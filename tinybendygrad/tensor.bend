@@ -2267,7 +2267,7 @@ def g_t4a(+ar: O.Found) -> O.Found:
 # Scalar shapes are the only place BOTH lanes answer, so scalar shapes are what the row is
 # built on.
 def g_sbuf(+ar: O.Arena, slot: U32) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{},
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1},
     O.AParam{O.ParamArg{slot, S.single(), None{}, None{}, None{}, S.AGlobal{},
       Some{S.D1{0}}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 

@@ -2566,10 +2566,10 @@ def c2d_pat(slot: U32, dt: S.Dt) -> O.ParamArg:
              False{}, None{}, None{}, False{}, None{}}
 
 def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{c2d_pa(slot, dt)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.AParam{c2d_pa(slot, dt)}, O.TNone{})
 
 def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
 
 # node 4 of `s5.ga.arena()` -- ops.bend:6490 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
 # here over a `c2d_buf` so the arena is this file's own and no index is inherited.

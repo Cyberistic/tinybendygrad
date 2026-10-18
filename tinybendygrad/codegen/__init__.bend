@@ -336,13 +336,13 @@ def test_param(ar: O.Arena, slot: U32) -> O.Found:
 
 # A test ALLOC.
 def test_alloc(ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.ABad{}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsALLOC{}, Some{1}, O.ABad{}, O.TNone{})
 
 # Pre-mint a BUFFER for `pm_r_alloc_m`. The engine cannot afford to
 # mint in a rule body (the new arena would be discarded); the test
 # fixture mints the BUFFER once and passes its index in `ctx[2]`.
 def test_buffer(ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.ABad{}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.ABad{}, O.TNone{})
 
 # Build the fixture: SINK[PARAM{0}, PARAM{1}, ALLOC]. Returns the
 # (grown arena, sink index) pair.

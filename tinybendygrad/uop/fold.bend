@@ -4310,9 +4310,10 @@ def g_add() -> O.Found:
   O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)])
 
 # `shape_to_shape_arg((2, 2))` -- `UOp(Ops.STACK, src=(CONST(2), CONST(2)))`. The
-# two CONSTs HASH-CONS to one node, so the arena is BUFFER, CONST(2), STACK,
-# RESHAPE and nothing else -- which is also what CPython's ucache holds, and the
-# oracle prints `same node as by-hand: True` for the hand-built and `_mop` nodes.
+# two CONSTs HASH-CONS to one node, so `g_marg22` itself adds one node and the
+# RESHAPE fixture it is called from is CONST(4), BUFFER, CONST(2), STACK, RESHAPE
+# -- which is also what CPython's ucache holds, and the oracle prints
+# `same node as by-hand: True` for the hand-built and `_mop` nodes.
 def g_marg22(ar: O.Arena) -> O.Found:
   +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
   +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(2)})
@@ -4328,14 +4329,14 @@ def g_marg23(ar: O.Arena) -> O.Found:
 # FIRST TWO-DIMENSIONAL SHAPE this repo can build. `_mop` builds it as
 # `UOp(op, src=(self,)+UOp.sink(*usrcs).simplify().src)` (ops.py:835).
 def g_resh22() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_buf()}, O.TNone{})
   +k = g_marg22(O.Found.ar(b))
   O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
 
 # RESHAPE(BUFFER(4), STACK(2, 3)) -- `raise ValueError(f"bad reshape: {ps} ->
 # {self.marg}")` (ops.py:412), which the oracle prints verbatim
 def g_resh23() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_buf()}, O.TNone{})
   +k = g_marg23(O.Found.ar(b))
   O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
 
@@ -4343,7 +4344,7 @@ def g_resh23() -> O.Found:
 # `movement.py:184`'s `return self if ret.shape == self.shape else ret`. The
 # oracle prints `identity ret==self: True` for that test.
 def g_resh4() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_buf()}, O.TNone{})
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(4)})
   O.UOp.new(O.Found.ar(c), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
@@ -4351,7 +4352,7 @@ def g_resh4() -> O.Found:
 # numbers {self.marg}")` (ops.py:410), which is a DIFFERENT check from the product
 # one. -2 as a two's complement I64 is hi=all-ones and lo=2 below all-ones.
 def g_reshneg() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_buf()}, O.TNone{})
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_hi_lo(4294967295, 4294967294)})
   O.UOp.new(O.Found.ar(c), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
@@ -4361,7 +4362,7 @@ def g_reshneg() -> O.Found:
 # src, and the dtype is `void` because `GroupOp.Movement` says `return src[0].dtype`
 # and a NOOP is in the `always void` set.
 def g_reshnoop() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_buf()}, O.TNone{})
   +n = O.UOp.new(O.Found.ar(b), O.OpsNOOP{}, [O.Found.i(b)], O.ANone{}, O.TNone{})
   +k = g_marg23(O.Found.ar(n))
   O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(n), O.Found.i(k)], O.ANone{}, O.TNone{})
@@ -4375,7 +4376,7 @@ def g_reshnoop() -> O.Found:
 # header, not in a missing simplifier; `g_mv_expsym_pos` is the same op with a real
 # end and it answers.
 def g_reshsym() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{g_buf()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_buf()}, O.TNone{})
   +z = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(0)})
   +n = O.UOp.special(O.Found.ar(z), O.Found.i(z), "N")
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
@@ -5914,30 +5915,34 @@ def t_gap_ok() -> Bool:
   # 1 CONST(0), 2 RESHAPE (deferred), 3 STORE over it (unanswered in turn)
   Bool.and(Bool.not(Kahn.settled(Folded.ar(x), Folded.t(x))), gap_count(x, 2))
 
-# THE 2-D FIXTURE end to end. `g_resh22`'s arena is 1 BUFFER, 2 CONST(2),
-# 3 STACK(2,2), 4 RESHAPE, and Python's `_shape` is `(2, 2)` over `int32` -- the
-# dtype is `GroupOp.Movement`'s `return src[0].dtype` and NOT `void`, because
-# src[0] is a BUFFER here and a NOOP in `resh_noop`.
+# THE 2-D FIXTURE end to end. `g_resh22`'s arena is 1 CONST(4), 2 BUFFER,
+# 3 CONST(2), 4 STACK(2,2), 5 RESHAPE, and Python's `_shape` is `(2, 2)` over
+# `int32` -- the dtype is `GroupOp.Movement`'s `return src[0].dtype` and NOT
+# `void`, because src[0] is a BUFFER here and a NOOP in `resh_noop`. The CONST(4)
+# is `src[0]`, the size node `UOp.new.param` interns ahead of the BUFFER; it is
+# what CPython's own ucache holds for `_buffer(4, ...)` and its ABSENCE is the
+# `nil-src/B` defect this fixture was carrying.
 def t_resh_2d() -> Bool:
   +x = folded(O.Found.ar(g_resh22()))
-  Bool.and(shape_is(x, 4, [sint_of(2), sint_of(2)]),
-    Bool.and(dt_is(x, 4, S.int32()), shape_is(x, 1, [sint_of(4)])))
+  Bool.and(shape_is(x, 5, [sint_of(2), sint_of(2)]),
+    Bool.and(dt_is(x, 5, S.int32()), shape_is(x, 2, [sint_of(4)])))
 
 # THE IDENTITY TEST of movement.py:184, `return self if ret.shape == self.shape
 # else ret`, from one fold: the ONE-element reshape is the no-op (4,) == (4,) and
 # `resh_2d` is the (2,2) != (4,) half of the same `if`.
 def t_resh_1d() -> Bool:
   +x = folded(O.Found.ar(g_resh4()))
-  # 1 BUFFER, 2 CONST(4), 3 RESHAPE
-  Bool.and(shape_is(x, 3, [sint_of(4)]), shape_is(x, 1, [sint_of(4)]))
+  # 1 CONST(4) (the size node), 2 BUFFER, 3 RESHAPE -- CONST(4) hash-conses to 1
+  Bool.and(shape_is(x, 3, [sint_of(4)]), shape_is(x, 2, [sint_of(4)]))
 
 # THE NOOP ARM, the one that must NOT check: `STACK(2, 3)` over a NOOP whose shape
 # is (4,), so the products are 6 and 4, and `resh_reject` proves the SAME node is
 # rejected when the src is a BUFFER. Python answers (2, 3) and `void`.
 def t_resh_noop() -> Bool:
   +x = folded(O.Found.ar(g_reshnoop()))
-  # 1 BUFFER, 2 NOOP, 3 CONST(2), 4 CONST(3), 5 STACK(2,3), 6 RESHAPE
-  Bool.and(shape_is(x, 6, [sint_of(2), sint_of(3)]), dt_is(x, 6, S.void()))
+  # 1 CONST(4) (the size node), 2 BUFFER, 3 NOOP, 4 CONST(2), 5 CONST(3),
+  # 6 STACK(2,3), 7 RESHAPE
+  Bool.and(shape_is(x, 7, [sint_of(2), sint_of(3)]), dt_is(x, 7, S.void()))
 
 # ALL THREE `raise`s, as three nodes the fold does NOT answer. `gap_count` is the
 # "not in the table" test `t_gap_ok` already uses, and the third is the EMPTY interval
@@ -5948,9 +5953,10 @@ def t_resh_reject() -> Bool:
   +a = folded(O.Found.ar(g_resh23()))
   +b = folded(O.Found.ar(g_reshneg()))
   +c = folded(O.Found.ar(g_reshsym()))
-  # the RESHAPE of each: 5 for the product mismatch, 3 for the negative dim, 6 for
-  # the EMPTY interval
-  Bool.and(gap_count(a, 5), Bool.and(gap_count(b, 3), gap_count(c, 6)))
+  # the RESHAPE of each: 6 for the product mismatch, 4 for the negative dim, 7 for
+  # the EMPTY interval -- each arena gained 1 CONST(4), the size node, interned
+  # ahead of the BUFFER
+  Bool.and(gap_count(a, 6), Bool.and(gap_count(b, 4), gap_count(c, 7)))
 
 # THE WHOLE TABLE SETTLES, so the 2-D answer is the ARM's answer and not a lucky
 # one: the same `Kahn.settled` claim `cycle_safe` makes, over a graph whose top
