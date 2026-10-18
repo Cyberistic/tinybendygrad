@@ -54,12 +54,20 @@ def main(plant: bool = False) -> int:
     nt = load()
     if nt is None:
         return 3
-    if plant:
-        with tempfile.TemporaryDirectory(dir=os.path.join(ROOT, ".agents", "slop")) as td:
-            nt.GRAPH_D = os.path.relpath(td, ROOT)
-            print(f"  PLANT: `GRAPH_D` -> {nt.GRAPH_D} (holds none of the declared artifacts)")
-            return report(nt)
-    return report(nt)
+    try:
+        if plant:
+            with tempfile.TemporaryDirectory(dir=os.path.join(ROOT, ".agents", "slop")) as td:
+                nt.GRAPH_D = os.path.relpath(td, ROOT)
+                print(f"  PLANT: `GRAPH_D` -> {nt.GRAPH_D} (holds none of the declared artifacts)")
+                return report(nt)
+        return report(nt)
+    except Exception as e:
+        # MEASURED 2026-10-18: an UNEXPECTED exception here exited **2**, which is NOT in `VERDICTS`
+        # — and `gates/gate-surface.py` charges exactly that as `RENAMED` ("a caller charging by
+        # integer prints a word this gate never used"). A gate must not be able to leave its own
+        # surface, so an unreadable tree is REFUSED (3), not an undeclared integer.
+        print(f"  REFUSED: {e!r} — NOTHING WAS MEASURED")
+        return 3
 
 
 def report(nt) -> int:
