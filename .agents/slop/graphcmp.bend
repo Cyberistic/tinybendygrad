@@ -35,6 +35,8 @@ import ./../../tinybendygrad/uop/fold.bend as F
 import ./../../tinybendygrad/helpers.bend as H
 import ./../../tinybendygrad/LAWS/spec.bend as S
 import ./../../tinybendygrad/uop/render.bend as R
+import ./../../tinybendygrad/tensor.bend as T
+import ./../../tinybendygrad/mixin/movement.bend as MX
 
 # ===========================================================================
 # THE CHUNK. `<bytecount>:<bytes>`. `String.length` counts CHARACTERS, which is byte
@@ -776,10 +778,22 @@ def g_sink() -> O.Found:
 # before this one had any node with more than one parent, so the differ had never placed
 # one -- and a differ that only ever saw trees cannot be said to handle a DAG.
 #
-# `GROUP`'s arg is `None` here (MEASURED: `UOp.group` is `UOp(Ops.GROUP, src=..., **kwargs)`
-# with no arg, ops.py:558-560, and `hasattr(group, 'params')` is `False`), so `ANone` is
-# the whole of it. See `graphcmp-LIMITS.md` on the `params` claim: there is no such field
-# at this tree to ignore.
+# **THE CENSUS ABOVE IS AGAINST A SCHEMA THAT NO LONGER EXISTS, AND IT WAS THE FALSE CLAIM
+# THAT BROKE THIS DRIVER.** The paragraph it came from read "`UOp.group` is
+# `UOp(Ops.GROUP, src=..., **kwargs)` with no arg, ops.py:558-560, and `hasattr(group,
+# 'params')` is `False`" -- so this body hand-built `O.OpsGROUP{}`, and upstream `900880433`
+# DELETED that constructor. `bin/bend graphcmp.bend --check-only` then answered
+# `SOME PROOFS FAIL`, `expected : a declared constructor (... ops.Op declares ... 75 ...)`.
+# Upstream REIMPLEMENTED `UOp.group` as `UOp(Ops.STACK).after(*srcs)` (`ops.py:536-538`), so
+# the root is now `AFTER` over a BARE `STACK` and the op sequence is
+# `STACK ALLOC CONST CONST STACK RESHAPE ADD MUL AFTER`. MEASURED 2026-10-18, py side:
+# 10 rows, and `gates/groupflip-gate.py` answers PASS on 11 rows / 0 divergences, so the
+# PORT's `UOp.group` already matches. **THE FIX IS TO CALL `O.UOp.group`, THE WAY CPYTHON
+# CALLS `UOp.group`, NOT TO SPELL THE NEW NODES OUT BY HAND** -- a hand-written
+# `STACK`+`AFTER` would stop testing the port's implementation and start testing my typing.
+# The per-graph node counts in the comments below are the same kind of stale census; the
+# AUTHORITATIVE, machine-regenerated ones are the `OPS REACHED` rows in
+# `runs/graphcmp/D/D1-graph-*.txt`, written by this run.
 def g_group() -> O.Found:
   +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
@@ -788,7 +802,7 @@ def g_group() -> O.Found:
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +add = O.UOp.new(O.Found.ar(r43), O.OpsADD{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
   +mul = O.UOp.new(O.Found.ar(add), O.OpsMUL{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(mul), O.OpsGROUP{}, [O.Found.i(add), O.Found.i(mul)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(mul), [O.Found.i(add), O.Found.i(mul)])
 
 # `--graph commute`: `UOp.group(a+b, a!=b, a.maximum(b), a&b, a|b, a^b)`, MEASURED at 14
 # nodes. SIX commutative ops in one graph, each a single elementwise node over the SAME
@@ -819,8 +833,8 @@ def g_commute() -> O.Found:
   +an = O.UOp.new(O.Found.ar(mx), O.OpsAND{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +orr = O.UOp.new(O.Found.ar(an), O.OpsOR{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +xo = O.UOp.new(O.Found.ar(orr), O.OpsXOR{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(xo), O.OpsGROUP{}, [O.Found.i(add), O.Found.i(ne), O.Found.i(mx),
-    O.Found.i(an), O.Found.i(orr), O.Found.i(xo)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(xo), [O.Found.i(add), O.Found.i(ne), O.Found.i(mx),
+    O.Found.i(an), O.Found.i(orr), O.Found.i(xo)])
 
 # `UOp.param(0, dtypes.float, 8, device="CPU", name="p0")` -- `ops.py:1235-1239`'s
 # `UOp.param`, MEASURED: `ParamArg(slot=0, dtype=f32, size=8, name='p0', device='CPU')`
@@ -907,7 +921,7 @@ def g_sym() -> O.Found:
   +pm = O.UOp.new(O.Found.ar(rn), O.OpsPARAM{}, Nil{}, O.AParam{var("m")}, O.TNone{})
   +sm = O.UOp.new(O.Found.ar(pm), O.OpsSTACK{}, [O.Found.i(pm), O.Found.i(c4)], O.ANone{}, O.TNone{})
   +rm = O.UOp.new(O.Found.ar(sm), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(sm)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(rm), O.OpsGROUP{}, [O.Found.i(rn), O.Found.i(rm)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(rm), [O.Found.i(rn), O.Found.i(rm)])
 
 # A PARAM of an arbitrary dtype, volatility and NAME, for the three PROGRAM graphs below.
 # `paramf` above is the f32/no-volatility/always-named case and is left alone: it is what
@@ -1170,7 +1184,7 @@ def g_bw() -> O.Found:
   +r143 = O.UOp.new(O.Found.ar(s143), O.OpsRESHAPE{}, [O.Found.i(ra), O.Found.i(s143)], O.ANone{}, O.TNone{})
   +p021a = O.UOp.new(O.Found.ar(r143), O.OpsPERMUTE{}, [O.Found.i(r143)], O.ATuple{[0, 2, 1]}, O.TNone{})
   +r34b = O.UOp.new(O.Found.ar(p021a), O.OpsRESHAPE{}, [O.Found.i(p021a), O.Found.i(s34)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(r34b), O.OpsGROUP{}, [O.Found.i(r43b), O.Found.i(r34b)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(r34b), [O.Found.i(r43b), O.Found.i(r34b)])
 
 # ===========================================================================
 # THE FOUR ELEMENTWISE/MOVEMENT GRAPHS (`alu`, `bit`, `where`, `move`). Added after the
@@ -1229,8 +1243,8 @@ def g_alu() -> O.Found:
   +sn = O.UOp.new(O.Found.ar(e2), O.OpsSIN{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
   +tr = O.UOp.new(O.Found.ar(sn), O.OpsTRUNC{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
   +dt = O.UOp.new(O.Found.ar(tr), O.OpsDETACH{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(dt), O.OpsGROUP{}, [O.Found.i(sq), O.Found.i(rp), O.Found.i(pw),
-    O.Found.i(lg), O.Found.i(e2), O.Found.i(sn), O.Found.i(tr), O.Found.i(dt)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(dt), [O.Found.i(sq), O.Found.i(rp), O.Found.i(pw),
+    O.Found.i(lg), O.Found.i(e2), O.Found.i(sn), O.Found.i(tr), O.Found.i(dt)])
 
 # `--graph bit`: `UOp.group(a<<a, a>>a, a//a, a%a)` over ONE `Tensor.empty(4,3, int)`.
 # MEASURED at 10 nodes, census
@@ -1250,8 +1264,8 @@ def g_bit() -> O.Found:
   +sr = O.UOp.new(O.Found.ar(sl), O.OpsSHR{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
   +fd = O.UOp.new(O.Found.ar(sr), O.OpsFLOORDIV{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
   +fm = O.UOp.new(O.Found.ar(fd), O.OpsFLOORMOD{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(fm), O.OpsGROUP{}, [O.Found.i(sl), O.Found.i(sr), O.Found.i(fd),
-    O.Found.i(fm)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(fm), [O.Found.i(sl), O.Found.i(sr), O.Found.i(fd),
+    O.Found.i(fm)])
 
 # `--graph where`: `UOp.group((a<a).where(a,a), (a<a))`. MEASURED at 8 nodes, census
 # `ALLOC=1 CMPLT=1 CONST=2 GROUP=1 RESHATE=1 STACK=1 WHERE=1`.
@@ -1271,7 +1285,7 @@ def g_where() -> O.Found:
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +lt = O.UOp.new(O.Found.ar(r43), O.OpsCMPLT{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
   +wh = O.UOp.new(O.Found.ar(lt), O.OpsWHERE{}, [O.Found.i(lt), O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(wh), O.OpsGROUP{}, [O.Found.i(wh), O.Found.i(lt)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(wh), [O.Found.i(wh), O.Found.i(lt)])
 
 # `--graph move`: the four MOVEMENT ops the corpus had not reached and can compare --
 # `pad(((0,1),(0,2)))`, `shrink(((1,4),(2,5)))`, `contiguous_backward()` and
@@ -1316,8 +1330,8 @@ def g_move() -> O.Found:
   # dtype CHANGING under it (`f32 -> i32`), which is the case `bitcast_ds` and `cast_ds`
   # share an arm for and must not be confused by.
   +bc = O.UOp.new(O.Found.ar(cb), O.OpsBITCAST{}, [O.Found.i(r43)], O.ADt{S.int32()}, O.TNone{})
-  O.UOp.new(O.Found.ar(bc), O.OpsGROUP{}, [O.Found.i(pd), O.Found.i(sk), O.Found.i(cb),
-    O.Found.i(bc)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(bc), [O.Found.i(pd), O.Found.i(sk), O.Found.i(cb),
+    O.Found.i(bc)])
 
 # `--graph flip`: `a.flip(0)` -- MEASURED at 6 nodes, census
 # `ALLOC=1 CONST=2 FLIP=1 RESHAPE=1 STACK=1`.
@@ -1350,19 +1364,32 @@ def g_move() -> O.Found:
 # choice of mine. `tinygrad/uop/ops.py:559` reads `if len(srcs) == 1 and isinstance(srcs[0],
 # UOp): return srcs[0]`, so `graphcmp.py:1386`'s `UOp.group(a.flip(0).uop)` -- ONE src --
 # RETURNS THE FLIP AND CREATES NO NODE. MEASURED today, calling CPython: `UOp.group(flip) is
-# flip` is `True`, and `emit_py('flip')` answers **6 rows** carrying no `GROUP` at all. The
+# flip` is `True`, and `emit_py('flip')` answers **29 rows** carrying no `GROUP` at all. The
 # `GROUP=1` this census used to carry was INHERITED FROM `move`, where `UOp.group` has FOUR
 # srcs and does build one; this graph was split out of `move` and took its wrapper with it.
-# IT IS THE ONLY SINGLE-SRC GROUP IN THIS FILE: of the 12 `OpsGROUP` statements here the other
-# 11 carry 2-8 srcs and every one of those is a node upstream builds. MEASURED, this graph:
-# 7 rows -> 6, and the census is now the 6 it always was.
+#
+# **AND `FLIP` IS GONE TOO, SO THE 6 ROWS ABOVE WERE AGAINST A SCHEMA THAT NO LONGER EXISTS.**
+# Upstream `900880433` ("remove Ops.FLIP", 2026-10-11) deleted `Ops.GROUP` and `Ops.FLIP`
+# and kept BOTH behaviours over ops that survived -- `UOp.group` is `UOp(Ops.STACK).after(...)`
+# (`ops.py:536-538`) and `Tensor.flip` is a PAD/SHRINK/TRANSPOSE loop (`movement.py:233-267`).
+# So this graph's 6 rows became 29 and `g_flip` below no longer has an `OpsFLIP{}` to build.
+# MEASURED 2026-10-18: `emit --side py --graph flip` answers **29 rows**, `OPS REACHED` never
+# names FLIP, and across the WHOLE corpus `GROUP=0` and `FLIP=0` on 34 of 34 graphs. The
+# repair is `MX.mxw_flip` -- THE PORT'S OWN IMPLEMENTATION, called the way CPython calls
+# `a.flip(0)`, NOT a hand-written PAD/SHRINK chain transcribed from the py rows, because a
+# transcription would stop testing the port and start testing my typing. `gates/groupflip.bend`
+# is the instrument that already certifies `mxw_flip` against CPython (11 rows, 0 divergences).
+# IT IS THE ONLY SINGLE-SRC GROUP IN THIS FILE, and after that commit it is not a group call
+# at all: the other 11 call sites became `O.UOp.group` and every one of those carries 2-8 srcs.
 def g_flip() -> O.Found:
   +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(r43), O.OpsFLIP{}, [O.Found.i(r43)], O.ABoolList{[True{}, False{}]}, O.TNone{})
+  +fb = T.tn_wrap_uop(O.Found.ar(r43), O.Found.i(r43))
+  +fk = MX.mxw_flip(fb, [0])
+  O.Found{T.Tensor.ar(fk), T.Tensor.u(fk)}
 
 # `rows.pick` is a `Bool.pick` chain: `Bool.pick` CHOOSES an arm, it does not SEQUENCE
 # one, so each rung is one more `Bool.pick` and the default is the matmul.
@@ -1417,7 +1444,7 @@ def g_threefry() -> O.Found:
   +a2 = O.UOp.new(O.Found.ar(tf0), O.OpsALLOC{}, Nil{}, O.AParam{allocd(2, S.uint64(), 12)}, O.TNone{})
   +r2 = O.UOp.new(O.Found.ar(a2), O.OpsRESHAPE{}, [O.Found.i(a2), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +tf1 = O.UOp.new(O.Found.ar(r2), O.OpsTHREEFRY{}, [O.Found.i(r0), O.Found.i(r2)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(tf1), O.OpsGROUP{}, [O.Found.i(tf0), O.Found.i(tf1)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(tf1), [O.Found.i(tf0), O.Found.i(tf1)])
 
 # `--graph mulacc`: `UOp(Ops.MULACC, src=(a.uop, b.uop, c.uop))` over three
 # `Tensor.empty(4,3)`, 10 nodes. The root is the MULACC with an `ANone` arg -- no
@@ -1501,7 +1528,7 @@ def g_cdiv() -> O.Found:
   +rb = O.UOp.new(O.Found.ar(b0), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +cm = O.UOp.new(O.Found.ar(rb), O.OpsCMOD{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +cd = O.UOp.new(O.Found.ar(cm), O.OpsCDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(cd), O.OpsGROUP{}, [O.Found.i(cm), O.Found.i(cd)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(cd), [O.Found.i(cm), O.Found.i(cd)])
 
 # `--graph late`: upstream's OWN late rewrite applied to its own eager graph -- 12 nodes,
 # the only route to `SUB`, `NEG`, `CMPEQ` and `FDIV`. The PORT builds the REWRITTEN graph
@@ -1521,7 +1548,7 @@ def g_late() -> O.Found:
   +ng = O.UOp.new(O.Found.ar(sb), O.OpsNEG{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
   +eq = O.UOp.new(O.Found.ar(ng), O.OpsCMPEQ{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +fd = O.UOp.new(O.Found.ar(eq), O.OpsFDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(fd), O.OpsGROUP{}, [O.Found.i(sb), O.Found.i(ng), O.Found.i(eq), O.Found.i(fd)], O.ANone{}, O.TNone{})
+  O.UOp.group(O.Found.ar(fd), [O.Found.i(sb), O.Found.i(ng), O.Found.i(eq), O.Found.i(fd)])
 
 # --- THE FOUR REMAINING SUBSTITUTED GRAPHS (2026-10-06). `custom_function`, `mselect`,
 # `mstack` and `stage` are in `graphcmp.py`'s `GRAPHS` and had NO arm here either, so each
