@@ -1179,7 +1179,7 @@ def g_sym():
 # `LIN`  `full_rewrite_to_sink` of a REAL scheduled matmul -- the first graph in the corpus
 #        that is a kernel the SCHEDULER produced. Reaches LOAD and STORE.
 # `LOOP` `hcq_fence` -- a REAL kernel body in this tree (tinygrad/runtime/support/hcq2.py:
-#        405-413), reached by CALLING it. The only place in the tree that mints a BACKEDGE
+#        72-78), reached by CALLING it. The only place in the tree that mints a BACKEDGE
 #        outside a hand-written fixture. Reaches BACKEDGE, LOAD and STORE.
 # `GATE` a gated STORE run through the REAL `pm_linearize_cleanups` -- the one rule in this
 #        tree that constructs `Ops.IF`/`Ops.ENDIF` (codegen/__init__.py:403). Reaches IF,
@@ -1236,32 +1236,48 @@ def g_lin():
 
 
 def g_loop():
-  """`hcq_fence(tv, tv, 0)` from tinygrad/runtime/support/hcq2.py:405-413 -- MEASURED at
-  **52** nodes on THIS tree (2026-10-18, `runs/graphcmp/D/D2-canon-py-loop.txt`) with the
-  census `CALL=4 BACKEDGE=1 LOAD=2 STORE=2 INDEX=7 RANGE=1 PARAM=6 BUFFER=3 AFTER=7
-  CONST=8 CUSTOM_FUNCTION=1 FLOORDIV=1 AND=1 ADD=2 MUL=2 CMPLT=2 NOOP=1 SINK=2`.
+  """`hcq_fence(tv, tv, 0)` from tinygrad/runtime/support/hcq2.py:72-78 -- MEASURED at
+  **52** nodes on THIS tree (2026-10-18, `runs/graphcmp/D/D2-canon-py-loop.txt`; re-emitted
+  live at 18:50:20Z and BYTE-IDENTICAL) with the census **`CONST=8 INDEX=8 AFTER=7 CALL=4
+  PARAM=4 BUFFER=3 ADD=2 CMPLT=2 LOAD=2 MUL=2 SINK=2 AND=1 BACKEDGE=1 CAST=1
+  CUSTOM_FUNCTION=1 FLOORDIV=1 NOOP=1 RANGE=1 STORE=1`**, COUNTED off the rows and not
+  transcribed. **This docstring said `STORE=2 INDEX=7 PARAM=6` AND ALL THREE WERE WRONG**
+  (the true counts are 1, 8 and 4) -- the same defect as the two below in a third dress: a
+  census nobody re-counted, sitting in the one place a reader would take it from.
 
   **THE `25` THIS USED TO SAY WAS THE BEND FIXTURE's CENSUS, NOT CPYTHON's -- THE SAME
   DEFECT AS THE STALE `34`/`77` PROSE CLAIMS, WITH THE SIDES SWAPPED.** `.agents/slop/
-  graphcmp.bend`'s `g_loop` models `hcq_fence`'s own loop body (25 rows, one `CALL`), while
-  CPython's tree carries three more `@uopfunc` bodies under three more `CALL`s. The number
-  written next to the graph here was read off the FIXTURE and filed as the oracle's, and
-  `cmd_diff` then refused the graph on the device precondition and wrote nothing but `rc=2`
-  to `D1-graph-loop.txt`, so `D1-verdicts.txt` printed `loop: VERDICT= EXPECTED=AGREE` with
-  an EMPTY cell. The refusal is now printed to stdout with the measured gap in it
-  (`# rows py=52 bend=25`, `CALL nodes py=4 bend=1`), and `checks/differ.py`'s
-  `graphs-refused` counts it as a REFUSAL rather than as a verdict that moved.
+  graphcmp.bend`'s `g_loop` modelled `hcq_fence`'s own loop body (25 rows, one `CALL`) and
+  replaced `get_time_ms` with an INVENTED store-and-reload counter, so it was wrong in two
+  further ways it did not admit: it spelled `uopfunc`'s two outlined PARAMs BACKWARDS (`slots`
+  where py has `tl`, and the volatility with them) and gave the outer CALL FOUR srcs where
+  py's i52 has three. `cmd_diff` then refused the graph on the device precondition and wrote
+  nothing but `rc=2` to `D1-graph-loop.txt`, so `D1-verdicts.txt` printed `loop: VERDICT=
+  EXPECTED=AGREE` with an EMPTY cell. **THE BEND FIXTURE WAS REBUILT TO ALL 52 ON 2026-10-18**,
+  so `loop` no longer REFUSES: it now runs the whole comparison and DISAGREEs with
+  `?=0/32`, because `fold.bend` cannot answer `AFTER(NOOP, u64)` -- the `?` LEDGER row and
+  `selfcheck`'s `loop` assertion both carry the cause and the measured count.
 
   WHY THIS ONE AND NOT A HAND-WRITTEN `UOp.backedge(...)` CALL. `UOp.backedge` is a real
-  constructor (ops.py:617) and `hando-writing` it would have reached BACKEDGE at the cost of
+  constructor (ops.py:620) and `hand-writing` it would have reached BACKEDGE at the cost of
   proving nothing. `hcq_fence` is the kernel tinygrad SHIPS for waiting on an HCQ2 queue --
-  `.backedge(loop, done < target)` at hcq2.py:411 is a POLL LOOP, which is exactly what a
+  `.backedge(loop, done < target)` at hcq2.py:78 is a POLL LOOP, which is exactly what a
   BACKEDGE is, and the `LOAD`s around it are the two it spins on. So the graph is upstream's
   own control flow, reached by CALLING upstream.
 
-  `tv` is a VOLATILE uint64 PARAM of size 1 on CPU: MEASURED, `hcq_fence` replaces its arg
-  with `volatile=True` itself (`tl.replace(arg=replace(tl.arg, volatile=True))`), so the
-  volatility is not a fixture choice but a consequence -- which is why the row says `b1`."""
+  `tv` is a uint64 PARAM of size 1 on CPU: MEASURED, `hcq_fence` replaces its `tl` arg with
+  `volatile=True` itself (hcq2.py:74), and the py rows put `volatile=True` on the node NAMED
+  `tl` -- `P(i1,...,stl,SGLOBAL,sCPU,b1,...)` at i2 -- which is the one `uopfunc`'s own
+  `param(i, n, a)` (ops.py:1318-1321) numbers second. The caller's `tv` (i51) is slot 3 and
+  UNNAMED, because `_storage` passes no `name` and `outlined` renumbers only the body's."""
+  from tinygrad.dtype import dtypes
+  from tinygrad.runtime.support.hcq2 import hcq_fence
+  # `hcq_fence` LOST ITS `tv` PARAMETER in the re-vendor: `runtime/support/hcq2.py:73`
+  # reads `def hcq_fence(slots, tl, last)` against `def hcq_fence(slots, tl, tv, last)` at
+  # `a741a469f^:406`. The four-argument call raised `TypeError: too many positional
+  # arguments` out of `UOp.outlined` (ops.py:1321), so this graph produced no rows at all.
+  tv = _storage(Ops.PARAM, 3, dtypes.uint64, 1, device="CPU")
+  return hcq_fence(tv, tv, 0)
   from tinygrad.dtype import dtypes
   from tinygrad.runtime.support.hcq2 import hcq_fence
   # `hcq_fence` LOST ITS `tv` PARAMETER in the re-vendor: `runtime/support/hcq2.py:73`
@@ -2345,8 +2361,12 @@ def row_ops(lines: list[str]) -> dict[str, int]:
 
   Field 1 of the eight length-prefixed fields is the op, so this is the same parse
   `unchunks` does and no pattern is involved. It exists because a refusal has to be able to
-  SAY what it cannot compare: `loop`'s says `CALL nodes py=4 bend=1`, which is the number
-  that names the gap, and a hard-written 4 would be a claim that rots with the port.
+  SAY what it cannot compare: the `# rows py=.. bend=.. CALL nodes py=.. bend=..` line, whose
+  numbers are counted from the two row sets and not asserted, because a hard-written `4`
+  would be a claim that rots with the port. It was `loop` that used to need it (25 of 52
+  nodes, 1 of 4 `CALL`s) and does not any more -- `loop`'s fixture is all 52 since
+  2026-10-18 -- so the line now has no member of the corpus behind it, which is a fact about
+  the CORPUS and not about the guard.
   """
   out: dict[str, int] = {}
   for ln in lines:
@@ -2424,12 +2444,19 @@ LEDGER = (
    "no third state in either column and `?` cannot be produced by the py side. FIRST LIVE "
    "on `--graph sym`: fold.bend's `marg.of` answered None for a STACK element that is not a "
    "CONST (the `ssimplify` wall), which unsettled the RESHAPE's whole `Derived` and so took "
-   "`dtype` with it. **NO LIVE FIXTURE ANY MORE**: `sym_dim`, `reshape_ok` and the void CALL "
-   "renderer closed it, and `sym`, `loop` and `bw` ALL read `?=0` (MEASURED on the live driver). "
-   "The row is kept as a REGRESSION row on `loop` and asserted directly on a fabricated "
-   "two-column line in `selfcheck` -- a claim with no fixture is a claim with no denominator. "
-   "**It was TWO port defects, not one**: the revert of either half puts `sym` back to "
-   "`?=0/6` and DISAGREE (measured, `runs/margsym/M16-sym-DISAGREE.txt`)"),
+   "`dtype` with it. CLOSED 2026-10-04 and `selfcheck` keeps `sym` as a REGRESSION ROW on that "
+   "closure. **LIVE AGAIN ON `--graph loop` SINCE 2026-10-18, ON A DIFFERENT CAUSE**: that "
+   "graph's bend fixture was rebuilt to all 52 of CPython's nodes (it carried 25) and the node "
+   "is `AFTER(NOOP, u64)` (py's i32), so `fold.bend`'s AFTER arm -- `thru0` (fold.bend:2564) -> "
+   "`dt_of` (fold.bend:699) -- is asked for upstream's `(void, None)`, which is ops.py:384's "
+   "`return self.src[0]._shape` read off a NOOP, and `dt_of`'s `None` arm returns the PORT-ONLY "
+   "outer `None` instead. That is what `?` IS. MEASURED 2026-10-18T18:56:36Z: `?=0/32`, 32 rung-1 "
+   "`dtype`/`shape` mismatches, `settled=False`. **IT IS A PORT LIMIT, NOT A FIXTURE DEFECT**: "
+   "all 52 nodes pair on their structural core (`SHARED cores=52 ONLY-PY=0 ONLY-BEND=0`), so "
+   "`op`, `arg`, `src`, `tag` and `depth` agree on EVERY one of them and only the two "
+   "fold-derived columns do not. The two-column claim is still also asserted on a fabricated "
+   "line below, because a claim with no fixture is a claim with no denominator -- and it now "
+   "has a LIVE one as well, which is the better of the two."),
   ("E", (6,), "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
    "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic "
    "`vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 "
@@ -2878,10 +2905,22 @@ def selfcheck(dev: str = "CPU") -> int:
   # two rows that are each still true for a named reason:
   #   * `sym` must answer `?=0` -- a REGRESSION ROW on the closure, and its failure text says
   #     the wall is back rather than saying "expected 6, got 0";
-  #   * `loop` must answer `?=0` -- `sym_dim`, `reshape_ok` and the void CALL renderer closed
-  #     its wall too, so NO live graph carries a `?`. THE TWO-COLUMN CLAIM NOW HAS A SYNTHETIC
-  #     FIXTURE -- a fabricated line with `?` in dtype AND shape, asserted below -- because a
-  #     claim with no fixture is a claim with no denominator.
+  #   * `loop` must answer `?=32` -- **MOVED BACK TO NONZERO 2026-10-18, AND NOT BY A
+  #     REGRESSION OF `fold.bend` BUT BY A FIXTURE THAT STOPPED MODELLING PART OF A GRAPH.**
+  #     `loop`'s bend fixture was rebuilt to all 52 of CPython's nodes (it carried 25), and
+  #     the 27 it gained include `AFTER(NOOP, u64)` (py's i32), which is the first node in
+  #     the corpus whose AFTER has a SHAPELESS `src[0]`. `uop/fold.bend`'s AFTER arm is
+  #     `thru0` (fold.bend:2564) = `dt_of(src_dt(0), src_shape(0))` (fold.bend:699), and
+  #     `dt_of`'s `None` arm returns the OUTER `None` -- the port-only "the fold produced no
+  #     `Derived`" -- so it cannot spell upstream's `(void, None)`, which is ops.py:384's
+  #     `return self.src[0]._shape` read off a NOOP. MEASURED 2026-10-18T18:56:36Z:
+  #     `# root=52 nodes=53 settled=False`, `?=0/32` on the bend side, 32 rung-1 field
+  #     mismatches, all of them `dtype`/`shape`, `SHARED cores=52 ONLY-PY=0 ONLY-BEND=0`.
+  #     **THE PIN IS THE SIZE, NOT ZERO**, so a change in EITHER direction is caught, and its
+  #     failure text names the cause instead of saying "expected 0, got 32" -- which is the
+  #     mistake the `sym` row above was written to avoid. It is a PORT LIMIT, and the fix
+  #     belongs in `fold.bend`'s `dt_of` (a `Some{DtShape{dt, None{}}}` arm, the spelling
+  #     `late()` already uses), not in this assertion.
   # HOISTED, because `emit_bend` is a subprocess and the failure message needed the number
   # too. MEASURED: the first version called it twice and `selfcheck` paid two full probe
   # runs to format one sentence.
@@ -2891,10 +2930,14 @@ def selfcheck(dev: str = "CPU") -> int:
     bad.append(f"the `ssimplify` wall is BACK: `--graph sym` answers ?={qsym} on the bend "
                f"side where the port's `fold.bend` `sym_dim.pa` (`fold.bend:1273`) says the "
                f"symbolic-dim case is closed and `--graph sym` VERDICT is AGREE")
-  if qloop != 0:
-    bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`'s CALL, not 0. Every "
-               f"wall that produced `?` is closed (`sym`, `loop` and `bw` all read 0), so a "
-               f"nonzero here means one has REOPENED.")
+  if qloop != 32:
+    bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`, not the 32 it "
+               f"measured at 2026-10-18T18:56:36Z. The cause is `fold.bend`'s AFTER arm "
+               f"(`thru0` at fold.bend:2564 -> `dt_of` at fold.bend:699), whose `None` arm "
+               f"returns the port-only outer `None` instead of upstream's `(void, None)`, so "
+               f"`AFTER(NOOP, u64)` and the 15 nodes above it read `?`. A count that is "
+               f"not 32 means `fold.bend` gained or lost that arm -- either way this row "
+               f"moved, and it must move by being RE-MEASURED and not by being edited.")
   # THE TWO-COLUMN ROW, DIRECTLY. `?` lands in `dtype` (field 2) and `shape` (field 3)
   # together; every live graph that used to carry it is closed, so the count is asserted on a
   # line this check fabricates -- the only way to keep the two-column claim tested.
@@ -3365,13 +3408,15 @@ def _dispatch(a) -> int:
   # them. Exit 2 -- a FAILURE, never a verdict, on the same principle as the 0-row guard.
   pdev, bdev = sorted(devnames(py)), sorted(devnames(bd))
   if pdev != bdev:
-    # **AND THE REFUSAL NAMES THE GAP IT CAN MEASURE, IN THE ROW, ON STDOUT.** `loop` is the
-    # corpus's one declared-partial fixture: it models `hcq_fence`'s own loop body and not
-    # the `@uopfunc` bodies CPython's version carries, so the device sets differ (`N` -- the
-    # absence token, on rows only the py side has) and the graph cannot be compared at all.
-    # That was true before this line and the corpus said so only through an exit code. The
-    # three numbers below are COUNTED from the two row sets, not asserted: the row counts, the
-    # `CALL` count per side, and the device tokens only one side carries.
+    # **AND THE REFUSAL NAMES THE GAP IT CANNOT MEASURE, ON STDOUT.** It used to be printed
+    # for `loop`, whose bend fixture modelled 25 of CPython's 52 nodes, carried 1 of its 4
+    # `CALL`s and named NO device on its REG-addrspace PARAMs -- so `pdev` held the absence
+    # token `N` and `bdev` did not, and the graph was refused with an empty verdict cell.
+    # **NONE OF THAT IS TRUE ANY MORE (MEASURED 2026-10-18T18:57:01Z): the fixture was
+    # rebuilt to all 52 nodes, the device sets are `['N', 'sCPU']` ON BOTH SIDES and the
+    # graph is COMPARED.** The branch and the three COUNTED numbers under it are the general
+    # guard and stay; the claim that names `loop` as its example does not, and a guard whose
+    # worked example has stopped needing it is the way a guard stops being read.
     pcall, bcall = row_ops(py).get("CALL", 0), row_ops(bd).get("CALL", 0)
     only_p = sorted(set(devnames(py)) - set(devnames(bd)))
     only_b = sorted(set(devnames(bd)) - set(devnames(py)))
@@ -3391,6 +3436,51 @@ def _dispatch(a) -> int:
           f"the report would be a cascade of `src` differences with the cause in none of "
           f"them. Re-run with --dev <the name the port resolved> -- or, if the name is not "
           f"in the port's table at all, that is a port gap to report, not a flag to set.")
+    return 2
+  # THE SECOND PRECONDITION, AND IT IS A WIDENING RATHER THAN A REPLACEMENT. `?` is
+  # graphcmp.bend's `dt_str`/`shape_str` arm for the port-only state "the fold produced no
+  # `Derived` for this node" (the LEDGER row), it CANNOT be produced by the py side, and a
+  # node carrying it has no `dtype` and no `shape` to compare -- so a graph with one is a
+  # graph with a hole in it, and a differ that pairs those nodes anyway reports a MISMATCH
+  # per FIELD on a node it has not read. MEASURED on `--graph loop`, which is the only
+  # member of the corpus that trips it: without this arm the run reads
+  # `expect-moved=1 graphs-agree=33 byte-identical=33` and nine attempts of `repro` all
+  # refuse (2026-10-18T19:00:39Z), i.e. the fixture's 36 CORRECT rows buy a permanently red
+  # zero-tolerance pin and a `D1-verdicts.txt` cell reading DISAGREE, which says "the port
+  # disagrees with CPython" where the truth is "the port cannot answer these nodes".
+  #
+  # **SO THE MARKER STAYS AND NAMES A MORE PRECISE CAUSE.** Before, `loop` was refused for
+  # firing the arm above (its fixture carried 25 of 52 nodes and 1 of 4 `CALL`s, and named
+  # no device on its REG-addrspace PARAMs, so `pdev` held the absence token and `bdev` did
+  # not). The fixture is now all 52 (MEASURED 2026-10-18T18:57:01Z: `devices py=['N',
+  # 'sCPU'] bend=['N', 'sCPU']`, `py rows=52 bend rows=52`, `CALL nodes py=4 bend=4`), and
+  # what is left is the port: `fold.bend`'s AFTER arm is `thru0` (fold.bend:2564) -> `dt_of`
+  # (fold.bend:699), and `dt_of`'s `None` arm returns the port-only outer `None` instead of
+  # upstream's `(void, None)`, so `AFTER(NOOP, u64)` cannot be rendered. **THIS IS A
+  # REFUSAL EITHER WAY AND THE DIFFERENCE IS WHICH LIE IS AVAILABLE**: without the arm, the
+  # run's own verdict cell asserts a disagreement nobody measured; with it, the artifact says
+  # "16 of 52 nodes are unreadable and here is the one node type that causes it", which is
+  # what the next unit needs and what `selfcheck`'s `?=32` assertion keeps honest.
+  qbd = dict(ledger(bd))["?"]
+  if qbd:
+    bnodes = len(bd) - qbd // 2
+    print(f"# rows py={len(py)} bend={len(bd)}  "
+          f"nodes the port DID answer={bnodes}  nodes it did not={qbd // 2} "
+          f"(`?` counts TWO columns per node, so `?={qbd}`)  "
+          f"CALL nodes py={row_ops(py).get('CALL', 0)} bend={row_ops(bd).get('CALL', 0)}")
+    print(f"# PORT LIMIT, NOT A PARTIAL FIXTURE: the bend side models {len(bd)} of the "
+          f"{len(py)} nodes and every one of them pairs on its structural core, but "
+          f"{qbd // 2} of them answer `?` in the dtype AND shape columns because "
+          f"`uop/fold.bend` did not settle them. The cause is ONE node type: an `AFTER` "
+          f"whose `src[0]` has NO SHAPE. `fold.bend`'s AFTER arm is `thru0` (fold.bend:2564) "
+          f"= `dt_of(src_dt(0), src_shape(0))` (fold.bend:699), and `dt_of`'s `None` arm "
+          f"returns the PORT-ONLY outer `None` -- `?` -- where upstream returns "
+          f"`self.src[0]._shape` (ops.py:384), which for a NOOP is `None` INSIDE a real "
+          f"`(dtype, shape)` pair. `nil_ds.shape` (fold.bend:1117) already spells that pair "
+          f"as `late()` for a void dtype; `dt_of` has no arm for it. Fix belongs in "
+          f"`fold.bend`, and `selfcheck` pins the count at 32 so the hole cannot grow "
+          f"unnoticed. This is stated here and NOT compared (exit 2, REFUSED, never a "
+          f"verdict): do not read this artifact as a disagreement about the port.")
     return 2
   rc, txt = report(py, bd, a.plant, equiv=a.equiv)
   print(txt)

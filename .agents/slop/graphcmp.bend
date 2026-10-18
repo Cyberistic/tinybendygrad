@@ -80,8 +80,32 @@ def i(x: U32) -> String:
 # read a shape of `2**32` as `0`. It costs four characters per dim and it is the difference
 # between an exact column and one that cannot see a large dimension.
 
-def is64(x: H.I64) -> String:
-  String.concat(["l", H.i64_text(x)])
+# ...AND IT IS UNSIGNED WHERE THE NORMAL FORM IS SIGNED, WHICH NO ROW IN THE CORPUS REACHED
+# UNTIL `--graph loop`. CPython's half is `f"{x >> 32}:{x & 0xFFFFFFFF}"` (graphcmp.py:388-393)
+# and Python's `>>` on a NEGATIVE int is an ARITHMETIC shift, so its high word is negative;
+# `H.i64_text` is `U32.show(hi) ":" U32.show(lo)` and `U32.show` of `0xFFFFFFFF` is
+# `4294967295`. MEASURED on the port's own row for the one negative CONST the corpus now has
+# (`start * -1`, hcq2.py:78): `l-1:4294967295` on the py side against
+# `l4294967295:4294967295` here. The two words are the SAME I64 -- `(2**64 - 1)` is `-1` in
+# two's complement -- so the port's VALUE is right and its SPELLING is the other one, and the
+# fix belongs in the normal form and not in `helpers.bend`. `hi < 2**31` answers the other
+# branch byte-for-byte identically to `U32.show`, so every other row in the corpus is
+# untouched -- which is why this sat here: an equality of two renderings that is only an
+# equality on the non-negative half of their domain.
+# The `.go` split is this file's own idiom for a binder a def needs to READ TWICE
+# (`checks` calls it "the `.go`/`.of` split is this one's own trade"), and the compiler
+# says so out loud: `Bool.pick(String, H.i32_is_neg(hi), f(hi), g(hi))` on one line is
+# "expected : hi / observed : hi (consumed more than once)" at the PARAMETER.
+def i64hi.go(neg: Bool, +hi: U32) -> String:
+  match neg:
+    case True{}: String.concat(["-", U32.show(U32.sub(0, hi))])
+    case _: U32.show(hi)
+
+def i64hi(+hi: U32) -> String:
+  i64hi.go(H.i32_is_neg(hi), hi)
+
+def is64(+x: H.I64) -> String:
+  String.concat(["l", i64hi(H.hi32(x)), ":", U32.show(H.lo32(x))])
 
 def bstr(s: String) -> String:
   String.concat(["s", s])
@@ -223,7 +247,12 @@ def rng(r: O.PyRange) -> String:
 def konst(c: O.Const) -> String:
   match c:
     case O.CBool{b}: String.concat(["b", Bool.show(b)])
-    case O.CInt{i2}: String.concat(["l", H.i64_text(i2)])
+    # `is64`, NOT `H.i64_text` -- and this arm used to spell the I64 ITSELF, so the two
+    # halves of the same column (`dim1`'s shape dims and this) were two renderings and the
+    # signed one had to be fixed twice. MEASURED on the one negative CONST the corpus has
+    # (`start * -1`, hcq2.py:78): `l-1:4294967295` on the py side, `l4294967295:4294967295`
+    # from this arm before. `is64` is the one spelling and it reads the SAME I64.
+    case O.CInt{i2}: is64(i2)
     # DEFECT 27, FOUND BY WIDENING (`--graph bw`, 2026-10-04), and this arm is HALF of it.
     # It was `F32.show(f2)`, which is the seven-significant-digit SHORTEST-ROUNDTRIP TEXT of
     # the value -- a `repr` in a structural field, the thing this file exists to forbid -- and
@@ -329,19 +358,27 @@ def custom_fn(c: O.CustomFunction) -> String:
 
 # `CallInfo` (ops.py:1392) is NOT a dataclass: a plain class with class-level defaults,
 # `grad_fxn` first and `aux` last, and `dtype: DType = dtypes.void` (ops.py:1398). Its
-# `__repr__` (ops.py:1401-1404) prints `id(self.grad_fxn)` -- a per-process address -- and
-# SUPPRESSES the dtype slot when that dtype is void (ops.py:1404). The port's record carries
-# the field (ops.bend:1057), so this renderer makes the slot CONDITIONAL: printing it always
-# made the port render a fourth field CPython's own repr refuses, and that reads as a shape
-# disagreement when it is a SPELLING one.
+# `__repr__` (ops.py:1394-1397) is `f"CallInfo({gf}, {repr(self.name)}, {self.precompile},
+# {self.precompile_backward})"` -- it prints `id(self.grad_fxn)`, a per-process address, and
+# it prints the dtype NEVER, not conditionally. The port's record carries the field
+# (ops.bend:1114), the FIELD IS LOAD-BEARING (fold.bend:1160 reads a CALL's dtype off
+# `CallInfo.dtype`, which is LIMITS.md 2's named divergence from ops.py:130's `src[0]`), and
+# the normal form DROPS it -- which is what graphcmp.py's `carg` does too, dropping `grad_fxn`
+# and `aux` for the same reason.
+#
+# THIS ARM USED TO BE CONDITIONAL ON VOID, ON THE CLAIM THAT ops.py:1404 "SUPPRESSES the dtype
+# slot when that dtype is void". ops.py:1404 IS THE `precompile_backward` LINE. The claim was
+# true of no commit of this tree, and it was invisible for a measured reason and not a lucky
+# one: EVERY CALL IN THE CORPUS UNTIL THIS ONE HAD A VOID DTYPE, so both arms printed three
+# tokens. MEASURED on all four `cI` rows the py side emits -- `cI(N,b0,b0)` (the anonymous
+# `clock_gettime` call, whose body is an `i32` CUSTOM_FUNCTION), two `cI(sdo_get_time_ms,b0,b0)`
+# and `cI(shcq_fence,b0,b0)` -- `graphcmp.py`'s arm prints three tokens for the non-void one
+# too, and this file printed four. Same shape as the float CONST and the unsigned `hi` above:
+# a rendering that agreed with the other side on the half of the domain the corpus had reached.
 def callinfo(ci: O.CallInfo) -> String:
   match ci:
     case O.CallInfo{cname, precompile, precompile_backward, cdtype}:
-      match cdtype:
-        case S.Dt{_, _, S.CVoid{}, _}:
-          String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ")"])
-        case _:
-          String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ",", dt(cdtype), ")"])
+      String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ")"])
 
 # FOUR SLOTS: name, applied_opts, opts_to_apply, beam -- `KernelInfo`'s own fields in
 # DECLARATION order (ops.py:1342-1347) minus `estimates`, which ops.bend DROPPED (P5,
@@ -1066,47 +1103,175 @@ def g_lin() -> O.Found:
     O.AKernel{O.KernelInfo{"r_4_5_3",
       [O.OPT{O.OPS_SPLIT{}, 2, O.OA_SPLIT{O.SPL{0, O.AXIS_UPCAST{}, None{}}}}], None{}, 0}}, O.TNone{})
 
-# `hcq_fence`'s three named PARAMs plus the one it takes as an argument. MEASURED off the
-# py side's rows: `slots` is slot 0 and UNVOLATILE, `tl` is slot 1 and VOLATILE --
-# `hcq_fence` replaces its arg with `volatile=True` itself (hcq2.py:407) -- `tv` is slot 2
-# and the caller's PARAM is slot 3 and UNNAMED.
+# `--graph loop`: `hcq_fence(tv, tv, 0)`, tinygrad's OWN HCQ2 fence kernel, reached by CALLING
+# it (`graphcmp.py:1266-1272`). **FIFTY-TWO NODES, ALL FIFTY-TWO BUILT**, node for node, in
+# TOPOSORT ORDER -- which is also BUILD order, so the arena index of each node IS its toposort
+# position IS the `i<k>` both sides print. `runs/graphcmp/D/D2-canon-py-loop.txt` is the
+# specification (52 rows; re-emitted live and byte-identical 2026-10-18T18:50:20Z), and the
+# census this block has to reproduce is `CONST=8 INDEX=8 AFTER=7 CALL=4 PARAM=4 BUFFER=3
+# ADD=2 CMPLT=2 LOAD=2 MUL=2 SINK=2 AND=1 BACKEDGE=1 CAST=1 CUSTOM_FUNCTION=1 FLOORDIV=1
+# NOOP=1 RANGE=1 STORE=1`.
+#
+# WHAT THE PREVIOUS 25-NODE FIXTURE MODELLED, AND THE THREE WRONG THINGS BESIDES THE 27 IT
+# DID NOT MODEL. It modelled `hcq_fence`'s OWN loop body and replaced `get_time_ms` with an
+# INVENTED store-and-reload counter (a `tv` PARAM that py does not have, an `i32` CAST, a
+# second STORE). So it was wrong in three ways its own comment asserted were right:
+#   * THE TWO OUTLINED PARAMs WERE SPELLED BACKWARDS. This block gave `slots` slot 0
+#     unvolatile and `tl` slot 1 VOLATILE; py's rows i2/i3 give `tl` slot 1 VOLATILE and
+#     `slots` slot 0 unvolatile -- the NAMES are what the differ pairs on, and the old
+#     block had `slots` where py has `tl`. `uopfunc`'s own `param(i, n, a)` (ops.py:1318)
+#     numbers `enumerate(ins.items())`, so `slots` is 0 and `tl` is 1, and only `tl` is
+#     `replace`d with `volatile=True` by hcq2.py:74.
+#   * THE OUTER CALL HAD FOUR SRCS (`[sk, p3, p3, p3]`) WHERE py's i52 HAS THREE. `ins` is
+#     a DICT with TWO entries (`slots`, `tl`) and both hold the SAME `tv`, so
+#     `f.call(*ins.values())` (ops.py:1325) is the body and `tv` twice: `n(i50,i51,i51)`.
+#   * THE CALLER'S PARAM WAS NAMED `tv` HERE AND IS UNNAMED IN py's i51 -- `_storage`
+#     (graphcmp.py:1088) passes no `name`, and `uopfunc` renumbers only the body's own
+#     params.
+# The 27 it did not model are, KIND BY KIND, `CUSTOM_FUNCTION` 1 (i13), `CALL` 3 (i17, i29,
+# i40), `BUFFER` 3 REG-addrspace placeholders (i8, i12, i38), `PARAM` 2 of them addrspace
+# `REG` (i9) / slot 3 (i51), `FLOORDIV` 1 (i24), `CONST` 6 new values (i11,i14,i20,i23,i43,
+# i46), `INDEX` 4 (i10,i16,i19,i22), `CAST` 1 (i15), `MUL` 1 (i44), `ADD` 1 (i45), `AND` 1
+# (i48), `CMPLT` 1 (i47), `AFTER` 6 (i18,i28,i30,i32,i39,i41) -- and they are NOT exotic:
+# they are `@uopfunc`'s `do_get_time_ms` body (hcq2.py:65-69) and `get_time_ms` (hcq2.py:70),
+# which the old fixture replaced rather than mirrored.
+def regd(slot: U32, nm: Maybe<&2, String>) -> O.ParamArg:
+  # `AddrSpace.REG` placeholders and params, which is the ONLY addrspace in this graph with
+  # NO device: `UOp.placeholder`'s `assert device is None, "LOCAL and REG placeholders
+  # cannot have a device"` (ops.py:1201) is what puts `N` in the device column of i8/i9/i12/
+  # i38, and `dm` above is what prints the same `N` the py side's `paramarg` prints. It is
+  # the ONLY reason `device_verdict`'s `ONE-SIDE-DEVICE-LESS` used to fire on this graph:
+  # py carried four `N`s in that column and the bend side carried none.
+  O.ParamArg{slot, S.uint64(), None{}, None{}, nm, S.AReg{}, None{}, False{}, None{}, None{},
+    False{}, None{}}
+
 def g_loop() -> O.Found:
   +ar = O.Arena.empty()
-  +p0 = O.UOp.new.param(ar, O.OpsPARAM{}, Some{1}, O.AParam{paramd(0, S.uint64(), Some{"slots"}, False{})}, O.TNone{})
-  +p1 = O.UOp.new.param(O.Found.ar(p0), O.OpsPARAM{}, Some{1}, O.AParam{paramd(1, S.uint64(), Some{"tl"}, True{})}, O.TNone{})
-  +c0 = O.UOp.const(O.Found.ar(p1), O.CInt{H.i64_of_i32(0)})
-  +ix0 = O.UOp.new(O.Found.ar(c0), O.OpsINDEX{}, [O.Found.i(p0), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  # 1. CONST weakint 1 -- `shape_to_shape_arg((1,))` for every size-1 PARAM/BUFFER, interned.
+  # Minted FIRST and explicitly, because `UOp.new.param` below reaches the SAME node through
+  # the SAME arena (ops.bend:3036 -> :2998 `shape_to_shape_arg.of`), so this is the index
+  # every one of them gets and therefore the `i1` py's row prints as the shape's dim.
+  +c1 = O.UOp.const(ar, O.CInt{H.i64_of_i32(1)})
+  # 2. `uopfunc`'s `param(1, "tl", tv)`: slot 1, name `tl`, VOLATILE (hcq2.py:74 replaces
+  # the arg with `volatile=True`). 3. `param(0, "slots", tv)`: slot 0, name `slots`, not
+  # volatile. Both are GLOBAL on CPU and both are size 1.
+  +ptl = O.UOp.new.param(O.Found.ar(c1), O.OpsPARAM{}, Some{1},
+    O.AParam{O.ParamArg{1, S.uint64(), None{}, None{}, Some{"tl"}, S.AGlobal{}, Some{S.D1{0}},
+      True{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+  +psl = O.UOp.new.param(O.Found.ar(ptl), O.OpsPARAM{}, Some{1},
+    O.AParam{O.ParamArg{0, S.uint64(), None{}, None{}, Some{"slots"}, S.AGlobal{}, Some{S.D1{0}},
+      False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+  # 4-6. `target = slots.index(0).load()` (hcq2.py:76).
+  +c0 = O.UOp.const(O.Found.ar(psl), O.CInt{H.i64_of_i32(0)})
+  +ix0 = O.UOp.new(O.Found.ar(c0), O.OpsINDEX{}, [O.Found.i(psl), O.Found.i(c0)], O.ANone{}, O.TNone{})
   +ld0 = O.UOp.new(O.Found.ar(ix0), O.OpsLOAD{}, [O.Found.i(ix0)], O.ANone{}, O.TNone{})
-  # `UOp.loop(0)` is `RANGE(void, (WEAK, 0), src=(NOOP,))` -- MEASURED, the py side's row
-  # reads `NOOP void R` then `RANGE void rg(i0,XWEAK,n(i0)) src=n(i6)`. A void RANGE is
-  # the first in the corpus and its NOOP child is the first NOOP.
+  # 7. `UOp(Ops.NOOP)` -- the loop's own NOOP, which is void and shapeless (`R`).
   +np = O.UOp.new(O.Found.ar(ld0), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
-  +rg = O.UOp.range_end(O.Found.ar(np), O.Found.i(np), [0], O.AXIS_WEAK{})
-  +af = O.UOp.new(O.Found.ar(rg), O.OpsAFTER{}, [O.Found.i(p1), O.Found.i(ld0), O.Found.i(rg)], O.ANone{}, O.TNone{})
-  +ix1 = O.UOp.new(O.Found.ar(af), O.OpsINDEX{}, [O.Found.i(af), O.Found.i(c0)], O.ANone{}, O.TNone{})
-  +ld1 = O.UOp.new(O.Found.ar(ix1), O.OpsLOAD{}, [O.Found.i(ix1)], O.ANone{}, O.TNone{})
-  +lt = O.UOp.new(O.Found.ar(ld1), O.OpsCMPLT{}, [O.Found.i(ld1), O.Found.i(ld0)], O.ANone{}, O.TNone{})
-  # `.backedge(loop, cond)` is `UOp(Ops.BACKEDGE, src=(self, loop, cond))` -- ops.py:617 --
-  # so src is (the load, the RANGE, the comparison) IN THAT ORDER.
-  +be = O.UOp.new(O.Found.ar(lt), O.OpsBACKEDGE{}, [O.Found.i(ld1), O.Found.i(rg), O.Found.i(lt)], O.ANone{}, O.TNone{})
-  +af2 = O.UOp.new(O.Found.ar(be), O.OpsAFTER{}, [O.Found.i(p1), O.Found.i(be)], O.ANone{}, O.TNone{})
-  +c1 = O.UOp.const(O.Found.ar(af2), O.CInt{H.i64_of_i32(1)})
-  +ix2 = O.UOp.new(O.Found.ar(c1), O.OpsINDEX{}, [O.Found.i(af2), O.Found.i(c1)], O.ANone{}, O.TNone{})
-  +p2 = O.UOp.new.param(O.Found.ar(ix2), O.OpsPARAM{}, Some{1}, O.AParam{paramd(2, S.uint64(), Some{"tv"}, False{})}, O.TNone{})
-  +cv = O.UOp.new(O.Found.ar(p2), O.OpsCAST{}, [O.Found.i(c1)], O.ADt{S.uint64()}, O.TNone{})
-  +ad = O.UOp.new(O.Found.ar(cv), O.OpsADD{}, [O.Found.i(p2), O.Found.i(cv)], O.ANone{}, O.TNone{})
-  +st = O.UOp.new(O.Found.ar(ad), O.OpsSTORE{}, [O.Found.i(ix2), O.Found.i(ad)], O.ANone{}, O.TNone{})
-  +af3 = O.UOp.new(O.Found.ar(st), O.OpsAFTER{}, [O.Found.i(p0), O.Found.i(st)], O.ANone{}, O.TNone{})
-  +ix3 = O.UOp.new(O.Found.ar(af3), O.OpsINDEX{}, [O.Found.i(af3), O.Found.i(c0)], O.ANone{}, O.TNone{})
-  +st2 = O.UOp.new(O.Found.ar(ix3), O.OpsSTORE{}, [O.Found.i(ix3), O.Found.i(ad)], O.ANone{}, O.TNone{})
-  +sk = O.UOp.new(O.Found.ar(st2), O.OpsSINK{}, [O.Found.i(st2)], O.ANone{}, O.TNone{})
-  +p3 = O.UOp.new.param(O.Found.ar(sk), O.OpsPARAM{}, Some{1}, O.AParam{paramd(3, S.uint64(), None{}, False{})}, O.TNone{})
-  # `@uopfunc` WRAPS the kernel in a CALL, and the root of `hcq_fence(...)` is the CALL --
-  # MEASURED. Its `CallInfo` has THREE slots on the py side (`name`, `precompile`,
-  # `precompile_backward`) against the port's FOUR (`graphcmp.bend`'s `callinfo` also emits
-  # `cdtype`), so this arg is a REPORTED disagreement by construction and LIMITS.md 2
-  # already says so: "The port has four fields including a `dtype` CPython does not have".
-  O.UOp.new(O.Found.ar(p3), O.OpsCALL{}, [O.Found.i(sk), O.Found.i(p3), O.Found.i(p3), O.Found.i(p3)],
+  # 8. `ms = UOp.placeholder((1,), dtypes.u64, addrspace=AddrSpace.REG)` (hcq2.py:70) ->
+  #    `UOp._buffer(1, u64, slot, addrspace=REG)` -> a BUFFER with the size CONST as its only
+  #    src. `pm_renumber_slots` (ops.py:1913) gave it slot 0; the SECOND one (i38) got 2.
+  +ms1 = O.UOp.new.param(O.Found.ar(np), O.OpsBUFFER{}, Some{1}, O.AParam{regd(0, None{})}, O.TNone{})
+  # 9. `do_get_time_ms` is ITSELF `@uopfunc`, so `outlined` mints `param(0, "ms", <arg>)`
+  #    (ops.py:1318) -- the name and the addrspace are read off the ARGUMENT (`ms.after(dep)`
+  #    inherits `AddrSpace.REG` from the placeholder) and the device is None for the reason
+  #    `regd` states. This is a PARAM where i8 is a BUFFER, and they are two nodes.
+  +pms = O.UOp.new.param(O.Found.ar(ms1), O.OpsPARAM{}, Some{1}, O.AParam{regd(0, Some{"ms"})}, O.TNone{})
+  +ix1 = O.UOp.new(O.Found.ar(pms), O.OpsINDEX{}, [O.Found.i(pms), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  # 11-12. `ts = UOp.placeholder((2,), dtypes.u64, addrspace=AddrSpace.REG)` (hcq2.py:67).
+  # The size CONST 2 is minted by `UOp.new.param`'s own `shape_to_shape_arg`, so it takes the
+  # arena index py's row i11 has and the BUFFER the index py's row i12 has -- which is why
+  # i8's CONST 1 is spelled out three stanzas up and this one is not.
+  +ts = O.UOp.new.param(O.Found.ar(ix1), O.OpsBUFFER{}, Some{2}, O.AParam{regd(0, None{})}, O.TNone{})
+  # 13. `UOp.custom_function("clock_gettime", dtype=dtypes.i32)` (hcq2.py:68) -- src=() and the
+  #     port's own `O.UOp.custom_function` (ops.bend:5519) is the only route to the node.
+  +cf = O.UOp.custom_function(O.Found.ar(ts), "clock_gettime", Nil{}, S.int32())
+  # 14-15. `UOp.const(time.CLOCK_MONOTONIC, dtypes.i32)` -- a weakint CONST and a forced
+  #     `CAST` to i32, because `UOp.const(b, dtype)` is `UOp.const(b, weakint).cast(dtype)`
+  #     and a CAST to `weakint` FOLDS (ops.py:611-613). `CLOCK_MONOTONIC` is 6 ON DARWIN,
+  #     which is the machine the rows were emitted on; that is a fact about this host and
+  #     not about the port, and it is why the CONST is spelled as the number.
+  +c6 = O.UOp.const(O.Found.ar(cf), O.CInt{H.i64_of_i32(6)})
+  +c6i = O.UOp.new(O.Found.ar(c6), O.OpsCAST{}, [O.Found.i(c6)], O.ADt{S.int32()}, O.TNone{})
+  # 16-17. `...call(UOp.const(...), ts.index(0))` (hcq2.py:68) -- an ANONYMOUS call, so
+  #     `CallInfo.name` is None and `callinfo` prints `cI(N,b0,b0)`.
+  +ix2 = O.UOp.new(O.Found.ar(c6i), O.OpsINDEX{}, [O.Found.i(ts), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +cl = O.UOp.new(O.Found.ar(ix2), O.OpsCALL{}, [O.Found.i(cf), O.Found.i(c6i), O.Found.i(ix2)],
+    O.ACall{O.CallInfo{None{}, False{}, False{}, S.int32()}}, O.TNone{})
+  # 18-27. The rest of `do_get_time_ms`: `ts = ts.after(...)`, then
+  #     `ms.index(0).store(ts[0] * 1000 + ts[1] // 1000000).sink()` (hcq2.py:68-69). The
+  #     STORE'S LEFT IS i10 -- the outlined PARAM -- not the placeholder, which is upstream's
+  #     own substitution and not a fixture choice. `CallInfo.cdtype` is `S.int32()` because
+  #     the port reads a CALL's dtype off the ARG (fold.bend:1160) where CPython reads it off
+  #     `src[0]` (ops.py:130); the two agree here only because `src[0]` IS i32, and the
+  #     divergence itself is LIMITS.md 2's, already named.
+  +af0 = O.UOp.new(O.Found.ar(cl), O.OpsAFTER{}, [O.Found.i(ts), O.Found.i(cl)], O.ANone{}, O.TNone{})
+  +ix3 = O.UOp.new(O.Found.ar(af0), O.OpsINDEX{}, [O.Found.i(af0), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +c1000 = O.UOp.const(O.Found.ar(ix3), O.CInt{H.i64_of_i32(1000)})
+  +ml0 = O.UOp.new(O.Found.ar(c1000), O.OpsMUL{}, [O.Found.i(ix3), O.Found.i(c1000)], O.ANone{}, O.TNone{})
+  +ix4 = O.UOp.new(O.Found.ar(ml0), O.OpsINDEX{}, [O.Found.i(af0), O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +c1e6 = O.UOp.const(O.Found.ar(ix4), O.CInt{H.i64_of_i32(1000000)})
+  +fd = O.UOp.new(O.Found.ar(c1e6), O.OpsFLOORDIV{}, [O.Found.i(ix4), O.Found.i(c1e6)], O.ANone{}, O.TNone{})
+  +ad0 = O.UOp.new(O.Found.ar(fd), O.OpsADD{}, [O.Found.i(ml0), O.Found.i(fd)], O.ANone{}, O.TNone{})
+  +st0 = O.UOp.new(O.Found.ar(ad0), O.OpsSTORE{}, [O.Found.i(ix1), O.Found.i(ad0)], O.ANone{}, O.TNone{})
+  +sk0 = O.UOp.new(O.Found.ar(st0), O.OpsSINK{}, [O.Found.i(st0)], O.ANone{}, O.TNone{})
+  # 28-31. `get_time_ms(target)` = `ms.after(do_get_time_ms(ms.after(dep)))[0]` (hcq2.py:70)
+  #     -- ms.after(dep) is built FIRST and is the CALL's src[1], and the two `do_get_time_ms`
+  #     CALLS (i29, i40) share ONE body (i27) because it is the same UOp twice.
+  +af1 = O.UOp.new(O.Found.ar(sk0), O.OpsAFTER{}, [O.Found.i(ms1), O.Found.i(ld0)], O.ANone{}, O.TNone{})
+  +cl1 = O.UOp.new(O.Found.ar(af1), O.OpsCALL{}, [O.Found.i(sk0), O.Found.i(af1)],
+    O.ACall{O.CallInfo{Some{"do_get_time_ms"}, False{}, False{}, S.void()}}, O.TNone{})
+  +af2 = O.UOp.new(O.Found.ar(cl1), O.OpsAFTER{}, [O.Found.i(ms1), O.Found.i(cl1)], O.ANone{}, O.TNone{})
+  +ix5 = O.UOp.new(O.Found.ar(af2), O.OpsINDEX{}, [O.Found.i(af2), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  # 32-33. `UOp.range(UOp(Ops.NOOP).after(start:=get_time_ms(...)), next(UOp.unique_num),
+  #     dtype=dtypes.void)` (hcq2.py:76). TWO facts here, both measured on the py rows: the
+  #     bound is the AFTER and the RANGE carries ONE src (the OLD fixture hung the RANGE off
+  #     the NOOP directly, which is the same class of error `g_lin`'s split-range stanza
+  #     documents), and the axis id is 1 -- `pm_renumber_slots` (ops.py:1912) walks the REG
+  #     BUFFERs first, so `next(ctx)` reaches the RANGE at 1, not 0.
+  +af3 = O.UOp.new(O.Found.ar(ix5), O.OpsAFTER{}, [O.Found.i(np), O.Found.i(ix5)], O.ANone{}, O.TNone{})
+  +rg = O.UOp.range_end(O.Found.ar(af3), O.Found.i(af3), [1], O.AXIS_WEAK{})
+  # 34-37. `done = tl.after(target, loop).index(0).load()` and `done < target`.
+  +af4 = O.UOp.new(O.Found.ar(rg), O.OpsAFTER{}, [O.Found.i(ptl), O.Found.i(ld0), O.Found.i(rg)], O.ANone{}, O.TNone{})
+  +ix6 = O.UOp.new(O.Found.ar(af4), O.OpsINDEX{}, [O.Found.i(af4), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +ld1 = O.UOp.new(O.Found.ar(ix6), O.OpsLOAD{}, [O.Found.i(ix6)], O.ANone{}, O.TNone{})
+  +lt0 = O.UOp.new(O.Found.ar(ld1), O.OpsCMPLT{}, [O.Found.i(ld1), O.Found.i(ld0)], O.ANone{}, O.TNone{})
+  # 38-42. The SECOND `get_time_ms(done)`, argument `done.after`. Its `ms` placeholder is the
+  #     same node as i8's apart from the slot, and `pm_renumber_slots` gave IT 2 -- which is
+  #     why i8 and i38 are two nodes with two different `arg`s and not one node (py's rows
+  #     i8 and i38 differ in exactly the slot and in nothing else).
+  +ms2 = O.UOp.new.param(O.Found.ar(lt0), O.OpsBUFFER{}, Some{1}, O.AParam{regd(2, None{})}, O.TNone{})
+  +af5 = O.UOp.new(O.Found.ar(ms2), O.OpsAFTER{}, [O.Found.i(ms2), O.Found.i(ld1)], O.ANone{}, O.TNone{})
+  +cl2 = O.UOp.new(O.Found.ar(af5), O.OpsCALL{}, [O.Found.i(sk0), O.Found.i(af5)],
+    O.ACall{O.CallInfo{Some{"do_get_time_ms"}, False{}, False{}, S.void()}}, O.TNone{})
+  +af6 = O.UOp.new(O.Found.ar(cl2), O.OpsAFTER{}, [O.Found.i(ms2), O.Found.i(cl2)], O.ANone{}, O.TNone{})
+  +ix7 = O.UOp.new(O.Found.ar(af6), O.OpsINDEX{}, [O.Found.i(af6), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  # 43-48. `get_time_ms(done) - start < 30000` (hcq2.py:78) becomes
+  #     `now + start * -1 < 30000`, so i43 is a NEGATIVE weakint CONST and `H.i64_of_i32` is
+  #     a SIGN-EXTENDING constructor (helpers.bend:1653): 4294967295 is the u32 spelling of
+  #     -1 and `i64_text` prints the pair `l-1:4294967295`, which is what py prints and what
+  #     `konst` above prints for the same value.
+  +cn1 = O.UOp.const(O.Found.ar(ix7), O.CInt{H.i64_of_i32(4294967295)})
+  +ml1 = O.UOp.new(O.Found.ar(cn1), O.OpsMUL{}, [O.Found.i(ix5), O.Found.i(cn1)], O.ANone{}, O.TNone{})
+  +ad1 = O.UOp.new(O.Found.ar(ml1), O.OpsADD{}, [O.Found.i(ix7), O.Found.i(ml1)], O.ANone{}, O.TNone{})
+  +c30k = O.UOp.const(O.Found.ar(ad1), O.CInt{H.i64_of_i32(30000)})
+  +lt1 = O.UOp.new(O.Found.ar(c30k), O.OpsCMPLT{}, [O.Found.i(ad1), O.Found.i(c30k)], O.ANone{}, O.TNone{})
+  +an = O.UOp.new(O.Found.ar(lt1), O.OpsAND{}, [O.Found.i(lt0), O.Found.i(lt1)], O.ANone{}, O.TNone{})
+  # 49-50. `done.backedge(loop, (done < target) & (...)).sink()` -- `.backedge` is
+  #     `UOp(Ops.BACKEDGE, src=(self, loop, cond))` (ops.py:620), so src is (the LOAD, the
+  #     RANGE, the AND) IN THAT ORDER, and both are `R`: BACKEDGE and SINK have no shape.
+  +be = O.UOp.backedge(O.Found.ar(an), O.Found.i(ld1), O.Found.i(rg), O.Found.i(an))
+  +sk1 = O.UOp.new(O.Found.ar(be), O.OpsSINK{}, [O.Found.i(be)], O.ANone{}, O.TNone{})
+  # 51. The CALLER's `tv`, unnamed: `UOp.param(3, uint64, 1, device="CPU")` with no `name`
+  #     (graphcmp.py:1271 `_storage`), GLOBAL on CPU, size 1, not volatile.
+  +ptv = O.UOp.new.param(O.Found.ar(sk1), O.OpsPARAM{}, Some{1},
+    O.AParam{O.ParamArg{3, S.uint64(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+      False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+  # 52. `f.call(*ins.values(), name="hcq_fence")` (ops.py:1325) over a TWO-ENTRY dict whose
+  #     values are the SAME `tv`, so src is (body, tv, tv). `CallInfo` carries the port's
+  #     fourth field (`cdtype`) and `callinfo` DROPS it -- as does graphcmp.py's own `carg`,
+  #     which drops `grad_fxn` and `aux` too. LIMITS.md 2's named divergence is that the
+  #     FIELD EXISTS and is what fold.bend:1160 reads the dtype from, not that it prints.
+  O.UOp.new(O.Found.ar(ptv), O.OpsCALL{}, [O.Found.i(sk1), O.Found.i(ptv), O.Found.i(ptv)],
     O.ACall{O.CallInfo{Some{"hcq_fence"}, False{}, False{}, S.void()}}, O.TNone{})
 
 # The gated STORE through the real `pm_linearize_cleanups`. FOURTEEN nodes and the root is
