@@ -4,7 +4,15 @@
 Rule: every backtick-quoted token containing '/', normalized by stripping
 markdown emphasis, surrounding parens, trailing punctuation, a leading './',
 and excluding URLs. A path is PRESENT iff it exists on disk or appears in
-`git ls-files` (or a tracked file lives under it); otherwise ABSENT.
+`git ls-tree -r --name-only HEAD` (or a committed file lives under it);
+otherwise ABSENT.
+
+The denominator is asked of the COMMIT, never of `git ls-files`. The index is
+per-worktree and mutable, so an index-read population inherits GIT_INDEX_FILE
+and moves under a co-located `jj` snapshot -- the defect `checks/repro-paths.py`
+records (584 armed vs 541 disarmed on the same tree) and which
+`gates/indexread-gate.py` names this file for. Guarded by
+`gates/ledger-denominator-gate.py`.
 
 Kind: INSTRUMENT if the basename matches the project's runnable-verdict
 vocabulary (gate/check/sweep/differ/e2e/repro/corpus/mutate/selftest/pin/
@@ -15,7 +23,7 @@ import re, os, subprocess, csv, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 os.chdir(ROOT)
 text = open('.agents/TOOLS.md').read()
-tracked = set(subprocess.run(['git','ls-files'], capture_output=True, text=True).stdout.split())
+tracked = set(subprocess.run(['git','ls-tree','-r','--name-only','HEAD'], capture_output=True, text=True, check=True).stdout.split())
 
 def norm(t):
     t = t.strip().strip('*_[]()`').rstrip('.,;:)("')
