@@ -997,7 +997,7 @@ def read_ledger(path):
     filter that kept `splitlines()[1:]` would drop the FIRST `#` line and then parse the SECOND as
     a row -- and `LEDGER_HEADER` is FIVE TAB-separated fields, so it would have been admitted as a
     gate named `path`. So: drop comments and blanks FIRST, then drop the one remaining header line.
-    That is `gates/opseven-gate.py:301`'s own reader (`if not ln.strip() or ln.startswith("#")`),
+    That is `gates/opseven-gate.py:325`'s own reader (`if not ln.strip() or ln.startswith("#")`),
     READ NOT COPIED, because this file is the generator of that file's sibling spelling and one
     file with two comment shapes is two formats.
 
