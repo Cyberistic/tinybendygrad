@@ -47,6 +47,15 @@ denominator is the walk, not the spelling**: 236 unconsumed members, of which **
 the 236 UNCLASSIFIED** (`TIMED-OUT` at that cap) -- so **12 IS A LOWER BOUND, not a total**, and
 this file prints the unclassified count beside it for exactly that reason.
 
+**AND 3 OF THOSE 12 ARE NOT THE CLASS, FOR A MEASURED REASON.** `gates/devtag-gate.py` prints 7
+`name=value` rows, names no `Gate`, and its own header says *"ZERO bend LANES, ZERO rows of its
+own, TWO CLAIMS, and both are about CLAIMS rather than values"* -- and then prints
+`devtag-gate: PASS`. It **decided for itself**, and its rows are its EVIDENCE rather than a
+comparison awaiting one. Two more measure the same way (`gates/tn_minimum-gate.py`,
+`gates/paramarg-site-gate.py`). So the class is **9, not 12**, after the `DECIDED` arm below --
+dropped for a measurement, not for being inconvenient, and asserted LIVE in `--plant` rather than
+against a fixture retyped by hand.
+
 So a filter would be a list wearing a declaration's clothes, and this file refuses to be one.
 **NO LANE NAME APPEARS IN THIS FILE, AND NONE MAY BE ADDED.** Membership below is a walk plus an
 AST, both loaded by path.
@@ -127,7 +136,7 @@ nothing compared it), `REFUSED 3` (a `bend` process is in flight or appeared mid
 **AND `PASS` IS UNREACHABLE IN `--run` ITSELF, WHICH IS WHY PLANT 2(a) EXISTS.** MEASURED: `--run`
 iterates the UNCONSUMED members only -- executing a consumed lane a second time would launch `bend`
 for a comparison `gatekit` has already made -- so `declared_by` is structurally 0 for every member
-it runs, and at 2026-10-18T18:43:57Z the live reading was 12 `DEAD` and **0 rows with
+it runs, and at 2026-10-18T18:43:57Z the live reading was 12 members printing rows and **0 with
 `declared>0`**. The `PASS` branch of `verdict()` therefore has NO live witness in this file's own
 `--run`, and a branch with no witness is a branch nobody checks -- which is why PLANT 2 plants a
 consumed lane rather than looking for one.
@@ -150,9 +159,9 @@ and by `verdict()` here. The plant asserts `PASS` from the first and `DEAD` from
 prints `comparisons=0 disagreements=0` from this file's own arithmetic, so the literal state the
 brief names is on the record rather than paraphrased.
 
-PLANT 2 -- **THE VACUITY GUARD, AND IT IS TWO DIRECTIONS.** A rule that fires on everything is
-satisfied by PLANT 1 alone, so PLANT 2 asserts the rule does NOT fire on either shape that must not
-be DEAD by it:
+PLANT 2 -- **THE VACUITY GUARD, AND IT IS THREE DIRECTIONS.** A rule that fires on everything is
+satisfied by PLANT 1 alone, so PLANT 2 asserts the rule does NOT fire on any of the three shapes
+that must not be DEAD by it:
 
   (a) a member that PRINTS lane rows AND IS NAMED BY A `Gate` -- the consumed lane. Charging it
       would make every gate in the tree DEAD and would make the census a tautology;
@@ -161,7 +170,19 @@ be DEAD by it:
       undeclared member would pass PLANT 1 and be unable to tell a lane from a census, and the
       vacuous version -- `no Gate names it -> DEAD`, with the printed-rows test dropped -- is
       asserted to be WRONG here, so a later edit that drops the grammar arm turns this plant RED
-      instead of green.
+      instead of green;
+  (c) a member that PRINTS lane rows, names no `Gate`, and printed **its own verdict**. This is
+      `gates/devtag-gate.py`'s MEASURED shape and it is asserted against the LIVE FILE rather than
+      a fixture retyped by hand, because a hand-typed fixture agrees with the instrument by
+      construction. Its rows are its EVIDENCE, not a comparison awaiting one.
+
+PLANT 3 -- **THE VERDICT WORDS ARE `gates/gatekit.py`'s, NOT A SECOND LIST.** `VERDICT_WORDS` is
+declared here and checked against `gatekit.VERDICT.values()` on every `--plant`, so a verdict added
+there and not here is a FAIL rather than a silent widening of the class.
+
+**MEASURED, ALL THREE GUARDS CAN FAIL.** Dropping the row-grammar arm, inverting the declaration
+arm, and dropping the `decided` arm each turn this suite RED at rc=1 (2026-10-18T18:52Z), and the
+restored file is GREEN 3/3.
 """
 from __future__ import annotations
 
@@ -188,6 +209,19 @@ BOUNDED = ROOT / "checks" / "bounded.py"          # the watchdog, LOADED BY PATH
 # `(row_name, value)` convention"; `gatekit._lines` counts every non-blank line, which is WIDER and
 # would charge every gate's prose to the lane class. `name=` is the narrow one and the tree's own.
 ROW = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+# A MEMBER THAT HAS ALREADY DECIDED. The five words are `gates/gatekit.py`'s own `VERDICT` table,
+# read by VALUE and not re-spelled: this list is checked against that table by `plants()`, so a
+# verdict added there and not here is a FAIL rather than a silent widening. MEASURED, why the arm
+# exists -- `gates/devtag-gate.py` prints 7 `name=value` rows, names no `Gate`, and its own header
+# says "ZERO bend LANES, ZERO rows of its own, TWO CLAIMS, and both are about CLAIMS rather than
+# values". Those rows ARE its evidence and it then prints `devtag-gate: PASS`: it decided, and a
+# rule that charged it DEAD would be charging a self-verifying gate for not being compared BY
+# ANOTHER INSTRUMENT. Two more measured the same way (`gates/tn_minimum-gate.py`,
+# `gates/paramarg-site-gate.py`). Without this arm the class is 12; with it, 9, and the 3 it drops
+# are dropped for a MEASURED reason rather than for being inconvenient.
+VERDICT_WORDS = ("PASS", "FAIL", "REFUSED", "SKIP", "DEAD")
+DECIDED = re.compile(r"\b(?:" + "|".join(VERDICT_WORDS) + r")\b")
 
 # HOW MANY MEMBERS ARE NAMED BY A `Gate(...)` CALL, AND WHICH ARGUMENTS NAME A LANE. `Gate` is
 # `gatekit.Gate`, and every lane-taking keyword of its signature is listed here BECAUSE THE
@@ -421,19 +455,23 @@ def verdicts(gk):
 NOT_A_LANE = "NOT-A-LANE"
 
 
-def verdict(printed_rows: int, declared_by: int, dead: int, pass_code: int) -> tuple[int, str]:
-    """`(exit, word)` for ONE member. The whole rule, in three lines and no names.
+def verdict(printed_rows: int, declared_by: int, decided: bool, dead: int,
+            pass_code: int) -> tuple[int, str]:
+    """`(exit, word)` for ONE member. The whole rule, in four lines and no names.
 
-    A member that printed lane rows and that no `Gate` names compared NOTHING, so it is `DEAD`: it
-    ran, it said something, and the thing it said was never diffed against anything. A member a
-    `Gate` names is that gate's own lane and is not this class. A member that printed no lane row
-    is not this class either -- it may have said nothing at all (`gates/gatesweep.py`'s own `DEAD`,
-    one arm further out) or it may have printed prose (a census, a reporter, `--help`), and telling
-    those two apart is what the `--plant` vacuity guard holds still.
+    A member that printed lane rows, that no `Gate` names, and that printed NO VERDICT OF ITS OWN
+    compared NOTHING, so it is `DEAD`: it ran, it said something, and nothing compared it. Each
+    other shape is not this class, and each exclusion is a measurement rather than a preference:
+
+      no lane row            a census, a reporter, `--help` -- or silence, which is
+                             `gates/gatesweep.py`'s own `DEAD`, one arm further out;
+      a `Gate` names it      that gate's own lane, diffed and pinned inside `gatekit`;
+      it printed a VERDICT   it decided for itself (`gates/devtag-gate.py`), so its rows are its
+                             EVIDENCE rather than a comparison awaiting one.
     """
-    if not printed_rows:
+    if not printed_rows or declared_by or decided:
         return pass_code, NOT_A_LANE
-    return (dead, "DEAD") if not declared_by else (pass_code, "PASS")
+    return dead, "DEAD"
 
 
 # ---------------------------------------------------------------------------------------------
@@ -503,7 +541,7 @@ def report(run: bool, seconds: float, show_rows: bool) -> int:
               f"comparisons=0 disagreements=0 is NOT a verdict here.")
         return REFUSED
 
-    rows_out: list[tuple[Path, str, int, int, float]] = []
+    rows_out: list[tuple[Path, str, int, int, bool, float]] = []
     peak_max = 0.0
     stopped = ""
     t_start = time.time()
@@ -522,28 +560,32 @@ def report(run: bool, seconds: float, show_rows: bool) -> int:
             break
         out, tok, _rc, peak, _took = execute(path, reason, gs, seconds)
         peak_max = max(peak_max, peak)
-        rows_out.append((path, tok, len(rows_in(out)), len(named.get(path.name, ())), peak))
+        n_rows, n_decl = len(rows_in(out)), len(named.get(path.name, ()))
+        decided = bool(DECIDED.search(out))
+        rows_out.append((path, tok, n_rows, n_decl, decided, peak))
         # ONE MACHINE-READABLE LINE PER EXECUTED MEMBER, whatever it printed. `--rows` used to print
         # only the rows, so an interrupted run could say nothing about the 15 members it had already
         # classified -- and a census that cannot report what it finished measured nothing on those
         # either. The line is `member=` so it parses with the SAME grammar as a lane row.
         if show_rows:
-            print(f"member={path.relative_to(ROOT)} rows={len(rows_in(out))} "
-                  f"declared={len(named.get(path.name, ()))} token={tok} rc={_rc} peak={peak:.0f}")
+            print(f"member={path.relative_to(ROOT)} rows={n_rows} declared={n_decl} "
+                  f"decided={int(decided)} token={tok} rc={_rc} peak={peak:.0f}")
             for l in rows_in(out):
                 print(f"  {path.name}: {l[:96]}")
         else:
-            print(f"member={path.relative_to(ROOT)} rows={len(rows_in(out))} "
-                  f"declared={len(named.get(path.name, ()))} token={tok} rc={_rc} peak={peak:.0f}",
-                  flush=True)
+            print(f"member={path.relative_to(ROOT)} rows={n_rows} declared={n_decl} "
+                  f"decided={int(decided)} token={tok} rc={_rc} peak={peak:.0f}", flush=True)
 
-    lanes = [(p, t, n, d, pk) for p, t, n, d, pk in rows_out if n]
-    dead = [x for x in lanes if not x[3]]
+    lanes = [x for x in rows_out if x[2]]
+    decided_own = [x for x in lanes if x[4]]
+    dead = [x for x in lanes if verdict(x[2], x[3], x[4], DEAD, PASS)[1] == "DEAD"]
     silent = [x for x in rows_out if not x[2]]
-    compared = sum(min(n, d) for _p, _t, n, d, _pk in lanes)
+    compared = sum(min(x[2], x[3]) for x in lanes)
     print(f"EXECUTED   : {len(rows_out)}/{len(unconsumed)} member(s), {seconds:g}s cap each, "
           f"serially, DEV=CPU SPEC=1")
     print(f"PRINTED    : members that emitted >=1 `name=value` row -> {len(lanes)}")
+    print(f"DECIDED    : of those, printed a VERDICT of their own     -> {len(decided_own)}"
+          f"   [NOT this class -- `gates/devtag-gate.py`'s measured shape]")
     print(f"SILENT     : members that emitted none                  -> {len(silent)}"
           f"   [NOT this class -- `gates/gatesweep.py` answers SILENT/DEAD for those]")
     print(f"DEAD       : printed rows and NO declared consumer       -> {len(dead)}")
@@ -562,7 +604,7 @@ def report(run: bool, seconds: float, show_rows: bool) -> int:
         return REFUSED
     if dead:
         print("\nDEAD, and each of these ran, printed rows, and had them compared by nothing:")
-        for p, tok, n, _d, _pk in dead:
+        for p, tok, n, _d, _dec, _pk in dead:
             print(f"  DEAD  rc=0 rows={n:<4} token={tok:<14} {p}")
         print(f"\nLANE-CENSUS: DEAD -- {len(dead)} member(s) printed lane rows with no declared "
               f"consumer,\n             over a walk of {len(members)}. "
@@ -627,10 +669,12 @@ def plants() -> int:
                              capture_output=True, text=True, timeout=30).stdout
         printed = len(rows_in(out))
         declared_by = len(declared([(d / "plant-unconsumed-lane.py", "py-main")]))
-        want = verdict(printed, declared_by, DEAD, PASS)[0]
+        decided = bool(DECIDED.search(out))
+        want = verdict(printed, declared_by, decided, DEAD, PASS)[0]
         old_word, _old_tok = gs.classify("WITHIN-LIMITS", 0, out)
         new_word = gk.VERDICT[want]
-        ok1 = printed == 2 and declared_by == 0 and old_word == "PASS" and new_word == "DEAD"
+        ok1 = (printed == 2 and declared_by == 0 and not decided
+               and old_word == "PASS" and new_word == "DEAD")
         print(f"  {'PASS' if ok1 else 'FAIL'}  1: a lane with no declared consumer is PASS under "
               f"`checks/gatesweep.py`\n"
               f"          observed: printed={printed} rows, declared_by={declared_by}, "
@@ -639,7 +683,7 @@ def plants() -> int:
         print(f"          comparisons={0} disagreements={0}  "
               f"-- 0 DISAGREEMENTS OVER 0 COMPARISONS, which is NOT agreement")
 
-    # -- PLANT 2: THE VACUITY GUARD, TWO DIRECTIONS.
+    # -- PLANT 2: THE VACUITY GUARD, THREE DIRECTIONS.
     with tempfile.TemporaryDirectory() as td:
         d = Path(td)
         (d / "plant-consumed-oracle.py").write_text(PLANT_LANE)
@@ -647,13 +691,13 @@ def plants() -> int:
         # (a) THE CONSUMED LANE. Its consumer is a `Gate(...)` in the walk, so it is named.
         consumed = declared([(d / "plant-gate.py", "py-main")])
         a_named = len(consumed.get("plant-consumed-oracle.py", ()))
-        a_code, a_word = verdict(2, a_named, DEAD, PASS)
+        a_code, a_word = verdict(2, a_named, False, DEAD, PASS)
         ok_a = a_named == 1 and a_word != "DEAD"
         # (b) THE PROSE MEMBER. It prints, it is undeclared, and it emitted no `name=value` row.
         prose = subprocess.run([str(PY), "-c", PLANT_PROSE], capture_output=True, text=True,
                                timeout=30).stdout
         b_rows = len(rows_in(prose))
-        b_code, b_word = verdict(b_rows, 0, DEAD, PASS)
+        b_code, b_word = verdict(b_rows, 0, False, DEAD, PASS)
         # Its `declared_by` is ASKED, not assumed: the same map that named the consumed lane names
         # nothing that carries this member's name, and 0 there is what makes it a counter-example.
         b_declared_by = len(consumed.get("plant-prose-census.py", ()))
@@ -669,13 +713,37 @@ def plants() -> int:
         # TRAP: a rule that fires on every undeclared member is satisfied by PLANT 1 alone.
         vacuous_word = "DEAD" if not b_declared_by else "PASS"
         ok_v = vacuous_word == "DEAD" and b_word == NOT_A_LANE
-        ok2 = ok_a and ok_b and ok_v
-        print(f"  {'PASS' if ok2 else 'FAIL'}  2: the rule does NOT fire on a CONSUMED lane or on a "
-              f"PROSE member, and the\n          VACUOUS rule (`no Gate names it` alone) DISAGREES "
-              f"with it on the prose member\n"
+        # (c) THE SELF-DECIDING MEMBER. Rows, no declared consumer, and it printed its OWN
+        # VERDICT -- the measured shape of `gates/devtag-gate.py` (7 rows, names no `Gate`, and
+        # its header says "ZERO bend LANES, ZERO rows of its own, TWO CLAIMS"). Its rows ARE its
+        # evidence, so it is not a lane awaiting a comparison. The LIVE witness is asserted too,
+        # because a fixture retyped by hand agrees with the instrument by construction: the plant
+        # runs the real file and reads the verdict off its own stdout.
+        decided_out = subprocess.run([str(PY), str(HERE / "devtag-gate.py")], capture_output=True,
+                                     text=True, timeout=120).stdout
+        c_rows = len(rows_in(decided_out))
+        c_declared = len(declared(population(gs)).get("devtag-gate.py", ()))
+        c_word = verdict(c_rows, c_declared, bool(DECIDED.search(decided_out)), DEAD, PASS)[1]
+        ok_c = c_rows > 0 and c_declared == 0 and c_word == NOT_A_LANE
+        ok2 = ok_a and ok_b and ok_v and ok_c
+        print(f"  {'PASS' if ok2 else 'FAIL'}  2: the rule fires on NEITHER a CONSUMED lane, NOR a "
+              f"PROSE member,\n          NOR a SELF-DECIDING one, and the VACUOUS rule (`no Gate "
+              f"names it` alone) DISAGREES\n          with it on the prose member\n"
               f"          observed: consumed_named={a_named}->{a_word}, prose_rows={b_rows} "
-              f"declared_by={b_declared_by}->{b_word}, vacuous_rule_says={vacuous_word}")
+              f"declared_by={b_declared_by}->{b_word},\n"
+              f"                   vacuous_rule_says={vacuous_word}, gates/devtag-gate.py LIVE "
+              f"rows={c_rows} declared_by={c_declared}->{c_word}")
         checks.append(("2", ok2))
+
+    # AND THE VERDICT WORDS ARE gatekit's, NOT A SECOND LIST. `DECIDED` names five words; if
+    # `gates/gatekit.py` gains or drops one, this goes RED rather than the class silently widening
+    # or narrowing. A hand-kept copy of another instrument's vocabulary is a list that rots.
+    words = set(VERDICT_WORDS)
+    same = words == set(gk.VERDICT.values())
+    print(f"  {'PASS' if same else 'FAIL'}  3: the words `DECIDED` recognises are gatekit's own "
+          f"`VERDICT`\n          values -- a verdict added there and not here must be a FAIL\n"
+          f"          observed: DECIDED={sorted(words)} VERDICT={sorted(set(gk.VERDICT.values()))}")
+    checks.append(("3", same))
 
     rc = 0 if all(ok for _, ok in checks) else 1
     print(f"--plant: {'GREEN' if rc == 0 else 'RED'} ({sum(1 for _, ok in checks if ok)}/"
