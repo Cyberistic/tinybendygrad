@@ -517,11 +517,27 @@ class Gate:
         ONE CELL MOVES. MEASURED, NOT ASSUMED: the population is
         `checks/gatesweep.py:population()` -- A DIRECTORY WALK, LOADED BY PATH, not a list --
         and each gate's oracle was taken from its OWN `Gate(oracle=...)` argument and run.
-        **80 gates, 60 of them `Gate`s with a declared oracle, 60 of 60 EXIT 0, 0 verdicts
-        move.** So the cell is UNREACHABLE for the whole population, and not merely for the
-        gates that are green -- a green one could not have reached it in principle, because
-        `return REFUSED` was the only way in and `REFUSED` is not a pass. The other 20 gates
-        run their own lanes and never call `_oracle` at all.
+        **NO COUNT IS TRANSCRIBED HERE.** This paragraph used to read "80 gates, 60 of them
+        `Gate`s with a declared oracle, 60 of 60 EXIT 0 ... The other 20 gates", and every
+        figure in it was a population MEASURED WHEN THE WALK WAS NARROWER: it described the
+        one hard-coded `gates` home, and the walk is now a derived pair of homes, so the
+        numbers were stale the moment the walk widened -- which is exactly the failure
+        `checks/gatesweep.py`'s own header records for a figure "written down once ... is
+        wrong within the hour". **THE DECLARATION REPLACES THE FIGURE, AND IT IS BY PATH:
+        `gates/lane-census.py`'s `DECLARED` row counts the `Gate(` call sites inside the very
+        walk `checks/gatesweep.py` holds, and `checks/gatesweep.py --plan` prints `WALK`, so
+        the reader runs them and gets TODAY's split rather than reading a number that has
+        been decaying silently since it was true.** (MEASURED 2026-10-18 19:0xZ, and quoted
+        here ONLY as the reading that justified deleting the other one: 252 walk members, 68
+        `Gate(` call sites inside the walk, 67 of those declaring `oracle=`, and the cell
+        moved 0 verdicts -- so it remains UNREACHABLE over the whole population, not merely
+        over the green half.)
+
+        SO THE CELL IS UNREACHABLE FOR THE WHOLE POPULATION, and not merely for the gates
+        that are green: a green one could not have reached it in principle, because
+        `return REFUSED` was the only way in and `REFUSED` is not a pass. The walk members
+        that run their own lanes never call `_oracle` at all -- and that split is the
+        `DECLARED` row above minus `WALK`, not a number anyone has to keep in step.
         """
         r = subprocess.run([str(PY), str(self.oracle)], capture_output=True, text=True)
         if r.returncode == 0:

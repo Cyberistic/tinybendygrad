@@ -51,17 +51,27 @@ WHAT THIS FILE DOES NOT DO. It does not scrape a gate's PROSE for a verdict word
 `gatekit.py:60` is `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`. A word matched out of free
 text is a shape, and this project has paid for shape-matching a population three times.
 
-TWO CLASSES A WIDER POPULATION ADMITS, AND NEITHER IS CLOSED HERE. `--selftest`'s WIDTH case
+TWO CLASSES A WIDER POPULATION ADMITS, AND ONE OF THEM IS NOW CLOSED. `--selftest`'s WIDTH case
 plants both, because a walk is not made honest by being wide.
 
-  A LANE IS NOT A GATE. A `*-oracle.py` run bare prints rows and exits 0, so it lands on PASS and
-  PASS is a claim about nothing -- "0 disagreements over 0 comparisons". MEASURED:
-  `gates/ew-explog-oracle.py` and `gates/tn_add_sub-oracle.py` both answer rc 0 with rows.
-  **NO LANE FILTER IS INSTALLED**, because the declaration available is not a population: of the
-  `-oracle.py` members, 13 are named by a `Gate(oracle=...)` argument read off the AST and 15 are
-  named by no declaration at all, so a filter would catch 13 of 28 and be a list wearing a
-  declaration's clothes. The number moves; the class is what `--selftest`'s `SCRIPT` fixture
-  holds still.
+  A LANE IS NOT A GATE -- **CLOSED 2026-10-18, BY `classify()`'s LAST ARM, NOT BY A FILTER.** A
+  `*-oracle.py` run bare prints rows and exits 0, so it used to land on `PASS` and `PASS` was a
+  claim about nothing -- "0 disagreements over 0 comparisons". **THE REMEDY IS NOT A LANE FILTER
+  AND NEVER WAS GOING TO BE ONE:** the declaration available is not a population, so a filter
+  would have caught the `Gate(oracle=...)`-named minority and been a list wearing a declaration's
+  clothes. `classify()` instead asks the question that needs no list -- did anything COMPARE this
+  member's rows -- using three helpers `gates/lane-census.py` owns and this file LOADED BY PATH
+  (`rows_in`, `DECIDED`, and `declared()`'s `Gate(oracle=..., bend=...)` AST read over the walk
+  this file already holds): **a member that printed `name=value` rows, that no `Gate` names, and
+  that printed no verdict word of its own is `DEAD, UNCONSUMED-LANE`, not `gatekit.VERDICT[0]`.**
+  The arm intercepts that one answer and nothing else -- a member that was about to be `FAIL`,
+  `REFUSED`, `SKIP` or `DEAD` keeps its own verdict and its own token, because each of those
+  already carries evidence a reader can check and `PASS` on an unconsumed lane carried none.
+  **A LANE THAT PRINTS ITS OWN VERDICT IS NOT CHARGED** (`gates/devtag-gate.py` is the measured
+  shape: rows, no consumer, and its own `PASS`), and neither is a CENSUS that prints no
+  `name=value` row at all -- drop either arm and the rule flattens both sides to one constant,
+  which is why `gates/artifactverdict-gate.py` plants both.
+
   A DRIVER WITH NO `main` IS NOT AN ENTRY. `entry_reason()` asks for `__main__`, so a file whose
   work happens at import is invisible however wide the walk is -- MEASURED 2026-10-18 18:12Z,
   **67 of the 73 `py-lib` files** under the two homes execute at their top level, and all 67 are
@@ -74,6 +84,7 @@ plants both, because a walk is not made honest by being wide.
 from __future__ import annotations
 
 import argparse
+import ast
 import importlib.util
 import os
 import re
@@ -136,6 +147,19 @@ bounded = _load("gw_bounded", HERE / "bounded.py")      # its TOKENS, imported n
 with warnings.catch_warnings():                          # `gates-pop` parses `.rows` fixtures
     warnings.simplefilter("ignore")                      # and emits its own SyntaxWarnings
     gpop = _load("gw_pop", GATES / "gates-pop.py")
+
+# THE ROW GRAMMAR AND THE DECISION WORDS ARE `gates/lane-census.py`'s, LOADED BY PATH -- and this
+# file holds NO copy of either. `gates/lane-census.py` owns `rows_in()`, `DECIDED` and the
+# `Gate(oracle=..., bend=...)` AST reader that says who consumes a lane; `AGENTS.md`'s DOCTRINE 1
+# records SIX instruments in this repo that declared a population by hand and lost the class for
+# it, and a hand-typed `^name=` is that same mistake wearing a regex. `None` is a POSSIBLE answer
+# and it is not an error to swallow: without this module `classify()` cannot tell whether anything
+# compared a member's rows, and it says `REFUSED, NOT A VERDICT: NO-RULE` rather than the `PASS`
+# this change exists to stop it from writing.
+try:
+    lanecensus = _load("gw_lanecensus", GATES / "lane-census.py")
+except (OSError, SyntaxError, ImportError):
+    lanecensus = None
 
 # `gates-pop`'s OWN vocabulary for "running this file as a program is its measurement", by NAME
 # and never re-spelled: a second copy of the list would be a second population.
@@ -230,7 +254,38 @@ def suffix(root: Path, hs: tuple[str, ...]) -> list[Path]:
     return [p for p, _ in walk(root, hs) if p.name.endswith(SUFFIX)]
 
 
-def classify(btoken: str, rc: int, text: str) -> tuple[str, str]:
+def unconsumed_lane(name: str | None, consumed: frozenset[str], text: str) -> bool:
+    """Whether THIS member printed lane rows that nothing compared.
+
+    **THE THREE ARMS ARE `gates/lane-census.py`'s, LOADED BY PATH, AND THIS FUNCTION ADDS
+    NOTHING.** `rows_in` is its row grammar, `DECIDED` is its own table of the five verdict words
+    (checked against `gatekit.VERDICT` by that file's own plant on every run), and `consumed` is
+    `declared()` -- the `Gate(oracle=..., bend=...)` call sites read off the AST of the very walk
+    this sweep holds. A member is charged only when ALL THREE hold, and every one of them is a
+    measurement rather than a preference:
+
+      it printed `name=value` rows   drop this arm and every unconsumed CENSUS in this tree is
+                                     DEAD -- a census is an instrument, not a comparison, and this
+                                     is the "flatten both sides to one constant" trap;
+      no `Gate` names it             drop this arm and every gate in the tree is DEAD;
+      it printed no verdict word     drop this arm and a SELF-VERIFYING gate is charged for
+                                     lacking a second opinion (`gates/devtag-gate.py`'s measured
+                                     shape: 7 rows, no consumer, and it prints its own `PASS`).
+
+    **`name is None` DOES NOT CHARGE, AND THAT IS THE FAIL-SAFE DIRECTION.** An unknown member
+    cannot be shown to be unconsumed, and a rule that manufactures a `DEAD` out of missing evidence
+    is the same defect inverted. It is not a hole in the population: `sweep()` passes every member's
+    own name, and the only callers that omit it are `--prove`'s pinned transcript (a first line per
+    gate -- MEASURED, it carries no `name=` row at all, so the rule is structurally inert there and
+    14/14 reproduce either way) and the two-function plant, which must see the OLD answer.
+    """
+    if lanecensus is None or name is None or name in consumed:
+        return False
+    return bool(lanecensus.rows_in(text)) and not lanecensus.DECIDED.search(text)
+
+
+def classify(btoken: str, rc: int, text: str, name: str | None = None,
+             consumed: frozenset[str] = frozenset()) -> tuple[str, str]:
     """`(verdict, token)` from the watchdog's token, the gate's rc, and its captured output.
 
     Every branch is a measured shape, and the order is the order the evidence is trustworthy in:
@@ -239,6 +294,23 @@ def classify(btoken: str, rc: int, text: str) -> tuple[str, str]:
       nothing said, or the watchdog said so -> DEAD: it ran and emitted nothing
       rc 1 + traceback -> DEAD: a crash is not the wrong answer (`hooks/run.py`'s rule, measured)
       else             -> the exit code IS the verdict, through gatekit's own table
+      ... and ONE arm on the `PASS` fall-through alone: a member that printed lane rows, that no
+      `Gate` names, and that printed no verdict of its own is `DEAD`, not `gatekit.VERDICT[0]`.
+
+    **WHY THAT LAST ARM IS CORRECT AND NOT MERELY STRICTER.** It intercepts exactly one answer --
+    the one the sweep was about to write when it had nothing to compare against. `PASS` in this file
+    means "the member ran and its exit code said so", and for a member no `Gate` declares there is
+    no exit code that means anything, because nothing in the tree is waiting to read the rows: the
+    old answer was a claim about NOTHING, which is precisely what `gates/lane-census.py` calls
+    "0 disagreements over 0 comparisons" and precisely what `AGENTS.md` records about
+    `artefacts_ok()`. So the arm does not make the sweep harsher about the TREE -- a member it
+    would have called `FAIL`, `REFUSED`, `SKIP` or `DEAD` is untouched, and each of those already
+    carries evidence the reader can check. It makes the sweep NARROWER about the CLAIM: `PASS` is
+    withheld from precisely the members that have not earned it, and the token `UNCONSUMED-LANE`
+    names the reason on the row so a reader sees which members moved.
+
+    `NO-RULE` is the other half of the same honesty: with `gates/lane-census.py` absent the three
+    arms cannot be evaluated, and a verdict this file cannot evaluate is not a verdict.
     """
     if btoken in (bounded.MEMORY, bounded.TIMEOUT):
         return "SKIP", btoken
@@ -249,16 +321,26 @@ def classify(btoken: str, rc: int, text: str) -> tuple[str, str]:
     if rc == 1 and TRACEBACK in text:
         return "DEAD", "TRACEBACK"
     word = gatekit.VERDICT.get(rc)
+    if word == gatekit.VERDICT[gatekit.PASS]:
+        if lanecensus is None:
+            return gatekit.VERDICT[gatekit.REFUSED], "NO-RULE"
+        if unconsumed_lane(name, consumed, text):
+            return gatekit.VERDICT[gatekit.DEAD], "UNCONSUMED-LANE"
     return (word, word) if word else ("REFUSED", f"UNASSIGNED({rc})")
 
 
-def run_one(gate: Path, reason: str, seconds: int, mb: int) -> tuple[str, str, int, float, str]:
+def run_one(gate: Path, reason: str, seconds: int, mb: int,
+            consumed: frozenset[str] = frozenset()) -> tuple[str, str, int, float, str]:
     """`(verdict, token, rc, seconds, peak)` for one gate, run under `checks/bounded.py`.
 
     The interpreter is the one `reason` names, and an UNKNOWN reason is a REFUSAL rather than a
     guess: `RUNNERS.get(reason.split("-")[0], [])` on a language this tree grows would hand it to
     the Python interpreter, and a Python parse error recorded as `FAIL` is a FAIL about the wrong
     subject -- the same defect as running `gate.sh` with `python`.
+
+    `consumed` is the CALLER'S set of lane filenames some `Gate` names, built once per run because
+    it costs a full AST pass over the walk (MEASURED 1.10 s at 252 members, 2026-10-18 19:0xZ) and
+    it is the difference between one computation and 252 of them.
     """
     runner = RUNNERS.get(reason.split("-")[0]) if reason else None
     if not runner:
@@ -272,13 +354,13 @@ def run_one(gate: Path, reason: str, seconds: int, mb: int) -> tuple[str, str, i
     btoken, rc = (m.group(1), int(m.group(2))) if m else ("NO-RECORD", r.returncode)
     # the gate's OWN words: the record and its continuation lines are the watchdog's, not the gate's
     said = "\n".join(l for l in r.stderr.splitlines() if not l.startswith(("[bounded]", "  ")))
-    verdict, token = classify(btoken, rc, r.stdout + "\n" + said)
+    verdict, token = classify(btoken, rc, r.stdout + "\n" + said, gate.name, consumed)
     peak = re.search(r"peak-RSS=(\d+)", r.stderr)
     return verdict, token, rc, took, (peak.group(1) if peak else "?")
 
 
 # --------------------------------------------------------------------- the proof, on real data
-def prove(cost_tsv: Path, truth_tsv: Path) -> int:
+def prove(cost_tsv: Path, truth_tsv: Path, pop: list[tuple[Path, str]]) -> int:
     """Classify REAL, already-captured gate outcomes and require the recorded verdict.
 
     Inputs are two transcripts a PRIOR run already wrote, so no gate is run:
@@ -286,6 +368,15 @@ def prove(cost_tsv: Path, truth_tsv: Path) -> int:
       `checks/gatesweep-run.tsv`  -- per gate: the VERDICT that run recorded.
     Both are pinned by content (see `PROVE_PIN`); drift is a REFUSAL, not a smaller proof.
     The classifier must reproduce every recorded verdict from (rc, first-line) alone.
+
+    **THE LANE RULE IS ASKED HERE AND CANNOT FIRE, AND THAT IS A MEASUREMENT, NOT A LAPSE.** `pop`
+    is the same walk `sweep()` gets, so the rule is evaluated over the identical declaration set --
+    but this transcript carries ONE FIRST LINE per gate (`row`'s `(.*)$` group), and MEASURED at
+    14/14 on 2026-10-18: not one of those 14 first lines matches `lane-census`'s `^name=` grammar.
+    So the pinned proof is STRUCTURALLY BLIND to the class, which is why it reads green both before
+    and after the rule and why `PASS 9 -> 0` cannot be demonstrated on it. The proof's job is to
+    pin the transcripts against drift, not to census the population; the census is
+    `gates/lane-census.py --run`, and the sweep that would move the tally is `checks/gatesweep.py`.
     """
     truth = {}
     for line in truth_tsv.read_text().splitlines()[1:]:
@@ -293,6 +384,7 @@ def prove(cost_tsv: Path, truth_tsv: Path) -> int:
         if len(cells) >= 2:
             truth[cells[0]] = {"GREEN": "PASS"}.get(cells[1], cells[1])   # run.py spells 0 GREEN
     row = re.compile(r"^\s*(\d+|OVER-CAP)\s+([\d.]+)s\s+(\S+)\s+(.*)$")
+    consumed = frozenset(lanecensus.declared(pop)) if lanecensus is not None else frozenset()
     n = ok = 0
     for line in cost_tsv.read_text().splitlines():
         m = row.match(line)
@@ -302,7 +394,7 @@ def prove(cost_tsv: Path, truth_tsv: Path) -> int:
         # a bound fired iff the run reached a cap: the watchdog's token, not a number, says so
         rc = int(rc_s) if rc_s.isdigit() else 0
         btoken = bounded.TIMEOUT if rc_s == "OVER-CAP" else bounded.WITHIN
-        verdict, token = classify(btoken, rc, head)
+        verdict, token = classify(btoken, rc, head, Path(path).name, consumed)
         # `checks/gatesweep-run.tsv` keys `gate-surface.py --report` by its flags; the path is the subject
         want = truth.get(path) or truth.get(path + " --report")
         n += 1
@@ -313,7 +405,35 @@ def prove(cost_tsv: Path, truth_tsv: Path) -> int:
     return 0 if ok == n and n else 1
 
 
-def artifact_census(root: Path = ROOT) -> None:
+def gate_names(pop: list[tuple[Path, str]]) -> frozenset[str]:
+    """The `Gate(name)` values declared INSIDE the walk, off the AST. Who owns an artifact dir.
+
+    `gatekit.Gate.__init__` takes `name` as its FIRST POSITIONAL argument (`gates/gatekit.py:377`)
+    and spends it as `self.dir = ART / name` (`:411`), so a directory under `gates/artifacts/` is
+    owned by whichever walk member spelled that string. MEASURED 2026-10-18 19:0xZ: a reader that
+    looks for `name=` as a KEYWORD sees none of them -- every gate in this tree writes
+    `Gate("tn_add_sub-gate", bend=..., ...)` -- and answers "82 dirs, 0 owners", which is the
+    `0 over 0` this file exists to stop. `gates/lane-census.py:declared()` cannot answer this
+    question either, and that is not an overlap: it reads `oracle=`/`bend=` (which LANE a gate
+    consumes), this reads the positional `name=` (which DIRECTORY a gate owns).
+    """
+    out = set()
+    for path, _reason in pop:
+        if path.suffix != ".py":
+            continue
+        try:
+            tree = ast.parse(path.read_text(errors="replace"))
+        except (SyntaxError, ValueError, OSError):
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "Gate" and node.args:
+                head = node.args[0]
+                if isinstance(head, ast.Constant) and isinstance(head.value, str):
+                    out.add(head.value)
+    return frozenset(out)
+
+
+def artifact_census(root: Path = ROOT, pop: list[tuple[Path, str]] | None = None) -> None:
     """What `gates/artifacts/*/` CAN and CANNOT say, since the brief names it as the proof input.
 
     `gatekit.Gate` PROMOTES its lanes on PASS and leaves the directory EMPTY otherwise
@@ -322,16 +442,52 @@ def artifact_census(root: Path = ROOT) -> None:
     and agreed. But every file here is a LANE (`py.rows`/`bd.out`/`bn.out`/`*.cmp`/`gate.bin`)
     -- never a gate's stdout -- so the directory is NOT an input a token parser can read. That
     is stated rather than papered over, and the token proof runs on the captured transcripts.
+
+    **AN EMPTY DIRECTORY IS NOT `DEAD`, AND THE TREE SAYS SO IN ITS OWN SOURCE.** The obvious
+    reading -- "nothing in it, so nothing compared it", the `artefacts_ok()` shape `AGENTS.md`
+    records -- is REFUTED by `gates/gatekit.py`'s measured note: "_clear() ... BOTH GATES GO rc=2
+    WITH AN EMPTY DIRECTORY". rc 2 is a code `VERDICT` does NOT name, so `classify()` calls it
+    `REFUSED, UNASSIGNED(2)`: a gate that refuses before `run()` leaves an empty directory by
+    DESIGN, and `FAIL`, `REFUSED`, `SKIP` and `DEAD` all end empty too. **SO EMPTINESS DECIDES
+    NOTHING, AND A GATE THAT CHARGED IT `DEAD` WOULD BE WRONG IN FOUR DIRECTIONS AT ONCE.** A
+    wrong reason is worse than no reason, so this census does not make that claim.
+
+    **WHAT IT REPORTS INSTEAD IS THE REAL `0 over 0`, AND IT IS A SPLIT, NOT A VERDICT.** The
+    82 directories were being counted as "82 gate dirs" while the walk declares far fewer owners,
+    so `len(dirs)` was a denominator padded with directories no CURRENT gate can write. MEASURED
+    2026-10-18 19:0xZ: 82 dirs, 65 populated, 17 empty, and of the 17 empty **12 have an owner in
+    the walk and 5 have none** -- `arenasrc-census`, `cells`, `opseven-mut`, `sensitiv`,
+    `tnvalue`. Those 5 are the population this file's own doctrine is about: a directory that
+    exists, that holds nothing, and that no member of the walk can populate. **THEY ARE COUNTED
+    AND NAMED; THEY ARE NOT CALLED `DEAD`,** because `gates/artifacts/` is `.gitignore`d, is
+    written by gate runs, and nothing in the tree reads an orphaned dir -- which is a finding for
+    a gate that owns artifact lifecycle, not a verdict this census may issue.
     """
     art = root / "gates" / "artifacts"
     dirs = [d for d in art.iterdir() if d.is_dir()]
-    pop = [d for d in dirs if any(d.iterdir())]
+    pop = population(root) if pop is None else pop
+    owners = gate_names(pop)
+    full = [d for d in dirs if any(d.iterdir())]
     empty = [d for d in dirs if not any(d.iterdir())]
+    orphan = [d for d in empty if d.name not in owners]
+    mine = [d for d in empty if d.name in owners]
+    unowned = [d for d in dirs if d.name not in owners]
     kinds = sorted({f for d in dirs for f in os.listdir(d)
                     if (d / f).is_file() and not f.startswith(".tmp.")})
-    print(f"ARTIFACTS: {len(dirs)} gate dirs -- {len(pop)} hold promoted lanes (reached the diff), "
-          f"{len(empty)} empty {[d.name for d in empty]}")
+    print(f"ARTIFACTS: {len(dirs)} gate dirs -- {len(full)} hold promoted lanes (reached the diff), "
+          f"{len(empty)} empty")
     print(f"           a dir holds {kinds}: LANE files, never a gate's stdout")
+    print(f"OWNERS    : `Gate(` name= declared in the walk            -> {len(owners)}"
+          f"   ({len(unowned)} of the {len(dirs)} dirs are named by NO walk member -- "
+          f"{sorted(d.name for d in unowned)})")
+    print(f"EMPTY     : of the {len(empty)} empty, {len(mine)} HAVE an owner -- that owner's "
+          f"verdict, and\n           EMPTINESS DECIDES NOTHING (`gates/gatekit.py`: rc=2 "
+          f"REFUSED leaves an empty dir)")
+    print(f"CANT-WRITE: empty AND named by no walk member            -> {len(orphan)}"
+          f"   {sorted(d.name for d in orphan)}")
+    print("           a directory nothing can write and nothing reads is the `0 over 0`; it is "
+          "REPORTED, not\n           called DEAD -- `gates/artifacts/` is .gitignore'd, so no "
+          "verdict may rest on it.")
 
 
 def report(root: Path = ROOT) -> list[tuple[Path, str]]:
@@ -418,12 +574,12 @@ def main(argv: list[str]) -> int:
     if args.selftest:
         return selftest(plant=args.plant)
     if args.prove:
-        artifact_census(ROOT)
+        artifact_census(ROOT, gates)
         drift = gatekit.oracle_drift(PROVE_PIN)   # a transcript that MOVED is a proof of other bytes
         if drift:
             print("PROVE: REFUSED -- " + "; ".join(drift))
             return gatekit.REFUSED
-        return prove(ROOT / PROVE_COST, ROOT / PROVE_TRUTH)
+        return prove(ROOT / PROVE_COST, ROOT / PROVE_TRUTH, gates)
 
     return sweep(gates, args.out, args.seconds, args.mb)
 
@@ -437,13 +593,20 @@ def sweep(gates: list[tuple[Path, str]], out: Path, seconds: int, mb: int) -> in
     is the one claim a run that COMPLETES cannot make, so `--selftest` reads the file mid-sweep.
     """
     tally = dict.fromkeys(set(gatekit.VERDICT.values()), 0)
+    # THE DECLARATION, ONCE PER RUN AND NEVER PER MEMBER. `gates/lane-census.py:declared()` reads the
+    # `Gate(oracle=..., bend=...)` call sites off the AST of `gates` -- the walk THIS CALL holds, so
+    # the declaring set is a SUBSET of the walked set by construction and no lane can be declared
+    # that the sweep would not run. With the helpers absent the set is EMPTY, and an empty set makes
+    # every row-printing member unconsumed: `classify()` answers `NO-RULE` before it can use it, so
+    # the failure is a REFUSED sweep rather than a sweep that charged 252 members on no evidence.
+    consumed = frozenset(lanecensus.declared(gates)) if lanecensus is not None else frozenset()
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w") as sink:
         sink.write(HEADER + "\n")
         sink.flush()
         rows = 0
         for g, reason in gates:
-            verdict, token, rc, took, peak = run_one(g, reason, seconds, mb)
+            verdict, token, rc, took, peak = run_one(g, reason, seconds, mb, consumed)
             tally[verdict] = tally.get(verdict, 0) + 1
             rel = str(g.relative_to(ROOT))
             print(f"  {verdict:<8} {took:6.1f}s  rc={rc:<4} peak={peak:>4}MB  {rel:<38} {token}")
