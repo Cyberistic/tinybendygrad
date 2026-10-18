@@ -63,10 +63,13 @@ plants both, because a walk is not made honest by being wide.
   declaration's clothes. The number moves; the class is what `--selftest`'s `SCRIPT` fixture
   holds still.
   A DRIVER WITH NO `main` IS NOT AN ENTRY. `entry_reason()` asks for `__main__`, so a file whose
-  work happens at import is invisible however wide the walk is -- MEASURED 2026-10-18 18:00Z, 70
-  of the 76 `py-lib` files under the two homes execute at their top level. **AND THE BUCKET
-  ITSELF IS THE FINDING**: `gates-pop.py` calls a module and a script the same word, so its
-  `py-lib` count cannot be split without this file's own AST pass.
+  work happens at import is invisible however wide the walk is -- MEASURED 2026-10-18 18:12Z,
+  **67 of the 73 `py-lib` files** under the two homes execute at their top level, and all 67 are
+  tracked. (`gates/artifacts/` and dotted names excluded: the former is `.gitignore`d and
+  `rm -rf`-able, the latter the walk prunes. **AND THE BUCKET ITSELF IS PART OF THE FINDING**:
+  `gates-pop.py` calls a module and a script the same word, so its own `py-lib` count cannot be
+  split without an AST pass, and that pass is this file's -- which is why the figure is quoted
+  here and not there.)
 """
 from __future__ import annotations
 
