@@ -603,6 +603,34 @@ index-arm-duplicate [#########] 4/4  **A PASS WHOSE COUNT IS MEASURED WITH A DAT
                                        (rc=5, the same three OIDs) -- and the reachable one is already
                                        pushed, so a scan that finds it can PREVENT NOTHING.
 
+no-txt-green [##########] 3/3  **rc=0, AND IT WAS TWO SEPARATE CAUSES, NOT ONE.** (1) The 3 hard
+                                       `.txt` files in `.agents/slop/armclass/` were REAL violations and
+                                       were renamed to the sanctioned extensions by CONTENT KIND,
+                                       VERIFIED INDEPENDENTLY before moving: `msg.txt` -> `msg.md`
+                                       (prose -- it is a commit-message body), `table-1837-frozen.txt`
+                                       -> `.rows` and `table-now.txt` -> `.rows` (both carry `#`
+                                       headers and aligned data rows). `git mv` recorded all three as
+                                       **`R100`, 100% similarity, bytes unchanged**, and **the only
+                                       references to the old names anywhere in the tree were in the
+                                       audit report that RECOMMENDED the rename** -- no gate, no
+                                       committed prose, no consumer. (2) **A SECOND CAUSE I DID NOT
+                                       PREDICT: a stray `--help/` DIRECTORY AT THE REPO ROOT holding
+                                       9 files** (`a.log`, `b.log`, `c-C*.log`, `cpython-words.txt`,
+                                       `nan.json`, `port-words.txt`, `words.diff`), **two of them
+                                       ZERO BYTES**, all written in ONE SECOND on 2026-10-17 06:46.
+                                       **ITS ORIGIN IS DIAGNOSED**: `.agents/slop/modulerefuse/
+                                       fixmeasure.py:41` runs gates with `["--help"]` as an argv case,
+                                       and something treated that flag as an OUTPUT DIRECTORY.
+                                       **NONE OF THE 9 IS IN `HEAD`'s TREE** (0 entries at that path) and
+                                       **NONE HAS A CONSUMER** -- they are untracked scratch, yet
+                                       `no-txt` counts them because its population is `os.walk(ROOT)`,
+                                       i.e. **DISK**, not the index. Moved to the scratchpad, NOT
+                                       deleted, so it is recoverable. **`2,045 -> 0` hard `.txt`; the
+                                       `176` excused graphcmp artifacts and the rest are untouched.**
+                                       **THE CLASS, STATED: A FLAG NAMED LIKE A PATH IS A PATH, AND A
+                                       GATE THAT WRITES WHERE ITS ARGV POINTS WILL DEPOSIT FILES IN THE
+                                       REPO ROOT.** That belongs to the `modulerefuse` unit, not here.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
