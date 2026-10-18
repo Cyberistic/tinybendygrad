@@ -1,0 +1,23 @@
+# entries: worktree 387; head 374
+# present-in-worktree-not-in-commit 14; present-in-commit-not-in-worktree 0; in both but DIFFERENT bytes 2; named inputs the commit does not have 1 (bin/bend)
+worktree-only	bin/bend
+worktree-only	tinybendygrad/codegen/decomp/dtype-mut.bend
+worktree-only	tinybendygrad/codegen/decomp/op-mut.bend
+worktree-only	tinybendygrad/codegen/late/.linearizer-mut.bend
+worktree-only	tinybendygrad/codegen/late/.regalloc-mut.bend
+worktree-only	tinybendygrad/nn/optim-mut.bend
+worktree-only	tinybendygrad/renderer/.wgsl-mut.bend
+worktree-only	tinybendygrad/renderer/amd/dsl-mut.bend
+worktree-only	tinybendygrad/renderer/amd/dsl.bend.bak
+worktree-only	tinybendygrad/renderer/cstyle-mut.bend
+worktree-only	tinybendygrad/runtime/PROBE-SELFDEMO.bend
+worktree-only	tinybendygrad/runtime/_p6.bend
+worktree-only	tinybendygrad/test/_probe/v5.bend
+worktree-only	tinybendygrad/uop/probe-mmcore.bend
+different-bytes	.agents/slop/graphcmp.bend
+different-bytes	.agents/slop/graphcmp.py
+digest	worktree	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5
+digest	head	0ee6c8a7edabf2454be653bccc90fe95714d161427e5a2b23fa76c6f2b87a4bb
+digest	worktree-minus-one-edit(tinybendygrad/LAWS.bend)	f3ba5e39d546c515d0a795984bb85b1d4522bb07cea1a1f8797f9f3241b55def
+# worktree == head ? False
+# one edit moves the digest ? True (victim present on disk: True)

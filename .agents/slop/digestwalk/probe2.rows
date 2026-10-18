@@ -1,0 +1,17 @@
+# ROOT /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+# SUBSTRATE_WALKS ('tinybendygrad', 'tinygrad')
+# SUBSTRATE_INPUTS 8
+reading	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	2026-10-18T19:07:36Z	note=call 1 of 1
+# entries total 387 = walk 379 + named 8
+# walk entries unique 379
+# named entries 8, ABSENT among them 0
+# named	.agents/slop/graphcmp-dbg-oracle.py	73e9237f68c3da09	present
+# named	.agents/slop/graphcmp-oracle.py	7d6748d32b0505d0	present
+# named	.agents/slop/graphcmp-p13-ops.py	6afb384fb7f6744e	present
+# named	.agents/slop/graphcmp.bend	60ef4052030d1a7a	present
+# named	.agents/slop/graphcmp.py	228561e8124fc6fc	present
+# named	bin/bend	1ca25cc0ff1e9df6	present
+# named	checks/devpin.py	87bfee1397266aef	present
+# named	checks/differ.py	0ea62b8f725d7fa9	present
+# walk	tinybendygrad	150	files hashed
+# walk	tinygrad	229	files hashed

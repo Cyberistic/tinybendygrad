@@ -1,0 +1,46 @@
+#	reading	digest	head	note
+# PROVENANCE. Every row tagged `reading` is `checks/differ.py`'s OWN `substrate_digest()`, called
+# in-process: `.agents/slop/digestwalk/probe.py REPS GAP` calls it directly, `.agents/slop/digestwalk/
+# clone.py` recomputes the same value from `differ.substrate_entries()` by a second code path.
+# Nothing was compiled -- no `bend`, no corpus loop, no gate, no `differ.py` subcommand. `head` is
+# `git rev-parse HEAD` read in the same or an adjacent command, index disarmed with
+# `env -u GIT_INDEX_FILE`; the commit times come from `git reflog HEAD` (cd0a0fe2 18:58:29Z,
+# 55c8bdb4 19:05:54Z, 41a70210 19:09:04Z, 4ff41173 19:10:36Z).
+# POPULATION. 387 members = 379 walk + 8 named until 19:08:31Z, then 389 = 379 walk + 10 named:
+# another unit edited `checks/differ.py` and admitted `graphcmp-dbg.bend` + `graphcmp-empty.bend`
+# into `SUBSTRATE_INPUTS`. Both files have existed since 2026-10-15/16 (mtimes measured), so the
+# population grew and nothing was created.
+# SELF-INFLICTION. 0 of 18 readings moved because of this unit: it wrote only under this directory,
+# which is in neither `SUBSTRATE_WALKS` nor `SUBSTRATE_INPUTS`.
+# DENOMINATOR. 18 readings, 3 distinct digests, 5 distinct HEADs, 487s.
+# (These counts are a FLOOR, not a cap: the tree was still moving when the last row was taken. The
+# two ratios this report rests on were already final by 19:08:40Z -- 0 of 3 commits moved the digest,
+# 1 of 1 observed fixed-HEAD interval did.)
+reading	digest	head	note
+1	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	cd0a0fe2d840c15d5cea0a716119bed2db7353bb	19:05:30Z population 387; probe call 1 of 3
+2	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	cd0a0fe2d840c15d5cea0a716119bed2db7353bb	19:05:33Z +3s nothing changed; STABLE
+3	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	cd0a0fe2d840c15d5cea0a716119bed2db7353bb	19:05:36Z +6s nothing changed; STABLE
+4	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	cd0a0fe2d840c15d5cea0a716119bed2db7353bb	19:06:38Z recomputed by clone.py from substrate_entries(); second code path, same value
+5	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	cd0a0fe2d840c15d5cea0a716119bed2db7353bb	19:06:59Z +89s; STABLE across 4 code paths and 4 commands
+6	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	55c8bdb4acba8b7922285b8fdea5550dad05c36a	19:07:36Z HEAD MOVED cd0a0fe2->55c8bdb4 AND THE DIGEST DID NOT MOVE (correctly: the commit touched 3 files, none in the population)
+7	291a162a8126f75f6b1ba933e46947bc68e89496b3cd8f7afd36407d8e16e3b5	55c8bdb4acba8b7922285b8fdea5550dad05c36a	19:08:16Z population still 387; 7 of 7 identical across 166s and a HEAD move
+8	24645ea69ed7c18c916e700a583967552e99bf3f909c75f19aa3ed8d4778f23b	55c8bdb4acba8b7922285b8fdea5550dad05c36a	19:08:36Z MOVED at +20s, SAME HEAD. Cause NAMED: checks/differ.py mtime 19:08:31Z, its bytes are row 1 of the hash and SUBSTRATE_INPUTS grew 8->10. The edit was COMMITTED 33s LATER, at 19:09:04Z as 41a70210, so this digest describes a state that was never a commit
+9	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	55c8bdb4acba8b7922285b8fdea5550dad05c36a	19:08:40Z MOVED AGAIN at +24s, SAME HEAD, population 389. Cause UNNAMED: an mtime census over the whole population for 19:08:35-19:08:42 finds 0 members written, which refutes an in-place edit; see REPORT.md section 1
+10	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	55c8bdb4acba8b7922285b8fdea5550dad05c36a	19:08:44Z snap-1.rows written: 389 per-path sha256 rows, kept to name the next move
+11	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:23Z HEAD MOVED 55c8bdb4->41a70210 (the commit that explains row 8) and the digest did NOT move: the bytes were already on disk
+12	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:23Z clone.py, second code path, same value; 2 of 389 members are dirty against HEAD (graphcmp.py, graphcmp.bend)
+13	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:37Z watch 1 of 4, members 389
+14	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:40Z watch 2 of 4, members 389
+15	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:43Z watch 3 of 4, members 389
+16	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:47Z watch 4 of 4, members 389; snap-2.rows == snap-1.rows, 0 members moved in 33s
+17	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	4ff41173c8cc0ea1cc65528a85137361b6a39ee3	19:11:56Z HEAD MOVED 41a70210->4ff41173 (committed 19:10:36Z; 4 files, none in the population) and the digest did NOT move. 0 of 3 commits in this window moved the digest
+18	b6d0bec6b52e8202bb336527150f813282f72cfcd386e822811c9c0fd9875171	05e926744a38e368777824e61bd23e321075cf27	19:13:37Z HEAD MOVED again (4ff41173->05e92674) and the digest did NOT move. Population still 389. 0 of 4 commits moved the digest; 1 of 2 observed moves happened at a fixed HEAD
+# --- NOT substrate_digest(). The same hash rule over DIFFERENT inputs, for comparison only. -----
+# The `head` rows read blob bytes out of the COMMIT, which no code in this tree does today. They are
+# NOT a clone's digest either: a clone has 366 walk + 9 named = 375 members, because 13 walk members
+# and `bin/bend` are in no commit. A clone's digest is a third number and is not computed here.
+compare	0ee6c8a7edabf2454be653bccc90fe95714d161427e5a2b23fa76c6f2b87a4bb	cd0a0fe2d840c15d5cea0a716119bed2db7353bb	19:06:59Z NOT the generator: 374 members OF THE COMMIT, of which 14 of the worktree's 387 are absent
+compare	0ee6c8a7edabf2454be653bccc90fe95714d161427e5a2b23fa76c6f2b87a4bb	55c8bdb4acba8b7922285b8fdea5550dad05c36a	19:07:32Z equal to the row above, and correctly so: the 3 files that commit touched are outside the population
+compare	f3ba5e39d546c515d0a795984bb85b1d4522bb07cea1a1f8797f9f3241b55def	55c8bdb4acba8b7922285b8fdea5550dad05c36a	19:07:32Z counterfactual: the worktree population with ONE member's bytes replaced (tinybendygrad/LAWS.bend). Nothing on disk was touched; it is what one uncommitted edit does to the digest
+compare	cef2b55dabed5c35328dc8176987c1cce87d6e77b79f81ff959cd3e6b344ece8	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:23Z the COMMIT's digest MOVED 0ee6c8a7->cef2b55d across the 41a70210 commit, because that commit touched `checks/differ.py`. The HEAD-side digest is commit-sensitive; the worktree one is not
+compare	589d62b189096233815c3fb3bc3af25f3ea12d6eadb17d44b18da05bae028b64	41a7021033c6b85dfa3bb2f9a2b8aaa2f6644e6f	19:09:23Z counterfactual over the 389-member population, same one-member edit

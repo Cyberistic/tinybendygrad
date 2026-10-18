@@ -1,0 +1,13 @@
+tinybendygrad/codegen/decomp/dtype-mut.bend
+tinybendygrad/codegen/decomp/op-mut.bend
+tinybendygrad/codegen/late/.linearizer-mut.bend
+tinybendygrad/codegen/late/.regalloc-mut.bend
+tinybendygrad/nn/optim-mut.bend
+tinybendygrad/renderer/.wgsl-mut.bend
+tinybendygrad/renderer/amd/dsl-mut.bend
+tinybendygrad/renderer/amd/dsl.bend.bak
+tinybendygrad/renderer/cstyle-mut.bend
+tinybendygrad/runtime/_p6.bend
+tinybendygrad/runtime/PROBE-SELFDEMO.bend
+tinybendygrad/test/_probe/v5.bend
+tinybendygrad/uop/probe-mmcore.bend

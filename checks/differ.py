@@ -998,7 +998,8 @@ def cmd_run(_a):
         # THE SECOND HALF OF THE PAIR, after the last `emit` and before the summary is written.
         # Both halves ride here because this summary is already parsed as `key=value` by four
         # consumers and a fifth file would be a second place the run is claimed.
-        *substrate_rows(substrate_start, substrate_digest())]) + "\n")
+        *substrate_rows(substrate_start, substrate_digest())
+         + [f"substrate-head={substrate_head()}"]]) + "\n")
     print(f"wrote {D.relative_to(ROOT)}")
     # **A RUN WITH AN UNANSWERED GRAPH IS INCOMPLETE, AND SAYS SO BY EXITING NON-ZERO.**
     # This is the choice between the three answers, and it is the run's EXIT STATUS that
@@ -1250,6 +1251,30 @@ def substrate_rows(start: str, end: str) -> list[str]:
     """The two lines, in summary order. `start` is taken before the first `emit` and `end`
     after the last, so the pair BRACKETS the whole run rather than sampling it once."""
     return [f"{k}={v}" for k, v in zip(SUBSTRATE_ROWS, (start, end))]
+
+
+def substrate_head(root: Path = ROOT) -> str:
+    """THE COMMIT THE RUN MEASURED, RECORDED BESIDE THE PAIR -- and it is a THIRD row, not a
+    replacement for the other two.
+
+    **WHY IT CANNOT REPLACE THEM.** MEASURED 2026-10-18 over 18 readings / 3 digests / 5 HEADs:
+    `substrate_digest()` is a function of the WORKING COPY, and **0 of 4 commits in the window moved
+    it** while **1 of 1 fixed-HEAD interval contained a move** -- another unit's edit to this file was
+    hashed 33 seconds BEFORE it was committed, so the digest briefly described a state no commit ever
+    named. **MOVE-DETECTION AND COMMIT-IDENTITY ARE THE SAME PROPERTY, AND A `ls-tree`-BASED DIGEST
+    CANNOT MOVE DURING A RUN -- IT WOULD `PASS` ON EXACTLY THE MIXTURE IT EXISTS TO CATCH.** So the
+    worktree pair STAYS and this row is ADDED.
+
+    **WITHOUT IT THE ROWS ARE UNREADABLE.** The digest covers 389 members of which **14 are in NO
+    commit at all** (`bin/bend` is `.gitignore:5`, and the walks sweep up `*-mut.bend`/`.bak` probe
+    scratch), so a FRESH CLONE HASHES **375** and would report a different substrate for the same
+    commit. Two readers of these rows name the worktree scope; **NONE named it in the row's key.**
+    `ABSENT` or not, this row is what makes the other two comparable to a tree.
+    """
+    q = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root,
+                       capture_output=True, text=True)
+    head = q.stdout.strip()
+    return head if q.returncode == 0 and head else "NO-HEAD"
 
 
 def substrate_bad(got) -> list[str]:

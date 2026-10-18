@@ -1,0 +1,5 @@
+# now entries 389 walk 379; snap-1 entries 389
+# walk added since snap-1: []
+# walk gone since snap-1: []
+# find -type f (minus __pycache__) 379; rglob walk 379; rglob minus find []
+# symlinks in the walks: []

@@ -878,6 +878,34 @@ comment-decay-restored [######...] 3/3  **A SWEEP THAT DELETES A FILE MAKES A LA
                                        editing it would make the guard lie about itself, which is
                                        the same defect one line up.
 
+substrate-head [##########] 3/3  **A DIGEST WITH NO COMMIT IN IT CANNOT BE COMPARED TO A TREE.**
+                                       MEASURED 2026-10-18 by a dispatched unit over **18 readings / 3
+                                       distinct digests / 5 distinct HEADs**: `substrate_digest()` is a
+                                       function of the **WORKING COPY** -- **0 of 4 commits** in the
+                                       window moved it, while **1 of 1 fixed-HEAD interval DID**,
+                                       because another unit's edit to `checks/differ.py` was hashed
+                                       **33 SECONDS BEFORE IT WAS COMMITTED**, so the digest briefly
+                                       described a state **no commit ever named**. **THE UNIT
+                                       CORRECTED THE PRIOR UNIT'S MECHANISM**: `bin/bend` is a regular
+                                       `sh` shim, NOT a symlink, so `read_bytes()` follows nothing --
+                                       the real hole is that **2,157 COMPILER FILES ARE OUTSIDE THE
+                                       POPULATION ENTIRELY** (`references/` is `.gitignore:2`, **0
+                                       tracked files**), so the digest covers the program and the
+                                       oracle and **ZERO BYTES OF THE COMPILER BOTH SIDES RUN**.
+                                       **14 OF 389 MEMBERS ARE IN NO COMMIT AT ALL** (`bin/bend` is
+                                       `.gitignore:5`; the walks sweep up `*-mut.bend`/`.bak` probe
+                                       scratch), so **A FRESH CLONE HASHES 375** and would report a
+                                       DIFFERENT substrate for the SAME commit.
+                                       **WHY THE OBVIOUS FIX IS WRONG, ARGUED BEFORE DOING IT:**
+                                       **MOVE-DETECTION AND COMMIT-IDENTITY ARE THE SAME PROPERTY**,
+                                       and a `ls-tree`-based digest **CANNOT MOVE DURING A RUN -- IT
+                                       WOULD `PASS` ON EXACTLY THE MIXTURE IT EXISTS TO CATCH.** So the
+                                       worktree pair STAYS and `substrate-head=` is ADDED BESIDE IT.
+                                       **BEFORE: two readers of these rows named the worktree scope
+                                       and NONE named it in the row's key.** Still REFUSED, not
+                                       guessed: the identity of 1 of the 2 digest moves observed in
+                                       the window is UNEXPLAINED.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

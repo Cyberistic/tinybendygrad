@@ -1,0 +1,16 @@
+# population on disk 379; present in HEAD 366; on disk and NOT in HEAD 13
+# tracked-and-identical 366
+# tracked-and-DIFFERENT 0
+untracked	tinybendygrad/codegen/decomp/dtype-mut.bend	head=ABSENT	worktree=8717a3648ea9
+untracked	tinybendygrad/codegen/decomp/op-mut.bend	head=ABSENT	worktree=9540756f887a
+untracked	tinybendygrad/codegen/late/.linearizer-mut.bend	head=ABSENT	worktree=f4163101b48f
+untracked	tinybendygrad/codegen/late/.regalloc-mut.bend	head=ABSENT	worktree=e52b02f62850
+untracked	tinybendygrad/nn/optim-mut.bend	head=ABSENT	worktree=30dfcd298153
+untracked	tinybendygrad/renderer/.wgsl-mut.bend	head=ABSENT	worktree=e8426fab75fa
+untracked	tinybendygrad/renderer/amd/dsl-mut.bend	head=ABSENT	worktree=7ab31c75c162
+untracked	tinybendygrad/renderer/amd/dsl.bend.bak	head=ABSENT	worktree=5e3403000f18
+untracked	tinybendygrad/renderer/cstyle-mut.bend	head=ABSENT	worktree=8ed743983652
+untracked	tinybendygrad/runtime/PROBE-SELFDEMO.bend	head=ABSENT	worktree=5ef9a806c96d
+untracked	tinybendygrad/runtime/_p6.bend	head=ABSENT	worktree=462842624c08
+untracked	tinybendygrad/test/_probe/v5.bend	head=ABSENT	worktree=005d02942a90
+untracked	tinybendygrad/uop/probe-mmcore.bend	head=ABSENT	worktree=922c580207ba
