@@ -9,10 +9,15 @@
 # allocates three buffers in Bend's memory, writes a known pattern, launches the
 # kernel, reads the result back and compares it against the expectation.
 #
-# THE EXPECTATION LIVES IN A FILE, WRITTEN BEFORE ANY RUN:
-#   .agents/slop/ops_bend-milestone-expected.txt
-# and the comparison row is ms_pass, over the WHOLE of PACKET.out. ms_got and
-# ms_want print beside it, so a reader who disagrees can see which side moved.
+# THE EXPECTATION LIVES IN A FILE, WRITTEN BEFORE ANY RUN, AND THIS SCRIPT NAMES NEITHER ITS PATH
+# NOR ITS EXTENSION ON PURPOSE: `_EXPECTED_STEM` in opsbend_milestone_gate.py is the single
+# declaration and it is resolved by discovery beside that gate. MEASURED 2026-10-18 19:11Z: a
+# `.txt`->`.md` rename moved the fixture and every copy of the old path broke at once -- this file's
+# comment, the gate's loader (at IMPORT, so the gate died before it read a row, and `checks/e2e.py`
+# stage 5 called that a FAIL), and `checks/e2e.py`'s own stage table. A comment that holds a path is
+# a second declaration that cannot fail, and the pin that names one is the only thing that notices.
+# The comparison row is ms_pass, over the WHOLE of PACKET.out. ms_got and ms_want print beside it,
+# so a reader who disagrees can see which side moved.
 #
 # NO PYTHON IN THE PATH. ./bin/bend ops_bend.bend opsbend is the whole runtime:
 # the allocator, the hex codec, the launch (Process.run) and the readback all run

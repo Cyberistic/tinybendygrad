@@ -11,9 +11,10 @@ harness exists for three things and no more:
   2. THE DENOMINATOR on every count. "3 buffers agree" without "3 of 3" is not a
      statement; a starved lane produced 115 rows where a loaded one produced 787.
   3. THE EXPECTED BYTES ARE READ FROM A FILE, not restated here, so the gate and
-     the file cannot drift. The file was written BEFORE any run
-     (`.agents/slop/ops_bend-milestone-expected.txt`); restating the literals in
-     Python would make this a second oracle and defeat the point.
+     the file cannot drift. The file was written BEFORE any run and is DECLARED ONCE,
+     as the stem `ops_bend-milestone-expected` below, and RESOLVED BY DISCOVERY --
+     see `_expected()`. Restating the literals in Python would make this a second
+     oracle and defeat the point.
 
 `PACKET.in` is checked against the port's OWN `encode` output implicitly: the
 executor parsed it, and `ms_exit=0` says it did. `PACKET.out` is checked against
@@ -24,7 +25,34 @@ same mistake.
 import pathlib
 import sys
 
-EXPECTED = pathlib.Path(__file__).parent / "ops_bend-milestone-expected.txt"
+# THE FIXTURE IS DECLARED ONCE, BY ITS STEM, AND FOUND BY DISCOVERY. **NOT BY EXTENSION, AND NOT BY
+# A `.txt`-THEN-`.md` FALLBACK: TWO LITERALS IS A HAND LIST, WHICH IS NOT A POPULATION** -- it names
+# two paths instead of one and both go stale at the next rename. What is named here is a STEM, the
+# part of the name that means something, and the extension is whatever the tree's file actually
+# carries. MEASURED 2026-10-18 19:11Z, this line was the whole of the bug:
+# `.venv/bin/python .agents/slop/opsbend_milestone_gate.py` exited 1 with `FileNotFoundError` on the
+# `.txt`, because a rename had moved it to `.md` and this read happened AT IMPORT, so the gate died
+# before it read a single row and `checks/e2e.py` stage 5 turned that into a FAIL.
+_EXPECTED_STEM = "ops_bend-milestone-expected"
+
+
+def _expected():
+    """The one file in this directory whose stem is `_EXPECTED_STEM`.
+
+    ZERO or TWO matches is an ERROR, not a guess. A half-finished rename leaves both, and picking one
+    by sort order would read a stale fixture and report a verdict about it -- so the population is
+    counted here rather than assumed, which is the difference between a resolver and a fallback.
+    """
+    here = pathlib.Path(__file__).resolve().parent
+    hits = sorted(p.name for p in here.iterdir()
+                  if p.is_file() and p.stem == _EXPECTED_STEM)
+    if len(hits) != 1:
+        raise SystemExit(f"{_EXPECTED_STEM}: expected exactly one file beside this gate, "
+                         f"found {hits}")
+    return here / hits[0]
+
+
+EXPECTED = _expected()
 
 # THE EXPECTATIONS ARE LIFTED OUT OF THE FILE, by parsing its own key=value TAIL
 # and reading multi-line values the way Python's own `repr` would have written
