@@ -1,0 +1,17 @@
+check	expected	observed	source_line
+oracle-selfcheck	# ORACLE SELFCHECK: OK	# ORACLE SELFCHECK: FAIL	checks/differ.py:293 -> runs/graphcmp/D/D0-run-summary.txt:18
+census-rc	rc=0	rc=1	checks/differ.py:269 -> runs/graphcmp/D/D0-run-summary.txt:19
+bad-entries-recorded/34-graphs	0	1 (the only `#   ` line printed after the verdict)	runs/graphcmp/D/D0-coverage-census.txt:72
+failing-graph/34	--	loop	runs/graphcmp/D/D0-coverage-census.txt:72
+device-precondition/loop@5da7e7add	DIFFERENT-DEVICES only when DEVICE NAMES disagree	DIFFERENT-DEVICES on an ABSENCE atom: py ['N','sCPU'] against bend ['sCPU']	.agents/slop/graphcmp-oracle.py:274 (commit 5da7e7add)
+device-verdict/loop@HEAD	ONE-SIDE-DEVICE-LESS	ONE-SIDE-DEVICE-LESS (pure trace of the committed rule; 1 of 3 cases)	.agents/slop/graphcmp-oracle.py:200-204
+device-verdict/fatal-branch@HEAD	DIFFERENT-DEVICES on sCPU vs sMETAL	DIFFERENT-DEVICES (the fatal branch still bites; 1 of 3 cases)	.agents/slop/graphcmp-oracle.py:201-202
+N-is-a-device-name	no -- `N` is ATOMS["none"]	no	.agents/slop/graphcmp.py:336 and :618-619
+loop-node-parity	52/52	52/25	runs/graphcmp/D/D0-coverage-census.txt:21
+loop-device-name-count	1 per side	2 on py (N, sCPU) / 1 on bend (sCPU)	.agents/slop/graphcmp.py:2363-2372
+graphs-refused/34	0	1 (loop)	runs/graphcmp/D/D0-run-summary.txt:5
+graphs-agree/34-answered	34	33	runs/graphcmp/D/D0-run-summary.txt:6
+selfcheck-CORPUS-distinct-rule	# SELFCHECK: OK	# SELFCHECK: OK (GREEN -- the two selfchecks are different code paths)	.agents/slop/graphcmp.py:2991 -> runs/graphcmp/D/D0-run-summary.txt:15
+bad.append-sites-pre-vs-HEAD	14	14 (one message's TEXT changed; no site added, none removed)	diff 5da7e7add..HEAD on .agents/slop/graphcmp-oracle.py
+artifact-mtime-vs-rule-commit	artifact at or after the rule commit	artifact 2026-10-18T21:22:13Z; rule committed 2026-10-18T21:30:30+03:00 (=18:30:30Z), 8m17s LATER	git log -1 -- .agents/slop/graphcmp-oracle.py
+artifact-tracked-in-git	tracked so a fix could ship with it	UNTRACKED and .gitignore:262 `/runs/` -- regenerated only by re-running	differ.py:907

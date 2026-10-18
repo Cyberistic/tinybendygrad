@@ -1,0 +1,26 @@
+row	denominator_source	moves_with_reality	false_agreement_risk	evidence
+graphs	DERIVED-FROM-TREE-FILE (len(corpus()))	yes	no -- a growth REDDENS this pin	differ.py:944 len(graphs); :716 graphs=corpus() -> graphcmp.GRAPHS=34; +1 graph reads 35 vs pin 34
+graphs-answered	MEASURED-FROM-THE-RUN (denominator=1, pin supplies the claim)	yes	no -- a growth REDDENS this pin	differ.py:945 len(graphs)-len(unset); +1 agreeing graph reads 35 vs pin 34
+graphs-unset	MEASURED-FROM-THE-RUN (denominator=1, pin supplies the claim)	yes	no -- a growth REDDENS this pin	differ.py:946 len(unset); +1 graph with no WANT row reads 1 vs pin 0
+expect-moved	MEASURED-FROM-THE-RUN (denominator=1, pin supplies the claim)	yes	no -- a growth REDDENS this pin	differ.py:953 len(moved); +1 disagreeing graph reads 1 vs pin 0
+graphs-refused	MEASURED-FROM-THE-RUN (denominator=1, NO PIN)	yes	no on its own; UNPINNED so nothing compares it	differ.py:961 len(refused); absent from PINS; the growth is caught by graphs/graphs-answered instead
+graphs-agree	MEASURED-FROM-THE-RUN (files_with over a glob; PINNED-EXPECTATION 34)	yes	no -- but NOT by this row: +1 agreeing graph reads 34 == pin 34 and stays GREEN	differ.py:962 files_with('D1-graph-*.txt','VERDICT: AGREE'); measured 33 on the live run, pin 34
+graphs-disagree	MEASURED-FROM-THE-RUN (files_with over a glob; NO PIN)	yes	no on its own; UNPINNED so nothing compares it	differ.py:963; +1 disagreeing graph reads 1 and expect-moved reads 1, which is what reddens
+byte-identical	MEASURED-FROM-THE-RUN (lines_with over a composed file; PINNED-EXPECTATION 34)	yes	no -- but NOT by this row: +1 byte-identical graph reads 34 == pin 34 and stays GREEN	differ.py:964 lines_with('D2-bytediff.txt','BYTE-IDENTICAL'); measured 33 on the live run, pin 34
+not-comparable	MEASURED-FROM-THE-RUN (denominator=1, PINNED-EXPECTATION 0)	yes	no -- zero-tolerance	differ.py:965 lines_with('D2-bytediff.txt','NOT COMPARED')
+stable-pairs	CODE-RESIDENT-LITERAL (`of 5` typed in the f-string)	no	YES, per row; MITIGATED by its two siblings	differ.py:966 `of 5` vs len(STAB)=5 at :241; +1 byte-identical pair reads 6 of 5 (RED); +1 DIFFERING pair reads 5 of 5 (GREEN)
+stable-failed	CODE-RESIDENT-LITERAL (`of 5` typed in the f-string)	no	YES, per row; MITIGATED by its two siblings	differ.py:967 `of 5`; +1 0-row pair reads 1 of 5 (RED); a differing or identical pair leaves 0 of 5 (GREEN)
+stable-differ	CODE-RESIDENT-LITERAL (`of 5` typed in the f-string)	no	YES, per row; MITIGATED by its two siblings	differ.py:968 `of 5`; +1 differing pair reads 1 of 5 (RED); an identical or 0-row pair leaves 0 of 5 (GREEN)
+plants-disagree	CODE-RESIDENT-LITERAL (`of 7` typed in the f-string)	no	YES -- UNMITIGATED: +1 plant that AGREES reads 7 of 7 and no other row sees it	differ.py:971 `of 7` vs len(PLANTS)=7 at :230; the glob D5-plant-*.txt sees the new file, the literal does not
+cross	CODE-RESIDENT-LITERAL (`of 1` typed in the f-string; the numerator is ONE named file)	no	YES -- UNMITIGATED, and doubly: a 2nd cross range in a NEW file is read by NO row	differ.py:972 `of 1`, one hardcoded run at :849; D4-cross-newsix.txt matches no row's expression at all
+selfcheck	MEASURED-FROM-THE-RUN (denominator=1; the PIN is the whole string)	n/a	no	differ.py:973 first_line('D0-selfcheck.txt'); green today
+conflations	CODE-RESIDENT-LITERAL (`of 4` typed in the f-string; NO differ.py declaration names this population)	no	YES -- UNMITIGATED: +1 disputed conflation reads 4 of 4	differ.py:974 `of 4`; the population lives in graphcmp.py cmd_conf, which emits one `# CONFLATION n VERDICT:` line per case and is not a list differ.py can read
+controls	CODE-RESIDENT-LITERAL (`of 5` typed in the f-string)	no	YES -- UNMITIGATED: +1 FAILING control reads 5 of 5	differ.py:975 `of 5` vs len(CONTROLS)=5 at :237; the glob sees the new control, the literal does not
+oracle-selfcheck	MEASURED-FROM-THE-RUN (denominator=1; the PIN is the whole string)	n/a	no	differ.py:978 grep_line('D0-coverage-census.txt','ORACLE SELFCHECK'); RED today (# ORACLE SELFCHECK: FAIL)
+census-rc	MEASURED-FROM-THE-RUN (denominator=1; the PIN is the whole string)	n/a	no	differ.py:979 last_line('D0-coverage-census.txt'); RED today (rc=1)
+dev	MEASURED-FROM-THE-RUN (device_of_run() reads the artifacts; NOT pinned, checked against them)	no	n/a	differ.py:1116 precondition_rows() -> device_of_run(); preconditions_bad() at :1119-1135
+lc_all	PINNED-EXPECTATION (ENV, ROW_VALUES)	no	n/a	differ.py:1065 ROW_VALUES; the row records what every child was handed
+noopt	PINNED-EXPECTATION (ENV, ROW_VALUES)	no	n/a	differ.py:1065 ROW_VALUES
+pythonhashseed	PINNED-EXPECTATION (ENV, ROW_VALUES)	no	n/a	differ.py:1065 ROW_VALUES
+substrate-start	MEASURED-FROM-THE-RUN (the run's own digest; NOT pinned, compared to substrate-end)	yes	n/a	differ.py:991 substrate_rows(substrate_start, substrate_digest()); SUBSTRATE_ROWS at :1156
+substrate-end	MEASURED-FROM-THE-RUN (the run's own digest; NOT pinned, compared to substrate-start)	yes	n/a	differ.py:991; substrate_bad() checks start == end

@@ -1,0 +1,10 @@
+.agents/slop/graphcmp-dbg-oracle.py
+.agents/slop/graphcmp-empty.bend
+.agents/slop/graphcmp-oracle.py
+.agents/slop/graphcmp-p13-ops.py
+.agents/slop/graphcmp-p14d.py
+.agents/slop/graphcmp-probe-optq.bend
+.agents/slop/graphcmp-repro.sh
+.agents/slop/graphcmp-run.sh
+.agents/slop/graphcmp.bend
+.agents/slop/graphcmp.py

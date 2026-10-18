@@ -1,0 +1,15 @@
+population.walked	34
+population.declared_graphcmp.GRAPHS	34
+population.identical	true
+population.only_in_walk	-
+population.only_in_declared	-
+count.graphs	mine=34	summary=34	match=true
+count.graphs-agree	mine=33	summary=33	match=true
+count.graphs-disagree	mine=0	summary=0	match=true
+count.graphs-refused	mine=1	summary=1	match=true
+count.byte-identical(aggregate lines)	mine=33	summary=33	match=true
+count.byte-identical(per-graph D2-cmp)	mine=33	summary=33	match=true
+substring_semantics.agree	33
+substring_semantics.disagree	0
+substring_semantics.differs_from_exact	false
+verdict.control	PASS

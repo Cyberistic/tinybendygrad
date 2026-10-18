@@ -1,0 +1,25 @@
+byte-identical	33
+census-rc	rc=1
+conflations	4 of 4
+controls	5 of 5
+cross	1 of 1
+dev	CPU
+expect-moved	0
+graphs	34
+graphs-agree	33
+graphs-answered	34
+graphs-disagree	0
+graphs-refused	1
+graphs-unset	0
+lc_all	C
+noopt	0
+not-comparable	0
+oracle-selfcheck	# ORACLE SELFCHECK: FAIL
+plants-disagree	7 of 7
+pythonhashseed	0
+selfcheck	# SELFCHECK: OK
+stable-differ	0 of 5
+stable-failed	0 of 5
+stable-pairs	5 of 5
+substrate-end	0ddf34d0da47ce78108337f4a9caddd3f9e49d450c56d5301f3e790b8983dc12
+substrate-start	0ddf34d0da47ce78108337f4a9caddd3f9e49d450c56d5301f3e790b8983dc12

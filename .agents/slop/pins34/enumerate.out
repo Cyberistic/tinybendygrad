@@ -1,0 +1,132 @@
+== THE CONTROL: WRITER'S KEYS vs THE LIVE FILE ==
+writer rows in source: 19 + 4 precondition + 2 substrate = 25
+live keys:             25
+same set:              True
+same order:            True
+only in writer:        none
+only in live file:     none
+starred rows:          ['precondition_rows()', 'substrate_rows(substrate_start, substrate_digest())']
+
+== EVERY ROW, ITS NUMERATOR EXPRESSION, ITS DENOMINATOR, AND WHERE THE DENOMINATOR LIVES ==
+graphs             numerator= len(graphs)                                                denominator= 1
+graphs-answered    numerator= len(graphs) - len(unset)                                   denominator= 1
+graphs-unset       numerator= len(unset)                                                 denominator= 1
+expect-moved       numerator= len(moved)                                                 denominator= 1
+graphs-refused     numerator= len(refused)                                               denominator= 1
+graphs-agree       numerator= files_with('D1-graph-*.txt', 'VERDICT: AGREE')             denominator= 1
+graphs-disagree    numerator= files_with('D1-graph-*.txt', 'VERDICT: DISAGREE')          denominator= 1
+byte-identical     numerator= lines_with('D2-bytediff.txt', 'BYTE-IDENTICAL')            denominator= 1
+not-comparable     numerator= lines_with('D2-bytediff.txt', 'NOT COMPARED')              denominator= 1
+stable-pairs       numerator= anchored('D9-stability.txt', ': 2 runs BYTE-IDENTICAL$')   denominator= of 5
+stable-failed      numerator= lines_with('D9-stability.txt', 'ONE SIDE IS A 0-ROW FAILURE') denominator= of 5
+stable-differ      numerator= anchored('D9-stability.txt', ': 2 runs DIFFER$')           denominator= of 5
+plants-disagree    numerator= files_with('D5-plant-*.txt', 'VERDICT: DISAGREE')          denominator= of 7
+cross              numerator= lines_with('D4-cross-range.txt', 'CROSS VERDICT: OK')      denominator= of 1
+selfcheck          numerator= first_line('D0-selfcheck.txt')                             denominator= 1
+conflations        numerator= lines_with('D7-conf.txt', 'VERDICT: OK')                   denominator= of 4
+controls           numerator= files_with('D3-control-*.txt', 'CONTROL VERDICT: OK')      denominator= of 5
+oracle-selfcheck   numerator= grep_line('D0-coverage-census.txt', 'ORACLE SELFCHECK')    denominator= 1
+census-rc          numerator= last_line('D0-coverage-census.txt')                        denominator= 1
+
+code-resident `of N` denominators: 7 of 19 written rows -> ['conflations', 'controls', 'cross', 'plants-disagree', 'stable-differ', 'stable-failed', 'stable-pairs']
+
+== THE CODE-RESIDENT ROWS, READ BY THE WRITER'S OWN PREDICATES OVER THE LIVE ARTIFACTS ==
+stable-pairs       measured now=5 of 5     live file=5 of 5     pin=5 of 5     pin matches now: True
+stable-failed      measured now=0 of 5     live file=0 of 5     pin=0 of 5     pin matches now: True
+stable-differ      measured now=0 of 5     live file=0 of 5     pin=0 of 5     pin matches now: True
+plants-disagree    measured now=7 of 7     live file=7 of 7     pin=7 of 7     pin matches now: True
+cross              measured now=1 of 1     live file=1 of 1     pin=1 of 1     pin matches now: True
+conflations        measured now=4 of 4     live file=4 of 4     pin=4 of 4     pin matches now: True
+controls           measured now=5 of 5     live file=5 of 5     pin=5 of 5     pin matches now: True
+
+== POPULATION SIZE AS THE WRITER'S OWN DECLARATIONS COUNT IT (code, not the literal) ==
+len(STAB)=5 len(PLANTS)=7 len(CONTROLS)=5 run(...,'cross',...) call sites=1
+literal 'of 5' vs len(STAB)=5; 'of 7' vs len(PLANTS)=7; 'of 5' vs len(CONTROLS)=5; 'of 1' vs cross call sites=1
+conflations: no differ.py declaration names the population (the `conf` oracle does) -- denominator 4 is typed in the f-string only
+
+== +1 MEMBER, EACH VARIANT: WHAT THE ROW WOULD READ AND WHETHER THE PIN STILL FIRES ==
+-- stable-pairs (pin '5 of 5', denominator literal 5)
+   + stab-identical         row=6 of 5     pin FIRES (red)
+   + stab-differ            row=5 of 5     pin SILENT (green)   <-- FALSE AGREEMENT
+   + stab-0row              row=5 of 5     pin SILENT (green)   <-- FALSE AGREEMENT
+-- stable-failed (pin '0 of 5', denominator literal 5)
+   + stab-identical         row=0 of 5     pin SILENT (green)   <-- FALSE AGREEMENT
+   + stab-differ            row=0 of 5     pin SILENT (green)   <-- FALSE AGREEMENT
+   + stab-0row              row=1 of 5     pin FIRES (red)
+-- stable-differ (pin '0 of 5', denominator literal 5)
+   + stab-identical         row=0 of 5     pin SILENT (green)   <-- FALSE AGREEMENT
+   + stab-differ            row=1 of 5     pin FIRES (red)
+   + stab-0row              row=0 of 5     pin SILENT (green)   <-- FALSE AGREEMENT
+-- plants-disagree (pin '7 of 7', denominator literal 7)
+   + plant-loadbearing      row=8 of 7     pin FIRES (red)
+   + plant-agrees           row=7 of 7     pin SILENT (green)   <-- FALSE AGREEMENT
+-- cross (pin '1 of 1', denominator literal 1)
+   + cross-ok               row=2 of 1     pin FIRES (red)
+   + cross-fails            row=1 of 1     pin SILENT (green)   <-- FALSE AGREEMENT
+   + cross-new-file-fails   row=1 of 1     pin SILENT (green)   <-- FALSE AGREEMENT
+-- conflations (pin '4 of 4', denominator literal 4)
+   + conf-ok                row=5 of 4     pin FIRES (red)
+   + conf-disputed          row=4 of 4     pin SILENT (green)   <-- FALSE AGREEMENT
+-- controls (pin '5 of 5', denominator literal 5)
+   + control-ok             row=6 of 5     pin FIRES (red)
+   + control-fails          row=5 of 5     pin SILENT (green)   <-- FALSE AGREEMENT
+== PINS: EVERY PINNED KEY IS A ROW THE WRITER WRITES ==
+PINS keys: 17;  pinned-but-unwritten: none
+written-but-unpinned: ['dev', 'graphs-disagree', 'graphs-refused', 'lc_all', 'noopt', 'pythonhashseed', 'substrate-end', 'substrate-start']
+
+== +1 MEMBER AS A PIN SET: DOES A SIBLING ROW CATCH WHAT ITS OWN DENOMINATOR HIDES? ==
+   + stab-identical   trio reads {'stable-pairs': '6 of 5', 'stable-failed': '0 of 5', 'stable-differ': '0 of 5'} -> red on stable-pairs
+   + stab-differ      trio reads {'stable-pairs': '5 of 5', 'stable-failed': '0 of 5', 'stable-differ': '1 of 5'} -> red on stable-differ
+   + stab-0row        trio reads {'stable-pairs': '5 of 5', 'stable-failed': '1 of 5', 'stable-differ': '0 of 5'} -> red on stable-failed
+
+== WHICH ROWS CAN SEE A GIVEN GROWTH AT ALL (artifact intersection, fnmatch over the exprs) ==
+   stab-identical         D9-stability.txt           seen only by: ['stable-differ', 'stable-failed', 'stable-pairs']
+   stab-differ            D9-stability.txt           seen only by: ['stable-differ', 'stable-failed', 'stable-pairs']
+   stab-0row              D9-stability.txt           seen only by: ['stable-differ', 'stable-failed', 'stable-pairs']
+   plant-loadbearing      D5-plant-newsix.txt        seen only by: ['plants-disagree']
+   plant-agrees           D5-plant-newsix.txt        seen only by: ['plants-disagree']
+   control-ok             D3-control-newsix.txt      seen only by: ['controls']
+   control-fails          D3-control-newsix.txt      seen only by: ['controls']
+   conf-ok                D7-conf.txt                seen only by: ['conflations']
+   conf-disputed          D7-conf.txt                seen only by: ['conflations']
+   cross-ok               D4-cross-range.txt         seen only by: ['cross']
+   cross-fails            D4-cross-range.txt         seen only by: ['cross']
+   cross-new-file-fails   D4-cross-newsix.txt        seen only by: []
+== THE BARE-COUNT ROWS: A CORPUS THAT GREW BY ONE, READ BY THE WRITER'S PREDICATES ==
+-- as published (live run): reader vs live file disagree on no row
+-- as published (live run)    pins red: ['graphs-agree', 'byte-identical', 'oracle-selfcheck', 'census-rc']
+   rows that moved: {'graphs': '34', 'graphs-answered': '34', 'graphs-unset': '0', 'expect-moved': '0', 'graphs-refused': '1', 'graphs-agree': '33', 'graphs-disagree': '0', 'byte-identical': '33', 'not-comparable': '0'}
+-- +1 graph, agrees           pins red: ['graphs', 'graphs-answered', 'oracle-selfcheck', 'census-rc']
+   rows that moved: {'graphs': '35', 'graphs-answered': '35', 'graphs-unset': '0', 'expect-moved': '0', 'graphs-refused': '1', 'graphs-agree': '34', 'graphs-disagree': '0', 'byte-identical': '34', 'not-comparable': '0'}
+-- +1 graph, disagrees        pins red: ['graphs', 'graphs-answered', 'expect-moved', 'graphs-agree', 'oracle-selfcheck', 'census-rc']
+   rows that moved: {'graphs': '35', 'graphs-answered': '35', 'graphs-unset': '0', 'expect-moved': '1', 'graphs-refused': '1', 'graphs-agree': '33', 'graphs-disagree': '1', 'byte-identical': '34', 'not-comparable': '0'}
+-- +1 graph, no expectation   pins red: ['graphs', 'graphs-unset', 'graphs-agree', 'byte-identical', 'oracle-selfcheck', 'census-rc']
+   rows that moved: {'graphs': '35', 'graphs-answered': '34', 'graphs-unset': '1', 'expect-moved': '0', 'graphs-refused': '1', 'graphs-agree': '33', 'graphs-disagree': '0', 'byte-identical': '33', 'not-comparable': '0'}
+-- +1 graph, refused          pins red: ['graphs', 'graphs-answered', 'graphs-agree', 'byte-identical', 'oracle-selfcheck', 'census-rc']
+   rows that moved: {'graphs': '35', 'graphs-answered': '35', 'graphs-unset': '0', 'expect-moved': '0', 'graphs-refused': '2', 'graphs-agree': '33', 'graphs-disagree': '0', 'byte-identical': '33', 'not-comparable': '0'}
+
+== THE LIVE RUN AGAINST PINS, RIGHT NOW (no simulation) ==
+   OK   graphs             live='34'                       pin='34'
+   OK   graphs-unset       live='0'                        pin='0'
+   OK   graphs-answered    live='34'                       pin='34'
+   OK   expect-moved       live='0'                        pin='0'
+   RED  graphs-agree       live='33'                       pin='34'
+   RED  byte-identical     live='33'                       pin='34'
+   OK   not-comparable     live='0'                        pin='0'
+   OK   selfcheck          live='# SELFCHECK: OK'          pin='# SELFCHECK: OK'
+   RED  census-rc          live='rc=1'                     pin='rc=0'
+   OK   stable-pairs       live='5 of 5'                   pin='5 of 5'
+   OK   stable-failed      live='0 of 5'                   pin='0 of 5'
+   OK   stable-differ      live='0 of 5'                   pin='0 of 5'
+   OK   plants-disagree    live='7 of 7'                   pin='7 of 7'
+   OK   cross              live='1 of 1'                   pin='1 of 1'
+   OK   controls           live='5 of 5'                   pin='5 of 5'
+   OK   conflations        live='4 of 4'                   pin='4 of 4'
+   RED  oracle-selfcheck   live='# ORACLE SELFCHECK: FAIL' pin='# ORACLE SELFCHECK: OK'
+== THE SECOND WITNESS: derive.py RE-DERIVES THE ROWS, SO DOES IT RE-TYPE THE DENOMINATORS? ==
+derive.py re-derives 18 named rows + precondition_rows(); writer writes 25
+keys the writer writes and derive.py does not: ['graphs-refused']
+`of N` literals re-typed in derive.py: ['of 5', 'of 5', 'of 5', 'of 7', 'of 1', 'of 4', 'of 5']
+same multiset as the writer's: True -- writer {'of 5': 4, 'of 7': 1, 'of 1': 1, 'of 4': 1}, derive {'of 5': 4, 'of 7': 1, 'of 1': 1, 'of 4': 1}
+derive.py docstring claims the live summary carries: ['24']  writer writes 25
+fixture removed: True (rebuilt by build_fixture() on every run)

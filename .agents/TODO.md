@@ -751,6 +751,93 @@ substrate-coverage [##########] 3/3  **A DIGEST THAT OMITS THE SUBJECT OF THE CO
                                        direction for a pin -- it should move when the population's
                                        DEFINITION moves -- but it means one re-run re-takes them.
 
+corpus-GREEN [##########] 2/2  **VERIFIED BY ME AT 2026-10-18T21:22:18Z: `graphs-agree=33`,
+                                       `graphs-disagree=0`, `graphs-refused=1`, `expect-moved=0`,
+                                       `byte-identical=33` -- AND THE 33/0 SPLIT REPRODUCES FROM THE 34
+                                       `D1-graph-*.txt` ARTIFACTS INDEPENDENTLY.** `gate` AND `lin` NOW
+                                       READ `AGREE` AND ARE BYTE-IDENTICAL; the two re-vendor-pin
+                                       prescriptions landed **in the fixture** (`g_gate` mints and
+                                       names the shape const, `g_lin` has the `AFTER`). **BUT
+                                       `tinybendygrad/codegen/late/linearizer.bend:1617` STILL
+                                       `List.append`s WHERE UPSTREAM WRAPS IN `AFTER` (0
+                                       `O.OpsAFTER{` in the file), SO `lin`'s GREEN ROW MEASURES THE
+                                       HAND-WRITTEN FIXTURE, NOT THE PORT** -- the trap `dg-lin`
+                                       predicted in its own report. **`graphs-refused=1` IS A ROW
+                                       THAT DID NOT EXIST THIS MORNING**: a unit proposed it and
+                                       `differ.py:961` now writes it, so the 34th graph is NAMED
+                                       instead of discoverable only by subtraction (`34-33-0`).
+                                       **WHAT IS STILL RED IS UPSTREAM OF THE CORPUS.**
+oracle-selfcheck [#########] 3/3  **A RED LIGHT ON A GREEN ROAD: THE PIN IS RED FOR A REASON THAT NO LONGER
+                                       EXISTS IN THE CODE.** The deciding rule was
+                                       `if py["devs"] != bd["devs"]: bad.append(...)`; the recorded
+                                       failure is `loop: the two sides opened DIFFERENT devices -- py
+                                       ['N','sCPU'] against bend ['sCPU']`. **`N` IS
+                                       `ATOMS["none"]`** -- `_carg(pa.device)` returns `"N"` for
+                                       `device=None`, **so an ABSENCE WAS COMPARED AGAINST A DEVICE
+                                       NAME.** Cause: `tinygrad/runtime/support/hcq2.py:66-70`'s
+                                       `UOp.placeholder(..., addrspace=REG)` carries no `device=`;
+                                       the corpus CORROBORATES WITHOUT BEING ASKED -- the 5 differing
+                                       ops are EXACTLY the ops `do_get_time_ms` builds.
+                                       **COMMIT `9f0164b6e` ALREADY FIXED IT** (routes `NODEV` to a
+                                       report, not to `bad`) AND IT IS AT HEAD -- **THE ARTIFACT IS
+                                       JUST 8m17s OLDER THAN ITS OWN FIX.** `runs/` IS GITIGNORED AND
+                                       UNTRACKED, so **A GREEN RULE CANNOT REACH A RED ARTIFACT: ONE
+                                       `checks/differ.py run` RE-TAKES IT, AND NO CODE NEEDS CHANGING.**
+                                       REFUSED rather than guessed: whether a fresh run is green is an
+                                       INFERENCE until it is taken.
+census-rc [##########] 3/3      **THE SAME FAILURE AS `oracle-selfcheck`, NOT AN INDEPENDENT ONE** --
+                                       `differ.py:978` and `:979` BOTH READ THE SAME FILE. Path: the
+                                       oracle's own exit code carried by a stamp
+                                       (`graphcmp-oracle.py:534` -> `differ.py:458` -> `:459-461`
+                                       stamp -> `:979`). **AND THE PRIOR UNIT'S `stamp_rc` CLAIM IS
+                                       REFUTED AS CITED, TRUE AS SUBSTANCE**: `:684` is
+                                       `one_line`'s body and `:691` is a BLANK LINE; the census
+                                       call at `:907` DOES pass `stamp_rc=True`. The two that omit it
+                                       are `:910` and `:914`, where a crash really would record no
+                                       `rc=`. **`graphs-agree`/`byte-identical` READ 33 vs 34
+                                       BECAUSE `loop` IS REFUSED -- A DIFFERENT MECHANISM, AND THEY
+                                       WILL STAY RED AFTER THE RE-TAKE.** Re-pinning them to 33
+                                       would trade a TRUE REFUSED for a SILENT HOLE.
+digest-residue [##########] 2/3  **AFTER MY `f62666ad6`, THE DIGEST PINS 387 INPUTS AND COVERS
+                                       `tinygrad/*.py` 213/213 -- CONFIRMED. THE RESIDUAL GAP IS
+                                       NAMED AND SMALL.** Correctness inputs **387 of 389 = 99.5%**;
+                                       whole-run coverage by file count is **387 of ~1351 ~ 29%**.
+                                       Two UNCOVERED drivers, both named: **`.agents/slop/
+                                       graphcmp-dbg.bend`** (run by `graphcmp.py:3021`) and
+                                       **`.agents/slop/graphcmp-empty.bend`** (`differ.py:903`'s
+                                       `else` branch, which IS TAKEN -- the comment claiming it was
+                                       deleted is now FALSE). **A GREP CENSUS MISSED THE FIRST
+                                       ENTIRELY AND INVENTED FOUR PHANTOM DRIVERS FROM
+                                       DOCSTRINGS.** **`bin/bend` RESOLVES TO
+                                       `references/bend/bend2/main.ts`: PHYSICALLY IN THE REPO,
+                                       VERSIONED NOWHERE (`git ls-files references` = 0), so the
+                                       digest pins a 5-LINE POINTER and not the 93-FILE POINTEe --
+                                       AND A FRESH CLONE YIELDS A DIFFERENT DIGEST.** The unit also
+                                       watched ONE HEAD produce TWO DIGESTS 70s apart, because the
+                                       digest walks the WORKING COPY, not a tree object: **the
+                                       "one substrate" claim holds within a tree and breaks across
+                                       a clone or an armed index.**
+immovable-denoms [#########] 3/3  **SEVEN SUMMARY ROWS CARRY A DENOMINATOR TYPED IN CODE, SO THEY CANNOT
+                                       MOVE WHEN THE SUBJECT GROWS** -- and five of them DUPLICATE A
+                                       DECLARATION ALREADY IN THE FILE (`len(STAB)`=5 x3, `len(PLANTS)`
+                                       =7, `len(CONTROLS)`=5). **THE FALSE-AGREEMENT RISK IS SPECIFIC AND
+                                       MEASURED: `cross`=`1 of 1` stays GREEN under any second cross
+                                       range; `plants-disagree`=`7 of 7` stays GREEN under an 8th plant
+                                       that AGREES -- THE EXACT DEFECT THE PIN EXISTS TO CATCH;
+                                       `controls`=`5 of 5` under a 6th FAILING control;
+                                       `conflations`=`4 of 4` under a 5th DISPUTED conflation.** The
+                                       `stable-*` rows ARE covered, by their siblings. BARE-COUNT PINS
+                                       ARE NOT AT RISK: a corpus growth is caught twice and every
+                                       stale literal there fails RED, not green. **THE CONTROL IS
+                                       WORTH NAMING: A CORRECT CONSTANT AND A DERIVED ONE ARE
+                                       INDISTINGUISHABLE UNTIL THE SUBJECT MOVES** -- which is
+                                       exactly why these are dangerous and why the seven being green
+                                       today proves nothing. **`pinindep/derive.py` RE-TYPES ALL SEVEN,
+                                       SO IT CAN CATCH THE COPIES DIVERGING BUT NEVER BOTH BEING
+                                       STALE -- AND IT IS ALREADY OUT OF DATE (omits
+                                       `graphs-refushed`, docstring says 24 rows). ANY FIX MUST
+                                       TOUCH BOTH FILES OR IT IS NOT ONE EDIT.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

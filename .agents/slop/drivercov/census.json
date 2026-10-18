@@ -1,0 +1,139 @@
+{
+ "digest_total": 387,
+ "cli_closure": [
+  "checks/differ.py",
+  ".agents/slop/graphcmp.py",
+  ".venv/bin/python",
+  "checks/devpin.py",
+  "bin/bend",
+  ".agents/slop/graphcmp.bend",
+  "gates/gatekit.py",
+  "checks/runs-artifacts.py",
+  ".agents/slop/graphcmp-oracle.py",
+  ".agents/slop/graphcmp-dbg-oracle.py",
+  ".agents/slop/graphcmp-p13-ops.py",
+  ".agents/slop/graphcmp-empty.bend",
+  ".agents/slop/graphcmp-dbg.bend"
+ ],
+ "run_path_files": [
+  ".agents/slop/graphcmp-dbg-oracle.py",
+  ".agents/slop/graphcmp-empty.bend",
+  ".agents/slop/graphcmp-oracle.py",
+  ".agents/slop/graphcmp-p13-ops.py",
+  ".agents/slop/graphcmp.py",
+  ".venv/bin/python",
+  "checks/devpin.py",
+  "checks/differ.py"
+ ],
+ "run_path_edges": [
+  [
+   "checks/differ.py",
+   "cmd_run",
+   "ARGFILE",
+   ".agents/slop/graphcmp-oracle.py",
+   "capture(....agents/slop/graphcmp-oracle.py...)"
+  ],
+  [
+   "checks/differ.py",
+   "cmd_run",
+   "ARGFILE",
+   ".agents/slop/graphcmp-dbg-oracle.py",
+   "capture(....agents/slop/graphcmp-dbg-oracle.py...)"
+  ],
+  [
+   "checks/differ.py",
+   "cmd_run",
+   "ARGFILE",
+   ".agents/slop/graphcmp-p13-ops.py",
+   "capture(....agents/slop/graphcmp-p13-ops.py...)"
+  ],
+  [
+   "checks/differ.py",
+   "cmd_run",
+   "ARGFILE",
+   ".agents/slop/graphcmp-empty.bend",
+   "run(....agents/slop/graphcmp-empty.bend...)"
+  ],
+  [
+   "checks/differ.py",
+   "corpus",
+   "IMPORTLIB",
+   ".agents/slop/graphcmp.py",
+   ".agents/slop/graphcmp.py"
+  ],
+  [
+   "checks/differ.py",
+   "capture",
+   "SUBPROCESS",
+   ".venv/bin/python",
+   ".venv/bin/python"
+  ],
+  [
+   "checks/differ.py",
+   "gc",
+   "SUBPROCESS",
+   ".venv/bin/python",
+   ".venv/bin/python .agents/slop/graphcmp.py"
+  ],
+  [
+   "checks/differ.py",
+   "gc",
+   "SUBPROCESS",
+   ".agents/slop/graphcmp.py",
+   ".venv/bin/python .agents/slop/graphcmp.py"
+  ],
+  [
+   "checks/differ.py",
+   "devices",
+   "IMPORTLIB",
+   "checks/devpin.py",
+   "checks/devpin.py"
+  ]
+ ],
+ "run_path_call_edges": 82,
+ "dynamic_sites": [],
+ "graphcmp_subproc": [
+  {
+   "line": 2171,
+   "fn": "emit_bend",
+   "argv": "bin/bend graphcmp.bend",
+   "resolved": [
+    "bin/bend",
+    ".agents/slop/graphcmp.bend"
+   ]
+  },
+  {
+   "line": 3021,
+   "fn": "debug_run",
+   "argv": "bin/bend graphcmp-dbg.bend",
+   "resolved": [
+    "bin/bend",
+    ".agents/slop/graphcmp-dbg.bend"
+   ]
+  }
+ ],
+ "graphcmp_subcommands_from_cmd_run": [
+  "conf",
+  "control",
+  "cross",
+  "dbg",
+  "diff",
+  "emit",
+  "selfcheck"
+ ],
+ "in_digest": {
+  ".agents/slop/graphcmp-dbg-oracle.py": true,
+  ".agents/slop/graphcmp-dbg.bend": false,
+  ".agents/slop/graphcmp-empty.bend": false,
+  ".agents/slop/graphcmp-oracle.py": true,
+  ".agents/slop/graphcmp-p13-ops.py": true,
+  ".agents/slop/graphcmp.bend": true,
+  ".agents/slop/graphcmp.py": true,
+  ".venv/bin/python": false,
+  "bin/bend": true,
+  "checks/devpin.py": true,
+  "checks/differ.py": true,
+  "checks/runs-artifacts.py": false,
+  "gates/gatekit.py": false
+ }
+}
