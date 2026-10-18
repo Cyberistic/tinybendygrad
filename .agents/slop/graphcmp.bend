@@ -960,15 +960,24 @@ def paramd(slot: U32, dtx: S.Dt, nm: Maybe<&2, String>, vol: Bool) -> O.ParamArg
 # hand-built. The bend side's cost is 84 new nodes; the py side's cost was three pipelines
 # the corpus had never run.
 #
-# `LIN`: `full_rewrite_to_sink` of a scheduled `(4,3)@(3,5)` matmul -- 46 nodes, MEASURED
-#        off the py side's own rows in `runs/graphcmp/D/D1-graph-lin.txt`. The first graph
-#        here that is a KERNEL. Its LOADs and its STORE are the two ops thirteen graphs of
-#        eager IR could not reach, because an eager graph has no memory traffic in it.
-# `LOOP`: `hcq_fence` (tinygrad/runtime/support/hcq2.py:405-413) -- 25 nodes, and the only
-#        place in this tree that mints a BACKEDGE outside a hand-written fixture: the
-#        `.backedge(loop, done < target)` at :411 is a POLL LOOP.
-# `GATE`: a gated STORE through the real `pm_linearize_cleanups` -- 14 nodes, root `LINEAR`,
+# `LIN`: `full_rewrite_to_sink` of a scheduled `(4,3)@(3,5)` matmul -- **50** nodes, MEASURED
+#        off the py side's own rows in `runs/graphcmp/D/D1-graph-lin.txt` on 2026-10-18. The
+#        `46` this said was the FIXTURE's count (49, before the `AFTER` below landed) filed as
+#        the oracle's -- the same disease as the stale `34`/`77` prose elsewhere in this tree.
+#        The first graph here that is a KERNEL. Its LOADs and its STORE are the two ops
+#        thirteen graphs of eager IR could not reach, because an eager graph has no memory
+#        traffic in it.
+# `LOOP`: `hcq_fence` (tinygrad/runtime/support/hcq2.py:405-413) -- **this arm models 25 of
+#        CPython's 52 rows** and the only place in this tree that mints a BACKEDGE outside a
+#        hand-written fixture: the `.backedge(loop, done < target)` at :411 is a POLL LOOP.
+#        THE GAP IS THREE `@uopfunc` CALL BODIES (`do_get_time_ms` twice, `clock_gettime`
+#        once), which is 27 rows and 3 of CPython's 4 `CALL` nodes. **IT IS A DECLARED
+#        PARTIAL MODEL AND NOT A COMPARISON**, and `graphcmp.py`'s `cmd_diff` says so on
+#        stdout with the counts measured off the two row sets rather than written here.
+# `GATE`: a gated STORE through the real `pm_linearize_cleanups` -- 15 nodes, root `LINEAR`,
 #        and the only route to `Ops.IF`/`Ops.ENDIF` in this tree (codegen/__init__.py:403).
+#        The `14` this said was the row count before the size CONST became a named line of
+#        the LINEAR below; CPython's LINEAR carries FOURTEEN srcs and this one now does too.
 
 # A weakint CONST of an i32 value, which is every shape literal in `lin`: the py side's rows
 # read `CONST weakint l0:4` followed by `CAST i32 Di32`, because `full_rewrite_to_sink`'s
@@ -990,7 +999,20 @@ def g_lin() -> O.Found:
   # first spelling was `range_end(..., [2, 1], WEAK)`, which read `rg(i0,XWEAK,n(i2,i1))`
   # against `rg(i0,XWEAK,n(i2))` with ONE src against two -- and because `arg` is in the
   # `core` that made the node one-sided, and the eight nodes above it moved with it.
-  +rb = O.UOp.new(O.Found.ar(off), O.OpsRANGE{}, [O.Found.i(c5i), O.Found.i(ra)], O.ARange{[2], O.AXIS_WEAK{}}, O.TNone{})
+  # THE SPLIT RANGE'S BOUND IS AN `AFTER`, NOT THE CAST. `pm_simplify_ranges` rewrites a range
+  # bound into `AFTER(bound, prev_range)` and the RANGE then hangs off THAT, so CPython's row
+  # pair is `AFTER i32 src=n(i7,i5)` then `RANGE i32 rg(..) src=n(i9)` -- TWO nodes with the
+  # RANGE carrying ONE src. This fixture built the RANGE with the two srcs DIRECTLY, which is
+  # ONE node and read `RANGE ... src=n(i7,i5)`: 49 rows against CPython's 50. MEASURED on both
+  # sides' own rows (`runs/graphcmp/D/D2-cmp-lin.txt`), and the port is right either way --
+  # `UOp.range_end` (`ops.bend:3104`) takes `(ar, end, ids, at)` and has no spelling for an
+  # intermediate AFTER, so the node is built here with `UOp.new`, which is what every other
+  # hand-built op in this file does. IT GOES BELOW `c5i`, not above it: `AFTER` names its
+  # bound, and a node that names one which does not exist yet leaves the fold unsettled and
+  # the emitter prints TWO rows (`settled=False`), which is the shape this file's own
+  # `# root=... settled=` header exists to make visible.
+  +af = O.UOp.new(O.Found.ar(off), O.OpsAFTER{}, [O.Found.i(c5i), O.Found.i(ra)], O.ANone{}, O.TNone{})
+  +rb = O.UOp.new(O.Found.ar(af), O.OpsRANGE{}, [O.Found.i(af)], O.ARange{[2], O.AXIS_WEAK{}}, O.TNone{})
   +of1 = O.UOp.new(O.Found.ar(rb), O.OpsADD{}, [O.Found.i(off), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +ix0 = O.UOp.new(O.Found.ar(of1), O.OpsINDEX{}, [O.Found.i(p0), O.Found.i(of1)], O.ANone{}, O.TNone{})
   +p1 = O.UOp.new.param(O.Found.ar(ix0), O.OpsPARAM{}, Some{12}, O.AParam{paramd(1, S.single(), None{}, False{})}, O.TNone{})
@@ -1033,9 +1055,16 @@ def g_lin() -> O.Found:
   # -- spelled with the port's own `O.OPT` (ops.bend) and rendered by `opt` above.
   # The axis is the SECOND split rng's index; the arg is the 2-tuple, so `top` is
   # `None{}` and not `Some{False{}}`. This is the node `lin`'s disagreement was in.
+  # THE SINK CARRIES NO TAG. CPython's own row for it reads `1:N` in the tag column
+  # (`runs/graphcmp/D/D2-canon-py-lin.txt`, the last row) because `full_rewrite_to_sink`
+  # builds `UOp(Ops.SINK, src=(x,), arg=KernelInfo(...))` with no `tag=`. This arm spelled it
+  # `O.TInt{1}`, which renders `i1` -- a field difference the differ pairs on and which made
+  # `lin` DISAGREE for a reason that is the FIXTURE and not the port. Found while fixing the
+  # split range two stanzas up, and it is the same defect: a hand-built node that does not
+  # match the row it is supposed to model.
   O.UOp.new(O.Found.ar(e0), O.OpsSINK{}, [O.Found.i(e0)],
     O.AKernel{O.KernelInfo{"r_4_5_3",
-      [O.OPT{O.OPS_SPLIT{}, 2, O.OA_SPLIT{O.SPL{0, O.AXIS_UPCAST{}, None{}}}}], None{}, 0}}, O.TInt{1})
+      [O.OPT{O.OPS_SPLIT{}, 2, O.OA_SPLIT{O.SPL{0, O.AXIS_UPCAST{}, None{}}}}], None{}, 0}}, O.TNone{})
 
 # `hcq_fence`'s three named PARAMs plus the one it takes as an argument. MEASURED off the
 # py side's rows: `slots` is slot 0 and UNVOLATILE, `tl` is slot 1 and VOLATILE --
@@ -1088,7 +1117,17 @@ def g_loop() -> O.Found:
 # the PROGRAM ORDER of the kernel, which no other graph in the corpus has.
 def g_gate() -> O.Found:
   +ar = O.Arena.empty()
-  +p0 = O.UOp.new.param(ar, O.OpsPARAM{}, Some{16}, O.AParam{paramd(0, S.single(), Some{"v0"}, False{})}, O.TNone{})
+  # THE SIZE CONST IS A ROW, AND IT IS ALSO ONE OF THE LINEAR'S LINES. CPython's LINEAR is
+  # `src=n(i1,...,i14)` -- FOURTEEN refs, and `i1` is the `weakint l0:16` that `p0`'s size
+  # interns. This fixture built that node implicitly, through `UOp.new.param`'s
+  # `shape_to_shape_arg` (`ops.bend:3036`), so it had no name to put in the LINEAR's src list
+  # and the list read THIRTEEN. MEASURED: 46 chars of refs against 49, and the ONLY byte
+  # difference in the whole graph (`runs/graphcmp/D/D2-cmp-gate.txt`, one row). It is emitted
+  # here explicitly instead: `UOp.const` interns through the same arena and the same ucache,
+  # so it lands on the same index the param's own size would have taken, and the row is
+  # unchanged -- what changes is that it now HAS A NAME and can be a line of the program.
+  +c16 = O.UOp.const(ar, O.CInt{H.i64_of_i32(16)})
+  +p0 = O.UOp.new.param(O.Found.ar(c16), O.OpsPARAM{}, Some{16}, O.AParam{paramd(0, S.single(), Some{"v0"}, False{})}, O.TNone{})
   +bf = O.UOp.new.param(O.Found.ar(p0), O.OpsBUFFER{}, Some{16}, O.AParam{paramd(1, S.single(), None{}, False{})}, O.TNone{})
   +c3 = O.UOp.const(O.Found.ar(bf), O.CInt{H.i64_of_i32(3)})
   +c4 = O.UOp.const(O.Found.ar(c3), O.CInt{H.i64_of_i32(4)})
@@ -1106,8 +1145,8 @@ def g_gate() -> O.Found:
   +en = O.UOp.new(O.Found.ar(ed), O.OpsEND{}, [O.Found.i(st), O.Found.i(rg)], O.ANone{}, O.TNone{})
   +sk = O.UOp.new(O.Found.ar(en), O.OpsSINK{}, [O.Found.i(en)], O.AKernel{O.KernelInfo{"gated", Nil{}, None{}, 0}}, O.TNone{})
   O.UOp.new(O.Found.ar(sk), O.OpsLINEAR{},
-    [O.Found.i(p0), O.Found.i(bf), O.Found.i(c3), O.Found.i(c4), O.Found.i(rg), O.Found.i(ix0),
-      O.Found.i(ix1), O.Found.i(lt), O.Found.i(fi), O.Found.i(st), O.Found.i(ed),
+    [O.Found.i(c16), O.Found.i(p0), O.Found.i(bf), O.Found.i(c3), O.Found.i(c4), O.Found.i(rg),
+      O.Found.i(ix0), O.Found.i(ix1), O.Found.i(lt), O.Found.i(fi), O.Found.i(st), O.Found.i(ed),
       O.Found.i(en), O.Found.i(sk)], O.ANone{}, O.TNone{})
 
 # `--graph bw`: `(Tensor.empty(4,3) @ Tensor.empty(3,4)).sum().gradient(a, b)`, MEASURED at

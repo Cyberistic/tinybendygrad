@@ -1209,8 +1209,15 @@ def _kernels(expr: Tensor) -> list:
 
 
 def g_lin():
-  """`full_rewrite_to_sink` of the scheduled `(4,3)@(3,5)` matmul -- MEASURED at 46 nodes
-  with the op census `END=2 LOAD=6 STORE=1 INDEX=7 RANGE=2 PARAM=3 SHRINK=2 WHERE=0`.
+  """`full_rewrite_to_sink` of the scheduled `(4,3)@(3,5)` matmul -- MEASURED at **50** nodes
+  on THIS tree (2026-10-18, `runs/graphcmp/D/D2-canon-py-lin.txt`) with the op census
+  `END=2 LOAD=6 STORE=1 INDEX=7 RANGE=2 PARAM=3 AFTER=1 MUL=3 SINK=1 LINEAR/CONST/CAST/…`.
+
+  **THE `46` THIS USED TO SAY WAS THE BEND FIXTURE's CENSUS, NOT CPYTHON's, WITH THE SIDES
+  SWAPPED.** `.agents/slop/graphcmp.bend`'s `g_lin` was missing the `AFTER` that
+  `pm_simplify_ranges` puts under the split RANGE's bound (49 rows), so the number written
+  next to the graph here was read off the wrong side and the corpus carried it for months.
+  **A COUNT THAT MEASURES THE FIXTURE AND IS FILED AS THE ORACLE's IS A PIN ON THE SCALE.**
 
   This is the graph the limits file asked for and did not have: a KERNEL, produced by
   `schedule_linear` (the real scheduler) and then by `full_rewrite_to_sink` (the real
@@ -1219,8 +1226,7 @@ def g_lin():
   Tensor graph has neither: its ALLOCs are read by the kernel, not by the graph.
 
   `optimize=True`, because `optimize=False` skips the whole optimization half of the pass
-  (`apply_opts`, codegen/__init__.py:297) and answers a DIFFERENT graph -- MEASURED, 45
-  nodes with `optimize=False` against 46 with it.
+  (`apply_opts`, codegen/__init__.py:297) and answers a DIFFERENT graph.
   """
   from tinygrad import Tensor
   from tinygrad.codegen import full_rewrite_to_sink
@@ -1230,16 +1236,28 @@ def g_lin():
 
 
 def g_loop():
-  """`hcq_fence(tv, tv, tv, 0)` from tinygrad/runtime/support/hcq2.py:405-413 -- MEASURED at
-  25 nodes with the census `BACKEDGE=1 LOAD=2 STORE=2 INDEX=4 RANGE=1 PARAM=4`.
+  """`hcq_fence(tv, tv, 0)` from tinygrad/runtime/support/hcq2.py:405-413 -- MEASURED at
+  **52** nodes on THIS tree (2026-10-18, `runs/graphcmp/D/D2-canon-py-loop.txt`) with the
+  census `CALL=4 BACKEDGE=1 LOAD=2 STORE=2 INDEX=7 RANGE=1 PARAM=6 BUFFER=3 AFTER=7
+  CONST=8 CUSTOM_FUNCTION=1 FLOORDIV=1 AND=1 ADD=2 MUL=2 CMPLT=2 NOOP=1 SINK=2`.
+
+  **THE `25` THIS USED TO SAY WAS THE BEND FIXTURE's CENSUS, NOT CPYTHON's -- THE SAME
+  DEFECT AS THE STALE `34`/`77` PROSE CLAIMS, WITH THE SIDES SWAPPED.** `.agents/slop/
+  graphcmp.bend`'s `g_loop` models `hcq_fence`'s own loop body (25 rows, one `CALL`), while
+  CPython's tree carries three more `@uopfunc` bodies under three more `CALL`s. The number
+  written next to the graph here was read off the FIXTURE and filed as the oracle's, and
+  `cmd_diff` then refused the graph on the device precondition and wrote nothing but `rc=2`
+  to `D1-graph-loop.txt`, so `D1-verdicts.txt` printed `loop: VERDICT= EXPECTED=AGREE` with
+  an EMPTY cell. The refusal is now printed to stdout with the measured gap in it
+  (`# rows py=52 bend=25`, `CALL nodes py=4 bend=1`), and `checks/differ.py`'s
+  `graphs-refused` counts it as a REFUSAL rather than as a verdict that moved.
 
   WHY THIS ONE AND NOT A HAND-WRITTEN `UOp.backedge(...)` CALL. `UOp.backedge` is a real
   constructor (ops.py:617) and `hando-writing` it would have reached BACKEDGE at the cost of
   proving nothing. `hcq_fence` is the kernel tinygrad SHIPS for waiting on an HCQ2 queue --
   `.backedge(loop, done < target)` at hcq2.py:411 is a POLL LOOP, which is exactly what a
   BACKEDGE is, and the `LOAD`s around it are the two it spins on. So the graph is upstream's
-  own control flow, reached by CALLING upstream, and it is byte-identical on NULL, CPU and
-  PYTHON (MEASURED, `.agents/slop/graphcmp-p14-sched.py`).
+  own control flow, reached by CALLING upstream.
 
   `tv` is a VOLATILE uint64 PARAM of size 1 on CPU: MEASURED, `hcq_fence` replaces its arg
   with `volatile=True` itself (`tl.replace(arg=replace(tl.arg, volatile=True))`), so the
@@ -2322,6 +2340,26 @@ def split_top(s: str) -> list[str]:
   return out
 
 
+def row_ops(lines: list[str]) -> dict[str, int]:
+  """The `op` column's census over an emitted stream, COUNTED and not declared.
+
+  Field 1 of the eight length-prefixed fields is the op, so this is the same parse
+  `unchunks` does and no pattern is involved. It exists because a refusal has to be able to
+  SAY what it cannot compare: `loop`'s says `CALL nodes py=4 bend=1`, which is the number
+  that names the gap, and a hard-written 4 would be a claim that rots with the port.
+  """
+  out: dict[str, int] = {}
+  for ln in lines:
+    if ln.startswith("#"):
+      continue
+    try:
+      op = unchunks(ln)[1]
+    except (ValueError, IndexError):
+      continue
+    out[op] = out.get(op, 0) + 1
+  return out
+
+
 def devnames(lines: list[str]) -> set[str]:
   """The device names the stream actually carries, read off `ParamArg`'s EIGHTH field
   (ops.py:33, the declaration order this file emits). Only `P(..)` args have one, so a
@@ -3312,6 +3350,14 @@ def _dispatch(a) -> int:
     return 0 if ok else 1
   bd, notes = emit_bend(a.dev, a.graph, probe=probe)
   py = emit_py(a.graph, a.plant)
+  # THE EMISSION NOTES ARE PRINTED BEFORE THE PRECONDITION, NOT AFTER IT. They used to be
+  # printed with the report, and a precondition refusal returns at the line below -- so every
+  # refusal wrote NOTHING to stdout and its whole record was the `.err` beside it. MEASURED
+  # 2026-10-18T18:04Z: `runs/graphcmp/D/D1-graph-loop.txt` was the single line `rc=2`, which
+  # is also the shape `artefacts_ok()` calls a 0-row failure, so a refusal and a dead
+  # emission were the same artifact. **A REFUSAL THAT NAMES ITSELF ONLY IN A `.err` IS A
+  # REFUSAL NOBODY READS**, and `D1-verdicts.txt` then prints an empty verdict cell for it.
+  print("\n".join("# " + n for n in notes))
   # THE PRECONDITION. The port's fixture names one device and the py graph carries
   # whatever `--dev` opened, so the two device sets must be EQUAL before the cores mean
   # anything: an ALLOC whose device differs has a different `core`, which propagates to
@@ -3319,16 +3365,34 @@ def _dispatch(a) -> int:
   # them. Exit 2 -- a FAILURE, never a verdict, on the same principle as the 0-row guard.
   pdev, bdev = sorted(devnames(py)), sorted(devnames(bd))
   if pdev != bdev:
+    # **AND THE REFUSAL NAMES THE GAP IT CAN MEASURE, IN THE ROW, ON STDOUT.** `loop` is the
+    # corpus's one declared-partial fixture: it models `hcq_fence`'s own loop body and not
+    # the `@uopfunc` bodies CPython's version carries, so the device sets differ (`N` -- the
+    # absence token, on rows only the py side has) and the graph cannot be compared at all.
+    # That was true before this line and the corpus said so only through an exit code. The
+    # three numbers below are COUNTED from the two row sets, not asserted: the row counts, the
+    # `CALL` count per side, and the device tokens only one side carries.
+    pcall, bcall = row_ops(py).get("CALL", 0), row_ops(bd).get("CALL", 0)
+    only_p = sorted(set(devnames(py)) - set(devnames(bd)))
+    only_b = sorted(set(devnames(bd)) - set(devnames(py)))
+    print(f"# rows py={len(py)} bend={len(bd)}  "
+          f"CALL nodes py={pcall} bend={bcall}  "
+          f"device tokens only on py={only_p} only on bend={only_b}")
+    if len(py) != len(bd):
+      print(f"# PARTIAL FIXTURE: the bend side models {len(bd)} of the {len(py)} nodes CPython's "
+            f"graph has ({len(py) - len(bd)} unmodelled), and it carries {bcall} of the {pcall} "
+            f"`CALL` nodes. A fixture that models part of a graph and emits rows without "
+            f"saying so is a fixture that reports a DIFFERENCE it manufactured, so this is "
+            f"stated here and NOT compared: fix the fixture, or drop the graph, but do not "
+            f"read this artifact as a verdict about the port.")
     print(f"# devices py={pdev} bend={bdev} -- NOT WELL-POSED, and this is NOT a verdict "
           f"(exit 2). The port's graph fixture is pinned at the arena tag 0 and the py graph "
           f"is on {pdev}, so every consumer of the ALLOC would carry a different `core` and "
           f"the report would be a cascade of `src` differences with the cause in none of "
           f"them. Re-run with --dev <the name the port resolved> -- or, if the name is not "
-          f"in the port's table at all, that is a port gap to report, not a flag to set.",
-          file=sys.stderr)
+          f"in the port's table at all, that is a port gap to report, not a flag to set.")
     return 2
   rc, txt = report(py, bd, a.plant, equiv=a.equiv)
-  print("\n".join("# " + n for n in notes))
   print(txt)
   return rc
 

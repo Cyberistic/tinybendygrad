@@ -387,6 +387,7 @@ def declared() -> set[str]:
     return {f"{n}.txt" for n in (*LITERALS, *REPRO_LITERALS)} \
         | {f"D1-graph-{g}.txt" for g in graphs} \
         | {f"D2-canon-{s}-{g}.txt" for g in graphs for s in ("py", "bend")} \
+        | {f"D2-canonform-{s}-{g}.txt" for g in graphs for s in ("py", "bend")} \
         | {f"D2-cmp-{g}.txt" for g in graphs} \
         | {f"D3-control-{g}.txt" for g in CONTROLS} \
         | {f"D5-plant-{p}.txt" for p, _ in PLANTS} \
@@ -523,6 +524,162 @@ def byte_diff(a, b, n):
     return "".join(p.stdout.splitlines(keepends=True)[:n])
 
 
+# ---------------------------------------------------------------------------
+# THE CANONICAL FORM, because `byte-identical` COMPARED A COLUMN THE PROJECT CALLS
+# REPORTING-ONLY.
+#
+# `.agents/slop/graphcmp.py:1999-2001` numbers the CPython side by TOPOSORT POSITION
+# (`ix = {id(n): i + 1 for i, n in enumerate(lst)}`) while `tinybendygrad/uop/ops.bend:1322`
+# says the port's arena "starts with the bottom at index 0", i.e. its `i` is a HASH-CONS
+# INDEX. Two different quantities, one spelling -- and `graphcmp.py:1986` says so in this
+# file's own tree: "THE IDS ARE REPORTING ONLY AND THE DIFFER NEVER KEYS ON THEM". MEASURED 2026-10-18T18:04Z with `gates/emitverdict-gate.py --why`:
+# py's emitted id column is monotonic in 34 of 34 graphs and the PORT's in 23, and the 11
+# that are not are EXACTLY the 11 that byte-differ while carrying `VERDICT: AGREE`. So
+# `byte-identical=20` was counting ALLOCATION ORDER, and 14 of 34 graphs were being called
+# byte-different for being interned in a different order. **A FALSE DISAGREEMENT IS WORSE
+# THAN A MISSED ONE**: it inflates the defect count and so hides the real defects behind
+# noise.
+#
+# **THIS IS A CANONICALISATION AND NOT A RENUMBERING, AND THAT IS THE WHOLE DIFFERENCE.**
+# A renumbering would give the py side the port's arena order: true for one tree, false the
+# moment the port's allocation order moves, i.e. it fits the symptom to today's tree. The
+# form below is derived from the GRAPH and from nothing else -- each node is labelled by its
+# whole subtree (`canon_key`), the rows are ORDERED by that label, and the ids are assigned
+# `1..n` in THAT order. No step of it reads either side's allocation order, so a change to
+# the port's arena cannot move it, and a change to the port's CONTENT will.
+#
+# **AND IT IS A BIJECTION, WHICH IS A PROPERTY AND NOT A HOPE.** Three wrong canonical forms
+# got here first and every one of them reported the same 14 graphs as different (they are in
+# `gates/emitverdict-gate.py`'s docstring, which took them): refining on the previous round's
+# LITERAL label never settles; re-ranking to FIRST-APPEARANCE order is not injective in the
+# labels, so a reference can be handed a number another node then claims -- a DANGLING
+# reference that reads as a graph defect; iterating a hash over the previous round's hash
+# never settles either. Here the output ids are `1..n`, each used exactly once, BY
+# CONSTRUCTION, and `canon_bijection()` CHECKS that on every graph of every run rather than
+# asserting it in a comment -- so a form that is not a bijection cannot reach `D2-cmp-*.txt`
+# and cannot be counted by `byte-identical`. Plant 6 and plant 7 below are the two halves:
+# the first proves the form is INVARIANT to numbering, the second that it does not MASK one.
+CANON_REF = re.compile(r"i(\d+)")
+
+
+def unchunk(line):
+    """The eight `<len>:<value>` fields. THE LENGTH PREFIX IS THE PARSE: a field cannot
+    contain a space, so nothing here can be confused for a delimiter and no regex is needed."""
+    out, i = [], 0
+    while i < len(line):
+        j = line.index(":", i)
+        n = int(line[i:j])
+        out.append(line[j + 1:j + 1 + n])
+        i = j + 1 + n
+    return out
+
+
+def canon_key(i, parsed, at, keys, live):
+    """`(op, dtype, shape, depth, tag, arg, child keys)` -- the label of the WHOLE subtree.
+
+    MEMOISED AND CYCLE-CHECKED rather than iterated to a fixpoint. A fixpoint over literal
+    labels is one of the three wrong forms above; a fixpoint over DIGESTS is another, because
+    the digest is rebuilt from a value that moved. Hashing the recursion bottom-up is
+    injective in the structure and needs no shared state, so `keys` can be filled in one
+    pass in EITHER emission order -- which is the whole requirement, since one side emits in
+    toposort order and the other in arena order.
+
+    A reference that does not resolve and a cycle both RAISE. A graph whose shape this
+    cannot decide must never reach a byte comparison, because a canonical form of an
+    undecidable graph is a canonical form of nothing.
+    """
+    if keys[i] is not None:
+        return keys[i]
+    if i in live:
+        raise ValueError("a reference cycle, so there is no subtree to label")
+    live.add(i)
+    _, op, dt, sh, dp, tg, ag, srcs = parsed[i]
+    kids = tuple(canon_key(at[k], parsed, at, keys, live) for k in srcs if k in at)
+    if len(kids) != len(srcs):
+        raise ValueError(f"a reference that names no row: {srcs}")
+    live.discard(i)
+    keys[i] = (op, dt, sh, dp, tg, ag, kids)
+    return keys[i]
+
+
+def canon_rows(rows):
+    """`rows` -> THE CANONICAL FORM: canonical ids, canonical order, same eight fields.
+
+    The ids are assigned by SORTING the subtree labels, so they are a function of the graph
+    alone. Ties -- two nodes whose entire subtrees are equal -- are resolved by the original
+    emit order and that is HARMLESS rather than lucky: if two subtrees are equal, then every
+    row that references them has an equal label too, so swapping their ids cannot change the
+    emitted text.
+    """
+    parsed = []
+    for ln in rows:
+        f = unchunk(ln)
+        if len(f) != 8:
+            raise ValueError(f"a row that is not eight length-prefixed fields: {ln[:60]!r}")
+        parsed.append((f[0].removeprefix("i"), *f[1:7], tuple(CANON_REF.findall(f[7]))))
+    at = {nid: i for i, (nid, *_r) in enumerate(parsed)}
+    if len(at) != len(parsed):
+        raise ValueError("two rows claim one id, so the id column is not injective")
+    keys: list = [None] * len(parsed)
+    for i in range(len(parsed)):
+        canon_key(i, parsed, at, keys, set())
+    order = sorted(range(len(parsed)), key=lambda i: keys[i])
+    new = {parsed[i][0]: rank for rank, i in enumerate(order, 1)}
+    out = []
+    for rank, i in enumerate(order, 1):
+        nid, *_f = parsed[i]
+        srcs = ",".join(f"i{new[k]}" for k in parsed[i][7])
+        fields = (f"i{rank}", *parsed[i][1:7], f"n({srcs})")
+        out.append(" ".join(f"{len(x)}:{x}" for x in fields))
+    return out
+
+
+def canon_bijection(rows):
+    """THE PROOF, AS A CHECK. `(ok, why)` over a canonical form's own bytes.
+
+    It asks two questions and both are decidable from the text: is the id column exactly
+    `1..n`, each used ONCE, and does every `src` reference name a row in it? A form that
+    fails either is not a relabelling of the graph and must not be compared, so this runs on
+    every graph of every run -- a claim about a bijection asserted in a docstring is the
+    thing this file exists to stop trusting.
+    """
+    ids, refs = [], set()
+    for ln in rows:
+        f = unchunk(ln)
+        if len(f) != 8:
+            return False, f"not eight fields: {ln[:60]!r}"
+        if not f[0].startswith("i"):
+            return False, f"the id field is {f[0]!r}"
+        ids.append(int(f[0][1:]))
+        refs.update(int(k) for k in CANON_REF.findall(f[7]))
+    n = len(ids)
+    if sorted(ids) != list(range(1, n + 1)):
+        return False, f"the id column is not 1..{n} each once ({len(ids)} rows, {len(set(ids))} ids)"
+    if not refs <= set(ids):
+        return False, f"a reference names no row: {sorted(refs - set(ids))[:4]}"
+    return True, f"ids=1..{n} each once, {len(refs)} reference(s) all resolve"
+
+
+def canon_body(raw):
+    """A side's bytes -> `(canonical bytes, why)`, and `why` names a refusal.
+
+    A side with no rows has no canonical form, and the artifact still gets written with the
+    reason IN it rather than left 0 bytes -- `artefacts_ok()` counts an empty artifact as a
+    defect and would report the same missing rows twice under two names.
+    """
+    rows = [ln for ln in raw.decode(errors="replace").splitlines() if ln.strip()]
+    if not rows:
+        return b"", "this side emitted 0 rows, and 0 rows is not a canonical form"
+    try:
+        canon = canon_rows(rows)
+        ok, why = canon_bijection(canon)
+        if not ok:
+            return b"", f"the canonical form is not a bijection: {why}"
+        return ("\n".join(canon) + "\n").encode(), why
+    except (ValueError, IndexError) as e:
+        return b"", f"no canonical form: {e}"
+
+
 def one_line(out):
     return (D / out).read_bytes().count(b"\n") <= 1
 
@@ -560,10 +717,29 @@ def cmd_run(_a):
     unset = [g for g in graphs if g not in WANT]
     for g in graphs:
         run(f"D1-graph-{g}.txt", "diff", "--graph", g)
+    # **A GRAPH THAT REFUSED IS NOT A GRAPH WHOSE VERDICT MOVED, AND CONFLATING THEM WAS
+    # LOSING THE NAME.** MEASURED 2026-10-18T18:04Z: `loop` printed `loop: VERDICT=
+    # EXPECTED=AGREE` -- an empty verdict cell with nothing after it -- while its OWN
+    # artifact was a one-line `rc=2` and its `.err` named the refusal in full. So the run
+    # held the name in two artifacts and dropped it from the one a reader reads, and then
+    # counted the loss as a verdict that had MOVED, which is a different claim: a moved
+    # verdict is the port answering wrongly, and a refusal is the port not answering.
+    # FIVE VERDICTS (`gates/gatekit.py:60`), so `expect-moved` counts only graphs that
+    # ANSWERED, `graphs-refused` counts the ones that did not, and the run refuses on
+    # either -- see the return below.
+    refused = [g for g in graphs if g in WANT and not verdict(f"D1-graph-{g}.txt")]
     moved = [f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED={WANT[g]}" for g in graphs
-             if g in WANT and verdict(f"D1-graph-{g}.txt") != WANT[g]]
-    na = sum(WANT[g] == "AGREE" for g in graphs if g in WANT)
-    bad = [g for g in graphs if WANT.get(g) == "DISAGREE"]
+             if g in WANT and verdict(f"D1-graph-{g}.txt") and verdict(f"D1-graph-{g}.txt") != WANT[g]]
+    # **AND `na`/`bad` COUNT THE ANSWERS, NOT THE EXPECTATIONS.** They used to be
+    # `sum(WANT[g] == "AGREE")` and `[g for g in WANT if WANT[g] == "DISAGREE"]`, which are two
+    # censuses of the TABLE, and the sentence they appear in is about the RUN. MEASURED on the
+    # first run of the canonical form (2026-10-18T18:18Z): the row read `33 of 34 graphs with
+    # an expectation ANSWERED and every answer was as expected (34 AGREE; ...)`, because the
+    # 34th graph had an AGREE *expectation* and no answer at all. A row that counts the table
+    # beside a sentence that counts the run is a row with two numbers in one place.
+    answered = [g for g in graphs if verdict(f"D1-graph-{g}.txt")]
+    na = sum(1 for g in answered if WANT.get(g) == "AGREE")
+    bad = [g for g in answered if verdict(f"D1-graph-{g}.txt") == "DISAGREE"]
 
     def untriaged(g):
         """THE ONE CLAUSE PER UNSET GRAPH, AND THE TWO ARE NOT THE SAME SENTENCE.
@@ -581,13 +757,24 @@ def cmd_run(_a):
                 else "an AGREE and nobody has said so -- a bookkeeping gap, not a known fault")
 
     write("D1-verdicts.txt", "\n".join(moved + [
+        # THE REFUSAL ROW. `first_line` is the artifact's own text -- `rc=2`, or a refusal
+        # sentence -- and `.err`'s first line is beside it because that is where
+        # `graphcmp.py` writes the reason (it exits before printing a verdict). **THE NAME OF
+        # A REFUSAL HAS TO REACH THE ROW A READER READS**, or the run's own `.err` file is the
+        # only place it exists and a summary that drops it reports a clean corpus.
+        f"{g}: REFUSED -- EXPECTED={WANT[g]}, and the artifact answered "
+        f"{first_line(f'D1-graph-{g}.txt')!r}; "
+        f"{first_line(f'D1-graph-{g}.txt.err')!r}" for g in refused
+    ] + [
         f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED=UNSET -- RUN AND RECORDED, NOT "
         f"COMPARED: {untriaged(g)}." for g in unset
     ] + [
         "AT LEAST ONE GRAPH'S VERDICT MOVED" if moved else
-        (f"all {len(graphs) - len(unset)} graphs with an expectation: verdict as expected "
-         f"({na} AGREE; {conjoin(bad)} DISAGREE, each with a named cause in the WANT comment "
-         f"above)") if not unset else
+        (f"{len(answered)} of {len(graphs) - len(unset)} graphs with "
+         f"an expectation ANSWERED and every answer was as expected ({na} AGREE; "
+         f"{conjoin(bad)} DISAGREE, each with a named cause in the WANT comment above)"
+         + (f"; {len(refused)} REFUSED and said so above: {conjoin(refused)}" if refused else ""))
+        if not unset else
         f"{len(graphs) - len(unset)} of {len(graphs)} graphs compared; "
         f"**RUN INCOMPLETE -- {len(unset)} HAVE NO EXPECTATION**"]) + "\n")
 
@@ -597,24 +784,60 @@ def cmd_run(_a):
     # children exited 2 having written ZERO BYTES and `cmp -s` on two empty files returns
     # success. Hence the byte-count guard: a verdict line cannot tell an empty comparison
     # from a satisfied one.
+    #
+    # THE CANONICAL FILES, and THE CANONICAL FORM OF THEM. Two artifacts per side, two
+    # questions, and they are NOT the same question:
+    #
+    #   `D2-canon-{side}-{g}.txt`     the rows as emitted, ids and all. It is the artifact
+    #                                  `gates/emitverdict-gate.py` reads and it is LEFT
+    #                                  BYTE-FOR-BYTE, because that gate's whole subject is the
+    #                                  disagreement between this step and the structural
+    #                                  verdict, and rewriting its input would delete the
+    #                                  second opinion instead of answering the first.
+    #   `D2-canonform-{side}-{g}.txt` the same rows under ids derived FROM THE GRAPH.
+    #
+    # `byte-identical` counts the SECOND. It used to count the first, which compared a
+    # TOPOSORT POSITION against a HASH-CONS INDEX -- see the block above `canon_rows` for the
+    # measurement and for the three canonical forms that were tried and were wrong first.
     for g in graphs:
         # A BARE redirect, deliberately not `run()`: this step needs stdout in two files at
         # once, so neither is staged and either can be left 0 bytes.
-        sides = {}
+        sides, forms, whys = {}, {}, {}
         for side in ("py", "bend"):
             with (D / f"D2-canon-{side}-{g}.txt").open("wb") as f:
                 gc("emit", "--side", side, "--graph", g, stdout=f, stderr=subprocess.DEVNULL)
             sides[side] = (D / f"D2-canon-{side}-{g}.txt").read_bytes()
+            forms[side], whys[side] = canon_body(sides[side])
+            # NEVER 0 BYTES: `artefacts_ok()` counts an empty artifact as a defect, and a
+            # refusal with its reason in it is the same fact stated once instead of twice.
+            (D / f"D2-canonform-{side}-{g}.txt").write_bytes(
+                forms[side] or (f"# NOT COMPARED: {whys[side]}\n").encode())
         py, bend = sides["py"], sides["bend"]
+        cpy, cbend = forms["py"], forms["bend"]
+        report = []
         if not py or not bend:
-            report = (f"{g} NOT COMPARED: py={len(py)} bytes bend={len(bend)} bytes "
-                      "(a 0-byte side is a FAILURE, not a pass)")
-        elif py == bend:
-            report = f"{g} BYTE-IDENTICAL ({len(py)} bytes both sides)"
+            report.append(f"{g} NOT COMPARED: py={len(py)} bytes bend={len(bend)} bytes "
+                          "(a 0-byte side is a FAILURE, not a pass)")
         else:
-            report = f"{g} DIFFERS:\n" + byte_diff(
-                D / f"D2-canon-py-{g}.txt", D / f"D2-canon-bend-{g}.txt", 20)
-        write(f"D2-cmp-{g}.txt", report + "\n")
+            # `RAW-IDENTICAL` / `RAW-DIFFERS`, NOT `BYTE-IDENTICAL` / `DIFFERS`: the summary
+            # row is `grep -c 'BYTE-IDENTICAL'` over the concatenation of these reports, so a
+            # word that also said BYTE-IDENTICAL would count one graph twice and the row would
+            # stop being a count of graphs. The raw comparison stays here because it is a real
+            # measurement -- it is the arena-vs-toposort difference itself -- and it is just no
+            # longer the thing `byte-identical` names.
+            report.append(f"{g} {'RAW-IDENTICAL' if py == bend else 'RAW-DIFFERS'} "
+                          f"(py={len(py)} bytes bend={len(bend)} bytes)"
+                          + ("" if py == bend else "\n" + byte_diff(
+                              D / f"D2-canon-py-{g}.txt", D / f"D2-canon-bend-{g}.txt", 20)))
+        if not cpy or not cbend:
+            report.append(f"{g} NOT COMPARED (canonical): py -- {whys['py']}; "
+                          f"bend -- {whys['bend']}")
+        else:
+            report.append(f"{g} {'CANONICAL BYTE-IDENTICAL' if cpy == cbend else 'CANONICAL DIFFERS'} "
+                          f"(py={len(cpy)} bytes bend={len(cbend)} bytes)"
+                          + ("" if cpy == cbend else "\n" + byte_diff(
+                              D / f"D2-canonform-py-{g}.txt", D / f"D2-canonform-bend-{g}.txt", 20)))
+        write(f"D2-cmp-{g}.txt", "\n".join(report) + "\n")
     # PER-GRAPH FILE, THEN CONCATENATED ONCE, in glob order. Both wrong shapes were tried:
     # `>>` accumulates until the file reads like a coverage table when it is one line
     # repeated, and `>` inside the loop leaves only the LAST graph's line.
@@ -728,6 +951,14 @@ def cmd_run(_a):
         # one is about whether the rows that exist were RIGHT. All four can be self-consistent
         # and wrong at once, which is the state this file ran in until now.
         f"expect-moved={len(moved)}",
+        # **THE FIFTH VERDICT, AND IT IS NOT `expect-moved` WITH A DIFFERENT SPELLING.** A
+        # graph whose artifact carries no `VERDICT:` line answered nothing: `graphcmp.py`
+        # exited 2 on a precondition (the device sets, or an emission that BROKE) and wrote
+        # the reason to its `.err`. Counting that as a moved verdict says the PORT is wrong
+        # when the HARNESS declined to compare, which is the same confusion the empty
+        # `loop: VERDICT=` cell was. MEASURED 2026-10-18T18:04Z: `expect-moved=3` was
+        # `gate`, `lin` and `loop`, and `loop` was not a moved verdict at all.
+        f"graphs-refused={len(refused)}",
         f"graphs-agree={files_with('D1-graph-*.txt', 'VERDICT: AGREE')}",
         f"graphs-disagree={files_with('D1-graph-*.txt', 'VERDICT: DISAGREE')}",
         f"byte-identical={lines_with('D2-bytediff.txt', 'BYTE-IDENTICAL')}",
@@ -790,10 +1021,20 @@ def cmd_run(_a):
                  f"silently grow." if unset else None,
                  "RUN WRONG: expect-moved=N -- these rows' EXPECTED verdicts did not match what "
                  "the port emitted, and a run whose table is wrong is not a measurement of the "
-                 "table:\n  " + "\n  ".join(moved) if moved else None):
+                 "table:\n  " + "\n  ".join(moved) if moved else None,
+                  # A REFUSAL IS NOT A WRONG ROW AND IS NOT A PASS. `cmd_run` refuses on it for
+                  # the same reason it refuses on `unset`: the corpus was not answered, so
+                  # nothing in this run may be read as a verdict about those graphs. MEASURED
+                  # 2026-10-18T18:04Z, `loop` was refused here (device precondition, exit 2)
+                  # and the run still reported it as a moved VERDICT, which is a claim about
+                  # the port the port never made.
+                  f"RUN INCOMPLETE: {len(refused)} of {len(graphs)} graphs REFUSED and so have "
+                  f"NO verdict: {', '.join(refused)}. Each refusal is named with its own reason "
+                  f"in D1-verdicts.txt; `expect-moved` does not count them, because a graph "
+                  f"that did not answer is not a graph whose answer moved." if refused else None):
         if line:
             print(line, file=sys.stderr)
-    return 1 if unset or moved else 0
+    return 1 if unset or moved or refused else 0
 
 
 # ---- THE PRECONDITIONS, AND THE CROSS-CHECK THAT KEEPS THE ROWS FROM BEING LABELS ---------
@@ -1240,10 +1481,21 @@ def artefacts_ok():
 # passed on its first run because its field regex was `^`-anchored and read ZERO values. And no
 # plant writes into `runs/graphcmp/D` -- a plant that mutates the state under test measures the
 # other units, not itself.
-def plant():
+# THE PLANT NAMES ARE A DECLARATION AND NOT A REGEX OVER THE SENTENCES, so `plant --name N`
+# selects by the key each check carries rather than by a substring of prose that a reword
+# would silently break. **A NAME THAT IS NOT IN IT IS `REFUSED` (3) AND NEVER `PASS`**: a
+# plant that does not exist measured nothing, and the five-state vocabulary (`gates/
+# gatekit.py:60`) has a word for that and it is not `PASS`.
+PLANT_NAMES = ("1", "2", "3", "4", "5", "6", "7", "8")
+
+
+def plant(only=None):
     import shutil
     import tempfile
     global D
+    if only is not None and only not in PLANT_NAMES:
+        print(f"plant: no such plant {only!r}; have {list(PLANT_NAMES)}")
+        return gatekit().REFUSED
     live = D
     kv = dict(ln.split("=", 1) for ln in text("D0-run-summary.txt").splitlines() if "=" in ln)
     checks = []
@@ -1309,13 +1561,105 @@ def plant():
                            "stale digest reds, live digest is silent, absent row reds",
                            len(stale) == 1 and not fresh and len(norow) == 1,
                            f"stale={len(stale)} live={len(fresh)} row-absent={len(norow)}"))
+            # PLANTS 6 AND 7 -- CAUSE 3, AND THEY ARE OPPOSITE PLANTS ON THE SAME QUESTION.
+            # `byte-identical` used to compare a TOPOSORT POSITION against a HASH-CONS INDEX,
+            # so 14 of 34 graphs were called byte-different for being interned in a different
+            # order. The canonical form (`canon_rows`) answers that. A claim that a new form
+            # removes a class of false difference needs BOTH halves: one plant that must MOVE
+            # the verdict (a real content change is not swallowed) and one that must NOT (a
+            # pure renumbering still compares equal, or the "removal" is a mask).
+            # THE SUBJECT IS DISCOVERED, NOT NAMED, and it is discovered BY CANONICALISING THE RAW
+            # ARTIFACTS rather than by reading the canonical-form artifacts -- so this plant
+            # tests the FUNCTION and not the presence of a file the run happens to have
+            # written. The population is exactly the class the fix is for: raw-different and
+            # canonical-equal. It is EMPTY if the fix did anything else, and an empty
+            # population here is a FAILURE, not a pass.
+            gap = []
+            for g in corpus():
+                pa, pb = D / f"D2-canon-py-{g}.txt", D / f"D2-canon-bend-{g}.txt"
+                if not (pa.exists() and pb.exists()) or pa.read_bytes() == pb.read_bytes():
+                    continue
+                ca, wa = canon_body(pa.read_bytes())
+                cb, wb = canon_body(pb.read_bytes())
+                if ca and cb and ca == cb:
+                    gap.append(g)
+            if not gap:
+                checks.append(("6+7: CAUSE 3 -- the canonical form must remove the "
+                               "numbering-only differences and nothing else",
+                               False, "no graph is raw-different and canonical-equal, so "
+                                      "there is nothing to plant and the claim is untested"))
+            else:
+                name = gap[0]
+                src = [ln for ln in (D / f"D2-canon-bend-{name}.txt").read_text().splitlines()
+                       if ln.strip()]
+                body = canon_body(("\n".join(src) + "\n").encode())[0]
+
+                def planted(rows, kind):
+                    """The bend side re-emitted after ONE edit. Pure; writes nothing.
+
+                    `number` is a ROTATION of the id set applied to the node id AND to every
+                    `src` reference, and a bijection is the entire point: renumbering "by
+                    first appearance" is not one -- the id field and the references are
+                    consumed in different orders, so a reference can be handed a number some
+                    other node then claims and the result is a dangling reference that reads
+                    as a graph defect."""
+                    n = len(rows)
+                    rot = {i: (i + 3) % n + 1 for i in range(1, n + 1)}
+                    out = []
+                    for ln in rows:
+                        f = unchunk(ln)
+                        if kind == "content" and f[1] == "CONST":
+                            f[1] = "AFTER"
+                        if kind == "number":
+                            f[0] = CANON_REF.sub(lambda m: f"i{rot[int(m.group(1))]}", f[0])
+                            f[7] = CANON_REF.sub(lambda m: f"i{rot[int(m.group(1))]}", f[7])
+                        out.append(" ".join(f"{len(x)}:{x}" for x in f))
+                    return ("\n".join(out) + "\n").encode()
+
+                moved_c = canon_body(planted(src, "content"))[0] != body
+                same_c = canon_body(planted(src, "number"))[0] == body
+                ok_num, why_num = canon_bijection(canon_body(planted(src, "number"))[0]
+                                                  .decode().splitlines())
+                checks.append(("6: CAUSE 3 -- ***a CONTENT change must MOVE the canonical "
+                               "verdict***, or the form is a mask and not a canonicalisation",
+                               moved_c, f"{name}: canonical BYTE-IDENTICAL -> DIFFERS = "
+                                        f"{moved_c}"))
+                checks.append(("7: CAUSE 3 -- ***a pure RENUMBERING must NOT move it***, and "
+                               "the renumbering must be a bijection (ids 1..n each once, every "
+                               "reference resolving)", same_c and ok_num,
+                               f"{name}: canonical BYTE-IDENTICAL -> BYTE-IDENTICAL = {same_c}; "
+                               f"bijection = {ok_num} ({why_num})"))
+            # PLANT 8 -- CAUSE 1. A REFUSAL MUST CARRY ITS NAME INTO THE ROW A READER READS.
+            # MEASURED 2026-10-18T18:04Z: `D1-verdicts.txt` printed `loop: VERDICT=
+            # EXPECTED=AGREE` while the artifact beside it was a one-line `rc=2` and its `.err`
+            # named the cause. A refusal that only exists in a `.err` is invisible to every
+            # consumer of the summary, and the graph it belongs to reads as an empty verdict.
+            rows_txt = (D / "D1-verdicts.txt").read_text() if (D / "D1-verdicts.txt").exists() else ""
+            bare = [ln for ln in rows_txt.splitlines()
+                    if "VERDICT= " in ln or ln.rstrip().endswith("VERDICT=")]
+            named = [ln for ln in rows_txt.splitlines() if ": REFUSED -- " in ln]
+            refused_now = [g for g in corpus() if g in WANT
+                           and not verdict(f"D1-graph-{g}.txt")]
+            named_ok = all(any(ln.startswith(f"{g}: REFUSED -- ") and
+                               first_line(f"D1-graph-{g}.txt") in ln for ln in named)
+                           for g in refused_now)
+            checks.append(("8: CAUSE 1 -- ***a REFUSED graph is named in D1-verdicts.txt with "
+                           "its artifact's own text***, and no row has an empty verdict cell",
+                           named_ok and not bare and len(named) == len(refused_now),
+                           f"refused={refused_now} named={len(named)} empty-verdict-rows={bare}"))
         finally:
             D = live
+    checks = [c for c in checks if only is None or c[0].startswith(f"{only}:")]
     print("PLANTS -- both halves of each, over a COPY of the live artifacts; no `bend`, no write "
           "into runs/graphcmp/D")
     for name, ok, got in checks:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")
     bad = sum(1 for c in checks if not c[1])
+    if not checks:
+        # IT RAN, IT SELECTED NOTHING, AND IT MEASURED NOTHING. `0 of 0` with a green word is
+        # the "compared nothing reads as agreement" failure wearing a pin.
+        print(f"PLANTS: plant {only!r} SELECTED NO CHECK -- NOT RUN")
+        return gatekit().SKIP
     print(f"PLANTS: {'GREEN' if not bad else 'RED'} ({len(checks) - bad}/{len(checks)})")
     return 1 if bad else 0
 
@@ -1467,10 +1811,17 @@ def main():
                    help="attempts per run, and 60s substrate probes per attempt "
                         "(the shell's WAIT; default 9)")
     sub.add_parser("snap", help="print the snapshot both gates are built from")
-    sub.add_parser("plant", help="assert the four precondition plants on a COPY of the artifacts")
+    p = sub.add_parser("plant", help="assert the plants on a COPY of the artifacts")
+    # NO `choices=`: argparse would exit 2 on a name that is not a plant, and 2 IS A CODE NO
+    # VOCABULARY NAMES (`checks/differ.py`'s own `cmd_repro` comment says so and is why that
+    # exit became 3). An unknown plant is REFUSED by `plant()` itself, which is the shape
+    # that keeps the five exits in one place.
+    p.add_argument("--name", default=None, metavar="N",
+                   help=f"run ONE plant of {list(PLANT_NAMES)}; an unknown name is REFUSED "
+                        f"(exit 3), never PASS")
     a = ap.parse_args()
     if a.cmd == "plant":
-        return plant()
+        return plant(a.name)
     D.mkdir(parents=True, exist_ok=True)
     drift = check_oracle()
     if drift:
