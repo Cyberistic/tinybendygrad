@@ -148,13 +148,110 @@ SCOPE_NAMES = ("AGENTS.md", "README.md")
 UNIT_AFTER = re.compile(r"\s*([A-Za-z][A-Za-z'/-]{2,})")
 NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
 
-# ONE COMMAND, THREE PROBES. The pin ledger's `204/230` and its `230 vendored blobs` are the
-# SAME population counted two ways, so they share one command rather than restating `git
-# ls-tree` three times -- `AGENTS.md`: "Shareable logic should be reused."
-PIN_POP_CMD = [PY, "-c",
-               "import subprocess;ps=[x for x in subprocess.run(['git','ls-tree','-r',"
-               "'6c3d401cf324','--name-only'],capture_output=True,text=True).stdout.split() "
-               "if x.startswith('tinygrad/')];print('population=%d value=%d'%(len(ps),len(ps)))"]
+# THE PIN IS DERIVED FROM THE TREE'S OWN RECORD, AND THIS FILE SPELLS NO REVISION.
+#
+# THE OLD SHAPE WAS FOUR `PIN_*` MEASURERS CARRYING THE LITERAL `6c3d401cf324`. The prose-fix
+# unit moved `.agents/UPSTREAM-PIN.md`'s pin to `002630241913` and recorded the old one as
+# `SUPERSEDED PIN`, so all four went UNBOUND and the document lost the coverage it had. A
+# REVISION CONSTANT IS A HAND LIST: `AGENTS.md`'s doctrine 1 records six instruments in this
+# tree that declared a population by hand and rotted silently, and MEASURED here it had already
+# rotted -- all four `PIN_*` rows bound ZERO lines tree-wide. Re-pointing the four literals would
+# have restored them for exactly one more re-vendor and left the next one to rot again.
+#
+# THE DERIVATION IS A LOAN FROM THE MODULE THAT ALREADY OWNS THE RECORD. `read_pin` comes from
+# `gates/docnum-census.py` BY PATH -- the same `load_owner` call that lends `walk`, so the
+# population and the pin are read from ONE place, which is `AGENTS.md`'s doctrine 1(a) and the
+# "AN INSTRUMENT'S SOURCE AND ITS SUBJECT MUST NOT COME FROM TWO PLACES" defect this file's own
+# `load_walk` docstring already records having made once.
+#
+# TWO REVISIONS, NOT ONE. The record names the pin we are ON and the pin we LEFT. `PIN MATCH` at
+# each is a different figure over a different population, and scoring both against one revision is
+# member (ii) -- a number that is right, attached to the wrong population -- which is the member
+# this instrument exists to catch, so it cannot commit it.
+PIN_RECORD = ".agents/UPSTREAM-PIN.md"
+PIN_SUPERSEDED = re.compile(r"\*\*SUPERSEDED PIN\*\*.*?`([0-9a-f]{7,40})`")
+
+
+def pin_cmd(sha, want):
+    """-> argv counting, over the `tinygrad/` paths at `sha`, one of `total`/`match`/`past`.
+
+    ONE GIT PROCESS PER CALL, NOT ONE PER PATH. The old spelling ran `git hash-object` and
+    `git rev-parse` once per vendored file -- 458 subprocesses for one figure. `git
+    hash-object --stdin-paths` is BYTE-IDENTICAL to that loop (MEASURED 2026-10-18T18:03:12Z:
+    229 paths, `batched == naive` True) at 1/229 the cost.
+
+    A POPULATION OF ZERO IS `REFUSED`, NEVER `0/0`. MEASURED, and it is doctrine 2 in one
+    operator: every command here shells to `git`, and `--plant-live` censuses a TEMP ROOT that is
+    not a repository, where `git ls-tree` writes nothing to stdout -- so the old spelling answered
+    `population=0 value=0`, a census that measured nothing and printed two numbers, of which
+    `0 == 0` scores HELD. `measure()` reads the word `REFUSED` and returns the REFUSED token, so
+    the zero denominator now has a name.
+    """
+    return [PY, "-c",
+            "import subprocess;"
+            "pin=dict((l.split('\\t',1)[1],l.split()[2]) for l in subprocess.run("
+            "['git','ls-tree','-r',%r,'tinygrad/'],capture_output=True,text=True).stdout.splitlines());"
+            "ps=sorted(pin);"
+            "eq=[a==pin[p] for a,p in zip(subprocess.run(['git','hash-object','--stdin-paths'],"
+            "input='\\n'.join(ps)+'\\n',capture_output=True,text=True).stdout.split(),ps)];"
+            "v={'total':len(ps),'match':sum(eq),'past':len(ps)-sum(eq)}[%r];"
+            "print('REFUSED: 0 tinygrad/ paths at this revision' if not ps else "
+            "'population=%%d value=%%d'%%(len(ps),v))" % (sha, want)]
+
+
+def measurers(root):
+    """-> the `MEASURERS` table for `root`, with every pin revision DERIVED.
+
+    IT IS A FUNCTION, NOT A CONSTANT, AND THAT IS THE FIX. A tuple literal would freeze whatever
+    revision the function read at import, which is a constant wearing a function's clothes: the
+    next re-vendor would move the record and leave the table measuring the old commit. Building
+    the table per root is what lets `--plan` PRINT the revisions it is about to measure, so the
+    derivation is visible in the contract rather than only in this file.
+
+    `--plant` never reaches here: it passes its own table, which is what keeps a synthetic plant
+    independent of this repo's pin and its `.venv`.
+    """
+    ours, superseded, ptoken = read_pins(root)
+    if ours is None:
+        # NO PIN MEANS NO PIN ROWS, AND IT SAYS SO. A table that silently dropped them would be
+        # green by absence of a claim, which is the hole `AGENTS.md`'s doctrine 2 names.
+        ours, superseded = "PIN-NOT-DERIVED", "PIN-NOT-DERIVED"
+    if superseded is None:
+        superseded = ours
+    return (MEASURERS_BASE
+            + (
+                # THE PIN LEDGER, DERIVED. The regexes were repaired at the same time as the
+                # revisions, and BOTH halves were dead before this commit: MEASURED
+                # 2026-10-18T17:58:42Z, all four `PIN_*` rows bound ZERO lines tree-wide, so
+                # `.agents/UPSTREAM-PIN.md` was not in the table at all. The two shapes that
+                # exist in it today are `| PIN MATCH **204/230** |` (line 669) and `204 of our
+                # vendored blobs` (line 533).
+                #
+                # EACH FIGURE IS MEASURED AT THE REVISION ITS OWN LINE BELONGS TO, and the
+                # revision is NAMED IN THE POPULATION TEXT so the row is self-describing:
+                # line 533 names `SUPERSEDED PIN` on the line itself, and line 669 reconciles the
+                # CURRENT table. Scoring either against the other is member (ii).
+                ("PIN_MATCH_NUM", r"PIN MATCH \*\*(\d+)\s*/", 1,
+                 "tinygrad/ paths matching the OUR PIN (%s)" % ours[:12],
+                 pin_cmd(ours, "match"), None),
+                ("PIN_MATCH_DEN", r"PIN MATCH \*\*(?:\d+)\s*/\s*(\d+)", 1,
+                 "tinygrad/ paths at the OUR PIN (%s)" % ours[:12],
+                 pin_cmd(ours, "total"), None),
+                ("PIN_TOTAL_BLOBS", r"(\d+)\s+of our vendored blobs", 1,
+                 "tinygrad/ paths matching the SUPERSEDED PIN (%s)" % superseded[:12],
+                 pin_cmd(superseded, "match"), None),
+                # `PIN_PAST` has NO SUBJECT IN THE DOCUMENT TODAY and is left bound to nothing.
+                # MEASURED 2026-10-18T18:02:55Z, `(\d+)\s+blobs are past the pin` matches zero
+                # lines tree-wide. It is NOT re-pointed at some other figure to make a row
+                # appear -- that is inventing a subject to score a probe, which is `gates/
+                # gapcensus-gate.py`'s recorded first `FAILED` and `gates/README.md:106`'s plant
+                # that reached past the decision. It becomes live the moment the record states a
+                # past-the-pin figure, which is what the population text below measures.
+                ("PIN_PAST", r"(\d+)\s+blobs are past the pin", 1,
+                 "tinygrad/ paths past the OUR PIN (%s)" % ours[:12],
+                 pin_cmd(ours, "past"), None),
+            ))
+
 
 # THE MEASURERS. (probe_name, probe_regex, which_group_is_THE_figure, population_text, argv, shape)
 #
@@ -166,7 +263,10 @@ PIN_POP_CMD = [PY, "-c",
 #
 # `group` selects WHICH captured number is the figure being asserted. `70 of 77 enum members`
 # asserts 77, so its regex captures both and names the second.
-MEASURERS = (
+#
+# IT IS A FUNCTION NOW, NOT A TUPLE: the `PIN_*` rows need a revision that is read out of the
+# tree per root, and freezing that at import is the constant this file stopped shipping.
+MEASURERS_BASE = (
     # `Ops` is an enum whose MEMBERSHIP is the figure, so population == value; it is kept
     # anyway because the row must RECORD the population even when the two coincide.
     ("OPS_ENUM", r"(\d+)\s+enum\s+members", 1, "tinygrad.uop.Ops enum members",
@@ -200,29 +300,11 @@ MEASURERS = (
      [PY, "-c", "import importlib.util;s=importlib.util.spec_from_file_location("
                 "'g','.agents/slop/graphcmp.py');m=importlib.util.module_from_spec(s);"
                 "s.loader.exec_module(m);n=len(m.PLANTS);print(f'population={n} value={n}')"], None),
-    # THE PIN LEDGER. Three separate figures, three separate populations, one table row each.
-    ("PIN_MATCH_NUM", r"\*\*PIN MATCH\*\*\s*\|\s*\*\*\s*(\d+)\s*/\s*(\d+)\s*\*\*", 1,
-     "tinygrad/ paths in git ls-tree -r 6c3d401cf324",
-     [PY, "-c", "import subprocess;P='6c3d401cf324';"
-                "ps=[x for x in subprocess.run(['git','ls-tree','-r',P,'--name-only'],"
-                "capture_output=True,text=True).stdout.split() if x.startswith('tinygrad/')];"
-                "n=sum(1 for p in ps if subprocess.run(['git','hash-object',p],"
-                "capture_output=True,text=True).stdout.strip()=="
-                "subprocess.run(['git','rev-parse',P+':'+p],capture_output=True,text=True)"
-                ".stdout.strip());print(f'population={len(ps)} value={n}')"], None),
-    ("PIN_MATCH_DEN", r"\*\*PIN MATCH\*\*\s*\|\s*\*\*\s*(\d+)\s*/\s*(\d+)\s*\*\*", 2,
-     "tinygrad/ paths in git ls-tree -r 6c3d401cf324", list(PIN_POP_CMD), None),
-    ("PIN_PAST", r"(\d+)\s+blobs are past the pin", 1,
-     "tinygrad/ paths whose blob differs from the pin",
-     [PY, "-c", "import subprocess;P='6c3d401cf324';"
-                "ps=[x for x in subprocess.run(['git','ls-tree','-r',P,'--name-only'],"
-                "capture_output=True,text=True).stdout.split() if x.startswith('tinygrad/')];"
-                "n=sum(1 for p in ps if subprocess.run(['git','hash-object',p],"
-                "capture_output=True,text=True).stdout.strip()!="
-                "subprocess.run(['git','rev-parse',P+':'+p],capture_output=True,text=True)"
-                ".stdout.strip());print(f'population={len(ps)} value={n}')"], None),
-    ("PIN_TOTAL_BLOBS", r"(\d+)\s+vendored blobs", 1, "tinygrad/ paths in git ls-tree -r 6c3d401cf324",
-     list(PIN_POP_CMD), None),
+    # THE PIN LEDGER IS NOT HERE. `measurers(root)` appends the four `PIN_*` rows with a
+    # revision read out of `.agents/UPSTREAM-PIN.md`, so a row that HAD to be spelled with a
+    # revision -- and all four were -- is a row that rots the next time the record moves.
+    # MEASURED before this change, 2026-10-18T17:58:42Z: all four bound ZERO lines tree-wide,
+    # so `.agents/UPSTREAM-PIN.md` was not in the table at all.
     # THE PORT DIFFERENTIAL, AND THE TWO FIGURES ITS COMMENTS REST ON.
     ("DIFFER_BYTE_IDENTICAL", r"(\d+)\s+of\s+\d+\s+graphs byte-identical", 1,
      "runs/graphcmp/D/D0-run-summary.txt byte-identical",
@@ -270,26 +352,27 @@ CONTESTED = ("DIFFER_BYTE_IDENTICAL", "DIFFER_AGREE")
 # would then count THIS census's own subprocesses.
 BEND_PROC = re.compile(r"references/bend/bend2/main\.ts")
 
+# THE WATCHDOG'S RECORD, PARSED NOT SCALED. `checks/bounded.py:250` writes
+# `[bounded] <TOKEN>  rc=...`; `checks/sb-gate.sh:103` reads the token out of that field and so
+# does this table. `BOUNDED_TOKEN` is the subset that means "the child produced no usable
+# measurement" -- `WITHIN-LIMITS` is deliberately ABSENT, because it means the opposite and
+# listing it would turn every successful run into a refusal.
+BOUNDED_RECORD = re.compile(r"^\[bounded\] (\S+)\s+rc=", re.M)
+BOUNDED_TOKEN = {"KILLED-ON-MEMORY": "KILLED-ON-MEMORY", "TIMED-OUT": "TIMED-OUT",
+                 "NOT-STARTED": "NOT-STARTED", "NO-VERDICT": "NO-VERDICT"}
 
-def load_walk(root):
-    """-> (`docnum-census`'s own `walk`) or (None, reason).
 
-    THE OWNER IS RESOLVED **INSIDE THE ROOT UNDER CENSUS**, NOT AT THIS MODULE'S OWN PATH.
-    MEASURED, and it is what this file's own plant caught on its first run: state 6 deletes
-    `gates/docnum-census.py` from the synthetic root and asserts the census REFUSES, and it
-    reported `walk=OK, rows=5` -- because the loan was being taken from the REAL tree's gate,
-    so a root that does not own a walk still got one. **AN INSTRUMENT'S SOURCE AND ITS
-    SUBJECT MUST NOT COME FROM TWO PLACES**, which is `checks/repro-paths.py`'s recorded
-    defect and `gates/gapcensus-gate.py --plant`'s first `FAILED`, in a third costume. The
-    parameter is what makes the loan honest: the population belongs to the tree being
-    censused, so the census reads that tree's walk owner or it has no population.
+def load_owner(root):
+    """-> (`docnum-census` module | None, token). THE SINGLE LOAN, AND IT IS TWO ARTEFACTS.
 
-    DOCTRINE 1(a) BY EXECUTION: this tree's governing rule is that a population is a
-    generator's own declaration LOADED BY PATH, and the walk of prose files is
-    `docnum-census.py`'s to give. Writing a second `PRUNE_DIRS` here would make this file the
-    seventh member of the very class it exists to census, so it borrows instead -- and says so
-    when the loan cannot be made, because a fallback population invented here would be exactly
-    the `LIVE_UNITS` defect wearing a different hat.
+    `walk` AND `read_pin` COME FROM THIS ONE CALL, deliberately. MEASURED on this file's first
+    run, before the two were joined: a plant that deleted `gates/docnum-census.py` still got a
+    walk, because the loan was being taken from the real tree's gate -- `AN INSTRUMENT'S SOURCE
+    AND ITS SUBJECT MUST NOT COME FROM TWO PLACES`, which is `checks/repro-paths.py`'s recorded
+    defect and `gates/gapcensus-gate.py --plant`'s first `FAILED`, in a third costume. Reading
+    the pin through a SEPARATE loader would put that same defect one level down: the population
+    and the revision would come from two modules and could disagree about which record is the
+    tree's.
     """
     owner = Path(root) / "gates" / WALK_OWNER.name
     if not owner.is_file():
@@ -300,7 +383,38 @@ def load_walk(root):
         spec.loader.exec_module(mod)
     except Exception as exc:  # noqa: BLE001 -- a REFUSED loan must be a row, not a traceback
         return None, "WALK-UNLOADABLE: %s: %s" % (WALK_OWNER.name, exc)
-    return getattr(mod, "walk", None), "OK"
+    return mod, "OK"
+
+
+def read_pins(root):
+    """-> (our_pin, superseded_pin | None, token). BOTH DERIVED; NEITHER IS TRANSCRIBED HERE.
+
+    `our_pin` IS THE OWNER'S `read_pin`, which refuses with `SystemExit` rather than guessing if
+    the record names no pin -- and that refusal is CAUGHT AND NAMED here, because an exception
+    escaping `census()` is a traceback where the file's own vocabulary has a word: `PIN-REFUSED`.
+
+    `superseded_pin` is read here and not by the owner, because no owner declares it: it is the
+    census's SECOND pin population and a borrowed method cannot invent one. MEASURED
+    2026-10-18T18:02:55Z, `\\*\\*SUPERSEDED PIN\\*\\*.*?`([0-9a-f]{7,40})`` matches
+    `.agents/UPSTREAM-PIN.md:24` and nothing else.
+    """
+    mod, token = load_owner(root)
+    if mod is None:
+        return None, None, token
+    try:
+        ours = mod.read_pin(root)
+    except SystemExit as exc:
+        return None, None, "PIN-REFUSED: %s" % exc
+    rec = Path(root) / PIN_RECORD
+    m = PIN_SUPERSEDED.search(rec.read_text(encoding="utf-8", errors="replace")) \
+        if rec.is_file() else None
+    return ours, (m.group(1) if m else None), "OK"
+
+
+def load_walk(root):
+    """-> (`docnum-census`'s own `walk`) or (None, reason). See `load_owner`, which is the loan."""
+    mod, token = load_owner(root)
+    return (None, token) if mod is None else (getattr(mod, "walk", None), "OK")
 
 
 def bend_live():
@@ -351,17 +465,27 @@ def measure(argv, root, shape=None):
     except (OSError, subprocess.TimeoutExpired):
         return None, None, "NOT-STARTED"
     out = proc.stdout + "\n" + proc.stderr
-    # READ THE VERDICT TOKEN, NEVER THE EXIT CODE AND NEVER A SUBSTRING. `AGENTS.md`:
-    # "`checks/bounded.py`'s own header records a unit that lost 425 rows by believing the
-    # status." MEASURED on this file's first run: EVERY measurer came back `UNMEASURED`
-    # because this list contained `MACHINE: **VIOLATED**`, and bounded prints that line --
-    # meaning only that THE TIME BOUND IS NOT ATTRIBUTABLE TO THE CHILD -- on a run that
-    # answered `WITHIN-LIMITS rc=0` and printed its figure. A substring test on stderr
-    # therefore DISCARDED EVERY SUCCESSFUL MEASUREMENT TAKEN WHILE THE MACHINE WAS LOADED,
-    # which in this tree is most of the time, and it did so while printing nothing wrong.
-    # The four tokens below are the watchdog's OWN verdicts; anything else is prose.
+    # THE WATCHDOG'S VERDICT IS PARSED OUT OF ITS RECORD LINE, NOT SUBSTRING-SCALED OVER THE
+    # WHOLE STREAM. `checks/bounded.py:250` writes `[bounded] <TOKEN>  rc=... :: <THE FULL
+    # ARGV>` to STDERR and then the child's own stderr behind it, so a command whose TEXT contains
+    # a token word has that word echoed back inside an otherwise successful run. MEASURED
+    # 2026-10-18T18:06:48Z on this file's own PIN command, whose zero-population guard spells
+    # `print('REFUSED: ...')`: the whole-stream scan returned `REFUSED` while the run answered
+    # `population=229 value=229` with `WITHIN-LIMITS rc=0`. A successful measurement was discarded
+    # and named as a refusal. **THAT IS THE SAME DEFECT THIS FUNCTION'S DOCSTRING ALREADY
+    # RECORDS FOR `MACHINE: **VIOLATED**`**, and the same remedy: read the record's own field,
+    # exactly as `checks/sb-gate.sh:103` does, instead of trusting a substring.
+    record = BOUNDED_RECORD.search(proc.stderr)
+    if record:
+        tok = record.group(1)
+        if tok in BOUNDED_TOKEN:
+            return None, None, tok
+    # THE CHILD'S OWN REFUSAL IS READ FROM **STDOUT**, and the channel is the load-bearing part:
+    # stdout is passed through verbatim and the watchdog's record never touches it, so a refusal a
+    # measurer prints there cannot be an echo. The old `MACHINE: **VIOLATED**` reading is why the
+    # token is a contract and not a shape -- `WITHIN-LIMITS` means the figure printed.
     for kill in ("KILLED-ON-MEMORY", "TIMED-OUT", "NOT-STARTED", "DEAD", "REFUSED"):
-        if kill in out:
+        if kill in proc.stdout:
             return None, None, kill
     if "Traceback (most recent call last)" in out:
         return None, None, "DEAD"
@@ -417,7 +541,7 @@ def lines_of(scope, root):
             yield rel, i, line
 
 
-def bind(line, measurers=None):
+def bind(line, measurers_table=None):
     """-> [(probe, figure, population_text, argv, shape, start)] for every probe the line
     satisfies. Empty means UNDECLARED. `start` is the OFFSET of the figure in the line.
 
@@ -431,7 +555,7 @@ def bind(line, measurers=None):
     a line is allowed to satisfy more than one probe.
     """
     hits = []
-    for name, pattern, group, pop_text, argv, shape in (measurers or MEASURERS):
+    for name, pattern, group, pop_text, argv, shape in (measurers_table or measurers(ROOT)):
         for m in re.finditer(pattern, line):
             if group <= (m.lastindex or 0):
                 hits.append((name, m.group(group).replace(",", ""), pop_text, argv, shape,
@@ -462,17 +586,17 @@ def gate_exit(rel, root):
     return REFUSED, "REFUSED"
 
 
-def census(root, run_gates=True, measurers=None):
+def census(root, run_gates=True, measurers_table=None):
     """-> (rows, ledger). `rows` is one entry per CLAIM the instrument can speak about.
 
-    `measurers` is a PARAMETER, not a module read, so `--plant` can drive THIS FUNCTION on a
-    synthetic contract whose command runs in a temp root with no `.venv`. A plant that reaches
+    `measurers_table` is a PARAMETER, not a module read, so `--plant` can drive THIS FUNCTION
+    on a synthetic contract whose command runs in a temp root with no `.venv`. A plant that reaches
     past the decision into the real table is a plant of the plumbing: `gates/README.md:106`
     records exactly that failure, and `gates/docnum-claim-gate.py` records the first version of
     its own plant comparing two integers it had written itself -- which tests `!=` and nothing
     else.
     """
-    table = measurers if measurers is not None else MEASURERS
+    table = measurers_table if measurers_table is not None else measurers(root)
     scope, walked, pruned, wtoken, selfx = prose_files(root)
     if scope is None:
         # A REFUSED loan is not an empty census, and the difference is the point: `DEAD` means
@@ -636,13 +760,23 @@ def render(rows, ledger, out):
 
 
 def plan(out):
+    ours, superseded, ptoken = read_pins(ROOT)
+    table = measurers(ROOT)
     out.write("MEASURERS (a generator's own declaration; NO EXPECTED FIGURE IS TRANSCRIBED)\n")
-    for name, pattern, group, pop_text, argv, shape in MEASURERS:
+    for name, pattern, group, pop_text, argv, shape in table:
         out.write("  %-24s figure=group%d  pop=%-52s %s\n"
                   % (name, group, pop_text[:52], " ".join(argv)))
-    out.write("EVERY CONTRACT ROW IS A COMMAND: %d rows, 0 expected figures\n" % len(MEASURERS))
+    out.write("EVERY CONTRACT ROW IS A COMMAND: %d rows, 0 expected figures\n" % len(table))
     out.write("CONTESTED (refused while any `bend` is live): %s\n" % ", ".join(CONTESTED))
     out.write("WALK OWNER (doctrine 1a, loaded by path): %s\n" % WALK_OWNER.name)
+    # THE PIN LEDGER IS PRINTED HERE BECAUSE IT IS DERIVED, AND A DERIVED VALUE NOBODY CAN SEE
+    # IS A CONSTANT WITH EXTRA STEPS. MEASURED 2026-10-18T18:03:12Z, `--plan` used to print four
+    # `6c3d401cf324` spellings that were three weeks stale and matched nothing.
+    out.write("PIN SOURCE (doctrine 1a, borrowed by path from the walk owner): %s -- %s\n"
+              % (PIN_RECORD, ptoken))
+    out.write("PIN OUR        : %s\n" % (ours or "NOT-DERIVED"))
+    out.write("PIN SUPERSEDED : %s\n" % (superseded or "NOT-DERIVED"))
+    out.write("NO REVISION IS SPELLED IN gates/prose-census.py; grep for one to check this.\n")
 
 
 def prove(root, rows, ledger, out):
@@ -731,7 +865,7 @@ def plant(out):
             "a claim naming no population at all: 55 files\n",  # binds nothing -> UNDECLARED
             encoding="utf-8")
 
-        rows, ledger = census(root, run_gates=False, measurers=plant_measurers)
+        rows, ledger = census(root, run_gates=False, measurers_table=plant_measurers)
         kinds = {r["kind"] for r in rows}
         out.write("PLANT rows=%d ledger=%s kinds=%s\n"
                   % (len(rows), {k: ledger[k] for k in ("claims", "checked", "undeclared")},
@@ -766,7 +900,7 @@ def plant(out):
         # `checks/sweep.py`'s removed `LIVE_UNITS` all over again.
         saved = (root / "gates" / "docnum-census.py").read_text(encoding="utf-8")
         (root / "gates" / "docnum-census.py").unlink()
-        rrows, rledger = census(root, run_gates=False, measurers=plant_measurers)
+        rrows, rledger = census(root, run_gates=False, measurers_table=plant_measurers)
         if rrows or rledger["walk"] == "OK" or not rledger.get("refused"):
             failures.append("with the walk owner absent the census invented a population "
                             "instead of refusing (walk=%s, rows=%d)"
@@ -781,7 +915,7 @@ def plant(out):
         # EXISTS FOR, REPRODUCED INSIDE THE PLANT -- so the empty case is asserted, not
         # assumed.
         with tempfile.TemporaryDirectory() as blank:
-            brows, bledger = census(Path(blank), run_gates=False, measurers=plant_measurers)
+            brows, bledger = census(Path(blank), run_gates=False, measurers_table=plant_measurers)
             empty_worst = worst({r["kind"] for r in brows}, bledger["checked"])
             if brows:
                 failures.append("an EMPTY tree produced %d row(s); the census must emit nothing "
@@ -804,6 +938,41 @@ def plant(out):
     return bool(failures)
 
 
+def mirror_tree(tmp):
+    """-> the mirror: a real tree of real instruments with ONLY the prose under test synthetic.
+
+    `.git` IS SYMLINKED ALONGSIDE `.venv`/`tinygrad`/`.agents` SO A `git`-BACKED MEASURER RUNS.
+    MEASURED before this change: the census on the mirror answered `population=0 value=0` for
+    every `PIN_*` row, because `git ls-tree` in a temp directory that is not a repository writes
+    nothing to stdout -- and `0 == 0` is a HELD row. A mirror that cannot run half the table is
+    not a faithful tree, it is a tree with the answer missing.
+    """
+    for d in (".venv", "tinygrad", "tinybendygrad", ".agents", "checks", ".git"):
+        if (ROOT / d).exists():
+            os.symlink(ROOT / d, tmp / d)
+    (tmp / "gates").mkdir()
+    os.symlink(ROOT / "gates" / "prose-census.py", tmp / "gates" / "prose-census.py")
+    for p in sorted((ROOT / "gates").iterdir()):
+        if p.name == "prose-census.py":
+            continue
+        if p.name == "docnum-census.py" or p.is_file():
+            (tmp / "gates" / p.name).write_bytes(p.read_bytes())
+        else:
+            os.symlink(p, tmp / "gates" / p.name)
+    # THE ROOT PROSE IS COPIED, NOT SYMLINKED. `AGENTS.md` and `README.md` are in scope
+    # (`SCOPE_NAMES`) and one of them is the densest single source of prose numbers in the
+    # tree, so a mirror that symlinked them could never plant into them -- and a plant that
+    # writes THROUGH a symlink would edit the real file, which is exactly what this mirror
+    # exists to avoid.
+    for name in SCOPE_NAMES:
+        if (ROOT / name).is_file():
+            (tmp / name).write_bytes((ROOT / name).read_bytes())
+    return tmp
+
+
+PLANT_TARGET = "gates/prose-census-plant.md"
+
+
 def plant_live(target, out, probe=None):
     """A PLANT ON THE REAL TREE: one prose number moved from TRUE to FALSE, and the census must
     go RED NAMING IT. Both directions are asserted, so this is the plant's OWN NEGATIVE CASE
@@ -811,11 +980,10 @@ def plant_live(target, out, probe=None):
 
     WHY A MIRROR TREE AND NOT AN EDIT. The grant here is read-only on the tree, and more to the
     point a plant that edits its subject leaves the tree wrong if it dies between the edit and
-    the revert. So the mirror SYMLINKS every instrument directory -- `.venv`, `tinygrad`,
-    `tinybendygrad`, `.agents`, `checks` -- and REAL-COPIES `gates/`, then plants into the copy.
-    The instruments that derive the figures are the real ones; only the PROSE under test is
-    synthetic. That is the same split the whole file argues for: a figure is derived by
-    something, and the something here is not synthetic.
+    the revert. So the mirror SYMLINKS every instrument directory and REAL-COPIES `gates/`, then
+    plants into the copy. The instruments that derive the figures are the real ones; only the
+    PROSE under test is synthetic. That is the same split the whole file argues for: a figure is
+    derived by something, and the something here is not synthetic.
 
     WHY IT MUST BE ABLE TO FAIL FIRST. `gates/gapcensus-gate.py --plant`'s first run reported
     `FAILED` for the wrong reason (`UP`/`PORT` bound at import) and a later unit recorded that a
@@ -823,98 +991,100 @@ def plant_live(target, out, probe=None):
     asserts BOTH halves before it asserts the defect: the UNPLANTED mirror must already be
     clean on that probe, and the PLANTED mirror must be red ON THAT PROBE AND NO OTHER. A plant
     that is red for an unrelated reason proves nothing.
+
+    THE DEFAULT TARGET IS SYNTHETIC AND CLEAN BY CONSTRUCTION, NOT FOUND BY SEARCHING THE TREE.
+    MEASURED 2026-10-18T18:08:00Z, bare `--plant-live` REFUSED with `gates/tn_minimum-gate.py
+    carries no probe-bound claim on probe PORT_VARIANTS`, and `--plant-live AGENTS.md --probe
+    OPS_ENUM` reports every surviving claim ALREADY MOVED -- every figure this tree still writes
+    is stale, which `plant_live`'s own comment had predicted ("A PLANT ON A DIRTY TREE MUST BE
+    ASSERTED LOCALLY"). **A TARGET CHOSEN BY SEARCHING THE TREE IS A LIST THAT ROTS SILENTLY**:
+    `AGENTS.md`'s doctrine 1 again, one directory over, and the `--probe` default is a
+    hand-picked name for the same reason. So the plant now WRITES ITS OWN CLAIM into the mirror
+    from the figure the REAL measurer derives, and asserts that claim goes red when the figure
+    moves. Nothing in the repository has to stay clean for it to run -- which is the property
+    that makes it a plant rather than a demonstration.
+
+    ITS OWN NEGATIVE CASE IS A SECOND, UNPLANTED CLAIM ON THE SAME PROBE. Two lines bind the
+    same probe to the same derived figure and the plant moves ONE of them. If the census
+    discriminates, one goes MOVED and the other stays HELD; if it blanket-fails, both go red and
+    the plant has proved nothing about the figure. That is the "MALFORMED PLANT THAT EMITTED
+    NOTHING WHILE ITS CHECK SCORED IT A SUCCESSFUL PLANT" defect with its mirror image: a plant
+    that goes red for no reason, which is the failure `gapcensus-gate.py` recorded in the other
+    direction.
+
+    `target` MAY STILL BE A REAL FILE, and then it is the tree that chooses. It is not the
+    default because a real file cannot be guaranteed clean, and a plant that can only run on a
+    clean tree can never be run on this one.
     """
     failures = []
-    if not (ROOT / target).is_file():
+    probe = probe or "PORT_VARIANTS"
+    if target is not None and not (ROOT / target).is_file():
         out.write("PLANT-LIVE REFUSED: %s is not on disk\n" % target)
         return True
     with tempfile.TemporaryDirectory() as tmp:
-        mirror = Path(tmp)
-        for d in (".venv", "tinygrad", "tinybendygrad", ".agents", "checks"):
-            if (ROOT / d).exists():
-                os.symlink(ROOT / d, mirror / d)
-        (mirror / "gates").mkdir()
-        os.symlink(ROOT / "gates" / "prose-census.py", mirror / "gates" / "prose-census.py")
-        real = ROOT / "gates"
-        for p in sorted(real.iterdir()):
-            if p.name == "prose-census.py":
-                continue
-            if p.name == "docnum-census.py":
-                (mirror / "gates" / p.name).write_bytes(p.read_bytes())
-            elif p.is_file():
-                (mirror / "gates" / p.name).write_bytes(p.read_bytes())
-            else:
-                os.symlink(p, mirror / "gates" / p.name)
-        for p in sorted(mirror.iterdir()):
-            if p.name == "gates":
-                continue
-            os.unlink(p)
-            os.symlink(ROOT / p.name, mirror / p.name)
-        # THE ROOT PROSE IS COPIED, NOT SYMLINKED. `AGENTS.md` and `README.md` are in scope
-        # (`SCOPE_NAMES`) and one of them is the densest single source of prose numbers in the
-        # tree, so a mirror that symlinked them could never plant into them -- and a plant that
-        # writes THROUGH a symlink would edit the real file, which is exactly what this mirror
-        # exists to avoid.
-        for name in SCOPE_NAMES:
-            if (ROOT / name).is_file():
-                (mirror / name).write_bytes((ROOT / name).read_bytes())
+        mirror = mirror_tree(Path(tmp))
 
         def verdicts():
             rows, ledger = census(mirror, run_gates=False)
             return rows, ledger, worst({r["kind"] for r in rows}, ledger["checked"])
 
+        if target is None:
+            row = next((m for m in measurers(mirror) if m[0] == probe), None)
+            if row is None:
+                out.write("PLANT-LIVE REFUSED: probe %s is not in the table for this root\n" % probe)
+                return True
+            pop, val, token = measure(row[4], mirror, row[5])
+            if token != "RAN":
+                out.write("PLANT-LIVE REFUSED: probe %s measured %s, so there is no figure to "
+                          "write a clean claim from\n" % (probe, token))
+                return True
+            claim = (mirror / PLANT_TARGET)
+            plant = "SAME %d members -- the planted claim\nSAME %d members -- the control\n"
+            claim.write_text(plant % (val, val), encoding="utf-8")
+            target = PLANT_TARGET
+            out.write("PLANT-LIVE synthetic claim %s from probe %s -> %d (%s)\n"
+                      % (PLANT_TARGET, probe, val, row[3]))
+        dest = mirror / target
+
         clean_rows, clean_ledger, clean = verdicts()
         planted = [r for r in clean_rows if r["file"] == target and r["probe"] == probe]
         if not planted:
-            out.write("PLANT-LIVE REFUSED: %s carries no probe-bound claim on probe %s; a "
-                      "plant on a claim the census cannot see proves nothing\n" % (target, probe))
+            out.write("PLANT-LIVE REFUSED: %s carries no probe-bound claim on probe %s; a plant "
+                      "on a claim the census cannot see proves nothing\n" % (target, probe))
             return True
-        written, measured = int(planted[0]["written"]), int(planted[0]["measured"])
-        before = [(r["written"], r["measured"], r["kind"]) for r in planted]
-        out.write("PLANT-LIVE clean mirror on %s/%s: %s -> verdict %s\n"
-                  % (target, probe, before, clean))
-        if any(k in ("MOVED", "CLAIM-FALSE-IN-PASSING-GATE") for _, _, k in before):
-            failures.append("the UNPLANTED mirror was already stale on %s/%s, so the plant "
-                            "would prove nothing" % (target, probe))
+        out.write("PLANT-LIVE clean mirror on %s/%s: %d row(s), kinds %s, verdict %s\n"
+                  % (target, probe, len(planted),
+                     sorted(r["kind"] for r in planted), clean))
+        if any(r["kind"] in ("MOVED", "CLAIM-FALSE-IN-PASSING-GATE") for r in planted):
+            failures.append("the UNPLANTED mirror was already stale on %s/%s, so the plant would "
+                            "prove nothing" % (target, probe))
 
-        # MOVE THE FIGURE FROM WHAT THE INSTRUMENT DERIVES TO ANYTHING ELSE. The false value is
-        # DERIVED (one more than measured), never chosen, so this plant cannot accidentally
-        # agree with a second stale figure.
-        dest = mirror / target
-        false = str(measured + 1)
-        text = dest.read_text(encoding="utf-8", errors="replace")
-        lines = text.splitlines(keepends=True)
-        ln = planted[0]["line"]
-        if str(written) not in lines[ln - 1]:
+        # MOVE ONE FIGURE FROM WHAT THE INSTRUMENT DERIVES TO ANYTHING ELSE. The false value is
+        # DERIVED (one more than measured), never chosen, so this plant cannot accidentally agree
+        # with a second stale figure.
+        lines = dest.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+        ln = min(r["line"] for r in planted)
+        written = next(r["written"] for r in planted if r["line"] == ln)
+        if written not in lines[ln - 1]:
             failures.append("line %d no longer carries the figure %s" % (ln, written))
         else:
-            lines[ln - 1] = lines[ln - 1].replace(str(written), false, 1)
+            lines[ln - 1] = lines[ln - 1].replace(written, str(int(written) + 1), 1)
             dest.write_text("".join(lines), encoding="utf-8")
         dirty_rows, dirty_ledger, dirty = verdicts()
-        out.write("PLANT-LIVE planted %s -> %s at %s:%d\n" % (written, false, target, ln))
-        named = [r for r in dirty_rows
-                 if r["file"] == target and r["probe"] == probe and r["kind"] == "MOVED"
-                 and r["written"] == false]
-        out.write("PLANT-LIVE dirty mirror: verdict %s; %d MOVED row(s) naming %s\n"
-                  % (dirty, len(named), target))
-        if not named:
-            failures.append("the census did not go red naming the planted figure at %s:%d"
-                            % (target, ln))
-        # THE VERDICT MOVES **FOR THAT PROBE**, NOT FOR THE TREE. MEASURED on this plant's
-        # first run: it asserted `dirty == clean` and reported `the verdict did not move from
-        # MOVED` -- while the census had in fact caught the planted figure perfectly. The
-        # mirror was ALREADY `MOVED` on five other probes (`OPS_ENUM`, `PORT_VARIANTS`,
-        # `CORPUS_RAISE`, ...), so a tree-wide verdict cannot move and the assertion could
-        # never pass on a tree that is not already perfect. **A PLANT ON A DIRTY TREE MUST BE
-        # ASSERTED LOCALLY**, or it can only ever be run on a clean tree -- which is to say it
+        after = {r["line"]: r["kind"] for r in dirty_rows
+                 if r["file"] == target and r["probe"] == probe}
+        out.write("PLANT-LIVE planted %s -> %d at %s:%d; per-probe %s; tree verdict %s\n"
+                  % (written, int(written) + 1, target, ln, sorted(after.items()), dirty))
+        # THE VERDICT MOVES **FOR THAT PROBE**, NOT FOR THE TREE. MEASURED on this plant's first
+        # run: it asserted `dirty == clean` and reported `the verdict did not move from MOVED`
+        # while the census had caught the planted figure perfectly -- the mirror was ALREADY
+        # `MOVED` on five other probes, so a tree-wide verdict cannot move and the assertion
+        # could never pass on a tree that is not already perfect. **A PLANT ON A DIRTY TREE MUST
+        # BE ASSERTED LOCALLY**, or it can only ever be run on a clean tree -- which is to say it
         # could never be run at all.
-        after = [r["kind"] for r in dirty_rows if r["file"] == target and r["probe"] == probe]
-        if after and after[0] != "MOVED":
-            failures.append("probe %s on %s read %s after the plant and not MOVED"
-                            % (probe, target, after[0]))
-        if after and before[0][2] == "MOVED":
-            failures.append("probe %s was already MOVED on %s before the plant"
-                            % (probe, target))
+        if after.get(ln) != "MOVED":
+            failures.append("probe %s on %s read %s after the plant at line %d and not MOVED"
+                            % (probe, target, after.get(ln), ln))
         others = {r["probe"] for r in dirty_rows if r["kind"] == "MOVED"} - {probe}
         if others:
             out.write("PLANT-LIVE note: %d other probe(s) also stale on this mirror: %s\n"
@@ -932,8 +1102,11 @@ def main(argv=None):
                     help="write the table to OUT ('-' for stdout)")
     ap.add_argument("--prove", action="store_true", help="assert the row identity")
     ap.add_argument("--plant", action="store_true", help="a synthetic tree that must be able to fail")
-    ap.add_argument("--plant-live", metavar="FILE", nargs="?", const="gates/tn_minimum-gate.py",
-                    help="plant a false figure in a MIRROR of the real tree and assert it goes red")
+    ap.add_argument("--plant-live", metavar="FILE", nargs="?", const="",
+                    help="plant a false figure in a MIRROR of the real tree and assert it goes "
+                         "red. With no FILE the claim is SYNTHETIC and clean by construction; "
+                         "with one, that file must already carry a clean probe-bound claim, "
+                         "which is why it is not the default")
     ap.add_argument("--probe", default="PORT_VARIANTS",
                     help="the probe --plant-live perturbs")
     ap.add_argument("--no-gates", action="store_true",
@@ -946,8 +1119,14 @@ def main(argv=None):
         return PASS
     if args.plant:
         return FAIL if plant(sys.stdout) else PASS
-    if args.plant_live:
-        return FAIL if plant_live(args.plant_live, sys.stdout, args.probe) else PASS
+    # `const=""` IS LOAD-BEARING. With `nargs="?"` and no `const`, argparse gives a bare
+    # `--plant-live` the value `None`, WHICH IS ALSO WHAT AN ABSENT FLAG GIVES -- so the
+    # synthetic plant was silently unreachable and the run fell through to the ordinary census.
+    # MEASURED 2026-10-18T18:09:01Z: bare `--plant-live` printed the census table instead. The
+    # dispatch therefore tests `is not None`, never truthiness, and an empty string is the
+    # sentinel that says "no file, use the synthetic claim".
+    if args.plant_live is not None:
+        return FAIL if plant_live(args.plant_live or None, sys.stdout, args.probe) else PASS
 
     rows, ledger = census(ROOT, run_gates=not args.no_gates)
     kinds = {r["kind"] for r in rows}
@@ -977,7 +1156,18 @@ def main(argv=None):
     if not stale:
         sys.stdout.write("NOTHING IS STALE: every probe-bound claim equals its re-derived "
                          "figure. This is a POSITIVE answer, not an absence of rows.\n")
-    if args.prove and not prove(ROOT, rows, ledger, sys.stdout):
+    # `--prove` IS THE ZERO-DENOMINATOR AND IDENTITY GUARD, AND IT WAS INVERTED.
+    # MEASURED on this tree before the fix, 2026-10-18T17:58:42Z: `prose-census.py --prove`
+    # printed `PROVE OK: 16504 claim(s) = 23 checked + 16481 undeclared; 24 row(s); 0 leak(s)`
+    # and exited **5**, which is `DEAD` -- "it ran and emitted nothing", said about a run that
+    # emitted a full table and a clean proof. `prove()` returns `bool(bad)`, so `not prove(...)`
+    # is true exactly when there are NO leaks: the one state in which the row identity holds was
+    # the only state reported as DEAD, and a leaking table fell through to the ordinary verdict
+    # and was never named. That is `AGENTS.md`'s doctrine 2 with the sign flipped -- a gate that
+    # reports the wrong verdict about the checks it ran is worse than one that reports none,
+    # because it is trusted. LEAKS ARE `DEAD`: the census's own arithmetic is broken, so its
+    # answers are unknown. BOTH DIRECTIONS ARE MEASURED BELOW.
+    if args.prove and prove(ROOT, rows, ledger, sys.stdout):
         return DEAD
     return VERDICT_OF.get(verdict, FAIL)
 
