@@ -1,0 +1,251 @@
+diff --git a/checks/differ.py b/checks/differ.py
+index b706cb685..4038dc751 100755
+--- a/checks/differ.py
++++ b/checks/differ.py
+@@ -327,6 +327,19 @@ REPRO_ARTIFACT = "D0-repro.txt"
+ D10 = "D10-zerorow-guard"
+ REPRO_PINS = {"repro-rc": "rc=0",
+               "d10-transcript": "9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84"}
++# AND THE ROW THAT MAKES THE WITNESS FALSIFIABLE. Both pins above are claims about a COMPARISON,
++# not about a TIME, so nothing in `D0-repro.txt` said WHEN it was taken -- and a witness nobody
++# re-took is then indistinguishable from one taken a minute ago.
++# MEASURED 2026-10-18: `D0-repro.txt` was dated Oct 17 01:50, four lines, and `repro_bad()`
++# returned `[]`. So a STALE FILE WAS SERVING AS THE WITNESS, which is worse than the staleness:
++# a pin a stale file can satisfy reports success with no measurement behind it.
++#
++# IT IS A ROW AND NOT A PIN, and that is the whole distinction. A pin would have to move with
++# every port edit -- `pinindep`'s finding, and this file's own stated reason for leaving
++# `substrate` out of `PINS` (`:895-901`). This is a COMPARISON against `substrate_digest()`,
++# the generator's own declared population, which `gates/corpusverdict-gate.py:170` already
++# reads by path for the run summary. **ONE question, ONE mechanism, asked of both witnesses.**
++REPRO_SUBSTRATE = "repro-substrate"
+ # THE ARTIFACT NAMES ARE AN OUTPUT CONTRACT, NOT CONSTANTS, and this is the declaration of it.
+ # `oracle-run.sh` writes all `declared()` names and reads twelve of them by name in its own
+ # summary block;
+@@ -947,11 +960,27 @@ def substrate_digest() -> str:
+     return h.hexdigest()
+ 
+ 
++# THE OTHER WALK. `tinygrad/` IS THE REFERENCE EVERY VERDICT IS RELATIVE TO, AND IT WAS NOT IN THE
++# POPULATION: MEASURED 2026-10-18, the digest covered **156** declared inputs and **0 of the 213**
++# `tinygrad/*.py`. So if the CPython side moved mid-run -- the likeliest move of all, since an
++# upstream re-vendor rewrites it -- `substrate_digest()` could not notice, and the run's whole claim,
++# "ONE run measured ONE substrate", would have been blind to the input that decides every comparison.
++# The dependency is executed, not decorative: `graphcmp-oracle.py:244` does `import tinygrad` and
++# `graphcmp-p13-ops.py:33` does `from tinygrad import Tensor, dtypes`.
++#
++# **A DIGEST THAT OMITS THE SUBJECT OF THE COMPARISON IS A PIN ON THE SCALE, NOT THE SUBJECT.**
++# This walk is what makes `tinygrad/` the SECOND subject, so a substrate move now names the member
++# that moved instead of hiding behind 213 unpinned files.
++SUBSTRATE_WALKS = ("tinybendygrad", "tinygrad")
++
++
+ def substrate_entries() -> list[tuple[str, str]]:
+-    """`(relpath, sha256)` per input: the walk plus the named files, ABSENT where not on disk."""
+-    out = [(p.relative_to(ROOT).as_posix(), hashlib.sha256(p.read_bytes()).hexdigest())
+-           for p in (ROOT / "tinybendygrad").rglob("*")
+-           if p.is_file() and "__pycache__" not in p.parts]
++    """`(relpath, sha256)` per input: the walks plus the named files, ABSENT where not on disk."""
++    out = []
++    for root in SUBSTRATE_WALKS:
++        out += [(p.relative_to(ROOT).as_posix(), hashlib.sha256(p.read_bytes()).hexdigest())
++                for p in (ROOT / root).rglob("*")
++                if p.is_file() and "__pycache__" not in p.parts]
+     for rel in SUBSTRATE_INPUTS:
+         p = ROOT / rel
+         out.append((rel, hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else "ABSENT"))
+@@ -1106,15 +1135,36 @@ def repro_bad() -> list[str]:
+       * a pinned key ABSENT from the artifact -- the writer's row moved, so the pin can see a gap
+         its own shape would otherwise hide.
+       * a value that differs -- the two runs DID differ, or the writer's shape moved.
++
++    **AND THE FOURTH STATE, WHICH IS THE ONE THAT LIES: A WITNESS NOBODY RE-TOOK.** The three
++    above are all about CONTENT, so all three are silent about TIME, and a file written on any
++    past day answers them exactly as one written a minute ago. MEASURED 2026-10-18: this
++    artifact was dated Oct 17 01:50 and this function returned `[]` -- a four-day-old file
++    satisfying a pin as though the second measurement had been taken, which it had not. The
++    `REPRO_SUBSTRATE` arm closes that, using the comparison `gates/corpusverdict-gate.py`
++    already makes for the summary. `cmd_repro` refusing its bound is what makes the arm
++    necessary: a refusal leaves the OLD artifact in place, so without this row the worst
++    outcome of a refusal is that the previous success keeps reading as one.
+     """
+     if not (D / REPRO_ARTIFACT).exists():
+         return [f"{REPRO_ARTIFACT} ABSENT -- the SECOND MEASUREMENT was never taken, so the "
+                 "denominator for `repro-rc` is 0 runs rather than 2. Run `checks/differ.py repro` "
+                 "to take it. `PINS` above stays green on one run and says nothing about this."]
+     got = dict(ln.split("=", 1) for ln in text(REPRO_ARTIFACT).splitlines() if "=" in ln)
+-    return [f"{k}={v} (expected {REPRO_PINS[k]}, from {REPRO_ARTIFACT})" for k, v in got.items()
+-            if k in REPRO_PINS and v != REPRO_PINS[k]] \
++    bad = [f"{k}={v} (expected {REPRO_PINS[k]}, from {REPRO_ARTIFACT})" for k, v in got.items()
++           if k in REPRO_PINS and v != REPRO_PINS[k]] \
+         + [f"{k} ABSENT from {REPRO_ARTIFACT}" for k in REPRO_PINS if k not in got]
++    live = substrate_digest()
++    if REPRO_SUBSTRATE not in got:
++        bad.append(f"{REPRO_SUBSTRATE} ABSENT from {REPRO_ARTIFACT} -- a witness that names no "
++                   "bytes is a measurement with no subject, which is `substrate_bad()`'s own rule "
++                   "for a summary and applies here unchanged. RE-TAKE it with "
++                   "`checks/differ.py repro`; never hand-edit a value into it")
++    elif got[REPRO_SUBSTRATE] != live:
++        bad.append(f"{REPRO_SUBSTRATE}={got[REPRO_SUBSTRATE][:12]} but the live substrate is "
++                   f"{live[:12]} -- this witness describes a tree that NO LONGER EXISTS, so the "
++                   f"`repro-rc=rc=0` beside it is a true statement about bytes nobody is shipping")
++    return bad
+ 
+ 
+ def artefacts_ok():
+@@ -1234,6 +1284,31 @@ def plant():
+                            len(preconditions_bad(absent)) == len(ROW_KEYS),
+                            f"{len(preconditions_bad(absent))} complaint(s) for {len(ROW_KEYS)} "
+                            f"absent row(s)"))
++            # PLANT 5 -- ***THE WITNESS NOBODY RE-TOOK.*** `repro_bad()` is the only thing that
++            # can tell a fresh witness from a four-day-old one, and before `REPRO_SUBSTRATE`
++            # existed it could not: MEASURED 2026-10-18, it returned `[]` over an Oct-17 file.
++            # ALL THREE HALVES, because a comparator that says STALE for anything is as
++            # worthless as one that never says it -- `gates/corpusverdict-gate.py:103-117`
++            # states that as the reason its own control plants TWO digests and the identical one.
++            witness = D / REPRO_ARTIFACT
++            keep = witness.read_text() if witness.exists() else None
++            pins = "".join(f"{k}={v}\n" for k, v in REPRO_PINS.items())
++            try:
++                witness.write_text(pins + f"{REPRO_SUBSTRATE}={'0' * 64}\n")
++                stale = [b for b in repro_bad() if REPRO_SUBSTRATE in b]
++                witness.write_text(pins + f"{REPRO_SUBSTRATE}={substrate_digest()}\n")
++                fresh = [b for b in repro_bad() if REPRO_SUBSTRATE in b]
++                witness.write_text(pins)
++                norow = [b for b in repro_bad() if REPRO_SUBSTRATE in b]
++            finally:
++                if keep is None:
++                    witness.unlink(missing_ok=True)
++                else:
++                    witness.write_text(keep)
++            checks.append(("5: ***a witness nobody re-took must NOT read as a measurement*** -- "
++                           "stale digest reds, live digest is silent, absent row reds",
++                           len(stale) == 1 and not fresh and len(norow) == 1,
++                           f"stale={len(stale)} live={len(fresh)} row-absent={len(norow)}"))
+         finally:
+             D = live
+     print("PLANTS -- both halves of each, over a COPY of the live artifacts; no `bend`, no write "
+@@ -1246,7 +1321,23 @@ def plant():
+ 
+ 
+ def clean_run(label, wait):
+-    """Run until healthy, bounded, and record the DEFECT below rather than pointing at a file.
++    """Run until healthy, BOUNDED, and say how long the bound was. Record the DEFECT below.
++
++    **THE BOUND IS `wait` ATTEMPTS AND IT WAS NEVER MISSING -- WHAT WAS MISSING IS THE
++    ARITHMETIC.** MEASURED 2026-10-18: `for attempt in range(wait)` has always been the bound
++    and `wait` defaults to 9, so this was NEVER AN INFINITE LOOP, and "a timer bounding an
++    infinite loop" misdescribes it. But `ready(wait)` is called once PER ATTEMPT and itself
++    probes `wait` times with `time.sleep(60)` between probes, so the ceiling is
++    `(wait-1)*60 + 30` seconds of pure SLEEP per attempt -- `9 * 510 = 4590 s = 76.5 min` for
++    ONE `clean_run`, and `cmd_repro` calls it TWICE. `checks/bounded.py:209-212` already
++    measured the consequence: "`differ.py repro` ran 184 s on 2026-10-13 and was killed at 900 s
++    on 2026-10-14 with `out=0B err=0B`".
++    **A BOUND NO CALLER CAN COMPUTE IS INDISTINGUISHABLE FROM NO BOUND**, so a watchdog stopping
++    it looks exactly like a hang, and the observed "600 s" was a CALLER's budget meeting a
++    4590 s ceiling rather than a timeout policy. So the refusal now reports the wall clock and
++    the attempt count: a bounded refusal is answerable, and `TIMED-OUT` stops meaning the same
++    thing as `REFUSED`. The ceiling is not reduced here -- `--seconds` remains the budget, and
++    this only makes the two distinguishable.
+ 
+     `ready() && <run>` is the SHELL's order and it is wrong, and this is where it lives. When
+     the substrate never settles, `ready` is False, the runner is never executed, and
+@@ -1254,6 +1345,9 @@ def clean_run(label, wait):
+     run's health while waiting for a run that did not happen. Reported, not fixed: fixing it
+     means running unconditionally and letting the pins judge the result, which changes what a
+     `repro` refusal MEANS and is not this function's decision to make.
++    **MEASURED 2026-10-18, so the first half of that is no longer hypothetical on this tree**:
++    `settled()` returned `ALL PROOFS CHECK` and `gates/corpusverdict-gate.py` recorded
++    `bend ... rc=0`, so the run DOES execute and `unhealthy()` reads THIS attempt.
+ 
+     **THIS USED TO END "Reported, not fixed -- see DIFFPY.md", AND `DIFFPY.md` EXISTED
+     NOWHERE IN THE REPO** (MEASURED: 0 files; the pointer was carried by `checks/README.md:93`
+@@ -1263,6 +1357,7 @@ def clean_run(label, wait):
+     defect, where a reader of the defect finds it. `checks/README.md:93` still points at the
+     missing file; that pointer is NOT MINE and is reported, not edited.
+     """
++    t0 = time.monotonic()
+     for attempt in range(wait):
+         if ready(wait):
+             subprocess.run([sys.executable, str(Path(__file__).resolve()), "run"], cwd=ROOT,
+@@ -1277,16 +1372,60 @@ def clean_run(label, wait):
+             print(f"# {label}: healthy run, and every artefact has a body")
+             return True
+         time.sleep(30)
+-    print(f"# {label}: no healthy run in {wait} attempts -- this is NOT a measurement")
++    print(f"# {label}: no healthy run in {wait} attempts, {time.monotonic() - t0:.0f}s spent "
++          f"(ceiling {(wait - 1) * 90 + 30}s of sleep) -- this is NOT a measurement")
+     return False
+ 
+ 
++def gatekit():
++    """`gates/gatekit.py` BY PATH, because it OWNS the five exits and nothing else does.
++    `gatekit.py:60` declares `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` and
++    `gates/gatesweep.py:134` maps an exit through it, so a number retyped here would be a
++    second copy of a table that HAS A GENERATOR -- the defect `artefacts_ok()` and
++    `checks/no-txt.py` were each fixed for, one level apart. `gatekit` imports nothing from
++    this file, so loading it here closes no cycle.
++
++    **IT IS RETURNED AS THE MODULE, NOT UNPACKED, AND THAT IS THE SECOND HALF OF THE FIX.** The
++    first version of this returned `VERDICT` -- a `code -> word` table -- and the call site wrote
++    `verdicts()[3]`, which yields the WORD `'REFUSED'`. Returning that as the exit status sends
++    the string to `sys.exit`, which prints it and returns **1**: the fix for an unnamed exit code
++    would have turned `repro` into a silent `FAIL`, i.e. indistinguishable from "the two runs
++    DIFFER". So the table is read in the direction the caller needs and the code is named by
++    `gatekit` itself.
++    """
++    spec = importlib.util.spec_from_file_location("gatekit", ROOT / "gates/gatekit.py")
++    mod = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(mod)
++    return mod
++
++
+ def cmd_repro(a):
+     with tempfile.TemporaryDirectory() as tmp:
+         shots = {}
+         for label, run_label in (("A", "run A"), ("B", "run B")):
+             if not clean_run(run_label, a.wait):
+-                return 2
++                # MEASURED 2026-10-18: this was `return 2`, and 2 IS A CODE NO VOCABULARY NAMES.
++                # `gates/gatekit.py:94-101` already measured that consequence for another gate --
++                # "a gate returning 2 ... made `VERDICT[code]` raise `KeyError: 2`, so the runner
++                # that aggregated it CRASHED while reporting on a gate that had answered". So the
++                # exit was not a sixth verdict, it was a TRAPDOOR, and a caller reading `$?` had
++                # nothing to read.
++                #
++                # IT IS `REFUSED` AND NOT `FAIL`, and the difference is the whole claim. `FAIL` (1)
++                # is what `cmd_repro` returns below when it DID take both runs and they differed --
++                # a measurement. Reaching this line means a healthy run to SNAPSHOT was absent, so
++                # the second measurement was never taken and nothing was determined about
++                # reproducibility: a precondition was absent, which is `REFUSED`'s own definition.
++                # Not `SKIP` (the run executed, repeatedly, and produced verdicts), not `DEAD` (it
++                # emitted complaints), not 0 (a gate that exits 0 having measured nothing is worse
++                # than no gate).
++                gk = gatekit()
++                print(f"REPRO: {gk.VERDICT[gk.REFUSED]} -- no healthy {run_label} in "
++                      f"{a.wait} attempt(s), so the SECOND MEASUREMENT WAS NOT TAKEN. "
++                      f"`{REPRO_ARTIFACT}` is whatever it was BEFORE this command started, and "
++                      f"`repro_bad()` will now say so: it refuses a witness that names no bytes "
++                      f"or names bytes that have moved.")
++                return gk.REFUSED
+             path = Path(tmp) / f"gcrepro{label}.sha"
+             with path.open("w") as f:
+                 snap(f)
+@@ -1300,14 +1439,15 @@ def cmd_repro(a):
+         # the denominator 2 -- and it was COMPUTED AND THROWN AWAY: printed, never persisted. So write it,
+         # as `key=value`, where a pin can read it BESIDE the summary it makes non-independent.
+         d10 = d10_sha(shots["B"].read_text())
++        base = f"{REPRO_SUBSTRATE}={substrate_digest()}\n"
+         if shots["A"].read_bytes() == shots["B"].read_bytes():
+             write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical={n}\nrepro-rc=rc=0\n"
+-                                  f"d10-transcript={d10}\n")
++                                  f"d10-transcript={d10}\n" + base)
+             print(f"REPRO: {n} of {n} files identical across two clean runs "
+                   "(sha256 over non-blank lines)")
+             return 0
+         write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical=0\nrepro-rc=rc=1\n"
+-                              f"d10-transcript={d10}\n")
++                              f"d10-transcript={d10}\n" + base)
+         print(f"REPRO: NOT IDENTICAL -- {n} files:")
+         sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
+         return 1

@@ -1,0 +1,15 @@
+=== A: repro 1 (the Q3 plant: reach the bound) 17:32:27Z ===
+repro 1 EXIT=3
+WITHIN-LIMITS
+# run A: run 1 summary was NOT healthy -- waiting: expect-moved=3 (expected 0); graphs-agree=31 (expected 34); byte-identical=20 (expected 34); stable-pairs=4 of 5 (expected 5 of 5); stable-failed=1 of 5 (expected 0 of 5); oracle-selfcheck=# ORACLE SELFCHECK: FAIL (expected # ORACLE SELFCHECK: OK); census-rc=rc=1 (expected rc=0)
+# run A: no healthy run in 1 attempts, 366s spent (ceiling 30s of sleep) -- this is NOT a measurement
+REPRO: REFUSED -- no healthy run A in 1 attempt(s), so the SECOND MEASUREMENT WAS NOT TAKEN. `D0-repro.txt` is whatever it was BEFORE this command started, and `repro_bad()` will now say so: it refuses a witness that names no bytes or names bytes that have moved.
+--- D0-repro.txt mtime after the refusal (must still be Oct 17) ---
+2026-10-17 01:50:09 130 bytes
+=== RUN 3 start 17:38:33Z ===
+peak-RSS=957 MB (ceiling 2048)  257s
+=== RUN 3 end 17:42:50Z ===
+=== RUN 4 start 17:42:50Z ===
+peak-RSS=876 MB (ceiling 2048)  225s
+=== RUN 4 end 17:46:35Z ===
+ALL DONE 17:46:35Z

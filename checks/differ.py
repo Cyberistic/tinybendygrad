@@ -1328,8 +1328,10 @@ def clean_run(label, wait):
     and `wait` defaults to 9, so this was NEVER AN INFINITE LOOP, and "a timer bounding an
     infinite loop" misdescribes it. But `ready(wait)` is called once PER ATTEMPT and itself
     probes `wait` times with `time.sleep(60)` between probes, so the ceiling is
-    `(wait-1)*60 + 30` seconds of pure SLEEP per attempt -- `9 * 510 = 4590 s = 76.5 min` for
-    ONE `clean_run`, and `cmd_repro` calls it TWICE. `checks/bounded.py:209-212` already
+    `60*(wait-1) + 30` seconds of pure SLEEP per ATTEMPT -- `9 * (540 + 30) = 4590 s` of sleep
+    for ONE `clean_run` at the default `wait=9`, and `cmd_repro` calls it TWICE. (That is
+    SLEEP; the runs themselves add more, so it is a floor on the ceiling and never an
+    overstatement.) `checks/bounded.py:209-212` already
     measured the consequence: "`differ.py repro` ran 184 s on 2026-10-13 and was killed at 900 s
     on 2026-10-14 with `out=0B err=0B`".
     **A BOUND NO CALLER CAN COMPUTE IS INDISTINGUISHABLE FROM NO BOUND**, so a watchdog stopping
@@ -1373,7 +1375,8 @@ def clean_run(label, wait):
             return True
         time.sleep(30)
     print(f"# {label}: no healthy run in {wait} attempts, {time.monotonic() - t0:.0f}s spent "
-          f"(ceiling {(wait - 1) * 90 + 30}s of sleep) -- this is NOT a measurement")
+          f"(ceiling {wait * (60 * (wait - 1) + 30)}s of sleep, i.e. {wait} attempts x "
+          f"{60 * (wait - 1) + 30}s) -- this is NOT a measurement")
     return False
 
 

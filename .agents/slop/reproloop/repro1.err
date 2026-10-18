@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=3  peak-RSS=956 MB (ceiling 2048)  366s  :: .venv/bin/python checks/differ.py repro  out=697B err=0B
+  MACHINE: **VIOLATED** -- loadavg 24.8 on 12 cores, swap free 1.45 of 20.00 GiB; loadavg 24.8 > 12 cores and swap free 1.45 of 20.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD
