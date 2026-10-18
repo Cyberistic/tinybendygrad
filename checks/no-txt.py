@@ -58,6 +58,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from typing import Callable
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Trees that are not this project: the git object store, the upstream clone, the tinygrad checkouts
@@ -162,8 +163,30 @@ def dup_census_lanes() -> set[str]:
     return {str(p.relative_to(ROOT)) for r in map(Path, roots) for p in r.glob(f"checks/lanes/{ext}")}
 
 
+# PER GENERATOR, IS A DECLARED NAME'S ABSENCE DRIFT OR DORMANCY? Keyed by the LOADER, never by
+# its label string, so a reworded label cannot silently switch the property off, and it is a
+# property OF the generator -- not a second copy of its names, which is what doctrine 1 forbids and
+# what would rot silently. Each entry is a prefix tuple matched against the declared name's
+# BASENAME, because that is the half the generator controls: a declared name is WRITTEN ONLY
+# SOMETIMES if its basename starts with one of these. Everything else is written on every run.
+#
+#   differ    `differ.run()` stages as `.tmp.<name>` and `os.replace`s it (`differ.py:304`), so a
+#             staging name exists only inside a run's window. The BASE names exist between runs.
+#   rename    `empty_remnants()` already intersects existence AND size: a non-empty or deleted
+#             remnant leaves the set by construction, so absence there is never observable drift.
+#   skipexit  its declared() is the outputs of a lane that runs on demand; between runs they are absent.
+CONDITIONAL = {graphcmp_artifacts: (".tmp.",),
+               empty_remnants: ("",),
+               skipexit_artifacts: ("",)}
+
+
 def carveouts() -> tuple[tuple[str, set[str]], ...]:
     """(label, declared set) per generator. A loader that raises contributes nothing but a report."""
+    return tuple((label, declared) for label, declared, _ in _carveouts())
+
+
+def _carveouts() -> tuple[tuple[str, set[str], Callable], ...]:
+    """(label, declared set, loader) per generator, so drift() can ask CONDITIONAL about the loader."""
     out = []
     for label, fn in (("`checks/differ.py`'s graphcmp artifacts + `.tmp.` staging", graphcmp_artifacts),
                       ("`.agents/slop/figure2/plant.py`'s forced plant summaries", plant_artifacts),
@@ -171,7 +194,7 @@ def carveouts() -> tuple[tuple[str, set[str]], ...]:
                       ("`.agents/slop/skipexit/repro.py`'s PRE-FIX LANE outputs", skipexit_artifacts),
                        ("`checks/dup-census.py`'s `lanes` CACHE (`.txt` mandated by its own glob)", dup_census_lanes)):
         try:
-            out.append((label, fn()))
+            out.append((label, fn(), fn))
         except Exception as e:                     # a carve-out that cannot be computed is not one
             print(f"  CARVE-OUT UNCOMPUTED ({label}): {e!r} — its files are REPORTED")
     return tuple(out)
@@ -185,6 +208,41 @@ def excused_names() -> set[str]:
     an exemption becomes a blanket.
     """
     return set().union(*(declared for _, declared in carveouts()))
+
+
+def drift() -> tuple[tuple[str, str, str], ...]:
+    """(label, ABSENT, PRESENT) per generator: HOW WIDE EACH CARVE-OUT IS, AND HOW MUCH OF IT EXEMPTS.
+
+    THE ONE THING `main()` STRUCTURALLY CANNOT SEE, and it is the failure this module exists to
+    avoid. `main()` INTERSECTS: a declared name with no file on disk contributes nothing, prints
+    nothing and moves no count. So deleting `runs/graphcmp/D/D1-graph-lin.txt` without touching
+    `differ.declared()` makes this gate one exemption WIDER than the thing it exempts, and the
+    gate gets QUIETER while saying nothing — a carve-out that has drifted from its subject, which
+    is a hole wearing an exemption's clothes. MEASURED 2026-10-18 (`gates/txt-carveout-gate.py`,
+    the reader for this): **every** absent name is covered by a `CONDITIONAL` prefix, which is what
+    keeps the count from being a RED today. The count itself MOVES with the run — a `.tmp.` staging
+    name exists only inside a run's window — so read it from the gate, never from this line.
+
+    Reporting the split for every group is what makes the plant meaningful: a name may CROSS from
+    PRESENT to ABSENT and the only reader that can notice is this function.
+    """
+    return tuple((label, sorted(p for p in declared if not os.path.exists(os.path.join(ROOT, p))),
+                  sum(os.path.exists(os.path.join(ROOT, p)) for p in declared))
+                 for label, declared, _ in _carveouts())
+
+
+def stale() -> tuple[tuple[str, str], ...]:
+    """(label, name) per ABSENT declared name that is NOT covered by a `CONDITIONAL` prefix.
+
+    This is the RED. It is non-empty exactly when a generator declares a name it writes on every
+    run and that name is not on disk, so the carve-out has outgrown its subject and `main()` is
+    exempting nothing while reporting nothing. Empty is a MEASUREMENT (`PASS 0 stale`), never a
+    default: the set is built from the live filesystem every run, so it can be non-empty.
+    """
+    return tuple((label, name) for label, declared, fn in _carveouts()
+                 for name in declared
+                 if not os.path.exists(os.path.join(ROOT, name))
+                 and not os.path.basename(name).startswith(CONDITIONAL.get(fn, ())))
 
 
 def plant() -> int:
