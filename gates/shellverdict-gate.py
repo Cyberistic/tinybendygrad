@@ -62,7 +62,6 @@ import argparse
 import importlib.util
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import warnings
@@ -248,11 +247,13 @@ def plant(root):
     """THREE SYNTHETIC TREES. A plant that perturbs something the detector does not read
     proves only that the tree parses.
 
-    A. the same synthetic file at `exit 3` and at `exit 4`, which is the whole defect and
-       nothing else -- same population, same tokenizer, same vocabulary, one integer;
-    B. THE REAL `checks/sb-gate.sh`, from its git blob, at the same relative path in a
-       throwaway tree. A detector that cannot see the defect in the file this file was written
-       about is a detector that measured nothing;
+    A. the same synthetic file with every token arm on one exit, and with the per-token
+       mapping `4 4 5` -- same population, same tokenizer, same vocabulary, three integers;
+    B. THE REAL `checks/sb-gate.sh`, its own live bytes, and then the SAME BYTES with its
+       `KILLED-ON-MEMORY` arm reverted from `skip` to `refuse`. A detector that cannot see the
+       defect when it is reintroduced into the file this file was written about is a detector
+       that measured nothing. **It does not read `git show HEAD:`**, and that is on purpose:
+       the fix moved HEAD, so a plant that reads the blob goes red for having been right.
     C. an arm whose exit this file CANNOT resolve, which must read `UNRESOLVED` and must NOT
        score green -- because an unread row is not an agreeing row.
     """
@@ -267,13 +268,18 @@ def plant(root):
     f.unlink()
 
     real = d / "sb-gate.sh"
-    blob = subprocess.run(["git", "show", f"HEAD:{SUBJECT}"], cwd=ROOT,
-                          capture_output=True, text=True, check=True).stdout
-    real.write_text(blob)
-    at_head = len(_mismatches(root))
-    real.write_text((ROOT / SUBJECT).read_text())      # the bytes on disk, right now
+    live = (ROOT / SUBJECT).read_text()
+    real.write_text(live)
     at_live = len(_mismatches(root))
-    same = blob == (ROOT / SUBJECT).read_text()
+    # THE PERTURBATION IS THE ONE-LINE REVERSION OF THE FIX, ON THE REAL FILE'S OWN BYTES.
+    # An earlier version of this plant read the defect out of `git show HEAD:...`, and that was
+    # a CHANGE-DETECTOR wearing a plant's clothes: the fix moved HEAD, the blob stopped being
+    # broken, and the plant went red for having been RIGHT. `AGENTS.md`: "change-detector tests
+    # considered harmful". **A PLANT MUST NOT DEPEND ON THE REPOSITORY STILL BEING BROKEN.**
+    perturbed = live.replace('KILLED-ON-MEMORY) skip "', 'KILLED-ON-MEMORY) refuse "')
+    same = perturbed == live
+    real.write_text(perturbed)
+    at_perturbed = len(_mismatches(root))
     real.unlink()
 
     unresolved = (PLANT % RIGHT).replace("KILLED-ON-MEMORY) s4 ;;", "KILLED-ON-MEMORY) : ;;")
@@ -287,8 +293,9 @@ def plant(root):
     results = [
         ("A  one exit on every token arm is caught", wrong == 3, f"{wrong} mismatching row(s)"),
         ("A  the per-token mapping is clean", right == 0, f"{right} mismatching row(s)"),
-        (f"B  {SUBJECT}@HEAD shows the defect", at_head >= 3, f"{at_head} mismatching row(s)"),
-        (f"B  {SUBJECT} live bytes are clean", (not same) and at_live == 0, f"{at_live} row(s)"),
+        (f"B  {SUBJECT} live bytes are clean", at_live == 0, f"{at_live} row(s)"),
+        ("B  reverting its KILLED-ON-MEMORY arm moves the row",
+         (not same) and at_perturbed > at_live, f"{at_live} -> {at_perturbed}"),
         ("C  a `:` arm is UNRESOLVED, not green", len(unres) == 1, f"{len(unres)} row(s)"),
         ("C  a `exit \"$2\"` arm is UNRESOLVED, not green", len(dyn) == 1, f"{len(dyn)} row(s)"),
     ]
