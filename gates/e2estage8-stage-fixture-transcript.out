@@ -1,0 +1,9 @@
+== 1/3 oracle (CPython)
+  stage 1 oracle: PASS
+
+== 2/3 port (pure bend, no GPU)
+bend: 24 rows
+  stage 2 port: PASS
+
+== 3/3 gate (matmul vs CPython)
+  stage 3 gate: PASS
