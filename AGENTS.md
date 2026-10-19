@@ -127,9 +127,12 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, AND **`repro`: `310 of 310 files identical across two clean runs`**
   (`D0-repro.txt` mtime **`Oct 19 00:16`**, **2 DAYS STALE BEFORE THAT**). **EVERY GRAPH IN THE 34 IS
   BYTE-IDENTICAL, AND THE VERDICT **REPRODUCES** — **WHICH ARE **TWO **DIFFERENT **CLAIMS** AND **ONLY THE
-  SECOND **IS **PROVEN.** **THE **THREE **MALFORMED **TREES **ARE **ORPHANED**: `d83cf685` IS OWNED BY
-  `591f6b499`, `3a60f33f` BY `63b64ebad`, **NONE IS AN ANCESTOR OF HEAD**, **SO A PUSH OF HEAD WOULD NOT
-  CARRY THEM.** **AND `?git diff HEAD` IS **UNRELIABLE **ON **THIS **TREE** **RIGHT **NOW**: THE ARMED INDEX
+  SECOND **IS **PROVEN.** **ALL **THREE **MALFORMED **TREES **ARE **ORPHANED** AND **ALL **THREE **ARE **NAMED**:
+  `d57bc484` (**UNOWNED** — **AND **IT **IS **THE **ONE **THIS **FILE **NAMED **ONLY **BY **COUNT**, **WHICH **TWO
+  UNITS **REPORTED **AS **A **GAP **INDEPENDENTLY** — **A **CENSUS **THAT **RECORDS **A **COUNT **WITHOUT **THE
+  NAMES **IS **NOT **A **CENSUS**), `d83cf685` (OWNED BY `591f6b499`), `3a60f33f` (OWNED BY `63b64ebad`);
+  **NONE IS AN ANCESTOR OF HEAD**, **SO A PUSH OF HEAD WOULD NOT
+  CARRY THEM.** **AND `git diff HEAD` IS **UNRELIABLE **ON **THIS **TREE** **RIGHT **NOW**: THE ARMED INDEX
   LISTS FRESH FILES AS DELETIONS, SO IT REPORTED **120** DELETIONS ON A FILE WHOSE `git hash-object`
   **EQUALS `HEAD:`** — **USE `git hash-object` vs `git rev-parse HEAD:<path>`, AND `git show --stat`,
   WHICH **HOLD.** **See `checks/README.md` and `.agents/slop/difftxt/`.
