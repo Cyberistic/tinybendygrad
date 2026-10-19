@@ -1,11 +1,11 @@
-"""RE-FREEZE `checks/e2e.py`'S TWO PINS FROM THE TWO FILES, AND PROVE THE ONE-EDIT INVARIANT.
+"""RE-FREEZE `checks/e2e.py`'S TWO PINS FROM THE TWO FILES, AND PROVE THE DECLARED-EDIT INVARIANT.
 
 THE PIN MOVES WITH THE EDIT, AND A PIN MOVED BY HAND IS A PIN THAT WILL EVENTUALLY NOT MATCH. So
 this derives both hashes from disk, writes them into `checks/e2e.py`, and then CHECKS what it wrote
 by reading `checks/e2e.py` BACK and asking three questions that share no code with the writer:
 
   1. does `checks/e2e.py` report drift?  (`oracle_drift() == []`)
-  2. does reverting the copy's ONE documented edit reproduce `checks/e2e.sh` byte for byte?
+  2. does reverting the copy's DOCUMENTED EDITS reproduce `checks/e2e.sh` byte for byte?
   3. does `sha256(checks/e2e.sh)` equal the `BODY_SHA` now in the file?
 
 (2) and (3) are checked with `difflib` and `hashlib` respectively, so a bug in the rewriter that
@@ -20,10 +20,10 @@ from __future__ import annotations
 import argparse
 import difflib
 import hashlib
-import importlib.util
 import re
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 HERE = Path(__file__).resolve()
 REPO = HERE.parents[3]
@@ -37,18 +37,35 @@ def sha(p: Path) -> str:
 
 
 def load_port():
-    """`checks/e2e.py` as a MODULE, so `oracle_drift()` is callable without running seven stages."""
-    spec = importlib.util.spec_from_file_location("e2epin", PORT)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    """`checks/e2e.py` as a MODULE, so `oracle_drift()` is callable without running seven stages.
+
+    **COMPILED FROM THE SOURCE TEXT, NOT `module_from_spec`, AND THE REASON IS MEASURED.** The
+    import machinery resolves a module through `__pycache__` and treats a cached `.pyc` as current when
+    the source's **mtime AND SIZE** both match. A `*_SHA` line is 64 hex characters, so every
+    re-freeze this file has ever performed replaced 64 characters with 64 characters -- the size never
+    changes. MEASURED 2026-10-19, in a scratch tree of this exact shape: overwrite
+    `BODY_SHA = "2ef51412..."` with `"9925f75c..."` (length preserved) within the same wall-clock
+    second as an import, load again, and the second load answers **`2ef51412`** -- the PRE-EDIT pin,
+    served from `checks/__pycache__/e2e.cpython-312.pyc`, which this tree's own readers create.
+    **A PIN THAT CAN BE READ BACK STALE IS NOT A PIN, AND THE ERROR IS SILENT IN BOTH DIRECTIONS:**
+    this file would have reported a green against bytes that no longer existed. `.agents/slop/e2esh/
+    plant.py:drift()` has always used `exec(compile(src, ...))` and is immune; this adopts its idiom
+    rather than inventing a second one.
+    """
+    ns: dict = {"__file__": str(PORT), "__name__": "e2epin"}
+    exec(compile(PORT.read_text(), str(PORT), "exec"), ns)   # noqa: S102 -- it is our own file
+    return SimpleNamespace(**{k: v for k, v in ns.items() if not k.startswith("__")})
 
 
 def verify() -> list[str]:
     """THE THREE QUESTIONS. An empty list means the pair is right."""
     port = load_port()
     bad = [f"oracle_drift(): {d}" for d in port.oracle_drift()]
-    reverted = ORACLE.read_bytes().decode().replace(*port.ORACLE_EDIT).encode()
+    # `revert_oracle()` IS `checks/e2e.py`'S OWN TRANSFORM, so this reader and `oracle_drift()` cannot
+    # disagree about what the declared delta is. MEASURED 2026-10-19, before this line: it applied
+    # `ORACLE_EDIT` ALONE -- one pair out of the eleven -- so question (2) reported a byte difference
+    # that was really the ten pairs this reader had never heard of, and its own comment admitted it.
+    reverted = port.revert_oracle(ORACLE.read_bytes().decode()).encode()
     if reverted != BODY.read_bytes():
         delta = "".join(difflib.unified_diff(BODY.read_text().splitlines(True),
                                              reverted.decode().splitlines(True), "e2e.sh", "reverted",
@@ -80,7 +97,7 @@ def main() -> int:
     bad = verify()
     for b in bad:
         print(f"  FAIL {b}")
-    print("the one-documented-edit invariant holds" if not bad else f"{len(bad)} failure(s)")
+    print("the declared-edit invariant holds" if not bad else f"{len(bad)} failure(s)")
     return 1 if bad else 0
 
 

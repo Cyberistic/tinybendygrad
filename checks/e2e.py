@@ -7,11 +7,21 @@
 `.agents/slop/` and resolved to the repo's PARENT from `checks/`. The shell's body is frozen at
 `.agents/slop/e2epy/oracle-e2e.sh` as the ORACLE this port is diffed against, because the rule this
 project wrote for itself is that the Python reproduces the shell's verdict on EVERY INPUT or it does
-not move. That oracle differs from `checks/e2e.sh` by exactly ONE documented edit -- `ORACLE_EDIT`,
-the `ROOT` preamble, because a fixture tree has no `pyproject.toml` for the assertion to find -- and
-both shas are pinned in `ORACLE_SHA` and `BODY_SHA`, CHECKED IN CODE on every run, refusing with exit
-3 on drift. A pin in a comment is a pin that cannot fail, and `checks/differ.py` measured that lesson
-the hard way.
+not move. That oracle differs from `checks/e2e.sh` by exactly the edits `ORACLE_EDITS` declares --
+one pair per call site, applied in order, the FIRST of which is the `ROOT` preamble, because a fixture
+tree has no `pyproject.toml` for the assertion to find -- and both shas are pinned in `ORACLE_SHA` and
+`BODY_SHA`, CHECKED IN CODE on every run, refusing with exit 3 on drift. A pin in a comment is a pin
+that cannot fail, and `checks/differ.py` measured that lesson the hard way.
+
+**THE NUMBER OF PAIRS IS NOT WRITTEN HERE, AND THE REASON IS THIS PARAGRAPH.** It used to read
+`exactly ONE documented edit -- ORACLE_EDIT` on a tree whose `ORACLE_EDITS` held 9 pairs, and that
+was a governing-document claim about this file's OWN MECHANISM that was false for as long as it
+stood (MEASURED 2026-10-19, `.venv/bin/python` over a `module_from_spec` load of this file:
+`oracle_drift() == []` and `revert(oracle) == checks/e2e.sh` byte for byte at 19894 B each, so the
+mechanism was SOUND and only its description had gone stale -- which is the same failure `BODY_SHA`
+itself went stale on, in prose, one level up). So the number is now DERIVED WHERE IT IS USED:
+`--help` prints `len(ORACLE_EDITS)`, and `oracle_drift()`'s own message carries it. **A COUNT
+TRANSCRIBED IN PROSE ABOUT ITS OWN INSTRUMENT IS A COUNT NOBODY CAN CHECK.**
 
 WHAT IT GATES, IN ORDER, AND THE ORDER IS THE ORDER THE CLAIMS COME IN:
 
@@ -241,15 +251,30 @@ ENV = dict(os.environ)
 # ORACLE_SHA 9ee46f84… / BODY_SHA e75c9e38…, the stage-8-only pair was
 # ORACLE_SHA 245a10db… / BODY_SHA 558554c8…, and the pair before the retirement was
 # e0eb23d5cb7340d5 / f222c02c9481d982.
+# THE PIN MOVED A SIXTH TIME, AND IT MOVED BECAUSE THE BODY MOVED: `checks/e2e.sh` gained two
+# `#` comment lines' worth of corrections to two citations of the stage-5 fixture, so its bytes
+# changed and the pin that names those bytes had to change with them IN THE SAME COMMIT. That is the
+# rule `BODY_SHA`'s own comment records ("any edit to that file must move the pin in the same
+# commit"), and following it is what keeps the comment-only-edit refusal honest: a pin that only
+# fired for code would have been a pin with a hole in the one place this gate has been bitten twice.
+# MEASURED, and the delta is the WHOLE story, not a re-freeze:
+#   `BODY_SHA` was `69d7cfcd…`, is now `2ef51412…`;
+#   `len(ORACLE_EDITS)` is 11 pairs;
+#   `revert_oracle()` over all 11 and `checks/e2e.sh` are both 20388 bytes and both `2ef51412…`;
+#   `oracle_drift() == []`.
+# **AND `sh -n` ACCEPTS BOTH SIDES**, which is the check that a comment edit cannot be a code edit.
+# The pair before this one was `69d7cfcd…`, the pair before that was `bdbf6f6c…`, and before that
+# `fcf647cd…`.
 ORACLE_SHA = "05d7cfea0aea9c8523649ad1e277cb03890214cb9c7996807c1b0295207f8696"
-BODY_SHA = "69d7cfcd7fb71b7f743906072f20800a49a315fa13248e77e61e026323835870"
+BODY_SHA = "2ef51412c74428b8545a133ebedeb763407ec9b3c78bf58fdf726e10a15cd3bb"
 # THE DOCUMENTED EDITS, IN ORDER, AS `(ORACLE_SIDE, SHELL_SIDE)`: applying every one of them to the
 # frozen copy must yield the live body, byte for byte. So the ORACLE's text is the FIRST element of
-# each pair. `ORACLE_EDIT` KEEPS ITS NAME AND ITS ONE-PAIR SHAPE, because
-# `.agents/slop/e2esh/refreeze.py:51` reads it that way and a changed shape would make that reader
-# raise instead of answer -- but it now applies ONE OF THREE edits, so that file's question (2) will
-# report a byte difference that is really the delta declared below. Its questions (1) and (3) are
-# unaffected. One line of that reader, out of this unit's grant.
+# each pair. `ORACLE_EDIT` IS STILL THE NAME OF THE FIRST PAIR AND IT IS NO LONGER THE ONLY ONE --
+# **it is not read alone by anything any more**, which is the repair, measured 2026-10-19:
+# `.agents/slop/e2esh/refreeze.py` applied `ORACLE_EDIT` and nothing else, so its question (2)
+# reported a byte difference that is really 1 of the declared pairs. It now calls `revert_oracle()`
+# below, the SAME function `oracle_drift()` uses, so two readers of this mechanism cannot drift
+# apart -- one transform, two callers, `AGENTS.md`'s "shareable logic should be reused".
 ORACLE_EDIT = ('ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}\n', """# ROOT IS ASSERTED, NOT COMPUTED. `../..` is `dirname "$0"` up two, which was correct while this
 # file lived at `.agents/slop/` and is WRONG here: `checks/` is one level shallower, so it resolved
 # to `/Users/cyberistic/src/tries` -- the repo's PARENT, a directory that exists, so `cd "$ROOT"`
@@ -306,10 +331,12 @@ ROOT=$(cd "$_d/.." && pwd)
 # these nine pairs are what keeps `revert(oracle) == checks/e2e.sh` byte for byte: the delta is
 # NAMED rather than removed, which is the whole difference between a pin and a hash.
 #
-# THE COST, MEASURED, AND OUT OF GRANT: `.agents/slop/e2esh/refreeze.py:52` applies `ORACLE_EDIT`
-# alone, so it answers question (2) wrongly for a seventh of the delta instead of a third. That
-# reader was already knowingly degraded -- its own comment above says so -- one line would move it
-# onto `ORACLE_EDITS`, and it is out of grant.
+# THE COST THAT EXISTED, MEASURED, AND REPAIRED IN THE SAME COMMIT THIS DELTA LANDED:
+# `.agents/slop/e2esh/refreeze.py` applied `ORACLE_EDIT` alone, so it answered its own question (2)
+# wrongly for 1 of the 9 declared pairs rather than for the delta, and it KNEWED -- its own comment
+# said so. Its questions (1) and (3) were always sound. One call to `revert_oracle()` is the fix, and
+# that function is the one `oracle_drift()` uses, so the reader cannot become wrong again by being
+# corrected in one place only.
 ORACLE_EDITS = (
     ORACLE_EDIT,
     ("# HAS NO `f64` GATE ROW.  `renderer/cstyle.bend:2984-3015` calls `rd_row` for exactly\n",
@@ -329,6 +356,31 @@ ORACLE_EDITS = (
      'echo "== 5/7 port\'s own device (the port\'s ops_bend runtime executes)"\n'),
     ('echo "== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"\n',
      'echo "== 6/7 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"\n'),
+    # TWO MORE, AND THEY ARE THE ONES THIS COMMIT IS ABOUT. Both are `#` comment lines in
+    # `checks/e2e.sh` naming `ops_bend-milestone-expected.txt`, a path that has not existed since the
+    # fixture was renamed to `.md`. **A COMMENT LINE IS NOT A STRING THE SHELL READS** -- `/bin/sh`
+    # discards it before execution, `grep -v '^[[:space:]]*#' checks/e2e.sh | grep -c
+    # 'ops_bend-milestone-expected'` is `0` and `grep -c '<<' checks/e2e.sh` is `0`, so no heredoc
+    # body mentions it either -- which is why this could sit here falsified and run. It was load-bearing
+    # all the same: it is the citation a reader would follow to the fixture.
+    # THE FIRST IS A LIVE POINTER, so it now names the STEM the loader actually resolves
+    # (`_EXPECTED_STEM` in `opsbend_milestone_gate.py`, by discovery), which is the same lesson the
+    # stage-5 header in this file records in prose.
+    # THE SECOND IS A MEASUREMENT -- `FileNotFoundError: .agents/slop/ops_bend-milestone-expected.txt`
+    # is what the fixture did on 2026-10-05 -- so the quote is KEPT VERBATIM and the correction is set
+    # BESIDE it, explicitly labelled a record. **A MEASUREMENT IS NOT A PATH AND MUST NOT BE REWRITTEN
+    # TO LOOK LIKE A CURRENT ONE.** Rewriting it to say `.md` would have made the sentence true and the
+    # evidence false.
+    ('# (`.agents/slop/ops_bend-milestone-expected.txt`). No Node, no browser, no adapter,\n',
+     '# (`.agents/slop/ops_bend-milestone-expected.*` -- BY STEM, NEVER BY EXTENSION: the loader resolves\n'
+     '# `_EXPECTED_STEM` in `opsbend_milestone_gate.py` by discovery, so the `.txt` -> `.md` rename that\n'
+     '# this pointer used to transcribe moved it once and the stage died on a `FileNotFoundError`). No Node,\n'
+     '# no browser, no adapter,\n'),
+    ('# artifact unable to say what it would have measured. NOT FIXED HERE, DELIBERATELY: changing what\n',
+     '# artifact unable to say what it would have measured. THE `.txt` IN THAT QUOTE IS A RECORD, NOT A\n'
+     '# PATH: it is the extension the fixture carried on 2026-10-05, and nothing resolves it now -- the\n'
+     '# loader takes `_EXPECTED_STEM` by discovery, so this citation cannot go stale the way a live\n'
+     '# pointer did. NOT FIXED HERE, DELIBERATELY: changing what\n'),
 )
 
 HELP = __doc__
@@ -517,6 +569,14 @@ def say_err(s: bytes) -> None:
 def main() -> int:
     if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
         say(HELP)
+        # THE PINS, DERIVED. The docstring deliberately does NOT transcribe how many pairs
+        # `ORACLE_EDITS` holds -- it is the reader that used to be wrong about its own mechanism --
+        # so the number is printed here from the tuple, and `--help` is the one command that can
+        # falsify the docstring's claim that there are "exactly the edits `ORACLE_EDITS` declares".
+        say(f"\nDECLARED EDITS: {len(ORACLE_EDITS)} pair(s) in `ORACLE_EDITS`, applied in order "
+            f"by `revert_oracle()`")
+        say(f"PINS: ORACLE_SHA {ORACLE_SHA[:16]}…  BODY_SHA {BODY_SHA[:16]}…  "
+            f"revert(oracle) == checks/e2e.sh is checked by `oracle_drift()` on every run")
         return 0
     if drift := oracle_drift():
         for line in drift:
@@ -645,6 +705,24 @@ def main() -> int:
     return 0
 
 
+def revert_oracle(raw: str) -> str:
+    """`raw` (the frozen oracle's text) with EVERY declared edit applied, in order.
+
+    **THE ONE DEFINITION OF THE TRANSFORM, AND THE REASON IT IS A FUNCTION.** `oracle_drift()` and
+    `.agents/slop/e2esh/refreeze.py` both need "the oracle as the body would have to be", and the
+    second one grew its own inline loop that applied only `ORACLE_EDIT` -- so its question (2)
+    answered a ninth of the delta and reported the rest as a byte difference (MEASURED 2026-10-19,
+    before this commit). Two loops over one table is two witnesses with no generator between them,
+    which is `checks/sweep.py`'s removed `LIVE_UNITS` one level in. `str.replace` that matches
+    NOTHING is silent, so an edit that stopped being present surfaces as the hash mismatch in
+    `oracle_drift()`, whose message names that possibility; there is deliberately no second "is each
+    ORACLE_SIDE still there" check, because the byte identity already is that check.
+    """
+    for oracle_side, shell_side in ORACLE_EDITS:
+        raw = raw.replace(oracle_side, shell_side)
+    return raw
+
+
 def oracle_drift() -> list[str]:
     """Is the frozen oracle still the thing this port was diffed against? An empty list means yes.
 
@@ -656,10 +734,9 @@ def oracle_drift() -> list[str]:
     is absent: a pin another unit is entitled to remove would report drift about a deletion, and the
     oracle already answers (1) and (2) from the one file that survives.
 
-    (2) APPLIES EVERY PAIR IN `ORACLE_EDITS` IN ORDER, and a `str.replace` that matches nothing is
-    silent -- so a declared edit that stopped being present shows up as a hash mismatch below, whose
-    message already names this possibility. There is no separate "is each ORACLE_SIDE still there"
-    check, because the byte identity already is that check.
+    (2) APPLIES EVERY PAIR IN `ORACLE_EDITS` IN ORDER, through `revert_oracle()`, which is also what
+    `.agents/slop/e2esh/refreeze.py` calls -- one transform, two callers, and no second copy of the
+    loop to fall behind the table.
     """
     import hashlib
     bad = []
@@ -670,10 +747,7 @@ def oracle_drift() -> list[str]:
     if hashlib.sha256(raw).hexdigest() != ORACLE_SHA:
         bad.append(f"e2epy/oracle-e2e.sh: {hashlib.sha256(raw).hexdigest()[:16]} != oracle "
                    f"{ORACLE_SHA[:16]}")
-    reverted = raw.decode(errors="replace")
-    for oracle_side, shell_side in ORACLE_EDITS:
-        reverted = reverted.replace(oracle_side, shell_side)
-    reverted = reverted.encode()
+    reverted = revert_oracle(raw.decode(errors="replace")).encode()
     if hashlib.sha256(reverted).hexdigest() != BODY_SHA:
         bad.append(f"e2epy/oracle-e2e.sh: reverting its {len(ORACLE_EDITS)} documented edits gives "
                    f"{hashlib.sha256(reverted).hexdigest()[:16]}, not the shell body "

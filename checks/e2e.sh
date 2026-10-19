@@ -144,7 +144,10 @@ verdict "stage 4 gate (matmul vs CPython, via WebGPU)" "$rc"
 # `tinybendygrad/runtime/ops_python.bend` -- which IS the executor, and which
 # `ops_bend.py:151` builds with `./bin/bend ... -o` -- reads PACKET.out back, and
 # compares it against an expectation written down BEFORE any run
-# (`.agents/slop/ops_bend-milestone-expected.txt`). No Node, no browser, no adapter,
+# (`.agents/slop/ops_bend-milestone-expected.*` -- BY STEM, NEVER BY EXTENSION: the loader resolves
+# `_EXPECTED_STEM` in `opsbend_milestone_gate.py` by discovery, so the `.txt` -> `.md` rename that
+# this pointer used to transcribe moved it once and the stage died on a `FileNotFoundError`). No Node,
+# no browser, no adapter,
 # and no tinygrad Python scheduler in the path.
 #
 # It is NOT COMPOSED WITH STAGES 1-4 ON PURPOSE. This stage does not run a matmul;
@@ -166,7 +169,10 @@ tail -3 "$RUN/e2e-opsbend.out"
 # milestone's own last three lines are the expectation-file comparison, but when it dies first they
 # are a traceback (measured 2026-10-05: `FileNotFoundError: .agents/slop/
 # ops_bend-milestone-expected.txt`), so a stage that ran and printed NOTHING COUNTABLE leaves the
-# artifact unable to say what it would have measured. NOT FIXED HERE, DELIBERATELY: changing what
+# artifact unable to say what it would have measured. THE `.txt` IN THAT QUOTE IS A RECORD, NOT A
+# PATH: it is the extension the fixture carried on 2026-10-05, and nothing resolves it now -- the
+# loader takes `_EXPECTED_STEM` by discovery, so this citation cannot go stale the way a live
+# pointer did. NOT FIXED HERE, DELIBERATELY: changing what
 # this stage prints is a change to the artifact on BOTH sides of the porting rule, and the oracle is
 # frozen so that such a change is a separate deliberate act rather than a side effect of retiring
 # stage 8. `.agents/slop/e2estage8/verdicts.py` reports it as `DENOMINATOR None` until then.
