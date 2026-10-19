@@ -5897,18 +5897,27 @@ def t_dtype_key() -> Bool:
 # `least_upper_dtype(int32, weakint)` and NOT the first src's.
 def t_shape_ok() -> Bool:
   +x = folded(O.Found.ar(g_add()))
-  # 1 CONST(0) (), 2 SPECIAL (), 3 BUFFER (4,), 4 CONST(3) (), 5 ADD (4,)
-  Bool.and(Bool.and(shape_is(x, 5, [sint_of(4)]), shape_is(x, 3, [sint_of(4)])),
-    Bool.and(shape_is(x, 4, Nil{}), dt_is(x, 5, S.int32())))
+  # 1 CONST(0) (), 2 SPECIAL (), 3 CONST(4) () , 4 BUFFER (4,), 5 CONST(3) (), 6 ADD (4,)
+  # RE-DERIVED, NOT NUDGED. The layout this row used to carry named 3 BUFFER, 4 CONST(3),
+  # 5 ADD, which is the arena WITHOUT the size node. `UOp.new.param` interns the size node
+  # FIRST (`ops.bend:3036`), so `CONST(4)` takes index 3 and every later node shifts up by
+  # one. The layout above is the MEASURED one, not the recalled one: see
+  # `.agents/slop/arena11/arena_layout.bend`, which prints op/size/nsrc/src[0] per index of
+  # `g_add` and reads `_i3=CONST/size=N/nsrc=0 _i4=BUFFER/size=4/nsrc=1/src0=3` -- the
+  # BUFFER's `src[0]` IS the CONST(4) at 3, which is the whole `nil-src/B` fix holding here.
+  Bool.and(Bool.and(shape_is(x, 6, [sint_of(4)]), shape_is(x, 4, [sint_of(4)])),
+    Bool.and(shape_is(x, 5, Nil{}), dt_is(x, 6, S.int32())))
 
 # the BUFFER's device and addrspace come from its ParamArg, the ADD's from "the
 # first src with a device", and the ADD's addrspace is None because GLOBAL and ALU
 # disagree -- which is what `one_addr`'s `not all_same(ad)` arm says.
+# THE INDEXES ARE `t_shape_ok`'s, FOR THE REASON GIVEN THERE: 4 is the BUFFER and 6 the
+# ADD in the arena that `g_add` actually builds.
 def t_device_ok() -> Bool:
   +x = folded(O.Found.ar(g_add()))
-  Bool.and(Bool.and(Bool.and(dev_is(UOp.device(Folded.ar(x), Folded.t(x), 3), 0), dev_is(UOp.device(Folded.ar(x), Folded.t(x), 5), 0)),
-    addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 3), Some{S.AGlobal{}})),
-    addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 5), None{}))
+  Bool.and(Bool.and(Bool.and(dev_is(UOp.device(Folded.ar(x), Folded.t(x), 4), 0), dev_is(UOp.device(Folded.ar(x), Folded.t(x), 6), 0)),
+    addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 4), Some{S.AGlobal{}})),
+    addr_is(UOp.addrspace(Folded.ar(x), Folded.t(x), 6), None{}))
 
 # THE CYCLE. `g_cycle` in ops.bend is a BACKEDGE over a SPECIAL and a RANGE, which is
 # the range graph's shape: the back-edge is a MARKER, so the arena is still a DAG and
