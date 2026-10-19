@@ -109,6 +109,58 @@ if [ "${1:-}" = "--substrate" ]; then substrate; skip "--substrate is a FINGERPR
 # The floor is asserted BEFORE the run, so a missing baseline can never be
 # reached as a skip on the way past a comparison.
 [ -f "$BASE" ]   || refuse "the regression floor is absent: $BASE (a missing baseline is not a passing baseline)"
+
+# THE REGRESSION FLOOR, AS ONE SET DIFFERENCE. The line this replaces was
+#   grep -F -x -f $BASE $D/rows-bd.txt
+# and `-f` ORs the pattern file: it succeeds if ANY pattern matches ANY line. MEASURED
+# 2026-10-19T15:41:25Z, on the shipped 81-row floor, with a `rows` file holding row 1 of
+# it -- rc 0, and the gate printed "== BASE rows: byte-identical (all present)". The same
+# command on an EMPTY `rows` file prints "NOT ALL PRESENT". So what was implemented was
+# "the port shares ONE row with the floor", which is neither a floor nor this file's own
+# wording ("every base row present", :226). `sort -u` both files and `comm -23` IS the
+# strong claim as ONE comparison over two files: no 81 patterns are transcribed, and the
+# denominator is the floor's own line count rather than a number in a comment. LC_ALL=C on
+# all three, because `comm` compares under ONE collation. `-u` makes it a SET claim --
+# "every DISTINCT floor row appears", which is the existence claim `grep -x -f` was trying
+# to be; the floor holds 81 lines and 81 distinct ones, so set and multiset coincide here.
+floor_check() {
+  w=$(mktemp -d) || refuse "mktemp -d failed: the floor cannot be compared without a work directory"
+  LC_ALL=C sort -u "$1" > "$w/base"; LC_ALL=C sort -u "$2" > "$w/rows"
+  LC_ALL=C comm -23 "$w/base" "$w/rows" > "$w/missing"
+  b=$(wc -l < "$w/base" | tr -d ' '); r=$(wc -l < "$w/rows" | tr -d ' '); m=$(wc -l < "$w/missing" | tr -d ' ')
+  if [ "$m" -eq 0 ]; then
+    echo "== BASE rows: COMPLETE -- $b of $b floor rows present in the $r rows the port emitted"
+    rm -rf "$w" || :; return 0
+  fi
+  echo "== BASE rows: *** INCOMPLETE -- $m of $b floor rows ABSENT from the $r rows the port emitted ***"
+  head -20 "$w/missing"
+  rm -rf "$w" || :; return 1
+}
+
+# `--plant` drives `floor_check` ITSELF, not a second copy of the comparison, on `rows`
+# files built FROM the shipped floor so the count is READ and never transcribed
+# (AGENTS.md doctrine 1). THE THIRD CASE IS THE CONTROL: a comparison that answered
+# INCOMPLETE to everything would pass the first two, and a `floor_check` that printed
+# NOTHING is scored by its exit, so silence cannot read as agreement. It needs only the
+# floor, so it is dispatched before the two absent inputs are checked, and it exits before
+# any `bend`.
+plant() {
+  mkdir -p "$D"
+  head -1 "$BASE" > "$D/plant-one.rows"; : > "$D/plant-zero.rows"; cp "$BASE" "$D/plant-all.rows"
+  rc=0
+  for c in one zero all; do
+    case $c in all) want=COMPLETE ;; *) want=INCOMPLETE ;; esac
+    if floor_check "$BASE" "$D/plant-$c.rows"; then got=COMPLETE; else got=INCOMPLETE; fi
+    if [ "$got" = "$want" ]; then say=ok; else say=FAIL; rc=1; fi
+    echo "PLANT $c rows: want $want, the gate said $got  [$say]"
+  done
+  rm -f "$D/plant-one.rows" "$D/plant-zero.rows" "$D/plant-all.rows"
+  [ "$rc" -eq 0 ] || exit 1
+  echo "== PLANT PASS: a partial floor and an absent floor are both INCOMPLETE, a whole floor is COMPLETE"
+  exit 0
+}
+if [ "${1:-}" = "--plant" ]; then plant; fi
+
 [ -f "$ORACLE" ] || refuse "the CPython oracle is absent: $ORACLE"
 [ -f "$DIFFER" ] || refuse "the differ is absent: $DIFFER"
 
@@ -176,14 +228,12 @@ fi
 ROWS=$(wc -l < $D/rows-bd.txt | tr -d ' ')
 echo "== DENOMINATOR: $ROWS rows; base rows: $(wc -l < $BASE | tr -d ' ')"
 
-# 1. the regression floor: the rows the previous unit left
-if grep -F -x -f $BASE $D/rows-bd.txt > /dev/null 2>&1; then
-  echo "== BASE rows: byte-identical (all present)"
-else
-  echo "== BASE rows: *** NOT ALL PRESENT ***"
-  grep -F -x -v -f $BASE $D/rows-bd.txt | head -20
-  exit 1
-fi
+# 1. the regression floor: the rows the previous unit left. `floor_check` owns the claim,
+# its diagnostic and its wording together, so the three cannot drift apart again. Its
+# diagnostic is the ABSENT floor rows; the line this replaced printed the other side --
+# `grep -F -x -v -f $BASE rows`, the emitted rows that are not floor rows -- which on the
+# arm it could reach was every row the port emitted, so it answered a different question.
+floor_check "$BASE" $D/rows-bd.txt || exit 1
 
 # THE CPYTHON LANE, AND THE `||` THIS GATE HAD WAS A FOLD. `|| { ...; exit 3; }` charged
 # REFUSED -- "a precondition was absent" -- to a lane that HAD BEEN INVOKED, so the two
