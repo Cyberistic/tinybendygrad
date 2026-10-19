@@ -946,6 +946,52 @@ nn-laws [##........] 1/3   **LAWS ARE THE RIGHT MECHANISM FOR PART OF THIS, BUT 
                                        DECOMPOSITION, NEVER NUMERICS.** A layer can pass every law and
                                        still compute the wrong numbers; that stays the corpus's job.
 
+nn-layers [#######...] 3/7     THE LAYERS LAND, AND ONE OF THEM FOUND A REAL DEFECT IN A FILE IT DOES
+                                       NOT OWN. `tinybendygrad/nn/layers.bend` (64 defs, 613 lines,
+                                       `ALL PROOFS CHECK` -- WARM, not COLD) and
+                                       `tinybendygrad/nn/pool.bend` (573 lines, same). **BOTH
+                                       PREMISES OF THE BRIEF WERE WRONG AND FINDING THAT OUT IS THE
+                                       RESULT.** (1) `relu` WAS ALREADY BUILT at `tensor.bend:774`;
+                                       `nn_relu` is a NAME ONTO IT, not a second copy. (2) **`mixin/op.bend`
+                                       SIDE B IS EMPTY** -- `:1523` is that file's LAST line, so
+                                       `conv2d` had nothing to wait on and was built in `layers.bend`.
+                                       (3) **THERE IS NO POOL OP, UPSTREAM OR HERE**: the whole `Ops`
+                                       enum (`tinygrad/uop/__init__.py:13-97`) has **0** lines
+                                       mentioning pool, and `grep -rn "MAXPOW2|AVGPOW2" tinygrad/` = **0
+                                       hits** -- **pooling in this tinygrad is a DECOMPOSITION**, so a
+                                       pool could not be "a UOp call missing an op".
+                                       **THE DEFECT, MEASURED BY ME, NOT RELAYED:** `tensor.bend:1815-1818`
+                                       `def tn_rop.perm.of(is_id, +self)` returns **`self` in BOTH
+                                       match arms**, so `tn_rop.perm` NEVER PERMUTES, while CPython
+                                       `ops.py:636` explicitly does `perm = reduce_axis + rest`.
+                                       **A REDUCE OVER THE WRONG AXES**: the unit measured `sum(-1)` over
+                                       `(2,4,3)` returning `(4,3)`, i.e. it reduced the FIRST axes. **NOT
+                                       FIXED HERE** -- it is a live reduction path in a file this unit
+                                       does not own, and `check-oracle.py` has ORACLE_PINs a byte-exact
+                                       copy of it; a blind rewrite would move the pin without moving
+                                       the behaviour. **THE UNIT ALSO FOUND 3 DEFECTS IN ITS OWN CODE,
+                                       ALL GREEN UNDER `--check-only` AND ALL FOUND BY ROWS**: a
+                                       spurious `List.reverse` that transposed EVERY shape, `kept` built
+                                       from axis INDICES instead of dim VALUES, and `reduce_axis`
+                                       filtering positionally. **THAT IS THE WHOLE ARGUMENT FOR ROWS --
+                                       CHECKING GREEN IS NOT BEING CORRECT.**
+                                       **THE HONEST GAP, NOT PAPERED OVER:** 3 of 3 symbols BUILT but
+                                       **1 of 3 SHAPE-VERIFIED** (`relu`, `got=1,4,8,8` against
+                                       CPython). `nn_linear` and `nn_conv2d` intern the right ops but
+                                       their folded shape read is EMPTY where a hand-built expression
+                                       reads `n=20 op=REDUCE` -- so the unit's own reduced-axes defect
+                                       may be the cause, and **IT DECLINED TO DIAGNOSE IT.**
+                                       **BATCHNORM IS ALREADY EXPRESSIBLE**: `mo_mean`, `mo_var`,
+                                       `mo_std`, `mo_eps`, `mo_norm`, `mo_sub`, `mo_mul`, `mo_reduce`
+                                       are ALL ported defs, so batchnorm's decomposition needs NO new
+                                       op and **its `nn-laws` row can move as soon as the layer lands** --
+                                       unlike padding, which `pool.bend` CORRECTLY REFUSED with a
+                                       named blocker (`identity_element`, `ops.py:61`) and NOTED THAT
+                                       PYTORCH'S 56-VS-55 POOL RESULT *IS* THAT REFUSAL.
+                                       **`mo_repeat` AND `mo_shrink` ARE ABSENT** from the 73 `mo_*`
+                                       defs, so `_pool`'s raw decomposition is unavailable and the
+                                       unit built pool over `mo_reduce`/`mo_mean`/`mo_max` instead.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

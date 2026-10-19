@@ -1,0 +1,16 @@
+symbol	upstream_file_line	port_file_line	BUILT|REFUSED	ops_used	blocker
+_pool	 tinygrad/mixin/movement.py:614-632	tinybendygrad/nn/pool.bend:226 pool_nd	BUILT	MX.mxw_reshape; MX.mxw_shrink; CR.cr_expand; MX.mxw_permute	none -- arena-read row pool_nd_8k2s2=(1)(1)(4)(4)(2)(2) and pool_nd_112k3s2=(1)(1)(55)(55)(3)(3) both measure CORRECT
+max_pool	tinygrad/mixin/op.py:1333-1376	tinybendygrad/nn/pool.bend:250 pool_maxpool	BUILT	MO.mo_max(Ops.MAX); pool_nd	row is U32 arithmetic not an arena read (WALL nn_pool_r1); padded arm REFUSED separately
+max_pool (padded)	tinygrad/mixin/op.py:1370	tinybendygrad/nn/pool.bend:252 pool_maxpool_padded	REFUSED	none	_pad_constant value!=0 arm (mixin/op.py:290) needs identity_element (tinygrad/uop/ops.py:61) -- not a def; rand.bend:279-281 records the same wall
+avg_pool	tinygrad/mixin/op.py:1285-1331	tinybendygrad/nn/pool.bend:260 pool_avgpool	BUILT	MO.mo_mean(Ops.ADD + div); pool_nd	same as max_pool: row is U32 arithmetic (WALL nn_pool_r1)
+avg_pool (padded)	tinygrad/mixin/op.py:1329	tinybendygrad/nn/pool.bend:262 pool_avgpool_padded	REFUSED	none	same as max_pool padded: mixin/op.py:290 needs identity_element
+adaptive_avg_pool	tinygrad/mixin/op.py:496-521 (mo_mean) + movement.py:614	tinybendygrad/nn/pool.bend:312 pool_adaptive_avg	BUILT	MX.mxw_reshape; MO.mo_mean	NO upstream class exists (grep class AdaptiveAvgPool tinygrad/ = 0 hits); divisible case only; row is U32 arithmetic (WALL nn_pool_r1)
+adaptive_avg_pool (i%o != 0)	none upstream	tinybendygrad/nn/pool.bend:315 pool_adaptive_avg_odd	REFUSED	none	movement.py:623-627 _pool kk/sz arithmetic is per-axis and uniform so unequal windows have no upstream decomposition to port
+flatten	tinygrad/helpers.py:53 (list helper, NOT a layer)	tinybendygrad/nn/pool.bend:326 pool_flatten	BUILT	MX.mxw_reshape	none -- row flatten_8_64_7_7=(8)(3136) and flatten_rest=3136 agree, arena-read
+batchnorm (forward)	tinygrad/mixin/op.py:1678-1698	tinybendygrad/nn/pool.bend:381 pool_bn	BUILT	MO.mo_sub; MO.mo_mul; MO.mo_add; MX.mxw_reshape	row is U32 arithmetic (BN.sh) not an arena read (WALL nn_pool_r1)
+batchnorm rsqrt	tinygrad/nn/__init__.py:59	tinybendygrad/nn/pool.bend:388 pool_rsqrt	BUILT	MO.mo_recip; E.ew_sqrt	mo_rsqrt is NOT a def anywhere (grep = 0 hits); built as recip(sqrt(x)) since both halves exist
+batchnorm calc_stats	tinygrad/nn/__init__.py:41-50	tinybendygrad/nn/pool.bend:396 pool_bn_stats.mean / :397 pool_bn_stats.cen	BUILT	MO.mo_mean; MO.mo_mul; MO.mo_sub	none
+batchnorm running stats	tinygrad/nn/__init__.py:55-58	tinybendygrad/nn/pool.bend:415 pool_bn_running_stats	REFUSED	none	TRAINING is not a binding in tinybendygrad (3 grep hits, all comments) AND Tensor.assign is not a def (tensor.bend:2539 states the immutability divergence)
+_pool for ndim != 4	tinygrad/mixin/movement.py:614	tinybendygrad/nn/pool.bend:427 pool_wall_4d	REFUSED	none	W4 carries noop as VALUES so every shape is six wide and movement.py:632 permute is [0,1,3,5,2,4] by construction
+_pool for 1 spatial axis	tinygrad/mixin/movement.py:614	tinybendygrad/nn/pool.bend:434 pool_wall_1d	REFUSED	none	NOT DUPLICATED: mixin/rand.bend:313 op_pool1 already is it (stride 1, dilation 1)
+reduce rows readable from arena	n/a	tinybendygrad/nn/pool.bend:437 pool_wall_r1	REFUSED	none	R1 (rand.bend:128-137): O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of
