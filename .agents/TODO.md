@@ -906,6 +906,46 @@ substrate-head [##########] 3/3  **A DIGEST WITH NO COMMIT IN IT CANNOT BE COMPA
                                        guessed: the identity of 1 of the 2 digest moves observed in
                                        the window is UNEXPLAINED.
 
+nn-laws [##........] 1/3   **LAWS ARE THE RIGHT MECHANISM FOR PART OF THIS, BUT THE SPEC IR CANNOT
+                                       YET STATE THE LAWS -- AND THE PROOF GATE IS ALREADY RED.**
+                                       MEASURED 2026-10-19. `LAWS.bend` holds **35 laws, BY NAME**:
+                                       `reshape_preserves_numel`, `permute_preserves_numel`,
+                                       `flip_preserves_numel`, `pad_numel_is_the_new_shape`,
+                                       `shrink_numel_is_the_new_shape`,
+                                       `stack_numel_is_the_leading_axis_times_the_operands`,
+                                       `reduce_numel_divides_by_the_reduced_axes`,
+                                       `broadcast_is_elementwise_max`, the ALU decompositions
+                                       (`neg_is_mul_by_minus_one` ... `mulacc_is_add_of_mul`),
+                                       `store_matches_its_buffer`, `max_dim_idempotent`,
+                                       `zip_max_idempotent`. **A LAW IS AN EQUATION PROVED BY
+                                       REFLEXIVITY BETWEEN A CLAIM IN `spec/tinyspec.tex` AND THE CODE
+                                       THAT EMITS IT** -- `LAWS/alu.bend`'s own header: *"the spec's
+                                       ALU table stops being a comment somebody might typo, and
+                                       becomes something the compiler checks."** **SO: NOT ALL OF THEM.**
+                                       A law suits a DECOMPOSITION the spec tabulates -- `batchnorm` is
+                                       `(x-mean)/sqrt(var+eps)*w+b`, exactly `alu.bend`'s shape, and
+                                       the pool OUTPUT SHAPE law already has siblings here
+                                       (`pad_numel_is_the_new_shape`). **IT DOES NOT SUIT
+                                       `conv2d`/`relu`/`linear`/`flatten`/`sequential`**, which are
+                                       not decompositions of a table; asserting `relu(x)=max(x,0)` would
+                                       be CEREMONY THAT READS LIKE VERIFICATION.
+                                       **THE BLOCKER IS MEASURED, NOT ASSUMED**: `LAWS/spec.bend` has
+                                       **NO `pool*` AND NO `reduce_*` PRIMITIVE**, so a pooling or
+                                       normalisation law has nothing to state over until the spec IR
+                                       gains the ops. **AND `PROOF.bend` IS RED AT REST** --
+                                       `bend PROOF.bend --check-only` prints `SOME PROOFS FAIL` /
+                                       `Error: 18 TODOs found.` **SO THE ORDER IS: OPS FIRST, THEN
+                                       LAWS; AND THE 18 TODOs ARE PREREQUISITE WORK, NOT A REGRESSION.**
+                                       **WHAT LAWS BUY, WHICH IS THE REAL REASON:** they are checked by
+                                       `PROOF.bend` on every `--check-only` across the tree, so a new
+                                       layer can be verified WITHOUT growing the 34-graph corpus --
+                                       which is what makes 88 ports affordable instead of
+                                       prohibitive. **AND THE LIMIT, FROM `LAWS.bend`'s OWN HEADER:**
+                                       the compilation IR (`uop/ops.py`) is a cyclic hash-consed graph
+                                       and is explicitly NOT covered -- so laws prove SHAPE AND
+                                       DECOMPOSITION, NEVER NUMERICS.** A layer can pass every law and
+                                       still compute the wrong numbers; that stays the corpus's job.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
