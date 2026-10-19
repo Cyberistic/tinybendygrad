@@ -17801,9 +17801,10 @@ EITHER, AND THAT WAS RIGHT.**
       -- **AND `5` IS GATEKIT'S `DEAD`, SO A READER SWITCHING ON THE FIVE READS BOUNDED's `NOT-STARTED` AS
       `DEAD`.**** OUT OF GRANT.
       → **TICKED 2026-10-19, `e00a3a74c`.** The collision is not disambiguated, it is **DESIGNED OUT**: the file
-      no longer reads `bounded.py`'s exit code at all. **ROW** `checks/sb-gate.sh:198` —
-      `tok=$(sed -n 's/^\[bounded\] \([A-Z-]*\)  rc=.*/\1/p' $D/rows-bd.err | tail -1)` — **a TOKEN**, and the five
-      arms at `:204-209` call `skip`/`dead`/`refuse` (exits **4**/**5**/**3**), so `NO-VERDICT` is now **DEAD** for a
+      no longer reads `bounded.py`'s exit code at all. **ROW** `checks/sb-gate.sh:199` —
+      `tok=$(sed -n 's/^\[bounded\] \([A-Z-]*\)  rc=.*/\1/p' $D/rows-bd.err | tail -1)` — **a TOKEN**, and the arms of
+      the `case "${tok:-NONE}"` at `:203` call `skip`/`dead`/`refuse` (exits **4**/**5**/**3**), so `NO-VERDICT` is
+      now **DEAD** for a
       stated reason ("a lane that demonstrably ran did not run on an absent precondition") and `NOT-STARTED` says
       **"(bounded.py exit 5)"**, naming WHOSE 5. `:194` states the rule: *"It is a TOKEN and not the exit code
       because the code is a coarse summary."* **THE CONFIRMING ROW IS A DIFFERENT INSTRUMENT:**
@@ -20705,7 +20706,7 @@ Each was ticked in place above with its sha and its row. **THE SUM, AND THE HONE
 | `runs/graphcmp/D/` not regenerated | `65d64bb74` | `graphs-answered=34`, `graphs-unset=0`, `expect-moved=0`; `unhealthy()` → 0 rows | **YES** |
 | clause IV stays RED | `65d64bb74` | `IV OK runs/graphcmp/D/: 1 dir(s), last run healthy on its own measure` | **YES** |
 | `env-precond --check` refuses | run at `65d64bb74` | `dev=CPU`/`lc_all=C`/`noopt=0`/`pythonhashseed=0`; gate **rc=0** | **YES** |
-| `sb-gate.sh:124-125` exit-code collision | `e00a3a74c` | `checks/sb-gate.sh:198` reads a TOKEN; `shellverdict-gate.py` → `emits [0, 1, 3, 4, 5] missing []` | no |
+| `sb-gate.sh:124-125` exit-code collision | `e00a3a74c` | `checks/sb-gate.sh:199` reads a TOKEN; `shellverdict-gate.py` → `emits [0, 1, 3, 4, 5] missing []` | no |
 
 **AND THE ONE FINDING BIGGER THAN ALL FIVE IS **NOT **AMONG **THEM, AND THAT IS **THE **POINT.**
 `runs/graphcmp/D/D0-run-summary.txt` reads `graphs=34`, `graphs-answered=34`, `graphs-unset=0`, `graphs-agree=34`,
