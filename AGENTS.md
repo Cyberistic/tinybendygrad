@@ -225,6 +225,25 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   `git fsck --no-progress` NAMES **3** SUCH TREES IN **UNDER A SECOND**, ***AND IT WAS ONLY RUN BECAUSE THE PUSH
   FAILED.*** **`git show --stat` ANSWERS "WHAT CHANGED"; `git fsck` ANSWERS "IS THIS COMMIT ***MALFORMED***" -- AND
   **THE SECOND QUESTION IS THE ONE THAT BLOCKS A PUSH.** **SO: **BOTH**, **IN THE SAME COMMAND**.**
+  **AND **A **PRIVATE `GIT_INDEX_FILE` **IS **NOT **ENOUGH**, **MEASURED 2026-10-19, **AND **THIS **CORRECTS **THE
+  **RECIPE **ABOVE**: IT **ISOLATES **THE **INDEX **AND **NOTHING **ELSE** — **NOT **THE **WORKING **TREE, NOT **THE
+  BRANCH **REF. A **CONCURRENT **UNIT **REVERTED **ANOTHER **UNIT's **WORK **TWICE**, AND **THE **REFLOG **IS **THE
+  PROOF:**
+```
+73e431d73  unit A: the fix (+77/-12)
+d87584cdf  unit B: lands e2e.py/e2e.sh at their PRE-73e431d73 bytes
+383a8e5e6  unit A: restore
+reset HEAD~1   unit B: drops the restore
+f09f490e  unit A: re-land
+reset -> 383a8e5e6   unit B: resets back ONTO the restore commit
+```
+  **AND `git diff --stat <before> d87584cdf -- checks/e2e.py checks/e2e.sh` IS **EMPTY** — **SO `d87584cdf` **IS **A
+  PURE REVERT CARRYING NONE OF ITS OWN EDITS: **THE DOCUMENTED HAZARD** — *"A COMMIT CARRYING A STALE INDEX WRITES THE
+  PREVIOUS CONTENT, AND THE SYMPTOM IS SILENT REVERSION."* **SO **THE **CONTROL **IS **NOT **"USE **A **PRIVATE INDEX":
+  IT IS **"**AFTER **EVERY **COMMIT **BY **ANY** UNIT**, **CHECK `git show --stat` **FOR **THE **FILES **YOU **CARE
+  ABOUT**, AND **IF **YOUR **BYTES **ARE **GONE**, **RE-LAND **ON **TOP** — **NEVER `reset` **SOMEONE **ELSE's COMMIT
+  **AND **NEVER **REBASE**."** ***AND `f09f490e` **WAS **LEFT **AS **A **DANGLING **BYTE-IDENTICAL **DUPLICATE, WHICH
+  IS **THE **CORRECT **OUTCOME: **A **RE-LAND, NOT **AN **AMEND.****
   **WHY THE PRIVATE INDEX, MEASURED 2026-10-17 IN A THROWAWAY REPO (`.agents/slop/idxpriv/`), NOT ON REAL
   WORK: `--only` IS **ALREADY BOUNDED**, AND THE FIX IS **NOT** ABOUT CONCURRENCY.** **`--only` CARRIED
   **EXACTLY ONE PATH** AGAINST **EVERY** SHAPE `checks/index-arm-gate.py` NAMES — `FOREIGN-ADD`, `DELETION`,
