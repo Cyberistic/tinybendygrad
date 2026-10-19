@@ -389,17 +389,40 @@ def is_python_entry(src):
 # LOCAL VARIABLE IS NOT A NARROWER POPULATION, IT IS A WIDER ONE.**
 SH_ENTRANCE = re.compile(r"^\s*(?:exec\b|\$\{?0)", re.M)
 SH_SELFREF = re.compile(r"\$\{0|[\"']\$0[\"']")
-SH_COMMENT = re.compile(r"^\s*#.*$", re.M)
+# `[^\S\n]` IS "WHITESPACE EXCEPT NEWLINE", so this matches the indentation a comment can have and
+# NOT the line break in front of it. IT WAS `^\s*`, AND `\s` INCLUDES `\n`, SO THE MATCH STARTED
+# ON THE PREVIOUS LINE AND **ATE ITS NEWLINE**: MEASURED 2026-10-19T16:25Z, `checks/run-f64.sh`
+# went 447 -> 434 newlines and `checks/sb-gate.sh` 276 -> 264, because `^\s*` eats the newline
+# before EACH comment of a run. `awk 'END{print NR}'` on the first reads 448 and 435 -- THE SAME
+# THIRTEEN, under the other convention.
+#
+# **THE POPULATION DID NOT MOVE, AND THAT IS MEASURED, NOT ASSUMED** -- the whole question, because
+# a fix that changed the set of gates would be a different instrument wearing this one's name.
+# Over 1336 files under `HOMES` it eats 2537 newlines and changes 0 entries and 0 tokenizer
+# verdicts; tree-wide over 155 `.sh`, 237 newlines and 0/0/0. **WHY**: `SH_ENTRANCE` is anchored
+# with `^\s*` TOO, and `\s` already spans newlines, so swallowing one cannot move a token across a
+# boundary the tokenizer cared about. The damage was invisible to every matcher here and visible
+# only to a reader counting lines -- which is the worst place for an instrument to be wrong.
+#
+# `SH_ENTRANCE` KEEPS ITS `\s*` ON PURPOSE: its leading class is load-bearing, not cosmetic, and
+# narrowing it is not free even where it measures as a no-op. It is not this function's output.
+SH_COMMENT = re.compile(r"^[^\S\n]*#.*$", re.M)
 
 
 def shell_code(src):
-    """Shell source with `#` COMMENTS removed.
+    """Shell source with `#` COMMENTS removed, AND NOT ONE LINE MORE THAN IT WAS.
 
     Same reason as `code_of`, and MEASURED on the same fault: `checks/sb-gate.sh:17` is a
     comment saying "This gate used to `cd "$(dirname "$0")/../../.."`", and a scanner that
     reads comments would find a `../../..` root in a file that no longer has one. **A gate's
     own changelog is not its code** -- and this repo writes unusually thorough changelogs, which
     is exactly what makes the mistake likely here.
+
+    **A LINE IS NOT A COMMENT AND A COMMENT IS NOT A LINE DELETION.** A census that returns a
+    blanked copy of a shell file has destroyed its geometry: any consumer reading a line number
+    off the result reads a number into a file that never had that line, by an amount that depends
+    on how the comments were spaced. That is the `SPEC`/census shape `AGENTS.md` already names --
+    a denominator that is wrong by a SILENT amount cannot be wrong and cannot be right.
     """
     return SH_COMMENT.sub("", src)
 
@@ -1007,6 +1030,17 @@ LEDGER_PATH = HERE / LEDGER.name
 #   only be answered by an absence.
 RETIRED = "gone"
 
+# **THE COLUMNS A `moved` VERDICT IS ALLOWED TO BE ABOUT, NAMED BY WHAT THEY ARE.**
+# `read_ledger` yields `(path, reason, root_const, asserts, onroot)`, so the tail is a FOUR-tuple
+# and `root_const` is its index 1. Index 2 and 3 are BOOLEANS the census decided; index 0 is the
+# word it classified by; index 1 is a QUOTATION of the gate's source. Index 1 is excluded because
+# a truncated prefix of a source line is not an observation of the gate -- see `report`'s
+# `DECIDED(new[k])` call, which carries the measurement.
+def DECIDED(tail):
+    """`(reason, asserts_root, on_root)` -- the tail of a ledger row MINUS the quotation at
+    index 1. Uppercase because `report` names it in a diff, not because it is a constant."""
+    return tail[0], tail[2], tail[3]
+
 
 def read_ledger(path):
     """`(path, reason, root_const, asserts, onroot)` rows, or None if there is no ledger yet.
@@ -1192,7 +1226,18 @@ def report(root, ledger_mode, ledger_path=None):
         # indistinguishable, so the only answer to `gone` was to erase the row -- the defect.
         retired = {k for k, v in old.items() if v[0] == RETIRED}
         added = sorted(set(new) - set(old))
-        moved = sorted(k for k in set(new) & set(old) if new[k] != old[k])
+        # **A QUOTATION IS NOT A DECISION, AND A DIFF OVER QUOTATIONS HAS NO ACTIONABLE CONTENT.**
+        # `r[1:]` is `(reason, root_const, asserts_root, on_root)`, and `root_const` is index 1 --
+        # `m.group(0)` of `ROOT_CONST`/`ROOT_INLINE` flattened by `" ".join(...split())` and cut at
+        # the TSV width: **it is a PREFIX OF THE GATE'S OWN SOURCE TEXT, TRUNCATED MID-EXPRESSION**,
+        # `Path sys.path.insert(0, str(Path(__file__).resolve().parents[1]` -- 63 characters and an
+        # unclosed paren. It answers nothing a reader can act on, and it MOVES on a reformat.
+        # MEASURED 2026-10-19T16:30Z on commit `325c422d9bd3`: it alone accounted for `5 changed`
+        # across five files that added a `sys.path.insert(0, ...)` line, and `0 of the 5` moved a
+        # boolean -- `asserts_root` and `on_root` are `SAME` on all five. The tree had genuinely
+        # moved and the ledger's only reported change was a reformat seen through a column that
+        # carries no decision. **SO THE COMPARISON IS OVER THE THREE COLUMNS THAT DECIDE SOMETHING.**
+        moved = sorted(k for k in set(new) & set(old) if DECIDED(new[k]) != DECIDED(old[k]))
         # `gone` is an UNRECORDED departure; `back` is a tombstone whose gate came BACK, which is
         # `added` by another name and is cured the same way. Both are red; neither is erasure.
         gone = sorted(set(old) - set(new) - retired)
@@ -1213,7 +1258,13 @@ def report(root, ledger_mode, ledger_path=None):
         for k in still:
             print(f"III   retired {k} -- left the population, recorded, kept")
         for k in moved:
-            print(f"III   CHANGED {k}: {old[k][0]} -> {new[k][0]}")
+            # NAME THE COLUMNS THAT MOVED. `old[k][0] -> new[k][0]` printed the REASON on both
+            # sides of the arrow even when the reason was unchanged and a boolean was what
+            # moved, so the line described a change it had not found.
+            print(f"III   CHANGED {k}: " + ", ".join(
+                f"{n} {o}->{b}"
+                for o, n, b in zip(DECIDED(old[k]), ("reason", "asserts_root", "on_root"),
+                                   DECIDED(new[k])) if o != b))
         if ledger_mode == "check" and (added or gone or moved or back):
             red = 1
         if not (added or gone or moved or back):
