@@ -137,18 +137,36 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **EQUALS `HEAD:`** — **USE `git hash-object` vs `git rev-parse HEAD:<path>`, AND `git show --stat`,
   WHICH **HOLD.** **See `checks/README.md` and `.agents/slop/difftxt/`.
 - `e2e.py` — **the SEVEN-stage end-to-end gate**, and `e2e.sh` beside it. Do not rewrite it to tidy it.
-  **NOT GREEN, AND NOT FOR THE REASON PREVIOUSLY WRITTEN HERE.** Stages 3, 4, 5 and 6 all **PASS** on the
-  last transcript, and `.agents/slop/xd2/cdp.mjs` and `.agents/slop/ops_bend-milestone-expected.txt` —
-  the two inputs an earlier revision of this file called deleted — **BOTH EXIST**. The only stage that
-  measures nothing is **7**, which SKIPs because `run-f64.sh` refuses a cold substrate, so **`e2e.py`
-  RETURNS 4, NOT 0** (`e2e.py:514`), and `checks/e2e.sh:335` likewise `exit 4`. **A SKIP IS NOT A PASS AND
-  THE EXIT STATUS SAYS SO**; a caller reading only `$?` cannot mistake it. Stage 8 is **RETIRED**: its
-  denominator was 0 (`runtime/dtype.js` is not one byte of the emitted bundle), so it was retired rather
-  than re-pointed. **`.agents/slop/e2estage8/verdicts.py` IS CURRENTLY RED (rc=1)** — not on a zero
-  denominator but on `e2e.py: PROSE names [0] the CODE does not emit`, i.e. the docstring still names a
-  stage `0` — **so the prose in this file is a THIRD witness to that disagreement and is stale too.**
-  Stages 2-7 need `bend`, `node` and `cc`, so **run it with nothing else compiling**, and under the
-  sum-precondition above.
+  **NEVER RUN ON THE REAL TREE.** Stages 2-7 need `bend`, `node` and `cc`, so **run it with nothing else
+  compiling**, and under the sum-precondition above.
+  **WHAT IS TRUE AS OF 2026-10-19 (`212f1443`), ALL OF IT MEASURED:**
+  - **THE GATE HAS **NEVER** BEEN RUN ON THE REAL TREE.** Every stage verdict in this file is from a transcript, and
+    the one on disk is **11.7 DAYS OLD** (`.agents/slop/e2epy/artifacts/live.port.out`, mtime **`Oct 7 23:25`**).
+    ***AND IT **IS **NOT **GITIGNORED** — ONLY `runs/` **IS** (`.gitignore:262`) — **SO `git status` **WOULD **HAVE
+    SHOWN **IT **CLEAN **AND **PROVED **NOTHING**.** THE **MTIME **IS **THE **PROOF.**
+  - **`.agents/slop/ops_bend-milestone-expected.txt` **DOES **NOT **EXIST** — IT **WAS **RENAMED **TO **`.md`**, AND
+    THE LOADER **NOW **RESOLVES **IT **BY **STEM** (`ops_bend-milestone-expected`), NOT BY EXTENSION: **A
+    `.txt`-THEN-`.md` FALLBACK **IS **A **HAND **LIST**. `runtime/dtype.js` **IS **ABSENT **ENTIRELY**; `cdp.mjs`'s
+    counterpart **IS **ALSO **ABSENT**. **THE "**BOTH EXIST**" **CLAIM **WAS **FALSE **ON **BOTH **COUNTS.**
+  - **STAGE 7 **SKIPS** BECAUSE `run-f64.sh` REFUSES A COLD SUBSTRATE. **IF **THAT **IS **STILL **TRUE**, THE GATE
+    EXITS **4**, **NOT **0** — **AND **THAT **IS **THE **GATE **BEING **HONEST, NOT **A **DEFECT **TO **HIDE**;
+    `AGENTS.md`'s OWN RULE SAYS A `SKIP` **IS **NOT **A `PASS` **AND **THE **EXIT **STATUS **SAYS **SO.** **DO **NOT **
+    REPORT **HOW **TO **MAKE **IT **GREEN.**
+  - **STAGE 8 **IS **RETIRED** AND `verdicts.py` **MEASURES **`PROSE 7 live: 1..7 | 1 RETIRED: 8`** — **SO **THE
+    `PROSE names [0] the CODE does not emit` **DEFECT **THIS **PARAGRAPH **USED **TO **CITE **WAS **REPAIRED **ON
+    2026-10-15** (`verdicts.py:39-46`), AND **THE `rc=1` **IS **NOW **ENTIRELY **DENOMINATOR**, NOT PROSE.**
+  - **`BODY_SHA` IS **A **CONTENT **PIN, NOT **A **BEHAVIOUR **CLAIM**, **DECLARED **AS **SUCH **IN **THE **FILE**
+    (`checks/e2e.py`) — **BECAUSE **A **HASH **OF **A **WHOLE **FILE **CANNOT **TELL **A **COMMENT **FROM **CODE**,
+    **AND **A **COMMENT-ONLY **EDIT **HAD **STOPPED **THIS **GATE **FROM **STARTING.** **ITS **REMEDY **IS **THE
+    RULE: **MOVE **THE **PIN **IN **THE **SAME **COMMIT**, **DECLARE **THE **DELTA **IN `ORACLE_EDITS`, **AND **KEEP
+    THE **THREE **PLANTS **FIRING.** **A **BARE **RE-FREEZE **WAS **MEASURED **INSUFFICIENT** — **IT **MOVES **THE
+    COMPLAINT **FROM **CHECK **3** TO **CHECK **2.**
+  - **AND **THE **DEFECT **THE **CENSUS **COULD **NOT **SEE, WHICH **IS **THE **GENERAL **FORM:** **`.agents/slop/e2e_port/run-port-mm.sh:107`
+    EMITS `== 6/6` **AND `.agents/slop/f64/run-f64.sh:78` EMITS `== 7/7`.** ***SO **A **STAGE's INNER LANE **PRINTS
+    A `== n/m` BANNER **AT **ALL**, **WHICH **RE-OPENS **STAGE 6 **IN `.agents/slop/e2estage8/verdicts.py:75 blocks()`** --
+    ***AND **A **RE-RUN **WILL **NOT **GO **GREEN **UNTIL **THOSE **TWO **ARE **MOVED.** ***THE **OPEN **QUESTION
+    IS **WHETHER **A **STAGE's INNER LANE **MAY **PRINT **SUCH **A **BANNER** — **AND **NO **INSTRUMENT **IN **THE
+    TREE **NOTICES **THAT **A **COMPARISON **ARTIFACT **IS **OLDER **THAN **THE **CODE **IT **COMPARES.**
 - `checks/no-txt.py` — **THE RULE IS REAL; THE CLAIM "there is no `.txt` file in this project" IS NOT.
   IT EXITS 1 AT 2026-10-06 13:00 WITH **550 HARD AND 139 EXCUSED (689 OWNED)** — AND THAT NUMBER MOVES, SO IT CARRIES THE READING
   THAT PRODUCED IT — AND IT PRINTS A SAMPLE AND THEN
