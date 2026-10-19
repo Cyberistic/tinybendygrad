@@ -1,0 +1,147 @@
+model	symbol	status	port_file_line	needed_by
+resnet	Tensor.conv2d	EXISTS	nn/layers.bend:756	nn_conv2d
+resnet	Tensor.relu	EXISTS	nn/layers.bend:262	nn_relu over tn_relu
+resnet	Tensor.linear	EXISTS	nn/layers.bend:427	nn_linear
+resnet	Tensor.batchnorm	EXISTS	nn/pool.bend:381	pool_bn decomposition only
+resnet	Tensor.batchnorm running-stats	MISSING	nn/pool.bend:415	TRAINING unbound; Tensor.assign absent
+resnet	Tensor.max_pool2d	EXISTS	nn/pool.bend:250	unpadded arm only
+resnet	Tensor.max_pool2d padded	MISSING	nn/pool.bend:252	identity_element (uop/ops.py:61)
+resnet	Tensor.sequential	MISSING		grep -rniE sequential returns 0
+resnet	Tensor.argmax	MISSING		no def; rc_arg is a reduce internal
+resnet	Tensor.item	MISSING		no def
+resnet	nn.Conv2d class	MISSING	tinybendygrad/nn/__init__.bend	17 defs and ZERO classes
+resnet	nn.BatchNorm2d class	MISSING	tinybendygrad/nn/__init__.bend	17 defs and ZERO classes
+resnet	nn.Linear class	MISSING	tinybendygrad/nn/__init__.bend	17 defs and ZERO classes
+resnet	fetch	MISSING		helpers.bend:2815 records the HTTP seam unported
+resnet	get_child	MISSING		grep ^def get_child( = 0
+resnet	torch_load	MISSING		grep torch_load = 0
+resnet	TinyJit	MISSING		engine/jit.bend has no tiny_jit def
+resnet	get_state_dict	EXISTS	nn/state.bend:318	reads state
+convnext	Tensor.conv2d	EXISTS	nn/layers.bend:756	upstream:7 Block.dwconv
+convnext	nn.Conv2d class	MISSING	nn/__init__.bend	upstream:7,22; 17 defs and ZERO classes
+convnext	Tensor.layernorm	MISSING	nn/__init__.bend:230	upstream:8,26 open wall mixin/op.py:1644
+convnext	nn.LayerNorm2d class	MISSING	nn/__init__.bend	upstream:22-23 downsample_layers
+convnext	nn.Linear class	MISSING	nn/__init__.bend	upstream:9-10,27 pwconv/head
+convnext	Tensor.linear	EXISTS	nn/layers.bend:427	nn_linear op behind :9,:27
+convnext	Tensor.sequential	MISSING		upstream:14,31,32; grep returns 0
+convnext	Tensor.gelu	MISSING	mixin/elementwise.bend:1217	only ew_quick_gelu, the 1.702 variant
+convnext	Tensor.ones	EXISTS	mixin/creation.bend:487	upstream:11 gamma
+convnext	Tensor.permute	EXISTS	mixin/movement.bend:1449	upstream:15,16
+convnext	Tensor.mean	EXISTS	mixin/op.bend:891	upstream:32
+convnext	Tensor.mul	EXISTS	tensor.bend:651	upstream:16
+convnext	Tensor.uniform	EXISTS	mixin/rand.bend:836	not named in this file
+convnext	Tensor.assign	MISSING	nn/pool.bend:408	upstream:51; tensor.bend:2539 immutability
+convnext	Tensor.realize	MISSING		upstream:51
+convnext	Tensor.numpy	MISSING		upstream:62
+convnext	Tensor.argmax	MISSING		upstream:63
+convnext	fetch	MISSING	helpers.bend:2815	upstream:48
+convnext	get_child	MISSING		upstream:50
+convnext	torch_load	MISSING		upstream:47-48
+convnext	Context	EXISTS	helpers.bend:405	upstream:61
+efficientnet	Tensor.conv2d	EXISTS	nn/layers.bend:756	upstream:39,40,45,46,49,127,129
+efficientnet	Tensor.batchnorm	EXISTS	nn/pool.bend:381	pool_bn decomposition, eval arm
+efficientnet	Tensor.batchnorm running-stats	MISSING	nn/pool.bend:415	upstream:12,23,34,85,119 TRAINING+assign; THE FIRST BLOCKER
+efficientnet	nn.BatchNorm2d class	MISSING	nn/__init__.bend	upstream:12,23,34,85,119
+efficientnet	Tensor.glorot_uniform	EXISTS	mixin/rand.bend:861	upstream:11,22,28,30,33,84,118,121
+efficientnet	nn_glorot bound	EXISTS	nn/__init__.bend:217	rd_glorot_uniform bound
+efficientnet	Tensor.avg_pool2d	EXISTS	nn/pool.bend:260	upstream:44,130 unpadded arm
+efficientnet	avg_pool2d kernel from x.shape	MISSING	nn/layers.bend:94	upstream:44,130 read shape[2:4]; nn_shape is a Maybe
+efficientnet	Tensor.swish	EXISTS	mixin/elementwise.bend:1208	upstream:39,41,45,127,129
+efficientnet	Tensor.silu	EXISTS	mixin/elementwise.bend:1209	not named here; silu is swish
+efficientnet	Tensor.sigmoid	EXISTS	mixin/elementwise.bend:1196	upstream:47
+efficientnet	Tensor.linear	EXISTS	nn/layers.bend:427	upstream:132 bias-as-Maybe IS the None check
+efficientnet	Tensor.sequential	MISSING		upstream:128,41; grep returns 0
+efficientnet	Tensor.add	EXISTS	tensor.bend:680	upstream:51
+efficientnet	Tensor.mul	EXISTS	tensor.bend:651	upstream:47
+efficientnet	Tensor.reshape	EXISTS	mixin/movement.bend:1431	upstream:131 explicit -1 needed; see pool.bend:322
+efficientnet	Tensor.zeros	EXISTS	mixin/creation.bend:446	upstream:29,31,122
+efficientnet	F32.ceil	EXISTS		upstream:81 spelled in ef_round_repeats
+efficientnet	Tensor.replace	MISSING		upstream:161 mv.replace
+efficientnet	Tensor.to	MISSING		upstream:161 vnp.to
+efficientnet	fetch	MISSING	helpers.bend:2815	upstream:146
+efficientnet	torch_load	MISSING		upstream:5,146
+efficientnet	get_child	MISSING		upstream:155
+inception	Tensor.conv2d	EXISTS	nn/layers.bend:756	every BasicConv2d; bias=False is None{}
+inception	nn.Conv2d class	MISSING	nn/__init__.bend	upstream:14 THE FIRST BLOCKER; no **kwargs
+inception	nn.BatchNorm2d class	MISSING	nn/__init__.bend	upstream:15
+inception	Tensor.batchnorm	EXISTS	nn/pool.bend:381	pool_bn decomposition
+inception	Tensor.batchnorm running-stats	MISSING	nn/pool.bend:415	upstream:15; load_from_pretrained:277 reads them
+inception	Tensor.relu	EXISTS	nn/layers.bend:262	upstream:18
+inception	Tensor.max_pool2d unpadded	EXISTS	nn/pool.bend:250	upstream:54,97,290,294 (5 of 17 pools)
+inception	Tensor.max_pool2d padded	MISSING	nn/pool.bend:252	upstream:147,150,237; identity_element
+inception	Tensor.avg_pool2d unpadded	EXISTS	nn/pool.bend:260	upstream:308 (1 of 17 pools)
+inception	Tensor.avg_pool2d padded	MISSING	nn/pool.bend:262	upstream:38,79,123,134,135,162,203,213,225
+inception	avg_pool2d count_include_pad=False	MISSING	nn/pool.bend:262	upstream:203,213,225; same refused arm
+inception	Tensor.cat	MISSING		upstream:40,56,81,99,121,122,125,205,215,227,239
+inception	Tensor.sequential	MISSING		upstream:18,36,37,134; grep returns 0
+inception	Tensor.reshape -1	MISSING	mixin/movement.bend:1431	upstream:135,190; no axis inference (pool.bend:322)
+inception	nn.Linear class	MISSING	nn/__init__.bend	upstream:131,163
+inception	Tensor.linear	EXISTS	nn/layers.bend:427	nn_linear op behind :131,:163
+inception	Tensor.interpolate	MISSING		upstream:284, the FIRST line of FidInceptionV3.__call__
+inception	cls_map dict	MISSING		upstream:140-141,246; no dict; only caller is FidInceptionV3
+inception	np.load	MISSING	extra/datasets/__init__.bend:21	upstream:314; no ndarray (Tensor is an arena slot)
+inception	np.cov	MISSING	extra/datasets/__init__.bend:21	upstream:319
+inception	np.atleast_1d/2d	MISSING	extra/datasets/__init__.bend:21	upstream:324-327
+inception	np.trace	MISSING		upstream:342; mo_sum is built, so this is a shape away
+inception	scipy.linalg.sqrtm	MISSING		upstream:8,331 FOREIGN DEPENDENCY, not a substrate gap
+inception	load_state_dict	MISSING	nn/state.bend:318	upstream:280; get_state_dict reads, no load writes
+inception	torch_load	MISSING		upstream:276
+inception	fetch	MISSING	helpers.bend:2815	upstream:275
+unet	Tensor.arange	MISSING		upstream:12 THE FIRST BLOCKER in a def
+unet	Tensor.cos	MISSING		upstream:14; tn_sin EXISTS at tensor.bend:423, so cos is a gap not a typo
+unet	Tensor.sin	EXISTS	tensor.bend:423	upstream:14
+unet	Tensor.exp	EXISTS	mixin/elementwise.bend:1286	upstream:12
+unet	Tensor.cat	MISSING		upstream:14,259
+unet	Tensor.unsqueeze	MISSING		upstream:13; undersized dims not writable
+unet	Tensor.chunk	MISSING		upstream:68
+unet	Tensor.cast	EXISTS	mixin/elementwise.bend:180	upstream:15,241
+unet	Tensor.scaled_dot_product_attention	MISSING	mixin/rand.bend:87-90	upstream:7,57 HEADLINE, shared with transformer.bend
+unet	Tensor.gelu	MISSING	mixin/elementwise.bend:1217	upstream:7,64; only ew_quick_gelu
+unet	Tensor.silu	EXISTS	mixin/elementwise.bend:1209	upstream:21,25,27,229,240
+unet	Tensor.expand	EXISTS	mixin/creation.bend:271	upstream:137
+unet	Tensor.conv2d	EXISTS	nn/layers.bend:756	upstream:22,32,34,107,126,133,176,196,229
+unet	Tensor.linear	EXISTS	nn/layers.bend:427	upstream:26,45-47,51,63,76,107,109,161,170,172
+unet	Tensor.layernorm	MISSING	nn/__init__.bend:230	upstream:87,88,89
+unet	nn.GroupNorm	MISSING	nn/__init__.bend	upstream:20,29,105,227; pool_bn is per-CHANNEL not per-GROUP
+unet	nn.LayerNorm class	MISSING	nn/__init__.bend	upstream:87-89
+unet	nn.Conv2d class	MISSING	nn/__init__.bend	upstream:22,32,34,107,126,133
+unet	nn.Linear class	MISSING	nn/__init__.bend	upstream:26,45-47,51,63,76,107,109
+unet	Tensor.add	EXISTS	tensor.bend:680	upstream:39,41,92-94,122
+unet	Tensor.permute	EXISTS	mixin/movement.bend:1449	upstream:116,120
+unet	Tensor.reshape -1	MISSING	mixin/movement.bend:1431	upstream:56,58; no axis inference
+unet	Tensor.sequential	MISSING		upstream:37,38,40,59,80,117,121,234,262; grep returns 0
+unet	dtypes.float16	EXISTS	dtype.bend:53	upstream:7; spelled S.half() in the port
+unet	Device.renderer.supported_dtypes	MISSING		upstream:15,240; a runtime capability query
+unet3d	Tensor.conv2d	EXISTS	nn/layers.bend:756	upstream:9,10,18,19,34; nd-generic on weight.shape[2:]
+unet3d	nn.Conv2d class	MISSING	nn/__init__.bend	upstream:9 THE FIRST BLOCKER; no bias=False spelling on the class
+unet3d	nn.InstanceNorm	MISSING	nn/__init__.bend	upstream:9,10,18,19; no running stats, so strictly easier than pool_bn
+unet3d	Tensor.batchnorm	EXISTS	nn/pool.bend:381	the neighbouring norm; InstanceNorm would be pool_bn over shape[1:]
+unet3d	nn.ConvTranspose2d	MISSING		upstream:17,34 second blocker; the port has a FORWARD conv only
+unet3d	Tensor.cat	MISSING		upstream:23, the skip connection
+unet3d	Tensor.relu	EXISTS	nn/layers.bend:262	upstream:9,10,18,19
+unet3d	Tensor.sequential	MISSING		upstream:13,22,24; grep returns 0
+unet3d	fetch	MISSING	helpers.bend:2815	upstream:50
+unet3d	get_child	MISSING		upstream:53
+unet3d	torch	MISSING		upstream:2,51; torch.jit.load, a SECOND weight format
+unet3d	Tensor.assign	MISSING	nn/pool.bend:408	upstream:55; tensor.bend:2539 immutability
+unet3d	Tensor.numpy	MISSING		upstream:55
+unet3d	pathlib.Path	MISSING		upstream:49
+vit	Tensor.scaled_dot_product_attention	MISSING	mixin/rand.bend:87-90	via TransformerBlock at :13; transformer.bend:108 REFUSES
+vit	TransformerBlock	MISSING	extra/models/transformer.bend:108	FILE PRESENT, def REFUSES on sdpa -- the distinguishing fact
+vit	Tensor.uniform	EXISTS	mixin/rand.bend:836	upstream:8,16,17
+vit	Tensor.zeros	EXISTS	mixin/creation.bend:446	upstream:8,17,25
+vit	Tensor.ones	EXISTS	mixin/creation.bend:487	upstream:10,11
+vit	Tensor.conv2d	EXISTS	nn/layers.bend:756	upstream:20
+vit	Tensor.reshape	EXISTS	mixin/movement.bend:1431	upstream:21,30
+vit	Tensor.reshape -1	MISSING	mixin/movement.bend:1431	upstream:21; pool.bend:322 states the boundary
+vit	Tensor.permute	EXISTS	mixin/movement.bend:1449	upstream:21
+vit	Tensor.add	EXISTS	tensor.bend:680	upstream:25,28
+vit	Tensor.cat	MISSING		upstream:27
+vit	Tensor.sequential	MISSING		upstream:28; grep returns 0
+vit	Tensor.layernorm	MISSING	nn/__init__.bend:230	upstream:29
+vit	Tensor.linear	EXISTS	nn/layers.bend:427	upstream:29,30
+vit	Tensor.gelu	MISSING	mixin/elementwise.bend:1217	upstream:14 act; only ew_quick_gelu
+vit	Tensor slice x[:,0]	MISSING		upstream:30; rd_slice is a 1-D shrink, not an index read
+vit	Tensor.assign	MISSING	nn/pool.bend:408	upstream:45-71, TWENTY-SEVEN call sites
+vit	np.load	MISSING	extra/datasets/__init__.bend:21	upstream:40
+vit	fetch	MISSING	helpers.bend:2815	upstream:40

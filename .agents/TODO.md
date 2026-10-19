@@ -992,6 +992,76 @@ nn-layers [#######...] 3/7     THE LAYERS LAND, AND ONE OF THEM FOUND A REAL DEF
                                        defs, so `_pool`'s raw decomposition is unavailable and the
                                        unit built pool over `mo_reduce`/`mo_mean`/`mo_max` instead.
 
+five-units [#####.....] 2/5   FIVE UNITS, AND THE HEADLINE IS NOT A NEW DEFECT BUT A CORRECTION TO ONE.
+                                       **1. `ropfix` -- THE `tn_rop.perm` CANDIDATE IS CORRECT AND PROVEN,
+                                       AND ITS BLAST RADIUS IS MEASURED AS ZERO.** Candidate diff
+                                       (114 lines, `patch --dry-run` clean, `ALL PROOFS CHECK`) on
+                                       `sum(-1)` over `(2,4,3)`: CPython `(2,4)` · BEFORE `(4,3)` ·
+                                       AFTER **`(2,4)`**, control axis `[0]` unmoved, and
+                                       `[0,2]` `(3)` -> `(4)`. Its graph becomes CPython's
+                                       `REDUCE(PERMUTE(RESHAPE(...)),(ADD,1))`.
+                                       **BLAST RADIUS: `ZERO OF 34 CORPUS GRAPHS CAN CHANGE** --
+                                       `graphcmp.bend` makes **1** `T.tn_*` call (`tn_wrap_uop`)
+                                       and **0** `T.tn_rop` calls, every graph being built
+                                       node-for-node. **SO THE CORPUS IS 34/34 GREEN *WHILE THIS
+                                       DEFECT IS LIVE*, AND ITS GREENNESS IS NOT EVIDENCE EITHER
+                                       WAY.** NOT LANDED: `mixin/op.bend`'s `norm0` row moves
+                                       18->19 nodes and MUST BE RE-PINNED IN THE SAME COMMIT.
+                                       **AND FIXING ONE DEFECT EXPOSED A SECOND:** `mo_keep_ds`
+                                       (`op.bend:781`) answers keepdim for the MIRRORED axis
+                                       because `mo_at` (`:316`) indexes `len(t)`, which counts from
+                                       the TAIL -- so `sum(-1, keepdim=True)` went from a wrong
+                                       `(1,4,3)` to EMPTY. Before, the broken permute reduced axis 0,
+                                       **so both defects agreed on axis 0 and cancelled into a
+                                       self-consistent wrong answer**; fixing one exposed the other.
+                                       **LAND `mo_at`/`mo_keep_ds` WITH IT OR IMMEDIATELY AFTER.**
+                                       2. `banner`: repair (a) -- MOVE the inner `== 6/6`/`== 7/7`
+                                       banners. Repair (b) is a **NO-OP**: `HEADER` starts `^` and
+                                       `re.match` already anchors at column 0. **THE FRAMING WAS
+                                       WRONG: THE PARSE IS CORRECT AND THE DUPLICATE IS REAL** --
+                                       `echo_file` puts the child's WHOLE output in the same
+                                       transcript. Stage 7's duplicate is LATENT (`F64_RE` filters
+                                       it), halving the work. **`verdicts.py` IS STILL RED BUT NO
+                                       CODE CHANGE CLEARS IT: 6 of its 7 failures are `gate SAYS`
+                                       vs `run PRINTED`, i.e. 11-DAY-OLD TRANSCRIPT STALENESS.**
+                                       3. `e2einputs`: the transcript is **TRACKED, NOT GITIGNORED**
+                                       and hashes byte-identically to HEAD, **so `git status` shows it
+                                       clean FOREVER -- only the MTIME is the proof.**
+                                       **AGENTS.md's `Oct 7 23:25` IS LOCAL TIME WEARING A `Z`** (the
+                                       host is `Asia/Kuwait`); true UTC is `2026-10-07T20:25:58Z`,
+                                       **284.03 h = 11.83 days**. The `.txt`->`.md` rename is REAL and
+                                       the loader resolves BY STEM with **NO `.txt`-then-`.md`
+                                       FALLBACK** (the file says so itself).
+                                       **BUT `runtime/dtype.js` IS REFUTED -- IT EXISTS**, 8884 B,
+                                       tracked, in HEAD. **STAGE 8 WAS RETIRED, NOT THE FILE**, and
+                                       AGENTS.md faithfully copied an error from
+                                       `.agents/slop/e2ereport/REPORT.md:154`.
+                                       **THE SHARPEST CASE, AND IT IS NOT A COUNT:**
+                                       `gates/e2estage8-stage-legacy.py:29` DEFAULTS to the stale
+                                       transcript and its ENTIRE DOCSTRING IS ABOUT PROSE vs CODE vs
+                                       TRANSCRIPT AGREEING -- **it cross-checks a gate's prose against
+                                       its code against its own artifact and NEVER ASKS WHETHER THE
+                                       ARTIFACT IS CURRENT.** 4. `vision`: six stubs, 6/6
+                                       `ALL PROOFS CHECK`; `inception`'s blocker is **12 of 17** pool
+                                       calls needing the padded arm, `vit` is blocked on a SIBLING
+                                       THAT IS PRESENT AND REFUSING (`transformer.bend:108`), and
+                                       `unet3d`'s 3-D conv is **NOT** the blocker -- `nn_conv2d` is
+                                       nd-generic. 5. `nlp`: eight stubs, 8/8; **attention,
+                                       embedding and argmax are MISSING; softmax and `adam` EXIST**
+                                       (`optim.bend:898 op_mstep` is `optim.py:167` VERBATIM), so a
+                                       training loop needs NOTHING NEW on the optimizer side.
+                                       **BOTH UNITS FOUND `resnet.bend`'s HEADLINE STALE** -- it still
+                                       says conv2d/BatchNorm/Linear are all missing, which stopped
+                                       being true when `layers.bend`/`pool.bend` landed, and
+                                       `nn/__init__.bend:230` still says `x.layernorm -- SIDE B, not
+                                       built`. **A WALL THAT HAS FALLEN IS STILL NAMED AS A WALL.**
+                                       **AND A CORRECTION TO A UNIT: it claimed `--check-only`
+                                       EXITS 0 EVEN WHEN IT FAILS, and that reading would report a
+                                       green tree. MEASURED BY ME: the failing file exits 1.** The
+                                       exit code DOES see the failure; only the FIRST LINE
+                                       distinguishes cleanly, which is what `differ.py:settled()`
+                                       already keys on.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

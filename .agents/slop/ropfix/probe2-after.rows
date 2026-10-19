@@ -1,0 +1,29 @@
+keepds_axis0=(2)(4)(1)
+keepds_axis1=(2)(1)(3)
+keepds_axis2=(1)(4)(3)
+keepdim root=14
+node 1 CONST shape=[] nsrc=0
+node 2 BUFFER shape=[(24)] nsrc=1
+node 3 CONST shape=[] nsrc=0
+node 4 CONST shape=[] nsrc=0
+node 5 CONST shape=[] nsrc=0
+node 6 STACK shape=[(3)] nsrc=3
+node 8 RESHAPE shape=[(2)(4)(3)] nsrc=2
+node 9 PERMUTE shape=[(3)(2)(4)] nsrc=1
+node 10 REDUCE shape=[(2)(4)] nsrc=1
+node 11 CONST shape=[] nsrc=0
+node 12 STACK shape=[(3)] nsrc=3
+node 14 RESHAPE shape=[] nsrc=2
+
+plain root=10
+node 1 CONST shape=[] nsrc=0
+node 2 BUFFER shape=[(24)] nsrc=1
+node 3 CONST shape=[] nsrc=0
+node 4 CONST shape=[] nsrc=0
+node 5 CONST shape=[] nsrc=0
+node 6 STACK shape=[(3)] nsrc=3
+node 8 RESHAPE shape=[(2)(4)(3)] nsrc=2
+node 9 PERMUTE shape=[(3)(2)(4)] nsrc=1
+node 10 REDUCE shape=[(2)(4)] nsrc=1
+
+done=1

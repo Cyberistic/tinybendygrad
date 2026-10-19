@@ -1,0 +1,114 @@
+--- a/tinybendygrad/tensor.bend
++++ b/tinybendygrad/tensor.bend
+@@ -1803,33 +1803,92 @@
+   match ds:
+     case Some{k}: Some{tn_rop.ne1(axis, Nil{}, k)}
+     case _: None{}
+-
+-def tn_rop.red2.of(src: U32, +ar: O.Arena, op: O.Op, +rn: List<&2, U32>) -> O.Found:
+-  O.UOp.new(ar, O.OpsREDUCE{}, [src], O.AReduce{op, U32.from_nat(tn_rop.len(rn))}, O.TNone{})
+ 
+-# `self.permute(perm)` where `perm = reduce_axis + the axes not in reduce_axis`, and
+-# mixin/movement.py:229's identity test `sorted(order_arg) != list(range(self.ndim))`
+-# hoisted. It is the
+-# test that decides whether a PERMUTE node exists at all, so both arms answer `self`:
+-# the hoist is the TEST, and building the PERMUTE is `tn_mop.order` above.
+-def tn_rop.perm.of(is_id: Bool, +self: U32) -> U32:
+-  match is_id:
+-    case True{}: self
+-    case _: self
++# `tuple(range(n))` -- ops.py:636's `range(len(self.shape))`, which is ALSO
++# mixin/movement.py:231's identity test on the SAME list, so one def serves both the
++# build and the test and the two cannot disagree about what `ndim` is. `i` is not a
++# parameter: it is `len(acc)`, which is what `range(n)` is. The SELF-CALL TAKES THE
++# COUNTDOWN FIRST because a self-call reads left to right and the SHRINKING argument goes
++# first -- `mixin/op.bend`'s `mo_range` is this def, spelled there because that file
++# imports this one and this one cannot import that.
++def tn_rop.range.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
++  match n:
++    case 0n: acc
++    case 1n+p: tn_rop.range.go(p, List.append(&2, U32, acc, [U32.from_nat(List.length(&2, U32, acc))]))
+ 
+-def tn_rop.perm(+ar: O.Arena, +self: U32, +axis: List<&2, U32>, +rn: List<&2, U32>) -> U32:
+-  tn_rop.perm.of(O.eq_u32(rn, axis), self)
++def tn_rop.range(n: Nat) -> List<&2, U32>: tn_rop.range.go(n, Nil{})
+ 
+-def tn_rop.red2(+ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>, +rn: List<&2, U32>) -> O.Found:
+-  tn_rop.red2.of(tn_rop.perm(ar, self, axis, rn), ar, op, rn)
++# `i in reduce_axis` -- the `i not in reduce_axis` of ops.py:636, as a `Bool` because a
++# `match` may not scrutinise `U32.is_eq` (a call). `Bool.pick` is the short-circuit: the
++# self-call is an ARGUMENT and the descent is the TAIL `t`, which is what terminates it.
++def tn_rop.in_rn.go(+rn: List<&2, U32>, +i: U32) -> Bool:
++  match rn:
++    case Nil{}: False{}
++    case a <> t: Bool.pick(Bool, U32.is_eq(a, i), True{}, tn_rop.in_rn.go(t, i))
+ 
+-def tn_rop.reduce.of(r: Maybe<&2, List<&2, U32>>, +ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
++def tn_rop.in_rn(+rn: List<&2, U32>, +i: U32) -> Bool: tn_rop.in_rn.go(rn, i)
++
++# `tuple(i for i in ns if i not in reduce_axis)` -- ops.py:636's second half. THE ORDER
++# IS WHAT THE PERMUTE MEANS: `perm`'s first `len(reduce_axis)` entries ARE the reduced
++# axes and the port's REDUCE drops `len(reduce_axis)` axes FROM THE HEAD
++# (`F.reduce_dims.put` / `S.drop_n`, which already agree), so APPENDING the survivors is
++# one function, PREPENDING them is a different one, and SORTING `ns` is a third.
++def tn_rop.rest.go(+ns: List<&2, U32>, +rn: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
++  match ns:
++    case Nil{}: acc
++    case i <> t: tn_rop.rest.go(t, rn,
++      Bool.pick(List<&2, U32>, tn_rop.in_rn(rn, i), acc, List.append(&2, U32, acc, [i])))
++
++def tn_rop.rest(+ns: List<&2, U32>, +rn: List<&2, U32>) -> List<&2, U32>:
++  tn_rop.rest.go(ns, rn, Nil{})
++
++# `self.permute(perm)` -- mixin/movement.py:214-231. ITS identity test is
++# `order_arg != tuple(range(self.ndim))`, and that is the test which decides whether a
++# PERMUTE NODE EXISTS AT ALL; `sorted(order_arg) != list(range(self.ndim))` on the line
++# above it is a VALIDITY check and it RAISED in CPython rather than returning anything.
++# So the TRUE arm is `self` and only the FALSE arm mints a node -- and the FALSE arm used
++# to answer `self` too, which is why `perm` was hoisted as a TEST and nothing was built.
++def tn_rop.perm.node(is_id: Bool, +ar: O.Arena, +self: U32, +ys: List<&2, U32>) -> O.Found:
++  match is_id:
++    case True{}: O.Found{ar, self}
++    case _: tn_mop.order(ar, self, O.OpsPERMUTE{}, ys)
++
++# `perm = reduce_axis + tuple(i for i in range(len(self.shape)) if i not in reduce_axis)`
++# -- ops.py:636 verbatim. `ds` IS `tn_rop.reduce`'s OWN filter input
++# (`tn_rop.ne1.of(tn_dims(tn_new(ar, self)), axis)`), so this arm cannot see a `None` that
++# `tn_rop.reduce` did not already refuse on; the `None` arm is here because a def must be
++# TOTAL, and it is the honest one -- with no `len(self.shape)` there is no `perm`, and
++# `range(len(self.shape))` is the read CPython raises on.
++def tn_rop.perm.of(ds: Maybe<&2, List<&2, O.Sint>>, +ar: O.Arena, +self: U32, +rn: List<&2, U32>) -> O.Found:
++  match ds:
++    case Some{k}:
++      +ns = tn_rop.range(List.length(&2, O.Sint, k))
++      +ys = List.concat(&2, U32, [rn, tn_rop.rest(ns, rn)])
++      tn_rop.perm.node(O.eq_u32(ys, ns), ar, self, ys)
++    case _: O.Found{ar, self}
++
++# `axis` IS NOT A PARAMETER, AND IT WAS ONE. `_rop` reads `axis` for the CLOSING reshape
++# (ops.py:638) and this permute does not: `mo_reduce.keep` (mixin/op.bend:790) and
++# `nn_reduce` (nn/layers.bend:230) are both that reshape and both own it. `axis` had
++# exactly one reader here and it was `O.eq_u32(rn, axis)` -- so the old test asked
++# `reduce_axis == axis`, which is DEFECT-1's question (mixin/reduce.bend:36) and not this
++# one's. It decided nothing, because both arms answered `self`.
++def tn_rop.perm(+ar: O.Arena, +self: U32, +rn: List<&2, U32>) -> O.Found:
++  tn_rop.perm.of(tn_dims(tn_new(ar, self)), ar, self, rn)
++
++def tn_rop.red2.of(+p: O.Found, op: O.Op, +rn: List<&2, U32>) -> O.Found:
++  O.UOp.new(O.Found.ar(p), O.OpsREDUCE{}, [O.Found.i(p)], O.AReduce{op, U32.from_nat(tn_rop.len(rn))}, O.TNone{})
++
++def tn_rop.red2(+ar: O.Arena, +self: U32, op: O.Op, +rn: List<&2, U32>) -> O.Found:
++  tn_rop.red2.of(tn_rop.perm(ar, self, rn), op, rn)
++
++def tn_rop.reduce.of(r: Maybe<&2, List<&2, U32>>, +ar: O.Arena, +self: U32, op: O.Op) -> O.Found:
+   match r:
+-    case Some{rn}: tn_rop.red2(ar, self, op, axis, rn)
++    case Some{rn}: tn_rop.red2(ar, self, op, rn)
+     case None{}: O.Found{ar, self}
+ 
+ def tn_rop.reduce(+ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
+-  tn_rop.reduce.of(tn_rop.ne1.of(tn_dims(tn_new(ar, self)), axis), ar, self, op, axis)
++  tn_rop.reduce.of(tn_rop.ne1.of(tn_dims(tn_new(ar, self)), axis), ar, self, op)
+ 
+ # `if not len(reduce_axis): return self.reshape(kept)`. The `kept` is
+ # `tuple(s for i, s in enumerate(self.shape) if i not in axis)`, and `axis` is EMPTY on

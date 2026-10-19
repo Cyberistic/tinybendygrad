@@ -1,0 +1,14 @@
+VARIANT | STAGES blocks() SAW | STAGE 6 BODY LINES | STAGE 6 DENOMINATOR | RE-OPENS | WHAT main() SAYS ABOUT STAGE 6 | WHAT IT MEANS
+V1 AS-IS | [6, 7] | 4 | 64 | ['stage 6 @line 3', 'stage 7 @line 7'] | no stage-6 denominator failure | the live re-open: both children print a header the gate already printed
+V2 repair (a) | [6, 7] | 4 | 64 | none | no stage-6 denominator failure | both inner banners renamed out of the `== n/m ` shape; nothing else changed
+V3 repair (a), stage 6 denominator DELETED | [6, 7] | 3 | None | none | FAIL: EMITTED, verdict PASS, no denominator counted | **the control's teeth**: re-open gone, and the stage must STILL fail on the missing row
+V4 repair (b1) column 0 | [6, 7] | 4 | 64 | none | no stage-6 denominator failure | the inner banners INDENTED rather than renamed, real headers untouched
+V5 repair (b) at its failure mode | NONE -- DEAD | 0 | None | none | no stage-6 denominator failure | every header indented: `blocks()` must see NO stage, and the check must have nothing to fail on
+V6 WHAT IS ON DISK TODAY | [6, 7] | 4 | 64 | ['stage 6 @line 3'] | no stage-6 denominator failure | stage 6's duplicate reaches the transcript, stage 7's is dropped by `F64_RE` first
+V7 stage 6 | first banner | '== 6/7 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)' | m read by readings() = 7 | banners seen = 2
+V7 stage 7 | first banner | '== 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)' | m read by readings() = 7 | banners seen = 2
+'== 6/6 THE MATMUL THROUGH THE PORT  -- execution: no Node, no browser, no adapter,' | F64_RE DROPS it -- filtered out of the transcript before blocks() ever sees it
+'== 7/7 AN f64 KERNEL THROUGH THE PORT -- double, not float' | F64_RE DROPS it -- filtered out of the transcript before blocks() ever sees it
+V8 REAL before | live.port.out | stage 6 denominator | 64 | re-opens = ['stage 6 @line 77'] | stages seen = 7
+V8 REAL after | live.port.out | stage 6 denominator | 64 | re-opens = NONE | stages seen = 7
+V8 REAL after, WHAT REMAINS | 6 DENOMINATOR FAIL(s) from `readings()` alone | stage 1; stage 2; stage 3; stage 4; stage 5; stage 6 | the re-open is NOT among them -- the candidate cleared exactly the re-open | each is `gate SAYS 7` against a transcript whose own banners read n/4 n/5 n/6 | only a FRESH RUN can clear these; the transcript is 11 DAYS OLD

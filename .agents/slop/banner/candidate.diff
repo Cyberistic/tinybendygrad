@@ -1,0 +1,34 @@
+--- a/.agents/slop/e2e_port/run-port-mm.sh
++++ b/.agents/slop/e2e_port/run-port-mm.sh
+@@ -103,8 +103,13 @@
+   return $lrc
+ }
+ 
++# NOT `== n/m `: `checks/e2e.py` ALREADY printed this stage's header (`say("== 6/7 the matmul
++# THROUGH THE PORT ...")`) and then `echo_file(pmm)`s this whole file into the SAME transcript, so a
++# second `== 6/m` line re-opens stage 6 at `.agents/slop/e2estage8/verdicts.py`'s `reopens()` --
++# MEASURED 2026-10-19 on `live.port.out:77`. The anchors are named because that file is being edited
++# under this measurement and its line numbers moved 21 lines mid-task.
+ hr
+-say "== 6/6 THE MATMUL THROUGH THE PORT  -- execution: no Node, no browser, no adapter,"
++say "== PORT-MM  THE MATMUL THROUGH THE PORT  -- execution: no Node, no browser, no adapter,"
+ say "        no tinygrad Python scheduler in the execution path"
+ 
+ hr
+--- a/.agents/slop/f64/run-f64.sh
++++ b/.agents/slop/f64/run-f64.sh
+@@ -74,8 +74,13 @@
+ hr()   { say ""; say "--------------------------------------------------------------------------------" }
+ 
+ mkdir -p "$W" || exit 1
++# NOT `== n/m `: `checks/e2e.py` ALREADY printed this stage's header (`say("== 7/7 the SAME kernel
++# in f64 ...")`). This one is LATENT rather than live -- `checks/e2e.py`'s `grep_file(f64, F64_RE)`
++# filters this file, and `F64_RE` does not match this line, so it never reaches the transcript; it is
++# a stale `7/7` for any reader of `runs/e2e/e2e-f64.out` regardless. Anchors, not line numbers: that
++# file moved 21 lines while this was being measured.
+ hr
+-say "== 7/7 AN f64 KERNEL THROUGH THE PORT -- double, not float"
++say "== F64-LANE  AN f64 KERNEL THROUGH THE PORT -- double, not float"
+ say "   harness: .agents/slop/portexec/run-kernel.sh mm, UNCHANGED, on a copy"
+ 
+ # ---- 0. THE SUBSTRATE, CHECKED THE WAY THAT HAS ACTUALLY BEEN FOOLED ----------

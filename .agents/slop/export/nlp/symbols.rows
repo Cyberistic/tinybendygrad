@@ -1,0 +1,151 @@
+model	symbol	EXISTS|MISSING	port_file_line	needed_by
+transformer	Tensor.scaled_dot_product_attention	MISSING	-	transformer.py:27 -- THE FIRST MISSING SYMBOL OF attn AND OF THIS FILE'S attention
+transformer	softmax	MISSING	-	transformer.py does not call it directly; the sibling of this row is the one below
+transformer	Tensor.scaled_dot_product_attention.WALL	MISSING	-	(the six named families: attention MISSING, softmax EXISTS one level down, embedding N/A, matmul N/A, argmax N/A, adam N/A)
+transformer	mo_softmax	EXISTS	mixin/op.bend:1095	not called by transformer.py; named because softmax is one of the six
+transformer	nn.Embedding	MISSING	-	transformer.py:44 inlines `Tensor.scaled_uniform` + `dot` instead of using nn.Embedding -- embedding is DONE by hand and `dot` EXISTS
+transformer	nn.Linear	EXISTS	nn/layers.bend:427	transformer.py:26,:28,:32,:33,:36,:37
+transformer	nn_dot	EXISTS	nn/layers.bend:383	transformer.py:58,:60 -- RETURNS Maybe, so :58 `onehot.dot(self.embed)` is not a call that type-checks today
+transformer	mo_log_softmax	EXISTS	mixin/op.bend:1109	transformer.py:60
+transformer	x.layernorm	MISSING	-	transformer.py:32,:36,:38 -- THE SECOND WALL, and it survives fixing attention
+transformer	x.dropout	MISSING	-	transformer.py:32,:33,:35,:37
+transformer	Tensor.eye	MISSING	-	transformer.py:51
+transformer	Tensor.one_hot	MISSING	-	transformer.py:54
+transformer	Tensor.cat	MISSING	-	transformer.py:56
+transformer	Tensor.flatten	MISSING	-	transformer.py:56
+transformer	Tensor.sequential	MISSING	-	transformer.py:59 -- also MISSING per resnet.bend:87-88, so NOT a new ask
+transformer	Tensor.argmax	MISSING	-	not named by transformer.py
+transformer	adam	N/A	nn/optim.bend:898 op_mstep	transformer.py constructs no optimizer and names no slot
+transformer	Tensor.scaled_uniform	EXISTS	mixin/rand.bend:855	transformer.py:12,:13,:14,:16,:18,:19,:44,:46 -- REACHABLE, so __init__ is portable
+bert	Tensor.scaled_dot_product_attention	MISSING	-	bert.py:279 -- THE WALL for BertSelfAttention.__call__
+bert	nn.Embedding	MISSING	-	bert.py:182,:183,:184,:46 -- THE FIRST MISSING SYMBOL OF THE FILE
+bert	nn.Linear	EXISTS	nn/layers.bend:427	bert.py:16,:130,:225,:239,:264,:265,:266,:292,:310
+bert	nn.LayerNorm	MISSING	-	bert.py:149,:185,:226,:293
+bert	mo_softmax	MISSING	-	bert.py does not call it; log_softmax does, and that exists
+bert	mo_log_softmax	EXISTS	mixin/op.bend:1109	bert.py:54
+bert	nn_dot	EXISTS	nn/layers.bend:383	bert.py:144 -- `@`; returns Maybe, so the call does not type-check
+bert	Tensor.argmax	MISSING	-	bert.py:66,:70
+bert	adam	EXISTS	nn/optim.bend:898 op_mstep	bert.py NAMES THE SLOTS at :90 (adam_v, adam_m, beta1_power, beta2_power) only to FILTER them out. The optimizer is ported; bert never calls it.
+bert	x.dropout	MISSING	-	bert.py:199,:231,:298
+bert	gelu(bert)	MISSING	-	bert.py:235-236 -- needs Tensor.erf, which is also MISSING
+bert	ew_gelu	MISSING	-	mixin/elementwise.bend:772 has the CONSTANT ew_k.gelu and :1217 has ew_quick_gelu; there is no `def ew_gelu`
+bert	Tensor.chunk	MISSING	-	bert.py:36
+bert	Tensor.arange	EXISTS	mixin/rand.bend:361	bert.py:55,:192
+bert	mxw_stk	EXISTS	mixin/movement.bend:1269	bert.py:40 Tensor.stack
+bert	Tensor.binary_crossentropy_logits	MISSING	-	bert.py:61,:72
+bert	Tensor.flatten	MISSING	-	bert.py:56 sparse_categorical_crossentropy
+bert	Tensor.one_hot	MISSING	-	bert.py:164 gather
+bert	fetch	MISSING	-	bert.py:20,:22; helpers.bend:2815 records the HTTP seam as unported
+bert	get_child	MISSING	-	bert.py:31; resnet.bend:112-113 already names it
+bert	tensorflow	MISSING	-	bert.py:81 -- a whole framework, not a porting gap
+t5	Tensor.matmul	MISSING	-	t5.py:210,:218 -- THE WALL, and it is T5-SPECIFIC: t5 never calls scaled_dot_product_attention
+t5	Tensor.scaled_dot_product_attention	N/A	-	t5.py does NOT use it. This is the reason t5.py:210 is plain matmul.
+t5	nn.Embedding	MISSING	-	t5.py:118,:251,:270 -- THE FIRST MISSING SYMBOL
+t5	nn.Linear	EXISTS	nn/layers.bend:427	t5.py:77,:78,:79,:112,:113,:114,:115
+t5	mo_softmax	EXISTS	mixin/op.bend:1095	t5.py:216 -- THE ONE NAMED FAMILY THAT IS PRESENT, and T5 is the only file in this slice that CALLS it
+t5	Tensor.rsqrt	MISSING	-	t5.py:66 -- nn/pool.bend:388 pool_rsqrt IS rsqrt but is named for a batchnorm
+t5	Tensor.abs	MISSING	-	t5.py:145
+t5	ew_gelu	MISSING	-	t5.py:82
+t5	Tensor.cat	MISSING	-	t5.py:285
+t5	mo_mean	EXISTS	mixin/op.bend:891	t5.py:65
+t5	mo_min	EXISTS	mixin/op.bend:1130	t5.py:158 -- the REDUCTION, which matches the axis=0 at :162
+t5	ew_where	EXISTS	mixin/elementwise.bend:571	t5.py:164
+t5	ew_log	EXISTS	mixin/elementwise.bend:1252	t5.py:153
+t5	ew_pow	EXISTS	mixin/elementwise.bend:518	t5.py:65 -- a BINOP, which is what pow(2) is here
+t5	op_arange	EXISTS	mixin/rand.bend:361	t5.py:169,:170
+t5	Tensor.argmax	MISSING	-	not named by t5.py
+t5	adam	N/A	nn/optim.bend:898 op_mstep	t5.py constructs no optimizer and names no slot
+t5	SentencePieceProcessor	MISSING	-	t5.py:26,:44; t5.py:1 is the pip install
+llama	Tensor.scaled_dot_product_attention	MISSING	-	llama.py:101,:104
+llama	nn.Embedding	MISSING	-	llama.py:201,:202
+llama	nn.RMSNorm	MISSING	-	llama.py:53,:54,:137,:138,:200 -- THE FIRST MISSING SYMBOL OF THE FILE, five sites
+llama	mo_softmax	EXISTS	mixin/op.bend:1095	llama.py:165 in `sample`
+llama	nn.Linear	EXISTS	nn/layers.bend:427	llama.py:45,:46,:47,:48,:51,:123,:124,:125,:202
+llama	Tensor.silu	EXISTS	mixin/elementwise.bend:1209	llama.py:128 ew_silu (= ew_swish, no extra def)
+llama	Tensor.cos	MISSING	-	llama.py:10 -- RoPE. mixin/elementwise.bend:550 has `def ew_sin` and there is no `def ew_cos`: HALF OF THE PAIR LANDED
+llama	Tensor.sin	EXISTS	mixin/elementwise.bend:550	llama.py:10 ew_sin
+llama	op_arange	EXISTS	mixin/rand.bend:361	llama.py:8,:9,:167
+llama	Tensor.argmax	MISSING	-	llama.py:151
+llama	Tensor.multinomial	MISSING	-	llama.py:184,:187 -- behind argsort, which mixin/rand.bend:880 marks TODO(p3)
+llama	adam	EXISTS	nn/optim.bend:898 op_mstep	llama.py NAMES NO OPTIMIZER. The adam a llama TRAINING LOOP would need is ALREADY PORTED: op_mstep :898 = optim.py:167, op_vstep :903 = optim.py:168, op_mhat, op_vhat.
+llama	TinyJit	PARTIAL	engine/jit.bend:370 InInfo	llama.py:205,:224; resnet.bend:116-123 -- the file is a port, the NAME and the DECORATOR are not
+llama	nn_repeat	EXISTS	nn/layers.bend:523	llama.py:34 repeat_kv
+clip	Tensor.scaled_dot_product_attention	MISSING	-	clip.py:176,:271 -- BOTH attention sites
+clip	nn.Embedding	MISSING	-	clip.py:201,:202,:319 -- THE FIRST MISSING SYMBOL OF THE FILE
+clip	nn.LayerNorm	MISSING	-	clip.py:182,:184,:222,:289,:292,:322,:348,:349 -- SEVEN sites, and the reason clip.py is further than retinanet.py
+clip	nn.Conv2d	EXISTS	nn/layers.bend:756	clip.py:343 -- the vision half's only conv; resnet.bend:69-81 called this MISSING and that text is STALE
+clip	nn.Linear	EXISTS	nn/layers.bend:427	clip.py:153,:154,:167,:168,:169,:170,:261,:279,:280
+clip	ew_quick_gelu	EXISTS	mixin/elementwise.bend:1217	clip.py:157 -- CLIP's ACTUAL activation, and it is ported
+clip	gelu(clip)	MISSING	-	clip.py:11 binds `Tensor.gelu`, NOT `Tensor.quick_gelu`. mixin/elementwise.bend has NO `def ew_gelu`. So :157 is reachable and the alias at :11 points at nothing.
+clip	Tensor.argmax	MISSING	-	clip.py:335,:470 -- the EOS-pooling index
+clip	Tensor.triu	MISSING	-	clip.py:324 attn_mask. NOT a creation op: mixin/creation.bend:9 names tril/triu in the inventory it measures itself against and records they are not there either.
+clip	Tensor.cat	MISSING	-	clip.py:356
+clip	nn_dot	EXISTS	nn/layers.bend:383	clip.py:337,:361,:471 `@ text_projection` -- returns Maybe, so these three do not type-check today
+clip	cr_empty	EXISTS	mixin/creation.bend:336	clip.py:320,:323,:345,:346,:351
+clip	cr_full	EXISTS	mixin/creation.bend:417	clip.py:324
+clip	Tensor.softmax	N/A	-	clip.py does not call softmax directly; both attention sites delegate to the MISSING fused op
+clip	adam	N/A	nn/optim.bend:898 op_mstep	clip.py names no optimizer and no slot
+clip	fetch	MISSING	-	clip.py:16; helpers.bend:2815
+clip	gzip	MISSING	-	clip.py:64 -- the 49408-entry BPE vocab is built from it
+rnnt	nn.Embedding	MISSING	-	rnnt.py:178 -- THE FIRST MISSING SYMBOL OF THE FILE
+rnnt	LSTM	LSTM MISSING	-	rnnt.py:118,:119 -- THE RECURRENCE WALL, and no model in this slice asked for it before
+rnnt	LSTMCell	MISSING	-	rnnt.py:97,:98 -- `gates.chunk(4,1)` at :109
+rnnt	Tensor.chunk	MISSING	-	rnnt.py:109
+rnnt	Tensor.cat	MISSING	-	rnnt.py:59,:115,:140,:199 -- six sites
+rnnt	Tensor.dropout	MISSING	-	rnnt.py:113,:201
+rnnt	Tensor.argmax	MISSING	-	rnnt.py:46
+rnnt	Tensor.clip	MISSING	-	rnnt.py:43
+rnnt	Tensor.numpy	MISSING	-	rnnt.py:28,:45,:46 -- the DEVICE-STATE SEAM; mixin/op.bend:87-89 names `item`/`data` as not ports
+rnnt	Tensor.unsqueeze	MISSING	-	rnnt.py:26,:38,:195 -- nn/layers.bend:520 nn_expand covers `expand` and NOT `unsqueeze`
+rnnt	nn.Linear	EXISTS	nn/layers.bend:427	rnnt.py:107,:191,:192
+rnnt	ew_sigmoid	EXISTS	mixin/elementwise.bend:1196	rnnt.py:110
+rnnt	ew_tanh	EXISTS	mixin/elementwise.bend:1232	rnnt.py:110
+rnnt	rd_uniform	EXISTS	mixin/rand.bend:836	rnnt.py:101,:102,:103,:104 -- so LSTMCell.__init__'s ARITHMETIC IS PORTED; only the class shell is missing
+rnnt	mxw_stk	EXISTS	mixin/movement.bend:1269	rnnt.py:148 Tensor.stack
+rnnt	pool_maxpool	N/A	nn/pool.bend:250	rnnt.py has no pooling
+rnnt	Tensor.softmax	N/A	-	rnnt.py has no attention
+rnnt	Tensor.matmul	N/A	nn/layers.bend:383 nn_dot	rnnt.py reaches matmul only through x.linear (:107)
+rnnt	Tensor.argmax	MISSING	-	rnnt.py:46
+rnnt	adam	N/A	nn/optim.bend:898 op_mstep	rnnt.py names no optimizer and no slot
+rnnt	fetch	MISSING	-	rnnt.py:64; helpers.bend:2815
+rnnt	TinyJit	PARTIAL	engine/jit.bend:370 InInfo	rnnt.py:15,:54,:127 -- decorator missing
+retinanet	Tensor.scaled_dot_product_attention	N/A	-	retinanet.py has NO attention -- this is why it asks for nothing new
+retinanet	nn.Embedding	N/A	-	retinanet.py never names it
+retinanet	nn.Conv2d	EXISTS	nn/layers.bend:756	retinanet.py:10 (three aliases),:137,:138,:159,:160,:222,:223,:238,:239,:309,:310 of the mask_rcnn twin
+retinanet	x.sequential	MISSING	-	retinanet.py:141,:167,:214,:215,:216,:217 -- THE FIRST MISSING SYMBOL of two of its four heads, and resnet.bend:87-88 already names it
+retinanet	Tensor.cat	MISSING	-	retinanet.py:142,:168,:197
+retinanet	Tensor.one_hot	MISSING	-	retinanet.py:151
+retinanet	Tensor.argmax	MISSING	-	np.argsort at retinanet.py:15,:93 -- MISSING, and `def mo_argmax` does not exist either (resnet.bend:89-93)
+retinanet	mo_mean	EXISTS	mixin/op.bend:891	retinanet.py:153 `.sum((-1,-2))` uses nn/layers.bend:242 nn_sum
+retinanet	ew_where	EXISTS	mixin/elementwise.bend:571	retinanet.py:153
+retinanet	ew_sigmoid	EXISTS	mixin/elementwise.bend:1196	retinanet.py:148,:153
+retinanet	pool_maxpool	EXISTS	nn/pool.bend:250	retinanet.py:213 max_pool2d -- resnet.bend:64-66 called the BODY SIDE B and that is now closed
+retinanet	mxw_permute	EXISTS	mixin/movement.bend:1449	retinanet.py:141,:167
+retinanet	mxw_pad.go	EXISTS	mixin/movement.bend:1517	retinanet.py:213
+retinanet	adam	N/A	nn/optim.bend:898 op_mstep	retinanet.py reads TRAINING at :144,:170,:190 (helpers.bend:65 type Flags EXISTS) but names no optimizer
+retinanet	generate_anchors	MISSING	-	retinanet.py:4 imports examples/mlperf/helpers.py; `ls tinybendygrad/examples/mlperf/` = No such file or directory. OUT OF SLICE.
+retinanet	sigmoid_focal_loss	MISSING	-	retinanet.py:5 imports examples/mlperf/losses.py; same directory, same answer
+mask_rcnn	Tensor.scaled_dot_product_attention	N/A	-	mask_rcnn.py has no attention
+mask_rcnn	Tensor.softmax	EXISTS	mixin/op.bend:1095	mask_rcnn.py names Tensor.softmax ONCE
+mask_rcnn	nn.Embedding	N/A	-	mask_rcnn.py never names it
+mask_rcnn	nn.Conv2d	EXISTS	nn/layers.bend:756	mask_rcnn.py:7 hits of nn.Conv
+mask_rcnn	nn.Linear	EXISTS	nn/layers.bend:427	mask_rcnn.py:4 hits
+mask_rcnn	nn.ConvTranspose2d	MISSING	-	mask_rcnn.py:1 hit -- THE ONLY LAYER UNIQUE TO THIS FILE
+mask_rcnn	Tensor.cat	MISSING	-	mask_rcnn.py:18 hits -- the file's real subject. mx_cat (mixin/movement.bend:124) is SHAPE ARITHMETIC (a,b)->a+b, not the op
+mask_rcnn	x.clip	MISSING	-	mask_rcnn.py:5 hits
+mask_rcnn	Tensor.chunk	MISSING	-	mask_rcnn.py:1 hit (:188 BoxList._split_into_xyxy)
+mask_rcnn	Tensor.round	MISSING	-	mask_rcnn.py:16,:20 -- rint and nearest_interpolate; nearest_interpolate is what FPN.__call__ hits at :322
+mask_rcnn	Tensor.cos	MISSING	-	mask_rcnn.py:28-29 meshgrid is np; there is no `def ew_cos` (ew_sin EXISTS at mixin/elementwise.bend:550)
+mask_rcnn	topk	MISSING	-	mask_rcnn.py:29 -- behind argsort, which mixin/rand.bend:880 marks TODO(p3)
+mask_rcnn	mo_where	EXISTS	mixin/elementwise.bend:571	mask_rcnn.py:8 hits of Tensor.where
+mask_rcnn	op_arange	EXISTS	mixin/rand.bend:361	mask_rcnn.py:10 hits of Tensor.arange
+mask_rcnn	mxw_stk	EXISTS	mixin/movement.bend:1269	mask_rcnn.py:5 hits of Tensor.stack
+mask_rcnn	nn_relu	EXISTS	nn/layers.bend:262	mask_rcnn.py:5 hits of Tensor.relu
+mask_rcnn	pool_maxpool	EXISTS	nn/pool.bend:250	mask_rcnn.py:101 LastLevelMaxPool
+mask_rcnn	mo_prod	EXISTS	mixin/op.bend:822	mask_rcnn.py:147 BoxList.area
+mask_rcnn	ew_sqrt	EXISTS	mixin/elementwise.bend:549	mask_rcnn.py:2 hits
+mask_rcnn	cr_full	EXISTS	mixin/creation.bend:417	mask_rcnn.py:2 hits of Tensor.full
+mask_rcnn	ew_log2	EXISTS	mixin/elementwise.bend:551	mask_rcnn.py:1 hit
+mask_rcnn	torch_load	MISSING	-	mask_rcnn.py:9; resnet.bend:97-98 already names it
+mask_rcnn	get_child	MISSING	-	mask_rcnn.py:8; resnet.bend:112-113 already names it
+mask_rcnn	adam	N/A	nn/optim.bend:898 op_mstep	mask_rcnn.py names no optimizer and no slot
