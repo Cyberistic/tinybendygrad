@@ -1,0 +1,300 @@
+upstream_path	ext	loc	disposition	reason	ported_path
+examples/__init__.py	py	0	MINIMAL_COPY	python, no API	tinybendygrad/examples/__init__.bend
+examples/audio_helpers.py	py	79	PORT	python model/harness	tinybendygrad/examples/audio_helpers.bend
+examples/beautiful_cartpole.py	py	126	PORT	python model/harness	tinybendygrad/examples/beautiful_cartpole.bend
+examples/beautiful_cifar.py	py	169	PORT	python model/harness	tinybendygrad/examples/beautiful_cifar.bend
+examples/beautiful_mnist.bend	bend	1168	ALREADY_BEND	shipped as .bend upstream	tinybendygrad/examples/beautiful_mnist.bend
+examples/beautiful_mnist.py	py	48	PORT	python model/harness	tinybendygrad/examples/beautiful_mnist.bend
+examples/beautiful_mnist.ts	ts	611	MINIMAL_COPY	type decls only	tinybendygrad/examples/beautiful_mnist.ts
+examples/beautiful_mnist_multigpu.py	py	56	PORT	python model/harness	tinybendygrad/examples/beautiful_mnist_multigpu.bend
+examples/benchmark_onnx.py	py	35	PORT	python model/harness	tinybendygrad/examples/benchmark_onnx.bend
+examples/compile_efficientnet.py	py	74	PORT	python model/harness	tinybendygrad/examples/compile_efficientnet.bend
+examples/compile_tensorflow.py	py	98	PORT	python model/harness	tinybendygrad/examples/compile_tensorflow.bend
+examples/conversation_data/pre_prompt_gary.yaml	yaml	13	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/conversation_data/pre_prompt_gary.yaml
+examples/conversation_data/pre_prompt_george.yaml	yaml	19	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/conversation_data/pre_prompt_george.yaml
+examples/conversation_data/pre_prompt_lexie.yaml	yaml	15	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/conversation_data/pre_prompt_lexie.yaml
+examples/conversation_data/pre_prompt_stacy.yaml	yaml	15	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/conversation_data/pre_prompt_stacy.yaml
+examples/gpt2.py	py	246	PORT	python model/harness	tinybendygrad/examples/gpt2.bend
+examples/gradaccum_mnist.py	py	107	PORT	python model/harness	tinybendygrad/examples/gradaccum_mnist.bend
+examples/hlb_cifar10.py	py	430	PORT	python model/harness	tinybendygrad/examples/hlb_cifar10.bend
+examples/llama.py	py	519	PORT	python model/harness	tinybendygrad/examples/llama.bend
+examples/llama3.py	py	529	PORT	python model/harness	tinybendygrad/examples/llama3.bend
+examples/llm.c/.gitignore	gitignore	3	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/llm.c/.gitignore
+examples/llm.c/export.py	py	104	PORT	python model/harness	tinybendygrad/examples/llm.c/export.bend
+examples/llm.c/train_gpt2.py	py	206	PORT	python model/harness	tinybendygrad/examples/llm.c/train_gpt2.bend
+examples/llm.c/ubench/matmul.c	c	65	MINIMAL_COPY	single C source	tinybendygrad/examples/llm.c/ubench/matmul.c
+examples/mamba.py	py	323	PORT	python model/harness	tinybendygrad/examples/mamba.bend
+examples/minrf.py	py	156	PORT	python model/harness	tinybendygrad/examples/minrf.bend
+examples/mixtral.py	py	62	PORT	python model/harness	tinybendygrad/examples/mixtral.bend
+examples/mlperf/README	(none)	19	VERBATIM_COPY	prose, no API	tinybendygrad/examples/mlperf/README
+examples/mlperf/dataloader.py	py	822	PORT	python model/harness	tinybendygrad/examples/mlperf/dataloader.bend
+examples/mlperf/helpers.py	py	367	PORT	python model/harness	tinybendygrad/examples/mlperf/helpers.bend
+examples/mlperf/initializers.py	py	189	PORT	python model/harness	tinybendygrad/examples/mlperf/initializers.bend
+examples/mlperf/losses.py	py	28	PORT	python model/harness	tinybendygrad/examples/mlperf/losses.bend
+examples/mlperf/lr_schedulers.py	py	59	PORT	python model/harness	tinybendygrad/examples/mlperf/lr_schedulers.bend
+examples/mlperf/metrics.py	py	68	PORT	python model/harness	tinybendygrad/examples/mlperf/metrics.bend
+examples/mlperf/model_eval.py	py	507	PORT	python model/harness	tinybendygrad/examples/mlperf/model_eval.bend
+examples/mlperf/model_spec.py	py	68	PORT	python model/harness	tinybendygrad/examples/mlperf/model_spec.bend
+examples/mlperf/model_train.py	py	2076	PORT	python model/harness	tinybendygrad/examples/mlperf/model_train.bend
+examples/mlperf/models/flat_llama.py	py	298	PORT	python model/harness	tinybendygrad/examples/mlperf/models/flat_llama.bend
+examples/mlperf/models/gpt_oss.py	py	454	PORT	python model/harness	tinybendygrad/examples/mlperf/models/gpt_oss.bend
+examples/mlperf/models/test_apply_grad.py	py	68	PORT	python model/harness	tinybendygrad/examples/mlperf/models/test_apply_grad.bend
+examples/mlperf/models/test_flat_llama.py	py	115	PORT	python model/harness	tinybendygrad/examples/mlperf/models/test_flat_llama.bend
+examples/mlperf/optim.py	py	138	PORT	python model/harness	tinybendygrad/examples/mlperf/optim.bend
+examples/mlperf/scripts/setup_kits19_dataset.sh	sh	19	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/scripts/setup_kits19_dataset.sh
+examples/mlperf/scripts/stable_diffusion_downloads.sh	sh	56	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/scripts/stable_diffusion_downloads.sh
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh	sh	8	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh
+examples/mlperf/training_submission_v4.0/tinycorp/systems/tinybox_green.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/systems/tinybox_green.json
+examples/mlperf/training_submission_v4.0/tinycorp/systems/tinybox_red.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v4.0/tinycorp/systems/tinybox_red.json
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md	md	72	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh	sh	12	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md	md	72	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh	sh	12	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/setup.sh	sh	8	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/setup.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh	sh	8	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh
+examples/mlperf/training_submission_v4.1/tinycorp/systems/tinybox_green.json	json	38	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/systems/tinybox_green.json
+examples/mlperf/training_submission_v4.1/tinycorp/systems/tinybox_red.json	json	38	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v4.1/tinycorp/systems/tinybox_red.json
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh	sh	16	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh	sh	28	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh	sh	16	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh	sh	26	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh	sh	17	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh	sh	31	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh	sh	24	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh	sh	25	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh	sh	8	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md	md	38	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh	sh	24	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/stable_diffusion/implementations/tinybox_8xMI300X/dev_run.sh	sh	72	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/stable_diffusion/implementations/tinybox_8xMI300X/dev_run.sh
+examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_8xMI300X.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_8xMI300X.json
+examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_green.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_green.json
+examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_red.json	json	36	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_red.json
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh	sh	17	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh	sh	16	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh	sh	18	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh	sh	30	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh	sh	16	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh	sh	27	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh	sh	17	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh	sh	30	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh	sh	25	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh	sh	26	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh	sh	8	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md	md	38	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh	sh	25	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_8xMI300X.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_8xMI300X.json
+examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_green.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_green.json
+examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_red.json	json	36	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_red.json
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh	sh	17	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh	sh	17	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh	sh	19	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh	sh	31	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/dev_run_fa.sh	sh	20	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/dev_run_fa.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/dev_run_fp8.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/dev_run_fp8.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/run_and_time.sh	sh	31	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh	sh	17	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh	sh	28	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md	md	68	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh	sh	18	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh	sh	31	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh	sh	44	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh	sh	39	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_beam.sh	sh	45	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_run.sh	sh	40	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/buid_dataset_cache.py	py	13	PORT	python model/harness	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/buid_dataset_cache.bend
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh	sh	51	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh	sh	50	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh	sh	46	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh	sh	45	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/profile.sh	sh	7	MINIMAL_COPY	shell, names the API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/profile.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh	sh	55	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/startup_walltime.sh	sh	10	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/startup_walltime.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh	sh	25	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md	md	50	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh	sh	13	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh	sh	26	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh	sh	8	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/setup.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md	md	38	MINIMAL	prose, names the API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh	sh	25	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh	sh	14	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh
+examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh	sh	15	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh
+examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_8xMI300X.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_8xMI300X.json
+examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_8xMI350X.json	json	38	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_8xMI350X.json
+examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_green.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_green.json
+examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_red.json	json	36	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_red.json
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh	sh	46	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh	sh	41	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_2x8xMI350X/dev_beam.sh	sh	5	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_2x8xMI350X/dev_beam.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_2x8xMI350X/dev_run.sh	sh	5	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_2x8xMI350X/dev_run.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_2x8xMI350X/setup.sh	sh	3	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_2x8xMI350X/setup.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh	sh	50	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh	sh	50	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh	sh	45	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh	sh	45	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/profile.sh	sh	5	MINIMAL_COPY	shell, names the API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/profile.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh	sh	54	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh
+examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/startup_walltime.sh	sh	10	VERBATIM_COPY	shell, no API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/startup_walltime.sh
+examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_8xMI300X.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_8xMI300X.json
+examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_8xMI350X.json	json	38	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_8xMI350X.json
+examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_green.json	json	37	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_green.json
+examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_red.json	json	36	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_red.json
+examples/mnist_gan.py	py	106	PORT	python model/harness	tinybendygrad/examples/mnist_gan.bend
+examples/olmoe.py	py	93	PORT	python model/harness	tinybendygrad/examples/olmoe.bend
+examples/openpilot/check_image_reads.py	py	30	PORT	python model/harness	tinybendygrad/examples/openpilot/check_image_reads.bend
+examples/openpilot/compile_onnx.py	py	80	PORT	python model/harness	tinybendygrad/examples/openpilot/compile_onnx.bend
+examples/openpilot/compile_warp.py	py	148	PORT	python model/harness	tinybendygrad/examples/openpilot/compile_warp.bend
+examples/openpilot/helpers.py	py	61	PORT	python model/harness	tinybendygrad/examples/openpilot/helpers.bend
+examples/openpilot/load_pickle.py	py	53	PORT	python model/harness	tinybendygrad/examples/openpilot/load_pickle.bend
+examples/other_mnist/beautiful_mnist_torch.py	py	69	PORT	python model/harness	tinybendygrad/examples/other_mnist/beautiful_mnist_torch.bend
+examples/qwq.py	py	115	PORT	python model/harness	tinybendygrad/examples/qwq.bend
+examples/sdv2.py	py	153	PORT	python model/harness	tinybendygrad/examples/sdv2.bend
+examples/sdxl.py	py	445	PORT	python model/harness	tinybendygrad/examples/sdxl.bend
+examples/sdxl_seed0.png	png	6421	VERBATIM_COPY	binary asset	tinybendygrad/examples/sdxl_seed0.png
+examples/stable_diffusion.py	py	350	PORT	python model/harness	tinybendygrad/examples/stable_diffusion.bend
+examples/stable_diffusion_seed0.png	png	1398	VERBATIM_COPY	binary asset	tinybendygrad/examples/stable_diffusion_seed0.png
+examples/stunning_mnist.py	py	60	PORT	python model/harness	tinybendygrad/examples/stunning_mnist.bend
+examples/test_onnx_imagenet.py	py	82	PORT	python model/harness	tinybendygrad/examples/test_onnx_imagenet.bend
+examples/test_pkl_imagenet.py	py	19	PORT	python model/harness	tinybendygrad/examples/test_pkl_imagenet.bend
+examples/tinychat/assets/cdn.jsdelivr.net/npm/@alpine-collective/toolkit@1.0.2/dist/cdn.min.js	js	1	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/cdn.jsdelivr.net/npm/@alpine-collective/toolkit@1.0.2/dist/cdn.min.js
+examples/tinychat/assets/cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js	js	15	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js
+examples/tinychat/assets/cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js	js	1	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js
+examples/tinychat/assets/cdn.jsdelivr.net/npm/purecss@3.0.0/build/base-min.css	css	10	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/assets/cdn.jsdelivr.net/npm/purecss@3.0.0/build/base-min.css
+examples/tinychat/assets/cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css	css	8	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/assets/cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css
+examples/tinychat/assets/cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/webfonts/fa-solid-900.ttf	ttf	4763	VERBATIM_COPY	binary asset	tinybendygrad/examples/tinychat/assets/cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/webfonts/fa-solid-900.ttf
+examples/tinychat/assets/cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/webfonts/fa-solid-900.woff2	woff2	585	VERBATIM_COPY	binary asset	tinybendygrad/examples/tinychat/assets/cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/webfonts/fa-solid-900.woff2
+examples/tinychat/assets/unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js	js	1212	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js
+examples/tinychat/assets/unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/vs2015.min.css	css	0	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/assets/unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/vs2015.min.css
+examples/tinychat/assets/unpkg.com/@marcreichel/alpine-autosize@1.3.x/dist/alpine-autosize.min.js	js	2	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/unpkg.com/@marcreichel/alpine-autosize@1.3.x/dist/alpine-autosize.min.js
+examples/tinychat/assets/unpkg.com/@marcreichel/alpine-autosize@1.3.x/dist/alpine-autosize.min.js.map	map	0	VERBATIM_COPY	binary asset	tinybendygrad/examples/tinychat/assets/unpkg.com/@marcreichel/alpine-autosize@1.3.x/dist/alpine-autosize.min.js.map
+examples/tinychat/assets/unpkg.com/alpinejs@3.x.x/dist/cdn.min.js	js	5	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/unpkg.com/alpinejs@3.x.x/dist/cdn.min.js
+examples/tinychat/assets/unpkg.com/dompurify@3.1.5/dist/purify.min.js	js	3	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/unpkg.com/dompurify@3.1.5/dist/purify.min.js
+examples/tinychat/assets/unpkg.com/dompurify@3.1.5/dist/purify.min.js.map	map	0	VERBATIM_COPY	binary asset	tinybendygrad/examples/tinychat/assets/unpkg.com/dompurify@3.1.5/dist/purify.min.js.map
+examples/tinychat/assets/unpkg.com/marked-highlight@2.1.2/lib/index.umd.js	js	97	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/unpkg.com/marked-highlight@2.1.2/lib/index.umd.js
+examples/tinychat/assets/unpkg.com/marked@13.0.0/marked.min.js	js	6	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/assets/unpkg.com/marked@13.0.0/marked.min.js
+examples/tinychat/common.css	css	130	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/common.css
+examples/tinychat/favicon.svg	svg	25	VERBATIM_COPY	binary asset	tinybendygrad/examples/tinychat/favicon.svg
+examples/tinychat/fetch_assets.sh	sh	23	VERBATIM_COPY	shell, no API	tinybendygrad/examples/tinychat/fetch_assets.sh
+examples/tinychat/index.css	css	281	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/index.css
+examples/tinychat/index.html	html	173	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/index.html
+examples/tinychat/index.js	js	313	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/index.js
+examples/tinychat/tinychat-browser/.gitignore	gitignore	4	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/tinychat-browser/.gitignore
+examples/tinychat/tinychat-browser/README.md	md	7	VERBATIM_COPY	prose, no API	tinybendygrad/examples/tinychat/tinychat-browser/README.md
+examples/tinychat/tinychat-browser/compile.py	py	147	PORT	python model/harness	tinybendygrad/examples/tinychat/tinychat-browser/compile.bend
+examples/tinychat/tinychat-browser/compile_wasm.sh	sh	22	VERBATIM_COPY	shell, no API	tinybendygrad/examples/tinychat/tinychat-browser/compile_wasm.sh
+examples/tinychat/tinychat-browser/index.css	css	321	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/tinychat-browser/index.css
+examples/tinychat/tinychat-browser/index.html	html	182	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/tinychat/tinychat-browser/index.html
+examples/tinychat/tinychat-browser/index.js	js	926	PORT	JS runtime, tinygrad-linked	tinybendygrad/examples/tinychat/tinychat-browser/index.js
+examples/tinychat/tinychat-browser/make_tiktoken_js.sh	sh	10	VERBATIM_COPY	shell, no API	tinybendygrad/examples/tinychat/tinychat-browser/make_tiktoken_js.sh
+examples/tinychat/tinychat-browser/tiktoken-export.js	js	4	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/tinychat-browser/tiktoken-export.js
+examples/tinychat/tinychat-browser/webpack.config.js	js	24	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/tinychat-browser/webpack.config.js
+examples/tinychat/tinychat-browser/worker.js	js	61	MINIMAL_COPY	JS, no API	tinybendygrad/examples/tinychat/tinychat-browser/worker.js
+examples/tools/bandwidth_test.py	py	34	PORT	python model/harness	tinybendygrad/examples/tools/bandwidth_test.bend
+examples/tools/gpuburn.py	py	15	PORT	python model/harness	tinybendygrad/examples/tools/gpuburn.bend
+examples/torch_cuda_kernel.py	py	37	PORT	python model/harness	tinybendygrad/examples/torch_cuda_kernel.bend
+examples/train_resnet.py	py	45	PORT	python model/harness	tinybendygrad/examples/train_resnet.bend
+examples/transformer.py	py	42	PORT	python model/harness	tinybendygrad/examples/transformer.bend
+examples/vgg7.py	py	260	PORT	python model/harness	tinybendygrad/examples/vgg7.bend
+examples/vgg7_helpers/waifu2x.py	py	193	PORT	python model/harness	tinybendygrad/examples/vgg7_helpers/waifu2x.bend
+examples/webgpu/efficientnet/index.html	html	123	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/webgpu/efficientnet/index.html
+examples/webgpu/mnist/README.md	md	105	VERBATIM_COPY	prose, no API	tinybendygrad/examples/webgpu/mnist/README.md
+examples/webgpu/mnist/index.html	html	149	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/webgpu/mnist/index.html
+examples/webgpu/mnist/mnist-webgpu.js	js	211	MINIMAL_COPY	JS, no API	tinybendygrad/examples/webgpu/mnist/mnist-webgpu.js
+examples/webgpu/mnist/oracle.json	json	9	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/webgpu/mnist/oracle.json
+examples/webgpu/stable_diffusion/compile.py	py	237	PORT	python model/harness	tinybendygrad/examples/webgpu/stable_diffusion/compile.bend
+examples/webgpu/stable_diffusion/index.html	html	632	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/webgpu/stable_diffusion/index.html
+examples/webgpu/yolov8/compile.py	py	20	PORT	python model/harness	tinybendygrad/examples/webgpu/yolov8/compile.bend
+examples/webgpu/yolov8/index.html	html	284	VERBATIM_COPY	no tinygrad API	tinybendygrad/examples/webgpu/yolov8/index.html
+examples/whisper.py	py	332	PORT	python model/harness	tinybendygrad/examples/whisper.bend
+examples/yolov3.py	py	406	PORT	python model/harness	tinybendygrad/examples/yolov3.bend
+examples/yolov8-onnx.py	py	13	PORT	python model/harness	tinybendygrad/examples/yolov8-onnx.bend
+examples/yolov8.py	py	397	PORT	python model/harness	tinybendygrad/examples/yolov8.bend
+extra/datasets/.gitignore	gitignore	4	VERBATIM_COPY	no tinygrad API	tinybendygrad/extra/datasets/.gitignore
+extra/datasets/__init__.py	py	43	PORT	python model/harness	tinybendygrad/extra/datasets/__init__.bend
+extra/datasets/fake_imagenet_from_mnist.py	py	40	PORT	python model/harness	tinybendygrad/extra/datasets/fake_imagenet_from_mnist.bend
+extra/datasets/imagenet.py	py	91	PORT	python model/harness	tinybendygrad/extra/datasets/imagenet.bend
+extra/datasets/imagenet_download.py	py	51	PORT	python model/harness	tinybendygrad/extra/datasets/imagenet_download.bend
+extra/datasets/kits19.py	py	219	PORT	python model/harness	tinybendygrad/extra/datasets/kits19.bend
+extra/datasets/librispeech.py	py	82	MINIMAL_COPY	python, no API	tinybendygrad/extra/datasets/librispeech.bend
+extra/datasets/openimages.py	py	209	PORT	python model/harness	tinybendygrad/extra/datasets/openimages.bend
+extra/datasets/preprocess_imagenet.py	py	21	PORT	python model/harness	tinybendygrad/extra/datasets/preprocess_imagenet.bend
+extra/datasets/sops.gz	gz	836	VERBATIM_COPY	binary asset	tinybendygrad/extra/datasets/sops.gz
+extra/datasets/squad.py	py	148	PORT	python model/harness	tinybendygrad/extra/datasets/squad.bend
+extra/datasets/wikipedia.py	py	398	PORT	python model/harness	tinybendygrad/extra/datasets/wikipedia.bend
+extra/datasets/wikipedia_download.py	py	53	PORT	python model/harness	tinybendygrad/extra/datasets/wikipedia_download.bend
+extra/models/bert.py	py	300	PORT	python model/harness	tinybendygrad/extra/models/bert.bend
+extra/models/clip.py	py	480	PORT	python model/harness	tinybendygrad/extra/models/clip.bend
+extra/models/convnext.py	py	63	PORT	python model/harness	tinybendygrad/extra/models/convnext.bend
+extra/models/efficientnet.py	py	164	PORT	python model/harness	tinybendygrad/extra/models/efficientnet.bend
+extra/models/inception.py	py	344	PORT	python model/harness	tinybendygrad/extra/models/inception.bend
+extra/models/llama.py	py	286	PORT	python model/harness	tinybendygrad/extra/models/llama.bend
+extra/models/mask_rcnn.py	py	1214	PORT	python model/harness	tinybendygrad/extra/models/mask_rcnn.bend
+extra/models/resnet.py	py	170	PORT	python model/harness	tinybendygrad/extra/models/resnet.bend
+extra/models/retinanet.py	py	263	PORT	python model/harness	tinybendygrad/extra/models/retinanet.bend
+extra/models/rnnt.py	py	202	PORT	python model/harness	tinybendygrad/extra/models/rnnt.bend
+extra/models/t5.py	py	285	PORT	python model/harness	tinybendygrad/extra/models/t5.bend
+extra/models/transformer.py	py	61	PORT	python model/harness	tinybendygrad/extra/models/transformer.bend
+extra/models/unet.py	py	262	PORT	python model/harness	tinybendygrad/extra/models/unet.bend
+extra/models/unet3d.py	py	59	PORT	python model/harness	tinybendygrad/extra/models/unet3d.bend
+extra/models/vit.py	py	73	PORT	python model/harness	tinybendygrad/extra/models/vit.bend
