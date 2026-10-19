@@ -59,10 +59,11 @@ DIFFER=$D/sb-diff.py
 # THE FIVE VERDICTS, AS EXITS -- `gates/gatekit.py:60`'s OWN TABLE,
 # `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`. A shell gate's exit status IS its whole
 # vocabulary -- `gates/gate-surface.py:150` measured that a `.sh` gate can only say what it
-# means in a shell -- so all five are spelled here, and the two files still share ZERO LINES
-# (`grep -c gatekit checks/sb-gate.sh` = 0, re-measured). WHAT THEY SHARE IS THE VOCABULARY,
-# and that is MEASURED rather than asserted, because `checks/gatesweep.py:323` reads EVERY
-# member's exit through `gatekit.VERDICT.get(rc)` with no regard for its language:
+# means in a shell -- so all five are spelled here, and the two files share no code: MEASURED
+# 2026-10-19T04:37:45Z, `grep -v '^ *#' checks/sb-gate.sh | grep -c gatekit` is **0**, and the
+# bare `grep -c gatekit` reads 4 because this header quotes the name. WHAT THEY SHARE IS THE
+# VOCABULARY, and that is MEASURED rather than asserted, because `checks/gatesweep.py:323`
+# reads EVERY member's exit through `gatekit.VERDICT.get(rc)` with no regard for its language:
 #
 #     $ .venv/bin/python -c "... run_one(Path('checks/sb-gate.sh'),'sh-selfref',60,512,...)"
 #     run_one -> ('REFUSED', 'REFUSED', 3, 0.0914, '0')      # measured 2026-10-19T04:26:06Z
