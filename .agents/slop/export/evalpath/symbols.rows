@@ -1,0 +1,47 @@
+upstream_symbol	state	port_file_line	needed_by	evidence
+Tensor	EXISTS	tinybendygrad/tensor.bend:1	resnet.py:2	tinybendygrad/tensor.bend, 2867 lines, type Tensor
+dtypes	EXISTS	tinybendygrad/dtype.bend:518	resnet.py:2	dtype.bend:518 to_dtype(nm: String) -> Maybe<&1, S.Dt>
+Tensor.relu	EXISTS	tinybendygrad/tensor.bend:774	resnet.py:29,32,57,58,61,62,109	tensor.bend:774 tn_relu(+t: Tensor) -> Tensor
+Tensor.cast	EXISTS	tinybendygrad/tensor.bend:1389	resnet.py:121	tensor.bend:1389 tn_cast.put(+ar, +i, +dt) -> Maybe<&2, Tensor>
+Tensor.shape	EXISTS	tinybendygrad/tensor.bend:216	resnet.py:148,152;test_pkl_imagenet.py:16	tensor.bend:216 tn_shape(+t) -> Maybe<&2, Maybe<&2, List<&2, O.Sint>>>
+Tensor.dtype	EXISTS	tinybendygrad/tensor.bend:219	resnet.py:153	tensor.bend:219 tn_dtype(+t: Tensor) -> Maybe<&2, S.Dt>
+Tensor.device	EXISTS	tinybendygrad/tensor.bend:213	resnet.py:153	tensor.bend:213 tn_device(+t: Tensor) -> Maybe<&2, Maybe<&2, S.Dev>>
+Tensor.mean	EXISTS	tinybendygrad/mixin/op.bend:891	resnet.py:120	mixin/op.bend:891 mo_mean(kd: Bool, +t, +axis) -> T.Tensor
+Tensor.reshape	PARTIAL	tinybendygrad/mixin/op.bend:664	resnet.py:153	mo_reshape:664 and mxw_reshape mixin/movement.bend:1431 exist; the call needs a layer's shape list and there is no layer
+Tensor.pad	PARTIAL	tinybendygrad/mixin/movement.bend:1520	resnet.py:110	mxw_pad(+t, +los, +his) EXISTS; reachable only once a layer supplies t
+Tensor.max_pool2d	PARTIAL	tinybendygrad/mixin/movement.bend:902	resnet.py:110	mx_pool_f:297 and mx_pool_shape:902 are the POOL SHAPE ARITHMETIC; the pool BODIES are mixin/op.bend SIDE B
+nn.Conv2d	MISSING	tinybendygrad/extra/models/resnet.bend:169	resnet.py:8,17,19,24,43,45,47,52,87	nn/__init__.bend has 17 defs, all shape arithmetic, 0 layer classes; nn/__init__.bend:231 TODO(p3) conv2d SIDE B; mixin/op.bend:1523 is the file's last line
+nn.BatchNorm2d	MISSING	tinybendygrad/extra/models/resnet.bend:166	resnet.py:7,18,20,25,26,44,46,48,53,54,88	nn/__init__.bend:229 TODO(p3) x.batchnorm SIDE B; grep -rnE '^def .*batchnorm' = 1 and it is this unit's own refusal at resnet.bend:166
+nn.Linear	MISSING	tinybendygrad/extra/models/resnet.bend:172	resnet.py:9,93	nn/__init__.bend:227 TODO(p3) x.linear; mixin/op.bend:14 lists linear in SIDE B
+nn.Conv2d.shape_arithmetic	EXISTS	tinybendygrad/nn/__init__.bend:209	resnet.py:105,149,173	nn_scale:209 nn_bound:210 nn_glorot:217 nn_groups:175 nn_same:196 nn_mt:151 -- all six callable, verified by --check-only
+Tensor.sequential	MISSING	tinybendygrad/extra/models/resnet.bend:224	resnet.py:31,60,111,113,115,117	mixin/op.bend:14 lists sequential in SIDE B; grep -rnE '^def .*sequential' --include='*.bend' tinybendygrad/ = 0
+Tensor.argmax	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:177	test_pkl_imagenet.py:17	grep -rnE '^def mo_argmax' --include='*.bend' tinybendygrad/ = 0; mixin/op.bend:11 lists argmax in SIDE A but no def carries it; rc_arg mixin/reduce.bend:208 is a reduction internal
+Tensor.item	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:181	test_pkl_imagenet.py:17	grep -rnE '^def .*item' --include='*.bend' tinybendygrad/ -- every hit is renderer/* or Lds.item, none is Tensor.item
+Tensor.to	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:181	test_pkl_imagenet.py:15,17	mixin/movement.bend wall list: '`to` is `tensor.py:353`' and is 'reported rather than ported'
+Tensor.rand	MISSING	tinybendygrad/extra/models/resnet.bend:260	resnet.py:167,169,170	mixin/rand.bend has rd_rand:650 and rd_randint:843 but no Tensor.rand spelling
+torch_load	MISSING	tinybendygrad/extra/models/resnet.bend:232	resnet.py:3,139	grep -rn 'torch_load' --include='*.bend' tinybendygrad/ = 0
+fetch	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:150	test_pkl_imagenet.py:3,7;train_resnet.py:4;resnet.py:4,139	grep -rnE '^def fetch\(' --include='*.bend' tinybendygrad/ = 0; helpers.bend:2815 'The HTTP machinery (fetch, fetch_fw, _ensure_downloads_dir) is urllib plus a temp file plus an atomic rename'
+get_child	MISSING	tinybendygrad/extra/models/resnet.bend:232	resnet.py:4,141	grep -rnE '^def .*get_child' --include='*.bend' tinybendygrad/ = 0
+get_state_dict	EXISTS	tinybendygrad/nn/state.bend:318	resnet.py:141	nn/state.bend:318 get_state_dict(o: Obj) -> List<&2, Ent>
+GlobalCounters	EXISTS	tinybendygrad/helpers.bend:2578	resnet.py:168;test_pkl_imagenet.py:2,14	helpers.bend:2578 GlobalCounters.init, :2582 GlobalCounters.reset
+Context	EXISTS	tinybendygrad/helpers.bend:405	resnet.py:165	helpers.bend:405 Context.arg(k: String, +v: String) -> CV
+TinyJit	PARTIAL	tinybendygrad/engine/jit.bend:370	resnet.py:166;test_pkl_imagenet.py:8,15	InInfo:370-389 is expected_input_info (jit.py:55) 'IN FULL' per jit.bend:38-41; _TinyJit.__call__ :125-178 'all four arms' PORTED; the NAME and the DECORATOR tiny_jit.of3 (jit.bend:24) are absent
+getenv	EXISTS	tinybendygrad/helpers.bend:148	train_resnet.py:7,28;test_pkl_imagenet.py:3,13	helpers.bend:148 getenv_str, :304 getenv_int; getenv('CNT',100) is getenv_int verbatim
+get_parameters	EXISTS	tinybendygrad/nn/state.bend:375	train_resnet.py:5,41	nn/state.bend:375 get_parameters(o: Obj) -> List<&2, T.Tensor>
+optim.SGD	MISSING	tinybendygrad/examples/train_resnet.bend:151	train_resnet.py:6,41	grep -c SGD tinybendygrad/nn/optim.bend = 0; that file's bodies are LAMB :873 and LARS :717
+numpy	MISSING	tinybendygrad/examples/train_resnet.bend:142	train_resnet.py:2,24,26,36,37,38	no n-d array library; .reshape .astype np.stack np.tile np.expand_dims np.asarray have no counterpart
+PIL.Image	MISSING	tinybendygrad/examples/train_resnet.bend:123	train_resnet.py:3,35	no image decode and no resize
+extra.training.train	MISSING	tinybendygrad/examples/train_resnet.bend:155	train_resnet.py:8,42	extra/training.py:7; no port
+extra.training.evaluate	MISSING	tinybendygrad/examples/train_resnet.bend:159	train_resnet.py:8,43	extra/training.py:41; no port
+extra.datasets.fetch_mnist	PARTIAL	tinybendygrad/extra/datasets/__init__.bend:49	train_resnet.py:10,23	def fetch_mnist(tensors: Bool) -> Refused EXISTS -- another unit, 2026-10-19 06:49 local. The call is answerable and its answer is a refusal
+sparse_categorical_crossentropy	MISSING	tinybendygrad/examples/train_resnet.bend:155	train_resnet.py:42 (via extra/training.py:7 default lossfn)	grep -rnE '^def mo_sparse' --include='*.bend' tinybendygrad/ = 0; mixin/op.bend:15 puts 'the losses' in SIDE B
+backward pass	PARTIAL	tinybendygrad/mixin/gradient.bend:1473	train_resnet.py:42	compute_gradient:1473 EXISTS and 61 gr_N rules exist; CALLED FROM EXACTLY ONE PLACE, tensor.bend:2011 inside tn_backward.of; tn_backward:2015 has 0 call sites outside tensor.bend
+ComposeTransforms	PARTIAL	tinybendygrad/examples/train_resnet.bend:123	train_resnet.py:13-20	a left fold over callables is Bend-idiomatic; the callables are Image.fromarray and np.stack, both missing
+sys.argv	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:150	test_pkl_imagenet.py:7	no argv reader
+pickle	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:154	test_pkl_imagenet.py:1,8	NO UNPICKLER EXISTS; helpers.bend:2812 'Bend has no pickle and no object graph to store'; engine/jit.bend:261 m_pickle is the MESSAGE STRING "can't pickle an uncaptured JIT", not a codec
+open rb byte source	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:150	test_pkl_imagenet.py:7	nn/state.bend:498 TODO(p3) TensorIO readinto; nn/onnx.bend 'Nothing in this port can read a byte out of a tensor'
+imagenet_dataloader	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:169	test_pkl_imagenet.py:4,13	examples/test_onnx_imagenet.py:25 upstream; grep -c imagenet tinybendygrad/nn/datasets.bend = 0
+OnnxRunner	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:173	test_pkl_imagenet.py:9,10,15	nn/onnx.bend:37-38 STAGE 3 NOT DONE, __init__ :374-376 through __call__ :441-470; :57-58 'it dispatches into the op table, so it is unreachable before the op bodies exist'
+ONNX op bodies (167)	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:173	test_pkl_imagenet.py:15	nn/onnx.bend:39 STAGE 4 NOT DONE, the 167 op BODIES (:475-1307) plus the quantization family
+ONNX protobuf reader	MISSING	tinybendygrad/examples/test_pkl_imagenet.bend:154	test_pkl_imagenet.py:8	nn/onnx.bend:53-58 PBBufferedReader :73-119 and OnnxPBParser :121-349, WALL: a protobuf reader OVER A TENSOR
+captured.expected_input_info	PARTIAL	tinybendygrad/engine/jit.bend:373	test_pkl_imagenet.py:10	InInfo.v:373 vars:377 dt:381 dev:385 of:389 -- jit.bend:38-41 says expected_input_info (jit.py:55) is ported IN FULL. The RECORD exists; the object carrying it does not

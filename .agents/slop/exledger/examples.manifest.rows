@@ -3,8 +3,8 @@ examples/__init__.py	py	0	MINIMAL_COPY	python, no API	tinybendygrad/examples/__i
 examples/audio_helpers.py	py	79	PORT	python model/harness	tinybendygrad/examples/audio_helpers.bend
 examples/beautiful_cartpole.py	py	126	PORT	python model/harness	tinybendygrad/examples/beautiful_cartpole.bend
 examples/beautiful_cifar.py	py	169	PORT	python model/harness	tinybendygrad/examples/beautiful_cifar.bend
-examples/beautiful_mnist.bend	bend	1168	ALREADY_BEND	shipped as .bend upstream	tinybendygrad/examples/beautiful_mnist.bend
-examples/beautiful_mnist.py	py	48	PORT	python model/harness	tinybendygrad/examples/beautiful_mnist.bend
+examples/beautiful_mnist.bend	bend	1168	OWN_OUTPUT	this project's own output; upstream ships no .bend -- NOT a mirror	(none: not a mirror target)
+examples/beautiful_mnist.py	py	48	PORT	python model/harness	CONFLICTS with examples/beautiful_mnist.bend (same stem, same .bend)
 examples/beautiful_mnist.ts	ts	611	MINIMAL_COPY	type decls only	tinybendygrad/examples/beautiful_mnist.ts
 examples/beautiful_mnist_multigpu.py	py	56	PORT	python model/harness	tinybendygrad/examples/beautiful_mnist_multigpu.bend
 examples/benchmark_onnx.py	py	35	PORT	python model/harness	tinybendygrad/examples/benchmark_onnx.bend

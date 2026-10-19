@@ -1,0 +1,854 @@
+{
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   20,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   23,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh": [
+  [
+   20,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   23,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh": [
+  [
+   13,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh": [
+  [
+   20,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   23,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh": [
+  [
+   13,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh": [
+  [
+   20,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   23,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   20,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   23,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh": [
+  [
+   20,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   23,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh": [
+  [
+   14,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh": [
+  [
+   17,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh": [
+  [
+   25,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 DEBUG=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   28,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh": [
+  [
+   16,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh": [
+  [
+   23,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   26,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh": [
+  [
+   17,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh": [
+  [
+   26,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   31,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   21,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   24,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh": [
+  [
+   22,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   25,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   14,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   21,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   24,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   14,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/stable_diffusion/implementations/tinybox_8xMI300X/dev_run.sh": [
+  [
+   66,
+   "run_retry TOTAL_CKPTS=7 python3 examples/mlperf/model_train.py; (( $? == 2 )) && { echo \"training failed before BEAM completion\"; exit 2; }",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   69,
+   "run_retry EVAL_SAMPLES=600 python3 examples/mlperf/model_eval.py; (( $? == 2 )) && { echo \"eval failed before BEAM completion\"; exit 2; }",
+   "examples/mlperf/model_eval.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh": [
+  [
+   17,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh": [
+  [
+   16,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh": [
+  [
+   19,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh": [
+  [
+   27,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   30,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh": [
+  [
+   16,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh": [
+  [
+   24,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   27,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh": [
+  [
+   17,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh": [
+  [
+   27,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   30,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   22,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   25,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh": [
+  [
+   23,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   26,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   14,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   22,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   25,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   14,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_1xMI300X/dev_beam.sh": [
+  [
+   17,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_beam.sh": [
+  [
+   17,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/dev_run.sh": [
+  [
+   20,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/run_and_time.sh": [
+  [
+   28,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   31,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/dev_run_fa.sh": [
+  [
+   20,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/dev_run_fp8.sh": [
+  [
+   20,
+   "IGNORE_BEAM_CACHE=1 BENCHMARK=10 BERT_LAYERS=2 RUNMLPERF=0 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   24,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI350X/run_and_time.sh": [
+  [
+   28,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   31,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_beam.sh": [
+  [
+   17,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/dev_run.sh": [
+  [
+   16,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/run_and_time.sh": [
+  [
+   25,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   28,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_beam.sh": [
+  [
+   18,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/dev_run.sh": [
+  [
+   16,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh": [
+  [
+   28,
+   "BENCHMARK=10 INITMLPERF=1 BERT_LAYERS=2 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   31,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh": [
+  [
+   44,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh": [
+  [
+   39,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_beam.sh": [
+  [
+   45,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_run.sh": [
+  [
+   40,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh": [
+  [
+   50,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh": [
+  [
+   51,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh": [
+  [
+   45,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh": [
+  [
+   46,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh": [
+  [
+   52,
+   "FAKEDATA=1 BENCHMARK=10 INITMLPERF=1 LLAMA_LAYERS=2 python3 examples/mlperf/model_train.py | tee \"$LOGFILE\"",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   55,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a \"$LOGFILE\"",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   22,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   25,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   13,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/run_and_time.sh": [
+  [
+   23,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   26,
+   "PARALLEL=0 RUNMLPERF=1 EVAL_START_EPOCH=3 EVAL_FREQ=4 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_beam.sh": [
+  [
+   14,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/dev_run.sh": [
+  [
+   15,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/run_and_time.sh": [
+  [
+   22,
+   "BENCHMARK=10 INITMLPERF=1 python3 examples/mlperf/model_train.py | tee $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   25,
+   "PARALLEL=0 RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a $LOGFILE",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_beam.sh": [
+  [
+   14,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_red/dev_run.sh": [
+  [
+   15,
+   "python examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh": [
+  [
+   46,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh": [
+  [
+   41,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh": [
+  [
+   50,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh": [
+  [
+   50,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh": [
+  [
+   45,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh": [
+  [
+   45,
+   "python3 examples/mlperf/model_train.py",
+   "examples/mlperf/model_train.py"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh": [
+  [
+   51,
+   "FAKEDATA=1 BENCHMARK=10 INITMLPERF=1 LLAMA_LAYERS=2 python3 examples/mlperf/model_train.py | tee \"$LOGFILE\"",
+   "examples/mlperf/model_train.py"
+  ],
+  [
+   54,
+   "RUNMLPERF=1 python3 examples/mlperf/model_train.py | tee -a \"$LOGFILE\"",
+   "examples/mlperf/model_train.py"
+  ]
+ ]
+}

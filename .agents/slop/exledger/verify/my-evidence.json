@@ -1,0 +1,1674 @@
+{
+ "examples/audio_helpers.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.dtype import ..."
+  ]
+ ],
+ "examples/beautiful_cartpole.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ],
+  [
+   5,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/beautiful_cifar.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/beautiful_mnist_multigpu.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   5,
+   "from tinygrad.nn.datasets import ..."
+  ]
+ ],
+ "examples/beautiful_mnist.bend": [
+  [
+   1,
+   "# examples/beautiful_mnist.bend -- tinygrad/examples/beautiful_mnist.py (48 lines)."
+  ],
+  [
+   40,
+   "#   W1  conv2d -- `tinygrad/mixin/op.py:1562`. CLOSED: THE SHAPE. `x.pad(padding_pos)`"
+  ],
+  [
+   58,
+   "#   W2  max_pool2d -- `tinygrad/mixin/op.py:1333`. CLOSED: THE SHAPE, on the same"
+  ],
+  [
+   110,
+   "#   W4  backward -- `tinygrad/mixin/gradient.py:20 call_gradient`, which"
+  ]
+ ],
+ "examples/beautiful_mnist.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   5,
+   "from tinygrad.nn.datasets import ..."
+  ]
+ ],
+ "examples/benchmark_onnx.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.onnx import ..."
+  ]
+ ],
+ "examples/compile_efficientnet.py": [
+  [
+   3,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   4,
+   "from tinygrad.device import ..."
+  ],
+  [
+   5,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/compile_tensorflow.py": [
+  [
+   11,
+   "from tinygrad.nn.onnx import ..."
+  ],
+  [
+   12,
+   "from tinygrad.tensor import ..."
+  ]
+ ],
+ "examples/gpt2.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.uop.ops import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   8,
+   "from tinygrad.llm.gguf import ..."
+  ]
+ ],
+ "examples/gradaccum_mnist.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/hlb_cifar10.py": [
+  [
+   10,
+   "from tinygrad import ..."
+  ],
+  [
+   11,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   12,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   13,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/llama.py": [
+  [
+   9,
+   "from tinygrad import ..."
+  ],
+  [
+   10,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   11,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/llama3.py": [
+  [
+   5,
+   "from tinygrad.llm.gguf import ..."
+  ],
+  [
+   6,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   7,
+   "from tinygrad import ..."
+  ],
+  [
+   8,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/llm.c/export.py": [
+  [
+   4,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   7,
+   "from tinygrad.engine.realize import ..."
+  ],
+  [
+   8,
+   "from tinygrad.schedule.memory import ..."
+  ]
+ ],
+ "examples/llm.c/train_gpt2.py": [
+  [
+   4,
+   "from tinygrad import ..."
+  ]
+ ],
+ "examples/mamba.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   7,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/minrf.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/mixtral.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   4,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/mlperf/dataloader.py": [
+  [
+   7,
+   "from tinygrad import ..."
+  ],
+  [
+   8,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   9,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/mlperf/helpers.py": [
+  [
+   6,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   7,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   8,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/mlperf/initializers.py": [
+  [
+   4,
+   "from tinygrad import ..."
+  ],
+  [
+   5,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   6,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   167,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/mlperf/losses.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ]
+ ],
+ "examples/mlperf/lr_schedulers.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.optim import ..."
+  ]
+ ],
+ "examples/mlperf/metrics.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ]
+ ],
+ "examples/mlperf/model_eval.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   210,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/mlperf/model_spec.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/mlperf/model_train.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   7,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   8,
+   "from tinygrad.nn.optim import ..."
+  ]
+ ],
+ "examples/mlperf/models/flat_llama.py": [
+  [
+   14,
+   "from tinygrad import ..."
+  ],
+  [
+   15,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   16,
+   "from tinygrad.uop.ops import ..."
+  ],
+  [
+   249,
+   "from tinygrad import ..."
+  ]
+ ],
+ "examples/mlperf/models/gpt_oss.py": [
+  [
+   10,
+   "from tinygrad import ..."
+  ],
+  [
+   11,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   12,
+   "from tinygrad.uop.ops import ..."
+  ],
+  [
+   410,
+   "from tinygrad import ..."
+  ]
+ ],
+ "examples/mlperf/models/test_apply_grad.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/mlperf/models/test_flat_llama.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.device import ..."
+  ],
+  [
+   82,
+   "from tinygrad import ..."
+  ],
+  [
+   100,
+   "from tinygrad import ..."
+  ]
+ ],
+ "examples/mlperf/optim.py": [
+  [
+   1,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   2,
+   "from tinygrad.dtype import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.optim import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/systems/tinybox_green.json": [
+  [
+   30,
+   "\"framework\": \"tinygrad, commit 0e8aa0e2886bf9a2d3ce093bce87305e182e6d4a\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.0/tinycorp/systems/tinybox_red.json": [
+  [
+   30,
+   "\"framework\": \"tinygrad, commit 0e8aa0e2886bf9a2d3ce093bce87305e182e6d4a\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/systems/tinybox_green.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, commit b5546912e24e0a864b35924da4efa5d71cfe368b\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v4.1/tinycorp/systems/tinybox_red.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, commit b5546912e24e0a864b35924da4efa5d71cfe368b\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   19,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_8xMI300X.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_green.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.0/tinycorp/systems/tinybox_red.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   19,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_8xMI300X.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_green.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v5.1/tinycorp/systems/tinybox_red.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_8xMI300X/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   18,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/buid_dataset_cache.py": [
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/profile.sh": [
+  [
+   7,
+   "[ \"$BENCHMARK\" -le 3 ] || [[ $DEV == NULL* ]] || python -m tinygrad.viz.cli -s AMD -t --interval \"train @ 2\" \"train @ 3\""
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/resnet/implementations/tinybox_red/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging from master."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   14,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/retinanet/implementations/tinybox_green/README.md": [
+  [
+   7,
+   "Install tinygrad and mlperf-logging (uncomment mlperf from setup.py) from branch mlperf_training_v5.0."
+  ],
+  [
+   9,
+   "git clone https://github.com/tinygrad/tinygrad.git"
+  ],
+  [
+   19,
+   "Install the p2p driver per [README](https://github.com/tinygrad/open-gpu-kernel-modules/blob/550.54.15-p2p/README.md)"
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_8xMI300X.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_8xMI350X.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v6.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_green.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.0/tinycorp/systems/tinybox_red.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/profile.sh": [
+  [
+   5,
+   "[ \"$BENCHMARK\" -le 3 ] || [[ $DEV == NULL* ]] || python -m tinygrad.viz.cli -s AMD -t --interval \"train @ 2\" \"train @ 3\""
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_8xMI300X.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_8xMI350X.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v6.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_green.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mlperf/training_submission_v6.1/tinycorp/systems/tinybox_red.json": [
+  [
+   31,
+   "\"framework\": \"tinygrad, branch mlperf_training_v5.0\","
+  ]
+ ],
+ "examples/mnist_gan.py": [
+  [
+   4,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   5,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   7,
+   "from tinygrad.nn import ..."
+  ]
+ ],
+ "examples/olmoe.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/openpilot/check_image_reads.py": [
+  [
+   2,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   3,
+   "from tinygrad.uop.ops import ..."
+  ],
+  [
+   4,
+   "from tinygrad.viz.serve import ..."
+  ]
+ ],
+ "examples/openpilot/compile_onnx.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.dtype import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   8,
+   "from tinygrad.nn.onnx import ..."
+  ]
+ ],
+ "examples/openpilot/compile_warp.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.engine.realize import ..."
+  ]
+ ],
+ "examples/openpilot/helpers.py": [
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.device import ..."
+  ],
+  [
+   7,
+   "from tinygrad.uop.ops import ..."
+  ],
+  [
+   8,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/openpilot/load_pickle.py": [
+  [
+   4,
+   "from tinygrad import ..."
+  ],
+  [
+   5,
+   "from tinygrad.engine.realize import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   8,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/other_mnist/beautiful_mnist_torch.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ],
+  [
+   2,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.datasets import ..."
+  ],
+  [
+   30,
+   "import tinygrad.nn.torch"
+  ]
+ ],
+ "examples/qwq.py": [
+  [
+   11,
+   "from tinygrad import ..."
+  ],
+  [
+   12,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   13,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/sdv2.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ],
+  [
+   2,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/sdxl.py": [
+  [
+   6,
+   "from tinygrad import ..."
+  ],
+  [
+   7,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   8,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   9,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/stable_diffusion.py": [
+  [
+   10,
+   "from tinygrad import ..."
+  ],
+  [
+   11,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   12,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   13,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/stunning_mnist.py": [
+  [
+   8,
+   "from tinygrad import ..."
+  ],
+  [
+   9,
+   "from tinygrad.nn.datasets import ..."
+  ],
+  [
+   10,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/test_onnx_imagenet.py": [
+  [
+   6,
+   "from tinygrad import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/test_pkl_imagenet.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/tinychat/tinychat-browser/compile.py": [
+  [
+   4,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   5,
+   "from tinygrad import ..."
+  ],
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/tools/bandwidth_test.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/tools/gpuburn.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ]
+ ],
+ "examples/torch_cuda_kernel.py": [
+  [
+   6,
+   "from tinygrad import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   8,
+   "from tinygrad.dtype import ..."
+  ]
+ ],
+ "examples/train_resnet.py": [
+  [
+   5,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   6,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/transformer.py": [
+  [
+   5,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   6,
+   "from tinygrad.nn.optim import ..."
+  ]
+ ],
+ "examples/vgg7_helpers/waifu2x.py": [
+  [
+   5,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/vgg7.py": [
+  [
+   5,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   6,
+   "from tinygrad.nn.optim import ..."
+  ],
+  [
+   7,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "examples/webgpu/efficientnet/index.html": [
+  [
+   19,
+   "<title>tinygrad has WebGPU</title>"
+  ],
+  [
+   20,
+   "<link rel=\"icon\" type=\"image/x-icon\" href=\"https://raw.githubusercontent.com/tinygrad/tinygrad/master/docs/logo.png\">"
+  ],
+  [
+   23,
+   "<h1>WebGPU <a href=\"https://github.com/geohot/tinygrad\">tinygrad</a> EfficientNet!</h1>"
+  ]
+ ],
+ "examples/webgpu/mnist/index.html": [
+  [
+   10,
+   "using the WGSL tinygrad's own WGSLRenderer emitted for the SAME"
+  ]
+ ],
+ "examples/webgpu/mnist/oracle.json": [
+  [
+   8,
+   "\"note\": \"CPython tinygrad, DEV=CPU, TRAINING=0 (py:29-30 get_test_acc path), u32 bit patterns\""
+  ]
+ ],
+ "examples/webgpu/mnist/README.md": [
+  [
+   18,
+   "The kernels are **tinygrad's own**, not hand-written approximations."
+  ],
+  [
+   20,
+   "`tinygrad/renderer/wgsl.py`'s `WGSLRenderer` emitted **from the same `Ops.PROGRAM`"
+  ],
+  [
+   43,
+   "`tinygrad/engine/realize.py:160 exec_kernel` is the one place that knows every"
+  ],
+  [
+   75,
+   "(`tinygrad/runtime/support/compiler_cpu.py:21`) with no `-ffp-contract=off`, so"
+  ]
+ ],
+ "examples/webgpu/stable_diffusion/compile.py": [
+  [
+   5,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   6,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   7,
+   "from tinygrad import ..."
+  ],
+  [
+   8,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/webgpu/stable_diffusion/index.html": [
+  [
+   7,
+   "<title>tinygrad has WebGPU</title>"
+  ],
+  [
+   172,
+   "<h1 id=\"sdTitle\">StableDiffusion powered by <a href=\"https://github.com/tinygrad/tinygrad\" target=\"_blank\" style=\"color: #4A90E2;\">tinygrad</a></h1>"
+  ],
+  [
+   173,
+   "<a href=\"https://github.com/tinygrad/tinygrad\" target=\"_blank\" style=\"position: absolute; top: 20px; right: 20px;\">"
+  ]
+ ],
+ "examples/webgpu/yolov8/compile.py": [
+  [
+   3,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   4,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   6,
+   "from tinygrad.device import ..."
+  ],
+  [
+   7,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/webgpu/yolov8/index.html": [
+  [
+   6,
+   "<title>YOLOv8 tinygrad WebGPU</title>"
+  ],
+  [
+   100,
+   "<h2>YOLOv8 tinygrad WebGPU</h2>"
+  ]
+ ],
+ "examples/whisper.py": [
+  [
+   6,
+   "from tinygrad import ..."
+  ],
+  [
+   7,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   8,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/yolov3.py": [
+  [
+   9,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   10,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   11,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "examples/yolov8-onnx.py": [
+  [
+   5,
+   "from tinygrad.nn.onnx import ..."
+  ]
+ ],
+ "examples/yolov8.py": [
+  [
+   1,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   2,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   9,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   10,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "extra/datasets/__init__.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/datasets/fake_imagenet_from_mnist.py": [
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/datasets/imagenet_download.py": [
+  [
+   2,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/datasets/imagenet.py": [
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/datasets/kits19.py": [
+  [
+   11,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   12,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   115,
+   "from tinygrad.engine.jit import ..."
+  ]
+ ],
+ "extra/datasets/openimages.py": [
+  [
+   8,
+   "from tinygrad import ..."
+  ],
+  [
+   9,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/datasets/preprocess_imagenet.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ]
+ ],
+ "extra/datasets/squad.py": [
+  [
+   6,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/datasets/wikipedia_download.py": [
+  [
+   8,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/datasets/wikipedia.py": [
+  [
+   18,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/models/bert.py": [
+  [
+   3,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   4,
+   "from tinygrad import ..."
+  ],
+  [
+   5,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   6,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "extra/models/clip.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ],
+  [
+   2,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn import ..."
+  ]
+ ],
+ "extra/models/convnext.py": [
+  [
+   1,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   2,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   47,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "extra/models/efficientnet.py": [
+  [
+   2,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   5,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "extra/models/inception.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ],
+  [
+   2,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/models/llama.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   106,
+   "from tinygrad.uop.ops import ..."
+  ]
+ ],
+ "extra/models/mask_rcnn.py": [
+  [
+   6,
+   "from tinygrad import ..."
+  ],
+  [
+   7,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   8,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   9,
+   "from tinygrad.nn.state import ..."
+  ]
+ ],
+ "extra/models/resnet.py": [
+  [
+   1,
+   "import tinygrad.nn"
+  ],
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn.state import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/models/retinanet.py": [
+  [
+   2,
+   "from tinygrad import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ],
+  [
+   7,
+   "import tinygrad.nn"
+  ],
+  [
+   10,
+   "use of bound name nn"
+  ]
+ ],
+ "extra/models/rnnt.py": [
+  [
+   1,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   2,
+   "from tinygrad.engine.jit import ..."
+  ],
+  [
+   3,
+   "from tinygrad.nn import ..."
+  ],
+  [
+   4,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/models/t5.py": [
+  [
+   20,
+   "from tinygrad import ..."
+  ]
+ ],
+ "extra/models/transformer.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ]
+ ],
+ "extra/models/unet.py": [
+  [
+   1,
+   "from tinygrad import ..."
+  ]
+ ],
+ "extra/models/unet3d.py": [
+  [
+   3,
+   "from tinygrad import ..."
+  ],
+  [
+   4,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   5,
+   "from tinygrad.helpers import ..."
+  ]
+ ],
+ "extra/models/vit.py": [
+  [
+   2,
+   "from tinygrad.tensor import ..."
+  ],
+  [
+   3,
+   "from tinygrad.helpers import ..."
+  ]
+ ]
+}
