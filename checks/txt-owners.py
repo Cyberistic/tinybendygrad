@@ -40,6 +40,14 @@ The hard set is IMPORTED from `no-txt.py`, never re-derived, so the carve-out ca
 walk here would be a second opinion about which files are exempt, and a second opinion about an
 exemption is how an exemption becomes a blanket. `no-txt.excused_names()` is the union of EVERY
 generator declaration `no-txt.py` loads, so this check and the guard hold one opinion, not two.
+
+THAT MAKES THIS FILE **NOT** A SECOND OPINION ON THE CARVE-OUT, and calling it one is the error it
+cannot refute from the inside. It is an ATTRIBUTION census over the hard set: which generator's own
+source writes each file the guard reports. MEASURED 2026-10-19 by plant -- one declared path made
+undeclared (`oracles/rows-bd.txt` +1 byte, which lapses `rename.py:LEFT_EMPTY` without editing any
+declaration) -- both moved 183 -> 184 in lockstep, so there is nothing here to disagree. The two
+answers would only differ if `checks/no-txt.py` itself changed mid-run, which is a race, not a
+second opinion.
 """
 from __future__ import annotations
 
@@ -74,6 +82,14 @@ def hard_set() -> list[str]:
     spec = importlib.util.spec_from_file_location("notxt", os.path.join(ROOT, "checks/no-txt.py"))
     nt = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(nt)
+    # ONCE, NOT PER FILE. `no-txt.py:excused_names()` is a FUNCTION CALL over a tree walk --
+    # `dup_census_lanes()` re-`rglob`s all of `.agents/slop` -- so evaluating it inside the filter
+    # ran it once per owned `.txt`: MEASURED 2026-10-19, 432 calls at 0.236 s each = 124 s, of which
+    # 99% was that one `rglob` over 6,430 files (2.78M path stats), and 379 of 432 items had been
+    # done when the 120 s ceiling arrived (rate 3.16/s, ETA 137 s). Cost is O(files x .agents/slop).
+    # Hoisting is not a behaviour change: the set is a pure function of a tree that does not move
+    # under the run, and `no-txt.py:290` computes it exactly once for the same verdict.
+    excused = nt.excused_names()
     found = []
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = [d for d in dirnames if d not in nt.SKIP]
@@ -82,7 +98,7 @@ def hard_set() -> list[str]:
                 rel = os.path.relpath(os.path.join(dirpath, f), ROOT)
                 if nt.owned(rel):
                     found.append(rel)
-    return sorted(rel for rel in found if rel not in nt.excused_names())
+    return sorted(rel for rel in found if rel not in excused)
 
 
 def resolve(tok: str, binds: dict[str, str]) -> tuple[str | None, str]:
@@ -143,30 +159,51 @@ def code_files() -> list[str]:
             and not r.startswith(("references/", "tinygrad/", "runs/graphcmp/"))]
 
 
-def callers(gen: str) -> int:
-    """How many other tracked files NAME this generator. 0 means nothing reaches it."""
-    stem = os.path.basename(gen)
-    n = 0
+def callers(gens: list[str]) -> dict[str, int]:
+    """How many other tracked files NAME each generator. 0 means nothing reaches it.
+
+    ONE pass over the population, not one pass PER GENERATOR. The per-generator form re-ran
+    `git ls-files` as a SUBPROCESS and re-opened every file, so asking about G generators cost
+    G subprocesses and G x files reads -- O(generators x files), the same shape as the `excused_names()`
+    hoist above and the reason `--gate` on a census with any attribution in it was unusable. Here every
+    body is read once and matched against every stem in memory, so it is G x files COMPARISONS and one
+    read each.
+    """
+    counts = dict.fromkeys(gens, 0)
+    stems = {g: os.path.basename(g) for g in gens}
     for rel in code_files():
-        if rel == gen:
+        if rel in stems:
             continue
         try:
             if os.path.getsize(os.path.join(ROOT, rel)) > SIZE_CAP:
                 continue
-            if stem in open(os.path.join(ROOT, rel), encoding="utf-8", errors="replace").read():
-                n += 1
+            body = open(os.path.join(ROOT, rel), encoding="utf-8", errors="replace").read()
         except OSError:
             continue
-    return n
+        for g, stem in stems.items():
+            if stem in body:
+                counts[g] += 1
+    return counts
 
 
-def census() -> tuple[list[str], dict[str, list[str]], dict[str, set[str]]]:
-    """(the hard set, repo-relative path -> every generator writing it, generator -> refusals)."""
+def census() -> tuple[list[str], dict[str, list[str]], dict[str, set[str]], int]:
+    """(the hard set, repo-relative path -> every generator writing it, generator -> refusals, RESOLVED).
+
+    `resolved` is the DENOMINATOR `0 generators` has to be read against. Without it the headline is
+    the dead-lane shape `AGENTS.md` records -- an answer indistinguishable from a resolver that found
+    nothing -- because this check follows REDIRECTS and `open(...)`/`write_text(...)`, and
+    `checks/differ.py:448` writes all 244 graphcmp artifacts with `os.replace(tmp, D / out)` where
+    `out` is a loop variable, so there is no `.txt` literal on the write line for any of them.
+    MEASURED 2026-10-19: pointed at the EXCUSED set as a control the same machinery attributes 7 of
+    249, i.e. it is alive but its recall over `runs/graphcmp/D/` is 0.
+    """
     hard = hard_set()
     own: dict[str, list[str]] = collections.defaultdict(list)
     refused: dict[str, set[str]] = collections.defaultdict(set)
+    resolved = 0
     for rel in code_files():
         for _, made, why in txt_writes(rel):
+            resolved += bool(made)
             if made is None:
                 refused[rel].add(why)
             elif made in hard and rel not in own[made]:
@@ -174,7 +211,7 @@ def census() -> tuple[list[str], dict[str, list[str]], dict[str, set[str]]]:
                 # are the same driver and both write `runs/e2e/e2e-mm-gate.txt`, so keeping only
                 # the first would make the answer depend on `git ls-files` sort order.
                 own[made].append(rel)
-    return hard, own, refused
+    return hard, own, refused, resolved
 
 
 def main() -> int:
@@ -182,20 +219,26 @@ def main() -> int:
     if args and args[0] == "--gate":
         return scoped_gate(args[1:])
 
-    hard, own, refused = census()
+    hard, own, refused, resolved = census()
     attributed: collections.Counter[str] = collections.Counter()
     for rel in hard:
         for g in own.get(rel, ()):
             attributed[g] += 1
     unowned = [r for r in hard if not own.get(r)]
+    reached = callers(list(attributed))
 
     print(f"  {len(hard)} `.txt` reported by checks/no-txt.py, attributed to OWNING GENERATORS\n")
     print(f"  {'files':>6}  {'reached':>7}  generator")
     for g, n in attributed.most_common():
-        print(f"  {n:6d}  {callers(g):7d}  {g}")
+        print(f"  {n:6d}  {reached[g]:7d}  {g}")
     print(f"\n  {len(attributed)} generators own {sum(attributed.values())} credits over "
           f"{len(hard) - len(unowned)} distinct files.")
-    print(f"  {len(unowned)} are named by NO write path in the tree:\n")
+    # THE DENOMINATOR, so the count above is an answer and not a shrug: `resolved` is every `.txt`
+    # write path the resolver FOLLOWED anywhere in the population, and it is the number that turns
+    # "0 generators" into "0 of N this check could see".
+    print(f"  {resolved} resolved `.txt` write path(s) in the population, which is what this "
+          f"attribution is a fraction of.")
+    print(f"  {len(unowned)} are named by NO write path THIS CHECK CAN FOLLOW:\n")
     for d, n in collections.Counter(os.path.dirname(u) for u in unowned).most_common():
         print(f"  {n:6d}  {d}/")
     why = collections.Counter(w for ws in refused.values() for w in ws)
@@ -214,7 +257,7 @@ def scoped_gate(names: list[str]) -> int:
     answerable -- it writes none, and that is rc 0, not `no such generator`.
     """
     if not names:
-        hard, own, _ = census()
+        hard, own, _, _ = census()
         red = collections.Counter(g for rel in hard for g in own.get(rel, ()))
         if not red:
             print("  GATE  no generator writes a reported `.txt`.")
@@ -229,12 +272,23 @@ def scoped_gate(names: list[str]) -> int:
         print(f"  GATE  no such file, so nothing was checked: {missing}")
         return 2
     red = 0
+    seen = 0
     for name in names:
-        for line, _, _ in (h for h in txt_writes(name) if h[1]):
+        hits = txt_writes(name)
+        seen += len(hits)
+        for line, _, _ in (h for h in hits if h[1]):
             print(f"  GATE  {name}:{line} still writes a `.txt`")
             red += 1
     if not red:
-        print(f"  GATE  none of {', '.join(names)} names a `.txt` write target.")
+        # THE DENOMINATOR, so rc 0 is a reading and not a shrug. `seen` is how many `.txt`-bearing
+        # lines were EXAMINED, and a small number next to a file that demonstrably writes `.txt` says
+        # the resolver does not model its write: MEASURED, `txt_writes("checks/differ.py")` returns
+        # ONE hit (a docstring) because `capture()` writes through `os.replace(tmp, D / out)` at
+        # `:448`, which `REDIRECT` does not match and `PYWRITE` does not match either. This check
+        # follows REDIRECTS and `open(...)`/`write_text(...)` ONLY, so a generator that stages and
+        # renames reads here as one that writes nothing -- which is why the word is CAN FOLLOW above.
+        print(f"  GATE  none of {', '.join(names)} names a `.txt` write target "
+              f"({seen} `.txt`-bearing line(s) examined).")
     return 1 if red else 0
 
 
