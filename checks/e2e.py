@@ -234,6 +234,7 @@ ENV = dict(os.environ)
 # any UNdeclared difference in either file still stops the gate.
 #
 # Current pair below; the pair before this one was
+# ORACLE_SHA 05d7cfea… / BODY_SHA fcf647cd… (`6ed4e1c1e`), the pair before that was
 # ORACLE_SHA 05d7cfea… / BODY_SHA aaea6add… (`5ed3ad771`, whose `checks/e2e.sh` hashes to it), the
 # pair before the root fix was
 # ORACLE_SHA 6a198bbf… / BODY_SHA 24d7fbf1…, the pair before the exit-status change was
@@ -241,7 +242,7 @@ ENV = dict(os.environ)
 # ORACLE_SHA 245a10db… / BODY_SHA 558554c8…, and the pair before the retirement was
 # e0eb23d5cb7340d5 / f222c02c9481d982.
 ORACLE_SHA = "05d7cfea0aea9c8523649ad1e277cb03890214cb9c7996807c1b0295207f8696"
-BODY_SHA = "fcf647cdadeaaf882f2f2e162583f4d29720ce2671d5b0a72a6ae28ef9de03eb"
+BODY_SHA = "bdbf6f6caaaf82ec64fee541c429d28b7530f0bc068d869a33710418813ad350"
 # THE DOCUMENTED EDITS, IN ORDER, AS `(ORACLE_SIDE, SHELL_SIDE)`: applying every one of them to the
 # frozen copy must yield the live body, byte for byte. So the ORACLE's text is the FIRST element of
 # each pair. `ORACLE_EDIT` KEEPS ITS NAME AND ITS ONE-PAIR SHAPE, because
@@ -265,6 +266,32 @@ ROOT=$(cd "$_d/.." && pwd)
 # `#` comment, and the shell's 108 non-comment lines identical on both sides (measured, above). It is
 # TWO pairs, not one, because one unchanged line separates the two regions and `str.replace` takes
 # one region at a time -- so "one pair per call site", not "one pair per commit".
+# THE THIRD DIFFERENCE, AND IT IS FOUR STAGE HEADERS. STAGES 5, 6 AND 7 WERE "ADDED, NOT
+# SUBSTITUTED" (this file's stage-5/6/7 blocks, and the shell's) AND EACH WROTE ITS OWN DENOMINATOR
+# -- `5/5`, `6/6`, `7/7` -- WHILE THE FOUR THAT EXISTED SAID `1/4 2/4 3/4 4/4`. So the gate emitted a
+# SEVEN-STAGE ARTIFACT THAT SAYS FOUR TIMES THAT IT IS FOUR STAGES LONG. A DENOMINATOR IS THE COUNT
+# OF A POPULATION, AND ONE TRANSCRIBED INSTEAD OF DERIVED IS A TRANSCRIPTION THAT DECAYS THE MOMENT A
+# STAGE IS ADDED: this is why the number was wrong for 4 of 7 and nobody noticed, because a reader
+# compares `n/` against the `n` on the same line, and `1/4` is internally CONSISTENT. It is also a
+# PARSER INPUT and not only a printed number -- `.agents/slop/e2estage8/verdicts.py:30` splits
+# stages on `^== (\d+)/\d+`, so whatever is on the right of the slash is what the census inherits.
+#
+# **THE DENOMINATOR IS STILL WRITTEN OUT, AND THAT IS A NAMED REFUSAL, NOT AN OMISSION.** The right
+# fix is to DERIVE it from the seven `say("== n/...")` call sites, so stage 8's retirement cannot make
+# it stale again. It is not done here because `.agents/slop/e2estage8/verdicts.py:49` discovers the
+# emitted stage set with `CODE = re.compile(r'say\("== (\d+)')` -- it READS THE POPULATION OUT OF
+# THESE LITERALS, so a derived header would make the census report `PROSE names [...] the CODE does
+# not emit` and go DARK. That trade, an honest number bought with a dead instrument, is refused.
+#
+# BOTH SIDES MOVED IN ONE COMMIT, because a port that disagreed with its shell on the very lines it
+# emits is not a port (`checks/e2e.py:126`). THE ORACLE IS FROZEN AND NOT EDITED, so it still says
+# `/4`, and these four pairs are what keeps `revert(oracle) == checks/e2e.sh` byte for byte: the
+# delta is NAMED rather than removed, which is the whole difference between a pin and a hash.
+#
+# THE COST, MEASURED, AND OUT OF GRANT: `.agents/slop/e2esh/refreeze.py:52` applies `ORACLE_EDIT`
+# alone, so it answers question (2) wrongly for a seventh of the delta instead of a third. That
+# reader was already knowingly degraded -- its own comment above says so -- one line would move it
+# onto `ORACLE_EDITS`, and it is out of grant.
 ORACLE_EDITS = (
     ORACLE_EDIT,
     ("# HAS NO `f64` GATE ROW.  `renderer/cstyle.bend:2984-3015` calls `rd_row` for exactly\n",
@@ -273,6 +300,13 @@ ORACLE_EDITS = (
      "# f64 is not among them, so all 227 rows are silent about `double*`.  (`rd_row` and its\n"
      "# seven-dtype dispatch were DELETED by `e51904b04`; the rows survive as data in\n"
      "# `gates/cstyle-live.rows`.)  `tmap CLANG`\n"),
+    ('echo "== 1/4 oracle (CPython tinygrad, DEV=CPU)"\n',
+     'echo "== 1/7 oracle (CPython tinygrad, DEV=CPU)"\n'),
+    ('echo "== 2/4 port (pure bend, no GPU)"\n',
+     'echo "== 2/7 port (pure bend, no GPU)"\n'),
+    ('echo "== 3/4 gpu (real WebGPU adapter, headless Chrome)"\n',
+     'echo "== 3/7 gpu (real WebGPU adapter, headless Chrome)"\n'),
+    ('echo "== 4/4 gate"\n', 'echo "== 4/7 gate"\n'),
 )
 
 HELP = __doc__
@@ -401,16 +435,37 @@ def bend_run() -> int:
     `rows` STARTS EMPTY, NOT ZERO, and that is the shell's shape: it is assigned only inside the
     success branch, so a bend that FAILS on attempt 1 prints `attempt 1 produced  rows` with
     nothing between the two words. Tidy that into `0` and the artifact changes.
+
+    THREE RETURNS, AND THE THIRD IS NOT A ROW COUNT. `0` is > 20 rows, `2` is eight fruitless
+    attempts, and `127`/`126` is `./bin/bend` absent / not executable -- the status the SHELL would
+    have exited with, which is why they are passed on rather than invented. `main()` reads `127`
+    as SKIP, because that is what this gate already does for the identical question at stage 3 (no
+    `node` on PATH) and at stage 7 (no `zsh`): a stage that measured nothing is not a stage that
+    got the wrong answer, and one tool being absent is not evidence about the port.
     """
     txt, err = RUN / "e2e-mm-bend.out", RUN / "e2e-mm-bend.err"
     rows = ""
     for i in range(1, 9):
         # `> TXT 2> ERR` ARE TWO SEPARATE STREAMS, and the row count is read from the FIRST one
         # only. `stage()` has one capture, so the two redirections are spelled out here.
+        #
+        # **THE 127 BRANCH IS `stage()`'s, ONE FUNCTION OVER, AND IT WAS MEASURED MISSING.** The
+        # sibling handles an absent command in two lines and this one raised `FileNotFoundError` out
+        # of `main()`, so a tree with no `./bin/bend` produced a traceback, no verdict line and no
+        # summary -- a CRASH, which is neither of this gate's five outcomes and is the defect the
+        # whole SKIP column exists to prevent. `except` is INSIDE the `with`, so the two artifacts
+        # are already open and `fail` can carry the complaint into the file `head -3` prints below:
+        # the same words `stage()` writes, to the same stream, for the same reason.
         with open(txt, "wb") as out, open(err, "wb") as fail:
             sys.stdout.flush()
-            rc = subprocess.run(["./bin/bend", ".agents/slop/e2e_mm.bend"], env=ENV, cwd=ROOT,
-                                stdout=out, stderr=fail).returncode
+            try:
+                rc = subprocess.run(["./bin/bend", ".agents/slop/e2e_mm.bend"], env=ENV, cwd=ROOT,
+                                    stdout=out, stderr=fail).returncode
+            except (FileNotFoundError, PermissionError) as exc:
+                status = 127 if isinstance(exc, FileNotFoundError) else 126
+                fail.write(f"./bin/bend: {'command not found' if status == 127 else 'Permission denied'}\n"
+                           .encode())
+                return status
         if rc == 0:
             rows = str(sum(1 for ln in raw(txt).splitlines() if b"=" in ln))
             if int(rows) > 20:
@@ -452,21 +507,31 @@ def main() -> int:
     os.chdir(ROOT)   # the shell's `cd "$(dirname "$0")/../.."`
     RUN.mkdir(parents=True, exist_ok=True)   # `mkdir -p`, under `set -e`
 
-    say("== 1/4 oracle (CPython tinygrad, DEV=CPU)")
+    say("== 1/7 oracle (CPython tinygrad, DEV=CPU)")
     if rc := stage([PY, ".agents/slop/e2e_mm.py"]):
         return rc          # `set -e`: aborts HERE, with no verdict line and no summary.
 
-    say("== 2/4 port (pure bend, no GPU)")
-    if rc := bend_run():
+    say("== 2/7 port (pure bend, no GPU)")
+    rc = bend_run()
+    if rc == 127:
+        # SKIP, NOT FAIL, AND NOT A CRASH. The five outcomes are PASS/FAIL/REFUSED/SKIP/DEAD and an
+        # ABSENT COMPILER is SKIP, for the reason this file already skipped stage 3 and stage 7: the
+        # stage measured nothing, and reporting a missing tool as a wrong answer would put "the port
+        # is broken" in the exit status when nothing about the port was measured. `126` (bend present
+        # and not executable) is deliberately NOT here: that is a broken install, and `set -e` stops
+        # on it below, exactly as the shell stops.
+        skip("stage 2 port (pure bend, no GPU)",
+             "`./bin/bend` is not available; stage 2 measured NOTHING")
+    elif rc:
         return rc          # `set -e`, same shape: 8 fruitless attempts stop the gate.
 
-    say("== 3/4 gpu (real WebGPU adapter, headless Chrome)")
+    say("== 3/7 gpu (real WebGPU adapter, headless Chrome)")
     if which("node"):
         verdict("stage 3 gpu (node)", stage(["node", ".agents/slop/e2e_mm_run.mjs"]))
     else:
         skip("stage 3 gpu (node)", "no `node` on PATH; stage 3 measured nothing")
 
-    say("== 4/4 gate")
+    say("== 4/7 gate")
     # THE EXIT STATUS IS THE GATE'S, NOT A PIPELINE'S. `checks/e2e.sh:120-125` names the trap this
     # repo keeps paying for: `"$PY" gate.py | tee out` makes `$?` the status of `tee`, so a gate that
     # CRASHED printed `PASS`. POSIX sh has no PIPESTATUS.
