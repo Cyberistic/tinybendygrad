@@ -267,10 +267,61 @@ def lane_a(rel: str, text: str) -> list[dict]:
   return out
 
 
-def prose(rel: str, text: str) -> list[tuple[int, str]]:
+class Unproseable(tokenize.TokenError):
+  """A FILE THE TOKENIZER COULD NOT READ, NAMED WITH THE LINE IT STOPPED AT.
+
+  A `tokenize.TokenError` and not a bare `Exception`, for an API reason rather than a
+  presentational one: `gates/nul-census-gate.py` and `gates/cites-pop-gate.py` both wrap
+  `prose()` in `except (tokenize.TokenError, IndentationError)`, so any refusal outside
+  that family would leave every existing caller's handler covering nothing -- which is how
+  a fix for "the extractor died" would have quietly stopped every guard against it.
+
+  `args[1]` is `(lineno, col)`, the shape `tokenize` itself uses, so a caller that reads a
+  position off a TokenError reads the RIGHT one here instead of `(1, 0)`."""
+
+  def __init__(self, rel: str, lineno: int | None, kind: str) -> None:
+    super().__init__(f"{rel}: the tokenizer stopped at line {lineno} ({kind})", (lineno, 0))
+    self.rel, self.lineno, self.kind = rel, lineno, kind
+
+
+def tokenizer_fault(exc: BaseException) -> tuple[int | None, str]:
+  """WHERE THE TOKENIZER STOPPED -- or `raise` if `exc` is not the tokenizer giving up.
+
+  THREE ARMS, AND THE POSITION LIVES IN A DIFFERENT PLACE IN EACH.  A `TokenError` carries
+  `args[1] == (lineno, col)`; a `SyntaxError` carries `lineno`; and a `SystemError` carries
+  NEITHER.  `tokenize.py:590` raises the former `from None`, which is why the arm that CAUGHT
+  discarded the position and reported `(1, 0)` -- while the `SystemError` arm keeps the whole
+  `SyntaxError` as `__cause__`: MEASURED 2026-10-19 on `tinybendygrad/runtime/ops_dsp.bend`,
+  the one NUL in the tree reads line 5401 there and nowhere else.  THAT ARM IS THE ONLY ARM
+  THAT SAYS WHERE, AND IT IS THE ARM `prose()` DID NOT CATCH.
+
+  THE `SystemError` ARM IS GATED ON `__cause__` AND NOT ON `SystemError`: a `SystemError` from
+  anywhere else has no `SyntaxError` cause, and a catch that cannot tell the two apart is the
+  `REFUSE:build:AttributeError` class -- a defect that reports itself as a discovered finding.
+  So the gate returns the position or it re-raises the ORIGINAL exception, which is what
+  makes "unrelated cause -> PROPAGATES" a property of this function and not of a comment."""
+  if isinstance(exc, tokenize.TokenError):
+    loc = exc.args[1] if len(exc.args) > 1 and isinstance(exc.args[1], tuple) else ()
+    return (loc[0] if loc and isinstance(loc[0], int) else None, "TokenError")
+  if isinstance(exc, SyntaxError):
+    return (exc.lineno, type(exc).__name__)
+  if isinstance(exc, SystemError) and isinstance(exc.__cause__, SyntaxError):
+    return (exc.__cause__.lineno, f"SystemError<-{type(exc.__cause__).__name__}")
+  raise exc
+
+
+def prose(rel: str, text: str, fault: list | None = None) -> list[tuple[int, str]]:
   """(lineno, text) for every PROSE line.  A `.md` is prose; a `.py` contributes its
   COMMENTS (`tokenize`) and its DOCSTRINGS (`ast`).  A `.py` string literal is code and
-  belongs to lane A, so it is excluded here by construction, not by taste."""
+  belongs to lane A, so it is excluded here by construction, not by taste.
+
+  A FILE THE TOKENIZER CANNOT READ CONTRIBUTES NOTHING, AND SAYS SO.  `census` passes `fault`
+  and receives `(lineno, kind)` from `tokenizer_fault`, and NO partial line list comes back:
+  the comments before the fault are real and the comments after it were never read, so
+  returning the ones that arrived is a census that reports less than it read without a row
+  saying so.  A CALLER THAT PASSES NO `fault` GETS AN `Unproseable` INSTEAD, because silence
+  is the defect this arm was widened to remove and an out-parameter must not reintroduce it
+  on the one caller that has nowhere to record the refusal."""
   if rel.endswith(".md"):
     return [(i, l) for i, l in enumerate(text.splitlines(), 1)]
   out = []
@@ -278,8 +329,15 @@ def prose(rel: str, text: str) -> list[tuple[int, str]]:
     for tok in tokenize.generate_tokens(iter(text.splitlines(True)).__next__):
       if tok.type == tokenize.COMMENT:
         out.append((tok.start[0], tok.string))
-  except (tokenize.TokenError, IndentationError):
-    pass
+  except (tokenize.TokenError, SyntaxError, SystemError) as e:
+    # `tokenizer_fault` is called UNCONDITIONALLY and BEFORE anything else: a caller that
+    # passed no list must still learn whether the exception was ours, and an early return
+    # here is a swallow no `fault` can record -- which is how this very arm was wrong once.
+    lineno, kind = tokenizer_fault(e)
+    if fault is None:
+      raise Unproseable(rel, lineno, kind) from e
+    fault.append((lineno, kind))
+    return []
   try:
     tree = ast.parse(text)
   except SyntaxError:
@@ -450,6 +508,13 @@ def needle_kind(needle: str, gap: str = "", line: str = "") -> str:
 
 
 def judge(c: dict) -> dict:
+  # A ROW THAT IS NOT A CLAIM IS NOT JUDGE'S BUSINESS.  `census` emits extractor-level
+  # refusals -- a file it could not read, a file whose prose it could not extract -- and
+  # they carry their own verdict.  Without this they fell through every lane to the lane-E
+  # tail and were reported as SKIP "a mention is not a claim", which is a verdict about a
+  # DIFFERENT THING, and SKIP is not PASS.
+  if "verdict" in c:
+    return c
   if c["lane"] == "A":
     text = read(c["subject"])
     if text is None:
@@ -537,22 +602,40 @@ def census(paths: list[str], tree: Path = ROOT) -> tuple[list[dict], Counter]:
     try:
       text = p.read_text(errors="replace")
     except OSError as e:
-      claims.append({"lane": "U", "kind": "unreadable", "file": rel, "subject": str(e)[:60]})
+      claims.append({"lane": "U", "kind": "unreadable", "verdict": REFUSED,
+                     "needle_kind": "unreadable", "file": rel, "subject": str(e)[:60],
+                     "evidence": f"the census could not read the file it was asked to census: {e}"})
       continue
     if rel.endswith(".py"):
       claims += lane_a(rel, text)
-    got, un = lane_bcd(rel, prose(rel, text))
+    fault: list = []
+    got, un = lane_bcd(rel, prose(rel, text, fault))
     claims += got
     unclass += un
+    if fault:
+      claims.append({"lane": "U", "kind": "unproseable", "verdict": REFUSED,
+                     "needle_kind": "unproseable", "file": rel, "at": fault[0][0],
+                     "subject": rel,
+                     "evidence": f"the tokenizer stopped at line {fault[0][0]} ({fault[0][1]}): "
+                                 f"this file's prose was NOT extracted, so every lane below A "
+                                 f"measured 0 claims on it and 0 is not agreement"})
   return claims, unclass
+
+
+def worst(judged: list[dict]) -> str:
+  """THE EXIT, IN ONE PLACE.  `summarise` and `main` each carried their own copy of this
+  expression, and a refusal that reached the summary but not `main` -- or the reverse --
+  is a census whose printed verdict and exit code disagree.  `SKIP` and `DEAD` are not
+  verdicts and are excluded by the caller, so they can never raise this."""
+  return FAIL if any(c["verdict"] == FAIL for c in judged) else (
+    REFUSED if any(c["verdict"] == REFUSED for c in judged) else PASS)
 
 
 def summarise(claims: list[dict], unclass: Counter, paths: list[str]) -> str:
   L = Counter(c["lane"] for c in claims)
   V = Counter((c["lane"], c.get("verdict", DEAD)) for c in claims)
   judged = [c for c in claims if c.get("verdict") in (PASS, FAIL, REFUSED)]
-  worst = FAIL if any(c["verdict"] == FAIL for c in judged) else (
-    REFUSED if any(c["verdict"] == REFUSED for c in judged) else PASS)
+  worst_ = worst(judged)
   o = [f"POPULATION : {len(paths)} committed .md/.py files (git ls-tree -r HEAD)",
        f"LANE A     : {L['A']}  positional (path, int, str) AST tuple literals",
        f"LANE B     : {L['B']}  `path:NNN` in prose -- EXISTENCE claims, no needle",
@@ -577,7 +660,7 @@ def summarise(claims: list[dict], unclass: Counter, paths: list[str]) -> str:
         f"EXISTENCE and check nothing else -- they CANNOT FAIL",
         f"ANCHORS     : {anch} of {L['D']} numeric claims carry a date; the other "
         f"{L['D'] - anch} assert present tense with nothing to expire them",
-        f"VERDICT: {worst} (exit {EXITS[worst]})"]
+        f"VERDICT: {worst_} (exit {EXITS[worst_]})"]
   return "\n".join(o)
 
 
@@ -717,6 +800,77 @@ def selftest(tree: Path) -> int:
     subj.unlink()
     cases.append(("ABSENT: an unreadable subject is REFUSED, never a silent pass",
                   judge(base[0])["verdict"], REFUSED))
+    # *** THREE PLANTS, AND NOT ONE OF THEM ASSERTS "NO EXCEPTION". ***  A plant that scores
+    # the absence of a crash reads PASS when the extractor is silent AND when the extractor
+    # emits nothing at all -- the same constant on both sides, which is how a predecessor's
+    # "first negative" was vacuous.  Each plant asserts on the ROW `census()` emits, and the
+    # expected line is DERIVED FROM THE FIXTURE, never written down: a transcribed number is
+    # the defect this file keeps re-finding.  A fixture that emits NO ROW yields a skeleton
+    # of the same shape rather than `{}`, so "emitted nothing" is a wrong ANSWER to compare
+    # and not a `KeyError` that hides every other plant's result.
+    def nul_case(name: str, raw: bytes) -> dict:
+      (d / name).write_bytes(raw)
+      body = raw.decode()
+      rows = [c for c in census([name], d)[0] if c["kind"] == "unproseable"]
+      if not rows:
+        return {"lane": "U", "verdict": None, "at": None, "needle_kind": None,
+                "want": body[:body.index("\x00")].count("\n") + 1}
+      rows[0]["want"] = body[:body.index("\x00")].count("\n") + 1
+      return rows[0]
+    indented = nul_case("indent-first.bend", b"# cite\n" * 4 + b"    a\n\x00\n")
+    bare = nul_case("nul-first.bend", b"# cite\n" * 2 + b"a\n" + b"# cite\n\x00\n")
+    cases.append(("NUL AFTER AN INDENT: the SystemError arm names the line it stops at",
+                  (indented.get("verdict"), indented.get("at"), indented.get("want"),
+                   indented.get("needle_kind")),
+                  (REFUSED, 6, 6, "unproseable")))
+    cases.append(("NUL BEFORE ANY INDENT: the TokenError arm reaches the SAME verdict",
+                  (bare.get("verdict"), bare.get("at"), bare.get("want")),
+                  (REFUSED, 5, 5)))
+    # AND A CALLER WITH NOWHERE TO RECORD THE REFUSAL IS TOLD, NOT SILENTLY HANDED `[]`.
+    # "silent" is what `gates/nul-census-gate.py` renders a bare `prose()` call as, and a
+    # green gate over a file nothing could read is the false pass this arm exists to deny.
+    try:
+      prose("x.bend", (d / "indent-first.bend").read_bytes().decode())
+      refused_shape = ("no-exception", None, None)
+    except tokenize.TokenError as e:
+      refused_shape = (type(e).__name__, e.args[1][0], e.kind)
+    cases.append(("NO `fault` LIST: `prose()` raises a TokenError carrying the line",
+                  refused_shape, ("Unproseable", 6, "SystemError<-SyntaxError")))
+    (d / "clean.py").write_text("# a comment\nx = 1\n")
+    cases.append(("NUL CONTROL: a file that DOES tokenize emits no refusal row",
+                  [c for c in census(["clean.py"], d)[0] if c["kind"] == "unproseable"], []))
+    # AND THE REFUSAL SURVIVES `judge` AND REACHES THE EXIT.  These two are the ones a
+    # mutation cannot see by mutating `prose()`: the row is correct and the RUN still exits
+    # 0, which is the forbidden shape -- `PASS` printed beside a file nothing could read.
+    cases.append(("UNPROSEABLE VERDICT: `judge` does not re-adjudicate the row as SKIP",
+                  (judge(indented).get("verdict"), judge(bare).get("verdict")),
+                  (REFUSED, REFUSED)))
+    cases.append(("UNPROSEABLE REACHES THE EXIT: a census over one such file is REFUSED 3",
+                  EXITS[worst([judge(indented)])], 3))
+    # THE GATE IS `__cause__`, AND THIS IS WHAT THE GATE IS FOR.  A `SystemError` from
+    # anywhere else is not the tokenizer's and must not be answered with a position.  Driven
+    # through `prose()` by patching the one call it makes, and asserted on WHAT ESCAPES.
+    unrelated = SystemError("not the tokenizer")
+    unrelated.__cause__ = ValueError("something else entirely")
+    saved_gen = tokenize.generate_tokens
+    tokenize.generate_tokens = lambda *_: (_ for _ in ()).throw(unrelated)
+    try:
+      prose("x.py", "a = 1\n")
+      escaped = "no-exception"
+    except BaseException as e:                              # noqa: BLE001 -- the point is that it ESCAPES
+      escaped_obj = e
+      escaped = f"{type(e).__name__}/{type(e.__cause__).__name__}"
+    finally:
+      tokenize.generate_tokens = saved_gen
+    cases.append(("UNRELATED CAUSE: a SystemError that is not the tokenizer PROPAGATES",
+                  (escaped, isinstance(tokenize.generate_tokens, type(saved_gen))),
+                  ("SystemError/ValueError", True)))
+    # ...and it propagates AS ITSELF, with its own diagnostic attached and not laundered
+    # into the SyntaxError this file would have reported had the cause been one.  Identity,
+    # not a type name: a re-raise of the `__cause__` would type-check and lose the object.
+    cases.append(("UNRELATED CAUSE: it escapes as the very object planted, cause intact",
+                  (escaped_obj is unrelated, type(escaped_obj.__cause__).__name__),
+                  (True, "ValueError")))
   fails = 0
   for why, got, want in cases:
     ok = got == want
@@ -806,9 +960,7 @@ def main() -> int:
       f"{c.get('subject','')}\t{c.get('needle_kind','')}\t{c.get('evidence','')}\n" for c in judged))
     print(f"ROWS      : {len(judged)} rows -> {args.rows}")
   real = [c for c in judged if c.get("verdict") in (PASS, FAIL, REFUSED)]
-  worst = FAIL if any(c["verdict"] == FAIL for c in real) else (
-    REFUSED if any(c["verdict"] == REFUSED for c in real) else PASS)
-  return EXITS[worst]
+  return EXITS[worst(real)]
 
 
 if __name__ == "__main__":
