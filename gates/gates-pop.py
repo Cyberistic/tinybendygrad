@@ -81,6 +81,7 @@ import contextlib
 import io
 import os
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -845,7 +846,7 @@ def gate_homes(root):
     """
     root = Path(root).resolve()
     paths, source = _tree_paths(root)
-    homes, witnesses, rejected, read_total = [], {}, [], 0
+    homes, witnesses, rejected, absent, read_total = [], {}, [], [], 0
     for top in sorted({p.split("/")[0] for p in paths if "/" in p}):
         base = root / top
         # `iterdir()`, NOT `os.walk`, AND THAT IS THE COHERENCE CONDITION RATHER THAN A SHALLOWNESS
@@ -877,11 +878,23 @@ def gate_homes(root):
         if good:
             homes.append(top)
             witnesses[top] = [str(p.relative_to(root)) for p in good]
+        elif not base.is_dir():
+            # **A DIRECTORY THE COMMIT TREE NAMES AND THE DISK DOES NOT CARRY IS NOT A DIRECTORY
+            # WITH NO GATES, AND `0/0` SAYS IT IS.** MEASURED on a synthetic repo: `mv gates
+            # verify` with no commit leaves the commit tree naming `gates/`, and the reject row
+            # read `gates 0/0` -- byte-identical to `.github 0/0` (an empty directory that really is
+            # empty) and to `docs 0/1` (a directory with a file and no gate). **THE MISSING
+            # DIRECTORY IS NOT INVISIBLE THE WAY A HAND-LIST TYPO IS: A TYPO NAMES NOTHING THAT
+            # EXISTS, WHILE A MISSING ONE NAMES SOMETHING THE TREE CARRIES.** It is named
+            # `ABSENT` so the two cannot be confused, and it is its OWN list rather than a third
+            # reading of the reject row because `report_roots`'s prose ("no gate there names a
+            # root...") is FALSE of a directory that is not there to be asked.
+            absent.append(top)
         else:
             rejected.append(f"{top} {len(survivors)}/{read}")
     return tuple(homes), {"source": source, "read": read_total,
-                          "candidates": len(witnesses) + len(rejected),
-                          "witnesses": witnesses, "rejected": rejected}
+                          "candidates": len(witnesses) + len(rejected) + len(absent),
+                          "witnesses": witnesses, "rejected": rejected, "absent": absent}
 
 
 _MEASURED = {}
@@ -955,6 +968,11 @@ def report_roots(derivation, indent="   "):
     for row in derivation["rejected"]:
         print(f"{indent}  reject  {row:24} -- no gate there names a root, refuses on a wrong one, "
               f"and resolves on-repo")
+    for top in derivation["absent"]:
+        print(f"{indent}  ABSENT  {top:24} -- the commit tree names it and the working copy does "
+              f"NOT carry it. That is\n{indent}          not the same answer as `0/0`: a missing "
+              f"directory is a MOVED or DELETED one, and this is\n{indent}          the row that "
+              f"says so instead of counting as an empty question.")
     print(f"{indent}          (rejected rows read `survivors/files-read`; {derivation['read']} "
           f"tracked file(s) read in total)")
 
@@ -1098,18 +1116,25 @@ def report(root, ledger_mode, ledger_path=None):
     entries, libs, opaque = _buckets(root)
     report_roots(derivation)
     print(f"     {derivation['read']} tracked file(s) read to answer that question; a rejected "
-          f"candidate is a DIRECTORY, and every one of the\n     twelve below was asked the same "
-          f"question and answered no -- the root set MOVES when one of them\n     starts "
-          f"answering yes, and this line is where a reader sees it.\n")
+          f"candidate is a DIRECTORY, and each of the\n     {len(derivation['rejected'])} below "
+          f"was asked the same question and answered no -- the root set MOVES when one of them\n"
+          f"     starts answering yes, and this line is where a reader sees it.\n")
     if not entries:
         print(f"I  EMPTY POPULATION: no entry point under {'/'.join(homes)}/ -- and an empty "
               f"population cannot\n   fail, which is the defect this file exists for. REFUSED.")
         return 2
 
     rows, named, unasserted, offroot = [], 0, 0, 0
-    print(f"I  DISCOVERED {len(entries)} entry point(s) under {'/'.join(homes)}/ "
-          f"(+{len(libs)} module(s) with no entry guard, {len(opaque)} file(s) OPAQUE -- readable\n"
-          f"   by no grammar in this instrument, which is a DENOMINATOR and not a verdict: it is")
+    print(f"I  DISCOVERED {len(entries)} entry point(s) in the IMMEDIATE files of "
+          f"{'/'.join(homes)}/ (+{len(libs)} module(s) with no entry guard, {len(opaque)} file(s) "
+          f"OPAQUE -- readable\n   by no grammar in this instrument, which is a DENOMINATOR and "
+          f"not a verdict: it is")
+    # **THE UNIT, PRINTED, BECAUSE `checks/gatesweep.py:walk` IS A DIFFERENT ONE AND A READER
+    # WITH TWO NUMBERS CANNOT RECONCILE THEM WITHOUT IT.** `os.walk` descends into `gates/oracles/`
+    # and `_buckets`' `iterdir()` does not; `gatesweep._prune` drops dotted names and `_buckets`
+    # does not. MEASURED 2026-10-19 03:57Z: `WALK 258` against `CONTROL 261`, and the difference
+    # is EXACTLY `258 - 2 subdirectory + 5 dotted = 261`. **TWO INSTRUMENTS HOLDING TWO WALK RULES
+    # DISAGREEING BY A CONSTANT ARE NOT A DEFECT; TWO INSTRUMENTS HOLDING TWO LISTS ARE.**
     # THE OPAQUE DENOMINATOR, BY EXTENSION, because a single total cannot say WHICH language the
     # instrument cannot read and a reader who is not told that cannot tell whether 148 is right.
     # It moves when the tree gains a language, which is the entire reason it is printed.
@@ -1257,6 +1282,39 @@ def _tree(root, *homes):
 
 
 MAIN = "if __name__ == '__main__':\n    raise SystemExit(0)\n"
+
+
+def _commit(root):
+    """Commit a synthetic tree, so `gate_homes` reads its COMMIT TREE instead of falling back.
+
+    **`_tree_paths` FALLS BACK TO THE WORKING COPY WHEN `git ls-tree` FAILS, and every other
+    plant in this file uses a temp directory that is not a repository** -- so a plant that did not
+    commit would exercise the fallback and never reach the question plant 11 asks. MEASURED: with
+    no commit, `gate_homes` cannot tell a renamed directory from a deleted one, because there is
+    no longer a tree that says what SHOULD be there.
+    """
+    for cmd in (["init", "-q"], ["config", "user.email", "p@example"],
+                ["config", "user.name", "plant"]):
+        subprocess.run(["git", "-C", str(root), *cmd], capture_output=True, text=True)
+    subprocess.run(["git", "-C", str(root), "add", "-A"], capture_output=True, text=True)
+    return subprocess.run(["git", "-C", str(root), "commit", "-qm", "plant"],
+                          capture_output=True, text=True).returncode
+
+
+def _roots(root):
+    """`(homes, entries, derivation)` for a tree that has CHANGED since it was last measured.
+
+    **`_MEASURED.clear()` IS NOT A CONVENIENCE, IT IS THE ONLY CORRECT MOVE.** `_measure` memoises
+    per resolved root path, which is exactly right for one run of `report` and exactly wrong for a
+    plant that mutates the same directory and measures it again. MEASURED: a first version of this
+    plant read `homes` through `gate_homes()` (unmemoised, so it moved) and `entries` through
+    `_buckets()` (memoised, so it did not), and every step reported a population that no longer
+    matched its own home set. **A MEMO IS A MEASUREMENT MADE ONCE AND READ TWICE -- WHICH IS FINE
+    INSIDE ONE RUN AND IS A LIE ACROSS FOUR.**
+    """
+    _MEASURED.clear()
+    homes, derivation = gate_homes(root)
+    return homes, len(_buckets(root)[0]), derivation
 
 
 def verdict_of(facts):
@@ -1579,6 +1637,58 @@ def _plants():
                    f"unrecorded={a} retired_green={b} monotonic={c} merge_keeps_all={d} "
                    f"(rows {len(rows)} -> {len(after_two)} -> {len(after)}; tombstone kept={len(tomb)}"
                    f"x2; retired={sorted(departed)})"))
+
+    # PLANT 11 -- **THE ROOT SET IS A POPULATION, NOT A FLOOR, AND IT IS NOT PLANTED ANYWHERE.**
+    # `HOMES = ("checks", "gates")` was replaced by `gate_homes()` in `3d92f5751`, and TWELVE plants
+    # assert tokenizers, roots, the ledger and the opaque bucket -- and NONE of them asks what the
+    # derivation is FOR. **A POPULATION GATE WITH NO PLANT ON ITS OWN ROOT SET IS A LIST THAT
+    # HAPPENS TO BE COMPUTED**, and that is the shape the hand tuple had. Three directions:
+    #   (a) RENAME A HOME, COMMIT: the population MOVES -- the new name is found, the old name is
+    #       not, and the entry count is UNCHANGED. A derivation that kept the old name would be a
+    #       cache; a derivation that kept BOTH would be a union.
+    #   (b) DELETE A HOME, COMMIT: the population SHRINKS TO NOTHING. **A POPULATION THAT CANNOT
+    #       SHRINK IS A FLOOR, NOT A POPULATION**, and the strongest form of that claim is a
+    #       population that reaches ZERO -- which is also the state `report` REFUSES with 2, so the
+    #       two agree instead of one papering over the other.
+    #   (c) RENAME A HOME WITHOUT COMMITTING: the commit tree still names the old directory, the
+    #       disk does not carry it, and the run says `ABSENT`. **WITHOUT (c) THAT IS `0/0`** --
+    #       the same row `.github 0/0` prints for a directory that really is empty -- so a
+    #       DELETED home and an EMPTY one are indistinguishable. **A HAND-LIST TYPO IS INVISIBLE; A
+    #       MISSING DIRECTORY IS NOT, AND THIS IS WHERE IT BECOMES SAYABLE.**
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r, "checks", "gates")
+        for home in ("checks", "gates"):
+            (r / home / f"{home}-gate.py").write_text(GOOD_ROOT)
+        _commit(r)
+        h0, n0, _ = _roots(r)
+        os.rename(r / "gates", r / "verify")
+        _commit(r)
+        h1, n1, _ = _roots(r)
+        moved = h0 == ("checks", "gates") and h1 == ("checks", "verify") and n1 == n0
+        # (b) THE SHRINK. The whole home goes, not one of its gates: `home-witness.py` still
+        # CERTIFIES a home that keeps one gate, so deleting a single file is not a shrinking.
+        shutil.rmtree(r / "verify")
+        _commit(r)
+        h2, n2, _ = _roots(r)
+        shrank = h2 == ("checks",) and n2 == n0 // 2
+        # (c) THE MISSING DIRECTORY. `checks` is in HEAD and absent from the disk, so the
+        # derivation must name it as ABSENT rather than count it as an empty question.
+        os.rename(r / "checks", r / "probe")          # NOT committed -- HEAD still says `checks`
+        _, _, d3 = _roots(r)
+        absent_row = "checks" in d3["absent"]
+        not_zero = not any(row.split()[0] == "checks" for row in d3["rejected"])
+        # AND THE LAST HALF: rename it BACK and the population comes back. **A POPULATION THAT
+        # CANNOT SHRINK IS A FLOOR, AND ONE THAT CANNOT GROW AGAIN IS NOT A POPULATION EITHER.**
+        os.rename(r / "probe", r / "checks")
+        h4, n4, _ = _roots(r)
+        grew_back = h4 == h2 and n4 == n2
+    checks.append(("11: THE ROOT SET IS A POPULATION, NOT A FLOOR -- rename a home and the "
+                   "population MOVES with it, delete one and it SHRINKS, a committed directory "
+                   "the disk lacks reads ABSENT rather than 0/0, and renaming it back GROWS it",
+                   moved and shrank and absent_row and not_zero and grew_back,
+                   f"homes {h0}->{h1}->{h2}->{h4}, entries {n0}->{n1}->{n2}->{n4}, "
+                   f"absent has 'checks'={absent_row}, no `checks 0/0` row={not_zero}"))
 
     # PLANT 5 -- **THE REPLAY.** The three named instances at their PRE-FIX sources, read out of
     # this repo's own git history, and asserted CAUGHT. Two of the three are `HERE.parents[2]`;
