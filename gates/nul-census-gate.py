@@ -34,6 +34,13 @@ set`.  That is not a `SyntaxError`, so the conversion never fires, and `prose()`
 catches `(tokenize.TokenError, IndentationError)`, lets it out.  The real diagnostic is
 NOT lost: it is the `__cause__`, a `SyntaxError: source code cannot contain null bytes`.
 
+AND NO SINGLE PROBE LEVEL CAN SEE THIS.  Asking `tokenize` alone reports the synthetic as
+a `TokenError`; asking `prose()` alone reports the same synthetic as `silent`, because
+`prose()` catches it.  Those are ONE EVENT at two levels, and the disagreement between a
+brief and `gates/cites-pop-gate.py:185` was that disagreement, not a disagreement about
+the world.  Clause IV prints all three levels, because a reproduction that cannot tell
+"no error" from "error caught" from "error escaped" is a reproduction that reports nothing.
+
 FIVE CLAUSES, EACH WITH ITS OWN DENOMINATOR.  NONE IS A VERDICT ABOUT A BINARY:
 
   I    THE ARITHMETIC  disk-follows-links vs committed blobs, and the exact subtraction.
@@ -415,14 +422,26 @@ def main() -> int:  # noqa: C901 -- five clauses, one pass each
   print("  `tuple.__new__` -- and is laundered to `SystemError`, so the conversion never")
   print("  fires and `prose()`, catching `(TokenError, IndentationError)`, lets it out.")
   print("  IS `prose()` REACHED, AND DOES IT ACTUALLY DIE?  MEASURED, NOT ASSUMED:")
-  try:
-    cites.prose(WITNESS, (ROOT / WITNESS).read_text(errors="replace"))
-    escaped = "no-exception"
-  except (tokenize.TokenError, IndentationError) as e:
-    escaped = f"CAUGHT {type(e).__name__}"
-  except BaseException as e:  # noqa: BLE001 -- the point is that it ESCAPES `prose()`
-    escaped = f"ESCAPED {type(e).__name__}"
-  print(f"    prose({WITNESS}) -> {escaped}")
+  # THREE LEVELS, BECAUSE NO SINGLE LEVEL CAN TELL THESE APART.  A probe that calls
+  # `prose()` cannot distinguish "no error" from "error CAUGHT" -- it sees silence for
+  # the synthetic -- and a probe that calls `tokenize` cannot distinguish "prose() would
+  # have caught it" from "prose() did catch it".  The reproduction in a brief and the
+  # plant in `gates/cites-pop-gate.py:185` disagreed for ONE LEVEL, not for one truth:
+  # `no-exception` and `TokenError (CAUGHT)` are the same event seen from two sides.
+  def through_prose(body: str) -> str:
+    try:
+      cites.prose("probe", body)
+      return "silent"
+    except (tokenize.TokenError, IndentationError) as e:
+      return f"caught {type(e).__name__}"
+    except BaseException as e:  # noqa: BLE001 -- the point is that it ESCAPES `prose()`
+      return f"ESCAPED {type(e).__name__}"
+  for label, body in [("synthetic, no INDENT", "a\n" + 'x = "b\x00"\n'),
+                      ("synthetic, INDENT    ", "    a\n" + 'x = "b\x00"\n'),
+                      (f"live {WITNESS[:18]}...", (ROOT / WITNESS).read_text(errors="replace"))]:
+    tok_name, tok_ind, _c = raises(body)
+    print(f"    {label}  tokenize -> {tok_name:12s} | prose() -> {through_prose(body)}")
+  escaped = through_prose((ROOT / WITNESS).read_text(errors="replace")) if exposure else "silent"
 
   # ---- V. THE EXPLANATION ---------------------------------------------------
   print("\n--- V. THE EXPLANATION: is the byte explained where it lives? ---")
