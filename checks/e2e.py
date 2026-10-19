@@ -242,7 +242,7 @@ ENV = dict(os.environ)
 # ORACLE_SHA 245a10db… / BODY_SHA 558554c8…, and the pair before the retirement was
 # e0eb23d5cb7340d5 / f222c02c9481d982.
 ORACLE_SHA = "05d7cfea0aea9c8523649ad1e277cb03890214cb9c7996807c1b0295207f8696"
-BODY_SHA = "bdbf6f6caaaf82ec64fee541c429d28b7530f0bc068d869a33710418813ad350"
+BODY_SHA = "69d7cfcd7fb71b7f743906072f20800a49a315fa13248e77e61e026323835870"
 # THE DOCUMENTED EDITS, IN ORDER, AS `(ORACLE_SIDE, SHELL_SIDE)`: applying every one of them to the
 # frozen copy must yield the live body, byte for byte. So the ORACLE's text is the FIRST element of
 # each pair. `ORACLE_EDIT` KEEPS ITS NAME AND ITS ONE-PAIR SHAPE, because
@@ -283,10 +283,28 @@ ROOT=$(cd "$_d/.." && pwd)
 # THESE LITERALS, so a derived header would make the census report `PROSE names [...] the CODE does
 # not emit` and go DARK. That trade, an honest number bought with a dead instrument, is refused.
 #
+# **AND TWO OF THE SEVEN WERE WRONG ANYWAY, MEASURED 2026-10-19T15:41Z BY A CENSUS, NOT BY A READER.**
+# The fix above took `1/4`..`4/4` to `/7` and DID NOT TOUCH THE TWO STAGES THAT HAD BEEN ADDED: `5/5`
+# and `6/6`, each written by the author of that stage and each internally CONSISTENT, so every reader
+# compared `n/` against the `n` on the same line and saw nothing. `.agents/slop/e2estage8/verdicts.py`
+# counted the call sites itself (`census FOUND 7 stage call site(s) in e2e.py`) and compared them:
+#     gate SAYS 7 denominator(s), from the gate source: 1->7 2->7 3->7 4->7 5->5 6->6 7->7
+#     DENOMINATOR FAIL: stage 5: the gate's own banner says `== 5/5` and the gate emits 7 stage(s)
+#     DENOMINATOR FAIL: stage 6: the gate's own banner says `== 6/6` and the gate emits 7 stage(s)
+# THE LESSON IS THE ONE THE FIX ABOVE ALREADY TAUGHT AND DID NOT APPLY TO ITSELF: **A PARTIAL FIX IS A
+# PARTIAL FIX, AND A GATE THAT PASSES IS NOT EVIDENCE THAT IT IS FINISHED.** Both banners are now `n/7`
+# and both sides of the port moved in this commit.
+#
+# THE PIN MOVED A FIFTH TIME, AND `BODY_SHA` MOVED WITH THE SHELL BY ONE BYTE-FOR-BYTE PROOF, not by a
+# comment: `revert(oracle)` over the nine pairs and `checks/e2e.sh` are both 19894 bytes and both
+# `69d7cfcd7fb71b7f`, so the two pairs above are the WHOLE delta and no undeclared difference rode in
+# with them. The pair before this one was `bdbf6f6c…`, and the pair before that was `fcf647cd…`.
+#
 # BOTH SIDES MOVED IN ONE COMMIT, because a port that disagreed with its shell on the very lines it
 # emits is not a port (`checks/e2e.py:126`). THE ORACLE IS FROZEN AND NOT EDITED, so it still says
-# `/4`, and these four pairs are what keeps `revert(oracle) == checks/e2e.sh` byte for byte: the
-# delta is NAMED rather than removed, which is the whole difference between a pin and a hash.
+# `/4` for stages 1-4 and `5/5`/`6/6` for the two stages that were added rather than substituted, and
+# these nine pairs are what keeps `revert(oracle) == checks/e2e.sh` byte for byte: the delta is
+# NAMED rather than removed, which is the whole difference between a pin and a hash.
 #
 # THE COST, MEASURED, AND OUT OF GRANT: `.agents/slop/e2esh/refreeze.py:52` applies `ORACLE_EDIT`
 # alone, so it answers question (2) wrongly for a seventh of the delta instead of a third. That
@@ -307,6 +325,10 @@ ORACLE_EDITS = (
     ('echo "== 3/4 gpu (real WebGPU adapter, headless Chrome)"\n',
      'echo "== 3/7 gpu (real WebGPU adapter, headless Chrome)"\n'),
     ('echo "== 4/4 gate"\n', 'echo "== 4/7 gate"\n'),
+    ('echo "== 5/5 port\'s own device (the port\'s ops_bend runtime executes)"\n',
+     'echo "== 5/7 port\'s own device (the port\'s ops_bend runtime executes)"\n'),
+    ('echo "== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"\n',
+     'echo "== 6/7 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"\n'),
 )
 
 HELP = __doc__
@@ -540,7 +562,7 @@ def main() -> int:
     echo_file(gate)
     verdict("stage 4 gate (matmul vs CPython, via WebGPU)", rc)
 
-    say("== 5/5 port's own device (the port's ops_bend runtime executes)")
+    say("== 5/7 port's own device (the port's ops_bend runtime executes)")
     ops = RUN / "e2e-opsbend.out"
     rc = stage(["./.agents/slop/opsbend-milestone.sh"], ops)
     tail_file(ops, 3)      # THE DENOMINATOR: the milestone's own last three lines.
@@ -552,7 +574,7 @@ def main() -> int:
     # effect of retiring stage 8. `e2estage8/verdicts.py` reports it as `DENOMINATOR None` until then.
     verdict("stage 5 ops_bend (kernel executes in Bend)", rc)
 
-    say("== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)")
+    say("== 6/7 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)")
     pmm = RUN / "e2e-port-mm.out"
     rc = stage(["zsh", ".agents/slop/e2e_port/run-port-mm.sh"], pmm)
     echo_file(pmm)

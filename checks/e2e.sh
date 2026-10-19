@@ -156,7 +156,7 @@ verdict "stage 4 gate (matmul vs CPython, via WebGPU)" "$rc"
 # there is no Bend renderer. That is the wall, and it is named rather than worked
 # around.
 # ---------------------------------------------------------------------------
-echo "== 5/5 port's own device (the port's ops_bend runtime executes)"
+echo "== 5/7 port's own device (the port's ops_bend runtime executes)"
 set +e
 ./.agents/slop/opsbend-milestone.sh > "$RUN/e2e-opsbend.out" 2>&1
 msrc=$?
@@ -204,7 +204,7 @@ verdict "stage 5 ops_bend (kernel executes in Bend)" "$msrc"
 #
 # Like stage 5, this stage's verdict does NOT become the script's exit status.
 # ---------------------------------------------------------------------------
-echo "== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"
+echo "== 6/7 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"
 set +e
 zsh .agents/slop/e2e_port/run-port-mm.sh > "$RUN/e2e-port-mm.out" 2>&1
 psrc=$?
