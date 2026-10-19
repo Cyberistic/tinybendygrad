@@ -98,13 +98,13 @@ skip () {     # skip <stage> <why>
   echo "  $1: SKIP -- $2"; SKIPS=$((SKIPS + 1))
 }
 
-echo "== 1/7 oracle (CPython tinygrad, DEV=CPU)"
+echo "== 1/4 oracle (CPython tinygrad, DEV=CPU)"
 "$PY" .agents/slop/e2e_mm.py
 
-echo "== 2/7 port (pure bend, no GPU)"
+echo "== 2/4 port (pure bend, no GPU)"
 bend_run
 
-echo "== 3/7 gpu (real WebGPU adapter, headless Chrome)"
+echo "== 3/4 gpu (real WebGPU adapter, headless Chrome)"
 # THE ONE STAGE THAT ASKS NODE. IT IS THE ONLY STAGE THAT NEEDS A BROWSER, SO IT IS
 # ALSO THE ONLY STAGE THAT CAN BE UNAVAILABLE. AN UNAVAILABLE STAGE IS `SKIP`, NEVER
 # `PASS`: it measured nothing, and calling that a pass is the same defect one level
@@ -116,7 +116,7 @@ else
   skip "stage 3 gpu (node)" "no \`node\` on PATH; stage 3 measured nothing"
 fi
 
-echo "== 4/7 gate"
+echo "== 4/4 gate"
 # THE EXIT STATUS IS THE PYTHON ONE, NOT `tee`'s. MEASURED in this harness, and it
 # is the exact trap this repo keeps paying for: `"$PY" gate.py | tee out.txt` makes
 # `$?` the status of `tee`, so a gate that CRASHED printed `PASS`. POSIX sh has no

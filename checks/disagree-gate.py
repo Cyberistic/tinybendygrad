@@ -123,17 +123,25 @@ PIN = {
 # any disagreement reds it (`named != sorted(PIN)`), any dispatcher substitution reds it, a
 # malformed wire reds it, and a summary that stops reading `graphs-disagree=0` reds it.
 #
-# **`loop` IS DELIBERATELY NOT PINNED, AND IT IS NOT PINNED-AND-AGREEING.**  On this run
-# `D1-graph-loop.txt` reads `rc=2` and carries NO `VERDICT:` line at all, so `names.py`
-# records it as `NO-VERDICT(rc=2)` and it is not in `disagree`.  That is this tree's REFUSED:
-# the port's `fold.bend` AFTER arm (`thru0`, `fold.bend:2564` -> `dt_of`, `fold.bend:699`)
-# returns the PORT-ONLY outer `None` -- the `?` marker -- for an `AFTER` whose `src[0]` has
-# NO SHAPE, where upstream reads `self.src[0]._shape` (`ops.py:384`), so 16 of `loop`'s 52
-# nodes answer `?` in BOTH columns.  **TODO(differ-corpus): `loop` is REFUSED, not AGREE, and
-# a REFUSED graph is not a disagreement -- the fix belongs in `tinybendygrad/uop/fold.bend`
-# (`dt_of` needs the `nil_ds.shape` pair that `fold.bend:1117` already spells as `late()`),
-# which is OUT OF THIS GATE'S GRANT.  WHEN IT IS FIXED `loop` WILL AGREE; WHEN A FIX MAKES
-# IT DISAGREE, PIN IT FROM THE RUN, NOT FROM THIS NOTE.**
+# **`loop` IS DELIBERATELY NOT PINNED, AND IT IS NOT PINNED-AND-AGREEING.**  It AGREES, and
+# `lane_pin` below already asserts that twice -- `names.py`'s `disagree: []` and
+# `D0-run-summary.txt`'s `graphs-disagree=0` -- so nothing in this paragraph is load-bearing.
+# MEASURED 2026-10-19 03:37Z, `cat runs/graphcmp/D/D1-graph-loop.txt`, on the coherent run
+# (`substrate-start` EQUALS `substrate-end` at `65d64bb74`): `settled=True`, `?=0/0` on both
+# columns, `VERDICT: AGREE`, and `D2-cmp-loop.txt` reads `CANONICAL BYTE-IDENTICAL`.  It ONCE
+# read `rc=2` with NO `VERDICT:` line, which was TRUE when written, and ALL FOUR of the line
+# numbers this paragraph used to carry were WRONG.  The cause was `dt_of` (`fold.bend:713`),
+# reached by the AFTER passthrough `thru0` (`fold.bend:905`, whose body is `fold.bend:906`,
+# dispatched from `fold.bend:2580`): its `None` arm answered the PORT-ONLY OUTER `None` --
+# the `?` marker CPython cannot print -- where upstream reads `self.src[0]._shape` on the
+# AFTER passthrough (`ops.py:377`) off a bare `NOOP`, whose own arm is `ops.py:338`.
+# `f251d80d` gave that `None` arm (`fold.bend:716`) the `(dt, None)` pair that `nil_ds.shape`
+# (`fold.bend:1133`) already spelled beside `late()` (`fold.bend:1114`), so both `?=0` rows
+# are regression rows.  **NO `TODO` STANDS HERE: THE OLD ONE NAMED LINE NUMBERS `f251d80d`
+# HAD ALREADY FIXED, AND A TODO THAT ASKS FOR A STATE THE TREE CORRECTLY REFUSES TO REACH IS
+# A CLAIM THAT CANNOT FAIL.**  WHEN A FIX MAKES A GRAPH DISAGREE, PIN IT FROM THE RUN, NOT
+# FROM THIS NOTE.  The `PLANT+DISARM` lane's `[REFUSED]` on a green corpus is that lane's own
+# subject being absent, and it explains itself at `lane_plant`; it is not this paragraph's.
 # NO HAND LIST HERE.  `names.py` DERIVES the substituted set from `graphcmp.py`'s `GRAPHS`
 # against `rows.pick3`'s own arms: a name with no arm falls through to the dispatcher's
 # single fallback builder, so the two sides build DIFFERENT graphs and the disagreement is
