@@ -101,6 +101,57 @@ silent skip.
 
 MEASURED, Bend accepts BOTH quote characters: `tinybendygrad/uop/upat.bend:1426` is
 `String.split(p, '}')`, and scanning that `}` as a bracket refuses the file.
+
+## THE PINS FILE PAIRED BY POSITION, AND WHY A KEY IS NOT A HAND LIST
+
+The comparison used to be `zip(pinned.splitlines(), body.splitlines())`. `census()` sorts,
+so ORDER IS DETERMINISTIC -- and that is exactly the trap: a deterministic order read as a
+correspondence. ONE KEY LEAVING SHIFTED EVERY LATER ROW, so the diff named files whose rows
+had not moved. MEASURED 2026-10-19T16:25Z against 43 pinned and 32 live, with eleven keys
+gone: the positional diff printed 32 CHANGED pairs and 11 `(absent)` lines, named
+`codegen/__init__.bend:339` as changed when nothing in that file had moved, and named
+`uop/ops.bend:6302` as CHANGED *AND* AS ABSENT IN THE SAME RUN -- the padding tail is the
+same misalignment read from the other end. Keyed on the `site <file>:<line>` field `render()`
+already emits first, the same two files say 31 both, **0 CHANGED**, 12 LOST, 1 APPEARED, and
+the one that appeared is `uop/fold.bend:5307` sitting 17 lines lower at `:5324` carrying a
+byte-identical row.
+
+**THE KEY IS A FIELD OF THE ROW, NOT A PATH LIST.** `render()` puts `site <file>:<line>`
+first on every line, so matching on it needs nothing added to the format and nothing
+maintained by hand -- which is the only kind of population `AGENTS.md`'s DOCTRINE 1 allows
+in a pins file. A list of the eleven paths would have been the defect wearing a fix's
+clothes.
+
+## WHAT A `retired` ROW IS, AND WHAT IT IS NOT
+
+`--accept` writes `retired <file>:<line> ...` for every key that left, computed from
+`PINS - body` and carrying the class it had. So the movement is RECORDED, which is the
+alternative to a snapshot that cannot say whether a site was fixed or deleted -- the
+`artefacts_ok()` trade, and `AGENTS.md`'s "a number that goes down without a number that
+says where it went is a deletion wearing a refactor's clothes".
+
+**A TOMBSTONE IS NOT A REASON.** NOTHING IN THIS FILE CAN TELL A FIX FROM A DELETION: both
+are a key the detector no longer returns, and the two leave different bytes in
+`tinybendygrad/` and the same absence here. So the gate prints, LIVE and NEVER STORED, how
+many rows each retired key's file carries now -- which answers "did the file die" and "did
+other sites leave it too" -- and says outright that it is not a claim of a fix. THE INDEPENDENT
+FACT FOR THIS RE-PIN IS NOT HERE AT ALL, and is in the commit message: the eleven sites now
+spell `O.UOp.new.param(ar, op, Some{n}, ...)`, and `n` is the size (`UOp.new.param` is
+`(+ar, +op, n: Maybe<&2, U32>, arg, tag)` and spends it on `shape_to_shape_arg.of`), which
+`sed -n` on the file shows without consulting this one.
+
+## WHAT THIS FILE STILL CANNOT SEE
+
+`nil-src`'s population is `thread_src.calls`, the tree's own `UOp.new(` WRITE SITES. A
+hand-written `Node{...}` arena literal is not a call, so it is invisible STRUCTURALLY, not
+by a missed prefix: `s5.arena()` (`uop/ops.bend:6898`) and `s5.ga.arena()` (`:7215`) carry
+SIX size-less `Node{Ops{BUFFER,ALLOC,PARAM}{}, Nil{}, ...}` literals between them -- THREE
+each, at `ops.bend:6902/6903/6904` and `:7218/7219/7220` -- beside the two
+`Node{OpsCONST{}, Nil{}}` at `:6901` and `:7227`, which are NOT in the class because the
+class is a node whose ARG IS `AParam{...}` and a CONST's arg is `APy{...}`. MEASURED 16:41Z
+by grepping the two function bodies. (SIX, not eight: the other two are the CONST literals.)
+Closing that is a change to `tinybendygrad/uop/ops.bend`, which moves `substrate_digest()`
+and invalidates the green corpus run, so it is named here and NOT made.
 """
 from __future__ import annotations
 
@@ -460,6 +511,108 @@ def render(rows: list) -> str:
 IDENT = ("op", "txt")
 
 
+# ---------------------------------------------------------------- the pins file
+#
+# THE KEY IS THE `site <file>:<line>` FIELD `render()` ALREADY EMITS FIRST ON EVERY ROW, so
+# nothing has to be added to the row format to match on it and no list of paths has to be
+# written down. MEASURED UNIQUE on both sides, 2026-10-19T16:26Z, `.venv/bin/python
+# gates/arenasrc_census.py --rows` and `gates/arenasrc_census.rows`: 43 distinct keys over
+# 43 pinned rows, 32 over 32 live, zero collisions -- which is what `census()`'s sort on
+# `(file, line, class)` buys, and a collision would be a site the census cannot tell apart
+# from its own neighbour on one line.
+#
+# A ROW THAT MOVED IS A ROW WHOSE KEY MATCHED AND WHOSE BYTES DIFFERED. A KEY THAT IS
+# ABSENT FROM ONE SIDE LEFT. Those are DIFFERENT CLAIMS AND THE POSITIONAL COMPARATOR THIS
+# REPLACES COULD NOT TELL THEM APART, because `zip(pins, body)` pairs by ORDINAL: ONE KEY
+# LEAVING SHIFTS EVERY LATER ROW.
+
+SITE_FIELD = "site"
+RETIRED_FIELD = "retired"
+
+
+def verb(row: str) -> str:
+  """`site` or `retired`. Which of the two is the whole difference between a row that is
+  in the population and a row that was and is not, and it is a WORD so the file reads."""
+  return row.split(" ", 1)[0]
+
+
+def key_of(row: str) -> str:
+  """The `<file>:<line>` a row is ABOUT, verb stripped. A line without a verb is its OWN
+  key rather than `None`, so a hand-mangled pins line cannot silently merge into another
+  row's bucket -- it fails as itself, named, on the first line of the diff."""
+  parts = row.split(" ")
+  return parts[1] if len(parts) > 2 and parts[0] in (SITE_FIELD, RETIRED_FIELD) else row
+
+
+def live_of(rows: list[str]) -> str | None:
+  return next((r for r in rows if verb(r) == SITE_FIELD), None)
+
+
+def dead_of(rows: list[str]) -> list[str]:
+  return [r for r in rows if verb(r) == RETIRED_FIELD]
+
+
+def index(rows: list[str]) -> dict[str, list[str]]:
+  """{key: [rows naming it]} -- a LIST, because one key may be BOTH `retired` and `site`.
+  That is a site that left the population and came back, and the two events are separate
+  facts; a map holding one of them would drop the record of the first on the very re-pin
+  that noticed the second, which is the defect this file was corrected for, one level
+  down."""
+  out: dict[str, list[str]] = {}
+  for row in rows:
+    out.setdefault(key_of(row), []).append(row)
+  return out
+
+
+def retire(row: str) -> str:
+  """The same row, said to have LEFT. Only the verb changes: the key and the classification
+  it carried are carried over verbatim, so a tombstone still names what it was."""
+  return RETIRED_FIELD + row[len(SITE_FIELD):]
+
+
+def class_of(row: str | None) -> str:
+  return row.split(" class=", 1)[1].split(" ", 1)[0] if row else "?"
+
+
+def tally(rows: list[str]) -> Counter:
+  """{class: n}. THE TRUSTWORTHY NUMBER. A positional diff reports how many LINES differ,
+  which is a fact about the ALPHABET and not about the population; this counts classes on
+  each side, so 11 BUFFER/ALLOC sites leaving reads as what it is."""
+  return Counter(class_of(r) for r in rows if " class=" in r)
+
+
+def compare(pins: str, body: str) -> tuple[int, list[str]]:
+  """(PASS|FAIL, the movements, in the order a reader needs them). KEYED, NEVER POSITIONAL.
+
+  FOUR MOVEMENTS, FOUR CLAIMS. `LOST` and `APPEARED` are POPULATION -- a key is on one side
+  and not the other. `CHANGED` is CLASSIFICATION -- a key is on both sides and its bytes
+  differ. `BACK` is A RETIREMENT REVERSED -- a key this file called `retired` is in the
+  population again. The positional comparator had no key to tell them by, and MEASURED what
+  that costs: 43 pinned against 32 live on 2026-10-19T16:25Z, eleven keys gone, it printed
+  32 CHANGED PAIRS and 11 `(absent)` lines -- naming `codegen/__init__.bend:339` as changed
+  when nothing in that file moved, and naming `uop/ops.bend:6302` as CHANGED *AND* AS
+  ABSENT IN THE SAME RUN, because the `(absent)` tail is the same misalignment seen from
+  the other end. Keyed, the same two files say 31 both, 0 CHANGED, 12 LOST, 1 APPEARED,
+  and the one that appeared is `uop/fold.bend:5307` sitting 17 lines lower at `:5324`
+  carrying a BYTE-IDENTICAL row."""
+  was, now = index(pins.splitlines()), index(body.splitlines())
+  lost = sorted(k for k in was if live_of(was[k]) and not now.get(k))
+  gained = sorted(k for k in now if not was.get(k))
+  back = sorted(k for k in now if dead_of(was.get(k, [])))
+  changed = sorted(k for k in was.keys() & now.keys()
+                   if live_of(was[k]) and live_of(was[k]) != live_of(now[k]))
+  why = []
+  if lost:
+    why.append(f"LOST   {len(lost)} key(s) LEFT the population: {lost}")
+  if gained:
+    why.append(f"APPEARED {len(gained)} key(s) NOT in the pins: {gained}")
+  if back:
+    why.append(f"BACK   {len(back)} RETIRED key(s) are in the population AGAIN: {back}")
+  for k in changed:
+    why.append(f"CHANGED {k}  class {class_of(live_of(was[k]))} -> {class_of(live_of(now[k]))}")
+  return (FAIL if why else PASS), why
+
+
 # ---------------------------------------------------------------- the plant
 
 
@@ -493,6 +646,59 @@ def _verdict(base_map: dict, got_map: dict, want: tuple[str, str]) -> tuple[int,
   return (PASS if moved and not why else FAIL), moved, why
 
 
+def pin_plants(body: str) -> int:
+  """Three movements of the PINS FILE ALONE, scored through `compare`, which is the
+  comparator that runs -- not a hand-written twin of it, which would prove nothing about
+  the one the gate uses.
+
+  **THE REORDER IS THE PLANT THE POSITIONAL DEFECT OWNS.** `zip(pins, body)` reads ORDER as
+  a claim, so REVERSING the rows of a pins file whose CONTENT did not change at all makes
+  it report that every row moved. A comparator that survives this cannot be pairing by
+  position, whatever it says in a comment.
+
+  **THE OTHER THREE ARE WHAT MAKES THE FIRST ONE MEAN ANYTHING.** A comparator that answered
+  PASS to everything would pass the reorder, and this tree's prior art is a plant that
+  emitted NOTHING while the check scored it a successful plant. So the SAME comparator, on
+  the SAME rows, must ALSO name a key the census has and the pins do not, a key the pins
+  have and the census does not, and a changed class -- and the suite has no verdict if any
+  of those goes quiet: `always-PASS` fails the last three, `always-FAIL` fails the first.
+  The two DROPS ARE THE SAME ONE-ROW EDIT DONE TO OPPOSITE SIDES, which is the whole point:
+  `LOST` and `APPEARED` are different CLAIMS and the positional comparator had no key to
+  tell them by. There is no constant here to flatten -- every plant is the real rows, one row
+  apart. `RECLASS` mutates the PINS side and therefore expects the message in `compare`'s
+  direction, PIN THEN NOW, so the plant pins the ORDER OF THE CLAIM as well as its content."""
+  rows = body.splitlines()
+  if len(rows) < 3:
+    print("--plant: the census emitted too few rows to move one", file=sys.stderr)
+    return FAIL
+  drop, cls = rows[-1], rows[0]
+  head, _, tail = cls.partition(" class=")
+  old, _, rest = tail.partition(" ")
+  new = "nil-src/B" if old == "nil-src/A" else "nil-src/A"
+  # (name, the PINS side, the CENSUS side, the verdict wanted, what the ONE movement must name)
+  cases = [("REORDER every row, change nothing", "\n".join(reversed(rows)), body, PASS, None),
+           ("DROP one row FROM THE PINS", "\n".join(rows[:-1]), body, FAIL, key_of(drop)),
+           ("DROP one row FROM THE CENSUS", body, "\n".join(rows[:-1]), FAIL, key_of(drop)),
+           ("RECLASS one row", "\n".join(f"{head} class={new} {rest}" if r == cls else r
+                                         for r in rows), body, FAIL,
+            f"{key_of(cls)}  class {new} -> {old}")]
+  bad = []
+  for name, pins, census, want, named in cases:
+    code, why = compare(pins, census)
+    ok = code == want and (named is None or (len(why) == 1 and named in why[0]))
+    print(f"--plant {name}: scored {code} naming {len(why)} movement(s) -- {'OK' if ok else 'FAILED'}")
+    for w in why:
+      print(f"    {w}")
+    if not ok:
+      bad.append(f"{name}: scored {code} naming {len(why)}, want {want}"
+                 + (f" naming {named!r}" if named else " naming nothing"))
+  if bad:
+    print("PIN PLANT FAILED: " + "; ".join(bad), file=sys.stderr)
+    return FAIL
+  print("--plant: order is not a claim; a key only one side has is, and so is a changed class")
+  return PASS
+
+
 def plant() -> int:
   """Move one site's upstream shape and require this file's rows to move with it.
 
@@ -509,6 +715,9 @@ def plant() -> int:
   tmp = ART / NAME / "plant"
   key = lambda rows: {f"{r['file']}:{r['line']}": r for r in rows}  # noqa: E731
   base, base_totals = census()
+  # FIRST, AND CHEAP: the pins-file plants need no tree copy, so a `copytree` failure must
+  # not be what decides whether the COMPARATOR was ever shown to be able to say no.
+  pinbad = pin_plants(render(base))
   base_map = key(base)
   bad = []
   for rel, defname, frm, to, want_from, want_to in nils.PLANTS:
@@ -550,8 +759,9 @@ def plant() -> int:
     if code != PASS:
       bad.append(f"{rel}: {'; '.join(why)}")
   shutil.rmtree(tmp, ignore_errors=True)
-  if bad:
-    print("PLANT FAILED: " + "; ".join(bad), file=sys.stderr)
+  if bad or pinbad != PASS:
+    if bad:
+      print("PLANT FAILED: " + "; ".join(bad), file=sys.stderr)
     return FAIL
   print(f"--plant: {len(nils.PLANTS)} direction(s) moved, and every opposite-expectation "
         f"score came back FAIL")
@@ -610,30 +820,56 @@ def main() -> int:
     for r in unasked[:10]:
       print(f"  {r['file']}:{r['line']} op={r['op']} proof={r['proof']}")
   if accept:
-    PINS.write_text(body)
-    print(f"re-pinned {len(rows)} rows into {rel(PINS)}")
+    # A RE-PIN THAT HIDES A COMPLAINT IS THE ONE MOVE THIS GATE MUST NOT MAKE, so the
+    # holes are checked BEFORE the write and not after it. MEASURED: the ordering this
+    # replaces returned PASS from `--accept` on a census carrying `nil-src/?` rows, which
+    # is the whole population the CPython lane could not classify, and wrote them into the
+    # pins where the next run compared them like any other row.
+    for hole in holes:
+      print(f"{NAME}: REFUSED: {hole}", file=sys.stderr)
+    if holes:
+      return REFUSED
+    # A KEY THAT LEFT IS WRITTEN DOWN AS ONE. `--accept` computes the tombstones from
+    # `PINS - body`, so no path is typed and the list cannot rot: it is this file's own
+    # diff, which is the only kind of population a pins file may hold.
+    was, live = index(PINS.read_text().splitlines()) if PINS.exists() else {}, index(body.splitlines())
+    gone = [live_of(was[k]) for k in sorted(was) if live_of(was[k]) and k not in live]
+    PINS.write_text(body + "".join(retire(r) + "\n" for r in gone))
+    print(f"re-pinned {len(rows)} row(s) into {rel(PINS)}"
+          + (f"; {len(gone)} key(s) RETIRED, not dropped: "
+             f"{[key_of(r) for r in gone]}" if gone else "; 0 retired"))
     return PASS
   pins = PINS.read_text() if PINS.exists() else ""
   if not pins:
     print(f"{NAME}: REFUSED: {rel(PINS)} is absent, so there is nothing to hold "
           f"this census to -- run with --accept to create it", file=sys.stderr)
     return REFUSED
-  if body != pins:
-    print(f"{NAME}: FAIL: {len(rows)} rows do not match {rel(PINS)} "
-          f"({len(body.splitlines())} now, {len(pins.splitlines())} pinned)")
-    now = body.splitlines()
-    was = pins.splitlines()
-    for a, b in zip(was + [""] * len(now), now + [""] * len(was)):
-      if a != b:
-        print(f"  pin  {a or '(absent)'}\n  now  {b or '(absent)'}")
+  code, why = compare(pins, body)
+  if code == FAIL:
+    print(f"{NAME}: FAIL: {len(rows)} rows against {rel(PINS)} -- "
+          f"{len(body.splitlines())} now, {len(pins.splitlines())} pinned, and these MOVEMENTS:")
+    for w in why:
+      print(f"  {w}")
     return FAIL
   for hole in holes:
     print(f"{NAME}: FAIL: {hole}", file=sys.stderr)
   if holes:
     return FAIL
+  was = index(pins.splitlines())
+  dead = [r for rs in was.values() for r in dead_of(rs)]
   print(f"{NAME}: PASS {len(rows)} rows, membership "
         f"{totals['declared_sites']}/{totals['declared_sites']}, "
         f"{totals['untracked']} untracked scratch site(s) named, pins agree")
+  if dead:
+    # LIVE-DERIVED, NEVER STORED: a tombstone carries no reason, because a pins file CANNOT
+    # TELL A FIX FROM A DELETION -- both are a key that is no longer detected. So the gate
+    # prints what it can measure about each, and says plainly what it cannot.
+    print(f"  {len(dead)} RETIRED key(s) in the pins -- each one a site this file once saw and "
+          f"does not see now. IT IS NOT A CLAIM THAT IT WAS FIXED:")
+    for r in dead:
+      here = totals["per_file"].get(key_of(r).rsplit(":", 1)[0], 0)
+      print(f"    {key_of(r)}  retired class={r.split('class=', 1)[1].split(' ', 1)[0]}  "
+            f"{key_of(r).rsplit(':', 1)[0]} now has {here} row(s)")
   return PASS
 
 
