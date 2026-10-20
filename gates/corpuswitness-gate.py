@@ -357,19 +357,33 @@ def main(argv=None) -> int:
                       recorded=got.get(differ.REPRO_SUBSTRATE, "ABSENT")[:16],
                       live=live[:16], declared_by="differ.REPRO_PINS+REPRO_SUBSTRATE"))
 
-  # --- THE VERDICT, REPORTED WITH ITS DENOMINATOR AND WITH THE NAME OF ITS JUDGE --------------
-  # REPORTED, NOT ASSERTED. These are `differ.unhealthy()`'s and `differ.PINS`' numbers; this
-  # gate prints them so a reader has them in one place, and names their judge so nobody mistakes
-  # a copy for a claim. `VERDICT_ROWS` is the sibling's declaration of which rows carry a
-  # denominator -- quoting `graphs-agree` without `graphs` is how a count stops being checkable.
+  # --- THE REPORTED VERDICT, DERIVED FROM COUNTS THE WITNESS ALREADY WROTE -------------------
+  # The state was the literal `True`, so a witness whose `repro-rc` said `rc=0` and whose
+  # `repro-identical` said `0` produced the same `state=OK` as one whose counts agreed. `cmd_repro`
+  # writes `repro-identical == repro-files` exactly when it writes `repro-rc=rc=0`. Those are
+  # different rows of the same witness: the reported word against the verdict the counts entail.
+  # OK only when they agree. A missing side is REFUSED (`NO-SUCH-ROW`), not OK -- an absence that
+  # reads OK is the literal back again. Not `repro_bad()` (that compares `repro-rc` to a pin) and
+  # not `claim` (claim does not read these two counts, so a coherent lie about them stays green
+  # there). `VERDICT_ROWS` is still reported, with its denominator, and is not what the state is.
   summary = C.rows_file(run)
   den = " ".join(f"{k}={summary.get(k, 'ABSENT')}" for k in C.VERDICT_ROWS)
-  rows.append(judge("verdict.reported", True, False,
-                    graphs=summary.get("graphs", "ABSENT"),
-                    agree=summary.get("graphs-agree", "ABSENT"),
-                    unhealthy=len(differ.unhealthy()), repro_bad=len(differ.repro_bad()),
-                    artefacts_ok=len(differ.artefacts_ok()),
-                    rows=den, judged_by="differ.unhealthy()+differ.PINS (NOT THIS GATE)"))
+  reported = got.get("repro-rc")
+  files, identical = got.get("repro-files"), got.get("repro-identical")
+  countable = (files is not None and identical is not None
+               and files.isdigit() and identical.isdigit())
+  derived = ("rc=0" if files == identical else "rc=1") if countable else None
+  report = {"graphs": summary.get("graphs", "ABSENT"),
+            "agree": summary.get("graphs-agree", "ABSENT"), "rows": den}
+  if reported is None or derived is None:
+    rows.append(judge("verdict.reported", False, True,
+                      reported=reported or "ABSENT", derived=derived or "NO-SUCH-ROW",
+                      verdict="NO-SUCH-ROW", **report))
+  else:
+    cohere = reported == derived
+    rows.append(judge("verdict.reported", cohere, False,
+                      reported=reported, derived=derived,
+                      verdict="AGREE" if cohere else "DISAGREE", **report))
 
   # --- WHAT IS CLAIMED. THE LINE, IN A ROW, SO IT CANNOT BE LOST IN PROSE. ---------------------
   # AND IT IS A DERIVATION, NOT A WORD. The row used to be `judge("claim", True, False,
@@ -410,8 +424,9 @@ def main(argv=None) -> int:
           f"# `differ.substrate_digest()`, never a timestamp. `witness.fresh` is `os.stat` and\n"
           f"# NOTHING ELSE, because `.gitignore:262:/runs/` makes every witness here invisible to\n"
           f"# `git status`. The `claim` row is the CONJUNCTION of the readings named in its\n"
-          f"# `conjuncts` field -- it is DERIVED, and it can go red. This gate claims REPRODUCIBLE\n"
-          f"# and does not measure CORRECTNESS.\n"
+          f"# `conjuncts` field -- it is DERIVED, and it can go red. `verdict.reported` derives\n"
+          f"# `repro-rc` from `repro-files` and `repro-identical` and goes red when they disagree.\n"
+          f"# This gate claims REPRODUCIBLE and does not measure CORRECTNESS.\n"
           + "\n".join(rows) + "\n")
   if not a.no_write:
     ART.mkdir(parents=True, exist_ok=True)

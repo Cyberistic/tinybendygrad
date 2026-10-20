@@ -37,6 +37,17 @@ own `repro-rc`, so two different witnesses make two different byte strings even 
 never moved. **THE CONTROL IS NOT OPTIONAL**: a two-sided test that only showed a DIFFERENCE would
 also pass if the gate printed a different row every time.
 
+AND THE PAIR THAT IS `verdict.reported`'S OWN:
+
+    J reported-disagrees  repro-rc stays rc=0, repro-identical != repro-files
+                          -> FAIL, DISAGREE, and `claim` stays OK
+    K reported-agrees     identical == files, rc=0 (the writer's success shape)
+                          -> PASS, AGREE                              <- J/K pair
+
+`J` KEEPS `repro-rc` ON THE PIN so `witness.substrate` cannot be what went red. The thing that
+moves is the count the reported word is derived from. `K` is the unbroken control: the same
+word, counts that entail it, and the row stays green.
+
 `C` IS THE HALF THAT HAD NO INSTRUMENT, AND THE PLANT PROVES IT IS NOT REDUNDANT. It also
 records what `checks/differ.py`'s OWN `repro_bad()` says about the planted tree, with `D`
 repointed at the plant's copy exactly as `differ.py:1538` does. On `C` every row, every
@@ -127,6 +138,11 @@ MUTANTS = (
     ("claim-row-ignores-the-readings",
      'cs = {n: state_of(by_name.get(n, "")) for n in CLAIM_CONJUNCTS}',
      'cs = {n: "OK" for n in CLAIM_CONJUNCTS}', "G-claim-row"),
+    # Caught by `J`: `verdict.reported` is the literal again, so a witness whose reported
+    # `repro-rc` and whose counts disagree still reads OK. The control (`K`) is the other side
+    # and must stay green against the UNMUTATED gate, not against this one.
+    ("verdict-reported-is-a-literal",
+     "cohere = reported == derived", "cohere = True", "J-reported-disagrees"),
     # Caught by `A`: the CLOCK no longer reads the filesystem. A clock that always reads 0 makes
     # every ordering comparison trivially TRUE, so `witness.fresh` would still read FRESH -- and
     # `freshness.source` is the only row in the tree that can see it.
@@ -198,14 +214,19 @@ def rewrite(path: pathlib.Path, keys, values: dict[str, str]) -> None:
   A planting helper that touches the second subject is a helper whose every case is two cases."""
   clock = os.stat(path)
   kept = []
+  seen = set()
   for line in path.read_text().splitlines():
     k, sep, _ = line.partition("=")
     if sep and k in values:
       kept.append(f"{k}={values[k]}")
+      seen.add(k)
     elif sep and k in keys:
       continue  # a declared row this case REMOVES
     else:
       kept.append(line)
+  # A value this case SETS that the witness did not have is appended. Dropping it would plant
+  # nothing and the case below would be green for the wrong reason.
+  kept.extend(f"{k}={v}" for k, v in values.items() if k not in seen)
   path.write_text("\n".join(kept) + "\n")
   os.utime(path, ns=(clock.st_atime_ns, clock.st_mtime_ns))
 
@@ -312,8 +333,11 @@ def suite(cvg, differ, src, repro_src) -> list[tuple[str, bool, str]]:
           repro_bad_note=False)
     check("D-ordered", PASS, {"witness.fresh": "FRESH", "claim": "REPRODUCIBLE"},
           {"verdict.current": "OK", "witness.substrate": "OK", "claim": "OK"}, mutate=shift(+NS))
-    check("E-absent-w2", REFUSED, {"verdict.current": "CURRENT", "claim": "NOT-MEASURED"},
-          {"witness.fresh": "REFUSED", "witness.substrate": "REFUSED", "claim": "REFUSED"},
+    check("E-absent-w2", REFUSED,
+          {"verdict.current": "CURRENT", "claim": "NOT-MEASURED",
+           "verdict.reported": "NO-SUCH-ROW"},
+          {"witness.fresh": "REFUSED", "witness.substrate": "REFUSED", "claim": "REFUSED",
+           "verdict.reported": "REFUSED"},
           mutate=lambda r1, r2, live: r2.unlink())
 
     # G -- THE HEADLINE MUST MOVE WHEN THE WITNESS MOVES. The `claim` row is the row EVERYBODY
@@ -329,6 +353,15 @@ def suite(cvg, differ, src, repro_src) -> list[tuple[str, bool, str]]:
     # DIFFERENCE would also pass if the gate printed a different row every time -- so the control
     # requires two witnesses that AGREE to produce the SAME row, byte for byte. A harness that
     # cannot show both is a harness that measured the noise.
+    #
+    # J/K -- `verdict.reported`, THE SAME SHAPE. The row used to be `judge(..., True, False)`,
+    # so it could not go red. `J` keeps `repro-rc=rc=0` (the pin, so `witness.substrate` and
+    # therefore `claim` stay green) and sets `repro-identical` to a count that is not
+    # `repro-files`. The derived verdict is then `rc=1` and the reported word is `rc=0`. `K`
+    # is the writer's own success shape -- identical == files, rc=0 -- and must stay green.
+    # `repro-rc` is NOT what moves between them; the counts are. A plant that also flipped
+    # `repro-rc` would be caught by `witness.substrate` and would have proved nothing about
+    # this row.
     g1, g2 = stage("G-claim-reproducible")
     h1, h2 = stage("H-claim-not-reproducible")
     i1, i2 = stage("I-claim-control")
@@ -371,6 +404,30 @@ def suite(cvg, differ, src, repro_src) -> list[tuple[str, bool, str]]:
     results.append(("G-claim-row", not bad,
                     "; ".join(bad) or f"G rc={g_rc} H rc={h_rc} I rc={i_rc}; G={g_v[0]}/{g_v[1]} "
                                      f"H={h_v[0]}/{h_v[1]} I==G"))
+
+    def repro_counts(path):
+      return dict(ln.split("=", 1) for ln in path.read_text().splitlines() if "=" in ln)
+
+    def with_counts(identical_of):
+      """Plant `repro-rc=rc=0` and a chosen `repro-identical`, leaving the pin's other rows.
+
+      `rc=0` is the pin, so `witness.substrate` stays green and a red here is THIS row. The
+      files count is the witness's own when it is a positive integer, else `2` -- a zero-file
+      witness would make `identical=0` agree, and the disagreement would not have been planted."""
+      def go(r1, r2, live):
+        files = repro_counts(r2).get("repro-files", "2")
+        if not files.isdigit() or files == "0":
+          files = "2"
+        rewrite(r2, {"repro-files", "repro-identical", "repro-rc"}, {
+            "repro-files": files, "repro-identical": identical_of(files), "repro-rc": "rc=0"})
+      return go
+
+    check("J-reported-disagrees", FAIL, {"verdict.reported": "DISAGREE", "claim": "REPRODUCIBLE"},
+          {"verdict.reported": "FAIL", "claim": "OK", "witness.substrate": "OK"},
+          mutate=with_counts(lambda files: "0"))
+    check("K-reported-agrees", PASS, {"verdict.reported": "AGREE", "claim": "REPRODUCIBLE"},
+          {"verdict.reported": "OK", "claim": "OK", "witness.substrate": "OK"},
+          mutate=with_counts(lambda files: files))
 
     # F -- THE PLANT'S OWN NEGATIVE CASE. `A`'s bytes, one expectation deliberately WRONG.
     r1, r2 = stage("F-harness-selftest")
