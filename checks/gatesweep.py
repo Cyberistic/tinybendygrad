@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gatesweep.py -- run the gate population under a watchdog and tally the FIVE verdicts.
 
-    .venv/bin/python checks/gatesweep.py --plan           # the population and the control, run nothing
+    .venv/bin/python checks/gatesweep.py --plan           # the population, the control, and the PROJECTION
     .venv/bin/python checks/gatesweep.py --plan --suffix  # ... of the OLD suffix set alone
     .venv/bin/python checks/gatesweep.py --prove          # classify REAL captured outcomes, run nothing
     .venv/bin/python checks/gatesweep.py --selftest       # drive the loop on SYNTHETIC gates, temp-dir
@@ -31,6 +31,14 @@ was indistinguishable from one that agreed (PASS, 0). Four faults, and each is a
               test from that same module's `entry_reason()`, so a second copy of the vocabulary
               cannot rot beside the first. A literal list is not a population; neither is the
               foreign glob; and `gate_homes()` is how the walk stays auditable.
+  PROJECTION  the two populations this file prints COME FROM TWO INSTRUMENTS WITH TWO WALK RULES
+              -- this walk descends and prunes dotted names, `gates-pop.discover()` is `iterdir()`,
+              immediate and dotted-kept -- and until `project()` existed NOTHING BRIDGED THEM, so a
+              reader saw two numbers and concluded the instruments disagreed. `project()` derives
+              each term from its OWN side's rule and prints the two numbers' difference AS VALUES
+              with every name, beside the numbers they explain. **NOT A SET DIFFERENCE:** that
+              identity is true of any two sets and would print `HELD` for ever. **NOT A MERGE:**
+              merging the walks makes both terms zero and destroys the projection.
   WATCHDOG    every gate runs THROUGH `checks/bounded.py`, so a hung or hungry gate is killed and
               its PEAK is reported. The kill's own TOKEN (KILLED-ON-MEMORY / TIMED-OUT /
               NOT-STARTED / NO-VERDICT) is read -- never the exit status, which the watchdog's own
@@ -129,17 +137,91 @@ def _load(name: str, path: Path):
     return module
 
 
-def control(root: Path = ROOT) -> str:
-    """`gates/gates-pop.py:discover()`, the denominator the walk is checked against.
+def control(root: Path = ROOT) -> tuple[list[Path], list[Path]]:
+    """`gates/gates-pop.py:discover()` -- `(entries, modules)`, the OTHER WALK, UNFORMATTED.
 
     `discover()` answers a DIFFERENT question -- "every entry point in both gate homes" -- and it
     re-parses the tree, emitting `gates-pop.py`'s own `SyntaxWarning`s. Those are not this run's
     subject, so they are silenced here and not allowed into a console whose verdicts matter.
+
+    **THE MEMBERS, NOT ONLY THE COUNT, BECAUSE `project()` BRIDGES THE TWO WALKS AND A COUNT
+    CANNOT BE BRIDGED WITH.** This used to return a finished string, which is what left the
+    difference between the two numbers to be carried by a prose fragment in
+    `checks/oracle-txt-census.py` -- a figure printed nowhere beside the numbers it explains.
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        entries, libs = gpop.discover(root)
-    return f"{len(entries)} entries + {len(libs)} modules"
+        return gpop.discover(root)
+
+
+def project(here: list[Path], there: list[Path], home_dirs: set[Path]) -> dict:
+    """HOW `WALK` AND `CONTROL` DIFFER, AS VALUES: `deep`, `dot`, `bridged`, `held`, and a residue.
+
+    THE DEFECT THIS EXISTS FOR. The two numbers this file prints come from two instruments with
+    two walk rules -- `walk()` is `os.walk`, RECURSIVE, with dotted names pruned; `discover()` is
+    `iterdir()`, IMMEDIATE ONLY, dotted names KEPT -- and until now NOTHING bridged them, so a
+    reader seeing `WALK 271` and `CONTROL 273` concludes the instruments DISAGREE. They do not.
+    **Both walks are correct and both are what they claim, so MERGING THEM WOULD DESTROY THIS
+    FUNCTION BY MAKING BOTH TERMS ZERO. THE DIFFERENCE IS THE USEFUL PART; DO NOT "FIX" IT.**
+
+    **THE TERMS COME FROM EACH WALK'S OWN RULE AND NEVER FROM THE OTHER WALK'S SET, AND THAT IS
+    THE WHOLE OF IT.** `deep` is every `here` member that is not an immediate child of a home --
+    the WALK's depth rule, measured on the WALK. `dot` is every `there` member with a dotted name
+    -- the CONTROL's dot rule, measured on the CONTROL. `bridged` is `len(here) - len(deep) +
+    len(dot)` and `held` says whether it EQUALS `len(there)`.
+
+    **A PROJECTION BUILT AS A SET DIFFERENCE WOULD BE A TAUTOLOGY THAT PRINTS `HELD` FOREVER.**
+    `len(W) - len(W - C) + len(C - W) == len(C)` is an identity of set theory -- true for ANY two
+    sets, true of two trees with nothing in common -- so a bridge built that way cannot fail and
+    a reader would read agreement into a constant. Deriving each term from its own side's rule is
+    what makes `held` a CLAIM: *these two instruments differ by these two rules and by no third.*
+    The residue is what a third reason looks like when one exists -- `extra` is a `here` member
+    the control lacks for a reason that is NOT depth and `stray` is a `there` member the walk
+    lacks for a reason that is NOT a dotted name -- and both are EMPTY on this tree. MEASURED
+    2026-10-20 by `.venv/bin/python checks/gatesweep.py --plan`, and THE TREE MOVED TWICE WHILE
+    THIS WAS BEING WRITTEN, WHICH IS THE PROOF THAT THE TERMS ARE MEASURED: at 00:19Z `WALK 271`,
+    `CONTROL 273`, `deep 2`, `dot 4`, `bridged 273`, `extra 0`, `stray 0`; at 00:21Z, after
+    another unit landed `gates/banner-emit-gate.py` and one more entry, `WALK 273`, `CONTROL 275`,
+    `bridged 275`, **`deep` and `dot` UNCHANGED** -- two new members, both immediate and undotted,
+    which is exactly what a held projection says. `dot` was **5** in the brief that asked for this
+    and is **4** in both readings -- `gates/.wgsl-mut-oracle.py` is gone -- so neither term is
+    typed, and a constant that must be edited when the world changes is a list that rots.
+    """
+    a, b = set(here), set(there)
+    deep = sorted(p for p in a if p.parent not in home_dirs)
+    dot = sorted(p for p in b if p.name.startswith("."))
+    bridged = len(a) - len(deep) + len(dot)
+    return {"walk": len(a), "control": len(b), "deep": deep, "dot": dot, "bridged": bridged,
+            "held": bridged == len(b),
+            "extra": sorted((a - b) - set(deep)), "stray": sorted((b - a) - set(dot))}
+
+
+def bridge(proj: dict, root: Path) -> None:
+    """PRINT `project()`'s values, EVERY NAME, so the two printed numbers are never read apart.
+
+    The names are the point. `dot` is another unit's in-flight scratch under `checks/`, and a
+    reader told only "the control keeps 4 more" cannot tell a scratch file from a gate; the
+    `deep` names are the two TRACKED `gates/oracles/*.sh`, which is the same fact behind the
+    19-vs-21 shell count `gates-pop` and `population()` used to report as a bare disagreement.
+
+    The residue prints ONLY when it is non-empty, because its absence is the claim and printing
+    `-> 0` twice would be noise dressed as evidence. When it IS non-empty the walk and the control
+    differ by a THIRD rule -- the two `ENTRIES` tuples, one per file, are the live candidate -- and
+    `held` is False, which is the only reading of a `DIFFERS BY` line a reader needs.
+    """
+    gap = proj["bridged"] - proj["control"]
+    print(f"PROJECTION : {proj['walk']} - {len(proj['deep'])} deeper + {len(proj['dot'])} dotted "
+          f"= {proj['bridged']} == CONTROL({proj['control']}) -> "
+          f"{'HELD' if proj['held'] else f'DIFFERS BY {gap:+d}'}")
+    for label, term, why in (("DEEPER", "deep", "walk DESCENDS, control is iterdir() immediate"),
+                             ("DOTTED", "dot", "walk PRUNES dotted, control keeps them"),
+                             ("UNEXPLAINED-WALK", "extra", "neither rule: a THIRD difference"),
+                             ("UNEXPLAINED-CONTROL", "stray", "neither rule: a THIRD difference")):
+        if not proj[term] and term in ("extra", "stray"):
+            continue
+        print(f"  {label:<19}: {why:<45} -> {len(proj[term])}")
+        for p in proj[term]:
+            print(f"                     {p.relative_to(root)}")
 
 
 gatekit = _load("gw_gatekit", GATES / "gatekit.py")     # the FIVE, and `VERDICT`
@@ -491,16 +573,18 @@ def artifact_census(root: Path = ROOT, pop: list[tuple[Path, str]] | None = None
 
 
 def report(root: Path = ROOT) -> list[tuple[Path, str]]:
-    """Print the FOUR DENOMINATORS, then return the population. Every number is derived here.
+    """Print the DENOMINATORS, then return the population. Every number is derived here.
 
-    THE ROWS, AND WHY THERE ARE FOUR. `WALK` is what this file now sweeps. `SUFFIX` is the old
+    THE ROWS, AND WHY THERE ARE SIX. `WALK` is what this file now sweeps. `SUFFIX` is the old
     question, asked and answered beside it so the widening is a number rather than an intention.
     `BEFORE` is what this file ACTUALLY swept before the change -- the walk hard-coded to one
     home -- and it is a third number because the two defects are independent: MEASURED, 9 of the
     gap is 9 CONFORMING `checks/*-gate.py` files the suffix had already approved and the home
     could not reach, so quoting only `WALK - SUFFIX` would attribute them to the suffix. `DELTA`
     is the gap split into its two causes, because the remedies differ: a NAME costs a rename the
-    brief forbids and a HOME costs nothing at all.
+    brief forbids and a HOME costs nothing at all. `CONTROL` is the other instrument, and
+    `PROJECTION` is the BRIDGE between it and `WALK` -- the sixth row, and the one that makes the
+    other five readable: without it two populations printed one under the other are two verdicts.
     """
     hs = homes(root)
     if not hs:
@@ -514,9 +598,12 @@ def report(root: Path = ROOT) -> list[tuple[Path, str]]:
     files = sum(1 for p in _all_files(root, hs) if p.name.endswith(SUFFIX))
     by_name, by_home = len(pop) - len(sfx), len(sfx) - len(before)
     try:
-        control_line = control(root)
+        entries, modules = control(root)
     except Exception as exc:                      # a control that cannot run is named, not zero
-        control_line = f"UNAVAILABLE ({type(exc).__name__})"
+        print(f"CONTROL   : gates-pop.discover() -> UNAVAILABLE ({type(exc).__name__})")
+        print("PROJECTION : REFUSED, NOT A VERDICT -- one walk is missing, and a bridge between "
+              "one walk\n              and nothing is the number beside it written twice.")
+        return pop
     print(f"HOMES     : gate_homes() -> {', '.join(hs)}  (MEASURED, not named here)")
     print(f"PRUNED    : dotted entries the walk skips                 -> {pruned}")
     print(f"WALK      : entry points in every derived home            -> {len(pop)}")
@@ -525,8 +612,9 @@ def report(root: Path = ROOT) -> list[tuple[Path, str]]:
     print(f"BEFORE    : `-gate.py` in the one home this file walked   -> {len(before)}")
     print(f"DELTA     : {len(pop)} - {len(before)} = +{len(pop) - len(before)}"
           f"   (+{by_name} by NAME, +{by_home} by HOME)")
-    print(f"CONTROL   : gates-pop.discover() -> {control_line}")
+    print(f"CONTROL   : gates-pop.discover() -> {len(entries)} entries + {len(modules)} modules")
     print("            (immediate files only; the walk descends, and `gates/oracles/` is tracked)")
+    bridge(project([p for p, _ in pop], entries, {root / h for h in hs}), root)
     return pop
 
 
@@ -547,7 +635,8 @@ def _all_files(root: Path, hs: tuple[str, ...]):
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--plan", action="store_true", help="print the population and the control")
+    ap.add_argument("--plan", action="store_true",
+                    help="print the population, the control, and the PROJECTION between them")
     ap.add_argument("--prove", action="store_true", help="classify real captured outcomes")
     ap.add_argument("--selftest", action="store_true", help="drive the loop on synthetic gates")
     ap.add_argument("--plant", action="store_true",
@@ -657,6 +746,12 @@ def guarded(body: str) -> str:
 UNCONFORMING = "nonconforming.py"     # an entry guard, and a name that is NOT `-gate.py`
 SCRIPT = "script-no-main.py"          # THE SAME PROGRAM with the guard REMOVED
 SCRIPT_SRC = 'print("ok")\n'
+# THE BRIDGE FIXTURES: one member per RULE the two walks differ by, planted at a KNOWN depth, so
+# `project()`'s terms are measured against a world that MOVED and not against a constant.
+WITNESS = "home-witness.py"           # certifies the synthetic tree's home (see below)
+DEEPER = "oracles/planted-deeper.py"  # a SUBDIRECTORY member: the walk descends, `iterdir()` cannot
+DOT_A, DOT_B = ".tmp-plant-a.py", ".tmp-plant-b.py"   # dotted members: pruned by the walk, kept
+THIRD = "third-reason.py"             # immediate, undotted, and DENIED the control: a THIRD rule
 
 
 def selftest(plant: bool = False) -> int:
@@ -675,7 +770,8 @@ def selftest(plant: bool = False) -> int:
     instead of argued in prose. **A WIDER WALK IS NOT A COMPLETE ONE, AND ONLY A FIXTURE PROVES
     IT**, because on the live tree every member is named to suit.
 
-    `plant=True` MISLABELS THE EXPECTATIONS ON PURPOSE -- one verdict and one width. A selftest
+    `plant=True` MISLABELS THE EXPECTATIONS ON PURPOSE -- one verdict, one width, and one bridge.
+    A selftest
     that cannot go red is a claim with no counterexample, so the mutation is a flag on the same
     code path rather than a second harness: `.venv/bin/python checks/gatesweep.py --selftest
     --plant` MUST return 1.
@@ -719,6 +815,85 @@ def selftest(plant: bool = False) -> int:
                         sample is not None and sample[1] and 1 <= sample[0] < len(PLANTS),
                         f"read {sample} (rows, sweep-alive) mid-sweep"
                         if sample else "never saw a row on disk before the sweep exited"))
+
+        # THE BRIDGE PLANT: the two walks DIFFER BY A KNOWN AMOUNT, AND THE PROJECTION MUST MOVE.
+        # `gates-pop.py`'s OWN home witness is LOADED BY PATH and never transcribed -- it is the
+        # same `GOOD_ROOT` that module's plants write, and a synthetic tree that certifies no home
+        # gets `discover() -> 0, 0`, which is `artefacts_ok()`'s shape and would leave every term
+        # below vacuously satisfied.
+        (root / "gates" / WITNESS).write_text(gpop.GOOD_ROOT)
+        hs = homes(root)
+        home_dirs = {root / h for h in hs}
+
+        def reading() -> dict:
+            """Both walks over the synthetic tree -- THE SAME PAIR `report()` bridges."""
+            return project([p for p, _ in walk(root, hs)], control(root)[0], home_dirs)
+
+        base = reading()
+        (root / "gates" / DEEPER).parent.mkdir(parents=True)
+        (root / "gates" / DEEPER).write_text(guarded('print("ok")'))
+        for dotted in (DOT_A, DOT_B):
+            (root / "gates" / dotted).write_text(guarded('print("ok")'))
+        moved = reading()
+        for planted in (DEEPER, DOT_A, DOT_B):        # RESTORE, because `TemporaryDirectory` is
+            (root / "gates" / planted).unlink()       # the only control this case has
+        (root / "gates" / DEEPER).parent.rmdir()
+        restored = reading()
+        want_deep, want_dot = len(base["deep"]) + 1, len(base["dot"]) + 2
+        if plant:
+            want_deep += 1                            # the third planted lie, on the bridge
+        bridge_ok = (hs == HOMES and base["walk"] == len(PLANTS) + 1
+                     and base["held"] and base["deep"] == [] and base["dot"] == []
+                     and moved["held"] and len(moved["deep"]) == want_deep
+                     and len(moved["dot"]) == want_dot
+                     and moved["deep"] == [root / "gates" / DEEPER]
+                     and [p.name for p in moved["dot"]] == [DOT_A, DOT_B]
+                     and moved["walk"] == base["walk"] + 1
+                     and moved["control"] == base["control"] + 2
+                     and restored == base)
+        results.append(("BRIDGE: the two walks differ by DEPTH and by DOTTED NAMES, the projection "
+                        "MOVES by exactly those amounts, and RESTORING the copy puts it back",
+                        bridge_ok,
+                        f"homes {hs} from the planted {WITNESS}; base walk {base['walk']} "
+                        f"control {base['control']} deep {len(base['deep'])} dot "
+                        f"{len(base['dot'])} bridged {base['bridged']} held {base['held']}"
+                        f" -> +{DEEPER} +{DOT_A} +{DOT_B} -> walk {moved['walk']} control "
+                        f"{moved['control']} deep {len(moved['deep'])} (want {want_deep}) dot "
+                        f"{len(moved['dot'])} (want {want_dot}) bridged {moved['bridged']} held "
+                        f"{moved['held']} -> restored == base: {restored == base}"
+                        if bridge_ok else
+                        f"homes {hs} want {HOMES}; base {base} want walk {len(PLANTS) + 1}; "
+                        f"moved deep {len(moved['deep'])}/{want_deep} dot "
+                        f"{len(moved['dot'])}/{want_dot} walk {moved['walk']}/{base['walk'] + 1} "
+                        f"control {moved['control']}/{base['control'] + 2}; "
+                        f"restored == base: {restored == base}"))
+
+        # THE FALSIFICATION, AND IT IS THE CLAUSE THAT MAKES `held` A MEASUREMENT. A file cannot
+        # make the two walks disagree on its own -- they share `entry_reason` -- so the third
+        # reason is PLANTED: an immediate, undotted member the control is DENIED. Neither rule can
+        # explain it, so `extra` is non-empty and `held` is FALSE. **A check that cannot go red is
+        # a constant wearing a check's name**, and `held` computed as a set difference would be
+        # exactly that -- see `project()`.
+        (root / "gates" / THIRD).write_text(guarded('print("ok")'))
+        lying = project([p for p, _ in walk(root, hs)],
+                        [p for p in control(root)[0] if p != root / "gates" / THIRD], home_dirs)
+        (root / "gates" / THIRD).unlink()
+        (root / "gates" / WITNESS).unlink()          # the WIDTH plant's base is `len(PLANTS)` alone
+        lies_ok = (not lying["held"] and lying["extra"] == [root / "gates" / THIRD]
+                   and lying["deep"] == [] and lying["dot"] == [] and lying["stray"] == [])
+        results.append(("FALSIFICATION: a THIRD difference the two rules cannot explain makes "
+                        "`held` FALSE and NAMES the member -- so `HELD` is not a constant",
+                        lies_ok,
+                        f"{THIRD} denied the control -> held {lying['held']} bridged "
+                        f"{lying['bridged']} vs control {lying['control']} "
+                        f"(DIFFERS BY {lying['bridged'] - lying['control']:+d}); extra "
+                        f"{[p.name for p in lying['extra']]}, deep {len(lying['deep'])}, dot "
+                        f"{len(lying['dot'])}, stray {len(lying['stray'])}"
+                        if lies_ok else
+                        f"held {lying['held']} bridged {lying['bridged']} control "
+                        f"{lying['control']} extra {[p.name for p in lying['extra']]} "
+                        f"(want [{THIRD}]) deep {len(lying['deep'])} dot {len(lying['dot'])} "
+                        f"stray {len(lying['stray'])}"))
 
         # THE WIDTH PLANT, BOTH DIRECTIONS. `base` is the walk over the fixtures ALONE, so every
         # expected number below is `len(PLANTS)` -- a declared constant -- and never the observed
