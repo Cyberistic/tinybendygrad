@@ -64,6 +64,9 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "gates"))
+from gatekit import DEAD, REFUSED  # noqa: E402
+
 GATES = ("banner-gate.py", "banner-emit-gate.py", "gatekit.py")
 LANE = ".agents/slop/e2e_port/run-port-mm.sh"
 CENSUS = ".agents/slop/e2estage8/verdicts.py"
@@ -111,7 +114,7 @@ def scratch() -> tuple[Path, int]:
 
 
 def read_out(tmp: Path, gate: str) -> tuple[int, str]:
-    """`(exit, stdout+stderr)` of one gate, run IN the scratch tree under the venv's interpreter."""
+    """`(exit, stdout+stderr)` of one gate, run IN the scratch tree under this interpreter."""
     p = subprocess.run([sys.executable, str(tmp / "gates" / gate)], capture_output=True, text=True,
                        cwd=str(tmp))
     return p.returncode, p.stdout + p.stderr
@@ -126,8 +129,13 @@ def c1_of(out: str) -> str:
 
 
 def emit_of(out: str) -> str:
-    """`banner-emit-gate.py` has ONE claim, so its EXIT is that claim."""
-    return "FAIL" if "banner-emit-gate: FAIL" in out else "PASS"
+    """`banner-emit-gate.py` has ONE claim, so its EXIT is that claim; the token is read off the
+    summary line rather than inferred from the presence of the word FAIL, because a DEAD or REFUSED
+    run says nothing about the claim and `SKIP IS NOT PASS`."""
+    for line in out.splitlines():
+        if line.startswith("banner-emit-gate: ") and " -- " in line:
+            return line.split("banner-emit-gate: ")[1].split(" -- ")[0]
+    return "?"
 
 
 def printed(tmp: Path, plant: str) -> tuple[dict[str, str], bool]:
@@ -146,6 +154,16 @@ def printed(tmp: Path, plant: str) -> tuple[dict[str, str], bool]:
     return got, any(ns["HEADER"].match(ln) for ln in got["zsh"].splitlines())
 
 
+def row(ok: bool, label: str) -> bool:
+    """ONE arm line, and the row IS the record: the verdict token goes in the label and the boolean
+    is returned so `main` can fold it into the count. Written as a helper because an f-string
+    replacement field holding an implicit concatenation is 3.12-ONLY syntax (`ruff`'s
+    `invalid-syntax` on 3.11), which is how three arms of this file were briefly unparseable
+    anywhere but the venv."""
+    print(f"  {'OK  ' if ok else 'FAIL'} {label:<62}")
+    return ok
+
+
 def main() -> int:
     falsify = "--falsify" in sys.argv[1:]
     results: list[bool] = []
@@ -155,9 +173,7 @@ def main() -> int:
         base = lane.read_text()
 
         c, out = read_out(tmp, "banner-emit-gate.py")
-        results.append(c == 0)
-        print(f"  {'OK  ' if c == 0 else 'FAIL'} {'CONTROL the unplanted tree is clean':<52} "
-              f"(banner-emit-gate exit {c})")
+        results.append(row(c == 0, f"CONTROL the unplanted tree is clean (exit {c})"))
 
         for name, plant, want_c1, want_bytes, want_emit in ARMS:
             lane.write_text(base + "\n" + plant + "\n")
@@ -170,21 +186,44 @@ def main() -> int:
             if falsify and name == "1 POSITIVE":           # THE PLANT, SHOWN ABLE TO FAIL
                 ok_b, ok_e, ok_x = not ok_b, not ok_e, not ok_x
             results += [ok_b, ok_e, ok_x]
-            print(f"  {'OK  ' if ok_b and ok_e and ok_x else 'FAIL'} "
-                  f"{name} planted into {Path(LANE).name:<44} "
-                  f"banner-gate C1={c1_of(bout)} (want {want_c1}) "
-                  f"banner-emit={emit_of(eout)} (want {'FAIL' if want_emit else 'PASS'}) "
-                  f"real bytes match HEADER={matches} (want {want_bytes})")
+            row(ok_b and ok_e and ok_x,
+                f"{name} -> banner-gate C1={c1_of(bout)} (want {want_c1}), "
+                f"banner-emit={emit_of(eout)} (want {'FAIL' if want_emit else 'PASS'}), "
+                f"real bytes match HEADER={matches} (want {want_bytes})")
+
         lane.write_text(base)
         code, out = read_out(tmp, "banner-emit-gate.py")
-        got = [ln for ln in out.splitlines() if ln.startswith("---   ")]
-        whole = code == 0 and len(got) == n_lanes
-        results.append(whole)
-        label = f"CONTROL the lane was restored and the walk still reports {n_lanes} lane(s)"
-        print(f"  {'OK  ' if whole else 'FAIL'} {label:<52}")
-        same = (ROOT / LANE).read_text() == base
-        results.append(same)
-        print(f"  {'OK  ' if same else 'FAIL'} {'CONTROL the REAL tree was never written':<52}")
+        n_rows = len([ln for ln in out.splitlines() if ln.startswith("---   ")])
+        results.append(row(code == 0 and n_rows == n_lanes,
+                           f"CONTROL the lane was restored; the walk reports {n_rows} of {n_lanes} "
+                           f"lane(s)"))
+
+        # THE TWO EXITS NOBODY READS, RUN. `banner-emit-gate.py` writes a DEAD branch and a REFUSED
+        # branch and nothing in this tree can reach either: the walk only comes up empty if
+        # `checks/e2e.py` loses its `stage([...])` call sites, and the REFUSED guard only fires away
+        # from a repo root. **A BRANCH THAT HAS NEVER RUN IS NOT A VERDICT, IT IS A COMMENT**, so both
+        # are provoked here in the scratch and the exits are exercised rather than quoted.
+        e2e = tmp / "checks/e2e.py"
+        kept = e2e.read_text()
+        e2e.write_text("# a gate with no `stage([...])` call site in it at all\n")
+        bcode, _ = read_out(tmp, "banner-gate.py")
+        ecode, eout = read_out(tmp, "banner-emit-gate.py")
+        results.append(row(bcode == DEAD and ecode == DEAD and emit_of(eout) == "DEAD"
+                           and "compared nothing" in eout,
+                           "DEAD no `stage([...])` call site: both gates exit DEAD, not PASS"))
+        e2e.write_text(kept)
+        (tmp / "pyproject.toml").unlink()
+        bcode, bout = read_out(tmp, "banner-gate.py")
+        ecode, eout = read_out(tmp, "banner-emit-gate.py")
+        results.append(row(bcode == REFUSED and ecode == REFUSED
+                           and "NOT A VERDICT" in bout and "NOT A VERDICT" in eout,
+                           "REFUSED not at a repo root: both gates exit REFUSED, not FAIL"))
+        (tmp / "pyproject.toml").write_text("# the scratch root's only job is to exist\n")
+        code, _ = read_out(tmp, "banner-emit-gate.py")
+        results.append(row(code == 0, "CONTROL restored: the scratch is back to a clean PASS"))
+
+        results.append(row((ROOT / LANE).read_text() == base,
+                           "CONTROL the REAL tree was never written"))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     print(f"--- {sum(results)} of {len(results)} arm(s) behaved as required"
