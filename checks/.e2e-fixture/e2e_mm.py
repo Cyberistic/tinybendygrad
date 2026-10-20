@@ -158,13 +158,22 @@ def name_of(buf):
   return _names[key]
 
 
+def launch_vals(prg, var_vals):
+  # ProgramInfo.vals is gone. kernel_params replaced it; only variables are
+  # vals. A buffer param's name is None and .expr asserts.
+  try:
+    return [var_vals[p.expr] for p in prg.kernel_params if p.is_variable]
+  except KeyError as e:
+    raise RuntimeError(f"unbound Variable {e}") from None
+
+
 def traced_exec_kernel(ctx, call, ast, devices=None):
   resolved = RZ.resolve_params(call, ctx.input_uops)
   for device, (bufs, device_vars) in zip(devices or RZ.to_tuple(call.src[1].device),
                                          RZ.unwrap_multi(call, [resolved[i] for i in ast.arg.globals])):
     var_vals = {**ctx.var_vals, **device_vars}
     g, l = ast.arg.launch_dims(var_vals)
-    rec = {"names": [], "global": list(g), "local": list(l), "vals": list(ast.arg.vals(var_vals))}
+    rec = {"names": [], "global": list(g), "local": list(l), "vals": launch_vals(ast, var_vals)}
     prg = to_program(ast.src[0], renderer)          # the SAME ast, rendered to WGSL
     src = [str(u.arg) for u in prg.src if u.op is Ops.SOURCE]
     rec["wgsl"] = src[0]
