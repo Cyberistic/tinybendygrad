@@ -1216,6 +1216,29 @@ freshness-reach [###.....] 1/3  **A GOVERNING DOCUMENT'S CLAIM WAS HALF FALSE WH
                                        (`.gitignore:262`), so their verdict can only be `REFUSED,
                                        ARTIFACTS-ABSENT` -- VISIBLE, BUT NOT GREEN.**
 
+all-three-green [##########] 3/3  **2026-10-20T20:40Z: THE CORPUS IS GREEN, REPRODUCIBLE, **AND CURRENT** --
+                                       ALL THREE AT ONCE, AND MEASURED **AFTER** THE `nn` CHANGES, SO THE
+                                       `conv2d` ROW'S 51->55 NODE MOVE NEEDED NO RE-PIN.** The re-take
+                                       ran under the sum-precondition: `bend` peak **643 MiB** against
+                                       a **9.6 GiB** (60% of 16 GiB) allowance, and 2 other processes
+                                       and nothing compiling. **`REPRO: 310 of 310 files identical
+                                       across two clean runs`, rc=0.**
+                                       **`unhealthy() -> 0`, `artefacts_ok() -> 0`, `repro_bad() -> 0`**,
+                                       and the substrate is COHERENT rather than merely green:
+                                       **`substrate-start == substrate-end == repro-substrate ==
+                                       10a0de50f`** (ONE substrate across the whole run) and
+                                       **`substrate-head == cd450ea61 == HEAD`** (the commit it was
+                                       taken ON). `d10-transcript=9bfb8517...` is the pin this
+                                       session's `d10-guard` row has been waiting on since 2026-10-15.
+                                       **THE LESSON OF THE LAST FOUR DAYS, IN ONE LINE: A GREEN CORPUS IS
+                                       NOT A CERTIFICATE UNTIL THE TREE STOPS MOVING** -- it was green at
+                                       00:16Z and stale within the hour, because a unit was porting
+                                       `tinybendygrad/extra/` and every `.bend` edit moves
+                                       `substrate_digest()`. **SO THE THREE THINGS THAT MUST HOLD
+                                       TOGETHER ARE: the verdict, the reproducibility, AND THE
+                                       SUBSTRATE'S IDENTITY -- AND ONLY THE THIRD SAYS WHETHER THE FIRST
+                                       TWO ARE ABOUT THE TREE AS IT STANDS.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
