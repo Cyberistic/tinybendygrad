@@ -1,0 +1,17 @@
+bendexec1 13 3
+1: PARAM f32 k:param:4:g
+2: PARAM f32 k:param:4:g
+3: PARAM f32 k:param:4:g
+4: CONST weakint c:0
+5: CAST i32 - 4
+6: INDEX f32 - 2 5
+7: LOAD f32 - 6
+8: INDEX f32 - 3 5
+9: LOAD f32 - 8
+10: INDEX f32 - 1 5
+11: ADD f32 - 7 9
+12: STORE void - 10 11
+13: SINK void - 12
+4 efbeadde
+4 0000803f
+4 00000040

@@ -5,13 +5,26 @@
 `checks/e2e.sh` is the shell body this port replaces, and it is still runnable: its root is ASSERTED
 (`pyproject.toml` + `tinybendygrad/`) rather than computed by `../..`, which was correct at
 `.agents/slop/` and resolved to the repo's PARENT from `checks/`. The shell's body is frozen at
-`.agents/slop/e2epy/oracle-e2e.sh` as the ORACLE this port is diffed against, because the rule this
+`checks/.e2e-fixture/e2epy/oracle-e2e.sh` as the ORACLE this port is diffed against, because the rule this
 project wrote for itself is that the Python reproduces the shell's verdict on EVERY INPUT or it does
 not move. That oracle differs from `checks/e2e.sh` by exactly the edits `ORACLE_EDITS` declares --
 one pair per call site, applied in order, the FIRST of which is the `ROOT` preamble, because a fixture
 tree has no `pyproject.toml` for the assertion to find -- and both shas are pinned in `ORACLE_SHA` and
 `BODY_SHA`, CHECKED IN CODE on every run, refusing with exit 3 on drift. A pin in a comment is a pin
 that cannot fail, and `checks/differ.py` measured that lesson the hard way.
+
+**THE FIXTURE LIVES IN GIT BESIDE THIS GATE, AND IT USED TO LIVE IN A TREE BEING PRUNED.**
+Every stage input is under `checks/.e2e-fixture/`, not under `.agents/slop/`, which is being
+pruned and holds no protection: a gate's REQUIRED INPUT belongs beside the gate IN GIT, and
+`AGENTS.md` records the rule after `checks/sb-gate.sh` lost its fixture. The set is not a list
+typed here -- it is DISCOVERED, by walking this file's own CODE, and the census that discovers
+it is `gates/edge-fixture-census.py`, whose ledger is `gates/edge-fixture.rows`. **MEASURED
+2026-10-20: 29 of the 56 files this gate reaches are under `.agents/slop/`, and ONE of them
+(`.agents/slop/ops_bend-milestone-expected.md`, 4 626 B) is resolved BY STEM rather than by
+path, so a scan of paths cannot see it.** The bytes were recovered from BLOBS
+(`git cat-file blob HEAD:<path>`), never from the worktree, and the copy of the frozen oracle
+is VERBATIM because its bytes ARE the `ORACLE_SHA` pin: the pin's SUBJECT moved and the pin's
+VALUE did not, because the bytes did not.
 
 **THE NUMBER OF PAIRS IS NOT WRITTEN HERE, AND THE REASON IS THIS PARAGRAPH.** It used to read
 `exactly ONE documented edit -- ORACLE_EDIT` on a tree whose `ORACLE_EDITS` held 9 pairs, and that
@@ -33,12 +46,12 @@ WHAT IT GATES, IN ORDER, AND THE ORDER IS THE ORDER THE CLAIMS COME IN:
                  DENOMINATOR: none of its own -- it is the fixture every later stage is measured
                  against. Under `set -e`, so a failure here ABORTS the gate with its own status
                  and NO verdict line is ever printed.
-  2  port        `./bin/bend .agents/slop/e2e_mm.bend` runs the pure half. No GPU.
+  2  port        `./bin/bend checks/.e2e-fixture/e2e_mm.bend` runs the pure half. No GPU.
                  DENOMINATOR: **> 20 `name=value` rows**, retried up to 8 times, because bend
                  stack-overflows on roughly one run in twenty and prints NOTHING. A run with 20 or
                  fewer rows is NOT a pass and NOT a fail: it is retried. Under `set -e`, so 8 fruitless
                  attempts abort the gate with status 2.
-  3  gpu         `node .agents/slop/e2e_mm_run.mjs` compiles the same `.bend` with `bend -o`, serves
+  3  gpu         `node checks/.e2e-fixture/e2e_mm_run.mjs` compiles the same `.bend` with `bend -o`, serves
                  it with a byte copy of `tinybendygrad/runtime/webgpu_call.js`, and walks it on a
                  real WebGPU adapter in headless Chrome.
                  DENOMINATOR: node's exit status, and nothing else -- the stage reads the STATUS
@@ -287,7 +300,7 @@ BODY_SHA = "2ef51412c74428b8545a133ebedeb763407ec9b3c78bf58fdf726e10a15cd3bb"
 # values, so an edit to the shell that forgets the pin is a MISMATCH -- which `oracle_drift()`
 # refuses with exit 3, and which the census reports as one. A comparison of a value with
 # itself would be a tautology that cannot fail, and that is worse than no instrument.
-ORACLE_SUBJECT = ".agents/slop/e2epy/oracle-e2e.sh"
+ORACLE_SUBJECT = "checks/.e2e-fixture/e2epy/oracle-e2e.sh"
 BODY_SUBJECT = "checks/e2e.sh"
 # THE DOCUMENTED EDITS, IN ORDER, AS `(ORACLE_SIDE, SHELL_SIDE)`: applying every one of them to the
 # frozen copy must yield the live body, byte for byte. So the ORACLE's text is the FIRST element of
@@ -555,7 +568,7 @@ def bend_run() -> int:
         with open(txt, "wb") as out, open(err, "wb") as fail:
             sys.stdout.flush()
             try:
-                rc = subprocess.run(["./bin/bend", ".agents/slop/e2e_mm.bend"], env=ENV, cwd=ROOT,
+                rc = subprocess.run(["./bin/bend", "checks/.e2e-fixture/e2e_mm.bend"], env=ENV, cwd=ROOT,
                                     stdout=out, stderr=fail).returncode
             except (FileNotFoundError, PermissionError) as exc:
                 status = 127 if isinstance(exc, FileNotFoundError) else 126
@@ -612,7 +625,7 @@ def main() -> int:
     RUN.mkdir(parents=True, exist_ok=True)   # `mkdir -p`, under `set -e`
 
     say("== 1/7 oracle (CPython tinygrad, DEV=CPU)")
-    if rc := stage([PY, ".agents/slop/e2e_mm.py"]):
+    if rc := stage([PY, "checks/.e2e-fixture/e2e_mm.py"]):
         return rc          # `set -e`: aborts HERE, with no verdict line and no summary.
 
     say("== 2/7 port (pure bend, no GPU)")
@@ -631,7 +644,7 @@ def main() -> int:
 
     say("== 3/7 gpu (real WebGPU adapter, headless Chrome)")
     if which("node"):
-        verdict("stage 3 gpu (node)", stage(["node", ".agents/slop/e2e_mm_run.mjs"]))
+        verdict("stage 3 gpu (node)", stage(["node", "checks/.e2e-fixture/e2e_mm_run.mjs"]))
     else:
         skip("stage 3 gpu (node)", "no `node` on PATH; stage 3 measured nothing")
 
@@ -640,13 +653,13 @@ def main() -> int:
     # repo keeps paying for: `"$PY" gate.py | tee out` makes `$?` the status of `tee`, so a gate that
     # CRASHED printed `PASS`. POSIX sh has no PIPESTATUS.
     gate = RUN / "e2e-mm-gate.out"
-    rc = stage([PY, ".agents/slop/e2e_mm_gate.py", str(RUN / "e2e-mm-bend.out")], gate)
+    rc = stage([PY, "checks/.e2e-fixture/e2e_mm_gate.py", str(RUN / "e2e-mm-bend.out")], gate)
     echo_file(gate)
     verdict("stage 4 gate (matmul vs CPython, via WebGPU)", rc)
 
     say("== 5/7 port's own device (the port's ops_bend runtime executes)")
     ops = RUN / "e2e-opsbend.out"
-    rc = stage(["./.agents/slop/opsbend-milestone.sh"], ops)
+    rc = stage(["./checks/.e2e-fixture/opsbend-milestone.sh"], ops)
     tail_file(ops, 3)      # THE DENOMINATOR: the milestone's own last three lines.
     # TODO(stage-5-denominator): `tail -3` IS THE DENOMINATOR AND IT IS ALSO WHAT A CRASH REPLACES,
     # so a stage that ran and printed NOTHING COUNTABLE leaves the artifact unable to say what it
@@ -658,13 +671,13 @@ def main() -> int:
 
     say("== 6/7 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)")
     pmm = RUN / "e2e-port-mm.out"
-    rc = stage(["zsh", ".agents/slop/e2e_port/run-port-mm.sh"], pmm)
+    rc = stage(["zsh", "checks/.e2e-fixture/e2e_port/run-port-mm.sh"], pmm)
     echo_file(pmm)
     verdict("stage 6 port (matmul THROUGH the port, no Node)", rc)
 
     say("== 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)")
     f64 = RUN / "e2e-f64.out"
-    rc = stage(["zsh", ".agents/slop/f64/run-f64.sh"], f64)
+    rc = stage(["zsh", "checks/.e2e-fixture/f64/run-f64.sh"], f64)
     if rc == 3:
         skip("stage 7 f64 (double through the port, no Node)",
              f"run-f64.sh refused: its substrate is cold; see {RUN}/e2e-f64.out")
@@ -762,22 +775,22 @@ def oracle_drift() -> list[str]:
     """
     import hashlib
     bad = []
-    copy = REPO / ".agents/slop/e2epy/oracle-e2e.sh"
+    copy = REPO / ORACLE_SUBJECT
     if not copy.exists():
-        return ["e2epy/oracle-e2e.sh: MISSING -- the frozen oracle is gone"]
+        return [f"{ORACLE_SUBJECT}: MISSING -- the frozen oracle is gone"]
     raw = copy.read_bytes()
     if hashlib.sha256(raw).hexdigest() != ORACLE_SHA:
-        bad.append(f"e2epy/oracle-e2e.sh: {hashlib.sha256(raw).hexdigest()[:16]} != oracle "
+        bad.append(f"{ORACLE_SUBJECT}: {hashlib.sha256(raw).hexdigest()[:16]} != oracle "
                    f"{ORACLE_SHA[:16]}")
     reverted = revert_oracle(raw.decode(errors="replace")).encode()
     if hashlib.sha256(reverted).hexdigest() != BODY_SHA:
-        bad.append(f"e2epy/oracle-e2e.sh: reverting its {len(ORACLE_EDITS)} documented edits gives "
+        bad.append(f"{ORACLE_SUBJECT}: reverting its {len(ORACLE_EDITS)} documented edits gives "
                    f"{hashlib.sha256(reverted).hexdigest()[:16]}, not the shell body "
                    f"{BODY_SHA[:16]} this port was diffed against -- so the oracle carries an "
                    f"UNDOCUMENTED difference, or a declared edit changed")
-    body = REPO / "checks/e2e.sh"
+    body = REPO / BODY_SUBJECT
     if body.exists() and hashlib.sha256(body.read_bytes()).hexdigest() != BODY_SHA:
-        bad.append(f"checks/e2e.sh: {hashlib.sha256(body.read_bytes()).hexdigest()[:16]} != "
+        bad.append(f"{BODY_SUBJECT}: {hashlib.sha256(body.read_bytes()).hexdigest()[:16]} != "
                    f"{BODY_SHA[:16]} -- the live shell body no longer matches the frozen oracle")
     return bad
 
