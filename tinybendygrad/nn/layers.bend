@@ -601,7 +601,13 @@ def nn_pad.his.go(+shp: List<&2, U32>, +pb: List<&2, U32>, +pa: List<&2, U32>,
   match shp pb pa:
     case s <> st b <> bt a <> at:
       nn_pad.his.go(st, bt, at, List.append(&2, U32, acc, [U32.add(U32.add(s, b), a)]))
-    case _ _ _: Nil{}
+    # THE BASE ARM RETURNED `Nil{}` AND DISCARDED ITS OWN ACCUMULATOR, so `conv2d`'s FIRST node
+    # read EMPTY rather than wrong -- and `nn_cnv.build:735` fires it before a single UOp is
+    # interned. MEASURED 2026-10-20: this line was the ONLY base arm in this file not returning
+    # `acc` (`nn_ks.go:102`, `:150`, `:174`, `:204`, `nn_zipcat.go:467` and four more all do), out
+    # of 4 `.go` walks and 37 `Nil{}` returns. **A base arm that drops the accumulator reads the
+    # same as an empty fold, which is why THREE units were needed to find it.**
+    case _ _ _: acc
 
 def nn_pad.at(g: List<&2, U32>, n: Nat) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, g, n), 0)
