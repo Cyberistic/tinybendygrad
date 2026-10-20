@@ -3,7 +3,7 @@
 
     .venv/bin/python gates/oracle-dangling-gate.py            # the census AND the verdict
     .venv/bin/python gates/oracle-dangling-gate.py --report   # census only, rc never charged
-    .venv/bin/python gates/oracle-dangling-gate.py --plant    # the self-test, in a temp copy
+    .venv/bin/python gates/oracle-dangling-gate.py --plant    # the self-test: a temp copy, and a temp repo for the walk
 
 ## THE QUESTION, AND WHY IT IS NOT "DOES THE FILE EXIST"
 
@@ -110,6 +110,7 @@ import argparse
 import ast
 import hashlib
 import importlib.util
+import os
 import re
 import subprocess
 import sys
@@ -164,10 +165,17 @@ LINE_COMMENT = re.compile(r"(?m)(^|\s)[#].*$")
 # -------------------------------------------------------------------------------------- plumbing
 
 
-def git(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
+def git(*args: str, stdin: str | None = None, cwd: Path | None = None) -> subprocess.CompletedProcess:
     """`git` in ROOT, inheriting the environment -- so an exported `GIT_INDEX_FILE` is honoured
-    by construction rather than by a parameter a caller has to remember to pass."""
-    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, input=stdin)
+    by construction rather than by a parameter a caller has to remember to pass.
+
+    `cwd` is a different repository (the walk plant). A foreign `GIT_INDEX_FILE` is dropped
+    there: it would point git at this repo's index.
+    """
+    env = None
+    if cwd is not None:
+        env = {k: v for k, v in os.environ.items() if k not in ("GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE")}
+    return subprocess.run(["git", *args], cwd=cwd or ROOT, capture_output=True, text=True, input=stdin, env=env)
 
 
 def load_by_path(rel: str, name: str):
@@ -438,8 +446,32 @@ def scope_of(subject: str, roles: dict[str, str], port_root: str) -> str:
 
 # ------------------------------------------------------------------------------- the recovery
 
+# Newest touching commits that become candidates. A deletion just outside this window is not
+# itself asked; the blob it removed sits one step further up.
+TOUCH_KEEP = 4
+# First-parent steps past the touching commit. 1 = parent, 2 = grandparent.
+# Depth 3 (the great-grandparent) is not walked. The plant shows both.
+WALK_DEPTH = 2
 
-def recover(paths: list[str]) -> dict[str, dict]:
+
+def _first_parents(shas: list[str], cwd: Path | None = None) -> dict[str, str]:
+    """`sha -> first parent`, asked by object id (`sha^`). A root has no parent.
+
+    Not `git rev-list --all`. That walk is not a path index.
+    """
+    uniq = list(dict.fromkeys(s for s in shas if s))
+    if not uniq:
+        return {}
+    p = git("cat-file", "--batch-check", stdin="\n".join(f"{s}^" for s in uniq) + "\n", cwd=cwd)
+    out: dict[str, str] = {}
+    for sha, line in zip(uniq, p.stdout.splitlines()):
+        fields = line.split()
+        if len(fields) >= 2 and fields[1] == "commit":
+            out[sha] = fields[0]
+    return out
+
+
+def recover(paths: list[str], cwd: Path | None = None) -> dict[str, dict]:
     """`path -> {blob, commit, bytes, sha256}` for every path a REF has carried, asked BY PATH.
 
     **`git rev-list --objects --all` IS NOT USED**, and the reason is measured in this tree:
@@ -448,10 +480,15 @@ def recover(paths: list[str]) -> dict[str, dict]:
     `git log --all --name-only -- <paths>` IS a path index -- a diff knows which path each side
     of a change was, an object walk does not -- and `git cat-file --batch-check` answers every
     candidate `<sha>:<path>` in ONE process.
+
+    Candidates are the touching commit, its first parent, and that parent's parent. Not the
+    great-grandparent. A deletion does not carry the blob. When that deletion is outside the
+    `TOUCH_KEEP` commits kept here, the blob's only surviving commit is the grandparent of
+    the oldest commit that is kept. `cwd` asks a different repository; the census does not pass it.
     """
     if not paths:
         return {}
-    p = git("log", "--all", "--format=%x01%H %P", "--name-only", "--", *paths)
+    p = git("log", "--all", "--format=%x01%H %P", "--name-only", "--", *paths, cwd=cwd)
     if p.returncode != 0:
         return {}
     touch: dict[str, list[tuple[str, list[str]]]] = {}
@@ -465,23 +502,28 @@ def recover(paths: list[str]) -> dict[str, dict]:
             touch.setdefault(line, [])
             if not any(s == sha for s, _ in touch[line]):
                 touch[line].append((sha, parents))
-    # CANDIDATES: the commit that touched the path, then its PARENT, then the grandparent.
-    # A commit that DELETED the path does not carry it; its parent does.
+    # CANDIDATES: touching commit, then WALK_DEPTH first-parent steps. The log line carries
+    # only the touching commit's parents; the next generation is asked by object id.
+    parent_of: dict[str, str] = {}
+    frontier = [ps[0] for entries in touch.values() for _sha, ps in entries[:TOUCH_KEEP] if ps]
+    for _ in range(max(WALK_DEPTH - 1, 0)):
+        found = _first_parents(frontier, cwd)
+        parent_of.update(found)
+        frontier = list(found.values())
     cands: list[str] = []
     for path, entries in touch.items():
-        for sha, parents in entries[:4]:
-            chain, cur_parents = [sha], parents
-            for _ in range(3):
-                if not cur_parents:
+        for sha, parents in entries[:TOUCH_KEEP]:
+            chain = [sha]
+            cur = parents[0] if parents else ""
+            for _ in range(WALK_DEPTH):
+                if not cur:
                     break
-                chain.append(cur_parents[0])
-                cur_parents = []
-            for c in chain:
-                cands.append(f"{c}:{path}")
+                chain.append(cur)
+                cur = parent_of.get(cur, "")
+            cands.extend(f"{c}:{path}" for c in chain)
     if not cands:
         return {}
-    chk = subprocess.run(["git", "cat-file", "--batch-check"], cwd=ROOT, capture_output=True,
-                         text=True, input="\n".join(cands) + "\n")
+    chk = git("cat-file", "--batch-check", stdin="\n".join(cands) + "\n", cwd=cwd)
     # **THE OUTPUT IS IN INPUT ORDER, AND THAT IS THE ONLY WAY BACK TO THE SPEC.**
     # `git cat-file --batch-check` prints `<oid> <type> <size>` -- it does NOT echo the input, so
     # a line cannot be matched to its own request by parsing it. The pairing is positional, and
@@ -501,7 +543,7 @@ def recover(paths: list[str]) -> dict[str, dict]:
         if not hit:
             continue
         oid, spec = hit
-        blob = git("cat-file", "blob", spec)
+        blob = git("cat-file", "blob", spec, cwd=cwd)
         if blob.returncode != 0:
             continue
         data = blob.stdout.encode()
@@ -830,10 +872,152 @@ def plant(surveyed: dict) -> int:
         return PASS if not bad else FAIL
 
 
+def _plant_env() -> dict[str, str]:
+    """Environment for the walk repo. A foreign index or GIT_DIR would write this repo."""
+    return {k: v for k, v in os.environ.items() if k not in ("GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE")}
+
+
+def _plant_git(repo: Path, env: dict[str, str], *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], cwd=repo, env=env, capture_output=True, text=True)
+
+
+def _plant_commit(repo: Path, env: dict[str, str], path: str, content: str | None, message: str) -> str:
+    """Write `content` or delete `path`, commit, return HEAD. `None` deletes."""
+    if content is None:
+        r = _plant_git(repo, env, "rm", "-q", "--", path)
+    else:
+        target = repo / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+        r = _plant_git(repo, env, "add", "--", path)
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip() or f"index update failed for {path}")
+    r = _plant_git(repo, env, "-c", "user.email=plant@example.invalid", "-c", "user.name=plant",
+                   "commit", "-q", "-m", message)
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip() or f"commit failed for {path}")
+    head = _plant_git(repo, env, "rev-parse", "HEAD")
+    if head.returncode != 0:
+        raise RuntimeError(head.stderr.strip() or "rev-parse failed")
+    return head.stdout.strip()
+
+
+def _plant_empty(repo: Path, env: dict[str, str], message: str) -> str:
+    r = _plant_git(repo, env, "-c", "user.email=plant@example.invalid", "-c", "user.name=plant",
+                   "commit", "-q", "--allow-empty", "-m", message)
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip() or "empty commit failed")
+    return _plant_git(repo, env, "rev-parse", "HEAD").stdout.strip()
+
+
+def _plant_chain(repo: Path, env: dict[str, str], path: str, content: str, distance: int) -> tuple[str, str]:
+    """Commit `content`, then enough non-carrying commits that the oldest kept re-add
+    sees it at first-parent distance `distance`. Returns `(content commit, oldest re-add)`.
+
+    The re-adds carry a different blob. A walk that stops short of `distance` returns
+    that blob, not `content`.
+    """
+    if distance < 2:
+        raise RuntimeError(f"distance {distance} does not put the blob past the parent")
+    content_sha = _plant_commit(repo, env, path, content, f"add {path}")
+    _plant_commit(repo, env, path, None, f"drop {path}")
+    for n in range(distance - 2):
+        _plant_empty(repo, env, f"pad {path} {n}")
+    oldest = ""
+    for i in range(TOUCH_KEEP):
+        sha = _plant_commit(repo, env, path, f"DECOY {path} {i}\n", f"readd {path} {i}")
+        if not oldest:
+            oldest = sha
+    return content_sha, oldest
+
+
+def _nth_parent(repo: Path, sha: str, n: int) -> str:
+    cur = sha
+    for _ in range(n):
+        p = git("rev-parse", "--verify", f"{cur}^", cwd=repo)
+        if p.returncode != 0:
+            return ""
+        cur = p.stdout.strip()
+    return cur
+
+
+def plant_walk() -> int:
+    """The recovery walk, in a temp repo. This repo's history is not rewritten.
+
+    GRAND -- the blob's only commit is the grandparent of the oldest kept touch. The
+    parent deleted the path, and the deletion is outside `TOUCH_KEEP`, so a parent-only
+    walk cannot see it.
+    GREAT -- the blob's only commit is one step further. Depth `WALK_DEPTH` must not
+    return it.
+    TOUCH -- the blob is in the touching commit. Still found.
+    """
+    import tempfile
+    grand_path, great_path, touch_path = "walk/grand.rows", "walk/great.rows", "walk/touch.rows"
+    grand_body, great_body, touch_body = "GRAND\n", "GREAT\n", "TOUCH\n"
+    print(f"WALK  claimed depth {WALK_DEPTH} (1=parent, 2=grandparent); "
+          f"not walked: depth {WALK_DEPTH + 1} (great-grandparent)")
+    try:
+        with tempfile.TemporaryDirectory(prefix="oracle-dangling-walk.") as tmp:
+            repo = Path(tmp) / "repo"
+            repo.mkdir()
+            env = _plant_env()
+            init = _plant_git(repo, env, "init", "-q", "-b", "main")
+            if init.returncode != 0:
+                print(f"PLANT REFUSED: git init: {init.stderr.strip()}")
+                return REFUSED
+            sha_g, oldest_g = _plant_chain(repo, env, grand_path, grand_body, WALK_DEPTH)
+            sha_gg, oldest_gg = _plant_chain(repo, env, great_path, great_body, WALK_DEPTH + 1)
+            sha_t = _plant_commit(repo, env, touch_path, touch_body, "touch")
+            if _nth_parent(repo, oldest_g, WALK_DEPTH) != sha_g:
+                print(f"PLANT REFUSED: grand blob is not at depth {WALK_DEPTH}")
+                return REFUSED
+            if _nth_parent(repo, oldest_gg, WALK_DEPTH + 1) != sha_gg:
+                print(f"PLANT REFUSED: great blob is not at depth {WALK_DEPTH + 1}")
+                return REFUSED
+            parent = _nth_parent(repo, oldest_g, WALK_DEPTH - 1)
+            if git("cat-file", "-e", f"{parent}:{grand_path}", cwd=repo).returncode == 0:
+                print("PLANT REFUSED: the parent of the kept touch still carries the grand blob")
+                return REFUSED
+            if git("cat-file", "-e", f"{sha_gg}:{great_path}", cwd=repo).returncode != 0:
+                print("PLANT REFUSED: the great-grandparent blob was not committed")
+                return REFUSED
+            got = recover([grand_path, great_path, touch_path], cwd=repo)
+    except RuntimeError as exc:
+        print(f"PLANT REFUSED: the walk repo could not be built: {exc}")
+        return REFUSED
+    grand, great, touch = got.get(grand_path), got.get(great_path), got.get(touch_path)
+    want_g = hashlib.sha256(grand_body.encode()).hexdigest()
+    want_gg = hashlib.sha256(great_body.encode()).hexdigest()
+    want_t = hashlib.sha256(touch_body.encode()).hexdigest()
+
+    def _brief(hit: dict | None) -> str:
+        if not hit:
+            return "absent"
+        return f"commit={hit['commit'][:12]} sha256={hit['sha256'][:12]}"
+
+    checks = [
+        ("blob only at the grandparent was found",
+         grand is not None and grand["commit"] == sha_g and grand["sha256"] == want_g,
+         f"depth {WALK_DEPTH}: {_brief(grand)} want={sha_g[:12]}"),
+        ("blob only at the great-grandparent was not found",
+         great is not None and great["commit"] != sha_gg and great["sha256"] != want_gg,
+         f"depth {WALK_DEPTH + 1}: {_brief(great)} not={sha_gg[:12]}"),
+        ("blob at the touching commit was still found",
+         touch is not None and touch["commit"] == sha_t and touch["sha256"] == want_t,
+         f"depth 0: {_brief(touch)} want={sha_t[:12]}"),
+    ]
+    for name, ok, detail in checks:
+        print(f"  {'OK  ' if ok else 'FAIL'}  {name:<62} {detail}")
+    bad = [n for n, ok, _ in checks if not ok]
+    print(f"  VERDICT {'PASS' if not bad else 'FAIL: ' + '; '.join(bad)}")
+    return PASS if not bad else FAIL
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--report", action="store_true", help="census only, rc never charged")
-    ap.add_argument("--plant", action="store_true", help="the self-test, in a temp copy")
+    ap.add_argument("--plant", action="store_true",
+                    help="the self-test: a temp copy, and a temp repo for the walk")
     ap.add_argument("--rows", help="write the per-subject table here")
     args = ap.parse_args(argv)
     try:
@@ -849,7 +1033,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  --report: rc never charged ({VERDICT[code]})")
         return PASS
     if args.plant:
-        return plant(surveyed)
+        walked = plant_walk()
+        copied = plant(surveyed)
+        if FAIL in (walked, copied):
+            return FAIL
+        if REFUSED in (walked, copied):
+            return REFUSED
+        return PASS
     return code
 
 
