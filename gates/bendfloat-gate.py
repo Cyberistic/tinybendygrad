@@ -419,14 +419,12 @@ def run(*, arm: str | None) -> int:
         return refuse(f"the armed lane answered {len(armed_ans)} rows, expected {want}")
 
     counts: dict[str, dict[str, int]] = {}
-    rows_by_name: dict[str, array.array] = {}
     off = 0
     for s, ps in zip(sections, pats):
         n = len(ps)
         rows = base[off:off + n]
         arows = armed_ans[off:off + n]
         off += n
-        rows_by_name[s["name"]] = rows
         d, bad = compare(rows, oracle[s["name"]])
         da, bada = compare(arows, oracle[s["name"]])
         counts[s["name"]] = {
@@ -446,17 +444,6 @@ def run(*, arm: str | None) -> int:
         c = counts[s["name"]]
         print(f"  {s['name']:<7} {c['rows']:>9} rows | disagree {c['disagree']:>9} "
               f"| distinct {c['distinct']:>6} (oracle {c['oracle_distinct']})")
-    # THE INJECTIVITY OF THE POSITIVE CLASS, COUNTED and not asserted: the sign bit
-    # cannot collide with itself, so the positive class is where injectivity is a
-    # question at all.  A rule can be injective and WRONG, so this row is not a verdict
-    # on its own -- it is the shape `gates/float-halfclass-gate.py` holds for the JS
-    # and the C, and it is here for the Bend.
-    pos_rows = {rows_by_name["h2f"][i] for i, h in enumerate(h2f) if h < 0x8000}
-    pos_bad = sum(1 for i, h in enumerate(h2f) if h < 0x8000
-                  and rows_by_name["h2f"][i] != oracle["h2f"][i])
-    h2f_pos = [h for h in h2f if h < 0x8000]
-    print(f"  h2f positive class: {len(h2f_pos)} inputs, {len(pos_rows)} distinct f32 "
-          f"patterns (the map must be INJECTIVE), {pos_bad} disagree")
     print(f"  RULE bend (dtype.bend): {K_FIXED!r}")
 
     if arm is None:

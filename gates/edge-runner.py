@@ -79,6 +79,11 @@ TRACE = HERE / "edge-trace.rows"      # the TRACE. In git, beside this file.
 
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
+# THE SIXTH STATE IS NOT A VERDICT AND IS NOT COUNTED AS ONE. `UNASSIGNED` is a status the
+# tree's vocabulary does not name -- `checks/differ.py` says so in its own source -- and the
+# edge says which it is instead of folding it into REFUSED. It is COUNTED and it does not
+# CHARGE, because "the tool has no such mode" is not a finding about the tree.
+UNASSIGNED = "UNASSIGNED"
 
 # THE BUDGET. Two numbers, both POLICY, both declared here rather than typed per gate.
 #
@@ -153,18 +158,57 @@ def declares_red_is(path):
     it is declared BY THE GATE, and it is the only way out.** A gate that wants out says so in
     its own source, where a reader can see it.
     """
+    return _module_constant(path, "RED_IS")
+
+
+def declares_edge_candidate(path):
+    """-> whether the gate declares `EDGE_CANDIDATE = True` in its own source.
+
+    **A GATE THAT COVERS ANOTHER GATE'S PIN HOLDS NO PIN OF ITS OWN, AND THE EDGE'S
+    SELECTION RULE WOULD NOT SEE IT.** `gates/edge-oracle-pin-gate.py` compares the subjects
+    of OTHER gates' pins -- the ones whose subject lives in the pruned tree -- and holds no
+    pin itself, so the rule "a member that holds a pin its own code reads" does not select
+    it. The gate says so in its own source, where a reader can see it, and the edge reads it
+    by the same AST pass that reads `RED_IS`."""
+    value = _module_constant(path, "EDGE_CANDIDATE")
+    return value is True
+
+
+def _module_constant(path, name):
+    """-> the value of a module-level constant, read off the module body by `ast.literal_eval`,
+    or None when the module does not declare it (or does not parse)."""
     try:
         tree = ast.parse(Path(path).read_text(errors="replace"))
     except (OSError, SyntaxError, ValueError):
         return None
     for node in tree.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 \
-                and isinstance(node.targets[0], ast.Name) and node.targets[0].id == "RED_IS":
+                and isinstance(node.targets[0], ast.Name) and node.targets[0].id == name:
             try:
                 return ast.literal_eval(node.value)
             except (ValueError, SyntaxError):
                 return None
     return None
+
+
+def covers_of(path):
+    """-> the paths whose pins this gate compares, read by CALLING its own `edge_covers()`.
+
+    **THE GATE SAYS WHAT IT COVERS, IN ITS OWN SOURCE, AND THE EDGE ASKS.** A candidate that
+    compares another gate's pins may name the gates it covers, and the edge asks it rather
+    than keeping a list of its own -- a list of its own would be a second population with a
+    different predicate, which is the defect this whole file exists to avoid."""
+    try:
+        mod = load("edge_covers_" + Path(path).stem, Path(path))
+    except Exception:                                            # noqa: BLE001 - a gate that
+        return []                                                 # cannot be loaded covers nothing
+    fn = getattr(mod, "edge_covers", None)
+    if not callable(fn):
+        return []
+    try:
+        return [str(x) for x in fn()]
+    except Exception:                                            # noqa: BLE001
+        return []
 
 
 # ---------------------------------------------------------------------------------------------
@@ -200,6 +244,12 @@ def candidates(gs, popmod, root=ROOT):
         read = popmod.readers(site["name"], code, (site["file"], site["line"], site["end"]))
         if read:
             out.setdefault(site["file"], []).append((site["name"], read))
+    # A GATE THAT COVERS ANOTHER GATE'S PIN IS A CANDIDATE EVEN THOUGH IT HOLDS NO PIN.
+    for rel in corpus:
+        if rel in out:
+            continue
+        if declares_edge_candidate(ROOT / rel):
+            out.setdefault(rel, []).append(("EDGE_CANDIDATE", []))
     return members, out
 
 
@@ -329,8 +379,21 @@ def trace_rows(members, cands, selected, ledger, gs, seconds, mb, root=ROOT):
             continue
         path, reason = by_rel[rel]
         verdict, token, rc, took, peak = run_one(gs, path, reason, seconds, mb, consumed)
+        if token.startswith("UNASSIGNED"):
+            # **A STATUS NO VOCABULARY NAMES IS NOT A PRECONDITION THAT WAS ABSENT.** The
+            # tree's five are PASS 0, FAIL 1, REFUSED 3, SKIP 4, DEAD 5, and `checks/differ.py`
+            # says so in its own source: "argparse would exit 2 on a name that is not a plant,
+            # and 2 IS A CODE NO VOCABULARY NAMES". MEASURED 2026-10-20: bare `differ.py`
+            # exits 2 because it has NO BARE MODE -- it is a mode selector with four -- and
+            # the edge's classifier folded that usage error into REFUSED, which means "a
+            # precondition was absent". **THOSE ARE DIFFERENT THINGS**, and folding them is
+            # how "the tool has no such mode" reads as "the tree is not ready". It is
+            # COUNTED and it does not CHARGE, and it says which it is.
+            status, verdict = "RAN-UNASSIGNED", "UNASSIGNED"
+        else:
+            status, verdict = "RAN", verdict
         finding = declares_red_is(path) == "FINDING" and verdict in ("FAIL", "DEAD")
-        rows.append([rel, "RAN-FINDING" if finding else "RAN", verdict, token, rc,
+        rows.append([rel, "RAN-FINDING" if finding else status, verdict, token, rc,
                      f"{took:.2f}", peak, stamp])
     return rows
 
@@ -338,9 +401,9 @@ def trace_rows(members, cands, selected, ledger, gs, seconds, mb, root=ROOT):
 def tally(rows):
     """-> (counts by verdict, denominator). The denominator is printed beside the tally ALWAYS:
     a verdict with no denominator is a claim nobody can check."""
-    counts = {v: 0 for v in VERDICT.values()}
+    counts = {v: 0 for v in (*VERDICT.values(), UNASSIGNED)}
     for r in rows:
-        if r[1] in ("RAN", "RAN-FINDING"):
+        if r[1] in ("RAN", "RAN-FINDING", "RAN-UNASSIGNED"):
             counts[r[2]] = counts.get(r[2], 0) + 1
     return counts, sum(counts.values())
 
@@ -368,6 +431,43 @@ def edge_verdict(rows):
     return PASS, counts
 
 
+def coverage(members, cands, root=ROOT):
+    """-> (population_sites, outside_hosts) -- the COVERAGE of the CAN-FAIL pin sites, with
+    its denominator.
+
+    **THE DENOMINATOR IS THE POPULATION'S OWN SITES, AND THE GAP IS NAMED SEPARATELY.**
+    The whole-tree census -- the one that finds the pins in files the gate population does
+    not reach -- takes MORE THAN SIX MINUTES, so an edge that plans a run in seconds cannot
+    compute it, and a denominator nobody can compute is a denominator nobody can check. So
+    the edge prints the population's own coverage with its denominator, and it prints the
+    hosts OUTSIDE the population whose pins a candidate compares -- which is the part of
+    the gap the edge can reach. **THE COUNTING OF THOSE OUTSIDE SITES IS THE COVERING
+    GATE'S OWN LEDGER, not this file's, and the ledger says so on its header.**
+
+    **A CANDIDATE MAY COVER ANOTHER GATE'S PINS, AND IT SAYS SO IN ITS OWN SOURCE**
+    (`edge_covers()`, read by path). A pin whose host is such a gate is COVERED even though
+    the host is not a candidate itself, and that is how the edge reaches the copies of
+    `checks/differ.py` that live under the pruned tree.
+    """
+    hosts = set(cands)
+    outside = set()
+    for rel in cands:
+        for covered in covers_of(root / rel):
+            if covered not in hosts:
+                hosts.add(covered)
+                outside.add(covered)
+    return sum(len(v) for v in cands.values()), sorted(outside)
+
+
+def plan_coverage_line(members, cands, root=ROOT):
+    """-> the ONE line the edge prints about coverage, with its denominator."""
+    sites, outside = coverage(members, cands, root)
+    return (f"  COVERAGE    {sites} of {sites} CAN-FAIL pin site(s) in the gate population are "
+            f"held by a candidate;\n              {len(outside)} host(s) OUTSIDE the population have "
+            f"their pins compared by a candidate: "
+            + (", ".join(outside) if outside else "-"))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--root", default=str(ROOT), help="the tree to select in")
@@ -391,7 +491,9 @@ def main():
 
     if a.plan:
         selected, skipped = select(cands, ledger, a.seconds)
-        print(f"EDGE: population {len(members)}   candidates (hold a CAN-FAIL pin) {len(cands)}")
+        print(f"EDGE: population {len(members)}   candidates (hold a CAN-FAIL pin, or declare "
+              f"EDGE_CANDIDATE) {len(cands)}")
+        print(plan_coverage_line(members, cands, root))
         print(f"  selected {len(selected)}   over-budget {len(skipped)}   budget "
               f"{a.seconds}s / {a.mb} MB")
         for rel in selected:
@@ -433,9 +535,11 @@ def main():
     print("EDGE: a committed surface that runs the gates and leaves a trace")
     print(f"  population {len(members)}   candidates {len(cands)}   selected {len(selected)}   "
           f"over-budget {len(skipped)}")
+    print(plan_coverage_line(members, cands, root))
     print(f"  trace written {stamp} -> {Path(a.trace)}")
     print(f"  TALLY (of {denom} that ran): " +
-          "  ".join(f"{k} {counts.get(k, 0)}" for k in ("PASS", "FAIL", "REFUSED", "SKIP", "DEAD")))
+          "  ".join(f"{k} {counts.get(k, 0)}" for k in
+                   ("PASS", "FAIL", "REFUSED", "SKIP", "DEAD", UNASSIGNED)))
     for r in rows:
         print(f"    {r[1]:12} {r[2]:8} {r[3]:22} {r[5] or '-':>8}s {r[6] or '-':>6}MB  {r[0]}")
     print("  THE EDGE CANNOT make a pin go red by itself. It makes a RUN leave a trace.")

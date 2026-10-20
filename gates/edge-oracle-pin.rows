@@ -1,0 +1,14 @@
+# gates/edge-oracle-pin.rows -- TAB separated. Generated; the generator is `gates/edge-oracle-pin-gate.py`, the ONLY writer.
+# columns: gate, pin, subject, resolved, pinned, actual, verdict
+# written 2026-10-20T17:21:04Z
+.agents/slop/corpuswire/tree/checks/differ.py	ORACLE_PIN	diffpy/oracle-run.sh	.agents/slop/diffpy/oracle-run.sh	94e7108d428bae3f	94e7108d428bae3f	CURRENT
+.agents/slop/corpuswire/tree/checks/differ.py	ORACLE_PIN	diffpy/oracle-repro.sh	.agents/slop/diffpy/oracle-repro.sh	a5d23505b3e93816	a5d23505b3e93816	CURRENT
+.agents/slop/corpuswire/tree/checks/differ_wantdummy.py	ORACLE_PIN	diffpy/oracle-run.sh	.agents/slop/diffpy/oracle-run.sh	94e7108d428bae3f	94e7108d428bae3f	CURRENT
+.agents/slop/corpuswire/tree/checks/differ_wantdummy.py	ORACLE_PIN	diffpy/oracle-repro.sh	.agents/slop/diffpy/oracle-repro.sh	a5d23505b3e93816	a5d23505b3e93816	CURRENT
+.agents/slop/figure2/plant/broken/checks/differ.py	ORACLE_PIN	diffpy/oracle-run.sh	.agents/slop/diffpy/oracle-run.sh	94e7108d428bae3f	94e7108d428bae3f	CURRENT
+.agents/slop/figure2/plant/broken/checks/differ.py	ORACLE_PIN	diffpy/oracle-repro.sh	.agents/slop/diffpy/oracle-repro.sh	a5d23505b3e93816	a5d23505b3e93816	CURRENT
+.agents/slop/figure2/plant/real/checks/differ.py	ORACLE_PIN	diffpy/oracle-run.sh	.agents/slop/diffpy/oracle-run.sh	94e7108d428bae3f	94e7108d428bae3f	CURRENT
+.agents/slop/figure2/plant/real/checks/differ.py	ORACLE_PIN	diffpy/oracle-repro.sh	.agents/slop/diffpy/oracle-repro.sh	a5d23505b3e93816	a5d23505b3e93816	CURRENT
+checks/differ.py	ORACLE_PIN	diffpy/oracle-run.sh	.agents/slop/diffpy/oracle-run.sh	94e7108d428bae3f	94e7108d428bae3f	CURRENT
+checks/differ.py	ORACLE_PIN	diffpy/oracle-repro.sh	.agents/slop/diffpy/oracle-repro.sh	a5d23505b3e93816	a5d23505b3e93816	CURRENT
+checks/substrate.py	ORACLE_PIN	substrate/oracle-check.sh	.agents/slop/substrate/oracle-check.sh	3b2ad83f57d995c9	3b2ad83f57d995c9	CURRENT
