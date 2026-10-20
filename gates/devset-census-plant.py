@@ -21,8 +21,11 @@ THE ARMS, AND WHAT EACH ONE IS FOR.
 | 3 THE PIN | a re-pin to a 584-line `hcq2.py`, where the constant is NOT in `hcq2.py` at all | **FAIL** | 4 and 6 |
 | 4 NEGATIVE | a re-pin to the 626-line `hcq2.py` -- the SAME set, one line up | **PASS** | -- |
 
-**ARM 4 IS THE UNBROKEN CONTROL FOR ARM 3, AND IT IS THE POINT OF THIS PLANT.** Both arms re-pin
-the port; they differ in WHICH upstream file they re-pin to. Arm 3's re-pin lands where the set
+**ARM 0 IS THE UNBROKEN CONTROL FOR ARMS 1 AND 2, AND ARM 4 IS THE UNBROKEN CONTROL FOR ARM 3.**
+Arm 0 is the same gate, the same scratch and the same mechanism with nothing planted, and it is
+green; without it a reader could not tell arms 1 and 2 from "this gate reds on anything". Arm 4 is
+the mechanism-matched control for arm 3, and it is the point of this plant: both arms re-pin the
+port; they differ in WHICH upstream file they re-pin to. Arm 3's re-pin lands where the set
 DIFFERS and the gate goes red; arm 4's re-pin lands where the set AGREES and the gate stays
 green. Without arm 4 a reader could not tell arm 3's FAIL from "this gate reds on any re-pin", and
 "the gate reds on any re-pin" is a gate that measures the re-pin and not the set.
