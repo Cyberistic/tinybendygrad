@@ -23,19 +23,23 @@ RE-VENDOR MAKES IT FALSE AGAIN, WHICH IS EXACTLY WHAT HAPPENED.** The remedy is 
 is to delete the SHA and keep the comparison in a place that reads it. So this gate holds the
 identity WITHOUT a sha in it, and then hunts the transcription itself.
 
-    PASS 0     the tree identity holds, and no gate home claims the current `tinygrad/` tree by a
-               transcribed sha. The index state is a row and is not this exit.
+    PASS 0     the tree identity holds, no gate home claims the current `tinygrad/` tree by a
+               transcribed sha, and rotclaim's judge did not classify a retired sha as LIVE.
+               The index state is a row and is not this exit.
     FAIL 1     a check ran and answered no -- a sha names the current tree and no verified record
-               owns that line, or the two trees differ
-    REFUSED 3  a precondition was absent, or a dated record's date does not match the commit its
-               derive names. An armed index is not this exit: it prints `INDEX-ARMED` and the pin
-               rows still emit. The exit is the pin verdict.
+               owns that line, the two trees differ, or rotclaim's judge classifies a retired sha
+               as LIVE
+    REFUSED 3  a precondition was absent, a dated record's date does not match the commit its
+               derive names, or rotclaim's judge did not classify both shas. An armed index is not
+               this exit: it prints `INDEX-ARMED` and the pin rows still emit. The index state
+               does not select the exit.
     DEAD 5     the gate could not measure at all
 
 READ-ONLY BY CONSTRUCTION. Every git call carries `--no-optional-locks`, which is what stops git
 refreshing -- and therefore rewriting -- `.git/index` as a side effect of being read. A gate that arms
-the thing it is inspecting is worse than no gate. Nothing here writes a file, fetches a ref, or
-touches `tinygrad/`.
+the thing it is inspecting is worse than no gate. Nothing here fetches a ref, touches `tinygrad/`,
+or writes a path the repository tracks. `rotclaim_split` writes a temporary fixture so rotclaim's
+judge has a file to read, and that directory is deleted with the call.
 
 CLAIM 2 IS A ROW, NOT A VERDICT, AND NOT A SECOND CENSUS. `checks/index-arm-gate.py` owns the
 shape census and refuses an armed index. This gate does not call it: that refusal is what hid the
@@ -74,6 +78,9 @@ that record owns nothing either. A sha that prefixes the current `HEAD:tinygrad`
 lines is a live claim: it goes false at the next re-vendor, and refreshing it is not a fix. A sha
 that prefixes only a retired tree is a pin for a past revision, which is not stale. `gates/artifacts/`
 is a run's transcript (`_generated`, imported from the same module), not a source claim.
+(e) ROTCLAIM'S CLASSIFICATION IS ASKED, NOT COPIED. `rotclaim_split` loads
+`gates/rotclaim-gate.py` by path and prints how its judge classifies a retired sha and the
+current tree sha. A retired answer of LIVE is a disagreement and fails this gate.
 """
 
 import hashlib
@@ -268,8 +275,8 @@ def classify(display_root, dirs, trees, git_root, emit_seen=False):
 
   The record test is `_record().spans`, imported, not reimplemented. This function only
   applies it to the hits `transcribed` already found, and splits a current-tree sha from a
-  retired one: rotclaim's own judge still calls every non-owned tree sha live, and a pin
-  for a past revision is not that.
+  retired one by this file's own rule. What `gates/rotclaim-gate.py` answers for those two
+  shas is `rotclaim_split`, loaded by path and printed. It is not restated here.
   """
   rc = _record()
   current = resolve(git_root, "HEAD:tinygrad")
@@ -326,6 +333,72 @@ def classify(display_root, dirs, trees, git_root, emit_seen=False):
       state = "LIVE" if tree == current else "PIN"
       rows.append({"kind": kind, "file": site, "literal": literal, "state": state})
   return rows
+
+
+_ANSWERED = ("PIN", "LIVE")
+
+
+def _answered(rows, sha, other):
+  """The state whose literal prefixes `sha` and not `other`. Two hits, or none, is no answer."""
+  hits = []
+  for row in rows:
+    literal, state = row.get("literal"), row.get("state")
+    if not isinstance(literal, str) or not literal or state not in _ANSWERED:
+      continue
+    if sha.startswith(literal) and not other.startswith(literal):
+      hits.append(state)
+  return hits[0] if len(hits) == 1 else None
+
+
+def rotclaim_split(git_root, loader=None, retired=None, current=None, trees=None):
+  """Ask rotclaim's judge, loaded by path, and print the two answers.
+
+  The retired sha is a `tinygrad/` tree that is not `HEAD:tinygrad`, derived here, never typed.
+  LIVE on that sha is a disagreement: the report says so and this returns FAIL. Any other
+  answered state, including PIN, is not that disagreement. A judge that does not classify both
+  shas is REFUSED, not a pass. The loader is the seam the plant stubs; the live path passes
+  none and loads `gates/rotclaim-gate.py`.
+  """
+  if current is None:
+    current = resolve(git_root, "HEAD:tinygrad")
+  if trees is None:
+    trees = tree_values(git_root)
+  if retired is None:
+    retired = next((t for t in trees if t != current), "")
+  if not current or not retired or retired == current:
+    print("pinned-tree-gate: rotclaim REFUSED -- no retired sha to ask about")
+    return REFUSED, None, None
+  try:
+    mod = (loader or _record)()
+  except Exception as exc:
+    print(f"pinned-tree-gate: rotclaim REFUSED -- {type(exc).__name__}: {exc}"[:200])
+    return REFUSED, None, None
+  judge = getattr(mod, "judge", None)
+  if not callable(judge):
+    print("pinned-tree-gate: rotclaim REFUSED -- loaded module has no judge")
+    return REFUSED, None, None
+  try:
+    with tempfile.TemporaryDirectory(prefix="pinsentence-") as td:
+      root = Path(td)
+      home = root / "gates"
+      home.mkdir()
+      (home / "ask.py").write_text(f"# {retired}\n# {current}\n")
+      rows = judge(git_root, [home], trees, root, run_derives=False)
+  except Exception as exc:
+    print(f"pinned-tree-gate: rotclaim REFUSED -- {type(exc).__name__}: {exc}"[:200])
+    return REFUSED, None, None
+  if not isinstance(rows, list):
+    print("pinned-tree-gate: rotclaim REFUSED -- judge did not return rows")
+    return REFUSED, None, None
+  retired_state, current_state = _answered(rows, retired, current), _answered(rows, current, retired)
+  if retired_state is None or current_state is None:
+    print("pinned-tree-gate: rotclaim REFUSED -- judge did not classify both shas")
+    return REFUSED, retired_state, current_state
+  print(f"pinned-tree-gate: rotclaim retired={retired_state} current={current_state}")
+  if retired_state == "LIVE":
+    print("pinned-tree-gate: DISAGREE -- rotclaim classifies the retired sha as LIVE")
+    return FAIL, retired_state, current_state
+  return PASS, retired_state, current_state
 
 
 # ---- the three claims -----------------------------------------------------------------------
@@ -463,6 +536,11 @@ def plant(root):
   INDEX ROWS, ON TEMP INDEXES, NOT ON `.git/index`. `GIT_INDEX_FILE` points the census at an
   index built with `read-tree HEAD` and at a copy of that index with one extra path. Both emit
   the same pin rows. The index row differs. A current-tree sha with no binding is still LIVE.
+
+  ROTCLAIM'S ANSWER IS ASKED, NOT RESTORED. `rotclaim_split` loads a judge and prints how it
+  classifies the retired sha and the current sha. The two directions stub that loader: a retired
+  answer of PIN is not a failure of this check, and a retired answer of LIVE is.
+  `current-sha-is-live` above is this file's own rule and is not those directions.
   """
   trees = tree_values(root)
   if len(trees) < 2:
@@ -556,6 +634,7 @@ def plant(root):
   check("current-sha-is-live", classified(f"# {cur}\n"), (1, "ABSENT", 0, 0))
   check("not-a-tree-on-a-record", classified(fresh + f"\n# {decoy}\n"), (0, "VERIFIED", 0, 0))
   _plant_index(root, cur, retired, bad)
+  _plant_rotclaim(root, cur, retired, trees, bad)
   if silent:
     print(f"--plant: REFUSED -- {len(silent)} direction(s) emitted nothing: {silent}")
     return REFUSED
@@ -614,6 +693,32 @@ def _plant_index(root, cur, retired, bad):
       bad.append("index-plant")
 
 
+def _plant_rotclaim(root, cur, retired, trees, bad):
+  """Stub the loader. A retired answer of PIN is not a failure; LIVE is. The check is `rotclaim_split`."""
+  def loader(retired_state, current_state):
+    class _Mod:
+      def judge(self, git_root, homes, trees, display_root, run_derives=True, emit_seen=False):
+        return [
+          {"file": "ask.py:1", "literal": retired, "state": retired_state},
+          {"file": "ask.py:2", "literal": cur, "state": current_state},
+        ]
+    def load():
+      return _Mod()
+    return load
+
+  def direction(label, retired_state, want):
+    verdict, got_r, got_c = rotclaim_split(
+      root, loader=loader(retired_state, "LIVE"), retired=retired, current=cur, trees=trees)
+    ok = verdict == want and got_r == retired_state
+    print(f"  {label}: {'OK' if ok else '<-- PLANT WRONG'} verdict={verdict} "
+          f"retired={got_r} current={got_c} wanted={want}")
+    if not ok:
+      bad.append(label)
+
+  direction("rotclaim-retired-pin", "PIN", PASS)
+  direction("rotclaim-retired-live", "LIVE", FAIL)
+
+
 def main():
   if "--plant" in sys.argv:
     return plant(ROOT)
@@ -622,6 +727,7 @@ def main():
     return DEAD
   ident_ok = tree_identity_holds(ROOT)
   idx, _shown, sha = census(ROOT)
+  split, retired_state, current_state = rotclaim_split(ROOT)
   if "--json" in sys.argv:
     print("PINNED-TREE JSON " + json.dumps({
       "identity": resolve(ROOT, "HEAD:tinygrad"),
@@ -629,23 +735,35 @@ def main():
       "index_paths": idx["paths"],
       "ls_files": idx["ls_files"],
       "ls_tree": idx["ls_tree"],
-      "claims": [ident_ok, sha == PASS],
-      "sha": sha}))
-  # EXIT RULE: the pin verdict, not the index state. A live claim or a broken tree
-  # identity is FAIL. A dated record whose date does not match is REFUSED and stays
-  # REFUSED. INDEX-ARMED / INDEX-DISARMED never enter this decision.
+      "claims": [ident_ok, sha == PASS, split == PASS],
+      "sha": sha,
+      "rotclaim": split,
+      "rotclaim_retired": retired_state,
+      "rotclaim_current": current_state}))
+  # EXIT RULE: the pin verdict, then the rotclaim disagreement, never the index state.
+  # A live claim, a broken tree identity, or a retired sha rotclaim classifies as LIVE is
+  # FAIL. A dated record whose date does not match, or a judge that did not classify both
+  # shas, is REFUSED. INDEX-ARMED / INDEX-DISARMED never enter this decision.
   if sha == DEAD:
     print("pinned-tree-gate: DEAD")
     return DEAD
-  if not ident_ok or sha == FAIL:
-    failed = [name for name, hit in (("identity", not ident_ok), ("live-claim", sha == FAIL)) if hit]
+  if not ident_ok or sha == FAIL or split == FAIL:
+    failed = [name for name, hit in (
+      ("identity", not ident_ok), ("live-claim", sha == FAIL),
+      ("rotclaim-retired-live", split == FAIL)) if hit]
     print(f"pinned-tree-gate: FAIL -- {failed}")
     return FAIL
-  if sha == REFUSED:
-    print("pinned-tree-gate: REFUSED, NOT A VERDICT: record-date")
+  if sha == REFUSED or split == REFUSED:
+    why = [name for name, hit in (
+      ("record-date", sha == REFUSED), ("rotclaim-unanswered", split == REFUSED)) if hit]
+    if why == ["record-date"]:
+      print("pinned-tree-gate: REFUSED, NOT A VERDICT: record-date")
+    else:
+      print("pinned-tree-gate: REFUSED, NOT A VERDICT: " + ", ".join(why))
     return REFUSED
   print("pinned-tree-gate: PASS -- the tree identity holds with no sha written here, "
         "and no gate home claims the current tinygrad/ tree by a transcribed sha. "
+        f"rotclaim retired={retired_state} current={current_state}. "
         f"The index row is {idx['state']} and is not this exit.")
   return PASS
 
