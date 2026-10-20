@@ -60,7 +60,15 @@ Development:
 
 
 When using bend:
-- run `bend guide` to learn it — **MEASURED rc=0, 677 lines. This is the one that works.**
+- **THE COMPILER **IS **REACHABLE **AS **`bin/bend`**, **NOT **AS **BARE `bend`** — **MEASURED 2026-10-20: `bin/bend` **IS
+  **A **2,097 **B **EXECUTABLE **SHIM **ONTO `references/bend/bend2/main.ts`**, **IT **RUNS**, **AND `command -v bend`
+  **FAILS**, **SO **A **BARE `bend` **RESOLVES **TO **NOTHING**.** **IT **IS **GITIGNORED **(`.gitignore:5`), **SO **IT
+  **IS **A **LOCAL **CONVENIENCE **AND **NOT **A **TRACKED **FILE** -- **WHICH **IS **WHY **THE **CORPUS **RUNS **IT
+  **AS **`./bin/bend`.** ***AND **THIS **LINE **HAS **COST **THE **TREE **A **DAY**: **AN **AGENT **WAS **NEARLY **CONVINCED
+  **IT **COULD **NOT **VERIFY **ANYTHING **BECAUSE **`command -v bend` **FAILED** -- **WHILE **A **WORKING **COMPILER **WAS
+  **SITTING **AT **`bin/bend`**.* **SO: **RUN **`bin/bend <file>`**, **OR **PUT **`$PWD/bin` **ON **`PATH`** -- **AND **NEVER
+  **CONCLUDE **"**THERE **IS **NO **BEND**" **FROM **`command -v bend`**.**
+- run `bin/bend guide` to learn it — **MEASURED rc=0, 677 lines. This is the one that works.**
 - use `LAWS.bend` to keep important rules — **the path is `tinybendygrad/LAWS.bend`; there is no
   `LAWS.bend` at the repo root, so the bare name resolves to nothing.** `--check-only` reports
   `Error: 34 TODOs found. The code is incomplete, and not a valid proof yet.`
