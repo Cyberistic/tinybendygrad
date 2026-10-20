@@ -12,7 +12,7 @@ nothing closed it, and every line after it was invisible. INCLUDING THE
 `if __name__ == "__main__":` GUARD, which is the line that says "RUN THIS AS A PROGRAM".
 
 This file is the CENSUS of that damage, and it is a census in the tree's sense: it repairs
-nothing and it judges nothing. It reports three things, and each is a measurement:
+nothing. The census run reports three things, and each is a measurement:
 
   1 HOW MANY TRACKED FILES LOST A TAIL, HOW MANY LINES EACH LOST, AND WHAT WAS IN IT.
   2 THE POPULATION BEFORE AND AFTER THE FIX, for the reader AND for the pin census that
@@ -38,14 +38,25 @@ vocabulary, not an invented one. It FAILS if the reader still swallows a tail, a
 if the fix moved a pin row from CAN-FAIL to CANNOT-FAIL, because CANNOT-FAIL is the
 accusation and a fix that creates an accusation has weakened the instrument it was meant to
 strengthen. It REFUSES if the before-arm is not in this repository.
+
+`--plant` IS NOT THE CENSUS. It writes two copies into a temporary directory and judges
+those copies. It does not call `load()`, so it does not walk the tree and it does not
+read `damage.rows`. The control asks the fixed reader whether it sees the sentinel
+`ends_inside` appends after a prefixed closer. The before reader, loaded by `git show`
+of `BEFORE_COMMIT`, does not. Substituting that before reader as the after reader makes
+the control red, and the plant requires the red: a control that cannot fail is not a
+control. A second copy the tokenizer cannot read must keep every line.
 """
 import argparse
 import importlib.util
+import io
 import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
+import tokenize
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -225,12 +236,139 @@ def write_rows(rows):
     return path
 
 
+def saw(reader, text, host, needle):
+    """-> True if `reader` returned a line carrying `needle`."""
+    return any(needle in line for _, line in reader.code_lines(text, host))
+
+
+def tokenizer_failed(text):
+    """-> True if `tokenize` cannot read `text`. The same exceptions `triple_blocks` catches."""
+    try:
+        list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (tokenize.TokenError, IndentationError, SyntaxError, ValueError):
+        return True
+    return False
+
+
+def write_copy(directory, name, text):
+    """Write `text` to a file under `directory` and return what was read back.
+    None if the copy's bytes are not the bytes that were written."""
+    path = os.path.join(directory, name)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    with open(path, encoding="utf-8") as fh:
+        got = fh.read()
+    return got if got == text else None
+
+
+def control_holds(reader, text, host):
+    """The control's question, asked of one reader.
+    True only if the reader sees the sentinel `ends_inside` appends (`ends_inside`
+    is false) and sees the planted marker. Substituting the before reader here
+    must be false: that is the falsifier."""
+    return (not ends_inside(reader, text, host)) and saw(reader, text, host, MARKER)
+
+
+def kept_every_line(reader, text, host):
+    """The census's rule, on a copy the tokenizer cannot read.
+    The copy contains a triple quote, so `code_lines` asks the tokenizer, and it
+    contains no comment, so every line of the file is a line the reader must return.
+    A reader that treats the failure as 'drop the file' loses them."""
+    if "'''" not in text and '"""' not in text:
+        return False
+    if not tokenizer_failed(text):
+        return False
+    lines = text.splitlines()
+    got = [line for _, line in reader.code_lines(text, host)]
+    return got == lines and any(MARKER in line for line in lines)
+
+
+def plant(root=ROOT):
+    """The control, the plant, and the falsifier. Copies only. `load()` is not called."""
+    after = load_module("code_reader_plant_after",
+                        os.path.join(root, "gates", "pincensus-pop.py"))
+    before = load_before(root)
+    if before is None:
+        print(f"code-reader-census --plant: REFUSED -- the before reader is not in "
+              f"this repository at {BEFORE_COMMIT}.", file=sys.stderr)
+        return REFUSED
+
+    # THE PREFIXED CLOSER. The marker is a line AFTER the closer, which is the tail
+    # the before reader swallows and the fixed reader must see. The sentinel is not
+    # in this text: `ends_inside` appends it.
+    prefixed = (
+        "BEND_MAIN = r'''\n"
+        "the body of a prefixed closer\n"
+        "'''\n"
+        f"{MARKER} = 1\n"
+    )
+    # THE TOKENIZE FAILURE. An unterminated triple quote, so the tokenizer is asked
+    # and cannot answer. The opener does not start the line, so the before reader's
+    # own state machine does not swallow this tail: the only way the fixed reader
+    # drops a line here is by weakening the failure rule.
+    broken = f"x = '''unterminated\n{MARKER} = 1\nkept = 1\n"
+    host = "python"
+
+    with tempfile.TemporaryDirectory(prefix="code-reader-plant-") as td:
+        root_abs = os.path.abspath(root)
+        if os.path.commonpath([os.path.abspath(td), root_abs]) == root_abs:
+            print("code-reader-census --plant: REFUSED -- the copy directory is inside "
+                  "the live tree.", file=sys.stderr)
+            return REFUSED
+        text = write_copy(td, "prefixed.py", prefixed)
+        bad = write_copy(td, "unreadable.py", broken)
+        if text is None or bad is None:
+            print("code-reader-census --plant: FAIL -- a copy did not read back as the "
+                  "bytes that were written.", file=sys.stderr)
+            return FAIL
+        if tokenizer_failed(text) or not tokenizer_failed(bad):
+            print("code-reader-census --plant: FAIL -- the copies do not have the shapes "
+                  "the two arms ask about.", file=sys.stderr)
+            return FAIL
+
+        after_inside = ends_inside(after, text, host)
+        before_inside = ends_inside(before, text, host)
+        after_saw = saw(after, text, host, MARKER)
+        before_saw = saw(before, text, host, MARKER)
+        # THE FALSIFIER IS THE CONTROL'S OWN QUESTION, with the before reader in the
+        # after slot. It must return FAIL. A control that still holds has not been
+        # shown able to fail.
+        control_rc = PASS if control_holds(after, text, host) else FAIL
+        falsifier_rc = PASS if control_holds(before, text, host) else FAIL
+        tokenize_ok = kept_every_line(after, bad, host)
+
+    before_blind = before_inside and not before_saw
+    out = sys.stdout
+    out.write("code-reader-census --plant: copies, not the live tree; load() was not called\n")
+    out.write(f"  CONTROL   rc={control_rc}  ends_inside={str(after_inside).lower()}  "
+              f"marker-seen={str(after_saw).lower()}  "
+              f"the fixed reader sees the sentinel after a prefixed closer\n")
+    out.write(f"  PLANT     ends_inside={str(before_inside).lower()}  "
+              f"marker-seen={str(before_saw).lower()}  "
+              f"the before reader does not see that sentinel\n")
+    out.write(f"  FALSIFIER rc={falsifier_rc}  before substituted as after; "
+              f"{'went red' if falsifier_rc == FAIL else 'DID NOT GO RED'}\n")
+    out.write(f"  TOKENIZE  {'kept every line' if tokenize_ok else 'DROPPED A LINE'}  "
+              f"a tokenize failure must keep every line\n")
+    ok = (control_rc == PASS and falsifier_rc == FAIL and before_blind and tokenize_ok)
+    if not ok:
+        print("code-reader-census --plant: FAIL", file=sys.stderr)
+        return FAIL
+    out.write("  PASS: the control holds, the substitution goes red, and a tokenize "
+              "failure kept every line.\n")
+    return PASS
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--root", default=ROOT)
     ap.add_argument("--no-write", action="store_true")
+    ap.add_argument("--plant", action="store_true",
+                    help="the control and its falsifier, on copies; does not walk the tree")
     args = ap.parse_args()
     root = args.root
+    if args.plant:
+        return plant(root)
     out = sys.stdout
 
     after = load_module("code_reader_after_pop", os.path.join(root, "gates", "pincensus-pop.py"))
