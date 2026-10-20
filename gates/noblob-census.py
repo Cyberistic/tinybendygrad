@@ -29,7 +29,9 @@ neither citation class. A citation added inside `_synthetic()` is PLANT-CITATION
 same path cited from a non-plant function is LOAD-BEARING. A plant that emits nothing
 while scoring success is not a plant.
 
-`recover()` claims a grandparent walk. This file reads that claim and does not fix it.
+`recover()`'s walk is read from the module loaded by path (`WALK_DEPTH`), not from
+the wiped-parent string. Depth 2 is the grandparent; depth 3 is not walked. This file
+does not fix the walk.
 """
 from __future__ import annotations
 
@@ -88,11 +90,12 @@ def git(args: list[str], env: dict | None = None, stdin: str | None = None) -> s
   return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, input=stdin, env=run_env)
 
 
-def load_dangling():
-  """Import the generator by path. `gates/` is not a package."""
-  if not DANGLING.is_file():
+def load_dangling(path: Path | None = None, name: str = "oracle_dangling_noblob"):
+  """Import the generator by path. `gates/` is not a package. A plant passes a copy."""
+  src = DANGLING if path is None else path
+  if not src.is_file():
     return None
-  spec = importlib.util.spec_from_file_location("oracle_dangling_noblob", DANGLING)
+  spec = importlib.util.spec_from_file_location(name, src)
   if spec is None or spec.loader is None:
     return None
   mod = importlib.util.module_from_spec(spec)
@@ -116,17 +119,129 @@ def filter_loaded(mod) -> bool:
   return 'in ("ORACLE", "EV", "SWEPT")' in src and "recover(" in src
 
 
+# One wording each. walk_claim() returns these; the plant matches them. A second sentence is a second rule.
+WALK_DEPTH2 = (
+  "CONFIRMED at grandparent: WALK_DEPTH = 2; the chain loop is range(WALK_DEPTH), "
+  "so depth 3 (great-grandparent) is not walked"
+)
+WALK_WIPE = (
+  "CONFIRMED, the wipe is back: recover() assigns cur_parents = [] after "
+  "appending one parent, so the chain is the touching commit and its parent"
+)
+WALK_NEITHER = (
+  "NOT CONFIRMED: recover() claims a grandparent and has neither WALK_DEPTH nor the wipe"
+)
+
+
+def _file_depth(path: Path) -> int | None:
+  """The module-level `WALK_DEPTH = <int>` in the file the module was loaded from. Last assignment wins."""
+  try:
+    tree = ast.parse(path.read_text())
+  except (OSError, SyntaxError):
+    return None
+  found = None
+  for node in ast.iter_child_nodes(tree):
+    if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+      continue
+    target = node.targets[0]
+    if not (isinstance(target, ast.Name) and target.id == "WALK_DEPTH"):
+      continue
+    value = node.value
+    found = value.value if isinstance(value, ast.Constant) and type(value.value) is int else None
+  return found
+
+
+def _pos(node: ast.AST) -> tuple[int, int]:
+  return (getattr(node, "lineno", 0), getattr(node, "col_offset", 0))
+
+
+def _is_append_cur0(node: ast.AST) -> bool:
+  """`chain.append(cur_parents[0])`, the one append the old wipe follows. Not a comment."""
+  call = node.value if isinstance(node, ast.Expr) else node
+  if not isinstance(call, ast.Call) or len(call.args) != 1:
+    return False
+  func, arg = call.func, call.args[0]
+  if not (isinstance(func, ast.Attribute) and func.attr == "append"
+          and isinstance(func.value, ast.Name) and func.value.id == "chain"):
+    return False
+  return (isinstance(arg, ast.Subscript) and isinstance(arg.value, ast.Name)
+          and arg.value.id == "cur_parents" and isinstance(arg.slice, ast.Constant)
+          and arg.slice.value == 0)
+
+
+def _is_wipe(node: ast.AST) -> bool:
+  """`cur_parents = []`. The assignment that throws away every parent after the first."""
+  if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+    return False
+  target = node.targets[0]
+  return (isinstance(target, ast.Name) and target.id == "cur_parents"
+          and isinstance(node.value, ast.List) and not node.value.elts)
+
+
+def _wipe_back(src: str) -> bool:
+  """The old bug: append `cur_parents[0]`, then assign `cur_parents = []`."""
+  try:
+    tree = ast.parse(src)
+  except SyntaxError:
+    return False
+  append_at = None
+  wipe_at = None
+  for node in ast.walk(tree):
+    if _is_append_cur0(node):
+      pos = _pos(node)
+      if append_at is None or pos < append_at:
+        append_at = pos
+    if _is_wipe(node):
+      pos = _pos(node)
+      if wipe_at is None or pos < wipe_at:
+        wipe_at = pos
+  return append_at is not None and wipe_at is not None and append_at < wipe_at
+
+
+def _appends_chain(node: ast.AST) -> bool:
+  return any(isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute)
+             and sub.func.attr == "append" and isinstance(sub.func.value, ast.Name)
+             and sub.func.value.id == "chain" for sub in ast.walk(node))
+
+
+def _chain_bounds(src: str) -> list[str] | None:
+  """Bound of every `range` loop that appends to `chain`. An enclosing `.items()` loop is not the walk."""
+  try:
+    tree = ast.parse(src)
+  except SyntaxError:
+    return None
+  bounds: list[str] = []
+  for node in ast.walk(tree):
+    if not isinstance(node, ast.For) or not _appends_chain(node):
+      continue
+    it = node.iter
+    if not (isinstance(it, ast.Call) and isinstance(it.func, ast.Name) and it.func.id == "range"):
+      continue
+    name = it.args[0].id if len(it.args) == 1 and isinstance(it.args[0], ast.Name) else "other"
+    bounds.append("WALK_DEPTH" if name == "WALK_DEPTH" else "other")
+  return bounds
+
+
+def _loaded_depth(mod) -> int | None:
+  """`WALK_DEPTH` from the loaded module, and only if the file it was loaded from assigns the same int."""
+  loaded = getattr(mod, "WALK_DEPTH", None)
+  path = getattr(mod, "__file__", None)
+  if type(loaded) is not int or not path:
+    return None
+  return loaded if _file_depth(Path(path)) == loaded else None
+
+
 def walk_claim(mod) -> str:
-  """What `recover()`'s source does, against what its comment claims. Not a fix."""
+  """What the loaded walk does. The constant is the module's, read from the file loaded by path. Not a fix."""
   src = inspect.getsource(mod.recover)
-  claims = "grandparent" in src
-  wipes = "cur_parents = []" in src
-  one_parent = "chain.append(cur_parents[0])" in src
-  if claims and wipes and one_parent:
-    return ("CONFIRMED, not fixed: recover() claims a grandparent walk and assigns "
-            "cur_parents = [] after appending one parent, so the chain is the touching "
-            "commit and its parent")
-  return "NOT CONFIRMED: recover()'s source no longer has the grandparent-wipe shape"
+  if _wipe_back(src):
+    return WALK_WIPE
+  bounds = _chain_bounds(src)
+  if _loaded_depth(mod) == 2 and bounds and all(b == "WALK_DEPTH" for b in bounds):
+    return WALK_DEPTH2
+  if "grandparent" in src and _loaded_depth(mod) is None and not _wipe_back(src):
+    return WALK_NEITHER
+  return "NOT CONFIRMED: the loaded walk is neither depth 2 nor the wipe"
 
 
 def touching(paths: list[str], env: dict | None = None) -> dict[str, list[str]] | None:
@@ -638,6 +753,131 @@ def _cite_plant(mod, surveyed: dict, real: dict, writers: list[str], control: st
   return PASS
 
 
+# The old walk, put back into a copy. The live file is not this text.
+_WIPE_BLOCK = (
+  "            chain, cur_parents = [sha], parents\n"
+  "            for _ in range(3):\n"
+  "                if not cur_parents:\n"
+  "                    break\n"
+  "                chain.append(cur_parents[0])\n"
+  "                cur_parents = []\n"
+)
+# Names the walk plant must print. A PASS that did not emit these scored success on nothing.
+WALK_REQUIRED = (
+  "PLANT a copy with WALK_DEPTH = 2 and no wipe is CONFIRMED at grandparent",
+  "PLANT a copy with the wipe is CONFIRMED, the wipe is back",
+  "PLANT a copy with neither constant nor wipe is NOT CONFIRMED",
+  "CONTROL the live oracle-dangling-gate.py is unmodified and reads depth 2",
+)
+
+
+def _with_wipe(text: str) -> str | None:
+  """The live chain loop, replaced by the wipe. Refuses a file that is not that shape."""
+  anchor = "            chain = [sha]\n"
+  tail = "            cands.extend"
+  if text.count(anchor) != 1:
+    return None
+  start = text.find(anchor)
+  end = text.find(tail, start)
+  if end < 0:
+    return None
+  return text[:start] + _WIPE_BLOCK + text[end:]
+
+
+def _without_depth(text: str) -> str | None:
+  """The module-level assignment removed. The grandparent claim in `recover()` stays."""
+  needle = "WALK_DEPTH = 2\n"
+  if text.count(needle) != 1:
+    return None
+  return text.replace(needle, "", 1)
+
+
+def _load_copy(path: Path, name: str):
+  """Load a copy by path. The copy inserts its own directory on `sys.path`; that does not stay."""
+  saved = sys.path.copy()
+  try:
+    return load_dangling(path, name)
+  except Exception as exc:  # noqa: BLE001 -- a copy that does not import is a refusal, not a pass
+    print(f"PLANT REFUSED: {name} did not load: {type(exc).__name__}: {exc}")
+    return None
+  finally:
+    sys.path[:] = saved
+
+
+def _walk_plant(mod) -> int:
+  """Three copies of the recover module, plus the live file left byte-identical.
+
+  Depth 2 and no wipe is the grandparent. The wipe is the wipe. Neither is not a pass.
+  """
+  import hashlib
+  import tempfile
+  before = DANGLING.read_bytes()
+  text = before.decode()
+  built = {
+    "depth2": text,
+    "wipe": _with_wipe(text),
+    "neither": _without_depth(text),
+  }
+  if any(v is None for v in built.values()):
+    print("PLANT REFUSED: the live walk is not the shape the copies are built from")
+    return REFUSED
+  want = {"depth2": WALK_DEPTH2, "wipe": WALK_WIPE, "neither": WALK_NEITHER}
+  names = {
+    "depth2": WALK_REQUIRED[0],
+    "wipe": WALK_REQUIRED[1],
+    "neither": WALK_REQUIRED[2],
+  }
+  checks: list[tuple[str, bool, str]] = []
+  print(f"  WALK PLANT live sha256={hashlib.sha256(before).hexdigest()[:12]}")
+  with tempfile.TemporaryDirectory(prefix="noblob-walk.") as tmp:
+    root = Path(tmp)
+    for kind in ("depth2", "wipe", "neither"):
+      body = built[kind]
+      if body is None:
+        print(f"PLANT REFUSED: the {kind} copy was not built")
+        return REFUSED
+      try:
+        ast.parse(body)
+      except SyntaxError as exc:
+        print(f"PLANT REFUSED: the {kind} copy does not parse: {exc}")
+        return REFUSED
+      dest = root / f"{kind}.py"
+      dest.write_text(body)
+      copy = _load_copy(dest, f"oracle_dangling_walk_{kind}")
+      if copy is None or not callable(getattr(copy, "recover", None)):
+        print(f"PLANT REFUSED: the {kind} copy did not load recover()")
+        return REFUSED
+      got = walk_claim(copy)
+      src = inspect.getsource(copy.recover)
+      depth = getattr(copy, "WALK_DEPTH", None)
+      wipe = _wipe_back(src)
+      claims = "grandparent" in src
+      if kind == "depth2":
+        shape = depth == 2 and not wipe and "WALK_DEPTH = 2\n" in body
+      elif kind == "wipe":
+        shape = wipe and "cur_parents = []" in body and "chain.append(cur_parents[0])" in body
+      else:
+        shape = claims and depth is None and not wipe and "WALK_DEPTH = 2\n" not in body
+      checks.append((names[kind], got == want[kind] and shape,
+                     f"got={got} depth={depth!r} wipe={wipe}"))
+  after = DANGLING.read_bytes()
+  live = walk_claim(mod)
+  checks.append((
+    WALK_REQUIRED[3],
+    after == before and live == WALK_DEPTH2,
+    f"bytes-same={after == before} walk={live}",
+  ))
+  for name, ok, detail in checks:
+    _print_check(name, ok, detail)
+  missing = [n for n in WALK_REQUIRED if n not in {c[0] for c in checks}]
+  if missing:
+    _print_check("walk plant emitted every required check", False, ", ".join(missing))
+    return FAIL
+  if any(not ok for _, ok, _ in checks):
+    return FAIL
+  return PASS
+
+
 def plant(mod, surveyed: dict, real: dict) -> int:
   """Checks on a copy of one namer and, for the history arm, a private index. The real index is not written.
 
@@ -647,6 +887,8 @@ def plant(mod, surveyed: dict, real: dict) -> int:
   CONTROL   an existing file is in neither citation class.
   CITE      a citation inside `_synthetic()` is PLANT-CITATION; the same path cited from a
             non-plant function is LOAD-BEARING. A plant that emits nothing is not a PASS.
+  WALK      a copy of the recover module at depth 2 is the grandparent; the wipe is the wipe;
+            neither is not a pass. The live file is not edited.
   """
   import tempfile
   never = _never_path()
@@ -723,11 +965,14 @@ def plant(mod, surveyed: dict, real: dict) -> int:
   ]
   bad = [n for n, ok, _d in checks if not _print_check(n, ok, _d)]
   cite_rc = _cite_plant(mod, surveyed, real, writers, control)
-  if cite_rc == REFUSED and not bad:
+  walk_rc = _walk_plant(mod)
+  arms = (("citation plant", cite_rc), ("walk plant", walk_rc))
+  refused = [n for n, rc in arms if rc == REFUSED]
+  failed = [n for n, rc in arms if rc not in (PASS, REFUSED)]
+  if not bad and not failed and refused:
     return REFUSED
-  if bad or cite_rc != PASS:
-    extra = [] if cite_rc == PASS else ["citation plant"]
-    print(f"  VERDICT FAIL: {'; '.join([*bad, *extra])}")
+  if bad or failed or refused:
+    print(f"  VERDICT FAIL: {'; '.join([*bad, *failed, *refused])}")
     return FAIL
   print("  VERDICT PASS")
   return PASS
