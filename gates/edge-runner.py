@@ -212,7 +212,15 @@ TRACE_COLUMNS = ["gate", "status", "verdict", "token", "rc", "seconds", "peak-mb
 def read_rows(path):
     """-> {first column: [fields]} for a generated `.rows` file. A MISSING file is `{}`, and a
     missing ledger is not an error: it means nothing has been measured yet, and the edge runs
-    what it has not measured rather than skipping it."""
+    what it has not measured rather than skipping it.
+
+    **THE COLUMN NAMES LIVE IN THE `#` HEADER AND NOT IN A LINE OF THEIR OWN**, and that is a
+    FIX, not a style. MEASURED 2026-10-20: with the column line written as data, this reader
+    parsed it as a row whose key was the literal string `gate`, and the edge's plan then
+    reported `STALE gate` -- a gate that does not exist, named by the file's own vocabulary.
+    The house style agrees: `gates/crp_graph_census-pins.rows` puts its column names in the
+    `#` header and writes no column line at all.
+    """
     if not path.is_file():
         return {}
     out = {}
@@ -232,8 +240,8 @@ def write_rows(path, columns, rows, header, root=ROOT):
     stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     with path.open("w") as fh:
         fh.write(f"# {header}\n")
+        fh.write(f"# columns: {', '.join(columns)}\n")
         fh.write(f"# written {stamp} HEAD={git_head(root)}\n")
-        fh.write("\t".join(columns) + "\n")
         for r in rows:
             fh.write("\t".join(str(x).replace("\t", " ") for x in r) + "\n")
     return stamp
