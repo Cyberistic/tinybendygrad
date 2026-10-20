@@ -7,6 +7,10 @@
 The comparator is `gates/rotclaim-gate.py`, loaded by path. A direction that emits
 no row is REFUSED. `--falsify` inverts the control's expected live count and must
 exit non-zero: a plant whose expectation cannot be violated measures nothing.
+
+A retired sha on the next line is PIN and does not increment `live`. The check
+reads that row's state: a live count of 0 with the row dropped is not a pass.
+A current-tree sha with the bindings stripped is LIVE. A comment does not exempt it.
 """
 from __future__ import annotations
 
@@ -41,6 +45,29 @@ def classified(rotclaim, text, trees):
     live = sum(1 for r in got if r["kind"] == "live")
     state = next((r["state"] for r in got if r["kind"] == "record"), "ABSENT")
     return (live, state)
+
+
+def scored(rotclaim, text, trees):
+    """`(live, pins, pin_state, record)`. `pin_state` is the row's own state."""
+    got = rotclaim.assess(text, trees, ROOT)
+    if not any(r["kind"] == "file" for r in got):
+        return None
+    pins = [r for r in got if r["kind"] == "pin"]
+    live = sum(1 for r in got if r["kind"] == "live")
+    record = next((r["state"] for r in got if r["kind"] == "record"), "ABSENT")
+    return (live, len(pins), pins[0]["state"] if pins else "ABSENT", record)
+
+
+def without_bindings(rotclaim, text):
+    """The dated-record lines, dropped by the comparator's own spans. None if it saw none."""
+    drop = set()
+    for rec in rotclaim.records_of(text).values():
+        for key in ("date", "derive"):
+            start, end, _value = rec[key]
+            drop.update(range(start, end + 1))
+    if not drop:
+        return None
+    return "\n".join(ln for i, ln in enumerate(text.splitlines(), 1) if i not in drop)
 
 
 def rows_hits(pinned, text, trees):
@@ -78,8 +105,13 @@ def main(argv):
     broken = text.replace(needle, 'REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"', 1) if needle in text else None
     control_want = (1, "VERIFIED") if "--falsify" in argv else (0, "VERIFIED")
 
+    stripped = without_bindings(rotclaim, text)
     check("control", classified(rotclaim, text, trees), control_want)
-    check("sha-on-the-next-line-is-live", classified(rotclaim, text + f"\n# {retired}\n", trees), (1, "VERIFIED"))
+    check("retired-sha-on-the-next-line-is-pin",
+          scored(rotclaim, text + f"\n# {retired}\n", trees), (0, 1, "PIN", "VERIFIED"))
+    check("current-sha-bindings-stripped-is-live",
+          classified(rotclaim, stripped + f"\n# {cur}\n", trees) if stripped is not None else None, (1, "ABSENT"))
+    check("comment-does-not-exempt", classified(rotclaim, text + f"\n# {cur}\n", trees), (1, "VERIFIED"))
     check("wrong-date-is-refused", classified(rotclaim, broken, trees) if broken is not None else None, (0, "REFUSED"))
     check("control-unbroken", classified(rotclaim, GATE.read_text(), trees), (0, "VERIFIED"))
     check("disk-unwritten", (GATE.read_bytes() == gate_bytes, LEDGER.read_bytes() == ledger_bytes), (True, True))
