@@ -23,12 +23,14 @@ RE-VENDOR MAKES IT FALSE AGAIN, WHICH IS EXACTLY WHAT HAPPENED.** The remedy is 
 is to delete the SHA and keep the comparison in a place that reads it. So this gate holds the
 identity WITHOUT a sha in it, and then hunts the transcription itself.
 
-    PASS 0     the tree identity holds, the index population is whole, no gate home transcribes a
-               `tinygrad/` tree value
-    FAIL 1     a check ran and answered no -- named, with the site or the value that answers no
-    REFUSED 3   a precondition was absent. An ARMED INDEX IS NOT A WRONG TREE: the blobs are right
-               and the files are on disk, but every instrument that reads `git ls-files` in this
-               tree is reading a POPULATION THAT IS NOT THE TREE
+    PASS 0     the tree identity holds, the index population is whole, and no gate home claims the
+               current `tinygrad/` tree by a transcribed sha
+    FAIL 1     a check ran and answered no -- a sha names the current tree and no verified record
+               owns that line, or the two trees differ
+    REFUSED 3   a precondition was absent, or a dated record's date does not match the commit its
+               derive names. An ARMED INDEX IS NOT A WRONG TREE: the blobs are right and the files
+               are on disk, but every instrument that reads `git ls-files` in this tree is reading
+               a POPULATION THAT IS NOT THE TREE
     DEAD 5     the gate could not measure at all
 
 READ-ONLY BY CONSTRUCTION. Every git call carries `--no-optional-locks`, which is what stops git
@@ -63,15 +65,15 @@ correctly not a hit; the plant's `NOT-A-TREE` state is what proves that rather t
 (c) The tree population is the last `DEPTH` commits that touched `tinygrad/`, which is a window: a
 site naming a tree older than the window is not found. Stating the window is the honest half; the
 window is why `DEPTH` is a named constant and not a number typed beside a claim.
-(d) IT CANNOT TELL A DATED MEASUREMENT RECORD FROM A LIVE CLAIM, and it REPORTS BOTH. Every hit is
-printed with the site, the literal and whether it abbreviates the current tree or a retired one, and
-THE CLASSIFICATION IS LEFT TO THE READER, because the alternative is matching prose -- asking whether
-a line says "is" or "was" -- and that is the same fault as a basename shape: it reads well on the
-lines you wrote and silently passes the ones you did not. **MEASURED, AND IT OVER-REPORTS:**
-`gates/corpusfresh-gate.py` carries BOTH ends of one re-vendor's arrow on a dated line with its own
-re-derivation command beside them, which is the CORRECT shape for a record and is reported here
-anyway. So the hit count is an UPPER BOUND on the rot, and a reader who wants the rot and not the
-record has to read the line -- which is stated here rather than left as a surprise on the first run.
+(d) A DATED RECORD IS A BINDING, IMPORTED FROM `gates/rotclaim-gate.py` (`spans`), NOT A COMMENT
+AND NOT A SECOND COPY OF THAT GATE. `*_RECORD_DATE` + `*_RECORD_DERIVE` -- the names in this tree
+are `REVENDOR_RECORD_DATE` and `REVENDOR_RECORD_DERIVE` -- own the lines of those two assignments
+only when a second git call says the date matches the commit the derive names. A comment that says
+"dated record" is not an assignment, so it owns nothing. A date that does not match is REFUSED, and
+that record owns nothing either. A sha that prefixes the current `HEAD:tinygrad` and is not on those
+lines is a live claim: it goes false at the next re-vendor, and refreshing it is not a fix. A sha
+that prefixes only a retired tree is a pin for a past revision, which is not stale. `gates/artifacts/`
+is a run's transcript (`_generated`, imported from the same module), not a source claim.
 """
 
 import hashlib
@@ -81,6 +83,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import warnings
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -171,6 +174,22 @@ def _load(name, path):
   return mod
 
 
+def _record():
+  """The dated-record test, loaded by path from `rotclaim-gate.py`. Not copied.
+
+  That module loads this file lazily, and only when its own judge runs. Loading it back at
+  import time is a cycle, so this is called from the claim and the plant, not from import.
+  `spans` is the test: ast assignments `*_RECORD_DATE` + `*_RECORD_DERIVE`, a second git call
+  for the date, and owned lines only when that call agrees. A comment is not an assignment.
+  """
+  if _record.mod is None:
+    _record.mod = _load("pinrecord_rotclaim", HERE / "rotclaim-gate.py")
+  return _record.mod
+
+
+_record.mod = None
+
+
 def _site(root, p):
   """`p` as a repo-relative site, or absolute when it is not under the repo AT ALL.
 
@@ -233,6 +252,76 @@ def index_readers(root, dirs):
           if m:
             hits.append((f"{_site(root, p)}:{n}", m.group(1)))
   return hits
+
+
+def _split_site(site):
+  path, _, line = site.rpartition(":")
+  return path, int(line)
+
+
+def classify(display_root, dirs, trees, git_root, emit_seen=False):
+  """Each transcribed tree sha is a record, a past pin, a transcript, or a live claim.
+
+  The record test is `_record().spans`, imported, not reimplemented. This function only
+  applies it to the hits `transcribed` already found, and splits a current-tree sha from a
+  retired one: rotclaim's own judge still calls every non-owned tree sha live, and a pin
+  for a past revision is not that.
+  """
+  rc = _record()
+  current = resolve(git_root, "HEAD:tinygrad")
+  hits = transcribed(display_root, dirs, trees)
+  rows, by_file = [], {}
+  for site, literal, tree in hits:
+    path, line = _split_site(site)
+    if rc._generated(path):
+      rows.append({"kind": "generated", "file": site, "literal": literal, "state": "TRANSCRIPT"})
+      continue
+    by_file.setdefault(path, []).append((line, literal, tree, site))
+  seen = set()
+  for d in dirs:
+    if not d.is_dir():
+      continue
+    for base, dirnames, files in os.walk(d):
+      dirnames[:] = [n for n in dirnames if n not in ("__pycache__", "artifacts") and not n.startswith(".tmp")]
+      for fname in files:
+        if not fname.endswith(".py"):
+          continue
+        p = Path(base) / fname
+        rel = _site(display_root, p)
+        try:
+          text = p.read_text(errors="replace")
+        except OSError:
+          continue
+        # `spans` parses with `ast.parse(text)` and no filename, so a `\.` in some other
+        # file's docstring warns as `<unknown>`. That warning is not this claim.
+        with warnings.catch_warnings():
+          warnings.simplefilter("ignore", SyntaxWarning)
+          owned, recs = rc.spans(text, git_root)
+        for rec in recs:
+          row = dict(rec)
+          row["file"] = rel
+          rows.append(row)
+        n_live = 0
+        for line, literal, tree, site in by_file.get(rel, []):
+          if any(a <= line <= b for a, b in owned):
+            rows.append({"kind": "owned", "file": site, "literal": literal, "state": "RECORD"})
+            continue
+          if tree == current:
+            n_live += 1
+            rows.append({"kind": "live", "file": site, "literal": literal, "state": "LIVE"})
+          else:
+            rows.append({"kind": "past", "file": site, "literal": literal, "state": "PIN"})
+        if emit_seen:
+          rows.append({"kind": "file", "file": rel, "state": "SEEN", "live": n_live})
+        seen.add(rel)
+  for path, items in sorted(by_file.items()):
+    if path in seen:
+      continue
+    for _line, literal, tree, site in items:
+      kind = "live" if tree == current else "past"
+      state = "LIVE" if tree == current else "PIN"
+      rows.append({"kind": kind, "file": site, "literal": literal, "state": state})
+  return rows
 
 
 # ---- the three claims -----------------------------------------------------------------------
@@ -298,39 +387,43 @@ def index_population_holds(root):
   return True
 
 
+def _n(rows, kind, state=None):
+  return sum(1 for r in rows if r["kind"] == kind and (state is None or r["state"] == state))
+
+
 def no_transcribed_tree_sha(root):
-  """CLAIM 3: NO GATE HOME TRANSCRIBES A `tinygrad/` TREE VALUE.
+  """CLAIM 3: NO GATE HOME MAKES A LIVE CLAIM THAT THE CURRENT `tinygrad/` TREE IS A TRANSCRIBED SHA.
 
-  This is the check that would have caught the five sites. The population is a DIRECTORY WALK of the
-  DERIVED gate homes and the tree values are a DERIVED window of this repository's own history, so
-  neither is typed; a fourth site added tomorrow is found by the same two derivations.
-
-  One assertion, and it names the site rather than the count alone: a hit prints `file:line`, the
-  literal, and the tree it abbreviates -- because "4 sites" does not tell a reader where to look, and
-  a count beside no site is a number nobody can act on.
+  The hits are still `transcribed`. The class of each hit is `classify`, which imports the record
+  test rather than matching the words "dated record". A verified record and a retired-tree pin are
+  printed and are not failures. A sha of the current tree, not on a verified binding, is a failure.
+  A record whose date does not match is REFUSED. Refreshing a sha is not a fix, and this function
+  does not write one.
   """
   trees = tree_values(root)
   if not trees:
     print("pinned-tree-gate: no `tinygrad/` tree value could be derived from this repository's own "
           "history, so there is no population to compare a literal against -- that is DEAD, not a "
           "clean census")
-    return False
+    return DEAD
   dirs = homes(root)
-  hits = transcribed(root, dirs, trees)
-  if hits:
-    print(f"pinned-tree-gate: {len(hits)} TRANSCRIBED TREE SHA(S) in the derived gate homes "
-          f"{[d.name for d in dirs]} -- each is a sentence a re-vendor falsifies for free:")
-    for site, lit, tree in hits:
-      cur = "IS THE CURRENT TREE" if tree == resolve(root, "HEAD:tinygrad") else "is a RETIRED tree"
-      print(f"      {site}  {lit}  -> {tree[:12]} ({cur})")
-    print("      DELETE THE SHA AND KEEP THE COMPARISON: a sha in prose is a transcription, and the "
-          "identity it stands in for is measurable. `gates/pinned-tree-gate.py --plant` shows the "
-          "claim can still go red on a planted one.")
-    return False
-  print(f"pinned-tree-gate: NO TRANSCRIBED TREE SHA in the derived gate homes "
-        f"{[d.name for d in dirs]} -- {len(trees)} distinct `tinygrad/` tree values over the last "
-        f"{DEPTH} commits that touched it, and no hex run under those homes abbreviates any of them")
-  return True
+  rows = classify(root, dirs, trees, root)
+  shown = [r for r in rows if r["kind"] != "file"]
+  if shown:
+    print("\n".join("pinned-tree\t" + _record().emit(r) for r in shown))
+  live, refused = _n(rows, "live"), _n(rows, "record", "REFUSED")
+  print(f"pinned-tree-gate: live={live} past={_n(rows, 'past')} "
+        f"verified={_n(rows, 'record', 'VERIFIED')} refused={refused} "
+        f"owned={_n(rows, 'owned')} transcript={_n(rows, 'generated')}")
+  if live:
+    print("pinned-tree-gate: FAIL -- a sha names the current tinygrad/ tree and no verified record "
+          "owns that line. Refreshing the sha is not a fix.")
+    return FAIL
+  if refused:
+    print("pinned-tree-gate: REFUSED -- a dated record's date does not match the commit its derive names")
+    return REFUSED
+  print(f"pinned-tree-gate: no live claim of the current tree in {[d.name for d in dirs]}")
+  return PASS
 
 
 # ---- the plant ------------------------------------------------------------------------------
@@ -360,6 +453,12 @@ def plant(root):
   file. If the planted file were unread, or the walk skipped it, or the check matched every hex, the
   counts would be 0/0/0 and the plant prints `PLANT WRONG` and exits 1. A plant that cannot fail is
   a comment.
+
+  THE CONTROL ABOVE IS UNBROKEN: it still calls `transcribed`. The copy directions call `classify`
+  on a copy of `corpusfresh-gate.py`. A dated record whose derive matches stays green, including
+  when the current tree sha sits on the binding line. A comment that says "dated record" does not
+  exempt that sha. A wrong date is a record row in state REFUSED. A direction that emits no row
+  is REFUSED, not a success.
   """
   trees = tree_values(root)
   if len(trees) < 2:
@@ -395,7 +494,67 @@ def plant(root):
         clean_sites = len(got)
     if clean_sites:
       bad.append(f"the control is not clean: {clean_sites} site(s) with no planted literal")
-  print(f"--plant: {'all 3 states OK' if not bad else 'PLANT WRONG: ' + '; '.join(bad)}")
+  fresh = (HERE / "corpusfresh-gate.py").read_text()
+  pair = _record().records_of(fresh).get("REVENDOR")
+  date = pair["date"][2] if pair and "date" in pair else ""
+  if not cur or not date or any(t.startswith(decoy) for t in trees):
+    print("--plant: REFUSED -- no current tree, no REVENDOR record, or the decoy prefixes a real tree")
+    return REFUSED
+
+  def drop_bindings(text):
+    drop = set()
+    for rec in _record().records_of(text).values():
+      for key in ("date", "derive"):
+        start, end, _value = rec[key]
+        drop.update(range(start, end + 1))
+    return "\n".join(ln for i, ln in enumerate(text.splitlines(), 1) if i not in drop) + "\n"
+
+  def assess(text):
+    with tempfile.TemporaryDirectory(prefix="pinrecord-") as td:
+      home = Path(td) / "gates"
+      home.mkdir()
+      (home / "fixture.py").write_text(text)
+      return classify(Path(td), [home], trees, root, emit_seen=True)
+
+  def classified(text):
+    got = assess(text)
+    if not got or not any(r["kind"] == "file" for r in got):
+      return None
+    rec = next((r["state"] for r in got if r["kind"] == "record"), "ABSENT")
+    return (_n(got, "live"), rec, _n(got, "past"), _n(got, "owned"))
+
+  silent = []
+
+  def check(label, got, want):
+    if got is None:
+      silent.append(label)
+      bad.append(label)
+      print(f"  {label}: REFUSED SILENT wanted={want}")
+      return
+    ok = got == want
+    print(f"  {label}: {'OK' if ok else 'REFUSED'} verdict={got} wanted={want}")
+    if not ok:
+      bad.append(label)
+
+  check("record-control", classified(fresh), (0, "VERIFIED", 0, 0))
+  check("record-owns-current-sha", classified(fresh.replace(
+    f'REVENDOR_RECORD_DATE = "{date}"', f'REVENDOR_RECORD_DATE = "{date}"  # {cur}', 1)),
+    (0, "VERIFIED", 0, 1))
+  check("prose-does-not-exempt", classified(drop_bindings(fresh) + f"# this was a dated record\n# {cur}\n"),
+        (1, "ABSENT", 0, 0))
+  check("wrong-date", classified(fresh.replace(
+    f'REVENDOR_RECORD_DATE = "{date}"', f'REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"  # {cur}', 1)),
+    (1, "REFUSED", 0, 0))
+  check("wrong-date-no-sha", classified(fresh.replace(
+    f'REVENDOR_RECORD_DATE = "{date}"', 'REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"', 1)),
+    (0, "REFUSED", 0, 0))
+  check("past-pin", classified(f"# {retired}\n"), (0, "ABSENT", 1, 0))
+  check("current-sha-is-live", classified(f"# {cur}\n"), (1, "ABSENT", 0, 0))
+  check("not-a-tree-on-a-record", classified(fresh + f"\n# {decoy}\n"), (0, "VERIFIED", 0, 0))
+  if silent:
+    print(f"--plant: REFUSED -- {len(silent)} direction(s) emitted nothing: {silent}")
+    return REFUSED
+  print(f"--plant: {'OK' if not bad else 'PLANT WRONG: ' + '; '.join(bad)}")
   return 1 if bad else 0
 
 
@@ -405,19 +564,34 @@ def main():
   if not (ROOT / ".git").exists() and not (ROOT / "HEAD").exists():
     print("pinned-tree-gate: DEAD -- no repository here; a gate with no tree measures nothing")
     return DEAD
-  ok = [tree_identity_holds(ROOT), index_population_holds(ROOT), no_transcribed_tree_sha(ROOT)]
+  ident_ok = tree_identity_holds(ROOT)
+  index_ok = index_population_holds(ROOT)
+  sha = no_transcribed_tree_sha(ROOT)
   if "--json" in sys.argv:
-    print("PINNED-TREE JSON " + json.dumps(
-      {"identity": resolve(ROOT, "HEAD:tinygrad"), "claims": ok}))
-  failed = [n for n, v in zip(("identity", "index-population", "no-transcribed-sha"), ok) if not v]
-  if "index-population" in failed and ok[0] and ok[2]:
-    print(f"pinned-tree-gate: REFUSED, NOT A VERDICT: {failed[0]}")
-    return REFUSED
-  if failed:
+    print("PINNED-TREE JSON " + json.dumps({
+      "identity": resolve(ROOT, "HEAD:tinygrad"),
+      "claims": [ident_ok, index_ok, sha == PASS],
+      "sha": sha}))
+  if sha == DEAD:
+    print("pinned-tree-gate: DEAD")
+    return DEAD
+  failed = []
+  if not ident_ok:
+    failed.append("identity")
+  if not index_ok:
+    failed.append("index-population")
+  if sha == FAIL:
+    failed.append("live-claim")
+  if sha == REFUSED:
+    failed.append("record-date")
+  if "live-claim" in failed or "identity" in failed:
     print(f"pinned-tree-gate: FAIL -- {failed}")
     return FAIL
+  if failed:
+    print(f"pinned-tree-gate: REFUSED, NOT A VERDICT: {failed[0]}")
+    return REFUSED
   print("pinned-tree-gate: PASS -- the tree identity holds with no sha written here, the index "
-        "population is whole, and no gate home transcribes a `tinygrad/` tree value")
+        "population is whole, and no gate home claims the current tinygrad/ tree by a transcribed sha")
   return PASS
 
 
