@@ -1042,6 +1042,25 @@ def DECIDED(tail):
     return tail[0], tail[2], tail[3]
 
 
+# **A CELL THIS READER DID NOT READ IS NOT A `False`.** `read_ledger` used to coerce with
+# `f[3] == "1"`, so every spelling outside the writer's own `{"0", "1"}` -- `True`, `garbage`,
+# `""`, `0` on a True cell, `01`, `2`, `" 1"`, `"1 "` -- came back as `False`, and
+# `asserts_root=False` IS A CLAIM: "this gate does not assert its root". MEASURED 2026-10-20T00:18Z
+# on copies of the live ledger: **8 of 8 such spellings read back `False` and none of them was
+# visible anywhere.** And the coercion is WORSE THAN AN ARBITRARY WRONG ANSWER, because it is
+# right most of the time: **187 of the 224 live rows carry `asserts_root=0`**, so a corrupted cell
+# disagrees with the writer's intent about one time in six and looks like a real decision the rest
+# -- **a corrupted column that is usually not wrong is a corruption nobody goes looking for.**
+UNREADABLE = "UNREADABLE"
+
+
+def _flag(cell):
+    """A boolean cell as `True`/`False`, or `UNREADABLE` when it is neither. **AND THE LEGAL
+    SPELLINGS ARE ASKED OF THE WRITER** (`SPELLINGS`, below) rather than written here, so the
+    format this reader accepts and the format this writer emits cannot drift apart."""
+    return cell == "1" if cell in SPELLINGS else UNREADABLE
+
+
 def read_ledger(path):
     """`(path, reason, root_const, asserts, onroot)` rows, or None if there is no ledger yet.
 
@@ -1056,6 +1075,13 @@ def read_ledger(path):
     The two booleans are coerced HERE rather than at the comparison, because `"0" != False` is
     True: an uncoerced round-trip made every row report CHANGED on a second run with nothing
     altered, which is the ledger-diff failure mode that teaches a reader to ignore the diff.
+
+    **AND A CELL THAT IS NOT A LEGAL SPELLING IS `UNREADABLE` RATHER THAN `False`.** Coercion is
+    right for the two spellings `ledger_line` emits and wrong for every other string, and the two
+    used to be the same line of code. **THE LOAD-BEARING PROPERTY IS THAT `UNREADABLE` CANNOT EQUAL
+    A BOOLEAN**, so `DECIDED` sees a row carrying one as different from a freshly measured row in
+    `report`, `moved` names it, and the run is red -- refusal here is LOUD BY CONSTRUCTION, not by
+    an extra test that a later edit can forget.
     """
     if not path.is_file():
         return None
@@ -1063,13 +1089,40 @@ def read_ledger(path):
     out = []
     for line in body[1:]:
         f = line.split("\t")
-        if len(f) >= 5:
-            out.append((f[0], f[1], f[2], f[3] == "1", f[4] == "1"))
+        # **THE PATH SURVIVES A ROW THIS READER CANNOT ACCOUNT FOR, AND THAT IS THE SHORT-ROW
+        # FIX.** A row with the wrong number of fields used to be DROPPED (`if len(f) >= 5`), and
+        # the drop was not a refusal, it was a hole. MEASURED 2026-10-20T00:18Z, cutting one live
+        # row to three fields made `report` print that gate as **NEW** -- a gate the ledger recorded
+        # on 2026-10-17 re-announced as a first sighting -- and shrank the denominator from `224` to
+        # `223` without one word about it. **REFUSING THE WHOLE ROW IS EXACTLY WHAT IT ALREADY DID**,
+        # which is the measurement that separated the two defects and decided between the options:
+        # a bad cell is ONE column and a short row is FOUR, and the answer that refuses only what it
+        # cannot read is the only one that is not the short-row defect. Arity is checked against
+        # `LEDGER_FIELDS` -- the HEADER is the format contract -- so a row with a SURPLUS field is
+        # unreadable too, in the same direction, for the same reason: the surplus is unnameable.
+        if len(f) != len(LEDGER_FIELDS):
+            f = f[:1] + [UNREADABLE] * (len(LEDGER_FIELDS) - 1)
+        out.append((f[0], f[1], f[2], *(_flag(c) for c in f[3:])))
     return out
 
 
 def ledger_line(row):
-    return f"{row[0]}\t{row[1]}\t{' '.join(row[2].split())}\t{int(row[3])}\t{int(row[4])}"
+    """One row as a TSV line. **AND A CELL THE WRITER DID NOT MEASURE IS WRITTEN AS IT READS,
+    NEVER AS `0`.** A tombstone carries its old facts forward, so a retired row whose cells were
+    unreadable reaches this line carrying `UNREADABLE`; `int(row[3])` would raise `ValueError` out
+    of `--write-ledger` on a corrupt ledger, which is a crash where the answer is a word, and
+    writing `0` instead would invent a decision nobody made."""
+    return "\t".join([row[0], row[1], " ".join(row[2].split())]
+                     + [str(int(b)) if isinstance(b, bool) else b for b in row[3:]])
+
+
+# **THE CANONICAL SPELLING, ASKED OF THE WRITER INSTEAD OF SPELLED HERE.** `ledger_line` writes
+# `int(...)`, so calling it over both booleans enumerates every value a boolean cell can legally
+# hold -- `int` over `(False, True)` IS exactly `{"0", "1"}`, which is why the generator rather
+# than the literal is the source. A `("0", "1")` written out at the reader would be a format
+# contract with no generator behind it, and that is the class of defect this clause sits beside.
+SPELLINGS = frozenset(ledger_line(("p", "r", "q", b, o)).split("\t")[3]
+                      for b in (False, True) for o in (False, True))
 
 
 def write_ledger(rows, path=None):
@@ -1099,6 +1152,10 @@ def write_ledger(rows, path=None):
 
 
 LEDGER_HEADER = "path\treason\troot_const\tasserts_root\ton_root"
+LEDGER_FIELDS = LEDGER_HEADER.split("\t")
+# **THE HEADER IS ALSO THE FORMAT CONTRACT, AND THE ARITY COMES FROM IT** rather than from a `5`
+# written beside the check that needs it: `read_ledger` reads `len(f) != len(LEDGER_FIELDS)`, so
+# renaming or re-aritying the header changes what counts as a well-formed row with no edit here.
 
 # THE GENERATOR LINE, SPELLED THE WAY THIS TREE ALREADY SPELLS IT. `gates/opseven-pins.rows` and
 # `gates/op_graph_census-pins.rows` both open with `# <file> -- GENERATED by `<gate> --<flag>`, which
@@ -1261,8 +1318,13 @@ def report(root, ledger_mode, ledger_path=None):
             # NAME THE COLUMNS THAT MOVED. `old[k][0] -> new[k][0]` printed the REASON on both
             # sides of the arrow even when the reason was unchanged and a boolean was what
             # moved, so the line described a change it had not found.
+            # **AND A CELL THE LEDGER DID NOT CARRY IS NOT A CHANGE, IT IS A HOLE.** An arrow
+            # `UNREADABLE->False` says the gate stopped asserting; what is true is that the ledger
+            # did not say, so the line names the hole, names what this run read instead, and names
+            # the cure -- the content `325c422d9bd3` lacked when it reported `5 changed`.
             print(f"III   CHANGED {k}: " + ", ".join(
-                f"{n} {o}->{b}"
+                f"{n} UNREADABLE in the ledger, this run read {b} -- re-derive it with "
+                f"`--write-ledger`" if o == UNREADABLE else f"{n} {o}->{b}"
                 for o, n, b in zip(DECIDED(old[k]), ("reason", "asserts_root", "on_root"),
                                    DECIDED(new[k])) if o != b))
         if ledger_mode == "check" and (added or gone or moved or back):
@@ -1432,7 +1494,8 @@ LIT_SH = ('#!/bin/sh\n# used to cd "$(dirname "$0")/../../.."\n_d=${0%/*}\ncd "$
 
 
 def plants():
-    """FIVE plants, ASSERTING FIVE DIFFERENT DIRECTIONS. Returns rc.
+    """ONE PLANT PER DIRECTION, and the count is printed from the checks rather than written here.
+    Returns rc.
 
     THE INERTNESS IS MEASURED AROUND THE WHOLE FUNCTION, not asserted inside one plant. Every
     plant reads the live tree -- `entry_reason(gk)` on `gates/gatekit.py` is a live read -- and a
@@ -1452,7 +1515,7 @@ def plants():
 
 
 def _plants():
-    """The five plants. SPLIT OUT of `plants()` so the whole suite runs inside ONE inertness
+    """The plants. SPLIT OUT of `plants()` so the whole suite runs inside ONE inertness
     window -- a plant that wrote would be caught whichever plant it was, and a per-plant
     assertion would have to be written five times and trusted five times.
 
@@ -1923,8 +1986,82 @@ def _plants():
                    f"counts={nums[0] if nums else None} old_spelling_refused={e} header_names_writer={f} "
                    f"(--plant's own inertness window is measured separately by `plants()`)"))
 
-    print("PLANTS -- twelve directions plus an inertness assertion, because a meta-gate's blind "
-          "spot is the one nobody\nelse checks")
+    # PLANT 13 -- **A CELL THE READER DID NOT READ IS `UNREADABLE`, AND A ROW IT CANNOT ACCOUNT
+    # FOR IS NOT DROPPED.** `read_ledger` coerced with `f[3] == "1"` and dropped `len(f) < 5`.
+    # Both were invisible, and they are NOT THE SAME DEFECT: a bad cell is ONE column, a short row
+    # is FOUR, and a plant that asserts one of them passes a reader that is wrong about the other.
+    # Both corruptions are applied to COPIES of a ledger this plant writes itself -- never the live
+    # one -- and are read back through the SAME reader, with an UNBROKEN CONTROL FIRST.
+    #
+    # **THE PLANT IS TWO-SIDED, AND THAT IS WHAT MAKES IT ABLE TO FAIL.** `control` is the
+    # falsifier against over-refusal: a reader that marked every cell `UNREADABLE` would satisfy
+    # every other clause here and fail this one. `sig` is the falsifier against the pre-fix reader:
+    # coercing `== "1"` marks nothing, so `sig` reads `(0, 0)` where it asserts `(1, 4)`. There is
+    # no third reader this suite is satisfied by, which is the property a plant needs and the one
+    # the first `negative` in this file lacked (it was vacuous).
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r, "checks")
+        syn = r / LEDGER.name
+        # THE FACTS ARE KNOWN BY CONSTRUCTION, not read from the live ledger: `alpha` and `beta`
+        # assert, `gamma` does not, so a corrupted `beta` cell flips a TRUE into an unread, and a
+        # shortened `gamma` row loses cells whose values are known. A plant whose truth comes from
+        # the file under audit can be satisfied by whatever that file happens to hold today.
+        write_ledger([(f"checks/{n}.py", "py-main", "q", n != "gamma", True)
+                      for n in ("alpha", "beta", "gamma")], syn)
+        clean = read_ledger(syn)
+        control = clean is not None and len(clean) == 3 and not any(UNREADABLE in row
+                                                                   for row in clean)
+        cells = syn.read_text().splitlines()
+        _hdr, alpha, beta, gamma = cells[-4:]   # THE HEADER AND THE THREE DATA ROWS ARE THE TAIL,
+        #                                         so the PREAMBLE's own line count is not restated
+        #                                         here -- a reader that had to know it is 9 would
+        #                                         break the day the preamble is reworded.
+        # ONE CELL CORRUPTED. MEASURED, the pre-fix reader read `garbage` as `False` and `moved`
+        # nothing; here the cell is `UNREADABLE` and THE OTHER FOUR ARE UNCHANGED, so the reader
+        # still proves `checks/beta.py` asserts nothing about -- well, it proves it knows nothing
+        # about ONE cell, which is what a reader that reads one bad column must say.
+        hurt = list(beta.split("\t"))
+        hurt[3] = "garbage"
+        syn.write_text("\n".join(cells[:-3] + [alpha, "\t".join(hurt), gamma]) + "\n")
+        bad = read_ledger(syn)
+        # **EVERY LOOKUP HERE TAKES A DEFAULT, BECAUSE A PLANT THAT CRASHES IS NOT A PLANT THAT
+        # FAILED.** MEASURED 2026-10-20T00:29Z against an over-refusing reader, `next(...)` raised
+        # `StopIteration` out of the suite -- so the run died with rc=1 and no `PLANTS: n/m` line at
+        # all, which is the one outcome that cannot tell a falsified plant from a broken tree. The
+        # rows are looked up by path and MISSED rather than demanded, and every clause below is
+        # written to be False rather than to raise.
+        b_row = next((x for x in bad if x[0] == "checks/beta.py"), None)
+        cell = (len(bad) == 3 and b_row is not None and b_row[3] == UNREADABLE
+                and b_row[:3] == clean[1][:3] and b_row[4] is True
+                and DECIDED(b_row[1:]) != DECIDED(clean[1][1:]))
+        # ONE ROW SHORTENED. The PATH SURVIVES, which is the whole of the fix and the opposite of
+        # a refusal: `gone` must not fire on a row the reader merely failed to parse, and a
+        # recorded discovery must not be re-announced as a first sighting (MEASURED, that is what
+        # `if len(f) >= 5` did). EVERY OTHER FIELD IS `UNREADABLE`, because `gamma` asserted
+        # nothing anyway and the reader must not be the thing that decides that.
+        syn.write_text("\n".join(cells[:-1] + ["\t".join(gamma.split("\t")[:3])]) + "\n")
+        cut = read_ledger(syn)
+        g_row = next((x for x in cut if x[0] == "checks/gamma.py"), None)
+        row = (len(cut) == 3 and g_row is not None
+               and g_row[1:] == (UNREADABLE,) * (len(LEDGER_FIELDS) - 1))
+        # **THE TWO READ DIFFERENTLY, AND THAT IS ASSERTED AS A COUNT OF HOLES**: one row with a
+        # single unreadable cell beside a row with four. A reader that refused everything fails
+        # `control`; a reader that refused nothing fails here.
+        sig = (sum(c == UNREADABLE for c in (b_row or ())),
+               sum(c == UNREADABLE for c in (g_row or ())))
+        differs = sig == (1, len(LEDGER_FIELDS) - 1)
+    checks.append(("13: A CELL THE READER DID NOT READ IS `UNREADABLE` AND AN UNACCOUNTABLE ROW "
+                   "IS NOT DROPPED -- a corrupted cell is refused while the other four fields still "
+                   "read, a shortened row KEEPS ITS PATH and refuses the rest, and the two are "
+                   "distinguishable (1 hole against 4)", control and cell and row and differs,
+                   f"control={control} cell={cell} row={row} differs={differs} "
+                   f"holes={sig} expected=(1, {len(LEDGER_FIELDS) - 1})"))
+
+    print("PLANTS -- one direction per check, plus an inertness assertion, because a meta-gate's "
+          "blind\nspot is the one nobody else checks. The count below is COMPUTED: MEASURED "
+          "2026-10-20T00:22Z, the\nprose above it said `twelve` over a suite of FOURTEEN, and a "
+          "number a reader has to\ntrust the prose for is the defect this file exists beside.")
     for name, ok, got in checks:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")
         rc |= 0 if ok else 1
@@ -1964,7 +2101,7 @@ def main():
                "WRITING: the ledger is read unless --write-ledger is named, because "
                "gates-pop.ledger.tsv is a SHARED writable path.")
     ap.add_argument("--plant", action="store_true",
-                    help="assert the twelve plants on a synthetic tree; never touches the live tree")
+                    help="assert every plant on a synthetic tree; never touches the live tree")
     ap.add_argument("--ledger", choices=("check",), default="check",
                     help="check: read the ledger and diff it against this run (the default). "
                          "WRITING IS NOT A MODE OF THIS FLAG -- it is `--write-ledger`, and "
