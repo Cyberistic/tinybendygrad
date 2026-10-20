@@ -315,6 +315,11 @@ REPRO_ARTIFACT = "D0-repro.txt"
 # THE DIFFERING ROWS, when a repro FAILS. `repro` prints the differing bytes and then throws the
 # snapshots away; without this file the failure is a NOTIFICATION, not a finding.
 REPRO_DIFF_ARTIFACT = "D0-repro-diff.txt"
+# THE SUMMARY ROWS THAT RECORD THE OBSERVER, NOT THE SUBJECT. `substrate-head` says WHICH COMMIT
+# measured the run; the rest of the summary says WHAT was measured. A comparison over the whole
+# file is therefore a comparison of the run AND the moment it was read, which is not the same claim
+# twice. See `snap()`.
+OBSERVER_ROWS = ("substrate-head",)
 # THE DIFFERING ROWS, when a repro FAILS. `repro` prints the differing bytes and then throws the
 # snapshots away; without this file the failure is a NOTIFICATION, not a finding.
 REPRO_DIFF_ARTIFIFACT = "D0-repro-diff.txt"
@@ -1333,6 +1338,18 @@ def snap(stream=sys.stdout):
                      and not any(part.startswith(".") for part in q.relative_to(D).parts)),
                     key=lambda q: q.relative_to(ROOT).as_posix()):
         body = b"".join(ln + b"\n" for ln in p.read_bytes().split(b"\n")[:-1] if ln.strip())
+        # **AN OBSERVER ROW IS NOT PART OF THE SUBJECT, AND HASHING IT MAKES A PIN FLAKY.**
+        # MEASURED 2026-10-20: `substrate-head=` was added to the summary to make a run comparable to
+        # a COMMIT -- and then two clean runs of the SAME TREE differed in EXACTLY ONE of 310 files,
+        # because that row records WHICH COMMIT measured the run and a commit landed between them
+        # (`77e6c2bec` at 03:53:51Z, `4e76b4cb` at 03:59:38Z). The corpus did not move; the OBSERVER
+        # did. **A ROW THAT MAKES A RUN COMPARABLE TO A TREE MAKES TWO RUNS OF THE SAME TREE
+        # INCOMPARABLE** -- both properties are wanted and they are NOT the same property, so the
+        # comparison is over the SUBJECT and the observer is recorded but not hashed.
+        if p.name == "D0-run-summary.txt":
+            body = b"".join(ln + b"\n" for ln in body.split(b"\n")[:-1]
+                             if ln.strip() and not any(ln.startswith(r.encode() + b"=")
+                                                  for r in OBSERVER_ROWS))
         print(f"{hashlib.sha256(body).hexdigest()}  {p.relative_to(ROOT)}", file=stream)
 
 
