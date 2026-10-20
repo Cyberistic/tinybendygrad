@@ -15,8 +15,12 @@ SIX CLAUSES, EACH WITH ITS OWN DENOMINATOR.  NONE IS A VERDICT ABOUT THE TREE:
   III  ACCIDENT    `#` languages are ALIVE BY ACCIDENT -- Python's `tokenize` also calls
                    `#` a comment -- so adding `.bend` LOOKS like it works.  `//` and
                    data languages stay DEAD.  Widening the suffix is not the fix.
-  IV   THE CRASH   widening `EXTS` to include `.bend` makes the census DIE, on a LIVE
-                   file, with an exception `prose()` does not catch.
+  IV   THE REPAIR  widening `EXTS` to include `.bend` NO LONGER DIES.  `9b1f5ac00` taught
+                   `prose()` to REFUSE -- `Unproseable`, named with the line it stopped at --
+                   and `Unproseable` IS a `tokenize.TokenError`, so every live caller's
+                   `except (TokenError, IndentationError)` covers it.  The file still yields
+                   ZERO claims, so the suffix is still not the fix; the REASON changed, and a
+                   clause that cannot say which reason it holds is holding none.
   V    B vs C      of the subjects the hidden text cites and cannot resolve: RENAMED (the
                    path is in some commit of this repo) vs NEVER-EXISTED (in none).
   VI   OVERCOUNT   files that MATCH the suffix and should not be counted: `.agents/slop/`
@@ -62,14 +66,30 @@ ARTEFACTS = (".rows", ".out", ".err")
 # data languages measurable rather than invisible.
 COMMENT_MARKS = ("#", "//", "*", "/*")
 
-# THE FILE THAT PROVES CLAUSE IV.  Named, not discovered by glob, because a plant whose
-# fixture can silently stop existing is a plant that stops failing.
-CRASH_WITNESS = "tinybendygrad/runtime/ops_dsp.bend"
+# THE FILE THAT CARRIES THE NUL.  Named, not discovered by glob, because a plant whose
+# fixture can silently stop existing is a plant that stops failing.  It was named
+# `CRASH_WITNESS` while the extractor died on it; `9b1f5ac00` taught `prose()` to refuse
+# instead, and a name that says CRASH of a file that no longer crashes is a name that will
+# be believed after it stops being true.  What the file IS has not changed: the one
+# committed text file holding a NUL byte.
+NUL_WITNESS = "tinybendygrad/runtime/ops_dsp.bend"
+
+# THE ARM `9b1f5ac00` ADDED, VERBATIM AS TEXT.  The falsification arm deletes it FROM A COPY
+# of the census and loads that copy by path, so `checks/cites-census.py` is never touched.  If
+# this string stops matching the census the mutation silently applies to nothing and the arm
+# would assert a property of an UNMUTATED file, which is a vacuous pass -- so the arm asserts
+# that the mutation changed the bytes rather than trusting that it did.
+SYSTEMERROR_ARM = """  if isinstance(exc, SystemError) and isinstance(exc.__cause__, SyntaxError):
+    return (exc.__cause__.lineno, f"SystemError<-{type(exc.__cause__).__name__}")
+"""
 
 
-def load_census():
-  """`checks/cites-census.py` BY PATH.  Absent -> the caller REFUSES, naming the file."""
-  spec = importlib.util.spec_from_file_location("cites_census_by_path", DECLARED_SOURCE)
+def load_census(source: Path = DECLARED_SOURCE):
+  """`checks/cites-census.py` BY PATH.  Absent -> the caller REFUSES, naming the file.
+  `source` is a parameter for the falsification arm only, which loads a COPY carrying the
+  pre-fix arm; the default is the census itself, so the population is never a second copy
+  of a constant."""
+  spec = importlib.util.spec_from_file_location("cites_census_by_path", source)
   mod = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(mod)
   return mod
@@ -119,9 +139,11 @@ def selftest() -> int:
 
   P1 FORWARD  a file whose extension the population CANNOT NAME is invisible.
   P2 REVERSE  a SCRATCH copy is counted exactly like the live gate it copies.
-  P3 THE CRASH a synthetic NUL is CAUGHT; only the REAL file escapes `prose()`.  This is
-              the plant that fails: any harness built from synthetic fixtures reports the
-              widening is safe, and the tree disagrees.
+  P3 THE REPAIR a NUL is REFUSED rather than swallowed, the refusal is NAMED and stops ON
+              the NUL, and a copy of the census with the `SystemError` arm deleted makes the
+              SAME assertion go red.  This plant used to assert the opposite -- that the real
+              file ESCAPES `prose()` -- and the fix that made that false is what it now
+              asserts.  Inverting a plant is not deleting one; the falsification arm is why.
   P4 THE ROOT  a citation into `references/` resolves on DISK even though the tree is
               gitignored and the file is in no commit -- the brief's reading (D) is a
               checkout property, not a citation defect."""
@@ -163,29 +185,92 @@ def selftest() -> int:
                   len(cites.lane_bcd("live.py", cites.prose("live.py",
                                                             live.read_text()))[0]), len(got)))
 
-    # P3 -- the plant that can fail.  MEASURED, not assumed: the synthetic fixture raises
-    # NOTHING (a 3-line file with one NUL tokenizes clean), so a harness built from
-    # fixtures reports the widening is safe; the real witness raises `SystemError`, which
-    # `prose()` does not catch.  An earlier revision of this block EXPECTED
-    # `tokenize.TokenError` for the fixture and FAILED -- the fixture does not raise at
-    # all, which is a stronger statement of the same defect and is what is asserted here.
+    # ---- P3 -- THE REPAIR, ASSERTED.  NOT DELETED. ------------------------------------
+    # THIS PLANT USED TO ASSERT THE DEFECT.  It wanted the real file to ESCAPE `prose()` as
+    # a raw `SystemError` while a synthetic NUL passed in silence, and it went red when
+    # `9b1f5ac00` landed: `tokenizer_fault` gained the `SystemError` arm that reads
+    # `e.__cause__.lineno`, and `prose()` now raises `Unproseable` instead of passing.  Both
+    # halves of that expectation are false, so THE PLANT WAS THE STALE THING.
+    #
+    # A PLANT IS A CLAIM THAT A DEFECT IS GUARDED, AND IT IS PROVED BY GOING RED WHEN THE
+    # GUARD IS REMOVED -- never by naming the defect's symptom.  So the expectation is
+    # inverted, not the expectation's job: what is asserted now is the REPAIR, and the arm
+    # below proves it is load-bearing by deleting the arm FROM A COPY and showing red.
+    def refusal(mod, rel, body):
+      """(name, inside the family every live caller catches, line it stopped at, kind) for
+      a caller that passes NO `fault` list -- the caller that has nowhere to record one.
+      SILENCE RETURNS `("no-exception", ...)`, which is the value no refusal may carry, so a
+      `prose()` that swallowed the NUL again cannot be mistaken for one that named it."""
+      try:
+        mod.prose(rel, body)
+        return ("no-exception", False, None, None)
+      except BaseException as e:  # noqa: BLE001 -- the point is WHAT escapes, not that one does
+        return (type(e).__name__, isinstance(e, tokenize.TokenError),
+                getattr(e, "lineno", None), getattr(e, "kind", None))
+
+    def guarded(mod, rel, body):
+      """Is the refusal (a) NAMED, (b) a `tokenize.TokenError` -- so `checks/cites-census.py`'s
+      own reason for the base class holds and every existing handler still covers it -- and
+      (c) stopped ON the NUL rather than at a fiction?  The expected line is READ OFF THE
+      FIXTURE'S OWN BYTES, never transcribed, so the plant follows the file if it moves and
+      a hand-copied 5401 would have quietly become a change-detector."""
+      name, in_family, at, kind = refusal(mod, rel, body)
+      nuls = [i for i, l in enumerate(body.splitlines(), 1) if "\x00" in l]
+      return (name, in_family, at == (nuls[0] if len(nuls) == 1 else None), bool(kind))
+
+    # THE ONE PREDICATE, NAMED.  It is evaluated on the census and on the reverted copy, so
+    # "the plant goes red" is this exact expression returning False -- not a second, weaker
+    # restatement of the same idea that would pass while the first one rotted.
+    GUARDED = ("Unproseable", True, True, True)  # named, in-family, stopped ON the NUL, kinded
+
     nul = d / "tiny.bend"
     nul.write_bytes(b"# a citation\n\x00\n")
-    try:
-      cites.prose("tiny.bend", nul.read_text(errors="replace"))
-      tiny = "no-exception"
-    except BaseException as e:  # noqa: BLE001
-      tiny = type(e).__name__
-    wit = ROOT / CRASH_WITNESS
-    try:
-      cites.prose(CRASH_WITNESS, wit.read_text(errors="replace"))
-      real = "no-exception"
-    except BaseException as e:  # noqa: BLE001
-      real = type(e).__name__
-    cases.append(("P3 THE CRASH: a synthetic NUL is SILENT; the real file ESCAPES prose()",
-                  (tiny, real),
-                  ("no-exception", "SystemError") if wit.is_file()
-                  else ("no-exception", "no-exception")))
+    tiny = nul.read_text(errors="replace")
+    # AN UNBROKEN CONTROL.  Without it every refusal row above is also satisfied by a
+    # `prose()` that refuses EVERYTHING, which is not a guard but a different crash.
+    clean = d / "clean.bend"
+    clean.write_bytes(b"# a citation\nx = 1\n")
+    cases.append(("P3 CONTROL : a file that DOES tokenize refuses nothing",
+                  refusal(cites, "clean.bend", clean.read_text())[0], "no-exception"))
+    cases.append(("P3 THE REPAIR : a synthetic NUL is REFUSED, in-family, stopped ON it",
+                  guarded(cites, "tiny.bend", tiny), GUARDED))
+    # A MISSING WITNESS IS A FAILURE AND NOT A MATCHED PAIR OF SENTINELS.  The original
+    # guarded this with `else ("no-exception", "no-exception")`, which PASSED when the
+    # fixture was gone -- a plant that reports success having measured nothing.
+    real = (ROOT / NUL_WITNESS).read_text(errors="replace") if (ROOT / NUL_WITNESS).is_file() else None
+    cases.append((f"P3 THE REPAIR : the live {NUL_WITNESS} is REFUSED at its own NUL",
+                  guarded(cites, NUL_WITNESS, real) if real is not None else ("WITNESS-GONE",),
+                  GUARDED))
+
+    # ---- P3 FALSIFICATION -- A PLANT THAT CANNOT GO RED IS NOT A PLANT -----------------
+    # MEASURED 2026-10-20T00:20:06Z: deleting `SYSTEMERROR_ARM` from a copy and re-running
+    # the SAME `guarded()` takes the live file from ('Unproseable', True, 5401,
+    # 'SystemError<-SyntaxError') to ('SystemError', False, None, None) -- red on the name,
+    # on the family, AND on the position -- while leaving the synthetic fixture at
+    # ('Unproseable', True, 2, 'TokenError'), UNCHANGED.
+    #
+    # THAT LAST FACT IS THE HARMONISATION OF THE TWO THINGS THAT LOOKED LIKE A CONFLICT.
+    # The old clause IV said "a synthetic minimal NUL plant scores TokenError (CAUGHT) -- so
+    # the plant must be the REAL FILE".  Its REASON died with the crash: both fixtures now
+    # score TokenError (CAUGHT).  Its CONCLUSION did not, and the reason it survives is
+    # sharper: the synthetic fixture never REACHES the `SystemError` arm at all, so it is
+    # IMMUNE to the revert and could never have detected it.  So the sentence is not deleted
+    # and the real file is not dropped -- both would trade a true conclusion for a false one.
+    census_src = DECLARED_SOURCE.read_text()
+    mutated_src = census_src.replace(SYSTEMERROR_ARM, "")
+    cases.append(("P3 MUTANT APPLIES : the reverted copy is NOT byte-identical to the census",
+                  mutated_src != census_src, True))
+    with tempfile.TemporaryDirectory(prefix="citespop-arm-reverted-") as mt:
+      reverted_path = Path(mt) / "cites-census-arm-reverted.py"
+      reverted_path.write_text(mutated_src)
+      reverted = load_census(reverted_path)
+      cases.append(("P3 FALSIFIED : with the SystemError arm gone the live file leaves "
+                    "`prose()` raw and UNPOSITIONED, so the repair is load-bearing",
+                    guarded(reverted, NUL_WITNESS, real) == GUARDED
+                    if real is not None else True, False))
+      cases.append(("P3 ARM, NOT ESCAPE : the synthetic fixture is UNREACHABLE for that arm, "
+                    "which is why the REAL FILE stays in the harness",
+                    guarded(reverted, "tiny.bend", tiny), guarded(cites, "tiny.bend", tiny)))
 
     # P4 -- the root.  A citation into a gitignored, untracked reference tree RESOLVES on
     # disk.  If the checkout ever loses `references/`, this plant flips, and the flip is
@@ -281,25 +366,40 @@ def main() -> int:  # noqa: C901 -- six clauses, one pass each
   print("  data languages have no such accident, and stay invisible. Adding the suffixes")
   print("  is therefore NOT the fix, and the coincidence is unverified by the census.")
 
-  # ---- IV. THE CRASH ----------------------------------------------------------
-  print("\n--- IV. THE CRASH: widening EXTS kills the census ---")
-  wit = ROOT / CRASH_WITNESS
+  # ---- IV. THE REPAIR ----------------------------------------------------------
+  print("\n--- IV. THE REPAIR: widening EXTS no longer kills the census ---")
+  wit = ROOT / NUL_WITNESS
   if not wit.is_file():
-    print(f"  {REFUSED}: {CRASH_WITNESS} is gone -- this clause cannot be measured")
+    print(f"  {REFUSED}: {NUL_WITNESS} is gone -- this clause cannot be measured")
   else:
     body = wit.read_text(errors="replace")
     try:
-      cites.prose(CRASH_WITNESS, body)
-      print("  prose() survived -- REPORTED AS A FACT, not as a pass")
-    except (tokenize.TokenError, IndentationError):
-      print("  prose() raised a CAUGHT TokenError -> no crash")
-    except BaseException as e:  # noqa: BLE001 -- the point is that it ESCAPES prose()
-      print(f"  prose() on a LIVE {CRASH_WITNESS} raised {type(e).__name__}, and prose()")
+      cites.prose(NUL_WITNESS, body)
+      print("  prose() returned -- REPORTED AS A FACT, not as a pass")
+    except (tokenize.TokenError, IndentationError) as e:
+      # `9b1f5ac00` MOVED THIS RUN OUT OF `except BaseException`.  `Unproseable` is a
+      # `tokenize.TokenError`, so it is caught HERE, which means the branch below is now
+      # UNREACHABLE for this file -- its prose was DEAD text describing a crash that no
+      # longer happens, and dead text is the verdict nobody writes down.
+      nuls = [i for i, l in enumerate(body.splitlines(), 1) if "\x00" in l]
+      print(f"  prose() REFUSED, and the refusal is CAUGHT here: {type(e).__name__} "
+            f"stopped at line {getattr(e, 'lineno', None)!r} "
+            f"(kind {getattr(e, 'kind', None)!r}); the file's NUL reads "
+            f"line {nuls[0] if len(nuls) == 1 else nuls}")
+      print("  So the widening does not DIE, and the reason this clause used to give has")
+      print("  expired: it is no longer pinned by an ACCIDENT of the exception, it is")
+      print("  pinned by ZERO YIELD -- the file is read and contributes 0 claims, which is")
+      print("  not agreement. Adding `.bend` still is NOT the fix, for a different reason,")
+      print("  and `gates/nul-refusal-gate.py` owns what the census EMITS for it (clause I).")
+      print("  THE PLANT MUST STILL BE THE REAL FILE: the synthetic NUL never REACHES the")
+      print("  `SystemError` arm, so it cannot detect that arm going away. See the PLANT")
+      print("  section's falsification arm, which deletes the arm FROM A COPY and measures it.")
+    except BaseException as e:  # noqa: BLE001 -- prose() did NOT catch this, and that is news
+      print(f"  prose() on a LIVE {NUL_WITNESS} raised {type(e).__name__}, and prose()")
       print("  catches only (tokenize.TokenError, IndentationError), so it PROPAGATES")
-      print("  out of census() and out of main(): the run DIES. It is a")
-      print("  SystemError from the C tokenizer over the file's single NUL byte.")
-      print("  A synthetic minimal NUL plant scores TokenError (CAUGHT) -- so the plant")
-      print("  must be the REAL FILE. See the PLANT section.")
+      print("  out of census() and out of main(): the run DIES. A SystemError from")
+      print("  anywhere OTHER than the tokenizer has no `__cause__` and is re-raised as")
+      print("  ITSELF, which is what the arm below is for.")
 
   # ---- V. B vs C --------------------------------------------------------------
   print("\n--- V. RENAMED (B) vs NEVER-EXISTED (C) ---")
