@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""Plant for the vendordep dated record. Copies only. The real files are not written.
+
+    .venv/bin/python gates/vendordep-census-plant.py
+    .venv/bin/python gates/vendordep-census-plant.py --falsify
+
+The comparator is `gates/rotclaim-gate.py`, loaded by path. A direction that emits
+no row is REFUSED. `--falsify` inverts the control's expected live count and must
+exit non-zero: a plant whose expectation cannot be violated measures nothing.
+"""
+from __future__ import annotations
+
+import importlib.util
+import sys
+import tempfile
+import warnings
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
+from gatekit import PASS, REFUSED  # noqa: E402
+
+GATE = HERE / "vendordep-census-gate.py"
+LEDGER = HERE / "vendordep-census.rows"
+
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        spec.loader.exec_module(mod)
+    return mod
+
+
+def classified(rotclaim, text, trees):
+    got = rotclaim.assess(text, trees, ROOT)
+    if not any(r["kind"] == "file" for r in got):
+        return None
+    live = sum(1 for r in got if r["kind"] == "live")
+    state = next((r["state"] for r in got if r["kind"] == "record"), "ABSENT")
+    return (live, state)
+
+
+def rows_hits(pinned, text, trees):
+    with tempfile.TemporaryDirectory(prefix="vendordep-rows-") as td:
+        home = Path(td) / "gates"
+        home.mkdir()
+        (home / "vendordep-census.rows").write_text(text)
+        return pinned.transcribed(Path(td), [home], trees)
+
+
+def main(argv):
+    warnings.filterwarnings("ignore", category=SyntaxWarning)
+    rotclaim = load("vendordep_rotclaim", HERE / "rotclaim-gate.py")
+    pinned = rotclaim.pinned_mod()
+    trees = pinned.tree_values(ROOT)
+    cur = pinned.resolve(ROOT, "HEAD:tinygrad")
+    retired = next((t for t in trees if t != cur), "")
+    if not cur or not retired:
+        print("vendordep-census-plant: REFUSED -- fewer than two tree values")
+        return REFUSED
+    gate_bytes = GATE.read_bytes()
+    ledger_bytes = LEDGER.read_bytes()
+    text = gate_bytes.decode()
+    ledger = ledger_bytes.decode()
+    rows = []
+
+    def check(label, got, want):
+        if got is None:
+            rows.append(f"plant.{label}\tstate=REFUSED\tverdict=SILENT\twanted={want}")
+            return
+        rows.append(f"plant.{label}\tstate={'OK' if got == want else 'REFUSED'}\tverdict={got}\twanted={want}")
+
+    date = rotclaim.records_of(text).get("REVENDOR", {}).get("date", (None, None, None))[2]
+    needle = f'REVENDOR_RECORD_DATE = "{date}"' if date else ""
+    broken = text.replace(needle, 'REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"', 1) if needle in text else None
+    control_want = (1, "VERIFIED") if "--falsify" in argv else (0, "VERIFIED")
+
+    check("control", classified(rotclaim, text, trees), control_want)
+    check("sha-on-the-next-line-is-live", classified(rotclaim, text + f"\n# {retired}\n", trees), (1, "VERIFIED"))
+    check("wrong-date-is-refused", classified(rotclaim, broken, trees) if broken is not None else None, (0, "REFUSED"))
+    check("control-unbroken", classified(rotclaim, GATE.read_text(), trees), (0, "VERIFIED"))
+    check("disk-unwritten", (GATE.read_bytes() == gate_bytes, LEDGER.read_bytes() == ledger_bytes), (True, True))
+    check("rows-pointer-is-not-live", len(rows_hits(pinned, ledger, trees)), 0)
+    check("rows-sha-on-the-next-line-is-live", len(rows_hits(pinned, ledger + f"\n{retired}\n", trees)), 1)
+
+    ok = sum(1 for r in rows if "\tstate=OK\t" in r)
+    print("\n".join(rows))
+    print(f"vendordep-census-plant: {'OK' if ok == len(rows) and rows else 'REFUSED'} ({ok} of {len(rows)})")
+    return PASS if ok == len(rows) and rows else REFUSED
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

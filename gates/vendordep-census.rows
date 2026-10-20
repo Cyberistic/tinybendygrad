@@ -1,5 +1,5 @@
-vendordep.revendor_old_tree=62319c8ae612
-vendordep.revendor_new_tree=6c91e8977790
+vendordep.revendor_old_tree=pointer:revendor
+vendordep.revendor_new_tree=pointer:revendor
 vendordep.changed_paths=29
 vendordep.changed_modified=28
 vendordep.changed_added=1

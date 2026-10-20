@@ -27,10 +27,12 @@ Those two axes disagree on 8 of 29 files, which is the finding: "the port depend
 and "the port mirrors what changed in it" are different questions and answering one does not
 answer the other.
 
-THE POPULATION IS DISCOVERED AND IS NOT A LIST. The changed set is
-`git diff <old-tinygrad-tree> <new-tinygrad-tree>`, where the two trees come from the two
-commits `git log -- tinygrad` reports. Measured: `77e6c2bec` and `86c4f1343`, trees
-`62319c8a` and `6c91e897`, 29 paths (28 M + 1 A). Nothing here names a file.
+THE POPULATION IS DISCOVERED AND IS NOT A LIST. The changed set is the diff
+`revendor()` returns: the two most recent commits that touch `tinygrad/`, and each
+commit's `tinygrad` subtree. Which re-vendor that pair belongs to is the dated record
+`REVENDOR_RECORD_DATE` / `REVENDOR_RECORD_DERIVE` -- a command that names the commit,
+not a sha. The ledger beside this file points at `revendor()` for the two trees and
+does not freeze them. Nothing here names a file.
 
 THE REACHABILITY ROOTS ARE DISCOVERED TWICE, AND THE COUNT THEY GIVE IS PRINTED BOTH TIMES,
 because the answer MOVES with the root set and a reader must see that it moved: `gates/*-gate.py`
@@ -106,13 +108,22 @@ def git_show_opt(rev_path: str) -> str:
 
 # --------------------------------------------------------------- the population
 
+# A dated record. `gates/rotclaim-gate.py` reads these names; a comment does not.
+# The command is bounded by the date, so a later re-vendor is not this record.
+# The two trees are what `revendor()` returns. They are not written here.
+REVENDOR_RECORD_DATE = "2026-10-20T00:53:51Z"
+REVENDOR_RECORD_DERIVE = (
+    "git --no-optional-locks log -1 --format=%H --until=2026-10-20T00:53:51Z -- tinygrad/"
+)
+
 
 def revendor() -> tuple[str, str, list[tuple[str, str]]]:
     """(old tree, new tree, [(status, path)]). DISCOVERED, never a list.
 
     The two commits are the two most recent that touch `tinygrad/`, and the trees are that
     commit's `tinygrad` SUBTREE -- which is why every path below is `device.py` and NOT
-    `tinygrad/device.py`. Measured 2026-10-20: `86c4f1343` and `77e6c2bec`, 29 paths.
+    `tinygrad/device.py`. The re-vendor this was written against is `REVENDOR_RECORD_DATE`;
+    the trees are this function's return, not a constant.
     """
     commits = git("log", "--format=%H", "--", "tinygrad").split()
     if len(commits) < 2:
