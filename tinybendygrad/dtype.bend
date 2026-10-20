@@ -687,17 +687,16 @@ def fp16_encode.ovf(ovf: Bool, +s: U32, +e: U32, +m: U32) -> U32:
 
 def fp16_encode.of(inf_nan: Bool, +s: U32, +e: U32, +m: U32) -> U32:
   match inf_nan:
-    # `struct.pack('e', x)` on a non-finite x is a WIDENING-NARROWING of the
-    # same pattern, not a constant: the quiet bit is forced on and the mantissa
-    # is TRUNCATED by the 13-bit difference, so `0xFFFFFFFF` (f32 mantissa all
-    # ones) becomes half `0xFFFF`, not half `0xFE00`. MEASURED against CPython
-    # for 0xFFFFFFFF, 0x7F800001, 0x7FC00000 and 0xFFC00000. Dropping the
-    # `m >> 13` -- which is what `runtime/dtype.c:121` does, it ORs only the
-    # quiet bit -- collapses every NaN payload to one pattern on the way IN, and
-    # `fp16_f32` then cannot recover it on the way out either.
+    # A NaN is CANONICALISED, not carried: `struct.pack('e', x)` on a non-finite x
+    # answers the ONE quiet NaN per sign -- 0x7E00 -- whatever the payload was.
+    # MEASURED against CPython 3.12 for 0xFFFFFFFF, 0x7F800001, 0x7FC00000 and
+    # 0xFFC00000: all four answer 0xFE00 or 0x7E00 and NONE answers 0xFFFF, so
+    # the payload this arm used to shift up by 13 was the one thing CPython does
+    # not do.  The C lane keeps only the quiet bit
+    # (`tinybendygrad/runtime/dtype.c:146` AT PIN `c958d7b0b`) and answers the
+    # same number.
     case True{}: U32.or(s, Bool.pick(U32, U32.is_ne(m, 0),
-                                     U32.or(31744, U32.or(512,
-                                                         U32.shrn(m, 13n))),
+                                     U32.or(31744, 512),
                                      31744))
     case False{}: fp16_encode.ovf(U32.is_ge(e, 143), s, e, m)
 
@@ -705,12 +704,21 @@ def fp16_encode(+s: U32, +e: U32, +m: U32) -> U32:
   fp16_encode.of(U32.is_ge(e, 255), s, e, m)
 
 # A half subnormal is `m * 2^-24`, so the f32 normal it becomes has exponent
-# `k + 103` where k is `31 - clz(m)` -- which is exactly `31 - floor(log2 m)`, so
-# `U32.log2` stands in for the C's `__builtin_clz` (`dtype.c:151`). The fraction
-# is shifted LEFT by `23 - k` into place.
+# `k + 103`, where `k` is the position of the mantissa's leading bit, and the
+# fraction is shifted LEFT by `23 - k` into place.
+#
+# `k` IS `U32.log2(m)`: bend2's `U32.log2` is `floor(log2 n)`, and the C's
+# `31u - __builtin_clz(m)` (`tinybendygrad/runtime/dtype.c:175-176` AT PIN
+# `c958d7b0b`) is that same number, because `__builtin_clz(m)` is
+# `31 - floor(log2 m)`.  The `31 -` that used to stand in front of `U32.log2(m)`
+# here made the exponent `31 - floor(log2 m) + 103`: 2**31 too large at `m = 1`,
+# where the answer is 2**-24 and the rule answered 128.0.  The JS lane's `k`
+# (`tinybendygrad/runtime/dtype.js:161` AT PIN `c958d7b0b`) is
+# `31 - Math.clz32(m)`, the same number spelled the other way round, and
+# `fp8_decode.sub_pat` below already spells `k` this way.
 def fp16_f32.norm(s: U32, +m: U32) -> U32:
   U32.or(U32.shln(s, 31n),
-         U32.or(U32.shln(U32.add(U32.sub(31, U32.from_nat(U32.log2(m))), 103), 23n),
+         U32.or(U32.shln(U32.add(U32.from_nat(U32.log2(m)), 103), 23n),
                 U32.and(U32.shln(m, U32.to_nat(U32.sub(23,
                   U32.from_nat(U32.log2(m))))), 8388607)))
 
@@ -728,12 +736,13 @@ def fp16_f32.e(sub: Bool, s: U32, e: U32, +m: U32) -> U32:
 
 def fp16_f32.go(inf_nan: Bool, s: U32, +e: U32, +m: U32) -> U32:
   match inf_nan:
-    # The mirror of `fp16_encode.of`'s nan arm: the fraction is shifted back UP
-    # by the same 13. `dtype.c:147` keeps only the quiet bit, which is the same
-    # payload loss from the other side.
+    # The mirror of `fp16_encode.of`'s nan arm: CPython's codec answers EVERY half
+    # NaN with the one f32 NaN per sign, so the payload is not recovered on this
+    # side either.  The C lane keeps only the quiet bit
+    # (`tinybendygrad/runtime/dtype.c:172` AT PIN `c958d7b0b`).
     case True{}: U32.or(U32.shln(s, 31n),
                         Bool.pick(U32, U32.is_ne(m, 0),
-                                  U32.or(2139095040, U32.shln(m, 13n)),
+                                  U32.or(2139095040, 4194304),
                                   2139095040))
     case False{}: fp16_f32.e(U32.is_eq(e, 0), s, e, m)
 
