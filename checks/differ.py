@@ -312,6 +312,12 @@ PINS = {
 # that must be re-pinned whenever an artifact is added, not a claim. `repro-identical` equals
 # `repro-files` exactly when `repro-rc` is `0`, so a pin on it could only restate this one.
 REPRO_ARTIFACT = "D0-repro.txt"
+# THE DIFFERING ROWS, when a repro FAILS. `repro` prints the differing bytes and then throws the
+# snapshots away; without this file the failure is a NOTIFICATION, not a finding.
+REPRO_DIFF_ARTIFACT = "D0-repro-diff.txt"
+# THE DIFFERING ROWS, when a repro FAILS. `repro` prints the differing bytes and then throws the
+# snapshots away; without this file the failure is a NOTIFICATION, not a finding.
+REPRO_DIFF_ARTIFIFACT = "D0-repro-diff.txt"
 # `d10-transcript` PINS D10's VERBATIM, WHICH IS THE ONE ARTIFACT THE CORPUS NEVER JUDGED.
 # MEASURED 2026-10-15: `snap()` byte-compares `D10-zerorow-guard.txt.err` across the two runs, so
 # `repro-rc=rc=0` proves it REPRODUCIBLE and says NOTHING about whether it is RIGHT -- and a `classify`
@@ -1840,6 +1846,28 @@ def cmd_repro(a):
                               f"d10-transcript={d10}\n" + base)
         print(f"REPRO: NOT IDENTICAL -- {n} files:")
         sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
+
+        # **A REPRODUCIBILITY FAILURE THAT CANNOT BE DIAGNOSED AFTER THE FACT IS NOT A FINDING, IT IS
+        # A NOTIFICATION.** MEASURED 2026-10-20: two clean runs differed in EXACTLY ONE of 310 files,
+        # and the differing BYTES were a pair of sha256s IN THE SNAPSHOT -- so the output named the
+        # ARTIFACT but not the ROW, and both snapshots lived in a `TemporaryDirectory` deleted on exit.
+        # **THE DIFFERENCE WAS THEREFORE UNRECOVERABLE**, and its cause turned out to be that
+        # `substrate-head` -- THE ROW ADDED TO MAKE A RUN COMPARABLE TO A TREE -- RECORDS WHICH COMMIT
+        # MEASURED IT, SO TWO RUNS OF THE SAME TREE ARE INCOMPARABLE WHILE HEAD MOVES. The artifact
+        # below names the differing ROWS, so the next failure is a FINDING.
+        for _line in byte_diff(shots["A"], shots["B"], 40).splitlines():
+            if not (_line.startswith("<") and "  runs/" in _line):
+                continue
+            _rel = _line.split("  ", 1)[1].strip()
+            _live = D / Path(_rel).name
+            if not _live.is_file():
+                continue
+            _a = Path(tmp) / ("runA-" + _live.name)
+            shutil.copy2(_live, _a)
+            _d = byte_diff(_a, _live, 40)
+            write(REPRO_DIFF_ARTIFACT, f"# {_rel}\n" + _d)
+            print(f"  differing rows of {_rel} written to {REPRO_DIFF_ARTIFACT}:")
+            sys.stdout.write("".join(f"     {ln}\n" for ln in _d.splitlines()))
         return 1
 
 

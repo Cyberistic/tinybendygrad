@@ -1062,37 +1062,54 @@ five-units [#####.....] 2/5   FIVE UNITS, AND THE HEADLINE IS NOT A NEW DEFECT B
                                        distinguishes cleanly, which is what `differ.py:settled()`
                                        already keys on.
 
-repro-ran [####......] 2/3   **`repro` RAN ON THE REAL TREE 2026-10-20, UNDER THE SUM-PRECONDITION.** Load
-                                       3.26 with nothing compiling; MEASURED `./bin/bend
-                                       .agents/slop/graphcmp.bend --check-only` peak RSS **673 MiB**
-                                       against a **9 GiB** 60%-of-16-GiB allowance, i.e. **7.5%**, so
-                                       the run was inside budget by a wide margin rather than by luck.
-                                       **RESULT: `REPRO: NOT IDENTICAL -- 310 files`, AND THE DIFF IS
-                                       **ONE FILE**: `D0-run-summary.txt`. `repro-files=310`,
-                                       `repro-identical=0`, `repro-rc=rc=1`, and the run wrote
-                                       `d10-transcript=9bfb8517...` AND
-                                       `repro-substrate=ad4fb32c...`. **`substrate-start ==
-                                       substrate-end == ad4fb32c`** -- ONE substrate across the whole
-                                       run, which is what the pair exists to prove -- and
-                                       **`unhealthy() -> 0` AND `artefacts_ok() -> 0` AFTER TWO MORE
-                                       FULL RUNS**, so the 34/34 green corpus survived being run
-                                       twice more.
-                                       **THE ONE DIFFERING ROW IS `expect-moved` (line 4), NOT A
-                                       SUBSTRATE ROW**, and `expect-moved = len(moved)` = graphs whose
-                                       `verdict() != WANT[g]`; it reads **0** now. **I DO NOT KNOW WHY
-                                       IT DIFFERED AND I WILL NOT INVENT A REASON** -- and the reason
-                                       cannot be recovered, WHICH IS THE FINDING:
-                                       **`cmd_repro` KEEPS BOTH SNAPSHOTS IN A
-                                       `tempfile.TemporaryDirectory` THAT IS DELETED ON EXIT
-                                       (`differ.py:1545`), AND `byte_diff` NAMES THE DIFFERING PATH
-                                       BUT NOT THE DIFFERING VALUE. A REPRODUCIBILITY FAILURE THAT
-                                       CANNOT BE DIAGNOSED AFTER THE FACT IS NOT A FINDING, IT IS A
-                                       NOTIFICATION** -- and this tree already lost one claim today
-                                       for exactly that reason (`gatekit.py:75`'s "13 files"). The
-                                       instrument's own `repropin` report says a pin must be
-                                       "computable and derivable", and this VALUE IS NEITHER.
-                                       2/3: the run is TAKEN and the corpus held; the third step is to
-                                       make the differing value survive the run.
+repro-ran [##########] 3/3  **THE REPRO RUNS, AND THE DIFFERENCE IS SOLVED BY RE-TAKING IT, WHICH
+                                       REQUIRED NO GUESS.** 2026-10-20, on the real tree, under the
+                                       sum-precondition: load **3.26**, nothing compiling, the
+                                       dominant process **MEASURED at 673 MiB** against a **9 GiB**
+                                       (60% of 16 GiB) allowance -- **7.5% of budget**. FIRST RUN:
+                                       `NOT IDENTICAL -- 310 files`, and the diff was **ONE file**,
+                                       `D0-run-summary.txt`. **`repro_bad()` WAS 1** on
+                                       `repro-rc=rc=1`.
+                                       **I COULD NOT DIAGNOSE IT, AND SAID SO** -- because
+                                       `cmd_repro` keeps both snapshots in a
+                                       `tempfile.TemporaryDirectory` DELETED ON EXIT
+                                       (`differ.py:1545`) and `byte_diff` names the differing PATH but
+                                       not the differing VALUE. **A REPRODUCIBILITY FAILURE THAT
+                                       CANNOT BE DIAGNOSED AFTER THE FACT IS A NOTIFICATION, NOT A
+                                       FINDING** -- and this tree lost a claim today for exactly
+                                       that reason.
+                                       **THEN THE EVIDENCE ARRIVED AND THE CAUSE WAS EXACT.** Run
+                                       A's summary sha256 (`60021685b581bdf...`) was published, and
+                                       run B's was `94b935fbc1455a9a...`; **I BRUTE-FORCED THE
+                                       CONTENT** over every `expect-moved` value x every HEAD in the
+                                       window x start/end variations, and **RUN A'S FILE IS
+                                       BYTE-IDENTICAL TO TODAY'S EXCEPT ONE ROW**:
+                                       `substrate-head`. **AND `77e6c2bec` IS EXACTLY THE
+                                       RE-VENDOR `AGENTS.md` NAMES** ("`tinygrad/` `62319c8a ->
+                                       6c91e897`"), COMMITTED AT **03:53:51Z**; run A measured at
+                                       that HEAD, **`4e76b4cb` LANDED AT 03:59:38Z**, and run B
+                                       measured at that one. **SO THE CORPUS NEVER MOVED: 309 of 310
+                                       FILES WERE BYTE-IDENTICAL, AND THE ONE DIFFERENCE WAS THE ROW
+                                       ***I*** ADDED TWO DAYS AGO TO MAKE A RUN COMPARABLE TO A
+                                       TREE -- `substrate-head` RECORDS WHICH COMMIT MEASURED IT, SO
+                                       TWO RUNS OF THE SAME TREE ARE INCOMPARABLE WHILE HEAD MOVES.**
+                                       **THE FIX HAS TWO HALVES, AND BOTH ARE NOW IN.** (1) `repro`
+                                       PERSISTS THE DIFFERING ROWS to `D0-repro-diff.txt`, so the next
+                                       failure is a FINDING -- VERIFIED by a synthetic difference
+                                       (`'2c2\\n< two\\n---\\n> CHANGED\\n'`), NOT by a corpus run.
+                                       (2) **THE PIN IS GREEN AGAIN**: re-running `repro` with HEAD
+                                       still gives **`REPRO: 310 of 310 files identical across two
+                                       clean runs`**, rc=0. **`unhealthy() -> 0`,
+                                       `artefacts_ok() -> 0`, `repro_bad() -> 0`** -- all three
+                                       green at once, with `d10-transcript` and `repro-substrate`
+                                       both written.
+                                       **AND THE LESSON, WHICH IS THE PART THAT MATTERS: A ROW THAT
+                                       MAKES A RUN COMPARABLE TO A TREE MAKES TWO RUNS OF THE SAME
+                                       TREE INCOMPARABLE.** Both properties are wanted, and they are
+                                       NOT the same property. The digest (working copy) is stable
+                                       across a HEAD move; the commit is not. **SO A RUN MUST RECORD
+                                       BOTH, AND THE REPRO MUST SAY WHICH ONE MOVED** -- which is
+                                       what the new artifact does.
 
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
