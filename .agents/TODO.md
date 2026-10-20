@@ -389,8 +389,12 @@ repro-anchor [##........] 1/3      THE FIX I LANDED 2026-10-15 WAS READING **ONE
                                        **HISTORICAL**, a record of a pruned tool. MEASURED: **560 dangling =
                                        46 ACTIONABLE + 514 historical**, and it surfaces exactly the findings I
                                        know are real -- `checks/rn-gate.py`'s gone oracle
-                                       (`.agents/slop/xd1/render-gate-oracle.py`) and its never-committed
-                                       selftest inputs (`checks/rn-orc.txt`, `checks/rn-port.txt`) -- while NOT
+                                       (`.agents/slop/xd1/render-gate-oracle.py`) and its selftest
+                                       inputs -- **WHICH WERE NEVER MISSING, ONLY MISNAMED: the captures EXIST as
+                                         `checks/rn-port.rows` and `checks/rn-orc.rows`, byte-verified against the md5s the
+                                         gate records at :44-45, and the lane now RUNS (80 gated rows, 75 agree,
+                                         5 disagree) -- so "0 COMMITS TOUCH THE NAME" WAS NEVER A MEASUREMENT
+                                         OF A MISSING ARTIFACT** -- while NOT
                                        failing on the 514 records. The exit status is driven by ACTIONABLE
                                        alone. **THE SPLIT IS WHAT I COULD NOT GUESS BEFORE, AND IT IS WHAT
                                        MAKES THE WIDENING SAFE**: one number for both buries 46 real findings
