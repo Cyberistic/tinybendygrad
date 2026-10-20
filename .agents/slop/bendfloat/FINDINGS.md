@@ -42,7 +42,12 @@ answer the one quiet NaN per sign, like `runtime/dtype.c:146` and `:172`.
 answers `0x33800000`.  THE MAP WAS ALWAYS INJECTIVE: 1023 distinct f32 patterns over the
 1023 positive half subnormals before AND after (2046 over both signs), so the Bend's
 defect was a wrong MAGNITUDE and never a lost one -- which is what rules out the
-non-injective reading.
+non-injective reading.  The gate prints that row as its own line:
+
+    h2f positive class: 1023 inputs, 1023 distinct f32 patterns (the map must be
+    INJECTIVE), 1023 disagree      <- BEFORE
+    h2f positive class: 1023 inputs, 1023 distinct f32 patterns (the map must be
+    INJECTIVE), 0 disagree         <- AFTER
 
 ## 3. THE SEAM'S 75 OF 77: THE SAME DEFECT, AND HOW THEY WERE TOLD APART
 
