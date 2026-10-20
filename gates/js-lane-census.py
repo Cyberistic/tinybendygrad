@@ -209,6 +209,24 @@ PLANTS = {
     "f16-round-disarm": [("    return s | ((m | 0x800000) >>> (27 - ue));",
                           "    return s | ((m | 0x800000) >>> (27 - ue) );"),
                          (">>> (27 - ue)", ">>> (27 - ue )")],
+    # ALL FOUR DEFECTS AT ONCE: the CLOSURE.  Every disagreement class must be EMPTY and
+    # the census must read 0 disagreements, which is the falsifier for "these four are
+    # ALL of it".  The order matters and is the order of the defects: the f16 SHIFT is
+    # fixed before the f16 ROUNDING, because a rounding on a thirteen-bit-wrong shift is
+    # a rounding of nothing.
+    "js-plant-all": [("((s | (103 << 23) | (m << 14)) >>> 0)",
+                      "((s | ((103 + (31 - Math.clz32(m))) << 23) "
+                      "| ((m << (23 - (31 - Math.clz32(m)))) & 0x7fffff)) >>> 0)"),
+                     (">>> (27 - ue)", ">>> (14 - ue)"),
+                     ("    return s | ((m | 0x800000) >>> (14 - ue));",
+                      "    const big = m | 0x800000, sh = 14 - ue;\n"
+                      "    let hm = big >>> sh;\n"
+                      "    const rem = big & ((1 << sh) - 1), halfway = 1 << (sh - 1);\n"
+                      "    if (rem > halfway || (rem === halfway && (hm & 1))) hm += 1;\n"
+                      "    return s | hm;"),
+                     ("function dtype_bf16(u) {\n  return of32(",
+                      "function dtype_bf16(u) {\n  if ((u & 0x7f800000) === 0x7f800000) "
+                      "return of32(u);\n  return of32(")],
 }
 
 # WHAT EACH PLANT MUST DO, and it is CHECKED against the run, because a plant whose effect
@@ -216,24 +234,32 @@ PLANTS = {
 # COUNT: a number written here would be an expected value nobody computed, and the tree's
 # rule is that a row's expected value is DERIVED.
 #
-#   (None, "same")    every class must be where the UNPLANTED lane put it.  A control that
+#   "*": "same"       EVERY class must be where the UNPLANTED lane put it.  A control that
 #                     moves a row is an instrument reading a TOKEN instead of a VALUE.
-#   (cls, "zero")     that class must be EMPTY, and the others must not have moved.
-#   (cls, "decrease") that class must be SMALLER, and the others must not have moved.
-#   (cls, "increase") that class must be LARGER, and the others must not have moved.
+#   <cls>: "zero"     that class must be EMPTY.
+#   <cls>: "decrease" that class must be SMALLER.
+#   <cls>: "increase" that class must be LARGER.
+#
+# A PLANT WITH NO ENTRY HERE IS REFUSED, because a plant whose effect is not declared is a
+# plant whose effect is not checked, and that is the shape this table exists to remove.
 PLANT_EFFECT = {
-    "arith-plant": ("fp8to", "increase"),
-    "arith-disarm": (None, "same"),
-    "thr-plant": ("fp8from", "increase"),
-    "thr-disarm": (None, "same"),
-    "f16-shift-plant": ("f16bits", "decrease"),
-    "f16-shift-disarm": (None, "same"),
-    "h2f-plant": ("half2f32", "zero"),
-    "h2f-disarm": (None, "same"),
-    "f16-round-plant": ("f16bits", "zero"),
-    "f16-round-disarm": (None, "same"),
-    "bf16-pass-plant": ("bf16", "zero"),
-    "bf16-pass-disarm": (None, "same"),
+    "arith-plant": {"fp8to": "increase"},
+    "arith-disarm": {"*": "same"},
+    "thr-plant": {"fp8from": "increase"},
+    "thr-disarm": {"*": "same"},
+    "f16-shift-plant": {"f16bits": "decrease"},
+    "f16-shift-disarm": {"*": "same"},
+    "h2f-plant": {"half2f32": "zero"},
+    "h2f-disarm": {"*": "same"},
+    "f16-round-plant": {"f16bits": "zero"},
+    "f16-round-disarm": {"*": "same"},
+    "bf16-pass-plant": {"bf16": "zero"},
+    "bf16-pass-disarm": {"*": "same"},
+    # ALL FOUR AT ONCE: the closure.  Every disagreement class must be EMPTY, and the
+    # census must read 0 disagreements -- which is the falsifier for "these four are all
+    # of it".  `gates/subnormal-flush-gate.py`'s `js-plant-all` is the same claim over the
+    # f16 subnormal class alone.
+    "js-plant-all": {"half2f32": "zero", "f16bits": "zero", "bf16": "zero", "fp16": "zero"},
 }
 
 
@@ -594,6 +620,9 @@ def run(*, plant: str | None, quick: bool) -> int:
             return refuse(f"input absent: {p}")
     if plant is not None and plant not in PLANTS:
         return refuse(f"unknown plant {plant!r}; one of {sorted(PLANTS)}")
+    if plant is not None and plant not in PLANT_EFFECT:
+        return refuse(f"plant {plant!r} has no declared effect in PLANT_EFFECT; a plant "
+                      f"whose effect is not declared is a plant whose effect is not checked")
     if bad := oracle_drift(ORACLE_PIN):
         return refuse("the CPython side drifted: " + "; ".join(bad))
     if not shutil.which(NODE):
@@ -726,33 +755,35 @@ def run(*, plant: str | None, quick: bool) -> int:
     # means two things is not a verdict.  `gates/subnormal-flush-gate.py` is the gate whose
     # exit code IS the arm's, because there the arm is the whole question.
     if plant is not None:
-        cls, rel = PLANT_EFFECT[plant]
+        want = PLANT_EFFECT[plant]
         base_counts, armed_counts = class_counts(base_bad), class_counts(bad)
         moved = {c: (base_counts.get(c, 0), armed_counts.get(c, 0))
                  for c in set(base_counts) | set(armed_counts)}
-        others = {c: v for c, v in moved.items() if c != cls}
-        ok = True
-        if rel == "same":
+        ok, why = True, ""
+        if "*" in want:
             # EVERY CLASS MUST BE WHERE THE UNPLANTED LANE PUT IT.  "Nothing moved" is
             # `b == a` for every class, and NOT "the dict is empty": the dict is empty
             # only when there were no disagreements at all, which is a DIFFERENT statement
             # and the first draft of this check conflated them.
             changed = {c: v for c, v in moved.items() if v[0] != v[1]}
             ok = not changed
-            why = ("every class moved: " + ", ".join(f"{c} {b}->{a}" for c, (b, a) in sorted(changed.items()))
-                   if changed else "")
-        else:
+            if changed:
+                why = "every class moved: " + ", ".join(
+                    f"{c} {b}->{a}" for c, (b, a) in sorted(changed.items()))
+        for cls, rel in want.items():
+            if cls == "*":
+                continue
             b, a = moved.get(cls, (0, 0))
-            ok = (rel == "zero" and a == 0) or (rel == "decrease" and a < b) \
+            good = (rel == "zero" and a == 0) or (rel == "decrease" and a < b) \
                 or (rel == "increase" and a > b)
-            why = f"{cls} is {a}, and the arm says {rel} of {b}"
-            for c, (b2, a2) in others.items():
-                if b2 != a2:
-                    ok = False
-                    why += f"; {c} also moved {b2} -> {a2}"
-        print(f"  ARM {plant}: {cls or 'every class'} must be {rel} -- "
-              f"{'HOLDS' if ok else 'VIOLATED: ' + why} "
-              f"({', '.join(f'{c} {b}->{a}' for c, (b, a) in sorted(moved.items())) or 'no class moved'})")
+            if not good:
+                ok = False
+                why += f"{cls} is {a}, and the arm says {rel} of {b}; "
+        print(f"  ARM {plant}: "
+              + ", ".join(f"{c or '*'} must be {r}" for c, r in want.items())
+              + f" -- {'HOLDS' if ok else 'VIOLATED: ' + why} ("
+              + ", ".join(f"{c} {b}->{a}" for c, (b, a) in sorted(moved.items()))
+              + ")")
     # ONE MINIMAL REPRODUCTION PER CLASS, DERIVED AT RUN TIME and not written down: the
     # disagreeing row of that class with the smallest-magnitude input.  A class name is a
     # label; a class's smallest failure is evidence, and a fixture that cannot fail is worse
