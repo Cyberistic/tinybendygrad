@@ -104,8 +104,16 @@ lane() {  # lane <mode> <label> <workdir> <logfile>
 }
 
 hr
-say "== 6/6 THE MATMUL THROUGH THE PORT  -- execution: no Node, no browser, no adapter,"
-say "        no tinygrad Python scheduler in the execution path"
+# THIS LANE'S BANNER IS INDENTED, AND ONLY ITS COLUMN MOVED. MEASURED 2026-10-20T00:18Z:
+# `.agents/slop/e2epy/artifacts/live.port.out` (13306 B, mtime 2026-10-07T23:25:58Z) carries this
+# line at transcript line 77, where `.agents/slop/e2estage8/verdicts.py:63` `HEADER` matched it and
+# `reopens()` printed `RE-OPEN  stage 6 was ALREADY OPEN at transcript line 77`. `checks/e2e.py:640`
+# `echo_file(pmm)` forwards this lane's WHOLE output, so the re-open happens on EVERY run, not only
+# on the window sizes nobody measured. Three spaces is what the next three `say`s below already use
+# for this lane's own sub-step headers, so the progress a human reads is unchanged and the lane
+# stops being a second writer of the census's population -- `gates/banner-gate.py`, C1.
+say "   == 6/6 THE MATMUL THROUGH THE PORT  -- execution: no Node, no browser, no adapter,"
+say "           no tinygrad Python scheduler in the execution path"
 
 hr
 say "   [EXEC] lane A -- kern2 CLANG, ONE OF THE PORT'S OWN 227 ROWS"

@@ -75,8 +75,15 @@ hr()   { say ""; say "----------------------------------------------------------
 
 mkdir -p "$W" || exit 1
 hr
-say "== 7/7 AN f64 KERNEL THROUGH THE PORT -- double, not float"
-say "   harness: .agents/slop/portexec/run-kernel.sh mm, UNCHANGED, on a copy"
+# THIS LANE'S BANNER IS INDENTED, AND ONLY ITS COLUMN MOVED. MEASURED 2026-10-20T00:18Z:
+# `checks/e2e.py:389` `F64_RE` does not admit this line, so it does not reach the transcript TODAY --
+# but `runs/e2e/e2e-f64.out` (mtime 2026-10-17T06:26Z) holds it at its own line 3, one edit of that
+# filter away from being forwarded, and `.agents/slop/e2estage8/verdicts.py:63` `HEADER` would match
+# it the moment it arrived. **A LANE WHOSE BANNER A FILTER HAPPENS TO DROP IS STILL A LANE WRITING
+# THE CENSUS's POPULATION**, so the writer's side is the side that moves: three spaces, which is
+# what the `harness:` line below and every `  *** SUBSTRATE …` row already use.
+say "   == 7/7 AN f64 KERNEL THROUGH THE PORT -- double, not float"
+say "      harness: .agents/slop/portexec/run-kernel.sh mm, UNCHANGED, on a copy"
 
 # ---- 0. THE SUBSTRATE, CHECKED THE WAY THAT HAS ACTUALLY BEEN FOOLED ----------
 # `--check-only` REPORTS `ALL PROOFS CHECK` FOR AN EMPTY FILE (measured, and it has
