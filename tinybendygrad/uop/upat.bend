@@ -108,7 +108,6 @@ type Lit is Data:
   LText{s: String}
   LOps{ys: List<&2, O.Op>}
   LDt{ys: List<&2, S.Dt>}
-  LTag{ys: List<&2, O.Tag>}
   LArg{a: O.Arg}
   LInt{n: U32}
 # ===========================================================================
@@ -118,9 +117,15 @@ type Lit is Data:
 #
 # `lit` is Python's `arg`, and the two things Python puts there are a STRING
 # (CUSTOM's format, CUSTOMI's text) and a PYTHON LITERAL (PYLITERAL, CONST's
-# `val`). `LOps`/`LDt`/`LTag` hold a LIST because Python's payload is a tuple
+# `val`). `LOps`/`LDt` hold a LIST because Python's payload is a tuple
 # of length one or a `frozenset`, and `len(self.op) > 1` is the test that
 # chooses between them -- so the length is the same information Python has.
+#
+# THERE IS NO `LTag`. Upstream deleted the tag clause -- `35dab0a35` "no upat
+# tag" (#18889) removed `UPat.match_tag` from `__slots__`, `__init__`,
+# `__reduce__`, `named` and `match`, and removed the clause from `_get_clause`
+# -- so a PYLITERAL can no longer carry a tag SET, and a literal variant for it
+# would be a constructor nothing can build.
 # ===========================================================================
 # `C{op, lit, ss}` is `UOp(Ops.X, src=..., arg=...)`. The tag is `None` on every
 # node this file builds and no rule here reads it, so it is not a field.
@@ -227,8 +232,8 @@ def head1c(gs: List<&2, C>) -> C:
 # Python gets it from `ucache` (two equal nodes are one object and `UOp.__eq__`
 # is identity); here it is spelled out.
 #
-# THE DEDUP KEY IS THE `arg`, AND THE `arg` OF A MULTI-ELEMENT op/dtype/tag IS A
-# `frozenset` -- upat.py:25, 36 and 43 all build `UOp(Ops.PYLITERAL,
+# THE DEDUP KEY IS THE `arg`, AND THE `arg` OF A MULTI-ELEMENT op/dtype IS A
+# `frozenset` -- upat.py:25 and 36 both build `UOp(Ops.PYLITERAL,
 # arg=frozenset(...))`. So the equality is SET equality and must be spelled as
 # such. Three facts, each measured, and they are why:
 #
@@ -245,10 +250,10 @@ def head1c(gs: List<&2, C>) -> C:
 #     "same object" is exactly "same `arg` under Python's `==`".
 #
 # VALUE-KEYED IS THEREFORE RIGHT and node-keyed would be the same answer; what was
-# wrong is the `==`. Order-sensitive list equality read `tag=('B','A')` and
-# `tag=('A','B')` as two nodes, so a tag filter reached by two clause branches
+# wrong is the `==`. Order-sensitive list equality read `('B','A')` and
+# `('A','B')` as two nodes, so a set filter reached by two clause branches
 # got one `a{n}` in CPython and a fresh one per path here (upatfuzz seed 50,
-# `--max-depth 8`: `uop.tag in a2` against `uop.tag in a7`). Both directions,
+# `--max-depth 8`: `uop.op in a2` against `uop.op in a7`). Both directions,
 # because a `frozenset` drops a repeated element and the tuple it came from does
 # not: `has_ops(x, y) and has_ops(y, x)`, never a length test.
 
@@ -262,18 +267,12 @@ def has_dts(+xs: List<&2, S.Dt>, +ys: List<&2, S.Dt>) -> Bool:
     case Nil{}: True{}
     case x <> t: Bool.and(List.contains(S.Dt, O.eq_dt, ys, x), has_dts(t, ys))
 
-def has_tags(+xs: List<&2, O.Tag>, +ys: List<&2, O.Tag>) -> Bool:
-  match xs:
-    case Nil{}: True{}
-    case x <> t: Bool.and(List.contains(O.Tag, O.eq_tag, ys, x), has_tags(t, ys))
-
 def eq_lit(a: Lit, b: Lit) -> Bool:
   match a b:
     case LNone{} LNone{}: True{}
     case LText{x} LText{y}: String.eq(x, y)
     case LOps{+x} LOps{+y}: Bool.and(has_ops(x, y), has_ops(y, x))
     case LDt{+x} LDt{+y}: Bool.and(has_dts(x, y), has_dts(y, x))
-    case LTag{+x} LTag{+y}: Bool.and(has_tags(x, y), has_tags(y, x))
     case LArg{x} LArg{y}: O.eq_arg(x, y)
     case LInt{x} LInt{n}: U32.is_eq(x, n)
     case _ _: False{}
@@ -404,6 +403,16 @@ def arg_int(a: O.Arg) -> Maybe<&2, U32>:
     # CustomFunction is a new Arg constructor. `isinstance(CustomFunction("f"), int)` is
     # False upstream (measured), so this arm is what the constructor forces -- not a tidy-up.
     case O.ACustom{_}: None{}
+    # `AOpLit` is the UNPAIRED `Op` -- the port's spelling of `upat.py:26`'s
+    # `UOp(Ops.PYLITERAL, arg=self.op[0])`. `isinstance(Ops.ADD, int)` is False
+    # upstream, so this arm answers `None` for the same reason `ACustom` does.
+    # It was MISSING here, and the missing arm is not a warning: `ops.bend`'s
+    # `Arg` gained the constructor and this file's closed match did not, so
+    # `bend --check-only` refused the whole file with "expected : cases for
+    # ops.AOpLit" (measured 2026-10-20T16:16Z, rc=1). The other two closed `Arg`
+    # matches -- `ops.bend`'s `eq_arg.sel` and `render.bend`'s `arg_repr` --
+    # already had it.
+    case O.AOpLit{_}: None{}
     case O.AKernel{_}: None{}
     case O.AProgram{_}: None{}
     case O.ARange{_, _}: None{}
@@ -465,26 +474,15 @@ def dt_clause.of(md: Maybe<&2, List<&2, S.Dt>>, base: C) -> List<&2, C>:
   match md:
     case Some{+ys}: dt_clause.pick(ge2(List.length(&2, S.Dt, ys)), ys, base, "{0}.dtype in {1}", "{0}.dtype is {1}")
     case None{}: Nil{}
-# `"{0}.tag in {1}"` / `"{0}.tag == {1}"` -- note `==` and not `is` for one tag.
-
-def tag_clause.pick(two: Bool, ys: List<&2, O.Tag>, base: C, many: String, one: String) -> List<&2, C>:
-  match two:
-    case True{}: [C{O.OpsCUSTOM{}, LText{many}, [base, C{O.OpsPYLITERAL{}, LTag{ys}, Nil{}}]}]
-    case False{}: [C{O.OpsCUSTOM{}, LText{one}, [base, C{O.OpsPYLITERAL{}, LTag{ys}, Nil{}}]}]
-
-def tag_clause.of(mt: Maybe<&2, List<&2, O.Tag>>, base: C) -> List<&2, C>:
-  match mt:
-    case Some{+ys}: tag_clause.pick(ge2(List.length(&2, O.Tag, ys)), ys, base, "{0}.tag in {1}", "{0}.tag == {1}")
-    case None{}: Nil{}
-# the seven `if`s, in Python's order
+# the six `if`s, in Python's order
 
 def pieces(u: O.UPat, +base: C) -> List<&2, C>:
   match u:
-    case O.UPat{op, md, mt, arg, name, _, _, _, +strict, +req, _}:
+    case O.UPat{op, md, arg, name, _, _, _, +strict, +req, _}:
       List.concat(&2, C, [op_clause.of(op, base), arg_clause.of(arg, base),
         len_clause.of(Bool.or(strict, U32.is_gt(req, 0)), strict, req, base),
         name_clause.of(name, base),
-        dt_clause.of(md, base), tag_clause.of(mt, base)])
+        dt_clause.of(md, base)])
 # `base.index(i)`: an INDEX over the base and a CONST carrying the index. The
 # CONST's dtype is `dtypes.from_py(i)` and no rule here reads it.
 
@@ -522,7 +520,7 @@ def nth.of(hit: Maybe<&2, O.UPat>) -> O.UPat:
   match hit:
     case Some{u}: u
     # the arena's bottom, the same shape `O.pat_nth.of` answers `None` with
-    case None{}: O.UPat{None{}, None{}, None{}, None{}, None{}, O.SNone{}, Nil{}, False{}, False{}, 0, Nil{}}
+    case None{}: O.UPat{None{}, None{}, None{}, None{}, O.SNone{}, Nil{}, False{}, False{}, 0, Nil{}}
 
 def nth(pat: O.Pat, n: U32) -> O.UPat:
   nth.of(List.get(&2, O.UPat, O.Pat.upats(pat), U32.to_nat(n)))
@@ -554,10 +552,14 @@ def alts_of(u: O.UPat) -> List<&2, O.UpAlt>:
 # ===========================================================================
 # _get_clause -- upat.py:15. `UPat` -> the predicate tree.
 #
-# The seven `if`s of the and_clause are seven defs here, because a `Bool` match
+# The six `if`s of the and_clause are six defs here, because a `Bool` match
 # IS an `if` and there is no other spelling. Each returns an empty list or a
 # one-element list, and `pieces` concatenates them in Python's order: op, arg,
-# len, name, dtype, tag.
+# len, name, dtype.
+#
+# THE SEVENTH IS GONE. It was the tag clause, and upstream deleted it --
+# `35dab0a35` "no upat tag" (#18889) removed `UPat.match_tag` and the
+# `"{0}.tag in {1}"` / `"{0}.tag == {1}"` arms from `_get_clause`.
 #
 # A PYLITERAL always carries the WHOLE list, never just its head: at length one
 # `LOps{ys}` and `LOps{[ys[0]]}` are the same value, so the singular arm costs
@@ -1727,14 +1729,14 @@ def pat_var() -> O.PatFound:
 def pat_add() -> O.PatFound:
   a = O.UPat.var(O.Pat{Nil{}}, Some{"a"}, None{})
   b = O.UPat.var(O.PatFound.pat(a), Some{"b"}, None{})
-  O.UPat.of(O.PatFound.pat(b), Some{[O.OpsADD{}]}, None{}, None{}, O.STuple{[0, 1]}, None{}, None{}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(b), Some{[O.OpsADD{}]}, None{}, O.STuple{[0, 1]}, None{}, None{}, False{}, None{}, False{})
 
 # `UPat(Ops.ADD, src=UPat(Ops.MUL, name="m"))` -- the repeat arm, with the store
 # lifted to the outer clause and the identity compare inside the loop
 
 def pat_repeat() -> O.PatFound:
-  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
+  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
 
 # `UPat.any(UPat(name="a"), UPat(name="b"))` -- the `is_any` arm and a nested
 # `_final_render` at depth 2
@@ -1742,7 +1744,7 @@ def pat_repeat() -> O.PatFound:
 def pat_any() -> O.PatFound:
   a = O.UPat.var(O.Pat{Nil{}}, Some{"a"}, None{})
   b = O.UPat.var(O.PatFound.pat(a), Some{"b"}, None{})
-  O.UPat.of(O.PatFound.pat(b), None{}, None{}, None{}, O.STuple{[0, 1]}, None{}, None{}, False{}, None{}, True{})
+  O.UPat.of(O.PatFound.pat(b), None{}, None{}, O.STuple{[0, 1]}, None{}, None{}, False{}, None{}, True{})
 
 # `UPat(Ops.INDEX, src=(UPat(Ops.ADD, src=UPat(Ops.MUL, name="m")),
 # UPat(name="i")))` -- A REPEAT NESTED IN A SRC TUPLE. The repeat's CHILD has no
@@ -1750,10 +1752,10 @@ def pat_any() -> O.PatFound:
 # order it rebuilds cannot show; `rep_src_src` below is the row that sees it.
 
 def pat_rep_src() -> O.PatFound:
-  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
+  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
   i = O.UPat.var(O.PatFound.pat(m), Some{"i"}, None{})
-  a = O.UPat.of(O.PatFound.pat(i), Some{[O.OpsADD{}]}, None{}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(a), Some{[O.OpsINDEX{}]}, None{}, None{}, O.STuple{[2, 1]}, None{}, None{}, False{}, None{}, False{})
+  a = O.UPat.of(O.PatFound.pat(i), Some{[O.OpsADD{}]}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(a), Some{[O.OpsINDEX{}]}, None{}, O.STuple{[2, 1]}, None{}, None{}, False{}, None{}, False{})
 
 # THE SAME REPEAT with the CHILD's src a TUPLE, so `substitute` runs on a
 # two-element `INDEX(CUSTOMI, CONST)` and can swap it. This row answers `None`
@@ -1761,18 +1763,18 @@ def pat_rep_src() -> O.PatFound:
 
 def pat_rep_src_src() -> O.PatFound:
   p = O.UPat.var(O.Pat{Nil{}}, Some{"p"}, None{})
-  m = O.UPat.of(O.PatFound.pat(p), Some{[O.OpsMUL{}]}, None{}, None{}, O.STuple{[0]}, None{}, Some{"m"}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsINDEX{}]}, None{}, None{}, O.SOne{1}, None{}, None{}, False{}, None{}, False{})
+  m = O.UPat.of(O.PatFound.pat(p), Some{[O.OpsMUL{}]}, None{}, O.STuple{[0]}, None{}, Some{"m"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsINDEX{}]}, None{}, O.SOne{1}, None{}, None{}, False{}, None{}, False{})
 
 # `UPat.any(UPat(Ops.ADD, src=UPat(Ops.MUL, name="m")), UPat(Ops.SUB,
 # name="s"))` -- A REPEAT INSIDE `is_any`. BOTH branches render, so the two
 # `ituop0`s and the two `a{n}`s are all exercised at once.
 
 def pat_any_rep() -> O.PatFound:
-  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
-  a = O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
-  s = O.UPat.of(O.PatFound.pat(a), Some{[O.OpsSUB{}]}, None{}, None{}, O.SNone{}, None{}, Some{"s"}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(s), None{}, None{}, None{}, O.STuple{[1, 2]}, None{}, None{}, False{}, None{}, True{})
+  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
+  a = O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, O.SOne{0}, None{}, None{}, False{}, None{}, False{})
+  s = O.UPat.of(O.PatFound.pat(a), Some{[O.OpsSUB{}]}, None{}, O.SNone{}, None{}, Some{"s"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(s), None{}, None{}, O.STuple{[1, 2]}, None{}, None{}, False{}, None{}, True{})
 
 # `UPat(Ops.MUL, src=UPat(Ops.ADD, src=(UPat(name="a"), UPat(name="a")),
 # name="m"))` -- THE DUPLICATE STORE. One bind over two srcs, so
@@ -1780,52 +1782,59 @@ def pat_any_rep() -> O.PatFound:
 
 def pat_dup_store() -> O.PatFound:
   a = O.UPat.var(O.Pat{Nil{}}, Some{"a"}, None{})
-  m = O.UPat.of(O.PatFound.pat(a), Some{[O.OpsADD{}]}, None{}, None{}, O.STuple{[0, 0]}, None{}, Some{"m"}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsMUL{}]}, None{}, None{}, O.SOne{1}, None{}, None{}, False{}, None{}, False{})
+  m = O.UPat.of(O.PatFound.pat(a), Some{[O.OpsADD{}]}, None{}, O.STuple{[0, 0]}, None{}, Some{"m"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsMUL{}]}, None{}, O.SOne{1}, None{}, None{}, False{}, None{}, False{})
 
 # `UPat(Ops.ADD, src=(UPat(Ops.MUL, name="m"), UPat(Ops.MUL, name="m")))` --
 # THE SHARED LITERAL. Both `Ops.MUL` PYLITERALs are ONE interned node, so CPython
 # spends `a0` and `a1` and prints `a1` twice.
 
 def pat_share() -> O.PatFound:
-  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, None{}, O.STuple{[0, 0]}, None{}, None{}, False{}, None{}, False{})
+  m = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsMUL{}]}, None{}, O.SNone{}, None{}, Some{"m"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(m), Some{[O.OpsADD{}]}, None{}, O.STuple{[0, 0]}, None{}, None{}, False{}, None{}, False{})
 
 # THE SAME LITERAL SPELLED IN A DIFFERENT ORDER --
-# `UPat((Ops.MUL, Ops.ADD), dtype=(dtypes.i32, dtypes.f16), tag=('B','A'),
-# src=(UPat((Ops.ADD, Ops.MUL), dtype=(dtypes.f16, dtypes.i32), tag=('A','B')),))`.
-# All THREE multi-element arms are one node per axis, so all three print the same
-# `a{n}` twice, and `a0`/`a1`/`a2` are the whole of `dyn_lookup`.
+# `UPat((Ops.MUL, Ops.ADD), dtype=(dtypes.i32, dtypes.f16),
+# src=(UPat((Ops.ADD, Ops.MUL), dtype=(dtypes.f16, dtypes.i32)),))`.
+# BOTH multi-element arms are one node per axis, so both print the same
+# `a{n}` twice, and `a0`/`a1` are the whole of `dyn_lookup`.
+#
+# THE THIRD ARM IS GONE. The row used to spell `tag=('B','A')` as well, so three
+# multi-element arms shared the `a{n}` numbering. Upstream deleted the tag
+# clause -- `35dab0a35` "no upat tag" (#18889) -- so a PYLITERAL can no longer
+# carry a tag SET, and the row is re-spelled with the two arms master still has.
+# The EXPECTED STRING is DERIVED, not transcribed: it is the vendored CPython's
+# `tinygrad/uop/upat.py::_get_code` output for this pattern, minus its
+# `# match for ...` header -- the same derivation that reproduces this file's
+# other sixteen rows byte for byte.
 #
 # `share` cannot see this: it spells `Ops.MUL` twice, which is equal in ANY
-# equality. This is the row that pins `eq_lit`'s three set arms, and the fuzzer
+# equality. This is the row that pins `eq_lit`'s set arms, and the fuzzer
 # does NOT substitute for it -- `--seeds 400 --max-depth 8` finds no seed on
 # which the `LOps` arm alone can be reverted (0 disagreements), so the LTag arm
 # is the only one the harness reaches and only at seed 50. Two UPats with the
 # same op SET in two orders is rare, and rarer still at depth 8.
 
 def pat_set_ord() -> O.PatFound:
-  c = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsADD{}, O.OpsMUL{}]}, Some{[S.half(), S.int32()]},
-    Some{[O.TStr{"A"}, O.TStr{"B"}]}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(c), Some{[O.OpsMUL{}, O.OpsADD{}]}, Some{[S.int32(), S.half()]},
-    Some{[O.TStr{"B"}, O.TStr{"A"}]}, O.STuple{[0]}, None{}, None{}, False{}, None{}, False{})
+  c = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsADD{}, O.OpsMUL{}]}, Some{[S.half(), S.int32()]}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(c), Some{[O.OpsMUL{}, O.OpsADD{}]}, Some{[S.int32(), S.half()]}, O.STuple{[0]}, None{}, None{}, False{}, None{}, False{})
 
 # `UPat(Ops.CALL, arg=4)` -- the inline int arm, which spends NO `a{n}`
 
 def pat_argint() -> O.PatFound:
-  O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsCALL{}]}, None{}, None{}, O.SNone{}, Some{O.ATuple{[4]}}, None{}, False{}, None{}, False{})
+  O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsCALL{}]}, None{}, O.SNone{}, Some{O.ATuple{[4]}}, None{}, False{}, None{}, False{})
 
 # `UPat(Ops.BINARY, src=(q, q, q, q))` with
 # `q = UPat.any(UPat(Ops.ADD), UPat(Ops.SUB), UPat(Ops.MUL), UPat(Ops.MAX))`:
 # four OR children of one AND, which is `raise UPatCompileError("too big")`
 
 def pat_bigor() -> O.PatFound:
-  c0 = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsADD{}]}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  c1 = O.UPat.of(O.PatFound.pat(c0), Some{[O.OpsSUB{}]}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  c2 = O.UPat.of(O.PatFound.pat(c1), Some{[O.OpsMUL{}]}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  c3 = O.UPat.of(O.PatFound.pat(c2), Some{[O.OpsMAX{}]}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  q = O.UPat.of(O.PatFound.pat(c3), None{}, None{}, None{}, O.STuple{[0, 1, 2, 3]}, None{}, None{}, False{}, None{}, True{})
-  O.UPat.of(O.PatFound.pat(q), Some{[O.OpsBINARY{}]}, None{}, None{}, O.STuple{[4, 4, 4, 4]}, None{}, None{}, False{}, None{}, False{})
+  c0 = O.UPat.of(O.Pat{Nil{}}, Some{[O.OpsADD{}]}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  c1 = O.UPat.of(O.PatFound.pat(c0), Some{[O.OpsSUB{}]}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  c2 = O.UPat.of(O.PatFound.pat(c1), Some{[O.OpsMUL{}]}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  c3 = O.UPat.of(O.PatFound.pat(c2), Some{[O.OpsMAX{}]}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  q = O.UPat.of(O.PatFound.pat(c3), None{}, None{}, O.STuple{[0, 1, 2, 3]}, None{}, None{}, False{}, None{}, True{})
+  O.UPat.of(O.PatFound.pat(q), Some{[O.OpsBINARY{}]}, None{}, O.STuple{[4, 4, 4, 4]}, None{}, None{}, False{}, None{}, False{})
 
 # THE ORACLE. Every `want_*` below is CPython's own `_get_code` output for the
 # pattern above it, printed by `uv run` against `tinygrad/uop/upat.py` -- except
@@ -1879,19 +1888,27 @@ def want_share() -> String:
     "  return None"], "\n")
 
 def want_set_ord() -> String:
-  String.join(["def compiled_match(uop, ctx):",
-    "  if (uop.op in a0 and len(uop.src) == 1 and uop.dtype in a1 and uop.tag in a2 and uop.src[0].op in a0 and uop.src[0].dtype in a1 and uop.src[0].tag in a2) and (_ret:=_fxn(ctx=ctx)) is not None: return _ret",
-    "  return None"], "\n")
-
+  String.join([
+    "def compiled_match(uop, ctx):",
+    "  if (uop.op in a0 and len(uop.src) == 1 and uop.dtype in a1 and uop.src[0].op in a0 and uop.src[0].dtype in a1) and (_ret:=_fxn(ctx=ctx)) is not None: return _ret",
+    "  return None"
+  ], "\n")
 # A BIND ONE LEVEL ABOVE A FORK, AND A BIND ABOVE THAT. This is the row that
 # pins `proc`'s WAITLIST, and it is the shape `upatfuzz` reaches at seed 40
 # (`--max-depth 4`, 5 and 6) and seed 39 (`--max-depth 8`).
 #
 #   p0 = UPat()                        -- arena 0
-#   p1 = UPat(tag='A')                 -- arena 1
+#   p1 = UPat(Ops.CONST)               -- arena 1
 #   p2 = UPat(src=[p0, p1])            -- arena 2, the `permutations` fork
 #   p3 = UPat(name='x', src=(p2, p0))  -- arena 3
 #   p4 = UPat(name='b', src=(p0, p3))  -- arena 4, the root
+#
+# p1 CARRIES A PREDICATE, and it has to: the row's assertion is that the two
+# `name=` binds come out in a definite ORDER, and the two branches are told
+# apart only by the clause on p1. With p1 bare -- which is what `UPat(tag='A')`
+# was, before upstream deleted the tag clause -- the two branches render
+# IDENTICALLY and the row would assert nothing at all. `Ops.CONST` is the
+# predicate master still has that a bare CONST node can be told by.
 #
 # `_get_clause` puts p3's `STORE x` ABOVE p2's children, and p2's `OR` is inside
 # p2's own AND, so `do_process_and`'s `for x in a.src` (upat.py:76) splices p3's
@@ -1904,19 +1921,20 @@ def want_set_ord() -> String:
 # no other row has two binds over a fork.
 
 def pat_store_ord() -> O.PatFound:
-  p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  p1 = O.UPat.of(O.PatFound.pat(p0), None{}, None{}, Some{[O.TStr{"A"}]}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  p2 = O.UPat.of(O.PatFound.pat(p1), None{}, None{}, None{}, O.SList{[0, 1]}, None{}, None{}, False{}, None{}, False{})
-  p3 = O.UPat.of(O.PatFound.pat(p2), None{}, None{}, None{}, O.STuple{[2, 0]}, None{}, Some{"x"}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(p3), None{}, None{}, None{}, O.STuple{[0, 3]}, None{}, Some{"b"}, False{}, None{}, False{})
+  p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  p1 = O.UPat.of(O.PatFound.pat(p0), Some{[O.OpsCONST{}]}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  p2 = O.UPat.of(O.PatFound.pat(p1), None{}, None{}, O.SList{[0, 1]}, None{}, None{}, False{}, None{}, False{})
+  p3 = O.UPat.of(O.PatFound.pat(p2), None{}, None{}, O.STuple{[2, 0]}, None{}, Some{"x"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(p3), None{}, None{}, O.STuple{[0, 3]}, None{}, Some{"b"}, False{}, None{}, False{})
 
 def want_store_ord() -> String:
-  String.join(["def compiled_match(uop, ctx):",
+  String.join([
+    "def compiled_match(uop, ctx):",
     "  if len(uop.src) == 2 and True and len(uop.src[1].src) == 2 and len(uop.src[1].src[0].src) == 2:",
-    "    if True and uop.src[1].src[0].src[1].tag == a0 and (_ret:=_fxn(ctx=ctx, x=uop.src[1], b=uop)) is not None: return _ret",
-    "    if uop.src[1].src[0].src[0].tag == a0 and True and (_ret:=_fxn(ctx=ctx, x=uop.src[1], b=uop)) is not None: return _ret",
-    "  return None"], "\n")
-
+    "    if True and uop.src[1].src[0].src[1].op is a0 and (_ret:=_fxn(ctx=ctx, x=uop.src[1], b=uop)) is not None: return _ret",
+    "    if uop.src[1].src[0].src[0].op is a0 and True and (_ret:=_fxn(ctx=ctx, x=uop.src[1], b=uop)) is not None: return _ret",
+    "  return None"
+  ], "\n")
 # THE FUEL BOUND, and the only row that can see it. Five arena UPats and an AND
 # spine seven deep -- the shape `upatfuzz --seeds 158 --max-depth 5` seed 157 and
 # `--seeds 200 --max-depth 12` reach -- and `proc_fix` needs more than 32 rounds
@@ -1927,30 +1945,30 @@ def want_store_ord() -> String:
 #   p0 = UPat()                                 -- arena 0
 #   p1 = UPat(name='b', dtype=(f32,h), src=[p0])
 #   p2 = UPat(arg=5, src=[p0, p1])
-#   p3 = UPat(Ops.CONST, name='a', dtype=(h,f32), tag='A', src=(p2, p1))
-#   p4 = UPat(Ops.NEG, dtype=i32, tag=('B','A'), src=(p3, p3, p1))  -- the root
+#   p3 = UPat(Ops.CONST, name='a', dtype=(h,f32), src=(p2, p1))
+#   p4 = UPat(Ops.NEG, dtype=i32, src=(p3, p3, p1))  -- the root
 #
 # `src=(p3, p3, p1)` is what makes the spine: p3 is walked TWICE, at `src[0]` and
 # `src[1]`, and p1 a third time at `src[2]`, so the third walk's pieces are the
 # LAST of a long `new_src` and a fuel that runs out drops exactly them.
 
 def pat_deep() -> O.PatFound:
-  p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
-  p1 = O.UPat.of(O.PatFound.pat(p0), None{}, Some{[S.single(), S.half()]}, None{}, O.SList{[0]}, None{}, Some{"b"}, False{}, None{}, False{})
-  p2 = O.UPat.of(O.PatFound.pat(p1), None{}, None{}, None{}, O.SList{[0, 1]}, Some{O.ATuple{[5]}}, None{}, False{}, None{}, False{})
-  p3 = O.UPat.of(O.PatFound.pat(p2), Some{[O.OpsCONST{}]}, Some{[S.half(), S.single()]},
-    Some{[O.TStr{"A"}]}, O.STuple{[2, 1]}, None{}, Some{"a"}, False{}, None{}, False{})
-  O.UPat.of(O.PatFound.pat(p3), Some{[O.OpsNEG{}]}, Some{[S.int32()]},
-    Some{[O.TStr{"B"}, O.TStr{"A"}]}, O.STuple{[3, 3, 1]}, None{}, None{}, False{}, None{}, False{})
+  p0 = O.UPat.of(O.Pat{Nil{}}, None{}, None{}, O.SNone{}, None{}, None{}, False{}, None{}, False{})
+  p1 = O.UPat.of(O.PatFound.pat(p0), None{}, Some{[S.single(), S.half()]}, O.SList{[0]}, None{}, Some{"b"}, False{}, None{}, False{})
+  p2 = O.UPat.of(O.PatFound.pat(p1), None{}, None{}, O.SList{[0, 1]}, Some{O.ATuple{[5]}}, None{}, False{}, None{}, False{})
+  p3 = O.UPat.of(O.PatFound.pat(p2), Some{[O.OpsCONST{}]}, Some{[S.half(), S.single()]}, O.STuple{[2, 1]}, None{}, Some{"a"}, False{}, None{}, False{})
+  O.UPat.of(O.PatFound.pat(p3), Some{[O.OpsNEG{}]}, Some{[S.int32()]}, O.STuple{[3, 3, 1]}, None{}, None{}, False{}, None{}, False{})
 
 def want_deep() -> String:
-  String.join(["def compiled_match(uop, ctx):",
-    "  if uop.op is a0 and len(uop.src) == 3 and uop.dtype is a1 and uop.tag in a2 and uop.src[0].op is a3 and len(uop.src[0].src) == 2 and uop.src[0].dtype in a4 and uop.src[0].tag == a5 and uop.src[0].src[0].arg == 5 and len(uop.src[0].src[0].src) == 2 and len(uop.src[0].src[1].src) == 1 and uop.src[0].src[1].dtype in a4 and True and uop.src[1].op is a3 and len(uop.src[1].src) == 2 and uop.src[1].dtype in a4 and uop.src[1].tag == a5 and uop.src[1].src[0].arg == 5 and len(uop.src[1].src[0].src) == 2 and len(uop.src[1].src[1].src) == 1 and uop.src[1].src[1].dtype in a4 and len(uop.src[2].src) == 1 and uop.src[2].dtype in a4:",
-    "    if True and len(uop.src[0].src[0].src[1].src) == 1 and uop.src[0].src[0].src[1].dtype in a4 and uop.src[0].src[0].src[1] is uop.src[0].src[1] and len(uop.src[1].src[0].src[1].src) == 1 and uop.src[1].src[0].src[1].dtype in a4 and uop.src[1].src[0].src[1] is uop.src[1].src[1] and uop.src[0].src[0].src[1] is uop.src[1].src[0].src[1] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[1] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[1], a=uop.src[0])) is not None: return _ret",
-    "    if True and len(uop.src[0].src[0].src[1].src) == 1 and uop.src[0].src[0].src[1].dtype in a4 and uop.src[0].src[0].src[1] is uop.src[0].src[1] and len(uop.src[1].src[0].src[0].src) == 1 and uop.src[1].src[0].src[0].dtype in a4 and uop.src[1].src[0].src[0] is uop.src[1].src[1] and uop.src[0].src[0].src[1] is uop.src[1].src[0].src[0] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[1] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[1], a=uop.src[0])) is not None: return _ret",
-    "    if len(uop.src[0].src[0].src[0].src) == 1 and uop.src[0].src[0].src[0].dtype in a4 and True and uop.src[0].src[0].src[0] is uop.src[0].src[1] and len(uop.src[1].src[0].src[1].src) == 1 and uop.src[1].src[0].src[1].dtype in a4 and uop.src[1].src[0].src[1] is uop.src[1].src[1] and uop.src[0].src[0].src[0] is uop.src[1].src[0].src[1] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[0] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[0], a=uop.src[0])) is not None: return _ret",
-    "    if len(uop.src[0].src[0].src[0].src) == 1 and uop.src[0].src[0].src[0].dtype in a4 and True and uop.src[0].src[0].src[0] is uop.src[0].src[1] and len(uop.src[1].src[0].src[0].src) == 1 and uop.src[1].src[0].src[0].dtype in a4 and uop.src[1].src[0].src[0] is uop.src[1].src[1] and uop.src[0].src[0].src[0] is uop.src[1].src[0].src[0] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[0] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[0], a=uop.src[0])) is not None: return _ret",
-    "  return None"], "\n")
+  String.join([
+    "def compiled_match(uop, ctx):",
+    "  if uop.op is a0 and len(uop.src) == 3 and uop.dtype is a1 and uop.src[0].op is a2 and len(uop.src[0].src) == 2 and uop.src[0].dtype in a3 and uop.src[0].src[0].arg == 5 and len(uop.src[0].src[0].src) == 2 and len(uop.src[0].src[1].src) == 1 and uop.src[0].src[1].dtype in a3 and True and uop.src[1].op is a2 and len(uop.src[1].src) == 2 and uop.src[1].dtype in a3 and uop.src[1].src[0].arg == 5 and len(uop.src[1].src[0].src) == 2 and len(uop.src[1].src[1].src) == 1 and uop.src[1].src[1].dtype in a3 and len(uop.src[2].src) == 1 and uop.src[2].dtype in a3:",
+    "    if True and len(uop.src[0].src[0].src[1].src) == 1 and uop.src[0].src[0].src[1].dtype in a3 and uop.src[0].src[0].src[1] is uop.src[0].src[1] and len(uop.src[1].src[0].src[1].src) == 1 and uop.src[1].src[0].src[1].dtype in a3 and uop.src[1].src[0].src[1] is uop.src[1].src[1] and uop.src[0].src[0].src[1] is uop.src[1].src[0].src[1] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[1] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[1], a=uop.src[0])) is not None: return _ret",
+    "    if True and len(uop.src[0].src[0].src[1].src) == 1 and uop.src[0].src[0].src[1].dtype in a3 and uop.src[0].src[0].src[1] is uop.src[0].src[1] and len(uop.src[1].src[0].src[0].src) == 1 and uop.src[1].src[0].src[0].dtype in a3 and uop.src[1].src[0].src[0] is uop.src[1].src[1] and uop.src[0].src[0].src[1] is uop.src[1].src[0].src[0] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[1] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[1], a=uop.src[0])) is not None: return _ret",
+    "    if len(uop.src[0].src[0].src[0].src) == 1 and uop.src[0].src[0].src[0].dtype in a3 and True and uop.src[0].src[0].src[0] is uop.src[0].src[1] and len(uop.src[1].src[0].src[1].src) == 1 and uop.src[1].src[0].src[1].dtype in a3 and uop.src[1].src[0].src[1] is uop.src[1].src[1] and uop.src[0].src[0].src[0] is uop.src[1].src[0].src[1] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[0] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[0], a=uop.src[0])) is not None: return _ret",
+    "    if len(uop.src[0].src[0].src[0].src) == 1 and uop.src[0].src[0].src[0].dtype in a3 and True and uop.src[0].src[0].src[0] is uop.src[0].src[1] and len(uop.src[1].src[0].src[0].src) == 1 and uop.src[1].src[0].src[0].dtype in a3 and uop.src[1].src[0].src[0] is uop.src[1].src[1] and uop.src[0].src[0].src[0] is uop.src[1].src[0].src[0] and uop.src[0] is uop.src[1] and uop.src[0].src[0].src[0] is uop.src[2] and (_ret:=_fxn(ctx=ctx, b=uop.src[0].src[0].src[0], a=uop.src[0])) is not None: return _ret",
+    "  return None"
+  ], "\n")
 
 def want_noctx() -> String:
   String.join(["def compiled_match(uop, ctx):",
@@ -1997,7 +2015,6 @@ def show(+f: O.PatFound, has_ctx: Bool) -> IO(Unit):
 #         `LArg` payload on the literal arm. `ATuple{[n]}` IS Python's `n`:
 #         that correspondence is the port's, and the fuzzer's cases obey it.
 #   dt    `-` or `+`-joined dtypes -- `f32`, `i32`, `h`.
-#   tag   `-` or `+`-joined tags -- `A`, `B`.
 #   src   `-` (no src) | `r<k>` a repeat of child k | `t<k>,<k>,..` a tuple
 #         | `l<k>,<k>` a list, which is the `permutations` fork.
 #   any   1 for `is_any`, which Python also requires a tuple `src` for.
@@ -2152,8 +2169,7 @@ def drv.bit.of(s: String) -> Bool:
 
 def drv.build(+ns: List<&2, String>, +pat: O.Pat, +xs: List<&2, U32>) -> O.PatFound:
   +s: O.SrcArg = drv.src.of2(drv.field(ns, 5), xs)
-  O.UPat.of(pat, drv.opm.of(drv.field(ns, 0)), drv.dtm.of(drv.field(ns, 3)),
-    drv.tgm.of(drv.field(ns, 4)), s, drv.am.of2(drv.field(ns, 2)),
+  O.UPat.of(pat, drv.opm.of(drv.field(ns, 0)), drv.dtm.of(drv.field(ns, 3)), s, drv.am.of2(drv.field(ns, 2)),
     drv.nm.of(drv.field(ns, 1)), drv.bit.of(drv.field(ns, 7)), None{},
     drv.bit.of(drv.field(ns, 6)))
 
@@ -2274,7 +2290,6 @@ def main() -> IO(Unit):
 #  M27 `proc.node` never DEFERS: the waitlist is gone          store_ord deep
 #  M28 `proc.join` answers the HEAD's `ch`, not the list's      store_ord deep
 #  M29 `fuel`'s multiplier 32n -> 8n                            deep
-#  M30 `eq_lit`'s `LTag` arm back to `O.eq_tag_list`            set_ord
 #  M11 `is_rep` is always False: the repeat arm is dead        repeat rep_src
 #                                                             rep_src_src any_rep
 #                                                             dup_store

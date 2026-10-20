@@ -2320,7 +2320,6 @@ type UPat is Data:
   UPat{
     op: Maybe<&2, List<&2, Op>>,
     match_dtype: Maybe<&2, List<&2, S.Dt>>,
-    match_tag: Maybe<&2, List<&2, Tag>>,
     arg: Maybe<&2, Arg>,
     name: Maybe<&2, String>,
     src_in: SrcArg,
@@ -2361,47 +2360,43 @@ def Pat.upats(pat: Pat) -> List<&2, UPat>:
 
 def UPat.op(u: UPat) -> Maybe<&2, List<&2, Op>>:
   match u:
-    case UPat{op, _, _, _, _, _, _, _, _, _, _}: op
+    case UPat{op, _, _, _, _, _, _, _, _, _}: op
 
 def UPat.match_dtype(u: UPat) -> Maybe<&2, List<&2, S.Dt>>:
   match u:
-    case UPat{_, md, _, _, _, _, _, _, _, _, _}: md
-
-def UPat.match_tag(u: UPat) -> Maybe<&2, List<&2, Tag>>:
-  match u:
-    case UPat{_, _, mt, _, _, _, _, _, _, _, _}: mt
+    case UPat{_, md, _, _, _, _, _, _, _, _}: md
 
 def UPat.arg(u: UPat) -> Maybe<&2, Arg>:
   match u:
-    case UPat{_, _, _, a, _, _, _, _, _, _, _}: a
+    case UPat{_, _, a, _, _, _, _, _, _, _}: a
 
 def UPat.name(u: UPat) -> Maybe<&2, String>:
   match u:
-    case UPat{_, _, _, _, n, _, _, _, _, _, _}: n
+    case UPat{_, _, _, n, _, _, _, _, _, _}: n
 
 def UPat.src_in(u: UPat) -> SrcArg:
   match u:
-    case UPat{_, _, _, _, _, si, _, _, _, _, _}: si
+    case UPat{_, _, _, _, si, _, _, _, _, _}: si
 
 def UPat.src(u: UPat) -> List<&2, UpAlt>:
   match u:
-    case UPat{_, _, _, _, _, _, s, _, _, _, _}: s
+    case UPat{_, _, _, _, _, s, _, _, _, _}: s
 
 def UPat.is_any(u: UPat) -> Bool:
   match u:
-    case UPat{_, _, _, _, _, _, _, b, _, _, _}: b
+    case UPat{_, _, _, _, _, _, b, _, _, _}: b
 
 def UPat.strict_length(u: UPat) -> Bool:
   match u:
-    case UPat{_, _, _, _, _, _, _, _, b, _, _}: b
+    case UPat{_, _, _, _, _, _, _, b, _, _}: b
 
 def UPat.required_len(u: UPat) -> U32:
   match u:
-    case UPat{_, _, _, _, _, _, _, _, _, n, _}: n
+    case UPat{_, _, _, _, _, _, _, _, n, _}: n
 
 def UPat.early_reject(u: UPat) -> List<&2, Op>:
   match u:
-    case UPat{_, _, _, _, _, _, _, _, _, _, er}: er
+    case UPat{_, _, _, _, _, _, _, _, _, er}: er
 
 # ===========================================================================
 
@@ -2517,17 +2512,6 @@ def eq_dt_list(xs: List<&2, S.Dt>, ys: List<&2, S.Dt>) -> Bool:
         case Nil{}: False{}
         case y <> u: Bool.and(eq_dt(x, y), eq_dt_list(t, u))
 
-def eq_tag_list(xs: List<&2, Tag>, ys: List<&2, Tag>) -> Bool:
-  match xs:
-    case Nil{}:
-      match ys:
-        case Nil{}: True{}
-        case _ <> _: False{}
-    case x <> t:
-      match ys:
-        case Nil{}: False{}
-        case y <> u: Bool.and(eq_tag(x, y), eq_tag_list(t, u))
-
 # The `Maybe` wrappers. Each unwrap is its own def, so the scrutinee is a
 # parameter -- the `intern.find.pick` shape.
 
@@ -2547,17 +2531,6 @@ def eq_opt_dt(x: Maybe<&2, List<&2, S.Dt>>, y: Maybe<&2, List<&2, S.Dt>>) -> Boo
     case Some{a}:
       match y:
         case Some{b}: eq_dt_list(a, b)
-        case None{}: False{}
-    case None{}:
-      match y:
-        case Some{_}: False{}
-        case None{}: True{}
-
-def eq_opt_tag(x: Maybe<&2, List<&2, Tag>>, y: Maybe<&2, List<&2, Tag>>) -> Bool:
-  match x:
-    case Some{a}:
-      match y:
-        case Some{b}: eq_tag_list(a, b)
         case None{}: False{}
     case None{}:
       match y:
@@ -2617,17 +2590,16 @@ def eq_in_src(+x: SrcArg, +y: SrcArg) -> Bool:
 
 def eq_upat(x: UPat, y: UPat) -> Bool:
   match x y:
-    case UPat{op1, md1, mt1, a1, n1, si1, s1, y1, l1, r1, e1} UPat{op2, md2, mt2, a2, n2, si2, s2, y2, l2, r2, e2}:
+    case UPat{op1, md1, a1, n1, si1, s1, y1, l1, r1, e1} UPat{op2, md2, a2, n2, si2, s2, y2, l2, r2, e2}:
       Bool.and(eq_opt_op(op1, op2),
       Bool.and(eq_opt_dt(md1, md2),
-      Bool.and(eq_opt_tag(mt1, mt2),
       Bool.and(eq_opt_arg(a1, a2),
       Bool.and(eq_opt_str(n1, n2),
       Bool.and(eq_in_src(si1, si2),
       Bool.and(eq_inalts(s1, s2),
       Bool.and(eq_bool(y1, y2),
       Bool.and(eq_bool(l1, l2),
-                U32.is_eq(r1, r2))))))))))
+                U32.is_eq(r1, r2)))))))))
 
 
 # ---------------------------------------------------------------------------
@@ -3590,7 +3562,6 @@ def UPat.of(
   +pat: Pat,
   op: Maybe<&2, List<&2, Op>>,
   match_dtype: Maybe<&2, List<&2, S.Dt>>,
-  match_tag: Maybe<&2, List<&2, Tag>>,
   +src: SrcArg,
   arg: Maybe<&2, Arg>,
   name: Maybe<&2, String>,
@@ -3600,15 +3571,15 @@ def UPat.of(
 
   # `alts_of(src)` is pure and `src` is `+`-shared, so it is recomputed rather
   # than bound: a `let` is affine and would be consumed by the constructor.
-  u: UPat = UPat{op, match_dtype, match_tag, arg, name, src, alts_of(src), is_any,
+  u: UPat = UPat{op, match_dtype, arg, name, src, alts_of(src), is_any,
            strict_of(src, allow_any_len), required_of(src),
            early_of(pat, src, custom_early_reject, alts_of(src))}
   UPat.of.put(pat, u)
 
 def UPat.named.put(u: UPat, name: String, pat: Pat) -> PatFound:
   match u:
-    case UPat{op, md, mt, arg, _, si, _, any, sl, _, _}: UPat.of(
-      pat, op, md, mt, si, arg, Some{name}, Bool.not(sl), None{}, any)
+    case UPat{op, md, arg, _, si, _, any, sl, _, _}: UPat.of(
+      pat, op, md, si, arg, Some{name}, Bool.not(sl), None{}, any)
 def opt_dts.one(dt: Maybe<&2, S.Dt>) -> Maybe<&2, List<&2, S.Dt>>:
   match dt:
     case Some{d}: Some{[d]}
@@ -3618,7 +3589,7 @@ def opt_dts(dt: Maybe<&2, S.Dt>) -> Maybe<&2, List<&2, S.Dt>>:
   opt_dts.one(dt)
 
 def UPat.var(pat: Pat, name: Maybe<&2, String>, dt: Maybe<&2, S.Dt>) -> PatFound:
-  UPat.of(pat, None{}, opt_dts(dt), None{}, SNone{}, None{}, name, False{}, None{}, False{})
+  UPat.of(pat, None{}, opt_dts(dt), SNone{}, None{}, name, False{}, None{}, False{})
 
 
 def UPat.named.of(hit: Maybe<&2, UPat>, name: String, pat: Pat) -> PatFound:
@@ -3643,7 +3614,7 @@ def UPat.named(+pat: Pat, k: U32, name: String) -> PatFound:
 # ---------------------------------------------------------------------------
 
 def UPat.any(pat: Pat, src: List<&2, U32>) -> PatFound:
-  UPat.of(pat, None{}, None{}, None{}, STuple{src}, None{}, None{}, False{}, None{}, True{})
+  UPat.of(pat, None{}, None{}, STuple{src}, None{}, None{}, False{}, None{}, True{})
 def UPat.or_any.pair(chosen: U32, +wrapped: PatFound) -> PatFound:
   UPat.any(PatFound.pat(wrapped), [chosen, PatFound.i(wrapped)])
 def or_pick(pat: Pat, k: U32, name: Maybe<&2, String>) -> U32:
@@ -3651,7 +3622,7 @@ def or_pick(pat: Pat, k: U32, name: Maybe<&2, String>) -> U32:
     case None{}: k
     case Some{nm}: PatFound.i(UPat.named(pat, k, nm))
 def UPat.or_any.wrap(pat: Pat, k: U32, name: Maybe<&2, String>, wrap: Op, any_len: Bool) -> PatFound:
-  UPat.of(pat, Some{[wrap]}, None{}, None{}, STuple{[k]}, None{}, name, any_len, None{}, False{})
+  UPat.of(pat, Some{[wrap]}, None{}, STuple{[k]}, None{}, name, any_len, None{}, False{})
 
 
 
@@ -3694,10 +3665,10 @@ def UPat.or_after(pat: Pat, k: U32, name: Maybe<&2, String>) -> PatFound:
 
 
 def UPat.cvar(pat: Pat, name: Maybe<&2, String>, dt: Maybe<&2, S.Dt>, arg: Maybe<&2, Arg>) -> PatFound:
-  UPat.of(pat, Some{[OpsCONST{}]}, opt_dts(dt), None{}, SNone{}, arg, name, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsCONST{}]}, opt_dts(dt), SNone{}, arg, name, False{}, None{}, False{})
 
 def UPat.const(pat: Pat, b: Const, dt: Maybe<&2, S.Dt>) -> PatFound:
-  UPat.of(pat, Some{[OpsCONST{}]}, opt_dts(dt), None{}, SNone{}, Some{APy{b}}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsCONST{}]}, opt_dts(dt), SNone{}, Some{APy{b}}, None{}, False{}, None{}, False{})
 
 # ---------------------------------------------------------------------------
 # The one-src sugar -- ops.py:1504-1522. Each is `UPat.of` with a fixed `op` and
@@ -3709,25 +3680,25 @@ def UPat.const(pat: Pat, b: Const, dt: Maybe<&2, S.Dt>) -> PatFound:
 # ---------------------------------------------------------------------------
 
 def UPat.f(pat: Pat, k: U32, op: Op) -> PatFound:
-  UPat.of(pat, Some{[op]}, None{}, None{}, STuple{[k]}, None{}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[op]}, None{}, STuple{[k]}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.sink(pat: Pat, srcs: List<&2, U32>) -> PatFound:
-  UPat.of(pat, Some{[OpsSINK{}]}, None{}, None{}, STuple{srcs}, None{}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsSINK{}]}, None{}, STuple{srcs}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.index(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
-  UPat.of(pat, Some{[OpsINDEX{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsINDEX{}]}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.load(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
-  UPat.of(pat, Some{[OpsLOAD{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsLOAD{}]}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.store(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
-  UPat.of(pat, Some{[OpsSTORE{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsSTORE{}]}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.end(pat: Pat, k: U32, srcs: List<&2, U32>) -> PatFound:
-  UPat.of(pat, Some{[OpsEND{}]}, None{}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsEND{}]}, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.backedge(pat: Pat, k: U32, loop: U32, cond: U32) -> PatFound:
-  UPat.of(pat, Some{[OpsBACKEDGE{}]}, None{}, None{}, STuple{[k, loop, cond]}, None{}, None{}, False{}, None{}, False{})
+  UPat.of(pat, Some{[OpsBACKEDGE{}]}, None{}, STuple{[k, loop, cond]}, None{}, None{}, False{}, None{}, False{})
 
 # `reduce` -- ops.py:1516. `arg = kwargs.pop('arg', None); if isinstance(arg, Ops):
 # arg = (arg, 0)`, so a bare `Ops` arg becomes a `(rop, 0)` REDUCE pair. The port
@@ -3735,8 +3706,8 @@ def UPat.backedge(pat: Pat, k: U32, loop: U32, cond: U32) -> PatFound:
 # `isinstance` test already done at the call site.
 def UPat.reduce.md(u: UPat, arg: Maybe<&2, Arg>, k: U32, srcs: List<&2, U32>, pat: Pat) -> PatFound:
   match u:
-    case UPat{_, md, _, _, _, _, _, _, _, _, _}: UPat.of(
-      pat, Some{[OpsREDUCE{}]}, md, None{}, STuple{prepend(k, srcs)}, arg, None{}, False{}, None{}, False{})
+    case UPat{_, md, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsREDUCE{}]}, md, STuple{prepend(k, srcs)}, arg, None{}, False{}, None{}, False{})
 
 def UPat.reduce.put(hit: Maybe<&2, UPat>, arg: Maybe<&2, Arg>, k: U32, srcs: List<&2, U32>, pat: Pat) -> PatFound:
   match hit:
@@ -3757,8 +3728,8 @@ def UPat.reduce(+pat: Pat, k: U32, srcs: List<&2, U32>, rop: Op, ax: U32) -> Pat
 # it is what stops a redundant CAST from being built.
 def UPat.bitcast.put(pat: Pat, u: UPat, dt: Maybe<&2, S.Dt>, k: U32) -> PatFound:
   match u:
-    case UPat{_, _, _, _, _, _, _, _, _, _, _}: UPat.of(
-      pat, Some{[OpsBITCAST{}]}, opt_dts(dt), None{}, STuple{[k]}, None{}, None{}, False{}, None{}, False{})
+    case UPat{_, _, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsBITCAST{}]}, opt_dts(dt), STuple{[k]}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.cast.same(same: Bool, +u: UPat, +dt: Maybe<&2, S.Dt>, k: U32, pat: Pat) -> PatFound:
   match same:
@@ -3809,8 +3780,8 @@ def UPat.bitcast(+pat: Pat, +k: U32, dt: Maybe<&2, S.Dt>) -> PatFound:
 # `SOne` case: ONE UNBOUNDED alternative rather than a permuted list.
 def UPat.broadcast.put(pat: Pat, u: UPat, k: U32) -> PatFound:
   match u:
-    case UPat{_, md, _, _, _, _, _, _, _, _, _}: UPat.of(
-      pat, Some{[OpsSTACK{}]}, md, None{}, SOne{k}, None{}, None{}, False{}, None{}, False{})
+    case UPat{_, md, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsSTACK{}]}, md, SOne{k}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.broadcast.of(hit: Maybe<&2, UPat>, +k: U32, pat: Pat) -> PatFound:
   match hit:
@@ -3825,8 +3796,8 @@ def UPat.broadcast(+pat: Pat, +k: U32) -> PatFound:
 # `after` -- ops.py:1520
 def UPat.after.put(pat: Pat, u: UPat, k: U32, srcs: List<&2, U32>) -> PatFound:
   match u:
-    case UPat{_, md, _, _, _, _, _, _, _, _, _}: UPat.of(
-      pat, Some{[OpsAFTER{}]}, md, None{}, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
+    case UPat{_, md, _, _, _, _, _, _, _, _}: UPat.of(
+      pat, Some{[OpsAFTER{}]}, md, STuple{prepend(k, srcs)}, None{}, None{}, False{}, None{}, False{})
 
 def UPat.after.of(hit: Maybe<&2, UPat>, +k: U32, +srcs: List<&2, U32>, pat: Pat) -> PatFound:
   match hit:
@@ -3852,8 +3823,8 @@ def UPat.after(+pat: Pat, +k: U32, srcs: List<&2, U32>) -> PatFound:
 # ---------------------------------------------------------------------------
 def UPat.alu.src.of(pat: Pat, comm: Bool, op: Op, +k: U32, other: U32, md: Maybe<&2, List<&2, S.Dt>>) -> PatFound:
   match comm:
-    case True{}: UPat.of(pat, Some{[op]}, md, None{}, SList{[k, other]}, None{}, None{}, False{}, None{}, False{})
-    case False{}: UPat.of(pat, Some{[op]}, md, None{}, STuple{[k, other]}, None{}, None{}, False{}, None{}, False{})
+    case True{}: UPat.of(pat, Some{[op]}, md, SList{[k, other]}, None{}, None{}, False{}, None{}, False{})
+    case False{}: UPat.of(pat, Some{[op]}, md, STuple{[k, other]}, None{}, None{}, False{}, None{}, False{})
 def is_one_of(op: Op, want: Op) -> Bool:
   U32.is_eq(Ops.value(op), Ops.value(want))
 
@@ -3889,7 +3860,7 @@ def UPat.alu.dt(+pat: Pat, +k: U32, other: U32, op: Op) -> Maybe<&2, List<&2, S.
 
 def UPat.alu.put(+pat: Pat, u: UPat, +op: Op, +k: U32, +other: U32) -> PatFound:
   match u:
-    case UPat{_, _, _, _, _, _, _, _, _, _, _}: UPat.alu.src(
+    case UPat{_, _, _, _, _, _, _, _, _, _}: UPat.alu.src(
       pat, UPat.alu.dt(pat, k, other, op), op, k, other)
 
 def UPat.alu.of(hit: Maybe<&2, UPat>, op: Op, +k: U32, +other: U32, pat: Pat) -> PatFound:
@@ -5870,7 +5841,7 @@ def t_broadcast_repeats.of(alts: List<&2, UpAlt>) -> Bool:
 def pat_nth.of(hit: Maybe<&2, UPat>) -> UPat:
   match hit:
     case Some{u}: u
-    case None{}: UPat{None{}, None{}, None{}, None{}, None{}, SNone{}, Nil{}, False{}, False{}, 0, Nil{}}
+    case None{}: UPat{None{}, None{}, None{}, None{}, SNone{}, Nil{}, False{}, False{}, 0, Nil{}}
 
 def pat_nth(+f: PatFound, n: U32) -> UPat:
   pat_nth.of(List.get(&2, UPat, Pat.upats(PatFound.pat(f)), U32.to_nat(n)))
