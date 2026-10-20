@@ -552,14 +552,19 @@ def alts_of(u: O.UPat) -> List<&2, O.UpAlt>:
 # ===========================================================================
 # _get_clause -- upat.py:15. `UPat` -> the predicate tree.
 #
-# The six `if`s of the and_clause are six defs here, because a `Bool` match
-# IS an `if` and there is no other spelling. Each returns an empty list or a
-# one-element list, and `pieces` concatenates them in Python's order: op, arg,
-# len, name, dtype.
+# THE `and_clause` CLAUSES ARE DEFS HERE, because a `Bool` match IS an `if` and
+# there is no other spelling. Each returns an empty list or a one-element list,
+# and `pieces` concatenates them in Python's order: op, arg, len, name, dtype.
+# FIVE of them, and FIVE is what upstream master has.
 #
-# THE SEVENTH IS GONE. It was the tag clause, and upstream deleted it --
+# THE SIXTH IS GONE, and it was the tag clause: upstream deleted it --
 # `35dab0a35` "no upat tag" (#18889) removed `UPat.match_tag` and the
-# `"{0}.tag in {1}"` / `"{0}.tag == {1}"` arms from `_get_clause`.
+# `"{0}.tag in {1}"` / `"{0}.tag == {1}"` arms from `_get_clause`. Upstream's
+# `_get_clause` therefore lost one `if` of its EIGHT -- MEASURED, the count of
+# top-level `if`s is 8 at the pin `78d482262` and 7 at
+# `refs/remotes/upstream/master` -- and its seven are `is_any`, `op`, `arg`,
+# `len`, `name`, `dtype` and `src`. `is_any` and `src` are the src arm's
+# business here and are not clauses.
 #
 # A PYLITERAL always carries the WHOLE list, never just its head: at length one
 # `LOps{ys}` and `LOps{[ys[0]]}` are the same value, so the singular arm costs
