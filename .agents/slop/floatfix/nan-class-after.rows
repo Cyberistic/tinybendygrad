@@ -1,0 +1,13 @@
+# measure-nan-class.py -- BEFORE the fifth fix -- 2026-10-20T16:48:23Z
+#   (the BEFORE rows are the ones in nan-class.rows of the previous commit)
+# AFTER the fifth fix -- 2026-10-20T16:57:03Z
+half NaN class: 2046 patterns (both signs)
+f32 NaN class: 128 patterns sampled from the two ends
+  half->f32 : js-vs-oracle 0/2046 | c-vs-oracle 0/2046 | js-vs-c 0/2046
+    h2f_7c01: oracle=7fc00000 js=7fc00000 c=7fc00000
+    h2f_7e00: oracle=7fc00000 js=7fc00000 c=7fc00000
+    h2f_7fff: oracle=7fc00000 js=7fc00000 c=7fc00000
+    h2f_fc01: oracle=ffc00000 js=ffc00000 c=ffc00000
+  f32->half : js-vs-oracle 0/128 | c-vs-oracle 0/128 | js-vs-c 0/128
+    f16b_7f800001: oracle=7e00 js=7e00 c=7e00
+    f16b_ffffffff: oracle=fe00 js=fe00 c=fe00

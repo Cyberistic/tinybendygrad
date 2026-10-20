@@ -161,7 +161,11 @@ function half_to_f32(h) {
     const k = 31 - Math.clz32(m);
     return (s | ((k + 103) << 23) | ((m << (23 - k)) & 0x7fffff)) >>> 0;
   }
-  if (e === 0x1f) return ((s | 0x7f800000 | (m << 13)) >>> 0);
+  // A half NaN is CANONICALISED, not carried: `dtype.c:172` keeps only the quiet
+  // bit, and CPython's own codec answers every half NaN with the one f32 NaN per
+  // sign, so the payload is dropped on this side exactly as the ENCODE side
+  // above drops it (dtype.py:226 is `struct.pack('e')`).
+  if (e === 0x1f) return ((s | 0x7f800000 | (m ? 0x400000 : 0)) >>> 0);
   return ((s | ((e + 112) << 23) | (m << 13)) >>> 0);
 }
 
