@@ -64,8 +64,14 @@ import ./../datasets/__init__.bend as D
 #
 # TODO(port): STOPPED AT `BertEmbeddings.__init__` (extra/models/bert.py:180).
 # FIRST MISSING SYMBOL: `Embedding(vocab_size, hidden_size)` at bert.py:182, where
-# `Embedding = nn.Embedding` is the module-level alias at bert.py:9 and there is no
-# `def Embedding` and no `def mo_i`/`def mo_fx` anywhere under `tinybendygrad/`.
+# `Embedding = nn.Embedding` is the module-level alias at bert.py:9 and there is no `def Embedding`
+# anywhere under `tinybendygrad/`, and no `def mo_i` either.
+# **THE `mo_fx` HALF OF THIS EVIDENCE WAS FALSE. CORRECTED 2026-10-20:** `def mo_fx1d` is at
+# `mixin/op.bend:1181` and `def mo_fx2d` at `:1189`, so "no `def mo_fx` anywhere" was falsifiable
+# and falsified -- the audit's grep demanded a literal `(` after the name and matched neither.
+# **THE CONCLUSION IS UNCHANGED AND WAS NEVER IN DOUBT:** `op.bend:1193` shows both are FIXTURES
+# returning `r` unchanged, not a gather, and `def mo_i` is still absent. **A CITATION WRONG ON ITS
+# EVIDENCE AND RIGHT ON ITS CONCLUSION STILL MISLEADS THE NEXT READER, WHO CHECKS THE EVIDENCE.**
 #
 # THE TWO `load_from_pretrained` ARE NOT A PORTING PROBLEM AND SHOULD NOT BE
 # TREATED AS ONE. bert.py:78-124 reads a TENSORFLOW checkpoint through
