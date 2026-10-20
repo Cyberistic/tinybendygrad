@@ -20,7 +20,8 @@ AND IT MOVED BECAUSE THIS PROJECT RE-VENDORED — NOT BECAUSE ANYTHING DRIFTED.*
 
 | | commit | date | how to re-derive it |
 |---|---|---|---|
-| **OUR PIN** — the commit the vendored `tinygrad/` is *based on* | `002630241913` | 2026-10-16 | the `PIN` line of `python3 .agents/slop/upstream-delta.py` |
+| **OUR PIN** — the commit the vendored `tinygrad/` is *based on* | `5c2bf39d6c4b` | **2026-10-20** | the `PIN` line of `python3 .agents/slop/upstream-delta.py` |
+| **SUPERSEDED PIN** — **the pin this file carried until the 2026-10-20 re-vendor** | `002630241913` | 2026-10-16 | still a resolvable revision (`git cat-file -t` answers `commit`) |
 | **SUPERSEDED PIN** — what this head of file recorded on 2026-09-29 | `6c3d401cf324` | 2026-09-29 | still a resolvable revision (`git cat-file -t 6c3d401cf324` → `commit`) and many tracked files cite it that way, so it is kept rather than deleted; `git grep -l 6c3d401cf324 \| wc -l` counts them |
 | **PIN MATCH** | every vendored blob under `tinygrad/` equals this pin's blob | | the `… vendored blobs match it` line of the same command |
 | of which **HAND-EDITED** | none | | the `⚠ HAND EDITS` line of the same command |
