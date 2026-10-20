@@ -82,6 +82,16 @@ threshold to choose -- see the long comment above `SUBJECT_RE` for the head-to-h
 (allowlist 33 firings of 300 commits since 2026-10-06T00:00; ratio@8 131) and for why
 "invisible in a diffstat" is a claim about `D` and not about removals.
 
+THE THIRD SUBJECT: A GATE STEM THE SUBJECT NAMES AND THE DIFF DOES NOT CONTAIN.
+`1dac4ab61` says `ledgergone:` and `git show --stat` is `gates/valscall-gate.py`.
+Both lanes above PASS it (0 deletion claims, 0 removals) -- measured 2026-10-20T22:02:08Z,
+rc=0. A `stem:` claim, or an explicit `gates/<file>.py`, whose stem is
+`gates/<stem>-gate.py` or `gates/<stem>.py` in HEAD (discovered, `git ls-tree -r
+HEAD`, not a list of these two commits) must be a stem the diff contains.
+A subject that names no such stem is not a failure of this check. A bare word
+is prose: any-token matching refuses "the census's banner shape" because
+`banner` is a stem, and a blamed innocent is worse than a missed claim.
+
 Run:  .venv/bin/python gates/msgdiff-gate.py check 00b101574
       .venv/bin/python gates/msgdiff-gate.py range --since=2026-10-06T12:00 HEAD
       .venv/bin/python gates/msgdiff-gate.py --plant
@@ -336,6 +346,105 @@ def _nearest_path(text, i, hi, window=40):
     return None if GAP_STOP.search(text[i:m.start()]) else m.group()
 
 
+# A gate file is `gates/<stem>.py`. If the basename ends in `-gate`, the prefix is
+# also a stem, so `ledgergone:` and `ledgergone-gate:` name the same file.
+# Discovery is HEAD, not the commit being judged: the population is the tree the
+# gate is running against, and a hand list of two commits is not a population.
+_GATE_PY = re.compile(r"gates/([^/]+)\.py")
+_STEM_CLAIM = re.compile(r"(?<![A-Za-z0-9_./-])([A-Za-z0-9_-]+)(?=\s*:)")
+_GATE_PATH_IN_TEXT = re.compile(r"(?<![A-Za-z0-9_./-])(gates/[A-Za-z0-9_-]+\.py)")
+_STEM_CACHE = {}
+
+
+def _path_stems(path):
+    """Stems one path yields. Stable order: the short stem, then the basename."""
+    m = _GATE_PY.fullmatch(path)
+    if not m:
+        return ()
+    base = m.group(1)
+    if base.endswith("-gate") and len(base) > 5:
+        return (base[:-5], base)
+    return (base,)
+
+
+def gate_stems(root):
+    """Every stem `gates/<stem>-gate.py` or `gates/<stem>.py` in HEAD.
+
+    Keyed on HEAD's sha, because the plant's scratch repo moves HEAD between
+    states and a cache of the seed would hide the files the later states add.
+    """
+    head = _git(root, "rev-parse", "HEAD").strip()
+    key = (str(root), head)
+    if key in _STEM_CACHE:
+        return _STEM_CACHE[key]
+    found = set()
+    for path in _git(root, "ls-tree", "-r", "--name-only", "HEAD").splitlines():
+        found.update(_path_stems(path))
+    _STEM_CACHE[key] = found
+    return found
+
+
+def named_gate_stems(subject, known):
+    """Stems the subject line CLAIMS. A bare word is not a claim.
+
+    `ledgergone:` is a claim. `gates/valscall-gate.py` is a claim. `banner` in
+    "the census's banner shape" is not -- measured, that word is a stem, and
+    refusing the sentence refuses an honest message for being prose.
+    """
+    hits = []
+    for m in _GATE_PATH_IN_TEXT.finditer(subject):
+        hits.extend((m.start(), stem) for stem in _path_stems(m.group(1)) if stem in known)
+    for m in _STEM_CLAIM.finditer(subject):
+        if m.group(1) in known:
+            hits.append((m.start(), m.group(1)))
+    named = []
+    for _, stem in sorted(hits):
+        if stem not in named:
+            named.append(stem)
+    return named
+
+
+def _diff_paths(root, sha):
+    """Every path the commit touches, rename source and destination included.
+
+    A rename still contains the stem. Folding the source out would refuse an
+    honest rename of the file the subject names.
+    """
+    status = _git(root, "diff-tree", "-r", "-M", "--root", "--no-commit-id",
+                  "--name-status", sha)
+    paths = []
+    for line in status.splitlines():
+        parts = line.split("\t")
+        if len(parts) >= 2:
+            paths.extend(parts[1:])
+    return paths
+
+
+def judge_named_stem(root, sha, message):
+    """(PASS|REFUSED, named, missing, diff gate paths).
+
+    The subject line only. The body of `1dac4ab61` discusses `ledgerdue`, and a
+    message that reports another gate must not be refused for naming it. No
+    named stem is PASS with `named=[]` -- this lane did not fail that subject.
+    """
+    subject = message.split("\n", 1)[0]
+    known = gate_stems(root)
+    named = named_gate_stems(subject, known)
+    gate_paths = []
+    diff_stems = set()
+    for path in _diff_paths(root, sha):
+        stems = _path_stems(path)
+        if stems:
+            gate_paths.append(path)
+            diff_stems.update(stems)
+    if not named:
+        return PASS, [], [], gate_paths
+    missing = [stem for stem in named if stem not in diff_stems]
+    if missing:
+        return REFUSED, named, missing, gate_paths
+    return PASS, named, [], gate_paths
+
+
 def deletion_claims(message):
     """Every deletion ASSERTION: (token, clause, index, kind) for a verb that is neither
     negated nor inside a meta-report. A verb governs at most one path (see `_nearest_path`)."""
@@ -352,9 +461,10 @@ def deletion_claims(message):
 def judge_message(root, sha, message, ack, verbose=False, ack_paths=""):
     """PASS, or REFUSED naming the sentence. FAIL is never returned: see the module docstring.
 
-    Returns `(code, checked, unchecked, refusals, subject)` where `subject` is
-    `(code, n_removals, n_unacknowledged, sample_paths)` -- THE SECOND SUBJECT, reported rather
-    than folded in, so `main()` can refuse on either and say which."""
+    Returns `(code, checked, unchecked, refusals, subject, stem)` where `subject` is
+    `(code, n_removals, n_unacknowledged, sample_paths)` and `stem` is
+    `(code, named, missing, diff_gate_paths)`. Reported rather than folded, so
+    `main()` can refuse on any and say which."""
     present, deleted, _removed, changed = commit_view(root, sha)
     unchecked = {k: 0 for k in UNCHECKED_KINDS}
     checked = 0
@@ -380,6 +490,7 @@ def judge_message(root, sha, message, ack, verbose=False, ack_paths=""):
                              f"the diff changes {changed} file{'s' if changed != 1 else ''}"))
 
     unchecked["pid"] = len(PID.findall(message))
+    stem = judge_named_stem(root, sha, message)
 
     label = f"{sha[:12]}"
     if refusals and not ack:
@@ -389,16 +500,18 @@ def judge_message(root, sha, message, ack, verbose=False, ack_paths=""):
         for tok, clause, why in refusals:
             print(f"  claim: {clause}", file=sys.stderr)
             print(f"  file:  {tok}  ({why})", file=sys.stderr)
-        print(f'  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff '
-              f"is a partial view", file=sys.stderr)
-        return REFUSED, checked, unchecked, refusals, (PASS, 0, 0, [])
+        print('  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff '
+              "is a partial view", file=sys.stderr)
+        return REFUSED, checked, unchecked, refusals, (PASS, 0, 0, []), stem
     acked = f" (ack: {ack})" if refusals and ack else ""
-    if verbose or refusals:
+    # A stem refusal is the verdict. Printing PASS for the claim lane first would
+    # make a reader who stops at the first line think the liar passed.
+    if (verbose or refusals) and stem[0] == PASS:
         print(f"PASS: {label} -- {checked} deletion claims checked, "
               f"{sum(unchecked.values())} uncheckable "
               f"(pids={unchecked['pid']}, counts=unfalsifiable, meta={unchecked['meta']})"
               f"{acked}")
-    return PASS, checked, unchecked, refusals, judge_subject(root, sha, message, ack_paths)
+    return PASS, checked, unchecked, refusals, judge_subject(root, sha, message, ack_paths), stem
 
 
 def revs_for(root, args):
@@ -410,11 +523,13 @@ def revs_for(root, args):
 
 # ---------------------------------------------------------------- plant
 def _plant():
-    """EIGHT STATES IN A SCRATCH REPO -- never this one. An HONEST message PASSes; a message
+    """STATES IN A SCRATCH REPO -- never this one. An HONEST message PASSes; a message
     claiming a deletion the commit did not make REFUSES (exit 3) naming the sentence; a message
     naming only uncheckable things (a pid) PASSes because it cannot be judged; the same false
     message PASSes with `--ack`; and the COUNT lane refuses a false count and passes an honest
-    one. Two states are distinguishable in token AND exit code; the rest prove the asymmetry."""
+    one. The stem lane refuses a subject that names a gate stem the diff lacks, passes one
+    that names the stem the diff has, and does not fail a subject that names no stem.
+    State B is the unbroken deletion-claim control."""
     root_env = dict(os.environ)
     for k in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"):
         root_env[k] = "p"
@@ -438,6 +553,12 @@ def _plant():
         # FIVE collateral paths, seeded TRACKED, whose names no message below ever mentions.
         for i in range(5):
             (root / f"other{i}.py").write_text(f"z = {i}\n")
+        # Two gate files, so the stem lane's population is discovered from this repo's
+        # HEAD rather than named in the gate. The names are the measured pair; the
+        # lookup is still `git ls-tree`.
+        (root / "gates").mkdir()
+        (root / "gates" / "ledgergone-gate.py").write_text("g = 1\n")
+        (root / "gates" / "valscall-gate.py").write_text("v = 1\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "seed")
 
@@ -507,6 +628,45 @@ def _plant():
         if r[4][0] != PASS:
             bad += [f"state H subject lane={_w(r[4][0])}, expected PASS(0) with SUBJECT_DIFF_ACK"]
 
+        # STATE I: subject names a stem the diff lacks. Claim lane has nothing to
+        # judge; the removal lane has nothing to judge; the stem lane must refuse.
+        (root / "gates" / "valscall-gate.py").write_text("v = 2\n")
+        run(root, "add", "-A")
+        run(root, "commit", "-q", "-m",
+            "ledgergone: classify each GONE ledger path without writing the ledger")
+        r = verdict(root)
+        if r[0] != PASS:
+            bad += [f"state I claim lane={_w(r[0])}, expected PASS(0) -- no deletion claim"]
+        if r[4][0] != PASS:
+            bad += [f"state I removal lane={_w(r[4][0])}, expected PASS(0) -- no removals"]
+        if r[5][0] != REFUSED or r[5][2] != ["ledgergone"]:
+            bad += [f"state I stem={_w(r[5][0])} missing={r[5][2]}, expected REFUSED ledgergone"]
+        else:
+            print(f"  I the stem lane refused {r[5][2]} (diff {r[5][3]})")
+
+        # STATE J: the SAME commit, a message copy that names the stem the diff has.
+        # Fed to the judge. The commit is not rewritten.
+        r = judge_message(root, "HEAD", "valscall: the file this diff contains\n",
+                          "", True, "")
+        if r[0] != PASS or r[5][0] != PASS or r[5][1] != ["valscall"]:
+            bad += [f"state J claim={_w(r[0])} stem={_w(r[5][0])} named={r[5][1]}, "
+                    f"expected PASS naming valscall"]
+
+        # STATE K: a subject that names no gate stem is not failed by this check.
+        r = judge_message(root, "HEAD",
+                          "classify each path without writing the ledger\n", "", True, "")
+        if r[5][0] != PASS or r[5][1]:
+            bad += [f"state K stem={_w(r[5][0])} named={r[5][1]}, expected PASS with no stem"]
+
+        # STATE L: a bare stem word is prose. Any-token matching would refuse this,
+        # because `ledgergone` is a stem and the diff does not contain it.
+        r = judge_message(root, "HEAD",
+                          "the census banner shape mentions ledgergone in prose\n",
+                          "", True, "")
+        if r[5][0] != PASS or r[5][1]:
+            bad += [f"state L stem={_w(r[5][0])} named={r[5][1]}, "
+                    f"expected PASS -- a bare word is not a stem claim"]
+
     print(f"--plant: {'all states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return FAIL if bad else PASS
 
@@ -526,38 +686,53 @@ def main(argv):
         # should grade; `check` already defaults its REVISION to HEAD, so only the MODE was
         # missing. The old bare run printed usage and returned SKIP, which is honest ("I could
         # not measure") but leaves a bare `for x in gates/*-gate.py` sweep unable to say anything
-        # about this gate at all. Both subjects still run: the claim lane and the diff lane.
+        # about this gate at all. All three subjects still run: the claim lane, the
+        # diff lane, and the gate-stem lane.
         if not argv:
             argv = ["check", "HEAD"]
         mode = argv[0]
         if mode == "check":
             sha = argv[1] if len(argv) > 1 else "HEAD"
             msg = _git(ROOT, "log", "-1", "--format=%B", sha)
-            code, _checked, _unchecked, _ref, subj = judge_message(
+            code, _checked, _unchecked, _ref, subj, stem = judge_message(
                 ROOT, sha, msg, ack, True, ack_paths)
-            if code == PASS:
-                return _report_subject(sha, subj)
-            return code
+            if code != PASS:
+                return code
+            stem_code = _report_stem(sha, stem)
+            # A passing removal lane must not print PASS under a stem refusal: the
+            # first sentence a reader sees would be the wrong verdict.
+            if stem_code == PASS or subj[0] != PASS:
+                subj_code = _report_subject(sha, subj)
+            else:
+                subj_code = PASS
+            if stem_code == REFUSED or subj_code == REFUSED:
+                return REFUSED
+            return PASS
         if mode == "range":
             revs = revs_for(ROOT, argv[1:])
             if not revs:
                 print("range: no commits matched", file=sys.stderr)
                 return SKIP
-            passed = refused = claim_refused = subject_refused = 0
+            passed = refused = claim_refused = subject_refused = stem_refused = 0
             for sha in revs:
                 msg = _git(ROOT, "log", "-1", "--format=%B", sha)
-                code, _c, _u, _r, subj = judge_message(ROOT, sha, msg, ack, False, ack_paths)
-                if code == PASS and subj[0] == PASS:
+                code, _c, _u, _r, subj, stem = judge_message(
+                    ROOT, sha, msg, ack, False, ack_paths)
+                if code == PASS and subj[0] == PASS and stem[0] == PASS:
                     passed += 1
                     continue
                 refused += 1
                 claim_refused += code == REFUSED
                 subject_refused += subj[0] == REFUSED
+                stem_refused += stem[0] == REFUSED
+                missing = f", missing {','.join(stem[2])}" if stem[2] else ""
                 print(f"REFUSED {sha[:12]}: claim-subject={_w(code)} "
-                      f"diff-subject={_w(subj[0])} "
-                      f"({subj[1]} removals, {subj[2]} unacknowledged)", file=sys.stderr)
+                      f"diff-subject={_w(subj[0])} stem={_w(stem[0])} "
+                      f"({subj[1]} removals, {subj[2]} unacknowledged{missing})",
+                      file=sys.stderr)
             print(f"range: {len(revs)} commits -- {passed} PASS, {refused} REFUSED "
-                  f"(claims: {claim_refused}, diffs: {subject_refused})")
+                  f"(claims: {claim_refused}, diffs: {subject_refused}, "
+                  f"stems: {stem_refused})")
             return REFUSED if refused else PASS
         print(f"unknown mode {mode!r}", file=sys.stderr)
         return SKIP
@@ -569,6 +744,25 @@ def main(argv):
 def _w(code):
     return {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP",
             DEAD: "DEAD"}.get(code, "UNASSIGNED")
+
+
+def _report_stem(sha, stem):
+    """The claim lane passed, so a stem refusal is printed as its own sentence.
+
+    A subject that named nothing is silent here: printing PASS for "no stem"
+    would look like a judgment of prose, which this lane does not make.
+    """
+    code, named, missing, gate_paths = stem
+    if code == PASS:
+        if named:
+            print(f"PASS: {sha[:12]} -- the subject names {', '.join(named)}, "
+                  f"which the diff contains")
+        return PASS
+    shown = ", ".join(gate_paths) if gate_paths else "no gates/*.py"
+    print(f"REFUSED, NOT A VERDICT: {sha[:12]} -- the subject names gate stem "
+          f"{', '.join(missing)} and the diff does not contain it (diff: {shown})",
+          file=sys.stderr)
+    return REFUSED
 
 
 def _report_subject(sha, subj):
