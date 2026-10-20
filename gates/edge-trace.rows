@@ -1,0 +1,21 @@
+# gates/edge-trace.rows -- TAB separated. Generated; the generator is `gates/edge-runner.py`. THE TRACE: it says which gates RAN and what they said, and it is IN GIT so the answer survives a fresh clone.
+# written 2026-10-20T16:31:54Z HEAD=cf650ff66
+gate	status	verdict	token	rc	seconds	peak-mb	measured-at
+checks/differ.py	RAN	REFUSED	UNASSIGNED(2)	2	0.35	26	2026-10-20T16:30:02Z
+checks/e2e.py	RAN	DEAD	TRACEBACK	1	0.63	99	2026-10-20T16:30:02Z
+checks/gatesweep.py	OVER-BUDGET	SKIP	MEASURED-30.29s				2026-10-20T16:30:03Z
+checks/substrate.py	RAN	REFUSED	REFUSED	3	0.34	21	2026-10-20T16:30:03Z
+gates/amd_dsl_census-gate.py	RAN	FAIL	FAIL	1	13.20	1602	2026-10-20T16:30:03Z
+gates/beautiful-mnist-gate.py	RAN	PASS	PASS	0	13.63	1706	2026-10-20T16:30:16Z
+gates/crp_graph_census-gate.py	RAN	REFUSED	REFUSED	3	0.91	403	2026-10-20T16:30:30Z
+gates/js-lane-census.py	RAN	FAIL	FAIL	1	1.48	507	2026-10-20T16:30:31Z
+gates/mixin-op-gate.py	RAN	PASS	PASS	0	10.73	1423	2026-10-20T16:30:32Z
+gates/onnx_census-gate.py	RAN	PASS	PASS	0	15.43	1764	2026-10-20T16:30:43Z
+gates/ops_python_census-gate.py	RAN	FAIL	FAIL	1	15.53	1851	2026-10-20T16:30:58Z
+gates/paramarg-site-gate.py	RAN	PASS	PASS	0	1.20	44	2026-10-20T16:31:14Z
+gates/rand_census-gate.py	RAN	FAIL	FAIL	1	12.89	1536	2026-10-20T16:31:15Z
+gates/state_census-gate.py	RAN	PASS	PASS	0	8.11	1132	2026-10-20T16:31:28Z
+gates/subnormal-flush-gate.py	RAN	FAIL	FAIL	1	1.52	43	2026-10-20T16:31:36Z
+gates/upstream-pow-dtype-gate.py	RAN	PASS	PASS	0	2.34	78	2026-10-20T16:31:38Z
+gates/upstream-promo-lattice-gate.py	RAN	FAIL	FAIL	1	0.34	22	2026-10-20T16:31:40Z
+gates/wgsl_render_census-gate.py	RAN	FAIL	FAIL	1	13.73	1468	2026-10-20T16:31:40Z

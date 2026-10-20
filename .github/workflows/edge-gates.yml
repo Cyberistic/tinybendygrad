@@ -1,0 +1,173 @@
+# THE EDGE -- the committed surface that runs the gates and leaves a trace.
+#
+# WHAT THIS IS, AND WHAT IT IS NOT. `gates/pincensus-gate.py` measured that 60 pins in this tree
+# CAN fail, that 0 are stale, and that NOTHING is wired to notice when one does: `.git/hooks`
+# holds 0 non-`.sample` files, `core.hooksPath` is UNSET, the 9 files in `.github/workflows/`
+# named 0 gates, and `gates/artifacts/` holds 0 tracked paths (it is gitignored). **THE PINS AND
+# THE COMPARATORS ARE FINE. WHAT IS MISSING IS AN EDGE.** This file is that edge.
+#
+# IT IS NOT A HOOK, AND THE REASON IS ALREADY RECORDED. `.agents/slop/hooks/REPORT.md` §4:
+# `.git/hooks/` is SHARED BY EVERY LIVE UNIT, is UNTRACKED, and is NOT PART OF THE TREE'S
+# HISTORY -- so a hook is neither usable nor reviewable here. This file is TRACKED, VERSIONED,
+# and DIFFABLE, which is the only thing that makes an edge auditable.
+#
+# WHAT THIS WORKFLOW CANNOT DO, STATED HERE BECAUSE A WORKFLOW THAT PROMISES MORE THAN IT
+# DELIVERS IS THE SAME DEFECT AS A PROSE PIN, ONE LAYER UP:
+#
+#   * **IT CANNOT MAKE A PIN GO RED BY ITSELF.** The pins and the comparators are fine. A stale
+#     pin goes red because the gate that HOLDS it compares it and disagrees. What this adds is
+#     the moment somebody RUNS the gates, the result LEAVES A TRACE IN THE REPOSITORY.
+#   * **IT RUNS ON GITHUB, NOT ON THIS MACHINE.** Its value today is that it is REVIEWABLE and
+#     VISIBLE -- a committed file a reviewer can read -- and NOT that it has run. It has never
+#     run: the tree's origin is upstream tinygrad, and this workflow is a NEW file.
+#   * **A GREEN RUN IS NOT A CLAIM THAT THE TREE IS GOOD.** It is a claim that the gates that
+#     could run AGREED. The trace prints its denominator beside its tally, always.
+#   * **IT COVERS THE GATES THE PIN CENSUS POINTS AT, NOT ALL OF THEM.** The selection is
+#     DISCOVERED by `gates/edge-runner.py` -- never a list -- and its denominator is printed.
+#
+# THE TRACE LANDS IN THREE PLACES, AND ONLY ONE OF THEM SURVIVES A FRESH CLONE:
+#   1. `gates/edge-trace.rows` -- COMMITTED, beside the gate, IN GIT. NOT under
+#      `gates/artifacts/`, which is gitignored and is where runs WRITE, so one `rm -rf
+#      gates/artifacts` deletes it and git cannot restore it. **A GATE'S REQUIRED INPUT BELONGS
+#      BESIDE THE GATE IN GIT.** This is the committed artifact.
+#   2. THE JOB SUMMARY -- visible on the run page, to a human, without anyone reading a file.
+#   3. A PULL-REQUEST COMMENT -- the same, where a reviewer already is.
+#
+# THE COST, MEASURED, NOT GUESSED. `gates/edge-cost.rows` is the MEASURED cost ledger, in git,
+# and it is the ONLY thing that decides what runs: a candidate whose measured wall clock exceeds
+# the edge's budget is NOT RUN, and its row says the number. MEASURED 2026-10-20 on a 12-core
+# M-series laptop, the 18 candidates cost 122.00 s of wall clock in total and peak at 1794 MB --
+# and ONE of them (`checks/gatesweep.py`, the gate that RUNS THE POPULATION) does not finish
+# inside the 30 s budget and is therefore never run by the edge.
+name: Edge gates
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write          # to commit the trace
+  pull-requests: write     # to comment on the PR
+
+concurrency:
+  group: edge-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # THE FULL HISTORY, AND THE REASON IS A TREE, NOT A SPEED. Several gates read git
+          # history -- `checks/differ.py`'s `ORACLE_PIN` names two REVISIONS, and
+          # `gates/pincensus-pop.py` asks `git cat-file -t` about them. On a SHALLOW clone those
+          # questions have different answers, so a shallow clone is a DIFFERENT TREE, and an edge
+          # that measures a different tree is not an edge. 16,364 commits, 226 MB packed.
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: THE ENVIRONMENT (the CPython oracle the gates compare against)
+        run: |
+          uv sync --frozen
+          .venv/bin/python -c "import tinygrad; print('tinygrad', tinygrad.__file__)"
+
+      # THE BEND TOOLCHAIN IS NOT IN THE TREE -- `references/` is gitignored and `bin/bend` is a
+      # shim that execs a FETCHED compiler -- so a gate that needs it cannot run without this.
+      # IT IS NOT FATAL ON PURPOSE: a missing toolchain makes a gate REFUSE (a precondition was
+      # absent), which is the honest verdict, and a workflow that dies on a missing toolchain is
+      # a workflow that measures nothing.
+      - uses: oven-sh/setup-bun@v2
+        continue-on-error: true
+      - name: THE BEND TOOLCHAIN (OPTIONAL -- its absence makes some gates REFUSE)
+        continue-on-error: true
+        run: sh tools/get-bend.sh
+
+      - name: RUN THE EDGE
+        id: edge
+        run: |
+          set +e
+          .venv/bin/python gates/edge-runner.py 2>&1 | tee "$RUNNER_TEMP/edge.out"
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: THE SUMMARY
+        run: |
+          {
+            echo "## EDGE -- the committed surface that runs the gates and leaves a trace"
+            echo
+            echo "**It CANNOT make a pin go red by itself.** The pins and the comparators are"
+            echo "fine; a stale pin goes red because the gate that HOLDS it compares it and"
+            echo "disagrees. What the edge adds is that a RUN leaves a trace in the repository."
+            echo
+            echo "**A green run is not a claim that the tree is good.** It is a claim that the"
+            echo "gates that could run AGREED. The denominator is below, and it is printed"
+            echo "because a verdict with no denominator is a claim nobody can check."
+            echo
+            if [ -f gates/edge-trace.rows ]; then
+              echo '```'
+              cat gates/edge-trace.rows
+              echo '```'
+            else
+              echo "**NO TRACE WAS WRITTEN.** The edge did not run to the point of writing one."
+            fi
+            echo
+            echo "### the edge's own output"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/edge.out" || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # THE COMMITTED ARTIFACT. It is written to `gates/edge-trace.rows` -- BESIDE THE GATE, IN
+      # GIT -- and this step is what puts it IN the repository's history, which is the only
+      # version of the trace that survives a fresh clone. It runs on a PUSH TO MASTER only: a
+      # workflow that pushes to a pull-request branch fights the human who owns that branch.
+      - name: COMMIT THE TRACE (the committed artifact)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          set -e
+          git config user.name "edge-bot"
+          git config user.email "edge-bot@users.noreply.github.com"
+          if git diff --quiet -- gates/edge-trace.rows && [ -z "$(git status --porcelain -- gates/edge-trace.rows)" ]; then
+            echo "the trace is unchanged -- nothing to commit"
+            exit 0
+          fi
+          git add gates/edge-trace.rows
+          git commit -m "edge: the trace of the gates that ran, committed beside the gate"
+          git push
+
+      # THE HUMAN-FACING HALF. The workflow cannot report to a human unless something READS it,
+      # so the summary above is not enough on its own -- a PR comment puts the verdict where a
+      # reviewer already is.
+      - name: COMMENT ON THE PULL REQUEST
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -e
+          if [ ! -f gates/edge-trace.rows ]; then
+            body="The edge did not write a trace. The run output is in the job log."
+          else
+            body="$(cat gates/edge-trace.rows)"
+          fi
+          {
+            echo "### EDGE -- \`gates/edge-runner.py\`"
+            echo
+            echo "It CANNOT make a pin go red by itself; it makes a RUN leave a trace."
+            echo
+            echo '```'
+            echo "$body"
+            echo '```'
+          } > "$RUNNER_TEMP/edge-comment.md"
+          gh pr comment "$PR_NUMBER" --body-file "$RUNNER_TEMP/edge-comment.md"
+
+      - name: THE VERDICT
+        run: exit ${{ steps.edge.outputs.rc }}
