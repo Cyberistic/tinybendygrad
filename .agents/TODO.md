@@ -14041,10 +14041,24 @@ which input stage 3 dies on.
       telling the reader the fix was REPORTED SOMEWHERE, and the somewhere is not there — a reader
       who trusts it loses the discovery that they cannot check it. **Another unit is auditing
       `differ.py`; not touched.**
-- [ ] **`AGENTS.md` NAMES THE WRONG FILE AND THE GATE IS NOW GREEN.** The `e2e.py` bullet says
-      *"NOT CURRENTLY GREEN … stage 3 needs `.agents/slop/xd2/cdp.mjs` and stage 5 needs
-      `ops_bend-milestone-expected.txt`"*. Both facts are stale: the gate is rc 0 (one SKIP), and
-      stage 3's blocker was `xd2/serve.mjs`, which that sentence does not mention.
+- [x] **THE NAMING HALF: `AGENTS.md` NO LONGER NAMES THE WRONG FILE.** Split out of the two-half
+      box below by `TODO2RECON` (2026-10-20), because **one fixed half does not tick a two-half box; it
+      splits it, and the split is a new box, not a tick.** **ROW** `grep -c 'NOT CURRENTLY GREEN' AGENTS.md`
+      → **0**, and the bullet now reads *"THE GATE HAS **NEVER** BEEN RUN ON THE REAL TREE"* (`AGENTS.md:143`);
+      the sha the bullet names for itself is `212f14433`. **AND THE FILE IT NAMED AS ABSENT IS NOT:**
+      `ls tinygrad/runtime/dtype.js` → **exists**, and `git ls-files | grep dtype.js` lists
+      `tinybendygrad/runtime/dtype.js` **IN HEAD** — so `AGENTS.md:149`'s *"`runtime/dtype.js` **IS **ABSENT
+      **ENTIRELY**"* is **FALSE as of this reading**. **`AGENTS.md` IS OUT OF GRANT, SO THAT CLAIM IS REPORTED
+      AND NOT EDITED** — and per this file's own rule it is **DELETION-CANDIDATE, NOT TICK-CANDIDATE**.
+- [ ] **THE OTHER HALF OF THE SPLIT BOX — "THE GATE IS rc 0 (one SKIP)" — IS STILL OPEN AND IS NOT
+      RE-DERIVABLE WITHOUT FORBIDDEN WORK.** `AGENTS.md` forbids running `checks/e2e.py` on the real tree
+      ("**NEVER RUN ON THE REAL TREE**", `AGENTS.md:140`), and the only on-disk transcript is
+      **12 DAYS OLDER THAN THE CODE IT WOULD BE COMPARED TO**: `.agents/slop/e2epy/artifacts/live.port.out`
+      mtime **`2026-10-07T20:25:58Z`** (local `Oct 7 23:25:58`, host is not UTC), `checks/e2e.py` mtime
+      **`Oct 19 19:28:09`**. **THE TRANSCRIPT IS TRACKED, NOT GITIGNORED** (`git check-ignore -v` → no match;
+      `git ls-files -s` blob `f7363cfc…` == `git hash-object` == `git rev-parse HEAD:…`), **SO `git status`
+      SHOWS IT CLEAN FOREVER AND THE MTIME IS THE ONLY PROOF.** Absence is recoverable; a confident false
+      green is not.
 - [ ] **STAGE 5'S DENOMINATOR IS STILL `None`, DELIBERATELY.** `tail -3` is both the denominator and
       what a crash replaces. `TODO(stage-5-denominator)` in both files, unchanged: fixing it moves
       what the gate prints on BOTH sides of the porting rule.
@@ -20787,7 +20801,16 @@ OK`, `census-rc=rc=0`, and `D0-repro.txt` reads `repro-files=310` / `repro-ident
 
 ### (b) OPEN AND ACTIONABLE — **file, line, command**
 
-- **THE TODO DENOMINATOR IS **916 **AND EVERY FIGURE IN CIRCULATION IS WRONG.** `.venv/bin/python gates/todo-census.py`
+- **THE TODO DENOMINATOR IS **916 **AND EVERY FIGURE IN CIRCULATION IS WRONG.** **SUPERSEDED ON THE COUNT,
+  2026-10-20 (`TODO2RECON`); THE ROWS BELOW ARE LEFT AS THEY WERE WRITTEN.** `916` WAS A READING AND **IT HAS
+  MOVED: `.venv/bin/python gates/todo-census.py` NOW PRINTS `SITES (the unit) : 934`** over `166 .bend files
+  walked` / `121 files with >=1 TODO`. **THE NUMBER AND ITS DIGEST, BOTH, SO THE NEXT READER CAN COMPARE:**
+  `gates/todopop-gate.py --numbers` → `subject digest 62e08670fe243e3f642d58b89f53539f7ee556ef4c3821107a40b7797d3f289e`,
+  `stamp 2026-10-20T00:19:21Z`, `ROWS-POPULATION size 166`, `ROWS 934`, `TOKEN-OCCURRENCES 939`,
+  `NEAR-MISS-LINES 941`, `ROWS-FILES 121`. **A COUNT WITH A TIMESTAMP BUT NO DIGEST IS NOT COMPARABLE WITH ANY
+  OTHER COUNT, AND THAT IS NOT HYPOTHETICAL: `TODO2RECON` TOOK TWO READINGS 25 s APART (`00:16:31Z`,
+  `00:16:56Z`) OF `--rows` AND BOTH HASHED `ef50a34d1ff7162e782654b42e7dfd411d63d6c0d167049002fbb13256dc090c`.**
+  **THE AS-WRITTEN ROW, WHICH IS WHAT `916` WAS:** `.venv/bin/python gates/todo-census.py`
   prints `SITES (the unit) : 916` over `152 .bend files walked` / `107 files with >=1 TODO`. **929, 932 AND 933 ARE ALL
   STALE** — they are readings, and the population is not fixed: `22d99ea98` landed `nn/layers.bend` and
   `nn/pool.bend` inside the window, so the walk's denominator changed under the last figure. **CONFIRMED BY A SECOND
@@ -20919,3 +20942,265 @@ Three reasons, and the third is the one that decides it:
 
 **SO THE STANDING RECOMMENDATION IS **ONE LINE, AND IT IS **THIS LINE**: open `gates/todo-census.py`, read `NEITHER`,
 and open a box for a SPECIFIC site with a `file:line` — not for the population, which the instrument owns.**
+
+
+## TODORECON2 — **THE SECOND RECONCILIATION (2026-10-20, `00:16:31Z`..`00:20:53Z`, HEAD `5ef627cab`)**
+
+**THE SAME RULE, RESTATED AS ONE SENTENCE, BECAUSE THE PRIOR PASS'S THREE RULES ARE THE THREE THAT
+WOULD HAVE BEEN BROKEN BY WHAT I FOUND.** *A box moves only on a row that exists **NOW** — in an
+artifact, or in an instrument's own stdout — that the box's own subject can be read out of; where the
+row is a count it carries its **CONTENT DIGEST** and not merely a timestamp; and a subject that was
+repaired but cannot be re-read today stays open with its reason.*
+
+### 0. **THE HEADLINE MEASUREMENT, AND IT IS A NEW INSTANCE OF THE RULE THIS SECTION EXISTS FOR**
+
+**THE WORKTREE MOVED UNDER ME DURING MY FIRST MEASUREMENT, AND EVERY COUNT I REPORT IS A WORKTREE
+COUNT, NOT A `HEAD` COUNT — SO THE TWO ARE NOT THE SAME MEASUREMENT AND THE FILE NOW SAYS SO.**
+
+| | `00:16:31Z` | `00:16:56Z` | `00:20:53Z` |
+|---|---|---|---|
+| `git rev-parse HEAD` | `f7703dcc0` | `f7703dcc0` | **`5ef627cab`** |
+| `todo-census.py --rows` sha256 | `ef50a34d1ff7162e…` | `ef50a34d1ff7162e…` | `ef50a34d1ff7162e…` |
+| `SITES (the unit)` | **934** | **934** | **934** |
+
+`5ef627cab`'s committer date is **`2026-10-20T03:16:50+03:00`** = **`00:16:50Z`** — **NINETEEN SECONDS
+AFTER MY FIRST CENSUS READING**, and it is a **`.bend`** edit to `tinybendygrad/extra/models/resnet.bend`
+which **REMOVED TWO `TODO`-BEARING LINES**: `git show f7703dcc0:…/resnet.bend | grep -c TODO` → **5**,
+`git show 5ef627cab:…/resnet.bend | grep -c TODO` → **3**, worktree → **3**. **SO A CENSUS TAKEN FROM
+THE WORKTREE READ **934** WHILE THE SAME CENSUS TAKEN FROM `HEAD:` WOULD HAVE READ **936** — a gap of 2
+on a population of 934, from one file, inside twenty seconds, with the digest I published unchanged
+because the digest was of the tree I actually read.**
+
+**THE GENERAL FORM, AND IT IS THE OPPOSITE OF THE ONE THE PRIOR PASS RECORDED.** The prior pass recorded
+*"a stable count is not a stable subject, and a moved subject need not move the count."* **THIS IS THE
+CONVERSE AND IT IS WORSE FOR A LEDGER: A MOVED WORKTREE NEED NOT MOVE THE COUNT, THE DIGEST, OR `HEAD`,
+SO THREE INSTRUMENTS THAT ALL LOOK LIKE THE SAME MEASUREMENT CAN BE THREE DIFFERENT MEASUREMENTS OF
+THREE DIFFERENT TREES.** `gates/todo-census.py:59` reads `REPO = os.path.dirname(HERE)` and walks the
+**worktree** (`os.walk`, `:94`); `git show HEAD:<path>` reads the **commit**; `git ls-tree -r HEAD` reads
+the **commit** again. **A COUNT IN THIS SECTION IS A WORKTREE COUNT UNLESS IT SAYS OTHERWISE, AND
+`todo-census.py` HAS NO `--ref` TO MAKE IT ANYTHING ELSE.**
+
+### (a) DONE AND PROVEN — **ONE box, one commit, one row**
+
+| box | commit | the row that proves it |
+|---|---|---|
+| `AGENTS.md` NAMES THE WRONG FILE (**the naming half only**) | the sha `AGENTS.md` names for itself: **`212f14433`** | `grep -c 'NOT CURRENTLY GREEN' AGENTS.md` → **0**; the bullet reads *"THE GATE HAS **NEVER** BEEN RUN ON THE REAL TREE"* (`AGENTS.md:143`) |
+
+**IT IS ONE BOX BECAUSE THE PRIOR PASS'S OWN RULE (c) FORCED A SPLIT, AND I AM NOT DOING IT QUIETLY.**
+The original box read *"`AGENTS.md` NAMES THE WRONG FILE **AND THE GATE IS NOW GREEN**"* — **TWO CLAIMS
+IN ONE BOX**, and one of them is not re-derivable. Rule 2 said *"one fixed half does not tick a two-half
+box; it splits it, and the split is a new box, not a tick."* **SO: THE NAMING HALF IS TICKED ABOVE AT
+LINE 14044 WITH ITS ROW; THE GREENNESS HALF IS NOW A **NEW OPEN BOX** IMMEDIATELY BELOW IT WITH ITS
+REASON; AND NEITHER HALF'S TEXT WAS DELETED.**
+
+**AND `212f14433` IS CITED AS **THE SHA `AGENTS.md` NAMES**, NOT AS PROOF.** `git show --stat 212f14433`
+says the commit is about the `== 5/5` / `== 6/6` banners, **not** about rewriting the naming — **so the
+prior pass's *"repaired — `AGENTS.md`'s `e2e.py` bullet was rewritten at `212f1443`"* IS A **CITATION I
+CANNOT RE-DERIVE**, and I am not repeating it. My row is `grep`, and `grep` is what carries the tick.**
+
+**AND THE SAME `AGENTS.md` BULLET CARRIES A PINNED CLAIM THAT IS NOW **FALSE**, WHICH IS FINDING (d)
+BELOW AND IS **NOT** A TICK.**
+
+### (b) OPEN AND ACTIONABLE — **every figure with its instrument, its population, and its digest**
+
+- **THE TODO POPULATION IS **934 ROWS**, NOT 916, AND THE NUMBER **CARRIES ITS DIGEST** —
+  `.venv/bin/python gates/todo-census.py` → `SITES (the unit) : 934` over `166 .bend files walked` /
+  `121 files with >=1 TODO`; worktree `--rows` digest **`ef50a34d1ff7162e782654b42e7dfd411d63d6c0d167049002fbb13256dc090c`**,
+  read three times (`00:16:31Z`, `00:16:56Z`, `00:20:53Z`), identical each time.
+  **AND `gates/todopop-gate.py` IS THE INSTRUMENT THAT CARRIES THE DIGEST FOR YOU, AND IT IS rc=0** —
+  `LANE1 DECLARED-IN-BOTH PASS` · `LANE2 AGREEMENT PASS  census SITES=934 == declaration rows=934` ·
+  **`LANE3 SUBJECT-PIN  digest 62e08670fe243e3f -> 62e08670fe243e3f (stable) stamp 2026-10-20T00:19:13Z`** ·
+  `LANE4 PLANT  2 tokens on 1 line -> rows census 934+1 declaration 934+1, tokens 939+2` ·
+  `LANE5 CONTROL  near-miss 'TODOs' -> rows +0 declaration +0, tokens +0` · `todopop-gate PASS`, **rc=0**.
+  `--numbers` adds the units under their own names: `ROWS-POPULATION size 166`, `ROWS 934`,
+  `TOKEN-OCCURRENCES 939`, `NEAR-MISS-LINES 941`, `ROWS-FILES 121`.
+  **WHAT SURVIVED THE MOVE, AND IT IS THE ONE THAT MATTERS: `NEITHER 14  <- open`** — 14 GAP sites no
+  gate's prose names and no gate's text opens. **THE CLASS SPLIT ALSO MOVED:** `GAP 134` (held),
+  **`NONG 106 → 119`**, `FRAG 48` (held), **`XREF 36 → 37`**, **`UNDECIDED 592 → 596`**.
+- **THE "SECOND IMPLEMENTATION" THAT WAS REPORTED UNVERIFIABLE **IS** RE-DERIVABLE — AS A **SHELL
+  PIPELINE, NOT A `.py` FILE**, AND THAT IS WHY THE SEARCH THAT DECLARED IT MISSING MISSED IT.**
+  The prior pass wrote *"CONFIRMED BY A SECOND IMPLEMENTATION: `grep -rnE '\bTODO\b' --include='*.bend'
+  tinybendygrad | wc -l` → 916"*, and a later unit reported that the second implementation *"IS NOT ON
+  DISK"* because **`rg` over every `.py` finds exactly one file** defining the unit. **BOTH ARE TRUE AND
+  THEY ARE ABOUT DIFFERENT THINGS.** MEASURED NOW: `grep -rnE '\bTODO\b' --include='*.bend' tinybendygrad
+  | wc -l` → **934**, and `grep -rn 'TODO' --include='*.bend' tinybendygrad | wc -l` (no `\b`) → **941**, and **941** is `NEAR-MISS-LINES` in the gate's
+  own `--numbers` row. **SO THE PIPELINE AGREES WITH THE CENSUS ON BOTH UNITS AND DISAGREES ON NEITHER.**
+  **THE LESSON IS THE POINT: AN INSTRUMENT IS A COMMAND, NOT A FILE EXTENSION, AND `rg --glob '*.py'`
+  IS A POPULATION THAT CANNOT SEE A `grep` PIPELINE — WHICH IS DOCTRINE 1's FAILURE REPRODUCED INSIDE
+  THE CENSUS OF DOCTRINE 1, AND IT IS NOW THE ELEVENTH MEMBER OF THAT TABLE.**
+- **THE ELEVEN `(B)` BUFFER/ALLOC nil-src SITES LEFT THE POPULATION, AND **THE INSTRUMENT REFUSES TO
+  CALL IT A FIX — WHICH IS THE CORRECT ANSWER AND NOT A GAP IN THE ANSWER.**** `gates/arenasrc_census.py`
+  prints **`CLASS nil-src/A/PARAM 8`**, **`CLASS nil-src/B/PARAM 24`** — and `24` is the whole live `B`
+  population, so **`B` went 35 → 24 and the arithmetic is `35 − 11 = 24` with nothing left over.**
+  The 35 is **not transcribed**: it is counted off the committed pin `gates/arenasrc_census.rows`, which
+  holds **44** rows keyed `class=nil-src/B` **35** and `class=nil-src/A` **9**, and of the 35 B rows
+  **EXACTLY 11 CARRY `op=ALLOC` (1) OR `op=BUFFER` (10)**. `gates/arenasrc_census.py` then prints
+  **`arenasrc-census: PASS 32 rows, membership 32/32, 9 untracked scratch site(s) named, pins agree`** and
+  **12 RETIRED KEYS** — **11 of class `nil-src/B` and 1 of `nil-src/A`**, named individually — under a
+  heading that says, in the instrument's own words, ***"IT IS NOT A CLAIM THAT IT WAS FIXED."***
+  **SO: EVERY LIVE `nil-src/B` ROW IS A `PARAM` ROW, AND THE 10 `BUFFER` + 1 `ALLOC` SITES ARE GONE FROM
+  THE LIVE SET.** **AND A TOMBSTONE IS NOT A REASON, MEASURED:** `44` (pin) `− 12` (retired) `= 32`
+  (live), and the four files that held the retired keys now read
+  `codegen/__init__.bend` **2 row(s)** · `tensor.bend` **1** · `uop/fold.bend` **1** ·
+  `uop/validate.bend` **0 row(s)** — **so ONE OF THE FOUR IS AN EMPTY FILE AND THE OTHER THREE STILL CARRY
+  ROWS, AND THE INSTRUMENT CANNOT TELL YOU WHICH ABSENCE IS A FIX AND WHICH IS A DELETION. THAT IS NOT
+  A LIMITATION TO FIX; IT IS WHAT A `nil-src` CENSUS MEASURES.**
+- **THE UNTESTED-`UOp` BUCKET IS **23** AND THE **2** IS A DIFFERENT QUESTION — AND BOTH HALVES STILL
+  HOLD.** `gates/untested-census.py` (rc=0) ends with
+  **`23 in the middle bucket; 2 have NO call site anywhere in the port: metadata, topovisit`**, and its
+  own table carries `metadata 0 0 0 0 5` beside `topovisit 0 0 0 3 0` — **0 port call sites each, which is
+  the row that makes `2` a subset rather than the bucket.** **`23` IS THE BUCKET. `2` IS THE SUBSET.
+  READING `2` AS THE BUCKET IS A DENOMINATOR CONFLATION AND NOTHING IN THE TREE CORRECTS IT BUT THIS LINE.**
+- **THE EXIT-CODE VOCABULARY, AND **THE INSTRUMENT NAMES ITS OWN THREE CONSUMERS BY PATH** — so the
+  population is a generator's declaration, not a list.** `gates/shellverdict-gate.py` (rc=0) prints
+  `population 18 shell entry points (gates-pop.discover, by path); vocabulary gatekit.VERDICT (by path);
+  consumer checks/gatesweep.py:classify (by path)`, and **`56 rows; 0 TOKEN disagreement(s); 1 unresolved
+  (charged to NEITHER verdict)`**. **`checks/sb-gate.sh` IS STILL THE ONLY ONE OF THE 18 THAT EMITS ALL
+  FIVE**: `emits [0, 1, 3, 4, 5]  missing []`. **AND THE 18-MEMBER POPULATION HAS MOVED UNDER THE PRIOR
+  PASS'S OWN LIST** — `checks/classify.sh`, `checks/gen.sh`, `checks/lint_demo.sh`, `checks/lintable-gate.sh`
+  and `checks/plant.sh` now carry rows and **none of the five was in the list of twelve that can exit
+  `2`**, so that list still reads 12 of 18 by coincidence rather than by derivation. **THE LIST WAS NEVER
+  THE POPULATION; THE INSTRUMENT IS.**
+- **THE 15 UNRESOLVED CELLS ARE **3 SHELL GATES × 5 VERDICTS**, AND THE INSTRUMENT NAMES THE THREE.**
+  `gates/shellverdict-reach-gate.py` (rc=0) prints
+  **`shellverdict-reach: 121 rows; 24 finding(s); 15 cell(s) UNRESOLVED (charged to NEITHER verdict)`**,
+  and the 15 are exactly **`checks/lint_demo.sh`**, **`checks/run-f64.sh`**,
+  **`checks/run-port-mm.sh`** × {`PASS`, `FAIL`, `REFUSED`, `SKIP`, `DEAD`}, each reading
+  **`does not parse under /bin/sh (rc!=0)`**. **A `SKIP` IS NOT A `PASS` AND THIS INSTRUMENT CHARGES
+  NONE OF THE 15 TO ANY VERDICT, WHICH IS THE HONEST THING TO DO WITH A LANE THAT PRODUCED NO ANSWER.**
+  **AND THE SAME GATE ENUMERATES THE FIVE OVER **7 CODES**: `rc=0..6`, each `COLLISION DEAD/…/SKIP`, with
+  `gatekit.charge` assigning **exactly one** verdict per code — `PASS`, `FAIL`, `REFUSED`, `REFUSED`,
+  `SKIP`, `SKIP`, `SKIP`.**
+
+### (c) DELIBERATELY **NOT** TICKED — **and the reason is the same shape each time**
+
+- **THE CORPUS IS NOT TICKED GREEN, AND THE REASON IT IS NOT CURRENT IS NOW **TWO INSTRUMENTS THAT
+  AGREE** RATHER THAN ONE.** `runs/graphcmp/D/` is **GITIGNORED** — `git check-ignore -v` →
+  **`.gitignore:262:/runs/`** — so `git status` proves nothing about it and **the mtime is the proof**:
+  newest artefact `2026-10-19T00:16:53` (`D0-repro.txt`), **27.0 h old** at this reading.
+  `checks/corpus-figure.py` prints, **with `DEV=CPU` and without it**,
+  **`corpus-figure: ARTIFACTS-STALE  runs/graphcmp/D: newest artefact is 27.0 h old, over the 24.0 h
+  limit, and it is read as current`**. And `differ.repro_bad()` reads **1 ROW**:
+  `repro-substrate=83c3f974c039 but the live substrate is 3812ca2a9d40 -- this witness describes a tree
+  that NO LONGER EXISTS`. **`differ.artefacts_ok()` → 0 rows.** **THE WITNESS IS INTERNALLY CONSISTENT AND
+  DESCRIBES A TREE THAT NO LONGER EXISTS: `D0-run-summary.txt` reads `graphs=34`, `graphs-answered=34`,
+  `graphs-unset=0`, `graphs-refused=0`, `graphs-agree=34`, `graphs-disagree=0`, `byte-identical=34`,
+  `plants-disagree=7 of 7`, `controls=5 of 5`, `conflations=4 of 4`, `stable-pairs=5 of 5`,
+  `oracle-selfcheck=# ORACLE SELFCHECK: OK`, `selfcheck=# SELFCHECK: OK`, `census-rc=rc=0`, and
+  `substrate-head=65d64bb74` — WHICH IS **NOT** `HEAD`. THAT IS THE WHOLE GREEN AND NONE OF IT IS
+  TICKED AS GREEN.**
+- **THE `?=` HEADLINE IS **A PLANT'S NUMBER AND NOT THE CORPUS'S**, AND THE CORPUS ROW IT IS READ FROM
+  **DOES NOT EXIST** — WHICH IS THE MOST IMPORTANT HALF OF THIS BULLET.** `gates/questionmark-plant-gate.py`
+  (rc=0, `questionmark-plant: PASS`) prints **`control rows=52 ?=0    planted rows=52 ?=32`**.
+  **SO `?=` IS **0** ON THE UNMUTATED SUBJECT AND **32** ONLY AFTER THE GATE REVERTS ONE LINE OF
+  `fold.bend` IN A COPY — `?` IS THE THING THE PLANT MAKES, NOT A THING THE CORPUS HAS.** **AND
+  `D0-run-summary.txt` CARRIES **NO `?=` ROW AT ALL** (26 lines, read in full), so *"`?=` went 32 → 0"*
+  IS **NOT** A MOVEMENT IN THAT FILE — IT IS A CONTROL/PLANT PAIR IN A DIFFERENT INSTRUMENT, AND THE
+  CORPUS NEVER SPOKE.**
+- **`SHARED cores` IS A **PER-GRAPH** ROW AND **NOT A CORPUS ROW**, SO "(no such row) → 52" IS TWO
+  DIFFERENT POPULATIONS ADDED TOGETHER.** `grep 'SHARED' runs/graphcmp/` returns a `# SHARED cores=N` line
+  in **each `D1-graph-*.txt`**, over `D1-graph-lin.txt:9` = **50**, `D1-graph-binblob.txt:9` = **21**,
+  `D1-graph-commute.txt:9` = **16**, `D1-graph-alu.txt:9` = **16**, `D1-graph-bit.txt:9` = **12**,
+  `D1-graph-allred.txt:9` = **10**, and so on — **one number PER GRAPH, not one number for the run.**
+  `D0-run-summary.txt` has no such row. **AND `D2-cmp-loop.txt` — the file `?=` and `SHARED cores` were
+  both read out of — CARRIES NEITHER**: it reads, in full, `loop RAW-IDENTICAL (py=3086 bytes bend=3086
+  bytes)` and `loop CANONICAL BYTE-IDENTICAL (py=3103 bytes bend=3103 bytes)`, **and nothing else.**
+  **SO: NO BOX, AND NO LINE OF THIS FILE, SHOULD SAY `?=` WENT 32 → 0 OR THAT `SHARED cores` WENT
+  (NO ROW) → 52. THE FIRST IS A PLANT, THE SECOND IS A ROW OF A FILE THAT DOES NOT HAVE IT, AND THE
+  52 IN `questionmark-plant-gate.py` IS A **ROW COUNT**, NOT A CORE COUNT.** *The prior pass recorded the
+  plant's control/plant pair correctly at line 20881 and I have found nothing that corrects it.*
+- **`shell_code()` ATE 2,603 NEWLINES IS **NOT RE-DERIVABLE**, AND ITS SUBJECT HAS BEEN **REPAIRED** —
+  so the claim died with its subject and, per the precedent, is **DELETION-CANDIDATE, NOT TICK-CANDIDATE.**
+  `gates/gates-pop.py:412 def shell_code(src)` is now `SH_COMMENT.sub("", src)` with
+  **`SH_COMMENT = re.compile(r"^[^\S\n]*#.*$", re.M)`** — `[^\S\n]` EXCLUDES THE NEWLINE — and its own
+  docstring says *"AND NOT ONE LINE MORE THAN IT WAS"*. **MEASURED OVER EVERY POPULATION I CAN NAME, THE
+  SHIPPED FUNCTION EATS **0** NEWLINES**: `gatesweep.population()` (271 members) **0**, `.sh` members (20)
+  **0**, `is_shell_entry` members (32) **0**, every tracked `*.sh` (267) **0**. **THE OLD `\s*` SPELLING
+  THE REACH-GATE'S DOCSTRING **STILL QUOTES** AT `gates/shellverdict-reach-gate.py:65` EATS 1 544 / 51 /
+  178 / 352 over those four populations — **AND `2 603` IS NONE OF THEM.** PER THE RULE THAT FOLLOWS THE
+  BRIEF: *IF A CLAIM CANNOT BE RE-DERIVED BY A COMMAND, SAY SO RATHER THAN WRITING THE CLAIM.*
+  **THE SUB-FINDING IS THE SHARPER ONE AND IT IS A CITATION INSIDE A GATE I MAY NOT EDIT:
+  `gates/shellverdict-reach-gate.py:66` STILL SAYS *"`checks/run-f64.sh` is 448 lines and `shell_code`
+  returns 435"*, AND BOTH NUMBERS ARE NOW WRONG — the file is **447** newlines, the old spelling returns
+  **434**, and the shipped one returns **447**. A GATE'S DOCSTRING IS A CITATION, AND A CITATION IS NOT
+  RE-DERIVED BY RUNNING THE CITED THING IF THE CITED THING WAS CHANGED WITHOUT THE CITATION BEING
+  CHANGED. THAT IS THE REVERSE OF THE CLASS, AND IT IS WORSE: A FALSE CITATION NAMES A FILE THAT EXISTS.**
+- **`graphs-refused` 1 → 0 IS TRUE **OF THE STALE WITNESS** AND IS NOT TICKED AS A MOVEMENT.**
+  `D0-run-summary.txt:5` reads `graphs-refused=0` — **and its `?` counterpart lives in a DIFFERENT FILE**
+  (see the two bullets above), so the "1 → 0" pairs a number from one artifact with a number from another.
+  **THE ROW THAT SURVIVES IS THE ONE `differ.repro_bad()` PRINTS, AND IT IS A ROW ABOUT STALENESS, NOT
+  ABOUT AGREEMENT.**
+- **`TODO(differ-corpus): loop is REFUSED, not AGREE` IS **NOT** RE-ADDED, AND NOW IT COULD NOT BE TRUE.**
+  `grep -rn 'TODO(differ-corpus)'` over `tinybendygrad/ checks/ gates/` → **0 hits**. **AND THE STATE IT
+  ASKED FOR IS ONE THE TREE NOW CORRECTLY REFUSES TO REACH:** `D2-cmp-loop.txt` reads
+  `CANONICAL BYTE-IDENTICAL`, and `D0-run-summary.txt` reads `graphs-refused=0`. **A TODO THAT ASKS FOR A
+  STATE THE TREE REFUSES IS WORSE THAN NO TODO — ABSENCE IS RECOVERABLE; A CONFIDENT FALSE TODO IS NOT —
+  AND RE-ADDING IT WOULD RESTATE THE LIE ONE LEVEL DOWN.**
+- **THE 560 OPEN BOXES ARE NOT 560 FINDINGS, AND THIS PASS TOOK **ONE** OF THEM.** `560` before,
+  `560` after. **THE **ELEVEN** COMMITS THAT LANDED SINCE THE PRIOR PASS (`fcf834a43..5ef627cab`, `git rev-list --count` → **11**) TOOK **0** BOXES
+  AND WROTE **+75/−4** LINES** — `git diff --numstat fcf834a43 HEAD -- .agents/TODO.md` → **`75  4`**, and
+  `git diff fcf834a43 HEAD -- .agents/TODO.md | grep -cE '^\+\s*- \[x\]'` → **0**. **THE FINDING IS
+  IDENTICAL TO LAST PASS'S AND IT HAS NOW REPEATED ONCE: THE FINDINGS LAND IN PROSE BLOCKS UNDER NEW
+  HEADINGS (`five-units` at line **995** is this cycle's) BECAUSE NONE OF THEM WAS RECONCILING A BOX.**
+  **AND THE DEEPER CAUSE, WHICH IS THE PART NOBODY HAS WRITTEN DOWN: **`grep -E '^\s*- \[.\].*' .agents/TODO.md`
+  AGAINST THE SUBJECT NAMES OF ALL TEN COMMITS RETURNS **ZERO** BOXES FOR `todopop-gate`, `arenasrc`,
+  `nilsrc`, `untested-census`, `shellverdict` AND `gates-pop-rows` — SIX GATES THAT PASS RIGHT NOW WITH A
+  ROW, AND NOT ONE OF THEM HAS A BOX. A FIX LANDS WITHOUT A BOX WHEN NO BOX ASKED FOR IT, AND THAT IS NOT
+  A GAP IN THE BOXES — IT IS A GAP IN THE BOXES' AUTHORSHIP. I DID NOT ADD SIX BOXES, BECAUSE A BOX IS A
+  PROMISE TO CLOSE SOMETHING AND I MEASURED NOBODY'S INTENTION TO CLOSE ANYTHING.**
+
+### (d) THE PINNED CLAIMS THAT **DIED WITH THEIR SUBJECTS** — **deleted where I can, reported where I cannot**
+
+**A TOMBSTONE IS NOT A REASON, AND A CONFIDENT FALSE TODO IS NOT A TODO.** `AGENTS.md` is **OUT OF GRANT**,
+so the first of these is reported, not fixed.
+
+1. **`AGENTS.md:149`'s *"`runtime/dtype.js` **IS **ABSENT **ENTIRELY**"* IS FALSE.** `ls tinygrad/runtime/dtype.js`
+   → **No such file**, but `git ls-files | grep dtype.js` lists **`tinybendygrad/runtime/dtype.js`** **IN
+   HEAD**, **8 884 B** (`git cat-file -s HEAD:tinybendygrad/runtime/dtype.js` → **8884**). **SO THE BULLET IS RIGHT ABOUT
+   `tinygrad/runtime/` AND WRONG ABOUT THE PORT'S OWN `tinybendygrad/runtime/` — THE SENTENCE IS
+   UNQUALIFIED AND A READER APPLIES IT TO THE ONE DIRECTORY THAT HAS THE FILE.**
+   **DELETION-CANDIDATE. NOT TICKED. NOT EDITED — OUT OF GRANT.**
+2. **`AGENTS.md:143`'s *"the one on disk is **11.7 DAYS OLD**"* HAS AGED PAST ITS OWN ARITHMETIC.**
+   Measured now: the transcript is `2026-10-07T20:25:58Z`, this reading is `2026-10-20T00:20Z` —
+   **12.16 days.** **A PINNED AGE IS A COUNT, AND IT MOVES EVERY HOUR WHILE EVERYTHING ELSE IN THE SENTENCE
+   STAYS TRUE.** It should be a mtime, and it already names one.
+3. **`AGENTS.md:143`'s mtime `Oct 7 23:25` IS **LOCAL TIME WEARING NO `Z`** — and it is correct while the
+   host is not UTC.** Local `Oct 7 23:25:58` on a `+03:00` host is `2026-10-07T20:25:58Z`. **A reader who
+   reads the local stamp as UTC overstates the transcript's age by three hours, in the safe direction, by
+   accident.**
+4. **THE 916 IN THIS SECTION'S OWN (b) BULLET ABOVE IS DEAD AND IS MARKED, NOT DELETED.** `934` now, with
+   a digest. **THE ROWS THAT PRODUCED 916 ARE LEFT IN PLACE** — a superseded reading that says it is
+   superseded is a record; a deleted one is a hole with nothing in it.
+
+### THE POINTER, NOT 934 BOXES — **AND THE TWO THINGS A HUMAN CAN SUPPLY THAT NO INSTRUMENT CAN**
+
+**`gates/todo-census.py` IS THE POPULATION AND IT IS THE RIGHT SHAPE:** `os.walk` + `endswith('.bend')`,
+one row per SITE (≡ per ROW, ≡ per LINE), a CLASS per row **decided by a command and not by reading**, and
+**`UNDECIDED` IS A VERDICT WITH ITS OWN ROW, NOT A REMAINDER** — now **596** of **934**, which is 63.8%.
+
+**WHY 934 BOXES ARE STILL WRONG, AND IT IS NOT THE DENOMINATOR ANYMORE:** a box per site is **a list of
+rows of a list**, and **the list would have been wrong within twenty seconds of being written** — §0 is
+the demonstration, not a hypothetical. It would also **conflate five questions** (`GAP 134`, `NONG 119`,
+`FRAG 48`, `XREF 37`, `UNDECIDED 596`) into one list of "tasks", which is `0 UNCLASSIFIED`'s exact failure
+mode; and it would re-create `gates-pop.py`'s `HOMES`, **a hand list with no generator, which cannot go red
+because nothing compares it to anything.** **THE POINTER GOES RED BY ITSELF:** `todo-census.py` is
+rc-driven over a walk, and `todopop-gate.py` **REFUSES if the subject digest moves under a read** —
+`gates/todopop-gate.py:219-221` prints `REFUSED: the subject changed while it was being measured; this
+reading is of two trees` and returns `REFUSED`, **so the refusal is a CODE PATH and not a promise.**
+
+**THE TWO THINGS ONLY A HUMAN CAN SUPPLY, AND BOTH ARE CHEAPER THAN ANY CLASSIFICATION:**
+
+- **THE 596 `UNDECIDED` ROWS **CANNOT** BE CLOSED BY THE CLASSIFIER, AND THE INSTRUMENT SAYS WHY IN ITS
+  OWN DOCSTRING.** `gates/todo-census.py:18`: *"the strongest available test — 'the subject upstream STILL
+  HAS and the port DOES NOT' — needs a symbol name, and **599 of the 758 cited sites carry NO mechanically
+  extractable one**, so for those the question cannot be asked by a command at all and the row is
+  `UNDECIDED`."* **IT IS NOT A DEFECT AND IT IS NOT A BACKLOG: IT IS A ROW SAYING THE QUESTION IS
+  UNASKABLE. A READER CAN ASK IT; A REGEX CANNOT.**
+- **`p1` / `p2` / `p3` ARE **USED** AND **DEFINED NOWHERE**, AND THE HISTOGRAM IS THE PROOF BOTH WAYS.**
+  `gates/todo-census.py`'s `TAG HISTOGRAM` reads **`p3 826`**, `(bare) 79`, `port 24`, `p6 1`, `p4 1`,
+  `pN 1`, `delete 1`, **`p1 1`** — and **`p2` DOES NOT APPEAR AT ALL**, so **`p2` IS USED ZERO TIMES** while
+  `p3` is used **826** times, i.e. **88.4% of every tagged row.** **AND A SEARCH FOR A DEFINITION RETURNS
+  NOTHING**: `grep -rnE '^\s*(#\s*)?(p1|p2|p3)\s*[:=]' tinybendygrad/*.bend` → **0 hits**, and no prose in
+  `AGENTS.md` defines the scale. **ONE LINE FROM A HUMAN — WHAT `p3` MEANS AND WHAT THE NUMBERS MEAN —
+  CLASSIFIES 826 ROWS THAT NO CENSUS CAN.** **THAT IS A BETTER ROADMAP THAN ANY CLASSIFICATION, IT COSTS
+  ONE SENTENCE, AND NO INSTRUMENT IN THIS TREE CAN PRODUCE IT.**
