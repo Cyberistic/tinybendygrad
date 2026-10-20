@@ -178,14 +178,16 @@ def project(here: list[Path], there: list[Path], home_dirs: set[Path]) -> dict:
     The residue is what a third reason looks like when one exists -- `extra` is a `here` member
     the control lacks for a reason that is NOT depth and `stray` is a `there` member the walk
     lacks for a reason that is NOT a dotted name -- and both are EMPTY on this tree. MEASURED
-    2026-10-20 by `.venv/bin/python checks/gatesweep.py --plan`, and THE TREE MOVED TWICE WHILE
-    THIS WAS BEING WRITTEN, WHICH IS THE PROOF THAT THE TERMS ARE MEASURED: at 00:19Z `WALK 271`,
-    `CONTROL 273`, `deep 2`, `dot 4`, `bridged 273`, `extra 0`, `stray 0`; at 00:21Z, after
-    another unit landed `gates/banner-emit-gate.py` and one more entry, `WALK 273`, `CONTROL 275`,
-    `bridged 275`, **`deep` and `dot` UNCHANGED** -- two new members, both immediate and undotted,
-    which is exactly what a held projection says. `dot` was **5** in the brief that asked for this
-    and is **4** in both readings -- `gates/.wgsl-mut-oracle.py` is gone -- so neither term is
-    typed, and a constant that must be edited when the world changes is a list that rots.
+    2026-10-20 by `.venv/bin/python checks/gatesweep.py --plan`, FOUR READINGS AS THE TREE MOVED
+    UNDER THIS UNIT, WHICH IS THE PROOF THAT THE TERMS ARE MEASURED: 00:19:12Z `WALK 271`,
+    `CONTROL 273`, `bridged 273`; 00:21:03Z `WALK 273`, `CONTROL 275`, `bridged 275`; 00:21:57Z
+    and 00:23:00Z unchanged. **`deep` and `dot` DID NOT MOVE ACROSS THE +2/+2** -- `deep 2`,
+    `dot 4`, `extra 0`, `stray 0` in every reading -- so both arrivals were immediate and
+    undotted, which is what a held projection says. **WHICH MEMBERS ARRIVED IS NOT RECORDED AND
+    IS NOT CLAIMED**: another unit was writing `gates/banner-emit-*` and `gates/cites-pop-gate.py`
+    throughout, so attributing the +2 to any of them would be a measurement this unit did not
+    take. `dot` was **5** in the brief that asked for this and is **4** in every reading --
+    `gates/.wgsl-mut-oracle.py` is gone -- so neither term is typed.
     """
     a, b = set(here), set(there)
     deep = sorted(p for p in a if p.parent not in home_dirs)
