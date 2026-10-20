@@ -59,7 +59,8 @@ def f32_pattern(x: float) -> int:
 h2f = [h for h in range(0x10000) if (h & 0x7C00) == 0 and (h & 0x3FF) != 0]
 band = sorted({e << 23 | m for e in range(102, 113)
                 for m in (0, 1, 2, 0x200000, 0x3FFFFF, 0x400000, 0x7FFFFF)})
-nan = [p for p in range(0x7F800000, 0x7F800000 + 0x800000) if p & 0x7FFFFF][:64]
+nan = ([p for p in range(0x7F800000, 0x7F800000 + 0x800000) if p & 0x7FFFFF][:32]
+       + [p for p in range(0x7F800000, 0x7F800000 + 0x800000) if p & 0x7FFFFF][-32:])
 f16b = band + nan
 
 src = BUNDLE.read_text()

@@ -25,13 +25,17 @@ the bend2 EMITTER's own output for the live `tinybendygrad/dtype.bend`
   BEND f32->half (fp16_encode, white-box), 77 band patterns: 0 disagree with CPython
   BEND f32->half (Dt.fp16, THE SEAM), 77 band patterns: 75 disagree with CPython
       seam_33000001: oracle=33800000 bend=43000000
-  BEND Dt.fp16 over 64 f32 NaN patterns: 0 disagree with CPython
+  BEND Dt.fp16 over 64 f32 NaN patterns (both ends of the mantissa): 32 disagree
   BEND half->f32 distinct f32 patterns over the 1023 positive half subnormals: 1023
 
-So the Bend's ENCODE side is right, its DECODE side is wrong by a factor of
-2**(31 - 2*log2 m) -- 2**31 at m = 1 -- and the Bend's `Dt.fp16` is wrong on 75 of the
-77 f32->half subnormal-band patterns.  The Bend's map is INJECTIVE (1023 distinct), so
-this is a VALUE defect, not the injectivity defect the JS had.
+So the Bend's ENCODE side is right on the subnormal band, its DECODE side is wrong by a
+factor of 2**(31 - 2*log2 m) -- 2**31 at m = 1 -- and the Bend's `Dt.fp16` is wrong on 75
+of the 77 f32->half subnormal-band patterns.  The Bend's map is INJECTIVE (1023
+distinct), so this is a VALUE defect, not the injectivity defect the JS had.  And the
+Bend's NaN arm keeps the payload in BOTH directions (`dtype.bend:698-701` on the way in,
+`:736` on the way out) where CPython canonicalises: the 32 disagreements above are
+exactly the high-mantissa NaNs, the 32 low-mantissa ones agreeing only because
+`m >> 13` is 0 there.
 
 THE FIX, MEASURED: `.venv/bin/python .agents/slop/floatfix/measure-bend-fix.py` applies
 one token to a COPY of the emitted bundle -- the `31 -` dropped from

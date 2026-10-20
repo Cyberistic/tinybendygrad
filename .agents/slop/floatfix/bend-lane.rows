@@ -1,4 +1,4 @@
-# measure-bend-lane.py -- the BEND lane's own fp16 -- 2026-10-20T16:57:06Z
+# measure-bend-lane.py -- the BEND lane's own fp16 -- 2026-10-20T16:59:05Z
 BEND half->f32 (fp16_f32, white-box), 2046 half subnormals: 2046 disagree with CPython
     h2f_1: oracle=33800000 bend=1124073472
     h2f_2: oracle=34000000 bend=1115684864
@@ -15,7 +15,7 @@ BEND f32->half (Dt.fp16, THE SEAM), 77 band patterns: 75 disagree with CPython
     seam_333fffff: oracle=33800000 bend=43000000
     seam_33400000: oracle=33800000 bend=43000000
     seam_337fffff: oracle=33800000 bend=43000000
-BEND Dt.fp16 over 64 f32 NaN patterns: 0 disagree with CPython
+BEND Dt.fp16 over 64 f32 NaN patterns: 32 disagree with CPython
 BEND half->f32 distinct f32 patterns over the 1023 positive half subnormals: 1023
 
 # measure-bend-fix.py -- the BEND's exponent, as emitted and with the one-token fix
