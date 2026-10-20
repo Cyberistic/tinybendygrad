@@ -554,7 +554,12 @@ def main() -> int:
 
   if not NAMES.exists():
     print(f"FATAL: {NAMES} is missing; the pin has no reader.", file=sys.stderr)
-    return 2
+    # **REFUSED (3), NOT 2 -- AND THIS FILE SAYS SO ITSELF, 18 LINES ABOVE:** "ABSENT AND STALE ARE
+    # BOTH REFUSED (3) AND ARE DISTINGUISHED BY TOKEN, NOT BY EXIT", and the same comment warns
+    # that "2 IS NOT NEUTRAL HERE" because a caller reading `$?` could not tell "you passed a bad
+    # --tree" from "the corpus was never run". **RETURNING 2 HERE IS THAT CONFUSION, IN THE ONE FILE
+    # THAT NAMES IT.**
+    return 3
   bad = 0
   refused = False
   for key in selected:

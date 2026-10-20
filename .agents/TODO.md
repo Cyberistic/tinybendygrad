@@ -1243,6 +1243,40 @@ all-three-green [##########] 3/3  **2026-10-20T20:40Z: THE CORPUS IS GREEN, REPR
                                        SUBSTRATE'S IDENTITY -- AND ONLY THE THIRD SAYS WHETHER THE FIRST
                                        TWO ARE ABOUT THE TREE AS IT STANDS.**
 
+refused-is-3 [##########] 3/3  **FOUR SITES PRINTED `REFUSED` AND EXITED 2, AND TWO OF THE FILES SAID SO
+                                       THEMSELVES.** MEASURED 2026-10-20, from a dispatched unit's census
+                                       of exit code 2: **2 IS NEITHER USAGE NOR REFUSED -- IT IS A SPARE
+                                       NUMBER CARRYING SIX CLASSES** (argparse's own usage code, which is
+                                       INHERITED and lives in no module; 32 instruments that DELIBERATELY
+                                       choose 2; propagated child statuses; 126/127 forwarded from
+                                       `checks/e2e.py`; and accidental `set -e` fallthrough). **THE
+                                       SHARPEST SINGLE FACT IS ONE FILE USING TWO NUMBERS FOR ONE
+                                       MEANING**: `checks/disagree-gate.py:557` returned **2** for "the
+                                       pin file is missing -- the pin has no reader" while the SAME FILE
+                                       at `:592` returns **3** for a refusal, and its OWN COMMENT at
+                                       :540-543 says *"2 IS NOT NEUTRAL HERE ... a caller reading `$?`
+                                       could not tell 'you passed a bad --tree' from 'the corpus was
+                                       never run'. ABSENT AND STALE ARE BOTH REFUSED (3) AND ARE
+                                       DISTINGUISHED BY TOKEN, NOT BY EXIT."* **IT STATES THE RULE AND
+                                       BREAKS IT 18 LINES LATER.**
+                                       **FOUR SITES FIXED, AND ONLY THOSE FOUR:** `gates/gate-surface.py:226`
+                                       (its `refuse()` helper), `gates/gate-surface.py:434` (the EMPTY
+                                       POPULATION refusal), `gates/retention-check.py:197` (its
+                                       `refuse()` helper), `checks/disagree-gate.py:557`. All four now
+                                       exit **3**. **`gates/gate-surface.py`'s `vocabulary()` READS
+                                       `gates/gatekit.py`'s unpack, so it inherits {0,1,3,4,5} and 2 is
+                                       simply UNNAMED -- and that file's own rule is that "a number
+                                       with no agreed meaning must be NAMED rather than resolved".**
+                                       **`gates/retention-check.py`'s comment already said it:**
+                                       *"`gates/gendirs.py` exits 3 for the identical sentence, so the
+                                       tree carries two numbers for one meaning and this is the second."*
+                                       **THE OTHER 15 `return 2` SITES WERE DELIBERATELY NOT RENUMBERED**,
+                                       because the census showed 2 is ALSO argparse's own usage code
+                                       (9 instruments, where 2 IS the usage code and belongs there), the
+                                       mutator family's local 2, and propagated child statuses. **RENUMBERING
+                                       2 TO 3 EVERYWHERE WOULD ERASE THE DISTINCTION AND SAYS NOTHING THE
+                                       FOUR FIXES DID NOT ALREADY SAY.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

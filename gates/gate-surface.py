@@ -218,7 +218,12 @@ def refuse(*why):
     rc 1 and a traceback, which carries no denominator and so counts nowhere).
     """
     print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-    sys.exit(2)
+    # **EXIT 3, NOT 2: `2` IS NOT IN THIS FILE'S OWN VOCABULARY.** `vocabulary()` reads
+    # `gates/gatekit.py`'s unpack, so it inherits {0,1,3,4,5} and 2 is simply UNNAMED, and this
+    # file's own rule is that "a number with no agreed meaning must be NAMED rather than resolved".
+    # The sentence printed above says REFUSED, and REFUSED is 3: `gates/gendirs.py` exits 3 for the
+    # identical sentence, so the tree carried TWO numbers for ONE meaning.
+    sys.exit(3)
 
 
 def gates_pop():
@@ -426,7 +431,7 @@ def report(root, charge=True):
     if not entries:
         print(f"I  EMPTY POPULATION: no entry point under {'/'.join(gpop.HOMES)}/ -- and an empty "
               f"population\n   cannot fail, which is the defect this file exists for. REFUSED.")
-        return 2
+        return 3   # REFUSED, and 3 is the only code this file's vocabulary names for it.
 
     print(f"I  DISCOVERED {len(entries)} entry point(s) under {'/'.join(gpop.HOMES)}/ "
           f"(+{len(libs)} module(s) with no entry guard)\n")

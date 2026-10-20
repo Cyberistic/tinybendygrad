@@ -192,7 +192,9 @@ def refuse(why):
     identical sentence, so the tree carries two numbers for one meaning and this is the second.
     """
     print(f"== REFUSED, NOT A VERDICT: retention-check: {why}", file=sys.stderr)
-    raise SystemExit(2)
+    # REFUSED IS 3, NOT 2. `gates/gendirs.py` exits 3 for the identical sentence, so the tree
+    # carried two numbers for one meaning -- and this file's own comment records that.
+    raise SystemExit(3)
 
 
 def git(*args):
