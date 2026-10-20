@@ -44,8 +44,10 @@ import hashlib
 import importlib.util
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from collections import Counter
 
@@ -78,6 +80,34 @@ def load_bind():
     not an importable name, and a second copy of the join rule would be a second witness."""
     spec = importlib.util.spec_from_file_location(
         "pincensus_bind", os.path.join(HERE, "bind-subject.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def load_pintable():
+    """The EXPECTATION-ROW population's discovery module, BY PATH, for the same reason.
+
+    **THE SECOND POPULATION, AND WHY IT IS A SEPARATE MODULE AND A SEPARATE TABLE.**
+    `gates/pincensus-pop.py`'s value token is a CONTENT ADDRESS, and that is what makes a
+    pin re-derivable: the census hashes the subject and compares two independent values. A
+    PIN TABLE'S ROWS ARE EXPECTATIONS -- `checks/differ.py`'s `PINS` holds `"graphs": "34"`
+    and `"stable-pairs": "5 of 5"` -- and an expectation cannot be re-derived by hashing
+    anything, because the thing it is about is a RUN. So the flagship table of this tree
+    was invisible to the instrument that exists to ask about pins, and the gap was known,
+    named and unclosed.
+
+    **THE DENOMINATOR IS NOT MERGED, AND THE REASON IS THE PRIOR UNIT'S.** The
+    content-addressed rows and the expectation rows are DIFFERENT OBJECTS -- an address and
+    an expectation -- so they are counted apart: `rows` keeps its meaning and its number
+    exactly as it was, and the expectation rows get their own count, their own classes and
+    their own table. The prior unit wrote that it would "rather report the gap than widen
+    the rule and quietly change what the number means", and this is the same refusal with
+    the gap CLOSED: the gap is closed by a second, named, separately-denominated
+    population, not by redefinition.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "pintable_pop", os.path.join(HERE, "pintable-pop.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -355,6 +385,190 @@ def census(root=ROOT, git_root=ROOT, scratch=False):
         "currency": dict(Counter(r["currency"] for r in rows)),
         "root": root, "git_root": git_root,
     }
+    # THE SECOND POPULATION, COUNTED APART. `meta["rows"]` above is UNCHANGED by it and
+    # MEANS WHAT IT MEANT: the content-addressed pin values the census decided about. The
+    # expectation rows are a different object -- an address is re-derivable, an expectation
+    # is only comparable -- and they are counted apart, with their own classes, their own
+    # currency vocabulary and their own table.
+    #
+    # **THE ARITY OF `census()` IS UNCHANGED**, because `gates/pincensus-plant.py` calls it
+    # as `rows, meta = census(...)` and that file is not this file's to edit.
+    exrows, exmeta = expectation_census(corpus, host, code, decls, git_root, root, upstream, P,
+                                        load_pintable(), B)
+    meta["expectations"] = exmeta
+    meta["expectation-rows"] = exrows
+    return rows, meta
+
+
+# THE EXPECTATION POPULATION, AND ITS THREE MOVES.
+#
+# 1 THE JOIN. An expectation row's KEY IS A ROW NAME, not a path. `gates/bind-subject.py`
+#   already says so -- "a row name is what an artifact carries; a bare literal has no row"
+#   -- and `subject_of()` above already implements it: with an `_ARTIFACT` declaration the
+#   key names a row of THAT artifact, without one the key would be read as a path. The
+#   expectation rows therefore use the SAME join and only change WHICH key they ask about:
+#   a key of a table with no `_ARTIFACT` declaration names NOTHING, and the honest answer
+#   to that is a refusal that says so, not a search for a file called `graphs`.
+#
+# 2 THE SUBJECT'S TWO SHAPES. An `_ARTIFACT` declaration names a RUN artifact, and a run
+#   artifact's bytes are not read here (a run may be LIVE); an `_SUBJECT` declaration names
+#   a FILE, and a file can be read -- and an expectation IS comparable, by looking the key
+#   up in the file's own `key=value` rows.
+#
+# 3 THE DECLARATION. The population is the tree's OWN declaration, read by path, because a
+#   table can be patched after it is declared and then the literal and the live value
+#   differ. The scan and the declaration are compared, and a disagreement is REPORTED.
+#
+# THE VERDICT VOCABULARY OF THIS POPULATION, AND IT IS THE CENSUS'S OWN:
+#   CURRENT / MISMATCH / ROW-ABSENT   the subject was read and the row was compared
+#   SUBJECT-IN-GITIGNORED-RUNS         the subject is a run artifact, so it is not read
+#   NO-SUBJECT-DECLARED               the table's artifact is not named in a form a
+#                                     machine can read -- a REFUSAL, and the finding
+#   NOT-CARRIED                       the scan and the tree's declaration disagree
+def expectation_subject(resolved, decl, key):
+    """-> the subject of ONE expectation row, or None.
+
+    **NONE IS NOT "NOT FOUND".** A row whose table names no artifact has no subject THAT
+    THE TREE DECLARES, and the difference between that and a subject that was searched for
+    and not found is the difference between a finding and a false claim: `checks/differ.py`'s
+    `PINS` rows are about `runs/graphcmp/D/D0-run-summary.txt`, which EXISTS. The census
+    refuses to say it does not.
+    """
+    if resolved is None:
+        return None
+    if resolved["kind"] == "SUBJECT":
+        return {"kind": "file", "path": resolved["value"], "at": resolved["at"]}
+    dirs = decl["run-dirs"]
+    return {"kind": "run-artifact", "artifact": resolved["value"],
+            "dir": dirs[0] if dirs else "", "row": key, "at": resolved["at"]}
+
+
+def expectation_currency(value, subject, corpus_root, git_root):
+    """-> (verdict, detail) for ONE expectation row, by COMPARING it with its subject.
+
+    An expectation is COMPARABLE and not RE-DERIVABLE: the row must read exactly the value
+    the tree declared, and the subject is read to find out. The two values are INDEPENDENT
+    -- one is the literal in the source, the other is the bytes on disk -- so the comparison
+    can fail, which is what a pin is for.
+    """
+    if subject is None:
+        return "NO-SUBJECT-DECLARED", (
+            "the table names no artifact, so the row's subject cannot be located; the key "
+            "names a ROW of an artifact, not a path, and no `_ARTIFACT` declaration names "
+            "the artifact")
+    if subject["kind"] == "run-artifact":
+        rel = os.path.normpath(os.path.join(subject["dir"], subject["artifact"])) \
+            if subject["dir"] else subject["artifact"]
+        return "SUBJECT-IN-GITIGNORED-RUNS", (
+            f"the row '{subject['row']}' is carried by {rel} (declared at {subject['at']}); a "
+            f"run artifact is gitignored by design and its bytes are not read, so this "
+            f"expectation is not comparable here and its absence is not a defect")
+    for root, label in ((corpus_root, "corpus"), (git_root, "git")):
+        if not root:
+            continue
+        for base in SUBJECT_ROOTS:
+            rel = os.path.normpath(os.path.join(base, subject["path"]))
+            if any(rel.startswith(n) for n in NEVER_READ):
+                return "SUBJECT-IN-GITIGNORED-RUNS", f"{rel} is under a gitignored run directory; not read"
+            path = os.path.join(root, rel)
+            if not os.path.isfile(path):
+                continue
+            got = None
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    if "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    if k.strip() == subject.get("row", ""):
+                        got = v.strip()
+            if got is None:
+                return "ROW-ABSENT", f"{rel} carries no row named '{subject.get('row', '')}'"
+            return ("CURRENT" if got == value else "MISMATCH"), \
+                f"{rel}[{subject.get('row', '')}]={got!r} vs expected {value!r}"
+    return "SUBJECT-NOT-FOUND", \
+        f"looked in {', '.join(SUBJECT_ROOTS)} for {subject['path']}; found neither"
+
+
+def drop_addresses(pairs, hex_re):
+    """-> pairs whose value is an expectation, not a content address.
+
+    `pincensus-pop.HEX` is the hex-pin token. A row that matches it is already in the
+    hex-pin population. Counting it here folds the two denominators. Measured before
+    this filter: `REPRO_PINS["d10-transcript"]` (a sha256 at `checks/differ.py:339`) was
+    both a hex pin and an expectation row.
+    """
+    return [(k, v) for k, v in pairs if not hex_re.search(v)]
+
+
+def expectation_census(corpus, host, code, decls, git_root, corpus_root, upstream, P, T, B):
+    """-> (rows, meta). THE SECOND POPULATION: the rows of a PIN TABLE whose value is an
+    EXPECTATION rather than a content address.
+
+    **THE POPULATION IS THE TREE'S OWN DECLARATION, AND THE SCAN IS THE CROSS-CHECK.** For
+    every table the census reads the module's attribute BY PATH -- executing the defining
+    module, as `gates/corpusverdict-gate.py` already does with `checks/differ.py` -- and
+    compares it against what `ast` sees in the source. The two are independent readings, so
+    they can disagree, and when they do the census carries the DECLARATION (what the tree
+    will actually compare) and says that the scan and the tree disagree.
+    """
+    binds = T.bindings(corpus, host)
+    tabs = T.tables(binds, P.PIN_NAME)
+    exps = T.expectations(tabs, P.HEX)
+    # THE TABLE each row belongs to, so a table's cross-check is computed ONCE and not per row.
+    by_table = {(t["file"], t["line"], t["name"]): t for t in tabs}
+
+    rows, meta = [], {"tables": 0, "cross-checked": 0, "not-cross-checkable": 0, "disagreeing": 0,
+                      "tables-not-carried": 0, "declaring-files": set()}
+    for (f, line, name), tab in sorted(by_table.items()):
+        if not any(e["file"] == f and e["name"] == name for e in exps):
+            continue
+        meta["tables"] += 1
+        decl_rows, note = T.declaration(corpus_root, f, name)
+        # HEX-VALUED ROWS ARE THE OTHER POPULATION. Compared and emitted only after they
+        # are dropped, so a mixed table (`REPRO_PINS` holds `rc=0` and a sha256) cannot
+        # put its content address in this count.
+        scan_rows = dict(drop_addresses(tab["rows"], P.HEX))
+        if decl_rows is None:
+            meta["not-cross-checkable"] += 1
+            carried, source = list(scan_rows.items()), "literal"
+            cross = f"NOT CROSS-CHECKABLE: {note}"
+        else:
+            meta["cross-checked"] += 1
+            meta["declaring-files"].add(f)
+            decl = dict(drop_addresses(decl_rows, P.HEX))
+            carried, source = list(decl.items()), "declaration"
+            diff = [k for k in set(scan_rows) | set(decl) if scan_rows.get(k) != decl.get(k)]
+            if diff:
+                meta["disagreeing"] += 1
+                cross = ("THE SCAN AND THE TREE DISAGREE on " + ", ".join(sorted(diff)))
+            else:
+                cross = "the scan and the tree's own declaration agree"
+            if tab["rebindings"]:
+                meta["tables-not-carried"] += 1
+                cross += f"; the name is bound {len(tab['rebindings'])} more time(s)"
+
+        decl_for_file = decls.get(f, {"subjects": {}, "artifacts": {}, "run-dirs": [], "at": {}})
+        resolved = B.resolve(name, decl_for_file)
+        read = P.readers(name, code, (f, line, line)) if code else []
+        for key, value in carried:
+            subject = expectation_subject(resolved, decl_for_file, key)
+            verdict, detail = expectation_currency(value, subject, corpus_root, git_root)
+            rows.append({
+                "class": "CAN-FAIL" if read else "CANNOT-FAIL",
+                "what": f"{name}[{key}]", "where": f"{f}:{line}",
+                "host": "python", "literal-or-derivation": source,
+                "value": value, "shape": "EXPECTATION",
+                "currency": verdict,
+                "detail": f"{detail}; {cross}",
+                "readers": ";".join(f"{t}:{i}" for t, i in read[:3]) or "-",
+                "n-readers": len(read),
+                "origin": "UPSTREAM" if f in upstream else "OURS",
+            })
+    meta["declaring-files"] = sorted(meta["declaring-files"])
+    meta["classes"] = dict(Counter(r["class"] for r in rows))
+    meta["currency"] = dict(Counter(r["currency"] for r in rows))
+    meta["origin"] = dict(Counter(r["origin"] for r in rows))
+    meta["rows"] = len(rows)
     return rows, meta
 
 
@@ -368,6 +582,25 @@ def write_rows(rows, meta):
     with open(os.path.join(ART, "census.rows"), "w") as fh:
         fh.write("# pincensus census.rows -- TAB separated. Generated; the generator is "
                  "gates/pincensus-gate.py.\n")
+        fh.write(f"# written {stamp} HEAD={git(meta['git_root'], 'rev-parse', '--short', 'HEAD')}\n")
+        fh.write("\t".join(COLUMNS) + "\n")
+        for r in rows:
+            fh.write("\t".join(str(r.get(c, "")).replace("\t", " ") for c in COLUMNS) + "\n")
+    return stamp
+
+
+def write_expectation_rows(rows, meta):
+    """The SECOND TABLE, AND IT IS A SEPARATE FILE FOR THE SAME REASON THE COUNT IS SEPARATE.
+
+    `census.rows` is the content-addressed population and its header says so. A reader who
+    finds 597 rows in ONE file cannot tell which kind a row is, and a row count that mixes
+    two denominators is a number nobody can check."""
+    os.makedirs(ART, exist_ok=True)
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    with open(os.path.join(ART, "census-tables.rows"), "w") as fh:
+        fh.write("# pincensus census-tables.rows -- TAB separated. Generated; the generator is "
+                 "gates/pincensus-gate.py. THE EXPECTATION POPULATION: the rows of a PIN "
+                 "TABLE whose value is an EXPECTATION and not a content address.\n")
         fh.write(f"# written {stamp} HEAD={git(meta['git_root'], 'rev-parse', '--short', 'HEAD')}\n")
         fh.write("\t".join(COLUMNS) + "\n")
         for r in rows:
@@ -404,21 +637,122 @@ def reachability():
     }
 
 
+# THE PLANT'S CORPUS, AND WHY IT IS SYNTHETIC. The live tree's scan and declaration
+# AGREE (measured disagreeing=0), so a plant that waits for the tree to already be wrong
+# cannot fail on the defect it exists to catch. The shape is the live leak: one table
+# holding an expectation and a content address, which is `REPRO_PINS`.
+_PLANT_DIGEST = "ab" * 32
+_PLANT_SCALAR = "0123456789abcdef"
+_PLANT_SCAN = "34"
+_PLANT_DECLARED = "PLANTED"
+_PLANT_BODY = (
+    'HEX_PIN = "%s"\n'
+    "PINS = {\n"
+    '    "graphs": "%s",\n'
+    '    "digest": "%s",\n'
+    "}\n"
+) % (_PLANT_SCALAR, _PLANT_SCAN, _PLANT_DIGEST)
+_PLANT_REBIND = 'PINS["graphs"] = "%s"\n' % _PLANT_DECLARED
+
+
+def _values(rows):
+    return {r["value"] for r in rows}
+
+
+def _one(rows, value):
+    got = [r for r in rows if r.get("value") == value]
+    return got[0] if len(got) == 1 else None
+
+
+def plant():
+    """Attack copies. The live tree is opened for nothing and never written.
+
+    TWO CLAIMS, AND EACH ONE CAN FAIL ON ITS OWN:
+
+      1 An expectation row whose scan and declaration disagree is not a hex pin.
+      2 A hex pin is not an expectation row.
+
+    The control is the same file with no rebinding. A census that says DISAGREE for
+    both, or that carries one value on both sides, fails: the first is a label, the
+    second is a vacuous negative.
+    """
+    base = tempfile.mkdtemp(prefix="pincensus-expect-plant-")
+    try:
+        control, planted = (os.path.join(base, name) for name in ("control", "planted"))
+        for dest, extra in ((control, ""), (planted, _PLANT_REBIND)):
+            os.makedirs(dest)
+            with open(os.path.join(dest, "pins.py"), "w", encoding="utf-8") as fh:
+                fh.write(_PLANT_BODY + extra)
+        c_rows, c_meta = census(control, ROOT, scratch=True)
+        p_rows, p_meta = census(planted, ROOT, scratch=True)
+        c_ex, p_ex = c_meta["expectation-rows"], p_meta["expectation-rows"]
+        c_hex, p_hex = _values(c_rows), _values(p_rows)
+        c_exp, p_exp = _values(c_ex), _values(p_ex)
+        c_row, p_row = _one(c_ex, _PLANT_SCAN), _one(p_ex, _PLANT_DECLARED)
+        bad = []
+        if c_row is None or p_row is None:
+            bad.append("a side produced no expectation row, so the plant compared nothing")
+        if _PLANT_DIGEST not in c_hex or _PLANT_DIGEST not in p_hex:
+            bad.append("the hex pin was not counted as a hex pin, so the split was not tested")
+        if _PLANT_SCALAR not in c_hex or _PLANT_SCALAR not in p_hex:
+            bad.append("the scalar hex pin was not counted as a hex pin")
+        if c_exp == p_exp:
+            bad.append("VACUOUS: control and plant carry the same expectation values")
+        if p_row is not None and "DISAGREE" not in p_row["detail"]:
+            bad.append("the plant did not observe a scan/declaration disagreement")
+        if c_row is not None and "DISAGREE" in c_row["detail"]:
+            bad.append("the control reported a disagreement it does not have")
+        if _PLANT_DECLARED in p_hex or _PLANT_SCAN in c_hex or _PLANT_SCAN in p_hex:
+            bad.append("an expectation row was counted as a hex pin")
+        if _PLANT_DIGEST in c_exp or _PLANT_DIGEST in p_exp or _PLANT_SCALAR in c_exp or _PLANT_SCALAR in p_exp:
+            bad.append("a hex pin was counted as an expectation row")
+        if any(r.get("shape") == "EXPECTATION" for r in p_rows):
+            bad.append("a hex-pin row was shaped as an expectation")
+        if c_meta["rows"] != len(c_rows) or p_meta["rows"] != len(p_rows):
+            bad.append("meta['rows'] does not mean the hex-pin rows")
+        if c_ex is c_rows or p_ex is p_rows:
+            bad.append("the two populations are one list")
+        print("pincensus-gate --plant: synthetic mixed table, scan %r declared %r" % (
+            _PLANT_SCAN, _PLANT_DECLARED))
+        print("  CONTROL  expectation=%s hex-has-digest=%s hex-has-expectation=%s" % (
+            None if c_row is None else c_row["value"], _PLANT_DIGEST in c_hex, _PLANT_SCAN in c_hex))
+        print("  PLANT    expectation=%s detail-disagrees=%s hex-has-expectation=%s" % (
+            None if p_row is None else p_row["value"],
+            False if p_row is None else "DISAGREE" in p_row["detail"],
+            _PLANT_DECLARED in p_hex))
+        print("  hex pin in expectation rows: control=%s plant=%s" % (
+            _PLANT_DIGEST in c_exp, _PLANT_DIGEST in p_exp))
+        if bad:
+            print("pincensus-gate --plant: FAIL -- " + "; ".join(bad), file=sys.stderr)
+            return FAIL
+        print("pincensus-gate --plant: the disagreed expectation is not a hex pin, "
+              "and the hex pin is not an expectation row")
+        return PASS
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
     ap.add_argument("--root", default=ROOT)
     ap.add_argument("--scratch", action="store_true",
                     help="treat --root as a corpus that is not a git tree")
     ap.add_argument("--no-write", action="store_true")
+    ap.add_argument("--plant", action="store_true",
+                    help="prove a disagreed expectation is not a hex pin, and a hex pin is not an expectation row")
     args = ap.parse_args()
+    if args.plant:
+        return plant()
 
     rows, meta = census(args.root, ROOT, args.scratch)
     if not rows:
         print("pincensus-gate: DEAD -- the census emitted no rows", file=sys.stderr)
         return DEAD
     stamp = "NOT WRITTEN (--no-write)"
+    exrows = meta.get("expectation-rows") or []
     if not args.no_write:
         stamp = write_rows(rows, meta)
+        write_expectation_rows(exrows, meta)
 
     reach = reachability()
     c = meta["classes"]
@@ -435,7 +769,15 @@ def main():
                   f"error budget: {h['py-extends-host-prose']} .py read as prose, "
                   f"{h['md-parses-as-python']} .md read as python {h['md-examples']}\n")
     out.write(f"  named pin sites: {meta['sites']}   prose pin lines: {meta['prose-lines']}"
-              f"   rows: {meta['rows']}\n\n")
+              f"   rows: {meta['rows']}\n")
+    exmeta = meta.get("expectations") or {}
+    out.write(f"  EXPECTATION ROWS, NOT ADDED TO rows: {len(exrows)}"
+              f"   tables: {exmeta.get('tables', 0)}"
+              f"   scan/declaration disagree: {exmeta.get('disagreeing', 0)}\n")
+    out.write("    a hex pin is not in this count; an expectation is not in the hex-pin count\n")
+    for k, v in sorted((exmeta.get("currency") or {}).items(), key=lambda kv: -kv[1]):
+        out.write(f"    {k:28} {v:5}\n")
+    out.write("\n")
 
     out.write("  THE THREE KINDS OF WRONG -- SEPARATE POPULATIONS, SEPARATE REMEDIES\n")
     for kind, what in (("CAN-FAIL", "a regression row: code reads it, so stale goes red"),
