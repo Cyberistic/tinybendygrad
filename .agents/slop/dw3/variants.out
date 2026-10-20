@@ -1,0 +1,5 @@
+scratchg: 1 fix(es) -> GUARD
+scratchgw: 2 fix(es) -> GUARD, WSHAPE
+scratchgwo: 3 fix(es) -> GUARD, WSHAPE, ORDER
+scratchfix: 5 fix(es) -> GUARD, WSHAPE, ORDER, BROADCAST, HEADER
+scratchfix MATCHES THE SCRIPT'S S4, BYTE FOR BYTE

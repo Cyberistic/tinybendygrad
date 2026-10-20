@@ -1156,6 +1156,66 @@ nn-path [####......] 2/4  **TWO REAL DEFECTS ON THE CONV2D PATH, LANDED, AND BOT
                                        answers `(3,3,1)` where the port reads `<EMPTY>`; it needs
                                        CPython's `:386` guard ported too).
 
+dw3-guard [#########] 4/4  **THE `dw >= 3` MATMUL ARM, AND THE MOST IMPORTANT FINDING OF THE PAIR IS THAT
+                                       A PARTIAL FIX MAKES AN INSTRUMENT LIE.** **THE BRIEF'S CITATION
+                                       WAS WRONG AND THE UNIT CORRECTED IT: THE GUARD IS NOT IN
+                                       `uop/ops.py` BUT IN `tinygrad/mixin/op.py:389`** --
+                                       `if x.shape[-1] != w.shape[axis_w:=-min(w.ndim, 2)]: raise
+                                       RuntimeError(f"cannot dot {x.shape} and {w.shape}")`. The port's
+                                       header carried the STALE upstream formula
+                                       (`-w.ndim if w.ndim > 1 else 0`), **which is WHY `nn_dot.order`
+                                       WAS WRONG FOR `dw>=3`**. And `:389` is a single DIM while `:391`
+                                       is a SLICE -- two different expressions, and the port spelled
+                                       NEITHER. **THE RULE, MEASURED NOT LISTED: accept iff
+                                       `x.shape[-1] == w.shape[-min(dw,2)]` AND the reshaped shapes
+                                       broadcast; refuse two ways (`cannot dot` and `shape mismatch`).
+                                       14,040 PAIRS ENUMERATED, 0 MISMATCHES.** At `dw==2` ALL 720
+                                       refusals are guard refusals, so for `dw<=2` the guard IS the
+                                       whole rule.
+                                       **THE ABLATION IS THE FINDING.** Case G `(3,3,4).(3,4,1)`
+                                       (CPython `(3,3,1)`): S0 `<DEAD>` -> **S2 (+WSHAPE) `(3,3,4)` --
+                                       A CONFIDENTLY WRONG ANSWER, RIGHT COUNT WRONG GRAPH** -> S3
+                                       (+ORDER) `(3,3,1)` OK -> S4 (+BROADCAST) `(3,3,1)` OK.
+                                       **FIXING ONE DEFECT WHILE LEAVING ANOTHER UNFIXED TURNED A DEAD
+                                       READ INTO A LIE, AND A DEAD READ IS SAFER THAN A LIE.** Cases
+                                       E/F/M show CPython's SECOND refusal (the broadcast) is a
+                                       SEPARATE mechanism the guard does NOT catch, and the port handed
+                                       back a dead graph instead of refusing. **A FIFTH CAUSE THE PRIOR
+                                       UNIT MISSED.** All 13 cases match CPython at S4 and the file's own
+                                       31 rows are unchanged. **BLAST RADIUS: all ten changed names are
+                                       FILE-LOCAL (measured, zero hits outside `layers.bend`)**,
+                                       `nn_dot.dts` (hence `nn_conv2d`) untouched, and **no gate,
+                                       check, law or proof names `nn_dot`.**
+freshness-reach [###.....] 1/3  **A GOVERNING DOCUMENT'S CLAIM WAS HALF FALSE WHILE IT LIVED, AND THE
+                                       UNIT CAUGHT IT.** `AGENTS.md` claimed *"13 FRESHNESS INSTRUMENTS,
+                                       0 REACHABLE FROM ANY SURFACE ... `.github/workflows/` HAS 9 FILES
+                                       AND 0 NAME A GATE"*. **MEASURED: 10 workflows, and `edge-gates.yml`
+                                       DOES NAME THE CHAIN** -- `edge-gates.yml:96` -> `gates/edge-runner.py`
+                                       -> `checks/gatesweep.py` -> the 13 -- and it landed 16h36m AFTER
+                                       the census was taken (`ac186c3d9`), so the census was never
+                                       re-run. **THE CLAIM IS GONE FROM `AGENTS.md` NOW (the concurrent
+                                       session rewrote it), so there was nothing left to correct; the
+                                       finding is kept here as the record.**
+                                       **BUT THE CHAIN IS SEVERED AT ONE NODE**: `gates/edge-trace.rows:6`
+                                       READS `checks/gatesweep.py OVER-BUDGET SKIP MEASURED-30.31s`, so
+                                       **THE REACHABILITY IS REAL AND THE EXECUTION IS NOT.** And the
+                                       census's own predicate is BYTE CONTAINMENT -- **a COMMENT IS
+                                       BYTES**, so a prose mention scores the same as an invocation.
+                                       **THE TRACE QUESTION IS PER-INSTRUMENT, AND THE CLAIM IS EXACTLY
+                                       TRUE FOR 7 OF 13**: TWO TRACKED LEDGERS answer it
+                                       (`gates/gates-pop.ledger.tsv` for existence,
+                                       `gates/help-census.rows` for runs) and they cover **6 of the 13**;
+                                       the other **7** (`gates/`-side, created 18-20 Oct) have no
+                                       committed existence row, no run row, and write into GITIGNORED
+                                       `gates/artifacts/`. **FOR THOSE SEVEN, "WAS IT RUN?" AND "DOES
+                                       IT EXIST?" HAVE THE SAME ANSWER: NOTHING.**
+                                       **THE CHEAPEST FIX IS A RE-RUN**: `gates/help-census.py` already
+                                       writes a tracked row for every entry point, covering the 7 that
+                                       have none. **AND THE HONEST CAVEAT: on a fresh clone the corpus
+                                       instruments' subject `runs/graphcmp/D/` is GITIGNORED
+                                       (`.gitignore:262`), so their verdict can only be `REFUSED,
+                                       ARTIFACTS-ABSENT` -- VISIBLE, BUT NOT GREEN.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
