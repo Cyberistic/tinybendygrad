@@ -3,10 +3,16 @@
 
     .venv/bin/python gates/opseven-oracle.py
 
-THE SEVEN. `tinybendygrad/uop/ops.bend`'s `type Op is Data:` block declares **77** members and
-`runs/graphcmp/D/D1-graph-*.txt` reaches **70** of them on all 34 graphs with `py == bend` on
+THE SEVEN. `tinybendygrad/uop/ops.bend`'s `type Op is Data:` block declares N members and
+`runs/graphcmp/D/D1-graph-*.txt` reaches all but seven of them with `py == bend` on
 every one, so the seven never observed are `CUSTOM CUSTOMI INS PROGRAM PYLITERAL REWRITE_ERROR
-SOURCE`. Nothing in this tree can say whether the port's answers for them are right, because
+SOURCE`. **THE TWO COUNTS ARE NOT IN THIS SENTENCE AND THE REASON IS THE SAME ONE AS THE SHA
+THAT WAS HERE.** A member count is a transcription of the thing a re-vendor moves: this line said
+**77**, and the gate beside it that actually MEASURES the block printed a different number on the
+same tree. `n_ops=` on stderr below is the live count, and `gates/opseven-gate.py`'s
+`ops_value_is_declaration_order` prints the block's own length and checks all three tables against
+it -- so a reader runs two instruments rather than believing one sentence that a re-vendor falsifies
+for free. Nothing in this tree can say whether the port's answers for them are right, because
 nothing in this tree ever BUILT one. This lane and `gates/opseven.bend` both build them.
 
 CAN CPYTHON EMIT EACH OF THE SEVEN? Yes, all seven, and six of the seven by ONE `UOp(...)`
@@ -45,12 +51,27 @@ WHAT IS PRINTED, AND WHY NOTHING HERE REIMPLEMENTS A PROPERTY:
           lane's whole job is to say which rules REJECT.
 
 `TGROOT` (optional) prefixes `sys.path`. It exists so a lane can be read against a vendor OTHER than
-the checked-out one. It was introduced when this tree's `tinygrad/` was the PRE-re-vendor vendor (77
-members, `GROUP` and `FLIP` present) while upstream read 75, and it is how every row below was measured
-against `git archive upstream:tinygrad` rather than the working tree. `a741a469f` (2026-10-17)
-RE-VENDORED `tinygrad/` to upstream `002630241`, so the two are now ONE tree -- MEASURED today,
-`HEAD:tinygrad` and `upstream:tinygrad` are both `62319c8ae612e51102916000d401d601a090353f` and both
-read 75 members -- and the default `TGROOT=""` already reads the 75-member enum. `TGROOT` STAYS because
+the checked-out one. It was introduced when this tree's `tinygrad/` was the PRE-re-vendor vendor (`GROUP`
+and `FLIP` present) while upstream had deleted both, and it is how every row below was measured
+against `git archive upstream:tinygrad` rather than the working tree. Since then this project has
+re-vendored `tinygrad/` twice more, and each re-vendor puts the two back on ONE tree, so the default
+`TGROOT=""` is the same thing a non-empty one would have been.
+
+**AND THIS PARAGRAPH NO LONGER SAYS WHICH TREE THAT IS, BECAUSE THE SHA IT USED TO CARRY WAS A
+TRANSCRIPTION AND A RE-VENDOR MAKES IT FALSE FOR FREE WHILE THE FACT STAYS TRUE.** It used to name
+the tree both sides pointed at, as a bare 40-hex, and that was true when it was written and is false
+now and nothing in the tree noticed, because a sha in prose looks exactly like a fact. It is not even
+named in the sentence explaining its removal -- that sentence would be the next site
+`gates/pinned-tree-gate.py` reports, and `git log -p -1 -- gates/opseven-oracle.py` is how a reader
+finds what it said.
+The identity it was standing in for is measured instead, and nothing here transcribes it:
+`gates/pinned-tree-gate.py`'s `tree_identity_holds` asks `git rev-parse` for `HEAD:tinygrad` and for
+`refs/remotes/upstream/master:tinygrad` and holds them EQUAL, printing both and naming neither in this
+file; `gates/opseven-gate.py`'s `ops_value_holds` differences the port's declaration block against
+`git show upstream:tinygrad/uop/__init__.py`, so two different trees put it RED on member names rather
+than leaving a sentence quietly untrue; and `n_ops=` on stderr is what this lane actually read.
+
+`TGROOT` STAYS because
 the next re-vendor needs it: a lane that can only be read against whatever is checked out cannot be
 re-read against an older vendor. The 31 rows of this file are byte-identical under BOTH roots; the only
 number that moves is `n_ops`, which is printed to stderr precisely so it cannot move a row.

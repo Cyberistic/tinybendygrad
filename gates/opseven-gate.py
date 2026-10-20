@@ -6,8 +6,8 @@
     .venv/bin/python gates/opseven-gate.py --plant      # the class-2 claim, made to FAIL
 
 31 ROWS, THREE LANES, ZERO DECLARED DIVERGENCES. THE SEVEN are `CUSTOM CUSTOMI INS
-PROGRAM PYLITERAL REWRITE_ERROR SOURCE`: the seven members of `tinybendygrad/uop/ops.bend`'s 77-variant
-`type Op is Data:` block that the 34-graph corpus does not build, so nothing in this tree ever had an
+PROGRAM PYLITERAL REWRITE_ERROR SOURCE`: the seven members of `tinybendygrad/uop/ops.bend`'s `type Op is
+Data:` block that the 34-graph corpus does not build, so nothing in this tree ever had an
 opinion about the port's answers for them.
 
 **SO THE INSTRUMENT BUILDS THEM.** `gates/opseven.bend` MINTS all twelve fixture nodes and
@@ -62,7 +62,9 @@ order of these Ops controls the order of the toposort"). `ops_value_is_declarati
 MEASURES that, over EVERY arm and not over the seven `value_*` rows: it reads the port's
 `type Op is Data:` block and the three tables keyed off it (`Ops.value`, `Ops.name.of`, `all_ops`) and
 holds that each has one entry per variant, IN DECLARATION ORDER, with `Ops.value` numbering them `1..N`
-and no gap. MEASURED at 75/75/75/75 with every arm at its own position.
+and no gap. MEASURED, AND NOT IN THIS SENTENCE: `ops_value_is_declaration_order` below prints the four
+lengths on every run and holds each table against `len(declared)`, so the figure a re-vendor moves is
+printed by the instrument rather than transcribed beside it.
 
 THE OLD CLAIM AND THE NEW ONE, AND WHY THE NEW ONE IS STRONGER. The old claim was "the port sits at an
 OFFSET from upstream equal to the number of upstream-deleted members the port still declares earlier",
@@ -86,11 +88,28 @@ VACUITY instead of the emptiness -- `_absent()` is empty IN BOTH DIRECTIONS, and
 sits at offset zero -- so "there is nothing to predict" is a RESULT the gate reached and checked, not a
 condition it was handed.
 
-THE RE-VENDOR, AND WHY THIS LANE IS SAFE UNDER IT. `a741a469f` (2026-10-17) RE-VENDORED `tinygrad/`
-to upstream `002630241`, and that vendor IS upstream now -- MEASURED today, `HEAD:tinygrad` and
-`upstream:tinygrad` are the SAME tree `62319c8ae612e51102916000d401d601a090353f`, so the oracle's
-`from tinygrad.uop import Ops` already reads the 75-member enum and `TGROOT` is no longer needed for
-this comparison. `TGROOT` STAYS because it is still the only way to read a lane against a vendor other
+THE RE-VENDOR, AND WHY THIS LANE IS SAFE UNDER IT. `a741a469f` (2026-10-17) RE-VENDORED `tinygrad/`,
+and this project has re-vendored it twice since, so `HEAD:tinygrad` and `upstream:tinygrad` are ONE
+tree and the oracle's `from tinygrad.uop import Ops` already reads upstream's own enum.
+
+**AND THIS PARAGRAPH NO LONGER SAYS WHICH TREE THAT IS, WHICH IS THE WHOLE FIX.** It used to name
+the tree the vendor had just produced, as a bare 40-hex. That was true when it was written, it is false
+now, and no re-vendor had to touch this file to make it so -- the next one makes it false again. A sha
+in prose is a transcription: it is TRUE BY LUCK until somebody vendors, and then it is FALSE until
+somebody notices, and nothing in between measures it. **THE SHA IS NOT EVEN NAMED IN THE SENTENCE
+EXPLAINING ITS REMOVAL**, because that sentence would be the next site `gates/pinned-tree-gate.py`
+reports; `git log -p -1 -- gates/opseven-gate.py` is how a reader finds what this file used to
+say, and `gates/pinned-tree-gate.py` prints the retired value it used to carry.
+
+**THE COMPARISON IS NOT DELETED, IT IS DELETED FROM THE PROSE AND KEPT WHERE IT IS AN INPUT.**
+`_upstream_ops()` below reads `git show upstream:tinygrad/uop/__init__.py` and `ops_value_holds`
+differences it against the port's own `type Op is Data:` block IN BOTH DIRECTIONS, so if the two
+trees had drifted the gate goes RED naming the members that differ -- which is the same claim, on the
+same two sides, read at run time instead of asserted at write time. `gates/pinned-tree-gate.py` holds
+the tree identity itself, by asking `git rev-parse` for both sides and naming no sha at all. Between
+them a re-vendor can no longer leave a sentence untrue.
+
+`TGROOT` STAYS because it is still the only way to read a lane against a vendor other
 than the checked-out one, and a lane that cannot be pointed elsewhere cannot be re-read against an older
 vendor when the next re-vendor lands. `--plant` is what proves this class still moves: six states, five
 of them red, none of which needs a `bend`.
