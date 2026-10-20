@@ -55,11 +55,35 @@ see is a row that will be read as more than it is.
                             defect that needs a pattern no walk reaches is invisible, and
                             the LCG's constants are the fixture's only claim to coverage.
 
-PLANT AND DISARM, each anchored and each COUNTED, because an anchor that moved is a
-measurement of nothing: `arith-plant` re-breaks JFP-2's e4m3 unsigned NaN and MUST move
-rows; `arith-disarm` is the SAME line re-spelled and must move 0; `thr-plant` puts JFP-1's
-three missing `-1`s back and MUST move rows; `thr-disarm` re-spells one row of the same
-table and must move 0.
+PLANT AND DISARM, each anchored, each COUNTED, each WITH A CONTROL, and each CHECKED
+against the run, because an anchor that moved is a measurement of nothing and a plant that
+cannot fail is a comment.  `PLANT_EFFECT` declares, for every arm, the RELATION it must
+satisfy -- never a transcribed COUNT, because a number written here would be an expected
+value nobody computed.  The relations are relative to the UNPLANTED lane, which the gate
+runs beside the planted one, so "must move 0" is a measurement and not an assertion.
+
+  arith-plant/arith-disarm   JFP-2's e4m3 unsigned NaN, re-broken / re-spelled.
+  thr-plant/thr-disarm       JFP-1's missing `-1` in the f32 overflow threshold.  THIS ONE
+                             MOVED ZERO ROWS until the FIXTURE was repaired: the encode
+                             fixture centred on `f32_pattern(ovf_threshold)` where
+                             `ovf_threshold` is an f64 BIT PATTERN, so it packed the
+                             INTEGER 4678677062884524031 as a float -- 4.7e18 -- and the
+                             saturation threshold was never in the fixture at all, for any
+                             of the four formats.  It is now `f64_value(ovf_threshold)`,
+                             and the saturation neighbourhood is KEPT IN EVERY MODE.
+  f16-shift-plant/-disarm    the f32->half subnormal SHIFT, thirteen bits too wide.
+  f16-round-plant/-disarm    the f32->half subnormal ROUND-HALF-TO-EVEN, which is missing
+                             altogether.  `f16-shift-plant` alone leaves the `f16bits`
+                             class at 43 and a class that does not close is a class with a
+                             SECOND defect wearing one name.
+  h2f-plant/h2f-disarm       the half SUBNORMAL's normalisation, absent from the JS lane.
+  bf16-pass-plant/-disarm    the non-finite PASS-THROUGH, absent from the JS lane.
+
+THE FOUR DEFECTS, and the `js-lane-census` reading that names all four of them, are
+`gates/subnormal-flush-gate.py`'s subject: it runs the ORACLE, the C lane (compiled from
+the live `dtype.c`) and the JS lane over the f16 subnormal class, so "which side is wrong"
+is a MEASUREMENT and not an inference.  This file has two lanes and the oracle is one of
+them, so it cannot answer that question -- it can only say that they differ.
 """
 from __future__ import annotations
 
@@ -130,8 +154,16 @@ PLANTS = {
     "arith-disarm": [("    if (mant === mantMax) return 0x7fc00000;",
                       "    if (mant == mantMax) return 0x7FC00000;")],
     # JFP-1 re-broken: the f64 ULP that `dtype.py:239-241` writes LOW, as an f32 pattern.
-    "thr-plant": [("0x37000000, 0x476fffff, 0x7b", "0x37000000, 0x47700000, 0x7b")],
-    "thr-disarm": [("0x37000000, 0x476fffff, 0x7b", "0x37000000, 0x476fffff , 0x7b")],
+    # TWO anchors, because `dtype.py:233` and `dtype.py:235` give `fp8e5m2` and
+    # `fp8e5m2fnuz` the SAME ovf (`0x40EE000000000000-1`) and the lane's table has
+    # `0x476fffff` for BOTH.  ONE anchor moved 0 ROWS under `--quick`: `--quick` drives
+    # kinds 0 and 3, and the single anchor named kind 1, so the plant broke a table entry
+    # the quick run never reads.  A PLANT THAT CANNOT FAIL IS A COMMENT, and this one was
+    # declared "MUST move rows" in this file's own header while moving none.
+    "thr-plant": [("0x37000000, 0x476fffff, 0x7b", "0x37000000, 0x47700000, 0x7b"),
+                  ("0x36800000, 0x476fffff, 0x7f", "0x36800000, 0x47700000, 0x7f")],
+    "thr-disarm": [("0x37000000, 0x476fffff, 0x7b", "0x37000000, 0x476fffff , 0x7b"),
+                   ("0x36800000, 0x476fffff, 0x7f", "0x36800000, 0x476fffff , 0x7f")],
 
     # THE TWO fp16 MECHANISM PLANTS, AND THEY ARE NOT PLANTS -- THEY ARE FIXES, APPLIED TO A
     # COPY.  `dtype.c:154` reads `u32 shift = (u32)(14 - exp)`; `dtype.js:129` reads
@@ -146,6 +178,10 @@ PLANTS = {
     "h2f-plant": [("((s | (103 << 23) | (m << 14)) >>> 0)",
                    "((s | ((103 + (31 - Math.clz32(m))) << 23) "
                    "| ((m << (23 - (31 - Math.clz32(m)))) & 0x7fffff)) >>> 0)")],
+    # THE SAME LINE, RE-SPELLED.  Must move 0: every plant in this family needs a control,
+    # and `h2f-plant` and `bf16-pass-plant` were the two that had none.
+    "h2f-disarm": [("((s | (103 << 23) | (m << 14)) >>> 0)",
+                    "((s | (103 << 23) | (m  << 14)) >>> 0)")],
     # `dtype.c:205` opens with `if ((x & 0x7F800000u) == 0x7F800000u) return x;` and says why
     # in five lines -- a non-finite is a PASS-THROUGH in `dtype.py:230`, not saturation, so
     # a NaN's payload and sign survive.  `dtype.bend:609` has the same `Bool.pick` guard.
@@ -153,6 +189,51 @@ PLANTS = {
     "bf16-pass-plant": [("function dtype_bf16(u) {\n  return of32(",
                          "function dtype_bf16(u) {\n  if ((u & 0x7f800000) === 0x7f800000) "
                          "return of32(u);\n  return of32(")],
+    # THE SAME LINE, RE-SPELLED.  Must move 0.
+    "bf16-pass-disarm": [("function dtype_bf16(u) {\n  return of32(",
+                          "function dtype_bf16(u) {\n  return  of32(")],
+    # THE FOURTH DEFECT, WHICH NO PLANT NAMED: the JS lane's f16 SUBNORMAL arm has no
+    # ROUND-HALF-TO-EVEN on the bits it drops, where `dtype.c:156-157` and `dtype.bend:648`
+    # both have it.  `f16-shift-plant` fixes the SHIFT and leaves this one behind, so the
+    # `f16bits` class does not go to ZERO under it -- it goes to 43 -- and a class that does
+    # not close is a class with a SECOND defect wearing one name.  This plant therefore
+    # carries BOTH edits: the SHIFT is fixed first, because the shift is thirteen bits wide
+    # and no rounding on a wrong shift is a rounding of anything.
+    "f16-round-plant": [(">>> (27 - ue)", ">>> (14 - ue)"),
+                         ("    return s | ((m | 0x800000) >>> (14 - ue));",
+                          "    const big = m | 0x800000, sh = 14 - ue;\n"
+                          "    let hm = big >>> sh;\n"
+                          "    const rem = big & ((1 << sh) - 1), halfway = 1 << (sh - 1);\n"
+                          "    if (rem > halfway || (rem === halfway && (hm & 1))) hm += 1;\n"
+                          "    return s | hm;")],
+    "f16-round-disarm": [("    return s | ((m | 0x800000) >>> (27 - ue));",
+                          "    return s | ((m | 0x800000) >>> (27 - ue) );"),
+                         (">>> (27 - ue)", ">>> (27 - ue )")],
+}
+
+# WHAT EACH PLANT MUST DO, and it is CHECKED against the run, because a plant whose effect
+# is not observable is a plant that cannot fail.  THE RELATIONS, never a transcribed
+# COUNT: a number written here would be an expected value nobody computed, and the tree's
+# rule is that a row's expected value is DERIVED.
+#
+#   (None, "same")    every class must be where the UNPLANTED lane put it.  A control that
+#                     moves a row is an instrument reading a TOKEN instead of a VALUE.
+#   (cls, "zero")     that class must be EMPTY, and the others must not have moved.
+#   (cls, "decrease") that class must be SMALLER, and the others must not have moved.
+#   (cls, "increase") that class must be LARGER, and the others must not have moved.
+PLANT_EFFECT = {
+    "arith-plant": ("fp8to", "increase"),
+    "arith-disarm": (None, "same"),
+    "thr-plant": ("fp8from", "increase"),
+    "thr-disarm": (None, "same"),
+    "f16-shift-plant": ("f16bits", "decrease"),
+    "f16-shift-disarm": (None, "same"),
+    "h2f-plant": ("half2f32", "zero"),
+    "h2f-disarm": (None, "same"),
+    "f16-round-plant": ("f16bits", "zero"),
+    "f16-round-disarm": (None, "same"),
+    "bf16-pass-plant": ("bf16", "zero"),
+    "bf16-pass-disarm": (None, "same"),
 }
 
 
@@ -186,19 +267,54 @@ def lcg(n: int, start: int = 0x9E3779B9) -> list[int]:
     return out
 
 
-def encode_cases(td, dts) -> list[int]:
-    """The fp8 ENCODE fixtures.  Every centre is CPython's `_fp8_cfg`, never `dtype.js`'s
-    `FP8_CFG`: reading a sweep centre out of the code under test is the transcript trap that
-    shipped ONE wrong threshold table in TWO languages (`checks/gate.py`'s own reason)."""
+def f64_value(bits: int) -> float:
+    """`_fp8_cfg`'s thresholds are f64 BIT PATTERNS, and `dtype.py:250` compares `absx` --
+    which is `xbits & 0x7FFFFFFFFFFFFFFF`, an INTEGER -- against `ovf_threshold` DIRECTLY,
+    so both sides of that comparison are integers.
+
+    THE FIRST DRAFT OF `encode_cases` passed the PATTERN to `struct.pack('<f', ...)`, which
+    packs the INTEGER 4678677062884524031 as a float -- 4.7e18 -- and centred the sweep
+    THERE.  The saturation threshold was therefore never in the fixture at all, for any of
+    the four formats, and `thr-plant` -- the plant this file's own header says "MUST move
+    rows" -- moved ZERO.  A fixture that cannot reach the thing it is about is a fixture
+    that cannot fail, and the fix is to unpack the pattern to the VALUE it denotes.
+    """
+    return struct.unpack("<d", struct.pack("<Q", bits))[0]
+
+
+def ovf_cases(td, dts) -> list[int]:
+    """The SATURATION NEIGHBOURHOOD of every driven format: the f32 patterns around the f64
+    VALUE of CPython's `ovf_threshold`.
+
+    THIS GROUP IS KEPT IN EVERY MODE, including `--quick`, because it is the group JFP-1 is
+    about.  The quick subset used to be `enc[:400]` of the SORTED list, and the saturation
+    neighbourhoods are neither the first nor the last of it -- they sit in the middle,
+    between the two formats' exact-fp8 bands -- so the truncation dropped every one of them
+    and `thr-plant` moved ZERO rows in BOTH modes.  A subset that drops the subject of the
+    gate is not a subset; it is a different gate.
+    """
     cases: set[int] = set()
     for k in dts:
-        ovf = td._fp8_cfg[k][4]
+        ovf = f64_value(td._fp8_cfg[k][4])
         for centre in (f32_pattern(ovf), f32_pattern(ovf) - 1):
             for d in range(-BAND, BAND + 1):
                 for p in (centre + d, centre - d):
                     if 0 <= p <= 0xFFFFFFFF:
                         cases.add(p)
-        for x in range(BAND):  # the exact-fp8 band: each code as an f32, and its neighbours
+    return sorted(cases)
+
+
+def encode_cases(td, dts) -> list[int]:
+    """The fp8 ENCODE fixtures.  Every centre is CPython's `_fp8_cfg`, never `dtype.js`'s
+    `FP8_CFG`: reading a sweep centre out of the code under test is the transcript trap that
+    shipped ONE wrong threshold table in TWO languages (`checks/gate.py`'s own reason)."""
+    cases: set[int] = set(ovf_cases(td, dts))
+    for k in dts:
+        # THE EXACT-fp8 BAND, over the WHOLE code space and not its first 64 codes.  The
+        # comment above this loop has always claimed "each code as an f32"; the code said
+        # `range(BAND)`, which is codes 0..63 -- and `max_norm` is code 123/126/127, so the
+        # TOP of the range, which is where the saturation lives, was never encoded either.
+        for x in range(256):
             f = td.fp8_to_float(x, k)
             if math.isnan(f):
                 continue
@@ -444,6 +560,23 @@ def py_rows(td, hlp, dts, spec: dict) -> tuple[dict[str, str], dict[str, str]]:
     return rows, diverges
 
 
+def class_of(key: str) -> str:
+    """The class a DISAGREEMENT row belongs to, by PREFIX: `half2f32_1` is `half2f32`,
+    `f16bits_855638016` is `f16bits`, `fp8to_fp8e4m3_0` is `fp8to`.  The prefix is the row's
+    OWN first field, so a new class is a new prefix and needs no entry here."""
+    return key.split("_")[0]
+
+
+def class_counts(bad: list[tuple[str, str, str]]) -> dict[str, int]:
+    """How many disagreeing rows each class holds.  A CLASS COUNT and not a total, because
+    a plant's effect is on ONE class and a total cannot say which."""
+    out: dict[str, int] = {}
+    for k, _, _ in bad:
+        c = class_of(k)
+        out[c] = out.get(c, 0) + 1
+    return out
+
+
 # ------------------------------------------------------------ the gate.
 def run(*, plant: str | None, quick: bool) -> int:
     # THE ROOT SUBSTRATE, ASSERTED AND NOT DECLARED.  `gates/gates-pop.py` reads `REFUSE`
@@ -480,6 +613,7 @@ def run(*, plant: str | None, quick: bool) -> int:
         return refuse(f"the register found {len(names)} registrations and the file holds "
                       f"{any_line} `io_eff(` lines -- this regex is TRUNCATING, which is how "
                       f"4 and then 7 of 10 went missing here and each printed as a count")
+    base_src = src                      # the UNPLANTED lane, for a plant to be compared to
     if plant is not None:
         for old, new in PLANTS[plant]:
             if src.count(old) != 1:
@@ -504,7 +638,11 @@ def run(*, plant: str | None, quick: bool) -> int:
     f16b = sorted({e << 23 | m for e in band
                    for m in (0, 1, 2, 0x200000, 0x3FFFFF, 0x400000, 0x7FFFFF)}
                   | {p for p in walk if band[0] <= (p >> 23) <= band[-1]})
-    spec = {"kinds": kinds, "names": names_f8, "encode": enc[:400] if quick else enc,
+    spec = {"kinds": kinds, "names": names_f8,
+            # THE QUICK SUBSET KEEPS BOTH ENDS of the sorted case list AND the saturation
+            # neighbourhoods, which are in neither end.
+            "encode": sorted(set(ovf_cases(td, dts)) | set(enc[:400]) | set(enc[-400:]))
+                        if quick else enc,
             "walk": walk, "f16b": f16b, "h2f": list(range(0x402)),
             "i64": [[nm, a, b] for nm in I64_SEAMS for a, b in i64_pairs()
                     if nm != "Dt.i64_trunc" or b == [0, 1]]}
@@ -513,6 +651,21 @@ def run(*, plant: str | None, quick: bool) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         work = pathlib.Path(tmp)
         raw, js_rc, js_err = build_js(work, src, names, spec)
+        # THE BASELINE LANE, so a PLANT can be said to have moved EXACTLY ITS CLASS and a
+        # CONTROL can be said to have moved NOTHING.  A plant's effect is a RELATION
+        # between two runs, and a relation needs two sides.
+        base_bad: list[tuple[str, str, str]] = []
+        if plant is not None:
+            raw0, rc0, err0 = build_js(work, base_src, names, spec)
+            if rc0 != 0:
+                print(f"node exited {rc0} on the unplanted lane:\n{err0[:600]}", file=sys.stderr)
+                return FAIL
+            js0 = {}
+            for line in raw0.splitlines():
+                m = ROW.match(line.strip())
+                if m:
+                    js0[m[1]] = m[2]
+            base_bad = [(k, py[k], js0[k]) for k in py if py[k] != js0.get(k)]
         rc = reach(work, names) if not quick else {}
 
     if js_rc != 0:
@@ -567,6 +720,39 @@ def run(*, plant: str | None, quick: bool) -> int:
             tally[k.rsplit("_", 1)[0]] = tally.get(k.rsplit("_", 1)[0], 0) + 1
     for cls, n in sorted(tally.items()):
         print(f"  MISMATCH class {cls}: {n} rows")
+    # THE PLANT'S DECLARED EFFECT, CHECKED AGAINST THE RUN.  An arm that does not do what
+    # it says is a FINDING, and it is printed as one: the census is red either way, so the
+    # arm's verdict is in the TEXT and not in the exit code, because an exit code that
+    # means two things is not a verdict.  `gates/subnormal-flush-gate.py` is the gate whose
+    # exit code IS the arm's, because there the arm is the whole question.
+    if plant is not None:
+        cls, rel = PLANT_EFFECT[plant]
+        base_counts, armed_counts = class_counts(base_bad), class_counts(bad)
+        moved = {c: (base_counts.get(c, 0), armed_counts.get(c, 0))
+                 for c in set(base_counts) | set(armed_counts)}
+        others = {c: v for c, v in moved.items() if c != cls}
+        ok = True
+        if rel == "same":
+            # EVERY CLASS MUST BE WHERE THE UNPLANTED LANE PUT IT.  "Nothing moved" is
+            # `b == a` for every class, and NOT "the dict is empty": the dict is empty
+            # only when there were no disagreements at all, which is a DIFFERENT statement
+            # and the first draft of this check conflated them.
+            changed = {c: v for c, v in moved.items() if v[0] != v[1]}
+            ok = not changed
+            why = ("every class moved: " + ", ".join(f"{c} {b}->{a}" for c, (b, a) in sorted(changed.items()))
+                   if changed else "")
+        else:
+            b, a = moved.get(cls, (0, 0))
+            ok = (rel == "zero" and a == 0) or (rel == "decrease" and a < b) \
+                or (rel == "increase" and a > b)
+            why = f"{cls} is {a}, and the arm says {rel} of {b}"
+            for c, (b2, a2) in others.items():
+                if b2 != a2:
+                    ok = False
+                    why += f"; {c} also moved {b2} -> {a2}"
+        print(f"  ARM {plant}: {cls or 'every class'} must be {rel} -- "
+              f"{'HOLDS' if ok else 'VIOLATED: ' + why} "
+              f"({', '.join(f'{c} {b}->{a}' for c, (b, a) in sorted(moved.items())) or 'no class moved'})")
     # ONE MINIMAL REPRODUCTION PER CLASS, DERIVED AT RUN TIME and not written down: the
     # disagreeing row of that class with the smallest-magnitude input.  A class name is a
     # label; a class's smallest failure is evidence, and a fixture that cannot fail is worse
