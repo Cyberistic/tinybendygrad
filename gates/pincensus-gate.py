@@ -20,6 +20,15 @@ THE THREE KINDS OF WRONG, WHICH ARE THREE DIFFERENT POPULATIONS WITH THREE REMED
                  nothing else records it. The remedy is the one `checks/e2e.py` already
                  models for `BODY_SHA`: DECLARE WHAT KIND OF CLAIM IT IS, IN THE FILE.
 
+AND CLASS 3's REMEDY HAS TWO HALVES, AND UNTIL BOTH WERE IN, THE FLAGSHIP PIN WAS UNMEASURABLE.
+`checks/e2e.py` declared WHAT KIND of claim `BODY_SHA` is -- a content pin, not a behaviour
+claim -- in prose, and the census could not use it: a pin with no SUBJECT is a literal, and
+the row read NO-MEASUREMENT. So the file now also declares WHICH FILE the pin is about, in a
+name a machine can read (`ORACLE_SUBJECT`, `BODY_SUBJECT`), and the census resolves it through
+`gates/bind-subject.py`. The two halves are the same declaration: the first says what KIND of
+claim it is, the second says what it is a claim ABOUT. A pin with the first and not the second
+is prose wearing a pin's name.
+
 THE VERDICT VOCABULARY IS `gates/gatekit.py`'s AND NOT INVENTED HERE:
   PASS 0 emitted and its accounting balances · FAIL 1 unused, a census judges nothing ·
   REFUSED 3 a precondition was absent or the population does not balance ·
@@ -64,6 +73,16 @@ def load_pop():
     return mod
 
 
+def load_bind():
+    """The subject resolver, BY PATH, for the same reason `load_pop` is by path: a hyphen is
+    not an importable name, and a second copy of the join rule would be a second witness."""
+    spec = importlib.util.spec_from_file_location(
+        "pincensus_bind", os.path.join(HERE, "bind-subject.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def git(git_root, *argv):
     r = subprocess.run(["git", *argv], cwd=git_root, capture_output=True, text=True)
     return (r.stdout if r.returncode == 0 else "").strip()
@@ -91,7 +110,7 @@ SUBJECT_ROOTS = (".", ".agents/slop")
 NEVER_READ = ("runs/",)
 
 
-def currency(value, git_root, subject):
+def currency(value, git_root, subject, corpus_root=None):
     """-> (shape, verdict, detail) for ONE value token. Every branch is a MEASUREMENT and
     every refusal NAMES what it tried, because this census's first draft asserted
     SUBJECT-ABSENT for nineteen subjects that were present at the repo root.
@@ -108,6 +127,18 @@ def currency(value, git_root, subject):
                 revisions was wrong -- they are sha256 prefixes.
       UNNAMED   no subject, no derivation, nothing to recompute. That is not a gap in this
                 file: it is the finding. The dict, or the prose, is the only copy.
+
+    `subject` is a DICT and not a path, because a subject has two shapes and the difference
+    is the difference between a measurement and a refusal: a FILE the census may hash, and a
+    RUN ARTIFACT it must not (a run may be LIVE, and a live artifact read under a pin is the
+    "STALE FILE WAS SERVING AS THE WITNESS" defect).
+
+    `corpus_root` IS WHERE THE SUBJECT IS LOOKED FOR FIRST. The census reads its corpus from
+    one root and its git objects from another, and a subject read from the WRONG one would
+    measure a file that is not the corpus's: a plant that moves the subject in a copy would
+    then be measuring the copy of the pin against the ORIGINAL of the subject, and could not
+    fail. The git root is the FALLBACK, so the existing plant -- which copies the pin's file
+    and lets the subject be read from the real tree -- still reads the same verdict.
     """
     bare, suffix = value
     kind = git(git_root, "cat-file", "-t", bare + (suffix or "")) if git_root else ""
@@ -115,23 +146,80 @@ def currency(value, git_root, subject):
         behind = git(git_root, "rev-list", "--count", f"{bare}{suffix or ''}..HEAD")
         return "REVISION", "RESOLVES", f"cat-file -t={kind}; behind-HEAD={behind or '?'}"
     if subject:
-        for base in SUBJECT_ROOTS:
-            rel = os.path.join(base, subject)
-            if any(rel.startswith(n) for n in NEVER_READ):
-                return "DIGEST", "SUBJECT-IN-GITIGNORED-RUNS", \
-                    f"{rel} is under a gitignored run directory; not read"
-            got = sha256_of(os.path.join(git_root, rel))
-            if got is not None:
-                how = "PREFIX " if len(bare) < 64 else ""
-                ok = got.startswith(bare)
-                return "DIGEST", ("%s%s" % (how, "CURRENT" if ok else "MISMATCH")), \
-                    f"sha256({rel})={got[:16]} vs pinned {bare[:16]}"
-        return "DIGEST", "SUBJECT-NOT-FOUND", \
-            f"looked in {', '.join(SUBJECT_ROOTS)} for {subject}; found neither"
+        return digest_currency(bare, git_root, subject, corpus_root)
     if 7 <= len(bare) <= 64:
         return "OTHER", "NO-MEASUREMENT", \
             f"len={len(bare)}, not a revision in this object store and no subject named"
     return "OTHER", "NO-MEASUREMENT", f"len={len(bare)}, not a revision length"
+
+
+def subject_of(resolved, key, decl):
+    """-> the subject of ONE value, or None. THE PRECEDENCE IS FIXED, AND IT IS THE POINT.
+
+      1 A `_SUBJECT` declaration names the FILE the pin is about. It wins over everything,
+        because it is the tree's own statement of the subject and it is a NAME, not an
+        inference this file made.
+      2 An `_ARTIFACT` declaration names the file a pin TABLE'S ROWS are carried by. It
+        applies only to a value that came from a DICT KEY, because a row name is what an
+        artifact carries; a bare literal has no row.
+      3 Otherwise the dict key IS the subject, which is the original behaviour and the one
+        `checks/differ.py`'s `ORACLE_PIN` depends on.
+
+    A subject of None is the honest answer when the binding names none: a digest with no
+    subject is a literal, and the census says so rather than inventing a path.
+    """
+    if resolved is None:
+        return {"kind": "file", "path": key} if key else None
+    if resolved["kind"] == "SUBJECT":
+        return {"kind": "file", "path": resolved["value"], "at": resolved["at"]}
+    if key is None:
+        return None
+    dirs = decl["run-dirs"]
+    return {"kind": "run-artifact", "artifact": resolved["value"],
+            "dir": dirs[0] if dirs else "", "row": key, "at": resolved["at"]}
+
+
+def digest_currency(bare, git_root, subject, corpus_root=None):
+    """-> (shape, verdict, detail) for a DIGEST whose subject is named.
+
+    THE TWO SUBJECT SHAPES, AND THE SECOND ONE IS NOT READ.
+
+      a FILE         the census hashes it and compares. The pin is the LITERAL in the source
+                     and the subject is a BYTE STRING on disk, so the comparison is between two
+                     INDEPENDENT values: a subject that moved without the pin moving is
+                     MISMATCH, which is a RED, which is the whole point of naming it.
+      a RUN ARTIFACT the subject is under `runs/`, which is GITIGNORED BY DESIGN. The census
+                     says where it is and refuses to read it, because a run may be live. The
+                     verdict is NOT "missing": the artifact is missing from the tree BY
+                     DESIGN, and reporting that as a missing subject is a false claim about a
+                     tree that is behaving correctly.
+    """
+    if subject["kind"] == "run-artifact":
+        rel = os.path.normpath(os.path.join(subject["dir"], subject["artifact"])) \
+            if subject["dir"] else subject["artifact"]
+        at = subject.get("at") or "-"
+        return "DIGEST", "SUBJECT-IN-GITIGNORED-RUNS", \
+            (f"the row '{subject['row']}' is carried by {rel} (declared at {at}); a run "
+             f"artifact is gitignored by design and its bytes are not read, so this digest is "
+             f"not re-derivable here and its absence is not a defect")
+    roots = []
+    for root, label in ((corpus_root, "corpus"), (git_root, "git")):
+        if root and root not in [r for r, _ in roots]:
+            roots.append((root, label))
+    for base in SUBJECT_ROOTS:
+        rel = os.path.normpath(os.path.join(base, subject["path"]))
+        if any(rel.startswith(n) for n in NEVER_READ):
+            return "DIGEST", "SUBJECT-IN-GITIGNORED-RUNS", \
+                f"{rel} is under a gitignored run directory; not read"
+        for root, label in roots:
+            got = sha256_of(os.path.join(root, rel))
+            if got is not None:
+                how = "PREFIX " if len(bare) < 64 else ""
+                ok = got.startswith(bare)
+                return "DIGEST", ("%s%s" % (how, "CURRENT" if ok else "MISMATCH")), \
+                    f"sha256({rel})[{label}]={got[:16]} vs pinned {bare[:16]}"
+    return "DIGEST", "SUBJECT-NOT-FOUND", \
+        f"looked in {', '.join(SUBJECT_ROOTS)} for {subject['path']}; found neither"
 
 
 def vendored(git_root):
@@ -165,6 +253,7 @@ def census(root=ROOT, git_root=ROOT, scratch=False):
     """-> (rows, meta). THE WHOLE CENSUS. Pure in the corpus's bytes: `root` is read,
     `git_root` is asked, so a plant can serve a mutated corpus and the same tree."""
     P = load_pop()
+    B = load_bind()
     if scratch:
         # A PLANT'S ROOT IS NOT A GIT REPO, so the walk is bounded by what the scratch root
         # HOLDS rather than by the tree. Stated because a bound that changes with the caller
@@ -193,6 +282,11 @@ def census(root=ROOT, git_root=ROOT, scratch=False):
     prose_lines = P.rule_b(corpus, host)
     upstream = set() if scratch else vendored(git_root)
 
+    # WHAT EACH PIN IS ABOUT. The declarations are discovered from the corpus's own CODE, so a
+    # subject is a NAME the tree already states rather than a path this file carries.
+    decls = B.declarations(corpus, code)
+    empty = {"subjects": {}, "artifacts": {}, "run-dirs": [], "at": {}}
+
     # The values any CODE site carries, so a prose line can be scored as a shadow or as the
     # only copy. This is what separates class 3 from class 2's prose cousins.
     code_values = {v for s in sites if s["host"] != "prose" for v in s["values"]}
@@ -207,12 +301,15 @@ def census(root=ROOT, git_root=ROOT, scratch=False):
         else:
             kind = "CAN-FAIL" if read else "CANNOT-FAIL"
         pairs = s.get("pairs") or {}
+        decl = decls.get(s["file"], empty)
+        resolved = B.resolve(s["name"], decl) if s["host"] != "prose" else None
         for i, raw in enumerate(TOKEN.finditer(" ".join(s["values"]))):
             value = (raw.group(1), raw.group(2))
             if s["host"] != "prose" and i >= len(s["values"]):
                 break
-            subject = next((k for k, v in pairs.items() if v == value[0]), None)
-            shape, verdict, detail = currency(value, git_root, subject)
+            key = next((k for k, v in pairs.items() if v == value[0]), None)
+            subject = subject_of(resolved, key, decl)
+            shape, verdict, detail = currency(value, git_root, subject, root)
             rows.append({
                 "class": kind, "what": s["name"], "where": f'{s["file"]}:{s["line"]}',
                 "host": s["host"], "literal-or-derivation": "literal",

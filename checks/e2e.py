@@ -267,6 +267,28 @@ ENV = dict(os.environ)
 # `fcf647cd…`.
 ORACLE_SHA = "05d7cfea0aea9c8523649ad1e277cb03890214cb9c7996807c1b0295207f8696"
 BODY_SHA = "2ef51412c74428b8545a133ebedeb763407ec9b3c78bf58fdf726e10a15cd3bb"
+# THE SUBJECTS, NAMED. THE TWO PINS ABOVE ARE ABOUT FILES, AND UNTIL THESE TWO LINES EXISTED
+# NOTHING BUT PROSE SAID WHICH: `ORACLE_SHA` is the FROZEN ORACLE COPY and `BODY_SHA` is the
+# LIVE SHELL BODY. A census that reads pins (`gates/pincensus-gate.py`) measured both as
+# NO-MEASUREMENT -- "len=64, not a revision in this object store and no subject named" --
+# because a digest with no subject is not a measurement, it is a literal. **THE PROSE ABOVE
+# SAYS WHAT KIND OF CLAIM THIS IS AND THESE TWO NAMES SAY WHICH FILE IT IS ABOUT**, and the
+# second half was the half a machine could not read.
+#
+# THE JOIN IS BY NAME AND IT IS THE LONGEST PREFIX THAT FITS: a pin `BODY_SHA` takes the
+# subject of `BODY_SUBJECT` because the declaration's prefix is a prefix of the pin's name,
+# and the longest such prefix wins (`gates/bind-subject.py`). **A HASH OF A WHOLE FILE CANNOT
+# TELL A COMMENT FROM CODE, AND A PIN WITHOUT A SUBJECT IS A PIN NOTHING CAN RE-DERIVE** --
+# so these two names are what make the flagship content pin measurable, and they are
+# DECLARATIONS and not derivations.
+#
+# THE SUBJECT IS NOT RE-DERIVED FROM THE PIN, AND THAT IS WHAT KEEPS THE MEASUREMENT HONEST.
+# `BODY_SHA` is a FROZEN LITERAL; `checks/e2e.sh` is a FILE ON DISK. The two are INDEPENDENT
+# values, so an edit to the shell that forgets the pin is a MISMATCH -- which `oracle_drift()`
+# refuses with exit 3, and which the census reports as one. A comparison of a value with
+# itself would be a tautology that cannot fail, and that is worse than no instrument.
+ORACLE_SUBJECT = ".agents/slop/e2epy/oracle-e2e.sh"
+BODY_SUBJECT = "checks/e2e.sh"
 # THE DOCUMENTED EDITS, IN ORDER, AS `(ORACLE_SIDE, SHELL_SIDE)`: applying every one of them to the
 # frozen copy must yield the live body, byte for byte. So the ORACLE's text is the FIRST element of
 # each pair. `ORACLE_EDIT` IS STILL THE NAME OF THE FIRST PAIR AND IT IS NO LONGER THE ONLY ONE --
