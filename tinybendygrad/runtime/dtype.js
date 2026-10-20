@@ -126,7 +126,16 @@ function f16_bits(x) {
   if (ue >= 0x1f) return s | 0x7c00;
   if (ue <= 0) {
     if (ue < -10) return s;
-    return s | ((m | 0x800000) >>> (27 - ue));
+    // The count is `14 - ue` (dtype.c:153), not `27 - ue`, which is thirteen bits
+    // too wide; `>>>` takes its count mod 32, so `27 - ue` at ue = -5 is 32 and
+    // shifts by ZERO. `ue` is in [-10, 0] here, so `sh` is in [14, 24] and the
+    // count is inside [0, 31] -- the flush guard above is what keeps it there.
+    const big = m | 0x800000, sh = 14 - ue;
+    let hm = big >>> sh;
+    // ROUND-HALF-TO-EVEN on the dropped bits, as dtype.c:155-157 has it.
+    const rem = big & ((1 << sh) - 1), halfway = 1 << (sh - 1);
+    if (rem > halfway || (rem === halfway && (hm & 1))) hm += 1;
+    return s | hm;
   }
   const keep = m >>> 13, rest = m & 0x1fff;
   let hm = keep;
@@ -142,12 +151,24 @@ function half_to_f32(h) {
   const s = (h & 0x8000) << 16;
   const e = (h >>> 10) & 0x1f;
   const m = h & 0x3ff;
-  if (e === 0) return m === 0 ? (s >>> 0) : ((s | (103 << 23) | (m << 14)) >>> 0);
+  if (e === 0) {
+    // A half subnormal is `m * 2^-24` with an UNNORMALISED mantissa, so the
+    // exponent is the position of the mantissa's leading bit, `k`, and the
+    // fraction is shifted left by `23 - k` to put it there (dtype.c:175-176).
+    // A fixed `m << 14` assumes the mantissa is already normalised, which is
+    // true of m >= 0x200 only, so it collapses 1023 subnormals onto 512.
+    if (m === 0) return s >>> 0;
+    const k = 31 - Math.clz32(m);
+    return (s | ((k + 103) << 23) | ((m << (23 - k)) & 0x7fffff)) >>> 0;
+  }
   if (e === 0x1f) return ((s | 0x7f800000 | (m << 13)) >>> 0);
   return ((s | ((e + 112) << 23) | (m << 13)) >>> 0);
 }
 
 function dtype_bf16(u) {
+  // dtype.py:230 hands a non-finite back UNTOUCHED, so a NaN's payload and its
+  // sign survive; rounding is what destroys them (dtype.c:205, dtype.bend:609).
+  if ((u & 0x7f800000) === 0x7f800000) return of32(u);
   return of32(((u + 0x7fff + ((u >>> 16) & 1)) & 0xffff0000) >>> 0);
 }
 
