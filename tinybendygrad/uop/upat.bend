@@ -2100,22 +2100,6 @@ def drv.dtm.of(s: String) -> Maybe<&2, List<&2, S.Dt>>:
     case "-": None{}
     case _: Some{drv.dts.go(String.split(s, '+'), Nil{})}
 
-def drv.tg1(s: String) -> O.Tag:
-  match s:
-    case "A": O.TStr{"A"}
-    case "B": O.TStr{"B"}
-    case _: O.TNone{}
-
-def drv.tgs.go(ks: List<&2, String>, acc: List<&2, O.Tag>) -> List<&2, O.Tag>:
-  match ks:
-    case Nil{}: acc
-    case k <> t: drv.tgs.go(t, List.append(&2, O.Tag, acc, [drv.tg1(k)]))
-
-def drv.tgm.of(s: String) -> Maybe<&2, List<&2, O.Tag>>:
-  match s:
-    case "-": None{}
-    case _: Some{drv.tgs.go(String.split(s, '+'), Nil{})}
-
 def drv.nm.of(s: String) -> Maybe<&2, String>:
   match s:
     case "-": None{}
@@ -2166,6 +2150,16 @@ def drv.bit.of(s: String) -> Bool:
 # ONE node, and the fold that threads the arena. `UPat.of` is the whole
 # construction API the gate's own fixtures use, so the driver adds no shape a
 # fixture could not have written.
+#
+# THE INPUT'S FIELD 4 IS THE TAG, AND IT IS ACCEPTED AND IGNORED. The driver's
+# input format is eight `,`-separated fields -- 0 op, 1 name, 2 arg, 3 dtype,
+# 4 TAG, 5 src, 6 allow_any_len, 7 is_any -- and field 4 is STILL THERE so the
+# POSITIONS of 5, 6 and 7 do not move and the fuzzer's format is unchanged.
+# It is read by nothing, because `UPat.of` no longer takes a tag: upstream
+# deleted the clause (`35dab0a35` "no upat tag"). So the driver parses a tag
+# and throws it away, which is what upstream's driver does too -- upstream's
+# `UPat.__init__` has no `tag` parameter, so a tag in the input is a TypeError
+# there and a no-op here.
 
 def drv.build(+ns: List<&2, String>, +pat: O.Pat, +xs: List<&2, U32>) -> O.PatFound:
   +s: O.SrcArg = drv.src.of2(drv.field(ns, 5), xs)
