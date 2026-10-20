@@ -40,10 +40,12 @@ POPULATION:
       with its own denominator, so the one hand list this file used to carry is gone and a reader
       sees the root set move without reading code.
   II  A POPULATION IS NOT EMPTY and not vacuously green. Reported per clause, always.
-  III THE SET MOVED OR THE LEDGER SAYS WHY. **A READ CANNOT WRITE, AND A WRITE SAYS IT WROTE.**
-      `--write-ledger` is this file's ONLY writer of `gates/gates-pop.ledger.tsv` and it is NOT the
-      default; every other invocation only reads, and the read names every row that is new, gone,
-      changed or back. **A LEDGER READ AND THEN REWRITTEN BY ITS OWN READER IS NOT A LEDGER** --
+  III THE SET MOVED OR THE LEDGER SAYS WHY. **A READ CANNOT WRITE, AND A WRITE NAMES ITS PATHS.**
+      `--write-ledger --only PATH` is this file's ONLY writer of `gates/gates-pop.ledger.tsv`. It
+      absorbs those paths and no others. A bare `--write-ledger` is REFUSED: that invocation MERGES
+      every row this run found, and the diff goes green without one gate having been measured. It
+      is NOT the default; every other invocation only reads, and the read names every row that is
+      new, gone, changed or back. **A LEDGER READ AND THEN REWRITTEN BY ITS OWN READER IS NOT A LEDGER** --
       `gates-pop.ledger.tsv` used to be written at `:646` and read at `:617` in the SAME process
       under the DEFAULT mode, so it was a DIARY, and the fix that made it a MONOTONIC MERGE left
       the DEFAULT still writing: a MERGE the reader performs without asking is the same diary with
@@ -509,11 +511,48 @@ def entry_reason(p):
     return None
 
 
+def carried(root, homes, paths):
+    """The IMMEDIATE files of `homes` that the COMMIT TREE carries, as paths relative to `root`.
+
+    **THIS IS THE POPULATION RULE, AND IT IS THIS FILE'S OWN DEFINITION, WHICH UNTIL NOW WAS
+    STATED IN PROSE AND APPLIED TO THE HOMES ONLY.** The definition above says a file is a gate
+    "iff the COMMIT TREE carries it (`git ls-tree -r HEAD` -- never the index, which a reset
+    empties, and never the working copy, which `chmod -R` and a stray write both move)". The
+    HOMES were derived from the commit tree (`gate_homes` -> `_tree_paths`), and the FILES were
+    not: `_buckets` walked the working copy, so the population was a SECOND, LOOSER reading of
+    the same question. MEASURED 2026-10-20T17:58Z on the live tree: **4 of the 293 entry points
+    were files the commit tree does not carry** -- `checks/.tmp-amd_dsl_census-mutate.py`,
+    `checks/.tmp-coverage.py`, `checks/.tmp-graphcmp-census-audit.py` and
+    `checks/.tmp-tc_ptx_render-oracle.py` -- another unit's in-flight scratch, the very files
+    `gates/gates-pop.py`'s own header records a plain invocation once wrote into the shared
+    ledger. `checks/gatesweep.py` had MEASURED the same fact from the other side (its header:
+    "6 of the 6 dotted entries under the two homes are ABSENT from `git ls-tree -r HEAD`") and
+    printed it as the `4 dotted` term of its projection -- **so the tree already knew, and the
+    census that owns the definition did not apply it.**
+
+    **WHY IT MATTERS BEYOND CONSISTENCY: IT IS WHAT MAKES THE SHARED LEDGER WRITABLE.** A
+    generator that can absorb another unit's uncommitted scratch is a generator whose every run
+    is a claim on a file other units own. **A POPULATION THAT INCLUDES ANOTHER UNIT's WORK IN
+    PROGRESS IS NOT A POPULATION OF THIS REPOSITORY.**
+
+    `paths` is the derivation's OWN path list -- the commit tree when there is one, and the
+    working copy when there is not (a synthetic tree). **SO A PLANT'S TREE STILL WORKS, AND THE
+    FALLBACK IS NOT A SPECIAL CASE: IT IS THE SAME RULE WITH A DIFFERENT ANSWER.**
+    """
+    keep = set()
+    for home in homes:
+        pre = home + "/"
+        for p in paths:
+            if p.startswith(pre) and "/" not in p[len(pre):]:
+                keep.add(p)
+    return keep
+
+
 def _buckets(root):
-    """`(entries, libs, opaque)`, by walking every REGULAR file in the DERIVED homes. NEVER a
-    literal list of files, NEVER a suffix set, and NEVER a literal list of homes: the homes come
-    from `gate_homes(root)` -- which is why a plant has to DECLARE its homes by planting a gate
-    that certifies one, and why `_tree` below does exactly that.
+    """`(entries, libs, opaque, uncarried)`, by walking every REGULAR file in the DERIVED homes.
+    NEVER a literal list of files, NEVER a suffix set, and NEVER a literal list of homes: the
+    homes come from `gate_homes(root)` -- which is why a plant has to DECLARE its homes by
+    planting a gate that certifies one, and why `_tree` below does exactly that.
 
     `iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended
     into and a cached `.pyc` cannot be counted as a gate. `os.lstat` and not `Path.exists()`
@@ -532,9 +571,18 @@ def _buckets(root):
     denominator rather than folded into `libs`. Folding it in is how `nan_census.mjs` would have
     stayed invisible for another day — a JavaScript file counted as a shell module is a wrong
     answer that still ADDS UP, which is the only kind of wrong answer that survives every count.
+
+    **AND THE FOURTH BUCKET IS THE NEW ONE: A FILE THE COMMIT TREE DOES NOT CARRY IS NOT A GATE
+    OF THIS REPOSITORY**, so it is counted and NAMED rather than admitted. It is returned as its
+    own list because a file that is invisible cannot be argued with -- and because the ledger's
+    writer reads this list, and a ledger that can absorb another unit's scratch is the defect
+    this bucket exists to close. MEASURED 2026-10-20T17:58Z: **4 files**, all of them
+    `checks/.tmp-*`, another unit's in-flight scratch, none of them in the commit tree.
     """
-    entries, libs, opaque = [], [], []
-    for home in _homes(root):
+    entries, libs, opaque, uncarried = [], [], [], []
+    homes = _homes(root)
+    keep = carried(root, homes, _measure(root)[1]["paths"])
+    for home in homes:
         h = root / home
         if not os.path.isdir(h):
             continue
@@ -542,13 +590,19 @@ def _buckets(root):
             if not stat.S_ISREG(os.lstat(p).st_mode):
                 continue
             r = entry_reason(p)
+            if str(p.relative_to(root)) not in keep:
+                # NOT CARRIED BY THE COMMIT TREE. It is not a gate of this repository, and it is
+                # not one of the repository's unreadable files either -- so it is counted and
+                # NAMED, never admitted.
+                uncarried.append((p, r))
+                continue
             if r is None:
                 opaque.append(p)
             elif r in ("py-main", "sh-dispatch", "sh-selfref", "js-main"):
                 entries.append(p)
             else:
                 libs.append(p)
-    return entries, libs, opaque
+    return entries, libs, opaque, uncarried
 
 
 def discover(root):
@@ -559,14 +613,32 @@ def discover(root):
     gate this unit was told not to edit. **A FIX THAT BREAKS A CALLER IS NOT A FIX; IT IS A
     TRADE, AND THE TRADE HAS TO BE PAID SOMEWHERE ELSE.** So the third bucket leaves through
     `opaque()` instead of through this signature, and the walk itself happens once.
+
+    **AND THE FOURTH BUCKET LEAVES THE SAME WAY, FOR THE SAME REASON.** `discover()` is read by
+    `checks/gatesweep.py` (its `CONTROL`), so its arity is a contract with a second instrument.
     """
-    entries, libs, _ = _buckets(root)
+    entries, libs, _opaque, _uncarried = _buckets(root)
     return entries, libs
 
 
 def opaque(root):
     """The third bucket alone, so `discover()`'s arity can stay a contract somebody else owns."""
     return _buckets(root)[2]
+
+
+def uncarried(root):
+    """The FOURTH bucket: `(path, reason)` for the immediate files of the homes that the COMMIT
+    TREE does not carry. `reason` is what `entry_reason()` reads the file as, or `None` when the
+    instrument cannot read it at all.
+
+    **A FILE THE TREE DOES NOT CARRY IS NOT A GATE, AND THE LEDGER'S WRITER READS THIS LIST.** A
+    generator that can absorb another unit's in-flight scratch is a generator whose every run is
+    a claim on a file other units own, and `gates/gates-pop.py`'s own header records a plain
+    invocation doing exactly that: **13 added and 7 removed lines, 4 of them `checks/.tmp-*`,
+    ANOTHER UNIT'S IN-FLIGHT SCRATCH.** So the writer must be able to ASK, and this is the
+    answer it asks.
+    """
+    return _buckets(root)[3]
 
 
 # ---- clause II: what each gate POPS FOR, and whether it can fail -----------------------
@@ -837,10 +909,28 @@ def _tree_paths(root):
     for `--plant`, whose synthetic trees are not repositories, and it SAYS WHICH it used: a
     derivation whose provenance is unprinted is a claim, and `gate-surface.py`'s `walk_control` is
     the second instance of this exact shape.
+
+    **AND THE COMMIT TREE THAT IS READ MUST BE *THIS ROOT's* COMMIT TREE, WHICH GIT WILL NOT SAY
+    BY ITSELF.** `git -C <dir> ls-tree` SEARCHES UPWARD for a repository, so a directory that is
+    merely INSIDE one reads THAT repository's tree and prints its paths relative to the
+    REPOSITORY's root -- not the directory's. MEASURED 2026-10-20T18:20Z:
+    `checks/gatesweep.py --selftest` builds its synthetic tree at `ROOT/.agents/slop/gwself.*`,
+    which is INSIDE this repository, so `git -C <that> ls-tree -r HEAD` answers with THIS TREE's
+    8,859 paths, relative to THIS repository's root, for a directory that holds five files. Every
+    path that read feeds is then about a DIFFERENT TREE and the reader cannot tell -- and the
+    fix is to ask, not to assume: **`--show-toplevel` MUST ANSWER THIS ROOT**, or the working
+    copy is used instead, which is what the fallback was already for and what a synthetic tree
+    needs. **A COMMIT TREE THAT IS NOT ROOTED AT THE TREE BEING MEASURED IS A MEASUREMENT OF
+    SOMETHING ELSE.**
     """
+    root = Path(root).resolve()
+    top = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                         capture_output=True, text=True)
+    rooted = top.returncode == 0 and top.stdout.strip() and \
+        Path(top.stdout.strip()).resolve() == root
     r = subprocess.run(["git", "-C", str(root), "ls-tree", "-r", "--name-only", "HEAD"],
                        capture_output=True, text=True)
-    if r.returncode == 0 and r.stdout.strip():
+    if rooted and r.returncode == 0 and r.stdout.strip():
         return sorted(r.stdout.splitlines()), "COMMIT TREE (git ls-tree -r HEAD)"
     # `find -type f` DOES NOT DESCEND A SYMLINKED DIRECTORY (196 under `e2epy/` here), so
     # `rglob` can report fewer files than `os.walk` would and the denominator would understate
@@ -917,7 +1007,8 @@ def gate_homes(root):
             rejected.append(f"{top} {len(survivors)}/{read}")
     return tuple(homes), {"source": source, "read": read_total,
                           "candidates": len(witnesses) + len(rejected) + len(absent),
-                          "witnesses": witnesses, "rejected": rejected, "absent": absent}
+                          "witnesses": witnesses, "rejected": rejected, "absent": absent,
+                          "paths": paths}
 
 
 _MEASURED = {}
@@ -1125,30 +1216,51 @@ SPELLINGS = frozenset(ledger_line(("p", "r", "q", b, o)).split("\t")[3]
                       for b in (False, True) for o in (False, True))
 
 
-def write_ledger(rows, path=None):
-    """MERGE `rows` into the ledger at `path`: adopt each row's current facts, add what is new,
-    and RETIRE every recorded path this run did not find. **A LINE IS NEVER DROPPED.** MEASURED,
-    the first version wrote `rows` and nothing else, which made `--ledger write` the erasure the
-    check mode then punished: a run that found **2** of **177** gates printed `177 gone` and
-    `GATES-POP: OK`, rc 0, having destroyed the record of every other gate in the tree. And
-    PLANT 10 caught the SECOND version of the merge here, which carried forward only rows whose
-    reason was not already `RETIRED` -- so a second `--ledger write` over an already-retired tree
-    **quietly deleted the tombstone**, which is the very erasure this row exists to forbid. **A
-    MERGE THAT DROPS WHAT IT HAS ALREADY RECORDED IS NOT A MERGE; IT IS A REWRITE WITH EXTRA
-    STEPS, AND THE PLANT THAT FOUND IT IS THE ONE THAT ASSERTS THE SECOND WRITE.**
+def write_ledger(rows, path=None, only=None):
+    """MERGE into the ledger at `path`. **A LINE IS NEVER DROPPED.**
+
+    `only is None` is the full merge: adopt each row's current facts, add what is new, and RETIRE
+    every recorded path this run did not find. Plants that build a synthetic ledger call it this
+    way. **THE CLI DOES NOT.** `--write-ledger` always passes `only`, a set of paths, and a bare
+    call is refused before it gets here: the full merge is the central sweep, and running it
+    against the shared ledger makes the diff green without one gate having been measured.
+
+    `only` absorbs those paths and no others. A named path that this run discovered is adopted. A
+    named path the ledger holds and this run did not find is RETIRED. Every other recorded path is
+    carried forward unchanged -- including a departure this run can see and was not asked to
+    record. A named path that is neither discovered nor recorded is NOT WRITTEN: the function
+    returns that list and leaves the file alone, and the caller refuses. MEASURED, the first
+    version wrote `rows` and nothing else, which made `--ledger write` the erasure the check mode
+    then punished: a run that found **2** of **177** gates printed `177 gone` and `GATES-POP: OK`,
+    rc 0, having destroyed the record of every other gate in the tree. And PLANT 10 caught the
+    SECOND version of the merge here, which carried forward only rows whose reason was not already
+    `RETIRED` -- so a second write over an already-retired tree **quietly deleted the tombstone**.
+    **A MERGE THAT DROPS WHAT IT HAS ALREADY RECORDED IS NOT A MERGE.**
 
     The parent is CREATED, because a foreign tree need not have this instrument's directory and a
     `write_text` into a missing one is a traceback -- which is `checks/census.py`'s docstring
     recording the tree doing exactly that: rc 1 and a stack, carrying no denominator.
+
+    Returns the unaccountable paths, or None after a write.
     """
     lp = path or LEDGER_PATH
     old = read_ledger(lp) or []
-    live = {r[0] for r in rows}
-    merged = list(rows) + [(p, RETIRED, c, a, o) for p, _r, c, a, o in old if p not in live]
+    live = {r[0]: r for r in rows}
+    if only is None:
+        merged = list(rows) + [(p, RETIRED, c, a, o) for p, _r, c, a, o in old if p not in live]
+    else:
+        unknown = sorted(p for p in only if p not in live and all(r[0] != p for r in old))
+        if unknown:
+            return unknown
+        adopted = [live[p] for p in only if p in live]
+        carried = [(p, RETIRED, c, a, o) if p in only and p not in live else (p, reason, c, a, o)
+                   for p, reason, c, a, o in old if p not in only or p not in live]
+        merged = adopted + carried
     body = LEDGER_PREAMBLE.splitlines() + [LEDGER_HEADER] + [ledger_line(r) for r in
                                                         sorted(merged, key=lambda r: r[0])]
     lp.parent.mkdir(parents=True, exist_ok=True)
     lp.write_text("\n".join(body) + "\n")
+    return None
 
 
 LEDGER_HEADER = "path\treason\troot_const\tasserts_root\ton_root"
@@ -1165,24 +1277,87 @@ LEDGER_FIELDS = LEDGER_HEADER.split("\t")
 # `read_ledger` drops comments and then ONE header line, so a reader of this file that skips neither
 # reads five tab-separated fields named `path` as a gate.
 LEDGER_PREAMBLE = (
-    f"# {LEDGER.name} -- GENERATED by `gates/{Path(__file__).name} --write-ledger`, which is its "
-    "ONLY writer: it writes\n"
-    f"# on NO other invocation, and every other invocation only READS it. Written by "
-    "`gates/gates-pop.py`,\n"
-    f"# which is a generator over the tree's gate homes -- so this file is a SHARED WRITABLE PATH "
-    "and a run that\n"
-    f"# rewrites it without being asked absorbs whatever else the tree held. A record of gates "
-    "that were DISCOVERED,\n"
-    f"# not a list of gates that exist: `reason={RETIRED}` is a row saying one LEFT. MERGED, NEVER "
-    "REWRITTEN -- every\n"
-    f"# edit adds information, so no edit goes green by erasing. One TAB-separated quintuple per "
-    "row:\n"
+    f"# {LEDGER.name} -- GENERATED by `gates/{Path(__file__).name} --write-ledger --only PATH`, "
+    "which is its ONLY writer: it writes\n"
+    f"# the named paths and no others. A bare `--write-ledger` is REFUSED. It writes on NO other "
+    "invocation, and every\n"
+    f"# other invocation only READS it. Written by `gates/gates-pop.py`, a generator over the "
+    "tree's gate homes --\n"
+    f"# so this file is a SHARED WRITABLE PATH, and a run that rewrites it without a path absorbs "
+    "whatever else the\n"
+    f"# tree held. A record of gates that were DISCOVERED, not a list of gates that exist: "
+    f"`reason={RETIRED}` is a row\n"
+    f"# saying one LEFT. MERGED, NEVER REWRITTEN -- every edit adds information, so no edit goes "
+    "green by erasing.\n"
+    f"# One TAB-separated quintuple per row:\n"
     f"# `<path>\\t<reason>\\t<root_const>\\t<asserts_root>\\t<on_root>`."
 )
 
 
+# ---- THE COMMIT THAT MADE EACH MOVEMENT --------------------------------------------------
+def events(root, homes):
+    """`{path: (introduced_by, removed_by)}` -- the commits that brought each path IN and took it
+    OUT, from ONE `git log` over the homes.
+
+    **ATTRIBUTION NAMES THE DEBT. IT IS NOT THE PAYMENT.** A ledger that is merely stale says
+    `73 new`; a ledger that is stale AND attributed says which commit owes the row. The payment is
+    `--write-ledger --only <path>`, run by the unit that owns that path, and it absorbs that path
+    alone. A bare `--write-ledger` is refused: that is the central sweep, and it makes the diff
+    green without one gate having been measured. MEASURED 2026-10-20T18:26Z:
+    one `git log --diff-filter=AD --name-status` over `checks` and `gates` answers **1,722 lines
+    in 0.22 s**, against **~0.06 s per path** for 78 individual `--diff-filter=A -1 -- <path>`
+    calls. ONE CALL, because the movements are a SET and the set is what the report needs.
+
+    `--no-renames`, because a rename is reported as `R` by default and `--diff-filter=AD` would
+    DROP IT -- so a gate that was renamed would carry no introducing commit at all, which is
+    exactly the movement a reader most needs attributed.
+
+    **THE LOG IS NEWEST-FIRST, so the FIRST event seen for a path is the CURRENT one**: the most
+    recent addition is the introduction of the version that is here now, and the most recent
+    deletion is the departure. A path added, deleted and re-added therefore carries the re-add.
+
+    **THE SUBJECT IS TRUNCATED, AND IT IS TRUNCATED HERE RATHER THAN AT PRINT TIME, BECAUSE THIS
+    TREE'S COMMIT MESSAGES ARE THOUSANDS OF CHARACTERS LONG.** `AGENTS.md` calls a commit message
+    "a claim this instrument cannot judge", but it is also the ONE WITNESS to which unit made a
+    change, so it is worth naming -- at 60 characters, which is enough to recognise the commit and
+    short enough to read in a list of 73.
+    """
+    root = Path(root).resolve()
+    # THE SAME ROOTED CHECK AS `_tree_paths`. `git -C <dir> log` searches upward, so a synthetic
+    # tree inside this repository would be attributed against THIS history. A commit that is not
+    # rooted at the tree being measured is a measurement of something else.
+    top = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"],
+                         capture_output=True, text=True)
+    if not (top.returncode == 0 and top.stdout.strip()
+            and Path(top.stdout.strip()).resolve() == root):
+        return {}
+    out = {}
+    r = subprocess.run(["git", "-C", str(root), "log", "--no-renames", "--diff-filter=AD",
+                        "--name-status", "--format=@@@ %h|%ci|%s", "--", *homes],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        return {}
+    commit = None
+    for line in r.stdout.splitlines():
+        if line.startswith("@@@ "):
+            h, when, subject = (line[4:].split("|", 2) + ["", ""])[:3]
+            commit = f"{h} {when} {subject[:60]}"
+            continue
+        parts = line.split("\t")
+        if len(parts) != 2 or commit is None:
+            continue
+        kind, path = parts
+        if kind not in ("A", "D"):
+            continue
+        slot = out.setdefault(path, [None, None])
+        i = 0 if kind == "A" else 1
+        if slot[i] is None:
+            slot[i] = commit
+    return {k: tuple(v) for k, v in out.items()}
+
+
 # ---- the report -------------------------------------------------------------------------
-def report(root, ledger_mode, ledger_path=None):
+def report(root, ledger_mode, ledger_path=None, only=None):
     """Every discovered gate, one line, with its denominator. A verdict with no denominator is
     a claim nobody can check -- `gates/retention-check.py` states that rule and this file
     holds to it.
@@ -1204,7 +1379,7 @@ def report(root, ledger_mode, ledger_path=None):
     """
     lpath = ledger_path or Path(root).resolve() / HERE.relative_to(ROOT) / LEDGER.name
     homes, derivation = _measure(root)
-    entries, libs, opaque = _buckets(root)
+    entries, libs, opaque, uncarried = _buckets(root)
     report_roots(derivation)
     print(f"     {derivation['read']} tracked file(s) read to answer that question; a rejected "
           f"candidate is a DIRECTORY, and each of the\n     {len(derivation['rejected'])} below "
@@ -1231,6 +1406,25 @@ def report(root, ledger_mode, ledger_path=None):
     # It moves when the tree gains a language, which is the entire reason it is printed.
     for suf, n in sorted(Counter(suffix_of(p) for p in opaque).items(), key=lambda kv: -kv[1]):
         print(f"     opaque {suf:8} {n:4} file(s)")
+    # **THE POPULATION RULE, PRINTED, WITH THE FILES IT EXCLUDED AND WHY THEY ARE EXCLUDED.**
+    # This file's own definition says a gate is a file the COMMIT TREE carries; the HOMES were
+    # derived that way and the FILES were not, so the walk could admit another unit's
+    # in-flight scratch. MEASURED 2026-10-20T17:58Z: **4 files** under the homes were not
+    # carried by the commit tree, all of them `checks/.tmp-*`, another unit's scratch -- and
+    # `gates/gates-pop.py`'s own header records a plain invocation writing exactly those into
+    # the shared ledger. **A FILE THE TREE DOES NOT CARRY IS NOT A GATE OF THIS REPOSITORY, AND
+    # A POPULATION THAT INCLUDES ANOTHER UNIT's WORK IN PROGRESS IS A CLAIM ON A FILE SOMEBODY
+    # ELSE OWNS.** The names are printed because a rule that excludes files without naming them
+    # is the `artefacts_ok()` shape wearing a population.
+    would_be = [(p, r) for p, r in uncarried if r is not None]
+    print(f"     POPULATION RULE: the COMMIT TREE carries the gate ({derivation['source']}); "
+          f"{len(uncarried)} immediate file(s) under the homes are NOT carried, so they are\n"
+          f"     NOT files of this repository. {len(would_be)} of them would have been entry points\n"
+          f"     or modules and are NAMED below; the other {len(uncarried) - len(would_be)} are "
+          f"files this instrument\n     could not read anyway, so excluding them changes nothing "
+          f"the census measures.")
+    for p, r in would_be:
+        print(f"       not carried: {str(p.relative_to(root)):46} {r}")
     print()
     for p in entries:
         const, asserts, onroot = root_facts(p, root)
@@ -1303,17 +1497,37 @@ def report(root, ledger_mode, ledger_path=None):
         print(f"III LEDGER DIFF: {len(added)} new, {len(gone)} UNRECORDED departure(s), "
               f"{len(moved)} changed, {len(back)} returned, {len(still)} retired "
               f"({len(rows)} live of {len(prev)} row(s); a RETIRED row is a record, not a claim)")
+        # **EVERY MOVEMENT NAMES THE COMMIT THAT OWES IT.** Attribution is the queue. The payment
+        # is `--write-ledger --only <path>`, and it records that path alone. A bare
+        # `--write-ledger` is refused: absorbing every row below is the central sweep, and it
+        # makes this diff green without one gate having been measured.
+        if added or gone or moved or back:
+            print("III   RECORD: `--write-ledger --only <path>` absorbs that path and no other. "
+                  "A bare `--write-ledger` is REFUSED.")
+        ev = events(root, homes)
         for k in added:
+            by = ev.get(k, (None, None))[0]
             print(f"III   NEW  {k}: {new[k][0]} root_ok={new[k][3]} "
-                  f"asserts={'YES' if new[k][2] else 'NO'}")
+                  f"asserts={'YES' if new[k][2] else 'NO'}"
+                  + (f"\nIII         introduced by {by}" if by else
+                     "\nIII         NOT ATTRIBUTABLE: no commit in this tree's history introduces it"))
         for k in gone:
+            by = ev.get(k, (None, None))[1]
             print(f"III   GONE {k} -- a gate that LEFT the population and the ledger does not say "
-                  f"so.\n               Re-run WITHOUT --ledger to RETIRE it: the row is kept with "
-                  f"reason=`{RETIRED}`, not deleted.")
+                  f"so.\n               `--write-ledger --only {k}` RETIRES this row and no other: "
+                  f"reason=`{RETIRED}`, not deleted. A bare `--write-ledger` is refused."
+                  + (f"\n               removed by {by}" if by else
+                     "\n               NEVER COMMITTED: the tree never carried this path, so the "
+                     "row is about a file\n               this repository does not have -- and the "
+                     "cure is the same: RETIRE the row, do not delete it."))
         for k in back:
-            print(f"III   BACK {k} -- retired, then discovered again; the row is live once more")
+            by = ev.get(k, (None, None))[0]
+            print(f"III   BACK {k} -- retired, then discovered again; the row is live once more"
+                  + (f"\nIII         introduced by {by}" if by else ""))
         for k in still:
-            print(f"III   retired {k} -- left the population, recorded, kept")
+            by = ev.get(k, (None, None))[1]
+            print(f"III   retired {k} -- left the population, recorded, kept"
+                  + (f"  (removed by {by})" if by else ""))
         for k in moved:
             # NAME THE COLUMNS THAT MOVED. `old[k][0] -> new[k][0]` printed the REASON on both
             # sides of the arrow even when the reason was unchanged and a boolean was what
@@ -1324,7 +1538,7 @@ def report(root, ledger_mode, ledger_path=None):
             # the cure -- the content `325c422d9bd3` lacked when it reported `5 changed`.
             print(f"III   CHANGED {k}: " + ", ".join(
                 f"{n} UNREADABLE in the ledger, this run read {b} -- re-derive it with "
-                f"`--write-ledger`" if o == UNREADABLE else f"{n} {o}->{b}"
+                f"`--write-ledger --only {k}`" if o == UNREADABLE else f"{n} {o}->{b}"
                 for o, n, b in zip(DECIDED(old[k]), ("reason", "asserts_root", "on_root"),
                                    DECIDED(new[k])) if o != b))
         if ledger_mode == "check" and (added or gone or moved or back):
@@ -1334,20 +1548,53 @@ def report(root, ledger_mode, ledger_path=None):
                   "RECORD. Stability is\n     the only state a set-difference gate can be quiet "
                   "about -- and it is reached by a MERGE,\n     never by a row being deleted.")
         print()
+    # **A PATHSPEC WRITE THAT LEAVES A MOVEMENT UNNAMED IS NOT GREEN.** This sits AFTER the
+    # ledger branch because a first-ever write has no `prev` and still has unnamed rows: write
+    # mode used to return 0 whenever it wrote, which is right for a full merge and wrong for
+    # `--only`. A movement this write was asked to record does not keep the run red; one it was
+    # not asked to record does.
+    if ledger_mode != "check" and only is not None and any(
+            k not in only for k in (*added, *gone, *moved, *back)):
+        red = 1
     if ledger_mode != "check":
-        write_ledger(rows, lpath)
+        # **A WRITE OF THE SHARED LEDGER WITHOUT A PATHSPEC IS THE CENTRAL SWEEP.** The CLI refuses
+        # it before it gets here; this is the same refusal for a caller that imported `report`.
+        # `only is None` remains the full merge, and it is how the plants build a synthetic ledger.
+        # It is not how the shared file is written.
+        if only is not None and not only:
+            refuse("`--write-ledger` named no path. That is the central sweep, and it is refused.")
+        if only is None and Path(lpath).resolve() == LEDGER_PATH.resolve():
+            refuse("a write of the shared ledger without `--only PATH` is the central sweep, "
+                   "refused. Name the paths this commit owns.")
+        # THE COUNTS ARE THE PATHS THIS WRITE ABSORBS, NOT THE DIFF. A pathspec that recorded every
+        # NEW row above would be the sweep again, and the banner would be the line that hid it.
+        scope = None if only is None else set(only)
+
+        def took(k):
+            return scope is None or k in scope
+
+        abs_added = [k for k in added if took(k)]
+        abs_gone = [k for k in gone if took(k)]
+        abs_moved = [k for k in moved if took(k)]
+        abs_back = [k for k in back if took(k)]
+        unknown = write_ledger(rows, lpath, scope)
+        if unknown:
+            refuse(f"`--only` named {', '.join(unknown)}, and this run can neither adopt nor "
+                   f"retire {'it' if len(unknown) == 1 else 'them'}: not discovered, and not in "
+                   f"the ledger. Nothing was written.")
         after = read_ledger(lpath) or []
         tombs = sum(1 for r in after if r[1] == RETIRED)
-        # **AND IT SAYS IT WROTE, IN THE PAST TENSE, WITH THE ROWS IT ABSORBED COUNTED.** The rows
-        # named above (`added`, `gone`, `moved`, `back`) ARE the rows this write absorbed, because
-        # they are computed from the same `prev` and `rows` the merge is -- so the count here must
-        # add up to the diff line or one of the two is lying, and PLANT 12 asserts it does.
+        # **AND IT SAYS IT WROTE, IN THE PAST TENSE, WITH THE ROWS IT ABSORBED COUNTED.** The
+        # absorbed counts are the intersection of the diff with the pathspec, so a write that
+        # names one path cannot claim it absorbed the rest. PLANT 12 asserts the line parses;
+        # PLANT 14 asserts the intersection.
+        spec = "" if scope is None else f" -- paths: {', '.join(sorted(scope))}"
         print(f"III LEDGER WROTE {lpath.name} ({lpath}): {len(prev or [])} -> {len(after)} row(s), "
               f"{tombs} retired, none dropped.\n"
-              f"     IT ABSORBED {len(added)} new, {len(moved)} changed, {len(back)} returned and "
-              f"RETIRED {len(gone)} -- the rows named above, one per line.\n"
-              f"     A LEDGER IS SHARED: if any of those rows is another unit's in-flight work, say "
-              f"so before committing it.\n")
+              f"     IT ABSORBED {len(abs_added)} new, {len(abs_moved)} changed, "
+              f"{len(abs_back)} returned and RETIRED {len(abs_gone)}{spec}.\n"
+              f"     A LEDGER IS SHARED: a path not named here was not recorded. If a named path "
+              f"is another unit's in-flight work, say so before committing it.\n")
 
     # IV -- THE SHARED POPULATION. Both meta-instruments report `gendirs.discovered()`, so the
     # count below and clause V of `gates/retention-check.py` are THE SAME MEASUREMENT and either
@@ -1561,7 +1808,7 @@ def _plants():
             '#!/bin/sh\n_d=${0%/*}; case $_d in "$0") _d=.;; esac\n'
             'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
         (r / "checks" / "mod.py").write_text("X = 1\n")
-        e, libs, _opaque = _buckets(r)
+        e, libs, _opaque, _uncarried = _buckets(r)
         got = {str(p.relative_to(r)) for p in e}
         # `len(e) == 2`, and the SECOND is the home witness `_tree` planted: the synthetic tree
         # earns `checks/` by holding a gate that certifies it, exactly as the live tree does.
@@ -1631,7 +1878,7 @@ def _plants():
         # the exclusion is visible rather than silent. `checks/bounded.py` is the live instance.
         (r / "checks" / "driver.py").write_text("def drive(): pass\n")
         (r / "gates" / "gatekit.py").write_text("class Gate: pass\n")
-        e, libs, _opaque = _buckets(r)
+        e, libs, _opaque, _uncarried = _buckets(r)
         libs_named = sorted(str(p.relative_to(r)) for p in libs)
         out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
                   and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
@@ -1886,7 +2133,7 @@ def _plants():
             'import Base\ndef f(x):\n  import "../tinybendygrad/runtime/sz.c"\n')
         (r / "checks" / "expected.rows").write_text(
             "2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 3:n()\n2:i4 5:STACK 7:weakint 3:n(i2,i3)\n")
-        pe, pl, po = _buckets(r)
+        pe, pl, po, _pu = _buckets(r)
         got = sorted(str(p.relative_to(r)) for p in pe)
         mjs_ok = "checks/nan.mjs" in got
         shim_ok = "checks/shim" in got
@@ -1900,15 +2147,26 @@ def _plants():
         # WITNESS; THE TREE IS.** Asserted live so a moved or re-spelled fixture is a FAIL.
         live_rows = [p for h in HOMES for p in sorted((HERE.parent / h).iterdir())
                      if p.is_file() and p.name.endswith(".rows")]
-        _, _, live_opaque = _buckets(HERE.parent)
-        live_rows_opaque = all(p in live_opaque for p in live_rows)
+        _, _, live_opaque, live_uncarried = _buckets(HERE.parent)
+        # **THE POPULATION RULE MOVED THE DENOMINATOR, AND THE OLD ASSERTION DID NOT MOVE WITH IT.**
+        # `_buckets` now excludes a file the commit tree does not carry BEFORE classification, so an
+        # untracked `.rows` is `uncarried`, not `opaque`. Requiring it to be opaque fails the plant
+        # for a rule that already excluded it. The witness is the files the tree carries: a carried
+        # `.rows` that parses is named, and the plant is red on that file rather than on the 141
+        # the commit tree does not hold.
+        not_carried = {p for p, _r in live_uncarried}
+        carried_rows = [p for p in live_rows if p not in not_carried]
+        not_opaque = [p for p in carried_rows if p not in live_opaque]
+        live_rows_opaque = not not_opaque
         ok9 = mjs_ok and shim_ok and bend_ok and rows_ok and live_rows_opaque
         checks.append(("9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS "
                        "`sh` gate are ADMITTED, a `.bend` driver is NOT read as JavaScript, and a "
                        "`.rows` fixture is OPAQUE", ok9,
                        f"mjs={mjs_ok} extless_sh={shim_ok} bend_not_js={bend_ok} "
                        f"rows_opaque={rows_ok} live_rows_opaque={live_rows_opaque} "
-                       f"({sum(p in live_opaque for p in live_rows)}/{len(live_rows)} real `.rows`) "
+                       f"({len(carried_rows) - len(not_opaque)}/{len(carried_rows)} carried `.rows` opaque, "
+                        f"{len(live_rows) - len(carried_rows)} not in the commit tree; "
+                        f"not opaque: {[str(p.relative_to(HERE.parent)) for p in not_opaque]}) "
                        f"-- entries={got}"))
 
     # PLANT 12 -- **A READ CANNOT WRITE, AND A WRITE SAYS IT WROTE.** The defect this file shipped:
@@ -1922,8 +2180,9 @@ def _plants():
     #   (a) a PLAIN invocation leaves the live ledger BYTE-IDENTICAL;
     #   (b) ...AND it MEASURED SOMETHING, or (a) is satisfied by a crash. It has to name the ledger
     #       diff, so a no-op that printed nothing cannot pass this plant;
-    #   (c) `--write-ledger` on a SYNTHETIC tree DOES write, and says `LEDGER WROTE` -- the direction
-    #       that makes (a) a boundary rather than a permanently-broken write;
+    #   (c) `--write-ledger --only <each entry>` on a SYNTHETIC tree DOES write, and says
+    #       `LEDGER WROTE` -- the direction that makes (a) a boundary rather than a permanently-broken
+    #       write. The bare flag, which is the central sweep, is plant 14;
     #   (d) THE WRITE'S COUNTS ADD UP to the rows it printed, because the count line and the per-row
     #       lines are computed independently and one of them can be wrong;
     #   (e) `--ledger write` is now an ARGUMENT ERROR, so the old silent-rewrite spelling cannot
@@ -1955,7 +2214,8 @@ def _plants():
         syn = r / HERE.relative_to(ROOT) / LEDGER.name
         wbuf = io.StringIO()
         try:
-            sys.argv = ["gates/gates-pop.py", "--root", str(r), "--write-ledger"]
+            sys.argv = ["gates/gates-pop.py", "--root", str(r), "--write-ledger",
+                        "--only", "checks/home-witness.py", "--only", "gates/home-witness.py"]
             with contextlib.redirect_stdout(wbuf):
                 main()
         finally:
@@ -2058,6 +2318,74 @@ def _plants():
                    f"control={control} cell={cell} row={row} differs={differs} "
                    f"holes={sig} expected=(1, {len(LEDGER_FIELDS) - 1})"))
 
+    # PLANT 14 -- **A WRITE NAMES ITS PATHS, AND THE BARE FLAG IS THE CENTRAL SWEEP.** Three units
+    # declined to run `--write-ledger` because it MERGES: adding every row makes the diff green
+    # without one gate having been measured. The flag without a path is therefore REFUSED, a named
+    # path absorbs only itself, and an unaccountable path writes nothing. Asserted through `main()`
+    # on a synthetic tree, because a plant that calls `write_ledger(..., only=)` asserts the
+    # function and not the CLI the refusals were about.
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r, "checks", "gates")
+        syn = r / HERE.relative_to(ROOT) / LEDGER.name
+        argv0 = sys.argv
+
+        def invoke(*args):
+            buf, err = io.StringIO(), io.StringIO()
+            try:
+                sys.argv = ["gates/gates-pop.py", "--root", str(r), *args]
+                with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err):
+                    code = main()
+                return code, buf.getvalue(), err.getvalue()
+            except SystemExit as ex:
+                return ex.code, buf.getvalue(), err.getvalue()
+            finally:
+                sys.argv = argv0
+
+        rc_bare, _, err_bare = invoke("--write-ledger")
+        bare = rc_bare == REFUSED and not syn.exists() and "central sweep" in err_bare
+        rc_one, out_one, _ = invoke("--write-ledger", "--only", "checks/home-witness.py")
+        body = syn.read_text() if syn.is_file() else ""
+        one = (rc_one == 1 and "checks/home-witness.py" in body
+               and "gates/home-witness.py" not in body and "IT ABSORBED 1 new" in out_one)
+        rc_two, out_two, _ = invoke("--write-ledger", "--only", "gates/home-witness.py")
+        body2 = syn.read_text() if syn.is_file() else ""
+        # THE NAMED PATH IS THE ONLY REMAINING MOVEMENT, so this write is green. The next read must
+        # agree, or the write absorbed a row the check cannot see.
+        rc_settled, _, _ = invoke()
+        both = (rc_two == 0 and rc_settled == 0 and "checks/home-witness.py" in body2
+                and "gates/home-witness.py" in body2 and "IT ABSORBED 1 new" in out_two)
+        snap = syn.read_bytes() if syn.is_file() else b""
+        rc_bad, _, err_bad = invoke("--write-ledger", "--only", "checks/no-such.py")
+        unknown = rc_bad == REFUSED and syn.read_bytes() == snap and "no-such" in err_bad
+        rc_alone, _, err_alone = invoke("--only", "checks/home-witness.py")
+        alone = rc_alone == REFUSED and "pathspec" in err_alone and syn.read_bytes() == snap
+        # A DEPARTURE NOT NAMED IS NOT RETIRED. Delete one gate, record the survivor, and the
+        # deleted row stays a live claim. Recording the deleted path then retires it alone.
+        (r / "gates" / "home-witness.py").unlink()
+        _MEASURED.clear()
+        rc_keep, _, _ = invoke("--write-ledger", "--only", "checks/home-witness.py")
+        kept = read_ledger(syn) or []
+        still_live = [x for x in kept if x[0] == "gates/home-witness.py"]
+        not_swept = (rc_keep == 1 and len(still_live) == 1 and still_live[0][1] != RETIRED)
+        rc_ret, _, _ = invoke("--write-ledger", "--only", "gates/home-witness.py")
+        after = read_ledger(syn) or []
+        tomb = [x for x in after if x[0] == "gates/home-witness.py"]
+        survivor = [x for x in after if x[0] == "checks/home-witness.py"]
+        rc_after, _, _ = invoke()
+        # NAMING THE DEPARTURE RECORDS IT, so this write is green and the next read agrees. A write
+        # that retired the survivor too would still be green here and is caught by `survivor`.
+        retired_one = (rc_ret == 0 and rc_after == 0 and len(tomb) == 1 and tomb[0][1] == RETIRED
+                       and len(survivor) == 1 and survivor[0][1] != RETIRED)
+    checks.append(("14: A WRITE NAMES ITS PATHS -- a bare `--write-ledger` is REFUSED and writes "
+                   "nothing, `--only` one path does not absorb the other, an unknown path writes "
+                   "nothing, and a departure not named is not retired",
+                   bare and one and both and unknown and alone and not_swept and retired_one,
+                   f"bare={bare} one={one} both={both} unknown={unknown} alone={alone} "
+                   f"not_swept={not_swept} retired_one={retired_one} "
+                   f"(rc bare={rc_bare} one={rc_one} two={rc_two} settled={rc_settled} "
+                   f"keep={rc_keep} ret={rc_ret} after={rc_after})"))
+
     print("PLANTS -- one direction per check, plus an inertness assertion, because a meta-gate's "
           "blind\nspot is the one nobody else checks. The count below is COMPUTED: MEASURED "
           "2026-10-20T00:22Z, the\nprose above it said `twelve` over a suite of FOURTEEN, and a "
@@ -2092,14 +2420,21 @@ HOMES = _homes(ROOT)
 HOME_DERIVATION = _derivation(ROOT)
 
 
+def _norm_only(path):
+    """The ledger's path-cell spelling. A leading `./` is the same path; a backslash is not a
+    different gate."""
+    path = path.replace("\\", "/")
+    return path[2:] if path.startswith("./") else path
+
+
 def main():
     ap = argparse.ArgumentParser(
         prog="gates/gates-pop.py", description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="DENOMINATOR: entry points under checks/ and gates/, discovered by AST and by "
                "self-dispatch. A verdict with no denominator is a claim nobody can check. "
-               "WRITING: the ledger is read unless --write-ledger is named, because "
-               "gates-pop.ledger.tsv is a SHARED writable path.")
+               "WRITING: `--write-ledger --only PATH` records that path and no other. "
+               "A bare `--write-ledger` is refused: it is the central sweep.")
     ap.add_argument("--plant", action="store_true",
                     help="assert every plant on a synthetic tree; never touches the live tree")
     ap.add_argument("--ledger", choices=("check",), default="check",
@@ -2108,22 +2443,33 @@ def main():
                          "`--ledger write` is now an ARGUMENT ERROR rather than a silent rewrite "
                          "of a file other units share")
     ap.add_argument("--write-ledger", action="store_true",
-                    help="the ONLY writer of gates/gates-pop.ledger.tsv: merge this run's rows, then "
-                         "PRINT every row it absorbed. The generated file's header names this flag, "
-                         "so there is one writer and one spelling of it")
+                    help="the ONLY writer of gates/gates-pop.ledger.tsv, and only together with "
+                         "--only. A bare --write-ledger is REFUSED: it would merge every row this "
+                         "run found, and the diff would go green without one gate having been measured")
+    ap.add_argument("--only", action="append", default=None, metavar="PATH",
+                    help="a path `--write-ledger` may absorb. Repeatable. Required with "
+                         "--write-ledger. The spelling is the ledger's path cell "
+                         "(checks/foo.py), and a path this run can neither adopt nor retire "
+                         "is refused and nothing is written")
     ap.add_argument("--root", default=None, help="point at another tree (plant/disarm only)")
     a = ap.parse_args()
-    # ONE writer, ONE spelling. `--write-ledger` is the flag the ledger's own header names, and
-    # `--ledger` cannot reach `write` -- so the old `--ledger write` is REFUSED by argparse instead
-    # of quietly rewriting a shared file, and a script that still passes it stops with a message
-    # rather than succeeding having absorbed whatever else the tree held.
+    # ONE writer, ONE spelling, ONE PATHSPEC. `--write-ledger` is the flag the ledger's own header
+    # names, and `--ledger` cannot reach `write`. The pathspec is the other half: a write that
+    # names no path is the central sweep, and it is refused rather than performed.
+    if a.only and not a.write_ledger:
+        refuse("`--only` is the pathspec of `--write-ledger`. A read takes no pathspec.")
+    if a.write_ledger and not a.only:
+        refuse("`--write-ledger` without `--only PATH` is the central sweep: it would MERGE every "
+               "row this run found into the shared ledger, and the diff would go green without one "
+               "gate having been measured. Name the paths this commit owns.")
     mode = "write" if a.write_ledger else a.ledger
+    only = {_norm_only(p) for p in a.only} if a.write_ledger else None
     if not a.root:
         for marker in ("pyproject.toml", "tinybendygrad"):
             if not (ROOT / marker).exists():
                 refuse(f"the repo root is not here: {marker} is absent at {ROOT}")
-        return plants() if a.plant else report(ROOT, mode)
-    return plants() if a.plant else report(Path(a.root).resolve(), mode)
+        return plants() if a.plant else report(ROOT, mode, only=only)
+    return plants() if a.plant else report(Path(a.root).resolve(), mode, only=only)
 
 
 if __name__ == "__main__":
