@@ -16,25 +16,32 @@ BLOB-GONE-BUT-LOGGED. The question is asked by path. `git rev-list --all` is not
 path index and is not used.
 
 CITERS ARE DISCOVERED from the same namer bodies, through the same `tokens()`, at
-file:line. Not a hand list.
+file:line. Not a hand list. Each citer is then classed by the citer's own structure.
+The rule is `RULE`, printed by the report. A path is PLANT-CITATION when every citer
+is plant-class, LOAD-BEARING when any citer is not, and NO-CITER when it has none.
+NO-CITER is printed. It is not a skip, and a path is not dropped to keep a count.
 
 THE FINDING IS REPORTED, NOT CHARGED. PASS is every no-blob subject carrying exactly
-one history class and at least one discovered citer. The plant is what can fail: a
+one history class and exactly one citation class. The plant is what can fail: a
 never-committed citation is NEVER-IN-HISTORY; a citation whose blob was removed from
-a copy of the index, but which `git log` still has, is not; an existing file is not
-in the no-blob list.
+a copy of the index, but which `git log` still has, is not; an existing file is in
+neither citation class. A citation added inside `_synthetic()` is PLANT-CITATION; the
+same path cited from a non-plant function is LOAD-BEARING. A plant that emits nothing
+while scoring success is not a plant.
 
 `recover()` claims a grandparent walk. This file reads that claim and does not fix it.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import importlib.util
 import inspect
 import os
 import subprocess
 import sys
 import time
+import warnings
 from collections import Counter
 from pathlib import Path
 
@@ -53,6 +60,23 @@ FILTER = ("ORACLE", "EV", "SWEPT")
 NEVER = "NEVER-IN-HISTORY"
 LOGGED = "BLOB-GONE-BUT-LOGGED"
 CLASSES = (NEVER, LOGGED)
+PLANT_CITE = "PLANT-CITATION"
+LOAD = "LOAD-BEARING"
+NO_CITER = "NO-CITER"
+CITE_CLASSES = (PLANT_CITE, LOAD, NO_CITER)
+# Exact names. `plants` and `_plant` are different functions and are not this class.
+PLANT_FUNCS = frozenset({"_synthetic", "plant"})
+# One string. report() prints it and cite_of() applies it. A second wording is a second rule.
+RULE = (
+    "A citer is plant-class when its line lies inside a function whose name is exactly "
+    "_synthetic or plant (lineno through end_lineno), or the token's span lies inside a "
+    "backtick-delimited example inside a docstring string. A docstring string is the first "
+    "statement of a module, class, or function body when that statement is a string constant. "
+    "A backtick span in that string is an example; a prose mention in the same docstring is not. "
+    "A path is PLANT-CITATION when it has at least one citer and every citer is plant-class, "
+    "LOAD-BEARING when any citer is not, and NO-CITER when it has none. NO-CITER is printed; "
+    "it is not a skip."
+)
 
 
 def git(args: list[str], env: dict | None = None, stdin: str | None = None) -> subprocess.CompletedProcess:
@@ -134,19 +158,154 @@ def touching(paths: list[str], env: dict | None = None) -> dict[str, list[str]] 
   return out
 
 
-def citers_of(paths: set[str], bodies: list[tuple[str, str]], tokens) -> dict[str, list[str]]:
-  """`path -> ['file:line', ...]` discovered by the generator's own tokenizer. Not a hand list."""
-  out = {p: [] for p in paths}
+def _clean_span(raw: str, mod) -> tuple[str, int, int] | None:
+  """`(cleaned, start, end)` within `raw`, or None if `tokens()` would drop the match.
+
+  The cleaning steps are `tokens()`'s, kept attached to the match so a later span test
+  can say whether that token sits inside a backtick. A divergence from `tokens()` is a
+  refusal, not a second tokenizer.
+  """
+  if len(raw) < 3 or mod.FAMILY.search(raw):
+    return None
+  stripped = raw.rstrip(".")
+  start = 0
+  tok = stripped
+  if tok.startswith("./"):
+    tok = tok[2:]
+    start = 2
+  if len(tok) < 3 or mod.FAMILY.search(tok):
+    return None
+  last = tok.rsplit("/", 1)[-1]
+  if "." not in last or last.index(".") == 0:
+    return None
+  return tok, start, len(stripped)
+
+
+def _line_spans(line: str, mod) -> list[tuple[str, int, int]]:
+  """`(token, col_lo, col_hi)` for every token `tokens(line)` returns, in that order."""
+  found: list[tuple[str, int, int]] = []
+  for m in mod.TOKEN_RUN.finditer(line):
+    got = _clean_span(m.group(1), mod)
+    if got is None:
+      continue
+    tok, a, b = got
+    found.append((tok, m.start(1) + a, m.start(1) + b))
+  if [t for t, _, _ in found] != mod.tokens(line):
+    raise RuntimeError(f"token spans diverged from tokens() on {line!r}")
+  return found
+
+
+def _structure(body: str) -> tuple[set[int], list[tuple[int, int, int]]] | None:
+  """`(plant-function lines, example spans)` or None if `body` does not parse.
+
+  A plant-function line is inside a function named `_synthetic` or `plant`, lineno through
+  end_lineno. An example span is `(lineno, col_lo, col_hi)`, half-open, inside both a
+  docstring string and a backtick span. A body that does not parse has no such structure;
+  its citers are not plant-class.
+  """
+  try:
+    with warnings.catch_warnings():
+      warnings.simplefilter("ignore", SyntaxWarning)
+      tree = ast.parse(body)
+  except SyntaxError:
+    return None
+  plant_lines: set[int] = set()
+  docs: list[tuple[int, int, int, int]] = []
+  for node in ast.walk(tree):
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in PLANT_FUNCS:
+      if node.end_lineno is not None:
+        plant_lines.update(range(node.lineno, node.end_lineno + 1))
+    stmts = getattr(node, "body", None)
+    if not isinstance(stmts, list) or not stmts:
+      continue
+    first = stmts[0]
+    value = first.value if isinstance(first, ast.Expr) else None
+    if not (isinstance(value, ast.Constant) and isinstance(value.value, str)
+            and value.end_lineno is not None and value.end_col_offset is not None):
+      continue
+    docs.append((value.lineno, value.col_offset, value.end_lineno, value.end_col_offset))
+  src = body.splitlines()
+  examples: list[tuple[int, int, int]] = []
+  for start_line, start_col, end_line, end_col in docs:
+    opened = False
+    for i in range(start_line - 1, min(end_line, len(src))):
+      line = src[i]
+      lo = start_col if i == start_line - 1 else 0
+      hi = end_col if i == end_line - 1 else len(line)
+      hi = min(hi, len(line))
+      if lo > hi:
+        continue
+      seg = line[lo:hi]
+      content_from = 0 if opened else None
+      cursor = 0
+      while True:
+        j = seg.find("`", cursor)
+        if j < 0:
+          break
+        if not opened:
+          opened = True
+          content_from = j + 1
+        else:
+          if content_from is not None and content_from < j:
+            examples.append((i + 1, lo + content_from, lo + j))
+          opened = False
+          content_from = None
+        cursor = j + 1
+      if opened and content_from is not None and content_from < len(seg):
+        examples.append((i + 1, lo + content_from, lo + len(seg)))
+  return plant_lines, examples
+
+
+def _role(n: int, hits: list[tuple[str, int, int]],
+          struct: tuple[set[int], list[tuple[int, int, int]]] | None) -> str:
+  """`func` | `example` | `load` for one line. A line inside `_synthetic` or `plant` is `func`
+  even when the token is not in a docstring. Otherwise every hit on the line must sit in a
+  backtick example, or the line is `load`."""
+  if struct is None:
+    return "load"
+  plant_lines, examples = struct
+  if n in plant_lines:
+    return "func"
+  def sits(a: int, b: int) -> bool:
+    return any(ln == n and slo <= a and b <= shi for ln, slo, shi in examples)
+  if hits and all(sits(a, b) for _, a, b in hits):
+    return "example"
+  return "load"
+
+
+def cite_index(paths: set[str], bodies: list[tuple[str, str]], mod) -> tuple[dict[str, list[str]], dict[str, str]]:
+  """`path -> ['file:line', ...]` and `'file:line' -> role`, from the generator's tokenizer.
+
+  Not a hand list of paths. A recorded citer always has a role. A body that does not parse
+  cannot be shown to be plant-class, so its citers are `load`.
+  """
+  citers = {p: [] for p in paths}
+  roles: dict[str, str] = {}
   if not paths:
-    return out
+    return citers, roles
   for rel, body in bodies:
+    struct = _structure(body)
     for n, line in enumerate(body.splitlines(), 1):
+      hits = [s for s in _line_spans(line, mod) if s[0] in citers]
+      if not hits:
+        continue
+      key = f"{rel}:{n}"
+      roles[key] = _role(n, hits, struct)
       seen: set[str] = set()
-      for tok in tokens(line):
-        if tok in out and tok not in seen:
+      for tok, _, _ in hits:
+        if tok not in seen:
           seen.add(tok)
-          out[tok].append(f"{rel}:{n}")
-  return out
+          citers[tok].append(key)
+  return citers, roles
+
+
+def cite_of(citers: list[str], roles: dict[str, str]) -> str:
+  """The path's citation class. See `RULE`. A citer with no role is not plant-class."""
+  if not citers:
+    return NO_CITER
+  if all(roles.get(c) in ("func", "example") for c in citers):
+    return PLANT_CITE
+  return LOAD
 
 
 def derive(mod, surveyed: dict, fs: Path) -> dict:
@@ -160,16 +319,21 @@ def derive(mod, surveyed: dict, fs: Path) -> dict:
   if commits is None:
     raise RuntimeError("git log --all -- <paths> did not answer")
   bodies, _deriv = mod.namer_population(fs)
-  cites = citers_of(set(missing), bodies, mod.tokens)
+  cites, roles_of = cite_index(set(missing), bodies, mod)
   rows = []
   for path in missing:
     touched = commits.get(path, [])
+    row_citers = cites.get(path, [])
+    row_roles = {c: roles_of[c] for c in row_citers if c in roles_of}
     rows.append({
       "path": path,
       "kind": mod.kind_of(path, roles),
       "class": NEVER if not touched else LOGGED,
       "commits": touched,
-      "citers": cites.get(path, []),
+      "citers": row_citers,
+      "roles": row_roles,
+      "cite": cite_of(row_citers, row_roles),
+      "role_gap": [c for c in row_citers if c not in roles_of],
     })
   return {"asked": asked, "recovered": len(recovery), "rows": rows,
           "witness": witness, "walk": walk_claim(mod),
@@ -200,10 +364,13 @@ def probe_beyond(rows: list[dict]) -> list[str]:
   return found
 
 
-def _cite_preview(citers: list[str], n: int = 6) -> str:
-  if len(citers) <= n:
-    return ", ".join(citers)
-  return ", ".join(citers[:n]) + f"  (+{len(citers) - n})"
+def _cite_preview(citers: list[str], roles: dict[str, str] | None = None, n: int = 6) -> str:
+  def one(c: str) -> str:
+    tag = "" if not roles else f" [{roles.get(c, '?')}]"
+    return c + tag
+  shown = [one(c) for c in citers[:n]]
+  tail = "" if len(citers) <= n else f"  (+{len(citers) - n})"
+  return ", ".join(shown) + tail
 
 
 def report(got: dict) -> None:
@@ -221,6 +388,10 @@ def report(got: dict) -> None:
     print(f"  TREE MOVED     prior reading {PRIOR}, this reading {n}. No path was dropped to keep {PRIOR}.")
   print(f"  {NEVER:<22} {len(by[NEVER])}")
   print(f"  {LOGGED:<22} {len(by[LOGGED])}")
+  cite_by = {k: [r for r in rows if r["cite"] == k] for k in CITE_CLASSES}
+  print(f"  CITE RULE      {RULE}")
+  for label in CITE_CLASSES:
+    print(f"  {label:<22} {len(cite_by[label])}")
   print(f"  WALK           {got['walk']}")
   if got["witness"]:
     print(f"  WITNESS        a second recover() found {len(got['witness'])} blob(s); paths kept: "
@@ -230,8 +401,9 @@ def report(got: dict) -> None:
   print("  PATHS")
   for r in rows:
     tip = r["commits"][0][:12] if r["commits"] else "-"
-    print(f"    {r['class']:<22} {r['kind']:<10} log={len(r['commits']):<4} tip={tip}  {r['path']}")
-    print(f"      citers {len(r['citers'])}: {_cite_preview(r['citers'])}")
+    print(f"    {r['cite']:<16} {r['class']:<22} {r['kind']:<10} "
+          f"log={len(r['commits']):<4} tip={tip}  {r['path']}")
+    print(f"      citers {len(r['citers'])}: {_cite_preview(r['citers'], r['roles'])}")
   never = by[NEVER]
   print(f"  {NEVER} NAMED  {len(never)}")
   for r in never:
@@ -242,6 +414,14 @@ def report(got: dict) -> None:
   print(f"  TOP CITERS of {NEVER}  {len(files)} file(s)")
   for rel, k in files.most_common(8):
     print(f"    {k:>4}  {rel}")
+  for label in CITE_CLASSES:
+    members = cite_by[label]
+    note = "  (neither: no discovered citer; not a skip)" if label == NO_CITER else ""
+    print(f"  {label} NAMED  {len(members)}{note}")
+    for r in members:
+      print(f"    {r['path']}")
+      if r["citers"]:
+        print(f"      citers {len(r['citers'])}: {_cite_preview(r['citers'], r['roles'])}")
   beyond = probe_beyond(rows)
   print(f"  BEYOND RECOVER()  {len(beyond)} grandparent blob(s) asked by path, not written back")
   for line in beyond[:12]:
@@ -261,16 +441,33 @@ def check(got: dict) -> tuple[int, str]:
   tally = Counter(r["class"] for r in rows)
   if sum(tally.values()) != len(rows):
     return FAIL, f"class counts sum to {sum(tally.values())} over {len(rows)}"
-  silent = [r["path"] for r in rows if not r["citers"]]
-  if silent:
-    return FAIL, f"{len(silent)} no-blob subject(s) have no discovered citer: {silent[:5]}"
-  return PASS, (f"{len(rows)} no-blob, " + " ".join(f"{k}={tally[k]}" for k in CLASSES))
+  cite_tally = Counter(r.get("cite") for r in rows)
+  gap = [r["path"] for r in rows if r.get("cite") not in CITE_CLASSES or r.get("role_gap")]
+  if gap:
+    return FAIL, f"{len(gap)} subject(s) carry no citation class: {gap[:5]}"
+  if sum(cite_tally[k] for k in CITE_CLASSES) != len(rows):
+    return FAIL, f"citation classes sum to {sum(cite_tally[k] for k in CITE_CLASSES)} over {len(rows)}"
+  for r in rows:
+    want = cite_of(r["citers"], r["roles"])
+    if r["cite"] != want:
+      return FAIL, f"{r['path']} cite={r['cite']} but the rule says {want}"
+    if r["cite"] == NO_CITER and r["citers"]:
+      return FAIL, f"{r['path']} is NO-CITER and has citers"
+    if r["cite"] != NO_CITER and not r["citers"]:
+      return FAIL, f"{r['path']} is {r['cite']} and has no citer"
+  cite = " ".join(f"{k}={cite_tally[k]}" for k in CITE_CLASSES)
+  return PASS, (f"{len(rows)} no-blob, " + " ".join(f"{k}={tally[k]}" for k in CLASSES) + " | " + cite)
+
+
+def _plant_path(leaf: str) -> str:
+  """A never-committed path built by concatenation, so this file does not cite it whole."""
+  return ".agents" + "/" + "slop/noblob-plant/" + leaf
 
 
 def _never_path() -> str:
   """A path this source must not cite as one token. `.agents` is dropped by `tokens()`
   (dot at index 0); the remainder is not a top-level name of the commit tree."""
-  return ".agents" + "/" + "slop/noblob-plant/never-existed.rows"
+  return _plant_path("never-existed.rows")
 
 
 def _existing(surveyed: dict, mod, skip: set[str]) -> str | None:
@@ -286,13 +483,170 @@ def _existing(surveyed: dict, mod, skip: set[str]) -> str | None:
   return None
 
 
+def _print_check(name: str, ok: bool, detail: str) -> bool:
+  print(f"  {'OK  ' if ok else 'FAIL'}  {name}")
+  print(f"        {detail}")
+  return ok
+
+
+def _cite_extra(syn: str, pfn: str, ex: str, prose: str, control: str, also: bool) -> str:
+  """Module-level functions appended to a copy. `also` adds a non-plant citer of the same paths."""
+  body = (
+    "def _synthetic():\n"
+    f"    return ({syn!r}, {control!r})\n"
+    "def plant():\n"
+    f"    return {pfn!r}\n"
+    "def show(x):\n"
+    f"    \"\"\"`{ex}` -> ['out'].\"\"\"\n"
+    "    return x\n"
+    "def prose():\n"
+    f"    \"\"\"named by a report: {prose} is not an example\"\"\"\n"
+    "    return 0\n"
+  )
+  if also:
+    body += (
+      "def not_a_plant():\n"
+      f"    return ({syn!r}, {pfn!r}, {ex!r}, {control!r})\n"
+    )
+  return body
+
+
+def _parsing_writer(writers: list[str]) -> str | None:
+  for w in writers:
+    try:
+      ast.parse((ROOT / w).read_text())
+    except (OSError, SyntaxError):
+      continue
+    return w
+  return None
+
+
+def _derive_appended(mod, writer: str, extra: str) -> dict | None:
+  """census+derive on a copy whose one namer is `writer` plus `extra`. Does not touch the index."""
+  import tempfile
+  text = (ROOT / writer).read_text() + "\n" + extra
+  try:
+    ast.parse(text)
+  except SyntaxError as exc:
+    print(f"PLANT REFUSED: the copy namer does not parse: {exc}")
+    return None
+  with tempfile.TemporaryDirectory(prefix="noblob-cite.") as tmp:
+    copy = Path(tmp) / "repo"
+    dest = copy / writer
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(text)
+    try:
+      return derive(mod, mod.census(copy), copy)
+    except Exception as exc:  # noqa: BLE001 -- a plant that hides this scores success on nothing
+      print(f"PLANT REFUSED: derive did not answer: {type(exc).__name__}: {exc}")
+      return None
+
+
+def _want(rows: dict, path: str, cite: str, role: str | None, writer: str) -> tuple[bool, str]:
+  row = rows.get(path)
+  if row is None:
+    return False, f"absent from the no-blob rows path={path}"
+  got_roles = sorted(set(row["roles"].values()))
+  ok = row["cite"] == cite and all(c.startswith(writer + ":") for c in row["citers"])
+  if role is not None:
+    ok = ok and got_roles == [role]
+  return ok, f"cite={row['cite']} roles={got_roles} citers={len(row['citers'])} path={path}"
+
+
+# Names the citation plant must print. A PASS that did not emit these scored success on nothing.
+CITE_REQUIRED = (
+  "PLANT citation inside _synthetic() is PLANT-CITATION",
+  "FALSIFY the same path cited from a non-plant function is LOAD-BEARING",
+  "PLANT citation inside plant() is PLANT-CITATION",
+  "FALSIFY the same plant() path cited from a non-plant function is LOAD-BEARING",
+  "PLANT backtick example in a docstring is PLANT-CITATION",
+  "FALSIFY the same docstring example cited from a non-plant function is LOAD-BEARING",
+  "FALSIFY a prose docstring mention is not a docstring example",
+  "CONTROL an existing file cited from _synthetic() is in neither",
+  "CONTROL an existing file cited from a non-plant function is in neither",
+)
+
+
+def _cite_plant(mod, surveyed: dict, real: dict, writers: list[str], control: str) -> int:
+  """The citation-class plant, on copies. Prints every check. Empty emission is FAIL, not PASS."""
+  writer = _parsing_writer(writers)
+  if writer is None:
+    print("PLANT REFUSED: no discovered gates/*.py namer parses; the function span cannot be read")
+    return REFUSED
+  syn, pfn, ex, prose = (
+    _plant_path("from-synthetic.rows"), _plant_path("from-plant-fn.rows"),
+    _plant_path("from-example.rows"), _plant_path("from-prose.rows"))
+  own = (HERE / "noblob-census.py").read_text()
+  own_toks = set(mod.tokens(own))
+  real_missing = {r["path"] for r in real["rows"]}
+  for path in (syn, pfn, ex, prose):
+    if path in own_toks or path in real_missing or (ROOT / path).exists():
+      print(f"PLANT REFUSED: {path} is already a token, a subject, or a file")
+      return REFUSED
+  checks: list[tuple[str, bool, str]] = []
+  print(f"  CITE PLANT writer={writer}  config=plant-only")
+  only = _derive_appended(mod, writer, _cite_extra(syn, pfn, ex, prose, control, also=False))
+  if only is None:
+    return REFUSED
+  only_rows = {r["path"]: r for r in only["rows"]}
+  checks += [
+    ("PLANT citation inside _synthetic() is PLANT-CITATION",
+     *_want(only_rows, syn, PLANT_CITE, "func", writer)),
+    ("PLANT citation inside plant() is PLANT-CITATION",
+     *_want(only_rows, pfn, PLANT_CITE, "func", writer)),
+    ("PLANT backtick example in a docstring is PLANT-CITATION",
+     *_want(only_rows, ex, PLANT_CITE, "example", writer)),
+    ("FALSIFY a prose docstring mention is not a docstring example",
+     *_want(only_rows, prose, LOAD, "load", writer)),
+    ("CONTROL an existing file cited from _synthetic() is in neither",
+     control not in only_rows,
+     f"in-rows={control in only_rows} path={control}"),
+  ]
+  for name, ok, detail in checks:
+    _print_check(name, ok, detail)
+  print(f"  CITE PLANT writer={writer}  config=same-path-from-non-plant")
+  both = _derive_appended(mod, writer, _cite_extra(syn, pfn, ex, prose, control, also=True))
+  if both is None:
+    return REFUSED
+  both_rows = {r["path"]: r for r in both["rows"]}
+  # The falsification is the mix: the plant-class citer is still there, and the non-plant citer
+  # moves the path to LOAD-BEARING. A class word alone would not show that.
+  mixed = (
+    ("FALSIFY the same path cited from a non-plant function is LOAD-BEARING", syn, "func"),
+    ("FALSIFY the same plant() path cited from a non-plant function is LOAD-BEARING", pfn, "func"),
+    ("FALSIFY the same docstring example cited from a non-plant function is LOAD-BEARING", ex, "example"),
+  )
+  for name, path, plant_role in mixed:
+    row = both_rows.get(path)
+    roles = set() if row is None else set(row["roles"].values())
+    ok = (row is not None and row["cite"] == LOAD and "load" in roles and plant_role in roles
+          and all(c.startswith(writer + ":") for c in row["citers"]))
+    detail = f"cite={None if row is None else row['cite']} roles={sorted(roles)} path={path}"
+    checks.append((name, ok, detail))
+    _print_check(name, ok, detail)
+  neither = control not in both_rows
+  checks.append(("CONTROL an existing file cited from a non-plant function is in neither",
+                 neither, f"in-rows={control in both_rows} path={control}"))
+  _print_check(checks[-1][0], checks[-1][1], checks[-1][2])
+  missing = [n for n in CITE_REQUIRED if n not in {c[0] for c in checks}]
+  if missing:
+    _print_check("citation plant emitted every required check", False, ", ".join(missing))
+    return FAIL
+  bad = [n for n, ok, _d in checks if not ok]
+  if bad:
+    return FAIL
+  return PASS
+
+
 def plant(mod, surveyed: dict, real: dict) -> int:
-  """Three checks, on a copy of one namer and a private index. The real index is not written.
+  """Checks on a copy of one namer and, for the history arm, a private index. The real index is not written.
 
   PLANT     a citation of a path that has never existed appears as NEVER-IN-HISTORY.
   FALSIFY   a citation of a path whose blob is deleted from the copy's index, but which
             `git log --all -- <path>` still has, does not become NEVER-IN-HISTORY.
-  CONTROL   an existing file is not in the no-blob list.
+  CONTROL   an existing file is in neither citation class.
+  CITE      a citation inside `_synthetic()` is PLANT-CITATION; the same path cited from a
+            non-plant function is LOAD-BEARING. A plant that emits nothing is not a PASS.
   """
   import tempfile
   never = _never_path()
@@ -360,16 +714,23 @@ def plant(mod, surveyed: dict, real: dict) -> int:
      victim_class != NEVER and (victim_row is None or victim_row["class"] != NEVER),
      f"git-log={'empty' if victim_class == NEVER else 'non-empty'} "
      f"in-noblob={victim in copy_rows} path={victim}"),
-    ("CONTROL an existing file is not in the no-blob list",
+    ("FALSIFY a module-level citation is LOAD-BEARING, not PLANT-CITATION",
+     never_row is not None and never_row.get("cite") == LOAD,
+     f"cite={None if never_row is None else never_row.get('cite')} path={never}"),
+    ("CONTROL an existing file is in neither citation class",
      control not in real_missing and control not in copy_rows,
      f"real={control in real_missing} copy={control in copy_rows} path={control}"),
   ]
-  for name, ok, detail in checks:
-    print(f"  {'OK  ' if ok else 'FAIL'}  {name}")
-    print(f"        {detail}")
-  bad = [n for n, ok, _d in checks if not ok]
-  print(f"  VERDICT {'PASS' if not bad else 'FAIL: ' + '; '.join(bad)}")
-  return PASS if not bad else FAIL
+  bad = [n for n, ok, _d in checks if not _print_check(n, ok, _d)]
+  cite_rc = _cite_plant(mod, surveyed, real, writers, control)
+  if cite_rc == REFUSED and not bad:
+    return REFUSED
+  if bad or cite_rc != PASS:
+    extra = [] if cite_rc == PASS else ["citation plant"]
+    print(f"  VERDICT FAIL: {'; '.join([*bad, *extra])}")
+    return FAIL
+  print("  VERDICT PASS")
+  return PASS
 
 
 def main(argv: list[str] | None = None) -> int:
