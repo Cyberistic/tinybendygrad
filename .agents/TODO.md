@@ -1243,7 +1243,42 @@ all-three-green [##########] 3/3  **2026-10-20T20:40Z: THE CORPUS IS GREEN, REPR
                                        SUBSTRATE'S IDENTITY -- AND ONLY THE THIRD SAYS WHETHER THE FIRST
                                        TWO ARE ABOUT THE TREE AS IT STANDS.**
 
-refused-is-3 [##########] 3/3  **FOUR SITES PRINTED `REFUSED` AND EXITED 2, AND TWO OF THE FILES SAID SO
+refused-is-3 [##########] 4/4  **ELEVEN SITES PRINTED `REFUSED` AND EXITED 2, AND THE CLASS IS NOW CLOSED.**
+                                       MEASURED 2026-10-20, from a dispatched unit's census of exit code 2:
+                                       **2 IS NEITHER USAGE NOR REFUSED -- IT IS A SPARE NUMBER CARRYING SIX
+                                       CLASSES.** THE SHARPEST SINGLE FACT IS ONE FILE USING TWO NUMBERS FOR
+                                       ONE MEANING: `checks/disagree-gate.py:557` returned **2** for "the
+                                       pin file is missing -- the pin has no reader" while the SAME FILE at
+                                       `:592` returns **3** for a refusal, and its OWN COMMENT at :540-543
+                                       says *"2 IS NOT NEUTRAL HERE ... a caller reading `$?` could not tell
+                                       'you passed a bad --tree' from 'the corpus was never run'. ABSENT AND
+                                       STALE ARE BOTH REFUSED (3) AND ARE DISTINGUISHED BY TOKEN, NOT BY
+                                       EXIT."* **IT STATES THE RULE AND BREAKS IT 18 LINES LATER.**
+                                       **ELEVEN SITES FIXED TO 3**, and the tree now says REFUSED in ONE
+                                       number: `gates/gate-surface.py:226` (its `refuse()` helper) and
+                                       `:434` (the EMPTY POPULATION refusal) · `gates/retention-check.py:197`
+                                       (its `refuse()` helper) · `checks/disagree-gate.py:557` ·
+                                       `gates/mixin-op-gate.py:99` and `gates/beautiful-mnist-gate.py:89`
+                                       (both: "the frozen shell oracle MOVED, so this run would compare
+                                       against nothing") · `checks/e2e.py:589` ("SUBSTRATE OR FIXTURE, not a
+                                       verdict") · `checks/txt-owners.py:273` ("no such file, so nothing
+                                       was checked") · `checks/repair-dupes.py:99` and its fixture copy
+                                       ("CANNOT be checked") · `gates/linearizer_census-oracle.py:207` --
+                                       which is the ORACLE'S OWN SELF-CHECK, so a failure means it CANNOT
+                                       ANSWER, which is REFUSED and not FAIL.
+                                       **THE 12 SITES THAT STILL EXIT 2 ARE ALL CORRECT, AND THE
+                                       CLASSIFICATION IS BY MEASUREMENT NOT BY ASSUMPTION**: **9 are
+                                       argparse's own usage code** (where 2 IS the usage code and belongs
+                                       there) · **2 print a usage message** (`checks/al-verdict.py:127`
+                                       and `checks/.e2e-fixture/opsbend_milestone_gate.py:114`) · **1 IS
+                                       NOT AN EXIT AT ALL** (`gates/amd_dsl_census-oracle.py:1046` returns a
+                                       COUNT of source rungs, and the census unit caught exactly that).
+                                       **SO: ZERO REFUSALS REMAIN EXITING 2, AND EVERY SURVIVING 2 IS
+                                       EITHER A USAGE CODE OR NOT A CODE.**
+                                       `gates/gate-surface.py`'s `vocabulary()` READS
+                                       `gates/gatekit.py`'s unpack, so it inherits {0,1,3,4,5} and 2 is
+                                       simply UNNAMED -- and that file's own rule is that "a number with
+                                       no agreed meaning must be NAMED rather than resolved."
                                        THEMSELVES.** MEASURED 2026-10-20, from a dispatched unit's census
                                        of exit code 2: **2 IS NEITHER USAGE NOR REFUSED -- IT IS A SPARE
                                        NUMBER CARRYING SIX CLASSES** (argparse's own usage code, which is

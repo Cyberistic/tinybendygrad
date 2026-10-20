@@ -270,7 +270,9 @@ def scoped_gate(names: list[str]) -> int:
     missing = [n for n in names if not os.path.isfile(os.path.join(ROOT, n))]
     if missing:
         print(f"  GATE  no such file, so nothing was checked: {missing}")
-        return 2
+        # REFUSED (3), NOT 2: "no such file, so nothing was checked" is an ABSENT SUBJECT. 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary.
+        # 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary.
+        return 3
     red = 0
     seen = 0
     for name in names:

@@ -96,7 +96,9 @@ def main() -> None:
         sys.exit(1)
     if not GOOD.exists():
         print(f"  {GOOD} is absent -- rows vs the recorded good run CANNOT be checked")
-        sys.exit(2)
+        # REFUSED (3), NOT 2: "GOOD is absent -- rows vs the recorded good run CANNOT be checked" is an ABSENT SUBJECT. 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary, so a reader of `$?` could not tell this from a usage error.
+        # 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary, so a reader of `$?` could not tell this from a usage error.
+        sys.exit(3)
     same = GOOD.read_bytes() == r.stdout.encode()
     print(f"  rows vs committed good run {GOOD.name}: "
           f"{'IDENTICAL, 0 bytes' if same else 'DIFFER'}")

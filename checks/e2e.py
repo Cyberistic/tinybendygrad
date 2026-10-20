@@ -586,7 +586,9 @@ def bend_run() -> int:
         time.sleep(1)
     say_err(b"bend: no run produced rows in 8 attempts -- SUBSTRATE OR FIXTURE, not a verdict\n")
     say_err(b"".join(raw(err).splitlines(keepends=True)[:3]))   # `head -3`, unmodified
-    return 2
+    # REFUSED (3), NOT 2: the message above says "SUBSTRATE OR FIXTURE, not a verdict" -- an ABSENT SUBJECT. 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary, so a reader of `$?` could not tell this from a usage error.
+    # 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary, so a reader of `$?` could not tell this from a usage error.
+    return 3
 
 
 def say_err(s: bytes) -> None:

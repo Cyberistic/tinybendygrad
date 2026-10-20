@@ -96,7 +96,9 @@ if __name__ == "__main__":
         print("  the frozen shell oracle moved, so this run would compare against nothing. "
               "Restore it, or re-freeze it deliberately and update ORACLE_PIN -- do not delete "
               "the pin.", file=sys.stderr)
-        sys.exit(2)
+        # REFUSED (3), NOT 2: the frozen oracle MOVED, so this run would compare against nothing -- an ABSENT SUBJECT. 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary, so a reader of `$?` could not tell this from a usage error.
+        # 2 is argparse's usage code and is UNNAMED in gatekit's vocabulary, so a reader of `$?` could not tell this from a usage error.
+        sys.exit(3)
     code = GATE.run()
     ok = code == 0
     # THE SHELL'S OWN LINES. `--check-only`'s stdout goes through to the reader in the shell,

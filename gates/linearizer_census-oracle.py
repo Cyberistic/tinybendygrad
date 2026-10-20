@@ -204,7 +204,9 @@ def ladder_check():
             print("ladder_check: the transcription disagrees with linearize", file=sys.stderr)
             print(f"  predicted {[u.op.name for u in want]}", file=sys.stderr)
             print(f"  linearize {[u.op.name for u in got]}", file=sys.stderr)
-            sys.exit(2)
+            # REFUSED (3), NOT 2: this is the ORACLE'S OWN SELF-CHECK (`ladder_check()` -- "THE ORACLE HAS ONE TRANSCRIPTION AND IT IS CHECKED ON EVERY RUN", per the gate's docstring at :52-54). A self-check that fails means the oracle CANNOT ANSWER, and "cannot answer" is REFUSED, not FAIL -- it is not evidence that the port is wrong.
+            # A self-check that fails means the oracle CANNOT ANSWER, and "cannot answer" is REFUSED, not FAIL -- it is not evidence that the port is wrong.
+            sys.exit(3)
 
 
 ladder_check()
