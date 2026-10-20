@@ -127,20 +127,26 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
   green. TRUST THE RED ONE.**
-  **AND AS OF **2026-10-19** (`65d64bb74`) **THE CORPUS IS **GREEN** AND **THIS **IS **A **FIRST**:**
+  **AND AS OF **2026-10-20T20:33Z** (`ff4501d2a`, **AFTER **THE **RE-VENDOR **AND **AFTER **TONIGHT's **PORT **WORK**)
+  **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
+  **THREE **HELD **AT **ONCE**:
   `graphs=34 graphs-answered=34 graphs-agree=34 graphs-disagree=0 byte-identical=34 graphs-refused=0`,
   `?=0`, `SHARED cores 52`, `plants-disagree 7 of 7`, `controls 5 of 5`, `conflations 4 of 4`,
-  `stable-pairs 5 of 5`, `oracle-selfcheck=OK`, `census-rc=rc=0`, **`selfcheck=# SELFCHECK: OK`**,
+  `stable-pairs 5 of 5`, `stable-failed 0 of 5`, `stable-differ 0 of 5`, `expect-moved 0`,
+  `oracle-selfcheck=OK`, `census-rc=rc=0`, **`selfcheck=# SELFCHECK: OK`**,
   **`unhealthy() -> 0 line(s)`** (THE READING IS **EMPTY**, NOT "0 COMPLAINTS"), **`artefacts_ok() -> 0`**,
-  **`repro_bad()` — AND **THE **RE-VENDOR **AT **`00:53:51Z` **(`77e6c2bec`, `tinygrad/` `62319c8a -> 6c91e897`)
-  **MOVED **THE **SUBSTRATE, **AND **THE **REPRO **WAS **TAKEN **AT **`00:53:53Z` -- ***TWO **SECONDS **LATER, **BY
-  **HAND.** **RUN **A **WROTE `D0-run-summary.txt` AT **`00:56:48Z`** (CAPTURED `sha256 60021685b581bdf…`) **AND
-  **RUN **B **WROTE `D0-repro.txt` AT **`00:59:50Z` **WITH **`repro-identical=0`, `repro-rc=rc=1`** ***SO **THE
-  **REPRODUCIBILITY **HALF **OF **THIS **SENTENCE **IS **NOW **FALSE**, **WHILE **THE **34/34 **HALF **IS **CURRENT** —
-  **AND **THE **CORPUS **IS **GREEN **RIGHT **NOW **NOT **BECAUSE **ANYTHING **FIRED** **BUT **BECAUSE **THE **AGENT
-  **THAT **RE-VENDORED **ALSO **RAN **THE **REPRO, **MANUALLY, **TWO **SECONDS **LATER.***** **THE **COUPLING **IS **IN
-  **SOMEONE's **HEAD, **NOT **IN **THE **TREE.** **AND **THE **RE-RUN **TOOK **357 s** (BOTH RUNS, **`00:53:53Z ->
-  00:59:50Z`**) **— **DO **NOT **QUOTE **THE **HISTORICAL **1937-2317 s / ~1050 MB, **IT **DID **NOT **REPRODUCE.**
+  **`repro_bad() -> 0`**, **AND `repro`: `310 of 310 files identical across two clean runs`**
+  (`D0-repro.txt`: `repro-files=310 repro-identical=310 repro-rc=rc=0`).
+  ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
+  **`substrate-start == substrate-end == live == f0080ea2049ff9b7...`** -- **THE **RUN **DESCRIBES **THE **TREE **AS **IT
+  **STANDS**, **AND `substrate-head=ff4501d2a` **IS **THE **COMMIT **IT **WAS **TAKEN **ON.***
+  ***AND **THE **RE-RUN **TOOK **352 s / 1070 MB** (BOTH RUNS, **ON **A **QUIET **MACHINE**), **TOKEN `WITHIN-LIMITS`***
+  -- **THE **HISTORICAL **1937-2317 s** **IS **STILL **THE **HONEST **FIGURE **FOR **A **CONTENDED **TREE**, **AND **THE
+  **`MACHINE: VIOLATED` **LINE **IS **NOT **ATTRIBUTABLE **TO **THE **CHILD** (LOADAVG **5.4** ON **12** CORES).**
+  **AND **THE **LESSON **OF **THE **SESSION**, **WHICH **IS **WHY **THE **THREE **HELD **TOGETHER **ONLY **AT **THE **END**:
+  **THE **CORPUS **WAS **GREEN **AT **`00:16Z` **AND **THEN **WAS **STALE **WITHIN **THE **HOUR** -- **BECAUSE **A **UNIT
+  **WAS **PORTING `tinybendygrad/extra/` **AND **EVERY **`.bend` **EDIT **MOVES `substrate_digest()`.** **SO **A **GREEN
+  **CORPUS **IS **NOT **A **CERTIFICATE **UNTIL **THE **TREE **STOPS **MOVING.**
   **AND **NOTE **`gates/corpuswitness-gate.py:286` **HARD-CODES `judge("claim", …, verdict="REPRODUCIBLE")`** -- **FED
   **A **WITNESS **SAYING `repro-rc=rc=0` **AND **ONE **SAYING `rc=1`, **THE `claim` **ROW **IS **BYTE-IDENTICAL**; **IT
   **IS **A **ROW **THAT **CANNOT **GO **RED** -- `differ.py`'s **OWN **PLANT **3: "if it does not go red, the row is a
