@@ -141,13 +141,17 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   compiling**, and under the sum-precondition above.
   **WHAT IS TRUE AS OF 2026-10-19 (`212f1443`), ALL OF IT MEASURED:**
   - **THE GATE HAS **NEVER** BEEN RUN ON THE REAL TREE.** Every stage verdict in this file is from a transcript, and
-    the one on disk is **11.7 DAYS OLD** (`.agents/slop/e2epy/artifacts/live.port.out`, mtime **`Oct 7 23:25`**).
+    the one on disk is **OLD — READ **ITS **MTIME**, **NOT **A **DURATION**: A **DURATION **IN **PROSE **ROTS **HOURLY
+    WHILE **THE **REST **OF **THE **SENTENCE **STAYS **TRUE**, **AND **THIS **SENTENCE **HAD **ONE** (`.agents/slop/e2epy/artifacts/live.port.out`, mtime **`Oct 7 23:25`**).
     ***AND IT **IS **NOT **GITIGNORED** — ONLY `runs/` **IS** (`.gitignore:262`) — **SO `git status` **WOULD **HAVE
     SHOWN **IT **CLEAN **AND **PROVED **NOTHING**.** THE **MTIME **IS **THE **PROOF.**
   - **`.agents/slop/ops_bend-milestone-expected.txt` **DOES **NOT **EXIST** — IT **WAS **RENAMED **TO **`.md`**, AND
     THE LOADER **NOW **RESOLVES **IT **BY **STEM** (`ops_bend-milestone-expected`), NOT BY EXTENSION: **A
-    `.txt`-THEN-`.md` FALLBACK **IS **A **HAND **LIST**. `runtime/dtype.js` **IS **ABSENT **ENTIRELY**; `cdp.mjs`'s
-    counterpart **IS **ALSO **ABSENT**. **THE "**BOTH EXIST**" **CLAIM **WAS **FALSE **ON **BOTH **COUNTS.**
+    `.txt`-THEN-`.md` FALLBACK **IS **A **HAND **LIST**. **`runtime/dtype.js` **IS **ABSENT **FROM **`tinygrad/runtime/`**
+    **— **AND **THAT **QUALIFICATION **IS **THE **WHOLE **POINT**: **`tinybendygrad/runtime/dtype.js` **EXISTS** (8,884 B,
+    **IN HEAD**), **AND **AN **UNQUALIFIED **"**ABSENT **ENTIRELY**" **IS **READ **AGAINST **THE **DIRECTORY **THAT **HAS
+    **IT**; **ALWAYS **QUALIFY **THE **TREE.** `cdp.mjs`'s counterpart **IS **ALSO **ABSENT**. **THE "**BOTH EXIST**"
+    **CLAIM **WAS **FALSE **ON **BOTH **COUNTS.**
   - **STAGE 7 **SKIPS** BECAUSE `run-f64.sh` REFUSES A COLD SUBSTRATE. **IF **THAT **IS **STILL **TRUE**, THE GATE
     EXITS **4**, **NOT **0** — **AND **THAT **IS **THE **GATE **BEING **HONEST, NOT **A **DEFECT **TO **HIDE**;
     `AGENTS.md`'s OWN RULE SAYS A `SKIP` **IS **NOT **A `PASS` **AND **THE **EXIT **STATUS **SAYS **SO.** **DO **NOT **
