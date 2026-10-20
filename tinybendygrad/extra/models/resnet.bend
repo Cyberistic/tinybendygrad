@@ -18,17 +18,32 @@ import ./../datasets/__init__.bend as D
 # exactly rather than rounding it to "not done".
 # Measured 2026-10-19 03:46-04:05Z at HEAD 80d329a33, all by reading the port.
 #
-# THE HEADLINE: `nn.Conv2d`, `nn.BatchNorm2d` AND `nn.Linear` ARE ALL MISSING.
-# `tinybendygrad/nn/__init__.bend` is 429 lines and holds NO LAYER CLASS. It
-# holds the SHAPE ARITHMETIC the layers need and nothing else:
+# THE HEADLINE, CORRECTED 2026-10-20 -- **AND THE CORRECTION IS THE POINT.** This used to read
+# "`nn.Conv2d`, `nn.BatchNorm2d` AND `nn.Linear` ARE ALL MISSING", and **THREE UNITS REPORTED IT AS
+# STALE WHILE IT WAS STILL TRUE-ISH**: `nn/layers.bend` and `nn/pool.bend` landed and CLOSED IT, and a
+# wall that has FALLEN is still NAMED as a wall. Measured now, by NAME, not by count --
+#   nn_conv2d     nn/layers.bend:756      nn_linear    nn/layers.bend:427
+#   nn_relu       nn/layers.bend:262      pool_bn      nn/pool.bend:381
+#   pool_maxpool  nn/pool.bend:250
+# **WHAT IS ACTUALLY STILL MISSING**, named and checked, and the distinction MATTERS: `vt_sequential`
+# and `vt_layernorm` DO exist -- at `extra/models/vit.bend:153` and `:157` -- **but both are STUB
+# REFUSALS inside another model's stub, not ported layers.** So "the name is absent" and "the layer is
+# absent" are DIFFERENT QUESTIONS, and a census that answers the first while being read as the second
+# is the same defect as this headline was. Genuinely ABSENT everywhere, 0 defs:
+# `scaled_dot_product_attention` and `identity_element` (the latter is why BOTH padded pool arms
+# refuse), plus `Tensor.cat` and reshape's `-1` inference. **ZERO nn LAYER CLASSES** --
+# `nn/__init__.bend` is 429 lines of shape arithmetic and still holds no class.
+# `nn/__init__.bend:230` still reads "`x.layernorm -- SIDE B, not built`", which is TRUE, so it is
+# deliberately NOT touched.
+# `nn/__init__.bend` holds the SHAPE ARITHMETIC the layers need and nothing else:
 #   nn_mt      :151   `make_tuple`                        nn_groups :175  `in_channels//groups`
 #   nn_same    :196   `padding='same'`                    nn_scale  :209  `1/sqrt(in_c*prod(ks))`
 #   nn_bound   :210   `1/sqrt(n)`                         nn_glorot :217  `(6/(fan_in+fan_out))**0.5`
-# and it says why in its own words at :94 -- "every `__call__` is a `TODO(p3)`
-# naming the line: 11 of the 13 classes. I am NOT writing defs that return a
-# `TODO`". Its wall list names the three this file needs first:
+# Its own wall list named the three this file needs first:
 #   :231  `TODO(p3) mixin/op.py  x.conv2d           -- SIDE B, not built.`
 #   :229  `TODO(p3) mixin/op.py:1662  x.batchnorm   -- SIDE B, not built.`
+# -- both are now BUILT, and that list is kept above ONLY as the record of what was true on
+# 2026-10-19, because a deleted blocker is how the NEXT reader thinks nothing was ever missing.
 #   :227  `TODO(p3) mixin/op.py:1254  x.linear       -- ...`
 #
 # AND `tinybendygrad/mixin/op.bend:1523` IS THE LAST LINE OF THAT FILE and reads
