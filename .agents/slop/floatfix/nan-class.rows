@@ -1,0 +1,11 @@
+# measure-nan-class.py -- 2026-10-20T16:48:23Z -- .venv/bin/python .agents/slop/floatfix/measure-nan-class.py
+half NaN class: 2046 patterns (both signs)
+f32 NaN class: 128 patterns sampled from the two ends
+  half->f32 : js-vs-oracle 2044/2046 | c-vs-oracle 0/2046 | js-vs-c 2044/2046
+    h2f_7c01: oracle=7fc00000 js=7f802000 c=7fc00000
+    h2f_7e00: oracle=7fc00000 js=7fc00000 c=7fc00000
+    h2f_7fff: oracle=7fc00000 js=7fffe000 c=7fc00000
+    h2f_fc01: oracle=ffc00000 js=ff802000 c=ffc00000
+  f32->half : js-vs-oracle 0/128 | c-vs-oracle 0/128 | js-vs-c 0/128
+    f16b_7f800001: oracle=7e00 js=7e00 c=7e00
+    f16b_ffffffff: oracle=fe00 js=fe00 c=fe00
