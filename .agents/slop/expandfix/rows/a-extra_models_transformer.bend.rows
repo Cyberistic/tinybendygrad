@@ -1,0 +1,2 @@
+transformer_refused_at=extra/models/transformer.py:4 TransformerBlock.__init__ -- reached :12 Tensor.scaled_uniform (mixin/rand.bend:855 EXISTS); BLOCKED AT :27 scaled_dot_product_attention via attn
+transformer_attention_exists=False

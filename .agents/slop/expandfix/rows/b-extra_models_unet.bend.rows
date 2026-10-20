@@ -1,0 +1,8 @@
+unet_refused_at=extra/models/unet.py:142 UNetModel.__init__ -- FIRST MISSING SYMBOL ResBlock at :184, i.e. nn.GroupNorm at unet.py:20
+unet_ported=False
+unet_first_blocker_line=extra/models/unet.py:12
+unet_first_blocker=Tensor.arange
+unet_headline_blocker=Tensor.scaled_dot_product_attention -- shared with transformer.bend and mixin/rand.bend:87-90
+unet_classes=11
+unet_alias_dtype=S.half() -- dtype.bend:53 renamed dtypes.float16
+unet_default_num_groups=32

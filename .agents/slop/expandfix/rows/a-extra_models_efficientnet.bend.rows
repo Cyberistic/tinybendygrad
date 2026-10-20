@@ -1,0 +1,8 @@
+efficientnet_refused_at=extra/models/efficientnet.py:8 MBConvBlock.__init__ -- FIRST MISSING SYMBOL BatchNorm2d at :12, whose running-statistics half is REFUSED at nn/pool.bend:415 (TRAINING is not a binding, Tensor.assign is not a def)
+efficientnet_ported=False
+efficientnet_mbconv_init_line=extra/models/efficientnet.py:8
+efficientnet_first_blocker=BatchNorm2d running stats -- nn/pool.bend:415
+efficientnet_pad_half_k3=1
+efficientnet_pad_stride2_k3=0
+efficientnet_oup_b0_expand6=192
+efficientnet_global_rows=10

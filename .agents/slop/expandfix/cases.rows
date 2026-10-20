@@ -1,0 +1,18 @@
+# THE EXPAND marg: CPython's rule, the port BEFORE, and the port AFTER.
+#
+# CPython: `_broadcast_to` (tinygrad/mixin/movement.py:128-146). The marg is
+#   new_shape[:n_left]  ++  the dims of the SOURCE axes that were 1 and became bigger,
+#   with a squeeze before and a permute after, so the result's shape IS the target.
+#
+# PORT: the EXPAND node's own shape is `tuple(self.marg) + ps` (tinygrad/uop/ops.py:397),
+#   so `marg` is read off the node with `mixin/movement.bend`'s `mxm_marg`.
+#
+# cols: case | src -> dst | CPython marg | CPython shape | BEFORE marg | BEFORE expand shape |
+#       BEFORE final | AFTER marg | AFTER expand shape | AFTER final | verdict
+case1_conv_expand	1,1,4,1,14,14,3,3 -> 1,1,4,8,14,14,3,3	8	1,1,4,8,14,14,3,3	1,1,4,8,14,14,3,3	1,1,4,8,14,14,3,3,1,1,4,1,14,14,3,3	1,1,4,8,14,14,3,3,1,1,4,1,14,14,3,3	8	8,1,1,4,14,14,3,3	1,1,4,8,14,14,3,3	OK: the marg is CPython's and the shape is the target
+case2_repeat	1,64,1,58,1,58 -> 1,64,4,58,4,58	4,4	1,64,4,58,4,58	1,64,4,58,4,58	1,64,4,58,4,58,1,64,1,58,1,58	1,64,232,232	4,4	4,4,1,64,58,58	1,64,232,232	OK: the marg is CPython's and the shape is the target
+case3_repeat_mid	1,64,1,58,1,58 -> 1,64,4,58,4,58	4,4	1,64,4,58,4,58	1,64,4,58,4,58	1,64,4,58,4,58,1,64,1,58,1,58	1,64,4,58,4,58,1,64,1,58,1,58	4,4	4,4,1,64,58,58	1,64,4,58,4,58	OK: the marg is CPython's and the shape is the target
+case4_pool_maxpool	1,64,1,58,1,58 -> 1,64,4,58,4,58	4,4	1,64,4,58,4,58	1,64,4,58,4,58	1,64,4,58,4,58,1,64,1,58,1,58	1,64,28,28,3,3	4,4	4,4,1,64,58,58	1,64,28,28,3,3	OK: the marg is CPython's and the shape is the target
+case5_scalar_expand	 -> 2,3,4	2,3,4	2,3,4	2,3,4	2,3,4	2,3,4	2,3,4	2,3,4	2,3,4	UNCHANGED (the 0-dim source: every dim is left-added)
+case6_left_added	4 -> 2,3,4	2,3	2,3,4	2,3,4	2,3,4,4	2,3,4,4	2,3	2,3,4	2,3,4	OK: the marg is CPython's and the shape is the target
+case7_middle_one	2,1,5 -> 2,3,5	3	2,3,5	2,3,5	2,3,5,2,1,5	2,3,5,2,1,5	3	3,2,5	2,3,5	OK: the marg is CPython's and the shape is the target

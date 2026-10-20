@@ -1,0 +1,98 @@
+A
+  x.shape          = (2, 3)
+  w.shape          = (3, 4)
+  dx,dw            = 2,2
+  k=min(dx-1,dw-1,1) = 1
+  axis_w=-min(dw,2) = -2
+  guard w.shape[axis_w] = 3  (x.shape[-1] = 3)
+  x.shape[0:-1]    = (2,)
+  w.shape[0:-2]    = ()
+  w.shape[axis_w:] = (3, 4)
+  x' target        = (2, 1, 3)
+  w' target        = (1, 3, 4)  (before transpose)
+  x.dot(w).shape   = (2, 4)
+
+B
+  x.shape          = (2, 4, 3)
+  w.shape          = (3, 4)
+  dx,dw            = 3,2
+  k=min(dx-1,dw-1,1) = 1
+  axis_w=-min(dw,2) = -2
+  guard w.shape[axis_w] = 3  (x.shape[-1] = 3)
+  x.shape[0:-1]    = (2, 4)
+  w.shape[0:-2]    = ()
+  w.shape[axis_w:] = (3, 4)
+  x' target        = (2, 4, 1, 3)
+  w' target        = (1, 3, 4)  (before transpose)
+  x.dot(w).shape   = (2, 4, 4)
+
+C
+  x.shape          = (8, 64, 7, 7)
+  w.shape          = (7, 16)
+  dx,dw            = 4,2
+  k=min(dx-1,dw-1,1) = 1
+  axis_w=-min(dw,2) = -2
+  guard w.shape[axis_w] = 7  (x.shape[-1] = 7)
+  x.shape[0:-1]    = (8, 64, 7)
+  w.shape[0:-2]    = ()
+  w.shape[axis_w:] = (7, 16)
+  x' target        = (8, 64, 7, 1, 7)
+  w' target        = (1, 7, 16)  (before transpose)
+  x.dot(w).shape   = (8, 64, 7, 16)
+
+D
+  x.shape          = (2, 3)
+  w.shape          = (3,)
+  dx,dw            = 2,1
+  k=min(dx-1,dw-1,1) = 0
+  axis_w=-min(dw,2) = -1
+  guard w.shape[axis_w] = 3  (x.shape[-1] = 3)
+  x.shape[0:-1]    = (2,)
+  w.shape[0:-2]    = ()
+  w.shape[axis_w:] = (3,)
+  x' target        = (2, 3)
+  w' target        = (3,)  (before transpose)
+  x.dot(w).shape   = (2,)
+
+E
+  x.shape          = (2, 3, 4)
+  w.shape          = (3, 4, 5)
+  dx,dw            = 3,3
+  k=min(dx-1,dw-1,1) = 1
+  axis_w=-min(dw,2) = -2
+  guard w.shape[axis_w] = 4  (x.shape[-1] = 4)
+  x.shape[0:-1]    = (2, 3)
+  w.shape[0:-2]    = (3,)
+  w.shape[axis_w:] = (4, 5)
+  x' target        = (2, 3, 1, 4)
+  w' target        = (3, 1, 4, 5)  (before transpose)
+  x.dot(w) RAISED  = IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3, 1, 4), (3, 1, 5, 4))
+
+F
+  x.shape          = (2, 3, 4)
+  w.shape          = (3, 4, 1)
+  dx,dw            = 3,3
+  k=min(dx-1,dw-1,1) = 1
+  axis_w=-min(dw,2) = -2
+  guard w.shape[axis_w] = 4  (x.shape[-1] = 4)
+  x.shape[0:-1]    = (2, 3)
+  w.shape[0:-2]    = (3,)
+  w.shape[axis_w:] = (4, 1)
+  x' target        = (2, 3, 1, 4)
+  w' target        = (3, 1, 4, 1)  (before transpose)
+  x.dot(w) RAISED  = IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3, 1, 4), (3, 1, 1, 4))
+
+G
+  x.shape          = (3, 3, 4)
+  w.shape          = (3, 4, 1)
+  dx,dw            = 3,3
+  k=min(dx-1,dw-1,1) = 1
+  axis_w=-min(dw,2) = -2
+  guard w.shape[axis_w] = 4  (x.shape[-1] = 4)
+  x.shape[0:-1]    = (3, 3)
+  w.shape[0:-2]    = (3,)
+  w.shape[axis_w:] = (4, 1)
+  x' target        = (3, 3, 1, 4)
+  w' target        = (3, 1, 4, 1)  (before transpose)
+  x.dot(w).shape   = (3, 3, 1)
+

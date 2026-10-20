@@ -1,0 +1,7 @@
+case1_conv_expand	src=1,1,4,1,14,14,3,3	dst=1,1,4,8,14,14,3,3	marg=8	shape=1,1,4,8,14,14,3,3	conv2d op.py:1600-1601; the marg is (rcout,) and the permute puts it back
+case2_repeat	src=1,64,1,58,1,58	dst=1,64,4,58,4,58	marg=4,4	shape=1,64,4,58,4,58	repeat movement.py:576-604; the marg is the REPEAT COUNTS
+case3_repeat_mid	src=1,64,1,58,1,58	dst=1,64,4,58,4,58	marg=4,4	shape=1,64,4,58,4,58	the same expand, read on its own
+case4_pool_maxpool	src=1,64,1,58,1,58	dst=1,64,4,58,4,58	marg=4,4	shape=1,64,4,58,4,58	_pool movement.py:624; kk0=kk1=ceildiv(3*(58+1),58)=4
+case5_scalar_expand	src=	dst=2,3,4	marg=2,3,4	shape=2,3,4	creation.py:85 const(v,dt).expand(shape); a 0-dim source has EVERY dim left-added
+case6_left_added	src=4	dst=2,3,4	marg=2,3	shape=2,3,4	the target is WIDER than the source; the marg is the LEFT-ADDED dims only
+case7_middle_one	src=2,1,5	dst=2,3,5	marg=3	shape=2,3,5	a 1 in the middle, no left added; the marg is (3,)

@@ -1,0 +1,7 @@
+inception_refused_at=extra/models/inception.py:13 BasicConv2d.__init__ -- FIRST MISSING SYMBOL nn.Conv2d CLASS at :14; the OP nn_conv2d (nn/layers.bend:756) EXISTS and its bias is a Maybe<&2, T.Tensor>, so bias=False IS expressible
+inception_ported=False
+inception_first_blocker_line=extra/models/inception.py:14
+inception_first_blocker=nn.Conv2d CLASS -- the op nn_conv2d EXISTS at nn/layers.bend:756
+inception_pool_wall=all 10 pool calls need a padded arm; nn/pool.bend:252 and :262 both refuse on identity_element (uop/ops.py:61)
+inception3_sublayers=28
+inception3_num_classes_default=1008

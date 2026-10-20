@@ -1,0 +1,2 @@
+resnet_refused_at=extra/models/resnet.py:155 ResNet18 -- FIRST MISSING SYMBOL Conv2d (:87)
+resnet_ported=False

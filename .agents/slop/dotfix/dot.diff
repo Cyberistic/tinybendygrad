@@ -1,0 +1,31 @@
+--- a/tinybendygrad/nn/layers.bend
++++ b/tinybendygrad/nn/layers.bend
+@@ -287,10 +287,27 @@
+ def nn_dotk(+dx: U32, +dw: U32) -> U32:
+   Bool.to_u32(Bool.and(U32.is_ge(dx, 2), U32.is_ge(dw, 2)))
+ 
++# `xs[0:-n]` -- CPython's TAIL SLICE, WHICH `List.drop` CANNOT SPELL.
++#
++# `List.drop` (references/bend/bend2/base.bend:993) IS A HEAD DROP: IT ANSWERS
++# `xs[n:]`, AND `List.take` (base.bend:984) IS ITS COMPLEMENT, SO
++# `take(xs, k)` ANSWERS `xs[:k]`. MEASURED, `.agents/slop/dotfix/sem.bend`:
++# `drop([2,4,3], 1)` = `[4,3]` AND `drop([2,4,3], 2)` = `[3]`.
++#
++# CPython's `x.shape[0:-1]` (op.py:390) IS THE OTHER END: IT KEEPS EVERY DIM
++# BUT THE LAST, AND ITS ANSWER IS `xs[:len-1]`. `Nat.sub` SATURATES AT 0
++# (base.bend:657), SO A SHAPE SHORTER THAN `n` ANSWERS `Nil{}` -- WHICH IS
++# WHAT `xs[0:-2]` ANSWERS FOR A 1-D OR A 2-D `w`.
++#
++# `uop/fold.bend`'s `take_n`/`drop_last` ARE THE SAME IDIOM ON `O.Sint`, AND
++# `runtime/support/system.bend`'s `pcibus[:-1]` IS THE SAME IDEA ON A STRING.
++def nn_tail_drop(+xs: List<&2, U32>, n: Nat) -> List<&2, U32>:
++  List.take(&2, U32, xs, Nat.sub(List.length(&2, U32, xs), n))
++
+ # `x.shape[0:-1]` ++ `[1]*k` ++ `[x.shape[-1]]` -- :387.
+ def nn_dot.xshape(+xs: List<&2, U32>, k: U32) -> List<&2, U32>:
+   List.append(&2, U32, List.concat(&2, U32,
+-    [List.drop(&2, U32, xs, 1n), H.make_tuple_rep(1, k)]),
++    [nn_tail_drop(xs, 1n), H.make_tuple_rep(1, k)]),
+     [Maybe.default(&2, U32, List.last(&2, U32, xs), 0)])
+ 
+ # `w.shape[0:-2]` ++ `[1]*k` ++ `w.shape[axis_w:]` -- :388. The last term IS

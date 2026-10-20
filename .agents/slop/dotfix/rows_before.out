@@ -1,0 +1,31 @@
+fold_base got=2,3 want=2,3
+fold_xr got=2,1,3 want=2,1,3
+fold_wr got=1,4,3 want=1,4,3
+fold_xw got=2,4,3 want=2,4,3
+fold_sm got=2,4 want=2,4
+fold_smk got= want=2,1,3
+fold_cc got=2,4 want=2,4
+fold_cc_sig got=n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE want=
+fold_xw_sig got=n=18 op=Ops.MUL nsrc=2 srcops=Ops.RESHAPE|Ops.PERMUTE want=
+dbg_dot_sig got=n=20 op=Ops.CAST nsrc=1 srcops=Ops.PERMUTE want=
+dbg_conv_sig got=n=51 op=Ops.RESHAPE nsrc=2 srcops=Ops.CAST|Ops.STACK want=
+dbg_x_sig got=n=6 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.STACK want=
+where_xshape got=2,3 want=2,3
+where_wshape got=3,4 want=3,4
+where_xdt got=f32 want=float32
+where_wdt got=f32 want=float32
+where_dts got=f32 want=float32
+pads_int1 got=1,1,1,1 want=1,1,1,1
+pads_seq12 got=2,2,1,1 want=2,2,1,1
+pads_seq11 got=1,1,1,1 want=1,1,1,1
+shape_x got=1,3,32,32 want=1,3,32,32
+relu got=1,4,8,8 want=(1,4,8,8)
+dot_2d got= want=(2,4)
+dot_1d got= want=(2,)
+linear got= want=(2,10)
+linear_nobias got= want=(2,10)
+conv_p1_s1 got= want=
+conv_p0_s1 got= want=
+conv_p1_s2 got= want=
+conv_seq got= want=
+conv_bias got= want=

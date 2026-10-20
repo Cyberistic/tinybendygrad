@@ -1,0 +1,5 @@
+unet3d_refused_at=extra/models/unet3d.py:8 DownsampleBlock.__init__ -- FIRST MISSING SYMBOL nn.InstanceNorm at :9 (the nn.Conv2d CLASS is missing too; the op nn_conv2d, nn/layers.bend:756, EXISTS and is nd-generic)
+unet3d_ported=False
+unet3d_down_init_line=extra/models/unet3d.py:8
+unet3d_filters_len=5
+unet3d_bottleneck_width=320

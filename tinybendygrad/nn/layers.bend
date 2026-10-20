@@ -287,10 +287,27 @@ def nn_relu(+x: T.Tensor) -> T.Tensor: T.tn_relu(x)
 def nn_dotk(+dx: U32, +dw: U32) -> U32:
   Bool.to_u32(Bool.and(U32.is_ge(dx, 2), U32.is_ge(dw, 2)))
 
+# `xs[0:-n]` -- CPython's TAIL SLICE, WHICH `List.drop` CANNOT SPELL.
+#
+# `List.drop` (references/bend/bend2/base.bend:993) IS A HEAD DROP: IT ANSWERS
+# `xs[n:]`, AND `List.take` (base.bend:984) IS ITS COMPLEMENT, SO
+# `take(xs, k)` ANSWERS `xs[:k]`. MEASURED, `.agents/slop/dotfix/sem.bend`:
+# `drop([2,4,3], 1)` = `[4,3]` AND `drop([2,4,3], 2)` = `[3]`.
+#
+# CPython's `x.shape[0:-1]` (op.py:390) IS THE OTHER END: IT KEEPS EVERY DIM
+# BUT THE LAST, AND ITS ANSWER IS `xs[:len-1]`. `Nat.sub` SATURATES AT 0
+# (base.bend:657), SO A SHAPE SHORTER THAN `n` ANSWERS `Nil{}` -- WHICH IS
+# WHAT `xs[0:-2]` ANSWERS FOR A 1-D OR A 2-D `w`.
+#
+# `uop/fold.bend`'s `take_n`/`drop_last` ARE THE SAME IDIOM ON `O.Sint`, AND
+# `runtime/support/system.bend`'s `pcibus[:-1]` IS THE SAME IDEA ON A STRING.
+def nn_tail_drop(+xs: List<&2, U32>, n: Nat) -> List<&2, U32>:
+  List.take(&2, U32, xs, Nat.sub(List.length(&2, U32, xs), n))
+
 # `x.shape[0:-1]` ++ `[1]*k` ++ `[x.shape[-1]]` -- :387.
 def nn_dot.xshape(+xs: List<&2, U32>, k: U32) -> List<&2, U32>:
   List.append(&2, U32, List.concat(&2, U32,
-    [List.drop(&2, U32, xs, 1n), H.make_tuple_rep(1, k)]),
+    [nn_tail_drop(xs, 1n), H.make_tuple_rep(1, k)]),
     [Maybe.default(&2, U32, List.last(&2, U32, xs), 0)])
 
 # `w.shape[0:-2]` ++ `[1]*k` ++ `w.shape[axis_w:]` -- :388. The last term IS
@@ -517,8 +534,17 @@ def nn_rep.fin(ss: List<&2, U32>, rr: List<&2, U32>) -> List<&2, U32>: nn_rep.fi
 # so it is `T.tn_mop` -- `tensor.bend:1699`, the movement builder whose `ADims`
 # arm is `tn_mop.dims` and which `mxw_reshape` / `mxw_permute` / `mxw_pad` /
 # `mxw_shrink` all wrap. `nn_ks` is `nn_dot`'s own `U32 -> O.Const` projection.
-def nn_expand(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor:
-  T.tn_alu.put(T.tn_mop(T.Tensor.ar(t), T.Tensor.u(t), O.OpsEXPAND{}, T.ADims{nn_ks(ds)}))
+#
+# **IT IS `_broadcast_to` (movement.py:128-146) AND NOT A BARE EXPAND.** CPython's
+# `expand` (movement.py:149-162) IS `_broadcast_to`, and `_broadcast_to`'s marg is
+# the LEFT-ADDED dims and THEN the dims of the source axes that were 1 and became
+# BIGGER -- with a squeeze before and a permute after, so that the result's shape
+# is the TARGET's. A marg that is the WHOLE TARGET is what `tuple(self.marg) + ps`
+# (ops.py:397) reads as: THE TARGET CONCATENATED WITH THE SOURCE, which is a
+# `1,64,4,58,4,58,1,64,1,58,1,58` where CPython's answer is `1,64,4,58,4,58`.
+# `mixin/movement.bend`'s `mxw_bcast` IS that rule, and it is the SAME def
+# `mixin/creation.bend`'s `cr_expand` calls, so the two sites cannot disagree.
+def nn_expand(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor: MX.mxw_bcast(t, ds)
 
 def nn_repeat(+t: T.Tensor, +shp: List<&2, U32>, +reps: List<&2, U32>) -> T.Tensor:
   MX.mxw_reshape(nn_expand(MX.mxw_reshape(t, nn_rep.unsq(shp, reps)), nn_rep.ex(shp, reps)), nn_rep.fin(shp, reps))

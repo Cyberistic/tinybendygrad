@@ -1,0 +1,3 @@
+mask_rcnn_refused_at=extra/models/mask_rcnn.py:1177 MaskRCNN.__init__ -- FIRST MISSING SYMBOL the `backbone:ResNet` argument (:1178); tinybendygrad/extra/models/resnet.bend EXISTS and REFUSES at its own :214
+mask_rcnn_conv2d_exists=True
+mask_rcnn_cat_exists=False

@@ -1,0 +1,127 @@
+# `cases.rows` -- `nn_dot.xshape` (tinybendygrad/nn/layers.bend:291) IS A HEAD DROP.
+# EVERY CELL BELOW WAS READ OUT OF AN INSTRUMENT RUN, NOT TYPED IN.
+#   CPython         = `.venv/bin/python .agents/slop/dotfix/cpython_oracle.py`
+#   PORT BEFORE     = `./bin/bend .agents/slop/dotfix/probe.bend`
+#   PORT AFTER      = `./bin/bend .agents/slop/dotfix/probe_fix.bend`
+#   FILE ROWS       = `./bin/bend .agents/slop/dotfix/{scratch,scratchfix}/nn/layers.bend`
+# COLLECT THEM ALL WITH `sh .agents/slop/dotfix/collect.sh`.
+# `<EMPTY>` IS WHAT THE PORT ANSWERED -- AN EMPTY SHAPE READ, NOT A MISSING ROW.
+
+# A: x(2,3) . w(3,4)
+A_x_shape=(2, 3)
+A_w_shape=(3, 4)
+A_cpython_x_target=(2, 1, 3)
+A_cpython_w_target=(1, 3, 4)
+A_cpython_result=(2, 4)
+A_port_before_xshape=3,1,3
+A_port_after_xshape=2,1,3
+A_port_before_wshape=1,3,4
+A_port_after_wshape=1,3,4
+A_port_before_result=<EMPTY>
+A_port_after_result=2,4
+A_xshape_moved=true
+
+# B: x(2,4,3) . w(3,4)
+B_x_shape=(2, 4, 3)
+B_w_shape=(3, 4)
+B_cpython_x_target=(2, 4, 1, 3)
+B_cpython_w_target=(1, 3, 4)
+B_cpython_result=(2, 4, 4)
+B_port_before_xshape=4,3,1,3
+B_port_after_xshape=2,4,1,3
+B_port_before_wshape=1,3,4
+B_port_after_wshape=1,3,4
+B_port_before_result=<EMPTY>
+B_port_after_result=2,4,4
+B_xshape_moved=true
+
+# C: x(8,64,7,7) . w(7,16)
+C_x_shape=(8, 64, 7, 7)
+C_w_shape=(7, 16)
+C_cpython_x_target=(8, 64, 7, 1, 7)
+C_cpython_w_target=(1, 7, 16)
+C_cpython_result=(8, 64, 7, 16)
+C_port_before_xshape=64,7,7,1,7
+C_port_after_xshape=8,64,7,1,7
+C_port_before_wshape=1,7,16
+C_port_after_wshape=1,7,16
+C_port_before_result=<EMPTY>
+C_port_after_result=8,64,7,16
+C_xshape_moved=true
+
+# D: x(2,3) . w(3,)
+D_x_shape=(2, 3)
+D_w_shape=(3,)
+D_cpython_x_target=(2, 3)
+D_cpython_w_target=(3,)
+D_cpython_result=(2,)
+D_port_before_xshape=3,3
+D_port_after_xshape=2,3
+D_port_before_wshape=3
+D_port_after_wshape=3
+D_port_before_result=<EMPTY>
+D_port_after_result=2
+D_xshape_moved=true
+
+# E: x(2,3,4) . w(3,4,5)
+E_x_shape=(2, 3, 4)
+E_w_shape=(3, 4, 5)
+E_cpython_x_target=(2, 3, 1, 4)
+E_cpython_w_target=(3, 1, 4, 5)
+E_cpython_result=RAISED IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3, 1, 4), (3, 1, 5, 4))
+E_port_before_xshape=3,4,1,4
+E_port_after_xshape=2,3,1,4
+E_port_before_wshape=5,1,3,4,5
+E_port_after_wshape=5,1,3,4,5
+E_port_before_result=<EMPTY>
+E_port_after_result=<EMPTY>
+E_xshape_moved=true
+
+# F: x(2,3,4) . w(3,4,1)
+F_x_shape=(2, 3, 4)
+F_w_shape=(3, 4, 1)
+F_cpython_x_target=(2, 3, 1, 4)
+F_cpython_w_target=(3, 1, 4, 1)
+F_cpython_result=RAISED IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3, 1, 4), (3, 1, 1, 4))
+F_port_before_xshape=3,4,1,4
+F_port_after_xshape=2,3,1,4
+F_port_before_wshape=1,1,3,4,1
+F_port_after_wshape=1,1,3,4,1
+F_port_before_result=<EMPTY>
+F_port_after_result=<EMPTY>
+F_xshape_moved=true
+
+# G: x(3,3,4) . w(3,4,1)
+G_x_shape=(3, 3, 4)
+G_w_shape=(3, 4, 1)
+G_cpython_x_target=(3, 3, 1, 4)
+G_cpython_w_target=(3, 1, 4, 1)
+G_cpython_result=(3, 3, 1)
+G_port_before_xshape=3,4,1,4
+G_port_after_xshape=3,3,1,4
+G_port_before_wshape=1,1,3,4,1
+G_port_after_wshape=1,1,3,4,1
+G_port_before_result=<EMPTY>
+G_port_after_result=<EMPTY>
+G_xshape_moved=true
+
+# THE PORT'S OWN ROWS IN `tinybendygrad/nn/layers.bend` -- BEFORE / AFTER.
+row_dot_2d_before_got=<EMPTY>
+row_dot_2d_after_got=2,4
+row_dot_2d_want=(2,4)
+row_dot_1d_before_got=<EMPTY>
+row_dot_1d_after_got=2
+row_dot_1d_want=(2,)
+row_linear_before_got=<EMPTY>
+row_linear_after_got=2,10
+row_linear_want=(2,10)
+row_linear_nobias_before_got=<EMPTY>
+row_linear_nobias_after_got=2,10
+row_linear_nobias_want=(2,10)
+row_dbg_dot_sig_before_got=n=20 op=Ops.CAST nsrc=1 srcops=Ops.PERMUTE
+row_dbg_dot_sig_after_got=n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE
+row_dbg_dot_sig_want=<EMPTY>
+row_fold_sm_before_got=2,4
+row_fold_sm_after_got=2,4
+row_fold_sm_want=2,4
+

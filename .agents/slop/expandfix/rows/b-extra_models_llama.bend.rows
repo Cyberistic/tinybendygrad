@@ -1,0 +1,3 @@
+llama_refused_at=extra/models/llama.py:37 Attention.__init__ -- wq/wk/wv/wo are linear (:45-51, nn/layers.bend:427 EXISTS); FIRST MISSING SYMBOL nn.RMSNorm (:53)
+llama_attention_exists=False
+llama_adam_exists=True

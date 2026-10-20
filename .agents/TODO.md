@@ -1111,6 +1111,51 @@ repro-ran [##########] 3/3  **THE REPRO RUNS, AND THE DIFFERENCE IS SOLVED BY RE
                                        BOTH, AND THE REPRO MUST SAY WHICH ONE MOVED** -- which is
                                        what the new artifact does.
 
+nn-path [####......] 2/4  **TWO REAL DEFECTS ON THE CONV2D PATH, LANDED, AND BOTH UNITS REFUTED A PRIOR
+                                       CLAIM WHILE CONFIRMING THE DEFECT.** (1) **`nn_dot.xshape`
+                                       USED A HEAD DROP WHERE CPYTHON USES A TAIL SLICE.**
+                                       `List.drop` (`references/bend/bend2/base.bend:993`) IS A HEAD
+                                       DROP -- MEASURED `drop([2,4,3],1) = [4,3]`, `drop([2,4,3],2) = [3]` --
+                                       and `List.take` (`:984`) is its complement, so **`take(xs, k)` IS
+                                       `xs[:k]`** and the tree's own `uop/fold.bend:485 drop_last` is
+                                       the same idiom. **NO ARGUMENT VALUE TURNS A HEAD DROP INTO A
+                                       TAIL DROP**, so the prior unit's "one argument" fix was REFUTED
+                                       -- and its OWN report says its control replaced the whole TERM
+                                       with a literal, so that control never proved the rule either.
+                                       FIXED with a new `nn_tail_drop` (2 lines) and the port's OWN
+                                       rows now move from **`<EMPTY>`** to CPython's answers:
+                                       `dot_2d` -> `2,4`, `dot_1d` -> `2`, `linear` -> `2,10`, and
+                                       `dbg_dot_sig`'s root op `Ops.CAST` -> **`Ops.REDUCE`** -- the
+                                       hand-built reading an earlier unit measured, now produced by
+                                       `nn_dot` itself. **THE EMPTY READ WAS THE SYMPTOM (PRODUCT 9
+                                       RESHAPE AGAINST PRODUCT 6); THE WRONG TARGET WAS THE CAUSE.**
+                                       **INDEPENDENT OF THE `mo_at`/`mo_reduced` WORK IN FLIGHT, BOTH
+                                       WAYS**: `mixin/op.bend` is byte-identical after, `mo_at` enters
+                                       only via the keepdim arm `nn_dot` does not take, and `mo_reduced`
+                                       is called from exactly two places, `mo_mean` and `mo_var`, which
+                                       `dot` does not compute. (2) **`nn_expand` AND `cr_expand` PASS
+                                       THE WHOLE TARGET AS `marg`.** CPython's rule (`tinygrad/mixin/
+                                       movement.py:128-146`) is **the left-added dims ++ the source
+                                       axes that were 1 and became bigger**, with a squeeze before and
+                                       a permute after -- and for conv2d (`n_left == 0`) the marg is
+                                       `(rcout,)`, **one dim that is NOT left-added**, so "only the
+                                       left-added dims" is right for the LEFT HALF ONLY. The port
+                                       produced `1,64,4,58,4,58,1,64,1,58,1,58` where CPython answers
+                                       `1,64,4,58,4,58`. **THREE FILES, NOT TWO**, and the third is
+                                       not optional: `cr_expand` needs `mixin/movement.bend`'s
+                                       `mxw_reshape`/`mxw_permute`, so `creation.bend` must import it.
+                                       **THE FOLD IS NOT THE INSTRUMENT** -- `uop/fold.bend`'s
+                                       `expand_ds` is FAITHFUL (`tuple(marg) + ps` IS `uop/ops.py:397`)
+                                       and was NOT touched; `mixin/movement.bend`'s `mxw_dims_of` is.
+                                       **THE EXISTING POOL ROWS HID THE DEFECT**, because the final
+                                       RESHAPE's marg is the target in both trees -- a probe reading
+                                       only the final node CANNOT SEE IT. 2/4: both landed; the two
+                                       steps left are re-running the corpus (the conv2d row moves
+                                       51 -> 55 nodes, so it needs a re-pin) and the `dw >= 3` case
+                                       the dotfix unit measured and deliberately LEFT OUT (CPython
+                                       answers `(3,3,1)` where the port reads `<EMPTY>`; it needs
+                                       CPython's `:386` guard ported too).
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

@@ -1,0 +1,3 @@
+rnnt_refused_at=extra/models/rnnt.py:119 LSTM.__init__ -- FIRST MISSING SYMBOL LSTMCell (:124); `self.cells` is a LIST of them, and a list of sub-models is the shape nn/__init__.bend:22-33 settled on for `*_st` defs
+rnnt_recurrence_exists=False
+rnnt_sigmoid_exists=True

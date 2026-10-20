@@ -1,0 +1,6 @@
+convnext_refused_at=extra/models/convnext.py:6 Block.__init__ -- FIRST MISSING SYMBOL nn.Conv2d CLASS at :7 (the op nn_conv2d, nn/layers.bend:756, EXISTS); then Tensor.layernorm at :8 (nn/__init__.bend:230)
+convnext_ported=False
+convnext_block_init_line=extra/models/convnext.py:6
+convnext_versions_count=5
+convnext_xlarge_dims_0=256
+convnext_xlarge_depths_2=27

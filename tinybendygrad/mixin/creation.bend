@@ -183,6 +183,7 @@ import ./../uop/fold.bend as F
 import ./../tensor.bend as T
 import ./dtype.bend as D
 import ./op.bend as MO
+import ./movement.bend as MX
 
 # ===========================================================================
 # THE CONST HELPERS -- `dtypes.from_py` (dtype.py:100) and `UOp.const` (ops.py:632).
@@ -268,7 +269,19 @@ def cr_mop(+t: T.Tensor, +op: O.Op, ds: List<&2, U32>) -> T.Tensor:
 # whole reduction. `T.tn_mop` supplies ops.py:823's early NOOP (`if op is Ops.EXPAND
 # and len(arg) == 0: return self`), so `full((), 42, buffer=False)` is the bare CONST,
 # which is CPython's own answer.
-def cr_expand(+t: T.Tensor, ds: List<&2, U32>) -> T.Tensor: cr_mop(t, O.OpsEXPAND{}, ds)
+#
+# `expand` IS `_broadcast_to` (movement.py:149-162 -> movement.py:128-146), so THIS IS
+# `_broadcast_to` AND NOT A BARE EXPAND. `mxw_bcast` is CPython's rule: the marg is
+# the LEFT-ADDED dims and THEN the dims of the source axes that were 1 and became
+# bigger, and the squeeze and the permute are what make the result's shape the
+# target's. FOR A 0-dim SOURCE EVERY DIM IS LEFT-ADDED, so the marg IS the whole
+# target and `mxw_bcast` BUILDS EXACTLY WHAT `cr_mop` BUILT -- the squeeze is a
+# no-op reshape and the permute is the identity, and both wrappers drop their node.
+# FOR A SOURCE WITH A 1 IN IT -- `nn/pool.bend:191`'s `_pool` repeat -- the marg is
+# the REPEAT COUNTS, and the bare EXPAND this def used to build was the shape
+# `tuple(self.marg) + ps` (ops.py:397) reads as: THE WHOLE TARGET CONCATENATED WITH
+# THE SOURCE.
+def cr_expand(+t: T.Tensor, ds: List<&2, U32>) -> T.Tensor: MX.mxw_bcast(t, ds)
 
 # `ret._uop.after(ret._uop.store(val._uop))` -- creation.py:87. `store` is
 # `UOp(Ops.STORE, src=(self,)+src)` (ops.py:616) and `after` is

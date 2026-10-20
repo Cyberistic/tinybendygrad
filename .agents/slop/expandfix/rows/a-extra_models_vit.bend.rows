@@ -1,0 +1,7 @@
+vit_refused_at=extra/models/vit.py:7 ViT.__init__ -- FIRST MISSING SYMBOL TransformerBlock at :13, which REFUSES on Tensor.scaled_dot_product_attention (transformer.bend:108; walls at mixin/rand.bend:87-90)
+vit_ported=False
+vit_init_line=extra/models/vit.py:7
+vit_blocker=extra/models/transformer.py -- TransformerBlock refuses on Tensor.scaled_dot_product_attention
+vit_default_layers=12
+vit_default_embed_dim=192
+vit_default_num_heads=3

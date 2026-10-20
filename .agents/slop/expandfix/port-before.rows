@@ -1,0 +1,8 @@
+case1_conv_expand final=1,1,4,8,14,14,3,3,1,1,4,1,14,14,3,3 | expand marg=1,1,4,8,14,14,3,3 shape=1,1,4,8,14,14,3,3,1,1,4,1,14,14,3,3 | 
+case2_repeat final=1,64,232,232 | expand marg=1,64,4,58,4,58 shape=1,64,4,58,4,58,1,64,1,58,1,58 | 
+case3_repeat_mid final=1,64,4,58,4,58,1,64,1,58,1,58 | expand marg=1,64,4,58,4,58 shape=1,64,4,58,4,58,1,64,1,58,1,58 | 
+case4_pool_maxpool final=1,64,28,28,3,3 | expand marg=1,64,4,58,4,58 shape=1,64,4,58,4,58,1,64,1,58,1,58 | permute shape=1,64,28,28,3,3
+case5_scalar_expand final=2,3,4 | expand marg=2,3,4 shape=2,3,4 | 
+case6_left_added final=2,3,4,4 | expand marg=2,3,4 shape=2,3,4,4 | 
+case7_middle_one final=2,3,5,2,1,5 | expand marg=2,3,5 shape=2,3,5,2,1,5 | 
+case8_conv2d final=1,8,32,32
