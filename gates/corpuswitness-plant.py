@@ -21,6 +21,22 @@ THE SIX, AND WHICH DIRECTION EACH ONE IS:
     E absent-w2          W2 deleted: the second measurement
                          was never taken                     -> REFUSED, never PASS
 
+AND THE SEVENTH, WHICH IS THE HEADLINE'S OWN:
+
+    G claim-row          the `claim` row over THREE witnesses -- the real one, one whose
+                         `repro-rc` says `rc=1`, and a BYTE-IDENTICAL copy of the first.
+                         The first two MUST produce DIFFERENT rows and the third MUST
+                         produce the SAME row as the first.            <- G's two-sided test
+
+`G` EXISTS BECAUSE THE `claim` ROW USED TO BE A LITERAL -- `judge("claim", True, False,
+verdict="REPRODUCIBLE")` -- SO A WITNESS SAYING `repro-rc=rc=0` AND ONE SAYING `rc=1` PRODUCED A
+BYTE-IDENTICAL ROW. `differ.py`'s own PLANT 3 names that shape: "if it does not go red, the row is
+a label". **THE PROOF IS NOT "THE GATE IS RED" BUT "THE HEADLINE'S VERDICT MOVES WHEN THE WITNESS
+MOVES"** -- and a BYTE comparison alone would not be enough, because the row REPORTS the witness's
+own `repro-rc`, so two different witnesses make two different byte strings even when the judgement
+never moved. **THE CONTROL IS NOT OPTIONAL**: a two-sided test that only showed a DIFFERENCE would
+also pass if the gate printed a different row every time.
+
 `C` IS THE HALF THAT HAD NO INSTRUMENT, AND THE PLANT PROVES IT IS NOT REDUNDANT. It also
 records what `checks/differ.py`'s OWN `repro_bad()` says about the planted tree, with `D`
 repointed at the plant's copy exactly as `differ.py:1538` does. On `C` every row, every
@@ -83,7 +99,8 @@ DEAD = "0" * 64
 #: `--prove`. CASE `F` PROVES THE EXPECTATION HARNESS CAN DETECT A VIOLATION; THESE PROVE THE
 #: CASES CAN DETECT A BROKEN GATE, which is the other half and the one that matters. Each mutant
 #: is a REAL DEFECT pasted into a COPY of the gate -- the comparator stuck on one word, the
-#: freshness predicate stuck on the other -- and each names the case that MUST go red. If the
+#: freshness predicate stuck on the other, the headline ignoring the readings it is derived from,
+#: the clock no longer reading the filesystem -- and each names the case that MUST go red. If the
 #: suite stays green against a mutant, every verdict it ever printed was decoration.
 #: `assert old in src` is load-bearing: a mutant whose anchor text has rotted proves nothing and
 #: says so, rather than silently patching nothing and reporting the suite green.
@@ -104,6 +121,17 @@ MUTANTS = (
     # can see it, which is why `C` also asserts `repro_bad_repro-arm=0`.
     ("freshness-stuck-on-OK",
      "ordered = m2 >= m1", "ordered = True", "C-out-of-order"),
+    # Caught by `G`: the `claim` row IGNORES the readings above it -- the defect this gate was
+    # FOUND with, pasted back in. The suite must notice that a witness saying `repro-rc=rc=1`
+    # still reads `REPRODUCIBLE`.
+    ("claim-row-ignores-the-readings",
+     'cs = {n: state_of(by_name.get(n, "")) for n in CLAIM_CONJUNCTS}',
+     'cs = {n: "OK" for n in CLAIM_CONJUNCTS}', "G-claim-row"),
+    # Caught by `A`: the CLOCK no longer reads the filesystem. A clock that always reads 0 makes
+    # every ordering comparison trivially TRUE, so `witness.fresh` would still read FRESH -- and
+    # `freshness.source` is the only row in the tree that can see it.
+    ("clock-no-longer-reads-the-filesystem",
+     "return os.stat(path).st_mtime_ns", "return 0", "A-live-substrate"),
 )
 
 
@@ -120,16 +148,29 @@ def tools():
   return cvg, cvg.load(ROOT / "checks" / "differ.py", "corpuswitness_plant_differ"), GATE_MODULE
 
 
-def run_gate(run: pathlib.Path, repro: pathlib.Path) -> tuple[int, dict[str, dict[str, str]]]:
+def run_gate(run: pathlib.Path, repro: pathlib.Path) -> tuple[int, dict[str, dict[str, str]], str]:
   """THE GATE AS A READER RUNS IT: a fresh process, `--no-write`, both witnesses named. In-process
   would share this plant's module cache and could not show that the gate is callable at all.
 
   The rows are read with the GATE'S OWN `tabrows`, loaded by path, so the parser that produced the
-  rows and the parser that reads them are one function rather than two that agree today."""
+  rows and the parser that reads them are one function rather than two that agree today. THE RAW
+  TEXT COMES BACK TOO, because case `G` compares the `claim` row AS PRINTED -- a `dict` of parsed
+  fields would be a comparison of this plant's reading of the row rather than of the row."""
   p = subprocess.run([sys.executable, str(GATE), "--run", str(run), "--repro", str(repro),
                       "--no-write"], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                      text=True)
-  return p.returncode, GATE_MODULE.tabrows(p.stdout)
+  return p.returncode, GATE_MODULE.tabrows(p.stdout), p.stdout
+
+
+def claim_line(text: str) -> str:
+  """The `claim` row, AS THE BYTES THE GATE PRINTED, or `NO-SUCH-ROW`.
+
+  THE ROW, AND NOT A FIELD OF IT: the question case `G` asks is whether the headline MOVES, and
+  a field would answer a narrower question than the one asked."""
+  for line in text.splitlines():
+    if line.split("\t")[0] == "claim":
+      return line
+  return "NO-SUCH-ROW"
 
 
 def stamp(rows, name: str) -> str:
@@ -200,7 +241,7 @@ def suite(cvg, differ, src, repro_src) -> list[tuple[str, bool, str]]:
       name_live(r1, r2, live, w1=plant_w1)
       if mutate:
         mutate(r1, r2, live)
-      rc, rows = run_gate(r1, r2)
+      rc, rows, _ = run_gate(r1, r2)
       bad = []
       # THE RACE GUARD, AND IT IS PER CASE BECAUSE A WHOLE-RUN LOCK IS NOT ENOUGH. Another unit
       # was editing `tinybendygrad/` throughout this session -- MEASURED: `substrate_digest()`
@@ -260,25 +301,82 @@ def suite(cvg, differ, src, repro_src) -> list[tuple[str, bool, str]]:
       return go
 
     check("A-live-substrate", PASS, {"verdict.current": "CURRENT", "witness.fresh": "FRESH",
-                                     "witness.substrate": "CURRENT"})
-    check("B-dead-substrate", FAIL, {"verdict.current": "STALE"},
-          {"witness.fresh": "OK", "witness.substrate": "OK"}, plant_w1=False,
+                                     "witness.substrate": "CURRENT", "claim": "REPRODUCIBLE"},
+          {"freshness.source": "OK", "claim": "OK"})
+    check("B-dead-substrate", FAIL, {"verdict.current": "STALE", "claim": "NOT-ESTABLISHED"},
+          {"witness.fresh": "OK", "witness.substrate": "OK", "claim": "FAIL"}, plant_w1=False,
           mutate=lambda r1, r2, live: rewrite(
               r1, differ.SUBSTRATE_ROWS, dict(zip(differ.SUBSTRATE_ROWS, (DEAD, DEAD)))))
-    check("C-out-of-order", FAIL, {"witness.fresh": "OUT-OF-ORDER"},
-          {"verdict.current": "OK", "witness.substrate": "OK"}, mutate=shift(-NS),
+    check("C-out-of-order", FAIL, {"witness.fresh": "OUT-OF-ORDER", "claim": "NOT-ESTABLISHED"},
+          {"verdict.current": "OK", "witness.substrate": "OK", "claim": "FAIL"}, mutate=shift(-NS),
           repro_bad_note=False)
-    check("D-ordered", PASS, {"witness.fresh": "FRESH"},
-          {"verdict.current": "OK", "witness.substrate": "OK"}, mutate=shift(+NS))
-    check("E-absent-w2", REFUSED, {"verdict.current": "CURRENT"},
-          {"witness.fresh": "REFUSED", "witness.substrate": "REFUSED"},
+    check("D-ordered", PASS, {"witness.fresh": "FRESH", "claim": "REPRODUCIBLE"},
+          {"verdict.current": "OK", "witness.substrate": "OK", "claim": "OK"}, mutate=shift(+NS))
+    check("E-absent-w2", REFUSED, {"verdict.current": "CURRENT", "claim": "NOT-MEASURED"},
+          {"witness.fresh": "REFUSED", "witness.substrate": "REFUSED", "claim": "REFUSED"},
           mutate=lambda r1, r2, live: r2.unlink())
+
+    # G -- THE HEADLINE MUST MOVE WHEN THE WITNESS MOVES. The `claim` row is the row EVERYBODY
+    # READS, and it used to be `judge("claim", True, False, verdict="REPRODUCIBLE")` -- a LITERAL,
+    # so a witness saying `repro-rc=rc=0` and a witness saying `rc=1` produced a BYTE-IDENTICAL
+    # row. `differ.py`'s own PLANT 3 names that shape: "if it does not go red, the row is a
+    # label". **THE PROOF IS NOT "THE GATE IS RED" BUT "THE ROW DIFFERS WHEN THE WITNESS
+    # DIFFERS"**, so this case runs the gate THREE times and compares the PRINTED BYTES of the
+    # `claim` row: G over the real witness, H over a witness whose `repro-rc` says `rc=1`, and I
+    # over a BYTE-IDENTICAL copy of G.
+    #
+    # I IS THE UNBROKEN CONTROL AND IT IS NOT OPTIONAL. A two-sided test that only showed a
+    # DIFFERENCE would also pass if the gate printed a different row every time -- so the control
+    # requires two witnesses that AGREE to produce the SAME row, byte for byte. A harness that
+    # cannot show both is a harness that measured the noise.
+    g1, g2 = stage("G-claim-reproducible")
+    h1, h2 = stage("H-claim-not-reproducible")
+    i1, i2 = stage("I-claim-control")
+    live_g = differ.substrate_digest()
+    for r1, r2 in ((g1, g2), (h1, h2), (i1, i2)):
+      name_live(r1, r2, live_g)
+    # `cmd_repro` writes BOTH rows when the two runs differ (`differ.py:1862`), so the planted
+    # witness is the shape the WRITER really produces and not a hand-made one.
+    rewrite(h2, {"repro-rc", "repro-identical"}, {"repro-rc": "rc=1", "repro-identical": "0"})
+    g_rc, g_out, g_text = run_gate(g1, g2)
+    h_rc, h_out, h_text = run_gate(h1, h2)
+    i_rc, i_out, i_text = run_gate(i1, i2)
+    g_claim, h_claim, i_claim = claim_line(g_text), claim_line(h_text), claim_line(i_text)
+    # THE VERDICT OF THE ROW, AND NOT ITS BYTES ALONE. The row REPORTS the witness's own
+    # `repro-rc`, so two rows over two different witnesses differ in BYTES even when the headline
+    # has not moved -- and a byte comparison would be satisfied by the report while the judgement
+    # stayed put. **THE HEADLINE MOVING IS A MOVE OF `state=` AND `verdict=`.**
+    g_v = (g_out.get("claim", {}).get("state", "NO-SUCH-ROW"),
+           g_out.get("claim", {}).get("verdict", "NO-SUCH-ROW"))
+    h_v = (h_out.get("claim", {}).get("state", "NO-SUCH-ROW"),
+           h_out.get("claim", {}).get("verdict", "NO-SUCH-ROW"))
+    i_v = (i_out.get("claim", {}).get("state", "NO-SUCH-ROW"),
+           i_out.get("claim", {}).get("verdict", "NO-SUCH-ROW"))
+    bad = []
+    if g_rc != PASS:
+      bad.append(f"G exited {g_rc}, wanted {PASS}")
+    if h_rc == PASS:
+      bad.append(f"H exited {h_rc} over a witness saying repro-rc=rc=1 -- the gate cannot go red")
+    if g_v != ("OK", "REPRODUCIBLE"):
+      bad.append(f"G's claim row reads state={g_v[0]} verdict={g_v[1]}, wanted OK/REPRODUCIBLE")
+    if h_v[0] == "OK":
+      bad.append(f"H's claim row still reads state={h_v[0]} verdict={h_v[1]} over a witness saying "
+                 f"repro-rc=rc=1 -- the headline cannot go red")
+    if g_v == h_v:
+      bad.append(f"the claim row's VERDICT did not move: G and H both read {g_v[0]}/{g_v[1]}")
+    if g_claim == h_claim:
+      bad.append("G and H produced the SAME claim row bytes over two witnesses that differ")
+    if i_v != g_v or i_claim != g_claim:
+      bad.append("the control (I, a byte-identical copy of G) produced a DIFFERENT claim row")
+    results.append(("G-claim-row", not bad,
+                    "; ".join(bad) or f"G rc={g_rc} H rc={h_rc} I rc={i_rc}; G={g_v[0]}/{g_v[1]} "
+                                     f"H={h_v[0]}/{h_v[1]} I==G"))
 
     # F -- THE PLANT'S OWN NEGATIVE CASE. `A`'s bytes, one expectation deliberately WRONG.
     r1, r2 = stage("F-harness-selftest")
     live = differ.substrate_digest()
     name_live(r1, r2, live)
-    rc, rows = run_gate(r1, r2)
+    rc, rows, _ = run_gate(r1, r2)
     got = stamp(rows, "verdict.current")
     measured = rows.get("verdict.current", {}).get("live", "NO-SUCH-ROW")
     raced = measured != live[:16]
@@ -344,7 +442,7 @@ def real_src() -> str:
 def main(argv=None) -> int:
   ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
   ap.add_argument("--prove", action="store_true",
-                  help="also run the suite against two mutated gates and require them to go red")
+                  help="also run the suite against mutated gates and require them to go red")
   a = ap.parse_args(argv)
   cvg, differ, _ = tools()
   src = cvg.SUMMARY

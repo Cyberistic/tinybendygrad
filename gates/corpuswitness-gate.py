@@ -74,9 +74,9 @@ differs is `FAIL` (it ran and got the wrong answer), `FAIL` outranks `REFUSED`, 
 emitted no rows at all is `DEAD`. The comparators are `corpusverdict-gate.py:control()`'s
 subject, so this gate cannot report a verdict from a comparator that cannot say `STALE`.
 
-WHAT THIS GATE CLAIMS, AND WHERE THE LINE IS -- THE HARD PART, AND IT IS ONE ROW. **"THE VERDICT
-REPRODUCES" IS NOT "THE VERDICT IS CORRECT".** This gate claims exactly the first: two clean runs
-produced a byte-identical artifact set, and the witness recording that describes the substrate
+WHAT THIS GATE CLAIMS, AND WHERE THE LINE IS -- AND WHY THE `claim` ROW IS A DERIVATION. **"THE
+VERDICT REPRODUCES" IS NOT "THE VERDICT IS CORRECT".** This gate claims exactly the first: two clean
+runs produced a byte-identical artifact set, and the witness recording that describes the substrate
 that is live now. It **CANNOT SEE CORRECTNESS GO MISSING**, and this tree has already paid for
 that once -- `REPRO_PINS`' `d10-transcript` is pinned *because* `repro-rc=rc=0` says nothing about
 D10 being right: "a `classify` that regressed to retrying would write `bend attempt 2` in BOTH
@@ -87,10 +87,51 @@ from "34 graphs agree with CPython identically wrong twice". That claim belongs 
 while NAMING that judge, rather than restating the verdict as its own. The `claim` row says which
 of the two it is, and the PASS line says `REPRODUCIBLE`, never `correct`.
 
-NEITHER `bend` NOR A WRITE UNDER `runs/`. This gate opens two files for reading and takes their
-timestamps; it writes only under `gates/artifacts/`. That is the contract
+THE `claim` ROW WAS A LITERAL, AND THAT WAS THE DEFECT THIS FILE WAS FOUND WITH.
+`judge("claim", True, False, verdict="REPRODUCIBLE")` puts the word in the row BY HAND, so a
+witness saying `repro-rc=rc=0` and a witness saying `rc=1` produced a **BYTE-IDENTICAL** `claim`
+row: a row that CANNOT GO RED, and `differ.py`'s own PLANT 3 names that shape ("if it does not go
+red, the row is a label"). **A HEADLINE THAT CANNOT GO RED IS THE WORST SHAPE A GATE HAS, BECAUSE
+IT IS THE ONE ROW EVERYBODY READS.** `witness.substrate` beside it DOES discriminate -- it compares
+`repro-rc` against `differ.REPRO_PINS["repro-rc"]` -- so the gate was HALF RIGHT AND HALF FAKE, and
+the fake half was the headline.
+
+THE THIRD WAY, AND WHY (a) AND (b) ARE THE SAME THING HERE. The row must report another
+instrument's verdict without hardcoding it and without re-deriving it, so there are three
+candidate shapes: (a) READ the witness's own row; (b) DERIVE the row from a value the witness
+already produces; (c) DROP the row and let the witness's own verdict BE the gate's.
+**(a) AND (b) ARE ONE OPERATION IN THIS GATE, AND THE REASON IS THAT THE GATE ALREADY READS THE
+WITNESS's OWN ROW.** `witness.substrate` reads `repro-rc` out of `D0-repro.txt` and compares it to
+`differ.REPRO_PINS["repro-rc"]` -- the GENERATOR's own declared pin, loaded by path. So "read the
+witness's own row" and "derive from a value the witness produces" are the same operation, and it
+has ALREADY BEEN DONE, once, in the row that owns it. **A `claim` ROW THAT READ `repro-rc` AGAIN
+WOULD BE A SECOND JUDGEMENT OF THE SAME VALUE**, which is the "second comparison implementation"
+this file's own header names as the reason a reading is not restated here. **(c) IS WORSE THAN
+BOTH, AND ITS COST IS THE PROSE IT WOULD DELETE:** the `claim` row is the only place this gate
+says WHAT IT DOES NOT CLAIM (`not_measured=CORRECTNESS`), and an absence is recoverable where a
+confident false claim is not.
+
+SO THE ROW IS A DERIVATION -- AND NOT OF THE WITNESS's VERDICT. **THE CLAIM IS THE CONJUNCTION**:
+`verdict.current` (the recorded verdict describes THIS tree), `witness.substrate` (the
+reproducibility witness holds and names this tree), `witness.fresh` (the witness was taken AFTER
+the verdict it describes) and `freshness.source` (the clock that measured that ordering is the
+one this gate declares). **`witness.fresh` IS THE CLOCK, AND NO OTHER INSTRUMENT IN THIS TREE
+READS ONE** -- `checks/corpus-figure.py` has 0 `st_mtime` occurrences and `checks/differ.py` has 1,
+and it is the sentence saying never to. **SO THE ROW IS NOT AN ECHO OF THE WITNESS: A WITNESS THAT
+SAYS `rc=0` AND IS FOUR DAYS OLD STILL REDS THIS ROW.** That is the case
+`gates/corpuswitness-plant.py`'s `C` plants and its `G` case measures.
+
+NO WRITE UNDER `runs/`, AND NO `bend` OF THIS GATE's OWN. This gate opens two files for reading
+and takes their timestamps; it writes only under `gates/artifacts/`. That is the contract
 `gates/corpusverdict-gate.py` states for itself, and it is what lets the plant copy the witnesses
-into a temporary directory and move their clocks there.
+into a temporary directory and move their clocks there. **THE BEND PROCESS IS NOT ABSENT, IT IS
+INHERITED, AND THE HEADER USED TO SAY IT WAS ABSENT.** Reading 1 means RUNNING the sibling, and
+the sibling's own `bend` row probes `./bin/bend .agents/slop/graphcmp.bend --check-only`
+(`corpusverdict-gate.py:196-206`). MEASURED 2026-10-20T18:02Z: that probe answers in 0.92 s, 0.99 s
+and 1.67 s over three runs, and the whole gate answers in 1.25 s -- **so the gate's cost IS the
+bend probe**, and the plant's 9 gate runs per suite are 9 bend probes. The gate reads that row's
+verdict about the SUBSTRATE and ignores both that row and its rc; the process is the price of
+running the instrument that owns the comparison.
 """
 
 from __future__ import annotations
@@ -99,6 +140,7 @@ import argparse
 import contextlib
 import io
 import importlib.util
+import inspect
 import os
 import pathlib
 import sys
@@ -153,6 +195,37 @@ def mtime_ns(path: pathlib.Path) -> int:
   return os.stat(path).st_mtime_ns
 
 
+#: THE READINGS THE `claim` ROW IS THE CONJUNCTION OF. NAMED, AND THE NAMES ARE THIS FILE's OWN
+#: ROWS: a row of this gate that is not named here is not part of the claim. `control` is a
+#: PRECONDITION on the comparator and not a reading of the tree; `freshness.source` is the
+#: PROVENANCE of the clock, and it IS a conjunct because a reading taken with an instrument the
+#: gate cannot name is not a measurement of anything.
+CLAIM_CONJUNCTS = ("verdict.current", "witness.fresh", "freshness.source", "witness.substrate")
+
+
+def judge_state(reading: str, state: str, **kv) -> str:
+  """A row whose STATE IS ALREADY DECIDED -- for the row that DERIVES one from the rows above.
+
+  `judge` takes a BOOLEAN and a boolean cannot carry a third state, and the derived row needs
+  three: `FAIL` (a conjunct ran and got the wrong answer), `REFUSED` (a conjunct's precondition
+  was absent, so it measured nothing) and `OK`."""
+  return cvg().emit(reading, **{cvg().STATE: state, **kv})
+
+
+def state_of(row: str) -> str:
+  """THE `state=` FIELD OF A ROW THIS GATE EMITTED, read back out of the row itself.
+
+  **THE DERIVATION IS OVER THE ROWS, NOT OVER A SECOND COPY OF THE MEASUREMENTS.** The row IS the
+  measurement's record, so reading its state back is READING the measurement and not re-deriving
+  it -- and the derived row cannot disagree with the rows above it, because it is built out of
+  them. `ABSENT` is a value a row can hold and it is not `OK`: a reading that stopped emitting
+  must not read as a reading that agreed."""
+  for field in row.split("\t")[1:]:
+    if field.startswith(cvg().STATE + "="):
+      return field.split("=", 1)[1]
+  return "ABSENT"
+
+
 def judge(reading: str, ok: bool, absent: bool, **kv) -> str:
   """One reading, one row. `absent` is `REFUSED` and `not ok` is `FAIL`, and they are not the
   same claim: nothing was measured is not a wrong answer.
@@ -162,8 +235,7 @@ def judge(reading: str, ok: bool, absent: bool, **kv) -> str:
   gate's rc. No reading here is bounded.py's, so a `token` would have to be invented --
   `OK?OK` would look like a measured verdict token and name no instrument. Absent a field beats
   a fake one: an unread column is notice, a wrong one is a lie somebody quotes."""
-  return cvg().emit(reading, **{cvg().STATE: "REFUSED" if absent else ("OK" if ok else "FAIL"),
-                                **kv})
+  return judge_state(reading, "REFUSED" if absent else ("OK" if ok else "FAIL"), **kv)
 
 
 def main(argv=None) -> int:
@@ -226,6 +298,12 @@ def main(argv=None) -> int:
                     verdict=tok, read_from="corpusverdict-gate.py::substrate",
                     cvg_rc=f"{cvg_rc}(IGNORED)"))
 
+  # --- THE WITNESS's OWN ROWS, READ ONCE -------------------------------------------------------
+  # `witness.substrate` JUDGES these rows and the `claim` row REPORTS the one the claim rests on.
+  # Reading them twice would be a second parser of one file, and `witness.substrate` already
+  # parses them with the sibling's own `rows_file`.
+  got = C.rows_file(repro) if repro.is_file() else {}
+
   # --- READING 2: IS W2 FRESH RELATIVE TO W1? THE MTIME, AND ONLY THE MTIME ------------------
   if not repro.is_file():
     rows.append(judge("witness.fresh", False, True, path=C.rel(repro)))
@@ -238,6 +316,24 @@ def main(argv=None) -> int:
                       delta_ms=f"{(m2 - m1) / 1e6:+.3f}",
                       summary_mtime_ns=m1, repro_mtime_ns=m2))
 
+  # --- WHICH INSTRUMENT PRODUCED READING 2, AND IT IS CHECKED RATHER THAN ASSERTED ------------
+  # THE ROW USED TO SAY `judge("freshness.source", True, False, ...)` -- A LITERAL `True`, WHICH
+  # IS THE SAME DEFECT THE `claim` ROW HAD: a row that cannot go red. The claim is that this
+  # gate's only clock still reads the FILESYSTEM, and `inspect.getsource` is the sibling's own
+  # instrument for a claim about an instrument's SOURCE (`corpusverdict-gate.py:189` asks
+  # `differ.cmd_run`'s source whether `run` is gated), so the check is in house style.
+  #
+  # **THE DOCSTRING IS EXCLUDED ON PURPOSE.** These docstrings TALK ABOUT GIT -- the rule that
+  # git is not asked is written down three times above -- so a check that grepped the whole
+  # source would read the prose that explains the rule and report it as a violation of it. The
+  # RETURN EXPRESSIONS are the code, and they are where the number comes from.
+  clock_src = [ln.strip() for ln in inspect.getsource(mtime_ns).splitlines()
+               if ln.strip().startswith("return ")]
+  clock_ok = bool(clock_src) and all("os.stat" in r and "git" not in r for r in clock_src)
+  rows.append(judge("freshness.source", clock_ok, False,
+                    via="os.stat().st_mtime_ns", git_asked="NO",
+                    why="git-check-ignore-says-.gitignore:262:/runs/-so-git-status-is-blind-here"))
+
   # --- READING 3: DOES W2 NAME THE LIVE SUBSTRATE? ITS WHOLE ROW SET, WITH THE DENOMINATOR ----
   # `REPRO_PINS` and `REPRO_SUBSTRATE` are `differ`'s OWN declarations, loaded, never transcribed:
   # a literal `d10-transcript=` value here would be a pin that must be re-typed by hand whenever
@@ -248,7 +344,6 @@ def main(argv=None) -> int:
     rows.append(judge("witness.substrate", False, True, rows=f"0 of {len(wanted)}",
                       live=live[:16], path=C.rel(repro)))
   else:
-    got = C.rows_file(repro)
     missing = sorted(k for k in wanted if k not in got)
     wrong = sorted(k for k in wanted if k in got and k != differ.REPRO_SUBSTRATE
                    and got[k] != differ.REPRO_PINS[k])
@@ -261,12 +356,6 @@ def main(argv=None) -> int:
                       missing=",".join(missing) or "-", differs=",".join(wrong) or "-",
                       recorded=got.get(differ.REPRO_SUBSTRATE, "ABSENT")[:16],
                       live=live[:16], declared_by="differ.REPRO_PINS+REPRO_SUBSTRATE"))
-
-  # --- WHICH INSTRUMENT PRODUCED READING 2. A ROW THAT CANNOT BE JUDGED IS NOT A ROW, BUT THIS
-  # --- ONE IS A PROVENANCE CLAIM AND IT IS JUDGED: `os.stat` must still be the source.
-  src = "os.stat().st_mtime_ns"
-  rows.append(judge("freshness.source", True, False, via=src, git_asked="NO",
-                    why="git-check-ignore-says-.gitignore:262:/runs/-so-git-status-is-blind-here"))
 
   # --- THE VERDICT, REPORTED WITH ITS DENOMINATOR AND WITH THE NAME OF ITS JUDGE --------------
   # REPORTED, NOT ASSERTED. These are `differ.unhealthy()`'s and `differ.PINS`' numbers; this
@@ -283,11 +372,30 @@ def main(argv=None) -> int:
                     rows=den, judged_by="differ.unhealthy()+differ.PINS (NOT THIS GATE)"))
 
   # --- WHAT IS CLAIMED. THE LINE, IN A ROW, SO IT CANNOT BE LOST IN PROSE. ---------------------
-  rows.append(judge("claim", True, False, verdict="REPRODUCIBLE",
-                    means="two clean runs produced byte-identical artifacts, and the witness "
-                          "recording that names the live substrate",
-                    not_measured="CORRECTNESS",
-                    correctness_judged_by="differ.unhealthy()+differ.PINS"))
+  # AND IT IS A DERIVATION, NOT A WORD. The row used to be `judge("claim", True, False,
+  # verdict="REPRODUCIBLE")` -- a LITERAL, so a witness saying `repro-rc=rc=0` and one saying
+  # `rc=1` produced a BYTE-IDENTICAL row, and `differ.py`'s own PLANT 3 names that shape: "if it
+  # does not go red, the row is a label". **THE CLAIM IS THE CONJUNCTION OF THIS GATE's OWN
+  # READINGS**, and one of the conjuncts is the CLOCK, which no other instrument in this tree
+  # reads -- so this row is NOT an echo of the witness: a witness that says `rc=0` and is four
+  # days old still reds it. See the header for why (a) and (b) are the same operation here.
+  by_name = {r.split("\t")[0]: r for r in rows}
+  cs = {n: state_of(by_name.get(n, "")) for n in CLAIM_CONJUNCTS}
+  cstate = ("FAIL" if any(v == "FAIL" for v in cs.values())
+            else "REFUSED" if any(v != "OK" for v in cs.values()) else "OK")
+  cverdict = {"OK": "REPRODUCIBLE", "FAIL": "NOT-ESTABLISHED", "REFUSED": "NOT-MEASURED"}[cstate]
+  rows.append(judge_state("claim", cstate, **{
+    "verdict": cverdict,
+    "conjuncts": ",".join(f"{n}:{cs[n]}" for n in CLAIM_CONJUNCTS),
+    # THE WITNESS's OWN ROW, SPELLED AS THE WITNESS SPELLS IT -- a hyphen is not a keyword
+    # argument's name, so this one field is passed through a dict. It is a REPORT of what the
+    # witness recorded, not a second judgement of it: `witness.substrate` is where the pin on
+    # this row is checked, against `differ.REPRO_PINS`.
+    "repro-rc": got.get("repro-rc", "ABSENT"),
+    "means": "the recorded verdict is CURRENT for this tree, the reproducibility witness holds "
+             "and names this tree, and the witness was taken AFTER the verdict it describes",
+    "not_measured": "CORRECTNESS",
+    "correctness_judged_by": "differ.unhealthy()+differ.PINS"}))
 
   if not rows:
     print(f"corpuswitness-gate: {verdict_of(DEAD)} -- no rows")
@@ -301,7 +409,9 @@ def main(argv=None) -> int:
           f"# `gates/corpusverdict-gate.py`'s OWN `substrate` row by running it; the substrate is\n"
           f"# `differ.substrate_digest()`, never a timestamp. `witness.fresh` is `os.stat` and\n"
           f"# NOTHING ELSE, because `.gitignore:262:/runs/` makes every witness here invisible to\n"
-          f"# `git status`. This gate claims REPRODUCIBLE and does not measure CORRECTNESS.\n"
+          f"# `git status`. The `claim` row is the CONJUNCTION of the readings named in its\n"
+          f"# `conjuncts` field -- it is DERIVED, and it can go red. This gate claims REPRODUCIBLE\n"
+          f"# and does not measure CORRECTNESS.\n"
           + "\n".join(rows) + "\n")
   if not a.no_write:
     ART.mkdir(parents=True, exist_ok=True)
@@ -318,8 +428,9 @@ def main(argv=None) -> int:
     which = [r.split("\t")[0] for r in refused]
     print(f"corpuswitness-gate: {verdict_of(REFUSED)} -- nothing measured for: {','.join(which)}")
     return REFUSED
-  print(f"corpuswitness-gate: PASS -- the REPRODUCIBILITY claim is CURRENT and its witness is "
-        f"FRESH (substrate {live[:16]}, W2 is {abs(mtime_ns(repro) - mtime_ns(run)) / 1e6:.1f}ms "
+  print(f"corpuswitness-gate: PASS -- the claim is ESTABLISHED: the recorded verdict is CURRENT, "
+        f"the reproducibility witness holds, and it was taken AFTER that verdict (substrate "
+        f"{live[:16]}, W2 is {abs(mtime_ns(repro) - mtime_ns(run)) / 1e6:.1f}ms "
         f"after W1). CORRECTNESS IS NOT MEASURED HERE: {summary.get('graphs')} graphs / "
         f"{summary.get('graphs-agree')} agree is `differ.unhealthy()`'s claim, not this gate's.")
   return PASS
