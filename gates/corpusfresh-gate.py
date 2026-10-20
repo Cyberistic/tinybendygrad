@@ -13,8 +13,12 @@ had to be ASKED.** This gate measures the OTHER half, which is the half that dec
 first half is worth having: **is there any surface in this tree that would have announced the
 staleness to somebody who did not go looking?**
 
-THE MEASUREMENT THAT MAKES IT NECESSARY. On 2026-10-20 the re-vendor `tinygrad/ 62319c8a ->
-6c91e897` landed at `00:53:51Z` (MEASURED: `git log -1 --format=%ad --date=iso tinygrad/`).
+THE MEASUREMENT THAT MAKES IT NECESSARY. One re-vendor of `tinygrad/` is the event this file
+is about. Its date and the command that recovers that commit are `REVENDOR_RECORD_DATE` and
+`REVENDOR_RECORD_DERIVE` -- a dated record, read by name, not a sha. A sha written in this
+sentence is what the pin census reports as the current tree, and the next re-vendor falsifies
+that reading while the event stays true. The command is bounded by the record's date:
+`git log -1` with no bound re-derives whatever landed last, which is a live query.
 MEASURED, this tree:
 
     .git/hooks/            13 files, ALL `*.sample`   -> 0 non-sample   (`ls | grep -vc '\.sample$'`)
@@ -81,6 +85,13 @@ ART = HERE / "artifacts" / "corpusfresh-gate"
 #: (`AGENTS.md`: 16 instruments, 2 of them classifier errors).** It is called a SUPERSET in the
 #: rows and the tally names it as such.
 FRESH_TOKENS = ("substrate_digest", "REPRO_SUBSTRATE", "substrate-start", "st_mtime_ns")
+
+# A dated record. `gates/rotclaim-gate.py` reads these names; prose does not exempt a sha.
+# The command is bounded by the date, so a later re-vendor is not this record.
+REVENDOR_RECORD_DATE = "2026-10-20T00:53:51Z"
+REVENDOR_RECORD_DERIVE = (
+  "git --no-optional-locks log -1 --format=%H --until=2026-10-20T00:53:51Z -- tinygrad/"
+)
 
 #: The four verdicts this gate's census can reach. Not the five-exit vocabulary -- a *hit* is not a
 #: verdict about the tree, it is an observation about a file, and inventing an exit for it would be

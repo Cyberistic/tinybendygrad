@@ -26,12 +26,16 @@ its own constant is a gate that cannot see a dropped row.
 
 WHAT THIS GATE CANNOT SEE, NAMED.
 
-  (a) THE CORPUS'S OWN DRIVER. `.agents/slop/graphcmp.py --side py` raises
-      `AttributeError: 'ParamArg' object has no attribute 'size'` at its `paramarg` (:710)
-      against the re-vendored `tinygrad/`: `HEAD:tinygrad` and `upstream:tinygrad` are both
-      `62319c8ae612e51102916000d401d601a090353f` and upstream's `ParamArg` (ops.py:25-37) has
-      no `size` member. MEASURED on all twelve of this file's graphs. So the corpus's CPython
-      lane cannot be re-run at this tree, which is why this gate builds its own.
+  (a) THE CORPUS'S OWN DRIVER. This paragraph used to name `HEAD:tinygrad` and
+      `refs/remotes/upstream/master:tinygrad` as one sha, and to cite an `AttributeError`
+      at a line of `paramarg`. The sha was a live claim about HEAD, not a pin for a past
+      revision: the two sides are one tree and the sha is not, so it is deleted rather
+      than refreshed. A refreshed sha is false at the next re-vendor. The absence is
+      `vendored_identity()` -- two reads, and whether `ParamArg` declares `size` -- which
+      goes red if either side moves. A sha put back in this file is a live row in
+      `gates/rotclaim-gate.py`. This file does not re-run the corpus driver; that driver
+      lives under `.agents/slop/`, and a sentence here that said it still crashes would
+      be another transcription.
   (b) THE CORPUS'S BEND LANE TRANSCRIBES THE OLD CONSTRUCTION. `graphcmp.bend` mints
       `O.UOp.new(..., O.OpsGROUP{}, ...)` at twelve sites and never calls the port's
       `UOp.group`, so re-expressing `group` cannot move the corpus's toposort by itself: the
@@ -59,12 +63,13 @@ WHAT THIS GATE CANNOT SEE, NAMED.
       it is not a claim that `flip` gets the axis right.
 """
 
+import ast
 import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import BEND, PY, Gate, gate
+from gatekit import Gate, gate
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -83,6 +88,10 @@ ROWS = ("group0", "group1", "group2", "group3", "group6",
 # same statement without the file.
 DIVERGING = ()
 
+# The deleted sha's replacement. `gates/rotclaim-gate.py` reads the name and calls the function,
+# so the deletion is a row and not a silence.
+IDENTITY_DERIVE = "vendored_identity"
+
 
 def _lane(name):
   """`(row -> value)` for one lane's own artifact, or `{}` when it is absent.
@@ -98,6 +107,68 @@ def _lane(name):
       out.update({l.split("=", 1)[0]: l.split("=", 1)[1]
                   for l in f.read_text().splitlines() if "=" in l})
   return out
+
+
+def _git(root, *args):
+  r = subprocess.run(("git", "--no-optional-locks", *args), cwd=root,
+                     capture_output=True, text=True)
+  return r.stdout if r.returncode == 0 else ""
+
+
+def paramarg_fields(src: str):
+  """The declared names of `class ParamArg`, or None when the class is absent.
+
+  AnnAssign and Assign both count. A line-range citation of the class is the claim that
+  just went stale; the names are the claim.
+  """
+  try:
+    tree = ast.parse(src)
+  except SyntaxError:
+    return None
+  for node in tree.body:
+    if isinstance(node, ast.ClassDef) and node.name == "ParamArg":
+      names = []
+      for stmt in node.body:
+        if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+          names.append(stmt.target.id)
+        elif isinstance(stmt, ast.Assign):
+          names.extend(t.id for t in stmt.targets if isinstance(t, ast.Name))
+      return tuple(names)
+  return None
+
+
+def identity_holds(head: str, upstream: str, fields) -> bool:
+  """The two trees are one tree, and `ParamArg` does not declare `size`.
+
+  Two arguments, two reads. Comparing one read to itself cannot fail, and `"" == ""`
+  is not an identity -- an unresolved side is a refusal, not a hold.
+  """
+  if not head or not upstream or head != upstream:
+    return False
+  return fields is not None and "size" not in fields
+
+
+def vendored_identity(root=None) -> bool:
+  """Read both sides from git. No sha is written here; the next re-vendor must not edit this file."""
+  root = root or ROOT
+  head = _git(root, "rev-parse", "--verify", "--quiet", "HEAD:tinygrad").strip()
+  upstream = _git(root, "rev-parse", "--verify", "--quiet",
+                  "refs/remotes/upstream/master:tinygrad").strip()
+  src = _git(root, "show", "refs/remotes/upstream/master:tinygrad/uop/ops.py")
+  fields = paramarg_fields(src) if src else None
+  ok = identity_holds(head, upstream, fields)
+  if not head or not upstream:
+    print("vendored_identity: a side did not resolve -- compared nothing")
+  elif head != upstream:
+    print("vendored_identity: the two trees differ")
+  elif fields is None:
+    print("vendored_identity: ParamArg did not parse out of upstream's ops.py")
+  elif "size" in fields:
+    print("vendored_identity: ParamArg declares size; the gap this sentence names has closed")
+  else:
+    print(f"vendored_identity: the two trees are one object and ParamArg declares "
+          f"{len(fields)} fields, none of them size")
+  return ok
 
 
 def port_has_no_group_node() -> bool:
@@ -144,12 +215,16 @@ GATE = Gate(
 )
 
 
+def _hold() -> bool:
+  return vendored_identity() and port_has_no_group_node()
+
+
 def main() -> int:
   return gate(GATE,
               f"groupflip-gate: PASS -- {len(ROWS)} rows compared exactly, 0 declared divergences; "
               "the witness is the TOPOSORT for `UOp.group` (ops.py:536-538) and `Tensor.flip` "
               "(movement.py:233-267)",
-              checks=port_has_no_group_node)
+              checks=_hold)
 
 
 if __name__ == "__main__":
