@@ -17,11 +17,16 @@ The marker is a binding name, which is code:
     `sha256(x) == sha256(x)` cannot fail; this can, because the date and the object
     store are different values.
   * `*_DERIVE`  a function that replaced a deleted sha. Called, not compared to itself.
-  * any other hex that prefixes a known `tinygrad/` tree value is a live claim.
+  * a hex that prefixes `HEAD:tinygrad` or `refs/remotes/upstream/master:tinygrad`,
+    on a line no verified record owns, is a live claim.
+  * a hex that prefixes any other known `tinygrad/` tree is a pin. A past revision
+    is not stale, and refreshing it is not a fix.
 
-A verified record owns only the lines of its own bindings. A sha on the next line is
-live. A comment that says "dated record" owns nothing. An unverified record owns
-nothing either: the name is not an exemption until the derivation holds.
+A verified record owns only the lines of its own bindings. A current-tree sha on the
+next line is live. A retired-tree sha that those lines do not own is a pin, and it
+does not increment `live`. A comment that says "dated record" owns nothing. An
+unverified record owns nothing either: the name is not an exemption until the
+derivation holds. A wrong date is REFUSED.
 """
 from __future__ import annotations
 
@@ -206,20 +211,36 @@ def _generated(rel):
   return "artifacts" in parts or any(p.startswith(".tmp") for p in parts)
 
 
+def _claim(site, literal, tree, head, upstream):
+  """Retired tree: PIN. Current tree: LIVE. A missing side stays LIVE; the caller records REFUSED."""
+  if head and upstream and tree not in (head, upstream):
+    return {"kind": "pin", "file": site, "literal": literal, "state": "PIN"}
+  return {"kind": "live", "file": site, "literal": literal, "state": "LIVE"}
+
+
 def judge(git_root, homes, trees, display_root, run_derives=True, emit_seen=False):
   """The live path and the plant. `run_derives` is off for a temp copy: importing it is not the test.
 
   With `emit_seen`, every `.py` walked emits a `file` row. A judge that reads nothing and a
   judge that found nothing are the same empty list, and the plant must be able to tell them apart.
+
+  A sha of a `tinygrad/` tree that is neither `HEAD:tinygrad` nor
+  `refs/remotes/upstream/master:tinygrad` is PIN, not LIVE. A past revision is not stale.
   """
-  hits = pinned_mod().transcribed(display_root, homes, trees)
+  pinned = pinned_mod()
+  head = pinned.resolve(git_root, "HEAD:tinygrad")
+  upstream = pinned.resolve(git_root, "refs/remotes/upstream/master:tinygrad")
+  hits = pinned.transcribed(display_root, homes, trees)
   rows = []
+  if not head or not upstream:
+    rows.append({"kind": "precondition", "name": "trees", "state": "REFUSED",
+                 "detail": "HEAD:tinygrad or refs/remotes/upstream/master:tinygrad did not resolve"})
   by_file = {}
-  for site, literal, _tree in hits:
+  for site, literal, tree in hits:
     path, line = site_line(site)
     if _generated(path):
       continue
-    by_file.setdefault(path, []).append((line, literal, site))
+    by_file.setdefault(path, []).append((line, literal, site, tree))
   seen = set()
   for home in homes:
     if not home.is_dir():
@@ -237,11 +258,13 @@ def judge(git_root, homes, trees, display_root, run_derives=True, emit_seen=Fals
         for rec in recs:
           rec["file"] = rel
           rows.append(rec)
-        for line, literal, site in by_file.get(rel, []):
+        for line, literal, site, tree in by_file.get(rel, []):
           if any(a <= line <= b for a, b in owned):
             continue
-          n_live += 1
-          rows.append({"kind": "live", "file": site, "literal": literal, "state": "LIVE"})
+          row = _claim(site, literal, tree, head, upstream)
+          if row["state"] == "LIVE":
+            n_live += 1
+          rows.append(row)
         if run_derives:
           for name, fn_name in sorted(derives_of(text).items()):
             state, detail = run_derive(path, fn_name)
@@ -250,12 +273,12 @@ def judge(git_root, homes, trees, display_root, run_derives=True, emit_seen=Fals
         if emit_seen:
           rows.append({"kind": "file", "file": rel, "state": "SEEN", "live": n_live})
         seen.add(rel)
-  # A hit in a non-.py file has no binding to own it.
+  # A hit in a non-.py file has no binding to own it. A retired tree is still a pin.
   for path, items in sorted(by_file.items()):
     if path in seen:
       continue
-    for _line, literal, site in items:
-      rows.append({"kind": "live", "file": site, "literal": literal, "state": "LIVE"})
+    for _line, literal, site, tree in items:
+      rows.append(_claim(site, literal, tree, head, upstream))
   return rows
 
 
@@ -275,33 +298,38 @@ def _count(rows, kind, state=None):
   return sum(1 for r in rows if r["kind"] == kind and (state is None or r["state"] == state))
 
 
-def assess(text, trees, git_root):
+def assess(text, trees, git_root, name="fixture.py"):
   with tempfile.TemporaryDirectory(prefix="rotclaim-") as td:
     root = Path(td)
     home = root / "gates"
     home.mkdir()
-    (home / "fixture.py").write_text(text)
+    (home / name).write_text(text)
     return judge(git_root, [home], trees, root, run_derives=False, emit_seen=True)
 
 
 def plant():
-  """Copies of the two files, plus copied arguments to `identity_holds`. The comparator is the real one.
+  """Copies, plus copied arguments to `identity_holds`. The comparator is the real one.
 
   A direction that emits no row is REFUSED, even if every emitted row says OK. That is the
-  plant that scores success while measuring nothing.
+  plant that scores success while measuring nothing. A retired sha alone is PIN and does not
+  increment `live`. A current-tree sha with the bindings stripped is LIVE. The two verified
+  REVENDOR records stay VERIFIED.
   """
   pinned = pinned_mod()
   trees = pinned.tree_values(ROOT)
   cur = pinned.resolve(ROOT, "HEAD:tinygrad")
-  retired = next((t for t in trees if t != cur), "")
-  if not cur or not retired:
-    print("rotclaim-gate --plant: REFUSED -- fewer than two tree values, so the plant would test a constant")
+  upstream = pinned.resolve(ROOT, "refs/remotes/upstream/master:tinygrad")
+  current = {t for t in (cur, upstream) if t}
+  retired = next((t for t in trees if t not in current), "")
+  if not cur or not upstream or not retired:
+    print("rotclaim-gate --plant: REFUSED -- a side did not resolve, or history has no retired tree")
     return REFUSED
   decoy = hashlib.sha1(b"rotclaim-not-a-tree").hexdigest()
   if any(t.startswith(decoy) for t in trees):
     print("rotclaim-gate --plant: REFUSED -- the decoy prefixes a real tree")
     return REFUSED
   fresh = (HERE / "corpusfresh-gate.py").read_text()
+  vendor = (HERE / "vendordep-census-gate.py").read_text()
   flip = (HERE / "groupflip-gate.py").read_text()
   date = records_of(fresh)["REVENDOR"]["date"][2]
   gf = load("rotclaim_groupflip", HERE / "groupflip-gate.py")
@@ -313,37 +341,58 @@ def plant():
       return
     rows.append(f"plant.{label}\tstate={'OK' if got == want else 'REFUSED'}\tverdict={got}\twanted={want}")
 
-  def classified(text):
-    got = assess(text, trees, ROOT)
+  def classified(text, name="fixture.py"):
+    got = assess(text, trees, ROOT, name)
     if not any(r["kind"] == "file" for r in got):
       return None
     return (_count(got, "live"), next((r["state"] for r in got if r["kind"] == "record"), "ABSENT"))
 
-  # The control is the unmutated copy. Every other direction is that copy, changed in one place.
+  def scored(text, name="fixture.py"):
+    """`(live, pin, record)`. None when the judge emitted no file, live, or pin row."""
+    got = assess(text, trees, ROOT, name)
+    if not any(r["kind"] in ("file", "live", "pin") for r in got):
+      return None
+    return (_count(got, "live"), _count(got, "pin"),
+            next((r["state"] for r in got if r["kind"] == "record"), "ABSENT"))
+
+  def judge_copies(pairs):
+    with tempfile.TemporaryDirectory(prefix="rotclaim-") as td:
+      root = Path(td)
+      home = root / "gates"
+      home.mkdir()
+      for name, text in pairs:
+        (home / name).write_text(text)
+      return judge(ROOT, [home], trees, root, run_derives=False, emit_seen=True)
+
+  def without_records(text):
+    kept, skip = [], False
+    for ln in text.splitlines():
+      if ln.startswith("REVENDOR_RECORD_DERIVE"):
+        skip = True
+        continue
+      if skip:
+        skip = ln.strip() != ")"
+        continue
+      if ln.startswith("REVENDOR_RECORD_DATE"):
+        continue
+      kept.append(ln)
+    return "\n".join(kept)
+
+  # The control is the unmutated copy. A current-tree sha is what "live" can still mean.
   check("record-control", classified(fresh), (0, "VERIFIED"))
-  check("sha-on-the-next-line-is-live", classified(fresh + f"\n# {retired}\n"), (1, "VERIFIED"))
-  kept, skip = [], False
-  for ln in fresh.splitlines():
-    if ln.startswith("REVENDOR_RECORD_DERIVE"):
-      skip = True
-      continue
-    if skip:
-      skip = ln.strip() != ")"
-      continue
-    if ln.startswith("REVENDOR_RECORD_DATE"):
-      continue
-    kept.append(ln)
-  prose = "\n".join(kept) + f"\n# On 2026-10-20 this was a dated record, MEASURED by git log.\n# {retired}\n"
+  check("sha-on-the-next-line-is-live", classified(fresh + f"\n# {cur}\n"), (1, "VERIFIED"))
+  prose = without_records(fresh) + (
+    "\n# On 2026-10-20 this was a dated record, MEASURED by git log.\n# " + cur + "\n")
   check("prose-does-not-exempt", classified(prose), (1, "ABSENT"))
   check("not-a-tree-is-not-a-hit", classified(fresh + f"\n# {decoy}\n"), (0, "VERIFIED"))
   broken = fresh.replace(f'REVENDOR_RECORD_DATE = "{date}"',
                          'REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"', 1)
   check("wrong-date-is-not-verified", classified(broken), (0, "REFUSED"))
   broken_sha = broken.replace('REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"',
-                              f'REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"  # {retired}', 1)
+                              f'REVENDOR_RECORD_DATE = "1999-01-01T00:00:00Z"  # {cur}', 1)
   check("unverified-record-does-not-own-its-sha", classified(broken_sha), (1, "REFUSED"))
   check("groupflip-absence", classified(flip), (0, "ABSENT"))
-  check("groupflip-sha-put-back", classified(flip + f"\n# {retired}\n"), (1, "ABSENT"))
+  check("groupflip-sha-put-back", classified(flip + f"\n# {cur}\n"), (1, "ABSENT"))
   check("identity-control", gf.identity_holds(cur, cur, ("slot", "dtype")), True)
   check("identity-diverges", gf.identity_holds(cur, retired, ("slot",)), False)
   check("identity-size", gf.identity_holds(cur, cur, ("slot", "size")), False)
@@ -355,6 +404,37 @@ def plant():
   except Exception as exc:
     live = f"RAISED {type(exc).__name__}"
   check("identity-live-read", live, True)
+
+  # A retired sha is PIN. Dropping the row, or still calling it LIVE, is not a pass.
+  check("retired-sha-alone-is-pin", scored(f"# {retired}\n"), (0, 1, "ABSENT"))
+  check("retired-sha-in-bend-is-pin", scored(f"# {retired}\n", "alone.bend"), (0, 1, "ABSENT"))
+  check("current-sha-in-bend-is-live", scored(f"# {cur}\n", "now.bend"), (1, 0, "ABSENT"))
+  check("retired-sha-beside-record-is-pin", scored(fresh + f"\n# {retired}\n"), (0, 1, "VERIFIED"))
+  check("current-sha-bindings-stripped-is-live",
+        classified(without_records(fresh) + f"\n# {cur}\n"), (1, "ABSENT"))
+
+  both = judge_copies([
+    ("corpusfresh-gate.py", fresh),
+    ("vendordep-census-gate.py", vendor),
+  ])
+  if sum(1 for r in both if r["kind"] == "file") < 2:
+    check("revendor-records-stay-verified", None, (("VERIFIED", "VERIFIED"), 0))
+  else:
+    recs = tuple(sorted((r["file"], r["name"], r["state"]) for r in both if r["kind"] == "record"))
+    check("revendor-records-stay-verified", (recs, _count(both, "live")),
+          ((("gates/corpusfresh-gate.py", "REVENDOR", "VERIFIED"),
+            ("gates/vendordep-census-gate.py", "REVENDOR", "VERIFIED")), 0))
+
+  bend = judge_copies([("mx_graph_census.bend", (HERE / "mx_graph_census.bend").read_text())])
+  pins = [r for r in bend if r["kind"] == "pin"]
+  if not pins and not _count(bend, "live"):
+    check("census-bend-retired-sha-is-pin", None, (0, 1, "PIN", True))
+  else:
+    lit = pins[0]["literal"] if len(pins) == 1 else ""
+    retired_hit = bool(lit) and any(t.startswith(lit) and t not in current for t in trees)
+    check("census-bend-retired-sha-is-pin",
+          (_count(bend, "live"), len(pins), pins[0]["state"] if pins else "ABSENT", retired_hit),
+          (0, 1, "PIN", True))
 
   ok = sum(1 for r in rows if "\tstate=OK\t" in r)
   print("\n".join(rows))
