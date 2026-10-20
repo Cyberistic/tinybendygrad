@@ -287,13 +287,28 @@ import ../../LAWS/spec.bend as S
 # its own value is a wrong submission waiting for a driver.
 # ===========================================================================
 
-# hcq2.py:18 `ContextVar("HCQ_CACHE_THRESH", 64)`. :565 reads it as
-# `len(linear.src) < HCQ_CACHE_THRESH`.
+# hcq2.py:19 AT PIN `0a5776355` `ContextVar("HCQ_CACHE_THRESH", 64)`. :565 reads
+# it as `len(linear.src) < HCQ_CACHE_THRESH`.
 def HCQ_CACHE_THRESH() -> U32: 64
 
-# hcq2.py:20 `HCQ_DEVS = frozenset(("NV","QCOM","CUDA","NULL","METAL")) |
+# hcq2.py:20 AT PIN `0a5776355` -- the 646-LINE `hcq2.py` this header declares --
+# `HCQ_DEVS = frozenset(("NV","QCOM","CUDA","NULL","METAL")) |
 # (frozenset(("AMD",)) if HCQ2 else frozenset())`. With HCQ2=1 -- which is what
 # this file IS -- the set is the six below, in the source's order.
+#
+# THE PIN IS NAMED BECAUSE THE CONSTANT MOVED AND THE SET CHANGED WITH IT, and
+# this is the only place in the port that says so: `d33d97ca7` ("hipify cuda",
+# #18763) added `HIP` on 2026-10-12, `e8308c08f` ("hcq2: schedule with cf",
+# #18809) moved the constant OUT of `hcq2.py` and into `device.py:19` on
+# 2026-10-14, and `38cbec532` ("move cl to hcq2", #18872) added `CL` on
+# 2026-10-19. At upstream HEAD the set is EIGHT members and `hcq2.py:20` is
+# not it.
+#
+# THE SIX BELOW ARE THE PIN'S SET AND NOT A SUBSET BY DESIGN. At the pin neither
+# `HIP` nor `CL` was an HCQ device -- upstream's `ops_hip.py` was 71 lines and
+# `ops_cl.py` 130, and the port's `ops_hip.bend`/`ops_cl.bend` are ports of
+# exactly those -- so adding them here would claim a queue model those two
+# files do not have.
 def HCQ_DEV_NV() -> U32: 1
 def HCQ_DEV_QCOM() -> U32: 2
 def HCQ_DEV_CUDA() -> U32: 3
