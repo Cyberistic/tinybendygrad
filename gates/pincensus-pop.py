@@ -32,9 +32,11 @@ measured and printed, not assumed: `md-parses-as-python` is a row.
 """
 import ast
 import hashlib
+import io
 import os
 import re
 import subprocess
+import tokenize
 from collections import Counter, defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -184,6 +186,78 @@ def host_of(text):
     return "prose"
 
 
+def cut_comment(line):
+    """-> `line` with its trailing `#` comment removed. The `#` inside a string is not a
+    comment, so the scan tracks quotes; a `\\` escapes the next character.
+
+    This is the ONE part of the reader that is still a hand-rolled scan, and it is a scan of
+    a LINE, not of a FILE: a `#` on a line cannot hide the NEXT line, so it cannot swallow a
+    tail. That is the whole difference between it and the block extent, which used to be
+    scanned across the file and could.
+    """
+    i, cut, quote = 0, line, None
+    while i < len(line):
+        c = line[i]
+        if quote:
+            if c == "\\":
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in "\"'":
+            quote = c
+        elif c == "#":
+            cut = line[:i]
+            break
+        i += 1
+    return cut
+
+
+# A triple-quoted string, with or without a prefix (`r`, `b`, `f`, `u`, `rb`, ...). The
+# prefix is part of the TOKEN, so the quote run is not at a fixed offset.
+TRIPLE = re.compile(r"\A[A-Za-z]*(\"\"\"|''')")
+
+# CPython 3.12 tokenizes an f-string as THREE tokens, not one: FSTRING_START, the
+# FSTRING_MIDDLEs, and FSTRING_END. A reader that looks only for STRING tokens therefore
+# does not see an f-string at all, and MEASURED on this tree that is not a corner: 13 of the
+# 53 files whose tail the old reader swallowed were swallowed by an F-STRING block.
+FSTRING_START = getattr(tokenize, "FSTRING_START", None)
+FSTRING_END = getattr(tokenize, "FSTRING_END", None)
+
+
+def triple_blocks(text):
+    """-> [(first_line, last_line)] for every triple-quoted block in `text`, or None if the
+    tokenizer cannot read the file at all.
+
+    THE TOKENIZER IS THE AUTHORITY ON WHERE A STRING BEGINS AND ENDS, and this function is
+    the only place in this file that asks it. It returns None rather than guessing: a file
+    the tokenizer cannot read has NO KNOWN BLOCK, and the caller then keeps every line, which
+    over-approximates the code. Over-approximation is the direction that protects the
+    census's own accusation (see `code_lines`), so "I could not read it" is answered by
+    reading MORE, never less.
+
+    MEASURED 2026-10-20 on this tree's corpus (8605 tracked files that decode as UTF-8):
+    every one of the 3145 PYTHON files tokenizes, and 10 of the 254 SHELL files do not --
+    a shell script is not Python, and `extra/setup_tinygpu_osx.sh` fails on an unterminated
+    string literal at line 2. Those 10 are the ones that must not be read as blocks.
+    """
+    try:
+        toks = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (tokenize.TokenError, IndentationError, SyntaxError, ValueError):
+        return None
+    out, stack = [], []
+    for t in toks:
+        if t.type == tokenize.STRING:
+            if TRIPLE.match(t.string):
+                out.append((t.start[0], t.end[0]))
+        elif FSTRING_START is not None and t.type == FSTRING_START:
+            if TRIPLE.match(t.string):
+                stack.append(t.start[0])
+        elif FSTRING_END is not None and t.type == FSTRING_END and stack:
+            out.append((stack.pop(), t.end[0]))
+    return out
+
+
 def code_lines(text, host):
     """-> [(lineno, line)] a reader could execute. Comments and docstrings are out.
 
@@ -197,40 +271,59 @@ def code_lines(text, host):
     READ is counted on a line that may not run. That direction is chosen on purpose -- it can
     only move a row from CANNOT-FAIL to CAN-FAIL, and CANNOT-FAIL is the accusation, so the
     bias runs against the census's own conclusion.
+
+    WHAT THIS FUNCTION USED TO GET WRONG, AND IT IS THE FINDING THIS FILE NOW CARRIES.
+
+    The old reader decided for itself where a string ended. It opened a docstring at a line
+    whose text BEGINS with a quote and closed it at the next line whose text ENDS with a
+    quote. Those are two different questions, and the gap between them is a FILE'S TAIL:
+
+      * a line that is the CLOSER of a triple-quoted block whose OPENER carried a prefix --
+        `BEND_MAIN = r'''` ... `'''` -- is a line that begins with a quote and is NOT an
+        opener. The old reader opened a docstring there, and nothing closed it, so every
+        line after it -- INCLUDING THE `if __name__ == "__main__":` GUARD -- was invisible
+        to every instrument that asks this function for the code.
+      * a closer with trailing text -- three double quotes and then a bracket, or three
+        double quotes and then `+ "".join(...)` -- does not END with a quote, so the old
+        reader did not close there either.
+
+    MEASURED 2026-10-20 on this tree: 53 tracked files lost their tail that way, 2380
+    lines in all, 32 of them carrying a `__main__` guard and 28 a `def`/`class`. The
+    census instrument is `gates/code-reader-census.py` and it re-derives every one of
+    those numbers from the tree.
+
+    THE FIX IS NOT A ONE-LINE CHANGE TO THE STATE MACHINE, AND THE REASON IS THE TOKENIZER'S
+    OWN BEHAVIOUR: the extent of a block is a property of the PARSE, and the parse is what
+    `tokenize` computes. Two of its behaviours are load-bearing here and both are measured:
+    an f-string is THREE tokens and not one (see `FSTRING_START` above), and a file it cannot
+    read has no blocks at all (see `triple_blocks`). A reader that looks for `STRING` tokens
+    alone misses every f-string block; a reader that treats a tokenizer failure as "no
+    strings" would MISS A REAL BLOCK; and a reader that treats it as "everything is a
+    string" would drop the file. The rule this file keeps is the one the old reader already
+    used and the one the tree's own bias wants: a block is excluded when it OPENS A LINE,
+    and a block that does not open a line is KEPT, so the interior of a string literal is
+    still counted as code.
     """
     if host == "prose":
         return []
+    lines = text.splitlines()
+    excluded = set()
+    # A file with no triple quote has no block, so it needs no tokenizer. This is not an
+    # optimisation with a semantic: it is the same question asked the cheap way.
+    if '"""' in text or "'''" in text:
+        blocks = triple_blocks(text)
+        for first, last in blocks or ():
+            opener = lines[first - 1].strip() if first - 1 < len(lines) else ""
+            if opener[:3] in ('"""', "'''"):
+                excluded.update(range(first, last + 1))
     out = []
-    in_doc = False
-    for lineno, line in enumerate(text.splitlines(), 1):
-        s = line.strip()
-        if in_doc:
-            if s.endswith('"""') or s.endswith("'''"):
-                in_doc = False
+    for lineno, line in enumerate(lines, 1):
+        if lineno in excluded:
             continue
+        s = line.strip()
         if s.startswith("#"):
             continue
-        if s.startswith('"""') or s.startswith("'''"):
-            q = s[:3]
-            if not (len(s) > 3 and s.count(q) >= 2):
-                in_doc = True
-            continue
-        i, cut, quote = 0, line, None
-        while i < len(line):
-            c = line[i]
-            if quote:
-                if c == "\\":
-                    i += 2
-                    continue
-                if c == quote:
-                    quote = None
-            elif c in "\"'":
-                quote = c
-            elif c == "#":
-                cut = line[:i]
-                break
-            i += 1
-        out.append((lineno, cut))
+        out.append((lineno, cut_comment(line)))
     return out
 
 
