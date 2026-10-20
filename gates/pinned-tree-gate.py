@@ -23,14 +23,13 @@ RE-VENDOR MAKES IT FALSE AGAIN, WHICH IS EXACTLY WHAT HAPPENED.** The remedy is 
 is to delete the SHA and keep the comparison in a place that reads it. So this gate holds the
 identity WITHOUT a sha in it, and then hunts the transcription itself.
 
-    PASS 0     the tree identity holds, the index population is whole, and no gate home claims the
-               current `tinygrad/` tree by a transcribed sha
+    PASS 0     the tree identity holds, and no gate home claims the current `tinygrad/` tree by a
+               transcribed sha. The index state is a row and is not this exit.
     FAIL 1     a check ran and answered no -- a sha names the current tree and no verified record
                owns that line, or the two trees differ
-    REFUSED 3   a precondition was absent, or a dated record's date does not match the commit its
-               derive names. An ARMED INDEX IS NOT A WRONG TREE: the blobs are right and the files
-               are on disk, but every instrument that reads `git ls-files` in this tree is reading
-               a POPULATION THAT IS NOT THE TREE
+    REFUSED 3  a precondition was absent, or a dated record's date does not match the commit its
+               derive names. An armed index is not this exit: it prints `INDEX-ARMED` and the pin
+               rows still emit. The exit is the pin verdict.
     DEAD 5     the gate could not measure at all
 
 READ-ONLY BY CONSTRUCTION. Every git call carries `--no-optional-locks`, which is what stops git
@@ -38,12 +37,12 @@ refreshing -- and therefore rewriting -- `.git/index` as a side effect of being 
 the thing it is inspecting is worse than no gate. Nothing here writes a file, fetches a ref, or
 touches `tinygrad/`.
 
-CLAIM 2 IS NOT REIMPLEMENTED, IT IS DELEGATED. The census of the index against the tree already
-exists and is already correct: `checks/index-arm-gate.py`'s `report()`. A second copy of that census
-is a second contract with no generator, which is the exact fault this gate exists to catch in prose.
-What is added is the sentence the delegation makes possible: the census is not about commits, it is
-about EVERY instrument in the tree that asks `git ls-files` for its population, and
-`INDEX_READERS` is that set, derived by a regex over the tree's own git-call sites rather than typed.
+CLAIM 2 IS A ROW, NOT A VERDICT, AND NOT A SECOND CENSUS. `checks/index-arm-gate.py` owns the
+shape census and refuses an armed index. This gate does not call it: that refusal is what hid the
+pin rows. The row here is a length comparison, `git ls-files` against `git ls-tree -r HEAD`, and
+the pin census does not read the index. It walks the gate homes and resolves tree objects with
+`git rev-parse` and `git log`. An armed index prints `INDEX-ARMED` and the excess path count. It
+does not select the exit.
 
 WHY THE INDEX IS CLAIM 2 AND NOT A FOOTNOTE. MEASURED, on the same tree, the same minute:
 `git rev-parse HEAD:tinygrad` and `refs/remotes/upstream/master:tinygrad` are ONE tree, and
@@ -55,6 +54,7 @@ THE INSTRUMENT DISAGREED, AND BOTH WERE HONEST. Re-run under an index built from
 command printed `PIN 5c2bf39d6c4b`, `AT PIN 230`, `PORT-RELEVANT CHANGED 0` -- which is what
 `.agents/UPSTREAM-PIN.md` says its rows read. **AN INSTRUMENT THAT ASKS THE INDEX FOR ITS POPULATION
 INHERITS `GIT_INDEX_FILE`, AND IT INHERITES IT SILENTLY, AND ITS OUTPUT LOOKS EXACTLY LIKE A FINDING.**
+That is why the index state is printed. It is not why this gate refuses.
 
 WHAT THIS GATE CANNOT SEE, NAMED. (a) Its transcription scan covers the DERIVED GATE HOMES and nothing
 else, so a claim in `AGENTS.md`, in `.agents/**` or in a `.bend` file is outside it -- and those are
@@ -111,12 +111,11 @@ HEX = re.compile(r"(?<![0-9a-f])([0-9a-f]{7,64})(?![0-9a-f])")
 # rather than beside a claim, and (c) above says what it costs.
 DEPTH = 60
 
-# THE SET OF INSTRUMENTS THAT ASK THE INDEX FOR THEIR POPULATION, DISCOVERED BY A REGEX OVER THE
-# TREE'S OWN GIT-CALL SITES, not typed: `checks/index-arm-gate.py` holds the census and this file
-# holds the CONSEQUENCE, and the consequence is only meaningful if the readers are visible. A literal
-# tuple here would be a population nobody could check, and this gate's third claim is that those are
-# the defect.
-INDEX_READERS = re.compile(r"""["']git["']\s*,\s*["'](ls-files|diff-index|diff-files)["']""")
+# A private commit index must not become this row. The plant passes `index_file`; the live path
+# passes None and these are scrubbed. `checks/index-arm-gate.py` scrubs the same set, and for the
+# same reason: inheriting `GIT_INDEX_FILE` describes a different file.
+_REDIRECTS = ("GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_OBJECT_DIRECTORY",
+              "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE")
 
 
 def git(root, *args):
@@ -126,6 +125,32 @@ def git(root, *args):
   except FileNotFoundError:
     return DEAD, ""
   return p.returncode, p.stdout
+
+
+def _git_env(index_file):
+  env = {k: v for k, v in os.environ.items() if k not in _REDIRECTS}
+  if index_file is not None:
+    env["GIT_INDEX_FILE"] = os.fspath(index_file)
+  return env
+
+
+def _count_lines(root, args, index_file):
+  """Non-empty lines of one read-only git call, or None if it did not run."""
+  try:
+    p = subprocess.run(GIT + args, cwd=root, capture_output=True, text=True, env=_git_env(index_file))
+  except FileNotFoundError:
+    return None
+  if p.returncode != 0:
+    return None
+  return sum(1 for line in p.stdout.splitlines() if line)
+
+
+def _git_at(root, index_file, *args):
+  """A git call whose index is `index_file`, never `.git/index`."""
+  try:
+    return subprocess.run(GIT + args, cwd=root, capture_output=True, text=True, env=_git_env(index_file))
+  except FileNotFoundError:
+    return None
 
 
 def resolve(root, rev):
@@ -233,27 +258,6 @@ def transcribed(root, dirs, trees):
   return hits
 
 
-def index_readers(root, dirs):
-  """`[(site, matched call)]` -- the gate-home call sites that would read the index. The census is
-  `checks/index-arm-gate.py`'s; this is the list of places that census is ABOUT."""
-  hits = []
-  for d in dirs:
-    for base, _, files in os.walk(d):
-      for f in files:
-        if not f.endswith(".py"):
-          continue
-        p = Path(base) / f
-        try:
-          text = p.read_text(errors="replace")
-        except OSError:
-          continue
-        for n, line in enumerate(text.splitlines(), 1):
-          m = INDEX_READERS.search(line)
-          if m:
-            hits.append((f"{_site(root, p)}:{n}", m.group(1)))
-  return hits
-
-
 def _split_site(site):
   path, _, line = site.rpartition(":")
   return path, int(line)
@@ -351,63 +355,52 @@ def tree_identity_holds(root):
   return True
 
 
-def index_population_holds(root):
-  """CLAIM 2: THE INDEX POPULATION IS THE TREE POPULATION, delegated to the instrument that already
-  answers it, and reported as the REFUSAL it is.
+def index_state(root, index_file=None):
+  """The index is a row, not a verdict.
 
-  `checks/index-arm-gate.py` is imported BY PATH and its `report()` is called; nothing about the
-  census is reimplemented here. A non-zero return is REFUSED (3) rather than FAIL (1) for
-  `index-arm-gate.py`'s stated reason, which this file adopts rather than re-argues: the blobs are
-  right and the files are on disk, and the thing that is wrong is the TOOL.
-
-  The count that matters is printed in the instrument's own SHAPES, and `INDEX_READERS` says which
-  call sites that count is about -- so a reader is not left to guess what an armed index costs.
+  Armed means `git ls-files` is longer than `git ls-tree -r HEAD`. `paths` is that excess.
+  The tree is read with ls-tree. ls-files is read only for this row. This return never selects
+  the gate's exit. The live path passes no `index_file` and scrubs `GIT_INDEX_FILE`; the plant
+  passes a temp index.
   """
-  sys.path.insert(0, str(ROOT / "gates"))
-  rc, census = _load("index_arm", ROOT / "checks" / "index-arm-gate.py").report(root)
-  n = sum(len(census.get(k, [])) for k in ("DELETION", "INTENT", "STALE", "FOREIGN"))
-  if rc != PASS:
-    readers = index_readers(root, homes(root))
-    print(f"pinned-tree-gate: REFUSED, NOT A VERDICT -- the index carries {n} path(s) HEAD does not "
-          f"(INDEX-ARM SHAPES: {', '.join(f'{k}={len(census.get(k, []))}' for k in ('DELETION', 'STALE', 'FOREIGN', 'INTENT'))}). "
-          f"The tree is fine; the TOOL is pointed wrong. EVERY INSTRUMENT THAT READS IT IS AFFECTED, "
-          f"AND {len(readers)} site(s) IN THE GATE HOMES CALL `git ls-files`/`diff-index`:")
-    for site, what in readers[:8]:
-      print(f"      {site}  {what}")
-    if len(readers) > 8:
-      print(f"      ... and {len(readers) - 8} more")
-    print("      MEASURED CONSEQUENCE: `.agents/slop/upstream-delta.py`'s `our_blobs()` reads "
-          "`git ls-files -s tinygrad/`, so under this index it derives its PIN from the PRE-re-vendor "
-          "blobs while `.agents/UPSTREAM-PIN.md` cites that same line as the re-derivation of its own "
-          "four rows. THE DOCUMENT AND THE INSTRUMENT DISAGREE, AND BOTH ARE HONEST.")
-    return False
-  print(f"pinned-tree-gate: INDEX POPULATION holds -- the index agrees with HEAD on all "
-        f"{census.get('n_tree', '?')} paths (delegated to checks/index-arm-gate.py; nothing here "
-        f"reimplements that census)")
-  return True
+  n_files = _count_lines(root, ("ls-files",), index_file)
+  n_tree = _count_lines(root, ("ls-tree", "-r", "HEAD"), index_file)
+  if n_files is None or n_tree is None:
+    row = {"state": "INDEX-UNREAD", "paths": None, "ls_files": n_files, "ls_tree": n_tree}
+  else:
+    extra = n_files - n_tree
+    row = {
+      "state": "INDEX-ARMED" if extra > 0 else "INDEX-DISARMED",
+      "paths": extra if extra > 0 else 0,
+      "ls_files": n_files,
+      "ls_tree": n_tree,
+    }
+  print(f"pinned-tree-gate: {row['state']} paths={row['paths']} "
+        f"ls-files={row['ls_files']} ls-tree={row['ls_tree']}")
+  return row
 
 
 def _n(rows, kind, state=None):
   return sum(1 for r in rows if r["kind"] == kind and (state is None or r["state"] == state))
 
 
-def no_transcribed_tree_sha(root):
+def pin_census(root, dirs, display_root):
   """CLAIM 3: NO GATE HOME MAKES A LIVE CLAIM THAT THE CURRENT `tinygrad/` TREE IS A TRANSCRIBED SHA.
 
   The hits are still `transcribed`. The class of each hit is `classify`, which imports the record
   test rather than matching the words "dated record". A verified record and a retired-tree pin are
   printed and are not failures. A sha of the current tree, not on a verified binding, is a failure.
   A record whose date does not match is REFUSED. Refreshing a sha is not a fix, and this function
-  does not write one.
+  does not write one. It does not read the index: the population is the directories it is handed,
+  and the tree objects come from `git rev-parse` and `git log`.
   """
   trees = tree_values(root)
   if not trees:
     print("pinned-tree-gate: no `tinygrad/` tree value could be derived from this repository's own "
           "history, so there is no population to compare a literal against -- that is DEAD, not a "
           "clean census")
-    return DEAD
-  dirs = homes(root)
-  rows = classify(root, dirs, trees, root)
+    return [], DEAD
+  rows = classify(display_root, dirs, trees, root)
   shown = [r for r in rows if r["kind"] != "file"]
   if shown:
     print("\n".join("pinned-tree\t" + _record().emit(r) for r in shown))
@@ -418,12 +411,19 @@ def no_transcribed_tree_sha(root):
   if live:
     print("pinned-tree-gate: FAIL -- a sha names the current tinygrad/ tree and no verified record "
           "owns that line. Refreshing the sha is not a fix.")
-    return FAIL
+    return shown, FAIL
   if refused:
     print("pinned-tree-gate: REFUSED -- a dated record's date does not match the commit its derive names")
-    return REFUSED
+    return shown, REFUSED
   print(f"pinned-tree-gate: no live claim of the current tree in {[d.name for d in dirs]}")
-  return PASS
+  return shown, PASS
+
+
+def census(root, dirs=None, display_root=None, index_file=None):
+  """Index row, then pin rows. The index never suppresses the pins and never selects the exit."""
+  idx = index_state(root, index_file=index_file)
+  shown, verdict = pin_census(root, homes(root) if dirs is None else dirs, display_root or root)
+  return idx, shown, verdict
 
 
 # ---- the plant ------------------------------------------------------------------------------
@@ -459,6 +459,10 @@ def plant(root):
   when the current tree sha sits on the binding line. A comment that says "dated record" does not
   exempt that sha. A wrong date is a record row in state REFUSED. A direction that emits no row
   is REFUSED, not a success.
+
+  INDEX ROWS, ON TEMP INDEXES, NOT ON `.git/index`. `GIT_INDEX_FILE` points the census at an
+  index built with `read-tree HEAD` and at a copy of that index with one extra path. Both emit
+  the same pin rows. The index row differs. A current-tree sha with no binding is still LIVE.
   """
   trees = tree_values(root)
   if len(trees) < 2:
@@ -551,11 +555,63 @@ def plant(root):
   check("past-pin", classified(f"# {retired}\n"), (0, "ABSENT", 1, 0))
   check("current-sha-is-live", classified(f"# {cur}\n"), (1, "ABSENT", 0, 0))
   check("not-a-tree-on-a-record", classified(fresh + f"\n# {decoy}\n"), (0, "VERIFIED", 0, 0))
+  _plant_index(root, cur, retired, bad)
   if silent:
     print(f"--plant: REFUSED -- {len(silent)} direction(s) emitted nothing: {silent}")
     return REFUSED
   print(f"--plant: {'OK' if not bad else 'PLANT WRONG: ' + '; '.join(bad)}")
   return 1 if bad else 0
+
+
+def _temp_indexes(root, td):
+  """A disarmed index from `read-tree HEAD`, and a copy with one extra path. Never `.git/index`."""
+  disarmed, armed = td / "disarmed.index", td / "armed.index"
+  made = _git_at(root, disarmed, "read-tree", "HEAD")
+  if made is None or made.returncode != 0:
+    return None
+  armed.write_bytes(disarmed.read_bytes())
+  rc, blob = git(root, "rev-parse", "HEAD:gates/pinned-tree-gate.py")
+  blob = blob.strip()
+  if rc != 0 or not blob:
+    return None
+  added = _git_at(root, armed, "update-index", "--add", "--cacheinfo", "100644", blob,
+                  "zz-pinidx-plant-extra")
+  if added is None or added.returncode != 0:
+    return None
+  return disarmed, armed
+
+
+def _plant_index(root, cur, retired, bad):
+  """Armed and disarmed temp indexes. Pin rows must match; the index row must not.
+
+  The fixture carries the current tree sha with no binding, so both censuses must call it LIVE,
+  and the pin verdict must be FAIL on both -- the index does not select it.
+  """
+  with tempfile.TemporaryDirectory(prefix="pinidx-") as raw:
+    td = Path(raw)
+    made = _temp_indexes(root, td)
+    if made is None:
+      bad.append("index-plant")
+      print("  index-plant: REFUSED could not build temp indexes")
+      return
+    disarmed, armed = made
+    home = td / "gates"
+    home.mkdir()
+    (home / "fixture.py").write_text(f"# {cur}\n# {retired}\n")
+    print("  index-armed-census:")
+    idx_a, pins_a, v_a = census(root, dirs=[home], display_root=td, index_file=armed)
+    print("  index-disarmed-census:")
+    idx_d, pins_d, v_d = census(root, dirs=[home], display_root=td, index_file=disarmed)
+    same = pins_a == pins_d and len(pins_a) > 0
+    differ = (idx_a["state"] == "INDEX-ARMED" and idx_d["state"] == "INDEX-DISARMED"
+              and idx_a["paths"] != idx_d["paths"])
+    live = any(r["state"] == "LIVE" and cur.startswith(r["literal"]) for r in pins_a)
+    ok = same and differ and live and v_a == v_d == FAIL
+    print(f"  index-rows: armed={idx_a['state']} paths={idx_a['paths']} pins={len(pins_a)} "
+          f"disarmed={idx_d['state']} paths={idx_d['paths']} pins={len(pins_d)} "
+          f"verdict={v_a}/{v_d} {'OK' if ok else '<-- PLANT WRONG'}")
+    if not ok:
+      bad.append("index-plant")
 
 
 def main():
@@ -565,33 +621,32 @@ def main():
     print("pinned-tree-gate: DEAD -- no repository here; a gate with no tree measures nothing")
     return DEAD
   ident_ok = tree_identity_holds(ROOT)
-  index_ok = index_population_holds(ROOT)
-  sha = no_transcribed_tree_sha(ROOT)
+  idx, _shown, sha = census(ROOT)
   if "--json" in sys.argv:
     print("PINNED-TREE JSON " + json.dumps({
       "identity": resolve(ROOT, "HEAD:tinygrad"),
-      "claims": [ident_ok, index_ok, sha == PASS],
+      "index": idx["state"],
+      "index_paths": idx["paths"],
+      "ls_files": idx["ls_files"],
+      "ls_tree": idx["ls_tree"],
+      "claims": [ident_ok, sha == PASS],
       "sha": sha}))
+  # EXIT RULE: the pin verdict, not the index state. A live claim or a broken tree
+  # identity is FAIL. A dated record whose date does not match is REFUSED and stays
+  # REFUSED. INDEX-ARMED / INDEX-DISARMED never enter this decision.
   if sha == DEAD:
     print("pinned-tree-gate: DEAD")
     return DEAD
-  failed = []
-  if not ident_ok:
-    failed.append("identity")
-  if not index_ok:
-    failed.append("index-population")
-  if sha == FAIL:
-    failed.append("live-claim")
-  if sha == REFUSED:
-    failed.append("record-date")
-  if "live-claim" in failed or "identity" in failed:
+  if not ident_ok or sha == FAIL:
+    failed = [name for name, hit in (("identity", not ident_ok), ("live-claim", sha == FAIL)) if hit]
     print(f"pinned-tree-gate: FAIL -- {failed}")
     return FAIL
-  if failed:
-    print(f"pinned-tree-gate: REFUSED, NOT A VERDICT: {failed[0]}")
+  if sha == REFUSED:
+    print("pinned-tree-gate: REFUSED, NOT A VERDICT: record-date")
     return REFUSED
-  print("pinned-tree-gate: PASS -- the tree identity holds with no sha written here, the index "
-        "population is whole, and no gate home claims the current tinygrad/ tree by a transcribed sha")
+  print("pinned-tree-gate: PASS -- the tree identity holds with no sha written here, "
+        "and no gate home claims the current tinygrad/ tree by a transcribed sha. "
+        f"The index row is {idx['state']} and is not this exit.")
   return PASS
 
 
