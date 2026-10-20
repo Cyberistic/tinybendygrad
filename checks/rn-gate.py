@@ -397,14 +397,16 @@ def selftest():
   # THIRD.** The guard is a hand list of what this file happens to read; the file's own inputs are
   # wherever it says they are. Refusing here keeps the lane a lane: `DEAD` is not a `PASS`, and an
   # unrunnable selftest that exits 1 will be read as a red port by anything that trusts `$?`.
-  for _cap in ("rn-port.txt", "rn-orc.txt"):
+  for _cap in ("rn-port.rows", "rn-orc.rows"):
     if not (HERE / _cap).is_file():
-      refuse(f"selftest input absent: {HERE / _cap} -- the captured pair this lane judges was never "
-             f"committed (0 commits touch it), so there is nothing to restore and no `git show` "
-             f"recovers it. Capture it with `--oracle-stdout` (an oracle-side capture IS committed "
-             f"elsewhere) or leave this lane PERMANENTLY REFUSED.")
-  live = (HERE / "rn-port.txt").read_text()
-  orc = (HERE / "rn-orc.txt").read_text()
+      refuse(f"selftest input absent: {HERE / _cap} -- the captured pair this lane judges is not "
+             f"here. IT IS NOT LOST: `checks/rn-port.rows` is lines 22..161 of the tracked "
+             f"`.agents/slop/flipthird/base-render.err` and `checks/rn-orc.rows` is the tracked "
+             f"`oracles/tinybendygrad_uop_render.bend.render-gate-oracle.rows`, and BOTH are "
+             f"byte-verified against the md5s this file records at :44-45. THE NAMES CHANGED, "
+             f"NOT THE CONTENT.")
+  live = (HERE / "rn-port.rows").read_text()
+  orc = (HERE / "rn-orc.rows").read_text()
   base = judge(live, orc)
   n0 = len(base["disagree"])
   print(f"[selftest base] the REAL captured pair: {len(base['gated'])} gated rows, "
@@ -466,11 +468,15 @@ def main():
   # file and never needs the script, so a guard at import would take away a path that works. And it
   # sits BEFORE the `bend` call so a refused gate costs nothing.
   if not a.oracle_stdout and not (REPO / ORACLE[0]).is_file():
-    refuse(f"oracle absent: {REPO / ORACLE[0]} -- the live lane would run a script that is not "
-           f"there, and `.agents/slop/xd1/` is gone. **IT WAS NEVER COMMITTED** -- 0 commits in the "
-           f"whole history touch it, so there is nothing to restore and no `git show` recovers it; "
-           f"this lane is PERMANENTLY REFUSED, not waiting on a cleanup. Pass --oracle-stdout to "
-           f"compare a CAPTURE instead. This gate cannot produce a denominator without its oracle.")
+    refuse(f"oracle absent: {REPO / ORACLE[0]} -- AND THE PATH IS THE WRONG ONE, NOT THE SCRIPT. The "
+           f"oracle IS committed, at `checks/render-gate-oracle.py`; `ORACLE` at :74 names a path "
+           f"0 commits ever touched, because `.agents/slop/xd1/` was pruned. Pointing at the "
+           f"committed script is NOT the fix either: it does `from tinygrad.uop.render import "
+           f"pyrender, ...` and the 2026-10-17 re-vendor REMOVED `pyrender` from "
+           f"`tinygrad/uop/render.py`, so the oracle would CRASH on an ImportError instead of "
+           f"refusing. **THIS LANE IS REFUSED UNTIL THE ORACLE RUNS AGAIN.** The CAPTURED pair "
+           f"this gate judges is NOT lost -- see the selftest lane, whose captures are byte-verified "
+           f"against the md5s at :44-45.")
   p = (subprocess.CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")
        if a.port_stdout else run(["./bin/bend", PORT]))
   o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracle_stdout).read_text(), "")

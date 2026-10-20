@@ -1,0 +1,67 @@
+POPULATION: 365 discovered entry point(s) + 78 lib(s) as owners, 38 checked-in .rows file(s) under gates/, 84 distinct .rows path(s) named by one of them
+  amd_dsl_census-pins.rows           rows=   31 cols= 3 owners=amd_dsl_census-gate.py,amd_dsl_census-mutate.py
+  arenasrc_census.rows               rows=   44 cols= - owners=arenasrc_census.py
+  assertlit.rows                     rows=   96 cols= 7 UNTRACKED owners=assertlit-census.py
+  citations-census-findings.rows     rows=  395 cols= 7 owners=citations-census-gate.py  <- row 1 is a COLUMN HEADER ROW, not data: 394 rows if so
+  crp_graph_census-pins.rows         rows=    1 cols= 4 owners=crp_graph_census-gate.py,crp_graph_census-mutate.py
+  cstyle-live.rows                   rows=  227 cols= - owners=dup-gate.py,repair-dupes.py
+  decomp_graph_census-pins.rows      rows=   17 cols= 3 owners=decomp_graph_census-gate.py
+  decomp_value-pins.rows             rows=  198 cols= 3 owners=decomp_value-gate.py
+  edge-cost.rows                     rows=   18 cols= 6 owners=edge-runner.py
+  edge-fixture.rows                  rows=   42 cols=11 owners=edge-fixture-census.py
+  edge-oracle-pin.rows               rows=   11 cols= 7 owners=edge-oracle-pin-gate.py
+  edge-trace.rows                    rows=   20 cols= 8 owners=edge-runner.py
+  falseclaim-plant.rows              rows=   10 cols= 8 owners=falseclaim-census-gate.py
+  falseclaim.rows                    rows=  162 cols= - UNTRACKED owners=falseclaim-census-gate.py
+  gapcensus-pins.rows                rows=   67 cols= 1 owners=gapcensus-gate.py,untested-census.py,untested-gate.py
+  help-census.rows                   rows=  227 cols=10 owners=help-census.py  <- row 1 is a COLUMN HEADER ROW, not data: 226 rows if so
+  indexread-baseline.rows            rows=   68 cols= 2 owners=indexread-gate.py
+  linearizer_census-pins.rows        rows=    2 cols= 4 owners=linearizer_census-gate.py
+  nilsrc-census.rows                 rows=  208 cols= - owners=nilsrc-census.py
+  op_graph_census-pins.rows          rows=    2 cols= 3 owners=op_graph_census-gate.py
+  ops_python_census-pins.rows        rows=    0 cols= - owners=ops_python_census-gate.py
+  ops_python_exec-fixtures.rows      rows= 6908 cols= - owners=ops_python_exec-gate.py,ops_python_exec-gen.py
+  ops_python_exec-pins.rows          rows=   52 cols= 1 owners=ops_python_exec-gate.py
+  opseven-pins.rows                  rows=    0 cols= - owners=opseven-gate.py
+  oracleblind.rows                   rows=  110 cols=24 UNTRACKED owners=oracleblind-census.py  <- row 1 is a COLUMN HEADER ROW, not data: 109 rows if so
+  prose-census.rows                  rows=   37 cols=12 owners=NONE
+  ptx_render_census-pins.rows        rows= 1733 cols= 3 owners=ptx_render_census-gate.py
+  realize_graph_census-pins.rows     rows=   63 cols= 3 owners=realize_graph_census-gate.py,realize_graph_census-mutate
+  regalloc_census-pins.rows          rows=    0 cols= - owners=regalloc_census-gate.py
+  revendor-struct.rows               rows=    1 cols= 2 owners=revendor-struct-gate.py
+  runner-cost.rows                   rows=   24 cols= 7 owners=runner.py  <- row 1 is a COLUMN HEADER ROW, not data: 23 rows if so
+  specreach-map.rows                 rows=   42 cols= 5 owners=NONE
+  symcases.rows                      rows=    7 cols= - owners=sym_graph_census.bend
+  tnvalue.rows                       rows=   32 cols=10 owners=tnvalue-census.py  <- row 1 is a COLUMN HEADER ROW, not data: 31 rows if so
+  untested-pins.rows                 rows=    4 cols= 1 owners=untested-gate.py
+  vendordep-census.rows              rows=   29 cols= 1 owners=vendordep-census-plant.py
+  wgsl_render_census-pins.rows       rows=   14 cols= 4 owners=wgsl_render_census-gate.py,wgsl_render_census-mutate.py
+  wk-f32-table.rows                  rows=   18 cols= 3 owners=wk-f32-rows.py
+MUTATIONS: 15 -mutate.py file(s), 10 wired; the unwired ones are datasets-mutate.py, linearizer_census-mutate.py, opseven-mutate.py, regalloc_census-mutate.py, worker-mutate.py -- REPORTED, not charged: a harness nothing invokes is a coverage gap or a dead def and this cannot tell which
+SHAPES (column count -> files): {None: 9, 1: 4, 2: 2, 3: 7, 4: 3, 5: 1, 6: 1, 7: 4, 8: 2, 10: 2, 11: 1, 12: 1, 24: 1}  -- a column COUNT, not one vocabulary
+LIVE: 3 of 38 table(s) are UNTRACKED (assertlit.rows, falseclaim.rows, oracleblind.rows) -- another unit is writing gates/ now, so this census's table set is not a fixed denominator and its findings about them are about work in flight
+  RED arenasrc_census.rows: no header at all, so nobody declared who writes it -- but arenasrc_census.py names it
+  RED citations-census-findings.rows: no header at all, so nobody declared who writes it -- but citations-census-gate.py names it
+  RED cstyle-live.rows: no header at all, so nobody declared who writes it -- but dup-gate.py,repair-dupes.py names it
+  RED edge-cost.rows: its 3-line header names no writer (a generator, a flag, or `by hand`) -- but edge-runner.py names it
+  RED edge-fixture.rows: its 3-line header names no writer (a generator, a flag, or `by hand`) -- but edge-fixture-census.py names it
+  RED edge-oracle-pin.rows: its 3-line header names no writer (a generator, a flag, or `by hand`) -- but edge-oracle-pin-gate.py names it
+  RED edge-trace.rows: its 3-line header names no writer (a generator, a flag, or `by hand`) -- but edge-runner.py names it
+  RED falseclaim-plant.rows: its 21-line header names no writer (a generator, a flag, or `by hand`) -- but falseclaim-census-gate.py names it
+  RED falseclaim.rows: no header at all, so nobody declared who writes it -- but falseclaim-census-gate.py names it
+  RED gapcensus-pins.rows: no header at all, so nobody declared who writes it -- but gapcensus-gate.py,untested-census.py,untested-gate.py names it
+  RED gapcensus-pins.rows: 67 rows carry ONE field, so this pins NAMES and no value -- say so in the header, or carry the values
+  RED help-census.rows: no header at all, so nobody declared who writes it -- but help-census.py names it
+  RED nilsrc-census.rows: no header at all, so nobody declared who writes it -- but nilsrc-census.py names it
+  RED oracleblind.rows: no header at all, so nobody declared who writes it -- but oracleblind-census.py names it
+  RED prose-census.rows: its 8-line header names no writer (a generator, a flag, or `by hand`) -- and NO GATE SOURCE NAMES IT
+  RED prose-census.rows: no gate source names this path
+  RED revendor-struct.rows: no header at all, so nobody declared who writes it -- but revendor-struct-gate.py names it
+  RED runner-cost.rows: no header at all, so nobody declared who writes it -- but runner.py names it
+  RED specreach-map.rows: its 5-line header names no writer (a generator, a flag, or `by hand`) -- and NO GATE SOURCE NAMES IT
+  RED specreach-map.rows: no gate source names this path
+  RED tnvalue.rows: no header at all, so nobody declared who writes it -- but tnvalue-census.py names it
+  RED untested-pins.rows: no header at all, so nobody declared who writes it -- but untested-gate.py names it
+  RED untested-pins.rows: 4 rows carry ONE field, so this pins NAMES and no value -- say so in the header, or carry the values
+  RED vendordep-census.rows: no header at all, so nobody declared who writes it -- but vendordep-census-plant.py names it
+PINS-SHAPE: RED -- 24 finding(s)

@@ -1,0 +1,24 @@
+[   PASS] CONTROL: the owner is READ, and the census runs
+          got 1, want 1
+[   FAIL] DRIFT 1: the owner GAINS `2` -- the CHOSEN `2` is now OWNED and must STOP being charged
+          got ['checks/chosen-two.py', 'checks/message.py'], want ['checks/message.py']
+[   PASS] DRIFT 2a: under a DEAD owner, a prose that says '5: DROPPED' is NOT a declaration
+          got no, want no
+[   FAIL] DRIFT 2b: under a DROPPED owner, the SAME prose IS a declaration -- the grammar follows the owner
+          got no, want yes
+[   FAIL] DRIFT 3: the owner holds TWO unpacks -- REFUSED, never a guess
+          got 1, want 3
+[   FAIL] DRIFT 4: the owner is GONE -- REFUSED, never a typed fallback
+          got 1, want 3
+[   PASS] MESSAGE-EXIT: `sys.exit('a message')` is CHARGED (exit 1)
+          got 1, want 1
+[   PASS] CONVENTION: an argparse instrument's `2` is INHERITED and is NOT charged; the same `2` in an instrument that does NOT import argparse IS charged
+          got ['checks/chosen-two.py', 'checks/message.py'], want ['checks/chosen-two.py', 'checks/message.py']
+[   PASS] UNPARSED: an instrument that cannot be parsed is REFUSED, and the refusal REACHES THE EXIT
+          got 3, want 3
+[   PASS] LIVE: the tree's own owner is READABLE and the census does not REFUSE it
+          got True, want True
+[   PASS] LIVE: no code is BOTH in the live vocabulary and in this file's CONVENTIONS -- a code the owner names cannot also be 'a convention outside the tree'
+          got [], want []
+
+=== selftest FAIL: 11 case(s) run, 4 failed ===

@@ -1,0 +1,586 @@
+instrument	code	verdict	declared_in_own_prose	note
+checks/.e2e-fixture/e2e_mm.py	str	MESSAGE-EXIT	na	2 site(s) hand a NON-INT to the exit: line 230 sys.exit(an f-string); line 267 sys.exit(an f-string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+checks/.e2e-fixture/e2e_mm_gate.py	0	PASS	no	sys.exit at line 250
+checks/.e2e-fixture/e2e_mm_gate.py	1	FAIL	no	sys.exit at line 250
+checks/.e2e-fixture/e2e_port/coverage.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/.e2e-fixture/e2e_port/plant.py	str	MESSAGE-EXIT	na	1 site(s) hand a NON-INT to the exit: line 24 sys.exit(an f-string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+checks/.e2e-fixture/e2epy/diff.py	0	PASS	no	sys.exit at line 309
+checks/.e2e-fixture/e2epy/diff.py	1	FAIL	no	sys.exit at line 309
+checks/.e2e-fixture/e2esh/plant.py	0	PASS	no	sys.exit at line 119
+checks/.e2e-fixture/e2esh/plant.py	1	FAIL	no	sys.exit at line 119
+checks/.e2e-fixture/f64/oracle_f64.py	str	MESSAGE-EXIT	na	2 site(s) hand a NON-INT to the exit: line 178 sys.exit(an f-string); line 182 sys.exit(an f-string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+checks/.e2e-fixture/f64/repair-dupes.py	0	PASS	no	sys.exit at line 103
+checks/.e2e-fixture/f64/repair-dupes.py	1	FAIL	no	sys.exit at line 96
+checks/.e2e-fixture/f64/repair-dupes.py	2	UNOWNED	no	sys.exit at lines 103,99
+checks/.e2e-fixture/opsbend_milestone_gate.py	str	MESSAGE-EXIT	na	1 site(s) hand a NON-INT to the exit: line 50 SystemExit(an f-string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+checks/.e2e-fixture/opsbend_milestone_gate.py	0	PASS	no	sys.exit at line 192
+checks/.e2e-fixture/opsbend_milestone_gate.py	1	FAIL	no	sys.exit at line 192
+checks/.e2e-fixture/opsbend_milestone_gate.py	2	UNOWNED	no	sys.exit at line 192
+checks/.e2e-fixture/portexec/gen_ffi.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/.e2e-fixture/portexec/oracle.py	str	MESSAGE-EXIT	na	1 site(s) hand a NON-INT to the exit: line 80 SystemExit(an f-string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+checks/.tmp-amd_dsl_census-mutate.py	0	PASS	yes	sys.exit at line 488
+checks/.tmp-amd_dsl_census-mutate.py	1	FAIL	no	sys.exit at line 488
+checks/.tmp-amd_dsl_census-mutate.py	2	UNOWNED	no	SystemExit at line 139
+checks/.tmp-coverage.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/.tmp-graphcmp-census-audit.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 178 a runtime value of type `Subscript`. REFUSED, not guessed
+checks/.tmp-graphcmp-census-audit.py	0	PASS	no	SystemExit/sys.exit at lines 177,178
+checks/.tmp-tc_ptx_render-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/abi4_gate.py	0	PASS	no	sys.exit at line 584
+checks/abi4_gate.py	1	FAIL	no	sys.exit at line 584
+checks/abi_gate.py	0	PASS	no	sys.exit at line 875
+checks/abi_gate.py	1	FAIL	no	sys.exit at line 875
+checks/abi_gate.py	3	REFUSED	no	sys.exit at line 69
+checks/al-verdict.py	0	PASS	no	sys.exit at line 156
+checks/al-verdict.py	2	UNOWNED	no	sys.exit at line 156
+checks/bend-health.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 421 the name `code` is bound at runtime. REFUSED, not guessed
+checks/both-census.py	0	PASS	no	sys.exit at line 131
+checks/both-census.py	3	REFUSED	no	sys.exit at line 41
+checks/bounded.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 516 a FOREIGN call: `get() on STATUS` -- its value is not in this module and is not guessed; line 516 the name `rc` is bound at runtime; line 516 a runtime value of type `Subscript`; line 516 a runtime value of type `Subscript`. REFUSED, not guessed
+checks/bounded.py	0	PASS	yes	sys.exit at line 516
+checks/bounded.py	1	FAIL	yes	sys.exit at line 516
+checks/census.py	0	PASS	no	sys.exit at line 354
+checks/census.py	3	REFUSED	yes	sys.exit at lines 51,354
+checks/citation-gate.py	0	PASS	yes	sys.exit at line 243
+checks/citation-gate.py	1	FAIL	yes	sys.exit at line 243
+checks/cites-census.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 967 a runtime value of type `Subscript`; line 967 a runtime value of type `Subscript`; line 967 a runtime value of type `Subscript`; line 64 a runtime value of type `Subscript`; line 197 a runtime value of type `Subscript`. REFUSED, not guessed
+checks/cl-port-gate.py	0	PASS	no	sys.exit at line 449
+checks/cl-port-gate.py	1	FAIL	no	sys.exit at line 449
+checks/cli.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/coindep.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/compile-census.py	0	PASS	yes	sys.exit at line 254
+checks/compile-census.py	1	FAIL	no	sys.exit at line 254
+checks/compile.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/corpus-figure.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 329 the name `code` is bound at runtime. REFUSED, not guessed
+checks/corpus-figure.py	0	PASS	no	sys.exit at line 329
+checks/corpus-figure.py	1	FAIL	no	sys.exit at line 329
+checks/coverage.py	0	PASS	no	sys.exit at line 182
+checks/coverage.py	3	REFUSED	yes	sys.exit at line 182
+checks/denominator.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 50 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+checks/devgate.py	0	PASS	no	sys.exit at line 773
+checks/devgate.py	1	FAIL	yes	sys.exit at line 773
+checks/devpin.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 184 the name `code` is bound at runtime. REFUSED, not guessed
+checks/devpin.py	0	PASS	no	sys.exit at line 184
+checks/devpin.py	1	FAIL	no	sys.exit at line 184
+checks/diary-census.py	0	PASS	no	sys.exit at line 549
+checks/diary-census.py	1	FAIL	no	sys.exit at line 549
+checks/diary-census.py	3	REFUSED	no	sys.exit at line 549
+checks/differ.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 1943 a FOREIGN call: `{'run': cmd_run, 'repro': cmd_repro}[a.c` -- its value is not in this module and is not guessed; line 1943 the name `code` is bound at runtime; line 1943 a runtime value of type `Attribute`; line 1943 a runtime value of type `Attribute`. REFUSED, not guessed
+checks/differ.py	0	PASS	no	sys.exit at line 1943
+checks/differ.py	1	FAIL	yes	sys.exit at line 1943
+checks/differ.py	3	REFUSED	no	sys.exit at line 1943
+checks/disagree-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 591 the name `code` is bound at runtime. REFUSED, not guessed
+checks/disagree-gate.py	0	PASS	no	SystemExit at line 591
+checks/disagree-gate.py	1	FAIL	no	SystemExit at line 591
+checks/disagree-gate.py	2	UNOWNED	no	SystemExit at line 591; the file uses argparse, so 2 is USAGE here
+checks/disagree-gate.py	3	REFUSED	no	SystemExit at line 591
+checks/dup-census.py	0	PASS	no	sys.exit at line 310
+checks/dup-census.py	3	REFUSED	no	sys.exit at line 67
+checks/dup-gate.py	0	PASS	no	sys.exit at line 385
+checks/dup-gate.py	1	FAIL	no	sys.exit at line 385
+checks/dup-gate.py	2	UNOWNED	no	sys.exit at line 385; the file uses argparse, so 2 is USAGE here
+checks/dup-gate.py	3	REFUSED	no	sys.exit at line 56
+checks/e2e.py	?	UNDETERMINED	na	36 site(s) whose code is computed at runtime or delegated: line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`; line 807 a runtime value of type `Attribute`. REFUSED, not guessed
+checks/e2e.py	0	PASS	no	sys.exit at line 807
+checks/e2e.py	1	FAIL	yes	sys.exit at line 807
+checks/e2e.py	2	UNOWNED	yes	sys.exit at line 807
+checks/e2e.py	3	REFUSED	yes	sys.exit at line 807
+checks/e2e.py	4	SKIP	yes	sys.exit at line 807
+checks/e2e.py	126	UNOWNED	no	sys.exit at line 807
+checks/e2e.py	127	UNOWNED	yes	sys.exit at line 807
+checks/env-precond.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 457 the name `REFUSED` is bound at runtime; line 457 the name `REFUSED` is bound at runtime; line 457 the name `code` is bound at runtime; line 457 the name `REFUSED` is bound at runtime; line 457 the name `code` is bound at runtime. REFUSED, not guessed
+checks/env-precond.py	0	PASS	yes	sys.exit at line 457
+checks/env-precond.py	1	FAIL	yes	sys.exit at line 457
+checks/env-precond.py	2	UNOWNED	no	sys.exit at line 457; the file uses argparse, so 2 is USAGE here
+checks/fw_live.py	1	FAIL	no	SystemExit at line 295
+checks/gate.py	0	PASS	no	sys.exit at line 275
+checks/gate.py	1	FAIL	no	sys.exit at line 275
+checks/gate.py	3	REFUSED	no	sys.exit at line 63
+checks/gate_dtype.py	0	PASS	no	sys.exit at line 138
+checks/gate_dtype.py	1	FAIL	no	sys.exit at line 138
+checks/gate_norm.py	0	PASS	no	sys.exit at line 295
+checks/gate_norm.py	1	FAIL	no	sys.exit at line 295
+checks/gatesweep.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 595 a runtime value of type `Attribute`; line 938 a runtime value of type `Attribute`; line 938 a runtime value of type `Attribute`; line 938 a runtime value of type `Attribute`; line 938 a runtime value of type `Attribute`. REFUSED, not guessed
+checks/gatesweep.py	0	PASS	yes	sys.exit at line 938
+checks/gatesweep.py	1	FAIL	yes	sys.exit at line 938
+checks/gen_gate.py	3	REFUSED	no	SystemExit at line 148
+checks/git-index-guard.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 96 the name `FAIL` is bound at runtime; line 96 the name `PASS` is bound at runtime; line 96 the name `REFUSED` is bound at runtime; line 96 the name `PASS` is bound at runtime; line 96 the name `DEAD` is bound at runtime; line 96 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+checks/graphcmp-census-audit.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 210 a runtime value of type `Subscript`. REFUSED, not guessed
+checks/graphcmp-census-audit.py	0	PASS	no	SystemExit/sys.exit at lines 203,209,210
+checks/graphcmp-census-audit.py	3	REFUSED	no	sys.exit at line 210
+checks/hermetic-census.py	0	PASS	no	sys.exit at line 222
+checks/hermetic-census.py	3	REFUSED	no	sys.exit at lines 55,222
+checks/index-arm-gate.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 337 the name `rc` is bound at runtime; line 337 the name `REFUSED` is bound at runtime; line 337 the name `PASS` is bound at runtime; line 337 the name `DEAD` is bound at runtime. REFUSED, not guessed
+checks/jsfix_gate.py	0	PASS	no	sys.exit at line 654
+checks/jsfix_gate.py	1	FAIL	no	sys.exit at line 654
+checks/jsfix_gate.py	3	REFUSED	no	sys.exit at line 65
+checks/llama.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/marker-audit.py	0	PASS	no	sys.exit at line 123
+checks/nl-gate-noguard.py	0	PASS	yes	sys.exit at line 110
+checks/nl-gate-noguard.py	1	FAIL	no	sys.exit at line 110
+checks/nl-gate-noguard.py	3	REFUSED	no	sys.exit at line 55
+checks/nl-gate.py	0	PASS	no	sys.exit at line 550
+checks/nl-gate.py	1	FAIL	yes	sys.exit at line 550
+checks/nl-gate.py	3	REFUSED	no	sys.exit at line 74
+checks/no-shrink.py	0	PASS	no	sys.exit at line 108
+checks/no-shrink.py	1	FAIL	no	sys.exit at line 108
+checks/no-strays.py	0	PASS	no	sys.exit at line 231
+checks/no-strays.py	1	FAIL	no	sys.exit at line 231
+checks/no-txt.py	0	PASS	yes	sys.exit at line 319
+checks/no-txt.py	1	FAIL	yes	sys.exit at line 319
+checks/norm_check.py	0	PASS	no	sys.exit at lines 112,137
+checks/norm_check.py	1	FAIL	no	sys.exit at lines 112,137
+checks/norm_check.py	3	REFUSED	no	sys.exit at line 38
+checks/nvrows-deadrow-gate.py	0	PASS	no	sys.exit at line 306
+checks/nvrows-deadrow-gate.py	1	FAIL	no	sys.exit at line 306
+checks/nvrows-deadrow-gate.py	2	UNOWNED	no	sys.exit at line 306; the file uses argparse, so 2 is USAGE here
+checks/nvrows-deadrow-gate.py	3	REFUSED	no	sys.exit at line 63
+checks/oracle-txt-census.py	0	PASS	yes	sys.exit at line 479
+checks/oracle-txt-census.py	1	FAIL	yes	sys.exit at line 479
+checks/oracle_f64.py	3	REFUSED	no	sys.exit at line 78
+checks/pathresolve.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 700 the name `verdict` is bound at runtime; line 700 the name `PASS` is bound at runtime; line 700 the name `FAIL` is bound at runtime. REFUSED, not guessed
+checks/plant.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/process_replay.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/render-gate-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/reorder-gate.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/repair-dupes.py	0	PASS	no	sys.exit at line 103
+checks/repair-dupes.py	1	FAIL	no	sys.exit at line 96
+checks/repair-dupes.py	2	UNOWNED	no	sys.exit at lines 103,99
+checks/repro-paths.py	0	PASS	no	sys.exit at line 197
+checks/repro-paths.py	1	FAIL	no	sys.exit at line 197
+checks/reset.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/residue.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 754 the name `rc` is bound at runtime. REFUSED, not guessed
+checks/residue.py	0	PASS	no	sys.exit at line 754
+checks/residue.py	3	REFUSED	yes	sys.exit at line 754
+checks/revendor-struct.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 994 the name `PASS` is bound at runtime; line 994 the name `DEAD` is bound at runtime. REFUSED, not guessed
+checks/rn-gate.py	0	PASS	no	sys.exit at line 531
+checks/rn-gate.py	1	FAIL	no	sys.exit at line 531
+checks/rn-gate.py	3	REFUSED	no	sys.exit at line 84
+checks/romless.py	1	FAIL	no	SystemExit at line 252
+checks/run.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/runs-artifacts.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 1106 the name `code` is bound at runtime; line 1106 the name `PASS` is bound at runtime; line 1106 the name `DEAD` is bound at runtime. REFUSED, not guessed
+checks/runs-artifacts.py	0	PASS	yes	SystemExit at line 1106
+checks/runs-artifacts.py	1	FAIL	yes	SystemExit at line 1106
+checks/rw-gate-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/serve.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/slop-declare.py	0	PASS	yes	sys.exit at line 349
+checks/slop-declare.py	1	FAIL	no	sys.exit at line 349
+checks/slop-declare.py	3	REFUSED	no	sys.exit at line 349
+checks/slop-declare.py	5	DEAD	no	sys.exit at line 349
+checks/stage1-census.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/substrate-current.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 462 the name `rc` is bound at runtime; line 462 the name `rc` is bound at runtime; line 462 the name `REFUSED` is bound at runtime; line 462 the name `PASS` is bound at runtime; line 462 the name `FAIL` is bound at runtime. REFUSED, not guessed
+checks/substrate-id.py	?	UNDETERMINED	na	7 site(s) whose code is computed at runtime or delegated: line 688 the name `rc` is bound at runtime; line 688 the name `DEAD` is bound at runtime; line 688 the name `DEAD` is bound at runtime; line 688 the name `PASS` is bound at runtime; line 688 the name `DEAD` is bound at runtime; line 688 the name `PASS` is bound at runtime; line 688 the name `DEAD` is bound at runtime. REFUSED, not guessed
+checks/substrate-id.py	0	PASS	no	sys.exit at line 688
+checks/substrate-id.py	1	FAIL	no	sys.exit at line 688
+checks/substrate-id.py	2	UNOWNED	yes	sys.exit at line 688; the file uses argparse, so 2 is USAGE here
+checks/substrate-manifest.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 581 the name `rc` is bound at runtime; line 581 the name `PASS` is bound at runtime; line 581 the name `PASS` is bound at runtime; line 581 the name `PASS` is bound at runtime; line 581 the name `FAIL` is bound at runtime. REFUSED, not guessed
+checks/substrate-manifest.py	2	UNOWNED	no	sys.exit at line 581; the file uses argparse, so 2 is USAGE here
+checks/substrate-snapshot.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 271 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+checks/substrate-snapshot.py	0	PASS	no	sys.exit at line 271
+checks/substrate-snapshot.py	1	FAIL	no	sys.exit at line 271
+checks/substrate-snapshot.py	2	UNOWNED	no	sys.exit at line 271; the file uses argparse, so 2 is USAGE here
+checks/substrate.py	0	PASS	yes	sys.exit at line 965
+checks/substrate.py	1	FAIL	no	sys.exit at line 965
+checks/substrate.py	3	REFUSED	yes	sys.exit at line 965
+checks/sweep.py	0	PASS	no	sys.exit at line 1488
+checks/sweep.py	3	REFUSED	no	sys.exit at line 1488
+checks/sz.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/test_rewrite_bottom_up_gate.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+checks/txt-owners.py	0	PASS	yes	sys.exit at line 296
+checks/txt-owners.py	1	FAIL	yes	sys.exit at line 296
+checks/txt-owners.py	2	UNOWNED	yes	sys.exit at line 296
+checks/unowned.py	0	PASS	no	sys.exit at line 243
+checks/unrunnable-recipes.py	0	PASS	no	sys.exit at line 603
+checks/verdict.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 75 the name `code` is bound at runtime. REFUSED, not guessed
+checks/vz_gate.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 124 a runtime value of type `BinOp`; line 80 a runtime value of type `BinOp`; line 95 a runtime value of type `BinOp`; line 93 a runtime value of type `BinOp`. REFUSED, not guessed
+checks/vz_gate.py	0	PASS	no	sys.exit at line 267
+checks/vz_gate.py	3	REFUSED	no	sys.exit at line 71
+checks/wallcheck.py	0	PASS	no	sys.exit at line 698
+checks/wallcheck.py	1	FAIL	no	sys.exit at line 698
+checks/wallcheck.py	2	UNOWNED	no	sys.exit at line 698; the file uses argparse, so 2 is USAGE here
+checks/wallcheck.py	3	REFUSED	no	sys.exit at line 698
+checks/wallcheck.py	4	SKIP	no	sys.exit at line 698
+checks/wallcheck.py	5	DEAD	no	sys.exit at line 698
+gates/allcopies-census.py	0	PASS	no	sys.exit at line 598
+gates/allcopies-census.py	3	REFUSED	no	SystemExit at line 407
+gates/amd_dsl_census-gate.py	?	UNDETERMINED	na	21 site(s) whose code is computed at runtime or delegated: line 994 the name `REFUSED` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `DEAD` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `DEAD` is bound at runtime; line 1150 the name `REFUSED` is bound at runtime; line 1150 the name `DEAD` is bound at runtime; line 1150 the name `REFUSED` is bound at runtime; line 1150 the name `REFUSED` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `DEAD` is bound at runtime; line 1150 the name `FAIL` is bound at runtime; line 1150 the name `DEAD` is bound at runtime; line 1150 the name `REFUSED` is bound at runtime; line 1150 the name `DEAD` is bound at runtime; line 1150 the name `REFUSED` is bound at runtime; line 1150 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/amd_dsl_census-gate.py	0	PASS	no	sys.exit at lines 988,1150
+gates/amd_dsl_census-gate.py	1	FAIL	no	sys.exit at lines 988,1150
+gates/amd_dsl_census-mutate.py	0	PASS	yes	sys.exit at line 517
+gates/amd_dsl_census-mutate.py	1	FAIL	no	sys.exit at line 517
+gates/amd_dsl_census-mutate.py	2	UNOWNED	no	SystemExit at line 140
+gates/amd_dsl_census-mutate.py	3	REFUSED	no	sys.exit at line 517
+gates/amd_dsl_census-oracle.py	0	PASS	no	sys.exit at line 1094
+gates/arenasrc_census.py	?	UNDETERMINED	na	11 site(s) whose code is computed at runtime or delegated: line 877 the name `PASS` is bound at runtime; line 877 the name `FAIL` is bound at runtime; line 877 the name `FAIL` is bound at runtime; line 877 the name `REFUSED` is bound at runtime; line 877 the name `PASS` is bound at runtime; line 877 the name `REFUSED` is bound at runtime; line 877 the name `PASS` is bound at runtime; line 877 the name `DEAD` is bound at runtime; line 877 the name `REFUSED` is bound at runtime; line 877 the name `PASS` is bound at runtime; line 877 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/arenasrc_probe-check.py	?	UNDETERMINED	na	11 site(s) whose code is computed at runtime or delegated: line 244 the name `PASS` is bound at runtime; line 244 the name `PASS` is bound at runtime; line 244 the name `FAIL` is bound at runtime; line 244 the name `FAIL` is bound at runtime; line 244 the name `FAIL` is bound at runtime; line 244 the name `FAIL` is bound at runtime; line 244 the name `REFUSED` is bound at runtime; line 244 the name `REFUSED` is bound at runtime; line 244 the name `FAIL` is bound at runtime; line 244 the name `DEAD` is bound at runtime; line 244 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/artifactverdict-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 462 the name `gk` is bound at runtime; line 462 a runtime value of type `Attribute`; line 462 the name `FAIL` is bound at runtime; line 462 the name `PASS` is bound at runtime; line 462 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/artifactverdict-gate.py	0	PASS	no	SystemExit at line 462
+gates/artifactverdict-gate.py	3	REFUSED	no	SystemExit at line 462
+gates/assertlit-census.py	0	PASS	no	sys.exit at line 1303
+gates/assertlit-census.py	1	FAIL	no	sys.exit at line 1303
+gates/autogen-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/axisflip-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 77 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/axisflip-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/banner-emit-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 148 the name `code` is bound at runtime; line 148 the name `REFUSED` is bound at runtime; line 148 the name `REFUSED` is bound at runtime; line 148 the name `REFUSED` is bound at runtime; line 148 the name `REFUSED` is bound at runtime; line 148 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/banner-emit-plant.py	0	PASS	yes	sys.exit at line 236
+gates/banner-emit-plant.py	1	FAIL	yes	sys.exit at line 236
+gates/banner-gate.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 248 the name `code` is bound at runtime; line 248 the name `REFUSED` is bound at runtime; line 248 the name `REFUSED` is bound at runtime; line 248 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/bc-u32-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 97 the name `code` is bound at runtime. REFUSED, not guessed
+gates/bc-u32-gen.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/bc-u32-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/bc_u32_table.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/beautiful-mnist-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 97 the name `code` is bound at runtime. REFUSED, not guessed
+gates/beautiful-mnist-gate.py	2	UNOWNED	no	sys.exit at line 89
+gates/beautiful-mnist-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/bendfloat-gate.py	?	UNDETERMINED	na	14 site(s) whose code is computed at runtime or delegated: line 494 the name `PASS` is bound at runtime; line 494 the name `FAIL` is bound at runtime; line 494 the name `PASS` is bound at runtime; line 494 the name `FAIL` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime; line 494 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/bind-plant.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 254 the name `PASS` is bound at runtime; line 254 the name `FAIL` is bound at runtime; line 254 the name `DEAD` is bound at runtime; line 254 the name `DEAD` is bound at runtime; line 254 the name `FAIL` is bound at runtime; line 254 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/bind-subject.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/blobpin-census-gate.py	?	UNDETERMINED	na	9 site(s) whose code is computed at runtime or delegated: line 289 the name `FAIL` is bound at runtime; line 289 the name `PASS` is bound at runtime; line 289 the name `PASS` is bound at runtime; line 289 the name `FAIL` is bound at runtime; line 289 the name `REFUSED` is bound at runtime; line 289 the name `DEAD` is bound at runtime; line 289 the name `REFUSED` is bound at runtime; line 289 the name `REFUSED` is bound at runtime; line 289 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/census-dev-gate.py	0	PASS	no	sys.exit at line 193
+gates/census-dev-gate.py	1	FAIL	no	sys.exit at line 193
+gates/census-dev-gate.py	3	REFUSED	yes	sys.exit at line 134
+gates/citations-census-gate.py	?	UNDETERMINED	na	8 site(s) whose code is computed at runtime or delegated: line 895 the name `PASS` is bound at runtime; line 895 the name `FAIL` is bound at runtime; line 895 the name `DEAD` is bound at runtime; line 895 the name `DEAD` is bound at runtime; line 895 the name `PASS` is bound at runtime; line 895 the name `FAIL` is bound at runtime; line 93 the name `REFUSED` is bound at runtime; line 191 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/cites-pop-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 458 a runtime value of type `Subscript`; line 458 a runtime value of type `Subscript`; line 458 a runtime value of type `Subscript`. REFUSED, not guessed
+gates/corpusfresh-gate.py	0	PASS	yes	sys.exit at line 298
+gates/corpusfresh-gate.py	1	FAIL	yes	sys.exit at line 298
+gates/corpusfresh-gate.py	3	REFUSED	no	sys.exit at line 298
+gates/corpusfresh-gate.py	5	DEAD	no	sys.exit at line 298
+gates/corpuslane-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 302 the name `PASS` is bound at runtime; line 302 the name `FAIL` is bound at runtime; line 302 the name `DEAD` is bound at runtime; line 302 the name `REFUSED` is bound at runtime; line 302 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/corpuslane-mutate.py	0	PASS	no	sys.exit at line 103
+gates/corpuslane-mutate.py	1	FAIL	no	sys.exit at line 103
+gates/corpusverdict-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 235 the name `PASS` is bound at runtime; line 235 the name `FAIL` is bound at runtime; line 235 the name `DEAD` is bound at runtime; line 235 the name `FAIL` is bound at runtime; line 235 the name `REFUSED` is bound at runtime; line 235 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/corpuswitness-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 329 the name `PASS` is bound at runtime; line 329 the name `REFUSED` is bound at runtime; line 329 the name `FAIL` is bound at runtime; line 329 the name `DEAD` is bound at runtime; line 329 the name `REFUSED` is bound at runtime; line 329 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/corpuswitness-plant.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 375 the name `verdict` is bound at runtime; line 375 the name `REFUSED` is bound at runtime; line 375 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/cr_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 134 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/cr_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/crp_graph_census-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 1188 the name `REFUSED` is bound at runtime; line 1233 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/crp_graph_census-gate.py	0	PASS	yes	sys.exit at line 1185
+gates/crp_graph_census-gate.py	1	FAIL	no	sys.exit at line 1185
+gates/crp_graph_census-mutate.py	0	PASS	no	sys.exit at line 761
+gates/crp_graph_census-mutate.py	1	FAIL	no	sys.exit at line 761
+gates/crp_graph_census-mutate.py	2	UNOWNED	no	SystemExit at lines 124,144
+gates/crp_graph_census-mutate.py	3	REFUSED	no	sys.exit at line 761
+gates/crp_graph_census-oracle.py	3	REFUSED	no	SystemExit at line 108
+gates/cstyle_render_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 187 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/cstyle_render_census-mutate.py	0	PASS	no	SystemExit at line 237
+gates/cstyle_render_census-mutate.py	1	FAIL	no	SystemExit at line 237
+gates/cstyle_render_census-oracle.py	0	PASS	no	SystemExit at line 326
+gates/datasets-mutate.py	1	FAIL	no	sys.exit at line 257
+gates/datasets-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/decomp_graph_census-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 500 the name `REFUSED` is bound at runtime; line 515 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/decomp_graph_census-gate.py	0	PASS	no	sys.exit at line 497
+gates/decomp_graph_census-gate.py	1	FAIL	no	sys.exit at line 497
+gates/decomp_graph_census-mutate.py	0	PASS	no	sys.exit at line 314
+gates/decomp_graph_census-mutate.py	1	FAIL	no	sys.exit at line 314
+gates/decomp_graph_census-mutate.py	3	REFUSED	no	sys.exit at line 314
+gates/decomp_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/decomp_value-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 134 the name `REFUSED` is bound at runtime; line 954 the name `code` is bound at runtime; line 931 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/decomp_value-gate.py	0	PASS	no	sys.exit at line 927
+gates/decomp_value-gate.py	1	FAIL	yes	sys.exit at line 927
+gates/devset-census-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 516 the name `FAIL` is bound at runtime; line 516 the name `PASS` is bound at runtime; line 516 the name `DEAD` is bound at runtime; line 516 the name `REFUSED` is bound at runtime; line 516 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/devset-census-plant.py	0	PASS	yes	sys.exit at line 155
+gates/devset-census-plant.py	1	FAIL	yes	sys.exit at line 155
+gates/devtag-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 259 the name `code` is bound at runtime; line 259 the name `REFUSED` is bound at runtime; line 259 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/dialect-fixture-gate.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/docnum-census.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 165 a runtime value of type `BinOp`; line 161 a runtime value of type `BinOp`. REFUSED, not guessed
+gates/docnum-census.py	0	PASS	yes	sys.exit at line 589
+gates/docnum-census.py	1	FAIL	no	sys.exit at line 589
+gates/docnum-census.py	5	DEAD	yes	sys.exit at line 589
+gates/docnum-claim-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 520 a runtime value of type `Subscript`; line 520 the name `REFUSED` is bound at runtime; line 520 the name `PASS` is bound at runtime. REFUSED, not guessed
+gates/docnum-claim-gate.py	0	PASS	no	sys.exit at line 520
+gates/docnum-claim-gate.py	1	FAIL	no	sys.exit at line 520
+gates/e2estage8-stage-fixture.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/e2estage8-stage-legacy.py	0	PASS	no	sys.exit at line 167
+gates/e2estage8-stage-legacy.py	1	FAIL	yes	sys.exit at line 167
+gates/e2estage8-stage-selftest.py	0	PASS	no	sys.exit at line 230
+gates/e2estage8-stage-selftest.py	1	FAIL	no	sys.exit at line 230
+gates/edge-fixture-census.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 868 the name `rc` is bound at runtime; line 868 the name `PASS` is bound at runtime; line 868 the name `FAIL` is bound at runtime; line 868 the name `REFUSED` is bound at runtime; line 868 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/edge-oracle-pin-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 212 the name `PASS` is bound at runtime; line 212 the name `FAIL` is bound at runtime; line 212 the name `DEAD` is bound at runtime. REFUSED, not guessed
+gates/edge-plant.py	0	PASS	yes	sys.exit at line 186
+gates/edge-plant.py	1	FAIL	no	sys.exit at line 186
+gates/edge-runner.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 554 the name `rc` is bound at runtime; line 554 the name `PASS` is bound at runtime; line 554 the name `PASS` is bound at runtime; line 554 a FOREIGN call: `plants() on plant` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/emitverdict-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 324 a FOREIGN call: `run() on Gate()` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/ew-consts-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 55 the name `code` is bound at runtime. REFUSED, not guessed
+gates/ew-consts-oracle.py	0	PASS	no	sys.exit at line 86
+gates/ew-explog-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 82 the name `code` is bound at runtime. REFUSED, not guessed
+gates/ew-explog-oracle.py	0	PASS	no	sys.exit at line 77
+gates/ew_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 135 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/ew_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/exitcode-census-gate.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 719 the name `code` is bound at runtime; line 719 the name `code` is bound at runtime; line 719 a runtime value of type `Attribute`; line 719 a runtime value of type `Attribute`. REFUSED, not guessed
+gates/falseclaim-census-gate.py	str	MESSAGE-EXIT	na	1 site(s) hand a NON-INT to the exit: line 515 SystemExit(an f-string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+gates/falseclaim-census-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 647 the name `PASS` is bound at runtime; line 647 the name `v` is bound at runtime; line 647 the name `DEAD` is bound at runtime; line 647 the name `REFUSED` is bound at runtime; line 647 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/falseclaim-census-gate.py	0	PASS	no	SystemExit at line 647
+gates/falseclaim-census-gate.py	1	FAIL	no	SystemExit at line 647
+gates/float-halfclass-gate.py	?	UNDETERMINED	na	15 site(s) whose code is computed at runtime or delegated: line 284 the name `PASS` is bound at runtime; line 284 the name `FAIL` is bound at runtime; line 284 the name `PASS` is bound at runtime; line 284 the name `FAIL` is bound at runtime; line 284 the name `FAIL` is bound at runtime; line 284 the name `FAIL` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime; line 284 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/fold_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 142 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/fold_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/gapcensus-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 183 the name `PASS` is bound at runtime; line 183 the name `FAIL` is bound at runtime; line 183 the name `DEAD` is bound at runtime; line 183 the name `REFUSED` is bound at runtime; line 183 the name `PASS` is bound at runtime; line 183 the name `PASS` is bound at runtime. REFUSED, not guessed
+gates/gapcensus-gate.py	0	PASS	no	sys.exit at line 183
+gates/gapcensus-gate.py	1	FAIL	no	sys.exit at line 183
+gates/gapcensus.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/gate-surface.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 919 a runtime value of type `Subscript`; line 919 a runtime value of type `Subscript`; line 919 a runtime value of type `Subscript`. REFUSED, not guessed
+gates/gate-surface.py	0	PASS	yes	sys.exit at line 919
+gates/gate-surface.py	1	FAIL	yes	sys.exit at line 919
+gates/gate-surface.py	2	UNOWNED	yes	sys.exit at lines 221,919; the file uses argparse, so 2 is USAGE here
+gates/gatekit.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/gates-pop-rows-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 185 the name `rc` is bound at runtime. REFUSED, not guessed
+gates/gates-pop.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 263 the name `REFUSED` is bound at runtime; line 2130 a runtime value of type `BinOp`; line 2130 a runtime value of type `BinOp`. REFUSED, not guessed
+gates/gates-pop.py	0	PASS	yes	sys.exit at line 2130
+gates/gates-pop.py	1	FAIL	no	sys.exit at line 2130
+gates/gates-pop.py	2	UNOWNED	no	sys.exit at line 2130; the file uses argparse, so 2 is USAGE here
+gates/gendirs.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 797 a runtime value of type `BinOp`. REFUSED, not guessed
+gates/gendirs.py	0	PASS	no	sys.exit at line 797
+gates/gendirs.py	3	REFUSED	no	SystemExit at line 463
+gates/git-massdelete-gate.py	?	UNDETERMINED	na	13 site(s) whose code is computed at runtime or delegated: line 260 the name `DEAD` is bound at runtime; line 260 the name `SKIP` is bound at runtime; line 260 the name `PASS` is bound at runtime; line 260 the name `rc` is bound at runtime; line 260 the name `REFUSED` is bound at runtime; line 260 the name `PASS` is bound at runtime; line 260 the name `REFUSED` is bound at runtime; line 260 the name `PASS` is bound at runtime; line 260 the name `REFUSED` is bound at runtime; line 260 the name `PASS` is bound at runtime; line 260 the name `REFUSED` is bound at runtime; line 260 the name `FAIL` is bound at runtime; line 260 the name `PASS` is bound at runtime. REFUSED, not guessed
+gates/gr_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 143 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/gr_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/groupflip-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 156 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/groupflip-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/help-census.py	0	PASS	yes	sys.exit at line 293
+gates/help-census.py	1	FAIL	yes	sys.exit at line 293
+gates/help-census.py	3	REFUSED	yes	sys.exit at line 293
+gates/i64-shl-gate.py	?	UNDETERMINED	na	9 site(s) whose code is computed at runtime or delegated: line 245 the name `code_out` is bound at runtime; line 245 the name `code` is bound at runtime; line 245 the name `REFUSED` is bound at runtime; line 245 the name `code` is bound at runtime; line 245 the name `REFUSED` is bound at runtime; line 245 the name `code` is bound at runtime; line 245 the name `DEAD` is bound at runtime; line 245 the name `FAIL` is bound at runtime; line 97 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/i64-shl-oracle.py	0	PASS	no	sys.exit at line 202
+gates/i64-shr-gate.py	?	UNDETERMINED	na	7 site(s) whose code is computed at runtime or delegated: line 81 the name `REFUSED` is bound at runtime; line 316 the name `code_out` is bound at runtime; line 316 the name `code` is bound at runtime; line 316 the name `REFUSED` is bound at runtime; line 316 the name `code` is bound at runtime; line 316 the name `DEAD` is bound at runtime; line 316 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/i64-shr-oracle.py	0	PASS	no	sys.exit at line 298
+gates/import-path-census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 704 the name `code` is bound at runtime. REFUSED, not guessed
+gates/indexread-gate.py	?	UNDETERMINED	na	8 site(s) whose code is computed at runtime or delegated: line 88 the name `REFUSED` is bound at runtime; line 298 the name `PASS` is bound at runtime; line 298 the name `FAIL` is bound at runtime; line 298 the name `DEAD` is bound at runtime; line 298 the name `PASS` is bound at runtime; line 298 the name `PASS` is bound at runtime; line 298 the name `REFUSED` is bound at runtime; line 298 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/js-lane-census.py	?	UNDETERMINED	na	15 site(s) whose code is computed at runtime or delegated: line 830 the name `PASS` is bound at runtime; line 830 the name `FAIL` is bound at runtime; line 830 the name `FAIL` is bound at runtime; line 830 the name `FAIL` is bound at runtime; line 830 the name `FAIL` is bound at runtime; line 830 the name `FAIL` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime; line 830 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/lane-census.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 800 the name `DEAD` is bound at runtime; line 800 the name `REFUSED` is bound at runtime; line 800 the name `REFUSED` is bound at runtime; line 800 the name `REFUSED` is bound at runtime; line 800 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/lane-census.py	0	PASS	yes	SystemExit at line 800
+gates/lane-census.py	1	FAIL	yes	SystemExit at line 800
+gates/lane-census.py	3	REFUSED	yes	SystemExit at line 800
+gates/ledger-denominator-gate.py	?	UNDETERMINED	na	9 site(s) whose code is computed at runtime or delegated: line 202 the name `PASS` is bound at runtime; line 202 the name `FAIL` is bound at runtime; line 202 the name `FAIL` is bound at runtime; line 202 the name `DEAD` is bound at runtime; line 202 the name `REFUSED` is bound at runtime; line 202 the name `DEAD` is bound at runtime; line 202 the name `REFUSED` is bound at runtime; line 202 the name `REFUSED` is bound at runtime; line 202 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/linearizer_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 286 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/linearizer_census-gate.py	0	PASS	no	sys.exit at line 285
+gates/linearizer_census-gate.py	1	FAIL	no	sys.exit at line 285
+gates/linearizer_census-gate.py	3	REFUSED	no	sys.exit at line 286
+gates/linearizer_census-mutate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 63 a FOREIGN call: `main() on mutkit` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/linearizer_census-oracle.py	2	UNOWNED	no	sys.exit at line 207
+gates/md_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 134 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/md_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/mixin-op-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 108 the name `code` is bound at runtime. REFUSED, not guessed
+gates/mixin-op-gate.py	2	UNOWNED	no	sys.exit at line 99
+gates/mixin-op-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/mo_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 133 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/mo_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/msgdiff-gate.py	?	UNDETERMINED	na	10 site(s) whose code is computed at runtime or delegated: line 593 the name `DEAD` is bound at runtime; line 593 the name `SKIP` is bound at runtime; line 593 the name `REFUSED` is bound at runtime; line 593 the name `PASS` is bound at runtime; line 593 the name `SKIP` is bound at runtime; line 593 the name `code` is bound at runtime; line 593 the name `REFUSED` is bound at runtime; line 593 the name `PASS` is bound at runtime; line 593 the name `FAIL` is bound at runtime; line 593 the name `PASS` is bound at runtime. REFUSED, not guessed
+gates/mutkit.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/mx_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 119 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/mx_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/nilsrc-census.py	?	UNDETERMINED	na	9 site(s) whose code is computed at runtime or delegated: line 724 the name `PASS` is bound at runtime; line 724 the name `FAIL` is bound at runtime; line 724 the name `REFUSED` is bound at runtime; line 724 the name `PASS` is bound at runtime; line 724 the name `PASS` is bound at runtime; line 724 the name `DEAD` is bound at runtime; line 724 the name `REFUSED` is bound at runtime; line 724 the name `PASS` is bound at runtime; line 724 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/nul-census-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 467 a runtime value of type `Subscript`; line 467 a runtime value of type `Subscript`; line 467 a runtime value of type `Subscript`. REFUSED, not guessed
+gates/nul-refusal-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 236 a runtime value of type `Subscript`; line 236 a runtime value of type `Subscript`; line 236 a runtime value of type `Subscript`; line 236 a runtime value of type `Subscript`; line 236 a runtime value of type `Subscript`. REFUSED, not guessed
+gates/onnx_census-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 147 a FOREIGN call: `gate` -- its value is not in this module and is not guessed; line 139 a FOREIGN call: `_plant` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/onnx_census-gate.py	3	REFUSED	no	sys.exit at line 146
+gates/onnx_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/op_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 267 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/op_graph_census-gate.py	0	PASS	no	sys.exit at line 250
+gates/op_graph_census-gate.py	1	FAIL	no	sys.exit at line 250
+gates/op_graph_census-gate.py	3	REFUSED	no	sys.exit at line 253
+gates/op_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/ops-core-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 82 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/ops-core-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/ops_bend_exec-e2e.py	0	PASS	yes	sys.exit at line 99
+gates/ops_bend_exec-e2e.py	1	FAIL	no	sys.exit at line 99
+gates/ops_python_census-gate.py	?	UNDETERMINED	na	21 site(s) whose code is computed at runtime or delegated: line 731 the name `REFUSED` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `DEAD` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `DEAD` is bound at runtime; line 873 the name `REFUSED` is bound at runtime; line 873 the name `DEAD` is bound at runtime; line 873 the name `REFUSED` is bound at runtime; line 873 the name `REFUSED` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `DEAD` is bound at runtime; line 873 the name `FAIL` is bound at runtime; line 873 the name `DEAD` is bound at runtime; line 873 the name `REFUSED` is bound at runtime; line 873 the name `DEAD` is bound at runtime; line 873 the name `REFUSED` is bound at runtime; line 873 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/ops_python_census-gate.py	0	PASS	no	sys.exit at lines 725,873
+gates/ops_python_census-gate.py	1	FAIL	no	sys.exit at lines 725,873
+gates/ops_python_census-oracle.py	str	MESSAGE-EXIT	na	1 site(s) hand a NON-INT to the exit: line 303 sys.exit(a string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+gates/ops_python_census-oracle.py	3	REFUSED	no	sys.exit at line 92
+gates/ops_python_exec-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 105 the name `REFUSED` is bound at runtime; line 339 the name `PASS` is bound at runtime; line 306 the name `FAIL` is bound at runtime; line 308 the name `FAIL` is bound at runtime; line 309 the name `FAIL` is bound at runtime; line 332 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/ops_python_exec-gen.py	1	FAIL	yes	sys.exit at line 535
+gates/ops_python_exec-gen.py	3	REFUSED	no	sys.exit at line 542
+gates/opseven-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 693 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/opseven-gate.py	0	PASS	no	sys.exit at line 693
+gates/opseven-gate.py	1	FAIL	no	sys.exit at line 693
+gates/opseven-gate.py	3	REFUSED	no	sys.exit at line 693
+gates/opseven-mutate.py	0	PASS	no	sys.exit at line 154
+gates/opseven-mutate.py	1	FAIL	no	sys.exit at line 154
+gates/opseven-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/opsref-census.py	0	PASS	no	sys.exit at line 268
+gates/optim-nop-mutate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 265 the name `code` is bound at runtime; line 265 a runtime value of type `Attribute`. REFUSED, not guessed
+gates/oracle-census-gate.py	?	UNDETERMINED	na	9 site(s) whose code is computed at runtime or delegated: line 734 the name `code` is bound at runtime; line 734 the name `PASS` is bound at runtime; line 734 the name `REFUSED` is bound at runtime; line 734 the name `code` is bound at runtime; line 734 the name `code` is bound at runtime; line 734 the name `PASS` is bound at runtime; line 734 the name `REFUSED` is bound at runtime; line 734 the name `code` is bound at runtime; line 734 the name `PASS` is bound at runtime. REFUSED, not guessed
+gates/oracle-census-gate.py	0	PASS	yes	sys.exit at line 734
+gates/oracle-census-gate.py	1	FAIL	yes	sys.exit at line 734
+gates/oracleblind-census.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 1333 the name `code` is bound at runtime; line 1333 the name `code` is bound at runtime. REFUSED, not guessed
+gates/oracleblind-census.py	0	PASS	no	sys.exit at line 1333
+gates/oracleblind-census.py	1	FAIL	no	sys.exit at line 1333
+gates/paramarg-shape-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 206 the name `code` is bound at runtime; line 196 the name `REFUSED` is bound at runtime; line 201 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/paramarg-shape-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/paramarg-site-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 287 the name `FAIL` is bound at runtime; line 287 the name `PASS` is bound at runtime; line 287 the name `DEAD` is bound at runtime; line 287 the name `REFUSED` is bound at runtime; line 287 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/path-resolve-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 216 the name `code` is bound at runtime. REFUSED, not guessed
+gates/pathwitness-gate.py	0	PASS	no	sys.exit at line 262
+gates/pathwitness-gate.py	1	FAIL	no	sys.exit at line 262
+gates/pincensus-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 473 the name `PASS` is bound at runtime; line 473 the name `REFUSED` is bound at runtime; line 473 the name `DEAD` is bound at runtime. REFUSED, not guessed
+gates/pincensus-plant.py	?	UNDETERMINED	na	7 site(s) whose code is computed at runtime or delegated: line 160 the name `PASS` is bound at runtime; line 160 the name `FAIL` is bound at runtime; line 160 the name `FAIL` is bound at runtime; line 160 the name `FAIL` is bound at runtime; line 160 the name `FAIL` is bound at runtime; line 160 the name `DEAD` is bound at runtime; line 160 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/pincensus-pop.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/pinned-tree-gate.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 425 the name `PASS` is bound at runtime; line 425 the name `FAIL` is bound at runtime; line 425 the name `REFUSED` is bound at runtime; line 425 the name `DEAD` is bound at runtime. REFUSED, not guessed
+gates/pinned-tree-gate.py	0	PASS	no	sys.exit at line 425
+gates/pinned-tree-gate.py	1	FAIL	no	sys.exit at line 425
+gates/pins-shape-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 540 the name `PASS` is bound at runtime; line 540 the name `FAIL` is bound at runtime; line 540 the name `PASS` is bound at runtime; line 540 the name `REFUSED` is bound at runtime; line 540 the name `REFUSED` is bound at runtime; line 540 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/pins-shape-gate.py	1	FAIL	yes	sys.exit at line 540
+gates/prose-census.py	?	UNDETERMINED	na	7 site(s) whose code is computed at runtime or delegated: line 1186 a FOREIGN call: `get() on VERDICT_OF` -- its value is not in this module and is not guessed; line 1186 the name `DEAD` is bound at runtime; line 1186 the name `FAIL` is bound at runtime; line 1186 the name `PASS` is bound at runtime; line 1186 the name `FAIL` is bound at runtime; line 1186 the name `PASS` is bound at runtime; line 1186 the name `PASS` is bound at runtime. REFUSED, not guessed
+gates/ptx_render_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 506 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/ptx_render_census-gate.py	0	PASS	no	sys.exit at line 502
+gates/ptx_render_census-gate.py	3	REFUSED	no	sys.exit at line 502
+gates/ptx_render_census-gen.py	0	PASS	no	sys.exit at line 150
+gates/ptx_render_census-gen.py	3	REFUSED	no	SystemExit at line 58
+gates/ptx_render_census-mutate.py	0	PASS	no	sys.exit at line 345
+gates/ptx_render_census-mutate.py	3	REFUSED	no	SystemExit at line 219
+gates/ptx_render_census-oracle.py	0	PASS	no	sys.exit at lines 605,604
+gates/qcom-oracle.py	0	PASS	no	sys.exit at line 394
+gates/qcom_cache-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/qcom_stage3-oracle.py	0	PASS	no	sys.exit at line 186
+gates/questionmark-plant-gate.py	str	MESSAGE-EXIT	na	1 site(s) hand a NON-INT to the exit: line 77 SystemExit(an f-string). CPython prints it to stderr and exits 1, so to `$?` every one of them IS FAIL, whatever the text says -- the token is the only witness
+gates/questionmark-plant-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 120 the name `FAIL` is bound at runtime; line 120 the name `PASS` is bound at runtime; line 120 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/rand_census-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 369 a FOREIGN call: `gate` -- its value is not in this module and is not guessed; line 361 a FOREIGN call: `_plant` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/rand_census-gate.py	3	REFUSED	no	sys.exit at line 368
+gates/rand_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/rd_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 89 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/rd_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/realize_graph_census-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 1363 the name `REFUSED` is bound at runtime; line 1380 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/realize_graph_census-gate.py	0	PASS	no	sys.exit at line 1360
+gates/realize_graph_census-gate.py	1	FAIL	no	sys.exit at line 1360
+gates/realize_graph_census-mutate.py	0	PASS	yes	SystemExit at line 1035
+gates/realize_graph_census-mutate.py	1	FAIL	no	SystemExit at line 1035
+gates/realize_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/regalloc_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 219 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/regalloc_census-gate.py	0	PASS	no	sys.exit at line 218
+gates/regalloc_census-gate.py	1	FAIL	no	sys.exit at line 218
+gates/regalloc_census-gate.py	3	REFUSED	no	sys.exit at line 219
+gates/regalloc_census-mutate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 65 a FOREIGN call: `main() on mutkit` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/regalloc_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/render_val_s-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 51 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/render_val_s-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/replace-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 59 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/replace-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/retention-check.py	?	UNDETERMINED	na	9 site(s) whose code is computed at runtime or delegated: line 678 a FOREIGN call: `bool` -- its value is not in this module and is not guessed; line 678 a FOREIGN call: `bool` -- its value is not in this module and is not guessed; line 678 a FOREIGN call: `int` -- its value is not in this module and is not guessed; line 678 a FOREIGN call: `bool` -- its value is not in this module and is not guessed; line 678 a FOREIGN call: `bool` -- its value is not in this module and is not guessed; line 678 a FOREIGN call: `bool` -- its value is not in this module and is not guessed; line 678 a FOREIGN call: `int` -- its value is not in this module and is not guessed; line 678 a FOREIGN call: `bool` -- its value is not in this module and is not guessed; line 678 the name `code` is bound at runtime. REFUSED, not guessed
+gates/retention-check.py	0	PASS	yes	sys.exit at line 678
+gates/retention-check.py	1	FAIL	yes	sys.exit at line 678
+gates/retention-check.py	2	UNOWNED	yes	SystemExit at line 195; the file uses argparse, so 2 is USAGE here
+gates/revendor-struct-gate.py	?	UNDETERMINED	na	3 site(s) whose code is computed at runtime or delegated: line 78 the name `verdict` is bound at runtime; line 78 the name `SKIP` is bound at runtime; line 78 the name `SKIP` is bound at runtime. REFUSED, not guessed
+gates/rng_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 217 a FOREIGN call: `gate` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/rng_graph_census-gate.py	3	REFUSED	no	SystemExit at line 127
+gates/rng_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/runner.py	?	UNDETERMINED	na	11 site(s) whose code is computed at runtime or delegated: line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`; line 621 a runtime value of type `Attribute`. REFUSED, not guessed
+gates/runner.py	3	REFUSED	yes	sys.exit at line 621
+gates/shellverdict-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 349 the name `FAIL` is bound at runtime; line 349 the name `PASS` is bound at runtime; line 349 the name `DEAD` is bound at runtime; line 349 the name `PASS` is bound at runtime; line 349 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/shellverdict-reach-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 559 the name `FAIL` is bound at runtime; line 559 the name `PASS` is bound at runtime; line 559 the name `DEAD` is bound at runtime; line 559 the name `PASS` is bound at runtime; line 559 the name `PASS` is bound at runtime; line 559 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/slop-prune-census.py	0	PASS	yes	sys.exit at line 634
+gates/slop-prune-census.py	1	FAIL	no	sys.exit at line 634
+gates/slop-prune-census.py	3	REFUSED	yes	sys.exit at line 634
+gates/slop-prune-census.py	5	DEAD	yes	sys.exit at line 634
+gates/specreach-compare.py	0	PASS	no	SystemExit at line 122
+gates/specreach-compare.py	1	FAIL	no	SystemExit at line 122
+gates/specreach-oracle.py	0	PASS	no	SystemExit at line 82
+gates/specshadow-map.py	0	PASS	no	SystemExit at line 556
+gates/specshadow-oracle.py	0	PASS	no	SystemExit at line 188
+gates/state_census-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 180 a FOREIGN call: `gate` -- its value is not in this module and is not guessed; line 172 a FOREIGN call: `_plant` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/state_census-gate.py	3	REFUSED	no	sys.exit at line 179
+gates/state_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/state_census.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/subnormal-flush-gate.py	?	UNDETERMINED	na	13 site(s) whose code is computed at runtime or delegated: line 407 the name `PASS` is bound at runtime; line 407 the name `FAIL` is bound at runtime; line 407 the name `FAIL` is bound at runtime; line 407 the name `PASS` is bound at runtime; line 407 the name `FAIL` is bound at runtime; line 407 the name `REFUSED` is bound at runtime; line 407 the name `REFUSED` is bound at runtime; line 407 the name `REFUSED` is bound at runtime; line 407 the name `REFUSED` is bound at runtime; line 407 the name `REFUSED` is bound at runtime; line 407 the name `REFUSED` is bound at runtime; line 407 the name `REFUSED` is bound at runtime; line 407 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/tagmachinery-gate.py	?	UNDETERMINED	na	8 site(s) whose code is computed at runtime or delegated: line 360 the name `code` is bound at runtime; line 360 the name `DEAD` is bound at runtime; line 360 the name `FAIL` is bound at runtime; line 360 the name `PASS` is bound at runtime; line 360 the name `REFUSED` is bound at runtime; line 360 the name `PASS` is bound at runtime; line 360 the name `FAIL` is bound at runtime; line 360 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/tc_ptx_render-oracle.py	3	REFUSED	no	SystemExit at line 439
+gates/tc_ptx_types-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 78 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tc_ptx_types-mutate.py	0	PASS	no	sys.exit at line 143
+gates/tc_ptx_types-mutate.py	3	REFUSED	no	SystemExit at line 85
+gates/tc_ptx_types-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_add_sub-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 59 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_add_sub-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_and_or_xor-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 71 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_and_or_xor-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_binop2_cmp-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 70 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_binop2_cmp-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_binop_arena-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 57 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_binop_arena-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_binop_sweep-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 64 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_binop_sweep-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_bitwise_not-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 52 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_bitwise_not-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_ceil_floor-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 53 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_ceil_floor-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_contiguous_backward-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 34 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_contiguous_backward-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_detach-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 43 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_detach-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_dunder_neg-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 40 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_dunder_neg-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_fdiv_mod-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 62 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_fdiv_mod-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_graph_census-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 155 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_graph_census-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_isfinite-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 46 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_isfinite-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_isnan-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 37 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_isnan-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_logical_not-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 46 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_logical_not-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_lshift_rshift-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 40 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_lshift_rshift-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_maximum-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 37 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_maximum-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_minimum-gate.py	0	PASS	no	sys.exit at line 129
+gates/tn_minimum-gate.py	1	FAIL	yes	sys.exit at line 129
+gates/tn_minimum-gate.py	3	REFUSED	no	sys.exit at line 129
+gates/tn_minimum-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_mul-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 51 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_mul-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_nary_arena-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 51 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_nary_arena-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_neg-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 42 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_neg-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_nodes-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 63 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_nodes-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_pow-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 53 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_pow-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_relu-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 37 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_relu-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_relu6-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 39 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_relu6-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_sin_log2_exp2_rsqrt-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 48 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_sin_log2_exp2_rsqrt-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_sqrt-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 42 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_sqrt-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_trunc_reciprocal_threefry-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 40 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_trunc_reciprocal_threefry-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tn_where-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 38 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/tn_where-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/tnvalue-census.py	0	PASS	no	sys.exit at line 728
+gates/tnvalue-census.py	1	FAIL	no	sys.exit at line 728
+gates/todo-census.py	0	PASS	no	sys.exit at line 325
+gates/todo-census.py	3	REFUSED	no	sys.exit at line 325
+gates/todopop-falsify.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 172 the name `PASS` is bound at runtime; line 172 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/todopop-gate.py	?	UNDETERMINED	na	9 site(s) whose code is computed at runtime or delegated: line 293 the name `PASS` is bound at runtime; line 293 the name `FAIL` is bound at runtime; line 293 the name `REFUSED` is bound at runtime; line 293 the name `REFUSED` is bound at runtime; line 293 the name `DEAD` is bound at runtime; line 293 the name `PASS` is bound at runtime; line 293 the name `FAIL` is bound at runtime; line 293 the name `PASS` is bound at runtime; line 293 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/todopop-unit.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/txt-carveout-gate.py	0	PASS	yes	sys.exit at line 95
+gates/txt-carveout-gate.py	1	FAIL	yes	sys.exit at line 95
+gates/txt-carveout-gate.py	3	REFUSED	yes	sys.exit at line 95
+gates/untested-census.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/untested-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 239 the name `PASS` is bound at runtime; line 239 the name `FAIL` is bound at runtime; line 239 the name `DEAD` is bound at runtime; line 239 the name `REFUSED` is bound at runtime; line 239 the name `PASS` is bound at runtime; line 239 the name `PASS` is bound at runtime. REFUSED, not guessed
+gates/untested-gate.py	0	PASS	no	sys.exit at line 239
+gates/untested-gate.py	1	FAIL	no	sys.exit at line 239
+gates/uop_cast-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 58 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/uop_cast-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/upstream-pow-dtype-gate.py	?	UNDETERMINED	na	5 site(s) whose code is computed at runtime or delegated: line 164 the name `code` is bound at runtime; line 164 the name `DEAD` is bound at runtime; line 164 the name `REFUSED` is bound at runtime; line 164 the name `planted` is bound at runtime; line 164 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/upstream-promo-lattice-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 219 the name `code` is bound at runtime; line 219 the name `DEAD` is bound at runtime; line 219 the name `REFUSED` is bound at runtime; line 219 the name `REFUSED` is bound at runtime; line 219 the name `planted` is bound at runtime; line 219 the name `FAIL` is bound at runtime. REFUSED, not guessed
+gates/validate-oracle-absent-gate.py	?	UNDETERMINED	na	6 site(s) whose code is computed at runtime or delegated: line 264 the name `PASS` is bound at runtime; line 264 the name `FAIL` is bound at runtime; line 264 the name `FAIL` is bound at runtime; line 264 the name `PASS` is bound at runtime; line 264 the name `REFUSED` is bound at runtime; line 264 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/vendordep-census-gate.py	?	UNDETERMINED	na	4 site(s) whose code is computed at runtime or delegated: line 401 the name `PASS` is bound at runtime; line 401 the name `DEAD` is bound at runtime; line 401 the name `DEAD` is bound at runtime; line 401 the name `SKIP` is bound at runtime. REFUSED, not guessed
+gates/verdictcopy-gate.py	0	PASS	yes	sys.exit at line 200
+gates/verdictcopy-gate.py	1	FAIL	no	sys.exit at line 200
+gates/verdictcopy-gate.py	3	REFUSED	no	sys.exit at line 200
+gates/wgsl_render_census-gate.py	?	UNDETERMINED	na	27 site(s) whose code is computed at runtime or delegated: line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `REFUSED` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `REFUSED` is bound at runtime; line 1468 the name `REFUSED` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `FAIL` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `REFUSED` is bound at runtime; line 1468 the name `DEAD` is bound at runtime; line 1468 the name `REFUSED` is bound at runtime; line 1468 the name `REFUSED` is bound at runtime; line 1452 the name `REFUSED` is bound at runtime. REFUSED, not guessed
+gates/wgsl_render_census-gate.py	0	PASS	no	sys.exit at lines 1468,1447
+gates/wgsl_render_census-gate.py	1	FAIL	no	sys.exit at lines 1468,1447
+gates/wgsl_render_census-gate.py	3	REFUSED	no	sys.exit at line 1447
+gates/wgsl_render_census-gate.py	5	DEAD	no	sys.exit at line 1447
+gates/wgsl_render_census-mutate.py	0	PASS	no	sys.exit at line 230
+gates/wgsl_render_census-mutate.py	1	FAIL	no	sys.exit at line 230
+gates/wgsl_render_census-oracle.py	0	PASS	no	sys.exit at line 969
+gates/wk-cd-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 64 a FOREIGN call: `run_gate` -- its value is not in this module and is not guessed; line 63 a FOREIGN call: `output_dir_plant` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/wk-cd-oracle.py	0	PASS	no	sys.exit at line 77
+gates/wk-eval-gate.py	?	UNDETERMINED	na	1 site(s) whose code is computed at runtime or delegated: line 78 a FOREIGN call: `main` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/wk-eval-oracle.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/wk-f32-gate.py	?	UNDETERMINED	na	2 site(s) whose code is computed at runtime or delegated: line 77 a FOREIGN call: `run_gate` -- its value is not in this module and is not guessed; line 76 a FOREIGN call: `output_dir_plant` -- its value is not in this module and is not guessed. REFUSED, not guessed
+gates/wk-f32-rows.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point
+gates/worker-mutate.py	-	NO-EXIT-PATH	na	no sys.exit/exit/SystemExit anywhere: a MODULE, not an entry point

@@ -1,0 +1,11 @@
+# .agents/slop/exit2/roles.rows -- the files that carry a literal 2 and are NOT instruments. TAB separated.
+# written 2026-10-20T20:59:58Z HEAD=9574a3e2a
+# columns: path, role, kinds, why-it-is-not-an-instrument
+checks/.e2e-fixture/f64/repair-dupes.py	NOT-IN-POP	deliberate	NOT an instrument: e2e stage-7 fixture
+checks/.e2e-fixture/opsbend-milestone.sh	NOT-IN-POP	deliberate	NOT an instrument: e2e stage-7 fixture
+checks/.e2e-fixture/opsbend_milestone_gate.py	NOT-IN-POP	deliberate	NOT an instrument: e2e stage-7 fixture
+checks/.e2e-fixture/portexec/run-kernel.sh	NOT-IN-POP	deliberate	NOT an instrument: e2e stage-7 fixture
+checks/.e2e-fixture/substrate-check.sh	NOT-IN-POP	deliberate	NOT an instrument: e2e stage-7 fixture
+checks/.tmp-amd_dsl_census-mutate.py	NOT-IN-POP	deliberate	NOT an instrument: another unit's scratch
+gates/oracles/beautiful-mnist-oracle.sh	NOT-IN-POP	accidental	NOT an instrument: e2e stage-7 fixture
+gates/oracles/mixin-op-oracle.sh	NOT-IN-POP	accidental	NOT an instrument: e2e stage-7 fixture
