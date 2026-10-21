@@ -19,9 +19,23 @@ BLOB is not HEAD's blob. That shape is a STALE-BLOB, and it is how another
 unit's work is reverted: a bare `git commit` writes the INDEX's content, so an
 index holding the PRE-change blob over a HEAD that holds the POST-change blob
 commits the old bytes and the new work is gone. `AGENTS.md`: "THE HAZARD IS
-SILENT REVERSION, NOT AN EMPTY BLOB." Measured on this tree, a bare commit over
-such an index would have written the OLD bytes of `gates/expectcopy-gate.py`
-back over the new ones, and the PATH COUNT was equal on both sides.
+SILENT REVERSION, NOT AN EMPTY BLOB."
+
+MEASURED ON THIS TREE, 2026-10-21. The invariant is NOT "the two path COUNTS
+are equal" -- that is incidental, and it stopped being true when another unit
+committed with a private index and left four paths short. The invariant is
+`ls-files == shared`: every path in the index is a path HEAD also has, so a
+PATH-SET check and a COUNT check both see nothing wrong with a STALE-BLOB,
+because a stale path is in BOTH sets. Three readings, one shape:
+
+    2026-10-21T18:00Z  HEAD 1404f3f6  ls-tree 8961  ls-files 8958  shared 8958  stale 2
+    2026-10-21T18:02Z  HEAD 06c66f88  ls-tree 8962  ls-files 8958  shared 8958  stale 5
+    2026-10-21T18:07Z  HEAD c836cf4a  ls-tree 8963  ls-files 8958  shared 8958  stale 8
+
+and the stale set GREW 2 -> 5 -> 8 while `.git/index`'s sha256 stood at
+ea1d68fe19eddb9657c7facd2ded97add2fc5030522cb2c6f2258e14bd0c4fa4 for the last
+two readings: the index did not move and HEAD moved under it. That is the
+hazard, and a count cannot see it.
 
 THE CLASSES, AND ONLY ONE OF THEM IS A FAILURE.
 
