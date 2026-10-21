@@ -105,6 +105,26 @@ git object is REFUSED, not a pass: absence is not agreement. The shas it prints
 are whatever the walk finds. This file does not list them. `range` is the other
 walk — it grades every lane and forwards its arguments unchanged.
 
+THE FOURTH SUBJECT, AND WHERE A REFUSAL IS DISCHARGED. The stem lane above refuses a
+subject that names a gate the diff does not contain, and it says REFUSED, NOT A VERDICT,
+because a rename, a squashed push or a unit split across two commits can each make an
+honest subject look unwitnessed. Nine commits in this tree's history are KNOWN honest and
+their subjects cannot be changed. So the reason lives in `gates/msgdiff-stem-ledger.rows`,
+beside this file, and this file CHECKS it:
+
+    diff-mentions     the commit's ADDED text cites every stem the refusal names
+    diff-other-gate   the diff's gate is a DIFFERENT, REAL gate, and the row names it
+    child-has-stem    the commit's DIRECT CHILD adds the gate the subject names
+
+THE POPULATION IS THE WALK'S, NOT THE LEDGER'S. The walk finds the refusals; the ledger
+explains rows. A refusal with NO row is UNEXPLAINED and the gate exits 1; a row whose
+claim does not RE-DERIVE is UNEXPLAINED and the gate exits 1; a missing ledger is
+REFUSED, not PASS; a row THIS WALK did not refuse is STALE and is REPORTED, with the
+reason it was not refused (the stem lane no longer refuses it, or the commit fell out
+of the walk's window). A row is a CLAIM: this gate checks the claim's mechanical
+parts and cannot read the reason in prose, so the prose is for the reader and the
+claim is for the gate.
+
 Run:  .venv/bin/python gates/msgdiff-gate.py check 00b101574
       .venv/bin/python gates/msgdiff-gate.py range --since=2026-10-06T12:00 HEAD
       .venv/bin/python gates/msgdiff-gate.py stems
@@ -466,8 +486,205 @@ def _diff_paths(root, sha):
     return paths
 
 
+# ---- the LEDGER: where a stem refusal is discharged -----------------------------------
+# A ROW IS A CLAIM AND THE GATE CHECKS THE CLAIM'S MECHANICAL CLAIM, NOT ITS PROSE. A gate
+# cannot read a sentence. What it can do is re-derive the claim from the repository and
+# REFUSE the row when the claim does not hold, so the ledger cannot excuse a commit by
+# asserting a reason that the tree does not bear out.
+#
+# THREE CLAIM SHAPES, AND `kind` SAYS WHICH. The shape is the check, so the row cannot
+# choose a weaker check to get itself accepted:
+#
+#   diff-mentions    the commit's ADDED text for `anchor` cites EVERY stem the refusal
+#                     names. A mention that was already in the file proves nothing about
+#                     THIS commit; an added line is the commit's own citation.
+#   diff-other-gate  the diff's gate is a DIFFERENT gate and a real one, and `anchor` is
+#                     that path. The subject named the wrong one of two real gates and
+#                     the diff says which.
+#   child-has-stem   the commit's DIRECT CHILD adds the gate the subject names. The
+#                     unit's work was split across two commits and the subject names
+#                     the second.
+LEDGER_FILE = "msgdiff-stem-ledger.rows"
+LEDGER_COLUMNS = ("sha", "stems", "kind", "anchor", "reason")
+LEDGER_KINDS = ("diff-mentions", "diff-other-gate", "child-has-stem")
+_LEDGER_CACHE = {}
+
+
+def _token(stem):
+    """A stem as a token: not a piece of a longer word, but a `-gate` or `.py` tail is
+    fine, so `wk-cd` is found inside `wk-cd-gate.py` and `pins-shape` inside
+    `pins-shape-gate.py`."""
+    return re.compile(r"(?<![A-Za-z0-9_-])" + re.escape(stem) + r"(?![A-Za-z0-9_])")
+
+
+def ledger_path(root):
+    """The ledger, beside the gate. `gates/` holds a gate's own inputs."""
+    return Path(root) / "gates" / LEDGER_FILE
+
+
+def read_ledger(root):
+    """({sha: (stems, kind, anchor, reason)}, error).
+
+    A MISSING or malformed ledger is an ERROR, not an empty ledger: an empty ledger
+    explains nothing, and a gate that cannot see its inputs must REFUSE, not PASS."""
+    path = ledger_path(root)
+    try:
+        stat = path.stat()
+    except OSError:
+        return {}, f"{LEDGER_FILE} is absent"
+    key = (str(path), stat.st_mtime_ns, stat.st_size)
+    if key in _LEDGER_CACHE:
+        return _LEDGER_CACHE[key]
+    rows, header, error = {}, None, None
+    for lineno, line in enumerate(path.read_text().splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        fields = line.split("\t")
+        if header is None:
+            header = fields
+            if tuple(header) != LEDGER_COLUMNS:
+                error = (f"{LEDGER_FILE}:{lineno} header is {header}, expected "
+                         f"{list(LEDGER_COLUMNS)}")
+                break
+            continue
+        if len(fields) != len(LEDGER_COLUMNS):
+            error = (f"{LEDGER_FILE}:{lineno} has {len(fields)} fields, expected "
+                     f"{len(LEDGER_COLUMNS)}")
+            break
+        sha, stems, kind, anchor, reason = fields
+        if not re.fullmatch(r"[0-9a-f]{40}", sha):
+            error = f"{LEDGER_FILE}:{lineno} sha is not 40 hex: {sha!r}"
+            break
+        if kind not in LEDGER_KINDS:
+            error = f"{LEDGER_FILE}:{lineno} kind is {kind!r}, expected one of {list(LEDGER_KINDS)}"
+            break
+        rows[sha] = (tuple(s for s in stems.split(",") if s), kind, anchor, reason)
+    if error is None and header is None:
+        error = f"{LEDGER_FILE} has no header row"
+    result = ({}, error) if error else (rows, None)
+    _LEDGER_CACHE[key] = result
+    return result
+
+
+def _diff_added(root, sha, path):
+    """The lines the commit ADDS to `path`.
+
+    The added text is the commit's OWN citation. A mention already in the file says
+    the file mentioned the gate, not that this commit did."""
+    patch = _git(root, "diff-tree", "-p", "-r", "-M", "--root", "--no-commit-id",
+                 sha, "--", path)
+    return "\n".join(line[1:] for line in patch.splitlines()
+                     if line.startswith("+") and not line.startswith("+++"))
+
+
+def explain_row(root, sha, missing, row):
+    """(ok, why). Whether the row's claim RE-DERIVES from the repository.
+
+    `missing` is the set of stems the gate found absent from the diff and `row` is
+    (stems, kind, anchor, reason). The row must cover EXACTLY the stems the refusal
+    names: a row that covers fewer leaves part of the refusal unexplained, and a row
+    that covers more explains a stem the refusal never raised.
+
+    A row that CANNOT be checked is not explained. A child sha that is not in the
+    repository is a claim nobody can verify, and a gate that raised DEAD over a bad
+    ledger row would report its own input as a crash."""
+    stems, kind, anchor, _reason = row
+    if set(stems) != set(missing):
+        return False, (f"the row covers {sorted(stems)} and the refusal names "
+                       f"{sorted(missing)}")
+    try:
+        if kind == "diff-mentions":
+            return _explain_mentions(root, sha, stems, anchor)
+        if kind == "diff-other-gate":
+            return _explain_other_gate(root, sha, stems, anchor)
+        return _explain_child(root, sha, stems, anchor)
+    except RuntimeError as e:
+        return False, f"the claim cannot be checked: {e}"
+
+
+def _explain_mentions(root, sha, stems, anchor):
+    """The commit's own ADDED text for `anchor` cites every stem the row covers."""
+    if anchor not in _diff_paths(root, sha):
+        return False, f"{anchor} is not in the diff"
+    added = _diff_added(root, sha, anchor)
+    for stem in stems:
+        if not _token(stem).search(added):
+            return False, f"the added text of {anchor} does not cite {stem}"
+    return True, f"the added text of {anchor} cites {', '.join(stems)}"
+
+
+def _explain_other_gate(root, sha, stems, anchor):
+    """The diff's gate is a DIFFERENT gate, and a real one."""
+    if anchor not in _diff_paths(root, sha):
+        return False, f"{anchor} is not in the diff"
+    others = [stem for stem in _path_stems(anchor) if stem not in stems]
+    if not others:
+        return False, f"{anchor} is a gate the subject names"
+    if not any(stem in gate_stems(root) for stem in others):
+        return False, f"{anchor} is not a gate in this tree"
+    return True, f"the diff's gate is {others[0]}"
+
+
+def _explain_child(root, sha, stems, anchor):
+    """The commit's DIRECT CHILD adds the gate the subject names."""
+    if _git(root, "log", "-1", "--format=%P", anchor).split() != [sha]:
+        return False, f"{anchor} is not a child of {sha}"
+    paths = _diff_paths(root, anchor)
+    for stem in stems:
+        if not any(stem in _path_stems(path) for path in paths):
+            return False, f"the child {anchor} adds no gate named {stem}"
+    return True, f"the child {anchor} adds the gate {', '.join(stems)}"
+
+
+def stem_verdict(root, sha, missing):
+    """(code, note) for one refusal: PASS when the ledger explains it, FAIL when it
+    does not, REFUSED when the ledger itself is absent or malformed.
+
+    The ledger is keyed by the FULL sha, and a caller may name a commit by any
+    prefix, so the sha is resolved before the row is looked up. The FULL form is
+    what the claim is checked against: the child of a commit is named by its
+    parent, and git names parents in full."""
+    rows, error = read_ledger(root)
+    if error:
+        return REFUSED, error
+    try:
+        full = _git(root, "rev-parse", "--verify", f"{sha}^{{commit}}").strip()
+    except RuntimeError as e:
+        return FAIL, f"the commit cannot be resolved: {e}"
+    row = rows.get(full)
+    if row is None:
+        return FAIL, "the ledger has no row for this commit"
+    ok, why = explain_row(root, full, missing, row)
+    if not ok:
+        return FAIL, f"the row does not derive: {why}"
+    return PASS, why
+
+
+def _stem_diff(root, sha):
+    """(paths, contained stems) for one commit's diff.
+
+    `contained` is what a diff path CONTAINS; `gate_paths` is what it IS. One walk
+    answers both, so the two never disagree about the same commit."""
+    paths = _diff_paths(root, sha)
+    contained = set()
+    for path in paths:
+        contained.update(_contained_stems(path))
+    return paths, contained
+
+
+def _missing_stems(root, sha):
+    """The stems the commit's subject names and the commit's diff does not contain.
+
+    THE SAME QUESTION THE LANE ASKS, asked of one commit, so the ledger's rows can
+    be checked against it without going through a whole walk."""
+    subject = _git(root, "log", "-1", "--format=%s", sha).strip()
+    named = named_gate_stems(subject, gate_stems(root))
+    _paths, contained = _stem_diff(root, sha)
+    return [stem for stem in named if stem not in contained]
+
+
 def judge_named_stem(root, sha, message):
-    """(PASS|REFUSED, named, missing, diff gate paths).
+    """(PASS|FAIL|REFUSED, named, missing, diff gate paths, note).
 
     The subject line only. The body of `1dac4ab61` discusses `ledgerdue`, and a
     message that reports another gate must not be refused for naming it. No
@@ -477,23 +694,25 @@ def judge_named_stem(root, sha, message):
     `-oracle`, `-mutate`, `-plant`, or a trailing extension removed, equals the
     stem. A `.bend` of that stem contains it. A rename still contains it.
     A stolen subject is not exempted: `ledgergone` over `valscall-gate.py` is
-    still absent.
+    still absent -- unless the LEDGER says why, and the ledger's claim re-derives.
+
+    A refusal the ledger does not cover is FAIL, not REFUSED: the ledger IS the
+    verdict mechanism, so an uncovered refusal is a defect to fix rather than a
+    measurement this gate cannot make. A MISSING ledger is REFUSED, because a gate
+    that cannot see its inputs has measured nothing.
     """
     subject = message.split("\n", 1)[0]
     known = gate_stems(root)
     named = named_gate_stems(subject, known)
-    gate_paths = []
-    diff_stems = set()
-    for path in _diff_paths(root, sha):
-        if _path_stems(path):
-            gate_paths.append(path)
-        diff_stems.update(_contained_stems(path))
+    paths, diff_stems = _stem_diff(root, sha)
+    gate_paths = [path for path in paths if _path_stems(path)]
     if not named:
-        return PASS, [], [], gate_paths
+        return PASS, [], [], gate_paths, ""
     missing = [stem for stem in named if stem not in diff_stems]
-    if missing:
-        return REFUSED, named, missing, gate_paths
-    return PASS, named, [], gate_paths
+    if not missing:
+        return PASS, named, [], gate_paths, ""
+    code, note = stem_verdict(root, sha, missing)
+    return code, named, missing, gate_paths, note
 
 
 def deletion_claims(message):
@@ -572,30 +791,37 @@ def revs_for(root, args):
     return _git(root, "rev-list", "--reverse", *args).split()
 
 
-def format_stem_refusal(kind, sha, subject, paths):
-    """The three fields a stem refusal prints: sha, subject, diff paths."""
+def format_stem_refusal(kind, sha, subject, paths, state="", note=""):
+    """The three fields a stem refusal prints: sha, subject, diff paths -- and the
+    LEDGER's verdict on it, which is the field a reader cannot do without."""
     if kind == "missing":
         diff = "diff: (absent)"
     elif paths:
         diff = "\n".join(f"diff: {p}" for p in paths)
     else:
         diff = "diff: (none)"
-    return f"REFUSED {sha}\nsubject: {subject}\n{diff}"
+    head = state or ("REFUSED" if kind == "missing" else "UNEXPLAINED")
+    text = f"{head} {sha}\nsubject: {subject}\n{diff}"
+    return f"{text}\nledger: {note}" if note else text
 
 
 def stem_range(root, args):
     """(code, rows, walked) for subject-stem refusals.
 
     No args walks the last 800. Any args are `rev-list` args (`-n 50`,
-    `--since=... HEAD`). A row is `(kind, sha, subject, paths)` with kind
-    `stem` or `missing`. A missing git object is REFUSED, not PASS.
-    The walk is the population: this function names no sha of its own.
-    """
+    `--since=... HEAD`). A row is `(kind, sha, subject, paths, state, note)` with
+    kind `stem`, `missing` or `stale` and state `EXPLAINED` or `UNEXPLAINED`.
+    A missing git object is REFUSED, not PASS. The walk is the population: this
+    function names no sha of its own -- the LEDGER explains rows, the walk finds
+    them, and a row the walk does not reach is STALE.
+
+    The exit is the ledger's: 0 when every refusal is explained, 1 when any refusal
+    is UNEXPLAINED, 3 when the ledger is absent or a git object is missing."""
     spec = list(args) if args else ["-n", "800", "HEAD"]
     try:
         revs = _git(root, "rev-list", *spec).split()
     except RuntimeError as e:
-        return REFUSED, [("missing", " ".join(spec), f"(missing git object: {e})", [])], 0
+        return REFUSED, [("missing", " ".join(spec), f"(missing git object: {e})", [], "", "")], 0
     if not revs:
         return SKIP, [], 0
     try:
@@ -603,7 +829,7 @@ def stem_range(root, args):
         raw = _git(root, "log", "--no-walk", "--stdin", r"--format=%H%x1e%s",
                    stdin="\n".join(revs) + "\n")
     except RuntimeError as e:
-        return REFUSED, [("missing", " ".join(spec), f"(missing git object: {e})", [])], 0
+        return REFUSED, [("missing", " ".join(spec), f"(missing git object: {e})", [], "", "")], 0
     subjects = {}
     # `\n` only. `splitlines()` also splits on `\x1e`, which is the separator
     # between sha and subject, so it would drop every subject and call a
@@ -614,23 +840,71 @@ def stem_range(root, args):
         sha, sep, subject = line.partition("\x1e")
         if sep and sha:
             subjects[sha] = subject
-    rows = []
+    rows, refused = [], set()
     for sha in revs:
         subject = subjects.get(sha)
         if subject is None:
-            rows.append(("missing", sha, "(missing git object)", []))
+            rows.append(("missing", sha, "(missing git object)", [], "", ""))
             continue
         if not named_gate_stems(subject, known):
             continue
         try:
-            code, _named, _missing, _gates = judge_named_stem(root, sha, subject)
-            paths = _diff_paths(root, sha) if code == REFUSED else []
+            _paths, contained = _stem_diff(root, sha)
+            missing = [stem for stem in named_gate_stems(subject, known)
+                       if stem not in contained]
         except RuntimeError:
-            rows.append(("missing", sha, "(missing git object)", []))
+            rows.append(("missing", sha, "(missing git object)", [], "", ""))
             continue
+        if not missing:
+            continue
+        code, note = stem_verdict(root, sha, missing)
+        state = "EXPLAINED" if code == PASS else "UNEXPLAINED"
         if code == REFUSED:
-            rows.append(("stem", sha, subject, paths))
-    return (REFUSED if rows else PASS), rows, len(revs)
+            state = "NO-LEDGER"
+        rows.append(("stem", sha, subject, _paths, state, note))
+        refused.add(sha)
+    rows.extend(_stale_rows(root, refused, set(revs)))
+    if any(row[0] == "missing" for row in rows):
+        return REFUSED, rows, len(revs)
+    if any(row[4] == "UNEXPLAINED" for row in rows if row[0] == "stem"):
+        return FAIL, rows, len(revs)
+    if any(row[4] == "NO-LEDGER" for row in rows if row[0] == "stem"):
+        return REFUSED, rows, len(revs)
+    return PASS, rows, len(revs)
+
+
+def _stale_rows(root, refused, walked):
+    """Ledger rows THIS WALK did not refuse.
+
+    A row is STALE when the walk did not refuse its commit, for either of two
+    reasons: the stem lane no longer refuses it (the row is obsolete), or the
+    commit fell out of the walk's window (the tree moved on). Both are REPORTED,
+    because a row the gate cannot use must not sit in the ledger unseen.
+
+    The exit is UNCHANGED by a stale row: the exit answers "is every refusal
+    explained?", and a stale row is a hygiene report about the LEDGER, not a
+    refusal of a commit."""
+    rows, error = read_ledger(root)
+    if error:
+        return []
+    return [("stale", sha, "", [], "STALE", _stale_note(root, sha, walked))
+            for sha in sorted(rows) if sha not in refused]
+
+
+def _stale_note(root, sha, walked):
+    """Why this row explains nothing right now."""
+    try:
+        subject = _git(root, "log", "-1", "--format=%s", sha).strip()
+        named = named_gate_stems(subject, gate_stems(root))
+        _paths, contained = _stem_diff(root, sha)
+        missing = [stem for stem in named if stem not in contained]
+    except RuntimeError:
+        return "the commit is not in this repository"
+    if not missing:
+        return "the stem lane does not refuse it -- the row is obsolete"
+    if sha not in walked:
+        return "the commit is outside this walk -- the tree moved on"
+    return "the walk did not refuse it"
 
 
 # ---------------------------------------------------------------- plant
@@ -681,6 +955,18 @@ def _plant():
         (root / "gates" / "valscall-gate.py").write_text("v = 1\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "seed")
+        # The LEDGER, committed beside the gate it explains, exactly as the real one
+        # is. A ledger that is not there is a REFUSED, not a PASS, so the scratch
+        # repo needs one from the first commit on.
+        def write_ledger(rows):
+            """The scratch ledger, written the way the real one is: a header and rows."""
+            (root / "gates" / LEDGER_FILE).write_text(
+                "\n".join(["# scratch ledger", "\t".join(LEDGER_COLUMNS)]
+                          + ["\t".join(row) for row in rows]) + "\n")
+
+        write_ledger([])
+        run(root, "add", "--", "gates/" + LEDGER_FILE)
+        run(root, "commit", "-q", "-m", "seed the stem ledger, empty")
 
         # STATE A: HONEST -- it really does delete victim.py, and the message says so
         (root / "victim.py").unlink()
@@ -750,7 +1036,9 @@ def _plant():
             bad += [f"state H subject lane={_w(r[4][0])}, expected PASS(0) with SUBJECT_DIFF_ACK"]
 
         # STATE I: subject names a stem the diff lacks. Claim lane has nothing to
-        # judge; the removal lane has nothing to judge; the stem lane must refuse.
+        # judge; the removal lane has nothing to judge; the stem lane must fail it.
+        # The LEDGER IS THERE and has NO ROW for it, so the refusal is UNEXPLAINED
+        # and the gate exits 1: an unexplained refusal is a defect, not a shrug.
         (root / "gates" / "valscall-gate.py").write_text("v = 2\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m",
@@ -761,10 +1049,11 @@ def _plant():
             bad += [f"state I claim lane={_w(r[0])}, expected PASS(0) -- no deletion claim"]
         if r[4][0] != PASS:
             bad += [f"state I removal lane={_w(r[4][0])}, expected PASS(0) -- no removals"]
-        if r[5][0] != REFUSED or r[5][2] != ["ledgergone"]:
-            bad += [f"state I stem={_w(r[5][0])} missing={r[5][2]}, expected REFUSED ledgergone"]
+        if r[5][0] != FAIL or r[5][2] != ["ledgergone"]:
+            bad += [f"state I stem={_w(r[5][0])} missing={r[5][2]}, "
+                    f"expected FAIL(1) with an unexplained ledgergone"]
         else:
-            print(f"  I the stem lane refused {r[5][2]} (diff {r[5][3]})")
+            print(f"  I the stem lane failed {r[5][2]} (diff {r[5][3]}): {r[5][4]}")
 
         # STATE J: the SAME commit, a message copy that names the stem the diff has.
         # Fed to the judge. The commit is not rewritten.
@@ -808,36 +1097,37 @@ def _plant():
         if r[5][0] != PASS or r[5][1]:
             bad += [f"state N stem={_w(r[5][0])} named={r[5][1]}, expected PASS with no stem"]
 
-        # STATE O: default walk (last 800) refuses the stolen subject and prints
+        # STATE O: default walk (last 800) fails the stolen subject and prints
         # its sha, subject, and the one diff path. The deletion-claim commit is
         # in that walk and is not a stem refusal — this lane does not grade it.
         code, rows, walked = stem_range(root, [])
         hit = [row for row in rows if row[1] == stolen]
-        if code != REFUSED or not walked or len(hit) != 1:
+        if code != FAIL or not walked or len(hit) != 1:
             bad += [f"state O code={_w(code)} walked={walked} hits={len(hit)}, "
-                    f"expected REFUSED naming the stolen subject"]
+                    f"expected FAIL(1) naming the unexplained stolen subject"]
         else:
-            kind, sha, subject, paths = hit[0]
-            text = format_stem_refusal(kind, sha, subject, paths)
-            if (kind != "stem" or paths != ["gates/valscall-gate.py"]
+            kind, sha, subject, paths, state, note = hit[0]
+            text = format_stem_refusal(kind, sha, subject, paths, state, note)
+            if (kind != "stem" or state != "UNEXPLAINED"
+                    or paths != ["gates/valscall-gate.py"]
                     or not subject.startswith("ledgergone:")
                     or sha not in text or subject not in text
                     or "gates/valscall-gate.py" not in text):
                 bad += [f"state O row did not carry sha, subject, and diff path: {hit[0]!r}"]
             else:
-                print(f"  O range refused {sha[:12]} diff {paths}")
+                print(f"  O range failed {sha[:12]} diff {paths}")
         if any(row[1] in (green, prose, claim_sha) for row in rows):
             bad += ["state O listed a green, prose, or deletion-claim commit"]
         narrow, narrow_rows, narrow_n = stem_range(root, ["-n", "1", stolen])
-        if narrow != REFUSED or narrow_n != 1 or [row[1] for row in narrow_rows] != [stolen]:
+        if narrow != FAIL or narrow_n != 1 or [row[1] for row in narrow_rows] != [stolen]:
             bad += [f"state O override stolen={_w(narrow)} n={narrow_n} "
-                    f"rows={len(narrow_rows)}, expected REFUSED"]
+                    f"rows={len(narrow_rows)}, expected FAIL(1)"]
 
         # STATE P: the same check, overridden to one honest commit, stays green.
         # A subject with no stem is in the prose override and is not failed.
         for label, spec in (("green", ["-n", "1", green]), ("prose", ["-n", "1", prose])):
             code, rows, walked = stem_range(root, spec)
-            if code != PASS or rows or walked != 1:
+            if code != PASS or [row for row in rows if row[0] == "stem"] or walked != 1:
                 bad += [f"state P {label}={_w(code)} rows={len(rows)} walked={walked}, "
                         f"expected PASS"]
 
@@ -872,7 +1162,7 @@ def _plant():
             ("U", "gates/opseven-plant.py", "p = 1\n",
              "opseven: the plant file contains the stem", PASS),
             ("V", "gates/not-the-stem.bend", "n = 1\n",
-             "opseven: a different bend does not contain it", REFUSED),
+             "opseven: a different bend does not contain it", FAIL),
         )
         for label, rel, text, message, expect in contain:
             dest = root / rel
@@ -923,6 +1213,107 @@ def _plant():
         else:
             print("  X ledgergone-gate: over the gate file stays green")
 
+        # ---- THE LEDGER ------------------------------------------------------------------
+        # STATE S: a refusal the ledger EXPLAINS passes. The claim re-derives: the diff's
+        # gate is `valscall` and the subject names `ledgergone`, so the row is TRUE.
+        write_ledger([(stolen, "ledgergone", "diff-other-gate", "gates/valscall-gate.py",
+                       "the diff's gate is valscall, not the gate the subject names")])
+        code, rows, _walked = stem_range(root, ["-n", "1", stolen])
+        hit = [row for row in rows if row[1] == stolen]
+        if code != PASS or len(hit) != 1 or hit[0][4] != "EXPLAINED":
+            bad += [f"state S code={_w(code)} rows={hit!r}, expected PASS with an EXPLAINED row"]
+        else:
+            print(f"  S the ledger explains {stolen[:12]}: {hit[0][5]}")
+
+        # STATE T: a row whose REASON DOES NOT DERIVE is UNEXPLAINED and the gate exits 1.
+        # The row is a claim, so a claim the repository does not bear out buys nothing.
+        write_ledger([(stolen, "ledgergone", "diff-other-gate", "gates/keep.py",
+                       "an anchor that is not in the diff")])
+        code, rows, _walked = stem_range(root, ["-n", "1", stolen])
+        if code != FAIL or not rows or rows[0][4] != "UNEXPLAINED":
+            bad += [f"state T code={_w(code)} rows={rows!r}, expected FAIL(1) UNEXPLAINED"]
+        else:
+            print(f"  T a row that does not derive is UNEXPLAINED: {rows[0][5]}")
+
+        # STATE U: a refusal with NO ROW is UNEXPLAINED and the gate exits 1.
+        write_ledger([])
+        code, rows, _walked = stem_range(root, ["-n", "1", stolen])
+        if code != FAIL or not rows or rows[0][4] != "UNEXPLAINED":
+            bad += [f"state U code={_w(code)} rows={rows!r}, expected FAIL(1) UNEXPLAINED"]
+        else:
+            print("  U a refusal with no row is UNEXPLAINED")
+
+        # STATE V2: a row for a sha that is NOT refused is STALE, and it is REPORTED.
+        # `green`'s subject names `valscall` and its diff contains it, so it is not
+        # a refusal at all, and a row claiming it is explains nothing.
+        write_ledger([(green, "valscall", "diff-mentions", "gates/valscall-gate.py",
+                       "a row for a commit the stem lane does not refuse")])
+        code, rows, _walked = stem_range(root, ["-n", "1", green])
+        stale = [row for row in rows if row[0] == "stale"]
+        if code != PASS or len(stale) != 1 or stale[0][1] != green:
+            bad += [f"state V2 code={_w(code)} stale={stale!r}, expected PASS with one STALE row"]
+        else:
+            print(f"  V2 a row for a commit that is not refused is STALE: {stale[0][5]}")
+
+        # STATE W2: a MISSING ledger is REFUSED, not PASS. The gate cannot judge a
+        # refusal it has no explanation for, and it must not read that as agreement.
+        (root / "gates" / LEDGER_FILE).unlink()
+        code, rows, _walked = stem_range(root, ["-n", "1", stolen])
+        if code != REFUSED or not rows or rows[0][4] != "NO-LEDGER":
+            bad += [f"state W2 code={_w(code)} rows={rows!r}, expected REFUSED(3) NO-LEDGER"]
+        else:
+            print(f"  W2 a missing ledger is REFUSED: {rows[0][5]}")
+
+        # STATE X2: the child-has-stem shape, on a real pair. The subject names a gate
+        # the diff lacks, and the commit's DIRECT CHILD adds that gate.
+        write_ledger([])
+        (root / "keep.py").write_text("x = 4\n")
+        run(root, "add", "-A")
+        run(root, "commit", "-q", "-m", "childgate: the label names a gate the diff lacks")
+        split = _git(root, "rev-parse", "HEAD").strip()
+        (root / "gates" / "childgate-gate.py").write_text("c = 1\n")
+        run(root, "add", "--", "gates/childgate-gate.py")
+        run(root, "commit", "-q", "-m", "childgate-gate: the gate the label named")
+        child = _git(root, "rev-parse", "HEAD").strip()
+        write_ledger([(split, "childgate", "child-has-stem", child,
+                       "the child adds the gate the subject names")])
+        code, rows, _walked = stem_range(root, ["-n", "1", split])
+        if code != PASS or not rows or rows[0][4] != "EXPLAINED":
+            bad += [f"state X2 code={_w(code)} rows={rows!r}, expected PASS with an EXPLAINED row"]
+        else:
+            print(f"  X2 the child's gate explains {split[:12]}: {rows[0][5]}")
+        # The SAME row with a child that is not a child: the claim does not derive.
+        write_ledger([(split, "childgate", "child-has-stem", split,
+                       "a child that is not a child")])
+        code, rows, _walked = stem_range(root, ["-n", "1", split])
+        if code != FAIL or not rows or rows[0][4] != "UNEXPLAINED":
+            bad += [f"state X2b code={_w(code)} rows={rows!r}, expected FAIL(1) UNEXPLAINED"]
+        else:
+            print(f"  X2b a child that is not a child explains nothing: {rows[0][5]}")
+
+        # ---- THE UNBROKEN CONTROL: THE REAL LEDGER ---------------------------------------
+        # Every row of the REAL ledger must RE-DERIVE, and a row whose claim does not
+        # derive must NOT discharge a refusal. This is the control the `1dac4ab61`
+        # refusal needs: it is explained only if the reason is CHECKABLE.
+        real_rows, error = read_ledger(ROOT)
+        if error:
+            bad += [f"state Y the real ledger does not read: {error}"]
+        else:
+            for sha, row in sorted(real_rows.items()):
+                ok, why = explain_row(ROOT, sha, _missing_stems(ROOT, sha), row)
+                if not ok:
+                    bad += [f"state Y the real row for {sha[:12]} does not derive: {why}"]
+            # FALSIFICATION: break each row's anchor and the row must stop working.
+            for sha, row in sorted(real_rows.items()):
+                stems, kind, anchor, reason = row
+                broken = (stems, kind, "gates/not-a-real-path.py", reason)
+                ok, _why = explain_row(ROOT, sha, _missing_stems(ROOT, sha), broken)
+                if ok:
+                    bad += [f"state Y a broken row for {sha[:12]} still discharged a refusal"]
+            if not bad:
+                print(f"  Y the real ledger's {len(real_rows)} rows all re-derive, "
+                      f"and a broken row discharges nothing")
+
     print(f"--plant: {'all states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return FAIL if bad else PASS
 
@@ -963,6 +1354,8 @@ def main(argv):
                 subj_code = PASS
             if stem_code == REFUSED or subj_code == REFUSED:
                 return REFUSED
+            if stem_code == FAIL or subj_code == FAIL:
+                return FAIL
             return PASS
         if mode == "range":
             revs = revs_for(ROOT, argv[1:])
@@ -980,7 +1373,7 @@ def main(argv):
                 refused += 1
                 claim_refused += code == REFUSED
                 subject_refused += subj[0] == REFUSED
-                stem_refused += stem[0] == REFUSED
+                stem_refused += stem[0] in (REFUSED, FAIL)
                 missing = f", missing {','.join(stem[2])}" if stem[2] else ""
                 print(f"REFUSED {sha[:12]}: claim-subject={_w(code)} "
                       f"diff-subject={_w(subj[0])} stem={_w(stem[0])} "
@@ -999,8 +1392,14 @@ def main(argv):
                 print("stems: no commits matched", file=sys.stderr)
                 return SKIP
             n_stem = sum(row[0] == "stem" for row in rows)
+            n_explained = sum(row[4] == "EXPLAINED" for row in rows if row[0] == "stem")
+            n_unexplained = sum(row[4] == "UNEXPLAINED" for row in rows if row[0] == "stem")
+            n_noledger = sum(row[4] == "NO-LEDGER" for row in rows if row[0] == "stem")
+            n_stale = sum(row[0] == "stale" for row in rows)
             n_miss = sum(row[0] == "missing" for row in rows)
-            print(f"stems: walked={walked} subject-stem-refused={n_stem} missing={n_miss}")
+            print(f"stems: walked={walked} subject-stem-refused={n_stem} "
+                  f"explained={n_explained} unexplained={n_unexplained} "
+                  f"no-ledger={n_noledger} stale={n_stale} missing={n_miss}")
             return code
         print(f"unknown mode {mode!r}", file=sys.stderr)
         return SKIP
@@ -1020,17 +1419,24 @@ def _report_stem(sha, stem):
     A subject that named nothing is silent here: printing PASS for "no stem"
     would look like a judgment of prose, which this lane does not make.
     """
-    code, named, missing, gate_paths = stem
+    code, named, missing, gate_paths, note = stem
     if code == PASS:
-        if named:
+        if note:
+            print(f"PASS: {sha[:12]} -- the subject names {', '.join(named)}, which the diff "
+                  f"does not contain; the LEDGER explains it: {note}")
+        elif named:
             print(f"PASS: {sha[:12]} -- the subject names {', '.join(named)}, "
                   f"which the diff contains")
         return PASS
     shown = ", ".join(gate_paths) if gate_paths else "no gates/*.py"
-    print(f"REFUSED, NOT A VERDICT: {sha[:12]} -- the subject names gate stem "
-          f"{', '.join(missing)} and the diff does not contain it (diff: {shown})",
-          file=sys.stderr)
-    return REFUSED
+    head = "REFUSED, NOT A VERDICT" if code == REFUSED else "UNEXPLAINED"
+    print(f"{head}: {sha[:12]} -- "
+          f"the subject names gate stem {', '.join(missing)} and the diff does not contain it "
+          f"(diff: {shown})", file=sys.stderr)
+    print(f"  ledger: {note}", file=sys.stderr)
+    print('  add a row to gates/msgdiff-stem-ledger.rows if the subject is right and the '
+          "diff is a partial view", file=sys.stderr)
+    return code
 
 
 def _report_subject(sha, subj):

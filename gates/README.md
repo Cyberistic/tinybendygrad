@@ -176,6 +176,19 @@ by path. Two gates that must agree byte-for-byte (the frozen shell oracles `mixi
 `beautiful-mnist` diff against) keep their `sha256` pin **and** live in `gates/`: a pin you
 cannot find the file for is not a pin.
 
+**A LEDGER IS A GATE'S INPUT TOO, AND IT LIVES BESIDE IT.** `gates/msgdiff-stem-ledger.rows` is
+`msgdiff-gate.py`'s own input, read by path and in git. A stem refusal is not a verdict — a
+rename, a squashed push, or a unit split across two commits each make an honest subject look
+unwitnessed — so the subjects that are KNOWN honest carry their reason there rather than in a
+commit that cannot be amended. The ledger is a set of **claims** and the gate **checks** them: the
+population is the walk's refusal set, re-derived, never a hand list of shas, and a row is
+discharged only when its claim re-derives from the repository — the commit's own added text cites
+the gate, the diff's gate is a different real gate, or the commit's direct child adds the gate the
+subject names. A refusal with no row, or with a row that does not derive, is UNEXPLAINED and the
+gate exits 1; a **missing** ledger is REFUSED, not PASS; a row the walk did not refuse is STALE and
+is reported. A gate cannot read a sentence, so the prose is for the reader and the claim is for the
+gate.
+
 The corpus argument for slop does not survive contact with a pruning directory. What matters is
 that a gate's inputs are as hard to delete as the gate.
 

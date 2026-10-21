@@ -1,0 +1,42 @@
+# msgdiff-stem-ledger.rows -- one row per commit whose SUBJECT names a gate stem
+# that the commit's own DIFF does not contain. `gates/msgdiff-gate.py stems` reads
+# this file and discharges a refusal only when the row's claim RE-DERIVES from the
+# repository. A row is a CLAIM, not a verdict: the gate checks the claim's
+# MECHANICAL parts and cannot read the reason in prose.
+#
+# WHY THIS FILE EXISTS. A stem refusal is not a verdict: a rename, a squashed push or
+# a unit split across two commits can each make an honest subject look unwitnessed.
+# Nine commits in this tree's history are KNOWN to be honest and their subjects
+# cannot be changed, so the reason lives here, beside the gate, and the gate CHECKS
+# it. A refusal with no row here is UNEXPLAINED and the gate exits 1.
+#
+# THE POPULATION IS THE WALK'S, NOT THIS FILE'S. The walk finds the refusals; this
+# file explains rows. A row THIS WALK did not refuse is STALE and is reported, with
+# the reason it was not refused: the stem lane no longer refuses it, or the commit
+# fell out of the walk's window. Nothing here names a sha the walk has not found.
+#
+# COLUMNS (TAB separated, one row per commit):
+#   sha      the commit, 40 hex
+#   stems    the gate stems the subject names and the diff lacks, comma separated.
+#            It must be EXACTLY the set the gate derives, or the row does not apply.
+#   kind     the shape of the claim, and the shape the gate checks:
+#              diff-mentions    the commit's ADDED text for `anchor` cites every stem.
+#                                A mention that was already in the file proves nothing
+#                                about THIS commit; an added line is its own citation.
+#              diff-other-gate  the diff's gate is a DIFFERENT, REAL gate, and `anchor`
+#                                is that path. The subject named the wrong one of two
+#                                real gates, and the diff says which.
+#              child-has-stem   the commit's DIRECT CHILD adds the gate the subject
+#                                names. The unit's work was split across two commits.
+#   anchor   the path (diff-mentions, diff-other-gate) or the child sha (child-has-stem)
+#   reason   one line: why the subject's stem does not match the diff
+sha	stems	kind	anchor	reason
+1dac4ab61ddf3eae6baeb54d3258ec4318d7c9de	ledgergone	child-has-stem	54878e213f389cd41789bb846c2acac48c5135a3	the subject names the ledgergone gate; this commit landed gates/valscall-gate.py and the ledgergone gate landed in its direct child
+fc4be8d9d8c81bfb4dabd2915c1ceea00ebeb401	gates-pop	diff-mentions	.agents/TODO.md	the diff is the TODO; the subject names the gate whose rule the TODO records
+7b6a10fa013d5428a5476c73115d709f96d1c009	retention-check	diff-mentions	.agents/slop/RUNS-GRAPHMP.md	the diff is the report; the subject names gates/retention-check.py, the gate already firing on the defect it reports
+3b4d800f834f7291ff34ac1e80896382b3c58cca	wk-cd,wk-cd-gate	diff-mentions	tinybendygrad/mixin/dtype.bend	the diff is the port source; the subject names gates/wk-cd-gate.py, whose cd_none row the added comment closes
+ce4bd59c497bf9b942a18bde6bb939c2ee25c063	tn_neg	diff-other-gate	gates/tn_dunder_neg-gate.py	the subject names tn_neg; the diff's gate is tn_dunder_neg, a different stem this commit did not touch
+21b0f0f25b89c820cea5a677aaef477c5ea4c633	gendirs,retention-check	diff-mentions	gates/gates-pop.py	the diff is the gate the subject's label names, gates-pop; the two stems it cites, gendirs and retention-check, are the gates the added text points at
+f495c88cbaa662851982f41cb06f74448a7742e1	indexread	diff-mentions	.agents/slop/sweepdirs/delset.py	the diff is the sweepdirs tool; the subject names gates/indexread-gate.py, whose trap the added comment cites
+edfb599b5ebab534f2a354562defa154e4d98100	pins-shape	diff-mentions	gates/symcases.rows	the diff is a gates/*.rows file; the subject names gates/pins-shape-gate.py, which asks every rows file to declare its writer
+cbea2eb4bfdf7d533a5db4914f4c0fbbf795db8d	gendirs	diff-mentions	.agents/slop/clauseVfix/REPORT.md	the diff is the report; the subject names gates/gendirs.py, which supplies every number it prints
