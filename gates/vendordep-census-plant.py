@@ -11,6 +11,8 @@ exit non-zero: a plant whose expectation cannot be violated measures nothing.
 A retired sha on the next line is PIN and does not increment `live`. The check
 reads that row's state: a live count of 0 with the row dropped is not a pass.
 A current-tree sha with the bindings stripped is LIVE. A comment does not exempt it.
+A retired sha on the next line of a `.rows` copy is PIN the same way. A count of
+transcribed hits is not that row. A current-tree sha in that copy is LIVE.
 """
 from __future__ import annotations
 
@@ -78,6 +80,21 @@ def rows_hits(pinned, text, trees):
         return pinned.transcribed(Path(td), [home], trees)
 
 
+def rows_scored(rotclaim, text, trees):
+    """`(live, pins, pin_state, live_state)` for a `.rows` copy. None if no hit row."""
+    got = rotclaim.assess(text, trees, ROOT, name="vendordep-census.rows")
+    pins = [r for r in got if r["kind"] == "pin"]
+    lives = [r for r in got if r["kind"] == "live"]
+    if not pins and not lives:
+        return None
+    return (
+        len(lives),
+        len(pins),
+        pins[0]["state"] if len(pins) == 1 else "ABSENT",
+        lives[0]["state"] if len(lives) == 1 else "ABSENT",
+    )
+
+
 def main(argv):
     warnings.filterwarnings("ignore", category=SyntaxWarning)
     rotclaim = load("vendordep_rotclaim", HERE / "rotclaim-gate.py")
@@ -116,7 +133,10 @@ def main(argv):
     check("control-unbroken", classified(rotclaim, GATE.read_text(), trees), (0, "VERIFIED"))
     check("disk-unwritten", (GATE.read_bytes() == gate_bytes, LEDGER.read_bytes() == ledger_bytes), (True, True))
     check("rows-pointer-is-not-live", len(rows_hits(pinned, ledger, trees)), 0)
-    check("rows-sha-on-the-next-line-is-live", len(rows_hits(pinned, ledger + f"\n{retired}\n", trees)), 1)
+    check("rows-retired-sha-on-the-next-line-is-pin",
+          rows_scored(rotclaim, ledger + f"\n{retired}\n", trees), (0, 1, "PIN", "ABSENT"))
+    check("rows-current-sha-on-the-next-line-is-live",
+          rows_scored(rotclaim, ledger + f"\n{cur}\n", trees), (1, 0, "ABSENT", "LIVE"))
 
     ok = sum(1 for r in rows if "\tstate=OK\t" in r)
     print("\n".join(rows))
