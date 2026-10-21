@@ -1239,6 +1239,9 @@ def pmp.special(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
 #
 #   pin:  ast = UOp.new_buffer('CPU', 4, dtypes.int, 0)
 #   head: ast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU'))
+#     -- the `4` is `ParamArg.size`, and it is there only BEFORE `72f98ffe0` moved
+#     `size` OUT: the ORACLE's subject `ccae837c703` (= `81157efb0^`) PREDATES the
+#     migration and still prints it; `5c2bf39d6c4b` has NO `size` term and prints NO `4`.
 #
 # The `UOp.new_buffer` SPELLING is what a `UOp` constructor cannot parse, so
 # this is not cosmetic: `test_pyrender`'s `eval_pyrender` would have built a
@@ -2823,10 +2826,10 @@ def print_uops(+ar: O.Arena, +uops: List<&2, U32>) -> List<&2, String>:
 # takes the axis type as its THIRD argument and sets the TAG -- so `axis_id` comes
 # back empty and `print_uops` dies in `axis_colors[u.axis_type]` with a KeyError.
 # MEASURED, after two rounds of "the oracle is broken".
-# A THIRTEEN-FIELD LITERAL and not `ParamArg.of`, which takes two arguments and
-# defaults the other eleven. `size=4` and `name="b"` are the two this fixture
-# needs, and the last column of the row is this record, so the ones that are NOT
-# default would change the row text and `pu_argrepr` would need a reason.
+# A TWELVE-FIELD LITERAL -- `1af4ba921` moved `size` OUT -- and not `ParamArg.of`,
+# which takes two arguments and defaults the other ten. `name="b"` is the ONE this
+# fixture needs, and the last column of the row is this record, so the ones that are
+# NOT default would change the row text and `pu_argrepr` would need a reason.
 def pu_pa(slot: U32) -> O.ParamArg:
   O.ParamArg{slot, S.int32(), None{}, None{}, Some{"b"}, S.AGlobal{},
     None{}, False{}, None{}, None{}, False{}, None{}}
