@@ -15,6 +15,12 @@ remaining file's blob equals ``checks/differ.py`` at a commit that is not HEAD.
   LIVE-FORK    the blob equals no historical ``checks/differ.py``. The copy
                drifted on its own. Two identical drifted files under ``plant/``
                are still one LIVE-FORK, not a pair that passes.
+  FORK-OF-A-COPY
+               the blob equals no historical ``checks/differ.py``, but the file was
+               derived from an OLD copy that is ON DISK: the nearest copy of the
+               flagship is closer to it, line for line, than the live flagship is.
+               A copied tree carries its own ``checks/differ.py``, and a file forked
+               from that copy is a fork of the copy, not a drift of the flagship.
   CURRENT      the blob equals ``HEAD:checks/differ.py``. A second current table.
   ABSENT       the path is not on disk. FAIL, not a skip.
 
@@ -25,15 +31,17 @@ including the fork itself, so it is not this question. The commit named is the
 first ``git log --all`` lists. No such commit is NO-COMMIT. A one-byte
 difference is not a match.
 
-PASS means every copy is HISTORICAL or PLANT-PAIR, and none is byte-identical
-to ``HEAD:checks/differ.py``. PASS means these are old copies, not a drifted
-flagship. FAIL while any LIVE-FORK remains, or while a copy is presented as
-the flagship. ``checks/differ.py`` is REFERENCE, not a fork.
+PASS means every copy is HISTORICAL, PLANT-PAIR or FORK-OF-A-COPY, and none is
+byte-identical to ``HEAD:checks/differ.py``. PASS means these are old copies, or
+forks of old copies, not a drifted flagship. FAIL while any LIVE-FORK remains, or
+while a copy is presented as the flagship. ``checks/differ.py`` is REFERENCE, not a
+fork.
 
 The census count is printed as measured. A copy is not dropped to keep a
 previous number.
 """
 import argparse
+import difflib
 import importlib.util
 import io
 import os
@@ -49,7 +57,7 @@ FLAGSHIP = "checks/differ.py"
 # The 1755e2338 reading. A comparison point, not a filter: if the census moves,
 # the new count is printed and every file is still classified.
 PRIOR = 85
-PASS_MEANS = "these are old copies, not a drifted flagship"
+PASS_MEANS = "these are old copies, or forks of old copies, not a drifted flagship"
 
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
@@ -169,6 +177,124 @@ def under_plant(rel):
     return "plant" in rel.replace("\\", "/").split("/")
 
 
+def known_flagship_blobs(history):
+    """-> {blob: class}. The blobs this repo holds ``checks/differ.py`` at.
+
+    HEAD's blob is CURRENT and every other is HISTORICAL. A file whose blob is in
+    this map IS a copy of the flagship; a file whose blob is not in it is not one,
+    whatever its name and whatever directory it sits in. The base search below is
+    over this map, so it searches by CONTENT and not by a basename shape.
+    """
+    out = {history["head-blob"]: "CURRENT"}
+    for blob in history["by"]:
+        out.setdefault(blob, "HISTORICAL")
+    return out
+
+
+def known_flagship_sizes(history):
+    """-> {size} of the blobs above.
+
+    A size filter is not a filter on the population: it only avoids hashing a file
+    whose LENGTH cannot be a copy's. The population is still decided by the blob.
+    """
+    sizes = set()
+    for blob in known_flagship_blobs(history):
+        rc, out, _err = git_text(["cat-file", "-s", blob])
+        if rc == 0 and out.strip().isdigit():
+            sizes.add(int(out.strip()))
+    return sizes
+
+
+def scope_copies(root, rel, known, sizes):
+    """-> [(rel, blob)] of the copies of the flagship visible from ``rel``.
+
+    THE WALK IS UP, ONE DIRECTORY AT A TIME, AND THE POPULATION AT EACH LEVEL IS
+    DISCOVERED BY CONTENT: every file in that directory whose blob is a known copy
+    of the flagship. A NAME would be doctrine 1's defect in a new place -- a tree
+    that renamed its copy would hide it, and the gate would call that copy's fork a
+    LIVE-FORK.
+
+    The walk stops at the first directory that holds a copy. A copied tree holds its
+    own ``checks/differ.py``, so a file inside that tree has the tree's copy in
+    scope, and the live flagship -- which lives elsewhere -- is not in scope.
+
+    A DRIFTED sibling is not a copy of the flagship, so it is not a baseline, and the
+    walk goes on past it.
+    """
+    parts = rel.replace("\\", "/").split("/")[:-1]
+    while True:
+        dirpath = os.path.join(root, *parts) if parts else root
+        try:
+            names = sorted(os.listdir(dirpath))
+        except OSError:
+            names = []
+        found = []
+        for name in names:
+            path = os.path.join(dirpath, name)
+            if not os.path.isfile(path):
+                continue
+            try:
+                if os.path.getsize(path) not in sizes:
+                    continue
+            except OSError:
+                continue
+            blob = file_blob(path)
+            if blob in known:
+                cand = "/".join(parts + [name]) if parts else name
+                if cand != rel:
+                    found.append((cand, blob))
+        if found:
+            return found
+        if not parts:
+            return []
+        parts = parts[:-1]
+
+
+def line_delta(left, right):
+    """-> how many lines differ between two files' bytes.
+
+    The metric is a longest-common-subsequence count over LINES, so it is symmetric,
+    it is zero only for byte-identical files, and it does not reward a file for
+    being short. It is used to decide which copy a file was DERIVED FROM: the copy
+    it differs from least is the one it came from.
+    """
+    a = left.decode(errors="replace").splitlines()
+    b = right.decode(errors="replace").splitlines()
+    matcher = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    matched = sum(block.size for block in matcher.get_matching_blocks())
+    return len(a) + len(b) - 2 * matched
+
+
+def copy_base(root, rel, history, known, sizes):
+    """-> (rel, blob, delta) of the copy this file was derived from, or None.
+
+    THE CLOSEST COPY WINS, AND THE LIVE FLAGSHIP IS ALWAYS A CANDIDATE. A file that
+    differs from the live flagship by one line is a fork of the live flagship,
+    whatever old copy happens to sit beside it; a file that differs from an old copy
+    by one line is a fork of that old copy. That is the whole difference between
+    FORK-OF-A-COPY and LIVE-FORK, and it is measured rather than declared.
+
+    The candidates are the copies ON DISK, so a file that is merely "the ancestor's
+    bytes plus one" and sits alone in a directory has no old copy to be a fork of,
+    and is a LIVE-FORK of the flagship that is on disk.
+    """
+    candidates = list(scope_copies(root, rel, known, sizes))
+    live = os.path.join(root, FLAGSHIP)
+    if os.path.isfile(live) and not any(c[0] == FLAGSHIP for c in candidates):
+        blob = file_blob(live)
+        if blob:
+            candidates.append((FLAGSHIP, blob))
+    if not candidates:
+        return None
+    raw = open(os.path.join(root, rel), "rb").read()
+    best = None
+    for cand, blob in candidates:
+        delta = line_delta(raw, open(os.path.join(root, cand), "rb").read())
+        if best is None or delta < best[2]:
+            best = (cand, blob, delta)
+    return best
+
+
 def classify(rows, root, history):
     """-> the copy set. The flagship is removed before any file is judged, so
     it cannot be classed as a copy of itself. History is this repo's, not ``root``'s:
@@ -218,6 +344,8 @@ def classify(rows, root, history):
         if item.get("kind") == "ABSENT" or not under_plant(item["path"]):
             continue
         plant_groups.setdefault(item["blob"], []).append(item["path"])
+    known = known_flagship_blobs(history)
+    sizes = known_flagship_sizes(history)
     copies = []
     for item in pending:
         if item.get("kind") == "ABSENT":
@@ -232,21 +360,32 @@ def classify(rows, root, history):
         item["commit"] = commit or "NO-COMMIT"
         item["commits"] = commits
         item["matches"] = len(commits)
+        item["base"] = None
         if blob == history["head-blob"]:
             item["kind"] = "CURRENT"
             item["note"] = "byte-identical to HEAD:checks/differ.py; a second current table"
         elif in_pair and commit:
             item["kind"] = "PLANT-PAIR"
             item["note"] = "one pair with " + ", ".join(others) + "; not an independent fork"
-        elif in_pair:
-            item["kind"] = "LIVE-FORK"
-            item["note"] = "one pair, not two drifts; blob equals no historical checks/differ.py"
         elif commit:
             item["kind"] = "HISTORICAL"
             item["note"] = "equals checks/differ.py at a commit that is not HEAD"
         else:
-            item["kind"] = "LIVE-FORK"
-            item["note"] = "blob equals no historical checks/differ.py"
+            base = copy_base(root, item["path"], history, known, sizes)
+            if base is not None:
+                item["base"] = {"path": base[0], "blob": base[1], "delta": base[2]}
+            if base is not None and base[1] != history["head-blob"]:
+                item["kind"] = "FORK-OF-A-COPY"
+                item["note"] = (f"a fork of {base[0]}, {base[2]} line(s) from it, "
+                                f"not of the live flagship")
+            else:
+                item["kind"] = "LIVE-FORK"
+                item["note"] = "blob equals no historical checks/differ.py"
+                if in_pair:
+                    item["note"] = "one pair, not two drifts; " + item["note"]
+                elif base is not None:
+                    item["note"] += (f"; nearest copy on disk is the live flagship "
+                                     f"{base[0]}, {base[2]} line(s) away")
         copies.append(item)
     result["copies"] = copies
     accounted = ref_rows + sum(c["rows"] for c in copies)
@@ -272,7 +411,7 @@ def exit_of(result):
         return FAIL
     if any(k in ("LIVE-FORK", "CURRENT", "ABSENT") for k in kinds):
         return FAIL
-    if all(k in ("HISTORICAL", "PLANT-PAIR") for k in kinds):
+    if all(k in ("HISTORICAL", "PLANT-PAIR", "FORK-OF-A-COPY") for k in kinds):
         return PASS
     return FAIL
 
@@ -299,7 +438,7 @@ def fail_why(result):
         why.append("an absent path is in the set")
     if any(c["kind"] == "CURRENT" for c in result["copies"]):
         why.append("a second current table is in the set")
-    return why or ["a copy is not HISTORICAL or PLANT-PAIR"]
+    return why or ["a copy is not HISTORICAL, PLANT-PAIR or FORK-OF-A-COPY"]
 
 
 def report(result, out, live=None):
@@ -323,15 +462,19 @@ def report(result, out, live=None):
     for copy in result["copies"]:
         commits = copy.get("commits") or []
         also = ",".join(c for c in commits if c != copy.get("commit"))
-        out.write(f"  {copy['kind']:12} {copy['path']} rows={copy['rows']} "
+        base = copy.get("base")
+        basestr = "" if not base else f" base={base['path']} delta={base['delta']}"
+        out.write(f"  {copy['kind']:14} {copy['path']} rows={copy['rows']} "
                   f"blob={copy.get('blob') or '-'} commit={copy.get('commit')} "
                   f"matches={copy.get('matches', 0)}"
                   + (f" also={also}" if also else "")
+                  + basestr
                   + f" {copy['note']}\n")
     kinds, pair_blobs, live_blobs = _counts(result["copies"])
     out.write(f"  historical={kinds.get('HISTORICAL', 0)} "
               f"plant-pairs={len(pair_blobs)} "
               f"plant-pair-files={kinds.get('PLANT-PAIR', 0)} "
+              f"forks-of-copies={kinds.get('FORK-OF-A-COPY', 0)} "
               f"live-forks={len(live_blobs)} "
               f"live-fork-files={kinds.get('LIVE-FORK', 0)} "
               f"current={kinds.get('CURRENT', 0)} absent={kinds.get('ABSENT', 0)}\n")
@@ -395,6 +538,15 @@ def plant():
     PAIR-DRIFT  two identical copies of the extra byte under ``plant/``. One
                 LIVE-FORK, not a pair that passes.
     CURRENT     a copy of ``HEAD:checks/differ.py``. FAIL, a second current table.
+    FORK-OF-A-COPY
+                a copied tree that carries its own ``checks/differ.py``, and a file
+                beside it forked from THAT copy. PASS, and the base is named.
+    MIXED-BASE  the FALSIFICATION of FORK-OF-A-COPY: a file forked from the LIVE
+                flagship, sitting BESIDE an old copy. LIVE-FORK, or the class is
+                "any file in a directory that has a copy in it".
+    TWINS       the second falsification: two drifted files side by side. Neither is
+                a copy of the flagship, so neither is a baseline, so neither is a
+                FORK-OF-A-COPY.
     CONTROL     the flagship is REFERENCE, and it is not in the copy set.
     """
     live_path = os.path.join(ROOT, FLAGSHIP)
@@ -427,9 +579,25 @@ def plant():
     drift_a = os.path.join(".agents", "slop", "plant", "left", "checks", "differ.py")
     drift_b = os.path.join(".agents", "slop", "plant", "right", "checks", "differ.py")
     current_rel = os.path.join(".agents", "slop", "copy", "checks", "differ_head.py")
+    # FORK-OF-A-COPY: a COPIED TREE that carries its own `checks/differ.py`, and a
+    # file beside it that is a fork of THAT copy. The tree's copy is one line away
+    # and the live flagship is a thousand lines away, so the base is the copy.
+    tree_rel = os.path.join(".agents", "slop", "copytree", "tree", "checks", "differ.py")
+    tree_fork_rel = os.path.join(".agents", "slop", "copytree", "tree", "checks", "differ_fork.py")
+    # MIXED-BASE: an old copy and, beside it, a fork of the LIVE flagship. The old
+    # copy is a thousand lines away and the live flagship is one, so the base is the
+    # flagship and the file is a LIVE-FORK.
+    mix_old_rel = os.path.join(".agents", "slop", "mix", "checks", "differ_old.py")
+    mix_drift_rel = os.path.join(".agents", "slop", "mix", "checks", "differ_drift.py")
+    # TWINS: two drifted files side by side. Neither is a copy of the flagship.
+    twin_a_rel = os.path.join(".agents", "slop", "twins", "checks", "differ_a.py")
+    twin_b_rel = os.path.join(".agents", "slop", "twins", "checks", "differ_b.py")
+    fork_of_copy = ancestor if ancestor.endswith(b"\n") else ancestor + b"\n"
+    fork_of_copy += b"# FORK OF A COPY: the baseline for this file is the copy beside it.\n"
     base = tempfile.mkdtemp(prefix="expectcopy-plant-")
     try:
-        names = ("historical", "livefork", "pair", "drift", "current", "control")
+        names = ("historical", "livefork", "pair", "drift", "current", "control",
+                 "forkofcopy", "mix", "twins")
         roots = {name: os.path.join(base, name) for name in names}
         for dest in roots.values():
             _write(dest, FLAGSHIP, head_raw)
@@ -440,6 +608,12 @@ def plant():
         _write(roots["drift"], drift_a, extra)
         _write(roots["drift"], drift_b, extra)
         _write(roots["current"], current_rel, head_raw)
+        _write(roots["forkofcopy"], tree_rel, ancestor)
+        _write(roots["forkofcopy"], tree_fork_rel, fork_of_copy)
+        _write(roots["mix"], mix_old_rel, ancestor)
+        _write(roots["mix"], mix_drift_rel, head_raw + b"\n")
+        _write(roots["twins"], twin_a_rel, extra)
+        _write(roots["twins"], twin_b_rel, extra)
         rows = {name: rows_of(dest, scratch=True) for name, dest in roots.items()}
         judged = {name: classify(rows[name], roots[name], history) for name in names}
         bad = []
@@ -458,6 +632,12 @@ def plant():
             bad.append("a drifted plant copy left the population, so the pair-drift compared nothing")
         if not _seen(rows["current"], current_rel):
             bad.append("the HEAD copy left the population, so CURRENT compared nothing")
+        if not _seen(rows["forkofcopy"], tree_fork_rel):
+            bad.append("the copy's fork left the population, so FORK-OF-A-COPY compared nothing")
+        if not _seen(rows["mix"], mix_drift_rel):
+            bad.append("the mixed-base file left the population, so MIXED-BASE compared nothing")
+        if not _seen(rows["twins"], twin_a_rel) or not _seen(rows["twins"], twin_b_rel):
+            bad.append("a twin left the population, so TWINS compared nothing")
         for label, result in judged.items():
             if any(copy["path"] == FLAGSHIP for copy in result["copies"]):
                 bad.append(f"{label}: {FLAGSHIP} was classed as a copy")
@@ -470,6 +650,11 @@ def plant():
         dleft = _kind(judged["drift"], drift_a)
         dright = _kind(judged["drift"], drift_b)
         current = _kind(judged["current"], current_rel)
+        treefork = _kind(judged["forkofcopy"], tree_fork_rel)
+        treebase = _kind(judged["forkofcopy"], tree_rel)
+        mixdrift = _kind(judged["mix"], mix_drift_rel)
+        twina = _kind(judged["twins"], twin_a_rel)
+        twinb = _kind(judged["twins"], twin_b_rel)
         if hist is None or hist["kind"] != "HISTORICAL" or exit_of(judged["historical"]) != PASS:
             bad.append(f"HISTORICAL did not fire ({None if hist is None else hist['kind']}, "
                        f"exit {exit_of(judged['historical'])})")
@@ -504,6 +689,31 @@ def plant():
         if current is None or current["kind"] != "CURRENT" or exit_of(judged["current"]) != FAIL:
             bad.append(f"CURRENT did not fire ({None if current is None else current['kind']}, "
                        f"exit {exit_of(judged['current'])})")
+        if treefork is None or treefork["kind"] != "FORK-OF-A-COPY":
+            bad.append("FORK-OF-A-COPY did not fire "
+                       f"({None if treefork is None else treefork['kind']})")
+        elif exit_of(judged["forkofcopy"]) != PASS:
+            bad.append(f"FORK-OF-A-COPY exited {exit_of(judged['forkofcopy'])}")
+        elif treefork["base"] is None or treefork["base"]["path"] != tree_rel:
+            bad.append("FORK-OF-A-COPY named a base that is not the copy beside it")
+        elif treefork["base"]["delta"] != 1:
+            bad.append(f"FORK-OF-A-COPY measured {treefork['base']['delta']} line(s) "
+                       f"from the copy beside it, not 1")
+        if treebase is None or treebase["kind"] != "HISTORICAL":
+            bad.append("the copied tree's own differ.py is not HISTORICAL, so the fork's "
+                       "baseline is not a copy of the flagship")
+        if mixdrift is None or mixdrift["kind"] != "LIVE-FORK":
+            bad.append("MIXED-BASE did not fire "
+                       f"({None if mixdrift is None else mixdrift['kind']}): a fork of the "
+                       "LIVE flagship beside an old copy must stay LIVE-FORK")
+        if exit_of(judged["mix"]) != FAIL:
+            bad.append(f"MIXED-BASE exited {exit_of(judged['mix'])}")
+        twin_kinds = {None if twina is None else twina["kind"],
+                      None if twinb is None else twinb["kind"]}
+        if twin_kinds != {"LIVE-FORK"}:
+            bad.append(f"TWINS did not fire ({twin_kinds}): a drifted sibling is not a baseline")
+        if exit_of(judged["twins"]) != FAIL:
+            bad.append(f"TWINS exited {exit_of(judged['twins'])}")
         if judged["control"]["copies"]:
             bad.append(f"CONTROL had copies: {judged['control']['copies']}")
         if exit_of(judged["historical"]) == exit_of(judged["livefork"]):
@@ -526,6 +736,14 @@ def plant():
               f"exit={exit_of(judged['drift'])} ({VERDICT[exit_of(judged['drift'])]})")
         print(f"  CURRENT    kind={None if current is None else current['kind']} "
               f"exit={exit_of(judged['current'])} ({VERDICT[exit_of(judged['current'])]})")
+        print(f"  FORK-OF-A-COPY kind={None if treefork is None else treefork['kind']} "
+              f"base={None if treefork is None or not treefork['base'] else treefork['base']['path']} "
+              f"delta={None if treefork is None or not treefork['base'] else treefork['base']['delta']} "
+              f"exit={exit_of(judged['forkofcopy'])} ({VERDICT[exit_of(judged['forkofcopy'])]})")
+        print(f"  MIXED-BASE kind={None if mixdrift is None else mixdrift['kind']} "
+              f"exit={exit_of(judged['mix'])} ({VERDICT[exit_of(judged['mix'])]})")
+        print(f"  TWINS      kinds={twin_kinds} "
+              f"exit={exit_of(judged['twins'])} ({VERDICT[exit_of(judged['twins'])]})")
         print(f"  CONTROL    class={judged['control']['reference-class']} "
               f"in-copies={any(c['path'] == FLAGSHIP for c in judged['control']['copies'])} "
               f"copies={len(judged['control']['copies'])}")
@@ -534,7 +752,8 @@ def plant():
             print("expectcopy-plant: FAIL -- " + "; ".join(bad), file=sys.stderr)
             return FAIL
         print("expectcopy-plant: an ancestor blob is HISTORICAL, one extra byte is LIVE-FORK, "
-              "two identical plant files are one pair, and the flagship is REFERENCE")
+              "two identical plant files are one pair, a fork of a copied tree's own copy is "
+              "FORK-OF-A-COPY, and the flagship is REFERENCE")
         return PASS
     finally:
         shutil.rmtree(base, ignore_errors=True)
