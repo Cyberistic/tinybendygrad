@@ -194,6 +194,7 @@ gates/rand_census-gate.py	py-main	-	0	1
 gates/randrows-gate.py	py-main	__file__.parent	0	1
 gates/rd_graph_census-gate.py	py-main	-	0	1
 gates/reachability-gate.py	py-main	__file__.parent	0	1
+gates/reachability-plant.py	py-main	__file__.parent	0	1
 gates/realize-mut-oracle.py	py-main	-	0	1
 gates/realize_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/realize_graph_census-mutate.py	py-main	__file__.parent	0	1
@@ -205,8 +206,10 @@ gates/replace-gate.py	py-main	-	0	1
 gates/retention-check.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/rng_graph_census-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/rng_graph_census-oracle.py	py-main	-	0	1
+gates/rotclaim-gate.py	py-main	__file__.parent	0	1
 gates/runner.py	py-main	__file__.parent	0	1
 gates/state_census-gate.py	py-main	-	0	1
+gates/substratestale-gate.py	py-main	__file__.parent	0	1
 gates/tc_ptx_render-oracle.py	py-main	-	0	1
 gates/tc_ptx_types-gate.py	py-main	-	0	1
 gates/tc_ptx_types-mutate.py	py-main	__file__.parent	0	1
@@ -240,9 +243,15 @@ gates/tn_sqrt-gate.py	py-main	-	0	1
 gates/tn_trunc_reciprocal_threefry-gate.py	py-main	-	0	1
 gates/tn_where-gate.py	py-main	-	0	1
 gates/tnvalue-census.py	py-main	__file__.parent	0	1
+gates/unsorted-gap.py	py-main	__file__.parent	0	1
 gates/uop_cast-gate.py	py-main	-	0	1
 gates/upstream-pow-dtype-gate.py	py-main	__file__.parent	0	1
 gates/upstream-promo-lattice-gate.py	py-main	__file__.parent	0	1
+gates/valscall-gate.py	py-main	__file__.parent	0	1
+gates/valsdiv-gate.py	py-main	__file__.parent	0	1
+gates/varsparams-gate.py	py-main	__file__.parent	0	1
+gates/varsparams-uses.py	py-main	__file__.parent	0	1
+gates/vendordep-census-plant.py	py-main	__file__.parent	0	1
 gates/viz-wall-gate.py	py-main	__file__.parent	0	1
 gates/wgsl_render_census-gate.py	py-main	__file__.parent	0	1
 gates/wgsl_render_census-mutate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
@@ -253,3 +262,5 @@ gates/wk-eval-gate.py	py-main	-	0	1
 gates/wk-eval-oracle.py	py-main	-	0	1
 gates/wk-f32-gate.py	py-main	-	0	1
 gates/wk-f32-rows.py	py-main	-	0	1
+gates/worker-gate.py	py-main	__file__.parent	0	1
+gates/worker-oracle.py	py-main	-	0	1
