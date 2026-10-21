@@ -7,7 +7,7 @@ population	port	tinybendygrad/uop/ops.bend	1009	6 fields
 population	upstream	tinygrad/uop/ops.py	1343	7 fields, 1 declaring file(s)
 port-field	tinybendygrad/uop/ops.bend	1009	global_size: List<&2, H.I64>
 port-field	tinybendygrad/uop/ops.bend	1009	local_size: List<&2, H.I64>
-port-field	tinybendygrad/uop/ops.bend	1009	vars: List<&2, U32>
+port-field	tinybendygrad/uop/ops.bend	1009	params: List<&2, U32>
 port-field	tinybendygrad/uop/ops.bend	1009	globals: List<&2, U32>
 port-field	tinybendygrad/uop/ops.bend	1009	outs: List<&2, U32>
 port-field	tinybendygrad/uop/ops.bend	1009	ins: List<&2, U32>
@@ -20,7 +20,7 @@ upstream-field	tinygrad/uop/ops.py	1343	ins: tuple[int, ...]
 upstream-field	tinygrad/uop/ops.py	1343	target: Target
 pair	position 0	global_size	global_size	List<&2, H.I64> | tuple[int | float, ...]
 pair	position 1	local_size	local_size	List<&2, H.I64> | tuple[int, ...]
-pair	position 2	vars	params	List<&2, U32> | tuple[UOp, ...]
+pair	position 2	params	params	List<&2, U32> | tuple[UOp, ...]
 pair	position 3	globals	globals	List<&2, U32> | tuple[int, ...]
 pair	position 4	outs	outs	List<&2, U32> | tuple[int, ...]
 pair	position 5	ins	ins	List<&2, U32> | tuple[int, ...]
@@ -42,12 +42,9 @@ port-use	comment	tinybendygrad/engine/realize.bend	30	# [a] realize.py:15   get_
 port-use	comment	tinybendygrad/engine/realize.bend	31	# [a] realize.py:16   get_call_var_uops     -- `prg.arg.vars` rebound to CONSTs
 port-use	comment	tinybendygrad/engine/realize.bend	486	# `[bound.get(v.expr, v) for v in prg.arg.vars]` -- realize.py:19. The bound map
 port-use	comment	tinybendygrad/engine/realize.bend	505	# `prg.arg.vars` -- realize.py:19 reads the PROGRAM node passed IN, not the CALL's
-port-use	accessor-call	tinybendygrad/engine/realize.bend	509	case O.AProgram{pi}: O.ProgramInfo.vars(pi)
 port-use	comment	tinybendygrad/engine/realize.bend	848	# drops bound vars, and MEASURED, the census's `encdec` call carries one, so `src[1]` and
 port-use	comment	tinybendygrad/engine/realize.bend	1494	#  12  PROGRAM k1, vars (n,), globals (0,1) outs (0,) ins (1,)
 port-use	comment	tinybendygrad/engine/realize.bend	1495	#  13  PROGRAM k1, vars (m,), globals (0,1) outs (0,) ins (1,)
-port-use	local	tinybendygrad/engine/realize.bend	1523	def pi(vars: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> O.ProgramInfo:
-port-use	ctor-arg	tinybendygrad/engine/realize.bend	1524	O.ProgramInfo{gs3(4, 1, 1), [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], vars, globals, outs, ins}
 port-use	comment	tinybendygrad/engine/realize.bend	1850	# --- realize.py:16 `get_call_var_uops`: `prg.arg.vars` rebound to CONSTs. The
 port-use	comment	tinybendygrad/engine/realize.bend	1851	# fixture's PROGRAM 12 has `vars=[n]` and the CALL passes the BOUND `n`, so the
 port-use	comment	tinybendygrad/engine/realize.bend	1852	# answer is a CONST with value 4; PROGRAM 13 has `vars=[m]` and the CALL passes the
@@ -69,23 +66,10 @@ port-use	comment	tinybendygrad/runtime/ops_metal.bend	3886	# | M4 | q.items appe
 port-use	comment	tinybendygrad/runtime/support/hcq2.bend	195	#   540` for `buf3 + 2 vars` at 512 -- its five entries are `512, 520, 528,
 port-use	comment	tinybendygrad/runtime/support/hcq2.bend	197	#   five once the two `uint32` vars are appended to the three `uint64` buffers
 port-use	comment	tinybendygrad/runtime/support/am/amdev.bend	1599	# `{v: k.removesuffix('_HWID') for k, v in vars(am).items() ...}` and a dict
-port-use	ctor-arg	tinybendygrad/uop/ops.bend	1010	ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, vars: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>}
-port-use	pattern-bind	tinybendygrad/uop/ops.bend	1556	case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: global_size
-port-use	pattern-bind	tinybendygrad/uop/ops.bend	1560	case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: local_size
-port-use	accessor-def	tinybendygrad/uop/ops.bend	1562	def ProgramInfo.vars(x: ProgramInfo) -> List<&2, U32>:
-port-use	pattern-bind	tinybendygrad/uop/ops.bend	1564	case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: vars
-port-use	pattern-bind	tinybendygrad/uop/ops.bend	1568	case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: globals
-port-use	pattern-bind	tinybendygrad/uop/ops.bend	1572	case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: outs
-port-use	pattern-bind	tinybendygrad/uop/ops.bend	1576	case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: ins
-port-use	pattern-bind	tinybendygrad/uop/ops.bend	2009	case ProgramInfo{global_size, local_size, vars, globals, outs, ins} ProgramInfo{g2, l2, v2, b2, o2, i2}:
-port-use	local	tinybendygrad/uop/ops.bend	2011	Bool.and(eq_u32(vars, v2), Bool.and(eq_u32(globals, b2),
 port-use	comment	tinybendygrad/uop/ops.bend	8432	# `tuple(var_vals[k.expr] for k in self.vars)` with
 port-use	comment	tinybendygrad/uop/ops.bend	8434	# `ProgramInfo(vars=(i,j)).vals({'i':7,'j':9})` is `(7, 9)` and a miss is
-port-use	accessor-call	tinybendygrad/uop/ops.bend	8511	vals.step(ar, v, ProgramInfo.vars(x), Nil{})
-port-use	comment	tinybendygrad/uop/ops.bend	8604	# and only `vars` is under test; `ProgramInfo.of()` supplies the three `(1,1,1)`s
-port-use	comment	tinybendygrad/uop/render.bend	708	# `vars` and `target` are both fields ops.bend cannot print: `vars` is a tuple of
-port-use	accessor-call	tinybendygrad/uop/render.bend	720	String.concat(["ProgramInfo(global_size=", i64_tuple_repr(O.ProgramInfo.global_size(pi)), ", local_size=", i64_tuple_repr(O.ProgramInfo.local_size(pi)), ", vars=", aprogram_vars(O.ProgramInfo.vars(pi)), ", globals=", u32_tuple_repr(O.ProgramInfo.globals(pi)), ", outs=", u32_tuple_repr(O.ProgramInfo.outs(pi)), ", ins=", u32_tuple_repr(O.ProgramInfo.ins(pi)), ", target=)"])
-port-use	string-label	tinybendygrad/uop/render.bend	3045	IO.print("                     py=ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)")
+port-use	string-label	tinybendygrad/uop/render.bend	720	String.concat(["ProgramInfo(global_size=", i64_tuple_repr(O.ProgramInfo.global_size(pi)), ", local_size=", i64_tuple_repr(O.ProgramInfo.local_size(pi)), ", vars=", aprogram_vars(O.ProgramInfo.params(pi)), ", globals=", u32_tuple_repr(O.ProgramInfo.globals(pi)), ", outs=", u32_tuple_repr(O.ProgramInfo.outs(pi)), ", ins=", u32_tuple_repr(O.ProgramInfo.ins(pi)), ", target=)"])
+port-use	string-label	tinybendygrad/uop/render.bend	3057	IO.print("                     py=ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)")
 upstream-use	other	tinygrad/uop/ops.py	1249	"""call a body with the given args: a plain CallInfo CALL. all inputs must be ready (buffers/params), this never
 upstream-use	other	tinygrad/uop/ops.py	1267	the remaining positions in order; when it's given, input params must already be slotted at their final positions.
 upstream-use	comment	tinygrad/uop/ops.py	1307	# the kernel's params in its arg order, which is slot order. the LINEAR keeps two IMAGE params of one slot in order, x86 isel drops stack params
