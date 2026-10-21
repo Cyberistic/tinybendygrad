@@ -113,6 +113,21 @@ def load_pintable():
     return mod
 
 
+def load_pintable_gate():
+    """The gate that already names a pin table's artifact, BY PATH.
+
+    `PINS` matches no `_ARTIFACT` prefix, so the binding join cannot see it.
+    The subject is not a handwritten exception for `checks/differ.py`. It is
+    the artifact `artifact_of` reads out of the one file `classify` says
+    pintable executes. A second copy of that rule would be a second witness.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "pintable_gate", os.path.join(HERE, "pintable-gate.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def git(git_root, *argv):
     r = subprocess.run(["git", *argv], cwd=git_root, capture_output=True, text=True)
     return (r.stdout if r.returncode == 0 else "").strip()
@@ -421,18 +436,23 @@ def census(root=ROOT, git_root=ROOT, scratch=False):
 #
 # THE VERDICT VOCABULARY OF THIS POPULATION, AND IT IS THE CENSUS'S OWN:
 #   CURRENT / MISMATCH / ROW-ABSENT   the subject was read and the row was compared
-#   SUBJECT-IN-GITIGNORED-RUNS         the subject is a run artifact, so it is not read
+#   SUBJECT-IN-GITIGNORED-RUNS         the subject is a run artifact, so it is not read.
+#                                     NOT CURRENT: this census does not compare the row
+#                                     to a live run. That comparison is pintable-gate's.
 #   NO-SUBJECT-DECLARED               the table's artifact is not named in a form a
-#                                     machine can read -- a REFUSAL, and the finding
+#                                     machine can read -- a REFUSAL, and the finding.
+#                                     The file pintable executes is not this class: its
+#                                     subject is the artifact that file's reader names.
+#                                     A copy that is not that file stays here unless its
+#                                     own binding resolves.
 #   NOT-CARRIED                       the scan and the tree's declaration disagree
 def expectation_subject(resolved, decl, key):
-    """-> the subject of ONE expectation row, or None.
+    """-> the subject a `_SUBJECT` or `_ARTIFACT` binding names, or None.
 
-    **NONE IS NOT "NOT FOUND".** A row whose table names no artifact has no subject THAT
-    THE TREE DECLARES, and the difference between that and a subject that was searched for
-    and not found is the difference between a finding and a false claim: `checks/differ.py`'s
-    `PINS` rows are about `runs/graphcmp/D/D0-run-summary.txt`, which EXISTS. The census
-    refuses to say it does not.
+    None means the binding join names nothing. It does not mean the row has no
+    subject. `PINS` matches no `_ARTIFACT` prefix, so this function returns None
+    for it. Which file pintable executes is not knowable here: a caller that
+    wants only the binding still sees None, and `expectation_census` asks.
     """
     if resolved is None:
         return None
@@ -500,6 +520,40 @@ def drop_addresses(pairs, hex_re):
     return [(k, v) for k, v in pairs if not hex_re.search(v)]
 
 
+def executed_files(exps, gate):
+    """-> {table name: path} for the one file pintable executes.
+
+    `pintable-gate.classify`, loaded by path, not a list of paths. A shadow's
+    path ends in `/<authored path>`. A copy is not that file. Zero or many is
+    not a subject: this function does not pick.
+    """
+    by_name = {}
+    for e in exps:
+        by_name.setdefault(e["name"], set()).add(e["file"])
+    out = {}
+    for name, files in by_name.items():
+        flag, _, _ = gate.classify(sorted(files))
+        if len(flag) == 1:
+            out[name] = flag[0]
+    return out
+
+
+def subject_executed(rel_file, name, text, decl, bind, key, gate):
+    """-> the run artifact the executed file's reader names, or None.
+
+    Not an `_ARTIFACT` binding. `artifact_of` is the module's own declaration of
+    which file the table's rows are carried by, and only for the file pintable
+    executes. The path is a run artifact. This census does not read it and does
+    not call the row CURRENT. A path that is not under `runs/` is not used: reading
+    it to compare would be pintable-gate's claim, not this one.
+    """
+    found, how = gate.artifact_of(name, text, decl, bind)
+    if not found or not any(found.startswith(n) for n in NEVER_READ):
+        return None
+    return {"kind": "run-artifact", "artifact": found, "dir": "", "row": key,
+            "at": "%s is the file pintable executes; %s" % (rel_file, how)}
+
+
 def expectation_census(corpus, host, code, decls, git_root, corpus_root, upstream, P, T, B):
     """-> (rows, meta). THE SECOND POPULATION: the rows of a PIN TABLE whose value is an
     EXPECTATION rather than a content address.
@@ -510,12 +564,19 @@ def expectation_census(corpus, host, code, decls, git_root, corpus_root, upstrea
     compares it against what `ast` sees in the source. The two are independent readings, so
     they can disagree, and when they do the census carries the DECLARATION (what the tree
     will actually compare) and says that the scan and the tree disagree.
+
+    **THE FLAGSHIP SUBJECT IS THE FILE PINTABLE EXECUTES, NOT A PATH EXCEPTION.** A table
+    with no `_ARTIFACT` binding is `NO-SUBJECT-DECLARED` except on that one file. The
+    artifact is the one `pintable-gate.artifact_of` already names. It is a run artifact,
+    so the class is `SUBJECT-IN-GITIGNORED-RUNS`. It is not `CURRENT`.
     """
     binds = T.bindings(corpus, host)
     tabs = T.tables(binds, P.PIN_NAME)
     exps = T.expectations(tabs, P.HEX)
     # THE TABLE each row belongs to, so a table's cross-check is computed ONCE and not per row.
     by_table = {(t["file"], t["line"], t["name"]): t for t in tabs}
+    gate = load_pintable_gate()
+    executed = executed_files(exps, gate)
 
     rows, meta = [], {"tables": 0, "cross-checked": 0, "not-cross-checkable": 0, "disagreeing": 0,
                       "tables-not-carried": 0, "declaring-files": set()}
@@ -552,6 +613,11 @@ def expectation_census(corpus, host, code, decls, git_root, corpus_root, upstrea
         read = P.readers(name, code, (f, line, line)) if code else []
         for key, value in carried:
             subject = expectation_subject(resolved, decl_for_file, key)
+            # A binding wins. Only the file pintable executes, and only when the
+            # binding names nothing, takes the reader scan. A copy stays unbound.
+            if subject is None and executed.get(name) == f:
+                subject = subject_executed(
+                    f, name, corpus.get(f, ""), decl_for_file, B, key, gate)
             verdict, detail = expectation_currency(value, subject, corpus_root, git_root)
             rows.append({
                 "class": "CAN-FAIL" if read else "CANNOT-FAIL",
@@ -664,6 +730,126 @@ def _one(rows, value):
     return got[0] if len(got) == 1 else None
 
 
+_SUBJECT_HEX = "cd" * 32
+_SUBJECT_EXPECT = "34"
+_SUBJECT_READER = (
+    'D = "runs/planted/D"\n'
+    "PINS = {\n"
+    '    "graphs": "%s",\n'
+    '    "digest": "%s",\n'
+    "}\n"
+    "def unhealthy():\n"
+    '    path = D / "D0-run-summary.txt"\n'
+    "    return PINS\n"
+) % (_SUBJECT_EXPECT, _SUBJECT_HEX)
+_SUBJECT_BARE = (
+    'D = "runs/planted/D"\n'
+    "PINS = {\n"
+    '    "graphs": "%s",\n'
+    '    "digest": "%s",\n'
+    "}\n"
+) % (_SUBJECT_EXPECT, _SUBJECT_HEX)
+_BOUND_COPY = (
+    'REPRO_ARTIFACT = "D0-repro.txt"\n'
+    'D = "runs/planted/D"\n'
+    "REPRO_PINS = {\n"
+    '    "repro-rc": "rc=0",\n'
+    "}\n"
+)
+_FLAG = "flag.py"
+_COPY = "kept/flag.py"
+_ORPHAN = "orphan.py"
+_BOUND = "bound.py"
+_BOUND_COPY_REL = "kept/bound.py"
+
+
+def _place(dest, rel, text):
+    path = os.path.join(dest, rel)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
+
+
+def _at(rows, rel, value):
+    got = [r for r in rows if r["where"].startswith(rel + ":") and r["value"] == value]
+    return got[0] if len(got) == 1 else None
+
+
+def plant_subject():
+    """Attack copies. The live tree is opened for nothing and never written.
+
+    The flagship is the file pintable executes, discovered by path, not named.
+    A copy of that file with `PINS` and no artifact binding stays
+    `NO-SUBJECT-DECLARED`. A copy that carries its own binding does not. A hex
+    pin is not an expectation row. `meta["rows"]` does not move when the
+    flagship subject is discovered. The discovered class is not `CURRENT`.
+    """
+    base = tempfile.mkdtemp(prefix="pincensus-subject-plant-")
+    try:
+        bare, read, bound = (os.path.join(base, n) for n in ("bare", "read", "bound"))
+        for dest, body in ((bare, _SUBJECT_BARE), (read, _SUBJECT_READER)):
+            for rel in (_FLAG, _COPY, _ORPHAN):
+                _place(dest, rel, body)
+        for rel in (_BOUND, _BOUND_COPY_REL):
+            _place(bound, rel, _BOUND_COPY)
+        b_rows, b_meta = census(bare, ROOT, scratch=True)
+        r_rows, r_meta = census(read, ROOT, scratch=True)
+        k_rows, k_meta = census(bound, ROOT, scratch=True)
+        b_ex, r_ex = b_meta["expectation-rows"], r_meta["expectation-rows"]
+        flag = _at(r_ex, _FLAG, _SUBJECT_EXPECT)
+        copy = _at(r_ex, _COPY, _SUBJECT_EXPECT)
+        orphan = _at(r_ex, _ORPHAN, _SUBJECT_EXPECT)
+        bare_flag = _at(b_ex, _FLAG, _SUBJECT_EXPECT)
+        bound_copy = _at(k_meta["expectation-rows"], _BOUND_COPY_REL, "rc=0")
+        bad = []
+        if flag is None or copy is None or orphan is None or bare_flag is None or bound_copy is None:
+            bad.append("a side produced no expectation row, so the plant compared nothing")
+        if flag is not None and flag["currency"] == "NO-SUBJECT-DECLARED":
+            bad.append("the flagship table is NO-SUBJECT-DECLARED")
+        if flag is not None and flag["currency"] == "CURRENT":
+            bad.append("the flagship was classed CURRENT; currency is not this census's claim")
+        if flag is not None and flag["currency"] != "SUBJECT-IN-GITIGNORED-RUNS":
+            bad.append("the flagship subject was read or not a run artifact (%s)" % flag["currency"])
+        if flag is not None and "pintable executes" not in flag["detail"]:
+            bad.append("the flagship subject was not said to be the file pintable executes")
+        if copy is not None and copy["currency"] != "NO-SUBJECT-DECLARED":
+            bad.append("a copy with PINS and no artifact binding left NO-SUBJECT-DECLARED")
+        if orphan is not None and orphan["currency"] != "NO-SUBJECT-DECLARED":
+            bad.append("a file pintable does not execute was given the flagship subject")
+        if bare_flag is not None and bare_flag["currency"] != "NO-SUBJECT-DECLARED":
+            bad.append("a flagship with no reader was given a subject")
+        if bound_copy is not None and bound_copy["currency"] == "NO-SUBJECT-DECLARED":
+            bad.append("a copy that carries its own binding stayed NO-SUBJECT-DECLARED")
+        if _SUBJECT_HEX not in _values(r_rows) or _SUBJECT_HEX in _values(r_ex):
+            bad.append("a hex pin was not kept out of the expectation rows")
+        if _SUBJECT_EXPECT in _values(r_rows):
+            bad.append("an expectation row was counted as a hex pin")
+        if b_meta["rows"] != r_meta["rows"]:
+            bad.append("meta['rows'] moved when the flagship subject was discovered "
+                       "(%s -> %s)" % (b_meta["rows"], r_meta["rows"]))
+        if r_meta["rows"] != len(r_rows) or b_meta["rows"] != len(b_rows):
+            bad.append("meta['rows'] does not mean the hex-pin rows")
+        if any(r.get("shape") == "EXPECTATION" for r in r_rows):
+            bad.append("a hex-pin row was shaped as an expectation")
+        print("pincensus-gate --plant: flagship subject, on copies")
+        print("  BARE     flagship=%s meta[rows]=%s" % (
+            None if bare_flag is None else bare_flag["currency"], b_meta["rows"]))
+        print("  READ     flagship=%s copy=%s orphan=%s meta[rows]=%s" % (
+            None if flag is None else flag["currency"],
+            None if copy is None else copy["currency"],
+            None if orphan is None else orphan["currency"], r_meta["rows"]))
+        print("  BOUND    copy=%s" % (None if bound_copy is None else bound_copy["currency"]))
+        if bad:
+            print("pincensus-gate --plant: FAIL -- " + "; ".join(bad), file=sys.stderr)
+            return FAIL
+        print("pincensus-gate --plant: the file pintable executes is not NO-SUBJECT-DECLARED; "
+              "a copy with no binding is; a hex pin is not an expectation row; "
+              "meta['rows'] is unchanged")
+        return PASS
+    finally:
+        shutil.rmtree(base, ignore_errors=True)
+
+
 def plant():
     """Attack copies. The live tree is opened for nothing and never written.
 
@@ -675,7 +861,12 @@ def plant():
     The control is the same file with no rebinding. A census that says DISAGREE for
     both, or that carries one value on both sides, fails: the first is a label, the
     second is a vacuous negative.
+
+    AND THE SUBJECT, ON COPIES: the file pintable executes is not
+    NO-SUBJECT-DECLARED. A copy with no artifact binding is. `meta["rows"]`
+    does not move.
     """
+    subject = plant_subject()
     base = tempfile.mkdtemp(prefix="pincensus-expect-plant-")
     try:
         control, planted = (os.path.join(base, name) for name in ("control", "planted"))
@@ -712,6 +903,10 @@ def plant():
             bad.append("meta['rows'] does not mean the hex-pin rows")
         if c_ex is c_rows or p_ex is p_rows:
             bad.append("the two populations are one list")
+        if c_row is not None and c_row["currency"] != "NO-SUBJECT-DECLARED":
+            bad.append("a table with no reader was given a subject")
+        if p_row is not None and p_row["currency"] != "NO-SUBJECT-DECLARED":
+            bad.append("a rebinding was read as a subject")
         print("pincensus-gate --plant: synthetic mixed table, scan %r declared %r" % (
             _PLANT_SCAN, _PLANT_DECLARED))
         print("  CONTROL  expectation=%s hex-has-digest=%s hex-has-expectation=%s" % (
@@ -727,7 +922,7 @@ def plant():
             return FAIL
         print("pincensus-gate --plant: the disagreed expectation is not a hex pin, "
               "and the hex pin is not an expectation row")
-        return PASS
+        return subject
     finally:
         shutil.rmtree(base, ignore_errors=True)
 
@@ -739,7 +934,7 @@ def main():
                     help="treat --root as a corpus that is not a git tree")
     ap.add_argument("--no-write", action="store_true")
     ap.add_argument("--plant", action="store_true",
-                    help="prove a disagreed expectation is not a hex pin, and a hex pin is not an expectation row")
+                    help="prove the flagship subject, the copy refusal, and that a hex pin is not an expectation row")
     args = ap.parse_args()
     if args.plant:
         return plant()
