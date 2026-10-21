@@ -1,0 +1,66 @@
+# viz-wall-pins.rows -- the EXPECTED capability table for `tinybendygrad/viz/serve.bend`.
+# capability<TAB>upstream_line<TAB>state<TAB>port_ref<TAB>note
+# The capability set and the upstream line numbers are DISCOVERED by `gates/viz-wall-gate.py`
+# (`ast` over `refs/remotes/upstream/master:tinygrad/viz/serve.py`); this file records the
+# STATE each one is expected to hold. A capability that appears in the port changes the
+# derived state and the gate goes RED until this file is refreshed.
+#
+TCPServerWithReuse	16	ABSENT		no def of this name anywhere in the port tree
+HTTPRequestHandler	22	ABSENT		no def of this name anywhere in the port tree
+create_step	56	PARTIAL	tinybendygrad/viz/serve.bend:511	the port's step is a List of Kv and its `_data` is a Maybe<String>; upstream's step is a dict whose `_data` is an arbitrary object
+VizData	60	ABSENT		no def of this name anywhere in the port tree
+load_rewrites	68	ABSENT		no def of this name anywhere in the port tree
+GraphRewriteDetails	91	ABSENT		no def of this name anywhere in the port tree
+shape_to_str	99	PRESENT	tinybendygrad/viz/serve.bend:577	
+mask_to_str	100	PRESENT	tinybendygrad/viz/serve.bend:585	
+fmt_colored	101	PRESENT	tinybendygrad/viz/serve.bend:594	
+canonicalize_ast	103	PARTIAL	tinybendygrad/viz/serve.bend:602	the port answers the IS-question (`canonicalize_ast_is`); upstream REWRITES the UOp (`u.replace(arg=KernelInfo())`)
+tokenize_uir	105	ABSENT		no def of this name anywhere in the port tree
+uop_to_json	114	ABSENT		no def of this name anywhere in the port tree
+_reconstruct	171	ABSENT		no def of this name anywhere in the port tree
+get_full_rewrite	179	ABSENT		no def of this name anywhere in the port tree
+get_sink_at	195	ABSENT		no def of this name anywhere in the port tree
+enum_str	204	PRESENT	tinybendygrad/viz/serve.bend:633	
+option	209	PRESENT	tinybendygrad/viz/serve.bend:643	
+rel_ts	211	PARTIAL	tinybendygrad/viz/serve.bend:665	upstream RAISES on an out-of-range timestamp; the port answers a Maybe (`REFUSED`). Same value on the in-range side.
+cpu_ts_diff	218	PRESENT	tinybendygrad/viz/serve.bend:733	
+flatten_events	221	ABSENT		no def of this name anywhere in the port tree
+timeline_layout	232	PARTIAL	tinybendygrad/viz/serve.bend:1037	the port packs FIVE of upstream's six `<IIIIfI` fields; the 32-bit float is the one it cannot produce -- and the reason it gives is a wall that is not a wall (see `f32.wall_claim`)
+encode_mem_free	257	PARTIAL	tinybendygrad/viz/serve.bend:1160	the port returns the packed bytes as a List<U32> plus the string table; upstream returns bytes. Same layout.
+graph_layout	265	ABSENT		no def of this name anywhere in the port tree
+soft_err	295	ABSENT		no def of this name anywhere in the port tree
+row_tuple	300	PRESENT	tinybendygrad/viz/serve.bend:1542	
+unpack_pmc	310	ABSENT		no def of this name anywhere in the port tree
+load_amd_counters	337	ABSENT		no def of this name anywhere in the port tree
+sqtt_timeline	370	ABSENT		no def of this name anywhere in the port tree
+device_sort_fn	459	PRESENT	tinybendygrad/viz/serve.bend:1240	
+get_profile	466	ABSENT		no def of this name anywhere in the port tree
+load_nv_counters	509	ABSENT		no def of this name anywhere in the port tree
+pma_timeline	520	ABSENT		no def of this name anywhere in the port tree
+get_stdout	538	ABSENT		no def of this name anywhere in the port tree
+get_elf_section	545	ABSENT		no def of this name anywhere in the port tree
+get_arch	549	PRESENT	tinybendygrad/viz/serve.bend:1348	
+amd_decode	551	ABSENT		no def of this name anywhere in the port tree
+parse_branch	565	PARTIAL	tinybendygrad/viz/serve.bend:1334	the port computes the offset from an (op_name, simm16) PAIR; upstream reads it off an `Inst`
+is_acc_operand	571	ABSENT		no def of this name anywhere in the port tree
+get_cfg	581	ABSENT		no def of this name anywhere in the port tree
+tokenize_asm	606	ABSENT		no def of this name anywhere in the port tree
+get_render	624	ABSENT		no def of this name anywhere in the port tree
+get_int	684	PARTIAL	tinybendygrad/viz/serve.bend:1360	the port reads an int out of a Kv query list; upstream reads it out of a `parse_qs` dict
+filter_keys	686	PRESENT	tinybendygrad/viz/serve.bend:535	
+Handler	688	ABSENT		no def of this name anywhere in the port tree
+reloader	716	ABSENT		no def of this name anywhere in the port tree
+load_pickle	727	ABSENT		no def of this name anywhere in the port tree
+route:/	692	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:/assets/	694	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:/ctxs	701	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:/get_profile	704	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:/js/	694	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:all-pmc	656	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:asm	638	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:code	635	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:graph-rewrites	628	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:prg-pma-pkts	674	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:prg-pmc	665	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:sqtt	666	ABSENT		upstream serves this path; the port has no server, so no route answers it
+route:uops	629	ABSENT		upstream serves this path; the port has no server, so no route answers it
