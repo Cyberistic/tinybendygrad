@@ -4,6 +4,7 @@
     .venv/bin/python checks/rn-gate.py                # live port + live oracle
     .venv/bin/python checks/rn-gate.py --plant ROW    # corrupt ONE VALUE
     .venv/bin/python checks/rn-gate.py --plant-shape OLD NEW
+    .venv/bin/python checks/rn-gate.py --plant-ansi   # the reader's COLOUR-INVARIANCE plant
     .venv/bin/python checks/rn-gate.py --selftest
     .venv/bin/python checks/rn-gate.py --names
 
@@ -32,7 +33,7 @@ lacks it: the detector looked for `" = "` and render's own VALUES are full of it
 `pyrender` legitimately emits newlines -- `pyrender buffer` answers
 
     c1 = UOp.range(4, 0, AxisType.WEAK)
-    ast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU'))
+    ast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device='CPU'))
 
 -- so ONE logical row is 2-4 PHYSICAL lines, and `rebase-gate.py:row()` cannot tell a continuation
 from a row.  MEASURED: 49 continuation lines on the port lane and 44 on the oracle, costing **43**
@@ -41,10 +42,46 @@ from FIVE HAND-WRITTEN WRAPS at render.bend:2809-2819).  The port also prints `p
 where the oracle does not, so the two lanes disagree about one extra key: a `ghost`.
 
 ⚠ AND ON THIS LANE THE VALUE COMPARISON IS **NOT** A TAUTOLOGICAL ZERO -- the opposite of llvmir and
-nir_llvmir.  MEASURED: port stdout md5 `302944bb48a32379`, oracle stdout md5
-`642f9770c558df0f1be03a8f67ac997e`; 140 lines against 124.  The two sides print DIFFERENT bytes,
-so `disagree` is a real measurement here and the value comparison is not decoration.  The port has
-11 rows the oracle does not answer -- all `rnd_*` -- which is `ghost`, not disagreement.
+nir_llvmir.  MEASURED 2026-10-21: port stdout md5 `72eb3e28575c8f843ac5ae58d9afcc98` (161 physical
+lines, STABLE across three consecutive runs), oracle stdout md5
+`642f9770c558df0f1be03a8f67ac997e` (124 lines) -- and the ORACLE's md5 is a PIN, because the oracle
+answers from an upstream REVISION, while the PORT's md5 is a MOVING reading: `tinybendygrad/uop/ops.bend`
+is another live unit's and its edit REMOVED the `4` from the port's hand-written `py=` literal
+between two runs of this gate on the same day, so the port's md5 moved `18b5e53f...` -> `72eb3e28...`
+with no edit to THIS file.  The two sides print DIFFERENT bytes, so `disagree` is a real measurement
+here and the value comparison is not decoration.  The port has 14 rows the oracle does not answer --
+11 `rnd_*` and 3 `pu_*` -- which is `ghost`, not disagreement.
+
+⚠ AND THE PORT LANE'S ANSI ESCAPES ARE A READER DEFECT, NOT A PORT DEFECT.  `print_uops` colours
+its indices (`\x1b[31m0\x1b[0m`) and upstream colours them too, so a lane's bytes MAY carry escapes
+and the reader has to cope.  ⚠ EVERY ESCAPE OPENS A `[` THAT NO `]` EVER CLOSES -- `\x1b[31m` is one
+`[` and `\x1b[0m` is another -- so a reader that counts brackets without stripping them is defeated
+by the FIRST coloured line and NEVER RECOVERS.  MEASURED 2026-10-21 on the live lane: 6 escapes on
+3 of the port's 161 lines, and the unstripped lane reads as **2 rows where the stripped lane reads
+94**, gates **0** rows, and reports a verdict about a lane it never read.  THE FIX IS IN THE
+READER -- `plain()` strips the escapes ONCE, at the point where the lane text ENTERS the reader, so
+the strict reader, the census's own measure and the shipped reader all see the same bytes -- and
+NOT in the port, which is entitled to print colour.  The reader's colour-invariance is PLANTED:
+`--plant-ansi` runs the arms, and the `colour` lane of `--selftest` is the same claim in the
+gate's own selftest.
+
+⚠ AND THE ELEVEN DISAGREEMENTS ARE TWO CAUSES, NOT ELEVEN BUGS.  MEASURED 2026-10-21 on the live
+lane: 80 gated rows, 69 agree, 11 disagree, and every one is NAMED.
+
+  FIVE are the HAND-WRITTEN `py=` WRAPS (render.bend:2809-2819) -- the port puts the `py=` column
+  on its OWN physical line and the oracle does not reprint it, so the port's VALUE for those five
+  carries an extra line: `arg_repr AKern`, `arg_repr AParam1`, `arg_repr AParam2`, `arg_repr
+  AParam3`, `arg_repr AProgr`.  For `AKern`, `AParam2` and `AProgr` the `py=` wrap is the ONLY
+  difference.  ⚠ THE CAPTURED PAIR DISAGREES ON EXACTLY THESE FIVE, and on nothing else.
+
+  SIX are the `ParamArg` SHAPE, and they are REAL: the port's `arg_repr` renders upstream master's
+  TWELVE-FIELD `ParamArg`, which has no `size`, so it answers `ParamArg(0, dtypes.i32,
+  device='CPU')` where CPython -- answering from the pinned revision `81157efb0^`, whose `ParamArg`
+  is `ParamArg(0, dtypes.i32, 4, device='CPU')` -- answers with the `4`: `pyrender buffer`,
+  `pyrender bufimage`, `pyrender buflocal`, `pyrender bufnodev`, `pyrender copy`, `pyrender store`.
+  ⚠ `AParam1` and `AParam3` carry BOTH causes, so the two groups overlap in 2 of the 11.  THIS IS
+  A `.bend` FILE AND OUT OF THIS GATE'S GRANT: the port's `arg_repr` rules predate upstream's
+  `ParamArg`, and the fix belongs in `tinybendygrad/uop/render.bend`, not in a reader.
 
 ⚠ AND THE SUBSTRATE IS NOT STILL.  `tinybendygrad/uop/ops.bend` and `uop/fold.bend` are in this
 file's 5-file import closure and belong to other live units.  MEASURED: the ORACLE and the PORT
@@ -54,12 +91,13 @@ census that reads its own cache without re-fetching reports a port that no longe
 capture here goes through `.agents/slop/eq/lane.py`, which digests the whole closure before and
 after.
 
-TWO THINGS THIS GATE REFUSES TO DO.  It does not write to the tree: `--plant` and `--plant-shape`
-rewrite CAPTURED BYTES in memory only.  And it does not accept an ambiguous row boundary --
+TWO THINGS THIS GATE REFUSES TO DO.  It does not write to the tree: `--plant`, `--plant-shape` and
+`--plant-ansi` rewrite CAPTURED BYTES in memory only, and `--plant-ansi`'s copy of the gate is made
+in a TEMP DIRECTORY, outside it.  And it does not accept an ambiguous row boundary --
 `row_strict` requires this lane's ` = [` to occur EXACTLY ONCE in the head, and it FOLDS a
 continuation into the row above it rather than reading it as a row of its own.
 """
-import argparse, hashlib, importlib.util, pathlib, re, subprocess, sys
+import argparse, hashlib, importlib.util, pathlib, re, shutil, subprocess, sys, tempfile
 from collections import Counter
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -71,7 +109,14 @@ HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[0]
 SLOP = REPO / ".agents" / "slop"
 PORT = "tinybendygrad/uop/render.bend"
-ORACLE = [".agents/slop/xd1/render-gate-oracle.py", "--gate"]
+ORACLE = ["checks/render-gate-oracle.py", "--gate"]
+"""THE ORACLE, IN GIT BESIDE THE GATE.  ⚠ THE PATH THIS NAMED BEFORE WAS A PRUNED DIRECTORY
+  (`.agents/slop/xd1/`), and a gate's input under `.agents/slop/` is exactly what deleted it: a
+  gate's required input belongs beside the gate IN GIT, not in a swept tree.  The oracle is
+  committed at `checks/render-gate-oracle.py` and it RUNS -- it resolves its subject by DISCOVERY
+  (the last upstream revision whose `tinygrad/uop/render.py` still defines `pyrender`, materialised
+  with `git archive` into a temp dir on `sys.path`) and prints 124 rows whose stdout md5 is
+  `642f9770c558df0f1be03a8f67ac997e`, byte-identical to the committed capture `checks/rn-orc.rows`."""
 
 
 def refuse(*why):
@@ -99,6 +144,31 @@ for _n in ("rebase-gate", "eq-census2"):
 SEP = "]   py=["      # `py_row`'s own three-space literal (render.bend:2148)
 ROW_OPEN = " = ["     # and its own name/value boundary, same line
 DEPTH = {"[": 1, "]": -1}
+
+ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+"""CSI ESCAPE SEQUENCES -- the SGR colour the port's `print_uops` emits and upstream emits too.
+  ⚠ EVERY ESCAPE OPENS A `[` THAT NO `]` EVER CLOSES (`\x1b[31m` is one `[`, `\x1b[0m` is another),
+  so a reader that counts brackets WITHOUT stripping them is defeated by the first coloured line
+  and never recovers: MEASURED 2026-10-21, the unstripped port lane reads as 2 rows where the
+  stripped lane reads 94, and gates 0."""
+
+
+def plain(text):
+  """The lane text with its ANSI escapes removed.  ONE function, called ONCE per lane, at the point
+  where the text ENTERS the reader -- so the strict reader, the census's own measure and the
+  shipped reader all see the SAME bytes and cannot disagree about what a row is.
+
+  ⚠ IT IS NOT A COSMETIC FILTER.  An escape is a `[` to every bracket counter in this tree, so a
+  lane whose depth never returns to zero has no rows at all, and a gate that reports a verdict over
+  such a lane has reported a verdict about nothing.  THE PORT IS ENTITLED TO PRINT COLOUR: the fix
+  belongs HERE and not in the `.bend` file."""
+  return ANSI.sub("", text)
+
+
+def escapes(text):
+  """(n_sequences, n_lines) -- the lane's ANSI escapes, so the reader's strip is REPORTED rather
+  than silent.  A strip nobody can see is a strip nobody can audit."""
+  return len(ANSI.findall(text)), sum(1 for line in text.splitlines() if "\x1b" in line)
 
 
 def load(name):
@@ -319,8 +389,113 @@ def plant_shape(text, pairs):
   return "\n".join(out) + "\n", hits
 
 
+def plant_ansi(text):
+  """A COPY of the lane text with the port's own colour form wrapped around every row's VALUE.
+
+  THE PORT EMITS COLOUR AND UPSTREAM DOES TOO, so the reader has to be COLOUR-INVARIANT: the same
+  bytes with the escapes and without must read as the same rows.  The copy differs from the
+  original ONLY by the escape sequences, so the claim is about the READER and not about the bytes.
+
+  ⚠ THE ESCAPES GO WHERE THE PORT PUTS THEM -- INSIDE THE VALUE, AFTER THE ROW BOUNDARY -- and not
+  around the whole line, because a reader that only copes with a leading escape is a reader that
+  copes with one producer's spelling.  The boundary is found with the CENSUS's own `depth0_eq`, on
+  the PLAIN line, so the escape cannot hide the `=` it is measured against."""
+  out = []
+  for line in text.splitlines():
+    eqs = _census.depth0_eq(line)
+    i = eqs[0] if eqs else None
+    out.append(f"{line[:i + 1]}\x1b[31m{line[i + 1:]}\x1b[0m" if i is not None else line)
+  return "\n".join(out) + "\n"
+
+
+def plant_refusal():
+  """A COPY of this gate whose ORACLE PATH DOES NOT RESOLVE must REFUSE, not PASS.
+
+  THE COPY IS A REAL TREE SHAPE: `pyproject.toml`, `tinybendygrad/` and `.agents/` are SYMLINKS to
+  this repo's, so the copy's `REPO` resolves, its readers LOAD, and the ONLY thing missing is the
+  oracle.  So the refusal the guard produces is the refusal about the ORACLE and not about a tree
+  that is not there -- which is the whole difference between a subject that is absent and a subject
+  that is broken."""
+  with tempfile.TemporaryDirectory(prefix="rn-gate-plant-") as td:
+    root = pathlib.Path(td)
+    (root / "checks").mkdir()
+    shutil.copy2(HERE / "rn-gate.py", root / "checks" / "rn-gate.py")
+    for name in ("pyproject.toml", "tinybendygrad", ".agents"):
+      (root / name).symlink_to(REPO / name)
+    return subprocess.run([sys.executable, str(root / "checks" / "rn-gate.py")],
+                          cwd=root, capture_output=True, text=True, timeout=600)
+
+
+def plant_ansi_run():
+  """THE PLANT, ITS CONTROL, ITS FALSIFICATION, AND THE REFUSAL.  Every arm is a CLAIM the gate
+  makes about its own reading, and every arm can fail.
+
+    CONTROL      the coloured copy ROUND-TRIPS: `plain(coloured) == plain`, byte for byte.  So a
+                 difference measured on the coloured copy is the READER's behaviour and not the
+                 copy's -- without this arm the plant could report a difference of its own making.
+    PLANT        the reader is COLOUR-INVARIANT: the rows read from the coloured copy are the rows
+                 read from the plain one.  ⚠ THIS ARM FAILS ON THE READER THAT COUNTED BRACKETS
+                 WITHOUT STRIPPING: MEASURED, that reader reads 1 row off the coloured copy where
+                 it reads 94 off the plain one, and gates 0.
+    FALSIFY      the SAME reader, with the strip OMITTED, must NOT read the plain copy's rows from
+                 the coloured one.  Without this arm the plant could pass on a reader that ignores
+                 colour because the coloured text happened to be colourless.
+    VERDICT      the gate's OWN verdict is colour-invariant: the same gated rows, the same
+                 agreements and the same disagreements, on the coloured copy and on the plain one.
+    REFUSAL      a copy of this gate whose oracle path does not resolve EXITS 3 and says REFUSED.
+
+  THE PLANT RUNS ON THE LIVE LANES, because the port's real bytes are part of the subject: a
+  reader that copes with a synthetic escape but not with the producer's own is not colour-
+  invariant, it is escape-flavour-invariant."""
+  p, o = run(["./bin/bend", PORT]), run([sys.executable] + ORACLE)
+  if p.returncode or o.returncode:
+    print(f"[plant:ansi] the live lanes did not run: bend rc={p.returncode}, oracle "
+          f"rc={o.returncode} -- this cell measured nothing and proves nothing.")
+    return 1
+  n_seq, n_line = escapes(p.stdout)
+  base_txt, coloured = plain(p.stdout), plant_ansi(p.stdout)
+  base = rows_strict(base_txt)[0]
+  fixed = rows_strict(plain(coloured))[0]     # the reader, WITH the strip
+  blind = rows_strict(coloured)[0]             # the SAME reader, WITHOUT it
+  v_plain, v_col = judge(p.stdout, o.stdout), judge(coloured, o.stdout)
+  arms = {
+      "CONTROL ": (plain(coloured) == base_txt, "EQUAL",
+                   "the coloured copy round-trips byte for byte"),
+      "PLANT   ": (fixed == base, "EQUAL",
+                   f"the reader is colour-invariant ({len(fixed)} rows vs {len(base)})"),
+      "FALSIFY ": (blind != base, "DIFFERENT",
+                   f"the ANSI-blind reading is defeated ({len(blind)} rows vs {len(base)})"),
+      "VERDICT ": ((v_col["gated"], v_col["agree"], [d[0] for d in v_col["disagree"]])
+                   == (v_plain["gated"], v_plain["agree"], [d[0] for d in v_plain["disagree"]]),
+                   "EQUAL",
+                   f"the gate's verdict is colour-invariant (gated {len(v_col['gated'])}, "
+                   f"agree {len(v_col['agree'])}, disagree {len(v_col['disagree'])})"),
+  }
+  ref = plant_refusal()
+  arms["REFUSAL "] = (ref.returncode == 3 and "REFUSED" in ref.stderr and "gated " not in ref.stdout,
+                      "EXIT 3",
+                      f"a copy whose oracle path does not resolve exits {ref.returncode} and says "
+                      f"REFUSED")
+  print(f"[plant:ansi] the live port lane carries {n_seq} ANSI escape(s) on {n_line} of its "
+        f"{len(p.stdout.splitlines())} lines")
+  ok = True
+  for name, (good, relation, why) in arms.items():
+    ok &= good
+    print(f"[plant:ansi] {name} {'ok  ' if good else 'FAIL'} {relation:<9} {why}")
+  print(f"[plant:ansi] the blind reader's names on the coloured copy: {sorted(blind)[:4]}")
+  print("PLANT", "OK -- the reader is colour-invariant, the blind reading is caught, and a copy "
+        "whose oracle path does not resolve refuses" if ok else "FAILED")
+  return 0 if ok else 1
+
+
 def judge(port_txt, orc_txt):
+  """The verdict over TWO lane texts.  ⚠ THE ANSI ESCAPES ARE STRIPPED HERE, ONCE, AT THE POINT
+  WHERE THE TEXT ENTERS THE READER -- so `reshape()`'s census measure, `rows_strict()` and the
+  shipped reader all see the same bytes and cannot disagree about what a row is.  A strip applied
+  to one reader and forgotten for another is how a lane reads 94 rows on one side and 2 on the
+  other."""
   bad = []
+  port_txt, orc_txt = plain(port_txt), plain(orc_txt)
   rs = [reshape("port", port_txt), reshape("oracle", orc_txt)]
   for m in rs:                                   # GUARD 0, BEFORE ANY VALUE IS COMPARED
     bad.extend(m["bad"])
@@ -358,6 +533,9 @@ def judge(port_txt, orc_txt):
     bad.append("the two lanes are BYTE-IDENTICAL and agree on every value, so this run is a "
                "TAUTOLOGICAL ZERO: the byte diff is the gate and GUARD 0 is the only thing that "
                "can be red.")
+  # ⚠ `identical_bytes` IS OVER THE TEXT THE READER SAW (the escapes stripped).  Colour is not a
+  # claim, so a lane that differs from the oracle ONLY by colour is not a tautological zero -- and
+  # the RAW bytes are reported by `main()` beside this, so the strip is never invisible.
   return {"bad": bad, "port": pr, "oracle": orr, "gated": gated, "agree": agree,
           "disagree": disagree, "stale": stale, "reshape": rs,
           "identical_bytes": port_txt == orc_txt}
@@ -372,7 +550,7 @@ def md5(text):
 
 
 def selftest():
-  """FOUR LANES OVER THE REAL CAPTURED PAIR.  The BASE DISAGREEMENT COUNT IS MEASURED, NOT
+  """FIVE LANES OVER THE REAL CAPTURED PAIR.  The BASE DISAGREEMENT COUNT IS MEASURED, NOT
   TYPED -- this lane's real pair already disagrees on 5 rows (the hand-written `py=` wraps), so a
   hardcoded 0 would be a claim about a lane that does not exist.  The property asserted is the one
   that separates the two plants:
@@ -404,7 +582,7 @@ def selftest():
              f"here. IT IS NOT LOST: `checks/rn-port.rows` is lines 22..161 of the tracked "
              f"`.agents/slop/flipthird/base-render.err` and `checks/rn-orc.rows` is the tracked "
              f"`oracles/tinybendygrad_uop_render.bend.render-gate-oracle.rows`, and BOTH are "
-             f"byte-verified against the md5s this file records at :44-45. THE NAMES CHANGED, "
+             f"byte-verified against the md5s this file's header records. THE NAMES CHANGED, "
              f"NOT THE CONTENT.")
   live = (HERE / "rn-port.rows").read_text()
   orc = (HERE / "rn-orc.rows").read_text()
@@ -420,11 +598,13 @@ def selftest():
   lanes = {
     "base": (live, orc),
     "value": (plant_value(live, "pyrender const")[0], orc),
+    "colour": (plant_ansi(live), orc),
     "shape": (plant_shape(live, [("pyrender const", "pyrender co=nst")])[0],) * 2,
     "collide": (plant_shape(live, [("pyrender const", "pyrender ast"),
                                    ("pyrender cast", "pyrender ast")])[0],) * 2,
   }
-  want = {"base": (True, n0), "value": (True, n0 + 1), "shape": (True, 0), "collide": (True, 0)}
+  want = {"base": (True, n0), "value": (True, n0 + 1), "colour": (True, n0), "shape": (True, 0),
+          "collide": (True, 0)}
   ok = True
   for name, (ptxt, otxt) in lanes.items():
     r = judge(ptxt, otxt)
@@ -438,6 +618,10 @@ def selftest():
   print(f"  NOTE every lane is BROKEN, and that is CORRECT: `cont` > 0 on the real lane and the "
         f"real pair really does disagree, so this lane's honest verdict is BROKEN and `base` "
         f"asserts BROKEN rather than AGREE. The two plants are still told apart by `disagree`.")
+  print(f"  NOTE the `colour` lane is the READER'S OWN PLANT: the captured port output with the "
+        f"port's escape form around every value must read as the same rows.  It FAILS on a reader "
+        f"that counts brackets without stripping -- MEASURED, that reader reads 2 rows where the "
+        f"stripped lane reads {len(base['port'])}, and gates 0.")
   print("SELFTEST", "OK -- a planted VALUE raises `disagree` by one; a planted NAME leaves "
         "`disagree` at the base count and moves the name sets, so the two are distinguishable"
         if ok else "FAILED")
@@ -449,17 +633,31 @@ def main():
   ap.add_argument("--selftest", action="store_true")
   ap.add_argument("--plant", default=None)
   ap.add_argument("--plant-shape", nargs=2, action="append", metavar=("OLD", "NEW"))
+  ap.add_argument("--plant-ansi", action="store_true")
   ap.add_argument("--names", action="store_true")
   ap.add_argument("--port-stdout", default=None)
   ap.add_argument("--oracle-stdout", default=None)
+  ap.add_argument("--oracle", default=None,
+                  help="the oracle script to run; the default is the committed one")
   a = ap.parse_args()
   if a.selftest:
     return selftest()
+  if a.plant_ansi:
+    return plant_ansi_run()
   if a.port_stdout or a.oracle_stdout:
     print("!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence about the "
           "CAPTURE, never about the tree as it is now.")
+  # ⚠ THE ORACLE IS A DECLARED INPUT, SO IT CAN BE NAMED.  The committed one is the default and the
+  # only one a verdict over this tree may be read as; naming another is how the REFUSAL stays
+  # REACHABLE BY ARGV now that the committed oracle EXISTS -- a gate whose only exit 3 needs a
+  # missing FILE cannot plant its own surface.  The guard below fires for the named path exactly as
+  # it fires for the default, so naming a path that does not resolve is a REFUSAL and not a lane.
+  oracle_argv = [a.oracle, "--gate"] if a.oracle else list(ORACLE)
+  if a.oracle:
+    print(f"!! ORACLE OVERRIDE: running `{a.oracle}` instead of the committed `{ORACLE[0]}`. A "
+          f"verdict over a substituted oracle is evidence about THAT ORACLE, not about this tree.")
   # AN ABSENT ORACLE IS REFUSED, NOT A LANE FAILURE, and this gate's OWN guard list is why it was
-  # not. The two readers this file LOADS are checked at `:93` by a hand-list of two names, and
+  # not. The two readers this file LOADS are checked at import by a hand-list of two names, and
   # `ORACLE` -- this file's own third declared input -- was never in it. MEASURED 2026-10-15:
   # `.agents/slop/xd1/` is GONE, so the oracle is absent from disk AND from HEAD, and the live lane
   # ran a script that is not there. The only signal it produced was `lane failure`, which is a
@@ -468,32 +666,37 @@ def main():
   # IT IS GUARDED HERE, AT THE POINT OF USE, NOT AT IMPORT: `--oracle-stdout` reads a captured
   # file and never needs the script, so a guard at import would take away a path that works. And it
   # sits BEFORE the `bend` call so a refused gate costs nothing.
-  if not a.oracle_stdout and not (REPO / ORACLE[0]).is_file():
+  if not a.oracle_stdout and not (REPO / oracle_argv[0]).is_file():
     # The count is the log's, not a transcription. `git log --all -- <path>` is a path query;
     # `git rev-list --all` is not, and is not asked. A non-empty log must not read as 0.
-    _asked = ["git", "log", "--all", "--format=%H", "--", ORACLE[0]]
+    _asked = ["git", "log", "--all", "--format=%H", "--", oracle_argv[0]]
     _log = subprocess.run(_asked, cwd=REPO, capture_output=True, text=True, timeout=120)
     if _log.returncode != 0:
       _touched = f"{' '.join(_asked)} did not answer (rc={_log.returncode})"
     else:
       _n = len([ln for ln in _log.stdout.splitlines() if ln])
       _touched = f"{_n} commits ever touched ({' '.join(_asked)})"
-    refuse(f"oracle absent: {REPO / ORACLE[0]} -- AND THE PATH IS THE WRONG ONE, NOT THE SCRIPT. The "
-           f"oracle IS committed, at `checks/render-gate-oracle.py`; `ORACLE` at :74 names a path "
-           f"{_touched}, because `.agents/slop/xd1/` was pruned. Pointing at the "
-           f"committed script is NOT the fix either: it does `from tinygrad.uop.render import "
-           f"pyrender, ...` and the 2026-10-17 re-vendor REMOVED `pyrender` from "
-           f"`tinygrad/uop/render.py`, so the oracle would CRASH on an ImportError instead of "
-           f"refusing. **THIS LANE IS REFUSED UNTIL THE ORACLE RUNS AGAIN.** The CAPTURED pair "
-           f"this gate judges is NOT lost -- see the selftest lane, whose captures are byte-verified "
-           f"against the md5s at :44-45.")
+    refuse(f"oracle absent: {REPO / oracle_argv[0]} -- an absent oracle is an ABSENT SUBJECT, not a "
+           f"failing lane, so this lane is REFUSED rather than judged. THE ORACLE THIS PROJECT "
+           f"SHIPS IS `checks/render-gate-oracle.py`, AND IT RUNS: it resolves its subject by "
+           f"DISCOVERY (the last upstream revision whose `tinygrad/uop/render.py` still defines "
+           f"`pyrender`, materialised with `git archive` into a temp dir on `sys.path`) and prints "
+           f"124 rows whose stdout md5 is `642f9770c558df0f1be03a8f67ac997e` -- byte-identical to "
+           f"the committed capture `checks/rn-orc.rows`. The path this gate names is {_touched}. "
+           f"The CAPTURED pair this gate judges is NOT lost -- see the selftest lane, whose "
+           f"captures are byte-verified against the md5s this file's header records.")
   p = (subprocess.CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")
        if a.port_stdout else run(["./bin/bend", PORT]))
   o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracle_stdout).read_text(), "")
-       if a.oracle_stdout else run([sys.executable] + ORACLE))
+       if a.oracle_stdout else run([sys.executable] + oracle_argv))
   print(f"{'CAPTURED' if a.port_stdout else 'live'} port rc={p.returncode} md5={md5(p.stdout)}   "
         f"{'CAPTURED' if a.oracle_stdout else 'live'} oracle rc={o.returncode} "
         f"md5={md5(o.stdout)}")
+  _pe, _pl = escapes(p.stdout)
+  _oe, _ol = escapes(o.stdout)
+  print(f"reader: ANSI escapes stripped before reading -- port {_pe} on {_pl} line(s), oracle "
+        f"{_oe} on {_ol} line(s).  ⚠ AN ESCAPE IS A `[` TO EVERY BRACKET COUNTER, SO A LANE THAT "
+        f"IS NOT STRIPPED HAS NO ROWS AT ALL.")
   if p.returncode or o.returncode:
     print(f"lane failure: bend {' '.join(p.stderr.split())[-140:]} | oracle "
           f"{' '.join(o.stderr.split())[-140:]}")
@@ -514,7 +717,8 @@ def main():
           f"continuation line of that row is left verbatim.")
   res = judge(p.stdout, o.stdout)
   print(f"port logical rows: {len(res['port'])}   oracle logical rows: {len(res['oracle'])}   the "
-        f"two lanes are BYTE-IDENTICAL: {res['identical_bytes']}"
+        f"two lanes are BYTE-IDENTICAL (AS THE READER SAW THEM, i.e. escapes stripped): "
+        f"{res['identical_bytes']}"
         + ("   <- TAUTOLOGICAL ZERO" if res["identical_bytes"] else
            "   <- so the value comparison below is a REAL measurement on this lane"))
   report_reshape(res["reshape"])
@@ -533,15 +737,22 @@ def main():
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate.
 #
-# `PLANTS[3]` IS THE REFUSAL PLANT, and it is the only state argv can reach: this gate refuses at
-# MODULE SCOPE, above every `argparse` -- the geometry is measured by
-# `.agents/slop/plantthe46/unreach.py`, which imports this tree's own declaration reader by path --
-# so no argument of any shape gets past it. `[]` therefore reaches `3`, and nothing else ever will.
-# It proves the refusal is REACHABLE. It does NOT prove this gate can tell `3` from `0`, because no
-# argv reaches `0`; every other code below stays UNPLANTED and the instrument keeps it red rather
-# than this file claiming a plant it does not have.
+# ⚠ THE SURFACE MOVED WHEN THE ORACLE PATH DID.  The refusal used to be the only state argv could
+# reach, because the oracle was ABSENT -- the path named a pruned directory -- and a missing
+# subject is a REFUSAL.  Now that the oracle is committed and RUNS, the refusal is reachable only
+# by NAMING an oracle that does not resolve, so the plant is `--oracle <a path that is not there>`
+# and the refusal is STILL reachable by argv.  A gate whose exit 3 needs a missing FILE cannot
+# plant its own surface, and a declared surface that no argv reaches is a label.
+#
+#   0  `--selftest` -- the gate's own five lanes over the captured pair, and they hold.
+#   1  the captured pair itself -- it really does disagree on five rows (the hand-written `py=`
+#      wraps), so the honest verdict over the capture is BROKEN, and no `bend` and no oracle
+#      subprocess is spent to learn it.
+#   3  `--oracle <a path that does not resolve>` -- an absent subject is REFUSED, not judged.
 VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
-PLANTS = {3: []}
+PLANTS = {0: ["--selftest"],
+          1: ["--port-stdout", "checks/rn-port.rows", "--oracle-stdout", "checks/rn-orc.rows"],
+          3: ["--oracle", "checks/__no_such_oracle__.py"]}
 
 if __name__ == "__main__":
   sys.exit(main())
