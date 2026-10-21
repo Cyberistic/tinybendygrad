@@ -140,7 +140,12 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
   **`substrate-start == substrate-end == live == 58c505697ca23e1d...`** -- **THE **RUN **DESCRIBES **THE **TREE **AS **IT
   **STANDS**, **AND `substrate-head=6cdeedb77cc3674515938e382973d5455c1abab6` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
-  **AND **IT **IS **HEAD**.***
+  **AND **IT **IS **AN **ANCESTOR **OF **HEAD**, **NOT **HEAD **ITSELF, **AND **THAT **IS **THE **HONEST **SHAPE**: **A
+  **COMMIT **THAT **FOLLOWS **IT **AND **TOUCHES **NOTHING **IN **THE **SUBSTRATE** -- **`AGENTS.md`, **`.agents/**`,
+  **`gates/**` -- **DOES **NOT **MAKE **THE **RUN **STALE, **AND **THE **DIGEST **IS **WHAT **SAYS **SO** (MEASURED:
+  **`git diff --name-only 6cdeedb77 HEAD -- tinybendygrad tinygrad bin/bend checks/differ.py …` **IS **EMPTY **AND
+  **THE **DIGEST **IS **UNCHANGED**).**  **BUT **A **COMMIT **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY
+  **THE **FIRST **`run` **OF **TONIGHT **WAS **RE-RUN.***
   ***AND **THE **RUNS **TOOK **271 s / 975 MB** (`run`) **AND **540 s / 920 MB** (`repro`), **TOKEN `WITHIN-LIMITS`***
   -- **AND **THE **`MACHINE: VIOLATED` **LINE **IS **NOT **ATTRIBUTABLE **TO **THE **CHILD**: **THE **REPRO'S **WAS
   **`loadavg 512.1` ON **12** CORES **WITH **SWAP **AT **0.92 **OF **41.00 GiB** FREE, **AND **THE **LOAD **WAS **NOT
