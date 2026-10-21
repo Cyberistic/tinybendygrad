@@ -23,10 +23,11 @@ SILENT REVERSION, NOT AN EMPTY BLOB."
 
 MEASURED ON THIS TREE, 2026-10-21. The invariant is NOT "the two path COUNTS
 are equal" -- that is incidental, and it stopped being true when another unit
-committed with a private index and left four paths short. The invariant is
-`ls-files == shared`: every path in the index is a path HEAD also has, so a
-PATH-SET check and a COUNT check both see nothing wrong with a STALE-BLOB,
-because a stale path is in BOTH sets. Three readings, one shape:
+committed with a private index, which leaves the paths it committed SHORT in the
+default index. The invariant is `ls-files == shared`: every path in the index
+is a path HEAD also has, so a PATH-SET check and a COUNT check both see nothing
+wrong with a STALE-BLOB, because a stale path is in BOTH sets. Three readings,
+one shape:
 
     2026-10-21T18:00Z  HEAD 1404f3f6  ls-tree 8961  ls-files 8958  shared 8958  stale 2
     2026-10-21T18:02Z  HEAD 06c66f88  ls-tree 8962  ls-files 8958  shared 8958  stale 5
@@ -57,6 +58,16 @@ differ on purpose, which is why this is a sibling and not an extension.
 EQUAL COUNTS WITH A STALE BLOB MUST NOT READ AS HEALTHY, so the counts and the
 stale set are printed together, and the exit is FAIL while any STALE-BLOB
 remains.
+
+THE INSTRUMENT THAT OVERLAPS, AND HOW IT DIFFERS.
+`checks/index-arm-gate.py` has a STALE shape too -- it names the paths whose
+index blob differs from the tree's -- and it is the one whose shape is "the
+tree is fine and the TOOL is pointed wrong", so it exits REFUSED (3) where this
+gate exits FAIL (1). It names those paths WITHOUT their hashes, and its PASS
+additionally requires the whole index to be unarmed, so on a tree that also has
+an INDEX-SHORT path it cannot report a clean index at all. The two are not
+duplicates: this gate's claim is about the CONTENT of the paths the two share,
+and it names BOTH hashes so a reader can tell which side is the older one.
 
 READ-ONLY ON THE INDEX IT MEASURES. Every git call carries
 `--no-optional-locks`, and GIT_INDEX_FILE is scrubbed, so a private commit
