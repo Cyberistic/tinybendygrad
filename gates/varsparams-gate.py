@@ -523,14 +523,23 @@ def plant() -> int:
   bad: list[str] = []
   with tempfile.TemporaryDirectory(prefix="varsparams-plant-") as tmp:
     root = Path(tmp)
+    measured: list[str] = []
     try:
-      run_plants(root, bad)
+      run_plants(root, bad, measured)
     except (OSError, LookupError, SyntaxError) as exc:
       bad.append(f"plant could not be built: {exc}")
   after = digest(live)
   moved = [path for path, old in before.items() if after.get(path) != old]
   if moved:
     bad.append(f"live files moved: {', '.join(moved)}")
+  # A PLANT THAT MEASURED NOTHING IS NOT A PASS.  MEASURED 2026-10-21: the live-copy arms
+  # could be skipped -- by an early return, by a renamed field, by a plant that only touches
+  # the SYNTHETIC fixtures -- and the plant still said PASS, because a skipped arm is not a
+  # failed arm.  So the arms that measure the LIVE copy are COUNTED, and the plant refuses
+  # to pass unless they ran.
+  for required in ("live record aligned", "preamble", "comment deleted", "only-target"):
+    if required not in measured:
+      bad.append(f"the plant arm {required!r} did not run, so this plant measured nothing there")
   if bad:
     print(f"varsparams-gate --plant: {verdict_of(FAIL)} -- {'; '.join(bad)}")
     return FAIL
@@ -538,7 +547,7 @@ def plant() -> int:
   return PASS
 
 
-def run_plants(root: Path, bad: list[str]) -> None:
+def run_plants(root: Path, bad: list[str], measured: list[str]) -> None:
   port_text = (PORT / "uop" / "ops.bend").read_text()
   up_text = UPSTREAM.read_text()
   witness = re.findall(
@@ -617,9 +626,27 @@ def run_plants(root: Path, bad: list[str]) -> None:
   code, rows = measure(root / "noclass.py", fail_port)
   check(bad, code, rows, REFUSED, "upstream with no ProgramInfo class")
 
-  if PAIR_PORT in record_fields(port_text):
-    renamed = rename_record_field(port_text, PAIR_PORT, PAIR_UPSTREAM)
-    up_names, _line = upstream_fields(UPSTREAM)
+  # THE LIVE RECORD'S OWN SIDED DIFFERENCE, DERIVED -- NEVER THE HARD-CODED PAIR.
+  # `PAIR_PORT`/`PAIR_UPSTREAM` name the SYNTHETIC fixtures' fields and are correct there.
+  # But the arms below measure the LIVE copy, and the live copy's fields are the port's
+  # business: MEASURED 2026-10-21, commit 9974c9d9b renamed the port's `vars` to `params`
+  # and this plant still expected the pre-rename world -- so the arms compared the live
+  # copy against a set it could no longer produce, and the plant FAILED on arms that
+  # measured nothing.  A PLANT THAT MEASURES NOTHING IS NOT A PASS, AND ONE THAT FAILS
+  # BECAUSE IT HELD A STALE NAME IS NOT EITHER.
+  up_names, _line = upstream_fields(UPSTREAM)
+  live_port_names = record_fields(port_text)
+  live_port_only = [n for n in live_port_names if n not in up_names and n != OWNED]
+  live_up_only = [n for n in up_names if n not in live_port_names and n != OWNED]
+
+  # THE PORT-ONLY FIELDS RENAMED TO MATCH UPSTREAM: the comment must not turn this into PASS.
+  renamed = port_text
+  rename_pairs = list(zip(live_port_only, [n for n in live_up_only if n != TARGET]))
+  if len(rename_pairs) != len(live_port_only):
+    bad.append("live record has a port-only field with no upstream counterpart to rename it to")
+  else:
+    for old, new in rename_pairs:
+      renamed = rename_record_field(renamed, old, new)
     for name in up_names:
       if name != OWNED and name not in record_fields(renamed):
         renamed = add_record_field(renamed, name)
@@ -630,18 +657,25 @@ def run_plants(root: Path, bad: list[str]) -> None:
     live_up = root / "live-up.py"
     live_up.write_text(up_text)
     code, rows = measure(live_up, live_port)
-    check(bad, code, rows, PASS, "live record renamed to params with no other mismatch")
-    if PAIR_PORT in row_value(rows, "port-fields"):
-      bad.append("live-record rename still reports vars")
-    if CLASS_PROSE in "\n".join(rows):
+    # THE EXPECTED VERDICT IS DERIVED: after the rename there is NO PORT-ONLY MISMATCH LEFT,
+    # and whatever upstream still has alone is what the gate must charge.  `target` is
+    # upstream-only, so the gate is red -- and the plant asserts the RED, with the set.
+    want = [mismatch_line("upstream-only", n, CLASS_PROSE if n == TARGET else None)
+            for n in up_names if n not in record_fields(renamed) and n != OWNED]
+    check(bad, code, rows, FAIL if want else PASS, "live record aligned with upstream")
+    same_mismatches(bad, rows, want, "live record aligned")
+    if any(line.startswith("varsparams-gate: mismatch: port-only") for line in mismatch_rows(rows)):
+      bad.append("live-record rename still reports a port-only field")
+    if CLASS_PROSE in "\n".join(rows) and not any(
+        n == TARGET for n in up_names if n not in record_fields(renamed) and n != OWNED):
       bad.append("aligned copy named PROSE-UNPORTED though target is present")
-  else:
-    print("varsparams-gate --plant: live record has no vars field; aligned live copy was not built")
 
-  plant_prose(root, bad, port_text, up_text)
+  measured.append("live record aligned")
+  plant_prose(root, bad, port_text, up_text, measured)
 
 
-def plant_prose(root: Path, bad: list[str], port_text: str, up_text: str) -> None:
+def plant_prose(root: Path, bad: list[str], port_text: str, up_text: str,
+                measured: list[str]) -> None:
   """Copies of the live record. The comment names a class; it does not pass."""
   if target_class(port_text) != CLASS_PROSE:
     bad.append("live preamble is not PROSE-UNPORTED, so the class plant measured nothing")
@@ -649,19 +683,21 @@ def plant_prose(root: Path, bad: list[str], port_text: str, up_text: str) -> Non
   prose_up = root / "prose-up.py"
   prose_up.write_text(up_text)
   prose_port = put_port(root / "prose-port", port_text)
-  three = [
-    mismatch_line("port-only", PAIR_PORT),
-    mismatch_line("upstream-only", PAIR_UPSTREAM),
-    mismatch_line("upstream-only", TARGET, CLASS_PROSE),
-  ]
-  bare_three = [
-    mismatch_line("port-only", PAIR_PORT),
-    mismatch_line("upstream-only", PAIR_UPSTREAM),
-    mismatch_line("upstream-only", TARGET),
-  ]
+  # THE EXPECTED SET IS THE LIVE COPY'S OWN SIDED DIFFERENCE, DERIVED FROM THE LIVE RECORD
+  # AND UPSTREAM -- NEVER FROM A HARD-CODED PAIR.  See the note in `run_plants`.
+  up_names, _line = upstream_fields(UPSTREAM)
+  live_port_names = record_fields(port_text)
+  port_only = [n for n in live_port_names if n not in up_names and n != OWNED]
+  up_only = [n for n in up_names if n not in live_port_names and n != OWNED]
+  three = [mismatch_line("port-only", n) for n in port_only]
+  three += [mismatch_line("upstream-only", n, CLASS_PROSE if n == TARGET else None)
+            for n in up_only]
+  bare_three = [mismatch_line("port-only", n) for n in port_only]
+  bare_three += [mismatch_line("upstream-only", n) for n in up_only]
   code, rows = measure(prose_up, prose_port)
   check(bad, code, rows, FAIL, "preamble says target is unported")
   same_mismatches(bad, rows, three, "preamble")
+  measured.append("preamble")
 
   stripped = without_preamble(port_text)
   if "type ProgramInfo is Data:" not in stripped:
@@ -674,16 +710,31 @@ def plant_prose(root: Path, bad: list[str], port_text: str, up_text: str) -> Non
   code, rows = measure(prose_up, put_port(root / "bare-port", stripped))
   check(bad, code, rows, FAIL, "preamble comment deleted")
   same_mismatches(bad, rows, bare_three, "comment deleted")
+  measured.append("comment deleted")
 
-  # vars renamed, target still absent: the comment must not turn this into PASS.
-  only = rename_record_field(port_text, PAIR_PORT, PAIR_UPSTREAM)
+  # THE PORT-ONLY FIELDS RENAMED, target still absent: the comment must not turn this into PASS.
+  # The live record may ALREADY be aligned -- MEASURED 2026-10-21, commit 9974c9d9b renamed
+  # the port's `vars` to `params` -- and then this case IS the live copy.  A rename that
+  # names a field the record does not have RAISES, and an arm that cannot be built is not
+  # a silent skip: it is a FAIL.
+  only = port_text
+  try:
+    for old, new in zip(port_only, [n for n in up_only if n != TARGET]):
+      only = rename_record_field(only, old, new)
+  except LookupError as exc:
+    bad.append(f"only-target arm could not be built: {exc}")
   code, rows = measure(prose_up, put_port(root / "only-port", only))
   check(bad, code, rows, FAIL, "only mismatch is prose-unported target")
-  same_mismatches(bad, rows, [mismatch_line("upstream-only", TARGET, CLASS_PROSE)], "only-target")
+  want_only = [mismatch_line("upstream-only", n, CLASS_PROSE if n == TARGET else None)
+               for n in up_names if n not in record_fields(only) and n != OWNED]
+  same_mismatches(bad, rows, want_only, "only-target")
+  measured.append("only-target")
 
   code, rows = measure(prose_up, put_port(root / "only-bare", without_preamble(only)))
   check(bad, code, rows, FAIL, "only-target comment deleted")
-  same_mismatches(bad, rows, [mismatch_line("upstream-only", TARGET)], "only-target bare")
+  want_bare = [mismatch_line("upstream-only", n) for n in up_names
+               if n not in record_fields(only) and n != OWNED]
+  same_mismatches(bad, rows, want_bare, "only-target bare")
 
   vals_up = root / "vals-prose-up.py"
   vals_up.write_text(insert_upstream_vals(up_text))
