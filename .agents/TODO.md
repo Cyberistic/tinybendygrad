@@ -444,26 +444,39 @@ shapecensus [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 instruments 
                                        live there); **29 of 244 rows rest on a file it did not read** and
                                        say so in column 5.
                                        `.agents/slop/shapecensus/`.
-exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** under `checks/` +
-                                       `gates/`, discovered by `os.walk`; `VERDICT` loaded BY PATH from
-                                       `gates/gatekit.py`, never retyped; nothing executed. **8 distinct
-                                       exit codes** across the 86 instruments that can produce a literal
-                                       one -- `0 1 2 3 4 5 126 127` -- and `VERDICT` names FIVE.
-                                       **UNOWNED: 20 rows / 18 instruments.** Code `2` on 18 is the
-                                       argparse/USAGE class, REPORTED not called a bug (`checks/dup-gate.py:362`
-                                       records the decision and its plant is LIVE); **9 import argparse,
-                                       9 do NOT** -- the other 9 choose `2` themselves, two of them at
-                                       MODULE SCOPE as a REFUSED shape. `126`/`127` are UNOWNED in
-                                       `checks/e2e.py` alone. **UNDECLARED: 140 rows / 73 instruments,
-                                       and 64 of the 140 are code `0`** -- `PASS` is the one code nobody
-                                       documents, because documenting it implies it can fail.
-                                       **THE FINDING NOBODY ASKED FOR: 24 instruments hand a NON-INT to
-                                       the exit, 57 sites** -- `sys.exit(f"...")` PRINTS the string and
-                                       exits **1**, so to `$?` all 57 read as an honest `FAIL` and the
-                                       only witness is a sentence invented at the call site. It also
-                                       CORRECTED MY OWN CITATION: the unassigned branch of
-                                       `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gates/gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
-                                       this session. `.agents/slop/exitcodes/`.
+exitcodes [##########] 3/3  **MEASURED, THE EXIT CONTRACT DECIDED, AND THE INSTRUMENT PROMOTED AND GREEN.**
+                                       The census is now **`checks/exitcode-census.py`** with
+                                       **`checks/exitcode-census.rows` BESIDE IT in git**, and it
+                                       **`rc=0`**. MEASURED 2026-10-21: **383** `.py` under
+                                       `checks/`+`gates/` (os.walk), **378** tracked in HEAD, **5** on
+                                       disk only (another session's in-flight work, NOT in the rows),
+                                       **600** rows, **8 distinct exit codes** (`0 1 2 3 4 5 126 127`)
+                                       where `VERDICT` names FIVE. **THE EXIT CONTRACT IS `0` PASS /
+                                       `1` FAIL / `3` REFUSED**, and **`3` IS LOAD-BEARING RATHER THAN A
+                                       FALLBACK**: the census's precondition is the LIVE
+                                       `gates/gatekit.py` vocabulary, so a missing, ambiguous or
+                                       unparsable owner is REFUSED, never a guess.
+                                       **AND IT IS GREEN BECAUSE IT FOUND 23 REAL DEFECTS AND THEY
+                                       WERE FIXED**, not because it measures nothing: **UNOWNED 0**,
+                                       **MESSAGE-EXIT 0** (was 20 rows / 18 instruments and 24
+                                       instruments / 57 sites on 2026-10-15). **19 MESSAGE-EXIT sites**
+                                       -- `sys.exit(f"...")` PRINTS and exits **1**, so to `$?` a
+                                       refusal reads as a FAIL -- were split **10 refusals -> 3** and
+                                       **5 failed comparisons -> 1**; **2 failures reported as 2** and
+                                       **2 refusals reported as 2** were renumbered; and **2 hand-rolled
+                                       USAGE exits** now DECLARE their code in their own docstrings,
+                                       which is the census's own `CLAIMED` class. **THE REMAINING
+                                       ROWS ARE NOT CHARGED, AND SAY WHY**: `CONVENTION` 10 (a code the
+                                       tree uses with a meaning fixed outside the vocabulary),
+                                       `CLAIMED` 2, `UNDETERMINED` 183 (a declared limit of a static
+                                       reader, not an absent precondition), `NO-EXIT-PATH` 93 (modules,
+                                       not entry points), `UNDECLARED` 226 over 128 (a LEXICAL LOWER
+                                       BOUND -- a gate cannot charge a measurement its own instrument
+                                       says is not a reading). **THE CONTROL: `--selftest` runs 11 cases
+                                       and 2 MUTANTS go red**, so the grammar is measured against the
+                                       live owner rather than a copy of it.
+                                       `.agents/slop/exitcodes/` (the unit) and
+                                       `.agents/slop/exitcensus/` (the promotion).
 
 rn-phantom-exact [#########] 3/3  THE CLASS IS EXACTLY 3, AND A UNIT FOUND A LARGER FINGERPRINT BESIDE IT.
                                        MEASURED 2026-10-17: origin−HEAD is **4** paths, of which **3** are
@@ -16778,10 +16791,13 @@ subject) and the second time in this one file, after its `0:ADD:2,1` canonical-f
 
 - [ ] **`t_sink` WAS RECORDED AS A REAL DIVERGENCE BY ME, TWICE, AND IT WAS NEITHER.**
       `symbolic.py:445-449`'s `UPat((Ops.SINK, Ops.GROUP), name="root")` **FLATTENS A GROUP SRC OUT OF
-      A SINK**. `tinybendygrad/uop/symbolic.bend:1558`'s `sym_12.hit` (the `flatten_u32` call is `:1559`) LOOKS
-        LIKE IT ALREADY DOES --
+        A SINK**. **A `sym_*.hit` IN `tinybendygrad/uop/symbolic.bend` LOOKS LIKE IT ALREADY
+          DOES** (the shape survives, the INSTANCE does not: `sym_12.hit` was reworked away, so a
+          line-number citation into this file is a citation that rots -- and it did, twice, in two
+          days) --
       `H.flatten_u32(sink_srcs.go(sy_srcs(x, u), x, Nil{}))` -- **SO EITHER SOMETHING ELSE MINTS THE
-      NOOP OR `sym_12.pat` NEVER FIRES ON THIS SHAPE.** `tinybendygrad/uop/symbolic.bend:3292`'s OWN `row("sink", ...)`
+        NOOP OR THE `pat` ARM NEVER FIRES ON THIS SHAPE.** `tinybendygrad/uop/symbolic.bend`'s OWN
+        `row("sink", ...)`
       IS ON `fx_sink`, **A THREE-SRC ROOT THE FIVE-ROW CORPUS DID NOT REPRODUCE UNTIL THE FRAME-STACK
       REPAIR -- SO THE PORT'S OWN 57 GATE ROWS NEVER SAW THIS SHAPE EITHER.** That is why the file's
       gate passes while the corpus row fails, and it is `ptx.bend`'s ALIAS DEFECT EXACTLY: all 25 of
