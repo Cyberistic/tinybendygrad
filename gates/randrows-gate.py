@@ -52,7 +52,7 @@ FRAC = re.compile(r"(\d+)\s+of\s+(\d+)|(\d+)/(\d+)", re.I)
 WORD = re.compile(r"stale|rows|lines", re.I)
 
 # gate-surface reads these by ast, not by import. Names are gatekit's.
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED", 5: "DEAD"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED", 5: "DEAD"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--plant"], 1: ["--expect", "fail"], 3: ["--expect", "refuse"], 5: ["--expect", "dead"]}
 RED_IS = "FINDING"
 

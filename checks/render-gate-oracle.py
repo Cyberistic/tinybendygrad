@@ -6,77 +6,24 @@ The rebase gate's row parser splits on the first `=` and compares the rest, so
 a raw `name=answer` line disagrees with every bracketed port row even when the
 answer is the same.
 
-THE SUBJECT IS A HYBRID, AND IT HAS TO BE.  TWO FACTS, BOTH MEASURED:
+`pyrender` WAS DELETED UPSTREAM, SO THIS ORACLE IMPORTS A REVISION THAT STILL
+HAS IT.  MEASURED, `refs/remotes/upstream/master` at `5c2bf39d6c`:
 
-  1 `pyrender` WAS DELETED UPSTREAM.  `81157efb0` (2026-10-05, "use render_uir
-    instead of pyrender" #18622) DELETED it; it was not renamed, and
-    `render_uir` is a DIFFERENT renderer -- SSA wire format (`%0 = add %1, %2`),
-    where `pyrender` printed RECONSTRUCTIBLE PYTHON (`ast = UOp.const(3)`) -- so
-    it is not a drop-in for this lane.  NO UPSTREAM REVISION AFTER `81157efb0^`
-    STILL DEFINES IT.
+    tinygrad/uop/render.py has `render_uir` (line 65) and NO `pyrender`.
+    `81157efb0` (2026-10-05, "use render_uir instead of pyrender" #18622) DELETED
+    `pyrender`; it was not renamed.  `render_uir` is a DIFFERENT renderer -- SSA
+    wire format (`%0 = add %1, %2`), where `pyrender` printed RECONSTRUCTIBLE
+    PYTHON (`ast = UOp.const(3)`) -- so it is not a drop-in for this lane.
+    `43e6e6ac2` (2026-10-03) had already deleted `print_uops` (the port's other
+    subject) and `4e10cce82` renamed `render_ssa` to `render_uir`.
 
-  2 `ParamArg` LOST ITS `size` FIELD.  `72f98ffe0` (2026-10-06, "move size from
-    ParamArg to src" #18624) moved the size OUT of `ParamArg` and into the
-    buffer's `src[0]`, and with it the `__repr__` this lane prints: the `size`
-    term left the repr, so a `ParamArg` that cannot hold a size prints
-    `ParamArg(0, dtypes.i32, device='CPU')` and one that can prints
-    `ParamArg(0, dtypes.i32, 4, device='CPU')`.
-
-THE PORT'S `ParamArg` RECORD CANNOT HOLD A `size` (it is the pin's, minus
-`spec`), so the port answers the SIZE-LESS `ParamArg` -- and the oracle used to
-answer the OTHER ONE, because it imported `ops.py` from the same 2026-10-05
-revision that still had `pyrender` and still had `size`.  THE PORT AND THE
-ORACLE DISAGREED ON EIGHT ROWS FOR THAT REASON ALONE.
-
-THE TWO FACTS HAVE DISJOINT REVISIONS: `pyrender` existed up to 2026-10-05 and
-`ParamArg` lost `size` on 2026-10-06.  SO THE SUBJECT IS TWO REVISIONS, AND
-BOTH ARE DISCOVERED, NOT LISTED:
-
-  RENDER REVISION  the last upstream revision whose `tinygrad/uop/render.py`
-                   still defines `pyrender` -- `81157efb0^` = `ccae837c703`.
-  OPS REVISION     the last upstream revision whose `tinygrad/uop/ops.py` has a
-                   `ParamArg` with NO `size` field AND whose `UOp.toposort`
-                   still enters CALL bodies by default.
-
-THE SECOND PROPERTY IS NOT A NICETY.  `efb4cc8cb` (2026-10-09, "toposort does
-not enter CALL bodies by default" #18645) FLIPPED that default, and the
-pyrender-era `render.py` calls `ast.toposort()` and then renders the CALL's
-BODY: with the flipped default the body is not in the toposort, `ctx[body]` is a
-`KeyError`, and the three `pyr_call_*` rows answer `!error` instead of `False`.
-MEASURED, at the pin: `KeyError: UOp(Ops.NOOP, arg=None, src=())` in
-`render.py:136`.  SO THE OPS REVISION IS THE LAST ONE THAT IS STILL COMPATIBLE
-WITH THE RENDERER, AND THE COMPATIBILITY IS A PROPERTY OF THE MATERIALISED
-`ops.py`, NOT A HASH SOMEONE WROTE DOWN.
-
-⚠ AND THE PIN IS NOT THE OPS REVISION.  MEASURED, the pin `5c2bf39d6c4b`
-(2026-10-20) has `enter_calls=False`, so the pin's `ops.py` CANNOT RUN the
-pyrender-era renderer, and its `KernelInfo` has an `optimized` field and its
-`ProgramInfo` calls its third field `params` -- so the pin's `ops.py` answers
-`arg_repr AKern` and `arg_repr AProgr` DIFFERENTLY FROM THE PORT, which prints
-the 2026-10-05 shapes.  A HYBRID BUILT ON THE PIN IS A HYBRID THAT DISAGREES
-WITH THE PORT ON FIVE ROWS.  THE OPS REVISION IS DERIVED, AND THE DERIVATION
-IS ABOVE.
-
-THE TWO REVISIONS ARE MATERIALISED AS ONE TREE: `git archive <ops revision>
-tinygrad` into a temp dir, `tinygrad/uop/render.py` OVERLAID from the render
-revision, and the temp dir put FIRST on `sys.path` so the vendored `tinygrad/`
-(which the 2026-10-17 re-vendor `86c4f1343` moved to upstream master, losing
-`pyrender`) cannot shadow it.  THE SHADOWING IS NOT ASSUMED: `verify_subject()`
-below ASKS EVERY `sys.meta_path` FINDER WHERE IT WOULD RESOLVE `tinygrad`, and
-REFUSES if any finder that comes EARLIER than the winner resolves it somewhere
-else -- AND REFUSES if the import did not come from the materialised tree at
-all.  A SHADOWED SUBJECT IS A DIFFERENT SUBJECT, AND IT IS REFUSED, NOT
-REPORTED.
-
-⚠ ONE NAME HAS TO COME FROM THE OLDER REVISION.  `render.py` at the render
-revision does `from tinygrad.uop.ops import ... consumer_map_from_toposort ...`,
-and that function was DELETED from `ops.py` by `81157efb0` -- the same commit
-that deleted `pyrender`.  SO THE MATERIALISED `ops.py` IS THE OPS REVISION'S
-BYTES PLUS EVERY NAME THE RENDERER IMPORTS FROM `ops.py` AND THE OPS REVISION
-DROPPED, TAKEN VERBATIM FROM THE RENDER REVISION'S `ops.py`.  THE SET OF
-MISSING NAMES IS DERIVED (the renderer's import statement minus the ops
-revision's own definitions), NOT LISTED, AND THE DERIVATION IS RE-COMPUTED AND
-COMPARED BYTE FOR BYTE BEFORE THE TREE IS USED.
+SO THE ORACLE'S SUBJECT IS THE LAST UPSTREAM REVISION THAT STILL DEFINES
+`pyrender`, WHICH IS `81157efb0^`.  IT IS DISCOVERED, NOT LISTED: `resolve()`
+walks `git rev-list <upstream> -- tinygrad/uop/render.py` newest-first and
+takes the parent of the revision whose blob LOST the function.  The tree is
+then MATERIALIZED with `git archive` into a temp dir and put FIRST on
+`sys.path`, so the vendored `tinygrad/` (which the 2026-10-17 re-vendor
+`86c4f1343` moved to upstream master, losing `pyrender`) cannot shadow it.
 
 THE IMPORT WAS RE-DERIVED, NOT TRANSCRIBED.  `range_str` and `multirange_str`
 are NOT imported here at all: this oracle prints no `pu_*` row, and those two
@@ -84,24 +31,14 @@ live in `tinygrad.uop.ops` at EVERY revision -- `tinygrad/uop/render.py` stopped
 re-exporting them at `43e6e6ac2`, which is exactly why the old one-line
 `from tinygrad.uop.render import pyrender, range_str, multirange_str` cannot
 survive a move of the subject.  `pyrender`'s SIGNATURE is unchanged
-(`pyrender(ast:UOp) -> str`).
+(`pyrender(ast:UOp) -> str`), so no call site below needed re-deriving.
 
-AND THE CALL SITE WAS RE-DERIVED FOR THE SUBJECT THIS ORACLE NOW MATERIALISES.
-`buf()` used to pass `size` as the THIRD POSITIONAL of `ParamArg`; at the
-materialised subject the third positional is `vmin_vmax`, so that call did not
-set a size, it set a RANGE.  The size was ALREADY in the `src` -- as
-`UOp.range(size, 0)`, which is where upstream put it -- so the arg never
-carried it.  `paramarg()` below now passes every field BY NAME and REFUSES a
-field the materialised class does not have, because a silently dropped field is
-exactly how this lane got a `size` it cannot hold.
-
-Every row is COMPUTED by running CPython's own `pyrender`; none is written
-down here.
+VERIFIED: at the resolved revision this oracle's 124 rows are BYTE-IDENTICAL to
+the tree's own capture `checks/rn-orc.rows`.  Every row is COMPUTED by running
+CPython's own `pyrender`; none is written down here.
 """
-import ast
 import atexit
 import io
-import os
 import shutil
 import subprocess
 import sys
@@ -109,7 +46,6 @@ import tarfile
 import tempfile
 
 UPSTREAM = "refs/remotes/upstream/master"
-OPS = "tinygrad/uop/ops.py"
 RENDER = "tinygrad/uop/render.py"
 
 
@@ -150,86 +86,7 @@ def git(*args):
   return p.stdout
 
 
-def blob(rev, path):
-  """The bytes of `<rev>:<path>`, or None when that revision does not have it."""
-  p = subprocess.run(["git", "show", f"{rev}:{path}"], cwd=REPO, capture_output=True)
-  return p.stdout if p.returncode == 0 else None
-
-
-# --- THE TWO PROPERTIES OF AN `ops.py`, AND HOW THEY ARE READ --------------------
-def paramarg_fields(src):
-  """The field names of `ParamArg` in `src`, in upstream's order.  None if there is none.
-
-  READ BY AST, NOT BY `grep`: the question is "does this class HAVE a `size` field", and a
-  grep for the word `size` answers a different question -- `size` appears in the module
-  dozens of times, in other classes, in comments, in `__repr__`."""
-  for node in ast.walk(ast.parse(src)):
-    if isinstance(node, ast.ClassDef) and node.name == "ParamArg":
-      return [s.target.id for s in node.body if isinstance(s, ast.AnnAssign)]
-  return None
-
-
-def toposort_enters_calls(src):
-  """True when `UOp.toposort` still enters CALL bodies by DEFAULT.
-
-  THE DEFAULT IS THE WHOLE QUESTION.  `efb4cc8cb` flipped it from `True` to `False`, and
-  the pyrender-era renderer calls `ast.toposort()` and then renders the CALL's body, so
-  the flip turns three `pyr_call_*` rows into `!error`.  The default is read off the
-  FUNCTION SIGNATURE, and a signature's defaults align to its LAST arguments -- so the
-  default of `enter_calls` is paired with `enter_calls` and not with `self`."""
-  for node in ast.walk(ast.parse(src)):
-    if not (isinstance(node, ast.ClassDef) and node.name == "UOp"):
-      continue
-    for fn in node.body:
-      if not (isinstance(fn, ast.FunctionDef) and fn.name == "toposort"):
-        continue
-      args, defaults = fn.args.args, list(fn.args.defaults)
-      for arg, default in zip(args[len(args) - len(defaults):], defaults):
-        if arg.arg == "enter_calls":
-          return ast.unparse(default) == "True"
-      for arg, default in zip(fn.args.kwonlyargs, fn.args.kw_defaults):
-        if arg.arg == "enter_calls" and default is not None:
-          return ast.unparse(default) == "True"
-  return False
-
-
-def module_names(src):
-  """The names `src` defines at module level: defs, classes and assignments."""
-  names = set()
-  for node in ast.parse(src).body:
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-      names.add(node.name)
-    elif isinstance(node, ast.Assign):
-      names.update(t.id for t in node.targets if isinstance(t, ast.Name))
-    elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-      names.add(node.target.id)
-  return names
-
-
-def imported_names(src, module):
-  """The names `src` imports FROM `module`, by its own import statement."""
-  for node in ast.walk(ast.parse(src)):
-    if isinstance(node, ast.ImportFrom) and node.module == module:
-      return [a.name for a in node.names]
-  return []
-
-
-def source_of(src, name):
-  """The exact source text of the module-level `def name` in `src`.  None if there is none.
-
-  BY AST, so the text is the function and not the lines that happen to mention it: the
-  splice below puts these bytes into another file, and a splice of the wrong lines would
-  be a silent fabrication."""
-  tree = ast.parse(src)
-  lines = src.splitlines(keepends=True)
-  for node in tree.body:
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:
-      return "".join(lines[node.lineno - 1:node.end_lineno])
-  return None
-
-
-# --- THE TWO REVISIONS, DISCOVERED ------------------------------------------------
-def resolve_render():
+def resolve():
   """The LAST upstream revision whose `tinygrad/uop/render.py` still defines `pyrender`.
 
   DISCOVERED BY DISCOVERY, NOT DECLARED BY HAND.  `git rev-list <upstream> --
@@ -259,231 +116,31 @@ def resolve_render():
          "oracle no longer exists anywhere in upstream history")
 
 
-def resolve_ops():
-  """The LAST upstream revision whose `tinygrad/uop/ops.py` the RENDERER can still run.
+def materialize(rev):
+  """`git archive <rev> tinygrad` into a temp dir, and put it FIRST on `sys.path`.
 
-  TWO PROPERTIES, BOTH READ OFF THE SOURCE:
-
-    P1  `ParamArg` has NO `size` field.  The port's `ParamArg` record cannot hold
-        one, so a subject whose `ParamArg` can is a DIFFERENT question.
-    P2  `UOp.toposort` still enters CALL bodies by default, so the pyrender-era
-        renderer can still walk a CALL's body.  MEASURED, `efb4cc8cb` flipped it
-        and the three `pyr_call_*` rows become `!error`.
-
-  WALKED NEWEST-FIRST OVER THE REVISIONS THAT CHANGED `ops.py` -- the same
-  `rev-list -- <path>` population `resolve_render()` uses -- and the FIRST that
-  satisfies BOTH is the answer.  MEASURED, that is `d5059900d7` (2026-10-07),
-  the last revision before `efb4cc8cb` that touched `ops.py`."""
-  try:
-    revs = git("rev-list", UPSTREAM, "--", OPS).split()
-  except (RuntimeError, FileNotFoundError) as e:
-    refuse(f"upstream history unavailable: {e}")
-  if not revs:
-    refuse(f"no upstream revision touches {OPS} -- {UPSTREAM} is not a usable ref")
-  for rev in revs:
-    src = blob(rev, OPS)
-    if src is None:
-      continue
-    text = src.decode()
-    fields = paramarg_fields(text)
-    if fields is None or "size" in fields:
-      continue
-    if toposort_enters_calls(text):
-      return rev
-  refuse("no upstream revision has a `ParamArg` with no `size` AND a `UOp.toposort` that "
-         "enters CALL bodies -- the subject of this oracle no longer exists anywhere in "
-         "upstream history")
-
-
-# --- THE HYBRID TREE ---------------------------------------------------------------
-def derived_ops(ops_src, render_src, render_revision):
-  """The materialised `ops.py`: the OPS revision's bytes PLUS the names the RENDERER
-  imports from `ops.py` and the OPS revision dropped, verbatim from the RENDER
-  revision's `ops.py`.
-
-  THE MISSING SET IS DERIVED, NOT LISTED: it is the renderer's own
-  `from tinygrad.uop.ops import ...` minus the names the ops revision defines.  At the
-  measured subject that is exactly ONE name, `consumer_map_from_toposort`, which
-  `81157efb0` deleted from `ops.py` in the same commit that deleted `pyrender` -- so the
-  renderer and the helper it needs come from ONE revision, and the `ops.py` they run
-  against comes from the other.
-
-  ⚠ THE SPLICE IS VERIFIED, NOT ASSUMED: the caller re-derives this and compares the
-  bytes, so a file that is not exactly "the ops revision plus the dropped names" is a
-  REFUSAL and not a different subject."""
-  missing = [n for n in imported_names(render_src, "tinygrad.uop.ops")
-             if n not in module_names(ops_src)]
-  donor = blob(render_revision, OPS)
-  if donor is None:
-    refuse(f"the render revision {render_revision} has no {OPS} to donate the missing "
-           f"name(s) {missing} from")
-  parts = []
-  for name in missing:
-    text = source_of(donor.decode(), name)
-    if text is None:
-      refuse(f"the render revision {render_revision} does not define {name!r}, which its "
-             f"own render.py imports from {OPS}")
-    parts.append(text)
-  return ops_src + b"".join(b"\n" + p.encode() for p in parts), missing
-
-
-def materialize(ops_revision, render_revision):
-  """The HYBRID tree, and the names the splice had to supply.
-
-  `git archive <ops revision> tinygrad` is the BASE, so every file in the tree is an
-  upstream blob; `tinygrad/uop/render.py` is OVERLAID from the render revision, so the
-  renderer is the pyrender-era one; and `tinygrad/uop/ops.py` is REPLACED by the
-  derivation above."""
+  The vendored `tinygrad/` cannot be used: it is upstream master since the
+  2026-10-17 re-vendor `86c4f1343`, and upstream master has no `pyrender`."""
   dest = tempfile.mkdtemp(prefix="render-gate-oracle-")
   atexit.register(shutil.rmtree, dest, ignore_errors=True)
-  tar = subprocess.run(["git", "archive", "--format=tar", ops_revision, "tinygrad"],
+  tar = subprocess.run(["git", "archive", "--format=tar", rev, "tinygrad"],
                        cwd=REPO, capture_output=True)
   if tar.returncode != 0:
-    refuse(f"git archive {ops_revision} tinygrad -> rc={tar.returncode}: "
+    refuse(f"git archive {rev} tinygrad -> rc={tar.returncode}: "
            f"{tar.stderr.decode(errors='replace').strip()}")
   with tarfile.open(fileobj=io.BytesIO(tar.stdout)) as t:
     t.extractall(dest, filter="data")
-  render_bytes = blob(render_revision, RENDER)
-  if render_bytes is None:
-    refuse(f"the render revision {render_revision} has no {RENDER}")
-  render_dest = f"{dest}/{RENDER}"
-  with open(render_dest, "wb") as f:
-    f.write(render_bytes)
-  ops_bytes = blob(ops_revision, OPS)
-  if ops_bytes is None:
-    refuse(f"the ops revision {ops_revision} has no {OPS}")
-  derived, missing = derived_ops(ops_bytes, render_bytes.decode(), render_revision)
-  with open(f"{dest}/{OPS}", "wb") as f:
-    f.write(derived)
-  return dest, derived, missing
+  return dest
 
 
-def competing_resolutions(name):
-  """[(index, finder, origin)] for EVERY `sys.meta_path` finder that can resolve `name`.
-
-  THE SHADOWING PROOF IS A QUESTION, NOT A CLAIM.  The vendored `tinygrad/` is reachable
-  through this venv's EDITABLE install, whose finder is APPENDED to `sys.meta_path` --
-  after `PathFinder`, which searches `sys.path`, where this oracle's materialised tree
-  goes FIRST.  So the vendored tree loses.  BUT THAT IS AN ARGUMENT ABOUT THIS
-  ENVIRONMENT, AND THE TREE HAS BEEN BURNED BY ARGUMENTS ABOUT ENVIRONMENTS: running
-  the oracle with the repository root on `sys.path` (which `python -c` from the root
-  DOES) makes the vendored tree win, and the oracle would then answer a DIFFERENT
-  QUESTION.  SO THE ORACLE ASKS: every finder is asked where it WOULD resolve
-  `tinygrad`, and the winner is compared against them.
-
-  MEASURED, on this tree: the editable finder resolves `tinygrad` to the vendored
-  `<repo>/tinygrad/__init__.py` at `sys.meta_path` index 3, and `PathFinder` resolves it
-  to the materialised tree at index 2 -- so the earlier finder wins, and the materialised
-  tree is the subject."""
-  out = []
-  for i, finder in enumerate(sys.meta_path):
-    try:
-      spec = finder.find_spec(name)
-    except Exception:
-      spec = None
-    if spec is not None:
-      out.append((i, finder, spec.origin))
-  return out
-
-
-def verify_origin(tinygrad, dest):
-  """THE SHADOWING CHECK, AND IT COMES FIRST.
-
-  A SHADOWED SUBJECT IS A DIFFERENT SUBJECT.  The vendored `tinygrad/` is reachable through
-  this venv's EDITABLE install, and putting the repository root on `sys.path` (which
-  `python -c` from the root DOES) makes the vendored tree win -- MEASURED, that is how the
-  first experiment in this file's history answered a DIFFERENT QUESTION and looked fine.
-
-  TWO CHECKS, AND THE SECOND ONE IS THE PROOF:
-    1 the imported `tinygrad` CAME FROM the materialised tree;
-    2 NO finder that comes EARLIER in `sys.meta_path` resolves `tinygrad` somewhere else.
-  The second is the proof, because it does not depend on this particular environment's
-  finder order: it asks every finder, and refuses if the one that would win is not the
-  materialised tree."""
-  origin = os.path.realpath(tinygrad.__file__)
-  if not origin.startswith(os.path.realpath(dest) + os.sep):
-    refuse(f"the imported `tinygrad` is {origin}, which is NOT the materialised tree "
-           f"({dest}) -- the vendored tree shadowed the subject, so every row below would "
-           "be a different question")
-  competing = competing_resolutions("tinygrad")
-  winner = next((i for i, _f, o in competing
-                 if o and os.path.realpath(o).startswith(os.path.realpath(dest) + os.sep)), None)
-  if winner is None:
-    refuse(f"no sys.meta_path finder resolves `tinygrad` to the materialised tree {dest} -- "
-           f"the competing resolutions are {[(i, o) for i, _f, o in competing]}")
-  for i, finder, o in competing:
-    if o and not os.path.realpath(o).startswith(os.path.realpath(dest) + os.sep) and i < winner:
-      refuse(f"sys.meta_path[{i}] ({type(finder).__name__}) resolves `tinygrad` to {o}, which "
-             f"is NOT the materialised tree, and it comes BEFORE the finder that does "
-             f"(index {winner}) -- the vendored tree would shadow the subject")
-
-
-def verify_subject(dest, ops_revision, render_revision, derived, missing):
-  """The subject is what it claims to be, or the lane is REFUSED.
-
-  FOUR CHECKS, EACH OF WHICH CAN FAIL:
-
-    1 the imported `tinygrad.uop.ops` is the materialised DERIVATION, byte for byte;
-    2 the imported `tinygrad.uop.render` is the render revision's blob, byte for byte;
-    3 the materialised `ParamArg` has NO `size` field (P1) -- a subject whose `ParamArg`
-      can hold one answers a different question than the port's;
-    4 the materialised `UOp.toposort` enters CALL bodies by default (P2) -- otherwise
-      the renderer answers `!error` on the CALL rows, which is a DIFFERENT ANSWER, not
-      a failure of the port.
-
-  (THE SHADOWING IS CHECKED BY `verify_origin()`, WHICH RUNS FIRST.)"""
-  import tinygrad.uop.ops as ops_module
-  import tinygrad.uop.render as render_module
-
-  if os.path.realpath(ops_module.__file__) != os.path.realpath(f"{dest}/{OPS}"):
-    refuse(f"the imported `tinygrad.uop.ops` is {ops_module.__file__}, not the materialised "
-           f"{dest}/{OPS}")
-  if os.path.realpath(render_module.__file__) != os.path.realpath(f"{dest}/{RENDER}"):
-    refuse(f"the imported `tinygrad.uop.render` is {render_module.__file__}, not the "
-           f"materialised {dest}/{RENDER}")
-  with open(f"{dest}/{OPS}", "rb") as f:
-    if f.read() != derived:
-      refuse(f"the materialised {OPS} is not the derivation it claims to be")
-  with open(f"{dest}/{RENDER}", "rb") as f:
-    if f.read() != blob(render_revision, RENDER):
-      refuse(f"the materialised {RENDER} is not the render revision's blob")
-  fields = paramarg_fields(derived.decode())
-  if fields is None or "size" in fields:
-    refuse(f"the materialised `ParamArg` has fields {fields} -- it must have NO `size`, "
-           "because the port's `ParamArg` record cannot hold one")
-  if not toposort_enters_calls(derived.decode()):
-    refuse("the materialised `UOp.toposort` does not enter CALL bodies by default, so the "
-           "pyrender-era renderer answers `!error` on the CALL rows -- a different answer, "
-           "not a failure of the port")
-
-
-RENDER_REV = resolve_render()
-OPS_REV = resolve_ops()
-DEST, DERIVED_OPS, SPLICED = materialize(OPS_REV, RENDER_REV)
-sys.path.insert(0, DEST)
-print(f"# subject: ops={OPS_REV} render={RENDER_REV} "
-      f"(the last revision whose {RENDER} defines `pyrender`; the last whose {OPS} has a "
-      f"`ParamArg` with no `size` and a `UOp.toposort` that enters CALL bodies)",
+REV = resolve()
+sys.path.insert(0, materialize(REV))
+print(f"# subject: upstream {REV} (the last revision whose {RENDER} defines `pyrender`)",
       file=sys.stderr)
-if SPLICED:
-  print(f"# spliced into {OPS}: {', '.join(SPLICED)} (the renderer imports it from `ops.py` "
-        f"and the ops revision dropped it)", file=sys.stderr)
 
-try:
-  import tinygrad
-except Exception as e:
-  refuse(f"the materialised subject does not import: {type(e).__name__}: {e}")
-
-verify_origin(tinygrad, DEST)
-
-try:
-  from tinygrad.uop.ops import UOp, Ops, AxisType, ParamArg, CallInfo, KernelInfo, ProgramInfo
-  from tinygrad.dtype import dtypes, AddrSpace
-  from tinygrad.uop.render import pyrender
-except Exception as e:
-  refuse(f"the materialised subject does not import: {type(e).__name__}: {e}")
-
-verify_subject(DEST, OPS_REV, RENDER_REV, DERIVED_OPS, SPLICED)
+from tinygrad.uop.ops import UOp, Ops, AxisType, ParamArg, CallInfo, KernelInfo, ProgramInfo
+from tinygrad.dtype import dtypes, AddrSpace
+from tinygrad.uop.render import pyrender
 
 OUT = []
 INT = dtypes.default_int
@@ -496,22 +153,6 @@ def row(n, f):
   except Exception as e:
     v = f"!{type(e).__name__}: {e}"
   OUT.append(f"{n}={v}")
-
-
-def paramarg(slot, dtype, **fields):
-  """The MATERIALISED `ParamArg`, built from the fields IT has.
-
-  EVERY FIELD IS PASSED BY NAME, and a field the materialised class does NOT have is a
-  REFUSAL and not a silent drop.  A silently dropped field is precisely how this lane
-  got a `size` it cannot hold: the old `buf()` passed `size` as the third POSITIONAL,
-  and at the materialised subject the third positional is `vmin_vmax`, so the call set
-  a RANGE and printed `vmin_vmax=4`."""
-  unknown = sorted(set(fields) - set(ParamArg.__dataclass_fields__))
-  if unknown:
-    refuse(f"the materialised `ParamArg` has no field(s) {unknown} -- the fixture asks for a "
-           f"field this subject does not have, and dropping it would answer a different "
-           f"question")
-  return ParamArg(slot, dtype, **fields)
 
 
 def cfn_arg():
@@ -530,15 +171,6 @@ def call(body, **ci):
 
 
 def buf(dev="CPU", size=4, addrspace=None, image=None, buffer=None):
-  """A BUFFER of `size` elements.
-
-  ⚠ THE SIZE IS IN THE `src`, NOT IN THE ARG, AND IT IS NOT AN OPTION.  Upstream moved
-  the size out of `ParamArg` into the buffer's `src[0]` (`72f98ffe0`, "move size from
-  ParamArg to src" #18624), and the materialised `ParamArg` is the one that move
-  produced: 13 fields, NO `size`, and its THIRD POSITIONAL is `vmin_vmax`.  The old call
-  passed `size` as that third positional, so it did not set a size -- it set a RANGE.
-  The size was already in the `src`, as `UOp.range(size, 0)`, which is where upstream
-  put it; the arg never carried it."""
   kw = {}
   if addrspace is not None:
     kw["addrspace"] = addrspace
@@ -547,32 +179,12 @@ def buf(dev="CPU", size=4, addrspace=None, image=None, buffer=None):
   if buffer is not None:
     kw["buffer"] = buffer
   return UOp(Ops.BUFFER, src=(UOp.range(size, 0),),
-             arg=paramarg(0, INT, device=dev, **kw))
+             arg=ParamArg(0, INT, size, device=dev, **kw))
 
 
 def held_buffer():
-  """A BUFFER carrying a device `Buffer` -- the one thing `pyrender` REFUSES to
-  reconstruct ("the Buffer object can't be reconstructed from code").
-
-  ⚠ THE `Buffer` SIGNATURE IS NOT THE SAME AT EVERY REVISION, AND THIS FIXTURE IS BUILT
-  FROM THE MATERIALISED ONE.  `d5059900d7` ("remove DType from Buffer" #18657) DROPPED the
-  `dtype` argument, so `Buffer(device, size, dtype)` became `Buffer(device, nbytes)`: the
-  old `Buffer(None, 16, INT)` would now pass `INT` as the `opaque` payload and 16 BYTES
-  where 16 ELEMENTS were meant -- and MEASURED, that call ALSO ALLOCATES (16 bytes on
-  METAL), which the correctly-sized one does not, so the old call leaves a device
-  allocation behind at interpreter shutdown.  THE SIZE IS THEREFORE 16 ELEMENTS OF `INT`
-  = 16 * `INT.itemsize` BYTES, said in whichever unit the materialised `Buffer` takes."""
   from tinygrad.device import Buffer
-  import inspect
-  params = inspect.signature(Buffer.__init__).parameters
-  kw = {"device": None}
-  if "size" in params:
-    kw["size"] = 16
-  if "dtype" in params:
-    kw["dtype"] = INT
-  if "nbytes" in params:
-    kw["nbytes"] = 16 * INT.itemsize
-  return buf(buffer=Buffer(**kw))
+  return buf(buffer=Buffer(None, 16, INT))
 
 
 def refuses(u):
@@ -714,14 +326,10 @@ row("arg_repr ACALL2", lambda: repr(CallInfo(name="f", dtype=INT)
 row("arg_repr ACALL3", lambda: repr(CallInfo(dtype=dtypes.weakint)
                                     if "dtype" in CallInfo.__dataclass_fields__ else
                                     CallInfo()))
-# ⚠ THE `4` THAT WAS HERE WAS THE SIZE, AND THE SIZE IS NOT A `ParamArg` FIELD AT
-# THE MATERIALISED SUBJECT.  It is in the buffer's `src[0]`, where upstream put it
-# (`72f98ffe0`).  A `ParamArg` that cannot hold a size prints no size, and the
-# PORT prints no size -- so the fixture asks for the fields the subject HAS.
-row("arg_repr AParam1", lambda: repr(paramarg(1, FLT, device="METAL")))
-row("arg_repr AParam2", lambda: repr(paramarg(2, INT, name="g")))
+row("arg_repr AParam1", lambda: repr(ParamArg(1, FLT, 4, device="METAL")))
+row("arg_repr AParam2", lambda: repr(ParamArg(2, INT, name="g")))
 row("arg_repr AParam3", lambda: repr(
-    paramarg(3, FLT, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))))
+    ParamArg(3, FLT, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))))
 row("arg_repr AKern", lambda: repr(KernelInfo()))
 row("arg_repr AProgr", lambda: repr(ProgramInfo()))
 row("dt_repr float", lambda: repr(FLT))

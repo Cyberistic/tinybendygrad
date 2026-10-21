@@ -960,7 +960,7 @@ def main():
 # listing it would claim a second way to reach a code that has one.  THE PLANTS ARE REACHABLE
 # ARGV ALL THE SAME, and the literal one is exercised by the selftest's `literal` lane, which
 # runs the SAME CODE over the capture.
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--selftest"],
           1: ["--port-stdout", "checks/rn-port.rows", "--oracle-stdout", "checks/rn-orc.rows"],
           3: ["--oracle", "checks/__no_such_oracle__.py"]}

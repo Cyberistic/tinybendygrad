@@ -311,7 +311,7 @@ def main() -> int:
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate. The RED is a FILE, so `--plant` makes the file and `main()` measures
 # it; the argv alone cannot reach it, which is why this is a mode and not a bare argv.
-VERDICTS = {0: "CLEAN", 1: "RED"}
+EXIT_SURFACE = VERDICTS = {0: "CLEAN", 1: "RED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: [], 1: ["--plant"]}
 
 

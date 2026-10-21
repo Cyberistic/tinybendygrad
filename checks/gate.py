@@ -285,7 +285,7 @@ def main() -> None:
 # It proves the refusal is REACHABLE. It does NOT prove this gate can tell `3` from `0`, because no
 # argv reaches `0`; every other code below stays UNPLANTED and the instrument keeps it red rather
 # than this file claiming a plant it does not have.
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {3: []}
 
 if __name__ == "__main__":

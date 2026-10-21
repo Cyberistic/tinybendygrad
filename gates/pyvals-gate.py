@@ -77,7 +77,7 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 from gatekit import DEAD, FAIL, PASS, REFUSED, VERDICT  # noqa: E402
 
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED", 5: "DEAD"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED", 5: "DEAD"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {
   0: ["--plant"],
   1: ["--expect", "fail"],

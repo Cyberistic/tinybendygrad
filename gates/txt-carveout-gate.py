@@ -87,7 +87,7 @@ def report(nt) -> int:
     return 1
 
 
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--plant"], 1: [], 3: []}
 
 

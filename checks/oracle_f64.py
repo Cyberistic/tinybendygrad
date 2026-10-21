@@ -313,7 +313,7 @@ def main():
 # `gates/gate-surface.py` classifies a red of an UNTAKEN gate as not-yet-a-claim-about-the-tree
 # precisely so that an unearned green cannot be manufactured. MEASURED before this edit: this file
 # declared 0/1/3 and reached NONE of them, three REDs; it now reaches 3 of 3 declared-by-plant.
-VERDICTS = {0: "OK", 1: "FAIL", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "OK", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {3: []}
 
 

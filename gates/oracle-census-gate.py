@@ -274,8 +274,8 @@ def python_names(path: str, tracked: set[str]) -> dict[str, set[str]]:
                 break
             if isinstance(node, ast.Assign):
                 names = [t.id for t in node.targets if isinstance(t, ast.Name)]
-                if any(n in names for n in ("PLANTS", "VERDICTS", "LITERALS", "PINS",
-                                            "Lanes", "LINES", "ROWS", "DIVERGES")):
+                if any(n in names for n in ("PLANTS", "EXIT_SURFACE", "VERDICTS", "LITERALS",
+                                            "PINS", "Lanes", "LINES", "ROWS", "DIVERGES")):
                     role = "table"
                 node = parent.get(node)
                 break
@@ -400,7 +400,7 @@ def table(rows: list[dict[str, object]]) -> str:
 # ------------------------------------------------------------------------------------ verdicts
 
 
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED", 5: "DEAD"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED", 5: "DEAD"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--plant"], 1: ["--plant-broken"], 3: ["--plant-undeclared"], 5: ["--plant-dead"]}
 # NO `RED_IS`, AND THE ABSENCE IS THE DECLARATION. `gates/gate-surface.py:361` accepts exactly
 # `FINDING | UNTAKEN | FAILURE` and rejected a fourth value -- and the value this file first

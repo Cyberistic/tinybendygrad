@@ -370,7 +370,7 @@ def main():
 # planted assertion, and moving it to `3` here would erase this gate's USAGE/REFUSED distinction --
 # the same collision one level down.  `2` is UNOWNED BY `gatekit`, which is `gates/gate-surface.py`'s
 # `UNOWNED` class doing its job, and NOT a defect in this file.
-VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {
   0: ["--compare", "gates/cstyle-live.rows", "gates/cstyle-live.rows"],
   1: ["--compare", "gates/cstyle-live.rows", "oracles/usb-oracle-BEFORE.rows"],

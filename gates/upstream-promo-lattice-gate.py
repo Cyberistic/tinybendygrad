@@ -58,9 +58,12 @@ ROOT = HERE.parent
 # this file has no import-order dependency on a module it must not edit.
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"]}
-RED_IS = "FINDING -- tinygrad's promotion is not a lattice; see the derivation row"
+# WHY THE RED IS A FINDING: tinygrad's promotion is not a lattice; see the derivation row.  THE
+# CLASS IS THE WHOLE OF `RED_IS` -- a reader that compares the string to a class name cannot read
+# a class out of a sentence, so the sentence lives HERE and the field carries the class alone.
+RED_IS = "FINDING"
 
 # AGENTS.md: `ad117c928^` IS THE PIN. `ad117c928` IS THIS PROJECT'S OWN RE-VENDOR, so HEAD is not
 # an oracle for a drifted file. Named, not discovered: this is a REVISION, and a revision is not

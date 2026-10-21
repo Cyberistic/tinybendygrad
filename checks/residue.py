@@ -746,7 +746,7 @@ def main() -> int:
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate -- and EXECUTES each plant, requiring the observed rc to be the
 # declared one. A declared verdict with no plant is RED, named.
-VERDICTS = {0: "PASS", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--plant"], 3: ["--disarm", "DELETE"]}
 
 

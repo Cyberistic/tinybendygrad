@@ -143,7 +143,7 @@ def main() -> None:
 # only by an input path this gate does not take, so it is declared and left UNPLANTED -- red and
 # named, which is the honest state -- rather than planted with a `.txt`-style mutation of a
 # tracked oracle in `.agents/slop/`.
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: [], 1: ["--plant"]}
 
 

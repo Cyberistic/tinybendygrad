@@ -689,7 +689,7 @@ def main() -> int:
 # owner's code is how a runner aggregating by INTEGER gets told a SKIP is a NO-ROW and prints the
 # wrong word for a gate that behaved correctly. The distinction survives where it is actually
 # readable -- in the sentence above the exit -- and the exit itself says only what the tree agreed.
-VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED", 4: "SKIP", 5: "DEAD"}
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED", 4: "SKIP", 5: "DEAD"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--selftest"], 1: ["--plant", "fail"], 2: ["--ledger", "/no/such/walls.tsv"],
           3: ["--plant", "story"], 4: ["NO-SUCH-ID"], 5: ["--plant", "dead"]}
 

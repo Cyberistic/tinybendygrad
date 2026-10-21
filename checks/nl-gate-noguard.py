@@ -102,7 +102,7 @@ def main():
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate. At rest this refuses on the swept oracle: `3` is the one reachable code.
-VERDICTS = {0: "AGREE", 1: "BROKEN", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "AGREE", 1: "BROKEN", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {3: []}
 
 

@@ -190,7 +190,7 @@ def verdict_words(vocab):
             if not isinstance(node, ast.Assign):
                 continue
             names = [t.id for t in node.targets if isinstance(t, ast.Name)]
-            if not any(n in ("VERDICTS", "VERDICT") for n in names):
+            if not any(n in ("EXIT_SURFACE", "VERDICTS", "VERDICT") for n in names):
                 continue
             try:
                 table = ast.literal_eval(node.value)

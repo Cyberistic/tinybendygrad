@@ -215,7 +215,7 @@ def main() -> int:
 #
 # `3` IS still reachable, in exactly one state: the INPUT-ABSENT one, which is a broken tree.
 # `gates/gate-surface.py` will keep `0` and `3` UNPLANTED, and that redness is DATA.
-VERDICTS = {0: "OK", 3: "REFUSED"}
+EXIT_SURFACE = VERDICTS = {0: "OK", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {}
 
 if __name__ == "__main__":
