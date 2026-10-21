@@ -35,6 +35,13 @@ oracle that prints rows the driver does not. This pair is the other shape -- 56 
 overlapping in 9, with 6 rows on the oracle's side and 47 on the driver's -- and the model
 would have to be given a second exclusion list to say so. The five verdicts and the watchdog
 are still `gatekit`'s and `checks/bounded.py`'s, LOADED BY PATH and never re-spelled.
+
+**AND THE COST OF THAT IS MEASURED, NOT ASSUMED.** Because no `Gate(oracle=...)` names this
+oracle, `checks/gatesweep.py:classify` charges it `DEAD (UNCONSUMED-LANE)` -- MEASURED
+2026-10-21, in its DEFAULT mode it prints 31 rows, is named by no `Gate`, and prints no
+verdict of its own. That is the honest verdict for a lane that compares nothing on its own,
+and it is what 20 of the walk's other oracle-shaped members already get. A `Gate` that named
+it would have to lie about the row count to make the declaration true.
 """
 import argparse
 import hashlib
