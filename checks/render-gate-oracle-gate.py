@@ -292,7 +292,11 @@ def main():
 # import, because import RUNS a gate -- and then EXECUTES each plant and requires the
 # observed rc to equal the declared one.  So these three argv are not decoration: each one
 # reaches the exit code it names.
-EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
+#
+# `EXIT_SURFACE` IS THE NAME AND `VERDICTS` IS THE LEGACY ALIAS, IN ONE ASSIGNMENT, so a
+# reader that knows either name reads the same table -- `3b12f5c878` moved a dozen gates
+# onto that spelling and the reader has not caught up with them yet.
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
 PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 3: ["--plant", "refused"]}
 
 if __name__ == "__main__":
