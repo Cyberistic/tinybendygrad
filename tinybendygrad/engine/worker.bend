@@ -424,8 +424,9 @@ def terminate_worker_pool(pool: Maybe<&2, Pool>) -> Maybe<&2, Pool>:
   None{}
 # ===========================================================================
 # SECTION 3 -- THE GATE. Both lanes print these rows and they must be
-# byte-identical. The CPython oracle is `.agents/slop/probe/worker_oracle.py`;
-# every row either has an oracle or is named BEND-ONLY at the foot.
+# byte-identical. The CPython oracle is `gates/worker-oracle.py worker` -- the
+# recovered `.agents/slop/probe/jit_oracle.py`, blob 0c8fcbe6, now beside the gate
+# that drives it; every row either has an oracle or is named BEND-ONLY at the foot.
 #
 # THE FIXTURE for `_without_main` is the MEASURED one, not a convenient one: run
 # CPython under `python3 -c` and `__main__.__file__` is ABSENT while
@@ -643,11 +644,11 @@ def main() -> IO(Unit):
 # BY CONSTRUCTION are the same blindness as two structures equal in COUNT.
 #
 # ---------------------------------------------------------------------------
-# THE CPYTHON LANE. The CPython oracle prints 15 rows, 9 of them shared with this gate,
-# all 9 GREEN (`SHARED=9 GREEN=9 RED=0`). The 47 BEND-ONLY rows are the schedule, the
-# `Pool` fields, the `Arg` readers, the pool-state machine's fixtures and the
-# `_without_main` LANE fixture (`m_absent`, which the script lane does not reach -- see
-# the gate's header), and they are listed rather than filtered. THE NINE SHARED ARE
+# THE CPYTHON LANE. `gates/worker-oracle.py worker` prints 15 rows, 9 of them shared
+# with this gate, all 9 GREEN (`SHARED=9 GREEN=9 RED=0`). The 47 BEND-ONLY rows are the
+# schedule, the `Pool` fields, the `Arg` readers, the pool-state machine's fixtures and
+# the `_without_main` LANE fixture (`m_absent`, which the script lane does not reach --
+# see the gate's header), and they are listed rather than filtered. THE NINE SHARED ARE
 # `init_allow_device_usage init_viz init_sigint_ignored cleared_file cleared_spec
 # after_spec_present spawnv_patched maxtasks_default pool_init_name`, so 47 + 9 = 56 =
 # the rows `main()` prints; the list below is the port's 56 names MINUS those nine, in
