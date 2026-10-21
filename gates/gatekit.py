@@ -193,7 +193,7 @@ def _said(stream, lines=3):
 # MEASURED 2026-10-16, over `DEV` in {CPU, PYTHON, DISK, NPY} x 14 census gates: NO gate's
 # answer moves, and `DEV` re-run reproduces. Every device those gates use is a LITERAL in
 # their own source -- `crp_graph_census-oracle.py:61` `DEV = "PYTHON"`,
-# `realize_graph_census-oracle.py:78` `"CPU"`, `ops_python_exec-gen.py:194`
+# `realize_graph_census-oracle.py:78` `"CPU"`, `ops_python_exec-gen.py:243`
 # `Context(DEV="PYTHON")`, and `device=None` in the rest -- which is a STRONGER claim than
 # "it does not depend on the device": it does not depend on an ambient one because it never
 # reads one. THE HAZARD IS REAL ONE DIRECTORY OVER: `checks/env-precond.py` declares

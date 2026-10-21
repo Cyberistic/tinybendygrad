@@ -1,19 +1,43 @@
 #!/usr/bin/env python3
-"""pyvals-gate.py -- does the PythonProgram harvest still read a `vals` key anything passes?
+"""pyvals-gate.py -- where does the PythonProgram harvest read the ALU words from?
 
     .venv/bin/python gates/pyvals-gate.py
     .venv/bin/python gates/pyvals-gate.py --plant
 
-The harvest is discovered, not named by line: a function assigned onto
-`PythonProgram.__call__` that calls `kw.get("vals", ...)`. The signature a caller
-is judged against is the one installed at that call, not the class method the
-assignment replaced. A `Class.__call__ = fn` in the same function, where `fn`
-reads `kw.get("vals")`, installs that signature until a later assignment replaces
-it. A caller under that assignment is `wrapped-caller` and is not `LIVE-CALLER`.
-A caller that passes `vals=` with the wrapper not installed is still
-`LIVE-CALLER`. "Has vals" means a parameter named `vals`, or the body calling
-`.get("vals")`. `**kw` swallows a key; it does not name one, and it is not
-acceptance.
+The harvest is discovered, not named by line: a function assigned onto a class's
+`__call__`. MEASURED 2026-10-21: the tree's live `.py` files hold exactly ONE
+such wrapper -- `gates/ops_python_exec-gen.py:241` -- so the population is a
+SHAPE found by a walk, and a second wrapper would make this gate REFUSE rather
+than pick one. The rule USED to be "a wrapper that calls `kw.get("vals", ...)`",
+and it was the harvest's own DEAD read that kept it true: the words now come
+POSITIONALLY, so a harvest that reads no key at all would have been invisible --
+and invisible is how "delete the read to go green" hides.
+
+THE READ has two shapes, and this gate says which:
+
+  KEY-READER        the wrapper reads a `vals` key. The signature is judged
+                    against it, and a signature that does not accept the key
+                    makes the read DEAD: `**kw` swallows a key, it does not name
+                    one, and the callee never reads a key it does not name.
+  POSITIONAL-READER the wrapper reads its own `*args`. The callee
+                    (`PythonProgram.__call__`, ops_python.py:61) takes
+                    `pargs = list(args)` and pops ONE per PARAM -- an ALU word
+                    at :97 and a buffer address at :107 -- so the words arrive
+                    POSITIONALLY, and a harvest that reads them positionally
+                    reads them where the callee gets them.
+
+A harvest that reads NEITHER is `NO-WORDS`, and it is a FAIL: the words are
+dropped, and a fixture that drops an ALU word is a WRONG ANSWER, not a missing
+row. That is the row that catches the read being deleted.
+
+The signature a caller is judged against is the one installed at that call, not
+the class method the assignment replaced. A `Class.__call__ = fn` in the same
+function, where `fn` reads `kw.get("vals")`, installs that signature until a
+later assignment replaces it. A caller under that assignment is `wrapped-caller`
+and is not `LIVE-CALLER`. A caller that passes `vals=` with the wrapper not
+installed is still `LIVE-CALLER`. "Has vals" means a parameter named `vals`, or
+the body calling `.get("vals")`. `**kw` swallows a key; it does not name one, and
+it is not acceptance.
 
 The caller population is an os.walk of `.py` files. glob is not used. `.bend` is
 not walked, so a Bend `Args.vals` is out of population by construction. A hit is
@@ -27,7 +51,10 @@ Exit FAIL if a live caller passes `vals=` into a signature that lacks it, the
 wrapper not being installed at that call. Exit PASS with row `KEY-REAL` if the
 caller is under the installed wrapper and the wrapper reads the key. Exit FAIL
 with row `DEAD-READER` if the harvest reads a key the class signature does not
-accept and no caller passes it — that is not PASS. Exit PASS if the class
+accept and no caller passes it — that is not PASS. Exit FAIL with row
+`NO-WORDS` if the harvest reads neither the key nor its own positional args.
+Exit PASS with row `POSITIONAL-READER` if the harvest reads the words from its
+positional args, which is where the callee reads them. Exit PASS if the class
 signature accepts `vals` and a caller passes it, or the harvest defaults to `()`
 and the signature accepts the key and nobody passes it. A walk that saw no
 `.py` file is DEAD. A harvest or a signature that cannot be read is REFUSED.
@@ -246,6 +273,22 @@ def accepts(fn):
   reads = [key for key, _node in kw_gets(fn)]
   kwarg = fn.args.kwarg.arg if fn.args.kwarg else ""
   return KEY in names or KEY in reads, names, kwarg, reads
+
+
+def positional_read(fn):
+  """The name of the harvest's own `*args`, if its body READS it.
+
+  THE OTHER READ. The callee takes the ALU words in its POSITIONAL list
+  (`pargs = list(args)`, ops_python.py:61), so a harvest that reads its own
+  var-positional parameter is reading the words where the callee gets them. A
+  var-positional parameter the body never LOADS is not a read -- it is a name.
+  """
+  if not fn.args.vararg: return ""
+  name = fn.args.vararg.arg
+  for node in ast.walk(fn):
+    if isinstance(node, ast.Name) and node.id == name and isinstance(node.ctx, ast.Load):
+      return name
+  return ""
 
 
 def aliases_of(tree, hooked):
@@ -512,12 +555,17 @@ def load_sig(root, harvest_path, harvest_tree, hooked, alias):
   return row, ok, base_row, ""
 
 
-def judge(has_vals, live_callers, reads_key, default_empty, wrapped=0):
+def judge(has_vals, live_callers, reads_key, positional, default_empty, wrapped=0):
   """Return `(code, row)`. DEAD-READER is a row, and its exit is FAIL.
 
   `wrapped` is a caller under the installed wrapper. That signature reads the key,
   so the call is not `LIVE-CALLER`. A caller with the wrapper not installed stays
   in `live_callers`.
+
+  `positional` is the harvest's own `*args` parameter, when its body reads it --
+  the read that puts the ALU words where the callee reads them. A harvest that
+  reads neither the key nor its args is `NO-WORDS`, and that is a FAIL: the
+  words are dropped, and a fixture that drops an ALU word is a wrong answer.
   """
   if live_callers and not has_vals:
     return FAIL, "LIVE-CALLER"
@@ -529,8 +577,10 @@ def judge(has_vals, live_callers, reads_key, default_empty, wrapped=0):
     return FAIL, "DEAD-READER"
   if default_empty and not live_callers and has_vals:
     return PASS, "DEFAULT-EMPTY"
-  if not reads_key and not live_callers:
-    return PASS, "NO-READER"
+  if positional:
+    return PASS, "POSITIONAL-READER"
+  if not live_callers:
+    return FAIL, "NO-WORDS"
   return REFUSED, "UNCLASSIFIED"
 
 
@@ -551,8 +601,6 @@ def survey(root: Path):
       continue
     for hooked, alias, wrapper, lineno in find_harvests(tree):
       gets = [(key, node) for key, node in kw_gets(wrapper) if key == KEY]
-      if not gets:
-        continue
       bucket = frozen_harvests if frozen(rel) else harvests
       bucket.append((path, rel, tree, hooked, alias, wrapper, lineno, gets))
   lines = [f"files={files}"]
@@ -569,11 +617,13 @@ def survey(root: Path):
     for _path, hrel, _tree, hooked, _alias, _wrapper, lineno, _gets in harvests:
       lines.append(f"harvest-site={hrel}:{lineno} class={hooked}")
     return REFUSED, lines, {"files": files}
-  path, rel, tree, hooked, alias, _wrapper, lineno, gets = harvests[0]
+  path, rel, tree, hooked, alias, wrapper, lineno, gets = harvests[0]
   reads = bool(gets)
+  positional = positional_read(wrapper)
   default_empty = bool(gets) and all(empty_default(node) for _key, node in gets)
   lines.append(f"harvest={rel}:{gets[0][1].lineno if gets else lineno} class={hooked} "
-               f"key={KEY if reads else '-'} reads={int(reads)} default-empty={int(default_empty)}")
+               f"key={KEY if reads else '-'} reads={int(reads)} default-empty={int(default_empty)} "
+               f"args={positional or '-'}")
   sig, has_vals, base_row, err = load_sig(root, path, tree, hooked, alias)
   if err:
     lines.append(err)
@@ -624,7 +674,7 @@ def survey(root: Path):
     lines.append(f"control={control} {'caller' if named else 'not-caller'}")
     held += not named
   lines.append(f"control-held={held} of {len(CONTROL)}")
-  code, row = judge(has_vals, live, reads, default_empty, len(wrapped))
+  code, row = judge(has_vals, live, reads, positional, default_empty, len(wrapped))
   lines.append(f"row={row}")
   return code, lines, {"files": files, "callers": len(live), "row": row, "lines": lines}
 
@@ -688,6 +738,21 @@ TUPLE_HARVEST = (
   "  def call(self, *bufs, **kw):\n"
   "    return kw.get('vals', ())\n"
   "  PythonProgram.render, PythonProgram.__call__ = None, call\n"
+)
+# THE OTHER READ: the harvest takes the words from its own `*bufs`, which is where
+# the callee takes them (ops_python.py:61, `pargs = list(args)`).
+POSITIONAL_HARVEST = (
+  "from prog import PythonProgram\n"
+  "def call(self, *bufs, **kw):\n"
+  "  return bufs\n"
+  "PythonProgram.__call__ = call\n"
+)
+# A harvest that reads NEITHER the key nor its own args: the words are dropped.
+SILENT_HARVEST = (
+  "from prog import PythonProgram\n"
+  "def call(self, *bufs, **kw):\n"
+  "  return None\n"
+  "PythonProgram.__call__ = call\n"
 )
 
 
@@ -798,6 +863,34 @@ def plant():
     _code, lines, info = survey(root)
     check("other-device-not-hook", not any(line.startswith("caller=metal.py:") for line in lines)
           and info.get("row") == "DEAD-READER")
+  finally:
+    td.cleanup()
+
+  td, root = _tree(PROG_LACKS, caller=False)
+  try:
+    _write(root, "harvest.py", POSITIONAL_HARVEST)
+    code, lines, info = survey(root)
+    check("positional-harvest-is-pass",
+          code == PASS and info.get("row") == "POSITIONAL-READER"
+          and any(line.startswith("harvest=harvest.py:") and "args=bufs" in line for line in lines))
+  finally:
+    td.cleanup()
+
+  td, root = _tree(PROG_LACKS, caller=True)
+  try:
+    _write(root, "harvest.py", POSITIONAL_HARVEST)
+    code, lines, info = survey(root)
+    check("positional-harvest-catches-vals-caller",
+          code == FAIL and info.get("row") == "LIVE-CALLER"
+          and any(line.startswith("caller=owned/live.py:") for line in lines))
+  finally:
+    td.cleanup()
+
+  td, root = _tree(PROG_LACKS, caller=False)
+  try:
+    _write(root, "harvest.py", SILENT_HARVEST)
+    code, lines, info = survey(root)
+    check("silent-harvest-is-no-words", code == FAIL and info.get("row") == "NO-WORDS")
   finally:
     td.cleanup()
 

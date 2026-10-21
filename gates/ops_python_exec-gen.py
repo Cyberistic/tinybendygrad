@@ -72,7 +72,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tinygrad import Tensor                                                  # noqa: E402
-from tinygrad.dtype import dtypes                                            # noqa: E402
+from tinygrad.dtype import AddrSpace, dtypes                               # noqa: E402
 from tinygrad.helpers import Context, Target, to_mv                        # noqa: E402
 from tinygrad.runtime import ops_python as OPY                               # noqa: E402
 from ops_bend import buf_extent, encode, is_buf, wire_arg   # noqa: E402
@@ -144,6 +144,45 @@ class Trace(list):
         return u
 
 
+def arg_plan(uops):
+    """`[(kind, extent)]` per arg the callee pops, in the callee's own order.
+
+    ops_python.py:61 takes `pargs = list(args)` and pops ONE per PARAM -- an ALU
+    word at :97 and a buffer address at :107 -- so the two kinds INTERLEAVE, and
+    the launch's positional args ARE that list. A REG PARAM (:102) and a BUFFER
+    (:107) pop nothing, so they are not in the sequence at all.
+
+    The BUFFERS are the port's own (`ops_bend.is_buf` on the wire arg, and
+    `ops_bend.buf_extent` for their size) and the WORDS are the callee's own
+    (`u.addrspace is AddrSpace.ALU` -- the test ops_python.py:97 spells it that
+    way), so neither reader is a second copy of the other's.
+    """
+    plan = []
+    for u in uops:
+        if u.op is not Ops.PARAM: continue
+        arg = wire_arg(u)
+        if is_buf(arg): plan.append(("buf", buf_extent(arg)))
+        elif u.addrspace is AddrSpace.ALU: plan.append(("word", 0))
+    return plan
+
+
+def callee_args(uops, addrs, words):
+    """The launch's args in the order the callee pops them: the buffer addresses
+    and the ALU words, interleaved the way `arg_plan` says the callee reads them.
+    `vals=` is **kw and the signature does not accept it (ops_python.py:55), so a
+    keyword could not carry a word even if the caller sent one."""
+    out = []
+    ai, wi = 0, 0
+    for kind, _extent in arg_plan(uops):
+        if kind == "buf":
+            out.append(addrs[ai])
+            ai += 1
+        else:
+            out.append(words[wi])
+            wi += 1
+    return out
+
+
 def harvest():
     """A GENERATOR over the real launches, not a list.
 
@@ -178,15 +217,25 @@ def harvest():
         # already owns both halves of that read: `ops_bend.is_buf` and
         # `ops_bend.buf_extent`. So the sizes are read with the tree's own reader and
         # the COUNT is checked against `encode`'s own header field.
-        ext = [buf_extent(wire_arg(u)) for u in self.uops if is_buf(wire_arg(u))]
+        plan = arg_plan(self.uops)
+        ext = [e for kind, e in plan if kind == "buf"]
         if len(ext) != int(pkt.splitlines()[0].split()[2]):
             raise RuntimeError(f"{len(ext)} buffer params against a header that says {pkt.splitlines()[0]}")
         # THE INPUTS, read BEFORE the call. The harvest is what fills the fixture
         # file's buffer lines, and the packet the port reads is
         # `<uop lines><nbytes> <hex>` -- the launch's INPUT state, not what the
         # launch left behind.
-        calls.append((pkt, ext, [bytes(to_mv(a, s)) for a, s in zip(bufs, ext)],
-                      tuple(kw.get("global_size", (1, 1, 1))), tuple(kw.get("vals", ()))))
+        #
+        # THE ALU WORDS COME FROM THE POSITIONAL ARGS, at the positions the
+        # callee pops them (ops_python.py:97), because that is where the callee
+        # gets them: `pargs = list(args)` at :61, one pop per PARAM. `vals=` is
+        # **kw and the signature does not accept it, so the keyword read that
+        # used to be here could only ever answer () -- and the caller that used
+        # to pass it lost the word, which is what commit 81da82e76 fixed.
+        addrs = [a for a, (kind, _e) in zip(bufs, plan) if kind == "buf"]
+        words = tuple(a for a, (kind, _e) in zip(bufs, plan) if kind == "word")
+        calls.append((pkt, ext, [bytes(to_mv(a, s)) for a, s in zip(addrs, ext)],
+                      tuple(kw.get("global_size", (1, 1, 1))), words))
         return _call(self, *bufs, **kw)
 
     OPY.PythonRenderer.render, OPY.PythonProgram.__call__ = render, call
@@ -361,8 +410,10 @@ def py_run(fx, fresh=False):
     # so a Trace installed first is overwritten and `seen` stays empty.
     prog.uops = Trace(prog.uops)
     addrs = [ctypes.addressof(ctypes.c_char.from_buffer(b)) for b in bufs]
-    # reader: pargs.pop(0) at ops_python.py:97. `vals=` is **kw and is not read.
-    prog(*addrs, *tuple(fx.vals), global_size=fx.gsize, local_size=(1, 1, 1))
+    # THE ARGS IN THE CALLEE'S ORDER: one per popped PARAM, an ALU word at
+    # ops_python.py:97 and a buffer address at :107, so the two kinds INTERLEAVE
+    # and the words cannot simply be appended. `vals=` is **kw and is not read.
+    prog(*callee_args(fx.uops, addrs, fx.vals), global_size=fx.gsize, local_size=(1, 1, 1))
     return prog, bufs
 
 
