@@ -9,13 +9,19 @@ re-derived. PRIOR is a comparison, not a population: if the count is not 13 the
 tree moved, and a path is not dropped to keep 13.
 
 THE CLASS IS THE CITER'S, not a list of paths. See `RULE`. STILL-UNSORTED fails.
-PASS only when every unsorted path is REDIRECT, CHECKER, or DATA.
+PASS only when every unsorted path is REDIRECT, CHECKER, or DATA. GONE-NOTE,
+MEASURED-OVER, and BOUND-NAME are printed and are not a pass. Nothing is dropped.
 
 The plant is on copies. A redirect of a `.txt` under the swept tree is REDIRECT,
 not REQUIRED and not a program. A `.rows` path cited as a file to read is DATA.
 A path cited as the program (`python` plus the path) is not DATA even if
 mis-suffixed, and is STILL-UNSORTED: loadgap owns REQUIRED. A REQUIRED path from
-the live census is not reclassed as DATA.
+the live census is not reclassed. "is gone" is GONE-NOTE, not STILL-UNSORTED and
+not REQUIRED; the word must be AFTER the path, and a filename does not supply it. A
+MEASURED sentence that names the path as the instrument, and does not run it, is
+MEASURED-OVER; a filename does not supply MEASURED either. A module-level
+assignment of the path that is not `ORACLE =` is BOUND-NAME. An existing file is
+not in the set.
 """
 from __future__ import annotations
 
@@ -44,7 +50,12 @@ REDIRECT = "REDIRECT"
 CHECKER = "CHECKER"
 DATA = "DATA"
 STILL = "STILL-UNSORTED"
-CLASSES = (REDIRECT, CHECKER, DATA, STILL)
+GONE = "GONE-NOTE"
+MEASURED = "MEASURED-OVER"
+BOUND = "BOUND-NAME"
+CLASSES = (REDIRECT, CHECKER, DATA, GONE, MEASURED, BOUND, STILL)
+# Printed, and not a pass. FAIL while any path sits outside these.
+PASS_AT = (REDIRECT, CHECKER, DATA)
 DATA_SUFFIX = (".txt", ".rows", ".bin")
 # The program is the operand of one of these, or `./path` as the command.
 RUNNER = re.compile(r"(?i)(?:python3?|sh|bash|bend)\s+([^\s`'\"|&;<>]+)")
@@ -64,8 +75,19 @@ RULE = (
     "Otherwise REDIRECT when a load citer sends stdout to the path (`>` or `>>`, and "
     "the path is not the program). Otherwise CHECKER when a load citer's span, after "
     "the path, says the path reads a row or re-derives from a row, and does not say it "
-    "produces one. Otherwise DATA when the path ends in .txt, .rows, or .bin. "
-    "Anything else is STILL-UNSORTED, printed, and not a skip."
+    "produces one. Otherwise GONE-NOTE when every load citer's span says, after the path "
+    "and after path tokens are blanked, that the path is gone, absent, or never committed. "
+    "A filename does not supply the word, and neither does a word that is not after the "
+    "path, nor a later sentence that does not contain the path. Otherwise MEASURED-OVER "
+    "when every load "
+    "citer's span says MEASURED and names the path as the instrument of that measurement "
+    "(the path sits in that MEASURED clause, introduced by '(', ',', ';', or 'in') and "
+    "the span does not run it. The word is read after path tokens are blanked, so a "
+    "filename does not supply it. Otherwise BOUND-NAME when every load citer is a "
+    "module-level assignment of the path to a name other than ORACLE. An ORACLE = "
+    "binding stays REQUIRED: this gate does not reclass it. Otherwise DATA when the "
+    "path ends in .txt, .rows, or .bin. GONE-NOTE, MEASURED-OVER, and BOUND-NAME are "
+    "printed and are not a pass. Anything else is STILL-UNSORTED, printed, and not a skip."
 )
 
 
@@ -142,6 +164,69 @@ def reads_row(span: str, path: str) -> bool:
   return READS_ROW.search(after) is not None or REDERIVES_ROW.search(after) is not None
 
 
+_MARK = "\x00"
+_INTRODUCED = re.compile(r"(?:\(|,|;|\bin)$")
+
+
+def gone_note(lg, span: str, path: str) -> bool:
+  """The sentence says the path is gone, after the path. A filename, and a later sentence, do not count."""
+  if path not in span or is_program(span, path):
+    return False
+  marked = span.replace(path, _MARK)
+  for hit in re.finditer(re.escape(_MARK), marked):
+    after = marked[hit.end():]
+    end = re.search(r"\.(?:\s|$)", after)
+    clause = after[:end.start()] if end else after
+    if lg.says_missing(clause):
+      return True
+  return False
+
+
+def measured_over(lg, span: str, path: str) -> bool:
+  """MEASURED names `path` as the instrument of that measurement, and the span does not run it."""
+  if path not in span or is_program(span, path):
+    return False
+  # The hits are searched in the BLANKED span, so a FILENAME cannot supply the word: a decoy
+  # path whose name carries MEASURED is not the measurement, and the subject is not named by it.
+  blank = lg.blanked(span.replace(path, _MARK))
+  for hit in re.finditer(r"\bMEASURED\b", blank):
+    after = blank[hit.end():]
+    end = re.search(r"\.(?:\s|$)", after)
+    clause = after[:end.start()] if end else after
+    at = clause.find(_MARK)
+    if at < 0:
+      continue
+    before = re.sub(r"[\s#`'\"]+", " ", clause[:at]).rstrip()
+    if _INTRODUCED.search(before):
+      return True
+  return False
+
+
+def bound_name(body: str, n: int, path: str) -> bool:
+  """A module-level assignment of `path` to a name other than ORACLE. See `RULE`."""
+  tree = _parse(body)
+  if tree is None:
+    return False
+  for node in tree.body:
+    if getattr(node, "lineno", None) != n:
+      continue
+    if isinstance(node, ast.Assign) and len(node.targets) == 1:
+      target, value = node.targets[0], node.value
+    elif isinstance(node, ast.AnnAssign):
+      target, value = node.target, node.value
+    else:
+      return False
+    if not isinstance(target, ast.Name) or target.id == "ORACLE":
+      return False
+    return isinstance(value, ast.Constant) and value.value == path
+  return False
+
+
+def _shared(keys: list[str], matched: list[str], missing: list[str]) -> bool:
+  """Every load citer shows the structure. A missing body cannot be shown to."""
+  return bool(keys) and not missing and len(matched) == len(keys)
+
+
 def _line(body: str, n: int) -> str:
   lines = body.splitlines()
   if 1 <= n <= len(lines):
@@ -166,13 +251,26 @@ def class_of(path: str, citers: list[tuple[str, int, str]], bodies: dict[str, st
   if not load:
     return STILL, []
   seen: list[tuple[str, str, str]] = []
+  gone: list[str] = []
+  measured: list[str] = []
+  bound: list[str] = []
+  missing: list[str] = []
   for rel, n in load:
     body = bodies.get(rel)
     key = f"{rel}:{n}"
     if body is None:
       seen.append((key, "", ""))
+      missing.append(key)
       continue
-    seen.append((key, _line(body, n), _span(lg, body, n)))
+    line, span = _line(body, n), _span(lg, body, n)
+    seen.append((key, line, span))
+    if gone_note(lg, span, path):
+      gone.append(key)
+    if measured_over(lg, span, path):
+      measured.append(key)
+    if bound_name(body, n, path):
+      bound.append(key)
+  keys = [key for key, _line, _span in seen]
   if any(is_program(span or line, path) for _k, line, span in seen):
     return STILL, [key for key, line, span in seen if is_program(span or line, path)]
   redirected = [key for key, line, span in seen if redirect_to(span or line, path)]
@@ -181,11 +279,16 @@ def class_of(path: str, citers: list[tuple[str, int, str]], bodies: dict[str, st
   checked = [key for key, _line, span in seen if reads_row(span, path)]
   if checked:
     return CHECKER, checked
+  if _shared(keys, gone, missing):
+    return GONE, gone
+  if _shared(keys, measured, missing):
+    return MEASURED, measured
+  if _shared(keys, bound, missing):
+    return BOUND, bound
   # A missing body cannot show that the citer does not run the path, so it is not DATA.
-  missing = [key for key, line, span in seen if not line and not span]
   if path.endswith(DATA_SUFFIX) and not missing:
-    return DATA, [key for key, _l, _s in seen]
-  return STILL, [key for key, _l, _s in seen]
+    return DATA, keys
+  return STILL, keys
 
 
 def _citers(row: dict) -> list[tuple[str, int, str]]:
@@ -264,7 +367,7 @@ def check(rows: list[dict]) -> tuple[int, str]:
   tally = Counter(r["uclass"] for r in rows)
   if sum(tally[k] for k in CLASSES) != len(rows):
     return FAIL, f"classes sum to {sum(tally[k] for k in CLASSES)} over {len(rows)}"
-  if tally[STILL]:
+  if any(r["uclass"] not in PASS_AT for r in rows):
     return FAIL, (f"{len(rows)} unsorted, " + " ".join(f"{k}={tally[k]}" for k in CLASSES))
   return PASS, (f"{len(rows)} unsorted, " + " ".join(f"{k}={tally[k]}" for k in CLASSES))
 
@@ -283,6 +386,13 @@ def _insert_header(text: str, block: str) -> str:
     body += "#\n"
   lines.insert(i, body)
   return "".join(lines)
+
+
+def _append(text: str, block: str) -> str:
+  """A module-level statement after the writer's last line. A comment is not an assignment."""
+  if not text.endswith("\n"):
+    text += "\n"
+  return text + (block if block.endswith("\n") else block + "\n")
 
 
 def _writer(surveyed: dict) -> str | None:
@@ -348,11 +458,29 @@ PLANT_REQUIRED = (
     "PLANT a path that reads a row is CHECKER",
     "FALSIFY a path that produces a row is not CHECKER",
     "CONTROL a live REQUIRED path is not reclassed as DATA",
+    "PLANT is gone is GONE-NOTE",
+    "FALSIFY is gone is not STILL-UNSORTED",
+    "FALSIFY is gone is not REQUIRED",
+    "FALSIFY a filename does not supply gone",
+    "FALSIFY a decoy filename does not supply gone",
+    "FALSIFY absent before the path is not GONE-NOTE",
+    "FALSIFY a later sentence does not supply gone",
+    "PLANT a MEASURED sentence is MEASURED-OVER",
+    "FALSIFY a MEASURED sentence that does not name the path is not MEASURED-OVER",
+    "FALSIFY a MEASURED sentence that runs the path is not MEASURED-OVER",
+    "FALSIFY a filename does not supply MEASURED",
+    "FALSIFY a decoy filename does not supply MEASURED",
+    "PLANT a module-level assignment is BOUND-NAME",
+    "FALSIFY ORACLE = is not BOUND-NAME",
+    "FALSIFY ORACLE = stays REQUIRED",
+    "FALSIFY a nested assignment is not BOUND-NAME",
+    "CONTROL a live REQUIRED path is not reclassed",
+    "CONTROL an existing file is not in the set",
 )
 
 
 def plant(lg, nb, dang, surveyed: dict, live_rows: list[dict], live_bodies: dict[str, str]) -> int:
-  """The three shapes, on copies, plus the falsifications and the live REQUIRED control."""
+  """The shapes, on copies, plus the falsifications and the live REQUIRED control."""
   writer = _writer(surveyed)
   required = [r for r in live_rows if r.get("gap") == lg.REQUIRED]
   if writer is None or not required:
@@ -363,14 +491,37 @@ def plant(lg, nb, dang, surveyed: dict, live_rows: list[dict], live_bodies: dict
   ran = _plant_path("ran.rows")
   reader = _plant_path("reads.sh")
   maker = _plant_path("makes.sh")
+  noted = _plant_path("noted.sh")
+  namedgone = _plant_path("gone.sh")
+  early = _plant_path("early.py")
+  latgone = _plant_path("latgone.py")
+  measured_p = _plant_path("measured.py")
+  aside = _plant_path("aside.py")
+  ranm = _plant_path("ranm.py")
+  worded = _plant_path("MEASURED.py")
+  decoym = _plant_path("decoym.py")
+  decoyg = _plant_path("decoyg.py")
+  bind = _plant_path("bind.py")
+  nested = _plant_path("nested.py")
+  # Joined at runtime, so this file does not cite either path as one token.
+  deeper = "oracles/" + "planted-deeper.py"
+  exist = "gates/" + "gatekit.py"
   own = LOADGAP.read_text(errors="replace") + (HERE / "unsorted-gap.py").read_text(errors="replace")
   own_toks = set(dang.tokens(own))
   already = set(surveyed.get("dangling", [])) | set(surveyed.get("subjects", {}))
-  for path in (redir, data, ran, reader, maker):
+  fresh = (redir, data, ran, reader, maker, noted, namedgone, early, latgone, measured_p,
+           aside, ranm, worded, decoym, decoyg, bind, nested)
+  for path in fresh:
     if path in own_toks or path in already or (ROOT / path).exists():
       print(f"PLANT REFUSED: {path} is already a token, a subject, or a file")
       return REFUSED
+  if not (ROOT / exist).is_file():
+    print(f"PLANT REFUSED: {exist} is not a file; the existing-file control has nothing to cite")
+    return REFUSED
   base = (ROOT / writer).read_text(errors="replace")
+  if deeper in base or (ROOT / deeper).is_file():
+    print(f"PLANT REFUSED: {deeper} is already in the writer or on disk")
+    return REFUSED
   checks: list[tuple[str, bool, str]] = []
   print(f"  PLANT writer={writer}")
 
@@ -479,6 +630,218 @@ def plant(lg, nb, dang, surveyed: dict, live_rows: list[dict], live_bodies: dict
           bool(required) and not live_bad,
           f"required={len(required)} reclassed-data={live_bad or '-'} "
           + " ".join(r["path"] for r in required))
+  checks.append(pair)
+  _print_check(*pair)
+
+  stolen = []
+  for r in required:
+    kind, _why = class_of(r["path"], _citers(r), live_bodies, lg)
+    if kind in (DATA, GONE, MEASURED, BOUND):
+      stolen.append(f"{r['path']}={kind}")
+  pair = ("CONTROL a live REQUIRED path is not reclassed",
+          bool(required) and not stolen,
+          f"required={len(required)} reclassed={stolen or '-'} "
+          + " ".join(r["path"] for r in required))
+  checks.append(pair)
+  _print_check(*pair)
+
+  noted_txt = _insert_header(base, f"# the witness {noted} is gone\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, noted_txt)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, noted)
+  ours = _ours(lg, got, bodies)
+  gap = None if got is None else got.get("gap")
+  for name, good, detail in (
+      ("PLANT is gone is GONE-NOTE",
+       ours == GONE and _row(unsorted, noted) is not None,
+       f"uclass={ours} gap={gap} path={noted}"),
+      ("FALSIFY is gone is not STILL-UNSORTED",
+       ours == GONE and ours != STILL,
+       f"uclass={ours}"),
+      ("FALSIFY is gone is not REQUIRED",
+       got is not None and gap != lg.REQUIRED and ours != lg.REQUIRED,
+       f"gap={gap} uclass={ours}"),
+  ):
+    checks.append((name, good, detail))
+    _print_check(name, good, detail)
+
+  named = _insert_header(base, f"# see {namedgone}\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, named)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, namedgone)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a filename does not supply gone",
+          got is not None and ours == STILL and ours != GONE,
+          f"uclass={ours} path={namedgone}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  early_txt = _insert_header(base, f"# the witness is absent; the file {early} is on disk\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, early_txt)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, early)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY absent before the path is not GONE-NOTE",
+          got is not None and ours == STILL and ours != GONE,
+          f"uclass={ours} path={early}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  latgone_txt = _insert_header(base, f"# the witness {latgone} is on disk. The oracle is gone.\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, latgone_txt)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, latgone)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a later sentence does not supply gone",
+          got is not None and ours == STILL and ours != GONE,
+          f"uclass={ours} path={latgone}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  decoyg_txt = _insert_header(base, f"# the witness {decoyg}, and the decoy absent.py, is on disk.\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, decoyg_txt)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, decoyg)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a decoy filename does not supply gone",
+          got is not None and ours == STILL and ours != GONE,
+          f"uclass={ours} path={decoyg}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  over = _insert_header(base, f"# MEASURED over the packets ({measured_p})\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, over)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, measured_p)
+  ours = _ours(lg, got, bodies)
+  pair = ("PLANT a MEASURED sentence is MEASURED-OVER",
+          ours == MEASURED and _row(unsorted, measured_p) is not None,
+          f"uclass={ours} gap={None if got is None else got.get('gap')} path={measured_p}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  later = _insert_header(base, f"# MEASURED the count was 4. The note names {aside}.\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, later)
+  if copied is None:
+    return REFUSED
+  rows, _unsorted, bodies = copied
+  got = _row(rows, aside)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a MEASURED sentence that does not name the path is not MEASURED-OVER",
+          got is not None and ours != MEASURED and ours == STILL,
+          f"uclass={ours} path={aside}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  ran_m = _insert_header(base, f"# MEASURED .venv/bin/python {ranm}\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, ran_m)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, ranm)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a MEASURED sentence that runs the path is not MEASURED-OVER",
+          got is not None and ours != MEASURED and ours == STILL
+          and ranm in {r["path"] for r in unsorted},
+          f"uclass={ours} gap={None if got is None else got.get('gap')}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  byname = _insert_header(base, f"# see {worded}\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, byname)
+  if copied is None:
+    return REFUSED
+  rows, _unsorted, bodies = copied
+  got = _row(rows, worded)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a filename does not supply MEASURED",
+          got is not None and ours != MEASURED and ours == STILL,
+          f"uclass={ours} path={worded}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  decoym_txt = _insert_header(
+      base, f"# MEASURED the count was 4. The decoy MEASURED.py, {decoym} is a file.\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, decoym_txt)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, decoym)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a decoy filename does not supply MEASURED",
+          got is not None and ours != MEASURED and ours == STILL,
+          f"uclass={ours} path={decoym}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  assigned = _append(base, f'DEEPER = "{deeper}"\n')
+  copied = _copy_unsorted(lg, nb, dang, writer, assigned)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, deeper)
+  ours = _ours(lg, got, bodies)
+  pair = ("PLANT a module-level assignment is BOUND-NAME",
+          ours == BOUND and _row(unsorted, deeper) is not None
+          and (None if got is None else got.get("gap")) != lg.REQUIRED,
+          f"uclass={ours} gap={None if got is None else got.get('gap')} path={deeper}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  oracle_eq = _append(base, f'ORACLE = "{bind}"\n')
+  copied = _copy_unsorted(lg, nb, dang, writer, oracle_eq)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, bind)
+  ours = _ours(lg, got, bodies)
+  gap = None if got is None else got.get("gap")
+  for name, good, detail in (
+      ("FALSIFY ORACLE = is not BOUND-NAME",
+       got is not None and ours != BOUND,
+       f"uclass={ours} gap={gap}"),
+      ("FALSIFY ORACLE = stays REQUIRED",
+       gap == lg.REQUIRED and bind not in {r["path"] for r in unsorted},
+       f"gap={gap} in-unsorted={bind in {r['path'] for r in unsorted}}"),
+  ):
+    checks.append((name, good, detail))
+    _print_check(name, good, detail)
+
+  held = _append(base, f"def _hold():\n    DEEPER = \"{nested}\"\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, held)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, bodies = copied
+  got = _row(rows, nested)
+  ours = _ours(lg, got, bodies)
+  pair = ("FALSIFY a nested assignment is not BOUND-NAME",
+          got is not None and ours == STILL and ours != BOUND
+          and _row(unsorted, nested) is not None,
+          f"uclass={ours} gap={None if got is None else got.get('gap')}")
+  checks.append(pair)
+  _print_check(*pair)
+
+  cited = _insert_header(base, f"# see {exist}\n")
+  copied = _copy_unsorted(lg, nb, dang, writer, cited)
+  if copied is None:
+    return REFUSED
+  rows, unsorted, _bodies_c = copied
+  in_set = any(r["path"] == exist for r in rows) or any(r["path"] == exist for r in unsorted)
+  pair = ("CONTROL an existing file is not in the set",
+          not in_set,
+          f"in-set={in_set} path={exist}")
   checks.append(pair)
   _print_check(*pair)
 
