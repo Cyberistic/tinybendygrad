@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """THE ops_bend MILESTONE GATE.
+  # exit code 2 is USAGE: this gate checks its own argv, BY HAND, without argparse.
 
     .venv/bin/python checks/.e2e-fixture/opsbend_milestone_gate.py rows.txt PACKET.in PACKET.out
 
@@ -47,8 +48,9 @@ def _expected():
     hits = sorted(p.name for p in here.iterdir()
                   if p.is_file() and p.stem == _EXPECTED_STEM)
     if len(hits) != 1:
-        raise SystemExit(f"{_EXPECTED_STEM}: expected exactly one file beside this gate, "
-                         f"found {hits}")
+        print(f"{_EXPECTED_STEM}: expected exactly one file beside this gate, "
+                         f"found {hits}", file=sys.stderr)
+        raise SystemExit(3)
     return here / hits[0]
 
 

@@ -109,7 +109,8 @@ def write_copy(pop, rows, path):
   """``write_ledger`` on a copy. The real ledger is not a legal target."""
   dest = Path(path).resolve()
   if dest == LEDGER.resolve() or dest == pop.LEDGER.resolve():
-    raise SystemExit("plant refused: write target is the real ledger")
+    print("plant refused: write target is the real ledger", file=sys.stderr)
+    raise SystemExit(3)
   return pop.write_ledger(rows, dest)
 
 

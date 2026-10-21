@@ -74,9 +74,10 @@ def stage(root: Path, revert: bool) -> Path:
   if revert:
     text = fold.read_text()
     if text.count(ARMED) != 1:
-      raise SystemExit(f"PLANT STALE: `dt_of`'s None arm is not the one line `f251d80d` wrote "
+      print(f"PLANT STALE: `dt_of`'s None arm is not the one line `f251d80d` wrote "
                        f"({text.count(ARMED)} occurrences of {ARMED!r}) -- re-measure the "
-                       f"plant, do not widen it")
+                       f"plant, do not widen it", file=sys.stderr)
+      raise SystemExit(3)
     fold.write_text(text.replace(ARMED, DISARMED))
   return slop / "graphcmp.bend"
 

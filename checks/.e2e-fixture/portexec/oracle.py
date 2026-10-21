@@ -77,7 +77,8 @@ def emit_kernel(dev, fname="E_4", body=None, prefix=None, vol0=False):
 def expect_words(dev, in_words):
   """CPython arithmetic for the body above, in float32."""
   if dev != "CLANG":
-    raise SystemExit(f"expect_words is only written for CLANG, not {dev}")
+    print(f"expect_words is only written for CLANG, not {dev}", file=sys.stderr)
+    raise SystemExit(3)
   x = np.frombuffer(struct.pack(f"<{len(in_words)}I", *in_words), dtype=np.float32).copy()
   out = np.zeros(4, dtype=np.float32)
   out[0] = np.float32(x[0] + np.float32(1.0))     # val0[0]+1.0f

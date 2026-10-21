@@ -300,8 +300,9 @@ def main():
     # f16 / 32 threads), queried with the FIRST one's triple.
     first, other = tc.amd_rdna3[0], tc.amd_rdna4[0]
     if (first.dims, first.dtype_in, first.threads) != (other.dims, other.dtype_in, other.threads):
-        sys.exit("amd_rdna3[0] and amd_rdna4[0] no longer share a triple, so this "
-                 "row is no longer the FIRST-MATCH row it is named for")
+        print("amd_rdna3[0] and amd_rdna4[0] no longer share a triple, so this "
+                 "row is no longer the FIRST-MATCH row it is named for", file=sys.stderr)
+        sys.exit(3)
     b("pywma_first_wins",
       found([first, other], (first.dims, first.dtype_in, first.threads)) is first)
     # THE ASSERTION TEXTS, built by ops_python.py:37 and :38 out of real fragments.

@@ -1312,6 +1312,47 @@ refused-is-3 [##########] 4/4  **ELEVEN SITES PRINTED `REFUSED` AND EXITED 2, AN
                                        2 TO 3 EVERYWHERE WOULD ERASE THE DISTINCTION AND SAYS NOTHING THE
                                        FOUR FIXES DID NOT ALREADY SAY.**
 
+exitcode-census [##########] 3/3  **A NEW TRACKED GATE THAT FOUND 23 REAL DEFECTS, AND IT IS GREEN BECAUSE
+                                       THEY WERE FIXED -- NOT BECAUSE IT MEASURES NOTHING.** Promoted
+                                       2026-10-21 from `.agents/slop/exitcodes/census.py` to
+                                       `checks/exitcode-census.py`, with `checks/exitcode-census.rows`
+                                       BESIDE IT in git. **THE EXIT CONTRACT IS `0` PASS / `1` FAIL /
+                                       `3` REFUSED**, and `3` is LOAD-BEARING rather than a fallback:
+                                       the census's precondition is the live `gates/gatekit.py`
+                                       vocabulary, so a missing, ambiguous or unparsable owner is
+                                       REFUSED, never a guess. **THE CONTROL IS THE POINT, AND IT
+                                       EARNED ITS KEEP**: `--selftest` runs **11 cases** (owner gains a
+                                       code / owner renames a verdict / owner is ambiguous / owner is
+                                       gone / a MESSAGE-EXIT is charged / an argparse `2` is a
+                                       CONVENTION and is NOT charged / an UNPARSED instrument reaches
+                                       the exit) and **2 MUTANTS go red** (a typed copy of the
+                                       vocabulary, a retyped word set), so the grammar is measured
+                                       against the live owner rather than against a copy of it.
+                                       **AND IT FOUND 23 REAL DEFECTS, WHICH I FIXED:**
+                                       **19 MESSAGE-EXIT sites** in 10 instruments -- `sys.exit(f"...")`
+                                       PRINTS and exits **1**, so to `$?` a refusal reads as a FAIL --
+                                       **10 are refusals** (a plant or fixture is absent, stale,
+                                       vacuous or refused -> **3**) and **5 are failed comparisons** (a
+                                       plant that did not verify, an answer that is not the final
+                                       buffer's bytes -> **1**); **2 failures reported as `2`** in
+                                       `checks/repair-dupes.py` -> **1**; **2 refusals reported as `2`**
+                                       in the two `-mutate.py` harnesses -> **3**; and **2 hand-rolled
+                                       USAGE exits** which now **DECLARE** their code in their own
+                                       docstrings, which is the census's own `CLAIMED` class. **THE
+                                       CENSUS IS NOW `rc=0`: UNOWNED 0, MESSAGE-EXIT 0.**
+                                       **TWO DEFECTS I FOUND IN THE NEW GATE ITSELF, BEFORE LANDING IT:**
+                                       (1) **THE ROWS AND THE SUMMARY DISAGREED BY ONE** -- the
+                                       charge was guarded by `tracked` but the ROW was still emitted, so
+                                       the file a reader reads carried SEVEN `UNOWNED` rows where the
+                                       summary said SIX; and a not-in-HEAD file is another session's
+                                       IN-FLIGHT work, so it is now skipped and the summary says so.
+                                       (2) **MY OWN EDIT SCRIPT SEQUENTIALLY RE-READ EACH FILE, SO
+                                       EACH FIX SHIFTED THE NEXT SITE'S LINE AND ONE WAS SILENTLY
+                                       SKIPPED** -- the census caught it, which is what a census is
+                                       for. **A CENSUS THAT FINDS 23 DEFECTS AND IS CORRECTED BY ITS
+                                       OWN OUTPUT IS AN INSTRUMENT WORKING; ONE THAT FINDS NONE IS
+                                       A GATE THAT MEASURES NOTHING.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

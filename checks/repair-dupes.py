@@ -102,7 +102,9 @@ def main() -> None:
     same = GOOD.read_bytes() == r.stdout.encode()
     print(f"  rows vs committed good run {GOOD.name}: "
           f"{'IDENTICAL, 0 bytes' if same else 'DIFFER'}")
-    sys.exit(0 if same else 2)
+    # FAIL (1), NOT 2: the rows DIFFER from the committed good run, so the
+    # repair did not reproduce it -- 2 is UNNAMED in gatekit's vocabulary.
+    sys.exit(0 if same else 1)
 
 
 if __name__ == "__main__":

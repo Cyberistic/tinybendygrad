@@ -175,11 +175,13 @@ def cpython_exec(body, a, b, d):
 def check_fixture(work):
   """(4) THE CONSTANT, re-derived.  Refuses rather than warns."""
   if repr(DELTA) != DELTA_TEXT:
-    sys.exit(f"FIXTURE CONSTANT MOVED: repr(2.0**-40) is {repr(DELTA)} but "
-             f"emit-f64.bend says {DELTA_TEXT!r}. Refusing to emit an oracle.")
+    print(f"FIXTURE CONSTANT MOVED: repr(2.0**-40) is {repr(DELTA)} but "
+             f"emit-f64.bend says {DELTA_TEXT!r}. Refusing to emit an oracle.", file=sys.stderr)
+    sys.exit(3)
   src = (ROOT / "checks/.e2e-fixture/f64/emit-f64.bend").read_text()
   if DELTA_TEXT not in src:
-    sys.exit(f"FIXTURE CONSTANT ABSENT: {DELTA_TEXT!r} is not in emit-f64.bend.")
+    print(f"FIXTURE CONSTANT ABSENT: {DELTA_TEXT!r} is not in emit-f64.bend.", file=sys.stderr)
+    sys.exit(3)
   return src
 
 

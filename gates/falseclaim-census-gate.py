@@ -512,9 +512,10 @@ def plant_cases():
             continue
         cells = [c.replace("\\n", "\n").replace("\\t", "\t") for c in raw.split("\t")]
         if len(cells) != 8:
-            raise SystemExit(f"PLANT DEAD: {PLANT.name} row has {len(cells)} columns, wanted 8: "
+            print(f"PLANT DEAD: {PLANT.name} row has {len(cells)} columns, wanted 8: "
                              f"{raw!r} -- a fixture the harness cannot read is a fixture that "
-                             "measures nothing")
+                             "measures nothing", file=sys.stderr)
+            raise SystemExit(3)
         kind, label, prose, form, value, call, want, why = cells
         out.append((kind, label, prose, form, value, call,
                     None if want == "-" else want, None if why == "-" else why))

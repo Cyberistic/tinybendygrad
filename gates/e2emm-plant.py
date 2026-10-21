@@ -72,27 +72,33 @@ def main():
   except AttributeError as e:
     assert "vals" in str(e), e
   else:
-    sys.exit("A: old call returned")
+    print("A: old call returned", file=sys.stderr)
+    sys.exit(1)
 
   vv = {"i": 3, "j": 7}
   got = mod.launch_vals(Prg([Nameless(), V("i"), V("buf", False), V("j")]), {**vv, "buf": 9})
   if got != [3, 7]:
-    sys.exit(f"B: new call returned {got}, not the variable bindings")
+    print(f"B: new call returned {got}, not the variable bindings", file=sys.stderr)
+    sys.exit(1)
   if mod.launch_vals(Prg([Nameless()]), {}) != []:
-    sys.exit("B: a buffer-only program is not an empty vals")
+    print("B: a buffer-only program is not an empty vals", file=sys.stderr)
+    sys.exit(1)
   try:
     mod.launch_vals(Prg([V("missing")]), {})
   except RuntimeError as e:
     assert "unbound Variable" in str(e), e
   else:
-    sys.exit("B: unbound variable returned")
+    print("B: unbound variable returned", file=sys.stderr)
+    sys.exit(1)
 
   old = Old([V("i"), V("j")])
   if record(old.vals(vv)) != record(mod.launch_vals(old, vv)):
-    sys.exit("C: control record moved")
+    print("C: control record moved", file=sys.stderr)
+    sys.exit(1)
   wider = Old([V("i")], extra=(Nameless(),))
   if record(wider.vals({"i": 3})) != record(mod.launch_vals(wider, {"i": 3})):
-    sys.exit("C: a non-variable kernel_param changed the record")
+    print("C: a non-variable kernel_param changed the record", file=sys.stderr)
+    sys.exit(1)
 
   # A derivation that does not filter is_variable either asserts or changes the record.
   try:
@@ -100,7 +106,8 @@ def main():
   except AssertionError:
     blind = None
   if blind == [3]:
-    sys.exit("falsification: an unfiltered walk matched the re-derivation")
+    print("falsification: an unfiltered walk matched the re-derivation", file=sys.stderr)
+    sys.exit(1)
 
   print("A AttributeError on vals")
   print("B re-derived [i, j], buffer excluded, unbound raises")

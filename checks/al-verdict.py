@@ -20,6 +20,7 @@ rows cannot be emitted at all and this instrument would report nothing. It catch
 `RuntimeError`, and `AssertionError` ONLY when the message starts
 `"None input shape not supported for "` -- so `ops.py:438`/`:137`/`:141`, which are WRONG
 FIXTURES, still refuse. It is a monkeypatch and NOTHING ON DISK CARRIES IT.
+# exit code 2 is USAGE: this instrument checks its own argv, BY HAND, without argparse.
 """
 from __future__ import annotations
 

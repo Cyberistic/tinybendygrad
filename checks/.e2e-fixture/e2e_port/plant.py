@@ -21,6 +21,7 @@ s = p.read_text()
 old, new = sys.argv[2], sys.argv[3]
 n = s.count(old)
 if n != 1:
-    sys.exit(f"VACUOUS PLANT: {p} contains {n} copies of the target text, not 1:\n  {old!r}")
+    print(f"VACUOUS PLANT: {p} contains {n} copies of the target text, not 1:\n  {old!r}", file=sys.stderr)
+    sys.exit(3)
 p.write_text(s.replace(old, new))
 print(f"    planted {p.name}: 1 site, {len(old)} -> {len(new)} bytes")

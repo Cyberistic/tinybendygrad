@@ -121,7 +121,8 @@ def assert_pins(path, nfields, value_columns, label_columns=()):
               f"{nfields} fields, value columns "
               f"{tuple(c + 1 for c in value_columns)}:\n  "
               + "\n  ".join(bad[:6]), file=sys.stderr)
-        raise SystemExit(2)
+        # REFUSED (3), NOT 2: the pins shape is not what this harness expects, so it cannot run -- 2 is UNNAMED in gatekit's vocabulary.
+        raise SystemExit(3)
     return rows
 
 
@@ -141,7 +142,8 @@ def _write_mutations(port=None, driver=None, oracle=None, pins=None, spec=None):
         print(f"== REFUSED, NOT A VERDICT: {DRIVER}: the creation.bend import "
               f"{DRIVER_IMPORT!r} is gone -- this harness rewrites it and cannot",
               file=sys.stderr)
-        raise SystemExit(2)
+        # REFUSED (3), NOT 2: the pins shape is not what this harness expects, so it cannot run -- 2 is UNNAMED in gatekit's vocabulary.
+        raise SystemExit(3)
     MUT_DRIVER.write_text(src.replace(DRIVER_IMPORT, DRIVER_MUT_IMPORT))
 
 

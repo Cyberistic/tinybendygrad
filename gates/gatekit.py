@@ -106,8 +106,8 @@ def verdict_of(code):
     static AST walk of the **226** `.py` files of `checks/`+`gates/` finds **20** that can return `2`
     at all. Three numbers, three questions, and a bare `13` answering none of them **is the defect
     this whole table is about** -- so the sentence now states the CLASS (a code `VERDICT` does not
-    name) and names the census that re-takes it: `.agents/slop/exitcodes/census.py`, whose
-    `codes.rows` column 3 is `UNOWNED`.
+    name) and names the census that re-takes it: `checks/exitcode-census.py`, whose
+    `checks/exitcode-census.rows` column 3 is `UNOWNED`.
 
     WHY `REFUSED` AND NOT `DEAD`. `DEAD` is "it ran and emitted nothing" -- a claim about EXECUTION,
     which only something that watched the process can make. A code this table does not define has

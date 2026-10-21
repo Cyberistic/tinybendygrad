@@ -236,8 +236,9 @@ def main():
     r.pop("_bufs", None)
 
   if len(launches) != 2:
-    sys.exit(f"expected 2 launches, traced {len(launches)} -- a zero-launch trace "
-             f"reads exactly like a program that computes nothing (trace_forward.py)")
+    print(f"expected 2 launches, traced {len(launches)} -- a zero-launch trace "
+             f"reads exactly like a program that computes nothing (trace_forward.py)", file=sys.stderr)
+    sys.exit(3)
 
   # ---- the id map: first-bind order, from BASE_ID, as `bufs3` does ----------
   first_bind, ids, sizes = [], {}, {}
@@ -273,7 +274,8 @@ def main():
   # expectation are about different tensors.
   final_after = u32_of(base64.b64decode(last["after"][final]))
   if final_after != answer:
-    sys.exit(f"answer is not the final buffer's bytes: {final} {final_after[:4]} vs {answer[:4]}")
+    print(f"answer is not the final buffer's bytes: {final} {final_after[:4]} vs {answer[:4]}", file=sys.stderr)
+    sys.exit(1)
   oracle = {
     "note": "every value below was produced by CALLING CPython tinygrad (DEV=CPU) in "
             "this file; nothing here is transcribed. u32 little-endian bit patterns.",

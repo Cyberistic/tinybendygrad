@@ -137,7 +137,8 @@ def assert_pins(path, nfields, value_columns, empty_allowed=()):
         print(f"{path.name}: THE PINS SHAPE IS NOT WHAT THIS HARNESS EXPECTS -- {nfields} "
               f"fields, value columns {tuple(c + 1 for c in value_columns)}:\n  "
               + "\n  ".join(bad[:6]), file=sys.stderr)
-        raise SystemExit(2)
+        # REFUSED (3), NOT 2: the pins shape is not what this harness expects, so it cannot run -- 2 is UNNAMED in gatekit's vocabulary.
+        raise SystemExit(3)
     return rows
 
 
