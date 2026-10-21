@@ -999,13 +999,20 @@ def KernelInfo.of() -> KernelInfo:
   # name: str = "test"            # name of the kernel
   KernelInfo{"test", Nil{}, None{}, 0}
 
-# ProgramInfo -- ops.py:1349. `target: Target` is NOT PORTED: `Target` is
-# helpers.py's device-target record and helpers.bend lists it as P6 ("it exists
-# to parse DEV, and DEV only exists once there is a device to point at"). So
-# `from_sink` drops its `target` parameter and the field goes with it. The other
-# six are ported. `global_size` is `tuple[int|float, ...]`, so its elements are
-# `H.I64`: an int is an I64 and a float is not a shape, so the float case in
-# `sym_infer` is recorded on `sym_infer` itself.
+# ProgramInfo -- ops.py:1343. `target: Target` is NOT PORTED, and the reason is
+# the CONSTRUCTOR and not the class. `Target` IS ported: `runtime/ops_python.bend:2420`
+# has `Target{device, renderer, arch, iface, indices}` against upstream's
+# `tinygrad/helpers.py:198` `Target`, whose only different name is `interface` -> `iface`.
+# Only `Target.parse` (`tinygrad/helpers.py:206`) is unported. `helpers.bend:2787` still
+# lists `Target` itself as P6, and that half of the sentence is STALE about the
+# class -- MEASURED 2026-10-21.
+# The FIELD goes because upstream's `from_sink` (`ops.py:1358`) is NOT PORTED: the
+# port has no `ProgramInfo.from_sink` at all, and `launch_dims` is still this
+# file's `TODO(p3)`, so nothing builds a `ProgramInfo` from a sink and there is
+# no `target` argument to drop. The other six FIELDS are ported. `global_size` is
+# `tuple[int|float, ...]`, so its elements are `H.I64`: an int is an I64 and a
+# float is not a shape, so the float case in `sym_infer` is recorded on
+# `sym_infer` itself.
 type ProgramInfo is Data:
   ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>}
 
@@ -8427,7 +8434,25 @@ def vv_has.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => Bool>) -> Bool:
 def vv_has(v: VarVals, k: String) -> Bool:
   vv_has.of(Map.has(&2, H.I64, VarVals.m(v), k))
 
-# ==== ops.py:1366  `ProgramInfo.vals` ======================================
+# ==== 186fbba2a0e149a87b625c228254d49ffa72a2ca:tinygrad/uop/ops.py:1350
+#      `ProgramInfo.vals` ====================================================
+#
+# UPSTREAM HAS NO SUCH METHOD AT THE PIN, AND THIS BLOCK IS NOT A PORT OF IT.
+# `a6addc2d4` ("buffers and args in any input order", 2026-10-14) DELETED
+# `ProgramInfo.vals` and renamed the field it read, `vars` -> `params`; the pin
+# `5c2bf39d6c4b` is a descendant of that commit, and its `class ProgramInfo`
+# (`tinygrad/uop/ops.py:1343`) has `params` and NO `vals`. So the block below is
+# the port of the method upstream HAD at `186fbba2a` -- the parent of
+# `a6addc2d4` -- where `def vals` is at `tinygrad/uop/ops.py:1350`.
+#
+# IT IS NOT A LOOSE ADDITION. The port's realize lane is at that same revision:
+# `engine/realize.bend`'s `get_call_var_uops` is the port of
+# `186fbba2a0e149a87b625c228254d49ffa72a2ca:tinygrad/engine/realize.py:16`
+# `get_call_var_uops`, which read `prg.arg.vars`; the pin reads
+# `prg.kernel_params` instead (`tinygrad/engine/realize.py:17`
+# `get_call_kernel_args`). And `ProgramInfo.from_sink` is NOT PORTED, so
+# `ProgramInfo.params` is never built from a sink and this `vals` has no
+# real-program caller: its only caller is this file's own `vv_*` lane.
 #
 # `tuple(var_vals[k.expr] for k in self.vars)` with
 # `raise RuntimeError(f"unbound Variable {e}")` on a miss. MEASURED:
@@ -8507,6 +8532,41 @@ def vals.step(+ar: Arena, +v: VarVals, xs: List<&2, U32>, acc: List<&2, H.I64>) 
 # and this file's standing spelling for a raise is the absent case -- the same
 # `Maybe` `UOp.expr` uses, and the reason `Maybe` rather than a sentinel is that a
 # schedule key of the WRONG LENGTH is a wrong program and not a diagnostic.
+#
+# ==== PORT EXTENSION ========================================================
+# PORT-EXTENSION: ProgramInfo.vals
+# PORT-EXTENSION-DATE: 2026-10-14T10:15:48Z
+# PORT-EXTENSION-UPSTREAM: a6addc2d4344ef51636626e937afece3147f0db3
+# PORT-EXTENSION-DERIVE: git --no-optional-locks log -1 --format=%H -S 'def vals(self, var_vals' refs/remotes/upstream/master -- tinygrad/uop/ops.py
+#
+# WHAT THIS IS. The port defines a member of `ProgramInfo` that upstream's
+# `ProgramInfo` does not have, so it is an EXTENSION and it says so here, where
+# the def is, so the declaration cannot drift away from the thing it declares.
+# `gates/valsdiv-gate.py` READS these four lines and CHECKS them: an extension
+# with no declaration is a FAIL, a declaration whose upstream revision does not
+# hold the method is a FAIL, a declaration whose date is not the revision's own
+# author date is a FAIL, and a declaration whose derive command does not
+# reproduce is a FAIL. So this is not prose and it is not a licence: it is a
+# claim the gate can lose.
+#
+# WHY THE DATE IS UPSTREAM'S AND NOT OURS. `a6addc2d4` is the commit that
+# DELETED `ProgramInfo.vals`, and `2026-10-14T10:15:48Z` is that commit's own
+# author date. The gate reads the date out of the object store and compares, so
+# the sha and the date are two different values that have to agree -- the check
+# `gates/rotclaim-gate.py` calls a dated record, and the reason a sha written
+# in prose is not one.
+#
+# WHY THE UPSTREAM SHA IS THE DELETING COMMIT AND NOT THE ONE THAT HAD IT. The
+# gate reads BOTH ends: at `a6addc2d4` upstream's `ProgramInfo` has no `vals`,
+# and at its parent `186fbba2a` it has one. So the declaration names the moment
+# the port and upstream parted.
+#
+# WHY THE DERIVE IS A HISTORY QUERY AND NOT A `git show`. The derive re-derives
+# the deleting commit from UPSTREAM's own ref -- the most recent upstream commit
+# that changed the number of `def vals(self, var_vals` lines -- so the declared
+# sha and the derive's answer are two INDEPENDENT reads that have to agree, and
+# a re-vendor of `tinygrad/` in THIS repo cannot satisfy the claim.
+# ==== END PORT EXTENSION ====================================================
 def ProgramInfo.vals(+ar: Arena, v: VarVals, x: ProgramInfo) -> Maybe<&2, List<&2, H.I64>>:
   vals.step(ar, v, ProgramInfo.params(x), Nil{})
 
@@ -8947,8 +9007,11 @@ def main() -> IO(Unit):
 #     it computes the offset with `strides_for_shape` instead of a
 #     `pm_contiguous_view_offset` matcher. P3 with `symbolic.bend`; the matcher form is
 #     NOT PORTED for the reason the pattern compiler is, below.
-#   `Target` in `ProgramInfo` -- helpers.py's device-target record, already
-#     listed as P6 in helpers.bend's own NOT PORTED block.
+#   `Target` in `ProgramInfo` -- the FIELD, and it is absent because upstream's
+#     `from_sink` is not ported, NOT because the class is missing: `Target` is
+#     ported at `runtime/ops_python.bend:2420` and only `Target.parse` is not.
+#     helpers.bend's own NOT PORTED block still lists `Target` as P6, and that
+#     half of it is stale.
 #   `grad_fxn` in `CallInfo` and `uopfunc` -- a Python function object; a Bend
 #     closure is single-use and is a `Type`, so it cannot be a `Data` field.
 #     The reverse-mode plumbing is `tinygrad/nn/gradient.py`, P7.

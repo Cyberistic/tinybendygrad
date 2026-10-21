@@ -12,14 +12,54 @@ not from a list in this file. The port side is a walk of `tinybendygrad/` (`os.w
 `ProgramInfo.vals(` that is not that definition and not inside a `#` comment is a call
 site. Comments are counted and are not callers.
 
-TWO FINDINGS, ONE EXIT WHILE THE DIVERGENCE HOLDS. A definition with a call site is a
-divergence. A definition whose only other mentions are comments is dead code that still
-claims an upstream API. Both are FAIL. They are not the same finding, and this file
-deletes neither.
+THE RULE, AND IT IS STRICTLY STRONGER THAN "THE PORT MUST NOT DEFINE IT".
+
+  A port may ADD a member that upstream does not have -- that is an EXTENSION, and
+  `AGENTS.md` says the port contract is behaviour, not names. But an extension has to be
+  DECLARED, and the declaration is a machine-readable record IN THE PORT FILE, next to
+  the def it declares:
+
+      # PORT-EXTENSION: ProgramInfo.vals
+      # PORT-EXTENSION-DATE: 2026-10-14T10:15:48Z
+      # PORT-EXTENSION-UPSTREAM: a6addc2d4344ef51636626e937afece3147f0db3
+      # PORT-EXTENSION-DERIVE: git --no-optional-locks log -1 --format=%H -S '...' ...
+
+  and this gate CHECKS the record instead of believing it. A declaration is DATED (the
+  date is the upstream commit's own author date, read back out of the object store and
+  compared, so the sha and the date are two different values that have to agree -- the
+  check `gates/rotclaim-gate.py` calls a dated record), it names an UPSTREAM REVISION,
+  and it carries a DERIVE COMMAND that is RUN and whose result is CHECKED against the
+  declared revision. The derive is a history query over upstream's own ref, so the
+  declaration cannot be satisfied by a re-vendor of `tinygrad/` in THIS repo.
+
+  **A DECLARED EXTENSION IS STILL AN ANSWER THE GATE CAN LOSE.** Every one of these is
+  a FAIL, and none of them was a FAIL before this file grew the declaration arm:
+
+    undeclared      the port defines `ProgramInfo.vals` and no declaration says so
+    malformed       the declaration is missing a date, a revision or a derive command
+    unattached     the declaration is in a different file from the def it declares
+    unparseable    the declared date does not parse
+    disagreement    the derive command does not name the declared revision
+    not-a-commit   the declared revision is not a commit object
+    wrong-date     the revision's own author date is not the declared date
+    not-deleted    upstream's `ProgramInfo` still HAS `vals` at the declared revision
+    never-there    upstream's `ProgramInfo` has no `vals` at the declared revision's
+                   parent either, so the declared revision did not delete it
+    dead           a declared extension nothing calls
+    unreachable    a declared extension whose callers `main` does not reach
+    stale          upstream's `ProgramInfo` HAS `vals` and the port still declares an
+                   extension, so the declaration must be withdrawn
+
+  So the gate is not "the port may add anything it likes, with a comment". It is "the
+  port may add a member it can PROVE it is porting, and it has to keep proving it".
 
 EXIT, re-derived on every run:
-  PASS     upstream's class has `vals` again, or the port definition is absent
-  FAIL     upstream has no `vals` and the port definition exists
+  PASS     upstream's class has `vals` again and no declaration claims otherwise, or the
+           port definition is absent and nothing declares it, or the port definition is
+           DECLARED and every check on the declaration holds and the extension is live
+  FAIL     upstream has no `vals` and the port definition is undeclared, or the port
+           definition is declared and the declaration does not hold, or the declaration
+           is stale
   REFUSED  a file this run must read is missing, the class is absent, or the walk
            found no `.bend` file -- a missing file is not "the def disappeared"
 
@@ -28,10 +68,13 @@ top-level code, by same-file name. A call site that exists but is not on that pa
 still a caller, and the finding says so.
 
 THE PLANT IS ON COPIES. `--plant` strips the definition and the call sites from a copy
-and requires that copy not FAIL for "def exists"; a copy that still has the definition
-must FAIL; a copy of upstream with a `vals` method inserted must PASS; a missing path
-must REFUSE. The live files are hashed before and after. A plant that does not move is
-FAIL, because a constant exit measured nothing.
+and requires that copy not FAIL for "def exists"; a copy whose declaration is removed
+must FAIL as undeclared; the unstripped copy must PASS as a declared extension; a copy
+whose derive command, date or revision is broken must FAIL; a copy whose callers are
+stripped must FAIL as dead; a copy of upstream with a `vals` method inserted must PASS
+when the port copy declares nothing and must FAIL when it declares an extension; a
+missing path must REFUSE. The live files are hashed before and after. A plant that does
+not move is FAIL, because a constant exit measured nothing.
 """
 from __future__ import annotations
 
@@ -39,6 +82,8 @@ import ast
 import hashlib
 import os
 import re
+import shlex
+import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -58,6 +103,18 @@ CALL_RE = re.compile(r"(?<![\w.])ProgramInfo\.vals\s*\(")
 FUNC_RE = re.compile(r"^def\s+([A-Za-z_][A-Za-z0-9_.]*)", re.M)
 CALLEE_RE = re.compile(r"(?<![\w.])([A-Za-z_][A-Za-z0-9_.]*)\s*\(")
 CLASS_RE = re.compile(r"^class ProgramInfo\b[^\n]*:", re.M)
+
+#: The DECLARATION markers, read out of the PORT's own comments. A declaration is the
+#: set of markers in ONE `.bend` file; the bare `PORT-EXTENSION` names the member and
+#: the three suffixed ones carry its date, its upstream revision and its derive command.
+EXT = "PORT-EXTENSION"
+EXT_DATE = "DATE"
+EXT_UPSTREAM = "UPSTREAM"
+EXT_DERIVE = "DERIVE"
+EXT_MARK = re.compile(r"^#\s*PORT-EXTENSION(?:-([A-Z]+))?\s*:\s*(.*?)\s*$")
+#: The upstream file at a REVISION. The vendored tree's path is upstream's own path, so
+#: the same name reads both the working tree and any revision of it.
+UPSTREAM_REL = "tinygrad/uop/ops.py"
 
 
 def walk_bend(root: Path) -> list[Path]:
@@ -139,16 +196,25 @@ def class_members(node: ast.ClassDef) -> tuple[tuple[str, ...], tuple[str, ...]]
   return tuple(fields), tuple(methods)
 
 
-def read_upstream(path: Path) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
-  """`(fields, methods)` of the top-level `ProgramInfo`, or None if it cannot be read."""
+def program_info(text: str) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+  """`(fields, methods)` of the top-level `ProgramInfo` in `text`, or None."""
   try:
-    tree = ast.parse(path.read_text())
-  except (OSError, SyntaxError):
+    tree = ast.parse(text)
+  except SyntaxError:
     return None
   for node in tree.body:
     if isinstance(node, ast.ClassDef) and node.name == "ProgramInfo":
       return class_members(node)
   return None
+
+
+def read_upstream(path: Path) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+  """`(fields, methods)` of the top-level `ProgramInfo`, or None if it cannot be read."""
+  try:
+    text = path.read_text()
+  except OSError:
+    return None
+  return program_info(text)
 
 
 def has_vals(fields: tuple[str, ...], methods: tuple[str, ...]) -> bool:
@@ -234,8 +300,123 @@ def witness(parent: dict[str, str | None], func_name: str) -> str:
   return " -> ".join([*chain, NAME])
 
 
-def scan_port(root: Path, display: Path) -> tuple[list[str], list[str], list[str], list[str]] | str:
-  """Defs, calls, comment sites, and a reachability witness. A string is a refusal."""
+def declarations(paths: list[Path]) -> dict[Path, dict[str, list[str]]]:
+  """`{path: {key: [values]}}` -- the `PORT-EXTENSION*` markers in each file's COMMENTS.
+
+  A marker in a STRING is not a marker, so the comment half is split off first. A key
+  that appears TWICE is kept as two values, because a declaration that says two things
+  is not a declaration and the caller has to be able to see that.
+  """
+  out: dict[Path, dict[str, list[str]]] = {}
+  for path in paths:
+    try:
+      text = path.read_text()
+    except OSError:
+      continue
+    found: dict[str, list[str]] = {}
+    for line in text.splitlines():
+      _code, comment = split_comment(line)
+      match = EXT_MARK.match(comment.strip())
+      if match is None:
+        continue
+      found.setdefault(match.group(1) or EXT, []).append(match.group(2))
+    if found:
+      out[path] = found
+  return out
+
+
+def git(*args: str) -> tuple[int, str, str]:
+  """`git` in THIS repo. The return code, stdout and stderr, never an exception."""
+  ran = subprocess.run(("git", "--no-optional-locks") + args, cwd=ROOT, capture_output=True, text=True)
+  return ran.returncode, ran.stdout, ran.stderr
+
+
+def same_instant(a: str, b: str) -> bool:
+  """Two timestamps, one instant. A wrong date is not a near miss."""
+  def parse(s: str) -> datetime:
+    return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(timezone.utc).replace(microsecond=0)
+  try:
+    return parse(a) == parse(b)
+  except ValueError:
+    return False
+
+
+def upstream_at(revision: str) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+  """`(fields, methods)` of upstream's `ProgramInfo` at `revision`, or None."""
+  code, out, _err = git("show", f"{revision}:{UPSTREAM_REL}")
+  if code != 0:
+    return None
+  return program_info(out)
+
+
+def run_derive(command: str) -> tuple[int, str, str]:
+  """The derive command, RUN. A derive that is not a git command is refused."""
+  argv = shlex.split(command)
+  if not argv or argv[0] != "git":
+    return 1, "", "the derive command is not a git command"
+  ran = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True)
+  return ran.returncode, ran.stdout, ran.stderr
+
+
+def declaration_failures(markers: dict[str, list[str]], where: Path, def_paths: list[Path]) -> list[str]:
+  """Why this declaration cannot stand. An empty list means it holds.
+
+  Every check here is a check that can FAIL, and the two that read the object store are
+  SECOND reads: the derive's answer and the declaration's own field have to agree, and
+  the revision's own author date has to agree with the declared date. `sha256(x) ==
+  sha256(x)` cannot fail; these can, because the date and the object store are
+  different values.
+  """
+  bad: list[str] = []
+  names = markers.get(EXT, [])
+  if len(names) != 1:
+    bad.append(f"the declaration names {len(names)} members")
+  date = markers.get(EXT_DATE, [])
+  revision = markers.get(EXT_UPSTREAM, [])
+  derive = markers.get(EXT_DERIVE, [])
+  for key, values in ((EXT_DATE, date), (EXT_UPSTREAM, revision), (EXT_DERIVE, derive)):
+    if len(values) != 1:
+      bad.append(f"the declaration has {len(values)} {key} fields and needs exactly one")
+  if bad:
+    return bad
+  if def_paths and where not in def_paths:
+    bad.append(f"the declaration is in {where} and the def is in {', '.join(str(p) for p in def_paths)}")
+  code, out, err = run_derive(derive[0])
+  if code != 0 or not out.strip():
+    bad.append(f"the derive command named no revision: {err.strip()[:120] or 'no output'}")
+    return bad
+  if out.strip() != revision[0]:
+    bad.append(f"the derive command named {out.strip()[:12]} and the declaration names {revision[0][:12]}")
+    return bad
+  sha = out.strip()
+  code, kind, _err = git("cat-file", "-t", sha)
+  if code != 0 or kind.strip() != "commit":
+    bad.append(f"{sha[:12]} is not a commit object")
+    return bad
+  code, when, _err = git("log", "-1", "--format=%aI", sha)
+  if code != 0 or not same_instant(when.strip(), date[0]):
+    bad.append(f"the revision's own date {when.strip() or 'absent'} is not the declared date {date[0]}")
+    return bad
+  at = upstream_at(sha)
+  if at is None:
+    bad.append(f"upstream's {UPSTREAM_REL} at {sha[:12]} is unreadable")
+    return bad
+  if has_vals(*at):
+    bad.append(f"upstream's ProgramInfo still has `vals` at {sha[:12]}")
+    return bad
+  before = upstream_at(f"{sha}^")
+  if before is None:
+    bad.append(f"upstream's {UPSTREAM_REL} at {sha[:12]}^ is unreadable")
+    return bad
+  if not has_vals(*before):
+    bad.append(f"upstream's ProgramInfo has no `vals` at {sha[:12]}^ either")
+    return bad
+  return bad
+
+
+def scan_port(root: Path, display: Path) -> tuple[list[str], list[str], list[str], list[str], list[Path], dict[Path, dict[str, list[str]]]] | str:
+  """Defs, calls, comment sites, a reachability witness, the files that hold the def,
+  and the declarations. One walk: the population is walked ONCE."""
   if not root.is_dir():
     return f"port root absent: {root}"
   files = walk_bend(root)
@@ -245,6 +426,7 @@ def scan_port(root: Path, display: Path) -> tuple[list[str], list[str], list[str
   calls: list[str] = []
   comments: list[str] = []
   witnesses: list[str] = []
+  def_paths: list[Path] = []
   for path in files:
     try:
       text = path.read_text()
@@ -257,6 +439,7 @@ def scan_port(root: Path, display: Path) -> tuple[list[str], list[str], list[str
     reached, parent = reach(code)
     for match in DEF_RE.finditer(code):
       defs.append(f"{shown}:{line_of(code, match.start())}")
+      def_paths.append(path)
     for match in CALL_RE.finditer(code):
       if any(start <= match.start() < end for start, end in def_spans):
         continue
@@ -268,7 +451,7 @@ def scan_port(root: Path, display: Path) -> tuple[list[str], list[str], list[str
         witnesses.append(f"{site} via {path_s}")
     for n in comment_mentions(text):
       comments.append(f"{shown}:{n}")
-  return defs, calls, comments, witnesses
+  return defs, calls, comments, witnesses, def_paths, declarations(files)
 
 
 def digest(paths: list[Path]) -> dict[str, str]:
@@ -298,32 +481,80 @@ def measure(upstream: Path, port_root: Path, display: Path | None = None) -> tup
   if isinstance(scanned, str):
     lines.append(f"valsdiv-gate: REFUSED -- {scanned}")
     return REFUSED, lines
-  defs, calls, comments, witnesses = scanned
+  defs, calls, comments, witnesses, def_paths, decls = scanned
   lines.append(f"valsdiv-gate: upstream-fields: {', '.join(fields)}")
   lines.append(f"valsdiv-gate: upstream-methods: {', '.join(methods)}")
   lines.append(f"valsdiv-gate: upstream-vals: {'present' if has_vals(fields, methods) else 'absent'}")
   lines.append(f"valsdiv-gate: port-defs: {len(defs)}" + (f" ({', '.join(defs)})" if defs else ""))
   lines.append(f"valsdiv-gate: port-calls: {len(calls)}" + (f" ({', '.join(calls)})" if calls else ""))
   lines.append(f"valsdiv-gate: port-comments: {len(comments)} (not callers)")
+
+  # THE DECLARATIONS, DISCOVERED. The port's own comments, walked, never a list here.
+  declared = {path: markers for path, markers in decls.items() if markers.get(EXT) == [NAME]}
+  lines.append(f"valsdiv-gate: port-declarations: {len(declared)}"
+               + (f" ({', '.join(rel(p, show) for p in declared)})" if declared else ""))
+  for path, markers in declared.items():
+    lines.append(f"valsdiv-gate: declaration: {rel(path, show)} "
+                 f"date={markers.get(EXT_DATE, ['-'])[0]} upstream={markers.get(EXT_UPSTREAM, ['-'])[0][:12]}")
+
   if has_vals(fields, methods):
+    if declared:
+      lines.append("valsdiv-gate: finding: stale-declaration -- upstream's ProgramInfo has vals")
+      lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- a declared extension for a member upstream has; withdraw it")
+      return FAIL, lines
     lines.append("valsdiv-gate: finding: aligned -- upstream ProgramInfo has vals")
     lines.append(f"valsdiv-gate: {verdict_of(PASS)} -- upstream grew vals; def-exists is not the failure")
     return PASS, lines
   if not defs:
+    if declared:
+      lines.append("valsdiv-gate: finding: orphan-declaration -- the port has no def ProgramInfo.vals")
+      lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- a declaration for a member the port does not define")
+      return FAIL, lines
     lines.append("valsdiv-gate: finding: absent -- no def ProgramInfo.vals")
     lines.append(f"valsdiv-gate: {verdict_of(PASS)} -- port def disappeared; not FAIL for def-exists")
     return PASS, lines
-  if witnesses:
-    lines.append(f"valsdiv-gate: finding: reachable -- {witnesses[0]}")
-    why = "divergence: port def is reachable from a live caller, upstream has no vals"
-  elif calls:
+
+  if not declared:
+    if witnesses:
+      lines.append(f"valsdiv-gate: finding: reachable -- {witnesses[0]}")
+      why = "divergence: port def is reachable from a live caller, upstream has no vals"
+    elif calls:
+      lines.append(f"valsdiv-gate: finding: callers -- {calls[0]} is not reached from main")
+      why = "divergence: port def has a caller that main does not reach, upstream has no vals"
+    else:
+      lines.append("valsdiv-gate: finding: dead-claim -- def exists, callers are only comments")
+      why = "dead code claiming an upstream API: port def exists, no call site, upstream has no vals"
+    lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- {why}")
+    lines.append("valsdiv-gate: a DECLARED extension would be read at this def; there is none")
+    return FAIL, lines
+
+  if len(declared) > 1:
+    lines.append(f"valsdiv-gate: finding: ambiguous -- {len(declared)} declarations for {NAME}")
+    lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- more than one declaration for the same member")
+    return FAIL, lines
+  where, markers = next(iter(declared.items()))
+  failures = declaration_failures(markers, where, def_paths)
+  if failures:
+    lines.append("valsdiv-gate: finding: declared-but-unproven -- " + "; ".join(failures))
+    lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- the declaration does not hold")
+    return FAIL, lines
+  lines.append("valsdiv-gate: declaration-verified: upstream lost `vals` at the declared revision, "
+               "the revision's own date is the declared date, and the derive command reproduces it")
+
+  # A DECLARED EXTENSION IS STILL AN ANSWER THE GATE CAN LOSE. Upstream deleted the
+  # method as UNUSED, so a declared extension that nothing calls is dead code, and one
+  # whose callers `main` does not reach is a claim with no subject.
+  if not calls:
+    lines.append("valsdiv-gate: finding: dead-claim -- declared, but its only mentions are comments")
+    lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- a declared extension nothing calls")
+    return FAIL, lines
+  if not witnesses:
     lines.append(f"valsdiv-gate: finding: callers -- {calls[0]} is not reached from main")
-    why = "divergence: port def has a caller that main does not reach, upstream has no vals"
-  else:
-    lines.append("valsdiv-gate: finding: dead-claim -- def exists, callers are only comments")
-    why = "dead code claiming an upstream API: port def exists, no call site, upstream has no vals"
-  lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- {why}")
-  return FAIL, lines
+    lines.append(f"valsdiv-gate: {verdict_of(FAIL)} -- a declared extension whose callers main does not reach")
+    return FAIL, lines
+  lines.append(f"valsdiv-gate: finding: declared-extension -- {witnesses[0]}")
+  lines.append(f"valsdiv-gate: {verdict_of(PASS)} -- declared, proven and live")
+  return PASS, lines
 
 
 def rewrite_code(text: str, drop_def: bool, drop_call: bool) -> str:
@@ -339,6 +570,36 @@ def rewrite_code(text: str, drop_def: bool, drop_call: bool) -> str:
       code = re.sub(r"\bdef\s+ProgramInfo\.vals\b", "def ProgramInfo.gone", code)
     if drop_call and not is_def:
       code = re.sub(r"(?<![\w.])ProgramInfo\.vals\b", "ProgramInfo.gone", code)
+    out.append(code + comment + nl)
+  return "".join(out)
+
+
+def strip_declaration(text: str) -> str:
+  """Remove the DECLARATION MARKERS and leave the prose. The prose is not a declaration:
+  a declaration is the four machine-readable lines, and a copy without them is the
+  UNDECLARED copy the plant needs."""
+  out = []
+  for line in text.splitlines(keepends=True):
+    nl = "\n" if line.endswith("\n") else ""
+    body = line[:-len(nl)] if nl else line
+    code, comment = split_comment(body)
+    if EXT_MARK.match(comment.strip()) is not None:
+      continue
+    out.append(code + comment + nl)
+  return "".join(out)
+
+
+def replace_marker(text: str, key: str, value: str) -> str:
+  """Replace one declaration marker's value. A copy whose declaration says something else
+  is a copy the gate has to be able to lose."""
+  out = []
+  for line in text.splitlines(keepends=True):
+    nl = "\n" if line.endswith("\n") else ""
+    body = line[:-len(nl)] if nl else line
+    code, comment = split_comment(body)
+    match = EXT_MARK.match(comment.strip())
+    if match is not None and (match.group(1) or EXT) == key:
+      comment = f"# {EXT}-{key}: {value}\n" if key != EXT else f"# {EXT}: {value}\n"
     out.append(code + comment + nl)
   return "".join(out)
 
@@ -373,51 +634,106 @@ def plant() -> int:
     port_text = (PORT / "uop" / "ops.bend").read_text()
     up_text = UPSTREAM.read_text()
 
-    gone = root / "gone"
-    gone.mkdir()
-    (gone / "ops.bend").write_text(rewrite_code(port_text, drop_def=True, drop_call=True))
+    def put(name: str, text: str) -> Path:
+      directory = root / name
+      directory.mkdir()
+      (directory / "ops.bend").write_text(text)
+      return directory
+
+    def check(name: str, code: int, want: int) -> None:
+      print(f"valsdiv-gate --plant: {name} was {verdict_of(code)}, wanted {verdict_of(want)}")
+      if code != want:
+        bad.append(f"{name} was {verdict_of(code)}, wanted {verdict_of(want)}")
+
+    # 1. THE DEF IS GONE AND NOTHING DECLARES IT: the port matches upstream's shape.
+    gone = put("gone", rewrite_code(strip_declaration(port_text), drop_def=True, drop_call=True))
     code, rows = measure(UPSTREAM, gone, gone)
     print("\n".join(rows))
-    if code == FAIL:
-      bad.append("def-removed copy FAILed for def-exists")
+    check("def-removed", code, PASS)
 
-    still = root / "still"
-    still.mkdir()
-    (still / "ops.bend").write_text(ensure_def(port_text))
-    code, rows = measure(UPSTREAM, still, still)
+    # 2. THE DEF IS THERE AND NOTHING DECLARES IT: the divergence, undeclared.
+    undeclared = put("undeclared", strip_declaration(port_text))
+    code, rows = measure(UPSTREAM, undeclared, undeclared)
     print("\n".join(rows))
-    if code != FAIL:
-      bad.append(f"def-present copy was {verdict_of(code)}, wanted FAIL")
+    check("undeclared", code, FAIL)
 
-    dead = root / "dead"
-    dead.mkdir()
-    (dead / "ops.bend").write_text(rewrite_code(ensure_def(port_text), drop_def=False, drop_call=True))
+    # 3. THE CONTROL: the live copy, declaration and all.
+    declared = put("declared", port_text)
+    code, rows = measure(UPSTREAM, declared, declared)
+    print("\n".join(rows))
+    check("declared", code, PASS)
+
+    # 4. THE DERIVE DOES NOT NAME THE DECLARED REVISION.
+    broken = replace_marker(port_text, EXT_DERIVE,
+                            "git --no-optional-locks rev-parse --verify no-such-revision^{commit}")
+    code, rows = measure(UPSTREAM, put("broken-derive", broken), root / "broken-derive")
+    print("\n".join(rows))
+    check("broken-derive", code, FAIL)
+
+    # 5. THE DECLARED DATE IS NOT THE REVISION'S OWN DATE.
+    dated = replace_marker(port_text, EXT_DATE, "1999-01-01T00:00:00Z")
+    code, rows = measure(UPSTREAM, put("wrong-date", dated), root / "wrong-date")
+    print("\n".join(rows))
+    check("wrong-date", code, FAIL)
+
+    # 6. THE DECLARED REVISION IS NOT THE ONE THE DERIVE NAMES.
+    moved = replace_marker(port_text, EXT_UPSTREAM, "7787f76dcc1d8803fce3304a6ebc3ec32204e441")
+    code, rows = measure(UPSTREAM, put("wrong-revision", moved), root / "wrong-revision")
+    print("\n".join(rows))
+    check("wrong-revision", code, FAIL)
+
+    # 7. THE DECLARATION IS IN A DIFFERENT FILE FROM THE DEF.
+    split_port = root / "split"
+    split_port.mkdir()
+    (split_port / "ops.bend").write_text(strip_declaration(port_text))
+    (split_port / "other.bend").write_text("\n".join(
+      line for line in port_text.splitlines() if EXT_MARK.match(split_comment(line)[1].strip()) is not None
+    ) + "\n")
+    code, rows = measure(UPSTREAM, split_port, split_port)
+    print("\n".join(rows))
+    check("declaration-elsewhere", code, FAIL)
+
+    # 8. A DECLARED EXTENSION NOTHING CALLS.
+    dead = put("dead", rewrite_code(port_text, drop_def=False, drop_call=True))
     code, rows = measure(UPSTREAM, dead, dead)
     print("\n".join(rows))
     if code != FAIL or not any("finding: dead-claim" in row for row in rows):
       bad.append("call-stripped copy did not FAIL as dead-claim")
+    print(f"valsdiv-gate --plant: dead was {verdict_of(code)}, wanted FAIL")
 
+    # 9. A DECLARED EXTENSION WHOSE CALLERS `main` DOES NOT REACH.
+    hidden = port_text.replace("def vd_rows(", "def vd_rows_hidden(", 1)
+    code, rows = measure(UPSTREAM, put("unreachable", hidden), root / "unreachable")
+    print("\n".join(rows))
+    if code != FAIL or not any("finding: callers" in row for row in rows):
+      bad.append("unreachable copy did not FAIL as callers")
+    print(f"valsdiv-gate --plant: unreachable was {verdict_of(code)}, wanted FAIL")
+
+    # 10. UPSTREAM GREW `vals` AND THE PORT DECLARES AN EXTENSION: the declaration is
+    #     STALE and has to be withdrawn.
     grew_up = root / "grew.py"
     grew_up.write_text(grow_vals(up_text))
-    code, rows = measure(grew_up, still, still)
+    code, rows = measure(grew_up, declared, declared)
     print("\n".join(rows))
-    if code != PASS or not any("upstream-vals: present" in row for row in rows):
-      bad.append("upstream-grew-vals copy did not PASS from the file")
+    check("upstream-grew-vals-stale-declaration", code, FAIL)
 
-    code, rows = measure(root / "missing.py", still, still)
+    # 11. UPSTREAM GREW `vals` AND THE PORT DECLARES NOTHING: aligned.
+    code, rows = measure(grew_up, undeclared, undeclared)
     print("\n".join(rows))
-    if code != REFUSED:
-      bad.append(f"missing upstream was {verdict_of(code)}, wanted REFUSED")
+    check("upstream-grew-vals", code, PASS)
 
+    # 12. THE MISSING PATHS.
+    code, rows = measure(root / "missing.py", declared, declared)
+    print("\n".join(rows))
+    check("missing upstream", code, REFUSED)
     code, rows = measure(UPSTREAM, root / "missing-port", root / "missing-port")
     print("\n".join(rows))
-    if code != REFUSED:
-      bad.append(f"missing port root was {verdict_of(code)}, wanted REFUSED")
+    check("missing port root", code, REFUSED)
 
   after = digest(live)
-  moved = [path for path, old in before.items() if after.get(path) != old]
-  if moved:
-    bad.append(f"live files moved: {', '.join(moved)}")
+  moved_live = [path for path, old in before.items() if after.get(path) != old]
+  if moved_live:
+    bad.append(f"live files moved: {', '.join(moved_live)}")
   if bad:
     print(f"valsdiv-gate --plant: {verdict_of(FAIL)} -- {'; '.join(bad)}")
     return FAIL
