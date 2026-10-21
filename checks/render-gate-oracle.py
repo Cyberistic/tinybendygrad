@@ -1,23 +1,146 @@
 #!/usr/bin/env python3
 """render-gate-oracle.py -- CPython's answer for EVERY row `render.bend` prints.
 
-`--gate` prints each answer in the port's `name = [answer] py=answer` shape and
-imports upstream HEAD, not the vendored hybrid. The rebase gate's row parser
-splits on the first `=` and compares the rest, so a raw `name=answer` line
-disagrees with every bracketed port row even when the answer is the same.
-"""
-import os
-import sys
+`--gate` prints each answer in the port's `name = [answer] py=answer` shape.
+The rebase gate's row parser splits on the first `=` and compares the rest, so
+a raw `name=answer` line disagrees with every bracketed port row even when the
+answer is the same.
 
-# The gate does not set PYTHONPATH. `--gate` must import HEAD itself: the
-# vendored `tinygrad/` is a hybrid (`ops.py` at HEAD, `render.py` at the pin)
-# and pyrender there disagrees with HEAD on 18 rows the port gets right.
-if "--gate" in sys.argv:
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "head"))
+`pyrender` WAS DELETED UPSTREAM, SO THIS ORACLE IMPORTS A REVISION THAT STILL
+HAS IT.  MEASURED, `refs/remotes/upstream/master` at `5c2bf39d6c`:
+
+    tinygrad/uop/render.py has `render_uir` (line 65) and NO `pyrender`.
+    `81157efb0` (2026-10-05, "use render_uir instead of pyrender" #18622) DELETED
+    `pyrender`; it was not renamed.  `render_uir` is a DIFFERENT renderer -- SSA
+    wire format (`%0 = add %1, %2`), where `pyrender` printed RECONSTRUCTIBLE
+    PYTHON (`ast = UOp.const(3)`) -- so it is not a drop-in for this lane.
+    `43e6e6ac2` (2026-10-03) had already deleted `print_uops` (the port's other
+    subject) and `4e10cce82` renamed `render_ssa` to `render_uir`.
+
+SO THE ORACLE'S SUBJECT IS THE LAST UPSTREAM REVISION THAT STILL DEFINES
+`pyrender`, WHICH IS `81157efb0^`.  IT IS DISCOVERED, NOT LISTED: `resolve()`
+walks `git rev-list <upstream> -- tinygrad/uop/render.py` newest-first and
+takes the parent of the revision whose blob LOST the function.  The tree is
+then MATERIALIZED with `git archive` into a temp dir and put FIRST on
+`sys.path`, so the vendored `tinygrad/` (which the 2026-10-17 re-vendor
+`86c4f1343` moved to upstream master, losing `pyrender`) cannot shadow it.
+
+THE IMPORT WAS RE-DERIVED, NOT TRANSCRIBED.  `range_str` and `multirange_str`
+are NOT imported here at all: this oracle prints no `pu_*` row, and those two
+live in `tinygrad.uop.ops` at EVERY revision -- `tinygrad/uop/render.py` stopped
+re-exporting them at `43e6e6ac2`, which is exactly why the old one-line
+`from tinygrad.uop.render import pyrender, range_str, multirange_str` cannot
+survive a move of the subject.  `pyrender`'s SIGNATURE is unchanged
+(`pyrender(ast:UOp) -> str`), so no call site below needed re-deriving.
+
+VERIFIED: at the resolved revision this oracle's 124 rows are BYTE-IDENTICAL to
+the tree's own capture `checks/rn-orc.rows`.  Every row is COMPUTED by running
+CPython's own `pyrender`; none is written down here.
+"""
+import atexit
+import io
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+UPSTREAM = "refs/remotes/upstream/master"
+RENDER = "tinygrad/uop/render.py"
+
+
+def _toplevel():
+  """The repository this oracle reads its subject from: the git TOPLEVEL of the WORKING
+  DIRECTORY, which is how git itself decides which repository it is in.
+
+  NOT `dirname(dirname(__file__))`.  A copy of this file -- which the gate's plants make, in
+  a temp directory -- would resolve that to the temp directory, which is not a repository,
+  and every plant would measure a refusal instead of the thing it plants.  The working
+  directory is the same answer for the original and for a copy, and it is the answer git
+  gives."""
+  p = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+  if p.returncode != 0:
+    print("== REFUSED, NOT A VERDICT: the working directory is not inside a git repository: "
+          f"{p.stderr.strip()}", file=sys.stderr)
+    sys.exit(3)
+  return p.stdout.strip()
+
+
+REPO = _toplevel()
+
+
+def refuse(*why):
+  """exit 3 = REFUSED, and NOT a verdict -- `checks/rn-gate.py`'s rule, in this file's idiom.
+
+  A LANE THAT CANNOT RUN IS REFUSED, NOT PASS.  The subject of this oracle is a
+  REVISION, and a revision that cannot be resolved or materialized is an absent
+  subject, not an empty answer."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+def git(*args):
+  p = subprocess.run(["git", *args], cwd=REPO, capture_output=True, text=True)
+  if p.returncode != 0:
+    raise RuntimeError(f"git {' '.join(args)} -> rc={p.returncode}: {p.stderr.strip()}")
+  return p.stdout
+
+
+def resolve():
+  """The LAST upstream revision whose `tinygrad/uop/render.py` still defines `pyrender`.
+
+  DISCOVERED BY DISCOVERY, NOT DECLARED BY HAND.  `git rev-list <upstream> --
+  <path>` lists exactly the revisions that CHANGED the path, newest first, and
+  every revision it omits has its parent's blob -- so the answer is a property
+  of that list and not of a hash somebody wrote down.  The REMOVAL is the
+  revision whose blob LOST the function: the first such revision, walking
+  newest-first, whose parent still HAS it, and that parent is the last revision
+  in which the function existed.  MEASURED, that is `81157efb0^`: `81157efb0`
+  (2026-10-05, "use render_uir instead of pyrender" #18622) is the commit that
+  deleted it, and nothing upstream has added it back since."""
+  try:
+    revs = git("rev-list", UPSTREAM, "--", RENDER).split()
+  except (RuntimeError, FileNotFoundError) as e:
+    refuse(f"upstream history unavailable: {e}")
+  if not revs:
+    refuse(f"no upstream revision touches {RENDER} -- {UPSTREAM} is not a usable ref")
+  for rev in revs:
+    parent = git("rev-parse", f"{rev}^").strip()
+    if ("def pyrender(" not in git("show", f"{rev}:{RENDER}")
+        and "def pyrender(" in git("show", f"{parent}:{RENDER}")):
+      return parent
+  for rev in revs:
+    if "def pyrender(" in git("show", f"{rev}:{RENDER}"):
+      return rev
+  refuse(f"no upstream revision defines `pyrender` in {RENDER} -- the subject of this "
+         "oracle no longer exists anywhere in upstream history")
+
+
+def materialize(rev):
+  """`git archive <rev> tinygrad` into a temp dir, and put it FIRST on `sys.path`.
+
+  The vendored `tinygrad/` cannot be used: it is upstream master since the
+  2026-10-17 re-vendor `86c4f1343`, and upstream master has no `pyrender`."""
+  dest = tempfile.mkdtemp(prefix="render-gate-oracle-")
+  atexit.register(shutil.rmtree, dest, ignore_errors=True)
+  tar = subprocess.run(["git", "archive", "--format=tar", rev, "tinygrad"],
+                       cwd=REPO, capture_output=True)
+  if tar.returncode != 0:
+    refuse(f"git archive {rev} tinygrad -> rc={tar.returncode}: "
+           f"{tar.stderr.decode(errors='replace').strip()}")
+  with tarfile.open(fileobj=io.BytesIO(tar.stdout)) as t:
+    t.extractall(dest, filter="data")
+  return dest
+
+
+REV = resolve()
+sys.path.insert(0, materialize(REV))
+print(f"# subject: upstream {REV} (the last revision whose {RENDER} defines `pyrender`)",
+      file=sys.stderr)
 
 from tinygrad.uop.ops import UOp, Ops, AxisType, ParamArg, CallInfo, KernelInfo, ProgramInfo
 from tinygrad.dtype import dtypes, AddrSpace
-from tinygrad.uop.render import pyrender, range_str, multirange_str
+from tinygrad.uop.render import pyrender
 
 OUT = []
 INT = dtypes.default_int
