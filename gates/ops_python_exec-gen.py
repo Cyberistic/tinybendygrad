@@ -361,7 +361,8 @@ def py_run(fx, fresh=False):
     # so a Trace installed first is overwritten and `seen` stays empty.
     prog.uops = Trace(prog.uops)
     addrs = [ctypes.addressof(ctypes.c_char.from_buffer(b)) for b in bufs]
-    prog(*addrs, global_size=fx.gsize, local_size=(1, 1, 1), vals=tuple(fx.vals))
+    # reader: pargs.pop(0) at ops_python.py:97. `vals=` is **kw and is not read.
+    prog(*addrs, *tuple(fx.vals), global_size=fx.gsize, local_size=(1, 1, 1))
     return prog, bufs
 
 

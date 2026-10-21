@@ -5,10 +5,15 @@
     .venv/bin/python gates/pyvals-gate.py --plant
 
 The harvest is discovered, not named by line: a function assigned onto
-`PythonProgram.__call__` that calls `kw.get("vals", ...)`. The signature is that
-class's own `__call__`, read from the module the assignment imports. "Has vals"
-means a parameter named `vals`, or the body calling `.get("vals")`. `**kw`
-swallows a key; it does not name one, and it is not acceptance.
+`PythonProgram.__call__` that calls `kw.get("vals", ...)`. The signature a caller
+is judged against is the one installed at that call, not the class method the
+assignment replaced. A `Class.__call__ = fn` in the same function, where `fn`
+reads `kw.get("vals")`, installs that signature until a later assignment replaces
+it. A caller under that assignment is `wrapped-caller` and is not `LIVE-CALLER`.
+A caller that passes `vals=` with the wrapper not installed is still
+`LIVE-CALLER`. "Has vals" means a parameter named `vals`, or the body calling
+`.get("vals")`. `**kw` swallows a key; it does not name one, and it is not
+acceptance.
 
 The caller population is an os.walk of `.py` files. glob is not used. `.bend` is
 not walked, so a Bend `Args.vals` is out of population by construction. A hit is
@@ -18,9 +23,11 @@ passes that class into `Compiled`. `helper_test_op(..., vals=)` is a different
 function. `var_vals=` is a different key. Retained trees (`.agents/slop/`,
 `runs/`, `gates/artifacts/`) are not live callers.
 
-Exit FAIL if a live caller passes `vals=` into a signature that lacks it.
-Exit FAIL with row `DEAD-READER` if the harvest reads a key the signature does
-not accept and no live caller passes it — that is not PASS. Exit PASS if the
+Exit FAIL if a live caller passes `vals=` into a signature that lacks it, the
+wrapper not being installed at that call. Exit PASS with row `KEY-REAL` if the
+caller is under the installed wrapper and the wrapper reads the key. Exit FAIL
+with row `DEAD-READER` if the harvest reads a key the class signature does not
+accept and no caller passes it — that is not PASS. Exit PASS if the class
 signature accepts `vals` and a caller passes it, or the harvest defaults to `()`
 and the signature accepts the key and nobody passes it. A walk that saw no
 `.py` file is DEAD. A harvest or a signature that cannot be read is REFUSED.
@@ -362,21 +369,42 @@ def self_attrs(cls, aliases, runtime_devices):
   return attrs
 
 
-def scan_body(body, names, devices, attrs, aliases, runtime_devices, rel, hits, shaped):
+def fn_reads(scope, name):
+  """True if a function in this body reads `kw.get("vals")`. A restore name does not."""
+  return any(isinstance(item, ast.FunctionDef) and item.name == name and KEY in [k for k, _n in kw_gets(item)]
+             for item in scope)
+
+
+def note_install(stmt, scope, hooked, installed):
+  """`Class.__call__ = fn` installs fn until a later assignment replaces it. Same function only."""
+  if not isinstance(stmt, ast.Assign):
+    return
+  for target, value in assignment_pairs(stmt):
+    got = hooked_of(target)
+    if got is None or got[0] != hooked or not isinstance(value, ast.Name):
+      continue
+    installed[0] = fn_reads(scope, value.id)
+
+
+def scan_body(body, names, devices, attrs, aliases, runtime_devices, rel, hits, shaped,
+              hooked, scope, installed, wrapped):
   for stmt in body:
     if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef)):
-      scan_function(stmt, names, devices, attrs, aliases, runtime_devices, rel, hits, shaped)
+      scan_function(stmt, names, devices, attrs, aliases, runtime_devices, rel, hits, shaped, hooked, wrapped)
       continue
     if isinstance(stmt, ast.ClassDef):
-      scan_class(stmt, names, devices, aliases, runtime_devices, rel, hits, shaped)
+      scan_class(stmt, names, devices, aliases, runtime_devices, rel, hits, shaped, hooked, wrapped)
       continue
+    note_install(stmt, scope, hooked, installed)
     subs = child_bodies(stmt)
     if subs:
       for sub in subs:
-        scan_body(sub, names, devices, attrs, aliases, runtime_devices, rel, hits, shaped)
+        scan_body(sub, names, devices, attrs, aliases, runtime_devices, rel, hits, shaped,
+                  hooked, scope, installed, wrapped)
       continue
     for target, value in assignments(stmt):
       bind_target(target, value, names, devices, aliases, runtime_devices)
+    under = installed[0]
     for call in calls_in(stmt):
       if KEY not in kw_set(call):
         continue
@@ -385,27 +413,29 @@ def scan_body(body, names, devices, attrs, aliases, runtime_devices, rel, hits, 
         text = text[:69] + "..."
       row = (rel, call.lineno, text)
       if callee_hit(call, names, attrs):
-        hits.append(row)
+        (wrapped if under else hits).append(row)
       elif "global_size" in kw_set(call) or "local_size" in kw_set(call):
         shaped.append(row)
 
 
-def scan_function(fn, outer_names, outer_devices, attrs, aliases, runtime_devices, rel, hits, shaped):
-  scan_body(fn.body, set(outer_names), dict(outer_devices), attrs, aliases, runtime_devices, rel, hits, shaped)
+def scan_function(fn, outer_names, outer_devices, attrs, aliases, runtime_devices, rel, hits, shaped, hooked, wrapped):
+  scan_body(fn.body, set(outer_names), dict(outer_devices), attrs, aliases, runtime_devices, rel, hits, shaped,
+            hooked, fn.body, [False], wrapped)
 
 
-def scan_class(cls, outer_names, outer_devices, aliases, runtime_devices, rel, hits, shaped):
+def scan_class(cls, outer_names, outer_devices, aliases, runtime_devices, rel, hits, shaped, hooked, wrapped):
   attrs = self_attrs(cls, aliases, runtime_devices)
   for item in cls.body:
     if isinstance(item, ast.FunctionDef):
-      scan_function(item, outer_names, outer_devices, attrs, aliases, runtime_devices, rel, hits, shaped)
+      scan_function(item, outer_names, outer_devices, attrs, aliases, runtime_devices, rel, hits, shaped, hooked, wrapped)
 
 
 def file_hits(tree, rel, hooked, runtime_devices):
   aliases = aliases_of(tree, hooked)
-  hits, shaped = [], []
-  scan_body(tree.body, set(), {}, set(), aliases, runtime_devices, rel, hits, shaped)
-  return hits, shaped
+  hits, shaped, wrapped = [], [], []
+  scan_body(tree.body, set(), {}, set(), aliases, runtime_devices, rel, hits, shaped,
+            hooked, tree.body, [False], wrapped)
+  return hits, shaped, wrapped
 
 
 def passes_runtime(tree, hooked):
@@ -482,11 +512,18 @@ def load_sig(root, harvest_path, harvest_tree, hooked, alias):
   return row, ok, base_row, ""
 
 
-def judge(has_vals, live_callers, reads_key, default_empty):
-  """Return `(code, row)`. DEAD-READER is a row, and its exit is FAIL."""
+def judge(has_vals, live_callers, reads_key, default_empty, wrapped=0):
+  """Return `(code, row)`. DEAD-READER is a row, and its exit is FAIL.
+
+  `wrapped` is a caller under the installed wrapper. That signature reads the key,
+  so the call is not `LIVE-CALLER`. A caller with the wrapper not installed stays
+  in `live_callers`.
+  """
   if live_callers and not has_vals:
     return FAIL, "LIVE-CALLER"
   if live_callers and has_vals:
+    return PASS, "KEY-REAL"
+  if wrapped and reads_key:
     return PASS, "KEY-REAL"
   if reads_key and not has_vals:
     return FAIL, "DEAD-READER"
@@ -546,7 +583,7 @@ def survey(root: Path):
     lines.append(base_row)
   devices = runtime_devices(root, hooked)
   lines.append(f"runtime-devices={','.join(sorted(devices)) or '-'}")
-  live, frozen_hits, shaped = [], [], []
+  live, frozen_hits, shaped, wrapped = [], [], [], []
   keywords = 0
   for py in walk_py(root):
     prel = rel_of(py, root)
@@ -557,21 +594,28 @@ def survey(root: Path):
     for node in ast.walk(ptree):
       if isinstance(node, ast.Call) and KEY in kw_set(node):
         keywords += 1
-    hits, near = file_hits(ptree, prel, hooked, devices)
+    hits, near, wrap = file_hits(ptree, prel, hooked, devices)
     for hit in hits:
       (frozen_hits if frozen(hit[0]) else live).append(hit)
+    for hit in wrap:
+      if not frozen(hit[0]):
+        wrapped.append(hit)
     shaped.extend(near)
   live.sort()
   frozen_hits.sort()
   shaped.sort()
+  wrapped.sort()
   for hit_rel, hit_line, text in live:
     lines.append(f"caller={hit_rel}:{hit_line} {text}")
+  for hit_rel, hit_line, text in wrapped:
+    lines.append(f"wrapped-caller={hit_rel}:{hit_line} {text}")
   for hit_rel, hit_line, text in frozen_hits:
     lines.append(f"frozen-caller={hit_rel}:{hit_line} {text}")
   for hit_rel, hit_line, text in shaped:
     if not any(hit_rel == c[0] and hit_line == c[1] for c in live):
       lines.append(f"not-hook={hit_rel}:{hit_line} {text}")
   lines.append(f"callers={len(live)}")
+  lines.append(f"wrapped-count={len(wrapped)}")
   lines.append(f"frozen-callers={len(frozen_hits)}")
   lines.append(f"vals-keywords={keywords}")
   held = 0
@@ -580,7 +624,7 @@ def survey(root: Path):
     lines.append(f"control={control} {'caller' if named else 'not-caller'}")
     held += not named
   lines.append(f"control-held={held} of {len(CONTROL)}")
-  code, row = judge(has_vals, live, reads, default_empty)
+  code, row = judge(has_vals, live, reads, default_empty, len(wrapped))
   lines.append(f"row={row}")
   return code, lines, {"files": files, "callers": len(live), "row": row, "lines": lines}
 
@@ -628,6 +672,16 @@ CALLER = (
   "  prog = PythonProgram()\n"
   "  prog(1, vals=(2,))\n"
 )
+# The call is under the assignment, in the same function. The wrapper reads the key.
+INSTALLED_CALL = (
+  "from prog import PythonProgram\n"
+  "def harvest():\n"
+  "  def call(self, *bufs, **kw):\n"
+  "    return kw.get('vals', ())\n"
+  "  PythonProgram.__call__ = call\n"
+  "  prog = PythonProgram()\n"
+  "  prog(1, vals=(2,))\n"
+)
 TUPLE_HARVEST = (
   "from prog import PythonProgram\n"
   "def harvest():\n"
@@ -659,9 +713,33 @@ def plant():
   td, root = _tree(PROG_LACKS, caller=True)
   try:
     code, lines, info = survey(root)
+    # Wrapper is assigned in harvest.py. This caller is in another file, so the
+    # wrapper is not installed at the call. Evidence must be emitted, not only scored.
+    shown = [line for line in lines if line.startswith(("caller=", "row="))]
+    for line in shown:
+      print(f"plant-out uninstalled {line}")
+    check("wrapper-not-installed-is-fail",
+          bool(shown) and code == FAIL and info.get("row") == "LIVE-CALLER"
+          and any(line.startswith("caller=owned/live.py:") for line in shown))
     check("caller-is-fail", code == FAIL and info.get("row") == "LIVE-CALLER"
           and any(line.startswith("caller=owned/live.py:") for line in lines))
     check("caller-not-dead-reader", info.get("row") != "DEAD-READER")
+  finally:
+    td.cleanup()
+
+  td = tempfile.TemporaryDirectory()
+  try:
+    root = Path(td.name)
+    _write(root, "prog.py", PROG_LACKS)
+    _write(root, "harvest.py", INSTALLED_CALL)
+    code, lines, info = survey(root)
+    shown = [line for line in lines if line.startswith(("wrapped-caller=", "caller=", "row=", "harvest="))]
+    for line in shown:
+      print(f"plant-out installed {line}")
+    check("wrapper-installed-not-fail",
+          bool(shown) and code == PASS and info.get("row") == "KEY-REAL"
+          and any(line.startswith("wrapped-caller=") for line in shown)
+          and not any(line.startswith("caller=") for line in shown))
   finally:
     td.cleanup()
 

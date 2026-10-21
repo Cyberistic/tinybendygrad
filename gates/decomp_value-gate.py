@@ -434,15 +434,16 @@ class Program:
       self.views.append(memoryview(mm).cast(storage_fmt_for_dtype(r.dtype)))
     uops = _topo(tuple(tails))
     self.prog = PythonProgram(None, _Elf(uops))
-    # `PythonProgram.__call__` feeds ALU PARAMs by `vals.pop(0)` IN THE ORDER THEY APPEAR in its
-    # uop list, so the order here IS the wire order and it is read off the list rather than
-    # sorted: sorting by slot would be a second, silent ordering rule. The out PARAMs are GLOBAL
-    # and are excluded for the same reason `PythonProgram` excludes them -- they arrive as `bufs`.
-    self.alu = [u for u in uops if u.op is Ops.PARAM and u.addrspace is AddrSpace.ALU]
 
   def words(self, vals):
     """`(word, ...)` -- each root's OWN value at its OWN dtype -- and `lo | hi<<32` packed."""
-    self.prog(*[mv_address(m) for m in self.mms], vals=tuple(vals(u.arg.name) for u in self.alu))
+    # reader: pargs.pop(0), ops_python.py:97 (ALU) and :107 (GLOBAL), one list, uop order.
+    # `vals=` is **kw and is not read. Do not drop an ALU word the cone still consumes.
+    addr = {f"out{i}": mv_address(m) for i, m in enumerate(self.mms)}
+    args = [addr[u.arg.name] if u.addrspace is AddrSpace.GLOBAL else vals(u.arg.name)
+            for u in self.prog.uops
+            if u.op is Ops.PARAM and u.addrspace in (AddrSpace.GLOBAL, AddrSpace.ALU)]
+    self.prog(*args)
     packed, out = 0, []
     for i, r in enumerate(self.roots):
       w = from_storage_scalar(self.views[i][0], r.dtype)
