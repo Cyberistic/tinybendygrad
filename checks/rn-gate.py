@@ -83,6 +83,22 @@ lane: 80 gated rows, 69 agree, 11 disagree, and every one is NAMED.
   A `.bend` FILE AND OUT OF THIS GATE'S GRANT: the port's `arg_repr` rules predate upstream's
   `ParamArg`, and the fix belongs in `tinybendygrad/uop/render.bend`, not in a reader.
 
+⚠ AND THE PORT'S OWN `py=` LITERAL HAD NO READER AT ALL, SO THE STALE-LITERAL COUNT WAS 0
+BECAUSE IT READ NOTHING.  `judge()` compares `split_py(pr[name])[0]` -- the producer's OWN answer
+-- and its STALE-LITERAL count read `split_py(pr[name])[1]`, WHICH IS `None` FOR EVERY ROW ON
+THIS LANE: `row_strict` splits the row at `]   py=[` and keeps the HEAD, so the literal is in
+the TAIL, and the TAIL WAS DISCARDED.  ⚠ A COUNT OF 0 THAT IS 0 BECAUSE THE READER READ NOTHING
+IS INDISTINGUISHABLE FROM A COUNT OF 0 THAT IS 0 BECAUSE THE TWO SIDES AGREE, and `cc2d21f6d`
+PROVED THE PORT DID CONTRADICT ITSELF ON EXACTLY SIX ROWS -- the port's `pyrender` EMULATION
+printed `ParamArg(0, dtypes.i32, device='CPU')` while the port's own `py=` LITERAL for the SAME
+row printed `ParamArg(0, dtypes.i32, 4, device='CPU')`, a `size` the port's `ParamArg` record
+CANNOT HOLD -- AND THIS GATE DID NOT NOTICE.  THE LITERAL IS NOW READ FROM WHERE IT IS: the
+reader takes the ROW TEXT and returns the producer's own EMULATION and the `py=` LITERAL, and
+the STALE-LITERAL count is the number of rows where THOSE TWO DISAGREE.  MEASURED 2026-10-21 on
+the live lane: 80 of the port's 94 read rows carry a literal, and 0 of them disagree -- 0
+BECAUSE THEY AGREE, and the denominator is PRINTED so a reader that read nothing could not print
+it.  THE PLANT (`--plant-literal`) RESTORES ONE LITERAL'S `size` AND THE COUNT MOVES TO 1.
+
 ⚠ AND THE SUBSTRATE IS NOT STILL.  `tinybendygrad/uop/ops.bend` and `uop/fold.bend` are in this
 file's 5-file import closure and belong to other live units.  MEASURED: the ORACLE and the PORT
 disagree on 11 rows because `render.bend:2693-2703` gained its `rnd_*` rows at 11:46 today, AFTER
@@ -142,6 +158,7 @@ for _n in ("rebase-gate", "eq-census2"):
            f"  (swept by 371cc64c9; recoverable from git at 371cc64c9^:{_rel})"
            "  This gate cannot produce a denominator without it.")
 SEP = "]   py=["      # `py_row`'s own three-space literal (render.bend:2148)
+PYCOL = "py="        # the `py=` COLUMN's own marker; `SEP` is this column's F2 SPELLING
 ROW_OPEN = " = ["     # and its own name/value boundary, same line
 DEPTH = {"[": 1, "]": -1}
 
@@ -267,22 +284,102 @@ def row_strict(logical):
   return None, None, f"L{first}: no depth-0 `=` at all -- REFUSED"
 
 
+def value_span(text):
+  """(i, j) -- the span of the producer's BRACKETED VALUE in `text`, or None.
+
+  THE VALUE IS ONE BRACKETED THING, so the pair has to be MATCHED.  ⚠ NOT `text.index("[")` AND
+  NOT `text.rfind("]")`: a value may hold brackets of its own (`[(1, 2)]`), and a reader that
+  cuts at the wrong bracket compares two different strings and calls the difference a
+  disagreement."""
+  d = 0
+  for i, c in enumerate(text):
+    if c == "[" and d == 0:
+      dd = 0
+      for j in range(i, len(text)):
+        dd += DEPTH.get(text[j], 0)
+        if dd == 0:
+          return i, j
+      return None
+    d += DEPTH.get(c, 0)
+  return None
+
+
+def py_span(text):
+  """(marker, start, end) -- where the `py=` column is in ONE LOGICAL ROW's text, or None.
+
+  THE MARKER IS THE LAST DEPTH-0 `py=`.  ⚠ `rfind` AND NOT `find`: the row's own NAME can carry
+  the marker -- MEASURED on the oracle lane, whose boundary is GLUED and whose `pyrender copy`
+  row therefore holds a `copy=` -- and the column is always the LAST one.  ⚠ AND DEPTH 0, so a
+  `py=` inside the producer's bracketed value is part of the value and not a column.
+  ⚠ THE SPAN, NOT THE TEXT: a plant has to REWRITE the literal IN PLACE, and a reader that
+  returns only the text cannot say where the text was -- a plant that replaced the first
+  occurrence of a string would have replaced the EMULATION's occurrence of it, which is the very
+  column the plant is not measuring."""
+  marks, d, i = [], 0, 0
+  while i < len(text):
+    if d == 0 and text.startswith(PYCOL, i):
+      marks.append(i)
+    d += DEPTH.get(text[i], 0)
+    i += 1
+  if not marks:
+    return None
+  marker = marks[-1]
+  tail = text[marker + len(PYCOL):]
+  start = marker + len(PYCOL) + (len(tail) - len(tail.lstrip()))
+  lit = tail.strip()
+  if lit.startswith("["):
+    span = value_span(lit)
+    if span and span[1] == len(lit) - 1:
+      return marker, start + span[0] + 1, start + span[1]
+  return marker, start, start + len(lit)
+
+
+def py_column(text):
+  """(emulation, literal, why) for ONE LOGICAL ROW's text, or (None, None, None).
+
+  THE PRODUCER'S OWN TWO COLUMNS, READ FROM THE ROW TEXT.
+  THE EMULATION  the producer's own answer -- the content of its bracketed value.
+  THE LITERAL    the `py=` column -- the transcription, hand-written in the `.bend` file.
+  ⚠ THE LITERAL IS NOT READ OUT OF THE VALUE SLOT: `row_strict` cuts the row at `]   py=[` and
+  keeps the head, so the literal is in the tail and the tail was DISCARDED -- a reader that
+  looked for it in the value could only ever answer `None`, and a count of 0 that is 0 because
+  the reader read NOTHING is indistinguishable from a count of 0 that is 0 because the two sides
+  AGREE."""
+  span = py_span(text)
+  if span is None:
+    return None, None, None
+  marker, a, b = span
+  head = text[:marker].rstrip()
+  vs = value_span(head)
+  if vs is None:
+    return None, None, "the `py=` column has no bracketed value in front of it"
+  return head[vs[0] + 1:vs[1]].strip(), text[a:b].strip(), None
+
+
 def rows_strict(text):
-  rows, refusals, dupes = {}, [], []
+  """(rows, refusals, columns) -- `columns` maps a row NAME to (emulation, literal).
+
+  THE THIRD THING IS THE `py=` COLUMN, and it is read from the ROW TEXT because the row's
+  name/value cut DISCARDED it: `row_strict` splits the row at `]   py=[` and keeps the head, so
+  the literal was never in the value at all.  ⚠ A ROW WHOSE COLUMN CANNOT BE READ IS REFUSED, not
+  guessed: it leaves the comparison AND it is named in the refusals, because a row that is
+  compared without its literal is a row whose SELF-CONSISTENCY was never measured, and a count
+  that silently skips the rows it could not read is a count with a denominator nobody can see."""
+  rows, refusals, dupes, columns = {}, [], [], {}
   for logical in logical_rows(text):
     name, value, why = row_strict(logical)
     if name is None:
       refusals.append((logical[0], why))
-    else:
-      if name in rows:
-        dupes.append(name)
-      rows[name] = value
-  return rows, refusals
-
-
-def split_py(value):
-  k = value.rfind(SEP)
-  return (value[:k], value[k + len(SEP):]) if k >= 0 else (value, None)
+      continue
+    emu, lit, why2 = py_column(logical[2])
+    if why2:
+      refusals.append((logical[0], f"L{logical[0]}: {name}: {why2}"))
+      continue
+    if name in rows:
+      dupes.append(name)
+    rows[name] = value
+    columns[name] = (emu, lit)
+  return rows, refusals, columns
 
 
 def reshape(lane, text):
@@ -300,7 +397,7 @@ def reshape(lane, text):
     eq        names containing `=`      the ROOT CAUSE on llvmir / cstyle / nir_llvmir.  0 here.
     lost      rows no name can address, SPLIT into a continuation, a reshape and a duplicate name.
   """
-  strict, refusals = rows_strict(text)
+  strict, refusals, _columns = rows_strict(text)
   c = _census.measure(text, lane)
   m = {"lane": lane, "physical": c["accepted"], "logical": len(strict), "cont": c["cont"],
        "shipped_keys": c["shipped_names"], "lost": c["lost_reader"],
@@ -366,6 +463,44 @@ def plant_value(text, name):
     print(f"[plant WARNING] the value plant on {name!r} matched NO line -- this cell measured "
           f"nothing and proves nothing.")
   return "\n".join(out) + "\n", hits
+
+
+def plant_literal(text, name, old, new):
+  """A COPY of the lane text with ONE row's `py=` LITERAL rewritten.
+
+  ⚠ THE PLANT IS APPLIED TO THE STRIPPED TEXT, and the reason is the READER: the row boundaries
+  are read by bracket DEPTH, and an ANSI escape is a `[` to every bracket counter (see `plain()`),
+  so on the RAW text the `pu_*` rows' escapes leave the depth ABOVE ZERO and the fold swallows the
+  rest of the lane -- MEASURED, the live lane reads 10 logical rows raw and 105 stripped.  The
+  planted lane is therefore THE LANE THE READER SEES, with one literal rewritten, and the escapes
+  are not part of the subject.
+
+  ⚠ THE SUBSTITUTION IS SCOPED TO THE LITERAL, and the literal is LOCATED BY ITS SPAN, because
+  the string being replaced is in the row's EMULATION as well: `ParamArg(0, dtypes.i32,
+  device='CPU')` is in BOTH columns of the `pyrender buffer` row, and a plant that replaced the
+  first occurrence would have changed the EMULATION and left the LITERAL alone -- which is the
+  exact opposite of the plant, and would have read as a clean 0.
+
+  ⚠ AND THE PLANT IS IN THE LANE TEXT, NOT IN THE COMPARED SLOT: it rewrites what the PORT
+  PRINTS, so the gate reads the planted lane the way it reads any other lane."""
+  stripped = plain(text)
+  lines = stripped.split("\n")
+  for logical in logical_rows(stripped):
+    if row_strict(logical)[0] != name:
+      continue
+    start, n, joined = logical
+    span = py_span(joined)
+    if span is None:
+      break
+    _, a, b = span
+    lit = joined[a:b]
+    if old not in lit:
+      break
+    lines[start - 1:start - 1 + n] = (joined[:a] + lit.replace(old, new) + joined[b:]).split("\n")
+    return "\n".join(lines), 1
+  print(f"[plant WARNING] the literal plant on {name!r} matched NO literal -- this cell measured "
+        f"nothing and proves nothing.")
+  return stripped, 0
 
 
 def plant_shape(text, pairs):
@@ -499,8 +634,8 @@ def judge(port_txt, orc_txt):
   rs = [reshape("port", port_txt), reshape("oracle", orc_txt)]
   for m in rs:                                   # GUARD 0, BEFORE ANY VALUE IS COMPARED
     bad.extend(m["bad"])
-  pr, pur = rows_strict(port_txt)
-  orr, our = rows_strict(orc_txt)
+  pr, pur, pcols = rows_strict(port_txt)
+  orr, our, _ocols = rows_strict(orc_txt)
   if not pr:
     bad.append("the port lane produced ZERO rows")
   if not orr:
@@ -511,24 +646,47 @@ def judge(port_txt, orc_txt):
   ghost = sorted(set(pr) - set(orr))
   if ghost:
     bad.append(f"port rows the oracle did not answer ({len(ghost)}): {ghost[:8]}")
-  agree, disagree, stale, gated = [], [], [], []
+  agree, disagree, gated = [], [], []
   for name in sorted(set(pr) & set(orr)):
-    got, want = split_py(pr[name])[0], split_py(orr[name])[0]
+    # ⚠ THE COMPARED BYTES ARE THE VALUE SLOT, AND THEY ARE WHAT THEY ALWAYS WERE: the old
+    # `split_py(v)[0]` was a NO-OP on this lane -- MEASURED on all three lanes, `split_py(v)[0] == v`
+    # for EVERY row, because the `]   py=[` cut leaves the value with no `py=` left to split on --
+    # so reading `pr[name]` and `orr[name]` directly compares the same bytes the gate compared
+    # before.  ⚠ THE COMPARISON ITSELF IS UNCHANGED: the producer's own answer against the
+    # oracle's.
+    got, want = pr[name], orr[name]
     gated.append(name)
     if got == want:
       agree.append(name)
     else:
       disagree.append((name, got, want))
-    lit = split_py(pr[name])[1]
-    if lit is not None and lit != want:
-      stale.append((name, lit, want))
+  # ⚠ THE PORT'S OWN TWO COLUMNS AGAINST EACH OTHER.  THIS IS NOT THE GATE'S COMPARISON -- that is
+  # the port's answer against the oracle's, above, and it is untouched -- it asks whether the
+  # port's EMULATION and the port's own `py=` LITERAL agree, which is the question a human reads a
+  # row to answer.  ⚠ AND IT IS OVER EVERY PORT ROW THAT CARRIES A LITERAL, not over the GATED
+  # rows: a row the oracle does not answer can still contradict itself.
+  stale, literals = [], 0
+  for name, (emu, lit) in pcols.items():
+    if lit is None:
+      continue
+    literals += 1
+    if emu != lit:
+      stale.append((name, emu, lit))
   if not gated:
     bad.append("0 gated rows: the two lanes share no row NAME, so nothing was compared. This is "
                "not a pass.")
+  if not literals:
+    bad.append("the port lane's `py=` column was read on ZERO rows, so the STALE-LITERAL count is "
+               "0 because the reader read NOTHING. This is not a pass.")
   if disagree:
     bad.append(f"{len(disagree)}/{len(gated)} gated row(s) DISAGREE and every one is NAMED: "
                f"{[d[0] for d in disagree][:8]}\n        first `{disagree[0][0]}`:"
                f"\n        port {disagree[0][1]!r}\n        cpy  {disagree[0][2]!r}")
+  if stale:
+    bad.append(f"{len(stale)}/{literals} row(s) whose `py=` LITERAL disagrees with the PORT'S OWN "
+               f"answer -- the port CONTRADICTS ITSELF, and every one is NAMED: "
+               f"{[s[0] for s in stale][:8]}\n        first `{stale[0][0]}`:"
+               f"\n        emulation {stale[0][1]!r}\n        literal   {stale[0][2]!r}")
   if not disagree and port_txt == orc_txt:
     bad.append("the two lanes are BYTE-IDENTICAL and agree on every value, so this run is a "
                "TAUTOLOGICAL ZERO: the byte diff is the gate and GUARD 0 is the only thing that "
@@ -537,7 +695,7 @@ def judge(port_txt, orc_txt):
   # claim, so a lane that differs from the oracle ONLY by colour is not a tautological zero -- and
   # the RAW bytes are reported by `main()` beside this, so the strip is never invisible.
   return {"bad": bad, "port": pr, "oracle": orr, "gated": gated, "agree": agree,
-          "disagree": disagree, "stale": stale, "reshape": rs,
+          "disagree": disagree, "stale": stale, "literals": literals, "reshape": rs,
           "identical_bytes": port_txt == orc_txt}
 
 
@@ -550,13 +708,15 @@ def md5(text):
 
 
 def selftest():
-  """FIVE LANES OVER THE REAL CAPTURED PAIR.  The BASE DISAGREEMENT COUNT IS MEASURED, NOT
+  """SEVEN LANES OVER THE REAL CAPTURED PAIR.  The BASE DISAGREEMENT COUNT IS MEASURED, NOT
   TYPED -- this lane's real pair already disagrees on 5 rows (the hand-written `py=` wraps), so a
   hardcoded 0 would be a claim about a lane that does not exist.  The property asserted is the one
-  that separates the two plants:
+  that separates the three plants:
 
       a VALUE plant RAISES `disagree` by exactly 1;
-      a NAME  plant leaves `disagree` at the base count and moves `eq`/the name sets.
+      a NAME  plant leaves `disagree` at the base count and moves `eq`/the name sets;
+      a LITERAL plant RAISES the STALE-LITERAL count by exactly 1, and its CONTROL -- the same
+      copy with a plant that matches nothing -- leaves it at the base count.
 
   On llvmir and nir_llvmir the base count is 0 and the two are equally distinguishable; here the
   base is 5, and a control that hardcoded 0 would have read `value` as a FAILURE of the
@@ -588,6 +748,7 @@ def selftest():
   orc = (HERE / "rn-orc.rows").read_text()
   base = judge(live, orc)
   n0 = len(base["disagree"])
+  s0 = len(base["stale"])
   print(f"[selftest base] the REAL captured pair: {len(base['gated'])} gated rows, "
         f"{len(base['agree'])} agree, {n0} disagree "
         f"{[d[0] for d in base['disagree']]} -- MEASURED, and it is NOT 0: the port puts the "
@@ -595,6 +756,10 @@ def selftest():
         f"oracle does not, so the port's VALUE for those five carries an extra line. A `clean` "
         f"lane that quietly is not the real lane is the failure this work is about, so the base is "
         f"the real pair and the number is printed.")
+  print(f"[selftest base] the port's OWN `py=` LITERAL against the port's own EMULATION: "
+        f"{s0}/{base['literals']} row(s) disagree -- MEASURED, and the DENOMINATOR is the point: "
+        f"a count of 0 with no denominator is a count that read NOTHING, and this one is 0 over "
+        f"{base['literals']} rows that were READ.")
   lanes = {
     "base": (live, orc),
     "value": (plant_value(live, "pyrender const")[0], orc),
@@ -602,18 +767,34 @@ def selftest():
     "shape": (plant_shape(live, [("pyrender const", "pyrender co=nst")])[0],) * 2,
     "collide": (plant_shape(live, [("pyrender const", "pyrender ast"),
                                    ("pyrender cast", "pyrender ast")])[0],) * 2,
+    # ⚠ THE LITERAL LANE: THE FALSIFICATION OF "0 BECAUSE THEY AGREE".  The capture is the port
+    # BEFORE `cc2d21f6d`, so its EMULATION and its LITERAL BOTH carry the `4` and the two AGREE;
+    # taking the `4` out of the LITERAL alone makes the capture contradict ITSELF, which is the
+    # same shape of defect the live plant makes.  ⚠ AND THE SUBSTITUTION IS SCOPED TO THE
+    # LITERAL: the same `ParamArg(...)` string is in the row's EMULATION, and a plant that
+    # changed both would have left the port self-consistent and read as a clean 0.
+    "literal": (plant_literal(live, "pyrender buffer",
+                               "ParamArg(0, dtypes.i32, 4, device='CPU')",
+                               "ParamArg(0, dtypes.i32, device='CPU')")[0], orc),
+    # THE UNBROKEN CONTROL: a copy of the port with a plant that matches NOTHING must be
+    # BYTE-IDENTICAL to the lane it was copied from, so the literal lane's difference is the
+    # PLANT's and not the copying's.
+    "control": (plant_literal(live, "pyrender buffer", "NO-SUCH-LITERAL", "x")[0], orc),
   }
-  want = {"base": (True, n0), "value": (True, n0 + 1), "colour": (True, n0), "shape": (True, 0),
-          "collide": (True, 0)}
+  want = {"base": (True, n0, s0), "value": (True, n0 + 1, s0 + 1), "colour": (True, n0, s0),
+          "shape": (True, 0, s0), "collide": (True, 0, s0), "literal": (True, n0, s0 + 1),
+          "control": (True, n0, s0)}
   ok = True
   for name, (ptxt, otxt) in lanes.items():
     r = judge(ptxt, otxt)
-    want_broken, want_dis = want[name]
-    good = bool(r["bad"]) == want_broken and len(r["disagree"]) == want_dis
+    want_broken, want_dis, want_stale = want[name]
+    good = (bool(r["bad"]) == want_broken and len(r["disagree"]) == want_dis
+            and len(r["stale"]) == want_stale)
     ok &= good
     print(f"  {name:<8} {'BROKEN' if r['bad'] else 'AGREE  '}  cont={r['reshape'][0]['cont']} "
           f"eq={len(r['reshape'][0]['eq'])} unaddressable={r['reshape'][0]['lost']} "
           f"disagree={len(r['disagree'])} {[d[0] for d in r['disagree']][:4]}  "
+          f"stale={len(r['stale'])}/{r['literals']} {[s[0] for s in r['stale']][:4]}  "
           f"{'ok' if good else 'SELFTEST FAIL'}")
   print(f"  NOTE every lane is BROKEN, and that is CORRECT: `cont` > 0 on the real lane and the "
         f"real pair really does disagree, so this lane's honest verdict is BROKEN and `base` "
@@ -622,8 +803,20 @@ def selftest():
         f"port's escape form around every value must read as the same rows.  It FAILS on a reader "
         f"that counts brackets without stripping -- MEASURED, that reader reads 2 rows where the "
         f"stripped lane reads {len(base['port'])}, and gates 0.")
+  print(f"  NOTE the `literal` lane is the ONE THAT PROVES THE `py=` COLUMN IS READ: its stale "
+        f"count is {s0 + 1} against the base's {s0}, and the `control` lane -- a copy of the SAME "
+        f"port with a plant that matches nothing -- is byte-identical and reads {s0}.  ⚠ A COUNT "
+        f"THAT IS 0 BECAUSE THE READER FOUND NOTHING IS INDISTINGUISHABLE FROM A COUNT THAT IS 0 "
+        f"BECAUSE THE TWO COLUMNS AGREE, and this lane is what tells the two apart.")
+  print(f"  NOTE the `value` lane ALSO reads a stale literal, and that is CORRECT rather than "
+        f"noise: `plant_value` puts `PLANTED` INSIDE the value's brackets, so it corrupts the "
+        f"EMULATION and leaves the LITERAL alone -- and a lane whose emulation and literal "
+        f"disagree IS a self-contradicting lane, whatever put it there.  ⚠ AND THE `literal` lane "
+        f"moves ONLY the stale count: its `disagree` is the base's {n0}, because the literal is "
+        f"NOT the column the gate compares.")
   print("SELFTEST", "OK -- a planted VALUE raises `disagree` by one; a planted NAME leaves "
-        "`disagree` at the base count and moves the name sets, so the two are distinguishable"
+        "`disagree` at the base count and moves the name sets; and a planted LITERAL raises the "
+        "stale count by one, so the two are distinguishable"
         if ok else "FAILED")
   return 0 if ok else 1
 
@@ -633,6 +826,8 @@ def main():
   ap.add_argument("--selftest", action="store_true")
   ap.add_argument("--plant", default=None)
   ap.add_argument("--plant-shape", nargs=2, action="append", metavar=("OLD", "NEW"))
+  ap.add_argument("--plant-literal", nargs=3, action="append", metavar=("ROW", "OLD", "NEW"),
+                  help="rewrite ONE row's `py=` literal, in the literal and nowhere else")
   ap.add_argument("--plant-ansi", action="store_true")
   ap.add_argument("--names", action="store_true")
   ap.add_argument("--port-stdout", default=None)
@@ -715,6 +910,13 @@ def main():
     p = subprocess.CompletedProcess([], 0, plant_value(p.stdout, a.plant)[0], p.stderr)
     print(f"[planted] `{a.plant}` corrupted on the PORT LANE ONLY, in the CAPTURED OUTPUT; every "
           f"continuation line of that row is left verbatim.")
+  for row, old, new in (a.plant_literal or []):
+    pt, ph = plant_literal(p.stdout, row, old, new)
+    p = subprocess.CompletedProcess([], 0, pt, p.stderr)
+    print(f"[planted LITERAL] {ph} literal(s) rewritten in `{row}`'s `py=` column, on the PORT LANE "
+          f"ONLY: {old!r} -> {new!r}.  ⚠ THE SUBSTITUTION IS SCOPED TO THE LITERAL: the same "
+          f"string is in the row's EMULATION, and a plant that changed both would have left the "
+          f"port self-consistent and read as a clean 0. No file on disk was touched.")
   res = judge(p.stdout, o.stdout)
   print(f"port logical rows: {len(res['port'])}   oracle logical rows: {len(res['oracle'])}   the "
         f"two lanes are BYTE-IDENTICAL (AS THE READER SAW THEM, i.e. escapes stripped): "
@@ -728,8 +930,10 @@ def main():
             f"({len(m['manufactured'])}): {m['manufactured'][:12]}")
   print(f"gated {len(res['gated'])}   agree {len(res['agree'])}   disagree "
         f"{[d[0] for d in res['disagree']][:8]}")
-  print(f"STALE-LITERAL {len(res['stale'])} `py=` literal(s) disagree with the other lane's answer: "
-        f"{[s[0] for s in res['stale']][:8]}")
+  print(f"STALE-LITERAL {len(res['stale'])}/{res['literals']} `py=` literal(s) disagree with the "
+        f"PORT'S OWN answer: {[s[0] for s in res['stale']][:8]}"
+        + ("   <- THE DENOMINATOR IS THE POINT: 0 over 0 rows is a reader that read NOTHING"
+           if not res["literals"] else ""))
   print(("BROKEN" if res["bad"] else "AGREE"), *(["\n  - " + b for b in res["bad"]]))
   return 1 if res["bad"] else 0
 
@@ -744,11 +948,18 @@ def main():
 # and the refusal is STILL reachable by argv.  A gate whose exit 3 needs a missing FILE cannot
 # plant its own surface, and a declared surface that no argv reaches is a label.
 #
-#   0  `--selftest` -- the gate's own five lanes over the captured pair, and they hold.
+#   0  `--selftest` -- the gate's own seven lanes over the captured pair, and they hold.
 #   1  the captured pair itself -- it really does disagree on five rows (the hand-written `py=`
 #      wraps), so the honest verdict over the capture is BROKEN, and no `bend` and no oracle
 #      subprocess is spent to learn it.
 #   3  `--oracle <a path that does not resolve>` -- an absent subject is REFUSED, not judged.
+#
+# ⚠ `--plant-literal` IS NOT IN `PLANTS`, AND NEITHER ARE `--plant`, `--plant-shape` NOR
+# `--plant-ansi`: `PLANTS` IS THE VERDICT SURFACE -- THE ARGV THAT REACH EACH DECLARED EXIT
+# CODE -- and a plant that CORRUPTS A LANE reaches the same verdict the lane already reaches, so
+# listing it would claim a second way to reach a code that has one.  THE PLANTS ARE REACHABLE
+# ARGV ALL THE SAME, and the literal one is exercised by the selftest's `literal` lane, which
+# runs the SAME CODE over the capture.
 VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
 PLANTS = {0: ["--selftest"],
           1: ["--port-stdout", "checks/rn-port.rows", "--oracle-stdout", "checks/rn-orc.rows"],
