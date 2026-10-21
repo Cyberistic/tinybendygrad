@@ -398,7 +398,11 @@ def measure(root: Path, which: str, work: Path) -> tuple[list[str], dict[str, in
 # THE STUB COMPILER. It is not a compiler: it answers `--check-only` with `ALL PROOFS CHECK`, the
 # plain run with two rows, and it BLOCKS on a chosen plain call so the plant can kill a harness
 # while the compiler is running. `WM_COUNT` names a counter file, `WM_BLOCK_AT` the plain call it
-# blocks on, and `WM_MARKER` is touched when it blocks. ONLY `sleep` is an external command.
+# blocks on, and `WM_MARKER` is touched when it blocks. ONLY `sleep` is an external command, and
+# it is `exec`ed rather than forked, for a MEASURED reason: the plant kills the harness's PROCESS
+# GROUP, and a process forked into a group AFTER the signal was sent is not a member the signal
+# reached. MEASURED: the first version of this stub left an ORPHANED `sleep` behind (PPID 1) in
+# exactly that window, so `exec` is what makes the kill deterministic rather than merely likely.
 STUB_BEND = """#!/bin/sh
 case "$*" in
   *--check-only*) echo "ALL PROOFS CHECK"; exit 0 ;;
@@ -413,7 +417,7 @@ if [ -n "$WM_COUNT" ]; then
   echo "$n" > "$WM_COUNT"
   if [ -n "$WM_BLOCK_AT" ] && [ "$n" -ge "$WM_BLOCK_AT" ]; then
     : > "$WM_MARKER"
-    sleep 300
+    exec sleep 300
   fi
 fi
 echo "row_a=1"
