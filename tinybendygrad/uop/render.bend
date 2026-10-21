@@ -2045,6 +2045,18 @@ def f_buf(ar: O.Arena, dev: S.Dev, +size: U32) -> O.Found:
 # THE GATE ROW. A `do IO<Unit>` body cannot bind with `+`, so the fixture is a
 # `def` per rule and this one folds, renders and prints. `py=` is the CPython
 # string for the same tree, so a dropped literal or a moved `cN` is a DIFF.
+#
+# THE `py=` COLUMN IS A TRANSCRIPTION OF THE PORT'S OWN ANSWER, and `1af4ba921`
+# LEFT SIX OF THEM BEHIND.  It moved `size` OUT of `ParamArg` (`72f98ffe0`) and
+# with it the `__repr__` this lane prints: the pin's line is
+# `args = [repr(self.slot), repr(self.dtype)] + [f"{k}={v!r}" ...]`, NO size
+# term, so the answer is `ParamArg(0, dtypes.i32, device='CPU')`.  The
+# `arg_repr` fixture and ITS literal moved together; these six did not, so the
+# port's own output and the port's own transcription disagreed on six rows --
+# MEASURED: 6 of the 80 rows carrying a `py=` literal, and they were exactly
+# these six.  THE ORACLE STILL PRINTS THE SIZE, because its subject
+# (`81157efb0^`) PREDATES the migration, so these six are RIGHT AGAINST THE PIN
+# and WRONG AGAINST THAT CAPTURE.
 def py_row(nm: String, py: String, +f: O.Found) -> IO(Unit):
   IO.print(String.concat([nm, " = [", pyrender(O.Found.ar(f), F.UOp.fold(O.Found.ar(f)), O.Found.i(f)), "]   py=[", py, "]"]))
 
@@ -2941,8 +2953,8 @@ def main() -> IO(Unit):
     py_row("pyrender const   ", "ast = UOp.const(3)", g_const())
     py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.f32)", g_cast())
     py_row("pyrender special ", "ast = UOp.special(4, 'gidx')", g_special())
-    py_row("pyrender buffer  ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU'))", g_buffer())
-    py_row("pyrender copy    ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nc2 = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device=('CPU', 'METAL')))\nast = c2.copy_to_device('METAL')", g_copy())
+    py_row("pyrender buffer  ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device='CPU'))", g_buffer())
+    py_row("pyrender copy    ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nc2 = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device=('CPU', 'METAL')))\nast = c2.copy_to_device('METAL')", g_copy())
     py_row("pyrender reduce  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2._rop(Ops.ADD, (0, 1))", g_reduce())
     py_row("pyrender range   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_range())
     py_row("pyrender range2  ", "ast = UOp.range(4, 0, AxisType.LOOP, src=(UOp.const(0),))", g_range2())
@@ -2960,14 +2972,14 @@ def main() -> IO(Unit):
     py_row("pyrender shared  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp(Ops.SUB, (c2, UOp.const(3)))", g_shared())
     py_row("pyrender fan     ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp.const(3)+c2*UOp.const(4)+c2*UOp.const(5)+c2*UOp.const(6)+c2*UOp.const(7)+c2*UOp.const(8)", g_fan())
     py_row("pyrender sink    ", "c2 = UOp.const(1)+UOp.const(2)\nc4 = c2*UOp.const(5)\nc5 = c2.sqrt()\nast = c4.sink(c5)", g_sink())
-    py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp(Ops.BUFFER, (c2,), ParamArg(0, dtypes.i32, 4, device='CPU'))\nast = UOp.const(0).store(c3)", g_store())
+    py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp(Ops.BUFFER, (c2,), ParamArg(0, dtypes.i32, device='CPU'))\nast = UOp.const(0).store(c3)", g_store())
     py_row("pyrender reduce2 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 0, AxisType.WEAK)\nast = c1._rop(Ops.MAX, (0, 1))", g_reduce2())
     py_row("pyrender flat1   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_flat1())
     py_row("pyrender flat2   ", "ast = UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1))", g_flat2())
     py_row("pyrender flat3   ", "ast = UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1, 2))", g_flat3())
-    py_row("pyrender buflocal", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, addrspace=AddrSpace.LOCAL, device='CPU'))", g_buflocal())
-    py_row("pyrender bufnodev", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4))", g_bufnodev())
-    py_row("pyrender bufimage", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, 4, device='CPU', image=(2, 2)))", g_bufimage())
+    py_row("pyrender buflocal", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, addrspace=AddrSpace.LOCAL, device='CPU'))", g_buflocal())
+    py_row("pyrender bufnodev", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32))", g_bufnodev())
+    py_row("pyrender bufimage", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device='CPU', image=(2, 2)))", g_bufimage())
     # `pyrender cfn` -- HEAD's answer, measured by calling `pyrender` on
     # `UOp(Ops.CUSTOM_FUNCTION, ..., arg=CustomFunction("myfn"))`. render.py:97
     # prints `arg={x.arg!r}`; ops.py:1394-1397's dataclass repr is the arg.
