@@ -1,5 +1,4 @@
 oracle	ladder	rows	verdict	value_axis_rows	echo_rows	constant_rows	blind_verdict	blind_rows	blind_why
-gates/cstyle-mut-oracle.py	v=0;v+1=1;v-1=-1;two=2	361	V-LADDER-SENSITIVE	NONE	ri_array_0;ri_array_1;ri_array_4;ri_swizzle_0;ri_swizzle_1;ri_swizzle_4	NONE	-	-	-
 gates/cstyle_render_census-oracle.py	v=0;v+1=1;v-1=-1;two=2	361	V-LADDER-SENSITIVE	NONE	ri_array_0;ri_array_1;ri_array_4;ri_swizzle_0;ri_swizzle_1;ri_swizzle_4	NONE	CANNOT BE PERTURBED	361	gates/cstyle_render_census-gate.py:Gate(oracle=) [beside-the-gate];gates/cstyle_
 gates/ew_graph_census-oracle.py	v=7;v+1=8;zero=0;neg=-7	46	V-LADDER-STABLE	NONE	NONE	NONE	ALL VALID INPUTS AGREE	46	gates/ew_graph_census-gate.py:Gate(oracle=) [beside-the-gate];gates/ew_graph_cen
 gates/linearizer_census-oracle.py	v=1;v+1=2;zero=0;neg=-1	71	V-LADDER-SENSITIVE	lin_u17;lin_u8	lin_nkey;lin_ord;lin_u0;lin_u1;lin_u10;lin_u11;lin_u12;lin_u13;lin_u14;lin_u15;lin_u16;lin_u18;lin_u2;lin_u3;lin_u4;lin_u5;lin_u6;lin_u7;lin_u9;lin_vm	NONE	CANNOT BE PERTURBED	71	gates/linearizer_census-gate.py:Gate(oracle=) [beside-the-gate];gates/linearizer

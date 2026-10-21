@@ -101,9 +101,12 @@ import importlib.util
 
 import re
 import resource
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
+import traceback
 import warnings
 from pathlib import Path
 
@@ -139,7 +142,35 @@ OUT_CALLS = frozenset({"print", "row", "rowf", "stdout.write", "stderr.write",
                        "sys.stdout.write", "sys.stderr.write"})
 
 
+class PopulationUnavailable(RuntimeError):
+    """The population could not be derived, so NO census was measured.
+
+    NAMED, because the failure this replaces was a bare `ValueError: too many values to unpack
+    (expected 3)` -- a traceback that names an ARITY and not a CONSEQUENCE, and the consequence is
+    that `gates/oracleblind.rows` (and the `gates/tnvalue.rows` computed from it) keep the bytes
+    of an EARLIER run with nothing in either file to say so. This exception is NOT caught here:
+    it propagates, the traceback survives, and the process exits non-zero. A census that dies is
+    DEAD (exit 5) and not a PASS, and the file it would have written is not written.
+    """
+
+
 # =============================================================== 1. THE POPULATION, DISCOVERED
+
+
+def _gates_pop(path: Path = None):
+    """`gates/gates-pop.py` LOADED BY PATH -- the derivation this tree already owns.
+
+    `gates/gate-surface.py:76` says it: "the population is not a second list, it is
+    `gates/gates-pop.py:discover()`, loaded by path". A second derivation with a different
+    predicate is a different question pretending to be the same one.
+
+    `path` exists for the PLANT, which plants a COPY whose `_buckets` returns three values and
+    asserts that the producer exits NON-ZERO rather than writing a table from a broken population.
+    """
+    spec = importlib.util.spec_from_file_location("gates_pop", path or (HERE / "gates-pop.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def _docs(tree):
@@ -216,12 +247,28 @@ def population():
     unreadable gates: `gates/gates-pop.py:entry_reason` already classifies a shell gate by shebang,
     and a census that re-parses shell as Python has measured nothing. Shell readers are COUNTED in
     `readers_not_python` instead.
+
+    THE ARITY IS NOT THIS FILE'S TO HOLD. MEASURED 2026-10-21: this file called the PRIVATE
+    `gates_pop._buckets` and unpacked THREE values, and `gates/gates-pop.py` grew a FOURTH
+    (`uncarried` -- the immediate files of the gate homes that the COMMIT TREE does not carry).
+    Both this file and `gates/tnvalue-census.py` died with `ValueError: too many values to unpack
+    (expected 3)`, and the `.rows` files they write kept the bytes of an EARLIER run with nothing
+    to say so. So the public accessors are used -- `discover()` for the two buckets this file
+    needs and `uncarried()` for the fourth -- and `gates-pop.py`'s own docstring says why they
+    exist ("the third bucket leaves through `opaque()` instead of through this signature...
+    AND THE FOURTH BUCKET LEAVES THE SAME WAY, FOR THE SAME REASON"). A caller that unpacks a
+    private tuple has taken on a contract nobody published.
     """
-    spec = importlib.util.spec_from_file_location("gates_pop", HERE / "gates-pop.py")
-    gates_pop = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gates_pop)
-    homes = tuple(gates_pop._homes(ROOT))
-    entries, libs, _opaque = gates_pop._buckets(ROOT)
+    try:
+        gates_pop = _gates_pop()
+        homes = tuple(gates_pop._homes(ROOT))
+        entries, libs = gates_pop.discover(ROOT)
+        uncarried = gates_pop.uncarried(ROOT)
+    except Exception as e:
+        raise PopulationUnavailable(
+            f"the gate population could not be derived: {type(e).__name__}: {e}. "
+            f"{REPORT.relative_to(ROOT)} was NOT rewritten and still holds the bytes of an "
+            f"earlier run.") from e
     readers = tuple(sorted(entries)) + tuple(sorted(libs))
     py_readers = [g for g in readers if g.suffix == ".py"]
     global ENV_READERS
@@ -280,13 +327,29 @@ def population():
             rel = path.relative_to(ROOT).as_posix() if path else val
             named.setdefault(rel, []).append(f"{g.relative_to(ROOT).as_posix()}:literal [{how}]")
 
-    walked = {}
+    # THE FOURTH BUCKET, USED AND NOT DROPPED. `gates-pop.py`'s own rule is "a gate is a file the
+    # COMMIT TREE carries", and this census's SECOND read -- the directory walk -- is the one that
+    # would otherwise admit a file the tree does NOT carry: another unit's in-flight scratch.
+    # MEASURED 2026-10-21 on the live tree: **1 of the 90 walked oracles is
+    # `checks/.tmp-tc_ptx_render-oracle.py`**, which `git ls-tree -r HEAD` does not name -- and a
+    # census that admits it RUNS another unit's unvetted file as a subprocess and writes a row for
+    # it into a committed table. So the walk is held to the SAME rule as the read that discovered
+    # it, and the files it excludes are NAMED rather than dropped: a rule that excludes files
+    # without naming them is the `artefacts_ok()` shape wearing a population.
+    not_carried = {p.relative_to(ROOT).as_posix() for p, _reason in uncarried}
+    walked, excluded = {}, []
     for home in homes:
         base = ROOT / home
         if base.is_dir():
             for p in sorted(base.iterdir()):
-                if p.is_file() and p.suffix == ".py" and "oracle" in p.stem.lower():
-                    walked[p.relative_to(ROOT).as_posix()] = p
+                if p.suffix != ".py" or "oracle" not in p.stem.lower():
+                    continue
+                rel = p.relative_to(ROOT).as_posix()
+                if rel in not_carried:
+                    excluded.append(rel)
+                    continue
+                if p.is_file():
+                    walked[rel] = p
 
     rows = {}
     for rel in sorted(set(named) | set(walked)):
@@ -302,6 +365,7 @@ def population():
                   "readers_not_python": len(readers) - len(py_readers),
                   "unreadable_readers": unread,
                   "walk_only": sum(1 for r in rows.values() if r["class"] == "WALK-ONLY"),
+                  "not_carried": sorted(excluded),
                   "absent": sorted(r for r, v in rows.items() if not v["exists"]),
                   "unresolved_decl": sorted(unresolved),
                   "declared_but_unlocatable": sorted(absent_lits)}
@@ -312,8 +376,6 @@ def population():
 
 def _parents(tree):
     return {id(c): n for n in ast.walk(tree) for c in ast.iter_child_nodes(n)}
-
-
 
 
 def _under_output(n, parents):
@@ -1096,6 +1158,8 @@ def summarise(rows, d):
     print(f"  population          {len(rows)} oracle(s): "
           + " ".join(f"{k}={v[k]}" for k in sorted(v)))
     print(f"  walk-only           {d['walk_only']} (no gate names them -- a DENOMINATOR)")
+    print(f"  not carried         {len(d['not_carried'])} (the COMMIT TREE does not carry them, so "
+          f"they are not files of this repository)  {d['not_carried'][:4]}")
     print(f"  absent on disk      {len(d['absent'])}  {d['absent'][:4]}")
     print(f"  unresolved decl     {d['unresolved_decl'] or 'none'}")
     print(f"  unlocatable decl    {len(d['declared_but_unlocatable'])}  {d['declared_but_unlocatable'][:4]}")
@@ -1196,6 +1260,150 @@ BINDINGS = [("a", lambda: len(VALUES)), ("b", lambda: len(VALUES) + 1)]
 print("".join(f"{n}={f()};\\n" for n, f in BINDINGS))
 '''
 
+# THE PLANT'S FIXTURES. THE ORACLE'S NAME IS A STEM, NEVER A LITERAL THAT ENDS IN `.py`: this file
+# IS IN ITS OWN POPULATION, and its own admission rule ("every tracked `.py` constant a gate
+# mentions whose value ends in `.py` and carries `oracle`") would turn a literal into a
+# DECLARATION. `gates/tnvalue-census.py` records the trap by name: "this file perturbed the very
+# denominator it reads its verdicts from, and it did it by NAMING A THING THAT DOES NOT EXIST". So
+# the names are STEMS plus a suffix, and the census's own filename is `__file__`'s.
+ORACLE_STEM = "fixture-oracle"
+GATE_STEM = "fixture-gate"
+WITNESS_STEM = "home-witness"
+
+FIXTURE_GATE = '''#!/usr/bin/env python3
+"""A synthetic gate that DECLARES an oracle -- the census's FIRST read, in miniature."""
+ORACLE = "fixture-oracle.py"
+
+
+def Gate(name, oracle=None):
+    return (name, oracle)
+
+
+def main():
+    print(Gate("fixture", oracle=ORACLE))
+
+
+if __name__ == "__main__":
+    main()
+'''
+
+
+def plant_population() -> list:
+    """Direction 8 -- THE POPULATION IS THE COMMIT TREE's, AND A BROKEN PRODUCER EXITS NON-ZERO.
+
+    FOUR ARMS, ON COPIES, IN A SCRATCH TREE THAT IS NOT A REPOSITORY OF THIS ONE.
+    `gates/gates-pop.py`'s `_tree_paths` records why the scratch tree is OUTSIDE: `git -C <dir>
+    ls-tree` SEARCHES UPWARD, so a scratch tree inside this repository reads THIS repository's
+    tree and the measurement is about a DIFFERENT TREE.
+
+    8a CONTROL -- a tree with one CARRIED oracle: the census copy writes a table that HOLDS it,
+        and the table DIFFERS from the stale bytes seeded before the run. The control is what
+        makes 8b mean anything -- a census that admitted nothing would pass 8b too.
+    8b PLANT -- the same tree plus an oracle the COMMIT TREE does NOT carry (it was written after
+        the commit): the table must NOT hold it, and the run must NAME it. This is the arm the
+        live tree has -- `checks/.tmp-tc_ptx_render-oracle.py` is another unit's in-flight scratch
+        and the walk used to admit it.
+    8c PLANT -- the same tree with a `gates-pop.py` whose `_buckets` returns THREE values: the
+        producer must exit NON-ZERO, must NAME the reason, and must NOT rewrite its table. **A
+        PRODUCER THAT DIES AND EXITS 0 IS THE WORSE SHAPE**: the file it writes stays at its old
+        bytes and nothing says so.
+    8d PLANT -- a tree with no gates at all: the census must SAY the population is empty, exit
+        DEAD (5), and write no table at all.
+    """
+    gp = _gates_pop()
+    checks = []
+    oracle_rel = f"gates/{ORACLE_STEM}.py"
+    late_rel = f"gates/late-{ORACLE_STEM}.py"
+    census_name = Path(__file__).name
+    env = {k: v for k, v in os.environ.items() if k != "GIT_INDEX_FILE"}
+
+    def build(root: Path, home: bool) -> Path:
+        """A scratch tree with a COMMIT, so `carried` means something.
+
+        The home is CERTIFIED by a witness and never by a list: `gates/gates-pop.py` derives the
+        homes from the gates, so a synthetic tree earns a home the only way a real one does. The
+        witness is `gates-pop.py`'s own `GOOD_ROOT`, LOADED FROM THAT MODULE -- a fixture retyped
+        by hand agrees with the instrument by construction.
+        """
+        (root).mkdir(parents=True, exist_ok=True)
+        (root / "pyproject.toml").write_text("[project]\nname='x'\n")
+        if home:
+            (root / "gates").mkdir(parents=True, exist_ok=True)
+            (root / "gates" / f"{WITNESS_STEM}.py").write_text(gp.GOOD_ROOT)
+            (root / "gates" / f"{GATE_STEM}.py").write_text(FIXTURE_GATE)
+            (root / "gates" / f"{ORACLE_STEM}.py").write_text(GOOD)
+        for cmd in (["init", "-q"], ["config", "user.email", "p@example"],
+                    ["config", "user.name", "plant"]):
+            subprocess.run(["git", "-C", str(root), *cmd], capture_output=True, text=True, env=env)
+        subprocess.run(["git", "-C", str(root), "add", "-A"], capture_output=True, text=True, env=env)
+        subprocess.run(["git", "-C", str(root), "commit", "-qm", "plant"],
+                       capture_output=True, text=True, env=env)
+        return root
+
+    def install(root: Path) -> Path:
+        """The census COPY and the population's own module, written AFTER the commit -- so the copy
+        is not a file of the scratch repository and the population is the scratch tree's own.
+        `gatekit.py` comes with them because `gates-pop.py` imports it BY PATH (`sys.path.insert(0,
+        str(HERE))` then `from gatekit import REFUSED`), and the five verdicts are imported, never
+        re-spelled."""
+        (root / "gates").mkdir(parents=True, exist_ok=True)
+        shutil.copy(HERE / census_name, root / "gates" / census_name)
+        shutil.copy(HERE / "gates-pop.py", root / "gates" / "gates-pop.py")
+        shutil.copy(HERE / "gatekit.py", root / "gates" / "gatekit.py")
+        os.symlink(ROOT / ".venv", root / ".venv")
+        return root / "gates" / census_name
+
+    def run(root: Path):
+        return subprocess.run([str(PY), str(root / "gates" / census_name)],
+                              capture_output=True, text=True, timeout=900, env=env)
+
+    with tempfile.TemporaryDirectory() as td:
+        root = build(Path(td).resolve() / "tree", home=True)
+        install(root)
+        (root / "gates" / f"late-{ORACLE_STEM}.py").write_text(GOOD)   # AFTER the commit
+        stale = "STALE ROWS FROM AN EARLIER RUN\n"
+        table = root / "gates" / "oracleblind.rows"
+        table.write_text(stale)
+        r = run(root)
+        out = r.stdout + r.stderr
+        written = table.read_text() if table.is_file() else ""
+        checks.append((
+            "plant 8a -- a producer that RUNS writes a table that DIFFERS from the stale bytes, and "
+            "it HOLDS the carried oracle (the CONTROL)",
+            r.returncode == 0 and written != stale and oracle_rel in written,
+            f"rc={r.returncode} differs={written != stale} holds={oracle_rel in written}"))
+        checks.append((
+            "plant 8b -- an oracle the COMMIT TREE does not carry is EXCLUDED from the table and "
+            "NAMED by the run",
+            late_rel not in written and late_rel in out,
+            f"in_table={late_rel in written} named={late_rel in out}"))
+        gp_copy = root / "gates" / "gates-pop.py"
+        src = gp_copy.read_text()
+        broken = src.replace("    return entries, libs, opaque, uncarried\n",
+                             "    return entries, libs, opaque\n")
+        gp_copy.write_text(broken)
+        r2 = run(root)
+        out2 = r2.stdout + r2.stderr
+        after = table.read_text() if table.is_file() else ""
+        checks.append((
+            "plant 8c -- a producer whose ARITY is wrong exits NON-ZERO, NAMES the reason, and does "
+            "NOT rewrite its table",
+            broken != src and r2.returncode != 0 and "PopulationUnavailable" in out2
+            and after == written,
+            f"patched={broken != src} rc={r2.returncode} named={'PopulationUnavailable' in out2} "
+            f"table_untouched={after == written}"))
+        empty = build(Path(td).resolve() / "empty", home=False)
+        install(empty)
+        r3 = run(empty)
+        out3 = r3.stdout + r3.stderr
+        checks.append((
+            "plant 8d -- a census that finds NOTHING says so, exits DEAD (5), and writes no table",
+            r3.returncode == 5 and "the population is empty" in out3
+            and not (empty / "gates" / "oracleblind.rows").exists(),
+            f"rc={r3.returncode} says_empty={'the population is empty' in out3} "
+            f"wrote={(empty / 'gates' / 'oracleblind.rows').exists()}"))
+    return checks
+
 
 def plant():
     """Three directions, and the census must be able to fail on the second one.
@@ -1218,6 +1426,8 @@ def plant():
        `emit(flag=True)` must not be perturbed, because flipping it changes WHICH METHOD IS UNDER
        TEST. The cost -- a fixture that really is a keyword bool -- is counted in `unreachable`
        rather than hidden, and `gates/tn_nary_arena-oracle.py` is the live instance of the cost.
+    6. THE POPULATION IS THE COMMIT TREE's, AND A BROKEN PRODUCER EXITS NON-ZERO -- `plant 8a-8d`,
+       in `plant_population()`, on copies in a scratch tree.
     """
     ART.mkdir(parents=True, exist_ok=True)
     checks = []
@@ -1268,10 +1478,11 @@ def plant():
                    het_ok and hom_ok,
                    f"heterogeneous={len(het)} refused={het_ok} homogeneous={len(hom)} "
                    f"rotated={hom_ok}"))
+    checks += plant_population()
     bad = [n for n, ok, _ in checks if not ok]
     for n, ok, seen in checks:
         print(f"  {'PASS' if ok else 'FAIL'}  {n}\n          observed: {seen}")
-    print(f"--plant: {'all seven directions hold' if not bad else 'FAILED: ' + '; '.join(bad)}")
+    print(f"--plant: {'all eight directions hold' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return 1 if bad else 0
 
 
@@ -1289,7 +1500,16 @@ def main(argv):
         return plant()
 
     t0 = time.time()
-    rows, d = population()
+    try:
+        rows, d = population()
+    except PopulationUnavailable:
+        # DEAD (5): THE RUNNER RAN AND EMITTED NOTHING. The traceback is PRINTED, not swallowed --
+        # the exception carries the reason AND the consequence (which `.rows` file was not
+        # rewritten), and the process exits non-zero. A producer that dies and exits 0 is the
+        # worse shape, because the file it writes stays at its old bytes and nothing says so.
+        traceback.print_exc()
+        print("  DEAD (5): no census was measured and no table was written", file=sys.stderr)
+        return 5
     if a.only:
         rows = {k: v for k, v in rows.items() if a.only in k}
     out = []
@@ -1318,9 +1538,17 @@ def main(argv):
         print(f"  --only {a.only}: {len(out)} row(s) to stdout; {REPORT.relative_to(ROOT)} NOT "
               f"written (a filtered run must not overwrite the population's table)", file=sys.stderr)
     else:
-        REPORT.write_text(text)
-        print(f"  sha256 {hashlib.sha256(text.encode()).hexdigest()[:16]}  "
-              f"({len(out)} rows -> {REPORT.relative_to(ROOT)}, {len(text)} bytes)")
+        if out:
+            REPORT.write_text(text)
+            print(f"  sha256 {hashlib.sha256(text.encode()).hexdigest()[:16]}  "
+                  f"({len(out)} rows -> {REPORT.relative_to(ROOT)}, {len(text)} bytes)")
+        else:
+            # AN EMPTY POPULATION MUST NOT OVERWRITE A TABLE THAT MEASURED SOMETHING. `verdict_of`
+            # answers DEAD (5) for it, and the file keeps the bytes of the last run that HAD a
+            # population: a table of zero rows is indistinguishable from a table that was never
+            # written, and the second is the one a reader would take for a fresh answer.
+            print(f"  population is EMPTY: {REPORT.relative_to(ROOT)} NOT written; it still holds "
+                  f"the bytes of an earlier run that measured something", file=sys.stderr)
     print(f"  wall {elapsed:.1f}s   peak child RSS {peak:.0f} MiB")
     print(f"  {why}")
     if a.report:
