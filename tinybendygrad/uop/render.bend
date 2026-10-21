@@ -705,7 +705,7 @@ def i64_tuple_repr.go(xs: List<&2, H.I64>) -> List<&2, String>:
 def i64_tuple_repr(xs: List<&2, H.I64>) -> String:
   String.concat(["(", String.join(i64_tuple_repr.go(xs), ", "), ")"])
 
-# `vars` and `target` are both fields ops.bend cannot print: `vars` is a tuple of
+# `params` and `target` are both fields ops.bend cannot print: `params` is a tuple of
 # UOPs (so its repr is `pretty_print` of each, which is `pretty_print`'s own
 # recursion) and `target` is a `Target` dataclass dropped at ops.bend:801.
 def aprogram_vars(xs: List<&2, U32>) -> String:
@@ -717,7 +717,7 @@ def aprogram_vars(xs: List<&2, U32>) -> String:
 # of a `Target` is the empty string -- `helpers.py`'s dataclass has no fields
 # set, so `target=` with nothing after it. That is measured, not guessed.
 def aprogram_repr(+pi: O.ProgramInfo) -> String:
-  String.concat(["ProgramInfo(global_size=", i64_tuple_repr(O.ProgramInfo.global_size(pi)), ", local_size=", i64_tuple_repr(O.ProgramInfo.local_size(pi)), ", vars=", aprogram_vars(O.ProgramInfo.vars(pi)), ", globals=", u32_tuple_repr(O.ProgramInfo.globals(pi)), ", outs=", u32_tuple_repr(O.ProgramInfo.outs(pi)), ", ins=", u32_tuple_repr(O.ProgramInfo.ins(pi)), ", target=)"])
+  String.concat(["ProgramInfo(global_size=", i64_tuple_repr(O.ProgramInfo.global_size(pi)), ", local_size=", i64_tuple_repr(O.ProgramInfo.local_size(pi)), ", vars=", aprogram_vars(O.ProgramInfo.params(pi)), ", globals=", u32_tuple_repr(O.ProgramInfo.globals(pi)), ", outs=", u32_tuple_repr(O.ProgramInfo.outs(pi)), ", ins=", u32_tuple_repr(O.ProgramInfo.ins(pi)), ", target=)"])
 
 # CustomFunction is a NEW Arg constructor (ops.bend, uop/ops.py:1394-1397). Upstream it is a
 # frozen dataclass with two fields, so its repr is the pair. `cf` is bound `+` because this

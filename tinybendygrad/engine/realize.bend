@@ -506,7 +506,7 @@ def rz_var_uops.go(+todo: List<&2, U32>, +r: RList, +bnds: List<&2, Bnd>) -> RLi
 # arg, and `AProgram` is the only `Arg` constructor carrying it.
 def rz_pvars.go(a: O.Arg) -> List<&2, U32>:
   match a:
-    case O.AProgram{pi}: O.ProgramInfo.vars(pi)
+    case O.AProgram{pi}: O.ProgramInfo.params(pi)
     case _: Nil{}
 
 def rz_pvars(ar: O.Arena, prg: U32) -> List<&2, U32>:
@@ -1520,8 +1520,8 @@ def zero_four() -> O.PyRange:
 def gs3(a: U32, b: U32, c: U32) -> List<&2, H.I64>:
   [H.i64_of_i32(a), H.i64_of_i32(b), H.i64_of_i32(c)]
 
-def pi(vars: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> O.ProgramInfo:
-  O.ProgramInfo{gs3(4, 1, 1), [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], vars, globals, outs, ins}
+def pi(params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> O.ProgramInfo:
+  O.ProgramInfo{gs3(4, 1, 1), [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], params, globals, outs, ins}
 
 def call_info(nm: String) -> O.CallInfo:
   O.CallInfo{Some{nm}, False{}, False{}, S.void()}

@@ -1007,7 +1007,7 @@ def KernelInfo.of() -> KernelInfo:
 # `H.I64`: an int is an I64 and a float is not a shape, so the float case in
 # `sym_infer` is recorded on `sym_infer` itself.
 type ProgramInfo is Data:
-  ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, vars: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>}
+  ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>}
 
 def ProgramInfo.of() -> ProgramInfo:
   ProgramInfo{[H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], Nil{}, Nil{}, Nil{}, Nil{}}
@@ -1553,27 +1553,27 @@ def KernelInfo.function_name(x: KernelInfo) -> String:
 
 def ProgramInfo.global_size(x: ProgramInfo) -> List<&2, H.I64>:
   match x:
-    case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: global_size
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: global_size
 
 def ProgramInfo.local_size(x: ProgramInfo) -> List<&2, H.I64>:
   match x:
-    case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: local_size
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: local_size
 
-def ProgramInfo.vars(x: ProgramInfo) -> List<&2, U32>:
+def ProgramInfo.params(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: vars
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: params
 
 def ProgramInfo.globals(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: globals
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: globals
 
 def ProgramInfo.outs(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: outs
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: outs
 
 def ProgramInfo.ins(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, vars, globals, outs, ins}: ins
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: ins
 
 def CallInfo.name(x: CallInfo) -> Maybe<&2, String>:
   match x:
@@ -2006,9 +2006,9 @@ def eq_kernelinfo(x: KernelInfo, y: KernelInfo) -> Bool:
 
 def eq_programinfo(x: ProgramInfo, y: ProgramInfo) -> Bool:
   match x y:
-    case ProgramInfo{global_size, local_size, vars, globals, outs, ins} ProgramInfo{g2, l2, v2, b2, o2, i2}:
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins} ProgramInfo{g2, l2, v2, b2, o2, i2}:
       Bool.and(eq_i64s(global_size, g2), Bool.and(eq_i64s(local_size, l2),
-        Bool.and(eq_u32(vars, v2), Bool.and(eq_u32(globals, b2),
+        Bool.and(eq_u32(params, v2), Bool.and(eq_u32(globals, b2),
         Bool.and(eq_u32(outs, o2), eq_u32(ins, i2))))))
 
 def eq_callinfo(x: CallInfo, y: CallInfo) -> Bool:
@@ -8508,7 +8508,7 @@ def vals.step(+ar: Arena, +v: VarVals, xs: List<&2, U32>, acc: List<&2, H.I64>) 
 # `Maybe` `UOp.expr` uses, and the reason `Maybe` rather than a sentinel is that a
 # schedule key of the WRONG LENGTH is a wrong program and not a diagnostic.
 def ProgramInfo.vals(+ar: Arena, v: VarVals, x: ProgramInfo) -> Maybe<&2, List<&2, H.I64>>:
-  vals.step(ar, v, ProgramInfo.vars(x), Nil{})
+  vals.step(ar, v, ProgramInfo.params(x), Nil{})
 
 # ==== the `vv_*` fixture and rows =========================================
 #
@@ -8601,7 +8601,7 @@ def vd_show(m: Maybe<&2, List<&2, H.I64>>) -> String:
     case None{}: "none"
 
 # The record is spelled through a helper because the SIX fields are all defaulted
-# and only `vars` is under test; `ProgramInfo.of()` supplies the three `(1,1,1)`s
+# and only `params` is under test; `ProgramInfo.of()` supplies the three `(1,1,1)`s
 # and the three empty lists, and a six-field LITERAL here would be a second copy of
 # a default that already has a name.
 def vd.pi.of(pi: ProgramInfo, xs: List<&2, U32>) -> ProgramInfo:
