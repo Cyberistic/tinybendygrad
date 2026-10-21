@@ -331,7 +331,20 @@ gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIA
                                        `PROVE_PIN`. RAN OVER THE REAL 70, 2026-10-15:
                                        TALLY `DEAD=0 FAIL=2 PASS=66 REFUSED=0 SKIP=2`,
                                        "68 of 70 gates reached a verdict about the tree",
-                                       616.0 s = 10.3 min, mean 8.8 s, max 37.6 s. The 2
+                                        616.0 s = 10.3 min, mean 8.8 s, max 37.6 s.
+                                        **AND THE POPULATION HAS MOVED SINCE: `gate_homes()` NOW RETURNS
+                                        `checks` AND `gates`, SO THE SWEEP'S POPULATION IS **313 ENTRY
+                                        POINTS** at 2026-10-21 (148 ending `-gate.py`), and the tool
+                                        spells its own delta out: **313 - 140 = +173 (+165 by NAME, +8 by
+                                        HOME)**. **SO THE TALLY ABOVE IS A CLAIM ABOUT THE 70-GATE
+                                        POPULATION IT WAS MEASURED ON, NOT ABOUT TODAY'S 313, AND IT HAS
+                                        NOT BEEN RE-MEASURED** -- a full sweep is outside this
+                                        session's budget. **WHAT IS MEASURED ABOUT THE 313**:
+                                        `checks/exitcode-census.py` is IN it and costs **2.4 s / 48 MiB**
+                                        (its gate 6.25 s), and **89 of the 313 are AST-only census-like
+                                        walks** of that order -- but it also holds **~12 heavy
+                                        instruments** (6 `e2e`, `differ`, `graphcmp`, `run-port`,
+                                        `run-f64`, 2 `compile`) that need `bend`/`node`/`cc`.
                                        FAILs are `indexread-gate.py` and `pins-shape-gate.py`
                                        (one defect: `pins-shape-gate.py` is indexread's NEW
                                        offender, `ls-files`); the 2 SKIPs are
