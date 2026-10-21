@@ -167,12 +167,22 @@ def warm(driver):
     return PASS, note
 
 
+def rows_note(text, note):
+    """The rows of a lane's stdout, and a note that says how many lines were NOT rows.
+
+    `bend` prints device notices beside its rows, so a line that is not a row is dropped from
+    the comparison -- and COUNTED, because a lane that printed forty rows and one line of
+    prose has said something the reader should see.
+    """
+    rows, junk = rows_of(text)
+    return rows, note + (f", {len(junk)} line(s) that are not rows" if junk else "")
+
+
 def compare(oracle_rows, port_rows, port_expected):
     """`(code, lines)` -- THE CLAIMS, and the classes they are about.
 
-    `port_expected` is the port's expected values, or None to leave that claim out. The
-    comparisons are over the two lanes' LIVE rows, so a lane that drifts is caught whichever
-    side of the expectation files moved.
+    The comparisons are over the two lanes' LIVE rows, so a lane that drifts is caught
+    whichever side of the expectation files moved.
     """
     on, on_dup = names(oracle_rows)
     pn, pn_dup = names(port_rows)
@@ -192,10 +202,9 @@ def compare(oracle_rows, port_rows, port_expected):
     if diffs:
         bad.append(f"{len(diffs)} of {len(shared)} shared rows disagree: "
                    + "; ".join(f"{k}: cp={a} port={b}" for k, a, b in diffs[:4]))
-    if port_expected is not None and list(port_rows) != list(port_expected):
+    if list(port_rows) != list(port_expected):
         bad.append(f"the port's {len(port_rows)} rows differ from {PORT_ROWS}")
-    port_match = "not checked" if port_expected is None else (
-        "match" if list(port_rows) == list(port_expected) else "DIFFER")
+    port_match = "match" if list(port_rows) == list(port_expected) else "DIFFER"
     lines = [
         f"CLAIM cpython-rows   {len(oracle_rows)} of {ORACLE_ROWS}",
         f"CLAIM shared-rows    {len(shared)} of {SHARED_ROWS}, {len(diffs)} disagreeing",
@@ -231,13 +240,13 @@ def gate(oracle=ORACLE, pin=None, driver=DRIVER, port_rows=PORT_ROWS):
     ocode, oout, onote = lane([str(gatekit.PY), str(opath), ORACLE_MODE], "cpython")
     if ocode != PASS:
         return ocode, [f"  {gatekit.verdict_of(ocode)}  {onote}"]
-    orows, _ojunk = rows_of(oout)
+    orows, onote = rows_note(oout, onote)
     if not orows:
         return DEAD, ["  DEAD  the CPython lane printed no rows"]
     pcode, pout, pnote = lane([str(gatekit.BEND), str(dpath)], "port")
     if pcode != PASS:
         return pcode, [f"  {gatekit.verdict_of(pcode)}  {pnote}"]
-    prows, _pjunk = rows_of(pout)
+    prows, pnote = rows_note(pout, pnote)
     if not prows:
         return DEAD, ["  DEAD  the port lane printed no rows"]
     code, lines = compare(orows, prows, expected)
