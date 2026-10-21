@@ -14,8 +14,9 @@ printed and fails: an unclassified input must not hide in PASS.
 
 The plant is on copies. A header line `ORACLE: <path>` of a never-committed
 path is REQUIRED. The same path cited only from a function named `probe` is
-PROBE. A citer that says `absent by design` is RECIPE-ABSENT. A path that
-exists is not in the set.
+PROBE. A citer that says `absent by design` is RECIPE-ABSENT. A sentence that
+says the oracle path is gone is not REQUIRED. A line that binds `ORACLE =` to
+the path is REQUIRED. A path that exists is not in the set.
 """
 from __future__ import annotations
 
@@ -48,6 +49,8 @@ CLASSES = (REQUIRED, PROBE, RECIPE, UNSORTED)
 # Exact name. `probe_extra` is a different function and is not this class.
 PROBE_FUNC = "probe"
 ABSENT = re.compile(r"(?i)absent\s+by\s+design")
+# Read from the span after path tokens are blanked. A filename cannot supply the word.
+MISSING = re.compile(r"(?i)\b(?:gone|absent)\b|never\s+committed")
 ORACLE_BIND = re.compile(r"\bORACLE\s*=")
 ORACLE_WORD = re.compile(r"(?i)\boracle\b")
 ORACLE_HEADER = re.compile(r"^\s*#\s*ORACLE:\s+\S")
@@ -67,8 +70,11 @@ RULE = (
     "and a load citer is a header line ORACLE: <path>, or the line binds ORACLE = to the path, "
     "or the line names the path as the oracle (the word oracle remains after path tokens are "
     "blanked), or a header command runs the path as the program that produces a gate's rows. "
-    "A span that says absent by design wins over REQUIRED. A path cited only from probe() is "
-    "PROBE, not REQUIRED. Anything else is UNSORTED, printed, and not a skip."
+    "A span that says the path is gone, absent, or never committed is not REQUIRED: the words "
+    "are read from that span after path tokens are blanked, so a filename does not supply them, "
+    "and no path is listed. A line that binds ORACLE = to the path, and a header command that "
+    "runs the path, stay REQUIRED. A span that says absent by design wins over REQUIRED. A path "
+    "cited only from probe() is PROBE, not REQUIRED. Anything else is UNSORTED, printed, and not a skip."
 )
 
 
@@ -181,6 +187,11 @@ def blanked(line: str) -> str:
   return PATH_TOKEN.sub(" ", line)
 
 
+def says_missing(span: str) -> bool:
+  """The span says the cited path is gone, absent, or never committed. See `RULE`."""
+  return MISSING.search(blanked(span)) is not None
+
+
 def is_script(path: str) -> bool:
   parts = path.split("/")
   return any(SCRIPT_KIND.search(p) for p in parts)
@@ -244,12 +255,15 @@ def class_of(path: str, citers: list[tuple[str, int, str]], bodies: dict[str, st
       line = lines[n - 1]
       para = paragraph(lines, n)
       in_header = n in header_lines(body)
+      # A span that says the path is gone does not name it as an oracle that must exist.
+      # A binding and a header runner are not that span, and are not demoted.
+      missing = says_missing(para)
       hit = False
-      if in_header and ORACLE_HEADER.search(line) and path in line:
+      if in_header and ORACLE_HEADER.search(line) and path in line and not missing:
         hit = True
       if ORACLE_BIND.search(line) and path in line:
         hit = True
-      if path in line and ORACLE_WORD.search(blanked(line)):
+      if path in line and ORACLE_WORD.search(blanked(line)) and not missing:
         hit = True
       if _runner(line, path, para, in_header):
         hit = True
@@ -399,11 +413,15 @@ PLANT_REQUIRED = (
     "PLANT a header runner that produces rows is REQUIRED",
     "FALSIFY by design without absent is not RECIPE-ABSENT",
     "CONTROL an existing file is not in the set",
+    "PLANT a sentence that the oracle is gone is not REQUIRED",
+    "PLANT a sentence that the oracle is absent is not REQUIRED",
+    "PLANT a sentence that the oracle was never committed is not REQUIRED",
+    "PLANT ORACLE = binding is REQUIRED",
 )
 
 
 def plant(nb, dang, surveyed: dict) -> int:
-  """The three shapes, on copies, plus the falsifications and the existing-file control."""
+  """The shapes, on copies, plus the falsifications and the existing-file control."""
   writer = _writer(surveyed)
   control = _existing(surveyed)
   if writer is None or control is None:
@@ -413,11 +431,14 @@ def plant(nb, dang, surveyed: dict) -> int:
   recipe = _plant_path("recipe-absent.bin")
   runner = _plant_path("row-runner.py")
   kept = _plant_path("kept-by-design.py")
+  # Concatenated, so this file does not cite the plant path as one token.
+  gone = ".agents" + "/" + "slop/" + "gone.py"
+  noted = _plant_path("noted.py")
   own = CENSUS.read_text(errors="replace") + (HERE / "loadgap-gate.py").read_text(errors="replace")
   dang_mod = dang
   own_toks = set(dang_mod.tokens(own))
   already = set(surveyed.get("dangling", [])) | set(surveyed.get("subjects", {}))
-  for path in (never, recipe, runner, kept):
+  for path in (never, recipe, runner, kept, gone, noted):
     if path in own_toks or path in already or (ROOT / path).exists():
       print(f"PLANT REFUSED: {path} is already a token, a subject, or a file")
       return REFUSED
@@ -494,6 +515,40 @@ def plant(nb, dang, surveyed: dict) -> int:
   checks.append(("FALSIFY by design without absent is not RECIPE-ABSENT",
                  got is not None and got["gap"] != RECIPE,
                  f"gap={None if got is None else got['gap']} path={kept}"))
+  _print_check(checks[-1][0], checks[-1][1], checks[-1][2])
+
+  said = _insert_header(base, f"# the oracle `{gone}` is gone\n")
+  rows = _copy_rows(nb, dang, writer, said)
+  if rows is None:
+    return REFUSED
+  got = _row(rows, gone)
+  checks.append(("PLANT a sentence that the oracle is gone is not REQUIRED",
+                 got is not None and got["gap"] != REQUIRED,
+                 f"gap={None if got is None else got['gap']} path={gone}"))
+  _print_check(checks[-1][0], checks[-1][1], checks[-1][2])
+
+  for name, line, path in (
+      ("PLANT a sentence that the oracle is absent is not REQUIRED",
+       f"# the oracle `{noted}` is absent\n", noted),
+      ("PLANT a sentence that the oracle was never committed is not REQUIRED",
+       f"# the oracle `{noted}` was never committed\n", noted),
+  ):
+    rows = _copy_rows(nb, dang, writer, _insert_header(base, line))
+    if rows is None:
+      return REFUSED
+    got = _row(rows, path)
+    checks.append((name, got is not None and got["gap"] != REQUIRED,
+                   f"gap={None if got is None else got['gap']} path={path}"))
+    _print_check(checks[-1][0], checks[-1][1], checks[-1][2])
+
+  bound = _insert_header(base, f"ORACLE = [{gone!r}]\n")
+  rows = _copy_rows(nb, dang, writer, bound)
+  if rows is None:
+    return REFUSED
+  got = _row(rows, gone)
+  checks.append(("PLANT ORACLE = binding is REQUIRED",
+                 got is not None and got["gap"] == REQUIRED,
+                 f"gap={None if got is None else got['gap']} path={gone}"))
   _print_check(checks[-1][0], checks[-1][1], checks[-1][2])
 
   missing = [n for n in PLANT_REQUIRED if n not in {c[0] for c in checks}]
