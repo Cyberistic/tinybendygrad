@@ -551,7 +551,7 @@ def subject_executed(rel_file, name, text, decl, bind, key, gate):
     if not found or not any(found.startswith(n) for n in NEVER_READ):
         return None
     return {"kind": "run-artifact", "artifact": found, "dir": "", "row": key,
-            "at": "%s is the file pintable executes; %s" % (rel_file, how)}
+            "at": "%s, the file pintable executes; %s" % (rel_file, how)}
 
 
 def expectation_census(corpus, host, code, decls, git_root, corpus_root, upstream, P, T, B):
