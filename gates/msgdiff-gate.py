@@ -92,8 +92,18 @@ A subject that names no such stem is not a failure of this check. A bare word
 is prose: any-token matching refuses "the census's banner shape" because
 `banner` is a stem, and a blamed innocent is worse than a missed claim.
 
+`stems` walks that check. No arguments means the last 800 (`rev-list -n 800
+HEAD`). Any arguments are rev-list arguments, so `-n 50` or `--since=... HEAD`
+overrides the default. Each refusal prints the sha, the subject, and the diff
+paths. Exit REFUSED if any remain, PASS only if the walk found none. A missing
+git object is REFUSED, not a pass: absence is not agreement. The shas it prints
+are whatever the walk finds. This file does not list them. `range` is the other
+walk — it grades every lane and forwards its arguments unchanged.
+
 Run:  .venv/bin/python gates/msgdiff-gate.py check 00b101574
       .venv/bin/python gates/msgdiff-gate.py range --since=2026-10-06T12:00 HEAD
+      .venv/bin/python gates/msgdiff-gate.py stems
+      .venv/bin/python gates/msgdiff-gate.py stems -n 50
       .venv/bin/python gates/msgdiff-gate.py --plant
       SUBJECT_DIFF_ACK=".agents/slop/<unit>" .venv/bin/python gates/msgdiff-gate.py check <rev>
 """
@@ -276,11 +286,11 @@ def judge_subject(root, sha, message, ack_paths):
     return PASS, len(removed), 0, []
 
 
-def _git(root, *args):
+def _git(root, *args, stdin=None):
     """One git call. `--no-optional-locks` so this gate NEVER writes the index it reads --
     a guard that moves the thing it measures is the jj-reset hazard restated."""
     r = subprocess.run(["git", "--no-optional-locks", "-C", str(root), *args],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, input=stdin)
     if r.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)}: rc={r.returncode}: {r.stderr.strip()}")
     return r.stdout
@@ -521,6 +531,67 @@ def revs_for(root, args):
     return _git(root, "rev-list", "--reverse", *args).split()
 
 
+def format_stem_refusal(kind, sha, subject, paths):
+    """The three fields a stem refusal prints: sha, subject, diff paths."""
+    if kind == "missing":
+        diff = "diff: (absent)"
+    elif paths:
+        diff = "\n".join(f"diff: {p}" for p in paths)
+    else:
+        diff = "diff: (none)"
+    return f"REFUSED {sha}\nsubject: {subject}\n{diff}"
+
+
+def stem_range(root, args):
+    """(code, rows, walked) for subject-stem refusals.
+
+    No args walks the last 800. Any args are `rev-list` args (`-n 50`,
+    `--since=... HEAD`). A row is `(kind, sha, subject, paths)` with kind
+    `stem` or `missing`. A missing git object is REFUSED, not PASS.
+    The walk is the population: this function names no sha of its own.
+    """
+    spec = list(args) if args else ["-n", "800", "HEAD"]
+    try:
+        revs = _git(root, "rev-list", *spec).split()
+    except RuntimeError as e:
+        return REFUSED, [("missing", " ".join(spec), f"(missing git object: {e})", [])], 0
+    if not revs:
+        return SKIP, [], 0
+    try:
+        known = gate_stems(root)
+        raw = _git(root, "log", "--no-walk", "--stdin", r"--format=%H%x1e%s",
+                   stdin="\n".join(revs) + "\n")
+    except RuntimeError as e:
+        return REFUSED, [("missing", " ".join(spec), f"(missing git object: {e})", [])], 0
+    subjects = {}
+    # `\n` only. `splitlines()` also splits on `\x1e`, which is the separator
+    # between sha and subject, so it would drop every subject and call a
+    # present commit missing.
+    for line in raw.split("\n"):
+        if not line:
+            continue
+        sha, sep, subject = line.partition("\x1e")
+        if sep and sha:
+            subjects[sha] = subject
+    rows = []
+    for sha in revs:
+        subject = subjects.get(sha)
+        if subject is None:
+            rows.append(("missing", sha, "(missing git object)", []))
+            continue
+        if not named_gate_stems(subject, known):
+            continue
+        try:
+            code, _named, _missing, _gates = judge_named_stem(root, sha, subject)
+            paths = _diff_paths(root, sha) if code == REFUSED else []
+        except RuntimeError:
+            rows.append(("missing", sha, "(missing git object)", []))
+            continue
+        if code == REFUSED:
+            rows.append(("stem", sha, subject, paths))
+    return (REFUSED if rows else PASS), rows, len(revs)
+
+
 # ---------------------------------------------------------------- plant
 def _plant():
     """STATES IN A SCRATCH REPO -- never this one. An HONEST message PASSes; a message
@@ -529,7 +600,9 @@ def _plant():
     message PASSes with `--ack`; and the COUNT lane refuses a false count and passes an honest
     one. The stem lane refuses a subject that names a gate stem the diff lacks, passes one
     that names the stem the diff has, and does not fail a subject that names no stem.
-    State B is the unbroken deletion-claim control."""
+    State B is the unbroken deletion-claim control. The stems walk refuses the stolen
+    subject, passes a walk that contains only the file the subject names, does not fail
+    a subject with no stem, and REFUSES a missing object rather than passing it."""
     root_env = dict(os.environ)
     for k in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"):
         root_env[k] = "p"
@@ -575,6 +648,7 @@ def _plant():
         (root / "more.py").write_text("q = 9\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "Deleted keep.py and added more.py")
+        claim_sha = _git(root, "rev-parse", "HEAD").strip()
         r = verdict(root)
         bad += [] if r[0] == REFUSED else [f"state B rc={r[0]}, expected REFUSED(3)"]
 
@@ -634,6 +708,7 @@ def _plant():
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m",
             "ledgergone: classify each GONE ledger path without writing the ledger")
+        stolen = _git(root, "rev-parse", "HEAD").strip()
         r = verdict(root)
         if r[0] != PASS:
             bad += [f"state I claim lane={_w(r[0])}, expected PASS(0) -- no deletion claim"]
@@ -666,6 +741,70 @@ def _plant():
         if r[5][0] != PASS or r[5][1]:
             bad += [f"state L stem={_w(r[5][0])} named={r[5][1]}, "
                     f"expected PASS -- a bare word is not a stem claim"]
+
+        # STATE M: a commit whose subject names the file the diff contains.
+        (root / "gates" / "valscall-gate.py").write_text("v = 3\n")
+        run(root, "add", "-A")
+        run(root, "commit", "-q", "-m", "valscall: the file this diff contains")
+        green = _git(root, "rev-parse", "HEAD").strip()
+        r = verdict(root)
+        if r[5][0] != PASS or r[5][1] != ["valscall"]:
+            bad += [f"state M stem={_w(r[5][0])} named={r[5][1]}, expected PASS naming valscall"]
+
+        # STATE N: no stem claim, committed, so the walk can see it. A bare
+        # `ledgergone` is prose. Any-token matching would refuse this commit.
+        (root / "keep.py").write_text("x = 3\n")
+        run(root, "add", "-A")
+        run(root, "commit", "-q", "-m", "the census banner shape mentions ledgergone in prose")
+        prose = _git(root, "rev-parse", "HEAD").strip()
+        r = verdict(root)
+        if r[5][0] != PASS or r[5][1]:
+            bad += [f"state N stem={_w(r[5][0])} named={r[5][1]}, expected PASS with no stem"]
+
+        # STATE O: default walk (last 800) refuses the stolen subject and prints
+        # its sha, subject, and the one diff path. The deletion-claim commit is
+        # in that walk and is not a stem refusal — this lane does not grade it.
+        code, rows, walked = stem_range(root, [])
+        hit = [row for row in rows if row[1] == stolen]
+        if code != REFUSED or not walked or len(hit) != 1:
+            bad += [f"state O code={_w(code)} walked={walked} hits={len(hit)}, "
+                    f"expected REFUSED naming the stolen subject"]
+        else:
+            kind, sha, subject, paths = hit[0]
+            text = format_stem_refusal(kind, sha, subject, paths)
+            if (kind != "stem" or paths != ["gates/valscall-gate.py"]
+                    or not subject.startswith("ledgergone:")
+                    or sha not in text or subject not in text
+                    or "gates/valscall-gate.py" not in text):
+                bad += [f"state O row did not carry sha, subject, and diff path: {hit[0]!r}"]
+            else:
+                print(f"  O range refused {sha[:12]} diff {paths}")
+        if any(row[1] in (green, prose, claim_sha) for row in rows):
+            bad += ["state O listed a green, prose, or deletion-claim commit"]
+        narrow, narrow_rows, narrow_n = stem_range(root, ["-n", "1", stolen])
+        if narrow != REFUSED or narrow_n != 1 or [row[1] for row in narrow_rows] != [stolen]:
+            bad += [f"state O override stolen={_w(narrow)} n={narrow_n} "
+                    f"rows={len(narrow_rows)}, expected REFUSED"]
+
+        # STATE P: the same check, overridden to one honest commit, stays green.
+        # A subject with no stem is in the prose override and is not failed.
+        for label, spec in (("green", ["-n", "1", green]), ("prose", ["-n", "1", prose])):
+            code, rows, walked = stem_range(root, spec)
+            if code != PASS or rows or walked != 1:
+                bad += [f"state P {label}={_w(code)} rows={len(rows)} walked={walked}, "
+                        f"expected PASS"]
+
+        # STATE Q: a missing object is REFUSED, not a pass and not DEAD.
+        missing = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        code, rows, _walked = stem_range(root, [missing])
+        if code != REFUSED or not rows or rows[0][0] != "missing":
+            bad += [f"state Q missing={_w(code)} rows={rows!r}, expected REFUSED not PASS"]
+        else:
+            text = format_stem_refusal(*rows[0])
+            if missing not in text or "(missing git object" not in text or "diff: (absent)" not in text:
+                bad += [f"state Q text omitted sha, subject, or diff: {text!r}"]
+            else:
+                print("  Q missing object REFUSED")
 
     print(f"--plant: {'all states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return FAIL if bad else PASS
@@ -734,6 +873,18 @@ def main(argv):
                   f"(claims: {claim_refused}, diffs: {subject_refused}, "
                   f"stems: {stem_refused})")
             return REFUSED if refused else PASS
+        if mode == "stems":
+            code, rows, walked = stem_range(ROOT, argv[1:])
+            for row in rows:
+                print(format_stem_refusal(*row), file=sys.stderr)
+                print(file=sys.stderr)
+            if code == SKIP:
+                print("stems: no commits matched", file=sys.stderr)
+                return SKIP
+            n_stem = sum(row[0] == "stem" for row in rows)
+            n_miss = sum(row[0] == "missing" for row in rows)
+            print(f"stems: walked={walked} subject-stem-refused={n_stem} missing={n_miss}")
+            return code
         print(f"unknown mode {mode!r}", file=sys.stderr)
         return SKIP
     except RuntimeError as e:
