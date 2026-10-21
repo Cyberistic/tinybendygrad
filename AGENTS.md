@@ -127,7 +127,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
   green. TRUST THE RED ONE.**
-  **AND AS OF **2026-10-20T20:33Z** (`ff4501d2a`, **AFTER **THE **RE-VENDOR **AND **AFTER **TONIGHT's **PORT **WORK**)
+  **AND AS OF **2026-10-21T20:31Z** (`6cdeedb77`, **AFTER **TONIGHT's **111 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
   `graphs=34 graphs-answered=34 graphs-agree=34 graphs-disagree=0 byte-identical=34 graphs-refused=0`,
@@ -138,26 +138,45 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `310 of 310 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=310 repro-identical=310 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == f0080ea2049ff9b7...`** -- **THE **RUN **DESCRIBES **THE **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=ff4501d2a` **IS **THE **COMMIT **IT **WAS **TAKEN **ON.***
-  ***AND **THE **RE-RUN **TOOK **352 s / 1070 MB** (BOTH RUNS, **ON **A **QUIET **MACHINE**), **TOKEN `WITHIN-LIMITS`***
-  -- **THE **HISTORICAL **1937-2317 s** **IS **STILL **THE **HONEST **FIGURE **FOR **A **CONTENDED **TREE**, **AND **THE
-  **`MACHINE: VIOLATED` **LINE **IS **NOT **ATTRIBUTABLE **TO **THE **CHILD** (LOADAVG **5.4** ON **12** CORES).**
-  **AND **THE **LESSON **OF **THE **SESSION**, **WHICH **IS **WHY **THE **THREE **HELD **TOGETHER **ONLY **AT **THE **END**:
+  **`substrate-start == substrate-end == live == 58c505697ca23e1d...`** -- **THE **RUN **DESCRIBES **THE **TREE **AS **IT
+  **STANDS**, **AND `substrate-head=6cdeedb77cc3674515938e382973d5455c1abab6` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **AND **IT **IS **HEAD**.***
+  ***AND **THE **RUNS **TOOK **271 s / 975 MB** (`run`) **AND **540 s / 920 MB** (`repro`), **TOKEN `WITHIN-LIMITS`***
+  -- **AND **THE **`MACHINE: VIOLATED` **LINE **IS **NOT **ATTRIBUTABLE **TO **THE **CHILD**: **THE **REPRO'S **WAS
+  **`loadavg 512.1` ON **12** CORES **WITH **SWAP **AT **0.92 **OF **41.00 GiB** FREE, **AND **THE **LOAD **WAS **NOT
+  **MINE** -- **IT **WAS **`ty` **AND **OrbStack.***
+  ***AND ***THE **LESSON **OF **THE **SESSION**, **AND **IT **IS **NOW **MEASURED **RATHER **THEN **ANECDOTED**:***
   **THE **CORPUS **WAS **GREEN **AT **`00:16Z` **AND **THEN **WAS **STALE **WITHIN **THE **HOUR** -- **BECAUSE **A **UNIT
   **WAS **PORTING `tinybendygrad/extra/` **AND **EVERY **`.bend` **EDIT **MOVES `substrate_digest()`.** **SO **A **GREEN
-  **CORPUS **IS **NOT **A **CERTIFICATE **UNTIL **THE **TREE **STOPS **MOVING.**
-  **AND **NOTE **`gates/corpuswitness-gate.py:286` **HARD-CODES `judge("claim", …, verdict="REPRODUCIBLE")`** -- **FED
-  **A **WITNESS **SAYING `repro-rc=rc=0` **AND **ONE **SAYING `rc=1`, **THE `claim` **ROW **IS **BYTE-IDENTICAL**; **IT
-  **IS **A **ROW **THAT **CANNOT **GO **RED** -- `differ.py`'s **OWN **PLANT **3: "if it does not go red, the row is a
+  **CORPUS **IS **NOT **A **CERTIFICATE **UNTIL **THE **TREE **STOPS **MOVING.** ***AND **TONIGHT **THE **SAME **THING
+  **HAPPENED **A **SECOND **TIME, **AND **THE **RUN **SAID **SO**: **THE **FIRST **`run` **OF **TONIGHT **RECORDED
+  **`substrate-start=8adec7c5…` **AND **`substrate-end=58c50569…` -- **IT **STRADDLED **A **`.bend` **EDIT **A **UNIT
+  **LANDED **MID-RUN**, **AND **THE **VERDICT **WAS **STILL **34/34** -- **SO **A **GREEN **RUN **OVER **A **MOVING
+  **TREE **IS **NOT **A **CERTIFICATE **EITHER, **AND **THE **RUN'S **OWN **TWO **DIGESTS **ARE **WHAT **SAY **SO.***
+  **AND **`gates/corpuswitness-gate.py`'s `claim` **ROW **IS **NO **LONGER **A **LITERAL** (`c22292d4f`): **IT **IS **THE
+  **CONJUNCTION **OF **FOUR **ROWS **THE **GATE **ALREADY **EMITS**, **AND **A **WITNESS **SAYING `repro-rc=rc=0` **AND **ONE
+  **SAYING `rc=1` **NOW **PRODUCE **DIFFERENT **ROWS** (`verdict.reported` TOO, `9c66365b7`).** **A **ROW **THAT **CANNOT
+  **GO **RED **IS **WORSE **THAN **NO **ROW** -- `differ.py`'s **OWN **PLANT **3: "if it does not go red, the row is a
   label."***
-  **AND: **13 **FRESHNESS **INSTRUMENTS, **0 **REACHABLE **FROM **ANY **SURFACE** -- **`.git/hooks/` **HAS **13 **FILES **AND
-  **0 **NON-`.sample`**, **`core.hooksPath` **IS **UNSET**, **`.github/workflows/` **HAS **9 **FILES **AND **0 **NAME **A
-  **GATE**, **AND `gates/artifacts/` **IS **GITIGNORED** (`.gitignore:214`)**. ***SO **FROM **A **FRESH **CLONE, "WAS **THIS
-  **GATE **EVER **RUN?" **AND **"DOES **THIS **GATE **EXIST?" **HAVE **ONE **ANSWER: NOTHING. **NOBODY **WAS **TOLD **AND
-  **NOBODY **WOULD **EVER **KNOW **THEY **WEREn't.**  **THE **DIFFERENCE **BETWEEN **"NOBODY **ASKED" **AND **"NOBODY **WAS
-  **TOLD"** IS **A **TRACE, NOT **A **VERDICT.****
-  (`D0-repro.txt` mtime **`Oct 19 00:16`**, **2 DAYS STALE BEFORE THAT**). **EVERY GRAPH IN THE 34 IS
+  **AND: **THE **REACHABILITY **CENSUS, **RE-MEASURED **2026-10-21T20:10Z** (`gates/reachability-gate.py`)** --
+  **`.github/workflows/` **HAS **10 **FILES **AND **1 **NAMES **A **GATE** (`edge-gates.yml` -> `gates/edge-runner.py`)**,
+  **`.git/hooks/` **HAS **14 **FILES **AND **0 **NON-`.sample`**, **`core.hooksPath` **IS **UNSET**, **AND
+  `gates/artifacts/` **IS **GITIGNORED** (`.gitignore:214`)**. ***BUT **THE **OLD **"0 **REACHABLE" **READING **WAS
+  **A **COUNT **OF **A **DIFFERENT **THING**: **THERE **ARE **321 **GATES** (DISCOVERED, **NEVER **LISTED**), **20 **ARE
+  **REACHABLE** -- **ALL **20 **OFF **ONE **WORKFLOW** -- **AND **73 **CHAINS **END **IN **NOTHING**, **A **GATE **NAMED
+  **ONLY **BY **AN **UNREACHABLE **GATE** **IS **STILL **UNREACHABLE**.**  **AND **`gates/edge-trace.rows` **IS **IN **GIT
+  **AND **HAS **21 **ROWS** (20 **SAY `RAN`**) **AT `HEAD=7f3ba0875` -- **AND **IT **SAYS **10 **OF **22 **GATES **ARE
+  **`DEAD`**, **AND **SEVEN **OF **THEM **RUN **NOW** -- **SO **THE **TREE's **ONLY **RECORD **OF **WHAT **RUNS **IS
+  **STALE, **AND **IT **IS **A **DATED **RECORD **THAT **NAMES **ITS **HEAD**.**  **THE **DIFFERENCE **BETWEEN **"NOBODY
+  **ASKED" **AND **"NOBODY **WAS **TOLD"** IS **A **TRACE, NOT **A **VERDICT** -- **AND **THE **TRACE **IS **NOW **A
+  **GATE** THAT **REFUSES **WHEN **THE **WIRING **IS **GONE**, **SO **"NO **GATE **IS **RUN" **AND **"ALL **GATES **ARE
+  **RUN" **CANNOT **LOOK **THE **SAME**.***
+  **AND **THE **INDEX **IS **STILL **ARMED** (8958 `ls-files` **AGAINST **8977 `ls-tree`**) **AND **A **STALE **BLOB **IS
+  **INVISIBLE **TO **A **COUNT** -- **SO **`gates/indexstale-gate.py` **NAMES **THE **8 **PATHS **WHERE **THE **INDEX
+  **AND **HEAD **SHARE **A **PATH **AND **DISAGREE **ABOUT **ITS **BYTES**, **AND **A **BARE **`git commit` **WOULD **REVERT
+  **THEM**.** **THE **INDEX **WAS **NOT **REPAIRED** -- **AND **EVERY **COMMIT **IN **THIS **SESSION **WENT **THROUGH **A
+  **PRIVATE **ONE**.**
+  (`D0-repro.txt` mtime **`Oct 21 23:31`**, **THE **RUN **OF **2026-10-21T20:31Z**). **EVERY GRAPH IN THE 34 IS
   BYTE-IDENTICAL, AND THE VERDICT **REPRODUCES** — **WHICH ARE **TWO **DIFFERENT **CLAIMS** AND **ONLY THE
   SECOND **IS **PROVEN.** **ALL **THREE **MALFORMED **TREES **ARE **ORPHANED** AND **ALL **THREE **ARE **NAMED**:
   `d57bc484` (**UNOWNED** — **AND **IT **IS **THE **ONE **THIS **FILE **NAMED **ONLY **BY **COUNT**, **WHICH **TWO
