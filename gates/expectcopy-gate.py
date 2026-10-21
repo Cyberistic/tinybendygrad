@@ -721,7 +721,7 @@ def plant():
         buf = io.StringIO()
         report(judged["historical"], buf)
         if f"PASS: {PASS_MEANS}" not in buf.getvalue():
-            bad.append("the PASS line does not say these are old copies, not a drifted flagship")
+            bad.append(f"the PASS line does not say {PASS_MEANS}")
         print(f"expectcopy-plant: ancestor {ancestor_commit} blob {ancestor_blob}")
         print(f"  HISTORICAL kind={None if hist is None else hist['kind']} "
               f"commit={None if hist is None else hist['commit']} "
