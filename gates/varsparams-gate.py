@@ -20,11 +20,19 @@ missing class, or a missing record is REFUSED, not PASS.
 If the only mismatch is port `vars` against upstream `params`, the finding
 says so. Any other name is named. None is dropped.
 
+`target` is not dropped. The comment block immediately before the record
+says `target` is not ported. That block is prose, not an assignment, so the
+mismatch row names `PROSE-UNPORTED` and the gate is still FAIL. Delete that
+block and the row is a bare mismatch. `vars`/`params` has no such comment
+and is not that class.
+
 THE PLANT IS ON COPIES. A port record with `vars` and an upstream class with
-`params` is FAIL. A copy whose record field was renamed to `params`, with no
-other mismatch left, is PASS. Inserting `vals` into upstream does not make a
-FAIL into a PASS and does not make an aligned copy FAIL. The live files are
-hashed before and after.
+`params` is FAIL. A copy whose preamble says `target` is not ported is FAIL,
+and that row says `PROSE-UNPORTED`. The same copy with that comment deleted
+is FAIL, and the row is a bare mismatch. A copy whose record field was
+renamed to `params`, with no other mismatch left, is PASS. Inserting `vals`
+into upstream does not make a FAIL into a PASS and does not make an aligned
+copy FAIL. The live files are hashed before and after.
 """
 from __future__ import annotations
 
@@ -49,6 +57,13 @@ PORT = ROOT / "tinybendygrad"
 OWNED = "vals"
 PAIR_PORT = "vars"
 PAIR_UPSTREAM = "params"
+TARGET = "target"
+CLASS_PROSE = "PROSE-UNPORTED"
+# `` `target: Target` is NOT PORTED `` is the live sentence. A comment is not an assignment.
+UNPORTED_CLAIM = re.compile(
+  r"`target\s*:[^`]*`\s+is\s+NOT\s+PORTED\b"
+  r"|\btarget\s+is\s+(?:NOT\s+PORTED|not\s+ported|unported)\b"
+)
 HEADER = re.compile(r"^type ProgramInfo is Data:", re.M)
 CTOR = re.compile(r"\bProgramInfo\{")
 NEXT_DECL = re.compile(r"\n(?=(?:type |def ))")
@@ -184,14 +199,72 @@ def declares_record(text: str) -> bool:
   return bool(HEADER.search(blank_noncode(text)))
 
 
-def read_port(root: Path) -> tuple[list[str], Path, int]:
-  """The one record under `root`, its path, and the header line. A walk, not a path literal."""
+def preamble_span(text: str) -> tuple[int, int] | None:
+  """Span of the comment block immediately before `type ProgramInfo is Data`.
+
+  Blank lines between the block and the header are not included. None if the
+  header is missing, repeated, or has no comment block in front of it.
+  """
+  code = blank_noncode(text)
+  headers = list(HEADER.finditer(code))
+  if len(headers) != 1:
+    return None
+  end = headers[0].start()
+  while end > 0 and text[end - 1] in " \t\n":
+    end -= 1
+  if end == 0:
+    return None
+  line_start = text.rfind("\n", 0, end) + 1
+  if not text[line_start:end].lstrip().startswith("#"):
+    return None
+  start = line_start
+  while start > 0:
+    prev_nl = text.rfind("\n", 0, start - 1)
+    prev_start = 0 if prev_nl < 0 else prev_nl + 1
+    if text[prev_start:start - 1].strip().startswith("#"):
+      start = prev_start
+      continue
+    break
+  return start, end
+
+
+def target_class(text: str) -> str | None:
+  """`PROSE-UNPORTED` when the record preamble says `target` is not ported.
+
+  The preamble is a comment. A comment names a class; it does not remove the
+  mismatch and it does not pass. No such comment means no class.
+  """
+  span = preamble_span(text)
+  if span is None:
+    return None
+  if UNPORTED_CLAIM.search(text[span[0]:span[1]]) is None:
+    return None
+  return CLASS_PROSE
+
+
+def without_preamble(text: str) -> str:
+  span = preamble_span(text)
+  if span is None:
+    raise LookupError("record preamble has no comment")
+  start, end = span
+  return text[:start] + text[end:]
+
+
+def mismatch_line(side: str, name: str, klass: str | None = None) -> str:
+  row = f"varsparams-gate: mismatch: {side} {name}"
+  if klass:
+    return f"{row} {klass}"
+  return row
+
+
+def read_port(root: Path) -> tuple[list[str], Path, int, str]:
+  """The one record under `root`, its path, the header line, and the file text."""
   if not root.is_dir():
     raise LookupError(f"port root absent: {root}")
   files = walk_bend(root)
   if not files:
     raise LookupError(f"no .bend file under {root}")
-  hits: list[tuple[list[str], Path, int]] = []
+  hits: list[tuple[list[str], Path, int, str]] = []
   for path in files:
     try:
       text = path.read_text()
@@ -201,7 +274,7 @@ def read_port(root: Path) -> tuple[list[str], Path, int]:
       continue
     names = record_fields(text)
     _start, _end, header_at = constructor_interior(text)
-    hits.append((names, path, line_of(text, header_at)))
+    hits.append((names, path, line_of(text, header_at), text))
   if len(hits) != 1:
     raise LookupError(f"expected one `type ProgramInfo is Data` under {root}, found {len(hits)}")
   return hits[0]
@@ -282,11 +355,12 @@ def measure(upstream: Path, port_root: Path) -> tuple[int, list[str]]:
     lines.append(f"varsparams-gate: REFUSED -- port root absent: {port_root}")
     return REFUSED, lines
   try:
-    port_names, port_path, port_line = read_port(port_root)
+    port_names, port_path, port_line, port_text = read_port(port_root)
     up_names, up_line = upstream_fields(upstream)
   except LookupError as exc:
     lines.append(f"varsparams-gate: REFUSED -- {exc}")
     return REFUSED, lines
+  klass = target_class(port_text)
   lines.append("varsparams-gate: port-parse: record_fields")
   lines.append(f"varsparams-gate: port-record: {rel(port_path)}:{port_line}")
   lines.append(f"varsparams-gate: port-fields: {joined(port_names)}")
@@ -301,9 +375,9 @@ def measure(upstream: Path, port_root: Path) -> tuple[int, list[str]]:
   lines.append(f"varsparams-gate: symmetric-difference: {joined(diff)}")
   lines.append(f"varsparams-gate: finding: {finding(port_only, up_only)}")
   for name in port_only:
-    lines.append(f"varsparams-gate: mismatch: port-only {name}")
+    lines.append(mismatch_line("port-only", name))
   for name in up_only:
-    lines.append(f"varsparams-gate: mismatch: upstream-only {name}")
+    lines.append(mismatch_line("upstream-only", name, klass if name == TARGET else None))
   n = len(port_only) + len(up_only)
   if n:
     why = "1 field mismatch" if n == 1 else f"{n} field mismatches"
@@ -374,12 +448,26 @@ def row_value(rows: list[str], key: str) -> str:
 
 
 def mismatch_names(rows: list[str]) -> list[str]:
+  """Field name of each mismatch row. A class token after the name is not a field."""
   names = []
   prefix = "varsparams-gate: mismatch: "
   for row in rows:
     if row.startswith(prefix):
-      names.append(row[len(prefix):].rsplit(" ", 1)[-1])
+      parts = row[len(prefix):].split()
+      if len(parts) < 2:
+        raise LookupError(f"malformed mismatch row: {row}")
+      names.append(parts[1])
   return names
+
+
+def mismatch_rows(rows: list[str]) -> list[str]:
+  return [row for row in rows if row.startswith("varsparams-gate: mismatch: ")]
+
+
+def same_mismatches(bad: list[str], rows: list[str], want: list[str], label: str) -> None:
+  got = mismatch_rows(rows)
+  if got != want:
+    bad.append(f"{label}: mismatches {got} != {want}")
 
 
 def check(bad: list[str], code: int, rows: list[str], want: int, label: str) -> None:
@@ -545,8 +633,65 @@ def run_plants(root: Path, bad: list[str]) -> None:
     check(bad, code, rows, PASS, "live record renamed to params with no other mismatch")
     if PAIR_PORT in row_value(rows, "port-fields"):
       bad.append("live-record rename still reports vars")
+    if CLASS_PROSE in "\n".join(rows):
+      bad.append("aligned copy named PROSE-UNPORTED though target is present")
   else:
     print("varsparams-gate --plant: live record has no vars field; aligned live copy was not built")
+
+  plant_prose(root, bad, port_text, up_text)
+
+
+def plant_prose(root: Path, bad: list[str], port_text: str, up_text: str) -> None:
+  """Copies of the live record. The comment names a class; it does not pass."""
+  if target_class(port_text) != CLASS_PROSE:
+    bad.append("live preamble is not PROSE-UNPORTED, so the class plant measured nothing")
+    return
+  prose_up = root / "prose-up.py"
+  prose_up.write_text(up_text)
+  prose_port = put_port(root / "prose-port", port_text)
+  three = [
+    mismatch_line("port-only", PAIR_PORT),
+    mismatch_line("upstream-only", PAIR_UPSTREAM),
+    mismatch_line("upstream-only", TARGET, CLASS_PROSE),
+  ]
+  bare_three = [
+    mismatch_line("port-only", PAIR_PORT),
+    mismatch_line("upstream-only", PAIR_UPSTREAM),
+    mismatch_line("upstream-only", TARGET),
+  ]
+  code, rows = measure(prose_up, prose_port)
+  check(bad, code, rows, FAIL, "preamble says target is unported")
+  same_mismatches(bad, rows, three, "preamble")
+
+  stripped = without_preamble(port_text)
+  if "type ProgramInfo is Data:" not in stripped:
+    bad.append("comment deletion removed the record")
+    return
+  if "`Target` in `ProgramInfo`" not in stripped:
+    bad.append("comment deletion removed more than the preamble")
+  if target_class(stripped) is not None:
+    bad.append("deleting the preamble did not clear the class")
+  code, rows = measure(prose_up, put_port(root / "bare-port", stripped))
+  check(bad, code, rows, FAIL, "preamble comment deleted")
+  same_mismatches(bad, rows, bare_three, "comment deleted")
+
+  # vars renamed, target still absent: the comment must not turn this into PASS.
+  only = rename_record_field(port_text, PAIR_PORT, PAIR_UPSTREAM)
+  code, rows = measure(prose_up, put_port(root / "only-port", only))
+  check(bad, code, rows, FAIL, "only mismatch is prose-unported target")
+  same_mismatches(bad, rows, [mismatch_line("upstream-only", TARGET, CLASS_PROSE)], "only-target")
+
+  code, rows = measure(prose_up, put_port(root / "only-bare", without_preamble(only)))
+  check(bad, code, rows, FAIL, "only-target comment deleted")
+  same_mismatches(bad, rows, [mismatch_line("upstream-only", TARGET)], "only-target bare")
+
+  vals_up = root / "vals-prose-up.py"
+  vals_up.write_text(insert_upstream_vals(up_text))
+  code, rows = measure(vals_up, prose_port)
+  check(bad, code, rows, FAIL, "vals inserted beside prose-unported target")
+  same_mismatches(bad, rows, three, "vals beside prose")
+  if OWNED in mismatch_names(rows):
+    bad.append("vals was verdicted beside the prose class")
 
 
 def main(argv: list[str] | None = None) -> int:
