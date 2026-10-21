@@ -604,7 +604,7 @@ def main() -> IO(Unit):
 # ===========================================================================
 # THE MEASURED MUTATION TABLE. Reproduce with
 #     .venv/bin/python gates/worker-mutate.py worker
-# RESTORED 2026-10-16 from `.agents/slop/probe/mutate.py`, blob ecc45370e, 12832 B, byte for
+# RESTORED 2026-10-16 from `.agents/slop/probe/mutate.py`, blob 977591e5, 12832 B, byte for
 # byte. MEASURED from `gates/`: rc=0, 16 rows, and it still reports a mutation that moves
 # nothing ("MUTATIONS THAT MOVED NOTHING (1): W6 ... [does not check]"), so it is not a
 # table of intentions.
@@ -643,17 +643,21 @@ def main() -> IO(Unit):
 # BY CONSTRUCTION are the same blindness as two structures equal in COUNT.
 #
 # ---------------------------------------------------------------------------
-# THE CPYTHON LANE. `.agents/slop/probe/jit_oracle.py worker` prints 15 rows, 9 of them
-# shared with this gate, all 9 GREEN (`SHARED=9 GREEN=9 RED=0`). The 47 BEND-ONLY rows
-# are the schedule, the `Pool` fields, the `Arg` readers, the pool-state machine's
-# fixtures and the `_without_main` LANE fixture (`m_absent`, which the script lane does
-# not reach -- see the gate's header), and they are listed rather than filtered:
+# THE CPYTHON LANE. The CPython oracle prints 15 rows, 9 of them shared with this gate,
+# all 9 GREEN (`SHARED=9 GREEN=9 RED=0`). The 47 BEND-ONLY rows are the schedule, the
+# `Pool` fields, the `Arg` readers, the pool-state machine's fixtures and the
+# `_without_main` LANE fixture (`m_absent`, which the script lane does not reach -- see
+# the gate's header), and they are listed rather than filtered. THE NINE SHARED ARE
+# `init_allow_device_usage init_viz init_sigint_ignored cleared_file cleared_spec
+# after_spec_present spawnv_patched maxtasks_default pool_init_name`, so 47 + 9 = 56 =
+# the rows `main()` prints; the list below is the port's 56 names MINUS those nine, in
+# PRINT ORDER, DERIVED from the two `main()`s rather than transcribed:
 #
-#   init_track_match_stats w_track_is_inert missing_test_holds missing_test_fails
-#   saved_file saved_spec after_file after_spec both_file both_spec both_spec_present
-#   both_file_present main_is_none cleared_file_is_none cleared_spec_is_none
-#   after_file_absent after_spec_present spawnv_env_copied spawnv_patched ctx_process_tag
-#   ctx_pool_tag refused_both pool_made pool_memo pool_memo_id pool_fresh_id
-#   pool_none_daemon pool_procs pool_memo_procs close_none close_some maxtasks_default
-#   pool_init_name sched map_n map_n0 task_nargs0 task_nargs1 task_nargs2 task_name
+#   init_track_match_stats w_track_is_inert missing_test_holds missing_test_fails saved_file saved_spec
+#   cleared_file_is_none cleared_spec_is_none after_file after_spec after_file_absent both_file
+#   both_spec both_file_present main_is_none spawnv_returncode spawnv_env_copied ctx_process_tag
+#   ctx_pool_tag refused_daemon refused_parallel0 refused_neither refused_both pool_made
+#   pool_memo pool_memo_id pool_fresh_id pool_none_daemon pool_procs pool_memo_procs
+#   terminate_once terminate_twice terminate_none close_none close_some sched
+#   map_n map_n0 task_nargs0 task_nargs1 task_nargs2 task_name
 #   arg_v arg_s eq_mstr_both eq_mstr_one eq_mstr_neither
