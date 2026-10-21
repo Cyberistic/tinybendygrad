@@ -89,12 +89,13 @@ def refuse(*why):
 if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
   refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
          f"(is `parents[N]` stale after a move?)")
-_SWEEP = "  (swept by 371cc64c9; recoverable from git at 371cc64c9^:.agents/slop/eq/%s.py)"
 for _n in ("rebase-gate", "eq-census2"):
   _p = SLOP / "eq" / f"{_n}.py" if _n == "eq-census2" else SLOP / f"{_n}.py"
   if not _p.is_file():
-    refuse(f"input absent: {_p}" + _SWEEP % _n
-           + "  This gate cannot produce a denominator without it.")
+    _rel = _p.relative_to(REPO).as_posix()
+    refuse(f"input absent: {_p}"
+           f"  (swept by 371cc64c9; recoverable from git at 371cc64c9^:{_rel})"
+           "  This gate cannot produce a denominator without it.")
 SEP = "]   py=["      # `py_row`'s own three-space literal (render.bend:2148)
 ROW_OPEN = " = ["     # and its own name/value boundary, same line
 DEPTH = {"[": 1, "]": -1}
@@ -468,9 +469,18 @@ def main():
   # file and never needs the script, so a guard at import would take away a path that works. And it
   # sits BEFORE the `bend` call so a refused gate costs nothing.
   if not a.oracle_stdout and not (REPO / ORACLE[0]).is_file():
+    # The count is the log's, not a transcription. `git log --all -- <path>` is a path query;
+    # `git rev-list --all` is not, and is not asked. A non-empty log must not read as 0.
+    _asked = ["git", "log", "--all", "--format=%H", "--", ORACLE[0]]
+    _log = subprocess.run(_asked, cwd=REPO, capture_output=True, text=True, timeout=120)
+    if _log.returncode != 0:
+      _touched = f"{' '.join(_asked)} did not answer (rc={_log.returncode})"
+    else:
+      _n = len([ln for ln in _log.stdout.splitlines() if ln])
+      _touched = f"{_n} commits ever touched ({' '.join(_asked)})"
     refuse(f"oracle absent: {REPO / ORACLE[0]} -- AND THE PATH IS THE WRONG ONE, NOT THE SCRIPT. The "
            f"oracle IS committed, at `checks/render-gate-oracle.py`; `ORACLE` at :74 names a path "
-           f"0 commits ever touched, because `.agents/slop/xd1/` was pruned. Pointing at the "
+           f"{_touched}, because `.agents/slop/xd1/` was pruned. Pointing at the "
            f"committed script is NOT the fix either: it does `from tinygrad.uop.render import "
            f"pyrender, ...` and the 2026-10-17 re-vendor REMOVED `pyrender` from "
            f"`tinygrad/uop/render.py`, so the oracle would CRASH on an ImportError instead of "
