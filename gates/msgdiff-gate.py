@@ -88,6 +88,11 @@ Both lanes above PASS it (0 deletion claims, 0 removals) -- measured 2026-10-20T
 rc=0. A `stem:` claim, or an explicit `gates/<file>.py`, whose stem is
 `gates/<stem>-gate.py` or `gates/<stem>.py` in HEAD (discovered, `git ls-tree -r
 HEAD`, not a list of these two commits) must be a stem the diff contains.
+A diff path contains a named stem when the path's basename, with `-gate`,
+`-oracle`, `-mutate`, `-plant`, or a trailing extension removed, equals the
+stem. A `.bend` of that stem contains it. A rename still contains it.
+`gates/opseven.bend` contains `opseven`. `gates/valscall-gate.py` does not
+contain `ledgergone`. Discovery is unchanged: a `.bend` is not a known stem.
 A subject that names no such stem is not a failure of this check. A bare word
 is prose: any-token matching refuses "the census's banner shape" because
 `banner` is a stem, and a blamed innocent is worse than a missed claim.
@@ -367,7 +372,12 @@ _STEM_CACHE = {}
 
 
 def _path_stems(path):
-    """Stems one path yields. Stable order: the short stem, then the basename."""
+    """Stems one `gates/<file>.py` yields for discovery. Not containment.
+
+    Stable order: the short stem, then the basename. A `.bend`, a `-oracle.py`,
+    or a `-mutate.py` does not discover a stem. Whether a diff path contains one
+    is `_contained_stems`.
+    """
     m = _GATE_PY.fullmatch(path)
     if not m:
         return ()
@@ -375,6 +385,32 @@ def _path_stems(path):
     if base.endswith("-gate") and len(base) > 5:
         return (base[:-5], base)
     return (base,)
+
+
+# One role suffix, not a loop: `gates-pop-rows-gate` contains `gates-pop-rows`,
+# not `gates-pop`. Stripping every role would make those equal.
+_CONTAIN_ROLES = ("-gate", "-oracle", "-mutate", "-plant")
+
+
+def _contained_stems(path):
+    """Stems one diff path contains. Extension off, then one role suffix off.
+
+    A diff path contains a named stem when the path's basename, with `-gate`,
+    `-oracle`, `-mutate`, `-plant`, or a trailing extension removed, equals the
+    stem. A `.bend` of that stem contains it. A rename still contains it:
+    `_diff_paths` yields the source and the destination, and both are asked.
+    """
+    base = path.rsplit("/", 1)[-1]
+    name, dot, ext = base.rpartition(".")
+    bare = name if dot and name and ext else base
+    if not bare:
+        return ()
+    stems = [bare]
+    for role in _CONTAIN_ROLES:
+        if bare.endswith(role) and len(bare) > len(role):
+            stems.append(bare[:-len(role)])
+            break
+    return tuple(stems)
 
 
 def gate_stems(root):
@@ -436,6 +472,12 @@ def judge_named_stem(root, sha, message):
     The subject line only. The body of `1dac4ab61` discusses `ledgerdue`, and a
     message that reports another gate must not be refused for naming it. No
     named stem is PASS with `named=[]` -- this lane did not fail that subject.
+
+    A diff path contains a named stem when the path's basename, with `-gate`,
+    `-oracle`, `-mutate`, `-plant`, or a trailing extension removed, equals the
+    stem. A `.bend` of that stem contains it. A rename still contains it.
+    A stolen subject is not exempted: `ledgergone` over `valscall-gate.py` is
+    still absent.
     """
     subject = message.split("\n", 1)[0]
     known = gate_stems(root)
@@ -443,10 +485,9 @@ def judge_named_stem(root, sha, message):
     gate_paths = []
     diff_stems = set()
     for path in _diff_paths(root, sha):
-        stems = _path_stems(path)
-        if stems:
+        if _path_stems(path):
             gate_paths.append(path)
-            diff_stems.update(stems)
+        diff_stems.update(_contained_stems(path))
     if not named:
         return PASS, [], [], gate_paths
     missing = [stem for stem in named if stem not in diff_stems]
@@ -602,8 +643,14 @@ def _plant():
     that names the stem the diff has, and does not fail a subject that names no stem.
     State B is the unbroken deletion-claim control. The stems walk refuses the stolen
     subject, passes a walk that contains only the file the subject names, does not fail
-    a subject with no stem, and REFUSES a missing object rather than passing it."""
+    a subject with no stem, and REFUSES a missing object rather than passing it.
+    A subject `opseven:` over a diff of `gates/opseven.bend` stays green. A subject
+    `ledgergone:` over `gates/valscall-gate.py` stays red. A `.bend` of a different
+    stem does not contain it. A rename of the file still contains it."""
     root_env = dict(os.environ)
+    # The scratch repo must not inherit a private index from the caller. A commit
+    # here that wrote the real tree's index would be the hazard this gate exists for.
+    root_env.pop("GIT_INDEX_FILE", None)
     for k in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"):
         root_env[k] = "p"
     bad = []
@@ -805,6 +852,76 @@ def _plant():
                 bad += [f"state Q text omitted sha, subject, or diff: {text!r}"]
             else:
                 print("  Q missing object REFUSED")
+
+        # Containment, on synthetic commits. `opseven` is discovered from the
+        # gate file, which is not in the diffs below. State I remains the stolen
+        # subject: `ledgergone:` over `gates/valscall-gate.py` is not exempted.
+        (root / "gates" / "opseven-gate.py").write_text("o = 1\n")
+        seeded = run(root, "add", "--", "gates/opseven-gate.py")
+        seeded_c = run(root, "commit", "-q", "-m", "seed opseven so the stem is discovered")
+        if seeded.returncode or seeded_c.returncode:
+            bad += [f"state R seed failed: {seeded.stderr.strip()} {seeded_c.stderr.strip()}"]
+        bend_sha = ""
+        contain = (
+            ("R", "gates/opseven.bend", "b = 1\n",
+             "opseven: the bend file contains the stem", PASS),
+            ("S", "gates/opseven-oracle.py", "o = 2\n",
+             "opseven: the oracle contains the stem", PASS),
+            ("T", "gates/opseven-mutate.py", "m = 1\n",
+             "opseven: the mutate file contains the stem", PASS),
+            ("U", "gates/opseven-plant.py", "p = 1\n",
+             "opseven: the plant file contains the stem", PASS),
+            ("V", "gates/not-the-stem.bend", "n = 1\n",
+             "opseven: a different bend does not contain it", REFUSED),
+        )
+        for label, rel, text, message, expect in contain:
+            dest = root / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(text)
+            added = run(root, "add", "--", rel)
+            committed = run(root, "commit", "-q", "-m", message)
+            if label == "R":
+                bend_sha = _git(root, "rev-parse", "HEAD").strip()
+            got = verdict(root)[5]
+            ok = got[0] == expect and not added.returncode and not committed.returncode
+            if expect == PASS:
+                ok = ok and got[1] == ["opseven"] and not got[2]
+            else:
+                ok = ok and got[2] == ["opseven"]
+            if not ok:
+                bad += [f"state {label} stem={_w(got[0])} named={got[1]} missing={got[2]} "
+                        f"add={added.returncode} commit={committed.returncode}, expected {_w(expect)}"]
+            else:
+                print(f"  {label} {rel} -> {_w(expect)}")
+        no_stem = judge_message(root, bend_sha, "a subject with no stem\n", "", True, "")
+        if not bend_sha or no_stem[5][0] != PASS or no_stem[5][1]:
+            bad += [f"state R prose stem={_w(no_stem[5][0])} named={no_stem[5][1]}, "
+                    f"expected PASS with no stem"]
+        else:
+            print("  R a subject with no stem is not failed")
+        moved = run(root, "mv", "gates/opseven.bend", "gates/opseven-renamed.bend")
+        committed = run(root, "commit", "-q", "-m", "opseven: a rename still contains the stem")
+        status = _git(root, "diff-tree", "-r", "-M", "--root", "--no-commit-id",
+                      "--name-status", "HEAD")
+        renamed = any(line.startswith("R") and "gates/opseven.bend" in line
+                      for line in status.splitlines())
+        got = verdict(root)[5]
+        if (moved.returncode or committed.returncode or not renamed
+                or got[0] != PASS or got[1] != ["opseven"]):
+            bad += [f"state W rename stem={_w(got[0])} named={got[1]} status={status!r}"]
+        else:
+            print("  W rename of opseven.bend still contains opseven")
+        (root / "gates" / "ledgergone-gate.py").write_text("g = 2\n")
+        added = run(root, "add", "--", "gates/ledgergone-gate.py")
+        committed = run(root, "commit", "-q", "-m",
+                        "ledgergone-gate: the long form is the same file")
+        got = verdict(root)[5]
+        if (added.returncode or committed.returncode or got[0] != PASS
+                or got[1] != ["ledgergone-gate"]):
+            bad += [f"state X long form stem={_w(got[0])} named={got[1]}, "
+                    f"expected PASS naming ledgergone-gate"]
+        else:
+            print("  X ledgergone-gate: over the gate file stays green")
 
     print(f"--plant: {'all states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return FAIL if bad else PASS
