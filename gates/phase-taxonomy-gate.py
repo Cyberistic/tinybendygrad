@@ -1,53 +1,80 @@
 #!/usr/bin/env python3
-"""phase-taxonomy-gate.py -- the tree's PRIORITY TAXONOMY: is it declared, and can it be
-RE-DERIVED from the tree's own layout?
+"""phase-taxonomy-gate.py -- the tree's PRIORITY TAXONOMY: is it declared, and do the tree's
+own markers agree with the tree's own layout?
 
-    .venv/bin/python gates/phase-taxonomy-gate.py            # the census
-    .venv/bin/python gates/phase-taxonomy-gate.py --search   # the DECLARATION SEARCH alone
-    .venv/bin/python gates/phase-taxonomy-gate.py --plant    # three states, no `.bend` run
+    .venv/bin/python gates/phase-taxonomy-gate.py            # the census and the clauses
+    .venv/bin/python gates/phase-taxonomy-gate.py --search    # the DECLARATION SEARCH alone
+    .venv/bin/python gates/phase-taxonomy-gate.py --plant     # the states that move the verdict
 
-WHAT THIS GATE IS FOR, IN ONE SENTENCE. The tree writes `TODO(p3)` on 827 sites today and
-`TODO(p1)`, `TODO(p4)`, `TODO(p6)`, `TODO(pN)`, `TODO(delete)`, `TODO(port)` on one site each,
-and NOBODY says what the scale means at the point of use. The tree says so about itself:
-`.agents/TODO.md` -- *"An undefined priority scale is why 1,026 markers have no order"* and
-*"The p-scale IS defined, as phases of the port plan, in `.agents/TODO.md` lines 917-928 and
-nowhere else"*. The line numbers are stale and the ONE gloss of the MEANING -- *"A `# TODO(p3)`
-in the tree means 'a phase owns this', not 'nobody knows'" -- lived in
-`tinybendygrad/engine/jit.bend`'s SECTION 10 and was DELETED on 2026-10-06
-(`git log --all -S 'a phase owns this' -- tinybendygrad/engine/jit.bend`). MEASURED 2026-10-20:
-`git show HEAD:tinybendygrad/engine/jit.bend | grep 'phase owns this'` answers rc=1, and the
-file's OWN header still cites "Section 9", "Section 10" and "Section 11" -- a file of 434 lines
-whose last section header is SECTION 3. The gloss is gone and the citation to it is not.
+WHAT THIS GATE IS FOR, IN ONE SENTENCE. The tree writes a phase tag on 730 of its 761
+markers -- `TODO(p3)`, `WALL(p3)`, `DONE(p3)` -- and 31 sites that say something else, and
+NOBODY says what the scale means at the point of use. The tree says so ABOUT ITSELF, in
+three places, and this gate READS those places instead of guessing:
 
-THE CLAIM, IN THREE CLAUSES, EACH DECIDED BY A COMMAND AND NONE OF THEM A COUNT.
+  `.agents/TODO.md:10438`                              -- "`p3` is a DEFAULT, not a phase."
+  `.agents/slop/WALLMAP.md:325`                        -- "`p3` is not a phase. It is a default."
+  `.agents/slop/notes/bend2-constraints.md:24665` (W-6) -- the same, with the count.
+
+THE CLAIM, IN FIVE CLAUSES, EACH DECIDED BY A COMMAND AND NONE OF THEM A COUNT.
 
   C1 DECLARED   the tree declares the phase -> directory assignment SOMEWHERE, and every
                 declaration it finds AGREES with every other on the phases they share.
-  C2 COVERED    every tag value in use names a phase the tree DECLARES.
-  C3 OBEDIENT   every tagged site sits in the directory its own tag names.
+  C2 COVERED    every tag value in use is CLASSIFIED, and every PHASE-shaped tag names a
+                phase the tree DECLARES.  A tag that does not name a phase is a
+                DISPOSITION -- an instruction, a stopping point, or a subject label -- and
+                is NOT judged as one.
+  C3 DEFAULT    the tree's own DOCUMENTS name one phase-shaped tag as the default, and the
+                tree's own LAYOUT agrees with them.
+  C4 LOCATED    every tag that is not the default is a PHASE CLAIM, and every claim sits in
+                a directory the table assigns to the phase it names.
+  C5 PARTIES    a `P<n>/<X>` compound names two PARTIES; only an OWNERSHIP claim whose two
+                parties disagree with the table is a conflict.
 
-C3 IS THE ONE THAT GOES RED, AND IT IS THE ONE THE BRIEF ASKED FOR: a census that goes red when
-the tree's LAYOUT and the MARKERS disagree. It is green-able, and green is reachable: retag the
-markers to their own phase, or re-cut the phase table to the layout, and it passes. Today it is
-RED, and that is a MEASUREMENT, not a defect this file invents.
+COUNT is the population a clause measured on PASS and the number of things that broke it on
+FAIL, so a reader can tell a clause that measured a lot from one that measured one thing.
 
-WHAT THE GATE DOES NOT CLAIM. It does not claim the phases are the right phases, and it does not
-claim the markers are the wrong ones -- it measures whether the two agree and reports which
-number is bigger. It transcribes NO expected value: the phase -> directory assignment is LOADED
-BY PATH from the tree's own table and PARSED, and the marker population is DISCOVERED by
-`os.walk` + `endswith` (never `glob`, which returns `[]` on a tree where `.bend` is on disk).
-Every number it prints is a count of something it just walked.
+WHAT CHANGED, AND WHY (2026-10-21). The old C3 was "every tagged site sits in the directory
+its own tag names". That is the gloss `tinybendygrad/engine/jit.bend`'s SECTION 10 used to
+carry -- *"A `# TODO(p3)` in the tree means 'a phase owns this'"* -- DELETED on 2026-10-06
+(`564733bed`), and the gate that measures it was written fourteen days LATER (`f978bca3b`,
+"keep the phase map, so C3 can go red"). MEASURED 2026-10-21, that clause was red on 441 of
+633 sites, and 439 of the 441 were `p3` markers: `p3` is the DEFAULT, so a `p3` marker in
+`runtime/` contradicts nothing. **The old clause was the deleted gloss, re-measured.** C4 is
+the same claim with the default excluded, and it is red on 3 sites -- each one a finding a
+human can act on, not a number that means "the tree disagrees with itself 441 times".
 
-THE DECLARATION IS FOUND BY SHAPE, NOT BY PATH. A phase table is a markdown table with a row
-whose first cell is `P<n>` and whose other cells name paths that RESOLVE under the port. That
-rule is what separates the port's phase table from the OTHER tables in the tree that also number
-themselves P1..P9 -- `.agents/slop/SCHEDULE-BODIES.md`'s Bend-rule priorities and
-`.agents/slop/sched-stage2.md`'s gate-sweep priorities -- and it is why the rule is a rule and not
-a list: both of those tables are IN the tree, both are P1..P9, and a hand list of "the phase
-table" would have had to say which of them it meant.
+THE OLD C5, AND WHY IT WAS WRONG. It compared the right-hand word of a compound against the
+phase table's cell STEMS BY NAME (`stem_of("viz/") == "viz"`, so `P3/VIZ` "contradicted"
+`viz/` at P8) and could not tell a FEATURE from a DIRECTORY. MEASURED 2026-10-21: all six
+`P3/VIZ` sites are trailing labels on a wall about upstream's `pyrender` round-trip, whose
+consumers are all in `tinygrad/uop/`, and the ONE compound in the tree that is an ownership
+statement -- `schedule/memory.bend:1686`, *"P6/runtime owns the allocator"* -- AGREES with
+the table. The markers are obedient; the READING was wrong. C5 now reads a compound as two
+PARTIES and only contradicts the table when the compound ASSERTS OWNERSHIP and the two
+parties disagree.
 
-EXIT STATUS, `gates/gatekit.py`'s five: 0 PASS · 1 FAIL · 3 REFUSED (no declaration found: the
-precondition, a taxonomy, is absent) · 5 DEAD (no `.bend` file, so nothing was compared).
+THE POPULATION IS WIDER THAN IT WAS. The old grammar matched `# TODO(...)` only, and the
+tree also writes `# WALL(p3)` (105) and `# DONE(p3)` (20) and three `# WALL(nn_pool_*)` --
+128 sibling sites the old population EXCLUDED, so the old gate measured a subset and said so
+nowhere. The marker VERBS are DISCOVERED, not listed: a verb is a marker verb iff at least
+one of its sites carries the UPSTREAM CITATION the tree's own brief gives as the marker
+grammar (`# TODO(p3) <file>.py:<line>  <name>`, `.agents/slop/brief-port.md:177`). Quoted
+upstream Python -- `# len(shape)`, `# ADD(u32)` -- never cites an upstream line, so the
+citation separates the two without a hand list of verbs. MEASURED 2026-10-21 that yields
+exactly `TODO`, `WALL` and `DONE`, 761 sites, and leaves 389 sites of quoted code out.
+
+WHAT THE GATE DOES NOT CLAIM. It does not claim the phases are the right phases, and it does
+not claim the markers are the wrong ones -- it measures whether the tree's own documents,
+the tree's own markers and the tree's own layout agree. It transcribes NO expected value:
+the phase -> directory assignment is LOADED BY PATH from the tree's own table and PARSED,
+the default is READ from the tree's own documents by shape, and the marker population is
+DISCOVERED by `os.walk` + `endswith` (never `glob`, which returns `[]` on a tree where `.bend`
+is on disk). Every number it prints is a count of something it just walked.
+
+EXIT STATUS, `gates/gatekit.py`'s five: 0 PASS · 1 FAIL · 3 REFUSED (a precondition was
+absent: no phase table, or no document saying which tag is the default) · 5 DEAD (no marker
+at all, so nothing was compared). A CLAUSE that could not run prints SKIP, and the gate as a
+whole exits 3: a clause that measured nothing is a refusal, not a pass.
 """
 import os
 import re
@@ -69,6 +96,13 @@ PORT_NAME = "tinybendygrad"
 # that counts the mention reports a tag that no marker carries.
 CLAIM = re.compile(r"^\s*#\s*TODO\(\s*([^)]*?)\s*\)")
 MENTION = re.compile(r"TODO\(\s*([^)]*?)\s*\)")
+# ANY `# VERB(tag)` at the start of a comment line -- the WIDE shape, which also matches quoted
+# upstream Python. The CITATION below is what separates a marker from a quotation.
+MARK = re.compile(r"^\s*#\s*([A-Za-z_][A-Za-z0-9_]*)\(\s*([^)]*?)\s*\)")
+# THE MARKER GRAMMAR THE TREE'S OWN BRIEF GIVES: `# TODO(p3) <file>.py:<line>  <name>`
+# (`.agents/slop/brief-port.md:177`). A verb that appears in THAT form at least once is a
+# MARKER VERB; a verb that only ever appears in quoted upstream code is not.
+CITED = re.compile(r"^\s*#\s*[A-Za-z_][A-Za-z0-9_]*\([^)]*\)\s+[A-Za-z0-9_./]+\.(?:py|bend)\s*:")
 # A PHASE TOKEN IN A HEADING: `## Phase P0 -- toolchain`, `## Phases P3-P8 -- the port`.
 PHASE_HEAD = re.compile(r"^#{1,6}\s+Phases?\s+P(\d)\b", re.I)
 # A TABLE ROW WHOSE FIRST CELL IS A PHASE.
@@ -77,10 +111,24 @@ PHASE_ROW = re.compile(r"^\|\s*P(\d)\s*\|(.*)$")
 CODE = re.compile(r"`([^`]+)`")
 # AN UPSTREAM CITATION, for the DERIVED DEMAND table.
 CITE = re.compile(r"\b([a-z_][a-z0-9_]*)\.py:\d+")
-# A PHASE/NAME annotation in prose (`P3/VIZ`). Matched against a phase-table cell; a hit on a
-# different phase is a contradiction the table cannot settle, including on continuation lines
-# that are not themselves `TODO` claims.
+# A PHASE/NAME compound in prose (`P3/VIZ`). The right slot is a PARTY, not a subordinate.
 ANNOT = re.compile(r"\bP(\d+)/([A-Za-z][A-Za-z0-9_]*)")
+# AN OWNERSHIP VERB. The compound is the SUBJECT of one of these iff it ASSERTS OWNERSHIP;
+# anything else is a trailing label. This is a closed-class English vocabulary, not a list of
+# this tree's names, and it is the ONLY lexical list in this file.
+OWNERS = re.compile(r"^\s*(?:is\s+|are\s+)?(owns?|owned|belongs\s+to|is\s+responsible\s+for)\b",
+                    re.I)
+# A CANONICAL phase tag: `p` and digits, and nothing else.
+CANON = re.compile(r"^p(\d+)$")
+# A tag that STARTS like a phase tag but is not one: `P3` (wrong case), `p3a`. Such a tag is
+# MALFORMED, not a disposition -- it is spelled as a phase claim and is not one.
+PHASEISH = re.compile(r"^[Pp]\d")
+# A DOCUMENT THAT DECLARES THE DEFAULT: it names a phase-shaped tag and says of it that it
+# IS a default, or is NOT a phase. MEASURED 2026-10-21, 8 lines in the tree match and all 8
+# name `p3`; three of them are the tree's own documents and five quote them.
+DEFAULT_DECL = re.compile(
+  r"(?<![A-Za-z0-9\-])p(\d)(?![A-Za-z0-9\-])[^\n]{0,24}?\b(?:is|are)\b[^\n]{0,24}?"
+  r"\b(?:default|not a phase)\b", re.I)
 
 # THE DECLARATION SEARCH COVERS PROSE AND PORT CODE. The gloss that WAS the definition lived in
 # a `.bend` file, so a search that only read `.md` would have missed it.
@@ -179,11 +227,16 @@ def declarations(root, port):
   return {p: dict(cells) for p, cells in assign.items()}, universe, evidence
 
 
-def markers(port):
-  """THE MARKER POPULATION, DISCOVERED. `(claims, mentions, annots)`.
-  claims and mentions are `(relpath, line, tag, text)`. annots are `(relpath, line, phase, name)`
-  for every `P<n>/<name>`, including continuation lines that are not claims."""
-  claims, mentions, annots = [], [], []
+def scan(port):
+  """ONE walk of the port. `(claims, mentions, annots, sites, verbs, compounds)`.
+
+  claims/mentions/annots are the TODO grammar the oracle reads. `sites` is the WIDENED
+  population -- every `# VERB(tag)` whose verb is a MARKER VERB -- and `verbs` is the
+  discovered verb vocabulary. A verb is a marker verb iff one of its sites CITES an upstream
+  line, which is the marker grammar the tree's own brief gives.
+  """
+  claims, mentions, annots, sites, compounds = [], [], [], [], []
+  byverb = defaultdict(list)
   for path in walk(port, ".bend"):
     rel = str(path.relative_to(port))
     for number, line in enumerate(read(path).splitlines(), 1):
@@ -194,7 +247,17 @@ def markers(port):
         mentions.append((rel, number, m.group(1), line.strip()))
       for m in ANNOT.finditer(line):
         annots.append((rel, number, int(m.group(1)), m.group(2)))
-  return claims, mentions, annots
+        compounds.append({"rel": rel, "line": number, "phase": int(m.group(1)),
+                          "name": m.group(2), "tail": line[m.end():], "text": line.strip()})
+      mark = MARK.match(line)
+      if mark:
+        byverb[mark.group(1)].append((rel, number, mark.group(2), line))
+  verbs = {v for v, found in byverb.items() if any(CITED.match(l) for _r, _n, _t, l in found)}
+  for verb in sorted(verbs):
+    for rel, number, tag, line in byverb[verb]:
+      sites.append((rel, number, verb, tag, line.strip()))
+  sites.sort()
+  return claims, mentions, annots, sites, verbs, compounds
 
 
 def census(root):
@@ -202,84 +265,77 @@ def census(root):
   own documents."""
   port = root / PORT_NAME
   assign, universe, evidence = declarations(root, port)
-  claims, mentions, annots = markers(port)
-  return {"port": port, "assign": assign, "sources": assign, "universe": universe,
-          "evidence": evidence, "claims": claims, "mentions": mentions, "annots": annots}
+  claims, mentions, annots, sites, verbs, compounds = scan(port)
+  return {"root": root, "port": port, "assign": assign, "sources": assign, "universe": universe,
+          "evidence": evidence, "claims": claims, "mentions": mentions, "annots": annots,
+          "sites": sites, "verbs": verbs, "compounds": compounds}
 
 
-def demand(c):
-  """THE DERIVED DEMAND of every tag in use. DERIVED, NOT TRANSCRIBED: every field is a
-  count or a set the walk just produced. The VERDICT is a RULE over those fields, and the
-  rules are printed with it."""
+def tag_class(tag):
+  """PHASE -- `p` and digits. MALFORMED -- spelled like a phase and is not one (`P3`, `p3a`).
+  DISPOSITION -- does not name a phase: an instruction (`delete`), a stopping point (`port`),
+  or a subject label (`nn_pool_4d`). The gate does NOT need to tell those three apart, and
+  does not pretend to: the tree explains them at `mixin/rand.bend:253` (delete),
+  `extra/datasets/__init__.bend:14` (port) and `nn/pool.bend:420` (nn_pool_*), and a tag that
+  names no phase is not a phase claim under any of those readings."""
+  if CANON.match(tag):
+    return "PHASE"
+  if PHASEISH.match(tag):
+    return "MALFORMED"
+  return "DISPOSITION"
+
+
+def spread_of(c):
+  """For every phase-shaped tag in use: the set of phase directories its sites sit in. This
+  is the LAYOUT witness -- a tag spread over many phase directories cannot be naming any one
+  of them, so it is the DEFAULT the tree's brief shows filled in."""
+  out = {}
+  for rel, _number, _verb, tag, _text in c["sites"]:
+    if tag_class(tag) != "PHASE":
+      continue
+    phase = phase_of(rel, c["assign"])
+    out.setdefault(tag, set())
+    if phase is not None:
+      out[tag].add(phase)
+  return out
+
+
+def default_declaration(root):
+  """The tree's own documents saying which tag is the DEFAULT. `{tag: [path:line, ...]}`,
+  read by shape: a line that names a phase-shaped tag and says of it that it IS a default or
+  is NOT a phase. This is a DECLARATION, loaded from the tree the way the phase table is --
+  not a list, and not a number this file transcribed."""
+  found = defaultdict(list)
+  for path in walk(root, PROSE_EXT):
+    for number, line in enumerate(read(path).splitlines(), 1):
+      for m in DEFAULT_DECL.finditer(line):
+        found[f"p{m.group(1)}"].append(f"{path.relative_to(root)}:{number}")
+  return dict(found)
+
+
+def tag_census(c, classes, default):
+  """One row per tag value in use: how many sites, in how many files, in how many phases, and
+  what CLASS the tag is. Every field is a count or a set the walk just produced."""
   bytag = defaultdict(list)
-  for rel, number, tag, text in c["claims"]:
-    bytag[tag].append((rel, number, text))
-  out = []
+  for rel, number, verb, tag, text in c["sites"]:
+    bytag[tag].append((rel, number, verb, text))
+  rows = []
   for tag, sites in sorted(bytag.items(), key=lambda kv: (-len(kv[1]), kv[0])):
     files = {s[0] for s in sites}
     phases = Counter(phase_of(s[0], c["assign"]) for s in sites)
     cited = Counter()
-    for _rel, _number, text in sites:
+    for _rel, _number, _verb, text in sites:
       cited.update(CITE.findall(text))
-    number = tag[1:] if tag.startswith("p") and tag[1:].isdigit() else None
-    phase = int(number) if number is not None else None
-    assigned = c["assign"].get(phase, []) if phase is not None else []
-    inside = sum(1 for s in sites if phase_of(s[0], c["assign"]) == phase) if assigned else 0
-    if phase is not None and not assigned:
-      verdict = "OFF-SCALE: names a phase the tree does not declare a directory for"
-    elif assigned and inside == len(sites):
-      verdict = "PHASE: every site sits in the directory its tag names"
-    elif assigned:
-      verdict = ("NOT-A-PHASE: the tag names a phase, but its sites sit in "
-                 f"{len(phases)} different phases")
-    else:
-      verdict = "DISPOSITION: the tag is not a phase, so it can only be a per-site declaration"
-    out.append({"tag": tag, "sites": len(sites), "files": len(files), "phase": phase,
-                "phases": dict(phases), "cited": len(cited), "inside": inside,
-                "assigned": assigned, "verdict": verdict,
-                "example": sites[0][2][:90]})
-  return out
-
-
-def report(c):
-  """Print the census. Rows are `name=value`, the grammar `gates/lane-census.py` reads."""
-  assign, universe, claims, mentions = c["assign"], c["universe"], c["claims"], c["mentions"]
-  print("phase-taxonomy-gate: THE DECLARATION SEARCH (shapes: TABLE, HEADING)")
-  print(f"  declaration_candidates={sum(1 for e in c['evidence'] if e[0] == 'TABLE')}")
-  print(f"  declaration_rows={sum(1 for e in c['evidence'] if e[0] == 'TABLE')}")
-  print(f"  rows_rejected_not_a_phase_table="
-        f"{sum(1 for e in c['evidence'] if e[0] == 'TABLE-NOT-A-PHASE-TABLE')}")
-  print(f"  phase_headings={sum(1 for e in c['evidence'] if e[0] == 'HEADING')}")
-  for shape, path, number, text in c["evidence"]:
-    if shape == "TABLE":
-      print(f"  TABLE       {path.relative_to(ROOT)}:{number}  {text[:100]}")
-  for shape, path, number, text in c["evidence"]:
-    if shape == "TABLE-NOT-A-PHASE-TABLE":
-      print(f"  NOT-A-PHASE {path.relative_to(ROOT)}:{number}  {text[:90]}")
-  for shape, path, number, text in c["evidence"]:
-    if shape == "HEADING":
-      print(f"  HEADING     {path.relative_to(ROOT)}:{number}  {text[:100]}")
-  print()
-  print("  THE DECLARED ASSIGNMENT (phase -> directories), AND WHERE EACH CELL WAS DECLARED:")
-  for phase in sorted(assign):
-    for cell in sorted(assign[phase]):
-      print(f"    P{phase} {cell:14s} declared at {', '.join(sorted(c['sources'][phase][cell]))}")
-  print(f"  phases_declared={','.join('P' + str(p) for p in sorted(universe))}")
-  print()
-  print("phase-taxonomy-gate: THE MARKER POPULATION")
-  print(f"  bend_files={len(walk(c['port'], '.bend'))}")
-  print(f"  tag_claims={len(claims)}")
-  print(f"  tag_mentions={len(mentions)}")
-  print(f"  tag_values_in_use={len({t for _r, _n, t, _x in claims})}")
-  print()
-  print("phase-taxonomy-gate: THE DERIVED DEMAND, ONE ROW PER TAG IN USE")
-  for row in demand(c):
-    print(f"  tag={row['tag']:8s} sites={row['sites']:4d} files={row['files']:3d} "
-          f"cited_upstream={row['cited']:3d} inside_own_phase={row['inside']:4d}")
-    print(f"      phases_of_sites={row['phases']}")
-    print(f"      demand={row['verdict']}")
-    print(f"      e.g. {row['example']}")
-  print()
+    phase = int(CANON.match(tag).group(1)) if CANON.match(tag) else None
+    kind = classes[tag]
+    if kind == "PHASE" and tag == default:
+      kind = "DEFAULT"
+    rows.append({"tag": tag, "kind": kind, "sites": len(sites), "files": len(files),
+                 "phase": phase, "phases": dict(phases), "cited": len(cited),
+                 "verbs": sorted({s[2] for s in sites}),
+                 "inside": phases.get(phase, 0) if phase is not None else 0,
+                 "example": sites[0][3][:90]})
+  return rows
 
 
 def stem_of(cell):
@@ -307,37 +363,48 @@ def disagreements(assign):
   return bad
 
 
-def annotation_conflicts(c):
-  """`P<n>/<name>` prose that names a phase-table cell the table assigns to another phase."""
+def compound_census(c):
+  """EVERY `P<n>/<X>` compound, read as TWO PARTIES.
+
+  The right slot is a party, and there are three kinds: a PHASE (`P3/P6` -- "P3 owns P6" is
+  not a sentence, so the compound cannot mean ownership), a DIRECTORY (`P6/runtime`), or a
+  FEATURE (`P3/VIZ` -- the visualization feature, whose upstream consumers are all in
+  `tinygrad/uop/`, NOT under `tinygrad/viz/`). A compound CONTRADICTS the phase table only
+  when it ASSERTS OWNERSHIP -- the compound is the subject of an ownership verb -- and the two
+  parties disagree about the table. A name that COLLIDES with a table cell's stem is a
+  collision, not a contradiction, and it is REPORTED as one."""
   index = {}
   for phase, cells in c["assign"].items():
     for cell in cells:
       index.setdefault(stem_of(cell), (phase, cell))
-  groups = defaultdict(list)
-  for rel, number, phase, name in c["annots"]:
-    hit = index.get(name.casefold())
-    if hit and hit[0] != phase:
-      groups[(phase, name.casefold(), hit[0], hit[1])].append(f"{rel}:{number}")
-  return groups
-
-
-def human_sentence(groups, cross):
-  """ONE question, and only when the scale cannot be re-derived. None when it can."""
-  if groups:
-    key, sites = max(groups.items(), key=lambda kv: (len(kv[1]), kv[0]))
-    ann, name, table, cell = key
-    where = f"{PORT_NAME}/{sites[0]}"
-    return (f"{len(sites)} markers say {name.upper()} is P{ann} ({where}) and the phase table "
-            f"puts `{cell}` at P{table}: which assignment is the scale?")
-  if cross:
-    return (f"{len(cross)} tagged sites sit outside the directory their tag names: "
-            "is the scale the marker, or the directory?")
-  return None
+  universe = c["universe"]
+  rows = []
+  for comp in c["compounds"]:
+    name = comp["name"]
+    if re.fullmatch(r"P\d+", name):
+      kind, resolved = "PHASE", f"P{name[1:]}" + ("" if int(name[1:]) in universe else " (undeclared)")
+    elif name.casefold() in index:
+      cellphase, cell = index[name.casefold()]
+      kind, resolved = "CELL", f"{cell} -> P{cellphase}"
+    else:
+      kind, resolved = "FEATURE", "no table cell of that name"
+    owner = OWNERS.match(comp["tail"])
+    position = f"OWNS:{owner.group(1)}" if owner else "LABEL"
+    conflict = ""
+    if owner and kind == "CELL":
+      cellphase, cell = index[name.casefold()]
+      if cellphase != comp["phase"]:
+        conflict = (f"the claim says P{comp['phase']} owns {cell}, and the table puts {cell} "
+                    f"at P{cellphase}")
+    rows.append({**comp, "kind": kind, "resolved": resolved, "position": position,
+                 "conflict": conflict})
+  return rows
 
 
 def verdicts(c):
-  """C1, C2, C3 -- each a count and a verdict, never a bare boolean."""
-  assign, universe, claims = c["assign"], c["universe"], c["claims"]
+  """THE FIVE CLAUSES. Each is a count and a verdict, never a bare boolean."""
+  assign, universe = c["assign"], c["universe"]
+  sites = c["sites"]
   # C1: a declaration exists, and every declaration agrees on the phases they share.
   # Agreement is equal directory sets, not "named in one file": two tables that name the
   # same cells are one scale.
@@ -348,103 +415,265 @@ def verdicts(c):
     c1 = ("FAIL", len(bad), f"declarations disagree on: {bad}")
   else:
     c1 = ("PASS", len(assign), "")
-  # C2: every tag value in use names a declared phase.
-  tags = sorted({t for _r, _n, t, _x in claims})
+  # C2: every tag value in use is classified, and every PHASE-shaped tag names a DECLARED
+  # phase. A tag that names no phase is a DISPOSITION and is not judged as one.
+  tags = sorted({t for _r, _n, _v, t, _x in sites})
+  classes = {t: tag_class(t) for t in tags}
   uncovered = [t for t in tags
-               if not (t.startswith("p") and t[1:].isdigit() and int(t[1:]) in universe)]
-  c2 = ("PASS", len(tags) - len(uncovered), "") if not uncovered else (
-    "FAIL", len(uncovered), f"tags that name no declared phase: {uncovered}")
-  # C3: every tagged site sits in the directory its tag names.
-  cross = []
-  for rel, number, tag, text in claims:
-    if not (tag.startswith("p") and tag[1:].isdigit()):
-      continue
-    phase = int(tag[1:])
-    if not assign.get(phase):
-      continue
-    if phase_of(rel, assign) != phase:
-      cross.append((rel, number, tag))
-  c3 = ("PASS", 0, "") if not cross else (
-    "FAIL", len(cross), f"{len(cross)} of {len(claims)} tagged sites sit outside their tag's phase")
-  return [("C1 DECLARED", c1), ("C2 COVERED", c2), ("C3 OBEDIENT", c3)], cross, uncovered
+               if classes[t] == "PHASE" and int(CANON.match(t).group(1)) not in universe]
+  malformed = [t for t in tags if classes[t] == "MALFORMED"]
+  broken = uncovered + malformed
+  if not assign:
+    c2 = ("SKIP", 0, "no phase table, so there is nothing to judge the tags against")
+  elif broken:
+    why = []
+    if uncovered:
+      why.append(f"tags that name no declared phase: {uncovered}")
+    if malformed:
+      why.append(f"tags spelled like a phase but not one: {malformed}")
+    c2 = ("FAIL", len(broken), "; ".join(why))
+  else:
+    c2 = ("PASS", len(tags), "")
+  # C3: the tree's own DOCUMENTS name the default, and the tree's own LAYOUT agrees.
+  declared = default_declaration(c["root"])
+  named = sorted(declared)
+  spread = spread_of(c)
+  default = None
+  if not named:
+    c3 = ("REFUSED", 0, "no document in the tree says which phase-shaped tag is the default")
+  elif len(named) > 1:
+    c3 = ("FAIL", len(named),
+          f"the tree's documents name more than one default: {named} "
+          f"({ {t: declared[t][:3] for t in named} })")
+  else:
+    default = named[0]
+    mine = len(spread.get(default, ()))
+    rivals = {t: len(s) for t, s in spread.items() if t != default}
+    worst = max(rivals, key=rivals.get) if rivals else None
+    if rivals and rivals[worst] > mine:
+      c3 = ("FAIL", 1, f"the documents call {default} the default, but {worst} sits in "
+                      f"{rivals[worst]} phase directories and {default} in {mine}")
+    else:
+      c3 = ("PASS", len(declared[default]), "")
+  # C4: every tag that is not the default is a PHASE CLAIM, and every claim sits in a
+  # directory the table assigns to the phase it names.
+  offenders, judged = [], 0
+  if not assign:
+    c4 = ("SKIP", 0, "no phase table, so no claim can be located")
+  elif c3[0] == "REFUSED":
+    c4 = ("SKIP", 0, "C3 could not identify the default, so no claim can be judged")
+  else:
+    for rel, number, _verb, tag, _text in sites:
+      if classes[tag] != "PHASE" or tag == default:
+        continue
+      phase = int(CANON.match(tag).group(1))
+      if phase not in universe:
+        continue  # a phase the tree does not declare is C2's business, not a claim to place
+      judged += 1
+      dirs = sorted(assign.get(phase, ()))
+      if not dirs:
+        reason = "NO-DIRECTORY"
+      else:
+        here = phase_of(rel, assign)
+        reason = ("SITE-UNASSIGNED" if here is None
+                  else ("OTHER-PHASE" if here != phase else ""))
+      if reason:
+        offenders.append({"rel": rel, "line": number, "tag": tag, "phase": phase,
+                          "reason": reason, "dirs": dirs})
+    c4 = ("PASS", judged, "") if not offenders else (
+      "FAIL", len(offenders), f"{len(offenders)} phase claims are not in the phase they name")
+  # C5: a compound names two parties; only an OWNERSHIP claim whose parties disagree is a
+  # conflict.
+  compounds = compound_census(c)
+  conflicts = [r for r in compounds if r["conflict"]]
+  c5 = ("PASS", len(compounds), "") if not conflicts else (
+    "FAIL", len(conflicts), f"{len(conflicts)} ownership claims disagree with the table")
+  parts = [("C1 DECLARED", c1), ("C2 COVERED", c2), ("C3 DEFAULT", c3), ("C4 LOCATED", c4),
+           ("C5 PARTIES", c5)]
+  return parts, {"classes": classes, "default": default, "declared": declared,
+                 "spread": spread, "offenders": offenders, "compounds": compounds,
+                 "conflicts": conflicts, "tags": tags}
+
+
+def report(c, detail):
+  """Print the census. Rows are `name=value`, the grammar `gates/lane-census.py` reads."""
+  assign, universe = c["assign"], c["universe"]
+  print("phase-taxonomy-gate: THE DECLARATION SEARCH (shapes: TABLE, HEADING)")
+  print(f"  declaration_rows={sum(1 for e in c['evidence'] if e[0] == 'TABLE')}")
+  sources = {src.rsplit(":", 1)[0] for cells in assign.values() for srcs in cells.values()
+             for src in srcs}
+  print(f"  declaration_sources={len(sources)}")
+  print(f"  rows_rejected_not_a_phase_table="
+        f"{sum(1 for e in c['evidence'] if e[0] == 'TABLE-NOT-A-PHASE-TABLE')}")
+  print(f"  phase_headings={sum(1 for e in c['evidence'] if e[0] == 'HEADING')}")
+  print()
+  print("  THE DECLARED ASSIGNMENT (phase -> directories), AND WHERE EACH CELL WAS DECLARED:")
+  for phase in sorted(assign):
+    for cell in sorted(assign[phase]):
+      print(f"    P{phase} {cell:14s} declared at {', '.join(sorted(c['sources'][phase][cell]))}")
+  print(f"  phases_declared={','.join('P' + str(p) for p in sorted(universe))}")
+  print()
+  print("phase-taxonomy-gate: THE MARKER POPULATION")
+  print(f"  bend_files={len(walk(c['port'], '.bend'))}")
+  print(f"  marker_verbs={','.join(sorted(c['verbs']))}")
+  print(f"  marker_sites={len(c['sites'])}")
+  print(f"  marker_sites_by_verb="
+        f"{','.join(f'{v}:{n}' for v, n in sorted(Counter(s[2] for s in c['sites']).items()))}")
+  print(f"  todo_claims_only={len(c['claims'])}")
+  print(f"  tag_mentions={len(c['mentions'])}")
+  print(f"  tag_values_in_use={len(detail['tags'])}")
+  only_mentions = sorted({t for _r, _n, t, _x in c["mentions"]} - set(detail["tags"]))
+  print(f"  tag_values_in_mentions_only={','.join(only_mentions) or 'none'} "
+        f"(a tag no MARKER carries: the tree names it, no site uses it)")
+  print()
+  print("phase-taxonomy-gate: THE DEFAULT, AND ITS TWO WITNESSES")
+  print(f"  default_tag={detail['default'] or 'NONE'}")
+  print(f"  default_declared_at={','.join(detail['declared'].get(detail['default'], ()))}")
+  print(f"  default_layout={detail['default']} sits in "
+        f"{len(detail['spread'].get(detail['default'], ()))} phase directories; the other "
+        "phase-shaped tags sit in "
+        + (", ".join(f"{t} in {len(s)}" for t, s in sorted(detail["spread"].items())
+                     if t != detail["default"]) or "none"))
+  print()
+  print("phase-taxonomy-gate: THE TAG CENSUS, ONE ROW PER TAG VALUE IN USE")
+  for row in tag_census(c, detail["classes"], detail["default"]):
+    print(f"  tag={row['tag']:12s} class={row['kind']:11s} sites={row['sites']:4d} "
+          f"files={row['files']:3d} verbs={','.join(row['verbs']):14s} "
+          f"cited_upstream={row['cited']:3d}")
+    print(f"      phases_of_sites={row['phases']}")
+    print(f"      e.g. {row['example']}")
+  print()
+
+
+def human_sentence(parts, detail):
+  """ONE question, and only when the gate's own PREMISE needs a human: the tree's documents
+  do not agree on which tag is the default, or do not say at all. A claim that is not LOCATED
+  is not a question -- it is a repair, and the gate prints it."""
+  byname = {name: (verdict, count, why) for name, (verdict, count, why) in parts}
+  verdict, _count, why = byname["C3 DEFAULT"]
+  if verdict == "PASS":
+    return None
+  if verdict == "REFUSED":
+    return ("the tree's documents do not say which phase-shaped tag is the DEFAULT, so no "
+            "marker can be judged a phase claim: which tag is it?")
+  return f"the tree's documents disagree about the DEFAULT: {why}"
+
+
+def run(root, c=None):
+  """The five clauses and the exit code. `root` is the repo root the census reads."""
+  c = c if c is not None else census(root)
+  if not c["sites"]:
+    print("phase-taxonomy-gate: DEAD: no marker was found under "
+          f"`{c['port']}`, so nothing was compared", file=sys.stderr)
+    return DEAD
+  parts, detail = verdicts(c)
+  print("phase-taxonomy-gate: THE FIVE CLAUSES")
+  for name, (verdict, count, why) in parts:
+    print(f"  {name:14s} {verdict:8s} count={count}  {why}")
+  for row in detail["offenders"]:
+    site = phase_of(row["rel"], c["assign"])
+    print(f"  claim_not_located tag={row['tag']} site={row['rel']}:{row['line']} "
+          f"says=P{row['phase']} reason={row['reason']} "
+          f"site_in={('P' + str(site)) if site is not None else 'no-phase'} "
+          f"P{row['phase']}_has={','.join(row['dirs']) or 'NO-DIRECTORY'}")
+  groups = defaultdict(list)
+  for row in detail["compounds"]:
+    groups[(row["position"], row["kind"], row["name"], row["resolved"])].append(row)
+  for (position, kind, name, resolved), rows in sorted(groups.items()):
+    first = rows[0]
+    if position.startswith("OWNS"):
+      print(f"  compound_ownership left=P{first['phase']} right={name} kind={kind} "
+            f"resolves={resolved} position={position} sites={len(rows)} "
+            + (f"CONFLICT: {first['conflict']}" if first["conflict"] else "AGREE"))
+    elif kind == "CELL":
+      print(f"  compound_label name={name} collides_with={resolved} position=LABEL "
+            f"sites={len(rows)} e.g. {first['rel']}:{first['line']} "
+            f"(a name collision, not a contradiction)")
+  sentence = human_sentence(parts, detail)
+  if sentence:
+    print(f"  human={sentence}")
+  # A FAIL beats a REFUSED beats a PASS: a clause that broke is the verdict, and a clause
+  # that could not run means the gate measured nothing on that clause.
+  codes = [v[0] for _n, v in parts]
+  if not c["assign"]:
+    code = REFUSED      # the precondition is absent, so the gate measured nothing
+  elif "FAIL" in codes:
+    code = FAIL
+  elif "REFUSED" in codes or "SKIP" in codes:
+    code = REFUSED
+  else:
+    code = PASS
+  relation = {PASS: "agree", REFUSED: "were not compared (a precondition was absent)"}.get(
+    code, "DISAGREE")
+  print(f"phase-taxonomy-gate: {verdict_of(code)} -- the tree's documents, its markers and "
+        f"its layout {relation}")
+  return code
 
 
 def plant():
-  """THREE STATES, so the reader can see the instrument MOVE. A gate that cannot go red is a
-  gate that cannot be wrong, and this one is red today, so the states that matter are the two
-  that make it RED and the one that makes it GREEN."""
+  """THE STATES THAT MOVE THE VERDICT, one tree per state. A clause that cannot fail is a
+  clause that must not exist, so every clause gets a state that makes it red."""
+  import contextlib
+  import io
   import tempfile
   ok = True
+  table = ("| phase | directory |\n| --- | --- |\n"
+           "| P3 | `uop/` |\n| P6 | `runtime/` |\n| P8 | `viz/` |\n")
+  default_line = "\n- `p3` is a DEFAULT, not a phase.\n"
+
+  def tree(base, name, table_text, files, prose=""):
+    root = base / name
+    port = root / "tinybendygrad"
+    for directory in ("uop", "runtime", "viz"):
+      (port / directory).mkdir(parents=True, exist_ok=True)
+    (root / ".agents").mkdir(parents=True, exist_ok=True)
+    (root / ".agents" / "TODO.md").write_text(table_text + prose)
+    for rel, text in files:
+      path = port / rel
+      path.parent.mkdir(parents=True, exist_ok=True)
+      path.write_text(text)
+    return root
+
+  obey = [("uop/x.bend", "# TODO(p3) ops.py:1  demo\n"),
+          ("runtime/y.bend", "# TODO(p6) ops.py:2  demo\n")]
+  disobey = [("uop/x.bend", "# TODO(p3) ops.py:1  demo\n"),
+             ("uop/y.bend", "# TODO(p6) ops.py:2  demo\n")]
+  states = [
+    ("plant-obey", (table, obey, default_line), PASS),
+    ("plant-disobey", (table, disobey, default_line), FAIL),
+    ("plant-undeclared", ("", obey, default_line), REFUSED),
+    ("plant-dead", (table, [("uop/x.bend", "# len(shape) is a python call\n")], default_line),
+     DEAD),
+    ("plant-offscale", (table, [("uop/x.bend", "# TODO(p3) ops.py:1  demo\n"
+                                          "# TODO(p9) ops.py:2  demo\n")], default_line), FAIL),
+    ("plant-malformed", (table, [("uop/x.bend", "# TODO(P3) ops.py:1  demo\n")], default_line),
+     FAIL),
+    ("plant-disagree", (table, [("uop/x.bend", "# TODO(p3) ops.py:1  demo\n")],
+                        default_line + "\n| P3 | `runtime/` |\n"), FAIL),
+    ("plant-ownership", (table, [("uop/x.bend", "# TODO(p3) ops.py:1  demo\n"
+                                               "#   P3/viz owns the renderer.\n")],
+                          default_line), FAIL),
+    ("plant-default-disagree",
+     (table, [("uop/x.bend", "# TODO(p3) ops.py:1  demo\n"),
+              ("runtime/y.bend", "# TODO(p3) ops.py:2  demo\n"),
+              ("uop/z.bend", "# TODO(p6) ops.py:3  demo\n")],
+      "- `p6` is a DEFAULT, not a phase.\n"), FAIL),
+    ("plant-no-default", (table, obey, ""), REFUSED),
+  ]
   with tempfile.TemporaryDirectory() as td:
     base = Path(td)
-    table = ("## Phases P3-P8 -- the port\n\n| phase | directory |\n| --- | --- |\n"
-             "| P3 | `uop/` |\n| P6 | `runtime/` |\n")
-    # Both phase directories must exist, or the disobey row's `uop/` cell does not resolve
-    # and C3 has no directory to disobey.
-    for name, where, want in (("plant-obey", "uop/x.bend", PASS),
-                              ("plant-disobey", "runtime/x.bend", FAIL)):
-      root = base / name
-      port = root / "tinybendygrad"
-      for directory in ("uop", "runtime"):
-        (port / directory).mkdir(parents=True, exist_ok=True)
-      (port / where).write_text("# TODO(p3) ops.py:1  demo\n")
-      (root / ".agents").mkdir(parents=True, exist_ok=True)
-      (root / ".agents" / "TODO.md").write_text(table)
-      got = run(root)
-      print(f"  {name:18s} rc={got}  expected rc={want}  {'OK' if got == want else 'MISMATCH'}")
-      ok = ok and got == want
-    root = base / "plant-undeclared"
-    (root / "tinybendygrad" / "uop").mkdir(parents=True, exist_ok=True)
-    (root / "tinybendygrad" / "uop" / "x.bend").write_text("# TODO(p3) ops.py:1  demo\n")
-    got = run(root)
-    print(f"  {'plant-undeclared':18s} rc={got}  expected rc={REFUSED}  "
-          f"{'OK' if got == REFUSED else 'MISMATCH'}")
-    ok = ok and got == REFUSED
-  print(f"--plant: {'all 3 states OK' if ok else 'FAILED'}")
+    for name, (table_text, files, prose), want in states:
+      root = tree(base, name, table_text, files, prose)
+      buf = io.StringIO()
+      with contextlib.redirect_stdout(buf):
+        got = run(root)
+      print(f"  {name:24s} rc={got}  expected rc={want}  "
+            f"{'OK' if got == want else 'MISMATCH'}")
+      if got != want:
+        ok = False
+        print(buf.getvalue())
+  print(f"--plant: {'all %d states OK' % len(states) if ok else 'FAILED'}")
   return PASS if ok else FAIL
-
-
-def run(root):
-  """The three clauses and the exit code. `root` is the repo root the census reads."""
-  c = census(root)
-  if not c["claims"]:
-    print("phase-taxonomy-gate: DEAD: no `TODO(...)` claim was found under "
-          f"`{c['port']}`, so nothing was compared", file=sys.stderr)
-    return DEAD
-  parts, cross, uncovered = verdicts(c)
-  print("phase-taxonomy-gate: THE THREE CLAUSES")
-  for name, (verdict, count, why) in parts:
-    print(f"  {name:14s} {verdict:8s} count={count}  {why}")
-  if cross:
-    print(f"  cross_phase_sites={len(cross)}   e.g. {cross[:3]}")
-  if uncovered:
-    print(f"  uncovered_tags={uncovered}")
-  print("phase-taxonomy-gate: CLUSTERING (a phase tag's sites, against the directory it names)")
-  for row in demand(c):
-    if row["phase"] is None:
-      continue
-    outside = row["sites"] - row["inside"]
-    print(f"  cluster tag={row['tag']} sites={row['sites']} inside={row['inside']} "
-          f"outside={outside} phases={row['phases']}")
-  groups = annotation_conflicts(c)
-  for key, sites in sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0])):
-    ann, name, table, cell = key
-    print(f"  annotation_conflict name={name.upper()} marker_phase=P{ann} "
-          f"table_phase=P{table} cell={cell} sites={len(sites)}")
-  sentence = human_sentence(groups, cross)
-  if sentence:
-    print(f"  human={sentence}")
-  # No declaration is a missing precondition, not a failed comparison. C2 can also be red
-  # in that state; the exit is still REFUSED.
-  if not c["assign"]:
-    code = REFUSED
-  elif all(v[0] == "PASS" for _n, v in parts):
-    code = PASS
-  else:
-    code = FAIL
-  relation = {PASS: "agree", REFUSED: "were not compared (no declaration)"}.get(code, "DISAGREE")
-  print(f"phase-taxonomy-gate: {verdict_of(code)} -- the tags and the tree's own layout {relation}")
-  return code
 
 
 def main():
@@ -460,8 +689,9 @@ def main():
     for shape, path, number, text in c["evidence"]:
       print(f"{shape:26s} {path.relative_to(ROOT)}:{number}  {text[:120]}")
     return PASS
-  report(census(ROOT))
-  return run(ROOT)
+  c = census(ROOT)
+  report(c, verdicts(c)[1])
+  return run(ROOT, c)
 
 
 if __name__ == "__main__":
