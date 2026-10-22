@@ -600,7 +600,7 @@ def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 # and is `uop/symbolic.py`'s `resolve`, not ops.bend's. And `_broadcast_to` needs
 # `broadcast_axes` (ops.py:89), which is also symbolic (`resolve(s == 1)`).
 #
-# TODO(p3) mixin/gradient.py:82  reduce_gradient -- `_rop`'s `resolve(self.shape[x]!=1)`
+# TODO(p3) mixin/gradient.py:8  reduce_gradient -- `_rop`'s `resolve(self.shape[x]!=1)`
 #   and `_broadcast_to`'s `broadcast_axes` are both `resolve` on a `Sint`, and
 #   `symbolic.py`'s `resolve` is not ported. Phase P3 owns `symbolic`.
 def gr_14(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}

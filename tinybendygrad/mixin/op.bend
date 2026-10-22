@@ -411,7 +411,7 @@ def mo_commit_dt(+fx: F.Folded, +t: T.Tensor) -> S.Dt:
 # "float32")`, which is a `Config` read and `Config` is P6; the DEFAULT is float32
 # and no caller in this file's range overrides it, which is the same argument
 # fold.bend makes for `least_upper_float` (fold.bend:176).
-# TODO(p3) tinygrad/dtype.py:220  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
+# TODO(p3) tinygrad/dtype.py:213  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
 #   `Config` read (P6). The default float32 is what `mo_sum_acc` uses and what every
 #   gate fixture needs.
 def mo_sum_acc.cls(cls: S.Cls, +dt: S.Dt) -> S.Dt:

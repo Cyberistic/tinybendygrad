@@ -3141,13 +3141,13 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #   RESHAPE of a BUFFER is therefore unverified by `sh_30`; it is not REJECTED,
 #   because `type_verify` fails only when no rule answers. WALL: `storage_base`,
 #   which is `base` plus a seventh `Derived` field. P3.
-# TODO(p3) spec.py:57  lambda x: `type(x.val) is type(x.dtype.const(x.val))` --
+# TODO(p3) spec.py:56  lambda x: `type(x.val) is type(x.dtype.const(x.val))` --
 #   PORTED as the class correspondence `DType.const` (tinygrad/dtype.py:79) actually
 #   tests, and it is UNREACHABLE on a well-formed arena, because a CONST's dtype is
 #   DERIVED from its value. `const_ok` in the gate says so. WALL: if
 #   `dtype.bend` becomes importable, `truncate` (tinygrad/dtype.py:295) is the half that is
 #   a C effect. P3.
-# TODO(p3) spec.py:148 lambda buf: `isinstance(buf.dtype, DType)` -- vacuous in this
+# TODO(p3) spec.py:151 lambda buf: `isinstance(buf.dtype, DType)` -- vacuous in this
 #   port, because `S.Dt` IS the DType. NO ACTION; recorded so the conjunct is not
 #   mistaken for a missing check.
 # ===========================================================================

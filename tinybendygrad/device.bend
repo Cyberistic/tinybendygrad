@@ -327,7 +327,7 @@ def dcls(ix: String) -> U32:
 # one per `__get_canonicalized_item`, and the growth IS the point: three
 # spellings of one device are ONE slot, because `canonicalize` runs first
 # (device.py:30).
-# TODO(p3) device.py:39  __get_canonicalized_item -- `functools.cache` and
+# TODO(p3) device.py:41  __get_canonicalized_item -- `functools.cache` and
 #   `self.get_class(ix)(ix)`. WALL: constructing a device opens hardware. The
 #   MEMOISATION is PORTED -- `reg_open` is the cache, keyed on the canonical
 #   name, and it grows only on a miss.
@@ -806,7 +806,7 @@ def mem_used(+ar: Bar, ixs: List<&2, U32>, +dev: U32, acc: U32) -> U32:
 # len(Buffer.profile_events)`. That list is a CLASS attribute (device.py:113), so
 # `trace_num` indexes a GLOBAL event log and is NOT a per-buffer counter: the
 # first buffer in a process is 0 and the tenth is 9 whatever device it is on.
-# TODO(p3) device.py:191  Buffer.profile_events -- a class-level list appended
+# TODO(p3) device.py:112  Buffer.profile_events -- a class-level list appended
 #   to by `allocate` under PROFILE. WALL: PROFILE is an env flag and the events
 #   are `ProfilePointEvent` objects. `trace_num` is PORTED as the length.
 def trace_num(n_events: U32) -> U32:
@@ -906,7 +906,7 @@ def needs_compile(ck: Bool, hit: Bool) -> Bool:
 # `Target`, and `signature` a tuple of `(name, slot, dtype, shape)`. Only the
 # dtypes are read by anything and only by `iter_sig`, so the port carries the
 # dtype list alone.
-# TODO(p3) device.py:357  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
+# TODO(p3) device.py:344  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
 #   effect behind `Compiler.compile_server` would hand one back.
 
 # `round_up` is `(n+a-1)//a*a` (helpers.py:69).
@@ -1262,7 +1262,7 @@ def show_bufs(xs: List<&2, U32>) -> String:
 # dtypes are read by anything and only by `iter_sig`, so the port carries the
 # ITEMSIZES -- all `iter_sig` reads, and it keeps the list's element type a
 # `U32` rather than an imported record.
-# TODO(p3) device.py:357  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
+# TODO(p3) device.py:344  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
 #   effect behind `Compiler.compile_server` (device.py:349) would hand one back.
 #
 # The `type` sits IMMEDIATELY above its first reader on purpose. Declared 500

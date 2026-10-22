@@ -95,7 +95,7 @@
 #    already-opened set, so the port compares host NAMES rather than
 #    interning a device object -- and the host names are interned into two tags
 #    so `device.bend`'s `map_ok` can be used as it is written.
-#    TODO(p3) device.py:328  `Device[buf.device]` -- the registry open.
+#    TODO(p3) device.py:315  `Device[buf.device]` -- the registry open.
 #
 # ===========================================================================
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument

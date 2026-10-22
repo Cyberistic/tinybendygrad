@@ -9,7 +9,7 @@
 # with NVOS21/NVOS54 command numbers", and that porting it "unblocks a
 # documented wall" -- namely `ops_nv.bend`'s two live `TODO(p3)` entries:
 #
-#     TODO(p3) ops_nv.py:353-384  NVKIface.__init__      WALL: /dev/nvidiactl,
+#     TODO(p3) ops_nv.py:349-380  NVKIface.__init__      WALL: /dev/nvidiactl,
 #     TODO(p3) ops_nv.py:385-401  rm_alloc/rm_control/uvm -- NVOS21/NVOS54/
 #
 # NEITHER IS ABOUT nvdev.py. MEASURED:

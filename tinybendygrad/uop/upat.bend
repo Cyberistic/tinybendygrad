@@ -1657,7 +1657,7 @@ def get_code(+pat: O.Pat, +u: O.UPat, has_ctx: Bool) -> Maybe<&2, Code>:
 # deconstruct_function(fxn))` and `inspect.signature(real_fxn).parameters` are
 # Python reflection over a function object, and they and `upat_compile`'s copy of
 # the same two lines are the SAME omission: a rule is a def.
-# TODO(p3) ops.py:1459 def get_location -- `sys._getframe`, the
+# TODO(p3) ops.py:1433 def get_location -- `sys._getframe`, the
 # `# match for {...}` header line of `_get_code`, and `UPat.location`.
 # TODO(p3) upat.py:186 exec -- `namespace["compiled_match"]`. The rendered `Code`
 # IS the artifact; running it is the rewrite engine's phase.

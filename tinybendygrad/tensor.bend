@@ -2052,57 +2052,57 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # already has `least_upper_dtypes` and `bcast_shape`, so the ONE line that is missing
 # is `_broadcast_to` (mixin/movement.py:128) -- which is why the `__i*__` are not
 # ported even though `alu` is.
-# TODO(p3) tensor.py:536  __iadd__        assign + elementwise.py:101 (Ops.ADD)
+# TODO(p3) tensor.py:534  __iadd__        assign + elementwise.py:101 (Ops.ADD)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:537  __isub__        assign + elementwise.py sub (Ops.SUB)
+# TODO(p3) tensor.py:535  __isub__        assign + elementwise.py sub (Ops.SUB)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:538  __imul__        assign + elementwise.py:143 (Ops.MUL)
+# TODO(p3) tensor.py:536  __imul__        assign + elementwise.py:143 (Ops.MUL)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:539  __itruediv__    assign + elementwise.py div (Ops.FDIV)
+# TODO(p3) tensor.py:537  __itruediv__    assign + elementwise.py div (Ops.FDIV)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:540  __ifloordiv__   assign + elementwise.py floordiv
+# TODO(p3) tensor.py:538  __ifloordiv__   assign + elementwise.py floordiv
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:541  __ipow__        assign + elementwise.py pow (Ops.POW)
+# TODO(p3) tensor.py:539  __ipow__        assign + elementwise.py pow (Ops.POW)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:542  __iand__        assign + elementwise.py:171 (Ops.AND)
+# TODO(p3) tensor.py:540  __iand__        assign + elementwise.py:171 (Ops.AND)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:543  __ior__         assign + elementwise.py:185 (Ops.OR)
+# TODO(p3) tensor.py:541  __ior__         assign + elementwise.py:185 (Ops.OR)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:544  __ixor__        assign + elementwise.py:200 (Ops.XOR)
+# TODO(p3) tensor.py:542  __ixor__        assign + elementwise.py:200 (Ops.XOR)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:545  __ilshift__     assign + elementwise.py:353 (Ops.SHL)
+# TODO(p3) tensor.py:543  __ilshift__     assign + elementwise.py:353 (Ops.SHL)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:546  __irshift__     assign + elementwise.py:364 (Ops.SHR)
+# TODO(p3) tensor.py:544  __irshift__     assign + elementwise.py:364 (Ops.SHR)
 #   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
@@ -2185,10 +2185,10 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #                                         is mixin/movement.py
 # TODO(p3) tensor.py:395  shard_       -- `shard` + `replace`
 # TODO(p3) tensor.py:401  shard_like   -- `shard` + `to`
-# TODO(p3) tensor.py:411  from_blob    -- an external pointer
-# TODO(p3) tensor.py:425  from_url     -- `helpers.fetch`
-# TODO(p3) tensor.py:441  manual_seed  -- class-level mutable state
-# TODO(p3) tensor.py:459  _next_counter -- the same, plus slicing and `assign`
+# TODO(p3) tensor.py:412  from_blob    -- an external pointer
+# TODO(p3) tensor.py:426  from_url     -- `helpers.fetch`
+# TODO(p3) tensor.py:442  manual_seed  -- class-level mutable state
+# TODO(p3) tensor.py:460  _next_counter -- the same, plus slicing and `assign`
 # TODO(p3) tensor.py:502  __setitem__  -- `backward_slice`, `is_realized`,
 #                                         `_base_buffer_is_realized` and
 #                                         mixin/elementwise.py's `_getitem`

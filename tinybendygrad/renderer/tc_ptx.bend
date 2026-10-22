@@ -703,7 +703,7 @@ def r_consts() -> String:
 # `renderer/__init__.bend`'s row and depends on `EMULATED_DTYPES`. What is
 # PORTED here is the PTX OVERRIDE (ptx.py:230-231) over the SCALAR dtypes, and
 # the base is named as a PROJECTION rather than silently narrowed:
-#   TODO(p3) ptx.py:230  supported_dtypes' BASE set -- `dtypes.all` minus an
+#   TODO(p3) ptx.py:231  supported_dtypes' BASE set -- `dtypes.all` minus an
 #                        emulated long; owned by renderer/__init__.bend:85
 def px_base_dtypes() -> List<&2, S.Dt>:
   [S.boolean(), S.int8(), S.int16(), S.int32(), S.int64(), S.uint8(), S.uint16(), S.uint32(),

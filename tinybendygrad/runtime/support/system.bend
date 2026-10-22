@@ -76,7 +76,7 @@
 #    physical pages and nothing else notices.
 #    TODO(p3) runtime/support/system.py:96  -- the u64 pagemap read.
 #    TODO(p3) runtime/support/system.py:175 -- the u64 BAR size.
-#    TODO(p3) runtime/support/system.py:448 -- `struct.unpack('<Q', data)[0]`.
+#    TODO(p3) runtime/support/system.py:445 -- `struct.unpack('<Q', data)[0]`.
 #
 # 2. THE SYSCALL STRINGS, :58/:75/:198/:247. `os.system` takes ONE string and
 #    hands it to `/bin/sh`, so these four are the whole of what a shell sees. A
@@ -769,7 +769,7 @@ def hx.q(+v: U32) -> String: hx.q.pick(hx.d4(v), U32.sub(4, hx.width(v)))
 # four tail bytes as the seam's, and `gid.of` takes them as TWO arguments and does
 # not concat a tail it built itself -- a port that appended them in the wrong order
 # would still print 24 hex characters.
-# TODO(p3) runtime/support/system.py:53 -- `socket.inet_aton(ip)`.
+# TODO(p3) runtime/support/system.py:52 -- `socket.inet_aton(ip)`.
 # ===========================================================================
 
 def gid.PREFIX_HEX() -> String: "00000000000000000000ffff"

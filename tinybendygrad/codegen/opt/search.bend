@@ -164,7 +164,7 @@
 # TODO(p3) search.py:128-166 `while not exiting:` -- the round loop itself.
 #                                         WALL: needs a per-round candidate list,
 #                                         and round 2 needs the winner's rngs.
-# TODO(p3) search.py:15-23 `actions` -- the 209 `OPT`s are not built, only
+# TODO(p3) search.py:14-22 `actions` -- the 209 `OPT`s are not built, only
 #                                         counted, and the census is what makes
 #                                         the count checkable. `acts_n` is a sum
 #                                         of the eight group sizes.

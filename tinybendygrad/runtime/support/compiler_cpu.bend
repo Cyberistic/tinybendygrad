@@ -19,7 +19,7 @@
 # nothing. The duplex pipe is `compileserver.bend`'s problem and the merged
 # `stderr=STDOUT` is `helpers.system`'s problem, and neither is this file.
 #   TODO(p3) compiler_cpu.py:21 -- the `subprocess.check_output` CALL itself.
-#   TODO(p3) compiler_cpu.py:21 -- `input=src.encode('utf-8')` (bend has no
+#   TODO(p3) compiler_cpu.py:22 -- `input=src.encode('utf-8')` (bend has no
 #                                    bytes; the source is a `String` already).
 #
 # ===========================================================================
@@ -79,7 +79,7 @@
 #   decides whether `bytes.fromhex` accepts the string and, if not, at WHICH
 #   position -- which is the part of the ValueError that is computed rather than
 #   fixed. The bytes themselves are WALL 1.
-#   TODO(p3) compiler_cpu.py:21 -- `src.encode('utf-8')`.
+#   TODO(p3) compiler_cpu.py:22 -- `src.encode('utf-8')`.
 #   TODO(p3) compiler_cpu.py:29 -- `bytes.fromhex(src)`.
 #
 # WALL 2 -- `cpu_objdump` and `capstone_flatdump` (helpers.py) are a

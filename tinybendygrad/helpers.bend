@@ -2570,7 +2570,7 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
 # float accumulator has no expression. The field is carried, typed `F32`, and is
 # never written here; `.agents/slop/helpers-oracle.py` measures what CPython does with
 # it and prints those rows to STDERR so they are recorded without being diffed.
-# TODO(p4) helpers.py:305  `time_sum_s` needs the engine's clock, which is a C effect.
+# TODO(p4) helpers.py:306  `time_sum_s` needs the engine's clock, which is a C effect.
 # ===========================================================================
 
 type Counters is Data:

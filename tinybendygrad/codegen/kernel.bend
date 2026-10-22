@@ -210,7 +210,7 @@ def kn_nsrc_ge(+ar: O.Arena, i: U32, n: U32) -> Bool:
 #     (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIPROCAL), src=(UPat(name="x"),), name="u"),
 #      lambda u,x: u.replace(src=(x.cast(u.dtype),)) if x.dtype != u.dtype else None)
 #
-# `# TODO(p3) __init__.py:246  x.dtype != u.dtype` -- the guard, and the `cast` it
+# `# TODO(p3) __init__.py:242  x.dtype != u.dtype` -- the guard, and the `cast` it
 # wraps, need an `S.Dt` as a VALUE: `x.cast(u.dtype)` is
 # `UOp(Ops.CAST, src=(x,), arg=dtype)` and `u.dtype` comes out of `fold.dt` as a
 # `Maybe<&2, S.Dt>`. bend 2.0.34 mis-parses `Maybe<&2, S.Dt>` in a def signature
@@ -775,7 +775,7 @@ def lw_go(lst: List<&2, U32>, +subs: List<&2, Sub>, +acc: List<&2, U32>, +ar: O.
     case +u <> t : lw_go(t, Line.subs(lw_step(subs, acc, fired, ar, u)), Line.out(lw_step(subs, acc, fired, ar, u)), ar, fired)
 
 
-# `# TODO(p3) __init__.py:411  replaced: dict[UOp, UOp]` -- a mutable dict becomes a
+# `# TODO(p3) __init__.py:409  replaced: dict[UOp, UOp]` -- a mutable dict becomes a
 # threaded LIST of `Sub`. That is a CHANGE OF SHAPE and not of meaning, because the
 # walk is in toposort order and each key is written once, so `lw_find`'s FIRST match
 # is the only match. `lw_three` is the row that exercises it, and `lw_key` is the
@@ -803,7 +803,7 @@ def line_rewrite(+lst: List<&2, U32>, +ar: O.Arena, fired: Maybe<&2, Ker>) -> Li
 #
 # THE FLAGS THEMSELVES are env reads and `helpers.bend` owns those, so they are not
 # names here: what this file owns is the COUNT and the ORDER, and the count is what
-# the cache key hashes. `# TODO(p3) __init__.py:509  to_program_config` -- the flags
+# the cache key hashes. `# TODO(p3) __init__.py:508  to_program_config` -- the flags
 # are `ContextVar`s in Python and a worker-scoped value here, which is a runtime
 # concern and not a codegen one.
 def cfg_len() -> U32:
@@ -830,7 +830,7 @@ def cfg_ctx_len() -> U32:
 # key is `(nsrc, is_ins)` and NOT the src count alone: `tp_tag` returns 2 and 4 from
 # the same arity and `tp_stage` is the row that says so.
 #
-# `# TODO(p3) __init__.py:425  UOp(Ops.LINEAR, src=tuple(lst))` -- `do_linearize`'s
+# `# TODO(p3) __init__.py:442  UOp(Ops.LINEAR, src=tuple(lst))` -- `do_linearize`'s
 # body is `linearize(sink)` from `late/linearizer.py`, which is not a claimed file,
 # and the LINEAR node's `arg=to_function_name(...)` is a string. The TABLE is
 # therefore exact and the BODIES are all `codegen/late/` and the renderer, i.e. the

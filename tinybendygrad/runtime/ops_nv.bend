@@ -61,7 +61,7 @@
 # makes every IMPORTER of this file print SOME PROOFS FAIL. That is the
 # import-closure rule and it is expected; `wgsl.bend` is green only because it
 # does not import dtype.
-#   TODO(p3) ops_nv.py:353-384  NVKIface.__init__      WALL: /dev/nvidiactl,
+#   TODO(p3) ops_nv.py:349-380  NVKIface.__init__      WALL: /dev/nvidiactl,
 #     /dev/nvidia-uvm opens and the three rm_controls that pick the driver
 #     version table. `nv_iowr` (:43-45) is PORTED as an ENCODER and the actual
 #     `fd.ioctl(...)` is the seam.
@@ -78,7 +78,7 @@
 #     and the `host` vs device branch are PORTED; the flags are the seam.
 #   TODO(p3) ops_nv.py:516-527  map/_alloc_gpu_vaddr -- `storage.meta` is a
 #     tuple of ctypes structs and the maps dict is keyed by a live device.
-#   TODO(p3) ops_nv.py:530-556  PCIIface -- GSP RPC. It inherits NVKIface's
+#   TODO(p3) ops_nv.py:527-553  PCIIface -- GSP RPC. It inherits NVKIface's
 #     whole interface and differs in six one-line methods; `is_nvd` is PORTED.
 #   TODO(p3) ops_nv.py:664-675  _query_gpu_info -- two rm_controls and an
 #     engineInfo array.
@@ -92,4 +92,4 @@
 #     _prof_readback -- PMA. The register-write ADDRESS ARITHMETIC
 #     (`SM_REG`, `GPC_BASE + gpc*0x4000 + ...`) is PORTED because it is pure;
 #     the ioctl that carries it is the seam.
-#   TODO(p3) ops_nv.py:24 -- BLOCKED. needs `extra.nv_gpu_driver` -- an FFI seam that lives behind the `IOCTL` flag: MEASURED, zero defs anywhere in the port. The conditional `if getenv("IOCTL"):` is the line that keeps the normal import free of it.
+#   TODO(p3) ops_nv.py:22 -- BLOCKED. needs `extra.nv_gpu_driver` -- an FFI seam that lives behind the `IOCTL` flag: MEASURED, zero defs anywhere in the port. The conditional `if getenv("IOCTL"):` is the line that keeps the normal import free of it.

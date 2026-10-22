@@ -114,7 +114,7 @@
 # WALL(p3) __init__.py:29  the AssertionError in _split_after (see above) -- BLOCKED: needs Python's `raise AssertionError`; the port DROPS the invalid src instead (`Split` carries only Python's two fields) and `split_bad_ks` pins the drop.
 # WALL(p3) __init__.py:61  `t not in k.backward_slice` is read as a nocalls
 #   toposort; that is EXACT, and the header explains why -- NOT A GAP: `sc_in_bs` reads `O.UOp.toposort_nocalls` and `wt_keep` applies `t is not k` FIRST (:885-886), so the two predicates are the SAME.
-# TODO(p3) __init__.py:79  `raise RuntimeError("cycle detected in assign graph")`
+# TODO(p3) __init__.py:78  `raise RuntimeError("cycle detected in assign graph")`
 #   -- a raise, as above. `COUNT_fx*_cyc` in the gate is the observable it guards,
 #   and it is 1 for fx2 and fx5 and 0 for fx1, so a cycle is visible as a
 #   non-empty answer even though the raise is not.
@@ -298,8 +298,8 @@ def sc_fuel(+ar: O.Arena) -> Nat:
 # `sc_store` is `UOp.new(ar, OpsSTORE, (self, val) or (self, val, gate),
 # ANone, TNone)` with the gate folded, and `g_body` in this file's own gate
 # already builds a STORE by hand, so this is that literal made a def.
-#   TODO(p3) ops.py:562  `UOp.body`  -- LOCAL COPY; ops.bend has no def.
-#   TODO(p3) ops.py:622  `UOp.store` -- LOCAL COPY; ops.bend has no def.
+#   TODO(p3) ops.py:543  `UOp.body`  -- LOCAL COPY; ops.bend has no def.
+#   TODO(p3) ops.py:594  `UOp.store` -- LOCAL COPY; ops.bend has no def.
 # ---------------------------------------------------------------------------
 def sc_body.of(op: O.Op, src0: U32) -> Maybe<&2, U32>:
   match op:
@@ -1378,7 +1378,7 @@ def cs_run(c: CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> CallifyCtx:
 #     `function.key` is a `bytes` CONTENT hash of the whole function and
 #     nothing in this tree computes one. AGENTS.md says inject time rather than
 #     read a clock, so the clock is not the wall; the KEY is.
-#   TODO(p3) __init__.py:130-131  `schedule_cache` and `diskcache_get`. THIS is
+#   TODO(p3) __init__.py:119-120  `schedule_cache` and `diskcache_get`. THIS is
 #     the trap worth naming: `schedule_cache` is a MODULE-LEVEL `dict[bytes,UOp]`
 #     read at :130 BEFORE `create_schedule` is called at :135, so a spec run twice
 #     in one process answers from the cache and NEVER re-enters the function. A
@@ -1388,9 +1388,9 @@ def cs_run(c: CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> CallifyCtx:
 #     -- it takes no cache at all -- and `lsl_none_*` are real CPython calls of
 #     the real function, so they exercise the same early return.
 #   WALL(p3) __init__.py:133      `if SPEC: type_verify(function, spec_tensor)` -- BLOCKED: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor` over `tensor_table()`; `type_verify`/`spec_tensor` are PORTED there (spec.bend:3121), NOT missing defs, and only the `SPEC > 1` and `DEBUG >= 3` arms are absent.
-#   TODO(p3) __init__.py:135      `get_kernel_graph(prepare_rangeify(function))`
+#   TODO(p3) __init__.py:132      `get_kernel_graph(prepare_rangeify(function))`
 #     -- `schedule/rangeify.py` and `schedule/prepare.py`, out of scope.
-#   TODO(p3) __init__.py:141-150  the `inspect.stack()` DEBUG block.
+#   TODO(p3) __init__.py:139-148  the `inspect.stack()` DEBUG block.
 # ---------------------------------------------------------------------------
 def lsl_pre(arg: O.Arg) -> Bool:
   match arg:
@@ -1613,7 +1613,7 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 # exists anywhere. See the corrected note at `__init__.py:279` for the measurement. Arm 1 is
 # therefore ALSO blocked on it, not on `binds` alone (:107-109), which is `dict[int,UOp]` keyed by a
 # Python int -- the same String-keyed-`Map` bill `Aa` pays above.
-#   TODO(p3) __init__.py:113  `s.variables()` -- no reader in the tree.
+#   TODO(p3) __init__.py:110  `s.variables()` -- no reader in the tree.
 #   TODO(p3) __init__.py:114  `s.substitute`   -- no reader in the tree.
 #   TODO(p3) __init__.py:107-109  `binds`, a `dict[int,UOp]` -- arm 1.
 # ---------------------------------------------------------------------------
@@ -1741,7 +1741,7 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #     mint is the wall. `UOp.param_like` is `TODO(p3) ops.py:1239` in
 #     `uop/ops.bend:4453` -- named, unported, and named as a TODO, so this is a
 #     recorded deferral and not a gap I found.
-#     TODO(p3) ops.py:1239  `UOp.param_like` -- no port. Blocks this body.
+#     TODO(p3) ops.py:1228  `UOp.param_like` -- no port. Blocks this body.
 #
 # 12. `contiguous_mops_to_view` -- __init__.py:199-215. It is the one of the
 #     twelve that `06-UNBLOCKED.md` found passes NO ctx on any call, and that is
@@ -1753,7 +1753,7 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #     TODO(p3) ops.py:559  `all_int(c.shape)` -- `c.shape` needs `fold.bend`'s
 #       `UOp.shape` and a whole-arena `Table`; `all_int` itself is
 #       `helpers.bend`'s `all_int_nest` over a `Nest`.
-#     TODO(p3) ops.py:561  `src.base` is ported; the `while buf.op is BITCAST`
+#     TODO(p3) ops.py:762  `src.base` is ported; the `while buf.op is BITCAST`
 #       peel is `UOp.base` with BITCAST added and is NOT a reader here.
 #     TODO(p3) __init__.py:206  `graph_rewrite(src, multi_pm)` --
 #       `schedule/multi.py`'s table.

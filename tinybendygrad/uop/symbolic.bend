@@ -3660,13 +3660,13 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   so a float `d` and a weakint `1` meet in the lattice this file does not have.
 #
 # THE FOUR THAT ARE GENUINELY UNAVAILABLE, and they are all P3 or later.
-# TODO(p3) symbolic.py:203 def lt_folding -- `u.const_factor()` (-> `divides` ->
+# TODO(p3) symbolic.py:207 def lt_folding -- `u.const_factor()` (-> `divides` ->
 #   `gcd`), `sum(u.vmin for u in p)` and `sum(u.vmax for u in p)`. Two of the
 #   three are `_min_max` (ops.py:1104, the largest single piece `fold.bend`
 #   defers). P3.
 # TODO(p3) symbolic.py:209 def canonicalize_simplex -- `u.vmin >= 0` and
 #   `GroupOp.Irreducible`, i.e. `_min_max` again. P3.
-# TODO(p3) symbolic.py:228 def fold_where_closure -- `bool_slice`
+# TODO(p3) symbolic.py:233 def fold_where_closure -- `bool_slice`
 #   (ops.py:290, a frozenset union down the srcs), `op_in_backward_slice_with_self`
 #   (a toposort plus a pop) and `substitute` + `simplify` (which are
 #   `graph_rewrite`). P3, and it is the largest single unlock after `_min_max`.
