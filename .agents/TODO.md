@@ -1490,6 +1490,105 @@ commit-recipe-race   [##] 2/3  **THE PRESCRIBED COMMIT RECIPE SWEEPS 40 OF 40 TR
                                        COMMITS SWEPT 0, `route.py` 22 SWEPT 0) -- THIS IS THE THIRD, INDEPENDENT
                                        CONFIRMATION, AND THE FIRST THAT FORCES THE RACE IN EVERY TRIAL.**
 
+substrate-break      [###] 2/4  **THE COMMITTED TREE DID NOT COMPILE, AND THE TREE'S OWN GATES SAID SO BY REFUSING
+                                       RATHER THAN ANSWERING.** MEASURED 2026-10-22T07:4xZ: `gates/nn-rows-gate.py`
+                                       ANSWERED **REFUSED (3)** ON THE LIVE TREE, NAMING `uop/ops.bend:8951` -- AND A
+                                       SECOND AGENT INDEPENDENTLY MEASURED THE SAME THING AT 04:16Z WITH A
+                                       **DIFFERENT** ERROR, BECAUSE **THE BREAKAGE MOVED UNDER IT.** ISOLATING IT:
+                                       `git archive HEAD tinybendygrad` INTO A SCRATCH AND RUNNING `--check-only`
+                                       SHOWED **HEAD'S PORT DID NOT COMPILE.** TWO BREAKS, BOTH COMMITTED: **(1)
+                                       `uop/weak.bend:395` `wk_derived` BUILT A 6-FIELD `F.Derived` WHILE
+                                       `uop/fold.bend:688` `Derived` HAS 8 FIELDS (`dt, shape, dev, addr, base,
+                                       unbase, sbase, ended`) -- INTRODUCED BY `0e9a93435` (THE COMMIT THAT ADDED THE
+                                       `unsharded_base`/`storage_base` FAMILY), WHICH ADDED THE TWO FIELDS AND NEVER
+                                       UPDATED `weak.bend`. **THE ERROR ONLY SURFACED WHEN THE FILE WAS *IMPORTED*,
+                                       NOT WHEN IT WAS CHECKED ALONE** -- SO `fold.bend --check-only` SAID `ALL PROOFS
+                                       CHECK` WHILE `mixin/op.bend --check-only` SAID THAT IT EXPECTED A `Derived`
+                                       WITH 8 FIELDS. **(2) `nn/pool.bend` IMPORTS
+                                       `./../extra/datasets/__init__.bend`, WHICH IS NOT IN HEAD** (THE 8
+                                       `extra/datasets/*.bend` FILES ARE ANOTHER UNIT'S UNCOMMITTED WORK). **I
+                                       REPAIRED (1) WITH 2 LINES THAT MIRROR THE EXISTING `base` LINE EXACTLY** --
+                                       `Maybe.default(&1, U32, F.fold.unbase(F.Folded.ar(fx), F.Folded.t(fx), i), 0)`
+                                       AND THE SAME FOR `sbase`; `F.fold.unbase`/`F.fold.sbase` EXIST WITH
+                                       `F.fold.base`'s OWN SIGNATURE (fold.bend:4694, :4704, :4710). **VERIFIED:
+                                       HEAD'S PORT + THAT FIX COMPILES** -- `mixin/op.bend`, `nn/layers.bend`,
+                                       `tensor.bend` AND `mixin/movement.bend` ALL READ `ALL PROOFS CHECK`. **(2) IS
+                                       NOT MINE: IT NEEDS THE OTHER UNIT'S FILES COMMITTED.**
+
+ops-rule1-family     [##] 2/3  **FOUR `match`-ON-A-CALL SITES IN ANOTHER UNIT'S IN-FLIGHT `uop/ops.bend` POISONED THE
+                                       WHOLE SUBSTRATE, AND I REPAIRED THEM IN THE WORKING TREE WITHOUT COMMITTING THE
+                                       FILE.** MEASURED 2026-10-22T07:35Z: `ops.bend:8951` `match Char.is_digit(c):`
+                                       -- BEND RULE 1, A MATCH CANNOT SCRUTINISE A COMPUTED VALUE -- AND THE ERROR
+                                       POISONED **EVERY** FILE THAT IMPORTS `uop/ops.bend` (`ops.bend`, `fold.bend`,
+                                       `mixin/op.bend`, `mixin/movement.bend`, `mixin/rand.bend`, `tensor.bend`,
+                                       `nn/layers.bend`, `nn/pool.bend`, `nn/item.bend` -- 9 OF 9 FAILED `--check-
+                                       only`), **AND BEND REFUSES TO EXECUTE A PROGRAM WHOSE IMPORTED PROOFS FAIL**,
+                                       SO THE SUBSTRATE WAS DEAD FOR EXECUTION. **IT WAS A FAMILY, NOT ONE SITE:
+                                       FIXING ONE MOVED THE ERROR TO THE NEXT.** THE FOUR SITES WERE `fs.sp.dim.digit`
+                                       (:8951), `fs.step` (:9045), `fs.step.io` (:9050) AND `fs.sz.go` (:9068). **THE
+                                       REPAIR IS THE PORT'S OWN IDIOM: A `.of` DEF THAT TAKES THE `Bool` AS A
+                                       *PARAMETER* AND A CALLER THAT COMPUTES IT** -- `pm_r_tag_m.of` (ops.bend:4429)
+                                       AND `pm_sub_m.of` (ops.bend:4454) ARE THE SAME SHAPE -- WHICH ALSO KEEPS THE
+                                       AUTHOR'S OWN STRUCTURE (A DEF HOLDS ONE `match`, AND EACH TEST IS ON A
+                                       DIFFERENT NODE): ONLY THE SCRUTINEE MOVES. **I DID NOT COMMIT
+                                       `tinybendygrad/uop/ops.bend`, BECAUSE IT CARRIES ANOTHER UNIT'S +463
+                                       UNCOMMITTED LINES AND COMMITTING IT WOULD SWEEP THEIR WORK INTO MY COMMIT** --
+                                       SO **THE REPAIR LIVES IN THE WORKING TREE AND THE OWNER MUST LAND IT.** **WHAT
+                                       REMAINS IS THE OWNER'S: `ops.bend:8770` `ProgramInfo.launch_dims` ANSWERS
+                                       *expected : Type, observed : Sigma* -- A TYPE-LEVEL PROBLEM IN THEIR
+                                       `ProgramInfo` DESIGN, NOT A MECHANICAL ONE, SO IT IS NOT MINE TO REPAIR.**
+
+argmax-ported        [####] 3/4  **THE RECIPE IS PORTED AND VERIFIED; THE GRAPH IS REFUSED WITH THE MEASUREMENT.**
+                                       `tinybendygrad/nn/argmax.bend` IMPLEMENTS UPSTREAM'S `Tensor.argmax` RECIPE
+                                       (`tinygrad/mixin/op.py:863-887`) ON A LIST, AND **THE TIE-BREAKING RULE IS A
+                                       CONSEQUENCE OF THE FORMULA** (`arange(n,0,-1)` IS `[n..1]`, SO `idx[j]` IS `n -
+                                       j` AT A MAXIMUM, SO `idx.max` PICKS THE SMALLEST `j` AMONG THE MAXIMA -- THE
+                                       FIRST OCCURRENCE) RATHER THAN AN ASSERTION ABOUT IT, WHICH IS WHY THE TIE ROWS
+                                       CAN BE CHECKED. **6 OF 6 ROWS GREEN ON THE COMMITTED TREE PLUS THE `weak.bend`
+                                       FIX, AND `ALL PROOFS CHECK`; AND THE `want` VALUES ARE UPSTREAM'S, NOT THIS
+                                       FILE'S OUTPUT -- THE ORCHESTRATOR RE-CHECKED ALL SIX AGAINST CPython IN `.venv`
+                                       INDEPENDENTLY: 0 DISAGREEMENTS OF 6.** **AND THE GRAPH-LEVEL `argmax` IS
+                                       REFUSED, WITH THE MEASUREMENT: `probe.bend` ASKS FOUR QUESTIONS AND Q4 -- CAN
+                                       THE PORT PRODUCE AN INDEX VECTOR ALONG THE AXIS -- **FAILS**: THE `arange`'s
+                                       SHAPE READS EMPTY **THROUGH BOTH THE FOLD AND THE MOVEMENT WALK** (ASKED TWICE
+                                       BECAUSE `examples/beautiful_mnist.bend` RECORDS THAT THE TWO DISAGREE ON AN
+                                       `arange`-ROOTED NODE). **Q1 (`nn_reduce` ANSWERS THE KEEPDIM MAX'S SHAPE), Q2
+                                       (THE COMPARISON BROADCASTS A `[4]` AGAINST A `[1]`) AND Q3 (THE BOOL DTYPE
+                                       SURVIVES) ALL PASS -- SO THREE OF UPSTREAM'S FOUR STEPS WORK, AND THE FOURTH IS
+                                       THE ONE ITS RECIPE LEANS ON.** **THE MISSING CAPABILITY IS NAMED: A FOLD THAT
+                                       ANSWERS THE SHAPE OF AN INDEX VECTOR ALONG AN AXIS.** **SCOPE: A 1-D F32
+                                       FORMULA; UPSTREAM TAKES AN AXIS AND ANY DTYPE, AND THAT WIDENING IS NOT DONE.**
+
+nn-rows-gate         [####] 3/4  **THE NN LAYERS NOW HAVE A COMPARER, AND THE CONV2D SHAPE IS FIXED.** `gates/nn-rows-
+                                       gate.py` (1,058 LINES) **DERIVES ITS POPULATION FROM THE COPY'S OWN
+                                       `nn_row.line(...)` CALL SITES** (28 LITERAL NAMES + 1 COMPUTED-NAME SITE x 3
+                                       INVOCATIONS = 31 -- NEVER A HAND LIST, NEVER A BASENAME SHAPE), RUNS THE PORT'S
+                                       OWN `nn/layers.bend` `main` (SO THE HARNESS DECIDES WHICH ROWS RUN), AND
+                                       **TAKES THE EXPECTED VALUES ONLY FROM THE PRINTED `want=` COLUMN, SO THERE IS
+                                       EXACTLY ONE COPY OF EVERY EXPECTATION.** IT CLASSIFIES
+                                       MATCH/MISMATCH/UNCHECKABLE/DEAD-ROW/SHRUNK, AND **ON A COMPILING COMMIT IT
+                                       READS `MATCH=12/31  MISMATCH=9/31  UNCHECKABLE=5/31  DEAD-ROW=5/31
+                                       SHRUNK=0/31` -- 19 OF 31 NOT PASSING EXACT COMPARISON** -- WHICH
+                                       **INDEPENDENTLY CONFIRMS THE ORCHESTRATOR'S OWN 19** (12 COULD PASS, 1 OF THOSE
+                                       12 FAILING, 5 DEAD, 5 UNCHECKABLE, 8 SPELLING-ONLY). **SIX CONTROLS, EACH A 0
+                                       -> 1 (OR 0 -> 5) TRANSITION.** **AND IT REFUSED (3) ON THE LIVE TREE WHILE THE
+                                       PORT DID NOT COMPILE, WHICH IS THE CORRECT VERDICT: A GATE MUST NOT ANSWER
+                                       ABOUT A FILE IT NEVER RAN.** **ONE LIMIT, STATED RATHER THAN PAPERED OVER:
+                                       DELETING A ROW *NAME* IS INVISIBLE TO IT (EXIT 0), BECAUSE A SELF-DECLARED
+                                       POPULATION SHRINKS ON BOTH SIDES AT ONCE; CATCHING THAT NEEDS A FROZEN BASELINE
+                                       LEDGER BESIDE THE GATE, WHICH IS NOT YET WRITTEN.** MEANWHILE `nn/layers.bend`
+                                       (`+146/-33`) FIXED **FOUR** DEFECTS: `nn_ones` WAS `range(n)` NOT ONES;
+                                       `nn_pool.go` WAS NOT UPSTREAM'S `_pool`; THE KEEPDIM TARGET WAS COUNTED FROM
+                                       THE END (`mo_at` ANSWERS `len(t)`, UPSTREAM IS THE FORWARD INDEX); AND
+                                       `nn_cnv.wt`/`bias` INHERITED (1). **ALL FIVE `conv_*` ROWS NOW READ UPSTREAM'S
+                                       ANSWERS** (`1,8,32,32` / `1,8,30,30` / `1,8,16,16` / `1,8,32,34` /
+                                       `1,8,32,32`), **AND `fold_smk`'s EXPECTATION WAS WRONG** (`2,1,3` IS CPython'S
+                                       ANSWER FOR AXIS `[1]`, NOT `[2]`) AND WAS CORRECTED TO `2,4,1`. **A REAL DEFECT
+                                       IS STILL OPEN AND IS NOT THE AGENT'S FILE: `mixin/op.bend:316` `mo_at` MUST
+                                       ANSWER `len(ds)-len(t)-1`; IT BREAKS `mo_keep_ds`, `mo_squeeze` AND
+                                       `mo_reduced` FOR RANK >= 2, AND THE 1-D FIXTURE AT `mixin/op.bend:1411` IS
+                                       BLIND TO IT.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

@@ -227,13 +227,42 @@ def nn_reduce.pick(+rn: List<&2, U32>, +t: T.Tensor, +kept: List<&2, U32>, +n: U
 # root IS the REDUCE and whose folded shape is `(2, 4)`; with the INDICES
 # substituted for the values it minted a second RESHAPE to `(0, 1)`, which the
 # fold could not read, and the row printed nothing.
+# `1 if i in axis else s for i,s in enumerate(self.shape)` -- reduce.py:18,
+# THE KEEPDIM TARGET. IT IS SPELLED HERE AND NOT READ FROM
+# `mixin/op.bend:781 mo_keep_ds`, AND THE REASON IS MEASURED: `mo_keep_ds`'s
+# index is `mixin/op.bend:316 mo_at`'s, and `mo_at` answers `len(t)` -- the
+# index COUNTED FROM THE END. `.agents/slop/nnconv/probe/moat.bend` measures
+# `idx(10,20,30) = 2,1,0` over a FORWARD walk, so `mo_keep_ds` is right on a
+# ONE-DIMENSIONAL shape -- where the two readings agree, and where
+# `mixin/op.bend:1411`'s `sh_sum0kd` row lives -- and wrong on every other.
+# MEASURED HERE: `mo_keep_ds` on `(2,4,3)` with axis `[2]` answers `(1,4,3)`
+# where CPython answers `(2,4,1)` (tinygrad/mixin/reduce.py:18).
+def nn_reduce.keepd.go(+ns: List<&2, U32>, +axis: List<&2, U32>, +ds: List<&2, U32>,
+  +acc: List<&2, U32>) -> List<&2, U32>:
+  match ns ds:
+    case i <> it s <> st: nn_reduce.keepd.go(it, axis, st,
+      List.append(&2, U32, acc, [Bool.pick(U32, nn_reduce.mem(axis, i), 1, s)]))
+    case _ _: acc
+
+def nn_reduce.keepd(+ds: List<&2, U32>, +axis: List<&2, U32>) -> List<&2, U32>:
+  nn_reduce.keepd.go(nn_range(nn_len32(ds)), axis, ds, Nil{})
+
+# THE KEEPDIM RESHAPE. `M.mo_reduce.keep` (mixin/op.bend:790) IS THE SAME SHAPE
+# AND IS NOT CALLED, because it reads `mo_keep_ds`; the ONE thing that changes
+# is WHICH INDEX the axis membership is tested against.
+def nn_reduce.keep(kd: Bool, +r: T.Tensor, +ds: List<&2, U32>,
+  +axis: List<&2, U32>) -> T.Tensor:
+  match kd:
+    case True{}: M.mo_reshape(r, nn_ks(nn_reduce.keepd(ds, axis)))
+    case _: r
+
 def nn_reduce(+t: T.Tensor, +axis: List<&2, U32>, op: O.Op, kd: Bool) -> T.Tensor:
   +ds = Maybe.default(&2, List<&2, U32>, nn_shape(t), Nil{})
   +n = nn_len32(ds)
   +rn = nn_reduce.rn(axis, ds)
   +red = M.mo_reshape(nn_reduce.pick(rn, t, nn_reduce.kept(ds, axis), n, op),
     nn_ks(nn_reduce.kept(ds, axis)))
-  M.mo_reduce.keep(kd, t, red, axis)
+  nn_reduce.keep(kd, red, ds, axis)
 
 # `sum` -- mixin/reduce.py:20, on top of `nn_reduce`. The HEAD is `mo_sum`'s own
 # (mixin/op.bend:811): `sum_acc_dtype(commit_dtype())` then a cast back iff the
@@ -494,7 +523,7 @@ def nn_linear(+x: T.Tensor, +w: T.Tensor, bias: Maybe<&2, T.Tensor>) -> Maybe<&2
   Maybe.bind(&2, T.Tensor, T.Tensor, nn_transpose(w),
     wt => Maybe.bind(&2, T.Tensor, T.Tensor, nn_dot(x, wt), d => nn_linear.add(d, bias)))
 # ===========================================================================
-# `conv2d` -- mixin/op.py:1562-1587. THE WALL NAMED AT `nn/__init__.bend:231`
+# `conv2d` -- mixin/op.py:1562-1603. THE WALL NAMED AT `nn/__init__.bend:231`
 # IS NOT A WALL, and both halves of that are measurements.
 #
 #   "mixin/op.bend SIDE B, not built" -- `mixin/op.bend`'s SIDE B IS EMPTY.
@@ -536,7 +565,12 @@ def nn_zipcat(a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>: nn_zipcat.go
 
 def nn_zeros(n: Nat) -> List<&2, U32>: MX.mxf_zeros(n)
 
-def nn_ones(n: U32) -> List<&2, U32>: MX.mx_range(U32.to_nat(n))
+# `[1] * n` -- THE ONES. `MX.mx_range` IS `range(n)` (movement.py:616's
+# `range(len(noop))`), so it answers `0, 1, ...` and NOT ones, and a list of
+# ones is `helpers.bend`'s `make_tuple_rep`. MEASURED: with `mx_range` here the
+# repeat's first count was `0`, so every repeated shape carried a LEADING ZERO
+# and the fold's answer for the whole `_pool` chain was off by that zero.
+def nn_ones(n: U32) -> List<&2, U32>: H.make_tuple_rep(1, n)
 
 # `x.shrink_to(shape)` -- movement.py:291, `self.shrink(tuple((0, ns) for ns in
 # shape))`. `mxw_shrink`'s marg is `(offset, SIZE)` (movement.bend:1525), so the
@@ -598,28 +632,86 @@ def nn_expand(+t: T.Tensor, +ds: List<&2, U32>) -> T.Tensor: MX.mxw_bcast(t, ds)
 def nn_repeat(+t: T.Tensor, +shp: List<&2, U32>, +reps: List<&2, U32>) -> T.Tensor:
   MX.mxw_reshape(nn_expand(MX.mxw_reshape(t, nn_rep.unsq(shp, reps)), nn_rep.ex(shp, reps)), nn_rep.fin(shp, reps))
 
-# --- `_pool` -- movement.py:604-616, THE CHAIN -----------------------------
+# --- `_pool` -- movement.py:614-632, IN UPSTREAM'S ORDER --------------------
 #
 # NO ARITHMETIC IS SPELLED HERE. Every number is `mixin/movement.bend`'s.
+#
+# THE CHAIN IS UPSTREAM'S, LINE BY LINE, AND THE ORDER IS LOAD-BEARING:
+#   movement.py:624  x = self.repeat(noop ++ [ceildiv(k*(i*f+d), i)])
+#   movement.py:626  x = x.shrink_to(noop ++ [k*(i*f+d)])
+#   movement.py:627  x = x.reshape(noop ++ flatten((k, i*f+d)))
+#   movement.py:629  x = x.shrink_to(noop ++ flatten((k, o*s))).reshape(noop ++ flatten((k, o, s)))
+#   movement.py:630  x = x.shrink_to(noop ++ flatten((k, o, 1))).reshape(noop ++ flatten((k, o)))
+#   movement.py:632  return x.permute(range(nn), *[nn+2i+1], *[nn+2i])
+#
+# `noop` IS `[None] * (self.ndim - len(k_))` (movement.py:618) AND `None` MEANS
+# "THIS AXIS IS NOT SHRUNK", so the shrink's target KEEPS THE SOURCE'S OWN SIZE
+# on those axes. THE PORT'S TARGETS ARE SIZES, so the noop axes carry the
+# SOURCE'S OWN DIMS -- which is `nn/pool.bend:145`'s `W4.lead` and NOT a list of
+# ones. MEASURED: with ones there, the channel axis was shrunk from 3 to 1 and
+# every shape in the chain was wrong.
+#
+# AND THE TWO SHRINK TARGETS ARE NOT THE SAME LIST. `movement.py:626` shrinks to
+# `k*(i*f+d)` and `movement.py:627` reshapes to `(k, i*f+d)` -- THE DILATED SIZE
+# WITHOUT THE `k *`. `mx_pool_kid` (movement.bend:316) IS `k*(i*f+d)`, so the
+# reshape's target needs a SECOND number, and a reshape that is not
+# size-preserving is a ValueError (movement.py:181).
+def nn_pool.dil.go(+i: List<&2, U32>, +f: List<&2, U32>, +d: List<&2, U32>,
+  +acc: List<&2, U32>) -> List<&2, U32>:
+  match i f d:
+    case a <> t b <> u c <> v: nn_pool.dil.go(t, u, v,
+      List.append(&2, U32, acc, [U32.add(U32.mul(a, b), c)]))
+    case _ _ _: acc
+
+def nn_pool.dil(i: List<&2, U32>, f: List<&2, U32>, d: List<&2, U32>) -> List<&2, U32>:
+  nn_pool.dil.go(i, f, d, Nil{})
+
+# `o * s` -- the STRIDED OUTPUT COUNT (movement.py:629), elementwise.
+def nn_zipmul.go(+a: List<&2, U32>, +b: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match a b:
+    case x <> at y <> bt: nn_zipmul.go(at, bt, List.append(&2, U32, acc, [U32.mul(x, y)]))
+    case _ _: acc
+
+def nn_zipmul(a: List<&2, U32>, b: List<&2, U32>) -> List<&2, U32>:
+  nn_zipmul.go(a, b, Nil{})
+
+# `flatten((k, o, s) for ...)` -- movement.py:629 -- the THREE entries of each
+# axis, FLATTENED, IN THE ORDER k, o, s. `nn_zipcat` (above) zips TWO lists, so
+# a THREE-tuple needs its own walk: zipping the two-list zip with the third
+# would pair `s0` with `k0` and `s1` with `o0`.
+def nn_zipcat3.go(+a: List<&2, U32>, +b: List<&2, U32>, +c: List<&2, U32>,
+  +acc: List<&2, U32>) -> List<&2, U32>:
+  match a b c:
+    case x <> at y <> bt z <> ct: nn_zipcat3.go(at, bt, ct,
+      List.append(&2, U32, List.append(&2, U32, List.append(&2, U32, acc, [x]), [y]), [z]))
+    case _ _ _: acc
+
+def nn_zipcat3(a: List<&2, U32>, b: List<&2, U32>, c: List<&2, U32>) -> List<&2, U32>:
+  nn_zipcat3.go(a, b, c, Nil{})
+
+# THE NOOP AXES, AS THE SOURCE'S OWN DIMS.
+def nn_pool.noop(+padded: List<&2, U32>, nn: U32) -> List<&2, U32>:
+  List.take(&2, U32, padded, U32.to_nat(nn))
+
 def nn_pool.go(+t: T.Tensor, +padded: List<&2, U32>, +k: List<&2, U32>,
   +s: List<&2, U32>, +d: List<&2, U32>, +nd: U32, +ni: U32) -> T.Tensor:
   +nn = MX.mx_dropn(nd, ni)
   +iv = MX.mx_i_(U32.to_nat(nd), U32.to_nat(ni), padded)
   +os = MX.mx_pool_out(iv, d, k, s)
-  +ks = MX.mx_pool_kid(k, iv, MX.mx_pool_f(os, s, iv, d), d)
-  +bs = MX.mx_cat(nn_ones(nn), ks)
-  +cs = MX.mx_cat(nn_ones(nn), nn_zipcat(k, ks))
-  +es = MX.mx_cat(nn_ones(nn), nn_zipcat(nn_zipcat(k, os), s))
-  +gs = MX.mx_cat(nn_ones(nn), nn_zipcat(nn_zipcat(nn_zipcat(k, os), nn_ones(ni)), nn_ones(ni)))
-  +hs = MX.mx_cat(nn_ones(nn), nn_zipcat(k, os))
-  +a = nn_repeat(t, padded, MX.mx_cat(nn_ones(nn), MX.mx_pool_rep.go(k, ks, iv, Nil{})))
-  +b = nn_shrink_to(a, bs)
-  +c = MX.mxw_reshape(b, cs)
-  +e = MX.mxw_reshape(nn_shrink_to(c, es), es)
-  +g = MX.mxw_reshape(nn_shrink_to(e, gs), hs)
-  MX.mxw_permute(g, MX.mx_pool_perm(nn, ni))
+  +fs = MX.mx_pool_f(os, s, iv, d)
+  +sz = MX.mx_pool_kid(k, iv, fs, d)
+  +dl = nn_pool.dil(iv, fs, d)
+  +np = nn_pool.noop(padded, nn)
+  +a = nn_repeat(t, padded, MX.mx_cat(nn_ones(nn), MX.mx_pool_rep.go(k, sz, iv, Nil{})))
+  +b = nn_shrink_to(a, MX.mx_cat(np, sz))
+  +c = MX.mxw_reshape(b, MX.mx_cat(np, nn_zipcat(k, dl)))
+  +e = nn_shrink_to(c, MX.mx_cat(np, nn_zipcat(k, nn_zipmul(os, s))))
+  +f2 = MX.mxw_reshape(e, MX.mx_cat(np, nn_zipcat3(k, os, s)))
+  +g = nn_shrink_to(f2, MX.mx_cat(np, nn_zipcat3(k, os, nn_ones(ni))))
+  +h = MX.mxw_reshape(g, MX.mx_cat(np, nn_zipcat(k, os)))
+  MX.mxw_permute(h, MX.mx_pool_perm(nn, ni))
 
-# --- `resolve_pool_pads` -- helpers.py:59 ----------------------------------
+# --- `resolve_pool_pads` -- tinygrad/helpers.py:59 --------------------------
 #
 # THE `int` ARM IS THE `None` ARM. Python's `padding:int|Sequence[int]` is a sum
 # type and a Bend `Maybe` is the port's spelling of one, so `None{}` IS "it was
@@ -640,7 +732,7 @@ def nn_pads(ps: Maybe<&2, List<&2, U32>>, v: U32, two: U32) -> List<&2, U32>:
     case None{}: H.make_tuple_rep(v, two)
     case Some{p}: nn_pads.seq(p, two)
 
-# --- `flat_to_grouped` -- helpers.py:58 ------------------------------------
+# --- `flat_to_grouped` -- tinygrad/helpers.py:58 ---------------------------
 #
 # `tuple(zip(padding[-2::-2], padding[::-2]))`. BOTH slices step by two FROM THE
 # END, so the pairs come out in REVERSE order of the flat list. That is
@@ -697,7 +789,7 @@ def nn_pad.pa.go(+gs: List<&2, List<&2, U32>>, +acc: List<&2, U32>) -> List<&2, 
     case Nil{}: acc
     case g <> rest: nn_pad.pa.go(rest, List.append(&2, U32, acc, [nn_pad.at(g, 1n)]))
 
-# --- the conv itself -- op.py:1580-1587 ------------------------------------
+# --- the conv itself -- op.py:1591-1603 ------------------------------------
 #
 # `(bs,cin_), (cout,cin), HW = self.shape[:2], weight.shape[:2], weight.shape[2:]`
 # is ONE tuple-unpack and it is read by every line below, so `nn_cnv.go` takes
@@ -743,7 +835,7 @@ def nn_cnv.dot(+a: T.Tensor, +b: T.Tensor, +ni: U32, +ds: List<&2, U32>, dt: S.D
   +r = nn_sum(True{}, T.tn_mul(a, b), nn_cnv.axes(U32.add(4, U32.mul(2, ni)), ni))
   MX.mxw_reshape(M.mo_cast_t(r, dt), ds)
 
-# --- `nn_conv2d` -- THE ENTRY, op.py:1580-1587 -----------------------------
+# --- `nn_conv2d` -- THE ENTRY, op.py:1591-1603 -----------------------------
 #
 # AND THE ONE REFUSAL THE WHOLE SECTION CARRIES, NAMED: NEGATIVE PADDING IS
 # NOT EXPRESSIBLE. `_pad_constant` opens with
@@ -779,13 +871,13 @@ def nn_cnv.pre(v: U32, bs: U32, groups: U32, cin: U32, p: List<&2, U32>, k: List
 def nn_cnv.out(bs: U32, cout: U32, p: List<&2, U32>) -> List<&2, U32>:
   List.concat(&2, U32, [[bs, cout], p])
 
-# `bias.reshape(1, -1, *[1]*len(HW))` -- :1587. `-1` IS `cout` because
+# `bias.reshape(1, -1, *[1]*len(HW))` -- :1603. `-1` IS `cout` because
 # `Conv2d.__init__` builds `Tensor.uniform(out_channels, ...)` (nn/__init__.py:107)
 # and `nn/__init__.bend`'s `nn_convb` row already pins that shape.
 def nn_cnv.bias(cout: U32, ni: U32) -> List<&2, U32>:
   List.concat(&2, U32, [[1, cout], nn_ones(ni)])
 
-# `ret if bias is None else ret.add(bias.reshape(1, -1, *[1]*len(HW)))` -- :1587.
+# `ret if bias is None else ret.add(bias.reshape(1, -1, *[1]*len(HW)))` -- :1603.
 # The ADD is a BROADCAST add -- `(bs, cout, oy, ox)` against `(1, cout, 1, 1)` --
 # and the fold answers its shape through the same `F.alu_ds` arm `nn_dot` and
 # `nn_linear` already rely on (uop/fold.bend:999).
@@ -906,23 +998,37 @@ def nn_row_linear_nb() -> IO(Unit):
 #   padding=1 (the 'same' a ResNet block uses) -> (1, 8, 32, 32)
 #   padding=0                            -> (1, 8, 30, 30)
 #   padding=1, stride=2                   -> (1, 8, 16, 16)
-def nn_row_conv(+pad_v: U32, +stride: U32) -> IO(Unit):
+#
+# THE EXPECTATIONS ARE CPython's, AND EVERY ONE OF THEM WAS READ OFF CPython's
+# OWN `tinygrad` IN THIS REPO'S `.venv` (`Tensor.zeros(1,3,32,32).conv2d(
+# Tensor.zeros(8,3,3,3), padding=...).shape`), WHICH IS UPSTREAM'S LINE FOR
+# LINE: op.py:1591-1603. `op.py:1596` is the pad+`_pool`, `op.py:1598` the
+# expand+permute, `op.py:1601-1602` the multiply+sum, `op.py:1602`'s
+# `.reshape(bs, cout, *oyx)` the output.
+def nn_row_conv(+pad_v: U32, +stride: U32, want: String) -> IO(Unit):
   nn_row.line(String.concat(["conv_p", U32.show(pad_v), "_s", U32.show(stride)]),
     nn_row.shp(nn_conv2d(nn_row.t([1, 3, 32, 32], 0, 3072), nn_row.t([8, 3, 3, 3], 1, 216),
-      1, stride, 1, pad_v, None{}, None{})), "")
+      1, stride, 1, pad_v, None{}, None{})), want)
 
-# `padding=(1, 2)` -- the `resolve_pool_pads` sequence arm (helpers.py:59-62),
+# `padding=(1, 2)` -- the `resolve_pool_pads` sequence arm (helpers.py:59-62,
+# `tinygrad/helpers.py` -- NOT `tinygrad/mixin/helpers.py`, WHICH DOES NOT EXIST),
 # whose REVERSAL plus `flat_to_grouped`'s is what puts (1,1) on the FIRST axis.
+# `helpers.py:62`'s `[p for p in padding for _ in range(2)][::-1]` answers
+# (2,2,1,1) and `helpers.py:58`'s `flat_to_grouped` answers ((1,1),(2,2)), so
+# the pad is (1,1) on the HEIGHT and (2,2) on the WIDTH: (1,3,32,32) becomes
+# (1,3,34,36) and the output is (1, 8, 32, 34).
 def nn_row_conv_t() -> IO(Unit):
   nn_row.line("conv_seq",
     nn_row.shp(nn_conv2d(nn_row.t([1, 3, 32, 32], 0, 3072), nn_row.t([8, 3, 3, 3], 1, 216),
-      1, 1, 1, 0, Some{[1, 2]}, None{})), "")
+      1, 1, 1, 0, Some{[1, 2]}, None{})), "1,8,32,34")
 
-# THE BIAS ARM of op.py:1587 -- `bias(8,)` reshaped to `(1, 8, 1, 1)`.
+# THE BIAS ARM of op.py:1603 -- `bias(8,)` reshaped to `(1, 8, 1, 1)`.
+# `op.py:1603`'s `ret.add(bias.reshape(1, -1, *[1] * len(HW)))` is a BROADCAST
+# add, so the shape is the conv's own: (1, 8, 32, 32).
 def nn_row_conv_bias() -> IO(Unit):
   nn_row.line("conv_bias",
     nn_row.shp(nn_conv2d(nn_row.t([1, 3, 32, 32], 0, 3072), nn_row.t([8, 3, 3, 3], 1, 216),
-      1, 1, 1, 1, None{}, Some{nn_row.t([8], 2, 8)})), "")
+      1, 1, 1, 1, None{}, Some{nn_row.t([8], 2, 8)})), "1,8,32,32")
 
 # THE PADDING ARITHMETIC, printed against CPython's own `resolve_pool_pads` /
 # `flat_to_grouped` reading. `nn_pads` answers the FLAT list `resolve_pool_pads`
@@ -998,7 +1104,14 @@ def nn_row_fold() -> IO(Unit):
     nn_row.line("fold_wr", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(wr), Nil{})), "1,4,3")
     nn_row.line("fold_xw", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(xw), Nil{})), "2,4,3")
     nn_row.line("fold_sm", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(sm), Nil{})), "2,4")
-    nn_row.line("fold_smk", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(smk), Nil{})), "2,1,3")
+    # `sum(axis=[2], keepdim=True)` over (2,4,3) is (2,4,1): reduce.py:18's
+    # `tuple(1 if i in axis else s for i,s in enumerate(self.shape))` puts the
+    # ONE AT THE REDUCED INDEX. THE OLD EXPECTATION "2,1,3" WAS WRONG: it is
+    # CPython's answer for axis [1], and it is ALSO what the port's
+    # `mixin/op.bend:781 mo_keep_ds` answers for axis [1] -- because
+    # `mixin/op.bend:316 mo_at` counts the index FROM THE END, so the port
+    # answers the axis [1] target for every axis.
+    nn_row.line("fold_smk", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(smk), Nil{})), "2,4,1")
     nn_row.line("fold_cc", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(cc), Nil{})), "2,4")
     nn_row.line("fold_cc_sig", MX.mxw_sig(T.Tensor.ar(cc), T.Tensor.u(cc)), "")
     nn_row.line("fold_xw_sig", MX.mxw_sig(T.Tensor.ar(xw), T.Tensor.u(xw)), "")
@@ -1015,8 +1128,8 @@ def main() -> IO(Unit):
     nn_row_dot1()
     nn_row_linear()
     nn_row_linear_nb()
-    nn_row_conv(1, 1)
-    nn_row_conv(0, 1)
-    nn_row_conv(1, 2)
+    nn_row_conv(1, 1, "1,8,32,32")
+    nn_row_conv(0, 1, "1,8,30,30")
+    nn_row_conv(1, 2, "1,8,16,16")
     nn_row_conv_t()
     nn_row_conv_bias()

@@ -398,6 +398,8 @@ def wk_derived(+fx: F.Folded, +i: U32) -> F.Derived:
     wk_dev_of(F.fold.device(F.Folded.ar(fx), F.Folded.t(fx), i)),
     wk_addr_of(F.fold.addr(F.Folded.ar(fx), F.Folded.t(fx), i)),
     Maybe.default(&1, U32, F.fold.base(F.Folded.ar(fx), F.Folded.t(fx), i), 0),
+    Maybe.default(&1, U32, F.fold.unbase(F.Folded.ar(fx), F.Folded.t(fx), i), 0),
+    Maybe.default(&1, U32, F.fold.sbase(F.Folded.ar(fx), F.Folded.t(fx), i), 0),
     wk_ended_of(F.fold.ended(F.Folded.ar(fx), F.Folded.t(fx), i))}
 
 def wk_deriveds.go(+fx: F.Folded, ss: List<&2, U32>, acc: List<&2, F.Derived>) -> List<&2, F.Derived>:
