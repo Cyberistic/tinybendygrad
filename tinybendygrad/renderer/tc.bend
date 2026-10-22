@@ -1,29 +1,60 @@
 # renderer/tc.bend -- port of tinygrad/renderer/tc.py
 #
 # ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This was `renderer/tc_ptx.bend`,
-# which held `tc.py` (141 lines) AND `ptx.py`; the 1:1 ruling separates them, and
+# which held `tc.py` AND `ptx.py`; the 1:1 ruling separates them, and
 # `renderer/tc_ptx.bend` is now the thinner half that CONSUMES this one. Nothing in
 # `renderer/ptx.bend` needs repointing: it imports `tc_ptx.bend as P` and that file
 # stays, with `import ./tc.bend as T` added.
 #
-# tc.py is the tensor-core TABLE: the `TensorCore` dataclass, the six quantities
-# derived from it in `__post_init__` (`dims`, `used`, `base_upcast_axes`, `relabel`,
-# `frag_coords`, `threads`), and the fourteen per-arch `TensorCore` values. Every one
-# of those is a PURE FUNCTION of its eleven fields, which is why this half can be
-# gated against CPython with no GPU, no driver and no codegen cache in the way -- 267
-# of the 620 rows.
+# THE UPSTREAM BEING MIRRORED IS `tinygrad/renderer/tc.py` AT THE PIN
+# `5c2bf39d6c4b`, and it is 149 LINES. (This header used to say "tc.py (141
+# lines)", which was true of the copy that was here when the split happened and
+# is NOT true of upstream now: `git show 5c2bf39d6c4b:tinygrad/renderer/tc.py`
+# is 149 lines, and `amd_rdna4` is one of the rows that grew.)
 #
-# THE MUTATION TABLE for tc.py's own rules (M1-M18) is in this file; the ptx.py half
-# (M19-M50) is in `tc_ptx.bend`'s tail.
+# tc.py is the tensor-core TABLE: the `TensorCore` dataclass (FIVE fields, tc.py:6-14),
+# the SIX quantities derived from it (`axis_coords`, `relabel`, `frag_coords`, `dims`,
+# `threads`, `base_upcast_axes`), and the SIXTEEN per-arch `TensorCore` values. Every
+# one of those is a PURE FUNCTION of those five fields, which is why this half can be
+# gated against CPython with no GPU, no driver and no codegen cache in the way -- 289
+# of the 623 rows.
+#
+# THE MUTATION TABLE for tc.py's own rules (M1-M10) is in this file; the ptx.py
+# half (M11-M50) is in `tc_ptx.bend`'s tail. THE RULE NUMBERS ARE THE
+# HARNESS'S, NOT A SPLIT'S: M1-M10 are the rules that edit a DEF IN THIS FILE
+# and M11-M50 are the rules that edit one in `tc_ptx.bend`, so "M11-M18" is not
+# a range that means anything -- M11 is `supports_half` and M18 is
+# `tensor_cores`, and both are ptx.py's.
 #
 #      device, nothing mutating after it. Python's `__init__` mutating
 #      `self.extra_matcher` (ptx.py:147) is a mutation too, and it is a wall
 #      (the rules are rewrites), so it is named rather than faked.
 #   2. THE GATE IS A STRING DIFF, NEVER A BOOLEAN ABOUT STRINGS. Every row
-#      prints `<name> = [BEND]   py=[CPYTHON]` and the `py=` half is a literal
-#      transcribed from `.agents/slop/tcptx-oracle.py` run against this
-#      `tinygrad/`. `String.concat` drops a literal silently, so a row that
-#      said "the asm is right" would survive a missing `;`.
+#      prints `<name> = [BEND]   py=[CPYTHON]` and the `py=` half is DERIVED
+#      FROM THIS FILE'S OWN STATE -- it is the port's value, re-read through
+#      the same table the port prints. `String.concat` drops a literal
+#      silently, so a row that said "the asm is right" would survive a
+#      missing `;`.
+#
+#      WHY DERIVED, AND THIS IS THE POINT OF THE WHOLE FILE. The `py=` half
+#      was a LITERAL -- text transcribed once from what CPython said. A
+#      transcription has no generator, so it cannot see CPython move, and
+#      MEASURED 2026-10-22 this file's transcription was WRONG ON 71 OF ITS
+#      286 CELLS: the dtype names in it were the PRE-RENAME ones (`half`,
+#      `float`, `__bf16`, `signed char`, `float8_e4m3`) where this tree's
+#      `tinygrad/` now says `f16`, `f32`, `bf16`, `i8`, `fp8e4m3`. The
+#      transcription also said `amd_rdna4` held FOUR tensor cores where
+#      upstream holds SEVEN, so the file agreed with itself and was wrong.
+#      A derived cell cannot rot that way: it is the port's own state, and
+#      the port's state is what the DIFF against CPython measures.
+#
+#      WHAT A DERIVED CELL IS NOT, STATED PLAINLY: it is not an INDEPENDENT
+#      witness, and it cannot fail on its own -- the row is internally
+#      consistent by construction. CPython's VALUE lives in the oracle
+#      (`gates/tc_ptx_render-oracle.py`, which computes every half from live
+#      `tinygrad/`), and the ASSERTION is the byte diff between that file's
+#      rows and this file's rows. This file carries CPython's FORM; the
+#      oracle carries CPython's VALUE.
 #   4. A `match` MAY ONLY SCRUTINISE A PARAMETER OR A PATTERN BINDER, so every
 #      record field has a hand-written reader (there is no `value.field` sugar
 #      and no generated projection -- brief rules 26 and 27) and every
@@ -31,20 +62,42 @@
 #   6. A RECORD LITERAL AND A RECORD PATTERN BOTH NAME EVERY FIELD.
 #
 # ---------------------------------------------------------------------------
-# THE GATE. 620 rows: 286 from tc.py and 334 from ptx.py, plus the one
+# THE GATE. 623 rows: 289 from tc.py and 334 from ptx.py, plus the one
 # framing newline `IO.print` supplies at the end. The oracle's `rows`
-# is a plain concatenation of the two stages, so the Bend side is ONE print --
+# is a plain concatenation of the two stages, so each half is ONE print --
 # `IO.print`'s own newline is the only frame, and it is the one `"\n"` the
 # oracle's `sys.stdout.write(... + "\n")` supplies.
-#   .venv/bin/python gates/tc_ptx_render-oracle.py rows > /tmp/pyall.rows
-#   ./bin/bend tinybendygrad/renderer/tc_ptx.bend > /tmp/bd_i.rows
-#   ./bin/bend tinybendygrad/renderer/tc_ptx.bend -o /tmp/tcptx && /tmp/tcptx > /tmp/bd_n.rows
-#   diff /tmp/bd_i.rows /tmp/pyall.rows && diff /tmp/bd_n.rows /tmp/pyall.rows
-# The oracle was RESTORED 2026-10-16 from `.agents/slop/tcptx-oracle.py` (blob e853efc4b,
-# 20580 B, byte for byte) and MEASURED from `gates/`: rc=0, `rows` prints 620 -- the same 620
-# this header claims -- so the number above and the instrument agree today.
-# `stage1` and `stage2` print the halves, 286 and 334 rows, for a localised
-# diff when a row moves.
+#
+# THIS HALF'S RECIPE, AND IT IS THE ONE THAT RUNS:
+#   .venv/bin/python gates/tc_ptx_render-oracle.py stage1 > /tmp/py1.rows
+#   ./bin/bend tinybendygrad/renderer/tc.bend > /tmp/bd1.rows
+#   diff /tmp/bd1.rows /tmp/py1.rows
+# `stage1` prints 289 rows and `stage2` prints 334, for a localised diff when
+# a row moves.
+#
+# THE UNION RECIPE IS DEAD, AND MEASURED DEAD, NOT ASSUMED. It used to name
+# `tc_ptx.bend` -- the file that holds the ptx.py half -- because the two
+# halves were ONE file before the 1:1 split, and `tc_ptx.bend`'s `main`
+# prints `r_stage2()` and NOTHING ELSE. MEASURED 2026-10-22: `./bin/bend
+# tinybendygrad/renderer/tc_ptx.bend` prints 343 rows, and NOT ONE of them is
+# a tc.py row, so the 289 rows below were in NO lane at all. A DEAD lane is
+# neither a zero nor a pass -- `gates/gatekit.py:59` gives DEAD exit 5 -- and
+# the reason this half went stale is that NOTHING WAS MEASURING IT.
+#
+# THE ptx.py HALF IS RED, AND IT IS NOT THIS FILE'S BUSINESS. MEASURED
+# 2026-10-22, the same run: `tc_ptx.bend` prints 343 rows where the oracle's
+# `stage2` prints 334, and the dtype spellings it carries are the PRE-RENAME
+# ones (`float`, `half`, `signed char`, `short`, `unsigned int`) where this
+# tree's `tinygrad/` now says (`f32`, `f16`, `i8`, `i16`, `u32`). Named here
+# so the next reader knows which half of the 623 is green and which is not.
+#
+# THE ORACLE. `gates/tc_ptx_render-oracle.py` is the live one and it computes
+# every half from live `tinygrad/`: `SELECTORS = {"rows", "stage1", "stage2"}`
+# and NO `bend` mode, so nothing in this tree can GENERATE this file's `py=`
+# text -- which is why the text used to be a transcription, and why it rotted.
+# The `.agents/slop/tcptx-oracle.py` this header used to name as the oracle's
+# source is ABSENT from the tree today (measured 2026-10-22); the gate's
+# oracle is in `gates/` and is in git.
 #
 # THE MUTATION TABLE is at the foot of the file, measured with
 # `.agents/slop/tcptx-mutate.py`.
@@ -52,13 +105,22 @@
 # ---------------------------------------------------------------------------
 # THE STAGES, and what landed in each
 #
-#   STAGE 1  DONE, 286 rows. tc.py. `TensorCore`'s five fields as a `Data`
+#   STAGE 1  DONE, 289 rows. tc.py. `TensorCore`'s five fields as a `Data`
 #            record, the coord packing, `axis_coords`, `base_upcast_axes`,
 #            `dims`, `threads`, `relabel`, `frag_coords`, `__post_init__`'s
 #            four assertions, `mma`, `mfma`, the sixteen tables, `get_cuda`,
-#            `get_amd`, `metal`, and the three `pm_validate_wmma_*` matchers'
-#            GUARDS (their rewrite BODIES are walls -- `.bitcast` is
-#            `TODO(p3) ops.py:<line>` in ops.bend).
+#            `get_amd`, and `metal`.
+#
+#            AND WHAT IS NOT GATED, NAMED RATHER THAN LEFT OUT. The three
+#            `pm_validate_wmma_*` matchers' GUARDS are NOT rows in either
+#            lane: the oracle has the function (`wmma_guard_rows`,
+#            `gates/tc_ptx_render-oracle.py:134`) and NEVER CALLS IT -- it is
+#            in neither `STAGE1` nor `STAGE2` -- so this file has no wmma row
+#            to print. MEASURED 2026-10-22: `grep -c '^wmma '` is 0 in the
+#            oracle's `stage1` and 0 in this file's. This header used to claim
+#            the guards were gated; they were not, and the rewrite BODIES are
+#            walls besides (`.bitcast` is `TODO(p3) ops.py:<line>` in
+#            ops.bend).
 #   STAGE 2  DONE, 334 rows. ptx.py's emitters: `render_val`, the twenty-one
 #            `asm_for_op` entries, `supports_half` / `doesnt_support_half`,
 #            `ptx_matcher`'s rule count, `mem_type`, `modifier`,
@@ -78,9 +140,11 @@ import ./../uop/ops.bend as O
 
 # ===========================================================================
 # THE GATE PRIMITIVES. `r` is wgsl.bend's row builder: a row is a VALUE here,
-# so a group of them is a `String` and the whole gate is one print. The `py=`
-# half is a LITERAL, which is what makes the diff a diff -- it cannot be the
-# same expression as the `got=` half.
+# so a group of them is a `String` and the whole gate is one print. `r` TAKES
+# the `py=` half as an argument, because `tc_ptx.bend` (the ptx.py half) calls
+# it too and that half still carries its own text. IN THIS FILE every `py=`
+# argument is DERIVED -- see the header, convention 2, for why a LITERAL was
+# the wrong shape and what a derived cell does and does not prove.
 # ===========================================================================
 
 def r(+nm: String, +got: String, +want: String) -> String:
@@ -237,7 +301,7 @@ def n012() -> List<&2, U32>: cd3(nk(0), nk(1), nk(2))
 def n0123() -> List<&2, U32>: cd4(nk(0), nk(1), nk(2), nk(3))
 
 # ===========================================================================
-# `TensorCore` -- tc.py:138-11. FIVE FIELDS, SEVEN `U32` LISTS, because a
+# `TensorCore` -- tc.py:6-14. FIVE FIELDS, SEVEN `U32` LISTS, because a
 # fragment is Python's `(lane_bits, element_bits)` pair and Bend has no tuple
 # (brief: a `Data` record per pair would cost four more reader defs and read
 # worse). The lane list comes first in every constructor because tc.py's
@@ -442,12 +506,21 @@ def fc_str(lanes: Nat, elems: Nat, +la: List<&2, U32>, +ea: List<&2, U32>, ax0: 
 # ===========================================================================
 # THE FNV-1a DIGEST, because `frag_coords`'s own string is 22 647 characters at
 # cdna's K=128 and hard-coding the eight shapes' worth of them would put ~180 KB
-# of literals in this file -- past the interpreter's measured 28 988-BYTE PER-FILE
-# CLIFF (`bend2-constraints.md`, "The interpreter's per-file byte cliff"). A
-# digest is a STRING beside CPython's string, catches every dropped literal that
-# a sample would miss, and costs six defs. CPython computes it independently in
-# the oracle. The row also carries `len=`, so a truncation is visible rather
-# than inferred.
+# of literals in this file. A digest is a STRING beside CPython's string, catches
+# every dropped literal that a sample would miss, and costs six defs. CPython
+# computes it independently in the oracle. The row also carries `len=`, so a
+# truncation is visible rather than inferred.
+#
+# THE CLIFF THIS USED TO CITE IS RETRACTED, AND THE REASON IS GONE WITH IT.
+# This comment said "~180 KB of literals ... past the interpreter's measured
+# 28 988-BYTE PER-FILE CLIFF (`.agents/slop/notes/bend2-constraints.md`)". The
+# note itself records the retraction: its own entry 7 says "THE 32 KiB
+# INTERPRETER CLIFF DOES NOT REPRODUCE FOR REAL `.bend` CONTENT -- 185 KB of
+# real defs across 543 top-level definitions interpret in 0.12 s". So the
+# cliff was measured against something that is not a `.bend` file, this file is
+# 60 010 BYTES and interprets, and the digest is here because it is the RIGHT
+# SHAPE -- a digest is a string beside CPython's string -- not because a cliff
+# forbids the alternative.
 # ===========================================================================
 
 def fnv.go(+s: String, h: U32) -> U32:
@@ -589,7 +662,7 @@ def mfma(+kk: U32, di: S.Dt, dou: S.Dt) -> Tc:
   +elem = cc2(List.take(&2, U32, ks, kl), List.drop(&2, U32, ks, Nat.add(kl, 2n)))
   Tc{di, dou, cc2(m0123(), lane), elem, cc2(n0123(), lane), elem, cd6(nk(0), nk(1), nk(2), nk(3), mk(2), mk(3)), cd2(mk(0), mk(1))}
 # ===========================================================================
-# THE TABLES. tc.py:44-141, in Python's order, each a `List<&2, Tc>`. The
+# THE TABLES. tc.py:50-149, in Python's order, each a `List<&2, Tc>`. The
 # `cuda_*` and `amd_*` tables are `Tc` records so a mutation can be aimed at
 # one of them and `List.length` can be read without a call.
 #
@@ -621,12 +694,21 @@ def amd_rdna3() -> List<&2, Tc>:
 
 # (16,16,16) rdna4 -- `frag_a=(("m0","m1","m2","m3","k2"), ("k0","k1","k3"))`:
 # k2 is the FOREIGN lane bit and k0,k1,k3 the elements.
+#
+# SEVEN (di,do) PAIRS, NOT FOUR. tc.py:78-81 builds one TensorCore per pair:
+# half/float, half/half, bfloat16/float, bfloat16/bfloat16, fp8e4m3/float,
+# fp8e5m2/float, int8/int32. MEASURED 2026-10-22: this table held FOUR --
+# it stopped at bfloat16/bfloat16 -- and the `py=` literal beside it said
+# `4`, so the file agreed with itself and was wrong. The upstream re-vendor
+# grew the table under the port and nothing was measuring this half.
 def rdna4_of(di: S.Dt, dou: S.Dt) -> Tc:
   Tc{di, dou, cd5(m0(), m1(), m2(), m3(), kkb(2)), cd3(kkb(0), kkb(1), kkb(3)),
     cd5(nk(0), nk(1), nk(2), nk(3), kkb(2)), cd3(kkb(0), kkb(1), kkb(3)), cd5(nk(0), nk(1), nk(2), nk(3), m3()), cd3(m0(), m1(), m2())}
 
 def amd_rdna4() -> List<&2, Tc>:
-  [rdna4_of(S.half(), S.single()), rdna4_of(S.half(), S.half()), rdna4_of(S.bfloat16(), S.single()), rdna4_of(S.bfloat16(), S.bfloat16())]
+  [rdna4_of(S.half(), S.single()), rdna4_of(S.half(), S.half()), rdna4_of(S.bfloat16(), S.single()),
+   rdna4_of(S.bfloat16(), S.bfloat16()), rdna4_of(S.fp8e4m3(), S.single()), rdna4_of(S.fp8e5m2(), S.single()),
+   rdna4_of(S.int8(), S.int32())]
 
 def amd_cdna_161616() -> List<&2, Tc>: [mfma(16, S.half(), S.single()), mfma(16, S.bfloat16(), S.single())]
 def amd_cdna_161632() -> List<&2, Tc>: [mfma(32, S.fp8e5m2(), S.single()), mfma(32, S.fp8e4m3(), S.single()), mfma(32, S.half(), S.single()), mfma(32, S.bfloat16(), S.single())]
@@ -655,7 +737,7 @@ def get_cuda(+ver: U32) -> List<&2, Tc>:
       Bool.pick(List<&2, Tc>, U32.is_ge(ver, 75), cuda_sm75(), Nil{})))
 
 # `get_amd(arch)`: `{"gfx942": amd_cdna3, "gfx950": amd_cdna4, "gfx1200":
-# amd_rdna4, "gfx1201": amd_rdna4}.get(arch, amd_rdna3)` (tc.py:98) -- the DEFAULT
+# amd_rdna4, "gfx1201": amd_rdna4}.get(arch, amd_rdna3)` (tc.py:99) -- the DEFAULT
 # is `amd_rdna3`, NOT `amd_cdna3`, and that is the arm every unlisted arch name
 # takes. `get_amd gfx1100` is the row that pins it; `gfx942` would not, because
 # it is one of the four keys.
@@ -668,18 +750,22 @@ def get_amd(nm: String) -> List<&2, Tc>:
     case _:        amd_rdna3()
 
 # ===========================================================================
-# THE STAGE 1 GATE. 267 rows, every one a STRING beside CPython's own string.
+# THE STAGE 1 GATE. 289 rows, every one a STRING beside CPython's own string.
 #
 #   * 16 tables x (a length row + one row per MEMBER).  The member row is
 #     `di->do/N,M,K`, so it pins the table's CONTENTS AND ITS ORDER -- a
 #     reversed concatenation moves the rows.
-#   * 8 distinct FRAGMENT SHAPES x 24 rows: the five dtype/fragment fields,
-#     `axis_coords`, `base_upcast_axes`, `threads`, `dims`, both `relabel`
-#     dicts, all three `frag_coords` (as a digest -- see the note by `dgst`),
-#     `__post_init__`'s lane count, its `distinct`/`cover` pair PER OPERAND, and
-#     the `ka == kb` A/B-k-agreement check.
+#   * 8 distinct FRAGMENT SHAPES x 25 rows: the five dtype/fragment fields,
+#     `axis_coords`, `used`, `base_upcast_axes`, `threads`, `dims`, both
+#     `relabel` dicts, all three `frag_coords` (as a digest -- see the note by
+#     `dgst`), `__post_init__`'s lane count, its `distinct`/`cover` pair PER
+#     OPERAND, and the `ka == kb` A/B-k-agreement check.
 #   * 6 `get_cuda` arches and 5 `get_amd` arch names, including the two that
 #     take `get_amd`'s DEFAULT arm.
+#
+# 16 + 62 + 200 + 11 = 289, and MEASURED 2026-10-22 against
+# `gates/tc_ptx_render-oracle.py stage1`: the oracle prints 289 rows and this
+# file prints the same 289, byte for byte.
 #
 # THE REPRESENTATIVES are named here rather than picked by index so that a
 # mutation of one table moves only that table's rows, and a mutation of
@@ -687,7 +773,14 @@ def get_amd(nm: String) -> List<&2, Tc>:
 # table), which is the localisation the mutation table records.
 # ===========================================================================
 
-def r1(+nm: String, +f: String, +got: String, +want: String) -> String: r(nm ++ "." ++ f, got, want)
+# THE DERIVED ROW. The `py=` half is the PORT'S OWN VALUE, read through the
+# same table the port prints, so a row cannot disagree with itself and a table
+# that grows a member grows a ROW rather than a second list of expectations to
+# keep in step with it. `r` takes the `py=` half as an argument because
+# `tc_ptx.bend` calls it too; `rd` is this file's derived half of that.
+def rd(+nm: String, +got: String) -> String: r(nm, got, got)
+
+def r1(+nm: String, +f: String, +got: String) -> String: rd(nm ++ "." ++ f, got)
 
 # `f"tc/{dims}/{dtype_in.name},{dtype_out.name}"` -- the row PREFIX, built by
 # the port so a wrong dims or a swapped dtype pair renames its own rows.
@@ -705,51 +798,51 @@ def tc_pairs(+ts: List<&2, Tc>) -> String:
     case Nil{}   : ""
     case h <> +t : String.concat([dt_name(Tc.di(h)), "->", dt_name(Tc.dou(h)), Bool.pick(String, List.is_empty(&2, Tc, t), "", ","), tc_pairs(t)])
 
-# ONE def for every table's member rows: the py literal is a LIST parameter and
-# the walk is a two-scrutinee match, because a row's `py=` half must be its own
-# literal and there are 67 of them.
-def r_tcs(+ts: List<&2, Tc>, +ps: List<&2, String>, +i: U32, +nm: String) -> String:
-  match ts ps:
-    case Nil{} _     : ""
-    case _     Nil{} : ""
-    case h <> +t p <> +pt :
-      rest = r_tcs(t, pt, U32.add(i, 1), nm)
-      String.concat([r("tc." ++ nm ++ "[" ++ U32.show(i) ++ "]", tc_pair(h), p), rest])
-def cuda_81616_rows() -> String: r_tcs(cuda_81616(), ["half->float/8,16,16", "__bf16->float/8,16,16", "half->half/8,16,16"], 0, "cuda_81616")
+# ONE def for every table's member rows. The `py=` half is the member's OWN
+# rendering, so the walk carries no second list: the table is the ONLY copy of
+# the (di,do) pairs, and a pair that moves moves both halves of its row.
+def r_tcs(+ts: List<&2, Tc>, +i: U32, +nm: String) -> String:
+  match ts:
+    case Nil{}   : ""
+    case h <> +t :
+      +p = tc_pair(h)
+      rest = r_tcs(t, U32.add(i, 1), nm)
+      String.concat([rd("tc." ++ nm ++ "[" ++ U32.show(i) ++ "]", p), rest])
+def cuda_81616_rows() -> String: r_tcs(cuda_81616(), 0, "cuda_81616")
 
 
 
-def r_tbl_cuda_81616() -> String: String.concat([r("tc.cuda_81616.len", tln(cuda_81616()), "3"), cuda_81616_rows()])
-def cuda_81632_f8_rows() -> String: r_tcs(cuda_81632_f8(), ["float8_e4m3->float/8,16,32", "float8_e5m2->float/8,16,32"], 0, "cuda_81632_f8")
-def cuda_8168_f16_rows() -> String: r_tcs(cuda_8168_f16(), ["half->float/8,16,8", "half->half/8,16,8"], 0, "cuda_8168_f16")
-def cuda_8168_tf32_rows() -> String: r_tcs(cuda_8168_tf32(), ["float->float/8,16,8"], 0, "cuda_8168_tf32")
-def cuda_sm75_rows() -> String: r_tcs(cuda_sm75(), ["half->float/8,16,8", "half->half/8,16,8"], 0, "cuda_sm75")
-def cuda_sm80_rows() -> String: r_tcs(cuda_sm80(), ["half->float/8,16,16", "__bf16->float/8,16,16", "half->half/8,16,16", "half->float/8,16,8", "half->half/8,16,8", "float->float/8,16,8"], 0, "cuda_sm80")
-def cuda_sm89_rows() -> String: r_tcs(cuda_sm89(), ["half->float/8,16,16", "__bf16->float/8,16,16", "half->half/8,16,16", "half->float/8,16,8", "half->half/8,16,8", "float->float/8,16,8", "float8_e4m3->float/8,16,32", "float8_e5m2->float/8,16,32"], 0, "cuda_sm89")
-def amd_rdna3_rows() -> String: r_tcs(amd_rdna3(), ["half->float/16,16,16", "half->half/16,16,16", "__bf16->float/16,16,16", "signed char->int/16,16,16"], 0, "amd_rdna3")
-def amd_rdna4_rows() -> String: r_tcs(amd_rdna4(), ["half->float/16,16,16", "half->half/16,16,16", "__bf16->float/16,16,16", "__bf16->__bf16/16,16,16"], 0, "amd_rdna4")
-def amd_cdna_161616_rows() -> String: r_tcs(amd_cdna_161616(), ["half->float/16,16,16", "__bf16->float/16,16,16"], 0, "amd_cdna_161616")
-def amd_cdna_161632_rows() -> String: r_tcs(amd_cdna_161632(), ["float8_e5m2->float/16,16,32", "float8_e4m3->float/16,16,32", "half->float/16,16,32", "__bf16->float/16,16,32"], 0, "amd_cdna_161632")
-def amd_cdna_1616128_rows() -> String: r_tcs(amd_cdna_1616128(), ["float8_e5m2->float/16,16,128", "float8_e4m3->float/16,16,128"], 0, "amd_cdna_1616128")
-def amd_cdna3_161632_rows() -> String: r_tcs(amd_cdna3_161632(), ["float8_e5m2fnuz->float/16,16,32", "float8_e4m3fnuz->float/16,16,32"], 0, "amd_cdna3_161632")
-def amd_cdna3_rows() -> String: r_tcs(amd_cdna3(), ["float8_e5m2fnuz->float/16,16,32", "float8_e4m3fnuz->float/16,16,32", "half->float/16,16,16", "__bf16->float/16,16,16"], 0, "amd_cdna3")
-def amd_cdna4_rows() -> String: r_tcs(amd_cdna4(), ["float8_e5m2->float/16,16,128", "float8_e4m3->float/16,16,128", "float8_e5m2->float/16,16,32", "float8_e4m3->float/16,16,32", "half->float/16,16,32", "__bf16->float/16,16,32", "half->float/16,16,16", "__bf16->float/16,16,16"], 0, "amd_cdna4")
-def metal_rows() -> String: r_tcs(metal(), ["float->float/8,8,8", "half->float/8,8,8", "half->half/8,8,8", "__bf16->float/8,8,8", "__bf16->__bf16/8,8,8"], 0, "metal")
-def r_tbl_cuda_81632_f8() -> String: String.concat([r("tc.cuda_81632_f8.len", tln(cuda_81632_f8()), "2"), cuda_81632_f8_rows()])
-def r_tbl_cuda_8168_f16() -> String: String.concat([r("tc.cuda_8168_f16.len", tln(cuda_8168_f16()), "2"), cuda_8168_f16_rows()])
-def r_tbl_cuda_8168_tf32() -> String: String.concat([r("tc.cuda_8168_tf32.len", tln(cuda_8168_tf32()), "1"), cuda_8168_tf32_rows()])
-def r_tbl_cuda_sm75() -> String: String.concat([r("tc.cuda_sm75.len", tln(cuda_sm75()), "2"), cuda_sm75_rows()])
-def r_tbl_cuda_sm80() -> String: String.concat([r("tc.cuda_sm80.len", tln(cuda_sm80()), "6"), cuda_sm80_rows()])
-def r_tbl_cuda_sm89() -> String: String.concat([r("tc.cuda_sm89.len", tln(cuda_sm89()), "8"), cuda_sm89_rows()])
-def r_tbl_amd_rdna3() -> String: String.concat([r("tc.amd_rdna3.len", tln(amd_rdna3()), "4"), amd_rdna3_rows()])
-def r_tbl_amd_rdna4() -> String: String.concat([r("tc.amd_rdna4.len", tln(amd_rdna4()), "4"), amd_rdna4_rows()])
-def r_tbl_amd_cdna_161616() -> String: String.concat([r("tc.amd_cdna_161616.len", tln(amd_cdna_161616()), "2"), amd_cdna_161616_rows()])
-def r_tbl_amd_cdna_161632() -> String: String.concat([r("tc.amd_cdna_161632.len", tln(amd_cdna_161632()), "4"), amd_cdna_161632_rows()])
-def r_tbl_amd_cdna_1616128() -> String: String.concat([r("tc.amd_cdna_1616128.len", tln(amd_cdna_1616128()), "2"), amd_cdna_1616128_rows()])
-def r_tbl_amd_cdna3_161632() -> String: String.concat([r("tc.amd_cdna3_161632.len", tln(amd_cdna3_161632()), "2"), amd_cdna3_161632_rows()])
-def r_tbl_amd_cdna3() -> String: String.concat([r("tc.amd_cdna3.len", tln(amd_cdna3()), "4"), amd_cdna3_rows()])
-def r_tbl_amd_cdna4() -> String: String.concat([r("tc.amd_cdna4.len", tln(amd_cdna4()), "8"), amd_cdna4_rows()])
-def r_tbl_metal() -> String: String.concat([r("tc.metal.len", tln(metal()), "5"), metal_rows()])
+def r_tbl_cuda_81616() -> String: String.concat([rd("tc.cuda_81616.len", tln(cuda_81616())), cuda_81616_rows()])
+def cuda_81632_f8_rows() -> String: r_tcs(cuda_81632_f8(), 0, "cuda_81632_f8")
+def cuda_8168_f16_rows() -> String: r_tcs(cuda_8168_f16(), 0, "cuda_8168_f16")
+def cuda_8168_tf32_rows() -> String: r_tcs(cuda_8168_tf32(), 0, "cuda_8168_tf32")
+def cuda_sm75_rows() -> String: r_tcs(cuda_sm75(), 0, "cuda_sm75")
+def cuda_sm80_rows() -> String: r_tcs(cuda_sm80(), 0, "cuda_sm80")
+def cuda_sm89_rows() -> String: r_tcs(cuda_sm89(), 0, "cuda_sm89")
+def amd_rdna3_rows() -> String: r_tcs(amd_rdna3(), 0, "amd_rdna3")
+def amd_rdna4_rows() -> String: r_tcs(amd_rdna4(), 0, "amd_rdna4")
+def amd_cdna_161616_rows() -> String: r_tcs(amd_cdna_161616(), 0, "amd_cdna_161616")
+def amd_cdna_161632_rows() -> String: r_tcs(amd_cdna_161632(), 0, "amd_cdna_161632")
+def amd_cdna_1616128_rows() -> String: r_tcs(amd_cdna_1616128(), 0, "amd_cdna_1616128")
+def amd_cdna3_161632_rows() -> String: r_tcs(amd_cdna3_161632(), 0, "amd_cdna3_161632")
+def amd_cdna3_rows() -> String: r_tcs(amd_cdna3(), 0, "amd_cdna3")
+def amd_cdna4_rows() -> String: r_tcs(amd_cdna4(), 0, "amd_cdna4")
+def metal_rows() -> String: r_tcs(metal(), 0, "metal")
+def r_tbl_cuda_81632_f8() -> String: String.concat([rd("tc.cuda_81632_f8.len", tln(cuda_81632_f8())), cuda_81632_f8_rows()])
+def r_tbl_cuda_8168_f16() -> String: String.concat([rd("tc.cuda_8168_f16.len", tln(cuda_8168_f16())), cuda_8168_f16_rows()])
+def r_tbl_cuda_8168_tf32() -> String: String.concat([rd("tc.cuda_8168_tf32.len", tln(cuda_8168_tf32())), cuda_8168_tf32_rows()])
+def r_tbl_cuda_sm75() -> String: String.concat([rd("tc.cuda_sm75.len", tln(cuda_sm75())), cuda_sm75_rows()])
+def r_tbl_cuda_sm80() -> String: String.concat([rd("tc.cuda_sm80.len", tln(cuda_sm80())), cuda_sm80_rows()])
+def r_tbl_cuda_sm89() -> String: String.concat([rd("tc.cuda_sm89.len", tln(cuda_sm89())), cuda_sm89_rows()])
+def r_tbl_amd_rdna3() -> String: String.concat([rd("tc.amd_rdna3.len", tln(amd_rdna3())), amd_rdna3_rows()])
+def r_tbl_amd_rdna4() -> String: String.concat([rd("tc.amd_rdna4.len", tln(amd_rdna4())), amd_rdna4_rows()])
+def r_tbl_amd_cdna_161616() -> String: String.concat([rd("tc.amd_cdna_161616.len", tln(amd_cdna_161616())), amd_cdna_161616_rows()])
+def r_tbl_amd_cdna_161632() -> String: String.concat([rd("tc.amd_cdna_161632.len", tln(amd_cdna_161632())), amd_cdna_161632_rows()])
+def r_tbl_amd_cdna_1616128() -> String: String.concat([rd("tc.amd_cdna_1616128.len", tln(amd_cdna_1616128())), amd_cdna_1616128_rows()])
+def r_tbl_amd_cdna3_161632() -> String: String.concat([rd("tc.amd_cdna3_161632.len", tln(amd_cdna3_161632())), amd_cdna3_161632_rows()])
+def r_tbl_amd_cdna3() -> String: String.concat([rd("tc.amd_cdna3.len", tln(amd_cdna3())), amd_cdna3_rows()])
+def r_tbl_amd_cdna4() -> String: String.concat([rd("tc.amd_cdna4.len", tln(amd_cdna4())), amd_cdna4_rows()])
+def r_tbl_metal() -> String: String.concat([rd("tc.metal.len", tln(metal())), metal_rows()])
 
 
 
@@ -772,37 +865,37 @@ def fc_of.of(oi: U32, +t: Tc) -> String:
 def r_tcd0(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "k1,k2,m0,m1,m2,k0,m3,k3"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "k1,k2,n0,n1,n2,k0,k3"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,m0,m1,m2,m3,k0,k1,k2,k3"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
     # `axis_coords`'s INTERMEDIATE on its own row. It is UNOBSERVABLE through
     # `axis_coords`: `__post_init__` asserts A covers every m and k coord and C
     # covers every n coord, and `axis_coords` reads a MAX per axis -- so
     # `used = A + C` and `used = A + B` give the same three maxima for EVERY
     # valid TensorCore, and swapping C for B in `Tc.used` moves no other row in
     # this file. The concatenation's own STRING is what differs, so it is a row.
-    r1(nm, "used", cd_join(Tc.used(t)), "k1,k2,m0,m1,m2,k0,m3,k3,n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "m3,n0,k3,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "32"),
-    r1(nm, "dims", Tc.dims(t), "8,16,16"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "k1=n1,k2=n2,m0=m0,m1=m1,m2=m2,k0=k3,m3=n0,k3=m3"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "k1=n1,k2=n2,n0=m0,n1=m1,n2=m2,k0=n0,k3=m3"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=1215 fnv=3939875115"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=559 fnv=2736630555"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=559 fnv=3208275915"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k0,k3,k1,k2"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k0,k3,k1,k2"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts0() -> Tc: mma(16, S.half(), S.single())
@@ -810,31 +903,31 @@ def ts0() -> Tc: mma(16, S.half(), S.single())
 def r_tcd1(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "fp8e4m3"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "k2,k3,m0,m1,m2,k0,k1,m3,k4"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "k2,k3,n0,n1,n2,k0,k1,k4"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,m0,m1,m2,m3,k0,k1,k2,k3,k4"),
-    r1(nm, "used", cd_join(Tc.used(t)), "k2,k3,m0,m1,m2,k0,k1,m3,k4,n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "m3,n0,k4,k3,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "32"),
-    r1(nm, "dims", Tc.dims(t), "8,16,32"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "k2=n1,k3=n2,m0=m0,m1=m1,m2=m2,k0=k3,k1=k4,m3=n0,k4=m3"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "k2=n1,k3=n2,n0=m0,n1=m1,n2=m2,k0=k4,k1=n0,k4=m3"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=2591 fnv=3274290231"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=1199 fnv=1735828139"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=559 fnv=3208275915"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k0,k1,k4,k2,k3"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k0,k1,k4,k2,k3"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts1() -> Tc: mma(32, S.fp8e4m3(), S.single())
@@ -842,31 +935,31 @@ def ts1() -> Tc: mma(32, S.fp8e4m3(), S.single())
 def r_tcd2(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "k1,k2,m0,m1,m2,k0,m3"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "k1,k2,n0,n1,n2,k0"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,m0,m1,m2,m3,k0,k1,k2"),
-    r1(nm, "used", cd_join(Tc.used(t)), "k1,k2,m0,m1,m2,k0,m3,n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "m3,n0,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "32"),
-    r1(nm, "dims", Tc.dims(t), "8,16,8"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "k1=n1,k2=n2,m0=m0,m1=m1,m2=m2,k0=n0,m3=m3"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "k1=n1,k2=n2,n0=m0,n1=m1,n2=m2,k0=m3"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=559 fnv=3208275915"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=255 fnv=4242223531"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=559 fnv=3208275915"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k0,k1,k2"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k0,k1,k2"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts2() -> Tc: mma(8, S.half(), S.single())
@@ -874,31 +967,31 @@ def ts2() -> Tc: mma(8, S.half(), S.single())
 def r_tcd3(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "f32"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "k0,k1,m0,m1,m2,m3,k2"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "k0,k1,n0,n1,n2,k2"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,m0,m1,m2,m3,k0,k1,k2"),
-    r1(nm, "used", cd_join(Tc.used(t)), "k0,k1,m0,m1,m2,m3,k2,n1,n2,m0,m1,m2,n0,m3"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "m3,n0,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "32"),
-    r1(nm, "dims", Tc.dims(t), "8,16,8"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "k0=n1,k1=n2,m0=m0,m1=m1,m2=m2,m3=n0,k2=m3"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "k0=n1,k1=n2,n0=m0,n1=m1,n2=m2,k2=m3"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=559 fnv=2483337883"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=255 fnv=2880975211"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=559 fnv=3208275915"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k2,k0,k1"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k2,k0,k1"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts3() -> Tc: mma(8, S.single(), S.single())
@@ -906,31 +999,31 @@ def ts3() -> Tc: mma(8, S.single(), S.single())
 def r_tcd4(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "m0,m1,m2,m3,n0,k0,k1,k2,k3"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "n0,n1,n2,n3,m0,k0,k1,k2,k3"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n0,n1,n2,n3,m0,m1,m2,m3"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,n3,m0,m1,m2,m3,k0,k1,k2,k3"),
-    r1(nm, "used", cd_join(Tc.used(t)), "m0,m1,m2,m3,n0,k0,k1,k2,k3,n0,n1,n2,n3,m0,m1,m2,m3"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "m3,m2,m1,k3,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "32"),
-    r1(nm, "dims", Tc.dims(t), "16,16,16"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "m0=n0,m1=n1,m2=n2,m3=n3,n0=m0,k0=k3,k1=m1,k2=m2,k3=m3"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "n0=n0,n1=n1,n2=n2,n3=n3,m0=m0,k0=k3,k1=m1,k2=m2,k3=m3"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=2431 fnv=3155196267"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=2431 fnv=3614521043"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=1215 fnv=3946414587"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k0,k1,k2,k3"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k0,k1,k2,k3"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts4() -> Tc: rdna3_of(S.half(), S.single())
@@ -938,31 +1031,31 @@ def ts4() -> Tc: rdna3_of(S.half(), S.single())
 def r_tcd5(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "f16"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "m0,m1,m2,m3,k2,k0,k1,k3"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "n0,n1,n2,n3,k2,k0,k1,k3"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n0,n1,n2,n3,m3,m0,m1,m2"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,n3,m0,m1,m2,m3,k0,k1,k2,k3"),
-    r1(nm, "used", cd_join(Tc.used(t)), "m0,m1,m2,m3,k2,k0,k1,k3,n0,n1,n2,n3,m3,m0,m1,m2"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "m2,m1,m0,k3,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "32"),
-    r1(nm, "dims", Tc.dims(t), "16,16,16"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "m0=n0,m1=n1,m2=n2,m3=n3,k2=m3,k0=m0,k1=m1,k3=m2"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "n0=n0,n1=n1,n2=n2,n3=n3,k2=m3,k0=m0,k1=m1,k3=m2"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=1215 fnv=1686690643"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=1215 fnv=3829953183"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=1215 fnv=1606384943"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k0,k1,k3,k2"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k0,k1,k3,k2"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts5() -> Tc: rdna4_of(S.half(), S.single())
@@ -970,31 +1063,31 @@ def ts5() -> Tc: rdna4_of(S.half(), S.single())
 def r_tcd6(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "fp8e5m2"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "m0,m1,m2,m3,k4,k5,k0,k1,k2,k3,k6"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "n0,n1,n2,n3,k4,k5,k0,k1,k2,k3,k6"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n0,n1,n2,n3,m2,m3,m0,m1"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,n3,m0,m1,m2,m3,k0,k1,k2,k3,k4,k5,k6"),
-    r1(nm, "used", cd_join(Tc.used(t)), "m0,m1,m2,m3,k4,k5,k0,k1,k2,k3,k6,n0,n1,n2,n3,m2,m3,m0,m1"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "m1,m0,k6,k5,k4,k3,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "64"),
-    r1(nm, "dims", Tc.dims(t), "16,16,128"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "m0=n0,m1=n1,m2=n2,m3=n3,k4=m2,k5=m3,k0=k4,k1=k5,k2=k6,k3=m0,k6=m1"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "n0=n0,n1=n1,n2=n2,n3=n3,k4=m2,k5=m3,k0=k4,k1=k5,k2=k6,k3=m0,k6=m1"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=11295 fnv=2304681711"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=11295 fnv=4134083867"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=1215 fnv=407250415"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k0,k1,k2,k3,k6,k4,k5"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k0,k1,k2,k3,k6,k4,k5"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts6() -> Tc: mfma(128, S.fp8e5m2(), S.single())
@@ -1002,31 +1095,31 @@ def ts6() -> Tc: mfma(128, S.fp8e5m2(), S.single())
 def r_tcd7(+t: Tc) -> String:
   +nm = tc_nm(t)
   String.concat([
-    r1(nm, "di", dt_name(Tc.di(t)), "f32"),
-    r1(nm, "do", dt_name(Tc.dou(t)), "f32"),
-    r1(nm, "frag_a", cd_join(Tc.alla(t)), "k1,m0,m1,k2,m2,k0"),
-    r1(nm, "frag_b", cd_join(Tc.allb(t)), "n1,k0,k1,n2,k2,n0"),
-    r1(nm, "frag_c", cd_join(Tc.allc(t)), "n1,m0,m1,n2,m2,n0"),
-    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)), "n0,n1,n2,m0,m1,m2,k0,k1,k2"),
-    r1(nm, "used", cd_join(Tc.used(t)), "k1,m0,m1,k2,m2,k0,n1,m0,m1,n2,m2,n0"),
-    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)), "n0,k2,k1,k0"),
-    r1(nm, "threads", U32.show(Tc.threads(t)), "32"),
-    r1(nm, "dims", Tc.dims(t), "8,8,8"),
-    r1(nm, "relabel.0", Tc.relabel.a(t), "k1=n1,m0=m0,m1=m1,k2=n2,m2=m2,k0=n0"),
-    r1(nm, "relabel.1", Tc.relabel.b(t), "n1=n1,k0=m0,k1=m1,n2=n2,k2=m2,n0=n0"),
-    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)), "len=255 fnv=1788109291"),
-    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)), "len=255 fnv=1788109291"),
-    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)), "len=255 fnv=1788109291"),
-    r1(nm, "lanes", Tc.lanes(t), "TrueTrueTrue"),
-    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))), "True"),
-    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)), "True"),
-    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))), "True"),
-    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)), "True"),
-    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))), "True"),
-    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)), "True"),
-    r1(nm, "ka", cd_join(Tc.kab_a(t)), "k0,k1,k2"),
-    r1(nm, "kb", cd_join(Tc.kab_b(t)), "k0,k1,k2"),
-    r1(nm, "kab_eq", bs(Tc.kab_eq(t)), "True"),
+    r1(nm, "di", dt_name(Tc.di(t)))
+    r1(nm, "do", dt_name(Tc.dou(t)))
+    r1(nm, "frag_a", cd_join(Tc.alla(t)))
+    r1(nm, "frag_b", cd_join(Tc.allb(t)))
+    r1(nm, "frag_c", cd_join(Tc.allc(t)))
+    r1(nm, "axis_coords", cd_join(Tc.axis_coords(t)))
+    r1(nm, "used", cd_join(Tc.used(t)))
+    r1(nm, "base_upcast_axes", cd_join(Tc.bu(t)))
+    r1(nm, "threads", U32.show(Tc.threads(t)))
+    r1(nm, "dims", Tc.dims(t))
+    r1(nm, "relabel.0", Tc.relabel.a(t))
+    r1(nm, "relabel.1", Tc.relabel.b(t))
+    r1(nm, "frag_coords.0", dgst(fc_of.of(0, t)))
+    r1(nm, "frag_coords.1", dgst(fc_of.of(1, t)))
+    r1(nm, "frag_coords.2", dgst(fc_of.of(2, t)))
+    r1(nm, "lanes", Tc.lanes(t))
+    r1(nm, "distinct.mk", bs(Tc.distinct(t, Tc.la(t), Tc.ea(t))))
+    r1(nm, "cover.mk", bs(Tc.cover(t, Tc.la(t), Tc.ea(t), 1, 2)))
+    r1(nm, "distinct.kn", bs(Tc.distinct(t, Tc.lb(t), Tc.eb(t))))
+    r1(nm, "cover.kn", bs(Tc.cover(t, Tc.lb(t), Tc.eb(t), 2, 0)))
+    r1(nm, "distinct.mn", bs(Tc.distinct(t, Tc.lc(t), Tc.ec(t))))
+    r1(nm, "cover.mn", bs(Tc.cover(t, Tc.lc(t), Tc.ec(t), 1, 0)))
+    r1(nm, "ka", cd_join(Tc.kab_a(t)))
+    r1(nm, "kb", cd_join(Tc.kab_b(t)))
+    r1(nm, "kab_eq", bs(Tc.kab_eq(t)))
   ])
 
 def ts7() -> Tc: metal_of(S.single(), S.single())
@@ -1034,17 +1127,17 @@ def ts7() -> Tc: metal_of(S.single(), S.single())
 def r_tcds() -> String:
   String.concat([r_tcd0(ts0()), r_tcd1(ts1()), r_tcd2(ts2()), r_tcd3(ts3()), r_tcd4(ts4()), r_tcd5(ts5()), r_tcd6(ts6()), r_tcd7(ts7())])
 
-def r_gc_75() -> String: r("get_cuda sm_75", tc_pairs(get_cuda(75)), "half->float,half->half")
-def r_gc_80() -> String: r("get_cuda sm_80", tc_pairs(get_cuda(80)), "half->float,__bf16->float,half->half,half->float,half->half,float->float")
-def r_gc_86() -> String: r("get_cuda sm_86", tc_pairs(get_cuda(86)), "half->float,__bf16->float,half->half,half->float,half->half,float->float")
-def r_gc_89() -> String: r("get_cuda sm_89", tc_pairs(get_cuda(89)), "half->float,__bf16->float,half->half,half->float,half->half,float->float,float8_e4m3->float,float8_e5m2->float")
-def r_gc_90() -> String: r("get_cuda sm_90", tc_pairs(get_cuda(90)), "half->float,__bf16->float,half->half,half->float,half->half,float->float,float8_e4m3->float,float8_e5m2->float")
-def r_gc_100() -> String: r("get_cuda sm_100", tc_pairs(get_cuda(100)), "half->float,__bf16->float,half->half,half->float,half->half,float->float,float8_e4m3->float,float8_e5m2->float")
-def r_ga_gfx942() -> String: r("get_amd gfx942", tc_pairs(get_amd("gfx942")), "float8_e5m2fnuz->float,float8_e4m3fnuz->float,half->float,__bf16->float")
-def r_ga_gfx950() -> String: r("get_amd gfx950", tc_pairs(get_amd("gfx950")), "float8_e5m2->float,float8_e4m3->float,float8_e5m2->float,float8_e4m3->float,half->float,__bf16->float,half->float,__bf16->float")
-def r_ga_gfx1200() -> String: r("get_amd gfx1200", tc_pairs(get_amd("gfx1200")), "half->float,half->half,__bf16->float,__bf16->__bf16")
-def r_ga_gfx1201() -> String: r("get_amd gfx1201", tc_pairs(get_amd("gfx1201")), "half->float,half->half,__bf16->float,__bf16->__bf16")
-def r_ga_gfx1100() -> String: r("get_amd gfx1100", tc_pairs(get_amd("gfx1100")), "half->float,half->half,__bf16->float,signed char->int")
+def r_gc_75() -> String: rd("get_cuda sm_75", tc_pairs(get_cuda(75)))
+def r_gc_80() -> String: rd("get_cuda sm_80", tc_pairs(get_cuda(80)))
+def r_gc_86() -> String: rd("get_cuda sm_86", tc_pairs(get_cuda(86)))
+def r_gc_89() -> String: rd("get_cuda sm_89", tc_pairs(get_cuda(89)))
+def r_gc_90() -> String: rd("get_cuda sm_90", tc_pairs(get_cuda(90)))
+def r_gc_100() -> String: rd("get_cuda sm_100", tc_pairs(get_cuda(100)))
+def r_ga_gfx942() -> String: rd("get_amd gfx942", tc_pairs(get_amd("gfx942")))
+def r_ga_gfx950() -> String: rd("get_amd gfx950", tc_pairs(get_amd("gfx950")))
+def r_ga_gfx1200() -> String: rd("get_amd gfx1200", tc_pairs(get_amd("gfx1200")))
+def r_ga_gfx1201() -> String: rd("get_amd gfx1201", tc_pairs(get_amd("gfx1201")))
+def r_ga_gfx1100() -> String: rd("get_amd gfx1100", tc_pairs(get_amd("gfx1100")))
 
 def r_stage1() -> String:
   String.concat([r_tbl_cuda_81616(), r_tbl_cuda_81632_f8(), r_tbl_cuda_8168_f16(), r_tbl_cuda_8168_tf32(),
@@ -1057,17 +1150,66 @@ def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(r_stage1())
 
-#   M3  `used` concatenates B's blocks, not C's                  8
+# THE MUTATION TABLE, RE-MEASURED 2026-10-22. The number is ROWS THAT MOVE in
+# the lane of the file that OWNS the def the rule edits, and it is POSITIONAL:
+# a `diff` is positional, so a dropped row shifts every row after it. The
+# CONTENT column says how many rows actually say something different.
+#
+#   THE tc.py RULES -- the defs are in THIS file, so the lane is THIS file's
+#   290 lines (289 rows and `IO.print`'s framing newline):
+#   M1  the coord packing is (bit << 1) | axis, not << 2      262   249 changed
+#   M2  axis code k = 3, not 2                                 16    14 changed
+#   M3  `used` concatenates B's blocks, not C's                  8     8 changed
 #   M4  `threads` reads frag_a[0]                              0  <-- BLIND
-#   M4b `threads` reads frag_c[1]                               8
-#   M5  `frag_coords`' accumulator starts at 1, not 0           24
-#   M10 `pow2` shifts by n+1                                   259
+#   M4b `threads` reads frag_c[1]                               8     8 changed
+#   M5  `frag_coords`' accumulator starts at 1, not 0           24    24 changed
+#   M6  the coord shift uses the AXIS, not the BIT              24    24 changed
+#   M7  (CONTROL: a comment-only edit)                          0
+#   M8  `mma`'s fragment_c lane ends at m3, not m2              28    28 changed
+#   M9  FNV-1a's offset basis is off by one                     24    24 changed
+#   M10 `pow2` shifts by n+1                                   262   249 changed
+#
+#   THE ptx.py RULES -- the defs are in `tc_ptx.bend` and the ROWS are that
+#   file's, so the lane is `tc_ptx.bend`'s 344 lines. They are recorded HERE
+#   because this foot is where the tree has them:
 #   M11 `supports_half` ends in SHR, not TRUNC                   2
 #   M12 `supports_half`'s tuple is in dict order                 1
 #   M13 `doesnt_support_half` appends instead of consing          1
 #   M14 `tensor_cores` appends instead of consing                 3
 #   M15 `supported_dtypes` appends instead of consing             0  <-- BLIND
 #   M18 `tensor_cores` filters on dtype_OUT                      2
+#
+# TWO OF THESE NUMBERS MOVED, AND THE DELTA IS EXACTLY THE THREE ROWS
+# `amd_rdna4` GAINED: M1 and M10 were 259 and are 262. They were measured
+# over a table with FOUR (di,do) pairs; upstream has SEVEN.
+#
+# AND TWO RULES IN THE TREE'S OWN HARNESS COULD NOT BE APPLIED AT ALL. The
+# harness aims every edit at `tc_ptx.bend` and spells the tc.py type as `Tc`,
+# which the SPLIT renamed to `T.Tc` -- so M14 and M18 matched NOTHING until
+# the qualification was adapted, and M1-M10 (whose defs are in THIS file)
+# cannot be applied in `tc_ptx.bend` at all. A rule whose edit does not
+# apply is not a measurement.
+#
+# THE PLANTS, AND WHAT EACH ONE NAMES. A mutation asks what the file's own
+# output does; a PLANT asks whether the GATE goes red, and that is the
+# question a fix has to answer. Measured 2026-10-22 against
+# `gates/tc_ptx_render-oracle.py stage1`:
+#
+#   P1  `amd_rdna4` loses its last PAIR            RED -- 4 rows of content:
+#                                                  `tc.amd_rdna4.len`,
+#                                                  `tc.amd_rdna4[6]` (gone),
+#                                                  `get_amd gfx1200`,
+#                                                  `get_amd gfx1201`
+#   P2  a `py=` LITERAL beside a correct table     RED -- 1 row: the row's two
+#                                                  halves disagree, `[7]` and
+#                                                  `py=[4]`
+#   P3  CONTROL: a comment-only edit              GREEN -- 0 rows
+#
+# P1 IS THE DEFECT THIS FILE HAD, and the four rows it names are exactly the
+# four that were wrong. P2 IS THE CLASS PLANTED BACK: a derived `py=` half
+# cannot disagree with the row it is in and a literal could -- which is why
+# 71 of this file's 286 cells were wrong and the file still agreed with
+# itself.
 # M4 IS A BLIND SPOT NO FIXTURE CAN CLOSE, and it is not a fixture gap. tc.py:43
 # ASSERTS `len(f[0]) == len(self.frag_c[0])` for all three fragments, so A, B
 # and C have the same LANE COUNT in every legal TensorCore and `threads`' three
