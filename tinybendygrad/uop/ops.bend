@@ -5075,7 +5075,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   namespace of `max/cdiv/cmod/floordiv/floormod/bitcast/dtypes`. Bend has no
 #   `eval`, so this needs a C effect that compiles a lambda or a tree-walking
 #   interpreter. P3/P6.
-# WALL(p3) ops.py:219  def __init__ -- BLOCKED. STORE A FUNCTION IN A DATA FIELD -- `recursive_property.__init__` keeps `self.fxn`. The
+# WALL(p3) ops.py:212  def __init__ -- BLOCKED. STORE A FUNCTION IN A DATA FIELD -- `recursive_property.__init__` keeps `self.fxn`. The
 #   port's own note at the `t_*` block says a function value in a FIELD forces `Type`, not
 #   `Data`, MEASURED. (A function as a PARAMETER is fine -- `bend guide:69` says functions may
 #   be stored, passed and returned, and `Maybe.map` already takes one.)
@@ -5086,13 +5086,13 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   the header's point 5 drops, and its GATE is `self.nm not in node.__dict__`:
 #   a memo-less port cannot answer that, because the predicate is vacuously true
 #   for every node and the "gate" would visit the whole slice unconditionally.
-# WALL(p3) ops.py:248  def __del__ -- BLOCKED. NO GARBAGE COLLECTOR TO CALL IT. `bend guide:646` -- "values are affine, a `match` frees
+# WALL(p3) ops.py:240  def __del__ -- BLOCKED. NO GARBAGE COLLECTOR TO CALL IT. `bend guide:646` -- "values are affine, a `match` frees
 #   the node it opens" -- so there is no `__del__` hook and nothing for it to remove itself
 #   from. The `ucache` it deletes from is Python's, and this port's interner is
 #   `intern.find`'s direct comparison, not a table a node has to leave.
 #   Refcount-driven eviction from `ucache`. The arena is monotone, so nothing is
 #   ever evicted and there is nothing to port.
-# WALL(p3) ops.py:251  def __reduce__ -- BLOCKED. THE PICKLE PROTOCOL. `return UOp, (op, src, arg, tag, metadata)` is a `__reduce__`: an
+# WALL(p3) ops.py:244  def __reduce__ -- BLOCKED. THE PICKLE PROTOCOL. `return UOp, (op, src, arg, tag, metadata)` is a `__reduce__`: an
 #   instruction to Python's `pickle`. Nothing in the port serialises a live UOp, so there is
 #   no protocol to implement.
 #   Pickling. A `U32` index and an `Arena` are not picklable objects, and this
@@ -5101,7 +5101,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `hashlib.sha256` over `str((op, dtype, arg))` and the srcs' keys concatenated.
 #   Two walls: the digest is a C effect (`tinygrad/runtime/`'s), and the string
 #   half reads `dtype`, which is `fold.bend`'s -- so neither half is writable here.
-# WALL(p3) ops.py:292  def _bool_slice -- BLOCKED. NEEDS `fold`'s WALK AND A dtype PREDICATE, so it lives DOWNSTREAM of this file like
+# WALL(p3) ops.py:284  def _bool_slice -- BLOCKED. NEEDS `fold`'s WALK AND A dtype PREDICATE, so it lives DOWNSTREAM of this file like
 #   `_eval`, `param_noshape` and `wk_is_virtual` do -- `dt_is_bool` is in `mixin/dtype.bend`
 #   and this file cannot import it (`ops.bend:87`). Its only consumer is a marker of its own:
 #   `symbolic.bend:3054` records that `fold_where_closure` needs `bool_slice` AND
@@ -5113,7 +5113,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `dtype` is `fold.bend`'s, so both halves belong to the worklist beside it; and
 #   `bool_slice`'s `| {self}` is a self-reference the fold has to add OUTSIDE its
 #   own memo, which is what Python's comment above the property says.
-# WALL(p3) ops.py:324  def tuplize -- BLOCKED. THE MECHANISM IS REPLACED, NOT MISSING. `tuplize` builds `(op.value, repr(arg), dtype, *(src
+# WALL(p3) ops.py:316  def tuplize -- BLOCKED. THE MECHANISM IS REPLACED, NOT MISSING. `tuplize` builds `(op.value, repr(arg), dtype, *(src
 #   tuplize))` to KEY CPython's `ucache`; this port's interner is `intern.find`, a direct
 #   comparison over `Arena.nodes`, so there is no hash table for a key to serve. Its two
 #   consumers are outside ops.py anyway -- `codegen/late/linearizer.py:36` (a sort) and
@@ -5185,7 +5185,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 
 
-# WALL(p3) ops.py:582  def __getitem__ -- BLOCKED. PYTHON'S SLICE PROTOCOL. The body calls `super(UOp, self).__getitem__(idx)`,
+# WALL(p3) ops.py:563  def __getitem__ -- BLOCKED. PYTHON'S SLICE PROTOCOL. The body calls `super(UOp, self).__getitem__(idx)`,
 #   `argfix`, `_normalize_indices`, `slice` objects and `self.shape[i]`. A slice is a Python
 #   runtime object with `start`/`stop`, and Bend has no slicing syntax to normalise.
 
@@ -5295,11 +5295,11 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   here would make every `uint64` bound wrong by a factor of two. This needs `Bnd`.
 #   P3, with `vmin`/`vmax`.
 
-# WALL(p3) ops.py:689  def unshard -- BLOCKED. `def _shard` IS ABSENT -- checked as a definition, comments excluded. `unshard` builds a
+# WALL(p3) ops.py:670  def unshard -- BLOCKED. `def _shard` IS ABSENT -- checked as a definition, comments excluded. `unshard` builds a
 #   UNSHARD and `_shard` is the constructor it shares with `shard` below.
 #   # *** multi-device helpers ***
 
-# WALL(p3) ops.py:709  def bounds -- BLOCKED. `def max_numel` IS ABSENT, and `bounds` also reads `self.axis` and a device COUNT
+# WALL(p3) ops.py:690  def bounds -- BLOCKED. `def max_numel` IS ABSENT, and `bounds` also reads `self.axis` and a device COUNT
 #   (`len(self.device)`, on the `Dev` tag). It is a `itertools.accumulate` + `pairwise`
 #   over per-axis shapes.
 
@@ -5307,7 +5307,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:728  def _shard
 
-# WALL(p3) ops.py:754  def shard -- BLOCKED. `def _shard` IS ABSENT -- the same one `unshard` needs. `copy_to_device` IS present, so
+# WALL(p3) ops.py:734  def shard -- BLOCKED. `def _shard` IS ABSENT -- the same one `unshard` needs. `copy_to_device` IS present, so
 #   this is one missing constructor rather than a missing subsystem.
 
 
@@ -5564,14 +5564,14 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 # WALL(p3) ops.py:1274  def call_with_outputs -- BLOCKED. ENDS IN THE `alloc` CHAIN: the body binds output ALLOCs through `mint` below, and `mint`
 #   calls `UOp.alloc`, which ends in `view_as` -- absent as a definition.
 
-# WALL(p3) ops.py:1292  def mint -- BLOCKED. CALLS `UOp.alloc` ("`buf = UOp.alloc(...)`"), and `alloc` ends in `ret.view_as(shape)`
+# WALL(p3) ops.py:1280  def mint -- BLOCKED. CALLS `UOp.alloc` ("`buf = UOp.alloc(...)`"), and `alloc` ends in `ret.view_as(shape)`
 #   -- `view_as` is absent as a definition.
 
-# WALL(p3) ops.py:1312  def call_with_output -- BLOCKED. IS `UOp.call_with_outputs((self,), *srcs)`, one line over the marker above it, so it is
+# WALL(p3) ops.py:1298  def call_with_output -- BLOCKED. IS `UOp.call_with_outputs((self,), *srcs)`, one line over the marker above it, so it is
 #   blocked on the same `alloc` -> `view_as` chain.
 #   # one-line convenience for the single-output case: self is the value
 
-# WALL(p3) ops.py:1313  def custom_kernel -- BLOCKED. BUILDS ITS PLACEHOLDERS WITH `UOp.placeholder_like`, and `placeholder_like` delegates to
+# WALL(p3) ops.py:1299  def custom_kernel -- BLOCKED. BUILDS ITS PLACEHOLDERS WITH `UOp.placeholder_like`, and `placeholder_like` delegates to
 #   `placeholder`, which ends in `view_as` -- absent as a definition. NOTE the `fxn:Callable`
 #   is NOT the blocker: `bend guide:69` says functions are values that can be passed and
 #   called, affine, and this calls `fxn` once.
@@ -5594,7 +5594,7 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 #   `prod(to_max_shape(shape))` plus a `view_as` RESHAPE, and **`view_as` IS ABSENT FROM THE PORT**
 #   (so is `unique_num`). Checked, not assumed.
 
-# WALL(p3) ops.py:1333  def outlined -- BLOCKED. PYTHON INTROSPECTION OF A CALLABLE: `inspect.signature(fn).bind(*args, **kwargs)`,
+# WALL(p3) ops.py:1323  def outlined -- BLOCKED. PYTHON INTROSPECTION OF A CALLABLE: `inspect.signature(fn).bind(*args, **kwargs)`,
 #   `bound.items()`, and the dict union `bound | {...}`. That is the runtime's own view of a
 #   function's parameters, which no compiled language exposes.
 

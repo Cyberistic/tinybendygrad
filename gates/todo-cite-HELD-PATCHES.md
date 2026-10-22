@@ -6,9 +6,9 @@ the ONE line the marker's quoted snippet is on. Nothing else in the file changes
 
 Pin `5c2bf39d6c4b` -- tinygrad/ tree 6c91e8977790, 230 blobs match the vendored copy, 360 local-only
 
-Measured 2026-10-22T22:46:32+00:00.
+Measured 2026-10-22T22:52:02+00:00.
 
-**143 citations** in **42 files**.
+**132 citations** in **35 files**.
 
 ## `tinybendygrad/codegen/kernel.bend` -- 4 citations
 
@@ -414,88 +414,6 @@ Measured 2026-10-22T22:46:32+00:00.
 #   #    TODO(p3) runtime/ops_metal.py:190  -- `encode_submit(MetalQueue(submit))`.
 # tinybendygrad/runtime/ops_metal.bend:202  runtime/ops_metal.py:193  -- NO MECHANICAL FIX: the cited line is inside `_offset` (declared at :183) and the marker names no symbol this file declares
 #   #    TODO(p3) runtime/ops_metal.py:193  -- `mtl_poll(tl) if …timeline…`.
-```
-
-## `tinybendygrad/runtime/ops_npy.bend` -- 1 citations
-
-```diff
---- a/tinybendygrad/runtime/ops_npy.bend
-+++ b/tinybendygrad/runtime/ops_npy.bend
-@@ -88 +88 @@
--#    TODO(p3) helpers.py:573  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
-+#    TODO(p3) helpers.py:575  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
-```
-
-## `tinybendygrad/runtime/support/compiler_amd.bend` -- 1 citations
-
-```diff
---- a/tinybendygrad/runtime/support/compiler_amd.bend
-+++ b/tinybendygrad/runtime/support/compiler_amd.bend
-@@ -114 +114 @@
--#   TODO(p3) compiler_amd.py:21-23 -- the two `amd_comgr_get_data` calls.
-+#   TODO(p3) compiler_amd.py:35-37 -- the two `amd_comgr_get_data` calls.
-```
-
-## `tinybendygrad/runtime/support/compiler_cuda.bend` -- 1 citations
-
-```diff
---- a/tinybendygrad/runtime/support/compiler_cuda.bend
-+++ b/tinybendygrad/runtime/support/compiler_cuda.bend
-@@ -115 +115 @@
--#   TODO(p3) compiler_cuda.py:28-35 -- `re.sub` x6.
-+#   TODO(p3) compiler_cuda.py:55-62 -- `re.sub` x6.
-```
-
-## `tinybendygrad/runtime/support/compiler_llvm.bend` -- 1 citations
-
-```diff
---- a/tinybendygrad/runtime/support/compiler_llvm.bend
-+++ b/tinybendygrad/runtime/support/compiler_llvm.bend
-@@ -80 +80 @@
--#   TODO(p3) compiler_llvm.py:4  -- `from tinygrad.runtime.autogen import llvm`.
-+#   TODO(p3) compiler_llvm.py:13  -- `from tinygrad.runtime.autogen import llvm`.
-```
-
-## `tinybendygrad/runtime/support/compiler_mesa.bend` -- 5 citations
-
-```diff
---- a/tinybendygrad/runtime/support/compiler_mesa.bend
-+++ b/tinybendygrad/runtime/support/compiler_mesa.bend
-@@ -77 +77 @@
--#   TODO(p3) compiler_mesa.py:59-60 -- `nak_compiler_create` / `nak_nir_options`.
-+#   TODO(p3) compiler_mesa.py:67-68 -- `nak_compiler_create` / `nak_nir_options`.
-@@ -85 +85 @@
--#   TODO(p3) compiler_mesa.py:131  -- `v.imm_state.count` (same).
-+#   TODO(p3) compiler_mesa.py:111  -- `v.imm_state.count` (same).
-@@ -86 +86 @@
--#   TODO(p3) compiler_mesa.py:133  -- `self.dev_id.gpu_id` (same).
-+#   TODO(p3) compiler_mesa.py:111  -- `self.dev_id.gpu_id` (same).
-@@ -97 +97 @@
--#   TODO(p3) compiler_mesa.py:16 -- `base64.b64decode`.
-+#   TODO(p3) compiler_mesa.py:22 -- `base64.b64decode`.
-@@ -99 +99 @@
--#   TODO(p3) compiler_mesa.py:78 -- `f.write(lib[sizeof(struct_nak_shader_info):])`.
-+#   TODO(p3) compiler_mesa.py:67 -- `f.write(lib[sizeof(struct_nak_shader_info):])`.
-```
-
-## `tinybendygrad/runtime/support/objc.bend` -- 1 citations
-
-```diff
---- a/tinybendygrad/runtime/support/objc.bend
-+++ b/tinybendygrad/runtime/support/objc.bend
-@@ -89 +89 @@
--#     TODO(p3) runtime/support/objc.py:71 -- `classmethod(...)` wrapping.
-+#     TODO(p3) runtime/support/objc.py:13 -- `classmethod(...)` wrapping.
-```
-
-## `tinybendygrad/runtime/support/system.bend` -- 1 citations
-
-```diff
---- a/tinybendygrad/runtime/support/system.bend
-+++ b/tinybendygrad/runtime/support/system.bend
-@@ -89 +89 @@
--#    TODO(p3) runtime/support/system.py:58  -- `os.system(cmd)`.
-+#    TODO(p3) runtime/support/system.py:137  -- `os.system(cmd)`.
 ```
 
 ## `tinybendygrad/schedule/__init__.bend` -- 10 citations
