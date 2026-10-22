@@ -83,11 +83,29 @@ lf_row("where2", mm.lift(O.OpsWHERE{}, lf_c3(BndInt{False{}, H.i64_of_hi_lo(0, 1
 lf_row("where3", mm.lift(O.OpsWHERE{}, lf_c3(BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 3)}, BndInt{False{}, H.i64_of_hi_lo(0, 4)}), O.ANone{}, S.int32()))
 lf_row("padf", mm.lift(O.OpsPAD{}, lf_c3(bnd_f(F32.div(F32.from_nat(3n), F32.from_nat(2n))), BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 1)}), O.ANone{}, S.single()))
 lf_row("padn", mm.lift(O.OpsPAD{}, lf_c3(bnd_f(F32.neg(F32.div(F32.from_nat(3n), F32.from_nat(2n)))), BndInt{False{}, H.i64_of_hi_lo(0, 0)}, BndInt{False{}, H.i64_of_hi_lo(0, 2)}), O.ANone{}, S.single()))
+# THE `mv_flip` ROW IS GONE, AND THIS IS WHY. Upstream DELETED the op, IN TWO COMMITS: MEASURED
+# on the enum's own member count, `4e0192eaf remove Ops.GROUP (#18637)` (2026-10-06) took
+# upstream's `Ops` from 77 members to 76, and `900880433 remove Ops.FLIP [pr] (#18729)`
+# (2026-10-11) took it from 76 to 75 -- which is the count AT THE PIN `5c2bf39d6c4b`, where
+# the port's `Op` also has 75 variants, 0 missing and 0 extra. So there is no op to lift,
+# and `mm.lift.rest`'s table has no FLIP arm because it cannot have one.
+#
+# WHAT REPLACED IT IS ALREADY IN THIS FILE. Upstream kept the BEHAVIOUR and re-expressed it
+# over ops that still exist: `Tensor.flip` is PAD / SHRINK / TRANSPOSE per axis, in a loop
+# (`movement.py`), and the port's `mxf_flip` builds exactly that -- `mxw_pad`, `mxw_shrink`,
+# `mxw_permute` and `mxw_reshape`. EVERY ONE OF THOSE IS ALREADY LIFTED HERE: `mv_pad`,
+# `mv_shrink`, `mv_permute` and `mv_reshape` are four rows below. A flip is not one op to
+# lift; it is a COMPOSITION, and the composition's parts are the rows.
+#
+# WHERE THE FLIP IS COVERED, THEN. `gates/groupflip.bend` prints the OP SEQUENCE of the
+# flip and of the group, and the corpus's `flip` graph builds it at the TENSOR level --
+# `.agents/slop/graphcmp.bend`'s `g_flip` is `MX.mxw_flip(fb, [0])` over a `RESHAPE`d
+# `ALLOC`/`STACK` base, and its verdict is AGREE and byte-identical. The op-level row that
+# asked "what is a FLIP's interval" has no question to ask any more.
 lf_row("mv_reshape", mm.lift(O.OpsRESHAPE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
 lf_row("mv_expand", mm.lift(O.OpsEXPAND{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
 lf_row("mv_permute", mm.lift(O.OpsPERMUTE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
 lf_row("mv_shrink", mm.lift(O.OpsSHRINK{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
-lf_row("mv_flip", mm.lift(O.OpsFLIP{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
 lf_row("mv_index", mm.lift(O.OpsINDEX{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
 lf_row("mv_stage", mm.lift(O.OpsSTAGE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
 lf_row("mv_after", mm.lift(O.OpsAFTER{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))

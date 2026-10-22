@@ -6,7 +6,18 @@
 # nothing else, so a sibling regression in any of the other sixteen would be invisible. Every
 # reverse-dispatch binop routes through `tn_binop` -- VERIFIED by reading, `awk` over
 # `tinybendygrad/tensor.bend` prints sixteen `.go` bodies plus `tn_max`, and every one of the
-# seventeen is a `tn_binop(lhs, rhs, O.OpsX{})` line -- and this gate proves it for each.
+# seventeen is a `tn_binop(lhs, rhs, <the op>)` line -- and this gate proves it for each.
+#
+# **`<the op>` IS A PLACEHOLDER, AND IT IS SPELLED THAT WAY ON PURPOSE.** It used to be
+# `O.OpsX{}`, which reads like a constructor and names one that does not exist: upstream's
+# `Ops` at the pin `5c2bf39d6c4b` has 75 members and the port's `Op` has 75 variants -- 0
+# missing, 0 extra -- and there is no `OpsX` among them, nor `OpsGROUP`, nor `OpsFLIP`. The
+# name was in a COMMENT, so this file COMPILES (`bin/bend --check-only` answers
+# `ALL PROOFS CHECK`), and a tree-wide census that counted `OpsX` as a CONSTRUCTED op was
+# counting TEXT, not CODE: it read a name in a comment as a construction, and the three
+# "stale constructors" it named were one comment, one generated fixture written against an
+# upstream that no longer exists, and one real thing. **A NAME IN A COMMENT IS NOT A
+# CONSTRUCTION**, and a census that cannot tell the two is a census of strings.
 #
 # THE RIGHT OPERAND IS `3 + 3` IN ITS OWN ARENA AT EVERY ROW, so its index is NOT 0 and an
 # un-merged read lands on the slot the node itself takes. Each row asserts TWO facts in one
