@@ -2045,6 +2045,31 @@ def f_buf_r(+r: O.Found, dev: S.Dev, size: U32) -> O.Found:
 def f_buf(ar: O.Arena, dev: S.Dev, +size: U32) -> O.Found:
   f_buf_r(f_rng(ar, size, 0), dev, size)
 
+# THE ROW SHAPE, IN ONE PLACE: `nm = [answer]   py=[cpython]`.  THE `py=`
+# column is the CPython form of the SAME row, the reader reads it, and the
+# shape is the LANE'S OWN: `rebase-gate.py:377` calls `name = [v]   py=[w]` the
+# F2 shape and lists `render.bend` among the twelve ports that print it.
+#
+# ⚠ AND THE COLUMN HAS TO BE ON THE ROW'S OWN LINE.  The reader cuts a row at
+# `]   py=[` and KEEPS THE HEAD, so a column that sits on a line of its own is
+# not cut and BECOMES PART OF THE ANSWER.  FIVE ROWS DID EXACTLY THAT until
+# this commit -- `arg_repr AKern`, `AParam1`, `AParam2`, `AParam3` and `AProgr`
+# -- each of them TWO `IO.print`s, the second one the `py=` column indented
+# under the answer.  Their ANSWERS were identical to the oracle's and still
+# disagreed with it, because the port's carried the column as an extra line
+# and the oracle's carried none: MEASURED, the port lane had 49 continuation
+# lines and the oracle's 44, and the five were exactly the difference.  A
+# reader that has to be told about a producer's line break is a reader that
+# cannot see its own population, and TWO of them were: `rn-gate.py`'s
+# `logical_rows` and `eq-census2.py`'s F2 pass.
+#
+# UPSTREAM PRINTS NO COLUMN AT ALL -- `pyrender` returns
+# `'\n'.join([f"{k} = {strip_parens(v)}" ...])` -- so the column is this lane's
+# own device and its shape is this lane's own business.  BUT THE VALUE IS WHAT
+# THE GATE COMPARES, and a value that carries the column is not the answer.
+def py_cell(nm: String, py: String, ans: String) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", ans, "]   py=[", py, "]"]))
+
 # THE GATE ROW. A `do IO<Unit>` body cannot bind with `+`, so the fixture is a
 # `def` per rule and this one folds, renders and prints. `py=` is the CPython
 # string for the same tree, so a dropped literal or a moved `cN` is a DIFF.
@@ -2061,7 +2086,7 @@ def f_buf(ar: O.Arena, dev: S.Dev, +size: U32) -> O.Found:
 # (`81157efb0^`) PREDATES the migration, so these six are RIGHT AGAINST THE PIN
 # and WRONG AGAINST THAT CAPTURE.
 def py_row(nm: String, py: String, +f: O.Found) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", pyrender(O.Found.ar(f), F.UOp.fold(O.Found.ar(f)), O.Found.i(f)), "]   py=[", py, "]"]))
+  py_cell(nm, py, pyrender(O.Found.ar(f), F.UOp.fold(O.Found.ar(f)), O.Found.i(f)))
 
 # ---------------------------------------------------------------------------
 # `pyr_call` -- REWRITTEN UPSTREAM. `78d482262` replaced the predicate:
@@ -2136,7 +2161,7 @@ def pyr_buffer(+ar: O.Arena, +u: U32) -> Bool:
 # is exactly what let `pyr_call` go stale through `78d482262` with nothing
 # noticing. `b2u_nat` is the `Bool -> U32` spelling every other count row uses.
 def pyr_row(nm: String, py: String, b: Bool) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", Bool.show(b), "]   py=[", py, "]"]))
+  py_cell(nm, py, Bool.show(b))
 
 # RULE 1. `UOp.const(3)` -- a CONST with `src=()`, the only shape rule 1 matches.
 def g_const() -> O.Found: f_const(O.Arena.empty(), 3)
@@ -3054,17 +3079,21 @@ def main() -> IO(Unit):
     # not. Flipping `acall_repr` back to the dtype tail moves these two and not ACALL.
     IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.Arena.empty(), 0, O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False)")
     IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.Arena.empty(), 0, O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False)")
-    IO.print("arg_repr AKern   = [" ++ arg_repr(O.Arena.empty(), 0, O.AKernel{O.KernelInfo.of()}) ++ "]")
-    IO.print("                     py=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)")
-    IO.print("arg_repr AProgr  = [" ++ arg_repr(O.Arena.empty(), 0, O.AProgram{O.ProgramInfo.of()}) ++ "]")
-    IO.print("                     py=ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)")
+    # THE FIVE `arg_repr` ROWS THAT USED TO WRAP.  They were TWO `IO.print`s
+    # each, with the `py=` column indented under the answer on a line of its
+    # own, and a column on a line of its own is not cut by the reader -- so the
+    # port's ANSWER carried the column and CPython's did not, and five rows
+    # disagreed with the oracle about an answer they SHARE.  MEASURED: the port
+    # lane had 49 continuation lines and the oracle's 44, and these five were
+    # exactly the difference; the port's value for them was the oracle's value
+    # plus one line.  `py_cell` is the one row shape now, and its comment says
+    # why the column cannot have a line of its own.
+    py_cell("arg_repr AKern  ", "KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)", arg_repr(O.Arena.empty(), 0, O.AKernel{O.KernelInfo.of()}))
+    py_cell("arg_repr AProgr ", "ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)", arg_repr(O.Arena.empty(), 0, O.AProgram{O.ProgramInfo.of()}))
     IO.print("ops_repr ADD     = [" ++ O.Ops.name(O.OpsADD{}) ++ "]   py=Ops.ADD")
-    IO.print("arg_repr AParam1 = [" ++ arg_repr(O.Arena.empty(), 0, O.AParam{pa1()}) ++ "]")
-    IO.print("                     py=ParamArg(1, dtypes.f32, device='METAL')")
-    IO.print("arg_repr AParam2 = [" ++ arg_repr(O.Arena.empty(), 0, O.AParam{pa2()}) ++ "]")
-    IO.print("                     py=ParamArg(2, dtypes.i32, name='g')")
-    IO.print("arg_repr AParam3 = [" ++ arg_repr(O.Arena.empty(), 0, O.AParam{pa3()}) ++ "]")
-    IO.print("                     py=ParamArg(3, dtypes.f32, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))")
+    py_cell("arg_repr AParam1", "ParamArg(1, dtypes.f32, device='METAL')", arg_repr(O.Arena.empty(), 0, O.AParam{pa1()}))
+    py_cell("arg_repr AParam2", "ParamArg(2, dtypes.i32, name='g')", arg_repr(O.Arena.empty(), 0, O.AParam{pa2()}))
+    py_cell("arg_repr AParam3", "ParamArg(3, dtypes.f32, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))", arg_repr(O.Arena.empty(), 0, O.AParam{pa3()}))
     IO.print("tag_str  TStr    = [" ++ tag_str(O.TStr{"x"}) ++ "]   py=x")
     IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
     IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")
