@@ -1,4 +1,4 @@
-# tinybendygrad/renderer/isa/x86.bend -- tinygrad/renderer/isa/x86.py (770 lines).
+# tinybendygrad/renderer/isa/x86.bend -- tinygrad/renderer/isa/x86.py (779 lines).
 #
 # THE CONVENTIONS are `renderer/__init__.bend`'s HEADER, read in full before this
 # line was written; all twelve are obeyed. The three that bite here:
@@ -15,31 +15,31 @@
 # WHAT IS COVERED, BY STAGE, WITH THE PYTHON LINES EACH IS WORTH
 # ===========================================================================
 #
-#   STAGE 1  THE REGISTER TABLE                     py:161-185, 25 lines   DONE
+#   STAGE 1  THE REGISTER TABLE                     py:173-192, 20 lines   DONE
 #     `RAX = Register("rax", 0)` and its 31 siblings, name -> number, number ->
 #     name, class membership (GPR / WGPR / XMM / CALLEE_SAVED), and `reg_strs`'s
 #     forty-eight sub-register names. 121 rows.
 #
-#   STAGE 2  THE OP ENUM AND THE OPERAND CLASSES    py:14-86, 73 lines   DONE
-#     `X86Ops`'s eighty-nine names with their `auto()` numbers in BOTH directions,
+#   STAGE 2  THE OP ENUM AND THE OPERAND CLASSES    py:15-87, 73 lines   DONE
+#     `X86Ops`'s eighty-eight names with their `auto()` numbers in BOTH directions,
 #     the seven `X86GroupOp` / module-level op sets, and `GPR_DEST_OPS` /
-#     `XMM_OPS`. 105 rows. `Rm1st` is a FORMULA in the source (x86.py:86,
+#     `XMM_OPS`. 105 rows. `Rm1st` is a FORMULA in the source (x86.py:87,
 #     `... | (Rm2nd & TwoAddress)`) and `XMM_OPS` is a FILTER
 #     (`{op for op in X86Ops if op.name.startswith('V')} - GPR_DEST_OPS`), so
 #     porting the FORMULA and diffing its twenty-six- and forty-four-member results
 #     against CPython's sets tests arithmetic rather than restating a lookup.
 #
-#   STAGE 3  THE OPERAND RULES                      py:279-295, 17 lines   DONE
+#   STAGE 3  THE OPERAND RULES                      py:281-289,  9 lines   DONE
 #     `_xmm_sz` / `_xmm_sz_m`, which pick the MOV spelling from
 #     `max_numel * itemsize`, over a (dtype, numel) grid chosen to straddle BOTH
 #     thresholds. 105 rows (three per fixture: spelling, memory spelling, bits).
 #
-#   STAGE 4  THE ENCODING TABLE                     py:624-687, 64 lines   DONE
+#   STAGE 4  THE ENCODING TABLE                     py:616-679, 64 lines   DONE
 #     `encodings`: every op's `encode(opc, reg=, pp=, sel=, we=)` parameters as
 #     data, plus the eight entries that build BYTES DIRECTLY (`MOVABS`'s
-#     `REX.W+B8+r` and the six jumps and `RET`). 89 rows.
+#     `REX.W+B8+r` and the six jumps and `RET`). 88 rows.
 #
-#   STAGE 5  THE ENCODER                              py:528-618, 91 lines   DONE
+#   STAGE 5  THE ENCODER                              py:520-610, 91 lines   DONE
 #     `encode`'s prefix / REX / VEX, MODRM, SIB, displacement and immediate bytes.
 #     GATED ON REAL MACHINE BYTES: the `hex.*` rows are CPython's own `encode()`
 #     output for a fixed fixture and the `enc.*` rows are its `encode()` PARAMETERS
@@ -47,26 +47,26 @@
 #     table and its own arithmetic. A wrong opcode cannot produce the same bytes.
 #     74 + 12 rows.
 #
-#   STAGE 7  THE ASSEMBLY TEXT                        py:728-749, 22 lines   DONE
+#   STAGE 7  THE ASSEMBLY TEXT                        py:737-758, 22 lines   DONE
 #     `asm_str`'s `_format_op` / `_format` / `_mem_adress` / the three-arm operand
 #     split / the skip / the join, as one `Bool` row per line of CPython's own
 #     output plus a count. 13 rows. `Asm.line` is the whole formatter; the UOp graph
 #     is the gate's input and not this file's type.
 #
-#   STAGE 6  THE RENDERER'S OWN CONSTANTS           py:700-710, 11 lines   DONE
-#            + py:770, 1 line
+#   STAGE 6  THE RENDERER'S OWN CONSTANTS           py:709-726, 18 lines   DONE
+#            + py:779, 1 line
 #     `device`, `has_local`, `global_max`, `code_for_op`, and `supported_dtypes` as
 #     the SET DIFFERENCE it is: `Cls.base_dtypes` walked and filtered by
 #     `Cls.dropped`, with a row per name on both sides. 27 rows.
 #
-#   STAGE 8  JUMP PATCHING                          py:751-768, 18 lines   PART
+#   STAGE 8  JUMP PATCHING                          py:760-777, 18 lines   PART
 #     `render`'s label table, jump backpatch table and the little-endian signed
 #     four-byte patch. The BYTES ARE PORTED and gated; the `targets`/`jumps`
 #     DICTS are keyed by UOp and by a Python object, which is a substrate gap (see
-#     NOT PORTED). `TODO(p3) x86.py:752`.
+#     NOT PORTED). `TODO(p3) x86.py:761`.
 #
-#   STAGE 3b `to_int` and `is_two_address`           py:190, 716           DONE
-#     20 + 89 rows. `to_int` is asked with a DTYPE OBJECT -- `S.half()`, `S.single()`,
+#   STAGE 3b `to_int` and `is_two_address`           py:199, 725           DONE
+#     20 + 88 rows. `to_int` is asked with a DTYPE OBJECT -- `S.half()`, `S.single()`,
 #     `S.double()`, all TWENTY of them -- and answers DTYPE `name`s, `i16`/`i32`/`i64`.
 #     It used to be asked with a NAME and armed on the pre-793abbb attribute spellings,
 #     which made the seven rows below incapable of failing; see `Op.to_int` itself.
@@ -88,10 +88,10 @@
 #   half-built, because a matcher that cannot match is not a partial port, it is a
 #   different program. `TODO(p3) x86.py:90`.
 #
-# * `pre_isel_matcher` (py:148-159, 12 lines) -- same wall. `TODO(p3) x86.py:148`.
-# * `isel_matcher` (py:315-452, 138 lines) -- THE BULK OF THE FILE, and it is
+# * `pre_isel_matcher` (py:156-168, 13 lines) -- same wall. `TODO(p3) x86.py:156`.
+# * `isel_matcher` (py:312-450, 139 lines) -- THE BULK OF THE FILE, and it is
 #   ninety-eight `PatternMatcher` entries. Same wall; this is why 350 and not 700.
-#   `TODO(p3) x86.py:315`.
+#   `TODO(p3) x86.py:312`.
 # * `pre_regalloc_matcher` (py:471-474) and `post_regalloc_matcher`
 #   (py:507-524) -- patterns again, and their rewrites
 #   (`flag_rematerialize`, `alloc_buffer`, `lower_range`, `lower_end`,
@@ -100,32 +100,37 @@
 #   is a `Ref`-per-field context record. `TODO(p3) x86.py:458`, `:466`, `:478`,
 #   `:490`, `:496`, `:501`.
 #
-# * `scratch_buffer` (py:126-127) -- `UOp.placeholder` and `AddrSpace.LOCAL`; it
+# * `scratch_buffer` (py:135) -- `UOp.placeholder` and `AddrSpace.LOCAL`; it
 #   builds an arena node, so it needs the UOp arena and `AddrSpace` in `spec.bend`.
 #   `TODO(p3) x86.py:126`.
-# * `gated_load` (py:129-134) and `gated_store` (py:136-139) -- both build a
+# * `gated_load` (py:137-143) and `gated_store` (py:144-146) -- both build a
 #   FOUR-node `AFTER` subtree and read `ctx` for a slot number. The DECISION they
 #   make -- which index is selected by the gate -- is a pure function and is not
 #   ported, because without the arena the "answer" is a string with no referent.
-#   `TODO(p3) x86.py:129`, `:136`.
+#   `TODO(p3) x86.py:137`, `:144`.
 # * `flag_gate` (py:144-145) -- ONE LINE and it is pure: `None` unless the op is a
 #   comparison on a non-float, else `m != const(0, int)`. It needs `Ops`' comparison
 #   set and `dtypes.floats`, both of which ARE in the substrate; the port keeps it
 #   out because its only two callers are inside the two matchers above. Carrying a
 #   def nothing calls is invisible to every check (`bend2-constraints.md` line
-#   1502 records three such defs in `schedule/indexing.bend`). `TODO(p3) x86.py:144`.
+#   1502 records three such defs in `schedule/indexing.bend`). `TODO(p3) x86.py:152`.
 # * `def_reg` (py:162) and `undef` (py:164) -- `UOp(Ops.INS, arg=(DEFINE, void),
 #   tag=(reg,))` and `UOp(Ops.NOOP)`; both are one arena node each. `stack_pointer`
 #   (py:185) is `def_reg(RSP)` and IS named as a register by the gate, so the
 #   register it wraps is ported. `TODO(p3) x86.py:162`.
-# * `base` / `lane` (py:188-189) -- both read `x.src[i]`'s src1.src0.val through
-#   `Ops.INDEX`. Arena reads. `TODO(p3) x86.py:188`.
+#   **UPSTREAM REMOVED BOTH** (the `DEFINE` placeholder went with it, and `undef()`
+#   became an inline `UOp(Ops.NOOP)`), and `stack_pointer` is now
+#   `UOp.placeholder((1,), dtypes.uint64, slot=-1, addrspace=AddrSpace.REG).replace(
+#   tag=(RSP,))` (py:192). So this hole is GONE, not carried: there is no `def_reg` to
+#   port, and the gate's `reg.stackptr` row asks the register and not the node.
+# * `base` / `lane` (py:197-198) -- both read `x.src[i]`'s src1.src0.val through
+#   `Ops.INDEX`. Arena reads. `TODO(p3) x86.py:197`.
 # * `asm_str` is DONE (py:728-749, STAGE 7) and so is `_format` / `_mem_adress`. One
 #   limit inside it is a WALL and not an omission: `AsmMem.disp` is a `U32` and
 #   CPython's displacement is a signed `int`, so `f" + {-3}"` has no Bend spelling.
 #   MEASURED, and it is the only reason the `rm1stnoidx` fixture displaces by `3`.
 #
-# * `imm` (py:191) / `to_imm` (py:192-196) -- `truncate[dt](v)` is
+# * `imm` (py:200) / `to_imm` (py:201-205) -- `truncate[dt](v)` is
 #   `dtype.bend`'s table and the answer is a `.rtag()`'d arena node; `to_imm`'s int64
 #   branch needs `DType.overflows`, which is `dtype.bend`'s too, and `dtype.bend`
 #   fails its own gate on 14 permanently unfilled laws. `to_imm`'s DECISION
@@ -133,54 +138,57 @@
 #   rather than ported alone. MEASURED while writing STAGE 7: `imm`'s `.rtag()` is
 #   load-bearing for the assembler -- `rdef` of a bare CAST is None and `_format`
 #   DROPS such an operand, while `rdef` of an `imm` is `True` and it is kept. The two
-#   differ only in the tag. `TODO(p3) x86.py:191`.
+#   differ only in the tag. `TODO(p3) x86.py:200`.
 # * `cmp` (py:199-201) / `mask` (py:203-205) -- build `x.ins(...)` nodes; `cmp`
 #   also RAISES on a float src[0], which is a wall, not a return. `TODO(p3)
-#   x86.py:199`.
-# * `vinsertps` (py:210-214) / `vpins` (py:218-220) / `idiv` (py:223-239) /
-#   `shift` (py:242-244) -- all `functools.reduce` chains over `x.ins(...)`.
-#   `TODO(p3) x86.py:210`.
-# * `fold_address` (py:247-257) / `lea` (py:260) / `is_address` (py:261-265) /
-#   `_is_vec_xmm` (py:282-283) -- pure DECISIONS over `x.op`, `x.src`, `base.dtype`
-#   and `x.vmin`; every input is an arena read. `is_address` in particular is five
-#   lines and four of them compare `x.arg[0]` against `{LEA, DEFINE}` and
-#   `X86GroupOp.Copy`, and that comparison IS ported -- as the `grp.*` rows -- with
-#   only the arena walk missing. `TODO(p3) x86.py:247`.
-# * `abi` (py:267-277) -- `_reg_arg` / `_stack_arg` build nodes and read
+#   x86.py:207`.
+# * `vinsertps` (py:219-225) / `vpins` (py:227-229) / `idiv` (py:231-242) /
+#   `shift` (py:244-248) -- all `functools.reduce` chains over `x.ins(...)`.
+#   `TODO(p3) x86.py:219`.
+# * `fold_address` (py:250-261) / `lea` (py:264) / `_is_vec_xmm` (py:278-279) --
+#   pure DECISIONS over `x.op`, `x.src`, `base.dtype` and `x.vmin`; every input is an
+#   arena read. `is_address` (py:261-265 in the old upstream) is GONE -- upstream
+#   deleted it -- so this hole is one function smaller than it was. `TODO(p3)
+#   x86.py:250`.
+# * `abi` (py:265-272) -- `_reg_arg` / `_stack_arg` build nodes and read
 #   `ctx.func_args`, which is a `sorted(...)` over `sink.toposort()`. `TODO(p3)
-#   x86.py:267`.
+#   x86.py:265`.
 # * `alloc_vregs` (py:297-313) -- reads `ctx.reg_n`, calls `ctx.vreg`, which
-#   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:297`.
+#   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:293`.
 # * `X86LinearContext` (py:689-698) and `assign_spill_slot` (py:694-698) -- the
 #   `lock` / `stack_allocated` / `stack_size` state above. `TODO(p3) x86.py:689`.
-# * `X86Renderer.__init__` (py:711-715) -- the arch check is `arch.split(",")[0]
+# * `X86Renderer.__init__` (py:720-726) -- the arch check is `arch.split(",")[0]
 #   != "x86_64"` (one `String.split`, P3) and then `from
 #   tinygrad.runtime.support.compiler_cpu import X86Compiler`, which is a Clang
-#   PROCESS SPAWN. FFI. `TODO(p3) x86.py:711`.
-# * `is_two_address` (py:716) / `copy` (py:717) -- `is_two_address` IS ported
-#   (89 rows). `copy` is `x.ins(MOV, src=(x,), tag=reg)`: one node. `TODO(p3)
-#   x86.py:717`.
-# * `spill` (py:719-722) / `fill` (py:724-726) -- build nodes from `fold_address`
+#   PROCESS SPAWN. FFI. `TODO(p3) x86.py:720`.
+# * `is_two_address` (py:725) / `copy` (py:726) -- `is_two_address` IS ported
+#   (88 rows). `copy` is `x.ins(MOV, src=(x,), tag=reg)`: one node. `TODO(p3)
+#   x86.py:726`.
+# * `spill` (py:728-731) / `fill` (py:733-735) -- build nodes from `fold_address`
 #   and read `rdef(x).cons[0] in XMM`, which IS a membership test against the XMM
-#   class the gate ports. The node build is not. `TODO(p3) x86.py:719`.
-# * `render`'s `targets` / `jumps` DICT (py:752-753, 767) -- keyed by a UOp and by
+#   class the gate ports. The node build is not. `TODO(p3) x86.py:728`.
+# * `render`'s `targets` / `jumps` DICT (py:761-762, 776) -- keyed by a UOp and by
 #   a Python `object`. The patch arithmetic is ported; the keying is a substrate
-#   change. `TODO(p3) x86.py:752`.
+#   change. `TODO(p3) x86.py:761`.
 #
 # ===========================================================================
-# THE GATE. `.agents/slop/x86/x86-oracle.py` is the ONLY source of `py=` text, and
+# THE GATE. `gates/x86_isa-oracle.py` is the ONLY source of `py=` text, and
 # `rows` / `bend` / `gate` are ONE RUN, so the reference and the gate's row source
 # cannot drift. EVERY expectation is CPython calling `tinygrad/renderer/isa/x86.py`
 # on THIS tree -- including the `hex.*` rows, which are CPython's own `encode()`
 # bytes for a fixed fixture and not a transcription of them, and the `asm.*` rows,
 # which are CPython's own `asm_str` output.
 #
-#   .venv/bin/python .agents/slop/x86/x86-oracle.py rows > .agents/slop/x86/py1.txt
-#   ./bin/bend tinybendygrad/renderer/isa/x86.bend > .agents/slop/x86/i.txt
-#   diff .agents/slop/x86/i.txt .agents/slop/x86/py1.txt && echo GATE GREEN
+#   .venv/bin/python gates/x86_isa-oracle.py rows > /tmp/py.rows
+#   ./bin/bend tinybendygrad/renderer/isa/x86.bend > /tmp/port.rows
+#   diff /tmp/port.rows /tmp/py.rows && echo GATE GREEN
 #
-# 774 rows. NO `py=` LITERAL IN THIS FILE IS TYPED. THE ROWS THEMSELVES ARE WRITTEN BY
-# `.agents/slop/x86/x86-gen.py`, which replaces the `Gate.rowsN()` blocks wholesale, so
+# 769 rows, AND NO `py=` HALF IN THIS FILE IS A LITERAL ANY MORE. Every row is
+# `rd(NAME, EXPR)`, and `rd` puts the PORT'S OWN VALUE in both halves, so a row
+# cannot disagree with itself and a stale row cannot sit here saying something the
+# port does not believe. THE ASSERTION IS THE LANE DIFF: the port's bytes against
+# CPython's bytes, byte for byte. THE ROWS THEMSELVES ARE WRITTEN BY
+# `gates/x86_isa-oracle.py`, which replaces the `Gate.rowsN()` blocks wholesale, so
 # there is no hand-edited copy of a generated table to fall out of date.
 # ===========================================================================
 
@@ -188,7 +196,7 @@ import Base
 import ./../../LAWS/spec.bend as S
 
 # ===========================================================================
-# `Hex` -- `binary.hex()` (x86.py:768). Base has decimal `Nat.show`/`U32.show` and
+# `Hex` -- `binary.hex()` (x86.py:777). Base has decimal `Nat.show`/`U32.show` and
 # no hex formatter, and the byte rows are worthless without one, so it is eight
 # lines here rather than a hole in the gate. Two digits per byte, lower case,
 # leading zero PRESERVED: CPython's `bytes.hex()` never drops it, and a byte gate
@@ -242,7 +250,7 @@ def Hex.bytes.go(bs: List<&2, U32>, +acc: String) -> String:
 def Hex.bytes(bs: List<&2, U32>) -> String: Hex.bytes.go(bs, "")
 
 # ===========================================================================
-# STAGE 1 -- THE REGISTER TABLE. x86.py:166-183.
+# STAGE 1 -- THE REGISTER TABLE. x86.py:173-192.
 #
 #     RAX = Register("rax", 0) ... RDI = Register("rdi", 7)
 #     GPR  = (RAX..RDI) + tuple(Register(f"r{i}", i) for i in range(8, 16))
@@ -488,13 +496,19 @@ def Reg.strs_lookup(+nm: String, +sz: U32) -> String:
 #
 # `FastEnum` + `auto()` assigns 0, 1, 2, ... IN DECLARATION ORDER, so the NAMES IN
 # ORDER *are* the numbering and `op_num` is a position lookup. The table is emitted
-# by `.agents/slop/x86/x86-oracle.py tables`; what the gate then tests is the
-# ARITHMETIC (both directions, 178 rows) and every derived predicate below.
+# by `gates/x86_isa-oracle.py tables`; what the gate then tests is the
+# ARITHMETIC (both directions, 176 rows) and every derived predicate below.
+#
+# EIGHTY-EIGHT NAMES, AND `DEFINE` IS NOT ONE OF THEM. Upstream removed the
+# "register placeholder that defines a register without emitting an instruction"
+# (x86.py:14-16) -- `def_reg` went with it -- so the eighty-nine-name table that was
+# here was a name upstream does not have, and every `op.*` / `oprev *` / `2a.*` row
+# about it was a row about an op that is not in the file being ported.
 # ===========================================================================
 
 def op_names() -> List<&2, String>: [
-    "FRAME_INDEX", "LABEL", "DEFINE", "LOOP_CMP", "LEA", "MOV", "MOVm", "MOVi", "MOVABS",
-    "VMOVSS", "VMOVSD", "VMOVUPS", "VMOVSSm", "VMOVSDm", "VMOVUPSm", "MOVZX", "MOVSX", "MOVSXD",
+    "FRAME_INDEX", "LABEL", "LOOP_CMP", "LEA", "MOV", "MOVm", "MOVi", "MOVABS", "VMOVSS",
+    "VMOVSD", "VMOVUPS", "VMOVSSm", "VMOVSDm", "VMOVUPSm", "MOVZX", "MOVSX", "MOVSXD",
     "VCVTPH2PS", "VCVTPS2PH", "VCVTSS2SD", "VCVTSD2SS", "VCVTSI2SS", "VCVTSI2SD", "VCVTTSS2SI",
     "VCVTTSD2SI", "VMOVD", "VMOVQ", "VMOVDm", "VMOVQm", "VCMPSS", "VCMPSD", "SETNE", "SETE",
     "SETL", "SETB", "CMOVNE", "CMOVE", "CMOVL", "CMOVB", "VBLENDVPS", "VBLENDVPD", "JNE", "JE",
@@ -513,14 +527,21 @@ def op_len() -> U32: U32.from_nat(List.length(&2, String, op_names()))
 # LITERAL -- `ops.bend`'s `Found.of(p: Arena & U32)` destructures one, nothing
 # constructs one.
 #
-# THE BASE IS 78 AND NOT 0, AND THAT IS THE FIRST THING THIS GATE FOUND. `FastEnum`'s
+# THE BASE IS 76 AND NOT 0, AND THAT IS THE FIRST THING THIS GATE FOUND. `FastEnum`'s
 # `auto()` CONTINUES FROM THE BASE `Ops` ENUM rather than restarting, so
-# `X86Ops.FRAME_INDEX` is 78 and `X86Ops.RET` is 166 -- eighty-nine ops numbered FROM
-# 78. A port that assumed 0..88 would print eighty-nine plausible numbers, every one
-# wrong, and `op.count` would still read 89. The 178 `op.*` / `oprev *` rows are what
+# `X86Ops.FRAME_INDEX` is 76 and `X86Ops.RET` is 163 -- eighty-eight ops numbered FROM
+# 76. A port that assumed 0..87 would print eighty-eight plausible numbers, every one
+# wrong, and `op.count` would still read 88. The 176 `op.*` / `oprev *` rows are what
 # caught it, which is why BOTH DIRECTIONS are gated and why a count is never a gate.
+#
+# THE BASE MOVED WHEN UPSTREAM'S `Ops` ENUM SHRANK, AND IT MOVED WITHOUT THE PORT
+# NOTICING: the `op.*` rows carried LITERAL `py=` halves, so a base that no longer
+# matched upstream was A NUMBER IN A STRING and nothing compared the two. The rows are
+# DERIVED now -- `rd("op.FRAME_INDEX", op_num("FRAME_INDEX"))` -- so the port's base and
+# CPython's base are compared by the lane diff, and a stale base is a DIFF and not a
+# comment.
 
-def Op.base() -> U32: 78
+def Op.base() -> U32: 76
 
 def Op.fwd(+ns: List<&2, String>, +nm: String, +i: U32) -> String:
   match ns:
@@ -593,9 +614,10 @@ def Enc.we_sel(e: Enc) -> U32:
   match e:
     case Enc{name, opc, reg, has_reg, pp, sel, we}: we
 
-# the row for an op that has NO encoding. `DEFINE`, `LABEL`, `FRAME_INDEX` and
-# `LOOP_CMP` are not instructions and `x86.py:761` raises on one -- the port answers
-# `enc.missing` instead, which is the same fact in a form a row can hold.
+# the row for an op that has NO encoding. `LABEL`, `FRAME_INDEX` and `LOOP_CMP` are
+# not instructions and `x86.py:770` raises on one -- the port answers `enc.missing`
+# instead, which is the same fact in a form a row can hold. (`DEFINE` was the fourth
+# and upstream removed it.)
 
 def Enc.none() -> Enc: Enc.of("-", 0, 0, False{}, 0, 0, 0)
 
@@ -675,7 +697,7 @@ def Op.member(+nm: String, +which: U32) -> Bool:
     case 8: Op.xmm_ops(nm)
     case _: Op.in_(nm, which)
 
-# `X86Renderer.is_two_address` (x86.py:716) IS `x.op is Ops.INS and x.arg[0] in
+# `X86Renderer.is_two_address` (x86.py:725) IS `x.op is Ops.INS and x.arg[0] in
 # TwoAddress`, and every row in `x86.py`'s isel matcher is an `Ops.INS`, so the op
 # test is the register test here and the membership is `TwoAddress`.
 
@@ -697,7 +719,7 @@ def Op.set_name(+which: U32) -> String: String.join(Op.set_names(which), ",")
 def Op.set_len(+which: U32) -> U32: U32.from_nat(List.length(&2, String, Op.set_names(which)))
 
 # ===========================================================================
-# STAGE 3 -- THE MOV SPELLING. x86.py:285-295.
+# STAGE 3 -- THE MOV SPELLING. x86.py:281-289.
 #
 #     def _xmm_sz(x):   bits = x.max_numel() * x.dtype.itemsize
 #                       if bits >= 16: return X86Ops.VMOVUPS
@@ -736,7 +758,7 @@ def Op.xmm_sz_m.of(+arm: U32) -> String:
 
 def Op.xmm_sz_m(+bits: U32) -> String: Op.xmm_sz_m.of(Op.sz_arm(bits))
 
-# `to_int` (x86.py:190) -- `{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32,
+# `to_int` (x86.py:199) -- `{dtypes.float16: dtypes.int16, dtypes.float32: dtypes.int32,
 # dtypes.float64: dtypes.int64}[dt]`. THE MISSING ARM IS A `KeyError` IN PYTHON, and it is a
 # row rather than a hole: `to_int(dtypes.int32)` has no answer, and a port that answered one
 # would be answering a question nobody asked. Every one of the TWENTY dtypes is a row.
@@ -1323,7 +1345,7 @@ def Enc.movabs(+reg: U32, +imm: U32) -> List<&2, U32>:
   Enc.cat([U32.or(72, U32.shrn(reg, 3n)), U32.add(184, U32.and(reg, 7))], Enc.imm_int(8n, 8n, imm))
 
 # ===========================================================================
-# STAGE 7 -- `asm_str`. x86.py:728-749. THE ASSEMBLY TEXT.
+# STAGE 7 -- `asm_str`. x86.py:737-758. THE ASSEMBLY TEXT.
 #
 # THE PORT IS THE FORMAT AND NOT THE GRAPH. `asm_str` reads a `list[UOp]`, and a UOp
 # graph is not this file's type: `ops.bend`'s `Arena` is a different representation with
@@ -1335,8 +1357,9 @@ def Enc.movabs(+reg: U32, +imm: U32) -> List<&2, U32>:
 # formats, so a wrong formatter byte is a diff.
 #
 # WHAT THE ORACLE DOES AND DOES NOT DECIDE. It decides which uop is a LABEL, which is a
-# RET and which is skipped, because that is `u.op is not Ops.INS or u.arg[0] is
-# X86Ops.DEFINE` -- a property of the graph. It does NOT decide how a mnemonic is
+# RET and which is skipped, because that is `u.op is not Ops.INS` -- a property of the
+# graph. (`arg[0] is X86Ops.DEFINE` was the second clause and upstream removed
+# `DEFINE`.) It does NOT decide how a mnemonic is
 # spelled, how wide it is padded, which of the four operand arms fires, or where the
 # commas go: `Asm.line` is the whole of that and it is the thing under test.
 # ===========================================================================
@@ -1345,8 +1368,8 @@ type AsmArg is Data: AsmArg{nm: String, sz: U32, val: U32, imm: Bool}
 type AsmMem is Data: AsmMem{base: String, idx: String, scale: U32, disp: U32}
 type AsmOp is Data: AsmOp{kind: U32, mn: String, tag: String, dsts: List<&2, AsmArg>, has_mem: Bool, mem: AsmMem, srcs: List<&2, AsmArg>}
 
-# KIND 0 an instruction with operands, 1 `RET` (mnemonic only, x86.py:747), 2 a LABEL
-# (`f"{str(u.tag)}:"`, x86.py:746), 3 skipped (`u.op is not Ops.INS or arg[0] is DEFINE`).
+# KIND 0 an instruction with operands, 1 `RET` (mnemonic only, x86.py:756), 2 a LABEL
+# (`f"{str(u.tag)}:"`, x86.py:755), 3 skipped (`u.op is not Ops.INS`).
 def AsmOp.of(+k: U32, +mn: String, +tag: String, +dsts: List<&2, AsmArg>, +has_mem: Bool, +mem: AsmMem, +srcs: List<&2, AsmArg>) -> AsmOp:
   AsmOp{k, mn, tag, dsts, has_mem, mem, srcs}
 
@@ -1549,7 +1572,7 @@ def asm_str(+fn: String, +os: List<&2, AsmOp>) -> List<&2, String>:
 
 
 # ===========================================================================
-# STAGE 8 -- `render`'s JUMP PATCH. x86.py:766-767.
+# STAGE 8 -- `render`'s JUMP PATCH. x86.py:775-776.
 #
 # `for u in uops: if (t:=jumps.get(u)) is not None:
 #  binary[t-4:t] = (targets[u.tag] - t).to_bytes(4, 'little', signed=True)`.
@@ -1671,7 +1694,7 @@ def enc_count_walk() -> U32: enc_count_walk.go(enc_table(), 0)
 def Enc.direct_names() -> List<&2, String>:
   ["MOVABS", "JMP", "RET", "JE", "JNE", "JL", "JB", "JGE"]
 
-# `x86.py:761` raises for an op with no `encodings` entry, and the four that have none
+# `x86.py:770` raises for an op with no `encodings` entry, and the three that have none
 # are the four that are not instructions. The list is the PORT's own miss answer walked
 # over the enum, so `enc.missing` cannot disagree with `enc.norow <NAME>`.
 
@@ -1691,10 +1714,11 @@ def EncCount.encode_calls(es: List<&2, Enc>, +i: U32) -> U32: EncCount.encode_ca
 
 def enc_paramcount() -> U32: EncCount.encode_calls(enc_table(), 0)
 
-# THE FOUR THAT MISS, AND NOT THE TWELVE THAT LOOK LIKE IT. An op has no `encode`
-# PARAMETERS either because it is not an instruction (`DEFINE`, `LABEL`,
-# `FRAME_INDEX`, `LOOP_CMP`) or because it builds its BYTES DIRECTLY (the six jumps,
-# `JMP`, `RET`, `MOVABS`) -- and the second group IS in `encodings`. Walking
+# THE THREE THAT MISS, AND NOT THE TWELVE THAT LOOK LIKE IT. An op has no `encode`
+# PARAMETERS either because it is not an instruction (`LABEL`, `FRAME_INDEX`,
+# `LOOP_CMP`; upstream's fourth, `DEFINE`, is gone) or because it builds its BYTES
+# DIRECTLY (the six jumps, `JMP`, `RET`, `MOVABS`) -- and the second group IS in
+# `encodings`. Walking
 # `enc_find`'s miss without the `is_direct` test listed all twelve, which is what the
 # `enc.missing` row showed on the first run.
 
@@ -1845,838 +1869,836 @@ def Cls.supported_dtypes_n() -> U32:
 #     "a row that re-transcribes agrees with a port that misread it". The `py=` halves
 #     were never touched: they were always CPython's own bytes.
 #
-# THE GATE. Every row below is GENERATED -- `.agents/slop/x86/x86-oracle.py gate`, written
-# in place by `.agents/slop/x86/x86-gen.py` -- and every `py=` half is CPython calling
-# `tinygrad/renderer/isa/x86.py` on THIS tree. NO `py=` LITERAL IN THIS FILE IS TYPED.
+# THE GATE. Every row below is GENERATED -- `gates/x86_isa-oracle.py gate` -- and every
+# `py=` half is CPython calling `tinygrad/renderer/isa/x86.py` on THIS tree.
 #
-#   .venv/bin/python .agents/slop/x86/x86-oracle.py rows > .agents/slop/x86/py1.txt
-#   ./bin/bend tinybendygrad/renderer/isa/x86.bend > .agents/slop/x86/i.txt
-#   diff .agents/slop/x86/i.txt .agents/slop/x86/py1.txt && echo GATE GREEN
+#   .venv/bin/python gates/x86_isa-oracle.py rows > /tmp/py.rows
+#   ./bin/bend tinybendygrad/renderer/isa/x86.bend > /tmp/port.rows
+#   diff /tmp/port.rows /tmp/py.rows && echo GATE GREEN
+#
+# AND NO `py=` HALF IN THIS FILE IS A LITERAL ANY MORE. Every row is `rd(NAME, EXPR)`,
+# and `rd` puts the PORT'S OWN VALUE in both halves: the `py=` half is the same
+# expression the `got=` half is, read through the same table. A literal `py=` half was
+# a TRANSCRIPTION of CPython's answer -- a second copy of the thing the port is being
+# asked about -- and it was the reason a stale row could sit here saying something the
+# port did not believe. THE ASSERTION MOVED TO THE LANE DIFF: the port's bytes against
+# CPython's bytes, byte for byte, is what a derived row cannot do to itself.
+
+# THE ROW BUILDER. `r` is `renderer/tc.bend`'s, copied and not invented: it takes the
+# `py=` half as an ARGUMENT because `tc_ptx.bend` calls it too, and `rd` is the DERIVED
+# half of it -- `py=` is the port's own value, so a row cannot disagree with itself.
+def r(+nm: String, +got: String, +want: String) -> String:
+  String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
+
+def rd(+nm: String, +got: String) -> String: r(nm, got, got)
 
 def Gate.rows0() -> List<&2, String>: [
-   "reg.gpr rax = [" ++ RegTriple(Reg.gpr(0)) ++ "]   py=[rax 0 8]"
-   "reg.gpr rcx = [" ++ RegTriple(Reg.gpr(1)) ++ "]   py=[rcx 1 8]"
-   "reg.gpr rdx = [" ++ RegTriple(Reg.gpr(2)) ++ "]   py=[rdx 2 8]"
-   "reg.gpr rbx = [" ++ RegTriple(Reg.gpr(3)) ++ "]   py=[rbx 3 8]"
-   "reg.gpr rsp = [" ++ RegTriple(Reg.gpr(4)) ++ "]   py=[rsp 4 8]"
-   "reg.gpr rbp = [" ++ RegTriple(Reg.gpr(5)) ++ "]   py=[rbp 5 8]"
-   "reg.gpr rsi = [" ++ RegTriple(Reg.gpr(6)) ++ "]   py=[rsi 6 8]"
-   "reg.gpr rdi = [" ++ RegTriple(Reg.gpr(7)) ++ "]   py=[rdi 7 8]"
-   "reg.gpr r8 = [" ++ RegTriple(Reg.gpr(8)) ++ "]   py=[r8 8 8]"
-   "reg.gpr r9 = [" ++ RegTriple(Reg.gpr(9)) ++ "]   py=[r9 9 8]"
-   "reg.gpr r10 = [" ++ RegTriple(Reg.gpr(10)) ++ "]   py=[r10 10 8]"
-   "reg.gpr r11 = [" ++ RegTriple(Reg.gpr(11)) ++ "]   py=[r11 11 8]"
-   "reg.gpr r12 = [" ++ RegTriple(Reg.gpr(12)) ++ "]   py=[r12 12 8]"
-   "reg.gpr r13 = [" ++ RegTriple(Reg.gpr(13)) ++ "]   py=[r13 13 8]"
-   "reg.gpr r14 = [" ++ RegTriple(Reg.gpr(14)) ++ "]   py=[r14 14 8]"
-   "reg.gpr r15 = [" ++ RegTriple(Reg.gpr(15)) ++ "]   py=[r15 15 8]"
-   "reg.xmm xmm0 = [" ++ RegTriple(Reg.xmm(0)) ++ "]   py=[xmm0 0 16]"
-   "reg.xmm xmm1 = [" ++ RegTriple(Reg.xmm(1)) ++ "]   py=[xmm1 1 16]"
-   "reg.xmm xmm2 = [" ++ RegTriple(Reg.xmm(2)) ++ "]   py=[xmm2 2 16]"
-   "reg.xmm xmm3 = [" ++ RegTriple(Reg.xmm(3)) ++ "]   py=[xmm3 3 16]"
-   "reg.xmm xmm4 = [" ++ RegTriple(Reg.xmm(4)) ++ "]   py=[xmm4 4 16]"
-   "reg.xmm xmm5 = [" ++ RegTriple(Reg.xmm(5)) ++ "]   py=[xmm5 5 16]"
-   "reg.xmm xmm6 = [" ++ RegTriple(Reg.xmm(6)) ++ "]   py=[xmm6 6 16]"
-   "reg.xmm xmm7 = [" ++ RegTriple(Reg.xmm(7)) ++ "]   py=[xmm7 7 16]"
-   "reg.xmm xmm8 = [" ++ RegTriple(Reg.xmm(8)) ++ "]   py=[xmm8 8 16]"
-   "reg.xmm xmm9 = [" ++ RegTriple(Reg.xmm(9)) ++ "]   py=[xmm9 9 16]"
-   "reg.xmm xmm10 = [" ++ RegTriple(Reg.xmm(10)) ++ "]   py=[xmm10 10 16]"
-   "reg.xmm xmm11 = [" ++ RegTriple(Reg.xmm(11)) ++ "]   py=[xmm11 11 16]"
-   "reg.xmm xmm12 = [" ++ RegTriple(Reg.xmm(12)) ++ "]   py=[xmm12 12 16]"
-   "reg.xmm xmm13 = [" ++ RegTriple(Reg.xmm(13)) ++ "]   py=[xmm13 13 16]"
-   "reg.xmm xmm14 = [" ++ RegTriple(Reg.xmm(14)) ++ "]   py=[xmm14 14 16]"
-   "reg.xmm xmm15 = [" ++ RegTriple(Reg.xmm(15)) ++ "]   py=[xmm15 15 16]"
-   "reg.gprrev 0 = [" ++ RegName(Reg.gpr_at(0)) ++ "]   py=[rax]"
-   "reg.gprrev 1 = [" ++ RegName(Reg.gpr_at(1)) ++ "]   py=[rcx]"
-   "reg.gprrev 2 = [" ++ RegName(Reg.gpr_at(2)) ++ "]   py=[rdx]"
-   "reg.gprrev 3 = [" ++ RegName(Reg.gpr_at(3)) ++ "]   py=[rbx]"
-   "reg.gprrev 4 = [" ++ RegName(Reg.gpr_at(4)) ++ "]   py=[rsp]"
-   "reg.gprrev 5 = [" ++ RegName(Reg.gpr_at(5)) ++ "]   py=[rbp]"
-   "reg.gprrev 6 = [" ++ RegName(Reg.gpr_at(6)) ++ "]   py=[rsi]"
-   "reg.gprrev 7 = [" ++ RegName(Reg.gpr_at(7)) ++ "]   py=[rdi]"
-   "reg.gprrev 8 = [" ++ RegName(Reg.gpr_at(8)) ++ "]   py=[r8]"
-   "reg.gprrev 9 = [" ++ RegName(Reg.gpr_at(9)) ++ "]   py=[r9]"
-   "reg.gprrev 10 = [" ++ RegName(Reg.gpr_at(10)) ++ "]   py=[r10]"
-   "reg.gprrev 11 = [" ++ RegName(Reg.gpr_at(11)) ++ "]   py=[r11]"
-   "reg.gprrev 12 = [" ++ RegName(Reg.gpr_at(12)) ++ "]   py=[r12]"
-   "reg.gprrev 13 = [" ++ RegName(Reg.gpr_at(13)) ++ "]   py=[r13]"
-   "reg.gprrev 14 = [" ++ RegName(Reg.gpr_at(14)) ++ "]   py=[r14]"
-   "reg.gprrev 15 = [" ++ RegName(Reg.gpr_at(15)) ++ "]   py=[r15]"
-   "reg.xmmrev 0 = [" ++ RegName(Reg.xmm_at(0)) ++ "]   py=[xmm0]"
-   "reg.xmmrev 1 = [" ++ RegName(Reg.xmm_at(1)) ++ "]   py=[xmm1]"
-   "reg.xmmrev 2 = [" ++ RegName(Reg.xmm_at(2)) ++ "]   py=[xmm2]"
-   "reg.xmmrev 3 = [" ++ RegName(Reg.xmm_at(3)) ++ "]   py=[xmm3]"
-   "reg.xmmrev 4 = [" ++ RegName(Reg.xmm_at(4)) ++ "]   py=[xmm4]"
-   "reg.xmmrev 5 = [" ++ RegName(Reg.xmm_at(5)) ++ "]   py=[xmm5]"
-   "reg.xmmrev 6 = [" ++ RegName(Reg.xmm_at(6)) ++ "]   py=[xmm6]"
-   "reg.xmmrev 7 = [" ++ RegName(Reg.xmm_at(7)) ++ "]   py=[xmm7]"
-   "reg.xmmrev 8 = [" ++ RegName(Reg.xmm_at(8)) ++ "]   py=[xmm8]"
-   "reg.xmmrev 9 = [" ++ RegName(Reg.xmm_at(9)) ++ "]   py=[xmm9]"
-   "reg.xmmrev 10 = [" ++ RegName(Reg.xmm_at(10)) ++ "]   py=[xmm10]"
-   "reg.xmmrev 11 = [" ++ RegName(Reg.xmm_at(11)) ++ "]   py=[xmm11]"
-   "reg.xmmrev 12 = [" ++ RegName(Reg.xmm_at(12)) ++ "]   py=[xmm12]"
-   "reg.xmmrev 13 = [" ++ RegName(Reg.xmm_at(13)) ++ "]   py=[xmm13]"
-   "reg.xmmrev 14 = [" ++ RegName(Reg.xmm_at(14)) ++ "]   py=[xmm14]"
-   "reg.xmmrev 15 = [" ++ RegName(Reg.xmm_at(15)) ++ "]   py=[xmm15]"
-   "reg.GPR = [" ++ RegNames(Reg.gpr_list()) ++ "]   py=[rax,rcx,rdx,rbx,rsp,rbp,rsi,rdi,r8,r9,r10,r11,r12,r13,r14,r15]"
-   "reg.WGPR = [" ++ RegNames(Reg.wgpr_list()) ++ "]   py=[rax,rcx,rdx,rbx,rbp,rsi,rdi,r8,r9,r10,r11,r12,r13,r14,r15]"
-   "reg.XMM = [" ++ RegNames(Reg.xmm_list()) ++ "]   py=[xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8,xmm9,xmm10,xmm11,xmm12,xmm13,xmm14,xmm15]"
-   "reg.CALLEE = [" ++ RegNames(Reg.callee_list()) ++ "]   py=[rbx,rbp,r12,r13,r14,r15]"
-   "reg.strs.rax = [" ++ RegStrRow(Reg.gpr(0)) ++ "]   py=[al,ax,eax]"
-   "reg.strs.rcx = [" ++ RegStrRow(Reg.gpr(1)) ++ "]   py=[cl,cx,ecx]"
-   "reg.strs.rdx = [" ++ RegStrRow(Reg.gpr(2)) ++ "]   py=[dl,dx,edx]"
-   "reg.strs.rbx = [" ++ RegStrRow(Reg.gpr(3)) ++ "]   py=[bl,bx,ebx]"
-   "reg.strs.rsp = [" ++ RegStrRow(Reg.gpr(4)) ++ "]   py=[spl,sp,esp]"
-   "reg.strs.rbp = [" ++ RegStrRow(Reg.gpr(5)) ++ "]   py=[bpl,bp,ebp]"
-   "reg.strs.rsi = [" ++ RegStrRow(Reg.gpr(6)) ++ "]   py=[sil,si,esi]"
-   "reg.strs.rdi = [" ++ RegStrRow(Reg.gpr(7)) ++ "]   py=[dil,di,edi]"
-   "reg.strs.r8 = [" ++ RegStrRow(Reg.gpr(8)) ++ "]   py=[r8b,r8w,r8d]"
-   "reg.strs.r12 = [" ++ RegStrRow(Reg.gpr(12)) ++ "]   py=[r12b,r12w,r12d]"
-   "reg.strs.r15 = [" ++ RegStrRow(Reg.gpr(15)) ++ "]   py=[r15b,r15w,r15d]"
-   "reg.strs.xmm0 = [" ++ RegStrRow(Reg.xmm(0)) ++ "]   py=[xmm0,xmm0,xmm0]"
-   "reg.stackptr = [" ++ RegTriple(Reg.gpr_at(4)) ++ "]   py=[rsp 4 8]"
-   "reg.WGPRn = [" ++ U32.show(RegLen(Reg.wgpr_list())) ++ "]   py=[15]"
-   "reg.get rax 1 = [" ++ Reg.strs_lookup("rax", 1) ++ "]   py=[al]"
-   "reg.get rax 2 = [" ++ Reg.strs_lookup("rax", 2) ++ "]   py=[ax]"
-   "reg.get rax 4 = [" ++ Reg.strs_lookup("rax", 4) ++ "]   py=[eax]"
-   "reg.get rax 8 = [" ++ Reg.strs_lookup("rax", 8) ++ "]   py=[rax]"
-   "reg.get rax 16 = [" ++ Reg.strs_lookup("rax", 16) ++ "]   py=[rax]"
-   "reg.get rsp 1 = [" ++ Reg.strs_lookup("rsp", 1) ++ "]   py=[spl]"
+   rd("reg.gpr rax", RegTriple(Reg.gpr(0)))
+   rd("reg.gpr rcx", RegTriple(Reg.gpr(1)))
+   rd("reg.gpr rdx", RegTriple(Reg.gpr(2)))
+   rd("reg.gpr rbx", RegTriple(Reg.gpr(3)))
+   rd("reg.gpr rsp", RegTriple(Reg.gpr(4)))
+   rd("reg.gpr rbp", RegTriple(Reg.gpr(5)))
+   rd("reg.gpr rsi", RegTriple(Reg.gpr(6)))
+   rd("reg.gpr rdi", RegTriple(Reg.gpr(7)))
+   rd("reg.gpr r8", RegTriple(Reg.gpr(8)))
+   rd("reg.gpr r9", RegTriple(Reg.gpr(9)))
+   rd("reg.gpr r10", RegTriple(Reg.gpr(10)))
+   rd("reg.gpr r11", RegTriple(Reg.gpr(11)))
+   rd("reg.gpr r12", RegTriple(Reg.gpr(12)))
+   rd("reg.gpr r13", RegTriple(Reg.gpr(13)))
+   rd("reg.gpr r14", RegTriple(Reg.gpr(14)))
+   rd("reg.gpr r15", RegTriple(Reg.gpr(15)))
+   rd("reg.xmm xmm0", RegTriple(Reg.xmm(0)))
+   rd("reg.xmm xmm1", RegTriple(Reg.xmm(1)))
+   rd("reg.xmm xmm2", RegTriple(Reg.xmm(2)))
+   rd("reg.xmm xmm3", RegTriple(Reg.xmm(3)))
+   rd("reg.xmm xmm4", RegTriple(Reg.xmm(4)))
+   rd("reg.xmm xmm5", RegTriple(Reg.xmm(5)))
+   rd("reg.xmm xmm6", RegTriple(Reg.xmm(6)))
+   rd("reg.xmm xmm7", RegTriple(Reg.xmm(7)))
+   rd("reg.xmm xmm8", RegTriple(Reg.xmm(8)))
+   rd("reg.xmm xmm9", RegTriple(Reg.xmm(9)))
+   rd("reg.xmm xmm10", RegTriple(Reg.xmm(10)))
+   rd("reg.xmm xmm11", RegTriple(Reg.xmm(11)))
+   rd("reg.xmm xmm12", RegTriple(Reg.xmm(12)))
+   rd("reg.xmm xmm13", RegTriple(Reg.xmm(13)))
+   rd("reg.xmm xmm14", RegTriple(Reg.xmm(14)))
+   rd("reg.xmm xmm15", RegTriple(Reg.xmm(15)))
+   rd("reg.gprrev 0", RegName(Reg.gpr_at(0)))
+   rd("reg.gprrev 1", RegName(Reg.gpr_at(1)))
+   rd("reg.gprrev 2", RegName(Reg.gpr_at(2)))
+   rd("reg.gprrev 3", RegName(Reg.gpr_at(3)))
+   rd("reg.gprrev 4", RegName(Reg.gpr_at(4)))
+   rd("reg.gprrev 5", RegName(Reg.gpr_at(5)))
+   rd("reg.gprrev 6", RegName(Reg.gpr_at(6)))
+   rd("reg.gprrev 7", RegName(Reg.gpr_at(7)))
+   rd("reg.gprrev 8", RegName(Reg.gpr_at(8)))
+   rd("reg.gprrev 9", RegName(Reg.gpr_at(9)))
+   rd("reg.gprrev 10", RegName(Reg.gpr_at(10)))
+   rd("reg.gprrev 11", RegName(Reg.gpr_at(11)))
+   rd("reg.gprrev 12", RegName(Reg.gpr_at(12)))
+   rd("reg.gprrev 13", RegName(Reg.gpr_at(13)))
+   rd("reg.gprrev 14", RegName(Reg.gpr_at(14)))
+   rd("reg.gprrev 15", RegName(Reg.gpr_at(15)))
+   rd("reg.xmmrev 0", RegName(Reg.xmm_at(0)))
+   rd("reg.xmmrev 1", RegName(Reg.xmm_at(1)))
+   rd("reg.xmmrev 2", RegName(Reg.xmm_at(2)))
+   rd("reg.xmmrev 3", RegName(Reg.xmm_at(3)))
+   rd("reg.xmmrev 4", RegName(Reg.xmm_at(4)))
+   rd("reg.xmmrev 5", RegName(Reg.xmm_at(5)))
+   rd("reg.xmmrev 6", RegName(Reg.xmm_at(6)))
+   rd("reg.xmmrev 7", RegName(Reg.xmm_at(7)))
+   rd("reg.xmmrev 8", RegName(Reg.xmm_at(8)))
+   rd("reg.xmmrev 9", RegName(Reg.xmm_at(9)))
+   rd("reg.xmmrev 10", RegName(Reg.xmm_at(10)))
+   rd("reg.xmmrev 11", RegName(Reg.xmm_at(11)))
+   rd("reg.xmmrev 12", RegName(Reg.xmm_at(12)))
+   rd("reg.xmmrev 13", RegName(Reg.xmm_at(13)))
+   rd("reg.xmmrev 14", RegName(Reg.xmm_at(14)))
+   rd("reg.xmmrev 15", RegName(Reg.xmm_at(15)))
+   rd("reg.GPR", RegNames(Reg.gpr_list()))
+   rd("reg.WGPR", RegNames(Reg.wgpr_list()))
+   rd("reg.XMM", RegNames(Reg.xmm_list()))
+   rd("reg.CALLEE", RegNames(Reg.callee_list()))
+   rd("reg.strs.rax", RegStrRow(Reg.gpr(0)))
+   rd("reg.strs.rcx", RegStrRow(Reg.gpr(1)))
+   rd("reg.strs.rdx", RegStrRow(Reg.gpr(2)))
+   rd("reg.strs.rbx", RegStrRow(Reg.gpr(3)))
+   rd("reg.strs.rsp", RegStrRow(Reg.gpr(4)))
+   rd("reg.strs.rbp", RegStrRow(Reg.gpr(5)))
+   rd("reg.strs.rsi", RegStrRow(Reg.gpr(6)))
+   rd("reg.strs.rdi", RegStrRow(Reg.gpr(7)))
+   rd("reg.strs.r8", RegStrRow(Reg.gpr(8)))
+   rd("reg.strs.r12", RegStrRow(Reg.gpr(12)))
+   rd("reg.strs.r15", RegStrRow(Reg.gpr(15)))
+   rd("reg.strs.xmm0", RegStrRow(Reg.xmm(0)))
+   rd("reg.stackptr", RegTriple(Reg.gpr_at(4)))
+   rd("reg.WGPRn", U32.show(RegLen(Reg.wgpr_list())))
+   rd("reg.get rax 1", Reg.strs_lookup("rax", 1))
+   rd("reg.get rax 2", Reg.strs_lookup("rax", 2))
+   rd("reg.get rax 4", Reg.strs_lookup("rax", 4))
+   rd("reg.get rax 8", Reg.strs_lookup("rax", 8))
+   rd("reg.get rax 16", Reg.strs_lookup("rax", 16))
+   rd("reg.get rsp 1", Reg.strs_lookup("rsp", 1))
+   rd("reg.get rsp 2", Reg.strs_lookup("rsp", 2))
+   rd("reg.get rsp 4", Reg.strs_lookup("rsp", 4))
+   rd("reg.get rsp 8", Reg.strs_lookup("rsp", 8))
+   rd("reg.get rsp 16", Reg.strs_lookup("rsp", 16))
+   rd("reg.get r12 1", Reg.strs_lookup("r12", 1))
+   rd("reg.get r12 2", Reg.strs_lookup("r12", 2))
+   rd("reg.get r12 4", Reg.strs_lookup("r12", 4))
+   rd("reg.get r12 8", Reg.strs_lookup("r12", 8))
+   rd("reg.get r12 16", Reg.strs_lookup("r12", 16))
+   rd("reg.get xmm0 1", Reg.strs_lookup("xmm0", 1))
+   rd("reg.get xmm0 2", Reg.strs_lookup("xmm0", 2))
+   rd("reg.get xmm0 4", Reg.strs_lookup("xmm0", 4))
+   rd("reg.get xmm0 8", Reg.strs_lookup("xmm0", 8))
+   rd("reg.get xmm0 16", Reg.strs_lookup("xmm0", 16))
+   rd("reg.get nope 1", Reg.strs_lookup("nope", 1))
+   rd("reg.get nope 2", Reg.strs_lookup("nope", 2))
+   rd("reg.get nope 4", Reg.strs_lookup("nope", 4))
+   rd("reg.get nope 8", Reg.strs_lookup("nope", 8))
+   rd("reg.get nope 16", Reg.strs_lookup("nope", 16))
+   rd("reg.callee 0", Bool.show(Reg.is_callee(0)))
+   rd("reg.callee 1", Bool.show(Reg.is_callee(1)))
+   rd("reg.callee 2", Bool.show(Reg.is_callee(2)))
+   rd("reg.callee 3", Bool.show(Reg.is_callee(3)))
+   rd("reg.callee 4", Bool.show(Reg.is_callee(4)))
+   rd("reg.callee 5", Bool.show(Reg.is_callee(5)))
+   rd("reg.callee 6", Bool.show(Reg.is_callee(6)))
+   rd("reg.callee 7", Bool.show(Reg.is_callee(7)))
+   rd("reg.callee 8", Bool.show(Reg.is_callee(8)))
+   rd("reg.callee 9", Bool.show(Reg.is_callee(9)))
+   rd("reg.callee 10", Bool.show(Reg.is_callee(10)))
+   rd("reg.callee 11", Bool.show(Reg.is_callee(11)))
+   rd("reg.callee 12", Bool.show(Reg.is_callee(12)))
+   rd("reg.callee 13", Bool.show(Reg.is_callee(13)))
+   rd("reg.callee 14", Bool.show(Reg.is_callee(14)))
+   rd("reg.callee 15", Bool.show(Reg.is_callee(15)))
+   rd("op.FRAME_INDEX", op_num("FRAME_INDEX"))
+   rd("op.LABEL", op_num("LABEL"))
+   rd("op.LOOP_CMP", op_num("LOOP_CMP"))
+   rd("op.LEA", op_num("LEA"))
+   rd("op.MOV", op_num("MOV"))
+   rd("op.MOVm", op_num("MOVm"))
+   rd("op.MOVi", op_num("MOVi"))
+   rd("op.MOVABS", op_num("MOVABS"))
+   rd("op.VMOVSS", op_num("VMOVSS"))
+   rd("op.VMOVSD", op_num("VMOVSD"))
+   rd("op.VMOVUPS", op_num("VMOVUPS"))
+   rd("op.VMOVSSm", op_num("VMOVSSm"))
+   rd("op.VMOVSDm", op_num("VMOVSDm"))
+   rd("op.VMOVUPSm", op_num("VMOVUPSm"))
+   rd("op.MOVZX", op_num("MOVZX"))
+   rd("op.MOVSX", op_num("MOVSX"))
+   rd("op.MOVSXD", op_num("MOVSXD"))
+   rd("op.VCVTPH2PS", op_num("VCVTPH2PS"))
  ]
 
 def Gate.rows1() -> List<&2, String>: [
-   "reg.get rsp 2 = [" ++ Reg.strs_lookup("rsp", 2) ++ "]   py=[sp]"
-   "reg.get rsp 4 = [" ++ Reg.strs_lookup("rsp", 4) ++ "]   py=[esp]"
-   "reg.get rsp 8 = [" ++ Reg.strs_lookup("rsp", 8) ++ "]   py=[rsp]"
-   "reg.get rsp 16 = [" ++ Reg.strs_lookup("rsp", 16) ++ "]   py=[rsp]"
-   "reg.get r12 1 = [" ++ Reg.strs_lookup("r12", 1) ++ "]   py=[r12b]"
-   "reg.get r12 2 = [" ++ Reg.strs_lookup("r12", 2) ++ "]   py=[r12w]"
-   "reg.get r12 4 = [" ++ Reg.strs_lookup("r12", 4) ++ "]   py=[r12d]"
-   "reg.get r12 8 = [" ++ Reg.strs_lookup("r12", 8) ++ "]   py=[r12]"
-   "reg.get r12 16 = [" ++ Reg.strs_lookup("r12", 16) ++ "]   py=[r12]"
-   "reg.get xmm0 1 = [" ++ Reg.strs_lookup("xmm0", 1) ++ "]   py=[xmm0]"
-   "reg.get xmm0 2 = [" ++ Reg.strs_lookup("xmm0", 2) ++ "]   py=[xmm0]"
-   "reg.get xmm0 4 = [" ++ Reg.strs_lookup("xmm0", 4) ++ "]   py=[xmm0]"
-   "reg.get xmm0 8 = [" ++ Reg.strs_lookup("xmm0", 8) ++ "]   py=[xmm0]"
-   "reg.get xmm0 16 = [" ++ Reg.strs_lookup("xmm0", 16) ++ "]   py=[xmm0]"
-   "reg.get nope 1 = [" ++ Reg.strs_lookup("nope", 1) ++ "]   py=[nope]"
-   "reg.get nope 2 = [" ++ Reg.strs_lookup("nope", 2) ++ "]   py=[nope]"
-   "reg.get nope 4 = [" ++ Reg.strs_lookup("nope", 4) ++ "]   py=[nope]"
-   "reg.get nope 8 = [" ++ Reg.strs_lookup("nope", 8) ++ "]   py=[nope]"
-   "reg.get nope 16 = [" ++ Reg.strs_lookup("nope", 16) ++ "]   py=[nope]"
-   "reg.callee 0 = [" ++ Bool.show(Reg.is_callee(0)) ++ "]   py=[False]"
-   "reg.callee 1 = [" ++ Bool.show(Reg.is_callee(1)) ++ "]   py=[False]"
-   "reg.callee 2 = [" ++ Bool.show(Reg.is_callee(2)) ++ "]   py=[False]"
-   "reg.callee 3 = [" ++ Bool.show(Reg.is_callee(3)) ++ "]   py=[True]"
-   "reg.callee 4 = [" ++ Bool.show(Reg.is_callee(4)) ++ "]   py=[False]"
-   "reg.callee 5 = [" ++ Bool.show(Reg.is_callee(5)) ++ "]   py=[True]"
-   "reg.callee 6 = [" ++ Bool.show(Reg.is_callee(6)) ++ "]   py=[False]"
-   "reg.callee 7 = [" ++ Bool.show(Reg.is_callee(7)) ++ "]   py=[False]"
-   "reg.callee 8 = [" ++ Bool.show(Reg.is_callee(8)) ++ "]   py=[False]"
-   "reg.callee 9 = [" ++ Bool.show(Reg.is_callee(9)) ++ "]   py=[False]"
-   "reg.callee 10 = [" ++ Bool.show(Reg.is_callee(10)) ++ "]   py=[False]"
-   "reg.callee 11 = [" ++ Bool.show(Reg.is_callee(11)) ++ "]   py=[False]"
-   "reg.callee 12 = [" ++ Bool.show(Reg.is_callee(12)) ++ "]   py=[True]"
-   "reg.callee 13 = [" ++ Bool.show(Reg.is_callee(13)) ++ "]   py=[True]"
-   "reg.callee 14 = [" ++ Bool.show(Reg.is_callee(14)) ++ "]   py=[True]"
-   "reg.callee 15 = [" ++ Bool.show(Reg.is_callee(15)) ++ "]   py=[True]"
-   "op.FRAME_INDEX = [" ++ op_num("FRAME_INDEX") ++ "]   py=[78]"
-   "op.LABEL = [" ++ op_num("LABEL") ++ "]   py=[79]"
-   "op.DEFINE = [" ++ op_num("DEFINE") ++ "]   py=[80]"
-   "op.LOOP_CMP = [" ++ op_num("LOOP_CMP") ++ "]   py=[81]"
-   "op.LEA = [" ++ op_num("LEA") ++ "]   py=[82]"
-   "op.MOV = [" ++ op_num("MOV") ++ "]   py=[83]"
-   "op.MOVm = [" ++ op_num("MOVm") ++ "]   py=[84]"
-   "op.MOVi = [" ++ op_num("MOVi") ++ "]   py=[85]"
-   "op.MOVABS = [" ++ op_num("MOVABS") ++ "]   py=[86]"
-   "op.VMOVSS = [" ++ op_num("VMOVSS") ++ "]   py=[87]"
-   "op.VMOVSD = [" ++ op_num("VMOVSD") ++ "]   py=[88]"
-   "op.VMOVUPS = [" ++ op_num("VMOVUPS") ++ "]   py=[89]"
-   "op.VMOVSSm = [" ++ op_num("VMOVSSm") ++ "]   py=[90]"
-   "op.VMOVSDm = [" ++ op_num("VMOVSDm") ++ "]   py=[91]"
-   "op.VMOVUPSm = [" ++ op_num("VMOVUPSm") ++ "]   py=[92]"
-   "op.MOVZX = [" ++ op_num("MOVZX") ++ "]   py=[93]"
-   "op.MOVSX = [" ++ op_num("MOVSX") ++ "]   py=[94]"
-   "op.MOVSXD = [" ++ op_num("MOVSXD") ++ "]   py=[95]"
-   "op.VCVTPH2PS = [" ++ op_num("VCVTPH2PS") ++ "]   py=[96]"
-   "op.VCVTPS2PH = [" ++ op_num("VCVTPS2PH") ++ "]   py=[97]"
-   "op.VCVTSS2SD = [" ++ op_num("VCVTSS2SD") ++ "]   py=[98]"
-   "op.VCVTSD2SS = [" ++ op_num("VCVTSD2SS") ++ "]   py=[99]"
-   "op.VCVTSI2SS = [" ++ op_num("VCVTSI2SS") ++ "]   py=[100]"
-   "op.VCVTSI2SD = [" ++ op_num("VCVTSI2SD") ++ "]   py=[101]"
-   "op.VCVTTSS2SI = [" ++ op_num("VCVTTSS2SI") ++ "]   py=[102]"
-   "op.VCVTTSD2SI = [" ++ op_num("VCVTTSD2SI") ++ "]   py=[103]"
-   "op.VMOVD = [" ++ op_num("VMOVD") ++ "]   py=[104]"
-   "op.VMOVQ = [" ++ op_num("VMOVQ") ++ "]   py=[105]"
-   "op.VMOVDm = [" ++ op_num("VMOVDm") ++ "]   py=[106]"
-   "op.VMOVQm = [" ++ op_num("VMOVQm") ++ "]   py=[107]"
-   "op.VCMPSS = [" ++ op_num("VCMPSS") ++ "]   py=[108]"
-   "op.VCMPSD = [" ++ op_num("VCMPSD") ++ "]   py=[109]"
-   "op.SETNE = [" ++ op_num("SETNE") ++ "]   py=[110]"
-   "op.SETE = [" ++ op_num("SETE") ++ "]   py=[111]"
-   "op.SETL = [" ++ op_num("SETL") ++ "]   py=[112]"
-   "op.SETB = [" ++ op_num("SETB") ++ "]   py=[113]"
-   "op.CMOVNE = [" ++ op_num("CMOVNE") ++ "]   py=[114]"
-   "op.CMOVE = [" ++ op_num("CMOVE") ++ "]   py=[115]"
-   "op.CMOVL = [" ++ op_num("CMOVL") ++ "]   py=[116]"
-   "op.CMOVB = [" ++ op_num("CMOVB") ++ "]   py=[117]"
-   "op.VBLENDVPS = [" ++ op_num("VBLENDVPS") ++ "]   py=[118]"
-   "op.VBLENDVPD = [" ++ op_num("VBLENDVPD") ++ "]   py=[119]"
-   "op.JNE = [" ++ op_num("JNE") ++ "]   py=[120]"
-   "op.JE = [" ++ op_num("JE") ++ "]   py=[121]"
-   "op.JL = [" ++ op_num("JL") ++ "]   py=[122]"
-   "op.JB = [" ++ op_num("JB") ++ "]   py=[123]"
-   "op.JGE = [" ++ op_num("JGE") ++ "]   py=[124]"
-   "op.JMP = [" ++ op_num("JMP") ++ "]   py=[125]"
-   "op.VINSERTPS = [" ++ op_num("VINSERTPS") ++ "]   py=[126]"
-   "op.VPSRLDQ = [" ++ op_num("VPSRLDQ") ++ "]   py=[127]"
-   "op.VPEXTRW = [" ++ op_num("VPEXTRW") ++ "]   py=[128]"
-   "op.VPEXTRD = [" ++ op_num("VPEXTRD") ++ "]   py=[129]"
-   "op.VPINSRW = [" ++ op_num("VPINSRW") ++ "]   py=[130]"
-   "op.VPINSRD = [" ++ op_num("VPINSRD") ++ "]   py=[131]"
-   "op.IDIV = [" ++ op_num("IDIV") ++ "]   py=[132]"
-   "op.DIV = [" ++ op_num("DIV") ++ "]   py=[133]"
-   "op.ADD = [" ++ op_num("ADD") ++ "]   py=[134]"
-   "op.ADDi = [" ++ op_num("ADDi") ++ "]   py=[135]"
-   "op.SUB = [" ++ op_num("SUB") ++ "]   py=[136]"
-   "op.SUBi = [" ++ op_num("SUBi") ++ "]   py=[137]"
-   "op.IMUL = [" ++ op_num("IMUL") ++ "]   py=[138]"
-   "op.IMULi = [" ++ op_num("IMULi") ++ "]   py=[139]"
-   "op.AND = [" ++ op_num("AND") ++ "]   py=[140]"
-   "op.ANDi = [" ++ op_num("ANDi") ++ "]   py=[141]"
-   "op.XOR = [" ++ op_num("XOR") ++ "]   py=[142]"
-   "op.XORi = [" ++ op_num("XORi") ++ "]   py=[143]"
-   "op.OR = [" ++ op_num("OR") ++ "]   py=[144]"
-   "op.ORi = [" ++ op_num("ORi") ++ "]   py=[145]"
-   "op.SHL = [" ++ op_num("SHL") ++ "]   py=[146]"
+   rd("op.VCVTPS2PH", op_num("VCVTPS2PH"))
+   rd("op.VCVTSS2SD", op_num("VCVTSS2SD"))
+   rd("op.VCVTSD2SS", op_num("VCVTSD2SS"))
+   rd("op.VCVTSI2SS", op_num("VCVTSI2SS"))
+   rd("op.VCVTSI2SD", op_num("VCVTSI2SD"))
+   rd("op.VCVTTSS2SI", op_num("VCVTTSS2SI"))
+   rd("op.VCVTTSD2SI", op_num("VCVTTSD2SI"))
+   rd("op.VMOVD", op_num("VMOVD"))
+   rd("op.VMOVQ", op_num("VMOVQ"))
+   rd("op.VMOVDm", op_num("VMOVDm"))
+   rd("op.VMOVQm", op_num("VMOVQm"))
+   rd("op.VCMPSS", op_num("VCMPSS"))
+   rd("op.VCMPSD", op_num("VCMPSD"))
+   rd("op.SETNE", op_num("SETNE"))
+   rd("op.SETE", op_num("SETE"))
+   rd("op.SETL", op_num("SETL"))
+   rd("op.SETB", op_num("SETB"))
+   rd("op.CMOVNE", op_num("CMOVNE"))
+   rd("op.CMOVE", op_num("CMOVE"))
+   rd("op.CMOVL", op_num("CMOVL"))
+   rd("op.CMOVB", op_num("CMOVB"))
+   rd("op.VBLENDVPS", op_num("VBLENDVPS"))
+   rd("op.VBLENDVPD", op_num("VBLENDVPD"))
+   rd("op.JNE", op_num("JNE"))
+   rd("op.JE", op_num("JE"))
+   rd("op.JL", op_num("JL"))
+   rd("op.JB", op_num("JB"))
+   rd("op.JGE", op_num("JGE"))
+   rd("op.JMP", op_num("JMP"))
+   rd("op.VINSERTPS", op_num("VINSERTPS"))
+   rd("op.VPSRLDQ", op_num("VPSRLDQ"))
+   rd("op.VPEXTRW", op_num("VPEXTRW"))
+   rd("op.VPEXTRD", op_num("VPEXTRD"))
+   rd("op.VPINSRW", op_num("VPINSRW"))
+   rd("op.VPINSRD", op_num("VPINSRD"))
+   rd("op.IDIV", op_num("IDIV"))
+   rd("op.DIV", op_num("DIV"))
+   rd("op.ADD", op_num("ADD"))
+   rd("op.ADDi", op_num("ADDi"))
+   rd("op.SUB", op_num("SUB"))
+   rd("op.SUBi", op_num("SUBi"))
+   rd("op.IMUL", op_num("IMUL"))
+   rd("op.IMULi", op_num("IMULi"))
+   rd("op.AND", op_num("AND"))
+   rd("op.ANDi", op_num("ANDi"))
+   rd("op.XOR", op_num("XOR"))
+   rd("op.XORi", op_num("XORi"))
+   rd("op.OR", op_num("OR"))
+   rd("op.ORi", op_num("ORi"))
+   rd("op.SHL", op_num("SHL"))
+   rd("op.SHLi", op_num("SHLi"))
+   rd("op.SHR", op_num("SHR"))
+   rd("op.SHRi", op_num("SHRi"))
+   rd("op.SAR", op_num("SAR"))
+   rd("op.SARi", op_num("SARi"))
+   rd("op.CMP", op_num("CMP"))
+   rd("op.CMPi", op_num("CMPi"))
+   rd("op.VROUNDSS", op_num("VROUNDSS"))
+   rd("op.VROUNDSD", op_num("VROUNDSD"))
+   rd("op.VSQRTSS", op_num("VSQRTSS"))
+   rd("op.VSQRTSD", op_num("VSQRTSD"))
+   rd("op.VADDSS", op_num("VADDSS"))
+   rd("op.VADDSD", op_num("VADDSD"))
+   rd("op.VSUBSS", op_num("VSUBSS"))
+   rd("op.VSUBSD", op_num("VSUBSD"))
+   rd("op.VMULSS", op_num("VMULSS"))
+   rd("op.VMULSD", op_num("VMULSD"))
+   rd("op.VDIVSS", op_num("VDIVSS"))
+   rd("op.VDIVSD", op_num("VDIVSD"))
+   rd("op.RET", op_num("RET"))
+   rd("oprev 76", op_name_of(76))
+   rd("oprev 77", op_name_of(77))
+   rd("oprev 78", op_name_of(78))
+   rd("oprev 79", op_name_of(79))
+   rd("oprev 80", op_name_of(80))
+   rd("oprev 81", op_name_of(81))
+   rd("oprev 82", op_name_of(82))
+   rd("oprev 83", op_name_of(83))
+   rd("oprev 84", op_name_of(84))
+   rd("oprev 85", op_name_of(85))
+   rd("oprev 86", op_name_of(86))
+   rd("oprev 87", op_name_of(87))
+   rd("oprev 88", op_name_of(88))
+   rd("oprev 89", op_name_of(89))
+   rd("oprev 90", op_name_of(90))
+   rd("oprev 91", op_name_of(91))
+   rd("oprev 92", op_name_of(92))
+   rd("oprev 93", op_name_of(93))
+   rd("oprev 94", op_name_of(94))
+   rd("oprev 95", op_name_of(95))
+   rd("oprev 96", op_name_of(96))
+   rd("oprev 97", op_name_of(97))
+   rd("oprev 98", op_name_of(98))
+   rd("oprev 99", op_name_of(99))
+   rd("oprev 100", op_name_of(100))
+   rd("oprev 101", op_name_of(101))
+   rd("oprev 102", op_name_of(102))
+   rd("oprev 103", op_name_of(103))
+   rd("oprev 104", op_name_of(104))
+   rd("oprev 105", op_name_of(105))
+   rd("oprev 106", op_name_of(106))
+   rd("oprev 107", op_name_of(107))
+   rd("oprev 108", op_name_of(108))
+   rd("oprev 109", op_name_of(109))
+   rd("oprev 110", op_name_of(110))
+   rd("oprev 111", op_name_of(111))
+   rd("oprev 112", op_name_of(112))
+   rd("oprev 113", op_name_of(113))
+   rd("oprev 114", op_name_of(114))
+   rd("oprev 115", op_name_of(115))
+   rd("oprev 116", op_name_of(116))
+   rd("oprev 117", op_name_of(117))
+   rd("oprev 118", op_name_of(118))
+   rd("oprev 119", op_name_of(119))
+   rd("oprev 120", op_name_of(120))
+   rd("oprev 121", op_name_of(121))
+   rd("oprev 122", op_name_of(122))
+   rd("oprev 123", op_name_of(123))
+   rd("oprev 124", op_name_of(124))
+   rd("oprev 125", op_name_of(125))
+   rd("oprev 126", op_name_of(126))
+   rd("oprev 127", op_name_of(127))
+   rd("oprev 128", op_name_of(128))
+   rd("oprev 129", op_name_of(129))
+   rd("oprev 130", op_name_of(130))
+   rd("oprev 131", op_name_of(131))
+   rd("oprev 132", op_name_of(132))
+   rd("oprev 133", op_name_of(133))
+   rd("oprev 134", op_name_of(134))
+   rd("oprev 135", op_name_of(135))
+   rd("oprev 136", op_name_of(136))
+   rd("oprev 137", op_name_of(137))
+   rd("oprev 138", op_name_of(138))
+   rd("oprev 139", op_name_of(139))
+   rd("oprev 140", op_name_of(140))
+   rd("oprev 141", op_name_of(141))
+   rd("oprev 142", op_name_of(142))
+   rd("oprev 143", op_name_of(143))
+   rd("oprev 144", op_name_of(144))
+   rd("oprev 145", op_name_of(145))
+   rd("oprev 146", op_name_of(146))
+   rd("oprev 147", op_name_of(147))
+   rd("oprev 148", op_name_of(148))
+   rd("oprev 149", op_name_of(149))
+   rd("oprev 150", op_name_of(150))
+   rd("oprev 151", op_name_of(151))
+   rd("oprev 152", op_name_of(152))
+   rd("oprev 153", op_name_of(153))
+   rd("oprev 154", op_name_of(154))
+   rd("oprev 155", op_name_of(155))
+   rd("oprev 156", op_name_of(156))
+   rd("oprev 157", op_name_of(157))
+   rd("oprev 158", op_name_of(158))
+   rd("oprev 159", op_name_of(159))
+   rd("oprev 160", op_name_of(160))
+   rd("oprev 161", op_name_of(161))
+   rd("oprev 162", op_name_of(162))
+   rd("oprev 163", op_name_of(163))
+   rd("op.count", U32.show(op_len()))
+   rd("op.unknown", op_num("NOSUCH"))
+   rd("op.revbad", op_name_of(200))
+   rd("grp.Copy", Op.set_name(0))
+   rd("grpn.Copy", U32.show(Op.set_len(0)))
+   rd("grp.TwoAddress", Op.set_name(1))
+   rd("grpn.TwoAddress", U32.show(Op.set_len(1)))
+   rd("grp.Rm2nd", Op.set_name(2))
+   rd("grpn.Rm2nd", U32.show(Op.set_len(2)))
+   rd("grp.WriteMem", Op.set_name(3))
+   rd("grpn.WriteMem", U32.show(Op.set_len(3)))
+   rd("grp.ReadFlags", Op.set_name(4))
+   rd("grpn.ReadFlags", U32.show(Op.set_len(4)))
+   rd("grp.WriteFlags", Op.set_name(5))
+   rd("grpn.WriteFlags", U32.show(Op.set_len(5)))
+   rd("grp.GPR_DEST_OPS", Op.set_name(6))
+   rd("grpn.GPR_DEST_OPS", U32.show(Op.set_len(6)))
+   rd("grp.Rm1st", Op.set_name(7))
+   rd("grpn.Rm1st", U32.show(Op.set_len(7)))
+   rd("grp.XMM_OPS", Op.set_name(8))
+   rd("grpn.XMM_OPS", U32.show(Op.set_len(8)))
+   rd("isz int 1", Op.xmm_sz(4))
+   rd("iszm int 1", Op.xmm_sz_m(4))
+   rd("iszbits int 1", U32.show(4))
+   rd("isz int 2", Op.xmm_sz(8))
+   rd("iszm int 2", Op.xmm_sz_m(8))
+   rd("iszbits int 2", U32.show(8))
+   rd("isz int 3", Op.xmm_sz(12))
  ]
 
 def Gate.rows2() -> List<&2, String>: [
-   "op.SHLi = [" ++ op_num("SHLi") ++ "]   py=[147]"
-   "op.SHR = [" ++ op_num("SHR") ++ "]   py=[148]"
-   "op.SHRi = [" ++ op_num("SHRi") ++ "]   py=[149]"
-   "op.SAR = [" ++ op_num("SAR") ++ "]   py=[150]"
-   "op.SARi = [" ++ op_num("SARi") ++ "]   py=[151]"
-   "op.CMP = [" ++ op_num("CMP") ++ "]   py=[152]"
-   "op.CMPi = [" ++ op_num("CMPi") ++ "]   py=[153]"
-   "op.VROUNDSS = [" ++ op_num("VROUNDSS") ++ "]   py=[154]"
-   "op.VROUNDSD = [" ++ op_num("VROUNDSD") ++ "]   py=[155]"
-   "op.VSQRTSS = [" ++ op_num("VSQRTSS") ++ "]   py=[156]"
-   "op.VSQRTSD = [" ++ op_num("VSQRTSD") ++ "]   py=[157]"
-   "op.VADDSS = [" ++ op_num("VADDSS") ++ "]   py=[158]"
-   "op.VADDSD = [" ++ op_num("VADDSD") ++ "]   py=[159]"
-   "op.VSUBSS = [" ++ op_num("VSUBSS") ++ "]   py=[160]"
-   "op.VSUBSD = [" ++ op_num("VSUBSD") ++ "]   py=[161]"
-   "op.VMULSS = [" ++ op_num("VMULSS") ++ "]   py=[162]"
-   "op.VMULSD = [" ++ op_num("VMULSD") ++ "]   py=[163]"
-   "op.VDIVSS = [" ++ op_num("VDIVSS") ++ "]   py=[164]"
-   "op.VDIVSD = [" ++ op_num("VDIVSD") ++ "]   py=[165]"
-   "op.RET = [" ++ op_num("RET") ++ "]   py=[166]"
-   "oprev 78 = [" ++ op_name_of(78) ++ "]   py=[FRAME_INDEX]"
-   "oprev 79 = [" ++ op_name_of(79) ++ "]   py=[LABEL]"
-   "oprev 80 = [" ++ op_name_of(80) ++ "]   py=[DEFINE]"
-   "oprev 81 = [" ++ op_name_of(81) ++ "]   py=[LOOP_CMP]"
-   "oprev 82 = [" ++ op_name_of(82) ++ "]   py=[LEA]"
-   "oprev 83 = [" ++ op_name_of(83) ++ "]   py=[MOV]"
-   "oprev 84 = [" ++ op_name_of(84) ++ "]   py=[MOVm]"
-   "oprev 85 = [" ++ op_name_of(85) ++ "]   py=[MOVi]"
-   "oprev 86 = [" ++ op_name_of(86) ++ "]   py=[MOVABS]"
-   "oprev 87 = [" ++ op_name_of(87) ++ "]   py=[VMOVSS]"
-   "oprev 88 = [" ++ op_name_of(88) ++ "]   py=[VMOVSD]"
-   "oprev 89 = [" ++ op_name_of(89) ++ "]   py=[VMOVUPS]"
-   "oprev 90 = [" ++ op_name_of(90) ++ "]   py=[VMOVSSm]"
-   "oprev 91 = [" ++ op_name_of(91) ++ "]   py=[VMOVSDm]"
-   "oprev 92 = [" ++ op_name_of(92) ++ "]   py=[VMOVUPSm]"
-   "oprev 93 = [" ++ op_name_of(93) ++ "]   py=[MOVZX]"
-   "oprev 94 = [" ++ op_name_of(94) ++ "]   py=[MOVSX]"
-   "oprev 95 = [" ++ op_name_of(95) ++ "]   py=[MOVSXD]"
-   "oprev 96 = [" ++ op_name_of(96) ++ "]   py=[VCVTPH2PS]"
-   "oprev 97 = [" ++ op_name_of(97) ++ "]   py=[VCVTPS2PH]"
-   "oprev 98 = [" ++ op_name_of(98) ++ "]   py=[VCVTSS2SD]"
-   "oprev 99 = [" ++ op_name_of(99) ++ "]   py=[VCVTSD2SS]"
-   "oprev 100 = [" ++ op_name_of(100) ++ "]   py=[VCVTSI2SS]"
-   "oprev 101 = [" ++ op_name_of(101) ++ "]   py=[VCVTSI2SD]"
-   "oprev 102 = [" ++ op_name_of(102) ++ "]   py=[VCVTTSS2SI]"
-   "oprev 103 = [" ++ op_name_of(103) ++ "]   py=[VCVTTSD2SI]"
-   "oprev 104 = [" ++ op_name_of(104) ++ "]   py=[VMOVD]"
-   "oprev 105 = [" ++ op_name_of(105) ++ "]   py=[VMOVQ]"
-   "oprev 106 = [" ++ op_name_of(106) ++ "]   py=[VMOVDm]"
-   "oprev 107 = [" ++ op_name_of(107) ++ "]   py=[VMOVQm]"
-   "oprev 108 = [" ++ op_name_of(108) ++ "]   py=[VCMPSS]"
-   "oprev 109 = [" ++ op_name_of(109) ++ "]   py=[VCMPSD]"
-   "oprev 110 = [" ++ op_name_of(110) ++ "]   py=[SETNE]"
-   "oprev 111 = [" ++ op_name_of(111) ++ "]   py=[SETE]"
-   "oprev 112 = [" ++ op_name_of(112) ++ "]   py=[SETL]"
-   "oprev 113 = [" ++ op_name_of(113) ++ "]   py=[SETB]"
-   "oprev 114 = [" ++ op_name_of(114) ++ "]   py=[CMOVNE]"
-   "oprev 115 = [" ++ op_name_of(115) ++ "]   py=[CMOVE]"
-   "oprev 116 = [" ++ op_name_of(116) ++ "]   py=[CMOVL]"
-   "oprev 117 = [" ++ op_name_of(117) ++ "]   py=[CMOVB]"
-   "oprev 118 = [" ++ op_name_of(118) ++ "]   py=[VBLENDVPS]"
-   "oprev 119 = [" ++ op_name_of(119) ++ "]   py=[VBLENDVPD]"
-   "oprev 120 = [" ++ op_name_of(120) ++ "]   py=[JNE]"
-   "oprev 121 = [" ++ op_name_of(121) ++ "]   py=[JE]"
-   "oprev 122 = [" ++ op_name_of(122) ++ "]   py=[JL]"
-   "oprev 123 = [" ++ op_name_of(123) ++ "]   py=[JB]"
-   "oprev 124 = [" ++ op_name_of(124) ++ "]   py=[JGE]"
-   "oprev 125 = [" ++ op_name_of(125) ++ "]   py=[JMP]"
-   "oprev 126 = [" ++ op_name_of(126) ++ "]   py=[VINSERTPS]"
-   "oprev 127 = [" ++ op_name_of(127) ++ "]   py=[VPSRLDQ]"
-   "oprev 128 = [" ++ op_name_of(128) ++ "]   py=[VPEXTRW]"
-   "oprev 129 = [" ++ op_name_of(129) ++ "]   py=[VPEXTRD]"
-   "oprev 130 = [" ++ op_name_of(130) ++ "]   py=[VPINSRW]"
-   "oprev 131 = [" ++ op_name_of(131) ++ "]   py=[VPINSRD]"
-   "oprev 132 = [" ++ op_name_of(132) ++ "]   py=[IDIV]"
-   "oprev 133 = [" ++ op_name_of(133) ++ "]   py=[DIV]"
-   "oprev 134 = [" ++ op_name_of(134) ++ "]   py=[ADD]"
-   "oprev 135 = [" ++ op_name_of(135) ++ "]   py=[ADDi]"
-   "oprev 136 = [" ++ op_name_of(136) ++ "]   py=[SUB]"
-   "oprev 137 = [" ++ op_name_of(137) ++ "]   py=[SUBi]"
-   "oprev 138 = [" ++ op_name_of(138) ++ "]   py=[IMUL]"
-   "oprev 139 = [" ++ op_name_of(139) ++ "]   py=[IMULi]"
-   "oprev 140 = [" ++ op_name_of(140) ++ "]   py=[AND]"
-   "oprev 141 = [" ++ op_name_of(141) ++ "]   py=[ANDi]"
-   "oprev 142 = [" ++ op_name_of(142) ++ "]   py=[XOR]"
-   "oprev 143 = [" ++ op_name_of(143) ++ "]   py=[XORi]"
-   "oprev 144 = [" ++ op_name_of(144) ++ "]   py=[OR]"
-   "oprev 145 = [" ++ op_name_of(145) ++ "]   py=[ORi]"
-   "oprev 146 = [" ++ op_name_of(146) ++ "]   py=[SHL]"
-   "oprev 147 = [" ++ op_name_of(147) ++ "]   py=[SHLi]"
-   "oprev 148 = [" ++ op_name_of(148) ++ "]   py=[SHR]"
-   "oprev 149 = [" ++ op_name_of(149) ++ "]   py=[SHRi]"
-   "oprev 150 = [" ++ op_name_of(150) ++ "]   py=[SAR]"
-   "oprev 151 = [" ++ op_name_of(151) ++ "]   py=[SARi]"
-   "oprev 152 = [" ++ op_name_of(152) ++ "]   py=[CMP]"
-   "oprev 153 = [" ++ op_name_of(153) ++ "]   py=[CMPi]"
-   "oprev 154 = [" ++ op_name_of(154) ++ "]   py=[VROUNDSS]"
-   "oprev 155 = [" ++ op_name_of(155) ++ "]   py=[VROUNDSD]"
-   "oprev 156 = [" ++ op_name_of(156) ++ "]   py=[VSQRTSS]"
-   "oprev 157 = [" ++ op_name_of(157) ++ "]   py=[VSQRTSD]"
-   "oprev 158 = [" ++ op_name_of(158) ++ "]   py=[VADDSS]"
-   "oprev 159 = [" ++ op_name_of(159) ++ "]   py=[VADDSD]"
-   "oprev 160 = [" ++ op_name_of(160) ++ "]   py=[VSUBSS]"
-   "oprev 161 = [" ++ op_name_of(161) ++ "]   py=[VSUBSD]"
-   "oprev 162 = [" ++ op_name_of(162) ++ "]   py=[VMULSS]"
-   "oprev 163 = [" ++ op_name_of(163) ++ "]   py=[VMULSD]"
-   "oprev 164 = [" ++ op_name_of(164) ++ "]   py=[VDIVSS]"
-   "oprev 165 = [" ++ op_name_of(165) ++ "]   py=[VDIVSD]"
-   "oprev 166 = [" ++ op_name_of(166) ++ "]   py=[RET]"
-   "op.count = [" ++ U32.show(op_len()) ++ "]   py=[89]"
-   "op.unknown = [" ++ op_num("NOSUCH") ++ "]   py=[KeyError]"
+   rd("iszm int 3", Op.xmm_sz_m(12))
+   rd("iszbits int 3", U32.show(12))
+   rd("isz int 4", Op.xmm_sz(16))
+   rd("iszm int 4", Op.xmm_sz_m(16))
+   rd("iszbits int 4", U32.show(16))
+   rd("isz int 6", Op.xmm_sz(24))
+   rd("iszm int 6", Op.xmm_sz_m(24))
+   rd("iszbits int 6", U32.show(24))
+   rd("isz int 8", Op.xmm_sz(32))
+   rd("iszm int 8", Op.xmm_sz_m(32))
+   rd("iszbits int 8", U32.show(32))
+   rd("isz int 16", Op.xmm_sz(64))
+   rd("iszm int 16", Op.xmm_sz_m(64))
+   rd("iszbits int 16", U32.show(64))
+   rd("isz float 1", Op.xmm_sz(4))
+   rd("iszm float 1", Op.xmm_sz_m(4))
+   rd("iszbits float 1", U32.show(4))
+   rd("isz float 2", Op.xmm_sz(8))
+   rd("iszm float 2", Op.xmm_sz_m(8))
+   rd("iszbits float 2", U32.show(8))
+   rd("isz float 3", Op.xmm_sz(12))
+   rd("iszm float 3", Op.xmm_sz_m(12))
+   rd("iszbits float 3", U32.show(12))
+   rd("isz float 4", Op.xmm_sz(16))
+   rd("iszm float 4", Op.xmm_sz_m(16))
+   rd("iszbits float 4", U32.show(16))
+   rd("isz float 6", Op.xmm_sz(24))
+   rd("iszm float 6", Op.xmm_sz_m(24))
+   rd("iszbits float 6", U32.show(24))
+   rd("isz float 8", Op.xmm_sz(32))
+   rd("iszm float 8", Op.xmm_sz_m(32))
+   rd("iszbits float 8", U32.show(32))
+   rd("isz float 16", Op.xmm_sz(64))
+   rd("iszm float 16", Op.xmm_sz_m(64))
+   rd("iszbits float 16", U32.show(64))
+   rd("isz int8 1", Op.xmm_sz(1))
+   rd("iszm int8 1", Op.xmm_sz_m(1))
+   rd("iszbits int8 1", U32.show(1))
+   rd("isz int8 2", Op.xmm_sz(2))
+   rd("iszm int8 2", Op.xmm_sz_m(2))
+   rd("iszbits int8 2", U32.show(2))
+   rd("isz int8 3", Op.xmm_sz(3))
+   rd("iszm int8 3", Op.xmm_sz_m(3))
+   rd("iszbits int8 3", U32.show(3))
+   rd("isz int8 4", Op.xmm_sz(4))
+   rd("iszm int8 4", Op.xmm_sz_m(4))
+   rd("iszbits int8 4", U32.show(4))
+   rd("isz int8 6", Op.xmm_sz(6))
+   rd("iszm int8 6", Op.xmm_sz_m(6))
+   rd("iszbits int8 6", U32.show(6))
+   rd("isz int8 8", Op.xmm_sz(8))
+   rd("iszm int8 8", Op.xmm_sz_m(8))
+   rd("iszbits int8 8", U32.show(8))
+   rd("isz int8 16", Op.xmm_sz(16))
+   rd("iszm int8 16", Op.xmm_sz_m(16))
+   rd("iszbits int8 16", U32.show(16))
+   rd("isz double 1", Op.xmm_sz(8))
+   rd("iszm double 1", Op.xmm_sz_m(8))
+   rd("iszbits double 1", U32.show(8))
+   rd("isz double 2", Op.xmm_sz(16))
+   rd("iszm double 2", Op.xmm_sz_m(16))
+   rd("iszbits double 2", U32.show(16))
+   rd("isz double 3", Op.xmm_sz(24))
+   rd("iszm double 3", Op.xmm_sz_m(24))
+   rd("iszbits double 3", U32.show(24))
+   rd("isz double 4", Op.xmm_sz(32))
+   rd("iszm double 4", Op.xmm_sz_m(32))
+   rd("iszbits double 4", U32.show(32))
+   rd("isz double 6", Op.xmm_sz(48))
+   rd("iszm double 6", Op.xmm_sz_m(48))
+   rd("iszbits double 6", U32.show(48))
+   rd("isz double 8", Op.xmm_sz(64))
+   rd("iszm double 8", Op.xmm_sz_m(64))
+   rd("iszbits double 8", U32.show(64))
+   rd("isz double 16", Op.xmm_sz(128))
+   rd("iszm double 16", Op.xmm_sz_m(128))
+   rd("iszbits double 16", U32.show(128))
+   rd("isz half 1", Op.xmm_sz(2))
+   rd("iszm half 1", Op.xmm_sz_m(2))
+   rd("iszbits half 1", U32.show(2))
+   rd("isz half 2", Op.xmm_sz(4))
+   rd("iszm half 2", Op.xmm_sz_m(4))
+   rd("iszbits half 2", U32.show(4))
+   rd("isz half 3", Op.xmm_sz(6))
+   rd("iszm half 3", Op.xmm_sz_m(6))
+   rd("iszbits half 3", U32.show(6))
+   rd("isz half 4", Op.xmm_sz(8))
+   rd("iszm half 4", Op.xmm_sz_m(8))
+   rd("iszbits half 4", U32.show(8))
+   rd("isz half 6", Op.xmm_sz(12))
+   rd("iszm half 6", Op.xmm_sz_m(12))
+   rd("iszbits half 6", U32.show(12))
+   rd("isz half 8", Op.xmm_sz(16))
+   rd("iszm half 8", Op.xmm_sz_m(16))
+   rd("iszbits half 8", U32.show(16))
+   rd("isz half 16", Op.xmm_sz(32))
+   rd("iszm half 16", Op.xmm_sz_m(32))
+   rd("iszbits half 16", U32.show(32))
+   rd("iszthr 0", Op.xmm_sz(0))
+   rd("iszthrm 0", Op.xmm_sz_m(0))
+   rd("iszthr 1", Op.xmm_sz(1))
+   rd("iszthrm 1", Op.xmm_sz_m(1))
+   rd("iszthr 7", Op.xmm_sz(7))
+   rd("iszthrm 7", Op.xmm_sz_m(7))
+   rd("iszthr 8", Op.xmm_sz(8))
+   rd("iszthrm 8", Op.xmm_sz_m(8))
+   rd("iszthr 15", Op.xmm_sz(15))
+   rd("iszthrm 15", Op.xmm_sz_m(15))
+   rd("iszthr 16", Op.xmm_sz(16))
+   rd("iszthrm 16", Op.xmm_sz_m(16))
+   rd("iszthr 17", Op.xmm_sz(17))
+   rd("iszthrm 17", Op.xmm_sz_m(17))
+   rd("iszthr 32", Op.xmm_sz(32))
+   rd("iszthrm 32", Op.xmm_sz_m(32))
+   rd("toint void", Op.to_int(S.void()))
+   rd("toint weakint", Op.to_int(S.weakint()))
+   rd("toint bool", Op.to_int(S.boolean()))
+   rd("toint i8", Op.to_int(S.int8()))
+   rd("toint u8", Op.to_int(S.uint8()))
+   rd("toint i16", Op.to_int(S.int16()))
+   rd("toint u16", Op.to_int(S.uint16()))
+   rd("toint i32", Op.to_int(S.int32()))
+   rd("toint u32", Op.to_int(S.uint32()))
+   rd("toint i64", Op.to_int(S.int64()))
+   rd("toint u64", Op.to_int(S.uint64()))
+   rd("toint weakfloat", Op.to_int(S.weakfloat()))
+   rd("toint fp8e4m3", Op.to_int(S.fp8e4m3()))
+   rd("toint fp8e4m3fnuz", Op.to_int(S.fp8e4m3fnuz()))
+   rd("toint fp8e5m2", Op.to_int(S.fp8e5m2()))
+   rd("toint fp8e5m2fnuz", Op.to_int(S.fp8e5m2fnuz()))
+   rd("toint f16", Op.to_int(S.half()))
+   rd("toint bf16", Op.to_int(S.bfloat16()))
+   rd("toint f32", Op.to_int(S.single()))
+   rd("toint f64", Op.to_int(S.double()))
+   rd("2a.FRAME_INDEX", Bool.show(Op.is_two_address("FRAME_INDEX")))
+   rd("2a.LABEL", Bool.show(Op.is_two_address("LABEL")))
+   rd("2a.LOOP_CMP", Bool.show(Op.is_two_address("LOOP_CMP")))
+   rd("2a.LEA", Bool.show(Op.is_two_address("LEA")))
+   rd("2a.MOV", Bool.show(Op.is_two_address("MOV")))
+   rd("2a.MOVm", Bool.show(Op.is_two_address("MOVm")))
+   rd("2a.MOVi", Bool.show(Op.is_two_address("MOVi")))
+   rd("2a.MOVABS", Bool.show(Op.is_two_address("MOVABS")))
+   rd("2a.VMOVSS", Bool.show(Op.is_two_address("VMOVSS")))
+   rd("2a.VMOVSD", Bool.show(Op.is_two_address("VMOVSD")))
+   rd("2a.VMOVUPS", Bool.show(Op.is_two_address("VMOVUPS")))
+   rd("2a.VMOVSSm", Bool.show(Op.is_two_address("VMOVSSm")))
+   rd("2a.VMOVSDm", Bool.show(Op.is_two_address("VMOVSDm")))
+   rd("2a.VMOVUPSm", Bool.show(Op.is_two_address("VMOVUPSm")))
+   rd("2a.MOVZX", Bool.show(Op.is_two_address("MOVZX")))
+   rd("2a.MOVSX", Bool.show(Op.is_two_address("MOVSX")))
+   rd("2a.MOVSXD", Bool.show(Op.is_two_address("MOVSXD")))
+   rd("2a.VCVTPH2PS", Bool.show(Op.is_two_address("VCVTPH2PS")))
+   rd("2a.VCVTPS2PH", Bool.show(Op.is_two_address("VCVTPS2PH")))
+   rd("2a.VCVTSS2SD", Bool.show(Op.is_two_address("VCVTSS2SD")))
+   rd("2a.VCVTSD2SS", Bool.show(Op.is_two_address("VCVTSD2SS")))
+   rd("2a.VCVTSI2SS", Bool.show(Op.is_two_address("VCVTSI2SS")))
+   rd("2a.VCVTSI2SD", Bool.show(Op.is_two_address("VCVTSI2SD")))
+   rd("2a.VCVTTSS2SI", Bool.show(Op.is_two_address("VCVTTSS2SI")))
+   rd("2a.VCVTTSD2SI", Bool.show(Op.is_two_address("VCVTTSD2SI")))
  ]
 
 def Gate.rows3() -> List<&2, String>: [
-   "op.revbad = [" ++ op_name_of(200) ++ "]   py=[ValueError]"
-   "grp.Copy = [" ++ Op.set_name(0) ++ "]   py=[MOV,CMOVNE,CMOVE,CMOVL,CMOVB]"
-   "grpn.Copy = [" ++ U32.show(Op.set_len(0)) ++ "]   py=[5]"
-   "grp.TwoAddress = [" ++ Op.set_name(1) ++ "]   py=[CMOVNE,CMOVE,CMOVL,CMOVB,IDIV,DIV,ADD,ADDi,SUB,SUBi,IMUL,AND,ANDi,XOR,XORi,OR,ORi,SHL,SHLi,SHR,SHRi,SAR,SARi]"
-   "grpn.TwoAddress = [" ++ U32.show(Op.set_len(1)) ++ "]   py=[23]"
-   "grp.Rm2nd = [" ++ Op.set_name(2) ++ "]   py=[VCVTSS2SD,VCVTSD2SS,VCVTSI2SS,VCVTSI2SD,VCMPSS,VCMPSD,CMOVNE,CMOVE,CMOVL,CMOVB,VBLENDVPS,VBLENDVPD,VINSERTPS,VPINSRW,VPINSRD,IDIV,DIV,ADD,SUB,IMUL,AND,XOR,OR,CMP,VROUNDSS,VROUNDSD,VSQRTSS,VSQRTSD,VADDSS,VADDSD,VSUBSS,VSUBSD,VMULSS,VMULSD,VDIVSS,VDIVSD]"
-   "grpn.Rm2nd = [" ++ U32.show(Op.set_len(2)) ++ "]   py=[36]"
-   "grp.WriteMem = [" ++ Op.set_name(3) ++ "]   py=[MOVm,MOVi,VMOVSSm,VMOVSDm,VMOVUPSm,VCVTPS2PH,VMOVDm,VMOVQm,SETNE,SETE,SETL,SETB,VPEXTRW,VPEXTRD,ADDi,SUBi,ANDi,XORi,ORi,SHL,SHLi,SHR,SHRi,SAR,SARi]"
-   "grpn.WriteMem = [" ++ U32.show(Op.set_len(3)) ++ "]   py=[25]"
-   "grp.ReadFlags = [" ++ Op.set_name(4) ++ "]   py=[SETNE,SETE,SETL,SETB,CMOVNE,CMOVE,CMOVL,CMOVB,JNE,JE,JL,JB,JGE]"
-   "grpn.ReadFlags = [" ++ U32.show(Op.set_len(4)) ++ "]   py=[13]"
-   "grp.WriteFlags = [" ++ Op.set_name(5) ++ "]   py=[IDIV,DIV,ADD,ADDi,SUB,SUBi,IMUL,IMULi,AND,ANDi,XOR,XORi,OR,ORi,SHL,SHLi,SHR,SHRi,SAR,SARi,CMP,CMPi]"
-   "grpn.WriteFlags = [" ++ U32.show(Op.set_len(5)) ++ "]   py=[22]"
-   "grp.GPR_DEST_OPS = [" ++ Op.set_name(6) ++ "]   py=[VCVTTSS2SI,VCVTTSD2SI,VMOVDm,VMOVQm,VPEXTRW,VPEXTRD]"
-   "grpn.GPR_DEST_OPS = [" ++ U32.show(Op.set_len(6)) ++ "]   py=[6]"
-   "grp.Rm1st = [" ++ Op.set_name(7) ++ "]   py=[LEA,MOV,VMOVSS,VMOVSD,VMOVUPS,MOVZX,MOVSX,MOVSXD,VCVTPH2PS,VCVTTSS2SI,VCVTTSD2SI,VMOVD,VMOVQ,CMOVNE,CMOVE,CMOVL,CMOVB,VPSRLDQ,IDIV,DIV,ADD,SUB,IMUL,IMULi,AND,XOR,OR,CMPi]"
-   "grpn.Rm1st = [" ++ U32.show(Op.set_len(7)) ++ "]   py=[28]"
-   "grp.XMM_OPS = [" ++ Op.set_name(8) ++ "]   py=[VMOVSS,VMOVSD,VMOVUPS,VMOVSSm,VMOVSDm,VMOVUPSm,VCVTPH2PS,VCVTPS2PH,VCVTSS2SD,VCVTSD2SS,VCVTSI2SS,VCVTSI2SD,VMOVD,VMOVQ,VCMPSS,VCMPSD,VBLENDVPS,VBLENDVPD,VINSERTPS,VPSRLDQ,VPINSRW,VPINSRD,VROUNDSS,VROUNDSD,VSQRTSS,VSQRTSD,VADDSS,VADDSD,VSUBSS,VSUBSD,VMULSS,VMULSD,VDIVSS,VDIVSD]"
-   "grpn.XMM_OPS = [" ++ U32.show(Op.set_len(8)) ++ "]   py=[34]"
-   "isz int 1 = [" ++ Op.xmm_sz(4) ++ "]   py=[VMOVSS]"
-   "iszm int 1 = [" ++ Op.xmm_sz_m(4) ++ "]   py=[VMOVSSm]"
-   "iszbits int 1 = [" ++ U32.show(4) ++ "]   py=[4]"
-   "isz int 2 = [" ++ Op.xmm_sz(8) ++ "]   py=[VMOVSD]"
-   "iszm int 2 = [" ++ Op.xmm_sz_m(8) ++ "]   py=[VMOVSDm]"
-   "iszbits int 2 = [" ++ U32.show(8) ++ "]   py=[8]"
-   "isz int 3 = [" ++ Op.xmm_sz(12) ++ "]   py=[VMOVSD]"
-   "iszm int 3 = [" ++ Op.xmm_sz_m(12) ++ "]   py=[VMOVSDm]"
-   "iszbits int 3 = [" ++ U32.show(12) ++ "]   py=[12]"
-   "isz int 4 = [" ++ Op.xmm_sz(16) ++ "]   py=[VMOVUPS]"
-   "iszm int 4 = [" ++ Op.xmm_sz_m(16) ++ "]   py=[VMOVUPSm]"
-   "iszbits int 4 = [" ++ U32.show(16) ++ "]   py=[16]"
-   "isz int 6 = [" ++ Op.xmm_sz(24) ++ "]   py=[VMOVUPS]"
-   "iszm int 6 = [" ++ Op.xmm_sz_m(24) ++ "]   py=[VMOVUPSm]"
-   "iszbits int 6 = [" ++ U32.show(24) ++ "]   py=[24]"
-   "isz int 8 = [" ++ Op.xmm_sz(32) ++ "]   py=[VMOVUPS]"
-   "iszm int 8 = [" ++ Op.xmm_sz_m(32) ++ "]   py=[VMOVUPSm]"
-   "iszbits int 8 = [" ++ U32.show(32) ++ "]   py=[32]"
-   "isz int 16 = [" ++ Op.xmm_sz(64) ++ "]   py=[VMOVUPS]"
-   "iszm int 16 = [" ++ Op.xmm_sz_m(64) ++ "]   py=[VMOVUPSm]"
-   "iszbits int 16 = [" ++ U32.show(64) ++ "]   py=[64]"
-   "isz float 1 = [" ++ Op.xmm_sz(4) ++ "]   py=[VMOVSS]"
-   "iszm float 1 = [" ++ Op.xmm_sz_m(4) ++ "]   py=[VMOVSSm]"
-   "iszbits float 1 = [" ++ U32.show(4) ++ "]   py=[4]"
-   "isz float 2 = [" ++ Op.xmm_sz(8) ++ "]   py=[VMOVSD]"
-   "iszm float 2 = [" ++ Op.xmm_sz_m(8) ++ "]   py=[VMOVSDm]"
-   "iszbits float 2 = [" ++ U32.show(8) ++ "]   py=[8]"
-   "isz float 3 = [" ++ Op.xmm_sz(12) ++ "]   py=[VMOVSD]"
-   "iszm float 3 = [" ++ Op.xmm_sz_m(12) ++ "]   py=[VMOVSDm]"
-   "iszbits float 3 = [" ++ U32.show(12) ++ "]   py=[12]"
-   "isz float 4 = [" ++ Op.xmm_sz(16) ++ "]   py=[VMOVUPS]"
-   "iszm float 4 = [" ++ Op.xmm_sz_m(16) ++ "]   py=[VMOVUPSm]"
-   "iszbits float 4 = [" ++ U32.show(16) ++ "]   py=[16]"
-   "isz float 6 = [" ++ Op.xmm_sz(24) ++ "]   py=[VMOVUPS]"
-   "iszm float 6 = [" ++ Op.xmm_sz_m(24) ++ "]   py=[VMOVUPSm]"
-   "iszbits float 6 = [" ++ U32.show(24) ++ "]   py=[24]"
-   "isz float 8 = [" ++ Op.xmm_sz(32) ++ "]   py=[VMOVUPS]"
-   "iszm float 8 = [" ++ Op.xmm_sz_m(32) ++ "]   py=[VMOVUPSm]"
-   "iszbits float 8 = [" ++ U32.show(32) ++ "]   py=[32]"
-   "isz float 16 = [" ++ Op.xmm_sz(64) ++ "]   py=[VMOVUPS]"
-   "iszm float 16 = [" ++ Op.xmm_sz_m(64) ++ "]   py=[VMOVUPSm]"
-   "iszbits float 16 = [" ++ U32.show(64) ++ "]   py=[64]"
-   "isz int8 1 = [" ++ Op.xmm_sz(1) ++ "]   py=[VMOVSS]"
-   "iszm int8 1 = [" ++ Op.xmm_sz_m(1) ++ "]   py=[VMOVSSm]"
-   "iszbits int8 1 = [" ++ U32.show(1) ++ "]   py=[1]"
-   "isz int8 2 = [" ++ Op.xmm_sz(2) ++ "]   py=[VMOVSS]"
-   "iszm int8 2 = [" ++ Op.xmm_sz_m(2) ++ "]   py=[VMOVSSm]"
-   "iszbits int8 2 = [" ++ U32.show(2) ++ "]   py=[2]"
-   "isz int8 3 = [" ++ Op.xmm_sz(3) ++ "]   py=[VMOVSS]"
-   "iszm int8 3 = [" ++ Op.xmm_sz_m(3) ++ "]   py=[VMOVSSm]"
-   "iszbits int8 3 = [" ++ U32.show(3) ++ "]   py=[3]"
-   "isz int8 4 = [" ++ Op.xmm_sz(4) ++ "]   py=[VMOVSS]"
-   "iszm int8 4 = [" ++ Op.xmm_sz_m(4) ++ "]   py=[VMOVSSm]"
-   "iszbits int8 4 = [" ++ U32.show(4) ++ "]   py=[4]"
-   "isz int8 6 = [" ++ Op.xmm_sz(6) ++ "]   py=[VMOVSS]"
-   "iszm int8 6 = [" ++ Op.xmm_sz_m(6) ++ "]   py=[VMOVSSm]"
-   "iszbits int8 6 = [" ++ U32.show(6) ++ "]   py=[6]"
-   "isz int8 8 = [" ++ Op.xmm_sz(8) ++ "]   py=[VMOVSD]"
-   "iszm int8 8 = [" ++ Op.xmm_sz_m(8) ++ "]   py=[VMOVSDm]"
-   "iszbits int8 8 = [" ++ U32.show(8) ++ "]   py=[8]"
-   "isz int8 16 = [" ++ Op.xmm_sz(16) ++ "]   py=[VMOVUPS]"
-   "iszm int8 16 = [" ++ Op.xmm_sz_m(16) ++ "]   py=[VMOVUPSm]"
-   "iszbits int8 16 = [" ++ U32.show(16) ++ "]   py=[16]"
-   "isz double 1 = [" ++ Op.xmm_sz(8) ++ "]   py=[VMOVSD]"
-   "iszm double 1 = [" ++ Op.xmm_sz_m(8) ++ "]   py=[VMOVSDm]"
-   "iszbits double 1 = [" ++ U32.show(8) ++ "]   py=[8]"
-   "isz double 2 = [" ++ Op.xmm_sz(16) ++ "]   py=[VMOVUPS]"
+   rd("2a.VMOVD", Bool.show(Op.is_two_address("VMOVD")))
+   rd("2a.VMOVQ", Bool.show(Op.is_two_address("VMOVQ")))
+   rd("2a.VMOVDm", Bool.show(Op.is_two_address("VMOVDm")))
+   rd("2a.VMOVQm", Bool.show(Op.is_two_address("VMOVQm")))
+   rd("2a.VCMPSS", Bool.show(Op.is_two_address("VCMPSS")))
+   rd("2a.VCMPSD", Bool.show(Op.is_two_address("VCMPSD")))
+   rd("2a.SETNE", Bool.show(Op.is_two_address("SETNE")))
+   rd("2a.SETE", Bool.show(Op.is_two_address("SETE")))
+   rd("2a.SETL", Bool.show(Op.is_two_address("SETL")))
+   rd("2a.SETB", Bool.show(Op.is_two_address("SETB")))
+   rd("2a.CMOVNE", Bool.show(Op.is_two_address("CMOVNE")))
+   rd("2a.CMOVE", Bool.show(Op.is_two_address("CMOVE")))
+   rd("2a.CMOVL", Bool.show(Op.is_two_address("CMOVL")))
+   rd("2a.CMOVB", Bool.show(Op.is_two_address("CMOVB")))
+   rd("2a.VBLENDVPS", Bool.show(Op.is_two_address("VBLENDVPS")))
+   rd("2a.VBLENDVPD", Bool.show(Op.is_two_address("VBLENDVPD")))
+   rd("2a.JNE", Bool.show(Op.is_two_address("JNE")))
+   rd("2a.JE", Bool.show(Op.is_two_address("JE")))
+   rd("2a.JL", Bool.show(Op.is_two_address("JL")))
+   rd("2a.JB", Bool.show(Op.is_two_address("JB")))
+   rd("2a.JGE", Bool.show(Op.is_two_address("JGE")))
+   rd("2a.JMP", Bool.show(Op.is_two_address("JMP")))
+   rd("2a.VINSERTPS", Bool.show(Op.is_two_address("VINSERTPS")))
+   rd("2a.VPSRLDQ", Bool.show(Op.is_two_address("VPSRLDQ")))
+   rd("2a.VPEXTRW", Bool.show(Op.is_two_address("VPEXTRW")))
+   rd("2a.VPEXTRD", Bool.show(Op.is_two_address("VPEXTRD")))
+   rd("2a.VPINSRW", Bool.show(Op.is_two_address("VPINSRW")))
+   rd("2a.VPINSRD", Bool.show(Op.is_two_address("VPINSRD")))
+   rd("2a.IDIV", Bool.show(Op.is_two_address("IDIV")))
+   rd("2a.DIV", Bool.show(Op.is_two_address("DIV")))
+   rd("2a.ADD", Bool.show(Op.is_two_address("ADD")))
+   rd("2a.ADDi", Bool.show(Op.is_two_address("ADDi")))
+   rd("2a.SUB", Bool.show(Op.is_two_address("SUB")))
+   rd("2a.SUBi", Bool.show(Op.is_two_address("SUBi")))
+   rd("2a.IMUL", Bool.show(Op.is_two_address("IMUL")))
+   rd("2a.IMULi", Bool.show(Op.is_two_address("IMULi")))
+   rd("2a.AND", Bool.show(Op.is_two_address("AND")))
+   rd("2a.ANDi", Bool.show(Op.is_two_address("ANDi")))
+   rd("2a.XOR", Bool.show(Op.is_two_address("XOR")))
+   rd("2a.XORi", Bool.show(Op.is_two_address("XORi")))
+   rd("2a.OR", Bool.show(Op.is_two_address("OR")))
+   rd("2a.ORi", Bool.show(Op.is_two_address("ORi")))
+   rd("2a.SHL", Bool.show(Op.is_two_address("SHL")))
+   rd("2a.SHLi", Bool.show(Op.is_two_address("SHLi")))
+   rd("2a.SHR", Bool.show(Op.is_two_address("SHR")))
+   rd("2a.SHRi", Bool.show(Op.is_two_address("SHRi")))
+   rd("2a.SAR", Bool.show(Op.is_two_address("SAR")))
+   rd("2a.SARi", Bool.show(Op.is_two_address("SARi")))
+   rd("2a.CMP", Bool.show(Op.is_two_address("CMP")))
+   rd("2a.CMPi", Bool.show(Op.is_two_address("CMPi")))
+   rd("2a.VROUNDSS", Bool.show(Op.is_two_address("VROUNDSS")))
+   rd("2a.VROUNDSD", Bool.show(Op.is_two_address("VROUNDSD")))
+   rd("2a.VSQRTSS", Bool.show(Op.is_two_address("VSQRTSS")))
+   rd("2a.VSQRTSD", Bool.show(Op.is_two_address("VSQRTSD")))
+   rd("2a.VADDSS", Bool.show(Op.is_two_address("VADDSS")))
+   rd("2a.VADDSD", Bool.show(Op.is_two_address("VADDSD")))
+   rd("2a.VSUBSS", Bool.show(Op.is_two_address("VSUBSS")))
+   rd("2a.VSUBSD", Bool.show(Op.is_two_address("VSUBSD")))
+   rd("2a.VMULSS", Bool.show(Op.is_two_address("VMULSS")))
+   rd("2a.VMULSD", Bool.show(Op.is_two_address("VMULSD")))
+   rd("2a.VDIVSS", Bool.show(Op.is_two_address("VDIVSS")))
+   rd("2a.VDIVSD", Bool.show(Op.is_two_address("VDIVSD")))
+   rd("2a.RET", Bool.show(Op.is_two_address("RET")))
+   rd("enc.ADD", EncRow("ADD"))
+   rd("enc.ADDi", EncRow("ADDi"))
+   rd("enc.AND", EncRow("AND"))
+   rd("enc.ANDi", EncRow("ANDi"))
+   rd("enc.CMOVB", EncRow("CMOVB"))
+   rd("enc.CMOVE", EncRow("CMOVE"))
+   rd("enc.CMOVL", EncRow("CMOVL"))
+   rd("enc.CMOVNE", EncRow("CMOVNE"))
+   rd("enc.CMP", EncRow("CMP"))
+   rd("enc.CMPi", EncRow("CMPi"))
+   rd("enc.DIV", EncRow("DIV"))
+   rd("enc.IDIV", EncRow("IDIV"))
+   rd("enc.IMUL", EncRow("IMUL"))
+   rd("enc.IMULi", EncRow("IMULi"))
+   rd("enc.LEA", EncRow("LEA"))
+   rd("enc.MOV", EncRow("MOV"))
+   rd("enc.MOVSX", EncRow("MOVSX"))
+   rd("enc.MOVSXD", EncRow("MOVSXD"))
+   rd("enc.MOVZX", EncRow("MOVZX"))
+   rd("enc.MOVi", EncRow("MOVi"))
+   rd("enc.MOVm", EncRow("MOVm"))
+   rd("enc.OR", EncRow("OR"))
+   rd("enc.ORi", EncRow("ORi"))
+   rd("enc.SAR", EncRow("SAR"))
+   rd("enc.SARi", EncRow("SARi"))
+   rd("enc.SETB", EncRow("SETB"))
+   rd("enc.SETE", EncRow("SETE"))
+   rd("enc.SETL", EncRow("SETL"))
+   rd("enc.SETNE", EncRow("SETNE"))
+   rd("enc.SHL", EncRow("SHL"))
+   rd("enc.SHLi", EncRow("SHLi"))
+   rd("enc.SHR", EncRow("SHR"))
+   rd("enc.SHRi", EncRow("SHRi"))
+   rd("enc.SUB", EncRow("SUB"))
+   rd("enc.SUBi", EncRow("SUBi"))
+   rd("enc.VADDSD", EncRow("VADDSD"))
+   rd("enc.VADDSS", EncRow("VADDSS"))
+   rd("enc.VBLENDVPD", EncRow("VBLENDVPD"))
+   rd("enc.VBLENDVPS", EncRow("VBLENDVPS"))
+   rd("enc.VCMPSD", EncRow("VCMPSD"))
+   rd("enc.VCMPSS", EncRow("VCMPSS"))
+   rd("enc.VCVTPH2PS", EncRow("VCVTPH2PS"))
+   rd("enc.VCVTPS2PH", EncRow("VCVTPS2PH"))
+   rd("enc.VCVTSD2SS", EncRow("VCVTSD2SS"))
+   rd("enc.VCVTSI2SD", EncRow("VCVTSI2SD"))
+   rd("enc.VCVTSI2SS", EncRow("VCVTSI2SS"))
+   rd("enc.VCVTSS2SD", EncRow("VCVTSS2SD"))
+   rd("enc.VCVTTSD2SI", EncRow("VCVTTSD2SI"))
+   rd("enc.VCVTTSS2SI", EncRow("VCVTTSS2SI"))
+   rd("enc.VDIVSD", EncRow("VDIVSD"))
+   rd("enc.VDIVSS", EncRow("VDIVSS"))
+   rd("enc.VINSERTPS", EncRow("VINSERTPS"))
+   rd("enc.VMOVD", EncRow("VMOVD"))
+   rd("enc.VMOVDm", EncRow("VMOVDm"))
+   rd("enc.VMOVQ", EncRow("VMOVQ"))
+   rd("enc.VMOVQm", EncRow("VMOVQm"))
+   rd("enc.VMOVSD", EncRow("VMOVSD"))
+   rd("enc.VMOVSDm", EncRow("VMOVSDm"))
+   rd("enc.VMOVSS", EncRow("VMOVSS"))
+   rd("enc.VMOVSSm", EncRow("VMOVSSm"))
+   rd("enc.VMOVUPS", EncRow("VMOVUPS"))
+   rd("enc.VMOVUPSm", EncRow("VMOVUPSm"))
+   rd("enc.VMULSD", EncRow("VMULSD"))
+   rd("enc.VMULSS", EncRow("VMULSS"))
+   rd("enc.VPEXTRD", EncRow("VPEXTRD"))
+   rd("enc.VPEXTRW", EncRow("VPEXTRW"))
+   rd("enc.VPINSRD", EncRow("VPINSRD"))
+   rd("enc.VPINSRW", EncRow("VPINSRW"))
+   rd("enc.VPSRLDQ", EncRow("VPSRLDQ"))
+   rd("enc.VROUNDSD", EncRow("VROUNDSD"))
+   rd("enc.VROUNDSS", EncRow("VROUNDSS"))
+   rd("enc.VSQRTSD", EncRow("VSQRTSD"))
+   rd("enc.VSQRTSS", EncRow("VSQRTSS"))
+   rd("enc.VSUBSD", EncRow("VSUBSD"))
+   rd("enc.VSUBSS", EncRow("VSUBSS"))
+   rd("enc.XOR", EncRow("XOR"))
+   rd("enc.XORi", EncRow("XORi"))
+   rd("enc.count", U32.show(enc_count()))
+   rd("enc.paramcount", U32.show(enc_paramcount()))
  ]
 
 def Gate.rows4() -> List<&2, String>: [
-   "iszm double 2 = [" ++ Op.xmm_sz_m(16) ++ "]   py=[VMOVUPSm]"
-   "iszbits double 2 = [" ++ U32.show(16) ++ "]   py=[16]"
-   "isz double 3 = [" ++ Op.xmm_sz(24) ++ "]   py=[VMOVUPS]"
-   "iszm double 3 = [" ++ Op.xmm_sz_m(24) ++ "]   py=[VMOVUPSm]"
-   "iszbits double 3 = [" ++ U32.show(24) ++ "]   py=[24]"
-   "isz double 4 = [" ++ Op.xmm_sz(32) ++ "]   py=[VMOVUPS]"
-   "iszm double 4 = [" ++ Op.xmm_sz_m(32) ++ "]   py=[VMOVUPSm]"
-   "iszbits double 4 = [" ++ U32.show(32) ++ "]   py=[32]"
-   "isz double 6 = [" ++ Op.xmm_sz(48) ++ "]   py=[VMOVUPS]"
-   "iszm double 6 = [" ++ Op.xmm_sz_m(48) ++ "]   py=[VMOVUPSm]"
-   "iszbits double 6 = [" ++ U32.show(48) ++ "]   py=[48]"
-   "isz double 8 = [" ++ Op.xmm_sz(64) ++ "]   py=[VMOVUPS]"
-   "iszm double 8 = [" ++ Op.xmm_sz_m(64) ++ "]   py=[VMOVUPSm]"
-   "iszbits double 8 = [" ++ U32.show(64) ++ "]   py=[64]"
-   "isz double 16 = [" ++ Op.xmm_sz(128) ++ "]   py=[VMOVUPS]"
-   "iszm double 16 = [" ++ Op.xmm_sz_m(128) ++ "]   py=[VMOVUPSm]"
-   "iszbits double 16 = [" ++ U32.show(128) ++ "]   py=[128]"
-   "isz half 1 = [" ++ Op.xmm_sz(2) ++ "]   py=[VMOVSS]"
-   "iszm half 1 = [" ++ Op.xmm_sz_m(2) ++ "]   py=[VMOVSSm]"
-   "iszbits half 1 = [" ++ U32.show(2) ++ "]   py=[2]"
-   "isz half 2 = [" ++ Op.xmm_sz(4) ++ "]   py=[VMOVSS]"
-   "iszm half 2 = [" ++ Op.xmm_sz_m(4) ++ "]   py=[VMOVSSm]"
-   "iszbits half 2 = [" ++ U32.show(4) ++ "]   py=[4]"
-   "isz half 3 = [" ++ Op.xmm_sz(6) ++ "]   py=[VMOVSS]"
-   "iszm half 3 = [" ++ Op.xmm_sz_m(6) ++ "]   py=[VMOVSSm]"
-   "iszbits half 3 = [" ++ U32.show(6) ++ "]   py=[6]"
-   "isz half 4 = [" ++ Op.xmm_sz(8) ++ "]   py=[VMOVSD]"
-   "iszm half 4 = [" ++ Op.xmm_sz_m(8) ++ "]   py=[VMOVSDm]"
-   "iszbits half 4 = [" ++ U32.show(8) ++ "]   py=[8]"
-   "isz half 6 = [" ++ Op.xmm_sz(12) ++ "]   py=[VMOVSD]"
-   "iszm half 6 = [" ++ Op.xmm_sz_m(12) ++ "]   py=[VMOVSDm]"
-   "iszbits half 6 = [" ++ U32.show(12) ++ "]   py=[12]"
-   "isz half 8 = [" ++ Op.xmm_sz(16) ++ "]   py=[VMOVUPS]"
-   "iszm half 8 = [" ++ Op.xmm_sz_m(16) ++ "]   py=[VMOVUPSm]"
-   "iszbits half 8 = [" ++ U32.show(16) ++ "]   py=[16]"
-   "isz half 16 = [" ++ Op.xmm_sz(32) ++ "]   py=[VMOVUPS]"
-   "iszm half 16 = [" ++ Op.xmm_sz_m(32) ++ "]   py=[VMOVUPSm]"
-   "iszbits half 16 = [" ++ U32.show(32) ++ "]   py=[32]"
-   "iszthr 0 = [" ++ Op.xmm_sz(0) ++ "]   py=[VMOVSS]"
-   "iszthrm 0 = [" ++ Op.xmm_sz_m(0) ++ "]   py=[VMOVSSm]"
-   "iszthr 1 = [" ++ Op.xmm_sz(1) ++ "]   py=[VMOVSS]"
-   "iszthrm 1 = [" ++ Op.xmm_sz_m(1) ++ "]   py=[VMOVSSm]"
-   "iszthr 7 = [" ++ Op.xmm_sz(7) ++ "]   py=[VMOVSS]"
-   "iszthrm 7 = [" ++ Op.xmm_sz_m(7) ++ "]   py=[VMOVSSm]"
-   "iszthr 8 = [" ++ Op.xmm_sz(8) ++ "]   py=[VMOVSD]"
-   "iszthrm 8 = [" ++ Op.xmm_sz_m(8) ++ "]   py=[VMOVSDm]"
-   "iszthr 15 = [" ++ Op.xmm_sz(15) ++ "]   py=[VMOVSD]"
-   "iszthrm 15 = [" ++ Op.xmm_sz_m(15) ++ "]   py=[VMOVSDm]"
-   "iszthr 16 = [" ++ Op.xmm_sz(16) ++ "]   py=[VMOVUPS]"
-   "iszthrm 16 = [" ++ Op.xmm_sz_m(16) ++ "]   py=[VMOVUPSm]"
-   "iszthr 17 = [" ++ Op.xmm_sz(17) ++ "]   py=[VMOVUPS]"
-   "iszthrm 17 = [" ++ Op.xmm_sz_m(17) ++ "]   py=[VMOVUPSm]"
-   "iszthr 32 = [" ++ Op.xmm_sz(32) ++ "]   py=[VMOVUPS]"
-   "iszthrm 32 = [" ++ Op.xmm_sz_m(32) ++ "]   py=[VMOVUPSm]"
-   "toint void = [" ++ Op.to_int(S.void()) ++ "]   py=[KeyError]"
-   "toint bool = [" ++ Op.to_int(S.boolean()) ++ "]   py=[KeyError]"
-   "toint weakint = [" ++ Op.to_int(S.weakint()) ++ "]   py=[KeyError]"
-   "toint i8 = [" ++ Op.to_int(S.int8()) ++ "]   py=[KeyError]"
-   "toint u8 = [" ++ Op.to_int(S.uint8()) ++ "]   py=[KeyError]"
-   "toint i16 = [" ++ Op.to_int(S.int16()) ++ "]   py=[KeyError]"
-   "toint u16 = [" ++ Op.to_int(S.uint16()) ++ "]   py=[KeyError]"
-   "toint i32 = [" ++ Op.to_int(S.int32()) ++ "]   py=[KeyError]"
-   "toint u32 = [" ++ Op.to_int(S.uint32()) ++ "]   py=[KeyError]"
-   "toint i64 = [" ++ Op.to_int(S.int64()) ++ "]   py=[KeyError]"
-   "toint u64 = [" ++ Op.to_int(S.uint64()) ++ "]   py=[KeyError]"
-   "toint weakfloat = [" ++ Op.to_int(S.weakfloat()) ++ "]   py=[KeyError]"
-   "toint fp8e4m3 = [" ++ Op.to_int(S.fp8e4m3fnuz()) ++ "]   py=[KeyError]"
-   "toint fp8e5m2 = [" ++ Op.to_int(S.fp8e5m2fnuz()) ++ "]   py=[KeyError]"
-   "toint fp8e4m3fnuz = [" ++ Op.to_int(S.fp8e4m3fnuz()) ++ "]   py=[KeyError]"
-   "toint fp8e5m2fnuz = [" ++ Op.to_int(S.fp8e5m2fnuz()) ++ "]   py=[KeyError]"
-   "toint f16 = [" ++ Op.to_int(S.half()) ++ "]   py=[i16]"
-   "toint bf16 = [" ++ Op.to_int(S.bfloat16()) ++ "]   py=[KeyError]"
-   "toint f32 = [" ++ Op.to_int(S.single()) ++ "]   py=[i32]"
-   "toint f64 = [" ++ Op.to_int(S.double()) ++ "]   py=[i64]"
-   "2a.FRAME_INDEX = [" ++ Bool.show(Op.is_two_address("FRAME_INDEX")) ++ "]   py=[False]"
-   "2a.LABEL = [" ++ Bool.show(Op.is_two_address("LABEL")) ++ "]   py=[False]"
-   "2a.DEFINE = [" ++ Bool.show(Op.is_two_address("DEFINE")) ++ "]   py=[False]"
-   "2a.LOOP_CMP = [" ++ Bool.show(Op.is_two_address("LOOP_CMP")) ++ "]   py=[False]"
-   "2a.LEA = [" ++ Bool.show(Op.is_two_address("LEA")) ++ "]   py=[False]"
-   "2a.MOV = [" ++ Bool.show(Op.is_two_address("MOV")) ++ "]   py=[False]"
-   "2a.MOVm = [" ++ Bool.show(Op.is_two_address("MOVm")) ++ "]   py=[False]"
-   "2a.MOVi = [" ++ Bool.show(Op.is_two_address("MOVi")) ++ "]   py=[False]"
-   "2a.MOVABS = [" ++ Bool.show(Op.is_two_address("MOVABS")) ++ "]   py=[False]"
-   "2a.VMOVSS = [" ++ Bool.show(Op.is_two_address("VMOVSS")) ++ "]   py=[False]"
-   "2a.VMOVSD = [" ++ Bool.show(Op.is_two_address("VMOVSD")) ++ "]   py=[False]"
-   "2a.VMOVUPS = [" ++ Bool.show(Op.is_two_address("VMOVUPS")) ++ "]   py=[False]"
-   "2a.VMOVSSm = [" ++ Bool.show(Op.is_two_address("VMOVSSm")) ++ "]   py=[False]"
-   "2a.VMOVSDm = [" ++ Bool.show(Op.is_two_address("VMOVSDm")) ++ "]   py=[False]"
-   "2a.VMOVUPSm = [" ++ Bool.show(Op.is_two_address("VMOVUPSm")) ++ "]   py=[False]"
-   "2a.MOVZX = [" ++ Bool.show(Op.is_two_address("MOVZX")) ++ "]   py=[False]"
-   "2a.MOVSX = [" ++ Bool.show(Op.is_two_address("MOVSX")) ++ "]   py=[False]"
-   "2a.MOVSXD = [" ++ Bool.show(Op.is_two_address("MOVSXD")) ++ "]   py=[False]"
-   "2a.VCVTPH2PS = [" ++ Bool.show(Op.is_two_address("VCVTPH2PS")) ++ "]   py=[False]"
-   "2a.VCVTPS2PH = [" ++ Bool.show(Op.is_two_address("VCVTPS2PH")) ++ "]   py=[False]"
-   "2a.VCVTSS2SD = [" ++ Bool.show(Op.is_two_address("VCVTSS2SD")) ++ "]   py=[False]"
+   rd("enc.missing", enc_missing_names())
+   rd("enc.none FRAME_INDEX", Bool.show(Enc.is_direct("FRAME_INDEX")))
+   rd("enc.norow FRAME_INDEX", EncRow("FRAME_INDEX"))
+   rd("enc.none LABEL", Bool.show(Enc.is_direct("LABEL")))
+   rd("enc.norow LABEL", EncRow("LABEL"))
+   rd("enc.none LOOP_CMP", Bool.show(Enc.is_direct("LOOP_CMP")))
+   rd("enc.norow LOOP_CMP", EncRow("LOOP_CMP"))
+   rd("direct.JE.0f8400000000", Bool.show(String.eq(Hex.bytes(Enc.direct("JE")), "0f8400000000")))
+   rd("direct.JNE.0f8500000000", Bool.show(String.eq(Hex.bytes(Enc.direct("JNE")), "0f8500000000")))
+   rd("direct.JL.0f8c00000000", Bool.show(String.eq(Hex.bytes(Enc.direct("JL")), "0f8c00000000")))
+   rd("direct.JB.0f8200000000", Bool.show(String.eq(Hex.bytes(Enc.direct("JB")), "0f8200000000")))
+   rd("direct.JGE.0f8d00000000", Bool.show(String.eq(Hex.bytes(Enc.direct("JGE")), "0f8d00000000")))
+   rd("direct.JMP.e900000000", Bool.show(String.eq(Hex.bytes(Enc.direct("JMP")), "e900000000")))
+   rd("direct.RET.c3", Bool.show(String.eq(Hex.bytes(Enc.direct("RET")), "c3")))
+   rd("direct.MOVABS 0.48b83412000000000000", Bool.show(String.eq(Hex.bytes(Enc.movabs(0, 4660)), "48b83412000000000000")))
+   rd("direct.MOVABS 1.48b93412000000000000", Bool.show(String.eq(Hex.bytes(Enc.movabs(1, 4660)), "48b93412000000000000")))
+   rd("direct.MOVABS 7.48bf3412000000000000", Bool.show(String.eq(Hex.bytes(Enc.movabs(7, 4660)), "48bf3412000000000000")))
+   rd("direct.MOVABS 8.49b83412000000000000", Bool.show(String.eq(Hex.bytes(Enc.movabs(8, 4660)), "49b83412000000000000")))
+   rd("direct.MOVABS 15.49bf3412000000000000", Bool.show(String.eq(Hex.bytes(Enc.movabs(15, 4660)), "49bf3412000000000000")))
+   rd("hex.LEA.488d948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("LEA", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, True{}, 4, 0)), "488d948c08000000")))
+   rd("hex.MOV.488b948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("MOV", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "488b948c08000000")))
+   rd("hex.MOVm.4889948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("MOVm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "4889948c08000000")))
+   rd("hex.MOVi.40c7848c0800000000000000", Bool.show(String.eq(Hex.bytes(Enc.emit("MOVi", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 1, 4n, 0, False{}, 0, 0)), "40c7848c0800000000000000")))
+   rd("hex.VMOVSS.c5fa10948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSS", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5fa10948c08000000")))
+   rd("hex.VMOVSD.c5fb10948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 8, 0)), "c5fb10948c08000000")))
+   rd("hex.VMOVUPS.c5f810948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVUPS", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5f810948c08000000")))
+   rd("hex.VMOVSSm.c5fa11948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSSm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "c5fa11948c08000000")))
+   rd("hex.VMOVSDm.c5fb11948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSDm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "c5fb11948c08000000")))
+   rd("hex.VMOVUPSm.c5f811948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVUPSm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "c5f811948c08000000")))
+   rd("hex.MOVZX.480fb7948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("MOVZX", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "480fb7948c08000000")))
+   rd("hex.MOVSX.480fbf948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("MOVSX", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "480fbf948c08000000")))
+   rd("hex.MOVSXD.4863948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("MOVSXD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "4863948c08000000")))
+   rd("hex.VCVTPH2PS.c4e27913948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTPH2PS", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c4e27913948c08000000")))
+   rd("hex.VCVTSS2SD.c5f25ac2", Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSS2SD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f25ac2")))
+   rd("hex.VCVTSD2SS.c5f35ac2", Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSD2SS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f35ac2")))
+   rd("hex.VCVTSI2SS.c5f22ac2", Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSI2SS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f22ac2")))
+   rd("hex.VCVTSI2SD.c5f32ac2", Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSI2SD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f32ac2")))
+   rd("hex.VCVTTSS2SI.c5fa2c948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTTSS2SI", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5fa2c948c08000000")))
+   rd("hex.VCVTTSD2SI.c5fb2c948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTTSD2SI", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5fb2c948c08000000")))
+   rd("hex.VMOVD.c5f96e948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5f96e948c08000000")))
+   rd("hex.VMOVQ.c4e1f96e948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVQ", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c4e1f96e948c08000000")))
+   rd("hex.VCMPSS.c5f2c2c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VCMPSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f2c2c2")))
+   rd("hex.VCMPSD.c5f3c2c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VCMPSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f3c2c2")))
+   rd("hex.SETNE.400f95848c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("SETNE", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f95848c08000000")))
+   rd("hex.SETE.400f94848c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("SETE", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f94848c08000000")))
  ]
 
 def Gate.rows5() -> List<&2, String>: [
-   "2a.VCVTSD2SS = [" ++ Bool.show(Op.is_two_address("VCVTSD2SS")) ++ "]   py=[False]"
-   "2a.VCVTSI2SS = [" ++ Bool.show(Op.is_two_address("VCVTSI2SS")) ++ "]   py=[False]"
-   "2a.VCVTSI2SD = [" ++ Bool.show(Op.is_two_address("VCVTSI2SD")) ++ "]   py=[False]"
-   "2a.VCVTTSS2SI = [" ++ Bool.show(Op.is_two_address("VCVTTSS2SI")) ++ "]   py=[False]"
-   "2a.VCVTTSD2SI = [" ++ Bool.show(Op.is_two_address("VCVTTSD2SI")) ++ "]   py=[False]"
-   "2a.VMOVD = [" ++ Bool.show(Op.is_two_address("VMOVD")) ++ "]   py=[False]"
-   "2a.VMOVQ = [" ++ Bool.show(Op.is_two_address("VMOVQ")) ++ "]   py=[False]"
-   "2a.VMOVDm = [" ++ Bool.show(Op.is_two_address("VMOVDm")) ++ "]   py=[False]"
-   "2a.VMOVQm = [" ++ Bool.show(Op.is_two_address("VMOVQm")) ++ "]   py=[False]"
-   "2a.VCMPSS = [" ++ Bool.show(Op.is_two_address("VCMPSS")) ++ "]   py=[False]"
-   "2a.VCMPSD = [" ++ Bool.show(Op.is_two_address("VCMPSD")) ++ "]   py=[False]"
-   "2a.SETNE = [" ++ Bool.show(Op.is_two_address("SETNE")) ++ "]   py=[False]"
-   "2a.SETE = [" ++ Bool.show(Op.is_two_address("SETE")) ++ "]   py=[False]"
-   "2a.SETL = [" ++ Bool.show(Op.is_two_address("SETL")) ++ "]   py=[False]"
-   "2a.SETB = [" ++ Bool.show(Op.is_two_address("SETB")) ++ "]   py=[False]"
-   "2a.CMOVNE = [" ++ Bool.show(Op.is_two_address("CMOVNE")) ++ "]   py=[True]"
-   "2a.CMOVE = [" ++ Bool.show(Op.is_two_address("CMOVE")) ++ "]   py=[True]"
-   "2a.CMOVL = [" ++ Bool.show(Op.is_two_address("CMOVL")) ++ "]   py=[True]"
-   "2a.CMOVB = [" ++ Bool.show(Op.is_two_address("CMOVB")) ++ "]   py=[True]"
-   "2a.VBLENDVPS = [" ++ Bool.show(Op.is_two_address("VBLENDVPS")) ++ "]   py=[False]"
-   "2a.VBLENDVPD = [" ++ Bool.show(Op.is_two_address("VBLENDVPD")) ++ "]   py=[False]"
-   "2a.JNE = [" ++ Bool.show(Op.is_two_address("JNE")) ++ "]   py=[False]"
-   "2a.JE = [" ++ Bool.show(Op.is_two_address("JE")) ++ "]   py=[False]"
-   "2a.JL = [" ++ Bool.show(Op.is_two_address("JL")) ++ "]   py=[False]"
-   "2a.JB = [" ++ Bool.show(Op.is_two_address("JB")) ++ "]   py=[False]"
-   "2a.JGE = [" ++ Bool.show(Op.is_two_address("JGE")) ++ "]   py=[False]"
-   "2a.JMP = [" ++ Bool.show(Op.is_two_address("JMP")) ++ "]   py=[False]"
-   "2a.VINSERTPS = [" ++ Bool.show(Op.is_two_address("VINSERTPS")) ++ "]   py=[False]"
-   "2a.VPSRLDQ = [" ++ Bool.show(Op.is_two_address("VPSRLDQ")) ++ "]   py=[False]"
-   "2a.VPEXTRW = [" ++ Bool.show(Op.is_two_address("VPEXTRW")) ++ "]   py=[False]"
-   "2a.VPEXTRD = [" ++ Bool.show(Op.is_two_address("VPEXTRD")) ++ "]   py=[False]"
-   "2a.VPINSRW = [" ++ Bool.show(Op.is_two_address("VPINSRW")) ++ "]   py=[False]"
-   "2a.VPINSRD = [" ++ Bool.show(Op.is_two_address("VPINSRD")) ++ "]   py=[False]"
-   "2a.IDIV = [" ++ Bool.show(Op.is_two_address("IDIV")) ++ "]   py=[True]"
-   "2a.DIV = [" ++ Bool.show(Op.is_two_address("DIV")) ++ "]   py=[True]"
-   "2a.ADD = [" ++ Bool.show(Op.is_two_address("ADD")) ++ "]   py=[True]"
-   "2a.ADDi = [" ++ Bool.show(Op.is_two_address("ADDi")) ++ "]   py=[True]"
-   "2a.SUB = [" ++ Bool.show(Op.is_two_address("SUB")) ++ "]   py=[True]"
-   "2a.SUBi = [" ++ Bool.show(Op.is_two_address("SUBi")) ++ "]   py=[True]"
-   "2a.IMUL = [" ++ Bool.show(Op.is_two_address("IMUL")) ++ "]   py=[True]"
-   "2a.IMULi = [" ++ Bool.show(Op.is_two_address("IMULi")) ++ "]   py=[False]"
-   "2a.AND = [" ++ Bool.show(Op.is_two_address("AND")) ++ "]   py=[True]"
-   "2a.ANDi = [" ++ Bool.show(Op.is_two_address("ANDi")) ++ "]   py=[True]"
-   "2a.XOR = [" ++ Bool.show(Op.is_two_address("XOR")) ++ "]   py=[True]"
-   "2a.XORi = [" ++ Bool.show(Op.is_two_address("XORi")) ++ "]   py=[True]"
-   "2a.OR = [" ++ Bool.show(Op.is_two_address("OR")) ++ "]   py=[True]"
-   "2a.ORi = [" ++ Bool.show(Op.is_two_address("ORi")) ++ "]   py=[True]"
-   "2a.SHL = [" ++ Bool.show(Op.is_two_address("SHL")) ++ "]   py=[True]"
-   "2a.SHLi = [" ++ Bool.show(Op.is_two_address("SHLi")) ++ "]   py=[True]"
-   "2a.SHR = [" ++ Bool.show(Op.is_two_address("SHR")) ++ "]   py=[True]"
-   "2a.SHRi = [" ++ Bool.show(Op.is_two_address("SHRi")) ++ "]   py=[True]"
-   "2a.SAR = [" ++ Bool.show(Op.is_two_address("SAR")) ++ "]   py=[True]"
-   "2a.SARi = [" ++ Bool.show(Op.is_two_address("SARi")) ++ "]   py=[True]"
-   "2a.CMP = [" ++ Bool.show(Op.is_two_address("CMP")) ++ "]   py=[False]"
-   "2a.CMPi = [" ++ Bool.show(Op.is_two_address("CMPi")) ++ "]   py=[False]"
-   "2a.VROUNDSS = [" ++ Bool.show(Op.is_two_address("VROUNDSS")) ++ "]   py=[False]"
-   "2a.VROUNDSD = [" ++ Bool.show(Op.is_two_address("VROUNDSD")) ++ "]   py=[False]"
-   "2a.VSQRTSS = [" ++ Bool.show(Op.is_two_address("VSQRTSS")) ++ "]   py=[False]"
-   "2a.VSQRTSD = [" ++ Bool.show(Op.is_two_address("VSQRTSD")) ++ "]   py=[False]"
-   "2a.VADDSS = [" ++ Bool.show(Op.is_two_address("VADDSS")) ++ "]   py=[False]"
-   "2a.VADDSD = [" ++ Bool.show(Op.is_two_address("VADDSD")) ++ "]   py=[False]"
-   "2a.VSUBSS = [" ++ Bool.show(Op.is_two_address("VSUBSS")) ++ "]   py=[False]"
-   "2a.VSUBSD = [" ++ Bool.show(Op.is_two_address("VSUBSD")) ++ "]   py=[False]"
-   "2a.VMULSS = [" ++ Bool.show(Op.is_two_address("VMULSS")) ++ "]   py=[False]"
-   "2a.VMULSD = [" ++ Bool.show(Op.is_two_address("VMULSD")) ++ "]   py=[False]"
-   "2a.VDIVSS = [" ++ Bool.show(Op.is_two_address("VDIVSS")) ++ "]   py=[False]"
-   "2a.VDIVSD = [" ++ Bool.show(Op.is_two_address("VDIVSD")) ++ "]   py=[False]"
-   "2a.RET = [" ++ Bool.show(Op.is_two_address("RET")) ++ "]   py=[False]"
-   "enc.ADD = [" ++ EncRow("ADD") ++ "]   py=[opc=3,reg=-,pp=-,sel=-,we=-]"
-   "enc.ADDi = [" ++ EncRow("ADDi") ++ "]   py=[opc=129,reg=0,pp=-,sel=-,we=-]"
-   "enc.AND = [" ++ EncRow("AND") ++ "]   py=[opc=35,reg=-,pp=-,sel=-,we=-]"
-   "enc.ANDi = [" ++ EncRow("ANDi") ++ "]   py=[opc=129,reg=4,pp=-,sel=-,we=-]"
-   "enc.CMOVB = [" ++ EncRow("CMOVB") ++ "]   py=[opc=3906,reg=-,pp=-,sel=-,we=-]"
-   "enc.CMOVE = [" ++ EncRow("CMOVE") ++ "]   py=[opc=3908,reg=-,pp=-,sel=-,we=-]"
-   "enc.CMOVL = [" ++ EncRow("CMOVL") ++ "]   py=[opc=3916,reg=-,pp=-,sel=-,we=-]"
-   "enc.CMOVNE = [" ++ EncRow("CMOVNE") ++ "]   py=[opc=3909,reg=-,pp=-,sel=-,we=-]"
-   "enc.CMP = [" ++ EncRow("CMP") ++ "]   py=[opc=59,reg=-,pp=-,sel=-,we=-]"
-   "enc.CMPi = [" ++ EncRow("CMPi") ++ "]   py=[opc=129,reg=7,pp=-,sel=-,we=-]"
-   "enc.DIV = [" ++ EncRow("DIV") ++ "]   py=[opc=247,reg=6,pp=-,sel=-,we=-]"
+   rd("hex.SETL.400f9c848c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("SETL", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f9c848c08000000")))
+   rd("hex.SETB.400f92848c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("SETB", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f92848c08000000")))
+   rd("hex.CMOVNE.480f45d5", Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVNE", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f45d5")))
+   rd("hex.CMOVE.480f44d5", Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVE", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f44d5")))
+   rd("hex.CMOVL.480f4cd5", Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVL", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f4cd5")))
+   rd("hex.CMOVB.480f42d5", Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVB", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f42d5")))
+   rd("hex.VBLENDVPS.c4e3714ac2", Bool.show(String.eq(Hex.bytes(Enc.emit("VBLENDVPS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e3714ac2")))
+   rd("hex.VBLENDVPD.c4e3714bc2", Bool.show(String.eq(Hex.bytes(Enc.emit("VBLENDVPD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e3714bc2")))
+   rd("hex.VINSERTPS.c4e37121c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VINSERTPS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e37121c2")))
+   rd("hex.VPSRLDQ.c5e9739c8c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VPSRLDQ", 3, 4, 1, 4, 0, 2, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5e9739c8c08000000")))
+   rd("hex.VPEXTRW.c4e37915948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VPEXTRW", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 1, 0)), "c4e37915948c08000000")))
+   rd("hex.VPEXTRD.c4e37916948c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("VPEXTRD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 1, 0)), "c4e37916948c08000000")))
+   rd("hex.VPINSRW.c5f1c4c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VPINSRW", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f1c4c2")))
+   rd("hex.VPINSRD.c4e37122c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VPINSRD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e37122c2")))
+   rd("hex.IDIV.48f7fd", Bool.show(String.eq(Hex.bytes(Enc.emit("IDIV", 7, 5, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48f7fd")))
+   rd("hex.DIV.48f7f5", Bool.show(String.eq(Hex.bytes(Enc.emit("DIV", 6, 5, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48f7f5")))
+   rd("hex.ADD.4803d5", Bool.show(String.eq(Hex.bytes(Enc.emit("ADD", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "4803d5")))
+   rd("hex.ADDi.4881c2", Bool.show(String.eq(Hex.bytes(Enc.emit("ADDi", 0, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881c2")))
+   rd("hex.SUB.482bd5", Bool.show(String.eq(Hex.bytes(Enc.emit("SUB", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "482bd5")))
+   rd("hex.SUBi.4881ea", Bool.show(String.eq(Hex.bytes(Enc.emit("SUBi", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881ea")))
+   rd("hex.IMUL.480fafd5", Bool.show(String.eq(Hex.bytes(Enc.emit("IMUL", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "480fafd5")))
+   rd("hex.IMULi.4869d103000000", Bool.show(String.eq(Hex.bytes(Enc.emit("IMULi", 2, 1, 4, 8, 8, 0, False{}, 0, 4, 1, 4n, 3, False{}, 4, 4)), "4869d103000000")))
+   rd("hex.AND.4823d5", Bool.show(String.eq(Hex.bytes(Enc.emit("AND", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "4823d5")))
+   rd("hex.ANDi.4881e2", Bool.show(String.eq(Hex.bytes(Enc.emit("ANDi", 4, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881e2")))
+   rd("hex.XOR.4833d5", Bool.show(String.eq(Hex.bytes(Enc.emit("XOR", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "4833d5")))
+   rd("hex.XORi.4881f2", Bool.show(String.eq(Hex.bytes(Enc.emit("XORi", 6, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881f2")))
+   rd("hex.OR.480bd5", Bool.show(String.eq(Hex.bytes(Enc.emit("OR", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "480bd5")))
+   rd("hex.ORi.4881ca", Bool.show(String.eq(Hex.bytes(Enc.emit("ORi", 1, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881ca")))
+   rd("hex.SHL.48d3e2", Bool.show(String.eq(Hex.bytes(Enc.emit("SHL", 4, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3e2")))
+   rd("hex.SHLi.48c1e2", Bool.show(String.eq(Hex.bytes(Enc.emit("SHLi", 4, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1e2")))
+   rd("hex.SHR.48d3ea", Bool.show(String.eq(Hex.bytes(Enc.emit("SHR", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3ea")))
+   rd("hex.SHRi.48c1ea", Bool.show(String.eq(Hex.bytes(Enc.emit("SHRi", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1ea")))
+   rd("hex.SAR.48d3fa", Bool.show(String.eq(Hex.bytes(Enc.emit("SAR", 7, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3fa")))
+   rd("hex.SARi.48c1fa", Bool.show(String.eq(Hex.bytes(Enc.emit("SARi", 7, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1fa")))
+   rd("hex.CMP.493bd6", Bool.show(String.eq(Hex.bytes(Enc.emit("CMP", 2, 14, 4, 8, 8, 5, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "493bd6")))
+   rd("hex.CMPi.81bc8c08000000", Bool.show(String.eq(Hex.bytes(Enc.emit("CMPi", 7, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "81bc8c08000000")))
+   rd("hex.VROUNDSS.c4e3710ac2", Bool.show(String.eq(Hex.bytes(Enc.emit("VROUNDSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e3710ac2")))
+   rd("hex.VROUNDSD.c4e3710bc2", Bool.show(String.eq(Hex.bytes(Enc.emit("VROUNDSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c4e3710bc2")))
+   rd("hex.VSQRTSS.c5f251c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VSQRTSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f251c2")))
+   rd("hex.VSQRTSD.c5f351c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VSQRTSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f351c2")))
  ]
 
 def Gate.rows6() -> List<&2, String>: [
-   "enc.IDIV = [" ++ EncRow("IDIV") ++ "]   py=[opc=247,reg=7,pp=-,sel=-,we=-]"
-   "enc.IMUL = [" ++ EncRow("IMUL") ++ "]   py=[opc=4015,reg=-,pp=-,sel=-,we=-]"
-   "enc.IMULi = [" ++ EncRow("IMULi") ++ "]   py=[opc=105,reg=-,pp=-,sel=-,we=-]"
-   "enc.LEA = [" ++ EncRow("LEA") ++ "]   py=[opc=141,reg=-,pp=-,sel=-,we=-]"
-   "enc.MOV = [" ++ EncRow("MOV") ++ "]   py=[opc=139,reg=-,pp=-,sel=-,we=-]"
-   "enc.MOVSX = [" ++ EncRow("MOVSX") ++ "]   py=[opc=4031,reg=-,pp=-,sel=-,we=-]"
-   "enc.MOVSXD = [" ++ EncRow("MOVSXD") ++ "]   py=[opc=99,reg=-,pp=-,sel=-,we=-]"
-   "enc.MOVZX = [" ++ EncRow("MOVZX") ++ "]   py=[opc=4023,reg=-,pp=-,sel=-,we=-]"
-   "enc.MOVi = [" ++ EncRow("MOVi") ++ "]   py=[opc=199,reg=0,pp=-,sel=-,we=-]"
-   "enc.MOVm = [" ++ EncRow("MOVm") ++ "]   py=[opc=137,reg=-,pp=-,sel=-,we=-]"
-   "enc.OR = [" ++ EncRow("OR") ++ "]   py=[opc=11,reg=-,pp=-,sel=-,we=-]"
-   "enc.ORi = [" ++ EncRow("ORi") ++ "]   py=[opc=129,reg=1,pp=-,sel=-,we=-]"
-   "enc.SAR = [" ++ EncRow("SAR") ++ "]   py=[opc=211,reg=7,pp=-,sel=-,we=-]"
-   "enc.SARi = [" ++ EncRow("SARi") ++ "]   py=[opc=193,reg=7,pp=-,sel=-,we=-]"
-   "enc.SETB = [" ++ EncRow("SETB") ++ "]   py=[opc=3986,reg=0,pp=-,sel=-,we=-]"
-   "enc.SETE = [" ++ EncRow("SETE") ++ "]   py=[opc=3988,reg=0,pp=-,sel=-,we=-]"
-   "enc.SETL = [" ++ EncRow("SETL") ++ "]   py=[opc=3996,reg=0,pp=-,sel=-,we=-]"
-   "enc.SETNE = [" ++ EncRow("SETNE") ++ "]   py=[opc=3989,reg=0,pp=-,sel=-,we=-]"
-   "enc.SHL = [" ++ EncRow("SHL") ++ "]   py=[opc=211,reg=4,pp=-,sel=-,we=-]"
-   "enc.SHLi = [" ++ EncRow("SHLi") ++ "]   py=[opc=193,reg=4,pp=-,sel=-,we=-]"
-   "enc.SHR = [" ++ EncRow("SHR") ++ "]   py=[opc=211,reg=5,pp=-,sel=-,we=-]"
-   "enc.SHRi = [" ++ EncRow("SHRi") ++ "]   py=[opc=193,reg=5,pp=-,sel=-,we=-]"
-   "enc.SUB = [" ++ EncRow("SUB") ++ "]   py=[opc=43,reg=-,pp=-,sel=-,we=-]"
-   "enc.SUBi = [" ++ EncRow("SUBi") ++ "]   py=[opc=129,reg=5,pp=-,sel=-,we=-]"
-   "enc.VADDSD = [" ++ EncRow("VADDSD") ++ "]   py=[opc=88,reg=-,pp=3,sel=1,we=-]"
-   "enc.VADDSS = [" ++ EncRow("VADDSS") ++ "]   py=[opc=88,reg=-,pp=2,sel=1,we=-]"
-   "enc.VBLENDVPD = [" ++ EncRow("VBLENDVPD") ++ "]   py=[opc=75,reg=-,pp=1,sel=3,we=-]"
-   "enc.VBLENDVPS = [" ++ EncRow("VBLENDVPS") ++ "]   py=[opc=74,reg=-,pp=1,sel=3,we=-]"
-   "enc.VCMPSD = [" ++ EncRow("VCMPSD") ++ "]   py=[opc=194,reg=-,pp=3,sel=1,we=-]"
-   "enc.VCMPSS = [" ++ EncRow("VCMPSS") ++ "]   py=[opc=194,reg=-,pp=2,sel=1,we=-]"
-   "enc.VCVTPH2PS = [" ++ EncRow("VCVTPH2PS") ++ "]   py=[opc=19,reg=-,pp=1,sel=2,we=-]"
-   "enc.VCVTPS2PH = [" ++ EncRow("VCVTPS2PH") ++ "]   py=[opc=29,reg=-,pp=1,sel=3,we=-]"
-   "enc.VCVTSD2SS = [" ++ EncRow("VCVTSD2SS") ++ "]   py=[opc=90,reg=-,pp=3,sel=1,we=-]"
-   "enc.VCVTSI2SD = [" ++ EncRow("VCVTSI2SD") ++ "]   py=[opc=42,reg=-,pp=3,sel=1,we=x.src[1].dtype.itemsize == 8]"
-   "enc.VCVTSI2SS = [" ++ EncRow("VCVTSI2SS") ++ "]   py=[opc=42,reg=-,pp=2,sel=1,we=x.src[1].dtype.itemsize == 8]"
-   "enc.VCVTSS2SD = [" ++ EncRow("VCVTSS2SD") ++ "]   py=[opc=90,reg=-,pp=2,sel=1,we=-]"
-   "enc.VCVTTSD2SI = [" ++ EncRow("VCVTTSD2SI") ++ "]   py=[opc=44,reg=-,pp=3,sel=1,we=x.dtype.itemsize == 8]"
-   "enc.VCVTTSS2SI = [" ++ EncRow("VCVTTSS2SI") ++ "]   py=[opc=44,reg=-,pp=2,sel=1,we=x.dtype.itemsize == 8]"
-   "enc.VDIVSD = [" ++ EncRow("VDIVSD") ++ "]   py=[opc=94,reg=-,pp=3,sel=1,we=-]"
-   "enc.VDIVSS = [" ++ EncRow("VDIVSS") ++ "]   py=[opc=94,reg=-,pp=2,sel=1,we=-]"
-   "enc.VINSERTPS = [" ++ EncRow("VINSERTPS") ++ "]   py=[opc=33,reg=-,pp=1,sel=3,we=-]"
-   "enc.VMOVD = [" ++ EncRow("VMOVD") ++ "]   py=[opc=110,reg=-,pp=1,sel=1,we=-]"
-   "enc.VMOVDm = [" ++ EncRow("VMOVDm") ++ "]   py=[opc=126,reg=-,pp=1,sel=1,we=-]"
-   "enc.VMOVQ = [" ++ EncRow("VMOVQ") ++ "]   py=[opc=110,reg=-,pp=1,sel=1,we=1]"
-   "enc.VMOVQm = [" ++ EncRow("VMOVQm") ++ "]   py=[opc=126,reg=-,pp=1,sel=1,we=1]"
-   "enc.VMOVSD = [" ++ EncRow("VMOVSD") ++ "]   py=[opc=16,reg=-,pp=3,sel=1,we=-]"
-   "enc.VMOVSDm = [" ++ EncRow("VMOVSDm") ++ "]   py=[opc=17,reg=-,pp=3,sel=1,we=-]"
-   "enc.VMOVSS = [" ++ EncRow("VMOVSS") ++ "]   py=[opc=16,reg=-,pp=2,sel=1,we=-]"
-   "enc.VMOVSSm = [" ++ EncRow("VMOVSSm") ++ "]   py=[opc=17,reg=-,pp=2,sel=1,we=-]"
-   "enc.VMOVUPS = [" ++ EncRow("VMOVUPS") ++ "]   py=[opc=16,reg=-,pp=0,sel=1,we=-]"
-   "enc.VMOVUPSm = [" ++ EncRow("VMOVUPSm") ++ "]   py=[opc=17,reg=-,pp=0,sel=1,we=-]"
-   "enc.VMULSD = [" ++ EncRow("VMULSD") ++ "]   py=[opc=89,reg=-,pp=3,sel=1,we=-]"
-   "enc.VMULSS = [" ++ EncRow("VMULSS") ++ "]   py=[opc=89,reg=-,pp=2,sel=1,we=-]"
-   "enc.VPEXTRD = [" ++ EncRow("VPEXTRD") ++ "]   py=[opc=22,reg=-,pp=1,sel=3,we=-]"
-   "enc.VPEXTRW = [" ++ EncRow("VPEXTRW") ++ "]   py=[opc=21,reg=-,pp=1,sel=3,we=-]"
-   "enc.VPINSRD = [" ++ EncRow("VPINSRD") ++ "]   py=[opc=34,reg=-,pp=1,sel=3,we=-]"
-   "enc.VPINSRW = [" ++ EncRow("VPINSRW") ++ "]   py=[opc=196,reg=-,pp=1,sel=1,we=-]"
-   "enc.VPSRLDQ = [" ++ EncRow("VPSRLDQ") ++ "]   py=[opc=115,reg=3,pp=1,sel=1,we=-]"
-   "enc.VROUNDSD = [" ++ EncRow("VROUNDSD") ++ "]   py=[opc=11,reg=-,pp=1,sel=3,we=-]"
-   "enc.VROUNDSS = [" ++ EncRow("VROUNDSS") ++ "]   py=[opc=10,reg=-,pp=1,sel=3,we=-]"
-   "enc.VSQRTSD = [" ++ EncRow("VSQRTSD") ++ "]   py=[opc=81,reg=-,pp=3,sel=1,we=-]"
-   "enc.VSQRTSS = [" ++ EncRow("VSQRTSS") ++ "]   py=[opc=81,reg=-,pp=2,sel=1,we=-]"
-   "enc.VSUBSD = [" ++ EncRow("VSUBSD") ++ "]   py=[opc=92,reg=-,pp=3,sel=1,we=-]"
-   "enc.VSUBSS = [" ++ EncRow("VSUBSS") ++ "]   py=[opc=92,reg=-,pp=2,sel=1,we=-]"
-   "enc.XOR = [" ++ EncRow("XOR") ++ "]   py=[opc=51,reg=-,pp=-,sel=-,we=-]"
-   "enc.XORi = [" ++ EncRow("XORi") ++ "]   py=[opc=129,reg=6,pp=-,sel=-,we=-]"
-   "enc.count = [" ++ U32.show(enc_count()) ++ "]   py=[85]"
-   "enc.paramcount = [" ++ U32.show(enc_paramcount()) ++ "]   py=[77]"
-   "enc.missing = [" ++ enc_missing_names() ++ "]   py=[FRAME_INDEX,LABEL,DEFINE,LOOP_CMP]"
-   "enc.none FRAME_INDEX = [" ++ Bool.show(Enc.is_direct("FRAME_INDEX")) ++ "]   py=[False]"
-   "enc.norow FRAME_INDEX = [" ++ EncRow("FRAME_INDEX") ++ "]   py=[none]"
-   "enc.none LABEL = [" ++ Bool.show(Enc.is_direct("LABEL")) ++ "]   py=[False]"
-   "enc.norow LABEL = [" ++ EncRow("LABEL") ++ "]   py=[none]"
-   "enc.none DEFINE = [" ++ Bool.show(Enc.is_direct("DEFINE")) ++ "]   py=[False]"
-   "enc.norow DEFINE = [" ++ EncRow("DEFINE") ++ "]   py=[none]"
+   rd("hex.VADDSS.c5f258c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VADDSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f258c2")))
+   rd("hex.VADDSD.c5f358c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VADDSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f358c2")))
+   rd("hex.VSUBSS.c5f25cc2", Bool.show(String.eq(Hex.bytes(Enc.emit("VSUBSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f25cc2")))
+   rd("hex.VSUBSD.c5f35cc2", Bool.show(String.eq(Hex.bytes(Enc.emit("VSUBSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f35cc2")))
+   rd("hex.VMULSS.c5f259c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VMULSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f259c2")))
+   rd("hex.VMULSD.c5f359c2", Bool.show(String.eq(Hex.bytes(Enc.emit("VMULSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f359c2")))
+   rd("hex.VDIVSS.c5f25ec2", Bool.show(String.eq(Hex.bytes(Enc.emit("VDIVSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f25ec2")))
+   rd("hex.VDIVSD.c5f35ec2", Bool.show(String.eq(Hex.bytes(Enc.emit("VDIVSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f35ec2")))
+   rd("cls.device", Cls.device())
+   rd("cls.has_local", Bool.show(Cls.has_local()))
+   rd("cls.global_max", ClsGmax())
+   rd("cls.code_for_op", Cls.code_for_op())
+   rd("cls.code_for_op_n", U32.show(Cls.code_for_op_n()))
+   rd("cls.base_dtypes", Cls.base_dtypes())
+   rd("cls.base_dtypes_n", U32.show(Cls.base_dtypes_n()))
+   rd("cls.drop_dtypes", Cls.drop_dtypes())
+   rd("cls.supported_dtypes", Cls.supported_dtypes())
+   rd("cls.supported_dtypes_n", U32.show(Cls.supported_dtypes_n()))
+   rd("cls.drop bf16", Bool.show(Cls.dropped("bf16")))
+   rd("cls.drop bool", Bool.show(Cls.dropped("bool")))
+   rd("cls.drop f16", Bool.show(Cls.dropped("f16")))
+   rd("cls.drop f32", Bool.show(Cls.dropped("f32")))
+   rd("cls.drop f64", Bool.show(Cls.dropped("f64")))
+   rd("cls.drop fp8e4m3", Bool.show(Cls.dropped("fp8e4m3")))
+   rd("cls.drop fp8e4m3fnuz", Bool.show(Cls.dropped("fp8e4m3fnuz")))
+   rd("cls.drop fp8e5m2", Bool.show(Cls.dropped("fp8e5m2")))
+   rd("cls.drop fp8e5m2fnuz", Bool.show(Cls.dropped("fp8e5m2fnuz")))
+   rd("cls.drop i16", Bool.show(Cls.dropped("i16")))
+   rd("cls.drop i32", Bool.show(Cls.dropped("i32")))
+   rd("cls.drop i64", Bool.show(Cls.dropped("i64")))
+   rd("cls.drop i8", Bool.show(Cls.dropped("i8")))
+   rd("cls.drop u16", Bool.show(Cls.dropped("u16")))
+   rd("cls.drop u32", Bool.show(Cls.dropped("u32")))
+   rd("cls.drop u64", Bool.show(Cls.dropped("u64")))
+   rd("cls.drop u8", Bool.show(Cls.dropped("u8")))
+   rd("asm.lines", U32.show(AsmLines_n([Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})])))
+   rd("asm.total", U32.show(AsmN(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]))))
+   rd("asm.L0..kern:", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 0n), ".kern:")))
  ]
 
 def Gate.rows7() -> List<&2, String>: [
-   "enc.none LOOP_CMP = [" ++ Bool.show(Enc.is_direct("LOOP_CMP")) ++ "]   py=[False]"
-   "enc.norow LOOP_CMP = [" ++ EncRow("LOOP_CMP") ++ "]   py=[none]"
-   "direct.JE.0f8400000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JE")), "0f8400000000")) ++ "]   py=[True]"
-   "direct.JNE.0f8500000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JNE")), "0f8500000000")) ++ "]   py=[True]"
-   "direct.JL.0f8c00000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JL")), "0f8c00000000")) ++ "]   py=[True]"
-   "direct.JB.0f8200000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JB")), "0f8200000000")) ++ "]   py=[True]"
-   "direct.JGE.0f8d00000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JGE")), "0f8d00000000")) ++ "]   py=[True]"
-   "direct.JMP.e900000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("JMP")), "e900000000")) ++ "]   py=[True]"
-   "direct.RET.c3 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.direct("RET")), "c3")) ++ "]   py=[True]"
-   "direct.MOVABS 0.48b83412000000000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs(0, 4660)), "48b83412000000000000")) ++ "]   py=[True]"
-   "direct.MOVABS 1.48b93412000000000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs(1, 4660)), "48b93412000000000000")) ++ "]   py=[True]"
-   "direct.MOVABS 7.48bf3412000000000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs(7, 4660)), "48bf3412000000000000")) ++ "]   py=[True]"
-   "direct.MOVABS 8.49b83412000000000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs(8, 4660)), "49b83412000000000000")) ++ "]   py=[True]"
-   "direct.MOVABS 15.49bf3412000000000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.movabs(15, 4660)), "49bf3412000000000000")) ++ "]   py=[True]"
-   "hex.LEA.488d948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("LEA", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, True{}, 4, 0)), "488d948c08000000")) ++ "]   py=[True]"
-   "hex.MOV.488b948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("MOV", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "488b948c08000000")) ++ "]   py=[True]"
-   "hex.MOVm.4889948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("MOVm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "4889948c08000000")) ++ "]   py=[True]"
-   "hex.MOVi.40c7848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("MOVi", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "40c7848c08000000")) ++ "]   py=[True]"
-   "hex.VMOVSS.c5fa10948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSS", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5fa10948c08000000")) ++ "]   py=[True]"
-   "hex.VMOVSD.c5fb10948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 8, 0)), "c5fb10948c08000000")) ++ "]   py=[True]"
-   "hex.VMOVUPS.c5f810948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVUPS", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5f810948c08000000")) ++ "]   py=[True]"
-   "hex.VMOVSSm.c5fa11948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSSm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "c5fa11948c08000000")) ++ "]   py=[True]"
-   "hex.VMOVSDm.c5fb11948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVSDm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "c5fb11948c08000000")) ++ "]   py=[True]"
-   "hex.VMOVUPSm.c5f811948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVUPSm", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 0, 0)), "c5f811948c08000000")) ++ "]   py=[True]"
-   "hex.MOVZX.480fb7948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("MOVZX", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "480fb7948c08000000")) ++ "]   py=[True]"
-   "hex.MOVSX.480fbf948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("MOVSX", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "480fbf948c08000000")) ++ "]   py=[True]"
-   "hex.MOVSXD.4863948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("MOVSXD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "4863948c08000000")) ++ "]   py=[True]"
-   "hex.VCVTPH2PS.c4e27913948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTPH2PS", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c4e27913948c08000000")) ++ "]   py=[True]"
-   "hex.VCVTSS2SD.c5f25ac2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSS2SD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f25ac2")) ++ "]   py=[True]"
-   "hex.VCVTSD2SS.c5f35ac2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSD2SS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f35ac2")) ++ "]   py=[True]"
-   "hex.VCVTSI2SS.c5f22ac2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSI2SS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f22ac2")) ++ "]   py=[True]"
-   "hex.VCVTSI2SD.c5f32ac2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTSI2SD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f32ac2")) ++ "]   py=[True]"
-   "hex.VCVTTSS2SI.c5fa2c948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTTSS2SI", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5fa2c948c08000000")) ++ "]   py=[True]"
-   "hex.VCVTTSD2SI.c5fb2c948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCVTTSD2SI", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5fb2c948c08000000")) ++ "]   py=[True]"
-   "hex.VMOVD.c5f96e948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5f96e948c08000000")) ++ "]   py=[True]"
-   "hex.VMOVQ.c4e1f96e948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMOVQ", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c4e1f96e948c08000000")) ++ "]   py=[True]"
-   "hex.VCMPSS.c5f2c2c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCMPSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f2c2c2")) ++ "]   py=[True]"
+   rd("asm.L1.L1:", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 1n), "L1:")))
+   rd("asm.L2.    mov     [rsp + rcx*4 + 8], rdx", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 2n), "    mov     [rsp + rcx*4 + 8], rdx")))
+   rd("asm.L3.    mov     rdx, rsp, rcx", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 3n), "    mov     rdx, rsp, rcx")))
+   rd("asm.L4.    mov     rdx, [rsp + rcx*4 + 16]", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 4n), "    mov     rdx, [rsp + rcx*4 + 16]")))
+   rd("asm.L5.    movsx   rdx, [rsp + rbx*4 + 3]", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 5n), "    movsx   rdx, [rsp + rbx*4 + 3]")))
  ]
 
 def Gate.rows8() -> List<&2, String>: [
-   "hex.VCMPSD.c5f3c2c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VCMPSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f3c2c2")) ++ "]   py=[True]"
-   "hex.SETNE.400f95848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETNE", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f95848c08000000")) ++ "]   py=[True]"
-   "hex.SETE.400f94848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETE", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f94848c08000000")) ++ "]   py=[True]"
-   "hex.SETL.400f9c848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETL", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f9c848c08000000")) ++ "]   py=[True]"
-   "hex.SETB.400f92848c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SETB", 0, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, True{}, 1, 0)), "400f92848c08000000")) ++ "]   py=[True]"
-   "hex.CMOVNE.480f45d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVNE", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f45d5")) ++ "]   py=[True]"
-   "hex.CMOVE.480f44d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVE", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f44d5")) ++ "]   py=[True]"
-   "hex.CMOVL.480f4cd5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVL", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f4cd5")) ++ "]   py=[True]"
-   "hex.CMOVB.480f42d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMOVB", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, True{}, 4, 0)), "480f42d5")) ++ "]   py=[True]"
-   "hex.VBLENDVPS.c4e3714ac2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VBLENDVPS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e3714ac2")) ++ "]   py=[True]"
-   "hex.VBLENDVPD.c4e3714bc2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VBLENDVPD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e3714bc2")) ++ "]   py=[True]"
-   "hex.VINSERTPS.c4e37121c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VINSERTPS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e37121c2")) ++ "]   py=[True]"
-   "hex.VPSRLDQ.c5e9739c8c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VPSRLDQ", 3, 4, 1, 4, 0, 2, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "c5e9739c8c08000000")) ++ "]   py=[True]"
-   "hex.VPEXTRW.c4e37915948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VPEXTRW", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 1, 0)), "c4e37915948c08000000")) ++ "]   py=[True]"
-   "hex.VPEXTRD.c4e37916948c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VPEXTRD", 2, 4, 1, 4, 8, 0, True{}, 8, 4, 0, 0n, 0, False{}, 1, 0)), "c4e37916948c08000000")) ++ "]   py=[True]"
-   "hex.VPINSRW.c5f1c4c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VPINSRW", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f1c4c2")) ++ "]   py=[True]"
-   "hex.VPINSRD.c4e37122c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VPINSRD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e37122c2")) ++ "]   py=[True]"
-   "hex.IDIV.48f7fd = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("IDIV", 7, 5, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48f7fd")) ++ "]   py=[True]"
-   "hex.DIV.48f7f5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("DIV", 6, 5, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48f7f5")) ++ "]   py=[True]"
-   "hex.ADD.4803d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("ADD", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "4803d5")) ++ "]   py=[True]"
-   "hex.ADDi.4881c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("ADDi", 0, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881c2")) ++ "]   py=[True]"
-   "hex.SUB.482bd5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SUB", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "482bd5")) ++ "]   py=[True]"
-   "hex.SUBi.4881ea = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SUBi", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881ea")) ++ "]   py=[True]"
-   "hex.IMUL.480fafd5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("IMUL", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "480fafd5")) ++ "]   py=[True]"
-   "hex.IMULi.4869d103000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("IMULi", 2, 1, 4, 8, 8, 0, False{}, 0, 4, 1, 4n, 3, False{}, 4, 4)), "4869d103000000")) ++ "]   py=[True]"
-   "hex.AND.4823d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("AND", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "4823d5")) ++ "]   py=[True]"
-   "hex.ANDi.4881e2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("ANDi", 4, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881e2")) ++ "]   py=[True]"
-   "hex.XOR.4833d5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("XOR", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "4833d5")) ++ "]   py=[True]"
-   "hex.XORi.4881f2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("XORi", 6, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881f2")) ++ "]   py=[True]"
-   "hex.OR.480bd5 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("OR", 2, 5, 4, 8, 8, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "480bd5")) ++ "]   py=[True]"
-   "hex.ORi.4881ca = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("ORi", 1, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "4881ca")) ++ "]   py=[True]"
-   "hex.SHL.48d3e2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SHL", 4, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3e2")) ++ "]   py=[True]"
-   "hex.SHLi.48c1e2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SHLi", 4, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1e2")) ++ "]   py=[True]"
-   "hex.SHR.48d3ea = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SHR", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3ea")) ++ "]   py=[True]"
-   "hex.SHRi.48c1ea = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SHRi", 5, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1ea")) ++ "]   py=[True]"
+   rd("asm.L6.    mov     [rsp + rcx*4], rdx", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 6n), "    mov     [rsp + rcx*4], rdx")))
+   rd("asm.L7.    vaddss  xmm0, xmm1, [rsp + xmm2*4 + 4], xmm0", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 7n), "    vaddss  xmm0, xmm1, [rsp + xmm2*4 + 4], xmm0")))
+   rd("asm.L8.    add     [rsp + rcx*4 + 8], 3", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 8n), "    add     [rsp + rcx*4 + 8], 3")))
+   rd("asm.L9.    vaddss  xmm0, xmm3, rdi", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 9n), "    vaddss  xmm0, xmm3, rdi")))
  ]
 
 def Gate.rows9() -> List<&2, String>: [
-   "hex.SAR.48d3fa = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SAR", 7, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "48d3fa")) ++ "]   py=[True]"
-   "hex.SARi.48c1fa = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("SARi", 7, 2, 4, 8, 0, 0, False{}, 0, 4, 0, 0n, 0, False{}, 4, 4)), "48c1fa")) ++ "]   py=[True]"
-   "hex.CMP.493bd6 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMP", 2, 14, 4, 8, 8, 5, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "493bd6")) ++ "]   py=[True]"
-   "hex.CMPi.81bc8c08000000 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("CMPi", 7, 4, 1, 4, 0, 0, True{}, 8, 4, 0, 0n, 0, False{}, 4, 0)), "81bc8c08000000")) ++ "]   py=[True]"
-   "hex.VROUNDSS.c4e3710ac2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VROUNDSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c4e3710ac2")) ++ "]   py=[True]"
-   "hex.VROUNDSD.c4e3710bc2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VROUNDSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c4e3710bc2")) ++ "]   py=[True]"
-   "hex.VSQRTSS.c5f251c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VSQRTSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f251c2")) ++ "]   py=[True]"
-   "hex.VSQRTSD.c5f351c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VSQRTSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f351c2")) ++ "]   py=[True]"
-   "hex.VADDSS.c5f258c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VADDSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f258c2")) ++ "]   py=[True]"
-   "hex.VADDSD.c5f358c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VADDSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f358c2")) ++ "]   py=[True]"
-   "hex.VSUBSS.c5f25cc2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VSUBSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f25cc2")) ++ "]   py=[True]"
-   "hex.VSUBSD.c5f35cc2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VSUBSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f35cc2")) ++ "]   py=[True]"
-   "hex.VMULSS.c5f259c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMULSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f259c2")) ++ "]   py=[True]"
-   "hex.VMULSD.c5f359c2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VMULSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f359c2")) ++ "]   py=[True]"
-   "hex.VDIVSS.c5f25ec2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VDIVSS", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 4, 0)), "c5f25ec2")) ++ "]   py=[True]"
-   "hex.VDIVSD.c5f35ec2 = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("VDIVSD", 0, 2, 4, 16, 16, 1, False{}, 0, 4, 0, 0n, 0, False{}, 8, 0)), "c5f35ec2")) ++ "]   py=[True]"
-   "cls.device = [" ++ Cls.device() ++ "]   py=[CPU]"
-   "cls.has_local = [" ++ Bool.show(Cls.has_local()) ++ "]   py=[False]"
-   "cls.global_max = [" ++ ClsGmax() ++ "]   py=[1 0 0]"
-   "cls.code_for_op = [" ++ Cls.code_for_op() ++ "]   py=[AND,CMPEQ,CMPLT,FDIV,NEG,OR,SHL,SHR,SQRT,SUB]"
-   "cls.code_for_op_n = [" ++ U32.show(Cls.code_for_op_n()) ++ "]   py=[10]"
-   "cls.base_dtypes = [" ++ Cls.base_dtypes() ++ "]   py=[bf16,bool,f16,f32,f64,fp8e4m3,fp8e4m3fnuz,fp8e5m2,fp8e5m2fnuz,i16,i32,i64,i8,u16,u32,u64,u8]"
-   "cls.base_dtypes_n = [" ++ U32.show(Cls.base_dtypes_n()) ++ "]   py=[17]"
-   "cls.drop_dtypes = [" ++ Cls.drop_dtypes() ++ "]   py=[bf16,fp8e4m3,fp8e4m3fnuz,fp8e5m2,fp8e5m2fnuz]"
-   "cls.supported_dtypes = [" ++ Cls.supported_dtypes() ++ "]   py=[bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8]"
-   "cls.supported_dtypes_n = [" ++ U32.show(Cls.supported_dtypes_n()) ++ "]   py=[12]"
-   "cls.drop bf16 = [" ++ Bool.show(Cls.dropped("bf16")) ++ "]   py=[True]"
-   "cls.drop bool = [" ++ Bool.show(Cls.dropped("bool")) ++ "]   py=[False]"
-   "cls.drop f16 = [" ++ Bool.show(Cls.dropped("f16")) ++ "]   py=[False]"
-   "cls.drop f32 = [" ++ Bool.show(Cls.dropped("f32")) ++ "]   py=[False]"
-   "cls.drop f64 = [" ++ Bool.show(Cls.dropped("f64")) ++ "]   py=[False]"
-   "cls.drop fp8e4m3 = [" ++ Bool.show(Cls.dropped("fp8e4m3")) ++ "]   py=[True]"
-   "cls.drop fp8e4m3fnuz = [" ++ Bool.show(Cls.dropped("fp8e4m3fnuz")) ++ "]   py=[True]"
-   "cls.drop fp8e5m2 = [" ++ Bool.show(Cls.dropped("fp8e5m2")) ++ "]   py=[True]"
-   "cls.drop fp8e5m2fnuz = [" ++ Bool.show(Cls.dropped("fp8e5m2fnuz")) ++ "]   py=[True]"
-   "cls.drop i16 = [" ++ Bool.show(Cls.dropped("i16")) ++ "]   py=[False]"
-   "cls.drop i32 = [" ++ Bool.show(Cls.dropped("i32")) ++ "]   py=[False]"
-   "cls.drop i64 = [" ++ Bool.show(Cls.dropped("i64")) ++ "]   py=[False]"
-   "cls.drop i8 = [" ++ Bool.show(Cls.dropped("i8")) ++ "]   py=[False]"
-   "cls.drop u16 = [" ++ Bool.show(Cls.dropped("u16")) ++ "]   py=[False]"
-   "cls.drop u32 = [" ++ Bool.show(Cls.dropped("u32")) ++ "]   py=[False]"
-   "cls.drop u64 = [" ++ Bool.show(Cls.dropped("u64")) ++ "]   py=[False]"
-   "cls.drop u8 = [" ++ Bool.show(Cls.dropped("u8")) ++ "]   py=[False]"
-   "asm.lines = [" ++ U32.show(AsmLines_n([Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})])) ++ "]   py=[12]"
- ]
-
-def Gate.rows10() -> List<&2, String>: [
-   "asm.total = [" ++ U32.show(AsmN(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]))) ++ "]   py=[13]"
-   "asm.L0..kern: = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 0n), ".kern:")) ++ "]   py=[True]"
-   "asm.L1.L1: = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 1n), "L1:")) ++ "]   py=[True]"
-   "asm.L2.    mov     [rsp + rcx*4 + 8], rdx = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 2n), "    mov     [rsp + rcx*4 + 8], rdx")) ++ "]   py=[True]"
- ]
-
-def Gate.rows11() -> List<&2, String>: [
-   "asm.L3.    mov     rdx, rsp, rcx = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 3n), "    mov     rdx, rsp, rcx")) ++ "]   py=[True]"
-   "asm.L4.    mov     rdx, [rsp + rcx*4 + 16] = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 4n), "    mov     rdx, [rsp + rcx*4 + 16]")) ++ "]   py=[True]"
-   "asm.L5.    movsx   rdx, [rsp + rbx*4 + 3] = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 5n), "    movsx   rdx, [rsp + rbx*4 + 3]")) ++ "]   py=[True]"
-   "asm.L6.    mov     [rsp + rcx*4], rdx = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 6n), "    mov     [rsp + rcx*4], rdx")) ++ "]   py=[True]"
- ]
-
-def Gate.rows12() -> List<&2, String>: [
-   "asm.L7.    vaddss  xmm0, xmm1, [rsp + xmm2*4 + 4], xmm0 = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 7n), "    vaddss  xmm0, xmm1, [rsp + xmm2*4 + 4], xmm0")) ++ "]   py=[True]"
-   "asm.L8.    add     [rsp + rcx*4 + 8], 3 = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 8n), "    add     [rsp + rcx*4 + 8], 3")) ++ "]   py=[True]"
-   "asm.L9.    vaddss  xmm0, xmm3, rdi = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 9n), "    vaddss  xmm0, xmm3, rdi")) ++ "]   py=[True]"
-   "asm.L10.    add     rdx, 5, rsi = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 10n), "    add     rdx, 5, rsi")) ++ "]   py=[True]"
- ]
-
-def Gate.rows13() -> List<&2, String>: [
-   "asm.L11.    ret     = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 11n), "    ret    ")) ++ "]   py=[True]"
-   "asm.L12.    vcvtsi2ss xmm0, xmm2, xmm1 = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 12n), "    vcvtsi2ss xmm0, xmm2, xmm1")) ++ "]   py=[True]"
-   "asm.fn = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("mykern", [Asm.skip(), Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 0n), ".mykern:")) ++ "]   py=[True]"
-   "render.0-0.00000000 = [" ++ Bool.show(String.eq(Render.le4(Render.delta(0, 0)), "00000000")) ++ "]   py=[True]"
-   "render.12-12.00000000 = [" ++ Bool.show(String.eq(Render.le4(Render.delta(12, 12)), "00000000")) ++ "]   py=[True]"
-   "render.0-16.f0ffffff = [" ++ Bool.show(String.eq(Render.le4(Render.delta(0, 16)), "f0ffffff")) ++ "]   py=[True]"
-   "render.40-12.1c000000 = [" ++ Bool.show(String.eq(Render.le4(Render.delta(40, 12)), "1c000000")) ++ "]   py=[True]"
-   "render.0-1048576.0000f0ff = [" ++ Bool.show(String.eq(Render.le4(Render.delta(0, 1048576)), "0000f0ff")) ++ "]   py=[True]"
+   rd("asm.L10.    add     rdx, 5, rsi", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 10n), "    add     rdx, 5, rsi")))
+   rd("asm.L11.    ret    ", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 11n), "    ret    ")))
+   rd("asm.L12.    vcvtsi2ss xmm0, xmm2, xmm1", Bool.show(String.eq(AsmLine.at(asm_str("kern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 12n), "    vcvtsi2ss xmm0, xmm2, xmm1")))
+   rd("asm.fn", Bool.show(String.eq(AsmLine.at(asm_str("mykern", [Asm.skip(), Asm.label("L1"), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.MOVi", [Asm.reg("rdx", 8), Asm.reg("rsp", 8), Asm.reg("rcx", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.MOV", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rcx", 4, 16), []), Asm.ins("X86Ops.MOVSX", [Asm.reg("rdx", 8)], True{}, AsmMem.of("rsp", "rbx", 4, 3), []), Asm.ins("X86Ops.MOVm", [], True{}, AsmMem.of("rsp", "rcx", 4, 0), [Asm.reg("rdx", 8)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm1", 16)], True{}, AsmMem.of("rsp", "xmm2", 4, 4), [Asm.reg("xmm0", 16)]), Asm.ins("X86Ops.ADDi", [], True{}, AsmMem.of("rsp", "rcx", 4, 8), [Asm.imm(3)]), Asm.ins("X86Ops.VADDSS", [Asm.reg("xmm0", 16), Asm.reg("xmm3", 16), Asm.reg("rdi", 8)], False{}, Asm.none(), Nil{}), Asm.ins("X86Ops.ADDi", [Asm.reg("rdx", 8), Asm.imm(5), Asm.reg("rsi", 8)], False{}, Asm.none(), Nil{}), Asm.ret("X86Ops.RET"), Asm.ins("X86Ops.VCVTSI2SS", [Asm.reg("xmm0", 16), Asm.reg("xmm2", 16), Asm.reg("xmm1", 16)], False{}, Asm.none(), Nil{})]), 0n), ".mykern:")))
+   rd("render.0-0.00000000", Bool.show(String.eq(Render.le4(Render.delta(0, 0)), "00000000")))
+   rd("render.12-12.00000000", Bool.show(String.eq(Render.le4(Render.delta(12, 12)), "00000000")))
+   rd("render.0-16.f0ffffff", Bool.show(String.eq(Render.le4(Render.delta(0, 16)), "f0ffffff")))
+   rd("render.40-12.1c000000", Bool.show(String.eq(Render.le4(Render.delta(40, 12)), "1c000000")))
+   rd("render.0-1048576.0000f0ff", Bool.show(String.eq(Render.le4(Render.delta(0, 1048576)), "0000f0ff")))
  ]
 # THE TABLE, IN CHUNKS. `String.concat` is ONE `IO.print` over 700 arguments and the
 # parser refuses it, and a fold over a list of row-strings would cost a step per row.
-# 14 list literals joined by `List.concat` is the shape that compiles and is one
+# TEN list literals joined by `List.concat` is the shape that compiles and is one
 # `IO.print`.
 
 def Gate.rows() -> List<&2, String>:
-  List.concat(&2, String, [Gate.rows0(), Gate.rows1(), Gate.rows2(), Gate.rows3(), Gate.rows4(), Gate.rows5(), Gate.rows6(), Gate.rows7(), Gate.rows8(), Gate.rows9(), Gate.rows10(), Gate.rows11(), Gate.rows12(), Gate.rows13()])
+  List.concat(&2, String, [Gate.rows0(), Gate.rows1(), Gate.rows2(), Gate.rows3(), Gate.rows4(), Gate.rows5(), Gate.rows6(), Gate.rows7(), Gate.rows8(), Gate.rows9()])
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    IO.print(String.join(Gate.rows(), "\n"))
+    IO.print(String.concat(Gate.rows()))
 

@@ -22481,3 +22481,48 @@ THE WHOLE POINT OF A BRIEF THAT NAMES A FILE INSTEAD OF A CONCLUSION.**
       `differ.py repro` PROCESSES RAN OVER THE SAME `runs/graphcmp/D/` DIRECTORY -- I had killed only the
       first shell's `run` step and not its `repro` -- and the second read **0 of 310 files identical**.
       **THAT IS THE CLASS THIS TREE KEEPS MEASURING, AND THIS TIME IT WAS MINE.**
+
+## Session 2026-10-22 — `renderer/isa/x86.bend`: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRED
+
+```
+x86-derive     [#########] 9/9      774 LITERAL `py=` cells -> 0 in `renderer/isa/x86.bend`.
+                                         769 rows, every one DERIVED (`rd(NAME, EXPR)`), and the
+                                         tree's LITERAL cells 1492 -> 718 with DERIVED 693 ->
+                                         1463. MEASURED by `.agents/slop/pylit-census/
+                                         pylit_census.py` on THIS tree with ONE file swapped
+                                         (the tree moved under this session: another unit
+                                         derived `runtime/ops_dsp.bend` in the middle of it).
+```
+
+- [x] **THE ORACLE WAS DEAD, AND A DEAD ORACLE IS NOT A RED ONE.**  `.agents/slop/x86/x86-oracle.py`
+      imported `is_address` from `tinygrad/renderer/isa/x86.py`, which upstream REMOVED, so the x86 lane
+      raised `ImportError` and emitted **ZERO** rows.  The lane was not RED -- it was **DEAD**, and
+      nothing in the tree said so.  It was ALSO STALE IN THE OTHER DIRECTION: its `toint` rows were the
+      OLD `float16`/`float32`/`float64` spellings and its `py=` halves were LITERAL, so the port and the
+      oracle had been describing DIFFERENT row sets for a long time.
+- [x] **THE REPAIRED ORACLE IS IN GIT, BESIDE THE GATE THAT NEEDS IT**: `gates/x86_isa-oracle.py`, with
+      the `rows` / `bend` / `gate` / `tables` selectors.  `gates/README.md`: "DRIVERS AND ORACLES LIVE
+      BESIDE THEIR GATE, IN `gates/`" -- and a sweep of `.agents/slop/` deleted seven of nine driver and
+      oracle files out from under gates that named them.
+- [x] **THE PORT WAS STALE AGAINST UPSTREAM, AND THE LITERAL `py=` HALVES ARE WHY NOBODY NOTICED.**
+      Upstream removed `X86Ops.DEFINE` (89 names -> 88) and its `Ops` enum shrank by two, so the base
+      moved 78 -> 76: **264 `op.*` / `oprev *` rows said 78 while the port's own `op_num` said 76, and
+      every one of them was GREEN** -- a literal `py=` half is a transcription of CPython's answer, and a
+      transcription cannot see CPython move.
+- [x] **THE ROWS ARE DERIVED NOW, IN `renderer/tc.bend`'s SHAPE**: `r(+nm, +got, +want)` and
+      `rd(+nm, +got) = r(nm, got, got)`.  `rd` puts the PORT'S OWN VALUE in both halves, so a row cannot
+      disagree with itself, and the ASSERTION MOVED TO THE LANE DIFF.  **THE PORT's OWN BYTES ARE
+      UNCHANGED** for every row that did not depend on the op table.
+- [x] **THE LANES AGREE BYTE FOR BYTE**: `gates/x86_isa-gate.py` runs CPython's lane, the port's
+      interpreted lane and the port's COMPILED lane, and all three are byte-identical (769 rows); and the
+      FOURTH lane compares the port's own `Gate.rowsN()` source against what the generator produces,
+      which is the ROW SET a diff cannot see.
+- [x] **THE PLANTS ARE THE ONES A DERIVED ROW CAN STILL FAIL**: `gates/x86_isa-plant.py` A0 (a
+      comment-only edit) is GREEN, and A1 (`Op.base()` 76 -> 78, so a row's VALUE is wrong while the port
+      is still SELF-CONSISTENT) is RED on **176 lines, 88 of them `op.*` rows**.  **A SELF-CONSISTENCY
+      CHECK WOULD BE GREEN ON A1**, and the RED comes from CPython's lane and only from it.
+- [x] **THE DIGEST DELTA, ATTRIBUTED**: `checks/differ.py` imported as a module and its PURE function
+      called (the file was not edited, `differ.py` was not run, the corpus was not re-run and
+      `runs/graphcmp/` was not read).  Over a population of **416** declared inputs, **EXACTLY ONE entry
+      moved** -- `tinybendygrad/renderer/isa/x86.bend` -- so the delta is this change's and not the
+      tree's.
