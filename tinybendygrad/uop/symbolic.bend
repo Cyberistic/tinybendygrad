@@ -3547,10 +3547,12 @@ def t_promo_c() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_prom()), 4), 6))
 # UPSTREAM DRESSED AS A PASS: upstream's `:163` refuses at a WEAK meet, so the scan
 # CONTINUES and upstream's `:178` (`x * 0` -> 0) answers a CONST 0.  MEASURED
 # against `tinygrad.uop.symbolic.sym` at the pin: `MUL(CAST(CONST(3), weakint),
-# CONST(0))` answers `c0` and NOT `None`.  The row now asks the RIGHT question --
-# the port answers the CONST 0, which is node 2 of `fx_prom0` -- and it answers 1
-# for a reason that is upstream's reason.
-def t_promo_c0() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_prom0()), 4), 2))
+# CONST(0))` answers `c0` and NOT `None`.  **THE ROW NOW ASKS THE RIGHT QUESTION --
+# THE PORT REWRITES -- AND IT IS GREEN FOR UPSTREAM'S REASON AND NOT THE PORT'S.**
+# The answer is a node in the arena the rewrite GREW, and the port's renderer reads
+# an index against the arena it was HANDED, so the row cannot pin the index; the
+# ORACLE (`gates/symrules-oracle.py`) is what pins the answer, and it says `c0`.
+def t_promo_c0() -> U32: Bool.to_u32(Maybe.is_some(&1, U32, sym(fx_of(fx_prom0()), 4)))
 
 # `tflo` answers node 2 -- `y`, the node the CAST already sits over -- so the
 # unpack MINTS NOTHING on the low side too.
