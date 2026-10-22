@@ -18,6 +18,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 spec = importlib.util.spec_from_file_location("d", ROOT / "checks/differ.py")
+if spec is None or spec.loader is None:
+    raise SystemExit("REFUSED: checks/differ.py would not load")
 d = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(d)
 

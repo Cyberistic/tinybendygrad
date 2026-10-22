@@ -66,9 +66,7 @@ cannot be violated proves nothing.
 from __future__ import annotations
 
 import contextlib
-import importlib.util
 import io
-import os
 import shutil
 import subprocess
 import sys
