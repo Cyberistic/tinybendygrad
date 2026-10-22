@@ -1,8 +1,8 @@
-sh_len=33
-te_len=55
-pr_len=42
-hq_len=35
-fu_len=70
+sh_len=34
+te_len=56
+pr_len=43
+hq_len=36
+fu_len=71
 kg_len=13
 tag_const=1
 tag_rej=1

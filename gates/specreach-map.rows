@@ -1,6 +1,6 @@
 # gates/specreach-compare.py reading
-#   probe.bend=bb122afe681bacdd oracle.py=45a84ce6d6a0f3d0 spec.bend=55f3e5c0b31dc252 ops.bend=f9f9ec7ffa04129b
-#   [bounded] WITHIN-LIMITS  rc=0  peak-RSS=807 MB (ceiling 2048)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/specreach.bend  out=596B err=42B
+#   probe.bend=9e637f6ddb0f46fc oracle.py=45a84ce6d6a0f3d0 spec.bend=5637241d445b008c ops.bend=f9f9ec7ffa04129b
+#   [bounded] WITHIN-LIMITS  rc=0  peak-RSS=828 MB (ceiling 2048)  7s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/specreach.bend  out=596B err=42B
 # fixture	key	port	cpython	agree
 bin_u8	sh	9	9	yes
 bin_u8	te	9	9	yes
@@ -22,25 +22,25 @@ ga_plain	sk	9	9	yes
 ga_plain	sf	1	1	yes
 # DIFFER over 18 cells: 0
 bin_u8	DISPATCH:fu26	9	-	port-only
-bin_u8	DISPATCH:fu58	0	-	port-only
-bin_u8	DISPATCH:fu67	9	-	port-only
-bin_u8	DISPATCH:fu68	9	-	port-only
+bin_u8	DISPATCH:fu60	0	-	port-only
+bin_u8	DISPATCH:fu69	9	-	port-only
+bin_u8	DISPATCH:fu70	9	-	port-only
 bin_u8	DISPATCH:hq0	9	-	port-only
 bin_u8	DISPATCH:hq1	9	-	port-only
 bin_u8	DISPATCH:pr0	0	-	port-only
 bin_u8	DISPATCH:sh0	9	-	port-only
 ga_after	DISPATCH:fu26	9	-	port-only
-ga_after	DISPATCH:fu58	9	-	port-only
-ga_after	DISPATCH:fu67	1	-	port-only
-ga_after	DISPATCH:fu68	9	-	port-only
+ga_after	DISPATCH:fu60	9	-	port-only
+ga_after	DISPATCH:fu69	1	-	port-only
+ga_after	DISPATCH:fu70	9	-	port-only
 ga_after	DISPATCH:hq0	1	-	port-only
 ga_after	DISPATCH:hq1	9	-	port-only
 ga_after	DISPATCH:pr0	9	-	port-only
 ga_after	DISPATCH:sh0	9	-	port-only
 ga_plain	DISPATCH:fu26	9	-	port-only
-ga_plain	DISPATCH:fu58	9	-	port-only
-ga_plain	DISPATCH:fu67	1	-	port-only
-ga_plain	DISPATCH:fu68	9	-	port-only
+ga_plain	DISPATCH:fu60	9	-	port-only
+ga_plain	DISPATCH:fu69	1	-	port-only
+ga_plain	DISPATCH:fu70	9	-	port-only
 ga_plain	DISPATCH:hq0	1	-	port-only
 ga_plain	DISPATCH:hq1	9	-	port-only
 ga_plain	DISPATCH:pr0	9	-	port-only

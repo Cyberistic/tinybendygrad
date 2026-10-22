@@ -59,11 +59,11 @@ def row(nm: String, v: U32) -> IO(Unit):
 # ONE FIXTURE, ALL SIX VERDICTS PLUS THE THREE SEAM TAGS. Every table is re-BUILT per use because
 # `fu_rewrite`/`kg_rewrite` take their `PMEntrys` by `+`, and a table is affine: it is spent on use.
 #
-# THE `fu_dispatch` TAGS BELOW ARE THE BLOCK BASES -- 26 is `spec_shared`'s first rule, 58 is
-# `spec_program`'s first and 67 is `spec_hcq`'s first -- so each one names a SEAM, and a seam is
+# THE `fu_dispatch` TAGS BELOW ARE THE BLOCK BASES -- 26 is `spec_shared`'s first rule, 60 is
+# `spec_program`'s first and 69 is `spec_hcq`'s first -- so each one names a SEAM, and a seam is
 # where a base that is one too high sends a block's first rule into the previous block's ladder.
-# `gates/spec-offsets-gate.py` reads these tags and the bases out of the source and refuses if
-# they stop being the same numbers.
+# `gates/specreach-gate.py`'s `tag_spaces()` reads these tags and the bases out of the source and
+# refuses if they stop being the same numbers.
 def probe(+nm: String, +i: U32, +fx: F.Folded) -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row(String.concat([nm, "_sh"]), Sp.show_v(Sp.shared_rewrite(fx, i)))
@@ -74,11 +74,11 @@ def probe(+nm: String, +i: U32, +fx: F.Folded) -> IO(Unit):
     f : Unit <- row(String.concat([nm, "_sf"]), Sp.show_v(Sp.fu_rewrite(Sp.full_table(), fx, i)))
     g : Unit <- row(String.concat([nm, "_fu26"]), Sp.show_v(Sp.fu_dispatch(26, fx, i)))
     h : Unit <- row(String.concat([nm, "_sh0"]), Sp.show_v(Sp.sh_dispatch(0, fx, i)))
-    i2 : Unit <- row(String.concat([nm, "_fu58"]), Sp.show_v(Sp.fu_dispatch(58, fx, i)))
+    i2 : Unit <- row(String.concat([nm, "_fu60"]), Sp.show_v(Sp.fu_dispatch(60, fx, i)))
     j : Unit <- row(String.concat([nm, "_pr0"]), Sp.show_v(Sp.pr_dispatch(0, fx, i)))
-    k : Unit <- row(String.concat([nm, "_fu67"]), Sp.show_v(Sp.fu_dispatch(67, fx, i)))
+    k : Unit <- row(String.concat([nm, "_fu69"]), Sp.show_v(Sp.fu_dispatch(69, fx, i)))
     l : Unit <- row(String.concat([nm, "_hq0"]), Sp.show_v(Sp.hq_dispatch(0, fx, i)))
-    m : Unit <- row(String.concat([nm, "_fu68"]), Sp.show_v(Sp.fu_dispatch(68, fx, i)))
+    m : Unit <- row(String.concat([nm, "_fu70"]), Sp.show_v(Sp.fu_dispatch(70, fx, i)))
     n : Unit <- row(String.concat([nm, "_hq1"]), Sp.show_v(Sp.hq_dispatch(1, fx, i)))
     return Unit{}
 
