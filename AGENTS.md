@@ -127,20 +127,21 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
   green. TRUST THE RED ONE.**
-  **AND AS OF **2026-10-22T11:03Z** (`ecde3623a`, **AFTER **TONIGHT's **206 **COMMITS**)
+  **AND AS OF **2026-10-22T12:46Z** (`1f6cdc93f`, **AFTER **TONIGHT's **218 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
-  `graphs=34 graphs-answered=34 graphs-agree=34 graphs-disagree=0 byte-identical=34 graphs-refused=0`,
+  `graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0 byte-identical=35 graphs-refused=0`,
+  `population=4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2`,
   `?=0`, `SHARED cores 52`, `plants-disagree 7 of 7`, `controls 5 of 5`, `conflations 4 of 4`,
-  `stable-pairs 5 of 5`, `stable-failed 0 of 5`, `stable-differ 0 of 5`, `expect-moved 0`,
+  `stable-pairs 5 of 5`, `stable-failed 0 of 5`, `stable-differ 0 of 5`, `expect-moved 0`, `plants-disagree 8 of 8`,
   `oracle-selfcheck=OK`, `census-rc=rc=0`, **`selfcheck=# SELFCHECK: OK`**,
   **`unhealthy() -> 0 line(s)`** (THE READING IS **EMPTY**, NOT "0 COMPLAINTS"), **`artefacts_ok() -> 0`**,
-  **`repro_bad() -> 0`**, **AND `repro`: `310 of 310 files identical across two clean runs`**
-  (`D0-repro.txt`: `repro-files=310 repro-identical=310 repro-rc=rc=0`).
+  **`repro_bad() -> 0`**, **AND `repro`: `319 of 319 files identical across two clean runs`**
+  (`D0-repro.txt`: `repro-files=319 repro-identical=319 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == d685031f056015920c66a9843260f10653a7e0c93b74f716c56f827911dafe3b`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == e83c9f1698d80f2f9211bf84c8e7cd3b0b4a1472618de5c4f4efbc5fe1af0864`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=ecde3623a222f015ffccdff4e3ab8887e0197ca5` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=1f6cdc93f4ec91706a0d3ac7b88fc228555c0b3c` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
   `ecde3623a`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
   **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
