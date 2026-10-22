@@ -2428,6 +2428,321 @@ def Target.device(+t: Target) -> String:
   match t:
     case Target{device, renderer, arch, iface, indices}: device
 
+def Target.renderer(+t: Target) -> String:
+  match t:
+    case Target{device, renderer, arch, iface, indices}: renderer
+
+def Target.iface(+t: Target) -> String:
+  match t:
+    case Target{device, renderer, arch, iface, indices}: iface
+
+def Target.indices(+t: Target) -> String:
+  match t:
+    case Target{device, renderer, arch, iface, indices}: indices
+
+# ===========================================================================
+# `Target.parse` -- tinygrad/helpers.py:206-214. THE DEV STRING PARSER.
+#
+# `Target` is upstream's record (helpers.py:198-203) and this is the one
+# function that FILLS it from a string, so it is the only thing in the port that
+# turns the `DEV=` environment variable into anything. Upstream, verbatim:
+#
+#     @staticmethod
+#     def parse(s:str) -> Target:
+#       if len(split:=s.split('+')) == 2:
+#         (iface, indices), s = ((iface_split[0], iface_split[1]) if len(iface_split:=split[0].rsplit(":", 1)) == 2 else (split[0], ""), split[1])
+#       elif len(split) > 2: raise RuntimeError(f"too many '+' in target string: {s!r}")
+#       else: iface, indices = "", ""
+#       match [x.upper() if i < 2 else x for i,x in enumerate(s.split(':'))]:
+#         case [dev, ren, arch]: return Target(dev, ren, arch, iface, indices)
+#         case [dev, ren]: return Target(dev, ren, interface=iface, indices=indices)
+#         case [dev]: return Target(dev, interface=iface, indices=indices)
+#         case _: raise RuntimeError(f"too many ':' in target string: {s!r}")
+#
+# SIX FACTS, and a port that misses any one of them is wrong in a way a
+# "looks about right" reading will not catch.
+#
+# 1. THE `+` CUT IS NOT THE MIDDLE OF THE STRING. `s.split('+')` gives the
+#    INTERFACE half FIRST and the DEVICE half SECOND, so `DEV=USB+AMD` is the
+#    interface "USB" and the device "AMD" -- the OPPOSITE of the order the two
+#    are written in. A string with NO '+' is all device and the interface is
+#    empty; a string with a '+' is the interface half and the device half.
+# 2. THE INTERFACE HALF MAY CARRY ITS OWN ':'. `split[0].rsplit(":", 1)` cuts
+#    that half at its LAST ':' -- before the cut is the interface, after it is
+#    the indices -- and `rsplit` with a maxsplit of ONE means "A:B:C" is the
+#    interface "A:B" and the indices "C", NOT the interface "A" and the
+#    indices "B:C".
+# 3. THE DEVICE HALF IS SPLIT ON ':' AND ITS FIRST TWO FIELDS ARE UPPERCASED.
+#    The arch is NOT: `DEV=AMD:LLVM:gfx1100` keeps "gfx1100" as it is written,
+#    and `render.of` (below) matches the arch with `String.starts_with(arch,
+#    "gfx")`, so an uppercased arch would stop being an AMD arch at all. The
+#    interface and the indices are not uppercased either.
+# 4. TWO REFUSALS, AND THEY ARE NOT THE SAME REFUSAL. A third '+' is "too
+#    many '+'"; a fourth ':' IN THE DEVICE HALF is "too many ':'". Upstream
+#    raises `RuntimeError`; the port's `None` IS that RuntimeError
+#    (helpers.bend:2382), so `Target.parse` answers a `Maybe`. The port cannot
+#    carry upstream's MESSAGE -- `None` is a value with no room for one -- but
+#    the BOUNDARY, which strings are refused and which are not, is the fact
+#    that matters and it is carried exactly.
+# 5. THE COLONS OF THE INTERFACE HALF ARE NOT THE DEVICE HALF'S BUDGET. The
+#    ':' count that refuses is the count of the DEVICE half ALONE, so
+#    "A:B:C+D" parses (the device half "D" has one field) and "A+B:C:D" parses
+#    too (the device half "B:C:D" has three, which is the most there is).
+#    Upstream's own error message is narrower still: it rebinds `s` to
+#    `split[1]` BEFORE the ':' split, so the "too many ':'" message names the
+#    DEVICE half and not the whole string.
+# 6. THE EMPTY STRING IS NOT A MALFORMED STRING. `Target.parse("")` is
+#    `Target("", "", "", "", "")`: the device half is "" and the interface is
+#    "". A port that treats "" as malformed refuses a string upstream accepts.
+#
+# THE PORT'S OWN NAME FOR THE FIELDS. Upstream's record is
+# `Target{device, renderer, arch, interface, indices}` and the port's is
+# `Target{device, renderer, arch, iface, indices}` -- ONE name differs and it
+# is the port's SHORT one: `interface` is `iface` here and NOTHING ELSE. Every
+# field upstream's `parse` fills is a field the port has, so the port's
+# `Target` is NOT missing one; `iface` IS upstream's `interface`, filled from
+# the same place in the same order, and `render.of` (below) reads the arch and
+# the device only, so no field of the record is unread.
+#
+# MEASURED, 2026-10-22, AGAINST CPython'S OWN `Target.parse`. The oracle is
+# the vendored `tinygrad/helpers.py` at the pin, called, never re-implemented,
+# and the port's answer was read out of the port by a probe
+# (`oracles/probe-targetparse.bend`, a probe and never a source). THIRTY-TWO
+# rows, TWENTY of them the single-string parser, and the diff is EMPTY:
+#
+#   ""                    => ||||
+#   CPU                   => CPU||||
+#   CPU:CLANG             => CPU|CLANG|||
+#   AMD:LLVM:gfx1100      => AMD|LLVM|gfx1100||
+#   AMD:LLVM:GFX1100      => AMD|LLVM|GFX1100||
+#   cpu:clang             => CPU|CLANG|||
+#   USB+AMD               => AMD|||USB|
+#   USB:1+AMD             => AMD|||USB|1
+#   AMD+CPU:CLANG         => CPU|CLANG||AMD|
+#   A:B:C+AMD             => AMD|||A:B|C
+#   usb:1+amd:llvm:gfx1100 => AMD|LLVM|gfx1100|usb|1
+#   A:B:C:D               => REFUSED      (upstream: too many ':' in target string: 'A:B:C:D')
+#   A+B+C                 => REFUSED      (upstream: too many '+' in target string: 'A+B+C')
+#   A:B:C+D               => D|||A:B|C
+#   A+B:C:D               => B|C|D|A|
+#   A+B:C:D:E             => REFUSED      (upstream: too many ':' in target string: 'B:C:D:E')
+#   ":"                   => ||||
+#   "A:"                  => A||||
+#   "::"                  => ||||
+#   "A::B"                => A||B||
+#
+# The five fields are printed as `device|renderer|arch|interface|indices`, in
+# upstream's order, with upstream's `interface` spelled `iface`. THE REFUSALS
+# AGREE ON THE BOUNDARY AND NOT ON THE MESSAGE: upstream raises
+# `RuntimeError("too many ':' in target string: 'B:C:D:E'")` and the port
+# answers `None`, which IS that RuntimeError in this tree's vocabulary
+# (helpers.bend:2382) and cannot carry its text, because `None` is a value
+# with no room for one.
+#
+# THE PLANT, AND WHERE EACH PLANTED CASE LANDS. The ways this could be wrong,
+# and the row that catches each:
+#
+#   * A COMPONENT IN THE WRONG ORDER -- the `+` cut puts the interface half
+#     FIRST. Caught by "USB+AMD" (device AMD, interface USB) and by
+#     "AMD+CPU:CLANG" (device CPU, renderer CLANG, interface AMD).
+#   * A DEFAULT OVERRIDING A GIVEN VALUE -- the unset fields must be "" and
+#     the given ones must survive. Caught by "CPU:CLANG" (renderer CLANG,
+#     arch ""), by "AMD:LLVM:gfx1100" (the arch is NOT uppercased) and by
+#     "A::B" (an EMPTY middle field is not shifted: arch B, renderer "").
+#   * A MALFORMED STRING SILENTLY ACCEPTED -- caught by "A+B+C" (too many
+#     '+') and by "A:B:C:D" and "A+B:C:D:E" (too many ':'), and NOT by
+#     "A:B:C+D" and "A+B:C:D", which upstream ACCEPTS and so must the port.
+#   * A DEVICE NAME THAT IS A PREFIX OF ANOTHER -- `Target.parse` matches no
+#     names at all, so the plant is at the LIST level, and it is planted there:
+#     ";CPU" parses to a target with an EMPTY device and one with "CPU", and
+#     the EMPTY one wins for EVERY device, which is upstream's rule
+#     (`not t.device or t.device == dev`) and not a prefix match.
+#   * THE EMPTY STRING IS NOT MALFORMED -- caught by the "" row.
+#
+# THE LIST LEVEL, the same comparison, five more rows plus five selections
+# plus two `replacedefault` rows, all identical:
+#
+#   CPU:CLANG;CPU:LLVM => LIST [CPU|CLANG|||] [CPU|LLVM|||]
+#   ;CPU               => LIST [||||] [CPU||||]
+#   A;B+C              => LIST [A||||] [C|||B|]
+#   CPU:CLANG;CPU:LLVM + CPU => CPU|CLANG|||     (the FIRST wins)
+#   CPU:CLANG;CPU:LLVM + GPU => GPU||||           (no match: a blank target)
+#   CPU:CLANG;AMD:LLVM + AMD => AMD|LLVM|||       (the second, matched)
+#   ;CPU + CPU => CPU||||                         (the EMPTY device wins)
+#   ;CPU + GPU => GPU||||
+#
+# THE PRECEDENCE IS UPSTREAM'S `_DEV.target(dev)` (helpers.py:216-218) AND NOT
+# `Target.parse`: the parse is per string, and the choice among the parsed
+# targets is the LIST's. Upstream's rule is `next((t for t in self._value if
+# not t.device or t.device == dev), Target(device=dev))` -- the FIRST target
+# whose device is empty or is `dev`, and the answer's device is `dev` whatever
+# the winner said -- and the port's `Target.select` is that, and the oracle
+# called upstream's own `DEV.target(dev)` on upstream's own parsed list, so
+# neither side is a re-implementation.
+#
+# WHAT CALLS IT IN THE PORT: NOTHING, and that is a fact about the port, not a
+# gap in it. The port has no DEV plumbing -- `helpers.bend` holds 4 of the 61
+# ContextVars and DEV is not one of them -- so there is no `DEV` string for
+# anything to parse. `device.bend`'s `canon` (device.py:26's `_canonicalize`)
+# is NOT this parser and must not become it: it splits on the FIRST ':' only,
+# uppercases the head, and strips a trailing ":0", so `canon("CPU:0")` is
+# "CPU" while `Target.parse("CPU:0")` is the device "CPU" and the RENDERER
+# "0". One keeps a device name a STRING and the other splits a device name
+# into FIELDS.
+# ===========================================================================
+
+# The three characters the parser cuts on. `'+'` is 43, `':'` is 58, `';'` is 59.
+def Target.PLUS() -> Char: Char.from_u32(43)
+def Target.COLON() -> Char: Char.from_u32(58)
+def Target.SEMI() -> Char: Char.from_u32(59)
+
+# `Target()` -- the dataclass's all-defaults instance (helpers.py:198-203).
+def Target.blank() -> Target: Target{"", "", "", "", ""}
+
+# The index of the LAST ':' in `s`, PLUS ONE, so 0 means "there is no colon".
+# This is the cut point of `s.rsplit(":", 1)`, and it is the only place the port
+# needs a LAST-occurrence split: `String.split` cuts at EVERY occurrence, so
+# `String.split("A:B:C", ':')` is three fields where `rsplit(":", 1)` is two.
+def Target.colon_go(cs: List<&2, Char>, +at: Nat, acc: Nat) -> Nat:
+  match cs:
+    case Nil{}: acc
+    case h <> t: Target.colon_go(t, Nat.add(at, 1n),
+      Bool.pick(Nat, Char.is_eq(h, Target.COLON()), Nat.add(at, 1n), acc))
+
+# The DEVICE half: `s.split(':')` matched against [dev], [dev, ren] and
+# [dev, ren, arch]. The first TWO fields are uppercased and the third is not,
+# and a FOURTH field is upstream's "too many ':'".
+def Target.parse_fields(+ds: List<&2, String>, too_many: Bool, iface: String, indices: String) -> Maybe<&2, Target>:
+  match too_many:
+    case True{}: None{}
+    case False{}:
+      d0 : String = Maybe.default(&2, String, List.get(&2, String, ds, 0n), "")
+      d1 : String = Maybe.default(&2, String, List.get(&2, String, ds, 1n), "")
+      d2 : String = Maybe.default(&2, String, List.get(&2, String, ds, 2n), "")
+      Some{Target{String.to_upper(d0), String.to_upper(d1), d2, iface, indices}}
+
+def Target.parse_device(s: String, iface: String, indices: String) -> Maybe<&2, Target>:
+  +ds : List<&2, String> = String.split(s, Target.COLON())
+  dn : Nat = List.length(&2, String, ds)
+  Target.parse_fields(ds, Nat.is_ge(dn, 4n), iface, indices)
+
+# THE TWO HALVES. With a '+' the INTERFACE half is first and the DEVICE half
+# is second; without one the whole string is the DEVICE half and the interface
+# is empty. `two` says which.
+def Target.parse_halves(+parts: List<&2, String>, +two: Bool) -> Maybe<&2, Target>:
+  +w0 : String = Maybe.default(&2, String, List.get(&2, String, parts, 0n), "")
+  w1 : String = Maybe.default(&2, String, List.get(&2, String, parts, 1n), "")
+  +left : String = Bool.pick(String, two, w0, "")
+  right : String = Bool.pick(String, two, w1, w0)
+  # the interface half, cut at its LAST ':'
+  +at : Nat = Target.colon_go(String.to_list(left), 0n, 0n)
+  iface : String = Bool.pick(String, Nat.is_eq(at, 0n), left, String.take(left, Nat.sub(at, 1n)))
+  indices : String = Bool.pick(String, Nat.is_eq(at, 0n), "", String.drop(left, at))
+  Target.parse_device(right, iface, indices)
+
+# A THIRD '+' is upstream's "too many '+'". The count is of the WHOLE string's
+# '+' pieces, so "A+B:C:D" is two pieces and parses, and "A+B+C" is three and
+# does not.
+def Target.parse_split(parts: List<&2, String>, too_many: Bool, two: Bool) -> Maybe<&2, Target>:
+  match too_many:
+    case True{}: None{}
+    case False{}: Target.parse_halves(parts, two)
+
+# `Target.parse` itself. Upstream's is a `staticmethod`, so the port makes it a
+# top-level def of the same name; the `Maybe` is upstream's `RuntimeError`.
+#
+# THE SHAPE IS THE LANGUAGE'S, NOT A STYLE CHOICE. Four rules of Bend, each
+# MEASURED by the compiler while this was written:
+#
+#   1. A `match` scrutinizes a PARAMETER or a bound FIELD. Never a computed
+#      value, never a local binder (bend.ts:2663) -- so every decision here is
+#      a `Bool` that is HANDED to a def of its own and matched THERE, or a
+#      `Bool.pick`, which is the same decision without the def.
+#   2. A def must be FILLED before it is CALLED, so every def here is BELOW
+#      the ones it calls.
+#   3. Bend refuses MUTUAL recursion, so the list fold is ONE def and it
+#      carries its two results as a PAIR.
+#   4. A value used more than once is marked `+` (a parameter, a binding, or
+#      a pattern field), or the compiler says "consumed more than once".
+def Target.parse(s: String) -> Maybe<&2, Target>:
+  +parts : List<&2, String> = String.split(s, Target.PLUS())
+  +n : Nat = List.length(&2, String, parts)
+  Target.parse_split(parts, Nat.is_gt(n, 2n), Nat.is_eq(n, 2n))
+
+# `Target.parse_list` -- `_DEV.value`'s setter (helpers.py:218), which is
+# `[Target.parse(t) for t in v.split(';')]`. A component that does not parse
+# makes the WHOLE list fail, because upstream's list comprehension raises on
+# the first one that does.
+#
+# The fold carries TWO things -- the targets parsed so far, and whether every
+# component so far parsed -- and a def returns ONE value, so the two travel as
+# a PAIR, the shape `helpers.bend:2500` already uses for the same reason.
+# Bend refuses MUTUAL recursion, so the fold is ONE def and the parsed
+# component is read through the two accessors below instead of through a
+# second fold that would have to call this one back.
+def Target.parse_list_ok(m: Maybe<&2, Target>) -> Bool:
+  match m:
+    case Some{t}: True{}
+    case None{}: False{}
+
+def Target.parse_list_val(m: Maybe<&2, Target>) -> Target:
+  match m:
+    case Some{t}: t
+    case None{}: Target.blank()
+
+def Target.parse_list_go(cs: List<&2, String>, +acc: List<&2, Target>, ok: Bool) ->
+  (Bool & List<&2, Target>):
+  match cs:
+    case Nil{}: (ok, acc)
+    case h <> t:
+      +m : Maybe<&2, Target> = Target.parse(h)
+      Target.parse_list_go(t, List.append(&2, Target, acc, [Target.parse_list_val(m)]),
+        Bool.and(ok, Target.parse_list_ok(m)))
+
+def Target.parse_list_of(p: (Bool & List<&2, Target>)) -> Maybe<&2, List<&2, Target>>:
+  (ok, ts) = p
+  Bool.pick(Maybe<&2, List<&2, Target>>, ok, Some{ts}, None{})
+
+def Target.parse_list(s: String) -> Maybe<&2, List<&2, Target>>:
+  Target.parse_list_of(Target.parse_list_go(String.split(s, Target.SEMI()), Nil{}, True{}))
+
+# `Target.select` -- `_DEV.target(dev)` (helpers.py:216-218). THE PRECEDENCE
+# WHEN A DEVICE IS NAMED MORE THAN ONCE: the FIRST target in the DEV list
+# whose device is empty or is `dev` wins, and the answer's device is `dev`
+# whatever the winner said. So "CPU:CLANG;CPU:LLVM" answers the FIRST, and a
+# target with an EMPTY device matches ANY device.
+#
+# Upstream also asserts `getenv(f"{dev}_CC", "") == ""` there, which is a
+# deprecation guard on the ENVIRONMENT and not part of the selection, and the
+# port's `select` is the selection alone.
+def Target.select_go(ts: List<&2, Target>, +dev: String) -> Maybe<&2, Target>:
+  match ts:
+    case Nil{}: None{}
+    case +t <> rest:
+      Bool.pick(Maybe<&2, Target>,
+        Bool.or(String.is_empty(Target.device(t)), String.eq(Target.device(t), dev)),
+        Some{t}, Target.select_go(rest, dev))
+
+def Target.select_of(m: Maybe<&2, Target>, +dev: String) -> Target:
+  match m:
+    case Some{+t}: Target{dev, Target.renderer(t), Target.arch(t), Target.iface(t), Target.indices(t)}
+    case None{}: Target{dev, "", "", "", ""}
+
+def Target.select(+ts: List<&2, Target>, +dev: String) -> Target:
+  Target.select_of(Target.select_go(ts, dev), dev)
+
+# `Target.replacedefault` (helpers.py:210): a field that is EMPTY takes the
+# given value and a field that is already SET keeps what it has. Upstream takes
+# keyword arguments; the port takes the five fields, and a field the caller does
+# not want to change is passed as "" -- which is also what "leave it alone"
+# means, because an empty field is exactly the one that gets replaced.
+def Target.replacedefault(+t: Target, dev: String, ren: String, arch: String, iface: String, idx: String) -> Target:
+  Target{Bool.pick(String, String.is_empty(Target.device(t)), dev, Target.device(t)),
+    Bool.pick(String, String.is_empty(Target.renderer(t)), ren, Target.renderer(t)),
+    Bool.pick(String, String.is_empty(Target.arch(t)), arch, Target.arch(t)),
+    Bool.pick(String, String.is_empty(Target.iface(t)), iface, Target.iface(t)),
+    Bool.pick(String, String.is_empty(Target.indices(t)), idx, Target.indices(t))}
+
 # `Renderer.tensor_cores` is a CLASS attribute defaulting to [] (renderer/
 # __init__.py:75), which is why :178's `else` arm leaves ncores at 0 rather than
 # raising: `__init__` never assigns it on that path. MEASURED, and it is the row
