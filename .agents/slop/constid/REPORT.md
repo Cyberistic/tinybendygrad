@@ -355,12 +355,15 @@ the walks, so the four gate files DO NOT move the digest; only the two `.bend` f
   held at the same instant:
 
 ```
-digest_live             = 9885b22757f918f27ea5dddf1d68f385d1b3b96acd2ebac4309cd66b84d23a5d
-digest_without_my_edits = d4580b8d5d1a62916c81f889644555d7a577fd4d327db30bd4f6a9dd886c3807
+digest_live             = 03ef1127461a7ab82033de334204d845552879ca1f9066394efb2889a5fb61ab
+digest_without_my_edits = 6f43584feda020e05088c2f5af1dbb9f364cefb97d49422792dd2e405c97f14d
 ```
 
-**⇒ THE ATTRIBUTED DELTA IS `d4580b8d…` → `9885b227…` WITH MY EDITS OFF AND BACK WITH
+**⇒ THE ATTRIBUTED DELTA IS `6f43584f…` → `03ef1127…` WITH MY EDITS OFF AND BACK WITH
 THEM ON.**  The instrument is `.agents/slop/constid/digest.py --attr F1 F2 --base 853bed545^`.
+**THESE TWO HEX STRINGS ARE A SNAPSHOT OF ONE INSTANT, NOT A CONSTANT** -- the digest moved
+four times while this unit worked, every time because another unit was editing
+`tinybendygrad/`, and the pair above is re-measured on demand.
 
 **THE DIGEST ALSO MOVED FOR A SECOND REASON, AND IT IS NOT MINE:** other units committed
 (`44e89e67b`, `298ad16f0`, `93e9efdf5`, `51359907a`, `df708e971`, `9b2287c6c`, `c6ee4b5cc`,
