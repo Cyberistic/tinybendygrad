@@ -1445,7 +1445,7 @@ def onx_halve.of(+neg: Bool, +x: H.I64) -> H.I64:
 def onx_halve(+x: H.I64) -> H.I64: onx_halve.of(H.i64_is_neg(x), x)
 
 # A CORRECT 64-BIT SUBTRACTION, carried here because `helpers.bend`'s is WRONG.
-# MEASURED on `H.i64_sub` (helpers.bend:1241-1243), against CPython:
+# MEASURED on `H.i64_sub` (helpers.bend:1733-1735), against CPython:
 #     case            CPython          H.i64_sub
 #     5 - 7           4294967295:4294967294   0:4294967294      <- no borrow
 #     1 - (-1)        0:2             1:2                <- no borrow

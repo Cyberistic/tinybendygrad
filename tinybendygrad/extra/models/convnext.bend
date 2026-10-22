@@ -218,7 +218,7 @@ def cn_get_model(version: U32, load_weights: Bool) -> D.Refused:
 
 # :48 weights = torch_load(fetch(...))['model']
 def cn_get_model_fetch() -> D.Refused:
-  D.refuse("extra/models/convnext.py:48 get_model -- MISSING fetch: helpers.bend:3191 records the whole HTTP seam as unported, and no def named fetch( exists")
+  D.refuse("extra/models/convnext.py:48 get_model -- MISSING fetch: helpers.bend:3193 records the whole HTTP seam as unported, and no def named fetch( exists")
 
 # :50 mv = get_child(model, k)  :51 mv.assign(...).realize()
 def cn_get_model_assign() -> D.Refused:

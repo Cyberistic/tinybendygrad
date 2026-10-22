@@ -23,7 +23,7 @@
 #      (`tinygrad/mixin/movement.py:38-46`) -- or an `AssertionError` whose
 #      MESSAGE is a literal in the source. THE PORT HAS THIS: the shape is
 #      `fold.shape` (`uop/fold.bend`) and the product is `H.prod_u32`
-#      (`helpers.bend:483`). This is the half that decides whether a
+#      (`helpers.bend:485`). This is the half that decides whether a
 #      multi-element tensor is an ERROR or a silent "first element", and
 #      upstream says ERROR.
 #
@@ -150,7 +150,7 @@ def nn_item_wall() -> String:
 # (`tinygrad/mixin/movement.py:38-46`).
 #
 # THE DIMS COME FROM THE FOLD (`M.mo_dims`, `mixin/op.bend:281`) AND THE
-# PRODUCT IS `H.prod_u32` (`helpers.bend:483`). `M.mo_reduced` IS **NOT** THE
+# PRODUCT IS `H.prod_u32` (`helpers.bend:485`). `M.mo_reduced` IS **NOT** THE
 # PRODUCT DEF: it is `prod([si for si, so in zip(shape, sum.shape) if
 # resolve(si != so)])` (`mixin/op.bend:876`), which is the product of the
 # dims the REDUCTION TOUCHED, so `mo_reduced(t, Nil{})` is the EMPTY product
@@ -282,14 +282,14 @@ def nn_item(+t: T.Tensor) -> Itm: nn_item.of(nn_item_numel(t), t)
 #
 # THE VALUE IS A PYTHON NUMBER, AND THE PORT SPELLS IT THE WAY PYTHON DOES
 # WHERE IT CAN:
-#   * `H.i64_dec` (`helpers.bend:2178`) is the SIGNED DECIMAL -- `str(int)` in
-#     Python -- and NOT `H.i64_text` (`helpers.bend:1710`), which is the
+#   * `H.i64_dec` (`helpers.bend:2180`) is the SIGNED DECIMAL -- `str(int)` in
+#     Python -- and NOT `H.i64_text` (`helpers.bend:1712`), which is the
 #     `hi:lo` bit pattern and would print `0:7` where Python prints `7`.
 #   * `Bool.show` is `str(bool)`.
-#   * `H.f32_show` (`helpers.bend:1027`) is NOT Python's `repr`: it prints an
+#   * `H.f32_show` (`helpers.bend:1029`) is NOT Python's `repr`: it prints an
 #     integer-valued float as an integer and every other float with SIX
-#     decimals (`helpers.bend:999-1004`), where Python prints the shortest
-#     decimal that reads back. `helpers.bend:997` CLAIMS it is "the shortest
+#     decimals (`helpers.bend:1001-1006`), where Python prints the shortest
+#     decimal that reads back. `helpers.bend:999` CLAIMS it is "the shortest
 #     decimal that reads back, the way Python's repr does" and the code under
 #     that comment does six decimals. SO THE FLOAT ROWS ARE TWO: one spells
 #     the value (`3.500000`) and one spells its EXACT float32 BIT PATTERN

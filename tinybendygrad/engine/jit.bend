@@ -126,7 +126,7 @@ def j_str(m: Maybe<&2, String>) -> String:
     case _: "unprintable"
 
 # `dedup` for a list of arena indices -- Python's `dict.fromkeys`
-# (helpers.bend:106). `_written_uops` (jit.py:64) and `held_bufs` (jit.py:161) are
+# (helpers.bend:108). `_written_uops` (jit.py:64) and `held_bufs` (jit.py:161) are
 # both set comprehensions, and this is the set.
 #
 # THE `.go` SPLIT IS NOT OPTIONAL, and the ORDER IS `.go` FIRST. `Bool.pick`
@@ -183,7 +183,7 @@ def j_at_l(xs: List<&2, List<&2, U32>>, n: U32) -> List<&2, U32>:
 
 # A STABLE string sort. jit.py:101 is `tuple(sorted(x[1].keys(), key=lambda v:
 # v.expr))` and `sorted` is stable, so this is insertion sort and not a commutative
-# one -- `H.argsort_u32` (helpers.bend:196) is the u32 sibling and there is no string
+# one -- `H.argsort_u32` (helpers.bend:602) is the u32 sibling and there is no string
 # one in the tree yet.
 #
 # `Bool.pick` IS THE SHAPE AND IT IS THE RECORDED ONE (`mixin/rand.bend` rule 4): it

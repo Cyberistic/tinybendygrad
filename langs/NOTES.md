@@ -68,7 +68,7 @@ parameter, never a call result:
 
 ```
 $ grep -rEn '^[[:space:]]*\([A-Za-z_0-9]+, [A-Za-z_0-9]+\) = ' tinybendygrad
-tinybendygrad/helpers.bend:1248:  (hi, lo) = r
+tinybendygrad/helpers.bend:1250:  (hi, lo) = r
 ```
 
 **The way out** is a value that travels in a cons and is read back by index,

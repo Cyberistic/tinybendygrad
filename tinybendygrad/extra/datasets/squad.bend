@@ -18,7 +18,7 @@
 #     (upstream:20-29), whose `ord(c) == 0x202F` (upstream:22) is the NARROW NO-BREAK
 #     SPACE. A pretokenizer that drops 0x202F silently loses SQuAD answers.
 # TODO(port): STOPPED AT `init_dataset` (extra/datasets/squad.py:9).
-#   MISSING: `fetch` (the `helpers.bend:2815` HTTP seam, upstream:11); a JSON reader
+#   MISSING: `fetch` (the `helpers.bend:3193` HTTP seam, upstream:11); a JSON reader
 #   for the nested `data -> articles -> paragraphs -> qas` walk (upstream:13-40);
 #   `transformers.BertTokenizer` (upstream:4) -- `tokenizer.tokenize` (upstream:60,70),
 #   `convert_tokens_to_ids` (upstream:110) and `convert_tokens_to_ids` over the vocab

@@ -2657,7 +2657,7 @@ def rnd_rows() -> IO(Unit):
 #
 # THE HEADER OF THIS FILE LISTED THIS DEF AS GAP (a) -- "NO `sprintf`, NO
 # field-width specifier" -- and said the gap is "CLOSED by composition". It is, and
-# the composition is the file's own: `H.pad_left` / `H.pad_right` (helpers.bend:1036,
+# the composition is the file's own: `H.pad_left` / `H.pad_right` (helpers.bend:1044-1047,
 # :1039) for every `:20s` / `:40s` / `:32s`, and `multirange_str`'s own `pad`
 # argument for the `pad=10`. Nothing new is written here for the widths.
 #
@@ -2813,7 +2813,7 @@ def pu_dtype(+tb: F.Table, +ar: O.Arena, +u: U32) -> String:
 #   `{str(u.dtype):40s}` 40 STRING -> H.pad_right   (was pad_left)
 #   `{str(srcs):32s}` 32  STRING   -> H.pad_right   (was pad_left)
 #
-# `H.pad_left` prepends the blank and `H.pad_right` appends it (helpers.bend:1036-1040),
+# `H.pad_left` prepends the blank and `H.pad_right` appends it (helpers.bend:1044-1047),
 # so the names read the way they act, and the mistake was using the NAME to decide the
 # direction instead of the SPEC. Three of the four were the same mistake and one was the
 # mirror of it, which is why the row read as one shifted field rather than four.

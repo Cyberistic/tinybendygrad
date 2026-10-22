@@ -61,7 +61,7 @@ def u32_text(v: U32) -> String: U32.show(v)
 def nat_text(v: Nat) -> String: U32.show(U32.from_nat(v))
 
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
-# 2. `H.I64` EXISTS (helpers.bend:1167, `I64{hi: U32, lo: U32}`), so the
+# 2. `H.I64` EXISTS (helpers.bend:1169, `I64{hi: U32, lo: U32}`), so the
 #    64-BIT WALL is narrower than "no 64-bit type": a `_raw` wider than 32 bits
 #    and the 64-bit `literal` field can both be held. What CANNOT be held is a
 #    field WIDER than 64 bits, of which there are none.
@@ -90,7 +90,7 @@ type Res is Data:
 # a scalar is meant. `Wrd` is what `bf_set` and `raw_walk` answer with, and
 # nothing else.
 #
-# `H.I64` IS THE WORD. `bend` has no 64-bit primitive (helpers.bend:1634) and
+# `H.I64` IS THE WORD. `bend` has no 64-bit primitive (helpers.bend:1642) and
 # `H.I64{hi: U32, lo: U32}` is this tree's own two-limb answer, already carried
 # by `dtype.bend` and `uop/fold.bend`. MEASURED on `helpers.bend`'s own algebra
 # against CPython's, all four exact:

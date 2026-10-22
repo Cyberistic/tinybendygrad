@@ -22,7 +22,7 @@
 #   `fetch` either. AFTER it: `tarfile` for the unpack, and `hashlib.md5` -- the port
 #   has no MD5, and "just skip the checksum" is the exact deletion this stub exists to
 #   prevent, because `VERIFY_CHECKSUM` (upstream:50) is how the corpus proves it is
-#   the corpus MLPerf scored. `getenv` IS ported (`helpers.bend:148` `getenv_str`,
+#   the corpus MLPerf scored. `getenv` IS ported (`helpers.bend:150` `getenv_str`,
 #   `:299` `getenv_int`), so lines 46/50/54 are the only part already reachable.
 # NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `wikipedia_uncompress_and_extract`
 #   (upstream:13), `verify_checksum` (upstream:24), `download_wikipedia`

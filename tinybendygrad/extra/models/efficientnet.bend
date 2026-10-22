@@ -185,7 +185,7 @@ def ef_round_filters(filters: U32, multiplier: F32) -> U32:
 
 # :80-81 round_repeats -- `int(math.ceil(global_params[1] * repeats))`. `ceil` is
 # a def in Base; the F32 multiply is upstream's. `U32.to_f32`/`F32.to_u32` is
-# the conversion PAIR this tree actually has (helpers.bend:927), and there is no
+# the conversion PAIR this tree actually has (helpers.bend:929), and there is no
 # `F32.from_f64` -- which is why these two are written in `U32` at all.
 def ef_round_repeats(repeats: U32, depth: F32) -> U32:
   F32.to_u32(F32.ceil(F32.mul(depth, U32.to_f32(repeats))))
@@ -235,7 +235,7 @@ def ef_url(n: U32) -> String:
 
 # :134 def load_from_pretrained(self)
 def ef_load_pretrained(number: U32) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:134 EfficientNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load(fetch(...)) at :146; helpers.bend:3191 records the fetch seam as unported and resnet.bend:97-98 records torch_load as 0 hits")
+  D.refuse("extra/models/efficientnet.py:134 EfficientNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load(fetch(...)) at :146; helpers.bend:3193 records the fetch seam as unported and resnet.bend:97-98 records torch_load as 0 hits")
 
 # :148 if k.endswith("num_batches_tracked"): continue -- SPELLED, AND IT IS
 # THE UN-DOTTED FORM UPSTREAM USES HERE. That is worth saying because

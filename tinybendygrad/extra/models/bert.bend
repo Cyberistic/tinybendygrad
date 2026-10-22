@@ -76,7 +76,7 @@ import ./../datasets/__init__.bend as D
 # THE TWO `load_from_pretrained` ARE NOT A PORTING PROBLEM AND SHOULD NOT BE
 # TREATED AS ONE. bert.py:78-124 reads a TENSORFLOW checkpoint through
 # `tf.train.list_variables`, and bert.py:24-31 reads a TORCH checkpoint through
-# `torch.load`. `helpers.bend:3191` already records the whole weight-download
+# `torch.load`. `helpers.bend:3193` already records the whole weight-download
 # seam as unported I/O, and neither framework has a counterpart. Named here so no
 # reader counts them as arithmetic left undone.
 #
@@ -118,7 +118,7 @@ def br_qa_init(hidden_size: U32, intermediate_size: U32, max_position_embeddings
 
 # :18 def load_from_pretrained(self)
 def br_qa_load_from_pretrained() -> D.Refused:
-  D.refuse("extra/models/bert.py:18 BertForQuestionAnswering.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:20); helpers.bend:3191 records the HTTP seam as unported")
+  D.refuse("extra/models/bert.py:18 BertForQuestionAnswering.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:20); helpers.bend:3193 records the HTTP seam as unported")
 
 # :33 def __call__(self, input_ids, attention_mask, token_type_ids)
 def br_qa_call(+input_ids: T.Tensor, +attention_mask: T.Tensor, +token_type_ids: T.Tensor) -> D.Refused:

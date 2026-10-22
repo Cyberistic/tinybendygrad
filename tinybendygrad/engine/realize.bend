@@ -1087,7 +1087,7 @@ def rz_nbytes_of(+ar: O.Arena, +call: U32) -> U32:
 # `encdec` node: shape `(16,)`, dtype `i32`, product `64`, an `int` -- so
 # `sym_infer(64, {})` is the `else` branch and `_sym_fxn`'s `exec` (ops.py:1168-1179)
 # is never reached. What the arm needs is `size_to_str` and `colored`, and BOTH ARE
-# PORTED (`helpers.bend:1143` and `helpers.bend:1083`).
+# PORTED (`helpers.bend:1147` and `helpers.bend:1087`).
 #
 # `rz_nbytes` IS ALREADY THE `sym_infer` ANSWER AND WAS ALREADY IN THIS FILE: `rz_prod.dim`
 # answers `None` for a SYMBOLIC dim, and CPython's `sym_infer` on a symbolic node with

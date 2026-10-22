@@ -571,7 +571,7 @@ def filter_keys(kvs: List<&2, Kv>) -> List<&2, Kv>:
 # ===========================================================================
 
 # `srender` of an `SI` is the INTEGER, in decimal. `H.i64_text` is `hi:lo` --
-# helpers.bend:1303 says so and gives the reason -- so a decimal renderer is
+# helpers.bend:1305 says so and gives the reason -- so a decimal renderer is
 # needed and it is only honest for a value that FITS: `hi == 0` is checked and the
 # `hi:lo` form is the fallback, which is a stated limit and not a silent one.
 def v_of(hi: U32, lo: U32) -> H.I64: H.i64_of_hi_lo(hi, lo)

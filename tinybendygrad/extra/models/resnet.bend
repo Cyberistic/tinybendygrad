@@ -65,8 +65,8 @@ import ./../datasets/__init__.bend as D
 #     `Tensor.mean`       mixin/op.bend:891 `mo_mean`                    (:120)
 #     `Tensor.sequential` SIDE B -- see MISSING
 #     `get_state_dict`    nn/state.bend:318                              (indirectly, :141)
-#     `GlobalCounters.reset` helpers.bend:2582                           (:168)
-#     `Context`           helpers.bend:405 `Context.arg`                 (:165)
+#     `GlobalCounters.reset` helpers.bend:2584                           (:168)
+#     `Context`           helpers.bend:407 `Context.arg`                 (:165)
 #     `fetch`             MISSING -- see MISSING
 #
 #   PARTIAL
@@ -117,7 +117,7 @@ import ./../datasets/__init__.bend as D
 #                         `extra/datasets/__init__.bend:49,:53`. A grep that
 #                         reads a PREFIX and calls it a hit is the failure this
 #                         tree already has a name for, so the instrument here
-#                         is anchored to `fetch\(`. ALSO, helpers.bend:3191
+#                         is anchored to `fetch\(`. ALSO, helpers.bend:3193
 #                         says why in the port's own words: "The HTTP machinery
 #                         (fetch, fetch_fw, _ensure_downloads_dir) is urllib
 #                         plus a temp file plus an atomic rename. It is I/O of

@@ -1001,35 +1001,32 @@ def KernelInfo.of() -> KernelInfo:
 
 # `Target` -- tinygrad/helpers.py:198. `device, renderer, arch, interface, indices`,
 # and the port spells `interface` as `iface` (which is what
-# `runtime/ops_python.bend:2420` already does).
+# `runtime/ops_python.bend:2620` already does).
 #
-# WHY THE CLASS IS HERE AND NOT IN `runtime/ops_python.bend`, WHICH ALREADY HAS
-# ONE. BEND REFUSES IMPORT CYCLES, and it is MEASURED, not remembered:
-# `.agents/slop/programinfo/a.bend` imports `b.bend` and `b.bend` imports
-# `a.bend`, and the compiler answers
-#     an import cycle through .../.agents/slop/programinfo/a.bend
+# THE RECORD IS NOT DECLARED HERE. It is declared ONCE, in `helpers.bend` -- the
+# `Target` record, in upstream's field order -- which is upstream's own home,
+# `helpers.py`. This file reaches it as `H.Target` through the alias it ALREADY
+# imports `helpers.bend` under. `helpers.bend` is a LEAF: it imports `Base` and
+# nothing else, so the edge `ops.bend -> helpers.bend` was already there and NO
+# CYCLE IS CLOSED.
+#
+# THIS FILE USED TO DECLARE ITS OWN `Target`, and the reason it gave was a cycle
+# that does not exist. The local copy was placed here because
 # `runtime/ops_python.bend:262` imports `../uop/ops.bend`, so `ops.bend` cannot
-# import `runtime/ops_python.bend` -- the edge would close the cycle. THE FIX IS
-# A MOVE, NOT A COPY: upstream puts `Target` in `helpers.py`, the port's
-# `helpers.bend` is the same module, and `ops.bend` ALREADY IMPORTS IT (as `H`).
-# So the class belongs in `helpers.bend` and `runtime/ops_python.bend:2420` should
-# read `H.Target`. That move is NOT DONE HERE -- this unit's file scope is
-# `uop/ops.bend` -- and until it happens there are TWO `Target` records with the
-# same shape and no shared identity.
+# import `runtime/ops_python.bend` -- TRUE, AND IRRELEVANT, because the record
+# never had to come from there. Two records with the same five fields and
+# DIFFERENT identities are two types: a `H.Target.parse`d target could not go
+# into a `ProgramInfo`, and the round trip (`gates/target-roundtrip.bend` --
+# twenty rows against CPython's own `Target.parse` and `ProgramInfo`) could not
+# be typed at all. MEASURED, before this change: the round trip gate answered
+# `expected : O.Target`, and the census gate answered "2 `type Target is Data:`
+# declaration(s)".
 #
-# `Target.parse` (`tinygrad/helpers.py:206`) is NOT PORTED and is not needed
-# here: `from_sink` takes the `Target` as an argument. `runtime/ops_python.bend`
-# does not compile today for an unrelated reason (MEASURED 2026-10-22:
-# `Target.parse.split` is an unfilled law), and `Target.parse` is another unit's
-# job.
-type Target is Data:
-  Target{device: String, renderer: String, arch: String, iface: String, indices: String}
-
-# `Target()` -- the dataclass default, which is FIVE EMPTY STRINGS. This is the
-# value upstream's `ProgramInfo.target: Target = Target()` defaults to, and the
-# value `from_sink` hands back when the caller names no target.
-def Target.of() -> Target:
-  Target{"", "", "", "", ""}
+# THE DEFAULT IS THE OTHER FILE'S. Upstream's `ProgramInfo.target: Target =
+# Target()` is the dataclass default of FIVE EMPTY STRINGS, and the port spells
+# the nullary constructor `of`, as `ProgramInfo.of` and `VarVals.new` do -- so it
+# is `H.Target.of()`, and it is the ONLY one. This file's own `Target.of()` is
+# gone, so there is no second default to keep in step.
 
 # ProgramInfo -- ops.py:1343. SEVEN fields, and the SEVENTH is `target: Target`.
 #
@@ -1042,10 +1039,10 @@ def Target.of() -> Target:
 # elements are `H.I64`: an int is an I64 and a float is not a shape, so the
 # float case in `sym_infer` is recorded on `sym_infer` itself.
 type ProgramInfo is Data:
-  ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>, target: Target}
+  ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>, target: H.Target}
 
 def ProgramInfo.of() -> ProgramInfo:
-  ProgramInfo{[H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], Nil{}, Nil{}, Nil{}, Nil{}, Target.of()}
+  ProgramInfo{[H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], Nil{}, Nil{}, Nil{}, Nil{}, H.Target.of()}
 
 # `var_vals: dict[str, int]` -- a `Map` is string-keyed in Bend, which is the
 # one place Python's dict and Bend's Map agree without an encoding, so it is
@@ -1613,8 +1610,9 @@ def ProgramInfo.ins(x: ProgramInfo) -> List<&2, U32>:
 # `target: Target` -- ops.py:1349. The SEVENTH field, and the one that was
 # missing until `from_sink` landed. The accessor is here for the same reason the
 # other six are: a Bend record has no projection syntax, so a field reader is
-# two defs.
-def ProgramInfo.target(x: ProgramInfo) -> Target:
+# two defs. The field's TYPE is `helpers.bend`'s record -- `H.Target` -- and not
+# a second copy of it.
+def ProgramInfo.target(x: ProgramInfo) -> H.Target:
   match x:
     case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: target
 
@@ -2062,10 +2060,14 @@ def eq_kernelinfo(x: KernelInfo, y: KernelInfo) -> Bool:
 
 # `eq_target` -- the SEVENTH field's comparator. `Target` is a frozen dataclass
 # upstream, so its equality is the five strings, and the port's `Target` is a
-# `Data` record whose equality is the same five strings.
-def eq_target(x: Target, y: Target) -> Bool:
+# `Data` record whose equality is the same five strings. It is
+# `helpers.bend`'s record, so the pattern is `H.Target{...}`: the field ORDER is
+# upstream's (`device, renderer, arch, iface, indices`), and a positional
+# pattern against a record with a different order would compare the wrong pairs
+# SILENTLY.
+def eq_target(x: H.Target, y: H.Target) -> Bool:
   match x y:
-    case Target{device, renderer, arch, iface, indices} Target{d2, r2, a2, i2, n2}:
+    case H.Target{device, renderer, arch, iface, indices} H.Target{d2, r2, a2, i2, n2}:
       Bool.and(String.eq(device, d2), Bool.and(String.eq(renderer, r2),
         Bool.and(String.eq(arch, a2), Bool.and(String.eq(iface, i2),
           String.eq(indices, n2)))))
@@ -5504,7 +5506,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # wired in this ORDER and that `argfix`'s empty arm is honoured. The number of
 # `end` operands is the only input that varies, so it is the only thing the family
 # varies. `argfix` is already ported as `argfix1`/`argfix2`/`argfix_seq`
-# (helpers.bend:539-546), so `end` is a `Maybe<&2, List<&2, U32>>` and not a node.
+# (helpers.bend:547-554), so `end` is a `Maybe<&2, List<&2, U32>>` and not a node.
 #
 # TWO BUGS, AND BOTH COMPILED.
 #
@@ -9229,11 +9231,11 @@ def fs.oi(+globals: List<&2, U32>, +outs: List<&2, U32>, +ins: List<&2, U32>) ->
     OI{outs, ins})
 
 # THE `ProgramInfo` UPSTREAM RETURNS.
-def fs.finish.pair(oi: OI, gs: List<&2, H.I64>, ls: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, tgt: Target) -> ProgramInfo:
+def fs.finish.pair(oi: OI, gs: List<&2, H.I64>, ls: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, tgt: H.Target) -> ProgramInfo:
   match oi:
     case OI{o, i}: ProgramInfo{gs, ls, params, globals, fs.slots(o), fs.slots(i), tgt}
 
-def fs.finish(acc: FS, sz: Sz, tgt: Target) -> ProgramInfo:
+def fs.finish(acc: FS, sz: Sz, tgt: H.Target) -> ProgramInfo:
   match acc:
     case FS{params, +globals, outs, ins}:
       match sz:
@@ -9245,7 +9247,7 @@ def fs.one() -> H.I64: H.i64_of_i32(1)
 def fs.ones() -> List<&2, H.I64>: [fs.one(), fs.one(), fs.one()]
 
 # THE ENTRY. `ProgramInfo.from_sink(sink, target)` -- ops.py:1358.
-def ProgramInfo.from_sink(+ar: Arena, +sink: U32, tgt: Target) -> Maybe<&2, ProgramInfo>:
+def ProgramInfo.from_sink(+ar: Arena, +sink: U32, tgt: H.Target) -> Maybe<&2, ProgramInfo>:
   Maybe.bind(&2, FS, ProgramInfo, fs.go(ar, UOp.toposort(Arena.budget(ar), ar, sink), FS{Nil{}, Nil{}, Nil{}, Nil{}}), acc =>
     Maybe.bind(&2, Sz, ProgramInfo, fs.sz.go(ar, UOp.toposort(Arena.budget(ar), ar, sink), Sz{fs.ones(), fs.ones()}), sz =>
       Some{fs.finish(acc, sz, tgt)}))
@@ -9383,9 +9385,9 @@ def fs.i64_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, Str
 def fs.i64_text(ys: List<&2, H.I64>) -> String:
   String.concat(["(", String.join(fs.i64_text.go(ys, Nil{}), ", "), ")"])
 
-def fs.target_text(t: Target) -> String:
+def fs.target_text(t: H.Target) -> String:
   match t:
-    case Target{device, renderer, arch, iface, indices}:
+    case H.Target{device, renderer, arch, iface, indices}:
       String.concat(["('", device, "', '", renderer, "', '", arch, "', '", iface, "', '", indices, "')"])
 
 # THE SLOTS OF THE PARAM NODES. `ProgramInfo.params` HOLDS THE NODE INDICES --
@@ -9420,7 +9422,7 @@ def fs.row.of(m: Maybe<&2, ProgramInfo>, nm: String, +ar: Arena) -> IO(Unit):
     case Some{pi}: srow(nm, fs.show(ar, pi))
 
 def fs.row(nm: String, +ar: Arena, sink: U32) -> IO(Unit):
-  fs.row.of(ProgramInfo.from_sink(ar, sink, Target.of()), nm, ar)
+  fs.row.of(ProgramInfo.from_sink(ar, sink, H.Target.of()), nm, ar)
 
 def fs.rows(+ar: Arena) -> IO(Unit):
   do IO<Unit>:
@@ -9454,7 +9456,7 @@ def UOp.set.end.of(e: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
 # logic of its own. So the only things a row can test are (a) that the three pieces
 # are wired in this ORDER and (b) that `argfix`'s `None`-means-empty arm is
 # honoured -- and `argfix` is already ported, as `argfix1` / `argfix2` /
-# `argfix_seq` (helpers.bend:539-546), one def per arity.
+# `argfix_seq` (helpers.bend:547-554), one def per arity.
 #
 # `end` IS A `Maybe<&2, List<&2, U32>>` and not a node, because Python's `end` is
 # `UOp | tuple | list` and the tuple and the single node are the SAME thing to
@@ -9765,11 +9767,6 @@ def main() -> IO(Unit):
 #     it computes the offset with `strides_for_shape` instead of a
 #     `pm_contiguous_view_offset` matcher. P3 with `symbolic.bend`; the matcher form is
 #     NOT PORTED for the reason the pattern compiler is, below.
-#   `Target` in `ProgramInfo` -- the FIELD, and it is absent because upstream's
-#     `from_sink` is not ported, NOT because the class is missing: `Target` is
-#     ported at `runtime/ops_python.bend:2420` and only `Target.parse` is not.
-#     helpers.bend's own NOT PORTED block still lists `Target` as P6, and that
-#     half of it is stale.
 #   `grad_fxn` in `CallInfo` and `uopfunc` -- a Python function object; a Bend
 #     closure is single-use and is a `Type`, so it cannot be a `Data` field.
 #     The reverse-mode plumbing is `tinygrad/nn/gradient.py`, P7.

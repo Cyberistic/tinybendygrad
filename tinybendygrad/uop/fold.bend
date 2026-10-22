@@ -5946,7 +5946,7 @@ def mmk_sibling() -> IO(Unit):
     mmk_row("mmkx_", "sibling_stage", x, O.Found.i(st))
     mmk_row("mmk_", "sibling", x, O.Found.i(f))
 
-# A DIM AS CPython PRINTS IT. `H.i64_text` is `hi:lo` on purpose (helpers.bend:1704)
+# A DIM AS CPython PRINTS IT. `H.i64_text` is `hi:lo` on purpose (helpers.bend:1706)
 # and a dim is a non-negative count under 2^31 -- `sint_of`'s own note says so -- so
 # the LOW WORD is the decimal. `lo32` and not a reader of the whole I64, because a
 # dim is exactly the case where the high word is zero.

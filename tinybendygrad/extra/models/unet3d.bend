@@ -162,7 +162,7 @@ def u3_unet3d_call(+x: T.Tensor) -> D.Refused:
 
 # :48 def load_from_pretrained(self)
 def u3_load_pretrained() -> D.Refused:
-  D.refuse("extra/models/unet3d.py:48 UNet3D.load_from_pretrained -- FIRST MISSING SYMBOL fetch at :50; helpers.bend:3191 records the whole HTTP seam as unported")
+  D.refuse("extra/models/unet3d.py:48 UNet3D.load_from_pretrained -- FIRST MISSING SYMBOL fetch at :50; helpers.bend:3193 records the whole HTTP seam as unported")
 
 # :51 torch.jit.load(fn, map_location=torch.device("cpu")).state_dict()
 def u3_load_torch() -> D.Refused:

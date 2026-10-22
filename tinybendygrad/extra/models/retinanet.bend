@@ -57,7 +57,7 @@ import ./../datasets/__init__.bend as D
 #   `x.sum`            nn/layers.bend:242 `nn_sum` and mixin/op.bend:891 `mo_mean` EXIST.
 #   `nn.Embedding`     NOT USED BY THIS FILE. `softmax` NOT USED (no attention).
 #   `adam`             NOT USED BY THIS FILE, though `TRAINING` is read at :144 and
-#                 :170 and :190 and IS available as helpers.bend:65 `type Flags`.
+#                 :170 and :190 and IS available as helpers.bend:67 `type Flags`.
 #
 # TWO THINGS IN retinanet.py ARE NOT THE PORT'S PROBLEM AND ARE NAMED SO THEY
 # ARE NOT COUNTED AS OURS:
@@ -179,7 +179,7 @@ def rn_head_init(in_channels: U32, num_anchors: U32, num_classes: U32) -> D.Refu
 
 # :189 def __call__(self, x, **kwargs)
 def rn_head_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/retinanet.py:189 RetinaHead.__call__ -- FIRST MISSING SYMBOL Tensor.sequential (:167); the TRAINING branch at :190 reads helpers.bend:65 Flags, which EXISTS")
+  D.refuse("extra/models/retinanet.py:189 RetinaHead.__call__ -- FIRST MISSING SYMBOL Tensor.sequential (:167); the TRAINING branch at :190 reads helpers.bend:67 Flags, which EXISTS")
 
 # ---------------------------------------------------------------------------
 # :200-218 ResNetFPN.

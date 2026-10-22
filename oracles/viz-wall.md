@@ -190,7 +190,7 @@ inside the port:
 | "`match u { case U32{data: w}: }` is a PARSE ERROR" | `tinybendygrad/base.bend:54-56` is exactly that match: `def F32.from_bits(bits: U32) -> F32: match bits: case U32{data}: F32{data}`. It compiles, and `dtype.bend:608` calls it. |
 | "Base defines exactly ten `F32.*`" | 10 `def F32.*` (min, max, clamp, lerp, square, hypot, round, pi, from_nat, to_nat) **and 36 `law F32.*`**. The census counted only the `def`s. |
 | "none is a bit cast" | `F32.bits` **is** a bit cast (F32 → U32). |
-| "the float's four bytes are the ONE thing this port cannot produce" | The port CALLS `F32.bits` in live code in six files: `tinybendygrad/dtype.bend:758,759,760,1129,1138`, `tinybendygrad/helpers.bend:909,912,918`, `tinybendygrad/renderer/tc_ptx.bend:299,311`, `tinybendygrad/mixin/elementwise.bend:995`, `tinybendygrad/mixin/gradient.bend:132`, `tinybendygrad/runtime/ops_python.bend:569,1844`, `tinybendygrad/runtime/ops_hip.bend:403`. |
+| "the float's four bytes are the ONE thing this port cannot produce" | The port CALLS `F32.bits` in live code in six files: `tinybendygrad/dtype.bend:758,759,760,1129,1138`, `tinybendygrad/helpers.bend:911,912,918`, `tinybendygrad/renderer/tc_ptx.bend:299,311`, `tinybendygrad/mixin/elementwise.bend:995`, `tinybendygrad/mixin/gradient.bend:132`, `tinybendygrad/runtime/ops_python.bend:569,1844`, `tinybendygrad/runtime/ops_hip.bend:403`. |
 
 **How the wall was reached.** The reasoning counted `grep '^def F32\.' base.bend` and stopped
 at ten. The base declares its intrinsics as **`law`**, not `def`, and `F32.bits` is one of

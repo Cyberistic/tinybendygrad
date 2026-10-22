@@ -20,7 +20,7 @@
 #   encoder and a JPEG writer, neither of which exists in the port; the module-level
 #   `X_train, Y_test = fetch_mnist()` (upstream:9) whose ndarrays come back
 #   `Refused` from `./__init__.bend`; `multiprocessing.Pool(64)` with
-#   `imap_unordered` (a fan-out over `trange`, and `helpers.bend:2823` records only
+#   `imap_unordered` (a fan-out over `trange`, and `helpers.bend:3200-3201` records only
 #   `trange` as ported); and `pathlib.Path.mkdir(parents=True, exist_ok=True)`
 #   (upstream:23,29-30). `os.cpu_count` is not needed -- 64 is a literal upstream.
 # NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `gen` (upstream:32) and the

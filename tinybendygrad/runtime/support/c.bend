@@ -110,7 +110,7 @@ import Base
 #
 # THIS IS A WORKAROUND AND NOT A DESIGN. Flip it back to
 # `import ./../../helpers.bend as H` + `H.ceildiv_u32(...)` when helpers
-# compiles again; the body is `helpers.bend:1202` verbatim so the swap changes
+# compiles again; the body is `helpers.bend:1204` verbatim so the swap changes
 # no behaviour and the `Field.bf_size` gate rows do not move.
 # ---------------------------------------------------------------------------
 def H_ceildiv_u32(+num: U32, +amt: U32) -> U32:

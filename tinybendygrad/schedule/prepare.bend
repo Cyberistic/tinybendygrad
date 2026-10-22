@@ -118,7 +118,7 @@ def len_ops(xs: List<&2, O.Op>) -> U32: U32.from_nat(List.length(&2, O.Op, xs))
 # are the two cases. The rendering is `U32.show` for the unsigned arm and the
 # I64 spelling for the signed one, and a `Data` match is the only way to read a
 # sum type's arms.
-# `H.i64_text` renders an I64 as `hi:lo` (helpers.bend:1232, "an I64 prints as its
+# `H.i64_text` renders an I64 as `hi:lo` (helpers.bend:1706, "an I64 prints as its
 # two words"), which is right for a 64-BIT pointer and wrong for a shape dim, where
 # CPython prints the plain integer.  `H.i64_is_neg` / `H.i64_add` / `H.lo32` are
 # the pieces, and a shape dim in this tree is either a small positive I64 or the

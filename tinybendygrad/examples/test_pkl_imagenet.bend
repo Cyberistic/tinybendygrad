@@ -41,10 +41,10 @@ import ./../extra/datasets/__init__.bend as D
 # THE SYMBOL CENSUS. Every symbol :1-19 names, with its instrument:
 #
 #   EXISTS
-#     `GlobalCounters`      (:2,:14)  helpers.bend:2578 `.init`, :2582 `.reset`.
+#     `GlobalCounters`      (:2,:14)  helpers.bend:2580 `.init`, :2582 `.reset`.
 #         Both TYPED -- `reset` takes and returns a `Counters` value rather than
 #         mutating an ambient one, which is the port's convention.
-#     `getenv`              (:3,:13)  helpers.bend:148 `getenv_str`, :304
+#     `getenv`              (:3,:13)  helpers.bend:150 `getenv_str`, :304
 #         `getenv_int`. `getenv("CNT", 100)` is `getenv_int` verbatim.
 #     `Tensor.shape`        (:16)     tensor.bend:216 `tn_shape` -- for the half
 #         that has an object to inspect.
@@ -72,12 +72,12 @@ import ./../extra/datasets/__init__.bend as D
 #         tensor dump; it is a Python OBJECT GRAPH containing a live
 #         `run_onnx_jit` with a `captured` record, and decoding it means
 #         INSTANTIATING CLASSES. The port's own header says it in as many
-#         words, `tinybendygrad/helpers.bend:3188`: "The sqlite disk cache is a
+#         words, `tinybendygrad/helpers.bend:3190`: "The sqlite disk cache is a
 #         persistent object store with pickle values. Bend has no pickle and no
 #         object graph to store, so the cache becomes the C-effect arena of P6
 #         and this is replaced rather than ported."
 #     `fetch`               (:3,:7)   MISSING. `grep -rnE "^def fetch\("
-#         --include='*.bend' tinybendygrad/` = 0, and helpers.bend:3191 gives
+#         --include='*.bend' tinybendygrad/` = 0, and helpers.bend:3193 gives
 #         the reason in the port's own words: "The HTTP machinery (fetch,
 #         fetch_fw, _ensure_downloads_dir) is urllib plus a temp file plus an
 #         atomic rename. It is I/O of exactly the kind the master plan puts in
@@ -148,11 +148,11 @@ def pkl_at(r: D.Refused) -> String:
 # because there is no byte source either.
 # ---------------------------------------------------------------------------
 def pkl_open(path: String) -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:7 FIRST MISSING SYMBOL fetch -- grep -c '^def fetch(' = 0; helpers.bend:3191 names it as unported HTTP")
+  D.refuse("examples/test_pkl_imagenet.py:7 FIRST MISSING SYMBOL fetch -- grep -c '^def fetch(' = 0; helpers.bend:3193 names it as unported HTTP")
 
 # :8   run_onnx_jit = pickle.load(f)
 def pkl_load() -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:8 FIRST MISSING SYMBOL pickle -- NO UNPICKLER EXISTS; helpers.bend:3188 says 'Bend has no pickle and no object graph'")
+  D.refuse("examples/test_pkl_imagenet.py:8 FIRST MISSING SYMBOL pickle -- NO UNPICKLER EXISTS; helpers.bend:3190 says 'Bend has no pickle and no object graph'")
 
 # :9   input_name = run_onnx_jit.captured.expected_names[0]
 # The RECORD EXISTS (InInfo jit.bend:370-389, ii_vars :393); the object does not.
@@ -164,7 +164,7 @@ def pkl_device() -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:10 BLOCKED ON pickle.load; InInfo.dev engine/jit.bend:385 exists but the object does not")
 
 # :13  for i,(img,y) in enumerate(imagenet_dataloader(cnt=getenv("CNT", 100))):
-# `getenv("CNT", 100)` IS PORTED -- helpers.bend:304 `getenv_int` is the typed
+# `getenv("CNT", 100)` IS PORTED -- helpers.bend:306 `getenv_int` is the typed
 # spelling of exactly this call -- and the dataloader is not.
 def pkl_dataloader(cnt: U32) -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:13 FIRST MISSING SYMBOL imagenet_dataloader (examples/test_onnx_imagenet.py:25); nn/datasets.bend has no imagenet table")

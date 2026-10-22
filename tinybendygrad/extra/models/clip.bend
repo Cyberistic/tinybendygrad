@@ -74,7 +74,7 @@ import ./../datasets/__init__.bend as D
 # THE FIRST 140 LINES ARE A BPE TOKENIZER AND ARE NOT A PORTING PROBLEM.
 # clip.py:15 `default_bpe()` `fetch`es a gzip file (:16), clip.py:37
 # `bytes_to_unicode` is a 256-entry dict, and clip.py:64 `gzip.open` +
-# `:88 re.compile` are Python string machinery. `helpers.bend:3191` already
+# `:88 re.compile` are Python string machinery. `helpers.bend:3193` already
 # records the whole HTTP/download seam as unported. Named here so the LOC count
 # is not read as arithmetic left undone.
 #
@@ -106,7 +106,7 @@ def cl_gelu_alias() -> D.Refused:
 
 # :14-17 @lru_cache() / def default_bpe()
 def cl_default_bpe() -> D.Refused:
-  D.refuse("extra/models/clip.py:14 default_bpe -- FIRST MISSING SYMBOL fetch (:16); helpers.bend:3191 records the HTTP seam as unported")
+  D.refuse("extra/models/clip.py:14 default_bpe -- FIRST MISSING SYMBOL fetch (:16); helpers.bend:3193 records the HTTP seam as unported")
 
 # ---------------------------------------------------------------------------
 # :19-138 Tokenizer / Tokenizer.ClipTokenizer. NOT PORTED: gzip, re, and a

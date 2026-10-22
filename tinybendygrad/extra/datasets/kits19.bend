@@ -25,7 +25,7 @@
 #   def, whose body is a directory scan (upstream:20):
 #   `sorted([x for x in BASEDIR.iterdir() if x.stem.startswith("case") and
 #    int(x.stem.split("_")[-1]) < 210 and x not in get_val_files()])`.
-#   MISSING: `fetch` (upstream:24, the `helpers.bend:2815` HTTP seam) which
+#   MISSING: `fetch` (upstream:24, the `helpers.bend:3193` HTTP seam) which
 #   `get_val_files` needs for `evaluation_cases.txt`; `pathlib`/`iterdir`/`functools.cache`
 #   for the scan; `nibabel` (`nib.load`, `image.header["pixdim"][1:4].tolist()`,
 #   `get_fdata()`, upstream:28-30) for NIfTI volumes; `scipy.signal`/`scipy.ndimage`

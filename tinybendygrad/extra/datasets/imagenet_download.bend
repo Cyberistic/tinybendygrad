@@ -20,11 +20,11 @@
 # TODO(port): STOPPED AT `imagenet_extract` (extra/datasets/imagenet_download.py:7).
 #   MISSING: `tarfile.open` + `getmembers()` + member-wise `extract` -- a gzip/tar
 #   reader, which the port has no seam for (`sz.bend` reads a directory, not an
-#   archive); `tqdm` (`helpers.bend:2823` records that only `trange` is ported and
+#   archive); `tqdm` (`helpers.bend:3201` records that only `trange` is ported and
 #   "What is left of `tqdm` is its terminal progress bar"); `os.makedirs`,
 #   `os.replace`, `os.remove`, `os.listdir` and `Path` arithmetic for the
 #   `__file__`-relative roots; and `fetch(url, local_path)` (upstream:43-45,49), which
-#   is the `helpers.bend:2815` HTTP seam. `fetch`'s SECOND ARGUMENT is the whole
+#   is the `helpers.bend:3193` HTTP seam. `fetch`'s SECOND ARGUMENT is the whole
 #   design here -- upstream downloads STRAIGHT TO THE FINAL PATH, so a partial
 #   download leaves a truncated `ILSVRC2012_img_val.tar` that `tarfile.open` will
 #   later accept and read short. Whatever ports `fetch` must port that hazard too.
@@ -48,4 +48,4 @@ def imagenet_prepare_train() -> D.Refused:
 
 # upstream: the `if __name__ == "__main__":` block at extra/datasets/imagenet_download.py:39
 def main() -> D.Refused:
-  D.refuse("extra/datasets/imagenet_download.py:43 fetch (helpers.bend:2815 HTTP seam)")
+  D.refuse("extra/datasets/imagenet_download.py:43 fetch (helpers.bend:3193 HTTP seam)")

@@ -918,11 +918,11 @@ def mn_step(+logits: T.Tensor, +y: T.Tensor, bs: U32, w: MnWeights) -> MnStep:
 # the whole reason the port has a printer at all.
 #
 # `f"{x:6.2f}"` is `H.pad_left(H.f32_fixed(x, 2n), 6)`: `f32_fixed` is `helpers.bend`'s
-# `printf("%.2f")` (helpers.bend:585) and `pad_left` is `rjust` (helpers.bend:637). Both
+# `printf("%.2f")` (helpers.bend:991) and `pad_left` is `rjust` (helpers.bend:1044). Both
 # are CALLS into a file this unit does not own.
 #
 # AND `f32_fixed` IS NOT `printf`'s `%.2f`. It WALKS the decimal digits two at a time
-# (`f32_frac`, helpers.bend:522) and never rounds the last one, so it TRUNCATES:
+# (`f32_frac`, helpers.bend:928) and never rounds the last one, so it TRUNCATES:
 # `f32_fixed(2.3456, 2n)` is `"2.34"` where CPython's `f"{2.3456:.2f}"` is `"2.35"`.
 # MEASURED on six values, four agree and two do not, so this example's PRETTY OUTPUT IS
 # WRONG for roughly half of all inputs -- and every `out_*` row below is chosen on the
@@ -1007,7 +1007,7 @@ def t_out() -> IO(Unit):
 
 # `row_round_*` -- THE ROUNDING MEASUREMENT, and it is BEND-ONLY because CPython cannot
 # be asked the question in this file's terms. `f"{2.3456:.2f}"` is `"2.35"` in CPython
-# and `H.f32_fixed(2.3456, 2n)` is `"2.34"`, because `f32_frac` (helpers.bend:522)
+# and `H.f32_fixed(2.3456, 2n)` is `"2.34"`, because `f32_frac` (helpers.bend:928)
 # WALKS the decimal digits and never rounds the last one. MEASURED on six fixtures:
 #
 #     2.3456 -> 2.34  / 2.35   DISAGREE

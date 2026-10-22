@@ -111,7 +111,7 @@ def dm_ival(m: Maybe<&2, U32>) -> U32:
 
 # `dm_floordiv` / `dm_floormod` ARE NOT `H.`: `H.floordiv_i32`/`H.floormod_i32` add
 # one on every INEXACT division and ignore the sign, so `6 // 4` answers 2 where
-# Python says 1 (`helpers.bend:1097`; bend2-constraints, "floor IS NOT AVAILABLE").
+# Python says 1 (`helpers.bend:1529`; bend2-constraints, "floor IS NOT AVAILABLE").
 # The step belongs to the opposite-sign case alone. DELETE BOTH AND CALL THE `H.`
 # VERSIONS WHEN THAT ONE-LINE FIX LANDS; nothing else in this file changes.
 def dm_floordiv.exact(exact: Bool, q: U32) -> U32:

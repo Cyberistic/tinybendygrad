@@ -82,7 +82,7 @@ an `exec`. Recorded, not engineered around.
 
 ## Four of the five imports do not exist
 
-`render.py:3-4` imports five names. `strip_parens` EXISTS (helpers.bend:1055).
+`render.py:3-4` imports five names. `strip_parens` EXISTS (helpers.bend:1463).
 The other four are rebuilt here, and two of those rebuilds are a real gap in a
 shared file rather than an inconvenience:
 

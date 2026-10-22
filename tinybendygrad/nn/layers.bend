@@ -321,7 +321,7 @@ def nn_relu(+x: T.Tensor) -> T.Tensor: T.tn_relu(x)
 
 # `*[1]*min(dx-1, dw-1, 1)` -- ONE def for the count that appears in BOTH
 # reshapes (:387 and :388). It is 1 exactly when both operands have >= 2 dims,
-# and `Bool.to_u32` is the Bool-as-`U32` helpers.bend:1607 already uses.
+# and `Bool.to_u32` is the Bool-as-`U32` helpers.bend:1609 already uses.
 def nn_dotk(+dx: U32, +dw: U32) -> U32:
   Bool.to_u32(Bool.and(U32.is_ge(dx, 2), U32.is_ge(dw, 2)))
 
