@@ -18,7 +18,7 @@ of interesting PTX kernels". What is NOT admitted is the per-node transcription:
 CONST-of-CAST flag are all READ OFF THE NODE CPYTHON BUILT.
 
 ONE SHAPE IS A CHOICE, AND IT IS THE ONLY ONE: `Wk.nmn` is `u.max_numel()`. A REG BUFFER
-of four elements and a LOAD of four elements both give 4, and ptx.py:198/208 read the same
+of four elements and a LOAD of four elements both give 4, and ptx.py:199/209 read the same
 number for both -- so there is nothing to choose.
 """
 import argparse
@@ -157,7 +157,7 @@ def wk_row(u, at, qual="P.Wk"):
     # OWN for everything else -- `ptx.bend`'s own header says so, and it is the only
     # way those two reads are told apart. MEASURED what happens when it is the
     # node's OWN: a LOAD whose src[0] is a GLOBAL INDEX has addrspace ALU, the port
-    # takes ptx.py:200's REG/ALU branch, ALIASES the INDEX's register, and emits no
+    # takes ptx.py:201's REG/ALU branch, ALIASES the INDEX's register, and emits no
     # `.reg .f32 %val_f32_<4>;` at all -- four rows the oracle has.
     a = u.addrspace
     if u.op in (Ops.INDEX, Ops.SHRINK, Ops.LOAD) and u.src:

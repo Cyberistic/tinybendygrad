@@ -80,7 +80,7 @@ Shell.render = ptxmod.PTXRenderer.render
 Shell.render_kernel = ptxmod.PTXRenderer.render_kernel
 
 class _NoRewrite:
-  # ptx.py:222 `string_rewrite.rewrite(u, ctx=self)` answers a list of kernel
+  # ptx.py:223 `string_rewrite.rewrite(u, ctx=self)` answers a list of kernel
   # LINES. The naming walk runs entirely before that call and does not read its
   # answer, so `[]` lets the walk reach `return self.render_kernel(...)`.
   def rewrite(self, u, ctx=None): return []
@@ -113,7 +113,7 @@ def r_of(v): return "{" + ", ".join(v) + "}" if isinstance(v, list) else str(v)
 
 def walk_rows(nm, uops, arch="sm_80"):
   """Drive the REAL `render`. A refusal is a TRUNCATED row: `render` raises at
-  ptx.py:203 before it has a register to print, so the row carries the message
+  ptx.py:204 before it has a register to print, so the row carries the message
   and nothing else."""
   r = Shell(Target(interface="", device="CUDA", arch=arch))
   try:
@@ -132,7 +132,7 @@ def walk_rows(nm, uops, arch="sm_80"):
   regs = [l for l in src.split("\n") if ".reg" in l]
   out += row(f"{nm}.reg.count", str(len(regs)))
   for i, l in enumerate(regs): out += row(f"{nm}.reg[{i}]", l.replace("\t", "\\t"))
-  # ptx.py:191-192 -- the SINK's arg renames the entry point; `render_kernel`
+  # ptx.py:192-193 -- the SINK's arg renames the entry point; `render_kernel`
   # prints it right after `.visible .entry`, so it is a header LINE.
   out += row(f"{nm}.entry", src.split("\n")[3])
   # THE COUNT OF THIS FIXTURE'S OWN ROWS. The per-line diff cannot see a
@@ -211,7 +211,7 @@ def f20_idx_pred():  # the counter's index is per-PREFIX, so `pred` and `alu`
   b = buf(i32)       # over the SAME i32 are separate series
   return UOp.sink(UOp(Ops.END, (alu(Ops.ADD, b, con(1, i32)),), None),
                   UOp(Ops.END, (alu(Ops.ADD, b, con(1, i32)),), None)).toposort()
-def f21_name():  # ptx.py:191-192 -- `if u.arg is not None: name = u.arg.function_name`.
+def f21_name():  # ptx.py:192-193 -- `if u.arg is not None: name = u.arg.function_name`.
   # The arg is a `KernelInfo` (ops.py:1342-1349), whose `function_name` is
   # `to_function_name(self.name)`, so a SINK carrying one RENAMES the entry point
   # and a SINK carrying none leaves it `"test"` (ptx.py:185). Two fixtures,
@@ -226,11 +226,11 @@ def f22_name2():
 
 # A SCALAR LOAD: `max_numel == 1` answers a bare register and NOT a one-element
 # list, which is the opposite of a REG buffer (f6) and the only thing that
-# separates ptx.py:208's `if max_numel > 1` from ptx.py:198's comprehension.
+# separates ptx.py:209's `if max_numel > 1` from ptx.py:199's comprehension.
 def f23_load1():
   b = buf(f32, size=1)
   return UOp.sink(UOp(Ops.LOAD, (b, sp("g0")), None)).toposort()
-# RANGE. `ridx` and the VOID clause (ptx.py:219) have no fixture without these:
+# RANGE. `ridx` and the VOID clause (ptx.py:220) have no fixture without these:
 # `UOp.range(..., dtype=i32)` is a register and `dtype=void` is a label only.
 def f24_range():
   b = buf(f32)
@@ -252,7 +252,7 @@ FIX = [("f1_alu", f1_alu), ("f2_counter", f2_counter), ("f3_cast", f3_cast), ("f
        ("f23_load1", f23_load1), ("f24_range", f24_range), ("f25_rangevoid", f25_rangevoid)]
 
 def fn_pairs():
-  # `to_function_name` (helpers.py:156), reached from ptx.py:192 through
+  # `to_function_name` (helpers.py:156), reached from ptx.py:193 through
   # `KernelInfo.function_name` (ops.py:1349). `ansistrip` is the WALL: it strips
   # ANSI ESCAPES with a regex, and every name below is plain ASCII, so the gate
   # covers the KEEP/HEX branch and not the strip. Uppercase hex, two digits,

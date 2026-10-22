@@ -42,8 +42,10 @@ WHY A FOURTH RENDER CENSUS, AND WHY THIS ONE IS DIFFERENT AGAIN.
 `gates/amd_dsl_census*` diffs a TRIPLE, because that is what its layer returns.
 `ptx.py` returns a WHOLE PTX MODULE, and the thing that decides the printed form is that
 `PTXRenderer.render`'s BODY comes from TWENTY-THREE `string_rewrite` rules of which the port
-has NONE (MEASURED: `grep -c 'string_rewrite' -w tinybendygrad/renderer/tc_ptx.bend` is 0 and
-the single hit is a comment at `tc_ptx.bend:272`). So the form is:
+has NONE (MEASURED, and the count is NOT 0: `grep -c 'string_rewrite' -w
+tinybendygrad/renderer/tc_ptx.bend` is 1 and the single hit is a COMMENT -- the port has no
+RULE TABLE, which is what the gate's own pin on the port's `ABSENT` answer witnesses). So the
+form is:
 
   * EVERY ROW BOTH LANES CAN PRODUCE IS COMPARED, value = the WHOLE answer, TAB and LF
     spelled by `TP.esc` on the port side and by the same two substitutions on the oracle
@@ -66,31 +68,49 @@ CPython. Neither is a regex over a source that could drift without anyone notici
 
 THE THREE DIVERGENCE GROUPS
 ---------------------------
-  GROUP 1 -- `tyo/mto/cto`, 18 rows. FINDING, NOT A CARVE-OUT. `tc_ptx.bend`'s `types_pri`
-    dispatches on `S.Dt.pri` and its `case _` arm is `""`; CPython's `PTXRenderer.types` is
-    a dict and a missing dtype is a `KeyError` at ptx.py:181. MEASURED both sides:
-    `weakint` -> the port says `pred`, `void` -> `pred` (both collide with `bool` on
-    `pri == 0`), and `weakfloat`/`bfloat16`/the four fp8s -> `""`. REACHABLE, which is what
-    makes it a defect: `UOp.range(4, 0)` defaults to `dtype=dtypes.weakint` and
+  GROUP 1 -- `tyo/mto/cto`, 18 rows. FINDING, NOT A CARVE-OUT. CPython's `PTXRenderer.types`
+    and its two siblings are DICTS of 12 KEYS, so a dtype they do not name is a `KeyError`
+    at ptx.py:181; the port's three tables answer the EMPTY STRING for exactly six dtypes
+    -- `void` (the `CVoid` arm) and `bfloat16` and the four fp8s (`types_pri`'s `case _`).
+    MEASURED both sides, and the `pred` that used to be in this sentence is GONE: the port
+    answers `pred` for `bool` ONLY, and CPython answers `pred` for `bool` too, so `bool` is
+    not a divergence at all -- the port answers `s32` for `weakint` (`w_int()`) and `f32` for
+    `weakfloat` (`w_float()`), and those are REAL types, not empty ones. REACHABLE, which is
+    what makes it a defect: `UOp.range(4, 0)` defaults to `dtype=dtypes.weakint` and
     `UOp.const(3.0) + UOp.const(4.0)` is a non-CONST node of dtype `dtypes.weakfloat`, so
-    ptx.py RAISES on both and the port emits `%ridx_pred_0` and `%alu__0`. This is the PTX
+    ptx.py RAISES on both and the port emits `%ridx_s32_0` and `%alu_f32_0`. This is the PTX
     form of `amd_dsl`'s `Res{v: U32}` + `U32.shln` discarding the high fields: a field
     SILENTLY EMPTIED where CPython refuses. "A U32 shift is not an error, it is a smaller
     number"; an empty type field is not an error either, it is a kernel ptxas rejects.
+    ⇒ THE EMPTIED FIELD IS THE SIX EMPTY-STRING DTYPES -- these 18 rows and
+    `f33_bf16cast.r1` (`%cast__0`) -- AND NOT weakint and weakfloat, whose port answers are
+    legal PTX types. The refusal is the same; only the EMPTINESS is not.
 
   GROUP 2 -- `<f>.mod`, 35 rows. CARVE-OUT, and the shape is the point. `string_rewrite` is
     NOT PORTED, so the module cannot be compared; a divergence that says so in one pinned
     string per fixture is the honest record, and the pin means the day the port grows a
-    module this gate goes red until the row leaves DIVERGES. Five of the thirty-five are not
-    `ABSENT` but `PORT-ANSWERED` (`f31`, `f32`, `f33`, `f34`) or `PORT-REFUSED:INDEX`
-    (`f08`): CPython refused and the port did not, which is GROUP 1 reaching the walk.
+    module this gate goes red until the row leaves DIVERGES. TWENTY-NINE of the thirty-five
+    are `ABSENT`; the other SIX are a REFUSAL, and they are not one thing:
+      * `f31`, `f32`, `f33` -- CPython refuses at ptx.py:181 (the dtype tables above) and
+        the port ANSWERS. GROUP 1 reaching the walk.
+      * `f34` -- CPython refuses at ptx.py:92, and NOT on a dtype: the ALU rule reads
+        `ctx.r[v]` for a CONST source and ptx.py:187 SKIPS CONSTs, so the register map has
+        no entry for a CONST. The port's WALK agrees with CPython's walk here.
+      * `f35` -- CPython refuses at ptx.py:225, because no `string_rewrite` rule matches a
+        LOAD whose source is an un-indexed PARAM. The port has no string_rewrite stage to
+        refuse IN, so it answers: the SAME gap as the twenty-nine, on the refusal side.
+      * `f08` -- BOTH refuse: CPython at ptx.py:204, the port at its own INDEX arm. The row
+        diverges only in the SPELLING of the refusal.
 
-  GROUP 3 -- the walk, 5 rows. FINDING, NOT A CARVE-OUT, and it is GROUP 1 REACHING THE
-    WALK: the five registers the port allocates where ptx.py:181 refuses.
+  GROUP 3 -- the walk, 5 rows. FINDING, NOT A CARVE-OUT: the five registers the port
+    allocates where CPython refuses. `f31_weakint.r1`, `f32_weakfloat.r2` and
+    `f33_bf16cast.r1` are GROUP 1 reaching the walk and CPython refuses at ptx.py:181;
+    `f34_boolalu.r3` and `.r4` are NOT -- CPython refuses at ptx.py:92, for the CONST
+    reason above, and the port's walk is RIGHT and CPython's walk agrees with it.
 
   GROUP 3a WAS HERE AND IT IS FIXED. `ptx.bend`'s alias arm was `case 2: Wal.rput(w,
-    rg_at(w, 0))`, and `rg_at(w, 0)` reads `Wal.r[0]` -- STEP ZERO -- where ptx.py:189
-    (`self.r[u] = self.r[u.src[0]]`) and ptx.py:204 (`r[u.src[0]][u.src[1].src[0].val]`)
+    rg_at(w, 0))`, and `rg_at(w, 0)` reads `Wal.r[0]` -- STEP ZERO -- where ptx.py:190
+    (`self.r[u] = self.r[u.src[0]]`) and ptx.py:205 (`r[u.src[0]][u.src[1].src[0].val]`)
     both read `r[u.src[0]]`, i.e. `Wal.r[refs[0]]`. SIX ROWS DIVERGED. Two reasons the
     defect survived a green gate, and BOTH are about the fixtures rather than the code:
       * all twenty-five of `ptx.bend`'s OWN fixtures put the aliased node at index 0, and
@@ -167,7 +187,7 @@ def run_oracle():
 # file's own per-lane row count, which is what makes a population that GREW red.
 #
 # 557 -> 579 was TWO fixtures. `f37_twobufs` adds 15 rows (10 `.r` + `.mod` + `.regn` +
-# 2 `.reg` + `.entry`): ptx.py:204's `r[u.src[0]]` read whose `src[0]` is NOT at step zero,
+# 2 `.reg` + `.entry`): ptx.py:205's `r[u.src[0]]` read whose `src[0]` is NOT at step zero,
 # which no other INDEX/SHRINK in the axis had (MEASURED: a REG `placeholder` has no srcs,
 # so toposort always emitted it first, and `u.src[0]` at index 0 is the ONE value
 # `rg_at(w, 0)` gets right). `f38_regload` adds 7 (3 `.r` + `.mod` + `.regn` + `.reg` +
@@ -239,15 +259,19 @@ FIXTURES = ["f01_alu", "f02_counter", "f03_cast5", "f04_end", "f05_regbuf4", "f0
 REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
             "f32_weakfloat": "PORT-ANSWERED", "f33_bf16cast": "PORT-ANSWERED",
             "f34_boolalu": "PORT-ANSWERED",
-            # f35 IS THE SIXTH, AND IT IS NOT A PORT DEFECT: ptx.py:224 refuses an
-            # UN-INDEXED PARAM load, and the PORT ALSO refuses -- both because there is no
-            # INDEX for ptx.py's LOAD rules to match. It is here so the census's count of
-            # refusals is six rather than five and a seventh is red.
+            # f35 IS THE SIXTH, AND IT IS NOT A PORT DEFECT: ptx.py:225 refuses an
+            # UN-INDEXED PARAM load -- no `string_rewrite` rule matches a LOAD whose
+            # source is a PARAM rather than an INDEX -- and the PORT ANSWERS, because the
+            # port has no string_rewrite stage to refuse IN. MEASURED: the port's own
+            # answer is `PORT-ANSWERED`, which is the word for "CPython refused and the
+            # port did not", so the sentence that used to sit here -- "the PORT ALSO
+            # refuses" -- CONTRADICTED THE VALUE BESIDE IT. It is here so the census's
+            # count of refusals is six rather than five and a seventh is red.
             "f35_loadvec": "PORT-ANSWERED"}
 
 # GROUP 3 -- the walk.
 # GROUP 3a IS GONE AND IT IS NOT A CARVE-OUT: `ptx.bend`'s alias arm read `Wal.r[0]`,
-# STEP ZERO, where ptx.py:189 (`self.r[u] = self.r[u.src[0]]`) and ptx.py:204
+# STEP ZERO, where ptx.py:190 (`self.r[u] = self.r[u.src[0]]`) and ptx.py:205
 # (`r[u.src[0]][u.src[1].src[0].val]`) both read `Wal.r[refs[0]]`. SIX ROWS DIVERGED --
 # `f07_reuse.r4`, `f10_loads.r4`, `.r6`, `.r8`, `.r9` and `f12_after.r5`, the port
 # answering `NONE` where CPython answers `%g0`/`%g1`/`%g2`/`{%g0, %g1, %g2}`/`%alu_f32_0`.
@@ -261,12 +285,166 @@ REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
 # is the OTHER such gap, and it is older: `M9` has moved zero rows since this census was
 # first run, and the reason recorded for it -- "it moves nothing BECAUSE the alias arm
 # already returns the wrong register" -- was true only while that arm was broken.
-# GROUP 3b -- GROUP 1 REACHING THE WALK: the five registers the port allocates where
-# ptx.py:181 refuses. THESE ARE THE FINDING'S ACTUAL STRINGS, AND THEY STAY: the dtype
-# tables are still `types_pri`'s `case _ -> ""` and this unit is not `tc_ptx.bend`'s.
+# GROUP 3b -- THE REGISTERS THE PORT ALLOCATES WHERE CPython REFUSES. THESE ARE THE
+# FINDING'S ACTUAL STRINGS, AND THEY STAY. THE REASON IS NOT ONE REASON: `f31_weakint.r1`,
+# `f32_weakfloat.r2` and `f33_bf16cast.r1` are GROUP 1 reaching the walk and CPython
+# refuses at ptx.py:181 on the dtype; `f34_boolalu.r3` and `.r4` are NOT GROUP 1 -- CPython
+# refuses at ptx.py:92, on a CONST the walk never registered, and the port's walk AGREES
+# with CPython's there. AND ONLY ONE OF THE FIVE EMPTIES A FIELD: `f33_bf16cast.r1` is
+# `%cast__0`, an empty type where a real one belongs, while `%ridx_s32_0` and `%alu_f32_0`
+# are LEGAL PTX types -- weakint and weakfloat are dtypes CPython refuses and the port
+# answers, and the answer is not an emptied field. This unit is not `tc_ptx.bend`'s.
 WEAK = {"f31_weakint.r1": "%ridx_s32_0", "f32_weakfloat.r2": "%alu_f32_0",
         "f33_bf16cast.r1": "%cast__0", "f34_boolalu.r3": "%alu_pred_1",
         "f34_boolalu.r4": "{%alu_pred_0, %alu_pred_1}"}
+
+
+# =====================================================================================
+# THE REASONS. EVERY DECLARED DIVERGENCE CARRIES ONE, AND EVERY REASON IS CHECKED.
+# =====================================================================================
+# A DECLARED DIVERGENCE IS A PIN, AND A PIN WITHOUT A TRUE REASON IS A PIN THAT CANNOT
+# FAIL. `gatekit` pins both sides of every declared row, so a divergence whose VALUE moves
+# is red -- and the REASONS were PROSE, so a reason that stopped being true was not. The
+# three reasons are DATA now, and `reasons_hold()` reads the tree for each of them:
+#
+#   * THE DTYPE TABLES. `PTXRenderer.types` and its two siblings are DICTS of 12 KEYS, so
+#     a dtype they do not name is a `KeyError` at ptx.py:181, and the port's three tables
+#     answer the EMPTY STRING for exactly six dtypes: `void`, `bfloat16` and the four fp8s.
+#   * THE MODULE. upstream's `ptx.py` renders a WHOLE PTX MODULE whose BODY is
+#     `string_rewrite`'s rules, and the port has no such stage, so it answers ABSENT.
+#   * A REFUSAL. Six fixtures are ones CPython REFUSES, and each refusal has a SITE in
+#     upstream's source. The site is the WITNESS and it is read from CPython's OWN
+#     traceback, so a re-vendor that MOVES a refusal is red with the move named.
+#
+# `REASON_RULES` IS THE NUMBER THE REASON CITES, AND `ABSENT` IS THE PORT'S OWN ANSWER --
+# so the number lives in two files and in two places here, and BOTH are checked:
+# `reasons_hold()` against upstream's own rule table and against the number inside `ABSENT`,
+# and `gatekit`'s pin against the lane the driver wrote.
+REASON_DTYPE_KEYS = 12
+REASON_RULES = 23
+ABSENT = "ABSENT:string_rewrite(23) not ported"
+# THE REFUSAL SITES: fixture -> (the exception, a fragment of its KEY when it has one, and
+# a fragment of the SOURCE LINE it refuses on). The line is never typed here -- it is read
+# from the traceback -- so the reason moves with the code instead of with the file.
+REASON_REFUSALS = {
+  "f08_refuse":    ("RuntimeError", "", "dynamic register indexing"),
+  "f31_weakint":   ("KeyError", "weakint", "self.types[unwrap(u).dtype]"),
+  "f32_weakfloat": ("KeyError", "weakfloat", "self.types[unwrap(u).dtype]"),
+  "f33_bf16cast":  ("KeyError", "bf16", "self.types[unwrap(u).dtype]"),
+  "f34_boolalu":   ("KeyError", "Ops.CONST", "ctx.r[v] for v in x.src"),
+  "f35_loadvec":   ("RuntimeError", "", "failed to render"),
+}
+
+_ORACLE_MOD = None  # the oracle, imported BY PATH, and only when a reason needs its fixtures
+
+
+def _oracle_mod():
+    """THE ORACLE, IMPORTED, so the FIXTURES are its own and not a second copy of them."""
+    global _ORACLE_MOD
+    if _ORACLE_MOD is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("ptx_census_oracle", ORACLE)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _ORACLE_MOD = mod
+    return _ORACLE_MOD
+
+
+def _refusal_site(fixture):
+    """WHERE CPython REFUSES a fixture, AND WHAT IT REFUSES ON.
+
+    CPython's OWN traceback, on the ORACLE's OWN graph, through the oracle's OWN `render`
+    call -- so the site is the site CPython refuses at TODAY and not a line number typed
+    here. The LAST frame is the one that raised.
+    """
+    import traceback
+    from tinygrad.uop.ops import UOp, Ops, KernelInfo
+    mod = _oracle_mod()
+    for name, build, fname in mod.FIXTURES:
+        if name != fixture:
+            continue
+        root = build()
+        sink = UOp(Ops.SINK, src=root if isinstance(root, tuple) else (root,),
+                   arg=KernelInfo(fname if fname is not None else "test"))
+        try:
+            mod.R.render(list(sink.toposort()))
+        except Exception as e:
+            fr = traceback.extract_tb(e.__traceback__)[-1]
+            return type(e).__name__, (str(e.args[0]) if e.args else ""), fr.filename, fr.lineno, fr.line
+        return None
+    return None
+
+
+def _row_reasons():
+    """EVERY DECLARED ROW'S REASON, AND THE REASON IS A FUNCTION OF THE ROW.
+
+    A refusing fixture's reason is its refusal's SITE, for the MODULE row and for the
+    walk's registers alike, because CPython's refusal is what makes BOTH of them differ.
+    The twenty-nine module rows the port answers ABSENT carry the string_rewrite reason.
+    """
+    out = {}
+    for k in _G1:
+        out[k] = "DTYPES"
+    for k in _G2:
+        out[k] = "REFUSAL:" + k.split(".")[0]
+    for k, (_py, port) in _G3.items():
+        out[k] = "STRING_REWRITE" if port.endswith("not ported") else "REFUSAL:" + k[:-4]
+    return out
+
+
+def reasons_hold() -> bool:
+    """THE REASONS, CHECKED AGAINST THE TREE. THE CHECK THAT MAKES A REASON A PIN.
+
+    A declared divergence is a PIN, and a pin without a true reason is a pin that cannot
+    fail. The gate already goes red when a divergence's VALUE moves -- `gatekit` pins both
+    sides of every declared row -- and it stayed green through a whole audit in which
+    eighteen of the reasons did not match the tree, because a reason was PROSE. Four
+    witnesses, and every one of them is a READ of the tree:
+      * upstream's own rule table, for the number of `string_rewrite` rules;
+      * upstream's own dtype table, for its size;
+      * CPython's own traceback, for WHERE each of the six refusals happens;
+      * the ORACLE'S OWN `.mod` rows, for WHICH fixtures refuse -- so a fixture that
+        starts refusing and has no declared reason is red, and a declared reason for a
+        fixture that stopped refusing is red.
+    """
+    import tinygrad.renderer.ptx as ptx
+    bad = []
+    rules = len(ptx.string_rewrite.patterns)
+    if rules != REASON_RULES:
+        bad.append(f"the reason says upstream's ptx.py has {REASON_RULES} string_rewrite rules; "
+                   f"it has {rules}")
+    # THE NUMBER INSIDE THE PORT'S OWN ANSWER, so the two copies of it cross-check. A copy
+    # nobody compares with anything is a copy that goes stale.
+    said = re.search(r"string_rewrite\((\d+)\)", ABSENT)
+    if said is None or int(said.group(1)) != REASON_RULES:
+        bad.append(f"the port's own answer says {said.group(1) if said else 'no'} rules and the "
+                   f"reason says {REASON_RULES}")
+    keys = len(ptx.PTXRenderer.types)
+    if keys != REASON_DTYPE_KEYS:
+        bad.append(f"the reason says CPython's dtype table has {REASON_DTYPE_KEYS} keys; it has "
+                   f"{keys}")
+    refusing = {k[:-4] for k, v in _PY_ROWS.items() if k.endswith(".mod") and v.startswith("REFUSE:")}
+    for f in sorted(refusing - set(REASON_REFUSALS)):
+        bad.append(f"{f} refuses and NO REASON is declared for it")
+    for f, (exc, key, frag) in REASON_REFUSALS.items():
+        site = _refusal_site(f)
+        if site is None:
+            bad.append(f"{f} does not refuse any more -- the declared reason is stale")
+            continue
+        etype, arg, filename, lineno, line = site
+        if etype != exc:
+            bad.append(f"{f} refuses with {etype}; the reason says {exc}")
+        if key and key not in arg:
+            bad.append(f"{f} refuses on {arg!r}; the reason says {key!r}")
+        if frag not in line:
+            bad.append(f"{f} refuses at {filename}:{lineno}, whose source does not carry "
+                       f"{frag!r} -- the declared SITE moved")
+    for k in DIVERGES:
+        if k not in _row_reasons():
+            bad.append(f"{k} is a declared divergence with NO REASON")
+    if bad:
+        print("ptx_render_census-gate: REASONS: " + "; ".join(bad[:4]), file=sys.stderr)
+    return not bad
 
 
 def module_divergences(py):
@@ -276,7 +454,7 @@ def module_divergences(py):
         # `gatekit` pins WHOLE LINES, not values -- MEASURED: a value-only pin answers
         # "py's f01_alu.mod is not '.version VERSION\n...'" with the row NAME missing off
         # the front, which is a pin no line can ever satisfy.
-        d[k] = (f"{k}={py[k]}", f"{k}=" + REFUSALS.get(f, "ABSENT:string_rewrite(23) not ported"))
+        d[k] = (f"{k}={py[k]}", f"{k}=" + REFUSALS.get(f, ABSENT))
     return d
 
 
@@ -341,8 +519,8 @@ def build_divergences():
 
 DIVERGES = build_divergences()
 
-# 62 -> 58. GROUP 3a EMPTIED: `ptx.bend`'s alias arm read `Wal.r[0]` where ptx.py:189 and
-# ptx.py:204 read `r[u.src[0]]`, six rows diverged, the fix landed, and the six are now
+# 62 -> 58. GROUP 3a EMPTIED: `ptx.bend`'s alias arm read `Wal.r[0]` where ptx.py:190 and
+# ptx.py:205 read `r[u.src[0]]`, six rows diverged, the fix landed, and the six are now
 # COMPARED rows like the rest. +2 for `f37_twobufs.mod` and `f38_regload.mod`, which are
 # GROUP 2 like every other `.mod`. 58 = 18 dtype + 5 weak registers + 35 `.mod`.
 # 58 -> 59 WAS GROUP 4, and it was the SAME RE-VENDOR: upstream's `ptx.py:164` `fmt` LOST its
@@ -368,6 +546,14 @@ DIVERGES = build_divergences()
 # under this formulation that row would have made the assert FIRE instead of quietly moving
 # a hand-typed number.
 N_DIVERGES = len(_G1) + len(_G2) + len(_G3)
+
+# THE HONEST COMPOSITION OF THE TABLE, DERIVED FROM THE TABLE AND NOT TYPED: how many rows
+# carry each REASON, and how the module rows divide between the three answers the port has.
+_REASONS = _row_reasons()
+_N_DTYPES = sum(1 for v in _REASONS.values() if v == "DTYPES")
+_N_RULES = sum(1 for v in _REASONS.values() if v == "STRING_REWRITE")
+_N_ANSWERED = sum(1 for _k, (_p, port) in _G3.items() if "PORT-ANSWERED" in port)
+_N_REFUSED = sum(1 for _k, (_p, port) in _G3.items() if "PORT-REFUSED" in port)
 
 GATE = None  # built by `gate()` / `refresh_pins()`, and NEVER at import time.
 
@@ -857,8 +1043,107 @@ def plant() -> int:
     if fp == 3:
         return 3
     bad += fp
+    rp = reason_plant()
+    if rp == 3:
+        return 3
+    bad += rp
     print(f"\n=== plant: {'FAIL' if bad else 'PASS'}: {bad} problem(s) ===")
     return 1 if bad else 0
+
+
+# ---- the reason plant -------------------------------------------------------------------
+# THE SUBJECT IS THIS FILE, because this file is where the REASON is declared.
+#
+# THE PLANT PUTS A STALE REASON INTO A COPY OF THIS FILE AND THE GATE MUST GO RED. The
+# bytes come from the WORKING TREE and never from `git show HEAD:` -- a plant that reads
+# HEAD plants nothing the moment HEAD carries the fix, and this fix IS in HEAD's future BY
+# CONSTRUCTION: the fix and the plant are the same commit.
+#
+# THE COPY SITS IN `gates/` BESIDE THIS ONE, so `HERE` and `ROOT` still resolve and the
+# copy IS this gate -- the same lanes, the same population, the same pins.
+REASON_SCRATCH = HERE / "_ptxreason_plantcase.py"
+# THE STALE REASON IS A SOURCE FRAGMENT AND NOT A LINE NUMBER: the declared site of f31's
+# refusal, moved to a fragment upstream does not refuse on. A line number would be a bet on
+# a byte offset; the fragment is a bet on the CODE, which is what the reason actually
+# claims.
+REASON_PLANT_FROM = '"weakint", "self.types[unwrap(u).dtype]"'
+REASON_PLANT_TO = '"weakint", "self.types[u.dtype]"'
+# THE SECOND STALE REASON: the NUMBER of upstream's rules, moved by one. It is a number the
+# gate reads against upstream's own rule table, so it is a reason that can fail on a
+# re-vendor -- and the pin on the port's own answer does NOT see it, because the answer
+# did not move.
+REASON_RULES_FROM = "REASON_RULES = 23"
+REASON_RULES_TO = "REASON_RULES = 24"
+# THE CONTROL'S ANCHOR IS A DECLARATION LINE and the comment goes on a LINE OF ITS OWN
+# above it -- the most comment-only edit there is, and the one the blank-line-dropping
+# proof exists for.
+REASON_CONTROL_ANCHOR = "REASON_DTYPE_KEYS = 12"
+REASON_CONTROL_EDIT = ("# a comment on a line of its own, above the declaration it belongs to\n"
+                        + REASON_CONTROL_ANCHOR)
+
+
+def reason_plant() -> int:
+    """THE REASON PLANT, ITS CONTROL, AND THE PROOF THAT THE CONTROL MOVED NOTHING.
+
+    THE PLANT writes a COPY of this file with a STALE REASON in it -- the declared site of
+    f31's refusal, moved to a fragment upstream does not refuse on -- and the gate MUST GO
+    RED AND SAY SO. A reason that nothing reads is a pin that cannot fail, and this is
+    the proof that the reason IS read.
+
+    THE CONTROL is a comment on a line of its own in the SAME file, and it must move
+    NOTHING. The proof that it moved nothing is the COMMENT-STRIPPED BYTES with the BLANK
+    LINES DROPPED -- `_code_only()`, which is `checks/port-compile-gate.py`'s own
+    `strip_comments()` plus the blank-line drop, and the drop is what makes the proof
+    cover a WHOLE-LINE comment at all.
+    """
+    original = Path(__file__).read_text()
+    if REASON_PLANT_FROM not in original:
+        print("REFUSED: the plant's anchor is not in this file as it stands. THE PLANT IS A "
+              "TEXT EDIT ON THE WORKING TREE, so an anchor that moved means the plant must be "
+              "re-anchored -- NOT that it should fall back to reading git.")
+        return 3
+    if REASON_CONTROL_ANCHOR not in original:
+        print("REFUSED: the control's anchor is not in this file as it stands.")
+        return 3
+    if REASON_RULES_FROM not in original:
+        print("REFUSED: the rule-count anchor is not in this file as it stands.")
+        return 3
+    cases = [
+        ("PLANT (the declared refusal site moved)",
+         original.replace(REASON_PLANT_FROM, REASON_PLANT_TO, 1),
+         "a declared reason that no longer matches the tree"),
+        ("PLANT (the declared rule count moved)",
+         original.replace(REASON_RULES_FROM, REASON_RULES_TO, 1),
+         "a declared number upstream's own rule table disagrees with"),
+        ("CONTROL (a comment on a line of its own)",
+         original.replace(REASON_CONTROL_ANCHOR, REASON_CONTROL_EDIT, 1),
+         "a comment-only edit in the SAME file, which must move NOTHING"),
+    ]
+    bad = 0
+    try:
+        for name, text, why in cases:
+            REASON_SCRATCH.write_text(text)
+            r = subprocess.run([str(PY), str(REASON_SCRATCH)], capture_output=True, text=True)
+            same_code = _code_only(text) == _code_only(original)
+            print(f"{name:<52} rc={r.returncode} comment-only={same_code!s:<5} {why}")
+            if name.startswith("PLANT"):
+                if r.returncode == 0:
+                    print("  THE PLANT DID NOT FIRE: a stale reason left the gate GREEN.")
+                    bad += 1
+                elif "REASONS" not in r.stderr:
+                    print("  THE PLANT FIRED FOR SOMETHING ELSE: " + r.stderr.strip()[:160])
+                    bad += 1
+            if name.startswith("CONTROL"):
+                if r.returncode != 0:
+                    print("  THE CONTROL IS NOT A CONTROL: a comment moved the verdict "
+                          f"(rc={r.returncode}): {r.stderr.strip()[:160]}")
+                    bad += 1
+                if not same_code:
+                    print("  THE CONTROL IS NOT A CONTROL: it edited more than a comment.")
+                    bad += 1
+    finally:
+        REASON_SCRATCH.unlink(missing_ok=True)
+    return bad
 
 
 # ---- the fmt plant ---------------------------------------------------------------------
@@ -1027,21 +1312,36 @@ if __name__ == "__main__":
     # compares with anything.  The comparison is still ASSERTED -- it is the shape of the
     # gate, not the value -- but the value is computed.
     assert GATE.compared == ROWS - N_DIVERGES
+    # THE MODULE ROWS HAVE EXACTLY THREE ANSWERS, AND THE THREE COUNTS ARE THE TABLE'S.
+    assert _N_RULES + _N_ANSWERED + _N_REFUSED == len(_G3), (
+        f"the module rows divide into {_N_RULES} ABSENT, {_N_ANSWERED} PORT-ANSWERED and "
+        f"{_N_REFUSED} PORT-REFUSED, which is not {len(_G3)} -- a fourth answer appeared")
     sys.exit(gate(make_gate(),
                   f"ptx_render_census-gate: {ROWS} rows (READ FROM THE POPULATION, not typed), "
                   f"3 lanes byte-identical over the walk and the SEAM, {N_DIVERGES} DECLARED "
-                  f"divergences in THREE groups -- {len(_G1)} are the dtype tables answering "
-                  "`pred` or the EMPTY STRING where ptx.py:181 raises KeyError (the PTX form "
-                  "of the AMDWORD32 defect, REACHABLE through UOp.range's default weakint) "
-                  f"and {len(_G2)} MORE are the registers the port then allocates where "
-                  "CPython refuses (`%alu__0`, `%cast__0`, `%ridx_pred_0`); and "
-                  f"{len(_G3)} are the un-ported string_rewrite. The `fmt_18` row -- the port's "
-                  "`tc_ptx.bend` passing a `$` line through untouched where the pin's "
-                  "`ptx.py:164` indents EVERY line -- is FIXED and COMPARED, because upstream "
-                  "`96397341d` DELETED that early return as DEAD CODE. The SIX rows that were "
-                  "ptx.bend's alias arm reading Wal.r[0] where ptx.py:189 and :204 read "
-                  "r[u.src[0]] are FIXED and COMPARED, `f37_twobufs` is the fixture whose INDEX "
-                  "carries a non-zero src[0] and the only thing in the axis that can see the "
-                  "same wrong read in `rg_pick`, and `f38_regload` is the one whose LOAD "
-                  "subscripts a LIST rather than a scalar, which is what M9 needed",
-                  checks=lambda: (names_hold() and axis_hold() and claims_hold() and pins_hold())))
+                  f"divergences -- ALL of them STILL REAL, and EVERY ONE OF THEM CARRIES A "
+                  f"REASON THAT IS CHECKED AGAINST THE TREE. {_N_DTYPES} are the dtype tables, "
+                  f"where CPython's {REASON_DTYPE_KEYS}-key dict raises KeyError at ptx.py:181 "
+                  "and the port answers the EMPTY STRING (a field EMPTIED -- the PTX form of "
+                  "the AMDWORD32 defect); "
+                  f"{_N_RULES} are the module, which upstream renders from {REASON_RULES} "
+                  "`string_rewrite` rules the port has none of; "
+                  f"{_N_ANSWERED} are a REFUSAL CPython raises and the port answers (three of "
+                  "them at ptx.py:181, one at ptx.py:92 on a CONST the walk never registered, "
+                  "one at ptx.py:225 in the string_rewrite stage); "
+                  f"{_N_REFUSED} are a refusal BOTH sides raise, so the row differs only in the "
+                  f"SPELLING; and {len(_G2)} are the walk's registers the port allocates where "
+                  "CPython refuses. `reasons_hold()` is what makes a reason a PIN: upstream's "
+                  "own rule table, upstream's own dtype table, CPython's own traceback, and the "
+                  "oracle's own refusals are the four witnesses, so a reason that stops "
+                  "matching the tree is RED. The `fmt_18` row -- the port's `tc_ptx.bend` "
+                  "passing a `$` line through untouched where the pin's `ptx.py:164` indents "
+                  "EVERY line -- is FIXED and COMPARED, because upstream `96397341d` DELETED "
+                  "that early return as DEAD CODE. The SIX rows that were ptx.bend's alias arm "
+                  "reading Wal.r[0] where ptx.py:190 and :205 read r[u.src[0]] are FIXED and "
+                  "COMPARED, `f37_twobufs` is the fixture whose INDEX carries a non-zero "
+                  "src[0] and the only thing in the axis that can see the same wrong read in "
+                  "`rg_pick`, and `f38_regload` is the one whose LOAD subscripts a LIST rather "
+                  "than a scalar, which is what M9 needed",
+                  checks=lambda: (reasons_hold() and names_hold() and axis_hold() and claims_hold()
+                                  and pins_hold())))
