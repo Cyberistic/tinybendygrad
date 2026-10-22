@@ -655,7 +655,15 @@ def census_in_file(ctx, builders):
             if encl is not None and encl in skip:
                 continue
             args = split_args(argtext)
-            nm = args[0].strip() if args else ""
+            nm = "<no-name>"
+            if b.kind == "PARAM" and b.index != 0 and args:
+                # THE NAME IS THE BUILDER'S FIRST ARGUMENT, and it is the first argument
+                # ONLY when the `py=` slot is not itself the first parameter: `r_sdb(py)` is
+                # a builder whose ONLY parameter is the value, so it has no name argument
+                # and reading args[0] as a name reads the VALUE as a name.
+                nm = args[0].strip()
+            elif b.kind == "INSIDE" and args:
+                nm = args[0].strip()
             if b.kind == "PARAM":
                 if b.index >= len(args):
                     continue
