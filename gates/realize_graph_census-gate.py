@@ -602,6 +602,23 @@ def refresh() -> int:
     return 0
 
 
+def _row(lane: dict, r: str) -> str:
+    """THE ROW's VALUE, OR A SENTINEL FOR A ROW THE LANE DOES NOT CARRY.
+
+    **A MISSING ROW IS A VERDICT AND NOT A CRASH.** `gatekit`'s OWN DOCSTRING NAMES THIS
+    SHAPE: "a MISSING ROW raised `KeyError` -- 8 TIMES ACROSS FOUR POPULATION MUTATIONS
+    -- and the exception PROPAGATED PAST `checks=` AND EXITED 1, WHICH IS THE SAME NUMBER
+    AS AN HONEST `FAIL`." **SO A MUTATION THAT MAKES A LANE LOSE A ROW MUST READ AS "THE
+    LANE LOST THE ROW" AND NOT AS A TRACEBACK** -- AND MEASURED, IT DID: THE PHASE-1
+    MUTATIONS THAT DELETE A ROW PRODUCED `EXC KeyError: 'b_bea0'`, `EXC KeyError:
+    'bea0_24'`, `EXC KeyError: 'res_10'` AND `EXC KeyError: 'res_64'`, AND THE HARNESS
+    NAMES THOSE AS GATE BUGS.
+
+    THE SENTINEL IS A STRING THAT CANNOT BE A VALUE, SO A COMPARISON AGAINST IT IS ALWAYS
+    FALSE AND A `!=` AGAINST IT IS ALWAYS TRUE: THE POINT IS TO ANSWER, NOT TO PASS."""
+    return lane.get(r, "<MISSING>")
+
+
 def _lane(name):
     f = ART / name
     if not f.is_file():
@@ -629,21 +646,21 @@ def classes_hold() -> bool:
         ok = False
 
     # SRC_BODY, NOW FIXED: the fifty-two rows it used to name must AGREE. The pin already
-    # freezes CPython's value, so `cpy[r] == port[r]` is the claim that the port still
+    # freezes CPython's value, so `_row(cpy, r) == _row(port, r)` is the claim that the port still
     # answers it -- a port that went back to `Arena.src_without_body` would answer one
     # entry longer and this is the row that says so by name rather than by a diff.
     for r in SRC_BODY_FIXED:
-        if cpy[r] != port[r]:
-            bad(f"{r}: cpy={cpy[r]!r} port={port[r]!r}, and the 52 `src[1:]` rows must "
+        if _row(cpy, r) != _row(port, r):
+            bad(f"{r}: cpy={_row(cpy, r)!r} port={_row(port, r)!r}, and the 52 `src[1:]` rows must "
                 f"still AGREE -- `get_call_arg_uops` is `O.Arena.src_from(ar, call, 1)`")
     # BOTTOM: the port answers something, and it is NEVER a value it read off the arena.
     for r in BOTTOM:
-        if port[r] == "bottom":
+        if _row(port, r) == "bottom":
             bad(f"{r}: the port agrees with a node CPython does not have")
     # NAME_ARM: the port answers `none` where CPython cannot answer at all.
     for r in NAME_ARM:
-        if port[r] != "none":
-            bad(f"{r}: the port answers {port[r]!r}, not `none`")
+        if _row(port, r) != "none":
+            bad(f"{r}: the port answers {_row(port, r)!r}, not `none`")
     # THE `NO_SHAPE` CLASSES: CPython RAISES IndexError BECAUSE `ops.py:1011`'s
     # `is_variable` READS `self._shape` AND A PARAM WITH NO `src` HAS NO `src[0]`. THE PORT
     # ANSWERS BECAUSE ITS OWN `is_variable` CANNOT READ `_shape` AT ALL -- THE `marg` WALL
@@ -652,8 +669,8 @@ def classes_hold() -> bool:
     # BEING A DIVERGENCE, AND A DIVERGENCE THAT QUIETLY BECAME AN AGREEMENT IS A CLASS
     # THAT LOST ITS REASON WITHOUT LOSING ITS ROW.
     for r in ARG_NO_SHAPE + NAME_NO_SHAPE + OI_NO_SHAPE + RES_NO_SHAPE + VAR_NO_SHAPE + WBUF_NO_SHAPE:
-        if cpy[r] != "raise=IndexError":
-            bad(f"{r}: cpy={cpy[r]!r} is not `raise=IndexError`, so it is not in this class")
+        if _row(cpy, r) != "raise=IndexError":
+            bad(f"{r}: cpy={_row(cpy, r)!r} is not `raise=IndexError`, so it is not in this class")
     # **AND THE PORT DOES NOT REFUSE: IT ANSWERS.** THE PORT's OWN `is_variable` CANNOT
     # READ `_shape` AT ALL -- THE `marg` WALL -- SO THE PORT ANSWERS EVERY ONE OF THESE
     # ROWS AND CPython CANNOT. **THE PORT's ANSWER IS `none` ON MANY OF THEM AND THAT IS
@@ -663,15 +680,15 @@ def classes_hold() -> bool:
     # THE CLASS IS EXACTLY ONE THING: CPython RAISES AND THE PORT ANSWERS.
     # VAL_BODY: the port has the CLAIM and no body, so its answer is the claim's bit.
     for r in VAL_BODY:
-        if port[r] not in ("0", "1"):
-            bad(f"{r}: the port answers {port[r]!r}, which is neither claim bit")
+        if _row(port, r) not in ("0", "1"):
+            bad(f"{r}: the port answers {_row(port, r)!r}, which is neither claim bit")
     # ARG_SLOT: a CALL whose `src[1]` is not a PARAM or a BUFFER. `kern_53` is the one that
     # ANSWERS a different COUNT rather than a refusal, and it is held separately.
     for r in ARG_SLOT:
-        if not cpy[r].startswith("raise=") and r != "kern_54":
-            bad(f"{r}: cpy {cpy[r]!r} is not a raise, so it is not in this class")
-    if (cpy["kern_54"], port["kern_54"]) != ("1", "0"):
-        bad(f"kern_54: cpy={cpy['kern_54']!r} port={port['kern_54']!r}, "
+        if not _row(cpy, r).startswith("raise=") and r != "kern_54":
+            bad(f"{r}: cpy {_row(cpy, r)!r} is not a raise, so it is not in this class")
+    if (_row(cpy, "kern_54"), _row(port, "kern_54")) != ("1", "0"):
+        bad(f"kern_54: cpy={_row(cpy, 'kern_54')!r} port={_row(port, 'kern_54')!r}, "
             f"not the declared SINK-in-the-arg-slot pair")
     # SINK_NO_KI: CPython RAISES `AttributeError` on `sink.arg.beam` for a SINK with no
     # `KernelInfo`, and the port's `rz_kernel_beam` DEFAULTS it to 0 -- so the rule CLAIMS
@@ -684,32 +701,32 @@ def classes_hold() -> bool:
     # the default `0` -> `1` moved zero of the rows -- `V2`, reported as vacuous and now
     # moving these two. With two bits, a default of 1 answers `00` here and is caught.
     for r in SINK_NO_KI:
-        if cpy[r] != "raise=AttributeError" or port[r] != "10":
-            bad(f"{r}: cpy={cpy[r]!r} port={port[r]!r}, not the declared SINK_NO_KI pair")
+        if _row(cpy, r) != "raise=AttributeError" or _row(port, r) != "10":
+            bad(f"{r}: cpy={_row(cpy, r)!r} port={_row(port, r)!r}, not the declared SINK_NO_KI pair")
     # SLOT_MISS: CPython raises IndexError on `inputs[slot]` and the port defaults to the
     # node, so the port's answer CONTAINS the node CPython refused to look up.
     for r in SLOT_MISS:
-        if cpy[r] != "raise=IndexError" or port[r] == "none":
-            bad(f"{r}: cpy={cpy[r]!r} port={port[r]!r}, not the declared SLOT_MISS pair")
+        if _row(cpy, r) != "raise=IndexError" or _row(port, r) == "none":
+            bad(f"{r}: cpy={_row(cpy, r)!r} port={_row(port, r)!r}, not the declared SLOT_MISS pair")
     # MSELECT_WALL: CPython resolves the MSELECT to its storage base and the port drops it.
-    if (cpy["wbuf_61"], port["wbuf_61"]) != ("BUFFER/1@0[g0:-]", "none"):
-        bad(f"wbuf_61: cpy={cpy['wbuf_61']!r} port={port['wbuf_61']!r}, "
+    if (_row(cpy, "wbuf_61"), _row(port, "wbuf_61")) != ("BUFFER/1@0[g0:-]", "none"):
+        bad(f"wbuf_61: cpy={_row(cpy, 'wbuf_61')!r} port={_row(port, 'wbuf_61')!r}, "
             f"not the declared MSELECT wall")
     # GETADDR_DRIFT, THE VENDORED-DRIFT FINDING: THE SAME NODE WITH THE SAME OP AND ARITY,
     # differing only in what `src[0]` BECAME -- and the `@<slot>` suffix is what says WHICH
     # input it became, which `BUFFER/1` alone could not. One more level is the instrument.
-    if (cpy["res_64"], port["res_64"]) != (
+    if (_row(cpy, "res_64"), _row(port, "res_64")) != (
             "BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@1[g1:-]+CONST/0[1]",
             "BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@0[g0:-]+CONST/0[1]"):
-        bad(f"res_64: cpy={cpy['res_64']!r} port={port['res_64']!r}, "
+        bad(f"res_64: cpy={_row(cpy, 'res_64')!r} port={_row(port, 'res_64')!r}, "
             f"not the declared GETADDR drift pair")
     # RET_IS_UOP, NOW FIXED: at ctx 0 both lanes answer `10` -- CLAIMED and the rewrite was
     # the identity -- and the ctx-7 rows answer the same CONE **and the same BEAM**.
     # `ret_is_uop_fixed_holds()` is the separate claim; this is the guard that the fix did
     # not move the OTHER context.
     for r in RET_IS_UOP_FIXED:
-        if cpy[r] != "10" or port[r] != "10":
-            bad(f"{r}: cpy={cpy[r]!r} port={port[r]!r}, and the ctx-0 row must be '10' "
+        if _row(cpy, r) != "10" or _row(port, r) != "10":
+            bad(f"{r}: cpy={_row(cpy, r)!r} port={_row(port, r)!r}, and the ctx-0 row must be '10' "
                 f"(claimed, identity rewrite) on BOTH sides now that `bm_new` carries "
                 f"`M.hop_self`")
     return ok
@@ -737,8 +754,8 @@ def ret_is_uop_fixed_holds() -> bool:
             print(f"  ret_is_uop_fixed_holds: {lane} is not there")
             return False
         for r in RET_IS_UOP_FIXED:
-            if rows[r] != "10":
-                print(f"  ret_is_uop_fixed_holds: {lane} {r}={rows[r]!r}, "
+            if rows.get(r, "<MISSING>") != "10":
+                print(f"  ret_is_uop_fixed_holds: {lane} {r}={rows.get(r)!r}, "
                       f"the `ret is not uop` clause is not firing at ctx 0")
                 ok = False
         sig = [rows[r] for r in rows if r.startswith(("beam_", "bea0_"))]
@@ -1127,11 +1144,11 @@ def pin_drift_holds() -> bool:
         print("  pin_drift_holds: the promoted port lane is not there")
         return False
     ok = True
-    if pin_row(64) != port["res_64"]:
+    if pin_row(64) != _row(port, "res_64"):
         print(f"  pin_drift_holds: the PIN answers res_64 {pin_row(64)!r} and the port "
-              f"{port['res_64']!r} -- FINDING 1's drift story is not what it claims")
+              f"{_row(port, 'res_64')!r} -- FINDING 1's drift story is not what it claims")
         ok = False
-    if pin_row(53) == port["res_53"]:
+    if pin_row(53) == _row(port, "res_53"):
         print(f"  pin_drift_holds: the PIN also answers res_53 {pin_row(53)!r}, so the "
               f"MSTACK wall is drift too and 'only one arm' is wrong")
         ok = False
