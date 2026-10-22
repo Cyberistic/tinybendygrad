@@ -138,7 +138,8 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `310 of 310 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=310 repro-identical=310 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == 58c505697ca23e1d...`** -- **THE **RUN **DESCRIBES **THE **TREE **AS **IT
+  **`substrate-start == substrate-end == live == 58c505697ca23e1d...`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **TREE **AS **IT
   **STANDS**, **AND `substrate-head=6cdeedb77cc3674515938e382973d5455c1abab6` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **IS **AN **ANCESTOR **OF **HEAD**, **NOT **HEAD **ITSELF, **AND **THAT **IS **THE **HONEST **SHAPE**: **A
   **COMMIT **THAT **FOLLOWS **IT **AND **TOUCHES **NOTHING **IN **THE **SUBSTRATE** -- **`AGENTS.md`, **`.agents/**`,
@@ -146,6 +147,21 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`git diff --name-only 6cdeedb77 HEAD -- tinybendygrad tinygrad bin/bend checks/differ.py …` **IS **EMPTY **AND
   **THE **DIGEST **IS **UNCHANGED**).**  **BUT **A **COMMIT **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY
   **THE **FIRST **`run` **OF **TONIGHT **WAS **RE-RUN.***
+  ***AND ***THE **SCOPE **OF **THAT **DIGEST **IS **THE **WORKING **TREE **AND **NOT **THE **COMMIT** -- **AND **THE
+  **TREE **ALREADY **SAYS **SO, **IN **`checks/differ.py:1275`**:** *"MOVE-DETECTION AND COMMIT-IDENTITY ARE THE SAME
+  PROPERTY, AND A `ls-tree`-BASED DIGEST CANNOT MOVE DURING A RUN -- IT WOULD `PASS` ON EXACTLY THE MIXTURE IT
+  EXISTS TO CATCH."*  **SO **THE **WORKTREE **PAIR **STAYS **AND **`substrate-head` **IS **ADDED** -- **AND **THE **COST
+  **IS **MEASURED:** **THE **DIGEST **COVERS **389 **MEMBERS **OF **WHICH **14 **ARE **IN **NO **COMMIT **AT **ALL**
+  (**`bin/bend` **IS **`.gitignore:5`**, **AND **THE **WALKS **SWEEP **UP `*-mut.bend` **/ `.bak` **PROBE
+  **SCRATCH**), **SO **A **FRESH **CLONE **HASHES **375** **AND **REPORTS **A **DIFFERENT **SUBSTRATE **FOR **THE
+  **SAME **COMMIT**.**  **MEASURED 2026-10-22, THE **SAME **CLASS **IN **A **NEW **PLACE**: **THE **WORKING **COPY
+  **CARRIED **SEVEN **GITIGNORED **FILES **INSIDE **THE **WALK** -- **A **`.bak`, **THREE `*mut.bend` **AND **THREE
+  **PROBES** -- **AND **THE **DIGEST **HASHED **EVERY **ONE**, **SO **A **UNIT **THAT **DROPPED **A **MUTATION
+  **PROBE **IN **THE **TREE **MOVED **THE **CORPUS's **FRESHNESS **PIN**.**  **THAT **IS **THE **MECHANISM **BEHIND
+  **EVERY **"THE **DIGEST **MOVED **AND **IT **WASN'T **ME"** **REPORT **TONIGHT** -- **AND **THE **GAP **THE **TREE
+  **NAMES **IS **EXACTLY **THE **ONE **THAT **CLOSES **IT**: **NONE **OF **THE **READERS **NAMED **THE **WORKTREE
+  **SCOPE **IN **THE **ROW's **KEY.**  **DO **NOT **"FIX" **THE **DIGEST **TO **BE **A **`ls-tree` **DIGEST** -- **THAT
+  **WOULD **UNDO **A **DELIBERATE **DECISION **AND **BLIND **THE **MID-RUN **MIXTURE.**
   ***AND **THE **RUNS **TOOK **271 s / 975 MB** (`run`) **AND **540 s / 920 MB** (`repro`), **TOKEN `WITHIN-LIMITS`***
   -- **AND **THE **`MACHINE: VIOLATED` **LINE **IS **NOT **ATTRIBUTABLE **TO **THE **CHILD**: **THE **REPRO'S **WAS
   **`loadavg 512.1` ON **12** CORES **WITH **SWAP **AT **0.92 **OF **41.00 GiB** FREE, **AND **THE **LOAD **WAS **NOT
