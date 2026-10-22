@@ -64,6 +64,7 @@ otherwise. It prints the denominator.
 import argparse
 import ast
 import importlib.util
+import os
 import subprocess
 import sys
 import time
@@ -102,6 +103,37 @@ UNASSIGNED = "UNASSIGNED"
 # gate, and 3 GB is under 60% of this machine's 17.18 GB (`sysctl -n hw.memsize`).
 BUDGET_SECONDS = 30
 BUDGET_MB = 3072
+
+# THE TREE IS PASSED IN, AND ITS NAME IS IN THE ENVIRONMENT. `gates/gatekit.py` reads it, and
+# `PYTHONPATH` carries the tree's `gates/` directory so a gate COPIED OUT of the tree can still
+# `import gatekit`. **THIS IS NOT "FIND THE TREE".** `gates/reporoot.py` is the tree's own
+# shape for finding a root -- it walks UPWARD for a directory holding `pyproject.toml`,
+# `tinybendygrad/` and `tinygrad/` -- and a copy in a temp directory has no such ancestor, so
+# that shape answers `RootNotFound` for exactly the case that has to work. **A FIX THAT WORKS
+# ONLY FROM THE REPO ROOT IS A FIX THAT WILL BE BROKEN BY THE NEXT COPY**, and the copy is not
+# hypothetical: `gates/edge-plant.py` runs its synthetic gates in a temp directory, and
+# `gates/ptx_render_census-mutate.py`'s M13 copies a gate out of the tree.
+TREE_ENV = "TINYGRAD_ROOT"
+
+
+def pass_the_tree_in(root):
+    """Hand the tree to every gate this runner starts.
+
+    `checks/gatesweep.py:run_one()` spawns the gate with `subprocess.run(cmd, ..., cwd=ROOT)` and
+    no `env=`, so the child INHERITS this process's environment -- which is the channel, and the
+    only one that does not need a copy to be in the right place. `TINYGRAD_ROOT` names the tree
+    (`gates/gatekit.py` reads it for the compiler and the interpreter); `PYTHONPATH` carries the
+    tree's `gates/` directory, so a gate that lives outside the tree can still find `gatekit`.
+
+    **THE ENV IS RESTORED BY THE CALLER**, because the plant runs this inside a process that
+    must not carry a fake tree into its next direction.
+    """
+    os.environ[TREE_ENV] = str(root)
+    gates = str(root / "gates")
+    parts = [p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep) if p]
+    if gates not in parts:
+        parts.insert(0, gates)
+    os.environ["PYTHONPATH"] = os.pathsep.join(parts)
 
 
 def load(name, path):
@@ -486,6 +518,7 @@ def main():
 
     gs, popmod, gk = modules()
     root = Path(a.root).resolve()
+    pass_the_tree_in(root)
     members, cands = candidates(gs, popmod, root)
     ledger = read_rows(Path(a.cost))
 

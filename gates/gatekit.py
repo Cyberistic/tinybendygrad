@@ -38,9 +38,32 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
+
+# THE TREE IS PASSED IN, NOT FOUND. `TINYGRAD_ROOT` names it, and a gate that lives OUTSIDE
+# the tree -- a COPY, in a temp directory -- still gets the tree's compiler and interpreter,
+# because the tree is a PARAMETER of the run and not a fact about where this file happens to
+# sit. `gates/reporoot.py` is this tree's own shape for FINDING a root, and it cannot be used
+# here: it walks UPWARD for a directory holding `pyproject.toml`, `tinybendygrad/` and
+# `tinygrad/`, and a copy in a temp directory has no such ancestor -- `RootNotFound`, which is
+# the right answer to "where is the tree?" and the wrong question. **THE TREE IS PASSED IN.**
+_PASSED = os.environ.get("TINYGRAD_ROOT")
+ROOT = Path(_PASSED).resolve() if _PASSED else HERE.parent
+
 ART = HERE / "artifacts"
+
+# THE COMPILER, OR THE REFUSAL THAT STANDS IN FOR IT. `.gitignore:5` ignores `/bin/bend` and
+# `git ls-tree -r HEAD -- bin/` is EMPTY, so a CLEAN CHECKOUT HAS NO COMPILER -- and every run
+# of `.github/workflows/edge-gates.yml` IS a clean checkout. MEASURED 2026-10-22 in a clean
+# checkout: `gates/mixin-op-gate.py` exited 1 in 0 s at 21 MB with
+# `FileNotFoundError: .../bin/bend`, and `checks/gatesweep.py:classify()` turned that into
+# `DEAD, TRACEBACK` -- which says "it ran and emitted nothing" about a gate that NEVER RAN.
+# The absent compiler is a PRECONDITION THAT WAS ABSENT, and this file already has a word for
+# that: `REFUSED`. So the compiler's absence is SPOKEN BY A PROCESS THAT EXISTS.
 BEND = ROOT / "bin" / "bend"
+BEND_ABSENT = HERE / "bend-absent.py"
+if not BEND.exists():
+    BEND = BEND_ABSENT
+
 PY = ROOT / ".venv" / "bin" / "python"
 
 WARM = "ALL PROOFS CHECK"
@@ -457,6 +480,16 @@ class Gate:
         # The guard was `not stdout and rc != 0`, which is the flake's shape AND a type error's
         # shape, so a deterministic failure was retried 25 times and then reported AS the flake.
         for tries in range(1, TRIES + 1):
+            if BEND == BEND_ABSENT:
+                # THE COMPILER IS NOT THERE, AND THAT IS A PRECONDITION THAT WAS ABSENT.
+                # **AND IT IS NOT A COLD DRIVER**, which is the case the two `warm` modes
+                # disagree about: a cold driver is a driver that exists and says the substrate
+                # is cold, and `beautiful-mnist-gate.py` reports one and goes on; there is
+                # nothing here to report and nothing to go on TO. So this returns False for
+                # BOTH modes, and `run()` answers REFUSED (3) -- which is what the workflow's
+                # own prose already promised (".github/workflows/edge-gates.yml:82-85").
+                self._say("the toolchain is absent: there is no `bin/bend` in this tree")
+                return False
             out = subprocess.run([str(BEND), str(self.bend), "--check-only"],
                                  capture_output=True, text=True)
             first = (out.stdout or "").splitlines()[:1]

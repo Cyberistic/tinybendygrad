@@ -23,7 +23,7 @@ runner that reads the gate's own exit satisfies A and B together**, and C, D, E 
 the selection, the bookkeeping and the escape hatch rather than the verdict. So no constant
 satisfies this suite: the plant is not a shape a broken runner can wear.
 
-**THE SIX DIRECTIONS.**
+**THE SEVEN DIRECTIONS.**
 
   A  a gate that DISAGREES is recorded `FAIL` and the edge's own exit is `FAIL` (1).
   B  THE CONTROL: a gate that AGREES is recorded `PASS` and the edge's own exit is `PASS` (0).
@@ -37,11 +37,22 @@ satisfies this suite: the plant is not a shape a broken runner can wear.
   G  THE ESCAPE HATCH: a gate that DECLARES `RED_IS = "FINDING"` in its own source is red BY
      DESIGN, so the edge COUNTS it and does NOT charge it -- and the control for that arm is a
      gate that is identical except for the declaration and DOES charge.
+  H  **A GATE THAT CANNOT START IS `REFUSED`, NOT `DEAD`** -- and the control for that arm is a
+     gate that CAN start, measured normally in the same run. **`DEAD` MEANS "IT RAN AND EMITTED
+     NOTHING", and a gate that never found its compiler never ran.** MEASURED 2026-10-22: a
+     clean checkout has no `bin/bend` (`.gitignore:5`, and `git ls-tree -r HEAD -- bin/` is
+     EMPTY), every GitHub Actions run of `.github/workflows/edge-gates.yml` IS a clean checkout,
+     and the nine gates that need the compiler died there with `FileNotFoundError` and were
+     recorded `DEAD, TRACEBACK` -- a verdict about a tree, about a gate that never ran. THIS
+     ARM IS THE ONE THAT CATCHES IT, AND IT IS NOT VACUOUS: against the pre-fix
+     `gates/gatekit.py` the same scenario answers `DEAD, TRACEBACK` and this arm FAILS.
 
 **EVERY GATE THE PLANT RUNS IS SYNTHETIC AND LIVES IN A TEMP DIRECTORY.** Nothing here touches the
 live tree's gates, and F asserts it.
 """
 import importlib.util
+import os
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -73,6 +84,26 @@ RED_IS = "FINDING"
 print("30 of 39 gates declare a surface; 9 have been seen to fire")
 print("FAIL")
 sys.exit(1)
+'''
+
+# H: A GATE WHOSE COMPILER IS NOT THERE. **THE TEXT IS WRITTEN TO DISK**, because a plant that
+# reads its subject out of git plants nothing the moment HEAD carries the defect's fix -- and a
+# plant that MUTATES a tracked file is a plant that damages the tree it audits.
+NO_TOOLCHAIN = '''#!/usr/bin/env python3
+"""no-toolchain-gate.py -- A GATE WHOSE COMPILER IS NOT THERE, and it SAYS SO.
+
+It is written into a COPY of the tree's `gates/` directory, so `from gatekit import Gate`
+resolves to the COPY -- and the copy has to WORK, because the tree is PASSED IN
+(`TINYGRAD_ROOT`), not found by walking upward out of a temp directory.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gatekit import Gate
+
+GATE = Gate("edge-plant-no-toolchain", bend="driver.bend", oracle="oracle.py", rows=1)
+sys.exit(GATE.run())
 '''
 
 
@@ -149,6 +180,59 @@ def plants():
         # D: an EMPTY selection is DEAD, never PASS.
         d = ed.edge_verdict([])[0] == DEAD
 
+    # H: A GATE THAT CANNOT START IS REFUSED, NOT DEAD.
+    #
+    # **WHAT IT REPRODUCES, EXACTLY.** `.gitignore:5` ignores `/bin/bend` and
+    # `git ls-tree -r HEAD -- bin/` is EMPTY, so a CLEAN CHECKOUT HAS NO COMPILER -- and every
+    # GitHub Actions run of `.github/workflows/edge-gates.yml` IS a clean checkout. MEASURED
+    # 2026-10-22 in a clean checkout of this tree: `gates/mixin-op-gate.py` exited 1 in 0 s at
+    # 21 MB with `FileNotFoundError: .../bin/bend`, and the tree's own classifier
+    # (`checks/gatesweep.py:classify()`) answered `("DEAD", "TRACEBACK")` -- which says "it ran
+    # and emitted nothing" about a gate that NEVER RAN. **`DEAD` IS A VERDICT ABOUT THE TREE
+    # AND THIS IS NOT ONE.** The absent compiler is a PRECONDITION THAT WAS ABSENT, and the
+    # tree's own word for that is `REFUSED`.
+    #
+    # **THE FAKE TREE IS A CLEAN CHECKOUT, AND THE GATE IS A COPY.** `gates/gatekit.py` and
+    # `gates/bend-absent.py` are COPIED beside the synthetic gate, so the copy has to find its
+    # own module, and THE TREE IS PASSED IN (`TINYGRAD_ROOT`) rather than found by walking
+    # upward out of a temp directory -- `gates/reporoot.py`'s shape, which cannot answer here.
+    with tempfile.TemporaryDirectory() as td:
+        tree = Path(td) / "tree"
+        (tree / "gates").mkdir(parents=True)
+        (tree / "tinybendygrad").mkdir()
+        (tree / "tinygrad").mkdir()
+        (tree / "pyproject.toml").write_text("")
+        os.symlink(ROOT / ".venv", tree / ".venv")
+        for name in ("gatekit.py", "bend-absent.py"):
+            shutil.copy2(HERE / name, tree / "gates" / name)
+        (tree / "driver.bend").write_text("x = 1\n")
+        (tree / "oracle.py").write_text("print('row=1 x=1')\n")
+        gate = tree / "gates" / "no-toolchain-gate.py"
+        gate.write_text(NO_TOOLCHAIN)
+        agree = tree / "gates" / "agree-gate.py"
+        agree.write_text(AGREE)
+        saved = {k: os.environ.get(k) for k in (ed.TREE_ENV, "PYTHONPATH")}
+        try:
+            ed.pass_the_tree_in(tree)
+            hmembers = [(gate, "py-main"), (agree, "py-main")]
+            hcands = {ed.rel_of(gate, tree): [("PIN", [])],
+                      ed.rel_of(agree, tree): [("PIN", [])]}
+            hrows = ed.trace_rows(hmembers, hcands, sorted(hcands), {}, gs, 30, 2048, root=tree)
+        finally:
+            for key, value in saved.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
+        hby = {r[0]: r for r in hrows}
+        h_row = hby[ed.rel_of(gate, tree)]
+        c_row = hby[ed.rel_of(agree, tree)]
+        # THE CLAIM: a gate that CANNOT START is REFUSED, and it is NOT DEAD.
+        h = h_row[2] == "REFUSED" and h_row[2] != "DEAD"
+        # THE CONTROL: a gate that CAN START is still measured normally, in the SAME run and
+        # with the SAME tree passed in -- so this arm cannot be satisfied by "refuse everything".
+        hcontrol = c_row[2] == "PASS" and c_row[1] == "RAN"
+
     checks.append(("A: a gate that DISAGREES is recorded FAIL", a,
                    f"row={bad_row[1]}/{bad_row[2]} rc={bad_row[4]}"))
     checks.append(("B: THE CONTROL -- a gate that AGREES is recorded PASS, and ALONE it leaves "
@@ -163,6 +247,11 @@ def plants():
     checks.append(("D: an EMPTY selection is DEAD (5), never PASS", d, ""))
     checks.append(("E: a candidate over the measured budget is SKIPped, and its row says the "
                    "measured cost", e, f"row={e_row[1]}/{e_row[3]}"))
+    checks.append(("H: a gate that CANNOT START (no compiler) is REFUSED, and is NOT DEAD",
+                   h, f"row={h_row[1]}/{h_row[2]} rc={h_row[4]}"))
+    checks.append(("H CONTROL: a gate that CAN START is still measured normally, in the same "
+                   "run and with the same tree passed in", hcontrol,
+                   f"row={c_row[1]}/{c_row[2]}"))
 
     after = {p: p.read_bytes() if p.is_file() else None for p in live}
     inert = before == after
