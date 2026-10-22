@@ -127,7 +127,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
   green. TRUST THE RED ONE.**
-  **AND AS OF **2026-10-22T08:55Z** (`710b55ae0`, **AFTER **TONIGHT's **199 **COMMITS**)
+  **AND AS OF **2026-10-22T11:03Z** (`ecde3623a`, **AFTER **TONIGHT's **206 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
   `graphs=34 graphs-answered=34 graphs-agree=34 graphs-disagree=0 byte-identical=34 graphs-refused=0`,
@@ -138,14 +138,14 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `310 of 310 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=310 repro-identical=310 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == 8174976365d2c502f7bb1a9b52b4c99af863706f3a763fd3b82b0da2f2466765`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == d685031f056015920c66a9843260f10653a7e0c93b74f716c56f827911dafe3b`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=710b55ae0ce6a20572b8845fdeaecf248d5b98c2` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
-  **AND **IT **IS **AN **ANCESTOR **OF **HEAD**, **NOT **HEAD **ITSELF, **AND **THAT **IS **THE **HONEST **SHAPE**: **A
-  **COMMIT **THAT **FOLLOWS **IT **AND **TOUCHES **NOTHING **IN **THE **SUBSTRATE** -- **`AGENTS.md`, **`.agents/**`,
-  **`gates/**` -- **DOES **NOT **MAKE **THE **RUN **STALE, **AND **THE **DIGEST **IS **WHAT **SAYS **SO** (MEASURED:
-  **`git diff --name-only 710b55ae0 HEAD -- tinybendygrad tinygrad bin/bend checks/differ.py …` **IS **EMPTY **AND
-  **THE **DIGEST **IS **UNCHANGED**).**  **BUT **A **COMMIT **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY
+  **STANDS**, **AND `substrate-head=ecde3623a222f015ffccdff4e3ab8887e0197ca5` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **AND **THIS **TIME **IT **IS **HEAD **ITSELF**, **NOT **AN **ANCESTOR **OF **IT**: MEASURED 2026-10-22T11:0xZ,
+  `git rev-parse --short HEAD` **IS** `ecde3623a`, **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399
+  **TRACKED **PATHS, **0 **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED
+  **DIGEST.**  **SO **THE **RUN **CERTIFIES **THE **COMMIT **THE **TREE **IS **AT** -- **THE **STRONGEST **FORM **OF **THE
+  **CLAIM**, **AND **IT **IS **ONLY **REACHABLE **WHEN **THE **TREE **IS **QUIET.**  **BUT **A **COMMIT **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY
   **THE **FIRST **`run` **OF **TONIGHT **WAS **RE-RUN.***
   ***AND ***THE **PART **THAT **IS **A **COVERAGE **HOLE **AND **NOT **A **RESULT** -- **THE `pI(` LANE **IS **DEAD**:***
   **MEASURED 2026-10-22: the corpus's 34 graphs produce **ZERO** `pI(` rows, so **the `ProgramInfo` FIELD LIST **IS
