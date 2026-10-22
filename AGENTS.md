@@ -426,7 +426,15 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   OTHER UNIT'S COMMIT IS THEN `HEAD`; AND **A RECIPE MEASUREMENT MUST ASSERT THAT THE COMMIT IT
   IS MEASURING LANDED**, BECAUSE A COMMIT THAT DID NOT HAPPEN IS A **REFUSAL**, AND A REFUSAL
   IS A DIFFERENT CLASS.** **NEVER `git add -A` -- MEASURED HERE AGAIN: IT PUTS ANOTHER UNIT'S
-  WORK INSIDE YOUR COMMIT.**
+  WORK INSIDE YOUR COMMIT.  **⚠ AND `git add <dir>` **IS **THE **SAME **HAZARD **WITH **A **PATH**:
+  MEASURED 2026-10-22, I **DID `git add checks/`** TO LAND THE TREE's OWN PUBLISHED INSTRUMENT
+  OUTPUTS, **AND **IT **SWEPT **IN **SIX **FILES **THAT **WERE **NOT **INSTRUMENT **OUTPUTS** -- **FOUR
+  `checks/.tmp-*.py` **STAGING **COPIES **OF **OTHER **GATES** (which **is **the **worst **kind **to
+  **commit: **A **FILE **THAT **LOOKS **LIKE **THE **THING **IT **SHADOWS**), **PLUS **A **`.err` **AND **A
+  **`.out`.**  **⇒ THE RULE **IS **"**STAGE **BY **PATH**", **AND **NOT **"NEVER `git add -A`"** -- a
+  **DIRECTORY **IS **NOT **A **PATH**.**  **AND **THE **HOLE **IS **CLOSED**: `.gitignore` **NOW
+  **COVERS **`checks/.tmp-*`, **`checks/*.out` **AND **`checks/*.err`**, **SO **THE **NEXT **`git add
+  checks/` **CANNOT **SWEEP **THEM **AGAIN.**
   **AND NOW ***ALSO*** RUN `git fsck --no-progress`, BECAUSE `--stat` **CANNOT** SEE A MALFORMED COMMIT AT ALL.**
   **AND A **SCRIPT **THAT **OTHERS **ARE **EXECUTING **IS **SHARED **STATE **TOO**, **AND **EDITING **IT
   **IN **PLACE **IS **THE **HAZARD** -- MEASURED 2026-10-22, **AND **I **CAUSED **IT**: I edited
