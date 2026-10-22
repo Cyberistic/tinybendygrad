@@ -49,7 +49,24 @@ PY, GCMP = ".venv/bin/python", ".agents/slop/graphcmp.py"
 # `env -u PYTHONPATH` is REQUIRED (it contaminates a control) and `LC_ALL=C` is REQUIRED (a
 # locale-colated sort fabricates diffs). `DEV=NULL` is the rebase gate's own setting;
 # graphcmp.py overrides it from its own `--dev`, which is why every artifact names its device.
-ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C", "DEV": "NULL", "PYTHONHASHSEED": "0", "NOOPT": "0"}
+#
+# `BEND_NO_TELEMETRY=1` is REQUIRED, AND IT IS THE ONLY OFF-REPO INPUT IN THE MEASUREMENT.
+# The compiler's daily check (`references/bend/bend2/main.ts:185-211`) fetches
+# `https://bend-lang.com/check` ONCE A DAY into `~/.bend/check.json` -- a file in the
+# DEVELOPER's HOME, not in this repository -- and prints `bend <published> is available` on
+# stderr when the published version beats the local one. That notice IS D10's transcript
+# (`attempt_note`, `graphcmp.py:2369-2371`), so the corpus's D10 pin was a pin on a network
+# answer. MEASURED 2026-10-22, five cases, the oracle's own `emit_bend`, each with its own
+# `HOME` so the user's cache was never touched:
+#     cache ver=2.0.38  -> e166842f40741d48... (the transcript's note)   == THE PIN
+#     cache ver=2.0.39  -> 312e2b4f4c75494d...                          != THE PIN  <- upstream's next release
+#     BEND_NO_TELEMETRY -> e7f59eefc308ea3b...                          == the OLD PIN, and IDENTICAL
+#                                                                              with and without a cache
+# So: with the flag the transcript is a function of THIS REPOSITORY alone; without it, the
+# next upstream Bend release reds the pin with NO repo change, NO port change and NO commit
+# to explain it. The flag is the compiler's OWN switch (`main.ts:186-188`), so this asks the
+# compiler to be quiet, not to be different.
+ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C", "DEV": "NULL", "PYTHONHASHSEED": "0", "NOOPT": "0", "BEND_NO_TELEMETRY": "1"}
 
 # THE FROZEN SHELL ORACLE IS PINNED HERE, IN CODE, AND CHECKED ON EVERY RUN.
 #
@@ -490,10 +507,25 @@ D10 = "D10-zerorow-guard"
 # The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`, and the LOCAL
 # compiler is 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13) -- so upstream's 2.0.38
 # release is what turned the notice on, and nothing in THIS repository turned it on.
-# **⇒ AND THIS PIN IS A PIN ON A NETWORK ANSWER.** The next upstream release moves it again with
-# NO REPO CHANGE AT ALL, and `BEND_NO_TELEMETRY=1` (`main.ts:186-188`) suppresses the check and
-# puts the transcript BACK on the old value. That is the durable fix and it is NOT applied here:
-# this change is the pin and this declaration, and nothing else.
+# **⇒ AND THIS PIN WAS A PIN ON A NETWORK ANSWER, AND IT IS NO LONGER ONE.** The next upstream
+# release moved it again with NO REPO CHANGE AT ALL. `BEND_NO_TELEMETRY=1` (`main.ts:186-188`)
+# suppresses the check and puts the transcript BACK on the empty-stderr value, and it is NOW
+# APPLIED -- in `ENV` above, which every child of this driver inherits, and in
+# `graphcmp.py`'s `clean_env()`, so the oracle is hermetic when it runs on its own too. The pin
+# is therefore back on the value it held BEFORE upstream's 2.0.38 release turned the notice on,
+# and it is the value a fresh clone with no network, no cache and no `~/.bend` produces.
+#
+# **⇒ AND THE PIN MOVED BACK, WHICH IS NOT A RE-FREEZE.** The rule above ("the remedy for a red
+# pin is to RE-TAKE, never to hand-edit") is about a pin whose SUBJECT moved; here the SUBJECT
+# was never the repository's, so removing the off-repo input is the only move that can be right,
+# and re-taking afterwards is what re-anchors the bytes. MEASURED 2026-10-22, five cases, the
+# oracle's own `emit_bend`, each with its own `HOME` so the user's cache was never touched:
+#     cache ver=2.0.38  -> the notice's transcript   == f35b2d90...
+#     cache ver=2.0.39  -> a DIFFERENT transcript    != f35b2d90...   <- upstream's next release
+#     BEND_NO_TELEMETRY -> the empty-stderr one      == 9bfb8517...   <- THIS PIN, and IDENTICAL
+#                                                                              with and without a cache
+# The corpus's own `repro` then compares the two clean runs byte for byte, so the claim "319 of
+# 319 identical" is a claim about the REPOSITORY and not about the developer's home directory.
 #
 # **THE CORPUS's OTHER DELTA, WHICH IS NOT THIS ONE.** Four changes moved the CORPUS between the
 # pin's commit (`6ed9f4256`, 2026-10-15) and today, and NONE of them moved THIS transcript --
@@ -526,7 +558,7 @@ D10 = "D10-zerorow-guard"
 #      `# UPSTREAM-PIN <path> <sha256>` line for each of the **7** files the oracle reads
 #      (`a7b3cede3`).
 REPRO_PINS = {"repro-rc": "rc=0",
-              "d10-transcript": "f35b2d90bdbe49b0361af9fe392e162fc51b44b63caf22d6c2e75062eee343f9"}
+              "d10-transcript": "9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84"}
 # AND THE ROW THAT MAKES THE WITNESS FALSIFIABLE. Both pins above are claims about a COMPARISON,
 # not about a TIME, so nothing in `D0-repro.txt` said WHEN it was taken -- and a witness nobody
 # re-took is then indistinguishable from one taken a minute ago.
@@ -631,15 +663,17 @@ def run(out, *args):
     so one function carries two opposite conventions ten lines apart, and a reader of a `.err` has
     no way to tell which one produced the sentence in front of them.
 
-    THE PATCH IS TWO FORMAT STRINGS AND IT IS NOT APPLIED HERE, FOR THE REASON THAT MATTERS:
-    `.agents/slop/graphcmp.py` is outside this unit's grant, and a `.slop/` file is inside a tree
-    other units are pruning, so the honest action is to NAME IT rather than to patch a file whose
-    next revision may not be mine. `%d attempt(s)` becomes `%d of %d attempt(s)` with
-    `(len(notes), tries)` in both tuples -- `len(notes)` is `attempt` on the exhaustion path and
-    `1` on the break path, so it is the count in every case where the message is printed at all.
-    NOTHING READS THE NUMBER: `checks/substrate-id.py`'s `--repro-files` counts `.err` FILES, and
-    `snap()` compares them byte-wise, so the mislabel moves no verdict here -- **which is exactly
-    why it survived, and the same reason a documented defect outlives the document that found it.**
+    THE PATCH IS TWO FORMAT STRINGS AND IT IS NOW APPLIED (2026-10-22). It was left NAMED for a
+    grant reason, not a technical one: `.agents/slop/graphcmp.py` was outside that unit's grant,
+    and a `.slop/` file is inside a tree other units are pruning, so the honest action was to NAME
+    IT rather than to patch a file whose next revision might not be its own. `%d attempt(s)`
+    became `%d of %d attempt(s)` with `(len(notes), tries)` in both tuples -- `len(notes)` is
+    `attempt` on the exhaustion path and `1` on the break path, so it is the count in every case
+    where the message is printed at all. NOTHING READ THE NUMBER: `checks/substrate-id.py`'s
+    `--repro-files` counts `.err` FILES, and `snap()` compares them byte-wise, so the mislabel
+    moved no verdict here -- **which is exactly why it survived, and the same reason a documented
+    defect outlives the document that found it.**  The two `.err` files that carry the sentence
+    are byte-compared by `snap()`, so the re-take below re-anchors them.
     """
     tmp = D / f".tmp.{out}"
     with tmp.open("wb") as f, (D / f"{out}.err").open("wb") as err:
@@ -1565,7 +1599,7 @@ def settled():
     that it exits 1 even on a clean file (`dtype.bend`'s 14 permanently-red laws), so the exit
     status is not the signal and the text is."""
     p = subprocess.run(["./bin/bend", ".agents/slop/graphcmp.bend", "--check-only"],
-                       cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                       cwd=ROOT, env=ENV, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     return p.stdout.split("\n", 1)[0]
 
 

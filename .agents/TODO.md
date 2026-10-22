@@ -1489,6 +1489,34 @@ corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OW
                                        `substrate-end=56f515c3` -- the tree's own instrument naming the cause), and
                                        REFUSED at 19:29Z because of (1).
 
+                                       **TICKED 2026-10-22T17:2xZ: THE REMEDY IS APPLIED, AND IT IS THE
+                                       PIN'S OWN NAMED CURE.** `BEND_NO_TELEMETRY=1` (`main.ts:186-188`) is the
+                                       COMPILER's OWN switch, and it is now set in TWO places, each at the
+                                       boundary where a `bin/bend` child is LAUNCHED: `checks/differ.py`'s
+                                       `ENV` (which every child of the corpus driver inherits) and
+                                       `graphcmp.py`'s `clean_env()` (which is the oracle's own child env, so
+                                       the oracle is hermetic when it runs on its own too). `settled()` --
+                                       the corpus's "is the compiler ready" gate -- was the ONLY child that
+                                       did not use `ENV`, and it now does; **⇒ AND IT WAS NOT A HAZARD**:
+                                       it merges stderr into stdout and reads LINE 1, and the notice lands
+                                       AFTER `ALL PROOFS CHECK`, so MEASURED, line 1 is `ALL PROOFS CHECK`
+                                       with and without the flag. **A NEGATIVE RESULT IS A RESULT.**
+                                       **⇒ AND THE PIN IS BACK ON `9bfb8517...`**, the value it held BEFORE
+                                       upstream's 2.0.38 release turned the notice on. **MEASURED, FIVE
+                                       CASES, THE ORACLE's OWN `emit_bend`, EACH WITH ITS OWN `HOME` SO THE
+                                       USER's CACHE WAS NEVER TOUCHED**: cache ver=2.0.38 -> the notice's
+                                       transcript; cache ver=2.0.39 -> **A DIFFERENT TRANSCRIPT** (so upstream's
+                                       next release WOULD have redded the pin with no repo change, no port
+                                       change and no commit to explain it); `BEND_NO_TELEMETRY=1` -> **THE
+                                       SAME TRANSCRIPT WITH AND WITHOUT A CACHE AND WITH AND WITHOUT A
+                                       NETWORK.** **⇒ SO THE CORPUS's "319 of 319 identical" IS NOW A CLAIM
+                                       ABOUT THE REPOSITORY AND NOT ABOUT THE DEVELOPER's HOME DIRECTORY.**
+                                       **⇒ AND THE SECOND NAMED, UNAPPLIED PATCH IN THE SAME FILE IS
+                                       APPLIED TOO**: `%d attempt(s)` -> `%d of %d attempt(s)` with
+                                       `(len(notes), tries)` in both tuples, in `graphcmp.py` and in
+                                       `checks/differ.py`'s own note about it. **⇒ AND `POPULATION_PIN` DID
+                                       NOT MOVE** (`4a44f98e...` before and after): the edit touched no graph.
+
 imagenet-distance    [##] 2/3  **THE MEASURED DISTANCE TO "RUN IMAGENET USING BEND", BY A WALK OF THE PORT'S 3,285
                                        `.bend` FILES AND 102,269 DEFS (not a hand list).** MEASURED 2026-10-22T04:05Z.
                                        **PRESENT**: `nn_conv2d`, `pool_bn`, `nn_linear`, `vt_sequential`, `mx_cat`,

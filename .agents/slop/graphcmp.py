@@ -2246,9 +2246,22 @@ def emit_py(graph: str, plant: str | None) -> list[str]:
 # that had twelve committed files print 0 rows for an hour.
 def clean_env(dev: str) -> dict:
   """`PYTHONPATH` REMOVED (it contaminates a control) and `LC_ALL=C` SET (a locale-colated
-  sort fabricates diffs, including on a no-op control)."""
+  sort fabricates diffs, including on a no-op control).
+
+  `BEND_NO_TELEMETRY=1` IS SET, AND IT IS THE ONLY OFF-REPO INPUT IN THE MEASUREMENT. The
+  compiler's daily check (`bend2/main.ts:185-211`) fetches `https://bend-lang.com/check` once
+  a day into `~/.bend/check.json` -- the DEVELOPER's HOME, not this repository -- and prints
+  `bend <published> is available` on stderr when the published version beats the local one.
+  That notice IS the D10 transcript (`attempt_note`, below), so without this the corpus pins a
+  network answer and the next upstream Bend release reds the pin with no repo change at all.
+  MEASURED 2026-10-22, five cases, this oracle's own `emit_bend`, each with its own `HOME` so
+  the user's cache was never touched: cache ver=2.0.38 -> one transcript, cache ver=2.0.39 ->
+  a DIFFERENT one, and `BEND_NO_TELEMETRY` -> the SAME one with and without a cache and with
+  and without a network. The flag is the compiler's OWN switch (`main.ts:186-188`): this asks
+  the compiler to be quiet, not to be different.
+  """
   e = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
-  e.update(LC_ALL="C", DEV=dev)
+  e.update(LC_ALL="C", DEV=dev, BEND_NO_TELEMETRY="1")
   return e
 
 
@@ -2406,8 +2419,8 @@ def emit_bend(dev: str, graph: str, tries: int = TRIES,
       return rows, notes
     if verdict != "RETRY":
       break
-  raise SystemExit("emit bend %s: %s after %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
-                   % (graph, verdict, tries, "\n  ".join(notes)))
+  raise SystemExit("emit bend %s: %s after %d of %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
+                   % (graph, verdict, len(notes), tries, "\n  ".join(notes)))
 
 
 # ---------------------------------------------------------------------------
@@ -3374,8 +3387,8 @@ def debug_run(dev: str, level: int, tries: int = TRIES) -> tuple[list[str], list
       return rows, notes
     if verdict != "RETRY":
       break
-  raise SystemExit("emit debug DEBUG=%s: %s after %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
-                   % (level, verdict, tries, "\n  ".join(notes)))
+  raise SystemExit("emit debug DEBUG=%s: %s after %d of %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
+                   % (level, verdict, len(notes), tries, "\n  ".join(notes)))
 
 
 def split_debug(rows: list[str]) -> tuple[list[str], list[str]]:
