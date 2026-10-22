@@ -345,14 +345,15 @@ BOTTOM = tuple("b_" + d for d in DRV)
 # nothing about being right. Matching realize.py:15 exactly is strictly better, costs two
 # characters, and removes 52 pins rather than annotating them.
 SRC_BODY_FIXED = (
-    "arg_9", "arg_10", "arg_11", "arg_12", "arg_13", "arg_14", "arg_15", "arg_16",
-    "arg_26", "arg_27", "arg_28", "arg_29", "arg_30", "arg_33", "arg_34", "arg_36",
-    "arg_39", "arg_41", "arg_45", "arg_46", "arg_47", "arg_48", "arg_56", "arg_58",
-    "arg_59", "arg_62",
-    "res_9", "res_10", "res_11", "res_12", "res_13", "res_14", "res_15", "res_16",
-    "res_26", "res_27", "res_28", "res_29", "res_30", "res_33", "res_34", "res_36",
-    "res_39", "res_41", "res_45", "res_46", "res_47", "res_48", "res_56", "res_58",
-    "res_59", "res_62",
+    "arg_10", "arg_11", "arg_12", "arg_13", "arg_14", "arg_15",
+    "arg_16", "arg_17", "arg_27", "arg_28", "arg_29", "arg_30",
+    "arg_31", "arg_34", "arg_35", "arg_37", "arg_40", "arg_42",
+    "arg_46", "arg_47", "arg_48", "arg_49", "arg_57", "arg_59",
+    "arg_60", "arg_63", "res_10", "res_11", "res_12", "res_13",
+    "res_14", "res_15", "res_16", "res_17", "res_27", "res_28",
+    "res_29", "res_30", "res_31", "res_34", "res_35", "res_37",
+    "res_40", "res_42", "res_46", "res_47", "res_48", "res_49",
+    "res_57", "res_59", "res_60", "res_63",
 )
 SRC_BODY: tuple = ()
 #

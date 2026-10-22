@@ -361,7 +361,7 @@ PHASE1 = [
     # this mutation changes is read only by `bm_zero` -- the CLAIM -- on the one node whose
     # rewrite is the identity, so the claim moved and the printed answer did not.
     # `<claim><fired>` prints `10` at the current default and `00` at this one, so this
-    # moves `beam_55` and `bea0_55`. MEASURED after the change.
+    # moves `beam_56` and `bea0_55`. MEASURED after the change.
     ("V2 `rz_kernel_beam` DEFAULTS a KernelInfo-less SINK to 1 (SINK_NO_KI's wrong answer)",
      "VALUE",
      [("port", "def rz_kernel_beam(a: O.Arg) -> U32:\n  match a:\n"
@@ -401,7 +401,7 @@ PHASE1 = [
                  "    case O.OpsBUFFER{}: String.concat([s, \"@\", U32.show(sl)])\n    case _: s",
        "def rs_s1.slot(op: O.Op, sl: U32, s: String) -> String:\n  match op:\n"
        "    case O.OpsPARAM{}: s\n    case O.OpsBUFFER{}: s\n    case _: s")]),
-    ("V9 `rs_is_view` drops the MSTACK arm, so `res_52` loses its `<-` depth", "VALUE",
+    ("V9 `rs_is_view` drops the MSTACK arm, so `res_53` loses its `<-` depth", "VALUE",
      [("driver", "    case O.OpsMSTACK{}: True{}\n    case O.OpsGETADDR{}: True{}",
        "    case O.OpsMSTACK{}: False{}\n    case O.OpsGETADDR{}: True{}")]),
     # -------------------------------------------------------------------- DEAD-DEF PROBES
@@ -448,14 +448,14 @@ PHASE1 = [
     ("P4 `rs_n()` drops a node: 1004 rows become 989", "POPULATION",
      [("driver", "def rs_n() -> Nat: 65n", "def rs_n() -> Nat: 64n")]),
     ("P5 the pins file loses ONE declared divergence", "POPULATION",
-     [("pins", "res_63\tres_63=BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]\t"
-               "res_63=BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]\n", "")]),
+     [("pins", "res_64\tres_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@1[g1:-]+CONST/0[1]\t"
+               "res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@0[g0:-]+CONST/0[1]\n", "")]),
     ("P6 one pin's PORT VALUE is edited (someone typed it wrong)", "POPULATION",
-     [("pins", "res_63=BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]\n",
-       "res_63=BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@1[g0:-]+CONST/0[1]\n")]),
+     [("pins", "res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@0[g0:-]+CONST/0[1]\n",
+       "res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@1[g0:-]+CONST/0[1]\n")]),
     ("P7 one pin's CPython value is edited", "POPULATION",
-     [("pins", "res_63=BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]\t",
-       "res_63=BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@0[g1:-]+CONST/0[1]\t")]),
+     [("pins", "res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@1[g1:-]+CONST/0[1]\t",
+       "res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@0[g1:-]+CONST/0[1]\t")]),
     ("P8 `rs_drv_name` RENAMES a driver: 63 rows vanish and 63 appear under a new name",
      "POPULATION",
      [("driver", "    case 2: \"res\"", "    case 2: \"resolve\"")]),
@@ -464,7 +464,7 @@ PHASE1 = [
      [("driver", "def rs_inputs() -> List<&2, U32>:\n  [10, 9]",
        "def rs_inputs() -> List<&2, U32>:\n  [9, 10]")]),
     ("X2 BOTH lanes' `inputs` become the two PARAMs: the fixture axis the gate's own "
-     "prose predicts makes `res_63` AGREE", "AXIS",
+     "prose predicts makes `res_64` AGREE", "AXIS",
      [("driver", "def rs_inputs() -> List<&2, U32>:\n  [10, 9]",
        "def rs_inputs() -> List<&2, U32>:\n  [2, 3]"),
       ("oracle", "return lst(RZ.resolve_params(u, (b1, b0)))",
@@ -581,25 +581,41 @@ PHASE1 = [
 PHASE2 = [
     # -- `classes_hold`: every class's claim, checked on the promoted lanes.
     ("G1 classes_hold: one `SRC_BODY_FIXED` row goes back to disagreeing", "GUARD",
-     {"bd.out": {"arg_9": "TAMPERED"}}, None),
+     {"bd.out": {"arg_10": "TAMPERED"}}, None),
     ("G2 classes_hold: a `BOTTOM` row answers a value read off the arena", "GUARD",
      {"bd.out": {"b_arg": "CONST/0[3]"}}, None),
     ("G3 classes_hold: a `NAME_ARM` row answers something other than `none`", "GUARD",
-     {"bd.out": {"name_18": "0"}}, None),
+     {"bd.out": {"name_19": "0"}}, None),
     ("G4 classes_hold: a `VAL_BODY` row answers neither claim bit", "GUARD",
-     {"bd.out": {"val_23": "2"}}, None),
-    ("G5 classes_hold: `kern_53` is no longer the declared SINK-in-the-arg-slot pair",
-     "GUARD", {"bd.out": {"kern_53": "1"}}, None),
+     {"bd.out": {"val_24": "2"}}, None),
+    ("G5 classes_hold: `kern_54` is no longer the declared SINK-in-the-arg-slot pair",
+     "GUARD", {"bd.out": {"kern_54": "1"}}, None),
     ("G6 classes_hold: a `SINK_NO_KI` row stops being the declared pair", "GUARD",
-     {"bd.out": {"beam_55": "1"}}, None),
-    ("G7 classes_hold: a `SLOT_MISS` row stops being the declared pair", "GUARD",
-     {"bd.out": {"res_20": "none"}}, None),
-    ("G8 classes_hold: `wbuf_60` is no longer the declared MSELECT wall", "GUARD",
-     {"bd.out": {"wbuf_60": "none"}}, None),
-    ("G9 classes_hold: `res_63` is no longer the declared GETADDR drift pair", "GUARD",
-     {"bd.out": {"res_63": "BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]@0"}}, None),
+     {"bd.out": {"beam_56": "1"}}, None),
+    # `SLOT_MISS` IS EMPTY AND THE THREE ROWS IT NAMED ARE IN `RES_NO_SHAPE`, WHOSE CLAIM
+    # IS ABOUT **CPython's** ANSWER (`cpy[r] == "raise=IndexError"`). SO THE PLANT BELONGS
+    # ON THE `py.rows` SIDE AND NOT ON THE PORT's: A PLANT THAT PATCHES THE WRONG LANE IS
+    # A PLANT THAT NEVER FIRES.
+    ("G7 classes_hold: a `RES_NO_SHAPE` row stops being CPython's raise", "GUARD",
+     {"py.rows": {"res_21": "0"}}, None),
+    # **THE OLD PLANT WAS `none` AND THE PORT's VALUE IS `none`, SO IT CHANGED NOTHING AND
+    # THE GUARD WAS SILENT** -- A PLANT THAT PATCHES A ROW WITH THE VALUE IT ALREADY HAS
+    # IS A PLANT THAT NEVER FIRES. THE VALUE IS NOW ONE THE PORT DOES NOT HAVE.
+    ("G8 classes_hold: `wbuf_61` is no longer the declared MSELECT wall", "GUARD",
+     {"bd.out": {"wbuf_61": "BUFFER/1@0[g0:-]"}}, None),
+    ("G9 classes_hold: `res_64` is no longer the declared GETADDR drift pair", "GUARD",
+     {"bd.out": {"res_64": "BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@0[g0:-]+CONST/0[1]@0"}}, None),
     ("G10 classes_hold: a `RET_IS_UOP_FIXED` ctx-0 row stops being `10`", "GUARD",
-     {"bd.out": {"bea0_23": "11:CALL/2[l],SINK/0[k1:0]"}}, None),
+     {"bd.out": {"bea0_24": "11:CALL/2[l],SINK/0[k1:0]"}}, None),
+    # -- THE `NO_SHAPE` FAMILY: CPython's `is_variable` READS `self._shape` AND A PARAM
+    # WITH NO `src` RAISES. THE CLAIM IS ABOUT CPython's ANSWER, SO THE PLANT IS ON THE
+    # `py.rows` SIDE.
+    ("G7b classes_hold: a `VAR_NO_SHAPE` row stops being CPython's raise", "GUARD",
+     {"py.rows": {"var_18": "0"}}, None),
+    ("G7c classes_hold: a `WBUF_NO_SHAPE` row stops being CPython's raise", "GUARD",
+     {"py.rows": {"wbuf_20": "0"}}, None),
+    ("G7d classes_hold: an `ARG_NO_SHAPE` row stops being CPython's raise", "GUARD",
+     {"py.rows": {"arg_20": "0"}}, None),
     # -- `no_bottom_value`: slot 0 and the arm-coverage rows, on BOTH port lanes.
     ("G11 no_bottom_value: the BOTTOM slot answers a value", "GUARD",
      {"bd.out": {"b_arg": "CONST/0[3]"}}, None),
@@ -610,12 +626,12 @@ PHASE2 = [
     # -- `ret_is_uop_fixed_holds`: FINDING 2's regression row, both halves.
     ("G14 ret_is_uop_fixed_holds: no ctx-7 row FIRED (a fix that dropped every rewrite)",
      "GUARD", {"bd.out": {r: "00" for r in
-                          ("beam_23", "beam_49", "beam_50", "beam_51", "beam_52", "beam_53",
-                           "beam_61", "beam_63")}}, None),
+                          ("beam_24", "beam_50", "beam_51", "beam_52", "beam_53", "beam_54",
+                           "beam_62", "beam_64")}}, None),
     ("G15 ret_is_uop_fixed_holds: a ctx-7 row fired but no longer carries `b=7`", "GUARD",
-     {"bd.out": {"beam_23": "11:CALL/2[l],SINK/0[k1:3],PARAM/0@0[g0:-]:b=3"}}, None),
+     {"bd.out": {"beam_24": "11:CALL/2[l],SINK/0[k1:3],PARAM/1@0[g0:-]:b=3"}}, None),
     ("G16 ret_is_uop_fixed_holds: a ctx-0 `bea0_*` row stopped answering `10`", "GUARD",
-     {"bd.out": {"bea0_49": "11:CALL/3[vs],SINK/0[k1:0]"}}, None),
+     {"bd.out": {"bea0_50": "11:CALL/3[vs],SINK/0[k1:0]"}}, None),
     ("G16b ret_is_uop_fixed_holds: NO row is REFUSED, so a claim that fires on everything "
      "would pass the ctx-0 check alone", "GUARD",
      {"bd.out": "@all:00->10"}, None),
@@ -643,12 +659,12 @@ PHASE2 = [
     ("G21 compares_holds: a bottom row no longer reads `bottom` on the CPython lane",
      "GUARD", {"py.rows": {"b_res": "none"}}, None),
     # -- `pin_drift_holds`: THE PIN RUNS ON EVERY PASS. NOT MUTATED -- driven instead.
-    ("G22 pin_drift_holds: the pin's row `res_63` no longer equals the port's", "GUARD",
-     {"bd.out": {"res_63": "BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]"}}, None),
-    ("G23 pin_drift_holds: the pin ALSO answers `res_52`, so 'only one arm' is wrong",
-     "GUARD", {"bd.out": {"res_52": "BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]"}}, None),
+    ("G22 pin_drift_holds: the pin's row `res_64` no longer equals the port's", "GUARD",
+     {"bd.out": {"res_64": "BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@1[g1:-]+CONST/0[1]"}}, None),
+    ("G23 pin_drift_holds: the pin ALSO answers `res_53`, so 'only one arm' is wrong",
+     "GUARD", {"bd.out": {"res_53": "BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]"}}, None),
 # -- `kern_blind_holds`: a SOURCE claim on the driver's `S.Dn{[...]}` and the oracle's
-    #    `("DISK", "CPU")`, AND a LANE claim on `kern_65`. **G24's old anchor was
+    #    `("DISK", "CPU")`, AND a LANE claim on `kern_66`. **G24's old anchor was
     #    `rs_cpu`'s `S.D1{0}` and G25's was `device="CPU"`, and BOTH ARE SILENT against the
     #    current check** -- it no longer asks "is there exactly one device", because there
     #    is a second one on purpose now. A guard mutation aimed at what the guard stopped
@@ -662,10 +678,10 @@ PHASE2 = [
      "GUARD", None,
      ("oracle", '_buf_dev(3, "g2", ("DISK", "CPU"))',
       '_buf_dev(3, "g2", ("CUDA", "CPU"))')),
-    ("G25b kern_blind_holds: the promoted PORT lane's `kern_65` is not 2", "GUARD",
-     {"bd.out": {"kern_65": "1"}}, None),
-    ("G25c kern_blind_holds: the CPython lane's `kern_65` is not 2", "GUARD",
-     {"py.rows": {"kern_65": "1"}}, None),
+    ("G25b kern_blind_holds: the promoted PORT lane's `kern_66` is not 2", "GUARD",
+     {"bd.out": {"kern_66": "1"}}, None),
+    ("G25c kern_blind_holds: the CPython lane's `kern_66` is not 2", "GUARD",
+     {"py.rows": {"kern_66": "1"}}, None),
     # -- `axis_hold`: THE DRIVER AXIS, READ BACK FROM FOUR PLACES. Five mutations, one per
     #    site plus the ORDER, because a check that reads four places and can only be made to
     #    fail by editing one of them has not been shown to read the other three.
@@ -689,7 +705,7 @@ PHASE2 = [
     #    mutation has to be a CONE to be a stale-arena read. Aimed at the old single-bit
     #    `"0"` it reads SILENT after the two-bit printer, which is why it is spelled this way.
     ("G35b no_bottom_value: the BOTTOM slot answers a beam CONE", "GUARD",
-     {"bd.out": {"b_beam": "11:CALL/2[l],SINK/0[k1:7],PARAM/0@0[g0:-]:b=7"}}, None),
+     {"bd.out": {"b_beam": "11:CALL/2[l],SINK/0[k1:7],PARAM/1@0[g0:-]:b=7"}}, None),
     # -- `drivers_hold`: the DRIVER AXIS, re-derived from `realize.bend` and `realize.py`.
     ("G26 drivers_hold: `realize.bend` loses a `*_table` driver", "GUARD", None,
      ("port", "def flatten_table() -> O.PMEntrys:", "def flatten_tab() -> O.PMEntrys:")),
@@ -713,7 +729,7 @@ PHASE2 = [
     #    brief names `rows_hold` and `pin_lines()` and NEITHER IS IN THE FILE (both 0), so
     #    the runner asserts the claim the gate actually makes.
     ("G30 the pin-COUNT assertion: the pins file gains a row no class declares", "GUARD",
-     None, ("pins", "res_63\tres_63=", "res_63_X\tres_63_X=")),
+     None, ("pins", "res_64\tres_64=", "res_64_X\tres_64_X=")),
     # -- `argkinds_hold`: NO LANE MAY PRINT `[?]`, AND THE GUARD'S SUBJECT IS A LANE, NOT A
 #    SOURCE. **THE FIRST TAMPER WAS SILENT TWICE, FOR TWO DIFFERENT REASONS, AND BOTH ARE
 #    WORTH NAMING.** (i) The first aimed at `rs_pay`'s `ACustom` arm, which is a DEAD ARM on the
@@ -725,7 +741,7 @@ PHASE2 = [
 #    `kern_blind_holds`, `drivers_hold`), and `argkinds_hold` reads the lane text. So the
 #    tamper must be a LANE ROW, and that is the third time this harness has aimed at the wrong
 #    KIND of subject rather than at the wrong half of a population.
-    # ... AND THE ROW CHOSEN HAS TO BE ONE NOBODY ELSE READS. The first row tried was `arg_9`,
+    # ... AND THE ROW CHOSEN HAS TO BE ONE NOBODY ELSE READS. The first row tried was `arg_10`,
     # which is in `SRC_BODY_FIXED` -- `classes_hold` reads it FIRST and `and`-chains, so the
     # run went red on `classes_hold` and `argkinds_hold` never got to speak. That is the
     # harness's own lesson (`GUARDS_TAIL` records `classes_hold` SUBSCRIPTS the lane where
