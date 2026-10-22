@@ -164,6 +164,38 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **False** **AND `hasattr(..., "params")` **IS **True** -- **SO **IT **WOULD **RAISE **IF **A **GRAPH **EVER **REACHED
   **IT.**  **A **GRAPH **WHOSE **PROGRAM **CARRIES **A **BUFFER **PARAM **WOULD **MAKE **THE **TWO **LISTS **DIFFER, AND
   **NO **SUCH **GRAPH **EXISTS **HERE.**  **THE **CORPUS **IS **GREEN **AND **THIS **HOLE **IS **IN **IT.**
+  ***AND ***THE **PORT's `Op` **ENUM **IS **EXACTLY **UPSTREAM's `Ops` **ENUM **AT **THE **PIN**, **AND **THE **TWO
+  **WAYS **OF **BEING **WRONG **ARE **BOTH **EMPTY**:** MEASURED 2026-10-22, **upstream 75, port 75, 0
+  missing, 0 extra.**  **AND **UPSTREAM's `Ops` **ENUM **LIVES **IN **`tinygrad/uop/__init__.py` **AT **THE
+  **PIN, **NOT **IN **`ops.py`** -- **SO **A **GREP **OF **`ops.py` **FINDS **NO `class Ops` **AND **A
+  **REGEX **THAT **TAKES **ONLY **THE **FIRST `auto()` **PER **LINE **UNDERCOUNTS **BY **HALF** (upstream
+  **writes **`BUFFER = auto(); ALLOC = auto()`**).**
+  **⇒ AND **THE **FALLOUT **OF **THE **ENUM **BEING **EXACT **IS **THREE **DRIVERS **STILL **CONSTRUCTING
+  **OPS **UPSTREAM **DELETED**: `OpsGROUP` (`gates/ptx_render_census_axis.bend`), `OpsFLIP`
+  (`oracles/lift-rows.bend`), `OpsX` (`gates/tn_binop_sweep.bend`).  **⇒ AND **THE **PTX **GATE **IS
+  **REFUSED, **NOT **RED: **IT **CANNOT **RUN **AT **ALL** -- **AND **A **GATE **THAT **IS **REFUSED **IS
+  **A **DEAD **GATE, **AND **THE **DIFFERENCE **MATTERS.**
+  **⇒ AND **UPSTREAM's `group()` **WAS **NOT **DELETED **WITH **THE **OP**: `4e0192eaf remove Ops.GROUP
+  (#18637)` **REMOVED **THE **ENUM **MEMBER **AND **CHANGED **WHAT **THE **METHOD **BUILDS** (now
+  `Ops.STACK.after(...)`), **AND **THE **PORT's `UOp.group` **MATCHES **UPSTREAM **EXACTLY** -- so **THE
+  **PORT **IS **RIGHT **AND **THE **DRIVERS **ARE **STALE.  **DO **NOT **"FIX" **THE **PORT.**
+  **⇒ AND **THE **GENERAL **LESSON: **A **DRIVER **THAT **CONSTRUCTS **AN **OP **UPSTREAM **DELETED **IS
+  **A **DRIVER **PINNED **TO **AN **OLDER **UPSTREAM, **AND **THE **PIN **IS **INVISIBLE** -- **A **FIXTURE
+  **AGAINST **AN **UNSTATED **REVISION **IS **A **FIXTURE **AGAINST **NOBODY.**
+
+  ***AND ***THERE **IS **NOW **A **COMPILE-LEVEL **CHECK **OVER **THE **WHOLE **PORT**: `checks/port-compile-gate.py`
+  **COMPILES **EVERY **FILE **AND **READS **THE **VERDICT **TOKEN** -- **165 of 169 COMPILE, 4 ARE **COLD
+  **BY **DESIGN** (`LAWS.bend`, `PROOF.bend`, `PROOF2.bend` -- EACH **DECLARES **IT **IS **NOT **A **PROOF
+  **YET** -- **AND `sz.bend`, **WHOSE **COLDNESS **IS **A **MEMORY **CEILING**, **NOT **A **VERDICT**:
+  **MEASURED `KILLED-ON-MEMORY` **AT **2100 MB **UNDER **A **2048 **CEILING **AND **4197 MB **UNDER **A
+  **4096 **ONE**).  **⇒ AND **A **ROW-LEVEL **INSTRUMENT **CANNOT **NOTICE **THAT **ITS **SUBJECT **DOES **NOT
+  **COMPILE**: **`runtime/support/autogen.bend` **HAD **NOT **COMPILED **FOR **AT **LEAST **TWO **COMMITS**,
+  **AND **THE **COMMIT **THAT **AUDITED **ITS **ROWS **SAID **"THE **PORT **IS **AT **0 **ROWS"** -- **A **FILE
+  **THAT **PRINTS **ZERO **ROWS **IS **INDISTINGUISHABLE, **TO **SUCH **AN **INSTRUMENT**, **FROM **A **FILE
+  **THAT **PRINTS **NONE**.  **IT **IS **NOW **149 **ROWS, **AND **36 **OF **THEM **AGREE **WITH **CPYTHON.**  **THE
+  **COST **IS **147 s **FOR **169 **FILES **= **0.87 s **PER **FILE, **ONE **BEND **AT **A **TIME**, **SO **IT
+  **IS **A **NIGHTLY **OR **PRE-MERGE **GATE, **NOT **A **PER-COMMIT **ONE.**
+
   ***AND ***THE **SCOPE **OF **THAT **DIGEST **IS **THE **WORKING **TREE **AND **NOT **THE **COMMIT** -- **AND **THE
   **TREE **ALREADY **SAYS **SO, **IN **`checks/differ.py:1275`**:** *"MOVE-DETECTION AND COMMIT-IDENTITY ARE THE SAME
   PROPERTY, AND A `ls-tree`-BASED DIGEST CANNOT MOVE DURING A RUN -- IT WOULD `PASS` ON EXACTLY THE MIXTURE IT
