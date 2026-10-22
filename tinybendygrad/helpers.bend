@@ -2868,9 +2868,9 @@ def Target.indices(+t: Target) -> String:
 #    indices "B:C".
 # 3. THE DEVICE HALF IS SPLIT ON ':' AND ITS FIRST TWO FIELDS ARE UPPERCASED.
 #    The arch is NOT: `DEV=AMD:LLVM:gfx1100` keeps "gfx1100" as it is written,
-#    and `render.of` (below) matches the arch with `String.starts_with(arch,
-#    "gfx")`, so an uppercased arch would stop being an AMD arch at all. The
-#    being an AMD arch at all. The interface and the indices are not
+#    and `render.of` (runtime/ops_python.bend) matches the arch with
+#    `String.starts_with(arch, "gfx")`, so an uppercased arch would stop being
+#    an AMD arch at all. The interface and the indices are not uppercased either.
 # 4. TWO REFUSALS, AND THEY ARE NOT THE SAME REFUSAL. A third '+' is "too
 #    many '+'"; a fourth ':' IN THE DEVICE HALF is "too many ':'". Upstream
 #    raises `RuntimeError`; the port's `None` IS that RuntimeError
@@ -2895,8 +2895,8 @@ def Target.indices(+t: Target) -> String:
 # is the port's SHORT one: `interface` is `iface` here and NOTHING ELSE. Every
 # field upstream's `parse` fills is a field the port has, so the port's
 # `Target` is NOT missing one; `iface` IS upstream's `interface`, filled from
-# the same place in the same order, and `render.of` (below) reads the arch and
-# the device only, so no field of the record is unread.
+# the same place in the same order, and `render.of` (runtime/ops_python.bend)
+# reads the arch and the device only, so no field of the record is unread.
 #
 # MEASURED, 2026-10-22, AGAINST CPython'S OWN `Target.parse`. The oracle is
 # the vendored `tinygrad/helpers.py` at the pin, called, never re-implemented,

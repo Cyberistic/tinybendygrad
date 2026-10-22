@@ -24,6 +24,12 @@
 # or of `uop/ops.bend` moves these rows. This file defines no `Target` of its
 # own, no parser of its own and no `ProgramInfo` of its own: `rg '^def (Target|'
 # over this file must find nothing, and `rg 'type Target' must find nothing.
+#
+# THE ROWS ARE `name=value`, which is the tree's convention and the one
+# `gates/gatekit.py`'s PIN CHECK reads: it asserts that a lane holds a line
+# starting with `<name>=`. The name is POSITIONAL (`t01`..`t20`) so that it is
+# never empty -- the FIRST DEV STRING IS THE EMPTY STRING -- and the DEV string
+# is in the VALUE, so the row reads as the thing it is.
 import Base
 import ./../tinybendygrad/helpers.bend as H
 import ./../tinybendygrad/uop/ops.bend as O
@@ -41,14 +47,15 @@ def prog(+t: H.Target) -> O.ProgramInfo:
                 [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)],
                 Nil{}, Nil{}, Nil{}, Nil{}, t}
 
-def one_of(s: String, m: Maybe<&2, H.Target>) -> IO(Unit):
+def one_of(nm: String, s: String, m: Maybe<&2, H.Target>) -> IO(Unit):
   match m:
     case Some{+t}:
-      IO.print(String.concat([s, " => ", show(t), " -> ", show(O.ProgramInfo.target(prog(t)))]))
-    case None{}: IO.print(String.concat([s, " => REFUSED"]))
+      IO.print(String.concat([nm, "=", s, " => ", show(t), " -> ",
+        show(O.ProgramInfo.target(prog(t)))]))
+    case None{}: IO.print(String.concat([nm, "=", s, " => REFUSED"]))
 
-def one(+s: String) -> IO(Unit):
-  one_of(s, H.Target.parse(s))
+def one(nm: String, +s: String) -> IO(Unit):
+  one_of(nm, s, H.Target.parse(s))
 
 # THE DEV STRINGS. Twenty of them, and they are not a sample: between them
 # they are the cases `helpers.bend`'s own header enumerates -- the `+` cut, the
@@ -58,23 +65,23 @@ def one(+s: String) -> IO(Unit):
 # that separates an empty middle field from a shifted one.
 def main() -> IO(Unit):
   do IO<Unit>:
-    one("")
-    one("CPU")
-    one("CPU:CLANG")
-    one("AMD:LLVM:gfx1100")
-    one("AMD:LLVM:GFX1100")
-    one("cpu:clang")
-    one("USB+AMD")
-    one("USB:1+AMD")
-    one("AMD+CPU:CLANG")
-    one("A:B:C+AMD")
-    one("usb:1+amd:llvm:gfx1100")
-    one("A:B:C:D")
-    one("A+B+C")
-    one("A:B:C+D")
-    one("A+B:C:D")
-    one("A+B:C:D:E")
-    one(":")
-    one("A:")
-    one("::")
-    one("A::B")
+    one("t01", "")
+    one("t02", "CPU")
+    one("t03", "CPU:CLANG")
+    one("t04", "AMD:LLVM:gfx1100")
+    one("t05", "AMD:LLVM:GFX1100")
+    one("t06", "cpu:clang")
+    one("t07", "USB+AMD")
+    one("t08", "USB:1+AMD")
+    one("t09", "AMD+CPU:CLANG")
+    one("t10", "A:B:C+AMD")
+    one("t11", "usb:1+amd:llvm:gfx1100")
+    one("t12", "A:B:C:D")
+    one("t13", "A+B+C")
+    one("t14", "A:B:C+D")
+    one("t15", "A+B:C:D")
+    one("t16", "A+B:C:D:E")
+    one("t17", ":")
+    one("t18", "A:")
+    one("t19", "::")
+    one("t20", "A::B")

@@ -39,28 +39,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import Gate, main
 
 # THE ROWS, NAMED ONCE. The same twenty the oracle walks, in the same order.
-ROWS = (
-    "target-empty",
-    "target-device-only",
-    "target-device-renderer",
-    "target-device-renderer-arch",
-    "target-arch-not-uppercased",
-    "target-lowercase-uppercased",
-    "target-plus-interface",
-    "target-plus-interface-indices",
-    "target-plus-then-device",
-    "target-interface-own-colon",
-    "target-lower-interface-arch",
-    "target-too-many-colons-refused",
-    "target-too-many-pluses-refused",
-    "target-interface-colons-not-budget",
-    "target-device-three-fields",
-    "target-device-four-fields-refused",
-    "target-colon-only",
-    "target-device-colon",
-    "target-two-colons",
-    "target-empty-middle-field",
-)
+# The names are POSITIONAL (`t01`..`t20`) so that no row name is empty -- the
+# first DEV string IS the empty string -- and `gates/gatekit.py`'s pin check
+# reads a lane row as a line starting with `<name>=`.
+ROWS = tuple(f"t{i:02d}" for i in range(1, 21))
 
 GATE = Gate(
     "target-roundtrip-gate",

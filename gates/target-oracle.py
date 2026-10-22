@@ -37,11 +37,20 @@ sys.path.insert(0, str(ROOT))
 from tinygrad.helpers import Target  # noqa: E402
 from tinygrad.uop.ops import ProgramInfo  # noqa: E402
 
+# THE ROWS ARE `name=value`, which is the tree's convention and the one
+# `gates/gatekit.py`'s PIN CHECK reads: it asserts that a lane holds a line
+# starting with `<name>=`. The name is POSITIONAL (`t01`..`t20`) so that it is
+# never empty -- the FIRST DEV STRING IS THE EMPTY STRING -- and the DEV string
+# is in the VALUE, so the row reads as the thing it is.
+#
 # THE SAME TWENTY, IN THE SAME ORDER, AS `gates/target-roundtrip.bend`.
 DEVS = (
-  "", "CPU", "CPU:CLANG", "AMD:LLVM:gfx1100", "AMD:LLVM:GFX1100", "cpu:clang",
-  "USB+AMD", "USB:1+AMD", "AMD+CPU:CLANG", "A:B:C+AMD", "usb:1+amd:llvm:gfx1100",
-  "A:B:C:D", "A+B+C", "A:B:C+D", "A+B:C:D", "A+B:C:D:E", ":", "A:", "::", "A::B",
+  ("t01", ""), ("t02", "CPU"), ("t03", "CPU:CLANG"), ("t04", "AMD:LLVM:gfx1100"),
+  ("t05", "AMD:LLVM:GFX1100"), ("t06", "cpu:clang"), ("t07", "USB+AMD"),
+  ("t08", "USB:1+AMD"), ("t09", "AMD+CPU:CLANG"), ("t10", "A:B:C+AMD"),
+  ("t11", "usb:1+amd:llvm:gfx1100"), ("t12", "A:B:C:D"), ("t13", "A+B+C"),
+  ("t14", "A:B:C+D"), ("t15", "A+B:C:D"), ("t16", "A+B:C:D:E"), ("t17", ":"),
+  ("t18", "A:"), ("t19", "::"), ("t20", "A::B"),
 )
 
 
@@ -50,14 +59,14 @@ def show(t: Target) -> str:
 
 
 def main() -> int:
-  for s in DEVS:
+  for nm, s in DEVS:
     try:
       parsed = Target.parse(s)
     except RuntimeError:
-      print(f"{s} => REFUSED")
+      print(f"{nm}={s} => REFUSED")
       continue
     after = ProgramInfo(target=parsed).target
-    print(f"{s} => {show(parsed)} -> {show(after)}")
+    print(f"{nm}={s} => {show(parsed)} -> {show(after)}")
   return 0
 
 
