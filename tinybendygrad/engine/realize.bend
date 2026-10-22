@@ -27,8 +27,8 @@
 # ---------------------------------------------------------------------------
 # THE TWO GROUPS, INVENTORIED. `[a]` is ported, `[b]` is the foreign-effect seam.
 #
-# [a] realize.py:15   get_call_arg_uops     -- `call.src[1:]`, minus bound vars
-# [a] realize.py:16   get_call_var_uops     -- `prg.arg.vars` rebound to CONSTs
+# [a] realize.py:16   get_call_arg_uops     -- `call.src[1:]`, minus VARIABLES
+# [a] realize.py:17   get_call_kernel_args  -- ONE ENTRY PER KERNEL PARAM, IN SLOT ORDER
 # [a] realize.py:21   get_call_outs_ins     -- (outs, ins) per body op
 # [a] realize.py:29   get_call_written_bufs -- outs \ ins, BUFFERs only, deduped
 # [a] realize.py:35   get_call_kernels      -- the device list (non-HCQ half)
@@ -236,6 +236,34 @@ def PArg.of(a: O.Arg) -> PArg:
     case O.AParam{pa}: PArg.of.p(pa)
     case _: PArg{False{}, False{}, False{}, False{}, 0, None{}, None{}}
 
+# ---------------------------------------------------------------------------
+# `PArg` -- THE FACTS OFF A `ParamArg`. `is_bound_var` (ops.py:1023) asks
+# `arg.val is not None`; `is_variable` (ops.py:1022) asks `vmin_vmax is not
+# None`, `addrspace is ALU` and `_shape == ()`. A `Maybe` is Bend's affine
+# handler and can be READ ONCE, so the facts travel in ONE record instead of
+# being re-derived from the thirteen-field `ParamArg` at each of the four places
+# that need one of them.
+# ---------------------------------------------------------------------------
+def PArg.is_alu(p: PArg) -> Bool:
+  match p:
+    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: is_alu
+
+def PArg.has_vm(p: PArg) -> Bool:
+  match p:
+    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: has_vm
+
+def PArg.slot(p: PArg) -> U32:
+  match p:
+    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: slot
+
+def PArg.nm(p: PArg) -> Maybe<&2, String>:
+  match p:
+    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: nm
+
+def PArg.dev(p: PArg) -> Maybe<&2, S.Dev>:
+  match p:
+    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: dev
+
 # `x.op is Ops.PARAM and isinstance(x.arg, ParamArg) and x.arg.val is not None`
 # -- realize.py:15's filter. The FOURTH conjunct of `is_variable`, `_shape == ()`
 # (ops.py:1022, via `marg` and `as_shape`), is NOT PORTED, and `fold.bend`
@@ -257,7 +285,29 @@ def rz_bound_var.go(ar: O.Arena, self: U32, +p: PArg) -> Bool:
 def rz_bound_var(+ar: O.Arena, +self: U32) -> Bool:
   rz_bound_var.go(ar, self, PArg.of(O.Arena.arg(ar, self)))
 
-# `tuple(s for s in call.src[1:] if not s.is_bound_var)` -- realize.py:15. THE SLICE IS
+# `s.is_variable` -- ops.py:1009: `self.op is Ops.PARAM and self.arg.vmin_vmax is not
+# None and self.arg.addrspace is AddrSpace.ALU and self._shape == ()`.
+#
+# THE PIN's `get_call_arg_uops` FILTERS ON THIS AND NOT ON `is_bound_var`, AND THAT IS
+# A CHANGE OF SUBSTANCE AND NOT OF SPELLING: `is_bound_var` IS `is_variable AND
+# arg.val is not None`, SO THE OLD FILTER DROPPED ONLY THE BOUND VARIABLES AND LEFT
+# AN UNBOUND ONE IN THE ARGUMENT LIST, WHERE `unwrap_multi`'s `bufs = [b.buffer for b
+# in resolved]` WOULD THEN ASK A VARIABLE FOR ITS BUFFER.
+#
+# THE FOURTH CONJUNCT IS NOT PORTED AND THE REASON IS THE SAME ONE THE `is_bound_var`
+# PARAGRAPH GIVES: `_shape` IS `marg` (ops.py:353) AND `fold.bend` RECORDS `marg` AS
+# P3 BEHIND `ssimplify`. WALL: `marg`. IT CANNOT CHANGE THE ANSWER FOR A NODE THAT
+# PASSES THE OTHER THREE, BECAUSE `addrspace is ALU` WITH A `vmin_vmax` IS ALREADY THE
+# SHAPE OF A KERNEL-GRAPH VARIABLE.
+def rz_is_var.go(ar: O.Arena, self: U32, +p: PArg) -> Bool:
+  Bool.and(O.op_is(ar, self, O.OpsPARAM{}),
+           Bool.and(PArg.is_pv(p), Bool.and(PArg.has_vm(p), PArg.is_alu(p))))
+
+def rz_is_var(+ar: O.Arena, +self: U32) -> Bool:
+  rz_is_var.go(ar, self, PArg.of(O.Arena.arg(ar, self)))
+
+# `tuple(s for s in call.src[1:] if not s.is_variable)` -- realize.py:16 AT THE PIN
+# `5c2bf39d6c4b`. THE SLICE IS
 # UNCONDITIONAL, and it was `Arena.src_without_body`, which is `src[1:]` FOR A CALL AND
 # `src` FOR EVERYTHING ELSE. So the port answered one EXTRA entry -- `src[0]` itself, at the
 # HEAD -- over every non-CALL. MEASURED on the census fixture: 52 rows of the 974, on 26
@@ -279,7 +329,7 @@ def rz_keep.arg(bound: Bool, +s: U32, +acc: List<&2, U32>) -> List<&2, U32>:
 def rz_arg_uops.go(+ar: O.Arena, todo: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match todo:
     case Nil{}: acc
-    case +s <> t: rz_arg_uops.go(ar, t, rz_keep.arg(rz_bound_var(ar, s), s, acc))
+    case +s <> t: rz_arg_uops.go(ar, t, rz_keep.arg(rz_is_var(ar, s), s, acc))
 
 def get_call_arg_uops(+ar: O.Arena, call: U32) -> List<&2, U32>:
   rz_arg_uops.go(ar, O.Arena.src_from(ar, call, 1), Nil{})
@@ -319,34 +369,6 @@ def rz_expr_s.some(m: Maybe<&2, String>) -> String:
 
 def rz_expr_s(m: Maybe<&2, String>) -> String:
   rz_expr_s.some(m)
-
-# ---------------------------------------------------------------------------
-# `PArg` -- THE FACTS OFF A `ParamArg`. `is_bound_var` (ops.py:1023) asks
-# `arg.val is not None`; `is_variable` (ops.py:1022) asks `vmin_vmax is not
-# None`, `addrspace is ALU` and `_shape == ()`. A `Maybe` is Bend's affine
-# handler and can be READ ONCE, so the facts travel in ONE record instead of
-# being re-derived from the thirteen-field `ParamArg` at each of the four places
-# that need one of them.
-# ---------------------------------------------------------------------------
-def PArg.is_alu(p: PArg) -> Bool:
-  match p:
-    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: is_alu
-
-def PArg.has_vm(p: PArg) -> Bool:
-  match p:
-    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: has_vm
-
-def PArg.slot(p: PArg) -> U32:
-  match p:
-    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: slot
-
-def PArg.nm(p: PArg) -> Maybe<&2, String>:
-  match p:
-    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: nm
-
-def PArg.dev(p: PArg) -> Maybe<&2, S.Dev>:
-  match p:
-    case PArg{is_pv, has_val, is_alu, has_vm, slot, nm, dev}: dev
 
 def rz_expr(ar: O.Arena, self: U32) -> String:
   rz_expr_s(PArg.nm(PArg.of(O.Arena.arg(ar, self))))
@@ -402,7 +424,7 @@ def rz_bound.walk(+ar: O.Arena, todo: List<&2, U32>, acc: List<&2, Bnd>) -> List
     case +s <> t: rz_bound.walk(ar, t, rz_bound.go(pa_bound.of(O.Arena.arg(ar, s), ar), acc))
 
 # `RList` -- `(arena, xs)` as a two-field `Data` record. A pair is a `Type` and
-# cannot carry a `+`, and both `get_call_var_uops` and `_resolve` GROW the arena
+# cannot carry a `+`, and both `get_call_kernel_args` and `_resolve` GROW the arena
 # while building their answer, so the answer has to carry the grown arena with it
 # or the caller would be holding indices into an arena it does not have. This is
 # the same move `ops.bend`'s `Found` makes for a single index.
@@ -424,7 +446,7 @@ def RList.at(r: RList, n: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, RList.xs(r), U32.to_nat(n)), 99)
 
 # THESE TWO READ THROUGH THE ANSWER'S OWN ARENA and that is the point of them.
-# `get_call_var_uops` MINTS a CONST and `resolve_params` rebuilds a view, so an
+# `get_call_kernel_args` MINTS a CONST and `resolve_params` rebuilds a view, so an
 # `RList` can hold an index the fixture's arena has never heard of: a gate row that
 # pairs such an index with `Land.ar` is reading out of bounds, which is a
 # memory fault rather than a wrong number and is not something `--check-only`
@@ -444,7 +466,7 @@ def rz_replace_arg(+ar: O.Arena, +self: U32, arg: O.Arg) -> O.Found:
   O.UOp.new(ar, O.Arena.op(ar, self), O.Arena.srcs(ar, self), arg, O.Arena.tag(ar, self))
 
 # THE LOOKUP FINDS THE ENTRY, AND THE CONST IS MINTED ONCE BY THE CALLER.
-# `bound.get(v.expr, v)` -- realize.py:19. Python's `dict.get` returns the
+# `bound.get(p.expr, ...)` -- realize.py:18 AT THE PIN. Python's `dict.get` returns the
 # DEFAULT on a miss and the default IS `v`, so the miss arm is `v`. A LINEAR SCAN
 # is the dict: `Map` is Bend's one mutable collection and `bnds` is affine, so it
 # is threaded beside the walk rather than stored inside it.
@@ -480,30 +502,24 @@ def rz_find.found(+ar: O.Arena, dflt: U32, m: Maybe<&2, Bnd>) -> O.Found:
     case Some{b}: rz_find.mint(b, ar)
     case _: O.Found{ar, dflt}
 
+# `bound.get(name, default)` -- THE PIN'S DICT GET. The bound map is threaded BESIDE
+# the walk rather than inside it: it is affine, and a `Data` field cannot carry a
+# `List`. The RESULT is an `RList` and not a `List` because the lookup grows the
+# arena, so the answer has to carry the arena it was read from -- the same reason
+# `rz_res` answers a `Found`.
 def rz_find(bnds: List<&2, Bnd>, +ar: O.Arena, nm: String, dflt: U32) -> O.Found:
   rz_find.found(ar, dflt, rz_find.walk(nm, bnds, None{}))
 
-# `[bound.get(v.expr, v) for v in prg.arg.vars]` -- realize.py:19. The bound map
-# is threaded BESIDE the walk rather than inside it: it is affine, and a `Data`
-# field cannot carry a `List`. The RESULT is an `RList` and not a `List` because
-# the lookup grows the arena, so the answer has to carry the arena it was read
-# from -- the same reason `rz_res` answers a `Found`.
+# `self.arg.params` -- THE PIN'S `ProgramInfo.params`, WHICH IS `ops.py:1341`'s THIRD
+# FIELD. IT HOLDS **EVERY** PARAM OF THE KERNEL AND NOT ONLY THE ALU ONES: upstream
+# `a6addc2d4` CHANGED `if u.op is Ops.PARAM and u.addrspace == AddrSpace.ALU` to
+# `if u.op is Ops.PARAM`, RENAMED THE FIELD `vars` -> `params`, AND DELETED
+# `ProgramInfo.vals`. THE PORT'S `ops.bend` FIELD IS ALREADY RENAMED (`9974c9d9b`),
+# BUT THE PORT'S REALIZE LANE STILL READ IT THE OLD WAY, AND THAT IS WHAT THIS BLOCK
+# REPAIRS.
 #
-# THE SHRINKING ARGUMENT IS FIRST (`todo`), because Bend reads a self-call's
-# arguments left to right and stops at the first that shrinks.
-def rz_var_uops.put(+r: RList, +f: O.Found) -> RList:
-  RList{O.Found.ar(f), List.append(&2, U32, RList.xs(r), [O.Found.i(f)])}
-
-def rz_var_uops.step(+r: RList, +bnds: List<&2, Bnd>, +v: U32) -> RList:
-  rz_var_uops.put(r, rz_find(bnds, RList.ar(r), rz_expr(RList.ar(r), v), v))
-
-def rz_var_uops.go(+todo: List<&2, U32>, +r: RList, +bnds: List<&2, Bnd>) -> RList:
-  match todo:
-    case Nil{}: r
-    case +v <> t: rz_var_uops.go(t, rz_var_uops.step(r, bnds, v), bnds)
-
-# `prg.arg.vars` -- realize.py:19 reads the PROGRAM node passed IN, not the CALL's
-# arg, and `AProgram` is the only `Arg` constructor carrying it.
+# `prg` IS THE PROGRAM NODE PASSED IN, NOT THE CALL's ARG, AND `AProgram` IS THE ONLY
+# `Arg` CONSTRUCTOR CARRYING IT.
 def rz_pvars.go(a: O.Arg) -> List<&2, U32>:
   match a:
     case O.AProgram{pi}: O.ProgramInfo.params(pi)
@@ -518,8 +534,222 @@ def rz_pvars(ar: O.Arena, prg: U32) -> List<&2, U32>:
 def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:
   rz_bound.walk(ar, O.Arena.src_from(ar, call, 1), Nil{})
 
-def get_call_var_uops(+ar: O.Arena, call: U32, prg: U32) -> RList:
-  rz_var_uops.go(rz_pvars(ar, prg), RList{ar, Nil{}}, rz_bound_map(ar, call))
+# ---------------------------------------------------------------------------
+# THE PIN'S VARIABLE-BINDING PATH.
+#
+# `realize.py:16` AT `186fbba2a` WAS `get_call_var_uops`:
+#
+#     bound = {s.expr: UOp.const(s.arg.val) for s in call.src[1:] if s.is_bound_var}
+#     return [bound.get(v.expr, v) for v in prg.arg.vars]
+#
+# upstream `a6addc2d4` ("buffers and args in any input order", 2026-10-14) REPLACED IT
+# WITH `get_call_kernel_args` (`realize.py:17` AT THE PIN `5c2bf39d6c4b`):
+#
+#     bound = {s.expr: UOp.const(s.arg.val) for s in call.src[1:] if s.is_bound_var}
+#     return [bound.get(p.expr, p.replace(arg=replace(p.arg, slot=-1))).ccast(p.dtype)
+#             if p.addrspace is AddrSpace.ALU else
+#             call.src[1+p.arg.slot].getaddr(devs) for p in prg.kernel_params]
+#
+# THE TWO ARE NOT THE SAME FUNCTION UNDER TWO NAMES. THE OLD ONE ANSWERED ONE ENTRY
+# PER VARIABLE, OUT OF `ProgramInfo.vars` -- THE ALU PARAMS ONLY -- AND A BOUND ONE
+# BECAME A CONST AND AN UNBOUND ONE STAYED ITSELF. THE NEW ONE ANSWERS ONE ENTRY PER
+# KERNEL PARAM, IN SLOT ORDER, AND A PARAM MAY BE A BUFFER, IN WHICH CASE THE ENTRY IS
+# THE ADDRESS OF THE CALL's ARGUMENT AT THAT SLOT.
+#
+# THE ORDER IS THE SLOT ORDER, AND THAT IS THE WHOLE OF "buffers and args in any input
+# order": `call.src[1+p.arg.slot]` IS THE CALL's ARGUMENT **AT THAT SLOT**, WHATEVER
+# ORDER THE CALLER PASSED THE ARGUMENTS IN. THE OLD `exec_kernel` READ `resolved[i]`
+# -- THE `i`th ENTRY OF THE FILTERED LIST -- WHERE `i` CAME FROM `arg.globals`, WHICH
+# ARE SLOTS, SO A BUFFER BEHIND A DROPPED ARGUMENT WAS READ AT THE WRONG INDEX.
+# ---------------------------------------------------------------------------
+
+# `self.src[1].src` -- THE LINEAR'S CHILDREN. THE PIN RAISES IndexError ON A PROGRAM
+# WITH FEWER THAN TWO SRCS AND THE PORT ANSWERS WITH THE `ProgramInfo` HALF ALONE:
+# WALL, and it is a REAL one, because the pin only ever calls this on a COMPILED
+# program (`codegen/__init__.py:503`'s `pm_to_program` gives a PROGRAM four srcs) and
+# a COMPILED PROGRAM's LINEAR CARRIES NO PARAM CHILDREN UNLESS THE KERNEL IS AN IMAGE
+# ONE (`ops.py:1307`'s own comment). THE PLANT FIXTURE BELOW GIVES EVERY PROGRAM IT
+# EXERCISES THE PIN's TWO-SRC SHAPE, SO THE PIN ANSWERS THERE AND THE TWO AGREE.
+def kp_lin_srcs.go(one: Bool, +ar: O.Arena, prg: U32) -> List<&2, U32>:
+  match one:
+    case True{}: Nil{}
+    case False{}: O.Arena.srcs(ar, O.Arena.src(ar, prg, 1))
+
+def kp_lin_srcs(+ar: O.Arena, +prg: U32) -> List<&2, U32>:
+  kp_lin_srcs.go(U32.is_le(O.Arena.nsrc(ar, prg), 1), ar, prg)
+
+# `u.op is Ops.PARAM`
+def kp_is_param(ar: O.Arena, x: U32) -> Bool:
+  O.op_is(ar, x, O.OpsPARAM{})
+
+def kp_keep_param(ar: O.Arena, +x: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  bl_t(kp_is_param(ar, x), List.append(&2, U32, acc, [x]), acc)
+
+def kp_lin_params.go(+ar: O.Arena, todo: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match todo:
+    case Nil{}: acc
+    case +x <> t: kp_lin_params.go(ar, t, kp_keep_param(ar, x, acc))
+
+def kp_lin_params(+ar: O.Arena, +prg: U32) -> List<&2, U32>:
+  kp_lin_params.go(ar, kp_lin_srcs(ar, prg), Nil{})
+
+# `p.arg.slot` -- THE PIN'S SORT KEY AND ITS LOOKUP KEY.
+def kp_slot(ar: O.Arena, x: U32) -> U32:
+  PArg.slot(PArg.of(O.Arena.arg(ar, x)))
+
+# `{u.arg.slot for u in params}` -- THE SLOTS THE LINEAR'S PARAMS ALREADY COVER.
+def kp_covers(+ar: O.Arena, todo: List<&2, U32>, +s: U32) -> Bool:
+  match todo:
+    case Nil{}: False{}
+    case +h <> t: Bool.or(U32.is_eq(kp_slot(ar, h), s), kp_covers(ar, t, s))
+
+# `params += [p for p in self.arg.params if p.arg.slot not in {u.arg.slot for u in params}]`
+def kp_keep_info(keep: Bool, +acc: List<&2, U32>, x: U32) -> List<&2, U32>:
+  bl_t(keep, List.append(&2, U32, acc, [x]), acc)
+
+def kp_uncovered.go(+ar: O.Arena, +lin: List<&2, U32>, todo: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match todo:
+    case Nil{}: acc
+    case +x <> t:
+      s = kp_slot(ar, x)
+      kp_uncovered.go(ar, lin, t, kp_keep_info(Bool.not(kp_covers(ar, lin, s)), acc, x))
+
+def kp_uncovered(+ar: O.Arena, +lin: List<&2, U32>, info: List<&2, U32>) -> List<&2, U32>:
+  kp_uncovered.go(ar, lin, info, Nil{})
+
+# `params = [u for u in self.src[1].src if u.op is Ops.PARAM]` AND THEN THE
+# `ProgramInfo` HALF, CONCATENATED IN THAT ORDER.
+def kp_merge.go(lin: List<&2, U32>, todo: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match todo:
+    case Nil{}: acc
+    case +x <> t: kp_merge.go(lin, t, List.append(&2, U32, acc, [x]))
+
+def kp_merge(+lin: List<&2, U32>, unc: List<&2, U32>) -> List<&2, U32>:
+  kp_merge.go(lin, unc, lin)
+
+# `sorted(params, key=lambda p: p.arg.slot)` -- A STABLE INSERTION SORT. PYTHON's
+# `sorted` IS STABLE AND THE PIN's ORDER IS THE SLOT ORDER, AND THE STABILITY IS
+# LOAD-BEARING FOR THE ONE CASE WHERE TWO PARAMS SHARE A SLOT (`ops.py:1307`: "the
+# LINEAR keeps two IMAGE params of one slot in order"). AN ENTRY GOES AFTER EVERY
+# ENTRY WHOSE SLOT IS <= ITS OWN, WHICH IS WHAT "STABLE" MEANS.
+# THE HEAD's SLOT AGAINST `sx`. AN EMPTY LIST SAYS `False`, WHICH IS RIGHT: THERE IS
+# NO HEAD TO GO BEFORE, SO THE ENTRY IS APPENDED.
+def kp_le(ar: O.Arena, todo: List<&2, U32>, sx: U32) -> Bool:
+  match todo:
+    case Nil{}: False{}
+    case +h <> _: U32.is_le(kp_slot(ar, h), sx)
+
+def kp_insert(todo: List<&2, U32>, +acc: List<&2, U32>, le: Bool, +ar: O.Arena, +sx: U32, +x: U32) -> List<&2, U32>:
+  match todo:
+    case Nil{}: List.append(&2, U32, acc, [x])
+    case +h <> +t:
+      match le:
+        case True{}: kp_insert(t, List.append(&2, U32, acc, [h]), kp_le(ar, t, sx), ar, sx, x)
+        case False{}: List.append(&2, U32, List.append(&2, U32, acc, [x]), h <> t)
+
+def kp_sort.go(todo: List<&2, U32>, +acc: List<&2, U32>, +ar: O.Arena) -> List<&2, U32>:
+  match todo:
+    case Nil{}: acc
+    case +x <> t: kp_sort.go(t, kp_insert(acc, Nil{}, kp_le(ar, acc, kp_slot(ar, x)), ar, kp_slot(ar, x), x), ar)
+
+# `prg.kernel_params` -- ops.py:1305-1310 AT THE PIN.
+#
+# WHAT IT NEEDS FROM `ProgramInfo.from_sink`, WHICH IS NOT PORTED: THE `params` FIELD
+# MUST HOLD **EVERY** PARAM OF THE KERNEL, NOT ONLY THE ALU ONES, AND SORTED BY SLOT.
+# THE PORT SORTS ANYWAY, SO THE SECOND HALF IS NOT A REQUIREMENT, BUT THE FIRST IS:
+# A `ProgramInfo` THAT LISTED ONLY THE ALU PARAMS WOULD LOSE THE BUFFER PARAMS AND
+# THE ANSWER WOULD HAVE NO ADDRESSES IN IT.
+def kernel_params(+ar: O.Arena, +prg: U32) -> List<&2, U32>:
+  +lin = kp_lin_params(ar, prg)
+  kp_sort.go(kp_merge(lin, kp_uncovered(ar, lin, rz_pvars(ar, prg))), Nil{}, ar)
+
+# `p.replace(arg=replace(p.arg, slot=-1))` -- THE SLOTLESS VAR READ. THE PIN SPELLS IT
+# `slot=-1` AND THE PORT's `ParamArg.slot` IS A `U32`, SO THE PORT SPELLS IT
+# `ops.bend`'s OWN `ParamArg.no_slot()` -- WHICH IS THE SAME VALUE, AND WHICH
+# `ops.bend:1447` SAYS ONCE FOR THE WHOLE TREE.
+def ka_slotless.pa(+ar: O.Arena, +self: U32, +pa: O.ParamArg) -> O.Found:
+  match pa:
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      O.UOp.new(ar, O.Arena.op(ar, self), O.Arena.srcs(ar, self),
+                O.AParam{O.ParamArg{O.ParamArg.no_slot(), dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}},
+                O.Arena.tag(ar, self))
+
+def ka_slotless.go(+ar: O.Arena, +self: U32, a: O.Arg) -> O.Found:
+  match a:
+    case O.AParam{+pa}: ka_slotless.pa(ar, self, pa)
+    case _: O.Found{ar, self}
+
+def ka_slotless(+ar: O.Arena, +self: U32) -> O.Found:
+  ka_slotless.go(ar, self, O.Arena.arg(ar, self))
+
+# `p.dtype` -- THE PARAM's DTYPE. A FRESH READ: `ParamArg` IS AFFINE, SO THE
+# SLOTLESS REBUILD AND THIS CANNOT BOTH READ THE SAME `ParamArg`.
+def ka_dtype.go(a: O.Arg) -> S.Dt:
+  match a:
+    case O.AParam{pa}: O.ParamArg.dtype(pa)
+    case _: S.void()
+
+def ka_dtype(+ar: O.Arena, +p: U32) -> S.Dt:
+  ka_dtype.go(O.Arena.arg(ar, p))
+
+# `p.addrspace is AddrSpace.ALU`
+def ka_is_alu(+ar: O.Arena, +p: U32) -> Bool:
+  PArg.is_alu(PArg.of(O.Arena.arg(ar, p)))
+
+# THE ALU ARM: `bound.get(p.expr, p.replace(arg=replace(p.arg, slot=-1))).ccast(p.dtype)`
+#
+# THE `.ccast(p.dtype)` IS NOT A NO-OP ON THE BOUND ARM. THE BOUND VALUE IS A CONST
+# WHOSE DTYPE IS THE DEFAULT (`dtypes.from_py`), AND `ccast` REBUILDS IT AT THE
+# PARAM's DTYPE: `UOp.const(val, int32)` IS `CAST/1<-CONST/1`, BECAUSE THE `.cast`
+# INSIDE `UOp.const` FOLDS AWAY ONLY AT THE WEAK DTYPES. ON THE UNBOUND ARM IT IS A
+# NO-OP, BECAUSE `p.dtype == p.dtype` AND `cast` RETURNS `self`.
+#
+# THE HIT AND THE MISS ARE TOLD APART BY THE OP: THE HIT IS THE CONST `rz_find`
+# MINTS AND THE MISS IS THE SLOTLESS PARAM. A PARAM IS NEVER A CONST.
+def ka_alu.go(is_const: Bool, +ar3: O.Arena, +hit: O.Found, +p: U32) -> O.Found:
+  match is_const:
+    case True{}: O.UOp.cast(ar3, O.Found.i(hit), ka_dtype(ar3, p))
+    case False{}: hit
+
+def ka_alu(+ar: O.Arena, bnds: List<&2, Bnd>, +p: U32) -> O.Found:
+  +slotless = ka_slotless(ar, p)
+  +ar2 = O.Found.ar(slotless)
+  +hit = rz_find(bnds, ar2, rz_expr(ar2, p), O.Found.i(slotless))
+  +ar3 = O.Found.ar(hit)
+  ka_alu.go(O.op_is(ar3, O.Found.i(hit), O.OpsCONST{}), ar3, hit, p)
+
+# THE BUFFER ARM: `call.src[1+p.arg.slot].getaddr(devs)`. THE SLOT IS THE LOOKUP KEY
+# AND NOT THE POSITION, AND THAT IS THE WHOLE OF "buffers and args in any input
+# order": `call.src[1+slot]` IS THE CALL's ARGUMENT AT THAT SLOT.
+def ka_buf(+ar: O.Arena, +call: U32, +p: U32, +dev: S.Dev) -> O.Found:
+  +s = O.Arena.src(ar, call, U32.add(1, kp_slot(ar, p)))
+  O.UOp.getaddr(O.Arena.budget(ar), ar, s, dev)
+
+def ka_step.go(is_alu: Bool, +ar: O.Arena, bnds: List<&2, Bnd>, +call: U32, +dev: S.Dev, +p: U32) -> O.Found:
+  match is_alu:
+    case True{}: ka_alu(ar, bnds, p)
+    case False{}: ka_buf(ar, call, p, dev)
+
+def ka_step(+ar: O.Arena, bnds: List<&2, Bnd>, +call: U32, +dev: S.Dev, +p: U32) -> O.Found:
+  ka_step.go(ka_is_alu(ar, p), ar, bnds, call, dev, p)
+
+def ka_put(+r: RList, +f: O.Found) -> RList:
+  RList{O.Found.ar(f), List.append(&2, U32, RList.xs(r), [O.Found.i(f)])}
+
+def ka_step2(+r: RList, +bnds: List<&2, Bnd>, +call: U32, +dev: S.Dev, +p: U32) -> RList:
+  ka_put(r, ka_step(RList.ar(r), bnds, call, dev, p))
+
+def ka_go(todo: List<&2, U32>, +r: RList, +bnds: List<&2, Bnd>, +call: U32, +dev: S.Dev) -> RList:
+  match todo:
+    case Nil{}: r
+    case +p <> t: ka_go(t, ka_step2(r, bnds, call, dev, p), bnds, call, dev)
+
+# THE PIN's FUNCTION, `realize.py:17` AT `5c2bf39d6c4b`. THE DEVICE IS A PARAMETER
+# BECAUSE THE PIN TAKES `devs` AND THE PORT's `S.Dev` IS ONE DEVICE: `ops.bend`'s
+# `ADev` HOLDS A SINGLE `S.Dev` AND THERE IS NO TUPLE SPELLING IN IT.
+def get_call_kernel_args(+ar: O.Arena, +call: U32, +prg: U32, +dev: S.Dev) -> RList:
+  +bnds = rz_bound_map(ar, call)
+  ka_go(kernel_params(ar, prg), RList{ar, Nil{}}, bnds, call, dev)
 
 # `(outs, ins)` -- realize.py:31-27. A pair is a `Type` and every reader would
 # have to match a computed value, so it is a two-field `Data` record.
@@ -1026,7 +1256,7 @@ def ExecContext.timeout_or0(c: ExecContext) -> U32:
 # is stated wrong: a self-call does not need a subterm of its own parameter, it
 # needs ONE ARGUMENT THAT SHRINKS, and it reads them LEFT TO RIGHT and stops at the
 # first one, so the shrinking argument has to LEAD. `rz_prod.fold` and
-# `rz_var_uops.go` both put the list tail first and both are accepted; with the tail
+# `ka_go` both put the list tail first and both are accepted; with the tail
 # last they are refused with "expected a decreasing self-call". So the worklist
 # shape the header guessed at -- a LIST TAIL -- is the right answer, and the
 # "rebuilt rather than a subterm" objection does not apply to it.
@@ -1427,6 +1657,22 @@ def _get_call_to_compile(+ar: O.Arena, +call: U32) -> Maybe<&2, U32>:
 #                    (x.op is Ops.PARAM and x.arg.name == '_device_num')
 #                    for x in call.body.toposort())
 #
+# THE PIN's FULL EXPRESSION HAS A SECOND CONJUNCT, AND THIS FILE DOES NOT PORT IT:
+#
+#     has_dnum = ((isinstance(call.body.arg, ProgramInfo) and
+#                  any(p.arg.name == '_device_num' for p in call.body.kernel_params)) or
+#                 any(... for x in call.body.toposort()))
+#
+# `a6addc2d4` CHANGED THAT CONJUNCT's READER FROM `call.body.arg.vars` TO
+# `call.body.kernel_params`, SO IT IS THE SAME VARIABLE-BINDING PATH AS EVERYTHING ELSE
+# ABOVE. IT IS NOT PORTED HERE, AND THE REASON IS MEASURED RATHER THAN ASSUMED: THE
+# PIN's `UOp.kernel_params` READS `self.src[1].src`, AND `call.body` IS AN UNCOMPILED
+# PROGRAM IN EVERY GRAPH THIS FILE BUILDS, SO THE PIN RAISES IndexError THERE. THE
+# CONJUNCT CANNOT BE PORTED WITHOUT `ProgramInfo.from_sink` AND WITHOUT A COMPILED
+# PROGRAM, AND BOTH COME WITH IT. THE ROWS `dnum_p`/`dnum_d`/`dnum_n` ARE THE
+# TOPOSORT HALF, AND THEY AGREE WITH `gates/realize_graph_census-oracle.py`'s OWN
+# `dnum_sig`, WHICH IS A TRANSCRIPTION OF THE SAME HALF.
+#
 # TODO(p3) realize.py:135  unwrap_multi's `bufs = [b.buffer for b in resolved]` --
 #   `UOp.buffer` ASSERTS `arg.buffer is not None`, i.e. the buffer is REALIZED, and
 #   realization is the allocator. WALL: no allocator. P6.
@@ -1520,8 +1766,12 @@ def zero_four() -> O.PyRange:
 def gs3(a: U32, b: U32, c: U32) -> List<&2, H.I64>:
   [H.i64_of_i32(a), H.i64_of_i32(b), H.i64_of_i32(c)]
 
+# THE SEVENTH FIELD IS `target: Target` -- upstream's `ops.py:1349` -- AND IT IS NOT
+# READ BY ANY READER IN THIS FILE, SO IT IS THE DEFAULT (`ops.bend`'s `Target.of()`,
+# WHICH IS FIVE EMPTY STRINGS). THE FIELD ARRIVED WITH `ProgramInfo.from_sink`'s
+# TARGET ARGUMENT, WHICH IS NOT PORTED.
 def pi(params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> O.ProgramInfo:
-  O.ProgramInfo{gs3(4, 1, 1), [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], params, globals, outs, ins}
+  O.ProgramInfo{gs3(4, 1, 1), [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], params, globals, outs, ins, O.Target.of()}
 
 def call_info(nm: String) -> O.CallInfo:
   O.CallInfo{Some{nm}, False{}, False{}, S.void()}
@@ -1754,6 +2004,89 @@ def main_arena() -> Land:
        O.Found.i(n6), O.Found.i(n9), O.Found.i(n25), O.Found.i(n31), O.Found.i(n35),
        O.Found.i(n40), O.Found.i(n41), O.Found.i(n19), O.Found.i(n20), O.Found.i(n24)}
 
+# ===========================================================================
+# THE PLANT FIXTURE. ITS OWN ARENA, AND THE REASON IS THAT THE MAIN FIXTURE's INDEX
+# MAP IS LOAD BEARING: `gates/realize_graph_census-gate.py`'s CALL_NODES LIST IS READ
+# OFF `main_arena`'s COMMENT, SO A PLANT THAT MOVED A MAIN-FIXTURE INDEX WOULD MOVE
+# EVERY ROW OF A GATE THAT HAS NOTHING TO DO WITH THIS FILE.
+#
+# EVERY PROGRAM HERE HAS THE PIN's COMPILED SHAPE -- `src=(sink, linear)` -- BECAUSE
+# THE PIN's `UOp.kernel_params` READS `self.src[1].src` AND A ONE-SRC PROGRAM RAISES
+# IndexError THERE. `codegen/__init__.py:503`'s `pm_to_program` GIVES A COMPILED
+# PROGRAM FOUR SRCS; TWO IS ENOUGH FOR THE READER, AND THE LINEAR HERE CARRIES NO
+# PARAM CHILDREN -- WHICH IS WHAT AN ASSEMBLED ONE CARRIES (`do_assemble` REPLACES THE
+# LINEAR's SRCS WITH `Ops.INS` NODES).
+#
+# THE PLANTS, AND WHAT EACH ONE IS FOR:
+#   cNone      A PROGRAM WITH NO VARIABLE AT ALL. THE ANSWER IS ONE ADDRESS PER
+#              BUFFER PARAM AND NOTHING ELSE.
+#   cZero      A VARIABLE BOUND TO ZERO. THE BOUND VALUE IS A CONST 0 AND THE
+#              LOOKUP MUST NOT READ 0 AS "ABSENT".
+#   cUnb       AN UNBOUND VARIABLE. THE ANSWER IS THE SLOTLESS VAR READ, AND THE
+#              ARGUMENT LIST DROPS IT (`get_call_arg_uops` FILTERS `is_variable`).
+#   cArgFirst  AN ARG PRECEDES A BUFFER: THE KERNEL's PARAMS ARE (VAR SLOT 0,
+#              BUFFER SLOT 1) AND THE ANSWER MUST BE IN THAT ORDER.
+#   cBufFirst  THE MIRROR -- (BUFFER SLOT 0, VAR SLOT 1) -- AND THE ANSWER MUST BE
+#              THE OTHER WAY ROUND. THE PAIR IS WHAT SAYS THE ORDER IS THE SLOT
+#              ORDER AND NOT "THE BUFFERS FIRST", WHICH IS WHAT THE PRE-PIN
+#              `exec_kernel` DID: `rt(*[b.get_buf(device) for b in prg_bufs], ...,
+#              vals=vals)` PUT THE BUFFERS FIRST AND THE VALUES AFTER THEM.
+#   cShadow    A VARIABLE WHOSE NAME IS A GLOBAL's NAME. `bound` IS KEYED ON THE
+#              NAME, SO THE LOOKUP MUST STILL ANSWER THE VARIABLE's OWN VALUE AND
+#              NOT THE GLOBAL's.
+# ===========================================================================
+type Pl is Data:
+  Pl{ar: O.Arena, cNone: U32, cZero: U32, cUnb: U32, cArgFirst: U32, cBufFirst: U32, cShadow: U32}
+
+def Pl.ar(p: Pl) -> O.Arena:
+  match p:
+    case Pl{ar, cNone, cZero, cUnb, cArgFirst, cBufFirst, cShadow}: ar
+
+def Pl.call.go(n: U32, a: U32, b: U32, c: U32, d: U32, e: U32, f: U32) -> U32:
+  match n:
+    case 0: a
+    case 1: b
+    case 2: c
+    case 3: d
+    case 4: e
+    case _: f
+
+def Pl.call(p: Pl, n: U32) -> U32:
+  match p:
+    case Pl{ar, cNone, cZero, cUnb, cArgFirst, cBufFirst, cShadow}:
+      Pl.call.go(n, cNone, cZero, cUnb, cArgFirst, cBufFirst, cShadow)
+
+# THE VARIABLE BOUND TO ZERO. `bnd_arg` IS THE SAME SHAPE WITH FOUR IN IT, AND THE
+# VALUE IS INSIDE A `Some`, SO ZERO IS NOT "ABSENT": `PArg.has_val` ASKS
+# `val is not None` AND NOT WHETHER THE VALUE IS TRUTHY.
+def bnd_arg0(+w: Slot) -> O.ParamArg:
+  O.ParamArg{Slot.slot(w), S.int32(), Some{zero_four()}, Some{1}, Slot.nm(w), S.Aalu{},
+             None{}, False{}, None{}, Some{0}, False{}, Some{O.CInt{H.i64_of_i32(0)}}}
+
+def plants_arena() -> Pl:
+  +a0 = O.Arena.empty()
+  +n1 = O.UOp.const(a0, O.CInt{H.i64_of_i32(3)})
+  +n2 = O.UOp.new.param(O.Found.ar(n1), O.OpsPARAM{}, Some{16}, O.AParam{buf_arg(Slot.of(0, "g0"))}, O.TNone{})
+  +n3 = O.UOp.new(O.Found.ar(n2), O.OpsPARAM{}, Nil{}, O.AParam{var_arg(Slot.of(0, "a0"))}, O.TNone{})
+  +n4 = O.UOp.new(O.Found.ar(n3), O.OpsPARAM{}, Nil{}, O.AParam{var_arg(Slot.of(1, "a1"))}, O.TNone{})
+  +n5 = O.UOp.new(O.Found.ar(n4), O.OpsPARAM{}, Nil{}, O.AParam{bnd_arg0(Slot.of(0, "z0"))}, O.TNone{})
+  +n6 = O.UOp.new(O.Found.ar(n5), O.OpsPARAM{}, Nil{}, O.AParam{bnd_arg(Slot.of(1, "g0"))}, O.TNone{})
+  +n7 = O.UOp.new(O.Found.ar(n6), O.OpsSINK{}, Nil{}, O.AKernel{kernel_info("kp", 0)}, O.TNone{})
+  +n8 = O.UOp.new(O.Found.ar(n7), O.OpsLINEAR{}, Nil{}, O.ANone{}, O.TNone{})
+  +n9 = O.UOp.new(O.Found.ar(n8), O.OpsPROGRAM{}, [O.Found.i(n7), O.Found.i(n8)], O.AProgram{pi([O.Found.i(n2)], [0], [0], [])}, O.TNone{})
+  +n10 = O.UOp.new(O.Found.ar(n9), O.OpsCALL{}, [O.Found.i(n9), O.Found.i(n2)], O.ACall{call_info("pn")}, O.TNone{})
+  +n11 = O.UOp.new(O.Found.ar(n10), O.OpsPROGRAM{}, [O.Found.i(n7), O.Found.i(n8)], O.AProgram{pi([O.Found.i(n5)], [0], [0], [])}, O.TNone{})
+  +n12 = O.UOp.new(O.Found.ar(n11), O.OpsCALL{}, [O.Found.i(n11), O.Found.i(n5)], O.ACall{call_info("pz")}, O.TNone{})
+  +n13 = O.UOp.new(O.Found.ar(n12), O.OpsPROGRAM{}, [O.Found.i(n7), O.Found.i(n8)], O.AProgram{pi([O.Found.i(n3)], [0], [0], [])}, O.TNone{})
+  +n14 = O.UOp.new(O.Found.ar(n13), O.OpsCALL{}, [O.Found.i(n13), O.Found.i(n3)], O.ACall{call_info("pu")}, O.TNone{})
+  +n15 = O.UOp.new(O.Found.ar(n14), O.OpsPROGRAM{}, [O.Found.i(n7), O.Found.i(n8)], O.AProgram{pi([O.Found.i(n3), O.Found.i(n2)], [1], [1], [])}, O.TNone{})
+  +n16 = O.UOp.new(O.Found.ar(n15), O.OpsCALL{}, [O.Found.i(n15), O.Found.i(n3), O.Found.i(n2)], O.ACall{call_info("pa")}, O.TNone{})
+  +n17 = O.UOp.new(O.Found.ar(n16), O.OpsPROGRAM{}, [O.Found.i(n7), O.Found.i(n8)], O.AProgram{pi([O.Found.i(n2), O.Found.i(n4)], [0], [0], [])}, O.TNone{})
+  +n18 = O.UOp.new(O.Found.ar(n17), O.OpsCALL{}, [O.Found.i(n17), O.Found.i(n2), O.Found.i(n4)], O.ACall{call_info("pb")}, O.TNone{})
+  +n19 = O.UOp.new(O.Found.ar(n18), O.OpsPROGRAM{}, [O.Found.i(n7), O.Found.i(n8)], O.AProgram{pi([O.Found.i(n2), O.Found.i(n6)], [0], [0], [])}, O.TNone{})
+  +n20 = O.UOp.new(O.Found.ar(n19), O.OpsCALL{}, [O.Found.i(n19), O.Found.i(n2), O.Found.i(n6)], O.ACall{call_info("ps")}, O.TNone{})
+  Pl{O.Found.ar(n20), O.Found.i(n10), O.Found.i(n12), O.Found.i(n14), O.Found.i(n16), O.Found.i(n18), O.Found.i(n20)}
+
 # `1` is `VTrue`, `0` is `VFalse`, `9` is `VSkip` -- `uop/spec.bend`'s spelling, and
 # a `VSkip` is a REAL ANSWER and not a failure: it is what a rule says when the
 # pattern does not apply, and `rewrite` answering `None` is the same thing.
@@ -1802,11 +2135,13 @@ def t_beam_len() -> U32: tlen(beam_table())
 def t_arg_len(+l: Land) -> U32:
   U32.from_nat(List.length(&2, U32, get_call_arg_uops(Land.ar(l), Land.callP(l))))
 
-# THE BOUND VARIABLE IS DROPPED. realize.py:15 filters `if not s.is_bound_var`, and
-# node 19 (`CALL (12, g0, nbnd)`) is the fixture that has one: `arg_len_b` is 1
-# where `arg_len` is 2, and the pair is what a walk over the RAW `src[1:]` gets
-# wrong. The two rows are also a first-wins control -- a filter that kept
-# everything would move `arg_len_b` and not `arg_len`.
+# THE BOUND VARIABLE IS DROPPED. realize.py:16 AT THE PIN FILTERS `if not
+# s.is_variable`, WHICH IS TRUE OF A BOUND VARIABLE TOO, and node 19 (`CALL (12, g0,
+# nbnd)`) is the fixture that has one: `arg_len_b` is 1 where `arg_len` is 2, and the
+# pair is what a walk over the RAW `src[1:]` gets wrong. The two rows are also a
+# first-wins control -- a filter that kept everything would move `arg_len_b` and not
+# `arg_len`. `arg_len_var` IS THE SAME FILTER ON AN **UNBOUND** VARIABLE, AND THE
+# PRE-PIN FILTER (`is_bound_var`) KEPT THOSE.
 def t_arg_len_b(+l: Land) -> U32:
   U32.from_nat(List.length(&2, U32, get_call_arg_uops(Land.ar(l), Land.callH(l))))
 
@@ -1847,22 +2182,49 @@ def t_kern_p(+l: Land) -> U32:
 def t_kern_v(+l: Land) -> U32:
   U32.from_nat(List.length(&2, U32, get_call_kernels(Land.ar(l), Land.callV(l))))
 
-# --- realize.py:16 `get_call_var_uops`: `prg.arg.vars` rebound to CONSTs. The
-# fixture's PROGRAM 12 has `vars=[n]` and the CALL passes the BOUND `n`, so the
-# answer is a CONST with value 4; PROGRAM 13 has `vars=[m]` and the CALL passes the
-# UNBOUND `m`, so the answer is `m` itself. TWO rows: a lookup that always missed
-# would move only the second.
-def t_var_cnt(+l: Land) -> U32:
-  RList.len(get_call_var_uops(Land.ar(l), Land.callH(l), Land.progV(l)))
+# --- realize.py:16 AT THE PIN: `get_call_arg_uops` FILTERS `is_variable` AND NOT
+# `is_bound_var`, SO AN **UNBOUND** VARIABLE IS DROPPED FROM THE ARGUMENT LIST. The
+# fixture's CALL 20 passes the UNBOUND `m` and `g0`, so the answer is ONE argument
+# where the pre-pin filter said TWO. THE ROW IS THE FILTER: A FILTER THAT DROPPED
+# NOTHING WOULD ANSWER 2 HERE AND 2 AT `arg_len` TOO.
+def t_arg_len_var(+l: Land) -> U32:
+  U32.from_nat(List.length(&2, U32, get_call_arg_uops(Land.ar(l), Land.callM(l))))
 
-def t_var_is_const(+l: Land) -> U32:
-  bl_of(RList.is_op(get_call_var_uops(Land.ar(l), Land.callH(l), Land.progV(l)), 0, O.OpsCONST{}))
+# --- realize.py:17 AT THE PIN: `get_call_kernel_args`. ONE ENTRY PER KERNEL PARAM,
+# IN SLOT ORDER. THE ANSWER IS TAKEN OVER THE PLANT FIXTURE, BECAUSE THE PIN's
+# `UOp.kernel_params` READS `self.src[1].src` AND THE MAIN FIXTURE's PROGRAMs HAVE
+# ONE SRC AND NO `src[1]`.
+def ka_of(+l: Pl, n: U32) -> RList:
+  +c = Pl.call(l, n)
+  +ar = Pl.ar(l)
+  get_call_kernel_args(ar, c, rz_body(ar, c), cpu_dev())
 
-def t_var_cnt_m(+l: Land) -> U32:
-  RList.len(get_call_var_uops(Land.ar(l), Land.callM(l), Land.progM(l)))
+def t_ka_len(+l: Pl, n: U32) -> U32:
+  RList.len(ka_of(l, n))
 
-def t_var_m_same(+l: Land) -> U32:
-  bl_of(RList.is_at(get_call_var_uops(Land.ar(l), Land.callM(l), Land.progM(l)), 0, Land.varM(l)))
+# THE BUFFER ARM: `call.src[1+p.arg.slot].getaddr(devs)` IS A `GETADDR`.
+def t_ka_addr(+l: Pl, n: U32, i: U32) -> U32:
+  bl_of(RList.is_op(ka_of(l, n), i, O.OpsGETADDR{}))
+
+# THE ALU ARM, UNBOUND: `p.replace(arg=replace(p.arg, slot=-1))` IS A `PARAM`.
+def t_ka_param(+l: Pl, n: U32, i: U32) -> U32:
+  bl_of(RList.is_op(ka_of(l, n), i, O.OpsPARAM{}))
+
+# THE ALU ARM, BOUND: `.ccast(p.dtype)` MAKES THE CONST A `CAST`.
+def t_ka_cast(+l: Pl, n: U32, i: U32) -> U32:
+  bl_of(RList.is_op(ka_of(l, n), i, O.OpsCAST{}))
+
+# THE SLOTLESS READ: THE ENTRY's SLOT IS THE PIN's `-1`, WHICH THE PORT SPELLS
+# `ops.bend`'s OWN `ParamArg.no_slot()`.
+def t_ka_slotless(+l: Pl, n: U32, i: U32) -> U32:
+  +r = ka_of(l, n)
+  bl_of(U32.is_eq(kp_slot(RList.ar(r), RList.at(r, i)), O.ParamArg.no_slot()))
+
+# THE PIN's `get_call_arg_uops` OVER A PLANT: AN UNBOUND VARIABLE IS DROPPED, SO A
+# CALL THAT PASSES ONLY A VARIABLE HAS NO ARGUMENT UOPS AT ALL.
+def t_ka_arglen(+l: Pl, n: U32) -> U32:
+  +c = Pl.call(l, n)
+  U32.from_nat(List.length(&2, U32, get_call_arg_uops(Pl.ar(l), c)))
 
 # --- realize.py:43 `get_call_name`: the PROGRAM arm is `ast.src[0].arg.name`, so
 # the answer is the KERNEL NAME and not the CALL name. `name_p` is a STRING row on
@@ -1951,10 +2313,16 @@ def t_ctx_time_cache() -> U32: bl_of(ExecContext.cache(ExecContext.of_time(False
 #   beam_len=1    realize.py:217 is ONE rule.
 #   arg_len=2     realize.py:15 over `(prog, g0, g1)` is two arg uops.
 #   arg_len_b=1   ... and ONE after the bound variable is dropped.
+#   arg_len_var=1 realize.py:16 AT THE PIN FILTERS `is_variable`, SO AN **UNBOUND**
+#                 variable is dropped too: the fixture's CALL 20 passes `(g0, m)`
+#                 and the answer is ONE. THE PRE-PIN FILTER SAID TWO, AND THAT IS
+#                 THE WHOLE OF THE FILTER CHANGE.
 #   oi_out_p=1    realize.py:24, a PROGRAM's `arg.outs` is `(0,)`.
 #   oi_out_s=1    realize.py:25, a STORE is `(0,)`.
 #   oi_in_p=1     realize.py:24, a PROGRAM's `arg.ins` is `(1,)`.
-#   oi_in_e=2     realize.py:26, `encdec` is `range(1, 3)` for a 3-arg call.
+#   oi_in_e=1     realize.py:26, `encdec` is `range(1, 2)` for a 2-arg call, AND THE
+#                 SECOND ARGUMENT IS THE UNBOUND `n` WHICH THE PIN's FILTER DROPS.
+#                 THE PRE-PIN ANSWER WAS `range(1, 3)` AND `2`.
 #   oi_out_v=0    realize.py:27, `validate` is NOT `encdec`, so `(), ()`.
 #   oi_in_v=0     ... the second half of that pair.
 #   wbuf_p=0      realize.py:33 keeps only `Ops.BUFFER`, and a PARAM is not one.
@@ -1962,10 +2330,28 @@ def t_ctx_time_cache() -> U32: bl_of(ExecContext.cache(ExecContext.of_time(False
 #                 dropped everything would move only `wbuf_p`.
 #   kern_p=1      realize.py:41, one device.
 #   kern_v=0      realize.py:40, a `validate` call enqueues no kernel.
-#   var_cnt=1     realize.py:19, `prg.arg.vars` has one entry.
-#   var_is_const=1  ... and the bound variable made it a CONST(4).
-#   var_cnt_m=1   the control: an UNBOUND variable is still one entry.
-#   var_m_same=1  ... and it is returned UNCHANGED, which is `bound.get`'s default.
+#   ka_none_len=1   realize.py:17 AT THE PIN: A PROGRAM WITH NO VARIABLE ANSWERS ONE
+#                   ENTRY, AND IT IS THE BUFFER's ADDRESS.
+#   ka_none_addr=1  ... and it is a `GETADDR`.
+#   ka_zero_len=1   A VARIABLE BOUND TO ZERO IS STILL A VARIABLE.
+#   ka_zero_cast=1  ... and its value is a `CAST` over the CONST 0, NOT A MISS.
+#   ka_unb_len=1    AN UNBOUND VARIABLE IS ONE ENTRY.
+#   ka_unb_param=1  ... and it is a `PARAM`.
+#   ka_unb_slotless=1 ... AND ITS SLOT IS THE PIN's `-1`: THE SLOTLESS VAR READ.
+#   ka_unb_arglen=0  AND `get_call_arg_uops` DROPS IT, SO THE CALL HAS NO ARGS.
+#   ka_af_len=2      AN ARG PRECEDES A BUFFER: TWO ENTRIES.
+#   ka_af_p0=1       ... AND THE ARG IS ENTRY ZERO.
+#   ka_af_a1=1       ... AND THE BUFFER's ADDRESS IS ENTRY ONE. THE ORDER IS THE
+#                    SLOT ORDER, NOT "THE BUFFERS FIRST".
+#   ka_af_slotless=1 ... AND THE ARG's SLOT IS `-1`.
+#   ka_bf_len=2      THE MIRROR: A BUFFER PRECEDES AN ARG.
+#   ka_bf_a0=1       ... AND THE BUFFER's ADDRESS IS ENTRY ZERO.
+#   ka_bf_p1=1       ... AND THE ARG IS ENTRY ONE.
+#   ka_bf_slotless=1 ... AND THE ARG's SLOT IS `-1`.
+#   ka_sh_len=2      A VARIABLE THAT SHADOWS A GLOBAL's NAME.
+#   ka_sh_cast=1     ... AND THE VARIABLE's OWN VALUE IS A `CAST`, NOT THE
+#                    GLOBAL's ADDRESS.
+#   ka_sh_a0=1       ... AND THE GLOBAL's ADDRESS IS STILL ENTRY ZERO.
 #   name_p=k1     realize.py:48 reads `ast.src[0].arg.name`, the KERNEL name and not
 #                 the call's. A STRING row, because this is the one reader where a
 #                 wrong `arg` would give a plausible wrong STRING.
@@ -2105,10 +2491,11 @@ def row_s2(m: Maybe<&2, String>) -> String:
     case Some{s}: s
     case _: "None"
 
-def gate_count() -> U32: 50
+def gate_count() -> U32: 67
 
 def main() -> IO(Unit):
   +l = main_arena()
+  +p = plants_arena()
   do IO<Unit>:
     IO.print(String.concat(["arena_n=", U32.show(t_arena_n(l))]))
     IO.print(String.concat(["gate_count=", U32.show(gate_count())]))
@@ -2117,6 +2504,7 @@ def main() -> IO(Unit):
     IO.print(String.concat(["beam_len=", U32.show(t_beam_len())]))
     IO.print(String.concat(["arg_len=", U32.show(t_arg_len(l))]))
     IO.print(String.concat(["arg_len_b=", U32.show(t_arg_len_b(l))]))
+    IO.print(String.concat(["arg_len_var=", U32.show(t_arg_len_var(l))]))
     IO.print(String.concat(["oi_out_p=", U32.show(t_oi_out_p(l))]))
     IO.print(String.concat(["oi_out_s=", U32.show(t_oi_out_s(l))]))
     IO.print(String.concat(["oi_in_p=", U32.show(t_oi_in_p(l))]))
@@ -2127,10 +2515,25 @@ def main() -> IO(Unit):
     IO.print(String.concat(["wbuf_buf=", U32.show(t_wbuf_buf(l))]))
     IO.print(String.concat(["kern_p=", U32.show(t_kern_p(l))]))
     IO.print(String.concat(["kern_v=", U32.show(t_kern_v(l))]))
-    IO.print(String.concat(["var_cnt=", U32.show(t_var_cnt(l))]))
-    IO.print(String.concat(["var_is_const=", U32.show(t_var_is_const(l))]))
-    IO.print(String.concat(["var_cnt_m=", U32.show(t_var_cnt_m(l))]))
-    IO.print(String.concat(["var_m_same=", U32.show(t_var_m_same(l))]))
+    IO.print(String.concat(["ka_none_len=", U32.show(t_ka_len(p, 0))]))
+    IO.print(String.concat(["ka_none_addr=", U32.show(t_ka_addr(p, 0, 0))]))
+    IO.print(String.concat(["ka_zero_len=", U32.show(t_ka_len(p, 1))]))
+    IO.print(String.concat(["ka_zero_cast=", U32.show(t_ka_cast(p, 1, 0))]))
+    IO.print(String.concat(["ka_unb_len=", U32.show(t_ka_len(p, 2))]))
+    IO.print(String.concat(["ka_unb_param=", U32.show(t_ka_param(p, 2, 0))]))
+    IO.print(String.concat(["ka_unb_slotless=", U32.show(t_ka_slotless(p, 2, 0))]))
+    IO.print(String.concat(["ka_unb_arglen=", U32.show(t_ka_arglen(p, 2))]))
+    IO.print(String.concat(["ka_af_len=", U32.show(t_ka_len(p, 3))]))
+    IO.print(String.concat(["ka_af_p0=", U32.show(t_ka_param(p, 3, 0))]))
+    IO.print(String.concat(["ka_af_a1=", U32.show(t_ka_addr(p, 3, 1))]))
+    IO.print(String.concat(["ka_af_slotless=", U32.show(t_ka_slotless(p, 3, 0))]))
+    IO.print(String.concat(["ka_bf_len=", U32.show(t_ka_len(p, 4))]))
+    IO.print(String.concat(["ka_bf_a0=", U32.show(t_ka_addr(p, 4, 0))]))
+    IO.print(String.concat(["ka_bf_p1=", U32.show(t_ka_param(p, 4, 1))]))
+    IO.print(String.concat(["ka_bf_slotless=", U32.show(t_ka_slotless(p, 4, 1))]))
+    IO.print(String.concat(["ka_sh_len=", U32.show(t_ka_len(p, 5))]))
+    IO.print(String.concat(["ka_sh_cast=", U32.show(t_ka_cast(p, 5, 1))]))
+    IO.print(String.concat(["ka_sh_a0=", U32.show(t_ka_addr(p, 5, 0))]))
     IO.print(String.concat(["name_p=", row_s2(t_name_p(l))]))
     IO.print(String.concat(["res_len=", U32.show(t_res_len(l))]))
     IO.print(String.concat(["res_slot0=", U32.show(t_res_slot0(l))]))
