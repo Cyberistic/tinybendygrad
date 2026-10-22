@@ -141,12 +141,19 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`substrate-start == substrate-end == live == d685031f056015920c66a9843260f10653a7e0c93b74f716c56f827911dafe3b`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
   **STANDS**, **AND `substrate-head=ecde3623a222f015ffccdff4e3ab8887e0197ca5` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
-  **AND **THIS **TIME **IT **IS **HEAD **ITSELF**, **NOT **AN **ANCESTOR **OF **IT**: MEASURED 2026-10-22T11:0xZ,
-  `git rev-parse --short HEAD` **IS** `ecde3623a`, **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399
-  **TRACKED **PATHS, **0 **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED
-  **DIGEST.**  **SO **THE **RUN **CERTIFIES **THE **COMMIT **THE **TREE **IS **AT** -- **THE **STRONGEST **FORM **OF **THE
-  **CLAIM**, **AND **IT **IS **ONLY **REACHABLE **WHEN **THE **TREE **IS **QUIET.**  **BUT **A **COMMIT **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY
-  **THE **FIRST **`run` **OF **TONIGHT **WAS **RE-RUN.***
+  **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
+  `ecde3623a`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
+  **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
+  **⚠ AND **THE **STRONGEST **FORM **OF **THE **CLAIM **IS **ALSO **THE **FRAILEST**, **AND **THIS **TREE
+  **DEMONSTRATED **IT **WITHIN **A **MINUTE **OF **ITS **BEING **WRITTEN**: **MY **OWN **NEXT **COMMIT
+  **TOUCHED **ONLY `AGENTS.md`**, **SO **HEAD **MOVED **TO `c978aabcb` **AND **THE **RUN's **`substrate-head`
+  **IS **NOW **AN **ANCESTOR **OF **HEAD **AGAIN.**  **MEASURED: `git diff --name-only ecde3623a HEAD` **IS
+  **EXACTLY **`AGENTS.md`,**0 **SUBSTRATE **PATHS **DIFFER, **AND **THE **DIGEST **IS **UNCHANGED.**
+  **SO **THE **MECHANISM **IS **NOW **DEMONSTRATED **RATHER **THAN **ASSERTED**: **A **COMMIT **THAT **FOLLOWS
+  **THE **RUN **AND **TOUCHES **NOTHING **IN **THE **SUBSTRATE** -- **`AGENTS.md`, **`.agents/**`, **`gates/**` --
+  **DOES **NOT **MAKE **THE **RUN **STALE, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**  **BUT **A **COMMIT
+  **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY **THE **FIRST **`run` **OF **TONIGHT **WAS
+  **RE-RUN.**
   ***AND ***THE **PART **THAT **IS **A **COVERAGE **HOLE **AND **NOT **A **RESULT** -- **THE `pI(` LANE **IS **DEAD**:***
   **MEASURED 2026-10-22: the corpus's 34 graphs produce **ZERO** `pI(` rows, so **the `ProgramInfo` FIELD LIST **IS
   **NOT **EXERCISED **AT **ALL**, AND **THE **CORPUS **CANNOT **SEE **THE `vars` -> `params` **RENAME** (`9974c9d9b` /
