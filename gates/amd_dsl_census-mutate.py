@@ -332,14 +332,17 @@ MUTATIONS = [
     ("G4 axes_hold: only offset 125 is uncovered, not 125 and 127", "GUARD", "gate",
      'if sorted(o for o in d.Reg._NAMES if o not in covered) != [125, 127]:',
      'if sorted(o for o in d.Reg._NAMES if o not in covered) != [125]:'),
-    # `ad117c928^^` WAS TRIED HERE AND IS **NOT** A MUTATION: it is the GRANDPARENT, a valid
-    # revision, and `dsl.py` has not moved in the file's whole history, so all three blobs are
-    # `6526706b` and the check is green. A revision that LOOKS malformed and resolves is the
-    # cheapest way to write a green that means nothing, so the rev here must be one `git`
-    # cannot resolve at all.
-    ("G5 pin_drift_hold: the PIN is a revision git cannot resolve", "GUARD", "gate",
-     'PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file',
-     'PIN = "nosuchrev"          # the pin AGENTS.md names for a drifted file'),
+    # THE PIN IS BYTES NOW, NOT A REVISION, so the mutation is a PATH that does not exist.
+    # `gates/gatekit.py:oracle_drift` answers "MISSING -- the frozen oracle is gone", which is
+    # the same shape of refusal the old unresolvable revision produced -- and the one thing a
+    # REVISION comparison could NOT produce, because a revision that does not resolve says
+    # nothing about the file on disk and a file that is absent from the WORKING TREE is
+    # exactly what `import tinygrad` would trip over.
+    ("G5 pin_drift_hold: the pinned FILE is one that does not exist", "GUARD", "gate",
+     '  "tinygrad/renderer/amd/dsl.py":\n'
+     '    "dd45cbdf0d63570742eb54a21ef09266eaed95b8f3708de5363ef1c64d86606f",',
+     '  "tinygrad/renderer/amd/dsl-ABSENT.py":\n'
+     '    "dd45cbdf0d63570742eb54a21ef09266eaed95b8f3708de5363ef1c64d86606f",'),
     ("G6 fixtures_hold: one fixture value is ADMITTED as a difference", "GUARD", "gate",
      "VAL_DIFF_ADMITTED = ()",
      'VAL_DIFF_ADMITTED = (("F64_VALS", "lit"),)'),
@@ -353,12 +356,31 @@ MUTATIONS = [
     # PRESENT, as a substring of `bfset_word64`'s pinned `0x10000000000000000`, so the first
     # version of this mutation was a GREEN that meant nothing. `65267000` is `grep -c` 0 in the
     # pins file and is the right shape -- eight hex digits, one digit off the real blob.
-    ("G9 pin_drift_hold: the blob it demands is one the pins file does not record", "GUARD",
-     "gate", '        if head and head not in PINS.read_text():',
-     '        if head and "65267000" not in PINS.read_text():'),
-    ("G9b pin_drift_hold: the recording assertion is REMOVED (a WEAKENING)", "GUARD",
-     "gate", "        if head and head not in PINS.read_text():",
-     "        if False:"),
+    ("G9 pin_drift_hold: the recorded blob it demands is one the pins file does not record",
+     "GUARD", "gate",
+     '  "tinygrad/renderer/amd/dsl.py": "6526706b",',
+     '  "tinygrad/renderer/amd/dsl.py": "65267000",'),
+    ("G9b pin_drift_hold: the recording assertion is REMOVED (a WEAKENING, expected GREEN)",
+     "GUARD", "gate",
+     "    for rel, blob in ROWS_TAKEN_AT.items():\n        if blob not in text:",
+     "    for rel, blob in ROWS_TAKEN_AT.items():\n        if False:"),
+    # G9c IS THE OTHER ARM OF `oracle_drift`: G5 is a file that is ABSENT and G9c is a file
+    # that is PRESENT with the WRONG BYTES, which is what a mistyped sha looks like. The
+    # sha256 given here is a REAL one -- `tinygrad/runtime/ops_python.py`'s -- so the pins
+    # file DOES record it and only the mismatch arm can be the one that fires.
+    ("G9c pin_drift_hold: the pinned sha256 is another file's sha256", "GUARD", "gate",
+     '    "dd45cbdf0d63570742eb54a21ef09266eaed95b8f3708de5363ef1c64d86606f",',
+     '    "96fd869a40884dec0247633c49af6e80dffc375afdbf222eb70f6b7d04bcf806",'),
+    # G9d IS THE CROSS-CHECK AND NOTHING ELSE: the file is real and its sha256 is right, so
+    # `oracle_drift` is GREEN, and the pins file does not record THAT path, so the
+    # "the pins file records the sha256" half is the only thing that can be red.
+    ("G9d pin_drift_hold: a pinned file the pins file does not record", "GUARD", "gate",
+     '  "tinygrad/runtime/autogen/amd/cdna/operands.py":\n'
+     '    "ae871116dbad3aa9644975ed0f1b6042c9d53d64078f01f6688c7d73ae01f381",\n}',
+     '  "tinygrad/runtime/autogen/amd/cdna/operands.py":\n'
+     '    "ae871116dbad3aa9644975ed0f1b6042c9d53d64078f01f6688c7d73ae01f381",\n'
+     '  "tinygrad/runtime/ops_python.py":\n'
+     '    "62decc9aa674b47a578e06bec68d46695920524da27b10fb63da75d420df8d7b",\n}'),
 ]
 
 SOURCES = {"port": PORT, "oracle": ORACLE, "pins": PINS, "gate": GATE}

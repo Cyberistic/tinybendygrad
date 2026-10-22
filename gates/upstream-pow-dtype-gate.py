@@ -35,6 +35,15 @@ shows `int32 ** 3` is RIGHT, `f32 ** f32-tensor` is RIGHT, and `int64 ** int64-t
 beside the broken row, has located the defect to the int32 path rather than to `pow`. **`int64`
 working is unexplained and this file does not explain it** -- it is reported as an OPEN QUESTION
 below, because a mechanism I have not read is not a mechanism I may assert.
+
+THE PIN IS BYTES AND IT IS A CHECK, NOT A LABEL. It used to compare `git show
+ad117c928^:tinygrad/uop/symbolic.py` with the working tree's bytes and PRINT the answer --
+`IDENTICAL -- this is at the PIN` -- while the exit code ignored it, so the pin could not go
+red. It is now the sha256 of the three upstream files the rows are produced FROM, compared
+against the WORKING TREE by `gates/gatekit.py:oracle_drift`, and a difference REFUSES (exit
+3) instead of being printed. **THE PIN AND THE ROWS ARE TWO INDEPENDENT FACTS:** the pin is
+about the BYTES of the inputs, the rows are about upstream's BEHAVIOUR, and a byte change no
+row reads leaves the rows green while the pin is red.
 """
 import argparse
 import os
@@ -46,6 +55,15 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PY = ROOT / ".venv" / "bin" / "python"
 
+# THE PIN IS READ BY THE HOUSE'S READER. `gates/gatekit.py:oracle_drift` is the one instrument
+# that hashes the file the oracle opens and compares it with a LITERAL, and it is the reader
+# `gates/onnx_census-gate.py`, `gates/rand_census-gate.py`, `gates/state_census-gate.py` and
+# `gates/ops_python_census-gate.py` all use. The FIVE VERDICTS above are restated rather
+# than imported, and that stays true: a NUMBER is a convention this file owns, while the
+# reader is an instrument this file uses.
+sys.path.insert(0, str(HERE))
+from gatekit import oracle_drift  # noqa: E402
+
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
@@ -55,7 +73,30 @@ PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"]}
 # class out of a sentence, so the sentence lives HERE and the field carries the class alone.
 RED_IS = "FINDING"
 
-PIN = "ad117c928^"
+# THE PIN IS BYTES, NOT A REVISION, AND IT IS A CHECK RATHER THAN A LABEL. The old one
+# compared `git show ad117c928^:tinygrad/uop/symbolic.py` with the working tree's bytes and
+# PRINTED the answer -- `IDENTICAL -- this is at the PIN` or `DIFFERS` -- and the exit code
+# ignored it entirely, so a pin that could not go red was carried as a line of prose. A
+# REVISION is the wrong instrument twice over: it names a COMMIT rather than the file on
+# disk, and it cannot see a working tree whose bytes differ from every revision it names.
+#
+# `gates/gatekit.py:oracle_drift` is the house mechanism and it REFUSES (exit 3) instead of
+# printing. THE VALUES ARE LITERALS, and they must stay literals: a pin re-derived from the
+# file it checks is `sha256(x) == sha256(x)`, which cannot fail. `gates/blobpin-census-gate.py`
+# MEASURES that claim over every pin site in the tree and fails a derived one.
+#
+# THE THREE FILES ARE THE POW PATH THIS GATE'S OWN HEADER NAMES: `symbolic.py`'s
+# `simplify_pow`/`xpow` rewrites, `mixin/elementwise.py`'s `base needs to be float` guard,
+# and `codegen/decomp/transcendental.py`'s `xpow`. The rows are produced by CALLING
+# upstream, so a change in any of the three can move them.
+DRIFT_PIN = {
+  "tinygrad/uop/symbolic.py":
+    "6a5dd43c32ac6a3e6d6a8de6b37967e5f0300c228547385862ccbf7572528fb2",
+  "tinygrad/mixin/elementwise.py":
+    "951d9d8a83e5cd3ae5a26571d685f2cef44fa8b41b1e4c3e028f1bf4d31076de",
+  "tinygrad/codegen/decomp/transcendental.py":
+    "1d737c265c9f96b8f09d82b85eb660dbb91b558a5af88512075c5a20540d00c5",
+}
 
 # THE FIXTURE IS UPSTREAM'S OWN EXPRESSION, SPELLED FIVE WAYS. Every field is a dtype name or a
 # list of ints; nothing here invents a field name, because two of this session's agents MIS-SPELLED
@@ -140,10 +181,26 @@ def main(argv=None):
   if not (ROOT / "tinygrad" / "uop" / "symbolic.py").exists():
     print(f"upstream-pow-dtype-gate: REFUSED, tinygrad/uop/symbolic.py is absent", file=sys.stderr)
     return REFUSED
-  env = {"GIT_INDEX_FILE": str(ROOT / ".git" / "agent-index"), "PATH": "/usr/bin:/bin"}
-  pin = subprocess.run(["git", "show", f"{PIN}:tinygrad/uop/symbolic.py"], cwd=ROOT, env=env,
-                       capture_output=True)
-  at_pin = pin.returncode == 0 and pin.stdout == (ROOT / "tinygrad" / "uop" / "symbolic.py").read_bytes()
+  # THE PIN IS A CHECK, NOT A LABEL. The old one compared a REVISION's bytes with the
+  # working tree's and PRINTED the answer while the exit code ignored it, so the pin could
+  # not go red. `oracle_drift` compares the WORKING TREE's bytes with a LITERAL sha256 and
+  # refuses when they differ, which is the house mechanism and the only shape in which this
+  # pin can fail at all.
+  #
+  # THE PIN AND THE OUTPUT CHECK ARE NOT THE SAME FACT. The PIN checks the BYTES of the
+  # three upstream files the rows are produced from -- the INPUTS. The OUTPUT CHECK is the
+  # six fixture rows, each run in its own process, and it is a fact about BEHAVIOUR: what
+  # upstream's own `Tensor.pow` does with a non-constant exponent. A byte change that no row
+  # reads leaves the rows green and the pin red; a change in upstream's promotion rules
+  # leaves the pin green and moves the rows. Neither is re-derived from the other.
+  drift = oracle_drift(DRIFT_PIN)
+  if drift:
+    print("upstream-pow-dtype-gate: REFUSED, NOT A VERDICT: the upstream files this gate "
+          "audits have moved, so the six rows would be measured against bytes this gate has "
+          "not read", file=sys.stderr)
+    for b in drift:
+      print(f"   {b}", file=sys.stderr)
+    return REFUSED
 
   rows = run_rows()
   if not any(v.startswith("VERDICT=") and not v.startswith("VERDICT=DEAD") for _, v in rows):
@@ -151,7 +208,8 @@ def main(argv=None):
     return DEAD
   bad = broken(rows)
   print(f"upstream-pow-dtype-gate: {len(rows)} fixture rows, each in its OWN process under DEV=CPU")
-  print(f"  symbolic.py vs {PIN}: {'IDENTICAL -- this is at the PIN' if at_pin else 'DIFFERS'}")
+  print(f"  the audited upstream files are byte-identical to the pin: "
+        f"{', '.join(sorted(DRIFT_PIN))}")
   for lbl, v in rows: print(f"     {lbl:36s} {v}")
   print(f"  {len(bad)} of {len(rows)} rows do not compile-and-run: {bad}")
   print("  OPEN QUESTION, NOT ANSWERED HERE: int64 ^ int64-tensor compiles and is correct while")

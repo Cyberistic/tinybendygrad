@@ -21,11 +21,13 @@ false of that, and they are DIFFERENT defects, so they get different rows:
   R2 ALGEBRA.  `least_upper_dtype` must be associative if it is a join of a lattice (that is a
      theorem about lattices, not a property of this implementation). This gate enumerates all
      19^3 triples and counts the ones where `(a|b)|c != a|(b|c)`.
-  R3 PIN.  Whether the file that carries the claim is the PIN (`ad117c928^`) or HEAD. A finding
-     that is only in HEAD is a PIN-VERSUS-HEAD DRIFT and is not this gate's subject, so it is
-     reported as its own row and `REFUSED` is not charged for it -- the row moves, the verdict does
-     not, because the two are different questions and `AGENTS.md` says for a drifted file the PIN
-     is the truthful oracle.
+  R3 PIN.  Whether the files that carry the claim are the ones this gate was last verified
+     against, or whether they have MOVED since. A finding that is only in the moved bytes is a
+     DRIFT and is not this gate's subject, so it is reported as its own row and `REFUSED` is
+     not charged for it -- the row moves, the verdict does not, because the two are different
+     questions. **THE PIN IS THE sha256 OF THE BYTES THE AUDIT READS, COMPARED AGAINST THE
+     WORKING TREE**, so it is a CHECK and it can go red; it used to be a REVISION compared
+     against the working tree and PRINTED, so it could not.
 
 WHY A N-ARY CALL AND A BINARY FOLD ARE BOTH REAL CONSUMERS (this is what makes R2 observable
 rather than academic). `promo_dtype` (tinygrad/uop/ops.py:118) is
@@ -47,12 +49,20 @@ but only for the one claim it is actually competent to decide, and that claim is
 import argparse
 import hashlib
 import itertools
-import subprocess
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+
+# THE PIN IS READ BY THE HOUSE'S READER. `gates/gatekit.py:oracle_drift` is the one instrument
+# that hashes the file the audit reads and compares it with a LITERAL, and it is the reader
+# `gates/onnx_census-gate.py`, `gates/rand_census-gate.py`, `gates/state_census-gate.py` and
+# `gates/ops_python_census-gate.py` all use. The FIVE VERDICTS below are restated rather than
+# imported, and that stays true: a NUMBER is a convention this file owns, while the reader is
+# an instrument this file uses.
+sys.path.insert(0, str(HERE))
+from gatekit import oracle_drift  # noqa: E402
 
 # THE FIVE VERDICTS, AS EXITS -- `gates/gatekit.py`'s numbers, restated rather than imported so
 # this file has no import-order dependency on a module it must not edit.
@@ -65,11 +75,39 @@ PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"]}
 # a class out of a sentence, so the sentence lives HERE and the field carries the class alone.
 RED_IS = "FINDING"
 
-# AGENTS.md: `ad117c928^` IS THE PIN. `ad117c928` IS THIS PROJECT'S OWN RE-VENDOR, so HEAD is not
-# an oracle for a drifted file. Named, not discovered: this is a REVISION, and a revision is not
-# a population of paths, so Doctrine 1 does not apply to it.
-PIN = "ad117c928^"
 UPSTREAM = ROOT / "tinygrad" / "dtype.py"
+
+# THE PIN IS BYTES, NOT A REVISION, AND IT IS A CHECK RATHER THAN A LABEL. The old one hashed
+# `git show ad117c928^:tinygrad/dtype.py` and compared it with the working tree's hash, and
+# PRINTED the answer -- `SAME -- this is at the PIN` or `DIFFERENT` -- while the exit code
+# ignored it and a mismatch only added a `[WARNING: ...]` to the last line. A pin that cannot
+# go red is a LABEL, and a label is not an instrument.
+#
+# `gates/gatekit.py:oracle_drift` is the house mechanism and it REFUSES (exit 3) instead of
+# printing. A REVISION is the wrong instrument twice over: it names a COMMIT rather than the
+# file on disk, and it cannot see a working tree whose bytes differ from every revision it
+# names -- which is the file `import tinygrad` opens.
+#
+# THE VALUES ARE LITERALS, and they must stay literals: a pin re-derived from the file it
+# checks is `sha256(x) == sha256(x)`, which cannot fail. `gates/blobpin-census-gate.py`
+# MEASURES that claim over every pin site in the tree and fails a derived one.
+#
+# THE FOUR FILES ARE THE PROMOTION PATH THIS AUDIT READS. `dtype.py` is the subject: the
+# `promo_lattice`, `least_upper_dtype` and `can_lossless_cast` the rows are about.
+# `mixin/elementwise.py`'s `promote` and `uop/ops.py`'s `promo_dtype` are the two real
+# entry points R4 drives (`promo_dtype` is `dts[0] if all_same(dts) else
+# least_upper_dtype(*dts)`), and `tensor.py` is what constructs the operands. A gate that
+# pinned only its subject would let `promo_dtype` move and report a stale R4 as a verdict.
+DRIFT_PIN = {
+  "tinygrad/dtype.py":
+    "7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926",
+  "tinygrad/mixin/elementwise.py":
+    "951d9d8a83e5cd3ae5a26571d685f2cef44fa8b41b1e4c3e028f1bf4d31076de",
+  "tinygrad/uop/ops.py":
+    "d006eafbb1a6e8326e9310ebbce7b04143bd80cf636e90779c3a86f7e2826ba9",
+  "tinygrad/tensor.py":
+    "5680ec3b2a716e435ae8f8ca42f39697ed46de7a3d50018a7becb9a368bcc56d",
+}
 
 # The population is DISCOVERED: every DType the class actually holds, minus the weak/void/alias
 # names `DTYPES_DICT` itself excludes, so this is upstream's own definition of "core dtypes"
@@ -82,14 +120,6 @@ def population():
                  if isinstance(v, DType) and not k.startswith(("default", "void", "weak", "_"))},
                 key=lambda d: (d.priority, d.bitsize, d.name, str(d.fmt)))
   return core, D
-
-
-def pin_blob_sha():
-  env = {"GIT_INDEX_FILE": str(ROOT / ".git" / "agent-index"), "PATH": "/usr/bin:/bin"}
-  out = subprocess.run(["git", "show", f"{PIN}:tinygrad/dtype.py"], cwd=ROOT, env=env,
-                       capture_output=True, text=True)
-  if out.returncode != 0: return None
-  return hashlib.sha256(out.stdout.encode()).hexdigest()
 
 
 def audit(core, D):
@@ -177,9 +207,27 @@ def main(argv=None):
     print("upstream-promo-lattice-gate: DEAD, the population DISCOVERED is empty", file=sys.stderr)
     return DEAD
 
+  # THE PIN IS A CHECK, NOT A LABEL. The old one compared a REVISION's bytes with the working
+  # tree's and PRINTED the answer while the exit code ignored it, so the pin could not go red.
+  # `oracle_drift` compares the WORKING TREE's bytes with a LITERAL sha256 and refuses when
+  # they differ, which is the house mechanism and the only shape in which this pin can fail.
+  #
+  # THE PIN AND THE OUTPUT CHECK ARE NOT THE SAME FACT. The PIN checks the BYTES of the four
+  # files the promotion path reads -- the INPUTS. The OUTPUT CHECK is the audit: the pairs
+  # with no join, the triples that are not associative, and the three real entry points -- a
+  # fact about upstream's BEHAVIOUR. A byte change no row reads leaves the audit green and the
+  # pin red; a change in upstream's promotion rules leaves the pin green and moves the audit.
+  # Neither is re-derived from the other.
+  drift = oracle_drift(DRIFT_PIN)
+  if drift:
+    print("upstream-promo-lattice-gate: REFUSED, NOT A VERDICT: the upstream files this audit "
+          "reads have moved, so the rows below would be measured against bytes this gate has "
+          "not read", file=sys.stderr)
+    for b in drift:
+      print(f"   {b}", file=sys.stderr)
+    return REFUSED
+
   work_sha = hashlib.sha256(UPSTREAM.read_bytes()).hexdigest()
-  pin_sha = pin_blob_sha()
-  at_pin = pin_sha is not None and pin_sha == work_sha
 
   nojoin, nonassoc = audit(core, D)
   obs = observable(D)
@@ -187,8 +235,8 @@ def main(argv=None):
 
   print(f"upstream-promo-lattice-gate: population DISCOVERED from DTypes.__dict__ = {len(core)} "
         f"dtypes, {len(core) ** 2} pairs, {len(core) ** 3} triples")
-  print(f"  R3 PIN: dtype.py sha256 {work_sha[:12]}, {PIN} sha256 "
-        f"{(pin_sha or 'UNAVAILABLE')[:12]}, {'SAME -- this is at the PIN' if at_pin else 'DIFFERENT'}")
+  print(f"  R3 PIN: dtype.py sha256 {work_sha[:12]} and the three files the promotion path "
+        f"reaches, byte-identical to the pin: {', '.join(sorted(DRIFT_PIN))}")
   print(f"  R1 LATTICE: {len(nojoin)} of {len(core) * (len(core) - 1) // 2} pairs have a "
         f"common-upper-bound set with MORE THAN ONE minimal element, so the poset has NO join")
   for a, b, mins, picked in nojoin:
@@ -213,8 +261,7 @@ def main(argv=None):
     print("upstream-promo-lattice-gate: no finding, and the three entry points agree")
   print(f"upstream-promo-lattice-gate: {VERDICT[code]} -- {len(nojoin)} no-join pairs, "
         f"{len(nonassoc)} non-associative triples, "
-        f"{len(set(obs.values()))} distinct promoted dtypes for one operand multiset"
-        + ("" if at_pin else "  [WARNING: working tree dtype.py is not the PIN]"))
+        f"{len(set(obs.values()))} distinct promoted dtypes for one operand multiset")
   return code
 
 

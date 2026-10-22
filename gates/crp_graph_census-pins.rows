@@ -29,6 +29,31 @@
 # A ZERO-LENGTH FILE IS NOT A MISSING ONE. `_pins()` answers REFUSED for a missing
 # file and an empty dict for an empty one, and only the second is a verdict.
 #
+# THE PIN IS THE sha256 OF THE BYTES THE ORACLE IMPORTS, and it is the same
+# mechanism `gates/onnx_census-gate.py` and `gates/ops_python_census-gate.py` use.
+# It is NOT a git revision: a revision names a COMMIT, and the file the oracle opens
+# is the one ON DISK. `drift_hold()` re-measures every one of them on every run,
+# against the WORKING TREE.
+# tinygrad/mixin/creation.py: 4099d41e065e5638f8bb17f6c016ec6b286bac52e5ca6c9a86b89d73cbebbebb
+# tinygrad/uop/ops.py: d006eafbb1a6e8326e9310ebbce7b04143bd80cf636e90779c3a86f7e2826ba9
+# tinygrad/dtype.py: 7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926
+# tinygrad/helpers.py: eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308
+# tinygrad/mixin/dtype.py: 99027a5281c17bfbd572f12a090bf0d31db36bd239202606c1d3d6237486ec64
+# tinygrad/mixin/movement.py: e6412a4f11b8dadb72cab73b260405c0b39389979e4786f0d981be321f121a50
+# tinygrad/tensor.py: 5680ec3b2a716e435ae8f8ca42f39697ed46de7a3d50018a7becb9a368bcc56d
+#
+# AND THE BYTES THE ROWS WERE TAKEN AGAINST, WHICH IS A DIFFERENT SET. A blob id
+# is a fact about a COMMIT and it is RECORDED here rather than read at refresh
+# time: `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and a header
+# that calls that "when these rows were taken" is a label that rots.
+# tinygrad/mixin/creation.py blob when these rows were taken: 73f51afa
+# tinygrad/uop/ops.py blob when these rows were taken: 3ffac84b
+# tinygrad/dtype.py blob when these rows were taken: f40089a1
+# tinygrad/helpers.py blob when these rows were taken: deb96849
+# tinygrad/mixin/dtype.py blob when these rows were taken: 688a612a
+# tinygrad/mixin/movement.py blob when these rows were taken: 35ebe0eb
+# tinygrad/tensor.py blob when these rows were taken: 4f7d22e7
+#
 
 # W3-BOUNDS -- 1 rows. creation.bend's W3, with a consequence rather than a refusal. `commit_dtype` (dtype.py:16) reads `self._uop.vmin`/`vmax`, which Python can compute and this port cannot, so `cr_empty_like` takes them as `Maybe`s. With `None{}` for both the ladder lands on i64; with `Some{0}` -- which is what `UOp._min_max`'s CONST arm (ops.py:1160) returns for the receiver's `0` -- it lands on i32 and AGREES. The `eb_` family is the second half of the pair and `classes_hold` refuses the pin without it.
 

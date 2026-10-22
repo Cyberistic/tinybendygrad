@@ -62,9 +62,9 @@ THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND TWELVE CHECKS COMPARE THEM EV
                     the whole input space and its 0 moved rows are the correct reading rather
                     than a population that failed to cover it. `C7`/`C8` measure the other
                     side of that: break the premise and `C1` moves 38 rows at `bare == 0`.
-    drift_hold      SEVEN vendored files, THREE blobs each, plus -- for the TWO THAT HAVE
-                    DRIFTED since `ad117c928^` -- the BODY of every def the rows read,
-                    compared between the pin and HEAD. See THE VENDORED answer below.
+    drift_hold      SEVEN vendored files, PINNED AS BYTES: the sha256 of the file the ORACLE
+                    IMPORTS, re-measured against the WORKING TREE by
+                    `gates/gatekit.py:oracle_drift`. See THE VENDORED answer below.
     classes_hold    each declared divergence still IS its class. A `PROMOTION FOLD` row must
                     be CPython's row with exactly one `CAST/1` deleted, REBUILT and
                     compared (a subsequence test is not the claim); a `W3 BOUNDS` row must
@@ -85,32 +85,51 @@ THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND TWELVE CHECKS COMPARE THEM EV
     no_noop_bottom   `NOOP` is `Arena.bottom()`, so a `NOOP` in any cone is an out-of-range
                     index read. Read off the port lanes' own output.
 
-THE VENDORED ANSWER, AND IT IS NOT "NOTHING DRIFTED". `git rev-parse --short=8` on all
-three revisions, per file:
+THE VENDORED ANSWER, AND IT IS NOT "NOTHING DRIFTED". `git rev-parse --short=8` per file, at
+the revision the 287 rows were taken against and at HEAD:
 
-    tinygrad/mixin/creation.py   HEAD=73f51afa  ad117c928=73f51afa  PIN=73f51afa  UNCHANGED
-    tinygrad/dtype.py            HEAD=f40089a1  ad117c928=f40089a1  PIN=f40089a1  UNCHANGED
-    tinygrad/mixin/dtype.py      HEAD=688a612a  ad117c928=688a612a  PIN=688a612a  UNCHANGED
-    tinygrad/mixin/movement.py   HEAD=35ebe0eb  ad117c928=35ebe0eb  PIN=35ebe0eb  UNCHANGED
-    tinygrad/tensor.py           HEAD=4f7d22e7  ad117c928=4f7d22e7  PIN=4f7d22e7  UNCHANGED
-    tinygrad/helpers.py          HEAD=563d1602  ad117c928=deb96849  PIN=deb96849  **DRIFTED**
-    tinygrad/uop/ops.py          HEAD=2c686da7  ad117c928=6f7b9996  PIN=3ffac84b  **DRIFTED**
+    tinygrad/mixin/creation.py   rows=73f51afa  HEAD=ef5f2587  **MOVED**
+    tinygrad/dtype.py            rows=f40089a1  HEAD=1e5dd2cf  **MOVED**
+    tinygrad/mixin/dtype.py      rows=688a612a  HEAD=688a612a  UNCHANGED
+    tinygrad/mixin/movement.py   rows=35ebe0eb  HEAD=092b031a  **MOVED**
+    tinygrad/tensor.py           rows=4f7d22e7  HEAD=57ad1915  **MOVED**
+    tinygrad/helpers.py          rows=deb96849  HEAD=7b8cee14  **MOVED**
+    tinygrad/uop/ops.py          rows=3ffac84b  HEAD=09fb943c  **MOVED**
 
-SO TWO FILES HAVE DRIFTED SINCE THE PIN `ad117c928^`, and `AGENTS.md` says the PIN is the
-truthful oracle for a drifted file -- which would mean these rows were measured against the
-wrong tree. THEY WERE NOT, AND THE MEASUREMENT IS IN `drift_hold()` AND IS ABOUT BODIES:
+SO SIX OF THE SEVEN HAVE MOVED since the rows were taken, and the old check said so by
+comparing BLOBS AT THREE REVISIONS -- `HEAD`, `ad117c928` and `ad117c928^` -- and then, for the
+files that had moved, by extracting the BODY of every def the rows read out of the PIN and out
+of HEAD and comparing them byte for byte.
 
-  * `helpers.py` moved by ONE INSERTION, `def to_name(*parts)`, and nothing in
-    `creation.py`'s ten methods reads it. `argfix` (helpers.py:24) and `prod` are
-    byte-identical: `git diff 'ad117c928^' HEAD -- tinygrad/helpers.py` is 1 file changed,
-    1 insertion(+), 0 deletions(-), and the hunk is that one def.
-  * `ops.py` moved by 61 insertions and 69 deletions, in `UOp.loop`, `UOp.param_like`,
-    `UOp.custom_function`, `UOp.call`, `CallInfo.__reduce__` and the deletion of
-    `contiguous_bitcast_index`. NONE OF THOSE IS READ BY THESE 207 ROWS. The two that are
-    -- `UOp.const` (ops.py:629-637, which owns the fold) and `UOp.toposort` (ops.py:588) --
-    are extracted from the pin and from HEAD and compared BYTE FOR BYTE, and they are
-    identical. `drift_hold()` re-extracts and re-compares on every run, so the claim stays
-    re-decidable instead of being a sentence somebody wrote once.
+**THE OLD CHECK WAS MEASURING THE WRONG PAIR, AND THE PROOF IS THAT IT WENT RED FOR A REASON
+THAT HAD NOTHING TO DO WITH THE ROWS.** `drift_hold()` at HEAD answered: `UOp.toposort CHANGED
+between ad117c928^ and HEAD`, `prod CHANGED between ad117c928^ and HEAD`, and FIVE of the seven
+`HAS DRIFTED and is NOT in DRIFTED`. The two BODY comparisons are the interesting part: they
+compared the PIN's def bodies against HEAD's, while the 287 ROWS are compared against the LIVE
+CPython -- which is the WORKING TREE. **SO THE OLD CHECK COULD BE GREEN WHILE THE BYTES THE
+ROWS WERE MEASURED AGAINST WERE NEITHER THE PIN'S NOR HEAD'S.** A revision comparison cannot
+see a working tree that differs from every revision it names, and that is the file
+`import tinygrad` opens.
+
+THE PIN IS A PIN ON BYTES NOW, and it is checked against the WORKING TREE: `DRIFT_PIN` holds
+the sha256 of the seven files the ORACLE IMPORTS and `gates/gatekit.py:oracle_drift`
+re-measures every one of them on every run -- the house mechanism, and the same one
+`gates/onnx_census-gate.py`, `gates/rand_census-gate.py`, `gates/state_census-gate.py` and
+`gates/ops_python_census-gate.py` use.
+
+**WHAT THE NEW CHECK COSTS, STATED RATHER THAN DISCOVERED LATER.** The old BODY comparison
+could say "this file moved, and the move does not touch the defs the rows read"; a whole-file
+content pin cannot, and that is the house's trade -- a hash of a whole file cannot tell a
+comment from code, so a COMMENT-ONLY change to any of the seven now reds the gate. The remedy
+is the house's remedy: re-decide the rows and move the pin in the same commit.
+
+**THE PIN AND THE OUTPUT CHECK ARE TWO INDEPENDENT FACTS, and neither is the other.** The PIN
+checks the BYTES of the seven files the oracle imports -- the INPUTS. The OUTPUT CHECK is the
+287-row diff between the port's lane and CPython's oracle -- the BEHAVIOUR. A byte change that
+no row reads leaves the diff green and the pin red; a port defect leaves the pin green and the
+diff red. A pin that named the rows' own values would be the same fact twice and could not
+fail; this one cannot, because its value is a LITERAL in this file and the file the oracle
+opens is a different thing from the rows it prints.
 
 THE 19 PINS THAT ARE NOT HERE, AND THE ONE THAT IS. `creation.bend` IS CHANGED BY THIS
 REVISION, and the change is the finding.
@@ -145,7 +164,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import BEND, PY, Gate, REFUSED, gate
+from gatekit import BEND, PY, Gate, REFUSED, gate, oracle_drift
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -158,25 +177,48 @@ CPY = ROOT / "tinygrad" / "mixin" / "creation.py"
 SPEC = ROOT / "tinybendygrad" / "LAWS" / "spec.bend"
 FOLD = ROOT / "tinybendygrad" / "uop" / "fold.bend"
 OPS = ROOT / "tinybendygrad" / "uop" / "ops.bend"
-PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file
 
-# THE SEVEN VENDORED FILES THESE ROWS READ, and the BLOB each must keep. A gate that pinned
-# only its subject would let `ops.py` move and report the port's stale numbers as a verdict.
-VENDORED = ("tinygrad/mixin/creation.py", "tinygrad/uop/ops.py", "tinygrad/dtype.py",
-            "tinygrad/helpers.py", "tinygrad/mixin/dtype.py", "tinygrad/mixin/movement.py",
-            "tinygrad/tensor.py")
-# THE TWO THAT HAVE ACTUALLY MOVED SINCE THE PIN, and the BODY of each def the rows read.
-# `drift_hold()` extracts these from the PIN and from HEAD and compares them byte for byte,
-# so "the drift does not touch what these rows read" is a re-derived claim and not a note.
-DRIFTED = {
-    "tinygrad/uop/ops.py": [
-        (r"^  def const\(b:ConstLike.*?(?=^  # cast, except for CONST)", "UOp.const"),
-        (r"^  def toposort\(self, gate.*?(?=^  def topovisit)", "UOp.toposort"),
-    ],
-    "tinygrad/helpers.py": [
-        (r"^def argfix\(\*x\):.*?(?=^def |\Z)", "argfix"),
-        (r"^def prod\(.*?(?=^def |\Z)", "prod"),
-    ],
+# THE PIN, AS BYTES AND NOT AS A REVISION. These are the seven vendored files the ORACLE
+# IMPORTS and the 287 ROWS READ, and the values are the sha256 of the bytes the oracle opens.
+# A gate that pinned only its subject would let `ops.py` move and report the port's stale
+# numbers as a verdict.
+#
+# THE VALUES ARE LITERALS, and they must stay literals. A pin re-derived from the file it
+# checks is `sha256(x) == sha256(x)`: it cannot fail, and an instrument that cannot fail is
+# worse than no instrument. `gates/blobpin-census-gate.py` MEASURES that claim over every
+# pin site in the tree and fails a derived one.
+#
+# `gates/gatekit.py:oracle_drift` re-measures these on every run. It is the house mechanism,
+# and it is the right one here for the reason the header says: a REVISION names a COMMIT, and
+# the file the oracle opens is the one ON DISK.
+DRIFT_PIN = {
+  "tinygrad/mixin/creation.py":
+    "4099d41e065e5638f8bb17f6c016ec6b286bac52e5ca6c9a86b89d73cbebbebb",
+  "tinygrad/uop/ops.py":
+    "d006eafbb1a6e8326e9310ebbce7b04143bd80cf636e90779c3a86f7e2826ba9",
+  "tinygrad/dtype.py":
+    "7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926",
+  "tinygrad/helpers.py":
+    "eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308",
+  "tinygrad/mixin/dtype.py":
+    "99027a5281c17bfbd572f12a090bf0d31db36bd239202606c1d3d6237486ec64",
+  "tinygrad/mixin/movement.py":
+    "e6412a4f11b8dadb72cab73b260405c0b39389979e4786f0d981be321f121a50",
+  "tinygrad/tensor.py":
+    "5680ec3b2a716e435ae8f8ca42f39697ed46de7a3d50018a7becb9a368bcc56d",
+}
+
+# THE BLOB THE ROWS WERE TAKEN AGAINST -- a RECORDED FACT, not a live reading.
+# `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and a header that calls that
+# "when these rows were taken" is a LABEL that rots: six of the seven have moved since.
+ROWS_TAKEN_AT = {
+  "tinygrad/mixin/creation.py": "73f51afa",
+  "tinygrad/uop/ops.py": "3ffac84b",
+  "tinygrad/dtype.py": "f40089a1",
+  "tinygrad/helpers.py": "deb96849",
+  "tinygrad/mixin/dtype.py": "688a612a",
+  "tinygrad/mixin/movement.py": "35ebe0eb",
+  "tinygrad/tensor.py": "4f7d22e7",
 }
 
 # THE ROW POPULATION IS NOT HERE. It is discovered from the driver, the dtype table and
@@ -698,52 +740,53 @@ def couple_hold() -> bool:
     return report("couple_hold", bad)
 
 
-def _blob(rev, rel):
-    r = subprocess.run(["git", "rev-parse", "--short=8", f"{rev}:{rel}"],
-                       capture_output=True, text=True, cwd=str(ROOT))
-    return r.stdout.strip() if r.returncode == 0 else f"rc={r.returncode}"
-
-
-def _at(rev, rel, pat):
-    r = subprocess.run(["git", "show", f"{rev}:{rel}"], capture_output=True, text=True,
-                       cwd=str(ROOT))
-    m = re.search(pat, r.stdout, re.M | re.S) if r.returncode == 0 else None
-    return m.group(0) if m else None
-
-
 def drift_hold() -> bool:
-    """SEVEN FILES, THREE BLOBS EACH, AND -- FOR THE TWO THAT HAVE MOVED -- THE BODY OF
-    EVERY DEF THE ROWS READ.
+    """SEVEN FILES, PINNED AS BYTES, AND CHECKED AGAINST THE WORKING TREE.
 
-    `AGENTS.md` says the PIN is the truthful oracle for a drifted file. TWO files HAVE
-    drifted since `ad117c928^` (`helpers.py` 1 insertion, `ops.py` 61+/69-), so a gate
-    that only compared blobs would have to declare its own 207 rows untrustworthy. What
-    makes them trustworthy is a BODY comparison: `UOp.const`, `UOp.toposort`, `argfix` and
-    `prod` are extracted from the pin and from HEAD and compared byte for byte, and they
-    are identical. That is re-extracted here on every run, so the claim is a reading rather
-    than a sentence somebody wrote once."""
-    bad = []
-    for rel in VENDORED:
-        head, vend, pin = _blob("HEAD", rel), _blob("ad117c928", rel), _blob(PIN, rel)
-        if not head.startswith(("rc=", "")):
-            bad.append(f"{rel}: HEAD did not resolve")
-            continue
-        if head == vend == pin:
-            continue
-        for pat, nm in DRIFTED.get(rel, []):
-            a, b = _at(PIN, rel, pat), _at("HEAD", rel, pat)
-            if a is None or b is None:
-                bad.append(f"{rel} HAS DRIFTED and {nm} could not be read from "
-                           f"{'the pin' if a is None else 'HEAD'}")
-            elif a != b:
-                bad.append(f"{rel} HAS DRIFTED and {nm} CHANGED between {PIN} and HEAD -- "
-                           f"the PIN is the truthful oracle for it and these rows were "
-                           f"measured against HEAD")
-    unlisted = [rel for rel in VENDORED if rel not in DRIFTED
-                and not (_blob("HEAD", rel) == _blob(PIN, rel))]
-    for rel in unlisted:
-        bad.append(f"{rel} HAS DRIFTED and is NOT in DRIFTED -- either add it with the defs "
-                   f"the rows read, or say why its drift cannot reach them")
+    THE HOUSE MECHANISM, read by `gates/gatekit.py:oracle_drift` -- the same one
+    `gates/onnx_census-gate.py`, `gates/rand_census-gate.py`,
+    `gates/state_census-gate.py` and `gates/ops_python_census-gate.py` use.
+
+    THE OLD CHECK COMPARED BLOBS AT THREE REVISIONS, and it was the wrong instrument
+    twice over. It read `git rev-parse <rev>:<path>` at `HEAD`, at `ad117c928` and
+    at `ad117c928^`, which is a fact about COMMITS and not about the file
+    `import tinygrad` opens -- so a WORKING TREE whose bytes differ from every
+    revision it named still passed. And for the files that had moved it compared
+    the BODY of every def the rows read, extracted from the PIN and from HEAD,
+    while the 287 ROWS are compared against the LIVE CPython, which is the
+    WORKING TREE. **So the old check could be green while the bytes the rows
+    were measured against were neither the pin's nor HEAD's.**
+
+    MEASURED, THE OLD CHECK WAS RED AT HEAD AND FOR A REASON THAT HAD NOTHING TO DO
+    WITH THE ROWS: `UOp.toposort CHANGED between ad117c928^ and HEAD`, `prod
+    CHANGED between ad117c928^ and HEAD`, and FIVE of the seven `HAS DRIFTED and
+    is NOT in DRIFTED`.
+
+    THE PIN AND THE OUTPUT CHECK ARE NOT THE SAME FACT. This one checks the BYTES
+    of the seven files the oracle imports -- the INPUTS. The 287-row diff checks
+    the BEHAVIOUR -- the port's answers against CPython's. A byte change that no
+    row reads leaves the diff green and this red; a port defect leaves this green
+    and the diff red. Neither can stand in for the other, and neither is
+    re-derived from the other.
+
+    WHAT THIS COSTS, STATED RATHER THAN DISCOVERED LATER: the old body comparison
+    could say "this file moved and the move does not touch the defs the rows
+    read", and a whole-file content pin cannot. A hash of a whole file cannot
+    tell a comment from code, so a comment-only change to any of the seven reds
+    this check. The remedy is the house's remedy: re-decide the rows and move the
+    pin in the same commit.
+
+    The pins file records the same values, so the pins file and this check cannot
+    disagree about which bytes the rows were measured against."""
+    bad = oracle_drift(DRIFT_PIN)
+    text = PINS.read_text() if PINS.is_file() else ""
+    for rel, want in DRIFT_PIN.items():
+        if want not in text:
+            bad.append(f"the pins file does not record {rel}'s pinned sha256 {want[:16]}")
+    for rel, blob in ROWS_TAKEN_AT.items():
+        if blob not in text:
+            bad.append(f"the pins file does not record {rel}'s blob {blob} -- the bytes "
+                       f"the rows were taken against")
     return report("drift_hold", bad)
 
 
@@ -1127,6 +1170,20 @@ def _header(n_div, n_same, rows):
         "#",
         "# A ZERO-LENGTH FILE IS NOT A MISSING ONE. `_pins()` answers REFUSED for a missing",
         "# file and an empty dict for an empty one, and only the second is a verdict.",
+        "#",
+        "# THE PIN IS THE sha256 OF THE BYTES THE ORACLE IMPORTS, and it is the same",
+        "# mechanism `gates/onnx_census-gate.py` and `gates/ops_python_census-gate.py` use.",
+        "# It is NOT a git revision: a revision names a COMMIT, and the file the oracle opens",
+        "# is the one ON DISK. `drift_hold()` re-measures every one of them on every run,",
+        "# against the WORKING TREE.",
+        *[f"# {rel}: {sha}" for rel, sha in DRIFT_PIN.items()],
+        "#",
+        "# AND THE BYTES THE ROWS WERE TAKEN AGAINST, WHICH IS A DIFFERENT SET. A blob id",
+        "# is a fact about a COMMIT and it is RECORDED here rather than read at refresh",
+        "# time: `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and a header",
+        "# that calls that \"when these rows were taken\" is a label that rots.",
+        *[f"# {rel} blob when these rows were taken: {blob}"
+          for rel, blob in ROWS_TAKEN_AT.items()],
         "#",
     ])
 

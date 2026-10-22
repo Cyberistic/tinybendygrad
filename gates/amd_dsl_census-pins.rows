@@ -10,9 +10,24 @@
 # class says WHY the two sides differ. A pin without a reason is a
 # weakened instrument; a divergence without a pin is a silent one.
 #
-# dsl.py blob at HEAD, at `ad117c928` and at the pin `ad117c928^`:
-# `pin_drift_hold()` re-measures all three on every run.
-# HEAD blob of tinygrad/renderer/amd/dsl.py when these rows were taken: 6526706b
+# THE PIN IS THE sha256 OF THE BYTES THE ORACLE IMPORTS, and it is the same
+# mechanism `gates/onnx_census-gate.py` and `gates/ops_python_census-gate.py`
+# use. It is NOT a git revision: a revision names a COMMIT, and the file the
+# oracle opens is the one ON DISK. `pin_drift_hold()` re-measures every one of
+# them on every run, against the WORKING TREE.
+# tinygrad/renderer/amd/dsl.py: dd45cbdf0d63570742eb54a21ef09266eaed95b8f3708de5363ef1c64d86606f
+# tinygrad/runtime/autogen/amd/rdna3/operands.py: 96fd869a40884dec0247633c49af6e80dffc375afdbf222eb70f6b7d04bcf806
+# tinygrad/runtime/autogen/amd/rdna4/operands.py: 5cca92ffc1d5f92ab3c31fbf73a8ba47d5d49dc3bdb52f257556b6ce6638d6a8
+# tinygrad/runtime/autogen/amd/cdna/operands.py: ae871116dbad3aa9644975ed0f1b6042c9d53d64078f01f6688c7d73ae01f381
+#
+# AND THE BYTES THE ROWS WERE TAKEN AGAINST, WHICH IS A DIFFERENT SET. A blob
+# id is a fact about a COMMIT and it is RECORDED here rather than read at
+# refresh time: `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and
+# a header that calls that "when these rows were taken" is a label that rots.
+# tinygrad/renderer/amd/dsl.py blob when these rows were taken: 6526706b
+# tinygrad/runtime/autogen/amd/rdna3/operands.py blob when these rows were taken: 6eb31ec1
+# tinygrad/runtime/autogen/amd/rdna4/operands.py blob when these rows were taken: c13fad79
+# tinygrad/runtime/autogen/amd/cdna/operands.py blob when these rows were taken: c409c13b
 
 # 9 CLASSES ARE RETIRED AND GONE, AND EVERY ONE OF THEIR ROWS IS EXACT NOW.
 # THEY ARE NOT IN `CLASSES` ANY MORE: A CLASS WITH NO ROWS IS A CLAIM THAT HAS

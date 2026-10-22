@@ -57,12 +57,40 @@ and IN ORDER. That is the answer to "an oracle that covers whatever the port
 happens to do is not an oracle": the axes are declared on BOTH sides and a
 drift on either side is red.
 
-`tinygrad/renderer/wgsl.py` HAS NOT DRIFTED. MEASURED, all three the same:
-`git rev-parse HEAD:tinygrad/renderer/wgsl.py`, `ad117c928:` and `ad117c928^:`
-are all `02d7fdea`. `AGENTS.md` records `cstyle.py` and `realize.py` as drifted
-and says the PIN is the truthful oracle for those; for THIS file the pin and
-HEAD are one blob, so HEAD is used directly and `pin_drift_hold()` re-measures
-all three on every run so a later re-vendor cannot make that quietly false.
+`tinygrad/renderer/wgsl.py` HAS MOVED SINCE THE PIN `ad117c928^`, AND THE MOVE
+TOUCHES WHAT THE ROWS READ. The blob was `02d7fdea` at `ad117c928^` and is
+`c7121333` at HEAD; `git diff ad117c928^ HEAD -- tinygrad/renderer/wgsl.py` is
+6 insertions and 6 deletions, and TWO of them are BEHAVIOUR: `string_rewrite`'s
+rule 2 lost its negative-const arm (`f"bitcast<u32>({c.val})" if c.val < 0
+else ...` became an unconditional `f"{c.val&0xFFFFFFFF}u"`) and the
+`packed_rmw` store pattern gained a `CAST` on its source. **SO THE 227 ROWS
+ARE A CAPTURE TAKEN AGAINST THE OLDER BYTES, AND THE ROW DIFF IS WHAT
+RE-DECIDES THEM** -- the pin below is a TRIPWIRE on the bytes the oracle
+imports, not a claim that the capture is current.
+
+THE PIN IS A PIN ON BYTES, NOT ON A COMMIT, and it is checked against the
+WORKING TREE. The old check compared `git rev-parse <rev>:<path>` at three
+revisions, which answers a question about COMMITS and not about the file
+`import tinygrad` opens, so a working tree whose bytes differ from every
+revision it named still passed -- and it demanded that all three blobs be
+EQUAL, which is a claim about the vendored tree and not about this gate's
+rows. `DRIFT_PIN` holds the sha256 of the bytes the ORACLE IMPORTS and
+`gates/gatekit.py:oracle_drift` re-measures them on every run -- the same
+house mechanism `gates/ops_python_census-gate.py`,
+`gates/onnx_census-gate.py`, `gates/rand_census-gate.py` and
+`gates/state_census-gate.py` use.
+
+**THE PIN AND THE OUTPUT CHECK ARE TWO INDEPENDENT FACTS, and neither is the
+other.** The PIN checks the BYTES of the five `tinygrad/` files the oracle
+imports: it is a fact about the INPUTS, and it goes red when a re-vendor
+touches a byte of them -- including a comment, which is a fact about the file
+and not about the behaviour. The OUTPUT CHECK is the 227-row diff between the
+port's lane and CPython's oracle, and it is a fact about BEHAVIOUR: it goes
+red when the port is wrong, and it stays green when a byte of `wgsl.py`
+changes in a way no row reads. A pin that named the rows' own values would be
+the same fact twice and could not fail; this one cannot, because its value is
+a LITERAL in this file and the file the oracle opens is a different thing
+from the rows it prints.
 
 `grep -c OpsCAST tinybendygrad/renderer/wgsl.bend` = **3**, and all three are
 triaged rather than counted by `never_folding_cast_hold()`:
@@ -242,7 +270,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import (BEND, PY, WARM, TMP, NOTICE, REFUSED, PASS, FAIL, DEAD,  # noqa: F401
-                     VERDICT)
+                     VERDICT, oracle_drift)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -252,7 +280,43 @@ PORT = ROOT / "tinybendygrad" / "renderer" / "wgsl.bend"
 ORACLE = HERE / "wgsl_render_census-oracle.py"
 
 ROWS = 227
-PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file
+
+# THE PIN, AS BYTES AND NOT AS A REVISION. These are the five `tinygrad/` files
+# the ORACLE IMPORTS and the ROWS READ: `wgsl.py` is the subject (its
+# `string_rewrite` rules and its renderer), `cstyle.py` because
+# `WGSLRenderer` IS a `CStyleLanguage` and the oracle reads `base_rewrite`'s
+# own patterns, `uop/ops.py` for `Ops`/`UOp`/`PatternMatcher`, `dtype.py` for
+# `AddrSpace` and `dtypes`, and `helpers.py` for `Target`.
+#
+# THE VALUES ARE LITERALS, and they must stay literals. A pin re-derived from
+# the file it checks is `sha256(x) == sha256(x)`: it cannot fail, and an
+# instrument that cannot fail is worse than no instrument.
+# `gates/blobpin-census-gate.py` MEASURES that claim over every pin site in
+# the tree and fails a derived one.
+#
+# `gates/gatekit.py:oracle_drift` re-measures these on every run. It is the
+# house mechanism, and it is the right one here for the reason the header says:
+# a REVISION names a COMMIT, and the file the oracle opens is the one ON DISK.
+DRIFT_PIN = {
+  "tinygrad/renderer/wgsl.py":
+    "84d1d17a116727e0decbc6f3da3b681fe698a92474388b87086df5ca38c19ecc",
+  "tinygrad/renderer/cstyle.py":
+    "3623cd9b6ad418affe8d6a093998cd931fd15ac2ae819abe724cf19f7275c5ea",
+  "tinygrad/uop/ops.py":
+    "d006eafbb1a6e8326e9310ebbce7b04143bd80cf636e90779c3a86f7e2826ba9",
+  "tinygrad/dtype.py":
+    "7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926",
+  "tinygrad/helpers.py":
+    "eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308",
+}
+
+# THE BLOB THE ROWS WERE TAKEN AGAINST -- a RECORDED FACT, not a live reading.
+# `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and a header that
+# calls that "when these rows were taken" is a LABEL that rots: wgsl.py's blob
+# was `02d7fdea` when the 227 rows were taken and is `c7121333` today.
+ROWS_TAKEN_AT = {
+  "tinygrad/renderer/wgsl.py": "02d7fdea",
+}
 
 # `string_rewrite`'s SEVENTEEN rules, by their INDEX in
 # `WGSLRenderer.string_rewrite.patterns`. `rules_hold()` re-derives the length and
@@ -675,25 +739,38 @@ def axes_hold():
 
 
 def pin_drift_hold():
-    """`wgsl.py` HAS NOT DRIFTED. All three blobs must stay equal, and the pins
-    file records the value -- so a later re-vendor that moves one of them turns
-    this red instead of quietly changing what the oracle is measured against.
-    """
-    def blob(rev):
-        r = subprocess.run(["git", "rev-parse", "--short=8",
-                            f"{rev}:tinygrad/renderer/wgsl.py"],
-                           capture_output=True, text=True, cwd=str(ROOT))
-        return r.stdout.strip() if r.returncode == 0 else f"rc={r.returncode}"
-    head, vend, pin = blob("HEAD"), blob("ad117c928"), blob(PIN)
-    bad = []
-    if not head:
-        bad.append("HEAD:tinygrad/renderer/wgsl.py did not resolve")
-    elif not (head == vend == pin):
-        bad.append(f"wgsl.py HAS DRIFTED: HEAD {head}, ad117c928 {vend}, "
-                   f"{PIN} {pin} -- the PIN would be the truthful oracle and "
-                   f"this gate's rows were measured against HEAD")
-    if PINS.is_file() and head and head not in PINS.read_text():
-        bad.append(f"the pins file does not record HEAD's blob {head}")
+    """THE ORACLE'S BYTES, PINNED. The house mechanism, read by
+    `gates/gatekit.py:oracle_drift` -- the same one `gates/onnx_census-gate.py`,
+    `gates/rand_census-gate.py`, `gates/state_census-gate.py` and
+    `gates/ops_python_census-gate.py` use.
+
+    THE OLD CHECK WAS A REVISION COMPARISON and it was the wrong instrument
+    twice over. It compared `git rev-parse <rev>:<path>` at `HEAD`, at
+    `ad117c928` and at `ad117c928^`, which is a fact about COMMITS and not
+    about the file `import tinygrad` opens, so a WORKING TREE whose bytes
+    differ from every revision it named still passed. And it demanded that all
+    three blobs be EQUAL, which is a claim about the vendored tree rather than
+    about this gate's rows: wgsl.py moved `02d7fdea` -> `c7121333` and the
+    check went red for a reason that had nothing to do with the 227 rows.
+
+    THE PIN AND THE OUTPUT CHECK ARE NOT THE SAME FACT. This one checks the
+    BYTES of the files the oracle imports -- the INPUTS. The 227-row diff
+    checks the BEHAVIOUR -- the port's answers against CPython's. A byte
+    change that no row reads leaves the diff green and this red; a port
+    defect leaves this green and the diff red. Neither can stand in for the
+    other, and neither is re-derived from the other.
+
+    The pins file records the same values, so the pins file and this check
+    cannot disagree about which bytes the rows were measured against."""
+    bad = oracle_drift(DRIFT_PIN)
+    text = PINS.read_text() if PINS.is_file() else ""
+    for rel, want in DRIFT_PIN.items():
+        if want not in text:
+            bad.append(f"the pins file does not record {rel}'s pinned sha256 {want[:16]}")
+    for rel, blob in ROWS_TAKEN_AT.items():
+        if blob not in text:
+            bad.append(f"the pins file does not record {rel}'s blob {blob} -- the bytes "
+                       f"the rows were taken against")
     return report("pin_drift_hold", bad)
 
 
@@ -1243,21 +1320,24 @@ def _header(n_lane, n_self):
         "# Each block is a CLASS, and each class says WHY the two sides differ.",
         "# A pin without a reason is a weakened instrument; a divergence without",
         "# a pin is a silent one.",
-        "#\n# wgsl.py blob at HEAD, at `ad117c928` and at the pin",
-        f"# `{PIN}`: `pin_drift_hold()` re-measures all three on every run.",
-        f"# HEAD blob of tinygrad/renderer/wgsl.py when these rows were taken: "
-        f"{pins_blob()}",
+        "#",
+        "# THE PIN IS THE sha256 OF THE BYTES THE ORACLE IMPORTS, and it is the same",
+        "# mechanism `gates/onnx_census-gate.py` and `gates/ops_python_census-gate.py`",
+        "# use. It is NOT a git revision: a revision names a COMMIT, and the file the",
+        "# oracle opens is the one ON DISK. `pin_drift_hold()` re-measures every one of",
+        "# them on every run, against the WORKING TREE.",
+        *[f"# {rel}: {sha}" for rel, sha in DRIFT_PIN.items()],
+        "#",
+        "# AND THE BYTES THE ROWS WERE TAKEN AGAINST, WHICH IS A DIFFERENT SET. A blob",
+        "# id is a fact about a COMMIT and it is RECORDED here rather than read at",
+        "# refresh time: `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and",
+        "# a header that calls that \"when these rows were taken\" is a label that rots.",
+        *[f"# {rel} blob when these rows were taken: {blob}"
+          for rel, blob in ROWS_TAKEN_AT.items()],
         "#\n# RETIRED CLASSES -- emitted from the gate's `RETIRED` constant, because",
         "# `--refresh` rewrites this header and MEASURED, eight stories written here",
         "# by hand were deleted by the next refresh.",
     ] + [f"#\n# {name}\n#   {why}" for name, why in RETIRED])
-
-
-def pins_blob():
-    r = subprocess.run(["git", "rev-parse", "--short=8",
-                        "HEAD:tinygrad/renderer/wgsl.py"],
-                       capture_output=True, text=True, cwd=str(ROOT))
-    return r.stdout.strip() if r.returncode == 0 else "unknown"
 
 
 # ===========================================================================

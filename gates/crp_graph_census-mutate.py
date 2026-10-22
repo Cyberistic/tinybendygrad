@@ -486,26 +486,21 @@ MUTATIONS = [
     ("G6 opscast_hold: the fold test is expected in its PRE-FIX spelling", "GUARD", "gate",
      '("cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",',
      '("cr_cast(D.md_dt_eq(c0, dt), T.tn_const(ar, v), dt)",'),
-    # G7 POINTS THE BODY COMPARISON AT A DEF THAT ACTUALLY MOVED. The first version moved the
-    # PIN to `ad117c928` and was GREEN -- and measuring why is the reading: `UOp.const` and
-    # `UOp.toposort` are byte-identical between `ad117c928^` and HEAD (505 and 702 bytes,
-    # MEASURED), which IS this gate's own claim, so extracting either of them twice cannot
-    # disagree and the assertion cannot fail on a healthy tree. `UOp.param_like` is 735 bytes
-    # at the pin and 777 at HEAD (MEASURED), so naming it makes the comparison a real one.
-    ("G7 drift_hold: the BODY comparison is pointed at a def that drifted", "GUARD", "gate",
-     '(r"^  def toposort\\(self, gate.*?(?=^  def topovisit)", "UOp.toposort")',
-     '(r"^  def param_like\\(self.*?(?=^  def )", "UOp.param_like")'),
-    # G7b IS A DELIBERATE WEAKENING AND IS EXPECTED GREEN: `tinygrad/helpers.py` HAS drifted
-    # since the pin (the gate's header says so), so removing one entry from `VENDORED` silences
-    # a real and recorded finding, and nothing turns red. That is the reading, not a pass.
-    ("G7b drift_hold: one DRIFTED file is dropped from VENDORED (a WEAKENING, expected GREEN)",
+    # G7 IS THE PIN'S MISMATCH ARM. The pin is BYTES now, so the mutation is a sha256 that
+    # belongs to ANOTHER file: `gates/gatekit.py:oracle_drift` hashes the file the oracle
+    # opens and compares it with the literal, and a literal from elsewhere cannot agree.
+    ("G7 drift_hold: the pinned sha256 is another file's sha256", "GUARD", "gate",
+     '    "d006eafbb1a6e8326e9310ebbce7b04143bd80cf636e90779c3a86f7e2826ba9",',
+     '    "4099d41e065e5638f8bb17f6c016ec6b286bac52e5ca6c9a86b89d73cbebbebb",'),
+    # G7b IS A DELIBERATE WEAKENING AND IS EXPECTED GREEN: dropping `tinygrad/helpers.py`
+    # from the pin stops the gate noticing that file at all, and nothing turns red -- because
+    # the pin is a TRIPWIRE on bytes and the seven files are all intact today. That is the
+    # reading, not a pass: a pin that covers fewer files covers fewer drifts.
+    ("G7b drift_hold: one pinned file is dropped from DRIFT_PIN (a WEAKENING, expected GREEN)",
      "GUARD", "gate",
-     'VENDORED = ("tinygrad/mixin/creation.py", "tinygrad/uop/ops.py", "tinygrad/dtype.py",\n'
-     '            "tinygrad/helpers.py", "tinygrad/mixin/dtype.py", "tinygrad/mixin/movement.py",\n'
-     '            "tinygrad/tensor.py")',
-     'VENDORED = ("tinygrad/mixin/creation.py", "tinygrad/dtype.py",\n'
-     '            "tinygrad/mixin/dtype.py", "tinygrad/mixin/movement.py",\n'
-     '            "tinygrad/tensor.py")'),
+     '  "tinygrad/helpers.py":\n'
+     '    "eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308",\n',
+     ''),
     ("G8 classes_hold: the W3 relation is i32 -> i8 rather than i32 -> i64", "GUARD", "gate",
      'pv.replace("ALLOC/0[i32", "ALLOC/0[i64") != bv',
      'pv.replace("ALLOC/0[i32", "ALLOC/0[i8") != bv'),
