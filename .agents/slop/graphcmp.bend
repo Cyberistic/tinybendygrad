@@ -457,10 +457,33 @@ def blobstr(bs: List<&2, U32>) -> String:
 
 # `ProgramInfo.global_size` is `tuple[int|float, ...]` (ops.bend:1352) so its elements are
 # `H.I64`; the float case is a `sint`'s and is recorded on `sint_of` there, not here.
+#
+# THE PATTERN IS EXACT-ARITY, AND THE RECORD HAS **SEVEN** FIELDS. MEASURED 2026-10-22:
+# the port's `ProgramInfo` gained `target: H.Target` as its seventh field, and this
+# driver still bound SIX, so **THE CORPUS's OWN DRIVER DID NOT COMPILE** and all 34
+# graphs were REFUSED -- with the compile error named in `D1-verdicts.txt`. **A BEND
+# RECORD PATTERN IS EXACT-ARITY, SO ADDING A FIELD TO A RECORD IS A BREAKING CHANGE IN
+# EVERY FILE THAT PATTERNS IT**, and the same change had to be followed in the port's
+# own eight patterns and in the realize census's.
+#
+# AND **THIS LANE IS DEAD, AND IT IS DEAD IN BOTH SIDES.** MEASURED 2026-10-22: the
+# corpus's 34 graphs produce **ZERO** `pI(` rows -- the port's artefacts carry none, and
+# the oracle's only `pI(` match in its own output is a COMMENT naming the form. So the
+# third component below is **NOT EXERCISED AT ALL**, and the corpus cannot see the
+# `vars` -> `params` RENAME (`9974c9d9b` / upstream `a6addc2d4`) -- which is a REAL port
+# change, because upstream's `params` is **EVERY** param, sorted by slot, where the old
+# `vars` was the **ALU-ONLY** list. **THE PORT'S THIRD FIELD IS THE PIN's `params` AND
+# THE ORACLE's BRANCH READS `x.vars`, WHICH THE LIVE UPSTREAM DOES NOT HAVE** (measured:
+# `hasattr(pi, "vars")` is **False** and `hasattr(pi, "params")` is **True** at the pin)
+# -- so that branch is STALE CODE THAT WOULD RAISE IF A GRAPH EVER REACHED IT.
+#
+# **SO THE ARITY FIX ABOVE WAS NECESSARY (the driver did not compile) AND THE THIRD
+# COMPONENT'S SEMANTICS IS A NAMED DEBT, NOT A GREEN LIGHT.** A graph whose PROGRAM
+# carries a BUFFER param would make the two lists differ, and NO SUCH GRAPH EXISTS HERE.
 def prog_info(pi: O.ProgramInfo) -> String:
   match pi:
-    case O.ProgramInfo{global_size, local_size, vars, globals, outs, ins}:
-      String.concat(["pI(", i64s(global_size), ",", i64s(local_size), ",", us(vars), ",", us(globals), ",", us(outs),
+    case O.ProgramInfo{global_size, local_size, params, globals, outs, ins, _tgt}:
+      String.concat(["pI(", i64s(global_size), ",", i64s(local_size), ",", us(params), ",", us(globals), ",", us(outs),
         ",", us(ins), ")"])
 
 # RANGE's arg is `(axis_type, axis_id)` (ops.py:643) and `axis_id` is `self.arg[1:]`
