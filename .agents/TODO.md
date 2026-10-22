@@ -1768,10 +1768,10 @@ mixin-op-red         [##] 2/3  **A TRACKED GATE IS RED AT HEAD, ON 11 ROWS, AND 
                                        ADDING TWO ROWS MADE IT **DEAD** (rc=5, *"lane bd.out produced 38 of 36 rows"*)
                                        -- WHICH IS THE *"A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO
                                        GATE"* CLASS, IN ITS OTHER FORM: **A GATE THAT CANNOT REACH ITS COMPARISON IS A
-                                       DEAD GATE, AND A DEAD GATE IS NOT A PASS.** **THE COUNTS ARE NOW 38 AND 34, SO
+                                       DEAD GATE, AND A DEAD GATE IS NOT A PASS.** **THE COUNTS ARE NOW **39 AND 35** (THREE ROWS WERE ADDED), SO
                                        THE GATE RUNS ITS COMPARISON AND REPORTS THE DISAGREEMENTS INSTEAD OF REFUSING
                                        TO COMPARE -- AND IT IS STILL RED, WHICH IS THE TRUTH.** **AND THE `mo_at` FIX
-                                       REPAIRED ONE OF THE ELEVEN (`meanN`), SO THE COUNT WENT 11 -> 10.** **THE
+                                       REPAIRED **NONE** OF THE ELEVEN -- THE DIFFER COUNT IS **UNCHANGED AT 11** -- AND **AN EARLIER READING OF MINE SAID OTHERWISE AND WAS WRONG: SEE `mixin-op-corrected`.** **THE
                                        `CAST/1` DIVERGENCE IS NOT MINE AND IS NOT FIXED BY THIS COMMIT: IT IS THE
                                        MEAN'S DENOMINATOR CASTS ITS RESULT AND CPYTHON'S DOES NOT, AND IT IS A NAMED
                                        NEXT MOVE.**
@@ -1905,6 +1905,27 @@ corpus-stale-fix     [##] 2/3  **THE `mo_at` FIX MOVED THE SUBSTRATE, SO THE COR
                                        IS THE OTHER HALF OF THAT MEASUREMENT, AND IT IS ALREADY GREEN ON THE THREE NEW
                                        ROWS: THE PORT AND THE ORACLE AGREE ON `sh_sum0_23=(3) f32`,
                                        `sh_sum0kd_23=(1)(3) f32` AND `sh_sq0_123=(2)(3) f32`.**
+
+
+mixin-op-corrected   [##] 3/3  **A CLAIM OF MINE DID NOT SURVIVE RE-MEASUREMENT, AND IT WAS WRITTEN DOWN IN THE LEDGER
+                                       AND IN A COMMIT MESSAGE.** COMMIT `f13ba8f0f`'s MESSAGE SAYS *"THIS FIX
+                                       REPAIRED ONE OF THE ELEVEN (`meanN`), SO THE COUNT WENT 11 -> 10"* -- **AND IT
+                                       IS WRONG.** RE-MEASURED 2026-10-22T20:2xZ ON THE CURRENT TREE, WITH THE TREE'S
+                                       OWN COMPARATOR (`gates/lanecmp.py`'s `compare()`, ON THE PORT'S ROWS AND THE
+                                       ORACLE'S ROWS): **`agree=24  agree_many=0  differ=11  unanswered=4  port_only=4
+                                       oracle_only=0`**, WITH `meanN` **STILL AMONG THE ELEVEN**. **THE DIFFER COUNT
+                                       IS UNCHANGED AT 11.** **THE CLEAN STATEMENT: HEAD READ `agree=21  differ=11`
+                                       OVER 32 COMPARED ROWS, AND THE TREE NOW READS `agree=24  differ=11` OVER 35 --
+                                       THE AGREE COUNT ROSE BY EXACTLY THE THREE NEW ROWS AND THE DIFFER COUNT DID NOT
+                                       MOVE.** **MY EARLIER "10" CAME FROM A LANE CAPTURE THAT WAS NOT THE TREE'S
+                                       STATE, AND A COMMIT MESSAGE IS IMMUTABLE, SO THIS ROW IS THE CORRECTION.**
+                                       **THE THREE NEW ROWS THEMSELVES ARE GREEN -- THE PORT AND THE ORACLE AGREE ON
+                                       `sh_sum0_23=(3) f32`, `sh_sum0kd_23=(1)(3) f32` AND `sh_sq0_123=(2)(3) f32`,
+                                       AND EACH GOES `void` UNDER THE ORIGINAL BACKWARD INDEX -- SO THE FIX IS SOUND
+                                       AND THE ELEVEN ARE A SEPARATE, PRE-EXISTING DIVERGENCE IN THE MEAN'S
+                                       DENOMINATOR DTYPE.** **THE LESSON IS THE SESSION'S OWN: A CLAIM RE-MEASURED ON
+                                       A DIFFERENT SNAPSHOT IS NOT A MEASUREMENT OF THE TREE, AND A NUMBER READ ONCE
+                                       FROM A LANE CAPTURE MUST BE RE-TAKEN ON THE TREE BEFORE IT IS WRITTEN DOWN.**
 
 
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
