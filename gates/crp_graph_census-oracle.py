@@ -173,11 +173,33 @@ def cval(u) -> str:
     return f"CONST/0[{v}:{u.dtype.name}]"
 
 
-def pval(a) -> str:
+def size_of(u) -> int | None:
+    """THE ALLOC's SIZE, AS UPSTREAM READS IT **NOW**.
+
+    Upstream DROPPED the `size` FIELD from `ParamArg` -- it is not among the thirteen
+    fields of `tinygrad/uop/ops.py:25-42` -- and moved the count into the ALLOC's
+    `src[0]`: `UOp.alloc` builds `src=(shape_to_shape_arg((prod(to_max_shape(shape)),)),)`
+    (ops.py:1190). So the size is read off the OWNER, which is exactly what the port's
+    `ParamArg.size(+ar, +self)` does -- it reads `src[0]` of the node it is handed.
+
+    `None` when `src[0]` is not a CONST, and the PORT prints `-` for that, so this prints
+    `-` too: the two lanes are compared as BYTES and the token grammar has to be the same
+    on both sides. MEASURED: an ALLOC's `src[0]` is always the size CONST here, so the
+    `-` arm is not reached by this census -- and it is written anyway, because a branch
+    that only the other side can reach is a branch nobody has measured."""
+    src0 = u.src[0]
+    return src0.val if src0.op is Ops.CONST else None
+
+
+def pval(u) -> str:
     """`ALLOC/0[<dtype> sz=<size> <addrspace> bind=<bool>]`. `bind_on_realize` is `True` for
     an ALLOC and is the ALLOC's one difference from a BUFFER (creation.py:41 vs ops.py:852);
-    `addrspace` is GLOBAL because `CreationMixin.empty` passes none."""
-    return f"ALLOC/0[{a.dtype.name} sz={a.size} {a.addrspace.name} bind={a.bind_on_realize}]"
+    `addrspace` is GLOBAL because `CreationMixin.empty` passes none. THE SIZE IS THE
+    OWNER'S `src[0]` (`size_of`) AND NOT `u.arg`'s, WHICH NO LONGER CARRIES ONE."""
+    a = u.arg
+    sz = size_of(u)
+    return (f"ALLOC/0[{a.dtype.name} sz={'-' if sz is None else sz} "
+            f"{a.addrspace.name} bind={a.bind_on_realize}]")
 
 
 def tok(u) -> str:
@@ -203,7 +225,7 @@ def tok(u) -> str:
     if u.op is Ops.CONST:
         return cval(u)
     if u.op is Ops.ALLOC:
-        return pval(u.arg)
+        return pval(u)
     if isinstance(u.arg, DType):
         return f"{u.op.name}/{len(u.src)}[{u.arg.name}]"
     return f"{u.op.name}/{len(u.src)}"

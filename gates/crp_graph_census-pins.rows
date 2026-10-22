@@ -57,4 +57,4 @@
 
 # W3-BOUNDS -- 1 rows. creation.bend's W3, with a consequence rather than a refusal. `commit_dtype` (dtype.py:16) reads `self._uop.vmin`/`vmax`, which Python can compute and this port cannot, so `cr_empty_like` takes them as `Maybe`s. With `None{}` for both the ladder lands on i64; with `Some{0}` -- which is what `UOp._min_max`'s CONST arm (ops.py:1160) returns for the receiver's `0` -- it lands on i32 and AGREES. The `eb_` family is the second half of the pair and `classes_hold` refuses the pin without it.
 
-el_weakint	W3-BOUNDS	ALLOC/0[i32 sz=6 GLOBAL bind=True],CONST/0[2:weakint],CONST/0[3:weakint],STACK/2,RESHAPE/2	ALLOC/0[i64 sz=6 GLOBAL bind=True],CONST/0[2:weakint],CONST/0[3:weakint],STACK/2,RESHAPE/2
+el_weakint	W3-BOUNDS	CONST/0[6:weakint],ALLOC/0[i32 sz=6 GLOBAL bind=True],CONST/0[2:weakint],CONST/0[3:weakint],STACK/2,RESHAPE/2	CONST/0[6:weakint],ALLOC/0[i64 sz=6 GLOBAL bind=True],CONST/0[2:weakint],CONST/0[3:weakint],STACK/2,RESHAPE/2

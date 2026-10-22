@@ -3,6 +3,9 @@
 #   .venv/bin/python gates/crp_graph_census-gate.py
 #   .venv/bin/python gates/crp_graph_census-gate.py --refresh
 #
+# 287 ROWS, 3 LANES, 286 EXACT MATCHES AND 1 DECLARED DIVERGENCE (`el_weakint`, W3's
+# missing vmin/vmax). THE `sz=` IN AN `ALLOC/0[...]` TOKEN IS `src[0]` ON BOTH SIDES.
+#
 # WHY A SECOND CENSUS AND NOT A WIDER `cr_graph_census`. The sibling EXISTS and is GREEN
 # (MEASURED rc=0, 28 rows), which is not what this file's brief said. What it prints is
 # `O.Rng.sig`: the node COUNT, the ROOT op, the ROOT's src COUNT and the ROOT's src op
@@ -148,8 +151,17 @@ def addrstr.of(g: Bool) -> String:
 
 def addrstr(a: S.Addr) -> String: addrstr.of(O.eq_addr(a, S.AGlobal{}))
 
-def pval(+p: O.ParamArg) -> String:
-  String.concat([T.dt_name(O.ParamArg.dtype(p)), " sz=", msu32(O.ParamArg.size(p)), " ",
+# THE SIZE IS `src[0]`, AND IT IS NOT THE `ParamArg`'s. Upstream DROPPED the `size`
+# FIELD from `ParamArg` (it is not among `tinygrad/uop/ops.py:25-42`'s thirteen) and
+# moved the count into the ALLOC's `src[0]` -- `UOp.alloc` builds
+# `src=(shape_to_shape_arg((prod(to_max_shape(shape)),)),)` (ops.py:1190). THE PORT
+# FOLLOWED, at `1af4ba921` ("sizetosrc: size -> src[0]"), and `ops.bend`'s
+# `ParamArg.size(+ar, +self)` READS `src[0]` OF THE OWNER -- so it takes the ARENA and
+# the NODE INDEX and not the record. THIS CALLER WAS LEFT ON THE OLD SHAPE
+# (`ParamArg.size(x: ParamArg)`, the field accessor) AND DID NOT COMPILE.
+# `O.Arena` IS NOT MISSING AND `O.Arena` IS NOT WRONG: THE GATE'S CALL WAS.
+def pval(+a: O.Arena, +u: U32, +p: O.ParamArg) -> String:
+  String.concat([T.dt_name(O.ParamArg.dtype(p)), " sz=", msu32(O.ParamArg.size(a, u)), " ",
                  addrstr(O.ParamArg.addrspace(p)), " bind=", bstr(O.ParamArg.bind_on_realize(p))])
 
 # THE BARE TOKEN, `OP/arity`, AND IT IS SPELLED ONCE HERE so the `ADt` arm below can put a
@@ -185,7 +197,7 @@ def tok.of(+a: O.Arena, +u: U32, c: Bool, s: String) -> String:
 def tok.arg(+a: O.Arena, +u: U32, g: O.Arg) -> String:
   match g:
     case O.APy{v}:    tok.of(a, u, True{}, String.concat(["CONST/0[", cval(v), "]"]))
-    case O.AParam{p}: tok.of(a, u, True{}, String.concat(["ALLOC/0[", pval(p), "]"]))
+    case O.AParam{p}: tok.of(a, u, True{}, String.concat(["ALLOC/0[", pval(a, u, p), "]"]))
     case O.ADt{d}:    tok.of(a, u, True{}, String.concat([tok.plain(a, u), "[", T.dt_name(d), "]"]))
     case _:           tok.of(a, u, False{}, "")
 

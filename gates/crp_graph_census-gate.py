@@ -609,6 +609,24 @@ def frompy_hold() -> bool:
     return report("frompy_hold", bad)
 
 
+# THE FOLD CALL, AND THE CLAIM IS ABOUT `de` AND NOT ABOUT THE VALUE. The claim is that the
+# fold test reads the CONST's DERIVED dtype (`de`) AND that the CAST's `ADt` IS THAT SAME
+# `de` -- and NOT which local holds the value. MEASURED 2026-10-22: the port's
+# `cr_const_of` grew `v2` (the TRUNCATED value, `cr_const_of.trunc`) at `79d3656c9`, so a
+# literal that pinned `T.tn_const(ar, v)` went RED on a change that had NOTHING TO DO WITH
+# THE CLAIM -- and a gate that goes red for a NEIGHBOUR is a gate that stops being read.
+# THIS PINS THE CLAIM AND NOT THE NEIGHBOUR: the fold test is `D.md_dt_eq(c0, de)`, the
+# CONST is `T.tn_const(ar, <value>)` and the `ADt` is `de`.
+#
+# AND IT IS NOT WEAKER AGAINST THE MUTATIONS. C1 (`de` -> `dt` in the `ADt`), C2/C3
+# (`c0, de` -> `c0, dt`), C5 (a hardcoded `boolean`) and C6 (`de` -> `c0`) ALL STOP MATCHING,
+# and C7 -- which touches `cr_cast_dt` and NOT this line -- is caught by the ROWS, which is
+# what it was always caught by. MEASURED, by applying this regex to the NINE mutated
+# spellings `gates/crp_graph_census-mutate.py` names that rewrite this line: 0 of 9 match,
+# and the port's own line is the one that does.
+FOLD_CALL = re.compile(r"cr_cast\(D\.md_dt_eq\(c0, de\), T\.tn_const\(ar, [^)]*\), de\)")
+
+
 def opscast_hold() -> bool:
     """THE (b) TRIAGE, AS A GATE. `grep -c OpsCAST tinybendygrad/mixin/creation.bend` is
     ONE, and this file's brief warned that a tree-wide grep is NOT the answer because most
@@ -642,17 +660,33 @@ def opscast_hold() -> bool:
     # argument (`de` to `dt`, one use) and moves 0 of 207 rows, with `MOVED-BARE == 0` as
     # well -- so the LANE CANNOT SEE IT EVEN THOUGH THE `ADt` IS NOW IN THE TOKEN, because
     # `de == dt` at every minted CAST (FINDING 1b, eighty measured cells). C4 is C1 with the
-    # two `want` literals below rewritten to expect the C1 spelling, and it is rc=0 GREEN:
+    # assertion below rewritten to expect the C1 spelling, and it is rc=0 GREEN:
     # with THIS LOOP silenced, breaking `de`'s second use is completely invisible. So the
     # spelling assertion is not a weaker substitute for a row, it is the ONLY instrument
     # there is for a claim no row can reach, and the honest move was to MEASURE that rather
     # than to weaken either half.
-    for want, why in (("+de = cr_cast_dt(F.is_cinvalid.val(v), dt)",
-                       "ops.py:630's `b is Invalid` dtype REPLACEMENT"),
-                      ("cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",
-                       "the fold test on the dtype the CONST HAS")):
-        if want not in src:
-            bad.append(f"`cr_const_of` no longer reads {want!r} -- {why} has moved")
+    #
+    # AND THE ASSERTION'S SPELLING MOVED, AND WHAT MOVED WITH IT WAS NOT THE CLAIM. The
+    # port's `cr_const_of` grew `v2` -- the TRUNCATED value, `cr_const_of.trunc` -- at
+    # `79d3656c9`, so the literal `T.tn_const(ar, v)` stopped being there and this
+    # assertion went RED on a change that had NOTHING TO DO WITH `de`. The claim is about
+    # `de` -- the fold test's right-hand side AND the CAST's `ADt` -- and not about which
+    # local holds the value, so `FOLD_CALL` (above) pins THE CLAIM: the fold test is
+    # `D.md_dt_eq(c0, de)`, the CONST is `T.tn_const(ar, <value>)` and the `ADt` is `de`.
+    # MEASURED, not argued: applied to the NINE mutated spellings
+    # `gates/crp_graph_census-mutate.py` names that rewrite this line, `FOLD_CALL` rejects
+    # 9 of 9 and accepts the port's own line -- so it is NOT WEAKER, and the ONE thing it
+    # stopped pinning is the thing it never claimed.
+    # THE `de` HALF IS A LITERAL AND THE FOLD CALL IS A REGEX, AND THE SPLIT IS THE CLAIM'S:
+    # the first is "ops.py:630's `b is Invalid` dtype REPLACEMENT is still here" and the
+    # second is "the fold test and the CAST's `ADt` are the same `de`".
+    if "+de = cr_cast_dt(F.is_cinvalid.val(v), dt)" not in src:
+        bad.append("`cr_const_of` no longer reads '+de = cr_cast_dt(F.is_cinvalid.val(v), "
+                   "dt)' -- ops.py:630's `b is Invalid` dtype REPLACEMENT has moved")
+    if not FOLD_CALL.search(src):
+        bad.append("`cr_const_of` no longer reads `cr_cast(D.md_dt_eq(c0, de), "
+                   "T.tn_const(ar, <value>), de)` -- the fold test on the dtype the CONST "
+                   "HAS has moved")
     return report("opscast_hold", bad)
 
 
