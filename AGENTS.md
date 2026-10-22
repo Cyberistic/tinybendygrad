@@ -183,6 +183,29 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **A **DRIVER **PINNED **TO **AN **OLDER **UPSTREAM, **AND **THE **PIN **IS **INVISIBLE** -- **A **FIXTURE
   **AGAINST **AN **UNSTATED **REVISION **IS **A **FIXTURE **AGAINST **NOBODY.**
 
+  ***AND ***THE **75 **HAS **A **HISTORY, **AND **IT **IS **UPSTREAM's **OWN:** MEASURED 2026-10-22 on the enum's
+  **OWN **MEMBER **COUNT**: **77 -> 76** at `4e0192eaf remove Ops.GROUP (#18637)` (2026-10-06) and
+  **76 -> 75** at `900880433 remove Ops.FLIP [pr] (#18729)` (2026-10-11) -- **WHICH **IS **THE **COUNT **AT
+  **THE **PIN, **AND **WHICH **IS **THE **PORT's **COUNT.**  **⇒ THE **PORT's `Op` **ENUM **IS **EXACTLY
+  **UPSTREAM's `Ops` **ENUM **AT **THE **PIN**, **AND **THE **TWO **UPSTREAM **DELETIONS **ARE **EXACTLY
+  **WHAT **TOOK **IT **THERE.**
+  **⇒ AND **A **TEXT **CENSUS **OVERSTATES**: **A **UNIT **THAT **FIXED **THE **DRIVER **CORRECTED **MY
+  **CENSUS, **WHICH **COUNTED **TEXT **AND **NOT **CODE**: `OpsGROUP` **WAS **A **REAL **COMPILE **ERROR**;
+  `OpsFLIP` **WAS **A **LATENT **STALE **REFERENCE **IN **A **FRAGMENT** (whose **standing **condition **IS
+  **A **DIFFERENT **ONE**: *"expected : 'def', 'type' or 'law'"* -- **BARE **STATEMENTS **AT **TOP **LEVEL**,
+  **NOT **`OpsFLIP`**); **AND `OpsX` **WAS **A **PLACEHOLDER **IN **A **COMMENT**, **AND **THE **FILE
+  **COMPILES.**  **⇒ A **CENSUS **THAT **NAMES **A **BROKEN **DRIVER **WITHOUT **SAYING **WHETHER **IT
+  **IS **BROKEN **IS **A **CENSUS **OF **NAMES.**
+  **⇒ AND **THE **PTX **AXIS **WAS **STALE **BY **+14 **ROWS **FOR **A **REASON **THAT **NO **INSTRUMENT
+  **SAW:** the 2026-10-16 **re-vendor **moved **A **BUFFER's **SIZE **OUT **OF **THE **`ParamArg` **AND **INTO
+  **A **SIZE **CONST **SRC**, so **CPYTHON's **OWN **GRAPHS **GAINED **A **NODE** -- **15 **FIXTURES **GAINED
+  **ONE, `f14_skips` **LOST **ONE** -- **AND **THE **AXIS's **BYTES **HAD **NOT **MOVED, **AND **THE **GATE
+  **THAT **WOULD **HAVE **SAID **SO **WAS **REFUSED **ON **THE **COMPILE **ERROR.**  **⇒ THE **DRIVER **IS
+  **NOW **GENERATED**, **AND **IT **CARRIES **A `# UPSTREAM-PIN <path> <sha256>` **LINE **PER **FILE **THE
+  **ORACLE **READS** -- **DERIVED **FROM **THE **ORACLE's **OWN **IMPORTS **PLUS **EACH **SYMBOL's **DEFINING
+  **MODULE**, **WHICH **IS **HOW **`tinygrad/uop/__init__.py` **GETS **IN **AT **ALL** (the **oracle **imports
+  **`Ops` **RE-EXPORTED **THROUGH **`ops.py`**).**
+
   ***AND ***THERE **IS **NOW **A **COMPILE-LEVEL **CHECK **OVER **THE **WHOLE **PORT**: `checks/port-compile-gate.py`
   **COMPILES **EVERY **FILE **AND **READS **THE **VERDICT **TOKEN** -- **165 of 169 COMPILE, 4 ARE **COLD
   **BY **DESIGN** (`LAWS.bend`, `PROOF.bend`, `PROOF2.bend` -- EACH **DECLARES **IT **IS **NOT **A **PROOF
