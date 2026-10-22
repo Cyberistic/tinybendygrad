@@ -193,7 +193,7 @@ def head_rows() -> IO(Unit):
 # THE MODULE ROW. THREE distinct, deterministic answers, all three PINNED, because one
 # string for all three cases would say the same thing whether or not the port rendered:
 #   `ABSENT:string_rewrite(23) not ported` -- CPython rendered and the port cannot
-#   `PORT-REFUSED:<op>`                    -- BOTH refused (ptx.py:203's raise)
+#   `PORT-REFUSED:<op>`                    -- BOTH refused (ptx.py:204's raise)
 #   `PORT-ANSWERED`                         -- CPython REFUSED and the port did NOT.
 # The third is the finding: a refusal CPython raises becomes a register the port
 # allocates, and `PORT-ANSWERED` is the string that says so in one word.
@@ -278,11 +278,11 @@ def walk_rows(+nm: String, +ss: List<&2, P.Wk>, +w: P.Wal, +rb: List<&2, String>
   # `IO(Unit)` arms answers "an unfilled law is a dead claim" and names an arm that is
   # perfectly well defined.
   # THE `.r` ROWS ARE EMITTED FOR A REFUSAL AND THE `.reg`/`.entry` ROWS ARE NOT, and the
-  # asymmetry is a FACT about `render` rather than a policy: ptx.py:208 assigns `r[u]`
-  # BEFORE ptx.py:222 can raise, so a refusal at 222 leaves the register map complete, while
+  # asymmetry is a FACT about `render` rather than a policy: ptx.py:209 assigns `r[u]`
+  # BEFORE ptx.py:223 can raise, so a refusal at 223 leaves the register map complete, while
   # `.reg` and `.entry` live in the MODULE `render_kernel` builds and there is no module.
   # MEASURED: the first draft returned early on a refusal and threw away the rows that pin
-  # ptx.py:208 -- which is exactly why `ptx_render_census-mutate.py`'s M1 moved zero of 515
+  # ptx.py:209 -- which is exactly why `ptx_render_census-mutate.py`'s M1 moved zero of 515
   # rows and the census had no vector LOAD to move.
   do IO<Unit>:
     a : Unit <- step_go(ss, P.Wal.r(w), 0, nm)
@@ -419,34 +419,39 @@ def main() -> IO(Unit):
 #
 # `tc_ptx.bend`'s `types_pri` is a dispatch on `S.Dt.pri`, and its `case _` arm is `""`.
 # CPython's `PTXRenderer.types` is a `dict[DType, str]` and a MISSING dtype is a
-# `KeyError` at ptx.py:181. MEASURED, both sides, over the eighteen dtypes `S.Dt` has and
-# `ptx.py`'s tables do not:
+# `KeyError` at ptx.py:181. MEASURED, both sides: the port names TWENTY dtypes --
+# `dtypes.all()` is SEVENTEEN and `void`, `weakint` and `weakfloat` are the other three --
+# and CPython's `types` dict has TWELVE keys, so EIGHT dtypes raise. THE PORT EMPTIES SIX
+# OF THE EIGHT -- `void`, `bfloat16` and the four fp8s -- and that is EIGHTEEN ROWS, three
+# tables each. THE TWO IT DOES NOT EMPTY ARE `weakint` AND `weakfloat`, and they are the
+# REACHABLE ones, which is why they are the first two rows:
 #
-#     weakint     port "pred"   mem "u8"   cast "pred"    CPython KeyError(weakint)
-#     weakfloat   port ""       mem ""     cast ""        CPython KeyError(weakfloat)
-#     void        port "pred"   mem "u8"   cast "pred"    CPython KeyError(void)
-#     bfloat16    port ""       mem ""     cast ""        CPython KeyError(bfloat16)
-#     fp8e4m3     port ""       mem ""     cast ""        CPython KeyError(fp8e4m3)
+#     weakint     port "s32"    mem "s32"  cast "s32"     CPython KeyError(weakint)
+#     weakfloat   port "f32"    mem "f32"  cast "f32"     CPython KeyError(weakfloat)
+#     void        port ""        mem ""     cast ""        CPython KeyError(void)
+#     bfloat16    port ""        mem ""     cast ""        CPython KeyError(bfloat16)
+#     fp8e4m3     port ""        mem ""     cast ""        CPython KeyError(fp8e4m3)
 #
-# `weakint` and `void` COLLIDE with `bool` on `pri == 0`, which is why they answer
-# `"pred"`: a register named `%ridx_pred_0` and a `.reg\t\t.pred %ridx_pred_<1>;`. The other
-# five answer `""`: a register named `%alu__0` and a `.reg\t\t. %alu__<1>;` -- an EMPTY
-# TYPE where a real PTX type belongs.
+# THE EMPTIED FIELD IS THE SIX THAT ANSWER `""` -- `void`, `bfloat16` and the four fp8s --
+# AND NOT weakint and weakfloat. MEASURED, both sides: `tc_ptx.bend`'s three tables
+# DISPATCH `CWeakInt` and `CWeakFloat` BEFORE their `case _` arms, so `weakint` answers
+# the DEFAULT INT's `"s32"` and `weakfloat` the DEFAULT FLOAT's `"f32"` -- REAL PTX
+# types -- while the six that answer `""` answer it with an EMPTY TYPE where a real PTX
+# type belongs: a register named `%alu__0` and a `.reg\t\t. %alu__<1>;`.
 #
 # AND IT IS REACHABLE, which is the part that makes it a defect and not a table curiosity.
-# MEASURED: `UOp.range(4, 0)` DEFAULTS to `dtype=dtypes.weakint`, ptx.py:216 gives it
+# MEASURED: `UOp.range(4, 0)` DEFAULTS to `dtype=dtypes.weakint`, ptx.py:217 gives it
 # prefix `ridx`, ptx.py:181 raises `KeyError: dtypes.weakint` -- and the port answers
-# `%ridx_pred_0`. `UOp.const(3.0) + UOp.const(4.0)` is an ADD whose dtype is
+# `%ridx_s32_0`. `UOp.const(3.0) + UOp.const(4.0)` is an ADD whose dtype is
 # `dtypes.weakfloat` and which is NOT a CONST, so ptx.py:187 does not skip it, and
-# ptx.py:181 raises `KeyError: dtypes.weakfloat` -- and the port answers `%alu__0` plus a
-# `.reg\t\t. %alu__<1>;`. Four fixtures (`f31_weakint`, `f32_weakfloat`, `f33_bf16cast`,
-# `f34_boolalu`) exist to pin this, and their `<f>.mod` rows are the port's
-# `PORT-ANSWERED`.
+# ptx.py:181 raises `KeyError: dtypes.weakfloat` -- and the port answers `%alu_f32_0`.
+# Four fixtures (`f31_weakint`, `f32_weakfloat`, `f33_bf16cast`, `f34_boolalu`) exist
+# to pin this, and their `<f>.mod` rows are the port's `PORT-ANSWERED`.
 #
 # "A U32 SHIFT IS NOT AN ERROR, IT IS A SMALLER NUMBER" -- and an empty type field is not
 # an error either, it is a KERNEL PTXAS REJECTS, emitted silently by a total function
-# whose `case _` arm was written for the eight fp8 dtypes and now also catches weakint,
-# weakfloat and void.
+# whose `case _` arm was written for the fp8 dtypes and now also catches bfloat16, and
+# whose `CVoid` arm answers the same empty string for `void`.
 #
 # ===========================================================================
 # FINDING 2 -- `ptx.py` ITSELF REFUSES FOUR SHAPES A REAL KERNEL HAS, AND NONE OF THEM
@@ -460,5 +465,5 @@ def main() -> IO(Unit):
 #                whose operand is a bare CONST raises `KeyError: UOp(Ops.CONST, arg=True,
 #                src=())`. The bool arms of `asm_for_op` (`or`/`and`/`xor.pred`) are
 #                therefore reachable only through a CAST of a CONST, never directly.
-#   f08_refuse   ptx.py:203's own raise, and the ONE refusal the walk declares.
+#   f08_refuse   ptx.py:204's own raise, and the ONE refusal the walk declares.
 # ===========================================================================
