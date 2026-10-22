@@ -1,0 +1,13 @@
+SOME PROOFS FAIL
+Error:
+- expected : @_:{a == b : Nat} -> Empty
+- observed : non-inferrable term
+Context:
+- a : Nat
+- b : Nat
+Location: bad
+3 | def bad(a: Nat, b: Nat) -> {a != b : Nat}:
+4>|   {==}
+  |   ^^^^
+5 | 
+bend 2.0.38 is available: run bend update

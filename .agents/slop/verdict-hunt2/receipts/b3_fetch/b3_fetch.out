@@ -1,0 +1,27 @@
+== A: no ~/.bend/check.json, BEND_ORIGIN=local http
+   rc=0
+   stdout='Bend 2.0.37: check, run, build and publish Bend programs.\n\nusage:\n  bend <file.bend> [args]                        check the file, then run main with args\n  ben'
+   stderr='bend 9.9.9 is available: run bend update\nNOTICE-FROM-THE-LOCAL-SERVER'
+   requests so far: ['/check?v=2.0.37&os=darwin&arch=arm64']
+   ~/.bend/check.json now: '{"t":1792702144116,"ver":"9.9.9","notice":"NOTICE-FROM-THE-LOCAL-SERVER"}\n'
+== B: the cache is fresh -> no request
+   rc=0
+   stdout='Bend 2.0.37: check, run, build and publish Bend programs.\n\nusage:\n  bend <file.bend> [args]                        check the file, then run main with args\n  ben'
+   stderr='bend 9.9.9 is available: run bend update\nNOTICE-FROM-THE-LOCAL-SERVER'
+   requests so far: []
+== C: BEND_NO_TELEMETRY=1
+   rc=0
+   stdout='Bend 2.0.37: check, run, build and publish Bend programs.\n\nusage:\n  bend <file.bend> [args]                        check the file, then run main with args\n  ben'
+   stderr=''
+   requests so far: []
+== D: --verdict with the local server
+   rc=1
+   stdout=''
+   stderr="Error: BendTT infrastructure: the kernel did not build (lean: warning: could not canonicalize path: '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/verdicthunt2/fetchhome/.elan/toolchains'\nwarning: could not canonicalize path: '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000g"
+   requests so far: []
+   VERDICT-OK? False
+== E: crafted check.json with t=0
+   rc=0
+   stdout='Bend 2.0.37: check, run, build and publish Bend programs.\n\nusage:\n  bend <file.bend> [args]                        check the file, then run main with args\n  ben'
+   stderr='bend 9.9.9 is available: run bend update\nNOTICE-FROM-THE-LOCAL-SERVER'
+   requests so far: ['/check?v=2.0.37&os=darwin&arch=arm64']

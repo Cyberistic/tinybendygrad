@@ -1,0 +1,9 @@
+SOME PROOFS FAIL
+Error:
+- message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+Location:
+3 | def bad(a: Nat, b: Nat) -> Empty:
+4>|   match {a != b : Nat}:
+  |         ^^^^^^^^^^^^^^
+5 |     case e:
+bend 2.0.38 is available: run bend update

@@ -1928,6 +1928,36 @@ mixin-op-corrected   [##] 3/3  **A CLAIM OF MINE DID NOT SURVIVE RE-MEASUREMENT,
                                        FROM A LANE CAPTURE MUST BE RE-TAKEN ON THE TREE BEFORE IT IS WRITTEN DOWN.**
 
 
+verdict-outside-repo [##] 3/3  **THE VERDICT IS DECIDED BY A BINARY OUTSIDE THE REPOSITORY, AND A `--verdict` LANE
+                                       OVER THIS PORT WOULD INHERIT IT -- SO THE LANE MUST PIN THE KERNEL, AND THE
+                                       OVERRIDE THAT MAKES THAT POSSIBLE IS NAMED.** MEASURED 2026-10-22 AT `v2.0.37`
+                                       / `4ff8545` BY `.agents/slop/verdict-hunt2/REPORT.md` §3 M11.
+                                       `references/bend/bend2/safe.ts:1483-1494` IS EXACTLY: `const hash =
+                                       sha256(LEAN_VERSION + "\0" + bendtt.lean)[:16]`; `const dir =
+                                       ~/.bend/bendtt/<hash>`; `const bin = dir/bendtt`; **`if (fs.existsSync(bin)) {
+                                       return bin; }` -- USED AS-IS, NEVER REBUILT AND NEVER CHECKED AGAINST
+                                       `bendtt.lean`.** **⇒ THE CACHE KEY IS HONEST (IT IS COMPUTABLE FROM THE PUBLIC
+                                       REPOSITORY -- MEASURED HERE: `b9f3e0253abffb11`, WHICH IS EXACTLY THE DIRECTORY
+                                       ON THIS MACHINE, AND ITS CACHED BINARY IS BYTE-IDENTICAL TO THE ONE BUILT FROM
+                                       THE REPO'S SOURCE) **BUT THE BINARY IS NOT VERIFIED**, AND IT IS THE BINARY
+                                       THAT IS EXECUTED.** **MEASURED: WITH `HOME=<temp>` AND A TWO-LINE SHELL SCRIPT
+                                       AT THAT PATH, **THE VERDICT FLIPPED BOTH WAYS** -- CONTROL rc=0 `ALL PROOFS
+                                       CHECK`; TREATED rc=1 `SOME PROOFS FAIL`; TREATED rc=0 `ALL PROOFS CHECK` --
+                                       **WITH NOTHING CHANGED IN THE REPOSITORY**, AND THE FORGED KERNEL'S LOG SHOWS
+                                       IT WAS CONSULTED.** **⇒ SO THE TREE'S RULE *"A PIN MUST BE A FUNCTION OF THE
+                                       REPOSITORY"* HAS A SHARP NEW INSTANCE: **THE VERDICT MUST BE A FUNCTION OF THE
+                                       REPOSITORY TOO, AND TODAY IT IS NOT** -- AND NO TREE GATE RUNS `--verdict` YET
+                                       (ONLY PROSE MENTIONS IT), SO **THE EXPOSURE IS LATENT, NOT LIVE.** **⇒ AND THE
+                                       ONE-LINE FIX IS NAMED, AND IT IS AN OVERRIDE THE COMPILER ALREADY HONOURS:
+                                       `safe.ts:1484` READS `process.env.BENDTT` FIRST AND RETURNS IT UNCONDITIONALLY.
+                                       **SO A `--verdict` LANE OVER THIS PORT SHOULD SET `BENDTT=` TO A KERNEL IT
+                                       BUILT FROM THE REPO'S `bendtt.lean` AND PIN THAT BINARY'S SHA256** -- RATHER
+                                       THAN TRUSTING `~/.bend/`. **⇒ AND `HOME` RELOCATES THE KERNEL, THE LEAN
+                                       TOOLCHAIN (`~/.elan`) AND THE CACHE, AND THE SHARED TEMP DIR WAS WIPED MID-
+                                       SESSION AND TOOK BOTH HUNTS' BUILT KERNELS WITH IT: *"A TOOL THAT LIVES ONLY IN
+                                       A SHARED TEMP DIR IS A TOOL THAT CAN VANISH."***
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

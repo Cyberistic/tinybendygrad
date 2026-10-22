@@ -1,0 +1,3 @@
+== /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/verdict-hunt2/cand/e02_law_for_empty.bend
+check-only : rc=1 | stdout= | stderr=SOME PROOFS FAIL Error: 1 TODO found. The code is incomplete, and not a valid proof yet. bend 2.0.38 is available: run bend update 
+verdict    : rc=1 | stdout= | stderr=SOME PROOFS FAIL Error: 1 TODO found. The code is incomplete, and not a valid proof yet. bend 2.0.38 is available: run bend update 

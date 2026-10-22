@@ -1,0 +1,3 @@
+== /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/verdict-hunt2/cand/h01_refute_empty.bend
+check-only : rc=1 | stdout= | stderr=SOME PROOFS FAIL Error: - message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def) Location: 10 | def bad() -> Empty: 11>|   match mk():    |         ^^ 12 |     case C0{}: bend 2.0.38 is available: run bend update 
+verdict    : rc=1 | stdout= | stderr=SOME PROOFS FAIL Error: - message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def) Location: 10 | def bad() -> Empty: 11>|   match mk():    |         ^^ 12 |     case C0{}: bend 2.0.38 is available: run bend update 

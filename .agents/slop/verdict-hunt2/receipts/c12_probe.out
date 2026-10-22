@@ -1,0 +1,26 @@
+p_parse_comment    REJECT rc=1  SOME PROOFS FAIL | In bad: | expected: a function type | observed: Σx1 : <> -> (Empty.arms x1)
+                   (a comment inside a term)
+p_parse_eof_hash   REJECT rc=1  SOME PROOFS FAIL | In bad: | expected: a function type | observed: Σx1 : <> -> (Empty.arms x1)
+                   (a '#' at EOF with no newline)
+p_parse_crlf       REJECT rc=1  SOME PROOFS FAIL | In bad: | expected: a function type | observed: Σx1 : <> -> (Empty.arms x1)
+                   (CR / TAB whitespace)
+p_parse_uni        REJECT rc=1  SOME PROOFS FAIL | parse error: expected ':' at 'äd : ∀x0 : Empty -> Empty = |   '
+                   (a multi-byte character in a name)
+p_parse_shadow     REJECT rc=1  SOME PROOFS FAIL | In x0: | expected: *2 | observed: *1
+                   (a def whose name equals a bound variable's name)
+p_fits_empty_lab   REJECT rc=1  SOME PROOFS FAIL | In bad: | a label of <>
+                   (a Lab at the EMPTY enum)
+p_fits_empty_any   REJECT rc=1  SOME PROOFS FAIL | In bad: | expected: <C0> | observed: *2
+                   (the empty enum used where <C0> is expected)
+p_fits_all_dom     REJECT rc=1  SOME PROOFS FAIL | In bad: | expected: <> | observed: *2
+                   (fits' All case REVERSES the domain)
+p_fits_all_dom2    ACCEPT rc=0  ALL PROOFS CHECK
+                   (the same, the other way round)
+p_efq_anycod       ACCEPT rc=0  ALL PROOFS CHECK
+                   (Efq at a function from the empty enum)
+p_tup_empty        REJECT rc=1  SOME PROOFS FAIL | In bad: | a label of <>
+                   (a Tup at the Empty Sigma, tag of type <C0>)
+p_tup_empty2       REJECT rc=1  SOME PROOFS FAIL | In bad: | expected: <> | observed: *2
+                   (the same, tag of type <>)
+p_ctrl_ok          REJECT rc=1  SOME PROOFS FAIL | In bad: | expected: a function type | observed: Σx1 : <> -> (Empty.arms x1)
+                   (a control that must be accepted)
