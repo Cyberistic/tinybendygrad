@@ -44,8 +44,8 @@
 # WHAT THE WALL STILL COSTS, and this is the part `uop/weak.bend` is waiting on. Every
 # weak.bend TODO that reads `commit_dtype` also needs the BOUNDS, and the bounds are the half
 # that is missing. Per `_min_max` arm (ops.py:1104-1163), MEASURED:
-#   ADD                                 i64_add, i64_sub        PRESENT, pure -- helpers.bend:1235,1238
-#   MAX/CMPLT/CMPNE/OR/AND-bool/XOR      i64_le/i64_cmp          PRESENT, pure -- helpers.bend:1220,1213
+#   ADD                                 i64_add, i64_sub        PRESENT, pure -- helpers.bend:1728,1733
+#   MAX/CMPLT/CMPNE/OR/AND-bool/XOR      i64_le/i64_cmp          PRESENT, pure -- helpers.bend:1703,1696
 #   WHERE/PAD/STACK/MOVEMENT/CONST       (no arith)              PORTABLE, they are min/max over srcs
 #   CAST (truncation)                   i64 trunc toward zero   `Dt.i64_trunc` -- dtype.bend:555, but
 #                                                                       an `IO(F32)`-style EFFECT SEAM
