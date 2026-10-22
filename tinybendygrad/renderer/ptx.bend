@@ -1,4 +1,4 @@
-# ptx.bend -- tinygrad/renderer/ptx.py: `render`'s NAMING WALK, ptx.py:171-228
+# ptx.bend -- tinygrad/renderer/ptx.py: `render`'s NAMING WALK, ptx.py:171-229
 #
 # ===========================================================================
 # WHAT IS HERE, WHAT IS NOT, AND WHY NEITHER IS A SECOND COPY
@@ -15,24 +15,24 @@
 # rename in `LAWS/spec.bend` moves BOTH copies or neither.
 #
 # What tc_ptx.bend's header calls STAGE 3 and names NOT STARTED is here: the
-# `ssa` COUNTER (ptx.py:180-183), the per-op register assignment (ptx.py:185-220),
+# `ssa` COUNTER (ptx.py:180-183), the per-op register assignment (ptx.py:185-221),
 # the `.reg` DECLARATIONS `render_kernel` prepends from `c.items()` (ptx.py:165),
-# the `bufs` collection (ptx.py:209), the entry-point NAME (ptx.py:185, 191-192)
-# and the ONE REFUSAL the walk raises (ptx.py:203).
+# the `bufs` collection (ptx.py:210), the entry-point NAME (ptx.py:185, 192-193)
+# and the ONE REFUSAL the walk raises (ptx.py:204).
 #
 # NOT HERE, and named rather than faked:
-#   * `string_rewrite` (ptx.py:81-135) -- nineteen graph-pattern rules whose BODY
+#   * `string_rewrite` (ptx.py:81-135) -- twenty-three graph-pattern rules whose BODY
 #     is an f-string over `ctx.r[x]`. It is CONSUMABLE exactly once the walk
 #     below supplies `ctx.r`, so it is the natural NEXT file and not a wall.
-#   * `ptx_matcher` (ptx.py:40-57) -- seven graph REWRITES, tc_ptx.bend's
+#   * `ptx_matcher` (ptx.py:40-57) -- eight graph REWRITES, tc_ptx.bend's
 #     `TODO(p3) ptx.py:42`-`56` block.
-#   * `to_function_name`'s `ansistrip` (helpers.py:156) -- a regex ANSI strip.
+#   * `to_function_name`'s `ansistrip` (helpers.py:157) -- a regex ANSI strip.
 #     The KEEP/HEX branch is ported and gated; the strip is the wall.
-#   * `Ops.WMMA`'s `wmma_r` (ptx.py:210-215) -- it needs the three fragment
+#   * `Ops.WMMA`'s `wmma_r` (ptx.py:211-216) -- it needs the three fragment
 #     tables, which are tc_ptx.bend's `Tc`, and it is named in its ARM.
 #
 # ===========================================================================
-# THE GATE. 224 rows, all STRINGS, and `py=` is a LITERAL, never an expression:
+# THE GATE. 281 rows, all STRINGS, and `py=` is a LITERAL, never an expression:
 #   .venv/bin/python gates/ptx_render_census-oracle.py > /tmp/s3py.rows
 #   ./bin/bend tinybendygrad/renderer/ptx.bend          > /tmp/bd.rows
 #   ./bin/bend tinybendygrad/renderer/ptx.bend -o /tmp/p3 && /tmp/p3 > /tmp/bdn.rows
@@ -41,7 +41,7 @@
 # **RETARGETED 2026-10-16.** These four lines read `.agents/slop/ptx-s3-oracle.py` and
 # `.agents/slop/ptxown/{s3py,bd,bdn}.txt`; the oracle was deleted by the sweep of 2026-10-05
 # (blob e853efc4b, 13071 B) and `ptxown/` is gone with it. The oracle that replaced it is
-# `gates/ptx_render_census-oracle.py`, MEASURED rc=0 at 579 rows from `gates/`. The path
+# `gates/ptx_render_census-oracle.py`, MEASURED rc=0 at 593 rows from `gates/`. The path
 # extensions are `.rows` because a `.txt` is a HARD row for `checks/no-txt.py`.
 # BOTH lanes byte-identical, and never gate on an exit status: `--check-only`
 # exits 1 on this repo even when the file is fine (14 unfilled `dtype.bend`
@@ -49,20 +49,20 @@
 #
 # THE ORACLE STUBS EXACTLY ONE THING AND SAYS WHY. `render` finishes the whole
 # register map BEFORE it first calls `string_rewrite.rewrite(u, ctx=self)`
-# (ptx.py:222), and the rewrite answers kernel LINES rather than register names,
+# (ptx.py:223), and the rewrite answers kernel LINES rather than register names,
 # so returning `[]` leaves this file's entire subject intact and removes only
 # the surface this file does not port. `render_kernel` is NOT stubbed: its `.reg`
 # declarations ARE `c.items()`, so they are this file's output.
 #
 # FOUR DIRECTIONS, because a one-directional table cannot see half the bugs:
-#   * `r[i]`    -- node -> register. ptx.py:204's pick / copy / skip arms, and
+#   * `r[i]`    -- node -> register. ptx.py:205's pick / copy / skip arms, and
 #     `is_list`, which is NOT one test: a REG buffer of ONE element is still a
 #     list (`f6_regbuf1` prints `{%reg_f32_0}`) while a LOAD of one element is a
-#     bare string (ptx.py:208 tests `max_numel > 1`).
+#     bare string (ptx.py:209 tests `max_numel > 1`).
 #   * `reg[i]`  -- counter key -> count, IN `c`'s INSERTION ORDER, which is what
 #     `c.items()` hands `render_kernel` and which no sort reproduces.
 #   * `entry`   -- the SINK's arg through `to_function_name`.
-#   * `REFUSAL` -- a TRUNCATED trace. ptx.py:203 raises BEFORE it has a register,
+#   * `REFUSAL` -- a TRUNCATED trace. ptx.py:204 raises BEFORE it has a register,
 #     so the row is the message plus the offending op and nothing else; the
 #     message's own tail is `{u}`, a UOp repr, i.e. the GRAPH and not a value.
 # ===========================================================================
@@ -75,11 +75,11 @@ import ./../uop/ops.bend as O
 
 # ===========================================================================
 # THE STATE. `r` is `dict[UOp, str | list[str]]` (ptx.py:176), `c` is a
-# `defaultdict[int]` over a STRING key (ptx.py:175), `kern` is ptx.py:227's
+# `defaultdict[int]` over a STRING key (ptx.py:175), `kern` is ptx.py:228's
 # `.reg .u32` lines and `ref` is the walk's refusal, which in Python is an
 # exception and here is a value because a Bend fold cannot raise.
 #
-# `Rg` holds `parts` rather than a rendered string because ptx.py:204 SUBSCRIPTS
+# `Rg` holds `parts` rather than a rendered string because ptx.py:205 SUBSCRIPTS
 # it -- `r[u.src[0]][u.src[1].src[0].val]` -- so the element has to be
 # addressable, and a pre-joined string would force a parse to get it back.
 # ===========================================================================
@@ -111,7 +111,7 @@ def Cnt.ty(+c: Cnt) -> String:
     case Cnt{key, ty, n}: ty
 
 # `Wal.ref` is `""` while the walk is healthy and the offending OP'S NAME once
-# ptx.py:203 has fired -- which also STOPS the walk, because in CPython the
+# ptx.py:204 has fired -- which also STOPS the walk, because in CPython the
 # raise ends `render` and nothing after it is computed.
 type Wal is Data:
   Wal{r: List<&2, Rg>, c: List<&2, Cnt>, kern: List<&2, String>, nm: String, ref: String}
@@ -149,7 +149,7 @@ def wal0() -> Wal: Wal{Nil{}, Nil{}, Nil{}, "test", ""}
 # of it. `addr` is the node's OWN address space for BUFFER/PARAM and `src[0]`'s
 # for INDEX/SHRINK/LOAD -- the only way those two reads are told apart.
 # `refs` are INDICES into the registers emitted SO FAR; `idx` is
-# `src[1].src[0].val` and `idx_ok` is ptx.py:204's CONST-of-CAST guard.
+# `src[1].src[0].val` (ptx.py:205) and `idx_ok` is ptx.py:203's CONST-of-CAST guard.
 type Wk is Data:
   Wk{op: O.Op, dt: S.Dt, addr: S.Addr, nmn: U32, nm: String, refs: List<&2, U32>, idx: U32, idx_ok: Bool}
 def Wk.op(w: Wk) -> O.Op:
@@ -247,7 +247,7 @@ def ssa_many.ago(k: Nat, +n: U32, +c: List<&2, Cnt>, +key: String) -> Ssa2:
       +rest = ssa_many.ago(fm, U32.add(n, 1), c, key)
       Ssa2{Ssa2.c(rest), List.append(&2, String, [ssa_name(key, n)], Ssa2.ps(rest))}
 
-# THE BUMP IS `k`, NOT ONE. MEASURED: ptx.py:198 and 208 call `ssa` ONCE PER
+# THE BUMP IS `k`, NOT ONE. MEASURED: ptx.py:199 and 209 call `ssa` ONCE PER
 # ELEMENT, and `c[prefix] += 1` runs inside `ssa`, so a four-element REG buffer
 # leaves the counter at FOUR and `.reg .f32 %reg_f32_<4>;` -- bumping by one
 # printed `<1>`, and the SECOND vector LOAD of `f10_loads` restarted at 1 instead
@@ -258,14 +258,14 @@ def ssa_many(+cs: List<&2, Cnt>, +key: String, +ty: String, +k: U32) -> Ssa2:
     ssa_many.ago(U32.to_nat(k), cnt_n(cs, key), cnt_bump(cs, key, ty, k), key))
 
 # ===========================================================================
-# THE PREFIX TABLE -- ptx.py:216-218, plus ptx.py:197-208's three allocating
+# THE PREFIX TABLE -- ptx.py:217-219, plus ptx.py:198-209's three allocating
 # overrides folded in so ONE `alloc` covers all four:
 #
 #     Ops.CAST/BITCAST -> ("cast", None)    Ops.END    -> ("pred", "pred")
 #     Ops.RANGE        -> ("ridx", None)    Ops.BUFFER -> ("local", "u64")
 #     Ops.INDEX/SHRINK -> ("bidx", "u64")   Ops.PARAM  -> ("dat", "u64" if GLOBAL)
 #     every ALU op     -> ("alu", None)     else       -> (None, None)
-#     Ops.RANGE and u.dtype == dtypes.void  ->  prefix = None        (ptx.py:219)
+#     Ops.RANGE and u.dtype == dtypes.void  ->  prefix = None        (ptx.py:220)
 #
 # `Pf{has, prefix, ty, k, lst}` IS that tuple plus the two facts ptx.py spells at
 # the USE SITE rather than in the table: `k`, how many `ssa` calls this uop makes,
@@ -308,14 +308,14 @@ def is_op(+op: O.Op, +o2: O.Op) -> Bool: O.eq_op(op, o2)
 def is_idx(+op: O.Op) -> Bool: Bool.or(is_op(op, O.OpsINDEX{}), is_op(op, O.OpsSHRINK{}))
 def is_reg(+op: O.Op, +addr: S.Addr) -> Bool: Bool.and(is_op(op, O.OpsBUFFER{}), O.eq_addr(addr, S.AReg{}))
 def is_global(+addr: S.Addr) -> Bool: O.eq_addr(addr, S.AGlobal{})
-# ptx.py:200 -- `u.src[0].addrspace in (AddrSpace.REG, AddrSpace.ALU)`. ALU IS
-# the special's own address space (ops.py:910), which is why a LOAD of a
+# ptx.py:201 -- `u.src[0].addrspace in (AddrSpace.REG, AddrSpace.ALU)`. ALU IS
+# the special's own address space (ops.py:899), which is why a LOAD of a
 # SPECIAL is a copy and not a memory read.
 def on_regsrc(+op: O.Op, +addr: S.Addr) -> Bool:
   Bool.and(Bool.or(is_idx(op), is_op(op, O.OpsLOAD{})),
     Bool.or(O.eq_addr(addr, S.AReg{}), O.eq_addr(addr, S.Aalu{})))
 
-# ptx.py:219 -- `if u.op is Ops.RANGE and u.dtype == dtypes.void: prefix = None`.
+# ptx.py:220 -- `if u.op is Ops.RANGE and u.dtype == dtypes.void: prefix = None`.
 # A loop header has a LABEL and no register. The test is `O.eq_dt` and NOT a
 # priority compare, because `S.boolean()` is also priority 0 and only bits
 # differ.
@@ -337,35 +337,35 @@ def pf.of(+op: O.Op, +dt: S.Dt, +addr: S.Addr, +nmn: U32) -> Pf:
   no_pf()))))))))))
 
 # ===========================================================================
-# THE ARM SELECTOR. ptx.py:186-220 is a chain of `if`s whose ORDER is
+# THE ARM SELECTOR. ptx.py:186-221 is a chain of `if`s whose ORDER is
 # load-bearing, because two of them overlap:
 #
-#   187  op in {NOOP, GROUP, CONST}        -> skip, no register
+#   187  op in {NOOP, CONST}               -> skip, no register
 #   188  AFTER                             -> alias src0
-#   191  SINK                              -> maybe rename the entry point
-#   194  STACK                             -> collect srcs
-#   197  BUFFER on a REG space             -> a LIST of `reg` registers
-#   200  INDEX|SHRINK|LOAD on REG/ALU src0 -> pick / copy / REFUSE
-#   206  SPECIAL                           -> "%" + arg, and a `.reg .u32`
-#   207  LOAD                              -> scalar or list of `val`
-#   209  PARAM                             -> `dat`, and a `.param`
-#   210  WMMA                              -> tc_ptx.bend's `Tc` fragments; NAMED
-#   216  the prefix table                  -> one `ssa`
+#   192  SINK                              -> maybe rename the entry point
+#   195  STACK                             -> collect srcs
+#   198  BUFFER on a REG space             -> a LIST of `reg` registers
+#   201  INDEX|SHRINK|LOAD on REG/ALU src0 -> pick / copy / REFUSE
+#   207  SPECIAL                           -> "%" + arg, and a `.reg .u32`
+#   208  LOAD                              -> scalar or list of `val`
+#   210  PARAM                             -> `dat`, and a `.param`
+#   211  WMMA                              -> tc_ptx.bend's `Tc` fragments; NAMED
+#   217  the prefix table                  -> one `ssa`
 #
-# 197 BEFORE 216 is what keeps a REG buffer out of the table, and 200 BEFORE
-# 207/209 is what keeps an on-REG LOAD from reading memory. In Python those two
+# 198 BEFORE 217 is what keeps a REG buffer out of the table, and 201 BEFORE
+# 208/210 is what keeps an on-REG LOAD from reading memory. In Python those two
 # facts are two `if`s in one loop; here they are the order of this `Bool.pick`
 # chain, so reordering it here is a mutation the table measures.
 #
 # A_REFUSE IS ITS OWN ARM rather than an error, because the gate wants the
-# REFUSAL as a row (ptx.py:203) and a Bend fold cannot raise.
+# REFUSAL as a row (ptx.py:204) and a Bend fold cannot raise.
 # ===========================================================================
 def is_any3(+op: O.Op, os: List<&2, O.Op>) -> Bool: List.contains(~O.Op, O.eq_op, os, op)
 
 # THE TAGS, AND `wk1.go`'s CASES ARE THESE NUMBERS. The two had drifted: A_ALLOC
 # was 8 and `wk1.go` had no `case 8`, so every ordinary uop fell through `case _:`
 # and the walk emitted NOTHING -- a green compile, 76 rows, every one of them
-# empty. A_REG and A_ALLOC are ONE tag because `pf.of` already folded ptx.py:197
+# empty. A_REG and A_ALLOC are ONE tag because `pf.of` already folded ptx.py:198
 # into the same table, so they are the same action.
 def A_SKIP() -> U32: 0
 def A_NAME() -> U32: 1
@@ -376,7 +376,7 @@ def A_REFUSE() -> U32: 5
 def A_SPEC() -> U32: 6
 def A_ALLOC() -> U32: 7
 
-# ptx.py:202-204. `LOAD` copies the whole register; `INDEX`/`SHRINK` SUBSCRIPT
+# ptx.py:203-205. `LOAD` copies the whole register; `INDEX`/`SHRINK` SUBSCRIPT
 # it, and a subscript that is not a CONST-of-CAST is the refusal.
 def arm.regsrc(+op: O.Op, idx_ok: Bool) -> U32:
   Bool.pick(U32, is_op(op, O.OpsLOAD{}), A_ALIAS(),
@@ -410,7 +410,7 @@ def rg_at.maybe(m: Maybe<&2, Rg>) -> Rg:
 
 def rg_at(w: Wal, +i: U32) -> Rg: rg_at.maybe(List.get(&2, Rg, Wal.r(w), U32.to_nat(i)))
 
-# ptx.py:195 -- `[cast(str, r[x]) for x in u.src]`. `cast` is `typing.cast`, a
+# ptx.py:196 -- `[cast(str, r[x]) for x in u.src]`. `cast` is `typing.cast`, a
 # runtime no-op, so the srcs' registers concatenate, and `Rg.l` is `True` even
 # when ONE src was a bare string. That is the one place `is_list` is set without
 # consulting `max_numel`, and `f11_stack` is the row: `{%local_u64_0, %alu_f32_0}`
@@ -424,7 +424,7 @@ def st_walk(+rs: List<&2, Rg>, +ii: List<&2, U32>, +acc: List<&2, String>) -> Li
 
 def rg_stack(w: Wal, +s: Wk) -> Rg: Rg{True{}, st_walk(Wal.r(w), Wk.refs(s), Nil{})}
 
-# ptx.py:204 -- `r[u.src[0]][u.src[1].src[0].val]`, a SUBSCRIPT and so always a
+# ptx.py:205 -- `r[u.src[0]][u.src[1].src[0].val]`, a SUBSCRIPT and so always a
 # scalar string: `f7_reuse` prints `%reg_f16_2` where its INDEX's value is 2. The
 # `Maybe` reader is here because `List.get` is the subscript and it answers
 # `None` past the end, which a REG buffer never gets to in a legal kernel.
@@ -433,7 +433,7 @@ def rg_pick.pick(m: Maybe<&2, String>) -> Rg:
     case Some{x}: Rg{False{}, [x]}
     case None{}  : Rg{False{}, Nil{}}
 
-# ptx.py:189 (`r[u] = self.r[u.src[0]]`) and ptx.py:204 (`r[u.src[0]][u.src[1].src[0].val]`)
+# ptx.py:190 (`r[u] = self.r[u.src[0]]`) and ptx.py:205 (`r[u.src[0]][u.src[1].src[0].val]`)
 # BOTH read `r[u.src[0]]`, and `Wal.r` is POSITIONAL over walk STEPS -- so the register is
 # `Wal.r[Wk.refs(s)[0]]`, the HEAD of `refs`, and NOT step zero. `Maybe.default` answers
 # step zero for a step with no srcs; every arm that reaches here (AFTER, INDEX, SHRINK,
@@ -451,8 +451,8 @@ def rg_pick(w: Wal, +s: Wk) -> Rg:
 
 # ===========================================================================
 # ===========================================================================
-# `to_function_name` -- helpers.py:156, reached from ptx.py:192 through
-# `KernelInfo.function_name` (ops.py:1349):
+# `to_function_name` -- helpers.py:157, reached from ptx.py:193 through
+# `KernelInfo.function_name` (ops.py:1340):
 #     ''.join(c if c in (ascii_letters+digits+'_') else f'{ord(c):02X}' for c in ansistrip(s))
 #
 # UPPERCASE hex, TWO digits, so "my kernel" is `my20kernel`. THE WALL is
@@ -485,7 +485,7 @@ def fn_name(+s: String) -> String: fn_name.go(String.to_list(s), "")
 # scrutinise a computed value, and `arm.of(...)` is one. Its arms are the
 # `A_*` TAGS, in tag order, so `A_ALIAS = 1` is `case 1`.
 # ===========================================================================
-# ptx.py:206 and 227 -- `r[u] = "%" + u.arg`, and the `.reg .u32` line is
+# ptx.py:207 and 228 -- `r[u] = "%" + u.arg`, and the `.reg .u32` line is
 # PREPENDED (`kernel = [f".reg .u32 %{u.arg};"] + kernel`), so `f10_loads`
 # emits `%g2, %g1, %g0`. `List.append(acc, [x])` APPENDS and would print them
 # in toposort order: a byte diff on three rows and a Bool either way.
@@ -495,12 +495,12 @@ def wk_spec.go(+w: Wal, +line: String, +reg: String) -> Wal:
 def wk_spec(+w: Wal, +s: Wk) -> Wal:
   wk_spec.go(w, String.concat([".reg .u32 %", Wk.nm(s), ";"]), String.concat(["%", Wk.nm(s)]))
 
-# ptx.py:185 and 191-192 -- `name` starts at "test" and a SINK carrying an arg
+# ptx.py:185 and 192-193 -- `name` starts at "test" and a SINK carrying an arg
 # renames it. NAMED here, because the entry point is a WALK output: the `.reg`
 # block is not.
 def wk_name(+w: Wal, +s: Wk) -> Wal: Bool.pick(Wal, is_op(Wk.op(s), O.OpsSINK{}), Wal.nset(w, fn_name(Wk.nm(s))), w)
 
-# ptx.py:220 -- `if prefix: r[u] = ssa(prefix, u, dtype)`, and ptx.py:197-208's
+# ptx.py:221 -- `if prefix: r[u] = ssa(prefix, u, dtype)`, and ptx.py:198-209's
 # three overrides land here because `pf.of` already folded them into the same
 # tuple. ONE `ssa_many`, so ONE bump, so a vector LOAD continues a series.
 def wk_alloc.go(+p: Pf, +w: Wal, +s: Wk) -> Wal:
@@ -526,7 +526,7 @@ def wk1.go(+a: U32, +w: Wal, +s: Wk) -> Wal:
 
 def wk1(+w: Wal, +s: Wk) -> Wal: wk1.go(arm.of(Wk.op(s), Wk.addr(s), Wk.idx_ok(s)), w, s)
 
-# ptx.py:203 -- the raise ENDS `render`, so the walk STOPS. `Bool.pick` is
+# ptx.py:204 -- the raise ENDS `render`, so the walk STOPS. `Bool.pick` is
 # NOT an `if`: it CHOOSES, and `wk_all(wk1(w, s), t)` in the losing arm would
 # still be evaluated and would burn the list, so the recursion is bound first
 # and the guard reads the RESULT of one step.
@@ -538,7 +538,7 @@ def wk_all(+ss: List<&2, Wk>, w: Wal) -> Wal:
       Bool.pick(Wal, String.is_empty(Wal.ref(n1)), wk_all(t, n1), n1)
 
 # ===========================================================================
-# THE `.reg` BLOCK. ptx.py:165 hands `render_kernel` `c.items()` and it prints
+# THE `.reg` BLOCK. ptx.py:229 hands `render_kernel` `c.items()` and ptx.py:165 prints
 #
 #     f".reg .{reg.split('_')[-2]} %{reg}<{cnt}>;"    for reg,cnt in regs
 #
@@ -550,7 +550,7 @@ def wk_all(+ss: List<&2, Wk>, w: Wal) -> Wal:
 # too and a `[-3]` would print `.cast`.
 #
 # `render_kernel` puts these BEFORE the body and the body BEFORE `ret;`, and
-# ptx.py:227's `.reg .u32` lines are INSIDE the body, so the whole block is
+# ptx.py:228's `.reg .u32` lines are INSIDE the body, so the whole block is
 # `decls ++ kern`. `f10_loads` pins the `++`: `kern ++ decls` is a byte diff.
 # ===========================================================================
 def reg_line(+key: String, +ty: String, +n: U32) -> String:
@@ -588,7 +588,7 @@ def Wt.want(+w: Wt) -> String:
 # indexed by CHARACTER.
 #
 # `r[i]` for every step the walk gave a register to, in the FIXTURE'S OWN order.
-# A skipped uop (NOOP/GROUP/CONST/SINK) contributes no row, and that ABSENCE is
+# A skipped uop (NOOP/CONST/SINK) contributes no row, and that ABSENCE is
 # a claim: `f14_skips` has two skipped steps at indices 0..1 and its first `r`
 # row is `[3]`.
 def r_go.put(+r: Rg, i: U32, +s: Wk) -> List<&2, String>:
@@ -617,7 +617,7 @@ def gots.fix(+w: Wal) -> List<&2, String>:
 
 # THE WHOLE FIXTURE, in the order the oracle prints it: the refusal if there is
 # one, else the `r` rows, then the `.reg` block, then the entry point. `ref` is
-# non-empty only when ptx.py:203 fired, and then NOTHING ELSE is produced -- the
+# non-empty only when ptx.py:204 fired, and then NOTHING ELSE is produced -- the
 # raise ends `render`, so there is no register and no `.reg` block at all.
 def gots.happy(+ss: List<&2, Wk>, +w: Wal) -> List<&2, String>:
   List.concat(&2, String, [r_go(ss, Wal.r(w), 0, Nil{}), gots.fix(w)])
@@ -1287,8 +1287,8 @@ def main() -> IO(Unit):
 # M12, M13 AND M14 WERE BLINDS UNTIL THREE FIXTURES EXISTED -- the clearest
 # argument in this file for the discipline. There was no fixture with a LOAD of
 # `max_numel == 1` and none with an `Ops.RANGE` AT ALL. `f23_load1` is the fix for
-# M12 and is the ONLY thing separating ptx.py:208's `if max_numel > 1` from
-# ptx.py:198's comprehension. `f24_range`/`f25_rangevoid` fix M13/M14; `f25` had
+# M12 and is the ONLY thing separating ptx.py:209's `if max_numel > 1` from
+# ptx.py:199's comprehension. `f24_range`/`f25_rangevoid` fix M13/M14; `f25` had
 # to be built with `UOp.loop`, NOT `UOp.range(..., dtype=void)`, because the
 # latter's bound is `CAST(CONST 3) -> void` and a CAST to void asks `types[void]`
 # for a key ptx.py's table does not have, so CPython raised KeyError at ptx.py:181
@@ -1299,7 +1299,7 @@ def main() -> IO(Unit):
 #
 # M03 MOVES ONLY TWO ROWS AND THAT IS THE POINT. `c[prefix] += 1` runs inside
 # `ssa`, once per ELEMENT, so a four-element REG buffer leaves the counter at four.
-# M15 AND M16 ARE BOTH ORDER BUGS IN OPPOSITE DIRECTIONS: ptx.py:227 PREPENDS each
+# M15 AND M16 ARE BOTH ORDER BUGS IN OPPOSITE DIRECTIONS: ptx.py:228 PREPENDS each
 # SPECIAL's `.reg .u32` line and `render_kernel` puts the declarations BEFORE the
 # body, so the block is `decls ++ kern` and the specials come out in REVERSE
 # toposort order (`f10_loads` prints `%g2, %g1, %g0`). A gate that compared the
