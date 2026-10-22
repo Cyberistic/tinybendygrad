@@ -510,13 +510,32 @@ def rz_find.found(+ar: O.Arena, dflt: U32, m: Maybe<&2, Bnd>) -> O.Found:
 def rz_find(bnds: List<&2, Bnd>, +ar: O.Arena, nm: String, dflt: U32) -> O.Found:
   rz_find.found(ar, dflt, rz_find.walk(nm, bnds, None{}))
 
-# `self.arg.params` -- THE PIN'S `ProgramInfo.params`, WHICH IS `ops.py:1341`'s THIRD
+# `self.arg.params` -- THE PIN'S `ProgramInfo.params`, WHICH IS `ops.py:1346`'s THIRD
 # FIELD. IT HOLDS **EVERY** PARAM OF THE KERNEL AND NOT ONLY THE ALU ONES: upstream
 # `a6addc2d4` CHANGED `if u.op is Ops.PARAM and u.addrspace == AddrSpace.ALU` to
 # `if u.op is Ops.PARAM`, RENAMED THE FIELD `vars` -> `params`, AND DELETED
-# `ProgramInfo.vals`. THE PORT'S `ops.bend` FIELD IS ALREADY RENAMED (`9974c9d9b`),
-# BUT THE PORT'S REALIZE LANE STILL READ IT THE OLD WAY, AND THAT IS WHAT THIS BLOCK
-# REPAIRS.
+# `ProgramInfo.vals`. `ProgramInfo.from_sink` (ops.py:1358) IS PORTED (`d87143780`), SO
+# THE FIELD HOLDS WHAT THE PIN HOLDS: EVERY PARAM, SORTED BY SLOT.
+#
+# **THE QUESTION THIS DEF ANSWERS IS "EVERY PARAM", AND IT IS NOT A FILTER.** ITS ONE
+# CALLER IS `kernel_params` BELOW -- THE PORT OF THE PIN's `UOp.kernel_params`
+# (ops.py:1305-1310), WHICH READS `self.arg.params` **IN FULL** -- AND THE PIN's
+# `get_call_kernel_args` (realize.py:21-22) HAS A **BUFFER ARM** OVER THAT LIST
+# (`call.src[1+p.arg.slot].getaddr(devs)`), SO AN ALU-ONLY LIST HERE WOULD DELETE THE
+# ADDRESSES OUT OF THE ANSWER AND LEAVE THE ARM DEAD. THE ALU-NESS IS ASKED **PER
+# PARAM**, AT `ka_is_alu` BELOW, OFF THE PARAM's OWN `ParamArg.addrspace` -- WHICH IS
+# UPSTREAM's `p.addrspace is AddrSpace.ALU` (realize.py:21). THE OLD UPSTREAM's ALU-ONLY
+# `vars` WAS READ BY THE METHOD UPSTREAM DELETED, AND THE PORT OF THAT METHOD IS
+# `ops.bend`'s `ProgramInfo.vals`, WHICH READS THE ALU SUBSET (`vals.alu.go`).
+#
+# **MEASURED, AND THE OPPOSITE OF WHAT A REPORT SAID.** READING THE ALU SUBSET HERE
+# MOVES **11 OF THE 19** ROWS OF `gates/realize_kernel_args-gate.py` -- `ka_none_len`
+# 1->0, `ka_af_len` 2->1, `ka_bf_len` 2->1, `ka_sh_len` 2->1, AND THEIR COMPANIONS --
+# AND CPython ANSWERS THE **BEFORE** VALUES: THE BUFFER ARM IS A `GETADDR` AND THE ALU
+# ARM IS THE SLOTLESS `PARAM` (`.agents/slop/rzpvars/oracle.py`, WHICH MIRRORS THE PLANT
+# FIXTURE NODE FOR NODE AND INCLUDES THREE PROGRAMS WITH A **BUFFER PARAM AND AN ALU
+# PARAM AT ONCE**). A PROOF WITH ONLY ALU PARAMS PROVES THE THING THAT WAS NEVER
+# BROKEN.
 #
 # `prg` IS THE PROGRAM NODE PASSED IN, NOT THE CALL's ARG, AND `AProgram` IS THE ONLY
 # `Arg` CONSTRUCTOR CARRYING IT.
@@ -654,11 +673,12 @@ def kp_sort.go(todo: List<&2, U32>, +acc: List<&2, U32>, +ar: O.Arena) -> List<&
 
 # `prg.kernel_params` -- ops.py:1305-1310 AT THE PIN.
 #
-# WHAT IT NEEDS FROM `ProgramInfo.from_sink`, WHICH IS NOT PORTED: THE `params` FIELD
-# MUST HOLD **EVERY** PARAM OF THE KERNEL, NOT ONLY THE ALU ONES, AND SORTED BY SLOT.
-# THE PORT SORTS ANYWAY, SO THE SECOND HALF IS NOT A REQUIREMENT, BUT THE FIRST IS:
-# A `ProgramInfo` THAT LISTED ONLY THE ALU PARAMS WOULD LOSE THE BUFFER PARAMS AND
-# THE ANSWER WOULD HAVE NO ADDRESSES IN IT.
+# WHAT IT NEEDS FROM `ProgramInfo.from_sink`, **WHICH IS PORTED** (`d87143780`): THE
+# `params` FIELD MUST HOLD **EVERY** PARAM OF THE KERNEL, NOT ONLY THE ALU ONES, AND
+# SORTED BY SLOT. THE PORT SORTS ANYWAY, SO THE SECOND HALF IS NOT A REQUIREMENT, AND
+# THE FIRST IS MET: `from_sink` FILLS `params` WITH `if u.op is Ops.PARAM: _params.append(u)`
+# (ops.py:1366) -- EVERY PARAM -- AND `rz_pvars` ABOVE READS THE LIST IN FULL. **SO THE
+# DEBT THIS BLOCK RECORDED IS PAID, AND `kernel_params` IS NOW THE PIN's FUNCTION.**
 def kernel_params(+ar: O.Arena, +prg: U32) -> List<&2, U32>:
   +lin = kp_lin_params(ar, prg)
   kp_sort.go(kp_merge(lin, kp_uncovered(ar, lin, rz_pvars(ar, prg))), Nil{}, ar)
@@ -1665,13 +1685,18 @@ def _get_call_to_compile(+ar: O.Arena, +call: U32) -> Maybe<&2, U32>:
 #
 # `a6addc2d4` CHANGED THAT CONJUNCT's READER FROM `call.body.arg.vars` TO
 # `call.body.kernel_params`, SO IT IS THE SAME VARIABLE-BINDING PATH AS EVERYTHING ELSE
-# ABOVE. IT IS NOT PORTED HERE, AND THE REASON IS MEASURED RATHER THAN ASSUMED: THE
-# PIN's `UOp.kernel_params` READS `self.src[1].src`, AND `call.body` IS AN UNCOMPILED
-# PROGRAM IN EVERY GRAPH THIS FILE BUILDS, SO THE PIN RAISES IndexError THERE. THE
-# CONJUNCT CANNOT BE PORTED WITHOUT `ProgramInfo.from_sink` AND WITHOUT A COMPILED
-# PROGRAM, AND BOTH COME WITH IT. THE ROWS `dnum_p`/`dnum_d`/`dnum_n` ARE THE
-# TOPOSORT HALF, AND THEY AGREE WITH `gates/realize_graph_census-oracle.py`'s OWN
-# `dnum_sig`, WHICH IS A TRANSCRIPTION OF THE SAME HALF.
+# ABOVE -- AND `kernel_params` READS `ProgramInfo.params` **IN FULL**, WHICH IS WHAT
+# `rz_pvars` ANSWERS (SEE THE BLOCK ABOVE). IT IS NOT PORTED HERE, AND THE REASON IS
+# MEASURED RATHER THAN ASSUMED: THE PIN's `UOp.kernel_params` READS `self.src[1].src`,
+# AND `call.body` IS AN UNCOMPILED PROGRAM IN EVERY GRAPH THE `dnum_*` ROWS READ, SO THE
+# PIN RAISES IndexError THERE. **`ProgramInfo.from_sink` IS PORTED NOW (`d87143780`) AND
+# THIS FILE HAS A COMPILED PROGRAM (`main_arena`'s NODE 39, AND `callC` CALLS IT), SO
+# THE CONJUNCT IS PORTABLE AND WHAT IS LEFT IS THE ROW: THE FIXTURE's ONLY COMPILED
+# PROGRAM CARRIES NO `_device_num` PARAM, AND ADDING ONE MEANS ADDING A NODE TO
+# `main_arena`, WHOSE INDEX MAP IS LOAD-BEARING FOR THE CENSUS.** THE ROWS
+# `dnum_p`/`dnum_d`/`dnum_n` ARE THE TOPOSORT HALF, AND THEY AGREE WITH
+# `gates/realize_graph_census-oracle.py`'s OWN `dnum_sig`, WHICH IS A TRANSCRIPTION OF
+# THE SAME HALF -- SO A FAITHFUL PORT OF THE CONJUNCT WOULD NEED THAT ORACLE RE-DERIVED.
 #
 # TODO(p3) realize.py:135  unwrap_multi's `bufs = [b.buffer for b in resolved]` --
 #   `UOp.buffer` ASSERTS `arg.buffer is not None`, i.e. the buffer is REALIZED, and
@@ -1767,11 +1792,12 @@ def gs3(a: U32, b: U32, c: U32) -> List<&2, H.I64>:
   [H.i64_of_i32(a), H.i64_of_i32(b), H.i64_of_i32(c)]
 
 # THE SEVENTH FIELD IS `target: Target` -- upstream's `ops.py:1349` -- AND IT IS NOT
-# READ BY ANY READER IN THIS FILE, SO IT IS THE DEFAULT (`ops.bend`'s `Target.of()`,
-# WHICH IS FIVE EMPTY STRINGS). THE FIELD ARRIVED WITH `ProgramInfo.from_sink`'s
-# TARGET ARGUMENT, WHICH IS NOT PORTED.
+# READ BY ANY READER IN THIS FILE, SO IT IS THE DEFAULT (`helpers.bend`'s
+# `Target.of()`, WHICH IS FIVE EMPTY STRINGS). `ProgramInfo.from_sink` -- WHICH TAKES
+# THE TARGET AS AN ARGUMENT -- IS PORTED (`d87143780`); THIS IS THE SYNTHETIC BUILDER
+# AND IT NAMES NO TARGET.
 def pi(params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> O.ProgramInfo:
-  O.ProgramInfo{gs3(4, 1, 1), [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], params, globals, outs, ins, O.Target.of()}
+  O.ProgramInfo{gs3(4, 1, 1), [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], params, globals, outs, ins, H.Target.of()}
 
 def call_info(nm: String) -> O.CallInfo:
   O.CallInfo{Some{nm}, False{}, False{}, S.void()}
