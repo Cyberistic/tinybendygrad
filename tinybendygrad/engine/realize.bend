@@ -2491,7 +2491,7 @@ def row_s2(m: Maybe<&2, String>) -> String:
     case Some{s}: s
     case _: "None"
 
-def gate_count() -> U32: 67
+def gate_count() -> U32: 66
 
 def main() -> IO(Unit):
   +l = main_arena()
