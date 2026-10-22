@@ -1588,6 +1588,18 @@ nn-rows-gate         [####] 3/4  **THE NN LAYERS NOW HAVE A COMPARER, AND THE CO
                                        ANSWER `len(ds)-len(t)-1`; IT BREAKS `mo_keep_ds`, `mo_squeeze` AND
                                        `mo_reduced` FOR RANK >= 2, AND THE 1-D FIXTURE AT `mixin/op.bend:1411` IS
                                        BLIND TO IT.**
+ **AND ON THE LIVE TREE, AFTER THE `layers.bend` FIX LANDED AND THE SUBSTRATE COMPILED AGAIN (MEASURED
+                                       2026-10-22T05:08Z), THE SAME GATE READS `MATCH=18  MISMATCH=8 (ALL 8 SPELLING-
+                                       ONLY)  UNCHECKABLE=5` -- **13 OF 31** -- SO THE FIX MOVED **19 -> 13** AND
+                                       **THE FIVE DEAD `conv_*` ROWS NOW MATCH UPSTREAM'S ANSWERS.** WHAT IS LEFT IS
+                                       THE TWO CLASSES THAT NEED A `.bend` EDIT IN `nn/layers.bend` AND THAT NOBODY
+                                       OWNS YET: THE 8 SPELLING MISMATCHES (`f32` AGAINST `float32`, `1,4,8,8` AGAINST
+                                       `(1,4,8,8)`) AND THE 5 `_sig` ROWS WHOSE `want` IS EMPTY. **THE `_sig` ROWS'
+                                       EXPECTATION MUST COME FROM A SOURCE INDEPENDENT OF THE FOLD BEING CHECKED** --
+                                       THE PORT'S OWN SPEC IR (`tinybendygrad/LAWS/spec.bend`) IS THE RIGHT WITNESS,
+                                       BECAUSE THE WHOLE POINT OF THE SPEC IS THAT IT IS NOT THE COMPILED FOLD --
+                                       **AND A ROW WHOSE `want` IS COPIED FROM THE `got` IT CHECKS IS NOT A FIX, IT IS
+                                       THE SAME VACUITY WITH MORE STEPS.**
 
 item-ported          [###] 3/4  **`Tensor.item` IS PORTED TO THE EDGE THE PORT CAN REACH, AND THE WALL IS NAMED.**
                                        UPSTREAM (`tinygrad/mixin/op.py:22-32`) IS AN `assert self.numel() == 1` AND
