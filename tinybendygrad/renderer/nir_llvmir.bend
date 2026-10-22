@@ -35,14 +35,24 @@
 #
 # ---------------------------------------------------------------------------
 # THE GATE. 205 rows + the one framing newline `IO.print` supplies, all diffed
-# byte-for-byte against `.agents/slop/nl/py1.txt`:
-#   .venv/bin/python .agents/slop/nl/nl-oracle.py rows > .agents/slop/nl/py1.txt
-#   ./bin/bend tinybendygrad/renderer/nir_llvmir.bend > /tmp/nl_i.txt
-#   ./bin/bend tinybendygrad/renderer/nir_llvmir.bend -o /tmp/nl && /tmp/nl > /tmp/nl_n.txt
-#   diff /tmp/nl_i.txt .agents/slop/nl/py1.txt && diff /tmp/nl_n.txt .agents/slop/nl/py1.txt
+# byte-for-byte against the oracle's own stdout:
+#   .venv/bin/python checks/nl-gate.py
+# and, by hand, the two lanes:
+#   .venv/bin/python gates/nir_llvmir-oracle.py rows > /tmp/nl_py1.rows
+#   ./bin/bend tinybendygrad/renderer/nir_llvmir.bend > /tmp/nl_port.rows
+#   diff /tmp/nl_port.rows /tmp/nl_py1.rows
 # The Bend side prints the WHOLE table with ONE `IO.print`, so `IO.print`'s own
 # newline is the only frame and the oracle's single trailing "\n" is its match.
 # Both lanes were measured byte-identical to each other AND to the oracle.
+#
+# TWO ORACLE COPIES, AND THEY ARE THE SAME ORACLE. `checks/nl-gate.py` reads
+# `.agents/slop/nl/nl-oracle.py` (the path the gate names), and
+# `gates/nir_llvmir-oracle.py` is the same file RECOVERED FROM GIT and landed,
+# with the tree DISCOVERED from its own path rather than from the caller's
+# working directory. They differ in that docstring and in that `sys.path` line
+# and in NOTHING else, and the `bend` mode -- the GENERATOR for the `py=`
+# halves -- is byte-identical in both. A generator that exists in one copy
+# only is a generator whose output depends on which copy the reader found.
 #
 # CHECK THE ORACLE'S EXIT PATH BEFORE BELIEVING IT. A gate whose oracle emits
 # zero rows is not a passing gate, and an oracle has shipped one that printed
@@ -78,7 +88,7 @@
 # ---------------------------------------------------------------------------
 # THE STAGES, and what landed in each
 #
-#   STAGE 1  DONE, 205 rows, both lanes byte-identical to `py1.txt`.
+#   STAGE 1  DONE, 205 rows, both lanes byte-identical to the oracle.
 #            `ldt` is re-armed on `Cls`/`bits`/`pri` -- see the note at
 #            `ldt.fp` and M40/M40b at the foot of the file.
 #            `llvmir.py`'s pure surface. `ldt`'s type map with its `ptr` and
@@ -92,6 +102,20 @@
 #            `%{'local'|'reg'}_{slot}`; the `getelementptr` line of
 #            `base_rewrite[0]`; and the AMD `f32_to_fp8` prefix -- which is
 #            `llvmir.py`'s ONLY formatter and so is what `fmt` means here.
+#
+# ⚠ AND STAGE 1 WAS STALE FOR NINETEEN DAYS, IN THREE PLACES AT ONCE, AND THE
+# GATE NAMED ALL TWENTY-SIX ROWS OF IT. `arcp` was in `flags`; the
+# `llvm_intrinsics` ops were in the AMD `code_for_op` override and not in the
+# base's; `CPULLVMRenderer.supported_dtypes` dropped `half` on a non-Darwin
+# host; and `amd_fp8s` had one non-empty answer where it now has two. Every
+# one of them was RIGHT on 2026-10-01, when the port was written against a
+# vendored upstream that had them, and every one of them was WRONG on
+# 2026-10-20, when the re-vendor brought in an upstream that does not. A port
+# that mirrors an upstream revision is right until upstream moves, and a copy
+# that is not RE-DERIVED when upstream moves is a copy of the OLD upstream --
+# the same shape as the `SQRT` rot in the sibling `renderer/nir.bend`, and the
+# same lesson: a `py=` half that AGREES with a stale port can never have said
+# otherwise, because it was generated FROM that port's own upstream.
 #   STAGE 2  NOT STARTED. `_render_fn` (:156-160), `_render_footer` (:210, :265),
 #            the per-op emitter strings of `base_rewrite` (:77-144) and
 #            `_render_kernel`'s naming walk (:161-202).
@@ -321,9 +345,12 @@ def lcast.a(+it: S.Dt, +ot: S.Dt) -> String:
 #                     **{x:signed_lop for x in dtypes.sints}, **{x:float_lop for x in dtypes.floats}}
 #
 # FOUR FACTS THE TABLE ENCODES:
-#   * `flags` is `" nsz arcp contract afn"` with a LEADING SPACE, and it is
-#     concatenated onto five of the six float entries. It is a row of its own
-#     (`lop.flags`) precisely so that a dropped space is a moved row.
+#   * `flags` is `" nsz contract afn"` with a LEADING SPACE, and it is
+#     concatenated onto ALL SIX of the float entries. It is a row of its own
+#     (`lop.flags`) precisely so that a dropped space is a moved row. `arcp` WAS
+#     in that string and upstream DROPPED it, so the port's copy was a value
+#     upstream no longer emits -- and a port that defends a stale value is a
+#     wrong value with a defence.
 #   * `signed_lop` is `{**unsigned_lop, ...}`, so it has the SAME TWELVE KEYS in
 #     the SAME ORDER and only five values differ. A port that spelled the signed
 #     table out independently would have twelve chances to disagree on the seven
@@ -343,7 +370,7 @@ def lcast.a(+it: S.Dt, +ot: S.Dt) -> String:
 # two is the `(dtypes.bool,)+dtypes.uints` membership and needs no third class.
 # ===========================================================================
 
-def ldt.flags() -> String: " nsz arcp contract afn"
+def ldt.flags() -> String: " nsz contract afn"
 
 def ulop(op: O.Op) -> String:
   match op:
@@ -599,9 +626,8 @@ def amd_of() -> Llvm:
   Llvm{True{}, 1, True{}, True{}, "", [2147483647, 65535, 65535], [2415919103, 2415919103, 2415919103],
        True{}, [4294967295, 4294967295, 4294967295], 65536}
 
-# `llvm_intrinsics` -- llvmir.py:225. Three ops to three llvm names, in dict
-# order, and `code_for_op` is `{**LLVMRenderer.code_for_op, **intrinsics}` so
-# `amd.code_for_op` has SIXTEEN keys where the base has THIRTEEN.
+# `llvm_intrinsics` -- llvmir.py:79. Three ops to three llvm names, in dict
+# order.
 def intr_of(+op: O.Op) -> String:
   match op:
     case O.OpsSQRT{}: "sqrt"
@@ -611,13 +637,19 @@ def intr_of(+op: O.Op) -> String:
 
 def intrs() -> List<&2, O.Op>: [O.OpsSQRT{}, O.OpsLOG2{}, O.OpsEXP2{}]
 
-# `code_for_op = {k:lambda:None for v in lop.values() for k in v.keys()}` --
-# llvmir.py:149. The THIRTEEN keys are the union of the three tables, which is
-# `lops.uf() ++ [FDIV]`, and the values are all `None` so the key SET is the
-# whole answer. `amd` ADDS `llvm_intrinsics` and the row count is the gate.
-def cfo_base() -> List<&2, O.Op>: List.append(&2, O.Op, lops.uf(), [O.OpsFDIV{}])
-
-def cfo_amd() -> List<&2, O.Op>: List.append(&2, O.Op, cfo_base(), intrs())
+# `code_for_op = {**{k:lambda:None for v in lop.values() for k in v.keys()},
+# **{op: lambda: None for op in llvm_intrinsics}}` -- llvmir.py:167. The union of
+# the three `lop` tables' KEYS (THIRTEEN) and the three `llvm_intrinsics` ops, so
+# SIXTEEN keys, and the values are all `None` so the key SET is the whole
+# answer.
+#
+# ONE DEF, AND THAT IS UPSTREAM'S SHAPE. `LLVMRenderer` owns `code_for_op` and
+# `CPULLVMRenderer` and `AMDLLVMRenderer` INHERIT it -- neither overrides it --
+# so all three rows read the same sixteen names. The port had TWO defs
+# (`cfo_base` and `cfo_amd`) because the OLD upstream put the intrinsics in the
+# AMD override; upstream moved them into the base, so the distinction is gone
+# and keeping it would be a second copy of a table upstream has one of.
+def cfo() -> List<&2, O.Op>: List.append(&2, O.Op, List.append(&2, O.Op, lops.uf(), [O.OpsFDIV{}]), intrs())
 
 # `code_for_workitem` -- llvmir.py:222-223. `chr(120 + int(x))` is the lane
 # letter, so x is a WIDTH and the name depends on which of `g`/`l` asked.
@@ -642,28 +674,35 @@ def barrier() -> List<&2, String>:
    "fence syncscope(\"workgroup\") acquire", ""]
 
 # ===========================================================================
-# STAGE 1e. `supported_dtypes` -- llvmir.py:217-219 and :286.
+# STAGE 1e. `supported_dtypes` -- llvmir.py:243-245 and :286.
 #
 #     # CPULLVMRenderer
 #     return {d for d in super().supported_dtypes() if
 #             (d != dtypes.bfloat16 or self.target.arch.startswith(("x86", "arm"))) and
-#             (d != dtypes.half or OSX) and d not in dtypes.fp8s}
+#             d not in dtypes.fp8s}
 #     # AMDLLVMRenderer
 #     return {d for d in super().supported_dtypes() if d not in dtypes.fp8s or d in amd_fp8s(self.target.arch)}
 #
-# THREE THINGS COME IN AS PARAMETERS, and each is a wall of its own:
+# TWO THINGS COME IN AS PARAMETERS, and each is a wall of its own:
 #   * `arch.startswith(("x86", "arm"))` -- Bend has `String.starts_with`, which
 #     takes ONE prefix, so the tuple is two tests or-ed. A `Bool` is what the
 #     row asks for, and `sd cpullvm riscv64` is the fixture that says the
 #     conjunction is a conjunction: riscv64 has NEITHER prefix.
-#   * `OSX` is a `helpers` CONSTANT (`OSX = ...`), imported into llvmir's
-#     namespace, and the gate sets `llvmir.OSX` rather than reading it -- so the
-#     parameter is honest and both cells are gated (`osx True` / `osx False`).
-#   * `amd_fp8s(arch)` is a `cstyle.bend` table. Its only non-empty answer on this
-#     tree is gfx942's FNUZ PAIR, so the port takes the MEMBERSHIP as a `Bool` and
-#     `sd amd gfx942` is the row that shows the difference. The alternative --
-#     spelling out four gates -- would be `cstyle.bend`'s table, and this file
-#     does not own it.
+#   * `amd_fp8s(arch)` is a `cstyle.py` DICT, and it has TWO non-empty answers
+#     on this tree -- gfx942's FNUZ PAIR and gfx1200/gfx1201's OCP PAIR -- so
+#     the port takes the ARCH and looks the set up itself. A `Bool` cannot
+#     spell three answers, and `sd amd gfx1200` is the row that shows the
+#     difference the OCP PAIR makes.
+#
+# ⚠ THE `OSX` CONJUNCT IS GONE, AND THAT IS A CHANGE IN UPSTREAM, NOT IN THE
+# PORT. The old `llvmir.py` imported `OSX` from `helpers` and dropped `half` on
+# a non-Darwin host; the `llvmir.py` this tree vendors does not import `OSX` at
+# all, so `half` is dropped by nothing and the lane's `osx` axis is INERT: the
+# `osx True` and `osx False` rows of each arch now answer ALIKE. The port kept
+# the clause for as long as upstream had it, which is the same shape as the
+# `arcp` flag and the `code_for_op` intrinsics: a port that mirrors an upstream
+# revision is right until upstream moves, and a copy that is not re-derived
+# when upstream moves is a copy of the OLD upstream.
 #
 # `super().supported_dtypes()` is `__init__.bend`'s `supported_dtypes(emu)`, so
 # both overrides READ THE SAME LIST and neither can drift from the base. The base
@@ -673,11 +712,25 @@ def barrier() -> List<&2, String>:
 
 def fp8s() -> List<&2, S.Dt>: [S.fp8e4m3(), S.fp8e5m2(), S.fp8e4m3fnuz(), S.fp8e5m2fnuz()]
 
-# `amd_fp8s(arch)` on this tree is the FNUZ PAIR and nothing else, so it is its
-# own list here rather than a second spelling of the fp8 set.
+# `amd_fp8s(arch)` -- cstyle.py:492-493 -- is a DICT, and the port MIRRORS it
+# rather than importing `cstyle.bend`'s copy: the `got=` half of a row has to
+# be the PORT's own answer, and a `py=` half that is the port's own expression
+# is not a diff. The FNUZ PAIR and the OCP PAIR are two different PAIRS, so
+# there are two lists and not one list and a flag.
 def fnuzs() -> List<&2, S.Dt>: [S.fp8e4m3fnuz(), S.fp8e5m2fnuz()]
 
-def is_fnuz(+d: S.Dt) -> Bool: List.contains(~S.Dt, O.eq_dt, fnuzs(), d)
+def ocps() -> List<&2, S.Dt>: [S.fp8e4m3(), S.fp8e5m2()]
+
+# `{"gfx942": dtypes.fp8_fnuz, "gfx950": dtypes.fp8_ocp, "gfx1200": dtypes.fp8_ocp,
+# "gfx1201": dtypes.fp8_ocp}.get(arch, ())`. `gfx950` is not on this lane's
+# grid and is left out for that reason; `gfx1100` is on it and is the EMPTY
+# answer, which is the arm the `sd amd gfx1100` row reads.
+def amd_fp8s(arch: String) -> List<&2, S.Dt>:
+  match arch:
+    case "gfx942"  : fnuzs()
+    case "gfx1200" : ocps()
+    case "gfx1201" : ocps()
+    case _         : Nil{}
 
 
 # `d not in dtypes.fp8s`. `List.contains(~A, eq, xs, +x)` takes a DEF and a list
@@ -688,17 +741,18 @@ def is_fp8(+d: S.Dt) -> Bool: List.contains(~S.Dt, O.eq_dt, fp8s(), d)
 
 def sd_base() -> List<&2, S.Dt>: R.supported_dtypes(Nil{})
 
-# `(d != bfloat16 or x86) and (d != half or osx) and d not in fp8s` --
-# llvmir.py:217-219. The `is_fp8` call makes `d` reusable, hence `+d`.
-def sd.drop_cpu(+d: S.Dt, x86: Bool, osx: Bool) -> Bool:
-  Bool.or(Bool.or(Bool.and(O.eq_dt(d, S.bfloat16()), Bool.not(x86)),
-                  Bool.and(O.eq_dt(d, S.half()), Bool.not(osx))), is_fp8(d))
+# `(d != bfloat16 or x86) and d not in fp8s` -- llvmir.py:243-245. TWO
+# conjuncts. The `is_fp8` call makes `d` reusable, hence `+d`.
+def sd.drop_cpu(+d: S.Dt, x86: Bool) -> Bool:
+  Bool.or(Bool.and(O.eq_dt(d, S.bfloat16()), Bool.not(x86)), is_fp8(d))
 
 # `d not in fp8s or d in amd_fp8s(arch)` -- llvmir.py:286. ONE conjunct where
-# the CPU renderer has three, and `sd amd gfx942` is the only row that can tell
-# the two apart from `sd amd gfx1100`.
-def sd.drop_amd(+d: S.Dt, fnuz: Bool) -> Bool:
-  Bool.and(is_fp8(d), Bool.not(Bool.and(fnuz, is_fnuz(d))))
+# the CPU renderer has two, and `sd amd gfx942` and `sd amd gfx1200` are the two
+# rows that can tell the two apart from `sd amd gfx1100`. `keep` is the arch's
+# OWN `amd_fp8s(arch)`, so the fp8 dtypes it names survive and the other two do
+# not.
+def sd.drop_amd(+d: S.Dt, +keep: List<&2, S.Dt>) -> Bool:
+  Bool.and(is_fp8(d), Bool.not(List.contains(~S.Dt, O.eq_dt, keep, d)))
 
 # `Bool.pick` ANSWERS ITS SECOND ARGUMENT WHEN THE CONDITION IS TRUE, so a
 # KEEP filter is `Bool.pick(..., keep(d), [d] ++ rest, rest)`. The first port
@@ -708,25 +762,25 @@ def sd.drop_amd(+d: S.Dt, fnuz: Bool) -> Bool:
 # dtype dropped and the fp8s survived.
 #
 # TWO FOLDS, NOT ONE PREDICATE ARGUMENT. `Bool.pick` is STRICT, so passing
-# `sd.drop_cpu(h, x86, osx)` as the `Bool` argument of a generic filter would run
-# it on every element and then throw the answer away -- and `Bool.pick`'s arms
+# `sd.drop_cpu(h, x86)` as the `Bool` argument of a generic filter would run it
+# on every element and then throw the answer away -- and `Bool.pick`'s arms
 # would need the SAME predicate twice. So the flag rides the walk and the arm
 # calls the predicate, which is `sd.cpu.go`'s and `sd.amd.go`'s only difference.
 # `List.append(&2, S.Dt, [h], rest)` is `[h] ++ rest`: the KEPT element goes in
 # FRONT, which is what a Python set-comprehension filter preserves.
-def sd.cpu.go(+ts: List<&2, S.Dt>, +x86: Bool, +osx: Bool) -> List<&2, S.Dt>:
+def sd.cpu.go(+ts: List<&2, S.Dt>, +x86: Bool) -> List<&2, S.Dt>:
   match ts:
     case Nil{}   : Nil{}
     case h <> +t :
-      +rest = sd.cpu.go(t, x86, osx)
-      Bool.pick(List<&2, S.Dt>, Bool.not(sd.drop_cpu(h, x86, osx)), List.append(&2, S.Dt, [h], rest), rest)
+      +rest = sd.cpu.go(t, x86)
+      Bool.pick(List<&2, S.Dt>, Bool.not(sd.drop_cpu(h, x86)), List.append(&2, S.Dt, [h], rest), rest)
 
-def sd.amd.go(+ts: List<&2, S.Dt>, +fnuz: Bool) -> List<&2, S.Dt>:
+def sd.amd.go(+ts: List<&2, S.Dt>, +keep: List<&2, S.Dt>) -> List<&2, S.Dt>:
   match ts:
     case Nil{}   : Nil{}
     case h <> +t :
-      +rest = sd.amd.go(t, fnuz)
-      Bool.pick(List<&2, S.Dt>, Bool.not(sd.drop_amd(h, fnuz)), List.append(&2, S.Dt, [h], rest), rest)
+      +rest = sd.amd.go(t, keep)
+      Bool.pick(List<&2, S.Dt>, Bool.not(sd.drop_amd(h, keep)), List.append(&2, S.Dt, [h], rest), rest)
 
 
 
@@ -935,12 +989,14 @@ def intr_names() -> String: String.join(intr_names.go(intrs(), Nil{}), ",")
 
 # ===========================================================================
 # THE ROW BUILDERS. Eleven small wrappers, one per group, and every `py=` half is
-# a LITERAL generated by `.agents/slop/nl/nl-oracle.py`'s `bend` mode -- which
-# computes it by calling live CPython. The generated text is pasted verbatim
-# below under "THE GENERATED ROWS"; regenerate with
-#     .venv/bin/python .agents/slop/nl/nl-oracle.py bend > .agents/slop/nl/stage1.bend
+# a LITERAL generated by the ORACLE's `bend` mode -- which computes it by
+# calling live CPython. The generated text is pasted verbatim below under
+# "THE GENERATED ROWS"; regenerate with
+#     .venv/bin/python gates/nir_llvmir-oracle.py bend > /tmp/nl_stage1.bend
 # and splice it in, so a change to the ORACLE and a change to the GATE are the
-# same commit.
+# same commit. (`.agents/slop/nl/nl-oracle.py` is the same oracle and its `bend`
+# mode is byte-identical; the landed copy is the one to read, because the
+# slop copy is one sweep away from having no witness at all.)
 # ===========================================================================
 
 def nth(+xs: List<&2, String>, i: U32) -> String: Maybe.default(&2, String, List.get(&2, String, xs, U32.to_nat(i)), "")
@@ -1007,11 +1063,15 @@ def r_nmbuf(nm: String, is_local: Bool, slot: U32, py: String) -> String:
 
 def r_sdb(py: String) -> String: r("sd base", unames_s(sd_base()), py)
 
-def r_sdcpu(nm: String, x86: Bool, osx: Bool, py: String) -> String:
-  r(String.concat(["sd cpullvm ", nm]), unames_s(sd.cpu.go(sd_base(), x86, osx)), py)
+# `r_sdcpu`'s `nm` carries the lane's `osx` axis because the LANE'S GRID has it
+# -- the oracle asks CPython with `llvmir.OSX` set both ways -- and the axis is
+# INERT at this upstream revision, so the answer does not read it. The name and
+# the answer are two different things, and the grid is the denominator.
+def r_sdcpu(nm: String, x86: Bool, py: String) -> String:
+  r(String.concat(["sd cpullvm ", nm]), unames_s(sd.cpu.go(sd_base(), x86)), py)
 
-def r_sdamd(nm: String, fnuz: Bool, py: String) -> String:
-  r(String.concat(["sd amd ", nm]), unames_s(sd.amd.go(sd_base(), fnuz)), py)
+def r_sdamd(+arch: String, py: String) -> String:
+  r(String.concat(["sd amd ", arch]), unames_s(sd.amd.go(sd_base(), amd_fp8s(arch))), py)
 
 def r_gep(nm: String, +xn: String, +d: S.Dt, +cnt: U32, +s0: String, +d1: S.Dt, +s1: String, py: String) -> String:
   r(String.concat(["gep ", nm]), gep_line(xn, d, cnt, s0, d1, s1), py)
@@ -1040,22 +1100,22 @@ def r_lcbs() -> String:
   String.concat([r_lcb("void", S.void(), "void=NotImplementedError,f16=NotImplementedError,bf16=NotImplementedError,f32=NotImplementedError,f64=NotImplementedError,bool=NotImplementedError,i8=NotImplementedError,i16=NotImplementedError,i32=NotImplementedError,i64=NotImplementedError,u8=NotImplementedError,u16=NotImplementedError,u32=NotImplementedError,u64=NotImplementedError"), r_lcb("f16", S.half(), "void=NotImplementedError,f16=fptrunc,bf16=fptrunc,f32=fptrunc,f64=fptrunc,bool=uitofp,i8=sitofp,i16=sitofp,i32=sitofp,i64=sitofp,u8=uitofp,u16=uitofp,u32=uitofp,u64=uitofp"), r_lcb("bf16", S.bfloat16(), "void=NotImplementedError,f16=fptrunc,bf16=fptrunc,f32=fptrunc,f64=fptrunc,bool=uitofp,i8=sitofp,i16=sitofp,i32=sitofp,i64=sitofp,u8=uitofp,u16=uitofp,u32=uitofp,u64=uitofp"), r_lcb("f32", S.single(), "void=NotImplementedError,f16=fpext,bf16=fpext,f32=fptrunc,f64=fptrunc,bool=uitofp,i8=sitofp,i16=sitofp,i32=sitofp,i64=sitofp,u8=uitofp,u16=uitofp,u32=uitofp,u64=uitofp"), r_lcb("f64", S.double(), "void=NotImplementedError,f16=fpext,bf16=fpext,f32=fpext,f64=fptrunc,bool=uitofp,i8=sitofp,i16=sitofp,i32=sitofp,i64=sitofp,u8=uitofp,u16=uitofp,u32=uitofp,u64=uitofp"), r_lcb("bool", S.boolean(), "void=NotImplementedError,f16=NotImplementedError,bf16=NotImplementedError,f32=NotImplementedError,f64=NotImplementedError,bool=NotImplementedError,i8=NotImplementedError,i16=NotImplementedError,i32=NotImplementedError,i64=NotImplementedError,u8=NotImplementedError,u16=NotImplementedError,u32=NotImplementedError,u64=NotImplementedError"), r_lcb("i8", S.int8(), "void=NotImplementedError,f16=fptosi,bf16=fptosi,f32=fptosi,f64=fptosi,bool=zext,i8=sext,i16=trunc,i32=trunc,i64=trunc,u8=zext,u16=trunc,u32=trunc,u64=trunc"), r_lcb("i16", S.int16(), "void=NotImplementedError,f16=fptosi,bf16=fptosi,f32=fptosi,f64=fptosi,bool=zext,i8=sext,i16=sext,i32=trunc,i64=trunc,u8=zext,u16=zext,u32=trunc,u64=trunc"), r_lcb("i32", S.int32(), "void=NotImplementedError,f16=fptosi,bf16=fptosi,f32=fptosi,f64=fptosi,bool=zext,i8=sext,i16=sext,i32=sext,i64=trunc,u8=zext,u16=zext,u32=zext,u64=trunc"), r_lcb("i64", S.int64(), "void=NotImplementedError,f16=fptosi,bf16=fptosi,f32=fptosi,f64=fptosi,bool=zext,i8=sext,i16=sext,i32=sext,i64=sext,u8=zext,u16=zext,u32=zext,u64=zext"), r_lcb("u8", S.uint8(), "void=NotImplementedError,f16=fptoui,bf16=fptoui,f32=fptoui,f64=fptoui,bool=zext,i8=sext,i16=trunc,i32=trunc,i64=trunc,u8=zext,u16=trunc,u32=trunc,u64=trunc"), r_lcb("u16", S.uint16(), "void=NotImplementedError,f16=fptoui,bf16=fptoui,f32=fptoui,f64=fptoui,bool=zext,i8=sext,i16=sext,i32=trunc,i64=trunc,u8=zext,u16=zext,u32=trunc,u64=trunc"), r_lcb("u32", S.uint32(), "void=NotImplementedError,f16=fptoui,bf16=fptoui,f32=fptoui,f64=fptoui,bool=zext,i8=sext,i16=sext,i32=sext,i64=trunc,u8=zext,u16=zext,u32=zext,u64=trunc"), r_lcb("u64", S.uint64(), "void=NotImplementedError,f16=fptoui,bf16=fptoui,f32=fptoui,f64=fptoui,bool=zext,i8=sext,i16=sext,i32=sext,i64=sext,u8=zext,u16=zext,u32=zext,u64=zext")])
 
 def r_lopf() -> String:
-  String.concat([r("lop.flags", q1(ldt.flags()), "' nsz arcp contract afn'"), r("lop.unsigned", lop.row(S.boolean()), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r("lop.unsigned.len", U32.show(oplen(lops.uf())), "12"), r("lop.signed", lop.row(S.int8()), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r("lop.signed.len", U32.show(oplen(lops.uf())), "12"), r("lop.float", lop.row(S.single()), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r("lop.float.len", U32.show(oplen(lops.sf())), "6")])
+  String.concat([r("lop.flags", q1(ldt.flags()), "' nsz contract afn'"), r("lop.unsigned", lop.row(S.boolean()), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r("lop.unsigned.len", U32.show(oplen(lops.uf())), "12"), r("lop.signed", lop.row(S.int8()), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r("lop.signed.len", U32.show(oplen(lops.uf())), "12"), r("lop.float", lop.row(S.single()), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r("lop.float.len", U32.show(oplen(lops.sf())), "6")])
 
 def r_lopz() -> String:
   String.concat([r("lop.keys", unames(lop.keys()), "bool,u8,u16,u32,u64,i8,i16,i32,i64,fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64"), r("lop.keys.len", U32.show(dtlen(lop.keys())), "17")])
 
 def r_lops() -> String:
-  String.concat([r_lop("fp8e4m3", S.fp8e4m3(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("fp8e5m2", S.fp8e5m2(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("fp8e4m3fnuz", S.fp8e4m3fnuz(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("fp8e5m2fnuz", S.fp8e5m2fnuz(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("f16", S.half(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("bf16", S.bfloat16(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("f32", S.single(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("f64", S.double(), "ADD=fadd nsz arcp contract afn,MUL=fmul nsz arcp contract afn,CMPLT=fcmp nsz arcp contract afn olt,CMPNE=fcmp nsz arcp contract afn une,CMPEQ=fcmp nsz arcp contract afn oeq,FDIV=fdiv nsz arcp contract afn"), r_lop("u8", S.uint8(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("u16", S.uint16(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("u32", S.uint32(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("u64", S.uint64(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("i8", S.int8(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("i16", S.int16(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("i32", S.int32(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("i64", S.int64(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("bool", S.boolean(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr")])
+  String.concat([r_lop("fp8e4m3", S.fp8e4m3(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("fp8e5m2", S.fp8e5m2(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("fp8e4m3fnuz", S.fp8e4m3fnuz(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("fp8e5m2fnuz", S.fp8e5m2fnuz(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("f16", S.half(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("bf16", S.bfloat16(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("f32", S.single(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("f64", S.double(), "ADD=fadd nsz contract afn,MUL=fmul nsz contract afn,CMPLT=fcmp nsz contract afn olt,CMPNE=fcmp nsz contract afn une,CMPEQ=fcmp nsz contract afn oeq,FDIV=fdiv nsz contract afn"), r_lop("u8", S.uint8(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("u16", S.uint16(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("u32", S.uint32(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("u64", S.uint64(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr"), r_lop("i8", S.int8(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("i16", S.int16(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("i32", S.int32(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("i64", S.int64(), "ADD=add nsw,MUL=mul,CDIV=sdiv,CMOD=srem,CMPLT=icmp slt,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=ashr"), r_lop("bool", S.boolean(), "ADD=add,MUL=mul,CDIV=udiv,CMOD=urem,CMPLT=icmp ult,CMPNE=icmp ne,CMPEQ=icmp eq,OR=or,AND=and,XOR=xor,SHL=shl,SHR=lshr")])
 
 def r_lopos() -> String:
-  String.concat([r_lopo("ADD", O.OpsADD{}, "fp8e4m3=fadd nsz arcp contract afn,fp8e5m2=fadd nsz arcp contract afn,fp8e4m3fnuz=fadd nsz arcp contract afn,fp8e5m2fnuz=fadd nsz arcp contract afn,f16=fadd nsz arcp contract afn,bf16=fadd nsz arcp contract afn,f32=fadd nsz arcp contract afn,f64=fadd nsz arcp contract afn,u8=add,u16=add,u32=add,u64=add,i8=add nsw,i16=add nsw,i32=add nsw,i64=add nsw,bool=add"), r_lopo("MUL", O.OpsMUL{}, "fp8e4m3=fmul nsz arcp contract afn,fp8e5m2=fmul nsz arcp contract afn,fp8e4m3fnuz=fmul nsz arcp contract afn,fp8e5m2fnuz=fmul nsz arcp contract afn,f16=fmul nsz arcp contract afn,bf16=fmul nsz arcp contract afn,f32=fmul nsz arcp contract afn,f64=fmul nsz arcp contract afn,u8=mul,u16=mul,u32=mul,u64=mul,i8=mul,i16=mul,i32=mul,i64=mul,bool=mul"), r_lopo("CDIV", O.OpsCDIV{}, "u8=udiv,u16=udiv,u32=udiv,u64=udiv,i8=sdiv,i16=sdiv,i32=sdiv,i64=sdiv,bool=udiv"), r_lopo("CMOD", O.OpsCMOD{}, "u8=urem,u16=urem,u32=urem,u64=urem,i8=srem,i16=srem,i32=srem,i64=srem,bool=urem"), r_lopo("CMPLT", O.OpsCMPLT{}, "fp8e4m3=fcmp nsz arcp contract afn olt,fp8e5m2=fcmp nsz arcp contract afn olt,fp8e4m3fnuz=fcmp nsz arcp contract afn olt,fp8e5m2fnuz=fcmp nsz arcp contract afn olt,f16=fcmp nsz arcp contract afn olt,bf16=fcmp nsz arcp contract afn olt,f32=fcmp nsz arcp contract afn olt,f64=fcmp nsz arcp contract afn olt,u8=icmp ult,u16=icmp ult,u32=icmp ult,u64=icmp ult,i8=icmp slt,i16=icmp slt,i32=icmp slt,i64=icmp slt,bool=icmp ult"), r_lopo("CMPNE", O.OpsCMPNE{}, "fp8e4m3=fcmp nsz arcp contract afn une,fp8e5m2=fcmp nsz arcp contract afn une,fp8e4m3fnuz=fcmp nsz arcp contract afn une,fp8e5m2fnuz=fcmp nsz arcp contract afn une,f16=fcmp nsz arcp contract afn une,bf16=fcmp nsz arcp contract afn une,f32=fcmp nsz arcp contract afn une,f64=fcmp nsz arcp contract afn une,u8=icmp ne,u16=icmp ne,u32=icmp ne,u64=icmp ne,i8=icmp ne,i16=icmp ne,i32=icmp ne,i64=icmp ne,bool=icmp ne"), r_lopo("CMPEQ", O.OpsCMPEQ{}, "fp8e4m3=fcmp nsz arcp contract afn oeq,fp8e5m2=fcmp nsz arcp contract afn oeq,fp8e4m3fnuz=fcmp nsz arcp contract afn oeq,fp8e5m2fnuz=fcmp nsz arcp contract afn oeq,f16=fcmp nsz arcp contract afn oeq,bf16=fcmp nsz arcp contract afn oeq,f32=fcmp nsz arcp contract afn oeq,f64=fcmp nsz arcp contract afn oeq,u8=icmp eq,u16=icmp eq,u32=icmp eq,u64=icmp eq,i8=icmp eq,i16=icmp eq,i32=icmp eq,i64=icmp eq,bool=icmp eq"), r_lopo("OR", O.OpsOR{}, "u8=or,u16=or,u32=or,u64=or,i8=or,i16=or,i32=or,i64=or,bool=or"), r_lopo("AND", O.OpsAND{}, "u8=and,u16=and,u32=and,u64=and,i8=and,i16=and,i32=and,i64=and,bool=and"), r_lopo("XOR", O.OpsXOR{}, "u8=xor,u16=xor,u32=xor,u64=xor,i8=xor,i16=xor,i32=xor,i64=xor,bool=xor"), r_lopo("SHL", O.OpsSHL{}, "u8=shl,u16=shl,u32=shl,u64=shl,i8=shl,i16=shl,i32=shl,i64=shl,bool=shl"), r_lopo("SHR", O.OpsSHR{}, "u8=lshr,u16=lshr,u32=lshr,u64=lshr,i8=ashr,i16=ashr,i32=ashr,i64=ashr,bool=lshr"), r_lopo("FDIV", O.OpsFDIV{}, "fp8e4m3=fdiv nsz arcp contract afn,fp8e5m2=fdiv nsz arcp contract afn,fp8e4m3fnuz=fdiv nsz arcp contract afn,fp8e5m2fnuz=fdiv nsz arcp contract afn,f16=fdiv nsz arcp contract afn,bf16=fdiv nsz arcp contract afn,f32=fdiv nsz arcp contract afn,f64=fdiv nsz arcp contract afn")])
+  String.concat([r_lopo("ADD", O.OpsADD{}, "fp8e4m3=fadd nsz contract afn,fp8e5m2=fadd nsz contract afn,fp8e4m3fnuz=fadd nsz contract afn,fp8e5m2fnuz=fadd nsz contract afn,f16=fadd nsz contract afn,bf16=fadd nsz contract afn,f32=fadd nsz contract afn,f64=fadd nsz contract afn,u8=add,u16=add,u32=add,u64=add,i8=add nsw,i16=add nsw,i32=add nsw,i64=add nsw,bool=add"), r_lopo("MUL", O.OpsMUL{}, "fp8e4m3=fmul nsz contract afn,fp8e5m2=fmul nsz contract afn,fp8e4m3fnuz=fmul nsz contract afn,fp8e5m2fnuz=fmul nsz contract afn,f16=fmul nsz contract afn,bf16=fmul nsz contract afn,f32=fmul nsz contract afn,f64=fmul nsz contract afn,u8=mul,u16=mul,u32=mul,u64=mul,i8=mul,i16=mul,i32=mul,i64=mul,bool=mul"), r_lopo("CDIV", O.OpsCDIV{}, "u8=udiv,u16=udiv,u32=udiv,u64=udiv,i8=sdiv,i16=sdiv,i32=sdiv,i64=sdiv,bool=udiv"), r_lopo("CMOD", O.OpsCMOD{}, "u8=urem,u16=urem,u32=urem,u64=urem,i8=srem,i16=srem,i32=srem,i64=srem,bool=urem"), r_lopo("CMPLT", O.OpsCMPLT{}, "fp8e4m3=fcmp nsz contract afn olt,fp8e5m2=fcmp nsz contract afn olt,fp8e4m3fnuz=fcmp nsz contract afn olt,fp8e5m2fnuz=fcmp nsz contract afn olt,f16=fcmp nsz contract afn olt,bf16=fcmp nsz contract afn olt,f32=fcmp nsz contract afn olt,f64=fcmp nsz contract afn olt,u8=icmp ult,u16=icmp ult,u32=icmp ult,u64=icmp ult,i8=icmp slt,i16=icmp slt,i32=icmp slt,i64=icmp slt,bool=icmp ult"), r_lopo("CMPNE", O.OpsCMPNE{}, "fp8e4m3=fcmp nsz contract afn une,fp8e5m2=fcmp nsz contract afn une,fp8e4m3fnuz=fcmp nsz contract afn une,fp8e5m2fnuz=fcmp nsz contract afn une,f16=fcmp nsz contract afn une,bf16=fcmp nsz contract afn une,f32=fcmp nsz contract afn une,f64=fcmp nsz contract afn une,u8=icmp ne,u16=icmp ne,u32=icmp ne,u64=icmp ne,i8=icmp ne,i16=icmp ne,i32=icmp ne,i64=icmp ne,bool=icmp ne"), r_lopo("CMPEQ", O.OpsCMPEQ{}, "fp8e4m3=fcmp nsz contract afn oeq,fp8e5m2=fcmp nsz contract afn oeq,fp8e4m3fnuz=fcmp nsz contract afn oeq,fp8e5m2fnuz=fcmp nsz contract afn oeq,f16=fcmp nsz contract afn oeq,bf16=fcmp nsz contract afn oeq,f32=fcmp nsz contract afn oeq,f64=fcmp nsz contract afn oeq,u8=icmp eq,u16=icmp eq,u32=icmp eq,u64=icmp eq,i8=icmp eq,i16=icmp eq,i32=icmp eq,i64=icmp eq,bool=icmp eq"), r_lopo("OR", O.OpsOR{}, "u8=or,u16=or,u32=or,u64=or,i8=or,i16=or,i32=or,i64=or,bool=or"), r_lopo("AND", O.OpsAND{}, "u8=and,u16=and,u32=and,u64=and,i8=and,i16=and,i32=and,i64=and,bool=and"), r_lopo("XOR", O.OpsXOR{}, "u8=xor,u16=xor,u32=xor,u64=xor,i8=xor,i16=xor,i32=xor,i64=xor,bool=xor"), r_lopo("SHL", O.OpsSHL{}, "u8=shl,u16=shl,u32=shl,u64=shl,i8=shl,i16=shl,i32=shl,i64=shl,bool=shl"), r_lopo("SHR", O.OpsSHR{}, "u8=lshr,u16=lshr,u32=lshr,u64=lshr,i8=ashr,i16=ashr,i32=ashr,i64=ashr,bool=lshr"), r_lopo("FDIV", O.OpsFDIV{}, "fp8e4m3=fdiv nsz contract afn,fp8e5m2=fdiv nsz contract afn,fp8e4m3fnuz=fdiv nsz contract afn,fp8e5m2fnuz=fdiv nsz contract afn,f16=fdiv nsz contract afn,bf16=fdiv nsz contract afn,f32=fdiv nsz contract afn,f64=fdiv nsz contract afn")])
 
 def r_consts() -> String:
-  String.concat([r("llvm.string_rewrite", "ABSENT", "ABSENT"), r("Renderer.suffix", q1(Llvm.suffix(Renderer_of())), "''"), r("Renderer.has_local", bs(Llvm.has_local(Renderer_of())), "True"), r("Renderer.has_shared", bs(Llvm.has_shared(Renderer_of())), "True"), r("Renderer.global_max", ushow(Llvm.gmax(Renderer_of())), "2415919103,2415919103,2415919103"), r("Renderer.local_max", ushow(Llvm.lmax(Renderer_of())), "2415919103,2415919103,2415919103"), r("Renderer.global_prod_max", pmax(Renderer_of()), "None"), r("Renderer.shared_max", U32.show(Llvm.smax(Renderer_of())), "32768"), r("llvm.has_local", bs(Llvm.has_local(llvm_of())), "True"), r("llvm.abi", abi_str(Llvm.has_abi(llvm_of()), Llvm.abi(llvm_of())), "AttributeError"), r("llvm.suffix", q1(Llvm.suffix(llvm_of())), "''"), r("llvm.global_max", ushow(Llvm.gmax(llvm_of())), "2415919103,2415919103,2415919103"), r("llvm.local_max", ushow(Llvm.lmax(llvm_of())), "2415919103,2415919103,2415919103"), r("llvm.global_prod_max", pmax(llvm_of()), "None"), r("llvm.shared_max", U32.show(Llvm.smax(llvm_of())), "32768"), r("llvm.code_for_op", opnames(cfo_base()), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,MUL,OR,SHL,SHR,XOR"), r("llvm.code_for_op.len", U32.show(oplen(cfo_base())), "13"), r("cpullvm.has_local", bs(Llvm.has_local(cpullvm_of())), "False"), r("cpullvm.abi", abi_str(Llvm.has_abi(cpullvm_of()), Llvm.abi(cpullvm_of())), "None"), r("cpullvm.suffix", q1(Llvm.suffix(cpullvm_of())), "''"), r("cpullvm.global_max", ushow(Llvm.gmax(cpullvm_of())), "1,0,0"), r("cpullvm.local_max", ushow(Llvm.lmax(cpullvm_of())), "2415919103,2415919103,2415919103"), r("cpullvm.global_prod_max", pmax(cpullvm_of()), "None"), r("cpullvm.shared_max", U32.show(Llvm.smax(cpullvm_of())), "32768"), r("cpullvm.code_for_op", opnames(cfo_base()), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,MUL,OR,SHL,SHR,XOR"), r("cpullvm.code_for_op.len", U32.show(oplen(cfo_base())), "13"), r("amd.has_local", bs(Llvm.has_local(amd_of())), "True"), r("amd.abi", abi_str(Llvm.has_abi(amd_of()), Llvm.abi(amd_of())), "amdgpu_kernel"), r("amd.suffix", q1(Llvm.suffix(amd_of())), "''"), r("amd.global_max", ushow(Llvm.gmax(amd_of())), "2147483647,65535,65535"), r("amd.local_max", ushow(Llvm.lmax(amd_of())), "2415919103,2415919103,2415919103"), r("amd.global_prod_max", pmax(amd_of()), "4294967295,4294967295,4294967295"), r("amd.shared_max", U32.show(Llvm.smax(amd_of())), "65536"), r("amd.code_for_op", opnames(cfo_amd()), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,EXP2,FDIV,LOG2,MUL,OR,SHL,SHR,SQRT,XOR"), r("amd.code_for_op.len", U32.show(oplen(cfo_amd())), "16"), r("llvm_intrinsics", intr_names(), "SQRT=sqrt,LOG2=log2,EXP2=exp2"), r("code_for_workitem g 0", wi(False{}, 0), "tail call i32 @llvm.amdgcn.workgroup.id.x()"), r("code_for_workitem g 1", wi(False{}, 1), "tail call i32 @llvm.amdgcn.workgroup.id.y()"), r("code_for_workitem g 2", wi(False{}, 2), "tail call i32 @llvm.amdgcn.workgroup.id.z()"), r("code_for_workitem l 0", wi(True{}, 0), "tail call i32 @llvm.amdgcn.workitem.id.x()"), r("code_for_workitem l 1", wi(True{}, 1), "tail call i32 @llvm.amdgcn.workitem.id.y()"), r("code_for_workitem l 2", wi(True{}, 2), "tail call i32 @llvm.amdgcn.workitem.id.z()"), r("barrier.lines", U32.show(slen(barrier())), "4"), r("barrier[0]", nth(barrier(), 0), "fence syncscope(\"workgroup\") release"), r("barrier[1]", nth(barrier(), 1), "tail call void @llvm.amdgcn.s.barrier()"), r("barrier[2]", nth(barrier(), 2), "fence syncscope(\"workgroup\") acquire"), r("barrier[3]", nth(barrier(), 3), "")])
+  String.concat([r("llvm.string_rewrite", "ABSENT", "ABSENT"), r("Renderer.suffix", q1(Llvm.suffix(Renderer_of())), "''"), r("Renderer.has_local", bs(Llvm.has_local(Renderer_of())), "True"), r("Renderer.has_shared", bs(Llvm.has_shared(Renderer_of())), "True"), r("Renderer.global_max", ushow(Llvm.gmax(Renderer_of())), "2415919103,2415919103,2415919103"), r("Renderer.local_max", ushow(Llvm.lmax(Renderer_of())), "2415919103,2415919103,2415919103"), r("Renderer.global_prod_max", pmax(Renderer_of()), "None"), r("Renderer.shared_max", U32.show(Llvm.smax(Renderer_of())), "32768"), r("llvm.has_local", bs(Llvm.has_local(llvm_of())), "True"), r("llvm.abi", abi_str(Llvm.has_abi(llvm_of()), Llvm.abi(llvm_of())), "AttributeError"), r("llvm.suffix", q1(Llvm.suffix(llvm_of())), "''"), r("llvm.global_max", ushow(Llvm.gmax(llvm_of())), "2415919103,2415919103,2415919103"), r("llvm.local_max", ushow(Llvm.lmax(llvm_of())), "2415919103,2415919103,2415919103"), r("llvm.global_prod_max", pmax(llvm_of()), "None"), r("llvm.shared_max", U32.show(Llvm.smax(llvm_of())), "32768"), r("llvm.code_for_op", opnames(cfo()), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,EXP2,FDIV,LOG2,MUL,OR,SHL,SHR,SQRT,XOR"), r("llvm.code_for_op.len", U32.show(oplen(cfo())), "16"), r("cpullvm.has_local", bs(Llvm.has_local(cpullvm_of())), "False"), r("cpullvm.abi", abi_str(Llvm.has_abi(cpullvm_of()), Llvm.abi(cpullvm_of())), "None"), r("cpullvm.suffix", q1(Llvm.suffix(cpullvm_of())), "''"), r("cpullvm.global_max", ushow(Llvm.gmax(cpullvm_of())), "1,0,0"), r("cpullvm.local_max", ushow(Llvm.lmax(cpullvm_of())), "2415919103,2415919103,2415919103"), r("cpullvm.global_prod_max", pmax(cpullvm_of()), "None"), r("cpullvm.shared_max", U32.show(Llvm.smax(cpullvm_of())), "32768"), r("cpullvm.code_for_op", opnames(cfo()), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,EXP2,FDIV,LOG2,MUL,OR,SHL,SHR,SQRT,XOR"), r("cpullvm.code_for_op.len", U32.show(oplen(cfo())), "16"), r("amd.has_local", bs(Llvm.has_local(amd_of())), "True"), r("amd.abi", abi_str(Llvm.has_abi(amd_of()), Llvm.abi(amd_of())), "amdgpu_kernel"), r("amd.suffix", q1(Llvm.suffix(amd_of())), "''"), r("amd.global_max", ushow(Llvm.gmax(amd_of())), "2147483647,65535,65535"), r("amd.local_max", ushow(Llvm.lmax(amd_of())), "2415919103,2415919103,2415919103"), r("amd.global_prod_max", pmax(amd_of()), "4294967295,4294967295,4294967295"), r("amd.shared_max", U32.show(Llvm.smax(amd_of())), "65536"), r("amd.code_for_op", opnames(cfo()), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,EXP2,FDIV,LOG2,MUL,OR,SHL,SHR,SQRT,XOR"), r("amd.code_for_op.len", U32.show(oplen(cfo())), "16"), r("llvm_intrinsics", intr_names(), "SQRT=sqrt,LOG2=log2,EXP2=exp2"), r("code_for_workitem g 0", wi(False{}, 0), "tail call i32 @llvm.amdgcn.workgroup.id.x()"), r("code_for_workitem g 1", wi(False{}, 1), "tail call i32 @llvm.amdgcn.workgroup.id.y()"), r("code_for_workitem g 2", wi(False{}, 2), "tail call i32 @llvm.amdgcn.workgroup.id.z()"), r("code_for_workitem l 0", wi(True{}, 0), "tail call i32 @llvm.amdgcn.workitem.id.x()"), r("code_for_workitem l 1", wi(True{}, 1), "tail call i32 @llvm.amdgcn.workitem.id.y()"), r("code_for_workitem l 2", wi(True{}, 2), "tail call i32 @llvm.amdgcn.workitem.id.z()"), r("barrier.lines", U32.show(slen(barrier())), "4"), r("barrier[0]", nth(barrier(), 0), "fence syncscope(\"workgroup\") release"), r("barrier[1]", nth(barrier(), 1), "tail call void @llvm.amdgcn.s.barrier()"), r("barrier[2]", nth(barrier(), 2), "fence syncscope(\"workgroup\") acquire"), r("barrier[3]", nth(barrier(), 3), "")])
 
 def r_sds() -> String:
-  String.concat([r_sdb("bf16,bool,f16,f32,f64,fp8e4m3,fp8e4m3fnuz,fp8e5m2,fp8e5m2fnuz,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("LLVM osx True", False{}, True{}, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("LLVM osx False", False{}, False{}, "bool,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("x86_64 osx True", True{}, True{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("x86_64 osx False", True{}, False{}, "bf16,bool,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("arm osx True", True{}, True{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("arm osx False", True{}, False{}, "bf16,bool,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("riscv64 osx True", False{}, True{}, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("riscv64 osx False", False{}, False{}, "bool,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx1100", False{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx942", True{}, "bf16,bool,f16,f32,f64,fp8e4m3fnuz,fp8e5m2fnuz,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx1200", False{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx1201", False{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8")])
+  String.concat([r_sdb("bf16,bool,f16,f32,f64,fp8e4m3,fp8e4m3fnuz,fp8e5m2,fp8e5m2fnuz,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("LLVM osx True", False{}, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("LLVM osx False", False{}, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("x86_64 osx True", True{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("x86_64 osx False", True{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("arm osx True", True{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("arm osx False", True{}, "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("riscv64 osx True", False{}, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdcpu("riscv64 osx False", False{}, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx1100", "bf16,bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx942", "bf16,bool,f16,f32,f64,fp8e4m3fnuz,fp8e5m2fnuz,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx1200", "bf16,bool,f16,f32,f64,fp8e4m3,fp8e5m2,i16,i32,i64,i8,u16,u32,u64,u8"), r_sdamd("gfx1201", "bf16,bool,f16,f32,f64,fp8e4m3,fp8e5m2,i16,i32,i64,i8,u16,u32,u64,u8")])
 
 def r_nms() -> String:
   String.concat([r_nm("param 0", 0, "%data0"), r_nm("param 3", 3, "%data3"), r_nm("param 7", 7, "%data7"), r_nmbuf("global", False{}, 5, "%reg_5"), r_nmbuf("local", True{}, 5, "%local_5"), r_nmbuf("reg", False{}, 5, "%reg_5"), r_nmbuf("alu", False{}, 5, "%reg_5")])
@@ -1080,12 +1140,40 @@ def main() -> IO(Unit):
 
 # ===========================================================================
 # THE MUTATION TABLE. Re-measured 2026-10-03 with
-# `.agents/slop/nl/nl-mutate.py`: one textual edit at a time, each row diffed
-# against the unmutated 205 WHOLE `name=value` LINES, by index, never by row
-# NAME (a name-comparing harness reported 0 for all 30 mutations in one unit).
-# "moved" is the number of rows that changed; the driver prints which. THREE
-# edits move nothing and that is the point of them. FORTY-FOUR mutations now,
-# the five newest being the `ldt.fp` re-arm below.
+# `.agents/slop/nl/nl-oracle.py`'s sibling `.agents/slop/nl/nl-mutate.py`: one
+# textual edit at a time, each row diffed against the unmutated 205 WHOLE
+# `name=value` LINES, by index, never by row NAME (a name-comparing harness
+# reported 0 for all 30 mutations in one unit). "moved" is the number of rows
+# that changed; the driver prints which. THREE edits move nothing and that is
+# the point of them. FORTY-FOUR mutations now, the five newest being the
+# `ldt.fp` re-arm below.
+#
+# ⚠ AND TEN OF THEM WERE RE-MEASURED ON 2026-10-22, AGAINST THIS PORT, BECAUSE
+# THE STALENESS FIX TOUCHED THE CODE THEY MUTATE. The harness
+# `.agents/slop/nl/nl-mutate.py` is GONE -- it is in no commit and there is
+# nothing to restore -- so the re-measurement was taken with a fresh driver
+# that (a) applies ONE textual edit, asserted to occur EXACTLY ONCE, (b)
+# compiles and runs the mutated copy, and (c) counts the moved rows BY INDEX
+# and BY ROW NAME and REFUSES to print a number the two disagree on. The
+# re-measured ten are M9, M12, M15, M16, M30, M31, M32, M33, M35 and M36, and
+# M35 and M36 are CROSS-CHECKS: they move the widest row sets on this lane
+# (the three `code_for_op` rows and the thirteen `sd` rows), so they are the
+# two that would have caught a count that moved for the wrong reason. The
+# other thirty-four are INHERITED, and they stand because the ROW SETS they
+# move are the same ones -- the re-arming changed the CONTENT of twenty-six
+# rows and the IDENTITY of none of them, so a mutation of code this fix did
+# not touch moves the same rows as it did in 2026-10-03. That is an argument,
+# not a measurement, and it is the reason the ten were re-taken.
+#
+# ⚠ AND THE RE-MEASUREMENT FOUND A DEFECT IN THE INSTRUMENT BEFORE IT FOUND
+# ONE IN THE PORT. The first driver's row reader cut the value at `head[i+5]`
+# where the boundary is four characters wide, so it DROPPED the first character
+# of every value, and then it `strip()`ed the rest -- which made `lop.flags`
+# ("' nsz contract afn'" vs "'nsz contract afn'") compare EQUAL, because the
+# only difference was the space the strip removed. M9 read FIFTEEN when the
+# answer is SIXTEEN. The same class as the two wrong shapes a unit measured
+# tonight elsewhere: a control that edits more than it meant to is not a
+# control, and a READER that loses a character is not a reader.
 #
 #   M1  `ldt`'s integer arm is `bits`, not `bits // 8`        14
 #   M2  `f16` spells `bfloat`, not `half`                          4
@@ -1102,7 +1190,7 @@ def main() -> IO(Unit):
 #   M13 `op in float_lop` is always True                        7
 #   M14 the op rows use `lop`'s key order, not `dtypes.all`'s  12
 #   M15 `code_for_op` drops FDIV                                6
-#   M16 AMD's `code_for_op` keeps one intrinsic                 2
+#   M16 `code_for_op` keeps ONE of the three intrinsics         6
 #   M17 AMD's `shared_max` is the base's 32768                  1
 #   M18 CPULLVM's `has_local` is True                          1
 #   M19 the absent `abi` answers `None`, not `AttributeError`   1
@@ -1118,8 +1206,8 @@ def main() -> IO(Unit):
 #   M29 (CONTROL: a comment-only edit)                           0
 #   M30 CPULLVM's `not in fp8s` conjunct is dropped             8
 #   M31 CPULLVM's bfloat16 clause is dropped                     4
-#   M32 AMD keeps ALL FOUR fp8, not the FNUZ pair               1
-#   M33 `is_fp8` tests the FNUZ pair, not the fp8 set          12
+#   M32 `amd_fp8s` answers ALL FOUR fp8 for every arch          3
+#   M33 `is_fp8` tests the FNUZ pair, not the fp8 set          10
 #   M34 `lop`'s keys put `bool` last                            1
 #   M35 the insertion sort's ELSE arm drops the head           16
 #   M36 `supported_dtypes` does not sort                        13
@@ -1151,6 +1239,26 @@ def main() -> IO(Unit):
 # footnote: a gate that has never been shown the bug it is guarding against is
 # a gate whose green rows are worth nothing.
 #
+# M16 AND M32 ARE TWO ENTRIES WHOSE SUBJECT WAS DELETED BY THE RE-ARMING, AND
+# THEY ARE RE-DEFINED RATHER THAN RENAMED, BECAUSE A MUTATION OF A TABLE THAT
+# NO LONGER EXISTS MEASURES NOTHING. M16 WAS "AMD's `code_for_op` keeps one
+# intrinsic", and the AMD OVERRIDE it mutated is gone -- upstream moved the
+# intrinsics into `LLVMRenderer.code_for_op`, so there is one table and three
+# classes read it. The entry is now "`code_for_op` keeps ONE of the three
+# intrinsics", and it moves SIX rows: the three `code_for_op` rows and their
+# three `.len` rows, where the old AMD-only edit moved TWO. M32 WAS "AMD keeps
+# ALL FOUR fp8, not the FNUZ pair", and `amd_fp8s` is now a per-ARCH table with
+# TWO non-empty answers, so the entry is now "`amd_fp8s` answers ALL FOUR fp8
+# for every arch" and it moves THREE rows -- `sd amd gfx942`, `sd amd gfx1200`
+# and `sd amd gfx1201` -- where the old FNUZ-only edit moved ONE. M33 went the
+# other way, TWELVE to TEN: `is_fp8` testing only the FNUZ pair used to move
+# the eight `sd cpullvm` rows and all FOUR `sd amd` rows, and it now moves the
+# eight `sd cpullvm` rows plus `sd amd gfx1100` and `sd amd gfx942` and NOT
+# `sd amd gfx1200`/`gfx1201` -- because the OCP pair those two keep is not an
+# fp8 dtype at all under that mutation, so it was never dropped and never
+# changes. A COUNT THAT MOVES BECAUSE THE PORT'S SHAPE MOVED IS A FINDING
+# ABOUT THE PORT, and the table has to carry it or the table is a decoration.
+#
 # M41, M42 and M43 ARE THE THREE ARMS OF THE RE-ARM, and their row counts say
 # what each one is load-bearing for. M41 moves the FOUR fp8 rows and nothing
 # else, which is the fp8 quadruple's `bits == 8` collapse being the MAP's own
@@ -1181,7 +1289,9 @@ def main() -> IO(Unit):
 #     twenty-five.
 #   * M35 -- the insertion sort's else arm returned the tail without the head, so
 #     `llvm.code_for_op` came back as `ADD,MUL,ADD,OR,ADD,...`: thirteen slots
-#     with five `ADD`s, and `llvm.code_for_op.len` GREEN throughout. This is the
+#     with five `ADD`s -- thirteen because the table had thirteen keys then,
+#     and it is SIXTEEN slots today -- and `llvm.code_for_op.len` GREEN
+#     throughout. This is the
 #     "pin a COUNT, not a boolean" note in its sharpest form -- here it is the
 #     count row that could NOT see the bug, and the sorted STRING that could.
 #   * M3 -- the `count` arm was `>= 1` in the first draft, so `ldt(1, float)`
@@ -1215,7 +1325,7 @@ def main() -> IO(Unit):
 # once, which is why `lop.op` is thirteen rows and not one.
 #
 # THREE CONTROLS, M4, M29 and M39, are comment-only edits and each moves nothing.
-# They are what makes the other thirty-six numbers mean something: a harness that
+# They are what makes the other forty-one numbers mean something: a harness that
 # reported "0 rows" for everything would look identical on the three thinnesses
 # above.
 # ===========================================================================
