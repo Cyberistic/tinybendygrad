@@ -22863,3 +22863,54 @@ x86-derive     [#########] 9/9      774 LITERAL `py=` cells -> 0 in `renderer/is
       **THE **SAME **DELETED **`$` **EARLY **RETURN** -- **⇒ **LEAVING **IT **WOULD **HAVE **TRADED
       **ONE **STALE **COPY **FOR **ANOTHER **AND **TURNED **A **GREEN **GATE **RED **ON **THE **WRONG
       **SIDE.**
+
+paramarg-spec [##] 2/3  **THE PORT's `ParamArg` IS MISSING **UPSTREAM's **13th **FIELD**, **AND **THE
+                       **FIX **TOUCHES **106 **CONSTRUCTION **SITES**IN **31 **FILES.** MEASURED
+                       2026-10-22: upstream's `tinygrad/uop/ops.py:25-42` declares **13** fields --
+                       `slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image,
+                       buffer, bind_on_realize, val, spec` -- and the port's `tinybendygrad/uop/ops.bend:869-883`
+                       declares **12**. **THE MISSING ONE IS `spec: BufferSpec|None = None`** -- *"the
+                       memory the linker gives an ALLOC"* -- **AND upstream's `ParamArg.__repr__` INCLUDES
+                       `spec` IN ITS `fields` TUPLE**, so the port's rendering cannot show the ALLOC's
+                       memory spec at all. **⇒ THE **PORT **IS **THE **ONE **THAT **IS **SHORT.**  **⇒ AND
+                       `rg -c 'ParamArg\{' tinybendygrad/` COUNTS **106 **CONSTRUCTION **SITES** ACROSS
+                       **31 **FILES**, **SO **THIS **IS **A **WORK **QUEUE, **NOT **A **DISPATCH.**
+                       **⇒ AND **IT **IS **PROBABLY **WHY **THE **PORT's **PTX **FIXTURES **ARE **THE
+                       **PRE-RE-VENDOR **GRAPHS**: **the **2026-10-16 **change **moved **a **BUFFER's
+                       **SIZE **out **of **THE **`ParamArg` **and **into **A **SIZE **CONST **SRC**, **and
+                       **the **port's **fixtures **hold **174 `Wk` **records **of **which **0 **of **THE
+                       **30 **CONSTS **CARRY **A **SIZE** -- **⇒ AND **85 **of **the **268 **frozen
+                       **`Wt` **ROW **SUFFIXES **NAME **A **ROW **THAT **HAS **MOVED.**
+
+fold-graph-arity [##] 2/3  **`gates/fold_graph_census.bend` **IS **BROKEN **AND **THE **FIX **CHANGES
+                       **THE **FIXTURE, **THE **ROWS **AND **THE **GATE's **ORACLE.** MEASURED
+                       2026-10-22 by the compile-census unit: the driver passes a **REAL** size, so
+                       **dropping **upstream's **`ParamArg.size` **FIELD **LOSES **IT** -- **⇒ THE **FIX
+                       **IS **THE **PORT's **OWN **`O.UOp.new.param`** (**size **-> **ALLOC **`src[0]`**),
+                       **WHICH **IS **THE **SAME **CHANGE **THE **PORT's **`ParamArg` **MADE **AND **THE
+                       **SAME **ONE **`paramarg-spec` **IS **NAMING.**  **⇒ **THE **ROW **IS **VISIBLE**:
+                       **`gates/compile-census-verdict.rows` **CARRIES **A **`FAIL` **ROW **WITH **THE
+                       **EXACT **ERROR **FOR **EACH **OF **THE **7 **BREAKAGES.**
+
+wk-eval-oracle [##] 2/3  **`gates/wk-eval-oracle.py` **IS **THE **CPYTHON **HALF **OF **THE **SAME
+                       **UPSTREAM **CHANGE, **AND **THE **GATE's **VERDICT **IS **UNCHANGED** -- **REFUSED
+                       **BEFORE, **REFUSED **AFTER** -- **⇒ THE **REASON **MOVED **FROM **THE **DRIVER
+                       **TO **THE **ORACLE.** MEASURED: a PARAM with `src=()` MEANS **`src[0]`** RAISES
+                       **`IndexError`**. **⇒ **AND **FIXING **IT **WRONGLY **WOULD **TURN **A
+                       **`REFUSED` **INTO **A **`FAIL`**, **WHICH **IS **THE **DANGEROUS **DIRECTION.**
+
+untracked-oracle-fragments [##] 2/3  **`oracles/probe-su.bend` **AND **`oracles/probe-targetparse.bend`
+                       **ARE **UNTRACKED** -- **NEVER **IN **GIT** -- **⇒ AND **THE **DIALECT **GATE
+                       **REPORTS **34 **"LOST" **CLAIMS **IN **THE **CONTEXT **FILES**, **AND **THE
+                       **GATE's **OWN **TEXT **SAYS **SO**: *"judged by their own gate; their 'lost' is
+                       **this **gate's **tag **rule **reading **probe **labels, **not **a **missing
+                       **row**"*. **⇒ **⇒ A **FIX **COULD **NOT **BE **COMMITTED **FOR **A **FILE **THE
+                       **REPOSITORY **DOES **NOT **OWN.**
+
+e2e-fixture-render-kernel [##] 2/3  **`checks/.e2e-fixture/{f64/emit-f64,portexec/emit-mm}.bend`
+                       **NAME **`C.render_kernel`, **AND **THE **PORT **NO **LONGER **HAS **IT.** MEASURED
+                       2026-10-22 by the compile-census unit. **⇒ **AND **`checks/e2e.py`'s **STAGE **3
+                       **CANNOT **START **BECAUSE **OF **IT**, **WHICH **IS **WHY **THE **EDGE **TRACE's
+                       **ONLY **REMAINING **`DEAD` **ROW **IS **`checks/e2e.py`** -- **⇒ AND **A **GATE
+                       **THAT **CANNOT **START **IS **NOT **"DEAD"**, **IT **IS **`REFUSED`**, **AND **THE
+                       **EDGE **NOW **SAYS **SO.**
