@@ -756,8 +756,17 @@ def judge(row: dict, corpus: Corpus, pin_cite) -> dict:
                 "why": f"the cited line does not hold the quoted snippet {snip[:44]!r}; "
                        f"the snippet is at :{hits[0]}"})
     return out
+  # THE MARKER NAMES A FUNCTION THAT IS NOT THE ONE IT DESCRIBES. The evidence is that
+  # the QUOTED SNIPPET is in the enclosing construct's body AND IS NOT in the named
+  # symbol's body: a marker that says "def variable" and quotes `is_variable`'s body
+  # names the wrong function, and the fix is to name the one it quotes. A snippet that
+  # is in BOTH bodies is not evidence of that -- the marker quoted a line of the
+  # function it names, and only its LINE is wrong.
+  sym_spans = spans.get(sym.split(".")[-1], []) if sym else []
+  sym_body = [(s[1], s[2]) for s in sym_spans]
   if sym and inside and inside[0] != sym and hits and \
-          any(inside[1] <= h <= inside[3] for h in hits):
+          any(inside[1] <= h <= inside[3] for h in hits) and \
+          not any(first <= h <= last for h in hits for first, last in sym_body):
     out.update({"verdict": "WRONG-SYMBOL", "decl": inside[1], "new_lo": inside[1],
                 "new_hi": inside[1],
                 "why": f"the marker names `{sym}` but the quoted snippet is inside "

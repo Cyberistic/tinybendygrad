@@ -1653,7 +1653,7 @@ def get_code(+pat: O.Pat, +u: O.UPat, has_ctx: Bool) -> Maybe<&2, Code>:
 # rule is a top-level def with a fixed arity, and ops.py's `PatternMatcher`
 # dispatch (P3) is what knows it.
 #
-# TODO(p3) ops.py:1590 def upat_interpret -- `types.FunctionType(
+# TODO(p3) ops.py:1561 def upat_interpret -- `types.FunctionType(
 # deconstruct_function(fxn))` and `inspect.signature(real_fxn).parameters` are
 # Python reflection over a function object, and they and `upat_compile`'s copy of
 # the same two lines are the SAME omission: a rule is a def.
