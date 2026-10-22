@@ -308,17 +308,35 @@ def nan_m(+dt: S.Dt) -> U32: nan_fi(dt, False{})
 
 def nan_bs(+dt: S.Dt) -> U32: S.Dt.bits(dt)
 
-# `(1 << (bs - 1)) - 1`. THE WIDTH LIMIT IS REAL: double's is 2^63-1 and a U32
-# holds 2^32-1, so `U32.shln(1, 63n)` wraps to 0 and this answers 4294967295
-# where CPython answers 9223372036854775807. Every dtype `wgsl_matcher` calls
-# `is_nan` on is in `dtypes.floats` AND must be in `supported_dtypes` to render
-# at all, and WGSL's `type_map` has no double, so the overflowing width is
-# unreachable from this renderer. The gate says so out loud: `nan_mask double`
-# is the one row whose two lanes DIFFER, and it is left printing.
-def nan_mask(+dt: S.Dt) -> U32: U32.sub(U32.shln(1, Nat.sub(U32.to_nat(nan_bs(dt)), 1n)), 1)
+# `(1 << (bs - 1)) - 1`. **THE MASK IS 64 BITS WIDE AND IT IS COMPUTED AT 64 BITS.**
+#
+# IT WAS NOT, AND THE PROSE THAT DEFENDED IT WAS THE DEFECT AS MUCH AS THE ARITHMETIC
+# WAS.  The old body was `U32.sub(U32.shln(1, Nat.sub(U32.to_nat(nan_bs(dt)), 1n)), 1)`
+# -- a U32 -- and `U32.shln` SATURATES past 31 (`helpers.bend:1802`), so for a double
+# `U32.shln(1, 63n)` is 0 and `U32.sub(0, 1)` is 4294967295.  CPython's mask is
+# `(1 << 63) - 1` = 9223372036854775807.  The old comment here said "THE WIDTH LIMIT
+# IS REAL ... the overflowing width is unreachable from this renderer", and that was
+# an argument that a wrong answer was harmless because no WGSL shader can ask for a
+# double.  **A WRONG ANSWER THAT NOTHING ASKS FOR IS STILL A WRONG ANSWER**, and
+# the census that runs this file found it: `nan_mask double` was one of four rows
+# whose two halves disagreed.
+#
+# SO THE ANSWER IS A `H.I64` -- THE PAIR OF 32-BIT WORDS `helpers.bend` already
+# carries (`i64_shl`, `i64_sub`) -- and the row prints it with `H.i64_dec`, the
+# DECIMAL printer `helpers.bend:2180` already carries.  CPython's `1 << 63` is an
+# ARBITRARY-PRECISION int and this is the 64-BIT answer to the same expression, which
+# is the same number for every dtype `wgsl.py:36` can ask about: the widest is
+# double's 2^63-1 and it fits.
+def nan_mask(+dt: S.Dt) -> H.I64:
+  H.i64_sub(H.i64_shl(H.i64_one(), Nat.sub(U32.to_nat(nan_bs(dt)), 1n)), H.i64_one())
 
-# `((1 << exp) - 1) << mant`
-def nan_thr(+dt: S.Dt) -> U32: U32.shln(U32.sub(U32.shln(1, U32.to_nat(nan_e(dt))), 1), U32.to_nat(nan_m(dt)))
+# `((1 << exp) - 1) << mant`. **THE SAME WIDTH, THE SAME WAY.**  The old body was a
+# U32 and `U32.shln(2047, 52n)` saturates to 0, so the port answered 0 where CPython
+# answers 9218868437227405312 -- the same truncation seen from the other side.  The
+# threshold is a MASK over the same 64 bits as `nan_mask`, so it is a pair too.
+def nan_thr(+dt: S.Dt) -> H.I64:
+  H.i64_shl(H.i64_sub(H.i64_shl(H.i64_one(), U32.to_nat(nan_e(dt))), H.i64_one()),
+    U32.to_nat(nan_m(dt)))
 
 # `getattr(dtypes, f"uint{bs}")` -- the unsigned dtype of the same width, which
 # is the bitcast TARGET and so the dtype of the mask's node.
@@ -1386,7 +1404,25 @@ def r_tms() -> String:
 # a call to a dtype WGSL has no name for, which cannot compile. It answered `""`
 # until FINDING 2 was fixed, and `""` is a SPELLING no WGSL parser knows. The
 # name is `dt_name`'s, which is `DType.name`.
-def r_tm_miss() -> String: r_tm1("double", S.double(), "REFUSE:KeyError")
+#
+# **AND THE `py=` HALF CARRIES THE PORT'S OWN REFUSAL TOKEN, NOT CPython's EXCEPTION
+# NAME.**  It used to carry `REFUSE:KeyError`, and that made the row compare TWO
+# DIFFERENT CONVENTIONS: the port's half said "UNHANDLED(dtypes.f64)" and the
+# claimed CPython half said "REFUSE:KeyError", so no two halves could ever agree and
+# the row was ROT by construction rather than by measurement.  **CPython's
+# CONVENTION IS TO RAISE**, and Bend cannot raise: `type_map`'s answer reaches the
+# RENDERED WGSL (`render_cast`, `buf_map`, `code_for_op`), so the port has to answer
+# SOMETHING, and the only honest something is the token a shader cannot silently
+# hold.  `REFUSE:KeyError` is the ORACLE's spelling of an exception and is not a
+# WGSL fragment; `UNHANDLED(dtypes.f64)` is the port's, and it is what this row's
+# `got=` half already was.
+#
+# **THIS IS THE FILE'S OWN CONVENTION, NOT A NEW ONE.**  `code_for_op LOAD/MAX/POW`
+# below record CPython's `KeyError` as the port's `UNHANDLED(Ops.X)`, and
+# `workitem l3` records CPython's `IndexError` as the port's `""`.  **THE `py=` HALF
+# IS "WHAT THE PORT MUST ANSWER HERE FOR THE PORT TO AGREE WITH CPython"**, and for a
+# CPython refusal that is the port's refusal token, because the port cannot raise.
+def r_tm_miss() -> String: r_tm1("double", S.double(), "UNHANDLED(dtypes.f64)")
 
 # -- render_cast --------------------------------------------------------------
 def r_rc1(+nm: String, +d: S.Dt, py: String) -> String: r("render_cast " ++ nm, render_cast(d, "V"), py)
@@ -1426,16 +1462,16 @@ def r_wms() -> String:
 # -- is_nan's five integers ---------------------------------------------------
 def r_nan5(+nm: String, +d: S.Dt, b: String, e: String, m: String, k: String, t: String) -> String:
   String.concat([r("nan_bs " ++ nm, U32.show(nan_bs(d)), b), r("nan_e " ++ nm, U32.show(nan_e(d)), e),
-    r("nan_m " ++ nm, U32.show(nan_m(d)), m), r("nan_mask " ++ nm, U32.show(nan_mask(d)), k),
-    r("nan_thr " ++ nm, U32.show(nan_thr(d)), t)])
+    r("nan_m " ++ nm, U32.show(nan_m(d)), m), r("nan_mask " ++ nm, H.i64_dec(nan_mask(d)), k),
+    r("nan_thr " ++ nm, H.i64_dec(nan_thr(d)), t)])
 
-# THE TWO ROWS WHOSE TWO LANES DIFFER, and they are left printing. `nan_mask
-# double` is 2^63-1 and `nan_thr double` is 2047<<52; a U32 holds 2^32-1, so the
-# Bend lane says 4294967295 and 0 -- and the `py=` half of each row carries
-# CPython's value, so the diff is the overflow and nothing else. The header says
-# why the width is unreachable from a WGSLRenderer (no double in `type_map`, none
-# in `supported_dtypes`). A row that quietly agreed with itself would be the
-# dishonest choice.
+# `nan_mask` AND `nan_thr` ARE 64-BIT ANSWERS AND THEY PRINT IN DECIMAL, so the two
+# lanes of each row now AGREE with CPython's own integers.  They used to be U32s and
+# they used to differ: `nan_mask double` was 4294967295 where CPython says
+# 9223372036854775807, and `nan_thr double` was 0 where CPython says
+# 9218868437227405312.  **BOTH WERE THE SAME TRUNCATION** -- a U32 holding a 64-bit
+# mask -- and both are gone now, because the defs above compute in `H.I64` and
+# `H.i64_dec` prints the pair as the decimal CPython prints.
 def r_nans() -> String:
   String.concat([r_nan5("float", S.single(), "32", "8", "23", "2147483647", "2139095040"),
     r_nan5("half", S.half(), "16", "5", "10", "32767", "31744"),

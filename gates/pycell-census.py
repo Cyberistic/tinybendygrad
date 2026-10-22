@@ -832,6 +832,26 @@ def render(rows):
 #: (`"]   py=["`), read back out of the emitted stream.
 ROW_SEP = "]   py=["
 
+#: THE `py=` HALVES THAT ARE NOT VALUES.  A row whose `py=` half is one of these
+#: MARKERS has NO CPython counterpart: the port asserts that CPython has no answer
+#: for that row at all, and the marker says so.
+#:
+#: **A MARKER IS NOT A VALUE, AND COMPARING THE TWO IS A CATEGORY ERROR.**  The ROT lane
+#: asks "does the port's own answer disagree with the port's own claim about CPython?",
+#: and that question has NO ANSWER for a row whose claim is "there is nothing to compare".
+#: `renderer/nir_llvmir.bend`'s `f32show 240.0` is the one such row: CPython's
+#: `str(240.0)` is `240.0` and the port's `F32.show(240.0)` is `240`, so there is no
+#: oracle for the port's own spelling -- the port's ORACLE generates the marker, and
+#: `checks/nl-gate.py` requires the port's stdout to be BYTE-IDENTICAL to that oracle's.
+#:
+#: **THIS IS A VOCABULARY AND NOT A POPULATION.**  Doctrine 1 is about populations of
+#: PATHS -- a hand list of files is a list, and a generator's own declaration is the
+#: alternative.  A vocabulary of MARKERS is a different thing: it says what a token
+#: MEANS, and the census REPORTS every row that carries one, BY NAME, so a reader can
+#: see each of them rather than trust a filter.
+BEND_ONLY = "BEND-ONLY"
+MARKERS = frozenset({BEND_ONLY})
+
 
 def match_bracket(text, i):
     """The index of the `]` that closes the `[` AT `text[i]`, or -1.

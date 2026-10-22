@@ -124,12 +124,14 @@ them is a formatting slip.
     CPython never computes. CARVE-OUT. The oracle's cell reads `GRAPH:` and
     carries the two CONSTs CPython WROTE, so `0xFFFFFFFF` and the mask are
     pinned on CPython's authority even though the product is not.
-  * `U32_WIDTH` -- `nan_mask double`, `nan_thr double`. `wgsl.py:36`'s mask is
-    `2**63-1` and its threshold is `2047 << 52`; a U32 holds `2**32-1`, so the
-    Bend lane says 4294967295 and 0. The port's own header
-    (`wgsl.bend:292-299`) says the width is unreachable because WGSL's
-    `type_map` has no double and `supported_dtypes` returns none.
-    CARVE-OUT, declared and left printing.
+  * `U32_WIDTH` -- RETIRED. `nan_mask double`, `nan_thr double`. `wgsl.py:36`'s
+    mask is `2**63-1` and its threshold is `2047 << 52`; a U32 holds `2**32-1`, so
+    the Bend lane said 4294967295 and 0. THE PORT WAS WRONG AND THE PROSE THAT
+    DEFENDED IT WAS THE DEFECT AS MUCH AS THE ARITHMETIC WAS: the reason read
+    "the width is unreachable from a WGSLRenderer", which is an argument that a
+    wrong answer nobody asks for is harmless, and it is not. `nan_mask` and
+    `nan_thr` now compute in `H.I64` and print with `H.i64_dec`, so the two rows
+    are EXACT MATCHES and this class has no rows left to hold. See `RETIRED`.
   * `INDEXERROR_TOTALIZED` -- `workitem l3`. `'xyz'[int(x)]` is an INDEX and 3
     is past the end of a three-character string; CPython raises `IndexError` and
     the port answers "" for the whole call (`wgsl.bend:375-378` records that the
@@ -933,8 +935,9 @@ def selfcheck_hold():
                    f"{sorted(stale - lane)}, the pins say {sorted(selfck)}")
     # The OTHER direction is INFORMATION, not a failure: `lane - stale` is the
     # set of rows whose recorded note IS CPython's answer and whose port value
-    # knowingly is not. MEASURED it is exactly the two U32_WIDTH rows, and it
-    # is the GOOD case -- wgsl.bend:1088-1094 says so in its own words.
+    # knowingly is not. MEASURED it is EMPTY now -- the two rows that used to be
+    # here were the U32_WIDTH pair, and they are EXACT MATCHES since the masks
+    # were computed at 64 bits.
     print(f"  selfcheck_hold: {len(stale)} stale notes = {len(stale & lane)} "
           f"lane rows whose note records the port's own totalization + "
           f"{len(selfck)} stale; and {len(lane - stale)} lane rows whose note "
@@ -1006,7 +1009,6 @@ CLASSES = [
     ("UNHANDLED_ARM", r"^code_for_op (LOAD|MAX|POW)$"),
     ("MISSING_ARM", r"^code_for_op FDIV$"),
     ("WMASK_IS_GRAPH", r"^wmask "),
-    ("U32_WIDTH", r"^nan_(mask|thr) double$"),
     ("INDEXERROR_TOTALIZED", r"^workitem l3$"),
     ("TYPE_MAP_KEYERROR", r"^type_map double$"),
     ("SELFCHECK", r"^(nan_uint (float|half|double)|supported_dtypes )"),
@@ -1027,9 +1029,6 @@ CLASS_WHY = {
                       "a chosen shift. The oracle's cell reads GRAPH: and "
                       "carries the two CONSTs CPython wrote; the port's is its "
                       "own CONSTANT-FOLDING of the same expression.",
-    "U32_WIDTH": "wgsl.py:36's mask is 2**63-1 and its threshold is 2047 << 52. "
-                 "A U32 holds 2**32-1. Unreachable from a WGSLRenderer: no "
-                 "double in type_map and none in supported_dtypes.",
     "INDEXERROR_TOTALIZED": "'xyz'[int(x)] is an INDEX and 3 is past the end of "
                             "a 3-character string. The port answers \"\" for the "
                             "whole call; x is 0..2 by construction "
@@ -1273,6 +1272,26 @@ def refresh():
 # strongest: the class existed to record that the two sides disagreed, and they
 # stopped.
 RETIRED = [
+    ("U32_WIDTH (2 rows, retired 2026-10-22)",
+     "`nan_mask double` and `nan_thr double`. `wgsl.py:36`'s mask is `(1 << (bs-1)) "
+     "- 1` and its threshold is `((1 << exp) - 1) << mant`, and for a double those "
+     "are 9223372036854775807 and 9218868437227405312 -- SIXTY-FOUR-BIT integers. "
+     "THE PORT COMPUTED THEM IN A U32, AND `U32.shln` DROPS THE BIT THAT FALLS OFF "
+     "THE TOP, so `U32.shln(1, 63n)` is 0 and the mask came out 4294967295 while "
+     "the threshold came out 0. TWO ROWS, TWO DIRECTIONS OF THE SAME TRUNCATION. "
+     "**AND THE PROSE THAT DEFENDED IT WAS THE DEFECT AS MUCH AS THE ARITHMETIC "
+     "WAS.** The class's reason read 'Unreachable from a WGSLRenderer: no double in "
+     "type_map and none in supported_dtypes' -- an argument that a WRONG ANSWER "
+     "NOBODY ASKS FOR is harmless, which is not an argument at all: the census that "
+     "RUNS this file found the disagreement, and a row that is wrong is wrong "
+     "whether or not a shader can reach it. THE FIX IS NOT A CARVE-OUT: `nan_mask` "
+     "and `nan_thr` now compute in `H.I64` -- the pair of 32-bit words "
+     "`helpers.bend` already carries -- and print with `H.i64_dec`, the DECIMAL "
+     "printer `helpers.bend:2180` already carries and that this same file already "
+     "used for `sr_cuint`. BOTH ROWS ARE EXACT MATCHES NOW, so this class has no "
+     "rows left to hold, and a class whose rows all became EXACT MATCHES is not a "
+     "weaker reason for being here, it is the strongest: the class existed to "
+     "record that the two sides disagreed, and they stopped."),
     ("PATTERN_UNPORTED (17 rows, retired 2026-10-14)",
      "`wgsl.bend` carried wgsl.py:65-93's seventeen rule BODIES and none of their "
      "`UPat`s, so the port had no predicate that could decline a node: each of the "

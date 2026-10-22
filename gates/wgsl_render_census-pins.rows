@@ -8,19 +8,35 @@
 # (`.gitignore`d, and where one `rm -rf` takes them) and not in the
 # environment of whoever ran it last.
 #
-# 14 LANE DIVERGENCES and 0 STALE SELF-CHECKS of 227 ROWS.
-# 213 EXACT MATCHES.
+# 12 LANE DIVERGENCES and 0 STALE SELF-CHECKS of 227 ROWS.
+# 215 EXACT MATCHES.
 # Each block is a CLASS, and each class says WHY the two sides differ.
 # A pin without a reason is a weakened instrument; a divergence without
 # a pin is a silent one.
 #
-# wgsl.py blob at HEAD, at `ad117c928` and at the pin
-# `ad117c928^`: `pin_drift_hold()` re-measures all three on every run.
-# HEAD blob of tinygrad/renderer/wgsl.py when these rows were taken: 02d7fdea
+# THE PIN IS THE sha256 OF THE BYTES THE ORACLE IMPORTS, and it is the same
+# mechanism `gates/onnx_census-gate.py` and `gates/ops_python_census-gate.py`
+# use. It is NOT a git revision: a revision names a COMMIT, and the file the
+# oracle opens is the one ON DISK. `pin_drift_hold()` re-measures every one of
+# them on every run, against the WORKING TREE.
+# tinygrad/renderer/wgsl.py: 84d1d17a116727e0decbc6f3da3b681fe698a92474388b87086df5ca38c19ecc
+# tinygrad/renderer/cstyle.py: 3623cd9b6ad418affe8d6a093998cd931fd15ac2ae819abe724cf19f7275c5ea
+# tinygrad/uop/ops.py: d006eafbb1a6e8326e9310ebbce7b04143bd80cf636e90779c3a86f7e2826ba9
+# tinygrad/dtype.py: 7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926
+# tinygrad/helpers.py: eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308
+#
+# AND THE BYTES THE ROWS WERE TAKEN AGAINST, WHICH IS A DIFFERENT SET. A blob
+# id is a fact about a COMMIT and it is RECORDED here rather than read at
+# refresh time: `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and
+# a header that calls that "when these rows were taken" is a label that rots.
+# tinygrad/renderer/wgsl.py blob when these rows were taken: 02d7fdea
 #
 # RETIRED CLASSES -- emitted from the gate's `RETIRED` constant, because
 # `--refresh` rewrites this header and MEASURED, eight stories written here
 # by hand were deleted by the next refresh.
+#
+# U32_WIDTH (2 rows, retired 2026-10-22)
+#   `nan_mask double` and `nan_thr double`. `wgsl.py:36`'s mask is `(1 << (bs-1)) - 1` and its threshold is `((1 << exp) - 1) << mant`, and for a double those are 9223372036854775807 and 9218868437227405312 -- SIXTY-FOUR-BIT integers. THE PORT COMPUTED THEM IN A U32, AND `U32.shln` DROPS THE BIT THAT FALLS OFF THE TOP, so `U32.shln(1, 63n)` is 0 and the mask came out 4294967295 while the threshold came out 0. TWO ROWS, TWO DIRECTIONS OF THE SAME TRUNCATION. **AND THE PROSE THAT DEFENDED IT WAS THE DEFECT AS MUCH AS THE ARITHMETIC WAS.** The class's reason read 'Unreachable from a WGSLRenderer: no double in type_map and none in supported_dtypes' -- an argument that a WRONG ANSWER NOBODY ASKS FOR is harmless, which is not an argument at all: the census that RUNS this file found the disagreement, and a row that is wrong is wrong whether or not a shader can reach it. THE FIX IS NOT A CARVE-OUT: `nan_mask` and `nan_thr` now compute in `H.I64` -- the pair of 32-bit words `helpers.bend` already carries -- and print with `H.i64_dec`, the DECIMAL printer `helpers.bend:2180` already carries and that this same file already used for `sr_cuint`. BOTH ROWS ARE EXACT MATCHES NOW, so this class has no rows left to hold, and a class whose rows all became EXACT MATCHES is not a weaker reason for being here, it is the strongest: the class existed to record that the two sides disagreed, and they stopped.
 #
 # PATTERN_UNPORTED (17 rows, retired 2026-10-14)
 #   `wgsl.bend` carried wgsl.py:65-93's seventeen rule BODIES and none of their `UPat`s, so the port had no predicate that could decline a node: each of the seventeen `srneg` rows drove a body on a node CPython's own `UPat.match` REJECTS -- the oracle asserted the rejection at the source, so the row was a refusal BY CONSTRUCTION -- and the port answered anyway. CARVE-OUT, and the right one at the time: not a wrong ANSWER but an absent REACHABILITY CHECK, and pinning it is what stopped the thirty-five `sr` rows from being read as thirty-five branch proofs. TWO OF THE SEVENTEEN WERE DANGEROUS RATHER THAN COSMETIC. `srneg 14 store u8` -- a PACKED store of an ordinary CONST -- is not a read-modify-write, `packed_rmw`'s `AND` was the whole of rule 14's pattern, and `sr_rmw` answered `atomicAnd(&B[1],W);` and DROPPED THE STORED VALUE. `srneg 15 store 3` -- a GATED store, three srcs -- fell to rule 15 and `sr_store` answered `B = V;` and DROPPED THE GATE. Both were unreachable from `render_kernel` as `wgsl.bend` drove it, and both would have been a silently wrong shader the moment a dispatcher handed them these nodes. THE PATTERNS LANDED: each rule now takes the fields its own `UPat` constrains -- the dtype for the eleven that name one, the op for the three whose rejecting node is a CONST, the src count for the four that divide on arity, and rule 6's `src=` clause -- and answers `NOMATCH`, the token CPython's `None` is spelled, so all seventeen rows are EXACT MATCHES rather than pins. Rule 13 ALSO GAINED A DEF (`sr_load`): its body was and is `render_load`, and a pattern is not a body. The rows stayed; the pins went. `sr pick bitcast`/`load`/`store` are the new rows that make the TABLE's order measurable, and `sr_dispatch_hold()` is the 34/35 check.
@@ -43,10 +59,6 @@ wmask 255_24	GRAPH:255<<24^4294967295	16777215	LANE
 wmask 255_8	GRAPH:255<<8^4294967295	4294902015	LANE
 wmask 65535_0	GRAPH:65535<<0^4294967295	4294901760	LANE
 wmask 65535_16	GRAPH:65535<<16^4294967295	65535	LANE
-
-# U32_WIDTH -- 2 rows. wgsl.py:36's mask is 2**63-1 and its threshold is 2047 << 52. A U32 holds 2**32-1. Unreachable from a WGSLRenderer: no double in type_map and none in supported_dtypes.
-nan_mask double	9223372036854775807	4294967295	LANE
-nan_thr double	9218868437227405312	0	LANE
 
 # INDEXERROR_TOTALIZED -- 1 rows. 'xyz'[int(x)] is an INDEX and 3 is past the end of a 3-character string. The port answers "" for the whole call; x is 0..2 by construction (codegen/gpudims.py).
 workitem l3	REFUSE:IndexError		LANE

@@ -6,8 +6,8 @@
     .venv/bin/python gates/pycell-census-gate.py --plant     # the plant alone, no bend
     .venv/bin/python gates/pycell-census-gate.py --plan      # the census, no bend, no verdict
 
-THE THREE LANES, AND WHY THERE ARE THREE
------------------------------------------
+THE FOUR LANES, AND WHY THERE ARE FOUR
+---------------------------------------
   1  THE INSTRUMENT.  The classifier's own correctness, asserted by
      `gates/pycell-plant.py`'s arms -- every arm a TEXT EDIT of a fixture, and the 224
      KNOWN CASES on a PINNED CONTENT-ADDRESSED blob.  **THIS LANE RUNS ON EVERY
@@ -23,6 +23,23 @@ THE THREE LANES, AND WHY THERE ARE THREE
      the bend lock PER INVOCATION -- `checks/bendlock.sh` is the wrapper for a SINGLE
      compiler run, and a gate that holds the lock for its whole command is the 26-minute
      hold `checks/bendlock.sh`'s header records.
+  4  THE BEND-ONLY ROWS.  A row whose `py=` half is a MARKER (`census.MARKERS`) has NO
+     CPython counterpart: the port asserts that CPython has no answer for that row at
+     all.  **COMPARING A MARKER WITH A VALUE IS A CATEGORY ERROR** -- the ROT lane's
+     question ("does the port disagree with its own claim about CPython?") has NO
+     ANSWER for a row whose claim is "there is nothing to compare".  MEASURED, and this
+     is the lane's whole reason to exist: `renderer/nir_llvmir.bend`'s `f32show 240.0`
+     carries the marker `BEND-ONLY`, because CPython's `str(240.0)` is `240.0` and the
+     port's `F32.show(240.0)` is `240`, so the port's own spelling has no oracle --
+     **AND THE PORT'S ORACLE GENERATES THE MARKER**, and `checks/nl-gate.py` requires
+     the port's stdout to be BYTE-IDENTICAL to that oracle's, so the row cannot be
+     re-spelled to make the two halves agree.
+
+**A ROW THAT QUIETLY AGREED WITH ITSELF WOULD BE THE DISHONEST CHOICE**, so the marker
+rows are COUNTED, REPORTED BY NAME, and held to the baseline: a marker row the baseline
+does not carry is a FAILURE (a new row with no CPython counterpart is new rot of the
+same kind as a new transcription), and a baseline marker row that is no longer a marker
+is PROGRESS and is reported.
 
 THE DEAD LANES, AND WHY THEY ARE A LANE
 ---------------------------------------
@@ -115,7 +132,7 @@ def run_port(path, timeout=300):
 
 def read_baseline(path=BASELINE):
     """`{kind: {key: row}}` -- the committed record of what the port looked like."""
-    out = {"ROT": {}, "COUNT": {}, "DEAD": {}}
+    out = {"ROT": {}, "COUNT": {}, "DEAD": {}, "BENDONLY": {}}
     if not path.is_file():
         return None
     for line in path.read_text().splitlines():
@@ -172,10 +189,11 @@ def gate(refresh=False, do_bend=True, plant_only=False):
           f"TRANSCRIPTION {tally[cm.TRANSCRIPTION]}  DERIVED {tally[cm.DERIVED]}  "
           f"PARAM {tally[cm.PARAM]}")
 
-    # -- LANE 3: THE ROT, and the DEAD LANES.  The port RUN.
+    # -- LANE 3: THE ROT, the DEAD LANES and the BEND-ONLY LANE.  The port RUN.
     rot_rows = []
     row_counts = {}
     dead_forms = []
+    bendonly_rows = []
     measured = 0
     if do_bend:
         if not BEND.is_file() or not BENDLOCK.is_file():
@@ -194,6 +212,13 @@ def gate(refresh=False, do_bend=True, plant_only=False):
             measured += 1
             row_counts[rel] = len(emitted)
             for (name, got, want) in emitted:
+                # LANE 4: A MARKER IS NOT A VALUE.  The row claims CPython has NO
+                # answer here, so there is nothing to disagree with; it is COUNTED and
+                # NAMED, and it is not a rot cell.
+                if want in cm.MARKERS:
+                    bendonly_rows.append(f"kind=BENDONLY key={rel}|{name[:80]} file={rel} "
+                                         f"name={name[:80]} got={got[:120]} marker={want}")
+                    continue
                 if got != want:
                     rot_rows.append(f"kind=ROT key={rel}|{name[:80]} file={rel} "
                                     f"name={name[:80]} got={got[:120]} want={want[:120]}")
@@ -212,6 +237,12 @@ def gate(refresh=False, do_bend=True, plant_only=False):
         print(f"ROT       : {measured} port program(s) run, {sum(row_counts.values())} rows, "
               f"{len(rot_rows)} row(s) whose `py=` half DISAGREES with the port's own "
               f"`got=` half")
+        print(f"BEND-ONLY : {len(bendonly_rows)} row(s) whose `py=` half is a MARKER -- CPython "
+              f"has NO counterpart for them, so there is nothing to compare and they are NOT rot "
+              f"cells.  THEY ARE COUNTED AND NAMED, because a row that quietly agreed with "
+              f"itself would be the dishonest choice")
+        for b in bendonly_rows[:12]:
+            print(f"            BENDONLY  {b}")
         print(f"DEAD LANES: {len(dead_forms)} `py=` value(s) the SOURCE declares and no row "
               f"carries -- A DEAD LANE IS NOT A RED LANE, AND NOTHING ELSE SAYS SO")
         for d in dead_forms[:12]:
@@ -226,7 +257,8 @@ def gate(refresh=False, do_bend=True, plant_only=False):
     # THE BASELINE ROWS.
     count_rows = [f"kind=COUNT key={rel} file={rel} transcription={per[rel][cm.TRANSCRIPTION]} "
                   f"derived={per[rel][cm.DERIVED]}" for rel in sorted(per) if per.get(rel)]
-    new_rows = sorted(rot_rows) + sorted(count_rows) + sorted(dead_forms)
+    new_rows = (sorted(rot_rows) + sorted(count_rows) + sorted(dead_forms)
+                + sorted(bendonly_rows))
 
     if refresh:
         header = (
@@ -240,6 +272,9 @@ def gate(refresh=False, do_bend=True, plant_only=False):
             "#              half -- a ROT CELL.  The key is `file|name`.\n"
             "#   kind=DEAD   a `py=` value the SOURCE declares and no row carries -- a DEAD\n"
             "#              LANE.  The key is `file|builder|site`.\n"
+            "#   kind=BENDONLY a row whose `py=` half is a MARKER: CPython has NO\n"
+            "#              counterpart for it, so there is NOTHING TO COMPARE and it is\n"
+            "#              NOT a rot cell.  The key is `file|name`.\n"
             "#\n"
             "# A gate cannot read a sentence, so the prose is for the reader and the rows are\n"
             "# for the gate.\n")
@@ -282,6 +317,20 @@ def gate(refresh=False, do_bend=True, plant_only=False):
         key = dict(p.split("=", 1) for p in d.split(" ") if "=" in p).get("key", "")
         if key not in base_dead:
             fail.append(f"NEW DEAD `py=` form: {d}")
+    # LANE 4: A MARKER ROW THE BASELINE DOES NOT CARRY IS A FAILURE -- a new row with
+    # no CPython counterpart is new rot of the same kind as a new transcription, and a
+    # marker that is silently accepted is a filter rather than a lane.
+    base_bend = {dict(p.split("=", 1) for p in v.split(" ") if "=" in p).get("key", "")
+                 for v in base["BENDONLY"].values()}
+    for b in bendonly_rows:
+        key = dict(p.split("=", 1) for p in b.split(" ") if "=" in p).get("key", "")
+        if key not in base_bend:
+            fail.append(f"NEW BEND-ONLY row (a `py=` MARKER the baseline does not carry -- a row "
+                        f"with NO CPython counterpart): {b}")
+    for key in sorted(base_bend - {dict(p.split("=", 1) for p in b.split(" ") if "=" in p)
+                                   .get("key", "") for b in bendonly_rows}):
+        print(f"PROGRESS  : {key} is no longer a BEND-ONLY row -- it has a CPython counterpart "
+              f"now")
 
     if not rows and not rot_rows:
         print("DEAD      : the census emitted no row")
@@ -293,6 +342,7 @@ def gate(refresh=False, do_bend=True, plant_only=False):
         return FAIL
     print(f"\nPYCELL-CENSUS: PASS -- {tally[cm.TRANSCRIPTION]} transcription cell(s), "
           f"{len(rot_rows)} rot row(s), {len(dead_forms)} dead form(s), "
+          f"{len(bendonly_rows)} bend-only row(s), "
           f"over {len(files)} discovered files.")
     return PASS
 
