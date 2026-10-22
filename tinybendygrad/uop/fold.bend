@@ -301,10 +301,22 @@ def promo_dtype(ds: List<&2, S.Dt>) -> S.Dt:
 # least_upper_float -- dtype.py:195. `weakfloat if dt is weakint else dt if
 # is_float(dt) else least_upper_dtype(dt, default_float)`, and DEFAULT_FLOAT is
 # float32, which no ops.py caller of this ever overrides.
+#
+# THE `CWeakFloat` ARM IS MISSING HERE, AND IT WAS A REAL DEFECT.  CPython's
+# `is_float` is `dt.kind == 'f'` and a WEAK FLOAT's kind is 'f', so
+# `least_upper_float(weakfloat)` IS `weakfloat` -- but the `CFloat` arm here is the
+# STRONG float class, so a weakfloat fell through to the `case _` arm and came back
+# `float32`.  MEASURED, 2026-10-22: `mixin/elementwise.bend`'s `asin` built
+# `SQRT` with dtype `f32` where CPython's is `weakfloat`, and the promotion then
+# inserted THREE `CAST f32` nodes that upstream does not have -- and it did the same
+# to every already-ported method that uses a unary ALU (`sigmoid`, `tanh`,
+# `quick_gelu`, `swish`, `silu`), which NO GATE COULD SEE because every one of those
+# gates' fixtures is an INT.
 def least_upper_float.cls(cls: S.Cls, dt: S.Dt) -> Maybe<&1, S.Dt>:
   match cls:
     case S.CWeakInt{}: Some{S.weakfloat()}
     case S.CFloat{}: Some{dt}
+    case S.CWeakFloat{}: Some{dt}
     case _: least_upper(promo_mask(dt), promo_mask(S.single()))
 
 def least_upper_float(+dt: S.Dt) -> S.Dt:
