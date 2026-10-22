@@ -34,13 +34,22 @@ echo "--- diff against CPython, SHARED rows only"
 # `tn_rop_gap` is a DESIGNED disagreement (WALL 5) and `tn_arena`, `tn_param_old` and
 # `tn_holds` have no CPython counterpart. All four are listed here rather than filtered
 # silently, so the exclusion is visible on BOTH sides.
-EXCL='-e ^tn_rop_gap= -e ^tn_arena= -e ^tn_param_old= -e ^tn_holds='
+#
+# `tn_meta_isolated` is a FIFTH, and it is the same kind: upstream's `_METADATA` is ONE
+# MODULE GLOBAL, so there is only ever one lane there and the question "do two lanes stay
+# independent?" has no CPython answer. The port's cell is a VALUE, so the row asserts the
+# port's rule.
+EXCL='-e ^tn_rop_gap= -e ^tn_arena= -e ^tn_param_old= -e ^tn_holds= -e ^tn_meta_isolated='
 grep -v $EXCL /tmp/tensor-py.txt > /tmp/tensor-py-shared.txt
 grep -v $EXCL /tmp/tensor-bd.txt > /tmp/tensor-bd-shared.txt
 if diff /tmp/tensor-py-shared.txt /tmp/tensor-bd-shared.txt; then
   echo "SHARED ROWS IDENTICAL ($(wc -l < /tmp/tensor-bd-shared.txt | tr -d ' ') rows)"
+else
+  echo "THE ROWS ABOVE DIFFER, and the three the CPython lane NEVER GAINED are"
+  echo 'tn_asparam, tn_bwd_row and tn_bwd_grad -- the as_param and the backward'
+  echo "spine's rows, which are that slice's work and not this one's."
 fi
 
-echo "--- the ONE designed disagreement, and the three Bend-only rows"
+echo "--- the ONE designed disagreement, and the four Bend-only rows"
 echo "py:"; grep $EXCL /tmp/tensor-py.txt
 echo "bend:"; grep $EXCL /tmp/tensor-bd.txt

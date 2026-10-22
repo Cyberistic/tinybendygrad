@@ -24,6 +24,7 @@ import sys, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from tinygrad.tensor import Tensor
+import tinygrad.tensor as tensor_mod
 from tinygrad.uop.ops import UOp, Ops
 
 def sig(u, nm):
@@ -51,7 +52,13 @@ sig(t.uop._mop(Ops.EXPAND, ()), 'tn_mop_exp0')
 sig(t.uop._mop(Ops.EXPAND, (0,)), 'tn_mop_exp')
 sig(t.uop._mop(Ops.PAD, ((0, 0), (0, 1))), 'tn_mop_pad')
 sig(t.uop._mop(Ops.SHRINK, ((0, 2),)), 'tn_mop_shr')
-sig(t.uop._mop(Ops.FLIP, (0,)), 'tn_mop_flip')
+# `tn_mop_flip` WAS HERE and it is GONE because `Ops.FLIP` DOES NOT EXIST at the
+# pin `5c2bf39d6c4b` (`git show 5c2bf39d6c4b:tinygrad/uop/ops.py` names PERMUTE
+# and no FLIP), so the row raised `AttributeError: type object 'Ops' has no
+# attribute 'FLIP'` and THIS LANE DIED AT LINE 54 -- it printed eleven rows and
+# stopped, so the gate was RED AT REST and every row after this one was
+# unmeasured. The Bend lane never had a flip row, so deleting the line
+# RESTORES the two lanes' row sets instead of inventing one.
 sig(t.uop._mop(Ops.PERMUTE, ()), 'tn_mop_perm0')
 
 # --- `_rop`, ops.py:655, on the 1-D BUFFER-rooted fixtures --------------------
@@ -108,3 +115,80 @@ all_uops = (x + 3).uop.toposort()
 scope_uops = [x.uop, (x + 3).uop, Tensor(3).uop]
 print('tn_needgrad=%d' % len([u for u in scope_uops
                              if u in all_uops and Tensor(u).is_floating_point()]))
+
+# --- the metadata lane: tensor.py:567-589 ------------------------------------
+#
+# THIRTEEN ROWS, asked of the REAL `_ContextVar` and the REAL
+# `_metadata_wrapper`. `TRACEMETA` DEFAULTS TO 1 (`helpers.py:240`), so the
+# reflection loop at tensor.py:586 RAN AT IMPORT TIME and every method below
+# is really wrapped.
+from tinygrad.helpers import Metadata
+
+def md_show(m):
+  """A metadata state, rendered the way the Bend lane renders it: the NAME, or
+  `none` when the state is ABSENT. An EMPTY name renders as the empty string,
+  and that is the point -- "set to an empty value" and "never set" are
+  DIFFERENT states and they print DIFFERENTLY."""
+  return 'none' if m is None else m.name
+
+def md_of(t):
+  """The metadata ON a tensor: `all_metadata.get(uop, None)` is a TUPLE, so
+  this is its one element, or None when the tensor never had one."""
+  m = t.uop.metadata
+  return None if m is None else m[0]
+
+# THE STATE AT REST. The cell has never been set and it reads ABSENT. This is
+# also the state a cell explicitly set to `None` is in: upstream's cell holds
+# `Metadata|None` and `None` IS its default, so "never set" and "set to None"
+# are the SAME state, and a port that told them apart would DIVERGE.
+print('tn_meta_rest=%s' % md_show(tensor_mod._METADATA.get()))
+
+# THE SET'S TOKEN. The first set's OLD value is absent, because there was
+# nothing there to take.
+old = tensor_mod._METADATA.set(Metadata(name='a'))
+print('tn_meta_set_old=%s' % md_show(old))
+print('tn_meta_set_now=%s' % md_show(tensor_mod._METADATA.get()))
+old2 = tensor_mod._METADATA.set(Metadata(name='b'))
+print('tn_meta_set2_old=%s' % md_show(old2))
+print('tn_meta_set2_now=%s' % md_show(tensor_mod._METADATA.get()))
+tensor_mod._METADATA.set(None)
+
+# THE WRAPPER AT REST. It INSTALLS the metadata named after the method, and the
+# tensor the call builds CARRIES it.
+print('tn_meta_enter=%s' % md_show(md_of(Tensor(5).alu(Ops.ADD, Tensor(3)))))
+
+# A METADATA ALREADY IN EFFECT: the wrapper does NOT overwrite it, so the
+# OUTER name is the one in effect. THIS IS THE NESTING RULE.
+tensor_mod._METADATA.set(Metadata(name='outer'))
+print('tn_meta_enter_set=%s' % md_show(md_of(Tensor(5).alu(Ops.ADD, Tensor(3)))))
+tensor_mod._METADATA.set(None)
+
+# SET TO AN EMPTY VALUE. The name is EMPTY and the state is SET, and the
+# wrapper STILL does not overwrite it, so the empty name SURVIVES. A port
+# whose "absent" state were an empty-named metadata would print `inner` here.
+tensor_mod._METADATA.set(Metadata(name=''))
+print('tn_meta_enter_empty=%s' % md_show(md_of(Tensor(5).alu(Ops.ADD, Tensor(3)))))
+tensor_mod._METADATA.set(None)
+
+# TRACEMETA OFF: the guard's FIRST term, and nothing is installed. The
+# reflection loop already ran at import, so the guard is what turns the
+# wrapping off -- `TRACEMETA.value` is what the guard reads.
+tm_value = tensor_mod.TRACEMETA.value
+tensor_mod.TRACEMETA.value = 0
+print('tn_meta_enter_tm0=%s' % md_show(md_of(Tensor(5).alu(Ops.ADD, Tensor(3)))))
+tensor_mod.TRACEMETA.value = tm_value
+
+# THE RESTORE. The token is the state BEFORE the install, so exiting the call
+# puts the cell back where it was.
+Tensor(5).alu(Ops.ADD, Tensor(3))
+print('tn_meta_exit=%s' % md_show(tensor_mod._METADATA.get()))
+
+# A TENSOR THAT NEVER HAD IT. `__init__` is in the loop's skip list, so the
+# tensor it builds opens no scope and carries nothing.
+print('tn_meta_never=%s' % md_show(md_of(Tensor(7))))
+
+# THE SKIP LIST, BOTH WAYS: `__init__` IS skipped and `alu` is NOT.
+# `functools.wraps` sets `__wrapped__`, so a wrapped method HAS it and a
+# skipped one does not.
+print('tn_meta_excl=%s' % ('True' if not hasattr(Tensor.__init__, '__wrapped__') else 'False'))
+print('tn_meta_excl2=%s' % ('True' if not hasattr(Tensor.alu, '__wrapped__') else 'False'))

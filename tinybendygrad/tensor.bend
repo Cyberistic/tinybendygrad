@@ -2196,18 +2196,192 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # TODO(p3) tensor.py:553  decode_hevc_frame -- `Variable.unbound` and
 #                                         `Ops.CUSTOM_FUNCTION`
 #
-# AND THE METADATA HALF, which is a third thing: tensor.py:570-591 is a
+# AND THE METADATA HALF, which is a third thing: tensor.py:567-589 is a
 # `contextvars`-free mutable class (`_ContextVar`), a decorator (`_metadata_wrapper`)
 # and a REFLECTION loop that wraps every Tensor method with it. Bend has no `setattr`,
 # no `inspect` and no mutable class state, and the metadata itself is
-# `all_metadata[new_uop] = (metadata,)` at :107, which is the `Maybe<&2, Metadata>`
-# ops.bend already carries on a `Found` (ops.bend:1996) and never populates.
-# TODO(p3) tensor.py:107  all_metadata     -- ops.bend has the reader and no writer,
-#                                             because the writer needs a scope threaded
-#                                             through `_apply_uop`
-# TODO(p3) tensor.py:570  _ContextVar      -- mutable class state
-# TODO(p3) tensor.py:578  _metadata_wrapper -- a closure, so a def it RETURNS
-# TODO(p3) tensor.py:588  the TRACEMETA loop -- `inspect.getmembers` + `setattr`
+# `all_metadata[new_uop] = (metadata,)` at :106.
+# TODO(p3) tensor.py:106  all_metadata     -- ops.bend has the READER
+#                                             (`O.UOp.metadata`, ops.bend:2697) and no
+#                                             writer, because the writer needs a scope
+#                                             threaded through `_apply_uop`
+# ===========================================================================
+
+# ===========================================================================
+# THE METADATA LANE -- tensor.py:567-589 AT THE PIN.
+#
+# THE PORT'S THREE MARKERS NAMED 570, 578 AND 588, AND ALL THREE ARE TWO LINES
+# LATE. The FUNCTION NAMES are all RIGHT; the LINE NUMBERS are not. The pin's
+# lines, in full:
+#
+#   567  # this tracks the tensor.py METADATA, contextvars.ContextVar was
+#   568  class _ContextVar(Generic[T]):
+#   569    def __init__(self, default:T): self.state:T = default
+#   570    def get(self) -> T: return self.state
+#   571    def set(self, x:T) -> T:
+#   572      ret, self.state = self.state, x
+#   573      return ret
+#   574  _METADATA: _ContextVar[Metadata|None] = _ContextVar(default=None)
+#   576  def _metadata_wrapper(fn: Callable[P, T]) -> Callable[P, T]:
+#   577    def _wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+#   578      if TRACEMETA < 1 or _METADATA.get() is not None: return fn(*args, **kwargs)
+#   579      token = _METADATA.set(Metadata(name=fn.__name__))
+#   580      with cpu_profile(TracingKey(fn.__name__), "USER"):
+#   581        ret = fn(*args, **kwargs)
+#   582      _METADATA.set(token)
+#   583      return ret
+#   584    return _wrapper
+#   586  if TRACEMETA >= 1:
+#   587    for name, fn in inspect.getmembers(Tensor, inspect.isfunction):
+#   588      if name in ["__class__", "__del__", "__init__", "__new__", "__repr__", "backward", "sequential", "gradient"]: continue
+#   589      setattr(Tensor, name, functools.wraps(fn)(_metadata_wrapper(fn)))
+#
+# SO: `570` is the pin's `def get`, and the CLASS is at 568; `578` is the pin's
+# guard, and the DEF is at 576; `588` is the pin's skip test, and the loop's
+# HEAD is at 586. The drift is the SAME +2 for all three, so this block was
+# written against a tensor.py TWO LINES SHORTER above 568.
+#
+# WHAT IS PORTABLE, and what the port gives up:
+#
+#   * THE CELL (`_ContextVar`) is a MUTABLE class with ONE field. Bend has no
+#     mutable class state, so the port's cell is a VALUE -- WALL 1's idiom
+#     applied to a module global. Upstream's `set` RETURNS THE OLD STATE, and
+#     that return is the TOKEN the wrapper restores, so the port's `set`
+#     returns it too: THE PAIR IS (NEXT, OLD).
+#   * THE WRAPPER (`_metadata_wrapper`) is a CLOSURE: it RETURNS a def. Bend
+#     has no function values, so the port's wrapper is the SCOPE and the CALL
+#     is the caller's. Everything the wrapper DECIDES -- the guard, the
+#     install, the token, the restore -- is here.
+#   * THE LOOP (586-589) is a REFLECTION: `inspect.getmembers` plus `setattr`
+#     on the class. Bend has neither, so the LOOP is not portable and its
+#     CONTENT is: the list of methods the loop SKIPS. That list is not
+#     decoration -- `__init__` is in it, and that is why a plain `Tensor(5)`
+#     carries NO metadata while a tensor built by `alu` carries `alu`.
+#
+# THE DIVERGENCE THAT MATTERS, and it is the one the edge rows are about:
+# upstream's cell is ONE MODULE GLOBAL, so the metadata of one call IS the
+# metadata another call sees. The port's cell is a VALUE, so two lanes are two
+# cells and one lane's state CANNOT leak into another's.
+#
+# AND THE STATE IS ABSENT OR IT IS A `Metadata`, AND THERE IS NO THIRD THING.
+# Upstream's cell holds `Metadata|None` and `None` IS its default, so "never
+# set" and "explicitly set to None" are the SAME state -- a port that told
+# them apart would DIVERGE. And an EMPTY NAME is a SET state, not an absent
+# one: `tn_meta_enter_empty` is the row that says so, and it is the row a
+# port with a sentinel default would fail.
+# ===========================================================================
+
+# THE CELL. `st` is the `Maybe<&2, O.Metadata>` of `_METADATA`, whose type at
+# the pin is `_ContextVar[Metadata|None]`.
+type MetaCell is Data:
+  MetaCell{st: Maybe<&2, O.Metadata>}
+
+# THE SCOPE. `eff` is the metadata IN EFFECT while the call runs and `token` is
+# the state to RESTORE when it returns. Upstream's token is the value
+# `_METADATA.set` RETURNS, which is the state BEFORE the install.
+type MetaScope is Data:
+  MetaScope{eff: Maybe<&2, O.Metadata>, token: Maybe<&2, O.Metadata>}
+
+# THE SWAP. `_ContextVar.set` RETURNS THE OLD STATE, and that return is the
+# token the wrapper restores at :582, so a port that dropped it could not
+# restore. THE PAIR IS (NEXT, OLD) AND IT IS A RECORD, not a tuple: Bend
+# refuses to destructure a tuple out of a COMPUTED value, and the set IS one.
+type MetaSwap is Data:
+  MetaSwap{now: MetaCell, old: Maybe<&2, O.Metadata>}
+
+# `_ContextVar.get` -- tensor.py:570.
+def tn_meta_get(c: MetaCell) -> Maybe<&2, O.Metadata>:
+  match c:
+    case MetaCell{st}: st
+
+# `_ContextVar.set` -- tensor.py:571-573.
+def tn_meta_set(c: MetaCell, x: Maybe<&2, O.Metadata>) -> MetaSwap:
+  match c:
+    case MetaCell{st}: MetaSwap{MetaCell{x}, st}
+
+def MetaSwap.now(s: MetaSwap) -> MetaCell:
+  match s:
+    case MetaSwap{now, old}: now
+
+def MetaSwap.old(s: MetaSwap) -> Maybe<&2, O.Metadata>:
+  match s:
+    case MetaSwap{now, old}: old
+
+def MetaScope.eff(s: MetaScope) -> Maybe<&2, O.Metadata>:
+  match s:
+    case MetaScope{eff, token}: eff
+
+def MetaScope.token(s: MetaScope) -> Maybe<&2, O.Metadata>:
+  match s:
+    case MetaScope{eff, token}: token
+
+# THE RENDERING, and BOTH lanes use it: the NAME, or `none` when the state is
+# ABSENT. An EMPTY name renders as the empty string, and that is the point --
+# "set to an empty value" and "never set" are DIFFERENT states and they print
+# DIFFERENTLY.
+def md_name(m: O.Metadata) -> String:
+  match m:
+    case O.Metadata{name, backward}: name
+
+def md_show(m: Maybe<&2, O.Metadata>) -> String:
+  match m:
+    case Some{x}: md_name(x)
+    case _: "none"
+
+# `TRACEMETA < 1` -- the guard's FIRST term, tensor.py:578.
+def tn_meta_off(tm: U32) -> Bool:
+  U32.is_lt(tm, 1)
+
+# `_METADATA.get() is not None` -- the guard's SECOND term.
+def tn_meta_is_set(cur: Maybe<&2, O.Metadata>) -> Bool:
+  match cur:
+    case Some{m}: True{}
+    case None{}: False{}
+
+# THE GUARD, tensor.py:578. BOTH TERMS MATTER: the first is "TRACEMETA is off"
+# and the second is "a metadata is ALREADY in effect", and the second is what
+# makes the OUTER name win.
+def tn_meta_guarded(tm: U32, cur: Maybe<&2, O.Metadata>) -> Bool:
+  Bool.or(tn_meta_off(tm), tn_meta_is_set(cur))
+
+# THE WRAPPER, tensor.py:576-584. THE CALL IS THE CALLER'S, because Bend has
+# no function values; WHAT THE WRAPPER DECIDES IS HERE.
+#
+# THE SET IS COMPUTED UNCONDITIONALLY AND THE GUARD DECIDES WHICH HALF IS
+# TAKEN, and that is not a shortcut: upstream's token IS the value `set`
+# returns, so the old half is the token in BOTH arms. In the guarded arm the
+# next half is DISCARDED, which is upstream's "no set at all", and because the
+# port's cell is a VALUE the discarded half has no effect anywhere.
+#
+# `Bool.pick` IS THE FILE'S IDIOM FOR A COMPUTED CONDITION (a `match` may only
+# scrutinize a PARAMETER), and the two arms are the two halves of the choice.
+def tn_meta_enter(tm: U32, +c: MetaCell, name: String) -> MetaScope:
+  +sw = tn_meta_set(c, Some{O.Metadata{name, False{}}})
+  Bool.pick(MetaScope, tn_meta_guarded(tm, tn_meta_get(c)),
+    MetaScope{tn_meta_get(c), MetaSwap.old(sw)},
+    MetaScope{tn_meta_get(MetaSwap.now(sw)), MetaSwap.old(sw)})
+
+# THE SKIP LIST, tensor.py:588. UPSTREAM'S OWN LITERAL, and it is the portable
+# content of the reflection loop: a method in this list is NOT wrapped, so the
+# tensor it builds opens NO scope and carries NOTHING. `__init__` is in it, and
+# that is why a plain `Tensor(5)` has no metadata.
+def tn_meta_skip() -> List<&2, String>:
+  ["__class__", "__del__", "__init__", "__new__", "__repr__", "backward", "sequential", "gradient"]
+
+def tn_meta_excluded(name: String) -> Bool:
+  List.contains(String, String.eq, tn_meta_skip(), name)
+
+# WHAT A TENSOR CARRIES. Upstream's writer is `all_metadata[new_uop] = (metadata,)`
+# at tensor.py:106 and its reader is `UOp.metadata` (ops.py:752), which is
+# `O.UOp.metadata` here. A method the loop SKIPS opens no scope, so the tensor
+# it builds carries NOTHING; a method it WRAPS opens one, so the tensor
+# carries the scope's metadata. THE WRITER IS STILL A WALL (the `:106` marker
+# above), so this is the lane's answer for the tensor, computed where the
+# writer would record it.
+def tn_meta_carries(tm: U32, c: MetaCell, +name: String) -> Maybe<&2, O.Metadata>:
+  Bool.pick(Maybe<&2, O.Metadata>, tn_meta_excluded(name),
+    None{},
+    MetaScope.eff(tn_meta_enter(tm, c, name)))
 
 # ===========================================================================
 # THE GATE.
@@ -2741,6 +2915,93 @@ def t_holds() -> IO(Unit):
   +b = g_c3(a)
   t_row("tn_holds", tn_holds.of(a, b))
 
+# --- the metadata lane: tensor.py:567-589 ------------------------------------
+#
+# THIRTEEN ROWS, and every one of them is a SHARED row: the CPython lane asks
+# the REAL `_ContextVar` and the REAL `_metadata_wrapper` and prints the same
+# string. The rows are the EDGES, and two of them are the ones a metadata lane
+# gets wrong: "set to an EMPTY value" and "a tensor that NEVER had it".
+
+# THE STATE AT REST. The cell has never been set and it reads ABSENT. This is
+# also the state a cell explicitly set to `None` is in: upstream's cell holds
+# `Metadata|None` and `None` IS its default, so "never set" and "set to None"
+# are the SAME state, and a port that told them apart would DIVERGE.
+def t_meta_rest() -> IO(Unit):
+  t_srow("tn_meta_rest", md_show(tn_meta_get(MetaCell{None{}})))
+
+# THE SET'S TOKEN. The first set's OLD value is absent, because there was
+# nothing there to take.
+def t_meta_set_old() -> IO(Unit):
+  sw = tn_meta_set(MetaCell{None{}}, Some{O.Metadata{"a", False{}}})
+  t_srow("tn_meta_set_old", md_show(MetaSwap.old(sw)))
+
+def t_meta_set_now() -> IO(Unit):
+  sw = tn_meta_set(MetaCell{None{}}, Some{O.Metadata{"a", False{}}})
+  t_srow("tn_meta_set_now", md_show(tn_meta_get(MetaSwap.now(sw))))
+
+# SET TWICE. The SECOND set returns the FIRST's state, and that is the whole
+# of the cell's token discipline: the wrapper's restore is a set of the value
+# a set returned.
+def t_meta_set2_old() -> IO(Unit):
+  sw1 = tn_meta_set(MetaCell{None{}}, Some{O.Metadata{"a", False{}}})
+  sw2 = tn_meta_set(MetaSwap.now(sw1), Some{O.Metadata{"b", False{}}})
+  t_srow("tn_meta_set2_old", md_show(MetaSwap.old(sw2)))
+
+def t_meta_set2_now() -> IO(Unit):
+  sw1 = tn_meta_set(MetaCell{None{}}, Some{O.Metadata{"a", False{}}})
+  sw2 = tn_meta_set(MetaSwap.now(sw1), Some{O.Metadata{"b", False{}}})
+  t_srow("tn_meta_set2_now", md_show(tn_meta_get(MetaSwap.now(sw2))))
+
+# THE WRAPPER AT REST. It INSTALLS the metadata named after the method.
+def t_meta_enter() -> IO(Unit):
+  t_srow("tn_meta_enter", md_show(MetaScope.eff(tn_meta_enter(1, MetaCell{None{}}, "alu"))))
+
+# A METADATA ALREADY IN EFFECT: the wrapper does NOT overwrite it, so the
+# OUTER name is the one in effect. THIS IS THE NESTING RULE, and it is why
+# the guard READS the cell before it writes it.
+def t_meta_enter_set() -> IO(Unit):
+  t_srow("tn_meta_enter_set",
+    md_show(MetaScope.eff(tn_meta_enter(1, MetaCell{Some{O.Metadata{"outer", False{}}}}, "inner"))))
+
+# SET TO AN EMPTY VALUE. The name is EMPTY and the state is SET, and the
+# wrapper STILL does not overwrite it, so the empty name SURVIVES. A port
+# whose "absent" state were an empty-named metadata would print `inner` here,
+# and this row is the one that sees it.
+def t_meta_enter_empty() -> IO(Unit):
+  t_srow("tn_meta_enter_empty",
+    md_show(MetaScope.eff(tn_meta_enter(1, MetaCell{Some{O.Metadata{"", False{}}}}, "inner"))))
+
+# TRACEMETA OFF: the guard's FIRST term, and nothing is installed.
+def t_meta_enter_tm0() -> IO(Unit):
+  t_srow("tn_meta_enter_tm0", md_show(MetaScope.eff(tn_meta_enter(0, MetaCell{None{}}, "alu"))))
+
+# THE RESTORE. The token is the state BEFORE the install, so exiting the
+# scope puts the cell back where it was.
+def t_meta_exit() -> IO(Unit):
+  t_srow("tn_meta_exit", md_show(MetaScope.token(tn_meta_enter(1, MetaCell{None{}}, "alu"))))
+
+# A TENSOR THAT NEVER HAD IT. `__init__` is in the loop's skip list, so the
+# tensor it builds opens no scope and carries nothing.
+def t_meta_never() -> IO(Unit):
+  t_srow("tn_meta_never", md_show(tn_meta_carries(1, MetaCell{None{}}, "__init__")))
+
+# THE SKIP LIST, BOTH WAYS: `__init__` IS skipped and `alu` is NOT.
+def t_meta_excl() -> IO(Unit):
+  t_row("tn_meta_excl", tn_meta_excluded("__init__"))
+
+def t_meta_excl2() -> IO(Unit):
+  t_row("tn_meta_excl2", tn_meta_excluded("alu"))
+
+# TWO CELLS DO NOT LEAK INTO EACH OTHER. Upstream has ONE module global, so a
+# metadata set in one call IS the metadata another call sees; the port's cell
+# is a VALUE, so two lanes are two cells. This row has no CPython counterpart
+# and is the file's BEND-ONLY lane, like `tn_holds` and `tn_arena`.
+def t_meta_isolated() -> IO(Unit):
+  sw = tn_meta_set(MetaCell{None{}}, Some{O.Metadata{"a", False{}}})
+  t_row("tn_meta_isolated", Bool.and(
+    String.eq(md_show(tn_meta_get(MetaSwap.now(sw))), "a"),
+    String.eq(md_show(tn_meta_get(MetaCell{None{}})), "none")))
+
 
 def t_param_old() -> IO(Unit):
   +f = tn_const(O.Arena.empty(), O.CInt{H.i64_of_i32(5)})
@@ -2784,6 +3045,20 @@ def main() -> IO(Unit):
     t_holds()
     t_srow("tn_bwd_row", t_bwd_row())
     t_srow("tn_bwd_grad", t_bwd_grad())
+    t_meta_rest()
+    t_meta_set_old()
+    t_meta_set_now()
+    t_meta_set2_old()
+    t_meta_set2_now()
+    t_meta_enter()
+    t_meta_enter_set()
+    t_meta_enter_empty()
+    t_meta_enter_tm0()
+    t_meta_exit()
+    t_meta_never()
+    t_meta_excl()
+    t_meta_excl2()
+    t_meta_isolated()
 
 
 # ===========================================================================
@@ -2824,13 +3099,22 @@ def main() -> IO(Unit):
 # `backward`'s zip spans two files (`tensor.bend` and `mixin/gradient.bend`), so a plant
 # there needs a substrate check that `tensor-mutate.py` does not have.
 #
-# THE GATE ITSELF, and the 29 SHARED ROWS:
+# THE GATE ITSELF, and the 42 SHARED ROWS:
 #     sh .agents/slop/tensor-gate.sh
 # `--check-only` is `ALL PROOFS CHECK`, the interpreted and native lanes are byte
-# identical, and the 29 rows both lanes can print are byte identical to CPython. The one
-# DESIGNED disagreement is `tn_rop_gap` (WALL 5) and the three BEND-ONLY rows are
-# `tn_arena`, `tn_param_old` and `tn_holds`; the script lists all four rather than
-# filtering them silently.
+# identical, and the 42 rows both lanes can print are byte identical to CPython. The one
+# DESIGNED disagreement is `tn_rop_gap` (WALL 5) and the four BEND-ONLY rows are
+# `tn_arena`, `tn_param_old`, `tn_holds` and `tn_meta_isolated`; the script lists all
+# five rather than filtering them silently.
+#
+# THREE ROWS THE CPYTHON LANE NEVER GAINED, and they are the gate's remaining red:
+# `tn_asparam`, `tn_bwd_row` and `tn_bwd_grad`. They are the `as_param` and the
+# `backward` spine's rows and they belong to those slices, not to this one.
+# MEASURED 2026-10-22, and the lane was RED AT REST FOR A DIFFERENT REASON: it died
+# at `tn_mop_flip` with `AttributeError: type object 'Ops' has no attribute 'FLIP'`
+# (`Ops.FLIP` does not exist at the pin `5c2bf39d6c4b`), so it printed ELEVEN rows
+# and stopped. Deleting that one line made the lane run to the end; the 42 rows that
+# now match are 42 that were not measured at all before.
 #
 # | mutation | the edit | rows that MOVED | what it is testing |
 # | --- | --- | --- | --- |
