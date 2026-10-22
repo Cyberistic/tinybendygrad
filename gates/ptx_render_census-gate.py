@@ -2,10 +2,29 @@
 """ptx_render_census-gate.py -- A RENDER CENSUS over `tinybendygrad/renderer/ptx.bend`.
 
     .venv/bin/python gates/ptx_render_census-gate.py
+    .venv/bin/python gates/ptx_render_census-gate.py --refresh
+    .venv/bin/python gates/ptx_render_census-gate.py --plant
 
-579 ROWS, THREE LANES (CPython, bend interpreted, bend compiled), 58 DECLARED DIVERGENCES
-IN TWO GROUPS. Run `--refresh` to rewrite `gates/ptx_render_census-pins.rows`; that is
-its ONLY writer, and a file nothing can write is a file nothing can check.
+THE ROW COUNT IS READ FROM THE POPULATION, NOT TYPED, and the PIN is
+`gates/ptx_render_census-pins.rows`: THREE LANES (CPython, bend interpreted, bend compiled),
+every row's whole value spelled out. Run `--refresh` to rewrite it; that is its ONLY writer,
+and a file nothing can write is a file nothing can check. A POPULATION THAT GREW is red
+there -- the pins file's own per-lane row count is asserted against the population's -- so
+the count that used to live in this source no longer has to be edited by hand, and a
+count that a regeneration moves is not a count that a regeneration can leave STALE.
+
+59 DECLARED DIVERGENCES IN FOUR GROUPS, and that number IS typed, because the divergence
+list is a hand-declared table and its SIZE is the claim.
+
+579 -> 593 AND 58 -> 59, AND BOTH MOVED FOR ONE REASON. The axis was generated on 2026-10-15
+against the tree's THEN-`tinygrad/`, and the 2026-10-16 re-vendor to upstream `002630241`
+moved a BUFFER's size out of the `ParamArg` and into a size CONST SRC -- so CPython's own
+graphs gained a node, and FIFTEEN of the thirty-seven fixtures gained one each. `f14_skips`
+LOST one: upstream deleted `Ops.GROUP` (`4e0192eaf remove Ops.GROUP (#18637)`, 2026-10-06) and
+the oracle's fixture no longer builds one, so the axis's `OpsGROUP{}` row was a fixture
+against an upstream that no longer exists and the file DID NOT COMPILE. MEASURED: 593 - 579
+= 14 = 15 gained - 1 lost, and the axis is now the generator's own output rather than a
+transcription of an older upstream.
 
 WHY A FOURTH RENDER CENSUS, AND WHY THIS ONE IS DIFFERENT AGAIN.
 `gates/cstyle_render_census*` diffs a rendered STRING for a C renderer.
@@ -89,36 +108,84 @@ must NOT move). A check never seen to fail is not a check, so
 mutations -- including THREE THAT MUTATE THIS GATE'S OWN GUARDS, which is the only way to
 show `names_hold`, `axis_hold` and `claims_hold` go red rather than being decoration.
 """
+import hashlib
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 from gatekit import Gate, gate, PY, BEND  # noqa: E402
 
 ORACLE = HERE / "ptx_render_census-oracle.py"
 DRIVER = HERE / "ptx_render_census.bend"
 AXIS = HERE / "ptx_render_census_axis.bend"
+GEN = HERE / "ptx_render_census-gen.py"
 PINS = HERE / "ptx_render_census-pins.rows"
 
-# 579 rows. The count is DERIVED, never typed: `ROWS = len(run_oracle())` would make the
-# count follow the population instead of pinning it, and a count that cannot go wrong is a
-# count that cannot catch. So it is asserted instead, and the assertion names the census.
-# 557 -> 579 is TWO fixtures. `f37_twobufs` adds 15 rows (10 `.r` + `.mod` + `.regn` +
+
+def _lines(text):
+    return [l for l in text.splitlines() if l.strip()]
+
+
+def run_oracle():
+    """CPython's OWN rows, and the POPULATION this gate compares.
+
+    It is HERE, above the constants that read it, because the row count is read from
+    the population and a population that is read twice can be two populations.
+    """
+    return _lines(subprocess.run([str(PY), str(ORACLE)], capture_output=True,
+                                 text=True, check=True).stdout)
+
+
+# THE ROW COUNT IS READ FROM THE POPULATION, NEVER TYPED.  A COUNT IN THE SOURCE IS A
+# SECOND COPY OF A FACT THE POPULATION ALREADY CARRIES, and it is the copy that goes
+# STALE: MEASURED, this file said 579 while the population held 593, and nothing said so
+# because the number was not compared with anything -- the gate was REFUSED on a compile
+# error, so the count was never consulted, and the axis that disagreed with it was the
+# axis's own stale copy.
+#
+# WHERE THE PIN WENT, AND WHY IT IS NOT LOST.  The pin is `gates/ptx_render_census-pins.rows`:
+# 3 lanes x one row per population row, every VALUE spelled out, and `pins_hold()` compares
+# every one of them with the live lanes.  A population that GAINS a row is red there (the
+# pins file has no entry for it and the count check below fires), a population that LOSES
+# one is red there (the pinned value is not in the lane), and a population that CHANGES a
+# value is red there too.  So the count is derived from the population and the CONTENT is
+# pinned by a file whose whole job is to pin it -- and `pins_hold()` also asserts the pins
+# file's own per-lane row count, which is what makes a population that GREW red.
+#
+# 557 -> 579 was TWO fixtures. `f37_twobufs` adds 15 rows (10 `.r` + `.mod` + `.regn` +
 # 2 `.reg` + `.entry`): ptx.py:204's `r[u.src[0]]` read whose `src[0]` is NOT at step zero,
 # which no other INDEX/SHRINK in the axis had (MEASURED: a REG `placeholder` has no srcs,
 # so toposort always emitted it first, and `u.src[0]` at index 0 is the ONE value
 # `rg_at(w, 0)` gets right). `f38_regload` adds 7 (3 `.r` + `.mod` + `.regn` + `.reg` +
 # `.entry`): a LOAD whose `src[0]` is a REG BUFFER, so its register is a LIST and
 # `r[u.src[0]]` and `r[u.src[0]][0]` are DIFFERENT -- the shape M9 could not move.
-ROWS = 579
+# 579 -> 593 is THE RE-VENDOR, and it is +14 rows: FIFTEEN fixtures gained a node because
+# upstream moved a BUFFER's size out of the arg and into a size CONST SRC, and `f14_skips`
+# LOST one because upstream deleted `Ops.GROUP` and the oracle's fixture no longer builds
+# one. 15 - 1 = 14, and 579 + 14 = 593. The axis is now the generator's own output, so the
+# two numbers cannot disagree: `axis_hold()` checks the axis against the generator.
+#
+# THE POPULATION IS THE ORACLE'S OWN ROWS, read ONCE, because `build_divergences()` needs
+# CPython's `.mod` text anyway and running the oracle twice is a second chance to get two
+# different answers.
+ORACLE_ROWS = run_oracle()
+ROWS = len(ORACLE_ROWS)
 # 62 -> 58. GROUP 3a EMPTIED: `ptx.bend`'s alias arm read `Wal.r[0]` where ptx.py:189 and
 # ptx.py:204 read `r[u.src[0]]`, six rows diverged, the fix landed, and the six are now
 # COMPARED rows like the rest. +2 for `f37_twobufs.mod` and `f38_regload.mod`, which are
 # GROUP 2 like every other `.mod`. 58 = 18 dtype + 5 weak registers + 35 `.mod`.
-N_DIVERGES = 58
+# 58 -> 59 is GROUP 4, and it is the SAME RE-VENDOR: upstream's `ptx.py:164` `fmt` LOST its
+# `line[0] == "$"` early return (`return line if line[0]=="$" else "\t" + line.replace(...)`
+# became `return "\t" + line.replace(...)`), so a `$` line is INDENTED by the pin and
+# PASSED THROUGH by the port, whose `tc_ptx.bend` still has `fmt_israw`. `fmt_18` is the
+# `$RAW` probe: the port says `$RAW`, CPython says `\t$RAW`. A FINDING, NOT A CARVE-OUT --
+# the port's `fmt` is stale against the pin -- and it is DECLARED so the exact wrong answer
+# is pinned on both sides and a reader can see it.
+N_DIVERGES = 59
 
 # --------------------------------------------------------------------------
 # THE DIVERGENCES, generated ONCE from a real run and then FROZEN here. The three
@@ -130,6 +197,17 @@ DTYPES_ABSENT = {"void": ("", "", ""), "bf16": ("", "", ""),
                  "fp8e4m3": ("", "", ""), "fp8e5m2": ("", "", ""),
                  "fp8e4m3fnuz": ("", "", ""), "fp8e5m2fnuz": ("", "", "")}
 WEAKINT = ("", "", "")
+
+
+# GROUP 4 -- `fmt_18`, ONE ROW, and it is the pin's `ptx.py:164` `fmt` against the port's
+# `tc_ptx.bend`. UPSTREAM DROPPED THE `$` EARLY RETURN: the pre-vendor line was
+# `return line if line[0]=="$" else "\t" + line.replace(...)` and the pin's is
+# `return "\t" + line.replace(...)`, so at the pin a `$` line is INDENTED like any other and
+# the port still PASSES IT THROUGH UNTOUCHED (`tc_ptx.bend`'s `fmt_israw`). The port's value
+# is `$RAW`; CPython's is `\t$RAW` -- a literal backslash-t, because the oracle escapes the
+# tab. The port's value is PINNED HERE so the exact wrong answer is on both sides, and the
+# port's `fmt` is `tc_ptx.bend`'s to fix, not this gate's.
+FMT_RAW = "fmt_18=\\t$RAW"
 
 
 def dtype_divergences():
@@ -201,10 +279,6 @@ def module_divergences(py):
     return d
 
 
-def _lines(text):
-    return [l for l in text.splitlines() if l.strip()]
-
-
 def _pins_lines(text):
     """PINS rows are non-blank AND not a `#` comment, so a provenance line is never parsed as data.
 
@@ -214,11 +288,6 @@ def _pins_lines(text):
     is worse than a refused one.
     """
     return [l for l in text.splitlines() if l.strip() and not l.startswith("#")]
-
-
-def run_oracle():
-    return _lines(subprocess.run([str(PY), str(ORACLE)], capture_output=True,
-                                 text=True, check=True).stdout)
 
 
 def rows_of(path):
@@ -257,7 +326,8 @@ def build_divergences():
     d.update(dtype_divergences())
     d.update({k: (f"{k}=NONE", f"{k}={v}") for k, v in WEAK.items()})
     d.update(module_divergences({l.split("=", 1)[0]: l.split("=", 1)[1]
-                                 for l in run_oracle()}))
+                                 for l in ORACLE_ROWS}))
+    d["fmt_18"] = (FMT_RAW, "fmt_18=$RAW")
     return d
 
 
@@ -287,7 +357,13 @@ def names_hold() -> bool:
     _, bn = rows_of_text(bd_txt.stdout)
     bad = []
     if len(pn) != ROWS:
-        bad.append(f"the oracle emits {len(pn)} named rows, the census declares {ROWS}")
+        # `ROWS` IS READ FROM THE POPULATION -- from ANOTHER RUN of the oracle, taken when
+        # this module was imported.  So this is not a tautology: it is the DETERMINISM
+        # check, and a census whose own oracle answers differently twice is a census whose
+        # population is not a set.  MEASURED, the oracle is deterministic; this says so on
+        # every run rather than assuming it.
+        bad.append(f"the oracle emits {len(pn)} named rows on this run, the population "
+                   f"held {ROWS} on the run this module was imported with")
     if pn != bn:
         only_py = [x for x in pn if x not in bn]
         only_bd = [x for x in bn if x not in pn]
@@ -314,14 +390,27 @@ def rows_of_text(text):
 
 
 def axis_hold() -> bool:
-    """THE FIXTURE AXIS, THREE WITNESSES. The census's `fixtures()`, the GENERATED axis's
-    `# FIXTURES` line, and the census's REFUSAL column against CPython's own refusals.
+    """THE FIXTURE AXIS, FIVE WITNESSES. The census's `fixtures()`, the GENERATED axis's
+    `# FIXTURES` line, the census's REFUSAL column against CPython's own refusals, the axis's
+    UPSTREAM-PIN against the tree, and the axis's BYTES against the generator.
 
-    Every one of the three is a text read or a run, never a hand list, and the REFUSAL
+    Every one of the five is a text read or a run, never a hand list, and the REFUSAL
     column is the only ADMITTED axis in the file: "which of these graphs does CPython
     refuse" is not something any call RETURNS, so the generator asks by CALLING `render` and
     this check asks again from the oracle's own `.mod=REFUSE:` rows. A sixth refusal on one
     side and not the other is red here, and not a silent extra row in the diff.
+
+    **AND THE LAST TWO ARE THE ONES THAT CATCH A STALE AXIS, WHICH IS WHAT ACTUALLY HAPPENED.**
+    The axis was generated on 2026-10-15 against the tree's THEN-`tinygrad/`; the 2026-10-16
+    re-vendor moved a BUFFER's size into a size CONST SRC, so CPython's graphs gained a node
+    and the axis was stale by +14 rows -- and NOTHING SAID SO, because the axis's own bytes
+    did not move and the gate that would have said so was REFUSED on a compile error. A
+    FIXTURE AGAINST AN UNSTATED REVISION IS A FIXTURE AGAINST NOBODY, so the axis now STATES
+    the upstream it was generated from, as a CONTENT PIN over the files the oracle READ
+    (derived from the oracle's own imports, not a list), and this check compares it with the
+    tree. The BYTE check is the second witness and it catches a hand-edit too: the axis is
+    the generator's own output, and anything else is a file that describes some other
+    upstream.
     """
     bad = []
     src = DRIVER.read_text()
@@ -346,9 +435,50 @@ def axis_hold() -> bool:
         py_ref = {k[:-4] for k, v in py.items() if k.endswith(".mod") and v.startswith("REFUSE:")}
         if py_ref != gen_refs:
             bad.append(f"CPYTHON REFUSES {sorted(py_ref)}, the axis declares {sorted(gen_refs)}")
+    bad += axis_pin_bad(ax)
     if bad:
         print("ptx_render_census-gate: AXIS: " + "; ".join(bad), file=sys.stderr)
     return not bad
+
+
+def axis_pin_bad(ax: str) -> list[str]:
+    """THE TWO STALENESS WITNESSES, and they answer DIFFERENT questions.
+
+    THE PIN: every `# UPSTREAM-PIN <path> <sha256>` line in the axis, compared with the
+    tree's current file. It NAMES the upstream file that moved, which is the answer a reader
+    wants ("your upstream moved, regenerate the axis"), and it is the content pin the house
+    already uses (`gates/gatekit.py:oracle_drift`): a revision STRING in a generated file is
+    a transcription, and a transcription is true until the next re-vendor and false after it
+    with nothing reading it.
+
+    THE BYTES: the axis against what `gates/ptx_render_census-gen.py` produces NOW. The
+    generator IS the axis's only writer, so anything else is a hand-edit or a stale file, and
+    this says so in one comparison instead of arguing about which fixture moved.
+
+    NEITHER IS A SECOND COPY OF THE PIN LIST: the pin lines are IN the axis, and the
+    generator is run, not re-implemented.
+    """
+    bad = []
+    pins = re.findall(r"^# UPSTREAM-PIN (\S+) ([0-9a-f]{64})$", ax, re.M)
+    if not pins:
+        bad.append("the axis states no UPSTREAM-PIN, so it names no upstream and a fixture "
+                   "against an unstated revision is a fixture against nobody")
+    for rel, want in pins:
+        p = ROOT / rel
+        if not p.is_file():
+            bad.append(f"{rel}: the pinned upstream file is ABSENT")
+            continue
+        got = hashlib.sha256(p.read_bytes()).hexdigest()
+        if got != want:
+            bad.append(f"{rel}: {got[:16]} != pinned {want[:16]} -- the upstream MOVED under the "
+                       f"axis; regenerate it with `gates/ptx_render_census-gen.py`")
+    gen = subprocess.run([str(PY), str(GEN)], capture_output=True, text=True)
+    if gen.returncode != 0:
+        bad.append(f"the generator did not run (rc={gen.returncode}): {gen.stderr.strip()[:120]}")
+    elif gen.stdout != ax:
+        bad.append("the axis is NOT what the generator produces now -- it is STALE or "
+                   "hand-edited; regenerate it with `gates/ptx_render_census-gen.py`")
+    return bad
 
 
 def claims_hold() -> bool:
@@ -362,9 +492,9 @@ def claims_hold() -> bool:
         claim, and `gatekit._lines` would otherwise have nothing to say about it;
       * `barrier` with its TAB spelled rather than emitted;
       * the EIGHT GROUP-3 walk rows. Six read `NONE` for as long as the pin stood and now
-        read CPython's register; `f37_twobufs.r3` is the one that must NOT change. They
+        read CPython's register; `f37_twobufs.r4` is the one that must NOT change. They
         are here because a fixed divergence leaves `DIVERGES` and becomes an ordinary
-        COMPARED row -- which the DIFF does see, but only as one row among 579.
+        COMPARED row -- which the DIFF does see, but only as one row among 593.
     """
     f = make_gate().dir / "bd.out"
     if not f.exists():
@@ -387,18 +517,30 @@ def claims_hold() -> bool:
             "f07_reuse.r4": "%g0", "f10_loads.r4": "%g0", "f10_loads.r6": "%g1",
             "f10_loads.r8": "%g2", "f10_loads.r9": "{%g0, %g1, %g2}",
             "f12_after.r5": "%alu_f32_0",
-            # AND THE `rg_pick` HALF, WHICH HAD NO FIXTURE UNTIL `f37_twobufs`. `r7` is
-            # `r[4][1]` = `%reg_f32_5`; reading step zero answers `%reg_f32_1`, a
-            # DIFFERENT register of the SAME buffer, so this is a discriminator and not
-            # a coincidence. `r8` is the STACK that consumes it.
-            "f37_twobufs.r7": "%reg_f32_5", "f37_twobufs.r8": "{%reg_f32_2, %reg_f32_5}",
-            # THE NEGATIVE IN THE SAME FIXTURE: `r3` is `r[0][2]`, and step zero is the
-            # RIGHT answer for it. Without this row the fixture could pass by being
-            # uniformly wrong.
-            "f37_twobufs.r3": "%reg_f32_2",
+            # AND THE `rg_pick` HALF, WHICH HAD NO FIXTURE UNTIL `f37_twobufs`. THE THREE
+            # ROWS BELOW MOVED BY ONE STEP, AND WHY IS THE SAME RE-VENDOR AS EVERYTHING ELSE:
+            # upstream moved a BUFFER's size into a size CONST SRC, so the size CONST is now
+            # step 0 and every INDEX in this fixture moved down one. `r8` is `r[5][1]` =
+            # `%reg_f32_5`, the second INDEX's register; reading step zero now answers `NONE`
+            # (step 0 is the size CONST, which allocates nothing) rather than `%reg_f32_1`,
+            # so the discriminator is LOUDER than it was. `r9` is the STACK that consumes it.
+            "f37_twobufs.r8": "%reg_f32_5", "f37_twobufs.r9": "{%reg_f32_2, %reg_f32_5}",
+            # THE FIRST INDEX'S REGISTER, `r[1][2]` = `%reg_f32_2`. IT IS NO LONGER THE
+            # "NEGATIVE" IT WAS: the old `r3` was `r[0][2]` and step zero WAS the buffer, so
+            # the step-zero read was RIGHT for it and the fixture could pass by being
+            # uniformly wrong. There is no such row left in this fixture -- step 0 is the
+            # size CONST now -- and MEASURED, the step-zero regression (`rg_pick` reading
+            # `Wal.r[0]`) moves SIX rows where it used to move TWO: `f05_regbuf4.r4`,
+            # `f06_regbuf1.r4`, `f36_regstore.r4`, `f37_twobufs.r4`, `.r8` and `.r9`, all
+            # to `NONE`. The fixture discriminates HARDER, and this row is one of the six.
+            "f37_twobufs.r4": "%reg_f32_2",
             "f31_weakint.r1": "%ridx_s32_0", "f32_weakfloat.r2": "%alu_f32_0",
             "f33_bf16cast.r1": "%cast__0",
-            "f35_loadvec.r1": "{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}",
+            # `f35_loadvec`'s LOAD IS STEP 2 NOW, NOT STEP 1, for the same reason: the
+            # PARAM's size CONST is step 0 and the PARAM is step 1. The VALUE is unchanged --
+            # a four-element LIST, which is the M9 shape (`f38_regload`'s LOAD subscripts a
+            # LIST rather than a scalar). MEASURED, M9 moves `f38_regload.r2` (it was `.r1`).
+            "f35_loadvec.r2": "{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}",
             "f31_weakint.mod": "PORT-ANSWERED", "f08_refuse.mod": "PORT-REFUSED:INDEX",
             "f05_regbuf4.reg0": "\\t.reg\\t\\t.f32 %reg_f32_<4>;",
             "f10_loads.reg2": "\\t.reg\\t\\t.u32 %g2;"}
@@ -440,6 +582,21 @@ def pins_hold() -> bool:
         got = raw[lane].get(row)
         if got != val:
             miss.append(f"{lane}:{row}={got!r} != pinned {val!r}")
+    # THE PINS FILE'S OWN ROW COUNT, and it is the PIN for the count the source no longer
+    # types.  `ROWS` is read from the POPULATION (the oracle's own rows), so a population
+    # that GREW moves `ROWS` with it -- and the pins file, which was written against the
+    # OLD population, is what says so.  WITHOUT THIS, a population that grew would be a
+    # SILENT change: every pinned row would still match (the old rows are still there),
+    # and the extra row would be compared against nothing.  THE COUNT IS NOT A NUMBER
+    # ANYMORE, IT IS A FILE, AND A FILE CAN BE STALE.
+    per_lane = {}
+    for l in lines[1:]:
+        lane = l.split("\t", 1)[0]
+        per_lane[lane] = per_lane.get(lane, 0) + 1
+    for lane, n in sorted(per_lane.items()):
+        if n != ROWS:
+            miss.append(f"{lane}: the pins file holds {n} rows, the population holds {ROWS} -- "
+                        f"the population moved; refresh the pins with --refresh")
     if miss:
         print("ptx_render_census-gate: PINS: " + "; ".join(miss[:4]), file=sys.stderr)
     return not miss
@@ -475,9 +632,27 @@ def refresh_pins():
     # a duplicate OF THE SAME VALUE, which is exactly the kind of noise a check that
     # iterates rather than compares will not notice. Deduped on `(lane, row)`, last wins.
     rows = {(t, r): v for t, r, v in (l.split("\t") for l in body)}
+    emitted: dict[str, set[str]] = {}
     for lane, name in (("py", "py.rows"), ("bd", "bd.out"), ("bn", "bn.out")):
         got, _ = rows_of(d / name)
+        emitted[lane] = set(got)
         rows.update({(lane, k): v for k, v in got.items()})
+    # **AND A PIN FOR A ROW THAT NO LANE EMITS IS DROPPED, WHICH IS THE OTHER HALF OF
+    # "REBUILT".** MEASURED: `f14_skips` LOST a node -- upstream deleted `Ops.GROUP`, so the
+    # fixture's walk is one step shorter -- and the old file's `f14_skips.r8` survived the
+    # merge because nothing in the lanes says that row does not exist. `pins_hold()` then
+    # read `raw[lane].get("f14_skips.r8")` as `None` against a pinned `NONE` and the gate
+    # went RED ON A ROW THAT DOES NOT EXIST. The merge exists so that a LANE THAT DID NOT
+    # RUN keeps its pins; a row no lane emits is not that, so it is dropped -- and the
+    # population of a pins file is the rows the lanes EMIT, which is what the file's own
+    # header says the lanes are.
+    every = set().union(*emitted.values()) if emitted else set()
+    dropped = [k for k in list(rows) if k[1] not in every]
+    for k in dropped:
+        del rows[k]
+    if dropped:
+        print(f"--refresh: dropped {len(dropped)} pin(s) for rows no lane emits, e.g. "
+              f"{sorted({r for _, r in dropped})[:4]}")
     # SORT BY (row, lane) AND WRITE lane, row, value -- MEASURED, the first version sorted
     # `(row, lane, value)` and then joined the tuple as it stood, so the file came out
     # `row<TAB>lane<TAB>value` while the header said `lane<TAB>row<TAB>value`. `pins_hold()`
@@ -497,20 +672,191 @@ def refresh_pins():
     return 0
 
 
+# ---- the plant ---------------------------------------------------------------------------------
+# THE PLANT IS A TEXT EDIT ON THE FILE AS IT STANDS NOW, NEVER A READ OF `git show HEAD:`.
+# A plant that reads HEAD plants nothing the moment HEAD carries the defect's fix -- and
+# THIS defect's fix is already in HEAD's future, because the fix IS "regenerate the axis".
+# So the bytes come from the WORKING TREE and the edit is applied to them.
+#
+# THE ANCHOR IS THE WHOLE `ax14` HEADER AND ITS FIRST TWO ROWS, not one row: the `OpsNOOP`
+# row is not unique (ax21 has one too), and an anchor that is not unique is an anchor that
+# plants in two places at once. MEASURED, and the reason is in the header: the file is
+# GENERATED, so the `ax14` block is a fixed shape the generator emits, and the plant puts
+# back the row the generator no longer emits.
+PLANT_ANCHOR = ('def ax14() -> List<&2, P.Wk>:\n'
+                '  [  P.Wk{O.OpsNOOP{}, S.void(), S.Aalu{}, 1, "", [], 0, True{}},\n'
+                '    P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},')
+# THE PLANTED ROW IS THE ROW THE OLD AXIS HAD: `O.OpsGROUP{}`, the op upstream DELETED in
+# `4e0192eaf remove Ops.GROUP (#18637)` (2026-10-06). It is not a plausible-looking op; it
+# is the EXACT text that was there, because the question the plant asks is "does the
+# compiler refuse a name the enum does not declare", and a made-up op would answer a
+# different question.
+PLANT_ROW = '    P.Wk{O.OpsGROUP{}, S.void(), S.Aalu{}, 1, "", [0, 0], 0, True{}},'
+# THE CONTROL'S ANCHOR IS A LINE THAT CARRIES ONE STATEMENT, so a comment appended at its
+# END cannot swallow anything. The two-part line is the `ax14` LIST OPEN plus its first
+# element -- `  [  P.Wk{...},` -- and that is what SHAPE A below uses.
+CONTROL_ANCHOR = '    P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},\n' \
+                 '    P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},'
+SCRATCH = HERE / "_ptxaxis_plantcase.bend"
+
+
+def _code_only(text: str) -> str:
+    """The file with every comment REMOVED and every blank line DROPPED.
+
+    The comment removal is `checks/port-compile-gate.py`'s own `strip_comments()`, imported by
+    path and not re-implemented -- it is the house's stripper and it knows that a `#` inside a
+    string is not a comment. The BLANK-LINE DROP is this file's addition, and it is what makes
+    the proof cover a WHOLE-LINE comment: a comment on its own line contributes a line that is
+    empty once the comment is stripped, and comparing LINE LISTS would call that "not
+    comment-only" -- which is the most comment-only edit there is.
+    """
+    pc = _load_port_compile()
+    return "\n".join(l for l in pc.strip_comments(text).split("\n") if l.strip())
+
+
+def plant() -> int:
+    """THE PLANT, THE CONTROL, AND THE TWO WRONG SHAPES OF A COMMENT-ONLY EDIT.
+
+        .venv/bin/python gates/ptx_render_census-gate.py --plant
+
+    THE PLANT puts `O.OpsGROUP{}` back and the COMPILE CHECK MUST GO RED. THE CONTROL is a
+    comment of the same size on a line that carries ONE statement, and it must move
+    NOTHING. The two wrong shapes are MEASURED, not assumed, because a control that edits
+    more than it meant to is not a control:
+
+      SHAPE A -- a comment BETWEEN the two parts of a line that carries two parts DELETES
+      the second part. In bend a `#` runs to the end of the line, so a comment inserted
+      between a list opener and its first element swallows the element, and the file still
+      COMPILES -- which is the dangerous part: the comment-only proof is what catches it,
+      and the compiler does not.
+      SHAPE B -- a whole-line comment AT COLUMN 0 does NOT break a bend file. The parser
+      skips whole-line comments, so the block below is untouched. MEASURED here, on this
+      file, at the insertion point the shape names.
+
+    THE COMPILE CHECK IS THE INSTRUMENT'S OWN, IMPORTED BY PATH from
+    `checks/port-compile-gate.py` -- its `judge()` and its `strip_comments()`. A second copy
+    of either would be a second copy of a population, and this file already carries one
+    fault of that kind.
+    """
+    pc = _load_port_compile()
+    original = AXIS.read_text()
+    if PLANT_ANCHOR not in original:
+        print("REFUSED: the plant's anchor is not in the axis as it stands. THE PLANT IS A TEXT "
+              "EDIT ON THE WORKING TREE, so an anchor that moved means the plant must be "
+              "re-anchored -- NOT that it should fall back to reading git.")
+        return 3
+    cases = []
+    # 1. THE PLANT: the compile error put back.
+    cases.append(("PLANT", original.replace(PLANT_ANCHOR, PLANT_ANCHOR.replace(
+        '    P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},',
+        PLANT_ROW + '\n    P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},', 1)),
+        "the op upstream deleted, constructed again"))
+    # 2. THE CONTROL: a comment of the same size, on a line that carries ONE statement.
+    cases.append(("CONTROL", original.replace(
+        PLANT_ANCHOR,
+        PLANT_ANCHOR + '  # control: a comment, same size, no code', 1),
+        "a comment of the same size at the end of a one-statement line"))
+    # 3. SHAPE A -- a comment BETWEEN the two parts of the two-part line. The first element
+    #    of the `ax14` list is the second part, and it is DELETED.
+    two_part = '  [  P.Wk{O.OpsNOOP{}, S.void(), S.Aalu{}, 1, "", [], 0, True{}},'
+    if two_part in original:
+        cases.append(("WRONG-SHAPE-A (comment between a list opener and its first element)",
+                      original.replace(two_part, '  [  # a comment between the opener and the element',
+                                       1),
+                      "the second part of a two-part line is DELETED"))
+    else:
+        print("WRONG-SHAPE-A  NOT APPLICABLE, AND THAT IS A MEASUREMENT: the axis has no line "
+              "that carries a list opener and its first element on one line.")
+    # 4. SHAPE B -- a whole-line comment AT COLUMN 0, above an indented body.
+    lines = original.split("\n")
+    indent = next((i for i, ln in enumerate(lines)
+                   if i > 0 and ln.startswith("  ") and lines[i - 1].strip()
+                   and not lines[i - 1].lstrip().startswith("#")), None)
+    if indent is not None:
+        b = list(lines)
+        b.insert(indent, "# a comment inserted at column 0")
+        cases.append((f"WRONG-SHAPE-B (column-0 comment above line {indent + 1})",
+                      "\n".join(b),
+                      "a comment line at column 0, above an indented body"))
+    else:
+        print("WRONG-SHAPE-B  NOT APPLICABLE, AND THAT IS A MEASUREMENT: no indented body "
+              "follows a non-comment line in the axis.")
+
+    bad = 0
+    for name, text, why in cases:
+        SCRATCH.write_text(text)
+        try:
+            state, detail, _ = pc.judge(str(SCRATCH), 2048, 300)
+        finally:
+            SCRATCH.unlink(missing_ok=True)
+        # A COMMENT-ONLY EDIT IS PROVED BY THE COMMENT-STRIPPED BYTES, not by the verdict --
+        # and the proof drops BLANK LINES, because a WHOLE-LINE comment IS a blank line once
+        # the comment is gone. MEASURED: without that, the most comment-only edit there is --
+        # a comment on its own line -- reads as "not comment-only" for a difference of ONE
+        # EMPTY LINE, and a control that is rejected for being a comment is a control that
+        # proves nothing. A comment APPENDED to a line leaves no blank line at all, so both
+        # shapes are covered by the same comparison.
+        same_code = _code_only(text) == _code_only(original)
+        print(f"{name:<62} verdict={state:<14} comment-only={same_code!s:<5} {why}")
+        print(f"{'':<62} :: {detail[:110]}")
+        if name == "PLANT":
+            if state != "FINDING":
+                print("  THE PLANT DID NOT FIRE: the compile check did not go red on the defect "
+                      "it plants.")
+                bad += 1
+        if name == "CONTROL":
+            if state != "COMPILES" or not same_code:
+                print("  THE CONTROL IS NOT A CONTROL: it moved the verdict, or it edited more "
+                      "than a comment.")
+                bad += 1
+        if name.startswith("WRONG-SHAPE-A") and same_code:
+            print("  THE WRONG SHAPE DID NOT MISBEHAVE: it was comment-only after all, so it is "
+                  "not a demonstration of anything.")
+            bad += 1
+        if name.startswith("WRONG-SHAPE-B") and state != "COMPILES":
+            print("  THE WRONG SHAPE BROKE THE FILE, so it is not the shape this file tolerates.")
+            bad += 1
+    print(f"\n=== plant: {'FAIL' if bad else 'PASS'}: {bad} problem(s) ===")
+    return 1 if bad else 0
+
+
+def _load_port_compile():
+    """`checks/port-compile-gate.py` BY PATH, for its `judge()` and its `strip_comments()`.
+
+    The compile check is that file's, and it reads the VERDICT TOKEN rather than the exit
+    status -- `AGENTS.md` records a unit that lost 425 rows by believing the status. Re-typing
+    a second judge here would be a second copy of the question, and the two would drift.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("port_compile", ROOT / "checks" / "port-compile-gate.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 if __name__ == "__main__":
+    if "--plant" in sys.argv:
+        sys.exit(plant())
     if "--refresh" in sys.argv:
         sys.exit(refresh_pins())
     make_gate()
     assert len(DIVERGES) == N_DIVERGES, f"DIVERGES holds {len(DIVERGES)}, the file says {N_DIVERGES}"
-    assert GATE.compared == ROWS - N_DIVERGES == 521
+    # NO TYPED COUNT HERE EITHER.  `534` was a second copy of `ROWS - N_DIVERGES` and it
+    # was stale for the same reason `593` was: a number in the source is a copy nobody
+    # compares with anything.  The comparison is still ASSERTED -- it is the shape of the
+    # gate, not the value -- but the value is computed.
+    assert GATE.compared == ROWS - N_DIVERGES
     sys.exit(gate(make_gate(),
-                  "ptx_render_census-gate: 579 rows, 3 lanes byte-identical over the walk and "
-                  "the SEAM, 58 DECLARED divergences in two groups -- 18 are the dtype "
+                  f"ptx_render_census-gate: {ROWS} rows (READ FROM THE POPULATION, not typed), "
+                  f"3 lanes byte-identical over the walk and the SEAM, {N_DIVERGES} DECLARED "
+                  "divergences in FOUR groups -- 18 are the dtype "
                   "tables answering `pred` or the EMPTY STRING where ptx.py:181 raises "
                   "KeyError (the PTX form of the AMDWORD32 defect, REACHABLE through "
                   "UOp.range's default weakint) and FIVE MORE are the registers the port "
                   "then allocates where CPython refuses (`%alu__0`, `%cast__0`, "
-                  "`%ridx_pred_0`); 35 are the un-ported string_rewrite. The SIX rows that "
+                  "`%ridx_pred_0`); 35 are the un-ported string_rewrite; and ONE (`fmt_18`) "
+                  "is the port's `tc_ptx.bend` still passing a `$` line through untouched "
+                  "where the pin's `ptx.py:164` indents every line. The SIX rows that "
                   "were ptx.bend's alias arm reading Wal.r[0] where ptx.py:189 and :204 "
                   "read r[u.src[0]] are FIXED and COMPARED, `f37_twobufs` is the fixture "
                   "whose INDEX carries a non-zero src[0] and the only thing in the axis "

@@ -21,12 +21,16 @@ ONE SHAPE IS A CHOICE, AND IT IS THE ONLY ONE: `Wk.nmn` is `u.max_numel()`. A RE
 of four elements and a LOAD of four elements both give 4, and ptx.py:198/208 read the same
 number for both -- so there is nothing to choose.
 """
+import ast
+import hashlib
+import importlib.util
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 src = (HERE / "ptx_render_census-oracle.py").read_text().split("if __name__")[0]
 G = {"__name__": "gen"}
 exec(compile(src, "oracle", "exec"), G)
@@ -62,6 +66,74 @@ def dt_of(d):
                               # `gates/crp_graph_census-oracle.py`, whose own docstring calls
                               # the same class "THE EMPTY POPULATION IS REFUSED, NOT RETURNED".
     return "S." + DT[nm] + "()"
+
+
+def upstream_modules():
+    """The `tinygrad.*` MODULES the oracle's own imports name, plus the modules that DEFINE
+    the symbols it takes from them.
+
+    WHY THE SECOND HALF IS NOT OPTIONAL, AND IT IS THE ENUM. The oracle says
+    `from tinygrad.uop.ops import UOp, Ops, KernelInfo`, and `Ops` -- THE ENUM THIS WHOLE
+    STORY IS ABOUT -- is not defined in `tinygrad/uop/ops.py`: `ops.py` re-exports it with
+    `from tinygrad.uop import Ops, GroupOp`, and the ENUM lives in `tinygrad/uop/__init__.py`.
+    So the oracle's DIRECT imports do not name the file the axis's op names come from, and a
+    pin built from them alone would sit on everything EXCEPT the enum.
+
+    THE SECOND HALF IS DERIVED, NOT TYPED: `Ops.__module__` is `"tinygrad.uop"`, and
+    `importlib.util.find_spec` turns that into `tinygrad/uop/__init__.py`. A hand list of six
+    paths is a list that rots the moment the oracle imports something new, which is the same
+    defect as a hand list of gates, one level down.
+
+    AND IT IS NOT THE TRANSITIVE CLOSURE, MEASURED: the closure over every `tinygrad.*`
+    import of every `tinygrad.*` module reaches **88** files, `tinygrad/runtime/autogen/amd/*`
+    among them, and a pin over those is a tripwire on upstream commits that cannot move this
+    axis. Six files, each one of which can change a byte of the axis, is the population.
+    """
+    mods = set()
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.ImportFrom) and node.module and node.module.split(".")[0] == "tinygrad":
+            mods.add(node.module)
+            try:
+                m = importlib.import_module(node.module)
+            except Exception:
+                continue
+            for alias in node.names:
+                obj = getattr(m, alias.name, None)
+                where = getattr(obj, "__module__", None)
+                if where and where.split(".")[0] == "tinygrad":
+                    mods.add(where)
+    return mods
+
+
+def upstream_pin():
+    """`[(repo-relative path, sha256)]` over the UPSTREAM FILES THE ORACLE READS.
+
+    WHY A CONTENT PIN AND NOT A REVISION STRING. The axis is GENERATED, so "which upstream is it
+    written against" is a question about the TREE it was generated from, and a revision string in
+    a generated file is a transcription: it is true at the moment it is written and false at the
+    next re-vendor, with nothing reading it. MEASURED, and this is the failure this pin exists
+    for: the 2026-10-16 re-vendor of `tinygrad/` moved a BUFFER's size out of the arg and into a
+    size CONST SRC, so CPython's own graphs gained a node, and this axis -- generated on 2026-10-15
+    against the PRE-vendor tree -- was STALE BY +14 ROWS. Nothing said so: the axis's own bytes
+    did not move, the gate that would have said so was REFUSED on a compile error, and a fixture
+    against an unstated revision is a fixture against nobody.
+
+    THE TREE'S OWN REVISION IS NOT WRITTEN HERE. `.agents/UPSTREAM-PIN.md` names it and
+    `gates/pinned-tree-gate.py` re-derives it BY CONTENT every run, so a revision string in a
+    generated file would be a SECOND copy of a pin that already has an instrument.
+    """
+    out = []
+    for m in sorted(upstream_modules()):
+        spec = importlib.util.find_spec(m)
+        if spec is None or not spec.origin or not spec.origin.endswith(".py"):
+            continue
+        p = Path(spec.origin).resolve()
+        try:
+            rel = p.relative_to(ROOT)
+        except ValueError:
+            continue
+        out.append((str(rel), hashlib.sha256(p.read_bytes()).hexdigest()))
+    return out
 
 
 def axis():
@@ -122,6 +194,16 @@ def main():
     print("# `Wk` IS `P.Wk`: ptx.bend DEFINES it and the axis imports ptx.bend, so the axis")
     print("# spells it qualified. A generated body that said `Wk` would not compile -- Bend")
     print("# resolves a name in the IMPORTING file, not in the file that defines it.")
+    print("# UPSTREAM-PIN -- THE UPSTREAM CONTENT THIS AXIS WAS GENERATED FROM. A fixture")
+    print("# against an unstated revision is a fixture against nobody, and a revision STRING")
+    print("# rots: it is true when it is written and false at the next re-vendor with nothing")
+    print("# reading it. So the pin is a sha256 over the files the ORACLE READS, derived from")
+    print("# the oracle's own imports. `gates/ptx_render_census-gate.py` checks every line of")
+    print("# it against the tree, and also checks that this file is byte-identical to what")
+    print("# THIS generator produces now -- the two together are what makes a stale axis RED")
+    print("# instead of a file that quietly describes yesterday's CPython.")
+    for rel, digest in upstream_pin():
+        print(f"# UPSTREAM-PIN {rel} {digest}")
     print("# ==== BEGIN GENERATED FIXTURES")
     names = [n for n, _, _ in axis()]
     print("# FIXTURES " + " ".join(names))

@@ -3,6 +3,7 @@ lane	row	value
 bd	barrier	bar.sync\t0;
 bn	barrier	bar.sync\t0;
 py	barrier	bar.sync\t0;
+bd	cto_0	
 bn	cto_0	
 py	cto_0	REFUSE:KeyError(void)
 bd	cto_1	pred
@@ -290,21 +291,24 @@ py	f05_regbuf4.entry	.visible .entry test (
 bd	f05_regbuf4.mod	ABSENT:string_rewrite(23) not ported
 bn	f05_regbuf4.mod	ABSENT:string_rewrite(23) not ported
 py	f05_regbuf4.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t\n)\n.maxntid 1\n{\n\t.reg\t\t.f32 %reg_f32_<4>;\n\t.reg\t\t.s32 %cast_s32_<1>;\n\tmov.b32\t\t%cast_s32_0, 2;\n\tret;\n}
-bd	f05_regbuf4.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bn	f05_regbuf4.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-py	f05_regbuf4.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bd	f05_regbuf4.r1	NONE
-bn	f05_regbuf4.r1	NONE
-py	f05_regbuf4.r1	NONE
-bd	f05_regbuf4.r2	%cast_s32_0
-bn	f05_regbuf4.r2	%cast_s32_0
-py	f05_regbuf4.r2	%cast_s32_0
-bd	f05_regbuf4.r3	%reg_f32_2
-bn	f05_regbuf4.r3	%reg_f32_2
-py	f05_regbuf4.r3	%reg_f32_2
-bd	f05_regbuf4.r4	NONE
-bn	f05_regbuf4.r4	NONE
-py	f05_regbuf4.r4	NONE
+bd	f05_regbuf4.r0	NONE
+bn	f05_regbuf4.r0	NONE
+py	f05_regbuf4.r0	NONE
+bd	f05_regbuf4.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bn	f05_regbuf4.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+py	f05_regbuf4.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bd	f05_regbuf4.r2	NONE
+bn	f05_regbuf4.r2	NONE
+py	f05_regbuf4.r2	NONE
+bd	f05_regbuf4.r3	%cast_s32_0
+bn	f05_regbuf4.r3	%cast_s32_0
+py	f05_regbuf4.r3	%cast_s32_0
+bd	f05_regbuf4.r4	%reg_f32_2
+bn	f05_regbuf4.r4	%reg_f32_2
+py	f05_regbuf4.r4	%reg_f32_2
+bd	f05_regbuf4.r5	NONE
+bn	f05_regbuf4.r5	NONE
+py	f05_regbuf4.r5	NONE
 bd	f05_regbuf4.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
 bn	f05_regbuf4.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
 py	f05_regbuf4.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
@@ -320,21 +324,24 @@ py	f06_regbuf1.entry	.visible .entry test (
 bd	f06_regbuf1.mod	ABSENT:string_rewrite(23) not ported
 bn	f06_regbuf1.mod	ABSENT:string_rewrite(23) not ported
 py	f06_regbuf1.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t\n)\n.maxntid 1\n{\n\t.reg\t\t.f32 %reg_f32_<1>;\n\t.reg\t\t.s32 %cast_s32_<1>;\n\tmov.b32\t\t%cast_s32_0, 0;\n\tret;\n}
-bd	f06_regbuf1.r0	{%reg_f32_0}
-bn	f06_regbuf1.r0	{%reg_f32_0}
-py	f06_regbuf1.r0	{%reg_f32_0}
-bd	f06_regbuf1.r1	NONE
-bn	f06_regbuf1.r1	NONE
-py	f06_regbuf1.r1	NONE
-bd	f06_regbuf1.r2	%cast_s32_0
-bn	f06_regbuf1.r2	%cast_s32_0
-py	f06_regbuf1.r2	%cast_s32_0
-bd	f06_regbuf1.r3	%reg_f32_0
-bn	f06_regbuf1.r3	%reg_f32_0
-py	f06_regbuf1.r3	%reg_f32_0
-bd	f06_regbuf1.r4	NONE
-bn	f06_regbuf1.r4	NONE
-py	f06_regbuf1.r4	NONE
+bd	f06_regbuf1.r0	NONE
+bn	f06_regbuf1.r0	NONE
+py	f06_regbuf1.r0	NONE
+bd	f06_regbuf1.r1	{%reg_f32_0}
+bn	f06_regbuf1.r1	{%reg_f32_0}
+py	f06_regbuf1.r1	{%reg_f32_0}
+bd	f06_regbuf1.r2	NONE
+bn	f06_regbuf1.r2	NONE
+py	f06_regbuf1.r2	NONE
+bd	f06_regbuf1.r3	%cast_s32_0
+bn	f06_regbuf1.r3	%cast_s32_0
+py	f06_regbuf1.r3	%cast_s32_0
+bd	f06_regbuf1.r4	%reg_f32_0
+bn	f06_regbuf1.r4	%reg_f32_0
+py	f06_regbuf1.r4	%reg_f32_0
+bd	f06_regbuf1.r5	NONE
+bn	f06_regbuf1.r5	NONE
+py	f06_regbuf1.r5	NONE
 bd	f06_regbuf1.reg0	\t.reg\t\t.f32 %reg_f32_<1>;
 bn	f06_regbuf1.reg0	\t.reg\t\t.f32 %reg_f32_<1>;
 py	f06_regbuf1.reg0	\t.reg\t\t.f32 %reg_f32_<1>;
@@ -383,30 +390,33 @@ py	f07_reuse.regn	3
 bd	f08_refuse.mod	PORT-REFUSED:INDEX
 bn	f08_refuse.mod	PORT-REFUSED:INDEX
 py	f08_refuse.mod	REFUSE:RuntimeError
-bd	f08_refuse.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bn	f08_refuse.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-py	f08_refuse.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bd	f08_refuse.r1	NONE
-bn	f08_refuse.r1	NONE
-py	f08_refuse.r1	NONE
-bd	f08_refuse.r2	%cast_s32_0
-bn	f08_refuse.r2	%cast_s32_0
-py	f08_refuse.r2	%cast_s32_0
-bd	f08_refuse.r3	NONE
-bn	f08_refuse.r3	NONE
-py	f08_refuse.r3	NONE
-bd	f08_refuse.r4	%cast_s32_1
-bn	f08_refuse.r4	%cast_s32_1
-py	f08_refuse.r4	%cast_s32_1
-bd	f08_refuse.r5	%alu_s32_0
-bn	f08_refuse.r5	%alu_s32_0
-py	f08_refuse.r5	%alu_s32_0
-bd	f08_refuse.r6	NONE
-bn	f08_refuse.r6	NONE
-py	f08_refuse.r6	NONE
+bd	f08_refuse.r0	NONE
+bn	f08_refuse.r0	NONE
+py	f08_refuse.r0	NONE
+bd	f08_refuse.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bn	f08_refuse.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+py	f08_refuse.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bd	f08_refuse.r2	NONE
+bn	f08_refuse.r2	NONE
+py	f08_refuse.r2	NONE
+bd	f08_refuse.r3	%cast_s32_0
+bn	f08_refuse.r3	%cast_s32_0
+py	f08_refuse.r3	%cast_s32_0
+bd	f08_refuse.r4	NONE
+bn	f08_refuse.r4	NONE
+py	f08_refuse.r4	NONE
+bd	f08_refuse.r5	%cast_s32_1
+bn	f08_refuse.r5	%cast_s32_1
+py	f08_refuse.r5	%cast_s32_1
+bd	f08_refuse.r6	%alu_s32_0
+bn	f08_refuse.r6	%alu_s32_0
+py	f08_refuse.r6	%alu_s32_0
 bd	f08_refuse.r7	NONE
 bn	f08_refuse.r7	NONE
 py	f08_refuse.r7	NONE
+bd	f08_refuse.r8	NONE
+bn	f08_refuse.r8	NONE
+py	f08_refuse.r8	NONE
 bd	f09_special.entry	.visible .entry test (
 bn	f09_special.entry	.visible .entry test (
 py	f09_special.entry	.visible .entry test (
@@ -650,18 +660,21 @@ py	f13_param.entry	.visible .entry test (
 bd	f13_param.mod	ABSENT:string_rewrite(23) not ported
 bn	f13_param.mod	ABSENT:string_rewrite(23) not ported
 py	f13_param.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<1>;\n\t.reg\t\t.u64 %local_u64_<1>;\n\tld.param.u64\t%dat_u64_0, [data0+0];\n\t.shared\t\t.align 16 .b8 local1[64];\n\tmov.u64\t\t%local_u64_0, local1[0];\n\tret;\n}
-bd	f13_param.r0	%dat_u64_0
-bn	f13_param.r0	%dat_u64_0
-py	f13_param.r0	%dat_u64_0
-bd	f13_param.r1	%local_u64_0
-bn	f13_param.r1	%local_u64_0
-py	f13_param.r1	%local_u64_0
-bd	f13_param.r2	{%dat_u64_0, %local_u64_0}
-bn	f13_param.r2	{%dat_u64_0, %local_u64_0}
-py	f13_param.r2	{%dat_u64_0, %local_u64_0}
-bd	f13_param.r3	NONE
-bn	f13_param.r3	NONE
-py	f13_param.r3	NONE
+bd	f13_param.r0	NONE
+bn	f13_param.r0	NONE
+py	f13_param.r0	NONE
+bd	f13_param.r1	%dat_u64_0
+bn	f13_param.r1	%dat_u64_0
+py	f13_param.r1	%dat_u64_0
+bd	f13_param.r2	%local_u64_0
+bn	f13_param.r2	%local_u64_0
+py	f13_param.r2	%local_u64_0
+bd	f13_param.r3	{%dat_u64_0, %local_u64_0}
+bn	f13_param.r3	{%dat_u64_0, %local_u64_0}
+py	f13_param.r3	{%dat_u64_0, %local_u64_0}
+bd	f13_param.r4	NONE
+bn	f13_param.r4	NONE
+py	f13_param.r4	NONE
 bd	f13_param.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 bn	f13_param.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 py	f13_param.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
@@ -686,24 +699,21 @@ py	f14_skips.r1	NONE
 bd	f14_skips.r2	NONE
 bn	f14_skips.r2	NONE
 py	f14_skips.r2	NONE
-bd	f14_skips.r3	NONE
-bn	f14_skips.r3	NONE
-py	f14_skips.r3	NONE
-bd	f14_skips.r4	%cast_f32_0
-bn	f14_skips.r4	%cast_f32_0
-py	f14_skips.r4	%cast_f32_0
-bd	f14_skips.r5	NONE
-bn	f14_skips.r5	NONE
-py	f14_skips.r5	NONE
-bd	f14_skips.r6	%cast_f32_1
-bn	f14_skips.r6	%cast_f32_1
-py	f14_skips.r6	%cast_f32_1
-bd	f14_skips.r7	%alu_f32_0
-bn	f14_skips.r7	%alu_f32_0
-py	f14_skips.r7	%alu_f32_0
-bd	f14_skips.r8	NONE
-bn	f14_skips.r8	NONE
-py	f14_skips.r8	NONE
+bd	f14_skips.r3	%cast_f32_0
+bn	f14_skips.r3	%cast_f32_0
+py	f14_skips.r3	%cast_f32_0
+bd	f14_skips.r4	NONE
+bn	f14_skips.r4	NONE
+py	f14_skips.r4	NONE
+bd	f14_skips.r5	%cast_f32_1
+bn	f14_skips.r5	%cast_f32_1
+py	f14_skips.r5	%cast_f32_1
+bd	f14_skips.r6	%alu_f32_0
+bn	f14_skips.r6	%alu_f32_0
+py	f14_skips.r6	%alu_f32_0
+bd	f14_skips.r7	NONE
+bn	f14_skips.r7	NONE
+py	f14_skips.r7	NONE
 bd	f14_skips.reg0	\t.reg\t\t.f32 %cast_f32_<2>;
 bn	f14_skips.reg0	\t.reg\t\t.f32 %cast_f32_<2>;
 py	f14_skips.reg0	\t.reg\t\t.f32 %cast_f32_<2>;
@@ -719,27 +729,30 @@ py	f15_bidx.entry	.visible .entry test (
 bd	f15_bidx.mod	ABSENT:string_rewrite(23) not ported
 bn	f15_bidx.mod	ABSENT:string_rewrite(23) not ported
 py	f15_bidx.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<1>;\n\t.reg\t\t.s32 %cast_s32_<1>;\n\t.reg\t\t.s32 %ridx_s32_<1>;\n\t.reg\t\t.u64 %bidx_u64_<1>;\n\t.reg\t\t.u32 %g0;\n\tld.param.u64\t%dat_u64_0, [data0+0];\n\tmov.b32\t\t%cast_s32_0, 64;\n\tmov.u32\t\t%ridx_s32_0, -1;\n\tbra\t\tEND_ridx_s32_0;\n\tLOOP_ridx_s32_0:\n\tmov.u32\t\t%g0, %ctaid.x;\n\tcvt.s64.s32\t%bidx_u64_0, %g0;\n\tmad.lo.s64\t%bidx_u64_0, %bidx_u64_0, 4, %dat_u64_0;\n\tret;\n}
-bd	f15_bidx.r0	%dat_u64_0
-bn	f15_bidx.r0	%dat_u64_0
-py	f15_bidx.r0	%dat_u64_0
-bd	f15_bidx.r1	NONE
-bn	f15_bidx.r1	NONE
-py	f15_bidx.r1	NONE
-bd	f15_bidx.r2	%cast_s32_0
-bn	f15_bidx.r2	%cast_s32_0
-py	f15_bidx.r2	%cast_s32_0
-bd	f15_bidx.r3	%ridx_s32_0
-bn	f15_bidx.r3	%ridx_s32_0
-py	f15_bidx.r3	%ridx_s32_0
-bd	f15_bidx.r4	%g0
-bn	f15_bidx.r4	%g0
-py	f15_bidx.r4	%g0
-bd	f15_bidx.r5	%bidx_u64_0
-bn	f15_bidx.r5	%bidx_u64_0
-py	f15_bidx.r5	%bidx_u64_0
-bd	f15_bidx.r6	NONE
-bn	f15_bidx.r6	NONE
-py	f15_bidx.r6	NONE
+bd	f15_bidx.r0	NONE
+bn	f15_bidx.r0	NONE
+py	f15_bidx.r0	NONE
+bd	f15_bidx.r1	%dat_u64_0
+bn	f15_bidx.r1	%dat_u64_0
+py	f15_bidx.r1	%dat_u64_0
+bd	f15_bidx.r2	NONE
+bn	f15_bidx.r2	NONE
+py	f15_bidx.r2	NONE
+bd	f15_bidx.r3	%cast_s32_0
+bn	f15_bidx.r3	%cast_s32_0
+py	f15_bidx.r3	%cast_s32_0
+bd	f15_bidx.r4	%ridx_s32_0
+bn	f15_bidx.r4	%ridx_s32_0
+py	f15_bidx.r4	%ridx_s32_0
+bd	f15_bidx.r5	%g0
+bn	f15_bidx.r5	%g0
+py	f15_bidx.r5	%g0
+bd	f15_bidx.r6	%bidx_u64_0
+bn	f15_bidx.r6	%bidx_u64_0
+py	f15_bidx.r6	%bidx_u64_0
+bd	f15_bidx.r7	NONE
+bn	f15_bidx.r7	NONE
+py	f15_bidx.r7	NONE
 bd	f15_bidx.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 bn	f15_bidx.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 py	f15_bidx.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
@@ -788,48 +801,51 @@ py	f17_u64.entry	.visible .entry test (
 bd	f17_u64.mod	ABSENT:string_rewrite(23) not ported
 bn	f17_u64.mod	ABSENT:string_rewrite(23) not ported
 py	f17_u64.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<1>;\n\t.reg\t\t.s32 %cast_s32_<2>;\n\t.reg\t\t.s32 %ridx_s32_<2>;\n\t.reg\t\t.u64 %bidx_u64_<2>;\n\t.reg\t\t.f32 %alu_f32_<1>;\n\t.reg\t\t.pred %pred_pred_<1>;\n\t.reg\t\t.u32 %g1;\n\t.reg\t\t.u32 %g0;\n\tld.param.u64\t%dat_u64_0, [data0+0];\n\tmov.b32\t\t%cast_s32_0, 64;\n\tmov.u32\t\t%ridx_s32_0, -1;\n\tbra\t\tEND_ridx_s32_0;\n\tLOOP_ridx_s32_0:\n\tmov.u32\t\t%g0, %ctaid.x;\n\tcvt.s64.s32\t%bidx_u64_0, %g0;\n\tmad.lo.s64\t%bidx_u64_0, %bidx_u64_0, 4, %dat_u64_0;\n\tmov.u32\t\t%g1, %ctaid.y;\n\tcvt.s64.s32\t%bidx_u64_1, %g1;\n\tmad.lo.s64\t%bidx_u64_1, %bidx_u64_1, 4, %bidx_u64_0;\n\tadd.f32\t\t%alu_f32_0, %bidx_u64_1, %bidx_u64_1;\n\tmov.b32\t\t%cast_s32_1, 8;\n\tmov.u32\t\t%ridx_s32_1, -1;\n\tbra\t\tEND_ridx_s32_1;\n\tLOOP_ridx_s32_1:\n\tEND_ridx_s32_1:\n\tadd.s32\t\t%ridx_s32_1, %ridx_s32_1, 1;\n\tsetp.lt.s32\t%pred_pred_0, %ridx_s32_1, %cast_s32_1;\n\t@%pred_pred_0\tbra LOOP_ridx_s32_1;\n\tret;\n}
-bd	f17_u64.r0	%dat_u64_0
-bn	f17_u64.r0	%dat_u64_0
-py	f17_u64.r0	%dat_u64_0
-bd	f17_u64.r1	NONE
-bn	f17_u64.r1	NONE
-py	f17_u64.r1	NONE
-bd	f17_u64.r10	%cast_s32_1
-bn	f17_u64.r10	%cast_s32_1
-py	f17_u64.r10	%cast_s32_1
-bd	f17_u64.r11	%ridx_s32_1
-bn	f17_u64.r11	%ridx_s32_1
-py	f17_u64.r11	%ridx_s32_1
-bd	f17_u64.r12	%pred_pred_0
-bn	f17_u64.r12	%pred_pred_0
-py	f17_u64.r12	%pred_pred_0
-bd	f17_u64.r13	NONE
-bn	f17_u64.r13	NONE
-py	f17_u64.r13	NONE
-bd	f17_u64.r2	%cast_s32_0
-bn	f17_u64.r2	%cast_s32_0
-py	f17_u64.r2	%cast_s32_0
-bd	f17_u64.r3	%ridx_s32_0
-bn	f17_u64.r3	%ridx_s32_0
-py	f17_u64.r3	%ridx_s32_0
-bd	f17_u64.r4	%g0
-bn	f17_u64.r4	%g0
-py	f17_u64.r4	%g0
-bd	f17_u64.r5	%bidx_u64_0
-bn	f17_u64.r5	%bidx_u64_0
-py	f17_u64.r5	%bidx_u64_0
-bd	f17_u64.r6	%g1
-bn	f17_u64.r6	%g1
-py	f17_u64.r6	%g1
-bd	f17_u64.r7	%bidx_u64_1
-bn	f17_u64.r7	%bidx_u64_1
-py	f17_u64.r7	%bidx_u64_1
-bd	f17_u64.r8	%alu_f32_0
-bn	f17_u64.r8	%alu_f32_0
-py	f17_u64.r8	%alu_f32_0
-bd	f17_u64.r9	NONE
-bn	f17_u64.r9	NONE
-py	f17_u64.r9	NONE
+bd	f17_u64.r0	NONE
+bn	f17_u64.r0	NONE
+py	f17_u64.r0	NONE
+bd	f17_u64.r1	%dat_u64_0
+bn	f17_u64.r1	%dat_u64_0
+py	f17_u64.r1	%dat_u64_0
+bd	f17_u64.r10	NONE
+bn	f17_u64.r10	NONE
+py	f17_u64.r10	NONE
+bd	f17_u64.r11	%cast_s32_1
+bn	f17_u64.r11	%cast_s32_1
+py	f17_u64.r11	%cast_s32_1
+bd	f17_u64.r12	%ridx_s32_1
+bn	f17_u64.r12	%ridx_s32_1
+py	f17_u64.r12	%ridx_s32_1
+bd	f17_u64.r13	%pred_pred_0
+bn	f17_u64.r13	%pred_pred_0
+py	f17_u64.r13	%pred_pred_0
+bd	f17_u64.r14	NONE
+bn	f17_u64.r14	NONE
+py	f17_u64.r14	NONE
+bd	f17_u64.r2	NONE
+bn	f17_u64.r2	NONE
+py	f17_u64.r2	NONE
+bd	f17_u64.r3	%cast_s32_0
+bn	f17_u64.r3	%cast_s32_0
+py	f17_u64.r3	%cast_s32_0
+bd	f17_u64.r4	%ridx_s32_0
+bn	f17_u64.r4	%ridx_s32_0
+py	f17_u64.r4	%ridx_s32_0
+bd	f17_u64.r5	%g0
+bn	f17_u64.r5	%g0
+py	f17_u64.r5	%g0
+bd	f17_u64.r6	%bidx_u64_0
+bn	f17_u64.r6	%bidx_u64_0
+py	f17_u64.r6	%bidx_u64_0
+bd	f17_u64.r7	%g1
+bn	f17_u64.r7	%g1
+py	f17_u64.r7	%g1
+bd	f17_u64.r8	%bidx_u64_1
+bn	f17_u64.r8	%bidx_u64_1
+py	f17_u64.r8	%bidx_u64_1
+bd	f17_u64.r9	%alu_f32_0
+bn	f17_u64.r9	%alu_f32_0
+py	f17_u64.r9	%alu_f32_0
 bd	f17_u64.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 bn	f17_u64.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 py	f17_u64.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
@@ -863,54 +879,57 @@ py	f19_mixed.entry	.visible .entry test (
 bd	f19_mixed.mod	ABSENT:string_rewrite(23) not ported
 bn	f19_mixed.mod	ABSENT:string_rewrite(23) not ported
 py	f19_mixed.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t.param .u64 data1,\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<2>;\n\t.reg\t\t.s32 %cast_s32_<2>;\n\t.reg\t\t.s32 %ridx_s32_<1>;\n\t.reg\t\t.u64 %bidx_u64_<2>;\n\t.reg\t\t.f32 %val_f32_<1>;\n\t.reg\t\t.f32 %cast_f32_<2>;\n\t.reg\t\t.f16 %val_f16_<1>;\n\t.reg\t\t.u32 %g2;\n\t.reg\t\t.u32 %g0;\n\tld.param.u64\t%dat_u64_0, [data1+0];\n\tmov.b32\t\t%cast_s32_0, 64;\n\tmov.u32\t\t%ridx_s32_0, -1;\n\tbra\t\tEND_ridx_s32_0;\n\tLOOP_ridx_s32_0:\n\tmov.u32\t\t%g0, %ctaid.x;\n\tcvt.s64.s32\t%bidx_u64_0, %g0;\n\tmad.lo.s64\t%bidx_u64_0, %bidx_u64_0, 4, %dat_u64_0;\n\tld.global.f32\t%val_f32_0, [%bidx_u64_0+0];\n\tcvt.rzi.s32.f32\t%cast_s32_1, %val_f32_0;\n\tcvt.rn.f32.s32\t%cast_f32_0, %cast_s32_1;\n\tld.param.u64\t%dat_u64_1, [data0+0];\n\tmov.u32\t\t%g2, %ctaid.z;\n\tcvt.s64.s32\t%bidx_u64_1, %g2;\n\tmad.lo.s64\t%bidx_u64_1, %bidx_u64_1, 2, %dat_u64_1;\n\tld.global.b16\t%val_f16_0, [%bidx_u64_1+0];\n\tcvt.f32.f16\t%cast_f32_1, %val_f16_0;\n\tret;\n}
-bd	f19_mixed.r0	%dat_u64_0
-bn	f19_mixed.r0	%dat_u64_0
-py	f19_mixed.r0	%dat_u64_0
-bd	f19_mixed.r1	NONE
-bn	f19_mixed.r1	NONE
-py	f19_mixed.r1	NONE
-bd	f19_mixed.r10	%g2
-bn	f19_mixed.r10	%g2
-py	f19_mixed.r10	%g2
-bd	f19_mixed.r11	%bidx_u64_1
-bn	f19_mixed.r11	%bidx_u64_1
-py	f19_mixed.r11	%bidx_u64_1
-bd	f19_mixed.r12	%val_f16_0
-bn	f19_mixed.r12	%val_f16_0
-py	f19_mixed.r12	%val_f16_0
-bd	f19_mixed.r13	%cast_f32_1
-bn	f19_mixed.r13	%cast_f32_1
-py	f19_mixed.r13	%cast_f32_1
-bd	f19_mixed.r14	{%cast_f32_0, %cast_f32_1}
-bn	f19_mixed.r14	{%cast_f32_0, %cast_f32_1}
-py	f19_mixed.r14	{%cast_f32_0, %cast_f32_1}
-bd	f19_mixed.r15	NONE
-bn	f19_mixed.r15	NONE
-py	f19_mixed.r15	NONE
-bd	f19_mixed.r2	%cast_s32_0
-bn	f19_mixed.r2	%cast_s32_0
-py	f19_mixed.r2	%cast_s32_0
-bd	f19_mixed.r3	%ridx_s32_0
-bn	f19_mixed.r3	%ridx_s32_0
-py	f19_mixed.r3	%ridx_s32_0
-bd	f19_mixed.r4	%g0
-bn	f19_mixed.r4	%g0
-py	f19_mixed.r4	%g0
-bd	f19_mixed.r5	%bidx_u64_0
-bn	f19_mixed.r5	%bidx_u64_0
-py	f19_mixed.r5	%bidx_u64_0
-bd	f19_mixed.r6	%val_f32_0
-bn	f19_mixed.r6	%val_f32_0
-py	f19_mixed.r6	%val_f32_0
-bd	f19_mixed.r7	%cast_s32_1
-bn	f19_mixed.r7	%cast_s32_1
-py	f19_mixed.r7	%cast_s32_1
-bd	f19_mixed.r8	%cast_f32_0
-bn	f19_mixed.r8	%cast_f32_0
-py	f19_mixed.r8	%cast_f32_0
-bd	f19_mixed.r9	%dat_u64_1
-bn	f19_mixed.r9	%dat_u64_1
-py	f19_mixed.r9	%dat_u64_1
+bd	f19_mixed.r0	NONE
+bn	f19_mixed.r0	NONE
+py	f19_mixed.r0	NONE
+bd	f19_mixed.r1	%dat_u64_0
+bn	f19_mixed.r1	%dat_u64_0
+py	f19_mixed.r1	%dat_u64_0
+bd	f19_mixed.r10	%dat_u64_1
+bn	f19_mixed.r10	%dat_u64_1
+py	f19_mixed.r10	%dat_u64_1
+bd	f19_mixed.r11	%g2
+bn	f19_mixed.r11	%g2
+py	f19_mixed.r11	%g2
+bd	f19_mixed.r12	%bidx_u64_1
+bn	f19_mixed.r12	%bidx_u64_1
+py	f19_mixed.r12	%bidx_u64_1
+bd	f19_mixed.r13	%val_f16_0
+bn	f19_mixed.r13	%val_f16_0
+py	f19_mixed.r13	%val_f16_0
+bd	f19_mixed.r14	%cast_f32_1
+bn	f19_mixed.r14	%cast_f32_1
+py	f19_mixed.r14	%cast_f32_1
+bd	f19_mixed.r15	{%cast_f32_0, %cast_f32_1}
+bn	f19_mixed.r15	{%cast_f32_0, %cast_f32_1}
+py	f19_mixed.r15	{%cast_f32_0, %cast_f32_1}
+bd	f19_mixed.r16	NONE
+bn	f19_mixed.r16	NONE
+py	f19_mixed.r16	NONE
+bd	f19_mixed.r2	NONE
+bn	f19_mixed.r2	NONE
+py	f19_mixed.r2	NONE
+bd	f19_mixed.r3	%cast_s32_0
+bn	f19_mixed.r3	%cast_s32_0
+py	f19_mixed.r3	%cast_s32_0
+bd	f19_mixed.r4	%ridx_s32_0
+bn	f19_mixed.r4	%ridx_s32_0
+py	f19_mixed.r4	%ridx_s32_0
+bd	f19_mixed.r5	%g0
+bn	f19_mixed.r5	%g0
+py	f19_mixed.r5	%g0
+bd	f19_mixed.r6	%bidx_u64_0
+bn	f19_mixed.r6	%bidx_u64_0
+py	f19_mixed.r6	%bidx_u64_0
+bd	f19_mixed.r7	%val_f32_0
+bn	f19_mixed.r7	%val_f32_0
+py	f19_mixed.r7	%val_f32_0
+bd	f19_mixed.r8	%cast_s32_1
+bn	f19_mixed.r8	%cast_s32_1
+py	f19_mixed.r8	%cast_s32_1
+bd	f19_mixed.r9	%cast_f32_0
+bn	f19_mixed.r9	%cast_f32_0
+py	f19_mixed.r9	%cast_f32_0
 bd	f19_mixed.reg0	\t.reg\t\t.u64 %dat_u64_<2>;
 bn	f19_mixed.reg0	\t.reg\t\t.u64 %dat_u64_<2>;
 py	f19_mixed.reg0	\t.reg\t\t.u64 %dat_u64_<2>;
@@ -947,30 +966,33 @@ py	f23_load1.entry	.visible .entry test (
 bd	f23_load1.mod	ABSENT:string_rewrite(23) not ported
 bn	f23_load1.mod	ABSENT:string_rewrite(23) not ported
 py	f23_load1.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<1>;\n\t.reg\t\t.s32 %cast_s32_<1>;\n\t.reg\t\t.s32 %ridx_s32_<1>;\n\t.reg\t\t.u64 %bidx_u64_<1>;\n\t.reg\t\t.f32 %val_f32_<1>;\n\t.reg\t\t.u32 %g0;\n\tld.param.u64\t%dat_u64_0, [data0+0];\n\tmov.b32\t\t%cast_s32_0, 64;\n\tmov.u32\t\t%ridx_s32_0, -1;\n\tbra\t\tEND_ridx_s32_0;\n\tLOOP_ridx_s32_0:\n\tmov.u32\t\t%g0, %ctaid.x;\n\tcvt.s64.s32\t%bidx_u64_0, %g0;\n\tmad.lo.s64\t%bidx_u64_0, %bidx_u64_0, 4, %dat_u64_0;\n\tld.global.f32\t%val_f32_0, [%bidx_u64_0+0];\n\tret;\n}
-bd	f23_load1.r0	%dat_u64_0
-bn	f23_load1.r0	%dat_u64_0
-py	f23_load1.r0	%dat_u64_0
-bd	f23_load1.r1	NONE
-bn	f23_load1.r1	NONE
-py	f23_load1.r1	NONE
-bd	f23_load1.r2	%cast_s32_0
-bn	f23_load1.r2	%cast_s32_0
-py	f23_load1.r2	%cast_s32_0
-bd	f23_load1.r3	%ridx_s32_0
-bn	f23_load1.r3	%ridx_s32_0
-py	f23_load1.r3	%ridx_s32_0
-bd	f23_load1.r4	%g0
-bn	f23_load1.r4	%g0
-py	f23_load1.r4	%g0
-bd	f23_load1.r5	%bidx_u64_0
-bn	f23_load1.r5	%bidx_u64_0
-py	f23_load1.r5	%bidx_u64_0
-bd	f23_load1.r6	%val_f32_0
-bn	f23_load1.r6	%val_f32_0
-py	f23_load1.r6	%val_f32_0
-bd	f23_load1.r7	NONE
-bn	f23_load1.r7	NONE
-py	f23_load1.r7	NONE
+bd	f23_load1.r0	NONE
+bn	f23_load1.r0	NONE
+py	f23_load1.r0	NONE
+bd	f23_load1.r1	%dat_u64_0
+bn	f23_load1.r1	%dat_u64_0
+py	f23_load1.r1	%dat_u64_0
+bd	f23_load1.r2	NONE
+bn	f23_load1.r2	NONE
+py	f23_load1.r2	NONE
+bd	f23_load1.r3	%cast_s32_0
+bn	f23_load1.r3	%cast_s32_0
+py	f23_load1.r3	%cast_s32_0
+bd	f23_load1.r4	%ridx_s32_0
+bn	f23_load1.r4	%ridx_s32_0
+py	f23_load1.r4	%ridx_s32_0
+bd	f23_load1.r5	%g0
+bn	f23_load1.r5	%g0
+py	f23_load1.r5	%g0
+bd	f23_load1.r6	%bidx_u64_0
+bn	f23_load1.r6	%bidx_u64_0
+py	f23_load1.r6	%bidx_u64_0
+bd	f23_load1.r7	%val_f32_0
+bn	f23_load1.r7	%val_f32_0
+py	f23_load1.r7	%val_f32_0
+bd	f23_load1.r8	NONE
+bn	f23_load1.r8	NONE
+py	f23_load1.r8	NONE
 bd	f23_load1.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 bn	f23_load1.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 py	f23_load1.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
@@ -1085,57 +1107,60 @@ py	f26_store.entry	.visible .entry test (
 bd	f26_store.mod	ABSENT:string_rewrite(23) not ported
 bn	f26_store.mod	ABSENT:string_rewrite(23) not ported
 py	f26_store.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<1>;\n\t.reg\t\t.s32 %cast_s32_<1>;\n\t.reg\t\t.s32 %ridx_s32_<1>;\n\t.reg\t\t.u64 %bidx_u64_<1>;\n\t.reg\t\t.f32 %cast_f32_<4>;\n\t.reg\t\t.u32 %g0;\n\tld.param.u64\t%dat_u64_0, [data0+0];\n\tmov.b32\t\t%cast_s32_0, 64;\n\tmov.u32\t\t%ridx_s32_0, -1;\n\tbra\t\tEND_ridx_s32_0;\n\tLOOP_ridx_s32_0:\n\tmov.u32\t\t%g0, %ctaid.x;\n\tcvt.s64.s32\t%bidx_u64_0, %g0;\n\tmad.lo.s64\t%bidx_u64_0, %bidx_u64_0, 4, %dat_u64_0;\n\tmov.b32\t\t%cast_f32_0, 0f00000000;\n\tmov.b32\t\t%cast_f32_1, 0f3F800000;\n\tmov.b32\t\t%cast_f32_2, 0f40000000;\n\tmov.b32\t\t%cast_f32_3, 0f40400000;\n\tst.global.v4.f32\t[%bidx_u64_0+0], {%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3};\n\tret;\n}
-bd	f26_store.r0	%dat_u64_0
-bn	f26_store.r0	%dat_u64_0
-py	f26_store.r0	%dat_u64_0
-bd	f26_store.r1	NONE
-bn	f26_store.r1	NONE
-py	f26_store.r1	NONE
-bd	f26_store.r10	NONE
-bn	f26_store.r10	NONE
-py	f26_store.r10	NONE
-bd	f26_store.r11	%cast_f32_2
-bn	f26_store.r11	%cast_f32_2
-py	f26_store.r11	%cast_f32_2
-bd	f26_store.r12	NONE
-bn	f26_store.r12	NONE
-py	f26_store.r12	NONE
-bd	f26_store.r13	%cast_f32_3
-bn	f26_store.r13	%cast_f32_3
-py	f26_store.r13	%cast_f32_3
-bd	f26_store.r14	{%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3}
-bn	f26_store.r14	{%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3}
-py	f26_store.r14	{%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3}
-bd	f26_store.r15	NONE
-bn	f26_store.r15	NONE
-py	f26_store.r15	NONE
+bd	f26_store.r0	NONE
+bn	f26_store.r0	NONE
+py	f26_store.r0	NONE
+bd	f26_store.r1	%dat_u64_0
+bn	f26_store.r1	%dat_u64_0
+py	f26_store.r1	%dat_u64_0
+bd	f26_store.r10	%cast_f32_1
+bn	f26_store.r10	%cast_f32_1
+py	f26_store.r10	%cast_f32_1
+bd	f26_store.r11	NONE
+bn	f26_store.r11	NONE
+py	f26_store.r11	NONE
+bd	f26_store.r12	%cast_f32_2
+bn	f26_store.r12	%cast_f32_2
+py	f26_store.r12	%cast_f32_2
+bd	f26_store.r13	NONE
+bn	f26_store.r13	NONE
+py	f26_store.r13	NONE
+bd	f26_store.r14	%cast_f32_3
+bn	f26_store.r14	%cast_f32_3
+py	f26_store.r14	%cast_f32_3
+bd	f26_store.r15	{%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3}
+bn	f26_store.r15	{%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3}
+py	f26_store.r15	{%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3}
 bd	f26_store.r16	NONE
 bn	f26_store.r16	NONE
 py	f26_store.r16	NONE
-bd	f26_store.r2	%cast_s32_0
-bn	f26_store.r2	%cast_s32_0
-py	f26_store.r2	%cast_s32_0
-bd	f26_store.r3	%ridx_s32_0
-bn	f26_store.r3	%ridx_s32_0
-py	f26_store.r3	%ridx_s32_0
-bd	f26_store.r4	%g0
-bn	f26_store.r4	%g0
-py	f26_store.r4	%g0
-bd	f26_store.r5	%bidx_u64_0
-bn	f26_store.r5	%bidx_u64_0
-py	f26_store.r5	%bidx_u64_0
-bd	f26_store.r6	NONE
-bn	f26_store.r6	NONE
-py	f26_store.r6	NONE
-bd	f26_store.r7	%cast_f32_0
-bn	f26_store.r7	%cast_f32_0
-py	f26_store.r7	%cast_f32_0
-bd	f26_store.r8	NONE
-bn	f26_store.r8	NONE
-py	f26_store.r8	NONE
-bd	f26_store.r9	%cast_f32_1
-bn	f26_store.r9	%cast_f32_1
-py	f26_store.r9	%cast_f32_1
+bd	f26_store.r17	NONE
+bn	f26_store.r17	NONE
+py	f26_store.r17	NONE
+bd	f26_store.r2	NONE
+bn	f26_store.r2	NONE
+py	f26_store.r2	NONE
+bd	f26_store.r3	%cast_s32_0
+bn	f26_store.r3	%cast_s32_0
+py	f26_store.r3	%cast_s32_0
+bd	f26_store.r4	%ridx_s32_0
+bn	f26_store.r4	%ridx_s32_0
+py	f26_store.r4	%ridx_s32_0
+bd	f26_store.r5	%g0
+bn	f26_store.r5	%g0
+py	f26_store.r5	%g0
+bd	f26_store.r6	%bidx_u64_0
+bn	f26_store.r6	%bidx_u64_0
+py	f26_store.r6	%bidx_u64_0
+bd	f26_store.r7	NONE
+bn	f26_store.r7	NONE
+py	f26_store.r7	NONE
+bd	f26_store.r8	%cast_f32_0
+bn	f26_store.r8	%cast_f32_0
+py	f26_store.r8	%cast_f32_0
+bd	f26_store.r9	NONE
+bn	f26_store.r9	NONE
+py	f26_store.r9	NONE
 bd	f26_store.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 bn	f26_store.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 py	f26_store.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
@@ -1163,30 +1188,33 @@ py	f27_loadbool.entry	.visible .entry test (
 bd	f27_loadbool.mod	ABSENT:string_rewrite(23) not ported
 bn	f27_loadbool.mod	ABSENT:string_rewrite(23) not ported
 py	f27_loadbool.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<1>;\n\t.reg\t\t.s32 %cast_s32_<1>;\n\t.reg\t\t.s32 %ridx_s32_<1>;\n\t.reg\t\t.u64 %bidx_u64_<1>;\n\t.reg\t\t.pred %val_pred_<1>;\n\t.reg\t\t.u32 %g0;\n\tld.param.u64\t%dat_u64_0, [data0+0];\n\tmov.b32\t\t%cast_s32_0, 64;\n\tmov.u32\t\t%ridx_s32_0, -1;\n\tbra\t\tEND_ridx_s32_0;\n\tLOOP_ridx_s32_0:\n\tmov.u32\t\t%g0, %ctaid.x;\n\tcvt.s64.s32\t%bidx_u64_0, %g0;\n\tmad.lo.s64\t%bidx_u64_0, %bidx_u64_0, 1, %dat_u64_0;\n\tld.global.u8\t%val_pred_0, [%bidx_u64_0+0];\n\tret;\n}
-bd	f27_loadbool.r0	%dat_u64_0
-bn	f27_loadbool.r0	%dat_u64_0
-py	f27_loadbool.r0	%dat_u64_0
-bd	f27_loadbool.r1	NONE
-bn	f27_loadbool.r1	NONE
-py	f27_loadbool.r1	NONE
-bd	f27_loadbool.r2	%cast_s32_0
-bn	f27_loadbool.r2	%cast_s32_0
-py	f27_loadbool.r2	%cast_s32_0
-bd	f27_loadbool.r3	%ridx_s32_0
-bn	f27_loadbool.r3	%ridx_s32_0
-py	f27_loadbool.r3	%ridx_s32_0
-bd	f27_loadbool.r4	%g0
-bn	f27_loadbool.r4	%g0
-py	f27_loadbool.r4	%g0
-bd	f27_loadbool.r5	%bidx_u64_0
-bn	f27_loadbool.r5	%bidx_u64_0
-py	f27_loadbool.r5	%bidx_u64_0
-bd	f27_loadbool.r6	%val_pred_0
-bn	f27_loadbool.r6	%val_pred_0
-py	f27_loadbool.r6	%val_pred_0
-bd	f27_loadbool.r7	NONE
-bn	f27_loadbool.r7	NONE
-py	f27_loadbool.r7	NONE
+bd	f27_loadbool.r0	NONE
+bn	f27_loadbool.r0	NONE
+py	f27_loadbool.r0	NONE
+bd	f27_loadbool.r1	%dat_u64_0
+bn	f27_loadbool.r1	%dat_u64_0
+py	f27_loadbool.r1	%dat_u64_0
+bd	f27_loadbool.r2	NONE
+bn	f27_loadbool.r2	NONE
+py	f27_loadbool.r2	NONE
+bd	f27_loadbool.r3	%cast_s32_0
+bn	f27_loadbool.r3	%cast_s32_0
+py	f27_loadbool.r3	%cast_s32_0
+bd	f27_loadbool.r4	%ridx_s32_0
+bn	f27_loadbool.r4	%ridx_s32_0
+py	f27_loadbool.r4	%ridx_s32_0
+bd	f27_loadbool.r5	%g0
+bn	f27_loadbool.r5	%g0
+py	f27_loadbool.r5	%g0
+bd	f27_loadbool.r6	%bidx_u64_0
+bn	f27_loadbool.r6	%bidx_u64_0
+py	f27_loadbool.r6	%bidx_u64_0
+bd	f27_loadbool.r7	%val_pred_0
+bn	f27_loadbool.r7	%val_pred_0
+py	f27_loadbool.r7	%val_pred_0
+bd	f27_loadbool.r8	NONE
+bn	f27_loadbool.r8	NONE
+py	f27_loadbool.r8	NONE
 bd	f27_loadbool.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 bn	f27_loadbool.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 py	f27_loadbool.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
@@ -1280,18 +1308,21 @@ py	f30_noparam.entry	.visible .entry a2Db_c2Ed (
 bd	f30_noparam.mod	ABSENT:string_rewrite(23) not ported
 bn	f30_noparam.mod	ABSENT:string_rewrite(23) not ported
 py	f30_noparam.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry a2Db_c2Ed (\n\t.param .u64 data0\n)\n.maxntid 1\n{\n\t.reg\t\t.u64 %dat_u64_<1>;\n\t.reg\t\t.u64 %local_u64_<1>;\n\tld.param.u64\t%dat_u64_0, [data0+0];\n\t.shared\t\t.align 16 .b8 local1[64];\n\tmov.u64\t\t%local_u64_0, local1[0];\n\tret;\n}
-bd	f30_noparam.r0	%dat_u64_0
-bn	f30_noparam.r0	%dat_u64_0
-py	f30_noparam.r0	%dat_u64_0
-bd	f30_noparam.r1	%local_u64_0
-bn	f30_noparam.r1	%local_u64_0
-py	f30_noparam.r1	%local_u64_0
-bd	f30_noparam.r2	{%dat_u64_0, %local_u64_0}
-bn	f30_noparam.r2	{%dat_u64_0, %local_u64_0}
-py	f30_noparam.r2	{%dat_u64_0, %local_u64_0}
-bd	f30_noparam.r3	NONE
-bn	f30_noparam.r3	NONE
-py	f30_noparam.r3	NONE
+bd	f30_noparam.r0	NONE
+bn	f30_noparam.r0	NONE
+py	f30_noparam.r0	NONE
+bd	f30_noparam.r1	%dat_u64_0
+bn	f30_noparam.r1	%dat_u64_0
+py	f30_noparam.r1	%dat_u64_0
+bd	f30_noparam.r2	%local_u64_0
+bn	f30_noparam.r2	%local_u64_0
+py	f30_noparam.r2	%local_u64_0
+bd	f30_noparam.r3	{%dat_u64_0, %local_u64_0}
+bn	f30_noparam.r3	{%dat_u64_0, %local_u64_0}
+py	f30_noparam.r3	{%dat_u64_0, %local_u64_0}
+bd	f30_noparam.r4	NONE
+bn	f30_noparam.r4	NONE
+py	f30_noparam.r4	NONE
 bd	f30_noparam.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 bn	f30_noparam.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
 py	f30_noparam.reg0	\t.reg\t\t.u64 %dat_u64_<1>;
@@ -1307,6 +1338,7 @@ py	f31_weakint.mod	REFUSE:KeyError
 bd	f31_weakint.r0	NONE
 bn	f31_weakint.r0	NONE
 py	f31_weakint.r0	NONE
+bd	f31_weakint.r1	%ridx_s32_0
 bn	f31_weakint.r1	%ridx_s32_0
 py	f31_weakint.r1	NONE
 bd	f31_weakint.r2	NONE
@@ -1321,6 +1353,7 @@ py	f32_weakfloat.r0	NONE
 bd	f32_weakfloat.r1	NONE
 bn	f32_weakfloat.r1	NONE
 py	f32_weakfloat.r1	NONE
+bd	f32_weakfloat.r2	%alu_f32_0
 bn	f32_weakfloat.r2	%alu_f32_0
 py	f32_weakfloat.r2	NONE
 bd	f32_weakfloat.r3	NONE
@@ -1362,45 +1395,51 @@ py	f34_boolalu.r5	NONE
 bd	f35_loadvec.mod	PORT-ANSWERED
 bn	f35_loadvec.mod	PORT-ANSWERED
 py	f35_loadvec.mod	REFUSE:RuntimeError
-bd	f35_loadvec.r0	%dat_u64_0
-bn	f35_loadvec.r0	%dat_u64_0
-py	f35_loadvec.r0	%dat_u64_0
-bd	f35_loadvec.r1	{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}
-bn	f35_loadvec.r1	{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}
-py	f35_loadvec.r1	{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}
-bd	f35_loadvec.r2	NONE
-bn	f35_loadvec.r2	NONE
-py	f35_loadvec.r2	NONE
+bd	f35_loadvec.r0	NONE
+bn	f35_loadvec.r0	NONE
+py	f35_loadvec.r0	NONE
+bd	f35_loadvec.r1	%dat_u64_0
+bn	f35_loadvec.r1	%dat_u64_0
+py	f35_loadvec.r1	%dat_u64_0
+bd	f35_loadvec.r2	{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}
+bn	f35_loadvec.r2	{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}
+py	f35_loadvec.r2	{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}
+bd	f35_loadvec.r3	NONE
+bn	f35_loadvec.r3	NONE
+py	f35_loadvec.r3	NONE
 bd	f36_regstore.entry	.visible .entry test (
 bn	f36_regstore.entry	.visible .entry test (
 py	f36_regstore.entry	.visible .entry test (
 bd	f36_regstore.mod	ABSENT:string_rewrite(23) not ported
 bn	f36_regstore.mod	ABSENT:string_rewrite(23) not ported
 py	f36_regstore.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t\n)\n.maxntid 1\n{\n\t.reg\t\t.f32 %reg_f32_<4>;\n\t.reg\t\t.s32 %cast_s32_<1>;\n\t.reg\t\t.f32 %cast_f32_<1>;\n\tmov.b32\t\t%cast_s32_0, 1;\n\tmov.b32\t\t%cast_f32_0, 0f3F800000;\n\tmov.b32\t\t%reg_f32_1, %cast_f32_0;\n\tret;\n}
-bd	f36_regstore.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bn	f36_regstore.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-py	f36_regstore.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bd	f36_regstore.r1	NONE
-bn	f36_regstore.r1	NONE
-py	f36_regstore.r1	NONE
-bd	f36_regstore.r2	%cast_s32_0
-bn	f36_regstore.r2	%cast_s32_0
-py	f36_regstore.r2	%cast_s32_0
-bd	f36_regstore.r3	%reg_f32_1
-bn	f36_regstore.r3	%reg_f32_1
-py	f36_regstore.r3	%reg_f32_1
-bd	f36_regstore.r4	NONE
-bn	f36_regstore.r4	NONE
-py	f36_regstore.r4	NONE
-bd	f36_regstore.r5	%cast_f32_0
-bn	f36_regstore.r5	%cast_f32_0
-py	f36_regstore.r5	%cast_f32_0
-bd	f36_regstore.r6	NONE
-bn	f36_regstore.r6	NONE
-py	f36_regstore.r6	NONE
+bd	f36_regstore.r0	NONE
+bn	f36_regstore.r0	NONE
+py	f36_regstore.r0	NONE
+bd	f36_regstore.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bn	f36_regstore.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+py	f36_regstore.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bd	f36_regstore.r2	NONE
+bn	f36_regstore.r2	NONE
+py	f36_regstore.r2	NONE
+bd	f36_regstore.r3	%cast_s32_0
+bn	f36_regstore.r3	%cast_s32_0
+py	f36_regstore.r3	%cast_s32_0
+bd	f36_regstore.r4	%reg_f32_1
+bn	f36_regstore.r4	%reg_f32_1
+py	f36_regstore.r4	%reg_f32_1
+bd	f36_regstore.r5	NONE
+bn	f36_regstore.r5	NONE
+py	f36_regstore.r5	NONE
+bd	f36_regstore.r6	%cast_f32_0
+bn	f36_regstore.r6	%cast_f32_0
+py	f36_regstore.r6	%cast_f32_0
 bd	f36_regstore.r7	NONE
 bn	f36_regstore.r7	NONE
 py	f36_regstore.r7	NONE
+bd	f36_regstore.r8	NONE
+bn	f36_regstore.r8	NONE
+py	f36_regstore.r8	NONE
 bd	f36_regstore.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
 bn	f36_regstore.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
 py	f36_regstore.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
@@ -1419,36 +1458,39 @@ py	f37_twobufs.entry	.visible .entry test (
 bd	f37_twobufs.mod	ABSENT:string_rewrite(23) not ported
 bn	f37_twobufs.mod	ABSENT:string_rewrite(23) not ported
 py	f37_twobufs.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t\n)\n.maxntid 1\n{\n\t.reg\t\t.f32 %reg_f32_<8>;\n\t.reg\t\t.s32 %cast_s32_<2>;\n\tmov.b32\t\t%cast_s32_0, 2;\n\tmov.b32\t\t%cast_s32_1, 1;\n\tret;\n}
-bd	f37_twobufs.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bn	f37_twobufs.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-py	f37_twobufs.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bd	f37_twobufs.r1	NONE
-bn	f37_twobufs.r1	NONE
-py	f37_twobufs.r1	NONE
-bd	f37_twobufs.r2	%cast_s32_0
-bn	f37_twobufs.r2	%cast_s32_0
-py	f37_twobufs.r2	%cast_s32_0
-bd	f37_twobufs.r3	%reg_f32_2
-bn	f37_twobufs.r3	%reg_f32_2
-py	f37_twobufs.r3	%reg_f32_2
-bd	f37_twobufs.r4	{%reg_f32_4, %reg_f32_5, %reg_f32_6, %reg_f32_7}
-bn	f37_twobufs.r4	{%reg_f32_4, %reg_f32_5, %reg_f32_6, %reg_f32_7}
-py	f37_twobufs.r4	{%reg_f32_4, %reg_f32_5, %reg_f32_6, %reg_f32_7}
-bd	f37_twobufs.r5	NONE
-bn	f37_twobufs.r5	NONE
-py	f37_twobufs.r5	NONE
-bd	f37_twobufs.r6	%cast_s32_1
-bn	f37_twobufs.r6	%cast_s32_1
-py	f37_twobufs.r6	%cast_s32_1
-bd	f37_twobufs.r7	%reg_f32_5
-bn	f37_twobufs.r7	%reg_f32_5
-py	f37_twobufs.r7	%reg_f32_5
-bd	f37_twobufs.r8	{%reg_f32_2, %reg_f32_5}
-bn	f37_twobufs.r8	{%reg_f32_2, %reg_f32_5}
-py	f37_twobufs.r8	{%reg_f32_2, %reg_f32_5}
-bd	f37_twobufs.r9	NONE
-bn	f37_twobufs.r9	NONE
-py	f37_twobufs.r9	NONE
+bd	f37_twobufs.r0	NONE
+bn	f37_twobufs.r0	NONE
+py	f37_twobufs.r0	NONE
+bd	f37_twobufs.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bn	f37_twobufs.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+py	f37_twobufs.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bd	f37_twobufs.r10	NONE
+bn	f37_twobufs.r10	NONE
+py	f37_twobufs.r10	NONE
+bd	f37_twobufs.r2	NONE
+bn	f37_twobufs.r2	NONE
+py	f37_twobufs.r2	NONE
+bd	f37_twobufs.r3	%cast_s32_0
+bn	f37_twobufs.r3	%cast_s32_0
+py	f37_twobufs.r3	%cast_s32_0
+bd	f37_twobufs.r4	%reg_f32_2
+bn	f37_twobufs.r4	%reg_f32_2
+py	f37_twobufs.r4	%reg_f32_2
+bd	f37_twobufs.r5	{%reg_f32_4, %reg_f32_5, %reg_f32_6, %reg_f32_7}
+bn	f37_twobufs.r5	{%reg_f32_4, %reg_f32_5, %reg_f32_6, %reg_f32_7}
+py	f37_twobufs.r5	{%reg_f32_4, %reg_f32_5, %reg_f32_6, %reg_f32_7}
+bd	f37_twobufs.r6	NONE
+bn	f37_twobufs.r6	NONE
+py	f37_twobufs.r6	NONE
+bd	f37_twobufs.r7	%cast_s32_1
+bn	f37_twobufs.r7	%cast_s32_1
+py	f37_twobufs.r7	%cast_s32_1
+bd	f37_twobufs.r8	%reg_f32_5
+bn	f37_twobufs.r8	%reg_f32_5
+py	f37_twobufs.r8	%reg_f32_5
+bd	f37_twobufs.r9	{%reg_f32_2, %reg_f32_5}
+bn	f37_twobufs.r9	{%reg_f32_2, %reg_f32_5}
+py	f37_twobufs.r9	{%reg_f32_2, %reg_f32_5}
 bd	f37_twobufs.reg0	\t.reg\t\t.f32 %reg_f32_<8>;
 bn	f37_twobufs.reg0	\t.reg\t\t.f32 %reg_f32_<8>;
 py	f37_twobufs.reg0	\t.reg\t\t.f32 %reg_f32_<8>;
@@ -1464,15 +1506,18 @@ py	f38_regload.entry	.visible .entry test (
 bd	f38_regload.mod	ABSENT:string_rewrite(23) not ported
 bn	f38_regload.mod	ABSENT:string_rewrite(23) not ported
 py	f38_regload.mod	.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t\n)\n.maxntid 1\n{\n\t.reg\t\t.f32 %reg_f32_<4>;\n\tret;\n}
-bd	f38_regload.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bn	f38_regload.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-py	f38_regload.r0	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bd	f38_regload.r0	NONE
+bn	f38_regload.r0	NONE
+py	f38_regload.r0	NONE
 bd	f38_regload.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
 bn	f38_regload.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
 py	f38_regload.r1	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
-bd	f38_regload.r2	NONE
-bn	f38_regload.r2	NONE
-py	f38_regload.r2	NONE
+bd	f38_regload.r2	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bn	f38_regload.r2	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+py	f38_regload.r2	{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+bd	f38_regload.r3	NONE
+bn	f38_regload.r3	NONE
+py	f38_regload.r3	NONE
 bd	f38_regload.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
 bn	f38_regload.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
 py	f38_regload.reg0	\t.reg\t\t.f32 %reg_f32_<4>;
@@ -1511,7 +1556,7 @@ bn	fmt_17	\tbar.sync\t0;
 py	fmt_17	\tbar.sync\t0;
 bd	fmt_18	$RAW
 bn	fmt_18	$RAW
-py	fmt_18	$RAW
+py	fmt_18	\t$RAW
 bd	fmt_19	\tfma.rn.f32\t%d, %a, %b, %c;
 bn	fmt_19	\tfma.rn.f32\t%d, %a, %b, %c;
 py	fmt_19	\tfma.rn.f32\t%d, %a, %b, %c;
@@ -1560,6 +1605,7 @@ py	kpf_3	.visible .entry
 bd	lmax	1024,1024,64
 bn	lmax	1024,1024,64
 py	lmax	1024,1024,64
+bd	mto_0	
 bn	mto_0	
 py	mto_0	REFUSE:KeyError(void)
 bd	mto_1	u8
@@ -1679,6 +1725,7 @@ py	tfn_8	a7Eb
 bd	tfn_9	a2Fb
 bn	tfn_9	a2Fb
 py	tfn_9	a2Fb
+bd	tyo_0	
 bn	tyo_0	
 py	tyo_0	REFUSE:KeyError(void)
 bd	tyo_1	pred

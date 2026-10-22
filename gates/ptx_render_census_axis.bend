@@ -11,6 +11,20 @@ import ./../tinybendygrad/renderer/ptx.bend as P
 # `Wk` IS `P.Wk`: ptx.bend DEFINES it and the axis imports ptx.bend, so the axis
 # spells it qualified. A generated body that said `Wk` would not compile -- Bend
 # resolves a name in the IMPORTING file, not in the file that defines it.
+# UPSTREAM-PIN -- THE UPSTREAM CONTENT THIS AXIS WAS GENERATED FROM. A fixture
+# against an unstated revision is a fixture against nobody, and a revision STRING
+# rots: it is true when it is written and false at the next re-vendor with nothing
+# reading it. So the pin is a sha256 over the files the ORACLE READS, derived from
+# the oracle's own imports. `gates/ptx_render_census-gate.py` checks every line of
+# it against the tree, and also checks that this file is byte-identical to what
+# THIS generator produces now -- the two together are what makes a stale axis RED
+# instead of a file that quietly describes yesterday's CPython.
+# UPSTREAM-PIN tinygrad/dtype.py 7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926
+# UPSTREAM-PIN tinygrad/helpers.py eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308
+# UPSTREAM-PIN tinygrad/renderer/ptx.py 906bd04176ef07274e0fc9d9bf99bc86bb8d8bc9674a3099aee2eceff3d3d3e0
+# UPSTREAM-PIN tinygrad/uop/__init__.py 22495f25f31b744f0362575fe42f2608a349d4642cba4a2d0a71150f234c7db3
+# UPSTREAM-PIN tinygrad/uop/ops.py d006eafbb1a6e8326e9310ebbce7b04143bd80cf636e90779c3a86f7e2826ba9
+# UPSTREAM-PIN tinygrad/uop/spec.py 13a8e64ad12f24a4c3806b1bce8e3d04be4478e37d84d82b45ae860e776fd4c6
 # ==== BEGIN GENERATED FIXTURES
 # FIXTURES f01_alu f02_counter f03_cast5 f04_end f05_regbuf4 f06_regbuf1 f07_reuse f08_refuse f09_special f09b_launch f10_loads f11_stack f12_after f13_param f14_skips f15_bidx f16_bitcast f17_u64 f19_mixed f23_load1 f24_range f25_rangevoid f26_store f27_loadbool f28_name f29_name2 f30_noparam f31_weakint f32_weakfloat f33_bf16cast f34_boolalu f35_loadvec f36_regstore f37_twobufs f38_regload
 # REFUSES f08_refuse f31_weakint f32_weakfloat f33_bf16cast f34_boolalu f35_loadvec
@@ -69,17 +83,19 @@ def ax03() -> List<&2, P.Wk>:
     P.Wk{O.OpsEND{}, S.single(), S.Aalu{}, 1, "", [4, 7], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [8], 0, True{}}]
 def ax04() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [0, 2], 2, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [3], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [1, 3], 2, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [4], 0, True{}}]
 def ax05() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 1, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 1, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [0, 2], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [3], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [1, 3], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [4], 0, True{}}]
 def ax06() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
     P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [0], 0, True{}},
@@ -88,14 +104,15 @@ def ax06() -> List<&2, P.Wk>:
     P.Wk{O.OpsLOAD{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [4], 0, True{}}]
 def ax07() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
-    P.Wk{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", [2, 4], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [0, 5], 0, False{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [6], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [4], 0, True{}},
+    P.Wk{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", [3, 5], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [1, 6], 0, False{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [7], 0, True{}}]
 def ax08() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
     P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [0], 0, True{}},
@@ -147,74 +164,78 @@ def ax12() -> List<&2, P.Wk>:
     P.Wk{O.OpsAFTER{}, S.single(), S.Aalu{}, 1, "", [4, 4], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [5], 0, True{}}]
 def ax13() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 16, "", [], 0, True{}},
-    P.Wk{O.OpsBUFFER{}, S.single(), S.ALocal{}, 16, "", [], 0, True{}},
-    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 32, "", [0, 1], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [2], 0, True{}}]
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 16, "", [0], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.ALocal{}, 16, "", [0], 0, True{}},
+    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 32, "", [1, 2], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [3], 0, True{}}]
 def ax14() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsNOOP{}, S.void(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsGROUP{}, S.void(), S.Aalu{}, 1, "", [0, 0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [3], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [2], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [5], 0, True{}},
-    P.Wk{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", [4, 6], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [1, 2, 7], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [4], 0, True{}},
+    P.Wk{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", [3, 5], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [0, 1, 6], 0, True{}}]
 def ax15() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [3], 0, True{}},
-    P.Wk{O.OpsSHRINK{}, S.single(), S.AGlobal{}, 1, "", [0, 4], 0, False{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [5], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [4], 0, True{}},
+    P.Wk{O.OpsSHRINK{}, S.single(), S.AGlobal{}, 1, "", [1, 5], 0, False{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [6], 0, True{}}]
 def ax16() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
     P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [0], 0, True{}},
     P.Wk{O.OpsBITCAST{}, S.single(), S.Aalu{}, 1, "", [1], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [2], 0, True{}}]
 def ax17() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [3], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [0, 4], 0, False{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g1", [3], 0, True{}},
-    P.Wk{O.OpsSHRINK{}, S.single(), S.AGlobal{}, 1, "", [5, 6], 0, False{}},
-    P.Wk{O.OpsADD{}, S.single(), S.AGlobal{}, 1, "", [7, 7], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [4], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [1, 5], 0, False{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g1", [4], 0, True{}},
+    P.Wk{O.OpsSHRINK{}, S.single(), S.AGlobal{}, 1, "", [6, 7], 0, False{}},
+    P.Wk{O.OpsADD{}, S.single(), S.AGlobal{}, 1, "", [8, 8], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [9], 0, True{}},
-    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [10], 0, True{}},
-    P.Wk{O.OpsEND{}, S.single(), S.AGlobal{}, 1, "", [8, 11], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [12], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [10], 0, True{}},
+    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [11], 0, True{}},
+    P.Wk{O.OpsEND{}, S.single(), S.AGlobal{}, 1, "", [9, 12], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [13], 0, True{}}]
 def ax18() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [3], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [0, 4], 0, False{}},
-    P.Wk{O.OpsLOAD{}, S.single(), S.AGlobal{}, 1, "", [5], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [6], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [7], 0, True{}},
-    P.Wk{O.OpsPARAM{}, S.half(), S.AGlobal{}, 4, "", [], 0, True{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g2", [3], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.half(), S.AGlobal{}, 1, "", [9, 10], 0, False{}},
-    P.Wk{O.OpsLOAD{}, S.half(), S.AGlobal{}, 1, "", [11], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [12], 0, True{}},
-    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 2, "", [8, 13], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [14], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [4], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [1, 5], 0, False{}},
+    P.Wk{O.OpsLOAD{}, S.single(), S.AGlobal{}, 1, "", [6], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [7], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [8], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.half(), S.AGlobal{}, 4, "", [0], 0, True{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g2", [4], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.half(), S.AGlobal{}, 1, "", [10, 11], 0, False{}},
+    P.Wk{O.OpsLOAD{}, S.half(), S.AGlobal{}, 1, "", [12], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [13], 0, True{}},
+    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 2, "", [9, 14], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [15], 0, True{}}]
 def ax19() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [3], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [0, 4], 0, False{}},
-    P.Wk{O.OpsLOAD{}, S.single(), S.AGlobal{}, 1, "", [5], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [6], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [4], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [1, 5], 0, False{}},
+    P.Wk{O.OpsLOAD{}, S.single(), S.AGlobal{}, 1, "", [6], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [7], 0, True{}}]
 def ax20() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
     P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [0], 0, True{}},
@@ -235,32 +256,34 @@ def ax21() -> List<&2, P.Wk>:
     P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [1, 4], 0, True{}}]
 def ax22() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 16, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 16, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [3], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [0, 4], 0, False{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [4], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", [1, 5], 0, False{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [6], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [7], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [8], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [9], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [10], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [11], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [12], 0, True{}},
-    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 4, "", [7, 9, 11, 13], 0, True{}},
-    P.Wk{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", [5, 14], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [15], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [13], 0, True{}},
+    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 4, "", [8, 10, 12, 14], 0, True{}},
+    P.Wk{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", [6, 15], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [16], 0, True{}}]
 def ax23() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.boolean(), S.AGlobal{}, 1, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.boolean(), S.AGlobal{}, 1, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
-    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [3], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.boolean(), S.AGlobal{}, 1, "", [0, 4], 0, False{}},
-    P.Wk{O.OpsLOAD{}, S.boolean(), S.AGlobal{}, 1, "", [5], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [6], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", [3], 0, True{}},
+    P.Wk{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "g0", [4], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.boolean(), S.AGlobal{}, 1, "", [1, 5], 0, False{}},
+    P.Wk{O.OpsLOAD{}, S.boolean(), S.AGlobal{}, 1, "", [6], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [7], 0, True{}}]
 def ax24() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
     P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [0], 0, True{}},
@@ -276,10 +299,11 @@ def ax25() -> List<&2, P.Wk>:
     P.Wk{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", [1, 3], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "MyKernel", [4], 0, True{}}]
 def ax26() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 16, "", [], 0, True{}},
-    P.Wk{O.OpsBUFFER{}, S.single(), S.ALocal{}, 16, "", [], 0, True{}},
-    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 32, "", [0, 1], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "a-b_c.d", [2], 0, True{}}]
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 16, "", [0], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.ALocal{}, 16, "", [0], 0, True{}},
+    P.Wk{O.OpsSTACK{}, S.single(), S.Aalu{}, 32, "", [1, 2], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "a-b_c.d", [3], 0, True{}}]
 def ax27() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
     P.Wk{O.OpsRANGE{}, S.weakint(), S.Aalu{}, 1, "", [0], 0, True{}},
@@ -301,31 +325,35 @@ def ax30() -> List<&2, P.Wk>:
     P.Wk{O.OpsSTACK{}, S.boolean(), S.Aalu{}, 2, "", [2, 3], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [4], 0, True{}}]
 def ax31() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [], 0, True{}},
-    P.Wk{O.OpsLOAD{}, S.single(), S.AGlobal{}, 4, "", [0], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [1], 0, True{}}]
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4, "", [0], 0, True{}},
+    P.Wk{O.OpsLOAD{}, S.single(), S.AGlobal{}, 4, "", [1], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [2], 0, True{}}]
 def ax32() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [0, 2], 1, True{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [1, 3], 1, True{}},
     P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [4], 0, True{}},
-    P.Wk{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", [3, 5], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [6], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [5], 0, True{}},
+    P.Wk{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", [4, 6], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [7], 0, True{}}]
 def ax33() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [0, 2], 2, True{}},
-    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [2], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [1, 3], 2, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
     P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
-    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [5], 0, True{}},
-    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [4, 6], 1, True{}},
-    P.Wk{O.OpsSTACK{}, S.single(), S.AReg{}, 2, "", [3, 7], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [8], 0, True{}}]
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [6], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [5, 7], 1, True{}},
+    P.Wk{O.OpsSTACK{}, S.single(), S.AReg{}, 2, "", [4, 8], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [9], 0, True{}}]
 def ax34() -> List<&2, P.Wk>:
-  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
-    P.Wk{O.OpsLOAD{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
-    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [1], 0, True{}}]
+  [  P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
+    P.Wk{O.OpsLOAD{}, S.single(), S.AReg{}, 4, "", [1], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [2], 0, True{}}]
 # ==== END GENERATED FIXTURES
