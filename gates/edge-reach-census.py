@@ -28,6 +28,14 @@ THE TWO ARMS, AND THEY ARE DIFFERENT CLAIMS.
     NAMED, because the population grows as other units add gates and a growing population is not a
     defect. **A CENSUS THAT ONLY COUNTS THE REACHABLE ONES IS A CENSUS OF THE EASY HALF.**
 
+**THE CLAIM IS RED FOR EXACTLY ONE EDGE RUN AFTER A DECLARATION, AND THAT IS THE POINT.** The
+trace is written at the END of a run, so a gate that declares itself is red in the run that first
+runs it -- the trace it is being judged against is the PREVIOUS one -- and green in the next.
+MEASURED 2026-10-22 on this tree: the census read the OLD trace and charged three declarations
+(`gates/edge-reach-census.py`, `gates/gates-pop-rows-gate.py`, `gates/reachability-gate.py`), the
+run wrote their rows, and the next reading charged nothing. **A GATE THAT IS RED BECAUSE THE EDGE
+HAS NOT RUN IT YET IS SAYING TRUE**, and the remedy is in the charge: run the edge.
+
 THE POPULATION IS DISCOVERED, NEVER LISTED. `checks/gatesweep.py:population()` -- the derived gate
 homes from `gates/gates-pop.py:gate_homes()` plus `entry_reason()`, walked with `os.walk`. Never a
 suffix, never a glob (`AGENTS.md` records `glob('*.bend')` answering `[]` over a tree holding 1,890
@@ -143,7 +151,8 @@ def judge(c):
         row = c.trace.get(rel)
         if row is None:
             charges.append(f"{rel} declares EDGE_CANDIDATE = True and has NO ROW in "
-                           f"{c.trace_path.name}: the runner claims to run it and does not")
+                           f"{c.trace_path.name}: the runner claims to run it and does not. "
+                           f"Run the edge and it will have one.")
         elif row[1] == "OVER-BUDGET":
             charges.append(f"{rel} declares EDGE_CANDIDATE = True and the trace says OVER-BUDGET "
                            f"({row[3]}): the edge cannot afford it, so it never runs")
