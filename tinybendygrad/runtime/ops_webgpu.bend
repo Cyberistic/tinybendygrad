@@ -76,8 +76,8 @@
 #    converts INSIDE the callback. The port keeps the String and drops the pair,
 #    because a String is what the entry point's NAME is (:54) and what the error
 #    message is, and both are read immediately.
-#    TODO(p3) runtime/ops_webgpu.py:13  -- WGPUStringView -> String.
-#    TODO(p3) runtime/ops_webgpu.py:14  -- String -> WGPUStringView.
+#    TODO(p3) runtime/ops_webgpu.py:14  symbol=from_wgpu_str  -- WGPUStringView -> String.
+#    TODO(p3) runtime/ops_webgpu.py:15  symbol=to_wgpu_str  -- String -> WGPUStringView.
 #
 # 2. THE 64-BIT WALL, and it is two lines of Python.
 #      :37  `wgpuInstanceWaitAny(instance, 1, WGPUFutureWaitInfo(future), 2**64-1)`
@@ -88,8 +88,8 @@
 #    unbounded wait timeout nor the delta is computable here. The seam must hand
 #    over the ALREADY-SCALED seconds, because the only thing this port can do
 #    with a time is print it.
-#    TODO(p3) runtime/ops_webgpu.py:37  -- the 2**64-1 wait timeout.
-#    TODO(p3) runtime/ops_webgpu.py:141 -- the u64 timestamp delta and its /1e9.
+#    TODO(p3) runtime/ops_webgpu.py:38  symbol=wrapper  -- the 2**64-1 wait timeout.
+#    TODO(p3) runtime/ops_webgpu.py:142  symbol=__call__ -- the u64 timestamp delta and its /1e9.
 #
 # 3. FLOAT UNIFORMS (:204). `val.to_bytes(4,'little',signed=val<0)` for an int,
 #    `struct.pack('<f', val)` for a float, and :97 passes `float('inf')`.
@@ -97,7 +97,7 @@
 #    f32 PATTERN cannot be built here at all. The INT arm is ported exactly
 #    (`dev.uniform_bytes`); the float arm is four bytes the seam must hand over.
 #    See THE INFINITY ENTRY, which is the load-bearing case.
-#    TODO(p3) runtime/ops_webgpu.py:204  -- struct.pack('<f', val).
+#    TODO(p3) runtime/ops_webgpu.py:205  symbol=create_uniform  -- struct.pack('<f', val).
 #
 # CTYPES SHAPING is not a wall and is named once: the
 # `(WGPUBindGroupLayoutEntry * n)(...)` array constructions at :77, :87, :97, :99,

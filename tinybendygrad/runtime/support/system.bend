@@ -74,8 +74,8 @@
 #    (`paddr.mask_hi = 0x7ffffff`, `paddr.mask_lo = 0xffffffff`) and gates BOTH
 #    halves against CPython, because a mask with one wrong half selects the wrong
 #    physical pages and nothing else notices.
-#    TODO(p3) runtime/support/system.py:96  -- the u64 pagemap read.
-#    TODO(p3) runtime/support/system.py:175 -- the u64 BAR size.
+#    TODO(p3) runtime/support/system.py:95  symbol=system_paddrs  -- the u64 pagemap read.
+#    TODO(p3) runtime/support/system.py:174  symbol=pci_setup_usb_bars -- the u64 BAR size.
 #    TODO(p3) runtime/support/system.py:445 -- `struct.unpack('<Q', data)[0]`.
 #
 # 2. THE SYSCALL STRINGS, :58/:75/:198/:247. `os.system` takes ONE string and
@@ -86,10 +86,10 @@
 #    THE STRING BESIDE CPYTHON'S -- a boolean about a string proves nothing,
 #    because `String.concat` will happily drop a literal and still make two
 #    strings that differ agree on a length.
-#    TODO(p3) runtime/support/system.py:58  -- `os.system(cmd)`.
-#    TODO(p3) runtime/support/system.py:75  -- `os.system("sudo modprobe ...")`.
-#    TODO(p3) runtime/support/system.py:198 -- `os.system("sudo lsof ...")`, in a message.
-#    TODO(p3) runtime/support/system.py:247 -- `os.system(...)`, in `PCIDevice.reset`.
+#    TODO(p3) runtime/support/system.py:58  symbol=write_sysfs  -- `os.system(cmd)`.
+#    TODO(p3) runtime/support/system.py:74  symbol=vfio  -- `os.system("sudo modprobe ...")`.
+#    TODO(p3) runtime/support/system.py:195  symbol=flock_acquire -- `os.system("sudo lsof ...")`, in a message.
+#    TODO(p3) runtime/support/system.py:244  symbol=reset -- `os.system(...)`, in `PCIDevice.reset`.
 #
 # 3. THE CTYPES LIBRARY GATE, :61-65 and :89. `atomic_lib` is
 #    `ctypes.CDLL(ctypes.util.find_library('atomic')) if sys.platform == "linux"
@@ -100,9 +100,9 @@
 #    :89 and it is pure, so it is ported as `cap.barrier_lib`, and the gate asks
 #    the question twice: which library, and whether it is a real fence at all.
 #    `ctypes.CDLL` and `find_library` are the FFI and are the trace.
-#    TODO(p3) runtime/support/system.py:62 -- `ctypes.CDLL(find_library('atomic'))`.
-#    TODO(p3) runtime/support/system.py:65 -- `ctypes.CDLL(find_library("System"))`.
-#    TODO(p3) runtime/support/system.py:89 -- `lib.atomic_thread_fence(5)`.
+#    TODO(p3) runtime/support/system.py:61  symbol=atomic_lib -- `ctypes.CDLL(find_library('atomic'))`.
+#    TODO(p3) runtime/support/system.py:64  symbol=libsys -- `ctypes.CDLL(find_library("System"))`.
+#    TODO(p3) runtime/support/system.py:88  symbol=memory_barrier -- `lib.atomic_thread_fence(5)`.
 #
 # 4. THE OSX PROPERTY READ, :108-112. `read_prop` is CoreFoundation: a CFString
 #    key, a `CFDataRef`, an 8-byte `c_uint8` buffer and `int.from_bytes(...,
@@ -110,9 +110,9 @@
 #    that is this file's own logic is the 8-byte little-endian read, which
 #    `pci.read_prop` ports. Everything above it is CoreFoundation, so the whole
 #    `OSX` half of `pci_scan_bus` is FFI and only the LINUX half is a trace.
-#    TODO(p3) runtime/support/system.py:108 -- the ctypes cast chain.
-#    TODO(p3) runtime/support/system.py:110 -- `IORegistryEntryCreateCFProperty`.
-#    TODO(p3) runtime/support/system.py:111 -- `CFDataGetBytes` into `(c_uint8*8)()`.
+#    TODO(p3) runtime/support/system.py:109  symbol=read_prop -- the ctypes cast chain.
+#    TODO(p3) runtime/support/system.py:109  symbol=read_prop -- `IORegistryEntryCreateCFProperty`.
+#    TODO(p3) runtime/support/system.py:110  symbol=read_prop -- `CFDataGetBytes` into `(c_uint8*8)()`.
 #
 # WHAT IS FFI, WHOLE. Stated once so the short file is not read as a short port:
 # `FileIOInterface` (:18-48) is a file descriptor and nothing else; `libc.mmap`
@@ -1604,7 +1604,7 @@ def pci.probe.sibs(+pcibus: String, +t: Tr) -> Tr: pci.probe.sibs.go(sib.paths(p
 # ALREADY lowercased -- which is why `sy_lock_AMD` and `sy_lock_AM` both pass a
 # lowercased prefix and both answer the SAME file. MEASURED against CPython:
 # 'AMD' and 'am' both give 'am_0000:03:00.0.lock', and that is the point of the
-# `lower()`. TODO(p3) runtime/support/system.py:208 -- the two `lower()` calls.
+# `lower()`. TODO(p3) runtime/support/system.py:205  symbol=__init__ -- the two `lower()` calls.
 def pci.lock_name(devpref: String, +pcibus: String) -> String:
   String.concat([devpref, "_", pcibus, ".lock"])
 
@@ -2263,7 +2263,7 @@ def rpc.options(t: Tr) -> Tr: rpc.opts(rpc.buf_opts(),
 # every `FileIOInterface(...)` above it becomes a mock and every path in this file stops
 # being read. The port keeps the PREDICATE and names the rebind as a wall, because a
 # gate cannot check "which class object is bound to a name".
-# TODO(p3) runtime/support/system.py:454 -- the MockFileIOInterface rebind.
+# TODO(p3) runtime/support/system.py:17  symbol=FileIOInterface -- the MockFileIOInterface rebind -- upstream's LAST line rebinds this name to the mock.
 # ===========================================================================
 
 def MOCK_HEADS() -> List<&2, String>: ["MOCK"]

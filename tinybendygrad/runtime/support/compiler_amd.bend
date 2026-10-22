@@ -110,15 +110,15 @@
 #   what :9's assert pins. So the switch and the assert are ported, and the
 #   numbers inside them are DECLARED autogen values rather than invented ones.
 #   TODO(p3) compiler_amd.py:3  -- `from tinygrad.runtime.autogen import comgr`.
-#   TODO(p3) compiler_amd.py:36-77 -- the 28 comgr calls of `compile_hip`.
-#   TODO(p3) compiler_amd.py:21-23 -- the two `amd_comgr_get_data` calls.
+#   TODO(p3) compiler_amd.py:36-77  symbol=compile_hip -- the 28 comgr calls of `compile_hip`.
+#   TODO(p3) compiler_amd.py:21-23  symbol=_get_comgr_data -- the two `amd_comgr_get_data` calls.
 #
 # WALL 2 -- sha256. `hashlib.sha256(' '.join(extra)).hexdigest()[:8]` is eight
 #   hex characters of a 64-bit digest. `base.bend` exports `Word`, not
 #   `Word(64n)` (bend2-constraints.md POSITION 2320), so there is no digest to
 #   compute. The TEMPLATE is ported and gated with the eight characters as a
 #   PARAMETER, so the row pins the key and not the hash.
-#   TODO(p3) compiler_amd.py:93 -- `hashlib.sha256(...).hexdigest()[:8]`.
+#   TODO(p3) compiler_amd.py:93  symbol=__init__ -- the first EIGHT characters of the sha256 hexdigest.
 #
 # WALL 3 -- the temp file NAMES. `tempfile.NamedTemporaryFile(suffix=...)`
 #   names three files and the two argv lists carry those names. bend has a
@@ -129,7 +129,7 @@
 #   `C.argv1(arch, rocm, bc, src, extra)` is a function of five strings and a
 #   list, and the element COUNT is pinned because that is what a wrong flag
 #   order or a dropped extra would change.
-#   TODO(p3) compiler_amd.py:97-98 -- the three NamedTemporaryFile names.
+#   TODO(p3) compiler_amd.py:97-98  symbol=compile -- the three NamedTemporaryFile names.
 #
 # WALL 4 -- the artifact read-back. `pathlib.Path(libf.name).read_bytes()`
 #   returns bytes, and bend has no name to read and no `.hsaco` to name.

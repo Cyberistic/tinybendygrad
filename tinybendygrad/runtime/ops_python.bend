@@ -101,14 +101,14 @@
 #    ported for those four and REFUSES the rest -- a 64-bit truncate has no U32
 #    image and an F32 cannot hold a half. This file refuses rather than
 #    emulating half a width.
-#    TODO(p3) runtime/ops_python.py:18 -- the multi-word bitcast load arm.
-#    TODO(p3) runtime/ops_python.py:30 -- the multi-word store arm.
-#    TODO(p3) runtime/ops_python.py:135 -- `truncate` for the ten C widths.
+#    TODO(p3) runtime/ops_python.py:21  symbol=_load -- the multi-word bitcast load arm.
+#    TODO(p3) runtime/ops_python.py:33  symbol=_store -- the multi-word store arm.
+#    TODO(p3) tinygrad/dtype.py:289  symbol=truncate -- `truncate` for the ten C widths.
 #
 # 2. TENSOR CORES. `wmma` (ops_python.py:33) needs `tcore.frag_coords()` and a
 #    three-way fragment layout, and its `arg` is a `(dims, dtype_in, threads)`
 #    tuple. There is no v1 spelling and no scalar lane for a fragment.
-#    TODO(p3) runtime/ops_python.py:33.
+#    TODO(p3) runtime/ops_python.py:33  symbol=_store.
 #
 # 3. `Ops.FDIV` AND `Ops.THREEFRY` -- see MEASURED FACT 2.
 #
@@ -252,7 +252,7 @@
 # in .agents/slop/exec_gate.bend, printed as KNOWN-FAIL so it cannot be mistaken
 # for a pass. `op_is_mathy` sends SQRT to the float lane and `f_of` reads the
 # 16 as 16.0, so the fault is inside the lane input, not the lane choice.
-# TODO(p3) runtime/ops_python.py:138 -- the float lane's input for an int dtype.
+# TODO(p3) runtime/ops_python.py:138  symbol=__call__ -- the float lane's input for an int dtype.
 
 import Base
 import ../base.bend as F
@@ -2398,7 +2398,7 @@ def Prog.launch() -> IO(Unit):
 # is a declared one. That is the one row in this census where the port's answer
 # is the weaker fact, and the gate says so rather than letting a green run read
 # as "the transform was verified here". It was not; the fold is WALL 5, above.
-# TODO(p3) runtime/ops_python.py:160 -- the base64 quartet fold.
+# TODO(p3) runtime/ops_python.py:164  symbol=compile -- the base64 quartet fold.
 def compile.transform() -> String: "base64.b64decode"
 def b64.transform() -> String: "base64.b64decode"
 

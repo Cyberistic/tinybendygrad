@@ -106,7 +106,7 @@
 
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:496   pm_lift -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (:530 open TODO).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:523   pm_encode -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`).
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:593   pm_link
+#    TODO(p3) runtime/support/hcq2.py:558  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
 #
 #    THREE NAMES THAT WERE ON THIS LIST AND ARE NOT ANY MORE, each because
 #    upstream RENAMED it and one because upstream DELETED it. The rename is not
@@ -137,7 +137,7 @@
 #    file follows the ops_webgpu lane instead and records the call in a `Tr`, so
 #    it is ALL PROOFS CHECK and the seam stays a greppable literal.
 #    TODO(p3) tinygrad/runtime/support/hcq2.py:125   ccall -- `ctypes` marshalling.
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:94   cfield -- `getattr` on a Field.
+#    TODO(p3) runtime/support/c.py:66  symbol=_resolve -- `cfield` is GONE upstream at this pin; `Field._resolve` is the shape that replaced it -- the ctypes field descriptor, not a `getattr`.
 #
 #    `cfunc_buf` WAS ON THIS LIST AND IS DELETED, not renamed. Upstream
 #    `bdddaad21` ("ccall by symbol", #18521) deleted the function AND its caller

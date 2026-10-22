@@ -44,7 +44,7 @@
 # call it so the collect-then-raise path runs for real.
 # `ll.comp_diag2_msg` carries TWO diagnostics so the `"\n".join` is a join and
 # not a single message.
-#   TODO(p3) compiler_llvm.py:36-42 -- the ctypes callback.
+#   TODO(p3) compiler_llvm.py:36-42  symbol=__init__ -- the ctypes callback.
 #
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
@@ -77,10 +77,10 @@
 #   callback type, and six enum constants that are CONSTANTS OF THE LIBRARY.
 #   The calls are the trace; the constants are declared (`LLVMCompiler.const_*`)
 #   and their values are read out of the real autogen module by the oracle.
-#   TODO(p3) compiler_llvm.py:4  -- `from tinygrad.runtime.autogen import llvm`.
+#   TODO(p3) runtime/autogen/llvm.py:8  symbol=dll -- the autogen import: `compiler_llvm.py`'s `from tinygrad.runtime.autogen import llvm`, and the autogen's own ctypes DLL binding is the wall.
 #   TODO(p3) compiler_llvm.py:15 -- the five `LLVMInitialize*` calls per arch.
-#   TODO(p3) compiler_llvm.py:52-61 -- the nine calls `compile` makes.
-#   TODO(p3) compiler_llvm.py:62 -- `ctypes.string_at(LLVMGetBufferStart(...))`.
+#   TODO(p3) compiler_llvm.py:52-61  symbol=compile -- the nine calls `compile` makes.
+#   TODO(p3) compiler_llvm.py:62  symbol=compile -- `ctypes.string_at(LLVMGetBufferStart(...))`.
 #
 # WALL 2 -- `ctypes` itself. `cerr()` is
 #   `ctypes.pointer(ctypes.pointer(ctypes.c_char()))`, i.e. a pointer to a
@@ -90,7 +90,7 @@
 #   `expect.ret_str` the arm. `ll.expect_x5_none` is the row for the third
 #   possibility: with a non-zero `x` and a `None` `err`, Python raises
 #   `AttributeError` -- bend has no such state, so that fixture is a WALL.
-#   TODO(p3) compiler_llvm.py:6  -- `cerr()`.
+#   TODO(p3) compiler_llvm.py:6  symbol=cerr  -- `cerr()`.
 #   TODO(p3) compiler_llvm.py:9  -- `ctypes.cast(err.contents, ctypes.c_char_p)`.
 #
 # WALL 3 -- `amdgpu_disassemble` and `cpu_objdump` (helpers.py): a spawn plus a

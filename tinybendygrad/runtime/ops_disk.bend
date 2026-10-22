@@ -109,7 +109,7 @@
 #    (:86) is a live mmap base address, and it is what every consumer of a Disk
 #    buffer reaches a buffer through. The port carries a 0 and names it;
 #    `Rc.addr` is the field and `dk_alloc_addr` is the row.
-#    TODO(p3) ops_disk.py:86  -- mv_address -> the mapping's base address.
+#    TODO(p3) helpers.py:576  symbol=mv_address  -- mv_address -> the mapping's base address.
 #
 # 2. THE io_uring mmaps (:57-61). Their LENGTHS are `p.sq_off.array +
 #    p.sq_entries * 4`, `p.cq_off.cqes + p.cq_entries * sizeof(cqe)` and
@@ -118,15 +118,15 @@
 #    before the syscall, so the trace records the ORDER and the file OFFSET
 #    (`IORING_OFF_CQ_RING` = 0x8000000, `IORING_OFF_SQES` = 0x10000000) and not
 #    the length.
-#    TODO(p3) ops_disk.py:57  -- the three mmap lengths.
-#    TODO(p3) ops_disk.py:58  -- ditto.
-#    TODO(p3) ops_disk.py:60  -- ditto.
+#    TODO(p3) ops_disk.py:164  symbol=uring  -- the three mmap lengths.
+#    TODO(p3) ops_disk.py:164  symbol=uring  -- ditto.
+#    TODO(p3) ops_disk.py:164  symbol=uring  -- ditto.
 #
 # 3. `is_block_device` (:35) is a `pathlib` stat of the PATH and `os.fstat(fd)
 #    .st_size` (:35) is a stat of the DESCRIPTOR. Both are one Bool and one `U32`
 #    the host supplies, and both ride on `Dev` as `blockdev`/`stsize` so a fixture
 #    reaches each of the three cells of :35's conjunction.
-#    TODO(p3) ops_disk.py:35  -- is_block_device() and fstat().st_size.
+#    TODO(p3) ops_disk.py:35  symbol=_might_open  -- is_block_device() and fstat().st_size.
 #
 # 4. `readinto`'s byte count (:97) and `mem.close()`'s BufferError (:48) are the
 #    FILE's answers. `dsk_reads.go` takes the reads that HAPPENED as its chunk
@@ -1359,10 +1359,10 @@ def shard_at(+seg_len: U32, +size: U32, +off: U32, devsize: U32, +osx: Bool,
 #    later emit records anything, so a refusal shows up as a TRUNCATION of the trace
 #    rather than as an exception value. `dk_grow_trace_unchanged` and
 #    `dk_grow_refused` are the two rows, and `dk_buf_refused_calls` is the third.
-# TODO(p3) ops_disk.py:119  -- the two while-loops of the io_uring arm.
-# TODO(p3) ops_disk.py:122  -- ktail/kring_mask and the sqe array.
-# TODO(p3) ops_disk.py:128  -- sq.array[sqe_index] = sqe_index; ktail[0] += 1.
-# TODO(p3) ops_disk.py:139  -- `assert cqe.res >= 0`, the third assert in the file.
+# TODO(p3) ops_disk.py:105  symbol=disk_read  -- the two while-loops of the io_uring arm.
+# TODO(p3) ops_disk.py:125  symbol=disk_copy_rewriter  -- ktail/kring_mask and the sqe array.
+# TODO(p3) ops_disk.py:105  symbol=disk_read  -- sq.array[sqe_index] = sqe_index; ktail[0] += 1.
+# TODO(p3) ops_disk.py:140  symbol=disk_copy_rewriter  -- `assert cqe.res >= 0`, the third assert in the file.
 def shard_ioring(seg_len: U32, size: U32, off: U32, devsize: U32, +osx: Bool,
                  +d: Dev) -> ShOut:
   shard_at(seg_len, size, off, devsize, osx,

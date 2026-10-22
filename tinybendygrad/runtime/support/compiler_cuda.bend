@@ -61,7 +61,7 @@
 # (`@4` with `NO_COLOR=1`) where `colored("X", "blue")` answers `"X"`, not in
 # the default process where it answers `"\x1b[34mX\x1b[0m"`.
 #   TODO(p3) compiler_cuda.py:29 -- `colored(...)` in each of the six lambdas.
-#   TODO(p3) helpers.py:41 -- `if NO_COLOR: return st`.
+#   TODO(p3) helpers.py:39  symbol=colored -- `if NO_COLOR: return st`.
 #
 # ===========================================================================
 # `CUDA_PATH = getenv("CUDA_PATH", "")` IS A PROCESS-BOOT CONSTANT, and it is
@@ -109,10 +109,10 @@
 #   TODO(p3) compiler_cuda.py:4  -- `from tinygrad.runtime.autogen import nvrtc, nvjitlink`.
 #   TODO(p3) compiler_cuda.py:52 -- `nvrtcVersion`.
 #   TODO(p3) compiler_cuda.py:57-61 -- the five `nvrtc*` calls of `compile`.
-#   TODO(p3) compiler_cuda.py:93-97 -- the six `nvJitLink*` calls.
+#   TODO(p3) compiler_cuda.py:93-97  symbol=compile -- the six `nvJitLink*` calls.
 #
 # WALL 2 -- the six `re.sub` SCANS (see the header).
-#   TODO(p3) compiler_cuda.py:28-35 -- `re.sub` x6.
+#   TODO(p3) compiler_cuda.py:28-35  symbol=pretty_ptx -- `re.sub` x6.
 #
 # WALL 3 -- the temp file NAMES. `cuda_disassemble` writes
 #   `pathlib.Path(tempfile.gettempdir()) / f"tinycuda_{md5(lib).hexdigest()}"`,
@@ -130,7 +130,7 @@
 #   ports that test with a `List<&2, U32>`; the two `NamedTemporaryFile`
 #   suffixes are `PTXCompiler`'s `.suffix` and `.cu`.
 #   TODO(p3) compiler_cuda.py:41 -- `lib.rstrip(b'\x00')`.
-#   TODO(p3) compiler_cuda.py:71 -- the two `tempfile.NamedTemporaryFile` names.
+#   TODO(p3) compiler_cuda.py:71  symbol=compile -- the two `tempfile.NamedTemporaryFile` names.
 import Base
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))

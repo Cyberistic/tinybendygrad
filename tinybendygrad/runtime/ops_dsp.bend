@@ -92,8 +92,8 @@
 #    `pathlib.Path(f.name).read_bytes()` after it. `args` IS ported -- it is a
 #    string function of `mock` -- and so is the whole command line, as
 #    `compile_cmd`. The spawn and the byte buffer are not.
-#    TODO(p3) runtime/ops_dsp.py:118 -- the clang spawn and the .so read-back.
-#    TODO(p3) runtime/ops_dsp.py:125 -- cpu_objdump / llvm-objdump.
+#    TODO(p3) runtime/ops_dsp.py:118  symbol=compile -- the clang spawn and the .so read-back.
+#    TODO(p3) runtime/ops_dsp.py:125  symbol=disassemble -- cpu_objdump / llvm-objdump.
 #
 # 2. THE ION AND MMAP SYSCALLS (:81-83, :88, :132, :172). `os.open('/dev/ion')`,
 #    `qcom_dsp.ION_IOC_ALLOC`, `libc.mmap`, `os.close('/dev/adsprpc-smd')`. Every
@@ -101,10 +101,10 @@
 #    `autogen/qcom_dsp.py` is generated ctypes bindings, so even on device these
 #    are struct layouts. What is ported is the ORDER and the ONE integer each call
 #    carries -- the size, the handle, the selector -- which is what the trace holds.
-#    TODO(p3) runtime/ops_dsp.py:81  -- ION_IOC_ALLOC / ION_IOC_SHARE.
-#    TODO(p3) runtime/ops_dsp.py:83  -- libc.mmap.
-#    TODO(p3) runtime/ops_dsp.py:132 -- os.open('/dev/ion').
-#    TODO(p3) runtime/ops_dsp.py:172 -- os.open('/dev/adsprpc-smd').
+#    TODO(p3) runtime/ops_dsp.py:81  symbol=_alloc  -- ION_IOC_ALLOC / ION_IOC_SHARE.
+#    TODO(p3) runtime/ops_dsp.py:83  symbol=_alloc  -- libc.mmap.
+#    TODO(p3) runtime/ops_dsp.py:132  symbol=__init__ -- os.open('/dev/ion').
+#    TODO(p3) runtime/ops_dsp.py:172  symbol=init_dsp -- os.open('/dev/adsprpc-smd').
 #
 # 3. THE RPCListener's HOST FILE SYSTEM AND ITS OBJECT WALK (:199-238). The DSP
 #    asks the HOST for these over the listener socket; this file implements
@@ -112,22 +112,22 @@
 #    DISPATCH TABLE, the seven arms' argument counts, the 8-byte object alignment
 #    and the reply field indices are pure and ARE ported. The syscalls and the
 #    pointer walk are not.
-#    TODO(p3) runtime/ops_dsp.py:199 -- the in_ptr/out_ptr walk over in_buf.
-#    TODO(p3) runtime/ops_dsp.py:215 -- os.open(name) for name != "tinylib".
-#    TODO(p3) runtime/ops_dsp.py:218 -- os.close(fd) for fd != TINYFD.
-#    TODO(p3) runtime/ops_dsp.py:223 -- os.lseek.
+#    TODO(p3) runtime/ops_dsp.py:199  symbol=run -- the in_ptr/out_ptr walk over in_buf.
+#    TODO(p3) runtime/ops_dsp.py:215  symbol=run -- os.open(name) for name != "tinylib".
+#    TODO(p3) runtime/ops_dsp.py:218  symbol=run -- os.close(fd) for fd != TINYFD.
+#    TODO(p3) runtime/ops_dsp.py:223  symbol=run -- os.lseek.
 #    TODO(p3) runtime/ops_dsp.py:227 -- the TINYFD read out of `binded_lib`.
-#    TODO(p3) runtime/ops_dsp.py:229 -- os.read.
-#    TODO(p3) runtime/ops_dsp.py:233 -- os.stat and the apps_std_STAT fill.
-#    TODO(p3) runtime/ops_dsp.py:237 -- FASTRPC_IOCTL_MMAP.
+#    TODO(p3) runtime/ops_dsp.py:229  symbol=run -- os.read.
+#    TODO(p3) runtime/ops_dsp.py:233  symbol=run -- os.stat and the apps_std_STAT fill.
+#    TODO(p3) runtime/ops_dsp.py:237  symbol=run -- FASTRPC_IOCTL_MMAP.
 #
 # 4. THE u64 TIMER (:71 `timer[0] / 1e6`, :292 `struct.unpack("I", ...)/1e9`).
 #    Bend has no 64-bit integer and no F64, so the DIVISOR is ported as the one
 #    number the seam must agree on -- and the two programs have DIFFERENT ones,
 #    1e6 against 1e9, which `dsp_scale_*` pins because a port that shared one
 #    scale would move exactly one of the three rows.
-#    TODO(p3) runtime/ops_dsp.py:71  -- the u64 read and the /1e6.
-#    TODO(p3) runtime/ops_dsp.py:292 -- the u32 inscount read and the /1e9.
+#    TODO(p3) runtime/ops_dsp.py:71  symbol=__call__  -- the u64 read and the /1e6.
+#    TODO(p3) runtime/ops_dsp.py:292  symbol=__call__ -- the u32 inscount read and the /1e9.
 #
 # THERE IS NO FOREIGN EFFECT IN THIS FILE. No `import "./x.c"`, no `-> IO(R)`. A
 # template-following device records its calls in a `Tr` and declares nothing, which

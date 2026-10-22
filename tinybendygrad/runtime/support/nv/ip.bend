@@ -99,40 +99,40 @@
 #     real ctypes writes into a real buffer. This port reproduces the layouts
 #     (THE LAYOUTS) and the U32-representable field values, and the ctypes
 #     marshalling itself is the seam.
-#       # TODO(p3) support/nv/ip.py:39  rpc_message_header_v(...)
-#       # TODO(p3) support/nv/ip.py:43  GSP_MSG_QUEUE_ELEMENT(...)
-#       # TODO(p3) support/nv/ip.py:146 FWSECLIC_READ_VBIOS_DESC(...)
-#       # TODO(p3) support/nv/ip.py:147 FWSECLIC_FRTS_REGION_DESC(...)
-#       # TODO(p3) support/nv/ip.py:374 MESSAGE_QUEUE_INIT_ARGUMENTS(...)
-#       # TODO(p3) support/nv/ip.py:394 LibosMemoryRegionInitArgument(...)
-#       # TODO(p3) support/nv/ip.py:438 GspFwWprMeta(**common, ...)
+#       # TODO(p3) support/nv/ip.py:39  symbol=_send_rpc_record  rpc_message_header_v(...)
+#       # TODO(p3) support/nv/ip.py:43  symbol=_send_rpc_record  GSP_MSG_QUEUE_ELEMENT(...)
+#       # TODO(p3) support/nv/ip.py:146  symbol=prep_ucode FWSECLIC_READ_VBIOS_DESC(...)
+#       # TODO(p3) support/nv/ip.py:147  symbol=prep_ucode FWSECLIC_FRTS_REGION_DESC(...)
+#       # TODO(p3) support/nv/ip.py:374  symbol=init_rm_args MESSAGE_QUEUE_INIT_ARGUMENTS(...)
+#       # TODO(p3) support/nv/ip.py:394  symbol=init_libos_args LibosMemoryRegionInitArgument(...)
+#       # TODO(p3) support/nv/ip.py:438  symbol=init_wpr_meta GspFwWprMeta(**common, ...)
 #       # TODO(p3) support/nv/ip.py:530 rpc_alloc_memory_v(...)
-#       # TODO(p3) support/nv/ip.py:551 rpc_gsp_rm_alloc_v(...)
-#       # TODO(p3) support/nv/ip.py:582 rpc_gsp_rm_control_v(...)
-#       # TODO(p3) support/nv/ip.py:595 struct_NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_...
+#       # TODO(p3) support/nv/ip.py:551  symbol=rpc_rm_alloc rpc_gsp_rm_alloc_v(...)
+#       # TODO(p3) support/nv/ip.py:582  symbol=rpc_rm_control rpc_gsp_rm_control_v(...)
+#       # TODO(p3) support/nv/ip.py:595  symbol=rpc_set_page_directory struct_NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_...
 #       # TODO(p3) support/nv/ip.py:597 rpc_set_page_directory_v(...)
-#       # TODO(p3) support/nv/ip.py:605 GspSystemInfo(...)
+#       # TODO(p3) support/nv/ip.py:605  symbol=rpc_set_gsp_system_info GspSystemInfo(...)
 #       # TODO(p3) support/nv/ip.py:612 rpc_unloading_guest_driver_v(...)
-#       # TODO(p3) support/nv/ip.py:622 PACKED_REGISTRY_ENTRY(...)
-#       # TODO(p3) support/nv/ip.py:626 PACKED_REGISTRY_TABLE(...)
+#       # TODO(p3) support/nv/ip.py:622  symbol=rpc_set_registry_table PACKED_REGISTRY_ENTRY(...)
+#       # TODO(p3) support/nv/ip.py:626  symbol=rpc_set_registry_table PACKED_REGISTRY_TABLE(...)
 #
 #   * the `/dev/nvidia*` fds and the `nvdev` register file. `nvdev.include(...)`
 #     (:99-105), `nvdev.wreg`/`rreg` (:231,:637), every `NV_P*` register, the
 #     `mmio` views (:111) and `_alloc_boot_mem` (:167) are device memory this
 #     file cannot reach.
 #       # TODO(p3) support/nv/ip.py:99   self.nvdev.include("dev_gsp", "ga102")
-#       # TODO(p3) support/nv/ip.py:111  self.nvdev.mmio[0x300000//4:...]
-#       # TODO(p3) support/nv/ip.py:167  self.nvdev._alloc_boot_mem(...)
-#       # TODO(p3) support/nv/ip.py:199  self.nvdev.NV_PGSP_FALCON_MAILBOX0.write
+#       # TODO(p3) support/nv/ip.py:111  symbol=prep_ucode  self.nvdev.mmio[0x300000//4:...]
+#       # TODO(p3) support/nv/ip.py:167  symbol=__patch  self.nvdev._alloc_boot_mem(...)
+#       # TODO(p3) support/nv/ip.py:199  symbol=init_hw  self.nvdev.NV_PGSP_FALCON_MAILBOX0.write
 #
 #   * `fetch_fw` (:174,:303,:402,:429) and `elf_loader` (:303) -- firmware
 #     download and ELF parsing. The offsets read OUT of their results are
 #     arithmetic and are ported (`prep_booter`, `init_gsp_image`,
 #     `init_boot_binary_image`); the download and the parse are the seam.
-#       # TODO(p3) support/nv/ip.py:174  fetch_fw(... "booter_load-570.144.bin" ...)
-#       # TODO(p3) support/nv/ip.py:303  elf_loader(fetch_fw(... "fmc-570.144.bin" ...))
-#       # TODO(p3) support/nv/ip.py:402  elf_loader(fetch_fw(... "gsp-570.144.bin" ...))
-#       # TODO(p3) support/nv/ip.py:429  fetch_fw(... "bootloader-570.144.bin" ...)
+#       # TODO(p3) support/nv/ip.py:174  symbol=prep_booter  fetch_fw(... "booter_load-570.144.bin" ...)
+#       # TODO(p3) support/nv/ip.py:303  symbol=init_fmc_image  elf_loader(fetch_fw(... "fmc-570.144.bin" ...))
+#       # TODO(p3) support/nv/ip.py:402  symbol=init_gsp_image  elf_loader(fetch_fw(... "gsp-570.144.bin" ...))
+#       # TODO(p3) support/nv/ip.py:429  symbol=init_boot_binary_image  fetch_fw(... "bootloader-570.144.bin" ...)
 #
 #   * `wait_cond` (:22,:96,:213,:277,:288,:326,:640), `time.sleep` (:274,:641)
 #     and `System.memory_barrier` (:52,:63,:78). `System.memory_barrier` IS a
@@ -141,17 +141,17 @@
 #     trace call too (`C_WAIT_RESP`, then `C_RPC_RAISE` on the timeout). The
 #     POLLING LOOPS are not: `wait_cond` and `time.sleep` are the seam, and no
 #     trace tag claims to be either of them.
-#       # TODO(p3) support/nv/ip.py:22   wait_cond(... "RPC queue not initialized")
-#       # TODO(p3) support/nv/ip.py:52   System.memory_barrier()  [PORTED: C_BARRIER]
+#       # TODO(p3) support/nv/ip.py:22  symbol=__init__   wait_cond(... "RPC queue not initialized")
+#       # TODO(p3) support/nv/ip.py:52  symbol=_send_rpc_record   System.memory_barrier()  [PORTED: C_BARRIER]
 #       # TODO(p3) support/nv/ip.py:274  time.sleep(0.1)
-#       # TODO(p3) support/nv/ip.py:640  wait_cond(lambda a, m: ...)
+#       # TODO(p3) support/nv/ip.py:640  symbol=run_cpu_seq  wait_cond(lambda a, m: ...)
 #
 #   * the VBIOS scan (:110-143). It walks a firmware image with a
 #     `match/case` over two code types and then walks three token tables; the
 #     WALKS are over bytes this file does not have. The one thing ported is the
 #     arithmetic that survives without the bytes -- `frts_offset` (:145),
 #     `desc_v3` size arithmetic (:141-143) -- and the refusal at :123.
-#       # TODO(p3) support/nv/ip.py:111  the PCI expansion ROM walk
+#       # TODO(p3) support/nv/ip.py:111  symbol=prep_ucode  the PCI expansion ROM walk
 #       # TODO(p3) support/nv/ip.py:123  assert bit_header.Signature == 0x00544942
 #
 # ---------------------------------------------------------------------------
@@ -187,8 +187,8 @@
 #      - `id8=int.from_bytes(bytes(f"LOG{name}", 'utf-8'), 'big')` (:395) is an
 #        EIGHT-BYTE name read big-endian. See the note beside `libos` and
 #        `ip_libos_id8_bytes`.
-#      # TODO(p3) support/nv/ip.py:442  GSP_FW_WPR_META_MAGIC
-#      # TODO(p3) support/nv/ip.py:605  GspSystemInfo.gpuPhysAddr / maxUserVa
+#      # TODO(p3) support/nv/ip.py:442  symbol=init_wpr_meta  GSP_FW_WPR_META_MAGIC
+#      # TODO(p3) support/nv/ip.py:605  symbol=rpc_set_gsp_system_info  GspSystemInfo.gpuPhysAddr / maxUserVa
 #
 # 2. THE DICT WALL, and it is a soft one. `self.chan_runlists` (:348),
 #    `self.runlists` (:475), `self.grctx_bufs` (:501), `ctxbufs` (:457) and the
@@ -207,8 +207,8 @@
 #    NOT in `nv_ip_tables.bend`: they belong to whoever ports `ops_nv.py`'s
 #    register table, and `fl.dma_chunk` takes its bit positions as parameters
 #    for exactly that reason.
-#      # TODO(p3) support/nv/ip.py:242  NV_PFALCON_FALCON_DMATRFCMD.encode(...)
-#      # TODO(p3) support/nv/ip.py:253  NV_PFALCON2_FALCON_MOD_SEL_ALGO_RSA3K
+#      # TODO(p3) support/nv/ip.py:242  symbol=execute_hs  NV_PFALCON_FALCON_DMATRFCMD.encode(...)
+#      # TODO(p3) support/nv/ip.py:253  symbol=execute_hs  NV_PFALCON2_FALCON_MOD_SEL_ALGO_RSA3K
 #      # TODO(p3) support/nv/ip.py:99   the register map `include` produces
 #
 # CTYPES SHAPING is not a wall and is named once: `(FALCON_APPLICATION_INTERFACE_ENTRY_V1
@@ -1528,7 +1528,7 @@ def bdf.as_int(+s: String) -> U32:
 # not fit a U32 and has no U32 spelling. What survives is that the name is eight
 # bytes, the first is 'L' for all six, and the sixth name is `RMARGS` and not
 # `LOG*` -- so `ip_libos_id8_bytes` is the row and `id8` is the seam.
-#   # TODO(p3) support/nv/ip.py:395  id8=int.from_bytes(...)
+#   # TODO(p3) support/nv/ip.py:395  symbol=init_libos_args  id8=int.from_bytes(...)
 # ---------------------------------------------------------------------------
 def libos_n() -> U32: 6
 

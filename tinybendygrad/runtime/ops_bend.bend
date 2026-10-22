@@ -102,7 +102,7 @@
 #    that knows a float CONST is the `f:` arm -- and takes the digits from the
 #    node. The row `bend_arg_const_float_is_f` pins the prefix and
 #    `bend_wall_float_bits` records the seam.
-#    TODO(p3) runtime/ops_bend.py:118  -- struct.pack('<f', u.arg).hex().
+#    TODO(p3) runtime/ops_bend.bend:1  symbol= -- the FLOAT CONST's `struct.pack('<f', u.arg).hex()` -- UPSTREAM'S `runtime/ops_bend.py` IS GONE AT THIS PIN, so this is a claim about the PORT's own encoder.
 #
 # 3. THE FFI SEAMS, named with their Python lines. None of these is an
 #    `@extern`; they are steps in the trace, so the trace stays greppable.
@@ -707,7 +707,7 @@ def norm2(xs: List<&1, String>) -> List<&2, String>:
 # RED in this file rather than absent. They are reported as red rather than
 # deleted, because a red row that names a wall is information and a deleted row
 # is a lie.
-#   TODO(p3) runtime/ops_bend.py:180 -- split a packet into LINES.
+#   TODO(p3) runtime/ops_bend.bend:1  symbol= -- split a packet into LINES -- UPSTREAM'S `runtime/ops_bend.py` IS GONE AT THIS PIN, so this is a claim about the PORT's own decoder.
 def NLCH() -> Char: Maybe.default(&2, Char, String.get("\n", 0n), ' ')
 
 # THE SPLIT, AND THE TRAILING EMPTY FIELD IS DROPPED because `encode` always ends

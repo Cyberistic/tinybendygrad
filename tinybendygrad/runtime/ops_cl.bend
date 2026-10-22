@@ -143,9 +143,9 @@
 #    every `cl_mem` argument becomes a `U32` HANDLE ID minted by the trace. What
 #    is gated is the ORDER and the IDENTITY of the calls that produce and consume
 #    them, which is the part that is not a pointer.
-#    TODO(p3) runtime/ops_cl.py:80   -- clCreateBuffer's cl_mem.
-#    TODO(p3) runtime/ops_cuda.py:23  -- extern()'s BufferStorage(ptr, meta).
-#    TODO(p3) runtime/ops_hip.py:71   -- _offset returns a hipDeviceptr_t.
+#    TODO(p3) runtime/ops_cl.py:85  symbol=_alloc   -- clCreateBuffer's cl_mem.
+#    TODO(p3) runtime/ops_cuda.py:67  symbol=_alloc  -- extern()'s BufferStorage(ptr, meta).
+#    TODO(p3) runtime/ops_cuda.py:87  symbol=_offset -- _offset returns a hipDeviceptr_t; upstream's HIPDevice has none of its own and inherits CUDAAllocator._offset.
 #
 # 2. THE 64-BIT WALL, and it is three lines of Python.
 #      cl:75  `float(end.value-start.value) * OSX_TIMING_RATIO * 1e-9`
@@ -156,27 +156,27 @@
 #    `Word(64n)`, so the delta is not computable here. `timing.scale` ports the
 #    factors that ARE expressible -- the ns->s divisor and the `OSX_TIMING_RATIO`
 #    -- and the subtraction is the seam's.
-#    TODO(p3) runtime/ops_cl.py:75  -- the u64 nanosecond delta.
-#    TODO(p3) runtime/ops_hip.py:57 -- the f32 millisecond elapsed.
+#    TODO(p3) runtime/ops_cl.py:139  symbol=_wait_signal -- the u64 nanosecond delta -- upstream's old `OSX_TIMING_RATIO` form is GONE at this pin and the u64 profiling timestamps are read here.
+#    TODO(p3) runtime/ops_cuda.py:104  symbol=__init__ -- the f32 millisecond elapsed -- upstream's `ret.value * 1e-3` is GONE at this pin and the clock is `time.perf_counter_ns()` here.
 #
 # 3. `ctypes.create_string_buffer` / `ctypes.string_at` (:29-32, :105-116) are a
 #    `(ptr, len)` pair the seam frees as soon as the call returns. The port keeps
 #    the decoded String, because the decoded String IS what :106 stores in
 #    `self.device_name` and what :100 prints.
-#    TODO(p3) runtime/ops_cl.py:29  -- the build-log string buffer.
-#    TODO(p3) runtime/ops_cl.py:105 -- the device-info string buffer.
+#    TODO(p3) runtime/ops_cl.py:31  symbol=compile  -- the build-log string buffer.
+#    TODO(p3) runtime/ops_cl.py:108  symbol=__init__ -- the device-info string buffer.
 #
 # 4. `CC_CB` / `BP_CB` (:10-11) are `CFUNCTYPE` signatures handed as the
 #    `pfn_notify` argument of `clCreateContext` and `clBuildProgram`. cl:110
 #    passes a fresh `CC_CB()` and cl:27,46 pass `BP_CB()`, and a callback that
 #    does nothing is indistinguishable from NULL at the trace level.
-#    TODO(p3) runtime/ops_cl.py:10  -- CC_CB / BP_CB.
+#    TODO(p3) runtime/ops_cl.py:13  symbol=CC_CB  -- CC_CB / BP_CB.
 #
 # 5. `hashlib.md5(device_name + driver_version).hexdigest()` (:118) is the
 #    compiler cache key. Neither md5 nor a SHA is in Base. The port builds the
 #    key's PREFIX and the two concatenated fields, which is everything about the
 #    key except the digest, and the digest is the seam's.
-#    TODO(p3) runtime/ops_cl.py:118 -- the md5 digest.
+#    TODO(p3) runtime/ops_cl.py:27  symbol=__init__ -- the md5 digest.
 #
 # 6. POINTER ARITHMETIC and `ctypes.byref`/`addressof`. cl:58's
 #    `getattr(ctypes, f"c_int{dt.bitsize}")(vals[...])` is a VALUE boxed into a
@@ -201,7 +201,7 @@
 #    CALL fails, and a real call needs a device. The oracle is
 #    `.agents/slop/cl_constmap.py`, which imports autogen.hip and asserts
 #    `getattr` for both memcpy kinds.
-#    TODO(p3) runtime/ops_hip.py:10 -- hipGetErrorString's text.
+#    TODO(p3) runtime/autogen/hip.py:960  symbol=hipGetErrorString -- hipGetErrorString's text.
 #
 # WHAT IS NOT A WALL, because it is DATA and is ported:
 #   `cl_errors` (:16) is a dict over the autogen module and CPython evaluates it

@@ -84,12 +84,12 @@
 #    syscall and this file reaches host memory the way `device.bend` reaches
 #    it -- by NAMING the call in a trace. `mmap`/`munmap`/`memcpy` and
 #    `to_mv` (helpers.py:573, `ctypes.from_address`) are FFI seams.
-#    TODO(p3) device.py:307  mmap.mmap -- the mapping syscall.
-#    TODO(p3) helpers.py:573  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
+#    TODO(p3) device.py:297  symbol=_alloc  mmap.mmap -- the mapping syscall.
+#    TODO(p3) helpers.py:575  symbol=to_mv  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
 # 2. `cpu_profile` (device.py:315,:317). A `with` around the copy that writes a
 #    profile event and re-reads `DEBUG`. It wraps the copy, it does not change
 #    it, and the three calls inside it are what the gate pins.
-#    TODO(p3) device.py:315  cpu_profile -- the `with` and its profile event.
+#    TODO(p3) device.py:310  symbol=_copyin  cpu_profile -- the `with` and its profile event.
 # 3. `Device[buf.device]` (device.py:328). Opening a device by string is a
 #    registry lookup and a hardware open. `device.bend` OWES this file the
 #    already-opened set, so the port compares host NAMES rather than

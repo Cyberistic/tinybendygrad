@@ -76,7 +76,7 @@
 #     does not is that the address is opaque and that `__del__` is GC-TIMED.
 #     `Idr.finalize` takes `is_finalizing` as a PARAMETER, which is the whole
 #     of `__del__`'s guard (:13-14) and makes it testable at all.
-#     TODO(p3) runtime/support/objc.py:13 -- the `__del__` hook itself.
+#     TODO(p3) runtime/support/objc.py:13  symbol=__del__ -- the `__del__` hook itself.
 #
 # W3  THE METAINTERPRETER, :47-73. `MetaSpec.__new__` / `__setattr__` /
 #     `_inherit` / `_addmeth` are metaclass hooks: they run when a CLASS is
@@ -86,7 +86,7 @@
 #     that `objc_getClass(name.encode())` hands back a live `Class` object,
 #     which is W1 wearing a hat.
 #     TODO(p3) runtime/support/objc.py:49 -- `lib.objc_getClass(name.encode())`.
-#     TODO(p3) runtime/support/objc.py:71 -- `classmethod(...)` wrapping.
+#     TODO(p3) runtime/support/objc.py:71  symbol=_addmeth -- `classmethod(...)` wrapping.
 #
 # W4  THE CALLABLES. `msg` returns a closure over `sender` and `sel`, and
 #     `returns_retained` returns a closure over `f`; Bend has no first-class
@@ -1070,9 +1070,9 @@ def t_symbols() -> IO(Unit):
     # the failure is at LINK time, against these two, which export neither.
     srow("sym_libm_exports_selname", "MISSING")
     srow("sym_libsystem_exports_selname", "MISSING")
-    # TODO(p3) runtime/support/objc.py:25  -- CDLL(find_library('objc'))
-    # TODO(p3) runtime/support/objc.py:30  -- CDLL("/usr/lib/libSystem.dylib")
-    # TODO(p3) runtime/ops_cpu.py:19       -- libobjc is missing from
+    # TODO(p3) runtime/support/objc.py:25  symbol=lib  -- CDLL(find_library('objc'))
+    # TODO(p3) runtime/support/objc.py:30  symbol=dispatch_data_create  -- CDLL("/usr/lib/libSystem.dylib")
+    # TODO(p3) runtime/ops_cpu.py:18  symbol=CPUProgram       -- libobjc is missing from
     #   CPUProgram.link_libs, so elf.py:13 cannot link the `extern void
     #   sel_registerName();` that cstyle.py:268 emits for every CUSTOM_FUNCTION.
     #   REPORTED, NOT FIXED: ops_cpu.py is not this unit's file.

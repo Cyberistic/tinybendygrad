@@ -70,20 +70,20 @@
 #   PYTHON itself reads at :119, :131 and :133 -- are not attributes of the
 #   autogen type. Those three are therefore autogen walls and are declared as
 #   parameters, which is the honest shape.
-#   TODO(p3) compiler_mesa.py:1-5  -- the autogen imports.
+#   TODO(p3) runtime/autogen/mesa.py:9  symbol=dll -- the autogen imports: `compiler_mesa.py`'s `from tinygrad.runtime.autogen import mesa, llvm, libc`, and the autogen's own ctypes DLL binding is the wall.
 #   TODO(p3) compiler_mesa.py:10   -- `mesa.rzalloc_size`.
 #   TODO(p3) compiler_mesa.py:16-17 -- `blob_reader_init` + `nir_deserialize`.
-#   TODO(p3) compiler_mesa.py:23-42 -- the sixteen LVP gallivm calls.
-#   TODO(p3) compiler_mesa.py:59-60 -- `nak_compiler_create` / `nak_nir_options`.
-#   TODO(p3) compiler_mesa.py:68-72 -- `nak_preprocess_nir` / `nak_compile_shader`.
-#   TODO(p3) compiler_mesa.py:86   -- `f"{n:04} [{fst:08x}_{snd:08x}] "` reaches
+#   TODO(p3) compiler_mesa.py:23-42  symbol=compile -- the sixteen LVP gallivm calls.
+#   TODO(p3) compiler_mesa.py:59-60  symbol=__init__ -- `nak_compiler_create` / `nak_nir_options`.
+#   TODO(p3) compiler_mesa.py:68  symbol=compile -- `nak_preprocess_nir` / `nak_compile_shader`.
+#   TODO(p3) compiler_mesa.py:89  symbol=hd   -- `f"{n:04} [{fst:08x}_{snd:08x}] "` reaches
 #                                     libc `fputs` through a ctypes callback.
 #   TODO(p3) compiler_mesa.py:91   -- `ir3_isa_disasm` + `struct_isa_decode_options`.
-#   TODO(p3) compiler_mesa.py:112-124 -- the twelve IR3 lowering calls.
+#   TODO(p3) compiler_mesa.py:112-124  symbol=compile -- the twelve IR3 lowering calls.
 #   TODO(p3) compiler_mesa.py:119  -- `info.num_ssbos` / `info.num_images`
 #                                     (autogen: `_mem_` only, MEASURED).
-#   TODO(p3) compiler_mesa.py:131  -- `v.imm_state.count` (same).
-#   TODO(p3) compiler_mesa.py:133  -- `self.dev_id.gpu_id` (same).
+#   TODO(p3) compiler_mesa.py:131  symbol=unpack_lib  -- `v.imm_state.count` (same).
+#   TODO(p3) compiler_mesa.py:133  symbol=disassemble  -- `self.dev_id.gpu_id` (same).
 #
 # WALL 2 -- md5. `hashlib.md5(lib).hexdigest()` is a 128-bit digest and bend has
 #   no 64-bit product (`base.bend` exports `Word`, not `Word(64n)`;
@@ -94,10 +94,10 @@
 # WALL 3 -- the blob. base64 decode, `struct_blob_reader`, the disassembly
 #   buffer and `Path.read_bytes()` all move `bytes`, and `File.read_bytes`
 #   exists but has no name to read from here.
-#   TODO(p3) compiler_mesa.py:16 -- `base64.b64decode`.
-#   TODO(p3) compiler_mesa.py:45 -- `ctypes.string_at(LLVMGetBufferStart(..))`.
-#   TODO(p3) compiler_mesa.py:78 -- `f.write(lib[sizeof(struct_nak_shader_info):])`.
-#   TODO(p3) compiler_mesa.py:108 -- `pathlib.Path(libf.name).read_bytes()`.
+#   TODO(p3) compiler_mesa.py:16  symbol=deserialize -- `base64.b64decode`.
+#   TODO(p3) compiler_mesa.py:45  symbol=compile -- `ctypes.string_at(LLVMGetBufferStart(..))`.
+#   TODO(p3) compiler_mesa.py:78  symbol=disassemble -- `f.write(lib[sizeof(struct_nak_shader_info):])`.
+#   TODO(p3) compiler_mesa.py:77  symbol=disassemble -- `pathlib.Path(libf.name).read_bytes()`.
 #
 # WALL 4 -- objdump / nvdisasm on the PATH. `helpers.system` raises
 #   `RuntimeError(f"system: '{cmd}' failed with exit code {e.returncode}\n...")`

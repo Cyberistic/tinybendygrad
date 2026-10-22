@@ -39,8 +39,8 @@
 #
 # `ops_amd.bend` records WALL 3 ("USB3, USBIface, ops_amd.py:810-833") naming
 # `USB3.list_devices`, `dma_view`, and the `0/4096/20480` controller window, with
-# `TODO(p3) runtime/ops_amd.py:812  USB3.list_devices` and
-# `TODO(p3) runtime/ops_amd.py:824  pci_dev.dma_view(40960, 544768)`. This file
+# `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices` and
+# `TODO(p3) runtime/ops_amd.py:798  symbol=ctrl  pci_dev.dma_view(40960, 544768)`. This file
 # closes:
 #
 #   * WALL 3, part 1 -- `USB3.list_devices` (:30-37). The enumeration is a `Tr`
@@ -1755,7 +1755,7 @@ def Tr.has(+cs: List<&2, Call>, +pat: List<&2, Call>) -> Bool:
 
 # ===========================================================================
 # THE ENUMERATION. `USB3.list_devices` (:30-37) is ONE loop and it is the wall
-# ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:812  USB3.list_devices`.
+# ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices`.
 #
 # THE SELECTION IS A PURE PREDICATE and the trace is the walk: the port compares
 # `(idVendor, idProduct) == (vendor, dev)` from the descriptor fields it has

@@ -169,7 +169,7 @@
 #   whose memory IS the packet, reinterpreted in place.
 #      WALL(p3) bnxtdev.py:131 getattr(bnxt, f"struct_cmdq_{name}"). -- BLOCKED. THE SAME
 #      RUNTIME NAME RESOLUTION as the marker at :77, one family over.
-#      TODO(p3) bnxtdev.py:149 resp_t.from_buffer_copy(self.creq.read(...)).
+#      TODO(p3) bnxtdev.py:149  symbol=rcfw resp_t.from_buffer_copy(self.creq.read(...)).
 #   2. THE 64-BIT PHYSICAL ADDRESSES (`build_pbl`'s entries, `db_value`, the
 #      doorbell word, `struct_cmdq_*.pbl`). There is no U64 in Bend 2.0.34.
 #      Every one of them is carried as TWO U32 halves, and -- MEASURED -- every
@@ -189,7 +189,7 @@
 #      node string is `nic.node` in `ops_rdma.bend`, which already ports it.
 # | WALL(p3) bnxtdev.py:54  self.devfmt = pci_dev.pcibus. -- BLOCKED. #   `self.devfmt = pci_dev.pcibus` READS A FIELD OFF A LIVE PCI DEVICE OBJECT. There is no live
 #   device object in the port: `Dev` is a `U32` tag (`LAWS/spec.bend:85`).
-#      TODO(p3) bnxtdev.py:157 `if BNXT_DEBUG >= 1: print(...)`.
+#      TODO(p3) bnxtdev.py:157  symbol=rcfw `if BNXT_DEBUG >= 1: print(...)`.
 #   6. `System.list_devices` / `PCIDevice` probing. Not in this file at all;
 #      WALL 2 of `ops_rdma.bend` owns it and names `bnxtdev.py`.
 #   7. THE GENERATOR OF :94-96. `sum(splits)`, `range(...)` and the
@@ -197,7 +197,7 @@
 #      arrive from a HWRM the port cannot make. The port takes `entry_size`,
 #      `min_num_entries`, the split SUM and the bitmap as PARAMETERS -- which is
 #      why the `bs_*` rows are `bs_count_of(typ, mne, sum_splits)` and not a
-#      closed table. TODO(p3) bnxtdev.py:95 tuple(getattr(caps, ...) for j ...).
+#      closed table. TODO(p3) bnxtdev.py:95  symbol=setup_backing_store tuple(getattr(caps, ...) for j ...).
 #
 # ===========================================================================
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument

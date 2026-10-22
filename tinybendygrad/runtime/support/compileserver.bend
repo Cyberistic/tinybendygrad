@@ -65,7 +65,7 @@
 #   TODO(p3) compileserver.py:8  -- `sys.stdin.buffer.read(n)`.
 #   TODO(p3) compileserver.py:12 -- `sys.stdout.buffer.write(...)`.
 #   TODO(p3) compileserver.py:13 -- `sys.stdout.buffer.flush()`.
-#   TODO(p3) device.py:352      -- the Popen that holds the pipe open.
+#   TODO(p3) device.py:335  symbol=server      -- the Popen that holds the pipe open.
 #
 # `ast.literal_eval` is the other unported piece: it parses a Python literal
 # from a STRING, and bend has no parser (and writing one is Turing

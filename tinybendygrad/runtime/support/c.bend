@@ -71,7 +71,7 @@
 # * `set_mask = ~((1 << bit_width) - 1) << bit_off` is UNBOUNDED in Python and
 #   a 32-bit complement here. Same value in the low `sz` bytes for every
 #   `sz <= 4`, because `b2i` is `sz` bytes wide. `sz > 4` truncates.
-#   `TODO(p3) c.py:69`.
+#   `TODO(p3) c.py:69  symbol=b2i`.
 # * THERE IS NO MASKING ON THE STORE, and that is observable: `b` is 12 bits at
 #   `bit_off 4` in a 2-byte slice, so `o.b = 0x1000` raises `OverflowError` out
 #   of `to_bytes(sz)` rather than truncating to `0`. `Field.bset_overflows` is
@@ -157,7 +157,7 @@ def _IOWR(base: U32, nr: U32, size: U32) -> U32: _do_ioctl(3, base, nr, size, Tr
 # it is SIGNED, and Bend 2.0.34 declares `Nat`, `U32` and `F32` and nothing
 # else (measured against base.bend's `type ... is Data:` list), so the sign is
 # a separate `Bool` and the formatter spells both halves.
-# `TODO(p3) c.py:12` -- a signed integer type.
+# `TODO(p3) c.py:11  symbol=_do_ioctl` -- a signed integer type.
 def _do_ioctl.rc_msg(neg: Bool, mag: U32) -> String:
   String.concat(["ioctl returned ", Bool.pick(String, neg, "-", ""), U32.show(mag)])
 
@@ -176,7 +176,7 @@ def _do_ioctl.rc_msg(neg: Bool, mag: U32) -> String:
 #
 # THE WALL is the `ctypes.Array` subclass: `key[0] * n` builds a ctypes array
 # TYPE, and `key[0]` is a ctypes type object rather than a width.
-# `TODO(p3) c.py:35`.
+# `TODO(p3) c.py:34  symbol=Array`.
 # ===========================================================================
 
 # `_type_, _length_ = ctypes.c_byte, 0`. The `_length_ = 0` is load-bearing
@@ -395,7 +395,7 @@ def Field.bset.merge(+sz: U32, mem: List<&2, U32>, +f: Field, v: U32, le: Bool) 
   U32.or(U32.and(Field.b2i(sz, mem, le), Field.set_mask(f)), U32.shln(v, U32.to_nat(Field.bit_off(f))))
 
 # `to_bytes(sz)` RAISES rather than truncating when `v << bit_off` does not fit
-# in `sz` bytes. Exact on the range the port supports; `TODO(p3) c.py:69` owns
+# in `sz` bytes. Exact on the range the port supports; `TODO(p3) c.py:69  symbol=b2i` owns
 # `sz > 4`, where the `U32` shift saturates instead of overflowing.
 def Field.bset_overflows(+f: Field, v: U32) -> Bool:
   U32.is_gt(U32.shln(v, U32.to_nat(Field.bit_off(f))),
@@ -605,7 +605,7 @@ def mem_hex.go(ms: List<&2, U32>, acc: String) -> String:
 # `_fields_` IS SET DIRECTLY HERE AND `SIZE` IS NOT, which is the whole of fact
 # 5. `functools.cache` is process-wide memoisation: a WALL, since it is the
 # shape of `ics_cache_same_obj=1` / `ics_cache_diff_obj=0` and there is no
-# module-level mutable state to hold it. `TODO(p3) c.py:83`.
+# module-level mutable state to hold it. `TODO(p3) c.py:83  symbol=init_c_struct_t`.
 # ===========================================================================
 
 # `type("CStruct", (Struct,), {'_fields_': [('_mem_', ctypes.c_byte * sz)]})`
@@ -773,12 +773,12 @@ def findlib.elf_ok(h0: U32, h1: U32, h2: U32, h3: U32) -> Bool:
   Bool.and(Bool.and(U32.is_eq(h0, 127), U32.is_eq(h1, 69)), Bool.and(U32.is_eq(h2, 76), U32.is_eq(h3, 70)))
 
 # THE WALLS, each with the fixture that proves them.
-# `DLL._loaded_` is a process-wide MUTABLE SET. `TODO(p3) c.py:90`.
+# `DLL._loaded_` is a process-wide MUTABLE SET. `TODO(p3) c.py:88  symbol=DLL`.
 def DLL.is_loaded(loaded: Bool) -> Bool: loaded
 # `DLL.bind` is a closure decorator with a `nonlocal cfunc` memo cell. Bend has
 # no closures and refuses mutual recursion, and the memo IS the state a closure
 # carries. What is left is the attribute assignment, in this order.
-# `TODO(p3) c.py:127`.
+# `TODO(p3) c.py:127  symbol=bind`.
 def DLL.bind.restype(restype: U32) -> U32: restype
 def DLL.bind.argtypes(argtypes: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, argtypes))
 # `os.environ['PATH']` inside an eagerly-built dict literal.
@@ -810,12 +810,12 @@ def findlib.no_path_key(has_path: Bool) -> String:
 #                         no runtime behaviour -- `T = TypeVar("T")` is an
 #                         annotation helper -- and a `Data` record cannot hold a
 #                         type PARAMETER, which is what they exist to do.
-#                         `TODO(p3) c.py:20`.
+#                         `TODO(p3) c.py:20  symbol=U`.
 #     POINTER             `POINTER[T]` is `ctypes.POINTER(T)` and `pointer(x)`
 #                         returns a `ctypes._Pointer`. Both are FFI: an ADDRESS.
-#                         `TODO(p3) c.py:25`.
+#                         `TODO(p3) c.py:25  symbol=__class_getitem__`.
 #     CFUNCTYPE           `CFUNCTYPE[None, (U32,)]` builds a ctypes function
-#                         TYPE. `TODO(p3) c.py:32`.
+#                         TYPE. `TODO(p3) c.py:31  symbol=CFUNCTYPE`.
 #     record     -> `Struct.of`  `record(cls)` is a CLASS DECORATOR that sets
 #                         `_fields_` and returns the class; Bend has no
 #                         decorators and no class to return, so the operation is

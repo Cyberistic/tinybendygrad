@@ -279,7 +279,7 @@ def CU_TAGWORD_COPY() -> String: "submit_cuda_copy"
 # used to quote is now a METHOD on the queue and takes no argument. The two tag
 # STRINGS did not move, which is why `cu_encode_tags` still answers
 # `submit_cuda_compute,submit_cuda_copy` -- RE-VERIFYED, the row is unchanged.
-# TODO(p3) runtime/ops_cuda.py:98  -- the rule's PATTERN also moved, from
+# TODO(p3) runtime/ops_cuda.py:57  symbol=cuda_submit  -- the rule's PATTERN also moved, from
 #   `UPat(Ops.CUSTOM_FUNCTION, arg="<name>", name="submit")` to
 #   `UPat(Ops.CALL, src=(UPat.custom_function("<name>"), UPat()), name="s")`.
 #   A UPat is `spec.bend`'s compiled matcher over an `O.Arena` and this file

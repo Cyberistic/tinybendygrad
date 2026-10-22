@@ -42,16 +42,16 @@
 #    The one 64-bit number ported is `NullAllocator._alloc`'s
 #    `itertools.count(1 << 40, 1 << 32)`, as a `Nat`; see `nalloc.va` for why that
 #    one is possible when `1 << 40` is not.
-#    TODO(p3) runtime/ops_cpu.py:62  -- struct.pack('<nQ', a & 0xffffffffffffffff).
+#    TODO(p3) runtime/ops_cpu.py:51  symbol=__call__  -- struct.pack('<nQ', a & 0xffffffffffffffff).
 # 2. THE BYTE-STRING ELFMAG TEST. `lib[:4] != libc.ELFMAG.encode()` (:21) compares
 #    four bytes (`b'\x7fELF'`, MEASURED); the port takes the ANSWER as a Bool, which
 #    is all any caller needs since `jit_loader` is a seam either way, and `cpu.elfmag`
 #    names the four bytes as a hex STRING so the constant is auditable.
-#    TODO(p3) runtime/ops_cpu.py:21  -- `lib[:4]` against `b'\x7fELF'`.
+#    TODO(p3) runtime/ops_cpu.py:21  symbol=_load -- the first FOUR bytes of `lib` against `b'\x7fELF'`.
 # 3. THE `dt.fmt` STRUCT FORMATS. `:70`'s `struct.pack_into(f'<{dt.fmt}', ...)` writes
 #    at a dtype-dependent offset. The OFFSETS are portable -- they are
 #    `TinyELF.iter_sig(...)`, which device.bend already ports -- the BYTES are a WALL.
-#    TODO(p3) runtime/ops_cpu.py:70  -- struct.pack_into('<{dt.fmt}', ...).
+#    TODO(p3) runtime/ops_cpu.py:59  symbol=__call__  -- struct.pack_into('<{dt.fmt}', ...).
 # 4. WHAT NULL DOES NOT COMPUTE. Its kernels are never run and `NullRenderer.asm`
 #    refuses anything that is not `gfx`. There is nothing to port in a result because
 #    there is nothing there: `nr.asm_msg` says so -- the emulated device WRITES

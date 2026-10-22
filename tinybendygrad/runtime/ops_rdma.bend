@@ -133,26 +133,26 @@
 #    keyed on a live device object. Same wall as `device.bend`'s
 #    `_opened_devices`, and the same answer: the CACHE KEY is ported -- the
 #    anchor name, the sorted pair -- and the cache itself is not.
-#    TODO(p3) ops_rdma.py:56  `functools.cache` on a device object.
+#    TODO(p3) ops_rdma.py:56  symbol=rdma_nic_for  `functools.cache` on a device object.
 # 2. THE NETLINK AND THE DRIVER (support/system.py, support/rdma/bnxtdev.py).
 #    `System.list_devices(*BNXT_IDS)`, `filter_visible_devices`, `PCIDevice`
 #    probing, `BNXTDev` firmware state and the mlx5/bnxt queues. All seams; the
 #    PCI ids, the bus number and the node string -- the three things those calls
 #    are asked FOR -- are ported.
 #    WALL(p3) ops_rdma.py:60  System.list_devices + filter_visible_devices -- BLOCKED: needs `System.list_devices(*BNXT_IDS)` + `filter_visible_devices` (netlink/driver seams, support/system.py; no def in the tree). CONTRADICTION: the :70-73 table says `nic.node`/`nic.bus`/`nic.list`/`nic.closest` are PORTED, but none is a def anywhere in `tinybendygrad/` -- they are LOCAL helpers inside `rdma_nic_for` (:56-64), which is unported, so the bus number and node string are NOT ported either.
-#    TODO(p3) ops_rdma.py:22  PCIDevice -- bar probing and firmware.
+#    TODO(p3) ops_rdma.py:22  symbol=__init__  PCIDevice -- bar probing and firmware.
 # 3. `PCIIfaceBase.p2p_paddrs` (:46). The GPU-to-GPU translation into the NIC's
 #    address space, for a peer-to-peer mapping. It is a driver call against live
 #    peer BARs. The port keeps the BRANCH -- `AddrSpace.SYS` keeps `mapping.paddrs`
 #    and everything else is translated -- because the branch is what decides
 #    whether the registration is right.
-#    TODO(p3) ops_rdma.py:46  PCIIfaceBase.p2p_paddrs.
+#    TODO(p3) ops_rdma.py:46  symbol=_map  PCIIfaceBase.p2p_paddrs.
 # 4. `unwrap_view` (:140). Collapsing a view chain to (base, offset) and then
 #    `getaddr(nic.device)` on it. The NIC-side address IS the key the
 #    registration handed back, so the port reads it out of `Pdt` -- which is the
 #    same number, arrived at by the other direction, and that is the point of
 #    carrying the table both ways.
-#    TODO(p3) ops_rdma.py:140  unwrap_view(...)[0].getaddr(nic.device).
+#    TODO(p3) ops_rdma.py:136  symbol=rdma_copies  unwrap_view(...)[0].getaddr(nic.device).
 # 5. THE 64-BIT WORDS. Two of them and neither is a TODO, because both are
 #    carried as TWO `U32` HALVES and both are exact:
 #      `db_value` (bnxtdev.py:13) is `(... << 32) | (index | epoch << 24)`, so

@@ -57,7 +57,7 @@
 #   TODO(p3) compiler_qcom.py:17 -- `fetch('https://git.tinygrad.win/...')`.
 #   TODO(p3) compiler_qcom.py:18 -- `shutil.which("qemu-aarch64-static")` when the
 #                                    PATH is the system's, not a parameter.
-#   TODO(p3) compiler_qcom.py:36-41 -- the five `cl_compiler_*` calls.
+#   TODO(p3) compiler_qcom.py:36-41  symbol=compile -- the five `cl_compiler_*` calls.
 #   TODO(p3) compiler_qcom.py:42 -- `ctypes.string_at(ptr, sz.value)`.
 #
 # WALL 2 -- the two persistent-pipe paths. `self.server(...)` is
@@ -67,8 +67,8 @@
 #   collects; it cannot hold a duplex pipe open. **This is the one seam in the
 #   whole unit that `Process.run` does NOT close**, and it is why
 #   `compileserver.py` gets its own file.
-#   TODO(p3) device.py:352 -- `subprocess.Popen(..., stdout=PIPE, stdin=PIPE)`.
-#   TODO(p3) device.py:353-356 -- `compile_server`'s write/read/read.
+#   TODO(p3) device.py:335  symbol=server -- `subprocess.Popen(..., stdout=PIPE, stdin=PIPE)`.
+#   TODO(p3) device.py:337  symbol=compile_server -- `compile_server`'s write/read/read.
 #   TODO(p3) compiler_qcom.py:35 -- `self.compile_server(src, self.compiler_process)`.
 #
 # WALL 3 -- bytes. `lib[off:off+4]` is a four-byte slice; bend has no byte

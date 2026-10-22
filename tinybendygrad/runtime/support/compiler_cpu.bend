@@ -105,7 +105,7 @@
 #   is a `ContextVar`, which is the same cached `getenv`. So `cpu.x86key` is
 #   `None` on this host ONLY because... it is measured, and the port's
 #   `X86Compiler.key` carries the `None` as an empty string.
-#   TODO(p3) device.py:337 -- `cachekey if CCACHE else None`.
+#   TODO(p3) device.py:324  symbol=__init__ -- `cachekey if CCACHE else None`.
 import Base
 
 # ===========================================================================
