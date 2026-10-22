@@ -311,10 +311,17 @@ def rows() -> list[tuple[str, int]]:
         r += [(f"{nm}_nsrcs", nsrcs(lin))]
         r += [(f"{nm}_ops", ops_of(lin))]
         r += [(f"{nm}_topo_marks", topo_marks(f["top"]))]
-        r += [(f"{nm}_topo_nodes", topo_nodes(f["top"]))]
+        r += [(f"{nm}_topo", topo_nodes(f["top"]))]
     # THE EDGES.
     f0 = fx0()
     lin0 = create_schedule(f0["top"])
+    # THE TOPOSORT's NODE COUNT IS NAMED `fxN_topo`, AND THIS ROW IS THE PROOF: this
+    # oracle ALREADY called fx0's `topo_nodes` `fx0_topo` while it called the other
+    # fixtures' `fxN_topo_nodes` -- so the oracle was INTERNALLY INCONSISTENT about its own
+    # row names and the port was consistent. MEASURED 2026-10-22: the two sides agreed on
+    # every VALUE and disagreed on six NAMES, which is a comparison that cannot report
+    # agreement. The gate compares whole `name=value` LINES, so the two sides must share a
+    # key -- and this file's own fx0 row says which key.
     r += [("fx0_topo", topo_nodes(f0["top"]))]
     r += [("fx0_lin_n", len(lin0.src))]
     r += [("fx0_lin_op", code(lin0))]
@@ -329,7 +336,7 @@ def rows() -> list[tuple[str, int]]:
         r += [(f"{nm}_nsrcs", nsrcs(lin))]
         r += [(f"{nm}_ops", ops_of(lin))]
         r += [(f"{nm}_topo_marks", topo_marks(f["top"]))]
-        r += [(f"{nm}_topo_nodes", topo_nodes(f["top"]))]
+        r += [(f"{nm}_topo", topo_nodes(f["top"]))]
     return r
 
 

@@ -2368,6 +2368,27 @@ def t_fx2_kids_n() -> U32: kids_n(pass2(fx2.ar(), pass1(fx2.ar(), fx2.top())))
 # `fx2_marks` -- at which point the pair collapses into one row and the
 # REORDER IS INVISIBLE.  That is the whole reason both are printed.
 # ===========================================================================
+# THE MARK MUST BE READABLE, OR THE ROW IS NOT PRODUCIBLE. Upstream's `UOp.val`
+# (ops.py:252-257) ASSERTS on anything that is not a CONST, a GETADDR or a CAST --
+# it never answers 0. So a kernel whose mark CANNOT be read has NO MARK, and a
+# fold that puts a digit in for it is asserting a value that does not exist.
+#
+# MEASURED 2026-10-22, AND THIS IS THE ROW THAT CAUGHT IT. `fx7` is the
+# `src_without_body` WITNESS: its second kernel's body is a SINK and not a body, so
+# the mark node on that kernel is a CALL -- unreadable. The port's `gate.val`
+# answers 0 for a node with no value, so the fold put a DIGIT 0 in and the port
+# answered `fx7_topo_marks=10` where CPython's own toposort answers 1, because
+# CPython SKIPS the kernel whose mark cannot be read. **AN ABSENT VALUE FOLDED IN
+# AS 0 IS THE ABSENT VALUE.** The filter below now asks the MARK, not the kernel's
+# op alone, and the fold skips what it cannot read.
+#
+# THE MARK NODE IS THE SAME PATH `gate.mark` READS: a kernel's `src[0].src[0].src[1]`,
+# on the UNWRAPPED kernel (`kernel`, the linearizer's own unwrap, so an END's kernel
+# is its src[0] -- the same unwrap `topo_kernels` does on the CPython side).
+def gate.markreadable(+ar: O.Arena, k: U32) -> Bool:
+  +m = sc_src(ar, sc_src0(ar, sc_src0(ar, kernel(ar, k))), 1)
+  Bool.or(sc_is(ar, m, O.OpsCONST{}), sc_is(ar, m, O.OpsCAST{}))
+
 def gate.kkeep.of(op: O.Op) -> Bool:
   match op:
     case O.OpsCALL{}: True{}
@@ -2382,7 +2403,7 @@ def gate.kput(hit: Bool, acc: List<&2, U32>, k: U32) -> List<&2, U32>:
 def gate.kkeep(+ar: O.Arena, +ks: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match ks:
     case Nil{}     : acc
-    case k <> rest : gate.kkeep(ar, rest, gate.kput(gate.kkeep.of(sc_op(ar, k)), acc, k))
+    case k <> rest : gate.kkeep(ar, rest, gate.kput(Bool.and(gate.kkeep.of(sc_op(ar, k)), gate.markreadable(ar, k)), acc, k))
 
 # `gate.mark` reads a CALL's body; an END's kernel is its src[0], so the END
 # is unwrapped FIRST (`kernel`, the linearizer's own unwrap).
@@ -2425,6 +2446,7 @@ def t_fx0_ops() -> U32: t_fx3.lin.ops(schedule(fx0.ar(), fx0.top()))
 
 # THE `src_without_body` WITNESS.  CPython schedules ONE kernel; a port that
 # descends into a CALL's body schedules TWO.
+def t_fx7_topo_marks() -> U32: gate.topo_marks(fx7.ar(), sc_topo_of(O.Arena.budget(fx7.ar()), fx7.ar(), fx7.top()))
 def t_fx7_topo() -> U32: U32.from_nat(List.length(&2, U32, sc_topo_of(O.Arena.budget(fx7.ar()), fx7.ar(), fx7.top())))
 def t_fx7_lin_n() -> U32: t_fx3.lin.of(schedule(fx7.ar(), fx7.top()))
 def t_fx7_lin_op() -> U32: t_fx3.lin.op(linear(schedule(fx7.ar(), fx7.top())))
@@ -2538,6 +2560,7 @@ def main() -> IO(Unit):
     row("fx0_marks", t_fx0_marks())
     row("fx0_nsrcs", t_fx0_nsrcs())
     row("fx0_ops", t_fx0_ops())
+    row("fx7_topo_marks", t_fx7_topo_marks())
     row("fx7_topo", t_fx7_topo())
     row("fx7_lin_n", t_fx7_lin_n())
     row("fx7_lin_op", t_fx7_lin_op())

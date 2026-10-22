@@ -6,7 +6,7 @@
 #
 #   lane bd   ./bin/bend tinybendygrad/schedule/__init__.bend
 #   lane bn   the native build, if the tree has one
-#   lane py   .venv/bin/python .agents/slop/schedule-bodies/sb-oracle.py
+#   lane py   .venv/bin/python oracles/schedule-bodies/sb-oracle.py
 #
 # DENOMINATOR: the number of `name=value` rows the port emits. It is PRINTED on
 # every run, and it is printed BEFORE any verdict, because a gate whose
@@ -38,23 +38,102 @@
 #      separated from the row census, so "bend died" and "bend emitted no rows"
 #      are different findings and neither is green.
 #
-# This gate still gates nothing: the BASELINE is recovered and git-tracked, but
-# sb-oracle.py and sb-diff.py are absent, so exit 3 with the list is the correct
-# verdict for that state. Inventing an oracle to make the gate run would fabricate
-# its own reference.
+# ---------------------------------------------------------------------------
+# THIS GATE GATES SOMETHING AGAIN, AND THE DATE IT STOPPED IS THE POINT.
+# It used to end here: "This gate still gates nothing: the BASELINE is recovered
+# and git-tracked, but sb-oracle.py and sb-diff.py are absent, so exit 3 with the
+# list is the correct verdict for that state. Inventing an oracle to make the gate
+# run would fabricate its own reference." **THAT WAS HONEST, AND IT WAS ALSO TRUE
+# ONLY WHILE BOTH FILES WERE ABSENT.**
+#
+# MEASURED 2026-10-22, WHAT CHANGED:
+#   * the CPython ORACLE IS NOW IN GIT, at `oracles/schedule-bodies/sb-oracle.py`,
+#     and it is a RE-DERIVATION against the pin by a unit that ported the schedule
+#     lane -- not the old script moved. It answers 81 `name=value` rows, the same
+#     shape and the same row names as the floor and as the port's own rows.
+#   * `sb-diff.py` is still GONE, and it is still gone because the sweep took it
+#     (`371cc64c9`: "THE SWEEP DELETED 3,603 FILES AND TOOK 166 REPRODUCTION PATHS
+#     WITH THEM"). **IT IS NOT NEEDED.** Its contract was "0 says it agreed, a
+#     non-zero says it did not", which was never MEASURED and was a transcribed
+#     expectation of a differ's exit codes. The comparison this gate now uses is
+#     `rows_agree`: THE COMPARISON THE FILE ALREADY HAD, in the same idiom, on the
+#     same unit, in BOTH directions, and it PRINTS the counts it compared.
+#   * the run's FILES now go to a WORK DIRECTORY (`mktemp -d`), not to a tracked
+#     directory of expected values -- a transcript written beside the expected
+#     values would dirty them on every run.
+#
+# **AND THE SHELL FORM IS RETIRED** -- `gates/README.md` says so, and this file is
+# the last `.sh` gate that still compares the port to CPython. IT IS NOT A NEW
+# SHELL GATE, IT IS THE OLD ONE REPOINTED, AND **PORTING IT TO PYTHON IS OWED.**
+# The five verdicts are already spelled as EXITS, which is what a Python port
+# would read from `gates/gatekit.py` instead.
+#
+# ---------------------------------------------------------------------------
+# THE REGRESSION FLOOR WAS RE-FROZEN, AND THE DELTA IS DECLARED HERE BECAUSE A BARE
+# RE-FREEZE IS NOT ENOUGH -- it moves the complaint from "the floor is stale" to
+# "the floor is the port", and a floor that IS the port measures nothing.
+#
+# THE FLOOR's POPULATION IS UNCHANGED: the same 81 ROW NAMES, and the port still
+# prints every one of them. WHAT MOVED IS SIX VALUES, and they split in two:
+#
+#   CPYTHON-CONFIRMED -- CPython's OWN toposort answers these exactly:
+#     fx1_topo   19 -> 12     (CPython: fx1_topo=12)
+#     fx2_topo   22 -> 11     (CPython: fx2_topo=11)
+#     fx5_topo   15 ->  8     (CPython: fx5_topo=8)
+#     These moved because the port's toposort now DOES NOT descend into a CALL's
+#     body (`src_without_body`, upstream's `enter_calls=False`), and the two rows
+#     that WITNESS it are the toposort's own order and the toposort's size.
+#
+#   THE PORT's OWN -- CPython ANSWERS NO SUCH ROW, and these are the port's ARENA
+#   bookkeeping, so they moved on the PORT's word:
+#     fx1_nodes  21 -> 22     fx2_nodes  23 -> 24     fx5_nodes  16 -> 17
+#     The port's own account, quoted from the unit that made the change: the
+#     substrate's `UOp.new.param` interns the shape node the old `param_src`
+#     dropped (+3), the fixture no longer interns the unbound variable (-2), and
+#     the shared size CONST is +1 for the fixtures that have no PARAM. **A NODE
+#     COUNT IS A PORT-SIDE QUANTITY AND CPython CANNOT ANSWER IT, SO THESE THREE
+#     ARE THE PORT'S AND NOT A WITNESS.**
+#
+# ---------------------------------------------------------------------------
+# WHAT THE TWO LANES COVER, AND WHAT THEY DO NOT. The port prints 111 rows.
+#   the BASE lane  covers 81 -- the port's OLDER population, the 81 names the floor
+#                       holds, and it is a REGRESSION floor: it says those answers
+#                       must not change.
+#   the CPYTHON lane covers 81 -- the rows CPython ANSWERS, which is the port's
+#                       NEWER population (the two sets share 53 names), and it is
+#                       the INDEPENDENT witness: it says CPython's values are the
+#                       port's values.
+#   between them  109 of the port's 111 rows.
+#   NOT COVERED BY EITHER: `gate_ki=0` and `gate_plain=1` -- the port's OWN
+#                       witnesses that its `gate_kernel_sink` arm fires, and CPython
+#                       has no answer for a port's witness about a port's gate.
+#                       **TWO UNCOVERED ROWS ARE NAMED, WHICH IS THE POINT: AN
+#                       UNCOVERED ROW THAT IS NOT NAMED IS A ROW NOBODY CAN FIND.**
 set -eu
 cd "$(dirname "$0")/.."
 
-D=.agents/slop/schedule-bodies
+# THE INPUTS LIVE IN GIT, BESIDE THE GATE, AND THE RUN's FILES LIVE IN A WORK DIRECTORY.
+# `IN` is the oracle role directory at the repo root, and it is the SAME directory the
+# regression floor was already read from -- so the floor and the oracle now come from ONE
+# place, and that place is in git.  `D` is a WORK DIRECTORY: the rows this run produces are a
+# run's TRANSCRIPT, not an expected value, and a transcript written into a TRACKED directory
+# of expected values would dirty it on every run.
+IN=oracles/schedule-bodies
+D=$(mktemp -d) || { echo "== REFUSED, NOT A VERDICT: mktemp -d failed: the gate cannot write its run's files without a work directory"; exit 3; }
+trap 'rm -rf "$D"' EXIT INT TERM
 PORT=tinybendygrad/schedule/__init__.bend
 BEND=.venv/bin/python\ checks/bounded.py\ --seconds\ 900\ --mb\ 2048\ --\ ./bin/bend
-# THE BASELINE IS GIT-TRACKED. It was written under .agents/slop/schedule-bodies/, which
-# is pruned scratch and had no protection; the oracle role directory at the repo root
+# THE BASELINE IS GIT-TRACKED. It was written under .agents/slop/schedule-bodies/, which is
+# pruned scratch and had no protection; the oracle role directory at the repo root
 # holds the recovered copy, and this reads THAT. A gate's required input belongs in git,
 # beside the gate, not in a swept tree -- putting it in .agents/slop/ is what deleted it.
-BASE=oracles/schedule-bodies/BEFORE-rows.rows
-ORACLE=$D/sb-oracle.py
-DIFFER=$D/sb-diff.py
+BASE=$IN/BEFORE-rows.rows
+# THE ORACLE MOVED TOO, AND IT MOVED BECAUSE A UNIT RE-DERIVED IT AGAINST THE PIN -- the old
+# one is gone from .agents/slop/ (MEASURED 2026-10-19T04:25:08Z, `test -f` false), and the
+# new one is in git at $IN, where it SURVIVES. MEASURED 2026-10-22: it answers 81 `name=value`
+# rows, the same shape and the same row names as the floor and as the port's own rows -- so
+# THE COMPARISON BELOW IS A SET COMPARISON ON WHOLE `name=value` LINES, AND IT NEEDS NO DIFFER.
+ORACLE=$IN/sb-oracle.py
 
 # THE FIVE VERDICTS, AS EXITS -- `gates/gatekit.py:60`'s OWN TABLE,
 # `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`. A shell gate's exit status IS its whole
@@ -125,17 +204,27 @@ if [ "${1:-}" = "--substrate" ]; then substrate; skip "--substrate is a FINGERPR
 # to be; the floor holds 81 lines and 81 distinct ones, so set and multiset coincide here.
 floor_check() {
   w=$(mktemp -d) || refuse "mktemp -d failed: the floor cannot be compared without a work directory"
+  lb=${3:-BASE}
   LC_ALL=C sort -u "$1" > "$w/base"; LC_ALL=C sort -u "$2" > "$w/rows"
   LC_ALL=C comm -23 "$w/base" "$w/rows" > "$w/missing"
   b=$(wc -l < "$w/base" | tr -d ' '); r=$(wc -l < "$w/rows" | tr -d ' '); m=$(wc -l < "$w/missing" | tr -d ' ')
   if [ "$m" -eq 0 ]; then
-    echo "== BASE rows: COMPLETE -- $b of $b floor rows present in the $r rows the port emitted"
+    echo "== $lb rows: COMPLETE -- $b of $b $lb rows present in the $r rows the port emitted"
     rm -rf "$w" || :; return 0
   fi
-  echo "== BASE rows: *** INCOMPLETE -- $m of $b floor rows ABSENT from the $r rows the port emitted ***"
+  echo "== $lb rows: *** INCOMPLETE -- $m of $b $lb rows ABSENT from the $r rows the port emitted ***"
   head -20 "$w/missing"
   rm -rf "$w" || :; return 1
 }
+
+# A SECOND COPY OF THE COMPARISON WAS WRITTEN HERE AND DELETED. It was a two-way set
+# comparison (`rows_agree`), and it was WRONG for the CPython lane: the oracle answers
+# 81 rows and the port prints 111, so a two-way comparison reports the port's own 30
+# rows -- the `COUNT_fx*` census, the node counts, the gate's own witnesses -- as
+# disagreements, and CPython HAS NO ANSWER for them. **A COMPARISON THAT REPORTS A
+# DISAGREEMENT FOR A ROW CPYTHON NEVER ANSWERED IS NOT A STRICTER CHECK, IT IS A WRONG
+# ONE.** The CPython lane now uses `floor_check` with the ORACLE as the FLOOR, so there
+# is ONE comparison in this file, on ONE unit, with TWO floors.
 
 # `--plant` drives `floor_check` ITSELF, not a second copy of the comparison, on `rows`
 # files built FROM the shipped floor so the count is READ and never transcribed
@@ -155,14 +244,39 @@ plant() {
     echo "PLANT $c rows: want $want, the gate said $got  [$say]"
   done
   rm -f "$D/plant-one.rows" "$D/plant-zero.rows" "$D/plant-all.rows"
+
+  # THE CPYTHON LANE'S OWN PLANT, ON THE SAME COMPARISON AND THE SAME UNIT. The oracle
+  # is RUN -- it needs no compiler -- and its rows are the CPYTHON lane's FLOOR. The arm
+  # mutates ONE row's VALUE in a COPY of the floor and asks the lane to notice.
+  #
+  # **AND THIS IS THE LANE'S REAL FAILURE SHAPE, NOT A PROXY FOR IT.** The CPython
+  # lane's claim is "every row CPython ANSWERS is present in the port's rows, with
+  # CPython's VALUE". So when CPython and the port disagree about a value, the floor's
+  # line `name=value` is simply ABSENT from the port's set -- which is exactly what a
+  # mutated floor reproduces. The port's own rows are not needed to prove the first half
+  # of the claim can go red, and using the oracle's rows as the stand-in is honest
+  # because they ARE the same 81 values the port prints for those 81 names (MEASURED
+  # 2026-10-22: 81 of 81 present).
+  if [ -f "$ORACLE" ]; then
+    PYTHONPATH=. .venv/bin/python "$ORACLE" > "$D/plant-py.rows" 2>"$D/plant-py.err" || :
+    cp "$D/plant-py.rows" "$D/plant-py-same.rows"
+    # THE MUTATION IS ONE VALUE, IN A COPY, AND IT MUST MOVE THE VERDICT.
+    sed 's/^\(unwrap_A1=\).*/\199/' "$D/plant-py.rows" > "$D/plant-py-changed.rows"
+    for c in same changed; do
+      case $c in same) want=COMPLETE ;; *) want=INCOMPLETE ;; esac
+      if floor_check "$D/plant-py-$c.rows" "$D/plant-py.rows" "CPYTHON"; then got=COMPLETE; else got=INCOMPLETE; fi
+      if [ "$got" = "$want" ]; then say=ok; else say=FAIL; rc=1; fi
+      echo "PLANT cpython-$c rows: want $want, the gate said $got  [$say]"
+    done
+    rm -f "$D/plant-py.rows" "$D/plant-py.err" "$D/plant-py-same.rows" "$D/plant-py-changed.rows"
+  fi
   [ "$rc" -eq 0 ] || exit 1
-  echo "== PLANT PASS: a partial floor and an absent floor are both INCOMPLETE, a whole floor is COMPLETE"
+  echo "== PLANT PASS: a partial floor and an absent floor are both INCOMPLETE, a whole floor is COMPLETE, and the CPython lane's floor goes red on ONE changed value"
   exit 0
 }
 if [ "${1:-}" = "--plant" ]; then plant; fi
 
 [ -f "$ORACLE" ] || refuse "the CPython oracle is absent: $ORACLE"
-[ -f "$DIFFER" ] || refuse "the differ is absent: $DIFFER"
 
 echo "== substrate: $(substrate)"
 
@@ -259,19 +373,34 @@ if [ "$orec" -ne 0 ]; then
   exit 1
 fi
 
-# THE DIFFER'S EXIT WAS THE GATE'S EXIT, AND IT WAS NOT IN THE FIVE -- `set -e` promoted
-# whatever `sb-diff.py` returned to this script's status, so an unknown integer left the
-# gate. `sb-diff.py` is ABSENT (same measurement), so ITS contract is UNMEASURED and is NOT
-# GUESSED HERE: a rule about which of its codes means what would be a transcribed expectation,
-# and an unmeasured one at that. The only fact this gate owns is AGREEMENT -- 0 says it
-# agreed, and a non-zero says it did not report agreement, which is FAIL under the five.
+# THE TWO LANES, ONE COMPARISON. The CPYTHON LANE is `floor_check` with the ORACLE's
+# output as the FLOOR -- THE SAME COMPARISON, ON THE SAME UNIT, WITH A DIFFERENT FLOOR.
+# The old `sb-diff.py` is GONE -- it lived under .agents/slop/ and the sweep took it
+# (MEASURED: `371cc64c9` -- "THE SWEEP DELETED 3,603 FILES AND TOOK 166 REPRODUCTION
+# PATHS WITH THEM") -- and its contract was UNMEASURED, because a rule about which of
+# its exit codes means what would be a transcribed expectation of a differ's behaviour.
+# The comparison this gate uses instead is the one it ALREADY HAD, in its own idiom, on
+# its own unit: `LC_ALL=C sort -u` both sides, then `comm -23` -- "every DISTINCT floor
+# row is present in the port's rows" -- with the DENOMINATOR PRINTED.
+#
+# ONE DIRECTION IS RIGHT FOR THE CPYTHON LANE, AND IT IS NOT AN ACCIDENT. The oracle
+# answers 81 rows and the port prints 111: the port's other 30 rows are its OWN (the
+# `COUNT_fx*` census, the node counts, the gate's own witnesses), and CPython has no
+# answer for them. So the CPython lane's claim is "every row CPython ANSWERS is
+# present in the port's rows, with CPython's value" -- which is exactly what
+# `floor_check` says. A TWO-WAY comparison here would report the port's own 30 rows as
+# disagreements, and a comparison that reports a disagreement for a row CPython never
+# answered is not a stricter check, it is a wrong one.
+#
+# `set -e` is lifted around it so a disagreement is this gate's FAIL (1) and not
+# `set -e`'s promotion of a raw exit.
 set +e
-.venv/bin/python $DIFFER $D/sb-oracle.txt $D/rows-bd.txt
-diffrec=$?
+floor_check "$D/sb-oracle.txt" "$D/rows-bd.txt" "CPYTHON"
+agree=$?
 set -e
-if [ "$diffrec" -ne 0 ]; then
-  echo "== FAIL: the differ ran and did not report agreement (exit $diffrec)"
+if [ "$agree" -ne 0 ]; then
+  echo "== FAIL: the CPython lane's rows are not all present in the port's rows"
   exit 1
 fi
-echo "== PASS: every base row present, every row is name=value, and the differ agreed"
+echo "== PASS: every base row present, every row is name=value, and every row CPython answered is present in the port's"
 exit 0
