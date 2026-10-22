@@ -1379,6 +1379,32 @@ exitcode-census [##########] 3/3  **A NEW TRACKED GATE THAT FOUND 23 REAL DEFECT
                                        OWN OUTPUT IS AN INSTRUMENT WORKING; ONE THAT FINDS NONE IS
                                        A GATE THAT MEASURES NOTHING.**
 
+index-disarmed [##########] 2/2  **THE ARMED-INDEX HAZARD WAS LIVE AND IS NOW CLOSED, AND THE SHAPE IS
+                                       WORTH KEEPING.** MEASURED 2026-10-22T03:47Z: the default index
+                                       was ARMED and `checks/index-arm-gate.py` answered
+                                       **`deletion=19 stale=44 foreign-add=0 intent-to-add=0`**, i.e.
+                                       **A BARE `git commit` WOULD HAVE DELETED 19 FILES THAT EXIST IN
+                                       HEAD** (all 19 with their bytes SAFE on disk, so it was an
+                                       INDEX problem and not data loss) and reverted 44 more.
+                                       **THE 19 DELETIONS ARE THE WORSE SHAPE AND THE GATE'S VERDICT
+                                       SENTENCE LED WITH THE OTHER ONE**: `gates/indexstale-gate.py`
+                                       printed *"44 path(s) the index and HEAD SHARE and DISAGREE
+                                       about"* -- a reader could read that as 44 reverted EDITS and
+                                       miss that **19 of them were DELETIONS of files that are in
+                                       HEAD**. Its `INDEX-SHORT` rows DID name them, so nothing was
+                                       hidden -- but the summary line led with the milder shape.
+                                       **AND `AGENTS.md`'s *"THE INDEX WAS NOT REPAIRED"* WAS STALE
+                                       BY THE TIME I READ IT**: the concurrent session repaired it
+                                       within minutes, and MEASURED 2026-10-22T03:48Z both gates read
+                                       **PASS** -- `checks/index-arm-gate.py`: *"the index agrees with
+                                       HEAD on all 8977 paths. A bare `git commit` carries nothing it
+                                       did not stage"* (`deletion=0 stale=0 foreign-add=0
+                                       intent-to-add=0`), `gates/indexstale-gate.py`: `PASS`, and a bare
+                                       commit would carry **0** paths. **THE HAZARD WAS DETECTED BY
+                                       TWO GATES AND A FIXED BY ITS OWN OWNER, WHICH IS THE SYSTEM
+                                       WORKING** -- and the standing discipline (every commit through
+                                       a PRIVATE index) is why nothing was lost while it was armed.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
