@@ -55,6 +55,7 @@ NOT as the child's exit status, per `checks/bounded.py`'s own header; such a fil
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import os
 import re
@@ -73,11 +74,29 @@ ROOT = Path(__file__).resolve().parents[1]
 HERE = Path(__file__).resolve().parent
 PY = ".venv/bin/python"
 
+# THE BEND LOCK, PER INVOCATION. `checks/bendlock.sh`'s own header says it: "**THE LOCK IS HELD
+# FOR THE WHOLE COMMAND, AND A COMMAND THAT RUNS **MANY** BENDS **MONOPOLISES IT** ... SO FOR A
+# GATE THAT RUNS MANY BENDS, **ACQUIRE THE LOCK **PER **INVOCATION**, NOT **ONCE **FOR **THE
+# **GATE** -- `gates/bendlock.py` **IS **THAT **LOCK** (it shares this path, so the two exclude
+# each other).**" **THIS CENSUS COMPILES MANY FILES** -- a hundred and more of them -- and it took
+# the lock ONCE, which made it wait on itself, or not take it at all, which let it run beside
+# another unit's compiler. `gates/bendlock.py` is the same lock and the same path, so the two
+# exclude each other. MEASURED, the shape it fixes: `checks/bendlock.sh -- .venv/bin/python
+# checks/compile-census.py` would hold the lock for the WHOLE census and every other unit would
+# wait for all of it.
+sys.path.insert(0, str(ROOT / "gates"))
+from bendlock import bend_lock  # noqa: E402
+
 # THE INSTRUMENT'S OWN POPULATION DECLARATION, LOADED BY PATH. Not re-typed here: a second copy of
 # the vocabulary is the same fault as a second copy of a population (`checks/cl-port-gate.py:65`).
 _spec = importlib.util.spec_from_file_location("substrate", ROOT / "checks" / "substrate.py")
 substrate = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(substrate)                      # module level is inert (it only defines)
+
+# THE WATCHDOG, AND IT IS `checks/substrate.py`'s OWN CONSTANT READ BY PATH -- the same file, the
+# same arguments, the same verdict token. A second spelling of the watchdog's path is a second
+# instrument that can drift from the first.
+BOUNDED = substrate.BOUNDED
 
 # WHAT THE WALK DOES NOT SEE, AND WHY. Each is a MEASURED exclusion, not a preference; the counts
 # travel in the CENSUS line so the subtraction is a number and not a claim.
@@ -99,6 +118,147 @@ TOKEN_RC = re.compile(r"\[bounded\] (?P<token>WITHIN-LIMITS|KILLED-ON-MEMORY|TIM
                       r"|NO-VERDICT)\b[^:]*?(?:rc=(?P<rc>\d+))?")
 # `gates/gatekit.py:NOTICE` is bend's 42-byte update line on stderr; it is not the instrument's answer.
 NOTICE = substrate.NOTICE
+
+# THE SHAPE THE COMPILER'S ERROR DID NOT MATCH. It is a name here so that a reader of this
+# file's rows, and `gates/compile-census-gate.py`, can ask for the set of shapes the tree can
+# produce without re-typing it.
+UNATTRIBUTED = "UNATTRIBUTED"
+
+# THE COMPILER's OWN ERROR SHAPES. **THE NAMES ARE `checks/substrate.py`'s -- THE TREE's OWN
+# VOCABULARY, SO A READER WHO KNOWS ONE KNOWS THE OTHER -- AND THE PATTERNS ARE FIXED, BECAUSE
+# `checks/substrate.py:cause_of()` CANNOT MATCH A REAL BEND FAILURE.** MEASURED, three defects,
+# and `cause_of_lines()` above says what they are: the `^` anchor over a whole output, the JOINED
+# form the compiler does not print, and the `'def','type'` spacing the compiler does not print.
+#
+# THE ORDER IS THE TABLE's OWN ORDER (`checks/substrate.py:773`: "most specific first, so the
+# generic type-mismatch shape cannot swallow `a defined name`), and the last two arms are the ones
+# the tree's table lacks: an ARITY error ("expected : X with N fields") and the fallback.
+#
+# **⇒ AND A SHAPE IS A CLASS, NOT A VERDICT.** `MISSING-DEF` and `UNKNOWN-CTOR` are BREAKAGES in
+# this tree and `SYNTAX` and `FOREIGN` are STANDING-COLD in it; the shape says WHICH, and
+# `gates/compile-census-standing.rows` says which files are allowed to be which.
+CAUSES = (
+    (re.compile(r"^Error: (\d+) TODOs? found\."), "HOLES", 1),
+    (re.compile(r"^Error: (\d+) defs rely on unsafe or foreign code:"), "FOREIGN", 1),
+    (re.compile(r"^- expected : a fresh name \(duplicate declaration: (\S+?)\)"), "DUPLICATE", 1),
+    (re.compile(r"^- expected : a defined name / observed : (\S+)"), "MISSING-DEF", 1),
+    (re.compile(r"^- expected : a declared constructor .* / observed : (\S+)"), "UNKNOWN-CTOR", 1),
+    (re.compile(r"^- message\s*: a declared constructor \(unknown: (\S+?)\)"), "UNKNOWN-CTOR", 1),
+    (re.compile(r"^- expected : ('def',\s*'type'\s*or\s*'law') / observed : (\S+)"), "SYNTAX", 2),
+    (re.compile(r"^- expected : [\w./]*?([A-Za-z_]\w*) with \d+ fields"), "ARITY", 1),
+    (re.compile(r"^- expected : (\S+) / observed : (\S+)"), "TYPE-MISMATCH", 2),
+)
+
+
+def cause_of_lines(output: str) -> tuple[str, str, str]:
+    """THE COMPILER's OWN ERROR SHAPE, the symbol it names, and the LINE it said it on.
+
+    **THE SHAPE NAMES ARE `checks/substrate.py`'s -- THE TREE's OWN VOCABULARY -- AND THE PATTERNS
+    ARE FIXED, BECAUSE `checks/substrate.py:cause_of()` CANNOT MATCH A REAL BEND FAILURE.**
+    MEASURED, two defects, and both are in the table's own patterns:
+
+      (a) **THE `^` ANCHOR.** `checks/substrate.py:cause_of()` searches the WHOLE output, and
+          `re.search` without `re.MULTILINE` anchors at the START OF THE STRING. A bend failure's
+          FIRST line is `SOME PROOFS FAIL` and the error is on the second, so the whole-output
+          search answers `None` for EVERY real failure. MEASURED on a synthetic three-line failure:
+          `cause_of()` answered `None` where the per-line search answers `('HOLES', '34')`.
+      (b) **THE JOINED FORM.** The table's patterns are written for `- expected : X / observed : Y`
+          ON ONE LINE, and the compiler prints the two halves on SEPARATE lines:
+          `- expected : a defined name` and `- observed : C.render_kernel`. ⇒ **THE PAIRS ARE
+          JOINED HERE, ONCE, AND THE TABLE IS THEN APPLIED TO THE FORM IT WAS WRITTEN FOR.**
+          MEASURED, on the real output of `checks/.e2e-fixture/f64/emit-f64.bend`: the joined
+          haystack answers `('MISSING-DEF', 'C.render_kernel')` where the table's own reader
+          answers `None`.
+      (c) **THE SPACING.** The `SYNTAX` pattern spells `'def','type' or 'law'` with no space after
+          the comma, and the compiler prints `'def', 'type' or 'law'`. `gates/opname-census-gate.py`'s
+          own `FRAGMENT` regex gets this right (`'def',\\s*'type'\\s*or\\s*'law'`), so the tree has
+          both spellings and only one of them matches.
+
+    ⇒ **THE CAUSE IS WHAT MAKES `COLD` A CLASS AND NOT A NOISE.** `COLD` alone says "the first
+    line was not `ALL PROOFS CHECK`", which every failure in the tree shares; the shape says
+    WHICH failure, and the compiler's own wording is what names them."""
+    lines = join_pairs(output.splitlines())
+    for rx, shape, group in CAUSES:
+        for line in lines:
+            if m := rx.search(line):
+                return shape, " ".join(m.group(group).split()), line.strip()
+    return UNATTRIBUTED, "", ""
+
+
+def join_pairs(lines: list[str]) -> list[str]:
+    """THE COMPILER's `- expected :` / `- observed :` PAIRS, JOINED ONTO ONE LINE.
+
+    **THE COMPILER PRINTS THE TWO HALVES ON SEPARATE LINES AND THE TREE's TABLE PATTERNS ARE
+    WRITTEN FOR THE JOINED FORM** -- `checks/substrate.py:CAUSES` spells them
+    `- expected : a defined name / observed : (\\S+)`. MEASURED on the real output of
+    `oracles/nv_ip_rows_c.bend`:
+
+        - expected : a defined name
+        - observed : IO
+
+    and the table's `MISSING-DEF` pattern does not match either line. **SO THE PAIR IS JOINED
+    HERE**, with the joiner the table's own patterns use, and the table is then applied to the
+    form it was written for. A line that has no partner is left alone."""
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        nxt = lines[i + 1] if i + 1 < len(lines) else ""
+        if ln.startswith("- expected : ") and nxt.startswith("- observed : "):
+            out.append(f"{ln} / observed : {nxt[len('- observed : '):]}")
+            i += 2
+            continue
+        out.append(ln)
+        i += 1
+    return out
+
+
+def sha_of(path: str) -> str:
+    """The file's sha256, so the census's record is keyed on CONTENT.
+
+    `checks/differ.py:substrate_digest()` says why, in the tree's own words: "Keyed on CONTENT and
+    on the path RELATIVE TO `ROOT`. Never on `st_mtime`". A census keyed on an mtime cannot tell a
+    file that was edited from a file that was merely checked out, and a fresh clone writes every
+    file at the moment it was cloned.
+    """
+    try:
+        return hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+    except OSError:
+        return "ABSENT"
+
+
+def compiler_words(path: str, mb: int, seconds: int) -> tuple[str, str]:
+    """THE COMPILER's OWN WORDS for one file: `(shape, the line it said them on)`.
+
+    **WHY THE COMPILER IS ASKED AGAIN, AND ONLY FOR THE FILES THAT ARE COLD.** `checks/substrate.py`
+    is this census's VERDICT instrument and stays so -- routing, `EMPTY` before `MISSING`, the
+    `[bounded]` record, the exit status discarded in favour of the FIRST LINE -- all of it lives in
+    the one file that owns it, and a bug fixed there moves this census for free. **BUT IT DOES NOT
+    FORWARD THE COMPILER's OUTPUT**: `checks/substrate.py:half1()` emits the FIRST line of the
+    merged output and nothing else, and the CAUSES section it can print (`--causes`) is built by
+    `checks/substrate.py:cause_of()`, whose `^`-anchored patterns are searched against the WHOLE
+    output -- **and a bend failure's FIRST line is `SOME PROOFS FAIL`, so the anchor never matches
+    and every real failure reads `UNATTRIBUTED`. MEASURED, on a synthetic three-line failure:
+    `cause_of()` answered `None` where the per-line search answers `('HOLES', '34')`.
+
+    ⇒ **SO THE WORDS ARE ASKED FOR DIRECTLY, AND THE COST IS THE SIZE OF THE COLD CLASS AND NOT OF
+    THE POPULATION.** The envelope is `checks/bounded.py` under `gates/bendlock.py` -- the same
+    watchdog and the same lock this census's other call uses -- and the shape is
+    `checks/substrate.py`'s own `CAUSES` table applied LINE BY LINE (`cause_of_lines()` above).
+
+    **WITHOUT THE WORDS, `COLD` IS A NOISE.** Every cold row in this tree's own artefact said
+    `SOME PROOFS FAIL`, which is the same sentence for a FRAGMENT that cannot compile by design and
+    for a driver whose constructor was deleted upstream."""
+    with bend_lock():
+        p = subprocess.run([PY, BOUNDED, "--mb", str(mb), "--seconds", str(seconds), "--",
+                            "./bin/bend", path, "--check-only"],
+                           cwd=ROOT, capture_output=True, text=True,
+                           env={k: v for k, v in os.environ.items() if k != "PYTHONPATH"})
+    tok = next((m for m in (TOKEN_RC.search(ln) for ln in p.stderr.split("\n")) if m), None)
+    if not tok or tok.group("token") != "WITHIN-LIMITS":
+        return "NO-MEASUREMENT", f"the bounded token was {tok.group('token') if tok else 'NO-TOKEN'}"
+    shape, symbol, error = cause_of_lines(p.stderr)
+    return (shape if shape == "UNATTRIBUTED" else f"{shape} {symbol}".strip()), error[:200]
 
 
 def discover() -> tuple[list[str], list[str]]:
@@ -129,17 +289,32 @@ def discover() -> tuple[list[str], list[str]]:
     return out, sorted(dropped.items())
 
 
-def judge(path: str, mb: int, seconds: int) -> tuple[str, str, str, str]:
-    """One file. Returns `(state, token, first-line, peak)`.
+def judge(path: str, mb: int, seconds: int) -> dict:
+    """One file. Returns `{state, token, first_line, peak, cause, error, sha}`.
 
     THE SUBSTRATE GATE IS THE INSTRUMENT, CALLED AS A SUBPROCESS, NOT REIMPLEMENTED. Everything that
     makes its verdict correct -- routing, `EMPTY` before `MISSING`, `--check-only`'s exit status
     being DISCARDED in favour of the FIRST LINE, the `[bounded]`/`MACHINE` lines kept off stdout --
     stays in the one file that owns it, and a bug fixed there moves this census for free.
+
+    **THE CAUSE, THE ERROR AND THE SHA ARE THREE MORE MEASUREMENTS OF THE SAME RUN, AND NONE OF
+    THEM IS A SECOND INSTRUMENT.** The cause is the compiler's own error shape, read off the
+    stderr this call already captured (`cause_of_lines()` above, over `checks/substrate.py`'s
+    `CAUSES` table); the error is the compiler's own line; the sha is the file's bytes.
+    **WITHOUT THE CAUSE, `COLD` IS A NOISE**: twenty-one rows in this tree's own artefact all
+    said `SOME PROOFS FAIL`, which is the same sentence for a FRAGMENT and for a driver whose
+    constructor was deleted upstream. **WITHOUT THE SHA, THE ARTEFACT IS A SNAPSHOT NOTHING CAN
+    CHECK**: a reader cannot tell a census that describes this tree from one that describes last
+    week's.
     """
-    p = subprocess.run([PY, "checks/substrate.py", "--mb", str(mb), "--seconds", str(seconds), path],
-                       cwd=ROOT, capture_output=True, text=True,
-                       env={k: v for k, v in os.environ.items() if k != "PYTHONPATH"})
+    # THE LOCK IS TAKEN FOR THIS ONE COMPILATION AND RELEASED IMMEDIATELY AFTER, so a census over
+    # a hundred files does not monopolise it for the whole run. See the import at the top of this
+    # file for why it is PER INVOCATION and not once for the census.
+    with bend_lock():
+        p = subprocess.run([PY, "checks/substrate.py", "--mb", str(mb), "--seconds", str(seconds),
+                            path],
+                           cwd=ROOT, capture_output=True, text=True,
+                           env={k: v for k, v in os.environ.items() if k != "PYTHONPATH"})
     row = next((ln for ln in p.stdout.split("\n") if ln.startswith(("WARM", "COLD", "EMPTY",
                                                                     "NO INSTRUMENT"))), "")
     # SEARCHED ACROSS THE LINE, NOT ANCHORED. MEASURED, AND IT COST A WHOLE 35-FILE RUN:
@@ -151,8 +326,11 @@ def judge(path: str, mb: int, seconds: int) -> tuple[str, str, str, str]:
     # the `DEAD` of `gates/gatekit.py:55` wearing a count.
     tok = next((m for m in (TOKEN_RC.search(ln) for ln in p.stderr.split("\n")) if m), None)
     tok, rc = (tok.group("token"), tok.group("rc")) if tok else ("NO-TOKEN", "")
+    sha = sha_of(path)
     if not row:                      # the instrument emitted nothing about this file at all
-        return "NO-MEASUREMENT", tok, "substrate.py emitted no verdict for this file", ""
+        return {"state": "NO-MEASUREMENT", "token": tok,
+                "first_line": "substrate.py emitted no verdict for this file", "peak": "",
+                "cause": "NO-VERDICT", "error": "", "sha": sha}
     state = row.split()[0]
     why = " :: ".join(x for x in row.split("::")[1:]).strip() if "::" in row else ""
     # bounded.py's token is the verdict. A KILL is not a COLD and a NOT-STARTED is not a COLD.
@@ -166,7 +344,16 @@ def judge(path: str, mb: int, seconds: int) -> tuple[str, str, str, str]:
         state = state + "?NOTOKEN"
     peak = next((m.group(1) for m in
                  (re.search(r"peak-RSS=(\d+) MB", ln) for ln in p.stderr.split("\n")) if m), "")
-    return state, tok, (why or row)[:160], peak
+    # THE COMPILER's OWN WORDS, AND ONLY FOR THE FILES THAT ARE COLD. `checks/substrate.py` is the
+    # verdict instrument and does not forward the compiler's output; `compiler_words()` asks again,
+    # and the cost is the size of the COLD class and not of the population.
+    cause, error = ("", "")
+    if state.startswith("COLD"):
+        cause, error = compiler_words(path, mb, seconds)
+    else:
+        cause, error = "WARM", ""
+    return {"state": state, "token": tok, "first_line": (why or row)[:160], "peak": peak,
+            "cause": cause, "error": error, "sha": sha}
 
 
 def main() -> int:
@@ -220,14 +407,35 @@ def main() -> int:
                  f"# state= WARM|COLD|NO-MEASUREMENT|NO-INSTRUMENT|<state>?NOTOKEN  token= checks/bounded.py's OWN verdict token, "
                  f"read off stderr because its exit status cannot mean one thing.\n"
                  "# first_line= the instrument's first stderr line, or the verdict row.\n"
+                 "# cause= the COMPILER's OWN error shape, from `checks/substrate.py`'s `CAUSES` table\n"
+                 "#   (loaded by path) applied LINE BY LINE -- `substrate.cause_of()` searches the whole\n"
+                 "#   output and its `^`-anchored patterns never match, because a bend failure's first\n"
+                 "#   line is `SOME PROOFS FAIL` and the error is on the second.  `COLD` ALONE IS A\n"
+                 "#   NOISE: every failure in the tree shares the sentence `SOME PROOFS FAIL`, and a\n"
+                 "#   FRAGMENT and a driver whose constructor was deleted upstream must not be read\n"
+                 "#   the same way.\n"
+                 "# sha= the file's sha256, so the record is keyed on CONTENT.  `checks/differ.py`'s\n"
+                 "#   `substrate_digest()` says why: \"Never on st_mtime\".  A reader can now tell a\n"
+                 "#   census that describes THIS tree from one that describes last week's.\n"
+                 "# error= the compiler's OWN line, verbatim, so a row names the error and not a\n"
+                 "#   class of it.  This is the column `gates/compile-census-gate.py` prints.\n"
+                 "# **THE COLUMN NAMES ARE IN THIS HEADER AND NOT IN A LINE OF THEIR OWN, AND THAT IS\n"
+                 "# A FIX AND NOT A STYLE.** MEASURED 2026-10-20 on `gates/edge-runner.py`'s reader of\n"
+                 "# a generated `.rows`: with the column line written as DATA, the reader parsed it as\n"
+                 "# a row whose key was the literal string `gate`, and the edge's plan then reported\n"
+                 "# `STALE gate` -- a gate that does not exist, named by the file's own vocabulary.\n"
+                 "# The house style agrees: `gates/crp_graph_census-pins.rows` puts its column names\n"
+                 "# in the `#` header and writes no column line at all.\n"
                  f"# ceiling {a.mb} MB, {a.seconds} s, ONE bend process at a time.\n"
-                 "state\tpeak_MB\ttoken\tfile\tfirst_line\n")
+                 "# columns: state, peak_MB, token, file, cause, sha, error, first_line\n")
         for i, path in enumerate(pop, 1):
-            state, tok, why, peak = judge(path, a.mb, a.seconds)
+            r = judge(path, a.mb, a.seconds)
+            state = r["state"]
             tally[state] = tally.get(state, 0) + 1
-            fh.write(f"{state}\t{peak}\t{tok}\t{path}\t{why}\n")
+            fh.write(f"{state}\t{r['peak']}\t{r['token']}\t{path}\t{r['cause']}\t{r['sha']}\t"
+                     f"{r['error']}\t{r['first_line']}\n")
             fh.flush()
-            print(f"{state:<15} {path:<48} [{tok}] {why}")
+            print(f"{state:<15} {path:<48} [{r['token']}] {r['cause']:<22} {r['error']}")
 
     judged = len(pop)
     # ANY STATE THAT IS NOT A MEASUREMENT IS COUNTED AS UNJUDGED, by PREFIX rather than by an

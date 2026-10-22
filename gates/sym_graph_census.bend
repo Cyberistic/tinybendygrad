@@ -263,7 +263,7 @@ def iscst(+w: String) -> Bool: Bool.or(iscst.name(w), iscst.head(w))
 
 def mkvar(ar: O.Arena, +w: String) -> O.Found:
   O.UOp.new(ar, O.OpsPARAM{}, Nil{},
-    O.AParam{O.ParamArg{O.ParamArg.no_slot(), vdt(w), None{},
+    O.AParam{O.ParamArg{O.ParamArg.no_slot(), vdt(w),
       Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{w}, S.Aalu{},
       None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 

@@ -1,0 +1,77 @@
+# gates/compile-census-standing.rows -- TAB separated. THE DECLARED STANDING-COLD SET.
+#
+# WHAT IT IS. `checks/compile-census.py` compiles every `.bend` outside the port and records
+# `COLD` for the ones that do not compile. **`COLD` IS A NOISY CLASS**: MEASURED 2026-10-22, every
+# cold row in this tree's own census artefact said `SOME PROOFS FAIL`, which is the same sentence
+# for a FRAGMENT that cannot compile by design and for a driver whose constructor was deleted
+# upstream. **THIS FILE IS THE DECLARATION OF WHICH IS WHICH, AND IT IS A DECLARATION AND NOT AN
+# INFERENCE.** `gates/compile-census-gate.py` reads it, and a COLD row that is NOT declared here is
+# a BREAKAGE: a driver that does not compile and nothing says it may not.
+#
+# THE COLUMNS.
+#   file   the path, relative to the repo root, exactly as `checks/compile-census.py` writes it.
+#   shape  THE COMPILER'S OWN ERROR SHAPE for the file, and it is one of the shapes in
+#          `checks/compile-census.py`'s `CAUSES` table -- READ BY PATH by
+#          `gates/compile-census-gate.py`, which REFUSES a declaration naming a shape the tree
+#          cannot produce. **THE SHAPE IS WHAT MAKES THE DECLARATION CHECKABLE**: a file whose
+#          error CHANGES is no longer the declared standing case, and the gate says so instead of
+#          waving it through.
+#   why    why this file is cold by design, in one line.
+#
+# WHAT A ROW DOES NOT DO. It does not make the file compile, and it does not make the census green
+# about it: the census's row stays `COLD`, and `gates/compile-census-gate.py` reads it as `SKIP` --
+# "it could not run, so it measured nothing" -- and counts it without charging the edge.
+#
+# THIS IS A DECLARATION AND NOT A POPULATION, AND THE DIFFERENCE MATTERS. A population is what an
+# instrument DISCOVERS (`checks/compile-census.py`'s own `discover()`, loaded by path), and this
+# file is the tree's own statement about a handful of files INSIDE that population. `AGENTS.md`
+# doctrine 1 is about populations, and this is not one: a row here is a CLAIM, and the gate that
+# reads it is the instrument that checks the claim.
+#
+# THE CLASSES, AND WHERE EACH ONE IS DECLARED IN THE TREE ALREADY. **NO ROW BELOW IS A LIST OF
+# NAMES THAT NOTHING CHECKS.**
+#
+#   FOREIGN       `Error: N defs rely on unsafe or foreign code:` -- the file PARSES AND
+#                 TYPE-CHECKS and the SAFETY verdict is what fails: it binds a C library. The
+#                 tree's own name for the class is `checks/port-compile-gate.py:ST_FOREIGN`, and
+#                 that file's header says why the refusal is about the PROMISE and not about the
+#                 parsing: "`bend` refuses a book whose defs RELY ON FOREIGN OR UNSAFE CODE".
+#   SYNTAX        `expected : 'def', 'type' or 'law'` -- bare statements at top level, where a
+#                 `def`, a `type` or a `law` belongs. A FRAGMENT. The tree's own name for the
+#                 class is `gates/opname-census-gate.py:FRAGMENT`.
+#   MISSING-DEF   `expected : a defined name / observed : X` -- a name the file's own imports do
+#                 not bring in. **IN A FRAGMENT THIS IS THE FILE'S STANDING CONDITION AND NOT A
+#                 DEFECT**: a `.bend` file in this dialect names only what it imports, and the
+#                 compiler's own `base.bend` owns `U32`, `F32`, `String`, `IO` and every
+#                 constructor of them, so a file that uses one MUST carry `import Base`.
+#                 `gates/dialect-fixture-gate.py` says so and MEASURES it, and its population is a
+#                 RULE and not a list of names: "every file under `oracles/` that names no
+#                 `import` and no `def main`". **THAT GATE IS WHAT JUDGES THOSE FILES' CLAIMS** --
+#                 a dialect fixture's claim is not a compilation result, and a gate that read a
+#                 fragment's compile status would be reading the wrong question.
+#   UNKNOWN-CTOR  `message : a declared constructor (unknown: X)` -- a constructor the file's own
+#                 imports do not bring in. The same FRAGMENT case, with the same rule.
+#
+# **⇒ AND A ROW WHOSE SHAPE IS NOT ONE OF THE CLASSES ABOVE IS A BREAKAGE.** `MISSING-DEF` in a
+# file that DOES import Base is a broken driver, and so is an `ARITY` error and a `TYPE-MISMATCH`
+# and a `DUPLICATE` and an `UNKNOWN-CTOR` in a file that does. The shape is a CLASS and not a
+# verdict; the DECLARATION is what says a file is allowed to be cold, and it says so by NAME.
+#
+# --------------------------------------------------------------------------- THE DECLARED SET
+# A FRAGMENT FIXTURE, AND IT SAYS SO: "IT IS A FRAGMENT ON PURPOSE, AND A FRAGMENT IS A SHAPE
+# AND NOT A FILENAME."
+gates/opname-census-fragment.bend	SYNTAX	THE FRAGMENT FIXTURE for `gates/opname-census-gate.py --plant`, and the file says so: bare statements at top level, where a `def`, a `type` or a `law` belongs.
+# A FRAGMENT, AND IT SAYS SO: "IT IS A FRAGMENT, and it says so" -- the `_min_max` fixture rows
+# re-indented inside the port's `def`.
+oracles/lift-rows.bend	SYNTAX	A FRAGMENT by design: the `_min_max` FIXTURE ROWS of `tinybendygrad/uop/fold.bend`, re-indented inside a `def`, and the file says so.
+# A FILE THAT BINDS A C LIBRARY. The compiler's SAFETY verdict, and `checks/port-compile-gate.py`'s
+# own `ST_FOREIGN` is the tree's name for the class.
+checks/c-context.bend	FOREIGN	BINDS A C LIBRARY: `Sz.read_dir` and `Sz.is_dir` are FOREIGN DEFS, and the compiler refuses a file whose defs rely on foreign code. The refusal is a fact about the PROMISE and not about the parsing.
+# THE DIALECT FIXTURES. `gates/dialect-fixture-gate.py`'s population is the RULE "every file under
+# `oracles/` that names no `import` and no `def main`", and that gate is what judges their CLAIMS.
+oracles/nv_ip_rows_c.bend	MISSING-DEF	A DIALECT FRAGMENT: no `import Base`, so `IO` is undefined. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`, which is the instrument for them.
+oracles/nv_ip_rows_d.bend	UNKNOWN-CTOR	A DIALECT FRAGMENT: no `import Base`, so `Nil` is not a declared constructor. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`.
+oracles/nv_ip_rows_e.bend	UNKNOWN-CTOR	A DIALECT FRAGMENT: no `import Base`, so `Nil` is not a declared constructor. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`.
+oracles/post-oracle-bend.bend	MISSING-DEF	A DIALECT FRAGMENT: no `import Base`, so `String` is undefined. ONE ORACLE EITHER SIDE OF A RENAME, and `gates/dialect-fixture-gate.py` measures the difference.
+oracles/pre-oracle-bend.bend	MISSING-DEF	A DIALECT FRAGMENT: no `import Base`, so `String` is undefined. ONE ORACLE EITHER SIDE OF A RENAME, and `gates/dialect-fixture-gate.py` measures the difference.
+oracles/usb-arith-rows.bend	MISSING-DEF	A DIALECT FRAGMENT: no `import Base`, so `IO` is undefined. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`, which is the instrument for them.

@@ -129,7 +129,7 @@ def g_ss_cast_param() -> O.Found:
   # The PARAM's arg is spelled here rather than through `fold.bend`'s `mw_pa`, so this driver
   # keeps the three imports it already had. `cval_arg` refuses it because a PARAM's arg is an
   # `AParam`, not one of the three `APy` arms -- which is the whole point of the fixture.
-  +p = O.UOp.new(ar, O.OpsPARAM{}, Nil{}, O.AParam{O.ParamArg{0, S.int32(), None{}, None{}, None{},
+  +p = O.UOp.new(ar, O.OpsPARAM{}, Nil{}, O.AParam{O.ParamArg{0, S.int32(), None{}, None{},
     None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
   O.UOp.new(O.Found.ar(p), O.OpsCAST{}, [O.Found.i(p)], O.ADt{S.int32()}, O.TNone{})
 

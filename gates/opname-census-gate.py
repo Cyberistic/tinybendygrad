@@ -91,6 +91,25 @@ plants nothing the moment HEAD carries the fix. The subject is `gates/opname-cen
 a file this gate OWNS -- a subject another unit owns is a shared path, and `AGENTS.md` records
 what happens to shared paths. The plant edits a COPY under a scratch name, the census
 discovers the copy by its own walk, and the copy is deleted when the run ends.
+
+⇒ **AND THIS CENSUS IS NOW A GATE THE EDGE RUNS, AND ITS BLIND SPOT IS DECLARED RATHER THAN
+CLOSED HERE.** Two things changed on 2026-10-22 and both are MEASURED:
+
+  * **IT WAS UNREACHABLE.** MEASURED: `gates/opname-census-gate.py` was in neither
+    `gates/edge-cost.rows` nor `gates/edge-trace.rows`, so the edge never ran it -- and a census
+    nobody runs is a census whose verdict nobody reads. That is the SAME defect
+    `checks/compile-census.py` had: its artefact said `COLD ... gates/crp_graph_census.bend` for
+    a day and a half and NOBODY WAS TOLD. So this file declares `EDGE_CANDIDATE = True`, which is
+    the tree's own hook (`gates/edge-oracle-pin-gate.py` uses it too) and which the edge reads BY
+    PATH, the way it reads a gate's `RED_IS`.
+  * **ITS BLIND SPOT IS THE COMPILE CENSUS's POPULATION, NOT A DEFECT IN THIS FILE.** This census
+    compiles ONLY the files that NAME a stale op, so a driver that fails for a TYPE ERROR is never
+    compiled by it. **THE COMPILE CENSUS SEES EVERYTHING; THIS ONE SEES THE CLASS.** The run
+    prints the complement -- `compiled=` and `not-compiled=` with the population as the
+    denominator -- and names the sibling that covers the rest:
+    `checks/compile-census.py`, whose verdict the edge runs as `gates/compile-census-gate.py`.
+    **DO NOT MERGE THEM AND DO NOT GROW EITHER'S POPULATION HERE**: two instruments with different
+    populations and different questions are RIGHT, and a second copy of either is not.
 """
 from __future__ import annotations
 
@@ -106,6 +125,16 @@ ROOT = HERE.parent
 ROWS = HERE / "opname-census.rows"
 SUBJECT = HERE / "opname-census-plantcase.bend"
 MB, SECONDS = 2048, 300
+
+# THE EDGE'S HOOK, DECLARED HERE AND READ BY THE EDGE. This census holds no pin of its own -- it
+# compares a NAME against the port's own enum -- so the edge's selection rule ("a member that
+# holds a pin its own code reads") would not see it, and a census the edge never runs is a census
+# whose verdict nobody reads. **THAT IS THE SAME DEFECT `checks/compile-census.py` HAD**:
+# MEASURED 2026-10-22, its rows said `COLD ... gates/crp_graph_census.bend` for a day and a half
+# and NOBODY WAS TOLD, because nothing ran it and nothing read its artefact. The tree's own escape
+# is used by `gates/edge-oracle-pin-gate.py` and by `gates/compile-census-gate.py`, and it is read
+# BY PATH, the same way the edge reads a gate's `RED_IS`.
+EDGE_CANDIDATE = True
 
 
 def _load(rel: str, name: str):
@@ -329,6 +358,7 @@ def census(rows_path: Path | None = None) -> tuple[int, list[dict], list[tuple[s
     rows: list[dict] = []
     raw_stale = code_stale = 0
     comment_only: list[tuple[str, int, str]] = []
+    compiled = 0
     for rel in pop:
         path = ROOT / rel
         try:
@@ -347,6 +377,7 @@ def census(rows_path: Path | None = None) -> tuple[int, list[dict], list[tuple[s
         unknown = {n for n in ctor | acc | bare if n not in declared}
         if not unknown:
             continue
+        compiled += 1
         state, detail, stderr = compile_verdict(rel)
         if state == pc.NOM:
             print(f"REFUSED    {rel}: the compile produced no verdict ({detail}), so this census "
@@ -373,6 +404,22 @@ def census(rows_path: Path | None = None) -> tuple[int, list[dict], list[tuple[s
     for rel, line, name in comment_only:
         print(f"COMMENT-ONLY {rel}:{line}  {name}  ::  a mention in a COMMENT is not a "
               "construction -- a TEXT census would report this as a stale op")
+    # THE COMPLEMENT, PRINTED WITH ITS DENOMINATOR, AND IT IS NOT A DEFECT TO BE FIXED HERE.
+    #
+    # **THIS CENSUS COMPILES ONLY THE FILES THAT NAME A STALE OP** (`if not unknown: continue`),
+    # so a driver that fails for a TYPE ERROR is never compiled by it. **THAT IS THIS
+    # INSTRUMENT'S POPULATION AND NOT A BLIND SPOT TO BE CLOSED HERE**: the class it does not
+    # see is covered by `checks/compile-census.py`, which compiles EVERY `.bend` outside the port
+    # and whose verdict the edge now runs as `gates/compile-census-gate.py`. **THE COMPILE CENSUS
+    # SEES EVERYTHING; THIS ONE SEES THE CLASS.** Two instruments with different populations and
+    # different questions are RIGHT, and a SECOND COPY OF EITHER IS NOT -- so neither of them
+    # grows the other's population here.
+    print(f"COMPLEMENT  compiled={compiled}  not-compiled={len(pop) - compiled} of {len(pop)}  ::  "
+          "this census compiles ONLY the files that NAME a stale op, so a driver that fails for a "
+          "TYPE ERROR is never compiled by it. That class is covered by "
+          "`checks/compile-census.py`, which compiles EVERY driver, and whose verdict the edge runs "
+          "as `gates/compile-census-gate.py`. TWO INSTRUMENTS, DIFFERENT POPULATIONS, DIFFERENT "
+          "QUESTIONS -- AND A SECOND COPY OF EITHER IS NOT.")
     tally: dict[str, int] = {}
     for r in rows:
         tally[r["class"]] = tally.get(r["class"], 0) + 1

@@ -1,103 +1,127 @@
-# compile-census: per-file `bin/bend --check-only` over the 97 .bend that checks/substrate.py's POP_ROOT=tinybendygrad/ does not walk.
-# taken=2026-10-22T06:27:35Z  committed=91  untracked=6  ::  A SNAPSHOT. `discover()` walks the WORKING COPY, so that count is `len(discover())` AT THIS MOMENT and it MOVES as drivers land; a run whose `handed=` differs from the number on the line above is the tree having moved, not this file being wrong. Re-run to re-take it.
+# compile-census: per-file `bin/bend --check-only` over the 102 .bend that checks/substrate.py's POP_ROOT=tinybendygrad/ does not walk.
+# taken=2026-10-22T17:18:36Z  committed=97  untracked=5  ::  A SNAPSHOT. `discover()` walks the WORKING COPY, so that count is `len(discover())` AT THIS MOMENT and it MOVES as drivers land; a run whose `handed=` differs from the number on the line above is the tree having moved, not this file being wrong. Re-run to re-take it.
 # state= WARM|COLD|NO-MEASUREMENT|NO-INSTRUMENT|<state>?NOTOKEN  token= checks/bounded.py's OWN verdict token, read off stderr because its exit status cannot mean one thing.
 # first_line= the instrument's first stderr line, or the verdict row.
+# cause= the COMPILER's OWN error shape, from `checks/substrate.py`'s `CAUSES` table
+#   (loaded by path) applied LINE BY LINE -- `substrate.cause_of()` searches the whole
+#   output and its `^`-anchored patterns never match, because a bend failure's first
+#   line is `SOME PROOFS FAIL` and the error is on the second.  `COLD` ALONE IS A
+#   NOISE: every failure in the tree shares the sentence `SOME PROOFS FAIL`, and a
+#   FRAGMENT and a driver whose constructor was deleted upstream must not be read
+#   the same way.
+# sha= the file's sha256, so the record is keyed on CONTENT.  `checks/differ.py`'s
+#   `substrate_digest()` says why: "Never on st_mtime".  A reader can now tell a
+#   census that describes THIS tree from one that describes last week's.
+# error= the compiler's OWN line, verbatim, so a row names the error and not a
+#   class of it.  This is the column `gates/compile-census-gate.py` prints.
+# **THE COLUMN NAMES ARE IN THIS HEADER AND NOT IN A LINE OF THEIR OWN, AND THAT IS
+# A FIX AND NOT A STYLE.** MEASURED 2026-10-20 on `gates/edge-runner.py`'s reader of
+# a generated `.rows`: with the column line written as DATA, the reader parsed it as
+# a row whose key was the literal string `gate`, and the edge's plan then reported
+# `STALE gate` -- a gate that does not exist, named by the file's own vocabulary.
+# The house style agrees: `gates/crp_graph_census-pins.rows` puts its column names
+# in the `#` header and writes no column line at all.
 # ceiling 2048 MB, 300 s, ONE bend process at a time.
-state	peak_MB	token	file	first_line
-COLD	32	WITHIN-LIMITS	checks/c-context.bend	SOME PROOFS FAIL
-WARM	457	WITHIN-LIMITS	checks/gate.bend	WARM        checks/gate.bend  (391 lines)  [bend --check-only]
-WARM	500	WITHIN-LIMITS	checks/gate_dtype.bend	WARM        checks/gate_dtype.bend  (76 lines)  [bend --check-only]
-WARM	533	WITHIN-LIMITS	checks/gate_norm.bend	WARM        checks/gate_norm.bend  (60 lines)  [bend --check-only]
-COLD	420	WITHIN-LIMITS	checks/.e2e-fixture/f64/emit-f64.bend	SOME PROOFS FAIL
-COLD	425	WITHIN-LIMITS	checks/.e2e-fixture/portexec/emit-mm.bend	SOME PROOFS FAIL
-WARM	773	WITHIN-LIMITS	examples/beautiful_mnist.bend	WARM        examples/beautiful_mnist.bend  (1168 lines)  [bend --check-only]
-WARM	653	WITHIN-LIMITS	gates/.opseven-mut-723815.bend	WARM        gates/.opseven-mut-723815.bend  (245 lines)  [bend --check-only]
-WARM	448	WITHIN-LIMITS	gates/arenasrc_rows.bend	WARM        gates/arenasrc_rows.bend  (102 lines)  [bend --check-only]
-WARM	408	WITHIN-LIMITS	gates/axisflip.bend	WARM        gates/axisflip.bend  (97 lines)  [bend --check-only]
-WARM	402	WITHIN-LIMITS	gates/bc-u32.bend	WARM        gates/bc-u32.bend  (97 lines)  [bend --check-only]
-WARM	625	WITHIN-LIMITS	gates/cr_graph_census.bend	WARM        gates/cr_graph_census.bend  (239 lines)  [bend --check-only]
-COLD	350	WITHIN-LIMITS	gates/crp_graph_census.bend	SOME PROOFS FAIL
-WARM	542	WITHIN-LIMITS	gates/cstyle_render_census.bend	WARM        gates/cstyle_render_census.bend  (498 lines)  [bend --check-only]
-WARM	510	WITHIN-LIMITS	gates/decomp-mut-driver.bend	WARM        gates/decomp-mut-driver.bend  (325 lines)  [bend --check-only]
-WARM	659	WITHIN-LIMITS	gates/decomp_graph_census.bend	WARM        gates/decomp_graph_census.bend  (325 lines)  [bend --check-only]
-WARM	406	WITHIN-LIMITS	gates/ew-consts.bend	WARM        gates/ew-consts.bend  (64 lines)  [bend --check-only]
-WARM	442	WITHIN-LIMITS	gates/ew-explog.bend	WARM        gates/ew-explog.bend  (10 lines)  [bend --check-only]
-WARM	422	WITHIN-LIMITS	gates/ew_activation.bend	WARM        gates/ew_activation.bend  (220 lines)  [bend --check-only]
-WARM	423	WITHIN-LIMITS	gates/ew_graph_census.bend	WARM        gates/ew_graph_census.bend  (418 lines)  [bend --check-only]
-COLD	473	WITHIN-LIMITS	gates/fold_graph_census.bend	SOME PROOFS FAIL
-WARM	423	WITHIN-LIMITS	gates/gr_graph_census.bend	WARM        gates/gr_graph_census.bend  (312 lines)  [bend --check-only]
-WARM	392	WITHIN-LIMITS	gates/groupflip.bend	WARM        gates/groupflip.bend  (224 lines)  [bend --check-only]
-WARM	225	WITHIN-LIMITS	gates/i64-shl.bend	WARM        gates/i64-shl.bend  (136 lines)  [bend --check-only]
-WARM	208	WITHIN-LIMITS	gates/i64-shr.bend	WARM        gates/i64-shr.bend  (190 lines)  [bend --check-only]
-WARM	386	WITHIN-LIMITS	gates/md_graph_census.bend	WARM        gates/md_graph_census.bend  (233 lines)  [bend --check-only]
-WARM	399	WITHIN-LIMITS	gates/mo_graph_census.bend	WARM        gates/mo_graph_census.bend  (240 lines)  [bend --check-only]
-WARM	385	WITHIN-LIMITS	gates/mx_graph_census.bend	WARM        gates/mx_graph_census.bend  (263 lines)  [bend --check-only]
-WARM	460	WITHIN-LIMITS	gates/mxgraph-fixture-rows.bend	WARM        gates/mxgraph-fixture-rows.bend  (208 lines)  [bend --check-only]
-WARM	994	WITHIN-LIMITS	gates/onnx_census.bend	WARM        gates/onnx_census.bend  (218 lines)  [bend --check-only]
-WARM	708	WITHIN-LIMITS	gates/op_graph_census.bend	WARM        gates/op_graph_census.bend  (325 lines)  [bend --check-only]
-COLD	221	WITHIN-LIMITS	gates/ops-core.bend	SOME PROOFS FAIL
-WARM	649	WITHIN-LIMITS	gates/opseven.bend	WARM        gates/opseven.bend  (245 lines)  [bend --check-only]
-WARM	469	WITHIN-LIMITS	gates/paramarg_shape.bend	WARM        gates/paramarg_shape.bend  (112 lines)  [bend --check-only]
-COLD	215	WITHIN-LIMITS	gates/ptx_render_census.bend	SOME PROOFS FAIL
-COLD	210	WITHIN-LIMITS	gates/ptx_render_census_axis.bend	SOME PROOFS FAIL
-WARM	589	WITHIN-LIMITS	gates/rd_graph_census.bend	WARM        gates/rd_graph_census.bend  (84 lines)  [bend --check-only]
-WARM	387	WITHIN-LIMITS	gates/realize_graph_census.bend	WARM        gates/realize_graph_census.bend  (1235 lines)  [bend --check-only]
-WARM	484	WITHIN-LIMITS	gates/realize_kernel_args.bend	WARM        gates/realize_kernel_args.bend  (47 lines)  [bend --check-only]
-WARM	214	WITHIN-LIMITS	gates/render_val_s.bend	WARM        gates/render_val_s.bend  (36 lines)  [bend --check-only]
-WARM	213	WITHIN-LIMITS	gates/replace.bend	WARM        gates/replace.bend  (100 lines)  [bend --check-only]
-WARM	479	WITHIN-LIMITS	gates/rng_graph_census.bend	WARM        gates/rng_graph_census.bend  (296 lines)  [bend --check-only]
-WARM	602	WITHIN-LIMITS	gates/specreach.bend	WARM        gates/specreach.bend  (95 lines)  [bend --check-only]
-WARM	700	WITHIN-LIMITS	gates/state_census.bend	WARM        gates/state_census.bend  (239 lines)  [bend --check-only]
-COLD	590	WITHIN-LIMITS	gates/sym_graph_census.bend	SOME PROOFS FAIL
-COLD	217	WITHIN-LIMITS	gates/target-roundtrip.bend	SOME PROOFS FAIL
-WARM	221	WITHIN-LIMITS	gates/tc_ptx_types.bend	WARM        gates/tc_ptx_types.bend  (60 lines)  [bend --check-only]
-WARM	423	WITHIN-LIMITS	gates/tn_add_sub.bend	WARM        gates/tn_add_sub.bend  (196 lines)  [bend --check-only]
-WARM	538	WITHIN-LIMITS	gates/tn_and_or_xor.bend	WARM        gates/tn_and_or_xor.bend  (235 lines)  [bend --check-only]
-WARM	476	WITHIN-LIMITS	gates/tn_binop2_cmp.bend	WARM        gates/tn_binop2_cmp.bend  (214 lines)  [bend --check-only]
-WARM	455	WITHIN-LIMITS	gates/tn_binop_arena.bend	WARM        gates/tn_binop_arena.bend  (140 lines)  [bend --check-only]
-WARM	447	WITHIN-LIMITS	gates/tn_binop_sweep.bend	WARM        gates/tn_binop_sweep.bend  (201 lines)  [bend --check-only]
-WARM	425	WITHIN-LIMITS	gates/tn_bitwise_not.bend	WARM        gates/tn_bitwise_not.bend  (170 lines)  [bend --check-only]
-WARM	402	WITHIN-LIMITS	gates/tn_ceil_floor.bend	WARM        gates/tn_ceil_floor.bend  (209 lines)  [bend --check-only]
-WARM	441	WITHIN-LIMITS	gates/tn_contiguous_backward.bend	WARM        gates/tn_contiguous_backward.bend  (55 lines)  [bend --check-only]
-WARM	456	WITHIN-LIMITS	gates/tn_detach.bend	WARM        gates/tn_detach.bend  (57 lines)  [bend --check-only]
-WARM	449	WITHIN-LIMITS	gates/tn_dunder_neg.bend	WARM        gates/tn_dunder_neg.bend  (75 lines)  [bend --check-only]
-WARM	457	WITHIN-LIMITS	gates/tn_fdiv_mod.bend	WARM        gates/tn_fdiv_mod.bend  (185 lines)  [bend --check-only]
-WARM	447	WITHIN-LIMITS	gates/tn_graph_census.bend	WARM        gates/tn_graph_census.bend  (331 lines)  [bend --check-only]
-WARM	433	WITHIN-LIMITS	gates/tn_isfinite.bend	WARM        gates/tn_isfinite.bend  (108 lines)  [bend --check-only]
-WARM	465	WITHIN-LIMITS	gates/tn_isnan.bend	WARM        gates/tn_isnan.bend  (67 lines)  [bend --check-only]
-WARM	398	WITHIN-LIMITS	gates/tn_logical_not.bend	WARM        gates/tn_logical_not.bend  (97 lines)  [bend --check-only]
-WARM	468	WITHIN-LIMITS	gates/tn_lshift_rshift.bend	WARM        gates/tn_lshift_rshift.bend  (83 lines)  [bend --check-only]
-WARM	460	WITHIN-LIMITS	gates/tn_maximum.bend	WARM        gates/tn_maximum.bend  (51 lines)  [bend --check-only]
-WARM	447	WITHIN-LIMITS	gates/tn_mul.bend	WARM        gates/tn_mul.bend  (136 lines)  [bend --check-only]
-WARM	407	WITHIN-LIMITS	gates/tn_nary_arena.bend	WARM        gates/tn_nary_arena.bend  (150 lines)  [bend --check-only]
-WARM	449	WITHIN-LIMITS	gates/tn_neg.bend	WARM        gates/tn_neg.bend  (119 lines)  [bend --check-only]
-WARM	403	WITHIN-LIMITS	gates/tn_nodes.bend	WARM        gates/tn_nodes.bend  (143 lines)  [bend --check-only]
-WARM	441	WITHIN-LIMITS	gates/tn_pow.bend	WARM        gates/tn_pow.bend  (111 lines)  [bend --check-only]
-WARM	413	WITHIN-LIMITS	gates/tn_relu.bend	WARM        gates/tn_relu.bend  (71 lines)  [bend --check-only]
-WARM	430	WITHIN-LIMITS	gates/tn_relu6.bend	WARM        gates/tn_relu6.bend  (67 lines)  [bend --check-only]
-WARM	392	WITHIN-LIMITS	gates/tn_sin_log2_exp2_rsqrt.bend	WARM        gates/tn_sin_log2_exp2_rsqrt.bend  (94 lines)  [bend --check-only]
-WARM	484	WITHIN-LIMITS	gates/tn_sqrt.bend	WARM        gates/tn_sqrt.bend  (57 lines)  [bend --check-only]
-WARM	457	WITHIN-LIMITS	gates/tn_trunc_reciprocal_threefry.bend	WARM        gates/tn_trunc_reciprocal_threefry.bend  (90 lines)  [bend --check-only]
-WARM	386	WITHIN-LIMITS	gates/tn_where.bend	WARM        gates/tn_where.bend  (72 lines)  [bend --check-only]
-WARM	218	WITHIN-LIMITS	gates/uop_cast.bend	WARM        gates/uop_cast.bend  (91 lines)  [bend --check-only]
-WARM	446	WITHIN-LIMITS	gates/wk-cd.bend	WARM        gates/wk-cd.bend  (61 lines)  [bend --check-only]
-COLD	403	WITHIN-LIMITS	gates/wk-eval.bend	SOME PROOFS FAIL
-WARM	423	WITHIN-LIMITS	gates/wk-f32.bend	WARM        gates/wk-f32.bend  (36 lines)  [bend --check-only]
-WARM	32	WITHIN-LIMITS	langs/core.bend	WARM        langs/core.bend  (343 lines)  [bend --check-only]
-WARM	589	WITHIN-LIMITS	oracles/dtype_oracle.bend	WARM        oracles/dtype_oracle.bend  (257 lines)  [bend --check-only]
-COLD	223	WITHIN-LIMITS	oracles/fold-mvt-e2e.bend	SOME PROOFS FAIL
-WARM	32	WITHIN-LIMITS	oracles/fold-probe-mvt.bend	WARM        oracles/fold-probe-mvt.bend  (68 lines)  [bend --check-only]
-WARM	223	WITHIN-LIMITS	oracles/fold-probe-mvt2.bend	WARM        oracles/fold-probe-mvt2.bend  (110 lines)  [bend --check-only]
-COLD	32	WITHIN-LIMITS	oracles/lift-rows.bend	SOME PROOFS FAIL
-COLD	32	WITHIN-LIMITS	oracles/nv_ip_rows_c.bend	SOME PROOFS FAIL
-COLD	32	WITHIN-LIMITS	oracles/nv_ip_rows_d.bend	SOME PROOFS FAIL
-COLD	32	WITHIN-LIMITS	oracles/nv_ip_rows_e.bend	SOME PROOFS FAIL
-COLD	32	WITHIN-LIMITS	oracles/post-oracle-bend.bend	SOME PROOFS FAIL
-COLD	32	WITHIN-LIMITS	oracles/pre-oracle-bend.bend	SOME PROOFS FAIL
-COLD	225	WITHIN-LIMITS	oracles/probe-su.bend	SOME PROOFS FAIL
-COLD	721	WITHIN-LIMITS	oracles/probe-targetparse.bend	SOME PROOFS FAIL
-COLD	31	WITHIN-LIMITS	oracles/usb-arith-rows.bend	SOME PROOFS FAIL
-WARM	559	WITHIN-LIMITS	oracles/ddcheck/tree/test/dtype_oracle.bend	WARM        oracles/ddcheck/tree/test/dtype_oracle.bend  (257 lines)  [bend --check-only]
-WARM	531	WITHIN-LIMITS	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	WARM        oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend  (257 lines)  [bend --check-only]
-WARM	491	WITHIN-LIMITS	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	WARM        oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend  (257 lines)  [bend --check-only]
-WARM	500	WITHIN-LIMITS	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	WARM        oracles/render-wt/tinybendygrad/test/dtype_oracle.bend  (257 lines)  [bend --check-only]
+# columns: state, peak_MB, token, file, cause, sha, error, first_line
+COLD	32	WITHIN-LIMITS	checks/c-context.bend	FOREIGN 3	a8bd84c1360b1ae5dc5c629d74d35c0c71f6dd296dcf040d5b04b7ced6d7162b	Error: 3 defs rely on unsafe or foreign code:	SOME PROOFS FAIL
+WARM	386	WITHIN-LIMITS	checks/gate.bend	WARM	865cdb3a76454b0fabbe35d2cc1d5a595703fc6a7057470b65a80098568070b6		WARM        checks/gate.bend  (391 lines)  [bend --check-only]
+WARM	576	WITHIN-LIMITS	checks/gate_dtype.bend	WARM	531a6a61f8f259464400c7bfb49639ffcd3632e3bf31c6daaad792623636a337		WARM        checks/gate_dtype.bend  (76 lines)  [bend --check-only]
+WARM	523	WITHIN-LIMITS	checks/gate_norm.bend	WARM	c791b2c963a7a05f40daa7b29fc14010a7e264c3a3e9f92b08243317d167f1a8		WARM        checks/gate_norm.bend  (60 lines)  [bend --check-only]
+WARM	216	WITHIN-LIMITS	checks/.e2e-fixture/e2e_mm.bend	WARM	0b4111f66f28e38cd948167286eee1e1cb048c7623ce6f62331238172d7b0258		WARM        checks/.e2e-fixture/e2e_mm.bend  (220 lines)  [bend --check-only]
+COLD	380	WITHIN-LIMITS	checks/.e2e-fixture/f64/emit-f64.bend	MISSING-DEF C.render_kernel	655263949193dde99fcd52894d5f3e702ce1b809a1c1313c5f7fd4a1c6513c8e	- expected : a defined name / observed : C.render_kernel	SOME PROOFS FAIL
+COLD	442	WITHIN-LIMITS	checks/.e2e-fixture/portexec/emit-mm.bend	MISSING-DEF C.render_kernel	3734617e205d13894ffeda4018502e9e3c862d356a49b60e7151774b37829ff3	- expected : a defined name / observed : C.render_kernel	SOME PROOFS FAIL
+WARM	843	WITHIN-LIMITS	examples/beautiful_mnist.bend	WARM	5a36614df451d81a270696834b2724a7c3f94809cccff82ae8d6ddc6a3c1951c		WARM        examples/beautiful_mnist.bend  (1168 lines)  [bend --check-only]
+WARM	612	WITHIN-LIMITS	gates/.opseven-mut-723815.bend	WARM	71fc7c1b9b04530b6037de35f212421fc57e7d4d6a70609417501176ce732f43		WARM        gates/.opseven-mut-723815.bend  (245 lines)  [bend --check-only]
+WARM	598	WITHIN-LIMITS	gates/arenasrc_rows.bend	WARM	3262a5e7d9761c5d3b3b59a3fb1597b7a88c4cc6e442691d527e2a77898df405		WARM        gates/arenasrc_rows.bend  (102 lines)  [bend --check-only]
+WARM	396	WITHIN-LIMITS	gates/axisflip.bend	WARM	99ddb7a1db7399a944bf6cc4bf41c6e4aad4a1a511d0425bf01767a10a59ab79		WARM        gates/axisflip.bend  (97 lines)  [bend --check-only]
+WARM	382	WITHIN-LIMITS	gates/bc-u32.bend	WARM	756643c4ffcf39831e32ef388c605d94800ab0968c41ce83642bbb31dba1418b		WARM        gates/bc-u32.bend  (97 lines)  [bend --check-only]
+WARM	259	WITHIN-LIMITS	gates/constid.bend	WARM	48cfc985564ddc552986159d61b9967450164f6695b1a58509a67d9a25592331		WARM        gates/constid.bend  (144 lines)  [bend --check-only]
+WARM	894	WITHIN-LIMITS	gates/cr_graph_census.bend	WARM	bab217e30284807be914d8399016f5fe4d14e00f47d87ff003393ae17a2c14bc		WARM        gates/cr_graph_census.bend  (239 lines)  [bend --check-only]
+WARM	795	WITHIN-LIMITS	gates/crp_graph_census.bend	WARM	8fbd623e59fc80d6eb1dd04dd603e911e83099dcf10bf4cb457edc2388753475		WARM        gates/crp_graph_census.bend  (509 lines)  [bend --check-only]
+WARM	415	WITHIN-LIMITS	gates/cstyle_render_census.bend	WARM	348893cc6b5f350484eb40b4604a4e93e030bc5a612e3629d92b40b376bb8382		WARM        gates/cstyle_render_census.bend  (498 lines)  [bend --check-only]
+WARM	519	WITHIN-LIMITS	gates/decomp-mut-driver.bend	WARM	725e5a40df429bad655130bd527a319ac3243a2c7e89fc63a24907174d5e0225		WARM        gates/decomp-mut-driver.bend  (325 lines)  [bend --check-only]
+WARM	655	WITHIN-LIMITS	gates/decomp_graph_census.bend	WARM	048c4689336cd49f8307e97508e0dcede4abdebfb75c79bd47bf3f9e6dd24dda		WARM        gates/decomp_graph_census.bend  (325 lines)  [bend --check-only]
+WARM	537	WITHIN-LIMITS	gates/ew-consts.bend	WARM	5feefdc146644e797ce5a5177d57586abb1cea9bceabb99d3361e23fb35503ae		WARM        gates/ew-consts.bend  (64 lines)  [bend --check-only]
+WARM	549	WITHIN-LIMITS	gates/ew-explog.bend	WARM	4decfe603f4eb01803df01f73ba93181352804dbc00254ab230ab8b71e28c4c6		WARM        gates/ew-explog.bend  (10 lines)  [bend --check-only]
+WARM	527	WITHIN-LIMITS	gates/ew_activation.bend	WARM	cd3079ae65b19d7fcd95aa38991c6d66e23e1f081ff7fab589d446fd508aa02b		WARM        gates/ew_activation.bend  (220 lines)  [bend --check-only]
+WARM	565	WITHIN-LIMITS	gates/ew_graph_census.bend	WARM	4a29b9c1ddca08a4486dafe05051a9d023ddadad31d49c564244ace2a5c6a0ae		WARM        gates/ew_graph_census.bend  (418 lines)  [bend --check-only]
+COLD	344	WITHIN-LIMITS	gates/fold_graph_census.bend	ARITY ParamArg	df2f79139f606a0f75f57cb1ab30dd53f6ae55745f61aca2fd62464ff9463812	- expected : ../tinybendygrad/uop/ops.ParamArg with 12 fields / observed : O.ParamArg{0, dt, size, vmm, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}	SOME PROOFS FAIL
+WARM	400	WITHIN-LIMITS	gates/gr_graph_census.bend	WARM	e25049354c15b32fe1760fa132fd211f756bcad7b22798b7f9f9d129e47dcc87		WARM        gates/gr_graph_census.bend  (312 lines)  [bend --check-only]
+WARM	550	WITHIN-LIMITS	gates/groupflip.bend	WARM	9ff25f0bb6fa6e9bb1eb21300a2fed720e0caef0b0485f7dcc5b6da9af25601f		WARM        gates/groupflip.bend  (224 lines)  [bend --check-only]
+WARM	216	WITHIN-LIMITS	gates/i64-shl.bend	WARM	1488e8eeb815d38120ce2d6e5eb04414923f765fc179c440d92e4c039ab33947		WARM        gates/i64-shl.bend  (136 lines)  [bend --check-only]
+WARM	204	WITHIN-LIMITS	gates/i64-shr.bend	WARM	f99331f519ef269d2f3ef0ee11d36267c1ad049d92c7d479aabc5bb2f719a26e		WARM        gates/i64-shr.bend  (190 lines)  [bend --check-only]
+WARM	480	WITHIN-LIMITS	gates/md_graph_census.bend	WARM	85dccfe751c68493d250d452e469f09466aa81bd0846d4bf11c6873e00003721		WARM        gates/md_graph_census.bend  (233 lines)  [bend --check-only]
+WARM	552	WITHIN-LIMITS	gates/mo_graph_census.bend	WARM	d15eb5ecdd3e4595ff0007eb84824199a4854610eed40249d416617bb2f32dec		WARM        gates/mo_graph_census.bend  (240 lines)  [bend --check-only]
+WARM	650	WITHIN-LIMITS	gates/mx_graph_census.bend	WARM	f1befa79977fd66f55a709a2d42251ee8d705a48df19959573dc6de84ed2f6e8		WARM        gates/mx_graph_census.bend  (263 lines)  [bend --check-only]
+WARM	490	WITHIN-LIMITS	gates/mxgraph-fixture-rows.bend	WARM	9bf11b325ba859a139e06a66c093116c04d7702a3b603deb1a8b8c5043ae3e22		WARM        gates/mxgraph-fixture-rows.bend  (208 lines)  [bend --check-only]
+WARM	1245	WITHIN-LIMITS	gates/onnx_census.bend	WARM	f6287fa064f7f405d64afd354de20fcca7a58a2789ad3dd8901e27df2c70d49e		WARM        gates/onnx_census.bend  (218 lines)  [bend --check-only]
+WARM	751	WITHIN-LIMITS	gates/op_graph_census.bend	WARM	7d825d80610b95a8efe4964f8caf981b2121dcf8b94937e93d7256924fbaeaac		WARM        gates/op_graph_census.bend  (325 lines)  [bend --check-only]
+COLD	0	WITHIN-LIMITS	gates/opname-census-fragment.bend	SYNTAX 'f'	e8cd1acbe8a8c8b4df888f9d09dc8f6aa0e1a69b6c6610141cba70565a00c6c9	- expected : 'def', 'type' or 'law' / observed : 'f'	SOME PROOFS FAIL
+WARM	313	WITHIN-LIMITS	gates/opname-census-plantcase.bend	WARM	b8dcd41758133a3c84f2dd7bd4129eab44dc12c2bb7258e6dc2fc66b23ec55f9		WARM        gates/opname-census-plantcase.bend  (44 lines)  [bend --check-only]
+WARM	264	WITHIN-LIMITS	gates/ops-core.bend	WARM	3720a7296df9ab530b9e533c423f0b659355a6c442cd0c7fb6e7352a2b10ca09		WARM        gates/ops-core.bend  (192 lines)  [bend --check-only]
+WARM	599	WITHIN-LIMITS	gates/opseven.bend	WARM	c1b6fac4a732636b6853331e2f64cbbaff43c2ec9935e585db6d481cebc4718d		WARM        gates/opseven.bend  (245 lines)  [bend --check-only]
+WARM	447	WITHIN-LIMITS	gates/paramarg_shape.bend	WARM	0f16440086e29074cbea317b54dd470e43451a48d2887c71604a0939e77ef318		WARM        gates/paramarg_shape.bend  (112 lines)  [bend --check-only]
+WARM	402	WITHIN-LIMITS	gates/ptx_render_census.bend	WARM	05447fe7bdf9b3790cc7b4ffd14ab2d96266cb39e14b3e7e12c762a1e14564ee		WARM        gates/ptx_render_census.bend  (463 lines)  [bend --check-only]
+WARM	326	WITHIN-LIMITS	gates/ptx_render_census_axis.bend	WARM	cf9c4d3ddb5e5973752c87d981a1d7f0f584a84f422f1dee59ae8457dd218e87		WARM        gates/ptx_render_census_axis.bend  (359 lines)  [bend --check-only]
+COLD	31	WITHIN-LIMITS	gates/pycell-plant.bend	TYPE-MISMATCH ':'	72bb86a84abe2201ce2cad741cde92165a1a3dcbe90db9e14e2368ca931c12e6	- expected : '<' / observed : ':'	SOME PROOFS FAIL
+WARM	866	WITHIN-LIMITS	gates/rd_graph_census.bend	WARM	cbfdf504a6712de99b9b6eaca3546077c916d328184efc9372f042d32ccb9fe3		WARM        gates/rd_graph_census.bend  (84 lines)  [bend --check-only]
+WARM	531	WITHIN-LIMITS	gates/realize_graph_census.bend	WARM	d65761df2d9100b67ca35515d089e1b66c8375056fc282f3e7af1ee9a09e5f19		WARM        gates/realize_graph_census.bend  (1254 lines)  [bend --check-only]
+WARM	548	WITHIN-LIMITS	gates/realize_kernel_args.bend	WARM	6d7ce7143b02b0e5e425874ba952cbc7b5b3bd2969a80e1035ea475c77ab9846		WARM        gates/realize_kernel_args.bend  (47 lines)  [bend --check-only]
+WARM	429	WITHIN-LIMITS	gates/render_val_s.bend	WARM	75cb38ed898ac018525a82ac2c80da6774c9082fb526e76157a4942afcd147d0		WARM        gates/render_val_s.bend  (36 lines)  [bend --check-only]
+WARM	292	WITHIN-LIMITS	gates/replace.bend	WARM	afb23c3d739bb390e95ac8e48f9b48506d21dbc9e61f460ef308e4f58c5fbe74		WARM        gates/replace.bend  (100 lines)  [bend --check-only]
+WARM	488	WITHIN-LIMITS	gates/rng_graph_census.bend	WARM	affc80eca4566623f31983a8a7307d5b1a796b13f9db8fcec0091e6ead0fdaeb		WARM        gates/rng_graph_census.bend  (296 lines)  [bend --check-only]
+WARM	561	WITHIN-LIMITS	gates/specreach.bend	WARM	f9f95b63d781e884cf8dbe4c5f5b27fd0780ebd60e36fb019712f16eba01cd69		WARM        gates/specreach.bend  (95 lines)  [bend --check-only]
+WARM	780	WITHIN-LIMITS	gates/state_census.bend	WARM	c29f185a888fdd35db6da65fab13cfcf33575dc543ad0bb6d07b18c0753eaceb		WARM        gates/state_census.bend  (239 lines)  [bend --check-only]
+WARM	750	WITHIN-LIMITS	gates/sym_graph_census.bend	WARM	c498853fa5ae57667a537a0f5e31dcf3c24ad3a385ab792338b459b9bb17ef45		WARM        gates/sym_graph_census.bend  (684 lines)  [bend --check-only]
+WARM	359	WITHIN-LIMITS	gates/target-roundtrip.bend	WARM	6d5b344e1dcb140c8b40f91f8d2adb1a90a1cf02724219e2823b87688b78b123		WARM        gates/target-roundtrip.bend  (87 lines)  [bend --check-only]
+WARM	373	WITHIN-LIMITS	gates/tc_ptx_types.bend	WARM	63a1626b18dddb95f15b656e385b4d4721156cf00a3b3b6378ff7c6fb3e822b8		WARM        gates/tc_ptx_types.bend  (60 lines)  [bend --check-only]
+WARM	535	WITHIN-LIMITS	gates/tn_add_sub.bend	WARM	25f151300a26f774b41bb4a15c0c6e3695ef8dbdcd9094c66501f64a1381a895		WARM        gates/tn_add_sub.bend  (196 lines)  [bend --check-only]
+WARM	548	WITHIN-LIMITS	gates/tn_and_or_xor.bend	WARM	8c702a4e1763e5aaecf1bcd18e5019664a37edff25bd5a7861f035cdad831e76		WARM        gates/tn_and_or_xor.bend  (235 lines)  [bend --check-only]
+WARM	479	WITHIN-LIMITS	gates/tn_binop2_cmp.bend	WARM	a28437587d6a199223449f9cc63847e02982fb746a346cb1672ae09f840cb3e9		WARM        gates/tn_binop2_cmp.bend  (214 lines)  [bend --check-only]
+WARM	609	WITHIN-LIMITS	gates/tn_binop_arena.bend	WARM	de7f231382b6e02964ff4f915e020670c38a74e2c70985e1d1d97f9b90a80afd		WARM        gates/tn_binop_arena.bend  (140 lines)  [bend --check-only]
+WARM	526	WITHIN-LIMITS	gates/tn_binop_sweep.bend	WARM	56da2a750de5d66fea32e72e416135cfbfbd35c10cc0e34c3b1d3ffd69e110bc		WARM        gates/tn_binop_sweep.bend  (212 lines)  [bend --check-only]
+WARM	508	WITHIN-LIMITS	gates/tn_bitwise_not.bend	WARM	e89b3fdc41ed9a297732b8d5a3c9058167d30669a2c482433eee4032de21233b		WARM        gates/tn_bitwise_not.bend  (170 lines)  [bend --check-only]
+WARM	505	WITHIN-LIMITS	gates/tn_ceil_floor.bend	WARM	8f0732d5bb6f501922286867dc32868effee6540499227a7505de45302c7d1ee		WARM        gates/tn_ceil_floor.bend  (209 lines)  [bend --check-only]
+WARM	524	WITHIN-LIMITS	gates/tn_contiguous_backward.bend	WARM	57384b206579690cf200621c0402205732cf77c6ca7da736e597922162dde13d		WARM        gates/tn_contiguous_backward.bend  (55 lines)  [bend --check-only]
+WARM	537	WITHIN-LIMITS	gates/tn_detach.bend	WARM	ec8a60d76ce0a7592ba6fc34fd85ddb177957f341df8c292c663b8dedae9793b		WARM        gates/tn_detach.bend  (57 lines)  [bend --check-only]
+WARM	535	WITHIN-LIMITS	gates/tn_dunder_neg.bend	WARM	b5953b0765c572ee80ecb0eea515d79c9cf5199f3d14735c19e9eb1f5067d2bb		WARM        gates/tn_dunder_neg.bend  (75 lines)  [bend --check-only]
+WARM	540	WITHIN-LIMITS	gates/tn_fdiv_mod.bend	WARM	0c199b8e6569cd589056fa2974d14fdc8e249e51f1a424224617133357edd8bf		WARM        gates/tn_fdiv_mod.bend  (185 lines)  [bend --check-only]
+WARM	559	WITHIN-LIMITS	gates/tn_graph_census.bend	WARM	85824099fe1ba5636e166eca862e2a2da29ad84f2709759cc653534332c07975		WARM        gates/tn_graph_census.bend  (331 lines)  [bend --check-only]
+WARM	534	WITHIN-LIMITS	gates/tn_isfinite.bend	WARM	0b0e86ea028ca7fa1c9ac31fa1ecf36bad234a6e8d5f1061f9a6b880ec1c6be0		WARM        gates/tn_isfinite.bend  (108 lines)  [bend --check-only]
+WARM	550	WITHIN-LIMITS	gates/tn_isnan.bend	WARM	8a1ab500fc2e05d06c7db5fac89210dced74a378c76bd4e238222be71703ce37		WARM        gates/tn_isnan.bend  (67 lines)  [bend --check-only]
+WARM	540	WITHIN-LIMITS	gates/tn_logical_not.bend	WARM	c22cae1d830e3df24181c1e4a0e061507401ce9f0e63cd4f9d60fafd0a5b9051		WARM        gates/tn_logical_not.bend  (97 lines)  [bend --check-only]
+WARM	580	WITHIN-LIMITS	gates/tn_lshift_rshift.bend	WARM	fdc40f19bcaa51b7ef13056d42314b00bec5be94e99ab108e520f9fea50cb37e		WARM        gates/tn_lshift_rshift.bend  (83 lines)  [bend --check-only]
+WARM	511	WITHIN-LIMITS	gates/tn_maximum.bend	WARM	ec6ec073974f79199d18c44d4e08ce4fa2f399630bbb94dacd13c7b1b2b36fac		WARM        gates/tn_maximum.bend  (51 lines)  [bend --check-only]
+WARM	540	WITHIN-LIMITS	gates/tn_mul.bend	WARM	b13468c1d6a863a49f6de4fbf151abee628f168fa57864b8d615691cd81bb1b9		WARM        gates/tn_mul.bend  (136 lines)  [bend --check-only]
+WARM	535	WITHIN-LIMITS	gates/tn_nary_arena.bend	WARM	3c450e5747cde56df64763c75885551284cacb1cf9f05e8a71beefdc838a308a		WARM        gates/tn_nary_arena.bend  (150 lines)  [bend --check-only]
+WARM	556	WITHIN-LIMITS	gates/tn_neg.bend	WARM	3109935e4af594025d85050a8c4ac32537e83a4b4db7a8b4d28519159d9a332d		WARM        gates/tn_neg.bend  (119 lines)  [bend --check-only]
+WARM	548	WITHIN-LIMITS	gates/tn_nodes.bend	WARM	079c944203d476132c316708e9cfa6b17f40b01388a1b917e2a164e16b14f458		WARM        gates/tn_nodes.bend  (143 lines)  [bend --check-only]
+WARM	586	WITHIN-LIMITS	gates/tn_pow.bend	WARM	6b32a5a0846b31027693386ca6506078217063eb97bfa79c67e850342ab735f5		WARM        gates/tn_pow.bend  (111 lines)  [bend --check-only]
+WARM	559	WITHIN-LIMITS	gates/tn_relu.bend	WARM	0cb986d08e1056b45c63aebb292cafe50a515530fc5f925a60465ee0591cf5c3		WARM        gates/tn_relu.bend  (71 lines)  [bend --check-only]
+WARM	538	WITHIN-LIMITS	gates/tn_relu6.bend	WARM	0cfd8d3c59a46eb30205f45f74fc31640ca1beac62f957e25c1f146f7de791e5		WARM        gates/tn_relu6.bend  (67 lines)  [bend --check-only]
+WARM	500	WITHIN-LIMITS	gates/tn_sin_log2_exp2_rsqrt.bend	WARM	01a9b6be24a8c15edd6939743c68c26bf8acf69e90e7fa4f178b47ad0b3bfce7		WARM        gates/tn_sin_log2_exp2_rsqrt.bend  (94 lines)  [bend --check-only]
+WARM	552	WITHIN-LIMITS	gates/tn_sqrt.bend	WARM	c2af4b96b0edaa0d165305bd53e0cefa31759a5884d693873c67996ef43617cd		WARM        gates/tn_sqrt.bend  (57 lines)  [bend --check-only]
+WARM	550	WITHIN-LIMITS	gates/tn_trunc_reciprocal_threefry.bend	WARM	446f11ae4e3b782318c15a19a974986a14d2cdc45576999126dece4b6bacad42		WARM        gates/tn_trunc_reciprocal_threefry.bend  (90 lines)  [bend --check-only]
+WARM	551	WITHIN-LIMITS	gates/tn_where.bend	WARM	9f0d415d56c42abc6401d224412ec700a22b0fd4b23c8c30fdc8dade9252824c		WARM        gates/tn_where.bend  (72 lines)  [bend --check-only]
+WARM	332	WITHIN-LIMITS	gates/uop_cast.bend	WARM	73b031f600c6c442b6dc6a5a580ae9a8bffc416169bc8c82cc5a9d642637d4d0		WARM        gates/uop_cast.bend  (91 lines)  [bend --check-only]
+WARM	551	WITHIN-LIMITS	gates/wk-cd.bend	WARM	225abf2d8847bf0814da24cf56ccc7762e894f7c56e953ace7e62f248a43e6bc		WARM        gates/wk-cd.bend  (61 lines)  [bend --check-only]
+WARM	518	WITHIN-LIMITS	gates/wk-eval.bend	WARM	41ff79776387d6d0642804b24e7b9a72919ee7298a336e9d0885e43454e631d5		WARM        gates/wk-eval.bend  (195 lines)  [bend --check-only]
+WARM	548	WITHIN-LIMITS	gates/wk-f32.bend	WARM	1e6301158ed179b852d1c47c96e19b6ff3f4cd97d82977773259fb60f66772ac		WARM        gates/wk-f32.bend  (36 lines)  [bend --check-only]
+WARM	32	WITHIN-LIMITS	langs/core.bend	WARM	0ec087e2b7929cf7bdd245e82d1e4cc84bb55f6fee62d1b8e9a7905fccecc31e		WARM        langs/core.bend  (343 lines)  [bend --check-only]
+WARM	521	WITHIN-LIMITS	oracles/dtype_oracle.bend	WARM	0b1d92660c249d81941df0d64fe4a1675f798aa627e33f4d2f21a16f0f81d7b5		WARM        oracles/dtype_oracle.bend  (257 lines)  [bend --check-only]
+COLD	370	WITHIN-LIMITS	oracles/fold-mvt-e2e.bend	ARITY ParamArg	2039f609a30de390b7031319ef4a281bba8b1c787dc5074c167f37242f221791	- expected : ../tinybendygrad/uop/ops.ParamArg with 12 fields / observed : O.ParamArg{0, S.Dt{5, 32, S.CSint{}, "i32"}, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}}, False{}, None{},	SOME PROOFS FAIL
+WARM	32	WITHIN-LIMITS	oracles/fold-probe-mvt.bend	WARM	9133bfcac687e6fffe221d421a9ca05dfe32ea3c041570c762526fa5def52179		WARM        oracles/fold-probe-mvt.bend  (68 lines)  [bend --check-only]
+WARM	342	WITHIN-LIMITS	oracles/fold-probe-mvt2.bend	WARM	4dcbd3e06e3ec6888e623eb9891177525e02eb93af3e089eb4584366a47912c4		WARM        oracles/fold-probe-mvt2.bend  (110 lines)  [bend --check-only]
+COLD	33	WITHIN-LIMITS	oracles/lift-rows.bend	SYNTAX 'l'	3d0d8ade7810318d73ba02d5cd335ec2541322628f191a9ce4cff124c39093d3	- expected : 'def', 'type' or 'law' / observed : 'l'	SOME PROOFS FAIL
+COLD	32	WITHIN-LIMITS	oracles/nv_ip_rows_c.bend	MISSING-DEF IO	db38abcee679fec0d4d4a48a67d785397e8bc95cb7d93dece70dfba7047ff94c	- expected : a defined name / observed : IO	SOME PROOFS FAIL
+COLD	32	WITHIN-LIMITS	oracles/nv_ip_rows_d.bend	UNKNOWN-CTOR Nil	c0b03079ed0037d4075d39e2a4d1ca80a607290c7259f95467d920e2ebece71e	- message  : a declared constructor (unknown: Nil)	SOME PROOFS FAIL
+COLD	32	WITHIN-LIMITS	oracles/nv_ip_rows_e.bend	UNKNOWN-CTOR Nil	4a580127840eadec7af17f38a03b9fa84f69391e9b3b5dc09d064a0ccf02ee3c	- message  : a declared constructor (unknown: Nil)	SOME PROOFS FAIL
+COLD	32	WITHIN-LIMITS	oracles/post-oracle-bend.bend	MISSING-DEF String	e9ac7e3fcf846535e6f856530e80a16d0fdd0477d4757af3f5285751333941f5	- expected : a defined name / observed : String	SOME PROOFS FAIL
+COLD	32	WITHIN-LIMITS	oracles/pre-oracle-bend.bend	MISSING-DEF String	7f09cb553da5f87e051f0bfd966205ca2ead0ab4efad2e264f07bf44b36d7bf2	- expected : a defined name / observed : String	SOME PROOFS FAIL
+COLD	252	WITHIN-LIMITS	oracles/probe-su.bend	ARITY ParamArg	f098b94912013ce79b1b59bdb6d11573a3e5ddc2defe3684c1a59ffc45419947	- expected : ../tinybendygrad/uop/ops.ParamArg with 12 fields / observed : O.ParamArg{0, S.Dt{5, 32, S.CSint{}, "i32"}, Some{5}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, F	SOME PROOFS FAIL
+COLD	729	WITHIN-LIMITS	oracles/probe-targetparse.bend	MISSING-DEF P.Target	3bc3f9bb0f9f58655d7851e2286413851b01056be2ba8cdd22cfc0eb7720874f	- expected : a defined name / observed : P.Target	SOME PROOFS FAIL
+COLD	32	WITHIN-LIMITS	oracles/usb-arith-rows.bend	MISSING-DEF IO	a2a3722404737842e7cf667b914372008d85b85d46d24d024ab58601a77c995d	- expected : a defined name / observed : IO	SOME PROOFS FAIL
+WARM	525	WITHIN-LIMITS	oracles/ddcheck/tree/test/dtype_oracle.bend	WARM	23adacc37f02380932ce5780a7d42938c679a649a352d39e8086ee67745e6936		WARM        oracles/ddcheck/tree/test/dtype_oracle.bend  (257 lines)  [bend --check-only]
+WARM	473	WITHIN-LIMITS	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	WARM	73a9d77b4af07bbad704792164deeaca83772033959e21d8df5e0294cc8e9823		WARM        oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend  (257 lines)  [bend --check-only]
+WARM	548	WITHIN-LIMITS	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	WARM	73a9d77b4af07bbad704792164deeaca83772033959e21d8df5e0294cc8e9823		WARM        oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend  (257 lines)  [bend --check-only]
+WARM	519	WITHIN-LIMITS	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	WARM	23adacc37f02380932ce5780a7d42938c679a649a352d39e8086ee67745e6936		WARM        oracles/render-wt/tinybendygrad/test/dtype_oracle.bend  (257 lines)  [bend --check-only]

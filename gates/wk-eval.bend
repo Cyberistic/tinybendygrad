@@ -147,7 +147,7 @@ def pm_built(nm: String, m: Maybe<&1, O.Found>) -> String:
 def param_of_on(+ar: O.Arena, +dt: S.Dt) -> O.Found:
   Bool.pick(O.Found, Bool.not(D.md_weak(dt)),
             O.UOp.new(ar, O.OpsPARAM{}, Nil{},
-                      O.AParam{O.ParamArg{0, dt, None{}, None{}, None{}, None{}, S.AGlobal{}, None{},
+                      O.AParam{O.ParamArg{0, dt, None{}, None{}, None{}, S.AGlobal{}, None{},
                                          False{}, None{}, None{}, False{}, None{}}}, O.TNone{}),
             O.Found{ar, 0})
 

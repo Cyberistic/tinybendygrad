@@ -1,0 +1,106 @@
+# gates/compile-census-verdict.rows -- TAB separated. Generated; the generator is `gates/compile-census-gate.py`, the ONLY writer.
+# census taken=2026-10-22T17:18:36Z  ::  the census's own reading, plus this gate's delta.
+# A `FAIL` row IS the work queue: a driver that does not compile and is not declared cold by design.
+# columns: verdict, class, file, cause, judged-by, detail
+PASS	WARM	checks/.e2e-fixture/e2e_mm.bend	WARM	CENSUS	the census says it compiles
+FAIL	BREAKAGE	checks/.e2e-fixture/f64/emit-f64.bend	MISSING-DEF C.render_kernel	CENSUS	BREAKAGE: it does not compile and NOTHING declares that it may not. cause=MISSING-DEF C.render_kernel  ::  - expected : a defined name / observed : C.render_kernel
+FAIL	BREAKAGE	checks/.e2e-fixture/portexec/emit-mm.bend	MISSING-DEF C.render_kernel	CENSUS	BREAKAGE: it does not compile and NOTHING declares that it may not. cause=MISSING-DEF C.render_kernel  ::  - expected : a defined name / observed : C.render_kernel
+SKIP	STANDING-COLD	checks/c-context.bend	FOREIGN 3	CENSUS	STANDING-COLD (FOREIGN): BINDS A C LIBRARY: `Sz.read_dir` and `Sz.is_dir` are FOREIGN DEFS, and the compiler refuses a file whose defs rely on foreign code. The refusal is a fact about the PROMISE and not about the parsing.
+PASS	WARM	checks/gate.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	checks/gate_dtype.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	checks/gate_norm.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	examples/beautiful_mnist.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/.opseven-mut-723815.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/arenasrc_rows.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/axisflip.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/bc-u32.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/constid.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/cr_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/crp_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/cstyle_render_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/decomp-mut-driver.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/decomp_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/ew-consts.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/ew-explog.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/ew_activation.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/ew_graph_census.bend	WARM	CENSUS	the census says it compiles
+FAIL	BREAKAGE	gates/fold_graph_census.bend	ARITY ParamArg	CENSUS	BREAKAGE: it does not compile and NOTHING declares that it may not. cause=ARITY ParamArg  ::  - expected : ../tinybendygrad/uop/ops.ParamArg with 12 fields / observed : O.ParamArg{0, dt, size, vmm, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
+PASS	WARM	gates/gr_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/groupflip.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/i64-shl.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/i64-shr.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/md_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/mo_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/mx_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/mxgraph-fixture-rows.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/onnx_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/op_graph_census.bend	WARM	CENSUS	the census says it compiles
+SKIP	STANDING-COLD	gates/opname-census-fragment.bend	SYNTAX 'f'	CENSUS	STANDING-COLD (SYNTAX): THE FRAGMENT FIXTURE for `gates/opname-census-gate.py --plant`, and the file says so: bare statements at top level, where a `def`, a `type` or a `law` belongs.
+PASS	WARM	gates/opname-census-plantcase.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/ops-core.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/opseven.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/paramarg_shape.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/ptx_render_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/ptx_render_census_axis.bend	WARM	CENSUS	the census says it compiles
+FAIL	BREAKAGE	gates/pycell-plant.bend	TYPE-MISMATCH ':'	CENSUS	BREAKAGE: it does not compile and NOTHING declares that it may not. cause=TYPE-MISMATCH ':'  ::  - expected : '<' / observed : ':'
+PASS	WARM	gates/rd_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/realize_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/realize_kernel_args.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/render_val_s.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/replace.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/rng_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/specreach.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/state_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/sym_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/target-roundtrip.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tc_ptx_types.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_add_sub.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_and_or_xor.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_binop2_cmp.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_binop_arena.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_binop_sweep.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_bitwise_not.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_ceil_floor.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_contiguous_backward.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_detach.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_dunder_neg.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_fdiv_mod.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_graph_census.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_isfinite.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_isnan.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_logical_not.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_lshift_rshift.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_maximum.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_mul.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_nary_arena.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_neg.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_nodes.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_pow.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_relu.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_relu6.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_sin_log2_exp2_rsqrt.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_sqrt.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_trunc_reciprocal_threefry.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/tn_where.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/uop_cast.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/wk-cd.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/wk-eval.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	gates/wk-f32.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	langs/core.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	oracles/ddcheck/tree/test/dtype_oracle.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	oracles/dtype_oracle.bend	WARM	CENSUS	the census says it compiles
+FAIL	BREAKAGE	oracles/fold-mvt-e2e.bend	ARITY ParamArg	CENSUS	BREAKAGE: it does not compile and NOTHING declares that it may not. cause=ARITY ParamArg  ::  - expected : ../tinybendygrad/uop/ops.ParamArg with 12 fields / observed : O.ParamArg{0, S.Dt{5, 32, S.CSint{}, "i32"}, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}}, False{}, None{},
+PASS	WARM	oracles/fold-probe-mvt.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	oracles/fold-probe-mvt2.bend	WARM	CENSUS	the census says it compiles
+SKIP	STANDING-COLD	oracles/lift-rows.bend	SYNTAX 'l'	CENSUS	STANDING-COLD (SYNTAX): A FRAGMENT by design: the `_min_max` FIXTURE ROWS of `tinybendygrad/uop/fold.bend`, re-indented inside a `def`, and the file says so.
+SKIP	STANDING-COLD	oracles/nv_ip_rows_c.bend	MISSING-DEF IO	CENSUS	STANDING-COLD (MISSING-DEF): A DIALECT FRAGMENT: no `import Base`, so `IO` is undefined. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`, which is the instrument for them.
+SKIP	STANDING-COLD	oracles/nv_ip_rows_d.bend	UNKNOWN-CTOR Nil	CENSUS	STANDING-COLD (UNKNOWN-CTOR): A DIALECT FRAGMENT: no `import Base`, so `Nil` is not a declared constructor. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`.
+SKIP	STANDING-COLD	oracles/nv_ip_rows_e.bend	UNKNOWN-CTOR Nil	CENSUS	STANDING-COLD (UNKNOWN-CTOR): A DIALECT FRAGMENT: no `import Base`, so `Nil` is not a declared constructor. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`.
+SKIP	STANDING-COLD	oracles/post-oracle-bend.bend	MISSING-DEF String	CENSUS	STANDING-COLD (MISSING-DEF): A DIALECT FRAGMENT: no `import Base`, so `String` is undefined. ONE ORACLE EITHER SIDE OF A RENAME, and `gates/dialect-fixture-gate.py` measures the difference.
+SKIP	STANDING-COLD	oracles/pre-oracle-bend.bend	MISSING-DEF String	CENSUS	STANDING-COLD (MISSING-DEF): A DIALECT FRAGMENT: no `import Base`, so `String` is undefined. ONE ORACLE EITHER SIDE OF A RENAME, and `gates/dialect-fixture-gate.py` measures the difference.
+FAIL	BREAKAGE	oracles/probe-su.bend	ARITY ParamArg	CENSUS	BREAKAGE: it does not compile and NOTHING declares that it may not. cause=ARITY ParamArg  ::  - expected : ../tinybendygrad/uop/ops.ParamArg with 12 fields / observed : O.ParamArg{0, S.Dt{5, 32, S.CSint{}, "i32"}, Some{5}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, F
+FAIL	BREAKAGE	oracles/probe-targetparse.bend	MISSING-DEF P.Target	CENSUS	BREAKAGE: it does not compile and NOTHING declares that it may not. cause=MISSING-DEF P.Target  ::  - expected : a defined name / observed : P.Target
+PASS	WARM	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	WARM	CENSUS	the census says it compiles
+PASS	WARM	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	WARM	CENSUS	the census says it compiles
+SKIP	STANDING-COLD	oracles/usb-arith-rows.bend	MISSING-DEF IO	CENSUS	STANDING-COLD (MISSING-DEF): A DIALECT FRAGMENT: no `import Base`, so `IO` is undefined. Its CLAIMS are judged by `gates/dialect-fixture-gate.py`, which is the instrument for them.
