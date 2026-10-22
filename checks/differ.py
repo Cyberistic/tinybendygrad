@@ -475,8 +475,58 @@ REPRO_DIFF_ARTIFIFACT = "D0-repro-diff.txt"
 # the rule `checks/corpus-figure.py:178` already states. An absent file answers `ABSENT`, which is
 # not the pin, so the arm is fail-safe in the direction that reports.
 D10 = "D10-zerorow-guard"
+# THE DELTA THIS PIN MOVED OVER, WITH ITS COUNT AND ITS REASON. **MEASURED 2026-10-22, AND IT
+# IS NOT THE PORT.** The transcript is `graphcmp.py`'s STDERR for `emit --side bend --bend-probe
+# .agents/slop/graphcmp-empty.bend`, and it is ONE line:
+#     # bend attempt 1: 0 rows, ANSWER, rc=0, # prints no rows at all, stderr: <LAST 240 CHARS>
+# (`attempt_note`, `graphcmp.py:2364-2371`). **THOSE 240 CHARACTERS ARE THE COMPILER'S "A NEWER
+# BEND IS AVAILABLE" NOTICE**, and the notice is a NETWORK ANSWER: `bend2/main.ts:185-211` fetches
+# `https://bend-lang.com/check` ONCE A DAY into `~/.bend/check.json` and prints
+# `bend <published> is available: run bend update` when the published version beats the local
+# `VERSION`. **SO BOTH VALUES OF THIS PIN WERE REBUILT BY HAND AND HASHED, AND THE OLD ONE IS
+# EXACTLY THE EMPTY-STDERR TRANSCRIPT:**
+#     stderr empty                      -> 9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84  (WAS)
+#     stderr "bend 2.0.38 is available" -> f35b2d90bdbe49b0361af9fe392e162fc51b44b63caf22d6c2e75062eee343f9  (NOW)
+# The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`, and the LOCAL
+# compiler is 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13) -- so upstream's 2.0.38
+# release is what turned the notice on, and nothing in THIS repository turned it on.
+# **⇒ AND THIS PIN IS A PIN ON A NETWORK ANSWER.** The next upstream release moves it again with
+# NO REPO CHANGE AT ALL, and `BEND_NO_TELEMETRY=1` (`main.ts:186-188`) suppresses the check and
+# puts the transcript BACK on the old value. That is the durable fix and it is NOT applied here:
+# this change is the pin and this declaration, and nothing else.
+#
+# **THE CORPUS's OTHER DELTA, WHICH IS NOT THIS ONE.** Four changes moved the CORPUS between the
+# pin's commit (`6ed9f4256`, 2026-10-15) and today, and NONE of them moved THIS transcript --
+# the probe compiles `tinybendygrad/uop/ops.bend` and prints a FIXED header, and the notice was
+# the only thing in the stderr. They are declared here because they are why the corpus's
+# POPULATION and the port's RULES moved. **COUNT AND REASON, EACH:**
+#   1. THE POPULATION GREW 34 -> 35 GRAPHS, BY ONE: `prog`. MEASURED: `graphcmp.GRAPHS` has 35
+#      members and `POPULATION_PIN` (`4a44f98e...`) equals `population_digest()`. REASON: `prog`
+#      is the FIRST graph whose `ProgramInfo` is COMPARED -- upstream's own
+#      `ProgramInfo.from_sink` over the `lin` kernel, whose three params are the three BUFFER
+#      params (out 4x5, left 4x3, right 3x5) -- so the `pI(` lane is alive where the 34 graphs
+#      produced ZERO `pI(` rows. COUNT OF THE ARTEFACTS: **9** (`repro-files` 310 -> 319): six
+#      `D1`/`D2` artefacts for `prog` plus `D1-graph-prog.txt.err`, plus the plant's
+#      `D5-plant-params.txt` and its `.err`.
+#   2. `tinybendygrad/renderer/nir_llvmir.bend` WAS STALE IN **4** PLACES AT ONCE: `arcp` in
+#      the flags; the three intrinsics `EXP2`/`LOG2`/`SQRT` in the AMD override and not in the
+#      base's; `half` kept on a non-Darwin host; and `amd_fp8s` with one answer where upstream
+#      has two. REASON: all four were RIGHT on 2026-10-01 and WRONG on 2026-10-20, because the
+#      2026-10-16 re-vendor moved the pin out from under the port (`06cf7f7da`).
+#   3. `tinybendygrad/renderer/tc_ptx.bend`'s `fmt` HAD UPSTREAM's DELETED `$` EARLY RETURN --
+#      **1** branch. REASON: upstream removed it in `96397341d` ("dead code cleanups [PR]
+#      (#18593)", 2026-10-03) because it was DEAD CODE: at its parent `ptx.py` held exactly ONE
+#      occurrence of `$`, the `fmt` line itself, and nothing in `tinygrad/renderer/` could
+#      produce a `$`-prefixed line -- so the pin's defaults are FIVE EMPTY STRINGS and the
+#      port's target must not be a machine's (`87738d316`).
+#   4. `gates/ptx_render_census_axis.bend` WAS REGENERATED, and the axis was stale by **+14**
+#      ROWS. REASON: the 2026-10-16 re-vendor moved a BUFFER's SIZE out of the `ParamArg` and
+#      into a SIZE CONST SRC, so CPYTHON's OWN graphs gained a node -- **15** fixtures gained
+#      one and `f14_skips` LOST one, 15 - 1 = +14 -- and the axis now carries a
+#      `# UPSTREAM-PIN <path> <sha256>` line for each of the **7** files the oracle reads
+#      (`a7b3cede3`).
 REPRO_PINS = {"repro-rc": "rc=0",
-              "d10-transcript": "9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84"}
+              "d10-transcript": "f35b2d90bdbe49b0361af9fe392e162fc51b44b63caf22d6c2e75062eee343f9"}
 # AND THE ROW THAT MAKES THE WITNESS FALSIFIABLE. Both pins above are claims about a COMPARISON,
 # not about a TIME, so nothing in `D0-repro.txt` said WHEN it was taken -- and a witness nobody
 # re-took is then indistinguishable from one taken a minute ago.

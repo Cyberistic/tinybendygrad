@@ -1426,7 +1426,7 @@ nn-rows-vacuous      [###] 1/4  **THE NN LAYERS HAVE NO COMPARER AT ALL, SO ALL 
                                        EXPECTATION LIVES IN ONE PLACE AND THE COMPARER MUST READ IT FROM THERE, NEVER
                                        A SECOND COPY.**
 
-corpus-witness-stale [##] 2/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OWN INSTRUMENTS SAY SO IN TWO INDEPENDENT
+corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OWN INSTRUMENTS SAY SO IN TWO INDEPENDENT
                                        WAYS.** MEASURED 2026-10-22T04:07Z: `checks/differ.py`'s `repro_bad()` RETURNED
                                        **2** ROWS (it returned 0 on 2026-10-21): `d10-transcript=f35b2d90...` against
                                        the pinned `9bfb8517...`, and `repro-substrate=58c505697ca2 but the live
@@ -1444,6 +1444,50 @@ corpus-witness-stale [##] 2/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OWN
                                        THE RE-RUN MUST WAIT FOR THE TREE TO STOP MOVING: **A GREEN CORPUS OVER A
                                        MOVING TREE IS NOT A CERTIFICATE**, and this is the second time that sentence
                                        has been paid for.
+
+                                       **TICKED 2026-10-22T20:05Z: THE PIN MOVED, AND ITS DELTA IS **NOT** THE FOUR
+                                       PORT CHANGES THE BRIEF NAMED.** MEASURED: the D10 transcript is ONE line --
+                                       `# bend attempt 1: 0 rows, ANSWER, rc=0, # prints no rows at all, stderr:
+                                       <LAST 240 CHARS>` (`attempt_note`, `graphcmp.py:2364-2371`) -- and those 240
+                                       characters are the COMPILER'S "a newer Bend is available" NOTICE, which
+                                       `bend2/main.ts:185-211` FETCHES FROM `https://bend-lang.com/check` ONCE A
+                                       DAY into `~/.bend/check.json` and prints when the published version beats the
+                                       local `VERSION`. **BOTH VALUES OF THE PIN WERE REBUILT BY HAND AND HASHED:
+                                       an EMPTY stderr hashes to the OLD `9bfb8517...`, and a stderr carrying
+                                       `bend 2.0.38 is available` hashes to the NEW `f35b2d90...` -- BIT FOR BIT.**
+                                       The cache was refreshed 2026-10-21T20:52:55Z with `{"ver":"2.0.38"}` and the
+                                       LOCAL compiler is 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13), so
+                                       upstream's 2.0.38 release is what turned the notice on and NOTHING IN THIS
+                                       REPOSITORY DID. **⇒ THE PIN IS A PIN ON A NETWORK ANSWER**: the next
+                                       upstream release moves it again with NO repo change, and
+                                       `BEND_NO_TELEMETRY=1` (`main.ts:186-188`) suppresses the check and puts the
+                                       transcript BACK on `9bfb8517...`. THE FOUR PORT CHANGES -- the population
+                                       34 -> 35 by `prog`; `nir_llvmir.bend`'s FOUR stale places; `tc_ptx.bend`'s
+                                       DELETED `$` early return; the regenerated PTX axis, +14 rows -- moved the
+                                       CORPUS and are DECLARED AT THE PIN, but they moved the OTHER artefacts and
+                                       NOT this transcript.
+                                       **THE WITNESS IS GREEN**: `gates/corpuswitness-gate.py` -> **PASS, 7 of 7
+                                       READINGS OK** (`witness.substrate` CURRENT, 3 of 3; `claim` REPRODUCIBLE,
+                                       and the claim row is STILL A DERIVATION -- plant case `G` reads FAIL/
+                                       NOT-ESTABLISHED where `rc=0` reads OK/REPRODUCIBLE);
+                                       `checks/differ.py`'s `unhealthy()`, `artefacts_ok()` and `repro_bad()` all
+                                       `[]`; `checks/differ.py plant` GREEN 10/10; `gates/corpuswitness-plant.py`
+                                       PASS 9 of 9; `checks/corpus-figure.py` (DEV=CPU) rc=0 with "RUN HEALTH: OK";
+                                       `gates/substratestale-gate.py` CURRENT rc=0; `gates/corpusfresh-gate.py`
+                                       PASS with its 6 of 6 control. `gates/corpusverdict-gate.py` still exits 1 on
+                                       its `run.gated` arm (`differ.py run` is UNGATED) -- a TRUE reading about a
+                                       different question, and it was 1 BEFORE this change too.
+                                       **AND TWO SHARED-STATE TRAPS, BOTH MEASURED, BOTH WORTH THE RECORD:**
+                                       (1) A FAILED repro leaves `runs/graphcmp/D/D0-repro-diff.txt` behind, that
+                                       file is in NO `declared()` set, so `artefacts_ok()` calls it UNEXPECTED and
+                                       **EVERY SUBSEQUENT RUN IS MALFORMED** -- so `cmd_repro` REFUSES for want of
+                                       a healthy run and the witness never advances. It is debris; removing it is
+                                       the whole remedy, and `cmd_run`'s own pruner does not remove it.
+                                       (2) TWO `differ.py repro` PROCESSES OVER ONE `runs/graphcmp/D/` is the
+                                       collision the tree has paid for twice tonight: MINE went RED at 18:32Z
+                                       because the substrate moved under it (`substrate-start=09d66a12` but
+                                       `substrate-end=56f515c3` -- the tree's own instrument naming the cause), and
+                                       REFUSED at 19:29Z because of (1).
 
 imagenet-distance    [##] 2/3  **THE MEASURED DISTANCE TO "RUN IMAGENET USING BEND", BY A WALK OF THE PORT'S 3,285
                                        `.bend` FILES AND 102,269 DEFS (not a hand list).** MEASURED 2026-10-22T04:05Z.
