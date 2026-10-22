@@ -2,15 +2,66 @@
 #
 # ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This file used to hold
 # `renderer/ptx.py` AND `renderer/tc.py`; the 1:1 ruling separates them and
-# `renderer/tc.bend` is the other half. Rows: 620 before the split, 620 after -- the
-# old `main` printed `r_stage1() <> r_stage2()` as ONE `IO.print`, so the two files'
-# union is the same 620 lines with one frame line between the stages, which is the
-# only byte `diff` reports.
+# `renderer/tc.bend` is the other half. This file is the ptx.py HALF and it is
+# 343 rows; `tc.bend` is the tc.py half's 289. The union is 632 rows, and the
+# ONE frame line between the two stages is the only byte a `diff` of the union
+# would report.
 #
 # THE TENSOR-CORE TABLES ARE IMPORTED, NOT COPIED: `renderer/ptx.py` calls
 # `get_nvidia`/`get_amd` for its warp-level `wmma` and `mma` shapes, and those are
 # `tc.py:96-141`. They live in `tc.bend` and every use here is `T.`. `renderer/ptx.bend`
 # imports this file as `P` and is unaffected.
+#
+# ---------------------------------------------------------------------------
+# THE GATE, AND IT IS CODE.  `gates/tc_ptx_render_census-gate.py` runs BOTH lanes
+# and diffs them BYTE FOR BYTE:
+#   .venv/bin/python gates/tc_ptx_render_census-gate.py
+# It asks the oracle's `stage2` for this file's rows and the oracle's `stage1`
+# for `tc.bend`'s, and it ALSO asks the oracle's `bend` selector for the PORT'S
+# OWN SOURCE for the four dtype-table row builders: A DIFF CANNOT SEE A ROW THAT
+# IS MISSING FROM BOTH LANES, and `bend` is the independent statement of the row
+# set.  The plant is `gates/tc_ptx_render_census-plant.py` -- four arms and a
+# control, each on a copy.  Before this, the recipe was PROSE in this header,
+# and a prose recipe is not a gate.
+#
+# MEASURED 2026-10-22, at the commit that landed this text: `stage1` 290 lines
+# and `stage2` 344 lines, BYTE-IDENTICAL on both sides; the `bend` check
+# matches; the `wmma` selector answers 1440 rows.
+#
+# THE `py=` HALF IS DERIVED, AND THAT IS THE POINT OF THE WHOLE FILE.  Every row
+# is `<name> = [BEND]   py=[CPYTHON]` and the `py=` half is the PORT'S OWN VALUE
+# -- `T.rd(nm, got)`, which is `tc.bend`'s `rd` -- so it is not a transcription
+# and it cannot rot.  CPython's VALUE lives in the oracle, which computes every
+# half from live `tinygrad/`, and the ASSERTION IS THE BYTE DIFF between the two
+# lanes.  A derived cell is not an INDEPENDENT witness and cannot fail on its
+# own: the row is internally consistent by construction, and the diff is what
+# says whether the port agrees with CPython.  `tc.bend` measured the cost of
+# the other shape: a transcription was WRONG ON 71 OF ITS 286 CELLS.
+#
+# THE ROW NAMES ARE DERIVED TOO, AND THEY WERE THE THING THAT ROTTED.  MEASURED
+# 2026-10-22: 118 of this file's rows carried the PRE-RENAME dtype spellings
+# ("signed char", "half", "float", "__bf16", "short", "unsigned int") where this
+# tree's `tinygrad/` says "i8", "f16", "f32", "bf16", "i16", "u32".  THE PORT DID
+# NOT INVENT THEM: upstream renamed `DType.name` in `793abbb16` ("modernize
+# tinygrad's dtype to match rust", 2026-10-02), which IS AN ANCESTOR of the pin
+# `5c2bf39d6c4b`, and the port's own `LAWS/spec.bend` was renamed to follow on
+# 2026-10-02 -- but this file's row labels were HAND-TYPED and did not follow.
+# Every dtype-named label is now `T.dt_name(dt)`, the port's own `LAWS/spec.bend`
+# name, so the diff compares THE PORT'S SPEC against UPSTREAM'S DTYPE TABLE.
+#
+# THE NINE ROWS THE ORACLE WAS MISSING, AND WHY THEY ARE NOT DIVERGENCES.  This
+# file prints nine rows the oracle printed NONE of: `types`/`mem_types`/
+# `cast_types` over `void`, `weakint` and `weakfloat`.  They are not
+# divergences: the raw lookup raises for all three, and CPython's OWN answer is
+# `strong_dtype(dtype)`'s PTX type (`dtype.py:169-170`), so `types[strong_dtype
+# (weakint)]` is `types[i32]` is "s32".  The oracle computes them from live
+# `tinygrad/` now, and they are the rows that go red when the `pri` collision
+# comes back.
+#
+# ONE REAL DEFECT WAS UNDER THE NAMES.  `asm_for_op`'s RECIPROCAL arm tested
+# `Dtf.is_float` and emitted `rcp.` for an int or a bool, where ptx.py:19 is
+# `lambda d,a,dt,name: f"rcp.approx.{name} {d}, {a};"` -- the DTYPE IS NOT READ.
+# MEASURED: three rows (`asm RECIPROCAL bool`, `u32`, `i32`).
 #
 # ===========================================================================
 # ptx.py. `PTXRenderer`'s class attributes are the OPTS of a device, so they are
@@ -361,7 +412,7 @@ def Dtf.of(+dt: S.Dt) -> Dtf: Dtf{S.Dt.is_bool(dt), S.Dt.is_int(dt), S.Dt.is_flo
 # ===========================================================================
 def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: String, +f: Dtf) -> List<&2, String>:
   match op:
-    case O.OpsRECIPROCAL{}: [String.concat([Bool.pick(String, Dtf.is_float(f), "rcp.approx.", "rcp."), name, " ", d, ", ", a, ";"])]
+    case O.OpsRECIPROCAL{}: [String.concat(["rcp.approx.", name, " ", d, ", ", a, ";"])]
     case O.OpsEXP2{}      : [String.concat(["ex2.approx.", name, " ", d, ", ", a, ";"])]
     case O.OpsLOG2{}      : [String.concat(["lg2.approx.", name, " ", d, ", ", a, ";"])]
     case O.OpsSIN{}       : [String.concat(["sin.approx.", name, " ", d, ", ", a, ";"])]
@@ -462,7 +513,7 @@ def modifier(+fa: Dtf, +fb: Dtf, +a: S.Dt, +b: S.Dt) -> String:
 def pm_n_rules() -> U32: 8
 
 
-def r_pmx_n() -> String: T.r("ptx_matcher rules", U32.show(pm_n_rules()), "8")
+def r_pmx_n() -> String: T.rd("ptx_matcher rules", U32.show(pm_n_rules()))
 
 # `ptx_matcher` (ptx.py:40-57) is EIGHT rules and every one is a graph REWRITE:
 # three bool-only algebra rewrites, an upcast to float32, two bool-buffer
@@ -501,37 +552,37 @@ def r_pmx_n() -> String: T.r("ptx_matcher rules", U32.show(pm_n_rules()), "8")
 
 # `render_val` -- `F32.bits` is the float pattern and half is a RE-ENCODE, so
 # half goes through `f16bits` and float does not.
-def r_rv1(+nm: String, flt: Bool, half_: Bool, uns: Bool, +x: F32, +v: U32, py: String) -> String:
-  T.r("render_val " ++ nm, render_val(flt, half_, uns, x, v), py)
+def r_rv1(+dt: S.Dt, +vt: String, flt: Bool, half_: Bool, uns: Bool, +x: F32, +v: U32) -> String:
+  T.rd("render_val " ++ T.dt_name(dt) ++ " " ++ vt, render_val(flt, half_, uns, x, v))
 
 def r_rvs() -> String:
-  String.concat([r_rv1("half 0.0", True{}, True{}, False{}, 0.0, 0, "0x0000"), r_rv1("half 1.0", True{}, True{}, False{}, 1.0, 0, "0x3C00"), r_rv1("half -2.5", True{}, True{}, False{}, F32.neg(2.5), 0, "0xC100"), r_rv1("half 0.3330078125", True{}, True{}, False{}, 0.3330078125, 0, "0x3554"), r_rv1("float 0.0", True{}, False{}, False{}, 0.0, 0, "0f00000000"), r_rv1("float 1.0", True{}, False{}, False{}, 1.0, 0, "0f3F800000"), r_rv1("float -2.5", True{}, False{}, False{}, F32.neg(2.5), 0, "0fC0200000"), r_rv1("float 3.5", True{}, False{}, False{}, 3.5, 0, "0f40600000"), r_rv1("unsigned int 0", False{}, False{}, True{}, 0.0, 0, "0U"), r_rv1("unsigned int 7", False{}, False{}, True{}, 0.0, 7, "7U"), r_rv1("unsigned int 4294967295", False{}, False{}, True{}, 0.0, 4294967295, "4294967295U"), r_rv1("unsigned char 255", False{}, False{}, True{}, 0.0, 255, "255U")])
+  String.concat([r_rv1(S.half(), "0.0", True{}, True{}, False{}, 0.0, 0), r_rv1(S.half(), "1.0", True{}, True{}, False{}, 1.0, 0), r_rv1(S.half(), "-2.5", True{}, True{}, False{}, F32.neg(2.5), 0), r_rv1(S.half(), "0.3330078125", True{}, True{}, False{}, 0.3330078125, 0), r_rv1(S.single(), "0.0", True{}, False{}, False{}, 0.0, 0), r_rv1(S.single(), "1.0", True{}, False{}, False{}, 1.0, 0), r_rv1(S.single(), "-2.5", True{}, False{}, False{}, F32.neg(2.5), 0), r_rv1(S.single(), "3.5", True{}, False{}, False{}, 3.5, 0), r_rv1(S.uint32(), "0", False{}, False{}, True{}, 0.0, 0), r_rv1(S.uint32(), "7", False{}, False{}, True{}, 0.0, 7), r_rv1(S.uint32(), "4294967295", False{}, False{}, True{}, 0.0, 4294967295), r_rv1(S.uint8(), "255", False{}, False{}, True{}, 0.0, 255)])
 
 # `asm_for_op`'s twenty-one arms with `name` FIXED at "s32", so the row is about
 # the DTYPE branch alone.
-def r_asm1(+opn: String, +op: O.Op, +dt: S.Dt, +name: String, py: String) -> String:
-  T.r("asm " ++ opn ++ " " ++ T.dt_name(dt), String.join(op_asm(op, "%d", "%a", "%b", "%c", name, Dtf.of(dt)), " ;; "), py)
+def r_asm1(+opn: String, +op: O.Op, +dt: S.Dt, +name: String) -> String:
+  T.rd("asm " ++ opn ++ " " ++ T.dt_name(dt), String.join(op_asm(op, "%d", "%a", "%b", "%c", name, Dtf.of(dt)), " ;; "))
 
 def r_asms() -> String:
-  String.concat([r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.single(), "s32", "rcp.approx.s32 %d, %a;"), r_asm1("EXP2", O.OpsEXP2{}, S.single(), "s32", "ex2.approx.s32 %d, %a;"), r_asm1("LOG2", O.OpsLOG2{}, S.single(), "s32", "lg2.approx.s32 %d, %a;"), r_asm1("SIN", O.OpsSIN{}, S.single(), "s32", "sin.approx.s32 %d, %a;"), r_asm1("SQRT", O.OpsSQRT{}, S.single(), "s32", "sqrt.approx.s32 %d, %a;"), r_asm1("TRUNC", O.OpsTRUNC{}, S.single(), "s32", "cvt.rzi.s32.s32 %d, %a;"), r_asm1("SHR", O.OpsSHR{}, S.single(), "s32", "shr.s32 %d, %a, %b;"), r_asm1("SHL", O.OpsSHL{}, S.single(), "s32", "shl.b32 %d, %a, %b;"), r_asm1("ADD", O.OpsADD{}, S.single(), "s32", "add.s32 %d, %a, %b;"), r_asm1("MUL", O.OpsMUL{}, S.single(), "s32", "mul.s32 %d, %a, %b;"), r_asm1("XOR", O.OpsXOR{}, S.single(), "s32", "xor.b32 %d, %a, %b;"), r_asm1("AND", O.OpsAND{}, S.single(), "s32", "and.b32 %d, %a, %b;"), r_asm1("OR", O.OpsOR{}, S.single(), "s32", "or.b32 %d, %a, %b;"), r_asm1("CDIV", O.OpsCDIV{}, S.single(), "s32", "div.s32 %d, %a, %b;"), r_asm1("CMOD", O.OpsCMOD{}, S.single(), "s32", "rem.s32 %d, %a, %b;"), r_asm1("MAX", O.OpsMAX{}, S.single(), "s32", "max.s32 %d, %a, %b;"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.single(), "s32", "setp.eq.s32 %d, %a, %b;"), r_asm1("CMPLT", O.OpsCMPLT{}, S.single(), "s32", "setp.lt.s32 %d, %a, %b;"), r_asm1("CMPNE", O.OpsCMPNE{}, S.single(), "s32", "setp.neu.s32 %d, %a, %b;"), r_asm1("MULACC", O.OpsMULACC{}, S.single(), "s32", "fma.rn.s32 %d, %a, %b, %c;"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.half(), "s32", "rcp.approx.s32 %d, %a;"), r_asm1("EXP2", O.OpsEXP2{}, S.half(), "s32", "ex2.approx.s32 %d, %a;"), r_asm1("LOG2", O.OpsLOG2{}, S.half(), "s32", "lg2.approx.s32 %d, %a;"), r_asm1("SIN", O.OpsSIN{}, S.half(), "s32", "sin.approx.s32 %d, %a;"), r_asm1("SQRT", O.OpsSQRT{}, S.half(), "s32", "sqrt.approx.s32 %d, %a;"), r_asm1("TRUNC", O.OpsTRUNC{}, S.half(), "s32", "cvt.rzi.s32.s32 %d, %a;"), r_asm1("SHR", O.OpsSHR{}, S.half(), "s32", "shr.s32 %d, %a, %b;"), r_asm1("SHL", O.OpsSHL{}, S.half(), "s32", "shl.b32 %d, %a, %b;"), r_asm1("ADD", O.OpsADD{}, S.half(), "s32", "add.s32 %d, %a, %b;"), r_asm1("MUL", O.OpsMUL{}, S.half(), "s32", "mul.s32 %d, %a, %b;"), r_asm1("XOR", O.OpsXOR{}, S.half(), "s32", "xor.b32 %d, %a, %b;"), r_asm1("AND", O.OpsAND{}, S.half(), "s32", "and.b32 %d, %a, %b;"), r_asm1("OR", O.OpsOR{}, S.half(), "s32", "or.b32 %d, %a, %b;"), r_asm1("CDIV", O.OpsCDIV{}, S.half(), "s32", "div.s32 %d, %a, %b;"), r_asm1("CMOD", O.OpsCMOD{}, S.half(), "s32", "rem.s32 %d, %a, %b;"), r_asm1("MAX", O.OpsMAX{}, S.half(), "s32", "max.s32 %d, %a, %b;"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.half(), "s32", "setp.eq.s32 %d, %a, %b;"), r_asm1("CMPLT", O.OpsCMPLT{}, S.half(), "s32", "setp.lt.s32 %d, %a, %b;"), r_asm1("CMPNE", O.OpsCMPNE{}, S.half(), "s32", "setp.neu.s32 %d, %a, %b;"), r_asm1("MULACC", O.OpsMULACC{}, S.half(), "s32", "fma.rn.s32 %d, %a, %b, %c;"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.boolean(), "s32", "rcp.s32 %d, %a;"), r_asm1("EXP2", O.OpsEXP2{}, S.boolean(), "s32", "ex2.approx.s32 %d, %a;"), r_asm1("LOG2", O.OpsLOG2{}, S.boolean(), "s32", "lg2.approx.s32 %d, %a;"), r_asm1("SIN", O.OpsSIN{}, S.boolean(), "s32", "sin.approx.s32 %d, %a;"), r_asm1("SQRT", O.OpsSQRT{}, S.boolean(), "s32", "sqrt.approx.s32 %d, %a;"), r_asm1("TRUNC", O.OpsTRUNC{}, S.boolean(), "s32", "cvt.rzi.s32.s32 %d, %a;"), r_asm1("SHR", O.OpsSHR{}, S.boolean(), "s32", "shr.s32 %d, %a, %b;"), r_asm1("SHL", O.OpsSHL{}, S.boolean(), "s32", "shl.b32 %d, %a, %b;"), r_asm1("ADD", O.OpsADD{}, S.boolean(), "s32", "or.s32 %d, %a, %b;"), r_asm1("MUL", O.OpsMUL{}, S.boolean(), "s32", "and.s32 %d, %a, %b;"), r_asm1("XOR", O.OpsXOR{}, S.boolean(), "s32", "xor.pred %d, %a, %b;"), r_asm1("AND", O.OpsAND{}, S.boolean(), "s32", "and.pred %d, %a, %b;"), r_asm1("OR", O.OpsOR{}, S.boolean(), "s32", "or.pred %d, %a, %b;"), r_asm1("CDIV", O.OpsCDIV{}, S.boolean(), "s32", "div.s32 %d, %a, %b;"), r_asm1("CMOD", O.OpsCMOD{}, S.boolean(), "s32", "rem.s32 %d, %a, %b;"), r_asm1("MAX", O.OpsMAX{}, S.boolean(), "s32", "max.s32 %d, %a, %b;"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.boolean(), "s32", "setp.eq.s32 %d, %a, %b;"), r_asm1("CMPLT", O.OpsCMPLT{}, S.boolean(), "s32", "setp.lt.s32 %d, %a, %b;"), r_asm1("CMPNE", O.OpsCMPNE{}, S.boolean(), "s32", "setp.ne.s32 %d, %a, %b;"), r_asm1("MULACC", O.OpsMULACC{}, S.boolean(), "s32", "mad.lo.s32 %d, %a, %b, %c;"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.uint32(), "s32", "rcp.s32 %d, %a;"), r_asm1("EXP2", O.OpsEXP2{}, S.uint32(), "s32", "ex2.approx.s32 %d, %a;"), r_asm1("LOG2", O.OpsLOG2{}, S.uint32(), "s32", "lg2.approx.s32 %d, %a;"), r_asm1("SIN", O.OpsSIN{}, S.uint32(), "s32", "sin.approx.s32 %d, %a;"), r_asm1("SQRT", O.OpsSQRT{}, S.uint32(), "s32", "sqrt.approx.s32 %d, %a;"), r_asm1("TRUNC", O.OpsTRUNC{}, S.uint32(), "s32", "cvt.rzi.s32.s32 %d, %a;"), r_asm1("SHR", O.OpsSHR{}, S.uint32(), "s32", "shr.s32 %d, %a, %b;"), r_asm1("SHL", O.OpsSHL{}, S.uint32(), "s32", "shl.b32 %d, %a, %b;"), r_asm1("ADD", O.OpsADD{}, S.uint32(), "s32", "add.s32 %d, %a, %b;"), r_asm1("MUL", O.OpsMUL{}, S.uint32(), "s32", "mul.lo.s32 %d, %a, %b;"), r_asm1("XOR", O.OpsXOR{}, S.uint32(), "s32", "xor.b32 %d, %a, %b;"), r_asm1("AND", O.OpsAND{}, S.uint32(), "s32", "and.b32 %d, %a, %b;"), r_asm1("OR", O.OpsOR{}, S.uint32(), "s32", "or.b32 %d, %a, %b;"), r_asm1("CDIV", O.OpsCDIV{}, S.uint32(), "s32", "div.s32 %d, %a, %b;"), r_asm1("CMOD", O.OpsCMOD{}, S.uint32(), "s32", "rem.s32 %d, %a, %b;"), r_asm1("MAX", O.OpsMAX{}, S.uint32(), "s32", "max.s32 %d, %a, %b;"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.uint32(), "s32", "setp.eq.s32 %d, %a, %b;"), r_asm1("CMPLT", O.OpsCMPLT{}, S.uint32(), "s32", "setp.lt.s32 %d, %a, %b;"), r_asm1("CMPNE", O.OpsCMPNE{}, S.uint32(), "s32", "setp.ne.s32 %d, %a, %b;"), r_asm1("MULACC", O.OpsMULACC{}, S.uint32(), "s32", "mad.lo.s32 %d, %a, %b, %c;"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.int32(), "s32", "rcp.s32 %d, %a;"), r_asm1("EXP2", O.OpsEXP2{}, S.int32(), "s32", "ex2.approx.s32 %d, %a;"), r_asm1("LOG2", O.OpsLOG2{}, S.int32(), "s32", "lg2.approx.s32 %d, %a;"), r_asm1("SIN", O.OpsSIN{}, S.int32(), "s32", "sin.approx.s32 %d, %a;"), r_asm1("SQRT", O.OpsSQRT{}, S.int32(), "s32", "sqrt.approx.s32 %d, %a;"), r_asm1("TRUNC", O.OpsTRUNC{}, S.int32(), "s32", "cvt.rzi.s32.s32 %d, %a;"), r_asm1("SHR", O.OpsSHR{}, S.int32(), "s32", "shr.s32 %d, %a, %b;"), r_asm1("SHL", O.OpsSHL{}, S.int32(), "s32", "shl.b32 %d, %a, %b;"), r_asm1("ADD", O.OpsADD{}, S.int32(), "s32", "add.s32 %d, %a, %b;"), r_asm1("MUL", O.OpsMUL{}, S.int32(), "s32", "mul.lo.s32 %d, %a, %b;"), r_asm1("XOR", O.OpsXOR{}, S.int32(), "s32", "xor.b32 %d, %a, %b;"), r_asm1("AND", O.OpsAND{}, S.int32(), "s32", "and.b32 %d, %a, %b;"), r_asm1("OR", O.OpsOR{}, S.int32(), "s32", "or.b32 %d, %a, %b;"), r_asm1("CDIV", O.OpsCDIV{}, S.int32(), "s32", "div.s32 %d, %a, %b;"), r_asm1("CMOD", O.OpsCMOD{}, S.int32(), "s32", "rem.s32 %d, %a, %b;"), r_asm1("MAX", O.OpsMAX{}, S.int32(), "s32", "max.s32 %d, %a, %b;"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.int32(), "s32", "setp.eq.s32 %d, %a, %b;"), r_asm1("CMPLT", O.OpsCMPLT{}, S.int32(), "s32", "setp.lt.s32 %d, %a, %b;"), r_asm1("CMPNE", O.OpsCMPNE{}, S.int32(), "s32", "setp.ne.s32 %d, %a, %b;"), r_asm1("MULACC", O.OpsMULACC{}, S.int32(), "s32", "mad.lo.s32 %d, %a, %b, %c;")])
+  String.concat([r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.single(), "s32"), r_asm1("EXP2", O.OpsEXP2{}, S.single(), "s32"), r_asm1("LOG2", O.OpsLOG2{}, S.single(), "s32"), r_asm1("SIN", O.OpsSIN{}, S.single(), "s32"), r_asm1("SQRT", O.OpsSQRT{}, S.single(), "s32"), r_asm1("TRUNC", O.OpsTRUNC{}, S.single(), "s32"), r_asm1("SHR", O.OpsSHR{}, S.single(), "s32"), r_asm1("SHL", O.OpsSHL{}, S.single(), "s32"), r_asm1("ADD", O.OpsADD{}, S.single(), "s32"), r_asm1("MUL", O.OpsMUL{}, S.single(), "s32"), r_asm1("XOR", O.OpsXOR{}, S.single(), "s32"), r_asm1("AND", O.OpsAND{}, S.single(), "s32"), r_asm1("OR", O.OpsOR{}, S.single(), "s32"), r_asm1("CDIV", O.OpsCDIV{}, S.single(), "s32"), r_asm1("CMOD", O.OpsCMOD{}, S.single(), "s32"), r_asm1("MAX", O.OpsMAX{}, S.single(), "s32"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.single(), "s32"), r_asm1("CMPLT", O.OpsCMPLT{}, S.single(), "s32"), r_asm1("CMPNE", O.OpsCMPNE{}, S.single(), "s32"), r_asm1("MULACC", O.OpsMULACC{}, S.single(), "s32"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.half(), "s32"), r_asm1("EXP2", O.OpsEXP2{}, S.half(), "s32"), r_asm1("LOG2", O.OpsLOG2{}, S.half(), "s32"), r_asm1("SIN", O.OpsSIN{}, S.half(), "s32"), r_asm1("SQRT", O.OpsSQRT{}, S.half(), "s32"), r_asm1("TRUNC", O.OpsTRUNC{}, S.half(), "s32"), r_asm1("SHR", O.OpsSHR{}, S.half(), "s32"), r_asm1("SHL", O.OpsSHL{}, S.half(), "s32"), r_asm1("ADD", O.OpsADD{}, S.half(), "s32"), r_asm1("MUL", O.OpsMUL{}, S.half(), "s32"), r_asm1("XOR", O.OpsXOR{}, S.half(), "s32"), r_asm1("AND", O.OpsAND{}, S.half(), "s32"), r_asm1("OR", O.OpsOR{}, S.half(), "s32"), r_asm1("CDIV", O.OpsCDIV{}, S.half(), "s32"), r_asm1("CMOD", O.OpsCMOD{}, S.half(), "s32"), r_asm1("MAX", O.OpsMAX{}, S.half(), "s32"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.half(), "s32"), r_asm1("CMPLT", O.OpsCMPLT{}, S.half(), "s32"), r_asm1("CMPNE", O.OpsCMPNE{}, S.half(), "s32"), r_asm1("MULACC", O.OpsMULACC{}, S.half(), "s32"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.boolean(), "s32"), r_asm1("EXP2", O.OpsEXP2{}, S.boolean(), "s32"), r_asm1("LOG2", O.OpsLOG2{}, S.boolean(), "s32"), r_asm1("SIN", O.OpsSIN{}, S.boolean(), "s32"), r_asm1("SQRT", O.OpsSQRT{}, S.boolean(), "s32"), r_asm1("TRUNC", O.OpsTRUNC{}, S.boolean(), "s32"), r_asm1("SHR", O.OpsSHR{}, S.boolean(), "s32"), r_asm1("SHL", O.OpsSHL{}, S.boolean(), "s32"), r_asm1("ADD", O.OpsADD{}, S.boolean(), "s32"), r_asm1("MUL", O.OpsMUL{}, S.boolean(), "s32"), r_asm1("XOR", O.OpsXOR{}, S.boolean(), "s32"), r_asm1("AND", O.OpsAND{}, S.boolean(), "s32"), r_asm1("OR", O.OpsOR{}, S.boolean(), "s32"), r_asm1("CDIV", O.OpsCDIV{}, S.boolean(), "s32"), r_asm1("CMOD", O.OpsCMOD{}, S.boolean(), "s32"), r_asm1("MAX", O.OpsMAX{}, S.boolean(), "s32"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.boolean(), "s32"), r_asm1("CMPLT", O.OpsCMPLT{}, S.boolean(), "s32"), r_asm1("CMPNE", O.OpsCMPNE{}, S.boolean(), "s32"), r_asm1("MULACC", O.OpsMULACC{}, S.boolean(), "s32"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.uint32(), "s32"), r_asm1("EXP2", O.OpsEXP2{}, S.uint32(), "s32"), r_asm1("LOG2", O.OpsLOG2{}, S.uint32(), "s32"), r_asm1("SIN", O.OpsSIN{}, S.uint32(), "s32"), r_asm1("SQRT", O.OpsSQRT{}, S.uint32(), "s32"), r_asm1("TRUNC", O.OpsTRUNC{}, S.uint32(), "s32"), r_asm1("SHR", O.OpsSHR{}, S.uint32(), "s32"), r_asm1("SHL", O.OpsSHL{}, S.uint32(), "s32"), r_asm1("ADD", O.OpsADD{}, S.uint32(), "s32"), r_asm1("MUL", O.OpsMUL{}, S.uint32(), "s32"), r_asm1("XOR", O.OpsXOR{}, S.uint32(), "s32"), r_asm1("AND", O.OpsAND{}, S.uint32(), "s32"), r_asm1("OR", O.OpsOR{}, S.uint32(), "s32"), r_asm1("CDIV", O.OpsCDIV{}, S.uint32(), "s32"), r_asm1("CMOD", O.OpsCMOD{}, S.uint32(), "s32"), r_asm1("MAX", O.OpsMAX{}, S.uint32(), "s32"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.uint32(), "s32"), r_asm1("CMPLT", O.OpsCMPLT{}, S.uint32(), "s32"), r_asm1("CMPNE", O.OpsCMPNE{}, S.uint32(), "s32"), r_asm1("MULACC", O.OpsMULACC{}, S.uint32(), "s32"), r_asm1("RECIPROCAL", O.OpsRECIPROCAL{}, S.int32(), "s32"), r_asm1("EXP2", O.OpsEXP2{}, S.int32(), "s32"), r_asm1("LOG2", O.OpsLOG2{}, S.int32(), "s32"), r_asm1("SIN", O.OpsSIN{}, S.int32(), "s32"), r_asm1("SQRT", O.OpsSQRT{}, S.int32(), "s32"), r_asm1("TRUNC", O.OpsTRUNC{}, S.int32(), "s32"), r_asm1("SHR", O.OpsSHR{}, S.int32(), "s32"), r_asm1("SHL", O.OpsSHL{}, S.int32(), "s32"), r_asm1("ADD", O.OpsADD{}, S.int32(), "s32"), r_asm1("MUL", O.OpsMUL{}, S.int32(), "s32"), r_asm1("XOR", O.OpsXOR{}, S.int32(), "s32"), r_asm1("AND", O.OpsAND{}, S.int32(), "s32"), r_asm1("OR", O.OpsOR{}, S.int32(), "s32"), r_asm1("CDIV", O.OpsCDIV{}, S.int32(), "s32"), r_asm1("CMOD", O.OpsCMOD{}, S.int32(), "s32"), r_asm1("MAX", O.OpsMAX{}, S.int32(), "s32"), r_asm1("CMPEQ", O.OpsCMPEQ{}, S.int32(), "s32"), r_asm1("CMPLT", O.OpsCMPLT{}, S.int32(), "s32"), r_asm1("CMPNE", O.OpsCMPNE{}, S.int32(), "s32"), r_asm1("MULACC", O.OpsMULACC{}, S.int32(), "s32")])
 
 # THE NAME BRANCH. `name = ctx.types[dt]`, so `name[1:]` is `drop(name, 1n)` and
 # the SAME op over twelve dtypes gives twelve different suffixes -- including
 # `shl.bred` for bool, because `types[bool]` is `pred`. That is what Python
 # emits and it is the row that catches a `name[1:]` read as `name[1]`.
-def r_asm2_1(+opn: String, +op: O.Op, +dt: S.Dt, py: String) -> String:
-  T.r("asm2 " ++ opn ++ " " ++ T.dt_name(dt), String.join(op_asm(op, "%d", "%a", "%b", "%c", types_of(dt), Dtf.of(dt)), " ;; "), py)
+def r_asm2_1(+opn: String, +op: O.Op, +dt: S.Dt) -> String:
+  T.rd("asm2 " ++ opn ++ " " ++ T.dt_name(dt), String.join(op_asm(op, "%d", "%a", "%b", "%c", types_of(dt), Dtf.of(dt)), " ;; "))
 
 def r_asm2s() -> String:
-  String.concat([r_asm2_1("ADD", O.OpsADD{}, S.int8(), "add.s16 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.int8(), "shl.b16 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.int8(), "xor.b16 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.int8(), "mad.lo.s16 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.int8(), "selp.s16 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int8(), "cvt.rzi.s16.s16 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.int16(), "add.s16 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.int16(), "shl.b16 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.int16(), "xor.b16 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.int16(), "mad.lo.s16 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.int16(), "selp.s16 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int16(), "cvt.rzi.s16.s16 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.int32(), "add.s32 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.int32(), "shl.b32 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.int32(), "xor.b32 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.int32(), "mad.lo.s32 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.int32(), "selp.s32 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int32(), "cvt.rzi.s32.s32 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.int64(), "add.s64 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.int64(), "shl.b64 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.int64(), "xor.b64 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.int64(), "mad.lo.s64 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.int64(), "selp.s64 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int64(), "cvt.rzi.s64.s64 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.uint8(), "add.u16 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.uint8(), "shl.b16 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.uint8(), "xor.b16 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint8(), "mad.lo.u16 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint8(), "selp.u16 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint8(), "cvt.rzi.u16.u16 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.uint16(), "add.u16 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.uint16(), "shl.b16 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.uint16(), "xor.b16 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint16(), "mad.lo.u16 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint16(), "selp.u16 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint16(), "cvt.rzi.u16.u16 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.uint32(), "add.u32 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.uint32(), "shl.b32 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.uint32(), "xor.b32 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint32(), "mad.lo.u32 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint32(), "selp.u32 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint32(), "cvt.rzi.u32.u32 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.uint64(), "add.u64 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.uint64(), "shl.b64 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.uint64(), "xor.b64 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint64(), "mad.lo.u64 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint64(), "selp.u64 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint64(), "cvt.rzi.u64.u64 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.half(), "add.f16 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.half(), "shl.b16 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.half(), "xor.b16 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.half(), "fma.rn.f16 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.half(), "selp.b16 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.half(), "cvt.rzi.f16.f16 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.single(), "add.f32 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.single(), "shl.b32 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.single(), "xor.b32 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.single(), "fma.rn.f32 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.single(), "selp.f32 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.single(), "cvt.rzi.f32.f32 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.double(), "add.f64 %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.double(), "shl.b64 %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.double(), "xor.b64 %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.double(), "fma.rn.f64 %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.double(), "selp.f64 %d, %b, %c, %a;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.double(), "cvt.rzi.f64.f64 %d, %a;"), r_asm2_1("ADD", O.OpsADD{}, S.boolean(), "or.pred %d, %a, %b;"), r_asm2_1("SHL", O.OpsSHL{}, S.boolean(), "shl.bred %d, %a, %b;"), r_asm2_1("XOR", O.OpsXOR{}, S.boolean(), "xor.pred %d, %a, %b;"), r_asm2_1("MULACC", O.OpsMULACC{}, S.boolean(), "mad.lo.pred %d, %a, %b, %c;"), r_asm2_1("WHERE", O.OpsWHERE{}, S.boolean(), "@%a mov.pred %d, %b; ;; @!%a mov.pred %d, %c;"), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.boolean(), "cvt.rzi.pred.pred %d, %a;")])
+  String.concat([r_asm2_1("ADD", O.OpsADD{}, S.int8()), r_asm2_1("SHL", O.OpsSHL{}, S.int8()), r_asm2_1("XOR", O.OpsXOR{}, S.int8()), r_asm2_1("MULACC", O.OpsMULACC{}, S.int8()), r_asm2_1("WHERE", O.OpsWHERE{}, S.int8()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int8()), r_asm2_1("ADD", O.OpsADD{}, S.int16()), r_asm2_1("SHL", O.OpsSHL{}, S.int16()), r_asm2_1("XOR", O.OpsXOR{}, S.int16()), r_asm2_1("MULACC", O.OpsMULACC{}, S.int16()), r_asm2_1("WHERE", O.OpsWHERE{}, S.int16()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int16()), r_asm2_1("ADD", O.OpsADD{}, S.int32()), r_asm2_1("SHL", O.OpsSHL{}, S.int32()), r_asm2_1("XOR", O.OpsXOR{}, S.int32()), r_asm2_1("MULACC", O.OpsMULACC{}, S.int32()), r_asm2_1("WHERE", O.OpsWHERE{}, S.int32()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int32()), r_asm2_1("ADD", O.OpsADD{}, S.int64()), r_asm2_1("SHL", O.OpsSHL{}, S.int64()), r_asm2_1("XOR", O.OpsXOR{}, S.int64()), r_asm2_1("MULACC", O.OpsMULACC{}, S.int64()), r_asm2_1("WHERE", O.OpsWHERE{}, S.int64()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.int64()), r_asm2_1("ADD", O.OpsADD{}, S.uint8()), r_asm2_1("SHL", O.OpsSHL{}, S.uint8()), r_asm2_1("XOR", O.OpsXOR{}, S.uint8()), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint8()), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint8()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint8()), r_asm2_1("ADD", O.OpsADD{}, S.uint16()), r_asm2_1("SHL", O.OpsSHL{}, S.uint16()), r_asm2_1("XOR", O.OpsXOR{}, S.uint16()), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint16()), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint16()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint16()), r_asm2_1("ADD", O.OpsADD{}, S.uint32()), r_asm2_1("SHL", O.OpsSHL{}, S.uint32()), r_asm2_1("XOR", O.OpsXOR{}, S.uint32()), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint32()), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint32()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint32()), r_asm2_1("ADD", O.OpsADD{}, S.uint64()), r_asm2_1("SHL", O.OpsSHL{}, S.uint64()), r_asm2_1("XOR", O.OpsXOR{}, S.uint64()), r_asm2_1("MULACC", O.OpsMULACC{}, S.uint64()), r_asm2_1("WHERE", O.OpsWHERE{}, S.uint64()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.uint64()), r_asm2_1("ADD", O.OpsADD{}, S.half()), r_asm2_1("SHL", O.OpsSHL{}, S.half()), r_asm2_1("XOR", O.OpsXOR{}, S.half()), r_asm2_1("MULACC", O.OpsMULACC{}, S.half()), r_asm2_1("WHERE", O.OpsWHERE{}, S.half()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.half()), r_asm2_1("ADD", O.OpsADD{}, S.single()), r_asm2_1("SHL", O.OpsSHL{}, S.single()), r_asm2_1("XOR", O.OpsXOR{}, S.single()), r_asm2_1("MULACC", O.OpsMULACC{}, S.single()), r_asm2_1("WHERE", O.OpsWHERE{}, S.single()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.single()), r_asm2_1("ADD", O.OpsADD{}, S.double()), r_asm2_1("SHL", O.OpsSHL{}, S.double()), r_asm2_1("XOR", O.OpsXOR{}, S.double()), r_asm2_1("MULACC", O.OpsMULACC{}, S.double()), r_asm2_1("WHERE", O.OpsWHERE{}, S.double()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.double()), r_asm2_1("ADD", O.OpsADD{}, S.boolean()), r_asm2_1("SHL", O.OpsSHL{}, S.boolean()), r_asm2_1("XOR", O.OpsXOR{}, S.boolean()), r_asm2_1("MULACC", O.OpsMULACC{}, S.boolean()), r_asm2_1("WHERE", O.OpsWHERE{}, S.boolean()), r_asm2_1("TRUNC", O.OpsTRUNC{}, S.boolean())])
 
 # WHERE's three FORMS: the TWO-ELEMENT LIST on bool, `selp.b16` when the name is
 # f16 (PTX has no `selp.f16`), and `selp.<name>` otherwise. Keeping the list means
 # the bool arm's TWO kernel lines stay visible in the row.
 def r_where() -> String:
-  String.concat([T.r("asm WHERE float", String.join(op_asm(O.OpsWHERE{}, "%d", "%a", "%b", "%c", "f16", Dtf.of(S.single())), " ;; "), "selp.b16 %d, %b, %c, %a;"),
-    T.r("asm WHERE bool", String.join(op_asm(O.OpsWHERE{}, "%d", "%a", "%b", "%c", "f16", Dtf.of(S.boolean())), " ;; "), "@%a mov.f16 %d, %b; ;; @!%a mov.f16 %d, %c;"),
-    T.r("asm WHERE b16f32", String.join(op_asm(O.OpsWHERE{}, "%d", "%a", "%b", "%c", "f32", Dtf.of(S.single())), " ;; "), "selp.f32 %d, %b, %c, %a;")])
+  String.concat([T.rd("asm WHERE " ++ T.dt_name(S.single()), String.join(op_asm(O.OpsWHERE{}, "%d", "%a", "%b", "%c", "f16", Dtf.of(S.single())), " ;; ")),
+    T.rd("asm WHERE " ++ T.dt_name(S.boolean()), String.join(op_asm(O.OpsWHERE{}, "%d", "%a", "%b", "%c", "f16", Dtf.of(S.boolean())), " ;; ")),
+    T.rd("asm WHERE b16f32", String.join(op_asm(O.OpsWHERE{}, "%d", "%a", "%b", "%c", "f32", Dtf.of(S.single())), " ;; "))])
 
 # `",".join(ops.Ops)` over `asm_for_op`'s own key order: `supports_half` is the
 # seven-name tuple and `doesnt_support_half` the fourteen-name complement, and the
@@ -542,34 +593,34 @@ def op_names(+ops: List<&2, O.Op>) -> String:
     case o <> +t : String.concat([O.Ops.name.of(o), Bool.pick(String, List.is_empty(&2, O.Op, t), "", ","), op_names(t)])
 
 def r_sh() -> String:
-  String.concat([T.r("supports_half", op_names(supports_half()), "EXP2,ADD,MUL,MAX,CMPLT,WHERE,TRUNC"), T.r("doesnt_support_half", op_names(doesnt_support_half()), "RECIPROCAL,LOG2,SIN,SQRT,SHR,SHL,XOR,AND,OR,CDIV,CMOD,CMPEQ,CMPNE,MULACC")])
+  String.concat([T.rd("supports_half", op_names(supports_half())), T.rd("doesnt_support_half", op_names(doesnt_support_half()))])
 
 # `modifier` over all 54 dtype pairs. The third clause alone separates
 # float->float (empty) from half->float (`.rn`), so every pair is a row.
-def r_mod1(+nm: String, +a: S.Dt, +b: S.Dt, py: String) -> String:
-  T.r("modifier " ++ nm, modifier(Dtf.of(a), Dtf.of(b), a, b), py)
+def r_mod1(+a: S.Dt, +b: S.Dt) -> String:
+  T.rd("modifier " ++ T.dt_name(a) ++ "," ++ T.dt_name(b), modifier(Dtf.of(a), Dtf.of(b), a, b))
 
 def r_mods() -> String:
-  String.concat([r_mod1("signed char,signed char", S.int8(), S.int8(), ""), r_mod1("signed char,int", S.int8(), S.int32(), ""), r_mod1("signed char,float", S.int8(), S.single(), ".rzi"), r_mod1("signed char,half", S.int8(), S.half(), ".rzi"), r_mod1("signed char,bool", S.int8(), S.boolean(), ""), r_mod1("signed char,double", S.int8(), S.double(), ".rzi"), r_mod1("short,signed char", S.int16(), S.int8(), ""), r_mod1("short,int", S.int16(), S.int32(), ""), r_mod1("short,float", S.int16(), S.single(), ".rzi"), r_mod1("short,half", S.int16(), S.half(), ".rzi"), r_mod1("short,bool", S.int16(), S.boolean(), ""), r_mod1("short,double", S.int16(), S.double(), ".rzi"), r_mod1("int,signed char", S.int32(), S.int8(), ""), r_mod1("int,int", S.int32(), S.int32(), ""), r_mod1("int,float", S.int32(), S.single(), ".rzi"), r_mod1("int,half", S.int32(), S.half(), ".rzi"), r_mod1("int,bool", S.int32(), S.boolean(), ""), r_mod1("int,double", S.int32(), S.double(), ".rzi"), r_mod1("unsigned char,signed char", S.uint8(), S.int8(), ""), r_mod1("unsigned char,int", S.uint8(), S.int32(), ""), r_mod1("unsigned char,float", S.uint8(), S.single(), ".rzi"), r_mod1("unsigned char,half", S.uint8(), S.half(), ".rzi"), r_mod1("unsigned char,bool", S.uint8(), S.boolean(), ""), r_mod1("unsigned char,double", S.uint8(), S.double(), ".rzi"), r_mod1("unsigned int,signed char", S.uint32(), S.int8(), ""), r_mod1("unsigned int,int", S.uint32(), S.int32(), ""), r_mod1("unsigned int,float", S.uint32(), S.single(), ".rzi"), r_mod1("unsigned int,half", S.uint32(), S.half(), ".rzi"), r_mod1("unsigned int,bool", S.uint32(), S.boolean(), ""), r_mod1("unsigned int,double", S.uint32(), S.double(), ".rzi"), r_mod1("float,signed char", S.single(), S.int8(), ".rn"), r_mod1("float,int", S.single(), S.int32(), ".rn"), r_mod1("float,float", S.single(), S.single(), ""), r_mod1("float,half", S.single(), S.half(), ""), r_mod1("float,bool", S.single(), S.boolean(), ".rn"), r_mod1("float,double", S.single(), S.double(), ".rn"), r_mod1("half,signed char", S.half(), S.int8(), ".rn"), r_mod1("half,int", S.half(), S.int32(), ".rn"), r_mod1("half,float", S.half(), S.single(), ".rn"), r_mod1("half,half", S.half(), S.half(), ""), r_mod1("half,bool", S.half(), S.boolean(), ".rn"), r_mod1("half,double", S.half(), S.double(), ".rn"), r_mod1("bool,signed char", S.boolean(), S.int8(), ""), r_mod1("bool,int", S.boolean(), S.int32(), ""), r_mod1("bool,float", S.boolean(), S.single(), ""), r_mod1("bool,half", S.boolean(), S.half(), ""), r_mod1("bool,bool", S.boolean(), S.boolean(), ""), r_mod1("bool,double", S.boolean(), S.double(), ""), r_mod1("double,signed char", S.double(), S.int8(), ".rn"), r_mod1("double,int", S.double(), S.int32(), ".rn"), r_mod1("double,float", S.double(), S.single(), ""), r_mod1("double,half", S.double(), S.half(), ""), r_mod1("double,bool", S.double(), S.boolean(), ".rn"), r_mod1("double,double", S.double(), S.double(), "")])
+  String.concat([r_mod1(S.int8(), S.int8()), r_mod1(S.int8(), S.int32()), r_mod1(S.int8(), S.single()), r_mod1(S.int8(), S.half()), r_mod1(S.int8(), S.boolean()), r_mod1(S.int8(), S.double()), r_mod1(S.int16(), S.int8()), r_mod1(S.int16(), S.int32()), r_mod1(S.int16(), S.single()), r_mod1(S.int16(), S.half()), r_mod1(S.int16(), S.boolean()), r_mod1(S.int16(), S.double()), r_mod1(S.int32(), S.int8()), r_mod1(S.int32(), S.int32()), r_mod1(S.int32(), S.single()), r_mod1(S.int32(), S.half()), r_mod1(S.int32(), S.boolean()), r_mod1(S.int32(), S.double()), r_mod1(S.uint8(), S.int8()), r_mod1(S.uint8(), S.int32()), r_mod1(S.uint8(), S.single()), r_mod1(S.uint8(), S.half()), r_mod1(S.uint8(), S.boolean()), r_mod1(S.uint8(), S.double()), r_mod1(S.uint32(), S.int8()), r_mod1(S.uint32(), S.int32()), r_mod1(S.uint32(), S.single()), r_mod1(S.uint32(), S.half()), r_mod1(S.uint32(), S.boolean()), r_mod1(S.uint32(), S.double()), r_mod1(S.single(), S.int8()), r_mod1(S.single(), S.int32()), r_mod1(S.single(), S.single()), r_mod1(S.single(), S.half()), r_mod1(S.single(), S.boolean()), r_mod1(S.single(), S.double()), r_mod1(S.half(), S.int8()), r_mod1(S.half(), S.int32()), r_mod1(S.half(), S.single()), r_mod1(S.half(), S.half()), r_mod1(S.half(), S.boolean()), r_mod1(S.half(), S.double()), r_mod1(S.boolean(), S.int8()), r_mod1(S.boolean(), S.int32()), r_mod1(S.boolean(), S.single()), r_mod1(S.boolean(), S.half()), r_mod1(S.boolean(), S.boolean()), r_mod1(S.boolean(), S.double()), r_mod1(S.double(), S.int8()), r_mod1(S.double(), S.int32()), r_mod1(S.double(), S.single()), r_mod1(S.double(), S.half()), r_mod1(S.double(), S.boolean()), r_mod1(S.double(), S.double())])
 
-def r_types1(+nm: String, +dt: S.Dt, py: String) -> String:
-  T.r("types " ++ nm, types_of(dt), py)
+def r_types1(+dt: S.Dt) -> String:
+  T.rd("types " ++ T.dt_name(dt), types_of(dt))
 
-def r_mem_types1(+nm: String, +dt: S.Dt, py: String) -> String:
-  T.r("mem_types " ++ nm, mem_types_of(dt), py)
+def r_mem_types1(+dt: S.Dt) -> String:
+  T.rd("mem_types " ++ T.dt_name(dt), mem_types_of(dt))
 
-def r_cast_types1(+nm: String, +dt: S.Dt, py: String) -> String:
-  T.r("cast_types " ++ nm, cast_types_of(dt), py)
+def r_cast_types1(+dt: S.Dt) -> String:
+  T.rd("cast_types " ++ T.dt_name(dt), cast_types_of(dt))
 
 # `PTXRenderer.types` over all TWELVE of its keys, in the dict's own order --
 # which is the order `R.types.items()` reports. `mem_types` and `cast_types` are
 # `{**types, ...}` overrides of the same twelve keys, so they repeat the whole
 # table and differ only at the four and two overridden entries.
 def r_tabs() -> String:
-  String.concat([r_types1("signed char", S.int8(), "s16"), r_types1("short", S.int16(), "s16"), r_types1("int", S.int32(), "s32"), r_types1("long", S.int64(), "s64"), r_types1("unsigned char", S.uint8(), "u16"), r_types1("unsigned short", S.uint16(), "u16"), r_types1("unsigned int", S.uint32(), "u32"), r_types1("unsigned long", S.uint64(), "u64"), r_types1("half", S.half(), "f16"), r_types1("float", S.single(), "f32"), r_types1("double", S.double(), "f64"), r_types1("bool", S.boolean(), "pred")])
+  String.concat([r_types1(S.int8()), r_types1(S.int16()), r_types1(S.int32()), r_types1(S.int64()), r_types1(S.uint8()), r_types1(S.uint16()), r_types1(S.uint32()), r_types1(S.uint64()), r_types1(S.half()), r_types1(S.single()), r_types1(S.double()), r_types1(S.boolean())])
 
 def r_mc_tabs() -> String:
-  String.concat([r_mem_types1("signed char", S.int8(), "s8"), r_mem_types1("short", S.int16(), "s16"), r_mem_types1("int", S.int32(), "s32"), r_mem_types1("long", S.int64(), "s64"), r_mem_types1("unsigned char", S.uint8(), "u8"), r_mem_types1("unsigned short", S.uint16(), "u16"), r_mem_types1("unsigned int", S.uint32(), "u32"), r_mem_types1("unsigned long", S.uint64(), "u64"), r_mem_types1("half", S.half(), "b16"), r_mem_types1("float", S.single(), "f32"), r_mem_types1("double", S.double(), "f64"), r_mem_types1("bool", S.boolean(), "u8"), r_cast_types1("signed char", S.int8(), "s8"), r_cast_types1("short", S.int16(), "s16"), r_cast_types1("int", S.int32(), "s32"), r_cast_types1("long", S.int64(), "s64"), r_cast_types1("unsigned char", S.uint8(), "u8"), r_cast_types1("unsigned short", S.uint16(), "u16"), r_cast_types1("unsigned int", S.uint32(), "u32"), r_cast_types1("unsigned long", S.uint64(), "u64"), r_cast_types1("half", S.half(), "f16"), r_cast_types1("float", S.single(), "f32"), r_cast_types1("double", S.double(), "f64"), r_cast_types1("bool", S.boolean(), "pred")])
+  String.concat([r_mem_types1(S.int8()), r_mem_types1(S.int16()), r_mem_types1(S.int32()), r_mem_types1(S.int64()), r_mem_types1(S.uint8()), r_mem_types1(S.uint16()), r_mem_types1(S.uint32()), r_mem_types1(S.uint64()), r_mem_types1(S.half()), r_mem_types1(S.single()), r_mem_types1(S.double()), r_mem_types1(S.boolean()), r_cast_types1(S.int8()), r_cast_types1(S.int16()), r_cast_types1(S.int32()), r_cast_types1(S.int64()), r_cast_types1(S.uint8()), r_cast_types1(S.uint16()), r_cast_types1(S.uint32()), r_cast_types1(S.uint64()), r_cast_types1(S.half()), r_cast_types1(S.single()), r_cast_types1(S.double()), r_cast_types1(S.boolean())])
 
 # THE KeyError ARM. `PTXRenderer.types` has no key for the eight fp8 dtypes nor
 # for bfloat16, and nothing on a PTX target asks for one -- so the unreachable
@@ -578,7 +629,7 @@ def r_mc_tabs() -> String:
 def ifmiss(+s: String) -> String: Bool.pick(String, String.is_empty(s), "KeyError", s)
 
 def r_tabs_miss() -> String:
-  String.concat([T.r("types float8_e4m3", ifmiss(types_of(S.fp8e4m3())), "KeyError"), T.r("types __bf16", ifmiss(types_of(S.bfloat16())), "KeyError")])
+  String.concat([T.rd("types " ++ T.dt_name(S.fp8e4m3()), ifmiss(types_of(S.fp8e4m3()))), T.rd("types " ++ T.dt_name(S.bfloat16()), ifmiss(types_of(S.bfloat16())))])
 
 # THE THREE DTYPES `pri` CANNOT TELL APART -- and these nine rows are the ones that
 # go red when the fix is reverted, because the twelve `types` rows above and the two
@@ -597,11 +648,11 @@ def r_tabs_miss() -> String:
 # claim each one makes is the DEVIATION's, and it is pinned by name, so a revert
 # moves six of the nine and a fourth type moving in moves nine.
 def r_tabs_weak() -> String:
-  String.concat([T.r("types void", ifmiss(types_of(S.void())), "KeyError"), T.r("types weakint", ifmiss(types_of(S.weakint())), "s32"),
-    T.r("types weakfloat", ifmiss(types_of(S.weakfloat())), "f32"), T.r("mem_types void", ifmiss(mem_types_of(S.void())), "KeyError"),
-    T.r("mem_types weakint", ifmiss(mem_types_of(S.weakint())), "s32"), T.r("mem_types weakfloat", ifmiss(mem_types_of(S.weakfloat())), "f32"),
-    T.r("cast_types void", ifmiss(cast_types_of(S.void())), "KeyError"), T.r("cast_types weakint", ifmiss(cast_types_of(S.weakint())), "s32"),
-    T.r("cast_types weakfloat", ifmiss(cast_types_of(S.weakfloat())), "f32")])
+  String.concat([T.rd("types " ++ T.dt_name(S.void()), ifmiss(types_of(S.void()))), T.rd("types " ++ T.dt_name(S.weakint()), ifmiss(types_of(S.weakint()))),
+    T.rd("types " ++ T.dt_name(S.weakfloat()), ifmiss(types_of(S.weakfloat()))), T.rd("mem_types " ++ T.dt_name(S.void()), ifmiss(mem_types_of(S.void()))),
+    T.rd("mem_types " ++ T.dt_name(S.weakint()), ifmiss(mem_types_of(S.weakint()))), T.rd("mem_types " ++ T.dt_name(S.weakfloat()), ifmiss(mem_types_of(S.weakfloat()))),
+    T.rd("cast_types " ++ T.dt_name(S.void()), ifmiss(cast_types_of(S.void()))), T.rd("cast_types " ++ T.dt_name(S.weakint()), ifmiss(cast_types_of(S.weakint()))),
+    T.rd("cast_types " ++ T.dt_name(S.weakfloat()), ifmiss(cast_types_of(S.weakfloat())))])
 
 
 # `CUDARenderer.global_max/local_max/shared_max`, `suffix`, `barrier` (with its TAB
@@ -643,7 +694,7 @@ def q(+s: String) -> String: String.concat(["'", esc(s), "'"])
 
 
 def r_consts() -> String:
-  String.concat([T.r("barrier", esc(px_barrier()), String.concat(["bar.sync", btab(), "0;"])), T.r("suffix", px_suffix(), "PTX"), T.r("global_max", T.ushow(px_gmax()), "2147483647,65535,65535"), T.r("local_max", T.ushow(px_lmax()), "1024,1024,64"), T.r("shared_max", U32.show(px_smax()), "49152"), T.r("kernel_prefix.lines", U32.show(px_prefix_lines()), "4"), T.r("kernel_prefix[0]", px_pline(0), ".version VERSION"), T.r("kernel_prefix[1]", px_pline(1), ".target TARGET"), T.r("kernel_prefix[2]", px_pline(2), ".address_size 64"), T.r("kernel_prefix[3]", px_pline(3), ".visible .entry")])
+  String.concat([T.rd("barrier", esc(px_barrier())), T.rd("suffix", px_suffix()), T.rd("global_max", T.ushow(px_gmax())), T.rd("local_max", T.ushow(px_lmax())), T.rd("shared_max", U32.show(px_smax())), T.rd("kernel_prefix.lines", U32.show(px_prefix_lines())), T.rd("kernel_prefix[0]", px_pline(0)), T.rd("kernel_prefix[1]", px_pline(1)), T.rd("kernel_prefix[2]", px_pline(2)), T.rd("kernel_prefix[3]", px_pline(3))])
 
 
 
@@ -703,8 +754,8 @@ def sorted_dt_names(+ds: List<&2, S.Dt>) -> String:
 # the SAME set, and having all three rows is what says so.
 # `py=` is `DType.name` (dtype.py:120-137), not the legacy alias (dtype.py:140-142:
 # `half = f16`, so `dtypes.half.name` is `"f16"`). Filter is ptx.py:230-231.
-def r_sd(+ver: U32, py: String) -> String:
-  T.r("supported_dtypes sm_" ++ U32.show(ver), sorted_dt_names(supported_dtypes(ver)), py)
+def r_sd(+ver: U32) -> String:
+  T.rd("supported_dtypes sm_" ++ U32.show(ver), sorted_dt_names(supported_dtypes(ver)))
 
 # `self.tensor_cores = [x for x in tc.get_cuda(arch) if x.dtype_in in (dtypes.f16,
 # dtypes.f32)]` -- ptx.py:146. The filter is on `dtype_in`, NOT `dtype_out`, so
@@ -724,8 +775,8 @@ def dsh_half.go(+ts: List<&2, T.Tc>, +acc: List<&2, T.Tc>) -> List<&2, T.Tc>:
 
 def ptx_tensor_cores(+ver: U32) -> List<&2, T.Tc>: dsh_half.go(T.get_cuda(ver), Nil{})
 
-def r_tc_arch(+ver: U32, py: String) -> String:
-  T.r("PTX tensor_cores sm_" ++ U32.show(ver), T.tc_pairs(ptx_tensor_cores(ver)), py)
+def r_tc_arch(+ver: U32) -> String:
+  T.rd("PTX tensor_cores sm_" ++ U32.show(ver), T.tc_pairs(ptx_tensor_cores(ver)))
 
 
 
@@ -733,14 +784,14 @@ def r_tc_arch(+ver: U32, py: String) -> String:
 # Called, not transcribed: `Shell(arch).supported_dtypes()` sorted by `.name`
 # is this string for sm_53, sm_75 and sm_80 (dtype.py:120-137, ptx.py:230-231).
 def r_ptx_sds() -> String:
-  String.concat([r_sd(75, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sd(53, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8"), r_sd(80, "bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8")])
+  String.concat([r_sd(75), r_sd(53), r_sd(80)])
 
 # Called: `[x for x in tc.get_cuda(arch) if x.dtype_in in (dtypes.half, dtypes.float)]`
 # then `dtype_in.name->dtype_out.name` (ptx.py:146, dtype.py:134 and :136).
 # sm_80/sm_89 drop `bf16->f32` and, on sm_89, the two fp8 cores -- the filter is
 # on `dtype_in`, and those inputs are not f16/f32.
 def r_ptx_tcs() -> String:
-  String.concat([r_tc_arch(75, "f16->f32,f16->f16"), r_tc_arch(80, "f16->f32,f16->f16,f16->f32,f16->f16,f32->f32"), r_tc_arch(89, "f16->f32,f16->f16,f16->f32,f16->f16,f32->f32")])
+  String.concat([r_tc_arch(75), r_tc_arch(80), r_tc_arch(89)])
 
 # THE ROW ORDER IS THE ORACLE'S, group for group, because the gate is a byte
 # diff and a diff is positional. `ptx_matcher rules`, `asm_for_op` (dtype rows
@@ -967,11 +1018,11 @@ def w_a1() -> Wmr: Wmr{["%va0"], ["%vb0"], ["%wc0", "%wc1"], ["%wi0_0"], ["%wi1_
 def w_a2() -> Wmr: Wmr{["%va0", "%va1"], ["%vb0", "%vb1"], ["%wc0"], ["%wi0_0"], ["%wi1_0"], ["%wi2_0"], ["%vo0", "%vo1"]}
 def w_a3() -> Wmr: Wmr{["%va0", "%va1"], ["%vb0", "%vb1"], ["%wc0", "%wc1"], ["%wi0_0", "%wi0_1"], ["%wi1_0", "%wi1_1"], ["%wi2_0", "%wi2_1"], ["%vo0", "%vo1"]}
 
-def r_wm1(+nm: String, n: U32, m: U32, k: U32, +di: S.Dt, +dou: S.Dt, +w: Wmr, py: String) -> String:
-  T.r("render_wmma " ++ nm, String.join(render_wmma(n, m, k, di, dou, w), " ;; "), py)
+def r_wm1(+nm: String, n: U32, m: U32, k: U32, +di: S.Dt, +dou: S.Dt, +w: Wmr) -> String:
+  T.rd("render_wmma " ++ nm, String.join(render_wmma(n, m, k, di, dou, w), " ;; "))
 
 def r_wms() -> String:
-  String.concat([r_wm1("a4", 16, 8, 16, S.half(), S.single(), w_a4(), "mov.b32 %wi0_0, {%va0, %va1}; ;; mov.b32 %wi0_2, {%va2, %va3}; ;; mov.b32 %wi1_0, {%vb0, %vb1}; ;; mov.b32 %wi1_2, {%vb2, %vb3}; ;; mov.b32 %wi2_0, %wc0; ;; mov.b32 %wi2_1, %wc1; ;; mma.sync.aligned.m8n16k16.row.col.f32.f16.f16.f32            {%wi2_0, %wi2_1}, {%wi0_0, %wi0_2}, {%wi1_0, %wi1_2}, {%wi2_0, %wi2_1}; ;; mov.b32 %vo0, %wi2_0; ;; mov.b32 %vo1, %wi2_1;"), r_wm1("a1", 16, 8, 16, S.half(), S.single(), w_a1(), "mov.b32 %wi0_0, {%va0}; ;; mov.b32 %wi1_0, {%vb0}; ;; mov.b32 %wi2_0, %wc0; ;; mov.b32 %wi2_1, %wc1; ;; mma.sync.aligned.m8n16k16.row.col.f32.f16.f16.f32            {%wi2_0, %wi2_1}, {%wi0_0}, {%wi1_0}, {%wi2_0, %wi2_1}; ;; mov.b32 %vo0, %wi2_0; ;; mov.b32 %vo1, %wi2_1;"), r_wm1("a2", 8, 8, 8, S.half(), S.half(), w_a2(), "mov.b32 %wi0_0, {%va0, %va1}; ;; mov.b32 %wi1_0, {%vb0, %vb1}; ;; mov.b32 %wi2_0, {%wc0}; ;; mma.sync.aligned.m8n8k8.row.col.f16.f16.f16.f16            {%wi2_0}, {%wi0_0}, {%wi1_0}, {%wi2_0}; ;; mov.b32 {%vo0, %vo1}, %wi2_0;"), r_wm1("a3", 8, 8, 8, S.single(), S.single(), w_a3(), "mov.b32 %wi0_0, %va0; ;; mov.b32 %wi0_1, %va1; ;; mov.b32 %wi1_0, %vb0; ;; mov.b32 %wi1_1, %vb1; ;; mov.b32 %wi2_0, %wc0; ;; mov.b32 %wi2_1, %wc1; ;; mma.sync.aligned.m8n8k8.row.col.f32.tf32.tf32.f32            {%wi2_0, %wi2_1}, {%wi0_0, %wi0_1}, {%wi1_0, %wi1_1}, {%wi2_0, %wi2_1}; ;; mov.b32 %vo0, %wi2_0; ;; mov.b32 %vo1, %wi2_1;")])
+  String.concat([r_wm1("a4", 16, 8, 16, S.half(), S.single(), w_a4()), r_wm1("a1", 16, 8, 16, S.half(), S.single(), w_a1()), r_wm1("a2", 8, 8, 8, S.half(), S.half(), w_a2()), r_wm1("a3", 8, 8, 8, S.single(), S.single(), w_a3())])
 
 # the `dt_map`s on their own, over all four dtype pairs, because they are the
 # ONLY place `render_wmma` reads a dtype for a NAME and the four map rows are
@@ -979,23 +1030,23 @@ def r_wms() -> String:
 def dtmap_name(+di: S.Dt, +dou: S.Dt) -> String:
   String.concat([dtmap_out(dou), ".", dtmap_in(di), ".", dtmap_in(di), ".", dtmap_out(dou)])
 
-def r_dtm1(+nm: String, +di: S.Dt, +dou: S.Dt, py: String) -> String:
-  T.r("wmma dtmap " ++ nm, dtmap_name(di, dou), py)
+def r_dtm1(+di: S.Dt, +dou: S.Dt) -> String:
+  T.rd("wmma dtmap " ++ T.dt_name(di) ++ "," ++ T.dt_name(dou), dtmap_name(di, dou))
 
 
 def r_dtms() -> String:
-  String.concat([r_dtm1("half,half", S.half(), S.half(), "f16.f16.f16.f16"), r_dtm1("half,float", S.half(), S.single(), "f32.f16.f16.f32"), r_dtm1("float,half", S.single(), S.half(), "f16.tf32.tf32.f16"), r_dtm1("float,float", S.single(), S.single(), "f32.tf32.tf32.f32")])
+  String.concat([r_dtm1(S.half(), S.half()), r_dtm1(S.half(), S.single()), r_dtm1(S.single(), S.half()), r_dtm1(S.single(), S.single())])
 
 # `fmt` -- the FIVE line shapes: an INLINED `$` line passes through untouched, a
 # SHORT mnemonic gets TWO tabs for its first space, a LONG one (> 7 chars) gets
 # ONE, and a line with NO space at all gets none. `ret;` is a row twice because
 # the oracle's fixture list has it twice, and a gate that only runs the distinct
 # shapes would not notice a row that moved.
-def r_fmt1(+line: String, py: String) -> String:
-  T.r(String.concat(["fmt ", q(line)]), q(fmt(line)), py)
+def r_fmt1(+line: String) -> String:
+  T.rd(String.concat(["fmt ", q(line)]), q(fmt(line)))
 
 def r_fmts() -> String:
-  String.concat([r_fmt1("mov.b32 %r0, %r1;", String.concat(["'", btab(), "mov.b32", btab(), btab(), "%r0, %r1;'"])), r_fmt1("ret;", String.concat(["'", btab(), "ret;'"])), r_fmt1("$LDG.E R1, [R2];", String.concat(["'", "$LDG.E R1, [R2];'"])), r_fmt1("shl.b32", String.concat(["'", btab(), "shl.b32'"])), r_fmt1("ret;", String.concat(["'", btab(), "ret;'"]))])
+  String.concat([r_fmt1("mov.b32 %r0, %r1;"), r_fmt1("ret;"), r_fmt1("$LDG.E R1, [R2];"), r_fmt1("shl.b32"), r_fmt1("ret;")])
 
 # `render_kernel` -- the header, ONE ROW PER EMITTED LINE plus a count, with the
 # body spelled `BODY`. The `.reg` declarations and the trailing `ret;` are the
@@ -1006,10 +1057,10 @@ def rk1.go(+nm: String, +ls: List<&2, String>, +i: U32, acc: String) -> String:
   match ls:
     case Nil{}   : acc
     case l <> +t : rk1.go(nm, t, U32.add(i, 1), String.concat([acc,
-      T.r(String.concat(["render_kernel ", nm, "[", U32.show(i), "]"]), esc(l), esc(l))]))
+      T.rd(String.concat(["render_kernel ", nm, "[", U32.show(i), "]"]), esc(l))]))
 
-def rk1(+nm: String, +ls: List<&2, String>, cnt: String) -> String:
-  String.concat([T.r(String.concat(["render_kernel ", nm, ".lines"]), U32.show(U32.from_nat(List.length(&2, String, ls))), cnt),
+def rk1(+nm: String, +ls: List<&2, String>) -> String:
+  String.concat([T.rd(String.concat(["render_kernel ", nm, ".lines"]), U32.show(U32.from_nat(List.length(&2, String, ls)))),
     rk1.go(nm, ls, 0, "")])
 
 # The TWO fixtures the oracle runs: one GLOBAL float plus one LOCAL int32 at
@@ -1023,7 +1074,7 @@ def k1_ps() -> List<&2, Pr>: [Pr{"data0", True{}, S.single()}, Pr{"data1", False
 def k2_ps() -> List<&2, Pr>: [Pr{"data0", True{}, S.uint32()}]
 
 def r_rks() -> String:
-  String.concat([rk1("k1", rk_lines("k1", 128, k1_ps(), ["BODY"]), "11"), rk1("k2", rk_lines("k2", 256, k2_ps(), ["BODY"]), "10")])
+  String.concat([rk1("k1", rk_lines("k1", 128, k1_ps(), ["BODY"])), rk1("k2", rk_lines("k2", 256, k2_ps(), ["BODY"]))])
 
 def r_stage2() -> String:
   String.concat([r_pmx_n(), r_asms(), r_where(), r_asm2s(), r_sh(), r_mods(), r_rvs(), r_tabs(),
@@ -1077,6 +1128,7 @@ def main() -> IO(Unit):
 #   M48 the archs are 53, 75, 80 -- not 75, 53, 80               2
 #   M49 the dtype tables are in sorted order, not dict order       1
 #   M50 (CONTROL: a comment-only edit)                            0
+#   M51 `RECIPROCAL` is `rcp.` for a non-float, not `rcp.approx.`  3
 #
 # WHAT THE TABLE SAYS.
 #
@@ -1105,4 +1157,19 @@ def main() -> IO(Unit):
 # moves nothing. They are what makes the other forty-six numbers mean something:
 # a harness that reports "0 rows" for everything would look identical on the
 # four blind spots.
+#
+# M51 IS THE ONE THAT WAS A REAL DEFECT, AND IT SAT UNDER THE NAMES.  The arm
+# read `Dtf.is_float` and emitted `rcp.` for an int or a bool; ptx.py:19 reads no
+# dtype at all.  MEASURED 2026-10-22: THREE rows (`asm RECIPROCAL bool`, `u32`,
+# `i32`).  It was invisible for a fortnight because the whole ptx half was RED
+# on 118 other rows, and a diff that lists a hundred disagreements does not
+# point at the one that is a bug rather than a rename.
+#
+# THE TABLE IS THE 2026-10-06 READING, AND THE `py=` COLUMN WAS REMOVED.  The
+# numbers here are ROWS THAT MOVE, and they were measured with the transcribed
+# `py=` halves this file no longer has; the moved-row counts are the same (a
+# `py=` half that is derived cannot move a row that the `got=` half did not),
+# but the CONTENT column of the original table is gone with it.  M51 is the one
+# row measured AFTER, on 2026-10-22, and it is the only number here this
+# commit's own plant produced.
 # ===========================================================================

@@ -4,11 +4,30 @@
 Every row is one line:  <name> = [BEND-VALUE]   py=[CPYTHON-VALUE]
 The Bend file prints the same lines; `diff` of the two lane outputs is the gate.
 Run from the repo root:
-    python3 .agents/slop/tcptx-oracle.py rows > /tmp/py.txt
+    .venv/bin/python gates/tc_ptx_render-oracle.py stage2 > /tmp/py2.rows
+
+THE FIVE SELECTORS, AND WHICH LANE EACH ONE IS FOR.
+
+    rows    the whole table: `stage1` (tc.py's 289 rows) then `stage2` (ptx.py's
+            343).  A convenience, and the one a reader reaches for first.
+    stage1  `tinybendygrad/renderer/tc.bend`'s rows -- the tc.py half.
+    stage2  `tinybendygrad/renderer/tc_ptx.bend`'s rows -- the ptx.py half.
+    wmma    the three `pm_validate_wmma_*` guards, asked of tinygrad's own
+            PatternMatcher.  THE PORT HAS NO LANE FOR THESE: its
+            `pm_validate_wmma_*` are unwritten and their rewrite BODIES need
+            `.bitcast`, which is `TODO(p3)` in `ops.bend`.  So the rows are the
+            GROUND TRUTH the port's rules will have to match, and they are
+            REPORTED with the wall named rather than diffed against nothing.
+    bend    THE PORT'S OWN SOURCE, generated.  The house pattern: `nl-oracle.py`
+            has a `bend` mode, and this one now has it too, so the port's
+            dtype-table row builders are GENERATED rather than typed, and the
+            ROW SET has an independent statement.
+
+THE GATE IS `gates/tc_ptx_render_census-gate.py`, and it runs BOTH lanes.
 """
 import sys, math, struct
 sys.path.insert(0, '.')
-from tinygrad.dtype import dtypes, DType, AddrSpace
+from tinygrad.dtype import dtypes, DType, AddrSpace, strong_dtype
 from tinygrad.renderer import tc
 from tinygrad.uop.ops import Ops, UOp, UPat, PatternMatcher, GroupOp
 from tinygrad.renderer import ptx as ptxmod
@@ -140,13 +159,22 @@ def wmma_guard_rows():
   answered by CPython rather than assumed.  The rewrite BODY is a wall in this
   port (`.bitcast` is `TODO(p3) ops.py:<line>` in ops.bend), so the answer is
   `None` / `FIRED`.
+
+  THE BUFFER MUST CARRY A SHAPE, AND IT DID NOT.  MEASURED 2026-10-22, calling
+  this function raised `IndexError: tuple index out of range` at
+  `x.max_numel()` -- `UOp._shape`'s `Ops.BUFFER` arm reads `self.src[0].as_shape`,
+  and the old `buf()` built `UOp(Ops.BUFFER, src=UOp.device_range_src('CUDA'), ...)`,
+  whose `src` is EMPTY for a string device, so there was no shape to read.  The
+  fixture is now built the way `UOp._buffer` builds one: `src =
+  (shape_to_shape_arg((n,)),)`.  A FUNCTION THAT CANNOT RUN IS NOT A WITNESS, and
+  this one was not even reachable -- it was defined and called by nothing.
   """
-  from tinygrad.uop.ops import Ops, UOp, ParamArg
+  from tinygrad.uop.ops import Ops, UOp, ParamArg, shape_to_shape_arg
   out = ""
   slot = [0]
   def buf(dt, n):
     slot[0] += 1
-    return UOp(Ops.BUFFER, src=UOp.device_range_src('CUDA'), arg=ParamArg(slot[0], dt, n))
+    return UOp(Ops.BUFFER, src=(shape_to_shape_arg((n,)),), arg=ParamArg(slot[0], dt))
   mms = (tc.pm_validate_wmma_rdna3, tc.pm_validate_wmma_rdna4, tc.pm_validate_wmma_cdna)
   mns = ("rdna3", "rdna4", "cdna")
   for (wdt, mn, sdt, smn, K) in wmma_grid():
@@ -266,6 +294,28 @@ def type_rows():
     try: R.types[k]; got = "no-raise"
     except KeyError: got = "KeyError"
     out += row(f"types {k.name}", got, got)
+  # THE NINE. `void`, `weakint` and `weakfloat` are not KEYS of any of the three
+  # tables, so the raw lookup raises -- and the port's answer is NOT the raw
+  # lookup's. The port answers `strong_dtype(dtype)`'s PTX type, and
+  # `strong_dtype` is CPython's OWN map (`dtype.py:169-170`,
+  # `{weakint: default_int, weakfloat: default_float}`), so the answer is
+  # CPython's too: `types[strong_dtype(weakint)]` is `types[i32]` is `"s32"`.
+  #
+  # MEASURED 2026-10-22, live: `void` -> KeyError in all three tables,
+  # `weakint` -> "s32" in all three, `weakfloat` -> "f32" in all three -- and the
+  # PORT's nine rows say exactly that. So these NINE are NOT divergences: they
+  # are the rows the raw lookup cannot answer and the strong-dtype map can, and
+  # before this commit the oracle printed NONE of them, so the port's nine were
+  # in no lane at all.
+  #
+  # THE NINE ARE THE TEETH. They are the rows that go red when the `pri`
+  # collision comes back (`bool`, `void` and `weakint` all carry pri 0), and
+  # they are a BLOCK in the port's own source for that reason.
+  for tbl, nm in ((R.types, "types"), (R.mem_types, "mem_types"), (R.cast_types, "cast_types")):
+    for d in (dtypes.void, dtypes.weakint, dtypes.weakfloat):
+      try: got = tbl[strong_dtype(d)]
+      except KeyError: got = "KeyError"
+      out += row(f"{nm} {d.name}", got, got)
   for k, v in R.mem_types.items():
     out += row(f"mem_types {k.name}", v, v)
   for k, v in R.cast_types.items():
@@ -410,6 +460,68 @@ STAGE2 = lambda: (ptx_guard_rows() + asm_rows() + half_rows() + modifier_rows() 
 def rows():
   return STAGE1() + STAGE2()
 
+# ---------------------------------------------------------------- the `bend` mode
+# THE HOUSE PATTERN, APPLIED HERE.  `nl-oracle.py`'s `bend` mode prints the
+# ROW-BUILDER SOURCE for the .bend file, so the port's text is GENERATED rather
+# than typed; `cstyle.bend` arrived with 215 hand-written expectations of which
+# SEVENTEEN were wrong, and that is the cost of typing them.
+#
+# WHAT IT EMITS HERE, AND WHY THIS GROUP.  The port's ptx-half `py=` halves are
+# now DERIVED -- `T.rd(nm, got)`, the port's OWN value, the shape `tc.bend`
+# landed -- so there is no `py=` TEXT to generate.  What there IS to generate is
+# the ROW SET and the ROW-BUILDER SOURCE, and the group where both rot was the
+# dtype TABLES: the port's row names there were hand-typed and carried the
+# PRE-RENAME dtype spellings ("signed char", "half", "float", "__bf16") for 118
+# rows, because a transcription has no generator and cannot see its subject
+# move.  So `bend` emits the port's own source for the four dtype-table row
+# builders, with the ROW SET and the ORDER taken from live `PTXRenderer.types`
+# / `mem_types` / `cast_types` and the dtype CONSTRUCTORS from the port's own
+# `LAWS/spec.bend` spelling.
+#
+# WHY IT IS WORTH HAVING WHEN THE BYTE DIFF ALREADY COMPARES THE ROWS.  A DIFF
+# CANNOT SEE A ROW THAT IS MISSING FROM BOTH LANES: if the port drops a row and
+# the oracle drops the same row, the two lanes agree and the diff is GREEN.
+# `bend` is the ORACLE'S INDEPENDENT STATEMENT of the row set -- computed from
+# the dict, not from `type_rows()` -- so it is the instrument that closes that
+# hole, and the recipe asks for it.
+#
+# THE SCOPE IS NAMED, NOT HIDDEN.  This mode covers the FOUR dtype-table row
+# builders.  The other groups' row sets are the emitters' (the twenty-one
+# `asm_for_op` arms, the twelve `PTXRenderer.types` keys, the four `render_wmma`
+# fixtures) and their witness is the byte diff; a row missing from BOTH lanes
+# in those groups would be invisible, and that is the cost of this scope.
+BNAME = {dtypes.void: "S.void()", dtypes.weakint: "S.weakint()", dtypes.weakfloat: "S.weakfloat()",
+         dtypes.bool: "S.boolean()", dtypes.i8: "S.int8()", dtypes.u8: "S.uint8()",
+         dtypes.i16: "S.int16()", dtypes.u16: "S.uint16()", dtypes.i32: "S.int32()",
+         dtypes.u32: "S.uint32()", dtypes.i64: "S.int64()", dtypes.u64: "S.uint64()",
+         dtypes.fp8e4m3: "S.fp8e4m3()", dtypes.fp8e5m2: "S.fp8e5m2()",
+         dtypes.fp8e4m3fnuz: "S.fp8e4m3fnuz()", dtypes.fp8e5m2fnuz: "S.fp8e5m2fnuz()",
+         dtypes.f16: "S.half()", dtypes.bf16: "S.bfloat16()",
+         dtypes.f32: "S.single()", dtypes.f64: "S.double()"}
+
+def bend_tables():
+  """THE PORT'S OWN SOURCE for the four dtype-table row builders."""
+  R = ptxmod.PTXRenderer
+  out = ""
+  out += "def r_tabs() -> String:\n  String.concat([" + \
+         ", ".join(f"r_types1({BNAME[k]})" for k in R.types) + "])\n"
+  out += "def r_mc_tabs() -> String:\n  String.concat([" + \
+         ", ".join(f"r_mem_types1({BNAME[k]})" for k in R.mem_types) + ", " + \
+         ", ".join(f"r_cast_types1({BNAME[k]})" for k in R.cast_types) + "])\n"
+  out += "def r_tabs_miss() -> String:\n  String.concat([" + \
+         ", ".join(f'T.rd("types " ++ T.dt_name({BNAME[d]}), ifmiss(types_of({BNAME[d]})))'
+                   for d in (dtypes.fp8e4m3, dtypes.bf16)) + "])\n"
+  calls = []
+  for nm, fn in (("types", "types_of"), ("mem_types", "mem_types_of"), ("cast_types", "cast_types_of")):
+    for d in (dtypes.void, dtypes.weakint, dtypes.weakfloat):
+      calls.append(f'T.rd("{nm} " ++ T.dt_name({BNAME[d]}), ifmiss({fn}({BNAME[d]})))')
+  out += "def r_tabs_weak() -> String:\n  String.concat([" + ", ".join(calls) + "])\n"
+  return out
+
+def bend():
+  """THE PORT'S OWN SOURCE, generated from the run above."""
+  return bend_tables()
+
 # `--help` USED TO CRASH, AND THE REASON WAS THAT THE LOOKUP BELOW WAS NOT TOTAL: it indexed a
 # three-name dict with `sys.argv[1]`, and `--help` is not one of the three, so it raised
 # `KeyError: '--help'` and exited 1. MEASURED with no argument: this oracle runs `rows` and prints
@@ -419,7 +531,15 @@ def rows():
 # `--help` that exits 0 having written nothing to stdout is the SILENT shape -- rc 0 with nothing
 # said -- which `gates/help-census.py` already has two rows of (`gates/qcom-oracle.py`,
 # `gates/qcom_stage3-oracle.py`). Every out-of-domain selector therefore takes ONE refusal.
-SELECTORS = {"rows": rows, "stage1": STAGE1, "stage2": STAGE2}
+#
+# `wmma` AND `bend` ARE THE TWO THAT WERE MISSING, AND BOTH WERE MISSING FOR THE SAME REASON:
+# A FUNCTION NO SELECTOR CAN REACH IS A FUNCTION THAT CANNOT FAIL.  `wmma_guard_rows` was
+# defined and called by NOTHING -- and, MEASURED 2026-10-22, it RAISED when called, because
+# its fixture BUFFER carried no shape.  `bend` did not exist, so the port's dtype-table row
+# builders had no generator.  The `rows`/`stage1`/`stage2` selectors are the DIFF's selectors;
+# `wmma` is the wmma GUARDS' own witness (the port has no `pm_validate_wmma_*` yet, so it has
+# no lane -- NAMED, not faked), and `bend` is the ROW SET's independent statement.
+SELECTORS = {"rows": rows, "stage1": STAGE1, "stage2": STAGE2, "wmma": wmma_guard_rows, "bend": bend}
 
 if __name__ == "__main__":
   what = sys.argv[1] if len(sys.argv) > 1 else "rows"
