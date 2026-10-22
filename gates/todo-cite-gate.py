@@ -7,6 +7,12 @@
     .venv/bin/python gates/todo-cite-gate.py --plant
     .venv/bin/python gates/todo-cite-gate.py --port DIR --upstream-dir DIR
 
+THE PATCHES FOR THE FILES THIS GATE MAY NOT EDIT, AND WHERE THEY LIVE.  A citation that is
+still false in a file another unit is holding is a FALSE CLAIM LEFT STANDING, so the gate
+prints the patch for it.  **THE PRINTS GO TO `gates/todo-cite-HELD-PATCHES.md`, BESIDE THIS
+GATE** -- and NOT under `.agents/slop/`, which is the directory this tree is pruning and where
+the tree has already lost `worker_oracle.py` and had to recover it from a blob.
+
 UPSTREAM IS THE PIN, AND THE PIN IS THE DECLARATION. `.agents/UPSTREAM-PIN.md`'s "OUR PIN"
 row names the commit whose `tinygrad/` tree this repo vendored, and this gate verifies the
 vendored bytes against that tree BEFORE it measures anything. The corpus is read from the
