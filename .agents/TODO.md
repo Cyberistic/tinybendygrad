@@ -21936,3 +21936,69 @@ THE MECHANISM THAT REPLACED IT.
       ABSENT; WHAT LANDED IS `Compiled`'s TWO MEMBERS AND THE RESOLUTION ORDER THEY EXIST FOR.
 - [ ] **THE PORT'S `pm_bufferize` TABLE IS UPSTREAM's DELETED SHAPE** AND IS STILL HERE. IT IS THE
       CORPSE, AND THE SECTION THAT PORTED IT NAMES THE RESTRUCTURING.
+
+## TARGETONE -- **THE PORT HAD TWO `Target` RECORDS AND NOW HAS ONE, IN UPSTREAM'S HOME, AND THE SECOND HALF IS A LIVE UNIT'S FILE** (2026-10-22, `ffbc2deec`)
+
+`target-census  [###......] 3/6` · `target-plant  [#########] 9/9` · `target-roundtrip  [##.......] 2/7`
+
+### 1. **THE DEFECT, AND THE IMPORT GRAPH THAT DECIDES WHERE THE ONE RECORD GOES**
+
+Upstream has ONE `Target` (`tinygrad/helpers.py:198`) and upstream's `uop/ops.py:13` and
+`runtime/ops_python.py:9` both IMPORT it from there. The port had TWO, with the same five fields
+and DIFFERENT identities -- `runtime/ops_python.bend:2420` (the record, its accessors and the DEV
+parser) and `uop/ops.bend:1025` (the record and `Target.of()`) -- so a parsed `Target` could not
+go into a `ProgramInfo`, and the two could drift apart with nothing noticing.
+
+`uop/ops.bend` CANNOT import `runtime/ops_python.bend`: the latter imports `../uop/ops.bend`, so the
+edge would close a cycle (MEASURED, not remembered -- `.agents/slop/programinfo/a.bend` imports
+`b.bend` and `b.bend` imports `a.bend`, and the compiler answers "an import cycle through ...").
+`helpers.bend` is a LEAF -- it imports `Base` and nothing else -- and BOTH consumers already import
+it as `H`, so `H.Target` is reachable from both with NO new import and NO cycle. Upstream's
+`helpers.py` is where the class is, and the port's `helpers.bend` is that file's mirror.
+
+**NO CONVERSION, BECAUSE ONE DECLARATION GOES.** Upstream's order is `device, renderer, arch,
+interface, indices` and the port's is `device, renderer, arch, iface, indices` -- ONE name differs
+and the ORDER IS UPSTREAM'S. A conversion between two records with the same field names in the same
+order is a no-op that can only ever be wrong SILENTLY, so there is not one.
+
+### 2. **WHAT LANDED**
+
+- [x] **THE RECORD AND THE DEV PARSER MOVED TO `helpers.bend`**, after `GlobalCounters` and before
+      the NOT PORTED ledger, and `runtime/ops_python.bend` reads `H.Target`. MEASURED: `bin/bend
+      tinybendygrad/helpers.bend` answers `ALL PROOFS CHECK`, rc=0. A method belongs with its type:
+      Bend REFUSES a method defined on an imported type (a `def O.Target.x` in a file that imports
+      `O` is a parse error -- "O is an import's alias"), so the parser moved with the record.
+- [x] **THE SEVENTEEN CITATIONS THE MOVE SHIFTS ARE RE-POINTED IN THE SAME COMMIT.** MEASURED: 116
+      live `helpers.bend:N` citations in 52 tracked files; the section's insertion point moves three
+      cited lines in the ledger (2812, 2815, 2842) and nothing else, so 17 occurrences in 11 files
+      changed and 99 did not.
+- [x] **`gates/target-census-gate.py` -- THE INSTRUMENT THAT MAKES THE DUPLICATE IMPOSSIBLE TO
+      REINTRODUCE.** The population is DISCOVERED (`os.walk` over `tinybendygrad/` plus
+      `endswith(".bend")`), and it asserts the record is declared ONCE, IN `helpers.bend`, with the
+      fields in upstream's ORDER, and that every consumer spells it `<alias>.Target`.
+- [x] **`gates/target-census-gate.py --plant` -- SIX ARMS, EACH CAUGHT.** A SECOND RECORD; A
+      DIFFERENT FIELD ORDER (THE SILENT ONE: a construction puts the values in the wrong slots and
+      a pattern compares the wrong pairs); A DROPPED FIELD; A RENAMED FIELD; A BARE `Target` in
+      `ProgramInfo.target` (structurally identical, nominally not); and the record declared ONCE in
+      the WRONG FILE. The control is SYNTHETIC, because the real tree may be in the defective state
+      the gate exists to name, and a red control cannot tell a mutation from the defect.
+- [x] **`gates/target-oracle.py` AND `gates/target-roundtrip.bend` -- THE ROUND TRIP, WITH THE
+      ORACLE BEING CPYTHON's OWN `Target.parse` AND CPYTHON's OWN `ProgramInfo`.** The row is
+      `<dev> => <before> -> <after>`, and BOTH halves are in it because a conversion that DROPS a
+      field or SWAPS `arch` and `iface` is SILENT in a row that prints only the parsed target.
+
+### 3. **WHAT IS NOT DONE, AND IS NOT TICKED**
+
+- [ ] **`tinybendygrad/uop/ops.bend` STILL DECLARES ITS OWN `Target`,** so
+      `gates/target-census-gate.py` is RED on FOUR of its six claims and the round trip cannot be
+      TYPED. The file is a LIVE UNIT's (487 insertions in flight: `ProgramInfo.from_sink`,
+      `launch_dims`, the `target` field) and it was NOT edited. THE PATCH IS PREPARED AND REPORTED:
+      delete the `type Target` declaration and `Target.of()`, and spell the field and the accessors
+      `H.Target`. IT IS NOT A HARD EDIT -- THE OTHER UNIT's OWN COMMENT ALREADY ASKED FOR IT
+      ("the class belongs in `helpers.bend` and `runtime/ops_python.bend:2420` should read
+      `H.Target`").
+- [ ] **`tinybendygrad/uop/ops.bend` DOES NOT COMPILE, FOR TWO REASONS THAT ARE NOT ABOUT
+      `Target`.** `fs.sp.dim.digit` matches `Char.is_digit(c)`, a COMPUTED VALUE, which Bend refuses
+      ("a match cannot scrutinize a computed value: give it its own def"), and `ProgramInfo.
+      launch_dims` returned `(A, B)`, a Sigma VALUE, where Bend's product TYPE is `A & B`. BOTH WERE
+      FIXED IN A SCRATCH COPY ONLY, TO MAKE THE ROUND TRIP PROVABLE; NEITHER IS FIXED IN THE TREE.
