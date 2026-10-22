@@ -2229,6 +2229,295 @@ def t_batch() -> IO(Unit):
     IO.pure(Unit, Unit{})
 
 # ===========================================================================
+# `bufferize_buf` -- hcq2.py:483-494. THE CONSUMER of the link mechanism.
+#
+# Upstream, in full (`tinygrad/runtime/support/hcq2.py:483-494` at the pin
+# `5c2bf39d6c4b`):
+#
+#   def bufferize_buf(ctx:LinkCtx, b:UOp) -> UOp:
+#     if b.arg.name is None: return UOp.new_buffer(b.device, b.max_numel(), b.dtype)
+#     dev, spec = Device[b.device], b.arg.spec or BufferSpec(cpu_access=True)
+#
+#     owned = Compiled.link_bufs.get(b.arg.name, Compiled.link_bufs.get(to_name(b.device, b.arg.name)))
+#     if owned is not None: r = owned if isinstance(owned, Buffer) else owned(b)
+#     elif (r:=dev.link_buffer(b)) is not None: pass
+#     elif not ctx.use_rt: r = Buffer(dev.device, max(b.max_numel(), 1) * b.dtype.itemsize, options=spec, preallocate=True)
+#     else: r = dev.rt_buffer(spec).view(b.nbytes(), dev.rt_allocator(spec).alloc(max(b.nbytes(), 1), alignment=256)).ensure_allocated()
+#
+#     return UOp.from_buffer(r, b.dtype, HCQ_RUNTIME_DEV.device)
+#
+# WHAT IT IS: THE LINK. It answers ONE question -- which PHYSICAL buffer does
+# this logical ALLOC belong to -- and the answer is a FOUR-WAY, in upstream's
+# order:
+#
+#   0  the alloc has NO name           a FRESH buffer, and it is NOT linked
+#   1  the registry, PLAIN name        `link_bufs[b.arg.name]`
+#   2  the registry, DEVICE-SCOPED     `link_bufs[to_name(b.device, b.arg.name)]`
+#   3  the device's `link_buffer`      `dev.link_buffer(b)`
+#   4  nothing                         allocate
+#
+# THE RESOLUTION IS ALREADY PORTED -- `device.bend`'s `link_resolve`
+# (device.bend:1226) answers exactly that four-way, with the same levels and
+# the same Buffer-vs-CALLABLE discriminator. WHAT WAS MISSING IS THE CONSUMER:
+# upstream's `bufferize_buf` is the ONLY caller of `link_bufs` and
+# `link_buffer` (device.bend:1052 measures that), so until this existed the
+# port carried a mechanism with nothing on the other end of it.
+#
+# TWO FACTS THE MECHANISM ALONE DOES NOT CARRY, AND THEY ARE THE POINT:
+#
+#   1. A LINKED BUFFER'S SIZE IS THE REGISTRY'S, NOT THE ALLOC'S. Upstream
+#      never resizes a registered buffer to fit the alloc: the `owned` branch
+#      hands the registry's buffer straight to `UOp.from_buffer`, and there is
+#      no `max_numel` anywhere on that path. A port that sized the result from
+#      the alloc would answer 16 where upstream answers 64.
+#   2. THE DEVICE OF THE RESULT. `UOp.from_buffer(r, b.dtype,
+#      HCQ_RUNTIME_DEV.device)` RE-PLACES a linked buffer on the runtime
+#      device, while the unnamed path's `UOp.new_buffer(b.device, ...)` keeps
+#      the alloc's own device.
+#
+# `ctx.use_rt` IS NOT PORTED, AND THE REASON IS MEASURED: it chooses the
+# ALLOCATION MECHANISM -- a runtime allocator's view or a plain preallocated
+# `Buffer` -- and the two agree on the byte count for every alloc
+# `UOp.from_buffer` accepts (`assert opaque.nbytes % dtype.itemsize == 0`),
+# while the runtime allocator itself is a WALL (`device.py`'s `rt_buffer` /
+# `rt_allocator`). So the port allocates `max(max_numel, 1) * itemsize` bytes,
+# the size both paths agree on.
+#
+# THE `+` ON THE PARAMETERS IS NOT NOISE. A `U32` is AFFINE and a `Data`
+# record is LINEAR, so a value used twice is "consumed more than once" unless
+# it is spelled `+` -- the same rule `device.bend` and `helpers.bend` obey.
+# AND A DEF MUST BE DEFINED BEFORE IT IS USED: a name that is not yet defined
+# resolves to an UNFILLED law, and live code cannot use one.
+# ===========================================================================
+
+# THE ALLOC. Upstream's `b` is a UOp and the function reads five things off
+# it: `b.arg.name` (the name, or None), `b.device`, `b.max_numel()`, `b.dtype`
+# and `b.arg.spec`. `has_name` is a `Bool` and not a `Maybe`, because a `Data`
+# record may not hold a `Maybe` field.
+#
+# `dev` is the device STRING and `dev_ix` the device INDEX, and they are two
+# fields because the registry lookup folds the STRING
+# (`to_name(b.device, b.arg.name)`) while a buffer the port ALLOCATES lands in
+# an arena slot, and a slot carries an INDEX (`device.bend:629` `Bn.dev`).
+# `b.arg.spec` IS NOT PORTED: upstream reads `b.arg.spec or
+# BufferSpec(cpu_access=True)` and only the allocation path uses it, and no
+# alloc in this port names a spec of its own.
+type Al is Data:
+  Al{has_name: Bool, name: String, dev: String, dev_ix: U32, n: U32, dt: S.Dt}
+
+# THE ANSWER. `level` is upstream's four-way, `kind` is upstream's
+# `isinstance(owned, Buffer)` discriminator (0 a Buffer, 1 a CALLABLE that was
+# called with the alloc, 2 neither), `buf` is the ARENA SLOT of the buffer
+# that won, `nb` is ITS byte count, `dev` is the device the RESULT is PLACED
+# on, and `ar` is the arena the result lives in -- GROWN when the allocation
+# path made a buffer, because upstream's `Buffer(...)` creates one and a
+# created Buffer is a slot.
+type Bz is Data:
+  Bz{ar: D.Bar, level: U32, kind: U32, buf: U32, nb: U32, dev: String}
+
+# `HCQ_RUNTIME_DEV.device` (tinygrad/helpers.py:249). NOT "CPU:LLVM":
+# `_DEV("HCQ_RUNTIME_DEV", "CPU:LLVM")` parses a `Target`, and a Target's
+# `.device` is the device part alone. MEASURED: the CPython oracle prints
+# `bz_dev_plain=CPU`.
+def HCQ_RUNTIME_DEV() -> String: "CPU"
+
+# `max(b.max_numel(), 1)` -- upstream's `max`, and it is what makes a
+# ZERO-element alloc allocate one element rather than none.
+def bz_max1(+n: U32) -> U32:
+  Bool.pick(U32, U32.is_zero(n), 1, n)
+
+# `BufferSpec(cpu_access=True)` -- the ALLOCATION path's spec (device.py:88's
+# five flags, in its order).
+def bz_spec() -> D.Bspec:
+  D.Bspec{False{}, True{}, False{}, False{}, False{}}
+
+# `Compiled.timeline`'s spec: `BufferSpec(host=True, uncached=True,
+# cpu_access=True)` (device.py:414).
+def bz_tl_spec() -> D.Bspec:
+  D.Bspec{True{}, True{}, True{}, False{}, False{}}
+
+# A FRESH buffer in the arena. `D.root` takes the ELEMENT count and the
+# dtype, and `Bn.nbytes` is `size * itemsize`, so a 16-byte buffer is 16
+# `uint8`s.
+def bz_new(+ar: D.Bar, dev_ix: U32, n: U32, dt: S.Dt, sp: D.Bspec) -> D.BFound:
+  D.bnew(ar, D.root(dev_ix, n, dt, sp))
+
+# THE UNNAMED PATH. `UOp.new_buffer(b.device, b.max_numel(), b.dtype)` -- a
+# FRESH buffer, NOT linked, sized `max_numel * itemsize` -- NO `max(..., 1)`,
+# which is the allocation path's and not this one's -- with the DEFAULT spec,
+# and PLACED ON THE ALLOC'S OWN DEVICE.
+def bz_unnamed2(f: D.BFound, dev: String, n: U32, dt: S.Dt) -> Bz:
+  match f:
+    case D.BFound{ar, i}: Bz{ar, 0, 2, i, U32.mul(n, S.Dt.itemsize(dt)), dev}
+
+def bz_unnamed(+ar: D.Bar, +dev: String, +dev_ix: U32, +n: U32, +dt: S.Dt) -> Bz:
+  bz_unnamed2(bz_new(ar, dev_ix, n, dt, D.spec()), dev, n, dt)
+
+# THE ALLOCATION PATH. `Buffer(dev.device, max(b.max_numel(), 1) *
+# b.dtype.itemsize, options=spec, preallocate=True)` -- a FRESH buffer, on the
+# RUNTIME device.
+def bz_alloc2(f: D.BFound, n2: U32, dt: S.Dt) -> Bz:
+  match f:
+    case D.BFound{ar, i}: Bz{ar, 4, 2, i, U32.mul(n2, S.Dt.itemsize(dt)), HCQ_RUNTIME_DEV()}
+
+def bz_alloc(+ar: D.Bar, +dev_ix: U32, +n: U32, +dt: S.Dt) -> Bz:
+  bz_alloc2(bz_new(ar, dev_ix, bz_max1(n), dt, bz_spec()), bz_max1(n), dt)
+
+# A REGISTRY or HOOK hit. The buffer that won is an EXISTING arena slot and
+# ITS SIZE IS ITS OWN: upstream never resizes a registered buffer to fit the
+# alloc -- the `owned` branch hands the registry's buffer straight to
+# `UOp.from_buffer` -- so this reads the SLOT and not the alloc.
+def bz_hit2(nb: U32, ar: D.Bar, level: U32, kind: U32, buf: U32) -> Bz:
+  Bz{ar, level, kind, buf, nb, HCQ_RUNTIME_DEV()}
+
+def bz_nb(+ar: D.Bar, buf: U32) -> U32:
+  D.nbytes(ar, buf)
+
+# THE FOUR-WAY. Level 0 is the UNNAMED path and it returns before the
+# resolution, so the only level that arrives here besides the three hits is
+# 4 -- allocate.
+def bz_pick(+level: U32, +kind: U32, +buf: U32, +nb: U32, +ar: D.Bar,
+            +dev_ix: U32, +n: U32, +dt: S.Dt) -> Bz:
+  match level:
+    case 1: bz_hit2(nb, ar, 1, kind, buf)
+    case 2: bz_hit2(nb, ar, 2, kind, buf)
+    case 3: bz_hit2(nb, ar, 3, 2, buf)
+    case _: bz_alloc(ar, dev_ix, n, dt)
+
+# THE NAMED PATH. `link_resolve` asks the registry's PLAIN key first, then the
+# registry's DEVICE-SCOPED key, then the device's own `link_buffer`, and
+# answers the four-way with the LEVEL, the Buffer-vs-CALLABLE KIND and the
+# ARENA SLOT of the buffer that won.
+def bz_of(r: D.LkRes, +ar: D.Bar, +dev_ix: U32, +n: U32, +dt: S.Dt) -> Bz:
+  match r:
+    case D.LkRes{level, kind, +buf}:
+      bz_pick(level, kind, buf, bz_nb(ar, buf), ar, dev_ix, n, dt)
+
+def bz_named(+regs: List<&2, D.Lk>, +hook: D.Hook, +ar: D.Bar, +name: String,
+             +dev: String, +dev_ix: U32, +n: U32, +dt: S.Dt) -> Bz:
+  bz_of(D.link_resolve(regs, Maybe.pure(&2, String, name), dev, hook),
+        ar, dev_ix, n, dt)
+
+# THE PORT of `bufferize_buf`.
+def bufferize(+regs: List<&2, D.Lk>, +hook: D.Hook, +ar: D.Bar, al: Al) -> Bz:
+  match al:
+    case Al{+has_name, +name, +dev, +dev_ix, +n, +dt}:
+      match has_name:
+        case False{}: bz_unnamed(ar, dev, dev_ix, n, dt)
+        case True{}: bz_named(regs, hook, ar, name, dev, dev_ix, n, dt)
+
+# ===========================================================================
+# THE REGISTRY ENTRY upstream's `hcq2.py:477` sets:
+#   `Compiled.link_bufs |= {"timeline": lambda b: Device[b.device].timeline}`
+#
+# THE WALL, AND IT IS THE `Lk` SHAPE. Upstream's entry is a PLAIN name whose
+# value is a CALLABLE, and the callable's result depends on the ALLOC's
+# DEVICE. The port's registry entry is `D.Lk{name, kind, buf}` -- ONE arena
+# slot -- so it cannot hold a per-device result.
+#
+# THE PORT HAS THE TIMELINE'S SIZE AND ITS SPEC: `device.bend`'s
+# `timeline_bytes()` is 16, and `device.py:414`'s spec is
+# `BufferSpec(host=True, uncached=True, cpu_access=True)`. THE PORT HAS NO
+# per-device timeline INSTANCE: upstream's is `Compiled.timeline`, a
+# `cached_property` on the device class, and the port has no device object to
+# hang one on.
+#
+# SO THE PORT PRODUCES THE ENTRY IN THE SHAPE UPSTREAM USES FOR ITS OTHER
+# PER-DEVICE BUFFERS (`ops_cuda.py:106`, `ops_metal.py:218`,
+# `ops_qcom.py:341`): a PLAIN "timeline" entry, KIND 1 -- a CALLABLE -- whose
+# slot is THIS device's timeline. On a ONE-device tree that is upstream's
+# answer exactly: LEVEL 1, KIND 1. On a MULTI-device tree upstream's lambda
+# picks the ALLOC's device's timeline and the port's single slot cannot, and
+# THAT is the wall.
+#
+# THE TIMELINE BUFFER. `Compiled.timeline` is `Buffer(self.device, 16,
+# options=BufferSpec(host=True, uncached=True, cpu_access=True),
+# initial_value=bytes(16))` -- SIXTEEN BYTES -- and `device.py:430` reads it as
+# two u64s (`self.timeline.host.view(fmt='Q')`), which is what `device.bend`'s
+# `timeline_size()` = 2 models.
+# ===========================================================================
+def bz_ix_cpu() -> U32: 7
+def bz_ix_null() -> U32: 11
+
+def bz_tl_arena2(f: D.BFound) -> D.Bar:
+  match f:
+    case D.BFound{ar, i}: ar
+
+def bz_tl_arena() -> D.Bar:
+  bz_tl_arena2(D.bnew(D.lk_arena(), D.root(bz_ix_cpu(), 16, S.uint8(), bz_tl_spec())))
+
+# The entry: the PLAIN name, KIND 1 (a CALLABLE), and the slot of THIS
+# device's timeline -- slot 8, the slot the arena appends.
+def bz_reg_timeline() -> List<&2, D.Lk>: [D.Lk{"timeline", 1, 8}]
+
+# ===========================================================================
+# THE FIXTURES. The arena is `device.bend`'s own `lk_arena()` -- slot 0 is the
+# bottom, slots 1..6 are the registry's sentinels at 64 bytes each and slot 7
+# is the device hook's buffer at 16 bytes -- so the port and the CPython
+# oracle agree on the SLOT NUMBERS by construction and not by a convention
+# both had to remember.
+#
+# THE REGISTRY IS THIS FILE'S, because the device-scoped key is a fold of the
+# device and `device.bend`'s fixture device is "PYTHON" while this one is a
+# device the port's table has an INDEX for: `device.bend`'s `dev_name` is
+# 7 = "CPU" and 11 = "NULL", and a buffer the port ALLOCATES lands in a slot,
+# and a slot carries an index.
+# ===========================================================================
+def bz_reg_plain() -> List<&2, D.Lk>: [D.Lk{"mine", 0, 1}]
+def bz_reg_dev() -> List<&2, D.Lk>: [D.Lk{D.to_name(["CPU", "mine"]), 0, 2}]
+def bz_reg_both() -> List<&2, D.Lk>: D.link_add(bz_reg_dev(), "mine", 0, 1)
+def bz_reg_call() -> List<&2, D.Lk>: [D.Lk{"call", 1, 3}]
+def bz_reg_devcall() -> List<&2, D.Lk>: [D.Lk{D.to_name(["CPU", "call"]), 1, 4}]
+def bz_reg_dup() -> List<&2, D.Lk>: D.link_add([D.Lk{"dup", 0, 5}], "dup", 0, 6)
+def bz_reg_none() -> List<&2, D.Lk>: Nil{}
+
+# THE ALLOCS. 16 uint8, so a FRESH buffer is 16 bytes and a REGISTERED one is
+# the registry's own -- 64. The timeline case's alloc is 64 bytes, so its
+# SIZE row says which of the two won.
+def bz_al_n(name: String, dev: String, dev_ix: U32, n: U32) -> Al:
+  Al{True{}, name, dev, dev_ix, n, S.uint8()}
+
+def bz_al(name: String, dev: String, dev_ix: U32) -> Al:
+  bz_al_n(name, dev, dev_ix, 16)
+
+def bz_al_unnamed(dev: String, dev_ix: U32) -> Al:
+  Al{False{}, "", dev, dev_ix, 16, S.uint8()}
+
+# THE ROWS for one case. The result is destructured ONCE -- a `match` may not
+# scrutinise a record's fields at a CALL SITE, so a def that reads five fields
+# of `Bz` reads them in one `match` and prints five rows.
+def bz_rows(+nm: String, r: Bz) -> IO(Unit):
+  match r:
+    case Bz{ar, level, kind, buf, nb, dev}:
+      do IO<Unit>:
+        a : Unit <- urow(String.concat(["bz_lvl_", nm]), level)
+        b : Unit <- urow(String.concat(["bz_kind_", nm]), kind)
+        c : Unit <- urow(String.concat(["bz_buf_", nm]), buf)
+        d : Unit <- urow(String.concat(["bz_bytes_", nm]), nb)
+        e : Unit <- srow(String.concat(["bz_dev_", nm]), dev)
+        IO.pure(Unit, Unit{})
+
+# THE TWELVE CASES, in the CPython oracle's order. The two lanes are compared
+# BY THE NUMBER: the slot, the level, the kind and the byte count.
+def t_bufferize() -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- srow("bz_devname_cpu", D.dev_name(bz_ix_cpu()))
+    b : Unit <- srow("bz_devname_null", D.dev_name(bz_ix_null()))
+    c : Unit <- bz_rows("plain", bufferize(bz_reg_plain(), D.link_buffer_base(), D.lk_arena(), bz_al("mine", "CPU", bz_ix_cpu())))
+    d : Unit <- bz_rows("dev", bufferize(bz_reg_dev(), D.link_buffer_base(), D.lk_arena(), bz_al("mine", "CPU", bz_ix_cpu())))
+    e : Unit <- bz_rows("both", bufferize(bz_reg_both(), D.link_buffer_base(), D.lk_arena(), bz_al("mine", "CPU", bz_ix_cpu())))
+    f : Unit <- bz_rows("call", bufferize(bz_reg_call(), D.link_buffer_base(), D.lk_arena(), bz_al("call", "CPU", bz_ix_cpu())))
+    g : Unit <- bz_rows("devcall", bufferize(bz_reg_devcall(), D.link_buffer_base(), D.lk_arena(), bz_al("call", "CPU", bz_ix_cpu())))
+    h : Unit <- bz_rows("dup", bufferize(bz_reg_dup(), D.link_buffer_base(), D.lk_arena(), bz_al("dup", "CPU", bz_ix_cpu())))
+    i : Unit <- bz_rows("none", bufferize(bz_reg_none(), D.link_buffer_base(), D.lk_arena(), bz_al("mine", "CPU", bz_ix_cpu())))
+    j : Unit <- bz_rows("unnamed", bufferize(bz_reg_none(), D.link_buffer_base(), D.lk_arena(), bz_al_unnamed("NULL", bz_ix_null())))
+    k : Unit <- bz_rows("hook", bufferize(bz_reg_none(), D.Hook{True{}, 7}, D.lk_arena(), bz_al("mine", "NULL", bz_ix_null())))
+    l : Unit <- bz_rows("shadow", bufferize(bz_reg_plain(), D.Hook{True{}, 7}, D.lk_arena(), bz_al("mine", "NULL", bz_ix_null())))
+    m : Unit <- bz_rows("wrongdev", bufferize(bz_reg_dev(), D.link_buffer_base(), D.lk_arena(), bz_al("mine", "CPU:0", bz_ix_cpu())))
+    n : Unit <- bz_rows("timeline", bufferize(bz_reg_timeline(), D.link_buffer_base(), bz_tl_arena(), bz_al_n("timeline", "CPU", bz_ix_cpu(), 64)))
+    IO.pure(Unit, Unit{})
+
+# ===========================================================================
 # THE MUTATION TABLE. Every "rows moved" below is the HARNESS's output, not an
 # estimate: `.agents/slop/hcq2-mutate.py` applies one edit to a scratch copy,
 # runs the INTERPRETED lane, and counts the rows whose VALUE changed. The useful
@@ -2250,6 +2539,7 @@ def main() -> IO(Unit):
     f : Unit <- t_cstruct()
     g : Unit <- t_geom()
     h : Unit <- t_batch()
+    i : Unit <- t_bufferize()
     IO.print("hq2-done=1")
 # | # | the edit | rows moved | what it is testing |
 # | --- | --- | --- | --- |

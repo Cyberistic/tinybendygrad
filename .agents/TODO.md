@@ -21925,7 +21925,7 @@ REPRODUCIBLE **AND** CURRENT -- ALL THREE AT ONCE -- AND ITS FRESHNESS IS NOW A 
 MUTATES A KERNEL'S BUFFER LIST.** THE PORT WAS PORTING A FUNCTION UPSTREAM DELETED. WHAT IS PORTED IS
 THE MECHANISM THAT REPLACED IT.
 
-`link-buf  [##########] 10/10` · `link-plant  [##########] 8/8` · `link-oracle  [#########.] 26/26`
+`link-buf  [##########] 10/10` · `link-plant  [##########] 8/8` · `link-oracle  [#########.] 26/26` · `link-consumer [#########] 9/9`
 
 ### 1. **WHAT UPSTREAM HAS, QUOTED, AT THE PIN `5c2bf39d6c4b`**
 
@@ -21990,10 +21990,35 @@ THE MECHANISM THAT REPLACED IT.
       `helpers.py:21`, SO THE PORT'S `helpers.bend` IS ITS HOME, AND THE HOIST IS A TWO-LINE EDIT FOR
       WHOSEVER IS ALLOWED TO CHANGE A SECOND FILE. THE TWO FOLDS MUST AGREE: THE DEVICE-SCOPED
       REGISTRY KEY IS A STRING.
-- [ ] **`hcq2.bend` HAS NO `bufferize_buf`**, SO THE CONSUMER OF THE PORTED MECHANISM IS STILL
-      ABSENT; WHAT LANDED IS `Compiled`'s TWO MEMBERS AND THE RESOLUTION ORDER THEY EXIST FOR.
+- [x] **`hcq2.bend` HAS NO `bufferize_buf`** -- **LANDED (2026-10-22).** `tinybendygrad/runtime/support/hcq2.bend`
+      NOW CARRIES `bufferize_buf` (hcq2.py:483-494) IN FULL: ALL FOUR LEVELS, THE
+      Buffer-vs-CALLABLE KIND, THE ARENA SLOT OF THE BUFFER THAT WON, ITS BYTE COUNT AND THE DEVICE
+      THE RESULT IS PLACED ON. IT CALLS `device.bend`'s `link_resolve`, SO THE MECHANISM AND ITS
+      CONSUMER ARE ONE ANSWER. **THE ORACLE IS IN GIT** (`oracles/hcq2-bufferize-oracle.py`) AND
+      DRIVES UPSTREAM's OWN `bufferize_buf` WITH A REAL `Ops.ALLOC` UOp: **shared=62 agree=62
+      differ=0** OVER TWELVE CASES. **THE SIZE IS THE POINT**: A LINKED BUFFER'S SIZE IS THE
+      REGISTRY'S (64), NOT THE ALLOC'S (16) -- UPSTREAM NEVER RESIZES ONE TO FIT. **THE PLANT IS 7
+      OF 7** (`oracles/hcq2-bufferize-mut.py`) AND NAMES THE FIVE FAILURES PLUS THE SIZE.
+      **THE WALL**: THE PORT HAS NO PER-DEVICE `timeline` INSTANCE, SO UPSTREAM'S PLAIN-NAME
+      PER-DEVICE CALLABLE (`hcq2.py:477`) IS PRODUCED IN THE SHAPE UPSTREAM USES FOR ITS OTHER
+      PER-DEVICE BUFFERS -- A PLAIN "timeline" ENTRY, KIND 1, HOLDING THIS DEVICE'S TIMELINE.
 - [ ] **THE PORT'S `pm_bufferize` TABLE IS UPSTREAM's DELETED SHAPE** AND IS STILL HERE. IT IS THE
       CORPSE, AND THE SECTION THAT PORTED IT NAMES THE RESTRUCTURING.
+      **WHAT IT IS, PRECISELY (2026-10-22, AT THE PIN `5c2bf39d6c4b`):** AT THE PIN
+      `tinygrad/device.py` HAS **NO `pm_bufferize` CLASS ATTRIBUTE AT ALL** -- `Compiled` CARRIES
+      `pm_encode`, `pm_lower`, `pm_link` AND `link_bufs` (device.py:374-377) INSTEAD. THE TABLE IN
+      THE PORT IS **UPSTREAM's PRE-RESTRUCTURE SHAPE**: THE TWO RULES `UPat(Ops.PARAM,
+      tag="timeline")` AND `UPat(Ops.PARAM, tag="program", name="b")`, WHICH A BACKEND USED TO
+      **PREPEND** TO `Compiled.pm_bufferize`.
+      **WHAT REPLACES IT IS `link_bufs` (device.py:377) + `link_buffer` (device.py:411)**, WHICH ARE
+      PORTED AND LIVE (`device.bend:1120-1229`), AND WHOSE CONSUMER (`bufferize_buf`) IS NOW
+      PORTED TOO (`hcq2.bend`).
+      **THE FILE:LINE TO CHANGE: `tinybendygrad/device.bend:1231-1400`** (THE SECTION HEADER, THE
+      `Pmb`/`Pn` TYPES, `rule1`, `pmb_scan`, `pmb_bufferize`, `pmb_len`), **THE FIXTURES AT
+      `:1530-1547`** (`pmb_named`, `pmb_grew`, `pmb_nonparam`, `pmb_timeline_nonparam`), **THE ROWS AT
+      `:1695-1701`** (`pmb_len`, `pmb_tl`, `pmb_named`, `pmb_none`, `pmb_grew`, `pmb_nonparam`,
+      `pmb_tl_nonparam`), AND THE TWO HEADERS THAT CALL IT A CORPSE (`:74-78`, `:1060-1067`).
+      **NOT DONE HERE: `device.bend` IS A LIVE UNIT'S FILE, CHANGED MINUTES AGO.**
 
 ## TARGETONE -- **THE PORT HAD TWO `Target` RECORDS AND NOW HAS ONE, IN UPSTREAM'S HOME, AND THE SECOND HALF IS A LIVE UNIT'S FILE** (2026-10-22, `ffbc2deec`)
 
