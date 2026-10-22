@@ -1731,10 +1731,10 @@ rn-recoverable [##########] 4/4  MEASURED 2026-10-17 by a dispatched unit, and I
                                        is in neither HEAD nor disk, so **restoring the path would buy
                                        an `ImportError` instead of an `exit 3` -- a `DEAD` lane
                                        wearing a `FAIL`'s clothes**, which is why it is not restored.
-const-identity [#######...] 3/7  **THE PORT's CONSTANT IDENTITY DIVERGES FROM UPSTREAM's IN BOTH
+const-identity [#########] 7/7  **THE PORT's CONSTANT IDENTITY DIVERGES FROM UPSTREAM's IN BOTH
                                        DIRECTIONS, AND ONE OF THEM IS A HASH COLLISION.** MEASURED,
-                                       and the instrument is `gates/constid-gate.py` (3 lanes) with
-                                       the plant `gates/constid-plant.py`.
+                                       and the instrument is `gates/constid-gate.py` (3 lanes, GREEN)
+                                       with the plant `gates/constid-plant.py` (GREEN, 4 of 4).
                                        **THE MERGE**: upstream's float-const identity is 64 bits
                                        (`ConstFloat` packs a DOUBLE, `dtype.py:8-25`) and the port's
                                        is 32 (a Bend float LITERAL is an F32 literal,
@@ -1750,21 +1750,26 @@ const-identity [#######...] 3/7  **THE PORT's CONSTANT IDENTITY DIVERGES FROM UP
                                        upstream's OWN two rules contradict each other and upstream's
                                        own hash table settles it for `__hash__` (TWO entries in ONE
                                        dict). The port's `eq_const.CFloat` is BITWISE, so it agrees
-                                       with upstream's hash table -- and the PLANT shows an IEEE
-                                       comparator would move the port's count of distinct constants
-                                       2 -> 1, a collision upstream does not have. **THE COMPARATOR
+                                       with upstream's hash table -- **AND THE PLANT MEASURED BOTH
+                                       ALTERNATIVES AND NEITHER IS A FIX**: IEEE SPLITS a constant
+                                       upstream interns as ONE (`split_keys_same` 1 -> 2), and
+                                       upstream's own `__eq__` MERGES two different nan payloads
+                                       upstream's hash table keeps apart (`split_keys_distinct`
+                                       2 -> 1). **THE BITWISE COMPARATOR IS THE ONLY ONE OF THE
+                                       THREE THAT MATCHES UPSTREAM IN BOTH NAN CELLS. THE COMPARATOR
                                        IS RIGHT; THE WIDTH IS WHAT DIVERGES.**
                                        **THE WALL IS DECLARED** in `tinybendygrad/dtype.bend`
                                        (`truncate_float`) and `tinybendygrad/mixin/creation.bend`
                                        (`cr_const_of.trunc`), and the patch for `uop/ops.bend`'s
                                        `CFloat` and `eq_const.CFloat` is PREPARED, not applied --
-                                       that file is another unit's.
-                                       **THE 4 THAT REMAIN ARE ALL `uop/ops.bend`'s**: the `Const`
-                                       type must carry the double's bits (`CFloat{f: F32, d: H.I64}`),
-                                       which needs an f64->f32 rounding Bend cannot do and EVERY
-                                       `CFloat{...}` site spelled -- so it is a change to a file in
-                                       flight, not a one-line fix. See
-                                       `.agents/slop/constid/`.
+                                       that file carried another unit's UNCOMMITTED edit from `MM`
+                                       to ` M` across this unit, so it NEVER SETTLED.
+                                       **THE FIX IS `uop/ops.bend`'s `Const`**: it must carry the
+                                       double's bits (`CFloat{f: F32, d: H.I64}`), which needs an
+                                       f64->f32 rounding Bend cannot do for itself (it is pure
+                                       INTEGER work on the 64 bits, and `H.I64` has it) and EVERY
+                                       `CFloat{...}` site spelled -- a change to a file in flight,
+                                       not a one-line fix. See `.agents/slop/constid/`.
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
@@ -22318,10 +22323,129 @@ the gate.
       DISCOVERED -- a row whose symbol is DECLARED AT its cited line -- because a row that
       resolves because a QUOTE happens to be on that line cannot be broken by moving the symbol.
 - [ ] **71 CITATIONS IN 9 FILES ARE STILL FALSE**, because those files were HELD by other units
-      when the fixer ran.  **THE EXACT PATCHES ARE IN `.agents/slop/todo-cite/HELD-PATCHES.md`**:
+      when the fixer ran.  **THE EXACT PATCHES ARE IN `gates/todo-cite-HELD-PATCHES.md`**:
       `uop/ops.bend` (50), `nn/onnx.bend` (8), `function.bend` (4), `renderer/wgsl.bend` (3),
       `engine/realize.bend` (2), `uop/render.bend` (1), `extra/models/{convnext,resnet,vit}.bend` (1 each).
+      **THE FILE MOVED OUT OF `.agents/slop/`, AND THE REASON IS THE SWEEP's OWN RULE READ BACK:
+      `371cc64c9` -- "THE GATE RULE REQUIRED A GATE-SHAPED ***NAME*** *AND* A CITATION. EVERYTHING
+      ELSE FELL THROUGH TO `DELETE`" -- so a CITED file under `.agents/slop/` IS STILL DELETABLE
+      WHEN ITS NAME IS NOT GATE-SHAPED, and `HELD-PATCHES.md` IS NOT.  **AND IT IS STILL A RUN's
+      TRANSCRIPT THAT THE GATE DOES NOT WRITE: A GENERATED FILE IS BETTER THAN A HAND-SAVED ONE.****
 - [ ] **`hcq2.py:94  cfield` NAMES A FUNCTION UPSTREAM DELETED.**  `def cfield` was at `:111`
       before `7d2420e64` ("deadcode (#18714)") removed it, so at the pin there is no `cfield` to
       cite.  The port's own `cfunc_buf` note already says what to do with a DELETED upstream
       function -- it is DELETED, not renamed, and there is nothing left to defer.
+
+## SESSION2026-10-22 -- **THE PORT ITSELF, AND THE INSTRUMENTS THAT CAUGHT IT** (2026-10-22, `c3c4120f4`..`80694e032`)
+
+**THE QUESTION WAS "WORK ON THE PORT AND ITS CORRECTNESS", AND THE ANSWER WAS **THIRTY-ONE
+PORT EDITS** ACROSS **EIGHT** UNITS PLUS **THE PLUMBING THE UNITS NEEDED TO BE SAFE**. EVERY
+COMPARISON WAS AGAINST **CPYTHON IN THE TREE** AT THE DECLARED PIN `5c2bf39d6c4b`, AND EVERY
+PLANT WAS **ON A COPY**. **AND FOUR UNITS FOUND THEIR BRIEF WRONG AND SAID SO** -- WHICH IS
+THE WHOLE POINT OF A BRIEF THAT NAMES A FILE INSTEAD OF A CONCLUSION.**
+
+`port-edits  [######################] 22/22` · `instruments  [##########........] 10/14` · `corpus-current  [####........] 4/4`
+
+### 1. **THE PORT, AND WHAT CPYTHON SAID ABOUT IT**
+
+- [x] **`ProgramInfo.from_sink` AND `ProgramInfo.launch_dims` ARE PORTED** (`d87143780`), AND THE
+      RECORD HAS ITS **SEVENTH FIELD** (`target: Target`). **THE PORT's ORACLE CAUGHT THREE BUGS THE
+      UNIT HAD WRITTEN** -- the index test read the STORE instead of its `src[0]`, the STORE/LOAD arms
+      were swapped, and `Bool.or` stood where upstream has `not outs **and** not ins` -- **AND ALL
+      THREE CANCELLED INTO A SELF-CONSISTENT WRONG ANSWER, WHICH IS WHY THE CPYTHON LANE WAS WORTH
+      BUILDING.** 14 `fs_*` rows byte-identical; the 319 pre-existing rows byte-identical.
+      **AND `launch_dims` HAS NO CALLER**: the port has no `exec_kernel`, no `ProgramInfo` in
+      `tensor.bend`, and no `to_program`.
+- [x] **THE REALIZE LANE IS ONTO THE PIN** (`4e12441a0`): `get_call_kernel_args`, `kernel_params`, and
+      **THE SLOT ORDER** -- 21 rows compare, 21 agree, **17 moved**. **AND THE PORT WAS OLDER THAN
+      ANYBODY THOUGHT**: it is pre-`a26c50b01`, not pre-`a6addc2d4`, because upstream DELETED
+      `get_call_written_bufs` on 2026-10-05 -- **which is the whole cause of the census's 23 dead
+      `wbuf_*` rows.**
+- [x] **`Target.parse` IS PORTED** (`815b8ec48`): **32 OF 32 ROWS AGREE WITH CPYTHON, INCLUDING EVERY
+      REFUSAL.** The port answers `None` where upstream raises `RuntimeError` -- **the same boundary,
+      and no room for a message.** And the parser is a **NEW CAPABILITY, NOT A REFACTOR**: nobody calls
+      it, because the port has no DEV plumbing yet.
+- [x] **THE PORT HAS **ONE** `Target` RECORD** (`8c432762ff`): the class lives in `helpers.bend` --
+      upstream's home, a **LEAF**, and **BOTH CONSUMERS ALREADY IMPORT IT AS `H`** -- so the cycle
+      argument that produced a SECOND record did not hold. 69 citations re-pointed across 38 files;
+      the round trip is 20 rows byte-identical over **THREE** lanes.
+- [x] **THE ACTIVATION FAMILY IS PORTED** (`cc238857c`): `asin` `acos` `atan` `elu` `celu` `selu` **and
+      `relu`**, and **THE PORT's OWN ORACLE FOUND TWO DEFECTS NO GATE COULD SEE** -- `least_upper_float`
+      had no `CWeakFloat` arm, so **five already-shipped methods carried three `CAST f32` nodes
+      upstream does not have** (invisible because every one of those gates' fixtures is an INT), and
+      `ew_tanh`'s operands were swapped (**the census's row cannot see it: the root is the ADD of
+      `sub` either way**). **THE OPERAND-ORDER ARM IS CAUGHT BY THE GRAPH AND BY NOTHING ELSE** --
+      17 graph rows, **ZERO** value rows, because `MUL` is commutative.
+- [x] **THE FOLD FAMILY'S THREE PROPERTIES ARE PORTED** (`0e9a93435`): `unsharded_base`, `storage_base`,
+      `is_virtual`, plus nine `vb_` rows byte-identical to CPython's own nine. **AND ALL 35 OF THE
+      FILE's MARKERS WERE STALE BY 5-23 LINES, AND ONE NAMED THE WRONG FUNCTION** -- **AND FOUR OF
+      THE SIX I ASKED ABOUT WERE ALREADY PORTED, IN OTHER FILES. THE `TODO(p3)` WAS A LIE.**
+- [x] **27 OF UPSTREAM's MISSING REWRITE RULES ARE PORTED** (`2ba5c731c`): the table is now in
+      upstream's composition order and a rule's name is its upstream line. **AND THE PRIOR CENSUS
+      COUNTED SOURCE TUPLES, NOT RULES** (`GroupOp` has five members) -- so the gap was **104 of 122**,
+      not 94 of 118, **AND IT DID NOT MOVE AT THE RE-VENDOR: IT WAS A COUNTING ERROR.** The ORDER arm
+      FIRED FOR REAL: `:189` was in the port and `:84` was not, and upstream's `:84` comes first, so the
+      port **rewrote where upstream does not** -- **a wrong kernel, not a silence.**
+- [x] **THE SCHEDULE LANE'S GATE GATES AGAIN** (`30b294bef`), **AND IT CAUGHT A **MARK **THAT **DOES
+      **NOT **EXIST**.** It had been REFUSED for days -- "the CPython oracle is absent" -- and the
+      oracle is now in git, so the comparison is the gate's OWN `floor_check` with the ORACLE as the
+      floor: **ONE COMPARISON, TWO FLOORS.** **AND THE PORT WAS MISSING THE ROW CPYTHON ANSWERS**
+      (`fx7_topo_marks`), **AND ADDING IT EXPOSED THE DEFECT**: upstream's `UOp.val` **ASSERTS** on a
+      non-const -- it never answers 0 -- so the port's `gate.val` **invented a DIGIT 0 for a mark that
+      does not exist** and answered 10 where CPython answers 1. **AN ABSENT VALUE FOLDED IN AS 0 IS
+      THE ABSENT VALUE.** **A MISSING ROW IS NOT A NEUTRAL ABSENCE, IT IS A BLIND SPOT, AND THE BLIND
+      SPOT WAS EXACTLY WHERE THE PORT DIFFERS.**
+- [x] **`pyr_gfx1201_ncores` SAID 4 WHERE CPYTHON SAYS 7** (`d68640895`): the re-vendor GREW
+      `tc.py`'s `amd_rdna4` from four tensor cores to seven and the port HELD the old length.
+      **A TRANSCRIBED LENGTH IS A PIN ON A FILE THAT CAN MOVE, AND THE FILE MOVED** -- and the port's
+      own prose said "amd_rdna4 also has 4", so the red had no name. **THE PORT WAS RIGHT FOR 30 OF 31
+      DEVICES AND WRONG FOR EXACTLY THE ONE WHOSE TABLE GREW.**
+- [x] **`bufferize_buf` IS PORTED** (`732c75f75`): the CONSUMER of the link mechanism, **62 OF 62 ROWS
+      AGAINST CPYTHON's OWN FUNCTION** -- and the port uses the **REGISTRY's** size, never the alloc's,
+      which upstream never resizes. **AND THE PORTED MECHANISM'S `pm_bufferize` TABLE WAS UPSTREAM's
+      DELETED SHAPE** (`3dc0d2b2f`), with a **LIVE CALLER** in `ops_metal.bend` that had to go with it.
+- [x] **THE COLOUR LADDER'S OFF-BY-ONE IS FIXED** (`6d3d052b1`): `"|65"` -> `"|64"`, and **the ladder was
+      never wrong -- the EXPECTATION was** (zero colour mismatches over all 75 ops, before and after).
+      **AND THE `F32.to_bits` "WALL" WAS NOT A WALL**: it is a `law` AND a compiler intrinsic, and the
+      port already called it from six files -- **a census that reads only the `def`s cannot see a
+      `law`.**
+- [x] **THE `py=` COLUMN'S LITERALS ARE A CLASS, AND 2,521 OF THEM EXISTED** (`31da6043e`): the census
+      decides a cell by the **ARGUMENT SHAPE** at the `py=` slot, and **1,542 of them have no live
+      generator**. `tc.bend` had 286 and is now **0** -- and the reason it went stale is that **the
+      gate recipe named a lane that printed NONE of those rows.**
+- [x] **THE TENSOR METADATA LANE IS PORTED** (`a357910a8`), AND **EVERY ONE OF ITS MARKERS HAD THE
+      RIGHT NAME AND A LATE LINE** -- a uniform **+2** drift.
+
+### 2. **THE PLUMBING THE UNITS NEEDED TO BE SAFE, AND THE LESSONS THAT CAME OUT OF IT**
+
+- [x] **`checks/bendlock.sh` EXISTS** (`48df44cc5`, `9b2287c6c`): **ONE BEND AT A TIME, AND A LOCK THAT
+      CANNOT OUTLIVE ITS OWNER.** The owner is a PID and the COMPILER is checked too, because the
+      compiler is `bun` and a shell can be alive while its `bun` child is gone. **A DEAD OWNER's LOCK IS
+      RECLAIMED; A LIVE OWNER's IS NEVER STOLEN, HOWEVER LONG IT IS HELD** -- and **A GATE THAT RUNS
+      MANY BENDS MONOPOLISES IT** (measured: 26 minutes), so `gates/bendlock.py` ACQUIRES **PER
+      INVOCATION** and shares the path.
+- [x] **THE DEFAULT INDEX WAS RE-ARMED TWICE**, each time staging files as DELETED that were in HEAD
+      and on disk -- **and A BARE `git commit` WOULD HAVE DELETED THEM**, including a substrate file
+      once. **IT WAS ENTIRELY AN ARTEFACT**: every entry was a stale blob for an already-committed
+      file. Repaired path by path; `ls-files` == `ls-tree`.
+- [x] **THE PORT's `extra/datasets/` MIRROR IS 1:1 AND IN GIT** (`8dbcef7ea`): it did not exist, ten of
+      upstream's eleven files were on disk and **UNTRACKED** -- inside the substrate walk, so they were
+      poisoning the digest -- and the eleventh I wrote. **EVERY LOC CLAIM VERIFIED AGAINST UPSTREAM
+      MASTER: 43, 40, 51, 91, 219, 209, 21, 148, 53, 398.**
+- [x] **A CITATION WAS WRONG IN THE TREE AND WRONG AGAIN IN THE WORKING COPY** (`80694e032`): the
+      `helpers.bend` lines for `i64_add`/`i64_sub`/`i64_le`/`i64_cmp` named **COMMENTS** in HEAD's
+      version AND in the uncommitted re-point, and the truth is **1728, 1733, 1703, 1696**. **A RE-POINT
+      THAT LANDS ON A COMMENT IS A CONTRACT RENEWED AGAINST NOTHING.**
+- [x] **THE CORPUS's FRESHNESS PIN HASHES THE **WORKING **TREE**, AND THE ROW's KEY DID NOT SAY SO**
+      (`c0b801a73`): `checks/differ.py:1275` says so in its own words -- **A `ls-tree` DIGEST CANNOT MOVE
+      DURING A RUN, SO THE WORKTREE PAIR STAYS** -- and the gap the tree names at `:1279-1283` is that
+      **NONE OF THE READERS NAMED THE SCOPE IN THE ROW's KEY.** **AND THE SEVEN GITIGNORED FILES IN THE
+      WALK ARE NOT DEBRIS: EVERY ONE IS NAMED BY A TRACKED FILE.**
+- [x] **A SCRIPT THAT OTHERS ARE EXECUTING IS SHARED STATE** (`b764e5a21`): **I CAUSED IT** -- I edited
+      `checks/bendlock.sh` IN PLACE while a unit was running it, and **A SHELL READS A SCRIPT BY BYTE
+      OFFSET**, so the other unit's shell RESUMED MID-LINE and died with **exit 127**. **THE CLASS IS
+      THE INDEX's CLASS: A PATH THAT OTHERS TOUCH IS A SHARED PATH.**
+- [x] **`git commit --only` **REFUSES** A NEW (UNTRACKED) PATH ON THIS GIT** (`27e4e33cc`): measured on
+      git 2.50.1, and **THE FILE SAID THE OPPOSITE** -- "0 OF 40 ON A NEW FILE TOO". **AND THE
+      PRIVATE-INDEX FORM ARMS THE SHARED INDEX AGAINST THE NEW FILES**, so a bare `git commit` by another
+      unit would delete them.
