@@ -1589,6 +1589,52 @@ nn-rows-gate         [####] 3/4  **THE NN LAYERS NOW HAVE A COMPARER, AND THE CO
                                        `mo_reduced` FOR RANK >= 2, AND THE 1-D FIXTURE AT `mixin/op.bend:1411` IS
                                        BLIND TO IT.**
 
+item-ported          [###] 3/4  **`Tensor.item` IS PORTED TO THE EDGE THE PORT CAN REACH, AND THE WALL IS NAMED.**
+                                       UPSTREAM (`tinygrad/mixin/op.py:22-32`) IS AN `assert self.numel() == 1` AND
+                                       THEN A **READ**: A REALIZED DEVICE BUFFER COPIED TO THE HOST AND REINTERPRETED
+                                       THROUGH THE DTYPE'S `fmt` (`tensor.py:285-301`, `:274-283`), WITH THE DTYPE'S
+                                       BYTE WIDTH (`dtype.py:63`) AND A WEAK DTYPE COMMITTED FIRST (`tensor.py:294`,
+                                       `mixin/dtype.py:16-17`). **THE PORT HAS THE PRECONDITION AND THE DTYPE HALF,
+                                       AND HAS NO WAY AT ALL TO DO THE BUFFER HALF**: `uop/ops.bend:5296` SAYS *"NO
+                                       LIVE `Buffer`"*, `engine/realize.bend:60` LISTS `realize.py:145 exec_copy` AS A
+                                       FOREIGN EFFECT, AND `nn/onnx.bend:49` SAYS *"Nothing in this port can read a
+                                       byte out of a tensor"*. **SO `tinybendygrad/nn/item.bend` PUTS UPSTREAM'S
+                                       PRECONDITION FIRST -- A MULTI-ELEMENT TENSOR IS UPSTREAM'S `AssertionError`,
+                                       VERBATIM, AND THE PORT DOES **NOT** RETURN THE FIRST ELEMENT -- THEN READS FROM
+                                       THE ONE PLACE A VALUE EXISTS (A CONST NODE'S `APy{v}`) WITH `commit_dtype` FOR
+                                       THE WEAK-DTYPE COMMIT, AND NAMES A REFUSAL EVERYWHERE ELSE.** THE RESULT IS A
+                                       SUM TYPE `Itm` (`Item` IS TAKEN BY `viz/cli.bend:94`). **VERIFIED: `ALL PROOFS
+                                       CHECK` ON THE SOUND COMMITTED TREE, AND 10 ROWS -- 9 GREEN, PLUS ONE THAT
+                                       *DOCUMENTS* THE DIVERGENCE** (UPSTREAM READS A ONE-ELEMENT BUFFER AS `3.5`; THE
+                                       PORT REFUSES AND NAMES THE WALL) **-- WITH TWO CONTROLS THAT PERTURB A `want`
+                                       AND MAKE A ROW GO RED, AND THE NATIVE LANE BYTE-IDENTICAL TO THE INTERPRETED
+                                       ONE.** **AND A SECOND FINDING WORTH KEEPING: THE PORT'S FLOAT SPELLING IS NOT
+                                       PYTHON'S `repr` -- `helpers.bend:997` *CLAIMS* SHORTEST-ROUND-TRIP AND THE CODE
+                                       UNDER IT PRINTS SIX DECIMALS -- SO THE FLOAT CLAIM IS CARRIED BY AN EXACT BIT-
+                                       PATTERN ROW (`1080033280`, CPython's `struct.pack('<f', 3.5)`) WITH THE DECIMAL
+                                       SPELLING PINNED ON TOP.**
+
+brief-citation-error [##] 2/3  **I ASSERTED A MEASUREMENT I HAD NOT MADE, IN A WORKER'S BRIEF, AND IT PROPAGATED. THIS
+                                       IS THE SESSION'S OWN CLASS AND I WAS THE OFFENDER.** MEASURED 2026-10-22: I
+                                       BRIEFED AN AGENT WITH *"**MEASURED**: `Buf.at` EXISTS -- A BUFFER ELEMENT READ
+                                       -- THIS IS THE MOST LIKELY PRIMITIVE `item` IS BUILT ON"* AND *"`mo_at` --
+                                       INDEXES A TENSOR"*. **BOTH ARE FALSE.** `Buf.at`
+                                       (`runtime/ops_python.bend:836`) ANSWERS *THE B-TH BUFFER IN A LIST OF BUFFERS*
+                                       -- THE PYTHON BACKEND'S ARGUMENT BINDING -- AND RETURNS A `Buf`, **NOT A
+                                       SCALAR**; AND `mo_at` (`mixin/op.bend:316`) IS `enumerate(self.shape)`'S INDEX,
+                                       **A SHAPE HELPER, NOT A TENSOR INDEX**.** **WHAT I HAD ACTUALLY MEASURED WAS
+                                       THAT THE *NAMES* EXIST. I CONFLATED EXISTENCE WITH SEMANTICS, WHICH IS EXACTLY
+                                       THE RECURRING CLASS THIS TREE KEEPS FIXING -- AN INSTRUMENT (OR A BRIEF)
+                                       READING ONE SPELLING OF A THING -- **AND I LABELLED IT `MEASURED`, WHICH IS THE
+                                       ONE THING A CITATION MUST NEVER BE.** THE WORKER CAUGHT IT AND SAID SO IN ITS
+                                       REPORT, WHICH IS THE SYSTEM WORKING; **BUT THE ERROR WAS MINE AND IT WAS
+                                       CARRIED IN A TASK BRIEF, WHERE A WRONG PRIMITIVE COSTS A WORKER HOURS.** **THE
+                                       RULE THIS ADDS: *A BRIEF MAY ASSERT WHAT A NAME CONTAINS, BUT IT MAY NOT ASSERT
+                                       WHAT A NAME MEANS UNLESS IT HAS READ THE BODY* -- AND `MEASURED` IS RESERVED
+                                       FOR A NUMBER WITH A DENOMINATOR AND A TIMESTAMP.** THE POSITIVE FORM: **A
+                                       NAME'S EXISTENCE IS ONE MEASUREMENT; ITS SEMANTICS ARE ANOTHER, AND THE SECOND
+                                       IS THE ONE THAT GETS ASSUMED.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

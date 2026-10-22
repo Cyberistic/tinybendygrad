@@ -1,0 +1,10 @@
+item_f32	3.500000	3.500000
+item_f32_bits	1080033280	1080033280
+item_f32_size	4	4
+item_i32	7	7
+item_i32_size	4	4
+item_bool	True	True
+item_bool_size	1	1
+item_multi	AssertionError: must have one element for item	AssertionError: must have one element for item
+item_multi_numel	2	2
+item_buffer_divergence	NO-READ: no live Buffer in the port (uop/ops.bend:5296); realize.py:145 exec_copy -- the device-to-host _copyout -- is a foreign effect (engine/realize.bend:60 [b])	3.5
