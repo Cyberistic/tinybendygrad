@@ -255,3 +255,53 @@ no `declared()`, so this set is the one this file owns — built from gatekit's 
 (`gatekit.py:317`), imported at `retention-check.py:68`. The transcription this replaced named
 `*.txt`/`*.sub`, which gatekit had stopped writing: clause I then named the ENTIRE contents of all
 11 gate dirs residue. MEASURED before/after: `11 with residue / 66 files` → `12/12 dirs clean`.
+
+## THE `py=` CELL CENSUS: A ROT CELL IS A TRANSCRIPTION THAT DISAGREES WITH THE PORT
+
+`gates/pycell-census-gate.py` is the gate over the port's `py=` cells -- the `py=` half of
+every `<name> = [BEND]   py=[CPYTHON]` row. **A CELL IS CLASSIFIED BY PROVENANCE, NOT BY
+SYNTAX**: a cell whose value was TYPED (its provenance chain reaches a literal) is a
+**TRANSCRIPTION**, and one the port computes (the chain reaches a call into the port) is
+**DERIVED**. The census that came before it asked whether the argument was a *quoted
+string*, and read a NUMBER as "not a quoted string, therefore DERIVED" -- **224 of
+`ops_dsp.bend`'s cells were transcriptions and the rule called them derived.**
+
+| file | what it is |
+|---|---|
+| `gates/pycell-census.py` | the census and its GENERATOR: the lexer, the row-builder discovery, the provenance resolver, the row grammar |
+| `gates/pycell-census-gate.py` | the gate: the instrument's own plant, the census, the port RUN, the rot count and the dead lanes |
+| `gates/pycell-plant.py` | the plant. **EVERY ARM IS A TEXT EDIT** of the fixture below |
+| `gates/pycell-plant.bend` | the fixture the plant edits |
+| `gates/pycell-census.rows` | the baseline the gate compares against; `pycell-census-gate.py --refresh` is its ONLY writer |
+
+**THE THREE LANES, AND THE VERDICTS ARE `gatekit`'s OWN.** `PASS 0` · `FAIL 1` ·
+`REFUSED 3` (a precondition was absent) · `SKIP 4` (the rows could not be measured) ·
+`DEAD 5`.
+
+1. **THE INSTRUMENT.** The plant's arms, on EVERY invocation: a census that cannot tell a
+   transcription from a derived cell is a rule that cannot fail. Arm 1 rewrites the
+   fixture's literal as the NUMBER `2` -- which the old syntactic rule still calls
+   DERIVED -- and asserts the new rule calls it TRANSCRIPTION; arm 5 is the **224 KNOWN
+   CASES** on a **PINNED CONTENT-ADDRESSED BLOB** (`432d3450`), because `HEAD:` moves and a
+   blob SHA cannot. **MEASURED: reintroducing the old blind spot turns the plant RED on 4
+   of 10 arms and the gate exits 1.**
+2. **THE CENSUS.** Every `py=` cell in the port, by PROVENANCE, against the baseline. **A
+   file whose TRANSCRIPTION count RISES is a FAILURE** -- a new frozen value is new rot; a
+   fall is progress and is reported.
+3. **THE ROT AND THE DEAD LANES.** The port is RUN (13 programs, the bend lock taken PER
+   INVOCATION) and the two halves of every row compared. **A ROW WHOSE `py=` HALF
+   DISAGREES WITH THE PORT'S OWN `got=` HALF IS A ROT CELL.** And a `py=` value the SOURCE
+   declares and no row carries is a **DEAD LANE** -- **a dead lane is not a red lane, and
+   nothing else in the tree says so.**
+
+**THE POPULATION IS DISCOVERED, NEVER NAMED.** `os.walk` + `endswith(".bend")` -- never
+`glob`, which returns `[]` when `.bend` files are on disk -- and the port's own DEFS are
+discovered the same way, for the constant-fold clause. **THE CENSUS IS CROSS-FILE**: a row
+builder may live in one file and be CALLED from another (`renderer/tc_ptx.bend` imports
+`./tc.bend as T` and calls `T.rd(...)`), so the import graph is parsed from each file's own
+`import ... as ALIAS` lines.
+
+**THE ROW GRAMMAR IS NOT ONE LINE PER ROW.** `uop/render.bend` emits a row whose `py=` half
+is three lines long, so a line-oriented parser reads 27 of its 42 rows and calls the other
+15 "not rows". The halves are BRACKET-MATCHED, and a ` = [` inside a half is not the row's
+own: a `got` half can be `ast = UOp.const(3)`.
