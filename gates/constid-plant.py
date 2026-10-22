@@ -55,12 +55,23 @@ CONTROL = {"split_keys_distinct": "2", "merge_keys": "1", "merge_keys_int": "1"}
 PLANTED = {"split_keys_distinct": "1", "merge_keys": "1", "merge_keys_int": "1"}
 
 
-def bend(root: Path, driver: Path, out: Path | None = None):
-    """`bend` UNDER THE TREE'S LOCK, and the ROWS it printed."""
+def bend(root: Path, driver: Path, out: Path | None = None, lock: Path | None = None):
+    """`bend` UNDER THE TREE'S LOCK, and the ROWS it printed.
+
+    THE LOCK SCRIPT IS TAKEN AS A STABLE COPY, ONCE, AND THE LOCK DIRECTORY IS STILL THE
+    TREE'S SHARED ONE.  MEASURED 2026-10-22: `checks/bendlock.sh` was EDITED IN FLIGHT by
+    another unit (mtime 10:35) while this plant's shell was READING it, and a shell reads a
+    script INCREMENTALLY BY BYTE OFFSET -- so it resumed mid-line and executed the wrong
+    bytes: `checks/bendlock.sh: line 102: st.: command not found`, and the plant REFUSED
+    (3) for a reason that had NOTHING TO DO WITH THE SUBSTRATE.  **A REFUSAL CAUSED BY
+    ANOTHER UNIT'S EDIT IS A REFUSAL, NOT A MEASUREMENT, AND IT MUST NOT BE RECORDED AS
+    ONE.**  The copy is the same mechanism and the same lock directory; only the FILE the
+    shell reads is pinned.
+    """
     argv = [str(root / "bin" / "bend"), str(driver)]
     if out is not None:
         argv += ["-o", str(out)]
-    cmd = [str(root / "checks" / "bendlock.sh"), "--"] + argv
+    cmd = [str(lock or (root / "checks" / "bendlock.sh")), "--"] + argv
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         return None, (r.stderr or r.stdout or f"rc={r.returncode}").strip()[:300]
@@ -92,6 +103,12 @@ def main() -> int:
     bad = []
     with tempfile.TemporaryDirectory() as td:
         scratch = Path(td)
+        # THE STABLE LOCK SCRIPT, taken ONCE, so an in-flight edit of the tree's copy cannot
+        # corrupt a shell's incremental read of it.  The LOCK DIRECTORY is the tree's shared
+        # one -- this copy serialises against the other units exactly as the original does.
+        lock = scratch / "bendlock.sh"
+        shutil.copy(ROOT / "checks" / "bendlock.sh", lock)
+        lock.chmod(0o755)
         shutil.copytree(ROOT / "tinybendygrad", scratch / "tinybendygrad")
         (scratch / "gates").mkdir()
         shutil.copy(HERE / "constid.bend", scratch / "gates" / "constid.bend")
@@ -105,7 +122,7 @@ def main() -> int:
 
         # 1 -- THE CONTROL.  The UNMUTATED copy must answer what the live tree answers, or
         # the measurement below would be about the copy rather than about the plant.
-        rows, err = bend(ROOT, driver, scratch / "control.bin")
+        rows, err = bend(ROOT, driver, scratch / "control.bin", lock)
         if rows is None:
             print(f"== REFUSED, NOT A VERDICT: the unmutated copy did not build: {err}",
                   file=sys.stderr)
@@ -115,7 +132,7 @@ def main() -> int:
         # 2 -- THE PLANT.  The IEEE comparator: a const upstream keeps apart becomes ONE in
         # the port, and the count of distinct constants MOVES.
         ops.write_text(pristine.replace(OLD, NEW, 1))
-        rows, err = bend(ROOT, driver, scratch / "planted.bin")
+        rows, err = bend(ROOT, driver, scratch / "planted.bin", lock)
         if rows is None:
             print(f"== REFUSED, NOT A VERDICT: the planted copy did not build: {err}",
                   file=sys.stderr)
@@ -127,7 +144,7 @@ def main() -> int:
         ops.write_text(pristine)
 
         # 3 -- THE LIVE TREE, so a copy that is special cannot be the only thing that passed.
-        rows, err = bend(ROOT, ROOT / "gates" / "constid.bend", scratch / "live.bin")
+        rows, err = bend(ROOT, ROOT / "gates" / "constid.bend", scratch / "live.bin", lock)
         if rows is None:
             print(f"== REFUSED, NOT A VERDICT: the live tree did not build: {err}", file=sys.stderr)
             return REFUSED
