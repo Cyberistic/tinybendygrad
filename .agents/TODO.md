@@ -22603,3 +22603,44 @@ x86-derive     [#########] 9/9      774 LITERAL `py=` cells -> 0 in `renderer/is
       `runs/graphcmp/` was not read).  Over a population of **416** declared inputs, **EXACTLY ONE entry
       moved** -- `tinybendygrad/renderer/isa/x86.bend` -- so the delta is this change's and not the
       tree's.
+
+### 3. **THE INSTRUMENTS THAT CAUGHT THE PORT's ROT, AND WHAT THEY COST** (2026-10-22)
+
+- [x] **THE `Op` **ENUM **IS **EXACTLY **UPSTREAM's **AT **THE **PIN** -- **75 = 75, 0 MISSING, 0 EXTRA** -- **AND
+      **THE **TWO **UPSTREAM **DELETIONS **ARE **EXACTLY **WHAT **TOOK **IT **THERE**:** **77 -> 76** at
+      `4e0192eaf remove Ops.GROUP (#18637)` and **76 -> 75** at `900880433 remove Ops.FLIP [pr]
+      (#18729)`.  **⇒ AND **A **TEXT **CENSUS **OVERSTATES**, **BECAUSE **A **COMMENT **AND **A
+      **FRAGMENT's **INCIDENTAL **MENTION **ARE **NOT **CODE** -- **AND **ONE **UNIT **CORRECTED **ME **ON
+      **THAT**, **AND **I **HAD **WRITTEN **THE **RULE **INTO **ITS **BRIEF **AND **THEN **BROKE **IT
+      **MYSELF.**
+- [x] **`checks/port-compile-gate.py` **COMPILES **EVERY **FILE **IN **THE **PORT** AND **READS **THE
+      **VERDICT **TOKEN**: **165 of 169 COMPILE, 4 COLD **BY **DESIGN**, 0 FINDINGS**, at **147 s**
+      (**0.87 s/file**, one bend at a time) -- **so it is a NIGHTLY or PRE-MERGE gate, not a
+      per-commit one.**  **IT **EXISTS **BECAUSE **A **ROW-LEVEL **INSTRUMENT **CANNOT **NOTICE **THAT
+      **ITS **SUBJECT **DOES **NOT **COMPILE**, **AND **`runtime/support/autogen.bend` **HAD **NOT
+      **COMPILED **FOR **AT **LEAST **TWO **COMMITS **WHILE **THE **COMMIT **THAT **AUDITED **ITS
+      **ROWS **SAID **"THE **PORT **IS **AT **0 **ROWS"**.**
+- [x] **`gates/opname-census-gate.py` **CENSUSES **THE **DRIVERS** -- **101 `.bend` **FILES **BEYOND **THE
+      **PORT**, **DISCOVERED**, **WITH **THE **EXCLUSIONS **PRINTED **AS **NUMBERS** -- AND **FINDS
+      **ZERO**: **no driver names a constructor the port's `Op` enum does not declare.**  **AND **IT
+      **CORRECTED **THE **COVERAGE **CLAIM**: **`checks/compile-census.py` **ALREADY **COMPILES **THOSE
+      **101 **FILES**, **so **widening **THE **PORT's **CENSUS **WOULD **DUPLICATE **AN **EXISTING
+      **INSTRUMENT** (+60% **ON **A **142 s **RUN**) -- **WHAT **IS **MISSING **IS **NOT **A **COMPILE
+      **CENSUS **BUT **A **CENSUS **OF **THE **CAUSE**, **BECAUSE **21 **OF **101 **DRIVERS **ARE
+      **COLD **AND **"COLD" **IS **A **NOISY **CLASS.**
+- [x] **THE **LLVM-IR **LANE **WAS **STALE **IN **FOUR **PLACES **AT **ONCE** -- `arcp` **IN **THE
+      **FLAGS**, **THE **THREE **INTRINSICS **IN **THE **AMD **OVERRIDE **AND **NOT **THE **BASE's**,
+      **`half` **KEPT **ON **A **NON-DARWIN **HOST**, **AND **`amd_fp8s` **WITH **ONE **ANSWER **WHERE
+      **UPSTREAM **HAS **TWO** -- **AND **EVERY **ONE **WAS **RIGHT on 2026-10-01** (the port was
+      written against a vendored upstream that had them) **AND **EVERY **ONE **WAS **WRONG on
+      2026-10-20** (the re-vendor brought in one that does not).  **⇒ A **PORT **THAT **MIRRORS **AN
+      **UPSTREAM **REVISION **IS **RIGHT **UNTIL **UPSTREAM **MOVES.**
+- [x] **THE **GATE **THAT **SAYS **SO **NOW **SAYS **THE **ROW **COUNT **IS **READ **FROM **THE
+      **POPULATION** **AND **THE **DIVERGENCE **COUNT **IS **THE **SUM **OF **THREE **DERIVED
+      **GROUPS** -- **AND **THAT **IS **STRONGER **THAN **THE **LITERAL **IT **REPLACES**, **BECAUSE
+      **A **ROW **ADDED **OUTSIDE **THE **GROUP **BUILDERS **WOULD **NOW **FIRE **AN **ASSERT.**
+- [x] **THE **PTX **LANE's **ORACLE **ALSO **CARRIED **A **STALE **COPY** -- `gates/tc_ptx_render-oracle.py`'s
+      `fmt_rows()` **TRANSCRIBED **UPSTREAM's `fmt` **INSTEAD **OF **APPLYING **IT**, **AND **CARRIED
+      **THE **SAME **DELETED **`$` **EARLY **RETURN** -- **⇒ **LEAVING **IT **WOULD **HAVE **TRADED
+      **ONE **STALE **COPY **FOR **ANOTHER **AND **TURNED **A **GREEN **GATE **RED **ON **THE **WRONG
+      **SIDE.**
