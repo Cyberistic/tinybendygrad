@@ -129,7 +129,7 @@
 #                                               not CUSTOM_FUNCTION`    or grad_fxn or aux`
 #
 # SITE 1 NEEDS NO CODE HERE AND THAT IS THE FINDING. The `renderer` matcher is
-# `# TODO(p3) render.py:45` -- not ported -- so the arm has no def in this file.
+# `# TODO(p3) render.py:102  renderer` -- not ported -- so the arm has no def in this file.
 # `rg -n "loop" tinybendygrad/uop/render.bend` returns ONE hit and it is a
 # comment about the consumer map. So site 1 is a drift site in a file that does
 # not exist yet, and the honest report is "no rows could have caught it because
@@ -1876,10 +1876,10 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 #   (they take the range list as a parameter), so only the `u.ranges` COLUMN is
 #   missing, not the formatting.
 # * `marg_str` (:35) / `render_marg` (:37) -- `marg_str`'s third arm is
-#   `a.render()`, and `render` is `# TODO(p3) ops.py:1181` in ops.bend; it needs
-#   `simplify()` (`# TODO(p3) ops.py:513`) and the whole `renderer` matcher, whose
+#   `a.render()`, and `render` is `# TODO(p3) ops.py:1173  def render` in ops.bend; it needs
+#   `simplify()` (`# TODO(p3) ops.py:495  def simplify`) and the whole `renderer` matcher, whose
 #   Movement arm calls `render_marg`, so the two are a cycle the port cannot break
-#   by ordering. `render_marg` itself is `x.marg`, which is `# TODO(p3) ops.py:814`.
+#   by ordering. `render_marg` itself is `x.marg`, which is `# TODO(p3) ops.py:792  def marg`.
 # * `renderer` / `renderer_infer` (:45, :74) -- 21 UPat rules whose payloads are
 #   mostly `ctx[src]`; only the sugar/renderer INFER arms need anything that is
 #   not already here. They are needed by `UOp.render()`, not by `pyrender`.
@@ -1910,7 +1910,7 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 #   refusal rows, and `f_range`'s signature widened from `id: U32` to
 #   `ids: List<&2, U32>` so the guard is reachable at all.
 #
-# TODO(p3) render.py:6   def pretty_print
+# TODO(p3) render.py:7   def pretty_print
 # PARTIAL, AND THE GATE IS NOT LANDED, so nothing here claims to be ported.
 #
 # The def COMPILES and three of the five fields are right: the op name, the `{i:4d}`

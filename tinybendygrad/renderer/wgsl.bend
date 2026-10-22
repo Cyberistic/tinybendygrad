@@ -12,9 +12,9 @@
 #
 #   TODO(p3) wgsl.py:7   sign_extend  -- `.bitcast`/`.alu` CONSTRUCTOR SUGAR
 #   TODO(p3) wgsl.py:15  packed_store -- ditto, plus `.load`/`.store`
-#   TODO(p3) wgsl.py:23  packed_load  -- ditto, plus `.index`
-#   TODO(p3) wgsl.py:34  is_nan       -- ditto (`.bitcast` and the compare)
-#   TODO(p3) wgsl.py:41  wgsl_matcher -- ditto; the seven RULES return arenas,
+#   TODO(p3) wgsl.py:24  packed_load  -- ditto, plus `.index`
+#   TODO(p3) wgsl.py:35  is_nan       -- ditto (`.bitcast` and the compare)
+#   TODO(p3) wgsl.py:42  wgsl_matcher -- ditto; the seven RULES return arenas,
 #                                  so a rule table here would have nothing to
 #                                  return but the input it was handed
 #

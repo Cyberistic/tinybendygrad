@@ -1063,7 +1063,7 @@ def wk_commit_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, OP_BC(),        Nil{}},   # 36  commit_weak_srcs
     O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]}  # 38  the STORE lambda
-# TODO(p3) weak.py:40 (UPat(Ops.CAST, src=(UPat(GroupOp.ALU, dtype=dtypes.weaks,
+# TODO(p3) weak.py:40  pm_commit_weak rule 2 -- (UPat(Ops.CAST, src=(UPat(GroupOp.ALU, dtype=dtypes.weaks,
 #   name="u"),), name="c"), cast_weak_srcs) -- `cast_weak_srcs` reads
 #   `u.commit_dtype(dtypes.i32)` and `s.commit_dtype(dtypes.i32)`, which is
 #   `commit_int(vmin, vmax)`, which is `UOp._min_max`. See the TODO on that def.
@@ -1088,10 +1088,10 @@ def LOWER_OPS() -> List<&2, O.Op>:
 # `to_max_shape` -> `x.vmax`, which is the same fold.
 # a gated long index into a small buffer narrows; its out-of-gate value is discarded
 # two stacked weak casts are two kind conversions: each resolves at its own kind's default
-# TODO(p3) weak.py:69 INDEX/SHRINK gated long index -- `buf.max_numel()` is
+# TODO(p3) weak.py:69  pm_lower_weak rule 0 -- INDEX/SHRINK gated long index -- `buf.max_numel()` is
 #   `prod(to_max_shape(shape))` and `to_max_shape` (ops.py:1886) is `int(x.vmax)`.
-# TODO(p3) weak.py:73 two stacked weak casts       -- `commit_dtype` twice.
-# TODO(p3) weak.py:75 PARAM/BUFFER/ALLOC weakint  -- `u.commit_dtype(dtypes.i32)`.
+# TODO(p3) weak.py:73  pm_lower_weak rule 1 -- two stacked weak casts -- `commit_dtype` twice.
+# TODO(p3) weak.py:75  pm_lower_weak rule 2 -- PARAM/BUFFER/ALLOC weakint -- `u.commit_dtype(dtypes.i32)`.
 # TODO(p3) weak.py:77 lower_weak_node             -- see the TODO on that def.
 def wk_lower_table() -> O.PMEntrys:
   O.PMEntrys{Nil{}}

@@ -37,6 +37,19 @@ the backticked names in the marker line, then in the bullet the marker sits in, 
 comment block, and the symbol that the upstream file actually DECLARES is the one the
 citation is measured against.
 
+THE SYMBOL IS THE CHECK, AND THE LINE IS THE POINTER. A marker that NAMES a symbol is
+making a claim about that symbol, so the cited line is measured against THAT SYMBOL and
+against nothing else, and the row says in its `how` column WHAT held it: `symbol-decl`
+(the cited line declares it), `symbol-body` (the cited line is inside it), `symbol-range`
+(the cited range covers its declaration), `symbol-named` (the cited line NAMES it, which
+is a call or a mention), `range-of-symbols` (the cited range covers more than one
+declaration), and `snippet` / `loose` / `short-form` -- the three ways a citation can hold
+by COINCIDENCE OF TEXT instead of by its symbol. MEASURED 2026-10-23: the old order let
+a quoted snippet and a loose backtick OVERRIDE the symbol the marker named, and
+`TODO(p3) ops.py:1198 def alloc -- ... ends `ret.view_as(shape)` was "fixed" to :1227 -- a
+line inside `param`, a DIFFERENT function -- while the symbol it names is declared at
+:1188. A fix that points at another function is worse than no fix.
+
 THE FOUR VERDICTS, AND THEY ARE NOT FOUR NAMES FOR ONE.
 
   RESOLVES       the cited line holds what the marker claims: it names a claim token, or
@@ -50,12 +63,23 @@ THE FOUR VERDICTS, AND THEY ARE NOT FOUR NAMES FOR ONE.
 A marker that cites NO upstream file is counted and not verdicted: `NO-CITATION` and
 `PORT-CITATION` are results, not passes.
 
-THE PLANT IS ON COPIES, AND IT HAS TWO ARMS AND AN UNBROKEN CONTROL. Arm one corrupts a
+THE PLANT IS ON COPIES, AND IT HAS THREE ARMS AND AN UNBROKEN CONTROL. Arm one corrupts a
 marker in a COPY of the port and asks the census to notice. Arm two MOVES A SYMBOL in a
 COPY of the pinned upstream and asks the census to notice that the line no longer holds
-the claim. The control is a byte-identical copy of the port, and it must produce the same
-verdict as the tree it was copied from -- a plant whose control differs from the live tree
-is measuring the difference between two trees, not the gate.
+the claim. Arm three DELETES THE SYMBOL from that copy and asks the census to notice that
+the citation is now false because the thing it names is GONE -- the arm that says the
+gate checks the SYMBOL and not only its line, and it is why the plant's target carries no
+snippet and no backtick: a citation that still resolved after the symbol was deleted was
+held by a coincidence of text. The control is a byte-identical copy of the port, and it
+must produce the same verdict as the tree it was copied from -- a plant whose control
+differs from the live tree is measuring the difference between two trees, not the gate.
+
+THE WORK QUEUE IS GENERATED, NOT HAND-WRITTEN. `--patches` writes
+`gates/todo-cite-HELD-PATCHES.md`: every citation that is still FALSE at the pin, with the
+gate's OWN rewrite -- the cited line becomes the line the marker's symbol is declared at,
+or the ONE line the marker's quoted snippet is on. A queue that is a second copy of a list
+is a contract with no generator and rots without anyone noticing, so the queue is written
+BY this gate and the file says which pin and which run produced it.
 
 THE EXITS ARE `gatekit`'s. `REFUSED` (3) when the pin does not verify or the port tree is
 absent -- an absent input is not a pass. `DEAD` (5) when no row was emitted. `FAIL` (1)
@@ -94,6 +118,13 @@ MARKER = re.compile(r"TODO\((p\d+)\)")
 CITE = re.compile(r"([A-Za-z0-9_.\-/]*[A-Za-z0-9_]\.(?:py|bend))\s*:\s*(\d+)(?:\s*-\s*(\d+))?")
 #: A BARE `:93`, which the port writes as a continuation of the file it just named.
 BARE = re.compile(r"(?<![\w./-]):(\d+)(?:\s*-\s*(\d+))?(?![\w:])")
+#: A MARKER'S EXPLICIT SYMBOL: `TODO(p3) ops.py:93 symbol=sym_infer`. THE NAME IS THE
+#: DURABLE PART OF A CITATION. A LINE NUMBER moves when upstream moves and a NAME does
+#: not, so a marker that names the symbol rots into a STALE POINTER -- which the gate
+#: names and `--fix` repairs -- and not into a FALSE CLAIM, which nothing can repair.
+#: IT IS PER CITATION, not per marker, because one marker may cite SEVERAL upstream
+#: lines and each of them lives in its own construct.
+SYMBOL_FIELD = re.compile(r"\bsymbol\s*=\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)?)")
 #: The upstream file's OWN declarations. `def`, `class`, and a module- or class-level
 #: assignment. A name that is only ever ASSIGNED is still a declared thing upstream.
 DECL = re.compile(r"^(\s*)(?:async\s+)?(?:def|class)\s+([A-Za-z_]\w*)")
@@ -311,14 +342,18 @@ def marker_records(path: Path, rel: str, census_mod=None) -> list[dict]:
         continue
       rest = ln[m.end():]
       cites: list[dict] = []
+      # THE SPANS ARE IN `rest` COORDINATES, so a citation and the `symbol=` that
+      # follows it can be compared. `own` is matched against `rest.strip()`, and the
+      # strip shifts every offset, so the lead is added back here.
+      lead = len(rest) - len(rest.strip())
       own = CITE.match(rest.strip())
       if own:
         lo = int(own.group(2))
         hi = int(own.group(3)) if own.group(3) else lo
         cites.append({"subject": own.group(1), "lo": lo, "hi": hi,
-                      "where": "own", "span": own.span()})
+                      "where": "own", "span": (own.start() + lead, own.end() + lead)})
         for b in BARE.finditer(rest):
-          if own.start() <= b.start() < own.end():
+          if own.start() + lead <= b.start() < own.end() + lead:
             continue
           blo = int(b.group(1))
           bhi = int(b.group(2)) if b.group(2) else blo
@@ -337,12 +372,32 @@ def marker_records(path: Path, rel: str, census_mod=None) -> list[dict]:
           hi = int(mm.group(3)) if mm.group(3) else lo
           cites.append({"subject": mm.group(1), "lo": lo, "hi": hi,
                         "where": "prose", "span": mm.span()})
+      # THE EXPLICIT SYMBOL OF EACH CITATION. The `symbol=` that FOLLOWS a citation in
+      # the marker's own text is that citation's symbol, and a marker may carry
+      # SEVERAL of them -- one per cited upstream line, because each of those lines
+      # lives in its own construct. A `symbol=` with no citation before it belongs to
+      # the marker's first citation.
+      for c in cites:
+        c["symbol"] = ""
+      for mm in SYMBOL_FIELD.finditer(rest):
+        best = None
+        for c in cites:
+          if c["where"] == "prose":
+            continue
+          if c["span"][1] <= mm.start() and (best is None or c["span"][1] > best["span"][1]):
+            best = c
+        if best is None and cites:
+          best = cites[0]
+        if best is not None:
+          best["symbol"] = mm.group(1)
       item = item_start(lines, i, blk)
       if cites and cites[0]["where"] == "own":
         # THE TEXT AFTER THE CITATION, and the citation is what separates the file from
         # the subject: `TODO(p3) ops.py:502  def ssimplify` says `ssimplify`, and the
-        # text after the MARKER says `ops.py`, which names nothing upstream.
-        after_cite = rest.strip()[own.end():].strip()
+        # text after the MARKER says `ops.py`, which names nothing upstream. The
+        # EXPLICIT `symbol=` IS REMOVED from it: it is a FIELD and not prose, and a
+        # reader that took its first token would read the word `symbol`.
+        after_cite = SYMBOL_FIELD.sub(" ", rest.strip()[own.end():]).strip()
       out.append({
         "rel": rel, "at": i, "line": ln.strip(), "tag": m.group(1),
         "after": rest.strip(), "after_cite": after_cite,
@@ -363,7 +418,17 @@ def marker_records(path: Path, rel: str, census_mod=None) -> list[dict]:
   for recs in by_block.values():
     last = ""
     for rec in recs:
-      if is_continuation(rec["after_cite"]):
+      # AN EXPLICIT `symbol=` IS THE MARKER'S SUBJECT, and it is not a prose token:
+      # it says which upstream construct the citation is about, and the gate checks
+      # the NAME. It also ENDS the inheritance chain, so the marker after it does
+      # not silently inherit a subject that is not its own.
+      explicit = next((c["symbol"] for c in rec["cites"]
+                       if c["where"] == "own" and c["symbol"]), "")
+      if explicit:
+        rec["subject_name"] = explicit
+        rec["subject_kind"] = "explicit"
+        last = explicit
+      elif is_continuation(rec["after_cite"]):
         rec["subject_name"] = last
         rec["subject_kind"] = "inherited" if last else "none"
       else:
@@ -657,6 +722,29 @@ def census(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> list[dict]:
 def judge(row: dict, corpus: Corpus, pin_cite) -> dict:
   """The verdict for one citation, as the row's fields.
 
+  THE SYMBOL CHECK COMES FIRST, AND IT IS EXCLUSIVE. A marker that NAMES a symbol is
+  making a claim about that symbol, so the cited line is measured against THAT SYMBOL
+  and against nothing else. MEASURED 2026-10-23 on this tree: the old order let a
+  QUOTED SNIPPET and a loose backtick coincidence OVERRIDE the symbol the marker
+  named, and `TODO(p3) ops.py:1198 def alloc -- ... ends `ret.view_as(shape)` was
+  "fixed" to :1227 -- a line inside `param`, a DIFFERENT function -- while the
+  symbol it named is declared at :1188. A fix that points at another function is
+  worse than no fix, so the symbol now decides, and the symbol's DECLARATION line
+  is the fix.
+
+  THE SHORT FORM IS NOT A LOOSE MATCH. The port writes "payne_hanek
+  intermediate_dtype" and upstream spells the function `payne_hanek_reduction`;
+  that is a name upstream does NOT declare, so it is measured by the marker's own
+  words below. The OLD rule also let `render` stand for a cited line inside
+  `render_uir`, and `call` for a line inside `call_with_outputs` -- the marker's
+  name was a PREFIX of the function the line was in, and the citation was about a
+  different function. A prefix is not a symbol.
+
+  `how` says WHAT held the citation, so a reader can see whether a row was resolved
+  by the symbol it names (`symbol-decl`, `symbol-range`, `symbol-body`) or by a
+  coincidence of text (`snippet`, `loose`, `short-form`). A row that resolves by
+  coincidence is a row the symbol did not check.
+
   THE FIX IS PART OF THE VERDICT, and it is part of it because a verdict that says
   "WRONG-LINE" and not "WRONG-LINE TO WHERE" sends a reader to the same place twice. The
   fix is the symbol's DECLARATION line -- or the ONE line the quoted snippet is on -- and
@@ -669,20 +757,21 @@ def judge(row: dict, corpus: Corpus, pin_cite) -> dict:
   subject = row["subject"]
   lo, hi = row["lo"], row["hi"]
   out = {"verdict": "", "why": "", "up": "", "decl": 0, "symbol": "", "new_lo": 0,
-         "new_hi": 0, "confident": False}
+         "new_hi": 0, "confident": False, "how": ""}
   if not subject.endswith(".py"):
-    out.update({"verdict": "PORT-CITATION",
+    out.update({"verdict": "PORT-CITATION", "how": "port",
                 "why": f"the marker cites the port's own `{subject}`"})
     return out
   path, how = corpus.resolve(subject, prefer_dir=row.get("prefer_dir", ""))
   if not path:
-    out.update({"verdict": "UNRESOLVABLE",
+    out.update({"verdict": "UNRESOLVABLE", "how": "no-file",
                 "why": f"`{subject}` names no upstream file at the pin ({how})"})
     return out
   lines = corpus.lines(path)
   out["up"] = path
   if not lines:
-    out.update({"verdict": "UNRESOLVABLE", "why": f"`{path}` is empty at the pin"})
+    out.update({"verdict": "UNRESOLVABLE", "how": "empty-file",
+                "why": f"`{path}` is empty at the pin"})
     return out
   declared = decls_of(lines)
   spans = body_spans(lines)
@@ -691,59 +780,111 @@ def judge(row: dict, corpus: Corpus, pin_cite) -> dict:
   # the line: the word "body" in `-- the body is the line above` is prose, and upstream
   # happens to declare a `body`, and a rule that took it would report a symbol the marker
   # never wrote.
+  #
+  # THE EXPLICIT `symbol=` OF THIS CITATION wins over the prose. A marker that writes
+  # `symbol=readinto` is about `readinto`, and the words after it are the note, not a
+  # second claim about a second construct. It is PER CITATION, so a marker that cites
+  # three upstream lines can name a different construct for each of them.
+  explicit = row.get("symbol", "")
   sym, sym_decl, sym_n = resolve_symbol(lines, spans, declared,
-                                        row.get("subject_name", ""), lo)
-  out["symbol"] = sym
+                                        explicit or row.get("subject_name", ""), lo)
+  out["symbol"] = sym or explicit
+  if explicit and not sym:
+    out.update({"verdict": "WRONG-SYMBOL", "how": "symbol-absent",
+                "why": f"the marker names `{explicit}`, which `{path}` does not declare "
+                       f"at the pin"})
+    return out
   if lo < 1 or lo > len(lines):
     if sym:
       out.update({"verdict": "WRONG-LINE", "decl": sym_decl, "new_lo": sym_decl,
                   "new_hi": sym_decl + (hi - lo), "confident": sym_n == 1,
+                  "how": "symbol-out-of-range",
                   "why": f"the file has {len(lines)} lines and the marker cites :{lo}; "
                          f"`{sym}` is declared at :{sym_decl}"})
       return out
-    out.update({"verdict": "UNRESOLVABLE",
+    out.update({"verdict": "UNRESOLVABLE", "how": "out-of-range",
                 "why": f"the file has {len(lines)} lines and the marker cites :{lo}"})
     return out
   inside = enclosing(lines, lo)
   snip = snippet_of(row)
   hits = [i for i, l in enumerate(lines, 1) if snip and snip in l]
-  # ---- THE HOLDS. A citation HOLDS when the cited line holds what the marker claims.
+  # ---- THE QUOTED SNIPPET, WHEN IT HOLDS AT THE CITED LINE. The quote IS the claim
+  # and it is THERE, so no rule about symbols may overrule it.
   if snip and (lo in hits or any(lo <= h <= hi for h in hits)):
-    out.update({"verdict": "RESOLVES",
+    out.update({"verdict": "RESOLVES", "how": "snippet",
                 "why": f"the cited line holds the quoted snippet {snip[:44]!r}"})
     return out
+  # ---- THE SYMBOL CHECK, AND IT IS THE CHECK THE MARKER NAMES.
   if sym:
     if sym_decl == lo:
-      out.update({"verdict": "RESOLVES", "decl": sym_decl,
+      out.update({"verdict": "RESOLVES", "decl": sym_decl, "how": "symbol-decl",
                   "why": f"the cited line declares `{sym}`"})
       return out
     if lo <= sym_decl <= hi:
-      out.update({"verdict": "RESOLVES", "decl": sym_decl,
+      out.update({"verdict": "RESOLVES", "decl": sym_decl, "how": "symbol-range",
                   "why": f"the cited range covers the declaration of `{sym}` at :{sym_decl}"})
       return out
     for decl, first, last, kind in spans.get(sym.split(".")[-1], []):
       if kind in ("def", "table") and first <= lo and hi <= last:
-        out.update({"verdict": "RESOLVES", "decl": decl,
+        out.update({"verdict": "RESOLVES", "decl": decl, "how": "symbol-body",
                     "why": f"the cited line is inside `{sym}` (declared at :{decl})"})
         return out
-    # THE MARKER NAMES A SHORT FORM OF THE FUNCTION THE CITED LINE IS IN. The port writes
-    # "payne_hanek intermediate_dtype" and upstream spells the function
-    # `payne_hanek_reduction`; the citation is at the right place and only the NAME is
-    # short, and a rule that called that a wrong line would send a reader to rewrite a
-    # citation that is already true.
-    if inside and (inside[0].startswith(sym) or sym.startswith(inside[0])):
-      out.update({"verdict": "RESOLVES", "decl": inside[1],
-                  "why": f"the cited line is inside `{inside[0]}` (declared at :{inside[1]}), "
-                         f"which upstream spells with the marker's `{sym}`"})
+    # THE CITED LINE NAMES THE SYMBOL. The claim is then about the CALL or the
+    # MENTION: the port writes "`counter.assign(...)`" and cites the line that CALLS
+    # `assign`, whose def is elsewhere. The name on the line is the evidence, and it
+    # is a WHOLE-WORD name -- `log` is NOT on the line `def log10(self)`, which is a
+    # DIFFERENT function, and a rule that counted it there would bless a citation
+    # that points at the wrong def.
+    if re.search(rf"\b{re.escape(sym.split('.')[-1])}\b", "\n".join(lines[lo - 1:hi])):
+      out.update({"verdict": "RESOLVES", "decl": sym_decl, "how": "symbol-named",
+                  "why": f"the cited line names `{sym}`"})
       return out
+    # A RANGE THAT COVERS ANOTHER SYMBOL'S DECLARATION names SEVERAL symbols, and one
+    # symbol's body cannot judge it: `ops_nv.py:385-401 rm_alloc/rm_control/uvm` is
+    # three functions in one range, and the fix a single symbol would give is a
+    # re-point to ONE of them and would drop the other two.
+    if hi > lo and any(lo <= d <= hi for nm, d in declared.items()
+                       if nm != sym.split(".")[-1]):
+      out.update({"verdict": "RESOLVES", "decl": sym_decl, "how": "range-of-symbols",
+                  "why": f"the cited range covers more than one declaration, so it names "
+                         f"more than `{sym}`"})
+      return out
+    # THE MARKER NAMES A FUNCTION THAT IS NOT THE ONE IT DESCRIBES. The evidence is
+    # that the QUOTED SNIPPET is in ANOTHER construct's body AND IS NOT in the named
+    # symbol's body: a marker that says "def variable" and quotes `is_variable`'s body
+    # names the wrong function, and the fix is to name the one it quotes. A snippet
+    # that is in BOTH bodies is not evidence of that -- the marker quoted a line of the
+    # function it names, and only its LINE is wrong.
+    sym_body = [(s[1], s[2]) for s in spans.get(sym.split(".")[-1], [])]
+    if inside and inside[0] != sym and hits and \
+            any(inside[1] <= h <= inside[3] for h in hits) and \
+            not any(first <= h <= last for h in hits for first, last in sym_body):
+      snip_inside = enclosing(lines, hits[0])
+      out.update({"verdict": "WRONG-SYMBOL",
+                  "decl": snip_inside[1] if snip_inside else hits[0],
+                  "new_lo": snip_inside[1] if snip_inside else hits[0],
+                  "new_hi": snip_inside[1] if snip_inside else hits[0],
+                  "how": "symbol-vs-snippet",
+                  "why": f"the marker names `{sym}` but the quoted snippet is inside "
+                         f"`{snip_inside[0] if snip_inside else '?'}` (declared at "
+                         f":{snip_inside[1] if snip_inside else hits[0]})"})
+      return out
+    out.update({"verdict": "WRONG-LINE", "decl": sym_decl, "new_lo": sym_decl,
+                "new_hi": sym_decl + (hi - lo), "confident": sym_n == 1,
+                "how": "symbol-moved",
+                "why": f"the cited line does not hold the claim; `{sym}` is declared at "
+                       f":{sym_decl}" + ("" if sym_n == 1 else
+                                         f" (one of {sym_n} declarations; the nearest)")})
+    return out
+  # ---- NO SYMBOL NAMED, so the MARKER'S OWN WORDS and the LINE carry it.
   # THE SAME TEST ON THE MARKER'S OWN WORDS, for a name upstream does not declare here.
   # The port writes "payne_hanek intermediate_dtype" and upstream spells the function
   # `payne_hanek_reduction`; the citation is at the right place and only the NAME is
   # short, and a rule that called that a wrong line would send a reader to rewrite a
   # citation that is already true.
   raw = row.get("subject_name", "")
-  if raw and not sym and inside and (inside[0].startswith(raw) or raw.startswith(inside[0])):
-    out.update({"verdict": "RESOLVES", "decl": inside[1],
+  if raw and inside and (inside[0].startswith(raw) or raw.startswith(inside[0])):
+    out.update({"verdict": "RESOLVES", "decl": inside[1], "how": "short-form",
                 "why": f"the cited line is inside `{inside[0]}` (declared at :{inside[1]}), "
                        f"which upstream spells with the marker's `{raw}`"})
     return out
@@ -752,45 +893,23 @@ def judge(row: dict, corpus: Corpus, pin_cite) -> dict:
     for i in range(lo, min(hi, len(lines)) + 1):
       for t in loose:
         if re.search(rf"\b{re.escape(t)}\b", lines[i - 1]):
-          out.update({"verdict": "RESOLVES",
+          out.update({"verdict": "RESOLVES", "how": "loose",
                       "why": f"the cited line names `{t}`"})
           return out
   # ---- IT DOES NOT HOLD. The symbol is RIGHT and the LINE is wrong, or nothing is known.
   if snip and len(hits) == 1:
     out.update({"verdict": "WRONG-LINE", "decl": hits[0], "new_lo": hits[0],
                 "new_hi": hits[0] + (hi - lo), "confident": True,
+                "how": "snippet-moved",
                 "why": f"the cited line does not hold the quoted snippet {snip[:44]!r}; "
                        f"the snippet is at :{hits[0]}"})
     return out
-  # THE MARKER NAMES A FUNCTION THAT IS NOT THE ONE IT DESCRIBES. The evidence is that
-  # the QUOTED SNIPPET is in the enclosing construct's body AND IS NOT in the named
-  # symbol's body: a marker that says "def variable" and quotes `is_variable`'s body
-  # names the wrong function, and the fix is to name the one it quotes. A snippet that
-  # is in BOTH bodies is not evidence of that -- the marker quoted a line of the
-  # function it names, and only its LINE is wrong.
-  sym_spans = spans.get(sym.split(".")[-1], []) if sym else []
-  sym_body = [(s[1], s[2]) for s in sym_spans]
-  if sym and inside and inside[0] != sym and hits and \
-          any(inside[1] <= h <= inside[3] for h in hits) and \
-          not any(first <= h <= last for h in hits for first, last in sym_body):
-    out.update({"verdict": "WRONG-SYMBOL", "decl": inside[1], "new_lo": inside[1],
-                "new_hi": inside[1],
-                "why": f"the marker names `{sym}` but the quoted snippet is inside "
-                       f"`{inside[0]}` (declared at :{inside[1]})"})
-    return out
-  if sym:
-    out.update({"verdict": "WRONG-LINE", "decl": sym_decl, "new_lo": sym_decl,
-                "new_hi": sym_decl + (hi - lo), "confident": sym_n == 1,
-                "why": f"the cited line does not hold the claim; `{sym}` is declared at "
-                       f":{sym_decl}" + ("" if sym_n == 1 else
-                                         f" (one of {sym_n} declarations; the nearest)")})
-    return out
   if inside:
-    out.update({"verdict": "UNRESOLVABLE", "decl": inside[1],
+    out.update({"verdict": "UNRESOLVABLE", "decl": inside[1], "how": "no-symbol",
                 "why": f"the cited line is inside `{inside[0]}` (declared at :{inside[1]}) "
                        f"and the marker names no symbol this file declares"})
     return out
-  out.update({"verdict": "UNRESOLVABLE",
+  out.update({"verdict": "UNRESOLVABLE", "how": "no-symbol",
               "why": f"the cited line does not hold the claim and no symbol in the marker "
                      f"is declared in `{path}`"})
   return out
@@ -924,8 +1043,18 @@ def report(rows: list[dict], pin: str, detail: str) -> None:
     for r in sorted(bad, key=lambda r: (r["rel"], r["at"])):
       print(f"  {r['rel']}:{r['at']}  {r['subject']}:{r['lo']}"
             + (f"-{r['hi']}" if r["hi"] != r["lo"] else "")
-            + f"  symbol={r['symbol'] or '-'}  {r['why']}")
+            + f"  symbol={r['symbol'] or '-'}  how={r.get('how') or '-'}"
+            + f"  {r['why']}")
       print(f"      {r['line'][:150]}")
+    print()
+  # WHAT HELD THE TRUE CITATIONS, and it is the count a reader wants: a row that
+  # resolved by the SYMBOL it names is checked; a row that resolved by a coincidence
+  # of text is not.
+  held = collections.Counter(r.get("how") or "-" for r in rows if r["verdict"] == "RESOLVES")
+  if held:
+    print("--- RESOLVES, BY WHAT HELD IT ---")
+    for k, n in sorted(held.items(), key=lambda kv: (-kv[1], kv[0])):
+      print(f"  {n:5d}  {k}")
     print()
 
 
@@ -948,11 +1077,17 @@ def _plant(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> int:
   # the marker one line off, and moving the symbol one line down. A row that resolves
   # because a QUOTE happens to be on that line cannot be broken by moving the symbol,
   # and a plant that cannot be broken proves nothing.
+  #
+  # THE TARGET IS A ROW THE SYMBOL CHECKED, and a row with no SNIPPET and no
+  # BACKTICK in its own line, so the two fallbacks cannot rescue it: arm 3 DELETES
+  # the symbol from the upstream copy, and a citation that still resolved after that
+  # would be a citation held by a coincidence of text.
   good = [r for r in rows if r["verdict"] == "RESOLVES" and r["up"] and r["symbol"]
           and r["where"] == "own" and r["decl"] == r["lo"] and r["lo"] > 1
-          and r["subject"].endswith(".py")]
+          and r["subject"].endswith(".py") and r.get("how") == "symbol-decl"
+          and not snippet_of(r) and not backticked(r["line"])]
   if not good:
-    print("PLANT REFUSED: no RESOLVES row whose symbol is declared AT its cited line",
+    print("PLANT REFUSED: no RESOLVES row whose SYMBOL is declared AT its cited line",
           file=sys.stderr)
     return REFUSED
   target = good[0]
@@ -984,6 +1119,13 @@ def _plant(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> int:
     shifted = up_lines[:decl_line - 1] + ["# PLANT: a line inserted above the symbol"] + \
         up_lines[decl_line - 1:]
     (up_copy / up_path).write_text("\n".join(shifted) + "\n", encoding="utf-8")
+    # ---- ARM 3: a COPY of the PINNED UPSTREAM with the symbol DELETED. This is the
+    # arm that says the gate checks the SYMBOL and not only its line: a citation whose
+    # symbol upstream no longer declares is FALSE, and the gate must say so.
+    up_del = td / "upstream-deleted"
+    (up_del / Path(up_path).parent).mkdir(parents=True, exist_ok=True)
+    deleted = up_lines[:decl_line - 1] + up_lines[decl_line:]
+    (up_del / up_path).write_text("\n".join(deleted) + "\n", encoding="utf-8")
     # ---- THE CONTROL: a BYTE-IDENTICAL copy of the port.
     control = td / "control"
     shutil.copytree(port, control)
@@ -995,6 +1137,7 @@ def _plant(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> int:
     ctl = census(control, corpus, pin_cite, census_mod)
     arm1 = census(port_copy, corpus, pin_cite, census_mod)
     arm2 = census(port, Corpus(root=up_copy), pin_cite, census_mod)
+    arm3 = census(port, Corpus(root=up_del), pin_cite, census_mod)
 
     def pick(rs: list[dict], rel: str, at: int) -> dict | None:
       for r in rs:
@@ -1006,7 +1149,8 @@ def _plant(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> int:
     c0 = pick(ctl, target["portrel"], target["at"])
     a1 = pick(arm1, target["portrel"], target["at"])
     a2 = pick(arm2, target["portrel"], target["at"])
-    if not (l0 and c0 and a1 and a2):
+    a3 = pick(arm3, target["portrel"], target["at"])
+    if not (l0 and c0 and a1 and a2 and a3):
       print("PLANT FAILED: the planted rows are not in the censuses", file=sys.stderr)
       return FAIL
     print(f"PLANT target    : {target['rel']}:{target['at']}  {target['subject']}:{target['lo']} "
@@ -1015,6 +1159,7 @@ def _plant(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> int:
     print(f"PLANT control   : {c0['verdict']}  -- {c0['why']}")
     print(f"PLANT arm1(port): {a1['verdict']}  -- {a1['why']}")
     print(f"PLANT arm2(up)  : {a2['verdict']}  -- {a2['why']}")
+    print(f"PLANT arm3(up)  : {a3['verdict']}  -- {a3['why']}")
     bad: list[str] = []
     if l0["verdict"] != c0["verdict"]:
       bad.append("the byte-identical control did not reproduce the live verdict")
@@ -1022,16 +1167,73 @@ def _plant(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> int:
       bad.append("arm 1: a marker pointed at the wrong line still RESOLVED")
     if a2["verdict"] == "RESOLVES":
       bad.append("arm 2: a moved symbol still RESOLVED at the old line")
+    if a3["verdict"] == "RESOLVES":
+      bad.append("arm 3: a DELETED symbol still RESOLVED")
     if arm1 == live:
       bad.append("arm 1: the corrupted copy produced the identical census")
     if arm2 == live:
       bad.append("arm 2: the moved upstream produced the identical census")
+    if arm3 == live:
+      bad.append("arm 3: the upstream with the symbol deleted produced the identical census")
     if bad:
       for b in bad:
         print(f"PLANT BAD: {b}", file=sys.stderr)
       return FAIL
-    print("PLANT OK: the census noticed both arms and the control was unchanged")
+    print("PLANT OK: the census noticed all three arms and the control was unchanged")
     return PASS
+
+
+# --------------------------------------------------------------------------- the work queue
+
+def patches(rows: list[dict], pin: str, detail: str) -> str:
+  """THE WORK QUEUE, GENERATED. Every citation that is still FALSE at the pin.
+
+  THE FIX IS THE GATE'S OWN REWRITE, so a fixer that applies the queue and the gate
+  that produced it cannot disagree about where the citation belongs: the gate's
+  `fix_citation` replaces the FIRST citation after the `TODO(pN)` tag with the line
+  the marker's symbol is declared at.
+
+  A ROW WITH NO MECHANICAL FIX IS NOT A HUNK. A row whose verdict is UNRESOLVABLE has
+  no line the gate can name -- the marker names no symbol the upstream file declares --
+  and printing a diff for it would be a FIX the gate does not believe in. Those rows
+  are printed as a NOTE with the reason, so the queue says what a fixer must decide
+  rather than what it must type."""
+  bad = [r for r in rows if r["verdict"] in ("WRONG-LINE", "WRONG-SYMBOL", "UNRESOLVABLE")]
+  by_file: dict[str, list[dict]] = collections.defaultdict(list)
+  for r in bad:
+    by_file[r["rel"]].append(r)
+  out = ["# HELD-FILE PATCHES -- the `TODO(pN)` citations that are FALSE at the pin",
+         "",
+         "Produced by `gates/todo-cite-gate.py --patches`. Every hunk is the gate's own",
+         "rewrite: the cited line becomes the line the marker's SYMBOL is declared at, or",
+         "the ONE line the marker's quoted snippet is on. Nothing else in the file changes.",
+         "",
+         f"Pin `{pin[:12]}` -- {detail}",
+         "",
+         f"Measured {datetime.now(timezone.utc).isoformat(timespec='seconds')}.",
+         "",
+         f"**{len(bad)} citations** in **{len(by_file)} files**.",
+         ""]
+  for rel in sorted(by_file):
+    rs = sorted(by_file[rel], key=lambda r: r["at"])
+    out.append(f"## `{rel}` -- {len(rs)} citations")
+    out.append("")
+    out.append("```diff")
+    out.append(f"--- a/{rel}")
+    out.append(f"+++ b/{rel}")
+    for r in rs:
+      if r["verdict"] == "UNRESOLVABLE" or not r["new_lo"]:
+        out.append(f"# {rel}:{r['at']}  {r['subject']}:{r['lo']}  -- NO MECHANICAL FIX: "
+                   f"{r['why']}")
+        out.append(f"#   {r['line'][:150]}")
+        continue
+      fixed = fix_citation(r["line"], r["subject"], r["new_lo"], r["new_hi"])
+      out.append(f"@@ -{r['at']} +{r['at']} @@")
+      out.append(f"-{r['line']}")
+      out.append(f"+{fixed}")
+    out.append("```")
+    out.append("")
+  return "\n".join(out) + "\n"
 
 
 # --------------------------------------------------------------------------- the fixer
@@ -1124,8 +1326,17 @@ def main(argv: list[str]) -> int:
   if not port.is_dir():
     print(f"# todo-cite-gate: REFUSED -- the port tree {port} is absent", file=sys.stderr)
     return REFUSED
-  pin_cite = load_by_path("todo_cite_pin", HERE / "pin-cite-gate.py")
-  census_mod = pin_cite.load_census()
+  # THE PIN CITATION INSTRUMENT IS AN INPUT, AND AN ABSENT INPUT IS NOT A PASS.
+  # `pin-cite-gate.py` is loaded BY PATH and it is not tracked in this tree, so a
+  # fresh clone has no file to load; a traceback is not a verdict, and a census that
+  # could not run has measured NOTHING.
+  try:
+    pin_cite = load_by_path("todo_cite_pin", HERE / "pin-cite-gate.py")
+    census_mod = pin_cite.load_census()
+  except Exception as exc:  # noqa: BLE001 -- the absence is the evidence
+    print(f"# todo-cite-gate: REFUSED -- the pin-citation instrument "
+          f"`gates/pin-cite-gate.py` could not be loaded: {exc}", file=sys.stderr)
+    return REFUSED
   if "--upstream-dir" in argv:
     corpus = Corpus(root=Path(argv[argv.index("--upstream-dir") + 1]))
     pin, detail = "COPY", "the corpus is a COPY of the pinned upstream"
@@ -1151,12 +1362,21 @@ def main(argv: list[str]) -> int:
         print(f"  {r['rel']}:{r['at']}  {r['subject']}:{r['lo']} -> {r['new_lo']}  "
               f"[{r['symbol']}]  {r['why']}")
     return PASS
+  if "--patches" in argv:
+    i = argv.index("--patches") + 1
+    nxt = argv[i] if i < len(argv) and not argv[i].startswith("-") else ""
+    out = Path(nxt) if nxt else HERE / "todo-cite-HELD-PATCHES.md"
+    text = patches(rows, pin, detail)
+    out.write_text(text, encoding="utf-8")
+    n = text.count("\n@@ -")
+    print(f"PATCHES    : {n} mechanical rewrites in {text.count('## `')} files -> {out}")
+    return PASS
   report(rows, pin, detail)
   if rows_out:
-    head = "rel\tat\tsubject\tlo\thi\tverdict\tsymbol\tdecl_line\tupstream\tline\n"
+    head = "rel\tat\tsubject\tlo\thi\tverdict\tsymbol\thow\tdecl_line\tupstream\tline\n"
     body = "".join(
       f"{r['rel']}\t{r['at']}\t{r['subject']}\t{r['lo']}\t{r['hi']}\t{r['verdict']}\t"
-      f"{r['symbol']}\t{r['decl']}\t{r['up']}\t{r['line']}\n" for r in rows)
+      f"{r['symbol']}\t{r.get('how') or '-'}\t{r['decl']}\t{r['up']}\t{r['line']}\n" for r in rows)
     rows_out.write_text(head + body)
     print(f"ROWS       : {len(rows)} -> {rows_out}")
   if report_only:

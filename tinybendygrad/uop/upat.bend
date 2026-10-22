@@ -1647,7 +1647,7 @@ def get_code(+pat: O.Pat, +u: O.UPat, has_ctx: Bool) -> Maybe<&2, Code>:
   get_code.broken(broken_of(u), pat, u, has_ctx, fuel(pat))
 
 # ===========================================================================
-# upat_compile -- upat.py:176. `@functools.cache` and the `exec` are the wall.
+# upat_compile -- upat.py:173. `@functools.cache` and the `exec` are the wall.
 #
 # `has_ctx` is a PARAMETER here and not `inspect.signature(real_fxn)`: a Bend
 # rule is a top-level def with a fixed arity, and ops.py's `PatternMatcher`
@@ -1659,7 +1659,7 @@ def get_code(+pat: O.Pat, +u: O.UPat, has_ctx: Bool) -> Maybe<&2, Code>:
 # the same two lines are the SAME omission: a rule is a def.
 # TODO(p3) ops.py:1433 def get_location -- `sys._getframe`, the
 # `# match for {...}` header line of `_get_code`, and `UPat.location`.
-# TODO(p3) upat.py:186 exec -- `namespace["compiled_match"]`. The rendered `Code`
+# TODO(p3) upat.py:181  upat_compile -- exec -- `namespace["compiled_match"]`. The rendered `Code`
 # IS the artifact; running it is the rewrite engine's phase.
 # ===========================================================================
 

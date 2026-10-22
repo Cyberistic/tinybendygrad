@@ -1,391 +1,630 @@
-# HELD-FILE PATCHES -- the `TODO(pN)` citations this unit could NOT re-point
+# HELD-FILE PATCHES -- the `TODO(pN)` citations that are FALSE at the pin
 
-Produced by `gates/todo-cite-gate.py` (the census) at the pin `5c2bf39d6c4b`. These files were HELD by other units when the fixer ran, so the
-citations below are STILL FALSE in them. Every hunk is the gate's own rewrite:
-the cited line becomes the line the marker's symbol is DECLARED at, or the ONE
-line the marker's quoted snippet is on. Nothing else in the file changes.
+Produced by `gates/todo-cite-gate.py --patches`. Every hunk is the gate's own
+rewrite: the cited line becomes the line the marker's SYMBOL is declared at, or
+the ONE line the marker's quoted snippet is on. Nothing else in the file changes.
 
-Measured 2026-10-22T07:51:30+00:00.
+Pin `5c2bf39d6c4b` -- tinygrad/ tree 6c91e8977790, 230 blobs match the vendored copy, 360 local-only
 
-**71 citations** in **9 files**.
+Measured 2026-10-22T22:46:32+00:00.
 
+**143 citations** in **42 files**.
 
-## `tinybendygrad/engine/realize.bend` -- 2 citations
+## `tinybendygrad/codegen/kernel.bend` -- 4 citations
+
+```diff
+--- a/tinybendygrad/codegen/kernel.bend
++++ b/tinybendygrad/codegen/kernel.bend
+@@ -99 +99 @@
+-# carries the `# TODO(p3) ops.py:581 def index` marker (581 is the `return`
++# carries the `# TODO(p3) ops.py:559 def index` marker (581 is the `return`
+# tinybendygrad/codegen/kernel.bend:472  __init__.py:226  -- NO MECHANICAL FIX: the cited line is inside `maybe_load` (declared at :222) and the marker names no symbol this file declares
+#   # `shp_same` is the reader that would answer it. `# TODO(p3) __init__.py:226
+# tinybendygrad/codegen/kernel.bend:539  __init__.py:229  -- NO MECHANICAL FIX: the cited line is inside `maybe_load` (declared at :222) and the marker names no symbol this file declares
+#   # ops and `ops.bend`'s `Op` is a closed enumeration. `# TODO(p3) __init__.py:229
+# tinybendygrad/codegen/kernel.bend:595  __init__.py:255  -- NO MECHANICAL FIX: the cited line is inside `add_raw_barrier` (declared at :247) and the marker names no symbol this file declares
+#   # `# TODO(p3) __init__.py:255  UOp.sink(...).toposort(gate=...)` -- BOTH bodies open
+```
+
+## `tinybendygrad/codegen/late/.linearizer-mut.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/codegen/late/.linearizer-mut.bend
++++ b/tinybendygrad/codegen/late/.linearizer-mut.bend
+# tinybendygrad/codegen/late/.linearizer-mut.bend:402  linearizer.py:50  -- NO MECHANICAL FIX: the cited line is inside `linearize` (declared at :8) and the marker names no symbol this file declares
+#   # `# TODO(p3) linearizer.py:50  the DEBUG_LINEARIZE print reads `extra` -- the one
+```
+
+## `tinybendygrad/codegen/late/linearizer.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/codegen/late/linearizer.bend
++++ b/tinybendygrad/codegen/late/linearizer.bend
+# tinybendygrad/codegen/late/linearizer.bend:402  linearizer.py:50  -- NO MECHANICAL FIX: the cited line is inside `linearize` (declared at :8) and the marker names no symbol this file declares
+#   # `# TODO(p3) linearizer.py:50  the DEBUG_LINEARIZE print reads `extra` -- the one
+```
+
+## `tinybendygrad/codegen/opt/search.bend` -- 3 citations
+
+```diff
+--- a/tinybendygrad/codegen/opt/search.bend
++++ b/tinybendygrad/codegen/opt/search.bend
+# tinybendygrad/codegen/opt/search.bend:154  search.py:138  -- NO MECHANICAL FIX: the cited line is inside `beam_search` (declared at :105) and the marker names no symbol this file declares
+#   # TODO(p3) search.py:138-141 the 1000x compute filter
+# tinybendygrad/codegen/opt/search.bend:171  search.py:108  -- NO MECHANICAL FIX: the cited line is inside `beam_search` (declared at :105) and the marker names no symbol this file declares
+#   # TODO(p3) search.py:108-111 `diskcache_get`/`diskcache_put` -- a persistent
+# tinybendygrad/codegen/opt/search.bend:174  search.py:116  -- NO MECHANICAL FIX: the cited line is inside `beam_search` (declared at :105) and the marker names no symbol this file declares
+#   # TODO(p3) search.py:116-122 `get_worker_pool` / `terminate_worker_pool` --
+```
+
+## `tinybendygrad/device.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/device.bend
++++ b/tinybendygrad/device.bend
+# tinybendygrad/device.bend:483  device.py:23  -- NO MECHANICAL FIX: the cited line does not hold the claim and no symbol in the marker is declared in `device.py`
+#   # TODO(p3) device.py:23  _Device._devices -- `pathlib.Path(...).iterdir()`.
+```
+
+## `tinybendygrad/engine/realize.bend` -- 1 citations
 
 ```diff
 --- a/tinybendygrad/engine/realize.bend
 +++ b/tinybendygrad/engine/realize.bend
-@@ -1148,3 +1148,3 @@
- #
--# TODO(p3) realize.py:107  runtime_cache -- a module-level `dict[tuple[bytes,str],
-+# TODO(p3) realize.py:105  runtime_cache -- a module-level `dict[tuple[bytes,str],
- #   Any]`. WALL: there is no `Device` to build a value for it and a Bend program
-@@ -1162,3 +1162,3 @@
- #
+@@ -1163 +1163 @@
 -# TODO(p3) realize.py:116  capturing -- a module-level list of Python CLASSES
 +# TODO(p3) realize.py:114  capturing -- a module-level list of Python CLASSES
- #   with an `add_linear` method, commented "put classes with an add_linear method
 ```
-
 
 ## `tinybendygrad/extra/models/convnext.bend` -- 1 citations
 
 ```diff
 --- a/tinybendygrad/extra/models/convnext.bend
 +++ b/tinybendygrad/extra/models/convnext.bend
-@@ -46,3 +46,3 @@
- #   eps=1e-6)`. `Tensor.layernorm` does not exist. The port says so in its own
+@@ -47 +47 @@
 -#   words at `nn/__init__.bend:230`: "TODO(p3) mixin/op.py:1644 x.layernorm --
 +#   words at `nn/__init__.bend:230`: "TODO(p3) mixin/op.py:1661 x.layernorm --
- #   SIDE B, not built", and that line is still true even though the conv2d and
 ```
-
 
 ## `tinybendygrad/extra/models/resnet.bend` -- 1 citations
 
 ```diff
 --- a/tinybendygrad/extra/models/resnet.bend
 +++ b/tinybendygrad/extra/models/resnet.bend
-@@ -43,3 +43,3 @@
- #   :231  `TODO(p3) mixin/op.py  x.conv2d           -- SIDE B, not built.`
+@@ -44 +44 @@
 -#   :229  `TODO(p3) mixin/op.py:1662  x.batchnorm   -- SIDE B, not built.`
 +#   :229  `TODO(p3) mixin/op.py:1678  x.batchnorm   -- SIDE B, not built.`
- # -- both are now BUILT, and that list is kept above ONLY as the record of what was true on
 ```
-
 
 ## `tinybendygrad/extra/models/vit.bend` -- 1 citations
 
 ```diff
 --- a/tinybendygrad/extra/models/vit.bend
 +++ b/tinybendygrad/extra/models/vit.bend
-@@ -43,3 +43,3 @@
- #   `Tensor.layernorm` does not exist. `nn/__init__.bend:230` names it as an
+@@ -44 +44 @@
 -#   open wall -- "TODO(p3) mixin/op.py:1644 x.layernorm -- SIDE B, not built" --
 +#   open wall -- "TODO(p3) mixin/op.py:1661 x.layernorm -- SIDE B, not built" --
- #   and that line is STILL TRUE even though the `x.conv2d` (:231), `x.batchnorm`
 ```
-
 
 ## `tinybendygrad/function.bend` -- 4 citations
 
 ```diff
 --- a/tinybendygrad/function.bend
 +++ b/tinybendygrad/function.bend
-@@ -250,3 +250,3 @@
- # SECTION B -- `UOp.buf_uop` (ops.py:925). `ops.bend` carries it as
+@@ -251 +251 @@
 -# `# TODO(p3) ops.py:925  def buf_uop`, and it is not optional here: it is the
 +# `# TODO(p3) ops.py:911  def buf_uop`, and it is not optional here: it is the
- # identity `add_to_ctx` refuses on and the value `invalid_outputs` collects. It
-@@ -1072,3 +1072,3 @@
- #
+@@ -1073 +1073 @@
 -# TODO(p3) ops.py:1239  `UOp.param_like` -- `x.param_like(len(ctx[0]))`. The SLOT
 +# TODO(p3) ops.py:1228  `UOp.param_like` -- `x.param_like(len(ctx[0]))`. The SLOT
- #   is answered by `fn_add` and the NODE is not built. Owner: `uop/ops.bend`, and
-@@ -1077,3 +1077,3 @@
- #   in a caller.
+@@ -1078 +1078 @@
 -# TODO(p3) ops.py:532   `UOp.substitute` -- `uret.substitute(subs)` and
 +# TODO(p3) ops.py:514   `UOp.substitute` -- `uret.substitute(subs)` and
- #   `uret.substitute({b: ...})`. It IS `graph_rewrite`, so it needs the matcher
-@@ -1109,3 +1109,3 @@
- #   the gate does and what the seam forces.
+@@ -1110 +1110 @@
 -# TODO(p3) ops.py:925  `buf_uop`'s MSELECT and MSTACK arms -- the multi-device
 +# TODO(p3) ops.py:911  `buf_uop`'s MSELECT and MSTACK arms -- the multi-device
- #   cluster (`mselect`, per-shard buffers). Neither op is reachable from a
 ```
 
+## `tinybendygrad/mixin/creation.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/mixin/creation.bend
++++ b/tinybendygrad/mixin/creation.bend
+# tinybendygrad/mixin/creation.bend:93  dtype.py:84  -- NO MECHANICAL FIX: the cited line is inside `float` (declared at :79) and the marker names no symbol this file declares
+#   #      TODO(p3) dtype.py:84  `DType.const`'s `truncate` -- THE INT ARM ONLY. THE FLOAT
+```
+
+## `tinybendygrad/mixin/elementwise.bend` -- 2 citations
+
+```diff
+--- a/tinybendygrad/mixin/elementwise.bend
++++ b/tinybendygrad/mixin/elementwise.bend
+@@ -837 +837 @@
+-# TODO(p3) elementwise.py:840  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
++# TODO(p3) elementwise.py:828  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
+@@ -838 +838 @@
+-# TODO(p3) elementwise.py:852  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
++# TODO(p3) elementwise.py:840  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
+```
+
+## `tinybendygrad/mixin/gradient.bend` -- 7 citations
+
+```diff
+--- a/tinybendygrad/mixin/gradient.bend
++++ b/tinybendygrad/mixin/gradient.bend
+# tinybendygrad/mixin/gradient.bend:615  mixin/gradient.py:83  -- NO MECHANICAL FIX: the cited line is inside `partial_store_gradient` (declared at :52) and the marker names no symbol this file declares
+#   # TODO(p3) mixin/gradient.py:83  ctx.contiguous -- needs `has_buffer_identity`
+# tinybendygrad/mixin/gradient.bend:699  mixin/gradient.py:92  -- NO MECHANICAL FIX: the cited line is inside `partial_store_gradient` (declared at :52) and the marker names no symbol this file declares
+#   # TODO(p3) mixin/gradient.py:92  COPY -- `copy_to_device` (ops.py:761) needs a device
+# tinybendygrad/mixin/gradient.bend:711  mixin/gradient.py:93  -- NO MECHANICAL FIX: the cited line is inside `partial_store_gradient` (declared at :52) and the marker names no symbol this file declares
+#   # TODO(p3) mixin/gradient.py:93  UNSHARD -- `_shard` (ops.py:751) reads `int(rng.vmax)`,
+# tinybendygrad/mixin/gradient.bend:744  mixin/gradient.py:98  -- NO MECHANICAL FIX: the cited line is inside `partial_store_gradient` (declared at :52) and the marker names no symbol this file declares
+#   # TODO(p3) mixin/gradient.py:98  ordering-only AFTER -- `buf_uop` (ops.py:925) walks
+@@ -813 +813 @@
+-# TODO(p3) mixin/gradient.py:102  partial_store_gradient -- the body RE-ENTERS
++# TODO(p3) mixin/gradient.py:52  partial_store_gradient -- the body RE-ENTERS
+@@ -897 +897 @@
+-# TODO(p3) mixin/gradient.py:102  partial_store_gradient -- the body calls
++# TODO(p3) mixin/gradient.py:52  partial_store_gradient -- the body calls
+# tinybendygrad/mixin/gradient.bend:1082  mixin/gradient.py:132  -- NO MECHANICAL FIX: the cited line is inside `compute_gradient` (declared at :114) and the marker names no symbol this file declares
+#   # file (see the `TODO(p3) mixin/gradient.py:132` note below, which is RETAINED):
+```
+
+## `tinybendygrad/mixin/op.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/mixin/op.bend
++++ b/tinybendygrad/mixin/op.bend
+# tinybendygrad/mixin/op.bend:292  mixin/op.py:62  -- NO MECHANICAL FIX: the cited line is inside `__getitem__` (declared at :34) and the marker names no symbol this file declares
+#   # TODO(p3) mixin/op.py:62  self.shape[k] for a SYMBOLIC dim -- `O.SU` needs
+```
+
+## `tinybendygrad/mixin/rand.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/mixin/rand.bend
++++ b/tinybendygrad/mixin/rand.bend
+# tinybendygrad/mixin/rand.bend:11  examples/beautiful_mnist.py:25  -- NO MECHANICAL FIX: `examples/beautiful_mnist.py` names no upstream file at the pin (absent)
+#   # `examples/beautiful_mnist.bend:78` records `TODO(p3) examples/beautiful_mnist.py:25` for
+```
+
+## `tinybendygrad/nn/__init__.bend` -- 2 citations
+
+```diff
+--- a/tinybendygrad/nn/__init__.bend
++++ b/tinybendygrad/nn/__init__.bend
+# tinybendygrad/nn/__init__.bend:223  mixin/rand.py:190  -- NO MECHANICAL FIX: the cited line is inside `scaled_uniform` (declared at :176) and the marker names no symbol this file declares
+#   # TODO(p3) mixin/rand.py:190  Tensor.uniform / Tensor.glorot_uniform -- `creation.py`'s
+# tinybendygrad/nn/__init__.bend:237  mixin/reduce.py:20  -- NO MECHANICAL FIX: the cited line is inside `_reduce` (declared at :13) and the marker names no symbol this file declares
+#   # TODO(p3) mixin/reduce.py:20 x.mean / x.sum    -- `mo_sum`/`mo_mean` EXIST in
+```
+
+## `tinybendygrad/nn/datasets.bend` -- 5 citations
+
+```diff
+--- a/tinybendygrad/nn/datasets.bend
++++ b/tinybendygrad/nn/datasets.bend
+# tinybendygrad/nn/datasets.bend:81  nn/datasets.py:6  -- NO MECHANICAL FIX: the cited line is inside `mnist` (declared at :4) and the marker names no symbol this file declares
+#   #    TODO(p3) nn/datasets.py:6   -- Tensor.from_url(..., gunzip=True).
+# tinybendygrad/nn/datasets.bend:82  nn/datasets.py:11  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
+#   #    TODO(p3) nn/datasets.py:11  -- the cifar tarball, and tar_extract with it.
+# tinybendygrad/nn/datasets.bend:86  nn/datasets.py:12  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
+#   #    TODO(p3) nn/datasets.py:12  -- tt["cifar-10-batches-bin/data_batch_i.bin"].
+# tinybendygrad/nn/datasets.bend:93  nn/datasets.py:7  -- NO MECHANICAL FIX: the cited line is inside `_mnist` (declared at :6) and the marker names no symbol this file declares
+#   #    TODO(p3) nn/datasets.py:7   -- reshape(-1,1,28,28).to(device).
+# tinybendygrad/nn/datasets.bend:94  nn/datasets.py:14  -- NO MECHANICAL FIX: the cited line is inside `cifar` (declared at :10) and the marker names no symbol this file declares
+#   #    TODO(p3) nn/datasets.py:14  -- train[:, 1:] and train[:, 0].
+```
 
 ## `tinybendygrad/nn/onnx.bend` -- 8 citations
 
 ```diff
 --- a/tinybendygrad/nn/onnx.bend
 +++ b/tinybendygrad/nn/onnx.bend
-@@ -1914,5 +1914,5 @@
- #   `Tensor(pathlib.Path)` for the external-data path (:226-232).
+@@ -1915 +1915 @@
 -# TODO(p3) onnx.py:361  _to_python_const -- `t.data().tobytes()` / `t.tolist()`.
-+# TODO(p3) onnx.py:282  _to_python_const -- `t.data().tobytes()` / `t.tolist()`.
- #   WALL: a host read of a realized buffer.
++# TODO(p3) onnx.py:281  _to_python_const -- `t.data().tobytes()` / `t.tolist()`.
+@@ -1917 +1917 @@
 -# TODO(p3) onnx.py:367  OnnxRunner.__init__ / _init_from_graph / _from_subgraph /
 +# TODO(p3) onnx.py:294  OnnxRunner.__init__ / _init_from_graph / _from_subgraph /
- #   _parse_input / to / _get_python_const / __call__ -- :374-470.
-@@ -1927,3 +1927,3 @@
- # WALL(p3) onnx.py:601  Not / Clip / IsInf -- BLOCKED: needs x.clip (elementwise.bend:880) and x.isinf (:832) (NOT defs); x.logical_not IS ported (ew_logical_not).
+@@ -1928 +1928 @@
 -# TODO(p3) onnx.py:606  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
 +# TODO(p3) onnx.py:526  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
- #   FastGelu / PRelu / LeakyRelu / ThresholdedRelu / LogSoftmax / Hardmax /
-@@ -1933,3 +1933,3 @@
- #   BitwiseXor / BitwiseNot / Mod
+@@ -1934 +1934 @@
 -# TODO(p3) onnx.py:643  Cast / CastLike -- `OnnxDataType(to).to_dtype()` is
 +# TODO(p3) onnx.py:563  Cast / CastLike -- `OnnxDataType(to).to_dtype()` is
- #   PORTED (`onx_odt_dt`), so only `x.cast` is missing.
-@@ -1947,5 +1947,5 @@
- #   EmbedLayerNormalization / MeanVarianceNormalization / LpNormalization / OneHot
+@@ -1948 +1948 @@
 -# TODO(p3) onnx.py:963  DepthToSpace / SpaceToDepth -- `X.rearrange` is a REWRITE
 +# TODO(p3) onnx.py:875  DepthToSpace / SpaceToDepth -- `X.rearrange` is a REWRITE
- #   of the whole index expression and has no mixin method of its own.
+@@ -1950 +1950 @@
 -# TODO(p3) onnx.py:969  dropout_7 / dropout_6 -- legacy `numpy.random.RandomState`,
 +# TODO(p3) onnx.py:881  dropout_7 / dropout_6 -- legacy `numpy.random.RandomState`,
- #   which is a NUMPY seeding requirement the port cannot state.
-@@ -1960,3 +1960,3 @@
- #   QLinearGlobalAveragePool / ConvInteger / MatMulInteger
+@@ -1961 +1961 @@
 -# TODO(p3) onnx.py:1265 Adagrad / Adam / Momentum -- the `@_onnx_training`
 +# TODO(p3) onnx.py:1177 Adagrad / Adam / Momentum -- the `@_onnx_training`
- #   decorator (:532-540) SPLITS a variadic `*inputs` into `groups` slices and
-@@ -1966,3 +1966,3 @@
- #   (`___wrapper` for all three) is PORTED and GATED.
+@@ -1967 +1967 @@
 -# TODO(p3) onnx.py:1305 Gradient -- `intermediate_tensors[y].gradient(*inputs)`.
 +# TODO(p3) onnx.py:1216 Gradient -- `intermediate_tensors[y].gradient(*inputs)`.
- 
 ```
 
-
-## `tinybendygrad/renderer/wgsl.bend` -- 3 citations
+## `tinybendygrad/nn/state.bend` -- 1 citations
 
 ```diff
---- a/tinybendygrad/renderer/wgsl.bend
-+++ b/tinybendygrad/renderer/wgsl.bend
-@@ -14,5 +14,5 @@
- #   TODO(p3) wgsl.py:15  packed_store -- ditto, plus `.load`/`.store`
--#   TODO(p3) wgsl.py:23  packed_load  -- ditto, plus `.index`
--#   TODO(p3) wgsl.py:34  is_nan       -- ditto (`.bitcast` and the compare)
--#   TODO(p3) wgsl.py:41  wgsl_matcher -- ditto; the seven RULES return arenas,
-+#   TODO(p3) wgsl.py:24  packed_load  -- ditto, plus `.index`
-+#   TODO(p3) wgsl.py:35  is_nan       -- ditto (`.bitcast` and the compare)
-+#   TODO(p3) wgsl.py:42  wgsl_matcher -- ditto; the seven RULES return arenas,
- #                                  so a rule table here would have nothing to
+--- a/tinybendygrad/nn/state.bend
++++ b/tinybendygrad/nn/state.bend
+@@ -498 +498 @@
+-# TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17) needs
++# TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17) needs
 ```
 
-
-## `tinybendygrad/uop/ops.bend` -- 50 citations
+## `tinybendygrad/nn/torch.bend` -- 1 citations
 
 ```diff
---- a/tinybendygrad/uop/ops.bend
-+++ b/tinybendygrad/uop/ops.bend
-@@ -5069,3 +5069,3 @@
- # the foot of this file, where the reason is longer.
--# TODO(p3) ops.py:74  def srender
-+# TODO(p3) ops.py:76  def srender
- #   `x.render()` is render.bend's and `str(x)` is its `const_repr`. Both live in
-@@ -5081,3 +5081,3 @@
- #   be stored, passed and returned, and `Maybe.map` already takes one.)
--# TODO(p3) ops.py:224  def __get__
-+# TODO(p3) ops.py:216  def __get__
- #   `recursive_property` stores a FUNCTION in a record field (`self.fxn = fxn`),
-@@ -5099,3 +5099,3 @@
- #   file has no process boundary to pickle across.
--# TODO(p3) ops.py:269  def key
-+# TODO(p3) ops.py:261  def key
- #   `hashlib.sha256` over `str((op, dtype, arg))` and the srcs' keys concatenated.
-@@ -5110,3 +5110,3 @@
- #   `frozenset[UOp]` is a deduped index list and needs no hash.
--# TODO(p3) ops.py:295  def bool_slice
-+# TODO(p3) ops.py:287  def bool_slice
- #   A `recursive_property` over the srcs, gated on `self.dtype is dtypes.bool`.
-@@ -5123,4 +5123,4 @@
- #   feeds. `repr(arg)` is render.bend's `arg_repr`, so this is three files deep.
--# TODO(p3) ops.py:459  def shard_shape
--# TODO(p3) ops.py:465  def max_shard_shape
-+# TODO(p3) ops.py:444  def shard_shape
-+# TODO(p3) ops.py:450  def max_shard_shape
- #   `shard_shape` reads `self.device` (fold), `self.axis` (fold) and `self.shape`
-@@ -5134,3 +5134,3 @@
- # with a membership test, and `ended_ranges` is ported too (fold.bend:4059).
--# TODO(p3) ops.py:495  def ranges
-+# TODO(p3) ops.py:479  def ranges
- #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
-@@ -5141,3 +5141,3 @@
- 
--# TODO(p3) ops.py:511  def simplify
-+# TODO(p3) ops.py:495  def simplify
- #   # *** uop evaluation ***
-@@ -5168,15 +5168,15 @@
- #   ONE documented divergence.
--# TODO(p3) ops.py:527  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
-+# TODO(p3) ops.py:511  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
- #   `bool_on_i32`).
--# TODO(p3) ops.py:528  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
-+# TODO(p3) ops.py:512  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
- #   `int_on_range`).
--# TODO(p3) ops.py:529  def __float__  -- DONE, same gate (`float_weakfloat`,
-+# TODO(p3) ops.py:513  def __float__  -- DONE, same gate (`float_weakfloat`,
- #   `float_on_i32`).
- 
--# TODO(p3) ops.py:530  def substitute
--
--# TODO(p3) ops.py:537  def __index__
-+# TODO(p3) ops.py:514  def substitute
-+
-+# TODO(p3) ops.py:521  def __index__
- #   # NOTE: this is not called by Tensor slice (Tensor handles UOps directly), but satisfies SupportsIndex for type checking
- 
--# TODO(p3) ops.py:542  def trace_num
-+# TODO(p3) ops.py:526  def trace_num
- 
-@@ -5212,3 +5212,3 @@
- 
--# TODO(p3) ops.py:600  def const_like
-+# TODO(p3) ops.py:581  def const_like
- 
-@@ -5220,5 +5220,5 @@
- 
--# TODO(p3) ops.py:622  def ins
--
--# TODO(p3) ops.py:623  def contract
-+# TODO(p3) ops.py:603  def ins
-+
-+# TODO(p3) ops.py:604  def contract
- 
-@@ -5227,7 +5227,7 @@
- 
--# TODO(p3) ops.py:640  def cconst
--
--
--
--# TODO(p3) ops.py:649  def wmma
-+# TODO(p3) ops.py:621  def cconst
-+
-+
-+
-+# TODO(p3) ops.py:630  def wmma
- 
-@@ -5235,3 +5235,3 @@
- 
--# TODO(p3) ops.py:663  def invalid
-+# TODO(p3) ops.py:644  def invalid
- 
-@@ -5256,3 +5256,3 @@
- 
--# TODO(p3) ops.py:665  def get_idx
-+# TODO(p3) ops.py:646  def get_idx
- 
-@@ -5261,3 +5261,3 @@
- 
--# TODO(p3) ops.py:680  def overflows
-+# TODO(p3) ops.py:661  def overflows
- #   `def overflows(self, dtype: DType) -> bool: return self.vmin < dtype.min or
-@@ -5307,3 +5307,3 @@
- 
--# TODO(p3) ops.py:748  def _shard
-+# TODO(p3) ops.py:728  def _shard
- 
-@@ -5314,7 +5314,7 @@
- #   `def param_like` IS ABSENT, and `store_call`'s body is two of them:
--# TODO(p3) ops.py:766  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
-+# TODO(p3) ops.py:746  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
- 
- #   A DEVICE IS A `U32` TAG HERE, NOT A STRING: `type Dev is Data: D1{tag: U32}`. So a device NAME has no prefix to test, and the two below are exactly a `startswith`:
--# TODO(p3) ops.py:775  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
--# TODO(p3) ops.py:776  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
-+# TODO(p3) ops.py:755  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
-+# TODO(p3) ops.py:756  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
- #   # little helpers
-@@ -5329,9 +5329,9 @@
- 
--# TODO(p3) ops.py:850  def new_buffer
--
--# TODO(p3) ops.py:857  def from_buffer
-+# TODO(p3) ops.py:835  def new_buffer
-+
-+# TODO(p3) ops.py:843  def from_buffer
- 
- #   `def canonicalize_device` and `def is_disk_device` ARE BOTH ABSENT, and both start with one:
--# TODO(p3) ops.py:861  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
--# TODO(p3) ops.py:879  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
-+# TODO(p3) ops.py:849  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
-+# TODO(p3) ops.py:867  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
- 
-@@ -5354,10 +5354,10 @@
- #   `def contiguous_view` IS ABSENT, and both of these ask it first:
--# TODO(p3) ops.py:952  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
--# TODO(p3) ops.py:968  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
-+# TODO(p3) ops.py:941  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
-+# TODO(p3) ops.py:957  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
- 
- # WALL(p3) -- STORAGE, DEVICE AND ALLOC. NO LIVE `Buffer` -- there is no `type Buffer is Data` anywhere in the port and ZERO `Buffer{` constructors. tinygrad's Buffer is an ALLOCATED OBJECT with a `realized` field and a `memory`
--# TODO(p3) ops.py:961  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
-+# TODO(p3) ops.py:950  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
- # TODO(p3) ops.py:999  def realized  -- BLOCKED, and ANSWERS a Buffer.
--# TODO(p3) ops.py:1010  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
--# TODO(p3) ops.py:777  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
-+# TODO(p3) ops.py:999  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
-+# TODO(p3) ops.py:757  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
- 
-@@ -5451,3 +5451,3 @@
- 
--# TODO(p3) ops.py:1060  def const_factor
-+# TODO(p3) ops.py:1048  def const_factor
- #   # *** uop symbolic stuff ***
-@@ -5465,9 +5465,9 @@
- 
--# TODO(p3) ops.py:1085  def gcd
--
--# TODO(p3) ops.py:1091  def divide_exact
--
--# TODO(p3) ops.py:1102  def vmin
--
--# TODO(p3) ops.py:1104  def vmax
-+# TODO(p3) ops.py:1073  def gcd
-+
-+# TODO(p3) ops.py:1079  def divide_exact
-+
-+# TODO(p3) ops.py:1090  def vmin
-+
-+# TODO(p3) ops.py:1092  def vmax
- 
-@@ -5484,6 +5484,6 @@
- #   `def view_as` IS ABSENT, and the alloc family ends in one:
--# TODO(p3) ops.py:1198  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
--# TODO(p3) ops.py:1203  def alloc_like  -- BLOCKED, and delegates to `alloc`.
-+# TODO(p3) ops.py:1227  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
-+# TODO(p3) ops.py:1194  def alloc_like  -- BLOCKED, and delegates to `alloc`.
- # TODO(p3) ops.py:1206  def placeholder  -- BLOCKED, and ends `view_as`.
--# TODO(p3) ops.py:1219  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
-+# TODO(p3) ops.py:1208  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
- 
-@@ -5547,5 +5547,5 @@
- 
--# TODO(p3) ops.py:1241  def param_like
--
--# TODO(p3) ops.py:1250  def view_as
-+# TODO(p3) ops.py:1228  def param_like
-+
-+# TODO(p3) ops.py:1236  def view_as
- 
-@@ -5578,5 +5578,5 @@
- 
--# TODO(p3) ops.py:1318  def to_elf
--
--# TODO(p3) ops.py:1331  def uopfunc
-+# TODO(p3) ops.py:1312  def to_elf
-+
-+# TODO(p3) ops.py:1319  def uopfunc
- 
-@@ -8138,3 +8138,3 @@
- 
--# TODO(p3) ops.py:1060  def const_factor
-+# TODO(p3) ops.py:1048  def const_factor
- #   `def const_factor(self) -> int: """largest known int that divides self"""` --
-@@ -8177,3 +8177,3 @@
- 
--# TODO(p3) ops.py:1085  def gcd
-+# TODO(p3) ops.py:1073  def gcd
- #   `zip(*[u.pop_const(Ops.MUL) for u in uops])`, a `Counter` intersection of
-@@ -8182,3 +8182,3 @@
- 
--# TODO(p3) ops.py:1091  def divide_exact
-+# TODO(p3) ops.py:1079  def divide_exact
- #   Recurses over ADD/MUL srcs and calls `divides`, `const_like` and `__floordiv__`.
+--- a/tinybendygrad/nn/torch.bend
++++ b/tinybendygrad/nn/torch.bend
+# tinybendygrad/nn/torch.bend:69  nn/torch.py:4  -- NO MECHANICAL FIX: the cited line does not hold the claim and no symbol in the marker is declared in `nn/torch.py`
+#   #    TODO(p3) nn/torch.py:4  the import -- `sys.modules` and the module search.
 ```
 
-
-## `tinybendygrad/uop/render.bend` -- 1 citations
+## `tinybendygrad/renderer/__init__.bend` -- 8 citations
 
 ```diff
---- a/tinybendygrad/uop/render.bend
-+++ b/tinybendygrad/uop/render.bend
-@@ -1912,3 +1912,3 @@
- #
--# TODO(p3) render.py:6   def pretty_print
-+# TODO(p3) render.py:7   def pretty_print
- # PARTIAL, AND THE GATE IS NOT LANDED, so nothing here claims to be ported.
+--- a/tinybendygrad/renderer/__init__.bend
++++ b/tinybendygrad/renderer/__init__.bend
+# tinybendygrad/renderer/__init__.bend:70  ops.py:1886  -- NO MECHANICAL FIX: the cited line is inside `label` (declared at :1878) and the marker names no symbol this file declares
+#   #     SYMBOLIC `vmax` -- a WALL (`TODO(p3) ops.py:1886` in the port, at
+# tinybendygrad/renderer/__init__.bend:176  ops.py:513  -- NO MECHANICAL FIX: the cited line is inside `__int__` (declared at :512) and the marker names no symbol this file declares
+#   # `mults` (`UOp.simplify` is `# TODO(p3) ops.py:513`; the `vmax` under
+# tinybendygrad/renderer/__init__.bend:177  ops.py:1886  -- NO MECHANICAL FIX: the cited line is inside `label` (declared at :1878) and the marker names no symbol this file declares
+#   # `to_max_shape` is `# TODO(p3) ops.py:1886`) is unreachable from that call site,
+# tinybendygrad/renderer/__init__.bend:394  __init__.py:26  -- NO MECHANICAL FIX: the cited line is inside `simplify` (declared at :24) and the marker names no symbol this file declares
+#   #   substrate. `TODO(p3) __init__.py:26`.
+# tinybendygrad/renderer/__init__.bend:408  __init__.py:83  -- NO MECHANICAL FIX: the cited line is inside `__reduce__` (declared at :82) and the marker names no symbol this file declares
+#   #   answer and nothing else can be true of it. `TODO(p3) __init__.py:83`, `:84`.
+# tinybendygrad/renderer/__init__.bend:408  __init__.py:84  -- NO MECHANICAL FIX: the cited line is inside `render` (declared at :83) and the marker names no symbol this file declares
+#   #   answer and nothing else can be true of it. `TODO(p3) __init__.py:83`, `:84`.
+# tinybendygrad/renderer/__init__.bend:413  __init__.py:77  -- NO MECHANICAL FIX: the cited line is inside `Renderer` (declared at :63) and the marker names no symbol this file declares
+#   #   `match` is `cstyle.bend`'s `code_for_op.of`. `TODO(p3) __init__.py:77`.
+# tinybendygrad/renderer/__init__.bend:415  __init__.py:75  -- NO MECHANICAL FIX: the cited line is inside `Renderer` (declared at :63) and the marker names no symbol this file declares
+#   #   which is not this unit's file and has no port. `TODO(p3) __init__.py:75`.
 ```
+
+## `tinybendygrad/renderer/amd/elf.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/renderer/amd/elf.bend
++++ b/tinybendygrad/renderer/amd/elf.bend
+# tinybendygrad/renderer/amd/elf.bend:45  elf.py:16  -- NO MECHANICAL FIX: the cited line is inside `assemble_linear` (declared at :15) and the marker names no symbol this file declares
+#   # TODO(p3) elf.py:16,38-42,43,103-109  the four blockers above.
+```
+
+## `tinybendygrad/renderer/cstyle.bend` -- 5 citations
+
+```diff
+--- a/tinybendygrad/renderer/cstyle.bend
++++ b/tinybendygrad/renderer/cstyle.bend
+# tinybendygrad/renderer/cstyle.bend:60  ops.py:1886  -- NO MECHANICAL FIX: the cited line is inside `label` (declared at :1878) and the marker names no symbol this file declares
+#   #       SYMBOLIC `vmax` (`TODO(p3) ops.py:1886`). `max_numel` below is the
+# tinybendygrad/renderer/cstyle.bend:1351  ops.py:1886  -- NO MECHANICAL FIX: the cited line is inside `label` (declared at :1878) and the marker names no symbol this file declares
+#   #     `TODO(p3) ops.py:1886` wall again. It is a `U32` PARAMETER here, and the
+# tinybendygrad/renderer/cstyle.bend:1363  ops.py:1886  -- NO MECHANICAL FIX: the cited line is inside `label` (declared at :1878) and the marker names no symbol this file declares
+#   # the SYMBOLIC maximum that is `TODO(p3) ops.py:1886`. The SPECIAL filter itself
+# tinybendygrad/renderer/cstyle.bend:1367  cstyle.py:157  -- NO MECHANICAL FIX: the cited line is inside `render_kernel` (declared at :155) and the marker names no symbol this file declares
+#   #   TODO(p3) cstyle.py:157, :160 -- BLOCKED. needs `local_dims` and `launch_bounds` -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.b
+# tinybendygrad/renderer/cstyle.bend:1367  cstyle.py:160  -- NO MECHANICAL FIX: the cited line is inside `render_kernel` (declared at :155) and the marker names no symbol this file declares
+#   #   TODO(p3) cstyle.py:157, :160 -- BLOCKED. needs `local_dims` and `launch_bounds` -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.b
+```
+
+## `tinybendygrad/renderer/isa/x86.bend` -- 20 citations
+
+```diff
+--- a/tinybendygrad/renderer/isa/x86.bend
++++ b/tinybendygrad/renderer/isa/x86.bend
+# tinybendygrad/renderer/isa/x86.bend:66  x86.py:761  -- NO MECHANICAL FIX: the cited line is inside `render` (declared at :760) and the marker names no symbol this file declares
+#   #     NOT PORTED). `TODO(p3) x86.py:761`.
+# tinybendygrad/renderer/isa/x86.bend:89  x86.py:90  -- NO MECHANICAL FIX: the cited line is inside `X86GroupOp` (declared at :56) and the marker names no symbol this file declares
+#   #   different program. `TODO(p3) x86.py:90`.
+# tinybendygrad/renderer/isa/x86.bend:91  x86.py:156  -- NO MECHANICAL FIX: the cited line is inside `flag_gate` (declared at :152) and the marker names no symbol this file declares
+#   # * `pre_isel_matcher` (py:156-168, 13 lines) -- same wall. `TODO(p3) x86.py:156`.
+# tinybendygrad/renderer/isa/x86.bend:94  x86.py:312  -- NO MECHANICAL FIX: the cited line is inside `copy_op` (declared at :309) and the marker names no symbol this file declares
+#   #   `TODO(p3) x86.py:312`.
+# tinybendygrad/renderer/isa/x86.bend:100  x86.py:458  -- NO MECHANICAL FIX: the cited line is inside `flag_rematerialize` (declared at :456) and the marker names no symbol this file declares
+#   #   is a `Ref`-per-field context record. `TODO(p3) x86.py:458`, `:466`, `:478`,
+# tinybendygrad/renderer/isa/x86.bend:100  x86.py:466  -- NO MECHANICAL FIX: the cited line is inside `alloc_buffer` (declared at :464) and the marker names no symbol this file declares
+#   #   is a `Ref`-per-field context record. `TODO(p3) x86.py:458`, `:466`, `:478`,
+# tinybendygrad/renderer/isa/x86.bend:100  x86.py:478  -- NO MECHANICAL FIX: the cited line is inside `lower_range` (declared at :476) and the marker names no symbol this file declares
+#   #   is a `Ref`-per-field context record. `TODO(p3) x86.py:458`, `:466`, `:478`,
+# tinybendygrad/renderer/isa/x86.bend:105  x86.py:126  -- NO MECHANICAL FIX: the cited line is inside `is_regbuf` (declared at :90) and the marker names no symbol this file declares
+#   #   `TODO(p3) x86.py:126`.
+# tinybendygrad/renderer/isa/x86.bend:110  x86.py:137  -- NO MECHANICAL FIX: the cited line is inside `scratch_buffer` (declared at :135) and the marker names no symbol this file declares
+#   #   `TODO(p3) x86.py:137`, `:144`.
+# tinybendygrad/renderer/isa/x86.bend:110  x86.py:144  -- NO MECHANICAL FIX: the cited line is inside `gated_load` (declared at :137) and the marker names no symbol this file declares
+#   #   `TODO(p3) x86.py:137`, `:144`.
+# tinybendygrad/renderer/isa/x86.bend:116  x86.py:152  -- NO MECHANICAL FIX: the cited line is inside `gated_store` (declared at :144) and the marker names no symbol this file declares
+#   #   1502 records three such defs in `schedule/indexing.bend`). `TODO(p3) x86.py:152`.
+# tinybendygrad/renderer/isa/x86.bend:120  x86.py:162  -- NO MECHANICAL FIX: the cited line is inside `flag_gate` (declared at :152) and the marker names no symbol this file declares
+#   #   register it wraps is ported. `TODO(p3) x86.py:162`.
+# tinybendygrad/renderer/isa/x86.bend:141  x86.py:200  -- NO MECHANICAL FIX: the cited line is inside `to_int` (declared at :199) and the marker names no symbol this file declares
+#   #   differ only in the tag. `TODO(p3) x86.py:200`.
+# tinybendygrad/renderer/isa/x86.bend:147  x86.py:219  -- NO MECHANICAL FIX: the cited line is inside `mask` (declared at :212) and the marker names no symbol this file declares
+#   #   `TODO(p3) x86.py:219`.
+# tinybendygrad/renderer/isa/x86.bend:157  x86.py:293  -- NO MECHANICAL FIX: the cited line is inside `_xmm_sz_m` (declared at :287) and the marker names no symbol this file declares
+#   #   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:293`.
+# tinybendygrad/renderer/isa/x86.bend:159  x86.py:689  -- NO MECHANICAL FIX: the cited line is inside `insert_linearized` (declared at :688) and the marker names no symbol this file declares
+#   #   `lock` / `stack_allocated` / `stack_size` state above. `TODO(p3) x86.py:689`.
+# tinybendygrad/renderer/isa/x86.bend:163  x86.py:720  -- NO MECHANICAL FIX: the cited line is inside `X86Renderer` (declared at :709) and the marker names no symbol this file declares
+#   #   PROCESS SPAWN. FFI. `TODO(p3) x86.py:720`.
+# tinybendygrad/renderer/isa/x86.bend:169  x86.py:728  -- NO MECHANICAL FIX: the cited line is inside `copy` (declared at :726) and the marker names no symbol this file declares
+#   #   class the gate ports. The node build is not. `TODO(p3) x86.py:728`.
+# tinybendygrad/renderer/isa/x86.bend:172  x86.py:761  -- NO MECHANICAL FIX: the cited line is inside `render` (declared at :760) and the marker names no symbol this file declares
+#   #   change. `TODO(p3) x86.py:761`.
+# tinybendygrad/renderer/isa/x86.bend:1585  x86.py:752  -- NO MECHANICAL FIX: the cited line is inside `_mem_adress` (declared at :743) and the marker names no symbol this file declares
+#   # `TODO(p3) x86.py:752`.
+```
+
+## `tinybendygrad/renderer/nir.bend` -- 7 citations
+
+```diff
+--- a/tinybendygrad/renderer/nir.bend
++++ b/tinybendygrad/renderer/nir.bend
+# tinybendygrad/renderer/nir.bend:1660  nir.py:50  -- NO MECHANICAL FIX: the cited line is inside `go` (declared at :45) and the marker names no symbol this file declares
+#   #   ABSENT on this tree (mesa.py:989). `TODO(p3) nir.py:50`.
+# tinybendygrad/renderer/nir.bend:1667  nir.py:121  -- NO MECHANICAL FIX: the cited line is inside `NIRRenderer` (declared at :115) and the marker names no symbol this file declares
+#   #   `TODO(p3) nir.py:121`, `:145`, `:290`.
+# tinybendygrad/renderer/nir.bend:1667  nir.py:145  -- NO MECHANICAL FIX: the cited line is inside `NIRRenderer` (declared at :115) and the marker names no symbol this file declares
+#   #   `TODO(p3) nir.py:121`, `:145`, `:290`.
+# tinybendygrad/renderer/nir.bend:1667  nir.py:290  -- NO MECHANICAL FIX: the cited line is inside `nload_img` (declared at :286) and the marker names no symbol this file declares
+#   #   `TODO(p3) nir.py:121`, `:145`, `:290`.
+# tinybendygrad/renderer/nir.bend:1672  nir.py:169  -- NO MECHANICAL FIX: the cited line is inside `NIRRenderer` (declared at :115) and the marker names no symbol this file declares
+#   #   diff. `TODO(p3) nir.py:169`.
+# tinybendygrad/renderer/nir.bend:1679  nir.py:69  -- NO MECHANICAL FIX: the cited line is inside `nchannel` (declared at :62) and the marker names no symbol this file declares
+#   #   `renderer/__init__.bend`'s convention 11 note). `TODO(p3) nir.py:69`.
+# tinybendygrad/renderer/nir.bend:1689  nir.py:312  -- NO MECHANICAL FIX: the cited line is inside `prerender` (declared at :305) and the marker names no symbol this file declares
+#   #   over `itertools.count`. `TODO(p3) nir.py:312`.
+```
+
+## `tinybendygrad/renderer/ptx.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/renderer/ptx.bend
++++ b/tinybendygrad/renderer/ptx.bend
+# tinybendygrad/renderer/ptx.bend:28  ptx.py:42  -- NO MECHANICAL FIX: the cited line is inside `render_val` (declared at :11) and the marker names no symbol this file declares
+#   #     `TODO(p3) ptx.py:42`-`56` block.
+```
+
+## `tinybendygrad/renderer/tc_ptx.bend` -- 2 citations
+
+```diff
+--- a/tinybendygrad/renderer/tc_ptx.bend
++++ b/tinybendygrad/renderer/tc_ptx.bend
+# tinybendygrad/renderer/tc_ptx.bend:75  ptx.py:145  -- NO MECHANICAL FIX: the cited line is inside `__init__` (declared at :142) and the marker names no symbol this file declares
+#   #   TODO(p3) ptx.py:145  self.compiler -- NVPTXCompiler / PTXCompiler
+# tinybendygrad/renderer/tc_ptx.bend:92  ptx.py:145  -- NO MECHANICAL FIX: the cited line is inside `__init__` (declared at :142) and the marker names no symbol this file declares
+#   #   TODO(p3) ptx.py:145  self.compiler -- NVPTXCompiler / PTXCompiler
+```
+
+## `tinybendygrad/runtime/ops_metal.bend` -- 3 citations
+
+```diff
+--- a/tinybendygrad/runtime/ops_metal.bend
++++ b/tinybendygrad/runtime/ops_metal.bend
+# tinybendygrad/runtime/ops_metal.bend:188  runtime/ops_metal.py:41  -- NO MECHANICAL FIX: the cited line is inside `__init__` (declared at :38) and the marker names no symbol this file declares
+#   #    TODO(p3) runtime/ops_metal.py:41  -- `__reduce__`.
+# tinybendygrad/runtime/ops_metal.bend:201  runtime/ops_metal.py:190  -- NO MECHANICAL FIX: the cited line is inside `_offset` (declared at :183) and the marker names no symbol this file declares
+#   #    TODO(p3) runtime/ops_metal.py:190  -- `encode_submit(MetalQueue(submit))`.
+# tinybendygrad/runtime/ops_metal.bend:202  runtime/ops_metal.py:193  -- NO MECHANICAL FIX: the cited line is inside `_offset` (declared at :183) and the marker names no symbol this file declares
+#   #    TODO(p3) runtime/ops_metal.py:193  -- `mtl_poll(tl) if …timeline…`.
+```
+
+## `tinybendygrad/runtime/ops_npy.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/runtime/ops_npy.bend
++++ b/tinybendygrad/runtime/ops_npy.bend
+@@ -88 +88 @@
+-#    TODO(p3) helpers.py:573  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
++#    TODO(p3) helpers.py:575  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
+```
+
+## `tinybendygrad/runtime/support/compiler_amd.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/runtime/support/compiler_amd.bend
++++ b/tinybendygrad/runtime/support/compiler_amd.bend
+@@ -114 +114 @@
+-#   TODO(p3) compiler_amd.py:21-23 -- the two `amd_comgr_get_data` calls.
++#   TODO(p3) compiler_amd.py:35-37 -- the two `amd_comgr_get_data` calls.
+```
+
+## `tinybendygrad/runtime/support/compiler_cuda.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/runtime/support/compiler_cuda.bend
++++ b/tinybendygrad/runtime/support/compiler_cuda.bend
+@@ -115 +115 @@
+-#   TODO(p3) compiler_cuda.py:28-35 -- `re.sub` x6.
++#   TODO(p3) compiler_cuda.py:55-62 -- `re.sub` x6.
+```
+
+## `tinybendygrad/runtime/support/compiler_llvm.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/runtime/support/compiler_llvm.bend
++++ b/tinybendygrad/runtime/support/compiler_llvm.bend
+@@ -80 +80 @@
+-#   TODO(p3) compiler_llvm.py:4  -- `from tinygrad.runtime.autogen import llvm`.
++#   TODO(p3) compiler_llvm.py:13  -- `from tinygrad.runtime.autogen import llvm`.
+```
+
+## `tinybendygrad/runtime/support/compiler_mesa.bend` -- 5 citations
+
+```diff
+--- a/tinybendygrad/runtime/support/compiler_mesa.bend
++++ b/tinybendygrad/runtime/support/compiler_mesa.bend
+@@ -77 +77 @@
+-#   TODO(p3) compiler_mesa.py:59-60 -- `nak_compiler_create` / `nak_nir_options`.
++#   TODO(p3) compiler_mesa.py:67-68 -- `nak_compiler_create` / `nak_nir_options`.
+@@ -85 +85 @@
+-#   TODO(p3) compiler_mesa.py:131  -- `v.imm_state.count` (same).
++#   TODO(p3) compiler_mesa.py:111  -- `v.imm_state.count` (same).
+@@ -86 +86 @@
+-#   TODO(p3) compiler_mesa.py:133  -- `self.dev_id.gpu_id` (same).
++#   TODO(p3) compiler_mesa.py:111  -- `self.dev_id.gpu_id` (same).
+@@ -97 +97 @@
+-#   TODO(p3) compiler_mesa.py:16 -- `base64.b64decode`.
++#   TODO(p3) compiler_mesa.py:22 -- `base64.b64decode`.
+@@ -99 +99 @@
+-#   TODO(p3) compiler_mesa.py:78 -- `f.write(lib[sizeof(struct_nak_shader_info):])`.
++#   TODO(p3) compiler_mesa.py:67 -- `f.write(lib[sizeof(struct_nak_shader_info):])`.
+```
+
+## `tinybendygrad/runtime/support/objc.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/runtime/support/objc.bend
++++ b/tinybendygrad/runtime/support/objc.bend
+@@ -89 +89 @@
+-#     TODO(p3) runtime/support/objc.py:71 -- `classmethod(...)` wrapping.
++#     TODO(p3) runtime/support/objc.py:13 -- `classmethod(...)` wrapping.
+```
+
+## `tinybendygrad/runtime/support/system.bend` -- 1 citations
+
+```diff
+--- a/tinybendygrad/runtime/support/system.bend
++++ b/tinybendygrad/runtime/support/system.bend
+@@ -89 +89 @@
+-#    TODO(p3) runtime/support/system.py:58  -- `os.system(cmd)`.
++#    TODO(p3) runtime/support/system.py:137  -- `os.system(cmd)`.
+```
+
+## `tinybendygrad/schedule/__init__.bend` -- 10 citations
+
+```diff
+--- a/tinybendygrad/schedule/__init__.bend
++++ b/tinybendygrad/schedule/__init__.bend
+# tinybendygrad/schedule/__init__.bend:1514  __init__.py:167  -- NO MECHANICAL FIX: the cited line is inside `simplify_copy_kernel` (declared at :161) and the marker names no symbol this file declares
+#   #   TODO(p3) __init__.py:167  the four-matcher rewrite -- THE WALL.
+# tinybendygrad/schedule/__init__.bend:1549  __init__.py:155  -- NO MECHANICAL FIX: the cited line is inside `assert_all_same_devices` (declared at :153) and the marker names no symbol this file declares
+#   #   TODO(p3) __init__.py:155  the RuntimeError -- a raise.
+# tinybendygrad/schedule/__init__.bend:1617  __init__.py:114  -- NO MECHANICAL FIX: the cited line is inside `apply_binds` (declared at :107) and the marker names no symbol this file declares
+#   #   TODO(p3) __init__.py:114  `s.substitute`   -- no reader in the tree.
+# tinybendygrad/schedule/__init__.bend:1733  __init__.py:240  -- NO MECHANICAL FIX: the cited line is inside `canonicalize_call_body` (declared at :235) and the marker names no symbol this file declares
+#   #     TODO(p3) __init__.py:240  `graph_rewrite(..., bottom_up=True)` -- no
+# tinybendygrad/schedule/__init__.bend:1741  ops.py:1239  -- NO MECHANICAL FIX: the cited line is inside `view_as` (declared at :1236) and the marker names no symbol this file declares
+#   #     mint is the wall. `UOp.param_like` is `TODO(p3) ops.py:1239` in
+# tinybendygrad/schedule/__init__.bend:1753  ops.py:559  -- NO MECHANICAL FIX: the cited line is inside `unbound_outputs` (declared at :556) and the marker names no symbol this file declares
+#   #     TODO(p3) ops.py:559  `all_int(c.shape)` -- `c.shape` needs `fold.bend`'s
+# tinybendygrad/schedule/__init__.bend:1765  __init__.py:214  -- NO MECHANICAL FIX: the cited line is inside `is_store_after` (declared at :213) and the marker names no symbol this file declares
+#   #     TODO(p3) __init__.py:214  `.reshape` -- `mixin/movement.bend`'s.
+# tinybendygrad/schedule/__init__.bend:1766  __init__.py:208  -- NO MECHANICAL FIX: the cited line is inside `contiguous_mops_to_view` (declared at :195) and the marker names no symbol this file declares
+#   #     TODO(p3) __init__.py:208  `.unshard` -- ABSENT from the tree.
+# tinybendygrad/schedule/__init__.bend:1781  __init__.py:285  -- NO MECHANICAL FIX: the cited line is inside `create_linear_with_vars` (declared at :268) and the marker names no symbol this file declares
+#   #     TODO(p3) __init__.py:285  `used_vars` -- `UOp.variables`.
+# tinybendygrad/schedule/__init__.bend:1782  __init__.py:301  -- NO MECHANICAL FIX: the file has 296 lines and the marker cites :301
+#   #     TODO(p3) __init__.py:301  `memory_plan_rewrite` -- `schedule/memory.py`.
+```
+
+## `tinybendygrad/schedule/multi.bend` -- 2 citations
+
+```diff
+--- a/tinybendygrad/schedule/multi.bend
++++ b/tinybendygrad/schedule/multi.bend
+# tinybendygrad/schedule/multi.bend:16  ops.py:1104  -- NO MECHANICAL FIX: the cited line is inside `_min_max` (declared at :1094) and the marker names no symbol this file declares
+#   # `copy_multi`. `fold.bend` lists it as `TODO(p3) ops.py:1104` and it is not a fold at
+# tinybendygrad/schedule/multi.bend:3452  ops.py:646  -- NO MECHANICAL FIX: the cited line is inside `valid` (declared at :645) and the marker names no symbol this file declares
+#   #   TODO(p3) ops.py:646 multi.py:12   `_apply_shrink`, SHRINK  -- BLOCKED.-- BLOCKED. needs `UOp._mop` -- which is PORTED as `tn_mop` in `tensor.bend:
+```
+
+## `tinybendygrad/tensor.bend` -- 8 citations
+
+```diff
+--- a/tinybendygrad/tensor.bend
++++ b/tinybendygrad/tensor.bend
+# tinybendygrad/tensor.bend:1211  tensor.py:74  -- NO MECHANICAL FIX: the cited line is inside `__init__` (declared at :56) and the marker names no symbol this file declares
+#   # TODO(p3) tensor.py:74  a float `ConstType` -- `F32{data: Word(32n)}` has no
+# tinybendygrad/tensor.bend:1350  tensor.py:73  -- NO MECHANICAL FIX: the cited line is inside `__init__` (declared at :56) and the marker names no symbol this file declares
+#   # TODO(p3) tensor.py:73  UOp.const(0.0, _dtype) -- an F32 literal.
+# tinybendygrad/tensor.bend:1583  ops.py:821  -- NO MECHANICAL FIX: the cited line is inside `_mop` (declared at :799) and the marker names no symbol this file declares
+#   # this file and carries both as `TODO(p3) ops.py:821` and `TODO(p3) ops.py:655`. A
+# tinybendygrad/tensor.bend:1583  ops.py:655  -- NO MECHANICAL FIX: the cited line is inside `reduce` (declared at :652) and the marker names no symbol this file declares
+#   # this file and carries both as `TODO(p3) ops.py:821` and `TODO(p3) ops.py:655`. A
+# tinybendygrad/tensor.bend:1863  ops.py:616  -- NO MECHANICAL FIX: the cited line is inside `const` (declared at :610) and the marker names no symbol this file declares
+#   # as `TODO(p3) ops.py:616` -- written here for the same reason `tn_mop` is.
+@@ -2110 +2110 @@
+-# TODO(p3) tensor.py:547  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
++# TODO(p3) tensor.py:545  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
+@@ -2171 +2171 @@
+-# TODO(p3) tensor.py:285  _data        -- `memoryview`
++# TODO(p3) tensor.py:283  _data        -- `memoryview`
+# tinybendygrad/tensor.bend:2204  tensor.py:106  -- NO MECHANICAL FIX: the cited line is inside `_apply_uop` (declared at :103) and the marker names no symbol this file declares
+#   # TODO(p3) tensor.py:106  all_metadata     -- ops.bend has the READER
+```
+
+## `tinybendygrad/uop/divandmod.bend` -- 6 citations
+
+```diff
+--- a/tinybendygrad/uop/divandmod.bend
++++ b/tinybendygrad/uop/divandmod.bend
+# tinybendygrad/uop/divandmod.bend:854  divandmod.py:13  -- NO MECHANICAL FIX: the cited line is inside `fold_divmod_general` (declared at :8) and the marker names no symbol this file declares
+#   # TODO(p3) divandmod.py:13 the RANGE HALF of `x//y` being a point -- PORTED for
+# tinybendygrad/uop/divandmod.bend:863  divandmod.py:13  -- NO MECHANICAL FIX: the cited line is inside `fold_divmod_general` (declared at :8) and the marker names no symbol this file declares
+#   # TODO(p3) divandmod.py:13-15 a FLOAT CONST -- `_min_max` returns PyConst and
+# tinybendygrad/uop/divandmod.bend:875  divandmod.py:41  -- NO MECHANICAL FIX: the cited line is inside `fold_divmod_general` (declared at :8) and the marker names no symbol this file declares
+#   # TODO(p3) divandmod.py:37 `Shared decomposition for folding rules` and :41-48
+# tinybendygrad/uop/divandmod.bend:885  divandmod.py:50  -- NO MECHANICAL FIX: the cited line is inside `fold_divmod_general` (declared at :8) and the marker names no symbol this file declares
+#   # TODO(p3) divandmod.py:50-55 `gcd_with_remainder: factor out common gcd from
+@@ -901 +901 @@
+-# TODO(p3) divandmod.py:77-81 `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
++# TODO(p3) divandmod.py:77-90 `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
+# tinybendygrad/uop/divandmod.bend:906  divandmod.py:11  -- NO MECHANICAL FIX: the cited line is inside `fold_divmod_general` (declared at :8) and the marker names no symbol this file declares
+#   # TODO(p3) divandmod.py:11 the `raise` itself -- Python's
+```
+
+## `tinybendygrad/uop/movement.bend` -- 2 citations
+
+```diff
+--- a/tinybendygrad/uop/movement.bend
++++ b/tinybendygrad/uop/movement.bend
+@@ -235 +235 @@
+-# the next time that file is edited (`# TODO(p3) ops.py:581  def index`).
++# the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
+# tinybendygrad/uop/movement.bend:432  movement.py:7  -- NO MECHANICAL FIX: the cited line does not hold the claim and no symbol in the marker is declared in `uop/movement.py`
+#   # TODO(p3) movement.py:7  rank >= 2: `UOp.sink(*usrcs).simplify()` there sees a
+```
+
+## `tinybendygrad/uop/spec.bend` -- 5 citations
+
+```diff
+--- a/tinybendygrad/uop/spec.bend
++++ b/tinybendygrad/uop/spec.bend
+# tinybendygrad/uop/spec.bend:3213  spec.py:286  -- NO MECHANICAL FIX: the file has 280 lines and the marker cites :286
+#   # TODO(p3) spec.py:286 def pyrender_globals -- imports `tinygrad.codegen.opt`,
+# tinybendygrad/uop/spec.bend:3217  spec.py:292  -- NO MECHANICAL FIX: the file has 280 lines and the marker cites :292
+#   # TODO(p3) spec.py:292 def eval_pyrender -- `exec` of GENERATED SOURCE. WALL: the
+# tinybendygrad/uop/spec.bend:3221  spec.py:296  -- NO MECHANICAL FIX: the file has 280 lines and the marker cites :296
+#   # TODO(p3) spec.py:296 def test_pyrender -- renders a UOp to source and compares
+# tinybendygrad/uop/spec.bend:3231  spec.py:7  -- NO MECHANICAL FIX: the cited line does not hold the claim and no symbol in the marker is declared in `uop/spec.py`
+#   # TODO(p3) spec.py:7   is_disk_device -- `from tinygrad.device import is_disk_device`
+# tinybendygrad/uop/spec.bend:3255  spec.py:133  -- NO MECHANICAL FIX: the cited line is inside `matches_dtype` (declared at :45) and the marker names no symbol this file declares
+#   # TODO(p3) spec.py:133 lambda x: `b := x.storage_base` -- a `while` over BITCAST,
+```
+
+## `tinybendygrad/uop/symbolic.bend` -- 5 citations
+
+```diff
+--- a/tinybendygrad/uop/symbolic.bend
++++ b/tinybendygrad/uop/symbolic.bend
+# tinybendygrad/uop/symbolic.bend:19  ops.py:483  -- NO MECHANICAL FIX: the cited line is inside `ranges` (declared at :479) and the marker names no symbol this file declares
+#   #                                            TODO(p3) ops.py:483)
+@@ -3667 +3667 @@
+-# TODO(p3) symbolic.py:209 def canonicalize_simplex -- `u.vmin >= 0` and
++# TODO(p3) symbolic.py:214 def canonicalize_simplex -- `u.vmin >= 0` and
+# tinybendygrad/uop/symbolic.bend:3673  symbolic.py:236  -- NO MECHANICAL FIX: the cited line is inside `fold_where_closure` (declared at :233) and the marker names no symbol this file declares
+#   # TODO(p3) symbolic.py:236-323 table `symbolic` -- ALL 47. Every one of the 47
+# tinybendygrad/uop/symbolic.bend:3691  symbolic.py:452  -- NO MECHANICAL FIX: the cited line is inside `gated_given_valid` (declared at :427) and the marker names no symbol this file declares
+#   # TODO(p3) symbolic.py:452 the `xpow` rule -- `xpow` is
+# tinybendygrad/uop/symbolic.bend:3701  symbolic.py:466  -- NO MECHANICAL FIX: the cited line is inside `gated_given_valid` (declared at :427) and the marker names no symbol this file declares
+#   # TODO(p3) symbolic.py:466-468 the three `1 - d` reciprocal rules -- and the wall is
+```
+

@@ -3006,8 +3006,8 @@ def UOp.broadcast(+ar: Arena, +self: U32, +count: U32) -> Found:
 # builds for bool/weakint/weakfloat, and the pair for every other dtype, so a
 # CONST of int32 is one node here and two there.
 #
-# TODO(p3): `UOp.const` needs `dtypes.from_py` (dtype.py:100, which also needs
-# `commit_int` and `strong_dtype`) and `truncate` (dtype.py:297, half of which is
+# TODO(p3) ops.py:610  def const -- `UOp.const` needs `dtypes.from_py` (dtype.py:100, which also needs
+# `commit_int` and `strong_dtype`) and `truncate` (dtype.py:289, half of which is
 # the C-effect seam ./dtype.bend already has). Both land with the dtype fold.
 def UOp.const(ar: Arena, +v: Const) -> Found:
   UOp.new(ar, OpsCONST{}, Nil{}, APy{v}, TNone{})
@@ -3423,7 +3423,7 @@ def UOp.backward_slice_with_self(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, 
 # the master plan already prescribes for `PatternMatcher` rules.
 
 # ---------------------------------------------------------------------------
-# `src` normalisation -- ops.py:1463-1468, the `permutations` line:
+# `src` normalisation -- ops.py:1456-1461, the `permutations` line:
 #
 #   src is a list  -> all permutations, or one alternative if `all_same`
 #   src is a tuple -> one alternative
@@ -3435,8 +3435,8 @@ def UOp.backward_slice_with_self(fuel: Nat, +ar: Arena, +self: U32) -> List<&2, 
 # a 3-ary commutative pattern matches nothing instead of matching wrongly. That
 # is unreachable from ops.py: the only caller of a list `src` is `alu`, and every
 # member of `GroupOp.Commutative` is BINARY -- ADD, AND, CMPEQ, CMPNE, MAX, MUL,
-# OR, XOR, all of them. Arity >= 3 is TODO(p3) and belongs with `spec.py`, the
-# only other caller.
+# OR, XOR, all of them. Arity >= 3 is TODO(p3) ops.py:1457  def UPat.__init__ --
+# and belongs with `spec.py`, the only other caller.
 # ---------------------------------------------------------------------------
 def all_same.from(+h: U32, t: List<&2, U32>) -> Bool:
   match t:
@@ -5067,10 +5067,10 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # STILL A WALL. Each names the rule, and each is ALSO in the NOT PORTED block at
 # the foot of this file, where the reason is longer.
-# TODO(p3) ops.py:74  def srender
+# TODO(p3) ops.py:76  def srender
 #   `x.render()` is render.bend's and `str(x)` is its `const_repr`. Both live in
 #   the file that imports this one, so the two-arm dispatch cannot be written here.
-# TODO(p3) ops.py:93  def sym_infer
+# TODO(p3) ops.py:1169  def sym_infer
 #   `exec` in `_sym_fxn` builds Python source from the graph and runs it in a
 #   namespace of `max/cdiv/cmod/floordiv/floormod/bitcast/dtypes`. Bend has no
 #   `eval`, so this needs a C effect that compiles a lambda or a tree-walking
@@ -5079,7 +5079,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   port's own note at the `t_*` block says a function value in a FIELD forces `Type`, not
 #   `Data`, MEASURED. (A function as a PARAMETER is fine -- `bend guide:69` says functions may
 #   be stored, passed and returned, and `Maybe.map` already takes one.)
-# TODO(p3) ops.py:224  def __get__
+# TODO(p3) ops.py:216  def __get__
 #   `recursive_property` stores a FUNCTION in a record field (`self.fxn = fxn`),
 #   and a function value in a field forces `Type`, not `Data` -- measured, and the
 #   reason the rule tables in this file are linear. The `__get__` half is the memo
@@ -5097,7 +5097,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   no protocol to implement.
 #   Pickling. A `U32` index and an `Arena` are not picklable objects, and this
 #   file has no process boundary to pickle across.
-# TODO(p3) ops.py:269  def key
+# TODO(p3) ops.py:261  def key
 #   `hashlib.sha256` over `str((op, dtype, arg))` and the srcs' keys concatenated.
 #   Two walls: the digest is a C effect (`tinygrad/runtime/`'s), and the string
 #   half reads `dtype`, which is `fold.bend`'s -- so neither half is writable here.
@@ -5108,7 +5108,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `substitute`, so porting this alone closes nothing downstream. **THE INTERNING DOES MAKE
 #   IT CHEAPER THAN CPYTHON'S**: two structurally equal nodes share an arena index, so the
 #   `frozenset[UOp]` is a deduped index list and needs no hash.
-# TODO(p3) ops.py:295  def bool_slice
+# TODO(p3) ops.py:287  def bool_slice
 #   A `recursive_property` over the srcs, gated on `self.dtype is dtypes.bool`.
 #   `dtype` is `fold.bend`'s, so both halves belong to the worklist beside it; and
 #   `bool_slice`'s `| {self}` is a self-reference the fold has to add OUTSIDE its
@@ -5121,8 +5121,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `_UOpTuple((op.value, repr(arg), self.dtype) plus every src's tuplize)`:
 #   `dtype` again, plus a `recursive_property` over the srcs, plus the sort it
 #   feeds. `repr(arg)` is render.bend's `arg_repr`, so this is three files deep.
-# TODO(p3) ops.py:459  def shard_shape
-# TODO(p3) ops.py:465  def max_shard_shape
+# TODO(p3) ops.py:444  def shard_shape
+# TODO(p3) ops.py:450  def max_shard_shape
 #   `shard_shape` reads `self.device` (fold), `self.axis` (fold) and `self.shape`
 #   (fold), and `max_shard_shape` is `to_max_shape(shard_shape)`, a fold over a
 #   `Sint` list. Every input is the worklist's, so these are fold.bend's rows;
@@ -5132,14 +5132,14 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # CPython. The reason these two carried for a month -- "Dict set algebra over the
 # fold's memo" -- was wrong: the arena interns, so `dict[UOp, None]` IS a list
 # with a membership test, and `ended_ranges` is ported too (fold.bend:4059).
-# TODO(p3) ops.py:495  def ranges
+# TODO(p3) ops.py:479  def ranges
 #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
 #   ones the ended ranges close. The wall is named where it is HIT --
 #   `schedule/rangeify.bend:189`, whose `rf_in_ranges` is the standing stub.
 
 
 
-# TODO(p3) ops.py:511  def simplify
+# TODO(p3) ops.py:495  def simplify
 #   # *** uop evaluation ***
 
 # DONE(p3) ops.py:92 def ssimplify -- `ssimplify_of` and `UOp.ssimplify_val` /
@@ -5166,19 +5166,19 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `wk_commit_dtype` already got. It is now `wk_eval_int` / `wk_eval_float` / `wk_eval_bool` in
 #   `weak.bend`, gated at `gates/wk-eval-gate.py`: 16 rows, 3 lanes, 15 identical to CPython and
 #   ONE documented divergence.
-# TODO(p3) ops.py:527  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
+# TODO(p3) ops.py:511  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
 #   `bool_on_i32`).
-# TODO(p3) ops.py:528  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
+# TODO(p3) ops.py:512  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
 #   `int_on_range`).
-# TODO(p3) ops.py:529  def __float__  -- DONE, same gate (`float_weakfloat`,
+# TODO(p3) ops.py:513  def __float__  -- DONE, same gate (`float_weakfloat`,
 #   `float_on_i32`).
 
-# TODO(p3) ops.py:530  def substitute
+# TODO(p3) ops.py:514  def substitute
 
-# TODO(p3) ops.py:537  def __index__
+# TODO(p3) ops.py:521  def __index__
 #   # NOTE: this is not called by Tensor slice (Tensor handles UOps directly), but satisfies SupportsIndex for type checking
 
-# TODO(p3) ops.py:542  def trace_num
+# TODO(p3) ops.py:526  def trace_num
 
 
 
@@ -5210,30 +5210,30 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   CORRECTLY ABSENT IS A WALL, NOT A GAP**, and the reason it was a marker at all is that
 #   nobody had written down WHICH kind it was.
 
-# TODO(p3) ops.py:600  def const_like
+# TODO(p3) ops.py:581  def const_like
 
 
-# TODO(p3) ops.py:609  def ufix
+# TODO(p3) ops.py:587  def ufix
 
-# TODO(p3) ops.py:616  def store
+# TODO(p3) ops.py:594  def store
 
 
-# TODO(p3) ops.py:622  def ins
+# TODO(p3) ops.py:603  def ins
 
-# TODO(p3) ops.py:623  def contract
+# TODO(p3) ops.py:604  def contract
 
 
 #   # cast, except for CONST, in which case rebuild a new CONST at the dtype
 
-# TODO(p3) ops.py:640  def cconst
+# TODO(p3) ops.py:621  def cconst
 
 
 
-# TODO(p3) ops.py:649  def wmma
+# TODO(p3) ops.py:630  def wmma
 
 # PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop` (tensor.bend:868).
 
-# TODO(p3) ops.py:663  def invalid
+# TODO(p3) ops.py:644  def invalid
 
 # DONE(p3) ops.py:664 def valid -- `UOp.where` and `UOp.valid_of` above, gated at
 #   `gates/ops-core-gate.py` in FOUR rows. `where` is `mixin/elementwise.py:426`'s
@@ -5254,12 +5254,12 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   here. "Cannot read it back" is not evidence that it cannot be written.
 #   PLANTED: swapping the two trailing srcs fails `valid_src1` and `valid_src2` together.
 
-# TODO(p3) ops.py:665  def get_idx
+# TODO(p3) ops.py:646  def get_idx
 
 
-# TODO(p3) ops.py:674  def reduce
+# TODO(p3) ops.py:652  def reduce
 
-# TODO(p3) ops.py:680  def overflows
+# TODO(p3) ops.py:661  def overflows
 #   `def overflows(self, dtype: DType) -> bool: return self.vmin < dtype.min or
 #   dtype.max < self.vmax`. Two comparisons and no minting, which is why it looks
 #   like the cheapest def on this list. It is not, and the reason is a QUESTION
@@ -5305,18 +5305,18 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:715  def axis
 
-# TODO(p3) ops.py:748  def _shard
+# TODO(p3) ops.py:728  def _shard
 
 # WALL(p3) ops.py:754  def shard -- BLOCKED. `def _shard` IS ABSENT -- the same one `unshard` needs. `copy_to_device` IS present, so
 #   this is one missing constructor rather than a missing subsystem.
 
 
 #   `def param_like` IS ABSENT, and `store_call`'s body is two of them:
-# TODO(p3) ops.py:766  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
+# TODO(p3) ops.py:746  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
 
 #   A DEVICE IS A `U32` TAG HERE, NOT A STRING: `type Dev is Data: D1{tag: U32}`. So a device NAME has no prefix to test, and the two below are exactly a `startswith`:
-# TODO(p3) ops.py:775  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
-# TODO(p3) ops.py:776  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
+# TODO(p3) ops.py:755  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
+# TODO(p3) ops.py:756  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
 #   # little helpers
 
 
@@ -5327,15 +5327,15 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 
 
-# TODO(p3) ops.py:850  def new_buffer
+# TODO(p3) ops.py:835  def new_buffer
 
-# TODO(p3) ops.py:857  def from_buffer
+# TODO(p3) ops.py:843  def from_buffer
 
 #   `def canonicalize_device` and `def is_disk_device` ARE BOTH ABSENT, and both start with one:
-# TODO(p3) ops.py:861  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
-# TODO(p3) ops.py:879  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
+# TODO(p3) ops.py:849  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
+# TODO(p3) ops.py:867  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
 
-# TODO(p3) ops.py:867  def _frompy
+# TODO(p3) ops.py:855  def _frompy
 
 
 
@@ -5352,14 +5352,14 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:931  def contiguous_view
 
 #   `def contiguous_view` IS ABSENT, and both of these ask it first:
-# TODO(p3) ops.py:952  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
-# TODO(p3) ops.py:968  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
+# TODO(p3) ops.py:941  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
+# TODO(p3) ops.py:957  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
 
 # WALL(p3) -- STORAGE, DEVICE AND ALLOC. NO LIVE `Buffer` -- there is no `type Buffer is Data` anywhere in the port and ZERO `Buffer{` constructors. tinygrad's Buffer is an ALLOCATED OBJECT with a `realized` field and a `memory`
-# TODO(p3) ops.py:961  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
-# TODO(p3) ops.py:999  def realized  -- BLOCKED, and ANSWERS a Buffer.
-# TODO(p3) ops.py:1010  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
-# TODO(p3) ops.py:777  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
+# TODO(p3) ops.py:950  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
+# TODO(p3) ops.py:988  def realized  -- BLOCKED, and ANSWERS a Buffer.
+# TODO(p3) ops.py:999  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
+# TODO(p3) ops.py:757  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
 
 
 # TODO(p3) ops.py:974  def buffer
@@ -5449,7 +5449,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 
 
-# TODO(p3) ops.py:1060  def const_factor
+# TODO(p3) ops.py:1048  def const_factor
 #   # *** uop symbolic stuff ***
 
 # TODO(p3) ops.py:1069  def divides
@@ -5463,29 +5463,29 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   reader recorded a divergence on the float fixture that was really just a narrow type, and
 #   `pop_const` returns whatever the CONST carries.
 
-# TODO(p3) ops.py:1085  def gcd
+# TODO(p3) ops.py:1073  def gcd
 
-# TODO(p3) ops.py:1091  def divide_exact
+# TODO(p3) ops.py:1079  def divide_exact
 
-# TODO(p3) ops.py:1102  def vmin
+# TODO(p3) ops.py:1090  def vmin
 
-# TODO(p3) ops.py:1104  def vmax
+# TODO(p3) ops.py:1092  def vmax
 
 # TODO(p3) ops.py:1106  def _min_max
 
 # TODO(p3) ops.py:1168  def _sym_fxn
 
-# TODO(p3) ops.py:93  def sym_infer
+# TODO(p3) ops.py:1169  def sym_infer
 
-# TODO(p3) ops.py:1183  def render
+# TODO(p3) ops.py:1173  def render
 
-# TODO(p3) ops.py:1191  def pyrender
+# TODO(p3) ops.py:1181  def render_uir  -- upstream's `pyrender` was DELETED before this pin.
 
 #   `def view_as` IS ABSENT, and the alloc family ends in one:
-# TODO(p3) ops.py:1198  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
-# TODO(p3) ops.py:1203  def alloc_like  -- BLOCKED, and delegates to `alloc`.
+# TODO(p3) ops.py:1188  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
+# TODO(p3) ops.py:1194  def alloc_like  -- BLOCKED, and delegates to `alloc`.
 # TODO(p3) ops.py:1206  def placeholder  -- BLOCKED, and ends `view_as`.
-# TODO(p3) ops.py:1219  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
+# TODO(p3) ops.py:1208  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
 
 
 
@@ -5545,9 +5545,9 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `prod(to_max_shape(shape))` plus a `view_as` RESHAPE, and **`view_as` IS ABSENT FROM THE PORT**
 #   (so is `unique_num`). Checked, not assumed.
 
-# TODO(p3) ops.py:1241  def param_like
+# TODO(p3) ops.py:1228  def param_like
 
-# TODO(p3) ops.py:1250  def view_as
+# TODO(p3) ops.py:1236  def view_as
 
 # custom_function -- ops.py:1258 upstream. `UOp(Ops.CUSTOM_FUNCTION, src=src,
 # arg=CustomFunction(name, dtype))`. The pin's spelling was ops.py:1256 and took no
@@ -5559,7 +5559,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt) -> Found:
   UOp.new(ar, OpsCUSTOM_FUNCTION{}, srcs, ACustom{CustomFunction{name, dt}}, TNone{})
 
-# TODO(p3) ops.py:1261  def call
+# TODO(p3) ops.py:1247  def call
 
 # WALL(p3) ops.py:1274  def call_with_outputs -- BLOCKED. ENDS IN THE `alloc` CHAIN: the body binds output ALLOCs through `mint` below, and `mint`
 #   calls `UOp.alloc`, which ends in `view_as` -- absent as a definition.
@@ -5576,9 +5576,9 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 #   is NOT the blocker: `bend guide:69` says functions are values that can be passed and
 #   called, affine, and this calls `fxn` once.
 
-# TODO(p3) ops.py:1318  def to_elf
+# TODO(p3) ops.py:1312  def to_elf
 
-# TODO(p3) ops.py:1331  def uopfunc
+# TODO(p3) ops.py:1319  def uopfunc
 
 # DONE(p3) ops.py:1229 def param -- THE SHAPE-LESS ARM ONLY, and it is in `weak.bend`. THE THIRD
 #   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
@@ -8136,7 +8136,7 @@ def vr.expr.rows(+ar: Arena) -> IO(Unit):
     c : Unit <- vr.expr.row("vr_expr_unnamed", ar, 3)
     vr.expr.row("vr_expr_nonparam", ar, 4)
 
-# TODO(p3) ops.py:1060  def const_factor
+# TODO(p3) ops.py:1048  def const_factor
 #   `def const_factor(self) -> int: """largest known int that divides self"""` --
 #   five arms, a `math.gcd` over the STACK and ADD srcs, and a positional read for
 #   MUL. Four of the five arms are one `match` each and are trivially expressible.
@@ -8175,12 +8175,12 @@ def vr.expr.rows(+ar: Arena) -> IO(Unit):
 #   `//` and `%` on an `H.I64`, plus `UOp.__floordiv__` for the Defines arm.
 #   Gated on all three.
 
-# TODO(p3) ops.py:1085  def gcd
+# TODO(p3) ops.py:1073  def gcd
 #   `zip(*[u.pop_const(Ops.MUL) for u in uops])`, a `Counter` intersection of
 #   `split_uop(Ops.MUL)` terms, and `math.gcd` over `const_factor`s. Needs
 #   `collections.Counter` as a fold and `const_factor` above.
 
-# TODO(p3) ops.py:1091  def divide_exact
+# TODO(p3) ops.py:1079  def divide_exact
 #   Recurses over ADD/MUL srcs and calls `divides`, `const_like` and `__floordiv__`.
 
 
@@ -8879,7 +8879,7 @@ type OI is Data:
 #
 # `sym_infer` (ops.py:95) IS THE IDENTITY ON AN INT, and `UOp.sym_infer`
 # (ops.py:1169) EVALUATES RENDERED SOURCE WITH `exec` -- the port's `sym_infer`
-# WALL, named at this file's `TODO(p3) ops.py:93 def sym_infer` and at
+# WALL, named at this file's `TODO(p3) ops.py:1169 def sym_infer` and at
 # `fold.bend:6540`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
 # `ProgramInfo` THE PORT CAN BUILD AND NOT ONE MORE: the port's `global_size`
 # and `local_size` are `List<&2, H.I64>`, so their elements are INTS.
