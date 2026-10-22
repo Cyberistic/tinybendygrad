@@ -1771,6 +1771,59 @@ const-identity [#########] 7/7  **THE PORT's CONSTANT IDENTITY DIVERGES FROM UPS
                                        `CFloat{...}` site spelled -- a change to a file in flight,
                                        not a one-line fix. See `.agents/slop/constid/`.
 
+render-derive     [##########] 10/10  **744 `py=` CELLS WERE TRANSCRIPTIONS, AND THE FIX IS NOT TO
+                                       KEEP THEM FRESHER -- IT IS TO DELETE THEM.** `llvmir.bend`
+                                       (471) and `ops_dsp.bend` (273) carried a `py=` half per
+                                       row: a LITERAL transcription of what CPython said once.
+                                       A transcription has no generator, so it cannot see CPython
+                                       move, and it cannot see the PORT move either --
+                                       MEASURED 2026-10-22, THIRTY of `ops_dsp.bend`'s rows
+                                       carried a `py=` half that was RIGHT while the `got=`
+                                       half beside it was WRONG: the file agreed with itself
+                                       and was wrong on thirty rows. The `py=` half is now
+                                       DERIVED -- `rd(nm, got)`, the house shape from
+                                       `tc.bend:781` -- the port's own value, re-read.
+                                       **THE CENSUS** (`.agents/slop/pylit-census/pylit_census.py`,
+                                       the instrument, not a self-count): the LITERAL column
+                                       1461 -> 718, i.e. **-743**, and it is EXACTLY
+                                       `llvmir.bend` -471 and `ops_dsp.bend` -272; the DERIVED
+                                       column +163, which is mine. (`x86.bend` moved under me --
+                                       another unit -- and moved its 774 `inline` cells to
+                                       `derived`, which is the other half of the footer's
+                                       "LITERAL cells" drop and is NOT mine. The census's own
+                                       blind spot, MEASURED and NOT a self-count: it reads a
+                                       cell's class by whether it is a quoted string, so the
+                                       224 NUMBER and BOOL cells of `ops_dsp.bend` were counted
+                                       as DERIVED before this change, when every one of them
+                                       was a transcription. The census's LITERAL count was
+                                       therefore an UNDER-count of the rot, not a witness
+                                       against it.)
+                                       **THE ORACLES ARE RECOVERED, NOT BUILT**:
+                                       `gates/llvmir_render-oracle.py` (blob
+                                       `ba636a9e2d429cb4c569c00a363e1d25b034b0a7`, commit
+                                       `0056b7845`) and `gates/ops_dsp_render-oracle.py` (blob
+                                       `291bbc8821dafb2ae0b8c464488d4b02300ced6b`, commit
+                                       `192142295`), and THE CLAIM EACH SUPPORTED IS PROVEN
+                                       AT THE PIN: 471 rows byte-identical, 497 rows with 30
+                                       declared divergences pinned on BOTH sides.
+                                       **THE PIN IS ONE COMMIT** (`813bbec3e`, extracted from
+                                       git at run time by `gates/renderkit.py`) and NOT a hand
+                                       list of the 409 lines that differ at HEAD: a hand list
+                                       of differing rows is a SECOND COPY OF THE ANSWER,
+                                       which is the failure this change removes.
+                                       **THE PLANTS** (`gates/render_derive-plant.py`, 5 arms):
+                                       P2 puts a `py=` LITERAL back beside a correct row and
+                                       the gate goes RED on 1 row with the VALUE UNCHANGED; V
+                                       puts a row's VALUE wrong and the gate goes RED on 1 row
+                                       with the VALUE MOVED -- which is what proves the lane
+                                       is NOT a self-consistency check, since the two halves
+                                       of a derived row always agree with EACH OTHER; and both
+                                       CONTROLS (a comment-only edit) move 0 rows.
+                                       **THE SUBSTRATE DIGEST** moves, and the delta
+                                       attributable to THIS change is measured by SWAPPING
+                                       THIS CHANGE'S OWN ENTRIES, not by a raw before/after
+                                       pair, which another unit's commits move too.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
