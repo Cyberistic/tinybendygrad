@@ -80,12 +80,12 @@ def CAST(a, dt):
 
 
 def CCONST(v, dt):
-    """`UOp.cconst` -- a CONST forced through a CAST, and the ONLY shape ptx.py:202 accepts.
+    """`UOp.cconst` -- a CONST forced through a CAST, and the ONLY shape ptx.py:203 accepts.
 
-    ptx.py:202 tests `u.src[1].op is Ops.CAST and u.src[1].src[0].op is Ops.CONST`.
+    ptx.py:203 tests `u.src[1].op is Ops.CAST and u.src[1].src[0].op is Ops.CONST`.
     `UOp.const(2, dtypes.int32)` is `CONST weakint` then `CAST i32`, so CASTing THAT
     gives `CAST(CAST(CONST))` and the subscript guard is FALSE -- which is how the first
-    draft of `f05_regbuf4` hit ptx.py:203's raise on a fixture that was SUPPOSED to take
+    draft of `f05_regbuf4` hit ptx.py:204's raise on a fixture that was SUPPOSED to take
     the accept arm. MEASURED, and it is why `CCONST` exists rather than `CAST(C(...))`.
     """
     return UOp.cconst(v, dt)
@@ -130,7 +130,7 @@ def F03_cast5():
 
 def F04_end():
     # ptx.py:126 -- `UPat(Ops.END, src=(UPat(), UPat(Ops.RANGE, name="r")))`: src[1] must
-    # be a RANGE. A NOOP there matches no rule and `render` raises ptx.py:224. MEASURED:
+    # be a RANGE. A NOOP there matches no rule and `render` raises ptx.py:225. MEASURED:
     # `UOp(Ops.END, src=(alu, UOp(Ops.NOOP)))` answers
     # "failed to render Ops.END with dtypes.f32 srcs [dtypes.f32, dtypes.void]".
     return UOp(Ops.END, src=(F01_alu(), UOp.range(8, 0, dtype=dtypes.int32)))
@@ -147,12 +147,12 @@ def F06_regbuf1():
 
 
 def F07_reuse():
-    # ptx.py:200 -- LOAD whose src[0] is ALU (a SPECIAL) is a COPY, not a memory read.
+    # ptx.py:201 -- LOAD whose src[0] is ALU (a SPECIAL) is a COPY, not a memory read.
     return SP(4, "g0").load()
 
 
 def F08_refuse():
-    # ptx.py:202-203 -- INDEX into a REG register by something that is not a CONST of a
+    # ptx.py:203-204 -- INDEX into a REG register by something that is not a CONST of a
     # CAST. ptx.py RAISES; this is the ONE refusal the walk has.
     buf = UOp.placeholder((4,), F32, slot=0, addrspace=AddrSpace.REG)
     dyn = CCONST(0, I32) + CCONST(1, I32)
@@ -237,11 +237,11 @@ def F19_mixed():
     # answers "failed to render Ops.LOAD". Both were the oracle's own fixture bugs.
     # NOTHING REDUCES A LOAD TO A SCALAR. MEASURED, three ways, all of them the oracle's
     # own bug rather than the port's: `.index(0)` builds `INDEX(LOAD(...), ...)`, whose
-    # subscript is a CONST rather than a CONST-of-a-CAST, so ptx.py:203 raises "dynamic
+    # subscript is a CONST rather than a CONST-of-a-CAST, so ptx.py:204 raises "dynamic
     # register indexing"; a bare `buf.load()` has no INDEX for ptx.py's LOAD rules to
-    # match, so ptx.py:224 raises "failed to render Ops.LOAD"; and `UOp.placeholder((),..)`
+    # match, so ptx.py:225 raises "failed to render Ops.LOAD"; and `UOp.placeholder((),..)`
     # has no axis to subscript. A SHAPE-(4,) buffer indexed once and loaded is the shape a
-    # real kernel has, and it is the shape that gives the LIST form of ptx.py:208.
+    # real kernel has, and it is the shape that gives the LIST form of ptx.py:209.
     p = UOp.placeholder((4,), F16, slot=0, addrspace=AddrSpace.GLOBAL)
     buf = UOp.placeholder((4,), F32, slot=1, addrspace=AddrSpace.GLOBAL)
     pl = UOp(Ops.INDEX, src=(p, SP(64, "g2")), arg=(0,)).load()
@@ -250,19 +250,19 @@ def F19_mixed():
 
 
 def F23_load1():
-    # `max_numel == 1` is the ONLY thing that separates ptx.py:208's comprehension from a
+    # `max_numel == 1` is the ONLY thing that separates ptx.py:209's comprehension from a
     # bare string, so the buffer has ONE element.
     buf = UOp.placeholder((1,), F32, slot=0, addrspace=AddrSpace.GLOBAL)
     return UOp(Ops.INDEX, src=(buf, SP(64, "g0")), arg=(0,)).load()
 
 
 def F24_range():
-    # ptx.py:216 -- RANGE gets prefix "ridx". A NON-void one allocates a register.
+    # ptx.py:217 -- RANGE gets prefix "ridx". A NON-void one allocates a register.
     return UOp.stack(UOp.range(4, 0, dtype=dtypes.int32), F01_alu())
 
 
 def F25_rangevoid():
-    # ptx.py:219 -- `if u.op is Ops.RANGE and u.dtype == dtypes.void: prefix = None`.
+    # ptx.py:220 -- `if u.op is Ops.RANGE and u.dtype == dtypes.void: prefix = None`.
     # `UOp.loop` is the only constructor that gives a RANGE a VOID dtype: its src is a
     # NOOP, and a NOOP's dtype is void. The SINK takes a second child because a loop's
     # shape is (4,) and `UOp.stack` needs matching shapes.
@@ -290,7 +290,7 @@ def F27_loadbool():
 
 def F31_weakint():
     # THE HEADLINE REFUSAL. `UOp.range(4, 0)` DEFAULTS to `dtype=dtypes.weakint`, the
-    # walk allocates `ridx` for it (ptx.py:216), and ptx.py:181 asks
+    # walk allocates `ridx` for it (ptx.py:217), and ptx.py:181 asks
     # `self.types[dtypes.weakint]` for a key the twelve-entry table does not have.
     # MEASURED: `KeyError: dtypes.weakint`. NOT via `UOp.special` -- MEASURED that
     # `sint_to_uop(64)` is a `CONST dtypes.weakint` and CONSTs are skipped at ptx.py:187,
@@ -302,13 +302,14 @@ def F31_weakint():
 def F32_weakfloat():
     # THE OTHER HEADLINE. An ADD over two weakfloat CONSTs is a real node with dtype
     # `dtypes.weakfloat` and it is NOT a CONST, so ptx.py:187 does not skip it;
-    # ptx.py:181 raises `KeyError: dtypes.weakfloat`. The port answers `"pred"` for
-    # weakint and `""` for weakfloat -- the first is a WRONG TYPE, the second is NO TYPE.
+    # ptx.py:181 raises `KeyError: dtypes.weakfloat`. The port answers `"s32"` for
+    # weakint and `"f32"` for weakfloat -- both are REAL PTX types, so the EMPTIED
+    # FIELD is the six dtypes that answer `""` and NOT these two.
     return UOp(Ops.ADD, src=(UOp.const(3.0), UOp.const(4.0)))
 
 
 def F33_bf16cast():
-    # ptx.py:231 excludes bfloat16 from `supported_dtypes` and `cast_types` has no
+    # ptx.py:232 excludes bfloat16 from `supported_dtypes` and `cast_types` has no
     # bfloat16 key, so a CAST to bf16 raises at ptx.py:181 as well.
     return UOp.const(3.0).cast(dtypes.bfloat16)
 
@@ -318,7 +319,7 @@ def F35_loadvec():
     # `ptx_render_census-mutate.py`'s M1 found it: M1 -- "`pf.of`'s LOAD list flag becomes
     # always false" -- moved ZERO of 515 rows. CAUSE, MEASURED: an INDEX carrying a
     # CONCRETE `arg=(0,)` is a SHRINK, so `UOp(Ops.INDEX, src=(buf, SP), arg=(0,)).load()`
-    # has `max_numel == 1` and ptx.py:208's comprehension is never reached. Every LOAD in
+    # has `max_numel == 1` and ptx.py:209's comprehension is never reached. Every LOAD in
     # the axis was a scalar, so `Pf.lst` had no observable effect. Dropping `arg` makes the
     # INDEX a RESHAPE and the LOAD a four-element vector, which is the shape `f10_loads`
     # already used on the port side. A mutation that moves zero rows is the census naming
@@ -337,7 +338,7 @@ def F36_regbuf_store():
 
 def F38_regload():
     # THE FIXTURE `ptx_render_census-mutate.py`'s M9 WAS MISSING, and M9's own recorded
-    # reason for moving zero rows was WRONG. M9 makes an on-REG/ALU LOAD take ptx.py:204's
+    # reason for moving zero rows was WRONG. M9 makes an on-REG/ALU LOAD take ptx.py:205's
     # SUBSCRIPT arm instead of its COPY arm, and it moved zero of 557 rows; the census's own
     # note blamed finding 2 -- "it moves nothing BECAUSE the alias arm already returns the
     # wrong register" -- which was true only while `rg_at(w, 0)` answered `NONE`. Now that
@@ -357,14 +358,14 @@ def F38_regload():
 
 def F37_twobufs():
     # THE FIXTURE EVERY EARLIER FIXTURE OF THIS CENSUS WAS MISSING, and the census's own
-    # alias finding named it: ptx.py:204 reads `r[u.src[0]][u.src[1].src[0].val]`, and every
+    # alias finding named it: ptx.py:205 reads `r[u.src[0]][u.src[1].src[0].val]`, and every
     # other INDEX/SHRINK on a REG src in this axis has its `src[0]` at STEP ZERO -- because a
     # REG `placeholder` has no srcs, so toposort always emits it first. `u.src[0]` NOT at
     # index 0 is ORDINARY (it is what `f10_loads`' three LOADs and `f12_after`'s AFTER
     # already are), and only f12/f10 said so.
     #
     # MEASURED, and this is why two buffers rather than one cleverer graph: `r[4][1]` is
-    # `%reg_f32_5` and `r[0][1]` is `%reg_f32_1`, so the two candidate readers of ptx.py:204
+    # `%reg_f32_5` and `r[0][1]` is `%reg_f32_1`, so the two candidate readers of ptx.py:205
     # ANSWER DIFFERENTLY and the row is a real discriminator rather than a coincidence.
     # MEASURED toposort, the whole axis of the defect: `INDEX(b, 1)` carries `refs=[4, 6]`.
     a = UOp.placeholder((4,), F32, slot=0, addrspace=AddrSpace.REG)
@@ -454,15 +455,15 @@ def run_fixture(name, build, fname):
     try:
         mod = R.render(uops)
     except Exception as e:
-        # ptx.py:181's KeyError, ptx.py:203's raise and ptx.py:224's all land here, and
+        # ptx.py:181's KeyError, ptx.py:204's raise and ptx.py:225's all land here, and
         # all THREE ARE NAMED rather than collapsed into one word -- because an oracle
         # answering `""` for a refusal would AGREE with a port answering `""`.
         #
-        # AND THE WALK ROWS ARE STILL EMITTED, which is the correction. ptx.py:208
-        # assigns `r[u]` BEFORE ptx.py:222 can raise, so a refusal at 222 leaves the
-        # register map COMPLETE and only the MODULE missing; ptx.py:181 and ptx.py:203
+        # AND THE WALK ROWS ARE STILL EMITTED, which is the correction. ptx.py:209
+        # assigns `r[u]` BEFORE ptx.py:223 can raise, so a refusal at 223 leaves the
+        # register map COMPLETE and only the MODULE missing; ptx.py:181 and ptx.py:204
         # stop the walk earlier and leave it short. The first draft returned on the
-        # exception and threw away the very rows that pin ptx.py:208 -- which is why
+        # exception and threw away the very rows that pin ptx.py:209 -- which is why
         # `ptx_render_census-mutate.py`'s M1 moved zero of 515 rows.
         mod = f"REFUSE:{type(e).__name__}"
     refused = isinstance(mod, str) and mod.startswith("REFUSE:")
@@ -479,7 +480,7 @@ def run_fixture(name, build, fname):
         return
     # THE WALK: `self.r` IS ptx.py:176's dict, read after the walk that filled it.
     #
-    # ONE ROW PER STEP, NOT ONE PER ALLOCATION. A step ptx.py:187/191 SKIPS gets `NONE`,
+    # ONE ROW PER STEP, NOT ONE PER ALLOCATION. A step ptx.py:187/192 SKIPS gets `NONE`,
     # and so does a step the walk reached and allocated nothing for. MEASURED, and this is
     # the population rule that makes the two lanes comparable by construction: with one row
     # per ALLOCATION the port's answer to a step is "no row", and an absent row cannot be
