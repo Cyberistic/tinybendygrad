@@ -14,7 +14,6 @@ whether the port is wrong -- what upstream's OWN HASH TABLE does with them.
 
 Every number printed here is measured; nothing is read off a diff.
 """
-import math
 import struct
 import sys
 

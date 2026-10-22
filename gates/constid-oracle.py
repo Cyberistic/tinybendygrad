@@ -83,10 +83,12 @@ def main() -> None:
         #    NOT `__eq__` -- and `__eq__` is what says two DIFFERENT payloads are equal.
         ("split_keys_same", keys_in_one_table(UOp(Ops.CONST, src=(), arg=nan_p1),
                                                UOp(Ops.CONST, src=(), arg=nan_p1))),
-        # 4: the REACHABLE nan.  `DType.const` canonicalises a nan to `math.nan`, so both of
-        #    these carry the SAME payload and are one key -- as they are in the port.
-        ("split_keys_reachable", keys_in_one_table(UOp.const(float("nan"), dtypes.float32),
-                                                   UOp.const(float("nan"), dtypes.weakfloat))),
+        # 4: the REACHABLE nan, SPELLED TWO WAYS.  `DType.const` canonicalises a nan to
+        #    `math.nan` (`dtype.py:81-82`), so two DIFFERENT nan payloads come out as ONE
+        #    key -- which is the same answer the port gives for its reachable nan, and the
+        #    answer upstream's own hash table gives for one payload twice.
+        ("split_keys_reachable", keys_in_one_table(UOp.const(nan_p1, dtypes.float32),
+                                                   UOp.const(nan_p2, dtypes.float32))),
         # 5-7: THE THREE DECLARED DIVERGENCES.
         ("merge_keys", keys_in_one_table(UOp.const(0.1, dtypes.weakfloat),
                                          UOp.const(0.10000000149011612, dtypes.weakfloat))),

@@ -25,8 +25,17 @@ and `__hash__` is `hash(self.bits)`.  So upstream's float-const identity is 64 b
 ```
 ConstFloat(0.1).bits              = 0x3fb999999999999a
 ConstFloat(0.10000000149011612).bits = 0x3fb99999a0000000
-hash differ                          = True
+hash(ConstFloat(0.1))              = 2286027170853263771
+hash(ConstFloat(0.10000000149011612)) = 2286027170960637953    <- DIFFERENT
 ConstFloat(0.1) == ConstFloat(0.10000000149011612) = False
+```
+
+**AND THE PORT's KEY, WHICH IS THE BIT PATTERN ITSELF** (the port has no separate hash
+function: the arena's key comparison is `eq_const.CFloat`, i.e. the bits):
+
+```
+F32.bits(0.1)               = 0x3DCCCCCD
+F32.bits(0.10000000149011612) = 0x3DCCCCCD                     <- THE SAME
 ```
 
 **TWO KEYS IN ONE HASH TABLE** -- upstream's own `ucache` key is
@@ -43,6 +52,8 @@ smallest integer an f32 cannot hold:
 ```
 ConstFloat(16777217.0).bits = 0x4170000010000000
 ConstFloat(16777216.0).bits = 0x4170000000000000     <- a different double
+hash(ConstFloat(16777217.0)) = 103582791697956866
+hash(ConstFloat(16777216.0)) = 103582791429521410     <- DIFFERENT
 struct.pack('<f', 16777217.0) == struct.pack('<f', 16777216.0)   <- the SAME f32, 0x4b800000
 ```
 
@@ -257,8 +268,63 @@ nothing about which defect it is.
 walks `tinybendygrad/` and `tinygrad/` plus a handful of NAMED inputs.  **`gates/` is NOT in
 the walks, so the four gate files DO NOT move the digest; only the two `.bend` files do.**
 
-* baseline, before any edit: `c92e6ccc8398d4c9c95e7bf5a705876daf1f579129881140c441291c7e21c733`
-* the digest WITHOUT my two edits, measured at the same instant as the digest WITH them,
-  is what the delta is attributed against (see the report body for the exact pair).
+* BASELINE, measured live at 10:04 before any of my edits:
+  `c92e6ccc8398d4c9c95e7bf5a705876daf1f579129881140c441291c7e21c733`
+* THE ATTRIBUTED DELTA, measured by swapping MY two files' entries in the entry list and
+  recomputing (bit-identical to having swapped the files on disk), with EVERYTHING ELSE
+  held at the same instant:
+
+```
+digest_live             = 2e9b27badeee6a705c0894298d031971d95fb2346a29e45ad488dfdd6ec9bebb
+digest_without_my_edits = 9f667b09446bbbdbbf324ae5d094b5d2647dd17a2d7352d28ded10a309bb9eb8
+```
+
+**⇒ THE ATTRIBUTED DELTA IS `2e9b27ba…` → `9f667b09…` WITH MY EDITS OFF AND BACK WITH
+THEM ON.**  The instrument is `.agents/slop/constid/digest.py --attr F1 F2 --base 853bed545^`.
+
+**THE DIGEST ALSO MOVED FOR A SECOND REASON, AND IT IS NOT MINE:** other units committed
+(`44e89e67b`, `298ad16f0`, `93e9efdf5`, `51359907a`) and are editing `tinybendygrad/`
+while this unit worked, so the live digest is not the baseline plus my delta.  **THE
+ATTRIBUTION IS DONE AT ONE INSTANT, WITH EVERYTHING ELSE HELD STILL, WHICH IS THE ONLY
+HONEST WAY TO DO IT.**
 
 **THE CORPUS WAS NOT RE-RUN.  `differ.py` WAS NOT RUN.  `runs/graphcmp/` WAS NOT READ.**
+
+---
+
+## 7. THE COMMIT
+
+`853bed545` -- "constid: the port's CONSTANT IDENTITY diverges from upstream's in BOTH
+directions, and the MERGE is a hash collision" -- 11 files, +1155/-1, and it carries EXACTLY
+those 11 paths.
+
+**THE RECIPE, AND IT IS MEASURED IN A THROWAWAY REPO FIRST** (`.agents/slop/constid/` has no
+copy of it; the recipe was run against a temp repo with a second unit's uncommitted edit
+present, and the assertion was that the commit carries NEITHER the second unit's edit NOR
+loses it):
+
+1. `git add -- <the NEW paths>` **ON THE SHARED INDEX** -- so another unit's bare `git
+   commit` cannot delete them (AGENTS.md: a private index lands a new file in HEAD but NOT
+   in the shared index, and a bare commit would then delete it).
+2. `GIT_INDEX_FILE=.git/agent-index-constid git read-tree HEAD` then
+   `GIT_INDEX_FILE=.git/agent-index-constid git add -- <the NEW paths>` -- the PRIVATE
+   index, seeded from the CURRENT HEAD.
+3. `GIT_INDEX_FILE=.git/agent-index-constid git commit --only -F <file> -- <all my paths>`
+   -- the PATHSPEC is the boundary, so the shared index's other content is not carried.
+4. `git show --stat` AND `git fsck --no-progress`, in the SAME command.  `fsck` names the
+   THREE KNOWN malformed trees (`d57bc484`, `3a60f33f`, `d83cf685`) and NO FOURTH.
+5. `git log -1 --format=%s` -- the subject landed.
+6. **AND THEN `git add -- <the two tracked .bend files>` ON THE SHARED INDEX**, because
+   step 3's private index left the SHARED index's entries for them at their PRE-COMMIT
+   blobs -- so a bare `git commit` by another unit would have REVERTED them.  MEASURED: the
+   status was `MM` on both before the re-sync and clean after it.
+
+**WHAT WAS NOT COMMITTED, AND WHY: `.agents/TODO.md` and `.agents/TOOLS.md`.**  Both carry
+ANOTHER UNIT's UNCOMMITTED WORK in the working tree (MEASURED: `git diff` on each shows
+lines that are not this unit's), and `git commit --only -- <path>` commits the WORKING-TREE
+content of a path, so committing either would have carried that unit's work inside this
+commit -- the measured hazard AGENTS.md names.  **This unit's tick-off and ledger rows are
+IN THE WORKING TREE** (`.agents/TODO.md`'s `const-identity [#######...] 3/7` row and
+`.agents/TOOLS.md`'s `constid` section) and go in with whoever commits the shared file,
+which is the tree's normal shape for the highest-traffic shared file in the tree.
+

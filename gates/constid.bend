@@ -26,7 +26,6 @@
 
 import Base
 import ./../tinybendygrad/helpers.bend as H
-import ./../tinybendygrad/LAWS/spec.bend as S
 import ./../tinybendygrad/uop/ops.bend as O
 import ./../tinybendygrad/base.bend as F
 
@@ -39,8 +38,6 @@ def NAN_P2() -> U32: 2143289345   # 0x7FC00001
 
 # SIX DECIMAL PLACES, and the number is a PARAMETER both lanes agree on.
 def VALUE_DP() -> Nat: 6n
-
-def prow(v: String) -> IO(Unit): IO.print(v)
 
 def urow(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))

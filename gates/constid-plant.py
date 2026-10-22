@@ -32,7 +32,6 @@ reports "the mutation was found" because the file did not compile has learned no
 THE BEND LOCK IS HELD FOR EVERY `bend` RUN, through `checks/bendlock.sh`, which is the tree's
 own lock and refuses to steal a live owner's.
 """
-import os
 import shutil
 import subprocess
 import sys
