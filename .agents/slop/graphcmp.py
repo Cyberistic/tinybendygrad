@@ -574,12 +574,75 @@ def carg(op: Ops, x, owner: UOp | None = None) -> str:
     #   where "not carried" is stated.
     return f"kI({bstr(x.name)},{tup([_carg(o) for o in x.applied_opts])},{_carg(x.opts_to_apply)},{u(x.beam)})"
   if op is Ops.PROGRAM:
-    # `ProgramInfo.global_size` is `tuple[int|float, ...]` (ops.bend:1352); the port holds
-    # `H.I64` and the float case is a `sint`'s, recorded on `sint_of` there. CPython's
-    # floats are rendered as `f<value>` so a float size is visible rather than truncated.
-    return "pI(" + ",".join([_carg(x.global_size), _carg(x.local_size), _carg(x.vars),
-                             _carg(x.globals), _carg(x.outs), _carg(x.ins)]) + ")"
+    # `ProgramInfo` HAS SEVEN FIELDS (ops.py:1343-1350) and this form carries SIX of them.
+    # The SEVENTH, `target`, is NOT CARRIED, and the ledger below is where that is stated
+    # -- with the measurement that says why. Read that ledger row before reading this one.
+    #
+    # THE THIRD COMPONENT IS `params`, AND IT IS NOT `vars`. **THE OLD SPELLING WAS A
+    # DIFFERENT LIST.** MEASURED against upstream's own history: `a6addc2d4` ("buffers and
+    # args in any input order", 2026-10-14) changed exactly one line of the class body --
+    # `vars: tuple[UOp, ...] = ()` -> `params: tuple[UOp, ...] = ()` -- and changed
+    # `from_sink` with it:
+    #     -  if u.op is Ops.PARAM and u.addrspace == AddrSpace.ALU: _vars.append(u)
+    #     +  if u.op is Ops.PARAM: _params.append(u)
+    # so the OLD `vars` was the **ALU-ONLY** list and the NEW `params` is **EVERY** param,
+    # both sorted by slot. **THE PORT'S RENAME IS `9974c9d9b`**, and the two lists are
+    # DIFFERENT LISTS, not two names for one list: a kernel whose params are all buffers
+    # has `vars == ()` and `params == (p0, p1, p2)`. **THE OLD BRANCH WAS STALE CODE THAT
+    # WOULD HAVE RAISED** -- MEASURED, at this tree's pin, `hasattr(ProgramInfo(), "vars")`
+    # is **False** and `hasattr(ProgramInfo(), "params")` is **True**, so `_carg(x.vars)`
+    # raised `AttributeError: 'ProgramInfo' object has no attribute 'vars'` the moment a
+    # graph reached this arm. And NO graph reached it: the corpus's 34 graphs produced
+    # **ZERO** `pI(` rows, because none of them was a `PROGRAM` at all.
+    return "pI(" + ",".join([_prog_sizes(x.global_size), _prog_sizes(x.local_size),
+                             _prog_params(x.params), _carg(x.globals), _carg(x.outs),
+                             _carg(x.ins)]) + ")"
   return _carg(x, owner)
+
+
+def _prog_sizes(sizes) -> str:
+  """`ProgramInfo.global_size` / `local_size` -- `tuple[int|float, ...]` (ops.py:1344).
+
+  AN INT HERE IS AN I64, and the port holds `H.I64`, so a size is spelled the way the
+  SHAPE COLUMN spells a dim: `l<hi>:<lo>` -- `i64` here, `H.i64_text` there. `_carg` would
+  have spelled an int with the `u32` atom (`i1`), and the port's `i64s` spells `l0:1`, so
+  the two sides would have DISAGREED on two fields that are the SAME value. **THE SIZE
+  COLUMN AND THE SHAPE COLUMN ARE THE SAME FACT AND MUST SPELL IT THE SAME WAY**, and
+  the shape column is the one the corpus has compared since 2026-10-03.
+
+  A FLOAT is a `sint`'s on the port's side and the port REFUSES a sink whose launch size
+  is not an int -- `ProgramInfo.from_sink` answers `None` (`Maybe<&2, ProgramInfo>`) --
+  so the float arm is reachable ONLY here. It prints the same `f<bits>` `_carg` prints,
+  so a float size is VISIBLE rather than truncated, and a disagreement about one is a
+  disagreement about the port refusing to hold it."""
+  return "n(" + ",".join(i64(s) if isinstance(s, int) else f32bits(s) for s in sizes) + ")"
+
+
+def _prog_params(params) -> str:
+  """THE THIRD COMPONENT OF `pI(`: the params' FULL `P(...)` RECORDS, in slot order.
+
+  **THE FULL RECORD, AND NOT THE SLOT LIST, AND THE REASON IS A ROW THAT COULD NOT GO
+  RED.** A slot list (`n(i0,i1,i2)`) would have been simpler, and it would have been
+  WORSE: for a kernel whose params are all buffers, `params`' slots and `globals`' slots
+  are THE SAME LIST, so the third component would have been a RESTATEMENT of the fourth
+  and could not have failed where the fourth did not. **THE FULL `P(...)` RECORD CARRIES
+  WHAT THE SLOT LIST CANNOT**: the ADDRSPACE (`SGLOBAL` against `SALU`), the dtype, the
+  size, the device and the name. **THE ADDRSPACE IS THE WHO POINT**: the old `vars` was
+  the ALU-ONLY list and the new `params` is every param, so the third component is where
+  the corpus can SEE that a buffer param is in the list at all -- and a slot list cannot
+  tell an ALU param from a buffer param that happens to share its slot.
+
+  THE `P(...)` SPELLING IS THE CORPUS'S OWN, not a new one: `paramarg` already renders
+  a `ParamArg` in thirteen fields in declaration order, and it is already what every
+  PARAM NODE's own `arg` column prints. So the third component is the SAME text the
+  graph's own PARAM rows carry, which makes the third component a CROSS-CHECK of the
+  list against the nodes rather than a second grammar.
+
+  THE OWNER IS THE PARAM ITSELF, so the SIZE is the param's own size -- `paramarg(pa,
+  owner)` reads it off `owner.src[0]` (graphcmp.py:703), and a `ParamArg` alone cannot
+  reach it. The port's `paramarg(ar, self, pa)` reads it off the same node, so the two
+  agree on the one field that needs an owner."""
+  return "n(" + ",".join(paramarg(p.arg, p) for p in params) + ")"
 
 
 def _carg(x, owner: UOp | None = None) -> str:
@@ -1193,6 +1256,14 @@ def g_sym():
 # is a `graph_rewrite` with a PYTHON ctx DICT"). So the honest statement of what was
 # expensive is: the py side stopped being hand-written, and the bend side did not stop being
 # hand-written for ANY of the thirteen earlier graphs either.
+#
+# **AND THERE IS NOW A FOURTH PROGRAM GRAPH, `prog`, AND IT IS THE ONE THAT COMPARES A
+# `ProgramInfo`.** The three above are KERNELS -- a SINK with a `KernelInfo` -- and a
+# `KernelInfo` says nothing about a `ProgramInfo`. `prog` is `lin` plus ONE node: a
+# `PROGRAM` carrying upstream's own `ProgramInfo.from_sink`. **IT IS THE FIRST GRAPH IN
+# THE CORPUS WHOSE `pI(` FORM IS EMITTED AT ALL** -- MEASURED 2026-10-22, the 34 graphs
+# before it produced ZERO `pI(` rows -- and its docstring says why the third component is
+# the params' FULL `P(...)` records.
 def _renderer():
   from tinygrad import Device
   return Device[Device.DEFAULT].renderer
@@ -1233,6 +1304,74 @@ def g_lin():
   out = Tensor.empty(4, 5).realize()
   out.assign(Tensor.empty(4, 3) @ Tensor.empty(3, 5))
   return full_rewrite_to_sink(_kernels(out)[0], _renderer(), optimize=True)
+
+
+def g_prog():
+  """THE FIRST GRAPH WHOSE `ProgramInfo` IS COMPARED -- A `PROGRAM` OVER THE `lin` KERNEL.
+
+  **WHY THIS GRAPH EXISTS, AND IT IS THE HOLE THE TREE SAID OUT LOUD.** MEASURED
+  2026-10-22: the corpus's 34 graphs produced **ZERO** `pI(` rows -- the port's artefacts
+  carry none, and the oracle's only `pI(` match in its own output is a COMMENT naming the
+  form. So the `ProgramInfo` arm was DEAD IN BOTH SIDES: not one node of the corpus was a
+  `PROGRAM`, so the third component of the form was not exercised at all. **AND THE
+  ORACLE's ARM WAS STALE CODE THAT WOULD HAVE RAISED**: it read `x.vars`, and at this
+  tree's pin `hasattr(ProgramInfo(), "vars")` is **False** and `hasattr(ProgramInfo(),
+  "params")` is **True** -- so the branch would have died with `AttributeError:
+  'ProgramInfo' object has no attribute 'vars'` the moment a graph reached it. **A DEAD
+  ARM AND A STALE ARM ARE THE SAME DEFECT SEEN FROM TWO SIDES**, and the corpus could see
+  neither.
+
+  **HOW THE PY SIDE'S PROGRAM GETS A BUFFER PARAM.** Upstream's own `ProgramInfo.from_sink`
+  (`ops.py:1358`) collects **EVERY** `Ops.PARAM` in the sink -- `if u.op is Ops.PARAM:
+  _params.append(u)` -- and the matmul kernel's three params are **the three BUFFERS**:
+  the output `4x5` (20 elements), the left `4x3` (12) and the right `3x5` (15), each with
+  `addrspace == AddrSpace.GLOBAL`, i.e. a BUFFER param and not an ALU variable. MEASURED,
+  on this tree, DEV=CPU:
+      params  = (PARAM slot 0 GLOBAL, PARAM slot 1 GLOBAL, PARAM slot 2 GLOBAL)
+      globals = (0, 1, 2)   outs = (0,)   ins = (1, 2)
+      global_size = (1, 1, 1)   local_size = (1, 1, 1)
+  **AND THE OLD `vars` WAS A DIFFERENT LIST, NOT A DIFFERENT NAME FOR THIS ONE.** Upstream
+  `a6addc2d4` ("buffers and args in any input order", 2026-10-14) changed one line of the
+  class body (`vars:` -> `params:`) and changed `from_sink` with it:
+      -  if u.op is Ops.PARAM and u.addrspace == AddrSpace.ALU: _vars.append(u)
+      +  if u.op is Ops.PARAM: _params.append(u)
+  so the old `vars` was the **ALU-ONLY** list and this graph's `vars` would have been
+  **EMPTY** -- `()` -- where `params` is all three buffers. **THE PORT'S RENAME IS
+  `9974c9d9b`, and the corpus could not see it, because no graph carried a PROGRAM at
+  all.** This graph is the one that carries it, and its third component is a list of
+  three BUFFER params, which is exactly the list the old spelling could not produce.
+
+  **THE PROGRAM NODE IS UPSTREAM'S OWN TWO LINES.** `codegen/__init__.py:492-493` reads
+      prog_info = ProgramInfo.from_sink(full_sink, renderer.target)
+      prg = UOp(Ops.PROGRAM, src=(full_sink,), arg=prog_info)
+  and this graph writes those two lines, because `do_to_program`'s REST is the compile
+  step -- `pm_to_program` renders the kernel and mints a BINARY, and a compiled program's
+  bytes are the machine's, so they cannot be a canonical form. **EVERY OTHER PIECE IS
+  UPSTREAM'S OWN CODE**: `Tensor.empty(4,5).realize()` and `Tensor.empty(4,3) @
+  Tensor.empty(3,5)` are the eager API, `schedule_linear` is the real scheduler,
+  `full_rewrite_to_sink` is the real codegen rewrite, and `ProgramInfo.from_sink` is
+  upstream's own static method. **NOTHING HERE IS TRANSCRIBED.**
+
+  **THE `target` IS NOT IN THE FORM, AND THE LEDGER SAYS SO.** `ProgramInfo` has SEVEN
+  fields and the `pI(` form carries SIX: the seventh is `target`, whose value is the
+  RENDERER's and whose `arch` is the MACHINE's -- MEASURED,
+  `Device["CPU"].renderer.target` is `arch='arm64,native'` here and
+  `ClangCompiler(target.arch.split(","))` (renderer/cstyle.py:322) compiles for it -- so
+  carrying it would make the corpus's canonical form machine-specific and the port's
+  fixture would have to hard-code this machine's arch. The ledger row is in
+  `graphcmp.py`'s `ledger_lines`, printed on EVERY report.
+
+  **THE PORT'S SIDE CALLS THE PORT'S OWN `ProgramInfo.from_sink`** -- the function that
+  carries the rename -- so the comparison is the port's `from_sink` against upstream's,
+  and not a hand-written literal against upstream's. See `graphcmp.bend`'s `g_prog`."""
+  from tinygrad import Tensor
+  from tinygrad.codegen import full_rewrite_to_sink
+  from tinygrad.uop.ops import ProgramInfo
+  ren = _renderer()
+  out = Tensor.empty(4, 5).realize()
+  out.assign(Tensor.empty(4, 3) @ Tensor.empty(3, 5))
+  sink = full_rewrite_to_sink(_kernels(out)[0], ren, optimize=True)
+  return UOp(Ops.PROGRAM, src=(sink,), arg=ProgramInfo.from_sink(sink, ren.target))
 
 
 def g_loop():
@@ -1709,7 +1848,11 @@ GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_
           "threefry": g_threefry, "mulacc": g_mulacc, "getaddr": g_getaddr,
           "unshard": g_unshard, "wmma": g_wmma,
           "custom_function": g_custom_function, "mselect": g_mselect,
-          "mstack": g_mstack, "stage": g_stage}
+          "mstack": g_mstack, "stage": g_stage,
+          # THE FIRST `PROGRAM` IN THE CORPUS, and the only graph whose `ProgramInfo` is
+          # compared at all. `checks/differ.py`'s `WANT` needs an entry for it -- the
+          # run is INCOMPLETE while the expectations table is shorter than the corpus.
+          "prog": g_prog}
 
 _BASE: dict[str, UOp] = {}
 
@@ -1947,6 +2090,61 @@ def plant_disarm(ast: UOp) -> UOp:
                        lambda n: UOp(Ops.EXPAND, src=(n.src[0], same)) if n is tgt else n)
 
 
+def plant_params(ast: UOp) -> UOp:
+  """THE THIRD COMPONENT OF `pI(`, WRONG ON PURPOSE. **THE PLANT THAT PROVES THE FORM IS
+  ALIVE.**
+
+  **WHAT IT EDITS.** The `PROGRAM` node's `ProgramInfo`, and ONLY its `params` field: the
+  LAST param is dropped, so the third component of the `pI(` row goes from three `P(...)`
+  records to two. Nothing else moves -- the node's op, its dtype, its shape, its tag, its
+  `src` and every other node of the graph are untouched, so the report is the `arg` field
+  of ONE node and not a cascade.
+
+  **WHY IT EXISTS, AND IT IS THE POINT OF THE WHOLE UNIT.** The `pI(` form was DEAD IN
+  BOTH SIDES for the corpus's whole life: MEASURED 2026-10-22, the 34 graphs produced
+  **ZERO** `pI(` rows, and the oracle's own arm read `x.vars`, which does not exist at
+  this pin (`hasattr(ProgramInfo(), "vars")` is **False**). **A FORM THAT NO GRAPH
+  REACHES IS A LABEL.** This plant is the control that says the form is a COMPARISON: if
+  the third component were dropped from the form, or rendered as a constant, this plant
+  would move NOTHING and the corpus would report AGREE -- which is the failure this plant
+  exists to make impossible.
+
+  **IT MUST NOT BE A NEW GRAPH.** A second fixture would call `Tensor.empty` again and
+  mint the next `ParamArg.slot` from the process-global counter, so the planted graph
+  would differ from the unplanted one in a SLOT as well -- a second difference of a
+  different kind, which is exactly how an attributable measurement becomes a confounded
+  one. (`plant_sym1`'s docstring says this about the symbolic case; it is the same
+  rule.) So the plant EDITS the graph the corpus already has, and the edit is inside the
+  node's own `arg`, where no counter is involved.
+
+  **THE ROOT IS HANDLED, AND IT IS HANDLED BECAUSE `_rebuild_with` DOES NOT REPLACE THE
+  ROOT.** `_rebuild_with` replaces a node only when `par.get(n) is not None` -- a node
+  with a parent -- so the ROOT is rebuilt from its children and NEVER replaced. On every
+  other graph the planted op is not the root, and here it IS: `prog`'s root is the
+  `PROGRAM`. So the root case is spelled out, and a graph whose PROGRAM is not the root
+  still goes through `_rebuild_with`.
+
+  **IT RAISES RATHER THAN PLANTING NOTHING.** A plant that quietly finds no target
+  reports AGREE for its own reasons -- `plant_srcswap`'s docstring records the version
+  that did (`pl is ast`, and it reported AGREE) -- so the count of PROGRAM nodes is
+  CHECKED and the plant refuses to run on a graph that has none."""
+  from dataclasses import replace
+  progs = [n for n in ast.toposort(enter_calls=True) if n.op is Ops.PROGRAM]
+  if len(progs) != 1:
+    raise SystemExit(f"plant params: expected exactly 1 PROGRAM node in the graph, got "
+                     f"{len(progs)} -- the plant edits a PROGRAM's `ProgramInfo.params` and "
+                     f"must be re-measured if the fixture changes")
+  tgt = progs[0]
+  if not tgt.arg.params:
+    raise SystemExit("plant params: the PROGRAM's `params` is EMPTY, so there is nothing to "
+                     "drop and the plant would report AGREE for its own reasons")
+  def drop(n: UOp) -> UOp:
+    return n.replace(arg=replace(n.arg, params=n.arg.params[:-1]))
+  if tgt is ast:
+    return drop(ast)
+  return _rebuild_with(ast, Ops.PROGRAM, drop)
+
+
 def plant_dsexpand(ast: UOp) -> UOp:
   """THE PLANT FOR `bw`, and it plants the op the graph exists to reach.
 
@@ -2003,7 +2201,12 @@ def plant_dsexpand(ast: UOp) -> UOp:
 
 PLANTS = {"dtype": plant_dtype, "srcswap": plant_srcswap, "shape": plant_shape,
           "bytes": plant_bytes, "pyuop": plant_pyuop, "opt": plant_opt,
-          "sym1": plant_sym1, "dsexpand": plant_dsexpand, "disarm": plant_disarm}
+          "sym1": plant_sym1, "dsexpand": plant_dsexpand, "disarm": plant_disarm,
+          # THE PLANT FOR THE `pI(` FORM, and the only one that can reach a `ProgramInfo`.
+          # It needs the `prog` graph -- no other graph in the corpus is a `PROGRAM` -- so
+          # `checks/differ.py`'s `PLANTS` tuple needs `("params", "prog")` beside the six
+          # `matmul` ones and the `sym` one.
+          "params": plant_params}
 
 
 def emit_py(graph: str, plant: str | None) -> list[str]:
@@ -2519,6 +2722,39 @@ def ledger_lines(py: dict[str, int], bd: dict[str, int]) -> list[str]:
   out.append("#   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT "
              "(port dropped it, P5); upstream's value is None for every kernel the port can "
              "build, so the count would be 0 BY CONSTRUCTION and is not printed as one")
+  # `ProgramInfo.target` -- the SEVENTH field of the record the `pI(` form renders, and
+  # THE ONE THE `pI(` FORM DOES NOT CARRY. **BOTH SIDES HOLD IT** (the port's record has
+  # `target: H.Target`, upstream's has `target: Target`), so this row is NOT the
+  # `estimates` case above -- it is a field both sides carry that the FORM leaves out,
+  # and the reason is a MEASUREMENT, not a preference:
+  #
+  #   * the ORACLE CAN render it. MEASURED: `_carg(Target("CPU", "", "arm64,native"))` is
+  #     `Target(device=sCPUrenderer=sarch=sarm64,nativeinterface=sindices=s)` -- the
+  #     generic dataclass arm, field by field, with UPSTREAM's field names (`interface`,
+  #     where the port's record spells it `iface`).
+  #   * the VALUE IS THE RENDERER'S, AND ITS `arch` IS THE MACHINE'S. MEASURED:
+  #     `Device["CPU"].renderer.target` is `Target(device='CPU', renderer='', arch=
+  #     'arm64,native', interface='', indices='')` on this machine, and
+  #     `ClangCompiler(target.arch.split(","))` (renderer/cstyle.py:322) COMPILES FOR IT.
+  #     So a `pI(` row carrying the target would be a MACHINE-SPECIFIC canonical form, and
+  #     the PORT's side would have to hard-code this machine's arch in a fixture -- the
+  #     corpus would then report a port bug on every other machine, for a reason that is
+  #     the machine and not the port. **THE `pI(` FORM IS A PROPERTY OF THE GRAPH; THE
+  #     TARGET IS A PROPERTY OF THE DEVICE.**
+  #   * the alternative -- BOTH sides carrying their own DEFAULT (`ProgramInfo.from_sink`
+  #     with no target gives upstream's `Target()`, and `H.Target.of()` gives the port's)
+  #     -- would put a CONSTANT on both sides of the row, and a row that cannot go red is
+  #     a LABEL and not a comparison. That is the same defect `differ.py`'s own plant 3
+  #     names ("if it does not go red, the row is a label").
+  #
+  # SO: the seventh field is NOT COMPARED, and this sentence is where that is said. It is
+  # printed on EVERY report, so "not compared" is a printed fact and never a silence.
+  out.append("#   -   arg   py=n/a  bend=n/a  ProgramInfo.target: BOTH SIDES HOLD IT AND THE "
+             "`pI(` FORM DOES NOT CARRY IT -- the value is the RENDERER's and its `arch` is "
+             "the MACHINE's (measured: Device['CPU'].renderer.target has arch='arm64,native' "
+             "and ClangCompiler(target.arch.split(',')) compiles for it), so carrying it would "
+             "make the canonical form machine-specific and the port's fixture would have to "
+             "hard-code this machine's arch")
   return out
 
 
@@ -3016,6 +3252,58 @@ def selfcheck(dev: str = "CPU") -> int:
     bad.append(f"the bend side's float CONST for `bw` is {lbd}, not exactly "
                f"['f1065353216'] -- `F32.bits(1.0)` MEASURES to 1065353216, so `F32.show` "
                f"is back in the `konst` arm")
+  # ###########################################################################
+  # THE `pI(` FORM, AND THE THREE ASSERTIONS THAT SAY IT IS A COMPARISON.
+  #
+  # MEASURED 2026-10-22: the corpus's 34 graphs produced **ZERO** `pI(` rows -- the form
+  # was DEAD in both sides -- and the oracle's own arm read `x.vars`, which does not exist
+  # at this pin (`hasattr(ProgramInfo(), "vars")` is **False**), so it would have RAISED
+  # the moment a graph reached it. **A FORM THAT NO GRAPH REACHES IS A LABEL**, and a
+  # label cannot fail. `--graph prog` is the graph that reaches it.
+  #
+  # THE THREE ASSERTIONS, and each is a way the form could still be DEAD:
+  #   1. the py side EMITS a `pI(` row -- so the form is not dead on this side;
+  #   2. the BEND side emits THE SAME BYTES -- so the two forms are ONE form and not two
+  #      that happen to look alike;
+  #   3. the PLANT CHANGES that row -- so the third component is COMPARED and not merely
+  #      PRINTED. **WITHOUT (3), (1) and (2) ARE SATISFIED BY A FORM THAT RENDERS A
+  #      CONSTANT**, and a constant is the thing this corpus exists to catch: the graph
+  #      would AGREE, the run would be green, and the comparison would be a fiction.
+  #
+  # **WHY THIS IS HERE AND NOT ONLY IN `checks/differ.py`'s PLANT LIST.** A plant is
+  # applied by `emit_py`, and `differ.py` drives the plant artifacts -- so a plant that
+  # only `differ.py` runs is a plant whose evidence is a file. **THIS ROW MAKES THE
+  # EVIDENCE THE RUN ITSELF**, and `differ.py` pins `selfcheck: "# SELFCHECK: OK"`, so a
+  # form that stops being compared makes THE CORPUS RED rather than quiet.
+  def prog_args(rows: list[str]) -> list[str]:
+    out = []
+    for ln in rows:
+      try:
+        f = unchunks(ln)
+      except ValueError:
+        continue
+      if len(f) == 8 and f[1] == "PROGRAM":
+        out.append(f[ARG])
+    return out
+  pclean, pplant = prog_args(emit_py("prog", None)), prog_args(emit_py("prog", "params"))
+  pbend = prog_args(emit_bend(dev, "prog")[0])
+  if len(pclean) != 1:
+    bad.append(f"the py side's `--graph prog` emits {len(pclean)} `pI(` rows, not 1 -- the "
+               f"`pI(` form is DEAD on the py side, and a form no graph reaches is a label")
+  if len(pbend) != 1:
+    bad.append(f"the bend side's `--graph prog` emits {len(pbend)} `pI(` rows, not 1 -- the "
+               f"`pI(` form is DEAD on the bend side, and a form no graph reaches is a label")
+  if pclean and pbend and pclean != pbend:
+    bad.append(f"the two sides' `pI(` forms DIFFER on `--graph prog`: py={pclean[0]!r} "
+               f"bend={pbend[0]!r} -- the form must be ONE form")
+  if pclean == pplant:
+    bad.append("the `params` plant does not change the `pI(` row -- so the third component "
+               "of the form is PRINTED and not COMPARED, and the form cannot fail. The plant "
+               "drops the LAST param, so a form that carries the params at all MUST move")
+  if pclean and "n(P(" not in pclean[0]:
+    bad.append(f"the `pI(` row's third component carries no `P(` record: {pclean[0]!r} -- the "
+               f"third component is the params' FULL RECORDS, and an empty or constant one is "
+               f"the `vars` hole this graph was added to close")
   if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "y") != 1:
     bad.append("at_value does not count a bytes atom at a value position")
   if at_value(f"N,{ATOMS['bytes']}4,{ATOMS['uop']},{ATOMS['opt']})", "u") != 1:

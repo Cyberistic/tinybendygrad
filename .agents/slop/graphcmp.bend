@@ -478,12 +478,65 @@ def blobstr(bs: List<&2, U32>) -> String:
 # -- so that branch is STALE CODE THAT WOULD RAISE IF A GRAPH EVER REACHED IT.
 #
 # **SO THE ARITY FIX ABOVE WAS NECESSARY (the driver did not compile) AND THE THIRD
-# COMPONENT'S SEMANTICS IS A NAMED DEBT, NOT A GREEN LIGHT.** A graph whose PROGRAM
-# carries a BUFFER param would make the two lists differ, and NO SUCH GRAPH EXISTS HERE.
-def prog_info(pi: O.ProgramInfo) -> String:
+# COMPONENT'S SEMANTICS WAS A NAMED DEBT, NOT A GREEN LIGHT.** A graph whose PROGRAM
+# carries a BUFFER param would make the two lists differ, and NO SUCH GRAPH EXISTED --
+# until `g_prog`, below, which is one.
+#
+# ###########################################################################
+# THE DEBT IS PAID (2026-10-22). `--graph prog` IS A GRAPH WHOSE PROGRAM CARRIES THREE
+# BUFFER PARAMS, AND THE THIRD COMPONENT IS NO LONGER A NAMED DEBT.
+#
+# **THE THIRD COMPONENT IS THE params' FULL `P(...)` RECORDS, AND NOT THEIR SLOT NUMBERS.**
+# The port's `ProgramInfo.params` is `List<&2, U32>` of ARENA INDICES (`ops.bend:1042`),
+# so the port can only print the SLOTS by looking each node up -- and a slot list would
+# have been a ROW THAT COULD NOT GO RED: for a kernel whose params are all buffers,
+# `params`' slots and `globals`' slots are THE SAME LIST, so the third component would
+# have been a RESTATEMENT of the fourth. **THE FULL `P(...)` RECORD CARRIES WHAT THE SLOT
+# LIST CANNOT** -- the ADDRSPACE (`SGLOBAL` against `SALU`), the dtype, the size, the
+# device and the name -- and **THE ADDRSPACE IS THE WHO POINT**: upstream's old `vars`
+# was the ALU-ONLY list and its `params` is EVERY param (`a6addc2d4`), so the third
+# component is where the corpus can SEE that a BUFFER param is in the list at all.
+#
+# **AND THE `P(...)` SPELLING IS THE CORPUS's OWN**, not a new one: `paramarg` above
+# already renders a `ParamArg` in thirteen fields in declaration order, and it is already
+# what every PARAM NODE's own `arg` column prints. So the third component is the SAME
+# text the graph's own PARAM rows carry, and it is a CROSS-CHECK of the list against the
+# nodes rather than a second grammar.
+#
+# **THE SEVENTH FIELD, `target`, IS NOT IN THE FORM, AND THE LEDGER SAYS SO.**
+# `graphcmp.py`'s `ledger_lines` prints a row for it on EVERY report, with the
+# measurement: the value is the RENDERER's and its `arch` is the MACHINE's
+# (`Device["CPU"].renderer.target` has `arch='arm64,native'` on this machine and
+# `ClangCompiler(target.arch.split(","))` compiles for it), so carrying it would make
+# the canonical form machine-specific and this file would have to hard-code this
+# machine's arch. **THE `pI(` FORM IS A PROPERTY OF THE GRAPH; THE TARGET IS A PROPERTY
+# OF THE DEVICE.** The port's `from_sink` still TAKES a target -- `H.Target.of()` -- and
+# the port's record still HOLDS it; the FORM just does not print it.
+def pparam.of(a: O.Arg, +ar: O.Arena, k: U32) -> String:
+  match a:
+    case O.AParam{pa}: paramarg(ar, k, pa)
+    # THE ARM IS UNREACHABLE BY CONSTRUCTION: the port's `from_sink` appends a node to
+    # `params` only when that node's op is `OpsPARAM` (`fs.param.put`), and a PARAM's
+    # arg IS an `AParam`. It is spelled rather than left out because a `match` here must
+    # be exhaustive, and `N` -- the corpus's absence atom -- reads as "this node has no
+    # ParamArg", which is a fact and not a silent agreement.
+    case _: "N"
+
+def pparam(+ar: O.Arena, +k: U32) -> String:
+  pparam.of(O.Arena.arg(ar, k), ar, k)
+
+def pparam.go(+ar: O.Arena, +ys: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match ys:
+    case Nil{}: acc
+    case y <> r: pparam.go(ar, r, List.append(&2, String, acc, [pparam(ar, y)]))
+
+def pparams(+ar: O.Arena, ys: List<&2, U32>) -> String:
+  String.concat(["n(", String.join(pparam.go(ar, ys, Nil{}), ","), ")"])
+
+def prog_info(+ar: O.Arena, pi: O.ProgramInfo) -> String:
   match pi:
     case O.ProgramInfo{global_size, local_size, params, globals, outs, ins, _tgt}:
-      String.concat(["pI(", i64s(global_size), ",", i64s(local_size), ",", us(params), ",", us(globals), ",", us(outs),
+      String.concat(["pI(", i64s(global_size), ",", i64s(local_size), ",", pparams(ar, params), ",", us(globals), ",", us(outs),
         ",", us(ins), ")"])
 
 # RANGE's arg is `(axis_type, axis_id)` (ops.py:643) and `axis_id` is `self.arg[1:]`
@@ -502,7 +555,7 @@ def argstr(+ar: O.Arena, self: U32, a: O.Arg, depth: U32) -> String:
     case O.ACustom{cf}: custom_fn(cf)
     case O.ACall{ci}: callinfo(ci)
     case O.AKernel{ki}: kernelinfo(ki)
-    case O.AProgram{pi}: prog_info(pi)
+    case O.AProgram{pi}: prog_info(ar, pi)
     case O.ARange{ids, at}: String.concat(["rg(", i(depth), ",", axis1(at), ",", us(ids), ")"])
     case O.AReduce{rop, num_axes}: String.concat(["rd(", opx(rop), ",", i(num_axes), ")"])
     # THE MISSING TWENTIETH. `AOpLit` (ops.bend:1079) holds a BARE `Op` -- the `arg` of a
@@ -1125,6 +1178,54 @@ def g_lin() -> O.Found:
   O.UOp.new(O.Found.ar(e0), O.OpsSINK{}, [O.Found.i(e0)],
     O.AKernel{O.KernelInfo{"r_4_5_3",
       [O.OPT{O.OPS_SPLIT{}, 2, O.OA_SPLIT{O.SPL{0, O.AXIS_UPCAST{}, None{}}}}], None{}, 0}}, O.TNone{})
+
+# ===========================================================================
+# `--graph prog`: THE FIRST `PROGRAM` IN THE CORPUS, and the first graph whose
+# `ProgramInfo` is compared at all.
+#
+# **WHAT IT IS.** The `lin` kernel -- the SAME fifty nodes, byte for byte -- with ONE
+# more node on top: a `PROGRAM` whose arg is a `ProgramInfo`. **THE PORT DOES NOT WRITE
+# THE `ProgramInfo` BY HAND: IT CALLS THE PORT'S OWN `ProgramInfo.from_sink`**
+# (`tinybendygrad/uop/ops.bend:9250`), which is the function that carries the
+# `vars` -> `params` RENAME (`9974c9d9b`). So the comparison is **the port's `from_sink`
+# against upstream's `from_sink`**, and not a hand-written literal against upstream's.
+# **THE PY SIDE CALLS UPSTREAM's OWN `from_sink` TOO** (`graphcmp.py`'s `g_prog`), over
+# the SAME sink the SAME way, so the two sides differ in nothing but the implementation.
+#
+# **WHY A BUFFER PARAM, AND WHY THAT IS THE POINT.** Upstream's `from_sink` collects
+# EVERY `Ops.PARAM` in the sink (`if u.op is Ops.PARAM: _params.append(u)`) and the
+# matmul kernel's three params ARE the three BUFFERS -- the output 4x5 (20 elements),
+# the left 4x3 (12) and the right 3x5 (15) -- each with `addrspace == AddrSpace.GLOBAL`.
+# **THE OLD `vars` WAS THE ALU-ONLY LIST** (`a6addc2d4` changed
+# `if u.op is Ops.PARAM and u.addrspace == AddrSpace.ALU` to `if u.op is Ops.PARAM`), so
+# this graph's `vars` would have been **EMPTY** and its `params` is all three buffers.
+# **THE CORPUS COULD NOT SEE THAT RENAME, BECAUSE NO GRAPH IN IT WAS A `PROGRAM` AT
+# ALL** -- MEASURED 2026-10-22, the 34 graphs produced ZERO `pI(` rows, and the oracle's
+# own arm read `x.vars`, which does not exist at the pin, so it would have RAISED the
+# moment a graph reached it. **A DEAD ARM AND A STALE ARM ARE THE SAME DEFECT SEEN FROM
+# TWO SIDES.**
+#
+# **THE `Maybe` IS THE PORT's OWN REFUSAL, AND IT IS NOT SILENT.** The port's
+# `from_sink` answers `None` for a sink whose LAUNCH SIZE is not a CONST (`fs.sp.val`
+# cannot hold a symbolic size, and upstream's own `cast(int, ...)` is a lie there), and
+# the `None` arm below DROPS the `PROGRAM` node -- so the corpus reports the node as
+# ONLY-PY and the reader sees that the port could not build a `ProgramInfo` at all,
+# rather than seeing an empty list and reading it as an answer. **IT IS UNREACHABLE FOR
+# THIS FIXTURE**: the `lin` sink has no `SPECIAL` at all (MEASURED, its census is
+# `END=2 LOAD=6 STORE=1 INDEX=7 RANGE=2 PARAM=3 AFTER=1 MUL=3 SINK=1` and no SPECIAL),
+# and the port's size fold only visits a SPECIAL.
+def g_prog.of(m: Maybe<&2, O.ProgramInfo>, +lin: O.Found) -> O.Found:
+  match m:
+    case Some{pi}:
+      O.UOp.new(O.Found.ar(lin), O.OpsPROGRAM{}, [O.Found.i(lin)], O.AProgram{pi}, O.TNone{})
+    case None{}:
+      # THE REFUSAL, AND IT IS LOUD: NO `PROGRAM` NODE AT ALL, so the differ reports it
+      # as ONLY-PY and the `pI(` row is absent on this side rather than WRONG.
+      lin
+
+def g_prog() -> O.Found:
+  +lin = g_lin()
+  g_prog.of(O.ProgramInfo.from_sink(O.Found.ar(lin), O.Found.i(lin), H.Target.of()), lin)
 
 # `--graph loop`: `hcq_fence(tv, tv, 0)`, tinygrad's OWN HCQ2 fence kernel, reached by CALLING
 # it (`graphcmp.py:1266-1272`). **FIFTY-TWO NODES, ALL FIFTY-TWO BUILT**, node for node, in
@@ -1891,7 +1992,12 @@ def rows.pick3(+name: String) -> O.Found:
                                                       Bool.pick(O.Found, String.eq(name, "mselect"), g_mselect(),
                                                         Bool.pick(O.Found, String.eq(name, "mstack"), g_mstack(),
                                                           Bool.pick(O.Found, String.eq(name, "stage"), g_stage(),
-                                                            g_matmul())))))))))))))))))))))))))))))))))
+                                                            # THE FIRST `PROGRAM` IN THE CORPUS. `g_prog` is `g_lin` plus
+                                                            # ONE node, and the one node is the one whose `pI(` form the
+                                                            # corpus had never compared -- MEASURED 2026-10-22, the 34
+                                                            # graphs produced ZERO `pI(` rows.
+                                                            Bool.pick(O.Found, String.eq(name, "prog"), g_prog(),
+                                                            g_matmul()))))))))))))))))))))))))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a
