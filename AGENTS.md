@@ -132,7 +132,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **THREE **HELD **AT **ONCE**:
   `graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0 byte-identical=35 graphs-refused=0`,
   `population=4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2`,
-  `?=0`, `SHARED cores 52`, `plants-disagree 7 of 7`, `controls 5 of 5`, `conflations 4 of 4`,
+  `?=0`, `SHARED cores 52`, `controls 5 of 5`, `conflations 4 of 4`,
   `stable-pairs 5 of 5`, `stable-failed 0 of 5`, `stable-differ 0 of 5`, `expect-moved 0`, `plants-disagree 8 of 8`,
   `oracle-selfcheck=OK`, `census-rc=rc=0`, **`selfcheck=# SELFCHECK: OK`**,
   **`unhealthy() -> 0 line(s)`** (THE READING IS **EMPTY**, NOT "0 COMPLAINTS"), **`artefacts_ok() -> 0`**,
@@ -143,7 +143,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **TREE **AS **IT
   **STANDS**, **AND `substrate-head=1f6cdc93f4ec91706a0d3ac7b88fc228555c0b3c` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `ecde3623a`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
+  `1f6cdc93f`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
   **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⚠ AND **THE **STRONGEST **FORM **OF **THE **CLAIM **IS **ALSO **THE **FRAILEST**, **AND **THIS **TREE
   **DEMONSTRATED **IT **WITHIN **A **MINUTE **OF **ITS **BEING **WRITTEN**: **MY **OWN **NEXT **COMMIT
