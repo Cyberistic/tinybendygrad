@@ -22449,3 +22449,35 @@ THE WHOLE POINT OF A BRIEF THAT NAMES A FILE INSTEAD OF A CONCLUSION.**
       git 2.50.1, and **THE FILE SAID THE OPPOSITE** -- "0 OF 40 ON A NEW FILE TOO". **AND THE
       PRIVATE-INDEX FORM ARMS THE SHARED INDEX AGAINST THE NEW FILES**, so a bare `git commit` by another
       unit would delete them.
+
+### 2. **THE CORPUS, AND THE HOLE IN IT** (2026-10-22, `710b55ae0`)
+
+- [x] **THE CORPUS's OWN DRIVER DID NOT COMPILE, AND ALL 34 GRAPHS WERE REFUSED.**  MEASURED:
+      `.agents/slop/graphcmp.bend:462` held a **SIX-field** `O.ProgramInfo{...}` pattern against the
+      **SEVEN-field** record -- **BEND RECORD PATTERNS ARE EXACT-ARITY, SO ADDING A FIELD TO A RECORD IS
+      A BREAKING CHANGE IN EVERY FILE THAT PATTERNS IT.**  The same change had to be followed in the
+      port's own eight patterns, in the realize census's, and **in the corpus's driver, WHICH IS NOT IN
+      THE PORT's TREE** -- so a unit grepping `tinybendygrad/` could never have found it.  **THE CORPUS
+      WAS THE ONLY INSTRUMENT THAT COULD NAME IT, AND IT NAMED IT IN `D1-verdicts.txt`.**
+- [x] **THE CORPUS IS GREEN, REPRODUCIBLE **AND** CURRENT -- ALL THREE AT ONCE.**  `graphs=34
+      answered=34 refused=0 agree=34 disagree=0 byte-identical=34 not-comparable=0`; `stable-pairs 5 of
+      5`, `stable-failed 0 of 5`, `plants-disagree 7 of 7`, `cross 1 of 1`, `conflations 4 of 4`,
+      `controls 5 of 5`; `selfcheck=# SELFCHECK: OK`, `oracle-selfcheck=# ORACLE SELFCHECK: OK`,
+      `census-rc=rc=0`; `substrate-start == substrate-end == live == 8174976365d2c...`;
+      `substrate-head=710b55ae0`; `repro-files=310 repro-identical=310 repro-rc=rc=0`.  **RUN 164 s, REPRO
+      331 s, both `WITHIN-LIMITS`.**
+- [ ] **THE `pI(` LANE IS DEAD, AND IT IS A HOLE IN THE CORPUS.**  MEASURED: the 34 graphs produce
+      **ZERO** `pI(` rows -- the port's artefacts carry none, and the oracle's only `pI(` match in its own
+      output is a COMMENT naming the form.  **SO THE `ProgramInfo` FIELD LIST IS NOT EXERCISED AT ALL,
+      AND THE CORPUS CANNOT SEE THE `vars` -> `params` RENAME** (`9974c9d9b` / upstream `a6addc2d4`) --
+      **WHICH IS A REAL PORT CHANGE, BECAUSE UPSTREAM's `params` IS EVERY PARAM, SORTED BY SLOT, WHERE THE
+      OLD `vars` WAS THE ALU-ONLY LIST.**  **AND THE ORACLE's BRANCH IS STALE CODE**: `graphcmp.py:580`
+      reads `x.vars`, and at the pin `hasattr(ProgramInfo(), "vars")` is **False** while
+      `hasattr(..., "params")` is **True**, so it would **RAISE** if a graph ever reached it.
+      **THE FIX IS A GRAPH WHOSE PROGRAM CARRIES A BUFFER PARAM** -- then the two lists differ -- and the
+      oracle's branch must be re-pointed at `params` at the same time.  **A GREEN THAT HIDES A HOLE IS
+      NOT A RESULT.**
+- [x] **THE REPRO's FIRST FAILING READING WAS **MY** CONCURRENCY, NOT A DEFECT.**  TWO
+      `differ.py repro` PROCESSES RAN OVER THE SAME `runs/graphcmp/D/` DIRECTORY -- I had killed only the
+      first shell's `run` step and not its `repro` -- and the second read **0 of 310 files identical**.
+      **THAT IS THE CLASS THIS TREE KEEPS MEASURING, AND THIS TIME IT WAS MINE.**
