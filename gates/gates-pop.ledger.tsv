@@ -181,6 +181,7 @@ gates/ops_python_exec-gen.py	py-main	__file__.parent	0	1
 gates/optim-nop-mutate.py	py-main	Path(__file__).resolve().parents[1]	0	1
 gates/oracle-census-gate.py	py-main	__file__.parent	0	1
 gates/oracle-dangling-gate.py	py-main	__file__.parent	0	1
+gates/oracle-spec-gate.py	py-main	__file__.parent	0	1
 gates/oracleblind-census.py	py-main	__file__.parent	0	1
 gates/path-resolve-gate.py	py-main	-	0	1
 gates/phase-taxonomy-gate.py	py-main	__file__.parent	1	1
