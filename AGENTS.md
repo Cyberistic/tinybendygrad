@@ -139,9 +139,9 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `319 of 319 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=319 repro-identical=319 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == e83c9f1698d80f2f9211bf84c8e7cd3b0b4a1472618de5c4f4efbc5fe1af0864`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == 3ef78ee5918f678e67636c3c628ffb2420d4252be770d5bcb28097602c539687`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=1f6cdc93f4ec91706a0d3ac7b88fc228555c0b3c` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=73a1c96c2d53e1ecd5f90d1d9470b0a379ceda45` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
   `1f6cdc93f`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
   **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
@@ -155,6 +155,19 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **DOES **NOT **MAKE **THE **RUN **STALE, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**  **BUT **A **COMMIT
   **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY **THE **FIRST **`run` **OF **TONIGHT **WAS
   **RE-RUN.**
+  ***AND ***THE **CORPUS's **OWN **WITNESS **NOW **PASSES**, **AND **THAT **IS **THE **STATE **THE **TREE
+  **HAS **NEVER **BEEN **IN**: `gates/corpuswitness-gate.py` -> **`PASS -- the claim is ESTABLISHED: the
+  recorded verdict is CURRENT, the reproducibility witness holds, and it was taken AFTER that verdict`**
+  -- **ALL **SEVEN **READINGS **OK**: `control`, `verdict.current`, `witness.fresh` (`FRESH`,
+  `order=mtime(W2)>=mtime(W1)`, `delta_ms=+92.013`), `freshness.source`, `witness.substrate`
+  (`CURRENT`, `rows=3 of 3`), `verdict.reported` (`reported=rc=0  derived=rc=0  verdict=AGREE`), and
+  `claim` (`verdict=REPRODUCIBLE`).  **⇒ A **SUMMARY **SAYS **GREEN **AND **A **WITNESS **SAYS **THE
+  **CLAIM **IS **ESTABLISHED** -- **AND **THE **WITNESS **IS **THE **ONE **THAT **HAS **CAUGHT **THREE
+  **REAL **THINGS **TONIGHT**: **A **STALE **`d10-transcript` **PIN**, **A **REPRO **THAT **EXITED **1
+  **WHILE **THE **SUMMARY **SAID **EVERYTHING **AGREED**, **AND **ARTEFACTS **OUT **OF **ORDER** (the
+  **summary **NEWER **THAN **THE **REPRO**).  **⇒ A **SUMMARY **IS **A **CLAIM **AND **A **WITNESS **IS
+  **A **CHECK**, **AND **ONLY **THE **SECOND **CAN **GO **RED.**
+
   ***AND ***THE **PART **THAT **IS **A **COVERAGE **HOLE **AND **NOT **A **RESULT** -- **THE `pI(` LANE **IS **DEAD**:***
   **MEASURED 2026-10-22: the corpus's 34 graphs produce **ZERO** `pI(` rows, so **the `ProgramInfo` FIELD LIST **IS
   **NOT **EXERCISED **AT **ALL**, AND **THE **CORPUS **CANNOT **SEE **THE `vars` -> `params` **RENAME** (`9974c9d9b` /
