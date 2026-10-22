@@ -20,6 +20,20 @@
 #   usage:  checks/bendlock.sh -- <command> [args...]
 #   env:    BEND_LOCK_DIR       where the lock lives (default: see below)
 #           BEND_LOCK_STALE_S   how old a DEAD owner's lock may be before reclaim (default 300)
+#           BEND_LOCK_UNOWNED_S how old an UNOWNED lock may be before reclaim (default 30)
+#           BEND_LOCK_WARN_S    how long a LIVE owner's hold is worth NAMING (default 120)
+#
+# ⚠ **THE LOCK IS HELD FOR THE WHOLE COMMAND, AND A COMMAND THAT RUNS **MANY** BENDS
+# **MONOPOLISES IT.**  MEASURED 2026-10-22: `checks/bendlock.sh -- .venv/bin/python
+# gates/ew_activation-gate.py` HELD THE LOCK FOR **26 MINUTES** -- that gate runs **11** `bend`
+# compiles inside one process -- **AND EVERY OTHER UNIT WAITED FOR THE WHOLE TIME.**  **SO FOR A
+# GATE THAT RUNS MANY BENDS, **ACQUIRE THE LOCK **PER **INVOCATION**, NOT **ONCE **FOR **THE
+# **GATE** -- `gates/bendlock.py` **IS **THAT **LOCK** (it shares this path, so the two exclude
+# each other).**  **THIS **SCRIPT **IS **THE **WRAPPER **FOR **A **SINGLE **COMPILER **RUN.**
+#
+# AND A WAITER **NOW **HEARS **WHY **IT **IS **WAITING**: after `BEND_LOCK_WARN_S` a live owner's
+# hold is NAMED, with its age and its command, so "the tree is busy" is distinguishable from
+# "the lock is stuck".
 #
 # THE DEFAULT LOCK PATH IS THE ONE THE UNITS WERE TOLD TO USE, AND THAT IS DELIBERATE.
 # MEASURED 2026-10-22: a script with a repo-named lock and an ad-hoc `mkdir` recipe with
@@ -50,6 +64,7 @@ fi
 LOCKDIR="${BEND_LOCK_DIR:-${TMPDIR:-/tmp}/opencode/bend.lock}"
 STALE_S="${BEND_LOCK_STALE_S:-300}"
 UNOWNED_S="${BEND_LOCK_UNOWNED_S:-30}"
+WARN_S="${BEND_LOCK_WARN_S:-120}"
 
 # A COMPILER IS ALIVE?  `bun .../main.ts` is the compiler; a bare `bend` does not exist.
 compiler_alive() {
@@ -86,6 +101,17 @@ acquire() {
       if [ "$age" -gt "$limit" ]; then
         rm -f "$LOCKDIR/owner" 2>/dev/null || true
         rmdir "$LOCKDIR" 2>/dev/null || true
+        continue
+      fi
+    fi
+    # A LIVE OWNER'S HOLD IS NAMED, ONCE EVERY 60 s, SO "THE TREE IS BUSY" IS
+    # DISTINGUISHABLE FROM "THE LOCK IS STUCK".  THE HOLD IS NEVER BROKEN -- A LIVE
+    # OWNER'S LOCK IS NEVER STOLEN, HOWEVER LONG IT IS HELD.
+    if [ -f "$LOCKDIR/owner" ] && [ "$op" -gt 0 ] 2>/dev/null; then
+      age=$(( $(date +%s) - $(stat -f %m "$LOCKDIR" 2>/dev/null || echo 0) ))
+      if [ "$age" -gt "$WARN_S" ]; then
+        echo "bendlock: waiting ${age}s for pid $op (a gate that runs many bends holds the lock for the WHOLE command -- gates/bendlock.py acquires it PER INVOCATION)" >&2
+        sleep 60
         continue
       fi
     fi
