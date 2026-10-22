@@ -22200,3 +22200,42 @@ the gate.
       73f51afa->ef5f2587 DRIFTED, `tinygrad/mixin/movement.py` 35ebe0eb->092b031a DRIFTED,
       `tinygrad/tensor.py` 4f7d22e7->57ad1915 DRIFTED, and only `tinygrad/mixin/dtype.py` is
       UNCHANGED. NOT FIXED HERE: one gate's pin, not five.
+
+### SYMRULES: THE CENSUS OF UPSTREAM'S REWRITE RULES, AND 27 OF THE MISSING ONES PORTED  --  [x] DONE
+
+- [x] **THE CENSUS IS DERIVED AND NOT COUNTED.** `gates/symrules-census.py` enumerates upstream's
+      rules from `tinygrad/uop/symbolic.py`'s AST, in upstream's COMPOSITION order (which is the
+      FIRST-WINS order), EXPANDS the one generator rule (`:284` is ONE line and FIVE rules, because
+      `GroupOp.Associative` has five members) and CROSS-CHECKS the total against the live matcher.
+      **UPSTREAM'S `symbolic` IS 122 RULES AND ITS `sym` IS 139 -- NOT THE 118 AND 135 A
+      SOURCE-LINE COUNT GIVES.** The port had 22 of `sym`'s 139; it has 49 now, plus the 2 of
+      `pm_remove_invalid`.
+- [x] **THE TABLE IS IN GIT, WITH ITS GENERATOR, AND IT IS STABLE BY REVISION.**
+      `gates/symrules.rows` is written by `gates/symrules-census.py --rows` and by nothing else,
+      and its header names the UPSTREAM PIN and the git blob id of every file the census read --
+      content-addressed, so a change to any of them makes the header stop matching.
+      `gates/symrules-gate.py` re-derives the census and diffs it, and `--plant` shows it can fail.
+- [x] **THE MAPPING IS VERIFIED BY THE OPS AND NOT ASSERTED BY THE AUTHOR.** Each port entry cites
+      the upstream line it ports, and the port's op set must be a SUBSET of the upstream rule's
+      `pdict` key set. **THAT CHECK FOUND THREE DEFECTS NO OTHER INSTRUMENT IN THE TREE COULD SEE:**
+      every one of the 24 citations was STALE (`tinygrad/` was re-vendored forward on 2026-10-20);
+      the three RECIPROCAL rules were cited OFF BY ONE; and TWO rules fire on FEWER ops than
+      upstream's do (`:84` on 2 of 9 -- `GroupOp.Unary|{CAST,BITCAST}` IS the nine unary ops --
+      and `:161` on 1 of 27).
+- [x] **TWENTY-SEVEN RULES PORTED, IN UPSTREAM'S ORDER, AND BOTH NAMED BODIES ARE REACHABLE.**
+      `simplify_pow` (upstream `:191`) and `fold_bitcast` (upstream `:183`) were PORTED AND HAD NO
+      TABLE ENTRY, so they were rules that could not run.  Both have entries now, and
+      `simplify_pow` NEEDED A GUARD: upstream refuses a negative exponent over an int and the
+      port's body did not, so wiring it as it stood would have made the port REWRITE WHERE
+      UPSTREAM DOES NOT.
+- [x] **THE ORDER IS A SEMANTIC PROPERTY AND IT IS CHECKED.** The table is FIRST-WINS, so the
+      order decides which of two matching rewrites wins, and `gates/symrules-gate.py` asserts the
+      port's table is a SUBSEQUENCE of upstream's composition order.  **THE PLANT MOVES THE ROWS
+      THAT SAY SO**: swapping `:163` and `:178` in the table moves `promo_c`, widening `:140`'s
+      dtype gate moves `trunc0`, dropping `:123`'s identity check moves `rebind0`, and making a
+      rule answer the node it matched moves `xorb`.
+- [ ] **NINETY RULES ARE STILL MISSING**, and `gates/symrules.rows` names every one of them by
+      line.  The next rule in upstream's order is `:90` (`lift_reduce_gate`), and it is DEFERRED on
+      `UOp.ranges` -- the port's own inventory says so.  `:87`, `:88`, `:97`, `:99`, `:129`,
+      `:155`, `:157`, `:186` and `:193` are the next ones in order, and each is DEFERRED on a
+      substrate fact the port's header names.
