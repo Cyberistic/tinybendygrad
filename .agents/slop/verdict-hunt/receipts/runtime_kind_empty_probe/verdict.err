@@ -1,0 +1,9 @@
+SOME PROOFS FAIL
+Error:
+- message  : a live scrutinee (a - scrutinee matches only in a dead region)
+Location: read
+11 |   match tag:
+12>|     case False{}:
+   |          ^^^^^^^
+13 |       match value:
+bend 2.0.38 is available: run bend update

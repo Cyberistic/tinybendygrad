@@ -1722,6 +1722,78 @@ oracle-two-copies    [##] 2/3  **THE GATE'S CPython ORACLE IS A COPY UNDER `.age
                                        AND IT MUST MOVE THE PIN.**
 
 
+verdict-hunt         [##] 2/3  **NO BOUNTY WIN, AND A REAL UPSTREAM BUG IN THE #1182 FAMILY -- IN THE OPPOSITE
+                                       DIRECTION.** MEASURED 2026-10-22 AT `v2.0.37` / `4ff8545`. REPORT:
+                                       `.agents/slop/verdict-hunt/REPORT.md` (21 KB), CANDIDATES AND 89 RECEIPTS
+                                       BESIDE IT. **THE CLOSEST RESULT IS `c10_ctxdead.bend`: `--verdict` PASSES
+                                       (rc=0, `ALL PROOFS CHECK`) AND THE BendTT THE KERNEL ACTUALLY READS CONTAINS A
+                                       **LIVE** KERNEL TERM OF TYPE `Empty` -- `(λ{(,): λ{}} x0)`, WHICH IS `Prj(Efq)
+                                       x0`, AND `Prj(Efq) : ∀x0 : Empty -> P` FOR ANY `P`.** **IT IS NOT THE BOUNTY:
+                                       THE REGION IS UNREACHABLE IN BEND'S OWN CHECKER (`ctx_dead`), SO THE `Empty` IS
+                                       NEVER A VALUE OF A RUNNING PROGRAM, AND THE DEF'S TYPE IS A **FUNCTION** `Empty
+                                       -> ... -> Empty`, NOT `Empty`.** **THE ROOT CAUSE, NAMED: bend2's CHECKER
+                                       (`bend.ts:3626-3631`) ALLOWS AN EMPTY MATCH `match x:` WITH NO CASES WHEN
+                                       `ctx_dead(book, ctx)`, AND `ctx_dead` (`bend.ts:842-853`) MEANS *SOME LIVE
+                                       BINDER IN THE CONTEXT HAS AN EMPTIED-ADT TYPE* -- WHILE `safe.ts:746-758`
+                                       ANSWERS THAT MATCH WITH THE `s.empty` BRANCH, I.E. WITH A **LIVE VALUE OF AN
+                                       ARBITRARY TYPE**, BECAUSE `safe.ts`'s PREDICATE IS `no_ctr` = *THE SCRUTINEE'S
+                                       OWN TYPE HAS NO CONSTRUCTORS LEFT* AND `s.empty` NON-EMPTY. **THE TWO SIDES
+                                       DISAGREE ABOUT WHAT *"THE SCRUTINEE'S TYPE IS EMPTY"* MEANS.** **AND THIS IS
+                                       THE **OPPOSITE** DIRECTION FROM #1182: THERE THE CHECKER WAS PERMISSIVE AND THE
+                                       KERNEL REJECTED; **HERE THE KERNEL IS THE PERMISSIVE SIDE.** **WHY THE HOLE IS
+                                       STILL CLOSED, TRACED THROUGH ALL THREE SOURCES OF `s.empty`: EVERY LIVE EMPTY-
+                                       TYPED VARIABLE IS UNINHABITED, SO THE REGION IS ALWAYS DEAD; A λ-BINDER SOURCE
+                                       MEANS THE DEF'S TYPE IS A FUNCTION TYPE; AND A DEFAULT-ARM SOURCE IS ONLY ADDED
+                                       WHEN THE MATCH IS ALREADY EXHAUSTED, IN WHICH CASE `safe.ts:766-767` REPLACES
+                                       THE CONTINUATION BY `Efq` AND THE ARM IS NEVER EMITTED.** **THIS IS WORTH
+                                       FILING AT `bendlang/bend` AS A NEW ISSUE IN THE #1182 FAMILY.**
+
+verdict-lane         [###] 2/3  **THE LEAN TOOLCHAIN IS PRESENT AND `--verdict` WORKS IN THIS TREE -- SO THE PORT'S
+                                       AUTHORITATIVE CHECK IS AVAILABLE, AND IT AGREES WITH THE ONE THE PORT USES.**
+                                       MEASURED 2026-10-22: `leanc`, `lake` AND `lean` ARE ALL ON PATH AT
+                                       `~/.elan/bin/`, AND `tinybendygrad/helpers.bend --verdict` ANSWERS `ALL PROOFS
+                                       CHECK` WITH rc=0. **`--verdict` COMPILES THE FILE TO BendTT AND RUNS THE LEAN-
+                                       VERIFIED KERNEL ON IT, SO IT IS THE AUTHORITATIVE CHECK -- AND THE PORT'S PROOF
+                                       GATE USES ONLY `--check-only`.** **MEASURED ON ALL SIX OF THE PORT'S PROOF
+                                       FILES, THE TWO LANES **AGREE**: `LAWS.bend` (34 TODOs), `PROOF.bend` (18 TODOs)
+                                       AND `PROOF2.bend` **REFUSE UNDER BOTH**; AND `LAWS/alu.bend`, `LAWS/PROOF-
+                                       ALL.bend` AND `LAWS/spec.bend` READ `ALL PROOFS CHECK` **UNDER BOTH**. **SO TWO
+                                       THINGS ARE ESTABLISHED: `--verdict` DOES NOT ACCEPT A FILE WITH TODOs -- IT
+                                       REFUSES THEM EXACTLY AS `--check-only` DOES -- AND THE PORT'S COMPLETED PROOF
+                                       FAMILY PASSES THE LEAN-VERIFIED KERNEL, SO THE PORT IS NOT RESTING ON A KERNEL-
+                                       LEVEL HOLE.** **THE NAMED NEXT MOVE: A `--verdict` LANE OVER THE PORT, WHICH IS
+                                       THE RUNG ABOVE `checks/port-compile-gate.py` (165 of 169 COMPILE, 4 COLD BY
+                                       DESIGN).**
+
+safe-ts-trust-gap    [##] 2/3  **THE LEAN SIDE IS CLOSED, SO THE TRUST GAP IS THE 1,573 LINES IN FRONT OF IT.**
+                                       MEASURED 2026-10-22 AT `v2.0.37`: `references/bend/bend2/bendtt.lean` IS
+                                       **3,895 LINES / 172,753 B** AND IS THE WHOLE KERNEL *AND* ITS CLAIMS *AND*
+                                       THEIR PROOFS (its own header, lines 8-13: *"1. THEORY ... 2. CLAIMS ... 3.
+                                       PROOF"*). **A SEARCH FOR `sorry` / `admit` / `axiom` / `native_decide` /
+                                       `unsafe` / `@[implemented_by]` FINDS **NONE**; THE 16 HITS ARE ALL `partial
+                                       def` IN THE `.bendtt` TEXT PARSER.** SO THE KERNEL'S TRUST BASE IS THE LEAN
+                                       COMPILER PLUS THE C COMPILER BEHIND `leanc -O3`, AND **THE KERNEL IS CLOSED**.
+                                       **AND THAT IS WHY THE BOUNTY IS HARD, AND IT IS THE MOST IMPORTANT THING THE
+                                       HUNT FOUND: `--verdict` **DOES NOT CHECK THAT THE TRANSLATION IS FAITHFUL**.**
+                                       `bend2/main.ts:808` `cli_verdict` DOES `book_promises(book)` AND THEN
+                                       `Safe.safe_check(book)`, AND `safe_check` (`safe.ts:1570`) IS `safe_book(book)`
+                                       -- **THE 1,573-LINE TYPESCRIPT ELABORATOR** -- FOLLOWED BY
+                                       `kernel_check(got.text)`, WHICH RUNS THE LEAN KERNEL. **THERE IS NO SECOND
+                                       CHECKER THAT COMPARES THE BendTT TERM AGAINST THE bend2 TERM, AND
+                                       `bendtt.lean:1-13` SAYS THE KERNEL *"TRUSTS NONE OF IT". SO THE ELABORATOR'S
+                                       FIDELITY IS AN ASSUMPTION, NEVER A CHECKED OBLIGATION** -- AND `safe.ts` IS
+                                       UNVERIFIED TYPESCRIPT. **THE TRUST GAP BETWEEN *"A PROOF IN BEND"* AND *"A
+                                       TRUSTWORTHY MATHEMATICAL PROOF"* IS THE 1,573 LINES IN FRONT OF THE VERIFIED
+                                       KERNEL, NOT THE KERNEL ITSELF.** **THE THREE UNTESTED HOLES, IN THE HUNT'S OWN
+                                       ORDER: (1) THE `partial def`s IN THE `.bendtt` TEXT PARSER
+                                       (`bendtt.lean:594-845`) ARE INSIDE THE TRUST BASE AND A MIS-PARSE IS OUTSIDE
+                                       EVERY CLAIM; (2) `Term.fits`'s SUBSUMPTION (`bendtt.lean:1018-1029`) -- `Enu
+                                       ks` FITS `Enu js` WHEN `ks ⊆ js`, SO `<>` FITS EVERY ENUM -- AGAINST
+                                       `bend.ts`'s `term_compare "LE"`; (3) `safe.ts`'s MODEL SEARCH (`model_at`,
+                                       489-538), WHICH MANUFACTURES THE BODY OF EVERY UNFILLED LAW -- **THE ONE PART
+                                       OF THE BOOK THE KERNEL CANNOT CROSS-CHECK AGAINST bend2.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

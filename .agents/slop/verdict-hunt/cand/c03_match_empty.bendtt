@@ -1,0 +1,11 @@
+f : ∀x0 : Empty -> Empty =
+  λ{(,): λ{}}
+
+Empty.arms : ∀x0 : <> -> *(.Q2) =
+  λ{}
+
+Empty : *(.Q2) =
+  Σx0 : <> -> (Empty.arms x0)
+
+Empty.efq : ∀x0 : Empty -> <> =
+  λ{(,): λ{}}
