@@ -132,6 +132,10 @@ gates/ew-consts-gate.py	py-main	-	0	1
 gates/ew-consts-oracle.py	py-main	-	0	1
 gates/ew-explog-gate.py	py-main	-	0	1
 gates/ew-explog-oracle.py	py-main	-	0	1
+gates/ew_activation-compare.py	py-main	-	0	1
+gates/ew_activation-gate.py	py-main	__file__.parent	0	1
+gates/ew_activation-oracle.py	py-main	-	0	1
+gates/ew_activation-plant.py	py-main	__file__.parent	0	1
 gates/ew_graph_census-gate.py	py-main	-	0	1
 gates/exitcode-census-gate.py	py-main	__file__.parent	0	1
 gates/expectcopy-gate.py	py-main	__file__.parent	0	1
