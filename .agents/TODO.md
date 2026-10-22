@@ -22519,17 +22519,41 @@ THE WHOLE POINT OF A BRIEF THAT NAMES A FILE INSTEAD OF A CONCLUSION.**
       `census-rc=rc=0`; `substrate-start == substrate-end == live == 8174976365d2c...`;
       `substrate-head=710b55ae0`; `repro-files=310 repro-identical=310 repro-rc=rc=0`.  **RUN 164 s, REPRO
       331 s, both `WITHIN-LIMITS`.**
-- [ ] **THE `pI(` LANE IS DEAD, AND IT IS A HOLE IN THE CORPUS.**  MEASURED: the 34 graphs produce
-      **ZERO** `pI(` rows -- the port's artefacts carry none, and the oracle's only `pI(` match in its own
-      output is a COMMENT naming the form.  **SO THE `ProgramInfo` FIELD LIST IS NOT EXERCISED AT ALL,
-      AND THE CORPUS CANNOT SEE THE `vars` -> `params` RENAME** (`9974c9d9b` / upstream `a6addc2d4`) --
-      **WHICH IS A REAL PORT CHANGE, BECAUSE UPSTREAM's `params` IS EVERY PARAM, SORTED BY SLOT, WHERE THE
-      OLD `vars` WAS THE ALU-ONLY LIST.**  **AND THE ORACLE's BRANCH IS STALE CODE**: `graphcmp.py:580`
-      reads `x.vars`, and at the pin `hasattr(ProgramInfo(), "vars")` is **False** while
-      `hasattr(..., "params")` is **True**, so it would **RAISE** if a graph ever reached it.
-      **THE FIX IS A GRAPH WHOSE PROGRAM CARRIES A BUFFER PARAM** -- then the two lists differ -- and the
-      oracle's branch must be re-pointed at `params` at the same time.  **A GREEN THAT HIDES A HOLE IS
-      NOT A RESULT.**
+- [x] **THE `pI(` LANE WAS DEAD, AND IT WAS A HOLE IN THE CORPUS.  IT IS NOW ALIVE** (`cb90d98a2`).
+      MEASURED, and the fix is the one this entry named: **A GRAPH WHOSE PROGRAM CARRIES A **BUFFER
+      PARAM** -- and the oracle's branch re-pointed at `params` **IN THE SAME COMMIT**, or the fix is
+      worthless.**  THE GRAPH IS `prog` (`graphcmp.py`'s `GRAPHS`, and `graphcmp.bend`'s
+      `rows.pick3`), and its PY SIDE BUILDS A REAL PROGRAM: `Tensor.empty(4,5).realize()`, a matmul
+      through upstream's **own** `schedule_linear` and `full_rewrite_to_sink`, and then upstream's own
+      two lines from `codegen/__init__.py:492-493` --
+      `UOp(Ops.PROGRAM, src=(sink,), arg=ProgramInfo.from_sink(sink, ren.target))`.  **THE PORT's
+      SIDE CALLS THE PORT's OWN `O.ProgramInfo.from_sink`**, so the comparison is the port's
+      `from_sink` against upstream's, not a literal.
+      **AND THE PROGRAM's THREE PARAMS **ARE **THE **THREE **BUFFERS** (output `4x5`, left `4x3`,
+      right `3x5`), each `addrspace == AddrSpace.GLOBAL`** -- measured `params = (PARAM slot 0
+      GLOBAL, PARAM slot 1 GLOBAL, PARAM slot 2 GLOBAL)`, `globals=(0,1,2)`, `outs=(0,)`,
+      `ins=(1,2)`.  **SO THE OLD `vars` WOULD HAVE BEEN **EMPTY** ON THIS GRAPH** (upstream
+      `a6addc2d4` changed `if u.op is Ops.PARAM and u.addrspace == AddrSpace.ALU` into `if u.op is
+      Ops.PARAM`), and the two lists now differ **WHERE IT MATTERS**.
+      **THE THIRD COMPONENT IS THE PARAMS' FULL `P(...)` RECORDS IN SLOT ORDER, NOT A SLOT LIST** --
+      for an all-buffer kernel the params' slots ARE the globals' slots, so a slot list would have
+      been a restatement of the fourth component, **A ROW THAT CANNOT GO RED.**  THE FULL RECORD
+      CARRIES THE **ADDRSPACE** (`SGLOBAL` vs `SALU`), which is exactly how the corpus sees it.
+      **AND THE `target` IS NOT CARRIED, AND THE LEDGER SAYS SO ON EVERY REPORT**: the oracle's
+      `_carg` CAN render it, but the value is the **renderer's** and its `arch` is the **machine's**
+      (`arm64,native` here), so carrying it would make the canonical form **machine-specific**; the
+      alternative -- both sides' defaults -- puts a **CONSTANT** on both sides, **A LABEL, NOT A
+      COMPARISON.**
+      **THE TWO FORMS ARE BYTE-IDENTICAL**, and the corpus's own per-graph diff says
+      `VERDICT: AGREE`, 51/51 rows, `SHARED cores=51 ONLY-PY=0 ONLY-BEND=0 field-mismatches=0`,
+      `PROGRAM 1/1` in the op census -- **and THE `pI(` FORM IS REACHED FOR THE FIRST TIME.**
+      **AND A DEAD FORM IS NOW A FAILURE**: `selfcheck` carries the liveness assertion, and it was
+      measured three ways (the third component replaced by a constant -> FAIL; dropped -> FAIL; as it
+      stands -> OK).  **THE PLANT DROPS THE LAST PARAM -> `VERDICT: DISAGREE`**, `ONLY-PY=1
+      ONLY-BEND=1`, both rows printed in full.
+      **⇒ AND THE RE-RUN'S EXPECTATIONS ARE A SEPARATE MATTER, AND A STRUCTURAL ONE** -- the corpus's
+      `WANT` and its count `PINS` are HAND-LISTS OF A DISCOVERABLE POPULATION, so adding a graph
+      needs them edited by hand.  **THAT IS THE DISEASE; THE THREE EDITS ARE THE SYMPTOMS.**
 - [x] **THE REPRO's FIRST FAILING READING WAS **MY** CONCURRENCY, NOT A DEFECT.**  TWO
       `differ.py repro` PROCESSES RAN OVER THE SAME `runs/graphcmp/D/` DIRECTORY -- I had killed only the
       first shell's `run` step and not its `repro` -- and the second read **0 of 310 files identical**.
