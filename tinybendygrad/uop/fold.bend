@@ -6441,7 +6441,7 @@ def vb_row(nm: String, +f: O.Found) -> IO(Unit):
     " virt=", vb_virt(UOp.is_virtual(ar, tb, u))]))
 
 # ===========================================================================
-# THE `vb_` PLANT, MEASURED. `.agents/slop/fold-vbase-mutate.py` applies each
+# THE `vb_` PLANT, MEASURED. `gates/fold-vbase-mutate.py` applies each
 # edit to a SCRATCH COPY of `tinybendygrad/`, compiles it, and diffs the `vb_`
 # rows against the baseline; the table is its output and nothing here is
 # transcribed by hand. A mutation that does not compile is reported as such
@@ -6449,11 +6449,11 @@ def vb_row(nm: String, +f: O.Found) -> IO(Unit):
 # which cannot tell "the edit changed nothing" from "the edit changed
 # everything" IS the defect.
 #
-#     .venv/bin/python .agents/slop/fold-vbase-mutate.py
+#     .venv/bin/python gates/fold-vbase-mutate.py
 #
 # THE ORACLE, and the diff that IS the test:
 #
-#     .venv/bin/python .agents/slop/fold-vbase-oracle.py > /tmp/vb_py.txt
+#     .venv/bin/python gates/fold-vbase-oracle.py > /tmp/vb_py.txt
 #     ./bin/bend tinybendygrad/uop/fold.bend | grep '^vb_' > /tmp/vb_bend.txt
 #     diff /tmp/vb_py.txt /tmp/vb_bend.txt
 #
@@ -6504,7 +6504,7 @@ def main() -> IO(Unit):
     me : Unit <- row("meet_and", t_meet_and())
     bv : Unit <- row("bnd_void_is_bool", t_bnd_void_is_bool())
     # THE `vb_` ROWS -- `unsharded_base`, `storage_base` and `is_virtual`. The
-    # expectations are `.agents/slop/fold-vbase-oracle.py`'s -- CPython's own
+    # expectations are `gates/fold-vbase-oracle.py`'s -- CPython's own
     # `base`/`unsharded_base`/`storage_base`/`is_virtual` on the SAME graphs --
     # so `diff` of the two lanes IS the test.
     vb_row("add", vb_add())
