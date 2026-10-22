@@ -724,38 +724,75 @@ def anon_name(g: G, tag: String) -> String:
 # autogen.py:113 the suggested name for an ELABORATED type, and :128/:142 the
 # `::`-to-`_` and space-to-`_` rewrites that make a C++ name a Python
 # identifier. BOTH are `str.replace`, and `String.replace` DOES NOT EXIST in
-# bend 2.0.34 -- `references/bend/bend2/base.bend` has no such def and no
-# intrinsic backs it, so this is WALL 2's second mouth.
+# bend -- `references/bend/bend2/base.bend` has no such def and no intrinsic
+# backs it (re-measured against the tree's pin, v2.0.37), so this is WALL 2's
+# second mouth.
 #
-# The walk is fixed-stride, which is what makes it expressible at all. A
-# general substring replace needs "either consume 1 or consume len(pattern)",
-# i.e. TWO recursive calls in one arm, and bend refuses two self-calls in an
-# arm (`references/bend` rejects the second with "a decreasing self-call"). A
-# FIXED pattern length turns it into one stride: take exactly 2 chars, decide,
-# recurse once on the tail. The accumulator goes SECOND because bend's descent
-# rule wants the shrinking argument first.
+# THE WALK IS ONE CHAR PER STEP AND CARRIES A PENDING STATE, and the reason is
+# that Python's `replace` FINDS THE PATTERN AT ANY OFFSET: `"a::b"` has its
+# "::" at offset 1, so a walk that took the chars in PAIRS would only ever see
+# "::" at even offsets and would answer "a::b" where Python answers "a_b".
+# A fixed stride is therefore NOT the same function, and the fixed-stride
+# version that stood here was wrong on this file's own fixture ("nm.cpp0").
+#
+# The pending state IS the escape from the two-descents shape this file
+# documents at :55-82: a general substring replace wants "either consume 1 or
+# consume len(pattern)", i.e. TWO recursive calls in one arm, and bend refuses
+# two self-calls in an arm. A ':' that may be the first half of a "::" is not
+# a second CALL, it is a STATE, and a state is a PARAMETER: one recursive call
+# per step, the state riding alongside the list. The accumulator goes SECOND
+# because bend's descent rule wants the shrinking argument first.
+#
+# `Bool.pick` EVALUATES BOTH ARMS (this file says so at :99-102), so a char
+# named in an arm is CONSUMED whether or not that arm is chosen. The char is
+# therefore declared `+` -- reusable -- and the walk binds it `+` too, which is
+# the shape `helpers.bend:1368` uses for the same reason.
 def colon() -> Char: ':'
 
-def rep_emit2(c1: Char, c2: Char) -> List<&2, Char>:
-  Bool.pick(List<&2, Char>, Bool.and(Char.is_eq(c1, colon()), Char.is_eq(c2, colon())), ["_"], [c1, c2])
-
-def rep_go2(cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
-  match cs:
-    case Nil{}: List.reverse(acc)
-    case c1 c2 rest: rep_go2(rest, List.append(&2, Char, acc, rep_emit2(c1, c2)))
-
-def rep_emit1(c1: Char) -> List<&2, Char>:
-  Bool.pick(List<&2, Char>, Char.is_eq(c1, space()), ["_"], [c1])
-
-def rep_go1(cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
-  match cs:
-    case Nil{}: List.reverse(acc)
-    case c1 rest: rep_go1(rest, List.append(&2, Char, acc, rep_emit1(c1)))
+def underscore() -> Char: '_'
 
 def space() -> Char: ' '
 
+# WHAT ONE CHAR CONTRIBUTES, GIVEN WHETHER A ':' IS HELD BACK. Four cases, and
+# `Bool.pick` takes all of them: a held-back ':' followed by a ':' is the pair
+# and becomes one '_'; a held-back ':' followed by anything else is emitted
+# alone and the other char follows it; an unheld ':' is held back (or, if the
+# NEXT char turns out to be a ':', the pair is emitted then).
+def rep_emit2(+pend: Bool, +c: Char) -> List<&2, Char>:
+  Bool.pick(List<&2, Char>, pend,
+    Bool.pick(List<&2, Char>, Char.is_eq(c, colon()), [underscore()], [colon(), c]),
+    Bool.pick(List<&2, Char>, Char.is_eq(c, colon()), Nil{}, [c]))
+
+# WHETHER THE NEXT CHAR IS HELD BACK. A held-back ':' is settled by whatever
+# comes next, so the state is CLEARED either way; an unheld ':' starts a new
+# hold.
+def rep_next(+pend: Bool, +c: Char) -> Bool:
+  Bool.pick(Bool, pend, False{}, Char.is_eq(c, colon()))
+
+def rep_go2(cs: List<&2, Char>, acc: List<&2, Char>, +pend: Bool) -> List<&2, Char>:
+  match cs:
+    case Nil{}: List.append(&2, Char, acc, Bool.pick(List<&2, Char>, pend, [colon()], Nil{}))
+    case +c1 <> rest: rep_go2(rest, List.append(&2, Char, acc, rep_emit2(pend, c1)), rep_next(pend, c1))
+
+# THE SPACE REWRITE, `real_nm.replace(' ', '_')` -- one char per step, no state
+# needed, because a space is never half of a pattern.
+def rep_emit1(+c: Char) -> Char:
+  Bool.pick(Char, Char.is_eq(c, space()), underscore(), c)
+
+def rep_go1(cs: List<&2, Char>, acc: List<&2, Char>) -> List<&2, Char>:
+  match cs:
+    case Nil{}: acc
+    case c1 <> rest: rep_go1(rest, List.append(&2, Char, acc, [rep_emit1(c1)]))
+
+# THE ACCUMULATOR IS IN ORDER AND IS NOT REVERSED AT THE END. `List.append(xs,
+# ys)` is `xs ++ ys` (`references/bend/bend2/base.bend:906`), so appending the
+# emission to the accumulator leaves it in order, and the `List.reverse` that
+# stood here reversed the whole answer. This file's own M29 records the
+# reversal as the defect ("the ORDER of the output -- the bug the differ
+# caught") and names the ten rows it moves; the same file's `rows_br_go` gets
+# the order right by appending and never reversing.
 def colons_to_underscores(n: String) -> String:
-  String.from_list(rep_go2(String.to_list(n), Nil{}))
+  String.from_list(rep_go2(String.to_list(n), Nil{}, False{}))
 
 def spaces_to_underscores(n: String) -> String:
   String.from_list(rep_go1(String.to_list(n), Nil{}))
@@ -1155,23 +1192,64 @@ def types_fixture() -> List<&2, Gt>:
 # instrument.
 #
 # ----------------------------------------------------------------------------
-# THIS FILE PRINTS ZERO ROWS, AND EVERY py= EXPECTATION ABOVE IS THEREFORE
-# UNREACHABLE TODAY. MEASURED: `./bin/bend tinybendygrad/runtime/support/autogen.bend`
-# is `rc=1`, 0 bytes on stdout, 0.5 s, peak RSS 31 MB under
-# `checks/bounded.py --mb 2048` (`WITHIN-LIMITS`, so the verdict is the compiler's,
-# not the watchdog's). The first error is at `:745`:
+# THIS FILE COMPILES AND PRINTS ITS ROWS. It did not, until 2026-10-22, and the
+# reason it did not is the shape of the defect this project has catalogued most:
+# THE INSTRUMENT THAT AUDITED IT WAS AUDITING ROWS OF A FILE THAT DID NOT
+# COMPILE. The commit that last touched it before that (`bfcc46fcd`, "autogen-
+# oracle: ONE ROW WAS DEAD AND 50 ROWS WERE NOT A FLOOR -- AND THE PORT IS AT 0
+# ROWS") measured the ORACLE's rows and reported "THE PORT IS A DEAD LANE".
+# A ROW-LEVEL INSTRUMENT CANNOT NOTICE THAT ITS SUBJECT DOES NOT COMPILE: the
+# port printed ZERO rows, and zero rows is what a file that prints none looks
+# like.
 #
-#     - expected : 1 patterns (one per scrutinee)
-#     - observed : 'c1 c2 rest'
+# WHAT IT WAS, MEASURED, and it was THREE defects and not one:
+#   :745  `case c1 c2 rest:` -- THREE patterns for ONE scrutinee. Bend spells
+#          the scrutinee count in the error (`references/bend/bend2/bend.ts:2301`:
+#          "expected : 1 patterns (one per scrutinee)"), and the rule is that a
+#          `match` takes ONE PATTERN PER SCRUTINEE. The fix is ONE pattern for
+#          one scrutinee -- the nested cons pattern `c1 <> c2 <> rest:`, which is
+#          `Con{c1, Con{c2, rest}}`. `rep_go1:753` had the same shape.
+#   :740  `c2 consumed more than once` -- `Bool.pick` EVALUATES BOTH ARMS (this
+#          file says so at :99-102), so a char named in an arm is consumed
+#          whether or not that arm is chosen. The fix is the `+` binder (the
+#          shape `helpers.bend:1368` uses for the same reason) and a `Bool`
+#          PENDING STATE instead of a fixed stride; the redesign is recorded
+#          above, at the rewrite itself.
+#   :755  `space()` was DEFINED AFTER `rep_emit1` USED IT, and bend refuses a
+#          forward reference to an unfilled definition ("expected : a filled
+#          definition (an unfilled law is a dead claim: live code cannot use
+#          it)"). The `def` had to move above its use.
 #
-# Bend spells that `case [c1, c2] <> rest:`, and `rep_go1:753` the same way. Both
-# clear. The NEXT stop is `rep_emit2:740`, `c2 : Char / c2 consumed more than
-# once` -- and that one is NOT a spelling bug: `Bool.pick` evaluates both arms, so
-# `c2` is consumed by the predicate and again by the value. That is the constraint
-# this file states at :99-102 ("a computed Bool can never GUARD a call") biting its
-# own WALL 2 workaround, and `colons_to_underscores` / `spaces_to_underscores` are
-# unreachable until it is redesigned. Reported, not repaired: a redesign of the
-# WALL 2 mouth is a porting decision and not a citation fix.
+# AND TWO OF THOSE WERE NOT SPELLING BUGS BUT SEMANTIC DEFECTS, and this file
+# already named BOTH in its own MUTATION TABLE, which is where the specification
+# for the repair came from: M29 ("colons_to_underscores: the accumulator is
+# reversed", 10 rows, "the ORDER of the output -- the bug the differ caught")
+# and M30 ("a lone trailing ':' is dropped", 2 rows, "the trailing-colon case,
+# which Python's replace also keeps"). The repair is measured against CPython's
+# own `str.replace` and against this file's own M29/M30, not against taste.
+#
+# MEASURED, 2026-10-22: `./bin/bend tinybendygrad/runtime/support/autogen.bend`
+# is `rc=0` and prints 149 rows (148 distinct). The oracle
+# (`gates/autogen-oracle.py gates/ag-fixture.h`) prints 117 rows (107 distinct),
+# 36 of which are the SAME ROW NAMES with the SAME VALUES -- 36 agreeing, 0
+# disagreeing, the rest being the oracle's `###` labels, its `cxkind_count` row
+# and its 60 `gen|` rows, which are WALL 1 (the port does not run the real
+# generator). The ten `nm.*`/`emit.alias` rows that M29 names are PORT-ONLY:
+# the oracle prints no `nm.*` row, so nothing in the tree gates them, and they
+# are checked here against CPython's `str.replace` directly.
+#
+# THE INSTRUMENT THAT WOULD HAVE CAUGHT IT EXISTED AND COVERED THIS FILE:
+# `checks/substrate.py`'s `POP_ROOT` is `tinybendygrad`, so this file is in it,
+# and `checks/substrate.py tinybendygrad/runtime/support/autogen.bend` answered
+# `COLD ... :: SOME PROOFS FAIL` on the bytes as they stood. What it could not
+# deliver is a VERDICT: over the whole port it is red for the standing
+# conditions below, and in the reachable edge (`gates/edge-trace.rows`, written
+# 2026-10-22T04:46:41Z) it is recorded `RAN REFUSED rc=3 0.58s`. The reading
+# that turns a compile census into a verdict is `checks/port-compile-gate.py`.
+#
+# THE py= EXPECTATIONS ABOVE ARE REACHABLE TODAY, and they are the reason this
+# block is here at all: a file that prints zero rows has no expectations to
+# fail.
 #
 # ----------------------------------------------------------------------------
 # TEN OF THE TWELVE PATHS CITED BY THIS HEADER ARE GONE, and the two that remain
