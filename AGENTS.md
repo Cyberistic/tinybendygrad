@@ -127,7 +127,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
   green. TRUST THE RED ONE.**
-  **AND AS OF **2026-10-22T12:46Z** (`1f6cdc93f`, **AFTER **TONIGHT's **218 **COMMITS**)
+  **AND AS OF **2026-10-22T16:44Z** (`73a1c96c2`, **AFTER **TONIGHT's **244 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
   `graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0 byte-identical=35 graphs-refused=0`,
@@ -143,7 +143,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **TREE **AS **IT
   **STANDS**, **AND `substrate-head=73a1c96c2d53e1ecd5f90d1d9470b0a379ceda45` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `1f6cdc93f`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
+  `73a1c96c2`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
   **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⚠ AND **THE **STRONGEST **FORM **OF **THE **CLAIM **IS **ALSO **THE **FRAILEST**, **AND **THIS **TREE
   **DEMONSTRATED **IT **WITHIN **A **MINUTE **OF **ITS **BEING **WRITTEN**: **MY **OWN **NEXT **COMMIT
