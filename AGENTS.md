@@ -127,7 +127,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
   green. TRUST THE RED ONE.**
-  **AND AS OF **2026-10-22T16:44Z** (`73a1c96c2`, **AFTER **TONIGHT's **244 **COMMITS**)
+  **AND AS OF **2026-10-22T17:2xZ** (`b5c16d646`, **AFTER **TONIGHT's **247 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
   `graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0 byte-identical=35 graphs-refused=0`,
@@ -139,11 +139,11 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `319 of 319 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=319 repro-identical=319 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == 3ef78ee5918f678e67636c3c628ffb2420d4252be770d5bcb28097602c539687`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == 62c5dd903b864c69dcb4dc9421b84c67ac41f65408e57a7bd93ef90a0ba6fe79`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
   **STANDS**, **AND `substrate-head=73a1c96c2d53e1ecd5f90d1d9470b0a379ceda45` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `73a1c96c2`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
+  `b5c16d646`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
   **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⚠ AND **THE **STRONGEST **FORM **OF **THE **CLAIM **IS **ALSO **THE **FRAILEST**, **AND **THIS **TREE
   **DEMONSTRATED **IT **WITHIN **A **MINUTE **OF **ITS **BEING **WRITTEN**: **MY **OWN **NEXT **COMMIT
@@ -167,6 +167,34 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **WHILE **THE **SUMMARY **SAID **EVERYTHING **AGREED**, **AND **ARTEFACTS **OUT **OF **ORDER** (the
   **summary **NEWER **THAN **THE **REPRO**).  **⇒ A **SUMMARY **IS **A **CLAIM **AND **A **WITNESS **IS
   **A **CHECK**, **AND **ONLY **THE **SECOND **CAN **GO **RED.**
+
+  ***AND ***THE **CORPUS's **D10 **PIN **WAS **A **PIN **ON **A **NETWORK **ANSWER, **AND **IT **IS **NOT
+  **ANY **MORE** -- **WHICH **IS **A **CLASS **THE **TREE **HAD **NOT **NAMED**:***
+  `checks/differ.py`'s `REPRO_PINS["d10-transcript"]` pins the sha256 of
+  `runs/graphcmp/D/D10-zerorow-guard.txt.err`, and **THOSE 240 CHARACTERS ARE THE COMPILER'S "A NEWER
+  BEND IS AVAILABLE" NOTICE** -- **WHICH `references/bend/bend2/main.ts:185-211` FETCHES FROM
+  `https://bend-lang.com/check` ONCE A DAY INTO **`~/.bend/check.json`, A FILE IN THE **DEVELOPER's
+  **HOME**, NOT IN THIS **REPOSITORY**.**  **⇒ THE **PIN **WAS **NOT **A **FUNCTION **OF **THE **TREE.**
+  **MEASURED, FIVE **CASES, THE **ORACLE's **OWN `emit_bend`, EACH **WITH **ITS **OWN `HOME` **SO **THE
+  **USER's **CACHE **WAS **NEVER **TOUCHED**:** **cache `2.0.38` -> `f35b2d90...`; cache `2.0.39` ->
+  `312e2b4f...` (***DIFFERENT*** -- **SO **UPSTREAM's **NEXT **RELEASE **WOULD **HAVE **REDDED **THE
+  **PIN **WITH **NO **REPO **CHANGE, NO **PORT **CHANGE, NO **BUG **AND **NO **COMMIT **TO **EXPLAIN
+  **IT**); `BEND_NO_TELEMETRY=1` -> `9bfb8517...`, **IDENTICAL **WITH **AND **WITHOUT **A **CACHE **AND
+  **WITH **AND **WITHOUT **A **NETWORK**.**
+  **⇒ AND **THE **CURE **IS **THE **COMPILER's **OWN **SWITCH** (`main.ts:186-188`), **APPLIED **AT **THE
+  **TWO **BOUNDARIES **WHERE **A `bin/bend` **CHILD **IS **LAUNCHED** -- **`checks/differ.py`'s `ENV`
+  **(which **every **child **of **the **corpus **driver **inherits**, **and **WHICH `settled()` -- **THE
+  **ONLY **CHILD **THAT **DID **NOT **USE **IT** -- **NOW **DOES**) **AND **`graphcmp.py`'s
+  `clean_env()`** -- **SO **THE **PIN **IS **BACK **ON **`9bfb8517...`**, THE **VALUE **IT **HELD
+  **BEFORE **UPSTREAM's **2.0.38 **RELEASE **TURNED **THE **NOTICE **ON.**  **⇒ AND **THE **DIRECT
+  **PROOF **THAT **THE **OFF-REPO **INPUT **IS **GONE **FROM **THE **MEASUREMENT**: **`~/.bend/check.json`'s
+  **MTIME **IS **UNCHANGED** (`Oct 21 20:52`) **AFTER **A **FULL `run` **AND `repro`** -- **THE **CORPUS
+  **DID **NOT **PHONE **HOME.**  **⇒ AND **`settled()` **WAS **CHECKED **AND **IS **NOT **A **HAZARD**:
+  **it **merges **stderr **into **stdout **and **reads **LINE **1**, **and **THE **NOTICE **LANDS
+  **AFTER **`ALL PROOFS CHECK`** -- **MEASURED, **LINE **1 **IS **`ALL PROOFS CHECK`** **WITH **AND
+  **WITHOUT **THE **FLAG.  **A **NEGATIVE **RESULT **IS **A **RESULT.**
+  **⇒ AND **THE **CLASS:** **A **PIN **MUST **BE **A **FUNCTION **OF **THE **REPOSITORY**, **AND **A **PIN
+  **OVER **BYTES **THAT **A **THIRD **PARTY **CAN **MOVE **IS **NOT **A **PIN**, **IT **IS **A **BET.**
 
   ***AND ***THE **`pI(` **LANE **IS **ALIVE** -- **AND **IT **WAS **DEAD **WHEN **THIS **PARAGRAPH **WAS **FIRST
   **WRITTEN**, **SO **THE **FIX **IS **THE **EVIDENCE:** MEASURED 2026-10-22, the corpus's 34 graphs produced
