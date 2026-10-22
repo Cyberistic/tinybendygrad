@@ -356,6 +356,16 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   IS A DIFFERENT CLASS.** **NEVER `git add -A` -- MEASURED HERE AGAIN: IT PUTS ANOTHER UNIT'S
   WORK INSIDE YOUR COMMIT.**
   **AND NOW ***ALSO*** RUN `git fsck --no-progress`, BECAUSE `--stat` **CANNOT** SEE A MALFORMED COMMIT AT ALL.**
+  **AND A **SCRIPT **THAT **OTHERS **ARE **EXECUTING **IS **SHARED **STATE **TOO**, **AND **EDITING **IT
+  **IN **PLACE **IS **THE **HAZARD** -- MEASURED 2026-10-22, **AND **I **CAUSED **IT**: I edited
+  **`checks/bendlock.sh`** IN PLACE WHILE A UNIT WAS RUNNING IT, **AND **A **SHELL **READS **A **SCRIPT
+  **BY **BYTE **OFFSET**, **SO **THE **OTHER **UNIT's **SHELL **RESUMED **MID-LINE **AND **RAN `st.`
+  **INSTEAD **OF `stat`** -- ITS **FIRST **VERIFY **RUN **DIED **WITH **EXIT **127 **AND **A **PLANT
+  **REFUSED **FOR **A **REASON **UNRELATED **TO **THE **SUBSTRATE**.  **THE **CLASS **IS **THE **INDEX's
+  **CLASS: **A **PATH **THAT **OTHERS **TOUCH **IS **A **SHARED **PATH**, **AND **THE **INDEX's **RULE
+  **IS **THE **RULE** -- **DO **NOT **TOUCH **A **PATH **OTHERS **HOLD**.  **A **FILE **THAT **OTHERS
+  **ARE **EXECUTING **IS **A **PATH **OTHERS **HOLD**, **AND **THE **SAFE **FORM **IS **TO **WRITE **A
+  **NEW **PATH **AND **LEAVE **THE **OLD **ONE **ALONE**.**
   **MEASURED 2026-10-17, AND IT IS THE ONE CHECK EVERY UNIT IN THIS SESSION MISSED:** **A PUSH OF THIS TREE FAILED
   WITH `remote: error: object d83cf685…: duplicateEntries: contains duplicate file entries` / `remote: fatal:
   fsck error in packed object` / `remote unpack failed` -- A COMMIT WHOSE TREE LISTED **`gates` TWICE**.** IT WAS
