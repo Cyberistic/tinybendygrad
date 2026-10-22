@@ -773,6 +773,22 @@ def ew_k.gelu() -> F32: 0.044715
 
 def ew_k.quick_gelu() -> F32: 1.702
 
+# `math.pi / 2` -- the ARC CONSTANT of `asin` and `acos`.  IT IS A COMPOSITION AND NOT
+# A LITERAL, and the reason is a MEASUREMENT: `F32.div(F32.pi(), 2.0)` is EXACTLY
+# `f32(pi/2)` because halving a normal f32 is exact, and `f32(pi/2)` is what CPython's
+# DOUBLE `math.pi / 2` truncates to.  A LITERAL `1.5707964` would be the same number
+# and a literal `1.5707963` would not be, and the difference is BELOW the sixth
+# decimal -- so the constant is a composition of two exact ones rather than a
+# transcription of a truncated one.  (`F32.pi()` is `3.14159265` in base.bend and
+# still rounds to CPython's `f32(pi)`.)
+def ew_k.pi_2() -> F32: F32.div(F32.pi(), 2.0)
+
+# `elu`'s AND `celu`'s DEFAULT `alpha` -- elementwise.py:962 and :974, both `alpha=1.0`.
+# It is a NAMED CONSTANT and not a bare `1.0` at the call site because the default is
+# PART OF THE SPEC: `celu` calls `elu` with upstream's default and not with `celu`'s
+# own alpha, and a reader cannot tell that from `ew_elu(q, 1.0)`.
+def ew_k.elu_alpha() -> F32: 1.0
+
 def ew_k.selu_alpha() -> F32: 1.6732632
 
 def ew_k.selu_gamma() -> F32: 1.050701
@@ -832,12 +848,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:878  acosh        -- .log()
 # TODO(p3) elementwise.py:890  round  -- 0.5 and 2.0 are available. THE REMAINDER IS NOT A CONSTANT: it is the rounding mode, and it still is
 # TODO(p3) elementwise.py:921  tan          -- .cos()
-# TODO(p3) elementwise.py:931  asin  -- math.pi/2 is available; `polyN` and the arcsine series are the remainder
-# TODO(p3) elementwise.py:944  acos  -- math.pi/2 is available; `asin` is the remainder
-# TODO(p3) elementwise.py:954  atan  -- math.sqrt(2) is `ew_k.sqrt_2()`, bit-exact; `asin` is the remainder
-# TODO(p3) elementwise.py:964  elu  -- alpha=1.0 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
-# TODO(p3) elementwise.py:976  celu  -- alpha=1.0 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
-# TODO(p3) elementwise.py:988  selu  -- alpha and gamma are `ew_k.selu_alpha()` and `ew_k.selu_gamma()` = 1.050701, bit-exact -- NOT 1.0507009. UNDIAGNOSED
 # TODO(p3) elementwise.py:1000 softplus     -- beta=1.0
 # TODO(p3) elementwise.py:1010 mish         -- softplus()
 # TODO(p3) elementwise.py:1022 logsigmoid   -- softplus()
@@ -1226,10 +1236,26 @@ def ew_quick_gelu(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(ew_mul2(t, ew
 # 4294967296.0. MEASURED, and the fix is `wk_i64_to_f32` carrying the magnitude in 24-bit
 # chunks, gated by `.agents/slop/wk-f32-gate.sh` (18 rows, three lanes).
 #
-# BOTH MULs PUT THE CONSTANT ON THE LEFT, as CPython writes `2.0 * self`, and that is
-# `rev=True` -- the same thing sigmoid's ADD needed, and the signature row is the only
-# thing in this port that can see an operand order at all.
-def ew_tanh(+t: T.Tensor) -> T.Tensor: ew_sub(ew_mul2(t, ew_sigmoid(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), 2.0)), True{})), True{}), ECon{O.CFloat{1.0}}, False{})
+# BOTH MULs PUT THE CONSTANT ON THE LEFT, as CPython writes `2.0 * self` and
+# `2.0 * (...)`, and that is `rev=True` -- the same thing sigmoid's ADD needed.
+#
+# **AND THE ORDER OF THE TWO ARGUMENTS IS LOAD-BEARING, AND IT WAS WRONG HERE.**
+# `ew_mul2(a, b, True{})` IS `b * a` -- `_broadcasted`'s reverse arm puts the UFIXED
+# operand on the LEFT -- so `2.0 * X` is `ew_mul2(X, c2, True{})` and NOT
+# `ew_mul2(c2, X, True{})`.  The version that was here wrote `ew_mul2(t, sigmoid,
+# True{})`, which is `sigmoid * self`, and the port's `tanh` was
+# `sigmoid(2*self) * self - 1.0` where upstream's is `2*sigmoid(2*self) - 1.0`.
+# MEASURED, 2026-10-22, against CPython over seventeen inputs: the port's `tanh(0.5)`
+# was `-0.6344707012176514` and CPython's is `0.46211719512939453`; the port's
+# `tanh(0.0)` was `-1.0` and CPython's is `0.0`.  **NO GATE COULD SEE IT**: the
+# census's `ew_tanh` row prints the ROOT's src ops, and the root is the ADD of
+# `sub` either way -- `Ops.MUL Ops.MUL` -- so the signature is IDENTICAL for the
+# right graph and the wrong one.  It took a COMPARISON THAT READS THE WHOLE GRAPH
+# (`.agents/slop/ew-activations/`) to see it.
+def ew_tanh(+t: T.Tensor) -> T.Tensor:
+  +c2 = ew_ct(ew_cf(T.Tensor.ar(t), 2.0))
+  +s = ew_sigmoid(ew_mul2(t, c2, True{}))
+  ew_sub(ew_mul2(s, c2, True{}), ECon{O.CFloat{1.0}}, False{})
 
 # `log`, `log10` and `exp` (elementwise.py:840, :852, :511) are the first three methods the
 # CONSTANT wall unblocked, and all three are TWO NODES over things that already exist:
@@ -1288,6 +1314,160 @@ def ew_exp(+t: T.Tensor) -> T.Tensor:
   +a = ew_cast(t, d1)
   +b = ew_cast(a, F.least_upper.of(ew_dt(a), S.single()))
   ew_cast(ew_exp2(ew_exp.mul(b, ew_k.inv_log2())), d1)
+
+# ===========================================================================
+# THE ACTIVATION FAMILY -- elementwise.py:672-1068. Upstream has EIGHTEEN
+# activations in that range and THIS FILE'S MARKERS NAMED SIX of them: `asin`
+# (`:929`), `acos` (`:942`), `atan` (`:952`), `elu` (`:962`), `celu` (`:974`)
+# and `selu` (`:986`). They are ported here, TOGETHER WITH `relu` (`:672`),
+# which `elu` calls and which was NOT in this layer before: `nn/layers.bend:262`'s
+# `nn_relu` is a NAME onto `tensor.bend:774`'s `tn_relu`, and the `tn_*` layer
+# does NOT PROMOTE -- CPython's `relu` on a float32 `self` REMINTS the zero to
+# weakfloat and the `tn_*` layer's does not, so `tn_relu` cannot stand in for
+# `elu`'s `self.relu()`.
+#
+# ALREADY PORTED AND NOT TOUCHED: `sigmoid` (`:683`), `tanh` (`:755`),
+# `quick_gelu` (`:767`), `swish` (`:794`), `silu` (`:806`), `log` (`:828`),
+# `log10` (`:840`), `exp` (`:510`), `rsqrt` (`:818`) -- all in this file -- and
+# `relu6` (`:695`) as `tensor.bend`'s `tn_relu6`. STILL MARKED AND NOT IN
+# THIS BLOCK: `hardswish` (`:707`), `hardsigmoid` (`:719`), `hardtanh` (`:732`),
+# `leaky_relu` (`:742`), `gelu` (`:777`), `atanh` (`:852`), `asinh` (`:864`),
+# `acosh` (`:876`), `softplus` (`:998`), `mish` (`:1008`), `logsigmoid`
+# (`:1020`), `sinh` (`:1032`), `cosh` (`:1044`), `erf` (`:1056`), `softsign`
+# (`:1070`).
+#
+# THE ARITY IS UPSTREAM'S, AND IT IS THE SPEC. `elu(self, alpha=1.0)` and
+# `celu(self, alpha=1.0)` take ONE extra argument; `selu(self,
+# alpha=1.6732632423543772, gamma=1.0507009873554805)` takes TWO, IN THAT
+# ORDER. Bend has no default argument, so the DEFAULTS ARE SPELLED WHERE THEY
+# ARE READ: `ew_k.elu_alpha` is upstream's `1.0`, `ew_k.selu_alpha` and
+# `ew_k.selu_gamma` are upstream's two, and a caller that wants upstream's
+# `elu()` writes `ew_elu(t, ew_k.elu_alpha())`.
+#
+# TWO RULES THAT THE `ew_*` LAYER OWNS AND EVERY ONE OF THESE FOLLOWS.
+#   1. THE OPERAND ORDER IS PYTHON'S. `ew_mul2(a, b, False{})` is `a * b` and
+#      `ew_mul2(a, b, True{})` is `b * a`, because `_broadcasted`'s reverse arm
+#      puts the UFIXED operand on the LEFT. CPython's `2.0 * X` is
+#      `Tensor.__rmul__` -> `mul(2.0, True)` -> `MUL(CONST 2.0, X)`, and its
+#      `X - 1.0` is `Tensor.__sub__` -> `sub(1.0, False)` -> `ADD(X, -1.0)` --
+#      so the CONST is on the LEFT for `alpha * X` and on the RIGHT for `X - 1`.
+#   2. THE CONST GOES IN THE ARENA OF WHATEVER LAST BUILT. `ew_cf` mints into
+#      the arena it is handed and the arena it returns is the GROWN one, so a
+#      const minted off an OLD tensor is a SIBLING arena -- and `ew_join`'s
+#      `O.Arena.merge` is what keeps that from being a silent wrong answer.
+# ===========================================================================
+
+# `relu` -- elementwise.py:672. `(self > 0).where(self, 0)`.
+#
+# THE `>` IS REVERSED: `__gt__` is `self._binop(Ops.CMPLT, x, True)`, so the
+# CONST is the LEFT src and `self` the right. MEASURED on CPython, `relu` of a
+# weakfloat `self` is `CMPLT(CONST 0.0, self)` over `WHERE(CMPLT, self,
+# CONST 0.0)`, and the ZERO IS THE REMINTED weakfloat 0.0 that `promote`
+# builds -- not the weakint 0 that `ufix` made.
+def ew_relu(+t: T.Tensor) -> T.Tensor:
+  ew_where.of(ew_gt(t, ECon{O.CInt{H.i64_of_i32(0)}}), ETen{t}, ECon{O.CInt{H.i64_of_i32(0)}})
+
+# `asin` -- elementwise.py:929-940.
+#
+#     coefficients = [-0.0012624911, 0.0066700901, -0.0170881256, 0.0308918810,
+#                     -0.0501743046, 0.0889789874, -0.2145988016, math.pi / 2]
+#     a = (s:=(self >= 0).where(1.0, -1.0)) * self
+#     return s * (math.pi / 2 - (1.0 - a).sqrt() * polyN(a, coefficients))
+#
+# `polyN` IS HORNER, AND THE ORDER IS THE ORDER: `helpers.py:154`'s
+# `functools.reduce(lambda acc,c: acc*x+c, p, 0.0)` starts at `0.0` and folds
+# the coefficients IN ORDER, so the LAST coefficient is the CONSTANT TERM -- and
+# the last coefficient IS `math.pi / 2`, which is why the polynomial's constant
+# term and the outer `math.pi / 2` are ONE CONST node and not two.
+#
+# THE EIGHT STEPS ARE WRITTEN OUT rather than folded over a list, and the reason
+# is a MEASUREMENT rather than a taste: a wrong ORDER of the coefficients
+# changes no node COUNT and no op -- it changes which CONST is added when --
+# and the CONST BITS are the only thing that sees it.  Written out, the order
+# is the order of the lines.
+#
+# `0.0 * a` IS `Tensor.__rmul__` -> `mul(0.0, True)` -> `MUL(CONST 0.0, a)`,
+# and the `0.0` IS THE SAME NODE as the reminted zero `self >= 0` built -- one
+# CONST, hash-consed, not two.
+def ew_asin.poly(+a: T.Tensor) -> T.Tensor:
+  +p1 = ew_add(ew_mul2(ew_ct(ew_cf(T.Tensor.ar(a), 0.0)), a, False{}), ECon{O.CFloat{F32.neg(0.0012624911)}}, False{})
+  +p2 = ew_add(ew_mul2(p1, a, False{}), ECon{O.CFloat{0.0066700901}}, False{})
+  +p3 = ew_add(ew_mul2(p2, a, False{}), ECon{O.CFloat{F32.neg(0.0170881256)}}, False{})
+  +p4 = ew_add(ew_mul2(p3, a, False{}), ECon{O.CFloat{0.030891881}}, False{})
+  +p5 = ew_add(ew_mul2(p4, a, False{}), ECon{O.CFloat{F32.neg(0.0501743046)}}, False{})
+  +p6 = ew_add(ew_mul2(p5, a, False{}), ECon{O.CFloat{0.0889789874}}, False{})
+  +p7 = ew_add(ew_mul2(p6, a, False{}), ECon{O.CFloat{F32.neg(0.2145988016)}}, False{})
+  ew_add(ew_mul2(p7, a, False{}), ECon{O.CFloat{ew_k.pi_2()}}, False{})
+
+# `asin` -- elementwise.py:929-940.  THE DOMAIN IS NOT CLAMPED, AND THAT IS
+# UPSTREAM'S ANSWER: there is no `where` on `|self| <= 1` anywhere in it, so
+# `asin(2.0)` is `sqrt(1.0 - 2.0)` and the NaN IS THE ANSWER.  CPython's
+# `asin` of a weakfloat 2.0 is NaN, and so is the port's, because the port
+# builds the same `SQRT` over the same negative.
+#
+# `self >= 0` IS `__ge__` IS `(self < 0).logical_not()`, so it is a CMPLT, a
+# CAST-TO-BOOL THAT FOLDS, and a CMPNE -- and the `1.0`/`-1.0` are the WHERE's
+# two value srcs, in that order.
+def ew_asin(+t: T.Tensor) -> T.Tensor:
+  +s = ew_where.of(ew_ge(t, ECon{O.CInt{H.i64_of_i32(0)}}, False{}), ECon{O.CFloat{1.0}}, ECon{O.CFloat{F32.neg(1.0)}})
+  +a = ew_mul2(s, t, False{})
+  +p = ew_asin.poly(a)
+  +r = ew_mul2(ew_sqrt(ew_sub.of(a, ECon{O.CFloat{1.0}}, True{})), p, False{})
+  ew_mul2(s, ew_sub.of(r, ECon{O.CFloat{ew_k.pi_2()}}, True{}), False{})
+
+# `acos` -- elementwise.py:942-950. `math.pi / 2 - self.asin()`.  The MINUS IS
+# A REVERSED `sub`: `Tensor.__rsub__` -> `sub(pi/2, True)` -> `ADD(CONST
+# pi/2, -asin)`, so the CONST is on the LEFT and the NEGATED rhs on the right.
+# The DOMAIN IS `asin`'s DOMAIN and it is NOT CLAMPED either: `acos(2.0)` is
+# NaN in CPython and NaN here.
+def ew_acos(+t: T.Tensor) -> T.Tensor:
+  ew_sub.of(ew_asin(t), ECon{O.CFloat{ew_k.pi_2()}}, True{})
+
+# `atan` -- elementwise.py:952-960. `(self / (1 + self * self).sqrt()).asin()`.
+# TWO ORDERING FACTS: the `1 +` IS `Tensor.__radd__` -> `add(1, True)` -> the
+# CONST IS ON THE LEFT, and the DIVISION IS `div`'s FLOAT ARM -> `MUL(self,
+# RECIPROCAL(sqrt))` and not a `DIV`.  `atan` HAS NO DOMAIN PROBLEM: the
+# argument of the `asin` is `self / sqrt(1 + self*self)`, whose magnitude is
+# at most 1 -- and at `self = inf` it is `inf / inf`, which is NaN in CPython
+# and NaN here.
+def ew_atan(+t: T.Tensor) -> T.Tensor:
+  +ss = ew_mul2(t, t, False{})
+  +q = ew_div(t, ETen{ew_sqrt(ew_add(ss, ECon{O.CInt{H.i64_of_i32(1)}}, True{}))}, False{}, RNone{})
+  ew_asin(q)
+
+# `elu` -- elementwise.py:962-972. `(self > 0).where(self, alpha*((self -
+# self.relu()).exp() - 1))`.  THREE ORDERING FACTS: the `self > 0` is the
+# REVERSED CMPLT of `relu`, the `self - self.relu()` is `Tensor.__sub__` ->
+# `ADD(self, -relu)`, and the `alpha *` is `Tensor.__rmul__` -> `MUL(CONST
+# alpha, ...)`.  THE `.exp()` IS `ew_exp` AND NOT A SQRT: it carries CPython's
+# three casts, so `elu` of a weakfloat `self` is a CAST, a MUL, an EXP2 and a
+# CAST.
+def ew_elu(+t: T.Tensor, +alpha: F32) -> T.Tensor:
+  +g = ew_gt(t, ECon{O.CInt{H.i64_of_i32(0)}})
+  +r = ew_relu(t)
+  +e = ew_exp(ew_sub.of(t, ETen{r}, False{}))
+  +m = ew_sub.of(e, ECon{O.CInt{H.i64_of_i32(1)}}, False{})
+  +am = ew_mul2(m, ew_ct(ew_cf(T.Tensor.ar(m), alpha)), True{})
+  ew_where.of(g, ETen{t}, ETen{am})
+
+# `celu` -- elementwise.py:974-984. `alpha * (self / alpha).elu()`.  THE
+# DIVISION IS UPSTREAM'S `self / alpha` -- the DIVISION, NOT A MULTIPLY BY A
+# RECIPROCAL SPELLED OUTSIDE: `div`'s float arm builds `MUL(self,
+# RECIPROCAL(alpha))`, and `elu` is then called with UPSTREAM'S DEFAULT
+# `alpha=1.0` and not with the `celu`'s own alpha.
+def ew_celu(+t: T.Tensor, +alpha: F32) -> T.Tensor:
+  +q = ew_div(t, ETen{ew_ct(ew_cf(T.Tensor.ar(t), alpha))}, False{}, RNone{})
+  +e = ew_elu(q, ew_k.elu_alpha())
+  ew_mul2(e, ew_ct(ew_cf(T.Tensor.ar(e), alpha)), True{})
+
+# `selu` -- elementwise.py:986-996. `gamma * self.elu(alpha)`.  TWO PARAMETERS
+# AND THE ORDER IS `alpha` THEN `gamma`, and the DEFAULTS ARE UPSTREAM'S:
+# `alpha=1.6732632423543772` and `gamma=1.0507009873554805` -- which are
+# `ew_k.selu_alpha()` and `ew_k.selu_gamma()`, the f32 spellings the
+# `ew-consts-gate` pins (NOT `1.0507009`, which is one ulp low).
+def ew_selu(+t: T.Tensor, +alpha: F32, +gamma: F32) -> T.Tensor:
+  +e = ew_elu(t, alpha)
+  ew_mul2(e, ew_ct(ew_cf(T.Tensor.ar(e), gamma)), True{})
 
 def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 
