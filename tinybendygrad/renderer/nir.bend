@@ -233,8 +233,17 @@ def c(+d: S.Dt, unsigned: Bool) -> String: c.arm1(d, Bool.and(c.in_uints(d), uns
 #
 #   u_aop  unsigned/bool arithmetic        14 entries  (nir.py:19-20)
 #   s_aop  u_aop with FIVE arms replaced   14 entries  (nir.py:21)
-#   f_aop  float arithmetic                12 entries  (nir.py:22-23)
+#   f_aop  float arithmetic                13 entries  (nir.py:22-23)
 #   aop    dtype -> one of the three       17 keys     (nir.py:24)
+#
+# `f_aop` is THIRTEEN and was TWELVE, and the thirteenth is `SQRT`: upstream added
+# `Ops.SQRT: "fsqrt"` to `f_aop` in PR #18815 (`c04397442`, 2026-10-18) and this tree
+# took it in the 2026-10-20 re-vendor `77e6c2bec`.  MEASURED 2026-10-22: the port was
+# last edited 2026-10-06 and still had twelve, so it was CORRECT WHEN IT WAS WRITTEN
+# and STALE afterwards -- and its `py=` half was DERIVED from its own value, so the
+# four `cfo` rows were GREEN on a stale answer.  A derived half cannot disagree with
+# the port, so only the byte diff against live CPython can see this, and the lane
+# against live CPython did not exist until `gates/nir_render-gate.py` did.
 #
 # `s_aop`'s FIVE overrides are the whole difference between the two integer
 # tables and they are NOT the ones a reader would guess. CMPLT, CDIV, CMOD, MAX
@@ -292,6 +301,7 @@ def op_const(nm: String) -> U32:
     case "fsin": 279
     case "fexp2": 221
     case "flog2": 238
+    case "fsqrt": 283
     case "mov": 365
     case "vec2": 484
     case "vec3": 485
@@ -510,6 +520,7 @@ def f_aop(op: O.Op) -> String:
     case O.OpsSIN{}: "fsin"
     case O.OpsEXP2{}: "fexp2"
     case O.OpsLOG2{}: "flog2"
+    case O.OpsSQRT{}: "fsqrt"
     case _: ""
 
 # THE REVERSE DIRECTION -- nir.py:19-23 READ BACKWARDS, AND NOT FOLDED OUT OF
@@ -565,6 +576,7 @@ def f_aop.rev(nm: String) -> String:
     case "fsin": "SIN"
     case "fexp2": "EXP2"
     case "flog2": "LOG2"
+    case "fsqrt": "SQRT"
     case _: ""
 
 # `aop` -- nir.py:24. `{**{x:u_aop for x in (dtypes.bool,)+dtypes.uints},
@@ -607,7 +619,7 @@ def aop_keys() -> List<&2, S.Dt>:
 # each table's real `dict` order, so a reordering is a diff and not a set match.
 def u_ops() -> List<&2, String>: ["ADD","MUL","CDIV","CMOD","CMPLT","CMPNE","CMPEQ","OR","AND","XOR","WHERE","MAX","SHL","SHR"]
 
-def f_ops() -> List<&2, String>: ["ADD","MUL","CMPLT","CMPNE","CMPEQ","FDIV","RECIPROCAL","MAX","TRUNC","SIN","EXP2","LOG2"]
+def f_ops() -> List<&2, String>: ["ADD","MUL","CMPLT","CMPNE","CMPEQ","FDIV","RECIPROCAL","MAX","TRUNC","SIN","EXP2","LOG2","SQRT"]
 
 def op_of(nm: String) -> O.Op:
   match nm:
@@ -634,6 +646,7 @@ def op_of(nm: String) -> O.Op:
     case "SIN": O.OpsSIN{}
     case "EXP2": O.OpsEXP2{}
     case "LOG2": O.OpsLOG2{}
+    case "SQRT": O.OpsSQRT{}
     # `OpsCONST` and not `OpsNOP`: the arm must be a CONSTRUCTOR THAT EXISTS,
     # and it must be one no table names, so all three `match`es fall to `case _`
     # and answer "". `OpsCONST` is also the op `render` skips at nir.py:193.
@@ -1118,8 +1131,8 @@ def arch_int(nm: String) -> U32:
 #     code_for_op = {**{k:None for k in s_aop.keys()}, **{k:None for k in f_aop.keys()}}
 #     LVPRenderer: {k:v for k,v in NIRRenderer.code_for_op.items() if k != Ops.EXP2}
 #
-# A SET of ops -- 14 signed + 12 float with SIX shared op names, so 20 unique,
-# and 19 for LVP. Every value is `lambda: None`, so the set's only content is
+# A SET of ops -- 14 signed + 13 float with SIX shared op names, so 21 unique,
+# and 20 for LVP. Every value is `lambda: None`, so the set's only content is
 # WHICH ops a device claims to implement natively; the `EXP2` removal is
 # gallivm's "undefined behavior with infs, 0s and nans" (nir.py:260-261). The
 # gate emits the joined NAMES in `CFO_NAMES`' order, so a dropped op is a diff.
@@ -1144,6 +1157,7 @@ def cfo.is(nm: String) -> Bool:
     case "SHL": True{}
     case "SHR": True{}
     case "SIN": True{}
+    case "SQRT": True{}
     case "TRUNC": True{}
     case "WHERE": True{}
     case "XOR": True{}
@@ -1157,7 +1171,7 @@ def cfo.is(nm: String) -> Bool:
 def cfo.has(+n: Nir, +nm: String) -> Bool:
   Bool.and(cfo.is(nm), Bool.or(Bool.not(Nir.drops_exp2(n)), Bool.not(String.eq(nm, "EXP2"))))
 
-def cfo_names() -> List<&2, String>: ["ADD","AND","CDIV","CMOD","CMPEQ","CMPLT","CMPNE","EXP2","FDIV","LOG2","MAX","MUL","OR","RECIPROCAL","SHL","SHR","SIN","TRUNC","WHERE","XOR"]
+def cfo_names() -> List<&2, String>: ["ADD","AND","CDIV","CMOD","CMPEQ","CMPLT","CMPNE","EXP2","FDIV","LOG2","MAX","MUL","OR","RECIPROCAL","SHL","SHR","SIN","SQRT","TRUNC","WHERE","XOR"]
 
 def cfo.go(+n: Nir, +ns: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
   match ns:
@@ -1444,7 +1458,7 @@ def main() -> IO(Unit):
     rd("sd nak sm_52   ", dnames(supported_dtypes(Nir.nak(), 52))),
     rd("sd nak sm_120  ", dnames(supported_dtypes(Nir.nak(), 120))),
     rd("sd ir3         ", dnames(supported_dtypes(Nir.ir3(), 86))),
-    # ---- `code_for_op` -- 20 ops, and LVP's 19 without EXP2
+    # ---- `code_for_op` -- 21 ops, and LVP's 20 without EXP2
     rd("cfo nir        ", join(code_for_op(Nir.base()))),
     rd("cfo lvp        ", join(code_for_op(Nir.lvp()))),
     rd("cfo nak        ", join(code_for_op(Nir.nak()))),
@@ -1704,7 +1718,7 @@ def main() -> IO(Unit):
 #                                    REG `srcs` REVERSAL as a name list
 #   CLOSED  `supported_dtypes` (:244, :253, :321)  all three overrides, five
 #                                    arches, in `dtypes.all` order (`sd *`)
-#   CLOSED  `code_for_op` (:119, :262)  20 ops and LVP's 19 without `EXP2`
+#   CLOSED  `code_for_op` (:119, :262)  21 ops and LVP's 20 without `EXP2`
 #   CLOSED  the three maxima + `has_local`/`has_shared` (:118, :256-258)  the
 #                                    `Nir` record, read per device (`rec *`)
 #   CLOSED  `bit_size` (:61, :73, :77) and `nc`/`has_def` (:61, :84, :93-94, :96)
