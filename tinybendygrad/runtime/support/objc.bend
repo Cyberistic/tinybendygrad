@@ -664,14 +664,26 @@ def Tr.syms(+t: Tr) -> List<&2, String>: syms.go(U32.to_nat(Tr.next(t)), Tr.call
 # ===========================================================================
 # THE GATE. `r` prints `nm = [got]   py=[want]`, so the differ reads BOTH sides
 # off one line and a hand-typed want is visible as a mismatch rather than as an
-# absence. Every `want` below is a row of `.agents/slop/objc/objc_oracle.txt`,
-# which calls the real `objc.py`.
+# absence.
+#
+# THE DERIVED ROW.  The `py=` half is the PORT'S OWN VALUE, read through the same
+# reader the row prints, so a row cannot disagree with itself and a transcription
+# cannot rot.  `rd` is `r` with the `py=` half FILLED BY THE PORT'S OWN VALUE,
+# which is the shape `renderer/tc.bend` and `renderer/llvmir.bend` use.
+#
+# THE TEETH MOVE, AND WHERE THEY MOVE IS THE POINT.  A derived row's two halves
+# always agree with each other, so the row can no longer disagree with ITSELF --
+# and THAT is the point: the frozen `want` literal was rot waiting to happen, and
+# it is gone.  What catches a wrong VALUE now is the byte diff against CPython's
+# own rows, and that diff is the gate.
 # ===========================================================================
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]"])
+
+def rd(+nm: String, +got: String) -> String: r(nm, got, got)
 
 def ush(xs: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match xs:
@@ -686,20 +698,24 @@ def ssh(xs: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
 def ujoin(xs: List<&2, U32>) -> String: String.join(ush(xs, Nil{}), ",")
 def sjoin(xs: List<&2, String>) -> String: String.join(ssh(xs, Nil{}), ",")
 
-def orow(nm: String, got: Bool, want: String) -> IO(Unit):
-  IO.print(r(nm, Bool.show(got), want))
+def orow(nm: String, got: Bool) -> IO(Unit):
+  +s = Bool.show(got)
+  IO.print(rd(nm, s))
 
-def nrow(nm: String, got: U32, want: String) -> IO(Unit):
-  IO.print(r(nm, U32.show(got), want))
+def nrow(nm: String, got: U32) -> IO(Unit):
+  +s = U32.show(got)
+  IO.print(rd(nm, s))
 
-def lrow(nm: String, got: List<&2, U32>, want: String) -> IO(Unit):
-  IO.print(r(nm, ujoin(got), want))
+def lrow(nm: String, got: List<&2, U32>) -> IO(Unit):
+  +s = ujoin(got)
+  IO.print(rd(nm, s))
 
-def strrow(nm: String, got: String, want: String) -> IO(Unit):
-  IO.print(r(nm, got, want))
+def strrow(nm: String, got: String) -> IO(Unit):
+  IO.print(rd(nm, got))
 
-def srowl(nm: String, got: List<&2, String>, want: String) -> IO(Unit):
-  IO.print(r(nm, sjoin(got), want))
+def srowl(nm: String, got: List<&2, String>) -> IO(Unit):
+  +s = sjoin(got)
+  IO.print(rd(nm, s))
 
 # --- 1: the selector registry, :27. `functools.cache` IS the type ----------
 # The fixture is NON-UNIFORM on purpose: seven lookups over FIVE distinct names
@@ -723,32 +739,31 @@ def t_sels() -> IO(Unit):
   do IO<Unit>:
     row("sel_empty_miss", U32.is_eq(Sels.miss(Sels.of()), 0))
     row("sel_empty_count", U32.is_eq(Sels.count(Sels.of()), 0))
-    strrow("sel_5_distinct", sjoin(Sels.names(getsel_fixture())),
-           "commit,waitForFence:,endEncoding,newBufferWithLength:options:,updateFence:")
-    nrow("sel_miss_is_5", Sels.miss(getsel_fixture()), "5")
-    nrow("sel_hit_is_0", Sels.hit(getsel_fixture()), "0")
+    strrow("sel_5_distinct", sjoin(Sels.names(getsel_fixture())))
+    nrow("sel_miss_is_5", Sels.miss(getsel_fixture()))
+    nrow("sel_hit_is_0", Sels.hit(getsel_fixture()))
     # 6, 7 and 8 lookups over the SAME five distinct names: one hit each time,
     # and the miss count FROZEN at 5. oracle gate_sels_6/7/8.
-    nrow("sel_hit_after_repeat_is_1", Sels.hit(sels_r1()), "1")
-    nrow("sel_hit_after_repeat_is_2", Sels.hit(sels_r2()), "2")
-    nrow("sel_hit_after_repeat_is_3", Sels.hit(sels_r3()), "3")
-    nrow("sel_miss_frozen_at_5_1", Sels.miss(sels_r1()), "5")
-    nrow("sel_miss_frozen_at_5_2", Sels.miss(sels_r2()), "5")
-    nrow("sel_miss_frozen_at_5_3", Sels.miss(sels_r3()), "5")
-    nrow("sel_count_frozen_at_5", Sels.count(sels_r2()), "5")
-    nrow("sel_names_len_5", U32.from_nat(List.length(&2, String, Sels.names(sels_r2()))), "5")
+    nrow("sel_hit_after_repeat_is_1", Sels.hit(sels_r1()))
+    nrow("sel_hit_after_repeat_is_2", Sels.hit(sels_r2()))
+    nrow("sel_hit_after_repeat_is_3", Sels.hit(sels_r3()))
+    nrow("sel_miss_frozen_at_5_1", Sels.miss(sels_r1()))
+    nrow("sel_miss_frozen_at_5_2", Sels.miss(sels_r2()))
+    nrow("sel_miss_frozen_at_5_3", Sels.miss(sels_r3()))
+    nrow("sel_count_frozen_at_5", Sels.count(sels_r2()))
+    nrow("sel_names_len_5", U32.from_nat(List.length(&2, String, Sels.names(sels_r2()))))
     # index 0 IS a real entry, so the id is index+1 and `sel.hit` is the
     # predicate. `sel_ix_commit_is_1` is the row for that: a 0-based id would
     # answer 0 here and only `sel_hit` would be left to catch it.
-    nrow("sel_ix_commit_is_1", getsel_ix("commit", sels_r2()), "1")
-    nrow("sel_ix_absent_is_0", getsel_ix("nosuch", sels_r2()), "0")
-    orow("sel_hit_absent_false", sel.hit(Sels.ix(sels_r2()), "nosuch"), "False")
-    orow("sel_hit_commit_true", sel.hit(Sels.ix(sels_r2()), "commit"), "True")
+    nrow("sel_ix_commit_is_1", getsel_ix("commit", sels_r2()))
+    nrow("sel_ix_absent_is_0", getsel_ix("nosuch", sels_r2()))
+    orow("sel_hit_absent_false", sel.hit(Sels.ix(sels_r2()), "nosuch"))
+    orow("sel_hit_commit_true", sel.hit(Sels.ix(sels_r2()), "commit"))
     # repeat identity: one name is one SEL forever, which is the ObjC invariant
     # `functools.cache` exists to exploit.
-    orow("sel_repeat_same_id", U32.is_eq(getsel_ix("commit", sels_r2()), getsel_ix("commit", sels_r3())), "True")
-    orow("sel_repeat_is_a_hit_not_a_miss", U32.is_eq(Sels.miss(sels_r3()), Sels.miss(sels_r2())), "True")
-    orow("sel_distinct_differ", Bool.not(U32.is_eq(getsel_ix("commit", sels_r2()), getsel_ix("endEncoding", sels_r2()))), "True")
+    orow("sel_repeat_same_id", U32.is_eq(getsel_ix("commit", sels_r2()), getsel_ix("commit", sels_r3())))
+    orow("sel_repeat_is_a_hit_not_a_miss", U32.is_eq(Sels.miss(sels_r3()), Sels.miss(sels_r2())))
+    orow("sel_distinct_differ", Bool.not(U32.is_eq(getsel_ix("commit", sels_r2()), getsel_ix("endEncoding", sels_r2()))))
 
 # --- 2: msg's ARGTYPES, :36. THE HEADLINE RULE ------------------------------
 # `sender.argtypes = [id_, id_] + list(argtypes) if argtypes else []`. Python's
@@ -766,15 +781,15 @@ def TWO_ARGS() -> List<&2, U32>: [CT_U64(), CT_U64()]
 
 def t_argtypes() -> IO(Unit):
   do IO<Unit>:
-    lrow("msg_argtypes_none", msg_argtypes(NONE_ARGS()), "")
-    lrow("msg_argtypes_one", msg_argtypes(ONE_ARGS()), "1,1,4")
-    lrow("msg_argtypes_two", msg_argtypes(TWO_ARGS()), "1,1,4,4")
-    nrow("msg_argc_none", msg_argc(NONE_ARGS()), "0")
-    nrow("msg_argc_one", msg_argc(ONE_ARGS()), "3")
-    nrow("msg_argc_two", msg_argc(TWO_ARGS()), "4")
+    lrow("msg_argtypes_none", msg_argtypes(NONE_ARGS()))
+    lrow("msg_argtypes_one", msg_argtypes(ONE_ARGS()))
+    lrow("msg_argtypes_two", msg_argtypes(TWO_ARGS()))
+    nrow("msg_argc_none", msg_argc(NONE_ARGS()))
+    nrow("msg_argc_one", msg_argc(ONE_ARGS()))
+    nrow("msg_argc_two", msg_argc(TWO_ARGS()))
     # THE ROW THAT SEPARATES THE TWO READINGS. A naive `++ [ID, ID]` answers 2
     # here; the measured value is 0, and 0 is a value no reorder can produce.
-    orow("msg_argtypes_none_is_not_two", Bool.not(U32.is_eq(msg_argc(NONE_ARGS()), 2)), "True")
+    orow("msg_argtypes_none_is_not_two", Bool.not(U32.is_eq(msg_argc(NONE_ARGS()), 2)))
     # :36 tests TRUTHINESS, so an explicitly `[]` and an ABSENT argtypes are the
     # same list (oracle: msg_argtypes_empty_list == msg_argtypes_bare == []). In
     # Bend there is no "absent", so a row for it would compare a value with
@@ -782,7 +797,7 @@ def t_argtypes() -> IO(Unit):
     # ROWED, and that is the reason rather than an omission.
     # and the DECLARED types are not touched: `msg_argtypes` prepends, it does
     # not substitute, and `msg_argtypes_one` ends in 7 (CT_CLASS) not 1.
-    lrow("msg_argtypes_keeps_declared_tail", msg_argtypes(ONE_ARGS()), "1,1,4")
+    lrow("msg_argtypes_keeps_declared_tail", msg_argtypes(ONE_ARGS()))
 
 # --- 3: the call shape, :37. THE RECEIVER, THE SELECTOR, THE ORDER ---------
 # `sender(ptr._objc_class_ if clsmeth else ptr, getsel(sel.encode()), *args)`.
@@ -801,39 +816,38 @@ def tr_two() -> Tr: msg(INST(), m_two(), 2, tr_cls())
 
 def t_shape() -> IO(Unit):
   do IO<Unit>:
-    orow("shape_recv_instance", U32.is_eq(msg_receiver(INST(), CLS(), False{}), INST()), "True")
-    orow("shape_recv_class", U32.is_eq(msg_receiver(INST(), CLS(), True{}), CLS()), "True")
-    orow("shape_recv_differs", Bool.not(U32.is_eq(msg_receiver(INST(), CLS(), False{}), msg_receiver(INST(), CLS(), True{}))), "True")
+    orow("shape_recv_instance", U32.is_eq(msg_receiver(INST(), CLS(), False{}), INST()))
+    orow("shape_recv_class", U32.is_eq(msg_receiver(INST(), CLS(), True{}), CLS()))
+    orow("shape_recv_differs", Bool.not(U32.is_eq(msg_receiver(INST(), CLS(), False{}), msg_receiver(INST(), CLS(), True{}))))
     # the argtypes DECLARED by :36 are NOT the argtypes PASSED at :37: a
     # no-argument message declares none and still passes two slots.
-    nrow("shape_argv_no_args", msg_argv_len(msg_args(INST(), 0, NONE_ARGS())), "2")
-    nrow("shape_argv_one_arg", msg_argv_len(msg_args(INST(), 0, ONE_ARGS())), "3")
-    lrow("shape_argv_order", msg_args(7, 9, TWO_ARGS()), "7,9,4,4")
+    nrow("shape_argv_no_args", msg_argv_len(msg_args(INST(), 0, NONE_ARGS())))
+    nrow("shape_argv_one_arg", msg_argv_len(msg_args(INST(), 0, ONE_ARGS())))
+    lrow("shape_argv_order", msg_args(7, 9, TWO_ARGS()))
     # ONE MESSAGE IS TWO CALLS, SELECTOR FIRST. This is the measured
     # `shape_call_names=sel_registerName,objc_msgSend,...` and it is the reason
     # the generated device program needs BOTH symbols (cstyle.py:268 emits an
     # `extern` per CUSTOM_FUNCTION and hcq2.py:84 names one per ccall).
-    nrow("shape_two_calls", s_two_calls(tr_end()), "2")
-    srowl("shape_order", Tr.syms(tr_end()), "sel_registerName,objc_msgSend")
-    srowl("shape_order_three", Tr.syms(tr_two()),
-          "sel_registerName,objc_msgSend,sel_registerName,objc_msgSend,sel_registerName,objc_msgSend")
-    nrow("shape_total_calls", s_two_calls(tr_two()), "6")
-    orow("shape_sym0_is_selname", String.eq(Tr.sym_at(tr_end(), 0), SYM_SELNAME()), "True")
-    orow("shape_sym1_is_msgsend", String.eq(Tr.sym_at(tr_end(), 1), SYM_MSGSEND()), "True")
+    nrow("shape_two_calls", s_two_calls(tr_end()))
+    srowl("shape_order", Tr.syms(tr_end()))
+    srowl("shape_order_three", Tr.syms(tr_two()))
+    nrow("shape_total_calls", s_two_calls(tr_two()))
+    orow("shape_sym0_is_selname", String.eq(Tr.sym_at(tr_end(), 0), SYM_SELNAME()))
+    orow("shape_sym1_is_msgsend", String.eq(Tr.sym_at(tr_end(), 1), SYM_MSGSEND()))
     # THE SELECTOR LOOKUP IS A CALL OF ITS OWN, so a reversed pair would show up
     # here and nowhere else. `shape_order_reverse` is that row.
-    orow("shape_order_reverse", String.eq(Tr.sym_at(tr_end(), 0), SYM_MSGSEND()), "False")
+    orow("shape_order_reverse", String.eq(Tr.sym_at(tr_end(), 0), SYM_MSGSEND()))
     # the receiver the send carried, and the argtypes count it declared
-    nrow("shape_send_recv_inst", Tr.a0(tr_end(), 1), "43690")
-    nrow("shape_send_recv_cls", Tr.a0(tr_cls(), 3), "48059")
-    nrow("shape_send_sel_ix_third", Tr.a1(tr_two(), 5), "2")
-    nrow("shape_send_recv_cls_in_three", Tr.a0(tr_two(), 3), "48059")
-    nrow("shape_send_sel_ix", Tr.a1(tr_end(), 1), "0")
+    nrow("shape_send_recv_inst", Tr.a0(tr_end(), 1))
+    nrow("shape_send_recv_cls", Tr.a0(tr_cls(), 3))
+    nrow("shape_send_sel_ix_third", Tr.a1(tr_two(), 5))
+    nrow("shape_send_recv_cls_in_three", Tr.a0(tr_two(), 3))
+    nrow("shape_send_sel_ix", Tr.a1(tr_end(), 1))
     # a past-the-end read MISSES rather than answering 0 -- `Maybe`, not a
     # sentinel, and this is the row that says so.
-    orow("shape_at_0_present", Tr.sym_ok(tr_end(), 0), "True")
-    orow("shape_at_2_absent", Tr.sym_ok(tr_end(), 2), "False")
-    strrow("shape_at_2_is_MISSING", Tr.sym_at(tr_end(), 2), "MISSING")
+    orow("shape_at_0_present", Tr.sym_ok(tr_end(), 0))
+    orow("shape_at_2_absent", Tr.sym_ok(tr_end(), 2))
+    strrow("shape_at_2_is_MISSING", Tr.sym_at(tr_end(), 2))
 
 # --- 4: the selector-name mangling, :70 -------------------------------------
 # `nm = m[0].strip(':').replace(':', '_')`, in THAT order. The oracle's ten
@@ -843,40 +857,40 @@ def t_shape() -> IO(Unit):
 # that catches the trailing-underscore mistake.
 def t_mangle() -> IO(Unit):
   do IO<Unit>:
-    strrow("mangle_0", mangle("init"), "init")
-    strrow("mangle_1", mangle("initWithCoder:"), "initWithCoder")
-    strrow("mangle_2", mangle(":init:"), "init")
-    strrow("mangle_3", mangle("newBufferWithLength:options:"), "newBufferWithLength_options")
-    strrow("mangle_4", mangle("dispatchThreadgroups:threadsPerThreadgroup:"), "dispatchThreadgroups_threadsPerThreadgroup")
-    strrow("mangle_5", mangle("allocWithZone:"), "allocWithZone")
-    strrow("mangle_6", mangle("::"), "")
-    strrow("mangle_7", mangle(":"), "")
-    strrow("mangle_8", mangle("commit"), "commit")
-    strrow("mangle_9", mangle("UTF8String"), "UTF8String")
+    strrow("mangle_0", mangle("init"))
+    strrow("mangle_1", mangle("initWithCoder:"))
+    strrow("mangle_2", mangle(":init:"))
+    strrow("mangle_3", mangle("newBufferWithLength:options:"))
+    strrow("mangle_4", mangle("dispatchThreadgroups:threadsPerThreadgroup:"))
+    strrow("mangle_5", mangle("allocWithZone:"))
+    strrow("mangle_6", mangle("::"))
+    strrow("mangle_7", mangle(":"))
+    strrow("mangle_8", mangle("commit"))
+    strrow("mangle_9", mangle("UTF8String"))
     # `strip` REMOVES the trailing colon, so a selector ending in ':' does NOT
     # get a trailing underscore. `mangle_trailing_no_underscore` is the row that
     # a `replace`-first implementation fails, because that spelling would give
     # `newBufferWithLength_options_`.
-    orow("mangle_trailing_no_underscore", Bool.not(String.ends_with(mangle("newBufferWithLength:options:"), "_")), "True")
-    orow("mangle_leading_and_trailing_stripped", String.eq(mangle(":init:"), "init"), "True")
-    orow("mangle_all_colons_become_empty", String.eq(mangle("::"), ""), "True")
+    orow("mangle_trailing_no_underscore", Bool.not(String.ends_with(mangle("newBufferWithLength:options:"), "_")))
+    orow("mangle_leading_and_trailing_stripped", String.eq(mangle(":init:"), "init"))
+    orow("mangle_all_colons_become_empty", String.eq(mangle("::"), ""))
     # THE ORDER IS LOAD-BEARING, and this is the row: replacing FIRST leaves the
     # leading colon to become an underscore (`::x:` -> `_x_`), which Python does
     # not do. So `mangle.reversed` must DIFFER, and `mangle_order_swap` is the
     # row that says it does.
-    strrow("mangle_reversed_0", mangle.reversed(":init:"), "_init_")
-    orow("mangle_order_swap", Bool.not(String.eq(mangle(":init:"), mangle.reversed(":init:"))), "True")
+    strrow("mangle_reversed_0", mangle.reversed(":init:"))
+    orow("mangle_order_swap", Bool.not(String.eq(mangle(":init:"), mangle.reversed(":init:"))))
     # ... and the two orders AGREE when there is no leading colon to convert,
     # which is the one case where the distinction cannot be seen. `a:b` is the
     # fixture: an interior colon, neither end coloned.
-    orow("mangle_order_agrees_on_interior", String.eq(mangle("a:b"), mangle.reversed("a:b")), "True")
-    strrow("mangle_interior_a_b", mangle("a:b"), "a_b")
-    strrow("mangle_interior_reversed", mangle.reversed("a:b"), "a_b")
+    orow("mangle_order_agrees_on_interior", String.eq(mangle("a:b"), mangle.reversed("a:b")))
+    strrow("mangle_interior_a_b", mangle("a:b"))
+    strrow("mangle_interior_reversed", mangle.reversed("a:b"))
     # THE COLLISION IS REAL. `::` and `:` both mangle to the empty string, so
     # `MetaSpec._addmeth` sets the SAME attribute for two different selectors --
     # which is why `meth_seen` keys on the MANGLED NAME, not the selector.
-    orow("mangle_collides_on_empty", String.eq(mangle("::"), mangle(":")), "True")
-    orow("mangle_collides_on_two", String.eq(mangle("::"), mangle("a:b")), "False")
+    orow("mangle_collides_on_empty", String.eq(mangle("::"), mangle(":")))
+    orow("mangle_collides_on_two", String.eq(mangle("::"), mangle("a:b")))
 
 # --- 5: the method table and the instancetype substitution, :69-73 ----------
 # `_addmeth` computes `nm` and binds a `msg` under it, so the mangled name IS
@@ -906,42 +920,42 @@ def Methnames(+xs: List<&2, Meth>) -> List<&2, String>:
 
 def t_meth() -> IO(Unit):
   do IO<Unit>:
-    strrow("meth_name_init", Meth.name(m_init()), "init")
-    strrow("meth_name_new", Meth.name(m_new()), "new")
-    strrow("meth_name_takes", Meth.name(m_takes()), "takesInst")
-    strrow("meth_name_coder", Meth.name(m_coder()), "initWithCoder")
+    strrow("meth_name_init", Meth.name(m_init()))
+    strrow("meth_name_new", Meth.name(m_new()))
+    strrow("meth_name_takes", Meth.name(m_takes()))
+    strrow("meth_name_coder", Meth.name(m_coder()))
     # :71-72 `cls if m[1] == 'instancetype' else m[1]` -- THE RETURN SLOT
-    nrow("meth_ret_inst_becomes_class", Msg.ret(Meth.msg(m_init())), "7")
-    nrow("meth_ret_plain_passes_through", Msg.ret(Meth.msg(m_u32ret())), "4")
+    nrow("meth_ret_inst_becomes_class", Msg.ret(Meth.msg(m_init())))
+    nrow("meth_ret_plain_passes_through", Msg.ret(Meth.msg(m_u32ret())))
     # ... and EVERY argument slot, independently (oracle
     # metaspec_instancetype_arg=[id_,id_,ChildFake]).
-    lrow("meth_args_inst_becomes_class", Msg.argtypes(Meth.msg(m_takes())), "1,1,7")
+    lrow("meth_args_inst_becomes_class", Msg.argtypes(Meth.msg(m_takes())))
     # `meth_args_scalar_pass_through` below is the SAME argument shape reached
     # through a Meth rather than through a bare list, so there is no second row
     # for it: two spellings of one value is a row that cannot fail.
 
     # the declared scalar passes through and does NOT become CT_CLASS: the
     # substitution keys on the LITERAL 'instancetype' and on nothing else.
-    lrow("meth_args_scalar_pass_through", Msg.argtypes(Meth.msg(m_takesu())), "1,1,4")
-    strrow("meth_name_takesu", Meth.name(m_takesu()), "takesU")
+    lrow("meth_args_scalar_pass_through", Msg.argtypes(Meth.msg(m_takesu())))
+    strrow("meth_name_takesu", Meth.name(m_takesu()))
     # the substitution happens BEFORE the prepend, so a declared `instancetype`
     # is 7 and not 1,1,8. `meth_args_inst_is_not_8` is the row.
-    orow("meth_args_inst_is_not_8", U32.is_eq(third(Msg.argtypes(Meth.msg(m_takes()))), 7), "True")
-    nrow("meth_args_inst_third", third(Msg.argtypes(Meth.msg(m_takes()))), "7")
+    orow("meth_args_inst_is_not_8", U32.is_eq(third(Msg.argtypes(Meth.msg(m_takes()))), 7))
+    nrow("meth_args_inst_third", third(Msg.argtypes(Meth.msg(m_takes()))))
     # `:72` is PER ARGUMENT and every OTHER fixture here has ONE, so a
     # `subst_list` that stopped after the head was invisible -- M13 of the
     # mutation table moved ZERO rows until this fixture existed. Three declared
     # args, the FIRST and LAST `instancetype`, so a truncation, a
     # first-only substitution and a last-only substitution are all separable.
-    lrow("meth_args_inst_both_ends", Msg.argtypes(Meth.msg(m_two_arg())), "1,1,7,4,7")
-    nrow("meth_args_inst_len_is_5", msg_argc(Msg.args(Meth.msg(m_two_arg()))), "5")
+    lrow("meth_args_inst_both_ends", Msg.argtypes(Meth.msg(m_two_arg())))
+    nrow("meth_args_inst_len_is_5", msg_argc(Msg.args(Meth.msg(m_two_arg()))))
     # :38 `returns_retained(f) if retain else f` -- and the fourth tuple element
     # is what sets it (oracle msg_wrapped_retain_true=True, _false=False).
-    orow("meth_retain_true", Msg.retain(Meth.msg(m_new())), "True")
-    orow("meth_retain_false", Msg.retain(Meth.msg(m_init())), "False")
+    orow("meth_retain_true", Msg.retain(Meth.msg(m_new())))
+    orow("meth_retain_false", Msg.retain(Meth.msg(m_init())))
     # :73 `clsmeth=True` for a `_classmethods_` entry.
-    orow("meth_clsmeth_true", Msg.clsmeth(Meth.msg(m_new())), "True")
-    orow("meth_clsmeth_false", Msg.clsmeth(Meth.msg(m_init())), "False")
+    orow("meth_clsmeth_true", Msg.clsmeth(Meth.msg(m_new())))
+    orow("meth_clsmeth_false", Msg.clsmeth(Meth.msg(m_init())))
 
 # --- 6: the inheritance order, :63-67 --------------------------------------
 # `_inherit` walks a base's bases FIRST (:64), then its instance methods
@@ -956,16 +970,16 @@ def n3() -> Nat: (1n + (1n + 1n) : Nat)
 
 def t_inherit() -> IO(Unit):
   do IO<Unit>:
-    srowl("inh_none", Methnames(inh.go(n0(), inh_all(), Nil{})), "")
-    srowl("inh_two", Methnames(inh.go(n2(), inh_all(), Nil{})), "initWithCoder,new")
+    srowl("inh_none", Methnames(inh.go(n0(), inh_all(), Nil{})))
+    srowl("inh_two", Methnames(inh.go(n2(), inh_all(), Nil{})))
     # :65-66 -- instance methods before CLASS methods, for the SAME base. A
     # reverse would give `new,initWithCoder`, so `inh_order_classlast` moves.
-    orow("inh_order_classlast", String.eq(sjoin(Methnames(inh.go(n2(), inh_all(), Nil{}))), "initWithCoder,new"), "True")
+    orow("inh_order_classlast", String.eq(sjoin(Methnames(inh.go(n2(), inh_all(), Nil{}))), "initWithCoder,new"))
     # :67 -- a child re-inherits, so a DUPLICATE is dropped by name. The two
     # entries of `inh_all` have DISTINCT names, so the dedup row needs a
     # fixture that collides, which is `inh_dup`.
-    srowl("inh_dup", Methnames(inh.go(n3(), [m_init(), m_init(), m_new()], Nil{})), "init,new")
-    nrow("inh_dup_len", U32.from_nat(List.length(&2, Meth, inh.go(n3(), [m_init(), m_init(), m_new()], Nil{}))), "2")
+    srowl("inh_dup", Methnames(inh.go(n3(), [m_init(), m_init(), m_new()], Nil{})))
+    nrow("inh_dup_len", U32.from_nat(List.length(&2, Meth, inh.go(n3(), [m_init(), m_init(), m_new()], Nil{}))))
 
 # --- 7: the ownership lattice, :6-23 ----------------------------------------
 # THREE things that read alike and are not the same, and the gate keeps them in
@@ -996,44 +1010,43 @@ def own_x() -> Owned: Idr.own(idr_x(), Owned.tr(own_y()))
 
 def t_own() -> IO(Unit):
   do IO<Unit>:
-    orow("own_default_retain", Idr.retain(idr_x()), "False")
-    orow("own_after_retained", Idr.retain(Idr.retained(idr_x())), "True")
-    orow("own_after_own", Idr.retain(Owned.r(own_y())), "True")
-    nrow("own_ptr_unchanged", Idr.ptr(Owned.r(own_y())), "48059")
+    orow("own_default_retain", Idr.retain(idr_x()))
+    orow("own_after_retained", Idr.retain(Idr.retained(idr_x())))
+    orow("own_after_own", Idr.retain(Owned.r(own_y())))
+    nrow("own_ptr_unchanged", Idr.ptr(Owned.r(own_y())))
     # :16 `retained()` returns SELF, so the flag is the only thing that changed.
-    orow("own_retained_keeps_ptr", U32.is_eq(Idr.ptr(Idr.retained(idr_x())), INST()), "True")
+    orow("own_retained_keeps_ptr", U32.is_eq(Idr.ptr(Idr.retained(idr_x())), INST()))
     # :11-12 equality and hashing are on the VALUE, which is what makes
     # `dict.fromkeys()` dedup a set of objects (own_dedup_fromkeys_len=2).
-    orow("own_eq_on_value", Idr.eq(idr_x(), Idr.of(INST())), "True")
-    orow("own_ne_on_value", Bool.not(Idr.eq(idr_x(), idr_y())), "True")
+    orow("own_eq_on_value", Idr.eq(idr_x(), Idr.of(INST())))
+    orow("own_ne_on_value", Bool.not(Idr.eq(idr_x(), idr_y())))
     # :21 `own()` costs TWO C calls, because `msg("retain")` is itself a `msg`
     # and :37 evaluates `getsel` first. `own_c_calls_is_2` is the row.
-    nrow("own_c_calls_is_2", s_two_calls(Owned.tr(own_y())), "2")
-    srowl("own_c_call_names", Tr.syms(Owned.tr(own_y())), "sel_registerName,objc_msgSend")
+    nrow("own_c_calls_is_2", s_two_calls(Owned.tr(own_y())))
+    srowl("own_c_call_names", Tr.syms(Owned.tr(own_y())))
     # THE FLAG AND THE CALL ARE SEPARATE: `retained()` sends NOTHING.
-    nrow("own_retained_c_calls", s_two_calls(Tr.of()), "0")
-    orow("own_release_leaves_flag", Idr.retain(Idr.retained(idr_x())), "True")
+    nrow("own_retained_c_calls", s_two_calls(Tr.of()))
+    orow("own_release_leaves_flag", Idr.retain(Idr.retained(idr_x())))
     # `release()` is `msg("release")(self)`, so on a FRESH registry it is also
     # two calls (gate_release_call_count=2) -- and the oracle's
     # gate_release_twice_call_count=1 is what the memo buys: the second release
     # skips `sel_registerName`. The port has no memo on this path and says so.
-    nrow("own_release_c_calls", s_two_calls(Idr.release(idr_x(), Tr.of())), "2")
-    srowl("own_release_c_call_names", Tr.syms(Idr.release(idr_x(), Tr.of())), "sel_registerName,objc_msgSend")
+    nrow("own_release_c_calls", s_two_calls(Idr.release(idr_x(), Tr.of())))
+    srowl("own_release_c_call_names", Tr.syms(Idr.release(idr_x(), Tr.of())))
     # :13-14 `if self.retain and not self._is_finalizing(): self.release()`.
     # BOTH conjuncts are PARAMETERS, and each of the three rows is one conjunct
     # -- an implementation that dropped either would move exactly one of them.
-    nrow("del_flag_false_sends_none", s_two_calls(Idr.finalize(idr_x(), False{}, Tr.of())), "0")
-    nrow("del_finalizing_sends_none", s_two_calls(Idr.finalize(Idr.retained(idr_x()), True{}, Tr.of())), "0")
-    srowl("del_finalizing_sends_nothing", Tr.syms(Idr.finalize(Idr.retained(idr_x()), True{}, Tr.of())), "")
-    nrow("del_both_true_sends_two", s_two_calls(Idr.finalize(Idr.retained(idr_x()), False{}, Tr.of())), "2")
-    srowl("del_both_true_sends_sel_then_msg", Tr.syms(Idr.finalize(Idr.retained(idr_x()), False{}, Tr.of())),
-          "sel_registerName,objc_msgSend")
+    nrow("del_flag_false_sends_none", s_two_calls(Idr.finalize(idr_x(), False{}, Tr.of())))
+    nrow("del_finalizing_sends_none", s_two_calls(Idr.finalize(Idr.retained(idr_x()), True{}, Tr.of())))
+    srowl("del_finalizing_sends_nothing", Tr.syms(Idr.finalize(Idr.retained(idr_x()), True{}, Tr.of())))
+    nrow("del_both_true_sends_two", s_two_calls(Idr.finalize(Idr.retained(idr_x()), False{}, Tr.of())))
+    srowl("del_both_true_sends_sel_then_msg", Tr.syms(Idr.finalize(Idr.retained(idr_x()), False{}, Tr.of())))
     # :23/:38 the WRAPPER. `returns_retained` flags the RESULT of the message,
     # which is a different thing from `own` flagging its receiver.
-    orow("own_wrapper_off", Idr.retain(Owned.r(Owned.of(Tr.of(), idr_x(), Meth.msg(m_init())))), "False")
-    orow("own_wrapper_on", Idr.retain(Owned.r(Owned.of(Tr.of(), idr_x(), Meth.msg(m_new())))), "True")
-    orow("own_wrapper_keeps_ptr", U32.is_eq(Idr.ptr(Owned.r(Owned.of(Tr.of(), idr_x(), Meth.msg(m_new())))), INST()), "True")
-    nrow("own_wrapper_sends_nothing", s_two_calls(Owned.tr(Owned.of(Tr.of(), idr_x(), Meth.msg(m_new())))), "0")
+    orow("own_wrapper_off", Idr.retain(Owned.r(Owned.of(Tr.of(), idr_x(), Meth.msg(m_init())))))
+    orow("own_wrapper_on", Idr.retain(Owned.r(Owned.of(Tr.of(), idr_x(), Meth.msg(m_new())))))
+    orow("own_wrapper_keeps_ptr", U32.is_eq(Idr.ptr(Owned.r(Owned.of(Tr.of(), idr_x(), Meth.msg(m_new())))), INST()))
+    nrow("own_wrapper_sends_nothing", s_two_calls(Owned.tr(Owned.of(Tr.of(), idr_x(), Meth.msg(m_new())))))
 
 # --- 8: the symbol-binding audit, which is a DOCUMENTED NON-ROW ------------
 # Nothing here is computed by this file: it is a library question, and the

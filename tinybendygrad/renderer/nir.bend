@@ -75,10 +75,19 @@ import ./../LAWS/spec.bend as S
 # THE GATE PRIMITIVES. Same shape as `nir_llvmir.bend`'s: a row is a VALUE, so a
 # group of rows is a `String` and the whole gate is ONE `IO.print` whose own
 # newline is the only frame.
+#
+# THE DERIVED ROW.  The `py=` half is the PORT'S OWN VALUE, re-read through the same
+# code the port prints, so a row cannot disagree with itself and a transcription
+# cannot rot.  `r` takes the `py=` half as an argument because `tc_ptx.bend` calls
+# it too; `rd` is this file's derived half of that.  THE TEETH MOVE TO THE ORACLE:
+# a derived row's two halves always agree with each other, so only the byte diff
+# against CPython can catch a wrong VALUE.
 # ===========================================================================
 
 def r(+nm: String, +got: String, +want: String) -> String:
   String.concat([nm, " = [", got, "]   py=[", want, "]\n"])
+
+def rd(+nm: String, +got: String) -> String: r(nm, got, got)
 
 def b2s(+x: Bool) -> String: Bool.pick(String, x, "True", "False")
 
@@ -1313,24 +1322,24 @@ def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(String.concat([
     # ---- `c(t, u)` : 17 dtypes x 2, plus the THREE `dtypes.all` does not hold
-    r("c bool u=True ", c(S.boolean(), True{}), "b"),
-    r("c bool u=False", c(S.boolean(), False{}), "b"),
-    r("c uint8 u=True ", c(S.uint8(), True{}), "u"),
-    r("c uint8 u=Fals", c(S.uint8(), False{}), "i"),
-    r("c uint32 u=True", c(S.uint32(), True{}), "u"),
-    r("c int32 u=True ", c(S.int32(), True{}), "i"),
-    r("c half u=True  ", c(S.half(), True{}), "f"),
-    r("c bf16 u=True  ", c(S.bfloat16(), True{}), "f"),
-    r("c fp8_e4m3 u=T ", c(S.fp8e4m3(), True{}), "f"),
-    r("c double u=True", c(S.double(), True{}), "f"),
-    r("c uint64 u=Fal", c(S.uint64(), False{}), "i"),
+    rd("c bool u=True ", c(S.boolean(), True{})),
+    rd("c bool u=False", c(S.boolean(), False{})),
+    rd("c uint8 u=True ", c(S.uint8(), True{})),
+    rd("c uint8 u=Fals", c(S.uint8(), False{})),
+    rd("c uint32 u=True", c(S.uint32(), True{})),
+    rd("c int32 u=True ", c(S.int32(), True{})),
+    rd("c half u=True  ", c(S.half(), True{})),
+    rd("c bf16 u=True  ", c(S.bfloat16(), True{})),
+    rd("c fp8_e4m3 u=T ", c(S.fp8e4m3(), True{})),
+    rd("c double u=True", c(S.double(), True{})),
+    rd("c uint64 u=Fal", c(S.uint64(), False{})),
     # THE THREE THAT SEPARATE `in_ints` FROM `S.Dt.is_int`. `weakint` is in
     # `dtypes.is_int` and NOT in `dtypes.ints`, so a port that used the shared
     # reader answers "i" here where Python answers "b".
-    r("c weakint u=T ", c(S.weakint(), True{}), "b"),
-    r("c weakfloat u=", c(S.weakfloat(), True{}), "b"),
-    r("c void u=True ", c(S.void(), True{}), "b"),
-    r("c index u=True", c(S.index(), True{}), "b"),
+    rd("c weakint u=T ", c(S.weakint(), True{})),
+    rd("c weakfloat u=", c(S.weakfloat(), True{})),
+    rd("c void u=True ", c(S.void(), True{})),
+    rd("c index u=True", c(S.index(), True{})),
     # THE SPELLING ROW, and the only row that is about SPELLING. `spec.bend`'s
     # `Dt.nm` and CPython's `DType.name` currently disagree on ten of the
     # seventeen -- `tinygrad/dtype.py` was renamed to `u8`/`f16`/`f32` in the
@@ -1339,107 +1348,107 @@ def main() -> IO(Unit):
     # diff HERE and nowhere else; when `spec.bend` catches up this row collapses
     # to seventeen `AGREE`s and nothing else moves. REPORTED, not fixed: neither
     # file is this unit's.
-    r("dt name map     ", dnames(all_of()), "fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool"),
+    rd("dt name map     ", dnames(all_of())),
     # ---- the three op tables, FORWARD and REVERSE
-    r("aop u  keys    ", dnames(aop_keys()), "bool,u8,u16,u32,u64,i8,i16,i32,i64,fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64"),
-    r("aop u  table   ", u_aop_tbl(0), "ADD=iadd/306,MUL=imul/338,CDIV=udiv/427,CMOD=umod/451,CMPLT=ult/441,CMPNE=ine/344,CMPEQ=ieq/314,OR=ior/353,AND=iand/309,XOR=ixor/361,WHERE=bcsel/115,MAX=umax/447,SHL=ishl/356,SHR=ushr/479"),
-    r("aop s  table   ", u_aop_tbl(1), "ADD=iadd/306,MUL=imul/338,CDIV=idiv/313,CMOD=irem/354,CMPLT=ilt/326,CMPNE=ine/344,CMPEQ=ieq/314,OR=ior/353,AND=iand/309,XOR=ixor/361,WHERE=bcsel/115,MAX=imax/334,SHL=ishl/356,SHR=ishr/357"),
-    r("aop f  table   ", f_aop_tbl(2), "ADD=fadd/177,MUL=fmul/253,CMPLT=flt/240,CMPNE=fneu/260,CMPEQ=feq/213,FDIV=fdiv/198,RECIPROCAL=frcp/270,MAX=fmax/248,TRUNC=ftrunc/288,SIN=fsin/279,EXP2=fexp2/221,LOG2=flog2/238"),
-    r("aop rev u      ", rev.go(0, u_ops()), "ADD:ADD->iadd/306,MUL:MUL->imul/338,CDIV:CDIV->udiv/427,CMOD:CMOD->umod/451,CMPLT:CMPLT->ult/441,CMPNE:CMPNE->ine/344,CMPEQ:CMPEQ->ieq/314,OR:OR->ior/353,AND:AND->iand/309,XOR:XOR->ixor/361,WHERE:WHERE->bcsel/115,MAX:MAX->umax/447,SHL:SHL->ishl/356,SHR:SHR->ushr/479"),
-    r("aop rev s      ", rev.go(1, u_ops()), "ADD:ADD->iadd/306,MUL:MUL->imul/338,CDIV:CDIV->idiv/313,CMOD:CMOD->irem/354,CMPLT:CMPLT->ilt/326,CMPNE:CMPNE->ine/344,CMPEQ:CMPEQ->ieq/314,OR:OR->ior/353,AND:AND->iand/309,XOR:XOR->ixor/361,WHERE:WHERE->bcsel/115,MAX:MAX->imax/334,SHL:SHL->ishl/356,SHR:SHR->ishr/357"),
-    r("aop rev f      ", rev.go(2, f_ops()), "ADD:ADD->fadd/177,MUL:MUL->fmul/253,CMPLT:CMPLT->flt/240,CMPNE:CMPNE->fneu/260,CMPEQ:CMPEQ->feq/213,FDIV:FDIV->fdiv/198,RECIPROCAL:RECIPROCAL->frcp/270,MAX:MAX->fmax/248,TRUNC:TRUNC->ftrunc/288,SIN:SIN->fsin/279,EXP2:EXP2->fexp2/221,LOG2:LOG2->flog2/238"),
+    rd("aop u  keys    ", dnames(aop_keys())),
+    rd("aop u  table   ", u_aop_tbl(0)),
+    rd("aop s  table   ", u_aop_tbl(1)),
+    rd("aop f  table   ", f_aop_tbl(2)),
+    rd("aop rev u      ", rev.go(0, u_ops())),
+    rd("aop rev s      ", rev.go(1, u_ops())),
+    rd("aop rev f      ", rev.go(2, f_ops())),
     # `aop_kind` per dtype -- the CLASS tag, all seventeen plus the weak three.
-    r("aop kind uint8 ", U32.show(aop_kind(S.uint8())), "0"),
-    r("aop kind bool  ", U32.show(aop_kind(S.boolean())), "0"),
-    r("aop kind int32 ", U32.show(aop_kind(S.int32())), "1"),
-    r("aop kind half  ", U32.show(aop_kind(S.half())), "2"),
-    r("aop kind weaki ", U32.show(aop_kind(S.weakint())), "1"),
-    r("aop kind void  ", U32.show(aop_kind(S.void())), "1"),
+    rd("aop kind uint8 ", U32.show(aop_kind(S.uint8()))),
+    rd("aop kind bool  ", U32.show(aop_kind(S.boolean()))),
+    rd("aop kind int32 ", U32.show(aop_kind(S.int32()))),
+    rd("aop kind half  ", U32.show(aop_kind(S.half()))),
+    rd("aop kind weaki ", U32.show(aop_kind(S.weakint()))),
+    rd("aop kind void  ", U32.show(aop_kind(S.void()))),
     # ---- `glsl_type`: the SYMBOL is computed, the CONSTANT is a refusal
-    r("glsl keys      ", glsl_key_go(all_of(), Nil{}), "fp8e4m3=?,fp8e5m2=?,fp8e4m3fnuz=?,fp8e5m2fnuz=?,f16=glsl_type_builtin_float16_t,bf16=?,f32=glsl_type_builtin_float,f64=glsl_type_builtin_double,u8=glsl_type_builtin_uint8_t,u16=glsl_type_builtin_uint16_t,u32=glsl_type_builtin_uint,u64=glsl_type_builtin_uint64_t,i8=glsl_type_builtin_int8_t,i16=glsl_type_builtin_int16_t,i32=glsl_type_builtin_int,i64=glsl_type_builtin_int64_t,bool=glsl_type_builtin_uint8_t"),
-    r("glsl call      ", glsl_call(all_of()), "fp8e4m3=AttributeError:glsl_type_builtin_double,fp8e5m2=AttributeError:glsl_type_builtin_double,fp8e4m3fnuz=AttributeError:glsl_type_builtin_double,fp8e5m2fnuz=AttributeError:glsl_type_builtin_double,f16=AttributeError:glsl_type_builtin_double,bf16=AttributeError:glsl_type_builtin_double,f32=AttributeError:glsl_type_builtin_double,f64=AttributeError:glsl_type_builtin_double,u8=AttributeError:glsl_type_builtin_double,u16=AttributeError:glsl_type_builtin_double,u32=AttributeError:glsl_type_builtin_double,u64=AttributeError:glsl_type_builtin_double,i8=AttributeError:glsl_type_builtin_double,i16=AttributeError:glsl_type_builtin_double,i32=AttributeError:glsl_type_builtin_double,i64=AttributeError:glsl_type_builtin_double,bool=AttributeError:glsl_type_builtin_double"),
+    rd("glsl keys      ", glsl_key_go(all_of(), Nil{})),
+    rd("glsl call      ", glsl_call(all_of())),
     # ---- `ncast`: 17 sources x 17 destinations, joined per source
-    r("ncast from int32", ncast_row(S.int32(), all_of()), "fp8e4m3:i2f8/AttributeError,fp8e5m2:i2f8/AttributeError,fp8e4m3fnuz:i2f8/AttributeError,fp8e5m2fnuz:i2f8/AttributeError,f16:i2f16/293,bf16:i2f16/293,f32:i2f32/294,f64:i2f64/295,u8:i2i8/301,u16:i2i16/298,u32:i2i32/299,u64:i2i64/300,i8:i2i8/301,i16:i2i16/298,i32:i2i32/299,i64:i2i64/300,bool:i2b1/AttributeError"),
-    r("ncast from uint8", ncast_row(S.uint8(), all_of()), "fp8e4m3:u2f8/AttributeError,fp8e5m2:u2f8/AttributeError,fp8e4m3fnuz:u2f8/AttributeError,fp8e5m2fnuz:u2f8/AttributeError,f16:u2f16/411,bf16:u2f16/411,f32:u2f32/412,f64:u2f64/413,u8:u2u8/419,u16:u2u16/416,u32:u2u32/417,u64:u2u64/418,i8:u2u8/419,i16:u2u16/416,i32:u2u32/417,i64:u2u64/418,bool:u2b1/AttributeError"),
-    r("ncast from bool ", ncast_row(S.boolean(), all_of()), "fp8e4m3:b2f8/AttributeError,fp8e5m2:b2f8/AttributeError,fp8e4m3fnuz:b2f8/AttributeError,fp8e5m2fnuz:b2f8/AttributeError,f16:b2f16/32,bf16:b2f16/32,f32:b2f32/33,f64:b2f64/34,u8:b2i8/39,u16:b2i16/36,u32:b2i32/37,u64:b2i64/38,i8:b2i8/39,i16:b2i16/36,i32:b2i32/37,i64:b2i64/38,bool:b2b1/28"),
-    r("ncast from float", ncast_row(S.single(), all_of()), "fp8e4m3:f2f8/AttributeError,fp8e5m2:f2f8/AttributeError,fp8e4m3fnuz:f2f8/AttributeError,fp8e5m2fnuz:f2f8/AttributeError,f16:f2f16/156,bf16:f2f16/156,f32:f2f32/159,f64:f2f64/160,u8:f2i8/166,u16:f2i16/163,u32:f2i32/164,u64:f2i64/165,i8:f2i8/166,i16:f2i16/163,i32:f2i32/164,i64:f2i64/165,bool:f2b1/AttributeError"),
-    r("ncast from long ", ncast_row(S.int64(), all_of()), "fp8e4m3:i2f8/AttributeError,fp8e5m2:i2f8/AttributeError,fp8e4m3fnuz:i2f8/AttributeError,fp8e5m2fnuz:i2f8/AttributeError,f16:i2f16/293,bf16:i2f16/293,f32:i2f32/294,f64:i2f64/295,u8:i2i8/301,u16:i2i16/298,u32:i2i32/299,u64:i2i64/300,i8:i2i8/301,i16:i2i16/298,i32:i2i32/299,i64:i2i64/300,bool:i2b1/AttributeError"),
-    r("ncast from weaki", ncast_row(S.weakint(), all_of()), "fp8e4m3:b2f8/AttributeError,fp8e5m2:b2f8/AttributeError,fp8e4m3fnuz:b2f8/AttributeError,fp8e5m2fnuz:b2f8/AttributeError,f16:b2f16/32,bf16:b2f16/32,f32:b2f32/33,f64:b2f64/34,u8:b2i8/39,u16:b2i16/36,u32:b2i32/37,u64:b2i64/38,i8:b2i8/39,i16:b2i16/36,i32:b2i32/37,i64:b2i64/38,bool:b2b1/28"),
+    rd("ncast from int32", ncast_row(S.int32(), all_of())),
+    rd("ncast from uint8", ncast_row(S.uint8(), all_of())),
+    rd("ncast from bool ", ncast_row(S.boolean(), all_of())),
+    rd("ncast from float", ncast_row(S.single(), all_of())),
+    rd("ncast from long ", ncast_row(S.int64(), all_of())),
+    rd("ncast from weaki", ncast_row(S.weakint(), all_of())),
     # ---- `scope` -- ALU IS THE ROW: it is not REG and it is not GLOBAL
-    r("scope global   ", scope(S.AGlobal{}), "global"),
-    r("scope local    ", scope(S.ALocal{}), "shared"),
-    r("scope reg      ", scope(S.AReg{}), "deref"),
-    r("scope alu      ", scope(S.Aalu{}), "deref"),
-    r("is_reg global  ", b2s(is_reg(S.AGlobal{})), "False"),
-    r("is_reg alu     ", b2s(is_reg(S.Aalu{})), "False"),
-    r("is_global local", b2s(is_global(S.ALocal{})), "False"),
-    r("is_global alu  ", b2s(is_global(S.Aalu{})), "False"),
+    rd("scope global   ", scope(S.AGlobal{})),
+    rd("scope local    ", scope(S.ALocal{})),
+    rd("scope reg      ", scope(S.AReg{})),
+    rd("scope alu      ", scope(S.Aalu{})),
+    rd("is_reg global  ", b2s(is_reg(S.AGlobal{}))),
+    rd("is_reg alu     ", b2s(is_reg(S.Aalu{}))),
+    rd("is_global local", b2s(is_global(S.ALocal{}))),
+    rd("is_global alu  ", b2s(is_global(S.Aalu{}))),
     # ---- the intrinsic arithmetic: WRITE_MASK / ALIGN_MUL / src ORDER
-    r("nstore mask    ", mask_tbl(S.uint32(), [1, 2, 3, 4, 8, 16]), "x1=wm1,al4,gsrcval,addr,lsrcaddr,val,lal4,nc1,bs32,x2=wm3,al8,gsrcval,addr,lsrcaddr,val,lal8,nc2,bs32,x3=wm7,al12,gsrcval,addr,lsrcaddr,val,lal12,nc3,bs32,x4=wm15,al16,gsrcval,addr,lsrcaddr,val,lal16,nc4,bs32,x8=wm255,al32,gsrcval,addr,lsrcaddr,val,lal32,nc8,bs32,x16=wm65535,al64,gsrcval,addr,lsrcaddr,val,lal64,nc16,bs32"),
-    r("nstore align L ", nstore_align_str(S.ALocal{}, 64, 4), "32"),
-    r("nstore align R ", nstore_align_str(S.AReg{}, 64, 4), "ABSENT"),
-    r("nstore align A ", nstore_align_str(S.Aalu{}, 64, 4), "32"),
-    r("nstore hasAL R ", b2s(nstore_has_align(S.AReg{})), "False"),
-    r("nstore hasAL A ", b2s(nstore_has_align(S.Aalu{})), "True"),
-    r("nstore srcs G  ", join(nstore_srcs(S.AGlobal{})), "val,addr"),
-    r("nstore srcs A  ", join(nstore_srcs(S.Aalu{})), "val,addr"),
-    r("nstore srcs R  ", join(nstore_srcs(S.AReg{})), "addr,val"),
-    r("nload hasACC G ", b2s(nload_has_access(S.AGlobal{})), "True"),
-    r("nload hasACC L ", b2s(nload_has_access(S.ALocal{})), "False"),
-    r("nload hasACC R ", b2s(nload_has_access(S.AReg{})), "False"),
-    r("nload hasACC A ", b2s(nload_has_access(S.Aalu{})), "False"),
-    r("nload hasAL R  ", b2s(nload_has_align(S.AReg{})), "False"),
-    r("nload hasAL A  ", b2s(nload_has_align(S.Aalu{})), "True"),
-    r("nload align R  ", U32.show(nload_align(S.AReg{}, 4, 16)), "0"),
-    r("nload align L  ", U32.show(nload_align(S.ALocal{}, 1, 16)), "16"),
-    r("bit_size long  ", U32.show(bit_size(S.int64())), "64"),
-    r("bit_size half  ", U32.show(bit_size(S.half())), "16"),
-    r("def_bit_size 64", U32.show(def_bit_size(64)), "64"),
-    r("gid nc/bs      ", String.concat([U32.show(gid_nc()), "/", U32.show(gid_bs())]), "3/32"),
-    r("barrier has_def", b2s(barrier_has_def()), "False"),
-    r("store has_def  ", b2s(store_has_def()), "False"),
-    r("load has_def   ", b2s(load_has_def()), "True"),
-    r("load_nc 16     ", U32.show(load_nc(16)), "16"),
-    r("store_nc 4     ", U32.show(store_nc()), "1"),
+    rd("nstore mask    ", mask_tbl(S.uint32(), [1, 2, 3, 4, 8, 16])),
+    rd("nstore align L ", nstore_align_str(S.ALocal{}, 64, 4)),
+    rd("nstore align R ", nstore_align_str(S.AReg{}, 64, 4)),
+    rd("nstore align A ", nstore_align_str(S.Aalu{}, 64, 4)),
+    rd("nstore hasAL R ", b2s(nstore_has_align(S.AReg{}))),
+    rd("nstore hasAL A ", b2s(nstore_has_align(S.Aalu{}))),
+    rd("nstore srcs G  ", join(nstore_srcs(S.AGlobal{}))),
+    rd("nstore srcs A  ", join(nstore_srcs(S.Aalu{}))),
+    rd("nstore srcs R  ", join(nstore_srcs(S.AReg{}))),
+    rd("nload hasACC G ", b2s(nload_has_access(S.AGlobal{}))),
+    rd("nload hasACC L ", b2s(nload_has_access(S.ALocal{}))),
+    rd("nload hasACC R ", b2s(nload_has_access(S.AReg{}))),
+    rd("nload hasACC A ", b2s(nload_has_access(S.Aalu{}))),
+    rd("nload hasAL R  ", b2s(nload_has_align(S.AReg{}))),
+    rd("nload hasAL A  ", b2s(nload_has_align(S.Aalu{}))),
+    rd("nload align R  ", U32.show(nload_align(S.AReg{}, 4, 16))),
+    rd("nload align L  ", U32.show(nload_align(S.ALocal{}, 1, 16))),
+    rd("bit_size long  ", U32.show(bit_size(S.int64()))),
+    rd("bit_size half  ", U32.show(bit_size(S.half()))),
+    rd("def_bit_size 64", U32.show(def_bit_size(64))),
+    rd("gid nc/bs      ", String.concat([U32.show(gid_nc()), "/", U32.show(gid_bs())])),
+    rd("barrier has_def", b2s(barrier_has_def())),
+    rd("store has_def  ", b2s(store_has_def())),
+    rd("load has_def   ", b2s(load_has_def())),
+    rd("load_nc 16     ", U32.show(load_nc(16))),
+    rd("store_nc 4     ", U32.show(store_nc())),
     # ---- `nalu`'s two symbols: the op name and the BUILD arity
     # THE THREE CONSTANT ROWS. These exist because thirty-eight `+1` mutations
     # moved nothing on the first sweep: `intr_const`, `idx_const` and the seven
     # `op_const` arms outside the three tables were defs no row called.
-    r("mesa alu  ", const_pick(alu_names(), 0, "nir_op_"), "nir_op_mov=365,nir_op_vec2=484,nir_op_vec3=485,nir_op_vec4=486,nir_op_vec5=487,nir_op_vec8=488,nir_op_vec16=483,nir_op_iadd=306,nir_op_imul=338,nir_op_ilt=326"),
-    r("mesa intr ", const_pick(intr_names(), 1, ""), "nir_intrinsic_store_global=669,nir_intrinsic_store_shared=689,nir_intrinsic_store_deref=667,nir_intrinsic_load_global=317,nir_intrinsic_load_shared=489,nir_intrinsic_load_deref=287,nir_intrinsic_load_workgroup_id=580,nir_intrinsic_load_local_invocation_id=364,nir_intrinsic_barrier=46,nir_intrinsic_ldc_nv=213,nir_intrinsic_load_ubo=552,nir_intrinsic_image_store=191,nir_intrinsic_image_load=184,nir_type_float16=144,nir_type_float32=160,nir_deref_type_var=0,nir_deref_type_array=1,nir_jump_break=2,MESA_SHADER_COMPUTE=5,SCOPE_WORKGROUP=4,ACCESS_CAN_REORDER=64,GLSL_SAMPLER_DIM_2D=1"),
-    r("mesa idx  ", const_pick(idx_names(), 2, ""), "NIR_INTRINSIC_ALIGN_MUL=20,NIR_INTRINSIC_WRITE_MASK=1,NIR_INTRINSIC_ACCESS=17,NIR_INTRINSIC_EXECUTION_SCOPE=40,NIR_INTRINSIC_IMAGE_DIM=14,NIR_INTRINSIC_SRC_TYPE=23,NIR_INTRINSIC_DEST_TYPE=24,NIR_INTRINSIC_RANGE=5"),
-    r("arch_int sm_86 ", U32.show(arch_int("sm_86")), "86"),
-    r("alu arities    ", String.concat([build_alu(1), ",", build_alu(2), ",", build_alu(3), ",", build_alu(4), ",", build_alu(5)]), "nir_build_alu1,nir_build_alu2,nir_build_alu3,nir_build_alu4,ABSENT"),
+    rd("mesa alu  ", const_pick(alu_names(), 0, "nir_op_")),
+    rd("mesa intr ", const_pick(intr_names(), 1, "")),
+    rd("mesa idx  ", const_pick(idx_names(), 2, "")),
+    rd("arch_int sm_86 ", U32.show(arch_int("sm_86"))),
+    rd("alu arities    ", String.concat([build_alu(1), ",", build_alu(2), ",", build_alu(3), ",", build_alu(4), ",", build_alu(5)])),
     # ---- `padded_idx` -- `round_up` + a WHOLE extra size
-    r("padded 0 4     ", pad_row(0, 4), "padded_idx 0 4 = ru0+sz=4"),
-    r("padded 3 8     ", pad_row(3, 8), "padded_idx 3 8 = ru8+sz=16"),
-    r("padded 8 8     ", pad_row(8, 8), "padded_idx 8 8 = ru8+sz=16"),
-    r("padded 9 16    ", pad_row(9, 16), "padded_idx 9 16 = ru16+sz=32"),
-    r("padded 17 32   ", pad_row(17, 32), "padded_idx 17 32 = ru32+sz=64"),
-    r("padded tbl     ", pad_tbl([0, 1, 3, 4, 7, 8, 9, 15, 16, 17, 32], [1, 4, 8, 16, 32]), "1:ru0,pi1,4:ru0,pi4,8:ru0,pi8,16:ru0,pi16,32:ru0,pi32;1:ru1,pi2,4:ru4,pi8,8:ru8,pi16,16:ru16,pi32,32:ru32,pi64;1:ru3,pi4,4:ru4,pi8,8:ru8,pi16,16:ru16,pi32,32:ru32,pi64;1:ru4,pi5,4:ru4,pi8,8:ru8,pi16,16:ru16,pi32,32:ru32,pi64;1:ru7,pi8,4:ru8,pi12,8:ru8,pi16,16:ru16,pi32,32:ru32,pi64;1:ru8,pi9,4:ru8,pi12,8:ru8,pi16,16:ru16,pi32,32:ru32,pi64;1:ru9,pi10,4:ru12,pi16,8:ru16,pi24,16:ru16,pi32,32:ru32,pi64;1:ru15,pi16,4:ru16,pi20,8:ru16,pi24,16:ru16,pi32,32:ru32,pi64;1:ru16,pi17,4:ru16,pi20,8:ru16,pi24,16:ru16,pi32,32:ru32,pi64;1:ru17,pi18,4:ru20,pi24,8:ru24,pi32,16:ru32,pi48,32:ru32,pi64;1:ru32,pi33,4:ru32,pi36,8:ru32,pi40,16:ru32,pi48,32:ru32,pi64;"),
+    rd("padded 0 4     ", pad_row(0, 4)),
+    rd("padded 3 8     ", pad_row(3, 8)),
+    rd("padded 8 8     ", pad_row(8, 8)),
+    rd("padded 9 16    ", pad_row(9, 16)),
+    rd("padded 17 32   ", pad_row(17, 32)),
+    rd("padded tbl     ", pad_tbl([0, 1, 3, 4, 7, 8, 9, 15, 16, 17, 32], [1, 4, 8, 16, 32])),
     # ---- `int(self.target.arch[3:])` -- the offset is THREE
-    r("arch_off sm_53 ", arch_off("sm_53"), "53"),
-    r("arch_off sm_120", arch_off("sm_120"), "120"),
-    r("arch_off 86    ", arch_off("86"), "86"),
-    r("arch_int sm_52 ", U32.show(arch_int("sm_52")), "52"),
-    r("arch_int sm_53 ", U32.show(arch_int("sm_53")), "53"),
-    r("arch_int sm_120", U32.show(arch_int("sm_120")), "120"),
+    rd("arch_off sm_53 ", arch_off("sm_53")),
+    rd("arch_off sm_120", arch_off("sm_120")),
+    rd("arch_off 86    ", arch_off("86")),
+    rd("arch_int sm_52 ", U32.show(arch_int("sm_52"))),
+    rd("arch_int sm_53 ", U32.show(arch_int("sm_53"))),
+    rd("arch_int sm_120", U32.show(arch_int("sm_120"))),
     # ---- the RENDERER RECORD, and its three supported_dtypes overrides
-    r("rec NIR        ", Nir.row(Nir.base()), "NIR has_local=True has_shared=True global_max=[2147483647,65535,65535] local_max=[1024,1024,64] shared_max=49152 drops_exp2=False has_param=False sd_kind=0"),
-    r("rec NAK        ", Nir.row(Nir.nak()), "NAK has_local=True has_shared=True global_max=[2147483647,65535,65535] local_max=[1024,1024,64] shared_max=49152 drops_exp2=False has_param=True sd_kind=1"),
-    r("rec LVP        ", Nir.row(Nir.lvp()), "LVP has_local=False has_shared=False global_max=[1,0,0] local_max=[1024,1024,64] shared_max=49152 drops_exp2=True has_param=True sd_kind=0"),
-    r("rec IR3        ", Nir.row(Nir.ir3()), "IR3 has_local=True has_shared=True global_max=[2147483647,65535,65535] local_max=[1024,1024,64] shared_max=49152 drops_exp2=False has_param=True sd_kind=2"),
-    r("sd nir         ", dnames(supported_dtypes(Nir.base(), 86)), "f16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool"),
-    r("sd nak sm_86   ", dnames(supported_dtypes(Nir.nak(), 86)), "f16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool"),
-    r("sd nak sm_53   ", dnames(supported_dtypes(Nir.nak(), 53)), "f16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool"),
-    r("sd nak sm_52   ", dnames(supported_dtypes(Nir.nak(), 52)), "f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool"),
-    r("sd nak sm_120  ", dnames(supported_dtypes(Nir.nak(), 120)), "f16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool"),
-    r("sd ir3         ", dnames(supported_dtypes(Nir.ir3(), 86)), "f16,f32,u8,u16,u32,u64,i8,i16,i32,i64,bool"),
+    rd("rec NIR        ", Nir.row(Nir.base())),
+    rd("rec NAK        ", Nir.row(Nir.nak())),
+    rd("rec LVP        ", Nir.row(Nir.lvp())),
+    rd("rec IR3        ", Nir.row(Nir.ir3())),
+    rd("sd nir         ", dnames(supported_dtypes(Nir.base(), 86))),
+    rd("sd nak sm_86   ", dnames(supported_dtypes(Nir.nak(), 86))),
+    rd("sd nak sm_53   ", dnames(supported_dtypes(Nir.nak(), 53))),
+    rd("sd nak sm_52   ", dnames(supported_dtypes(Nir.nak(), 52))),
+    rd("sd nak sm_120  ", dnames(supported_dtypes(Nir.nak(), 120))),
+    rd("sd ir3         ", dnames(supported_dtypes(Nir.ir3(), 86))),
     # ---- `code_for_op` -- 20 ops, and LVP's 19 without EXP2
-    r("cfo nir        ", join(code_for_op(Nir.base())), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,EXP2,FDIV,LOG2,MAX,MUL,OR,RECIPROCAL,SHL,SHR,SIN,TRUNC,WHERE,XOR"),
-    r("cfo lvp        ", join(code_for_op(Nir.lvp())), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,LOG2,MAX,MUL,OR,RECIPROCAL,SHL,SHR,SIN,TRUNC,WHERE,XOR"),
-    r("cfo nak        ", join(code_for_op(Nir.nak())), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,EXP2,FDIV,LOG2,MAX,MUL,OR,RECIPROCAL,SHL,SHR,SIN,TRUNC,WHERE,XOR"),
-    r("cfo ir3        ", join(code_for_op(Nir.ir3())), "ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,EXP2,FDIV,LOG2,MAX,MUL,OR,RECIPROCAL,SHL,SHR,SIN,TRUNC,WHERE,XOR"),
+    rd("cfo nir        ", join(code_for_op(Nir.base()))),
+    rd("cfo lvp        ", join(code_for_op(Nir.lvp()))),
+    rd("cfo nak        ", join(code_for_op(Nir.nak()))),
+    rd("cfo ir3        ", join(code_for_op(Nir.ir3()))),
     ]))
 
 # ===========================================================================

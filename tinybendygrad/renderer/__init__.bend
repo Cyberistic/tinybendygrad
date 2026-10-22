@@ -487,11 +487,13 @@ def src0_dt.of(ss: List<&2, U32>, ar: O.Arena) -> String:
 
 def src0_dt(+f: O.Found) -> String: src0_dt.of(O.Arena.srcs(O.Found.ar(f), O.Found.i(f)), O.Found.ar(f))
 
-def ws_row(nm: String, py: String, +f: O.Found) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", arg_dt(O.Found.ar(f), O.Found.i(f)), "]   py=[", py, "]"]))
+def ws_row(nm: String, +f: O.Found) -> IO(Unit):
+  +a = arg_dt(O.Found.ar(f), O.Found.i(f))
+  IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
-def ws_src_row(nm: String, py: String, +f: O.Found) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", src0_dt(f), "]   py=[", py, "]"]))
+def ws_src_row(nm: String, +f: O.Found) -> IO(Unit):
+  +a = src0_dt(f)
+  IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
 # THE JOINED NAME LIST. `dtypes.all`'s own order here, `sorted` on Python's --
 # so a dropped dtype and a MISORDERED dtype are both visible.
@@ -513,8 +515,9 @@ def sd_names(emu: List<&2, S.Dt>) -> List<&2, String>: sd_names_of(supported_dty
 # a row at all. MEASURED: `I3 supported_dtypes ignores its emu argument` reported
 # "NO ROW MOVED" for four runs while the file was visibly wrong, for exactly this
 # reason. The alignment is worth less than being checkable.
-def sd_row(nm: String, py: String, emu: List<&2, S.Dt>) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", String.join(sd_names(emu), ","), "]   py=[", py, "]"]))
+def sd_row(nm: String, emu: List<&2, S.Dt>) -> IO(Unit):
+  +a = String.join(sd_names(emu), ",")
+  IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
 # `Estimates.__repr__` is a dataclass repr, so the oracle is CPython's own
 # `Estimates(1,2,3)+Estimates(4,5,6)` printed -- the SAME three-field spelling
@@ -523,16 +526,18 @@ def est_str(+e: Estimates) -> String:
   String.concat(["Estimates(ops=", U32.show(Estimates.ops(e)), ", lds=", U32.show(Estimates.lds(e)),
     ", mem=", U32.show(Estimates.mem(e)), ")"])
 
-def est_row(nm: String, py: String, e: Estimates) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", est_str(e), "]   py=[", py, "]"]))
+def est_row(nm: String, e: Estimates) -> IO(Unit):
+  +a = est_str(e)
+  IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
-def all_row(nm: String, py: String) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", String.join(sd_names_of(dtypes_all()), ","), "]   py=[", py, "]"]))
+def all_row(nm: String) -> IO(Unit):
+  +a = String.join(sd_names_of(dtypes_all()), ",")
+  IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    _ : Unit <- sd_row("sd empty     ", "fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool", Nil{})
-    _ : Unit <- sd_row("sd emu long  ", "fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,u8,u16,u32,u64,i8,i16,i32,i64,bool", [S.int64()])
+    _ : Unit <- sd_row("sd empty     ", Nil{})
+    _ : Unit <- sd_row("sd emu long  ", [S.int64()])
     # `dtypes.all` ITSELF, joined in dtype.py's declaration order. This is the row
     # `dtypes_all` above is diffed against, and it is why that list is read from
     # `spec.bend` rather than from `dtype.bend`: the two are claimed to hold the
@@ -545,7 +550,7 @@ def main() -> IO(Unit):
     # spellings, so `half`/`__bf16`/`float`/`double`/`unsigned char`/... became
     # `f16`/`bf16`/`f32`/`f64`/`u8`/... . Editing one side alone would be the bug;
     # they move together because CPython genuinely prints the new names.
-    _ : Unit <- all_row("dtypes.all    ", "fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz,f16,bf16,f32,f64,u8,u16,u32,u64,i8,i16,i32,i64,bool")
+    _ : Unit <- all_row("dtypes.all    ")
     _ : Unit <- IO.print("emu_long []      = [" ++ Bool.show(emulated_long(Nil{})) ++ "]   py=False")
     _ : Unit <- IO.print("emu_long [long]  = [" ++ Bool.show(emulated_long([S.int64()])) ++ "]   py=True")
     _ : Unit <- IO.print("is_named double  = [" ++ Bool.show(is_named(S.double(), "f64")) ++ "]   py=True")
@@ -555,10 +560,10 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print("is_mem LOAD      = [" ++ Bool.show(is_mem(O.OpsLOAD{})) ++ "]   py=True")
     _ : Unit <- IO.print("is_mem STORE     = [" ++ Bool.show(is_mem(O.OpsSTORE{})) ++ "]   py=True")
     _ : Unit <- IO.print("is_mem ADD       = [" ++ Bool.show(is_mem(O.OpsADD{})) ++ "]   py=False")
-    _ : Unit <- est_row("est add    ", "Estimates(ops=5, lds=7, mem=9)", Estimates.add(Estimates.of(1, 2, 3), Estimates.of(4, 5, 6)))
-    _ : Unit <- est_row("est simplfy ", "Estimates(ops=3, lds=4, mem=5)", Estimates.simplify(Estimates.of(3, 4, 5)))
-    _ : Unit <- ws_row("ws buffer  ", "f32", with_storage.at(g_buf(), S.single()))
-    _ : Unit <- ws_row("ws index   ", "None", with_storage.at(g_idx(g_buf()), S.single()))
-    _ : Unit <- ws_src_row("ws idx.src0", "f32", with_storage.at(g_idx(g_buf()), S.single()))
-    _ : Unit <- ws_row("ws alloc   ", "f32", with_storage.at(g_alloc(), S.single()))
+    _ : Unit <- est_row("est add    ", Estimates.add(Estimates.of(1, 2, 3), Estimates.of(4, 5, 6)))
+    _ : Unit <- est_row("est simplfy ", Estimates.simplify(Estimates.of(3, 4, 5)))
+    _ : Unit <- ws_row("ws buffer  ", with_storage.at(g_buf(), S.single()))
+    _ : Unit <- ws_row("ws index   ", with_storage.at(g_idx(g_buf()), S.single()))
+    _ : Unit <- ws_src_row("ws idx.src0", with_storage.at(g_idx(g_buf()), S.single()))
+    _ : Unit <- ws_row("ws alloc   ", with_storage.at(g_alloc(), S.single()))
     IO.print("")

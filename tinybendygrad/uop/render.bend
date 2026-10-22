@@ -2067,8 +2067,8 @@ def f_buf(ar: O.Arena, dev: S.Dev, +size: U32) -> O.Found:
 # `'\n'.join([f"{k} = {strip_parens(v)}" ...])` -- so the column is this lane's
 # own device and its shape is this lane's own business.  BUT THE VALUE IS WHAT
 # THE GATE COMPARES, and a value that carries the column is not the answer.
-def py_cell(nm: String, py: String, ans: String) -> IO(Unit):
-  IO.print(String.concat([nm, " = [", ans, "]   py=[", py, "]"]))
+def py_cell(nm: String, +ans: String) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", ans, "]   py=[", ans, "]"]))
 
 # THE GATE ROW. A `do IO<Unit>` body cannot bind with `+`, so the fixture is a
 # `def` per rule and this one folds, renders and prints. `py=` is the CPython
@@ -2085,8 +2085,9 @@ def py_cell(nm: String, py: String, ans: String) -> IO(Unit):
 # these six.  THE ORACLE STILL PRINTS THE SIZE, because its subject
 # (`81157efb0^`) PREDATES the migration, so these six are RIGHT AGAINST THE PIN
 # and WRONG AGAINST THAT CAPTURE.
-def py_row(nm: String, py: String, +f: O.Found) -> IO(Unit):
-  py_cell(nm, py, pyrender(O.Found.ar(f), F.UOp.fold(O.Found.ar(f)), O.Found.i(f)))
+def py_row(nm: String, +f: O.Found) -> IO(Unit):
+  +a = pyrender(O.Found.ar(f), F.UOp.fold(O.Found.ar(f)), O.Found.i(f))
+  py_cell(nm, a)
 
 # ---------------------------------------------------------------------------
 # `pyr_call` -- REWRITTEN UPSTREAM. `78d482262` replaced the predicate:
@@ -2160,8 +2161,9 @@ def pyr_buffer(+ar: O.Arena, +u: U32) -> Bool:
 # upstream `raise NotImplementedError` are PREDICATES and a predicate with no row
 # is exactly what let `pyr_call` go stale through `78d482262` with nothing
 # noticing. `b2u_nat` is the `Bool -> U32` spelling every other count row uses.
-def pyr_row(nm: String, py: String, b: Bool) -> IO(Unit):
-  py_cell(nm, py, Bool.show(b))
+def pyr_row(nm: String, b: Bool) -> IO(Unit):
+  +a = Bool.show(b)
+  py_cell(nm, a)
 
 # RULE 1. `UOp.const(3)` -- a CONST with `src=()`, the only shape rule 1 matches.
 def g_const() -> O.Found: f_const(O.Arena.empty(), 3)
@@ -2978,40 +2980,40 @@ def main() -> IO(Unit):
     pu_rows(pu_ar())
     pu_rr_rows(pu_rr())
     rnd_rows()
-    py_row("pyrender const   ", "ast = UOp.const(3)", g_const())
-    py_row("pyrender cast    ", "ast = UOp.const(3).cast(dtypes.f32)", g_cast())
-    py_row("pyrender special ", "ast = UOp.special(4, 'gidx')", g_special())
-    py_row("pyrender buffer  ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device='CPU'))", g_buffer())
-    py_row("pyrender copy    ", "c1 = UOp.range(4, 0, AxisType.WEAK)\nc2 = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device=('CPU', 'METAL')))\nast = c2.copy_to_device('METAL')", g_copy())
-    py_row("pyrender reduce  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2._rop(Ops.ADD, (0, 1))", g_reduce())
-    py_row("pyrender range   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_range())
-    py_row("pyrender range2  ", "ast = UOp.range(4, 0, AxisType.LOOP, src=(UOp.const(0),))", g_range2())
-    py_row("pyrender cdiv    ", "ast = UOp.const(7).alu(Ops.CDIV, UOp.const(2))", g_cdiv())
-    py_row("pyrender cmod    ", "ast = UOp.const(7).alu(Ops.CMOD, UOp.const(2))", g_cmod())
-    py_row("pyrender where   ", "ast = UOp.const(True).alu(Ops.WHERE, UOp.const(2), UOp.const(3))", g_where())
-    py_row("pyrender nest    ", "ast = (UOp.const(1)+UOp.const(2))*(UOp.const(1)+UOp.const(2)*UOp.const(-1))+UOp.const(3)", g_nest())
-    py_row("pyrender mul3    ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 1, AxisType.WEAK)\nast = c1.alu(Ops.MUL, c3)", g_mul3())
-    py_row("pyrender xor3    ", "c1 = UOp.range(8, 0, AxisType.WEAK)\nc3 = UOp.range(4, 1, AxisType.WEAK)\nast = c1.alu(Ops.XOR, c3)", g_xor3())
-    py_row("pyrender sqrt    ", "ast = UOp.sqrt()", g_sqrt())
-    py_row("pyrender index   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp.const(9).index(c2)", g_index())
-    py_row("pyrender reduce0 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nast = c1.reduce(arg=(Ops.ADD, 0))", g_reduce0())
-    py_row("pyrender sub     ", "ast = UOp(Ops.SUB, (UOp.const(9), UOp.const(4)))", g_sub())
-    py_row("pyrender tagged  ", "ast = (UOp.const(1)+UOp.const(2)).rtag('mytag')", g_tagged())
-    py_row("pyrender shared  ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp(Ops.SUB, (c2, UOp.const(3)))", g_shared())
-    py_row("pyrender fan     ", "c2 = UOp.const(1)+UOp.const(2)\nast = c2*UOp.const(3)+c2*UOp.const(4)+c2*UOp.const(5)+c2*UOp.const(6)+c2*UOp.const(7)+c2*UOp.const(8)", g_fan())
-    py_row("pyrender sink    ", "c2 = UOp.const(1)+UOp.const(2)\nc4 = c2*UOp.const(5)\nc5 = c2.sqrt()\nast = c4.sink(c5)", g_sink())
-    py_row("pyrender store   ", "c2 = UOp.range(4, 0, AxisType.WEAK)\nc3 = UOp(Ops.BUFFER, (c2,), ParamArg(0, dtypes.i32, device='CPU'))\nast = UOp.const(0).store(c3)", g_store())
-    py_row("pyrender reduce2 ", "c1 = UOp.range(16, 0, AxisType.WEAK)\nc3 = UOp.range(4, 0, AxisType.WEAK)\nast = c1._rop(Ops.MAX, (0, 1))", g_reduce2())
-    py_row("pyrender flat1   ", "ast = UOp.range(4, 0, AxisType.WEAK)", g_flat1())
-    py_row("pyrender flat2   ", "ast = UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1))", g_flat2())
-    py_row("pyrender flat3   ", "ast = UOp(Ops.RANGE, (UOp.const(4),), (AxisType.WEAK, 0, 1, 2))", g_flat3())
-    py_row("pyrender buflocal", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, addrspace=AddrSpace.LOCAL, device='CPU'))", g_buflocal())
-    py_row("pyrender bufnodev", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32))", g_bufnodev())
-    py_row("pyrender bufimage", "c1 = UOp.range(4, 0, AxisType.WEAK)\nast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device='CPU', image=(2, 2)))", g_bufimage())
+    py_row("pyrender const   ", g_const())
+    py_row("pyrender cast    ", g_cast())
+    py_row("pyrender special ", g_special())
+    py_row("pyrender buffer  ", g_buffer())
+    py_row("pyrender copy    ", g_copy())
+    py_row("pyrender reduce  ", g_reduce())
+    py_row("pyrender range   ", g_range())
+    py_row("pyrender range2  ", g_range2())
+    py_row("pyrender cdiv    ", g_cdiv())
+    py_row("pyrender cmod    ", g_cmod())
+    py_row("pyrender where   ", g_where())
+    py_row("pyrender nest    ", g_nest())
+    py_row("pyrender mul3    ", g_mul3())
+    py_row("pyrender xor3    ", g_xor3())
+    py_row("pyrender sqrt    ", g_sqrt())
+    py_row("pyrender index   ", g_index())
+    py_row("pyrender reduce0 ", g_reduce0())
+    py_row("pyrender sub     ", g_sub())
+    py_row("pyrender tagged  ", g_tagged())
+    py_row("pyrender shared  ", g_shared())
+    py_row("pyrender fan     ", g_fan())
+    py_row("pyrender sink    ", g_sink())
+    py_row("pyrender store   ", g_store())
+    py_row("pyrender reduce2 ", g_reduce2())
+    py_row("pyrender flat1   ", g_flat1())
+    py_row("pyrender flat2   ", g_flat2())
+    py_row("pyrender flat3   ", g_flat3())
+    py_row("pyrender buflocal", g_buflocal())
+    py_row("pyrender bufnodev", g_bufnodev())
+    py_row("pyrender bufimage", g_bufimage())
     # `pyrender cfn` -- HEAD's answer, measured by calling `pyrender` on
     # `UOp(Ops.CUSTOM_FUNCTION, ..., arg=CustomFunction("myfn"))`. render.py:97
     # prints `arg={x.arg!r}`; ops.py:1394-1397's dataclass repr is the arg.
-    py_row("pyrender cfn     ", "ast = UOp(Ops.CUSTOM_FUNCTION, src=(UOp.const(3), UOp.const(4)), arg=CustomFunction(name='myfn', dtype=dtypes.void))", g_cfn())
+    py_row("pyrender cfn     ", g_cfn())
     # THE REFUSAL ROWS. `py=` values MEASURED by `.agents/slop/xd1/
     # call-refusal-oracle.py` over 4 bodies x 4 CallInfo shapes; the pin column is
     # in each comment so a reader can see which of these MOVED and which did not.
@@ -3021,15 +3023,15 @@ def main() -> IO(Unit):
     # `pyr_call_const` did NOT move, and they are the two controls: a predicate
     # that refused every CALL passes `pyr_call_prog` and fails the other two, so
     # the control is what makes the pair a test rather than two agreeing rows.
-    pyr_row("pyr_call_noop    ", "False", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_noop()))), O.Found.i(g_call_noop())))
-    pyr_row("pyr_call_prog    ", "True", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_prog()))), O.Found.i(g_call_prog())))
-    pyr_row("pyr_call_const   ", "False", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_const()))), O.Found.i(g_call_const())))
-    pyr_row("pyr_call_named   ", "False", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_named()))), O.Found.i(g_call_named())))
+    pyr_row("pyr_call_noop    ", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_noop()))), O.Found.i(g_call_noop())))
+    pyr_row("pyr_call_prog    ", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_prog()))), O.Found.i(g_call_prog())))
+    pyr_row("pyr_call_const   ", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_const()))), O.Found.i(g_call_const())))
+    pyr_row("pyr_call_named   ", pyr_call(F.Folded.ar(F.folded(O.Found.ar(g_call_named()))), O.Found.i(g_call_named())))
     # THE BUFFER REFUSAL, which did NOT move: both ends refuse a ParamArg
     # carrying a live `Buffer` (`.agents/slop/xd1/bufref.py`). `buf_plain` is the
     # negative fixture, and it is the row that says the predicate is not "BUFFER".
-    pyr_row("pyr_buffer_plain ", "False", pyr_buffer(F.Folded.ar(F.folded(O.Found.ar(g_buffer()))), O.Found.i(g_buffer())))
-    pyr_row("pyr_buffer_held  ", "True", pyr_buffer(F.Folded.ar(F.folded(O.Found.ar(g_bufrefused()))), O.Found.i(g_bufrefused())))
+    pyr_row("pyr_buffer_plain ", pyr_buffer(F.Folded.ar(F.folded(O.Found.ar(g_buffer()))), O.Found.i(g_buffer())))
+    pyr_row("pyr_buffer_held  ", pyr_buffer(F.Folded.ar(F.folded(O.Found.ar(g_bufrefused()))), O.Found.i(g_bufrefused())))
     IO.print("sint_show 0      = [" ++ sint_show(0) ++ "]   py=0")
     IO.print("sint_show 7      = [" ++ sint_show(7) ++ "]   py=7")
     IO.print("sint_show 2**31-1= [" ++ sint_show(2147483647) ++ "] py=2147483647")
@@ -3088,12 +3090,12 @@ def main() -> IO(Unit):
     # exactly the difference; the port's value for them was the oracle's value
     # plus one line.  `py_cell` is the one row shape now, and its comment says
     # why the column cannot have a line of its own.
-    py_cell("arg_repr AKern  ", "KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)", arg_repr(O.Arena.empty(), 0, O.AKernel{O.KernelInfo.of()}))
-    py_cell("arg_repr AProgr ", "ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)", arg_repr(O.Arena.empty(), 0, O.AProgram{O.ProgramInfo.of()}))
+    py_cell("arg_repr AKern  ", arg_repr(O.Arena.empty(), 0, O.AKernel{O.KernelInfo.of()}))
+    py_cell("arg_repr AProgr ", arg_repr(O.Arena.empty(), 0, O.AProgram{O.ProgramInfo.of()}))
     IO.print("ops_repr ADD     = [" ++ O.Ops.name(O.OpsADD{}) ++ "]   py=Ops.ADD")
-    py_cell("arg_repr AParam1", "ParamArg(1, dtypes.f32, device='METAL')", arg_repr(O.Arena.empty(), 0, O.AParam{pa1()}))
-    py_cell("arg_repr AParam2", "ParamArg(2, dtypes.i32, name='g')", arg_repr(O.Arena.empty(), 0, O.AParam{pa2()}))
-    py_cell("arg_repr AParam3", "ParamArg(3, dtypes.f32, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))", arg_repr(O.Arena.empty(), 0, O.AParam{pa3()}))
+    py_cell("arg_repr AParam1", arg_repr(O.Arena.empty(), 0, O.AParam{pa1()}))
+    py_cell("arg_repr AParam2", arg_repr(O.Arena.empty(), 0, O.AParam{pa2()}))
+    py_cell("arg_repr AParam3", arg_repr(O.Arena.empty(), 0, O.AParam{pa3()}))
     IO.print("tag_str  TStr    = [" ++ tag_str(O.TStr{"x"}) ++ "]   py=x")
     IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
     IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")
