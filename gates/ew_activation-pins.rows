@@ -1,0 +1,26 @@
+# ew_activation-pins.rows -- THE EXPECTED VALUES of `gates/ew_activation-plant.py`,
+# and that file is their ONLY reader and their ONLY writer (`--refresh`).
+#
+# ONE TAB-SEPARATED TRIPLE per plant: `<label>\t<graph rows differing>\t<value rows
+# differing>`.  THE `control` ROW IS THE UNPLANTED PORT, and it is pinned at 0/0
+# because a comparison that already disagrees on the control measures nothing.
+#
+# THESE ARE A CLAIM ABOUT THE INSTRUMENT AND NOT ABOUT THE PORT: they are what each
+# plant moves, so a plant that stops moving what it moved is a change in the
+# COMPARISON and not a change in the port.  THAT IS WHY THEY ARE PINNED AT ALL: a
+# comparison's sensitivity is a fact, and a fact nobody checks rots.
+#
+# THE SUBSTRATE THEY WERE TAKEN ON.  The plants run against HEAD's `tinybendygrad/`
+# and not against the working copy, so the counts are a function of a COMMIT.
+# substrate=9b75e04f751ae0a305276a7ea5845383f48e12b5
+control	0	0
+P1 alpha default	34	14
+P2 sign error	51	34
+P3 coefficient order	51	12
+P4 domain clamp	51	8
+P5 nan propagation	51	30
+P6 operand order	51	0
+P7 celu's own alpha	17	7
+P8 selu's parameters	34	12
+P9 the missing CWeakFloat arm	238	2
+P10 ew_tanh's operand order	17	14
