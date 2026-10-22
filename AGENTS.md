@@ -127,7 +127,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
   green. TRUST THE RED ONE.**
-  **AND AS OF **2026-10-21T20:31Z** (`6cdeedb77`, **AFTER **TONIGHT's **111 **COMMITS**)
+  **AND AS OF **2026-10-22T08:55Z** (`710b55ae0`, **AFTER **TONIGHT's **199 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
   `graphs=34 graphs-answered=34 graphs-agree=34 graphs-disagree=0 byte-identical=34 graphs-refused=0`,
@@ -138,15 +138,24 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `310 of 310 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=310 repro-identical=310 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == 58c505697ca23e1d...`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == 8174976365d2c502f7bb1a9b52b4c99af863706f3a763fd3b82b0da2f2466765`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=6cdeedb77cc3674515938e382973d5455c1abab6` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=710b55ae0ce6a20572b8845fdeaecf248d5b98c2` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **IS **AN **ANCESTOR **OF **HEAD**, **NOT **HEAD **ITSELF, **AND **THAT **IS **THE **HONEST **SHAPE**: **A
   **COMMIT **THAT **FOLLOWS **IT **AND **TOUCHES **NOTHING **IN **THE **SUBSTRATE** -- **`AGENTS.md`, **`.agents/**`,
   **`gates/**` -- **DOES **NOT **MAKE **THE **RUN **STALE, **AND **THE **DIGEST **IS **WHAT **SAYS **SO** (MEASURED:
-  **`git diff --name-only 6cdeedb77 HEAD -- tinybendygrad tinygrad bin/bend checks/differ.py …` **IS **EMPTY **AND
+  **`git diff --name-only 710b55ae0 HEAD -- tinybendygrad tinygrad bin/bend checks/differ.py …` **IS **EMPTY **AND
   **THE **DIGEST **IS **UNCHANGED**).**  **BUT **A **COMMIT **THAT **TOUCHES **A **`.bend` **WOULD, **AND **THAT **IS **WHY
   **THE **FIRST **`run` **OF **TONIGHT **WAS **RE-RUN.***
+  ***AND ***THE **PART **THAT **IS **A **COVERAGE **HOLE **AND **NOT **A **RESULT** -- **THE `pI(` LANE **IS **DEAD**:***
+  **MEASURED 2026-10-22: the corpus's 34 graphs produce **ZERO** `pI(` rows, so **the `ProgramInfo` FIELD LIST **IS
+  **NOT **EXERCISED **AT **ALL**, AND **THE **CORPUS **CANNOT **SEE **THE `vars` -> `params` **RENAME** (`9974c9d9b` /
+  upstream `a6addc2d4`) -- **WHICH **IS **A **REAL **PORT **CHANGE**, **BECAUSE **UPSTREAM's `params` **IS **EVERY **PARAM,
+  **SORTED **BY **SLOT**, **WHERE **THE **OLD `vars` **WAS **THE **ALU-ONLY **LIST.**  **AND **THE **ORACLE's **BRANCH
+  **IS **STALE **CODE**: `graphcmp.py:580` **READS `x.vars`, AND **AT **THE **PIN `hasattr(ProgramInfo(), "vars")` **IS
+  **False** **AND `hasattr(..., "params")` **IS **True** -- **SO **IT **WOULD **RAISE **IF **A **GRAPH **EVER **REACHED
+  **IT.**  **A **GRAPH **WHOSE **PROGRAM **CARRIES **A **BUFFER **PARAM **WOULD **MAKE **THE **TWO **LISTS **DIFFER, AND
+  **NO **SUCH **GRAPH **EXISTS **HERE.**  **THE **CORPUS **IS **GREEN **AND **THIS **HOLE **IS **IN **IT.**
   ***AND ***THE **SCOPE **OF **THAT **DIGEST **IS **THE **WORKING **TREE **AND **NOT **THE **COMMIT** -- **AND **THE
   **TREE **ALREADY **SAYS **SO, **IN **`checks/differ.py:1275`**:** *"MOVE-DETECTION AND COMMIT-IDENTITY ARE THE SAME
   PROPERTY, AND A `ls-tree`-BASED DIGEST CANNOT MOVE DURING A RUN -- IT WOULD `PASS` ON EXACTLY THE MIXTURE IT
