@@ -1731,6 +1731,40 @@ rn-recoverable [##########] 4/4  MEASURED 2026-10-17 by a dispatched unit, and I
                                        is in neither HEAD nor disk, so **restoring the path would buy
                                        an `ImportError` instead of an `exit 3` -- a `DEAD` lane
                                        wearing a `FAIL`'s clothes**, which is why it is not restored.
+const-identity [#######...] 3/7  **THE PORT's CONSTANT IDENTITY DIVERGES FROM UPSTREAM's IN BOTH
+                                       DIRECTIONS, AND ONE OF THEM IS A HASH COLLISION.** MEASURED,
+                                       and the instrument is `gates/constid-gate.py` (3 lanes) with
+                                       the plant `gates/constid-plant.py`.
+                                       **THE MERGE**: upstream's float-const identity is 64 bits
+                                       (`ConstFloat` packs a DOUBLE, `dtype.py:8-25`) and the port's
+                                       is 32 (a Bend float LITERAL is an F32 literal,
+                                       `bend.ts:2204-2210`), so upstream's `0.1` and
+                                       `0.10000000149011612` are TWO KEYS in ONE `ucache` and ONE
+                                       key in ONE arena -- `merge_keys` upstream 2, the port 1. AND
+                                       THE CONSTANT HOLDS A DIFFERENT NUMBER: upstream's weakfloat
+                                       const for `16777217.0` holds `16777217.0`, the port's holds
+                                       `16777216.0` (2**24+1 is the smallest integer an f32 cannot
+                                       hold) -- `merge_value_text`.
+                                       **THE SPLIT**: upstream's `ConstFloat.__eq__` says `nan == nan`
+                                       for ANY two nans and its `__hash__` is `hash(self.bits)`, so
+                                       upstream's OWN two rules contradict each other and upstream's
+                                       own hash table settles it for `__hash__` (TWO entries in ONE
+                                       dict). The port's `eq_const.CFloat` is BITWISE, so it agrees
+                                       with upstream's hash table -- and the PLANT shows an IEEE
+                                       comparator would move the port's count of distinct constants
+                                       2 -> 1, a collision upstream does not have. **THE COMPARATOR
+                                       IS RIGHT; THE WIDTH IS WHAT DIVERGES.**
+                                       **THE WALL IS DECLARED** in `tinybendygrad/dtype.bend`
+                                       (`truncate_float`) and `tinybendygrad/mixin/creation.bend`
+                                       (`cr_const_of.trunc`), and the patch for `uop/ops.bend`'s
+                                       `CFloat` and `eq_const.CFloat` is PREPARED, not applied --
+                                       that file is another unit's.
+                                       **THE 4 THAT REMAIN ARE ALL `uop/ops.bend`'s**: the `Const`
+                                       type must carry the double's bits (`CFloat{f: F32, d: H.I64}`),
+                                       which needs an f64->f32 rounding Bend cannot do and EVERY
+                                       `CFloat{...}` site spelled -- so it is a change to a file in
+                                       flight, not a one-line fix. See
+                                       `.agents/slop/constid/`.
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
@@ -21912,9 +21946,25 @@ REPRODUCIBLE **AND** CURRENT -- ALL THREE AT ONCE -- AND ITS FRESHNESS IS NOW A 
       TIME** (`--write-ledger --only PATH`).
 - [ ] **`gates/edge-trace.rows` IS STALE** -- IT SAYS **10 OF 22 GATES ARE DEAD**, AND **SEVEN OF THEM RUN
       NOW**. IT IS A DATED RECORD THAT NAMES ITS HEAD, BUT IT IS THE TREE'S ONLY RECORD OF WHAT RUNS.
-- [ ] **THE PORT'S `ProgramInfo.params` HAS THE OLD UPSTREAM'S SEMANTICS** (ALU-ONLY PARAMS), NOT THE PIN'S
+- [x] **THE PORT'S `ProgramInfo.params` HAS THE OLD UPSTREAM'S SEMANTICS** (ALU-ONLY PARAMS), NOT THE PIN'S
       (ALL PARAMS), **AND `ProgramInfo.from_sink` IS NOT PORTED AT ALL** -- SO `vals` HAS **NO REAL-PROGRAM
       CALLER**. A NAME-LEVEL GATE CANNOT SEE THIS.
+      **LANDED 2026-10-22, `tinybendygrad/uop/ops.bend`: `ProgramInfo.from_sink` (ops.py:1358) AND
+      `ProgramInfo.launch_dims` (ops.py:1352) ARE PORTED, `ProgramInfo` HAS ITS **SEVENTH** FIELD
+      (`target: Target`, ops.py:1349), AND `ProgramInfo.params` NOW HOLDS **THE PIN'S ALL-PARAMS LIST**
+      (`if u.op is Ops.PARAM: _params.append(u)`, ops.py:1364) -- WHICH IS WHAT THE PIN MEANS AND WHAT
+      THE OLD UPSTREAM'S `vars` DID NOT.** `from_sink` REFUSES (a `Maybe`) A SINK WHOSE LAUNCH SIZE IS
+      SYMBOLIC, BECAUSE UPSTREAM'S `cast(int, ...)` IS A LIE THERE AND THE PORT'S `global_size` IS
+      `List<&2, H.I64>`. **13 `fs_*` ROWS, ONE PER FAILURE MODE, COMPARED AGAINST CPYTHON BYTE FOR BYTE
+      (`.agents/slop/programinfo/oracle.py`), AND 8 PLANTS, ONE PER WAY `from_sink` COULD BE WRONG, EACH
+      ONE CAUGHT BY A ROW (`.agents/slop/programinfo/plant.py`).**
+      **WHAT IS STILL OWED, AND IT IS NOT MINE:** `tinybendygrad/engine/realize.bend:509`'s `rz_pvars`
+      READS `ProgramInfo.params` AS THE OLD UPSTREAM'S `prg.arg.vars` -- THE VARIABLES -- AND WITH THE
+      PIN'S SEMANTICS THAT LIST IS NOW EVERY PARAM, SO `rz_pvars` MUST READ THE **ALU SUBSET** (ONE
+      LINE, AND `ProgramInfo.vals` IN `ops.bend` NOW READS THE SAME SUBSET). **AND `vals` STILL HAS NO
+      REAL-PROGRAM CALLER:** NOTHING CALLS `from_sink` YET, BECAUSE THE PORT HAS NO `to_program` --
+      `tinybendygrad/codegen/kernel.bend` BUILDS `OpsPROGRAM` NODES WITH AN `ANone{}` ARG, NOT AN
+      `AProgram`. UPSTREAM'S CALLER IS `tinygrad/codegen/__init__.py:492` AND `:502`.
 - [ ] **`gates/varsparams-uses.rows` IS STALE** (IT PREDATES THE RENAME) **AND `gates/varsparams-gate.py`'s
       OWN PLANT WAS BROKEN BY THE RENAME** -- FIXED IN §1, BUT THE TABLE IS STILL STALE.
 
@@ -22246,3 +22296,32 @@ the gate.
       READS HEAD PLANTS NOTHING THE MOMENT HEAD CARRIES THE DEFECT'S FIX.** The arm now puts the count
       back to FOUR. MEASURED: the plain run is 9 of 9, and `--falsify` is 8 of 9 with ARM 1 FAIL and
       exit 1 -- so the plant CAN fail, and the arm that fails is the one whose expectation was inverted.
+
+## Session 2026-10-22 — THE `TODO(pN)` MARKERS ARE CITATIONS, AND 55 OF THEM NAMED A LINE THAT NO LONGER HELD THE CLAIM
+
+- [x] **THE POPULATION IS DISCOVERED AND IT IS 752 MARKER CITATIONS IN 82 `.bend` FILES.**
+      `gates/todo-cite-gate.py` walks `tinybendygrad/` with `os.walk` + `endswith(".bend")`
+      (never `glob`), finds every `TODO(pN)` in a comment, and reads the citation the marker
+      carries. **A MARKER INSIDE BACKTICKS IS A MARKER MENTIONED** -- the port writes
+      "three `TODO(p3)`s" to talk about the queue -- and a backticked span that CARRIES A
+      CITATION is a quoted marker and stays in the population. **THE RESOLUTION IS BY SYMBOL
+      WHERE THE MARKER NAMES ONE**, and the upstream file says where that symbol is DECLARED;
+      the marker's own words name it (`TODO(p3) ops.py:502  def ssimplify`).
+- [x] **55 CITATIONS RE-POINTED, IN 19 FILES, AND EVERY ONE RESOLVES AT THE PIN NOW.**
+      Before: 318 RESOLVES / 135 WRONG-LINE / 1 WRONG-SYMBOL / 265 UNRESOLVABLE.
+      After: 373 RESOLVES / 81 WRONG-LINE / 0 WRONG-SYMBOL / 265 UNRESOLVABLE.
+      **THE DRIFT IS UPSTREAM MOVING AND THE MARKERS BEING FROZEN**: 8-19 lines on `ops.py`,
+      3-4 on `device.py`, 44 on `hcq2.py`, 88 on `onnx.py`, 29 on `ops.py:1459`.
+- [x] **THE PLANT HAS TWO ARMS AND AN UNBROKEN CONTROL, AND BOTH ARMS ARE NOTICED.**
+      `--plant` corrupts a marker in a COPY of the port, and MOVES A SYMBOL in a COPY of the
+      pinned upstream; a byte-identical control must reproduce the live verdict.  The target is
+      DISCOVERED -- a row whose symbol is DECLARED AT its cited line -- because a row that
+      resolves because a QUOTE happens to be on that line cannot be broken by moving the symbol.
+- [ ] **71 CITATIONS IN 9 FILES ARE STILL FALSE**, because those files were HELD by other units
+      when the fixer ran.  **THE EXACT PATCHES ARE IN `.agents/slop/todo-cite/HELD-PATCHES.md`**:
+      `uop/ops.bend` (50), `nn/onnx.bend` (8), `function.bend` (4), `renderer/wgsl.bend` (3),
+      `engine/realize.bend` (2), `uop/render.bend` (1), `extra/models/{convnext,resnet,vit}.bend` (1 each).
+- [ ] **`hcq2.py:94  cfield` NAMES A FUNCTION UPSTREAM DELETED.**  `def cfield` was at `:111`
+      before `7d2420e64` ("deadcode (#18714)") removed it, so at the pin there is no `cfield` to
+      cite.  The port's own `cfunc_buf` note already says what to do with a DELETED upstream
+      function -- it is DELETED, not renamed, and there is nothing left to defer.
