@@ -168,15 +168,27 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **summary **NEWER **THAN **THE **REPRO**).  **⇒ A **SUMMARY **IS **A **CLAIM **AND **A **WITNESS **IS
   **A **CHECK**, **AND **ONLY **THE **SECOND **CAN **GO **RED.**
 
-  ***AND ***THE **PART **THAT **IS **A **COVERAGE **HOLE **AND **NOT **A **RESULT** -- **THE `pI(` LANE **IS **DEAD**:***
-  **MEASURED 2026-10-22: the corpus's 34 graphs produce **ZERO** `pI(` rows, so **the `ProgramInfo` FIELD LIST **IS
-  **NOT **EXERCISED **AT **ALL**, AND **THE **CORPUS **CANNOT **SEE **THE `vars` -> `params` **RENAME** (`9974c9d9b` /
-  upstream `a6addc2d4`) -- **WHICH **IS **A **REAL **PORT **CHANGE**, **BECAUSE **UPSTREAM's `params` **IS **EVERY **PARAM,
-  **SORTED **BY **SLOT**, **WHERE **THE **OLD `vars` **WAS **THE **ALU-ONLY **LIST.**  **AND **THE **ORACLE's **BRANCH
-  **IS **STALE **CODE**: `graphcmp.py:580` **READS `x.vars`, AND **AT **THE **PIN `hasattr(ProgramInfo(), "vars")` **IS
-  **False** **AND `hasattr(..., "params")` **IS **True** -- **SO **IT **WOULD **RAISE **IF **A **GRAPH **EVER **REACHED
-  **IT.**  **A **GRAPH **WHOSE **PROGRAM **CARRIES **A **BUFFER **PARAM **WOULD **MAKE **THE **TWO **LISTS **DIFFER, AND
-  **NO **SUCH **GRAPH **EXISTS **HERE.**  **THE **CORPUS **IS **GREEN **AND **THIS **HOLE **IS **IN **IT.**
+  ***AND ***THE **`pI(` **LANE **IS **ALIVE** -- **AND **IT **WAS **DEAD **WHEN **THIS **PARAGRAPH **WAS **FIRST
+  **WRITTEN**, **SO **THE **FIX **IS **THE **EVIDENCE:** MEASURED 2026-10-22, the corpus's 34 graphs produced
+  **ZERO** `pI(` rows, so **the `ProgramInfo` FIELD LIST **WAS **NOT **EXERCISED **AT **ALL**, AND
+  **THE **CORPUS **COULD **NOT **SEE **THE `vars` -> `params` **RENAME** (`9974c9d9b` / upstream
+  `a6addc2d4`) -- **WHICH **IS **A **REAL **PORT **CHANGE**, **BECAUSE **UPSTREAM's `params` **IS **EVERY
+  **PARAM, **SORTED **BY **SLOT**, **WHERE **THE **OLD `vars` **WAS **THE **ALU-ONLY **LIST.**
+  **⇒ THE **FIX **WAS **A **35TH **GRAPH**, `prog`, **WHOSE **PROGRAM **CARRIES **THREE **BUFFER **PARAMS**
+  (**GLOBAL **ADDRSPACE**), **AND **THE **THIRD **COMPONENT **IS **THE **PARAMS' **FULL `P(...)` **RECORDS
+  **IN **SLOT **ORDER** -- **NOT **A **SLOT **LIST**, **FOR **THE **MEASURED **REASON **THAT **FOR **AN
+  **ALL-BUFFER **KERNEL **THE **PARAMS' **SLOTS **ARE **THE **GLOBALS' **SLOTS**, **SO **A **SLOT **LIST
+  **WOULD **HAVE **BEEN **A **RESTATEMENT **OF **THE **FOURTH **COMPONENT: **A **ROW **THAT **CANNOT **GO
+  **RED.**  **THE **FULL **RECORD **CARRIES **THE **ADDRSPACE** (`SGLOBAL` vs `SALU`), **WHICH **IS **HOW
+  **THE **CORPUS **SEES **THAT **A **BUFFER **PARAM **IS **IN **THE **LIST.**
+  **⇒ AND **THE `target` **IS **NOT **CARRIED, **AND **THE **LEDGER **SAYS **SO **ON **EVERY **REPORT**: the
+  **value **is **the **RENDERER's **and **its `arch` **is **THE **MACHINE's**, **so **carrying **it **would
+  **make **the **canonical **form **machine-specific**, **and **the **alternative **-- **both **sides' **defaults
+  -- **puts **A **CONSTANT **ON **BOTH **SIDES: **A **LABEL, **NOT **A **COMPARISON.**
+  **⇒ AND **THE **ORACLE's **BRANCH **WAS **STALE **CODE** (`graphcmp.py:580` **READ **`x.vars`, AND **AT **THE
+  **PIN `hasattr(ProgramInfo(), "vars")` **IS **False**), **AND **IT **WAS **RE-POINTED **AT **`params` **IN
+  **THE **SAME **COMMIT **AS **THE **GRAPH** -- **BECAUSE **A **RE-POINT **WITHOUT **A **GRAPH **TO **REACH
+  **IT **IS **A **RE-POINT **OF **DEAD **CODE.**
   ***AND ***THE **PORT's `Op` **ENUM **IS **EXACTLY **UPSTREAM's `Ops` **ENUM **AT **THE **PIN**, **AND **THE **TWO
   **WAYS **OF **BEING **WRONG **ARE **BOTH **EMPTY**:** MEASURED 2026-10-22, **upstream 75, port 75, 0
   missing, 0 extra.**  **AND **UPSTREAM's `Ops` **ENUM **LIVES **IN **`tinygrad/uop/__init__.py` **AT **THE
