@@ -108,6 +108,29 @@ because `None` means ABSENT and the wrapper then installs). So this refusal is a
 DIVERGENCE, and it is the port's answer: the type forbids what upstream's own
 annotation forbids (`_METADATA: _ContextVar[Metadata|None]`).
 
+## THE COMMITS, AND THE DIGEST
+
+* `a357910a8` -- the port, the CPython lane's two repairs, this report, the plant
+  and the two instruments. SEVEN files, +677/-17.
+* `4e14129c4` -- `digest.py`'s baseline revision becomes an ARGUMENT, because
+  after a commit `HEAD:<target>` IS the change.
+
+**THE CORPUS WAS NOT RE-RUN AND `checks/differ.py` WAS NOT EDITED.** The digest
+is `checks/differ.py`'s own `substrate_digest()`, imported as a module and
+called, and the ATTRIBUTED delta is measured on ONE tree at ONE moment with
+`tinybendygrad/tensor.bend` swapped IN MEMORY for its parent's bytes. Measured
+2026-10-22, and the numbers MOVE with the tree because the tree is moving:
+
+```
+live-digest                                  = c75f5f748d7b1f99b618388840b90bd38ff64049960712882dd86dee652e5c83
+before-digest (a357910a8^, same tree, same instant) = 4737860410be5b53f4c36ed035390b1329a104850e8c67c5b7962c440316ab3b
+attributed-delta                             = MOVED
+```
+
+The delta is MY ONE FILE, because both digests were computed on the same tree
+with only that file's bytes swapped. `git fsck --no-progress` names the THREE
+known malformed trees (`d57bc484`, `d83cf685`, `3a60f33f`) and no fourth.
+
 ## WHAT WAS FOUND AND NOT DONE
 
 * **THE TREE'S CPYTHON LANE WAS RED AT REST, AND IT WAS NOT THE METADATA LANE.**
