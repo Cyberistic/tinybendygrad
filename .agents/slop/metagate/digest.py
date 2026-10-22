@@ -2,9 +2,15 @@
 
 Calls `checks/differ.py`'s PURE function `substrate_digest()` -- the module is imported, never
 edited -- and computes the same digest twice on the SAME tree: once as the working copy stands,
-and once with `tinybendygrad/tensor.bend` swapped for HEAD's bytes IN MEMORY (the entries list
-is rebuilt, the file on disk is NOT touched). The difference between the two is MY change and
-nothing else, even while other units are writing the tree.
+and once with `tinybendygrad/tensor.bend` swapped IN MEMORY for another revision's bytes (the
+entries list is rebuilt, the file on disk is NOT touched). The difference between the two is
+MY change and nothing else, even while other units are writing the tree.
+
+    python digest.py [<rev>]     # <rev> supplies the "before" bytes; default HEAD
+
+AFTER the commit, `HEAD:<target>` IS my bytes, so the default reports UNCHANGED -- which is
+the right answer for "is the tree as HEAD says?" and the wrong answer for "what did I move?".
+Pass the PARENT (`<rev>^`) to get the attributed delta.
 """
 import hashlib, importlib.util, subprocess, sys, os
 
@@ -14,6 +20,7 @@ differ = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(differ)
 
 TARGET = "tinybendygrad/tensor.bend"
+REV = sys.argv[1] if len(sys.argv) > 1 else "HEAD"
 
 def digest_with(target_bytes):
   real = differ.substrate_entries
@@ -28,10 +35,10 @@ def digest_with(target_bytes):
   finally:
     differ.substrate_entries = real
 
-head_bytes = subprocess.run(["git", "show", "HEAD:" + TARGET], cwd=ROOT, capture_output=True, check=True).stdout
+head_bytes = subprocess.run(["git", "show", REV + ":" + TARGET], cwd=ROOT, capture_output=True, check=True).stdout
 live = differ.substrate_digest()
 head = digest_with(head_bytes)
 print("live-digest      = %s" % live)
-print("head-bytes-digest= %s" % head)
+print("before-digest (%s)= %s" % (REV, head))
 print("attributed-delta = %s" % ("MOVED" if live != head else "UNCHANGED"))
-print("head-bytes len   = %d" % len(head_bytes))
+print("before bytes len  = %d" % len(head_bytes))
