@@ -137,6 +137,17 @@ must NOT move). A check never seen to fail is not a check, so
 `gates/ptx_render_census-mutate.py` carries thirteen
 mutations -- including THREE THAT MUTATE THIS GATE'S OWN GUARDS, which is the only way to
 show `names_hold`, `axis_hold` and `claims_hold` go red rather than being decoration.
+
+AND THE CITATIONS ARE CHECKED TOO, because A CITATION IS A CLAIM AND A CLAIM NOBODY
+CHECKS IS A LABEL. Every `ptx.py:NNN` in this census's five files is DECLARED -- which
+citations each file makes, IN ORDER, and what the cited line CARRIES -- and `cites_hold()`
+reads the tree and says whether the two agree. The audit that added it found THIRTY-SEVEN
+stale citations in the port alone, all from ONE upstream line INSERTED by `975127a10`.
+`cites_hold()` is red when a file's citations are not the declared ones (a citation that
+MOVED, one ADDED, one DROPPED), when a cited line no longer carries what the declaration
+names (UPSTREAM MOVED), and when what the declaration names is no longer UNIQUE to the line
+it names. `--plant` moves one citation off the line it claims and the gate must go RED; a
+comment that adds prose must move NOTHING.
 """
 import hashlib
 import re
@@ -1047,6 +1058,10 @@ def plant() -> int:
     if rp == 3:
         return 3
     bad += rp
+    cp = cite_plant()
+    if cp == 3:
+        return 3
+    bad += cp
     print(f"\n=== plant: {'FAIL' if bad else 'PASS'}: {bad} problem(s) ===")
     return 1 if bad else 0
 
@@ -1284,6 +1299,298 @@ def fmt_plant() -> int:
     return bad
 
 
+# ---- the citations ---------------------------------------------------------------------
+# EVERY `ptx.py:NNN` IN THIS CENSUS'S OWN FIVE FILES IS A CLAIM ABOUT UPSTREAM'S `ptx.py`,
+# AND A CLAIM NOBODY CHECKS IS A LABEL. THE AUDIT THAT PRODUCED THIS SECTION FOUND THIRTY-
+# SEVEN STALE CLAIMS IN THE PORT ALONE, AND THE CAUSE WAS ONE LINE: upstream `975127a10`
+# ("use AFTER for RANGE ordering deps instead of multiple srcs", #18618) INSERTED ONE LINE
+# at upstream's 189, and every citation at or after it moved by one. A re-vendor does that
+# again, and until this section NOTHING IN THE TREE WAS WATCHING.
+#
+# THE DECLARATION IS TWO TABLES, AND THE SECOND ONE IS THE ONE THAT DOES THE WORK:
+#   * `PTX_CITE_CONTENT` -- what a cited LINE CARRIES: a fragment of the line, and for a
+#     SPAN the text of the line that ENDS it. The fragment must be UNIQUE to the line it
+#     names, so the declaration can tell a line from its neighbour.
+#   * `PTX_CITE_ORDER` -- WHICH CITATIONS EACH FILE MAKES, AND IN WHICH ORDER. THE ORDER
+#     IS THE PIN. A citation's number is a claim about a LINE, and a claim that survives
+#     being edited onto a DIFFERENT line is not a claim: keyed by the line alone, every
+#     citation could be moved onto any other line that carries some content and the check
+#     would still be green. Keyed by the ORDER, a citation that moves is red.
+#
+# SO A CITATION CAN BE WRONG IN THREE WAYS, AND ALL THREE ARE CHECKED:
+#   1. the file's citations are not the declared ones -- one MOVED, one ADDED, one DROPPED;
+#   2. a cited line no longer carries what the declaration names -- UPSTREAM MOVED;
+#   3. the content the declaration names is no longer UNIQUE to the line it names.
+#
+# AND THE ORDER IS NOT A STRAWMAN: it is the property the audit's own failure had. The
+# audit moved thirty-seven numbers and found the moves WRONG, because a number is a
+# claim about a LINE and the line is what upstream moved.
+UPSTREAM_PTX = ROOT / "tinygrad" / "renderer" / "ptx.py"
+# THE POPULATION IS DISCOVERED BY A REGEX OVER THE TREE'S OWN WRITE SITES, never by a hand
+# list of CITATIONS: these five files are the ones that CITE upstream's `ptx.py`, and the
+# regex finds every citation in each of them, in order.
+#
+# AND THE POPULATION IS THE `ptx.py:NNN` FORM, WHICH IS A NAMED LIMIT AND NOT A CLAIM OF
+# COMPLETENESS: the prose ALSO carries BARE upstream-line references -- the ARM SELECTOR's
+# eleven rows, a `ptx.py:NNN, NNN-NNN` continuation, a `ptx.py:NNN and NNN` continuation
+# and a `ptx.py:NNN/NNN` one -- and those are NOT in the population, because a bare number
+# in prose is indistinguishable from a row count and a regex that tried would be a LIST OF
+# SHAPES rather than a discovery. THEY WERE AUDITED BY HAND, IN THE SAME PASS, AND THEY
+# MOVED WITH THE SAME +1; they are NOT CHECKED. THAT IS THE BLIND SPOT, AND IT IS NAMED SO
+# A READER CAN SEE IT INSTEAD OF ASSUMING IT IS NOT THERE.
+CITE_FILES = (
+    ("port",   ROOT / "tinybendygrad" / "renderer" / "ptx.bend"),
+    ("driver", HERE / "ptx_render_census.bend"),
+    ("oracle", ORACLE),
+    ("gate",   HERE / "ptx_render_census-gate.py"),
+    ("gen",    HERE / "ptx_render_census-gen.py"),
+)
+CITE_RE = re.compile(r"ptx\.py:(\d+)(?:-(\d+))?")
+# WHAT EACH CITED LINE CARRIES. MEASURED against upstream's `ptx.py` as it stands, and the
+# check RE-MEASURES it on every run -- a fragment that stops being unique, or stops being
+# on the line it names, is RED, which is how a re-vendor announces itself.
+PTX_CITE_CONTENT = {
+  "24-28":      ("Ops.ADD: lambda d,a,b,dt,name:", "Ops.OR: lambda d,a,b,dt, name: f\"or.pred {d}, {a}, {b};\" if dt == dtypes.bool else f\"or.b{name[1:]} {d}, {a}, {b};\","),
+  "40-57":      ("ptx_matcher = PatternMatcher([", "])"),
+  "42":         ("(UPat.var('x', dtype=dtypes.bool).ne(UPat.var('y'))", None),
+  "49-51":      ("(UPat(Ops.LOAD, dtypes.bool, src=(UPat(name=\"idx\"),), name=\"x\", allow_any_len=True)", "+ x.src[2:]).cast(dtypes.bool) if idx.addrspace != AddrSpace.REG else None),"),
+  "81-135":     ("string_rewrite = PatternMatcher([", "])"),
+  "83":         ("UPat.cvar(\"c\").cast(name=\"x\")", None),
+  "92":         ("(UPat(GroupOp.ALU, name=\"x\")", None),
+  "99-101":     ("(UPat(Ops.STORE, src=(UPat(name=\"loc\"), UPat.var(\"var\"))), lambda ctx, loc, var:", "if loc.addrspace == AddrSpace.REG else None),"),
+  "99-105":     ("(UPat(Ops.STORE, src=(UPat(name=\"loc\"), UPat.var(\"var\"))), lambda ctx, loc, var:", "f\"[{ctx.r[loc]}+0], {('{' + ', '.join(ctx.r[var]) + '}') if var.max_numel() > 1 else ctx.r[var]};\"),"),
+  "102":        ("UPat((Ops.INDEX, Ops.SHRINK), name=\"loc\"), UPat.var(\"var\"))", None),
+  "126":        ("(UPat(Ops.END, name=\"x\", src=(UPat(), UPat(Ops.RANGE, name=\"r\")))", None),
+  "164":        ("def fmt(line): return", None),
+  "165":        ("f\".reg .{reg.split('_')[-2]}", None),
+  "166-167":    ("local_dims = [u.src[0] for u in uops if u.op is Ops.SPECIAL", "launch_bounds = prod([d.vmax for d in local_dims])"),
+  "171-229":    ("def render(self, uops:list[UOp]) -> str:", "return self.render_kernel(kernel, name, bufs, c.items(), uops)"),
+  "175":        ("c: defaultdict[str, int] = defaultdict(int)", None),
+  "176":        ("r: dict[UOp, list[str]|str] = {}", None),
+  "180-183":    ("def ssa(prefix:str, u:UOp|None=None, dtype:str|None=None) -> str:", "return f\"%{prefix}{c[prefix]-1}\""),
+  "181":        ("self.types[unwrap(u).dtype]", None),
+  "185":        ("name = \"test\"", None),
+  "185-221":    ("name = \"test\"", "if prefix: r[u] = ssa(prefix, u, dtype)"),
+  "186-221":    ("for u in uops:", "if prefix: r[u] = ssa(prefix, u, dtype)"),
+  "187":        ("if u.op in {Ops.NOOP, Ops.CONST}: continue", None),
+  "190":        ("self.r[u] = self.r[u.src[0]]", None),
+  "193":        ("if u.arg is not None: name = u.arg.function_name", None),
+  "196":        ("r[u] = [cast(str,r[x]) for x in u.src]", None),
+  "198":        ("if u.op is Ops.BUFFER and u.addrspace == AddrSpace.REG:", None),
+  "198-209":    ("if u.op is Ops.BUFFER and u.addrspace == AddrSpace.REG:", "r[u] = [ssa('val', dtype=self.types[u.dtype]) for _ in range(u.max_numel())] if u.max_numel() > 1 else ssa('val', u)"),
+  "199":        ("ssa(\"reg\", u, self.types[u.dtype])", None),
+  "201":        ("if u.op in {Ops.INDEX, Ops.SHRINK, Ops.LOAD} and u.src[0].addrspace in (AddrSpace.REG, AddrSpace.ALU):", None),
+  "203":        ("if u.op is not Ops.LOAD and not (u.src[1].op is Ops.CAST and u.src[1].src[0].op is Ops.CONST):", None),
+  "203-204":    ("if u.op is not Ops.LOAD and not (u.src[1].op is Ops.CAST and u.src[1].src[0].op is Ops.CONST):", "raise RuntimeError(f\"PTX does not support dynamic register indexing: {u}\")"),
+  "203-205":    ("if u.op is not Ops.LOAD and not (u.src[1].op is Ops.CAST and u.src[1].src[0].op is Ops.CONST):", "r[u] = r[u.src[0]] if u.op is Ops.LOAD else r[u.src[0]][u.src[1].src[0].val]"),
+  "204":        ("raise RuntimeError(f\"PTX does not support dynamic register indexing: {u}\")", None),
+  "205":        ("r[u] = r[u.src[0]] if u.op is Ops.LOAD else r[u.src[0]][u.src[1].src[0].val]", None),
+  "207":        ("if u.op is Ops.SPECIAL: r[u] = \"%\" + u.arg", None),
+  "209":        ("ssa('val', dtype=self.types[u.dtype])", None),
+  "210":        ("elif u.op is Ops.PARAM: bufs.append((f\"data{u.arg.slot}\", u))", None),
+  "211-216":    ("elif u.op is Ops.WMMA:", "r[u] = [ssa(\"wmma\", dtype=self.types[u.dtype]) for _ in range(u.max_numel())]"),
+  "217":        ("prefix, dtype = {Ops.CAST: (\"cast\", None)", None),
+  "217-219":    ("prefix, dtype = {Ops.CAST: (\"cast\", None)", "Ops.PARAM: (\"dat\", \"u64\" if u.addrspace is AddrSpace.GLOBAL else None), **{op: (\"alu\", None) for op in GroupOp.ALU}}.get(u.op, (None, None))"),
+  "220":        ("if u.op is Ops.RANGE and u.dtype == dtypes.void: prefix = None", None),
+  "221":        ("if prefix: r[u] = ssa(prefix, u, dtype)", None),
+  "223":        ("l: str|list[str]|None = string_rewrite.rewrite(u, ctx=self)", None),
+  "225":        ("raise RuntimeError(f\"failed to render {u.op} with {u.dtype} srcs", None),
+  "228":        ("if u.op is Ops.SPECIAL: kernel = [f\".reg .u32 %{u.arg};\"] + kernel", None),
+  "229":        ("return self.render_kernel(kernel, name, bufs, c.items(), uops)", None),
+  "232":        ("d not in dtypes.fp8s+(dtypes.bfloat16,)", None),
+}
+# WHICH CITATIONS EACH FILE MAKES, IN ORDER. MEASURED from the files as they stand, and the
+# check compares them on every run: a file whose citations are not THESE is red, and the
+# first difference is NAMED -- which file, which citation, what it says now, what it said.
+PTX_CITE_ORDER = {
+  "port": ("171-229", "180-183", "185-221", "165", "210", "185", "204", "81-135", "40-57", "42", "211-216", "223", "205", "209", "204", "176", "175", "228", "205", "204", "205", "203", "180-183", "199", "217-219", "198-209", "220", "201", "220", "186-221", "204", "198", "203-205", "196", "205", "190", "205", "193", "207", "185", "221", "198-209", "204", "229", "165", "228", "204", "83", "209", "199", "181", "228"),
+  "driver": ("40-57", "164", "204", "187", "209", "223", "209", "181", "217", "181", "187", "181", "187", "92", "204"),
+  "oracle": ("203", "203", "204", "126", "225", "201", "203-204", "166-167", "187", "203", "203", "204", "225", "209", "209", "217", "220", "99-105", "102", "49-51", "217", "181", "187", "187", "181", "232", "181", "209", "99-101", "205", "205", "205", "24-28", "181", "204", "225", "209", "223", "181", "204", "209", "176", "187", "165", "164"),
+  "gate": ("164", "181", "181", "92", "187", "225", "204", "181", "92", "190", "205", "205", "225", "190", "205", "181", "92", "181", "190", "205", "164", "164", "181", "181", "92", "225", "164", "190"),
+  "gen": ("199", "201"),
+}
+
+
+def _cite_keys(text):
+    """EVERY CITATION IN A TEXT, IN ORDER, AS THE KEY THE DECLARATION USES.
+
+    A SPAN is `a-b` and a SINGLE LINE is `a`, and the two are different declarations: the
+    span's END is a line of its own, and it carries its own text.
+    """
+    out = []
+    for m in CITE_RE.finditer(text):
+        a = int(m.group(1))
+        b = int(m.group(2) or a)
+        out.append(f"{a}-{b}" if b != a else str(a))
+    return out
+
+
+def _cite_problems(files=None, upstream=None):
+    """EVERY WAY A CITATION CAN BE WRONG, AS A LIST OF SENTENCES.
+
+    The ORDER is compared first, because it is the only one of the three that can see a
+    citation MOVED onto a line that is itself perfectly valid: the content check asks
+    "does the cited line carry what the declaration says about THAT line", and a
+    declaration is always true about its own line.
+    """
+    files = CITE_FILES if files is None else files
+    up = UPSTREAM_PTX.read_text().split("\n") if upstream is None else upstream.split("\n")
+    bad = []
+    for fid, path in files:
+        want = PTX_CITE_ORDER.get(fid)
+        if want is None:
+            bad.append(f"{fid}: NO DECLARATION of its citations")
+            continue
+        got = tuple(_cite_keys(path.read_text()))
+        if got != want:
+            i = next((i for i in range(max(len(got), len(want)))
+                      if i >= len(got) or i >= len(want) or got[i] != want[i]), 0)
+            said = got[i] if i < len(got) else "ABSENT"
+            declared = want[i] if i < len(want) else "ABSENT"
+            bad.append(f"{fid}: citation {i+1} says ptx.py:{said}, the declaration says "
+                       f"ptx.py:{declared} ({len(got)} citations in the file, {len(want)} declared)")
+            continue
+        for key in got:
+            decl = PTX_CITE_CONTENT.get(key)
+            if decl is None:
+                bad.append(f"{fid}: ptx.py:{key} has NO DECLARED CONTENT")
+                continue
+            a, b = (int(x) for x in key.split("-")) if "-" in key else (int(key), int(key))
+            anchor, end = decl
+            if not (1 <= a <= len(up)) or not (1 <= b <= len(up)) or a > b:
+                bad.append(f"{fid}: ptx.py:{key} is OUTSIDE upstream's {len(up)}-line file")
+                continue
+            if anchor not in up[a-1]:
+                bad.append(f"{fid}: ptx.py:{key} -- line {a} does not carry {anchor!r}")
+            hits = [i+1 for i, l in enumerate(up) if anchor in l]
+            if hits != [a]:
+                bad.append(f"{fid}: ptx.py:{key} -- {anchor!r} is on lines {hits}, not only {a}")
+            if end is not None:
+                if up[b-1].strip() != end:
+                    bad.append(f"{fid}: ptx.py:{key} -- line {b} does not carry {end!r}")
+                hits = [i+1 for i, l in enumerate(up) if a <= i+1 <= b and l.strip() == end]
+                if hits != [b]:
+                    bad.append(f"{fid}: ptx.py:{key} -- {end!r} is on lines {hits} of the span, "
+                               f"not only {b}")
+    return bad
+
+
+def cites_hold() -> bool:
+    """THE CITATIONS, CHECKED AGAINST UPSTREAM. THE CHECK THAT MAKES A CITATION A PIN.
+
+    A citation is a CLAIM, and this is the check that reads the claim and the tree and
+    says whether they agree. It is RED when a file's citations are not the declared ones,
+    when a cited line no longer carries what the declaration names, and when what the
+    declaration names is no longer unique to the line it names.
+    """
+    try:
+        bad = _cite_problems()
+    except OSError as exc:
+        print(f"ptx_render_census-gate: CITES: {exc}", file=sys.stderr)
+        return False
+    if bad:
+        print("ptx_render_census-gate: CITES: " + "; ".join(bad[:4]), file=sys.stderr)
+        return False
+    return True
+
+
+# ---- the cite plant --------------------------------------------------------------------
+# THE SUBJECT IS THE ORACLE, and the defect is a citation that MOVED OFF THE LINE IT
+# CLAIMS. THE BYTES COME FROM THE WORKING TREE and never from `git show HEAD:` -- a plant
+# that reads HEAD plants nothing the moment HEAD carries the fix, and this fix IS in HEAD's
+# future BY CONSTRUCTION: the fix and the plant are the same commit.
+CITE_SCRATCH = HERE / "_ptxcite_plantcase.py"
+# THE LINE THE CITATION CLAIMS, AND THE LINE IT IS MOVED ONTO. Upstream's 181 is the dtype
+# lookup -- `self.types[unwrap(u).dtype]` -- the line that RAISES `KeyError` for a dtype the
+# table does not name. Upstream's 182 is `c[prefix] += 1`, the `ssa` COUNTER. So the moved
+# citation names a line that carries something else ENTIRELY, and the gate must notice that
+# the claim moved with it.
+#
+# THE NUMBER IS AN INTEGER AND THE TEXT IS AN f-STRING, and that is not tidiness: a
+# literal citation -- the file name, a colon, and a number -- IN THIS FILE would be a
+# CITATION OF THIS FILE, because the population is DISCOVERED by a regex over the tree's
+# own write sites, and the plant's whole subject is a COPY of another file. So this file
+# holds no citation it does not mean.
+CITE_PLANT_LINE = 181
+CITE_PLANT_FROM = f"ptx.py:{CITE_PLANT_LINE}"
+CITE_PLANT_TO = f"ptx.py:{CITE_PLANT_LINE + 1}"
+# THE CONTROL'S ANCHOR IS A `def` LINE, and the comment goes on a LINE OF ITS OWN above it --
+# the most comment-only edit there is, and the one the blank-line-dropping proof exists for.
+CITE_CONTROL_ANCHOR = "def F01_alu():"
+
+
+def cite_plant() -> int:
+    """THE PLANTS, THE CONTROL, AND THE PROOF THAT THE CONTROL MOVED NOTHING.
+
+    THE FIRST PLANT moves ONE citation off the line it claims and the gate MUST GO RED AND
+    SAY SO. A citation that nobody checks is a label, and the label here is a line number
+    that looks exactly like a claim.
+
+    THE SECOND PLANT ADDS a claim in a comment, and the gate must go red too: the
+    declaration says WHICH CLAIMS THE FILE MAKES, so a new one is a change nobody
+    verified. THE POPULATION IS DISCOVERED, but the DECLARATION is what says the discovered
+    population is the RIGHT one.
+
+    THE CONTROL is a comment on a line of its own, in the SAME file, and it must move
+    NOTHING. The proof that it moved nothing is the COMMENT-STRIPPED BYTES with the BLANK
+    LINES DROPPED -- `_code_only()`, which is `checks/port-compile-gate.py`'s own
+    `strip_comments()` plus the blank-line drop.
+
+    AND THE PLANTS' EDITS ARE COMMENT EDITS TOO -- the citations live in PROSE, because a
+    citation is a claim ABOUT upstream and a claim belongs in a comment. That is the POINT
+    and not a loophole: the gate reads the CLAIM inside the comment, so a comment that
+    MOVES a claim is red and a comment that ADDS PROSE is green, and the difference
+    between the two is a claim and not a byte.
+    """
+    original = ORACLE.read_text()
+    if CITE_PLANT_FROM not in original:
+        print("REFUSED: the plant's citation is not in the oracle as it stands. THE PLANT IS "
+              "A TEXT EDIT ON THE WORKING TREE, so an anchor that moved means the plant must "
+              "be re-anchored -- NOT that it should fall back to reading git.")
+        return 3
+    if CITE_CONTROL_ANCHOR not in original:
+        print("REFUSED: the control's anchor is not in the oracle as it stands.")
+        return 3
+    cases = [
+        ("PLANT (one citation moved off the line it claims)",
+         original.replace(CITE_PLANT_FROM, CITE_PLANT_TO, 1),
+         "a citation that names a line it does not claim"),
+        ("PLANT (a NEW citation added by a comment)",
+         original.replace(CITE_CONTROL_ANCHOR,
+                          "# a comment that adds a claim: ptx.py:" + str(CITE_PLANT_LINE) +
+                          "\n" + CITE_CONTROL_ANCHOR, 1),
+         "a claim the declaration does not carry"),
+        ("CONTROL (a comment on a line of its own)",
+         original.replace(CITE_CONTROL_ANCHOR,
+                          "# a comment on a line of its own\n" + CITE_CONTROL_ANCHOR, 1),
+         "a comment-only edit in the SAME file, which must move NOTHING"),
+    ]
+    bad = 0
+    try:
+        for name, text, what in cases:
+            CITE_SCRATCH.write_text(text)
+            problems = _cite_problems([("oracle", CITE_SCRATCH)])
+            same_code = _code_only(text) == _code_only(original)
+            print(f"{name:<62} cites={'RED' if problems else 'green':<5} "
+                  f"comment-only={same_code!s:<5} {what}")
+            for p in problems[:2]:
+                print(f"{'':<62} :: {p}")
+            if name.startswith("PLANT"):
+                if not problems:
+                    print("  THE PLANT DID NOT FIRE: a claim moved and nothing went red.")
+                    bad += 1
+            if name.startswith("CONTROL"):
+                if problems:
+                    print("  THE CONTROL IS NOT A CONTROL: it moved the verdict.")
+                    bad += 1
+                if not same_code:
+                    print("  THE CONTROL IS NOT A CONTROL: it edited more than a comment.")
+                    bad += 1
+    finally:
+        CITE_SCRATCH.unlink(missing_ok=True)
+    return bad
+
+
 def _load_port_compile():
     """`checks/port-compile-gate.py` BY PATH, for its `judge()` and its `strip_comments()`.
 
@@ -1342,6 +1649,10 @@ if __name__ == "__main__":
                   "COMPARED, `f37_twobufs` is the fixture whose INDEX carries a non-zero "
                   "src[0] and the only thing in the axis that can see the same wrong read in "
                   "`rg_pick`, and `f38_regload` is the one whose LOAD subscripts a LIST rather "
-                  "than a scalar, which is what M9 needed",
+                  "than a scalar, which is what M9 needed. EVERY `ptx.py:NNN` CITATION IN "
+                  "THESE FIVE FILES IS DECLARED -- WHICH citations each file makes, IN ORDER, "
+                  "and what the cited line CARRIES -- so `cites_hold()` is red when a citation "
+                  "MOVED, when a cited line no longer carries what the declaration names, and "
+                  "when what the declaration names is no longer UNIQUE to the line it names",
                   checks=lambda: (reasons_hold() and names_hold() and axis_hold() and claims_hold()
-                                  and pins_hold())))
+                                  and pins_hold() and cites_hold())))
