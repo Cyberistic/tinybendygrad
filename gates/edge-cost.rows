@@ -1,28 +1,31 @@
 # gates/edge-cost.rows -- TAB separated. Generated; the generator is `gates/edge-runner.py --measure`, the ONLY writer.
 # columns: gate, seconds, peak-mb, verdict, token, measured-at
-# written 2026-10-22T17:34:58Z HEAD=bbf342a28
-checks/differ.py	0.49	23	REFUSED	UNASSIGNED(2)	2026-10-22T17:29:00Z
-checks/e2e.py	30.66	577	SKIP	TIMED-OUT	2026-10-22T17:29:31Z
-checks/gatesweep.py	30.44	154	SKIP	TIMED-OUT	2026-10-22T17:30:01Z
-checks/substrate.py	0.72	24	REFUSED	REFUSED	2026-10-22T17:30:02Z
-gates/amd_dsl_census-gate.py	30.32	1354	SKIP	TIMED-OUT	2026-10-22T17:30:32Z
-gates/beautiful-mnist-gate.py	30.14	1723	SKIP	TIMED-OUT	2026-10-22T17:31:02Z
-gates/code-reader-census.py	30.16	738	SKIP	TIMED-OUT	2026-10-22T17:31:33Z
-gates/compile-census-gate.py	0.79	25	FAIL	FAIL	2026-10-22T17:31:33Z
-gates/crp_graph_census-gate.py	23.24	1915	PASS	PASS	2026-10-22T17:31:57Z
-gates/edge-oracle-pin-gate.py	0.36	22	PASS	PASS	2026-10-22T17:31:57Z
-gates/js-lane-census.py	2.19	567	PASS	PASS	2026-10-22T17:31:59Z
-gates/mixin-op-gate.py	25.37	1423	FAIL	FAIL	2026-10-22T17:32:25Z
-gates/onnx_census-gate.py	30.22	2158	SKIP	TIMED-OUT	2026-10-22T17:32:55Z
-gates/opname-census-gate.py	1.89	51	PASS	PASS	2026-10-22T17:32:57Z
-gates/ops_python_census-gate.py	28.48	2486	PASS	PASS	2026-10-22T17:33:25Z
-gates/paramarg-site-gate.py	1.79	47	PASS	PASS	2026-10-22T17:33:27Z
-gates/rand_census-gate.py	29.05	2046	FAIL	FAIL	2026-10-22T17:33:56Z
-gates/state_census-gate.py	16.30	1205	PASS	PASS	2026-10-22T17:34:12Z
-gates/subnormal-flush-gate.py	1.87	42	PASS	PASS	2026-10-22T17:34:14Z
-gates/symrules-census.py	0.36	21	PASS	PASS	2026-10-22T17:34:15Z
-gates/tagmachinery-gate.py	5.16	43	PASS	PASS	2026-10-22T17:34:20Z
-gates/upstream-pow-dtype-gate.py	4.95	80	PASS	PASS	2026-10-22T17:34:25Z
-gates/upstream-promo-lattice-gate.py	0.71	81	FAIL	FAIL	2026-10-22T17:34:25Z
-gates/wgsl_render_census-gate.py	30.19	1469	SKIP	TIMED-OUT	2026-10-22T17:34:56Z
-gates/worker-gate.py	2.50	47	PASS	PASS	2026-10-22T17:34:58Z
+# written 2026-10-22T18:33:16Z HEAD=217c8f8cf
+checks/differ.py	0.35	23	REFUSED	UNASSIGNED(2)	2026-10-22T18:27:17Z
+checks/e2e.py	30.18	601	SKIP	TIMED-OUT	2026-10-22T18:27:47Z
+checks/gatesweep.py	30.16	171	SKIP	TIMED-OUT	2026-10-22T18:28:17Z
+checks/substrate.py	0.46	21	REFUSED	REFUSED	2026-10-22T18:28:18Z
+gates/amd_dsl_census-gate.py	30.22	1613	SKIP	TIMED-OUT	2026-10-22T18:28:48Z
+gates/beautiful-mnist-gate.py	30.16	1702	SKIP	TIMED-OUT	2026-10-22T18:29:18Z
+gates/code-reader-census.py	30.51	1169	SKIP	TIMED-OUT	2026-10-22T18:29:49Z
+gates/compile-census-gate.py	3.24	74	FAIL	FAIL	2026-10-22T18:29:52Z
+gates/crp_graph_census-gate.py	24.40	1868	PASS	PASS	2026-10-22T18:30:16Z
+gates/edge-oracle-pin-gate.py	0.38	21	PASS	PASS	2026-10-22T18:30:17Z
+gates/edge-reach-census.py	10.89	147	FAIL	FAIL	2026-10-22T18:30:28Z
+gates/gates-pop-rows-gate.py	0.96	69	PASS	PASS	2026-10-22T18:30:28Z
+gates/js-lane-census.py	2.52	563	PASS	PASS	2026-10-22T18:30:31Z
+gates/mixin-op-gate.py	20.74	1609	FAIL	FAIL	2026-10-22T18:30:52Z
+gates/onnx_census-gate.py	26.54	2217	PASS	PASS	2026-10-22T18:31:18Z
+gates/opname-census-gate.py	1.84	51	PASS	PASS	2026-10-22T18:31:20Z
+gates/ops_python_census-gate.py	25.92	2239	PASS	PASS	2026-10-22T18:31:46Z
+gates/paramarg-site-gate.py	1.82	47	PASS	PASS	2026-10-22T18:31:48Z
+gates/rand_census-gate.py	29.31	2099	FAIL	FAIL	2026-10-22T18:32:17Z
+gates/reachability-gate.py	10.51	131	PASS	PASS	2026-10-22T18:32:28Z
+gates/state_census-gate.py	15.63	1177	PASS	PASS	2026-10-22T18:32:43Z
+gates/subnormal-flush-gate.py	1.51	114	PASS	PASS	2026-10-22T18:32:45Z
+gates/symrules-census.py	0.36	20	PASS	PASS	2026-10-22T18:32:45Z
+gates/tagmachinery-gate.py	4.08	41	PASS	PASS	2026-10-22T18:32:49Z
+gates/upstream-pow-dtype-gate.py	3.08	82	PASS	PASS	2026-10-22T18:32:52Z
+gates/upstream-promo-lattice-gate.py	0.40	23	FAIL	FAIL	2026-10-22T18:32:53Z
+gates/wgsl_render_census-gate.py	21.90	1885	PASS	PASS	2026-10-22T18:33:15Z
+gates/worker-gate.py	1.27	47	PASS	PASS	2026-10-22T18:33:16Z

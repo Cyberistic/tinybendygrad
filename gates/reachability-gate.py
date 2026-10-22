@@ -74,6 +74,21 @@ TRACE = HERE / "edge-trace.rows"
 
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 
+# THE EDGE'S HOOK, DECLARED HERE AND READ BY THE EDGE (`gates/edge-runner.py:declares_edge_candidate`).
+#
+# **THE GATE THAT MEASURES REACHABILITY WAS ITSELF UNREACHABLE**, which is the sharpest instance
+# of the class this tree keeps rediscovering: an instrument that is DISCOVERED and that nobody runs
+# measures nothing, and the instrument that says so was among the ones nobody ran. MEASURED
+# 2026-10-22: this file was in no `.github/workflows/`, held no pin the edge's selection rule could
+# see, and had no row in `gates/edge-cost.rows` -- so the edge never ran it and its answer about
+# the tree reached nobody.
+#
+# The tree's own mechanism is the fix, and it is the SAME one the compile-census gate and the
+# oracle-pin gate use: declare it, and let the runner write the cost row and the trace row.
+# **A HAND-WRITTEN ROW IN EITHER LEDGER WOULD BE A ROW THE RUNNER NEVER PRODUCED.** The cost is
+# MEASURED: this gate takes 12.6 s against the edge's 30 s budget, so the edge can afford it.
+EDGE_CANDIDATE = True
+
 # A PATH TOKEN: a maximal run of the characters a path is made of. `.` and `-` are IN it, because
 # `edge-runner.py` is one component and splitting it would make `runner.py` a component too --
 # and a component that is not a component is how a basename join answers "yes" to the wrong gate.

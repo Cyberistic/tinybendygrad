@@ -138,14 +138,22 @@ def pass_the_tree_in(root):
 
 def load(name, path):
     """A MODULE, LOADED BY PATH. Never imported by name: `gates/gates-pop.py` has a hyphen, and
-    importing a gate RUNS it."""
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        return None
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[name] = mod
-    spec.loader.exec_module(mod)
-    return mod
+    importing a gate RUNS it.
+
+    **THE WARNINGS ARE SILENCED HERE, FOR THE REASON `checks/gatesweep.py` gives about its own
+    `homes()`: silencing at the call site is a thing a caller can forget, and this file's stdout
+    is a verdict a reader reads. MEASURED: `gates/edge-oracle-pin-gate.py` carries a regex with an
+    invalid escape sequence, so loading it printed a `SyntaxWarning` into the middle of the edge's
+    own output."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        spec = importlib.util.spec_from_file_location(name, path)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[name] = mod
+        spec.loader.exec_module(mod)
+        return mod
 
 
 def modules():
@@ -208,9 +216,19 @@ def declares_edge_candidate(path):
 
 def _module_constant(path, name):
     """-> the value of a module-level constant, read off the module body by `ast.literal_eval`,
-    or None when the module does not declare it (or does not parse)."""
+    or None when the module does not declare it (or does not parse).
+
+    **THE WARNINGS ARE SILENCED HERE, AND THAT IS A FIX RATHER THAN A MATTER OF TASTE.**
+    `ast.parse` of `gates/gates-pop.py` -- which this function is handed, because the gate
+    population INCLUDES the file that owns the population -- emits two `SyntaxWarning`s for the
+    invalid escape sequences in that file's own regexes, and a gate's stdout is a verdict a reader
+    reads. MEASURED: `gates/edge-runner.py --plan` printed them on stderr, and so did every
+    consumer of this function, and `checks/gatesweep.py`'s own rule says the thing out loud: "a
+    console whose verdicts matter cannot carry another instrument's warnings"."""
     try:
-        tree = ast.parse(Path(path).read_text(errors="replace"))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            tree = ast.parse(Path(path).read_text(errors="replace"))
     except (OSError, SyntaxError, ValueError):
         return None
     for node in tree.body:
@@ -258,7 +276,21 @@ def candidates(gs, popmod, root=ROOT):
     pin read by an import from OUTSIDE the gate population is not counted here. **THAT IS A
     MEASURED LIMITATION AND IT IS STATED RATHER THAN HIDDEN**: the whole-tree census counts
     those, and `gates/pincensus-gate.py` is the instrument for that question.
+    **THE WARNINGS ARE SILENCED INSIDE THIS FUNCTION AND NOT AT THE CALL SITE**, for the reason
+    `checks/gatesweep.py` gives about its own `homes()`: silencing at the call site is a thing a
+    caller can forget, and the caller here is a runner whose stdout is a verdict a reader reads.
+    MEASURED: `gates/pincensus-pop.py:host_of` re-parses every member of the population, and the
+    population INCLUDES `gates/gates-pop.py`, whose own regexes carry two invalid escape sequences
+    -- so `ast.parse` emitted two `SyntaxWarning`s on every run, and they landed in the middle of
+    the plan's output.
     """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return _candidates(gs, popmod, root)
+
+
+def _candidates(gs, popmod, root):
+    """The body of `candidates()`, under the warning filter its caller installs."""
     members = gs.population(root)
     corpus, host = {}, {}
     for path, _reason in members:
@@ -277,10 +309,19 @@ def candidates(gs, popmod, root=ROOT):
         if read:
             out.setdefault(site["file"], []).append((site["name"], read))
     # A GATE THAT COVERS ANOTHER GATE'S PIN IS A CANDIDATE EVEN THOUGH IT HOLDS NO PIN.
+    #
+    # **`root / rel`, AND NOT `ROOT / rel`.** MEASURED: the corpus above is read out of `root`, so
+    # `rel` is relative to the tree being MEASURED, and the module-global `ROOT` is the tree this
+    # file HAPPENS to live in. On the live tree the two are the same directory and the difference
+    # is invisible; on any other tree -- and a PLANT is any other tree -- the declaration was read
+    # out of the REAL tree while the gate was found in the SYNTHETIC one, so a synthetic gate that
+    # declared `EDGE_CANDIDATE = True` was NOT selected, and the instrument that exists to catch
+    # an unrun claim could not see one. **A PATH COMPUTED FROM A CONSTANT IS A PATH ABOUT THE
+    # CONSTANT'S TREE, NOT ABOUT THE TREE BEING MEASURED.**
     for rel in corpus:
         if rel in out:
             continue
-        if declares_edge_candidate(ROOT / rel):
+        if declares_edge_candidate(root / rel):
             out.setdefault(rel, []).append(("EDGE_CANDIDATE", []))
     return members, out
 

@@ -1,28 +1,31 @@
 # gates/edge-trace.rows -- TAB separated. Generated; the generator is `gates/edge-runner.py`. THE TRACE: it says which gates RAN and what they said, and it is IN GIT so the answer survives a fresh clone.
 # columns: gate, status, verdict, token, rc, seconds, peak-mb, measured-at
-# written 2026-10-22T17:40:44Z HEAD=bbf342a28
-checks/differ.py	RAN-UNASSIGNED	UNASSIGNED	UNASSIGNED(2)	2	0.35	24	2026-10-22T17:38:08Z
-checks/e2e.py	OVER-BUDGET	SKIP	MEASURED-30.66s				2026-10-22T17:38:09Z
-checks/gatesweep.py	OVER-BUDGET	SKIP	MEASURED-30.44s				2026-10-22T17:38:09Z
-checks/substrate.py	RAN	REFUSED	REFUSED	3	0.34	21	2026-10-22T17:38:09Z
-gates/amd_dsl_census-gate.py	OVER-BUDGET	SKIP	MEASURED-30.32s				2026-10-22T17:38:09Z
-gates/beautiful-mnist-gate.py	OVER-BUDGET	SKIP	MEASURED-30.14s				2026-10-22T17:38:09Z
-gates/code-reader-census.py	OVER-BUDGET	SKIP	MEASURED-30.16s				2026-10-22T17:38:09Z
-gates/compile-census-gate.py	RAN	FAIL	FAIL	1	0.62	25	2026-10-22T17:38:09Z
-gates/crp_graph_census-gate.py	RAN	PASS	PASS	0	26.79	1574	2026-10-22T17:38:09Z
-gates/edge-oracle-pin-gate.py	RAN	PASS	PASS	0	0.45	21	2026-10-22T17:38:36Z
-gates/js-lane-census.py	RAN	PASS	PASS	0	4.68	555	2026-10-22T17:38:37Z
-gates/mixin-op-gate.py	RAN	FAIL	FAIL	1	27.33	1429	2026-10-22T17:38:41Z
-gates/onnx_census-gate.py	OVER-BUDGET	SKIP	MEASURED-30.22s				2026-10-22T17:39:09Z
-gates/opname-census-gate.py	RAN	PASS	PASS	0	2.40	52	2026-10-22T17:39:09Z
-gates/ops_python_census-gate.py	RAN	SKIP	TIMED-OUT	-9	30.12	2262	2026-10-22T17:39:11Z
-gates/paramarg-site-gate.py	RAN	PASS	PASS	0	2.57	47	2026-10-22T17:39:41Z
-gates/rand_census-gate.py	RAN	SKIP	TIMED-OUT	-9	30.12	1860	2026-10-22T17:39:44Z
-gates/state_census-gate.py	RAN	PASS	PASS	0	17.11	1167	2026-10-22T17:40:14Z
-gates/subnormal-flush-gate.py	RAN	PASS	PASS	0	2.16	109	2026-10-22T17:40:31Z
-gates/symrules-census.py	RAN	PASS	PASS	0	0.34	20	2026-10-22T17:40:33Z
-gates/tagmachinery-gate.py	RAN	PASS	PASS	0	3.79	43	2026-10-22T17:40:34Z
-gates/upstream-pow-dtype-gate.py	RAN	PASS	PASS	0	4.14	82	2026-10-22T17:40:37Z
-gates/upstream-promo-lattice-gate.py	RAN-FINDING	FAIL	FAIL	1	0.69	81	2026-10-22T17:40:42Z
-gates/wgsl_render_census-gate.py	OVER-BUDGET	SKIP	MEASURED-30.19s				2026-10-22T17:40:42Z
-gates/worker-gate.py	RAN	PASS	PASS	0	1.26	47	2026-10-22T17:40:42Z
+# written 2026-10-22T18:51:39Z HEAD=217c8f8cf
+checks/differ.py	RAN-UNASSIGNED	UNASSIGNED	UNASSIGNED(2)	2	0.51	23	2026-10-22T18:45:44Z
+checks/e2e.py	OVER-BUDGET	SKIP	MEASURED-30.18s				2026-10-22T18:45:44Z
+checks/gatesweep.py	OVER-BUDGET	SKIP	MEASURED-30.16s				2026-10-22T18:45:44Z
+checks/substrate.py	RAN	REFUSED	REFUSED	3	0.50	21	2026-10-22T18:45:44Z
+gates/amd_dsl_census-gate.py	OVER-BUDGET	SKIP	MEASURED-30.22s				2026-10-22T18:45:45Z
+gates/beautiful-mnist-gate.py	OVER-BUDGET	SKIP	MEASURED-30.16s				2026-10-22T18:45:45Z
+gates/code-reader-census.py	OVER-BUDGET	SKIP	MEASURED-30.51s				2026-10-22T18:45:45Z
+gates/compile-census-gate.py	RAN	FAIL	FAIL	1	16.66	74	2026-10-22T18:45:45Z
+gates/crp_graph_census-gate.py	RAN	SKIP	TIMED-OUT	-9	30.33	908	2026-10-22T18:46:02Z
+gates/edge-oracle-pin-gate.py	RAN	PASS	PASS	0	0.61	21	2026-10-22T18:46:32Z
+gates/edge-reach-census.py	RAN	PASS	PASS	0	26.89	139	2026-10-22T18:46:33Z
+gates/gates-pop-rows-gate.py	RAN	PASS	PASS	0	2.03	68	2026-10-22T18:47:00Z
+gates/js-lane-census.py	RAN	PASS	PASS	0	9.67	525	2026-10-22T18:47:02Z
+gates/mixin-op-gate.py	RAN	SKIP	TIMED-OUT	-9	30.53	1489	2026-10-22T18:47:11Z
+gates/onnx_census-gate.py	RAN	SKIP	TIMED-OUT	-9	30.47	1354	2026-10-22T18:47:42Z
+gates/opname-census-gate.py	RAN	PASS	PASS	0	4.26	51	2026-10-22T18:48:12Z
+gates/ops_python_census-gate.py	RAN	SKIP	TIMED-OUT	-9	31.34	1143	2026-10-22T18:48:17Z
+gates/paramarg-site-gate.py	RAN	PASS	PASS	0	6.89	46	2026-10-22T18:48:48Z
+gates/rand_census-gate.py	RAN	SKIP	TIMED-OUT	-9	30.49	1118	2026-10-22T18:48:55Z
+gates/reachability-gate.py	RAN	PASS	PASS	0	26.24	123	2026-10-22T18:49:25Z
+gates/state_census-gate.py	RAN	SKIP	TIMED-OUT	-9	30.27	805	2026-10-22T18:49:52Z
+gates/subnormal-flush-gate.py	RAN	PASS	PASS	0	5.26	113	2026-10-22T18:50:22Z
+gates/symrules-census.py	RAN	PASS	PASS	0	2.77	42	2026-10-22T18:50:27Z
+gates/tagmachinery-gate.py	RAN	PASS	PASS	0	13.58	39	2026-10-22T18:50:30Z
+gates/upstream-pow-dtype-gate.py	RAN	PASS	PASS	0	13.29	82	2026-10-22T18:50:43Z
+gates/upstream-promo-lattice-gate.py	RAN-FINDING	FAIL	FAIL	1	2.58	81	2026-10-22T18:50:57Z
+gates/wgsl_render_census-gate.py	RAN	SKIP	TIMED-OUT	-9	30.82	539	2026-10-22T18:50:59Z
+gates/worker-gate.py	RAN	PASS	PASS	0	8.46	47	2026-10-22T18:51:30Z

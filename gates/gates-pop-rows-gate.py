@@ -71,6 +71,17 @@ def _load_gates_pop():
 
 POP = _load_gates_pop()
 LEDGER = HERE / "gates-pop.ledger.tsv"
+
+# THE EDGE'S HOOK, DECLARED HERE AND READ BY THE EDGE (`gates/edge-runner.py:declares_edge_candidate`).
+#
+# **A GATE ABOUT GATES THAT NOBODY RAN.** MEASURED 2026-10-22: this file held no pin the edge's
+# selection rule could see, was in no `.github/workflows/`, and had no row in
+# `gates/edge-cost.rows` -- so the tree's own record of what a gate-ledger row IS was written by an
+# instrument that nothing executed. The tree's own mechanism is the fix, and it is the SAME one
+# `gates/compile-census-gate.py` and `gates/edge-oracle-pin-gate.py` use: declare it, and let the
+# runner write the cost row and the trace row. **A HAND-WRITTEN ROW IN EITHER LEDGER WOULD BE A
+# ROW THE RUNNER NEVER PRODUCED.** The cost is MEASURED: 0.48 s against the edge's 30 s budget.
+EDGE_CANDIDATE = True
 PREAMBLE_STATE = ("not-measured",)  # set by `main`; the summary line reads it, and a fact that is
                                    # printed mid-report and absent from the summary is unread
 
