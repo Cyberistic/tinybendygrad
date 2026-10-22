@@ -302,19 +302,36 @@ def mo_dim_u32(d: O.Sint) -> U32:
 def mo_dim_at(+fx: F.Folded, +i: U32, k: U32) -> U32:
   mo_dim_u32(Maybe.default(&2, O.Sint, List.get(&2, O.Sint, mo_dims(fx, i), U32.to_nat(k)), F.sint_of(1)))
 
-# THE INDEX OF A HEAD ELEMENT, `i` in `enumerate(self.shape)`, and it is `len(t)` --
-# the TAIL's length, because a pattern `case d <> t` leaves `t` one shorter than the
-# scrutinee and the head sits at `len(t)`. It is a length rather than a threaded
-# counter because a def body reads its parameters once each, and threading `i` would
-# need it for the test AND for the increment.
+# THE INDEX OF A HEAD ELEMENT, `i` in `enumerate(self.shape)`, AND **`enumerate`
+# COUNTS FROM THE FRONT**. THE HEAD OF `ds` IS THE LAST ELEMENT OF `ds`, SO ITS
+# FORWARD INDEX IS `n - len(ds)` WHERE `n` IS THE ORIGINAL LENGTH -- AND `n` HAS TO BE
+# THREADED, BECAUSE `ds` AT THE CALL SITE IS THE *REMAINING* LIST, NOT THE ORIGINAL ONE.
 #
-# MEASURED: the first version said `len(ds) - len(t)`, which is `len(t) + 1`, and every
-# index in every walk was off by one. `t_sum0kd` still printed the right four nodes --
-# `RESHAPE(REDUCE, CONST(4))` has the same node COUNT and the same op names as
-# `RESHAPE(REDUCE, CONST(1))` -- so the signature rows could not see it and the COUNT
-# could not either. It is `sh_sum0kd` (the SHAPE row) that caught it.
-def mo_at(+ds: List<&2, O.Sint>, +t: List<&2, O.Sint>) -> U32:
-  U32.from_nat(List.length(&2, O.Sint, t))
+# **THIS DEF WAS WRONG TWICE AND BOTH ERRORS WERE INVISIBLE TO THE ROWS THAT EXIST.**
+# THE FIRST VERSION SAID `len(ds) - len(t)`, WHICH IS THE FORWARD INDEX PLUS ONE, AND
+# EVERY INDEX IN EVERY WALK WAS OFF BY ONE; `t_sum0kd` STILL PRINTED THE RIGHT FOUR
+# NODES -- `RESHAPE(REDUCE, CONST(4))` HAS THE SAME NODE COUNT AND THE SAME OP NAMES AS
+# `RESHAPE(REDUCE, CONST(1))` -- SO THE SIGNATURE ROWS COULD NOT SEE IT AND THE COUNT
+# COULD NOT EITHER. IT IS `sh_sum0kd` (THE SHAPE ROW) THAT CAUGHT IT. **THE SECOND
+# VERSION SAID `len(t)`, WHICH IS THE INDEX COUNTED FROM THE *END* -- AND THAT IS ALSO
+# WRONG, AND IT IS WRONG WHERE IT MATTERS.**
+#
+# **MEASURED 2026-10-22, THE THREE NEIGHBOURS ARE ALL FORWARD AND THIS ONE WAS NOT:**
+# `mo_dim_at` READS `mo_dims` AT A FORWARD INDEX, `mo_resolve` ADDS `total` TO A
+# NEGATIVE AXIS (UPSTREAM'S `_resolve_dim`, reduce.py:15), AND `mo_range` BUILDS
+# `0..n-1`. SO THE PORT'S AXIS LIST IS FORWARD AND THE WALK'S INDEX MUST BE TOO.
+# **THE CONSEQUENCE, MEASURED AGAINST CPython IN `.venv`:**
+#   * THE KEEPDIM TARGET FOR `(2,2)` ON AXIS `[0]` IS `(1)(2)` (reduce.py:18, `1 if i
+#     in axis else s for i, s in enumerate(self.shape)`) AND THIS DEF ANSWERED `(2)(1)`
+#     -- **THE ORDER IS WRONG EVEN ON A SQUARE.**
+#   * THE REDUCED SIZE FOR A `(2,3)` TENSOR ON AXIS `[0]` IS 3 AND THIS DEF ANSWERED 2.
+#   * `nn/layers.bend:230` MEASURED THE SAME DIVERGENCE ON `(2,4,3)` WITH AXIS `[2]`,
+#     WHERE `mo_keep_ds` ANSWERED `(1,4,3)` AND CPython ANSWERS `(2,4,1)`.
+# **AND NOTHING IN THE TREE COULD SEE IT: THE PORT'S ONLY RANK-2 FIXTURE IS `(2,2)` --
+# WHERE THE SIZE IS ACCIDENTALLY RIGHT BECAUSE THE TWO DIMENSIONS ARE EQUAL -- AND ITS
+# ONLY KEEPDIM ROW IS ONE-DIMENSIONAL, WHERE `len(t)` AND THE FORWARD INDEX AGREE.**
+def mo_at(+ds: List<&2, O.Sint>, +n: U32) -> U32:
+  U32.sub(n, U32.from_nat(List.length(&2, O.Sint, ds)))
 
 # `tuple(range(n))` -- `permute`'s identity test (movement.py:214) and
 # `_reduce`'s `range(self.ndim)` when `axis is None` (reduce.py:15) are the SAME list,
@@ -689,15 +706,16 @@ def mo_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
 # ACCUMULATOR, because `U32.is_eq(i, dim)` is a call and a `match` may not scrutinise
 # one (rule 1). `Bool.pick` is strict, so the appended branch is built and discarded
 # when `i == dim`; that costs a CONST and is what makes the walk terminate.
-def mo_squeeze.go(+ds: List<&2, O.Sint>, +dim: U32, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
+def mo_squeeze.go(+ds: List<&2, O.Sint>, +dim: U32, +n: U32, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
   match ds:
     case Nil{}: acc
-    case c <> +t: mo_squeeze.go(t, dim,
-      Bool.pick(List<&2, O.Const>, U32.is_eq(mo_at(ds, t), dim), acc,
+    case c <> +t: mo_squeeze.go(t, dim, n,
+      Bool.pick(List<&2, O.Const>, U32.is_eq(mo_at(ds, n), dim), acc,
         List.append(&2, O.Const, acc, [mo_ki(mo_dim_u32(c))])))
 
 def mo_squeeze_dims(+t: T.Tensor, +dim: U32) -> List<&2, O.Const>:
-  mo_squeeze.go(mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)), dim, Nil{})
+  +ds = mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))
+  mo_squeeze.go(ds, dim, U32.from_nat(List.length(&2, O.Sint, ds)), Nil{})
 
 def mo_squeeze.pick(keep: Bool, +t: T.Tensor, +dim: U32) -> T.Tensor:
   match keep:
@@ -772,14 +790,15 @@ def mo_iaxis(+axis: List<&2, U32>, i: U32) -> Bool: mo_iaxis.go(axis, i)
 def mo_keep_one(inaxis: Bool, d: O.Sint) -> U32:
   Bool.pick(U32, inaxis, 1, mo_dim_u32(d))
 
-def mo_keep_ds.go(+ds: List<&2, O.Sint>, +axis: List<&2, U32>, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
+def mo_keep_ds.go(+ds: List<&2, O.Sint>, +axis: List<&2, U32>, +n: U32, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
   match ds:
     case Nil{}: acc
-    case d <> +t: mo_keep_ds.go(t, axis,
-      List.append(&2, O.Const, acc, [mo_ki(mo_keep_one(mo_iaxis(axis, mo_at(ds, t)), d))]))
+    case d <> +t: mo_keep_ds.go(t, axis, n,
+      List.append(&2, O.Const, acc, [mo_ki(mo_keep_one(mo_iaxis(axis, mo_at(ds, n)), d))]))
 
 def mo_keep_ds(+t: T.Tensor, +axis: List<&2, U32>) -> List<&2, O.Const>:
-  mo_keep_ds.go(mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)), axis, Nil{})
+  +ds = mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))
+  mo_keep_ds.go(ds, axis, U32.from_nat(List.length(&2, O.Sint, ds)), Nil{})
 
 # `_reduce` -- reduce.py:13-18. `self.cast(self.commit_dtype())`, then `_rop`, then the
 # keepdim reshape.
@@ -867,14 +886,15 @@ def mo_divn(+t: T.Tensor, n: U32) -> T.Tensor:
 # reduce did not touch, so the walk multiplies `shape[i]` for every `i not in axis`.
 # `Bool.pick` is strict and both arms are pure, which is why the multiply is not
 # hoisted out -- the same shape `tensor.bend`'s `tn_rop.ne1` uses for its filter.
-def mo_reduced.go(+ds: List<&2, O.Sint>, +axis: List<&2, U32>, +acc: U32) -> U32:
+def mo_reduced.go(+ds: List<&2, O.Sint>, +axis: List<&2, U32>, +n: U32, +acc: U32) -> U32:
   match ds:
     case Nil{}: acc
-    case d <> +t: mo_reduced.go(t, axis,
-      Bool.pick(U32, mo_iaxis(axis, mo_at(ds, t)), U32.mul(acc, mo_dim_u32(d)), acc))
+    case d <> +t: mo_reduced.go(t, axis, n,
+      Bool.pick(U32, mo_iaxis(axis, mo_at(ds, n)), U32.mul(acc, mo_dim_u32(d)), acc))
 
 def mo_reduced(+t: T.Tensor, +axis: List<&2, U32>) -> U32:
-  mo_reduced.go(mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)), axis, 1)
+  +ds = mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))
+  mo_reduced.go(ds, axis, U32.from_nat(List.length(&2, O.Sint, ds)), 1)
 
 # `self.dtype if is_float(self.dtype) else float32` (op.py:518, :545).
 def mo_out_dt(float: Bool, +t: T.Tensor) -> S.Dt:
@@ -1178,6 +1198,13 @@ def mo_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
 def mo_buf4(+ar: O.Arena, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{4}, O.AParam{mo_buf.arg(0, dt)}, O.TNone{})
 
+# A BUFFER OF `n` ELEMENTS, so a fixture can be a shape that is NOT A SQUARE. **THE
+# ONLY RANK-2 FIXTURE THIS FILE HAD WAS `(2,2)`, AND ON A SQUARE THE REDUCED SIZE IS
+# ACCIDENTALLY RIGHT WHATEVER THE INDEX SAYS, BECAUSE THE TWO DIMENSIONS ARE EQUAL --
+# SO THE `(2,3)` FIXTURE BELOW IS WHAT MAKES THE INDEX VISIBLE.**
+def mo_bufn(+ar: O.Arena, dt: S.Dt, n: U32) -> O.Found:
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{n}, O.AParam{mo_buf.arg(0, dt)}, O.TNone{})
+
 def mo_fx1d() -> T.Tensor:
   +b = mo_buf4(O.Arena.empty(), S.single())
   T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
@@ -1190,6 +1217,16 @@ def mo_fx2d() -> T.Tensor:
   +b = mo_buf4(O.Arena.empty(), S.single())
   +x = T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
   +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(2), mo_ki(2)]})
+  T.tn_new(O.Found.ar(r), O.Found.i(r))
+
+# THE NON-SQUARE RANK-2 FIXTURE, `(2,3)`. **CPython IN `.venv`: `sum(axis=0)` IS
+# `(3,)` AND `sum(axis=0, keepdim=True)` IS `(1,3)`; `sum(axis=1)` IS `(2,)` AND
+# `sum(axis=1, keepdim=True)` IS `(2,1)`.** THE PORT, WITH THE BACKWARD INDEX, ANSWERED
+# `(2,)` AND `(2,1)` FOR AXIS 0 -- SEE `mo_at`'s COMMENT.
+def mo_fx23() -> T.Tensor:
+  +b = mo_bufn(O.Arena.empty(), S.single(), 6)
+  +x = T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
+  +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(2), mo_ki(3)]})
   T.tn_new(O.Found.ar(r), O.Found.i(r))
 
 # --- 1-3: the fixtures themselves, and they are ROWS because a 2-D fixture that
@@ -1433,6 +1470,20 @@ def t_sh_norm0() -> IO(Unit):
   +r = mo_norm0(mo_ax(False{}, x, 0), x)
   mo_shape("sh_norm0", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
 
+# THE TWO ROWS THAT MAKE `mo_at`'s INDEX VISIBLE. **THEY ARE RANK 2 AND NOT A SQUARE,
+# AND ONE OF THEM KEEPS THE DIMENSION -- SO BETWEEN THEM THEY PIN BOTH HALVES OF THE
+# DEFECT: THE REDUCED SIZE (`mo_reduced`) AND THE KEEPDIM TARGET (`mo_keep_ds`).**
+# CPython: `sum(axis=0)` ON `(2,3)` IS `(3,)` AND `sum(axis=0, keepdim=True)` IS `(1,3)`.
+def t_sh_sum0_23() -> IO(Unit):
+  +x = mo_fx23()
+  +r = mo_sum(False{}, x, mo_ax(False{}, x, 0))
+  mo_shape("sh_sum0_23", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
+def t_sh_sum0kd_23() -> IO(Unit):
+  +x = mo_fx23()
+  +r = mo_sum(True{}, x, mo_ax(False{}, x, 0))
+  mo_shape("sh_sum0kd_23", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
 # --- the four BEND-ONLY rows.
 
 # `t_commit_weak` -- rule 4. `commit_dtype` (tinygrad/dtype.py:16) REFUSES a weakint node
@@ -1517,6 +1568,8 @@ def main() -> IO(Unit):
     ag : Unit <- t_sh_lse0()
     ah : Unit <- t_sh_lse0kd()
     ai : Unit <- t_sh_norm0()
+    aj : Unit <- t_sh_sum0_23()
+    ak : Unit <- t_sh_sum0kd_23()
     t_bin_promote()
 
 # ===========================================================================

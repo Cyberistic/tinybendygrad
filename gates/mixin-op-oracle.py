@@ -63,6 +63,11 @@ def fx1d() -> Tensor: return Tensor([1., 2., 3., 4.], device='PYTHON')
 def i1d() -> Tensor: return Tensor([1, 2, 3, 4], device='PYTHON')
 def fx2d() -> Tensor: return Tensor([[1., 2.], [3., 4.]], device='PYTHON')
 
+# THE NON-SQUARE RANK-2 FIXTURE, `(2,3)`. **THE ORACLE HAS TO HAVE IT, BECAUSE A
+# ROW WITHOUT A WITNESS IS NOT A ROW BUT A LABEL** -- and `(2,2)` is the shape whose
+# reduced size is the same whichever way the index is counted.
+def fx23() -> Tensor: return Tensor([[1., 2., 3.], [4., 5., 6.]], device='PYTHON')
+
 # --- 1-2: the fixtures, as rows.
 row('lit1d', fx1d())
 row('lit2d', fx2d())
@@ -135,6 +140,12 @@ shrow('sh_mean0', fx1d().mean(axis=0))
 shrow('sh_lse0', fx1d().logsumexp(axis=0))
 shrow('sh_lse0kd', fx1d().logsumexp(axis=0, keepdim=True))
 shrow('sh_norm0', fx2d().normalize(p=0, dim=0))
+
+# THE TWO ROWS THAT MAKE `mo_at`'s INDEX VISIBLE: THE REDUCED SIZE AND THE KEEPDIM
+# TARGET, ON A RANK-2 SHAPE THAT IS NOT A SQUARE. CPython: `sum(axis=0)` ON `(2,3)` IS
+# `(3,)` AND `sum(axis=0, keepdim=True)` IS `(1,3)`.
+shrow('sh_sum0_23', fx23().sum(axis=0))
+shrow('sh_sum0kd_23', fx23().sum(axis=0, keepdim=True))
 
 # --- THE BEND-ONLY ROWS. `rop_gap` is `T.tn_rop`'s own shape refusal; `exp_cast` pins
 # that `exp`'s three casts are the IDENTITY for a float32 source; `commit_weak` is the

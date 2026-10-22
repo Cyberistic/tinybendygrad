@@ -1647,6 +1647,81 @@ brief-citation-error [##] 2/3  **I ASSERTED A MEASUREMENT I HAD NOT MADE, IN A W
                                        NAME'S EXISTENCE IS ONE MEASUREMENT; ITS SEMANTICS ARE ANOTHER, AND THE SECOND
                                        IS THE ONE THAT GETS ASSUMED.**
 
+mo-at-forward        [####] 3/4  **`mo_at` COUNTED THE INDEX FROM THE END, SO EVERY RANK>=2 KEEPDIM REDUCE AND EVERY
+                                       RANK>=2 REDUCED COUNT WAS WRONG -- AND NOTHING IN THE TREE COULD SEE IT.**
+                                       MEASURED 2026-10-22. `mixin/op.bend`'s `mo_at` ANSWERED `len(t)` -- THE TAIL'S
+                                       LENGTH -- WHILE ITS THREE NEIGHBOURS ARE ALL **FORWARD**: `mo_dim_at` READS
+                                       `mo_dims` AT A FORWARD INDEX, `mo_resolve` ADDS `total` TO A NEGATIVE AXIS
+                                       (UPSTREAM'S `_resolve_dim`, reduce.py:15), AND `mo_range` BUILDS `0..n-1`. SO
+                                       THE PORT'S AXIS LIST IS FORWARD AND THE WALK'S INDEX WAS NOT. **THE
+                                       CONSEQUENCES, AGAINST CPython IN `.venv`: THE KEEPDIM TARGET FOR `(2,2)` ON
+                                       AXIS `[0]` IS `(1)(2)` (reduce.py:18) AND THE PORT ANSWERED `(2)(1)` -- THE
+                                       ORDER IS WRONG EVEN ON A SQUARE; THE REDUCED COUNT FOR `(2,3)` ON AXIS `[0]` IS
+                                       2 AND THE PORT ANSWERED 3; AND `nn/layers.bend:230` HAD ALREADY MEASURED IT ON
+                                       `(2,4,3)` WITH AXIS `[2]`, WHERE `mo_keep_ds` ANSWERED `(1,4,3)` AND CPython
+                                       ANSWERS `(2,4,1)`.** **AND NOTHING COULD SEE IT: THE PORT'S ONLY RANK-2 FIXTURE
+                                       IS `(2,2)` -- WHERE THE COUNT IS ACCIDENTALLY RIGHT BECAUSE THE TWO DIMENSIONS
+                                       ARE EQUAL -- AND ITS ONLY KEEPDIM ROW IS ONE-DIMENSIONAL, WHERE `len(t)` AND
+                                       THE FORWARD INDEX AGREE.** **THE FIX: `mo_at` NOW ANSWERS `n - len(ds)`, WHERE
+                                       `n` IS THE ORIGINAL LENGTH, AND THE ORIGINAL LENGTH IS THREADED THROUGH THE
+                                       THREE WALKS -- **AND THREADING IT IS NOT OPTIONAL**: `ds` AT THE CALL SITE IS
+                                       THE *REMAINING* LIST, SO `len(ds) - len(t) - 1` IS ALWAYS 0 AND THE ORIGINAL
+                                       LENGTH IS NOT RECOVERABLE FROM THE CALL SITE. **`n` HAD TO BE `+n`**: A PLAIN
+                                       `n` USED TWICE IS BEND'S *"consumed more than once"*, AND `mo_iaxis.go`'s `+i`
+                                       IS USED TWICE AND COMPILES, SO `+` IS THE FORM THAT ALLOWS IT.** **THE ROWS
+                                       THAT MAKE IT VISIBLE: A `(2,3)` FIXTURE (`mo_bufn` + `mo_fx23`) AND TWO SHAPE
+                                       ROWS, `sh_sum0_23` AND `sh_sum0kd_23`, ON BOTH SIDES -- THE PORT AND THE ORACLE
+                                       -- BECAUSE A ROW WITHOUT A WITNESS IS A LABEL.** **THE CONTROL, REPRODUCING THE
+                                       ORIGINAL FORMULA EXACTLY (`len(t)` == `len(ds)-1` AT THE CALL SITE):
+                                       `sh_sum0kd_23` READS **`void`** -- THE SHAPE CANNOT BE READ AT ALL -- AGAINST
+                                       THE ORACLE'S `(1)(3) f32`, **AND THE PRE-EXISTING 1-D ROW `sh_sum0kd` IS
+                                       UNCHANGED, EXACTLY AS PREDICTED.** **AND `mo_squeeze` AND `mo_reduced` ARE ALSO
+                                       AFFECTED BY THE BACKWARD INDEX AND **NEITHER IS COVERED BY A ROW THAT CAN
+                                       FAIL** -- `mo_reduced` IS THE MEAN'S DENOMINATOR AND THE FOLD COMPUTES THE
+                                       REDUCE'S SHAPE INDEPENDENTLY, SO NO SHAPE ROW SEES IT, AND `mo_squeeze` HAS NO
+                                       ROW AT ALL. **THOSE TWO ARE THE NAMED NEXT MOVE.**
+
+mixin-op-red         [##] 2/3  **A TRACKED GATE IS RED AT HEAD, ON 11 ROWS, AND NOBODY HAD NOTICED.** MEASURED
+                                       2026-10-22: THE TREE'S OWN COMPARATOR, `gates/lanecmp.py`'s `compare()`, RUN ON
+                                       **HEAD's OWN LANES** (`git archive HEAD tinybendygrad` INTO A SCRATCH, THE PORT
+                                       RUN THERE, HEAD's `.agents/slop/mixin-op-gate.py` RUN FOR CPython) READS
+                                       **`agree=21  agree_many=0  differ=11  unanswered=4  port_only=4
+                                       oracle_only=0`**. THE 11 ARE THE MEAN/VAR/STD FAMILY: `mean0`, `mean0kd`,
+                                       `meanN`, `mean0_2d`, `var0`, `var0c0`, `std0`, `varmean0_v`, `varmean0_m`,
+                                       `stdmean0_s`, `stdmean0_m`. **THE PORT'S GRAPH HAS ONE MORE NODE THAN CPython's
+                                       AND THE EXTRA NODE IS A `CAST/1` BETWEEN THE `RECIPROCAL` AND THE `MUL` -- SO
+                                       IT IS A DTYPE DIFFERENCE IN THE MEAN'S DENOMINATOR, NOT AN INDEX DIFFERENCE,
+                                       AND IT PREDATES THIS SESSION'S WORK.** **AND THE GATE ITSELF WAS NOT EVEN
+                                       REACHING THE COMPARISON: ITS ROW COUNT IS PINNED (`rows=36, compared=32`) AND
+                                       ADDING TWO ROWS MADE IT **DEAD** (rc=5, *"lane bd.out produced 38 of 36 rows"*)
+                                       -- WHICH IS THE *"A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO
+                                       GATE"* CLASS, IN ITS OTHER FORM: **A GATE THAT CANNOT REACH ITS COMPARISON IS A
+                                       DEAD GATE, AND A DEAD GATE IS NOT A PASS.** **THE COUNTS ARE NOW 38 AND 34, SO
+                                       THE GATE RUNS ITS COMPARISON AND REPORTS THE DISAGREEMENTS INSTEAD OF REFUSING
+                                       TO COMPARE -- AND IT IS STILL RED, WHICH IS THE TRUTH.** **AND THE `mo_at` FIX
+                                       REPAIRED ONE OF THE ELEVEN (`meanN`), SO THE COUNT WENT 11 -> 10.** **THE
+                                       `CAST/1` DIVERGENCE IS NOT MINE AND IS NOT FIXED BY THIS COMMIT: IT IS THE
+                                       MEAN'S DENOMINATOR CASTS ITS RESULT AND CPYTHON'S DOES NOT, AND IT IS A NAMED
+                                       NEXT MOVE.**
+
+oracle-two-copies    [##] 2/3  **THE GATE'S CPython ORACLE IS A COPY UNDER `.agents/slop/`, AND A SECOND COPY SITS
+                                       BESIDE THE GATE -- AND THE TWO MUST BE EDITED IN LOCKSTEP.** MEASURED
+                                       2026-10-22: `gates/mixin-op-gate.py`'s `oracle=` IS **`.agents/slop/mixin-op-
+                                       gate.py`**, AND THE FROZEN SHELL ORACLE (`gates/oracles/mixin-op-oracle.sh`,
+                                       sha256-PINNED VIA `ORACLE_PIN`) RUNS THAT SAME PATH TOO -- WHILE `gates/mixin-
+                                       op-oracle.py` IS A **BYTE-IDENTICAL** COPY THAT **NOTHING RUNS**. `AGENTS.md`
+                                       NAMES THIS EXACT ANTI-PATTERN: *"A GATE'S REQUIRED INPUT BELONGS BESIDE THE
+                                       GATE **IN GIT** -- AND NOT IN `.agents/slop/`, WHICH THIS LINE USED TO
+                                       RECOMMEND"*. **SO THE REPONT IS THE RIGHT END-STATE AND IT IS NOT FREE: THE
+                                       FROZEN SHELL'S BYTES CHANGE, SO **ITS `ORACLE_PIN` MUST MOVE IN THE SAME
+                                       COMMIT**, AND BOTH EXTANT COPIES OF THE SHELL (`gates/oracles/` AND
+                                       `oracles/gateport/oracles/`) ARE BYTE-IDENTICAL BY DESIGN AND MUST STAY SO.**
+                                       **THE TWO COPIES ARE NOW BYTE-IDENTICAL AGAIN (I COPIED THE EDITED ONE OVER THE
+                                       LIVE ONE), BUT THAT IS A LOCKSTEP EDIT AND NOT A FIX, AND **A SECOND COPY OF A
+                                       LIST IS A CONTRACT WITH NO GENERATOR** -- THE REPOINT IS THE NAMED NEXT MOVE,
+                                       AND IT MUST MOVE THE PIN.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

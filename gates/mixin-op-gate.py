@@ -6,14 +6,14 @@
 WHAT IT GATES, AND THE DENOMINATOR THE VERDICT TRAVELS WITH, because a gate whose scope lives
 in a comment is a gate nobody can check.
 
-    36 rows, THREE LANES, and the DENOMINATOR IS 32.
-      py    CPython, `.agents/slop/mixin-op-gate.py` -- 32 rows
-      bd    the port, interpreted, `./bin/bend tinybendygrad/mixin/op.bend` -- 36 rows
-      bn    the port, NATIVE, `bend -o` then run                       -- 36 rows
-    32 rows are COMPARED byte for byte across all three lanes.
+    38 rows, THREE LANES, and the DENOMINATOR IS 34.
+      py    CPython, `.agents/slop/mixin-op-gate.py` -- 34 rows
+      bd    the port, interpreted, `./bin/bend tinybendygrad/mixin/op.bend` -- 38 rows
+      bn    the port, NATIVE, `bend -o` then run                       -- 38 rows
+    34 rows are COMPARED byte for byte across all three lanes.
     4 rows are PORT-ONLY -- `rop_gap`, `exp_cast`, `commit_weak`, `bin_promote` -- and they are
-    excluded BY NAME on both sides. The port emits 36 and CPython 32, so the count that is
-    compared is 32 and the count that is printed is 32; the 4 are named at the foot of this
+    excluded BY NAME on both sides. The port emits 38 and CPython 34, so the count that is
+    compared is 34 and the count that is printed is 34; the 4 are named at the foot of this
     file and their ABSENCE from the oracle is asserted too, because a gate that only checked the
     row would pass the moment CPython grew it and then the exclusion would be hiding a real
     comparison.
@@ -81,8 +81,8 @@ GATE = Gate(
     "mixin-op-gate",
     bend="tinybendygrad/mixin/op.bend",
     oracle=".agents/slop/mixin-op-gate.py",
-    rows=36,
-    compared=32,
+    rows=38,
+    compared=34,
     # THE FOUR, BY NAME, AND WHY BY NAME. These name a refusal or a defect rather than a graph,
     # so CPython cannot be asked for them; filtering by POSITION instead would drop whatever row
     # happens to sit fourth today and silently compare something else tomorrow.
