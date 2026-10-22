@@ -22973,6 +22973,21 @@ paramarg-spec [##] 2/3  **THE PORT's `ParamArg` IS MISSING **UPSTREAM's **13th *
                        **the **port's **fixtures **hold **174 `Wk` **records **of **which **0 **of **THE
                        **30 **CONSTS **CARRY **A **SIZE** -- **⇒ AND **85 **of **the **268 **frozen
                        **`Wt` **ROW **SUFFIXES **NAME **A **ROW **THAT **HAS **MOVED.**
+                       **⇒ AND **THE **TYPE **IS **ALREADY **IN **THE **PORT**: `tinybendygrad/device.bend:537`
+                       **DECLARES **`Bspec{uncached, cpu_access, host, nolru, ext_ptr}`** -- **UPSTREAM's
+                       **`BufferSpec`** WITH **`external_ptr` **FLATTENED **TO **A **`Bool`** (THE **PORT's
+                       **OWN **COMMENT **SAYS **WHY**: *"a `Data` record may not hold a `Maybe` field"*) --
+                       **AND **`device.bend:540` **HAS **A **`spec()` **CONSTRUCTOR **FOR **THE **ALL-FALSE
+                       **ONE.** **⇒ AND **UPSTREAM's `UOp.alloc` **DOES **PASS **IT**: `tinygrad/uop/ops.py:1192`
+                       **READS **`spec=spec`** **INTO **THE **`ParamArg`** -- **⇒ ⇒ **⇒ SO **THE **PORT
+                       **CANNOT **CARRY **THE **ALLOC's **MEMORY **SPEC **AT **ALL, **AND **THE **PORT's
+                       **RUNTIME **LANES **ALL **KNOW **ABOUT **`BufferSpec`** (`ops_metal.bend`,
+                       **`ops_cuda.bend`, `ops_dsp.bend` **ALL **CITE **`BufferSpec(nolru=True)`**).**
+                       **⇒ AND **THE **COST **IS **MEASURED: **BEND's **`Data` **RECORDS **HAVE **NO **FIELD
+                       **DEFAULTS** (THE **PORT's **`ParamArg` **HAS **NONE**; **UPSTREAM's **IS **A **CLASS
+                       **WHERE **EVERY **OPTIONAL **FIELD **HAS **ONE**), **⇒ SO **THE **106 **SITES **MUST
+                       **ALL **CHANGE, **AND **THE **`case ParamArg{...}` **PATTERN **AT
+                       **`ops.bend:1470`** **MUST **GAIN **A **FIELD **TOO.**
 
 fold-graph-arity [##] 2/3  **`gates/fold_graph_census.bend` **IS **BROKEN **AND **THE **FIX **CHANGES
                        **THE **FIXTURE, **THE **ROWS **AND **THE **GATE's **ORACLE.** MEASURED
@@ -23006,3 +23021,19 @@ e2e-fixture-render-kernel [##] 2/3  **`checks/.e2e-fixture/{f64/emit-f64,portexe
                        **ONLY **REMAINING **`DEAD` **ROW **IS **`checks/e2e.py`** -- **⇒ AND **A **GATE
                        **THAT **CANNOT **START **IS **NOT **"DEAD"**, **IT **IS **`REFUSED`**, **AND **THE
                        **EDGE **NOW **SAYS **SO.**
+
+spec-pattern-vs-body [##] 2/3  **A **RULE **WHOSE **MATCH **TEST **IS **IN **THE **BODY **INSTEAD **OF
+                       **THE **PATTERN **ANSWERS `False` **WHERE **UPSTREAM **ANSWERS `None`, **AND **THAT
+                       **MAKES **EVERY **LATER **RULE **IN **THE **SAME **BLOCK **UNREACHABLE.** MEASURED
+                       2026-10-22 by the unit that added upstream's two missing shared rules: upstream's
+                       rule 19 is a **PATTERN** (a node whose `src[0]` is not in the set does not *match*,
+                       so the rule is **SKIPPED**), and the port had that src-op test in the **BODY** -- and
+                       **a `False` STOPS THE FOLD, SO THE PORT ANSWERED `False` WHERE UPSTREAM ANSWERS
+                       `None`, WHICH MADE UPSTREAM's RULE 20 UNREACHABLE, AND THE PORT STILL REJECTED
+                       `AFTER(ADD(1,2))`. **⇒ A **SILENT **WRONG **ANSWER.** **⇒ AND **THE **TREE's **OWN
+                       **DELTA **INSTRUMENT **COMPARES **THE **RULES' **OP **SETS**, **NOT **THEIR **SRC
+                       **SETS**, **SO **THE **INSTANCE **WAS **INVISIBLE **TO **IT** -- **AND **THE **AUDIT
+                       **OF **"UPSTREAM **PATTERN **CLAUSES **vs **THE **PORT's **BODY**" **IS **OPEN.**
+                       **⇒ AND **THE **DISTINCTION **IS **THE **AUDIT**: **A **TEST **ON **THE **MATCHED
+                       **NODE **IS **LEGITIMATELY **A **BODY **TEST**; **A **TEST **OF **WHETHER **IT
+                       **MATCHES **IS **A **PATTERN **TEST** -- **⇒ SO **COUNT **BOTH.**
