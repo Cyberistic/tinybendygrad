@@ -1405,6 +1405,64 @@ index-disarmed [##########] 2/2  **THE ARMED-INDEX HAZARD WAS LIVE AND IS NOW CL
                                        WORKING** -- and the standing discipline (every commit through
                                        a PRIVATE index) is why nothing was lost while it was armed.
 
+nn-rows-vacuous      [###] 1/4  **THE NN LAYERS HAVE NO COMPARER AT ALL, SO ALL 31 OF THEIR ROWS ARE LABELS, AND 19 OF
+                                       THE 31 COULD NOT PASS EVEN UNDER EXACT COMPARISON.** MEASURED 2026-10-22T04:10Z
+                                       at HEAD `0d1d77737`: `nn_row.line(nm, got, want)` (nn/layers.bend:879) ONLY
+                                       PRINTS -- THERE IS NO COMPARER IN THE TREE, because the only files that NAME
+                                       these rows (`fold_smk`, `dbg_x_sig`) are scratch under `.agents/slop/`. **THE
+                                       31 ROWS, CLASSIFIED: 12** could pass under exact comparison **AND 1 OF THOSE 12
+                                       FAILS** (`fold_smk` reads empty where `2,1,3` is expected); **5 read NOTHING AT
+                                       ALL** (the `conv_*` rows: `got=` AND `want=` both empty); **5 have an EMPTY
+                                       `want`** (the `_sig` rows); **8 differ ONLY IN SPELLING**
+                                       (`where_xdt`/`where_wdt`/`where_dts` read `f32` against `float32`;
+                                       `relu`/`dot_2d`/`dot_1d`/`linear`/`linear_nobias` read `1,4,8,8` against
+                                       `(1,4,8,8)`). 12+1+5+5+8 = 31. **THE KEYSTONE IS THE 5 `conv_*` ROWS:
+                                       `nn_row.shp` maps `None{}` to the literal `"NONE"`, SO AN EMPTY `got` MEANS
+                                       `nn_conv2d` RETURNED A TENSOR WHOSE SHAPE CANNOT BE READ** -- `nn_shape` is
+                                       `None` for it. **SO `nn_conv2d` PRODUCES AN UNSHAPED TENSOR, AND THAT IS THE
+                                       LAYER RESNET, AND THEREFORE IMAGENET, STANDS ON.** The conv expectations are
+                                       ALREADY IN THE FILE'S OWN COMMENT (op.py:1562): padding=1 -> `(1,8,32,32)`,
+                                       padding=0 -> `(1,8,30,30)`, padding=1 stride=2 -> `(1,8,16,16)`. **THE
+                                       EXPECTATION LIVES IN ONE PLACE AND THE COMPARER MUST READ IT FROM THERE, NEVER
+                                       A SECOND COPY.**
+
+corpus-witness-stale [##] 2/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OWN INSTRUMENTS SAY SO IN TWO INDEPENDENT
+                                       WAYS.** MEASURED 2026-10-22T04:07Z: `checks/differ.py`'s `repro_bad()` RETURNED
+                                       **2** ROWS (it returned 0 on 2026-10-21): `d10-transcript=f35b2d90...` against
+                                       the pinned `9bfb8517...`, and `repro-substrate=58c505697ca2 but the live
+                                       substrate is 6039c610e03c -- this witness describes a tree that NO LONGER
+                                       EXISTS`. **BOTH ARE THE INSTRUMENTS WORKING AS DESIGNED** -- the content pin
+                                       caught that the artifact's bytes changed, and the `REPRO_SUBSTRATE` arm caught
+                                       that the witness is about a tree that is gone; `repro_bad()`'s own docstring
+                                       names the fourth state (*"A WITNESS NOBODY RE-TOOK"*) and the remedy is IN THE
+                                       ROW: re-take with `checks/differ.py repro`. **THE STORED RUN RECORDED
+                                       `substrate-start == substrate-end == 58c505697ca2` AT `substrate-
+                                       head=6cdeedb77`; 9 COMMITS LANDED SINCE AND 1 TOUCHED A `.bend`.** AND THE
+                                       DIGEST MOVED **LIVE** UNDER ME: at 04:07Z the live substrate read
+                                       `6039c610e03c`, at 04:20Z it read `6dc2b4ee598f` with `substrate-
+                                       head=be238dff6656` -- **BECAUSE MY OWN AGENTS WERE EDITING `.bend` FILES.** SO
+                                       THE RE-RUN MUST WAIT FOR THE TREE TO STOP MOVING: **A GREEN CORPUS OVER A
+                                       MOVING TREE IS NOT A CERTIFICATE**, and this is the second time that sentence
+                                       has been paid for.
+
+imagenet-distance    [##] 2/3  **THE MEASURED DISTANCE TO "RUN IMAGENET USING BEND", BY A WALK OF THE PORT'S 3,285
+                                       `.bend` FILES AND 102,269 DEFS (not a hand list).** MEASURED 2026-10-22T04:05Z.
+                                       **PRESENT**: `nn_conv2d`, `pool_bn`, `nn_linear`, `vt_sequential`, `mx_cat`,
+                                       `mo_reshape`, and a fetch FRAMEWORK (`fetch_cifar`, `fetch_mnist`,
+                                       `fetch_done`, `fetch_fail`, `fetch_end`). **ABSENT**: `argmax` (0 of 102,269
+                                       defs, and no index-reduce either -- no `reduce_*idx`, no `where_max`); `item`
+                                       (no `read_scalar`, `to_host`, `d2h` or `o2h` ANYWHERE, so `item` is NOT a
+                                       wrapper around something that exists under another name -- it is a real gap).
+                                       **A STUB, NOT A PORT**: `tinybendygrad/extra/datasets/imagenet.bend` (46 lines)
+                                       REFUSES all three upstream defs; `extra/models/resnet.bend` (279 lines) refuses
+                                       too. **AND THE PORT'S `extra/datasets/` IS A DIFFERENT MODULE FROM UPSTREAM'S
+                                       `nn/datasets.py`** -- upstream's `ImageNet` class is in
+                                       `tinygrad/nn/datasets.py` while the port's `extra/datasets/imagenet.py` is the
+                                       FILE-LIST half. **THE CHAIN, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE
+                                       SHAPE (see `nn-rows-vacuous`) -> `argmax` -> `item` -> A REAL MODEL -> THE 150
+                                       GB OF DATA, WHICH IS A HOST CONCERN AND NOT THE PORT'S.** The first three are
+                                       the port's; the last two are not.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
@@ -21675,3 +21733,80 @@ REPRODUCIBLE **AND** CURRENT -- ALL THREE AT ONCE -- AND ITS FRESHNESS IS NOW A 
       CALLER**. A NAME-LEVEL GATE CANNOT SEE THIS.
 - [ ] **`gates/varsparams-uses.rows` IS STALE** (IT PREDATES THE RENAME) **AND `gates/varsparams-gate.py`'s
       OWN PLANT WAS BROKEN BY THE RENAME** -- FIXED IN §1, BUT THE TABLE IS STILL STALE.
+
+## LINKBUF -- **`Compiled.link_bufs` AND `Compiled.link_buffer` ARE PORTED, AND THE PRIOR UNIT'S READING OF UPSTREAM WAS WRONG ON ALL THREE COUNTS** (2026-10-22)
+
+**THE BRIEF SAID "UPSTREAM'S `Compiled.tag()` CALLS `link_buffer()` AND `link_bufs`". UPSTREAM HAS NO
+`Compiled.tag()` AT ALL, `link_buffer` AND `link_bufs` ARE NOT CALLED BY `device.py`, AND NEITHER
+MUTATES A KERNEL'S BUFFER LIST.** THE PORT WAS PORTING A FUNCTION UPSTREAM DELETED. WHAT IS PORTED IS
+THE MECHANISM THAT REPLACED IT.
+
+`link-buf  [##########] 10/10` · `link-plant  [##########] 8/8` · `link-oracle  [#########.] 26/26`
+
+### 1. **WHAT UPSTREAM HAS, QUOTED, AT THE PIN `5c2bf39d6c4b`**
+
+- `tinygrad/device.py:377` -- `  link_bufs:dict[str, Any] = {}` (a CLASS attribute of `Compiled`)
+- `tinygrad/device.py:411` -- `  def link_buffer(self, b:UOp) -> Buffer|None: return None`
+- `tinygrad/runtime/support/hcq2.py:477` -- `Compiled.link_bufs |= {"timeline": lambda b: Device[b.device].timeline}`
+- `tinygrad/runtime/support/hcq2.py:488-490` (in `bufferize_buf`) --
+  `owned = Compiled.link_bufs.get(b.arg.name, Compiled.link_bufs.get(to_name(b.device, b.arg.name)))` /
+  `if owned is not None: r = owned if isinstance(owned, Buffer) else owned(b)` /
+  `elif (r:=dev.link_buffer(b)) is not None: pass`
+- `tinygrad/helpers.py:21` -- `def to_name(*parts:str) -> str: return "_".join(parts).replace(":", "_").lower()`
+- PER-DEVICE OVERRIDES: `ops_null.py:77` (ALWAYS a host buffer), `ops_cl.py:123` and `ops_metal.py:238`
+  (`if b.arg.name != "slots" or b.max_numel() <= 4: return None`).
+
+### 2. **THE THREE PRIOR CLAIMS, AND WHAT EACH ONE MEASURES TO BE**
+
+- [x] **"UPSTREAM'S `Compiled.tag()` CALLS `link_buffer()`"** -- **FALSE. THERE IS NO `Compiled.tag()`.**
+      `rg -n 'def tag|\.tag\(' tinygrad/` AT THE PIN ANSWERS ONE LINE --
+      `tinygrad/uop/ops.py:269: def tagstr(self)`. `tag` IS A FIELD OF `UOp.arg` THAT THE MATCHER
+      PATTERNS READ (`UPat(Ops.PARAM, tag="timeline")`), NOT A METHOD.
+- [x] **"`link_buffer` MUTATES A KERNEL'S BUFFER LIST"** -- **FALSE. `link_buffer` IS A PURE QUERY**: A
+      UOp IN, A BUFFER OR NONE OUT. `link_bufs` IS A DICT THAT `|=` MUTATES. WHAT CHANGES IS THE
+      ALLOC's BINDING, AND `bufferize_buf` BUILDS A **NEW** UOp (`UOp.from_buffer(...)`).
+- [x] **"THE PORT HAS A `tag` THAT DOES THE LINKING INLINE"** -- **NO. THE PORT HAS NO `tag` AT ALL**
+      (ITS `tag_of` IS THE DEVICE REGISTRY's ALLOW-LIST, A DIFFERENT THING). WHAT THE PORT HAD WAS
+      `pm_bufferize`, WHICH IS UPSTREAM's **DELETED** SHAPE: AT THE PREVIOUS VENDORING
+      `device.py:375` READ `pm_bufferize:Any = None` AND THE RULES WERE A `PatternMatcher` A BACKEND
+      **PREPENDED** TO. AT THE PIN THAT CLASS ATTRIBUTE IS GONE.
+
+### 3. **WHAT LANDED, AND THE CPYTHON COMPARISON**
+
+- [x] **`tinybendygrad/device.bend` CARRIES THE LIVE MECHANISM**: `to_name` (helpers.py:21), THE
+      REGISTRY (`Lk`, WITH UPSTREAM's `isinstance(owned, Buffer)` DISCRIMINATOR), `link_add` (`|=` IS
+      `dict.update`), THE BASE CLASS's `link_buffer` (`None`), AND THE RESOLUTION ORDER --
+      **PLAIN NAME FIRST, DEVICE-SCOPED NAME SECOND, THE DEVICE's OWN HOOK THIRD, ALLOCATE FOURTH**.
+- [x] **THE ORACLE IS UPSTREAM's OWN CODE**: `.agents/slop/linkbuf/oracle.py` DRIVES
+      `hcq2.py`'s REAL `bufferize_buf` WITH A REAL `Ops.ALLOC` UOp, AND THE LEVEL IS **OBSERVED** FROM
+      THE SENTINEL BUFFER THAT CAME BACK -- NOT ASSERTED.
+- [x] **`shared=26 agree=26 differ=0`** (`.agents/slop/linkbuf/compare.sh`). THE 26 ROWS ARE THE
+      LEVEL (0..4), THE KIND (BUFFER vs CALLABLE), THE SELECTED BUFFER (THE FIXTURE's SLOT, WHICH IS
+      THE ORACLE's SENTINEL ID), THE BYTE COUNTS (64 AND 16), AND THE THREE `to_name` FOLDS.
+- [x] **NO PRE-EXISTING ROW MOVED**: 110 HEAD ROWS, 136 NEW, **0 MISSING, 0 CHANGED, 26 ADDED**.
+
+### 4. **THE PLANT, AND THE EIGHT MUTATIONS THAT ARE ITS PLANTS (`.agents/slop/linkbuf/mutate.py`)**
+
+- [x] **A BUFFER ADDED TWICE** -- `link_add` PREPENDS: `lk_buf_dup` 6 -> 5. UPSTREAM's `dict.update`
+      OVERWRITES, SO THE **LAST** REGISTRATION WINS.
+- [x] **A BUFFER ADDED TO THE WRONG LIST** -- THE TWO HITS ARE SWAPPED: SIX ROWS MOVE.
+- [x] **A LIST MUTATED IN PLACE WHEN THE CALLER EXPECTED A COPY** -- **THE PORT CANNOT EXPRESS IT AND
+      SAYS SO**: UPSTREAM's `|=` MUTATES A CLASS ATTRIBUTE IN PLACE AND A BEND LIST IS A VALUE. WHAT
+      SURVIVES IS THAT THE REGISTRY IS ONE VALUE, AND THE TWO MUTATIONS THAT BREAK IT ARE THE TWO KEYS
+      SWAPPED (SIX ROWS) AND THE DEVICE-SCOPED KEY FORGETTING THE DEVICE (SIX ROWS).
+- [x] **A NULL BUFFER** -- AN UNNAMED ALLOC TREATED AS A MISS (`lk_lvl_unnamed` 0 -> 4), AND THE BASE
+      CLASS's `None` ANSWER TREATED AS A BUFFER (`lk_lvl_none` 4 -> 3).
+- [x] **EVERY ONE OF THE EIGHT MUTATIONS MOVES AT LEAST ONE ROW.** A MUTATION THAT MOVES NOTHING IS A
+      DEAD ROW, AND A DEAD ROW IS A LABEL. THE MUTANTS ARE COMPILED AND RUN **IN A SCRATCH
+      DIRECTORY**, SO MEASURING THEM DOES NOT MOVE THE SUBSTRATE DIGEST.
+
+### 5. **WHAT WAS NOT DONE, AND IS NOT TICKED**
+
+- [ ] **`to_name` IS DUPLICATED IN `ops_rdma.bend` (`:726-740`, AS `tname`)**. UPSTREAM KEEPS IT IN
+      `helpers.py:21`, SO THE PORT'S `helpers.bend` IS ITS HOME, AND THE HOIST IS A TWO-LINE EDIT FOR
+      WHOSEVER IS ALLOWED TO CHANGE A SECOND FILE. THE TWO FOLDS MUST AGREE: THE DEVICE-SCOPED
+      REGISTRY KEY IS A STRING.
+- [ ] **`hcq2.bend` HAS NO `bufferize_buf`**, SO THE CONSUMER OF THE PORTED MECHANISM IS STILL
+      ABSENT; WHAT LANDED IS `Compiled`'s TWO MEMBERS AND THE RESOLUTION ORDER THEY EXIST FOR.
+- [ ] **THE PORT'S `pm_bufferize` TABLE IS UPSTREAM's DELETED SHAPE** AND IS STILL HERE. IT IS THE
+      CORPSE, AND THE SECTION THAT PORTED IT NAMES THE RESTRUCTURING.
