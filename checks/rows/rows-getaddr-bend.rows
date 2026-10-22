@@ -1,2 +1,3 @@
-2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
-2:i2 7:GETADDR 3:u64 2:() 2:i0 1:N 4:sCPU 5:n(i1)
+2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 5:l0:12 3:n()
+2:i2 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 5:n(i1)
+2:i3 7:GETADDR 3:u64 2:() 2:i0 1:N 4:sCPU 5:n(i2)

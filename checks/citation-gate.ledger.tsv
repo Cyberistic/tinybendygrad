@@ -576,3 +576,58 @@ weak.bend
 buf = UOp.alloc(...)	
 UOp.call_with_outputs((self,), *srcs)	
  (ops.py:430), and the 	
+ -- elementwise.py:125. 	
+ -- elementwise.py:575. 	
+ -- elementwise.py:674. 	
+ -- elementwise.py:697. 	
+ -- elementwise.py:656. 	
+ -- elementwise.py:662. 	
+ -- elementwise.py:378. 	
+ -- elementwise.py:355. Same shape with 	
+ -- elementwise.py:330. 	
+ -- elementwise.py:336. 	
+ -- elementwise.py:603. 	
+self.size * self.dtype.itemsize	86c4f1343,813bbec3e,61be7ea90,1057f7d27,254a7372f,c53e85468,d6b404ac1,2c363b5f0
+print_uops	86c4f1343,813bbec3e,61be7ea90,450668828
+sr_pick_*	
+mixin/dtype.py:36	
+ptx.py:219	
+U32.sub(Fld.align(f), 1)	
+toposort(enter_calls=False)	86c4f1343,813bbec3e,61be7ea90,0a5776355,130dbcba1
+ (ops.bend:2966) is 	
+a in new_axs	86c4f1343,813bbec3e,61be7ea90,b30c7e00d
+required_len = 1	
+ (elementwise.py:103) is 	
+. BOTH OPERANDS ARE 	
+where(q, x, y)	
+ -- elementwise.py:261 	
+ADD(detach, MUL(up, -1))	
+ (optim.py:26, 	
+u.reshape(max_shape).shrink_to(new_shape)	86c4f1343,813bbec3e,61be7ea90,fca7c767b
+x.cast(uint32).cat((x >> 32).cast(uint32))	
+(name, slot, dtype, shape)	86c4f1343,813bbec3e,61be7ea90,9fdaa4bff
+'System' if OSX else 'kernel' if WIN else 'gcc_s'	86c4f1343,813bbec3e,61be7ea90,206713373
+elif sys.platform == "win32":	86c4f1343,813bbec3e,61be7ea90,d4fff0ea0,97187bf8b,0f374e10d
+ret.value * 1e-3	
+v.cast(flds[n][1])	86c4f1343,813bbec3e,61be7ea90,67ef401f4
+split_l2i	86c4f1343,813bbec3e,61be7ea90,1380d6cc5,654d475d3
+l2i_rewrite_idx	86c4f1343,813bbec3e,61be7ea90,8e16e81e7
+sink.toposort(enter_calls=False)	86c4f1343,813bbec3e,61be7ea90,0a5776355
+ is ops.py:1925's 	
+ (ops.py:353-357). 	
+arg=CustomFunction(fn)	86c4f1343,813bbec3e,61be7ea90,ad117c928
+72f98ffe0	
+Ops.GROUP	86c4f1343,813bbec3e,61be7ea90,636a43722,00d01d978,6f1a98349,19535df53,6415e3e8a,74b4cfe44
+src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)	
+consumer_map_from_toposort	86c4f1343,813bbec3e,61be7ea90,450668828,3a557016c,62e62d876
+pyrender	86c4f1343,813bbec3e,61be7ea90,f626844e5,450668828
+tuple(s for s in call.src[1:] if not s.is_bound_var)	86c4f1343,813bbec3e,61be7ea90,b1859805b
+bound.get(v.expr, v)	86c4f1343,813bbec3e,61be7ea90,58edff61d
+[bound.get(v.expr, v) for v in prg.arg.vars]	86c4f1343,813bbec3e,61be7ea90,58edff61d
+prg.arg.vars	86c4f1343,813bbec3e,61be7ea90,58edff61d
+dedup([b for b in bufs if b.op is Ops.BUFFER])	86c4f1343,813bbec3e,61be7ea90,5aa99adf6
+[(d, call, None) for d in to_tuple(call.src[1].device)]	86c4f1343,813bbec3e,61be7ea90,023bfdb38
+gates/realize_graph_census	
+get_call_written_bufs	86c4f1343,813bbec3e,61be7ea90,6074c002e
+get_call_var_uops	86c4f1343,813bbec3e,61be7ea90,58edff61d
+ inside the live 	

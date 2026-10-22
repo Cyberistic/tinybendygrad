@@ -1,5 +1,5 @@
 # port-compile: one `bin/bend --check-only` per .bend under tinybendygrad/, ONE AT A TIME, under checks/bounded.py.
-# taken=2026-10-22T13:07:44Z  population=169  ceiling 2048 MB, 300 s each.
+# taken=2026-10-22T15:00:02Z  population=169  ceiling 2048 MB, 300 s each.
 # state= COMPILES | COMPILES-AS-C | COLD-BY-DESIGN | FINDING | NO-MEASUREMENT
 # COMPILES       `--check-only` says `ALL PROOFS CHECK`.
 # COMPILES-AS-C  the checker refuses for a PROMISE (the file binds foreign or
