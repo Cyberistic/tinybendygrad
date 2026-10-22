@@ -242,16 +242,20 @@ LANDED (comment-only, in the two FREE files):
   the merge (the weakfloat arm is the identity on the PORT's F32, which is not upstream's
   identity on a double) and says the fix is `uop/ops.bend`'s `Const`.
 
-PREPARED, NOT APPLIED (`patch/constid-ops-bend.patch`, 59 lines):
+PREPARED, NOT APPLIED (`patch/constid-ops-bend.patch`, 63 lines):
 
 * at `type Const`'s `CFloat{f: F32}` -- the same wall, where a reader who opens
   `uop/ops.bend` will see it, with the measured counts and the compiler's answer;
 * at `eq_const.CFloat` -- the NAN ANSWER, and the instruction NOT to change the
   comparator.
 
-**IT WAS NOT APPLIED BECAUSE `tinybendygrad/uop/ops.bend` IS `MM` -- ANOTHER UNIT'S
-IN-FLIGHT WORK -- AT BOTH THE START AND THE END OF THIS UNIT.**  The patch applies cleanly
-to the current working copy (`git apply --check` rc=0).
+**IT WAS NOT APPLIED BECAUSE `tinybendygrad/uop/ops.bend` IS ANOTHER UNIT's, AND IT NEVER
+SETTLED.**  The status was `MM` at the start of this unit and ` M` at the end -- the other
+unit's commit landed and their NEXT edit is in the working tree, uncommitted (MEASURED: the
+working-tree diff is their move of the `Target` record out of `ops.bend` and into
+`helpers.bend`).  **A FILE THAT STILL CARRIES ANOTHER UNIT's UNCOMMITTED EDIT HAS NOT
+SETTLED, AND COMMITTING IT WOULD CARRY THEIR WORK INSIDE THIS COMMIT.**  So the patch
+stays prepared.  `git apply --check` rc=0 against the current working copy.
 
 ---
 
@@ -291,6 +295,24 @@ So the plant now measures:
 * **AND `merge_keys` and `merge_keys_int` DO NOT MOVE UNDER EITHER ARM** -- the merge is not
   the comparator's doing, it is the WIDTH.  **A PLANT THAT MOVED EVERY COUNT WOULD HAVE
   PROVED NOTHING ABOUT WHICH DEFECT IT IS.**
+
+### THE PLANT'S MEASURED OUTPUT
+
+```
+  PASS  1: the UNMUTATED copy answers the CONTROL counts
+  PASS  2: ARM A -- the IEEE comparator SPLITS a constant upstream interns as ONE
+                (split_keys_same 1 -> 2)
+  PASS  3: ARM B -- upstream's `__eq__` MERGES two different nan payloads
+                (split_keys_distinct 2 -> 1), a hash collision upstream does not have
+  PASS  4: the LIVE tree answers the CONTROL counts too
+constid-plant: 4 of 4
+```
+
+**ARM B'S FIRST ATTEMPT DID NOT COMPILE**, and the compiler said why:
+`expected : g / observed : g (consumed more than once)`, at `eq_const.CFloat` -- Bend's
+linear types REFUSE a match binder used twice, and arm B uses `g` twice.  The `+` ON THE
+BINDER IS THE FIX (`case CFloat{+g}`), and it is the tree's own spelling --
+`helpers.bend:709` and `:1939` both write `case SShape{+d2}` and `case DivSt{+q, +r, ...}`.
 
 ### THE WAIT, AND A REFUSAL THAT WAS NOT A MEASUREMENT
 
@@ -333,18 +355,18 @@ the walks, so the four gate files DO NOT move the digest; only the two `.bend` f
   held at the same instant:
 
 ```
-digest_live             = 2e9b27badeee6a705c0894298d031971d95fb2346a29e45ad488dfdd6ec9bebb
-digest_without_my_edits = 9f667b09446bbbdbbf324ae5d094b5d2647dd17a2d7352d28ded10a309bb9eb8
+digest_live             = 9885b22757f918f27ea5dddf1d68f385d1b3b96acd2ebac4309cd66b84d23a5d
+digest_without_my_edits = d4580b8d5d1a62916c81f889644555d7a577fd4d327db30bd4f6a9dd886c3807
 ```
 
-**⇒ THE ATTRIBUTED DELTA IS `2e9b27ba…` → `9f667b09…` WITH MY EDITS OFF AND BACK WITH
+**⇒ THE ATTRIBUTED DELTA IS `d4580b8d…` → `9885b227…` WITH MY EDITS OFF AND BACK WITH
 THEM ON.**  The instrument is `.agents/slop/constid/digest.py --attr F1 F2 --base 853bed545^`.
 
 **THE DIGEST ALSO MOVED FOR A SECOND REASON, AND IT IS NOT MINE:** other units committed
-(`44e89e67b`, `298ad16f0`, `93e9efdf5`, `51359907a`) and are editing `tinybendygrad/`
-while this unit worked, so the live digest is not the baseline plus my delta.  **THE
-ATTRIBUTION IS DONE AT ONE INSTANT, WITH EVERYTHING ELSE HELD STILL, WHICH IS THE ONLY
-HONEST WAY TO DO IT.**
+(`44e89e67b`, `298ad16f0`, `93e9efdf5`, `51359907a`, `df708e971`, `9b2287c6c`, `c6ee4b5cc`,
+`8611c5ce8`, and others) and are editing `tinybendygrad/` while this unit worked, so the
+live digest is not the baseline plus my delta.  **THE ATTRIBUTION IS DONE AT ONE INSTANT,
+WITH EVERYTHING ELSE HELD STILL, WHICH IS THE ONLY HONEST WAY TO DO IT.**
 
 **THE CORPUS WAS NOT RE-RUN.  `differ.py` WAS NOT RUN.  `runs/graphcmp/` WAS NOT READ.**
 

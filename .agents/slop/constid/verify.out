@@ -1,0 +1,23 @@
+== 1: dtype.bend --check-only
+bendlock: waiting 121s for pid 50534 (a gate that runs many bends holds the lock for the WHOLE command -- gates/bendlock.py acquires it PER INVOCATION)
+bendlock: waiting 181s for pid 50534 (a gate that runs many bends holds the lock for the WHOLE command -- gates/bendlock.py acquires it PER INVOCATION)
+bendlock: waiting 241s for pid 50534 (a gate that runs many bends holds the lock for the WHOLE command -- gates/bendlock.py acquires it PER INVOCATION)
+ALL PROOFS CHECK
+Use --verdict for mathematical validity.
+bend 2.0.38 is available: run bend update
+== 2: mixin/creation.bend --check-only
+ALL PROOFS CHECK
+Use --verdict for mathematical validity.
+bend 2.0.38 is available: run bend update
+== 3: gates/constid.bend --check-only
+ALL PROOFS CHECK
+Use --verdict for mathematical validity.
+bend 2.0.38 is available: run bend update
+== 4: the gate
+constid-gate: 10 rows, 3 lanes -- 4 COMPARED and AGREEING, 3 DECLARED divergences (the MERGE: upstream keeps two doubles apart and the port holds one f32, so the constant HOLDS A DIFFERENT NUMBER), and 3 port-only rows pinning the LANE SPLIT on the nan payload -- the C lane keeps it and the JS lane cannot, and upstream's own hash table is bitwise, so the port's bitwise `eq_const.CFloat` is RIGHT and an IEEE comparator would create a collision upstream does not have
+== 5: the plant
+  PASS  1: the UNMUTATED copy answers the CONTROL counts
+  FAIL  2: the PLANTED comparator makes the port's COUNT OF DISTINCT CONSTANTS MOVE (2 keys -> 1, a collision upstream does not have) and leaves the MERGE's count where it was (the merge is the WIDTH, not the comparator): {'split_keys_distinct': ('1', '2')}
+  PASS  3: the LIVE tree answers the CONTROL counts too
+constid-plant: FAILED -- ["2: the PLANTED comparator makes the port's COUNT OF DISTINCT CONSTANTS MOVE (2 keys -> 1, a collision upstream does not have) and leaves the MERGE's count where it was (the merge is the WIDTH, not the comparator)"]
+EXIT=1

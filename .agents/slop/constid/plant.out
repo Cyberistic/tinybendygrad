@@ -1,0 +1,6 @@
+  PASS  1: the UNMUTATED copy answers the CONTROL counts
+  PASS  2: ARM A -- the IEEE comparator SPLITS a constant upstream interns as ONE (split_keys_same 1 -> 2)
+  PASS  3: ARM B -- upstream's `__eq__` MERGES two different nan payloads (split_keys_distinct 2 -> 1), a hash collision upstream does not have
+  PASS  4: the LIVE tree answers the CONTROL counts too
+constid-plant: 4 of 4 -- the port's BITWISE `eq_const.CFloat` is the ONLY one of the three that matches upstream's hash table in BOTH nan cells: IEEE SPLITS a constant upstream interns as one (the same nan payload twice becomes two nodes), and upstream's own `__eq__` MERGES two different nan payloads upstream's hash table keeps apart (a collision upstream does not have). The MERGE's count does not move under either arm, because the merge is the WIDTH and not the comparator
+EXIT=0

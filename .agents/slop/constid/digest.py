@@ -44,8 +44,8 @@ def digest_of(entries):
     return h.hexdigest()
 
 
-def head_blob(rel):
-    r = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=ROOT, capture_output=True)
+def head_blob(rel, base="HEAD"):
+    r = subprocess.run(["git", "show", f"{base}:{rel}"], cwd=ROOT, capture_output=True)
     if r.returncode != 0:
         return "ABSENT"
     return hashlib.sha256(r.stdout).hexdigest()
@@ -56,15 +56,20 @@ def main(argv):
     entries = differ.substrate_entries()
     if len(argv) >= 2 and argv[1] == "--attr":
         mine = argv[2:]
+        base = "HEAD"
+        if len(argv) >= 4 and argv[-2] == "--base":
+            base = argv[-1]
+            mine = argv[2:-2]
         live = digest_of(entries)
         reverted = dict(entries)
         for rel in mine:
-            reverted[rel] = head_blob(rel)
+            reverted[rel] = head_blob(rel, base)
         without = digest_of(list(reverted.items()))
         print(f"digest_live={live}")
         print(f"digest_without_my_edits={without}")
+        print(f"base={base}")
         for rel in mine:
-            print(f"entry {rel}: HEAD={reverted[rel]} now={dict(entries).get(rel)}")
+            print(f"entry {rel}: {base}={reverted[rel]} now={dict(entries).get(rel)}")
         return 0
     print(differ.substrate_digest())
     return 0
