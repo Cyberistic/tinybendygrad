@@ -9,13 +9,22 @@
 # 3  the GATE runs and is GREEN
 # 4  the PLANT runs and answers its three states
 #
-# EVERY `bend` RUN GOES THROUGH `checks/bendlock.sh`, which is the tree's own lock: it
-# records the owner's PID, checks whether the COMPILER is alive, reclaims a DEAD owner's
-# lock and NEVER steals a LIVE owner's.  The wait is REPORTED, because a wait that is not
-# reported reads as a hang.
+# EVERY `bend` RUN GOES THROUGH `checks/bendlock.sh`, and THE LOCK SCRIPT IS TAKEN AS A
+# STABLE COPY, ONCE, FOR THE REASON `gates/constid-plant.py`'s docstring gives at length:
+# MEASURED 2026-10-22, `checks/bendlock.sh` was EDITED IN FLIGHT by another unit (mtime
+# 10:35) while a shell was READING it, and a shell reads a script INCREMENTALLY BY BYTE
+# OFFSET -- so it resumed mid-line and executed the wrong bytes
+# (`checks/bendlock.sh: line 102: st.: command not found`), and this file's FIRST RUN DIED
+# WITH EXIT 127 ON THAT ALONE.  **A REFUSAL CAUSED BY ANOTHER UNIT'S EDIT IS A REFUSAL, NOT
+# A MEASUREMENT.**  The lock DIRECTORY is still the tree's shared one, so the serialisation
+# is unchanged and only the FILE the shell reads is pinned.
 set -eu
 cd "$(dirname "$0")/../../.."
-LOCK=./checks/bendlock.sh
+LOCKDIR_TMP=$(mktemp -d)
+trap 'rm -rf "$LOCKDIR_TMP"' EXIT
+cp ./checks/bendlock.sh "$LOCKDIR_TMP/bendlock.sh"
+chmod +x "$LOCKDIR_TMP/bendlock.sh"
+LOCK="$LOCKDIR_TMP/bendlock.sh"
 say() { echo "== $*"; }
 
 say "1: dtype.bend --check-only"

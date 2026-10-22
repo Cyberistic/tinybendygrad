@@ -133,10 +133,26 @@ split_bits_p2   2143289344 (0x7FC00000) 2143289345 (0x7FC00001)  -
 ### THE ANSWER TO "FIX IT IF THE PORT's EQUALITY IS THE THING THAT DIVERGES"
 
 **THE PORT's EQUALITY IS THE KEY IDENTITY, AND IT DOES NOT DIVERGE FROM UPSTREAM's HASH
-TABLE.  MAKING IT IEEE WOULD CREATE A HASH COLLISION UPSTREAM DOES NOT HAVE.**  The plant
-measures it -- see §5.
+TABLE.  MAKING IT IEEE WOULD NOT CREATE A COLLISION -- IT WOULD CREATE A DUPLICATE, WHICH
+IS THE OTHER DEFECT.**  And the comparator that *would* create the collision is not IEEE at
+all: it is upstream's own `__eq__`.  **THE PLANT MEASURED BOTH, AND THE FIRST VERSION OF
+THE PLANT WAS WRONG** -- see §5.
 
 What diverges is the WIDTH, and the WIDTH is a WALL -- see §3.
+
+### THE THREE COMPARATORS, IN BOTH NAN CELLS -- upstream's hash table is the thing to match
+
+`ConstFloat.__hash__` is `hash(self.bits)`, so upstream interns the SAME payload twice as
+ONE key and two DIFFERENT payloads as TWO keys.
+
+| comparator | same payload twice (upstream: 1 key) | two different payloads (upstream: 2 keys) |
+| --- | --- | --- |
+| **BITWISE (the port's)** | 1 -- MATCHES | 2 -- MATCHES |
+| IEEE (arm A) | **2 -- SPLITS what upstream merges** | 2 -- matches |
+| upstream's `__eq__` (arm B) | 1 -- matches | **1 -- MERGES, a collision upstream does not have** |
+
+**⇒ THE BITWISE COMPARATOR IS THE ONLY ONE OF THE THREE THAT MATCHES UPSTREAM's HASH TABLE
+IN BOTH CELLS, AND NEITHER ALTERNATIVE IS A FIX.**
 
 ---
 
@@ -248,17 +264,59 @@ mutation to the COPY, and measures the C lane.
 **THE ARM: A CONST THAT UPSTREAM KEEPS APART MUST NOT BE ONE IN THE PORT -- PLANT IT AND
 SHOW THE PORT's COUNT OF DISTINCT CONSTANTS MOVE.**
 
-The mutation is the comparator itself:
+The mutation is the comparator itself, and there are **TWO ARMS** because the first
+version of this plant had ONE and WAS WRONG:
 
 ```
-  case CFloat{g}: U32.is_eq(F32.bits(f), F32.bits(g))      # the port's
--> case CFloat{g}: F32.is_eq(f, g)                          # IEEE
+  case CFloat{g}: U32.is_eq(F32.bits(f), F32.bits(g))      # the port's, BITWISE
+-> case CFloat{g}: F32.is_eq(f, g)                          # ARM A, IEEE
+-> case CFloat{g}: Bool.or(Bool.and(H.f32_is_nan(f), H.f32_is_nan(g)), F32.is_eq(f, g))
+                                                             # ARM B, upstream's __eq__
 ```
 
-and the count of distinct constants in ONE arena MOVES **2 -> 1** -- a collision upstream
-does not have.  **AND `merge_keys` DOES NOT MOVE**: it stays 1, because the merge is not the
-comparator's doing, it is the WIDTH.  A plant that moved every count would have proved
-nothing about which defect it is.
+**THE FIRST VERSION PREDICTED ARM A WOULD MERGE TWO NAN PAYLOADS (2 -> 1), AND IT DID
+NOT.**  MEASURED: the count stayed at 2, because IEEE equality already says two different
+nan payloads are DIFFERENT.  **THE PLANT FAILED ON ITS OWN PREDICTION** -- which is what a
+plant is for -- and the correction is the SECOND ARM, which is the comparator that really
+merges them: upstream's own `__eq__`, which special-cases nan as equal.
+
+So the plant now measures:
+
+* **ARM A (IEEE)** -- `split_keys_same` MOVES **1 -> 2**: a constant upstream interns as ONE
+  node becomes TWO, because IEEE says a nan is not equal to ITSELF.  **A DUPLICATE, AND
+  UPSTREAM'S HASH TABLE HAS ONE ENTRY.**
+* **ARM B (upstream's `__eq__`)** -- `split_keys_distinct` MOVES **2 -> 1**: two different nan
+  payloads upstream's `__eq__` calls EQUAL become ONE key in the port.  **A HASH COLLISION
+  UPSTREAM'S OWN HASH TABLE DOES NOT HAVE.**
+* **AND `merge_keys` and `merge_keys_int` DO NOT MOVE UNDER EITHER ARM** -- the merge is not
+  the comparator's doing, it is the WIDTH.  **A PLANT THAT MOVED EVERY COUNT WOULD HAVE
+  PROVED NOTHING ABOUT WHICH DEFECT IT IS.**
+
+### THE WAIT, AND A REFUSAL THAT WAS NOT A MEASUREMENT
+
+**THE WAIT: 29 MINUTES AND 26 SECONDS for another unit's `gates/ew_activation-gate.py`,
+WHICH HOLDS THE LOCK FOR THE WHOLE COMMAND** (it runs MANY bends under ONE
+`checks/bendlock.sh` acquisition -- `checks/bendlock.sh`'s own header now says so, and its
+commit `9b2287c6c` added a 60-second "waiting for pid N" notice for exactly this).  At the
+peak there were **THREE units queued on the same lock directory**, and `bendlock.sh` has NO
+QUEUE -- it is a `mkdir` race -- so the order is luck, and the wait is reported rather than
+hidden.
+
+**AND THE FIRST PLANT ATTEMPT REFUSED (exit 3) FOR A REASON THAT HAD NOTHING TO DO WITH
+THE SUBSTRATE:** `checks/bendlock.sh` was EDITED IN FLIGHT by another unit (mtime 10:35)
+while the plant's shell was READING it, and a shell reads a script INCREMENTALLY BY BYTE
+OFFSET -- so it resumed mid-line and executed the wrong bytes:
+
+```
+checks/bendlock.sh: line 102: st.: command not found
+```
+
+**A REFUSAL CAUSED BY ANOTHER UNIT'S EDIT IS A REFUSAL, NOT A MEASUREMENT.**  The plant
+now takes the lock SCRIPT as a STABLE COPY, taken ONCE -- the lock DIRECTORY is still the
+tree's shared one, so the serialisation is the same and only the FILE the shell reads is
+pinned.  **AND THE COMPILED LANE IS THE ONE THAT MATTERS FOR THE PLANT, because it is the
+lane that KEEPS a nan payload, and therefore the lane in which the comparator is what
+decides the count.**
 
 ---
 

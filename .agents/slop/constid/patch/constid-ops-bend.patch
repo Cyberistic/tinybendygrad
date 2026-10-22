@@ -36,7 +36,7 @@
    CFloat{f: F32}
    CInvalid{}
  
-@@ -1955,6 +1984,20 @@
+@@ -1955,6 +1984,24 @@
    # BITS, NOT IEEE. `UOp.key` is a hash over the packed arg, so CONST identity is
    # the bit pattern; `F32.is_eq` is IEEE and disagrees in both directions (see
    # `t_float_zeros_differ` / `t_float_nan_interns`, which are CPython-measured).
@@ -50,10 +50,14 @@
 +  # REACHABLE nan agrees anyway: `DType.const` canonicalises a nan to `math.nan`
 +  # (`dtype.py:81-82`), so upstream has exactly one reachable const nan payload too.
 +  #
-+  # `gates/constid-plant.py` plants the IEEE comparator and MEASURES the consequence: the
-+  # port's count of distinct constants in ONE arena moves 2 -> 1, which is a hash collision
-+  # upstream does not have.  **DO NOT CHANGE THIS COMPARATOR.**  What diverges is the WIDTH
-+  # (`CFloat` above), not the comparison.
++  # `gates/constid-plant.py` MEASURES BOTH ALTERNATIVES, AND NEITHER IS A FIX: the IEEE
++  # comparator SPLITS a constant upstream interns as ONE (IEEE says a nan is not equal to
++  # itself, so the same payload twice becomes two nodes), and upstream's own `__eq__` --
++  # which says two nans ARE equal -- MERGES two DIFFERENT nan payloads upstream's hash
++  # table keeps apart, because upstream's `__hash__` is `hash(self.bits)`.  **THE BITWISE
++  # COMPARATOR IS THE ONLY ONE OF THE THREE THAT MATCHES UPSTREAM's HASH TABLE IN BOTH NAN
++  # CELLS.  DO NOT CHANGE IT.**  What diverges is the WIDTH (`CFloat` above), not the
++  # comparison.
    match y:
      case CFloat{g}: U32.is_eq(F32.bits(f), F32.bits(g))
      case _: False{}

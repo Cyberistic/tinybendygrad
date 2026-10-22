@@ -1210,9 +1210,13 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # `eq_const.CFloat` COMPARES THE BITS, and that is RIGHT.  Upstream's `__eq__` says two
 # nans are equal and upstream's `__hash__` says otherwise -- upstream's own two rules
 # contradict each other, and upstream's own hash table settles it in favour of `__hash__`
-# (two entries in one dict).  `gates/constid-plant.py` plants the IEEE comparator and
-# shows the port's count of distinct constants MOVE 2 -> 1: a collision upstream does not
-# have.  **THE MERGE IS THE WIDTH.  THE COMPARATOR IS NOT WHAT DIVERGES.**
+# (two entries in one dict).  `gates/constid-plant.py` MEASURES BOTH ALTERNATIVES, AND
+# NEITHER IS A FIX: the IEEE comparator SPLITS a constant upstream interns as ONE (IEEE says
+# a nan is not equal to itself, so the same payload twice becomes two nodes), and upstream's
+# own `__eq__` MERGES two DIFFERENT nan payloads upstream's hash table keeps apart -- a hash
+# collision upstream does not have.  **THE BITWISE COMPARATOR IS THE ONLY ONE OF THE THREE
+# THAT MATCHES UPSTREAM's HASH TABLE IN BOTH NAN CELLS.  THE MERGE IS THE WIDTH.  THE
+# COMPARATOR IS NOT WHAT DIVERGES.**
 #
 # THE INT ARM IS dtype.py:296's OTHER HALF and is NOT PORTED: it needs the value to be
 # an `H.I64` and the width to be a mask, and the port's `CInt` holds a full `H.I64`.

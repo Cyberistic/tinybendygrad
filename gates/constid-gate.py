@@ -52,7 +52,10 @@ payload makes this gate go RED and say so.  A split that could not move would be
 
 WHAT THIS GATE DOES NOT CLAIM.  It does not claim the port's `eq_const.CFloat` is wrong:
 it is the bitwise comparator, and upstream's own hash table is bitwise too, so it is RIGHT.
-`gates/constid-plant.py` measures the other half -- what an IEEE comparator would do.
+`gates/constid-plant.py` measures the two alternatives and finds that NEITHER is a fix --
+IEEE SPLITS a constant upstream interns as one, and upstream's own `__eq__` MERGES two
+different nan payloads upstream's hash table keeps apart.  What diverges is the WIDTH
+(`CFloat` above), not the comparison.
 """
 import sys
 from pathlib import Path
@@ -128,6 +131,8 @@ if __name__ == "__main__":
                        f"HOLDS A DIFFERENT NUMBER), and {len(PORT_ONLY)} port-only rows "
                        f"pinning the LANE SPLIT on the nan payload -- the C lane keeps it and "
                        f"the JS lane cannot, and upstream's own hash table is bitwise, so the "
-                       f"port's bitwise `eq_const.CFloat` is RIGHT and an IEEE comparator "
-                       f"would create a collision upstream does not have",
+                       f"port's bitwise `eq_const.CFloat` is RIGHT: the plant finds that IEEE "
+                       f"SPLITS a constant upstream interns as one, and upstream's own `__eq__` "
+                       f"MERGES two nan payloads upstream's hash table keeps apart -- so "
+                       f"NEITHER is a fix, and what diverges is the WIDTH",
                   checks=lane_split_holds))
