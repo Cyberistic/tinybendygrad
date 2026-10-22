@@ -3,30 +3,35 @@
 # ===========================================================================
 # WHAT THIS FILE IS: viz's LOGIC, without viz's SERVER.
 #
-# `serve.py` is 771 lines and 18 of them mention http/socket/handler/do_GET/
-# send_header. The other 753 are a profiler, a graph labeler and a binary
+# `serve.py` is 757 lines and 12 of them mention http/socket/handler/do_GET/
+# send_header. The other 745 are a profiler, a graph labeler and a binary
 # encoder, and none of it needs a socket. That is the shape of this port: the
 # logic is here and it is gated; the server is named, and named only.
+#
+# EVERY LINE NUMBER AND EVERY COUNT IN THIS HEADER IS UPSTREAM `5c2bf39d`
+# (2026-10-20), the revision `tinygrad/` is vendored from. They were written
+# against `a0fca89d2ab1` (2026-09-29) and had to be re-derived here, because a
+# header that names no revision is a transcription that reads like a fact.
 #
 # THE HTML/JS PAYLOAD -- WHERE IT ACTUALLY LIVES, MEASURED.
 #
 # `serve.py` contains NO HTML and NO JavaScript: no `<script>`, no `<div`, no
 # `onclick`. `do_GET` opens the payload BY PATH and writes it to a socket.
 #
-#   serve.py:707  open(os.path.join(os.path.dirname(__file__), "index.html"))
-#   serve.py:710  open(os.path.join(os.path.dirname(__file__), self.path))
+#   serve.py:693  open(os.path.join(os.path.dirname(__file__), "index.html"))
+#   serve.py:696  open(os.path.join(os.path.dirname(__file__), self.path))
 #
-#   tinygrad/viz/index.html            451 lines
-#   tinygrad/viz/js/index.js         1,202 lines
-#   tinygrad/viz/js/worker.js          122 lines
-#   tinygrad/viz/assets/...          1,883 lines of vendored CDN blobs
+#   tinygrad/viz/index.html            465 lines
+#   tinygrad/viz/js/index.js         1,225 lines
+#   tinygrad/viz/js/worker.js          142 lines
+#   tinygrad/viz/assets/...          1,369 lines of vendored CDN blobs
 #                                     (highlight.min.js alone is 1,231)
 #
 # So the payload is not "transcribed" or "declared" -- it is ALREADY A SEAM
-# upstream. There is nothing in `serve.py` to port for it, and 1,775 lines of
-# hand-written browser code plus 1,883 lines of minified vendor, in a language
-# whose only consumer is a browser, would be strictly worse than the two
-# `open()` calls that already name it. `Handler.do_GET` below keeps the routing
+# upstream: 1,832 lines of hand-written browser code plus 1,369 lines of
+# minified vendor, in a language whose only consumer is a browser, would be
+# strictly worse than the two `open()` calls that already name it. There is
+# nothing in `serve.py` to port for it. `Handler.do_GET` below keeps the routing
 # ladder that decides WHICH file, because that ladder IS logic and it is the
 # part a reviewer can check.
 #
@@ -35,46 +40,48 @@
 #
 #   serve.py:16-20   TCPServerWithReuse      socketserver.TCPServer
 #   serve.py:22-40   HTTPRequestHandler       http.server.BaseHTTPRequestHandler
-#   serve.py:302-307 soft_err                 contextmanager + traceback
-#   serve.py:379-464 sqtt_timeline            a FUNCTION-LOCAL `from
+#   serve.py:294-298 soft_err                 contextmanager + traceback
+#   serve.py:370-457 sqtt_timeline            a FUNCTION-LOCAL `from
 #                                              tinygrad.renderer.amd.sqtt import
-#                                              ...` of 22 names, then `map_insts`
+#                                              ...` of 21 names, then `map_insts`
 #                                              over the raw SQTT stream
-#   serve.py:517-526 load_nv_counters         ProfilePMAEvent selected by
+#   serve.py:509-518 load_nv_counters         ProfilePMAEvent selected by
 #                                              `type(e).__name__`, so the type is
 #                                              in no import
-#   serve.py:528-542 pma_timeline             `from extra.nv_pma.decode import`
-#   serve.py:546-550 get_stdout                io.StringIO + redirect_stdout
-#   serve.py:553-555 get_elf_section           `from ...support.elf import`
-#   serve.py:559-571 amd_decode                `from ...autogen.amd.rdna3.ins import`
-#   serve.py:579-586 is_acc_operand            `Reg` (renderer/amd/dsl.py) and
+#   serve.py:520-534 pma_timeline             `from extra.nv_pma.decode import`
+#   serve.py:538-543 get_stdout                io.StringIO + redirect_stdout
+#   serve.py:545-547 get_elf_section           `from ...support.elf import`
+#   serve.py:551-563 amd_decode                `from ...autogen.amd.rdna3.ins import`
+#   serve.py:571-578 is_acc_operand            `Reg` (renderer/amd/dsl.py) and
 #                                              `OpType` (runtime/autogen/amd)
-#   serve.py:589-645 amdgpu_cfg                Inst._fields, Inst.operands,
-#                                              amdgpu_kd (autogen)
-#   serve.py:730-736 reloader                 os.stat + os.execv
-#   serve.py:741-743 load_pickle               pickle.load, under @Context(DEBUG=0)
-#   serve.py:745-771 __main__                  argparse + socket + multiprocessing
-#                                              + threading + signal
+#   serve.py:606-620 tokenize_asm             Inst._fields, Inst.operands, and
+#                                              `amdgpu_kd` at :649-651
+#   serve.py:716-722 reloader                 os.stat + os.execv
+#   serve.py:727-729 load_pickle              pickle.load, under @Context(DEBUG=0)
+#   serve.py:731-757 __main__                  argparse + socket + multiprocessing
+#                                              + threading
 #
 # TWO MORE SEAMS THAT ARE NOT SOCKETS, and both are measured facts about
 # ANOTHER FILE rather than choices:
 #
-#   serve.py:78-96    load_rewrites    needs `RewriteTrace` (uop/ops.py:1735)
-#   serve.py:177-208  _reconstruct,    needs `TrackedGraphRewrite`
-#                     get_full_rewrite,  (uop/ops.py:1632)
+#   serve.py:68-87    load_rewrites    needs `RewriteTrace` (uop/ops.py:1726)
+#   serve.py:171-200  _reconstruct,    needs `TrackedGraphRewrite`
+#                     get_full_rewrite,  (uop/ops.py:1619)
 #                     get_sink_at
-#     `grep -rn 'TrackedGraphRewrite\|RewriteTrace' tinybendygrad` returns SEVEN
-#     hits and every one is a comment or a `# TODO(p3)`: ops.bend has no def, no
-#     type and no inventory row for either. `trace_num` -- the ENCODING
-#     `_reconstruct` mirrors -- is `ops.bend:3519 # TODO(p3) ops.py:544`. So this
-#     file ports the graph logic it CAN and names the four defs that wait on
-#     ops.bend's trace, which is a P3 row, not a wall in this file.
+#     `grep -rn 'TrackedGraphRewrite\|RewriteTrace' tinybendygrad` hits ONLY
+#     comments -- ops.bend has no def, no type and no inventory row for either.
+#     `trace_num` -- the ENCODING `_reconstruct` mirrors -- is a `# TODO(p3)`
+#     row for it in `ops.bend`, and upstream's own `trace_num` is at
+#     `uop/ops.py:526`. So this file ports the graph logic it CAN and names the
+#     four defs that wait on ops.bend's trace, which is a P3 row, not a wall in
+#     this file.
 #
-#   serve.py:108,137 `srender` and `word_wrap`
-#     `srender` is `ops.bend:3455 # TODO(p3) ops.py:76`. `word_wrap` has NO row
-#     in helpers.bend at all. `shape_to_str` is PORTED over `sint` rendered as
-#     its integer form, which is `srender`'s answer for every `sint` that is an
-#     int -- and the gate's fixtures are exactly those.
+#   serve.py:99,132  `srender` and `word_wrap`
+#     `srender` is a `# TODO(p3)` row for it in `ops.bend`; upstream's is at
+#     `uop/ops.py:76`. `word_wrap` has NO row in helpers.bend at all.
+#     `shape_to_str` is PORTED over `sint` rendered as its integer form, which
+#     is `srender`'s answer for every `sint` that is an int -- and the gate's
+#     fixtures are exactly those.
 #
 # ===========================================================================
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
@@ -99,17 +106,22 @@
 # order, per-device event order, `toposort` order, `range` order. Every fixture
 # below has at least three distinct values in every ordered position it can.
 #
-# ONE WALL IN THE ENCODER, MEASURED, and it is a Bend one.
-# `struct.pack("<IIIIfI", ...)` writes a 32-bit IEEE-754 float. bend 2.0.34's
-# base has NO `F32.to_bits`: `F32{data: Word(32n)}` and `U32{data: Word(32n)}`
-# have the SAME representation, but `match u { case U32{data: w}: }` is a PARSE
-# ERROR ("expected a term, observed ':'"), so the field is not matchable and the
-# two cannot be converted between. Base defines exactly ten `F32.*` and none is
-# a bit cast. So the float's four bytes are the ONE thing this port cannot
-# produce, and `tl_row` SAYS SO IN THE ROW: five packable fields as hex, then
-# `st_ns=<et-st>`, then the sixth, and the CPython oracle projects the same six
-# out of the real 20 bytes IT packed. The integer the float is computed from is
-# checked; the float's bit pattern is not, and nothing here pretends otherwise.
+# ONE GAP IN THE ENCODER, MEASURED, and it is NOT A WALL.
+# `struct.pack("<IIIIfI", ...)` writes a 32-bit IEEE-754 float, and a float's
+# four bytes ARE reachable: `F32.bits` is a `law` in
+# `references/bend/bend2/base.bend` and a COMPILER INTRINSIC (`comp.ts:227`
+# `f32_bits`), and the port already calls it from `dtype.bend`, `helpers.bend`,
+# `renderer/tc_ptx.bend`, `runtime/ops_python.bend` and `uop/ops.bend`. The
+# census that called the float's bytes a wall counted `grep '^def F32\.'` --
+# TEN -- and stopped; the base declares its intrinsics as `law` (36 of them)
+# and `F32.bits` is one of those.
+#
+# SO THE SIXTH FIELD IS A WRITER, NOT A WALL, and `timeline_layout` is PARTIAL
+# because it is UNFINISHED: `tl_row` packs five of upstream's six `<IIIIfI`
+# fields as hex, then `st_ns=<et-st>`, then the sixth, and the CPython oracle
+# projects the same six out of the real 20 bytes IT packed. The integer the
+# float is computed from is checked; the float's bit pattern is not, and
+# nothing here pretends otherwise.
 #
 # TWO MORE NUMBERS, both stated so a reader can subtract them.
 #   * TIMESTAMPS. Python's are `Decimal` and `rel_ts`/`flatten_events` do
@@ -117,7 +129,7 @@
 #     positive integer microsecond count, so `H.I64` is that integer exactly.
 #   * `dur`. Python's is `float(en-ts)`. It is carried as an `F32` for the pack
 #     and as `H.I64` for the gate, and the two are related by nothing in this
-#     file -- see the wall above.
+#     file -- see the gap above.
 
 import Base
 import ./../uop/ops.bend as O
@@ -346,22 +358,26 @@ def json_obj(+kvs: List<&2, Kv>) -> String:
 # SECTION 4 -- THE COLOUR TABLES.
 #
 # `uops_colors` is a DICT LITERAL with two `**` expansions, and a Python dict
-# literal is LAST-WINS. So the port is a ladder in the OPPOSITE order of the
-# source: the step-5 explicit entries, then THREEFRY, then the ALU expansion,
-# then the Movement expansion, then the step-1 explicit entries, then the
-# `#ffffff` default. MEASURED consequences, and both are rows:
+# literal is LAST-WINS. So the ladder MUST test the LAST writer first: the
+# step-5 explicit entries, then THREEFRY, then the ALU expansion, then the
+# Movement expansion, then the step-1 explicit entries, then the `#ffffff`
+# default. The port's arms are `ex` (step-5 and THREEFRY), then `grp`
+# (step-1), then `tail` (the two groups, then the default) -- so it tests
+# step-1 BEFORE the expansions, and that is the same answer ONLY because the
+# two sets are DISJOINT (MEASURED: no step-1 entry is in `GroupOp.movement` or
+# `GroupOp.alu`). MEASURED consequences, and both are rows:
 #
 #   * `Ops.UNSHARD` is spelled out as "#f6ccff" at source position 14 and the
 #     Movement expansion is position 15, so IF UNSHARD were in GroupOp.Movement
 #     the expansion would win. `op_color.UNSHARD=#f6ccff` -- so it is not, and
-#     `ops.bend`'s `GroupOp.movement` agrees (RESHAPE/EXPAND/PERMUTE/PAD/SHRINK/FLIP).
+#     `ops.bend`'s `GroupOp.movement` agrees (RESHAPE/EXPAND/PERMUTE/PAD/SHRINK).
 #   * `Ops.WMMA` is "#efefc0" and `Ops.INS` is "#eec4ff", both spelled out before
 #     the ALU expansion. `op_color.WMMA=#efefc0` -- so neither is in GroupOp.ALU.
 #
 # A CHANGE TO `GroupOp.movement` OR `GroupOp.alu` IS A SILENT CHANGE HERE, and it
 # is the `x86.bend` trap from the brief: an arm that stops matching falls
 # through to whatever is next. So the two group tests are ARGS, computed by the
-# caller, and the gate carries all 77 ops -- a set of 77 rows cannot hide one op
+# caller, and the gate carries all 75 ops -- a set of 75 rows cannot hide one op
 # quietly changing colour.
 # ===========================================================================
 
@@ -433,7 +449,7 @@ def addrspace_color(a: S.Addr) -> String:
 # `wave_colors` -- `{**{x:"#1F7857" for x in ["WMMA","MFMA"]}, **{x:"#ffffc0" for
 # x in ["VALU","VINTERP"]}, "SALU": ..., ...}`. viz reads it by SUBSTRING
 # (`next((v for k,v in viz.wave_colors.items() if k in op_name), None)`,
-# cli.py:161) so the LOOKUP is `name.contains(k)` and first-key-wins is what
+# cli.py:121) so the LOOKUP is `name.contains(k)` and first-key-wins is what
 # Python's `.items()` gives; both are in `wave_color_of`.
 # `List.head`/`List.tail` answer a `Maybe`/a list at a DIFFERENT usage depth than
 # the `&2` list a pair fold carries, so the two one-line readers are named here
@@ -502,7 +518,7 @@ def Kv.maybe_kv(k: String, m: Maybe<&2, String>) -> Kv:
 def Kv.ofu(k: String, v: U32) -> Kv: Kv{k, U32.show(v)}
 def Kv.ofi(k: String, v: H.I64) -> Kv: Kv{k, H.i64_text(v)}
 
-# `f"{query[0]}?ctx={query[1]}&step={query[2]}"` -- serve.py:67. The THREE parts
+# `f"{query[0]}?ctx={query[1]}&step={query[2]}"` -- serve.py:57. The THREE parts
 # of the query tuple each land in a different place, so a swapped ctx/step is a
 # diff and not a length change.
 def step_query(path: String, ctx: U32, st: U32) -> String:
@@ -544,10 +560,11 @@ def filter_keys(kvs: List<&2, Kv>) -> List<&2, Kv>:
 # SECTION 6 -- SHAPES. `shape_to_str` is `"(" + ",".join(srender(x) for x in s)
 # + ")"` and `mask_to_str` is the same one level down.
 #
-# `srender` IS NOT CALLED. It is `ops.bend:3455 # TODO(p3) ops.py:76`, and
-# `uop/render.bend`'s `sint_show` is NOT imported either: render.bend pulls in
-# fold.bend, which is mid-edit by another unit, and a viz gate that dies on a
-# cold fold.bend compile is a gate that reports nothing. So `sint_str` answers
+# `srender` IS NOT CALLED. It is a `# TODO(p3)` row for it in `ops.bend`, and
+# upstream's `srender` is at `uop/ops.py:76`. `uop/render.bend`'s `sint_show` is
+# NOT imported either: render.bend pulls in fold.bend, which is mid-edit by
+# another unit, and a viz gate that dies on a cold fold.bend compile is a gate
+# that reports nothing. So `sint_str` answers
 # the `SI` arm -- which is `srender`'s answer for every `sint` that is an int,
 # and is every `sint` the gate builds -- and NAMES the `SU` arm as `srender`'s
 # job. `shape_to_str.sym` is that seam and it is not called by any row.
@@ -683,7 +700,7 @@ def rel_ts(ts: H.I64, start: H.I64) -> Maybe<&2, U32>: rel_ts.at(rel_view(ts, st
 #   ProfileGraphEvent   ents:list[ProfileGraphEntry], deps, sigs:list[Decimal]
 #   ProfileGraphEntry   device, name, st_id:int, en_id:int, profile_key
 #
-# `sigs` is a LIST indexed by id, not a dict (device.py:84), which is why
+# `sigs` is a LIST indexed by id, not a dict (device.py:86), which is why
 # `GEnt` carries two `U32` indices and `sig_at` is a list position.
 #
 # TIMESTAMPS ARE `H.I64`. Python's are `Decimal` and both `rel_ts` and
@@ -712,7 +729,7 @@ type Ev is Data:
 type GEnt is Data:
   GEnt{dev: String, nm: String, st_id: U32, en_id: U32}
 
-# The `(st, en, dur, e)` FOUR-TUPLE `get_profile` builds at serve.py:493. A
+# The `(st, en, dur, e)` FOUR-TUPLE `get_profile` builds at serve.py:235. A
 # record and not a 4-tuple because Bend's Sigma nests to the left and every
 # reader of a nested tuple needs its own accessor; four accessors for one tuple
 # is more code than one record and its four accessors, which is what it is.
@@ -738,7 +755,7 @@ def Ev.ts(e: Ev) -> H.I64:
     case EvPoint{ts, nm, key, dev}: ts
     case EvGraph{ents, sigs}: H.i64_of_i32(0)
 
-# `e.sigs[id]` over a LIST (device.py:84 types `sigs` as `list[Decimal]`, not a
+# `e.sigs[id]` over a LIST (device.py:86 types `sigs` as `list[Decimal]`, not a
 # dict), and an out-of-range index is an IndexError in Python, so the default is
 # a PARAMETER and 0 stands for it.
 def sig_at.go(sigs: List<&2, H.I64>, +id: Nat, d: H.I64) -> H.I64:
@@ -757,17 +774,18 @@ def ev_en(m: Maybe<&2, H.I64>, st: H.I64) -> H.I64:
     case None{}: st
 
 # ===========================================================================
-# SECTION 9 -- `timeline_layout` -- serve.py:240-263.
+# SECTION 9 -- `timeline_layout` -- serve.py:232-255.
 #
 #   struct.pack("<BI", 0, len(events)) + b"".join(events)
 #   each event: struct.pack("<IIIIfI", enum_str(name), option(ref), option(key),
 #                            rel_ts(st, start_ts, ...), dur, enum_str(json.dumps(fmt)))
 #
-# THE `f` FIELD IS THE WALL (see the header). Every other byte is exact and the
-# row says so: `tl_row` prints the hex of bytes 0..15 and 20..23 with the INTEGER
-# the float came from between them, so a wrong name index, a wrong `option`, a
-# wrong `rel_ts` or a wrong fmt index is a diff. Only the four float bytes are
-# unverified, and only because bend 2.0.34 cannot turn an F32 into bits.
+# THE `f` FIELD IS THE ONE GAP (see the header). Every other byte is exact and
+# the row says so: `tl_row` prints the hex of bytes 0..15 and 20..23 with the
+# INTEGER the float came from between them, so a wrong name index, a wrong
+# `option`, a wrong `rel_ts` or a wrong fmt index is a diff. Only the four
+# float bytes are unverified, and only because this port has not written them
+# yet: `F32.bits` is available, so the sixth field is a WRITER and not a wall.
 #
 # `if dur == 0 or isinstance(e, ProfilePointEvent): continue` -- BOTH tests, and
 # the fixture has a point event with dur 0 AND a range event with dur 0, so a
@@ -786,7 +804,7 @@ def ev_en(m: Maybe<&2, H.I64>, st: H.I64) -> H.I64:
 #   2. `json.loads` IS NOT PORTED. `ret.startswith("JSON")` takes a branch that
 #      re-parses a JSON string, and viz's only producer of that string is
 #      `json.dumps({"pc": ...})` / `json.dumps({"link": ...})` two functions away
-#      (serve.py:397, 418, 430). A tokenizer over UNKNOWN input is a different
+#      (serve.py:387, 413, 422). A tokenizer over UNKNOWN input is a different
 #      shape from every other def here and it would be untestable without one, so
 #      it is NAMED at `tl_fmt.str` and the `{"metadata": ret}` arm -- which needs
 #      no parse -- is ported and gated.
@@ -889,7 +907,7 @@ def tl_keep(dur: F32, e: Ev) -> Bool: Bool.not(Bool.or(U32.is_zero(F32.to_u32(du
 # and `enum_pos` is what makes that ordering visible in the source.
 
 
-# `<I` name, `<I` option(ref), `<I` option(key), `<I` rel_ts, [WALL float],
+# `<I` name, `<I` option(ref), `<I` option(key), `<I` rel_ts, [GAP float],
 # `<I` fmt. The two zeros are the un-ported `ref_map` branch and are 0 because
 # that branch's answer is `None`, which `option` maps to 0 -- see the header.
 def tl_pack5(d: DevEv, st: U32, ni: U32, fi: U32, +acc: TlAcc) -> List<&2, U32>:
@@ -927,7 +945,7 @@ def tl_pack5(d: DevEv, st: U32, ni: U32, fi: U32, +acc: TlAcc) -> List<&2, U32>:
 # `ret: int -> {"B/s": int(ret/(dur*1e-6)), "B": ret}`
 # `ret: tb   -> {"tb": tb}`
 
-# The `JSON`-prefixed arm is the `json.loads` WALL named in the header; this is
+# The `JSON`-prefixed arm is the `json.loads` WALL named in section 9; this is
 # the `{"metadata": ret}` arm, and it is a whole line of the gate.
 
 # `int(x / (dur*1e-6))`. `F32.to_u32` truncates toward zero, which is `int()`'s
@@ -1044,7 +1062,7 @@ def timeline_layout(evs: List<&2, DevEv>, start: H.I64) -> TlAcc:
 def tl_row(+acc: TlAcc, ns: H.I64) -> String:
   String.concat([hex_of(TlAcc.bs(acc)), "/ns", H.i64_text(ns), "/", Nat.show(List.length(&2, U32, TlAcc.bs(acc)))])
 
-# SECTION 10 -- `encode_mem_free` -- serve.py:265-271.
+# SECTION 10 -- `encode_mem_free` -- serve.py:257-263.
 #
 #   struct.pack("<BIII", 0, ts, key, len(ei_encoding))
 #     + b"".join(struct.pack("<IIIB", run_id, name_id, num, mode) for ...)
@@ -1175,7 +1193,7 @@ def memfree_hex(t: (List<&2, U32> & List<&2, String> & Bool)) -> String:
   memfree_hex.at(bs, sc, ok)
 
 # ===========================================================================
-# SECTION 11 -- `graph_layout` -- serve.py:273-299. TWO BRANCHES on
+# SECTION 11 -- `graph_layout` -- serve.py:265-290. TWO BRANCHES on
 # `k.startswith("LINE:")`, and they share NOTHING: the LINE branch packs
 # `<BIBQ` plus `<IQ` pairs and appends `max(y)` to `peaks`; the MEMORY branch
 # packs `<BIIIQ` per alloc and a nested `encode_mem_free` per free.
@@ -1424,7 +1442,7 @@ def row_one(+x: String) -> String:
 
 
 # ===========================================================================
-# SECTION 12 -- `row_tuple` -- serve.py:309-310. This is the sharpest function
+# SECTION 12 -- `row_tuple` -- serve.py:300-301. This is the sharpest function
 # in the file for a gate and the fixture is built for it:
 #
 #   return ((0, 0),) if "Clock" in row else tuple(
@@ -1468,10 +1486,10 @@ def row_one(+x: String) -> String:
 
 def row(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
 
-# THE OP COLOUR LADDER, ALL SEVENTY-SEVEN OPS, and not a sample. `uops_colors` is
+# THE OP COLOUR LADDER, ALL SEVENTY-FIVE OPS, and not a sample. `uops_colors` is
 # a dict literal with two `**` expansions whose whole job is LAST-WINS ordering,
 # so a handful of rows could not see one op quietly changing colour while every
-# other row stayed green. 77 rows, one per op, plus the dict LENGTH -- and the
+# other row stayed green. 75 rows, one per op, plus the dict LENGTH -- and the
 # length is what catches an op that gained or lost an entry.
 def op_row(nm: String, py: String, op: O.Op) -> IO(Unit):
   row(nm, String.concat([uops_color(op), "|", py]))
@@ -1479,7 +1497,7 @@ def op_row(nm: String, py: String, op: O.Op) -> IO(Unit):
 # THE OP ENUMERATION, in the order `Op` is declared in ops.bend, which is also the
 # order `uop/__init__.py` says controls the toposort -- so this list is not only
 # a fixture, it is the file's own statement of which ops exist. MEASURED: the
-# seventy-seven names here and the seventy-seven `Ops` members CPython enumerates
+# seventy-five names here and the seventy-five `Ops` members CPython enumerates
 # are the SAME SET with no member on either side, which is what makes
 # `uops_color` total rather than partial.
 def op_list() -> List<&2, O.Op>:
@@ -1512,9 +1530,12 @@ def addr_row(nm: String, py: String, a: S.Addr) -> IO(Unit):
 def bool_row(nm: String, py: String, b: Bool) -> IO(Unit):
   row(nm, String.concat([Bool.pick(String, b, "True", "False"), "|", py]))
 
-# `len(uops_colors)` is 65, NOT 77: twelve ops carry no entry and answer the
+# `len(uops_colors)` is 64, NOT 75: eleven ops carry no entry and answer the
 # `.get(op, "#ffffff")` DEFAULT. So the row counts the NON-DEFAULT colours, and
-# that is the number a gained or lost dict entry would move.
+# that is the number a gained or lost dict entry would move. MEASURED at
+# upstream `5c2bf39d`: `len(uops_colors)` is 64, and the port's own ladder
+# colours 64 of its 75 ops with the same 64 answers -- so the row's literal is
+# the SECOND half and it must be 64.
 def count_tinted.at(op: O.Op, +acc: Nat) -> Nat:
   Bool.pick(Nat, String.eq(uops_color(op), "#ffffff"), acc, Nat.add(acc, 1n))
 
@@ -1865,7 +1886,7 @@ def main() -> IO(Unit):
     op_row("op_color.REDUCE", "#FF5B5B", O.OpsREDUCE{})
     op_row("op_color.ALLREDUCE", "#ff40a0", O.OpsALLREDUCE{})
     op_row("op_color.PYLITERAL", "#ffffff", O.OpsPYLITERAL{})
-    row("op_color_len", String.concat([op_color_len(), "|65"]))
+    row("op_color_len", String.concat([op_color_len(), "|64"]))
     addr_row("addr_color.GLOBAL", "#75bd7b", S.AGlobal{})
     addr_row("addr_color.LOCAL", "#e7c86a", S.ALocal{})
     addr_row("addr_color.REG", "#e68181", S.AReg{})
