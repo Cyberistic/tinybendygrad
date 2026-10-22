@@ -25,13 +25,33 @@ THE CLAIM, IN FIVE CLAUSES, EACH DECIDED BY A COMMAND AND NONE OF THEM A COUNT.
                 is NOT judged as one.
   C3 DEFAULT    the tree's own DOCUMENTS name one phase-shaped tag as the default, and the
                 tree's own LAYOUT agrees with them.
-  C4 LOCATED    every tag that is not the default is a PHASE CLAIM, and every claim sits in
-                a directory the table assigns to the phase it names.
+  C4 LOCATED    every tag that is not the default is a PHASE CLAIM, and every claim names
+                the phase that OWNS THE WORK and is located: it sits in that phase's own
+                directory, or in a SHARED file -- one the table assigns to no phase, which
+                serves every phase. A tag naming a phase the table gives NO directory owns
+                no work to own, so it is SPELLED like a phase claim and is not one; the
+                marker says so at the point of use, and a marker that does not is RED.
   C5 PARTIES    a `P<n>/<X>` compound names two PARTIES; only an OWNERSHIP claim whose two
                 parties disagree with the table is a conflict.
 
 COUNT is the population a clause measured on PASS and the number of things that broke it on
 FAIL, so a reader can tell a clause that measured a lot from one that measured one thing.
+
+WHAT C4 MEASURED BEFORE, AND WHY IT WAS WRONG (2026-10-23). C4 was "every claim sits in a
+directory the table assigns to the phase it names", and it was red on 3 of 3 claims it
+judged: `helpers.bend:438` (`TODO(p6)`), `helpers.bend:2573` (`TODO(p4)`) and
+`runtime/ops_metal.bend:277` (`TODO(p1)`). **All three were FALSE POSITIVES, and the tree
+says why, in three places and two files.** `helpers.bend` is a SHARED file -- the table
+assigns it to no phase, and it serves every phase -- and its two claims name the phase that
+OWNS THE WORK (`P6` = `runtime/`, whose ContextVar work the note describes at
+`helpers.bend:52`; `P4` = `engine/`, whose clock the note asks for). And `p1` names a
+phase the table gives NO directory, so it cannot be naming ownership of work at all: the
+tree's own ledger calls it "a severity" (`.agents/TODO.md:11110`,
+`.agents/slop/WALLMAP.md:328`). **⇒ A CLAUSE THAT IS RED ON EVERY CLAIM IT JUDGES IS NOT
+A CLAUSE, IT IS A CHARGE, AND THE TREE'S OWN DOCUMENTS SAY WHAT IT WAS CHARGING.** The
+clause now measures the question the tree's documents answer, and it can still go red in
+every class: a claim in ANOTHER phase's directory, a claim naming a phase that owns no
+work with no declaration, and a declaration that contradicts the table.
 
 WHAT CHANGED, AND WHY (2026-10-21). The old C3 was "every tagged site sits in the directory
 its own tag names". That is the gloss `tinybendygrad/engine/jit.bend`'s SECTION 10 used to
@@ -129,6 +149,18 @@ PHASEISH = re.compile(r"^[Pp]\d")
 DEFAULT_DECL = re.compile(
   r"(?<![A-Za-z0-9\-])p(\d)(?![A-Za-z0-9\-])[^\n]{0,24}?\b(?:is|are)\b[^\n]{0,24}?"
   r"\b(?:default|not a phase)\b", re.I)
+# A MARKER THAT SAYS WHAT ITS OWN TAG IS, AT THE POINT OF USE. This is the sentence the
+# gate's own header asks for -- "NOBODY says what the scale means at the point of use" --
+# and it is the tree's OWN word for the one marker that is spelled like a phase claim and
+# is not one (`.agents/TODO.md:11110`: "`p1` ... = 'this file ports a superseded upstream'
+# -- a severity").
+#
+# THE PHRASE IS NOT "not a phase", AND THE REASON IS MEASURED, NOT STYLISTIC:
+# `DEFAULT_DECL` reads "pN ... is a default | not a phase" out of the tree's PROSE to find
+# the DEFAULT, and it reads `.bend` files as well as `.md` ones. A marker that said "not a
+# phase" would be a SECOND default declaration and would take C3 red. "NOT A PHASE CLAIM"
+# carries the same meaning and is not in `DEFAULT_DECL`'s vocabulary.
+NOT_A_CLAIM = re.compile(r"\bNOT A (?:WORK|PHASE) CLAIM\b", re.I)
 
 # THE DECLARATION SEARCH COVERS PROSE AND PORT CODE. The gloss that WAS the definition lived in
 # a `.bend` file, so a search that only read `.md` would have missed it.
@@ -455,33 +487,69 @@ def verdicts(c):
                       f"{rivals[worst]} phase directories and {default} in {mine}")
     else:
       c3 = ("PASS", len(declared[default]), "")
-  # C4: every tag that is not the default is a PHASE CLAIM, and every claim sits in a
-  # directory the table assigns to the phase it names.
-  offenders, judged = [], 0
+  # C4: every tag that is not the default is a PHASE CLAIM, and every claim is LOCATED.
+  #
+  # WHAT "LOCATED" MEANS, AND WHY IT IS NOT "SITS IN THE PHASE'S DIRECTORY". A claim
+  # names the phase that OWNS THE WORK -- that is the tree's own reading of the two
+  # singletons (`helpers.bend:438` `TODO(p6)` is P6's `runtime/` ContextVar work;
+  # `helpers.bend:2573` `TODO(p4)` is P4's `engine/` clock) -- and a phase owns work
+  # only in a directory the table assigns to it. So a claim is located when the site is
+  # in the phase's own directory OR the site is in a SHARED file: a file the table
+  # assigns to NO phase, which serves every phase, and is therefore in nobody's phase
+  # and in no WRONG phase. The table is what makes a file shared, so a ledger that
+  # stopped calling `helpers.bend` shared would take this clause red on the spot.
+  #
+  # THE SECOND CLASS: a tag that names a phase the table gives NO directory cannot be
+  # naming ownership of work -- that phase owns none to own -- so it is SPELLED like a
+  # phase claim and is not one. The tree says so at the point of use (the marker
+  # declares itself, `NOT_A_CLAIM`), and a marker that does NOT declare it is RED: an
+  # unexplained phase-shaped tag is a finding, not a free pass. And the declaration
+  # cannot be used as an escape hatch: a marker that declares itself while naming a
+  # phase that DOES own work contradicts the table, and that is RED too.
+  offenders, held, located = [], [], 0
   if not assign:
     c4 = ("SKIP", 0, "no phase table, so no claim can be located")
   elif c3[0] == "REFUSED":
     c4 = ("SKIP", 0, "C3 could not identify the default, so no claim can be judged")
   else:
-    for rel, number, _verb, tag, _text in sites:
+    for rel, number, _verb, tag, text in sites:
       if classes[tag] != "PHASE" or tag == default:
         continue
       phase = int(CANON.match(tag).group(1))
       if phase not in universe:
         continue  # a phase the tree does not declare is C2's business, not a claim to place
-      judged += 1
       dirs = sorted(assign.get(phase, ()))
+      declares = bool(NOT_A_CLAIM.search(text))
+      here = phase_of(rel, assign)
       if not dirs:
-        reason = "NO-DIRECTORY"
-      else:
-        here = phase_of(rel, assign)
-        reason = ("SITE-UNASSIGNED" if here is None
-                  else ("OTHER-PHASE" if here != phase else ""))
-      if reason:
+        # THE PHASE OWNS NO WORK. A tag naming it cannot be naming work ownership.
+        if declares:
+          held.append({"rel": rel, "line": number, "tag": tag, "phase": phase,
+                       "class": "DISPOSITION", "reason": "OWNS-NO-WORK-DECLARED",
+                       "dirs": dirs, "site_in": here})
+        else:
+          offenders.append({"rel": rel, "line": number, "tag": tag, "phase": phase,
+                            "reason": "OWNS-NO-WORK", "dirs": dirs, "site_in": here})
+        continue
+      if declares:
+        # The marker says it is not a phase claim, and the tag names a phase that OWNS
+        # work. One of the two is wrong, and the table is the one that can be checked.
         offenders.append({"rel": rel, "line": number, "tag": tag, "phase": phase,
-                          "reason": reason, "dirs": dirs})
-    c4 = ("PASS", judged, "") if not offenders else (
-      "FAIL", len(offenders), f"{len(offenders)} phase claims are not in the phase they name")
+                          "reason": "DECLARES-NOT-A-CLAIM", "dirs": dirs, "site_in": here})
+        continue
+      if here == phase:
+        located += 1
+        continue
+      if here is None:
+        held.append({"rel": rel, "line": number, "tag": tag, "phase": phase,
+                     "class": "SHARED", "reason": "SHARED-SERVES-EVERY-PHASE",
+                     "dirs": dirs, "site_in": here})
+        continue
+      offenders.append({"rel": rel, "line": number, "tag": tag, "phase": phase,
+                        "reason": "OTHER-PHASE", "dirs": dirs, "site_in": here})
+    considered = located + len(held) + len(offenders)
+    c4 = ("PASS", considered, "") if not offenders else (
+      "FAIL", len(offenders), f"{len(offenders)} phase claims are not located")
   # C5: a compound names two parties; only an OWNERSHIP claim whose parties disagree is a
   # conflict.
   compounds = compound_census(c)
@@ -491,8 +559,8 @@ def verdicts(c):
   parts = [("C1 DECLARED", c1), ("C2 COVERED", c2), ("C3 DEFAULT", c3), ("C4 LOCATED", c4),
            ("C5 PARTIES", c5)]
   return parts, {"classes": classes, "default": default, "declared": declared,
-                 "spread": spread, "offenders": offenders, "compounds": compounds,
-                 "conflicts": conflicts, "tags": tags}
+                 "spread": spread, "offenders": offenders, "held": held,
+                 "compounds": compounds, "conflicts": conflicts, "tags": tags}
 
 
 def report(c, detail):
@@ -517,6 +585,10 @@ def report(c, detail):
   print(f"  bend_files={len(walk(c['port'], '.bend'))}")
   print(f"  marker_verbs={','.join(sorted(c['verbs']))}")
   print(f"  marker_sites={len(c['sites'])}")
+  shared = sum(1 for path in walk(c['port'], '.bend')
+               if phase_of(str(path.relative_to(c['port'])), assign) is None)
+  print(f"  shared_files={shared}  (the table assigns these to NO phase: they serve every "
+        "phase, so a claim in one is in nobody's phase and in no WRONG phase)")
   print(f"  marker_sites_by_verb="
         f"{','.join(f'{v}:{n}' for v, n in sorted(Counter(s[2] for s in c['sites']).items()))}")
   print(f"  todo_claims_only={len(c['claims'])}")
@@ -571,9 +643,15 @@ def run(root, c=None):
   for name, (verdict, count, why) in parts:
     print(f"  {name:14s} {verdict:8s} count={count}  {why}")
   for row in detail["offenders"]:
-    site = phase_of(row["rel"], c["assign"])
+    site = row.get("site_in")
     print(f"  claim_not_located tag={row['tag']} site={row['rel']}:{row['line']} "
           f"says=P{row['phase']} reason={row['reason']} "
+          f"site_in={('P' + str(site)) if site is not None else 'no-phase'} "
+          f"P{row['phase']}_has={','.join(row['dirs']) or 'NO-DIRECTORY'}")
+  for row in detail["held"]:
+    site = row.get("site_in")
+    print(f"  claim_held tag={row['tag']} site={row['rel']}:{row['line']} "
+          f"says=P{row['phase']} class={row['class']} reason={row['reason']} "
           f"site_in={('P' + str(site)) if site is not None else 'no-phase'} "
           f"P{row['phase']}_has={','.join(row['dirs']) or 'NO-DIRECTORY'}")
   groups = defaultdict(list)
@@ -638,6 +716,16 @@ def plant():
           ("runtime/y.bend", "# TODO(p6) ops.py:2  demo\n")]
   disobey = [("uop/x.bend", "# TODO(p3) ops.py:1  demo\n"),
              ("uop/y.bend", "# TODO(p6) ops.py:2  demo\n")]
+  # THE CLASSES C4 NOW MEASURES, each one a state that makes it red or holds it green.
+  # `| P1 | "the contract" |` is a phase the tree DECLARES and gives NO DIRECTORY: the cell
+  # names no file in the port, so the row is a declared phase with no work to own.
+  p1_table = table + "| P1 | \"the contract\" |\n"
+  shared = [("helpers.bend", "# TODO(p6) ops.py:2  the phase that owns this work\n")]
+  shared_no_work = [("helpers.bend", "# TODO(p1) ops.py:2  a severity, not a claim\n")]
+  shared_declared = [("helpers.bend",
+                       "# TODO(p1) ops.py:2  NOT A PHASE CLAIM -- a severity: the whole file\n")]
+  contradicted = [("runtime/y.bend",
+                   "# TODO(p6) ops.py:2  NOT A PHASE CLAIM -- a severity: the whole file\n")]
   states = [
     ("plant-obey", (table, obey, default_line), PASS),
     ("plant-disobey", (table, disobey, default_line), FAIL),
@@ -659,6 +747,10 @@ def plant():
               ("uop/z.bend", "# TODO(p6) ops.py:3  demo\n")],
       "- `p6` is a DEFAULT, not a phase.\n"), FAIL),
     ("plant-no-default", (table, obey, ""), REFUSED),
+    ("plant-shared", (table, shared, default_line), PASS),
+    ("plant-shared-no-work", (p1_table, shared_no_work, default_line), FAIL),
+    ("plant-shared-declared", (p1_table, shared_declared, default_line), PASS),
+    ("plant-declares-contradiction", (table, contradicted, default_line), FAIL),
   ]
   with tempfile.TemporaryDirectory() as td:
     base = Path(td)

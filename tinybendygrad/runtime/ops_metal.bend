@@ -274,7 +274,7 @@ import ../LAWS/spec.bend as S
 # `0 likely-WRONG` is NOT a verdict and is never quoted as one.
 #
 # ---------------------------------------------------------------------------
-# TODO(p1): THIS FILE IS A PORT OF A SUPERSEDED `ops_metal.py`, and its whole
+# TODO(p1): NOT A PHASE CLAIM -- a severity (.agents/TODO.md:11110). THIS FILE IS A PORT OF A SUPERSEDED `ops_metal.py`, and its whole
 # selector/message layer has no referent in the tree any more. It was written
 # against `7b6766c2f`; the tree is `ad117c928`, which DELETED `SELECTORS`,
 # `mtl_sel`, the `sels` Buffer (renamed `handles`) and the `MSGSEND` DICT (now a
