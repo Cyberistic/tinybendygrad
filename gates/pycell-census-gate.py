@@ -286,6 +286,25 @@ def gate(refresh=False, do_bend=True, plant_only=False):
     # PROGRESS.  A rot row the baseline does not carry is NEW ROT.  A form that was
     # REACHED and is DEAD now is a REGRESSION.
     fail = []
+    # LANE 4, ASSERTED AND NOT ONLY TRUE BY THE ORDER OF TWO LINES.  A MARKER is
+    # not a VALUE: the ROT lane's question ("does the port disagree with its own
+    # claim about CPython?") has NO ANSWER for a row whose claim is "there is
+    # nothing to compare", so such a row goes to the BEND-ONLY lane and is
+    # COUNTED and NAMED there.  The `continue` above makes that structurally
+    # true, and THIS makes it a CHECK: if a future edit to the lane ever lets a
+    # marker into the ROT set, the census says so instead of the reader having
+    # to notice that `1 bend-only row(s)` and `1 rot row(s)` are the same row.
+    # MEASURED, the row that made the lane: `renderer/nir_llvmir.bend`'s
+    # `f32show 240.0` -- CPython's `str(240.0)` is `240.0`, the port's
+    # `F32.show(240.0)` is `240`, and the port's own oracle GENERATES the
+    # marker, so the row cannot be re-spelled to make the halves agree.
+    marker_rot = [r for r in rot_rows
+                  if dict(p.split("=", 1) for p in r.split(" ") if "=" in p
+                          ).get("want") in cm.MARKERS]
+    if marker_rot:
+        fail.append(f"{len(marker_rot)} row(s) whose `py=` half is a MARKER are in the "
+                    f"ROT lane: {marker_rot[:3]} -- a marker is not a value and "
+                    f"comparing the two is a category error")
     if plant_bad:
         fail.append(f"the instrument's own plant is RED on {len(plant_bad)} arm(s): "
                     + ", ".join(c[0] for c in plant_bad))

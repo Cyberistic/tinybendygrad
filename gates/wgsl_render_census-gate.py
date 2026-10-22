@@ -92,15 +92,27 @@ the same fact twice and could not fail; this one cannot, because its value is
 a LITERAL in this file and the file the oracle opens is a different thing
 from the rows it prints.
 
-`grep -c OpsCAST tinybendygrad/renderer/wgsl.bend` = **3**, and all three are
-triaged rather than counted by `never_folding_cast_hold()`:
+THE PORT's `OpsCAST{}` SITES ARE TRIAGED BY ROLE, AND NOT COUNTED.  A count of
+`OpsCAST{}` OCCURRENCES was a count the PORT's GROWTH moves: `sr_rmw_cast` --
+the packed read-modify-write's CAST arm -- added a site and the two FIXTURE
+rows added two more, so the count went 3 -> 6 while the constant stayed at 3.
+`never_folding_cast_hold()` therefore CLASSIFIES every site out of the port's
+OWN TEXT and asserts the ROLES, which is the DERIVED form of the claim:
 
-  * `:334` `prw_cast` -- a PATTERN TEST (`op(ar,c) == OpsCAST{}`). Correct use.
-  * `:575` `ssimp`    -- a PATTERN TEST (`op(ar,x) == OpsCAST{} && ss_is(src0)`).
-  * `:838` `f_cast_dt` -- the ONE that MINTS, and it calls `O.UOp.new` DIRECTLY
-    rather than `O.UOp.cast` (`ops.bend:2919`), so it mints whatever the
-    arguments are. This is class (b), the never-folding CAST, and it is a
-    FIXTURE defect with a measured consequence -- see FINDING 1 below.
+  * MINT -- the port CONSTRUCTS a CAST node.  There is ONE, `f_cast_dt`, and
+    it calls `O.UOp.new` DIRECTLY rather than `O.UOp.cast` (`ops.bend:2919`), so
+    it mints whatever the arguments are.  This is class (b), the never-folding
+    CAST, and it is a FIXTURE defect with a measured consequence -- see
+    FINDING 1 below.
+  * TEST -- the port TESTS for a CAST (`O.eq_op(..., O.OpsCAST{})`): the
+    packed read's `prw_cast`, `ssimp`'s CAST arm, and `sr_rmw_cast`.
+  * FIXTURE -- the op is handed to a def as an ARGUMENT: the `sr rmw nv` and
+    `sr pick store` rows.
+
+AND THE CLASSIFICATION IS PINNED BY CONTENT, because a DERIVED count FOLLOWS
+the port and cannot notice the port MOVING: `CAST_SITE_PIN` is a sha256 over
+the sites' own BYTES -- the corpus's `POPULATION_PIN` pattern -- so a new site,
+or a site whose ROLE changed, is a tripwire rather than a silent growth.
 
 THE FOUR DIVERGENCE CLASSES. Each is measured, each has a reason, and none of
 them is a formatting slip.
@@ -265,6 +277,7 @@ was absent (the pins file, the artifact directory, the substrate, the oracle) ·
 5 a lane ran and emitted nothing.
 """
 
+import hashlib
 import re
 import subprocess
 import sys
@@ -319,6 +332,44 @@ DRIFT_PIN = {
 ROWS_TAKEN_AT = {
   "tinygrad/renderer/wgsl.py": "02d7fdea",
 }
+
+# ===========================================================================
+# THE TWO PORT-SIDE CONTENT PINS, AND WHY A DERIVED COUNT IS NOT ENOUGH.
+#
+# `DRIFT_PIN` above is a pin on the ORACLE's INPUTS -- the bytes of the five
+# `tinygrad/` files it imports.  These two are pins on the PORT side, and they
+# exist because of the shape of the defect they repair:
+#
+# **A COUNT THAT THE PORT's GROWTH MOVED MUST BE DERIVED OR DECLARED, NEVER
+# TYPED.**  Two counts in this file were typed, and the port's growth moved
+# both.  `never_folding_cast_hold()` counted `OpsCAST{}` OCCURRENCES and said
+# 3; the port grew `sr_rmw_cast` (the packed read-modify-write's CAST arm) and
+# two FIXTURE rows, and the count became 6.  `sr_dispatch_hold()` said "exactly
+# ONE fixture falls through: rmw plain"; the port grew a `rmw bare` fixture
+# beside `sr_rmw_cast` and there were TWO.  In BOTH cases the population grew
+# on BOTH sides together -- the port's rows and the oracle's fixtures -- so
+# `names_hold()` stayed GREEN and the only thing in the tree that noticed was
+# a typed constant.  **A CONSTANT IS NOT A POPULATION, AND A POPULATION THAT
+# GREW IS A FINDING NOBODY WAS TOLD.**
+#
+# **AND A DERIVED COUNT FOLLOWS THE PORT, SO IT CANNOT NOTICE THE PORT
+# MOVING.**  That is the whole reason these two pins exist, and they are the
+# corpus's `POPULATION_PIN` pattern: a sha256 over a POPULATION'S NAMES and
+# the SOURCE of each member -- not over a file, so an unrelated edit does not
+# move it, and not over a number, so a growth moves it.
+#
+#   * `CAST_SITE_PIN` -- the port's `OpsCAST{}` SITES, verbatim.  A site
+#     added, removed or edited is a tripwire.
+#   * `SR_FIXTURE_PIN` -- the `sr` fixture population's NAMES, their declared
+#     rule indices, and each fixture's NODE.  A fixture added, relabelled or
+#     re-shaped is a tripwire.
+#
+# THE VALUES ARE LITERALS, for the reason `DRIFT_PIN`'s are: a pin re-derived
+# from the thing it checks is `sha256(x) == sha256(x)`, and
+# `gates/blobpin-census-gate.py` MEASURES that claim over every pin site in the
+# tree and fails a derived one.
+CAST_SITE_PIN = "4ad7ca714528448aaaa26de8df868b7210483e07f96f374f210718509392c70d"
+SR_FIXTURE_PIN = "ef5de30191ae3986897a1d197b349264f8d2311d32da922d93758edc1a7eff3e"
 
 # `string_rewrite`'s SEVENTEEN rules, by their INDEX in
 # `WGSLRenderer.string_rewrite.patterns`. `rules_hold()` re-derives the length and
@@ -773,7 +824,46 @@ def pin_drift_hold():
         if blob not in text:
             bad.append(f"the pins file does not record {rel}'s blob {blob} -- the bytes "
                        f"the rows were taken against")
+    # THE TWO PORT-SIDE PINS ARE RECORDED IN THE PINS FILE TOO, for the same
+    # reason the oracle's are: the pins file and this check must not be able to
+    # disagree about WHICH bytes were measured.  `--refresh` writes them from
+    # the constants here, so they cannot drift apart silently.
+    for name, pin in (("the port's OpsCAST sites", CAST_SITE_PIN),
+                      ("the `sr` fixture population", SR_FIXTURE_PIN)):
+        if pin not in text:
+            bad.append(f"the pins file does not record {name}'s pinned sha256 "
+                       f"{pin[:16]}")
     return report("pin_drift_hold", bad)
+
+
+def _cast_sites():
+    """`[(lineno, text, role)]` -- every `OpsCAST{}` site in the PORT's own text.
+
+    **THE ROLE IS DERIVED FROM THE SITE AND NOT TYPED**, and it is the
+    derivation that replaced a count.  The check used to assert
+    `grep -c OpsCAST == 3`, and the port's growth moved that number -- the
+    `sr_rmw_cast` arm and the two FIXTURE rows -- so the constant was a
+    number the port owned and nobody re-decided.  A number the port can move
+    must be DERIVED or DECLARED, and the ROLES are the derivation:
+
+      MINT     the port CONSTRUCTS a CAST node (`O.UOp.new`).
+      TEST     the port TESTS for one (`O.eq_op(..., O.OpsCAST{})`).
+      FIXTURE  the op is handed to a def as an ARGUMENT.
+      AMBIGUOUS  a site that both MINTS and TESTS -- nobody can triage it, and
+                 a site nobody can triage is a site nobody has looked at.
+
+    A site whose ROLE is derived from its own text cannot be re-typed by an
+    edit to this file, and the ROLE is what the check asserts.
+    """
+    out = []
+    for n, ln in enumerate(src().splitlines(), 1):
+        if "OpsCAST{}" not in ln:
+            continue
+        mint, test = "O.UOp.new(" in ln, "O.eq_op(" in ln
+        role = ("AMBIGUOUS" if mint and test else "MINT" if mint
+                else "TEST" if test else "FIXTURE")
+        out.append((n, ln.strip(), role))
+    return out
 
 
 def never_folding_cast_hold():
@@ -803,8 +893,13 @@ def never_folding_cast_hold():
          shape. That is the fix, and this check says so by asserting the shape
          and the answer.
 
-    And `grep -c OpsCAST tinybendygrad/renderer/wgsl.bend` is re-measured as 3,
-    with each of the three lines named: two are pattern TESTS and one MINTS.
+    And the port's `OpsCAST{}` SITES are re-measured as ROLES, not as a count
+    -- see `_cast_sites()`.  **THE CLAIM THAT CAN GO RED IS THE NUMBER OF
+    MINTING SITES, NOT THE NUMBER OF SITES.**  A second MINT would be a second
+    place the port builds a CAST node directly instead of folding it, and that
+    is the defect this check exists for.  A new TEST or FIXTURE site is not a
+    defect -- it is growth -- and the CONTENT PIN (`CAST_SITE_PIN`) is what
+    says so, by going red on the bytes rather than on a number nobody re-read.
     """
     sys.path.insert(0, str(ROOT))
     from tinygrad.uop.ops import UOp, Ops, ssimplify, sint_to_uop
@@ -844,9 +939,27 @@ def never_folding_cast_hold():
     if "f_cast_dt(f_cast_dt(" not in src() and "f_cast_dt(c2, S.int32())" not in src():
         bad.append("wgsl.bend's fx_mixed no longer builds the DOUBLE CAST "
                    "sint_to_uop builds -- FINDING 1's fix was reverted")
-    n = len(re.findall(r"OpsCAST\{\}", src()))
-    if n != 3:
-        bad.append(f"wgsl.bend has {n} OpsCAST{{}} sites, expected 3")
+    # THE SITES, BY ROLE.  The count that moved is GONE; what is asserted is the
+    # number of sites that MINT, and the number of sites nobody can triage.
+    sites = _cast_sites()
+    mints = [s for s in sites if s[2] == "MINT"]
+    if len(mints) != 1:
+        bad.append(f"wgsl.bend has {len(mints)} site(s) that MINT a CAST "
+                   f"(O.UOp.new), expected exactly 1 -- at "
+                   f"{[s[0] for s in mints]}")
+    for (n, _t, role) in sites:
+        if role == "AMBIGUOUS":
+            bad.append(f"wgsl.bend:{n} both MINTS and TESTS a CAST -- a site nobody "
+                       f"can triage")
+    # AND THE SITES' OWN BYTES ARE PINNED, so the port GROWING is a tripwire
+    # rather than a silent growth.  A derived count FOLLOWS the port and cannot
+    # notice the port moving; this can.
+    got_pin = hashlib.sha256(
+        "\n".join(t for (_n, t, _r) in sites).encode()).hexdigest()
+    if got_pin != CAST_SITE_PIN:
+        bad.append(f"the port's OpsCAST sites moved: {got_pin[:16]} != pinned "
+                   f"{CAST_SITE_PIN[:16]} -- a site was added, removed or edited, "
+                   f"and nobody re-decided")
     return report("never_folding_cast_hold", bad)
 
 
@@ -1068,41 +1181,114 @@ REPORTED = []
 
 
 def sr_dispatch_hold():
-    """THE THIRTY-FIVE POSITIVE `sr` ROWS, RE-ASKED WHICH RULE CPython'S OWN
-    MATCHER WOULD PICK. This is the 34/35 measurement, and it was a `.agents/slop`
-    PROBE rather than a check until the fixtures were hoisted out of
-    `g_string_rewrite` into the oracle's `sr_fixtures()` -- one declaration, read
-    by the row printer AND by this.
+    """THE FALL-THROUGH SET, DERIVED FROM CPython's OWN MATCHER -- and the
+    POPULATION it is derived over, PINNED.
 
-    `PatternMatcher.rewrite` takes the FIRST pattern that matches, so "the rule
-    this row is on" is a claim about the TABLE and not about a body, and a body
-    agreeing with a body says nothing about it. So for every positive fixture the
-    gate asks CPython `sr_first(u)` and compares with the row's rule index:
+    **WHAT THIS CHECK IS SUPPOSED TO BE.**  That every positive `sr` row is on
+    the rule CPython's `PatternMatcher.rewrite` WOULD reach, so the row is a
+    BRANCH PROOF and not a SPELLING.
 
-      * 34 of the 35 are the row's own rule -- the row is on the rule the table
-        would reach, which is what makes the thirty-five rows thirty-five branch
-        proofs rather than thirty-five spellings;
-      * ONE IS NOT, and it is `rmw plain`: `UOp.store(idx_pl, vf)` is a packed
-        store whose value is an ordinary CONST, so rule 14's `packed_rmw` pattern
-        REFUSES it and the matcher FALLS THROUGH to rule 15. Asking rule 14 alone
-        answers `None` and that is what the row says on both sides; dispatching
-        answers `B = V;`. The fall-through is the finding, so it is ASSERTED
-        rather than tolerated: a second fixture that falls through is red here.
+    **WHAT IT MEASURED, AND IT WAS NOT THE PORT.**  It walked the ORACLE's
+    `sr_fixtures()` and asked CPython's matcher which rule it would pick, and
+    the PORT WAS NEVER READ.  So its subject was CPython's own matcher -- a
+    fact about the VENDORED UPSTREAM -- together with the ORACLE's fixture
+    LABELS.  **A PORT GATE WHOSE SUBJECT IS NOT THE PORT IS A GATE WHOSE NAME
+    LIES ABOUT WHAT IT HOLDS**, and the fix is to say which half is whose.
+
+    **WHERE EACH HALF BELONGS, AND IT IS THREE PLACES AND NOT ONE.**
+
+      * THE UPSTREAM HALF -- "CPython's matcher routes this fixture to that
+        rule" -- is a fact about the BYTES of `tinygrad/renderer/wgsl.py`, and
+        the house's place for a fact about upstream's bytes is the BYTE PIN:
+        `DRIFT_PIN` above, re-measured on every run by
+        `gates/gatekit.py:oracle_drift`.  If upstream's table moves, THAT is
+        what goes red, and the fall-through set is re-derived on the next run.
+      * THE ORACLE HALF -- the fixture LABELS -- is a fact about
+        `gates/wgsl_render_census-oracle.py`, and its place is the POPULATION
+        PIN: `SR_FIXTURE_PIN`, a sha256 over the population's NAMES, their
+        declared rule indices and each fixture's NODE -- the corpus's
+        `POPULATION_PIN` pattern.  **WITHOUT IT THE ONLY THING THAT NOTICED
+        THE GROWTH WAS A TYPED COUNT**: the port grew `sr_rmw_cast` and a
+        `rmw bare` fixture together, the population grew on BOTH sides at once,
+        `names_hold()` stayed GREEN, and the count of fall-throughs went from
+        one to two while the constant said one.
+      * THE PORT HALF -- the port must REFUSE every fixture CPython's table
+        refuses -- is the half that BELONGS IN A PORT GATE, and it is the half
+        this check now carries.
+
+    **AND THE PORT HALF IS NOT A SECOND OPINION ABOUT THE LANE DIFF.**  The
+    diff compares the port's row to the ORACLE's row, so if BOTH answered a
+    rendering on a fixture CPython's matcher routes elsewhere, the diff would
+    be GREEN and the row would be a SPELLING.  This check is the one that says
+    so, and it is the only one that can: the diff never asks CPython's matcher
+    anything.
+
+    **THE DERIVED CLAIM, AND IT IS ABOUT THE MEMBERS AND NOT ABOUT HOW MANY.**
+    For a fixture CPython's matcher routes to a DIFFERENT rule than the one the
+    fixture declares, the DECLARED rule REFUSES the node -- and a rule that
+    refuses answers NOMATCH, on both sides.  So:
+
+      * the ORACLE's row for it must be NOMATCH (a rule that ANSWERS while the
+        table reaches another one is a LABEL THAT LIES), and
+      * the PORT's row for it must be NOMATCH too (a rendering there is a
+        SPELLING and not a proof).
+
+    Neither of those is a count, so NEITHER is a number the port's growth can
+    move silently: a new fall-through is measured, named and printed, and the
+    POPULATION PIN is what says a new one was not re-decided.
     """
     m = _oracle_mod()
+    fixtures = m.sr_fixtures()
+    bad = []
+    # THE POPULATION, PINNED BY ITS OWN BYTES -- names, rule indices, nodes.
+    got_pin = hashlib.sha256(
+        "\n".join(f"{i}\t{name}\t{str(u).replace(chr(10), ' ')}"
+                  for (i, name, u, _p) in fixtures).encode()).hexdigest()
+    if got_pin != SR_FIXTURE_PIN:
+        bad.append(f"the `sr` fixture population moved: {got_pin[:16]} != pinned "
+                   f"{SR_FIXTURE_PIN[:16]} -- a fixture was added, removed, "
+                   f"relabelled or re-shaped, and nobody re-decided")
+    # THE FALL-THROUGH SET, DERIVED.  NO TYPED COUNT AND NO TYPED LIST: the set
+    # is whatever CPython's matcher says, and the claim below is about the
+    # set's MEMBERS.
     fell = []
-    for i, name, u, _p in m.sr_fixtures():
+    for i, name, u, _p in fixtures:
         first = m.sr_first(u)
         if first != i:
-            fell.append(f"{name} ({i} -> {first})")
-    if len(fell) == 1 and fell[0].startswith("rmw plain"):
-        return report("sr_dispatch_hold", [])
-    bad = [f"the fixtures CPython's matcher routes to a DIFFERENT rule are {fell}, "
-           f"the table says exactly one: rmw plain. A row on a rule the table "
-           f"would not reach is a SPELLING and not a proof."]
+            fell.append((i, name, first))
+    # A CHECK THAT MEASURED NOTHING IS NOT A PASS.  The set was never empty --
+    # `rmw plain` is a store of an ordinary CONST, which rule 14's pattern
+    # refuses -- so an empty set means the TABLE moved and nobody re-decided.
     if not fell:
-        bad.append("rmw plain NO LONGER falls through -- re-measure the store-pair "
-                   "order before believing the rest of this check")
+        bad.append("no fixture falls through -- the measurement this check exists "
+                   "to take is not being taken; re-measure the table before "
+                   "believing the rest of it")
+    want, why = oracle_lane()
+    if want is None:
+        return report("sr_dispatch_hold", [why])
+    got_rows, _rec = port_lane()
+    if not got_rows:
+        return report("sr_dispatch_hold",
+                      ["the port's lane did not run -- this check measured nothing"])
+    o_by = {l.split("=", 1)[0]: l.split("=", 1)[1] for l in want if "=" in l}
+    p_by = {l.split("=", 1)[0]: l.split("=", 1)[1]
+            for l in got_rows if l and "=" in l}
+    for (i, name, first) in fell:
+        row = f"sr {name}"
+        ov, pv = o_by.get(row), p_by.get(row)
+        if ov is None or pv is None:
+            bad.append(f"{row!r} is in no lane -- oracle {ov!r}, port {pv!r}")
+            continue
+        if ov != "NOMATCH":
+            bad.append(f"{row}: CPython's matcher reaches rule {first}, not {i}, and "
+                       f"rule {i} ANSWERS {ov[:60]!r} -- the fixture's label is a lie")
+        if pv != "NOMATCH":
+            bad.append(f"{row}: the port answers {pv[:60]!r} on a fixture CPython's "
+                       f"matcher routes to rule {first} -- a SPELLING and not a proof")
+    # THE SET IS NAMED, because a census that records a count without the names
+    # is not a census.
+    print(f"  sr_dispatch_hold: {len(fixtures)} fixture(s), {len(fell)} fall(s) "
+          f"through: {[(n, f'{i}->{f}') for (i, n, f) in fell]}", file=sys.stderr)
     return report("sr_dispatch_hold", bad)
 
 
@@ -1346,6 +1532,15 @@ def _header(n_lane, n_self):
         "# oracle opens is the one ON DISK. `pin_drift_hold()` re-measures every one of",
         "# them on every run, against the WORKING TREE.",
         *[f"# {rel}: {sha}" for rel, sha in DRIFT_PIN.items()],
+        "#",
+        "# AND THE TWO PORT-SIDE PINS, WHICH ARE BYTES AND NOT NUMBERS.  A COUNT",
+        "# THAT THE PORT's GROWTH MOVED MUST BE DERIVED OR DECLARED AND NEVER",
+        "# TYPED, and a DERIVED COUNT FOLLOWS THE PORT AND CANNOT NOTICE THE PORT",
+        "# MOVING -- so the two populations that grew are PINNED BY THEIR OWN",
+        "# BYTES, the corpus's `POPULATION_PIN` pattern:",
+        f"# {PORT.relative_to(ROOT).as_posix()}: OpsCAST sites sha256 {CAST_SITE_PIN}",
+        f"# {ORACLE.relative_to(ROOT).as_posix()}: sr fixture population sha256 "
+        f"{SR_FIXTURE_PIN}",
         "#",
         "# AND THE BYTES THE ROWS WERE TAKEN AGAINST, WHICH IS A DIFFERENT SET. A blob",
         "# id is a fact about a COMMIT and it is RECORDED here rather than read at",

@@ -25,6 +25,14 @@
 # tinygrad/dtype.py: 7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926
 # tinygrad/helpers.py: eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308
 #
+# AND THE TWO PORT-SIDE PINS, WHICH ARE BYTES AND NOT NUMBERS.  A COUNT
+# THAT THE PORT's GROWTH MOVED MUST BE DERIVED OR DECLARED AND NEVER
+# TYPED, and a DERIVED COUNT FOLLOWS THE PORT AND CANNOT NOTICE THE PORT
+# MOVING -- so the two populations that grew are PINNED BY THEIR OWN
+# BYTES, the corpus's `POPULATION_PIN` pattern:
+# tinybendygrad/renderer/wgsl.bend: OpsCAST sites sha256 4ad7ca714528448aaaa26de8df868b7210483e07f96f374f210718509392c70d
+# gates/wgsl_render_census-oracle.py: sr fixture population sha256 ef5de30191ae3986897a1d197b349264f8d2311d32da922d93758edc1a7eff3e
+#
 # AND THE BYTES THE ROWS WERE TAKEN AGAINST, WHICH IS A DIFFERENT SET. A blob
 # id is a fact about a COMMIT and it is RECORDED here rather than read at
 # refresh time: `git rev-parse HEAD:<path>` answers the blob at HEAD NOW, and
