@@ -320,8 +320,13 @@ def CONTROL_REQ() -> U32: 3
 def INIT_FLAGS() -> U32: 1
 
 # ION (:81) -- align 0x200, heap_id_mask 1<<ION_SYSTEM_HEAP_ID, ION_FLAG_CACHED
+# `ION_SYSTEM_HEAP_ID` is 25, out of `tinygrad/runtime/autogen/qcom_dsp.py`'s
+# `enum_ion_heap_ids` -- `(ION_SYSTEM_HEAP_ID:=25)`.  It was 0 HERE, and 0 is
+# `INVALID_HEAP_ID`, so the port asked ION for the INVALID heap and its
+# `heap_id_mask` was 1<<0 = 1 instead of 1<<25 = 33554432.  `dsp_ion` is the
+# row that pins all five numbers and it says so.
 def ION_ALIGN() -> U32: 512
-def ION_SYSTEM_HEAP_ID() -> Nat: 0n
+def ION_SYSTEM_HEAP_ID() -> Nat: 25n
 def ION_FLAG_CACHED() -> U32: 1
 
 # the device nodes (:132, :172), the shell image (:134), its alignment (:135)
@@ -342,9 +347,14 @@ def ARG_SHARED() -> String: "-shared"
 def ARG_STATIC() -> String: "-static"
 def CACHEKEY() -> String: "compile_dsp"
 
-# :121 the command tail, identical in the mock and the real compile
+# :121 the command tail, identical in the mock and the real compile.  The `-o` slot
+# is where upstream writes `{f.name}` -- a TEMPFILE name, and a name no fixed
+# string can be -- so the slot is `<TMP>` here, and the port never spawns this
+# command anyway (the spawn is not ported).  `<TMP>` is the SAME token the
+# oracle's `dsp_cmd_*` rows carry, and it is a SLOT, not a path: upstream's
+# `f.name` and `self.link_ld.name` are both random.
 def COMPILE_TAIL() -> String:
-  "-O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o "
+  "-O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o <TMP>"
 
 # :13,:14 the two class attributes the generated C depends on
 def BUFFER_SUFFIX() -> String: " restrict __attribute__((align_value(128)))"
@@ -1257,8 +1267,21 @@ def mockdsp_boilerplate() -> String:
     "\nstatic void *mmap2(void *addr, unsigned int length, int prot, int flags, int fd, unsigned long offset) {{",
     "\nreturn (void*)syscall((long)addr, length, prot, flags, fd, offset, 222); }}"])
 
-def boiler_lines() -> U32: 9
-def boiler_first_len() -> U32: 65
+# The boilerplate is NINE lines and its FIRST is 106 characters long --
+# `/* DSP boilerplate */ static long syscall(long r0, long r1, long r2, long r3,
+# long r4, long r5, long r6) {`.  The first-line length was 65 HERE, a number
+# that is in no upstream revision at all, and it is MEASURED from the port's OWN
+# boilerplate now, so a boilerplate that grows cannot leave the row behind.
+def boiler_lines() -> U32:
+  U32.from_nat(List.length(&2, String, String.lines(mockdsp_boilerplate())))
+
+def boiler_first_len.go(m: Maybe<&2, String>) -> U32:
+  match m:
+    case None{}: 0
+    case Some{+l}: U32.from_nat(String.length(l))
+
+def boiler_first_len() -> U32:
+  boiler_first_len.go(List.get(&2, String, String.lines(mockdsp_boilerplate()), 0n))
 
 def u32_of_str(+s: String, sub: String) -> U32:
   Bool.to_u32(String.contains(s, sub))
@@ -1387,9 +1410,14 @@ def compiler.del_unlinks(mock: Bool) -> Bool: Bool.not(mock)
 # 'clang')` and is a parameter here, the way helpers.bend's Flags threads getenv.
 def CC_DEFAULT() -> String: "clang"
 
+# :111 `self.args = f"-shared {compiler_args} -T{self.link_ld.name}"` -- the `-T`
+# slot is the LINK SCRIPT's tempfile name, so it is `<TMP>` for the same reason
+# the `-o` slot is.  It was `/tmp/dsp_link.ld`, a path the port never creates.
+def LINK_SCRIPT_ARG() -> String: " -T<TMP>"
+
 def compile_cmd(+mock: Bool, +cc: String) -> String:
   String.concat([cc, " ", compiler_args_first(mock), " ", COMPILER_ARGS(),
-    Bool.pick(String, compiler_args_has_T(mock), " -T/tmp/dsp_link.ld", ""),
+    Bool.pick(String, compiler_args_has_T(mock), LINK_SCRIPT_ARG(), ""),
     " ", COMPILE_TAIL()])
 
 
@@ -1567,13 +1595,28 @@ def RPC_GREET_IS_EXEC() -> Bool: U32.is_eq(RPC_GREET(), rpc_sc(M_INVOKE(), 2, 1,
 # the seven `sc` values the loop dispatches on, taken from the elif chain at
 # :213-238. The chain's ORDER is not the numeric order, so `rpc.arm` is a table and
 # `dsp_rpc_arms` is its image.
+#
+# THE SEVEN LITERALS, READ OUT OF UPSTREAM'S OWN SOURCE at
+#   :213 `if sc == 0x20200: pass`          :213  0x0020200
+#   :214 `elif sc == 0x13050100: # open`   :214  0x13050100
+#   :217 `elif sc == 0x3010000:`           :217  0x03010000
+#   :219 `elif sc == 0x9010000: # seek`    :219  0x09010000
+#   :225 `elif sc == 0x4010200: # read`    :225  0x04010200
+#   :232 `elif sc == 0x1f020100: # stat`   :232  0x1f020100
+#   :236 `elif sc == 0x2010100: # mmap`    :236  0x02010100
+# FIVE of the seven HERE were WRONG: 0x0BE00000, 0x09002600, 0x04004000,
+# 0x01DC0000 and 0x02010000 are in NO upstream revision -- `git log --all -S` finds
+# no such constant in `tinygrad/runtime/ops_dsp.py` at all -- and a port that
+# dispatches on them NEVER reaches upstream's arms.  `dsp_rpc_scs` is the row
+# that pins all seven, and `dsp_rpc_reply_io` and `dsp_rpc_seek_err` are the two
+# that read a wrong selector out of it.
 def SC_HELLO() -> U32: 131584
-def SC_OPEN() -> U32: 199229440
+def SC_OPEN() -> U32: 319095040
 def SC_CLOSE() -> U32: 50397184
-def SC_SEEK() -> U32: 151004672
-def SC_READ() -> U32: 67125248
-def SC_STAT() -> U32: 31195136
-def SC_MMAP() -> U32: 33619968
+def SC_SEEK() -> U32: 151060480
+def SC_READ() -> U32: 67174912
+def SC_STAT() -> U32: 520225024
+def SC_MMAP() -> U32: 33620224
 
 def ARM_NONE() -> U32: 0
 def ARM_HELLO() -> U32: 1
@@ -1592,24 +1635,24 @@ def ARM_MMAP() -> U32: 7
 def rpc.arm_open(sc: U32) -> U32:
   match sc:
     case 131584: ARM_HELLO()
-    case 199229440: ARM_OPEN()
+    case 319095040: ARM_OPEN()
     case _: ARM_NONE()
 
 def rpc.arm_close(sc: U32) -> U32:
   match sc:
     case 50397184: ARM_CLOSE()
-    case 151004672: ARM_SEEK()
+    case 151060480: ARM_SEEK()
     case _: rpc.arm_open(sc)
 
 def rpc.arm_read(sc: U32) -> U32:
   match sc:
-    case 67125248: ARM_READ()
-    case 31195136: ARM_STAT()
+    case 67174912: ARM_READ()
+    case 520225024: ARM_STAT()
     case _: rpc.arm_close(sc)
 
 def rpc.arm(sc: U32) -> U32:
   match sc:
-    case 33619968: ARM_MMAP()
+    case 33620224: ARM_MMAP()
     case _: rpc.arm_read(sc)
 
 # the chain's ORDER as arm ids, so it can be printed. SEVEN, not eight: `ARM_NONE`
@@ -1661,12 +1704,20 @@ def rpc.reply_sc_index() -> U32: 2
 def rpc.reply_context_index() -> U32: 0
 
 # :201 `round_up(in_ptr + 4, 8) if i < inbufs else round_up(out_ptr + 4, 8)`.
-# EVERY object pointer is 8-aligned and sits after a 4-byte size, so the padding is
-# 0 or 4 and the object itself starts at the aligned address.
+# THE OBJECT POINTER, and it is upstream's OWN expression: the size field is four
+# bytes and the object that follows it is 8-ALIGNED, so the object starts at
+# `round_up(off + 4, 8)`.  The formula here used to be `8 - (off mod 8)`, which
+# is the distance to the NEXT 8-boundary and is NOT upstream's expression: it
+# answers 8 for an already-aligned offset, and the comment beside it said "the
+# padding is 0 or 4 and NEVER 8" -- so the row contradicted its own comment.
+# The PADDING is the difference between the aligned pointer and the unaligned
+# one, and it is 0..7 and not 0 or 4, because upstream's `in_ptr` advances by
+# `obj_ptr + obj_size` and `obj_size` is arbitrary.
 def RPC_OBJ_ALIGN() -> U32: 8
 def RPC_SIZE_BYTES() -> U32: 4
 
-def rpc.obj_pad(off: U32) -> U32: U32.sub(RPC_OBJ_ALIGN(), U32.mod(off, RPC_OBJ_ALIGN()))
+def rpc.obj_ptr(off: U32) -> U32:
+  H.round_up_u32(U32.add(off, RPC_SIZE_BYTES()), RPC_OBJ_ALIGN())
 def rpc.obj_count(inbufs: U32, outbufs: U32) -> U32: U32.add(inbufs, outbufs)
 
 # the seven arms' ARGUMENT COUNTS, which is the pure part of WALL 3:
@@ -1729,8 +1780,38 @@ def rpc.hello(+t: Tr) -> Tr: t
 
 # :239 the unknown-op raise. `rpc.arm` answers `ARM_NONE` and the caller turns that
 # into a refusal with nothing recorded.
+#
+# :239 `raise RuntimeError(f"Unknown op: {sc=:X}")` -- the `:X` is UPPERCASE hex
+# with NO padding, so 255 is `FF` and 0 is `0`.  The port printed the DECIMAL
+# (`sc=255`), which is not what upstream's f-string says.
+#
+# THE HEX, and it is here because `helpers.bend` has no hex and the one in
+# `renderer/tc_ptx.bend` is FIXED WIDTH (`hex4`, `hex8`), which is a different
+# function: upstream's `:X` prints as many digits as the number has.
+def HEX_DIGITS() -> String: "0123456789ABCDEF"
+
+def u32_hex_digit(n: U32) -> String:
+  String.from_list([Maybe.default(&2, Char, String.get(HEX_DIGITS(), U32.to_nat(n)),
+    Char.from_u32(63))])
+
+# The FUEL is the digit count and it SHRINKS, so the self-call is a decreasing
+# one: a U32 is at most eight hex digits, and the walk stops at the first zero.
+def u32_hex.go(n: Nat, +v: U32, +acc: String) -> String:
+  match n:
+    case 0n: acc
+    case 1n+m:
+      match v:
+        case 0: acc
+        case _: u32_hex.go(m, U32.div(v, 16),
+          String.append(acc, u32_hex_digit(U32.mod(v, 16))))
+
+def u32_hex(+n: U32) -> String:
+  match n:
+    case 0: "0"
+    case _: String.reverse(u32_hex.go(8n, n, ""))
+
 def rpc.unknown_err(+sc: U32) -> String:
-  String.concat(["RuntimeError: Unknown op: sc=", U32.show(sc)])
+  String.concat(["RuntimeError: Unknown op: sc=", u32_hex(sc)])
 
 
 # ===========================================================================
@@ -1752,8 +1833,23 @@ def mprog.stdin_bytes.go(+bs: List<&2, U32>, acc: U32) -> U32:
 def mprog.stdin_bytes(bs: List<&2, U32>) -> U32:
   mprog.stdin_bytes.go(bs, 0)
 
+# :283-286 the input is the bufs' bytes and THEN the vals packed with `dt.fmt`,
+# so the count is the bufs' bytes plus EIGHT per val.  `nbufs` was IGNORED here
+# -- `mprog.nstdin(0, 0)` answered the three-buffer fixture's 6 -- so the row
+# `dsp_mp_nstdin` said 6 where upstream's own arithmetic says 0.
+def mprog.bufs_prefix.go(n: Nat, +bs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match n:
+    case 0n: acc
+    case 1n+m:
+      match bs:
+        case Nil{}: acc
+        case b <> t: mprog.bufs_prefix.go(m, t, List.append(&2, U32, acc, [b]))
+
+def mprog.bufs_prefix(nbufs: U32) -> List<&2, U32>:
+  mprog.bufs_prefix.go(U32.to_nat(nbufs), fx.bufs3(), Nil{})
+
 def mprog.nstdin(+nbufs: U32, nvals: U32) -> U32:
-  U32.add(mprog.stdin_bytes(fx.bufs3()), U32.mul(nvals, 8))
+  U32.add(mprog.stdin_bytes(mprog.bufs_prefix(nbufs)), U32.mul(nvals, 8))
 
 # :287 `offset = 4` -- the inscount is the FIRST four bytes of stdout, then the
 # buffers in order, then `assert offset == len(proc.stdout)`.
@@ -5725,7 +5821,7 @@ def t_rpc() -> IO(Unit):
     
     
     
-    lrow("dsp_rpc_a_open",     [rpc.arm(199229440)])
+    lrow("dsp_rpc_a_open",     [rpc.arm(SC_OPEN())])
 
 
 
@@ -5741,7 +5837,7 @@ def t_rpc() -> IO(Unit):
     
     
     
-    lrow("dsp_rpc_a_seek",     [rpc.arm(151004672)])
+    lrow("dsp_rpc_a_seek",     [rpc.arm(SC_SEEK())])
 
 
 
@@ -5749,7 +5845,7 @@ def t_rpc() -> IO(Unit):
     
     
     
-    lrow("dsp_rpc_a_read",     [rpc.arm(67125248)])
+    lrow("dsp_rpc_a_read",     [rpc.arm(SC_READ())])
 
 
 
@@ -5757,7 +5853,7 @@ def t_rpc() -> IO(Unit):
     
     
     
-    lrow("dsp_rpc_a_stat",     [rpc.arm(31195136)])
+    lrow("dsp_rpc_a_stat",     [rpc.arm(SC_STAT())])
 
 
 
@@ -5765,7 +5861,7 @@ def t_rpc() -> IO(Unit):
     
     
     
-    lrow("dsp_rpc_a_mmap",     [rpc.arm(33619968)])
+    lrow("dsp_rpc_a_mmap",     [rpc.arm(SC_MMAP())])
 
 
 
@@ -5879,7 +5975,7 @@ def t_rpc() -> IO(Unit):
     
     
     
-    lrow("dsp_rpc_reply_io",     [sc_ins(199229440), sc_outs(199229440),
+    lrow("dsp_rpc_reply_io",     [sc_ins(SC_OPEN()), sc_outs(SC_OPEN()),
                                   sc_ins(67240448), sc_outs(67240448)])
 
 
@@ -5889,8 +5985,8 @@ def t_rpc() -> IO(Unit):
     
     
     
-    lrow("dsp_rpc_pad",     [rpc.obj_pad(0), rpc.obj_pad(1), rpc.obj_pad(4),
-                             rpc.obj_pad(5), rpc.obj_pad(8), rpc.obj_pad(12)])
+    lrow("dsp_rpc_objptr",     [rpc.obj_ptr(0), rpc.obj_ptr(1), rpc.obj_ptr(4),
+                                rpc.obj_ptr(5), rpc.obj_ptr(8), rpc.obj_ptr(12)])
 
 
 
@@ -5934,7 +6030,7 @@ def t_rpc() -> IO(Unit):
     
     
     
-    srow("dsp_rpc_seek_err",     rpc.seek_err(151004672))
+    srow("dsp_rpc_seek_err",     rpc.seek_err(SC_SEEK()))
 
 
 

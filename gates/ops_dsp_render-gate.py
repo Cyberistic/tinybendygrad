@@ -4,7 +4,7 @@
     .venv/bin/python gates/ops_dsp_render-gate.py
     .venv/bin/python gates/ops_dsp_render-gate.py --port <path>   # for the plant
 
-497 ROWS, THREE LANES, THIRTY DECLARED DIVERGENCES.
+497 ROWS, THREE LANES, **NO DECLARED DIVERGENCES**: 497 COMPARED.
 
 WHY THIS GATE EXISTS AT ALL.  `ops_dsp.bend` carried 497 `py=` cells -- 273 of them
 STRING literals and 224 of them numbers and booleans, which the census counts as
@@ -20,47 +20,110 @@ byte diff against CPython's lane, which is where the value now lives.
 THE ORACLE IS RECOVERED, from git history: blob
 `291bbc8821dafb2ae0b8c464488d4b02300ced6b` of `.agents/slop/dsp_oracle2.py`, commit
 `192142295`, which is the commit that made this file's rows compared in the first
-place.  It lives beside this gate, at `gates/ops_dsp_render-oracle.py`.
+place.  It lives beside this gate, at `gates/ops_dsp_render-oracle.py`, and it has
+been EDITED -- the edits are listed in ITS header, one per adjudicated row.
 
-THE THIRTY DIVERGENCES, AND WHAT A DIVERGENCE IS HERE.  Each one is a row where the
-port's own value and the oracle's value DIFFER, and each is PINNED ON BOTH SIDES:
-a divergence is precisely where the two sides differ, and pinning one string can
-only ever describe half of it.  A pinned divergence is a CLAIM -- "the oracle says
-this and the port says that" -- and it is NOT a verdict on which of the two is
-right.  That distinction is not a hedge: the oracle is a hand-written MODEL of
-upstream, and it is known to be wrong on at least one of the thirty.
+THE THIRTY, ADJUDICATED.  They used to be DECLARED and PINNED on both sides, which
+is honest and is also a licence without a basis: a declared divergence is a
+statement that "this row differs, and here is why", and nobody had said why for
+these thirty.  Every one of them now has a VERDICT, and the verdict is on the
+side that was wrong, with the upstream line that says so.  THE ORACLE WAS WRONG ON
+23, THE PORT WAS WRONG ON 11, AND FOUR OF THE THIRTY WERE WRONG ON BOTH SIDES.
+EVERY ONE OF THEM IS NOW A COMPARED ROW.
 
-  `dsp_vt_vox_3_1`  THE ORACLE IS THE WRONG SIDE, and it is measurable.  The
-    oracle's own formula for the `vox_*` family is `{nb} * 8`, which drops the
-    value index; a LATER version of the very same file spells it `({nb} + {j}) * 8`
-    and says why: "ops_dsp.py:68 is `enumerate(zip(vals, sig[len(bufs):]), start=
-    len(bufs))`, so the index is `nbufs + j` and the offset `(nbufs + j) * 8`...
-    MEASURED, by packing into a real `bytearray` and reading back which slot moved:
-    3 bufs and 2 vals put them at 24 and 32".  The port says 32, which is the
-    MEASURED answer.  That later version cannot be used here because it also
-    names a seventeenth trace kind (`MUNMAP`) that this port does not have, so its
-    `assert sorted(KIND.values()) == list(range(len(KNM)))` fails before it prints a
-    row -- the file in git history is a seventeen-kind file that CANNOT RUN.
-  `dsp_cmd_m/r/cc`  THE ORACLE IS THE WRONG SIDE, and the oracle says so itself:
-    "upstream interpolates a tempfile name, so a CPython diff is impossible for the
-    whole command".  The oracle compares the STABLE PREFIX; the port prints the
-    whole command with the name it would use.
-  `dsp_exec_*` (8)  THE ORACLE'S SEAM, NOT THE PORT'S.  "upstream's trace has no
-    OPEN_LIB/CLOSE_LIB marker, so the port's seam kinds need a remap" -- upstream
-    has ONE ioctl for open, invoke-attrs and close, and only the `sc` tells them
-    apart, so the oracle REMAPS the two it can identify.
-  THE REST (19)  THE PORT'S OWN RESIDUAL, reported and not reconciled by the tree's
-    own history: commit `192142295` records "26 RESIDUAL DISAGREEMENTS, REPORTED NOT
-    RECONCILED, which is the honest state" and names them -- `dsp_link_line` emits
-    `*.(text)`, `ION_SYSTEM_HEAP_ID` 0 against upstream's 25, the `SC_*` constants,
-    `rpc.unknown_err`'s `sc=255` against upstream's f-string `sc=FF`, and the
-    boilerplate's first-line length.
+  THE PORT'S OWN RESIDUAL (7 rows), each with the upstream line:
+    `dsp_m_boiler`     the boilerplate's first line is 106 characters --
+                        ops_dsp.py:243 `mockdsp_boilerplate` -- and the port said 65.
+    `dsp_rpc_scs`      FIVE of the seven `sc` selectors were wrong:
+                        ops_dsp.py:214 `0x13050100`, :219 `0x9010000`, :225
+                        `0x4010200`, :232 `0x1f020100`, :236 `0x2010100`.  The
+                        port's values (0x0BE00000, 0x09002600, 0x04004000,
+                        0x01DC0000, 0x02010000) are in NO upstream revision --
+                        `git log --all -S` finds no such constant in
+                        `tinygrad/runtime/ops_dsp.py` at all -- so the port's
+                        listener never reached upstream's arms.
+    `dsp_rpc_reply_io` the same cause: the row reads the ins/outs out of
+                        SC_OPEN, and SC_OPEN was 0x0BE00000.
+    `dsp_rpc_seek_err` the same cause: the row names SC_SEEK.
+    `dsp_rpc_pad`      the port's `8 - (off mod 8)` is not upstream's expression
+                        and contradicts its own comment: ops_dsp.py:201 is
+                        `round_up(in_ptr + 4, 8)`, the OBJECT POINTER.  The row
+                        is renamed `dsp_rpc_objptr` on both sides, because a row
+                        named `pad` that asserts a pointer says one thing and
+                        means another.
+    `dsp_rpc_unknown`  ops_dsp.py:239 is `f"Unknown op: {sc=:X}"` -- UPPERCASE
+                        hex, so 255 is `FF` -- and the port printed the decimal.
+    `dsp_mp_nstdin`    `mprog.nstdin` IGNORED its `nbufs` and always summed the
+                        three-buffer fixture, so `nstdin(0, 0)` answered 6 where
+                        ops_dsp.py:283-286's own arithmetic says 0.
 
-So the honest summary of this gate is: 467 of 497 rows are byte-identical to
-CPython, and 30 are declared, pinned on both sides, and NOT adjudicated.
+  BOTH SIDES WRONG (4 rows):
+    `dsp_ion`          the port's ION_SYSTEM_HEAP_ID was 0 -- `INVALID_HEAP_ID` --
+                        where `tinygrad/runtime/autogen/qcom_dsp.py`'s
+                        `enum_ion_heap_ids` says `(ION_SYSTEM_HEAP_ID:=25)`, so
+                        the port asked ION for the INVALID heap and its
+                        `heap_id_mask` was 1<<0 instead of 1<<25; and the ORACLE's
+                        row asserted `heap_id_mask = 1` while also asserting
+                        `ION_SYSTEM_HEAP_ID = 25` in the same list, where
+                        ops_dsp.py:81 is `heap_id_mask=1<<ION_SYSTEM_HEAP_ID`.
+    `dsp_cmd_m`        ops_dsp.py:121-122 interpolates `{f.name}` and ops_dsp.py:111
+    `dsp_cmd_r`        interpolates `{self.link_ld.name}` -- TWO TEMPFILE NAMES, so
+    `dsp_cmd_cc`       no fixed path is upstream's.  The oracle's rows carried
+                        `/tmp/x` and `/tmp/ld`, and the port's carried an empty
+                        `-o` and a `/tmp/dsp_link.ld` the port never creates.  Both
+                        sides now carry `<TMP>` in the slot, and the oracle CHECKS
+                        its transcription against upstream's own source.
+
+  THE ORACLE'S OWN SEAM (19 rows), with the upstream line:
+    `dsp_vt_vox_3_1`   the formula was `{nb} * 8`, which DROPS the value index.
+                        ops_dsp.py:68 is `for i,(v,(_,_,dt,_)) in enumerate(zip(vals,
+                        self.signature[len(bufs):]), start=len(bufs)):
+                        struct.pack_into(unwrap(dt.fmt), var_vals_mv, i*8, v)` --
+                        `i` STARTS AT `len(bufs)`, so the offset is `(nbufs + j) * 8`.
+                        The four `j == 0` fixtures cannot see the difference and
+                        `vox_3_1` can.  A LATER VERSION OF THIS VERY FILE spells it
+                        `({nb} + {j}) * 8` and says why.
+    `dsp_link_line`    the formula dropped the parentheses: ops_dsp.py:106 is
+    `dsp_link_line2`   `f'.{n} : ALIGN(4096) {{ *(.{n}) }}'`, an input-section
+    `dsp_link_script`  pattern, and not `*.{n}`.
+    `dsp_fp`           the row asserted the NUL-BEARING string and ops_dsp.py:143
+    `dsp_fp_len`       is `fp = "file:///tinylib?entry&_modver=1.0&_dom=cdsp\0"`
+                        -- a NAME and a TERMINATOR, and the port's `String` cannot
+                        hold a NUL, so the two sides were asserting different
+                        claims.  Both now assert the NAME and the three lengths.
+    `dsp_ol_handle`    the row was the LITERAL `"0,1"`, which `str()` prints as
+                        the TUPLE `(0, 1)` -- a different SHAPE from the lane's
+                        list.  It is derived from the real `open_lib` call now.
+    `dsp_exec_*` (8)   `_install` recorded EVERY `FASTRPC_IOCTL_INVOKE` as
+                        RPC_INVOKE, so the trace could not say OPEN from CLOSE.
+                        ops_dsp.py:146 is `sc=rpc_sc(method=0, ins=2, outs=2)` and
+                        ops_dsp.py:152 is `sc=rpc_sc(method=1, ins=1, outs=2)`, and
+                        those two `sc`s are how upstream tells them apart -- there
+                        is ONE ioctl for open, invoke-attrs and close.  The remap
+                        the gate's prose claimed and the code did not do is now
+                        done.
+    `dsp_free_r_n`     the `os.close` fake recorded only the three descriptors
+    `dsp_free_r_order` the harness knew about, so upstream's `os.close(
+                        storage.buf.share_info.fd)` (ops_dsp.py:90) was SWALLOWED.
+    `dsp_alloc_m_n`    `_alloc(mock=True)` never set `MOCKDSP`, so the "mock"
+                        fixture took the REAL arm (ops_dsp.py:79) and counted the
+                        real arm's three calls.
+    `dsp_rpc_cnt`      the row was a HAND-LISTED literal of sixteen numbers, and
+                        it had EIGHT arms where upstream's chain (ops_dsp.py:213
+                        -238) has SEVEN.  It is GENERATED from that chain now.
 
 THE PIN.  This port tracks an upstream that has since moved, and the oracle reads
 the PINNED `tinygrad/` that `gates/renderkit.py` extracts from git at run time.
+THE RE-PIN WAS MEASURED AND IT IS NOT THE FIX: re-pinning to the tree's HEAD
+(`a741a469f`, upstream 002630241) moves TWO of the 497 rows -- `dsp_e_ag_off1` and
+`dsp_e_ag_mm2`, because upstream PR #18649 changed the `off`/`mmap` index from
+the PARAM index to a compacted GLOBAL counter -- and it fixes NONE of the thirty,
+because the `vox_*` bug was in the ORACLE'S FORMULA and not in upstream.  So the
+re-pin is a TWO-ROW TRADE FOR ZERO FIXES, the port would have to change its index
+semantics to take it, and the honest shape is to fix the oracle's formula and
+KEEP the pin.  A per-row-set pin -- a list of the rows that differ -- is the
+SECOND COPY OF THE ANSWER the pin exists to avoid, and it would have to be
+re-derived by hand every time upstream moved.
 """
 import argparse
 import sys
@@ -74,69 +137,13 @@ PORT = "tinybendygrad/runtime/ops_dsp.bend"
 ORACLE = "gates/ops_dsp_render-oracle.py"
 ROWS = 497
 
-# THE THIRTY, PINNED ON BOTH SIDES.  (the ORACLE's row, the PORT's row)
-DIVERGES = {
-    "dsp_vt_vox_3_1": ('dsp_vt_vox_3_1 = [24]   py=[24]',
-                      'dsp_vt_vox_3_1 = [32]   py=[32]'),
-    "dsp_m_boiler": ('dsp_m_boiler = [9,106]   py=[9,106]',
-                      'dsp_m_boiler = [9,65]   py=[9,65]'),
-    "dsp_ion": ('dsp_ion = [512,1,1,25,1]   py=[512,1,1,25,1]',
-                      'dsp_ion = [512,1,1,0,1]   py=[512,1,1,0,1]'),
-    "dsp_free_r_n": ('dsp_free_r_n = [2]   py=[2]',
-                      'dsp_free_r_n = [3]   py=[3]'),
-    "dsp_free_r_order": ('dsp_free_r_order = [False]   py=[False]',
-                      'dsp_free_r_order = [True]   py=[True]'),
-    "dsp_alloc_m_n": ('dsp_alloc_m_n = [3]   py=[3]',
-                      'dsp_alloc_m_n = [1]   py=[1]'),
-    "dsp_link_line": ('dsp_link_line = [.text : ALIGN(4096) { *.text }]   py=[.text : ALIGN(4096) { *.text }]',
-                      'dsp_link_line = [.text : ALIGN(4096) { *(.text) }]   py=[.text : ALIGN(4096) { *(.text) }]'),
-    "dsp_link_line2": ('dsp_link_line2 = [.got.plt : ALIGN(4096) { *.got.plt }]   py=[.got.plt : ALIGN(4096) { *.got.plt }]',
-                      'dsp_link_line2 = [.got.plt : ALIGN(4096) { *(.got.plt) }]   py=[.got.plt : ALIGN(4096) { *(.got.plt) }]'),
-    "dsp_link_script": ('dsp_link_script = [SECTIONS { . = 0x0; .text : ALIGN(4096) { *.text }\n.rela.plt : ALIGN(4096) { *.rela.plt }\n.rela.dyn : ALIGN(4096) { *.rela.dyn }\n.plt : ALIGN(4096) { *.plt }\n.data : ALIGN(4096) { *.data }\n.bss : ALIGN(4096) { *.bss }\n.hash : ALIGN(4096) { *.hash }\n.dynamic : ALIGN(4096) { *.dynamic }\n.got : ALIGN(4096) { *.got }\n.got.plt : ALIGN(4096) { *.got.plt }\n.dynsym : ALIGN(4096) { *.dynsym }\n.dynstr : ALIGN(4096) { *.dynstr }\n.symtab : ALIGN(4096) { *.symtab }\n.shstrtab : ALIGN(4096) { *.shstrtab }\n.strtab : ALIGN(4096) { *.strtab }\n /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }]   py=[SECTIONS { . = 0x0; .text : ALIGN(4096) { *.text }\n.rela.plt : ALIGN(4096) { *.rela.plt }\n.rela.dyn : ALIGN(4096) { *.rela.dyn }\n.plt : ALIGN(4096) { *.plt }\n.data : ALIGN(4096) { *.data }\n.bss : ALIGN(4096) { *.bss }\n.hash : ALIGN(4096) { *.hash }\n.dynamic : ALIGN(4096) { *.dynamic }\n.got : ALIGN(4096) { *.got }\n.got.plt : ALIGN(4096) { *.got.plt }\n.dynsym : ALIGN(4096) { *.dynsym }\n.dynstr : ALIGN(4096) { *.dynstr }\n.symtab : ALIGN(4096) { *.symtab }\n.shstrtab : ALIGN(4096) { *.shstrtab }\n.strtab : ALIGN(4096) { *.strtab }\n /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }]',
-                      'dsp_link_script = [SECTIONS { . = 0x0; .text : ALIGN(4096) { *(.text) }\n.rela.plt : ALIGN(4096) { *(.rela.plt) }\n.rela.dyn : ALIGN(4096) { *(.rela.dyn) }\n.plt : ALIGN(4096) { *(.plt) }\n.data : ALIGN(4096) { *(.data) }\n.bss : ALIGN(4096) { *(.bss) }\n.hash : ALIGN(4096) { *(.hash) }\n.dynamic : ALIGN(4096) { *(.dynamic) }\n.got : ALIGN(4096) { *(.got) }\n.got.plt : ALIGN(4096) { *(.got.plt) }\n.dynsym : ALIGN(4096) { *(.dynsym) }\n.dynstr : ALIGN(4096) { *(.dynstr) }\n.symtab : ALIGN(4096) { *(.symtab) }\n.shstrtab : ALIGN(4096) { *(.shstrtab) }\n.strtab : ALIGN(4096) { *(.strtab) }\n /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }]   py=[SECTIONS { . = 0x0; .text : ALIGN(4096) { *(.text) }\n.rela.plt : ALIGN(4096) { *(.rela.plt) }\n.rela.dyn : ALIGN(4096) { *(.rela.dyn) }\n.plt : ALIGN(4096) { *(.plt) }\n.data : ALIGN(4096) { *(.data) }\n.bss : ALIGN(4096) { *(.bss) }\n.hash : ALIGN(4096) { *(.hash) }\n.dynamic : ALIGN(4096) { *(.dynamic) }\n.got : ALIGN(4096) { *(.got) }\n.got.plt : ALIGN(4096) { *(.got.plt) }\n.dynsym : ALIGN(4096) { *(.dynsym) }\n.dynstr : ALIGN(4096) { *(.dynstr) }\n.symtab : ALIGN(4096) { *(.symtab) }\n.shstrtab : ALIGN(4096) { *(.shstrtab) }\n.strtab : ALIGN(4096) { *(.strtab) }\n /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }]'),
-    "dsp_cmd_m": ('dsp_cmd_m = [clang -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x]   py=[clang -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x]',
-                      'dsp_cmd_m = [clang -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o ]   py=[clang -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o ]'),
-    "dsp_cmd_r": ('dsp_cmd_r = [clang -shared --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -T/tmp/ld -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x]   py=[clang -shared --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -T/tmp/ld -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x]',
-                      'dsp_cmd_r = [clang -shared --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -T/tmp/dsp_link.ld -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o ]   py=[clang -shared --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -T/tmp/dsp_link.ld -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o ]'),
-    "dsp_cmd_cc": ('dsp_cmd_cc = [gcc -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x]   py=[gcc -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x]',
-                      'dsp_cmd_cc = [gcc -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o ]   py=[gcc -static --target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o ]'),
-    "dsp_fp": ('dsp_fp = [file:///tinylib?entry&_modver=1.0&_dom=cdsp\x00]   py=[file:///tinylib?entry&_modver=1.0&_dom=cdsp\x00]',
-                      'dsp_fp = [file:///tinylib?entry&_modver=1.0&_dom=cdsp]   py=[file:///tinylib?entry&_modver=1.0&_dom=cdsp]'),
-    "dsp_fp_len": ('dsp_fp_len = [44,1,44]   py=[44,1,44]',
-                      'dsp_fp_len = [43,1,44]   py=[43,1,44]'),
-    "dsp_ol_handle": ('dsp_ol_handle = [(0, 1)]   py=[(0, 1)]',
-                      'dsp_ol_handle = [0,1]   py=[0,1]'),
-    "dsp_exec_kinds": ('dsp_exec_kinds = [10,11,10]   py=[10,11,10]',
-                      'dsp_exec_kinds = [12,11,14]   py=[12,11,14]'),
-    "dsp_exec_order": ('dsp_exec_order = [False]   py=[False]',
-                      'dsp_exec_order = [True]   py=[True]'),
-    "dsp_exec_retry_open": ('dsp_exec_retry_open = [0]   py=[0]',
-                      'dsp_exec_retry_open = [2]   py=[2]'),
-    "dsp_exec_retry_close": ('dsp_exec_retry_close = [0]   py=[0]',
-                      'dsp_exec_retry_close = [1]   py=[1]'),
-    "dsp_exec_retry_inits": ('dsp_exec_retry_inits = [5]   py=[5]',
-                      'dsp_exec_retry_inits = [2]   py=[2]'),
-    "dsp_exec_retry_kinds": ('dsp_exec_retry_kinds = [10,10,4,6,7,8,9,10,10,11,10]   py=[10,10,4,6,7,8,9,10,10,11,10]',
-                      'dsp_exec_retry_kinds = [12,10,4,6,7,8,9,10,12,11,14]   py=[12,10,4,6,7,8,9,10,12,11,14]'),
-    "dsp_exec_fail_open": ('dsp_exec_fail_open = [0]   py=[0]',
-                      'dsp_exec_fail_open = [2]   py=[2]'),
-    "dsp_exec_fail_kinds": ('dsp_exec_fail_kinds = [10,10,4,6,7,8,9,10,10]   py=[10,10,4,6,7,8,9,10,10]',
-                      'dsp_exec_fail_kinds = [12,10,4,6,7,8,9,10,12]   py=[12,10,4,6,7,8,9,10,12]'),
-    "dsp_rpc_scs": ('dsp_rpc_scs = [131584,319095040,50397184,151060480,67174912,520225024,33620224]   py=[131584,319095040,50397184,151060480,67174912,520225024,33620224]',
-                      'dsp_rpc_scs = [131584,199229440,50397184,151004672,67125248,31195136,33619968]   py=[131584,199229440,50397184,151004672,67125248,31195136,33619968]'),
-    "dsp_rpc_reply_io": ('dsp_rpc_reply_io = [5,1,2,2]   py=[5,1,2,2]',
-                      'dsp_rpc_reply_io = [224,0,2,2]   py=[224,0,2,2]'),
-    "dsp_rpc_pad": ('dsp_rpc_pad = [8,8,8,16,16,16]   py=[8,8,8,16,16,16]',
-                      'dsp_rpc_pad = [8,7,4,3,8,4]   py=[8,7,4,3,8,4]'),
-    "dsp_rpc_seek_err": ('dsp_rpc_seek_err = [AssertionError: Supported only SEEK_SET (sc=151060480)]   py=[AssertionError: Supported only SEEK_SET (sc=151060480)]',
-                      'dsp_rpc_seek_err = [AssertionError: Supported only SEEK_SET (sc=151004672)]   py=[AssertionError: Supported only SEEK_SET (sc=151004672)]'),
-    "dsp_rpc_unknown": ('dsp_rpc_unknown = [RuntimeError: Unknown op: sc=FF]   py=[RuntimeError: Unknown op: sc=FF]',
-                      'dsp_rpc_unknown = [RuntimeError: Unknown op: sc=255]   py=[RuntimeError: Unknown op: sc=255]'),
-    "dsp_rpc_cnt": ('dsp_rpc_cnt = [0,0,4,1,1,0,1,0,1,0,1,2,2,1,1,1]   py=[0,0,4,1,1,0,1,0,1,0,1,2,2,1,1,1]',
-                      'dsp_rpc_cnt = [0,0,4,1,1,0,1,0,1,2,2,1,1,1]   py=[0,0,4,1,1,0,1,0,1,2,2,1,1,1]'),
-    "dsp_mp_nstdin": ('dsp_mp_nstdin = [6,22,0]   py=[6,22,0]',
-                      'dsp_mp_nstdin = [6,22,6]   py=[6,22,6]'),
-}
+# NO DECLARED DIVERGENCES.  The thirty this gate used to declare are ADJUDICATED:
+# every one of them has a verdict (the port's or the oracle's, and four were both)
+# and is now a COMPARED row.  A declaration is a CLAIM -- "these two sides differ
+# here" -- and a claim can go stale, so `renderkit` REFUSES a declaration whose
+# two sides are the same row instead of excluding it from the diff.  See the
+# header for the verdicts and the upstream line behind each one.
+DIVERGES = {}
 
 
 def main():
@@ -146,11 +153,14 @@ def main():
     args = ap.parse_args()
     code = render_gate("ops_dsp_render", args.port, args.oracle, ROWS, DIVERGES)
     if code == PASS:
-        print("ops_dsp_render-gate: 497 rows, 3 lanes byte-identical over the 467 "
-              "COMPARED rows, 30 DECLARED divergences pinned on BOTH sides -- the "
-              "port's `py=` half is DERIVED (the port's own value), so a row cannot "
-              "disagree with itself, and the assertion is the byte diff against "
-              "CPython's lane at the pinned upstream")
+        # THE COUNTS ARE DERIVED, not written down: a gate that compares 467
+        # instead of 497 is a gate that MEASURED LESS, and that has to be
+        # visible in the gate's own line.
+        print(f"ops_dsp_render-gate: {ROWS} rows, 3 lanes byte-identical over "
+              f"{ROWS - len(DIVERGES)} COMPARED rows, {len(DIVERGES)} DECLARED "
+              f"divergences -- the thirty this gate used to declare are "
+              f"ADJUDICATED (23 the oracle's, 11 the port's, four both), and a "
+              f"declaration that goes stale is REFUSED, not trusted")
     return code
 
 

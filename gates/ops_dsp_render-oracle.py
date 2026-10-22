@@ -47,9 +47,67 @@ extraction, and it REFUSES rather than measuring against the wrong tree.
 port's own source agree about which tree they are talking about.
 
 
-ONE EDIT, AND IT IS MARKED: the ROOT block above.  Everything else in this file is
-the recovered blob byte for byte, and the sha256 in this header is the recovered
-file's -- so a reader can `git cat-file blob` it and diff.
+ONE EDIT, AND IT IS MARKED: the ROOT block above.  And then TEN MORE, and they are
+THE EDITS below: this file is the RECOVERED BLOB MINUS those edits, so the blob,
+its commit and its sha256 above are what every edit is a diff against -- a reader
+can `git cat-file blob 291bbc8821dafb2ae0b8c464488d4b02300ced6b` and diff.  The
+edits are the THIRTY DIVERGENCES the gate used to declare, adjudicated: each one
+fixed a row where CPYTHON'S SIDE was wrong, and each says WHICH upstream line
+says so.
+
+THE EDITS, AND THEY ARE THE THIRTY DIVERGENCES ADJUDICATED.  A declared divergence
+that survives with no reason is a licence with no basis, and this file's header
+is where the reasons live.  The gate that reads this file now compares ALL 497
+rows.
+
+  E1  `dsp_vt_vox_*`   the formula was `{nb} * 8`, which DROPS the value index.
+      ops_dsp.py:68 is `for i,(v,(_,_,dt,_)) in enumerate(zip(vals,
+      self.signature[len(bufs):]), start=len(bufs)): struct.pack_into(
+      unwrap(dt.fmt), var_vals_mv, i*8, v)` -- `i` STARTS AT `len(bufs)`, so the
+      offset is `(nbufs + j) * 8` and not `nbufs * 8`.  The four `j == 0` fixtures
+      cannot see the difference and `vox_3_1` can.  A LATER VERSION OF THIS VERY
+      FILE spells it `({nb} + {j}) * 8` and says why.
+  E2  `dsp_link_line`, `dsp_link_line2`, `dsp_link_script`  the formula was
+      `'.{n} : ALIGN(4096) { *.{n} }'`, which drops the PARENTHESES.  ops_dsp.py:106
+      is `f'.{n} : ALIGN(4096) {{ *(.{n}) }}'` -- `*(.{n})`, an input-section
+      pattern, not a bare `*.{n}`.
+  E3  `dsp_cmd_m`, `dsp_cmd_r`, `dsp_cmd_cc`  the rows carried a FABRICATED path
+      (`/tmp/x`, `/tmp/ld`).  ops_dsp.py:121-122 interpolates `f.name` and
+      ops_dsp.py:111 interpolates `self.link_ld.name`, and both are TEMPFILE
+      NAMES, so no fixed path is upstream's.  The rows now carry `<TMP>` in the
+      slot, and `_check_compile_src` CHECKS the transcription against upstream's
+      own source.
+  E4  `dsp_fp`, `dsp_fp_len`  the rows asserted the NUL-BEARING string and
+      `len(fp)`.  ops_dsp.py:143 is `fp = "file:///tinylib?entry&_modver=1.0&
+      _dom=cdsp\0"` -- a NAME and a TERMINATOR, and the port's `String` cannot
+      hold a NUL, so the two sides were asserting different claims.  The rows now
+      assert the NAME and the three lengths, all derived from upstream's `fp`.
+  E5  `dsp_ol_handle`  the row was the LITERAL `"0,1"`, which `str()` prints as
+      the TUPLE `(0, 1)` -- a different SHAPE from the lane's list, so the two
+      sides differed on punctuation.  It is now derived from the real
+      `open_lib` call and printed in the lane's shape.
+  E6  `dsp_exec_*` (8 rows)  `_install` recorded EVERY `FASTRPC_IOCTL_INVOKE` as
+      `RPC_INVOKE`, so the trace could not say OPEN from CLOSE.  ops_dsp.py:146
+      is `sc=rpc_sc(method=0, ins=2, outs=2)` and ops_dsp.py:152 is
+      `sc=rpc_sc(method=1, ins=1, outs=2)`, and those two `sc`s are how upstream
+      tells the two apart -- there is ONE ioctl for open, invoke-attrs and close.
+      The remap the gate's prose claimed and the code did not do is now done.
+  E7  `dsp_free_r_n`, `dsp_free_r_order`  the `os.close` fake recorded ONLY the
+      three descriptors the harness knew about, so upstream's `os.close(
+      storage.buf.share_info.fd)` (ops_dsp.py:90) was SWALLOWED.  Every close is
+      recorded now, and `_order` compares the ORDER of the KINDS, because the
+      args have their own rows.
+  E8  `dsp_alloc_m_n`  `_alloc(mock=True)` never set `MOCKDSP`, so the "mock"
+      fixture took the REAL arm (ops_dsp.py:79) and counted the real arm's
+      three calls.  The fixture sets the flag `getenv("MOCKDSP")` reads -- and
+      CLEARS `getenv`'s cache, because `getenv` is `@functools.cache`d
+      (helpers.py:163) and the cache is what made the flag unreadable.
+  E9  `dsp_rpc_cnt`  the row was a HAND-LISTED literal of sixteen numbers, and
+      it had EIGHT arms where upstream's chain has SEVEN.  It is now GENERATED
+      from upstream's `RPCListener.run` with `ast`, one (nin, nout) per arm.
+  E10 `dsp_ion`  the row asserted `heap_id_mask = 1` while also asserting
+      `ION_SYSTEM_HEAP_ID = 25`, and ops_dsp.py:81 is `heap_id_mask=1<<
+      qcom_dsp.ION_SYSTEM_HEAP_ID` -- 1<<25, not 1.
 """
 import os
 import re
@@ -67,7 +125,7 @@ from tinygrad.dtype import dtypes, AddrSpace
 from tinygrad.renderer.cstyle import ClangRenderer
 from tinygrad.runtime.ops_dsp import (rpc_sc, rpc_prep_args, DSPRenderer, MockDSPRenderer,
                                       DSPCompiler, mockdsp_boilerplate)
-from tinygrad.helpers import Target, round_up
+from tinygrad.helpers import Target, round_up, getenv
 import tinygrad.runtime.autogen.qcom_dsp as QD
 import tinygrad.runtime.autogen.libc as L
 import tinygrad.runtime.ops_dsp
@@ -151,10 +209,20 @@ FX = {
 SECTIONS = ['text', 'rela.plt', 'rela.dyn', 'plt', 'data', 'bss', 'hash', 'dynamic',
             'got', 'got.plt', 'dynsym', 'dynstr', 'symtab', 'shstrtab', 'strtab']
 CCS = "--target=hexagon -mcpu=hexagonv65 -fuse-ld=lld -nostdlib -mhvx=v65 -mhvx-length=128b"
+# ops_dsp.py:106 is `f'.{n} : ALIGN(4096) {{ *(.{n}) }}'` -- the input-section
+# pattern is `*(.{n})`, WITH the parentheses.  The formula here used to spell
+# `*.{n}`, which is a different pattern and a different string.
 LINK_SCRIPT = ("SECTIONS { . = 0x0; " +
-               "\n".join(f'.{n} : ALIGN(4096) {{ *.{n} }}' for n in SECTIONS) +
+               "\n".join(f'.{n} : ALIGN(4096) {{ *(.{n}) }}' for n in SECTIONS) +
                "\n /DISCARD/ : { *(.note .note.* .gnu.hash .comment) } }")
 FP = "file:///tinylib?entry&_modver=1.0&_dom=cdsp\0"
+# ops_dsp.py:143 is `fp = "file:///tinylib?entry&_modver=1.0&_dom=cdsp\0"` -- a NAME
+# and a TERMINATOR, and `len(fp)` counts BOTH.  The port's `String` cannot hold a
+# NUL, so the port's rows assert the NAME and the three lengths; these two rows
+# assert the SAME three quantities, derived from upstream's `fp`, so the two
+# sides are the same claim and not two claims that differ by a punctuation mark.
+FP_NAME = FP.removesuffix("\0")
+FP_NUL_LEN = len(FP) - len(FP_NAME)
 def _scs():
   """ops_dsp.py:213-236's `elif sc == ...` chain, READ OUT OF THE SOURCE with `ast`
   rather than typed: the seven selectors are the whole dispatch table and two of them
@@ -175,6 +243,52 @@ def _scs():
 
 _ARMS = _scs()
 SC_HELLO, SC_OPEN, SC_CLOSE, SC_SEEK, SC_READ, SC_STAT, SC_MMAP = _ARMS
+
+
+def _arm_counts():
+  """the per-arm (nin, nout) of upstream's `RPCListener.run` dispatch, READ OUT
+  of the source with `ast` -- the arm's own `in_args[N]` and `out_args[N]` uses.
+
+  The row used to be a HAND-LISTED literal of sixteen numbers, and it had EIGHT
+  arms where upstream's chain has SEVEN, so it was a second copy of the answer
+  AND the wrong copy.  This is the generator: it walks the `elif sc == ...`
+  chain in the chain's OWN order and takes, per arm, how many `in_args` and how
+  many `out_args` that arm touches.  `ops_dsp.py:213-238` is the chain and
+  :239's `else` is NOT an arm -- it is the refusal, and it touches nothing.
+  """
+  import ast
+  tree = ast.parse((ROOT / "tinygrad/runtime/ops_dsp.py").read_text())
+  cls = next(n for n in ast.walk(tree)
+             if isinstance(n, ast.ClassDef) and n.name == "RPCListener")
+  run = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == "run")
+
+  def is_sc_cmp(node):
+    return (isinstance(node, ast.Compare) and isinstance(node.ops[0], ast.Eq)
+            and isinstance(node.left, ast.Name) and node.left.id == "sc"
+            and isinstance(node.comparators[0], ast.Constant))
+
+  def counts(body):
+    nin = nout = 0
+    for stmt in body:
+      for sub in ast.walk(stmt):
+        if isinstance(sub, ast.Subscript) and isinstance(sub.value, ast.Name):
+          if sub.value.id == "in_args":
+            nin = max(nin, sub.slice.value + 1)
+          elif sub.value.id == "out_args":
+            nout = max(nout, sub.slice.value + 1)
+    return (nin, nout)
+
+  out, chain = [], next(n for n in ast.walk(run) if isinstance(n, ast.If) and is_sc_cmp(n.test))
+  while True:
+    out.append(counts(chain.body))
+    if not chain.orelse or not isinstance(chain.orelse[0], ast.If):
+      break
+    chain = chain.orelse[0]
+  return out
+
+
+ARM_COUNTS = [n for c in _arm_counts() for n in c]
+assert ARM_COUNTS == [0, 0, 4, 1, 1, 0, 1, 0, 1, 2, 2, 1, 1, 1], ARM_COUNTS
 
 
 def e_ln(rend, spec, i):
@@ -281,10 +395,27 @@ assert sorted(KIND.values()) == list(range(len(KNM))), KIND
 K = {n: KIND["CALL_" + n] for n in KNM}
 TRACE = []
 
+# THE FASTRPC SELECTORS that tell upstream's open and close apart.  Upstream has
+# ONE ioctl for open, invoke-attrs and close -- ops_dsp.py:146 is
+# `FASTRPC_IOCTL_INVOKE(self.rpc_fd, handle=0, sc=rpc_sc(method=0, ins=2,
+# outs=2), pra=pra)` and ops_dsp.py:152 is `sc=rpc_sc(method=1, ins=1, outs=2)` --
+# and only the `sc` says which is which.  So the port's OPEN_LIB and CLOSE_LIB
+# seam kinds are REMAPPED from the `sc` the call carries; before this the trace
+# said RPC_INVOKE three times and could not say OPEN from CLOSE at all.
+OPEN_LIB_SC = rpc_sc(method=0, ins=2, outs=2)
+CLOSE_LIB_SC = rpc_sc(method=1, ins=1, outs=2)
+
 
 def _install():
   """fake the ioctls, `os.open`/`os.close` and libc's mmap, and RECORD."""
-  QD.FASTRPC_IOCTL_INVOKE = lambda fd, handle=None, sc=None, pra=None: _rec(K["RPC_INVOKE"], sc)
+  def _invoke(fd, handle=None, sc=None, pra=None):
+    if sc == OPEN_LIB_SC:
+      return _rec(K["OPEN_LIB"], sc)
+    if sc == CLOSE_LIB_SC:
+      return _rec(K["CLOSE_LIB"], sc)
+    return _rec(K["RPC_INVOKE"], sc)
+
+  QD.FASTRPC_IOCTL_INVOKE = _invoke
   QD.FASTRPC_IOCTL_INVOKE_ATTRS = lambda fd, fds=None, attrs=None, inv=None: _rec(
       K["RPC_INVOKE_ATTRS"], getattr(inv, "sc", None))
   QD.FASTRPC_IOCTL_GETINFO = lambda fd, arg: _rec(K["RPC_GETINFO"], arg)
@@ -305,9 +436,12 @@ def _install():
     return _ro(path, flags, *a)
 
   def _close(fd):
-    if fd in (98, 99, 55):
-      _rec(K["OS_CLOSE"], fd)
-      return None
+    # EVERY close is a call the port's trace records: upstream's `_free` closes
+    # `storage.buf.share_info.fd` (ops_dsp.py:90) and that descriptor is one the
+    # harness never opened, so recording only the three the harness knew about
+    # SWALLOWED a call upstream makes.  The real close still runs, and its
+    # OSError is still swallowed -- the RECORD is what was missing.
+    _rec(K["OS_CLOSE"], fd)
     try:
       return _rc(fd)
     except OSError:          # a descriptor the harness never really opened
@@ -364,9 +498,16 @@ def _arg(name, prov, trace, kind, i=0):
 
 
 def _order(name, prov, trace, pat, neg=""):
-  """`pat` is a list of (kind, arg). The row is True iff CPython's trace IS this."""
-  want = [(K[n], v) for n, v in pat]
-  put(name, prov, "%s[(k, a) for k, a in %r] == %r" % (neg, trace, want))
+  """`pat` is a list of (kind, arg). The row is True iff CPython's trace IS this.
+
+  The ORDER is a claim about the SEQUENCE OF KINDS.  The args have their own
+  rows -- `dsp_free_r_hdl`, `dsp_free_r_mm`, `dsp_init_args`, `dsp_exec_sc` --
+  and the descriptor upstream closes is not the descriptor the port's model
+  names, so comparing args here compared two fixtures' descriptors instead of
+  the order the row is about.
+  """
+  want = [K[n] for n, _ in pat]
+  put(name, prov, "%s[k for k, a in %r] == %r" % (neg, trace, want))
 
 
 def _has(name, prov, trace, pat, neg=""):
@@ -522,7 +663,12 @@ put("dsp_vt_hi_big", "SRC", "int.from_bytes(struct.pack('<i', -1) + bytes(4), 'l
 put("dsp_vt_sz_nbytes", "SRC", "8")   # the SLOT is eight bytes wide (:65)
 for nm, (nb, j) in [("vox_3_0", (3, 0)), ("vox_3_1", (3, 1)), ("vox_0_0", (0, 0)),
                     ("vox_1_0", (1, 0)), ("vox_15_0", (15, 0))]:
-  put(f"dsp_vt_{nm}", "SRC", f"{nb} * 8")
+  # ops_dsp.py:68 is `for i,(v,(_,_,dt,_)) in enumerate(zip(vals,
+  # self.signature[len(bufs):]), start=len(bufs)): struct.pack_into(unwrap(dt.fmt),
+  # var_vals_mv, i*8, v)` -- `i` STARTS AT `len(bufs)`, so the offset is
+  # `(nbufs + j) * 8`.  The formula here used to be `{nb} * 8`, which DROPPED `j`:
+  # invisible on the four `j == 0` fixtures and wrong on `vox_3_1`.
+  put(f"dsp_vt_{nm}", "SRC", f"({nb} + {j}) * 8")
 # `hi_*` is `vt_hi_written` (itemsize == 8) and the ROW is `Bool.not(...)` for the narrow
 # ones, so the expectation is the value the row's own expression produces.
 for nm, a in [("hi_q", "i64"), ("hi_Q", "u64"), ("hi_d", "f64")]:
@@ -682,8 +828,11 @@ put("dsp_acc_math0", "SRC", "lfmt([0 + 0, 0 + 0])")
 put("dsp_acc_mshare", "SRC", "True")
 put("dsp_acc_moff", "SRC", "0 + 64")
 # ops_dsp.py:81 `align=0x200, heap_id_mask=1<<ION_SYSTEM_HEAP_ID, flags=ION_FLAG_CACHED`
-put("dsp_ion", "SRC", "lfmt([0x200, 1, int(QD.ION_FLAG_CACHED), int(QD.ION_SYSTEM_HEAP_ID), "
-                     "int(QD.ION_FLAG_CACHED)])")
+# The mask is `1 << ION_SYSTEM_HEAP_ID` and NOT `1`: the row used to say `1` while
+# also saying `ION_SYSTEM_HEAP_ID = 25` in the same list, which is a claim about
+# two different heaps at once.
+put("dsp_ion", "SRC", "lfmt([0x200, 1<<int(QD.ION_SYSTEM_HEAP_ID), int(QD.ION_FLAG_CACHED), "
+                     "int(QD.ION_SYSTEM_HEAP_ID), int(QD.ION_FLAG_CACHED)])")
 put("dsp_ion_a", "SRC", "lfmt([round_up(x, 0x200) for x in (1, 511, 512, 513, 1024)])")
 put("dsp_shell_sz", "SRC",
     "lfmt([round_up(x, 0x1000) for x in (0, 1, 4095, 4096, 4097, 4660)])")
@@ -725,7 +874,26 @@ def _alloc(mock, size):
   QD.ION_IOC_ALLOC, QD.ION_IOC_SHARE = _ia, _is
   al = _D.DSPAllocator(d)
   TRACE.clear()
-  st = al._alloc(size, _D.BufferSpec())
+  # `getenv("MOCKDSP")` is what picks the arm (ops_dsp.py:79), so the MOCK
+  # fixture has to SET IT: without it the "mock" allocation took the REAL arm
+  # and the row counted the real arm's three calls.  `getenv` is
+  # `@functools.cache`d (helpers.py:163), so the CACHE is cleared too -- setting
+  # the variable alone would read the first call's answer forever.  The flag is
+  # restored afterwards so the REAL fixture still takes the real arm.
+  was = os.environ.get("MOCKDSP")
+  if mock:
+    os.environ["MOCKDSP"] = "1"
+  else:
+    os.environ.pop("MOCKDSP", None)
+  getenv.cache_clear()
+  try:
+    st = al._alloc(size, _D.BufferSpec())
+  finally:
+    if was is None:
+      os.environ.pop("MOCKDSP", None)
+    else:
+      os.environ["MOCKDSP"] = was
+    getenv.cache_clear()
   return list(TRACE)
 
 
@@ -790,12 +958,34 @@ put("dsp_link_n", "CPY", f"len({SECTIONS!r})")
 for nm, ix in [("0", 0), ("1", 1), ("7", 7), ("9", 9), ("13", 13), ("14", 14)]:
   put(f"dsp_link_{nm}", "SRC", f"{SECTIONS[ix]!r}")
 for nm, s in [("line", "text"), ("line2", "got.plt")]:
-  put(f"dsp_link_{nm}", "SRC", "'.' + %r + ' : ALIGN(4096) { *.' + %r + ' }'" % (s, s))
+  put(f"dsp_link_{nm}", "SRC", "'.' + %r + ' : ALIGN(4096) { *(.' + %r + ') }'" % (s, s))
 put("dsp_link_script", "SRC", "LINK_SCRIPT")
 put("dsp_link_align", "SRC", "4096")
-put("dsp_cmd_m", "SRC", f"'clang -static {CCS} -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x'")
-put("dsp_cmd_r", "SRC", f"'clang -shared {CCS} -T/tmp/ld -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x'")
-put("dsp_cmd_cc", "SRC", f"'gcc -static {CCS} -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o /tmp/x'")
+# ops_dsp.py:121-122 builds the command from `self.args` and a TEMPFILE name:
+#   system(f"{getenv('CC','clang')} {self.args} -O2 -Wall -Werror
+#          -fno-stack-protector -x c -fPIC " +
+#          f"-ffreestanding -nostdlib - -o {f.name}", input=src.encode())
+# and ops_dsp.py:111 puts `self.link_ld.name` -- ANOTHER tempfile name -- in the
+# `-T` slot.  So upstream's command has TWO paths that no fixed string can be,
+# and a row that printed one would be printing a claim upstream never made.  The
+# rows print `<TMP>` in the slot, and `_check_compile_src` below CHECKS the
+# transcription against the source it transcribes, so upstream moving REFUSES
+# here instead of disagreeing quietly in a diff.
+def _check_compile_src():
+  src = (ROOT / "tinygrad/runtime/ops_dsp.py").read_text()
+  for frag in ('self.args = f"-static {compiler_args}"',
+               'self.args = f"-shared {compiler_args} -T{self.link_ld.name}"',
+               "-O2 -Wall -Werror -fno-stack-protector -x c -fPIC ",
+               "-ffreestanding -nostdlib - -o {f.name}"):
+    if frag not in src:
+      raise SystemExit(f"upstream's compile source no longer has {frag!r}: the "
+                       f"`dsp_cmd_*` rows transcribe it and must be re-derived")
+
+
+_check_compile_src()
+put("dsp_cmd_m", "SRC", f"'clang -static {CCS} -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o <TMP>'")
+put("dsp_cmd_r", "SRC", f"'clang -shared {CCS} -T<TMP> -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o <TMP>'")
+put("dsp_cmd_cc", "SRC", f"'gcc -static {CCS} -O2 -Wall -Werror -fno-stack-protector -x c -fPIC -ffreestanding -nostdlib - -o <TMP>'")
 put("dsp_cmd_cc_used", "SRC", "True")
 put("dsp_cmd_mock_used", "SRC", "True")
 put("dsp_suffix", "CPY", "R.buffer_suffix")
@@ -859,8 +1049,8 @@ put("dsp_cl_sc", "CPY", str(sc(None, 1, 1, 2, 0)))
 put("dsp_ol_f", "CPY", f"lfmt(sc_fields({sc(None, 0, 2, 2, 0)}))")
 put("dsp_cl_f", "CPY", f"lfmt(sc_fields({sc(None, 1, 1, 2, 0)}))")
 # :143,:145,:148
-put("dsp_fp", "CPY", f"{FP!r}")
-put("dsp_fp_len", "CPY", f"lfmt([{len(FP)}, 1, {len(FP)}])")
+put("dsp_fp", "CPY", f"{FP_NAME!r}")
+put("dsp_fp_len", "CPY", f"lfmt([{len(FP_NAME)}, {FP_NUL_LEN}, {len(FP)}])")
 put("dsp_ol_ins", "CPY", "lfmt([%d, 255, 8, 255])" % len(FP))
 for nm, v in [("neg", 0xffffffff), ("neg2", 0x80000000), ("neg3", 0xfffffffe),
               ("0", 0), ("pos", 100), ("maxpos", 0x7fffffff)]:
@@ -871,9 +1061,13 @@ put("dsp_ol_err", "SRC", "'RuntimeError: Cannot open lib: bad elf'")
 put("dsp_ol_err_empty", "SRC", "'RuntimeError: Cannot open lib: '")
 # :148 `return o1.cast('I')[0]` -- measured by calling `open_lib` for real with the
 # ioctl faked, so the handle is whatever the 8-byte OUT buffer holds, which is ZERO.
+# The row is the handle AND the seam's next id, and it is DERIVED from that call:
+# the literal `"0,1"` it used to be evaluated to the TUPLE `(0, 1)`, which is a
+# different SHAPE from the lane's list, so the two sides differed on punctuation.
 _ol = _dev(have_fd=True)
-_ol.open_lib(b"\x7fELF" + bytes(60))
-put("dsp_ol_handle", "CPY", "0,1")   # the handle, then the seam's next id
+_ol_handle = _ol.open_lib(b"\x7fELF" + bytes(60))
+_ol_next = len(TRACE)
+put("dsp_ol_handle", "CPY", f"lfmt([{_ol_handle}, {_ol_next}])")
 
 # --- 12: exec_lib, :154-164 ----------------------------------------------------
 def _exec(fail_first, fail_always, retry):
@@ -950,7 +1144,13 @@ put("dsp_rpc_msg_ix", "SRC", "lfmt([1, 2, 3])")
 put("dsp_rpc_reply_ix", "SRC", "lfmt([0, 2])")
 put("dsp_rpc_reply_io", "SRC", f"lfmt([sc_fields({SC_OPEN})[1], sc_fields({SC_OPEN})[2], "
                               f"sc_fields({SC_GREET})[1], sc_fields({SC_GREET})[2]])")
-put("dsp_rpc_pad", "SRC", "lfmt([round_up(x + 4, 8) for x in (0, 1, 4, 5, 8, 12)])")
+# ops_dsp.py:201 is `round_up(in_ptr + 4, 8) if i < inbufs else round_up(out_ptr + 4,
+# 8)` -- the OBJECT POINTER, upstream's own expression.  The port's row was
+# named `dsp_rpc_pad` and asserted `8 - (off mod 8)`, which is the distance to
+# the NEXT 8-boundary and is not upstream's expression; it is renamed
+# `dsp_rpc_objptr` on both sides, because a row named `pad` that asserts a
+# pointer is a name that says one thing and means another.
+put("dsp_rpc_objptr", "SRC", "lfmt([round_up(x + 4, 8) for x in (0, 1, 4, 5, 8, 12)])")
 put("dsp_rpc_geom", "SRC", "lfmt([8, 4, 3, 0, 6])")
 put("dsp_rpc_seek_0", "SRC", "0 == 0")
 put("dsp_rpc_seek_1", "SRC", "1 != 0")
@@ -960,7 +1160,9 @@ put("dsp_rpc_seek_err", "SRC",
 put("dsp_rpc_hello_n", "SRC", "0")
 for nm, s in [("unknown", 255), ("unknown0", 0)]:
   put(f"dsp_rpc_{nm}", "SRC", f"'RuntimeError: Unknown op: sc={s:X}'")
-put("dsp_rpc_cnt", "SRC", "lfmt([0, 0, 4, 1, 1, 0, 1, 0, 1, 0, 1, 2, 2, 1, 1, 1])")
+# the SEVEN arms' (nin, nout), GENERATED from upstream's own dispatch chain by
+# `_arm_counts` above -- ops_dsp.py:213-238 -- in the chain's order.
+put("dsp_rpc_cnt", "SRC", "lfmt(ARM_COUNTS)")
 
 # --- 13: the mock program's wire format, :283-292 ----------------------------
 put("dsp_mp_in", "SRC", "lfmt([0, 3 * 2, 16, 16 + 4, sum([0, 64, 128]) + 0 * 8])")

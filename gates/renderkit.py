@@ -85,13 +85,32 @@ def refuse(name, why):
     return REFUSED
 
 
+def row_end(text, start):
+    """the index of the `]` that CLOSES the `py=[` bracket that starts at `start`.
+
+    The first `]` after `py=[` is NOT the row's end: a value may contain
+    brackets -- `dsp_e_off1`'s value is `int off1 = ((int*)pra[1].buf.pv)[1];]`
+    -- and taking the first `]` cut 18 of `ops_dsp`'s 497 rows in half, so 18 of
+    the lane's row NAMES were a FRAGMENT of the previous row's value.  The
+    brackets BALANCE, so the end is the `]` that closes the one `py=[` opened.
+    """
+    depth, i = 1, start
+    while i < len(text):
+        if text[i] == "[":
+            depth += 1
+        elif text[i] == "]":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    raise ValueError(f"a row has no closing `]`: {text[start - 4:start + 60]!r}")
+
+
 def split_rows(text):
     """[(name, row_text)] for every row in a lane."""
     out, pos = [], 0
     for m in ROW_END.finditer(text):
-        end = text.find("]", m.end())
-        if end < 0:
-            raise ValueError(f"a row has no closing `]`: {text[m.start():m.start() + 60]!r}")
+        end = row_end(text, m.end())
         row = text[pos:end + 1]
         pos = end + 1
         while pos < len(text) and text[pos] == "\n":
@@ -140,6 +159,15 @@ def render_gate(name, port, oracle, rows, diverges=None):
     A divergence is excluded from the diff and PINNED: an excluded-and-unpinned row
     is how a divergence stops being a claim, and a pin of one side can only ever
     describe half of it.
+
+    AND A DECLARED DIVERGENCE IS CHECKED AGAINST THE LANES, NOT TRUSTED.  A
+    declaration is a CLAIM -- "the port's row and CPython's row DIFFER on this
+    row" -- and a claim can go STALE: the port was fixed, or the oracle was, and
+    the two sides are now the same row.  Then the gate REFUSES (exit 3) instead
+    of excluding a row it no longer measures and calling the run green.
+    **A DECLARED DIVERGENCE THAT CANNOT GO STALE IS A LABEL.**  The staleness
+    check comes BEFORE the pin check, so a port that moved TOWARD CPython's
+    value is refused as stale rather than reported as a pin that moved.
     """
     diverges = dict(diverges or {})
     port, oracle = Path(port), Path(oracle)
@@ -207,6 +235,17 @@ def render_gate(name, port, oracle, rows, diverges=None):
             return FAIL
     # THE PINNED DIVERGENCES, on BOTH sides, before the diff.
     for row, (want_oracle, want_port) in diverges.items():
+        # THE STALENESS CHECK, and it is FIRST: a declaration says the two sides
+        # DIFFER, so if they are the SAME row the declaration is stale and the
+        # gate REFUSES rather than excluding a row it no longer measures.  This
+        # is what makes a declaration a CLAIM and not a LABEL.  A row that is
+        # not in a lane at all is the pin check's business, not this one's.
+        py_row, bd_row = dict(lanes["py"]).get(row), dict(lanes["bd"]).get(row)
+        if py_row is not None and py_row == bd_row:
+            return refuse(name, f"the declared divergence {row!r} is STALE: the "
+                                f"port's row and CPython's row are the same, so it "
+                                f"is not a divergence any more -- drop the "
+                                f"declaration")
         for tag, want in (("py", want_oracle), ("bd", want_port), ("bn", want_port)):
             got = dict(lanes[tag]).get(row)
             if got != want:
