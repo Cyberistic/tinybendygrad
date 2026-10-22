@@ -6,17 +6,25 @@
 WHAT IT GATES, AND THE DENOMINATOR THE VERDICT TRAVELS WITH, because a gate whose scope lives
 in a comment is a gate nobody can check.
 
-    39 rows, THREE LANES, and the DENOMINATOR IS 35.
-      py    CPython, `.agents/slop/mixin-op-gate.py` -- 35 rows
-      bd    the port, interpreted, `./bin/bend tinybendygrad/mixin/op.bend` -- 39 rows
-      bn    the port, NATIVE, `bend -o` then run                       -- 39 rows
-    35 rows are COMPARED byte for byte across all three lanes.
+    42 rows, THREE LANES, and the DENOMINATOR IS 38.
+      py    CPython, `.agents/slop/mixin-op-gate.py` -- 38 rows
+      bd    the port, interpreted, `./bin/bend tinybendygrad/mixin/op.bend` -- 42 rows
+      bn    the port, NATIVE, `bend -o` then run                       -- 42 rows
+    38 rows are COMPARED byte for byte across all three lanes.
     4 rows are PORT-ONLY -- `rop_gap`, `exp_cast`, `commit_weak`, `bin_promote` -- and they are
-    excluded BY NAME on both sides. The port emits 39 and CPython 35, so the count that is
-    compared is 35 and the count that is printed is 35; the 4 are named at the foot of this
+    excluded BY NAME on both sides. The port emits 42 and CPython 38, so the count that is
+    compared is 38 and the count that is printed is 38; the 4 are named at the foot of this
     file and their ABSENCE from the oracle is asserted too, because a gate that only checked the
     row would pass the moment CPython grew it and then the exclusion would be hiding a real
     comparison.
+
+    THE THREE VALUE ROWS -- `val_mean0`, `val_mean0_2d`, `val_var0` -- are the ONLY rows in
+    this gate that print a CONST's PAYLOAD, and they are the row `0eee58d9d` named and no row
+    printed. A signature prints `CONST/0` and the payload lives in the node's ARG, so
+    `mean`'s DENOMINATOR -- the product of the REDUCED dims (op.py:520) -- was a CONST whose
+    VALUE no row in this gate could see: a wrong product is a wrong MEAN with every other row
+    still green. They are the THREE DISTINCT DIVISORS, so one row per divisor makes them a
+    COVERAGE claim and not a sample.
 
 EXIT STATUS: 0 all three lanes identical · 1 a warm check failed, a lane took the wrong row
 count, the oracle failed, the native compile failed, or the lanes disagree · 2 the frozen
@@ -81,8 +89,8 @@ GATE = Gate(
     "mixin-op-gate",
     bend="tinybendygrad/mixin/op.bend",
     oracle=".agents/slop/mixin-op-gate.py",
-    rows=39,
-    compared=35,
+    rows=42,
+    compared=38,
     # THE FOUR, BY NAME, AND WHY BY NAME. These name a refusal or a defect rather than a graph,
     # so CPython cannot be asked for them; filtering by POSITION instead would drop whatever row
     # happens to sit fourth today and silently compare something else tomorrow.

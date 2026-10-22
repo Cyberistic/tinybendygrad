@@ -134,6 +134,17 @@ def compare(port: list[Row], oracle: list[Row]) -> dict:
     `unanswered`  the oracle has no row with that name at all.
     `port_only`   names the port printed and the oracle did not.
     `oracle_only` names the oracle printed and the port did not.
+
+    **`unanswered` AND `port_only` ARE THE SAME SET, AND THIS FUNCTION COUNTS IT
+    TWICE.**  Both are "the port printed a name the oracle did not" -- the two
+    sentences above say the same thing in two different words -- and the code
+    computes them from the same condition (`n not in o_idx`).  MEASURED on the
+    `mixin` lane, 2026-10-23: `unanswered=4` and `port_only=4`, and the four names
+    are the SAME FOUR (`rop_gap`, `exp_cast`, `commit_weak`, `bin_promote`), so
+    `len(unanswered) + len(port_only)` is a count of FOUR rows and NOT of eight.
+    A reader who adds the two numbers counts one set twice, and the count it
+    reports is a population mismatch that does not exist: `oracle_only` was 0, so
+    the oracle had NO row the port lacked.
     """
     # THE NON-ROWS ARE COUNTED AND NOT COMPARED.  A line that is neither shape is
     # not a row, and a row the reader cannot name is not a row this comparison can

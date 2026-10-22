@@ -26,6 +26,8 @@ import sys
 
 sys.path.insert(0, '.')
 from tinygrad import Tensor  # noqa: E402
+from tinygrad.uop import Ops  # noqa: E402
+from tinygrad.dtype import InvalidType  # noqa: E402
 
 
 def sig(t) -> str:
@@ -54,6 +56,40 @@ def shrow(name, t) -> None:
 
 def row(name, t) -> None:
   print(f"{name}={sig(t)}")
+
+
+# --- THE VALUE ROWS, and they are the ONLY rows here that print a CONST's
+# PAYLOAD. A signature prints `CONST/0` and the payload lives in the node's ARG,
+# so `mean`'s DENOMINATOR -- the product of the REDUCED dims (op.py:520) -- is a
+# CONST whose VALUE no row in this file could see: a wrong product is a wrong
+# MEAN with every other row still green.
+#
+# THE SPELLING, AND WHY IT IS NOT `repr`. The port's `f32_show` prints an
+# integral float as "4" and Python prints "4.0", so a FLOAT is printed in SIX
+# DECIMAL PLACES on both sides -- `f32_fixed.body(f, 6n)` in the port and
+# `f"{float(v):.6f}"` here -- an INT is `i<decimal>`, a BOOL is `True`/`False`
+# and the INVALID payload is `x`. A row the two sides spell differently is not
+# a row.
+def constval(v) -> str:
+  if isinstance(v, InvalidType): return "x"
+  if isinstance(v, bool): return str(v)   # BEFORE int: bool is an int subclass
+  if isinstance(v, int): return f"i{v}"
+  if isinstance(v, float): return f"f{v:.6f}"
+  return "x"
+
+
+def valsig(t) -> str:
+  us = t.uop.toposort()
+  parts = []
+  for u in us:
+    s = f"{u.op.name}/{len(u.src)}"
+    if u.op is Ops.CONST: s += "=" + constval(u.arg)
+    parts.append(s)
+  return f"{len(us)} " + " ".join(parts) + " "
+
+
+def valrow(name, t) -> None:
+  print(f"{name}={valsig(t)}")
 
 
 # --- the fixtures. `Tensor([1.,2.,3.,4.], device='PYTHON')` is ONE BUFFER and
@@ -153,6 +189,14 @@ shrow('sh_sum0kd_23', fx23().sum(axis=0, keepdim=True))
 
 # THE SQUEEZE ROW. CPython: `squeeze(0)` ON `(1,2,3)` IS `(2,3)`.
 shrow('sh_sq0_123', fx123().squeeze(0))
+
+# --- THE VALUE ROWS, and they are THE THREE DISTINCT DIVISORS, so one row per
+# divisor makes this a COVERAGE claim and not a sample: `mean` divides by 4 (a
+# `(4,)` source) and by 2 (a `(2,2)` source -- the SQUARE fixture, where a wrong
+# index is invisible), and `var` divides by `n - correction` = 3.
+valrow('val_mean0', fx1d().mean(axis=0))
+valrow('val_mean0_2d', fx2d().mean(axis=0))
+valrow('val_var0', fx1d().var(axis=0))
 
 # --- THE BEND-ONLY ROWS. `rop_gap` is `T.tn_rop`'s own shape refusal; `exp_cast` pins
 # that `exp`'s three casts are the IDENTITY for a float32 source; `commit_weak` is the

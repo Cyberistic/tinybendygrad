@@ -567,6 +567,26 @@ def mo_bin(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
   +r = mo_promote(F.folded(T.Tensor.ar(l)), y2, od)
   mo_alu2(T.Tensor.ar(r), T.Tensor.u(l), op, T.Tensor.u(r))
 
+# `mo_bin` WITHOUT THE RIGHT-HAND PROMOTION, and that difference is the whole of
+# `div`. `mo_bin` IS `_binop` (elementwise.py:36) -- promote both, then `alu` -- and
+# `_binop` promotes ONCE. `div` (elementwise.py:229-259) is NOT `_binop`: it
+# promotes both in `_broadcasted`, builds the RECIPROCAL of the promoted right-hand
+# side, and then `alu`s that WITHOUT promoting again -- elementwise.py:253 says so:
+# "alu, not *: _broadcasted already promoted these, and a second promote would cast
+# 1/b (only a weak CONST is kept weak)".
+# THE RECIPROCAL OF A WEAK CONST IS WEAK, so the second promotion is a REAL CAST,
+# not a no-op: MEASURED 2026-10-23, `mo_bin` put a `CAST/1` between the RECIPROCAL
+# and the MUL in ELEVEN of this gate's rows.
+#
+# `mo_alu2` IS THE ARENA-LEVEL NODE BUILDER FOR A TWO-SOURCE `alu`; THIS IS THE
+# TENSOR-LEVEL ONE, and it is `mo_bin` with the right-hand promotion removed.
+def mo_alu(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
+  +m = O.Arena.merge(T.Tensor.ar(t), T.Tensor.ar(y))
+  +y2 = T.tn_new(O.Merge.ar(m), O.Merge.at(m, T.Tensor.u(y)))
+  +fx = F.folded(O.Merge.ar(m))
+  +l = mo_promote(fx, t, mo_bin_out(fx, t, y2))
+  mo_alu2(T.Tensor.ar(l), T.Tensor.u(l), op, T.Tensor.u(y2))
+
 # THE CONST-OPERAND HALF OF `_binop`, and it exists for W9. MEASURED: `E.ew_binop`
 # with a weakINT constant builds a self-referential node (elementwise.bend:245 threads
 # the pre-remint arena), so every `x * (-1)` -- `neg` (elementwise.py:82), and therefore
@@ -861,17 +881,28 @@ def mo_recip(+t: T.Tensor) -> T.Tensor: E.ew_reciprocal(t)
 # a.dtype == bool: a = a.cast(default_float)`; `d = a.alu(Ops.MUL, b.reciprocal())`.
 # `a` is always float32 by the time it gets here (`numerator` and `squares` are
 # `cast(sum_acc_dtype(...))`), so the int arm is false and the cast is not built --
-# which is precisely what the oracle's five-node `t_mean0` says.
+# which is precisely what the oracle's six-node `t_mean0` says.
 # THE ORDER IS `_broadcasted` THEN `reciprocal` (elementwise.py:250-255), so the
 # promotion has already lifted the weakint CONST to weakfloat by the time the
 # RECIPROCAL is built. MEASURED: taking the reciprocal FIRST printed a `CAST/1` where
 # CPython prints none -- `t_mean0` was 6 nodes against CPython's 5 -- because the
-# promotion then had to CAST a RECIPROCAL instead of REMINTing a CONST. `mo_bin`'s own
-# promotion is the identity on the already-promoted right-hand side, so spelling the
-# promotion here is not a second one.
+# promotion then had to CAST a RECIPROCAL instead of REMINTing a CONST.
+#
+# AND THERE IS NO SECOND PROMOTION, and that is the whole of the difference from
+# `mo_bin`. elementwise.py:253 says it in as many words: "alu, not *: _broadcasted
+# already promoted these, and a second promote would cast 1/b (only a weak CONST is
+# kept weak)". `_broadcasted` promotes BOTH operands ONCE; `div` then builds the
+# RECIPROCAL of the promoted right-hand side -- which is a weakfloat, because a weak
+# CONST is KEPT WEAK -- and `alu`s it WITHOUT promoting again.
+# MEASURED 2026-10-23, on this tree: `mo_bin` promoted the RECIPROCAL, so the port
+# printed `RECIPROCAL/1 CAST/1 MUL/2` where CPython prints `RECIPROCAL/1 MUL/2` --
+# ELEVEN of this gate's rows, all of them the same one extra `CAST/1`, and the
+# DENOMINATOR's VALUE (`f4.000000`) was RIGHT ON BOTH SIDES. The `val_*` rows are
+# what made that visible: a signature prints `CONST/0` and the payload lives in the
+# node's ARG.
 def mo_div(+t: T.Tensor, +c: T.Tensor) -> T.Tensor:
   +b = mo_promote(F.folded(T.Tensor.ar(c)), c, mo_bin_out(F.folded(T.Tensor.ar(c)), t, c))
-  mo_bin(t, O.OpsMUL{}, mo_recip(b))
+  mo_alu(t, O.OpsMUL{}, mo_recip(b))
 
 # `x.div(n)` for a Python `int` `n`, which is `mean`'s `denominator` and `var`'s
 # `smax(n - correction, 0)`. `ufix` (ops.py:606) turns it into a weakint CONST and
@@ -882,8 +913,16 @@ def mo_divn(+t: T.Tensor, n: U32) -> T.Tensor:
   mo_div(t, mo_const_t(t, mo_ki(n)))
 
 # `prod([si for si, so in zip(shape, sum.shape) if resolve(si != so)])` (op.py:520,
-# :547). The zip keeps the dims whose SIZE CHANGED, which is exactly the dims the
-# reduce did not touch, so the walk multiplies `shape[i]` for every `i not in axis`.
+# :547). THE ZIP KEEPS THE DIMS WHOSE SIZE CHANGED, AND THOSE ARE EXACTLY THE DIMS
+# THE REDUCE TOUCHED: the keepdim sum has a 1 where the reduce happened and the
+# source's own size everywhere else, so `si != so` is TRUE for the reduced dims and
+# FALSE for the others. **THE WALK THEREFORE MULTIPLIES `shape[i]` FOR EVERY `i` IN
+# `axis`** -- and this comment used to say the opposite ("the dims the reduce did
+# not touch", "for every `i not in axis`"), which is the SAME claim as upstream's
+# formula read backwards. The CODE was right and the PROSE was wrong, and the prose
+# is what a reader trusts. MEASURED 2026-10-23, by the `val_*` rows, which print
+# the CONST's PAYLOAD: the denominator is `f4.000000` for a `(4,)` source reduced on
+# axis 0, `f2.000000` for a `(2,2)` one, and CPython agrees with both.
 # `Bool.pick` is strict and both arms are pure, which is why the multiply is not
 # hoisted out -- the same shape `tensor.bend`'s `tn_rop.ne1` uses for its filter.
 def mo_reduced.go(+ds: List<&2, O.Sint>, +axis: List<&2, U32>, +n: U32, +acc: U32) -> U32:
@@ -1162,6 +1201,63 @@ def mo_min(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # COUNT is the first field of the row so a dropped or duplicated node is visible in
 # the same place every time.
 # ===========================================================================
+
+# ===========================================================================
+# THE VALUE ROWS -- THE ROW `0eee58d9d` NAMED AND NO ROW PRINTED.
+#
+# `mo_sig` prints each node's OP and its src COUNT, and a CONST's PAYLOAD lives in
+# the node's ARG, so `CONST/0` says the node is a CONST and says NOTHING about
+# what it holds. `mean`'s DENOMINATOR is such a CONST -- the product of the
+# REDUCED dims (op.py:520) -- and a wrong product is a wrong MEAN with every
+# other row in this file still green.
+#
+# THE SPELLING, AND WHY IT IS NOT PYTHON's `repr`. The port's `f32_show` prints
+# an integral float as "4" and Python prints "4.0", so a FLOAT is printed in SIX
+# DECIMAL PLACES on both sides -- `f32_fixed.body(f, 6n)` here and
+# `f"{float(v):.6f}"` in the oracle -- an INT is `i<decimal>`, a BOOL is
+# `True`/`False` and the INVALID payload is `x`. A row the two sides spell
+# differently is not a row.
+#
+# THE THREE ROWS ARE THE THREE DISTINCT DIVISORS, and one row per divisor is
+# what makes the row a COVERAGE claim rather than a sample: `mean` divides by
+# 4 (a `(4,)` source) and by 2 (a `(2,2)` source -- the SQUARE fixture, where a
+# wrong index is invisible), and `var` divides by `n - correction` = 3.
+# ===========================================================================
+
+def mo_cval(v: O.Const) -> String:
+  match v:
+    case O.CInt{i}: String.concat(["i", O.fs.i64_dec(i)])
+    case O.CFloat{f}: String.concat(["f", H.f32_fixed.body(f, 6n)])
+    case O.CBool{b}: Bool.show(b)
+    case O.CInvalid{}: "x"
+
+def mo_cval_of.arg(arg: O.Arg) -> String:
+  match arg:
+    case O.APy{v}: mo_cval(v)
+    case _: ""
+
+# THE VALUE OF THE NODE AT `u`, OR "" WHEN IT IS NOT A CONST.
+def mo_cval_of.op(op: O.Op, +ar: O.Arena, u: U32) -> String:
+  match op:
+    case O.OpsCONST{}: String.concat(["=", mo_cval_of.arg(O.Arena.arg(ar, u))])
+    case _: ""
+
+def mo_cval_of(+ar: O.Arena, +u: U32) -> String:
+  mo_cval_of.op(O.Arena.op(ar, u), ar, u)
+
+def mo_valsig.go(xs: List<&2, U32>, +ar: O.Arena, acc: String) -> String:
+  match xs:
+    case Nil{}: acc
+    case +u <> t: mo_valsig.go(t, ar, String.concat([acc,
+      O.Ops.name.of(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u)),
+      mo_cval_of(ar, u), " "]))
+
+def mo_valsig.of(+ar: O.Arena, i: U32) -> String:
+  +xs = O.UOp.toposort(O.Arena.budget(ar), ar, i)
+  String.concat([U32.show(U32.from_nat(List.length(&2, U32, xs))), " ", mo_valsig.go(xs, ar, "")])
+
+def mo_valsig(nm: String, +ar: O.Arena, i: U32) -> IO(Unit):
+  IO.print(String.concat([nm, "=", mo_valsig.of(ar, i)]))
 
 def mo_sig.go(xs: List<&2, U32>, +ar: O.Arena, acc: String) -> String:
   match xs:
@@ -1551,6 +1647,23 @@ def t_bin_promote() -> IO(Unit):
     Bool.and(Bool.not(U32.is_eq(T.Tensor.u(pw), T.Tensor.u(c))),
              U32.is_gt(O.Arena.next(T.Tensor.ar(pw)), O.Arena.next(T.Tensor.ar(c))))))
 
+# --- THE VALUE ROWS, and they are the ONLY rows in this file that print a CONST's
+# PAYLOAD. See the block above `mo_cval` for why the spelling is what it is.
+def t_val_mean0() -> IO(Unit):
+  +x = mo_fx1d()
+  +r = mo_mean(False{}, x, mo_ax(False{}, x, 0))
+  mo_valsig("val_mean0", T.Tensor.ar(r), T.Tensor.u(r))
+
+def t_val_mean0_2d() -> IO(Unit):
+  +x = mo_fx2d()
+  +r = mo_mean(False{}, x, mo_ax(False{}, x, 0))
+  mo_valsig("val_mean0_2d", T.Tensor.ar(r), T.Tensor.u(r))
+
+def t_val_var0() -> IO(Unit):
+  +x = mo_fx1d()
+  +r = mo_var(False{}, 1, x, mo_ax(False{}, x, 0))
+  mo_valsig("val_var0", T.Tensor.ar(r), T.Tensor.u(r))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- t_lit1d()
@@ -1591,6 +1704,9 @@ def main() -> IO(Unit):
     aj : Unit <- t_sh_sum0_23()
     ak : Unit <- t_sh_sum0kd_23()
     al : Unit <- t_sh_sq0_123()
+    am : Unit <- t_val_mean0()
+    an : Unit <- t_val_mean0_2d()
+    ao : Unit <- t_val_var0()
     t_bin_promote()
 
 # ===========================================================================
