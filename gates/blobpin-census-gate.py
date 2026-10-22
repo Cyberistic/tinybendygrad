@@ -27,6 +27,15 @@ WHAT IT CLAIMS, AND WHY EACH CLAIM CAN BE WRONG.
               one. A DERIVED pin is `sha256(x) == sha256(x)`: it cannot fail, and `AGENTS.md`
               calls an instrument that cannot fail worse than no instrument. This is the claim
               that makes the census able to say "12 of 12 are literals" and mean it.
+              **AND THE CLAIM IS NOW MEASURED RATHER THAN ASSUMED.** The population used to be
+              the LITERALS THEMSELVES, so a pin whose value was `sha256(x).hexdigest()` of the
+              very file it checks was not a site at all -- it was INVISIBLE, and the count simply
+              went down. The population is now every PATH KEY in a pin dict, and the value is
+              the claim: a value that is not a quoted hex constant is DERIVED and the gate
+              fails. **THIS IS THE ARM NOBODY PLANTED, and it is planted here:** a copy of a
+              caller whose pin is re-derived from the file it checks must be REPORTED, and the
+              report must be shown to matter by running the reader against a MUTATED copy of
+              the file -- a LITERAL pin goes red there and the RE-DERIVED one does not.
 
   VENDORED    Each pinned blob is byte-identical in the working tree, at `HEAD`, and at
               `refs/remotes/upstream/master` -- three DERIVED readings, no sha transcribed here.
@@ -53,6 +62,16 @@ EXIT STATUS: 0 every claim above holds · 1 a claim is false (named) · 3 a prec
 absent (no git, no upstream ref, a caller this file cannot resolve) · 5 the population is empty,
 which is DEAD: a census over zero pins reports zero drift and is indistinguishable from a census
 that found nothing wrong.
+
+**AND THIS FILE WAS DEAD, WHICH IS WHY THE LITERAL CLAIM WAS NEVER MEASURED.** MEASURED
+2026-10-22: `blobpin-census-gate.py` exited 1 with a traceback --
+`IndexError: list index out of range` at the line that printed the unresolved caller's argument.
+The cause was a call site with an EMPTY argument: `gates/edge-fixture-census.py:529` and
+`checks/.e2e-fixture/e2esh/plant.py` name `oracle_drift()` in PROSE, and the census's
+`_uncomment` strips `#` comments but not DOCSTRINGS. **A CENSUS THAT CRASHES ON ITS OWN
+POPULATION REPORTS NOTHING**, and this one reported nothing at all, so the claim it exists to
+make -- that every pin in the tree is a LITERAL -- was a sentence and not a reading. An empty
+argument is now what it is: a MENTION, not a call, because `oracle_drift` REQUIRES an argument.
 """
 from __future__ import annotations
 
@@ -78,6 +97,13 @@ HOMES = ("gates", "checks")
 # count -- a population that is silently halved and a number nobody checks. Both quote styles are
 # accepted for the same reason.
 SITE = re.compile(r"""["'](?P<path>tinygrad/\S+\.py)["']\s*:\s*["'](?P<sha>[0-9a-f]{40,64})["']""")
+# EVERY PATH KEY IN A PIN DICT, WHATEVER ITS VALUE. `SITE` finds the sites whose value IS a
+# quoted hex constant; this finds the KEYS, so a pin whose value is DERIVED is still in the
+# population and can be REPORTED. A census whose population is the literals can only ever see
+# literals, which is how a derived pin became invisible.
+KEY = re.compile(r"""["'](?P<path>tinygrad/\S+\.py)["']\s*:""")
+# AND WHAT COUNTS AS A LITERAL VALUE: a quoted hex constant and nothing else.
+HEX = re.compile(r"""["'][0-9a-f]{40,64}["']""")
 # EVERY CALL SITE OF THE READER. `gatekit.py` defines it; everyone else consumes it.
 CALL = re.compile(r"\boracle_drift\s*\(")
 DEF = "def oracle_drift"
@@ -87,7 +113,6 @@ DEF = "def oracle_drift"
 # Line comments are stripped before the scan; `splitlines`/`join` keeps one line per line, so
 # every reported line number is still the file's own.
 COMMENT = re.compile(r"#.*$")
-LEAD_NAME = re.compile(r"[A-Za-z_]\w*")
 
 
 def _uncomment(t: str) -> str:
@@ -125,18 +150,157 @@ def _dict_for(t: str, name: str) -> str | None:
     return _span(t, m.end() - 1, "{", "}") if m else None
 
 
-def census(src: Path) -> tuple[list[tuple[str, str, str, int]], list[str], dict[str, int]]:
-    """`(path, sha, file, line)` per site, the callers this file could not resolve, and the
-    number of `tinygrad` sites each resolved caller contributes.
+# A SIBLING FILE THIS FILE NAMES BY PATH. `gates/float-halfclass-gate.py` loads
+# `gates/subnormal-flush-gate.py` this way and `gates/bendfloat-gate.py` loads
+# `gates/float-halfclass-gate.py` this way, so the two of them reach ONE pin dict
+# through a chain of two.
+PATHY = re.compile(r"""HERE\s*/\s*["'](?P<name>[\w.-]+\.py)["']""")
+# A MODULE-LEVEL ASSIGNMENT, and the NAME its right-hand side starts with.
+ASSIGN = re.compile(r"^\s*(?P<name>[A-Za-z_]\w*)\s*=\s*(?P<rhs>[^\n#]+)", re.M)
+# A CONDITIONAL'S TRUE BRANCH: `pin = ORACLE_PIN if pin is None else pin` names
+# `ORACLE_PIN`, and that is the dict the call site ends up reading.
+COND = re.compile(r"([A-Za-z_]\w*)\s+if\b")
+IDENT = re.compile(r"[A-Za-z_]\w*")
 
-    A caller is RESOLVED by taking the dict literal its `oracle_drift(X)` argument names -- by
-    NAME in the same file (`DRIFT_PIN`, `ORACLE_PIN`, `DELEGATED`), or inline. An unresolved
-    caller is reported, never skipped: a caller whose pins live where this file cannot see them
-    is a population it cannot see, and a census that cannot see its population cannot be
-    anything. The per-caller COUNT is what makes a caller that quietly stopped pinning anything
-    visible rather than merely absent.
-    """
+
+def _arg_name(arg: str) -> str | None:
+    """The NAME a call site's argument names, or None.
+
+    `DRIFT_PIN` and `ORACLE_PIN` are names. `sfg.ORACLE_PIN` is a qualified name and
+    the dict it names is the one the LAST component names. `DELEGATED if pins is None
+    else pins` is a conditional and the dict it names is the one the TRUE branch names."""
+    m = COND.match(arg)
+    if m:
+        return m.group(1)
+    m = IDENT.match(arg)
+    if not m:
+        return None
+    head = m.group(0)
+    if arg.startswith(head) and "." in arg:
+        return arg.rsplit(".", 1)[1].strip()
+    return head
+
+
+def _closure(src: Path, t: str) -> list[Path]:
+    """The files this file NAMES BY PATH, and the files THOSE name, and so on.
+
+    It is the TRANSITIVE closure because `gates/bendfloat-gate.py` reaches
+    `gates/subnormal-flush-gate.py`'s `ORACLE_PIN` through
+    `gates/float-halfclass-gate.py`, and a one-level search would not find it."""
+    out: list[Path] = []
+    seen: set[Path] = set()
+    queue = [src]
+    while queue:
+        cur = queue.pop()
+        try:
+            txt = cur.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for m in PATHY.finditer(txt):
+            nxt = cur.parent / m.group("name")
+            if nxt in seen or not nxt.is_file():
+                continue
+            seen.add(nxt)
+            out.append(nxt)
+            queue.append(nxt)
+    return out
+
+
+def _assigned_name(t: str, name: str) -> str | None:
+    """The NAME a module-level assignment of `name` starts its right-hand side with."""
+    for m in ASSIGN.finditer(t):
+        if m.group("name") != name:
+            continue
+        rhs = m.group("rhs").strip()
+        c = COND.match(rhs)
+        if c:
+            return c.group(1)
+        i = IDENT.match(rhs)
+        return i.group(0) if i else None
+    return None
+
+
+def _resolve_pin_dict(src: Path, t: str, arg: str) -> str | None:
+    """The TEXT of the pin dict a call site's argument names, or None.
+
+    THE FOUR SHAPES, AND WHY THEY ARE ONE RULE. MEASURED 2026-10-22, three callers used
+    the last three and the census REFUSED on all of them, so it certified nothing:
+
+      1. `DRIFT_PIN = { ... }` in the caller's own file.
+      2. `ORACLE_PIN = sfg.ORACLE_PIN` -- an ALIAS of another module's dict.
+      3. `sfg.ORACLE_PIN` -- a QUALIFIED name.
+      4. `def gate(..., pin=None)` and `pin = ORACLE_PIN if pin is None else pin` -- a
+         PARAMETER whose default is a module-level dict.
+
+    THE RULE: reduce the argument to a NAME, find the dict literal assigned to that name
+    in the caller's own file and then in the files the caller NAMES BY PATH, and if it is
+    not there, follow the caller's own assignment of that name and try again. A census
+    that cannot see its population cannot be anything, so the shapes are resolved rather
+    than reported as a smaller number."""
+    name = _arg_name(arg)
+    if not name:
+        return None
+    files = [src] + _closure(src, t)
+    seen: set[str] = set()
+    while name and name not in seen:
+        seen.add(name)
+        for f in files:
+            try:
+                body = _dict_for(f.read_text(encoding="utf-8", errors="replace"), name)
+            except OSError:
+                body = None
+            if body is not None:
+                return body
+        nxt = _assigned_name(t, name)
+        if not nxt or nxt == name:
+            return None
+        name = nxt
+    return None
+
+
+def _value_after(body: str, i: int) -> str:
+    """The VALUE EXPRESSION of one dict entry, from the character after its key.
+
+    It ends at the next `,` or `}` at DEPTH ZERO, so a call inside the value does not end
+    it, and it may span lines -- six of the tree's sites put the literal on the line BELOW
+    the key."""
+    depth, j = 0, i
+    while j < len(body):
+        c = body[j]
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            if depth == 0:
+                return body[i:j].strip()
+            depth -= 1
+        elif c == "," and depth == 0:
+            return body[i:j].strip()
+        j += 1
+    return body[i:j].strip()
+
+
+def census(src: Path) -> tuple[list[tuple[str, str, str, int]], list[tuple[str, str, str, int]],
+                               list[str], dict[str, int]]:
+    """`(sites, derived, unresolved, per_caller)`.
+
+    `sites` are the LITERAL pin sites -- `(path, sha, file, line)`. `derived` are the pin
+    entries whose value is NOT a literal -- `(path, value, file, line)` -- and they are in
+    the POPULATION, not in a footnote, because a census whose population is the literals can
+    only ever see literals. `unresolved` are the callers this file could not resolve, and
+    they are reported, never skipped: a caller whose pins live where this file cannot see
+    them is a population it cannot see, and a census that cannot see its population cannot
+    be anything. The per-caller COUNT is what makes a caller that quietly stopped pinning
+    anything visible rather than merely absent.
+
+    AN EMPTY ARGUMENT IS A MENTION, NOT A CALL. `oracle_drift` REQUIRES an argument, so
+    `oracle_drift()` is a mention in prose -- `gates/edge-fixture-census.py:529` and
+    `checks/.e2e-fixture/e2esh/plant.py` both have one -- and the census used to CRASH on
+    them, because the line that reported an unresolved caller printed `arg.splitlines()[0]`
+    and an empty argument has no lines. MEASURED 2026-10-22, this file exited 1 with an
+    `IndexError` and reported NOTHING, so the LITERAL claim it exists to make was a
+    sentence rather than a reading."""
     sites: list[tuple[str, str, str, int]] = []
+    derived: list[tuple[str, str, str, int]] = []
     unresolved: list[str] = []
     per_caller: dict[str, int] = {}
     for home in HOMES:
@@ -154,8 +318,9 @@ def census(src: Path) -> tuple[list[tuple[str, str, str, int]], list[str], dict[
             for c in CALL.finditer(t):
                 line = t.count("\n", 0, c.start()) + 1
                 arg = _span(t, c.end() - 1, "(", ")")[1:-1].strip()
-                body = arg if arg.startswith("{") else _dict_for(t, LEAD_NAME.match(arg).group()) \
-                    if LEAD_NAME.match(arg) else None
+                if not arg:
+                    continue  # a MENTION: `oracle_drift()` has no argument and is not a call
+                body = arg if arg.startswith("{") else _resolve_pin_dict(p, t, arg)
                 if body is None:
                     unresolved.append(f"{rel}:{line} oracle_drift({arg.splitlines()[0][:40]})")
                     continue
@@ -165,7 +330,26 @@ def census(src: Path) -> tuple[list[tuple[str, str, str, int]], list[str], dict[
                     at = t.find(m.group(0))
                     sites.append((m.group("path"), m.group("sha"), rel,
                                   t.count("\n", 0, at) + 1 if at >= 0 else line))
-    return sites, unresolved, per_caller
+                for m in KEY.finditer(body):
+                    val = _value_after(body, m.end())
+                    if HEX.fullmatch(val):
+                        continue
+                    at = t.find(m.group(0))
+                    derived.append((m.group("path"), val, rel,
+                                    t.count("\n", 0, at) + 1 if at >= 0 else line))
+    return sites, derived, unresolved, per_caller
+
+
+def claim_literal(derived) -> list[str]:
+    """EVERY PIN ENTRY'S VALUE IS A LITERAL, and this is MEASURED.
+
+    A DERIVED pin -- the sha256 of the very file it checks, computed at run time -- is
+    `sha256(x) == sha256(x)`: it cannot fail, and an instrument that cannot fail is worse
+    than no instrument. The population used to be the literals THEMSELVES, so such a pin
+    was INVISIBLE: it was not a site, the count went down, and nothing said so."""
+    return [f"{at}:{ln} {path}: the pinned sha256 is DERIVED ({val[:56]!r}) -- a pin "
+            f"re-derived from the file it checks cannot fail"
+            for path, val, at, ln in derived]
 
 
 def claim_intact(sites) -> list[str]:
@@ -208,49 +392,150 @@ def claim_vendored(sites) -> tuple[list[str], list[tuple[str, str, str, str]]]:
     return bad, rows
 
 
-def report(sites, rows, per_caller) -> None:
+def report(sites, derived, rows, per_caller) -> None:
     print(f"population blobpin sites={len(sites)} paths={len({s[0] for s in sites})} "
-          f"callers={len(per_caller)} literals={len(sites)} derived=0")
+          f"callers={len(per_caller)} literals={len(sites)} derived={len(derived)}")
     for at, n in sorted(per_caller.items()):
         print(f"  caller {at:<44} tinygrad-sites={n}")
     for path, sha, at, ln in sorted(sites, key=lambda s: (s[0], s[2])):
         print(f"  LITERAL {path:<26} {sha[:16]}  {at}:{ln}")
+    for path, val, at, ln in sorted(derived, key=lambda s: (s[0], s[2])):
+        print(f"  DERIVED {path:<26} {val[:40]:<42}  {at}:{ln}")
     print("\nclaim LAST-MOVE -- DERIVED from git, no sha transcribed in this file:")
     for path, head, up, moved in rows:
         print(f"  {path:<26} HEAD={head} upstream={up}  last-commit {moved}")
 
 
-def plant(sites) -> int:
-    """One hex digit flipped in a COPY, and the census must notice. The tree is never a base."""
+def plant(sites, derived) -> int:
+    """THE ARMS, each on a COPY. The tree is never a base.
+
+    ARM 0 CONTROL   the real tree's census is GREEN: every pin is a literal, every literal
+                    is intact, and every pinned blob is vendored. This is the UNBROKEN
+                    CONTROL -- a plant with no green control measures nothing.
+    ARM 1 LITERAL   one hex digit of one pin is flipped in a COPY. The census must notice,
+                    because the file the pin names no longer has the bytes the pin says.
+    ARM 2 RE-DERIVED  **THE ARM NOBODY PLANTS.** A pin whose value is the sha256 of the
+                    very file it checks, computed at run time, is `sha256(x) == sha256(x)`:
+                    it CANNOT FAIL. Two things are measured, and both matter:
+                      (a) the census must REPORT it -- the pin's entry is in the population
+                          because the population is the KEYS, not the literals; and
+                      (b) the report must be shown to MATTER, by running the reader
+                          `gatekit.oracle_drift` itself against a MUTATED copy of the file: a
+                          LITERAL pin goes RED there and the RE-DERIVED pin does not.
+                    (b) is the half that shows the LITERAL claim is not bookkeeping."""
+    import gatekit
+    results: list[tuple[str, bool, str]] = []
+
+    # ARM 0: THE UNBROKEN CONTROL.
+    live_sites, live_derived, live_unresolved, _ = census(ROOT)
+    live_vendored, _ = claim_vendored(live_sites)
+    control = claim_intact(live_sites) + claim_literal(live_derived) + live_vendored
+    results.append(("0 CONTROL the real tree's census is green", not control,
+                    f"{len(live_sites)} literal(s), {len(live_derived)} derived, "
+                    f"{len(control)} claim(s) false"))
+    if live_unresolved:
+        results.append(("0 CONTROL no caller is unresolved", False, str(live_unresolved)))
+
     with tempfile.TemporaryDirectory() as tmp:
         mirror = Path(tmp)
         for home in HOMES:
             (mirror / home).mkdir()
             for p in (ROOT / home).rglob("*.py"):
-                (mirror / home / p.relative_to(ROOT / home)).symlink_to(p)
+                # THE PARENT DIRECTORIES ARE MADE, because `gates/artifacts/` has SUBDIRECTORIES
+                # and a symlink into a directory that does not exist raises. MEASURED: the first
+                # run of this plant raised `FileNotFoundError` on
+                # `gates/artifacts/code-reader-census/before-pincensus-pop.py`, and the plant had
+                # never run before because the census CRASHED on its own population.
+                dest = mirror / home / p.relative_to(ROOT / home)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.symlink_to(p)
+        if not sites:
+            print("PLANT REFUSED: no literal pin site to plant on", file=sys.stderr)
+            return REFUSED
         victim = mirror / sites[0][2]
-        # THE FIRST HEX DIGIT, because that is the real failure mode -- a mistyped pin -- and
-        # because `gatekit.oracle_drift` prints 16 characters: flipping the LAST one leaves the
-        # printed window identical and the plant reports FIRED with two equal strings, which is
-        # the one message that cannot be read.
-        mutant = victim.read_text().replace(sites[0][1], ("0" if sites[0][1][0] != "0" else "1")
-                                            + sites[0][1][1:], 1)
-        if mutant == victim.read_text():
-            print("PLANT REFUSED: the site text was not found in its own file")
+        original = victim.read_text()
+        # ARM 1: THE FIRST HEX DIGIT, because that is the real failure mode -- a mistyped
+        # pin -- and because `gatekit.oracle_drift` prints 16 characters: flipping the LAST
+        # one leaves the printed window identical and the plant reports FIRED with two equal
+        # strings, which is the one message that cannot be read.
+        mutant = original.replace(sites[0][1], ("0" if sites[0][1][0] != "0" else "1")
+                                  + sites[0][1][1:], 1)
+        if mutant == original:
+            print("PLANT REFUSED: the site text was not found in its own file", file=sys.stderr)
             return REFUSED
         victim.unlink()
         victim.write_text(mutant)
-        got, _, _ = census(mirror)
+        got, got_derived, _, _ = census(mirror)
         bad = claim_intact(got)
         print(f"PLANT one digit of {sites[0][1][:16]} flipped in a COPY of {sites[0][2]}")
         print(f"  population {len(sites)} -> {len(got)}   intact {len(sites)} -> {len(got) - len(bad)}")
         for b in bad:
             print(f"  FIRED {b}")
-        if len(got) != len(sites) or not bad:
+        ok1 = len(got) == len(sites) and bool(bad)
+        results.append(("1 LITERAL a mistyped sha256 is caught", ok1,
+                        f"{len(bad)} site(s) red"))
+        if not ok1:
             print("PLANT FAILED: the census did not move, so it cannot see a drift")
-            return FAIL
-        print("PLANT OK: the population is unchanged and one site went red")
-    return PASS
+
+        # ARM 2: THE RE-DERIVED PIN. THE CENSUS MUST CATCH IT, AND THE CENSUS'S CATCH MUST
+        # MATTER.
+        #
+        # (a) THE TAUTOLOGY, MEASURED ON A COPY. The file the pin names is COPIED and one
+        # byte is appended; the reader is pointed at the copy. A LITERAL pin over it goes
+        # RED; the SAME pin RE-DERIVED from the copy's own bytes stays GREEN, because
+        # `sha256(x) == sha256(x)`. That is the whole reason the value must be a literal.
+        rel = sites[0][0]
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td)
+            (scratch / rel).parent.mkdir(parents=True, exist_ok=True)
+            (scratch / rel).write_bytes((ROOT / rel).read_bytes() + b"\n# planted\n")
+            keep = gatekit.ROOT
+            gatekit.ROOT = scratch
+            try:
+                literal_bad = gatekit.oracle_drift({rel: sites[0][1]})
+                rederived = hashlib.sha256((scratch / rel).read_bytes()).hexdigest()
+                derived_bad = gatekit.oracle_drift({rel: rederived})
+            finally:
+                gatekit.ROOT = keep
+        print(f"PLANT the file {rel} is COPIED and one byte appended, and the reader is "
+              f"pointed at the copy")
+        print(f"  a LITERAL pin over the copy: {len(literal_bad)} complaint(s) "
+              f"{literal_bad[:1]}")
+        print(f"  a RE-DERIVED pin over the copy: {len(derived_bad)} complaint(s) "
+              f"{derived_bad[:1]}  <-- it CANNOT fail")
+        ok2a = bool(literal_bad) and not derived_bad
+        results.append(("2 RE-DERIVED the tautology cannot fail, the literal can", ok2a,
+                        f"literal {len(literal_bad)}, re-derived {len(derived_bad)}"))
+
+        # (b) THE CENSUS MUST REPORT IT. The victim's pin is replaced by the re-derivation
+        # -- the EXACT shape that cannot fail -- and the census over the copy must name it.
+        # THE VICTIM IS RESTORED FIRST, because ARM 1 already changed it.
+        victim.unlink()
+        victim.write_text(original)
+        derived_expr = (f'__import__("hashlib").sha256((ROOT / "{rel}").read_bytes())'
+                        f'.hexdigest()')
+        mutant2 = original.replace(f'"{sites[0][1]}"', derived_expr, 1)
+        if mutant2 == original:
+            print("PLANT REFUSED: the site's literal was not found in the copy", file=sys.stderr)
+            return REFUSED
+        victim.unlink()
+        victim.write_text(mutant2)
+        got2, got_derived2, _, _ = census(mirror)
+        named = [d for d in got_derived2 if d[2] == sites[0][2]]
+        print(f"PLANT the pin in a COPY of {sites[0][2]} is RE-DERIVED from the file it checks")
+        print(f"  literals {len(got2)} (was {len(got)})   derived {len(got_derived2)}")
+        for d in named:
+            print(f"  REPORTED {d[0]} at {d[2]}:{d[3]}: {d[1][:60]}")
+        ok2b = bool(named) and len(got_derived2) > len(derived)
+        results.append(("2 RE-DERIVED the census REPORTS it", ok2b,
+                        f"{len(named)} derived entry/entries in the copy"))
+
+    for label, ok, detail in results:
+        print(f"  {'OK  ' if ok else 'FAIL'} {label}  --  {detail}")
+    bad = [l for l, ok, _ in results if not ok]
+    print(f"PLANT {'OK' if not bad else 'FAILED'}: {len(results) - len(bad)} of {len(results)} "
+          f"arm(s) behaved as required")
+    return PASS if not bad else FAIL
 
 
 def main() -> int:
@@ -263,24 +548,24 @@ def main() -> int:
               "vendored bytes to compare against, and comparing against nothing is a PASS that "
               "measured nothing", file=sys.stderr)
         return REFUSED
-    sites, unresolved, per_caller = census(ROOT)
+    sites, derived, unresolved, per_caller = census(ROOT)
     if unresolved:
         print(f"REFUSED, NOT A VERDICT: {len(unresolved)} caller(s) of oracle_drift are not "
               f"resolvable here: {unresolved}", file=sys.stderr)
         return REFUSED
-    if not sites:
+    if not sites and not derived:
         print("DEAD: zero in-code tinygrad blob pins found, so zero drift is reportable",
               file=sys.stderr)
         return DEAD
     if "--plant" in sys.argv:
-        return plant(sites)
+        return plant(sites, derived)
     vendored, rows = claim_vendored(sites)
-    report(sites, rows, per_caller)
-    bad = claim_intact(sites) + vendored
+    report(sites, derived, rows, per_caller)
+    bad = claim_intact(sites) + claim_literal(derived) + vendored
     for b in bad:
         print(f"  FAILED {b}", file=sys.stderr)
     print(f"blobpin-census-gate: {verdict_of(FAIL if bad else PASS)} "
-          f"-- {len(sites)} literal pin(s) over {len(rows)} blob(s), "
+          f"-- {len(sites)} literal pin(s) over {len(rows)} blob(s), {len(derived)} derived, "
           f"{'all intact and all vendored' if not bad else str(len(bad)) + ' claim(s) false'}")
     return FAIL if bad else PASS
 
