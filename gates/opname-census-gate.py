@@ -277,6 +277,9 @@ def code_only(text: str) -> str:
 def negative_control() -> tuple[bool, str]:
     """THE NEGATIVE CONTROL, MEASURED ON EVERY RUN. `runtime/ops_dsp.bend`'s `Tr.refused` cells.
 
+    Returns `(ok, why)`. `ok` is TRUE when the control did NOT fire, i.e. when the scanner
+    produced no candidate for that file -- which is the shape it must have.
+
     They are ACCESSOR-FED -- calls to a def in the same file -- and they are not constructions
     of an `Op`, and `Tr` is not a member of the `Op` enum. So the scanner must produce ZERO
     candidates for that file. A scanner whose shape was "a name followed by `(`" would have
@@ -633,7 +636,7 @@ def selftest() -> int:
     """
     neg, why = negative_control()
     print(f"NEGATIVE    the control fired={not neg!s:<5} :: {why}")
-    if neg:
+    if not neg:
         print("  THE NEGATIVE CONTROL FIRED: the scanner reached something that is not an op "
               "construction.")
         return FAIL
