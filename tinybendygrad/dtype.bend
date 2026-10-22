@@ -50,13 +50,52 @@ import ./base.bend as F
 # check, so keeping them would be a name the port can still spell but nothing
 # gates.
 #
-# `spec.bend`'s own heads (`half`, `bfloat16`, `single`, `double`) are tinyspec's
-# IR words and stay: they are not dtype.py attribute names and never were.
+# `spec.bend`'s own heads are tinyspec's IR words and stay: they are not dtype.py
+# attribute names and never were -- `index`, `boolean`, `int8`..`uint64`, `half`,
+# `bfloat16`, `single`, `double`. `index` is the dtype an INDEX is carried in,
+# and it is `S.index()` in spec.bend and NOT a `dtypes.*` accessor here: upstream's
+# `dtypes` has no such name to spell, so a `dtypes.index()` would be a name the
+# port could write and upstream could not, and nothing called it.
+#
+# THE GROUPINGS FOLLOW THIS BLOCK -- `dtypes.fp8s()` and its kin answer a LIST of
+# dtypes, and upstream spells them as tuples. They are counted apart from the
+# twenty because a grouping is a LIST and not a dtype.
+#
+# ---------------------------------------------------------------------------
+# THE OMISSION DECLARATION. The port does not spell every name upstream's
+# `dtypes` spells, and the names it leaves out are a CLAIM, so they are declared
+# here -- next to the reason -- and read BY PATH by `gates/dtypeeven-gate.py`.
+# Each class is a RULE over a block of upstream's own `tinygrad/dtype.py` and not
+# a list of names, so the declaration cannot rot the way a hand list rots, and
+# the gate can say whether the rule still describes upstream.
+#
+#   DTYPES-POLICY: canonical=ALL
+#   DTYPES-POLICY: grouping=PARTIAL
+#   DTYPES-POLICY: legacy-alias=NONE
+#   DTYPES-POLICY: helper=NONE
+#
+#   canonical     upstream's `Final[DType]` names; the port spells EVERY one,
+#                 because a canonical name the port cannot spell is a dtype the
+#                 port cannot name.
+#   legacy-alias  upstream's `# legacy dtype aliases` block; the port spells
+#                 NONE, for the reason above -- a def nothing calls is invisible
+#                 to every check. `to_dtype_of` below still ACCEPTS them, because
+#                 upstream's `to_dtype` does.
+#   helper        upstream's REMAINING attributes, whatever upstream adds to that
+#                 residue: the predicates, the properties and the helper tuples. The
+#                 port spells NONE of them, because the port's `dtypes.*` namespace
+#                 holds DTYPES and the groupings of dtypes and nothing else.
+#   grouping      upstream's tuple-valued attributes; the port spells the ones
+#                 below, which are the ones `dtypes.all` is built from, and
+#                 leaves out the ones it does not need.
+#
+# A CLASS UPSTREAM NO LONGER HAS, OR A CLASS THE GATE DOES NOT KNOW, IS RED: a
+# rule that stops matching upstream is a lie the gate is asked to believe.
+# ---------------------------------------------------------------------------
 # ===========================================================================
 
 def dtypes.void() -> S.Dt: S.void()
 def dtypes.weakint() -> S.Dt: S.weakint()
-def dtypes.index() -> S.Dt: S.weakint()
 def dtypes.bool() -> S.Dt: S.boolean()
 def dtypes.i8() -> S.Dt: S.int8()
 def dtypes.u8() -> S.Dt: S.uint8()
