@@ -1879,7 +1879,7 @@ mo-squeeze-row       [####] 4/4  **THE THIRD CALL SITE OF `mo_at` NOW HAS A ROW 
                                        ORACLE'S `(2)(3) f32`, AND THE PRE-EXISTING 1-D ROW `sh_sum0kd` IS UNCHANGED,
                                        EXACTLY AS PREDICTED.** **SO `mo_at`'s THREE CALL SITES NOW STAND AT:
                                        `mo_keep_ds` -- COVERED BY `sh_sum0kd_23`; `mo_squeeze` -- COVERED BY
-                                       `sh_sq0_123`; AND `mo_reduced` -- **STILL UNCOVERED, AND IT IS THE ONE THAT
+                                       `sh_sq0_123`; AND `mo_reduced` -- **IT WAS UNCOVERED, AND ON 2026-10-23 IT WAS COVERED (SEE `mixin-op-closed`), AND IT IS THE ONE THAT
                                        MATTERS MOST**: IT IS THE MEAN'S DENOMINATOR, AND **NO ROW CAN SEE IT** -- THE
                                        FOLD COMPUTES THE REDUCE'S SHAPE INDEPENDENTLY, SO NO SHAPE ROW MOVES, AND THE
                                        SIGNATURE ROWS PRINT `CONST/0` (THE OP AND THE SOURCE COUNT) AND NOT THE
@@ -1956,6 +1956,29 @@ verdict-outside-repo [##] 3/3  **THE VERDICT IS DECIDED BY A BINARY OUTSIDE THE 
                                        TOOLCHAIN (`~/.elan`) AND THE CACHE, AND THE SHARED TEMP DIR WAS WIPED MID-
                                        SESSION AND TOOK BOTH HUNTS' BUILT KERNELS WITH IT: *"A TOOL THAT LIVES ONLY IN
                                        A SHARED TEMP DIR IS A TOOL THAT CAN VANISH."***
+
+
+mixin-op-closed      [##] 3/3  **THE WALL THAT `mo-squeeze-row` NAMED HAS FALLEN, AND THE ELEVEN HAVE BEEN CLOSED --
+                                       AND THE CLOSURE CAME WITH A ROW KIND THIS TREE DID NOT HAVE.** MEASURED
+                                       2026-10-23T02:2xZ: `gates/mixin-op-gate.py` READS **`38 shared rows, 3 lanes
+                                       identical`**, rc=0 -- **ALL THIRTY-EIGHT AGREE, AND THE ELEVEN THAT WERE RED AT
+                                       HEAD (`agree=21  differ=11`) ARE GONE.** **AND THE MECHANISM IS THE INTERESTING
+                                       PART: THE CONCURRENT SESSION'S `ca185c501` ADDED A **VALUE ROW** -- `mo_cval` /
+                                       `mo_cval_of`, WHICH PRINTS A CONST's **VALUE** AND NOT JUST ITS OP AND SOURCE
+                                       COUNT -- AND THE THREE `val_*` ROWS AGREE ON BOTH SIDES: `val_mean0` READS
+                                       `CONST/0=f4.000000`, `val_mean0_2d` READS `CONST/0=f2.000000`, AND `val_var0`
+                                       READS THE WHOLE CHAIN.** **⇒ SO `mo_reduced` -- THE MEAN'S DENOMINATOR, WHICH
+                                       `mo-squeeze-row` NAMED AS THE ONE NO ROW COULD SEE -- IS NOW SEEN, AND ITS
+                                       VALUE IS RIGHT ON BOTH SIDES.** **⇒ AND THE ROW KIND IS THE POINT: A SIGNATURE
+                                       ROW PRINTS `CONST/0`, SO IT COULD NEVER SEE THE DENOMINATOR, AND **CLOSING THAT
+                                       GAP NEEDED A NEW ROW KIND, NOT A NEW FIX** -- THE SAME LESSON AS THE NN ROWS,
+                                       WHERE THE FIX WAS A COMPARER.** **⇒ AND A PLANT CAME WITH IT: `gates/mixin-op-
+                                       plant.py` (240 LINES), THE INSTRUMENT THAT PROVES THE NEW ROWS CAN GO RED.**
+                                       **⇒ AND A WALL THAT FELL IS STILL NAMED AS A WALL IS THE CLASS THIS TREE KEEPS
+                                       FIXING, SO THIS ROW EXISTS TO SAY THAT TWO OF `mo-squeeze-row`'s CLAIMS ARE NOW
+                                       HISTORY: **`mo_reduced` IS COVERED, AND THE ELEVEN ARE CLOSED.** THE ELEVEN
+                                       WERE, MEASURED AT 2026-10-22T20:2xZ, `agree=24  agree_many=0  differ=11` WITH
+                                       `meanN` AMONG THEM; THE MEASUREMENT ABOVE IS 2026-10-23 AND READS 38 OF 38.
 
 
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
