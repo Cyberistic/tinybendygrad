@@ -135,8 +135,11 @@ def tabs_go(+xs: List<&2, U32>) -> IO(Unit):
 # 3. `fmt` -- ptx.py:164, a CLOSURE with no name to call. Its whole rule is
 # `"\t" + line.replace(" ", TAB if len(first token) > 7 else TABTAB, 1)`, so the axis is
 # ptx.py's OWN mnemonics and the interesting pairs straddle seven characters: `mov.b32` is
-# 7 and gets two tabs, `selp.f32` is 8 and gets one. `$RAW` is the `line[0] == "$"`
-# early return.
+# 7 and gets two tabs, `selp.f32` is 8 and gets one. `$RAW` is the shape with NO SPACE
+# AT ALL: it gets the leading TAB and there is no first space to replace. IT WAS ONCE
+# THE `line[0] == "$"` EARLY RETURN -- upstream `96397341d` ("dead code cleanups [PR]
+# (#18593)", 2026-10-03) DELETED that branch as dead code, so at the pin a `$` line is
+# INDENTED like every other and this row is a COMPARED row, not a declared divergence.
 # ===========================================================================
 # EVERY ENTRY BUT ONE CARRIES A SPACE, and that is the correction: the first draft's axis
 # was bare mnemonics, `mov.b32` and `add.f32` with no operands, so `line.replace(" ", ...)`
