@@ -18,7 +18,19 @@ this ran, so the run is a single child under a 2048 MB ceiling and the verdict i
 WHAT THE OUTPUT IS FOR. Nothing here decides whether a disagreement is acceptable. `spec_full` is
 upstream's semantics, so a disagreement is a fact to be reported with both numbers attached, and this
 file prints them; freezing either side as "the contract" is what `AGENTS.md` calls a gate that cannot
-fail. The `--out` file is a READING with the two hashes that produced it in its header, so the next run
+fail. `gates/specreach-gate.py` is the VERDICT on these cells and on the tag spaces; this file stays
+the map.
+
+THE ADJUDICATION OF THE THREE `sf` CELLS, because the map used to read as a PORT defect and the
+reader deserves the answer. It WAS the port, and it was ONE def: `fu_block.go`'s three thresholds
+each read ONE MORE than the block base they select, so a block's FIRST rule was dispatched into the
+PREVIOUS block's ladder, where that ladder's `case _` arm handed it to a rule that does not apply
+to it -- `spec_hcq`'s GETADDR rule (`spec.py:230`) to `spec_shared`'s SINK rule (`spec.py:50`), and
+`spec_program`'s first rule (`spec.py:206`) to no rule at all. The port's RULE BODIES were right all
+along, and the `DISPATCH:` rows below are the proof: `hq0` answered True and `pr0` answered False on
+the very fixtures whose `sf` row read `9`. The oracle was measuring the same six tables upstream
+composes, so it was NOT measuring less. MEASURED, both lanes, before and after:
+`gates/specreach-map.rows` read `DIFFER over 18 cells: 3` and reads `0`. The `--out` file is a READING with the two hashes that produced it in its header, so the next run
 is a diff against a stated tree rather than against an impression.
 
 NO `__main__` GUARD, ON PURPOSE: `gates/gates-pop.py` discovers gates by that AST node, and this is a
@@ -34,6 +46,7 @@ ROOT = Path(__file__).resolve().parent.parent
 HERE = ROOT / "gates"
 PY = ROOT / ".venv" / "bin" / "python"
 BOUNDED = ROOT / "checks" / "bounded.py"
+BENDLOCK = ROOT / "checks" / "bendlock.sh"
 BEND = ROOT / "bin" / "bend"
 PROBE = HERE / "specreach.bend"
 ORACLE = HERE / "specreach-oracle.py"
@@ -67,8 +80,8 @@ def main() -> int:
   ap.add_argument("--out", type=Path, help="write the reading here")
   args = ap.parse_args()
 
-  bd = subprocess.run([str(PY), str(BOUNDED), "--mb", "2048", "--", str(BEND), str(PROBE)],
-                      capture_output=True, text=True, cwd=ROOT)
+  bd = subprocess.run([str(BENDLOCK), "--", str(PY), str(BOUNDED), "--mb", "2048", "--",
+                       str(BEND), str(PROBE)], capture_output=True, text=True, cwd=ROOT)
   token = next((l for l in bd.stderr.splitlines() if l.startswith("[bounded]")), "[bounded] NOT RUN")
   if "WITHIN-LIMITS" not in token:
     print(token)

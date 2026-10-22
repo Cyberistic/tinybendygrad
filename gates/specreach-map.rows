@@ -1,46 +1,46 @@
 # gates/specreach-compare.py reading
-#   probe.bend=f9f95b63d781e884 oracle.py=45a84ce6d6a0f3d0 spec.bend=9e0db2be2c27bdf7 ops.bend=df02e01280c03527
-#   [bounded] WITHIN-LIMITS  rc=0  peak-RSS=772 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/specreach.bend  out=596B err=0B
+#   probe.bend=bb122afe681bacdd oracle.py=45a84ce6d6a0f3d0 spec.bend=55f3e5c0b31dc252 ops.bend=f9f9ec7ffa04129b
+#   [bounded] WITHIN-LIMITS  rc=0  peak-RSS=807 MB (ceiling 2048)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/specreach.bend  out=596B err=42B
 # fixture	key	port	cpython	agree
 bin_u8	sh	9	9	yes
 bin_u8	te	9	9	yes
 bin_u8	sp	0	0	yes
 bin_u8	hq	9	9	yes
 bin_u8	sk	9	9	yes
-bin_u8	sf	9	0	NO
+bin_u8	sf	0	0	yes
 ga_after	sh	9	9	yes
 ga_after	te	9	9	yes
 ga_after	sp	9	9	yes
 ga_after	hq	1	1	yes
 ga_after	sk	9	9	yes
-ga_after	sf	9	1	NO
+ga_after	sf	1	1	yes
 ga_plain	sh	9	9	yes
 ga_plain	te	9	9	yes
 ga_plain	sp	9	9	yes
 ga_plain	hq	1	1	yes
 ga_plain	sk	9	9	yes
-ga_plain	sf	9	1	NO
-# DIFFER over 18 cells: 3
+ga_plain	sf	1	1	yes
+# DIFFER over 18 cells: 0
 bin_u8	DISPATCH:fu26	9	-	port-only
-bin_u8	DISPATCH:fu59	9	-	port-only
+bin_u8	DISPATCH:fu58	0	-	port-only
+bin_u8	DISPATCH:fu67	9	-	port-only
 bin_u8	DISPATCH:fu68	9	-	port-only
-bin_u8	DISPATCH:fu69	9	-	port-only
 bin_u8	DISPATCH:hq0	9	-	port-only
 bin_u8	DISPATCH:hq1	9	-	port-only
 bin_u8	DISPATCH:pr0	0	-	port-only
 bin_u8	DISPATCH:sh0	9	-	port-only
 ga_after	DISPATCH:fu26	9	-	port-only
-ga_after	DISPATCH:fu59	9	-	port-only
+ga_after	DISPATCH:fu58	9	-	port-only
+ga_after	DISPATCH:fu67	1	-	port-only
 ga_after	DISPATCH:fu68	9	-	port-only
-ga_after	DISPATCH:fu69	9	-	port-only
 ga_after	DISPATCH:hq0	1	-	port-only
 ga_after	DISPATCH:hq1	9	-	port-only
 ga_after	DISPATCH:pr0	9	-	port-only
 ga_after	DISPATCH:sh0	9	-	port-only
 ga_plain	DISPATCH:fu26	9	-	port-only
-ga_plain	DISPATCH:fu59	9	-	port-only
+ga_plain	DISPATCH:fu58	9	-	port-only
+ga_plain	DISPATCH:fu67	1	-	port-only
 ga_plain	DISPATCH:fu68	9	-	port-only
-ga_plain	DISPATCH:fu69	9	-	port-only
 ga_plain	DISPATCH:hq0	1	-	port-only
 ga_plain	DISPATCH:hq1	9	-	port-only
 ga_plain	DISPATCH:pr0	9	-	port-only

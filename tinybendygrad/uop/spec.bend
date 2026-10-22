@@ -2326,8 +2326,8 @@ def full_own() -> O.PMEntrys:
 
 def full_table() -> O.PMEntrys:
   full_table.go(O.PMEntrys.es(full_own()), O.PMEntrys.es(bump(4, tensor_own())),
-    O.PMEntrys.es(bump(26, shared_table())), O.PMEntrys.es(bump(59, program_own())),
-    O.PMEntrys.es(bump(68, hcq_own())))
+    O.PMEntrys.es(bump(26, shared_table())), O.PMEntrys.es(bump(58, program_own())),
+    O.PMEntrys.es(bump(67, hcq_own())))
 
 def fu_block.last(c: Bool) -> U32:
   match c:
@@ -2348,28 +2348,38 @@ def fu_block.pick(a: Bool, b: Bool, c: Bool) -> U32:
 # scrutinise a call, so the three comparisons have to cross a def boundary as three
 # Bools and be re-joined here -- and joining them as a number is what lets the
 # dispatch below be a four-arm `match` instead of a nine-def ladder.
+# THE THREE THRESHOLDS ARE THE BASES `full_table.go` BUMPS BY, and each was ONE MORE
+# THAN ITS BASE, so a block's FIRST rule sat in the PREVIOUS block's ladder -- where the
+# ladder's `case _` arm handed it to a rule that does not apply to it. `spec_hcq`'s
+# GETADDR rule (`spec.py:230`) went to `spec_shared`'s SINK rule (`spec.py:50`) and
+# `spec_program`'s first rule (`spec.py:206`) to no rule at all, so `fu_rewrite` answered
+# `VSkip` for a GETADDR and for a BINARY under a CONST where upstream answers True and
+# False. MEASURED: `gates/specreach-map.rows`, three cells and all of the key `sf`.
 def fu_block.go(+tag: U32) -> U32:
-  fu_block.pick(U32.is_lt(tag, 27), U32.is_lt(tag, 60), U32.is_lt(tag, 69))
+  fu_block.pick(U32.is_lt(tag, 26), U32.is_lt(tag, 58), U32.is_lt(tag, 67))
 
 def fu_block(tag: U32) -> U32:
   fu_block.go(tag)
 
 # the tag spaces of the four blocks, each with its own dispatch and its base
-# subtracted: 4-25 `spec_tensor` (22 own + 33 shared), 26-58 `spec_shared`,
-# 59-67 `spec_program` (9 own), 68-69 `spec_hcq` (2 own).
+# subtracted: 4-25 `spec_tensor` (22 own), 26-57 `spec_shared` (32), 58-66
+# `spec_program` (9 own), 67-68 `spec_hcq` (2 own). The bases are the CUMULATIVE
+# SIZES -- 4, 26, 58, 67 -- so the tag space has no hole in it.
 #
-# EVERY NUMBER HERE IS SPELLED TWICE -- once as the `bump(N, ...)` that builds the table
-# and once as the `U32.sub(tag, N)` below -- and NOTHING TIES THE TWO TOGETHER. Deleting
-# one rule rebased `full_table.go` to 26 / 59 / 68 and left these four still at 27 / 60 /
-# 69, so every tag past `full_own`'s four entered the WRONG table's dispatch. It compiled,
-# it ran, and it raised nothing. `.agents/slop/spec-offsets.py` checks all fourteen
-# offsets against the table sizes AND checks that every ladder reads `case N: _N`.
+# EVERY NUMBER HERE IS SPELLED THREE TIMES -- once as the `bump(N, ...)` that builds the
+# table, once as the `U32.sub(tag, N)` below, and once as a threshold in `fu_block.go` --
+# and NOTHING TIES THE THREE TOGETHER. Deleting the twenty-third tensor rule (2026-10-17)
+# rebased `full_table.go` and `fu_dispatch.of` to 26 / 59 / 68 and left `fu_block.go` at
+# 27 / 60 / 69, so every tag past `full_own`'s four entered the WRONG table's dispatch;
+# dropping the GROUP rule (2026-10-18) left a HOLE at tag 58 on top of that. It compiled,
+# it ran, and it raised nothing. `gates/spec-offsets-gate.py` checks all three spellings
+# against the table sizes AND checks that every ladder reads `case N: _N`.
 def fu_dispatch.of(blk: U32, tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   match blk:
     case 1: te_dispatch(U32.sub(tag, 4), fx, self)
     case 2: sh_dispatch(U32.sub(tag, 26), fx, self)
-    case 3: pr_dispatch(U32.sub(tag, 59), fx, self)
-    case _: hq_dispatch(U32.sub(tag, 68), fx, self)
+    case 3: pr_dispatch(U32.sub(tag, 58), fx, self)
+    case _: hq_dispatch(U32.sub(tag, 67), fx, self)
 
 def fu_dispatch.go(+tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
   match tag:
@@ -3250,6 +3260,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # | `te_dispatch.go` ladder: `case 5: te_4` | NONE | 0 |
 # | `te_dispatch.go` ladder: `case 4: te_5` | NONE | 0 |
 # | `te_scan` last-wins | NONE | 0 |
+# | `fu_block.go`'s thresholds 26 / 58 / 67 -> 27 / 60 / 69 | NONE | 0 |
 #
 # THE FIRST ROW IS THE ONE THAT ANSWERS "WAS THE DELETION WORTH MAKING": three rows, not
 # two. `tag_rej` joins `te_len` and `fu_len` because re-inserting the rule pushes the
@@ -3264,11 +3275,27 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 # ungated: `fu_len` counts entries and `bump` does not change how many there are. Two of
 # those offsets were WRONG for part of this session -- `fu_dispatch.of` said 27 / 60 / 69
 # while `full_table.go` said 26 / 59 / 68 -- and no row noticed, because no row could.
-# That is why the offsets moved to `spec-offsets.py`, which checks all fourteen against
-# the table sizes and checks every ladder reads `case N: _N`: a mutation the gate cannot
-# see is exactly what a checker outside the gate is for. A fixture with both a tensor and
-# a program op would close two of the four; the two handoff rows need a node that no
-# tensor rule claims, which is a different fixture again.
+#
+# THE THIRD SPELLING WAS THE ONE THAT STAYED WRONG FOR FIVE DAYS. `fu_block.go`'s three
+# thresholds are a THIRD copy of the same bases, and the twenty-third tensor rule's
+# deletion (2026-10-17) moved two of the three and left this one at 27 / 60 / 69 -- so
+# every tag past `full_own`'s four entered the WRONG table's dispatch, and dropping the
+# GROUP rule (2026-10-18) left a HOLE at tag 58 on top of that. The cost was MEASURED and
+# it was not a count: `gates/specreach-map.rows` read `sf` as 9 against 0, 1 and 1 on all
+# three fixtures for five days, because `fu_rewrite` sent `spec_hcq`'s GETADDR rule to
+# `spec_shared`'s SINK rule and `spec_program`'s first rule to no rule at all. The port's
+# RULE BODIES were right (`hq0` answered True and `pr0` answered False on the same
+# fixtures) -- the arithmetic was what was wrong.
+#
+# `gates/specreach-gate.py` is the checker, and it is OUTSIDE this file's gate on purpose:
+# a mutation this gate cannot see is exactly what a checker outside the gate is for. It
+# checks all THREE spellings against the table sizes, checks every ladder reads
+# `case N: _N`, checks that every entry of the composed table lands on its OWN rule, and
+# grades the cells `gates/specreach-map.rows` prints. MEASURED: with the thresholds put
+# back to 27 / 60 / 69 it prints EIGHT tag-space problems and names three differing
+# cells, and it exits 1. A fixture with both a tensor and a program op would close two of
+# the four; the two handoff rows need a node that no tensor rule claims, which is a
+# different fixture again.
 #
 # THE THREE `te_dispatch.go` LADDER BLIND SPOTS ARE PURE COVERAGE. `Land` has no SPECIAL
 # node and no RESHAPE/EXPAND node, so `te_4` and `te_5` have no row that can reach them,

@@ -192,6 +192,20 @@ def population_digest(path=None) -> str:
 # the four count pins in `PINS` below are DERIVED, and this one is not, because a digest is
 # not a count: it moves when the population's CONTENT moves and it cannot be re-derived from
 # the population, which is the whole difference between a pin and a label.
+#
+# THE DELTA HERE IS NIL, and the reason is MEASURED, because a reader lands on this line and
+# asks what changed. On 2026-10-22 the port's SPEC TABLES were fixed -- `fu_block.go`'s three
+# thresholds each read one more than the block base they select, so a block's FIRST rule was
+# dispatched into the PREVIOUS block's ladder -- and `gates/specreach-gate.py` went from three
+# differing cells to none. The corpus's population did NOT change, and it could not have:
+# the corpus never runs the port's spec tables (its bend lane imports `LAWS/spec.bend`, a
+# DIFFERENT file, and the port's `verify_*` entry points have zero callers), and its bend
+# lane's dispatcher names the same 35 graphs, so a new graph needs a builder inside
+# `.agents/slop/graphcmp.bend`, which a `.bend` file outside that directory cannot import at
+# all -- the compiler rejects an import path with a segment starting with `.`. The population
+# DOES carry the shapes (`getaddr` a GETADDR, `binblob` a BINARY, and the gate prints both);
+# what is missing is a VERDICT LANE over it, and that is `gates/specreach-map.rows` (the map)
+# and `gates/specreach-gate.py` (the verdict).
 POPULATION_PIN = "4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2"
 
 
