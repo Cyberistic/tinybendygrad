@@ -13,8 +13,9 @@ there -- the pins file's own per-lane row count is asserted against the populati
 the count that used to live in this source no longer has to be edited by hand, and a
 count that a regeneration moves is not a count that a regeneration can leave STALE.
 
-59 DECLARED DIVERGENCES IN FOUR GROUPS, and that number IS typed, because the divergence
-list is a hand-declared table and its SIZE is the claim.
+58 DECLARED DIVERGENCES IN THREE GROUPS, and the number is DERIVED from the three
+groups' own populations -- a hand-typed total is a second copy of the table's size, and
+the copy is the part that goes stale.
 
 579 -> 593 AND 58 -> 59, AND BOTH MOVED FOR ONE REASON. The axis was generated on 2026-10-15
 against the tree's THEN-`tinygrad/`, and the 2026-10-16 re-vendor to upstream `002630241`
@@ -25,6 +26,15 @@ the oracle's fixture no longer builds one, so the axis's `OpsGROUP{}` row was a 
 against an upstream that no longer exists and the file DID NOT COMPILE. MEASURED: 593 - 579
 = 14 = 15 gained - 1 lost, and the axis is now the generator's own output rather than a
 transcription of an older upstream.
+
+59 -> 58 IS THE OTHER HALF OF THAT SAME RE-VENDOR, AND IT IS FIXED. The 59th divergence was
+GROUP 4, ONE row: `fmt_18`, the port's `tc_ptx.bend` passing a `$` line through untouched
+where the pin's `ptx.py:164` indents EVERY line. Upstream `96397341d` ("dead code cleanups
+[PR] (#18593)", 2026-10-03) DELETED that early return -- MEASURED, at that commit's parent
+`ptx.py` held NO OTHER `$` (ONE occurrence in the whole file, the `fmt` line itself), so no
+line could begin with `$` and the branch was DEAD CODE -- and the 2026-10-16 re-vendor moved
+the tree PAST that commit. `tc_ptx.bend` no longer has `fmt_israw`, `fmt_18` is an ORDINARY
+COMPARED row, and `claims_hold()` pins its value like every other row's.
 
 WHY A FOURTH RENDER CENSUS, AND WHY THIS ONE IS DIFFERENT AGAIN.
 `gates/cstyle_render_census*` diffs a rendered STRING for a C renderer.
@@ -174,18 +184,8 @@ def run_oracle():
 # different answers.
 ORACLE_ROWS = run_oracle()
 ROWS = len(ORACLE_ROWS)
-# 62 -> 58. GROUP 3a EMPTIED: `ptx.bend`'s alias arm read `Wal.r[0]` where ptx.py:189 and
-# ptx.py:204 read `r[u.src[0]]`, six rows diverged, the fix landed, and the six are now
-# COMPARED rows like the rest. +2 for `f37_twobufs.mod` and `f38_regload.mod`, which are
-# GROUP 2 like every other `.mod`. 58 = 18 dtype + 5 weak registers + 35 `.mod`.
-# 58 -> 59 is GROUP 4, and it is the SAME RE-VENDOR: upstream's `ptx.py:164` `fmt` LOST its
-# `line[0] == "$"` early return (`return line if line[0]=="$" else "\t" + line.replace(...)`
-# became `return "\t" + line.replace(...)`), so a `$` line is INDENTED by the pin and
-# PASSED THROUGH by the port, whose `tc_ptx.bend` still has `fmt_israw`. `fmt_18` is the
-# `$RAW` probe: the port says `$RAW`, CPython says `\t$RAW`. A FINDING, NOT A CARVE-OUT --
-# the port's `fmt` is stale against the pin -- and it is DECLARED so the exact wrong answer
-# is pinned on both sides and a reader can see it.
-N_DIVERGES = 59
+# THE DIVERGENCE COUNT IS DERIVED, AND IT IS ASSIGNED BELOW, AFTER THE THREE GROUPS
+# EXIST. The reason and the history are with the assignment.
 
 # --------------------------------------------------------------------------
 # THE DIVERGENCES, generated ONCE from a real run and then FROZEN here. The three
@@ -199,15 +199,16 @@ DTYPES_ABSENT = {"void": ("", "", ""), "bf16": ("", "", ""),
 WEAKINT = ("", "", "")
 
 
-# GROUP 4 -- `fmt_18`, ONE ROW, and it is the pin's `ptx.py:164` `fmt` against the port's
-# `tc_ptx.bend`. UPSTREAM DROPPED THE `$` EARLY RETURN: the pre-vendor line was
-# `return line if line[0]=="$" else "\t" + line.replace(...)` and the pin's is
-# `return "\t" + line.replace(...)`, so at the pin a `$` line is INDENTED like any other and
-# the port still PASSES IT THROUGH UNTOUCHED (`tc_ptx.bend`'s `fmt_israw`). The port's value
-# is `$RAW`; CPython's is `\t$RAW` -- a literal backslash-t, because the oracle escapes the
-# tab. The port's value is PINNED HERE so the exact wrong answer is on both sides, and the
-# port's `fmt` is `tc_ptx.bend`'s to fix, not this gate's.
-FMT_RAW = "fmt_18=\\t$RAW"
+# GROUP 4 WAS HERE AND IT IS FIXED. `fmt_18` was the ONE row of a FOURTH group: the
+# port's `tc_ptx.bend` had `fmt_israw`, a `line[0] == "$"` early return, and upstream
+# `96397341d` ("dead code cleanups [PR] (#18593)", 2026-10-03) DELETED that early
+# return -- MEASURED, at that commit's parent `ptx.py` held NO OTHER `$` (ONE occurrence
+# in the whole file, the `fmt` line itself), so no line could begin with `$` and the
+# branch was DEAD CODE. The 2026-10-16 re-vendor moved the tree PAST that commit and the
+# port's `fmt` was stale against the pin: the port said `$RAW`, CPython said `\t$RAW`.
+# `tc_ptx.bend` has no `fmt_israw` any more, so at the pin EVERY line is indented and
+# `fmt_18` is an ORDINARY COMPARED row -- and `claims_hold()` below pins its value like
+# every other row's.
 
 
 def dtype_divergences():
@@ -309,6 +310,15 @@ def rows_of(path):
     return out, order
 
 
+# THE THREE GROUPS, COMPUTED ONCE, and the count is their SUM. A group's MEMBERS are
+# DISCOVERED -- the dtype list, the `WEAK` dict, the fixture list -- so the total is a fact
+# about the table and the table's size is not a second copy of anything.
+_PY_ROWS = {l.split("=", 1)[0]: l.split("=", 1)[1] for l in ORACLE_ROWS}
+_G1 = dtype_divergences()
+_G2 = {k: (f"{k}=NONE", f"{k}={v}") for k, v in WEAK.items()}
+_G3 = module_divergences(_PY_ROWS)
+
+
 def build_divergences():
     """Every group, in one place, at MODULE SCOPE -- and the reason is `Gate.__init__`.
 
@@ -323,15 +333,42 @@ def build_divergences():
     reads a lane rather than a file.
     """
     d = {}
-    d.update(dtype_divergences())
-    d.update({k: (f"{k}=NONE", f"{k}={v}") for k, v in WEAK.items()})
-    d.update(module_divergences({l.split("=", 1)[0]: l.split("=", 1)[1]
-                                 for l in ORACLE_ROWS}))
-    d["fmt_18"] = (FMT_RAW, "fmt_18=$RAW")
+    d.update(_G1)
+    d.update(_G2)
+    d.update(_G3)
     return d
 
 
 DIVERGES = build_divergences()
+
+# 62 -> 58. GROUP 3a EMPTIED: `ptx.bend`'s alias arm read `Wal.r[0]` where ptx.py:189 and
+# ptx.py:204 read `r[u.src[0]]`, six rows diverged, the fix landed, and the six are now
+# COMPARED rows like the rest. +2 for `f37_twobufs.mod` and `f38_regload.mod`, which are
+# GROUP 2 like every other `.mod`. 58 = 18 dtype + 5 weak registers + 35 `.mod`.
+# 58 -> 59 WAS GROUP 4, and it was the SAME RE-VENDOR: upstream's `ptx.py:164` `fmt` LOST its
+# `line[0] == "$"` early return (`return line if line[0]=="$" else "\t" + line.replace(...)`
+# became `return "\t" + line.replace(...)`), so a `$` line is INDENTED by the pin and
+# PASSED THROUGH by the port, whose `tc_ptx.bend` had `fmt_israw`. `fmt_18` is the
+# `$RAW` probe: the port said `$RAW`, CPython said `\t$RAW`. A FINDING, NOT A CARVE-OUT --
+# the port's `fmt` was stale against the pin -- and it was DECLARED so the exact wrong answer
+# was pinned on both sides and a reader could see it.
+# 59 -> 58 IS THAT FINDING FIXED. `tc_ptx.bend` has no `fmt_israw` any more, so `fmt_18` is
+# an ORDINARY COMPARED row and the table is its three groups again.
+#
+# THE COUNT IS DERIVED, NOT TYPED, AND IT IS A DIFFERENT KIND OF NUMBER FROM `ROWS`.
+# `ROWS` is a count of a DISCOVERABLE population (the oracle's own rows) and the house rule
+# is that such a count is not a pin -- it is READ, and the pins file's own per-lane row count
+# is what says so when the population moves. `N_DIVERGES` is the size of a HAND-DECLARED
+# table: a JUDGMENT about which differences are accepted, each with its exact wrong answer
+# pinned on BOTH sides. It was `59`, and it was a SECOND COPY of the table's size -- the
+# copy being the part that goes stale. It is now the SUM OF THE THREE GROUPS, whose MEMBERS
+# are each DISCOVERED from their own population (the dtype list, the `WEAK` dict, the fixture
+# list), and the CHECK is that the TABLE IS EXACTLY THOSE GROUPS. That check is worth more
+# than the literal it replaces: GROUP 4 was a row added OUTSIDE the three group builders, and
+# under this formulation that row would have made the assert FIRE instead of quietly moving
+# a hand-typed number.
+N_DIVERGES = len(_G1) + len(_G2) + len(_G3)
+
 GATE = None  # built by `gate()` / `refresh_pins()`, and NEVER at import time.
 
 
@@ -506,7 +543,7 @@ def claims_hold() -> bool:
     # the integer arms, so one rule is pinned three times over.
     want = {"fmt_0": "\\tmov.b32\\t\\t%d, %a;", "fmt_1": "\\tselp.f32\\t%d, %b, %c, %a;",
             "fmt_4": "\\tor.pred\\t\\t%d, %a, %b;", "fmt_10": "\\tsetp.eq.s32\\t%d, %a, %b;",
-            "fmt_18": "$RAW", "fmt_17": "\\tbar.sync\\t0;",
+            "fmt_18": "\\t$RAW", "fmt_17": "\\tbar.sync\\t0;",
             "tyo_11": "", "mto_11": "", "cto_11": "", "tyo_14": "", "tyo_17": "",
             "barrier": "bar.sync\\t0;",
             # GROUP 3a, NOW FIXED. These six read `NONE` for exactly as long as the pin
@@ -816,8 +853,150 @@ def plant() -> int:
         if name.startswith("WRONG-SHAPE-B") and state != "COMPILES":
             print("  THE WRONG SHAPE BROKE THE FILE, so it is not the shape this file tolerates.")
             bad += 1
+    fp = fmt_plant()
+    if fp == 3:
+        return 3
+    bad += fp
     print(f"\n=== plant: {'FAIL' if bad else 'PASS'}: {bad} problem(s) ===")
     return 1 if bad else 0
+
+
+# ---- the fmt plant ---------------------------------------------------------------------
+# THE SUBJECT IS THE PORT, AND THE DEFECT IS THE ONE UPSTREAM DELETED.
+#
+# THE BYTES COME FROM THE WORKING TREE AND NEVER FROM `git show HEAD:`. A plant that reads
+# HEAD plants nothing the moment HEAD carries the fix, and THIS fix IS IN HEAD'S FUTURE BY
+# CONSTRUCTION: the fix and the plant are the same commit, so a HEAD-reading plant would
+# plant NOTHING on the very commit that removes the defect.
+#
+# THE SCRATCH LIVES IN `gates/`, NOT IN `tinybendygrad/`. `bin/bend` resolves
+# `import ./x.bend` relative to the IMPORTING FILE's own directory, so a copy of
+# `tc_ptx.bend` has to sit where its own imports resolve -- and `tinybendygrad/` IS the
+# substrate, so a scratch file left there would MOVE THE DIGEST. The copy's four imports
+# are rewritten to reach the port's own files and the driver's ONE import line is rewritten
+# to reach the copy: five lines of rewriting and NO hand-written axis.
+FMT_PORT = ROOT / "tinybendygrad" / "renderer" / "tc_ptx.bend"
+FMT_SCRATCH_PORT = HERE / "_ptxfmt_port_plantcase.bend"
+FMT_SCRATCH_DRIVER = HERE / "_ptxfmt_driver_plantcase.bend"
+FMT_DRIVER_IMPORT = "import ./../tinybendygrad/renderer/tc_ptx.bend as TP"
+FMT_DRIVER_IMPORT_SCRATCH = "import ./_ptxfmt_port_plantcase.bend as TP"
+FMT_PORT_IMPORTS = (("import ./../helpers.bend as H", "import ./../tinybendygrad/helpers.bend as H"),
+                    ("import ./../LAWS/spec.bend as S", "import ./../tinybendygrad/LAWS/spec.bend as S"),
+                    ("import ./../uop/ops.bend as O", "import ./../tinybendygrad/uop/ops.bend as O"),
+                    ("import ./tc.bend as T", "import ./../tinybendygrad/renderer/tc.bend as T"))
+# THE FIXED `fmt`, AND THE DEFECTIVE ONE. THE PLANT PUTS THE DEFECT BACK, AND IT PUTS BACK
+# `fmt_israw` WITH IT, because the fix REMOVED that def: upstream deleted the `$` early
+# return and the port deleted its reader with it.
+FMT_FIXED = ('def fmt(+line: String) -> String:\n'
+             '  String.concat([tab(), String.from_list(fmt_rep(String.to_list(line), '
+             'fmt_rep_of(line), Nil{}))])')
+FMT_DEFECT = ('def fmt_israw(+line: String) -> Bool: String.eq(String.take(line, 1n), "$")\n'
+              '\n'
+              'def fmt(+line: String) -> String:\n'
+              '  Bool.pick(String, fmt_israw(line), line, String.concat([tab(), '
+              'String.from_list(fmt_rep(String.to_list(line), fmt_rep_of(line), Nil{}))]))')
+# THE CONTROL'S ANCHOR IS A `def` LINE, and the comment goes on a LINE OF ITS OWN above it.
+# A whole-line comment is the MOST comment-only edit there is, and it is the one the
+# blank-line-dropping proof exists for.
+FMT_CONTROL_ANCHOR = ("def fmt_rep(+cs: List<&2, Char>, +rep: String, "
+                      "+acc: List<&2, Char>) -> List<&2, Char>:")
+FMT_CONTROL_EDIT = "# a comment inserted at column 0, above the def it belongs to\n" + FMT_CONTROL_ANCHOR
+
+
+def _fmt_row(port_text):
+    """The port's `fmt_18` row, MEASURED by running the CENSUS'S OWN DRIVER.
+
+    The scratch driver is the gate's own driver with ONE import line swapped, so the axis,
+    the row names and the comparison are the gate's own and not a second copy of them.
+    """
+    p = port_text
+    for old, new in FMT_PORT_IMPORTS:
+        if old not in p:
+            return None, f"the port's import {old!r} is not in the file as it stands"
+        p = p.replace(old, new, 1)
+    d = DRIVER.read_text()
+    if FMT_DRIVER_IMPORT not in d:
+        return None, "the driver's import of `tc_ptx.bend` is not in the file as it stands"
+    FMT_SCRATCH_PORT.write_text(p)
+    FMT_SCRATCH_DRIVER.write_text(d.replace(FMT_DRIVER_IMPORT, FMT_DRIVER_IMPORT_SCRATCH, 1))
+    from bendlock import bend_lock
+    with bend_lock():
+        r = subprocess.run([str(BEND), str(FMT_SCRATCH_DRIVER)], capture_output=True, text=True)
+    if r.returncode != 0:
+        return None, f"the scratch driver did not run (rc={r.returncode}): {r.stderr.strip()[:120]}"
+    for l in r.stdout.splitlines():
+        if l.startswith("fmt_18="):
+            return l.split("=", 1)[1], None
+    return None, "the scratch driver emitted no `fmt_18` row"
+
+
+def fmt_plant() -> int:
+    """THE PORT PLANTED WITH THE DELETED UPSTREAM RULE, AND A COMMENT-ONLY CONTROL.
+
+    THE PLANT puts upstream's DELETED `$` early return back into `tc_ptx.bend` and the
+    `fmt_18` row MUST MOVE -- back to `$RAW`, the deleted rule's answer -- which is what
+    makes `pins_hold()` red, because the pins file pins `bd.fmt_18` as the pin's value.
+
+    THE CONTROL is a comment on a line of its own, and it must move NOTHING. The proof that
+    it moved nothing is the COMMENT-STRIPPED BYTES with the BLANK LINES DROPPED -- the same
+    proof the axis plant uses, and the same third finding: a whole-line comment IS a blank
+    line once the comment is gone, so a comparison that keeps blank lines calls the most
+    comment-only edit there is "not comment-only".
+
+    THE TWO WRONG SHAPES OF A COMMENT-ONLY EDIT ARE MEASURED BY THE AXIS PLANT ABOVE, ON
+    THE AXIS. They are properties of bend's comment handling and not of this file, and
+    measuring them twice would be a second copy of a measurement.
+    """
+    original = FMT_PORT.read_text()
+    if FMT_FIXED not in original:
+        print("REFUSED: the port's `fmt` is not in the file as it stands. THE PLANT IS A TEXT "
+              "EDIT ON THE WORKING TREE, so an anchor that moved means the plant must be "
+              "re-anchored -- NOT that it should fall back to reading git.")
+        return 3
+    if FMT_CONTROL_ANCHOR not in original:
+        print("REFUSED: the control's anchor is not in the port as it stands.")
+        return 3
+    bad = 0
+    try:
+        want, why = _fmt_row(original)
+        if want is None:
+            print(f"REFUSED: the port as it stands answered no `fmt_18` row: {why}")
+            return 3
+        cases = [
+            ("PLANT (upstream's DELETED `$` early return put back)",
+             original.replace(FMT_FIXED, FMT_DEFECT, 1),
+             "the rule upstream deleted, constructed again"),
+            ("CONTROL (a comment on a line of its own)",
+             original.replace(FMT_CONTROL_ANCHOR, FMT_CONTROL_EDIT, 1),
+             "a comment-only edit, which must move NOTHING"),
+        ]
+        for name, text, what in cases:
+            got, why = _fmt_row(text)
+            if got is None:
+                print(f"{name}: the scratch did not answer: {why}")
+                bad += 1
+                continue
+            same_code = _code_only(text) == _code_only(original)
+            print(f"{name:<62} fmt_18={got!r:<12} comment-only={same_code!s:<5} {what}")
+            if name.startswith("PLANT"):
+                if got == want:
+                    print("  THE PLANT DID NOT FIRE: the row did not move.")
+                    bad += 1
+                elif got != "$RAW":
+                    print(f"  THE PLANT MOVED THE ROW TO {got!r}, which is not the deleted rule's "
+                          "answer ($RAW).")
+                    bad += 1
+            if name.startswith("CONTROL"):
+                if got != want:
+                    print("  THE CONTROL IS NOT A CONTROL: it moved the row.")
+                    bad += 1
+                if not same_code:
+                    print("  THE CONTROL IS NOT A CONTROL: it edited more than a comment.")
+                    bad += 1
+    finally:
+        FMT_SCRATCH_PORT.unlink(missing_ok=True)
+        FMT_SCRATCH_DRIVER.unlink(missing_ok=True)
+    return bad
 
 
 def _load_port_compile():
@@ -840,7 +1019,9 @@ if __name__ == "__main__":
     if "--refresh" in sys.argv:
         sys.exit(refresh_pins())
     make_gate()
-    assert len(DIVERGES) == N_DIVERGES, f"DIVERGES holds {len(DIVERGES)}, the file says {N_DIVERGES}"
+    assert len(DIVERGES) == N_DIVERGES, (
+        f"the table holds {len(DIVERGES)} rows and its three groups hold {N_DIVERGES} -- a "
+        "divergence was added OUTSIDE a group builder, or two groups share a row")
     # NO TYPED COUNT HERE EITHER.  `534` was a second copy of `ROWS - N_DIVERGES` and it
     # was stale for the same reason `593` was: a number in the source is a copy nobody
     # compares with anything.  The comparison is still ASSERTED -- it is the shape of the
@@ -849,17 +1030,18 @@ if __name__ == "__main__":
     sys.exit(gate(make_gate(),
                   f"ptx_render_census-gate: {ROWS} rows (READ FROM THE POPULATION, not typed), "
                   f"3 lanes byte-identical over the walk and the SEAM, {N_DIVERGES} DECLARED "
-                  "divergences in FOUR groups -- 18 are the dtype "
-                  "tables answering `pred` or the EMPTY STRING where ptx.py:181 raises "
-                  "KeyError (the PTX form of the AMDWORD32 defect, REACHABLE through "
-                  "UOp.range's default weakint) and FIVE MORE are the registers the port "
-                  "then allocates where CPython refuses (`%alu__0`, `%cast__0`, "
-                  "`%ridx_pred_0`); 35 are the un-ported string_rewrite; and ONE (`fmt_18`) "
-                  "is the port's `tc_ptx.bend` still passing a `$` line through untouched "
-                  "where the pin's `ptx.py:164` indents every line. The SIX rows that "
-                  "were ptx.bend's alias arm reading Wal.r[0] where ptx.py:189 and :204 "
-                  "read r[u.src[0]] are FIXED and COMPARED, `f37_twobufs` is the fixture "
-                  "whose INDEX carries a non-zero src[0] and the only thing in the axis "
-                  "that can see the same wrong read in `rg_pick`, and `f38_regload` is the one "
-                  "whose LOAD subscripts a LIST rather than a scalar, which is what M9 needed",
+                  f"divergences in THREE groups -- {len(_G1)} are the dtype tables answering "
+                  "`pred` or the EMPTY STRING where ptx.py:181 raises KeyError (the PTX form "
+                  "of the AMDWORD32 defect, REACHABLE through UOp.range's default weakint) "
+                  f"and {len(_G2)} MORE are the registers the port then allocates where "
+                  "CPython refuses (`%alu__0`, `%cast__0`, `%ridx_pred_0`); and "
+                  f"{len(_G3)} are the un-ported string_rewrite. The `fmt_18` row -- the port's "
+                  "`tc_ptx.bend` passing a `$` line through untouched where the pin's "
+                  "`ptx.py:164` indents EVERY line -- is FIXED and COMPARED, because upstream "
+                  "`96397341d` DELETED that early return as DEAD CODE. The SIX rows that were "
+                  "ptx.bend's alias arm reading Wal.r[0] where ptx.py:189 and :204 read "
+                  "r[u.src[0]] are FIXED and COMPARED, `f37_twobufs` is the fixture whose INDEX "
+                  "carries a non-zero src[0] and the only thing in the axis that can see the "
+                  "same wrong read in `rg_pick`, and `f38_regload` is the one whose LOAD "
+                  "subscripts a LIST rather than a scalar, which is what M9 needed",
                   checks=lambda: (names_hold() and axis_hold() and claims_hold() and pins_hold())))

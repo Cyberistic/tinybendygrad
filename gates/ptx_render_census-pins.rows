@@ -1554,8 +1554,8 @@ py	fmt_16	\tshr.u32\t\t%d, %a, %b;
 bd	fmt_17	\tbar.sync\t0;
 bn	fmt_17	\tbar.sync\t0;
 py	fmt_17	\tbar.sync\t0;
-bd	fmt_18	$RAW
-bn	fmt_18	$RAW
+bd	fmt_18	\t$RAW
+bn	fmt_18	\t$RAW
 py	fmt_18	\t$RAW
 bd	fmt_19	\tfma.rn.f32\t%d, %a, %b, %c;
 bn	fmt_19	\tfma.rn.f32\t%d, %a, %b, %c;

@@ -32,6 +32,19 @@ from tinygrad.renderer import tc
 from tinygrad.uop.ops import Ops, UOp, UPat, PatternMatcher, GroupOp
 from tinygrad.renderer import ptx as ptxmod
 
+
+class _Shell(ptxmod.PTXRenderer):
+  """`PTXRenderer` WITHOUT its `__init__`, which wants the CUDA compiler.
+
+  `render_kernel` reads only `self.types` and `self.kernel_prefix`, and BOTH are CLASS
+  attributes, so a shell with no target answers `fmt` exactly -- and the whole point of
+  reading `fmt` off `render_kernel` is that it is upstream's OWN closure and not a
+  transcription of it.
+  """
+  def __init__(self): pass
+
+_PTX = _Shell()
+
 def row(nm, got, want):
   return f"{nm} = [{got}]   py=[{want}]\n"
 
@@ -440,11 +453,31 @@ def render_kernel_rows():
       out += row(f"render_kernel {fn}[{i}]", ln.replace("\t", "\\t"), ln.replace("\t", "\\t"))
   return out
 
+def upstream_fmt(line):
+  """upstream's `fmt`, APPLIED -- not transcribed.
+
+  `fmt` is a CLOSURE inside `render_kernel` and has no name to call, so the honest way
+  to ask it is to CALL `render_kernel` with a one-line kernel and read the body back.
+  `gates/ptx_render_census-oracle.py` reads it the same way.
+
+  THE TRANSCRIPTION THAT WAS HERE ROTTED, AND IT ROTTED THE SAME WAY THE PORT DID:
+  it still carried the `line[0] == "$"` early return that upstream DELETED in
+  `96397341d` ("dead code cleanups [PR] (#18593)", 2026-10-03) -- MEASURED, at that
+  commit's parent `ptx.py` held NO OTHER `$` (ONE occurrence in the whole file, the
+  `fmt` line itself), so no line could begin with `$` and the branch was DEAD CODE.
+  The port's `tc_ptx.bend` carried the SAME stale rule, so the two AGREED and this
+  gate was GREEN about a shape neither of them had at the pin.
+  """
+  m = _PTX.render_kernel([line], "fmt", [], [], [])
+  body = m.split("\n{\n", 1)[1].rsplit("\n\tret;", 1)[0].split("\n")
+  return body[0]
+
+
 def fmt_rows():
   lines = ["mov.b32 %r0, %r1;", "ret;", "$LDG.E R1, [R2];", "shl.b32", "ret;"]
   out = ""
   for l in lines:
-    g = l if l[0] == "$" else "\t" + l.replace(" ", "\t" if len(l.split(" ")[0]) > 7 else "\t\t", 1)
+    g = upstream_fmt(l)
     out += row(f"fmt {l!r}", repr(g), repr(g))
   return out
 

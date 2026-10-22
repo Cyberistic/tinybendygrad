@@ -812,16 +812,24 @@ def r_ptx_tcs() -> String:
 
 
 # ===========================================================================
-# `fmt` -- ptx.py:164.
+# `fmt` -- ptx.py:164, AT THE PIN.
 #
-#     def fmt(line): return line if line[0]=="$" else "\t" + line.replace(" ", "\t" if len(line.split(" ")[0]) > 7 else "\t\t", 1)
+#     def fmt(line): return "\t" + line.replace(" ", "\t" if len(line.split(" ")[0]) > 7 else "\t\t", 1)
 #
-# `$` lines are INLINED ASM and pass through untouched; everything else is
-# indented by a TAB and its FIRST space becomes ONE TAB (mnemonic longer than
-# seven characters) or TWO. The `1` on `replace` is load-bearing: without it
-# EVERY space in the line would become a tab.
+# EVERY line is indented by a TAB and its FIRST space becomes ONE TAB (mnemonic
+# longer than seven characters) or TWO. The `1` on `replace` is load-bearing:
+# without it EVERY space in the line would become a tab.
+#
+# THE `$` EARLY RETURN IS GONE, AND IT IS UPSTREAM THAT DELETED IT. Upstream
+# `96397341d` ("dead code cleanups [PR] (#18593)", 2026-10-03) turned
+# `return line if line[0]=="$" else "\t" + line.replace(...)` into
+# `return "\t" + line.replace(...)`. MEASURED, at that commit's parent `ptx.py`
+# held NO OTHER `$` -- ONE occurrence in the whole file, the `fmt` line itself --
+# so no line could ever begin with `$` and the branch was DEAD CODE. The port
+# kept it, and the two agreed until the 2026-10-16 re-vendor moved the tree
+# past that commit. A COMMENT THAT ARGUES FOR A BEHAVIOUR UPSTREAM DELETED IS
+# A WRONG BEHAVIOUR WITH A DEFENCE, so this file's own `$` prose went with it.
 # ===========================================================================
-def fmt_israw(+line: String) -> Bool: String.eq(String.take(line, 1n), "$")
 
 # `line.split(" ")[0]` -- the mnemonic, i.e. everything before the first space.
 def fmt_head(+cs: List<&2, Char>, +acc: List<&2, Char>) -> List<&2, Char>:
@@ -847,7 +855,7 @@ def tab2() -> String: String.concat([tab(), tab()])
 def fmt_rep_of(+line: String) -> String: Bool.pick(String, fmt_wide(line), tab(), tab2())
 
 def fmt(+line: String) -> String:
-  Bool.pick(String, fmt_israw(line), line, String.concat([tab(), String.from_list(fmt_rep(String.to_list(line), fmt_rep_of(line), Nil{}))]))
+  String.concat([tab(), String.from_list(fmt_rep(String.to_list(line), fmt_rep_of(line), Nil{}))])
 
 # ===========================================================================
 # `render_wmma(ctx, wmma)` -- ptx.py:61-76. THE `mma.sync` SPELLING, and the
@@ -1037,11 +1045,13 @@ def r_dtm1(+di: S.Dt, +dou: S.Dt) -> String:
 def r_dtms() -> String:
   String.concat([r_dtm1(S.half(), S.half()), r_dtm1(S.half(), S.single()), r_dtm1(S.single(), S.half()), r_dtm1(S.single(), S.single())])
 
-# `fmt` -- the FIVE line shapes: an INLINED `$` line passes through untouched, a
-# SHORT mnemonic gets TWO tabs for its first space, a LONG one (> 7 chars) gets
-# ONE, and a line with NO space at all gets none. `ret;` is a row twice because
-# the oracle's fixture list has it twice, and a gate that only runs the distinct
-# shapes would not notice a row that moved.
+# `fmt` -- the FIVE line shapes: EVERY line gets a leading TAB, and its FIRST
+# space becomes ONE TAB when the mnemonic is LONGER than seven characters and TWO
+# when it is not; a line with NO space at all has no first space to replace. The
+# `$` line is indented like every other -- upstream DELETED the `$` early return
+# (see `fmt`, above). `ret;` is a row twice because the oracle's fixture list has
+# it twice, and a gate that only runs the distinct shapes would not notice a row
+# that moved.
 def r_fmt1(+line: String) -> String:
   T.rd(String.concat(["fmt ", q(line)]), q(fmt(line)))
 
