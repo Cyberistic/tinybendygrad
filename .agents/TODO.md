@@ -22093,3 +22093,110 @@ order is a no-op that can only ever be wrong SILENTLY, so there is not one.
       ("a match cannot scrutinize a computed value: give it its own def"), and `ProgramInfo.
       launch_dims` returned `(A, B)`, a Sigma VALUE, where Bend's product TYPE is `A & B`. BOTH WERE
       FIXED IN A SCRATCH COPY ONLY, TO MAKE THE ROUND TRIP PROVABLE; NEITHER IS FIXED IN THE TREE.
+
+## NCORES -- **A CORE COUNT WAS A TRANSCRIPTION OF A TABLE'S LENGTH, THE ORACLE MOVED UNDER IT, AND THE PORT SAID 4 WHERE CPYTHON SAID 7** (2026-10-22)
+
+`ops-python-count  [#########] 9/9` · `ops-python-plant  [#########] 9/9`
+
+### 1. **WHERE THE NUMBER CAME FROM, ON BOTH SIDES, QUOTED**
+
+`pyr_gfx1201_ncores` is `len(Renderer.tensor_cores)` for a `gfx1201` target. Upstream sets it at
+`tinygrad/runtime/ops_python.py:175-177`:
+
+    elif target.arch.startswith("gfx"):
+      self.target = replace(target, device="AMD")
+      self.tensor_cores = tc.get_amd(target.arch)
+
+and `tinygrad/renderer/tc.py:99` is
+
+    def get_amd(arch): return {"gfx942": amd_cdna3, "gfx950": amd_cdna4, "gfx1200": amd_rdna4, "gfx1201": amd_rdna4}.get(arch, amd_rdna3)
+
+`tc.py:78-81` builds `amd_rdna4` as SEVEN `TensorCore`s -- ONE PER (dtype_in, dtype_out) PAIR:
+half/float, half/half, bfloat16/float, bfloat16/bfloat16, **fp8e4m3/float, fp8e5m2/float,
+int8/int32**. **SO CPython ANSWERS 7, AND THE NUMBER IS NEITHER A COMPUTE-UNIT COUNT (a `gfx1201`
+has 40 CUs) NOR A SIMD COUNT: IT IS THE LENGTH OF A TABLE OF dtype PAIRS.** The same
+`get_amd` answers `amd_cdna3` (4) for `gfx942`, `amd_cdna4` (8) for `gfx950`, and `amd_rdna3` (4) for
+EVERY OTHER gfx name -- which is the dict's DEFAULT, and the default is the row that matters.
+
+The port cannot ask tc.py for that length, so `tinybendygrad/runtime/ops_python.bend`'s `cores_of`
+HOLDS the lengths -- and its rdna4 arm said **4**. **THAT WAS RIGHT UNTIL `86c4f1343` RE-VENDORED
+`tinygrad/` TO UPSTREAM `002630241` (2026-10-16), WHICH ADDED THE LAST THREE PAIRS TO `tc.py`'s
+`amd_rdna4`.** A TRANSCRIBED LENGTH IS A PIN ON A FILE THAT CAN MOVE, and the port carried the OLD
+one, so `pyr_gfx1201_ncores` answered 4 where CPython answered 7.
+
+### 2. **AND THE GOVERNING PROSE SAID THE OPPOSITE, WHICH IS WHY THE RED HAD NO NAME**
+
+The port's own comment over the `*_tid` rows read "amd_rdna3 and amd_cdna3 BOTH have 4 cores and
+**amd_rdna4 also has 4** -- so three different tables answer 4", and
+`gates/ops_python_census-gate.py`'s header REPEATED IT. BOTH ARE FALSE: `amd_rdna4` holds SEVEN.
+**A GATE THAT IS RED FOR A REASON NOBODY CAN FIND IS A GATE WHOSE PROSE IS LYING.** Both are
+corrected, and the check that would have caught the defect WITHOUT a `bend` run is now part of
+the gate.
+
+### 3. **WHAT LANDED**
+
+- [x] **THE PORT'S COUNT: `cores_of`'s rdna4 arm 4 -> 7**, with a comment that records WHY it is
+      seven and that the count is a TABLE'S LENGTH and not a CU count. MEASURED: the port's own
+      85-row fixture lane is BYTE-IDENTICAL to CPython's oracle (`diff` EMPTY) on the same
+      substrate.
+- [x] **THE PIN MOVED, TO THE HOUSE MECHANISM.** `pin_drift_hold()` compared GIT BLOBS AT
+      REVISIONS (`HEAD`, `ad117c928`, `ad117c928^`) and so could not see a WORKING TREE whose bytes
+      differ -- which is the file `import tinygrad` opens -- and the revision it named stopped being
+      the oracle at the re-vendor. It is now `DRIFT_PIN`, a sha256 OF THE BYTES THE ORACLE
+      IMPORTS, read by `gates/gatekit.py:oracle_drift`, the same mechanism
+      `gates/onnx_census-gate.py` and `gates/state_census-gate.py` use since `86c4f1343` moved
+      theirs. **THIS GATE'S PIN WAS NOT ONE OF THE FOUR THAT COMMIT MOVED.**
+- [x] **`cores_axis_hold()` -- THE COUNT AXIS, RE-DERIVED FROM tc.py ITSELF, AT THE SOURCE, WITH
+      NO `bend` RUN.** It re-derives BOTH halves: `cores_of_amd`/`cores_of_cuda` against
+      `tc.get_amd`/`tc.get_cuda` (whose KEYS, DEFAULT and RUN THRESHOLDS are read out of tc.py's
+      own source, so the population is DISCOVERED and not listed), and `cores_of` against `len()` of
+      tc.py's own tables. A count that no longer matches its table is a red run NAMING THE TABLE
+      AND THE TWO NUMBERS -- measured: against HEAD's bytes it answers `tc.amd_rdna4 holds 7 tensor
+      cores and the port's cores_of answers 4`.
+- [x] **THE PLANT: `gates/ops_python_census-plant.py`, NINE ARMS, 9 OF 9.** It NEVER WRITES THE
+      TREE (a scratch with HEAD's `tinybendygrad/`, a copy of `tinygrad/`, and the oracle at
+      `scratch/gates/`), it HOLDS THE BEND LOCK for each invocation, and it names the ways a count
+      can be wrong: THE INHERITED DEFECT (the old table's length); A COUNT HARD-CODED FOR ONE
+      DEVICE (gfx1201 sent to rdna3, the table gfx1100 really selects, while gfx1200 -- which
+      shares the table -- stays right); A COUNT READ FROM THE WRONG TABLE (cdna4's length); A CU
+      COUNT FOR A TENSOR-CORE COUNT (40); A COUNT THAT DEPENDS ON THE CARD (gfx1200 sent to
+      rdna3, which the ROW DIFF SEES ONLY AS `pyr_gfx1200_tid` -- there is no `pyr_gfx1200_ncores`
+      row -- so the TID axis is the instrument that earns its keep); and THE ORACLE MOVES (tc.py's
+      `amd_rdna4` grows by one and the port does not -- the re-vendor, reproduced). `--falsify`
+      inverts ARM 1's expectation.
+- [x] **THE PINS FILE: 0 DIVERGENCES, AND IT IS NOT A PIN.** `gates/ops_python_census-pins.rows`
+      is GENERATED by `--refresh`, which is its only writer, and it is regenerated: the header now
+      records the sha256 pin instead of the dead revision. **NO DIVERGENCE IS DECLARED, BECAUSE
+      THERE IS NONE: the port was WRONG and it now MATCHES.** A pin would have recorded a
+      divergence that is not a divergence, and `divergences_hold()` refuses any pin that does not
+      land in a declared class.
+
+### 4. **WHAT IS NOT DONE, AND IS NOT TICKED**
+
+- [ ] **THE GATE WAS NOT RUN ON THE REAL TREE TONIGHT, AND THE REASON IS ANOTHER UNIT'S FILE.**
+      MEASURED: the working tree's `tinybendygrad/runtime/ops_python.bend` did not compile
+      ("expected : first / observed : first (consumed more than once)" at `p_recip_of`,
+      `runtime/ops_python.bend:2375`) and `tinybendygrad/uop/ops.bend` did not compile either
+      ("a match cannot scrutinize a computed value" at `fs.sp.dim.digit`). **THE GATE WAS RUN IN A
+      SCRATCH BUILT FROM `git archive HEAD tinybendygrad` PLUS THE FIX, WHERE IT IS GREEN** --
+      85 rows x 3 lanes, 85 exact, 0 pinned, all ELEVEN checks OK, 14 s. It is re-run on the real
+      tree when the tree is quiet.
+- [ ] **`tinybendygrad/renderer/tc.bend` -- THE PORT OF `tc.py` ITSELF -- IS ALSO STALE, AND IT IS
+      A BIGGER DEFECT.** MEASURED: its `amd_rdna4()` lists FOUR pairs and its stage-1 row reads
+      `tc.amd_rdna4.len = [4]   py=[4]`, where upstream's `amd_rdna4` holds SEVEN
+      (fp8e4m3/float, fp8e5m2/float, int8/int32 are missing). **AND THE `py=` COLUMN IS A HARDCODED
+      LITERAL IN THE PORT** (`r("tc.amd_rdna4.len", tln(amd_rdna4()), "4")`, `tc.bend:745`), so the
+      port asserts ITSELF against a transcription and cannot see upstream move. NOT FIXED HERE: it
+      is a different lane's file, and the instrument defect (a `py=` column that is not CPython)
+      is the deeper one.
+- [ ] **FIVE OTHER GATES CARRY THE SAME MISSED PIN, AND SIX OF NINE SAMPLED FILES DRIFTED.** The
+      `PIN = "ad117c928^"` revision comparison is in `gates/amd_dsl_census-gate.py`,
+      `gates/crp_graph_census-gate.py`, `gates/wgsl_render_census-gate.py`,
+      `gates/upstream-pow-dtype-gate.py` and `gates/upstream-promo-lattice-gate.py`. MEASURED
+      between `ad117c928^` and HEAD: `tinygrad/renderer/amd/dsl.py` 6526706b->211696f0 DRIFTED,
+      `tinygrad/renderer/wgsl.py` 02d7fdea->c7121333 DRIFTED, `tinygrad/helpers.py`
+      deb96849->7b8cee14 DRIFTED, `tinygrad/uop/ops.py` 3ffac84b->09fb943c DRIFTED,
+      `tinygrad/dtype.py` f40089a1->1e5dd2cf DRIFTED, `tinygrad/mixin/creation.py`
+      73f51afa->ef5f2587 DRIFTED, `tinygrad/mixin/movement.py` 35ebe0eb->092b031a DRIFTED,
+      `tinygrad/tensor.py` 4f7d22e7->57ad1915 DRIFTED, and only `tinygrad/mixin/dtype.py` is
+      UNCHANGED. NOT FIXED HERE: one gate's pin, not five.

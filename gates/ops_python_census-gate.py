@@ -50,12 +50,14 @@ THE PRINTED FORM, AND WHY EACH FIELD IS THE THING THE LAYER RETURNS.
                      no value after the `=` and it is still a row.
     key=<int>        a COUNT, where the layer returns a `list`: `len(tensor_cores)`.
     key=<0..8>       a TABLE ID, on the eleven `*_tid` rows. NOT a count, and this
-                     is the port's own argument (ops_python.bend:2617): MEASURED,
-                     `amd_rdna3`, `amd_cdna3` and `amd_rdna4` all answer 4 cores, so
-                     three of tc.py's eight tables are indistinguishable by length
-                     and `pyr_gfx1100_ncores`, `pyr_gfx942_ncores`, `pyr_gfx1201_ncores`
-                     and `pyr_gfx1101_ncores` are all `4`. The tid row is the fact
-                     `get_amd`'s dict is actually about.
+                     is the port's own argument: MEASURED, `amd_rdna3` and
+                     `amd_cdna3` BOTH answer 4 cores, so a count cannot tell those
+                     two apart, and the tid row is the fact `get_amd`'s dict is
+                     actually about. `amd_rdna4` answers SEVEN (see the count axis
+                     below), so `pyr_gfx1201_ncores=7` and `pyr_gfx1100_ncores=4`
+                     and `pyr_gfx942_ncores=4` are three DIFFERENT lengths -- which
+                     is what a table's length is, and what the count axis below
+                     re-derives from tc.py on every run.
     key=True|False   a PREDICATE, or a refusal (`pyr_emulate_bad*`, the three
                      `pywma_lookup_*_miss` rows -- ops_python.py:35 is `next()` over
                      a generator, so a miss is StopIteration and the row says NOT
@@ -67,7 +69,7 @@ THE PRINTED FORM, AND WHY EACH FIELD IS THE THING THE LAYER RETURNS.
 THE INPUT AXIS, which is the point of an interpreter census. Every row is
 (def x input). The inputs are the axes CPython's own ladders are DEFINED over and
 they are not the same values the port happened to pick: `arch` runs over METAL,
-gfx942, gfx950, gfx1200, gfx1201, an unknown gfx (tc.py:98's dict DEFAULT), sm_74
+gfx942, gfx950, gfx1200, gfx1201, an unknown gfx (tc.py:99's dict DEFAULT), sm_74
 (below the ladder's bottom), sm_75, sm_86, sm_88 (one below the sm_80 rung), sm_89,
 sm_90, `""` and `NOT_AN_ARCH`; `dtype` over 8; `EMULATE` over 4; `TensorCore` over
 tc.py's real fragments. The boundary values are the rows that matter: `sm_88` is
@@ -93,13 +95,38 @@ core with 32 elements per A lane, and `PythonDevice.__init__`'s argument ORDER i
 read off that function's disassembly. A reimplementation here would agree with
 itself, which is the exact failure `tn_bitwise_not` recorded (seven rows).
 
-`ops_python.py` HAS NOT DRIFTED SINCE THE PIN `ad117c928^`. MEASURED, all three the
-same: `git rev-parse HEAD:tinygrad/runtime/ops_python.py`,
-`git rev-parse ad117c928:...` and `git rev-parse 'ad117c928^:...'` are all
-`02687a3d`, so HEAD is the oracle and `pin_drift_hold()` records that so a later
-re-vendor turns this red instead of quietly changing the subject. `tc.py` -- which
-29 of the 85 rows read through `PythonRenderer.__init__` -- is checked the same way
-and is also un-drifted at `9ba914d2`.
+THE ORACLE MOVED, AND THIS GATE'S PIN WAS MISSED BY THE COMMIT THAT MOVED IT.
+`86c4f1343` re-vendored `tinygrad/` to upstream `002630241` (2026-10-16) -- a
+DELIBERATE, USER-REQUESTED re-vendor, not drift -- and moved the pins of four
+gates with it (`js-lane-census.py`, `onnx_census-gate.py`, `rand_census-gate.py`,
+`state_census-gate.py`). THIS GATE'S PIN WAS NOT ONE OF THEM, so `pin_drift_hold()`
+was red on BOTH of its files while this header still claimed they were
+un-drifted. The pin is moved here, and it is moved to the HOUSE mechanism --
+`DRIFT_PIN`, a sha256 OF THE BYTES THE ORACLE IMPORTS, read by
+`gates/gatekit.py:oracle_drift` -- rather than to a git revision, because the old
+check compared BLOBS AT REVISIONS and so could not see a WORKING TREE whose bytes
+differ, which is the file `import tinygrad` actually opens.
+
+    tinygrad/runtime/ops_python.py   02687a3d -> 5e704b90
+    tinygrad/renderer/tc.py          9ba914d2 -> 52b59046
+
+AND THE MOVE IS NOT COSMETIC. `tc.py`'s `amd_rdna4` grew from FOUR tensor cores
+to SEVEN -- `fp8e4m3/float`, `fp8e5m2/float` and `int8/int32` were added to its
+(di,do) list (tc.py:80-81) -- and the port's `cores_of` held the OLD table's
+LENGTH, so `pyr_gfx1201_ncores` answered 4 where CPython answered 7. A
+transcribed LENGTH is a pin on a file that can move, and the row carrying it was
+the only place the move showed up.
+
+THE COUNT AXIS, WHICH IS A TRANSCRIPTION AND NOW SAYS SO. The `*_ncores` rows are
+`len(tensor_cores)` -- the LENGTH of the list `tc.get_amd`/`tc.get_cuda`/METAL
+selected -- and the port cannot ask tc.py for it, so `cores_of` HOLDS THE
+LENGTHS. `cores_axis_hold()` below re-derives BOTH halves of the count from
+tc.py ITSELF, on every run and WITHOUT `bend`: the arch->TABLE map
+(`cores_of_amd`, `cores_of_cuda`) against `tc.get_amd`/`tc.get_cuda`, and the
+TABLE->LENGTH map (`cores_of`) against `len()` of tc.py's own tables. So a count
+that no longer matches its table is a red run naming the table and the two
+numbers -- not a row that quietly disagrees and a comment that says it was
+always so.
 
 THE SIX FINDINGS. None of them is a disagreement between the two lanes; each is a
 property of the PORT, re-measured on every run by a check below, so a later fix
@@ -215,7 +242,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import (BEND, PY, WARM, TMP, NOTICE, REFUSED, PASS, FAIL, DEAD,  # noqa: F401
-                     VERDICT)
+                     VERDICT, oracle_drift)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -225,14 +252,27 @@ PORT = ROOT / "tinybendygrad" / "runtime" / "ops_python.bend"
 ORACLE = HERE / "ops_python_census-oracle.py"
 
 ROWS = 85
-PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file
 
-# THE VENDORED FILES THE ROWS READ, and the BLOB each one must keep. `ops_python.py`
+# THE VENDORED FILES THE ROWS READ, and the sha256 each one must keep. `ops_python.py`
 # is the subject; `tc.py` is read by 29 of the 85 rows through
 # `PythonRenderer.__init__`, which is :171 `tc.get_amd` / :173 `tc.get_cuda` /
 # :170 `tc.metal`. A gate that pinned only its subject would let tc.py move and
 # report the port's stale numbers as a verdict.
 VENDORED = ("tinygrad/runtime/ops_python.py", "tinygrad/renderer/tc.py")
+
+# THE PIN, AS BYTES AND NOT AS A REVISION. These two files MOVED with the deliberate
+# re-vendor of `tinygrad/` to upstream `002630241` (2026-10-16) -- `86c4f1343` -- and
+# this gate's pin was NOT among the four it moved, so the rows below were measured
+# against a `tc.py` that no longer exists. The values are the sha256 of the files
+# the ORACLE IMPORTS, and `gates/gatekit.py:oracle_drift` re-measures them on every
+# run: a WORKING TREE whose bytes differ is what `import tinygrad` opens, and a
+# revision comparison cannot see it.
+DRIFT_PIN = {
+  "tinygrad/runtime/ops_python.py":
+    "62decc9aa674b47a578e06bec68d46695920524da27b10fb63da75d420df8d7b",
+  "tinygrad/renderer/tc.py":
+    "f8836d7fa6dee7f0f84f6adf29c192a29ffae62ca40e0372f74b128cde4e6654",
+}
 
 # THE DRIVER AXIS, re-derived from `gate()`'s own body on every run -- never a list
 # here. The ORDER is part of the contract: the lanes are diffed line by line.
@@ -328,25 +368,26 @@ def names_hold() -> bool:
 
 
 def pin_drift_hold() -> bool:
-    """`ops_python.py` and `tc.py` have NOT drifted. All three blobs of each must
-    stay equal and the pins file records the values, so a later re-vendor that moves
-    one turns this red instead of quietly changing what the oracle is measured
-    against."""
-    def blob(rev, rel):
-        r = subprocess.run(["git", "rev-parse", "--short=8", f"{rev}:{rel}"],
-                           capture_output=True, text=True, cwd=str(ROOT))
-        return r.stdout.strip() if r.returncode == 0 else f"rc={r.returncode}"
-    bad, text = [], PINS.read_text() if PINS.is_file() else ""
-    for rel in VENDORED:
-        head, vend, pin = blob("HEAD", rel), blob("ad117c928", rel), blob(PIN, rel)
-        if not head:
-            bad.append(f"HEAD:{rel} did not resolve")
-        elif not (head == vend == pin):
-            bad.append(f"{rel} HAS DRIFTED: HEAD {head}, ad117c928 {vend}, {PIN} {pin} -- "
-                       f"the PIN is the truthful oracle and this gate's rows were measured "
-                       f"against HEAD")
-        elif head not in text:
-            bad.append(f"the pins file does not record {rel}'s HEAD blob {head}")
+    """THE ORACLE'S BYTES, PINNED. `ops_python.py` and `tc.py` are what the oracle
+    IMPORTS, so what is pinned is their sha256 -- the house mechanism, read by
+    `gates/gatekit.py:oracle_drift`, and the same one `gates/onnx_census-gate.py`
+    and `gates/state_census-gate.py` use since the re-vendor moved their pins.
+
+    THE OLD CHECK WAS A REVISION COMPARISON and it was the wrong instrument twice
+    over. It compared `git rev-parse <rev>:<path>`, which is a fact about a
+    COMMIT and not about the file on disk, so a WORKING TREE whose bytes differ
+    from every revision it named still passed -- and the file on disk is the one
+    `import tinygrad` opens. And it named `ad117c928^`, a revision that stopped
+    being the oracle when `86c4f1343` re-vendored `tinygrad/`, so the check was
+    red for four days and its own header still said the files had not drifted.
+
+    The pins file records the same values, so the pins file and this check cannot
+    disagree about which bytes the rows were measured against."""
+    bad = oracle_drift(DRIFT_PIN)
+    text = PINS.read_text() if PINS.is_file() else ""
+    for rel, want in DRIFT_PIN.items():
+        if want not in text:
+            bad.append(f"the pins file does not record {rel}'s pinned sha256 {want[:16]}")
     return report("pin_drift_hold", bad)
 
 
@@ -414,6 +455,129 @@ def tid_axis_hold() -> bool:
                    f"`PythonRenderer.__init__` and {len(direct)} directly, expected 29 "
                    f"and 14 -- the census's extent over tc.py changed")
     return report("tid_axis_hold", bad)
+
+
+# ---- THE COUNT AXIS. The port's own three ladders, PARSED. -----------------
+def _def_body(src, name):
+    """The body of one `def` in the port, by name, or None.
+
+    THE BODY ENDS AT THE NEXT TOP-LEVEL LINE, and not at the next `def`: a `def`
+    can be followed by a `type` (`type Rend is Data:`), by a comment block, or by
+    anything else at column 0, and a body that ran past its own def would read the
+    NEXT def's arms as its own."""
+    m = re.search(rf"^def {re.escape(name)}\([^\n]*\n(.*?)(?=^\S|\Z)", src, re.M | re.S)
+    return m.group(1) if m else None
+
+
+def _pick_names(body):
+    """`[(condition_text, name)]` for a `Bool.pick` chain of `CORES_*()` values.
+
+    A `Bool.pick` chain names its VALUE after its CONDITION, so the text IN FRONT of
+    a `CORES_*` is the condition that selects it, and the LAST name in the chain is
+    the chain's DEFAULT -- the value every unmatched input takes."""
+    parts = re.split(r"(CORES_\w+)\(\)", body)
+    return [(parts[i - 1], parts[i]) for i in range(1, len(parts), 2)]
+
+
+def cores_axis_hold() -> bool:
+    """THE COUNT AXIS, RE-DERIVED FROM tc.py ITSELF, AT THE SOURCE, WITHOUT `bend`.
+
+    The `*_ncores` rows are `len(tensor_cores)` -- the LENGTH of the list
+    `tc.get_amd`/`tc.get_cuda`/METAL selected -- and the port cannot ask tc.py for
+    it, so `cores_of` HOLDS THE LENGTHS and `cores_of_amd`/`cores_of_cuda` HOLD THE
+    ARCH MAP. A held length is a pin on a file that can move, and tc.py DID move:
+    the re-vendor to upstream `002630241` grew `amd_rdna4` from four tensor cores to
+    seven, and the port's transcription answered 4 where CPython answered 7.
+
+    So BOTH halves are re-derived here, from tc.py's OWN source and tc.py's OWN
+    module-level tables, and the port's ladders are compared with them:
+
+      * `cores_of_amd` against `tc.get_amd`'s dict -- its KEYS and its DEFAULT are
+        read out of tc.py's own `get_amd` line, so the population is DISCOVERED and
+        not listed here -- and `cores_of_cuda` against `tc.get_cuda`'s rungs, read
+        out of its own line the same way.
+      * `cores_of` against `len()` of the table each `CORES_*` names.
+
+    NO `bend` RUNS HERE. The row diff is the backstop and it is the slower
+    instrument; this one names the table and the two numbers, at the place the
+    number is written, and it runs on a tree whose substrate will not compile."""
+    sys.path.insert(0, str(ROOT))
+    from tinygrad.renderer import tc
+    src = PORT.read_text()
+    tc_src = (ROOT / "tinygrad/renderer/tc.py").read_text()
+    bad = []
+
+    # THE PORT'S LADDERS.
+    body = _def_body(src, "cores_of") or ""
+    arms = {n: int(v) for n, v in
+            re.findall(r"U32\.is_eq\(tid, CORES_(\w+)\(\)\), (\d+)", body)}
+    dm = re.search(r",\s*(\d+)\s*\)+$", body.strip())
+    default_count = int(dm.group(1)) if dm else None
+    amd = _pick_names(_def_body(src, "cores_of_amd") or "")
+    cuda = _pick_names(_def_body(src, "cores_of_cuda") or "")
+    if not arms or default_count is None or not amd or not cuda:
+        return report("cores_axis_hold",
+                      ["the port's cores_of / cores_of_amd / cores_of_cuda could not be read"])
+
+    # THE PORT'S arch -> table, and its default. The port spells a table
+    # `CORES_AMD_RDNA4` and tc.py spells it `amd_rdna4`, so the `CORES_` goes.
+    def tname(name):
+        return name.lower().removeprefix("cores_")
+
+    amd_map = {}
+    for cond, name in amd[:-1]:
+        for a in re.findall(r'String\.eq\(arch, "([^"]+)"\)', cond):
+            amd_map[a] = tname(name)
+    # THE PORT'S cuda ladder, and its default.
+    cuda_map = {}
+    for cond, name in cuda[:-1]:
+        t = re.search(r"U32\.is_ge\(v, (\d+)\)", cond)
+        if t:
+            cuda_map[int(t.group(1))] = tname(name)
+
+    # TC.PY'S OWN TRUTH, DISCOVERED FROM ITS OWN SOURCE.
+    ga = re.search(r"def get_amd\(arch\): return \{(.*?)\}\.get\(arch, (\w+)\)", tc_src, re.S)
+    gc = re.search(r"def get_cuda\(arch\): return ([^\n]*)", tc_src)
+    if not ga or not gc:
+        return report("cores_axis_hold", ["tc.py's get_amd / get_cuda could not be read"])
+    tc_keys = {a: t.lower() for a, t in re.findall(r'"([^"]+)":\s*(\w+)', ga.group(1))}
+    tc_amd_default = ga.group(2).lower()
+    tc_cuda = {int(v): t.lower() for t, v in
+               re.findall(r"(\w+) if [^ ]+ >= (\d+)", gc.group(1))}
+
+    # (1) THE ARCH -> TABLE HALF.
+    for arch, table in sorted(tc_keys.items()):
+        got = amd_map.get(arch)
+        if got != table:
+            bad.append(f"tc.get_amd({arch!r}) selects {table} and the port's cores_of_amd "
+                       f"selects {got}")
+    if set(amd_map) != set(tc_keys):
+        bad.append(f"the port's cores_of_amd maps {sorted(amd_map)} and tc.get_amd's dict "
+                   f"has {sorted(tc_keys)}")
+    if tname(amd[-1][1]) != tc_amd_default:
+        bad.append(f"tc.get_amd's default is {tc_amd_default} and the port's cores_of_amd "
+                   f"falls back to {tname(amd[-1][1])}")
+    if cuda_map != tc_cuda:
+        bad.append(f"tc.get_cuda's rungs are {tc_cuda} and the port's cores_of_cuda's are "
+                   f"{cuda_map}")
+    if tname(cuda[-1][1]) != "none":
+        bad.append(f"tc.get_cuda's bottom rung is the EMPTY list and the port's "
+                   f"cores_of_cuda falls back to {tname(cuda[-1][1])}")
+
+    # (2) THE TABLE -> LENGTH HALF. The population is the port's OWN `CORES_*`
+    # names; `tid_axis_hold` already holds them against tc.py's real tables.
+    tids = {n.upper() for n, _ in re.findall(r"^def CORES_(\w+)\(\) -> U32: (\d+)$", src, re.M)}
+    if len(tids - set(arms)) != 1:
+        bad.append(f"the port's cores_of has an arm for {sorted(arms)} and leaves "
+                   f"{len(tids - set(arms))} tid(s) to the default -- exactly one table "
+                   f"may take the default")
+    for tid in sorted(tids):
+        want = 0 if tid == "NONE" else len(getattr(tc, tid.lower(), []) or [])
+        got = arms.get(tid, default_count)
+        if got != want:
+            bad.append(f"tc.{tid.lower()} holds {want} tensor cores and the port's "
+                       f"cores_of answers {got}")
+    return report("cores_axis_hold", bad)
 
 
 def ctor_axis_hold() -> bool:
@@ -616,7 +780,7 @@ def checks_hold() -> bool:
     ok = True
     for fn in (groups_hold, names_hold, pin_drift_hold, tid_axis_hold, ctor_axis_hold,
                literal_rows_hold, pyc_rows_hold, dead_defs_hold, interpreter_hold,
-               divergences_hold):
+               cores_axis_hold, divergences_hold):
         ok = fn() and ok
     return ok
 
@@ -711,14 +875,22 @@ def _header(n):
          "# missing file and an empty one for an empty file, and only the second is a",
          "# verdict.",
          "#",
-         f"# {VENDORED[0]} blob at HEAD / `ad117c928` / the pin `{PIN}`: "
-         f"{pins_blob(VENDORED[0])}. The subject.",
-         f"# {VENDORED[1]} blob, same three: {pins_blob(VENDORED[1])}. Read by 29 of the",
+         f"# {VENDORED[0]} blob at HEAD: {pins_blob(VENDORED[0])}. The subject.",
+         f"# {VENDORED[1]} blob at HEAD: {pins_blob(VENDORED[1])}. Read by 29 of the",
          f"# {ROWS} rows through `PythonRenderer.__init__` -- ops_python.py:170",
          f"# `tc.metal`, :173 `tc.get_cuda`, :171 `tc.get_amd` -- and by 14 more",
          f"# directly (the `pywma_*` family), 43 of {ROWS} in all, so a gate that pinned",
          "# only its subject would let it move and report the port's stale numbers as a",
-         "# verdict. `pin_drift_hold()` re-measures all six on every run."])
+         "# verdict.",
+         "#",
+         "# THE PIN IS THE sha256 OF THE BYTES THE ORACLE IMPORTS, and it is the same",
+         "# mechanism `gates/onnx_census-gate.py` and `gates/state_census-gate.py` use",
+         "# since the re-vendor of `tinygrad/` to upstream `002630241` (2026-10-16) moved",
+         "# theirs. It is NOT a git revision: a revision names a COMMIT, and the file the",
+         "# oracle opens is the one ON DISK.",
+         f"# {VENDORED[0]}: {DRIFT_PIN[VENDORED[0]]}",
+         f"# {VENDORED[1]}: {DRIFT_PIN[VENDORED[1]]}",
+         "# `pin_drift_hold()` re-measures both on every run."])
 
 
 if "--refresh" in sys.argv:

@@ -22,11 +22,20 @@
 # missing file and an empty one for an empty file, and only the second is a
 # verdict.
 #
-# tinygrad/runtime/ops_python.py blob at HEAD / `ad117c928` / the pin `ad117c928^`: 02687a3d. The subject.
-# tinygrad/renderer/tc.py blob, same three: 9ba914d2. Read by 29 of the
+# tinygrad/runtime/ops_python.py blob at HEAD: 5e704b90. The subject.
+# tinygrad/renderer/tc.py blob at HEAD: 52b59046. Read by 29 of the
 # 85 rows through `PythonRenderer.__init__` -- ops_python.py:170
 # `tc.metal`, :173 `tc.get_cuda`, :171 `tc.get_amd` -- and by 14 more
 # directly (the `pywma_*` family), 43 of 85 in all, so a gate that pinned
 # only its subject would let it move and report the port's stale numbers as a
-# verdict. `pin_drift_hold()` re-measures all six on every run.
+# verdict.
+#
+# THE PIN IS THE sha256 OF THE BYTES THE ORACLE IMPORTS, and it is the same
+# mechanism `gates/onnx_census-gate.py` and `gates/state_census-gate.py` use
+# since the re-vendor of `tinygrad/` to upstream `002630241` (2026-10-16) moved
+# theirs. It is NOT a git revision: a revision names a COMMIT, and the file the
+# oracle opens is the one ON DISK.
+# tinygrad/runtime/ops_python.py: 62decc9aa674b47a578e06bec68d46695920524da27b10fb63da75d420df8d7b
+# tinygrad/renderer/tc.py: f8836d7fa6dee7f0f84f6adf29c192a29ffae62ca40e0372f74b128cde4e6654
+# `pin_drift_hold()` re-measures both on every run.
 
