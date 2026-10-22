@@ -136,7 +136,7 @@ def tr_compose_call(+x: T.Tensor) -> D.Refused:
 # :23  X_train, Y_train, X_test, Y_test = fetch_mnist()
 # PARTIAL, and the honest reading is that the answer EXISTS and it is a refusal.
 def tr_fetch_mnist() -> D.Refused:
-  D.refuse("examples/train_resnet.py:23 fetch_mnist -- extra/datasets/__init__.bend:49 refuses it; no byte source (helpers.bend:2815) and no ndarray")
+  D.refuse("examples/train_resnet.py:23 fetch_mnist -- extra/datasets/__init__.bend:49 refuses it; no byte source (helpers.bend:3191) and no ndarray")
 
 # :24  X_train = X_train.reshape(-1, 28, 28).astype(np.uint8)
 def tr_reshape_uint8() -> D.Refused:

@@ -117,7 +117,7 @@ import ./../datasets/__init__.bend as D
 #                         `extra/datasets/__init__.bend:49,:53`. A grep that
 #                         reads a PREFIX and calls it a hit is the failure this
 #                         tree already has a name for, so the instrument here
-#                         is anchored to `fetch\(`. ALSO, helpers.bend:2815
+#                         is anchored to `fetch\(`. ALSO, helpers.bend:3191
 #                         says why in the port's own words: "The HTTP machinery
 #                         (fetch, fetch_fw, _ensure_downloads_dir) is urllib
 #                         plus a temp file plus an atomic rename. It is I/O of

@@ -72,12 +72,12 @@ import ./../extra/datasets/__init__.bend as D
 #         tensor dump; it is a Python OBJECT GRAPH containing a live
 #         `run_onnx_jit` with a `captured` record, and decoding it means
 #         INSTANTIATING CLASSES. The port's own header says it in as many
-#         words, `tinybendygrad/helpers.bend:2812`: "The sqlite disk cache is a
+#         words, `tinybendygrad/helpers.bend:3188`: "The sqlite disk cache is a
 #         persistent object store with pickle values. Bend has no pickle and no
 #         object graph to store, so the cache becomes the C-effect arena of P6
 #         and this is replaced rather than ported."
 #     `fetch`               (:3,:7)   MISSING. `grep -rnE "^def fetch\("
-#         --include='*.bend' tinybendygrad/` = 0, and helpers.bend:2815 gives
+#         --include='*.bend' tinybendygrad/` = 0, and helpers.bend:3191 gives
 #         the reason in the port's own words: "The HTTP machinery (fetch,
 #         fetch_fw, _ensure_downloads_dir) is urllib plus a temp file plus an
 #         atomic rename. It is I/O of exactly the kind the master plan puts in
@@ -148,11 +148,11 @@ def pkl_at(r: D.Refused) -> String:
 # because there is no byte source either.
 # ---------------------------------------------------------------------------
 def pkl_open(path: String) -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:7 FIRST MISSING SYMBOL fetch -- grep -c '^def fetch(' = 0; helpers.bend:2815 names it as unported HTTP")
+  D.refuse("examples/test_pkl_imagenet.py:7 FIRST MISSING SYMBOL fetch -- grep -c '^def fetch(' = 0; helpers.bend:3191 names it as unported HTTP")
 
 # :8   run_onnx_jit = pickle.load(f)
 def pkl_load() -> D.Refused:
-  D.refuse("examples/test_pkl_imagenet.py:8 FIRST MISSING SYMBOL pickle -- NO UNPICKLER EXISTS; helpers.bend:2812 says 'Bend has no pickle and no object graph'")
+  D.refuse("examples/test_pkl_imagenet.py:8 FIRST MISSING SYMBOL pickle -- NO UNPICKLER EXISTS; helpers.bend:3188 says 'Bend has no pickle and no object graph'")
 
 # :9   input_name = run_onnx_jit.captured.expected_names[0]
 # The RECORD EXISTS (InInfo jit.bend:370-389, ii_vars :393); the object does not.

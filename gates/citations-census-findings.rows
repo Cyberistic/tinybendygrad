@@ -253,7 +253,7 @@ ABSENT-TEXT	NOT-MOVED	tinybendygrad/function.bend:625	function.py:19-25	suffix	D
 ABSENT-TEXT	NOT-MOVED	tinybendygrad/function.bend:1073	ops.py:1239	suffix	UOp.param_like	'UOp.param_like' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
 DANGLING-LINE	NOT-MOVED	tinybendygrad/helpers.bend:155	base.bend:172	suffix		tinybendygrad/base.bend has 56 lines, cited at :172
 DANGLING-LINE	NOT-MOVED	tinybendygrad/helpers.bend:2567	base.bend:1556	suffix		tinybendygrad/base.bend has 56 lines, cited at :1556
-DANGLING-LINE	NOT-MOVED	tinybendygrad/helpers.bend:2842	base.bend:1556	suffix		tinybendygrad/base.bend has 56 lines, cited at :1556
+DANGLING-LINE	NOT-MOVED	tinybendygrad/helpers.bend:3218	base.bend:1556	suffix		tinybendygrad/base.bend has 56 lines, cited at :1556
 ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/creation.bend:39	ops.py:1160	suffix	fill_value	'fill_value' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
 ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/creation.bend:253	tinygrad/uop/ops.py:105	exact	T.tn_mop	'T.tn_mop' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
 ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/creation.bend:395	creation.py:61	suffix	cr_invalids	'cr_invalids' is NOWHERE in tinygrad/mixin/creation.py (165 lines)

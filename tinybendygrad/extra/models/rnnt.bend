@@ -88,7 +88,7 @@ import ./../datasets/__init__.bend as D
 #
 # `load_from_pretrained` (:62-94) is THIRTY-THREE `.assign(...)` LINES against a
 # TORCH checkpoint read through `torch.load` (:68) and a `fetch` (:64) that
-# `helpers.bend:2815` records as unported. It is not arithmetic left undone and it
+# `helpers.bend:3191` records as unported. It is not arithmetic left undone and it
 # is not counted as such.
 #
 # TODO(port): STOPPED AT `Prediction.__init__` (extra/models/rnnt.py:175).
@@ -136,7 +136,7 @@ def rt_pred_joint(+logit: T.Tensor, +label: T.Tensor, +hc: T.Tensor, +mask: T.Te
 
 # :62 def load_from_pretrained(self)
 def rt_rnnt_load_from_pretrained() -> D.Refused:
-  D.refuse("extra/models/rnnt.py:62 RNNT.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:64); helpers.bend:2815 records the HTTP seam as unported. The 33 `.assign` lines at :72-94 are torch-checkpoint loads, not arithmetic")
+  D.refuse("extra/models/rnnt.py:62 RNNT.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:64); helpers.bend:3191 records the HTTP seam as unported. The 33 `.assign` lines at :72-94 are torch-checkpoint loads, not arithmetic")
 
 # ---------------------------------------------------------------------------
 # :97-115 LSTMCell. THE RECURRENCE WALL, SPELLED OUT.

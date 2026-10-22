@@ -235,7 +235,7 @@ def ef_url(n: U32) -> String:
 
 # :134 def load_from_pretrained(self)
 def ef_load_pretrained(number: U32) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:134 EfficientNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load(fetch(...)) at :146; helpers.bend:2815 records the fetch seam as unported and resnet.bend:97-98 records torch_load as 0 hits")
+  D.refuse("extra/models/efficientnet.py:134 EfficientNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load(fetch(...)) at :146; helpers.bend:3191 records the fetch seam as unported and resnet.bend:97-98 records torch_load as 0 hits")
 
 # :148 if k.endswith("num_batches_tracked"): continue -- SPELLED, AND IT IS
 # THE UN-DOTTED FORM UPSTREAM USES HERE. That is worth saying because

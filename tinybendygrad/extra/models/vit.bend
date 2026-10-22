@@ -168,7 +168,7 @@ def vt_slice(+x: T.Tensor) -> D.Refused:
 # :32 def load_from_pretrained(m)   -- NOTE it is NOT `self`; upstream takes the
 # model as a parameter and it is the only def in this file that does.
 def vt_load_pretrained(embed_dim: U32) -> D.Refused:
-  D.refuse("extra/models/vit.py:32 ViT.load_from_pretrained -- FIRST MISSING SYMBOL np.load at :40; the port has no ndarray, and helpers.bend:2815 already records the fetch seam as unported")
+  D.refuse("extra/models/vit.py:32 ViT.load_from_pretrained -- FIRST MISSING SYMBOL np.load at :40; the port has no ndarray, and helpers.bend:3191 already records the fetch seam as unported")
 
 # :45-55 m.embedding[0].assign(...) -- one def for the block, because the
 # blocker is ONE symbol repeated twenty-seven times and naming it twenty-seven
