@@ -22239,3 +22239,10 @@ the gate.
       `UOp.ranges` -- the port's own inventory says so.  `:87`, `:88`, `:97`, `:99`, `:129`,
       `:155`, `:157`, `:186` and `:193` are the next ones in order, and each is DEFERRED on a
       substrate fact the port's header names.
+- [x] **THE PLANT'S "INHERITED" ARM IS A TEXT EDIT AND NOT `git show HEAD:`, AND THAT IS A MEASURED
+      CORRECTION, NOT A PREFERENCE.** The first revision took HEAD's bytes, and the moment the fix was
+      committed HEAD CARRIED THE FIX -- so the arm planted NOTHING, measured `lane=IDENTICAL axis=OK`,
+      and scored GREEN under `--falsify` for the ONE arm whose expectation was inverted. **A PLANT THAT
+      READS HEAD PLANTS NOTHING THE MOMENT HEAD CARRIES THE DEFECT'S FIX.** The arm now puts the count
+      back to FOUR. MEASURED: the plain run is 9 of 9, and `--falsify` is 8 of 9 with ARM 1 FAIL and
+      exit 1 -- so the plant CAN fail, and the arm that fails is the one whose expectation was inverted.

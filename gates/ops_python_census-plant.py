@@ -24,9 +24,16 @@ THE ARMS. Each one is a mutation of a SCRATCH copy of the port (or, for ARM 6, o
 scratch copy of `tc.py`), and each names the way it could be wrong:
 
   0 CONTROL     nothing planted. The lanes agree and the axis check is OK.
-  1 INHERITED   the port's bytes at HEAD -- the defect as it was inherited. The count
-                is the OLD TABLE'S LENGTH, which is right for the table tc.py used to
-                have and wrong for the table it has.
+  1 INHERITED   the count put back to FOUR -- the value the port held before the
+                fix, and the OLD TABLE'S LENGTH, which is right for the table
+                tc.py used to have and wrong for the table it has. **THIS ARM IS A
+                TEXT EDIT AND NOT `git show HEAD:`**, and that is a measured
+                correction, not a preference: the first revision of this plant
+                took HEAD's bytes, and the moment the fix was committed HEAD
+                CARRIED THE FIX -- so the arm planted NOTHING, measured
+                `lane=IDENTICAL axis=OK`, and scored green under `--falsify` for
+                the one arm whose expectation was inverted. **A PLANT THAT READS
+                HEAD PLANTS NOTHING THE MOMENT HEAD CARRIES THE DEFECT'S FIX.**
   2 ONE DEVICE  gfx1201 is sent to rdna3, the table gfx1100 REALLY selects. The count
                 is another device's count: RIGHT for the device it was measured on,
                 WRONG for this one -- and gfx1200, which shares the table, is still
@@ -194,6 +201,13 @@ def mutations(port_text: str) -> dict[str, str]:
     """The MUTATED port texts, by label. Every one is a TEXT EDIT on the port, so the
     mutation is a change a port author could have made by accident."""
     out = {}
+    # ARM 1: the count put back to FOUR -- the value the port held before the fix.
+    # A TEXT EDIT, NOT `git show HEAD:`: HEAD carries the fix now, so an arm that
+    # reads HEAD plants nothing. MEASURED: the first revision of this file took
+    # HEAD's bytes and, the moment the fix was committed, the arm measured
+    # `lane=IDENTICAL axis=OK` -- a green for the one arm `--falsify` inverts.
+    out["1 INHERITED"] = port_text.replace(
+        "U32.is_eq(tid, CORES_AMD_RDNA4()), 7,", "U32.is_eq(tid, CORES_AMD_RDNA4()), 4,")
     # ARM 2: gfx1201 alone is sent to rdna3 -- the table gfx1100 really selects. The
     # `Bool.or` of gfx1200 and gfx1201 is SPLIT, so the chain gains a `Bool.pick` and
     # needs one more closing paren: a mutation that does not compile is a DEAD arm,
@@ -236,9 +250,6 @@ def main() -> int:
                 print(f"  FAIL {label}: THE PLANT DID NOT PLANT -- the text it edits is "
                       f"not in the port any more", file=sys.stderr)
                 results.append(False)
-        head_port = subprocess.run(["git", "show", f"HEAD:{PORT_REL}"], cwd=str(ROOT),
-                                   capture_output=True, text=True).stdout
-        muts = {"1 INHERITED": head_port, **muts}
         # ARM 6: the ORACLE moves. `tc.amd_rdna4` grows by one entry, the port does not.
         tc_scratch = scratch / TC_REL
         tc_live = tc_scratch.read_text()
@@ -311,8 +322,6 @@ def main() -> int:
             lane, names = lane_diff(py_rows, bd_rows)
             axis, axis_msg = axis_check(port, scratch)
             want_lane, want_rows, want_axis = "DISAGREE", {"pyr_gfx1201_ncores"}, "FAIL"
-            if falsify:
-                want_lane, want_rows, want_axis = "IDENTICAL", set(), "OK"
             ok = lane == want_lane and set(names) == want_rows and axis == want_axis
             detail = f"lane={lane} rows={sorted(names)} axis={axis}"
             results.append(row(ok, f"{'6 THE ORACLE':<14} want lane={want_lane} "
