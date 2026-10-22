@@ -930,6 +930,12 @@ def p_bsrc(+dt: S.Dt) -> Bool:
 # `packed_rmw`'s OUTER op -- the `&` in `packed_rmw & UPat.var("wmask")` is
 # `Ops.AND` and not a bind, so the shape under it is still `prw_of`'s wall.
 #
+# THE PIN ADDED A SECOND FALL-THROUGH, and it is `sr rmw bare`: rule 14's
+# pattern binds `b` to the SOURCE of a CAST, so a store whose buffer is not a
+# CAST is not rule 14 either, and it falls to rule 15 with rule 14 alone
+# answering nothing. The two rules' patterns are therefore INVERTED over the
+# two nodes, and `sr_rmw_cast` is the clause that says which way round.
+#
 # The other two multi-rule ops need no walk and get none: rules 12 and 13 are
 # disjoint on the src COUNT and rules 0, 2, 3, 4 are disjoint on the dtype and on
 # src[0]'s op, so first-match and any-match agree on them. MEASURED on CPython's
@@ -959,8 +965,22 @@ def sr_pick_bitcast(+dt: S.Dt, +s0: S.Dt) -> U32:
 def sr_pick_load(+ns: U32) -> U32:
   Bool.pick(U32, U32.is_eq(ns, 3), 12, Bool.pick(U32, U32.is_eq(ns, 1), 13, sr_none()))
 
-def sr_pick_store(+ns: U32, +vop: O.Op) -> U32:
-  Bool.pick(U32, Bool.and(U32.is_eq(ns, 2), O.eq_op(vop, O.OpsAND{})), 14,
+# THE STORE'S BUFFER MUST BE A CAST. Upstream's rule 14 is
+# `UPat.store(UPat(Ops.CAST, src=(UPat.var("b"),)), UPat.any(packed_rmw, packed_rmw | UPat.var("nv")))`
+# -- the `b` binder is the CAST's SOURCE and not the buffer -- and that is a PAIR
+# with `packed_store`, which now stores to `word = idx.cast(dtypes.uint32)`
+# rather than to `idx` itself. MEASURED, the two patterns are INVERTED over the
+# two nodes: the pre-pin `UPat.store(UPat.var("b"), ...)` answers
+# `atomicAnd(&B[1],W);` on `STORE(INDEX, AND)` and NOTHING on `STORE(CAST, AND)`,
+# and the pinned one answers NOTHING on the first and `atomicAnd(&B[1],W);` on
+# the second -- because `UPat.match`'s `setdefault(name, uop) is not uop` check
+# REJECTS a store whose `b` and `packed_rmw`'s `b` are different UOps. So the
+# buffer's op is the rule's THIRD predicate, beside the src COUNT and the value's
+# op, and it is ONE def because the TABLE and the BODY both ask it.
+def sr_rmw_cast(+bop: O.Op) -> Bool: O.eq_op(bop, O.OpsCAST{})
+
+def sr_pick_store(+ns: U32, +vop: O.Op, +bop: O.Op) -> U32:
+  Bool.pick(U32, Bool.and(Bool.and(U32.is_eq(ns, 2), O.eq_op(vop, O.OpsAND{})), sr_rmw_cast(bop)), 14,
     Bool.pick(U32, U32.is_eq(ns, 2), 15, sr_none()))
 
 # 0 `UPat(Ops.CAST, dtype=dtypes.uint32, src=(UPat(Ops.INDEX, name="x"),))`, then
@@ -982,19 +1002,25 @@ def sr_neg(+dt: S.Dt, +x: String) -> String:
 def sr_cbool(+dt: S.Dt, v: Bool) -> String:
   Bool.pick(String, O.eq_dt(dt, S.boolean()), Bool.pick(String, v, "true", "false"), "NOMATCH")
 
-# 3 `f"bitcast<u32>({c.val})" if c.val<0 else f"{c.val&0xFFFFFFFF}u"` and
-# 4 `f"i32({v})" if (v:=truncate[x.dtype](c.val))<0 else f"{v}"`. BOTH TAKE THE
-# CONST'S OWN weakint VALUE, and the value is an `I64` and NOT a `U32` here
-# because a U32 cannot tell a weakint CONST of -1 from one of 4294967295 and
-# CPython can: the two spellings are `bitcast<u32>(-1)` and `4294967295u`.
-# `truncate[x.dtype]` with `x.dtype == int32` is `ctypes.c_int32`, so rule 4's
-# mask is the 32-bit one and NOT a 64-bit one.
+# 3 `f"{c.val&0xFFFFFFFF}u"` and 4 `f"i32({v})" if (v:=truncate[x.dtype](c.val))<0
+# else f"{v}"`. BOTH TAKE THE CONST'S OWN weakint VALUE, and the value is an
+# `I64` and NOT a `U32` here because a U32 cannot tell a weakint CONST of -1
+# from one of 4294967295 and CPython can. `truncate[x.dtype]` with `x.dtype ==
+# int32` is `ctypes.c_int32`, so rule 4's mask is the 32-bit one and NOT a
+# 64-bit one.
+#
+# RULE 3 HAS NO NEGATIVE ARM, and that is THE PIN'S CHANGE: upstream dropped
+# `f"bitcast<u32>({c.val})" if c.val < 0 else ...` and a negative const cast to
+# u8/u16/u32 is now the MASKED value with its `u` suffix. MEASURED against the
+# vendored `tinygrad/renderer/wgsl.py`: `c.val = -1` answers `4294967295u` and
+# not `bitcast<u32>(-1)`. So the two spellings the old text contrasted are ONE
+# spelling now, and the axis below still carries -1 because the WEAKINT value
+# is still a different one -- `fixtures_hold` compares the AXES and not the
+# renderings.
 def sr_cuint.masked(+v: H.I64) -> H.I64: H.i64_of_hi_lo(0, H.lo32(v))
 
 def sr_cuint(+dt: S.Dt, +v: H.I64) -> String:
-  Bool.pick(String, p_cuint(dt),
-    Bool.pick(String, H.i64_is_neg(v), String.concat(["bitcast<u32>(", H.i64_dec(v), ")"]),
-      String.concat([H.i64_dec(sr_cuint.masked(v)), "u"])), "NOMATCH")
+  Bool.pick(String, p_cuint(dt), String.concat([H.i64_dec(sr_cuint.masked(v)), "u"]), "NOMATCH")
 
 def sr_ci32.trunc(+v: H.I64) -> H.I64: H.i64_of_i32(H.lo32(v))
 
@@ -1073,7 +1099,7 @@ def sr_lgate(ns: U32, +b: String, +i0: String, +n0: U32, +d0: S.Dt, a0: S.Addr, 
 def sr_load(ns: U32, +x: String, +n: U32, +dt: S.Dt, a: S.Addr) -> String:
   Bool.pick(String, U32.is_eq(ns, 1), render_load(x, n, dt, a), "NOMATCH")
 
-# 14 `UPat.store(UPat.var("b"), UPat.any(packed_rmw, packed_rmw | UPat.var("nv")))`
+# 14 `UPat.store(UPat(Ops.CAST, src=(UPat.var("b"),)), UPat.any(packed_rmw, packed_rmw | UPat.var("nv")))`
 # -- the READ-MODIFY-WRITE: `atomicAnd` clears the field, `atomicAdd` sets it, and
 # `new_v` is gone when it is 0 so the second line is OPTIONAL. `vop` is
 # `packed_rmw`'s OUTER op and it is the pattern's whole discriminator here: a
@@ -1081,11 +1107,15 @@ def sr_load(ns: U32, +x: String, +n: U32, +dt: S.Dt, a: S.Addr) -> String:
 # `srneg 14` answered `atomicAnd(&B[1],W);` and DROPPED THE STORED VALUE. The
 # `\n  ` is a real newline in Python and is SPELLED by the row's `one_line`; the
 # two spaces after it are in the f-string.
+#
+# `bop` IS THE STORE'S BUFFER'S OP and it is the pin's THIRD predicate: the
+# pattern binds `b` to the CAST's SOURCE, so a store whose buffer is not a CAST
+# is not this rule at all. `sr_rmw_cast` is that clause.
 def sr_rmw.add(hasnv: Bool, +b: String, +nv: String) -> String:
   Bool.pick(String, hasnv, String.concat(["\n  atomicAdd(&", b, ",", nv, ");"]), "")
 
-def sr_rmw(+vop: O.Op, pk: Bool, hasnv: Bool, +b: String, +w: String, +nv: String) -> String:
-  Bool.pick(String, Bool.and(O.eq_op(vop, O.OpsAND{}), pk),
+def sr_rmw(+vop: O.Op, +bop: O.Op, pk: Bool, hasnv: Bool, +b: String, +w: String, +nv: String) -> String:
+  Bool.pick(String, Bool.and(Bool.and(O.eq_op(vop, O.OpsAND{}), sr_rmw_cast(bop)), pk),
     String.concat(["atomicAnd(&", b, ",", w, ");", sr_rmw.add(hasnv, b, nv)]), "NOMATCH")
 
 # 15 `UPat.store(UPat.var("b"), UPat.var("v"))` -- `f"{ctx[b]} = {ctx[v]};"` --
@@ -1095,7 +1125,7 @@ def sr_store(ns: U32, +b: String, +v: String) -> String:
 
 # 16 `UPat(Ops.INDEX, src=(UPat.var("b"), UPat.var("idx")))` --
 # `f"{ctx[b]}[{strip_parens(ctx[idx]) if idx.arg is Ops.ADD else ctx[idx]}]"`, and
-# `strip_parens` (helpers.bend:1455) is ALREADY PORTED, `is_balanced` and all,
+# `strip_parens` (helpers.bend:1463) is ALREADY PORTED, `is_balanced` and all,
 # which is why this rule is four lines and not a walk. The `Ops.ADD` test is the
 # rule's own `isadd` parameter; a source that is not balanced keeps its parens,
 # and `(I0)+(I1)` is that case. `op` is the pattern's, because `srneg 16` is a
@@ -1509,7 +1539,7 @@ def r_srneg_0() -> String:
     r_srneg(11, "const", sr_bany(O.OpsCONST{}, S.single(), "S"), "NOMATCH"),
     r_srneg(12, "load 2", sr_lgate(1, "B[1]", "B[1]", 16, S.uint8(), S.AGlobal{}, "V", "G"), "NOMATCH"),
     r_srneg(13, "load 3", sr_load(3, "B[1]", 16, S.uint8(), S.AGlobal{}), "NOMATCH"),
-    r_srneg(14, "store u8", one_line(sr_rmw(O.OpsCONST{}, True{}, False{}, "B[1]", "W", "NV")), "NOMATCH"),
+    r_srneg(14, "store u8", one_line(sr_rmw(O.OpsCONST{}, O.OpsINDEX{}, True{}, False{}, "B[1]", "W", "NV")), "NOMATCH"),
     r_srneg(15, "store 3", sr_store(3, "B", "V"), "NOMATCH"),
     r_srneg(16, "const", sr_index(O.OpsCONST{}, True{}, "B", "(I0+I1)"), "NOMATCH")])
 
@@ -1522,9 +1552,10 @@ def r_sr_0() -> String:
 
 # rules 3-4: the two CONST casts. THE FIXTURE IS THE WEAKINT CONST'S OWN VALUE AS
 # AN I64, SPELLED `hi:lo`, because that is the one representation that tells -1
-# from 4294967295 -- the two spellings are `bitcast<u32>(-1)` and
-# `4294967295u` and a `U32` word is both of them at once. `fixtures_hold` reads
-# these three axes off this file's text, so an axis cannot drift on one side.
+# from 4294967295 -- and the PINNED rule 3 renders BOTH of them `4294967295u`,
+# which is why the AXIS and not the rendering is what these rows carry.
+# `fixtures_hold` reads these three axes off this file's text, so an axis cannot
+# drift on one side.
 def r_cu1(+nm: String, hi: U32, lo: U32, py: String) -> String:
   r("sr cuchar " ++ nm, sr_cuint(S.uint32(), H.i64_of_hi_lo(hi, lo)), py)
 
@@ -1532,7 +1563,7 @@ def r_ci1(+nm: String, hi: U32, lo: U32, py: String) -> String:
   r("sr ci32 " ++ nm, sr_ci32(S.int32(), H.i64_of_hi_lo(hi, lo)), py)
 
 def r_sr_3() -> String:
-  String.concat([r_cu1("255", 0, 255, "255u"), r_cu1("-1", 4294967295, 4294967295, "bitcast<u32>(-1)"),
+  String.concat([r_cu1("255", 0, 255, "255u"), r_cu1("-1", 4294967295, 4294967295, "4294967295u"),
     r_cu1("4294967295", 0, 4294967295, "4294967295u"), r_cu1("4294967296", 1, 0, "0u"),
     r_ci1("7", 0, 7, "7"),
     r_ci1("-3", 4294967295, 4294967293, "i32(-3)"), r_ci1("4294967295", 0, 4294967295, "i32(-1)"),
@@ -1580,11 +1611,21 @@ def r_sr_12() -> String:
 # f-string. `O.OpsAND{}` is `packed_rmw`'s outer op and `O.OpsCONST{}` is the
 # `rmw plain` node's stored value, which is why that row is a refusal and not a
 # second rendering.
+#
+# THE CAST CONSTRUCTOR AND THE INDEX CONSTRUCTOR ARE THE STORE'S BUFFER, and they
+# are what the pinned rule-14 pattern discriminates on. `rmw nv` is CPython's OWN
+# `packed_store` output, whose buffer is `word = idx.cast(dtypes.uint32)` -- a
+# CAST -- so it IS rule 14. `rmw bare` is the same AND without the `new_v`, and
+# its buffer is the INDEX under that CAST, so rule 14 REFUSES it and the row is
+# a refusal. MEASURED, the two patterns are INVERTED over the two nodes: the
+# pre-pin `UPat.store(UPat.var("b"), ...)` answered `atomicAnd(&B[1],W);` on
+# `STORE(INDEX, AND)` and NOTHING on `STORE(CAST, AND)`, and the pinned one
+# answers NOTHING on the first and `atomicAnd(&B[1],W);` on the second.
 def r_sr_14() -> String:
-  String.concat([r_sr("rmw nv", one_line(sr_rmw(O.OpsAND{}, True{}, True{}, "B[1]", "W", "NV")),
+  String.concat([r_sr("rmw nv", one_line(sr_rmw(O.OpsAND{}, O.OpsCAST{}, True{}, True{}, "B[1]", "W", "NV")),
       "atomicAnd(&B[1],W);\\n  atomicAdd(&B[1],NV);"),
-    r_sr("rmw bare", one_line(sr_rmw(O.OpsAND{}, True{}, False{}, "B[1]", "W", "NV")), "atomicAnd(&B[1],W);"),
-    r_sr("rmw plain", sr_rmw(O.OpsCONST{}, False{}, False{}, "B", "W", "NV"), "NOMATCH"),
+    r_sr("rmw bare", one_line(sr_rmw(O.OpsAND{}, O.OpsINDEX{}, True{}, False{}, "B[1]", "W", "NV")), "NOMATCH"),
+    r_sr("rmw plain", sr_rmw(O.OpsCONST{}, O.OpsINDEX{}, False{}, False{}, "B", "W", "NV"), "NOMATCH"),
     r_sr("store", sr_store(2, "B", "V"), "B = V;")])
 
 # rule 16: the INDEX, and `strip_parens` on the `Ops.ADD` source. `(I0)+(I1)` is
@@ -1613,8 +1654,8 @@ def r_sr_pick() -> String:
     sr_pick_bitcast(S.single(), S.half()), sr_pick_bitcast(S.half(), S.half())]), ","),
     "6,7,8,9,10,11,11"),
     r_sr("pick load", String.join(u32_show([sr_pick_load(3), sr_pick_load(1)]), ","), "12,13"),
-    r_sr("pick store", String.join(u32_show([sr_pick_store(2, O.OpsAND{}),
-      sr_pick_store(2, O.OpsCONST{})]), ","), "14,15")])
+    r_sr("pick store", String.join(u32_show([sr_pick_store(2, O.OpsAND{}, O.OpsCAST{}),
+      sr_pick_store(2, O.OpsCONST{}, O.OpsINDEX{})]), ","), "14,15")])
 
 def r_srs() -> String:
   String.concat([r_sr_0(), r_sr_3(), r_sr_5(), r_sr_6(), r_sr_12(), r_sr_14(), r_sr_16(), r_sr_pick()])
@@ -1689,7 +1730,7 @@ def main() -> IO(Unit):
 #   M44 sr_index never strips parens              1  sr index add
 #   M49 sr_idx's guard is dropped                 1  sr idx plain
 #   M50 sr_ci32 truncates to 64 bits             2  sr ci32 4294967295 sr ci32 4294967296
-#   M51 sr_cuint forgets the u32 mask             1  sr cuchar 4294967296
+#   M51 sr_cuint forgets the u32 mask             2  sr cuchar -1, sr cuchar 4294967296
 #   M52 sr_buffer drops the space after the colon 3  sr buffer global/local/reg
 #   M53 ssimp walks ONE cast, not the chain       2  rk_sz mixed rk mixed
 #   M54 type_map's KeyError arm answers nothing   1  type_map double, via the PIN check
@@ -1701,26 +1742,30 @@ def main() -> IO(Unit):
 #
 #   M55 sr_bhalf ANDs half with src=, so it ORs   1  srneg 6
 #   M56 sr_pick_bitcast drops rule 6's src=       1  sr pick bitcast (11 -> 6)
-#   M57 sr_pick_store forgets packed_rmw's AND    1  sr pick store (15 -> 14)
-#   M58 sr_rmw forgets packed_rmw's AND           1  srneg 14, DROPS THE VALUE AGAIN
+#   M57 sr_pick_store forgets packed_rmw's AND    0  BLIND SPOT, see THE PIN
+#   M58 sr_rmw forgets packed_rmw's AND           0  BLIND SPOT, see THE PIN
 #   M59 sr_store accepts a 3-src GATED store      1  srneg 15, DROPS THE GATE AGAIN
 #   M60 sr_buffer forgets the BUFFER op           1  srneg 5
 #   M61 sr_load accepts any src count             1  srneg 13
 #   M62 sr_idx forgets the CAST dtype             1  srneg 0
 #   M63 sr_neg accepts float32 as an unsigned     1  srneg 1
+#   M64 sr_rmw_cast forgets the CAST              1  sr rmw bare
+#   M65 sr_rmw_cast refuses every buffer          2  sr pick store, sr rmw nv
 #
-# M58 AND M59 ARE THE TWO DANGEROUS ONES, and they are worth reading together:
-# each reinstates a SILENT WRONG ANSWER rather than an over-firing -- a packed
-# store whose stored value is dropped, and a gated store whose gate is dropped.
-# Neither shows in a diff of the two lanes' row NAMES, and both were live in this
-# file until the patterns landed.
+# M59 IS THE DANGEROUS ONE NOW, and it is worth reading with M64: M59 reinstates a
+# SILENT WRONG ANSWER rather than an over-firing -- a gated store whose gate is
+# dropped -- and it shows in a diff of the two lanes' row NAMES only.
+# M64 AND M65 ARE THE PIN'S OWN, and they are the two mutations that say the new
+# predicate is load-bearing: M64 (`sr_rmw_cast` forgets the CAST) moves `sr rmw
+# bare`, and M65 (`sr_rmw_cast` refuses every buffer) moves `sr pick store` AND
+# `sr rmw nv`.
 #   P1 the port drops rule 16's whole row group   DEAD  5, "207 rows" expected
 #   P2 the port drops ONE row from a group        DEAD  5, "207 rows" expected
 #   P3 the ORACLE drops one rule's rows          REFUSED 3, "207 rows" expected
 #   P4 the port RENAMES a row (same count)        1  sr bushort half
 #   P5 the pins lose a pinned divergence          1  code_for_op LOAD
 #   P6 a pin's PORT VALUE is edited               1  type_map double, "appears 0 times"
-#   P7 the port's fixture axis drifts              1  sr cuchar -1
+#   P7 the port's fixture axis drifts              0  BLIND SPOT, see THE PIN
 #   P8 the oracle's fixture axis drifts            0  fixtures_hold: SR_CI
 #   P9 the port DUPLICATES a row name              1  sr bany
 #
@@ -1737,7 +1782,50 @@ def main() -> IO(Unit):
 # `hi == 0`, so replacing `masked(v)` with `v` left every one of them unchanged
 # and the gate was GREEN on a mutation. The `4294967296` row is the fix and it
 # was added because the mutation table said so, not because the code looked
-# wrong.
+# wrong. IT NOW MOVES TWO ROWS, and the second one is the PIN's: rule 3 has no
+# negative arm, so a weakint CONST of -1 is masked to `4294967295u` and the mask
+# is observable on it too.
+#
+# ===========================================================================
+# THE PIN, AND THE THREE BLIND SPOTS IT OPENED.
+#
+# `tinygrad/renderer/wgsl.py` MOVED under this port, and TWO of its changes
+# touch the rows: `string_rewrite`'s rule 3 lost its negative-const arm and
+# rule 14's STORE pattern gained a `CAST` on its buffer. MEASURED, the two
+# patterns are INVERTED over the two nodes -- the pre-pin rule 14 answered
+# `atomicAnd(&B[1],W);` on `STORE(INDEX, AND)` and NOTHING on `STORE(CAST,
+# AND)`, and the pinned one answers NOTHING on the first and `atomicAnd(&B[1],
+# W);` on the second -- so this file's `sr rmw bare` row is a REFUSAL now, and
+# `sr rmw nv` still renders the pair.
+#
+# THE THREE BLIND SPOTS ARE ALL THE SAME ONE: THE RULE-14 PREDICATE IS NOW THREE
+# CLAUSES AND NO FIXTURE ISOLATES THE SECOND. `sr_pick_store` and `sr_rmw` test
+# the src COUNT, the VALUE's op (`Ops.AND`) and the BUFFER's op (`Ops.CAST`),
+# and the oracle's three rule-14 fixtures are `rmw nv` (AND, CAST), `rmw bare`
+# (AND, INDEX) and `rmw plain` (CONST, INDEX): every one of them is refused by
+# the CAST clause or by the AND clause or by BOTH, so removing EITHER clause
+# alone changes no row. MEASURED 2026-10-22: M57 and M58 move 0 rows, where
+# they moved 1 each before the pin. THE FIX IS AN ORACLE FIXTURE, not a port
+# fix -- a fourth rule-14 node whose buffer IS a CAST and whose value is NOT an
+# AND -- and it needs a row on both sides.
+#
+# P7 IS THE SAME SHAPE FROM THE OTHER END. Rule 3 renders a weakint CONST of -1
+# and one of 4294967295 as the SAME `4294967295u`, so drifting the `-1` axis
+# entry's high word changes no row: MEASURED, P7 moves 0 rows where it moved 1.
+# The AXIS still carries -1 because the WEAKINT value is still a different one,
+# and `fixtures_hold` compares the axis and not the rendering -- so the axis is
+# right and the MUTATION is blind.
+#
+# THE PLANTS, and they are the same harness the mutation table uses: a COPY of
+# this file beside the original, one edit, and the rows that moved.
+#
+#   PLANT A  rule 3 regains the pre-pin negative arm    1  sr cuchar -1
+#   PLANT B  `sr_rmw_cast` always true (pre-pin rule 14) 1  sr rmw bare
+#
+# A PLANT THAT MOVES NOTHING IS A HOLE, so A and B are the two claims that the
+# pin's two changes are load-bearing, and they are the two the gate's lane diff
+# would otherwise have caught silently.
+# ===========================================================================
 #
 # WHAT THE TABLE SAYS, and the three things it caught that the rows did not.
 #
@@ -1757,7 +1845,9 @@ def main() -> IO(Unit):
 # and so must APPEND; `u32_show` and `ls_sz` are WALKED and so must PREPEND. Each
 # wrong choice reverses a WHOLE SHADER and is invisible in a boolean.
 #
-# THREE BLIND SPOTS LEFT, and they are the honest content of this table.
+# FIVE BLIND SPOTS LEFT, and they are the honest content of this table. TWO OF
+# THEM ARE THE PIN'S -- M57, M58 and P7, and they are in THE PIN block above
+# with the reason and the fix.
 #
 #   M11's BLIND SPOT IS GONE. It moved nothing because `render_load` had NO ROW
 #   AT ALL -- it was ported, called by nothing in this file (the string rule that
@@ -1790,10 +1880,12 @@ def main() -> IO(Unit):
 #
 # 1. `packed_rmw`'s INNER shape. `sr_pick_store` and `sr_rmw` test `Ops.AND`,
 #    which is `packed_rmw`'s outer op and the whole of what distinguishes a
-#    read-modify-write from a plain store; `AND(LOAD(CAST(b, u32)), wmask)` --
-#    the `& UPat.var("wmask")` is an Ops.AND and not a bind -- is still
-#    unported, and `prw_of` is still the def that names it and calls nothing.
-#    A CONST spliced onto an `AND` of the wrong shape would still pass.
+#    read-modify-write from a plain store, and the pin's THIRD predicate -- the
+#    store's buffer being a CAST -- which is `sr_rmw_cast`; but
+#    `AND(LOAD(CAST(b, u32)), wmask)` -- the `& UPat.var("wmask")` is an Ops.AND
+#    and not a bind -- is still unported, and `prw_of` is still the def that
+#    names it and calls nothing. A CONST spliced onto an `AND` of the wrong
+#    shape would still pass.
 # 2. RULES 0, 2, 3 AND 4 SHARE AN OP and their dtypes are NOT all disjoint --
 #    rule 0 is `uint32` and rule 3 is `uint32 | uint16 | uint8` -- so they divide
 #    on src[0]'s op as well, and the ORDER between them is untested because they
