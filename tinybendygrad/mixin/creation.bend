@@ -265,6 +265,31 @@ def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 # and `UOp.const(0.1, dtypes.bfloat16)` holds `ConstFloat(0.10009765625)`: WITHOUT this
 # the port would hold the f32 of 0.1 in BOTH, which is a DIFFERENT NUMBER IN THE GRAPH.
 # `f32` AND `weakfloat` ARE THE IDENTITY, so the rows that were already right do not move.
+#
+# ---------------------------------------------------------------------------
+# THE `weakfloat` ARM IS THE IDENTITY ON THE PORT'S F32, WHICH IS NOT UPSTREAM'S IDENTITY ON
+# A DOUBLE, AND THE DIFFERENCE IS REACHABLE -- it is a MERGE of two upstream constants into
+# one, and a merge is a hash collision in the port's constant identity.  MEASURED, and the
+# instrument is `gates/constid-gate.py`:
+#
+#   upstream's weakfloat const for `0.1` holds the DOUBLE `0.1` (`0x3FB999999999999A`) and
+#   the one for `0.10000000149011612` holds the DOUBLE `0x3FB99999A0000000`; two doubles, two
+#   `ConstFloat.bits`, TWO KEYS in upstream's `ucache`.
+#   the port's `O.CFloat{f}` holds an F32, and a Bend float LITERAL is an F32 literal
+#   (`bend.ts:2204-2210`), so the port's `0.1` and its `0.10000000149011612` are the SAME
+#   `0x3DCCCCCD` and ONE KEY in ONE arena.  `merge_keys`: upstream 2, the port 1.
+#
+# AND THE CONSTANT HOLDS A DIFFERENT NUMBER: upstream's weakfloat const for `16777217.0`
+# holds `16777217.0` and the port's holds `16777216.0`, because 2**24+1 is the smallest
+# integer an f32 cannot hold.  `merge_value_text`.
+#
+# SO `truncate_float` IS NOT WHERE THIS IS FIXED: the value it is handed is ALREADY an f32
+# when it arrives, and the port's SOURCE cannot spell a double.  `dtype.bend`'s wall
+# comment names the compiler's answer (no F64, a float literal is `Lit("F32", ...)`, and the
+# 64 bits of a double ARE holdable -- `H.I64` is `I64{hi: U32, lo: U32}`) and what the
+# port cannot do with them (write one, or compute one).  THE FIX IS `uop/ops.bend`'s
+# `Const`, and that file is another unit's.
+# ---------------------------------------------------------------------------
 def cr_const_of.trunc(dt: S.Dt, v: O.Const) -> O.Const:
   match v:
     case O.CFloat{f}: O.CFloat{DT.truncate_float(dt, f)}

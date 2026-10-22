@@ -797,7 +797,7 @@ def fp8_is_fnuz(kind: U32) -> Bool:
 # representable in f32 -- so the value arm is arithmetic that never rounds, and
 # the honest translation is the PATTERN those bits have. The C's own comment says
 # so at :106. Writing it as a float expression would import `F32.div` and
-# `F32.pow`, which are `law`s live code cannot call (helpers.bend:2323).
+# `F32.pow`, which are `law`s live code cannot call (helpers.bend:2325).
 #
 #   normal    (dtype.c:109) (1 + mant/2^(sig-1)) * 2^(exp - bias)
 #               = 1.f * 2^(exp - bias), and `1.f`'s top bit is exactly bit
@@ -1164,6 +1164,55 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # F32, so an f64 CONST HERE IS THE F32 OF UPSTREAM'S DOUBLE. The port's `Const` type
 # (`uop/ops.bend:802`, `CFloat{f: F32}`) is where that would have to be fixed, and
 # that file is another unit's.
+#
+# ---------------------------------------------------------------------------
+# THE WALL IS WIDER THAN THE VALUE, AND THE WIDER PART IS THE IDENTITY.  MEASURED, and the
+# instrument is `gates/constid-gate.py` (three lanes, and a PLANT in `gates/constid-plant.py`):
+#
+# UPSTREAM'S CONST IDENTITY FOR A FLOAT IS 64 BITS.  `dtype.py:8-25`'s `ConstFloat` packs
+# its value with `struct.pack('<d', v)` -- a DOUBLE -- and `__hash__` is `hash(self.bits)`.
+# So two upstream constants are two keys iff their DOUBLES differ, and `0.1`
+# (`0x3FB999999999999A`) and `0.10000000149011612` (`0x3FB99999A0000000`) are two keys: TWO
+# ENTRIES IN ONE DICT, on upstream's own `ucache` key.
+#
+# THE PORT'S IS 32.  A Bend float LITERAL is an F32 literal (`bend.ts:2204-2210`), so the
+# port's `0.1` and its `0.10000000149011612` are the SAME 32 bits (`0x3DCCCCCD`) and
+# therefore ONE key in ONE arena.  `gates/constid-gate.py`'s `merge_keys` row: upstream 2,
+# the port 1.  AND THE CONSTANT HOLDS A DIFFERENT NUMBER: upstream's weakfloat const holds
+# the DOUBLE, so `16777217.0` stays `16777217.0`, and the port's holds the f32 of it, which
+# is `16777216.0` -- 2**24+1 is the smallest integer an f32 cannot hold, and it is the
+# pair whose difference the port's own formatter can SEE (`merge_value_text`).
+#
+# SO THIS IS NOT A NEAR MISS ON THE VALUE ALONE: it is a MERGE of two upstream constants
+# into one, and a merge is a hash collision in the port's constant identity.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE COMPILER ACTUALLY OFFERS, FROM ITS SOURCE, because "there is no F64" is a
+# claim about a file and the file is right here:
+#
+#   * NO F64.  `references/bend/bend2/base.bend:65-68` declares `U32{data: Word(32n)}` and
+#     `F32{data: Word(32n)}` and NOTHING ELSE of that shape; there is no `F64` in
+#     `references/bend/bend2/` at all, and no f64 arithmetic to call.
+#   * A float LITERAL is an F32 literal.  `bend.ts:2204-2210`: `const v = f32_round(m[0]);
+#     ... return Lit("F32", f32_to_bits(v));`.  So the port's SOURCE cannot even SPELL a
+#     double -- the narrowing happens AT THE LITERAL, before any const identity question.
+#   * 64 BITS ARE HOLDABLE.  `Word(p)` is generic over `Nat` (`base.bend:54-62`), so
+#     `Word(64n)` is a legal type, and THE PORT ALREADY HOLDS 64 BITS: `helpers.bend:1647`
+#     is `type I64 is Data: I64{hi: U32, lo: U32}`.
+#
+# SO THE WALL IS NOT "THE BITS DO NOT FIT".  IT IS: THE PORT CANNOT WRITE A DOUBLE AND
+# CANNOT COMPUTE ONE (no f64 arithmetic), so a `CFloat` that carried the double's bits
+# would have to have its f32 carried ALONGSIDE it, computed by an f64->f32 rounding that
+# Bend cannot do -- and every `CFloat{...}` site in the tree would have to spell the
+# double's bits.  THAT IS A CHANGE TO `uop/ops.bend`'s `Const`, which is another unit's.
+#
+# WHAT IS SETTLED, and MEASURED, so the next reader does not re-open it: the port's
+# `eq_const.CFloat` COMPARES THE BITS, and that is RIGHT.  Upstream's `__eq__` says two
+# nans are equal and upstream's `__hash__` says otherwise -- upstream's own two rules
+# contradict each other, and upstream's own hash table settles it in favour of `__hash__`
+# (two entries in one dict).  `gates/constid-plant.py` plants the IEEE comparator and
+# shows the port's count of distinct constants MOVE 2 -> 1: a collision upstream does not
+# have.  **THE MERGE IS THE WIDTH.  THE COMPARATOR IS NOT WHAT DIVERGES.**
 #
 # THE INT ARM IS dtype.py:296's OTHER HALF and is NOT PORTED: it needs the value to be
 # an `H.I64` and the width to be a mask, and the port's `CInt` holds a full `H.I64`.

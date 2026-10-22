@@ -1,0 +1,59 @@
+--- a/tinybendygrad/uop/ops.bend
++++ b/tinybendygrad/uop/ops.bend
+@@ -799,6 +799,35 @@
+ type Const is Data:
+   CBool{b: Bool}
+   CInt{i: H.I64}
++  # `CFloat{f: F32}` -- AND THE F32 IS 32 BITS WHERE UPSTREAM'S IS 64.  `dtype.py:8-25`'s
++  # `ConstFloat` packs its value with `struct.pack('<d', v)` -- a DOUBLE -- and `__hash__` is
++  # `hash(self.bits)`, so upstream's float-const identity is 64 bits wide.  THE PORT'S IS 32,
++  # AND THAT IS A MERGE AND NOT A NEAR MISS: two upstream constants that differ only above
++  # bit 32 are ONE key here.
++  #
++  # MEASURED, and the instrument is `gates/constid-gate.py` (three lanes; the plant is
++  # `gates/constid-plant.py`):
++  #   upstream  `0.1` is `0x3FB999999999999A` and `0.10000000149011612` is
++  #             `0x3FB99999A0000000` -- two doubles, two `ConstFloat.bits`, TWO ENTRIES in
++  #             ONE dict keyed by upstream's own `ucache` key (`ops.py:201`).
++  #   the port  a Bend float LITERAL is an F32 literal (`bend.ts:2204-2210`), so `0.1` and
++  #             `0.10000000149011612` are the SAME `0x3DCCCCCD` and ONE key in ONE arena.
++  #             `merge_keys`: upstream 2, the port 1.
++  #   AND THE CONSTANT HOLDS A DIFFERENT NUMBER: upstream's weakfloat const for `16777217.0`
++  #             holds `16777217.0` and this one holds `16777216.0`, because 2**24+1 is the
++  #             smallest integer an f32 cannot hold.  `merge_value_text`.
++  #
++  # WHY THE F32 AND NOT A DOUBLE: THERE IS NO F64.  `references/bend/bend2/base.bend:65-68`
++  # declares `U32{data: Word(32n)}` and `F32{data: Word(32n)}` and nothing else of that
++  # shape, and `bend.ts:2204-2210` makes every float literal `Lit("F32", f32_to_bits(v))`.
++  # 64 BITS ARE HOLDABLE -- `Word(p)` is generic over `Nat`, and `helpers.bend:1647` is
++  # `type I64 is Data: I64{hi: U32, lo: U32}` -- but what Bend cannot do is WRITE a double or
++  # COMPUTE one, so a `CFloat` carrying the double's bits would have to carry the f32
++  # alongside it and the double's bits would have to be SPELLED at every `CFloat{...}` site.
++  # THAT IS THE CHANGE THIS TYPE NEEDS.
++  #
++  # `tinybendygrad/dtype.bend`'s `truncate_float` wall comment carries the long form, and
++  # `tinybendygrad/mixin/creation.bend`'s `cr_const_of.trunc` carries the reachability.
+   CFloat{f: F32}
+   CInvalid{}
+ 
+@@ -1955,6 +1984,20 @@
+   # BITS, NOT IEEE. `UOp.key` is a hash over the packed arg, so CONST identity is
+   # the bit pattern; `F32.is_eq` is IEEE and disagrees in both directions (see
+   # `t_float_zeros_differ` / `t_float_nan_interns`, which are CPython-measured).
++  #
++  # AND BITWISE IS THE RIGHT ANSWER, WHICH IS NOT THE OBVIOUS ONE.  Upstream's
++  # `ConstFloat.__eq__` says `nan == nan` for ANY two nans (`dtype.py:16-18`) while its
++  # `__hash__` is `hash(self.bits)` (`dtype.py:21`) -- upstream's OWN two rules contradict
++  # each other, and upstream's own hash table settles it in favour of `__hash__`: MEASURED,
++  # two nans with different payloads are TWO entries in ONE dict, and the same payload twice
++  # is ONE.  A CONST's identity IS a hash, so the hash is the thing to match, and the
++  # REACHABLE nan agrees anyway: `DType.const` canonicalises a nan to `math.nan`
++  # (`dtype.py:81-82`), so upstream has exactly one reachable const nan payload too.
++  #
++  # `gates/constid-plant.py` plants the IEEE comparator and MEASURES the consequence: the
++  # port's count of distinct constants in ONE arena moves 2 -> 1, which is a hash collision
++  # upstream does not have.  **DO NOT CHANGE THIS COMPARATOR.**  What diverges is the WIDTH
++  # (`CFloat` above), not the comparison.
+   match y:
+     case CFloat{g}: U32.is_eq(F32.bits(f), F32.bits(g))
+     case _: False{}
