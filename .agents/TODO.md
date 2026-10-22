@@ -1463,6 +1463,33 @@ imagenet-distance    [##] 2/3  **THE MEASURED DISTANCE TO "RUN IMAGENET USING BE
                                        GB OF DATA, WHICH IS A HOST CONCERN AND NOT THE PORT'S.** The first three are
                                        the port's; the last two are not.
 
+commit-recipe-race   [##] 2/3  **THE PRESCRIBED COMMIT RECIPE SWEEPS 40 OF 40 TRIALS UNDER A RACE, AND THE HAZARD
+                                       FIRED ON ME.** MEASURED 2026-10-22 at HEAD `a50ec806e`, instrument
+                                       `.agents/slop/idxrace/idxrace.py` (Python, throwaway repo, no `bend`, no
+                                       corpus, no network). **THE INCIDENT: MY OWN COMMIT `64169355a` CARRIED 866
+                                       DELETIONS ACROSS 5 PATHS -- INCLUDING `tinybendygrad/device.bend` (441 LINES, A
+                                       SUBSTRATE FILE) AND THREE `.agents/slop/linkbuf/` TOOLS (422 LINES) -- BECAUSE
+                                       THE RECIPE WAS `PARENT=$(git rev-parse HEAD); git read-tree "$PARENT"; git add;
+                                       git commit`, AND ANOTHER UNIT COMMITTED BETWEEN THE `rev-parse` AND THE
+                                       `commit`.** THE COMMIT'S TREE WAS THE OLD TREE, SO IT REVERTED 5 PATHS AND
+                                       DELETED 4 OF THEM. **`git show --stat` CAUGHT IT** (which is why `AGENTS.md`
+                                       mandates it), AND THE CONCURRENT SESSION **RE-LANDED IT ON TOP** (`4f189e21c`:
+                                       *"RE-LAND of fa8d62f01 -- a concurrent commit REVERTED IT, and the remedy is to
+                                       re-land, never to reset"*) WITHOUT BEING ASKED. **THE BYTES ON DISK WERE NEVER
+                                       TOUCHED** (`git read-tree` without `-u` does not touch the working tree), so
+                                       nothing was lost. **THE MEASUREMENT -- THREE RECIPES, 40 TRIALS EACH, WITH THE
+                                       RACE INJECTED IN EVERY TRIAL AND THE OTHER UNIT PATHPEC-SCOPED (NEVER `git add
+                                       -A`): A (seed from a CAPTURED parent) SWEEPS **40 of 40**, WITH A REAL `DELETED
+                                       d.txt` AND A REAL `REVERTED b.txt`; B (re-seed from the CURRENT HEAD
+                                       immediately before add, and re-check) sweeps **0 of 40**; C (NO SEED AT ALL:
+                                       `git commit --only -m msg -- <path>`) sweeps **0 of 40**, AND **0 of 40 ON A
+                                       NEW (UNTRACKED) FILE** TOO. SELFCHECK: 0 refused commits, so every 'swept 0' IS
+                                       A REAL PASS. THE CAPTURE IS THE DEFECT, NOT THE `read-tree` -- so PREFER C,
+                                       WHICH HAS NO WINDOW TO LOSE. AND `AGENTS.md`'S OWN MEASUREMENTS ALREADY SAID
+                                       `--only` IS BOUNDED (`contam.py` 4 of 4) AND RACE-FREE (`race.py` 36 CONCURRENT
+                                       COMMITS SWEPT 0, `route.py` 22 SWEPT 0) -- THIS IS THE THIRD, INDEPENDENT
+                                       CONFIRMATION, AND THE FIRST THAT FORCES THE RACE IN EVERY TRIAL.**
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
