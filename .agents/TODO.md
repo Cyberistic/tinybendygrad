@@ -1866,6 +1866,47 @@ safe-ts-trust-gap    [##] 2/3  **THE LEAN SIDE IS CLOSED, SO THE TRUST GAP IS TH
                                        OF THE BOOK THE KERNEL CANNOT CROSS-CHECK AGAINST bend2.**
 
 
+mo-squeeze-row       [####] 4/4  **THE THIRD CALL SITE OF `mo_at` NOW HAS A ROW THAT GOES RED, SO TWO OF THE THREE ARE
+                                       COVERED.** `mo_squeeze` READS THE DIM WITH `mo_dim_at` -- A **FORWARD** INDEX
+                                       -- AND DROPS IT WITH `mo_squeeze.go`, WHOSE TEST USED `mo_at`'s BACKWARD ONE,
+                                       **SO THE TWO HALVES OF THE SAME OPERATION DISAGREED ABOUT WHICH DIM WAS BEING
+                                       DROPPED** -- AND IT HAD **NO ROW AT ALL**, SO NEITHER HALF WAS PINNED. **THE
+                                       FIXTURE IS `(1,2,3)`: THE SIZE-1 DIM IS FIRST AND THE OTHER TWO DIFFER, SO THE
+                                       INDEX AND THE DIM ITSELF CANNOT BE CONFUSED.** CPython: `squeeze(0)` ON
+                                       `(1,2,3)` IS `(2,3)`; WITH THE BACKWARD INDEX THE PORT DROPPED THE **LAST** DIM
+                                       AND ANSWERED `(1,2)`. **THE CONTROL, REPRODUCING THE ORIGINAL FORMULA EXACTLY:
+                                       `sh_sq0_123` READS **`void`** -- THE SHAPE CANNOT BE READ AT ALL -- AGAINST THE
+                                       ORACLE'S `(2)(3) f32`, AND THE PRE-EXISTING 1-D ROW `sh_sum0kd` IS UNCHANGED,
+                                       EXACTLY AS PREDICTED.** **SO `mo_at`'s THREE CALL SITES NOW STAND AT:
+                                       `mo_keep_ds` -- COVERED BY `sh_sum0kd_23`; `mo_squeeze` -- COVERED BY
+                                       `sh_sq0_123`; AND `mo_reduced` -- **STILL UNCOVERED, AND IT IS THE ONE THAT
+                                       MATTERS MOST**: IT IS THE MEAN'S DENOMINATOR, AND **NO ROW CAN SEE IT** -- THE
+                                       FOLD COMPUTES THE REDUCE'S SHAPE INDEPENDENTLY, SO NO SHAPE ROW MOVES, AND THE
+                                       SIGNATURE ROWS PRINT `CONST/0` (THE OP AND THE SOURCE COUNT) AND NOT THE
+                                       CONST'S VALUE, SO NO SIGNATURE ROW MOVES EITHER. **A DEF WHOSE VALUE IS WRONG
+                                       AND WHICH NO ROW CAN SEE IS THE DEEPEST FORM OF *"A ROW THAT CANNOT GO RED IS A
+                                       LABEL"* -- AND CLOSING IT NEEDS A ROW THAT PRINTS A CONST'S VALUE, WHICH NO ROW
+                                       PRINTS TODAY.**
+
+corpus-stale-fix     [##] 2/3  **THE `mo_at` FIX MOVED THE SUBSTRATE, SO THE CORPUS WITNESS IS STALE -- AND THE TREE'S
+                                       OWN INSTRUMENT SAYS SO.** MEASURED 2026-10-22T20:15Z: `checks/differ.py`'s
+                                       `repro_bad()` RETURNS **1** ROW -- *"repro-substrate=62c5dd903b86 but the live
+                                       substrate is 0fce74ff4890 -- this witness describes a tree that NO LONGER
+                                       EXISTS"* -- **WHICH IS THE INSTRUMENT WORKING**: THE `REPRO_SUBSTRATE` ARM
+                                       COMPARES THE WITNESS'S RECORDED DIGEST AGAINST THE LIVE ONE, AND
+                                       `mixin/op.bend` IS A SUBSTRATE FILE, SO THE FIX MOVED IT. **THE WITNESS AT
+                                       `b5c16d646` RECORDED `62c5dd903b86`; THE LIVE SUBSTRATE IS NOW
+                                       `0fce74ff4890`.** **SO THE RE-RUN IS NEEDED, AND IT MUST WAIT FOR THE TREE TO
+                                       STOP MOVING -- AND AT 20:15Z THE LOAD WAS **47 ON 12 CORES** (WITH A 15-MINUTE
+                                       READING OF 272), SO THE MACHINE WAS NOT THE PLACE TO RUN A 271-SECOND CORPUS.**
+                                       **AND THE RE-RUN IS ALSO THE MEASUREMENT OF THE FIX'S BLAST RADIUS: THE
+                                       CORPUS'S 35 GRAPHS COMPARED BYTE FOR BYTE, SO IF `mo_at`'s BACKWARD INDEX
+                                       CHANGED ANY OF THEM, THE CORPUS WILL SAY SO.** **THE PORT'S OWN `mixin-op` GATE
+                                       IS THE OTHER HALF OF THAT MEASUREMENT, AND IT IS ALREADY GREEN ON THE THREE NEW
+                                       ROWS: THE PORT AND THE ORACLE AGREE ON `sh_sum0_23=(3) f32`,
+                                       `sh_sum0kd_23=(1)(3) f32` AND `sh_sq0_123=(2)(3) f32`.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

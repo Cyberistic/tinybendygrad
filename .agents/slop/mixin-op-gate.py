@@ -68,6 +68,10 @@ def fx2d() -> Tensor: return Tensor([[1., 2.], [3., 4.]], device='PYTHON')
 # reduced size is the same whichever way the index is counted.
 def fx23() -> Tensor: return Tensor([[1., 2., 3.], [4., 5., 6.]], device='PYTHON')
 
+# THE SQUEEZE FIXTURE, `(1,2,3)`: THE SIZE-1 DIM IS FIRST AND THE OTHER TWO DIFFER, SO
+# THE INDEX AND THE DIM ITSELF CANNOT BE CONFUSED. `mo_squeeze` HAD NO ROW AT ALL.
+def fx123() -> Tensor: return Tensor([[[1., 2., 3.], [4., 5., 6.]]], device='PYTHON')
+
 # --- 1-2: the fixtures, as rows.
 row('lit1d', fx1d())
 row('lit2d', fx2d())
@@ -146,6 +150,9 @@ shrow('sh_norm0', fx2d().normalize(p=0, dim=0))
 # `(3,)` AND `sum(axis=0, keepdim=True)` IS `(1,3)`.
 shrow('sh_sum0_23', fx23().sum(axis=0))
 shrow('sh_sum0kd_23', fx23().sum(axis=0, keepdim=True))
+
+# THE SQUEEZE ROW. CPython: `squeeze(0)` ON `(1,2,3)` IS `(2,3)`.
+shrow('sh_sq0_123', fx123().squeeze(0))
 
 # --- THE BEND-ONLY ROWS. `rop_gap` is `T.tn_rop`'s own shape refusal; `exp_cast` pins
 # that `exp`'s three casts are the IDENTITY for a float32 source; `commit_weak` is the

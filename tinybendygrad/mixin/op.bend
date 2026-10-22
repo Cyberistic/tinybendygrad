@@ -1229,6 +1229,17 @@ def mo_fx23() -> T.Tensor:
   +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(2), mo_ki(3)]})
   T.tn_new(O.Found.ar(r), O.Found.i(r))
 
+# THE SQUEEZE FIXTURE, `(1,2,3)`. **THE SIZE-1 DIM IS FIRST AND THE OTHER TWO DIFFER,
+# SO THE INDEX AND THE DIM ITSELF CANNOT BE CONFUSED** -- which is the whole point, because
+# `mo_squeeze` IS THE THIRD CALL SITE OF `mo_at` AND IT HAD **NO ROW AT ALL**, SO THE
+# BACKWARD INDEX WAS INVISIBLE THERE TOO. CPython: `squeeze(0)` ON `(1,2,3)` IS `(2,3)`;
+# WITH THE BACKWARD INDEX THE PORT DROPPED THE **LAST** DIM AND ANSWERED `(1,2)`.
+def mo_fx123() -> T.Tensor:
+  +b = mo_bufn(O.Arena.empty(), S.single(), 6)
+  +x = T.tn_wrap_uop(O.Found.ar(b), O.Found.i(b))
+  +r = T.tn_mop(T.Tensor.ar(x), T.Tensor.u(x), O.OpsRESHAPE{}, T.ADims{[mo_ki(1), mo_ki(2), mo_ki(3)]})
+  T.tn_new(O.Found.ar(r), O.Found.i(r))
+
 # --- 1-3: the fixtures themselves, and they are ROWS because a 2-D fixture that
 # built the wrong shape would silently change every row below it.
 
@@ -1484,6 +1495,15 @@ def t_sh_sum0kd_23() -> IO(Unit):
   +r = mo_sum(True{}, x, mo_ax(False{}, x, 0))
   mo_shape("sh_sum0kd_23", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
 
+# THE SQUEEZE ROW. `mo_squeeze` READS THE DIM WITH `mo_dim_at` -- A **FORWARD** INDEX --
+# AND DROPS IT WITH `mo_squeeze.go`, WHOSE TEST USED `mo_at`'s BACKWARD ONE. **SO THE TWO
+# HALVES OF THE SAME OPERATION DISAGREED ABOUT WHICH DIM WAS BEING DROPPED.** CPython:
+# `squeeze(0)` ON `(1,2,3)` IS `(2,3)`.
+def t_sh_sq0_123() -> IO(Unit):
+  +x = mo_fx123()
+  +r = mo_squeeze(x, 0)
+  mo_shape("sh_sq0_123", F.folded(T.Tensor.ar(r)), T.Tensor.u(r))
+
 # --- the four BEND-ONLY rows.
 
 # `t_commit_weak` -- rule 4. `commit_dtype` (tinygrad/dtype.py:16) REFUSES a weakint node
@@ -1570,6 +1590,7 @@ def main() -> IO(Unit):
     ai : Unit <- t_sh_norm0()
     aj : Unit <- t_sh_sum0_23()
     ak : Unit <- t_sh_sum0kd_23()
+    al : Unit <- t_sh_sq0_123()
     t_bin_promote()
 
 # ===========================================================================
