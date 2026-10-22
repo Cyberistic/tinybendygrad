@@ -22956,8 +22956,9 @@ x86-derive     [#########] 9/9      774 LITERAL `py=` cells -> 0 in `renderer/is
       **ONE **STALE **COPY **FOR **ANOTHER **AND **TURNED **A **GREEN **GATE **RED **ON **THE **WRONG
       **SIDE.**
 
-paramarg-spec [##] 2/3  **THE PORT's `ParamArg` IS MISSING **UPSTREAM's **13th **FIELD**, **AND **THE
-                       **FIX **TOUCHES **106 **CONSTRUCTION **SITES**IN **31 **FILES.** MEASURED
+paramarg-spec [##] 2/3  **THE PORT's `ParamArg` IS MISSING **UPSTREAM's **13th **FIELD** (`spec`).
+                       **MY **FIRST **FRAMING **OF **THIS **WAS **WRONG **AND **THIS **IS **THE
+                       **CORRECTED **ONE.** MEASURED
                        2026-10-22: upstream's `tinygrad/uop/ops.py:25-42` declares **13** fields --
                        `slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image,
                        buffer, bind_on_realize, val, spec` -- and the port's `tinybendygrad/uop/ops.bend:869-883`
@@ -22967,7 +22968,29 @@ paramarg-spec [##] 2/3  **THE PORT's `ParamArg` IS MISSING **UPSTREAM's **13th *
                        memory spec at all. **⇒ THE **PORT **IS **THE **ONE **THAT **IS **SHORT.**  **⇒ AND
                        `rg -c 'ParamArg\{' tinybendygrad/` COUNTS **106 **CONSTRUCTION **SITES** ACROSS
                        **31 **FILES**, **SO **THIS **IS **A **WORK **QUEUE, **NOT **A **DISPATCH.**
-                       **⇒ AND **IT **IS **PROBABLY **WHY **THE **PORT's **PTX **FIXTURES **ARE **THE
+                       **⇒ AND **THE **CORRECTED **MEASUREMENT, **WHICH **MAKES **IT **A **SMALL **ITEM
+                       **AND **NOT **A **BEHAVIOUR **GAP:** **UPSTREAM's `arg.spec` **HAS
+                       **EXACTLY **ONE **READER **IN **THE **WHOLE **UPSTREAM **TREE** --
+                       **`tinygrad/runtime/support/hcq2.py:485`**: `dev, spec = Device[b.device],
+                       b.arg.spec or BufferSpec(cpu_access=True)`. **⇒ AND **THE **PORT **HAS **NO
+                       **HCQ2** -- **⇒ AND **THE **PORT's **OWN **DSP **ALLOCATOR **ALREADY **CARRIES
+                       **THE **SPEC **OUT-OF-BAND**: `tinybendygrad/runtime/ops_dsp.bend:1445`
+                       **`def dev.shell_spec() -> D.Bspec`** -- **⇒ **⇒ **SO **THE **FIELD **IS **NOT
+                       **NEEDED **FOR **ANYTHING **THE **PORT **DOES**; **IT **IS **NEEDED **ONLY **TO
+                       **PORT **HCQ2** (WHICH **IS **AN **UNPORTED **FEATURE**, **NOT **A **BUG).**
+                       **⇒ ⇒ **⇒ **⇒ **⇒ AND **THE **STALE **AXIS **WAS **NOT **CAUSED **BY **THIS
+                       **AT **ALL** -- **IT **WAS **THE **2026-10-16 **RE-VENDOR's **SIZE **CONST
+                       **SRC**, **AND **IT **IS **ALREADY **FIXED**: **THE **REGENERATOR **REBUILT **THE
+                       **AXIS **FROM **THE **ORACLE's **`FIX`** (174 -> **194** **records**, **the **20
+                       **extra **being **THE **SIZE **CONST**), **AND **THE **CENSUS's **CLASS **IS
+                       **NOW **THE **GENERATOR's **PRESENCE** -- **GENERATED / DRIFTED / FROZEN /
+                       **UNDECLARED** -- **AND **IT **READS **`268 of 268` **RIGHT** (was **182 right,
+                       **1 wrong, **85 stale**).**
+                       **⇒ ⇒ **⇒ **⇒ **⇒ SO **THE **HONEST **SCOPE **OF **THIS **ITEM **IS:**
+                       **IF **THE **PORT **IS **EVER **TO **PORT **HCQ2**, **THE **FIELD **AND **THE
+                       **106 **SITES **ARRIVE **WITH **IT**; **OTHERWISE **IT **IS **UPSTREAM's
+                       **PLUMBING **FOR **A **PATH **THE **PORT **DOES **NOT **HAVE.**
+**⇒ AND **IT **IS **PROBABLY **WHY **THE **PORT's **PTX **FIXTURES **ARE **THE
                        **PRE-RE-VENDOR **GRAPHS**: **the **2026-10-16 **change **moved **a **BUFFER's
                        **SIZE **out **of **THE **`ParamArg` **and **into **A **SIZE **CONST **SRC**, **and
                        **the **port's **fixtures **hold **174 `Wk` **records **of **which **0 **of **THE
