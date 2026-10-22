@@ -2898,12 +2898,12 @@ def Target.indices(+t: Target) -> String:
 # the same place in the same order, and `render.of` (runtime/ops_python.bend)
 # reads the arch and the device only, so no field of the record is unread.
 #
-# MEASURED, 2026-10-22, AGAINST CPython'S OWN `Target.parse`. The oracle is
-# the vendored `tinygrad/helpers.py` at the pin, called, never re-implemented,
-# and the port's answer was read out of the port by a probe
-# (`gates/target-roundtrip.bend`, the Bend lane of the gate, and
-# `gates/target-oracle.py`, the CPython lane). THIRTY-TWO
-# rows, TWENTY of them the single-string parser, and the diff is EMPTY:
+# MEASURED, 2026-10-22, AGAINST CPython'S OWN `Target.parse` AND `ProgramInfo`.
+# The oracle is the vendored `tinygrad/helpers.py` and `tinygrad/uop/ops.py` at the pin,
+# CALLED, never re-implemented, and the port's answer is read out of the port by the
+# round trip's two lanes (`gates/target-roundtrip.bend` and `gates/target-oracle.py`).
+# THE DIFF IS EMPTY on all TWENTY rows: the five fields, in upstream's order, come back
+# out of the `ProgramInfo` EXACTLY as they went in, and `eq_target` says so too.
 #
 #   ""                    => ||||
 #   CPU                   => CPU||||

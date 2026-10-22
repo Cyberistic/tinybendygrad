@@ -22044,6 +22044,14 @@ order is a no-op that can only ever be wrong SILENTLY, so there is not one.
       ORACLE BEING CPYTHON's OWN `Target.parse` AND CPYTHON's OWN `ProgramInfo`.** The row is
       `<dev> => <before> -> <after>`, and BOTH halves are in it because a conversion that DROPS a
       field or SWAPS `arch` and `iface` is SILENT in a row that prints only the parsed target.
+- [x] **THE ROUND TRIP IS PROVEN, BYTE FOR BYTE, ON ALL TWENTY ROWS.** MEASURED in a SCRATCH
+      TREE: the port's `H.Target.parse` goes into a `ProgramInfo`-shaped SEVEN-field record whose
+      seventh field is the CANONICAL `H.Target`, and comes out with the same five values in the
+      same order, and `eq_target` says they are equal. THE PORT'S TWENTY ROWS ARE CPython's
+      TWENTY ROWS (`diff` EMPTY). IT WAS IMPOSSIBLE BEFORE: the parse produced ONE `Target` and
+      `ProgramInfo` wanted ANOTHER, so the compiler said no. THE PROOF RAN AGAINST THE PORT'S
+      `ProgramInfo` SHAPE RATHER THAN THE PORT'S `ProgramInfo` BECAUSE THE LATTER LIVES IN THE
+      LIVE UNIT'S FILE, WHICH DOES NOT COMPILE TONIGHT (see below).
 
 ### 3. **WHAT IS NOT DONE, AND IS NOT TICKED**
 
