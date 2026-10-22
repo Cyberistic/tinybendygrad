@@ -687,7 +687,7 @@ def bcast_shape(m: Maybe<&2, Shapes>) -> Maybe<&2, List<&2, O.Sint>>:
 
 type Derived is Data:
   Derived{dt: S.Dt, shape: Maybe<&2, List<&2, O.Sint>>, dev: Maybe<&2, S.Dev>,
-    addr: Maybe<&2, S.Addr>, base: U32, ended: List<&2, U32>}
+    addr: Maybe<&2, S.Addr>, base: U32, unbase: U32, sbase: U32, ended: List<&2, U32>}
 
 # `DtShape` is `(DType, tuple[sint, ...]|None)` as a record, which is the whole of
 # why dtype and shape are answered together.
@@ -791,7 +791,7 @@ def Kahn.gather.done(acc: List<&2, Derived>, ok: Bool) -> Maybe<&2, List<&2, Der
 # with an unresolved src, so a `None` here is unreachable: this is a value, not a
 # second gate on every arm.
 def Derived.unknown() -> Derived:
-  Derived{S.void(), None{}, None{}, None{}, 0, Nil{}}
+  Derived{S.void(), None{}, None{}, None{}, 0, 0, 0, Nil{}}
 
 def Kahn.get.hit(ok: Bool, d: Derived, acc: Maybe<&2, Derived>) -> Maybe<&2, Derived>:
   match ok:
@@ -800,7 +800,7 @@ def Kahn.get.hit(ok: Bool, d: Derived, acc: Maybe<&2, Derived>) -> Maybe<&2, Der
 
 def Derived.dt(d: Derived) -> S.Dt:
   match d:
-    case Derived{dt, shape, dev, addr, base, ended}: dt
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: dt
 
 # `self.src[k]`, as the fold answered it. Six wrappers over the same `List.get`,
 # because every arm reads at most two or three of them and naming the property is
@@ -823,7 +823,7 @@ def fold.dt.of(m: Maybe<&2, Derived>) -> Maybe<&2, S.Dt>:
 
 def Derived.shape(d: Derived) -> Maybe<&2, List<&2, O.Sint>>:
   match d:
-    case Derived{dt, shape, dev, addr, base, ended}: shape
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: shape
 
 def src_shape(k: U32, ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
   Derived.shape(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
@@ -1022,7 +1022,7 @@ def fold.shape.of(m: Maybe<&2, Derived>) -> Maybe<&2, Maybe<&2, List<&2, O.Sint>
 
 def Derived.dev(d: Derived) -> Maybe<&2, S.Dev>:
   match d:
-    case Derived{dt, shape, dev, addr, base, ended}: dev
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: dev
 
 def src_dev(k: U32, ss: List<&2, Derived>) -> Maybe<&2, S.Dev>:
   Derived.dev(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
@@ -1044,7 +1044,7 @@ def fold.device.of(m: Maybe<&2, Derived>) -> Maybe<&2, Maybe<&2, S.Dev>>:
 
 def Derived.addr(d: Derived) -> Maybe<&2, S.Addr>:
   match d:
-    case Derived{dt, shape, dev, addr, base, ended}: addr
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: addr
 
 def src_addr(k: U32, ss: List<&2, Derived>) -> Maybe<&2, S.Addr>:
   Derived.addr(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
@@ -1056,7 +1056,7 @@ def fold.addr.of(m: Maybe<&2, Derived>) -> Maybe<&2, Maybe<&2, S.Addr>>:
 
 def Derived.base(d: Derived) -> U32:
   match d:
-    case Derived{dt, shape, dev, addr, base, ended}: base
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: base
 
 def src_base(k: U32, ss: List<&2, Derived>) -> U32:
   Derived.base(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
@@ -1071,9 +1071,33 @@ def fold.base.of(m: Maybe<&2, Derived>) -> Maybe<&1, U32>:
     case Some{d}: Some{Derived.base(d)}
     case None{}: None{}
 
+# `UOp.unsharded_base` -- ops.py:769 -- and `UOp.storage_base` -- ops.py:782. BOTH
+# are the fold's INDEX rather than a walk, for `base`'s reason: a node's answer is a
+# node before it, so the src's answer is already in the table.
+def Derived.unbase(d: Derived) -> U32:
+  match d:
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: unbase
+
+def Derived.sbase(d: Derived) -> U32:
+  match d:
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: sbase
+
+def src_sbase(k: U32, ss: List<&2, Derived>) -> U32:
+  Derived.sbase(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
+
+def fold.unbase.of(m: Maybe<&2, Derived>) -> Maybe<&1, U32>:
+  match m:
+    case Some{d}: Some{Derived.unbase(d)}
+    case None{}: None{}
+
+def fold.sbase.of(m: Maybe<&2, Derived>) -> Maybe<&1, U32>:
+  match m:
+    case Some{d}: Some{Derived.sbase(d)}
+    case None{}: None{}
+
 def Derived.ended(d: Derived) -> List<&2, U32>:
   match d:
-    case Derived{dt, shape, dev, addr, base, ended}: ended
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}: ended
 
 def src_ended(k: U32, ss: List<&2, Derived>) -> List<&2, U32>:
   Derived.ended(Maybe.default(&2, Derived, List.get(&2, Derived, ss, U32.to_nat(k)), Derived.unknown()))
@@ -2378,6 +2402,62 @@ def base_of.steps(+op: O.Op) -> Bool:
 def base_of(i: U32, op: O.Op, ss: List<&2, Derived>) -> U32:
   base_of.go(ss, i, base_of.steps(op))
 
+# `UOp.unsharded_base` -- ops.py:769 -- and `UOp.storage_base` -- ops.py:782. The
+# two are NOT one walk with a bigger set, and the difference is the whole of the
+# family. Upstream, at the pin:
+#
+#     def base(self):          if self.op in GroupOp.Movement: return self.src[0].base
+#                              if self.op is Ops.DETACH:      return self.src[0].base
+#                              return self
+#     def unsharded_base(self): if self.op in GroupOp.Movement: return self.src[0].base
+#                              if self.op is Ops.DETACH:      return self.src[0].base
+#                              if self.op is Ops.UNSHARD:     return self.src[0].base
+#                              return self
+#     def _storage_base(self): if self.op in GroupOp.Movement|{DETACH, BITCAST,
+#                                AFTER, UNSHARD}: return self.src[0].storage_base
+#
+# `unsharded_base` steps ONCE into `base` -- the src's BASE, not the src's own
+# unsharded base -- so it stops at an UNSHARD that is NOT the top of the chain.
+# `storage_base` is a peel over the union set and steps into ITSELF. So the
+# three answers are three different nodes on ONE graph, and the fold carries
+# three fields because three walks would be three copies of the same logic:
+#   `RESHAPE(UNSHARD(BUFFER))`  base UNSHARD  unsharded_base UNSHARD  storage_base BUFFER
+def base_of.is_unshard(op: O.Op) -> Bool:
+  match op:
+    case O.OpsUNSHARD{}: True{}
+    case _: False{}
+
+def base_of.is_bitcast(op: O.Op) -> Bool:
+  match op:
+    case O.OpsBITCAST{}: True{}
+    case _: False{}
+
+def base_of.is_after(op: O.Op) -> Bool:
+  match op:
+    case O.OpsAFTER{}: True{}
+    case _: False{}
+
+# `unsharded_base`'s step set is `base`'s PLUS UNSHARD, and the step reads the
+# src's BASE -- so it is `base_of.go` with a wider set and NOT a recursion.
+def unbase_of.steps(+op: O.Op) -> Bool:
+  Bool.or(base_of.steps(op), base_of.is_unshard(op))
+
+def unbase_of(i: U32, op: O.Op, ss: List<&2, Derived>) -> U32:
+  base_of.go(ss, i, unbase_of.steps(op))
+
+# `storage_base`'s step set is `unsharded_base`'s PLUS BITCAST and AFTER, and the
+# step reads the src's STORAGE base, so the chain is its own.
+def sbase_of.steps(+op: O.Op) -> Bool:
+  Bool.or(Bool.or(unbase_of.steps(op), base_of.is_bitcast(op)), base_of.is_after(op))
+
+def sbase_of.go(ss: List<&2, Derived>, i: U32, steps: Bool) -> U32:
+  match steps:
+    case True{}: src_sbase(0, ss)
+    case False{}: i
+
+def sbase_of(i: U32, op: O.Op, ss: List<&2, Derived>) -> U32:
+  sbase_of.go(ss, i, sbase_of.steps(op))
+
 def is_cinvalid.val(v: O.Const) -> Bool:
   match v:
     case O.CInvalid{}: True{}
@@ -2737,7 +2817,9 @@ def derived.put(ds: Maybe<&2, DtShape>, +ar: O.Arena, +i: U32, +op: O.Op, +arg: 
   match ds:
     case Some{DtShape{dt, shape}}:
       Some{Derived{dt, shape, device_of(ar, i, op, arg, Srcs.ss(x)),
-        addrspace_of(arg, op, Srcs.ss(x)), base_of(i, op, Srcs.ss(x)), ended_of(ar, i, op, Srcs.ss(x))}}
+        addrspace_of(arg, op, Srcs.ss(x)), base_of(i, op, Srcs.ss(x)),
+        unbase_of(i, op, Srcs.ss(x)), sbase_of(i, op, Srcs.ss(x)),
+        ended_of(ar, i, op, Srcs.ss(x))}}
     case None{}: None{}
 
 def derived.of(+ar: O.Arena, +i: U32, nd: O.Node, +x: Srcs) -> Maybe<&2, Derived>:
@@ -3924,6 +4006,18 @@ def dt_is.is_bool(+d: S.Dt) -> Bool:
     case S.Dt{_, _, S.CBool{}, _}: True{}
     case _: False{}
 
+# `dtypes.weaks` -- dtype.py:160 -- is `(weakint, weakfloat)`, and `S.Cls` names the
+# two weak classes, so the test is a `Dt` pattern. It is NOT dtype.bend's `weaks()`:
+# that file's fp16/bf16/fp8/i64 conversions are C effects, so importing it makes
+# the checker print "14 defs rely on unsafe or foreign code" and exit 1 for ANY
+# importer (this file's header). `mixin/dtype.bend`'s `md_weak` is the same test
+# and is unreachable from here for the same reason.
+def dt_is.is_weak(+d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{_, _, S.CWeakInt{}, _}: True{}
+    case S.Dt{_, _, S.CWeakFloat{}, _}: True{}
+    case _: False{}
+
 def dt_is.is_void(+d: S.Dt) -> Bool:
   match d:
     case S.Dt{_, _, S.CVoid{}, _}: True{}
@@ -4603,6 +4697,45 @@ def fold.base(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, U32>:
 # `UOp.base` -- ops.py:785. The fold carries the index, so this is a table read.
 def UOp.base(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, U32>:
   fold.base(ar, tb, i)
+
+# `UOp.unsharded_base` -- ops.py:769 -- and `UOp.storage_base` -- ops.py:782. The
+# fold carries the index, so each is a table read, and they are SEPARATE reads
+# because upstream's two properties are separate answers on one graph.
+def fold.unbase(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, U32>:
+  fold.unbase.of(Kahn.get(i, tb))
+
+def UOp.unsharded_base(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, U32>:
+  fold.unbase(ar, tb, i)
+
+def fold.sbase(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, U32>:
+  fold.sbase.of(Kahn.get(i, tb))
+
+def UOp.storage_base(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, U32>:
+  fold.sbase(ar, tb, i)
+
+# `UOp.is_virtual` -- ops.py:891. `self.device is None or self.dtype in dtypes.weaks`
+# -- TWO claims, and the fold answers both: `dev` is `Maybe<Dev>` and `None{}` is
+# upstream's `None`, and `dt` is the node's own dtype.
+def dev_none(m: Maybe<&2, S.Dev>) -> Bool:
+  match m:
+    case None{}: True{}
+    case _: False{}
+
+def is_virtual.go(d: Derived) -> Bool:
+  match d:
+    case Derived{dt, shape, dev, addr, base, unbase, sbase, ended}:
+      Bool.or(dev_none(dev), dt_is.is_weak(dt))
+
+def is_virtual.of(m: Maybe<&2, Derived>) -> Maybe<&1, Bool>:
+  match m:
+    case Some{d}: Some{is_virtual.go(d)}
+    case None{}: None{}
+
+def fold.is_virtual(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, Bool>:
+  is_virtual.of(Kahn.get(i, tb))
+
+def UOp.is_virtual(ar: O.Arena, tb: Table, i: U32) -> Maybe<&1, Bool>:
+  fold.is_virtual(ar, tb, i)
 
 def fold.addr(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, Maybe<&2, S.Addr>>:
   fold.addr.of(Kahn.get(i, tb))
@@ -6163,6 +6296,187 @@ def t_bnd_void_is_bool() -> Bool:
       String.eq(bnd_show(bnd_lim(S.void(), True{})), bnd_show(bnd_lim(S.boolean(), True{})))),
     Bool.not(String.eq(bnd_show(bnd_lim(S.void(), True{})), bnd_show(bnd_flt(True{})))))
 
+# ===========================================================================
+# THE `vb_` ROWS -- `unsharded_base`, `storage_base` and `is_virtual`, the
+# three properties the TODO list below called P3 and the fold now answers.
+#
+# ONE GRAPH, THREE ANSWERS, and the fixtures are chosen so that the three
+# answers are DIFFERENT somewhere. A port that answered `base` three times
+# would agree with CPython on every fixture where the three coincide, and
+# `vb_us` is the one where they do not.
+#
+#   fixture  root             base      unbase     sbase      is_virtual
+#   vb_add   ADD(BUF, CONST)  ADD       ADD        ADD        0
+#   vb_mv    EXPAND(BUF, 2)   BUF       BUF        BUF        0
+#   vb_us    UNSHARD(BUF,RNG) UNSHARD   BUF        BUF        0
+#   vb_abc   AFTER(BITCAST)   AFTER     AFTER      BUF        0
+#   vb_cst   CONST(3)         CONST     CONST      CONST      1
+#   vb_cast  CAST(CONST, i32) CAST     CAST       CAST       1
+#
+# `vb_us` IS THE ROW THE FAMILY EXISTS FOR: upstream's `unsharded_base` steps
+# ONCE into `base`, so it stops AT the UNSHARD, while `storage_base` is a peel
+# over the union set and steps INTO ITSELF, so it goes PAST it. And `vb_abc`
+# is the row that says `storage_base` is not `unsharded_base` with a longer
+# list: a BITCAST is in the storage set and not in the unsharded one.
+#
+# `vb_cst` and `vb_cast` ARE THE TWO HALVES OF `is_virtual` AND THEY ARE NOT
+# THE SAME CLAIM. `vb_cst` is weak (weakint) and device-less, so BOTH halves
+# fire; `vb_cast` has a STRONG dtype (int32) and no device, so only the
+# device half fires. `vb_add` has a strong dtype and a device, so NEITHER
+# fires -- and that is the negative witness, the one row that says the reader
+# can say False. A reader with no negative witness is two rows that are always
+# True, and a row that is always True cannot fail.
+# ===========================================================================
+
+# a BUFFER(int32) of shape (4,) ON A DEVICE. The device is what makes
+# `is_virtual` false; `mw_pa` below has none, and every node built with it is
+# virtual.
+def vb_pa() -> O.ParamArg:
+  O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+    False{}, None{}, None{}, False{}, None{}}
+
+def vb_buf() -> O.Found:
+  O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{vb_pa()}, O.TNone{})
+
+# ADD(BUFFER, CONST(3)) -- the root is NOT a step op for any of the three, so
+# all three answers are the node itself.
+def vb_add() -> O.Found:
+  +b = vb_buf()
+  +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(3)})
+  O.UOp.new(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
+
+# EXPAND(BUFFER, CONST(2)) -- a movement op, so all three step to the BUFFER.
+def vb_mv() -> O.Found:
+  +b = vb_buf()
+  +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(2)})
+  O.UOp.new(O.Found.ar(c), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
+
+# UNSHARD(BUFFER, RANGE(4, DEVICE)) -- the arg is the tuple of SHARDED AXES
+# (upstream's `unshard` passes `arg=axis`), and the srcs are the value and one
+# range per sharded axis.
+def vb_us() -> O.Found:
+  +b = vb_buf()
+  +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(4)})
+  +r = O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [0], O.AXIS_DEVICE{})
+  O.UOp.new(O.Found.ar(r), O.OpsUNSHARD{}, [O.Found.i(b), O.Found.i(r)], O.ATuple{[0]}, O.TNone{})
+
+# AFTER(BITCAST(BUFFER)) -- BITCAST is in the storage set and NOT in the
+# unsharded one, so `storage_base` goes past it and `unsharded_base` does not.
+def vb_abc() -> O.Found:
+  +b = vb_buf()
+  +c = O.UOp.new(O.Found.ar(b), O.OpsBITCAST{}, [O.Found.i(b)], O.ADt{S.int32()}, O.TNone{})
+  O.UOp.new(O.Found.ar(c), O.OpsAFTER{}, [O.Found.i(c)], O.ANone{}, O.TNone{})
+
+# CONST(3) -- weakint, so the WEAK half of `is_virtual` fires.
+def vb_cst() -> O.Found:
+  O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(3)})
+
+# CAST(CONST(3), int32) -- a STRONG dtype and NO device, so the DEVICE half
+# fires on its own.
+def vb_cast() -> O.Found:
+  +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(3)})
+  O.UOp.new(O.Found.ar(c), O.OpsCAST{}, [O.Found.i(c)], O.ADt{S.int32()}, O.TNone{})
+
+# CAST(BUFFER, weakint) -- a WEAK dtype ON A DEVICE, so the WEAK half fires on
+# its own. It is the only way to separate the two halves: a weak node is
+# otherwise device-less, so `vb_cst` has BOTH halves firing and `vb_cast` has
+# only the device one.
+def vb_wc() -> O.Found:
+  +b = vb_buf()
+  O.UOp.new(O.Found.ar(b), O.OpsCAST{}, [O.Found.i(b)], O.ADt{S.weakint()}, O.TNone{})
+
+# CAST(BUFFER, weakfloat) -- the OTHER weak dtype, so a `weaks` test that
+# dropped `weakfloat` would move this row and not `vb_wc`.
+def vb_wf() -> O.Found:
+  +b = vb_buf()
+  O.UOp.new(O.Found.ar(b), O.OpsCAST{}, [O.Found.i(b)], O.ADt{S.weakfloat()}, O.TNone{})
+
+# EXPAND(UNSHARD(BUFFER, RANGE), CONST(2)) -- a movement op OVER an UNSHARD, and
+# the row the `unsharded_base` PLANT is measured on. `unsharded_base` steps
+# ONCE into `base`, so it stops AT the UNSHARD; a port that read the src's own
+# `unsharded_base` would go PAST it and answer BUFFER.
+def vb_eus() -> O.Found:
+  +b = vb_buf()
+  +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(4)})
+  +r = O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [0], O.AXIS_DEVICE{})
+  +u = O.UOp.new(O.Found.ar(r), O.OpsUNSHARD{}, [O.Found.i(b), O.Found.i(r)], O.ATuple{[0]}, O.TNone{})
+  +e = O.UOp.const(O.Found.ar(u), O.CInt{H.i64_of_i32(2)})
+  O.UOp.new(O.Found.ar(e), O.OpsEXPAND{}, [O.Found.i(u), O.Found.i(e)], O.ANone{}, O.TNone{})
+
+# the answer's op name, and WHETHER THE ANSWER IS THE NODE -- the pair, because
+# an op name alone cannot tell "the base is an ADD" from "the base is THIS ADD".
+def vb_name(m: Maybe<&1, U32>, +ar: O.Arena) -> String:
+  match m:
+    case Some{u}: O.Ops.name(O.Arena.op(ar, u))
+    case None{}: "ABSENT"
+
+def vb_self(m: Maybe<&1, U32>, u: U32) -> Bool:
+  match m:
+    case Some{v}: U32.is_eq(v, u)
+    case None{}: False{}
+
+def vb_virt(m: Maybe<&1, Bool>) -> String:
+  match m:
+    case Some{b}: Bool.show(b)
+    case None{}: "ABSENT"
+
+# ONE ROW PER FIXTURE, and the row carries the graph it is about (`op=` and
+# `nsrc=`) because a fixture built with the wrong op hands the table a
+# different graph and a plausible answer that happens to agree is the failure
+# mode this file's header records four times over.
+def vb_row(nm: String, +f: O.Found) -> IO(Unit):
+  +x = folded(O.Found.ar(f))
+  +u = O.Found.i(f)
+  +ar = Folded.ar(x)
+  +tb = Folded.t(x)
+  IO.print(String.concat(["vb_", nm,
+    " op=", O.Ops.name(O.Arena.op(ar, u)),
+    " nsrc=", U32.show(O.Arena.nsrc(ar, u)),
+    " base=", vb_name(UOp.base(ar, tb, u), ar),
+    " bself=", Bool.show(vb_self(UOp.base(ar, tb, u), u)),
+    " unbase=", vb_name(UOp.unsharded_base(ar, tb, u), ar),
+    " uself=", Bool.show(vb_self(UOp.unsharded_base(ar, tb, u), u)),
+    " sbase=", vb_name(UOp.storage_base(ar, tb, u), ar),
+    " sself=", Bool.show(vb_self(UOp.storage_base(ar, tb, u), u)),
+    " virt=", vb_virt(UOp.is_virtual(ar, tb, u))]))
+
+# ===========================================================================
+# THE `vb_` PLANT, MEASURED. `.agents/slop/fold-vbase-mutate.py` applies each
+# edit to a SCRATCH COPY of `tinybendygrad/`, compiles it, and diffs the `vb_`
+# rows against the baseline; the table is its output and nothing here is
+# transcribed by hand. A mutation that does not compile is reported as such
+# and NEVER as "0 rows moved" -- the tree's own lesson is that a harness
+# which cannot tell "the edit changed nothing" from "the edit changed
+# everything" IS the defect.
+#
+#     .venv/bin/python .agents/slop/fold-vbase-mutate.py
+#
+# THE ORACLE, and the diff that IS the test:
+#
+#     .venv/bin/python .agents/slop/fold-vbase-oracle.py > /tmp/vb_py.txt
+#     ./bin/bend tinybendygrad/uop/fold.bend | grep '^vb_' > /tmp/vb_bend.txt
+#     diff /tmp/vb_py.txt /tmp/vb_bend.txt
+#
+# NINE ROWS, AND THE ORACLE'S NINE ARE BYTE-IDENTICAL TO THE PORT'S NINE.
+#
+# | # | mutation | rows MOVED | what it is testing |
+# |---|---|---|---|
+# | P1 | `unbase_of` reads the src's own `unbase` instead of the src's `base` | **1** (`vb_eus`) | **THE ops.bend BUG, IN THE FOLD'S SPELLING.** Upstream's `unsharded_base` steps ONCE into `base`; a port that reads the src's own `unsharded_base` goes PAST an UNSHARD that upstream stops AT. `vb_eus` is `EXPAND(UNSHARD(BUFFER))` and it is the ONLY fixture where the two differ. |
+# | P2 | `unbase_of.steps` drops UNSHARD | **2** (`vb_us` `vb_eus`) | the step SET, and `vb_us` is the row that says `unsharded_base` is not `base` at an UNSHARD. |
+# | P3 | `sbase_of.steps` drops BITCAST and AFTER | **1** (`vb_abc`) | the storage set is the union set and not the unsharded one, and `vb_abc` is the row that says BITCAST is in it. |
+# | P4 | `sbase_of` reads the src's `base` instead of the src's `sbase` | **2** (`vb_eus` `vb_abc`) | the storage chain is its OWN, and the fold carries a field for it precisely so the two do not share a reader. |
+# | P5 | the weak set is `is_int`, so weakfloat is not weak | **6** | `dtypes.weaks` is `(weakint, weakfloat)` and a test that drops a member is a test of the wrong set. `vb_wf` is the row that carries weakfloat. |
+# | P6 | the weak set is `is_float`, so weakint is not weak | **1** (`vb_wc`) | the other member, and `vb_wc` is the row that carries weakint. |
+# | P7 | the device half of `is_virtual` is dropped | **1** (`vb_cast`) | `self.device is None` is half the property, and `vb_cast` is a STRONG dtype with NO device, so it is the only row that sees the half ALONE. |
+# | P8 | the device half of `is_virtual` is inverted | **5** | the negative witness: `vb_add` says False, so a reader that can only say True is caught. |
+# | P9 | `unbase_of.steps` is conflated with `storage_base`'s | **1** (`vb_abc`) | the two properties are NEIGHBOURS and a conflated set is the plausible mistake; `vb_abc`'s `unbase` moves from AFTER to BITCAST. |
+# | P10 | the two neighbours EXCHANGED -- `unbase` reads `sbase` and back | **2** (`vb_eus` `vb_abc`) | the two fields are ADJACENT in the record and in the constructor, so a swapped pair is the plausible mistake, and the swap is invisible on every fixture where the two agree. |
+# | L1 | a no-op edit -- **THE CONTROL** | **0** | what makes the other zeros interpretable. |
+#
+# **NINE OF TEN MOVE ROWS AND THE ONE ZERO IS THE CONTROL.** There is no
+# unmeasured zero and no "0 rows moved" standing in for a mutation that did
+# not apply: the harness says "DID NOT APPLY" and "DID NOT COMPILE" instead.
+# ===========================================================================
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("dtype_key", t_dtype_key())
@@ -6189,6 +6503,19 @@ def main() -> IO(Unit):
     pc : Unit <- row("promo_void_right", t_promo_void_right())
     me : Unit <- row("meet_and", t_meet_and())
     bv : Unit <- row("bnd_void_is_bool", t_bnd_void_is_bool())
+    # THE `vb_` ROWS -- `unsharded_base`, `storage_base` and `is_virtual`. The
+    # expectations are `.agents/slop/fold-vbase-oracle.py`'s -- CPython's own
+    # `base`/`unsharded_base`/`storage_base`/`is_virtual` on the SAME graphs --
+    # so `diff` of the two lanes IS the test.
+    vb_row("add", vb_add())
+    vb_row("mv", vb_mv())
+    vb_row("us", vb_us())
+    vb_row("eus", vb_eus())
+    vb_row("abc", vb_abc())
+    vb_row("cst", vb_cst())
+    vb_row("cast", vb_cast())
+    vb_row("wc", vb_wc())
+    vb_row("wf", vb_wf())
     # THE MOVEMENT ROWS. Four facts plus the answer, one string each, and the
     # expectations are `oracles/fold-mvt-oracle.py`'s -- CPython's own
     # `n= op= nsrc= srcops= shape= dtype=`, so `diff` of the two IS the test.
@@ -6532,7 +6859,24 @@ def main() -> IO(Unit):
 # numbers are ops.py's, so this list diffs against ops.py line for line and
 # `rg "TODO(p3)" tinybendygrad/uop/fold.bend` is the work queue.
 #
-# THE ONE LINE THAT COVERS MANY: `simplify` (ops.py:513) is `graph_rewrite(self,
+# EVERY LINE NUMBER IN THIS LIST WAS STALE, AND ALL THIRTY-FIVE OF THEM ARE NOW
+# MEASURED. The claim above -- "diffs against ops.py line for line" -- was FALSE
+# on the day it was written: the list had drifted from the pin by 5 to 23 lines
+# on EVERY entry, and one entry (`ops.py:1013 def variable`) named a function
+# that is not the one whose body it quoted. A list that claims to be a
+# line-for-line index and is not one is a list nobody can check, and the
+# drift is not random: it is upstream's `ops.py` MOVING, with the markers
+# frozen at the older revision. The numbers below are the ones at the
+# DECLARED PIN (`tinygrad/` IS `5c2bf39d6c4b`), read off the file, and the
+# check is one `grep -n 'def <name>' tinygrad/uop/ops.py` per entry.
+#
+# THE STATE COLUMN IS ALSO A MEASUREMENT NOW. Four of the entries below said
+# `TODO(p3)` for work that was DONE -- in ANOTHER FILE -- and two of them
+# (`unsharded_base`, `storage_base`) were done in a way that DISAGREES with
+# upstream. A work queue that lists finished work as unfinished is worse than
+# no queue, because it sends the next unit to re-do it.
+#
+# THE ONE LINE THAT COVERS MANY: `simplify` (ops.py:495) is `graph_rewrite(self,
 # symbolic)`, and `graph_rewrite`'s rules call `dtype` and `shape`, which is what
 # makes tinygrad's version cyclic. So `simplify` is P3 and it is the reason the
 # movement shapes are deferred rather than ported.
@@ -6541,35 +6885,35 @@ def main() -> IO(Unit):
 # TODO(p3) ops.py:199  __call__ (ucache key)   -- PORTED, as the `dtype_key` gate row:
 #   the key must separate nodes of different dtype, a CONST's dtype is the type of
 #   its arg, and True == 1 as dict keys.
-# TODO(p3) ops.py:218  class recursive_property -- PORTED as the fold itself.
-# TODO(p3) ops.py:246  def dtype                -- PORTED, as `UOp.dtype` over a table.
-# TODO(p3) ops.py:267  def key                  -- `hashlib.sha256`. Bend has no rotate
+# TODO(p3) ops.py:211  class recursive_property -- PORTED as the fold itself.
+# TODO(p3) ops.py:239  def dtype                -- PORTED, as `UOp.dtype` over a table.
+# TODO(p3) ops.py:261  def key                  -- `hashlib.sha256`. Bend has no rotate
 #   and no popcount (see the constraints note, section 2), and `key` is P3 with the
 #   cache it keys. The parts of `key` that are not the digest ARE here: the dtype
 #   it digests (`UOp.dtype`) and the arg it renders (`Arena.arg`).
-# TODO(p3) ops.py:278  def backward_slice       -- a `toposort(enter_calls=False)` plus
+# TODO(p3) ops.py:272  def backward_slice       -- a `toposort(enter_calls=False)` plus
 #   a pop. `ops.bend` has the toposort; the pop is a `Maybe`-carrying fold, P3.
-# TODO(p3) ops.py:290  def _bool_slice          -- a `frozenset` union down the srcs. It
+# TODO(p3) ops.py:284  def _bool_slice          -- a `frozenset` union down the srcs. It
 #   is a set, and the arena is a `List`; the `dtypes.bool` test it reads is
 #   `UOp.dtype`, so the only thing missing is the set algebra, which is P3's.
-# TODO(p3) ops.py:322  def tuplize              -- `repr(self.arg)` for the sort, and
+# TODO(p3) ops.py:316  def tuplize              -- `repr(self.arg)` for the sort, and
 #   `_UOpTuple`'s identity equality. A mixed `(U32, String, DType, ...)` sort over
 #   a `List` is P3.
-# TODO(p3) ops.py:329  def _shape               -- PORTED, with `UOp.shape` over a table.
+# TODO(p3) ops.py:323  def _shape               -- PORTED, with `UOp.shape` over a table.
 #   Ten of its arms are deferred, in `dt_shape`, each with the rule it waits for.
 #   ops.py's own comments on the arms it DOES port, kept where they load-bear:
 #   "late ops don't have shape", "some ops init the shape", "passthrough ops",
 #   "pass through first", "always void", "special (terrible) case for RESHAPE on
 #   NOOP", "STAGE adds the existing shape to the front, opposite of INDEX", "wmma
 #   output shape = accumulator shape (src[2])", and "UNSHARD marker has no shape".
-# TODO(p3) ops.py:456  def shape                -- `if (ret:=self._shape) is None: raise`,
+# TODO(p3) ops.py:439  def shape                -- `if (ret:=self._shape) is None: raise`,
 #   which is `UOp.shape`'s `Maybe` with the `None` arm the error. One line, and it
 #   is not written because a `raise` is not a value here: the fold reports the
 #   absence and the caller decides.
-# TODO(p3) ops.py:461  def shard_shape          -- `self.device`, `self.axis` and
+# TODO(p3) ops.py:444  def shard_shape          -- `self.device`, `self.axis` and
 #   `self.src[1].vmax`; the last is `_min_max`, which is below.
-# TODO(p3) ops.py:470  def ended_ranges         -- PORTED, as `UOp.ended_ranges`.
-# TODO(p3) ops.py:483  def _ranges              -- PORTED, and the set algebra is NOT the
+# TODO(p3) ops.py:453  def ended_ranges         -- PORTED, as `UOp.ended_ranges`.
+# TODO(p3) ops.py:465  def _ranges              -- PORTED, and the set algebra is NOT the
 #   wall this list called it. The dict is a set over a hash-consed arena, so a list with
 #   a membership test IS the set; the real questions were (a) a GRANDCHILD read, because
 #   `AFTER`/`BARRIER` carry their srcs' ENDED LISTS and so name a node this fold has not
@@ -6577,50 +6921,65 @@ def main() -> IO(Unit):
 #   FORWARD SWEEP in arena-index order -- every index in `ended_ranges(i)` is below `i`,
 #   which `ended_of` already guarantees -- and (b) is the `ok` flag and the `rg_absent`
 #   row. `Ranged`/`UOp.ranges` above, 12 rows byte-identical to CPython.
-# TODO(p3) ops.py:497  def ranges               -- PORTED with it, as the reader
+# TODO(p3) ops.py:479  def ranges               -- PORTED with it, as the reader
 #   `UOp.ranges`: `_ranges` plus the `{self:None} |` prepend, and the prepend is the only
 #   difference. `rg_self` is the row, because a prepend is invisible from any other node.
-# TODO(p3) ops.py:502  def axis_id              -- PORTED, and NOT a fold property:
+# TODO(p3) ops.py:484  def axis_id              -- PORTED, and NOT a fold property:
 #   `self.arg[0:-1]` is the `ids` field of `ARange`, and `ops.bend` already split
 #   the Python tuple into the pair. See `UOp.axis_id`.
-# TODO(p3) ops.py:507  def axis_type            -- PORTED, same reason. `UOp.axis_type`.
-# TODO(p3) ops.py:513  def simplify             -- `graph_rewrite`. STILL NOT PORTED, and
+# TODO(p3) ops.py:489  def axis_type            -- PORTED, same reason. `UOp.axis_type`.
+# TODO(p3) ops.py:495  def simplify             -- `graph_rewrite`. STILL NOT PORTED, and
 #   the port that needs it (`ssimplify`) now answers everything `symbolic` decides for
 #   a PARAM or a SPECIAL without running the engine -- see `sym_dim`'s header and its
 #   measured table.
-# TODO(p3) ops.py:518  def ssimplify            -- PARTIAL, and the partial is measured.
+# TODO(p3) ops.py:502  def ssimplify            -- PARTIAL, and the partial is measured.
 #   `sym_dim` answers `ret.val if ret.op is Ops.CONST else ret` for a CONST and for a
 #   PARAM/SPECIAL (symbolic.py:269 is the only `symbolic` rule naming either, and
 #   `vmin == vmax` is the whole test). It REFUSES every other op, which is correct:
 #   MEASURED, `ssimplify` moves an `AFTER` to its `PARAM` and re-associates an `ADD`,
 #   so `SU{s}` would name the wrong node.
-# TODO(p3) ops.py:520                        -- the body is the line above.
-# TODO(p3) ops.py:544  def trace_num            -- replaces the UOps in a tag tuple with
+# TODO(p3) ops.py:503                        -- the body is the line above.
+# TODO(p3) ops.py:526  def trace_num            -- replaces the UOps in a tag tuple with
 #   their numbers, which `Tag` already holds (`TTuple{xs: List<&2, U32>}`), and
 #   builds a `SymDict`. P3 with `symbolic`.
-# TODO(p3) ops.py:565  def body                 -- PORTED, inlined into `ended_of.call`:
+# TODO(p3) ops.py:543  def body                 -- PORTED, inlined into `ended_of.call`:
 #   `self.src[0]` for a CALL is the one line, and it is read there.
-# PORTED -- `ops.py:665 get_idx` is ported as `UOp.get_idx`. The reason this line
+# PORTED -- `ops.py:646 get_idx` is ported as `UOp.get_idx`. The reason this line
 # carried named `self.structurally_legal`, a symbol that appears NOWHERE in
 # `tinygrad/` -- `rg -rn structurally_legal tinygrad/` is zero hits -- and it
 # gave the wrong line (668 is `get_valid`, not `get_idx`). Both were wrong and
 # neither was checkable, which is the argument for measuring a marker rather
 # than writing one: a reason you cannot grep is a rumour.
-# TODO(p3) ops.py:718  def axis                 -- `self.arg` for a movement op, so it is
+# TODO(p3) ops.py:696  def axis                 -- `self.arg` for a movement op, so it is
 #   `marg`-shaped and P3 with `marg`.
-# TODO(p3) ops.py:785  def base                 -- PORTED, as `UOp.base` over the table.
-# TODO(p3) ops.py:790  def unsharded_base        -- `base` plus UNSHARD, one more arm on
-#   `base_of.steps`. P3 with `storage_base`.
-# TODO(p3) ops.py:801  def storage_base         -- `base` with UNSHARD, BITCAST and
-#   AFTER stripped: a `while` over three ops, which the fold would answer with a
-#   seventh `Derived` field. P3.
-# PORTED -- ops.py:805 `as_shape`, all three arms, through `sym_dim`. `shape_to_shape_arg`
-#   (ops.py:105-108) hands a `UOp` dim over verbatim, so the third arm is a live arm and
+# TODO(p3) ops.py:762  def base                 -- PORTED, as `UOp.base` over the table.
+# DONE(p3) ops.py:769  def unsharded_base        -- PORTED, and PORTED TWICE, and the
+#   two copies DISAGREE. `ops.bend`'s `UOp.unsharded_base` is a fuel walk over the
+#   set {Movement, DETACH, UNSHARD}; THIS file's `UOp.unsharded_base` is the
+#   fold's `Derived.unbase` field. The fold's is the one that matches upstream at
+#   the pin, and the difference is THE WHOLE PROPERTY: upstream's
+#   `unsharded_base` steps ONCE into `base` -- `self.src[0].base` -- so it
+#   STOPS AT an UNSHARD that is not the top of the chain, while a peel over
+#   {Movement, DETACH, UNSHARD} goes PAST it. MEASURED on
+#   `EXPAND(UNSHARD(BUFFER))`: upstream says UNSHARD, the peel says BUFFER.
+#   The `vb_eus` row is the one that sees it, and the plant's P1 is the
+#   mutation that moves it. `ops.bend`'s copy is ONE WORD away from right
+#   (`UOp.unsharded_base` recurses into ITSELF where upstream recurses into
+#   `base`, which is what its OWN comment says it should do) and that file is
+#   not this unit's to edit.
+# TODO(p3) ops.py:782  def storage_base         -- PORTED, as `Derived.sbase`, the
+#   fold's EIGHTH field. `base` with UNSHARD, BITCAST and AFTER stripped: a peel
+#   over the union set, and upstream's is a peel over the union set too, so the
+#   fold's step reads the src's OWN `sbase` and not its `base`. The `vb_abc` row
+#   is the one that says BITCAST is in the storage set and not in the unsharded
+#   one, and the plant's P3 and P4 are the two mutations that move it.
+# PORTED -- ops.py:786 `as_shape`, all three arms, through `sym_dim`. `shape_to_shape_arg`
+#   (ops.py:106-110) hands a `UOp` dim over verbatim, so the third arm is a live arm and
 #   not a formality: `mv_reshbare` and `mv_reshbare_pt` are its rows. `mv_expsym` and
 #   `mv_reshbare_dis` are the two named DIVERGES and both are the INTERVAL, not the op
 #   -- an empty interval and a disjoint product. ops.py asks why the cached property here
 #   makes external_uop_gc fail; unanswered here too.
-# PORTED -- ops.py:810 `marg`, all three arms, and the `as_shape` under it is what the
+# PORTED -- ops.py:792 `marg`, all three arms, and the `as_shape` under it is what the
 #   second and third arms share. `marg.of`'s CONST arm and its `not STACK` arm are now
 #   ONE def (`marg.one`), because `sym_dim` reads `s.val` and `ssimplify(s)` in the same
 #   place:
@@ -6632,27 +6991,41 @@ def main() -> IO(Unit):
 #   and FLIP all answer now, INCLUDING OVER A SYMBOLIC DIM -- `mv_reshsym_nm` and
 #   `mv_reshbare` are its rows and `mv_expsym_pos` is EXPAND's. UNSHARD does not, and its
 #   wall is `_min_max`.
-# TODO(p3) ops.py:890  def device               -- PORTED, as `UOp.device`.
-# TODO(p3) ops.py:905  def is_virtual           -- `self.dtype in dtypes.weaks`, and
-#   `dtypes.weaks` is dtype.bend's `weaks()`, which is unreachable (see the header).
-#   The `self.device is None` half is `UOp.device`.
-# TODO(p3) ops.py:910  def addrspace            -- PORTED, as `UOp.addrspace`.
-# TODO(p3) ops.py:1008 def is_realized          -- `has_buffer_identity`, a graph walk
+# DONE(p3) ops.py:875  def device               -- PORTED, as `UOp.device`.
+# DONE(p3) ops.py:891  def is_virtual           -- PORTED, as `UOp.is_virtual`, and
+#   the wall this entry named is GONE. The wall was "`dtypes.weaks` is
+#   dtype.bend's `weaks()`, which is unreachable": it is not, because
+#   `dtypes.weaks` is `(weakint, weakfloat)` (dtype.py:160) and `S.Cls` names
+#   the two weak classes, so the test is a `Dt` pattern -- `dt_is.is_weak` --
+#   and no C effect is in the way. `weak.bend`'s `wk_is_virtual` reads the same
+#   two facts and was RIGHT; what it lacked was a NEGATIVE WITNESS, and that
+#   is what the `vb_` rows are: `vb_add` says False and `vb_cast` says True on
+#   the device half alone. `vb_wc` and `vb_wf` are the two weak dtypes ON A
+#   DEVICE, and they are the only way to see the weak half on its own, because
+#   a weak node is otherwise device-less.
+# DONE(p3) ops.py:896  def addrspace            -- PORTED, as `UOp.addrspace`.
+# TODO(p3) ops.py:999 def is_realized          -- `has_buffer_identity`, a graph walk
 #   with a set. P3.
-# TODO(p3) ops.py:1013 def variable             -- `self.op is Ops.PARAM and
+# TODO(p3) ops.py:1009 def is_variable        -- `self.op is Ops.PARAM and
 #   self.arg.vmin_vmax is not None`, which is a `ParamArg` read and no fold at all.
-#   P3 with its four siblings at 1018-1044.
-# TODO(p3) ops.py:1047 def variables            -- the `unbind`/`unbind_all` set walk.
+#   P3 with its four siblings at 1013-1039.
+#
+#   THE NAME WAS WRONG AND SO WAS THE LINE, and BOTH ARE FIXED HERE. The marker
+#   said `ops.py:1013 def variable`; the body it quotes is the `is_variable`
+#   PROPERTY at 1009, and `UOp.variable` -- the factory at 1004 -- is a
+#   DIFFERENT function with a different body. A marker whose name and whose
+#   quoted body disagree is a marker nobody can check.
+# TODO(p3) ops.py:1037 def variables            -- the `unbind`/`unbind_all` set walk.
 #   P3 with the set algebra.
-# TODO(p3) ops.py:1058 def const_factor         -- `divides` on a symbolic factor list,
+# TODO(p3) ops.py:1048 def const_factor         -- `divides` on a symbolic factor list,
 #   and `divides` needs `gcd`, and `gcd` needs a `Counter` fold. P3.
-# DONE(p3) ops.py:1100 def vmin                 -- LANDED as `UOp.vmin`, a reader over the
+# DONE(p3) ops.py:1090 def vmin                 -- LANDED as `UOp.vmin`, a reader over the
 #   sweep's row. `mmk_vmin` and `mmk_vmax` are TWO rows on the ONE node whose bounds are
 #   63 bits apart, because a pair in one string cannot see them exchanged and `commit_int`
 #   reads them as two arguments. MW4 exchanges them one line at a time and moves one row
 #   each, which is the measurement that neither reader is riding on the other.
-# DONE(p3) ops.py:1102 def vmax                 -- same, and the same two rows.
-# DONE(p3) ops.py:1104 def _min_max             -- THE BOUND, THE OP TABLE,
+# DONE(p3) ops.py:1092 def vmax                 -- same, and the same two rows.
+# DONE(p3) ops.py:1094 def _min_max             -- THE BOUND, THE OP TABLE,
 #   `int(x).bit_length()` AND THE WALK ARE LANDED AND GATED: 54 + 127 + 17 rows
 #   byte-identical to CPython, 3 recorded divergences (`mmkx_*`), and 54 + 35 + 7
 #   mutation entries. The walk is `mm.sweep`, a FORWARD SWEEP in arena index order rather
@@ -6702,7 +7075,7 @@ def main() -> IO(Unit):
 #       See the section header above for the full argument.
 #     * `Bnd = NInf | PInf | Int{neg, mag} | Flt` and `bnd_lim`, the twenty DTYPE
 #       LIMITS, hoisted out of dtype.bend under the same notice as `promo_mask`.
-#     * `mm.lift`, the OP TABLE for ops.py:1105-1163 -- PURE over
+#     * `mm.lift`, the OP TABLE for ops.py:1094-1156 -- PURE over
 #       `(op, srcs, arg, dtype)` with the src intervals handed IN, which is what makes
 #       it gateable before there is a walk. Twelve of the sixteen binary arms plus
 #       WHERE, Defines+vmin_vmax, RANGE/SPECIAL, STACK, CONST, PAD, the
@@ -6744,16 +7117,19 @@ def main() -> IO(Unit):
 #     4. `self.src[0].buf_uop` (a `while` over five ops) for the LOAD-from-BINARY arm.
 #   So this retires the WALL'S NAMING, its i64 arithmetic, `bit_length`, the dtype limits,
 #   the op table AND the walk -- and leaves four div/mod arms, CAST and the LOAD arm.
-# TODO(p3) ops.py:1166 def _sym_fxn             -- `exec` of generated source. P3/P6.
-# TODO(p3) ops.py:1196 def alloc                -- `new_buffer`, which is P6's device
+# TODO(p3) ops.py:1158 def _sym_fxn             -- `exec` of generated source. P3/P6.
+# TODO(p3) ops.py:1188 def alloc                -- `new_buffer`, which is P6's device
 #   memory layer.
-# TODO(p3) ops.py:1227 def param                -- P6, same reason.
-# TODO(p3) ops.py:1400 def __reduce__           -- pickling; the arena is monotone and
+# TODO(p3) ops.py:1218 def param                -- P6, same reason.
+# TODO(p3) ops.py:1395 def __reduce__           -- pickling; the arena is monotone and
 #   has no destruction, so there is nothing to pickle.
-# TODO(p3) ops.py:1412 def safe_exp2            -- `math.*` in a table; F32 is native in
-#   Bend and `F32.exp` exists, so this is a match ladder over the ALU ops. P3.
-# TODO(p3) ops.py:1412 def safe_pow             -- the same.
-# TODO(p3) ops.py:1427 def exec_alu             -- its tuple operand case is a
+# DONE(p3) ops.py:1402 def safe_exp2            -- PORTED, and NOT HERE: it is
+#   `symbolic.bend`'s `f32_exp2` (`F32.pow(2.0, x)`), and `ops.py:1402` is what
+#   the `python_alu` table's `Ops.EXP2` entry calls. The marker said 1412.
+# DONE(p3) ops.py:1406 def safe_pow             -- the same, as `symbolic.bend`'s
+#   `f32_pow`, and the marker said 1412 for BOTH. `runtime/ops_python.bend` is
+#   the other reader.
+# TODO(p3) ops.py:1422 def exec_alu             -- its tuple operand case is a
 #   vectorised ALIKE branch. P3.
 # ===========================================================================
 #
