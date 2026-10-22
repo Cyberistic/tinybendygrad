@@ -461,12 +461,12 @@ PHASE1 = [
      [("driver", "    case 2: \"res\"", "    case 2: \"resolve\"")]),
     # ------------------------------------------------------------------------------ AXIS
     ("X1 the PORT lane's `inputs` are the two BUFFERs in the OTHER order", "AXIS",
-     [("driver", "def rs_inputs() -> List<&2, U32>:\n  [10, 9]",
-       "def rs_inputs() -> List<&2, U32>:\n  [9, 10]")]),
+     [("driver", "def rs_inputs() -> List<&2, U32>:\n  [11, 10]",
+       "def rs_inputs() -> List<&2, U32>:\n  [10, 11]")]),
     ("X2 BOTH lanes' `inputs` become the two PARAMs: the fixture axis the gate's own "
      "prose predicts makes `res_64` AGREE", "AXIS",
-     [("driver", "def rs_inputs() -> List<&2, U32>:\n  [10, 9]",
-       "def rs_inputs() -> List<&2, U32>:\n  [2, 3]"),
+     [("driver", "def rs_inputs() -> List<&2, U32>:\n  [11, 10]",
+       "def rs_inputs() -> List<&2, U32>:\n  [3, 4]"),
       ("oracle", "return lst(RZ.resolve_params(u, (b1, b0)))",
        "return lst(RZ.resolve_params(u, (g1, g0)))")]),
     ("X3 the `beam` driver's ctx is 3, not 7 (`bea0` at 0 is unchanged)", "AXIS",
@@ -536,11 +536,11 @@ PHASE1 = [
      [("driver", "      g = rs_ids(rs_fuel(ar), globals, \"\", True{})\n"
                  "      o = rs_ids(rs_fuel(ar), outs, \"\", True{})\n"
                  "      i = rs_ids(rs_fuel(ar), ins, \"\", True{})\n"
-                 "      v = rs_pay.var(rs_fuel(ar), ar, vars, \"\", True{})",
+                 "      v = rs_pay.var(rs_fuel(ar), ar, params, \"\", True{})",
        "      g = rs_ids(rs_fuel(ar), Nil{}, \"\", True{})\n"
        "      o = rs_ids(rs_fuel(ar), Nil{}, \"\", True{})\n"
        "      i = rs_ids(rs_fuel(ar), Nil{}, \"\", True{})\n"
-       "      v = rs_pay.var(rs_fuel(ar), ar, vars, \"\", True{})")]),
+       "      v = rs_pay.var(rs_fuel(ar), ar, params, \"\", True{})")]),
     # **A SEVENTH DISTINCT CAUSE OF ZERO, MEASURED HERE AND IT IS NOT ANY OF THE SIX.** The
     # FIRST FORM OF `V11` passed `rs_opt_str`'s own `String` RESULT back into `rs_opt_str`,
     # which takes a `Maybe<&2, String>`: `bend` REFUSED the lane (`bd rc=1`, 1004 rows
