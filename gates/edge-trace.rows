@@ -1,26 +1,26 @@
 # gates/edge-trace.rows -- TAB separated. Generated; the generator is `gates/edge-runner.py`. THE TRACE: it says which gates RAN and what they said, and it is IN GIT so the answer survives a fresh clone.
 # columns: gate, status, verdict, token, rc, seconds, peak-mb, measured-at
-# written 2026-10-22T15:20:15Z HEAD=e7c4e3fed
-checks/differ.py	RAN-UNASSIGNED	UNASSIGNED	UNASSIGNED(2)	2	0.63	20	2026-10-22T15:19:17Z
-checks/e2e.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:18Z
-checks/gatesweep.py	OVER-BUDGET	SKIP	MEASURED-30.31s				2026-10-22T15:19:19Z
-checks/substrate.py	RAN	REFUSED	REFUSED	3	0.61	11	2026-10-22T15:19:19Z
-gates/amd_dsl_census-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:19Z
-gates/beautiful-mnist-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:20Z
-gates/code-reader-census.py	RAN	SKIP	TIMED-OUT	-9	30.31	792	2026-10-22T15:19:20Z
-gates/crp_graph_census-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:51Z
-gates/edge-oracle-pin-gate.py	RAN	PASS	PASS	0	0.61	11	2026-10-22T15:19:51Z
-gates/js-lane-census.py	RAN	REFUSED	REFUSED	3	0.61	11	2026-10-22T15:19:52Z
-gates/mixin-op-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:52Z
-gates/onnx_census-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:53Z
-gates/ops_python_census-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:54Z
-gates/paramarg-site-gate.py	RAN	REFUSED	REFUSED	3	0.61	11	2026-10-22T15:19:54Z
-gates/rand_census-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:55Z
-gates/state_census-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:19:56Z
-gates/subnormal-flush-gate.py	RAN	PASS	PASS	0	3.17	103	2026-10-22T15:19:56Z
-gates/symrules-census.py	RAN	PASS	PASS	0	0.61	11	2026-10-22T15:19:59Z
-gates/tagmachinery-gate.py	RAN	REFUSED	REFUSED	3	0.61	11	2026-10-22T15:20:00Z
-gates/upstream-pow-dtype-gate.py	RAN-FINDING	FAIL	FAIL	1	10.76	200	2026-10-22T15:20:01Z
-gates/upstream-promo-lattice-gate.py	RAN-FINDING	FAIL	FAIL	1	2.49	162	2026-10-22T15:20:11Z
-gates/wgsl_render_census-gate.py	RAN	DEAD	TRACEBACK	1	0.61	11	2026-10-22T15:20:14Z
-gates/worker-gate.py	RAN	REFUSED	REFUSED	3	0.61	11	2026-10-22T15:20:14Z
+# written 2026-10-22T15:37:36Z HEAD=0bdaedaa3
+checks/differ.py	RAN-UNASSIGNED	UNASSIGNED	UNASSIGNED(2)	2	0.64	28	2026-10-22T15:36:37Z
+checks/e2e.py	RAN	DEAD	TRACEBACK	1	0.59	10	2026-10-22T15:36:38Z
+checks/gatesweep.py	OVER-BUDGET	SKIP	MEASURED-30.31s				2026-10-22T15:36:39Z
+checks/substrate.py	RAN	REFUSED	REFUSED	3	0.59	9	2026-10-22T15:36:39Z
+gates/amd_dsl_census-gate.py	RAN	DEAD	TRACEBACK	1	0.60	9	2026-10-22T15:36:39Z
+gates/beautiful-mnist-gate.py	RAN	DEAD	TRACEBACK	1	0.59	10	2026-10-22T15:36:40Z
+gates/code-reader-census.py	RAN	SKIP	TIMED-OUT	-9	30.19	804	2026-10-22T15:36:40Z
+gates/crp_graph_census-gate.py	RAN	DEAD	TRACEBACK	1	0.59	10	2026-10-22T15:37:11Z
+gates/edge-oracle-pin-gate.py	RAN	PASS	PASS	0	0.59	10	2026-10-22T15:37:11Z
+gates/js-lane-census.py	RAN	REFUSED	REFUSED	3	0.60	10	2026-10-22T15:37:12Z
+gates/mixin-op-gate.py	RAN	DEAD	TRACEBACK	1	0.59	10	2026-10-22T15:37:12Z
+gates/onnx_census-gate.py	RAN	DEAD	TRACEBACK	1	0.59	9	2026-10-22T15:37:13Z
+gates/ops_python_census-gate.py	RAN	DEAD	TRACEBACK	1	0.59	9	2026-10-22T15:37:14Z
+gates/paramarg-site-gate.py	RAN	REFUSED	REFUSED	3	0.59	10	2026-10-22T15:37:14Z
+gates/rand_census-gate.py	RAN	DEAD	TRACEBACK	1	0.59	9	2026-10-22T15:37:15Z
+gates/state_census-gate.py	RAN	DEAD	TRACEBACK	1	0.59	9	2026-10-22T15:37:15Z
+gates/subnormal-flush-gate.py	RAN	PASS	PASS	0	2.80	100	2026-10-22T15:37:16Z
+gates/symrules-census.py	RAN	PASS	PASS	0	0.59	9	2026-10-22T15:37:19Z
+gates/tagmachinery-gate.py	RAN	REFUSED	REFUSED	3	0.59	9	2026-10-22T15:37:19Z
+gates/upstream-pow-dtype-gate.py	RAN-FINDING	FAIL	FAIL	1	12.07	198	2026-10-22T15:37:20Z
+gates/upstream-promo-lattice-gate.py	RAN-FINDING	FAIL	FAIL	1	2.45	166	2026-10-22T15:37:32Z
+gates/wgsl_render_census-gate.py	RAN	DEAD	TRACEBACK	1	0.59	10	2026-10-22T15:37:34Z
+gates/worker-gate.py	RAN	REFUSED	REFUSED	3	0.60	10	2026-10-22T15:37:35Z
