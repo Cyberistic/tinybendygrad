@@ -1,0 +1,65 @@
+# THE GRAPHS, ONE PER LINE: `name|<s-expr>`.  The reader is the PORT's own driver
+# (`tinybendygrad/uop/symbolic.bend`'s `fz_run`), and the oracle
+# (`gates/symrules-oracle.py`) READS THIS SAME FILE and builds the same graphs in
+# CPython.  **ONE FILE, TWO READERS** -- so the port and the oracle cannot be
+# measuring two different graphs, which is the defect a hand-written pair of
+# fixtures has by construction.
+#
+# THE VOCABULARY IS THE PORT'S: `c<N>` and `n<N>` are weakint CONSTs, `bt`/`bf` are
+# the two bool CONSTs, `bad` is the Invalid CONST, and every other name is a VARIABLE
+# at the dtype its LAST character states -- `x`/`y` weakint, `xb`/`yb` bool, `xf`
+# weakfloat, `xi` int32.
+#
+# EVERY RULE GETS A PAIR, and the pair is the claim: the graph upstream's rule FIRES
+# on, and the graph upstream's rule must NOT fire on.  A rule that fires on the
+# second one is a rule that fires where upstream's does not -- and THAT is the
+# dangerous direction, because the missing rule is a silence and the extra rule is a
+# wrong kernel.
+r89|(add bad x)
+r89_no|(cmpeq bad x)
+r95|(where xb bad x)
+r95_no|(where xb x y)
+r121|(shl x c0)
+r121_no|(shl x c1)
+r122|(mul x c1)
+r122_no|(mul x c2)
+r124|(floordiv x c1)
+r124_no|(floordiv x c2)
+r125|(floordiv x n1)
+r125_no|(floordiv x c1)
+r130|(and xb c1)
+r130_no|(and xb c0)
+r131|(or xb c1)
+r131_no|(or xb c0)
+r132|(cmpne xb bf)
+r132_no|(cmpne xb bt)
+r133|(and xb xb)
+r133_no|(and xb yb)
+r135|(where xb bt bf)
+r135_no|(where xb bf bt)
+r136|(where xb bf bt)
+r136_no|(where xb bt bf)
+r142|(cmplt x x)
+r142_no|(cmplt x y)
+r143|(floormod x x)
+r143_no|(floormod x y)
+r144|(xor x x)
+r144_no|(xor x y)
+r145|(and x c0)
+r145_no|(and x c1)
+r151|(cmpne x x)
+r151_no|(cmpne xf xf)
+r167|(mul xb yb)
+r167_no|(mul x y)
+r168|(add xb yb)
+r168_no|(add x y)
+r169|(max xb yb)
+r169_no|(max x y)
+r173|(mul x (reciprocal x))
+r173_no|(mul x (reciprocal y))
+r178|(mul x c0)
+r178_no|(mul x c1)
+r189|(cast:bool x)
+r189_no|(cast:i32 x)
+r191|(pow x c0)
+r191_no|(pow x y)
