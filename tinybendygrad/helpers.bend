@@ -19,7 +19,9 @@
 # -- and `.agents/slop/helpers-i64-mutations.txt` is its output.
 #
 # `truncate` is not one of helpers.py's: it is dtype.py:296, it needs `dtypes`,
-# and it lives in ./dtype.bend. See dtype.bend `def truncate`.
+# and it lives in ./dtype.bend. See dtype.bend `def truncate_float` -- THE FLOAT ARM,
+# which is the one `DType.const` (dtype.py:84) takes for a float dtype. The int arm
+# is still P3 and dtype.bend says so.
 
 import Base
 

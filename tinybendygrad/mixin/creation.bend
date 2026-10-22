@@ -90,7 +90,14 @@
 #      `fill_value` is the ALREADY-TRUNCATED `O.Const` and `cr_zeros_i` passes
 #      `MO.mo_ki(0)`. That is CPython's own answer, which is why `row_zeros23i_g` is a
 #      row and not a restatement.
-#      TODO(p3) dtype.py:84  `DType.const`'s `truncate`.
+#      TODO(p3) dtype.py:84  `DType.const`'s `truncate` -- THE INT ARM ONLY. THE FLOAT
+#      ARM IS PORTED: `DT.truncate_float` (dtype.bend) is `truncate.get(self, float)`,
+#      and `cr_const_of.trunc` applies it, so a float CONST holds the value IN ITS
+#      DTYPE. MEASURED on CPython, `UOp.const(0.1, dtypes.float16)` holds
+#      `ConstFloat(0.0999755859375)`; without the truncation the port holds the f32 of
+#      0.1, which is a DIFFERENT NUMBER IN THE GRAPH. The int arm needs the value to
+#      be an `H.I64` and the width to be a mask, and the port's `CInt` holds a full
+#      `H.I64`.
 #   4. `u.reshape(max_shape).shrink_to(new_shape)` (creation.py:42) IS AN ALLOC AND A
 #      CONDITIONAL RESHAPE, and `shrink_to` CONTRIBUTES NOTHING. `reshape`'s identity
 #      test is `ret.shape == self.shape` (movement.py:187) and an ALLOC's shape is
@@ -178,6 +185,7 @@
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
+import ./../dtype.bend as DT
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../tensor.bend as T
@@ -241,15 +249,38 @@ def cr_cast_dt.of(isinv: Bool, dt: S.Dt) -> S.Dt:
 
 def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
 
+# `DType.const` -- dtype.py:79-84 -- for the FLOAT arm. `truncate.get(self, float)`
+# is the dtype's own format, so the value the CONST holds is the value IN THAT FORMAT
+# and not the value the caller typed. `DT.truncate_float` IS that arm.
+#
+# THE `import ./../dtype.bend` IS BACK, and `mixin/dtype.bend:17-29` says when it comes
+# back: "when `tinybendygrad/dtype.bend` stops printing the foreign-code notice these
+# defs go back there and the imports come with them". THE NOTICE IS GONE -- the six
+# laws were retired (dtype.bend:568-588) and the file is PURE, so it is importable, and
+# `nn/layers.bend`, `nn/optim.bend` and `runtime/ops_python.bend` already import it.
+# IT IS `DT` AND NOT `D` HERE BECAUSE `D` IS `./dtype.bend` -- `mixin/dtype.bend`, a
+# DIFFERENT FILE.
+#
+# MEASURED on CPython, `UOp.const(0.1, dtypes.float16)` holds `ConstFloat(0.0999755859375)`
+# and `UOp.const(0.1, dtypes.bfloat16)` holds `ConstFloat(0.10009765625)`: WITHOUT this
+# the port would hold the f32 of 0.1 in BOTH, which is a DIFFERENT NUMBER IN THE GRAPH.
+# `f32` AND `weakfloat` ARE THE IDENTITY, so the rows that were already right do not move.
+def cr_const_of.trunc(dt: S.Dt, v: O.Const) -> O.Const:
+  match v:
+    case O.CFloat{f}: O.CFloat{DT.truncate_float(dt, f)}
+    case _: v
+
 # `UOp.const` -- ops.py:632-638, `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`.
-# `dtype.const`'s truncation is P3 (fact 3 of the header), so `v` is the value AFTER it.
+# `dtype.const`'s truncation is the FLOAT arm, applied above; the INT arm is P3, so an
+# INT value still arrives already truncated and `v` is the value AFTER it.
 # `c0` is the CONST's DERIVED dtype (ops.py:185) and `de` is `dtype` AFTER ops.py:630, so the
 # fold test is `CONST.dtype == de` -- the `same` of `cr_cast` above, read off the dtype the
 # CONST HAS rather than the one the caller asked for.
 def cr_const_of(+ar: O.Arena, +v: O.Const, +dt: S.Dt) -> T.Tensor:
-  +c0 = cr_from_py(v)
+  +v2 = cr_const_of.trunc(dt, v)
+  +c0 = cr_from_py(v2)
   +de = cr_cast_dt(F.is_cinvalid.val(v), dt)
-  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)
+  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v2), de)
 
 # `shape_to_shape_arg`'s `UOp.const(x)` per dim (tinygrad/uop/ops.py:105). `T.tn_mop`'s `ADims{ds}`
 # takes the CONSTS rather than the ints, and `tn_mop.dims` interns them in the arena it

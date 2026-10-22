@@ -1139,3 +1139,51 @@ def float_to_fp8(x: F32, dtype: S.Dt) -> U32:
 
 def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
   Dt.fp8_to(x, fp8_kind(dt_name(dtype)))
+
+# ===========================================================================
+# `truncate` -- dtype.py:296. THE FLOAT ARM, and the reason a float CONST can hold a
+# value AT ITS DTYPE.
+#
+# UPSTREAM'S `truncate` IS A DICT FROM A DTYPE TO A CONVERSION, and the conversion is
+# chosen by the dtype's CLASS: `DType.const` (dtype.py:84) takes the float arm when
+# `dtypes.is_float(self)`, the bool arm when `is_bool`, and the int arm otherwise.
+# THIS IS THE FLOAT ARM, and it is here because the three conversions it needs are
+# here: `Dt.fp16` and `Dt.bf16` are `float_to_fp16`/`float_to_bf16` and `Dt.fp8_to` is
+# `fp8_to_float`, all three of which dtype.py:290-293 NAMES AS `truncate`'s OWN ENTRIES.
+#
+# f32 IS THE IDENTITY, because Bend's F32 IS the f32: a Bend float LITERAL is already
+# the f32 rounding of the decimal (bend.ts:2204-2210 makes `Lit("F32",
+# f32_to_bits(v))`), and upstream's `truncate[float32]` is `ctypes.c_float(x).value`,
+# which is the same rounding.
+#
+# weakfloat IS THE IDENTITY TOO, and upstream AGREES: `truncate.get(self, float)` is
+# `float` for a dtype the dict does not name, and `float` is the identity.
+#
+# f64 IS A WALL AND NOT A NEAR MISS. Upstream's `truncate[float64]` is
+# `ctypes.c_double(x).value` -- the identity on a DOUBLE -- and the port's value is an
+# F32, so an f64 CONST HERE IS THE F32 OF UPSTREAM'S DOUBLE. The port's `Const` type
+# (`uop/ops.bend:802`, `CFloat{f: F32}`) is where that would have to be fixed, and
+# that file is another unit's.
+#
+# THE INT ARM IS dtype.py:296's OTHER HALF and is NOT PORTED: it needs the value to be
+# an `H.I64` and the width to be a mask, and the port's `CInt` holds a full `H.I64`.
+# `mixin/creation.bend` names what is left of that.
+# ===========================================================================
+
+def truncate_float.of(nm: String, f: F32) -> F32:
+  match nm:
+    case "f16": Dt.fp16(f)
+    case "bf16": Dt.bf16(F32.bits(f))
+    # THE fp8 ARM IS THE ROUND TRIP, and the round trip is the whole of upstream's entry:
+    # `truncate[fp8] = lambda x, dtype=fp8: fp8_to_float(float_to_fp8(x, dtype), dtype)`
+    # (dtype.py:292). `Dt.fp8_to` DECODES AN fp8 PATTERN -- it is not the f32 pattern --
+    # so the encode has to be there. MEASURED: `Dt.fp8_to(F32.bits(0.1), 0)` answers
+    # 0xC1000000, which is -8.0, and the round trip answers CPython's 0x3DD00000.
+    case "fp8e4m3": fp8_to_float(float_to_fp8(f, S.fp8e4m3()), S.fp8e4m3())
+    case "fp8e5m2": fp8_to_float(float_to_fp8(f, S.fp8e5m2()), S.fp8e5m2())
+    case "fp8e4m3fnuz": fp8_to_float(float_to_fp8(f, S.fp8e4m3fnuz()), S.fp8e4m3fnuz())
+    case "fp8e5m2fnuz": fp8_to_float(float_to_fp8(f, S.fp8e5m2fnuz()), S.fp8e5m2fnuz())
+    case _: f
+
+def truncate_float(dt: S.Dt, f: F32) -> F32:
+  truncate_float.of(dt_name(dt), f)
