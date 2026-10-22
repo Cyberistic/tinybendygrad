@@ -127,10 +127,10 @@
 #   :204-206 the residency set      PORTED  three calls, conditional
 #   :213 check_family               PORTED  the reverse lookup
 #   :214 arch                       PORTED  `[12:]` of the family name
-#   :216 pm_bufferize               PARTIAL the three rules, FIRST-WINS
+#   :216 pm_bufferize               GONE    upstream deleted it; the section below
 #   :222 sels                       PORTED  18 u64 = 144 bytes, and the [3:5]
 #   :228 mark_resident              PORTED  both paths, and they are exclusive
-#   :239 new_slots                  PORTED
+#   :239 new_slots                  GONE    upstream deleted it; `link_buffer` replaced it
 #   :243 pipeline                   PORTED  four calls and `checked` twice
 #   :251 new_icb                    PORTED  the size and the eleven steps
 #   :258 the ICB refusal           PORTED  refusal 5
@@ -192,14 +192,14 @@
 #    is a developer tool with no caller in the port.
 #    TODO(p3) runtime/ops_metal.py:76  -- `subprocess.Popen` of compiler_explorer.
 #
-# 5. THE UOp MATCHER (:189, :192, :216). `pm_encode` and `pm_lower` match on
-#    UOps and `pm_bufferize` PREPENDS three rules to `Compiled`'s, so the port
-#    carries the three rules' PATTERNS and their first-wins fold and nothing
-#    else: a rule's body is a UOp graph, and building one needs
-#    `./uop/ops.bend` and the HCQ2 lowering this file does not own.
+# 5. THE UOp MATCHER (:189, :192). `pm_encode` and `pm_lower` match on UOps and
+#    their bodies are UOp graphs, and building one needs `./uop/ops.bend` and the
+#    HCQ2 lowering this file does not own, so the port carries neither.
+#    `pm_bufferize` (:216) WAS a third one and it is GONE from upstream at the
+#    pin, so the port carries it no longer -- see the section that used to hold
+#    it.
 #    TODO(p3) runtime/ops_metal.py:190  -- `encode_submit(MetalQueue(submit))`.
 #    TODO(p3) runtime/ops_metal.py:193  -- `mtl_poll(tl) if …timeline…`.
-#    TODO(p3) runtime/ops_metal.py:217  -- the three `pm_bufferize` bodies.
 #
 # NOT A WALL, and named because it looks like one: every `mtl_msg` goes through
 # `ccall(MSGSEND[ret], obj, sel, *args)`, and `ccall` builds a UOp
@@ -2647,224 +2647,45 @@ def dev.pools.at(has: Bool, +t: Tr) -> Tr:
     case False{}: pool_push(t)
 
 # ===========================================================================
-# :216-220 -- `pm_bufferize`, THE FIRST-WINS CLAIM, and it is the one the brief
-# asks for: a node TWO rules both claim, where the ORDER decides.
+# `pm_bufferize` IS GONE FROM UPSTREAM AT THE PIN, and this file's port of it
+# is gone with it.
 #
+# The old upstream had, at `ops_metal.py:216-220`,
 #   self.pm_bufferize = PatternMatcher([
 #     (UPat(Ops.PARAM, tag="mtl_sel"),    lambda ctx: ctx.sels),                      # M0
 #     (UPat(Ops.PARAM, tag="slots", name="b"),
 #                                    lambda ctx,b: ctx.new_slots(b.max_numel()) if b.max_numel() > 4 else None),  # M1
 #     (UPat(Ops.PARAM, name="b"),         lambda ctx,b: ctx.new_icb(*b.tag[1:]) if isinstance(b.tag, tuple) and b.tag[0] == "mtl_icb" else None),  # M2
 #   ]) + self.pm_bufferize
+# and `device.bend` carried `Compiled`'s two rules -- the TAIL of that `+`.
+# AT THE PIN NONE OF IT IS THERE: `rg -n 'pm_bufferize' tinygrad/` answers
+# NOTHING, `ops_metal.py` has no `new_slots` and no `self.sels`, and
+# `device.py:374-377` carries `pm_encode`, `pm_lower`, `pm_link` and
+# `link_bufs` -- with `link_buffer` a per-device method at `device.py:411`.
 #
-# The `+` is a LIST CONCATENATION and the rewrite is FIRST-WINS, so the three
-# METAL rules are consulted BEFORE device.bend's three. That ordering is visible
-# in exactly one place: M2 and `device.py:404`'s second rule carry the IDENTICAL
-# pattern `UPat(Ops.PARAM, name="b")`, and a PARAM whose tag is `("mtl_icb", …)`
-# gets a fresh ICB Buffer and NOT Compiled's program buffer. `mt_pmb_icb` is that
-# row; `mt_pmb_cfunc` beside it is the fixture where a cfunc named `b` still gets
-# M2's program buffer, because M2's `else None` means it fires but answers
-# nothing and `device.bend`'s scan takes over.
-# ===========================================================================
-
-# The six fields the six patterns read. `tl` is `Compiled`'s first rule and is
-# here so the tail is one call into `device.bend` and not a second transcription
-# of it.
-type PmbNode is Data:
-  PmbNode{par: Bool, mtl_sel: Bool, slots: Bool, named_b: Bool, icb: Bool, tl: Bool}
-
-def pmb_node(par: Bool, ms: Bool, sl: Bool, nb: Bool, ic: Bool, tl: Bool) -> PmbNode:
-  PmbNode{par, ms, sl, nb, ic, tl}
-
-def PmbNode.par(n: PmbNode) -> Bool:
-  match n:
-    case PmbNode{par, mtl_sel, slots, named_b, icb, tl}: par
-
-def PmbNode.mtl_sel(n: PmbNode) -> Bool:
-  match n:
-    case PmbNode{par, mtl_sel, slots, named_b, icb, tl}: mtl_sel
-
-def PmbNode.slots(n: PmbNode) -> Bool:
-  match n:
-    case PmbNode{par, mtl_sel, slots, named_b, icb, tl}: slots
-
-def PmbNode.named_b(n: PmbNode) -> Bool:
-  match n:
-    case PmbNode{par, mtl_sel, slots, named_b, icb, tl}: named_b
-
-def PmbNode.icb(n: PmbNode) -> Bool:
-  match n:
-    case PmbNode{par, mtl_sel, slots, named_b, icb, tl}: icb
-
-def PmbNode.tl(n: PmbNode) -> Bool:
-  match n:
-    case PmbNode{par, mtl_sel, slots, named_b, icb, tl}: tl
-
-# the three METAL patterns, as three predicates. `mt_pmb_*` is the family that
-# exists so a mutation dropping one conjunct has a row that moves: M1's
-# `> 4` and M2's `("mtl_icb", …)` are the two GUARDS, and neither is exercised
-# by the other two rules' fixtures.
-# EACH PATTERN STATES ITS OWN CONJUNCTS. The first version chained them --
-# `pmb_m1 = pmb_m0 && slots && named_b` and `pmb_m2 = pmb_m0 && named_b &&
-# icb` -- and `pmb_m0` carries `tag="mtl_sel"`, so BOTH of them silently
-# required the `mtl_sel` tag as well. `mt_pmb_slots` and `mt_pmb_icb` answered
-# 2 and 2 where the source answers 2 and 3, and nothing else in the gate could
-# see it: M0's own fixture is the only one with `mtl_sel` set. The three
-# patterns are:
+# WHAT REPLACED IT, and none of it is ported HERE yet:
+#   :218  `Compiled.link_bufs |= {to_name(self.device, "handles"): lambda b:
+#         self.handles}` -- M0's ANSWER (`ctx.sels`, renamed `self.handles`),
+#         delivered by the registry instead of by a matcher. The KEY it
+#         registers is `metal_0_handles`, and that is `device.bend`'s own
+#         `tn_colon` row.
+#   :238  `def link_buffer(self, b)` -- M1's ANSWER: a "slots" alloc of more
+#         than four elements gets a HOST buffer of `b.max_numel() * 8` bytes.
+#         The `> 4` half of that guard is `SLOTS_MIN`, and `mt_slots_thresh4`
+#         and `mt_slots_thresh5` are its rows, and they stay.
+#   :219  `Compiled.pm_link += ...` -- M2's ANSWER: the ICB is now built by the
+#         LINK matcher, and `new_icb` (:251) survives as its BODY.
+# The port of the registry and of its consumer lives in `device.bend` (the
+# `lk_*` rows) and in `tinybendygrad/runtime/support/hcq2.bend`
+# (`bufferize_buf`), and Metal's CONTRIBUTIONS to it are NOT ported.
 #
-#   M0  UPat(Ops.PARAM, tag="mtl_sel")
-#   M1  UPat(Ops.PARAM, tag="slots", name="b")
-#   M2  UPat(Ops.PARAM, name="b")            -- NO TAG
+# SO THE SEVENTEEN ROWS THAT MEASURED THIS BLOCK ARE GONE, and so are the four
+# mutation-table entries that were about it. They measured upstream code that
+# does not exist, which is a row that can only ever agree.
 #
-# and M2's MISSING TAG is the whole of the difference between M1 and M2.
-def pmb_m0(+n: PmbNode) -> Bool: Bool.and(PmbNode.par(n), PmbNode.mtl_sel(n))
-def pmb_m1(+n: PmbNode) -> Bool:
-  Bool.and(PmbNode.par(n), Bool.and(PmbNode.slots(n), PmbNode.named_b(n)))
-
-# M2's PATTERN IS `UPat(Ops.PARAM, name="b")` and NOTHING ELSE -- no
-# `tag="slots"` and no `tag="mtl_sel"`. `mt_pmb_icb` is the row and it is the
-# ONLY row in the family that can see the difference, because every other
-# fixture is either an mtl_sel (M0) or a slots (M1) or neither (the tail).
-def pmb_m2(+n: PmbNode) -> Bool:
-  Bool.and(PmbNode.par(n), Bool.and(PmbNode.named_b(n), PmbNode.icb(n)))
-
-# The three answers, interned so the gate can print one. 0 is Python's `None`,
-# 1 is `ctx.sels`, 2 is a new_slots Buffer and 3 is a new_icb Buffer. `0` is
-# ALSO "M1 or M2 fired and answered None", which is the case the `else None`
-# writes down and the case a LAST-wins fold gets wrong.
-def PMB_NONE() -> U32: 0
-def PMB_SELS() -> U32: 1
-def PMB_SLOTS() -> U32: 2
-def PMB_ICB() -> U32: 3
-
-# The step and the run, device.bend's own shape: the candidate answer, whether
-# the rule FIRES, and the next index in one `Data` record, because a `Data`
-# record may not hold a `Maybe` and the scan may not scrutinise a computed
-# value.
-# ONE RULE'S CANDIDATE: the arena it would have grown into, the answer it
-# would have given, whether it FIRES, and the next rule index. Four things in
-# one `Data` record because a `Data` record may not hold a `Maybe` and the scan
-# may not scrutinise a computed value -- device.bend's `Step` shape, with the
-# arena added because M1 and M2 both ALLOCATE.
-type PmbStep is Data:
-  PmbStep{ar: D.Bar, got: U32, fires: Bool, k: Nat}
-
-def PmbStep.ar(s: PmbStep) -> D.Bar:
-  match s:
-    case PmbStep{ar, got, fires, k}: ar
-
-def PmbStep.got(s: PmbStep) -> U32:
-  match s:
-    case PmbStep{ar, got, fires, k}: got
-
-def PmbStep.fires(s: PmbStep) -> Bool:
-  match s:
-    case PmbStep{ar, got, fires, k}: fires
-
-def PmbStep.k(s: PmbStep) -> Nat:
-  match s:
-    case PmbStep{ar, got, fires, k}: k
-
-# The scan's state: the arena, whether a rule has answered, what it answered,
-# and the NEXT RULE INDEX. The index is a FIELD and not a second parameter
-# because a self-call's fuel may not feed both the self-call and the dispatch,
-# and because `Nat` is not `Data` and cannot take a `+` -- `PmbRun.k` is a def
-# rather than a field read for the same reason `Tr.calls` is.
-type PmbRun is Data:
-  PmbRun{ar: D.Bar, made: Bool, got: U32, k: Nat}
-
-def PmbRun.ar(r: PmbRun) -> D.Bar:
-  match r:
-    case PmbRun{ar, made, got, k}: ar
-
-def PmbRun.made(r: PmbRun) -> Bool:
-  match r:
-    case PmbRun{ar, made, got, k}: made
-
-def PmbRun.got(r: PmbRun) -> U32:
-  match r:
-    case PmbRun{ar, made, got, k}: got
-
-def PmbRun.k(r: PmbRun) -> Nat:
-  match r:
-    case PmbRun{ar, made, got, k}: k
-
-# THE THREE METAL RULES, and each is one `PmbStep`. `ne` is `b.max_numel()`, the
-# ONE input M1's guard reads, and it is a parameter rather than a field because a
-# UOp's `max_numel` is a graph read (WALL 5) and its VALUE is all the decision
-# uses. M1's guard is `> 4`; M2's is `isinstance(b.tag, tuple) and b.tag[0] ==
-# "mtl_icb"`, which the `icb` field already is.
-def pmb_m1.fires(+n: PmbNode, ne: U32) -> Bool:
-  Bool.and(pmb_m1(n), dev.wants_slots(ne))
-
-# M1 and M2 ALLOCATE, so their step grows the arena. The Buffer is a HOST
-# `uint64` of `b.max_numel()` elements, which is :218's `new_slots` shape and
-# :251's ICB header shape -- and `mt_pmb_grew` is the row that says a rule that
-# FIRES and a rule that is KEPT are the same growth.
-def pmb_grow(ar: D.Bar, ne: U32) -> D.Bar:
-  D.BFound.ar(D.bnew(ar, D.Bn{0, MTL_DEV(), ne, S.uint64(), 0, 0, False{}, 0,
-                             D.Bspec{False{}, True{}, False{}, True{}, False{}}}))
-
-def pmb_step1(+ar: D.Bar, fires: Bool, ne: U32) -> PmbStep:
-  Bool.pick(PmbStep, fires, PmbStep{pmb_grow(ar, ne), PMB_SLOTS(), True{}, 2n},
-            PmbStep{ar, PMB_NONE(), False{}, 2n})
-
-def pmb_step2(+ar: D.Bar, fires: Bool, ne: U32) -> PmbStep:
-  Bool.pick(PmbStep, fires, PmbStep{pmb_grow(ar, ne), PMB_ICB(), True{}, 3n},
-            PmbStep{ar, PMB_NONE(), False{}, 3n})
-
-def pmb_step(k: Nat, ar: D.Bar, +n: PmbNode, +ne: U32) -> PmbStep:
-  match k:
-    case 0n: PmbStep{ar, PMB_SELS(), pmb_m0(n), 1n}
-    case 1n: pmb_step1(ar, pmb_m1.fires(n, ne), ne)
-    case _: pmb_step2(ar, pmb_m2(n), ne)
-
-# FIRST-WINS, spelled out: a rule's answer replaces the accumulator only if it
-# FIRES and the accumulator is still empty. `PmbRun.made` is the whole of
-# `ops.bend`'s `pm_keep`, and it is what makes M0 beat M1 on a node that is BOTH
-# an `mtl_sel` and a `slots` PARAM -- which cannot happen, because
-# `UPat(Ops.PARAM, tag="mtl_sel")` and `tag="slots"` are DIFFERENT tags, and
-# `mt_pmb_both` is the fixture that proves the two patterns are exclusive.
-# THE INDEX ADVANCES ON A MISS TOO, and that is the second bug this gate found
-# in its own port: `pmb_keep` returned the accumulator UNCHANGED when a rule did
-# not fire, so the rule index stayed at 0, rule 0 was evaluated three times and
-# rules 1 and 2 NEVER RAN. Every `pm_bufferize` answer was then the TAIL's, and
-# `mt_pmb_icb` printed 2 where the source answers 3. The miss arm carries the
-# new index and the OLD arena, the old flag and the old answer.
-def pmb_keep(+r: PmbRun, +s: PmbStep) -> PmbRun:
-  Bool.pick(PmbRun, Bool.and(PmbStep.fires(s), Bool.not(PmbRun.made(r))),
-            PmbRun{PmbStep.ar(s), True{}, PmbStep.got(s), PmbStep.k(s)},
-            PmbRun{PmbRun.ar(r), PmbRun.made(r), PmbRun.got(r), PmbStep.k(s)})
-
-# `Nat` FUEL is the first parameter because a self-call must be visibly
-# decreasing, and it may not feed both the self-call and the rule dispatch.
-def pmb_go(fuel: Nat, +ar: D.Bar, +n: PmbNode, +ne: U32, +r: PmbRun) -> PmbRun:
-  match fuel:
-    case 0n: r
-    case 1n+p:
-      +s = pmb_step(PmbRun.k(r), ar, n, ne)
-      pmb_go(p, ar, n, ne, pmb_keep(r, s))
-
-def pmb_metal(+ar: D.Bar, +n: PmbNode, ne: U32) -> PmbRun:
-  pmb_go(3n, ar, n, ne, PmbRun{ar, False{}, PMB_NONE(), 0n})
-
-# `+ self.pm_bufferize` -- the TAIL of :220, and it is `device.bend`'s OWN scan
-# called, not a second copy of it. `Compiled`'s TWO rules read `is_param`,
-# `tag="timeline"` and `name="b"`, and the first two are the `PmbNode` fields
-# that carry them across. `device.bend`'s `Pn` lost its fourth `cfunc` field when
-# upstream `bdddaad21` deleted `pm_bufferize`'s `cfunc_buf` rule, so the trailing
-# `False{}` this call used to pass is gone.
-def pmb_tail(+ar: D.Bar, +n: PmbNode) -> PmbRun:
-  +p = D.pmb_bufferize(ar, D.param(PmbNode.par(n), PmbNode.tl(n), PmbNode.named_b(n)))
-  PmbRun{D.Pmb.ar(p), True{}, D.Pmb.got(p), 0n}
-
-# THE WHOLE OF :216-220. The `+` IS a list concatenation and `rewrite` is
-# FIRST-WINS, so Metal's three rules are consulted BEFORE device.bend's two --
-# and this is the only place that ordering is written down.
-def pm_bufferize(+ar: D.Bar, +n: PmbNode, ne: U32) -> PmbRun:
-  +a = pmb_metal(ar, n, ne)
-  Bool.pick(PmbRun, PmbRun.made(a), a, pmb_tail(PmbRun.ar(a), n))
-
+# WHAT IS STILL PORTED OF METAL'S SIDE, and it is the part that survives: the
+# `handles` buffer's five words, the `sels` table's rewrite of words 3 and 4,
+# and `new_icb`'s size arithmetic (`icb_size`, `icb_header`, `mt_icb_*`).
 # ===========================================================================
 # THE GATE. Every row is a claim about `ops_metal.py`'s TEXT, about a constant
 # in `autogen/metal.py`, or about a LIVE `MetalDevice` on this host -- and every
@@ -3665,47 +3486,6 @@ def t_sync() -> IO(Unit):
     urow("mt_pool_nopop", ncalls(CALL_AUTORELPOP(), p0))
     urow("mt_pool_push", ncalls(CALL_AUTORELPUSH(), p0))
 
-# --- 9: `pm_bufferize`, :216-220 -- THE FIRST-WINS CLAIM ----------------------
-# M2 and `device.py:404`'s rule 2 carry the IDENTICAL pattern `UPat(Ops.PARAM,
-# name="b")`, and the `+` PREPENDS, so a PARAM whose tag is `("mtl_icb", ...)`
-# gets Metal's ICB and not Compiled's program buffer. `mt_pmb_icb` is that row.
-def t_pmb() -> IO(Unit):
-  do IO<Unit>:
-    # M0: a PARAM tagged `mtl_sel`
-    +a : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(True{}, True{}, False{}, False{}, False{}, False{}), 0))
-    urow("mt_pmb_sels", PmbRun.got(a))
-    urow("mt_pmb_sels_n", D.bar_next(PmbRun.ar(a)))
-    # M1: a PARAM tagged `slots` AND named `b`, with max_numel 8
-    +b : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(True{}, False{}, True{}, True{}, False{}, False{}), 8))
-    urow("mt_pmb_slots", PmbRun.got(b))
-    urow("mt_pmb_slots_n", D.bar_next(PmbRun.ar(b)))
-    # M1's GUARD: max_numel 4 is NOT > 4, so M1 answers None and the TAIL --
-    # `device.bend`'s own scan -- gives Compiled's program buffer. The answer is
-    # 2 EITHER WAY and only the ARENA tells them apart: the tail's rule 1 grows
-    # one Buffer too, so this row cannot see the guard, and `mt_pmb_grew` and
-    # `mt_pmb_slots` are the pair that can.
-    +b4 : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(True{}, False{}, True{}, True{}, False{}, False{}), 4))
-    urow("mt_pmb_slots4", PmbRun.got(b4))
-    # M2: a PARAM named `b` whose tag is an `mtl_icb` TUPLE
-    +c : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(True{}, False{}, False{}, True{}, True{}, False{}), 8))
-    urow("mt_pmb_icb", PmbRun.got(c))
-    urow("mt_pmb_icb_n", D.bar_next(PmbRun.ar(c)))
-    # THE TWO-RULES-CLAIM-ONE-NODE FIXTURE: M0's tag and M1's tag are different
-    # in Python, so a node that is BOTH takes M0 -- which is what a first-wins
-    # fold does and what a LAST-wins fold gets wrong.
-    +e : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(True{}, True{}, True{}, True{}, True{}, False{}), 8))
-    urow("mt_pmb_both", PmbRun.got(e))
-    urow("mt_pmb_both_n", D.bar_next(PmbRun.ar(e)))
-    # NOT a PARAM: no rule's pattern is a tag alone, so the TAIL answers.
-    +f : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(False{}, True{}, True{}, True{}, True{}, True{}), 8))
-    urow("mt_pmb_nonparam", PmbRun.got(f))
-    urow("mt_pmb_grew", D.bar_next(PmbRun.ar(c)))
-    urow("mt_pmb_nogrew", D.bar_next(PmbRun.ar(a)))
-    # a cfunc named `b` that is NOT an ICB: M2's `else None`, so the answer is
-    # Compiled's rule 2 -- and 2, never 3.
-    +g : PmbRun <- IO.pure(PmbRun, pm_bufferize(D.bar_empty(), pmb_node(True{}, False{}, False{}, True{}, False{}, False{}), 8))
-    urow("mt_pmb_cfunc", PmbRun.got(g))
-
 # ===========================================================================
 # --- 9: THE CONSTANTS THEMSELVES -------------------------------------------
 # WHY THIS SECTION EXISTS, and it is the answer to ops_nv.bend, which shipped 606
@@ -3788,10 +3568,6 @@ def t_const() -> IO(Unit):
     urow("mt_c_slot_cbuf", SLOT_CBUF())
     urow("mt_c_slot_stride4", SLOT_STRIDE4())
     urow("mt_c_kbuf_ix", KERNEL_BUF_IX())
-    urow("mt_c_pmb_none", PMB_NONE())
-    urow("mt_c_pmb_sels", PMB_SELS())
-    urow("mt_c_pmb_slots", PMB_SLOTS())
-    urow("mt_c_pmb_icb", PMB_ICB())
     urow("mt_c_metal_apple", METAL_APPLE())
     urow("mt_c_metal_mac", METAL_MAC())
     urow("mt_c_all_syms", ALL_SYMS())
@@ -3806,10 +3582,9 @@ def main() -> IO(Unit):
     f : Unit <- t_alloc()
     g : Unit <- t_icb()
     h : Unit <- t_sync()
-    i : Unit <- t_pmb()
-    j : Unit <- t_const()
-    k : Unit <- t_seam()
-    l : Unit <- t_wired()
+    i : Unit <- t_const()
+    j : Unit <- t_seam()
+    k : Unit <- t_wired()
     IO.print("mt-done=1")
 
 # ===========================================================================
@@ -3828,7 +3603,7 @@ def main() -> IO(Unit):
 # measures what this gate does NOT see.
 #
 # ---------------------------------------------------------------------------
-# FOUR MOVE NOTHING, and only ONE of them is a control.
+# THREE MOVE NOTHING, and only ONE of them is a control.
 #
 #  * M14 and M14c add a `+` to a parameter and nothing else. They cannot change
 #    behaviour and are run BECAUSE "the edit that adds only a `+`" is the one an
@@ -3836,11 +3611,6 @@ def main() -> IO(Unit):
 #    edits made real, and they move 9 and 11 rows.
 #  * M41 is the comment-only CONTROL. A table with no row that CANNOT move is a
 #    table of coincidences.
-#  * M26b is a FINDING ABOUT THE SOURCE. `device.py:404`'s second `pm_bufferize`
-#    rule carries the IDENTICAL `name="b"` pattern, fires on every node Metal's
-#    first rule fires on, and answers the same thing -- so Metal's rule is
-#    REDUNDANT with `Compiled`'s on every input, and the only difference it can
-#    make is to fire LESS. No fixture will ever change that.
 #
 # ---------------------------------------------------------------------------
 # THREE MOVED NOTHING ON THE FIRST RUN AND WERE FIXED WITH A FIXTURE, which is
@@ -3911,12 +3681,8 @@ def main() -> IO(Unit):
 # | M23 | sync_range CONSES and reverses | 4  mt_sync_idx17,mt_sync_idx21,mt_sync_scan_idx,mt_sync_scan_idx21 |  mt_sync_idx17,mt_sync_idx21,mt_sync_scan_idx,mt_sync_scan_idx21 | | the append-vs-cons order. `mt_sync_idx5` is the one-element fixture that is BLIND to it, which is why `mt_sync_idx17` exists. |
 # | M24 | sync.one's guard is inverted | 7  mt_sync_guard_args,mt_sync_guard_hits,mt_sync_guard_miss,mt_sync_guard_sels,mt_sync_noscan_calls,mt_sync_scan_calls |  mt_sync_guard_args,mt_sync_guard_hits,mt_sync_guard_miss,mt_sync_guard_sels,mt_sync_noscan_calls,mt_sync_scan_calls | | :279's `slots[start] and not slots[start + 2]`. |
 # | M25 | the autorelease pool PUSHES before it POPS | 1  mt_pool_order |  mt_pool_order | | :284-285's pop-then-push. |
-# | M26 | pmb_m2 requires the mtl_sel tag as well | 1  mt_pmb_icb |  mt_pmb_icb | | **A REAL PORT BUG**: M2's pattern is `UPat(Ops.PARAM, name="b")` with NO tag, and the first version chained it off M0. `mt_pmb_icb` printed 2 where the source answers 3. |
-# | M26b | pmb_m1 requires the mtl_sel tag as well | 0 | see below. |
 # | M26c | dev.pipeline.f keeps the COMPILER's magic check | 17  mt_icb_bar,mt_icb_bind,mt_icb_calls,mt_icb_cmd_order,mt_icb_conc,mt_icb_kbuf_args |  mt_icb_bar,mt_icb_bind,mt_icb_calls,mt_icb_cmd_order,mt_icb_conc,mt_icb_kbuf_args | | **A REAL PORT BUG**: `ccompile.ok(0, 0, ...)` compares a library's head against MTLB/ENDT and so EVERY pipeline refused. |
-# | M26d | pmb_keep does not advance the rule index on a miss | 1  mt_pmb_icb |  mt_pmb_icb | | **A REAL PORT BUG**: the miss arm returned the accumulator unchanged, so rule 0 ran three times and rules 1 and 2 never ran. |
 # | M26e | icb: every command is set up BEFORE the next handle is taken | 2  mt_icb_cmd_order,mt_icb_order |  mt_icb_cmd_order,mt_icb_order | | :259 and :260 are TWO SEPARATE LOOPS. |
-# | M27 | pmb_keep is LAST-wins | 7  mt_pmb_both,mt_pmb_both_n,mt_pmb_cfunc,mt_pmb_sels,mt_pmb_slots,mt_pmb_slots4 |  mt_pmb_both,mt_pmb_both_n,mt_pmb_cfunc,mt_pmb_sels,mt_pmb_slots,mt_pmb_slots4 | | device.py:1611's `rewrite` is first-wins. |
 # | M28 | icb_hdr_word divides by 4, not 8 | 2  mt_icb_order,mt_icb_storeslots |  mt_icb_order,mt_icb_storeslots | | :266's `view(fmt='Q')[header // 8]`. Found as a blind spot -- the row was missing and `mt_icb_storeslots` is the fix. |
 # | M29 | icb_size drops the `+ 24` header | 3  mt_icb_nbytes,mt_icb_size,mt_icb_sizes_agree |  mt_icb_nbytes,mt_icb_size,mt_icb_sizes_agree | | :129 and :253 must spell the SAME number. |
 # | M30 | fam_scan is FIRST-wins, not LAST-wins | 8  mt_fam_apple8,mt_fam_apple8_9,mt_fam_apple9,mt_fam_apple9_family,mt_fam_apple_first,mt_fam_mac |  mt_fam_apple8,mt_fam_apple8_9,mt_fam_apple9,mt_fam_apple9_family,mt_fam_apple_first,mt_fam_mac | | :213's `next(filter(..., reversed(...)))` is a LAST-wins over the dict. |
@@ -3975,17 +3741,23 @@ def main() -> IO(Unit):
 # (seventeen) are the next two and each is one constant or one call under a
 # whole subtree.
 #
-# M26b IS A BLIND SPOT AND IT IS ABOUT THE SOURCE, NOT THE GATE. M1's pattern is
-# `UPat(Ops.PARAM, tag="slots", name="b")` and its body is
+# M26b WAS A BLIND SPOT AND IT WAS ABOUT THE SOURCE, NOT THE GATE. M1's pattern
+# was `UPat(Ops.PARAM, tag="slots", name="b")` and its body was
 # `ctx.new_slots(b.max_numel()) if b.max_numel() > 4 else None`; `device.py:404`'s
-# second rule is `UPat(Ops.PARAM, name="b")` -> a program Buffer, and it fires on
-# EVERY node M1 fires on. So whenever M1 fires, `device.bend`'s rule 1 would have
-# given the same ANSWER (2) and the same ARENA GROWTH (one Buffer). Adding
-# `tag="mtl_sel"` to M1's predicate changes nothing observable, for any input.
-# The only difference M1 can make is to fire LESS -- which is what the `> 4`
-# guard and M26 show. **Metal's first `pm_bufferize` rule is REDUNDANT with
-# `Compiled`'s second one, on every input, and the port says so rather than
-# pretending the gate can see it.**
+# second rule was `UPat(Ops.PARAM, name="b")` -> a program Buffer, and it fired
+# on EVERY node M1 fired on. So whenever M1 fired, `device.bend`'s rule 1 gave
+# the same ANSWER (2) and the same ARENA GROWTH (one Buffer). Adding
+# `tag="mtl_sel"` to M1's predicate changed nothing observable, for any input.
+# The only difference M1 could make was to fire LESS -- which is what the `> 4`
+# guard and M26 showed. **Metal's first `pm_bufferize` rule was REDUNDANT with
+# `Compiled`'s second one, on every input.**
+#
+# AND THEN UPSTREAM DELETED BOTH. At the pin `ops_metal.py` has NO
+# `pm_bufferize` at all, `new_slots` is GONE, and their replacements are the
+# LINK mechanism -- `Compiled.link_bufs |= {to_name(self.device, "handles"):
+# lambda b: self.handles}` and `MetalDevice.link_buffer` -- neither of which
+# this file ports. So the whole `pm_bufferize` port is GONE from here too, and
+# with it the seventeen rows that measured it.
 #
 # WHAT THIS GATE STILL DOES NOT SEE, and it is a short list:
 #
@@ -4010,8 +3782,9 @@ def main() -> IO(Unit):
 #  5. `int(cb.GPUStartTime() * 1e9)` (:281) -- no F64, so `dev.sync` records the
 #     THREE calls and the two slot indices and not the nanoseconds.
 #  6. `pm_encode` and `pm_lower` (:189, :192). Both are `UOp` MATCHERS whose
-#     bodies build graphs, and the port carries neither. `pm_bufferize` IS gated
-#     because its answers are Buffers and Buffers are the port's subject.
+#     bodies build graphs, and the port carries neither. `pm_bufferize` WAS
+#     gated because its answers were Buffers and Buffers are the port's
+#     subject; upstream DELETED it, so it is not gated at all any more.
 # ===========================================================================
 
 
