@@ -10,15 +10,17 @@ Two gates, and WHAT EACH ONE CLAIMS, because a gate whose scope is a comment is 
 nobody can check:
 
   run     the per-graph VERDICT line and its DENOMINATOR line for every graph in the
-          CORPUS (`graphcmp.GRAPHS`), each against the verdict `WANT` expects of it, plus
-          separate counts of how many had NO expectation at all and of how many rows were
-          WRONG; then the canonical py-vs-bend byte identity of each graph, 5 same-side
-          controls, 1 cross-graph comparison, 7 plants that must DISAGREE and name something,
-          the ordered/`--equiv` split on the same reordered pair, 4 conflations, the DEBUG-level
-          comparison, 5 two-run stability pairs, the 0-row guard fired on purpose, the both-sides
-          coverage census, the CPython `DEBUG>=1` reachability question, and the raw CPython ops
-          probe. It REFUSES (exit 1) while any corpus graph has no expectation, or while any row
-          disagrees with what the port emitted.
+          CORPUS (`graphcmp.GRAPHS`), each against the verdict it is EXPECTED to print -- and
+          the DEFAULT is AGREE, so the expectations are a table of EXCEPTIONS and not a
+          table of graphs; plus a count of how many rows were WRONG; then the canonical
+          py-vs-bend byte identity of each graph, 5 same-side controls, 1 cross-graph
+          comparison, 8 plants that must DISAGREE and name something, the ordered/`--equiv`
+          split on the same reordered pair, 4 conflations, the DEBUG-level comparison, 5
+          two-run stability pairs, the 0-row guard fired on purpose, the both-sides coverage
+          census, the CPython `DEBUG>=1` reachability question, and the raw CPython ops probe.
+          It REFUSES (exit 1) while any row disagrees with what the port emitted, and
+          REFUSES (exit 3) before it starts while the POPULATION is not decided -- a graph
+          list that nobody has re-decided is a corpus that cannot certify itself.
 
   repro   that ONE run is reproducible: two clean runs, sha256 over the non-blank lines of
           every artifact, byte-compared. It first WAITS for the substrate (`--check-only`'s
@@ -31,8 +33,10 @@ nobody can check:
 import argparse
 import hashlib
 import importlib.util
+import inspect
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -86,149 +90,251 @@ def check_oracle() -> list[str]:
             bad.append(f"{name}: {got[:16]} != pinned {want[:16]}")
     return bad
 
-def corpus() -> tuple[str, ...]:
-    """`graphcmp.GRAPHS` -- the graphs this run is ANSWERABLE ABOUT, read from the generator.
+_MODULES: dict[str, object] = {}
 
-    THE CORPUS IS THE AUTHORITY ON WHAT EXISTS; `WANT` IS THE AUTHORITY ON WHAT IT MUST PRINT.
-    Two questions, two tables, and the defect was that one table was doing both jobs: the run
-    loop iterated `WANT`, so a graph absent from `WANT` was never run and never counted, and
-    `graphs=` counted what `WANT` wrote. MEASURED: 25 declared, 16 in the table, 9 in neither,
-    and `git log -S'"flip": "AGREE"' -- checks/differ.py` returns nothing -- those 9 were never
-    in ANY run, not dropped from one. Of those nine, **four now carry a row and five do not**:
-    see the four `DISAGREE`s and the five-name block under `WANT`.
+
+def graphcmp_module(path=None):
+    """`graphcmp.py` BY PATH -- the generator's own declaration of the corpus AND its plants.
+
+    CACHED BY PATH, and the key is the PATH, because the corpus is asked for by the pin
+    table at IMPORT and by the run at its start, and TWO LOADS OF ONE FILE COULD DISAGREE if
+    the file moved between them. A DIFFERENT path is a DIFFERENT key, so a MUTATED COPY --
+    the plant below -- is loaded as itself and never served from the cache.
+
+    THE MODULE SCOPE IS INERT, and that is measured rather than assumed: MEASURED 2026-10-22,
+    importing it costs **0.018 s** and leaves `tinygrad` ABSENT from `sys.modules`, so asking
+    it for its own keys is cheap and side-effect-free.
+    """
+    key = str(path or (ROOT / GCMP))
+    if key not in _MODULES:
+        spec = importlib.util.spec_from_file_location("graphcmp_corpus", key)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _MODULES[key] = mod
+    return _MODULES[key]
+
+
+def corpus() -> tuple[str, ...]:
+    """`graphcmp.GRAPHS` -- THE GRAPHS THE CORPUS IS, read from the generator.
+
+    THE CORPUS IS THE AUTHORITY ON WHAT EXISTS; THE EXPECTATIONS ARE THE AUTHORITY ON WHAT IT
+    MUST PRINT. Two questions, two tables, and the defect was that one table was doing both
+    jobs: the run loop iterated the expectations, so a graph absent from them was never run
+    and never counted, and `graphs=` counted what the table wrote.
+
+    **THE POPULATION IS DISCOVERED, NEVER TYPED.** `graphcmp.py`'s `GRAPHS` is the GENERATOR'S
+    OWN DECLARATION, loaded BY PATH -- so a graph that joins the corpus joins it by being
+    ADDED to the generator, and no list in this file has to learn about it. MEASURED
+    2026-10-22: **35** graphs.
 
     IMPORTED, not copied, for the reason `checks/no-txt.py` gives: a second list of graph
     names is a contract with no generator, which is the failure this whole change exists to
-    remove. `graphcmp.py` imports no tinygrad and runs no `bend` at module scope (MEASURED:
-    0.01s, `tinygrad` absent from `sys.modules`), so asking it for its own keys is cheap and
-    side-effect-free -- and it is the SAME object `diff --graph` validates against, so a name
-    here is a name the run can actually run.
+    remove. And it is the SAME object `diff --graph` validates against, so a name here is a
+    name the run can actually run.
     """
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("graphcmp_corpus", ROOT / GCMP)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return tuple(sorted(mod.GRAPHS))
+    return tuple(sorted(graphcmp_module().GRAPHS))
 
 
-# THE GRAPHS AND THE VERDICT EACH MUST PRINT, IN ONE TABLE, in the order the shell listed
-# them. Two lists can disagree, and a graph that runs but is not checked is a graph nobody
-# looked at. No default verdict is available here: a claim with no denominator, or an
-# expectation that reads a variable, is a claim nobody can check.
+def population_digest(path=None) -> str:
+    """sha256 over the POPULATION's NAMES and over the BYTES THAT DEFINE EACH GRAPH.
+
+    **THIS IS A CONTENT PIN, AND THAT IS THE HOUSE PATTERN.** A REVISION pin is a pin on a
+    file that can move; a CONTENT pin is a pin on the BYTES -- `gates/gatekit.py:oracle_drift`
+    reads a sha256 of the bytes the oracle imports, and five gates were converted that way.
+    So the thing that must NOT move is the population's IDENTITY, and it is measured over
+    bytes: the NAMES (so a graph that joins the corpus moves it) and the SOURCE of each
+    graph's defining function (so a fixture that CHANGES moves it too, because a changed
+    fixture can flip a verdict and is the same class of event as a new graph).
+
+    **THE SOURCE, NOT THE BYTECODE.** A pin has to survive a Python upgrade, and bytecode is
+    version-dependent -- the tree already learned that a pin is a SEED and a sort is a LAW.
+    The source text is version-independent, and it is the corpus's own words about its own
+    fixtures.
+
+    IT IS NOT A SECOND COPY OF THE POPULATION: the names come from the generator and the
+    bytes come from the generator. A different `path` is a different population, which is
+    what makes the plant below possible.
+    """
+    mod = graphcmp_module(path)
+    h = hashlib.sha256()
+    for name in sorted(mod.GRAPHS):
+        h.update(name.encode())
+        h.update(b"\0")
+        h.update(inspect.getsource(mod.GRAPHS[name]).encode())
+        h.update(b"\0")
+    return h.hexdigest()
+
+
+# THE POPULATION'S IDENTITY, AS A CONTENT PIN. **THIS IS THE ONE PIN IN THIS FILE THAT A
+# GRAPH ADDITION MUST MOVE**, and moving it is a DELIBERATE EDIT: the diff that adds a graph
+# to `graphcmp.GRAPHS` carries this line, and a reader of that diff sees the corpus grow and
+# the pin move together.
 #
-# **THIS TABLE IS NOT THE LIST OF GRAPHS. IT IS THE LIST OF *EXPECTATIONS*, and the run is
-# INCOMPLETE while it is shorter than `corpus()`.** See `cmd_run` for what an expectation-free
-# graph does and for the non-zero exit. A graph with no entry here is RUN, RECORDED and marked
-# UNSET -- never skipped, and never counted as though it had been checked.
-# `.agents/slop/want/census.py` prints the two sides against each other and exits non-zero on
-# a gap, so the gap is checkable without running anything.
-WANT = {
-    "matmul": "AGREE", "reduce": "AGREE", "buffer": "AGREE", "sink": "AGREE",
-    "range": "AGREE", "rangeflat": "AGREE", "cast": "AGREE", "special": "AGREE",
-    "binblob": "AGREE", "group": "AGREE", "commute": "AGREE", "indexed": "AGREE",
-    "sym": "AGREE",
-    # `lin` AGREES NOW, AND IT LEFT THE DISAGREEMENT SET ENTIRELY. It disagreed on ONE node of 46
-    # -- its SINK's `applied_opts` -- because the port typed them `List<U32>` where the pin has a
-    # three-field `Opt`; the port now defines `OPT{op, axis, arg}` in `uop/ops.bend` and
-    # `graphcmp.bend` renders it. MEASURED on the live driver: row 46 goes 45/46 -> 46/46 with no
-    # other graph moving. **THE ENTRY STAYS because `unset` requires every graph here (`:407`).**
-    "lin": "AGREE",
-    # `loop` AGREES NOW, AND THE CAUSE WAS NOT THE FIELD. It disagreed on ONE node of 25 -- its
-    # CALL -- and the PIN HAS that field (`ad117c928^:tinygrad/uop/ops.py:1398`). The port's
-    # `callinfo` printed the slot UNCONDITIONALLY where the pin's own `__repr__` suppresses it for
-    # void (`:1404`). Fixed in `3b183700a`, re-derived on the live driver at 25/25. **THE ENTRY
-    # STAYS because `unset` requires every graph here (`:407`); removing it would read as UNSET.**
-    "loop": "AGREE",
-    "gate": "AGREE",
-    # THE FOUR OF THE NINE THAT DISAGREE. Each row is a disagreement rather than a re-statement
-    # of the last artifact, and each disagreement is a DIFFERENT KIND from `lin`/`loop`, which are
-    # one located field on 45 and 24 matched cores. These four read `field-mismatches=0`: no two
-    # nodes pair, so nothing is compared and nothing differs. The disagreement is the NODE SET.
-    #
-    # `flip` AGREES (moved 2026-10-13, run with 34 of 34 graphs byte-identical). It was the LAST
-    # row whose expectation predated the measurement, and BOTH of the things the prediction named
-    # are now false. It read: `arg py=n(b1,b0) bend=n(i1,i0)`, "and the port adds one `GROUP`
-    # node". Neither holds. The `ABoolList` fix landed, so BOTH lanes read `n(b1,b0)`. And the
-    # `GROUP` node was never a port defect at all: `tinygrad/uop/ops.py:559` reads
-    # `if len(srcs) == 1 and isinstance(srcs[0], UOp): return srcs[0]`, so a ONE-src `UOp.group`
-    # builds NO NODE -- and of 12 hand-built `OpsGROUP` statements, `g_flip` was the only one
-    # carrying a single src (it was split out of `move` and took its four-src wrapper with it). So
-    # the fixture was modelling a call its own oracle collapses, and the py lane was right all
-    # along: `emit_py('flip')` answers 6 rows carrying no `GROUP` at all.
-    # **A PREDICTION IS NOT A PIN.** It moves when the measurement moves, and it moves with the
-    # evidence written down next to it.
-    "flip": "AGREE",
-    # `allred`, `cdiv` and `late` MOVED TO AGREE (2026-10-06, run34). They were DISAGREE for one
-    # reason -- the bend side emitted `matmul`'s GRAPH because `rows.pick3` had no arm for them
-    # (`.agents/slop/unsetexp/`). `adevfix` (device-tuple normal form) and `armfour` (`c3b4da262`,
-    # the arms) landed, so the run now reads the real fixture: `D2-cmp-allred/cdiv/late.txt` are
-    # `BYTE-IDENTICAL` and `D1-graph-*.txt` read `VERDICT: AGREE`. `expect-moved` adjudicated it --
-    # it read 3 against these three rows and returns to 0 once they move here.
-    "allred": "AGREE", "cdiv": "AGREE", "late": "AGREE",
-    # THE FOURTEEN THE CORPUS DECLARED AND `WANT` NEVER ANSWERED (`.agents/slop/wantwire/REPORT.md`
-    # Phases 1-2). Each row is MEASURED by the run34 graph phase -- the phase that finished at
-    # 15:35:04, BEFORE the port went into flux at 15:35:12 -- so each is a real AGREE or DISAGREE
-    # and never a default. `getaddr` was the FIFTEENTH and stayed UNSET because its bend emission
-    # was a single `NOOP ... BAD` row (the arena bottom, never interned) and `diff --graph getaddr`
-    # exits 2 `NOT WELL-POSED`, so there was no verdict to answer with. **IT IS ANSWERED NOW
-    # (2026-10-07, runfinal): `graphcmp.bend:1358` threads the arena `UOp.new` RETURNED, so the
-    # emission is a real 2-row graph. MEASURED by `differ.py run` (223 s, WITHIN-LIMITS, peak
-    # 770 MB): `D1-graph-getaddr.txt` reads `VERDICT: AGREE` and `D2-cmp-getaddr.txt`
-    # `BYTE-IDENTICAL (143 bytes both sides)`, with `oracle-selfcheck: OK` and `census-rc=rc=0`.
-    # The row is WRITTEN because the run MEASURED it -- `graphs-unset` moving 1 -> 0 is a function
-    # of THIS TABLE, the AGREE is a function of the PORT.**
-    #
-    #   Phase 1 -- the armed fixtures whose rows AGREE:
-    "alu": "AGREE", "bit": "AGREE", "bw": "AGREE", "move": "AGREE", "where": "AGREE",
-    "threefry": "AGREE", "mulacc": "AGREE",
-    #   armfour's four, now armed -- two AGREE, two DISAGREE:
-    "custom_function": "AGREE", "mstack": "AGREE",
-    #   THE FOUR REAL DISAGREEMENTS THIS RUN FOUND, each DISAGREE for a NAMED cause, never deleted:
-    #     `mselect` -- `arg py=i0 bend=y n(i0)`: the port stores an int arg as a one-byte ABlob
-    #       (`ops.bend:4560`), the `WALL(p3)` trigger at `ops.bend:4554`.
-    #     `stage` / `unshard` / `wmma` -- the port's fold has no arm for the op, so BOTH columns are
-    #       unsettled (`dtype py=f32 bend=? shape py=(...) bend=?`), the class the armfour note
-    #       called out for `stage`/`wmma`. `.agents/slop/foldgap/` is the unit fixing those arms;
-    #       when they land these three rows move to AGREE and `expect-moved` fires -- which is the
-    #       point of a pin that can fail.
-    "mselect": "AGREE",
-    # `stage` and `wmma` JOINED THEM (2026-10-06, the CLEAN re-run): `mselectarg`'s `AInt` variant
-    # closed `mselect`, and `foldgap`'s WMMA-shape fix + STAGE arm closed those two -- both landed
-    # AFTER the first run, which is why the first run pinned all three DISAGREE. `unshard` JOINED
-    # THEM (2026-10-13): `whosecache` corrected the same stale `GROUP` census here that it
-    # corrected in `mulacc`/`getaddr` -- all four were disputed by `graphcmp.bend`'s own comments,
-    # and the port had already agreed. `foldgap`'s refusal was about a shape it declined to claim;
-    # nothing in the graph needed one, so the honest `?` became an honest answer rather than a gap.
-    "stage": "AGREE", "unshard": "AGREE", "wmma": "AGREE",
-    # MEASURED, not predicted -- see the `getaddr` note above: VERDICT=AGREE, byte-identical.
-    "getaddr": "AGREE",
-}
-# THE FIVE STILL WITHOUT A ROW, AND WHY THEY DO NOT GET ONE HERE. `alu` `bit` `bw` `move` `where`.
-# **THEIR AGREE IS FORCED, NOT OBSERVED**, and that is the measurement, not a defence:
-#   - 3 of 3 trials, warm substrate, all five STABLE (`.agents/slop/unsetexp/trials.tsv`);
-#   - canonical bytes IDENTICAL on all five (`emit py` == `emit bend`), so the two channels pick
-#     the same 19 and the same 6 over all 25 -- MEASURED, not proved;
-#   - `RESIDUALS IN THIS RUN: none` on all five, so no column was compared by count or presence
-#     instead of in full. That third clause is what makes the pair non-trivial: `binblob` and
-#     `buffer` are byte-identical AND AGREE *with* a residual, so byte identity alone does not
-#     certify "compared in full".
-# Writing five `AGREE` rows anyway would be the answer `DECISION.md` §2 rejects. MEASURED: **14
-# of the 16 rows this file carried were bare `AGREE` with ONE observation and no independent
-# corroboration that they were anything but `AGREE`** -- `runs/` is gitignored (`.gitignore:144`),
-# so no verdict has ever been recorded durably, all 14 entered in the single commit `6d5509216`,
-# and only `g_flip` had ever predicted its own verdict. Five more would make it 19 of 20. So the
-# gap stays OPEN and the run keeps refusing, which is answer 3: **an uncomparison blocks a figure,
-# and these five are compared and unanswered.** Whoever wants the table closed has everything the
-# row needs in this comment, and this file has made the row's content checkable in the meantime --
-# `expect-moved`, which is 0 over all 20 rows and 3 trials.
+# MEASURED 2026-10-22 over the live tree: `4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2`
+# over 35 graphs. **A PIN THAT IS A COUNT OF A DISCOVERABLE POPULATION IS NOT ONE OF THESE** --
+# the four count pins in `PINS` below are DERIVED, and this one is not, because a digest is
+# not a count: it moves when the population's CONTENT moves and it cannot be re-derived from
+# the population, which is the whole difference between a pin and a label.
+POPULATION_PIN = "4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2"
+
+
+def population_bad(digest=None) -> list[str]:
+    """THE POPULATION'S IDENTITY AGAINST ITS PIN. Empty means the corpus is DECIDED.
+
+    **THIS IS THE PROTECTION AGAINST "A GRAPH WAS ADDED AND NOT RE-DECIDED", AND IT IS THE
+    ONLY ONE.** The count pins below are DERIVED from the population, so they follow it
+    wherever it goes and CANNOT notice that it moved -- which is exactly the trade the
+    derivation makes: a count that follows the population cannot go stale, and a population
+    that changes must move A PIN. This is that pin, and it is compared by every reader of
+    health.
+
+    **THE RUN REFUSES ON IT TOO** (`cmd_run`), and that refusal is the difference between
+    "the corpus noticed" and "the corpus certified a population nobody had an opinion
+    about". A graph that joins the corpus and is not re-decided makes the corpus UNHEALTHY
+    and UNRUNNABLE, and the remedy is one visible line in this file.
+
+    `digest` is the identity of SOME population -- the live one by default, and a PLANTED one
+    in the plant below, which is how the plant can ask the question without editing the tree.
+    """
+    try:
+        live = population_digest() if digest is None else digest
+    except Exception as e:                     # a population nobody can read is not decided
+        return [f"population ABSENT -- the corpus's graph list could not be read "
+                f"({type(e).__name__}: {e}), so nothing can be decided about it"]
+    if live == POPULATION_PIN:
+        return []
+    return [f"population={live[:16]} but POPULATION_PIN is {POPULATION_PIN[:16]} -- the corpus's "
+            f"graph list has CHANGED since it was decided, so a run over it certifies a "
+            f"population nobody has re-decided. Re-decide it, and move POPULATION_PIN here in "
+            f"the SAME COMMIT as the change."]
+
+
+# THE EXPECTATIONS, AS A TABLE OF **EXCEPTIONS** -- AND THE DEFAULT IS "AGREE".
+#
+# **A GRAPH THAT IS NOT NAMED HERE IS EXPECTED TO AGREE.** So ADDING A GRAPH MUST NOT REQUIRE
+# EDITING THIS TABLE: the corpus's population is DISCOVERED (`corpus()` reads `graphcmp.GRAPHS`
+# BY PATH, the generator's own declaration) and every graph in it is expected to agree unless
+# it is named here. What this table holds is the graphs that are NOT expected to agree, and
+# **THE COUNT OF EXCEPTIONS IS THE DENOMINATOR THAT MATTERS** -- not the number of graphs,
+# which follows the population and is DERIVED (see `PINS`).
+#
+# **AND THE EXCEPTIONS ARE EMPTY TODAY, WHICH IS A MEASUREMENT AND NOT AN OMISSION.** Every
+# graph this corpus held on 2026-10-21 was a DISAGREE at some point, and each moved to AGREE
+# with a located cause. The causes are the port's history and they are recorded here because a
+# table that has been empty for a REASON is worth more than a table that was never full:
+#
+#   `lin`     the port typed the SINK's `applied_opts` as `List<U32>` where the pin has a
+#             three-field `Opt`; the port now defines `OPT{op, axis, arg}` in `uop/ops.bend`
+#             and `graphcmp.bend` renders it. Row 46 went 45/46 -> 46/46 with no other graph
+#             moving.
+#   `loop`    the port printed the CALL's slot UNCONDITIONALLY where the pin's own `__repr__`
+#             suppresses it for void (`ad117c928^:tinygrad/uop/ops.py:1404`). Fixed in
+#             `3b183700a`, re-derived on the live driver at 25/25.
+#   `flip`    the `ABoolList` fix landed, so both lanes read `n(b1,b0)`. And the `GROUP` node
+#             the old prediction named was never a port defect: `tinygrad/uop/ops.py:559` reads
+#             `if len(srcs) == 1 and isinstance(srcs[0], UOp): return srcs[0]`, so a ONE-src
+#             `UOp.group` builds NO NODE -- and of 12 hand-built `OpsGROUP` statements `g_flip`
+#             was the only one carrying a single src. The FIXTURE modelled a call its own
+#             oracle collapses, and the py lane was right all along.
+#   `allred`, `cdiv`, `late`  the bend side emitted `matmul`'s graph because `rows.pick3` had no
+#             arm for them (`.agents/slop/unsetexp/`); `adevfix` and `armfour` (`c3b4da262`)
+#             landed, so `D2-cmp-*.txt` are BYTE-IDENTICAL and the verdicts read AGREE.
+#   `mselect` the port stored an int arg as a one-byte ABlob (`uop/ops.bend:4560`, the
+#             `WALL(p3)` trigger at `:4554`); `mselectarg`'s `AInt` variant closed it.
+#   `stage`, `wmma`  the port's fold had no arm for the op, so BOTH columns were unsettled
+#             (`dtype py=f32 bend=? shape py=(...) bend=?`); `foldgap`'s WMMA-shape fix and the
+#             STAGE arm closed them.
+#   `unshard` the same stale `GROUP` census `mulacc` and `getaddr` carried -- a dispute about
+#             `graphcmp.bend`'s own comments, not about the port.
+#   `getaddr` the arena's `UOp.new` RETURNED was not threaded (`graphcmp.bend:1358`), so the
+#             emission was a single `NOOP ... BAD` row and `diff --graph getaddr` exited 2
+#             `NOT WELL-POSED`.
+#
+# **A PREDICTION IS NOT A PIN.** It moves when the measurement moves, and it moves with the
+# evidence written down next to it. That is why the causes above are PROSE and not rows: a
+# row here is a CLAIM the run checks, and a claim that holds for every graph in the corpus is
+# ONE NUMBER -- the population's identity, pinned by CONTENT in `POPULATION_PIN` -- and not
+# thirty-five.
+WANT: dict[str, str] = {}
+
+
+def expectation(g: str) -> str:
+    """THE VERDICT A GRAPH IS EXPECTED TO PRINT. **THE DEFAULT IS "AGREE".**
+
+    The expectations are a table of EXCEPTIONS (`WANT`), so a graph that joins the corpus is
+    expected to agree the moment it is added -- and the corpus's growth is caught by the
+    POPULATION PIN, which is a content pin over the graph list's own names and bytes.
+
+    **THE DENOMINATOR THAT MATTERS IS THE NUMBER OF EXCEPTIONS**, and it is `len(WANT)`.
+    """
+    return WANT.get(g, "AGREE")
 # THE PLANTS. Every one must DISAGREE and NAME something; a plant that agrees is a plant that
-# is not load-bearing. `sym1` needs the `sym` graph and the others need the matmul, so they
-# are not one loop. NOT the attributable measurement for the symbolic dim: a plant edits the
-# PY side only (planting the bend side is six DAG rewrites in Bend -- the reason
-# `--plant-side` was removed), so `D5-plant-sym1.txt` carries the plant's effect AND `sym`'s
-# pre-existing `?` disagreements together.
+# is not load-bearing. `sym1` needs the `sym` graph, `params` needs the `prog` graph and the
+# others need the matmul, so they are not one loop. NOT the attributable measurement for the
+# symbolic dim: a plant edits the PY side only (planting the bend side is six DAG rewrites in
+# Bend -- the reason `--plant-side` was removed), so `D5-plant-sym1.txt` carries the plant's
+# effect AND `sym`'s pre-existing `?` disagreements together.
+#
+# **IT IS A TUPLE OF PAIRS AND NOT A DICT, BECAUSE `gates/corpuslane-gate.py:244` ITERATES IT
+# AS PAIRS** -- `for plant, g in differ.PLANTS` -- so the shape is a CONTRACT with a consumer
+# and changing it would break that gate in a way no test here would notice.
+#
+# `params` is the PLANT FOR THE `pI(` FORM: it drops the LAST param of `prog`'s PROGRAM, so
+# the third component of the `pI(` row goes from three `P(...)` records to two. It is the only
+# plant that can reach a `ProgramInfo`, and the form was DEAD in both sides for the corpus's
+# whole life until `prog` joined (MEASURED 2026-10-22: the 34 graphs produced ZERO `pI(` rows).
 PLANTS = tuple((p, "matmul") for p in ("dtype", "srcswap", "shape", "bytes", "pyuop", "opt")) \
-    + (("sym1", "sym"),)
+    + (("sym1", "sym"), ("params", "prog"))
+# THE PLANTS THE CORPUS'S OWN INSTRUMENT DECLARES AND THE CORPUS DOES NOT RUN.
+#
+# **THE PLANT POPULATION IS DISCOVERED, AND IT IS `graphcmp.PLANTS`** -- the generator's own
+# declaration of the plants it can apply, read BY PATH from `.agents/slop/graphcmp.py`, which
+# MEASURED 10 members on 2026-10-22. `PLANTS` above is the corpus's SELECTION of them, and a
+# selection is not a population: a hand list of plants is the same class of defect as a hand
+# list of graphs, so the difference between the two is CHECKED rather than left to be noticed.
+#
+# TWO are declared and not run. `gates/corpuslane-gate.py:254` already runs them, on `bw`,
+# and reports them as their own class -- `unwired` -- so "the number of plants the corpus
+# exercises" and "the number that exist" stop being different numbers nobody notices. Their
+# target is an EXPAND whose margin is `CONST 3`, and the corpus's own fixtures have none.
+#
+# **A PLANT ADDED TO `graphcmp.PLANTS` AND TO NEITHER LIST REDS THE CORPUS**, because a plant
+# the corpus's instrument declares and the corpus neither runs nor excuses is a plant whose
+# absence nobody would notice.
+PLANTS_UNWIRED = ("dsexpand", "disarm")
+
+
+def plants_bad() -> list[str]:
+    """THE PLANT POPULATION AGAINST THE CORPUS'S SELECTION OF IT. Empty means the two agree.
+
+    **A PLANT THAT IS NOT IN `PLANTS` IS A PLANT THE CORPUS DOES NOT RUN** -- so the
+    population is not "the plants the corpus runs" but "every plant the corpus's own
+    instrument declares", and the SELECTION is checked against it from both sides: a plant
+    the corpus runs must be a declared plant (a typo would plant nothing and report a
+    DISAGREE for its own reasons), and a declared plant the corpus does not run must be
+    NAMED in `PLANTS_UNWIRED` with the reason it is not run.
+    """
+    try:
+        declared = set(graphcmp_module().PLANTS)
+    except Exception as e:
+        return [f"plants ABSENT -- the corpus's plant list could not be read "
+                f"({type(e).__name__}: {e}), so nothing can be decided about it"]
+    selected = {p for p, _ in PLANTS}
+    bad = []
+    if unknown := sorted(selected - declared):
+        bad.append(f"plants {unknown} are RUN but the corpus's instrument does not declare them, "
+                   f"so the run would plant nothing and count a DISAGREE for its own reasons")
+    if missing := sorted(declared - selected - set(PLANTS_UNWIRED)):
+        bad.append(f"plants {missing} are DECLARED by the corpus's instrument and are neither run "
+                   f"nor excused in PLANTS_UNWIRED, so the corpus does not run every plant it "
+                   f"declares")
+    try:
+        graphs = set(corpus())
+    except Exception:
+        graphs = set()
+    if unknown_graphs := sorted({g for _, g in PLANTS} - graphs):
+        bad.append(f"plants run on graphs the corpus does not have: {unknown_graphs}")
+    return bad
 # THE CONTROLS: each side against ITSELF. A differ never seen to agree with itself is not
 # known to work. `group` is the first DAG, so a control over a tree-only corpus is a control
 # that has never met a two-parent node; `gate` and `loop` are the widest-fan-in and a
@@ -242,55 +348,88 @@ STAB = tuple((g, ()) for g in ("group", "sym", "loop", "gate")) + (("commute", (
 # A HEALTHY RUN, not merely a FINISHED one. Every pin is matched BY CONTENT, never by line
 # number. MEASURED: the shell pinned `graphs-agree=13`, then `14`, against a corpus reading
 # `22`, so this gate reported a fully correct run unhealthy and sat retrying it -- a health
-# gate pinned to a count can be wrong in the direction of refusing to measure. The first
-# three are MEASURED against a run of THIS driver on 2026-10-05 (the shell's `24/22/21` were
-# transcribed from a 24-graph corpus this driver does not run); the rest are the shell's.
+# gate pinned to a count can be wrong in the direction of refusing to measure.
+#
+# **NINE OF THE SEVENTEEN ARE DERIVED, AND THAT IS THE POINT.** A COUNT OF A DISCOVERABLE
+# POPULATION MUST NOT BE TYPED: a typed count is stale the moment the population moves, and a
+# stale count is either a red nobody can fix by doing the right thing or a green that hides a
+# growth. MEASURED 2026-10-06, `checks/corpus-figure.py` found the corpus at **34** while
+# `differ.py` pinned `graphs=25`, and printed `RUN HEALTH : OK` over the stale run -- "the
+# figure and the health gate were two witnesses to one stale run". So the counts below are
+# FUNCTIONS of the population, and the thing that must NOT move is the population's IDENTITY,
+# which is a CONTENT PIN (`POPULATION_PIN`).
+#
+# **AND THE DERIVED VALUES ARE STILL COMPARED AGAINST THE ARTEFACT** -- `unhealthy()` reads the
+# run's own rows and compares them with these -- so a derived expectation is an EXPECTATION
+# and not a decoration: a run whose `graphs` row disagrees with the discovered corpus is RED.
+# THE NINE DERIVED ROWS, BY NAME -- so the fail-safe below can enumerate them, and so a reader
+# can see at a glance which of the seventeen follow a population and which are pins.
+COUNT_PINS = ("graphs", "graphs-answered", "graphs-agree", "byte-identical",
+              "stable-pairs", "stable-failed", "stable-differ", "plants-disagree", "controls")
+
+
+def derived_counts() -> dict[str, str]:
+    """THE NINE ROWS WHOSE VALUE IS A FUNCTION OF A POPULATION. DERIVED, NEVER TYPED.
+
+    `graphs`, `graphs-answered`, `graphs-agree` and `byte-identical` count the CORPUS, whose
+    membership is `graphcmp.GRAPHS` -- discovered, by path. `stable-*`, `plants-disagree` and
+    `controls` count SELECTIONS this file holds (`STAB`, `PLANTS`, `CONTROLS`), and their
+    DENOMINATORS were typed into the summary writer as `of 5`, `of 7`, `of 5` -- the same
+    defect one level down: a typed denominator is a literal that goes stale when the selection
+    grows, and `plants-disagree` would have read `8 of 7` the moment `params` joined.
+
+    **THE EXCEPTIONS ARE THE DENOMINATOR THAT MATTERS.** `graphs-agree` and `byte-identical`
+    expect every graph the corpus runs to agree and to be byte-identical, so the expectation
+    is `N - len(WANT)`: the number of graphs MINUS the number of exceptions. A graph expected
+    to disagree is not counted as agreeing, and it is not counted as byte-identical either --
+    a DISAGREE is a difference, and a difference is not byte-identity.
+
+    **IF THE CORPUS CANNOT BE READ, EVERY DERIVED VALUE IS "UNREADABLE"** -- which is not any
+    pin, so every comparison REDS. A population nobody can read is not a healthy one, and the
+    failure is in the direction that reports.
+    """
+    try:
+        n = len(corpus())
+        stab, controls, plants, exceptions = len(STAB), len(CONTROLS), len(PLANTS), len(WANT)
+    except Exception:
+        return {k: "UNREADABLE" for k in COUNT_PINS}
+    return {
+        "graphs": str(n),
+        "graphs-answered": str(n),
+        "graphs-agree": str(n - exceptions),
+        "byte-identical": str(n - exceptions),
+        "stable-pairs": f"{stab} of {stab}",
+        "stable-failed": f"0 of {stab}",
+        "stable-differ": f"0 of {stab}",
+        "plants-disagree": f"{plants} of {plants}",
+        "controls": f"{controls} of {controls}",
+    }
+
+
 PINS = {
-    # `graphs` is the CORPUS size and `graphs-unset` the gap, and BOTH are pinned: a corpus
-    # that grows without a matching expectation cannot pass, and one that SHRINKS cannot pass
-    # either. The 2026-10-05 pins (`graphs=16`, `graphs-agree=14`, `byte-identical=14`) were
-    # measured against a COLD substrate -- every bend emission was a 0-row failure -- so they
-    # are not comparable to a warm one. Only the first three are functions of the CORPUS;
-    # every other pin here is a function of the PORT and moves when the port's next fix
-    # lands. `.agents/slop/want/DECISION.md` records which is which.
-    "graphs": "34", "graphs-unset": "0", "graphs-answered": "34",
-    # `expect-moved` is the ONLY pin that asks whether the table's ASSERTIONS HELD, and it is
-    # not a function of the corpus: it is a function of the PORT against the TABLE. **It is 0 and
-    # it is a ZERO-TOLERANCE INVARIANT, which is why it does not need re-pinning when the corpus
-    # grows** -- a graph that grows into `WANT` and agrees contributes nothing, and a graph that
-    # grows into `WANT` and disagrees is exactly what this counts. Nothing pinned it and nothing
-    # exited on it: `cmd_run` returned 0 whenever `unset` was empty, so a run in which a row was
-    # simply WRONG was healthy and green, and the only thing that would have noticed is
-    # `graphs-agree` -- which nets out, and so misses the case where one row moves to AGREE while
-    # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
-    # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
+    # `expect-moved` is the ONLY pin that asks whether the EXPECTATIONS HELD, and it is not a
+    # function of the corpus: it is a function of the PORT against the exceptions table. **It is
+    # 0 and it is a ZERO-TOLERANCE INVARIANT**, so it does not need re-pinning when the corpus
+    # grows -- a graph that joins and agrees contributes nothing, and a graph that joins and
+    # disagrees is exactly what this counts. Nothing pinned it and nothing exited on it:
+    # `cmd_run` used to return 0 whenever `unset` was empty, so a run in which a row was simply
+    # WRONG was healthy and green, and the only thing that would have noticed is `graphs-agree`
+    # -- which nets out, and so misses the case where one row moves to AGREE while another moves
+    # to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over all 20 rows
+    # (`.agents/slop/unsetexp/trials.tsv`).
     "expect-moved": "0",
-    "graphs-agree": "34", "byte-identical": "34", "not-comparable": "0",
+    "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
-    # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
-    # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5
-    # attempts` file, so `cmp -s` called the pair BYTE-IDENTICAL and `stable-pairs` read 5 of
-    # 5. **Two identical FAILURES compare equal.** So the gate reads the FAILED and DIFFER
-    # counts, not the identical one.
-    # ***MOVED TO GREEN BY runfinal (2026-10-07), THE FIRST RUN TAKEN UNDER A SETTLED SUBSTRATE
-    # SINCE run34.*** run34 could not pin these because the port was rewritten at 15:35:12
-    # (`render.bend`/`upat.bend`), 15:35:24 (`ops.bend`) and 15:39:43 (`fold.bend`) -- ~10 s AFTER
-    # its graph phase's `D2-bytediff` landed at 15:35:04 -- so every bend step from `control`
-    # onward wrote a 0-row failure (`emit bend: 0 rows after 5 attempts`), NOT a measurement, and
-    # run34 kept the last healthy values rather than pin a broken reading. runfinal: port quiet
-    # ~4 h 50 m at the start, `differ.py run` returned `WITHIN-LIMITS` in 223 s at 770 MB peak,
-    # and EVERY ONE of these read green -- so they are now the MEASURED values, not the inherited
-    # ones. They are functions of the PORT (a bend step that dies reddens them); the two
-    # `graphs-agree`/`byte-identical` pins above moved 32 -> 34 (2026-10-13). They are MEASURED, not
-    # predicted: the run wrote `graphs=34 ... graphs-agree=34 byte-identical=34 not-comparable=0
-    # expect-moved=0`, with every control green, so a pin of 32 was stale by exactly the graphs
-    # that had joined the corpus. THEY ARE THE TWO RED PINS OF `RUN HEALTH: 15 of 17` — AND A PIN
-    # THAT IS LOWER THAN ITS SUBJECT IS NOT A STRICTER GATE, IT IS A STALE ONE. `31 -> 32` with
-    # `getaddr` above is the same move, and the rule is unchanged: a verdict pin MOVES with the
-    # measurement, and the evidence is written next to it.
-    "stable-pairs": "5 of 5", "stable-failed": "0 of 5", "stable-differ": "0 of 5",
-    "plants-disagree": "7 of 7", "cross": "1 of 1", "controls": "5 of 5",
-    "conflations": "4 of 4", "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
+    # THE POPULATION'S IDENTITY, AS A CONTENT PIN. **THE ONE PIN A GRAPH ADDITION MUST MOVE**,
+    # and the one that replaces `graphs-unset`: a graph that joins the corpus and is not
+    # re-decided leaves the pin stale, and a stale pin is a red in `unhealthy()` and a REFUSED
+    # run in `cmd_run`. MEASURED 2026-10-22 over the live tree's 35 graphs.
+    "population": POPULATION_PIN,
+    # `cross` is ONE comparison and `conflations` are the ORACLE's own four cases -- neither is a
+    # count of a population this file discovers, so both stay literal.
+    "cross": "1 of 1", "conflations": "4 of 4",
+    "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
+    **derived_counts(),
 }
 # THE SECOND WITNESS, AND WHY IT IS NOT AN EIGHTEENTH MEMBER OF `PINS`.
 #
@@ -387,11 +526,12 @@ def declared() -> set[str]:
     them. `cmd_run` builds these names out of `corpus()`/`CONTROLS`/`PLANTS`/`STAB`, so this
     reads the same sources it does.
 
-    **IT READS `corpus()`, NOT `WANT`.** The run now writes one `D1-graph-`, two `D2-canon-`
-    and one `D2-cmp-` artifact for EVERY graph in the corpus, including the nine with no
-    expectation, because those nine are run and recorded rather than skipped. A `declared()`
-    built from `WANT` would call all 36 of those `UNEXPECTED` and leave 9 graphcmp `.txt`
-    files with no `.txt` policy -- the exact orphan `checks/no-txt.py`'s carve-out is for.
+    **IT READS `corpus()`, NOT THE EXPECTATIONS.** The run writes one `D1-graph-`, two
+    `D2-canon-` and one `D2-cmp-` artifact for EVERY graph in the corpus, and the corpus is
+    the DISCOVERED population -- so a graph that joins it joins the artefact list with it, and
+    a `declared()` built from the expectations would call every one of those `UNEXPECTED` and
+    leave graphcmp `.txt` files with no `.txt` policy -- the exact orphan
+    `checks/no-txt.py`'s carve-out is for.
     A DECLARATION THAT MISSES ONE NAME IS A POPULATION THAT EXCLUDES IT.
     """
     graphs = corpus()
@@ -696,6 +836,24 @@ def one_line(out):
 
 
 def cmd_run(_a):
+    # **THE POPULATION MUST BE DECIDED BEFORE THE RUN, OR THE RUN CERTIFIES NOTHING.**
+    # A graph that joins the corpus and is not re-decided leaves `POPULATION_PIN` stale, and a
+    # run over it would be a measurement of a population nobody has an opinion about -- which is
+    # the defect the exceptions table used to prevent by refusing to run. So this is a REFUSED
+    # (3) and not a FAIL (1): a PRECONDITION was absent, not a comparison that came out wrong.
+    # The plant population is the same shape: a plant the corpus's instrument declares and the
+    # corpus neither runs nor excuses is a gap nobody would notice.
+    #
+    # **AND IT REFUSES BEFORE IT TOUCHES THE ARTEFACT DIRECTORY**, because a run that cannot
+    # certify its population must not leave a half-written set behind for a reader to find.
+    if bad := population_bad() + plants_bad():
+        for line in bad:
+            print(line, file=sys.stderr)
+        print("  the corpus cannot certify a population that has not been decided: re-decide it, "
+              "and move POPULATION_PIN in this file in the SAME COMMIT as the change.",
+              file=sys.stderr)
+        return gatekit().REFUSED
+
     D.mkdir(parents=True, exist_ok=True)
     for tmp in D.glob(".tmp.*"):
         tmp.unlink()
@@ -709,23 +867,21 @@ def cmd_run(_a):
 
     # ONE LINE OF SUBSTANCE PER GRAPH: `diff --graph NAME` prints exactly one `# VERDICT:`
     # line and its `# DENOMINATOR:` line, and NAME is the only argument. The verdict step
-    # ASSERTS each graph rather than leaving a reader to check twenty-five files by eye.
+    # ASSERTS each graph rather than leaving a reader to check thirty-five files by eye.
     #
-    # **THE LOOP IS OVER `corpus()`, NOT OVER `WANT`.** This is the whole defect, and the
-    # loop itself was the evidence: it used to read `for g in WANT:`, which meant
+    # **THE LOOP IS OVER `corpus()`, NOT OVER THE EXPECTATIONS.** This is the whole defect, and
+    # the loop itself was the evidence: it used to read `for g in WANT:`, which meant
     # `graphcmp.GRAPHS` was never consulted by the run at all and every graph the corpus
     # declared but the table omitted was INVISIBLE -- not failed, not skipped, INVISIBLE,
     # while `graphs=` reported the table's own length as though it were the corpus.
     #
-    # A GRAPH WITH NO EXPECTATION IS RUN ANYWAY. It is not skipped (a skip is a silent
-    # hole), and it is not compared against a default (a default is a gate that cannot
-    # fail). It is run, its real verdict is recorded, and it is marked UNSET -- and UNSET
-    # makes the whole run INCOMPLETE, because a run that silently accepts graphs nobody
-    # has an opinion about is a run whose denominator is a subset of its own numerator.
-    # **MEASURED 2026-10-06: 9 became 5** -- four of the nine disagreed with a located cause and
-    # took a row, and the five that agree have none yet, deliberately. See the block under `WANT`.
+    # **AND NOW EVERY GRAPH HAS AN EXPECTATION, BECAUSE THE DEFAULT IS "AGREE"**
+    # (`expectation()`). There is no UNSET state and no `graphs-unset` row: a graph that joins
+    # the corpus is EXPECTED TO AGREE, and the corpus's growth is caught by the POPULATION PIN
+    # instead -- a content pin over the graph list's own names and bytes, so a graph that joins
+    # without a re-decision leaves a stale pin and the run REFUSES (see the top of this
+    # function). **THE DENOMINATOR THAT MATTERS IS THE NUMBER OF EXCEPTIONS**, and it is 0.
     graphs = corpus()
-    unset = [g for g in graphs if g not in WANT]
     for g in graphs:
         run(f"D1-graph-{g}.txt", "diff", "--graph", g)
     # **A GRAPH THAT REFUSED IS NOT A GRAPH WHOSE VERDICT MOVED, AND CONFLATING THEM WAS
@@ -738,9 +894,9 @@ def cmd_run(_a):
     # FIVE VERDICTS (`gates/gatekit.py:60`), so `expect-moved` counts only graphs that
     # ANSWERED, `graphs-refused` counts the ones that did not, and the run refuses on
     # either -- see the return below.
-    refused = [g for g in graphs if g in WANT and not verdict(f"D1-graph-{g}.txt")]
-    moved = [f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED={WANT[g]}" for g in graphs
-             if g in WANT and verdict(f"D1-graph-{g}.txt") and verdict(f"D1-graph-{g}.txt") != WANT[g]]
+    refused = [g for g in graphs if not verdict(f"D1-graph-{g}.txt")]
+    moved = [f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED={expectation(g)}" for g in graphs
+             if verdict(f"D1-graph-{g}.txt") and verdict(f"D1-graph-{g}.txt") != expectation(g)]
     # **AND `na`/`bad` COUNT THE ANSWERS, NOT THE EXPECTATIONS.** They used to be
     # `sum(WANT[g] == "AGREE")` and `[g for g in WANT if WANT[g] == "DISAGREE"]`, which are two
     # censuses of the TABLE, and the sentence they appear in is about the RUN. MEASURED on the
@@ -749,23 +905,8 @@ def cmd_run(_a):
     # 34th graph had an AGREE *expectation* and no answer at all. A row that counts the table
     # beside a sentence that counts the run is a row with two numbers in one place.
     answered = [g for g in graphs if verdict(f"D1-graph-{g}.txt")]
-    na = sum(1 for g in answered if WANT.get(g) == "AGREE")
+    na = sum(1 for g in answered if expectation(g) == "AGREE")
     bad = [g for g in answered if verdict(f"D1-graph-{g}.txt") == "DISAGREE"]
-
-    def untriaged(g):
-        """THE ONE CLAUSE PER UNSET GRAPH, AND THE TWO ARE NOT THE SAME SENTENCE.
-
-        A recorded DISAGREE with nobody to say whether it is right is the strongest possible
-        signal that the table is BEHIND THE PORT -- it can fail, so it is worth writing down. An
-        AGREE with nobody to say whether it is right is a bookkeeping gap: it cannot fail, so
-        there is nothing to check. MEASURED 2026-10-06, the nine read five AGREE and four
-        DISAGREE, and the artifact printed all nine with one identical sentence, so a reader could
-        not tell which five were a one-line row away from closed and which four needed a
-        diagnosis. This is that difference, computed from the artifacts rather than asserted.
-        """
-        return ("a recorded DISAGREE and nobody has said whether it is right -- a claim that can "
-                "fail, and the table is behind the port" if verdict(f"D1-graph-{g}.txt") == "DISAGREE"
-                else "an AGREE and nobody has said so -- a bookkeeping gap, not a known fault")
 
     write("D1-verdicts.txt", "\n".join(moved + [
         # THE REFUSAL ROW. `first_line` is the artifact's own text -- `rc=2`, or a refusal
@@ -773,21 +914,16 @@ def cmd_run(_a):
         # `graphcmp.py` writes the reason (it exits before printing a verdict). **THE NAME OF
         # A REFUSAL HAS TO REACH THE ROW A READER READS**, or the run's own `.err` file is the
         # only place it exists and a summary that drops it reports a clean corpus.
-        f"{g}: REFUSED -- EXPECTED={WANT[g]}, and the artifact answered "
+        f"{g}: REFUSED -- EXPECTED={expectation(g)}, and the artifact answered "
         f"{first_line(f'D1-graph-{g}.txt')!r}; "
         f"{first_line(f'D1-graph-{g}.txt.err')!r}" for g in refused
     ] + [
-        f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED=UNSET -- RUN AND RECORDED, NOT "
-        f"COMPARED: {untriaged(g)}." for g in unset
-    ] + [
         "AT LEAST ONE GRAPH'S VERDICT MOVED" if moved else
-        (f"{len(answered)} of {len(graphs) - len(unset)} graphs with "
-         f"an expectation ANSWERED and every answer was as expected ({na} AGREE; "
-         f"{conjoin(bad)} DISAGREE, each with a named cause in the WANT comment above)"
+        (f"{len(answered)} of {len(graphs)} graphs ANSWERED and every answer was as expected "
+         f"({na} AGREE; {conjoin(bad)} DISAGREE, each with a named cause in the exceptions table "
+         f"above)"
          + (f"; {len(refused)} REFUSED and said so above: {conjoin(refused)}" if refused else ""))
-        if not unset else
-        f"{len(graphs) - len(unset)} of {len(graphs)} graphs compared; "
-        f"**RUN INCOMPLETE -- {len(unset)} HAVE NO EXPECTATION**"]) + "\n")
+    ]) + "\n")
 
     # THE CANONICAL FILES ARE BYTE-IDENTICAL, the cheapest check here: it fails first when an
     # atom letter moves. THIS STEP WAS A VACUOUS PASS until 2026-10-04: it ran `emit py` /
@@ -951,26 +1087,27 @@ def cmd_run(_a):
         # `WANT` wrote and therefore reported the TABLE's length wearing the CORPUS's name:
         # 9 graphs were declared, never run, and the line said nothing. A denominator that
         # counts only the answered cases is a denominator that cannot shrink and so cannot be
-        # wrong. `graphs-unset` is the separate count the brief asks for, and it is what makes
-        # the run INCOMPLETE rather than passing (see `census` and `unhealthy`).
+        # wrong.
         #
-        # **`graphs`, `graphs-answered` and `graphs-unset` ARE NOT THREE QUESTIONS AND A READER
-        # MAY COUNT THEM AS FOUR.** MEASURED: they are `n`, `n - u`, `u` -- three views of two
-        # numbers, so one of them is a restatement and a pin on all three can only ever catch
-        # what a pin on any two already catches. All three are kept because each names a
-        # DIFFERENT thing to a reader (`the corpus`, `the coverage`, `the gap`) and because a
-        # health gate that answers one number in three spellings is easier to notice rot in.
-        # `expect-moved`, two lines below, is the first line here that is NOT a view of `n` and
-        # `u`.
+        # **`graphs` AND `graphs-answered` ARE TWO VIEWS OF ONE NUMBER NOW** -- there is no
+        # `u` to subtract, because every graph has an expectation (the default is AGREE). They
+        # are kept as two spellings because a health gate that answers one number twice is
+        # easier to notice rot in, and because `graphs-answered` is the one that moves when a
+        # graph REFUSES to answer.
         f"graphs={len(graphs)}",
-        f"graphs-answered={len(graphs) - len(unset)}",
-        f"graphs-unset={len(unset)}",
+        f"graphs-answered={len(answered)}",
+        # **THE POPULATION'S IDENTITY, IN THE RUN'S OWN SUMMARY.** A row that says which
+        # population was measured, so the run is comparable to a corpus rather than to a
+        # number. It is a CONTENT digest over the graph list's names and the bytes that define
+        # each graph, and `PINS` holds the pinned one: a run over a population nobody has
+        # re-decided leaves this row disagreeing with the pin, which is a RED in `unhealthy()`
+        # and a REFUSED run in `cmd_run`.
+        f"population={population_digest()}",
         # **THE COUNT OF ROWS THAT ARE WRONG**, which nothing counted until now. Distinct from
-        # every line above it: `graphs`/`graphs-answered`/`graphs-unset` are about how many ROWS
-        # the table has, `graphs-agree`/`graphs-disagree` are about how many ARTIFACTS carry a
-        # verdict (unset graphs included, so an unset graph that agrees counts in both), and this
-        # one is about whether the rows that exist were RIGHT. All four can be self-consistent
-        # and wrong at once, which is the state this file ran in until now.
+        # every line above it: `graphs`/`graphs-answered` are about how many ROWS the corpus
+        # has, `graphs-agree`/`graphs-disagree` are about how many ARTIFACTS carry a verdict,
+        # and this one is about whether the rows that exist were RIGHT. All of them can be
+        # self-consistent and wrong at once, which is the state this file ran in until now.
         f"expect-moved={len(moved)}",
         # **THE FIFTH VERDICT, AND IT IS NOT `expect-moved` WITH A DIFFERENT SPELLING.** A
         # graph whose artifact carries no `VERDICT:` line answered nothing: `graphcmp.py`
@@ -984,16 +1121,20 @@ def cmd_run(_a):
         f"graphs-disagree={files_with('D1-graph-*.txt', 'VERDICT: DISAGREE')}",
         f"byte-identical={lines_with('D2-bytediff.txt', 'BYTE-IDENTICAL')}",
         f"not-comparable={lines_with('D2-bytediff.txt', 'NOT COMPARED')}",
-        f"stable-pairs={anchored('D9-stability.txt', r': 2 runs BYTE-IDENTICAL$')} of 5",
-        f"stable-failed={lines_with('D9-stability.txt', 'ONE SIDE IS A 0-ROW FAILURE')} of 5",
-        f"stable-differ={anchored('D9-stability.txt', r': 2 runs DIFFER$')} of 5",
-        # SEVEN, NOT SIX, and the seventh is `sym1` -- the plant that needs the `sym` graph
-        # rather than the matmul, so it is not in the six-above loop.
-        f"plants-disagree={files_with('D5-plant-*.txt', 'VERDICT: DISAGREE')} of 7",
+        # **THE DENOMINATORS ARE DERIVED, NOT TYPED.** `of 5` and `of 7` were literals in this
+        # writer, so a selection that grew made the row read `8 of 7` -- a number nobody can
+        # check. They come from `STAB`, `PLANTS` and `CONTROLS` now, which are this file's own
+        # declarations, so they cannot drift from what was run.
+        f"stable-pairs={anchored('D9-stability.txt', r': 2 runs BYTE-IDENTICAL$')} of {len(STAB)}",
+        f"stable-failed={lines_with('D9-stability.txt', 'ONE SIDE IS A 0-ROW FAILURE')} of {len(STAB)}",
+        f"stable-differ={anchored('D9-stability.txt', r': 2 runs DIFFER$')} of {len(STAB)}",
+        # EIGHT, NOT SEVEN: the eighth is `params`, the plant for the `pI(` form, which needs
+        # the `prog` graph rather than the matmul, so it is not in the six-above loop.
+        f"plants-disagree={files_with('D5-plant-*.txt', 'VERDICT: DISAGREE')} of {len(PLANTS)}",
         f"cross={lines_with('D4-cross-range.txt', 'CROSS VERDICT: OK')} of 1",
         f"selfcheck={first_line('D0-selfcheck.txt')}",
         f"conflations={lines_with('D7-conf.txt', 'VERDICT: OK')} of 4",
-        f"controls={files_with('D3-control-*.txt', 'CONTROL VERDICT: OK')} of 5",
+        f"controls={files_with('D3-control-*.txt', 'CONTROL VERDICT: OK')} of {len(CONTROLS)}",
         # The oracle's own assertions ride in the same summary as the differ's, because a
         # coverage claim whose printer is broken is a coverage claim about the printer.
         f"oracle-selfcheck={grep_line('D0-coverage-census.txt', 'ORACLE SELFCHECK')}",
@@ -1012,51 +1153,40 @@ def cmd_run(_a):
         *substrate_rows(substrate_start, substrate_digest())
          + [f"substrate-head={substrate_head()}"]]) + "\n")
     print(f"wrote {D.relative_to(ROOT)}")
-    # **A RUN WITH AN UNANSWERED GRAPH IS INCOMPLETE, AND SAYS SO BY EXITING NON-ZERO.**
-    # This is the choice between the three answers, and it is the run's EXIT STATUS that
-    # carries it -- not a line in the summary, because a line in the summary is something a
-    # reader has to know to look for. Every artifact is still written: the measurement is
-    # real, the graphs really ran, and their real verdicts are in `D1-verdicts.txt`
-    # marked UNSET. What is refused is the CLAIM that the run answered the corpus.
-    #
-    # **AND A ROW THAT IS WRONG IS A SECOND, SEPARATE REFUSAL, WHICH THIS USED NOT TO RAISE.**
+    # **A RUN WHOSE ROWS ARE WRONG IS A SEPARATE REFUSAL, AND IT USED NOT TO BE RAISED.**
     # MEASURED: the exit was `if unset` and nothing else, so with every graph answered a run
     # in which a row was simply WRONG returned 0 and read HEALTHY -- and the one pin that could
     # have noticed, `graphs-agree`, NETS OUT over the corpus and so misses the case where one
     # row moves to AGREE while another moves to DISAGREE. That is the failure this whole file is
     # about (a claim with no denominator, or a count that cannot distinguish right from wrong),
-    # and it was in the gate itself. The two refusals are reported separately because they are
-    # different questions: `graphs-unset` says nobody wrote a row, `expect-moved` says a row is
-    # wrong, and only the second is a claim the port made.
+    # and it was in the gate itself. The refusals are reported separately because they are
+    # different questions: `expect-moved` says a row is wrong, a REFUSAL says the corpus was
+    # not answered, and only the first is a claim the port made.
     #
-    # **AND IT DOES NOT CONSULT `PINS`, WHICH IS THE CORRECT SHAPE AND WAS MEASURED.** `run` honours
-    # 2 of the 17 (`graphs-unset`, `expect-moved`) and returns 0 unconditionally otherwise. Making
-    # it consult the other 15 would make `run` A GATE ON ITS OWN OUTPUT: a run that finds the port
-    # changed a row would refuse to EXIT, so the change could never be recorded, and the pins are
-    # hand-written literals that move when the port's next fix lands (`:240-280` says so itself).
-    # **A MEASUREMENT MUST NOT BE CITED AS A HEALTH GATE, AND THE JUDGE MUST NOT BE THE RUN.**
-    # `unhealthy()` and `checks/corpus-figure.py` are the judges; `run` is the measurement.
-    for line in (f"RUN INCOMPLETE: {len(unset)} of {len(graphs)} graphs have NO expectation in "
-                 f"WANT: {', '.join(unset)}. Each was run and recorded (D1-verdicts.txt, marked "
-                 f"UNSET) and each is in `graphs=`; add an expectation for each to complete the "
-                 f"run. A corpus growth that must be answered for is a corpus that cannot "
-                 f"silently grow." if unset else None,
-                 "RUN WRONG: expect-moved=N -- these rows' EXPECTED verdicts did not match what "
-                 "the port emitted, and a run whose table is wrong is not a measurement of the "
-                 "table:\n  " + "\n  ".join(moved) if moved else None,
-                  # A REFUSAL IS NOT A WRONG ROW AND IS NOT A PASS. `cmd_run` refuses on it for
-                  # the same reason it refuses on `unset`: the corpus was not answered, so
-                  # nothing in this run may be read as a verdict about those graphs. MEASURED
-                  # 2026-10-18T18:04Z, `loop` was refused here (device precondition, exit 2)
-                  # and the run still reported it as a moved VERDICT, which is a claim about
-                  # the port the port never made.
-                  f"RUN INCOMPLETE: {len(refused)} of {len(graphs)} graphs REFUSED and so have "
-                  f"NO verdict: {', '.join(refused)}. Each refusal is named with its own reason "
-                  f"in D1-verdicts.txt; `expect-moved` does not count them, because a graph "
-                  f"that did not answer is not a graph whose answer moved." if refused else None):
+    # **AND IT DOES NOT CONSULT `PINS`, WHICH IS THE CORRECT SHAPE AND WAS MEASURED.** `run`
+    # honours ONE of the 17 (`expect-moved`) and returns 0 unconditionally otherwise. Making it
+    # consult the other 16 would make `run` A GATE ON ITS OWN OUTPUT: a run that finds the port
+    # changed a row would refuse to EXIT, so the change could never be recorded, and the pins
+    # are hand-written literals that move when the port's next fix lands (the block above
+    # `PINS` says so itself). **A MEASUREMENT MUST NOT BE CITED AS A HEALTH GATE, AND THE JUDGE
+    # MUST NOT BE THE RUN.** `unhealthy()` and `checks/corpus-figure.py` are the judges; `run`
+    # is the measurement.
+    for line in ("RUN WRONG: expect-moved=N -- these rows' EXPECTED verdicts did not match what "
+                 "the port emitted, and a run whose expectations are wrong is not a measurement "
+                 "of them:\n  " + "\n  ".join(moved) if moved else None,
+                 # A REFUSAL IS NOT A WRONG ROW AND IS NOT A PASS. `cmd_run` refuses on it for
+                 # the same reason it refuses on a moved row: the corpus was not answered, so
+                 # nothing in this run may be read as a verdict about those graphs. MEASURED
+                 # 2026-10-18T18:04Z, `loop` was refused here (device precondition, exit 2)
+                 # and the run still reported it as a moved VERDICT, which is a claim about
+                 # the port the port never made.
+                 f"RUN INCOMPLETE: {len(refused)} of {len(graphs)} graphs REFUSED and so have "
+                 f"NO verdict: {', '.join(refused)}. Each refusal is named with its own reason "
+                 f"in D1-verdicts.txt; `expect-moved` does not count them, because a graph "
+                 f"that did not answer is not a graph whose answer moved." if refused else None):
         if line:
             print(line, file=sys.stderr)
-    return 1 if unset or moved or refused else 0
+    return 1 if moved or refused else 0
 
 
 # ---- THE PRECONDITIONS, AND THE CROSS-CHECK THAT KEEPS THE ROWS FROM BEING LABELS ---------
@@ -1309,13 +1439,24 @@ def substrate_bad(got) -> list[str]:
 
 def verdict(out):
     """`grep -o 'VERDICT: [A-Z]*' ... | tail -1 | cut -d' ' -f2`. The LAST one, because a
-    report carries the verdict twice and the operative line is the one at the bottom."""
-    found = re.findall(r"VERDICT: [A-Z]*", text(out))
+    report carries the verdict twice and the operative line is the one at the bottom.
+
+    **A MISSING ARTIFACT HAS NO VERDICT, AND SAYING SO IS NOT A CRASH.** The file is absent
+    when the artefact set on disk is older than the corpus -- and then the graph did not
+    answer, which is a REFUSAL and not an exception. MEASURED 2026-10-22: the corpus grew to
+    35 graphs while the artefact set still held 34, so reading a graph that was never run
+    raised `FileNotFoundError` from inside a PLANT -- and a crash is not a verdict.
+    """
+    p = D / out
+    if not p.exists():
+        return ""
+    found = re.findall(r"VERDICT: [A-Z]*", p.read_text(errors="replace"))
     return found[-1].split()[1] if found else ""
 
 
 def first_line(out):
-    return text(out).split("\n", 1)[0]
+    p = D / out
+    return p.read_text(errors="replace").split("\n", 1)[0] if p.exists() else ""
 
 
 def last_line(out):
@@ -1410,9 +1551,17 @@ def unhealthy():
     # of their own: `gates/retention-check.py`'s CLAUSE IV calls THIS function by reference, so a
     # run whose summary records no device -- or records one the artifacts contradict -- makes the
     # retention rule fire with no new parser and no new clause.
+    #
+    # **AND THE POPULATION AND THE PLANTS RIDE HERE TOO, BECAUSE THEY ARE HEALTH IN THE SAME
+    # SENSE.** A run over a population nobody has re-decided is not healthy, and a run whose
+    # plant population has drifted from the corpus's instrument's is not healthy -- and both are
+    # facts about the TREE the run is on, which is what this function is about. **THE DERIVED
+    # COUNTS ARE COMPARED HERE AND NOWHERE ELSE**, so a derived expectation that is never
+    # compared would be an expectation in name only: the run's own `graphs=` row is checked
+    # against the DISCOVERED corpus, and a disagreement is a red.
     return [f"{k}={v} (expected {PINS[k]})" for k, v in got.items() if k in PINS and v != PINS[k]] \
         + [f"{k} ABSENT" for k in PINS if k not in got] + preconditions_bad(got) \
-        + substrate_bad(got)
+        + substrate_bad(got) + population_bad() + plants_bad()
 
 
 def repro_bad() -> list[str]:
@@ -1552,16 +1701,124 @@ def artefacts_ok():
 # would silently break. **A NAME THAT IS NOT IN IT IS `REFUSED` (3) AND NEVER `PASS`**: a
 # plant that does not exist measured nothing, and the five-state vocabulary (`gates/
 # gatekit.py:60`) has a word for that and it is not `PASS`.
-PLANT_NAMES = ("1", "2", "3", "4", "5", "6", "7", "8")
+PLANT_NAMES = ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
+
+
+def report_plants(checks, only=None) -> int:
+    """THE PLANTS, PRINTED. One line per check, and the count at the end.
+
+    A plant that selected nothing is `SKIP` and never `PASS`: it ran, it selected nothing,
+    and it measured nothing.
+    """
+    checks = [c for c in checks if only is None or c[0].startswith(f"{only}:")]
+    print("PLANTS -- both halves of each, over COPIES; no `bend`, no write into runs/graphcmp/D")
+    for name, ok, got in checks:
+        print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")
+    bad = sum(1 for c in checks if not c[1])
+    if not checks:
+        # IT RAN, IT SELECTED NOTHING, AND IT MEASURED NOTHING. `0 of 0` with a green word is
+        # the "compared nothing reads as agreement" failure wearing a pin.
+        print(f"PLANTS: plant {only!r} SELECTED NO CHECK -- NOT RUN")
+        return gatekit().SKIP
+    print(f"PLANTS: {'GREEN' if not bad else 'RED'} ({len(checks) - bad}/{len(checks)})")
+    return 1 if bad else 0
+
+
+# THE ONE GRAPH A PLANT ADDS, AS A TEXT EDIT ON A COPY OF THE CORPUS'S OWN GENERATOR.
+# **IT IS NOT READ FROM `git show HEAD:`** -- an arm that reads HEAD plants nothing the moment
+# HEAD carries the fix, which is how one unit's plant scored green under `--falsify` on
+# 2026-10-22. The edit is APPENDED, so it cannot collide with the generator's own text, and
+# the graph it adds is never CALLED -- only NAMED, which is what moves the population's
+# identity.
+PLANTED_GRAPH_SRC = b'''
+
+def g_planted():
+  """A PLANT, AND IT IS NOT IN THE CORPUS."""
+  return g_matmul()
+
+
+GRAPHS["planted"] = g_planted
+'''
+
+
+def population_plants() -> list[tuple[str, bool, str]]:
+    """PLANTS 9 AND 10 -- THE POPULATION, AND THE COUNTS DERIVED FROM IT.
+
+    **SELF-CONTAINED: EVERY ARM IS A TEXT EDIT ON A COPY, AND NO LIVE ARTEFACT IS READ.**
+    That is the lesson from 2026-10-22: one unit's arm read `git show HEAD:`, so it planted
+    NOTHING the moment HEAD carried the defect's fix, scored green under `--falsify`, and had
+    to be rewritten. So the corpus's generator is COPIED and EDITED here, and the artefact is
+    SYNTHESISED here -- neither is read from the tree's history and neither is the live run.
+
+    PLANT 9 is the PROTECTION AGAINST "A GRAPH WAS ADDED AND NOT RE-DECIDED": the population
+    is a CONTENT PIN, so a graph that joins the corpus moves it, and a graph that joins
+    without the pin moving MUST GO RED. PLANT 10 is the protection against a DERIVED
+    EXPECTATION THAT IS NEVER COMPARED: the run's own `graphs=` row is checked against the
+    DISCOVERED corpus, and a disagreement MUST FAIL.
+    """
+    checks = []
+    # PLANT 9 -- THE POPULATION PIN. THE COPY IS A TEXT EDIT, never a read of HEAD.
+    live = population_digest()
+    with tempfile.TemporaryDirectory() as td:
+        mutated = Path(td) / "graphcmp.py"
+        mutated.write_bytes((ROOT / GCMP).read_bytes() + PLANTED_GRAPH_SRC)
+        planted = population_digest(mutated)
+    # THE ARTEFACT IS SYNTHESISED FROM THE PIN TABLE AND THE PRECONDITION ROWS, so it is
+    # COMPLETE and GREEN -- and then one row at a time is made to disagree with the tree.
+    global D
+    keep_dir = D
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            D = Path(td).resolve()
+            body = dict(PINS)
+            body.update(dict(ln.split("=", 1) for ln in precondition_rows()))
+            body["substrate-start"] = body["substrate-end"] = substrate_digest()
+
+            def summary(**over):
+                (D / "D0-run-summary.txt").write_text(
+                    "".join(f"{k}={over.get(k, v)}\n" for k, v in body.items()))
+
+            summary()
+            green = unhealthy()
+            summary(graphs=str(len(corpus()) + 1))
+            red_count = unhealthy()
+            summary(population=planted)
+            red_pop = unhealthy()
+    finally:
+        D = keep_dir
+    # PLANT 9 -- ***a graph added to the corpus's list WITHOUT the population pin moving MUST
+    # GO RED***, AND THE PIN IS A CONTENT PIN OVER THE GRAPH LIST'S OWN NAMES AND BYTES.
+    # THREE HALVES: the LIVE tree is green (or the plant proves nothing); the PLANTED
+    # population's identity is not the pin, so the pin reds; and a RUN over the planted
+    # population is red END TO END, through the health check every reader uses.
+    checks.append(("9: ***a graph added to the corpus's list WITHOUT the population pin moving "
+                   "MUST GO RED*** -- and the pin is a CONTENT pin over the graph list's own "
+                   "names and bytes",
+                   live == POPULATION_PIN and not green and bool(population_bad(planted))
+                   and bool(red_pop),
+                   f"live={live[:12]} pin={POPULATION_PIN[:12]} planted={planted[:12]} -> "
+                   f"{population_bad(planted) or '[]'}; a run over it -> {red_pop or '[]'}"))
+    # PLANT 10 -- ***the artefact's counts disagreeing with the DISCOVERED population MUST
+    # FAIL***. A derived expectation that is never compared is not an expectation.
+    checks.append(("10: ***the artefact's counts disagreeing with the DISCOVERED population "
+                   "MUST FAIL*** -- a derived expectation that is never compared is not an "
+                   "expectation",
+                   not green and any("graphs" in b for b in red_count),
+                   f"green={green or '[]'} planted graphs={len(corpus()) + 1} -> {red_count or '[]'}"))
+    return checks
 
 
 def plant(only=None):
-    import shutil
-    import tempfile
     global D
     if only is not None and only not in PLANT_NAMES:
         print(f"plant: no such plant {only!r}; have {list(PLANT_NAMES)}")
         return gatekit().REFUSED
+    # PLANTS 9 AND 10 ARE SELF-CONTAINED -- they build their own copies and read NO live
+    # artefact -- so they can be asked for on their own, and so a tree with no run on disk can
+    # still be asked whether the POPULATION is pinned and whether the DERIVED COUNTS are
+    # compared. The other eight need the live artefacts, so they are not reachable from here.
+    if only in ("9", "10"):
+        return report_plants(population_plants(), only)
     live = D
     kv = dict(ln.split("=", 1) for ln in text("D0-run-summary.txt").splitlines() if "=" in ln)
     checks = []
@@ -1704,8 +1961,7 @@ def plant(only=None):
             bare = [ln for ln in rows_txt.splitlines()
                     if "VERDICT= " in ln or ln.rstrip().endswith("VERDICT=")]
             named = [ln for ln in rows_txt.splitlines() if ": REFUSED -- " in ln]
-            refused_now = [g for g in corpus() if g in WANT
-                           and not verdict(f"D1-graph-{g}.txt")]
+            refused_now = [g for g in corpus() if not verdict(f"D1-graph-{g}.txt")]
             named_ok = all(any(ln.startswith(f"{g}: REFUSED -- ") and
                                first_line(f"D1-graph-{g}.txt") in ln for ln in named)
                            for g in refused_now)
@@ -1713,21 +1969,12 @@ def plant(only=None):
                            "its artifact's own text***, and no row has an empty verdict cell",
                            named_ok and not bare and len(named) == len(refused_now),
                            f"refused={refused_now} named={len(named)} empty-verdict-rows={bare}"))
+            # PLANTS 9 AND 10 -- THE POPULATION. Self-contained, so they run here too.
+            checks += population_plants()
         finally:
             D = live
-    checks = [c for c in checks if only is None or c[0].startswith(f"{only}:")]
-    print("PLANTS -- both halves of each, over a COPY of the live artifacts; no `bend`, no write "
-          "into runs/graphcmp/D")
-    for name, ok, got in checks:
-        print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")
-    bad = sum(1 for c in checks if not c[1])
-    if not checks:
-        # IT RAN, IT SELECTED NOTHING, AND IT MEASURED NOTHING. `0 of 0` with a green word is
-        # the "compared nothing reads as agreement" failure wearing a pin.
-        print(f"PLANTS: plant {only!r} SELECTED NO CHECK -- NOT RUN")
-        return gatekit().SKIP
-    print(f"PLANTS: {'GREEN' if not bad else 'RED'} ({len(checks) - bad}/{len(checks)})")
-    return 1 if bad else 0
+    return report_plants(checks, only)
+    return report_plants(checks, only)
 
 
 def clean_run(label, wait):
