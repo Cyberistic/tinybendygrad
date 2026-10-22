@@ -999,25 +999,53 @@ def KernelInfo.of() -> KernelInfo:
   # name: str = "test"            # name of the kernel
   KernelInfo{"test", Nil{}, None{}, 0}
 
-# ProgramInfo -- ops.py:1343. `target: Target` is NOT PORTED, and the reason is
-# the CONSTRUCTOR and not the class. `Target` IS ported: `runtime/ops_python.bend:2420`
-# has `Target{device, renderer, arch, iface, indices}` against upstream's
-# `tinygrad/helpers.py:198` `Target`, whose only different name is `interface` -> `iface`.
-# Only `Target.parse` (`tinygrad/helpers.py:206`) is unported. `helpers.bend:2787` still
-# lists `Target` itself as P6, and that half of the sentence is STALE about the
-# class -- MEASURED 2026-10-21.
-# The FIELD goes because upstream's `from_sink` (`ops.py:1358`) is NOT PORTED: the
-# port has no `ProgramInfo.from_sink` at all, and `launch_dims` is still this
-# file's `TODO(p3)`, so nothing builds a `ProgramInfo` from a sink and there is
-# no `target` argument to drop. The other six FIELDS are ported. `global_size` is
-# `tuple[int|float, ...]`, so its elements are `H.I64`: an int is an I64 and a
-# float is not a shape, so the float case in `sym_infer` is recorded on
-# `sym_infer` itself.
+# `Target` -- tinygrad/helpers.py:198. `device, renderer, arch, interface, indices`,
+# and the port spells `interface` as `iface` (which is what
+# `runtime/ops_python.bend:2420` already does).
+#
+# WHY THE CLASS IS HERE AND NOT IN `runtime/ops_python.bend`, WHICH ALREADY HAS
+# ONE. BEND REFUSES IMPORT CYCLES, and it is MEASURED, not remembered:
+# `.agents/slop/programinfo/a.bend` imports `b.bend` and `b.bend` imports
+# `a.bend`, and the compiler answers
+#     an import cycle through .../.agents/slop/programinfo/a.bend
+# `runtime/ops_python.bend:262` imports `../uop/ops.bend`, so `ops.bend` cannot
+# import `runtime/ops_python.bend` -- the edge would close the cycle. THE FIX IS
+# A MOVE, NOT A COPY: upstream puts `Target` in `helpers.py`, the port's
+# `helpers.bend` is the same module, and `ops.bend` ALREADY IMPORTS IT (as `H`).
+# So the class belongs in `helpers.bend` and `runtime/ops_python.bend:2420` should
+# read `H.Target`. That move is NOT DONE HERE -- this unit's file scope is
+# `uop/ops.bend` -- and until it happens there are TWO `Target` records with the
+# same shape and no shared identity.
+#
+# `Target.parse` (`tinygrad/helpers.py:206`) is NOT PORTED and is not needed
+# here: `from_sink` takes the `Target` as an argument. `runtime/ops_python.bend`
+# does not compile today for an unrelated reason (MEASURED 2026-10-22:
+# `Target.parse.split` is an unfilled law), and `Target.parse` is another unit's
+# job.
+type Target is Data:
+  Target{device: String, renderer: String, arch: String, iface: String, indices: String}
+
+# `Target()` -- the dataclass default, which is FIVE EMPTY STRINGS. This is the
+# value upstream's `ProgramInfo.target: Target = Target()` defaults to, and the
+# value `from_sink` hands back when the caller names no target.
+def Target.of() -> Target:
+  Target{"", "", "", "", ""}
+
+# ProgramInfo -- ops.py:1343. SEVEN fields, and the SEVENTH is `target: Target`.
+#
+# `target` was ABSENT because the CONSTRUCTOR was: upstream's `from_sink`
+# (`ops.py:1358`) takes a `target` argument and there was no `from_sink`, so
+# there was no argument to drop and no value to store. `from_sink` is ported
+# below, so the field is here.
+#
+# THE OTHER SIX ARE UNCHANGED. `global_size` is `tuple[int|float, ...]`, so its
+# elements are `H.I64`: an int is an I64 and a float is not a shape, so the
+# float case in `sym_infer` is recorded on `sym_infer` itself.
 type ProgramInfo is Data:
-  ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>}
+  ProgramInfo{global_size: List<&2, H.I64>, local_size: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>, target: Target}
 
 def ProgramInfo.of() -> ProgramInfo:
-  ProgramInfo{[H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], Nil{}, Nil{}, Nil{}, Nil{}}
+  ProgramInfo{[H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], Nil{}, Nil{}, Nil{}, Nil{}, Target.of()}
 
 # `var_vals: dict[str, int]` -- a `Map` is string-keyed in Bend, which is the
 # one place Python's dict and Bend's Map agree without an encoding, so it is
@@ -1560,27 +1588,35 @@ def KernelInfo.function_name(x: KernelInfo) -> String:
 
 def ProgramInfo.global_size(x: ProgramInfo) -> List<&2, H.I64>:
   match x:
-    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: global_size
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: global_size
 
 def ProgramInfo.local_size(x: ProgramInfo) -> List<&2, H.I64>:
   match x:
-    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: local_size
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: local_size
 
 def ProgramInfo.params(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: params
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: params
 
 def ProgramInfo.globals(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: globals
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: globals
 
 def ProgramInfo.outs(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: outs
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: outs
 
 def ProgramInfo.ins(x: ProgramInfo) -> List<&2, U32>:
   match x:
-    case ProgramInfo{global_size, local_size, params, globals, outs, ins}: ins
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: ins
+
+# `target: Target` -- ops.py:1349. The SEVENTH field, and the one that was
+# missing until `from_sink` landed. The accessor is here for the same reason the
+# other six are: a Bend record has no projection syntax, so a field reader is
+# two defs.
+def ProgramInfo.target(x: ProgramInfo) -> Target:
+  match x:
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target}: target
 
 def CallInfo.name(x: CallInfo) -> Maybe<&2, String>:
   match x:
@@ -1882,6 +1918,19 @@ def eq_addr(x: S.Addr, y: S.Addr) -> Bool:
         case S.Aalu{}: True{}
         case _: False{}
 
+# IS THIS PARAM AN ALU ONE? `u.addrspace != AddrSpace.ALU` (ops.py:1365) IS
+# THE ALU/GLOBAL SPLIT, and it is asked in TWO places: `from_sink`'s `_globals`
+# and `ProgramInfo.vals`'s variables. SO IT IS WRITTEN ONCE, HERE, AGAINST THE
+# `ParamArg` -- AND BOTH CALL IT, BECAUSE BEND HAS NO FORWARD REFERENCES AND
+# THE TWO CALLERS ARE 7000 LINES APART.
+def pa.is_alu.of(a: Arg) -> Bool:
+  match a:
+    case AParam{pa}:
+      match pa:
+        case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+          eq_addr(addrspace, S.Aalu{})
+    case _: False{}
+
 def eq_dt(x: S.Dt, y: S.Dt) -> Bool:
   match x y:
     case S.Dt{pri, bits, cls, nm} S.Dt{p2, b2, c2, n2}:
@@ -2011,12 +2060,23 @@ def eq_kernelinfo(x: KernelInfo, y: KernelInfo) -> Bool:
       Bool.and(String.eq(name, n2), Bool.and(eq_opts(applied_opts, o2),
         Bool.and(KernelInfo.eq_opts(opts_to_apply, p2), U32.is_eq(beam, b2))))
 
+# `eq_target` -- the SEVENTH field's comparator. `Target` is a frozen dataclass
+# upstream, so its equality is the five strings, and the port's `Target` is a
+# `Data` record whose equality is the same five strings.
+def eq_target(x: Target, y: Target) -> Bool:
+  match x y:
+    case Target{device, renderer, arch, iface, indices} Target{d2, r2, a2, i2, n2}:
+      Bool.and(String.eq(device, d2), Bool.and(String.eq(renderer, r2),
+        Bool.and(String.eq(arch, a2), Bool.and(String.eq(iface, i2),
+          String.eq(indices, n2)))))
+
 def eq_programinfo(x: ProgramInfo, y: ProgramInfo) -> Bool:
   match x y:
-    case ProgramInfo{global_size, local_size, params, globals, outs, ins} ProgramInfo{g2, l2, v2, b2, o2, i2}:
+    case ProgramInfo{global_size, local_size, params, globals, outs, ins, target} ProgramInfo{g2, l2, v2, b2, o2, i2, t2}:
       Bool.and(eq_i64s(global_size, g2), Bool.and(eq_i64s(local_size, l2),
         Bool.and(eq_u32(params, v2), Bool.and(eq_u32(globals, b2),
-        Bool.and(eq_u32(outs, o2), eq_u32(ins, i2))))))
+        Bool.and(eq_u32(outs, o2), Bool.and(eq_u32(ins, i2),
+          eq_target(target, t2)))))))
 
 def eq_callinfo(x: CallInfo, y: CallInfo) -> Bool:
   match x y:
@@ -5536,13 +5596,40 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 #   `bound.items()`, and the dict union `bound | {...}`. That is the runtime's own view of a
 #   function's parameters, which no compiled language exposes.
 
-# TODO(p3) ops.py:1361  def launch_dims
-
+# DONE(p3) ops.py:1352 def launch_dims -- `ProgramInfo.launch_dims` is
+# `ProgramInfo.launch_dims` (this file, the `from_sink` block below). It is the
+# IDENTITY on the port's launch sizes, because `sym_infer` (ops.py:95) is the
+# identity on an int and the port's `global_size`/`local_size` are
+# `List<&2, H.I64>`. The block says which half of upstream's method the port
+# does NOT have and why.
+#
 #   ops.py:1366  def vals
-# PORTED -- `ProgramInfo.vals` is `ProgramInfo.vals` (this file). Five `vv_*` rows
-# byte-identical to CPython on all three lanes via `sh .agents/slop/ops-vv-gate.sh`,
-# with TWO negative controls: drop `Map.has` and the gate reds; flip the fold's
-# order and the gate reds.
+# PORTED -- `ProgramInfo.vals` is `ProgramInfo.vals` (this file). Five `vv_*` rows.
+#
+# THE ROWS ARE READ BY NO INSTRUMENT, and that is MEASURED, not assumed:
+# `rg -n 'vv_two|vv_one|vv_zero|vv_none|vv_miss_second'` over the tree answers
+# THIS FILE and nothing else. THE `sh .agents/slop/ops-vv-gate.sh` THIS BLOCK
+# USED TO CITE DOES NOT EXIST -- MEASURED 2026-10-22, `find . -name
+# 'ops-vv-gate*'` (not under `references/`) answers NOTHING -- so the
+# "byte-identical to CPython on all three lanes" claim had NO INSTRUMENT BEHIND
+# IT and the two negative controls it named had nothing to fire against. THE
+# CLAIM IS WITHDRAWN, NOT REPLACED.
+#
+# WHAT DOES READ THE LANE: `gates/valsdiv-gate.py` reads the PORT-EXTENSION
+# DECLARATION above and checks that the extension is LIVE -- DEFINED, CALLED, AND
+# REACHABLE FROM `main` -- which it reports as
+# `finding: declared-extension -- tinybendygrad/uop/ops.bend:8675 via main ->
+# vd_rows -> vd_row -> ProgramInfo.vals`. It reads the DECLARATION and the
+# CALL GRAPH; it does not read the five rows' VALUES.
+#
+# SO THE LANE STAYS, because the rows are still the best statement of what
+# `vals` does, and DELETING THEM to make a number look better is what
+# `AGENTS.md` forbids. AND `vals` STILL HAS NO REAL-PROGRAM CALLER after
+# `from_sink` landed: `from_sink` builds `ProgramInfo.params` as upstream's pin
+# does -- ALL the params -- while `vals` is the port of the method upstream HAD
+# at `186fbba2a`, which read `self.vars`, the VARIABLES. The two are different
+# lists, and `vals` now reads the ALU SUBSET of `params` so that it keeps its
+# own declared contract.
 #
 # I GOT THIS BLOCKER WRONG TWICE before landing it, and both errors were the same
 # shape: a claim about a LANGUAGE, written without grepping. First that `Map` was
@@ -8567,8 +8654,29 @@ def vals.step(+ar: Arena, +v: VarVals, xs: List<&2, U32>, acc: List<&2, H.I64>) 
 # sha and the derive's answer are two INDEPENDENT reads that have to agree, and
 # a re-vendor of `tinygrad/` in THIS repo cannot satisfy the claim.
 # ==== END PORT EXTENSION ====================================================
+# THE ALU SUBSET OF `params`, and it is a SUBSET because upstream's DELETED
+# `ProgramInfo.vals` read `self.vars` -- the VARIABLES -- and the port's
+# `ProgramInfo.params` is upstream's `params`, which `from_sink` fills with ALL
+# the params (`if u.op is Ops.PARAM: _params.append(u)`, ops.py:1364). Reading
+# the whole list would look a BUFFER's name up in the variable map, and a
+# buffer has no name, so the fold would REFUSE a program that upstream's `vals`
+# answers. THE SUBSET IS THE VARIABLES, and `AddrSpace.ALU` is what makes a
+# PARAM a variable.
+def vals.alu.put.of(is_alu: Bool, h: U32, acc: List<&2, U32>) -> List<&2, U32>:
+  match is_alu:
+    case True{}: List.append(&2, U32, acc, [h])
+    case False{}: acc
+
+def vals.alu.put(ar: Arena, +h: U32, acc: List<&2, U32>) -> List<&2, U32>:
+  vals.alu.put.of(pa.is_alu.of(Arena.arg(ar, h)), h, acc)
+
+def vals.alu.go(+ar: Arena, xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: vals.alu.go(ar, t, vals.alu.put(ar, h, acc))
+
 def ProgramInfo.vals(+ar: Arena, v: VarVals, x: ProgramInfo) -> Maybe<&2, List<&2, H.I64>>:
-  vals.step(ar, v, ProgramInfo.params(x), Nil{})
+  vals.step(ar, v, vals.alu.go(ar, ProgramInfo.params(x), Nil{}), Nil{})
 
 # ==== the `vv_*` fixture and rows =========================================
 #
@@ -8582,10 +8690,17 @@ def ProgramInfo.vals(+ar: Arena, v: VarVals, x: ProgramInfo) -> Maybe<&2, List<&
 # `vv_miss_first` is the SECOND-MISS row and not the first: `vals` refuses at the
 # first miss, so a fixture that missed on `i` would never look at `j` and the two
 # would be one row. Missing on the SECOND name is what proves the fold STOPS.
+# THE ADDRSPACE IS `ALU`, and that is the whole of what this def is for.
+# UPSTREAM'S `ProgramInfo.vars` -- the field the DELETED `ProgramInfo.vals`
+# READ -- IS THE ALU PARAMS (`if u.op is Ops.PARAM and u.addrspace ==
+# AddrSpace.ALU`, ops.py:1363 at `186fbba2a`), and the port's `vals` reads the
+# ALU SUBSET of `params` for the same reason. SO THE FIXTURE'S PARAMS MUST BE
+# ALU PARAMS, OR THE LANE WOULD BE TESTING A LIST UPSTREAM'S `vals` NEVER HAD.
+# THE ROWS' VALUES DO NOT CHANGE: they are the MAP's values, keyed by NAME.
 def vd_pa.put(p: ParamArg, nm: Maybe<&2, String>) -> ParamArg:
   match p:
     case ParamArg{slot, dtype, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
-      ParamArg{slot, dtype, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
+      ParamArg{slot, dtype, vmin_vmax, multiple_of, nm, S.Aalu{}, device, volatile, image, buffer, bind_on_realize, val}
 
 def vd_pa(slot: U32, nm: Maybe<&2, String>) -> ParamArg:
   vd_pa.put(ParamArg.of(slot, S.weakint()), nm)
@@ -8666,7 +8781,7 @@ def vd_show(m: Maybe<&2, List<&2, H.I64>>) -> String:
 # a default that already has a name.
 def vd.pi.of(pi: ProgramInfo, xs: List<&2, U32>) -> ProgramInfo:
   match pi:
-    case ProgramInfo{g, l, _v, go, o, i}: ProgramInfo{g, l, xs, go, o, i}
+    case ProgramInfo{g, l, _v, go, o, i, tg}: ProgramInfo{g, l, xs, go, o, i, tg}
 
 def vd.pi(xs: List<&2, U32>) -> ProgramInfo: vd.pi.of(ProgramInfo.of(), xs)
 
@@ -8681,6 +8796,648 @@ def vd_rows(+ar: Arena) -> IO(Unit):
     c : Unit <- vd_row("vv_zero", ar, vd_put("i", H.i64_of_i32(0), VarVals.new()), [1])
     d : Unit <- vd_row("vv_none", ar, VarVals.new(), Nil{})
     vd_row("vv_miss_second", ar, vd_put("i", H.i64_of_i32(7), VarVals.new()), [1, 2])
+
+# ===========================================================================
+# `ProgramInfo.launch_dims` -- ops.py:1352 -- AND `ProgramInfo.from_sink`
+# -- ops.py:1358. THE TWO METHODS UPSTREAM'S `ProgramInfo` HAS AT THE PIN.
+#
+# `gates/valsdiv-gate.py` READS UPSTREAM'S CLASS AND PRINTED
+# `upstream-methods: launch_dims, from_sink` on 2026-10-22, which is the same
+# two names this block carries.
+#
+# `launch_dims` COMES FIRST BECAUSE UPSTREAM'S ORDER IS `launch_dims` (1352)
+# THEN `from_sink` (1358), and the `vals` block above is the port of the
+# method upstream had at `186fbba2a` -- the parent of the commit that deleted
+# it -- so the order here is `vals`, `launch_dims`, `from_sink`.
+#
+# THE ORDER INSIDE IS DEPENDENCY ORDER, and Bend has no forward references: a
+# def may only call defs written ABOVE it. That is why every `.of` def is
+# written before the def that calls it, and why the three arena readers are at
+# the top.
+# ===========================================================================
+
+# THE THREE ARENA READS THIS BLOCK MATCHS ON. A `match` MAY NOT SCRUTINISE A
+# COMPUTED VALUE ("give it its own def"), SO EACH ONE GETS ITS OWN DEF.
+def fs.arg(ar: Arena, u: U32) -> Arg:
+  Arena.arg(ar, u)
+
+def fs.op(ar: Arena, u: U32) -> Op:
+  Arena.op(ar, u)
+
+def fs.srcs(ar: Arena, u: U32) -> List<&2, U32>:
+  Arena.srcs(ar, u)
+
+# THE PARAM LIST HOLDS `PSlot` AND NOT THE NODE INDEX, because the sort key is
+# the PARAM's SLOT and `List.sort`'s comparator must be a TOP-LEVEL DEF: a
+# closure is affine and `List.sort` calls its comparator once per comparison,
+# so a comparator that reads the arena cannot be a closure. The key therefore
+# travels BESIDE the value.
+type PSlot is Data:
+  PSlot{slot: U32, node: U32}
+
+# THE COMPARATOR'S PARAMETERS ARE NAMED `a` AND `b` AND NOT `x` AND `y`,
+# because `List.sort`'s comparator is a TEMPLATE and it is INLINED into
+# `List.merge.go`, whose own pattern binders are `x` and `y`.
+def PSlot.le(a: PSlot, b: PSlot) -> Bool:
+  match a b:
+    case PSlot{slot, node} PSlot{s2, n2}: U32.is_le(slot, s2)
+
+# A PARAM's SLOT and whether it is an ALU one -- the two facts `from_sink` asks
+# of a PARAM.
+type PInfo is Data:
+  PInfo{slot: U32, alu: Bool}
+
+def PInfo.slot(p: PInfo) -> U32:
+  match p:
+    case PInfo{slot, alu}: slot
+
+def PInfo.alu(p: PInfo) -> Bool:
+  match p:
+    case PInfo{slot, alu}: alu
+
+# UPSTREAM'S `_params`, `_globals`, `outs` AND `ins`, IN ONE RECORD. `params`
+# holds the PARAM node INDICES (upstream holds the UOps, and the port's
+# `ProgramInfo.params` is `List<&2, U32>`), `globals`/`outs`/`ins` hold SLOTS.
+type FS is Data:
+  FS{params: List<&2, PSlot>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>}
+
+# THE TWO LAUNCH-SIZE TRIPLES. It is also the ANSWER TYPE of `launch_dims`,
+# because a pair is not a `Type` this language can return and upstream's
+# `launch_dims` returns a pair.
+type Sz is Data:
+  Sz{gs: List<&2, H.I64>, ls: List<&2, H.I64>}
+
+# `outs` AND `ins` TOGETHER, because upstream's default (`if not outs and not
+# ins: outs = ins = _globals`) sets BOTH at once.
+type OI is Data:
+  OI{o: List<&2, U32>, i: List<&2, U32>}
+
+# `launch_dims` -- `global_size = tuple([sym_infer(sz, var_vals) for sz in
+# self.global_size])` and the same for `local_size`.
+#
+# `sym_infer` (ops.py:95) IS THE IDENTITY ON AN INT, and `UOp.sym_infer`
+# (ops.py:1169) EVALUATES RENDERED SOURCE WITH `exec` -- the port's `sym_infer`
+# WALL, named at this file's `TODO(p3) ops.py:93 def sym_infer` and at
+# `fold.bend:6540`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
+# `ProgramInfo` THE PORT CAN BUILD AND NOT ONE MORE: the port's `global_size`
+# and `local_size` are `List<&2, H.I64>`, so their elements are INTS.
+#
+# THAT IS THE PORT'S SHAPE AND NOT A SHORTCUT. Upstream's `global_size` is
+# `tuple[int|float, ...]` and its `from_sink` puts a UOp in it when a launch
+# size is SYMBOLIC -- MEASURED, the `fs_special_sym` row of
+# `.agents/slop/programinfo/oracle.py` reads
+#     global_size=(UOp(Ops.CAST, arg=dtypes.weakint, src=(UOp(Ops.PARAM,
+#       arg=ParamArg(-1, dtypes.i32, vmin_vmax=(1, 10), name='nn',
+#       addrspace=AddrSpace.ALU),)),), 1, 1)
+# and the port's `from_sink` REFUSES that sink rather than pretend the size is
+# 1. So every `ProgramInfo` the port can build has INT sizes, and `sym_infer`
+# on an int is the identity on all of them.
+#
+# SO THE VARIABLE VALUES ARE NOT READ HERE, and that is the ONE thing this
+# method does not do. `var_vals` is upstream's parameter and it is the SEAM:
+# `sym_infer` lands HERE.
+def ProgramInfo.launch_dims(v: VarVals, +x: ProgramInfo) -> Sz:
+  Sz{ProgramInfo.global_size(x), ProgramInfo.local_size(x)}
+
+# ---------------------------------------------------------------------------
+# `from_sink` -- ops.py:1358.
+#
+#     @staticmethod
+#     def from_sink(sink:UOp, target:Target=Target()) -> ProgramInfo:
+#       _params: list[UOp] = []
+#       _globals: list[int] = []
+#       outs: list[int] = []
+#       ins: list[int] = []
+#       global_size: list[int] = [1, 1, 1]
+#       local_size: list[int] = [1, 1, 1]
+#       for u in sink.toposort():
+#         if u.op is Ops.PARAM: _params.append(u)
+#         if u.op is Ops.PARAM and u.addrspace != AddrSpace.ALU: _globals.append(u.arg.slot)
+#         if u.op in (Ops.STORE, Ops.LOAD):
+#           if (idx:=u.src[0]).op in (Ops.INDEX, Ops.SHRINK) or (u.src[0].op is Ops.CAST and (idx:=u.src[0].src[0]).op is Ops.INDEX):
+#             if (buf:=idx.src[0].buf_uop).op is Ops.PARAM: (outs if u.op is Ops.STORE else ins).append(buf.arg.slot)
+#         if u.op is Ops.SPECIAL: (local_size if u.arg[0] == 'l' else global_size)[int(u.arg[-1])] = cast(int, u.src[0].substitute({v:v.replace(arg=replace(v.arg, slot=-1)) for v in u.src[0].toposort() if v.op is Ops.PARAM and v.is_variable}).ssimplify())
+#       if not outs and not ins: outs = ins = _globals # if neither is inferred, default to all buffers
+#       return ProgramInfo(tuple(global_size), tuple(local_size),
+#                          tuple(sorted(_params, key=lambda p: p.arg.slot)), tuple(sorted(dedup(_globals))), tuple(sorted(dedup(outs))),
+#                          tuple(sorted(dedup(ins))), target)
+#
+# THE PORT'S ANSWER IS A `Maybe`, AND THE REFUSAL IS MEASURED AND NOT A
+# CONVENIENCE: upstream's `cast(int, ...)` is a LIE in the SYMBOLIC case -- the
+# value in `global_size` is a UOp -- and the port's `global_size` is
+# `List<&2, H.I64>`, which holds INTS. So a sink whose launch size is not a
+# CONST is REFUSED, and `Maybe` is the port's standing spelling for "this
+# cannot be answered here" (the same one `ProgramInfo.vals` uses for an
+# unbound Variable).
+#
+# A `match` MAY NOT SCRUTINISE A COMPUTED VALUE, SO EVERY READ THAT IS
+# MATCHED ON GETS ITS OWN `.of` DEF, and every read that is a BOOL is
+# DISPATCHED WITH `Bool.pick` RATHER THAN A `match`. That is why this block is
+# longer than upstream's twenty lines: Bend has no projection syntax, no
+# `for`, and no mutable list.
+# ---------------------------------------------------------------------------
+
+# THE PARAM'S SLOT AND ITS ADDRSPACE. `ParamArg`'s pattern must name all
+# THIRTEEN fields, so the port's own accessors (`ParamArg.slot`,
+# `ParamArg.addrspace`) are used rather than a second copy of that pattern.
+def fs.pinfo.of(+a: Arg) -> Maybe<&2, PInfo>:
+  match a:
+    case AParam{pa}: Some{PInfo{ParamArg.slot(pa), pa.is_alu.of(a)}}
+    case _: None{}
+
+def fs.pinfo(ar: Arena, u: U32) -> Maybe<&2, PInfo>:
+  fs.pinfo.of(fs.arg(ar, u))
+
+# THE PARAM'S SLOT, for the `buf_uop` answer.
+def fs.slot.of(a: Arg) -> Maybe<&2, U32>:
+  match a:
+    case AParam{pa}:
+      match pa:
+        case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+          Some{slot}
+    case _: None{}
+
+def fs.slot(ar: Arena, u: U32) -> Maybe<&2, U32>:
+  fs.slot.of(fs.arg(ar, u))
+
+# `(buf:=idx.src[0].buf_uop).op is Ops.PARAM` -- upstream asks whether the
+# buffer under the index is a PARAM and then reads its SLOT, so the answer here
+# is the slot and `None{}` is "not a PARAM".
+#
+# THE WALK IS upstream's `while len(s.src) and s.op not in {Ops.BUFFER,
+# Ops.ALLOC, Ops.PARAM, Ops.STAGE, Ops.MSTACK}: s = s.src[0]`. THE TWO ARMS
+# BEFORE IT ANSWER THE SAME QUESTION: an MSELECT (`buf_uop` returns
+# `self.src[0].buf_uop.mselect(self.arg)`) and an MSTACK (`buf_uop` returns an
+# MSTACK) are NOT PARAMs, so `from_sink` records nothing for either -- and the
+# port does not rebuild those nodes, which is the only part of the two arms
+# `from_sink` can see.
+#
+# UPSTREAM'S FOURTH ARM (`if self.base.op is Ops.AFTER: return
+# self.base.src[0].buf_uop.base`) IS THE SAME ANSWER AS THE WALK: `base` skips
+# the MOVEMENT ops and a movement op's `src[0]` IS the node it moves, so the
+# walk and `base` reach the same node, and upstream's `buf_uop` stops at the
+# same set.
+#
+# THE FUEL IS `Arena.budget(ar)` -- NODES PLUS EDGES -- and it is the port's
+# standing bound for a walk with no structural decrease: the walk follows
+# `src[0]` in an ARENA, so nothing about the ARENA gets smaller.
+def fs.buf_slot(fuel: Nat, op: Op, +ar: Arena, +s: U32) -> Maybe<&2, U32>:
+  match fuel:
+    case 0n: None{}
+    case 1n+f:
+      match op:
+        case OpsPARAM{}: fs.slot(ar, s)
+        case OpsBUFFER{}: None{}
+        case OpsALLOC{}: None{}
+        case OpsSTAGE{}: None{}
+        case OpsMSTACK{}: None{}
+        case OpsMSELECT{}: None{}
+        case _: fs.buf_slot(f, fs.op(ar, Arena.src0(ar, s)), ar, Arena.src0(ar, s))
+
+def fs.buf_slot.of(+ar: Arena, +s: U32) -> Maybe<&2, U32>:
+  fs.buf_slot(Arena.budget(ar), fs.op(ar, s), ar, s)
+
+# `(idx:=u.src[0]).op in (Ops.INDEX, Ops.SHRINK) or (u.src[0].op is Ops.CAST
+# and (idx:=u.src[0].src[0]).op is Ops.INDEX)` -- the index node under a STORE
+# or a LOAD. THE CAST ARM IS A SEPARATE DEF because it reads a DIFFERENT node.
+# THE INDEX NODE UNDER A STORE OR A LOAD. UPSTREAM READS `u.src[0]` -- THE
+# STORE'S OWN FIRST SRC -- AND NOT `u`:
+#
+#     if (idx:=u.src[0]).op in (Ops.INDEX, Ops.SHRINK) or
+#        (u.src[0].op is Ops.CAST and (idx:=u.src[0].src[0]).op is Ops.INDEX):
+#
+# AND THE OP THAT IS TESTED IS THE OP OF `u.src[0]`, NOT THE OP OF `u`. THAT
+# WAS WRONG FOR ONE RUN AND **NOTHING CAUGHT IT**: the test said "a STORE is
+# not an INDEX", so NO SLOT WAS EVER RECORDED, and every sink's `outs` AND `ins`
+# CAME OUT EMPTY -- so upstream's `if not outs and not ins` default fired and
+# the rows read `outs=(0) ins=(0)`, WHICH IS NOT EITHER UPSTREAM'S ANSWER.
+# THE CPYTHON DIFF CAUGHT IT, AND THE TWO ROWS THAT CARRY IT ARE `fs_store` AND
+# `fs_load`.
+def fs.idx.cast.of(op: Op, +ar: Arena, +u: U32) -> Maybe<&2, U32>:
+  match op:
+    case OpsINDEX{}: Some{Arena.src0(ar, Arena.src0(ar, u))}
+    case _: None{}
+
+def fs.idx.cast(+ar: Arena, +u: U32) -> Maybe<&2, U32>:
+  fs.idx.cast.of(fs.op(ar, Arena.src0(ar, Arena.src0(ar, u))), ar, u)
+
+def fs.idx.of(op: Op, +ar: Arena, +u: U32) -> Maybe<&2, U32>:
+  match op:
+    case OpsINDEX{}: Some{Arena.src0(ar, u)}
+    case OpsSHRINK{}: Some{Arena.src0(ar, u)}
+    case OpsCAST{}: fs.idx.cast(ar, u)
+    case _: None{}
+
+def fs.idx(+ar: Arena, +u: U32) -> Maybe<&2, U32>:
+  fs.idx.of(fs.op(ar, Arena.src0(ar, u)), ar, u)
+
+# `u.arg[0] == 'l'` -- the FIRST character of a SPECIAL's name. 'l' is ASCII
+# 108 and `Char.to_u32` answers the byte.
+def fs.sp.local.of(cs: List<&2, Char>) -> Bool:
+  match cs:
+    case Nil{}: False{}
+    case c <> _: Char.is_eq(c, Chr{108})
+
+def fs.sp.local(nm: String) -> Bool:
+  fs.sp.local.of(String.to_list(nm))
+
+# `int(u.arg[-1])` -- the LAST character of the name, as a DIMENSION INDEX.
+# The names are "g0", "g1", "g2", "l0", "l1", so the last character is a
+# DIGIT and '0' is ASCII 48.
+def fs.sp.dim.digit.of(is_digit: Bool, c: Char) -> Maybe<&2, U32>:
+  match is_digit:
+    case True{}: Some{U32.sub(Char.to_u32(c), 48)}
+    case False{}: None{}
+
+def fs.sp.dim.digit(+c: Char) -> Maybe<&2, U32>:
+  fs.sp.dim.digit.of(Char.is_digit(c), c)
+
+def fs.sp.dim.last(m: Maybe<&2, Char>) -> Maybe<&2, U32>:
+  match m:
+    case Some{c}: fs.sp.dim.digit(c)
+    case None{}: None{}
+
+def fs.sp.dim.of(cs: List<&2, Char>) -> Maybe<&2, U32>:
+  fs.sp.dim.last(List.last(&2, Char, cs))
+
+def fs.sp.dim(nm: String) -> Maybe<&2, U32>:
+  fs.sp.dim.of(String.to_list(nm))
+
+# `u.src[0].substitute(...).ssimplify()` -- upstream. THE PORT'S `ssimplify` IS
+# `UOp.ssimplify_val`, WHICH ANSWERS A CONST AND A CAST OF A CONST AND NOTHING
+# ELSE, AND THE SYMBOLIC CASE IS WHERE THE PORT REFUSES.
+def fs.sp.val.of(m: Maybe<&1, Const>) -> Maybe<&2, H.I64>:
+  match m:
+    case Some{CInt{i}}: Some{i}
+    case _: None{}
+
+def fs.sp.val(+ar: Arena, u: U32) -> Maybe<&2, H.I64>:
+  fs.sp.val.of(UOp.ssimplify_val(ar, Arena.src0(ar, u)))
+
+# `(local_size if u.arg[0] == 'l' else global_size)[int(u.arg[-1])] = value` --
+# upstream's ONE update. `List.set` REBUILDS the list, so the LAST special for
+# a dimension wins, which is what upstream's assignment does.
+def fs.sp.put.of(local: Bool, dim: Nat, v: H.I64, +sz: Sz) -> Maybe<&2, Sz>:
+  match local:
+    case True{}:
+      match sz:
+        case Sz{gs, ls}: Some{Sz{gs, List.set(&2, H.I64, ls, dim, v)}}
+    case False{}:
+      match sz:
+        case Sz{gs, ls}: Some{Sz{List.set(&2, H.I64, gs, dim, v), ls}}
+
+def fs.sp.put(nm: String, dim: Nat, v: H.I64, sz: Sz) -> Maybe<&2, Sz>:
+  fs.sp.put.of(fs.sp.local(nm), dim, v, sz)
+
+def fs.sp.set(+ar: Arena, u: U32, +nm: String, sz: Sz) -> Maybe<&2, Sz>:
+  Maybe.bind(&2, U32, Sz, fs.sp.dim(nm), dim =>
+    Maybe.bind(&2, H.I64, Sz, fs.sp.val(ar, u), v =>
+      fs.sp.put(nm, U32.to_nat(dim), v, sz)))
+
+# THE SPECIAL'S ARM, AND THE DIFFERENCE BETWEEN "NOT A SPECIAL" AND "A
+# SPECIAL WHOSE SIZE I CANNOT HOLD". THE FIRST IS SKIPPED AND THE SECOND IS
+# REFUSED, and they must not share a spelling: a `Maybe` that answers `None{}`
+# for a node that is not a SPECIAL would REFUSE THE WHOLE SINK, and every sink
+# in the tree has nodes that are not SPECIALs.
+def fs.sp.arg.of(a: Arg, +ar: Arena, +u: U32, sz: Sz) -> Maybe<&2, Sz>:
+  match a:
+    case AStr{nm}: fs.sp.set(ar, u, nm, sz)
+    case _: Some{sz}
+
+def fs.sp.step.of(op: Op, a: Arg, +ar: Arena, +u: U32, sz: Sz) -> Maybe<&2, Sz>:
+  match op:
+    case OpsSPECIAL{}: fs.sp.arg.of(a, ar, u, sz)
+    case _: Some{sz}
+
+def fs.sp.step(+ar: Arena, +u: U32, sz: Sz) -> Maybe<&2, Sz>:
+  fs.sp.step.of(fs.op(ar, u), fs.arg(ar, u), ar, u, sz)
+
+
+# `if u.op is Ops.PARAM: _params.append(u)` AND `if u.op is Ops.PARAM and
+# u.addrspace != AddrSpace.ALU: _globals.append(u.arg.slot)` -- ONE def,
+# because the second test is a CONJUNCTION of the first.
+def fs.param.put(+p: PInfo, +u: U32, +params: List<&2, PSlot>, +globals: List<&2, U32>, +outs: List<&2, U32>, +ins: List<&2, U32>) -> FS:
+  Bool.pick(FS, PInfo.alu(p),
+    FS{List.append(&2, PSlot, params, [PSlot{PInfo.slot(p), u}]), globals, outs, ins},
+    FS{List.append(&2, PSlot, params, [PSlot{PInfo.slot(p), u}]), List.append(&2, U32, globals, [PInfo.slot(p)]), outs, ins})
+
+def fs.param.maybe(ar: Arena, +u: U32, acc: FS) -> Maybe<&2, FS>:
+  match acc:
+    case FS{params, globals, outs, ins}:
+      Maybe.bind(&2, PInfo, FS, fs.pinfo(ar, u), p =>
+        Some{fs.param.put(p, u, params, globals, outs, ins)})
+
+def fs.param(ar: Arena, u: U32, +acc: FS) -> FS:
+  Maybe.default(&2, FS, fs.param.maybe(ar, u, acc), acc)
+
+# `(outs if u.op is Ops.STORE else ins).append(buf.arg.slot)` -- ONE def for
+# the STORE and the LOAD, because the two differ only in WHICH list the slot
+# lands in.
+def fs.io_slot(+ar: Arena, +u: U32) -> Maybe<&2, U32>:
+  Maybe.bind(&2, U32, U32, fs.idx(ar, u), idx =>
+    Maybe.bind(&2, U32, U32, fs.buf_slot.of(ar, Arena.src0(ar, idx)), slot =>
+      Some{slot}))
+
+# A STORE RECORDS AN `out` AND A LOAD RECORDS AN `in` -- upstream's
+# `(outs if u.op is Ops.STORE else ins).append(buf.arg.slot)` (ops.py:1368). The
+# two arms WERE SWAPPED for one run, and the CPython diff caught it: with the
+# swap AND a wrong `outs = ins = _globals` default the two mistakes cancelled
+# on `fs_store` and `fs_load` and the rows read `outs=(0) ins=(0)` -- a
+# SELF-CONSISTENT ANSWER THAT IS NOT EITHER UPSTREAM'S. THE PROOF IS THE PAIR
+# `fs_store` (a STORE and no LOAD) AND `fs_load` (a LOAD and no STORE).
+def fs.io.put(is_store: Bool, slot: U32, params: List<&2, PSlot>, globals: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> FS:
+  match is_store:
+    case True{}: FS{params, globals, List.append(&2, U32, outs, [slot]), ins}
+    case False{}: FS{params, globals, outs, List.append(&2, U32, ins, [slot])}
+
+def fs.io.maybe(+ar: Arena, +u: U32, acc: FS) -> Maybe<&2, FS>:
+  match acc:
+    case FS{params, globals, outs, ins}:
+      Maybe.bind(&2, U32, FS, fs.io_slot(ar, u), slot =>
+        Some{fs.io.put(eq_op(Arena.op(ar, u), OpsSTORE{}), slot, params, globals, outs, ins)})
+
+def fs.io(ar: Arena, u: U32, +acc: FS) -> FS:
+  Maybe.default(&2, FS, fs.io.maybe(ar, u, acc), acc)
+
+# THE `if`s OF UPSTREAM'S LOOP, IN ORDER, AS A CHAIN OF DEFS: a def holds ONE
+# `match`, and each test is on a DIFFERENT node. THE SPECIAL ARM IS IN THE
+# SIZE FOLD BELOW, because it needs its own accumulator.
+def fs.step.io.of(is_io: Bool, +ar: Arena, +u: U32, +acc: FS) -> Maybe<&2, FS>:
+  match is_io:
+    case True{}: Some{fs.io(ar, u, acc)}
+    case False{}: Some{acc}
+
+def fs.step.io(+ar: Arena, +u: U32, +acc: FS) -> Maybe<&2, FS>:
+  fs.step.io.of(Bool.or(eq_op(Arena.op(ar, u), OpsSTORE{}), eq_op(Arena.op(ar, u), OpsLOAD{})), ar, u, acc)
+
+def fs.step.of(is_param: Bool, +ar: Arena, +u: U32, +acc: FS) -> Maybe<&2, FS>:
+  match is_param:
+    case True{}: Some{fs.param(ar, u, acc)}
+    case False{}: fs.step.io(ar, u, acc)
+
+def fs.step(+ar: Arena, +u: U32, +acc: FS) -> Maybe<&2, FS>:
+  fs.step.of(eq_op(Arena.op(ar, u), OpsPARAM{}), ar, u, acc)
+
+# THE FOLD OVER `sink.toposort()`. `Maybe.bind`'s LAMBDA IS THE CONTINUATION,
+# so the whole fold is one def with one `match` and one bind -- the same shape
+# as `vals.step` above.
+def fs.go(+ar: Arena, todo: List<&2, U32>, +acc: FS) -> Maybe<&2, FS>:
+  match todo:
+    case Nil{}: Some{acc}
+    case u <> t:
+      Maybe.bind(&2, FS, FS, fs.step(ar, u, acc), a2 => fs.go(ar, t, a2))
+
+# THE SIZE FOLD -- upstream's SPECIAL arm, over the same toposort.
+# THE SIZE FOLD -- upstream's SPECIAL arm, over the same toposort. IT IS ONE
+# DEF AND NOT TWO because the step CONTINUES THE FOLD, and a def that calls
+# the fold it is a step of is a CYCLE, which this language refuses.
+def fs.sz.go(+ar: Arena, todo: List<&2, U32>, +sz: Sz) -> Maybe<&2, Sz>:
+  match todo:
+    case Nil{}: Some{sz}
+    case +u <> t:
+      Maybe.bind(&2, Sz, Sz, fs.sp.step(ar, u, sz), s2 => fs.sz.go(ar, t, s2))
+
+# `sorted(dedup(...))` -- the three slot lists. `H.dedup_u32` IS upstream's
+# `dedup` (`list(dict.fromkeys(x))`: first occurrence wins, order retained).
+def fs.slots(xs: List<&2, U32>) -> List<&2, U32>:
+  List.sort(U32, U32.is_le, H.dedup_u32(xs))
+
+# `sorted(_params, key=lambda p: p.arg.slot)` -- the SORT, and then the
+# mapping back to node indices.
+# THE HEAD GOES FIRST AND NOT LAST, and `List.append` is `xs ++ ys`, so the
+# order of the two arguments is the whole of this def. `ax_names_str.go` is the
+# same shape: `List.append(&2, String, [AxisType.name(a)], ax_names_str.go(t))`.
+def fs.nodes(xs: List<&2, PSlot>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: Nil{}
+    case PSlot{slot, node} <> t: List.append(&2, U32, [node], fs.nodes(t))
+
+def fs.params(xs: List<&2, PSlot>) -> List<&2, U32>:
+  fs.nodes(List.sort(PSlot, PSlot.le, xs))
+
+# `if not outs and not ins: outs = ins = _globals` -- upstream's default when
+# NEITHER is inferred: every buffer is both.
+#
+# **AND NOT** IS THE WHOLE OF THIS DEF, and it was `Bool.or` for one run and
+# the CPython diff caught it: `Bool.or` fires when EITHER list is empty, so a
+# sink with a STORE and no LOAD would have had its `ins` overwritten with the
+# globals. Upstream's default fires only when BOTH are empty. THE PROOF IS
+# `fs_store` (a STORE and no LOAD) AND `fs_load` (a LOAD and no STORE).
+def fs.oi(+globals: List<&2, U32>, +outs: List<&2, U32>, +ins: List<&2, U32>) -> OI:
+  Bool.pick(OI, Bool.and(List.is_empty(&2, U32, outs), List.is_empty(&2, U32, ins)),
+    OI{globals, globals},
+    OI{outs, ins})
+
+# THE `ProgramInfo` UPSTREAM RETURNS.
+def fs.finish.pair(oi: OI, gs: List<&2, H.I64>, ls: List<&2, H.I64>, params: List<&2, U32>, globals: List<&2, U32>, tgt: Target) -> ProgramInfo:
+  match oi:
+    case OI{o, i}: ProgramInfo{gs, ls, params, globals, fs.slots(o), fs.slots(i), tgt}
+
+def fs.finish(acc: FS, sz: Sz, tgt: Target) -> ProgramInfo:
+  match acc:
+    case FS{params, +globals, outs, ins}:
+      match sz:
+        case Sz{gs, ls}:
+          fs.finish.pair(fs.oi(globals, outs, ins), gs, ls, fs.params(params), fs.slots(globals), tgt)
+
+def fs.one() -> H.I64: H.i64_of_i32(1)
+
+def fs.ones() -> List<&2, H.I64>: [fs.one(), fs.one(), fs.one()]
+
+# THE ENTRY. `ProgramInfo.from_sink(sink, target)` -- ops.py:1358.
+def ProgramInfo.from_sink(+ar: Arena, +sink: U32, tgt: Target) -> Maybe<&2, ProgramInfo>:
+  Maybe.bind(&2, FS, ProgramInfo, fs.go(ar, UOp.toposort(Arena.budget(ar), ar, sink), FS{Nil{}, Nil{}, Nil{}, Nil{}}), acc =>
+    Maybe.bind(&2, Sz, ProgramInfo, fs.sz.go(ar, UOp.toposort(Arena.budget(ar), ar, sink), Sz{fs.ones(), fs.ones()}), sz =>
+      Some{fs.finish(acc, sz, tgt)}))
+
+# ==== the `fs_*` fixture and rows =========================================
+#
+# THE FIXTURE IS ONE ARENA WITH EVERY NODE IN IT, and each fixture is a SINK
+# over a different set of them. THE NODE MAP IS BELOW, and the indices are the
+# positions in the arena's node list (`Arena.empty` spends slot 0 on the
+# bottom, so node k is at index k).
+#
+#   0  bottom            1  PARAM slot 0 GLOBAL      "g0"
+#   2  PARAM slot 1 GLOBAL      "g1"          3  PARAM slot 2 GLOBAL  "g2"
+#   4  PARAM slot 3 GLOBAL      "g3"          5  PARAM slot 2 ALU "b"
+#   6  PARAM slot 3 ALU "c"     7  PARAM slot 1 ALU "a"
+#   8  CONST 0           9  CONST 1          10  CONST 16        11  CONST 4
+#  12  INDEX (1, 8)     13  INDEX (2, 8)     14  INDEX (3, 8)     15  INDEX (4, 8)
+#  16  STORE (12, 9)    17  LOAD (13)        18  STORE (14, 9)    19  LOAD (15)
+#  20  CAST (12)        21  STORE (20, 9)    22  SHRINK (1)       23  STORE (22, 9)
+#  24  SPECIAL (10) "g0"     25  SPECIAL (11) "l0"    26  SPECIAL (5) "g0"
+#  27  SINK ()          28  SINK (8)         29  SINK (5)         30  SINK (1)
+#  31  SINK (16)        32  SINK (17)        33  SINK (18, 19)    34  SINK (6, 7, 5)
+#  35  SINK (1, 1)      36  SINK (24, 25)    37  SINK (26)        38  SINK (21)
+#  39  SINK (23)        40  PARAM slot 0 GLOBAL "h"   41  SINK (1, 40)
+#
+# EVERY FIXTURE IS ONE OF THE WAYS `from_sink` COULD BE WRONG, and each has a
+# CPython row with the same name in `.agents/slop/programinfo/oracle.py`:
+#
+#   fs_empty        A SINK WITH NO SRCS AT ALL -- no params, no sizes.
+#   fs_noparam      A SINK WHOSE ONLY SRC IS A CONST -- no PARAM anywhere.
+#   fs_alu          A SINK WITH ONE ALU PARAM: `params` holds it and `globals`
+#                   does not, so the ALU/GLOBAL SPLIT IS VISIBLE.
+#   fs_global       A SINK WITH ONE GLOBAL PARAM and no STORE or LOAD: upstream's
+#                   `if not outs and not ins: outs = ins = _globals` fires.
+#   fs_store        A STORE into INDEX(PARAM) -- `outs`.
+#   fs_load         A LOAD out of INDEX(PARAM) -- `ins`.
+#   fs_store_load   BOTH, so `outs` and `ins` are separate and sorted.
+#   fs_order        THREE ALU PARAMs WITH SLOTS 3, 1, 2 -- the SORT.
+#   fs_dup          THE SAME PARAM TWICE -- the toposort's cache.
+#   fs_dupslot      TWO PARAMS WITH THE SAME SLOT -- the DEDUP of the slot lists
+#                   (`sorted(dedup(_globals))`), which `fs_dup` cannot reach
+#                   because the toposort visits a node once.
+#   fs_special      TWO SPECIALs, "g0" over 16 and "l0" over 4 -- the sizes.
+#   fs_special_sym  A SPECIAL OVER A VARIABLE -- the SYMBOLIC case, which the
+#                   port REFUSES and CPython answers with a UOp in `global_size`.
+#   fs_cast_index   A STORE of a CAST of an INDEX -- the CAST arm.
+#   fs_shrink       A STORE of a SHRINK -- the SHRINK arm.
+def fs.gparam(slot: U32) -> ParamArg:
+  ParamArg.of(slot, S.int32())
+
+# AN ALU PARAM WITH A SLOT AND A NAME: `UOp.param(slot, dtype, name=nm,
+# addrspace=AddrSpace.ALU, vmin_vmax=(1, 10))`.
+# A GLOBAL PARAM WITH A NAME. It is a DIFFERENT NODE from `fs.gparam(0)` --
+# the intern key is (op, src, arg, tag) and the NAME is IN THE ARG -- and it has
+# the SAME SLOT, which is what makes `fs_dupslot` the row the DEDUP needs.
+def fs.gparam_named(slot: U32, nm: String) -> ParamArg:
+  ParamArg{slot, S.int32(), None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
+
+def fs.aparam(slot: U32, nm: String) -> ParamArg:
+  ParamArg{slot, S.int32(), Some{PyRange{H.i64_of_i32(1), H.i64_of_i32(10)}}, Some{1}, Some{nm},
+    S.Aalu{}, None{}, False{}, None{}, None{}, False{}, None{}}
+
+def fs.ar() -> Arena:
+  Arena{[
+    Arena.bottom(),
+    Node{OpsPARAM{}, Nil{}, AParam{fs.gparam(0)}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{fs.gparam(1)}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{fs.gparam(2)}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{fs.gparam(3)}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{fs.aparam(2, "b")}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{fs.aparam(3, "c")}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{fs.aparam(1, "a")}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(0)}}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(1)}}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(16)}}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(4)}}, TNone{}},
+    Node{OpsINDEX{}, [1, 8], ANone{}, TNone{}},
+    Node{OpsINDEX{}, [2, 8], ANone{}, TNone{}},
+    Node{OpsINDEX{}, [3, 8], ANone{}, TNone{}},
+    Node{OpsINDEX{}, [4, 8], ANone{}, TNone{}},
+    Node{OpsSTORE{}, [12, 9], ANone{}, TNone{}},
+    Node{OpsLOAD{}, [13], ANone{}, TNone{}},
+    Node{OpsSTORE{}, [14, 9], ANone{}, TNone{}},
+    Node{OpsLOAD{}, [15], ANone{}, TNone{}},
+    Node{OpsCAST{}, [12], ADt{S.int32()}, TNone{}},
+    Node{OpsSTORE{}, [20, 9], ANone{}, TNone{}},
+    Node{OpsSHRINK{}, [1], ATuple{Nil{}}, TNone{}},
+    Node{OpsSTORE{}, [22, 9], ANone{}, TNone{}},
+    Node{OpsSPECIAL{}, [10], AStr{"g0"}, TNone{}},
+    Node{OpsSPECIAL{}, [11], AStr{"l0"}, TNone{}},
+    Node{OpsSPECIAL{}, [5], AStr{"g0"}, TNone{}},
+    Node{OpsSINK{}, Nil{}, AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [8], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [5], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [1], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [16], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [17], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [18, 19], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [6, 7, 5], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [1, 1], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [24, 25], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [26], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [21], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsSINK{}, [23], AKernel{KernelInfo.of()}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{fs.gparam_named(0, "h")}, TNone{}},
+    Node{OpsSINK{}, [1, 40], AKernel{KernelInfo.of()}, TNone{}}], [0]}
+
+# THE PRINTERS. A U32 LIST, AN I64 LIST, AND THE TARGET.
+def fs.u32_text.go(+ys: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ys:
+    case Nil{}: acc
+    case h <> t: fs.u32_text.go(t, List.append(&2, String, acc, [U32.show(h)]))
+
+def fs.u32_text(ys: List<&2, U32>) -> String:
+  String.concat(["(", String.join(fs.u32_text.go(ys, Nil{}), ", "), ")"])
+
+# THE DECIMAL OF AN I64. The port's own `H.i64_text` is the `hi:lo` form --
+# "a dump the oracle can diff line for line" -- and a launch size of 1 reading
+# as "0:1" is a row nobody can read, so this def prints the DECIMAL when the
+# high word is zero (which every launch size is) and the `hi:lo` form when it
+# is not.
+def fs.i64_dec.of(hi: U32, lo: U32) -> String:
+  match hi:
+    case 0: U32.show(lo)
+    case _: String.concat([U32.show(hi), ":", U32.show(lo)])
+
+def fs.i64_dec(+x: H.I64) -> String:
+  fs.i64_dec.of(H.hi32(x), H.lo32(x))
+
+def fs.i64_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, String>:
+  match ys:
+    case Nil{}: acc
+    case h <> t: fs.i64_text.go(t, List.append(&2, String, acc, [fs.i64_dec(h)]))
+
+def fs.i64_text(ys: List<&2, H.I64>) -> String:
+  String.concat(["(", String.join(fs.i64_text.go(ys, Nil{}), ", "), ")"])
+
+def fs.target_text(t: Target) -> String:
+  match t:
+    case Target{device, renderer, arch, iface, indices}:
+      String.concat(["('", device, "', '", renderer, "', '", arch, "', '", iface, "', '", indices, "')"])
+
+# THE SLOTS OF THE PARAM NODES. `ProgramInfo.params` HOLDS THE NODE INDICES --
+# upstream holds the UOps -- and the row prints the SLOTS, because a node index
+# is an artefact of the arena and a slot is the fact.
+def fs.pslot(ar: Arena, u: U32) -> U32:
+  Maybe.default(&2, U32, fs.slot(ar, u), 0)
+
+def fs.pslots.go(+ar: Arena, xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: fs.pslots.go(ar, t, List.append(&2, U32, acc, [fs.pslot(ar, h)]))
+
+def fs.pslots(ar: Arena, xs: List<&2, U32>) -> List<&2, U32>:
+  fs.pslots.go(ar, xs, Nil{})
+
+# THE ROW. `global_size`, `local_size`, `params`, `globals`, `outs`, `ins` AND
+# `target` -- upstream's SEVEN fields, in upstream's order.
+def fs.show(+ar: Arena, +pi: ProgramInfo) -> String:
+  String.concat([
+    "global_size=", fs.i64_text(ProgramInfo.global_size(pi)),
+    " local_size=", fs.i64_text(ProgramInfo.local_size(pi)),
+    " params=", fs.u32_text(fs.pslots(ar, ProgramInfo.params(pi))),
+    " globals=", fs.u32_text(ProgramInfo.globals(pi)),
+    " outs=", fs.u32_text(ProgramInfo.outs(pi)),
+    " ins=", fs.u32_text(ProgramInfo.ins(pi)),
+    " target=", fs.target_text(ProgramInfo.target(pi))])
+
+def fs.row.of(m: Maybe<&2, ProgramInfo>, nm: String, +ar: Arena) -> IO(Unit):
+  match m:
+    case None{}: srow(nm, "REFUSED")
+    case Some{pi}: srow(nm, fs.show(ar, pi))
+
+def fs.row(nm: String, +ar: Arena, sink: U32) -> IO(Unit):
+  fs.row.of(ProgramInfo.from_sink(ar, sink, Target.of()), nm, ar)
+
+def fs.rows(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- fs.row("fs_empty", ar, 27)
+    b : Unit <- fs.row("fs_noparam", ar, 28)
+    c : Unit <- fs.row("fs_alu", ar, 29)
+    d : Unit <- fs.row("fs_global", ar, 30)
+    e : Unit <- fs.row("fs_store", ar, 31)
+    f : Unit <- fs.row("fs_load", ar, 32)
+    g : Unit <- fs.row("fs_store_load", ar, 33)
+    h : Unit <- fs.row("fs_order", ar, 34)
+    i : Unit <- fs.row("fs_dup", ar, 35)
+    j : Unit <- fs.row("fs_special", ar, 36)
+    k : Unit <- fs.row("fs_special_sym", ar, 37)
+    l : Unit <- fs.row("fs_cast_index", ar, 38)
+    m : Unit <- fs.row("fs_shrink", ar, 39)
+    fs.row("fs_dupslot", ar, 41)
 
 def UOp.set.end.of(e: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
   match e:
@@ -8809,6 +9566,7 @@ def main() -> IO(Unit):
   do IO<Unit>:
     u0 : Unit <- set_rows(set_ar())
     x0 : Unit <- vd_rows(vd_arena())
+    w1 : Unit <- fs.rows(fs.ar())
     y0 : Unit <- vrn_rows(Arena.empty())
     w0 : Unit <- rra.rows(rra.arena())
     v0 : Unit <- vr.expr.rows(vr.arena())
