@@ -141,7 +141,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
   **`substrate-start == substrate-end == live == 62c5dd903b864c69dcb4dc9421b84c67ac41f65408e57a7bd93ef90a0ba6fe79`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=73a1c96c2d53e1ecd5f90d1d9470b0a379ceda45` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=b5c16d646b8ed992c2e238bca6a9ae4cd8800f57` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
   `b5c16d646`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
   **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
