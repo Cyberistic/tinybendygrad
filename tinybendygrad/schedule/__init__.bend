@@ -75,7 +75,9 @@
 #   last conjunct is `self._shape == ()`. For a PARAM that is ops.py:368, which
 #   is `image`/`size` off the arg and nothing else -- so it is `fold.bend`'s
 #   `param_shape`, NOT the fold table, and no `Folded` is threaded anywhere in
-#   this file. TODO(p3) ops.py:3370 stays in ops.bend.
+#   this file.  TODO(p3) ops.py:323  `UOp._shape` -- STAYS IN ops.bend.
+#   (ops.py:3370 DOES NOT EXIST at the pin: `tinygrad/uop/ops.py` is 1926 lines
+#   there.  `_shape` is ops.py:323 and `shape` is ops.py:439.)
 # * `UOp.buf_uop` (ops.py:925) is a fuel fold here and NOT the recursive property
 #   it is in Python, because of the two arms that CONSTRUCT:
 #       if self.op is Ops.MSELECT: return self.src[0].buf_uop.mselect(self.arg)
@@ -150,10 +152,13 @@
 #    has no such cycle.
 #
 # ---------------------------------------------------------------------------
-# THE GATE. 71 rows, and EVERY expectation is the printed output of
-# `.agents/slop/notes/sched-truth.py` (fx1, fx2, fx3, the helper rows) or of
-# `python3` running `tinygrad.schedule.create_schedule` on the fixtures built
-# here (fx5). Both lanes print the same 71 lines.
+# THE GATE. 109 rows, and EVERY expectation is CPython's printed output: the
+# oracle is `.agents/slop/schedport/oracle.py`, which builds the SAME fixtures
+# here and runs the PIN's `tinygrad.schedule.create_schedule` on them.  It
+# answers 80 of the 109 rows; the other 29 are the port's OWN bookkeeping (the
+# arena counts and the four dicts' counts), which CPython has no name for.
+# The floor is `oracles/schedule-bodies/BEFORE-rows.rows` (81 rows) and the
+# gate is `checks/sb-gate.sh`.
 #
 #   fx1 `topo_n 19 lin_n 2 lin_op LINEAR marks 12 nsrcs 22
 #        lin_src_ops [['SINK','BUFFER'],['SINK','BUFFER']]`
@@ -467,6 +472,37 @@ def sc_split(+ar: O.Arena, +after: U32) -> Split:
 #
 # `sc_topo` reuses ops.bend's `Topo` RECORD and `Arena.push_srcs`, so the only
 # thing it copies is the loop.
+#
+# ---------------------------------------------------------------------------
+# TWO UPSTREAM RULES THIS COPY DROPPED, BOTH MEASURED AGAINST CPython's
+# `tinygrad.schedule.create_schedule` -- the oracle is
+# `.agents/slop/schedport/oracle.py`, built on the pin's `tinygrad/`.
+#
+# 1. THE `KernelInfo` ARM.  Upstream, ops.py:1915-1918:
+#
+#         def gate_kernel_sink(x:UOp) -> bool:
+#           if x.op is Ops.LINEAR: return False
+#           if x.op is Ops.SINK and isinstance(x.arg, KernelInfo): return False
+#           return True
+#
+#     The port's `sc_gate.of` answered True for EVERY SINK, so a SINK carrying
+#     a `KernelInfo` -- which is what a KERNEL BODY is -- was GATED IN, and the
+#     whole subtree under it was visited.  The reader was already here
+#     (`sc_gate.ker`, the very next def), so the rule was present and NOT
+#     APPLIED.  CPython's answer on the `fx8` fixture is ZERO kernels and the
+#     port's was ONE: A KERNEL THAT CPYTHON DOES NOT SCHEDULE.  The rows are
+#     `gate_ki` and `gate_plain` and the fixture is `fx8`.
+#
+# 2. `src_without_body` AND THE PUSH ORDER.  Upstream's toposort
+#     (ops.py:289-301) walks `node.src_without_body` -- `self.src[1:]` for a
+#     CALL and `self.src` otherwise (ops.py:1317) -- so it NEVER descends into
+#     a CALL's body, and it pushes the srcs REVERSED so that the FIRST src is
+#     popped first.  The port's copy pushed ALL srcs, in order, so it
+#     descended into every kernel body AND visited the srcs in the opposite
+#     order.  Both are visible: `fx7` is a fixture whose AFTER lives only
+#     inside a CALL's body (CPython schedules ONE kernel, the port scheduled
+#     TWO), and `fx2_topo_marks` is the toposort's own ORDER -- the REORDER
+#     ARM, as a row.
 # ===========================================================================
 def sc_gate.ker(arg: O.Arg) -> Bool:
   match arg:
@@ -476,7 +512,7 @@ def sc_gate.ker(arg: O.Arg) -> Bool:
 def sc_gate.of(op: O.Op, arg: O.Arg) -> Bool:
   match op arg:
     case O.OpsLINEAR{} _ : False{}
-    case O.OpsSINK{} a   : True{}
+    case O.OpsSINK{} a   : Bool.not(sc_gate.ker(a))
     case _ _             : True{}
 
 def sc_gate(+ar: O.Arena, +i: U32) -> Bool:
@@ -486,9 +522,21 @@ def sc_topo.cx(rest: List<&2, O.Frame>, t: O.Topo) -> O.Topo:
   match t:
     case O.Topo{cache, stack, calls}: O.Topo{cache, rest, calls}
 
+# UPSTREAM PUSHES THE SRCS REVERSED, so the FIRST src is the first popped.
+# `O.Arena.push_srcs` PREPENDS each src in list order, so the LAST src would
+# be popped first -- the opposite.  Passing the REVERSED src list restores
+# upstream's order: `push_srcs([s_n..s_1])` leaves `s_1` on the head.
+#
+# THE SRCS ARE `src_without_body` -- upstream's `enter_calls=False` reader
+# (ops.py:1317) -- because `create_schedule` calls `toposort(gate_kernel_sink)`
+# with no `enter_calls`.  `Topo`'s `calls` field is that flag, and this copy
+# always runs the `False{}` side of it, so the field and the reader agree.
+def sc_topo.push(ar: O.Arena, +n: U32, rest: List<&2, O.Frame>) -> List<&2, O.Frame>:
+  O.Arena.push_srcs(O.Arena.src_without_body(ar, n), O.Frame{n, True{}} <> rest)
+
 def sc_topo.keep2(ar: O.Arena, +n: U32, cache: List<&2, U32>, calls: Bool, rest: List<&2, O.Frame>, ok: Bool) -> O.Topo:
   match ok:
-    case True{} : O.Topo{cache, O.Arena.push_srcs(sc_srcs(ar, n), O.Frame{n, True{}} <> rest), calls}
+    case True{} : O.Topo{cache, sc_topo.push(ar, n, rest), calls}
     case False{}: O.Topo{cache, rest, calls}
 
 def sc_topo.keep(ok: Bool, ar: O.Arena, +n: U32, rest: List<&2, O.Frame>, t: O.Topo) -> O.Topo:
@@ -524,8 +572,11 @@ def sc_topo.go(fuel: Nat, +ar: O.Arena, t: O.Topo) -> List<&2, U32>:
     case 0n   : O.Topo.cache_of(t)
     case 1n+p : sc_topo.go(p, ar, sc_topo(ar, t))
 
+# `calls` is upstream's `enter_calls`, and `create_schedule` calls
+# `sched_sink.toposort(gate_kernel_sink)` -- NO `enter_calls`, so `False{}`.
+# `True{}` here is what made the port descend into every kernel body.
 def sc_topo_of(fuel: Nat, +ar: O.Arena, +self: U32) -> List<&2, U32>:
-  sc_topo.go(fuel, ar, sc_topo(ar, O.Topo{Nil{}, List.append(&2, O.Frame, Nil{}, [O.Frame{self, False{}}]), True{}}))
+  sc_topo.go(fuel, ar, sc_topo(ar, O.Topo{Nil{}, List.append(&2, O.Frame, Nil{}, [O.Frame{self, False{}}]), False{}}))
 
 # ===========================================================================
 # `UOp.is_bound_var` -- ops.py:1023 -- which is `is_variable` (ops.py:1020) plus
@@ -1460,9 +1511,16 @@ def copy_kernel_to_store(disk: List<&2, U32>, +ar: O.Arena, +call: U32, +dst: U3
 # a bottom-up rewrite over FOUR matchers, two of them imported at :168-170.
 # Naming a def `simplify_copy_kernel` that answers the guard's BOOLEAN would put
 # a WRONG ANSWER under an UPSTREAM NAME and a caller would take it for the rule.
-#   TODO(p3) __init__.py:171  the four-matcher bottom_up rewrite -- THE WALL.
-#   TODO(p3) __init__.py:168-170  `sym` / `pm_flatten_range` /
+#   TODO(p3) __init__.py:167  the four-matcher rewrite -- THE WALL.
+#   TODO(p3) __init__.py:164-166  `sym` / `pm_flatten_range` /
 #     `pm_simplify_ranges` -- no port. `pm_mops` is `schedule/prepare.bend`'s.
+#   (ops.py:171 is the COMMENT `# simplify copy kernels`; the rewrite itself is
+#   `sink = graph_rewrite(ast, sym+pm_mops+pm_flatten_range+pm_simplify_ranges,
+#   init_ctx=MapCtx, name="simplify ranges in copy")` at __init__.py:167 -- and
+#   it is TOP-DOWN: upstream's `graph_rewrite` takes `bottom_up=False` by
+#   default (ops.py:1886) and this call does not pass it.  Only the OTHER
+#   rewrite in this file, `canonicalize_call_body` at __init__.py:236, is
+#   bottom_up.)
 def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: U32) -> Bool:
   cks_fire(disk, ar, dst, src)
 
@@ -1488,7 +1546,10 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 # THE THREE-WAY SELECTOR IS ONE `match` AND NOT A NESTED ONE, because a `match`
 # nested inside a `case h <> t:` LIST arm is REFUSED in bend 2.0.34 (this file's
 # rule 1). Class 1 is "a PARAM with a device we have not kept yet".
-#   TODO(p3) __init__.py:159  the RuntimeError -- a raise.
+#   TODO(p3) __init__.py:155  the RuntimeError -- a raise.
+#   (__init__.py:159 is `return call.replace(src=(dst.store(src),) +
+#   call.src[1:])`, the LAST LINE of `copy_kernel_to_store`; the RuntimeError
+#   is at __init__.py:155, inside `assert_all_same_devices` at :153-155.)
 # ---------------------------------------------------------------------------
 type Ads is Data:
   Ads{ds: List<&2, U32>}
@@ -1730,9 +1791,17 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 # `BAD` is an AFTER with a SINK source, which `_split_after` DROPS here and
 # which Python raises on.
 #
-#   fx1     1 C1  2 SPa  3 A1   4 SPb  5 B1   6 C0   7 ST1  8 BODY1  9 C2
-#          10 ST2 11 BODY2 12 VB 13 Vu 14 K1 15 K2 16 E2 17 AF1 18 AF2 19 SINKA
-#          20 TOP1 21 BAD            (so `fx1_nodes`=21 and `fx1_topo`=19)
+#   fx1     0 NOOP 1 C1  2 SPa  3 A1   4 SPb  5 B1   6 C0   7 ST1  8 BODY1
+#          9 C2  10 ST2 11 BODY2 12 VB 13 K1 14 K2 15 E2 16 AF1 17 AF2 18 SINKA
+#          19 TOP1 20 BAD            (so `fx1_nodes`=21 and `fx1_topo`=19)
+#   THE TABLE IS A READING, NOT A CONTRACT.  It was written against the
+#   substrate of 2026-10-07, whose `param_src` DROPPED the size CONST and the
+#   PARAM's STACK (ops.bend:3035-3036); `UOp.new.param` interns BOTH
+#   (ops.bend:3062-3064), so every index after the first PARAM moved and 18
+#   rows were reading the WRONG NODE.  The rows no longer READ this table: they
+#   read GRAPH POSITIONS (`fx1.a()`, `fx2.kb()`, ...), which cannot move.  The
+#   three `fx*_nodes` rows are the only rows that still count arena slots, and
+#   they are port-only bookkeeping.
 #   fx2     1 C1  2 SPa  3 A2   4 SPx  5 X2   6 C0   7 ST1  8 BODY1  9 C2
 #          10 ST2 11 BODY2 12 C3 13 ST3 14 BODY3 15 Ka 16 Kb 17 Kc 18 AFa 19 AFb
 #          20 AFc 21 SINKA 22 TOP2
@@ -1778,25 +1847,13 @@ def fx1() -> O.Found:
   +d1 = g_body(1, O.Found.ar(b))
   +d2 = g_body(2, O.Found.ar(d1))
   +vb = O.UOp.new.param(O.Found.ar(d2), O.OpsPARAM{}, None{}, O.AParam{g_pv("v", Some{O.CInt{H.i64_of_i32(3)}})}, O.TNone{})
-  +vu = O.UOp.new.param(O.Found.ar(vb), O.OpsPARAM{}, None{}, O.AParam{g_pv("v", None{})}, O.TNone{})
-  +k1 = O.UOp.new(O.Found.ar(vu), O.OpsCALL{}, [O.Found.i(d1), O.Found.i(a)], O.ANone{}, O.TNone{})
+  +k1 = O.UOp.new(O.Found.ar(vb), O.OpsCALL{}, [O.Found.i(d1), O.Found.i(a)], O.ANone{}, O.TNone{})
   +k2 = O.UOp.new(O.Found.ar(k1), O.OpsCALL{}, [O.Found.i(d2), O.Found.i(b), O.Found.i(vb)], O.ANone{}, O.TNone{})
   +e2 = O.UOp.new(O.Found.ar(k2), O.OpsEND{}, [O.Found.i(k2)], O.ANone{}, O.TNone{})
   +f1 = O.UOp.new(O.Found.ar(e2), O.OpsAFTER{}, [O.Found.i(a), O.Found.i(k1)], O.ANone{}, O.TNone{})
   +f2 = O.UOp.new(O.Found.ar(f1), O.OpsAFTER{}, [O.Found.i(f1), O.Found.i(e2)], O.ANone{}, O.TNone{})
   +sa = O.UOp.sink(O.Found.ar(f2), [O.Found.i(a)])
   O.UOp.sink(O.Found.ar(sa), [O.Found.i(f2), O.Found.i(sa)])
-
-# `UOp(Ops.AFTER, src=(A1, K1, UOp(Ops.SINK, src=(A1,))))` -- the AFTER whose
-# third source `_split_after` DROPS here and which Python raises on. Interned in
-# fx1's arena and deliberately NOT reachable from the sink, so `fx1_nodes` (21) is
-# two larger than `fx1_topo` (19, which is `sched-truth.py`'s printed `topo_n`):
-# `Vu` and `BAD` are interned and nothing reaches them.
-def fx1.bad() -> O.Found:
-  O.UOp.new(O.Found.ar(fx1()), O.OpsAFTER{}, [3, 14, 19], O.ANone{}, O.TNone{})
-
-# BAD's arena -- one node longer than `fx1.ar()`, because BAD lives at index 21.
-def fx1.arb() -> O.Arena: O.Found.ar(fx1.bad())
 
 # fx2: three kernels on TWO states, A2 written twice. Ka and Kb both write A2, so
 # Kb READS the state AFa superseded and Ka must run AFTER it -- the WAR edge.
@@ -1853,24 +1910,143 @@ def fx4() -> O.Found:
   +st = O.UOp.new(O.Found.ar(c1), O.OpsSTAGE{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(st), O.OpsMSTACK{}, [O.Found.i(a), O.Found.i(a)], O.ANone{}, O.TNone{})
 
-# `fx3.after_after` -- an AFTER whose SECOND source is an AFTER, so `_split_after`
-#'s dep half is exercised. Interned in fx3's arena, not reachable from the sink.
-def fx3.after_after() -> O.Found:
-  O.UOp.new(O.Found.ar(fx3()), O.OpsAFTER{}, [10, 9], O.ANone{}, O.TNone{})
-
+# ===========================================================================
+# THE FIXTURE ADDRESSES.  A node is named by its PLACE IN THE GRAPH and NEVER
+# by its arena index.
+#
+# WHY, MEASURED.  The arena is a MOVING TARGET: `UOp.new.param` interns the
+# shape node that the old `param_src` DROPPED (ops.bend:3035-3036 and
+# :3062-3064), so one substrate change moved every index after the first
+# PARAM.  The port's rows were ADDRESSED by index and 18 of them went on
+# reading the WRONG NODE -- `unwrap_A1` answered 9 (a CONST) where CPython
+# answers 1 (a BUFFER) -- and the gate did not see it because its CPython
+# oracle is gone (see the header).  A graph position cannot move.
+#
+# The addresses below are therefore DERIVED, and every row that used an index
+# now reads a name.  `fx1.bad` and `fx3.after_after` intern ONE node into the
+# fixture's arena, so their srcs are addresses in THAT arena -- and they are
+# derived the same way.
+# ===========================================================================
 def fx1.ar() -> O.Arena: O.Found.ar(fx1())
 def fx1.top() -> U32: O.Found.i(fx1())
 def fx2.ar() -> O.Arena: O.Found.ar(fx2())
 def fx2.top() -> U32: O.Found.i(fx2())
 def fx3.ar() -> O.Arena: O.Found.ar(fx3())
 def fx3.top() -> U32: O.Found.i(fx3())
-def fx3.arb() -> O.Arena: O.Found.ar(fx3.after_after())
-def fx3.aa() -> U32: O.Found.i(fx3.after_after())
 def fx5.ar() -> O.Arena: O.Found.ar(fx5())
 def fx5.top() -> U32: O.Found.i(fx5())
 def fx4.ar() -> O.Arena: O.Found.ar(fx4())
-def fx4.st() -> U32: U32.sub(O.Found.i(fx4()), 1)
 def fx4.ms() -> U32: O.Found.i(fx4())
+
+# fx1: TOP = SINK(AF2, SA); AF2 = AFTER(AF1, E2); AF1 = AFTER(A1, K1);
+# E2 = END(K2); K1 = CALL(body1, A1); K2 = CALL(body2, B1, VB).
+def fx1.af2() -> U32: sc_src0(fx1.ar(), fx1.top())
+def fx1.sa() -> U32: sc_src(fx1.ar(), fx1.top(), 1)
+def fx1.af1() -> U32: sc_src0(fx1.ar(), fx1.af2())
+def fx1.e2() -> U32: sc_src(fx1.ar(), fx1.af2(), 1)
+def fx1.a() -> U32: sc_src0(fx1.ar(), fx1.af1())
+def fx1.k1() -> U32: sc_src(fx1.ar(), fx1.af1(), 1)
+def fx1.k2() -> U32: sc_src0(fx1.ar(), fx1.e2())
+def fx1.b() -> U32: sc_src(fx1.ar(), fx1.k2(), 1)
+def fx1.vb() -> U32: sc_src(fx1.ar(), fx1.k2(), 2)
+
+# fx2: TOP = SINK(AFB, AFC, SA); AFB = AFTER(AFa, KB); AFC = AFTER(X, KC);
+# AFa = AFTER(A, KA).
+def fx2.afb() -> U32: sc_src0(fx2.ar(), fx2.top())
+def fx2.afc() -> U32: sc_src(fx2.ar(), fx2.top(), 1)
+def fx2.fa() -> U32: sc_src0(fx2.ar(), fx2.afb())
+def fx2.kb() -> U32: sc_src(fx2.ar(), fx2.afb(), 1)
+def fx2.ka() -> U32: sc_src(fx2.ar(), fx2.fa(), 1)
+
+# fx3: TOP = SINK(AG2, SA); AG2 = AFTER(AG1, K3); AG1 = AFTER(A3, K3).
+def fx3.ag2() -> U32: sc_src0(fx3.ar(), fx3.top())
+def fx3.ag1() -> U32: sc_src0(fx3.ar(), fx3.ag2())
+
+# fx5: TOP = SINK(AFb, SA); AFb = AFTER(AFa, KB); AFa = AFTER(A5, KA).
+def fx5.afb() -> U32: sc_src0(fx5.ar(), fx5.top())
+def fx5.afa() -> U32: sc_src0(fx5.ar(), fx5.afb())
+def fx5.kb() -> U32: sc_src(fx5.ar(), fx5.afb(), 1)
+def fx5.ka() -> U32: sc_src(fx5.ar(), fx5.afa(), 1)
+
+# `UOp(Ops.AFTER, src=(A1, K1, UOp(Ops.SINK, src=(A1,))))` -- the AFTER whose
+# third source `_split_after` DROPS here and which Python raises on. Interned in
+# fx1's arena and deliberately NOT reachable from the sink. The srcs are graph
+# positions, not arena indices: `fx1.a()`, `fx1.k1()`, `fx1.sa()`.
+def fx1.bad() -> O.Found:
+  O.UOp.new(O.Found.ar(fx1()), O.OpsAFTER{}, [fx1.a(), fx1.k1(), fx1.sa()], O.ANone{}, O.TNone{})
+
+# BAD's arena -- one node longer than `fx1.ar()`, because BAD is interned into it.
+def fx1.arb() -> O.Arena: O.Found.ar(fx1.bad())
+
+# `fx3.after_after` -- an AFTER whose SECOND source is an AFTER, so `_split_after`
+#'s dep half is exercised. Interned in fx3's arena, not reachable from the sink.
+def fx3.after_after() -> O.Found:
+  O.UOp.new(O.Found.ar(fx3()), O.OpsAFTER{}, [fx3.ag2(), fx3.ag1()], O.ANone{}, O.TNone{})
+
+def fx3.arb() -> O.Arena: O.Found.ar(fx3.after_after())
+def fx3.aa() -> U32: O.Found.i(fx3.after_after())
+
+# THE UNBOUND VARIABLE.  `Vu` was interned in fx1's arena and NOT reachable
+# from the sink, so it had no graph position -- and an arena index is exactly
+# the thing this section removes.  It is built HERE, by the SAME constructor
+# the fixture used (`g_pv("v", None{})`), in its own arena, and the row asks
+# its question there.  The ANSWER is the same question: is an unbound
+# variable a bound one?
+def fx1.vu() -> O.Found:
+  O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, None{}, O.AParam{g_pv("v", None{})}, O.TNone{})
+
+# THE STAGE of fx4 is the other unreachable node, and it gets the same
+# treatment: built by itself, in its own arena.
+def fx4.st() -> O.Found:
+  +a = g_buf(0, "a4b", O.Arena.empty())
+  +c0 = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(0)})
+  +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})
+  O.UOp.new(O.Found.ar(c1), O.OpsSTAGE{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})
+
+# ===========================================================================
+# THE EDGE FIXTURES.  THE THREE THE SCHEDULE CAN MEET, AND TWO WITNESSES.
+#
+# fx0 EMPTY.  A sink with no AFTERs at all.  CPython answers a LINEAR with NO
+# srcs and NO error: `create_schedule` on an empty schedule is a schedule of
+# zero kernels, and a port that treats it as an error fails a real input.
+#
+# fx7 THE `src_without_body` WITNESS.  An AFTER that lives ONLY inside a CALL's
+# body -- the shape an INLINE call has (ops.py:547: `self.body.op is Ops.SINK
+# and self.body.arg is None`, so the body's SINK carries NO KernelInfo and the
+# GATE cannot exclude it).  CPython's toposort never descends into a CALL's
+# body, so it schedules ONE kernel; a port that walks all srcs schedules TWO.
+# An extra kernel is a REORDER.
+#
+# fx8 THE `gate_kernel_sink` WITNESS.  A SINK whose arg IS a KernelInfo --
+# which is what a kernel body is.  CPython's gate REJECTS it, so the subtree
+# under it is never visited and its kernel is NEVER scheduled: zero kernels.
+# A port whose gate says True for every SINK schedules one.
+# ===========================================================================
+def fx0() -> O.Found:
+  O.UOp.sink(O.Arena.empty(), Nil{})
+
+def fx7() -> O.Found:
+  +a = g_buf(0, "a7", O.Arena.empty())
+  +a2 = g_buf(1, "a7b", O.Found.ar(a))
+  +d1 = g_body(1, O.Found.ar(a2))
+  +d3 = g_body(3, O.Found.ar(d1))
+  +k1 = O.UOp.new(O.Found.ar(d3), O.OpsCALL{}, [O.Found.i(d1), O.Found.i(a)], O.ANone{}, O.TNone{})
+  +f1 = O.UOp.new(O.Found.ar(k1), O.OpsAFTER{}, [O.Found.i(a), O.Found.i(k1)], O.ANone{}, O.TNone{})
+  +k3 = O.UOp.new(O.Found.ar(f1), O.OpsCALL{}, [O.Found.i(d3), O.Found.i(a2)], O.ANone{}, O.TNone{})
+  +g = O.UOp.new(O.Found.ar(k3), O.OpsAFTER{}, [O.Found.i(a2), O.Found.i(k3)], O.ANone{}, O.TNone{})
+  +body2 = O.UOp.sink(O.Found.ar(g), [O.Found.i(g)])
+  +k2 = O.UOp.new(O.Found.ar(body2), O.OpsCALL{}, [O.Found.i(body2), O.Found.i(a2)], O.ANone{}, O.TNone{})
+  +sa = O.UOp.sink(O.Found.ar(k2), [O.Found.i(a)])
+  O.UOp.sink(O.Found.ar(sa), [O.Found.i(f1), O.Found.i(k2), O.Found.i(sa)])
+
+def fx8() -> O.Found:
+  +a = g_buf(0, "a8", O.Arena.empty())
+  +d1 = g_body(1, O.Found.ar(a))
+  +k1 = O.UOp.new(O.Found.ar(d1), O.OpsCALL{}, [O.Found.i(d1), O.Found.i(a)], O.ANone{}, O.TNone{})
+  +f1 = O.UOp.new(O.Found.ar(k1), O.OpsAFTER{}, [O.Found.i(a), O.Found.i(k1)], O.ANone{}, O.TNone{})
+  +kin = O.UOp.new(O.Found.ar(f1), O.OpsSINK{}, [O.Found.i(f1)], O.AKernel{O.KernelInfo.of()}, O.TNone{})
+  +sa = O.UOp.sink(O.Found.ar(kin), [O.Found.i(a)])
+  O.UOp.sink(O.Found.ar(sa), [O.Found.i(kin), O.Found.i(sa)])
 
 # ===========================================================================
 # THE GATE'S READERS. `gate.code` is `sched-truth.py`'s `code()` verbatim, plus
@@ -1984,49 +2160,49 @@ def row(nm: String, v: U32) -> IO(Unit):
 # THE ROWS. Every expectation below is `sched-truth.py`'s printed output, and the
 # comment over each block is that output.
 # ===========================================================================
-def t_unwrap_A1() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), 3)))
-def t_unwrap_B1() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), 5)))
-def t_unwrap_Vb() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), 12)))
-def t_unwrap_AF1() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), 17)))
-def t_unwrap_AF2() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), 18)))
+def t_unwrap_A1() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), fx1.a())))
+def t_unwrap_B1() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), fx1.b())))
+def t_unwrap_Vb() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), fx1.vb())))
+def t_unwrap_AF1() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), fx1.af1())))
+def t_unwrap_AF2() -> U32: gate.code(sc_op(fx1.ar(), sc_unwrap(fx1.ar(), fx1.af2())))
 def t_unwrap_bad() -> U32: gate.code(sc_op(fx1.arb(), sc_unwrap(fx1.arb(), O.Found.i(fx1.bad()))))
 
 # sched-truth.py: `split_A1 ks=0 ds=0` .. `split_AG2 ks=1 ds=0` and
 # `split_bad RAISED`. BAD's sources are K1 (a CALL) and a SINK, so the kernels
 # half is 1 and the SINK is DROPPED where Python raises -- `split_bad_ks` pins
 # the drop, and `split_AF2_ds=0` pins the AFTER half of a real one.
-def t_split_A1() -> U32: gate.ks(fx1.ar(), 3)
-def t_split_AF1() -> U32: gate.ks(fx1.ar(), 17)
-def t_split_AF2() -> U32: gate.ks(fx1.ar(), 18)
-def t_split_AG1() -> U32: gate.ks(fx3.ar(), 9)
-def t_split_AG2() -> U32: gate.ks(fx3.ar(), 10)
+def t_split_A1() -> U32: gate.ks(fx1.ar(), fx1.a())
+def t_split_AF1() -> U32: gate.ks(fx1.ar(), fx1.af1())
+def t_split_AF2() -> U32: gate.ks(fx1.ar(), fx1.af2())
+def t_split_AG1() -> U32: gate.ks(fx3.ar(), fx3.ag1())
+def t_split_AG2() -> U32: gate.ks(fx3.ar(), fx3.ag2())
 def t_split_bad() -> U32: gate.ks(fx1.arb(), O.Found.i(fx1.bad()))
-def t_split_AF2_ds() -> U32: gate.ds(fx1.ar(), 18)
+def t_split_AF2_ds() -> U32: gate.ds(fx1.ar(), fx1.af2())
 
 # `states_A1 1 ['BUFFER']`, `states_AF2 1 ['AFTER']`, `states_AG2 1 ['AFTER']`
-def t_states_A1() -> U32: U32.from_nat(List.length(&2, U32, sc_states(sc_fuel(fx1.ar()), fx1.ar(), 3)))
-def t_states_AF2() -> U32: U32.from_nat(List.length(&2, U32, sc_states(sc_fuel(fx1.ar()), fx1.ar(), 18)))
-def t_states_AG2() -> U32: U32.from_nat(List.length(&2, U32, sc_states(sc_fuel(fx3.ar()), fx3.ar(), 10)))
+def t_states_A1() -> U32: U32.from_nat(List.length(&2, U32, sc_states(sc_fuel(fx1.ar()), fx1.ar(), fx1.a())))
+def t_states_AF2() -> U32: U32.from_nat(List.length(&2, U32, sc_states(sc_fuel(fx1.ar()), fx1.ar(), fx1.af2())))
+def t_states_AG2() -> U32: U32.from_nat(List.length(&2, U32, sc_states(sc_fuel(fx3.ar()), fx3.ar(), fx3.ag2())))
 
 # `bufuop_A1 1 bufuop_AF1 1 bufuop_AF2 1 / bufuop_AG1 1 bufuop_AG2 1 bufuop_Vb 3`
-def t_bu_A1() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), 3)))
-def t_bu_AF1() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), 17)))
-def t_bu_AF2() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), 18)))
-def t_bu_Vb() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), 12)))
-def t_bu_AG1() -> U32: gate.code(sc_op(fx3.ar(), sc_buf_uop(fx3.ar(), 9)))
-def t_bu_AG2() -> U32: gate.code(sc_op(fx3.ar(), sc_buf_uop(fx3.ar(), 10)))
+def t_bu_A1() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), fx1.a())))
+def t_bu_AF1() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), fx1.af1())))
+def t_bu_AF2() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), fx1.af2())))
+def t_bu_Vb() -> U32: gate.code(sc_op(fx1.ar(), sc_buf_uop(fx1.ar(), fx1.vb())))
+def t_bu_AG1() -> U32: gate.code(sc_op(fx3.ar(), sc_buf_uop(fx3.ar(), fx3.ag1())))
+def t_bu_AG2() -> U32: gate.code(sc_op(fx3.ar(), sc_buf_uop(fx3.ar(), fx3.ag2())))
 
 # `bv_Vb 1 bv_Vu 0 bv_A1 0` -- and the bound var is a CALL's src[2]
-def t_bv_Vb() -> U32: b2u(sc_is_bound_var(fx1.ar(), 12))
-def t_bv_Vu() -> U32: b2u(sc_is_bound_var(fx1.ar(), 13))
-def t_bv_A1() -> U32: b2u(sc_is_bound_var(fx1.ar(), 3))
-def t_bv_K2src2() -> U32: b2u(sc_is_bound_var(fx1.ar(), sc_src(fx1.ar(), 15, 2)))
+def t_bv_Vb() -> U32: b2u(sc_is_bound_var(fx1.ar(), fx1.vb()))
+def t_bv_Vu() -> U32: b2u(sc_is_bound_var(O.Found.ar(fx1.vu()), O.Found.i(fx1.vu())))
+def t_bv_A1() -> U32: b2u(sc_is_bound_var(fx1.ar(), fx1.a()))
+def t_bv_K2src2() -> U32: b2u(sc_is_bound_var(fx1.ar(), sc_src(fx1.ar(), fx1.k2(), 2)))
 
 # `bs_K2_K1 0 bs_E2_K2 1 bs_K1_K2 0 bs_Kb_Ka 0`
-def t_bs_K2_K1() -> U32: b2u(sc_in_bs(fx1.ar(), 15, 14))
-def t_bs_E2_K2() -> U32: b2u(sc_in_bs(fx1.ar(), 16, 15))
-def t_bs_K1_K2() -> U32: b2u(sc_in_bs(fx1.ar(), 14, 15))
-def t_bs_Kb_Ka() -> U32: b2u(sc_in_bs(fx2.ar(), 16, 15))
+def t_bs_K2_K1() -> U32: b2u(sc_in_bs(fx1.ar(), fx1.k2(), fx1.k1()))
+def t_bs_E2_K2() -> U32: b2u(sc_in_bs(fx1.ar(), fx1.e2(), fx1.k2()))
+def t_bs_K1_K2() -> U32: b2u(sc_in_bs(fx1.ar(), fx1.k1(), fx1.k2()))
+def t_bs_Kb_Ka() -> U32: b2u(sc_in_bs(fx2.ar(), fx2.kb(), fx2.ka()))
 
 # fx1: `topo_n 19 lin_n 2 lin_op LINEAR / marks 12 nsrcs 22 /
 #        lin_src_ops [['SINK','BUFFER'],['SINK','BUFFER']]`
@@ -2091,7 +2267,7 @@ def t_split_AG3_ds() -> U32: gate.ds(fx3.arb(), fx3.aa())
 # `buf_uop` on the two ops its stop set adds. With the wider stop set the walk
 # answers the node itself; without it the walk descends to the BUFFER and both
 # print 1.
-def t_bu_STAGE() -> U32: gate.code(sc_op(fx4.ar(), sc_buf_uop(fx4.ar(), fx4.st())))
+def t_bu_STAGE() -> U32: gate.code(sc_op(O.Found.ar(fx4.st()), sc_buf_uop(O.Found.ar(fx4.st()), O.Found.i(fx4.st()))))
 def t_bu_MSTACK() -> U32: gate.code(sc_op(fx4.ar(), sc_buf_uop(fx4.ar(), fx4.ms())))
 
 # THE COUNT ROWS. THE WRITES' KERNEL LISTS, summed: fx1 1+1, fx2 1+1+1, fx3 1+0.
@@ -2148,10 +2324,17 @@ def t_fx5_cyc() -> U32: U32.from_nat(cycles(pass2(fx5.ar(), pass1(fx5.ar(), fx5.
 def t_fx5_kidn() -> U32: kids_n(pass2(fx5.ar(), pass1(fx5.ar(), fx5.top())))
 
 # `Ka in Kb.backward_slice` -- the predicate that suppresses the WAR edge here.
-def t_bs_Ka_Kb() -> U32: b2u(sc_in_bs(fx5.ar(), 12, 10))
+def t_bs_Ka_Kb() -> U32: b2u(sc_in_bs(fx5.ar(), fx5.kb(), fx5.ka()))
 
 def t_fx3_lin_n() -> U32: t_fx3.lin.of(schedule(fx3.ar(), fx3.top()))
 def t_fx3_marks() -> U32: t_fx3.lin.marks(schedule(fx3.ar(), fx3.top()))
+# THE THREE ROWS fx3 NEVER PRINTED.  CPython answers all three (10, 2, 71) and
+# the port did not ask: a fixture with a row for its MARK and its COUNT and
+# none for its ORDER is a fixture whose ORDER is unpinned.
+def t_fx3_topo() -> U32: U32.from_nat(List.length(&2, U32, sc_topo_of(O.Arena.budget(fx3.ar()), fx3.ar(), fx3.top())))
+def t_fx3_lin_op() -> U32: t_fx3.lin.op(linear(schedule(fx3.ar(), fx3.top())))
+def t_fx3_nsrcs() -> U32: t_fx3.lin.nsrcs(schedule(fx3.ar(), fx3.top()))
+def t_fx3_ops() -> U32: t_fx3.lin.ops(schedule(fx3.ar(), fx3.top()))
 
 # THE COUNT ROWS. `n_children n_in_degree n_writes n_reads n_zero cycle`:
 #   fx1 `0 2 2 3 2 0`   fx2 `1 3 3 3 2 1`
@@ -2172,6 +2355,96 @@ def t_fx2_rds() -> U32: U32.from_nat(List.length(&2, Rd, Ctx.rds(pass2(fx2.ar(),
 def t_fx2_zero() -> U32: U32.from_nat(List.length(&2, U32, zero(pass2(fx2.ar(), pass1(fx2.ar(), fx2.top())))))
 def t_fx2_cyc() -> U32: U32.from_nat(cycles(pass2(fx2.ar(), pass1(fx2.ar(), fx2.top()))))
 def t_fx2_kids_n() -> U32: kids_n(pass2(fx2.ar(), pass1(fx2.ar(), fx2.top())))
+
+# ===========================================================================
+# THE TOPOSORT'S OWN ORDER -- the REORDER ARM, as a ROW.
+#
+# CPython's toposort (ops.py:289-301) pushes `reversed(node.src)` and pops the
+# LAST element, so the FIRST src is popped first.  `fx2_topo_marks` is that
+# order (123 = Ka,Kb,Kc) and `fx2_marks` is the LINEAR order (231 = Kb,Kc,Ka):
+# THE SAME THREE KERNELS, IN A DIFFERENT ORDER, BECAUSE A WAR EDGE PUTS Ka
+# AFTER THE KERNEL THAT READS THE STATE Ka SUPERSEDES.  The two rows are a
+# PAIR, and a port that linearized in the toposort order would answer 123 for
+# `fx2_marks` -- at which point the pair collapses into one row and the
+# REORDER IS INVISIBLE.  That is the whole reason both are printed.
+# ===========================================================================
+def gate.kkeep.of(op: O.Op) -> Bool:
+  match op:
+    case O.OpsCALL{}: True{}
+    case O.OpsEND{}  : True{}
+    case _           : False{}
+
+def gate.kput(hit: Bool, acc: List<&2, U32>, k: U32) -> List<&2, U32>:
+  match hit:
+    case True{} : List.append(&2, U32, acc, [k])
+    case False{}: acc
+
+def gate.kkeep(+ar: O.Arena, +ks: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ks:
+    case Nil{}     : acc
+    case k <> rest : gate.kkeep(ar, rest, gate.kput(gate.kkeep.of(sc_op(ar, k)), acc, k))
+
+# `gate.mark` reads a CALL's body; an END's kernel is its src[0], so the END
+# is unwrapped FIRST (`kernel`, the linearizer's own unwrap).
+def gate.kmark(+ar: O.Arena, k: U32) -> U32:
+  gate.mark(ar, kernel(ar, k))
+
+def gate.topo_marks.go(ks: List<&2, U32>, +ar: O.Arena, acc: U32) -> U32:
+  match ks:
+    case Nil{}     : acc
+    case k <> rest : gate.topo_marks.go(rest, ar, U32.add(U32.mul(acc, 10), gate.kmark(ar, k)))
+
+def gate.topo_marks(+ar: O.Arena, ks: List<&2, U32>) -> U32:
+  gate.topo_marks.go(gate.kkeep(ar, ks, Nil{}), ar, 0)
+
+def t_fx1_topo_marks() -> U32: gate.topo_marks(fx1.ar(), sc_topo_of(O.Arena.budget(fx1.ar()), fx1.ar(), fx1.top()))
+def t_fx2_topo_marks() -> U32: gate.topo_marks(fx2.ar(), sc_topo_of(O.Arena.budget(fx2.ar()), fx2.ar(), fx2.top()))
+def t_fx3_topo_marks() -> U32: gate.topo_marks(fx3.ar(), sc_topo_of(O.Arena.budget(fx3.ar()), fx3.ar(), fx3.top()))
+def t_fx5_topo_marks() -> U32: gate.topo_marks(fx5.ar(), sc_topo_of(O.Arena.budget(fx5.ar()), fx5.ar(), fx5.top()))
+
+# ===========================================================================
+# THE EDGE ROWS.  EMPTY, the `src_without_body` WITNESS and the
+# `gate_kernel_sink` WITNESS.
+# ===========================================================================
+def fx0.ar() -> O.Arena: O.Found.ar(fx0())
+def fx0.top() -> U32: O.Found.i(fx0())
+def fx7.ar() -> O.Arena: O.Found.ar(fx7())
+def fx7.top() -> U32: O.Found.i(fx7())
+def fx8.ar() -> O.Arena: O.Found.ar(fx8())
+def fx8.top() -> U32: O.Found.i(fx8())
+def fx8.kin() -> U32: sc_src0(fx8.ar(), fx8.top())
+def fx8.sa() -> U32: sc_src(fx8.ar(), fx8.top(), 1)
+
+# EMPTY.  CPython: `fx0_lin_n=0 fx0_lin_op=10 fx0_marks=0 fx0_nsrcs=0 fx0_ops=0`.
+def t_fx0_topo() -> U32: U32.from_nat(List.length(&2, U32, sc_topo_of(O.Arena.budget(fx0.ar()), fx0.ar(), fx0.top())))
+def t_fx0_lin_n() -> U32: t_fx3.lin.of(schedule(fx0.ar(), fx0.top()))
+def t_fx0_lin_op() -> U32: t_fx3.lin.op(linear(schedule(fx0.ar(), fx0.top())))
+def t_fx0_marks() -> U32: t_fx3.lin.marks(schedule(fx0.ar(), fx0.top()))
+def t_fx0_nsrcs() -> U32: t_fx3.lin.nsrcs(schedule(fx0.ar(), fx0.top()))
+def t_fx0_ops() -> U32: t_fx3.lin.ops(schedule(fx0.ar(), fx0.top()))
+
+# THE `src_without_body` WITNESS.  CPython schedules ONE kernel; a port that
+# descends into a CALL's body schedules TWO.
+def t_fx7_topo() -> U32: U32.from_nat(List.length(&2, U32, sc_topo_of(O.Arena.budget(fx7.ar()), fx7.ar(), fx7.top())))
+def t_fx7_lin_n() -> U32: t_fx3.lin.of(schedule(fx7.ar(), fx7.top()))
+def t_fx7_lin_op() -> U32: t_fx3.lin.op(linear(schedule(fx7.ar(), fx7.top())))
+def t_fx7_marks() -> U32: t_fx3.lin.marks(schedule(fx7.ar(), fx7.top()))
+def t_fx7_nsrcs() -> U32: t_fx3.lin.nsrcs(schedule(fx7.ar(), fx7.top()))
+def t_fx7_ops() -> U32: t_fx3.lin.ops(schedule(fx7.ar(), fx7.top()))
+
+# THE `gate_kernel_sink` WITNESS.  CPython schedules ZERO kernels.
+def t_fx8_topo_marks() -> U32: gate.topo_marks(fx8.ar(), sc_topo_of(O.Arena.budget(fx8.ar()), fx8.ar(), fx8.top()))
+def t_fx8_topo() -> U32: U32.from_nat(List.length(&2, U32, sc_topo_of(O.Arena.budget(fx8.ar()), fx8.ar(), fx8.top())))
+def t_fx8_lin_n() -> U32: t_fx3.lin.of(schedule(fx8.ar(), fx8.top()))
+def t_fx8_lin_op() -> U32: t_fx3.lin.op(linear(schedule(fx8.ar(), fx8.top())))
+def t_fx8_marks() -> U32: t_fx3.lin.marks(schedule(fx8.ar(), fx8.top()))
+def t_fx8_nsrcs() -> U32: t_fx3.lin.nsrcs(schedule(fx8.ar(), fx8.top()))
+def t_fx8_ops() -> U32: t_fx3.lin.ops(schedule(fx8.ar(), fx8.top()))
+
+# THE GATE ITSELF, on the two SINKS of `fx8`: the one carrying a `KernelInfo`
+# is NOT gated (0) and the plain one IS (1).  Without the arm the first is 1.
+def t_gate_ki() -> U32: b2u(sc_gate(fx8.ar(), fx8.kin()))
+def t_gate_plain() -> U32: b2u(sc_gate(fx8.ar(), fx8.sa()))
 
 # ===========================================================================
 # THE TWELVE'S ROWS. Every expectation is `sb-oracle.py`'s printed output and
@@ -2251,6 +2524,35 @@ def main() -> IO(Unit):
     row("COUNT_fx3_wrks", t_fx3_wrks())
     row("fx3_lin_n", t_fx3_lin_n())
     row("fx3_marks", t_fx3_marks())
+    row("fx3_topo", t_fx3_topo())
+    row("fx3_lin_op", t_fx3_lin_op())
+    row("fx3_nsrcs", t_fx3_nsrcs())
+    row("fx3_ops", t_fx3_ops())
+    row("fx1_topo_marks", t_fx1_topo_marks())
+    row("fx2_topo_marks", t_fx2_topo_marks())
+    row("fx3_topo_marks", t_fx3_topo_marks())
+    row("fx5_topo_marks", t_fx5_topo_marks())
+    row("fx0_topo", t_fx0_topo())
+    row("fx0_lin_n", t_fx0_lin_n())
+    row("fx0_lin_op", t_fx0_lin_op())
+    row("fx0_marks", t_fx0_marks())
+    row("fx0_nsrcs", t_fx0_nsrcs())
+    row("fx0_ops", t_fx0_ops())
+    row("fx7_topo", t_fx7_topo())
+    row("fx7_lin_n", t_fx7_lin_n())
+    row("fx7_lin_op", t_fx7_lin_op())
+    row("fx7_marks", t_fx7_marks())
+    row("fx7_nsrcs", t_fx7_nsrcs())
+    row("fx7_ops", t_fx7_ops())
+    row("fx8_topo_marks", t_fx8_topo_marks())
+    row("fx8_topo", t_fx8_topo())
+    row("fx8_lin_n", t_fx8_lin_n())
+    row("fx8_lin_op", t_fx8_lin_op())
+    row("fx8_marks", t_fx8_marks())
+    row("fx8_nsrcs", t_fx8_nsrcs())
+    row("fx8_ops", t_fx8_ops())
+    row("gate_ki", t_gate_ki())
+    row("gate_plain", t_gate_plain())
     row("fx5_nodes", t_fx5_nodes())
     row("fx5_topo", t_fx5_topo())
     row("fx5_lin_n", t_fx5_lin_n())
