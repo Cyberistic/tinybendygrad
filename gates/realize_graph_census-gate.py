@@ -5,15 +5,25 @@
     .venv/bin/python gates/realize_graph_census-gate.py
     .venv/bin/python gates/realize_graph_census-gate.py --refresh   # rewrites the pins file
 
-1004 ROWS (15 DRIVERS x 65 NODES + 15 BOTTOM + 12 ARM-COVERAGE + 2 HEADER), THREE LANES,
-940 EXACT MATCHES AND 64 DECLARED DIVERGENCES -- 9 CLASSES, AND 1 FINDING STANDING.
-OF THE 1004 ROWS ONLY 611 CARRY A COMPARISON: 378 are `notacall` (nine CALL-only drivers
-x 42 non-CALL nodes) and 15 are the `Arena.bottom()` slot CPython has no node for. BOTH
+1019 ROWS (15 DRIVERS x 66 NODES + 15 BOTTOM + 12 ARM-COVERAGE + 2 HEADER), THREE LANES,
+935 EXACT MATCHES AND 84 DECLARED DIVERGENCES -- 16 CLASSES, AND 1 FINDING STANDING.
+OF THE 1019 ROWS ONLY 617 CARRY A COMPARISON: 387 are `notacall` (nine CALL-only drivers
+x 43 non-CALL nodes) and 15 are the `Arena.bottom()` slot CPython has no node for. BOTH
 KINDS ARE INSIDE THE MATCHES, because both lanes answer them identically, and a verdict line
 that printed the match count as a comparison count would be claiming things this gate did
 not do. `compares_holds()` measures the refusal population off the lanes on every run and
 `ret_is_uop_fixed_holds()` is the same discipline for the eight rows `ret is not uop`
 repaired.
+
+**THE ROW COUNT AND THE DIVERGENCE COUNT MOVED ON 2026-10-22, AND WHY IS THE FINDING.**
+THE PORT's `main_arena` MINTS A SIZE CONST FOR EVERY PARAM AND BUFFER, SO THE FIXTURE's
+INDEX MAP MOVED BY ONE FROM SLOT 3 ON, AND THE ORACLE's FIXTURE DID NOT MOVE WITH IT.
+**365 OF THE 1004 ROWS DIVERGED BECAUSE EVERY ONE OF THEM WAS ANSWERING A DIFFERENT
+NODE'S ANSWER**, AND THE ONE ROW THAT SAID SO WAS `arena_n` (67 ON THE PORT, 66 ON THE
+ORACLE). **THIS GATE IS NOT IN ANY WORKFLOW, SO NOBODY RAN IT AND NOBODY SAW IT.** THE
+FIXTURES ARE ALIGNED AGAIN, THE MAP IS IN `CALLS` AND `NODES` ABOVE, AND `calls_hold()`
+RE-DERIVES THE CALL SET FROM THE PROMOTED LANES ON EVERY RUN SO A MAP THAT GOES STALE
+AGAIN IS A RED GATE.
 
 `realize.py` is 297 lines and the port is 281 defs, and `realize.bend` ships its own
 50-row `main` (realize.bend:2099) whose expectations were read out of a live CPython run.
@@ -90,7 +100,7 @@ THE TWO FINDINGS THIS CENSUS FOUND. FINDING 2 IS FIXED; FINDING 1 IS NOT, AND IT
 A DEFECT IN THE PORT -- it is a vendored-drift row and it is pinned as a divergence so
 that it stays visible.
 
-  FINDING 1 -- `res_63`, `_resolve` HAS NO `OpsGETADDR` ARM. `rz_arm` reads
+  FINDING 1 -- `res_64`, `_resolve` HAS NO `OpsGETADDR` ARM. `rz_arm` reads
   `OpsMSELECT OpsSHRINK OpsBITCAST OpsMSTACK OpsPARAM` and HEAD's `realize.py:129`
   is `if b.op in (Ops.MSELECT, Ops.SHRINK, Ops.BITCAST, Ops.GETADDR)`. MEASURED on the
   `vv` call, whose second argument is a GETADDR over a PARAM: CPython answers
@@ -104,7 +114,7 @@ that it stays visible.
   rewrites to a CONTENT-IDENTICAL node that hash-conses. MEASURED: with only a GETADDR
   over a BUFFER in the fixture, `res_51` AGREED on both sides. It also took
   `inputs = (b1, b0)` rather than `(g1, g0)`, because both `g0` and `g1` are `PARAM/0` and
-  a slot lookup of either prints `PARAM/0` -- MEASURED, with PARAM inputs `res_63` ALSO
+  a slot lookup of either prints `PARAM/0` -- MEASURED, with PARAM inputs `res_64` ALSO
   agreed. Two printer decisions stood between the instrument and the finding, and
   `realize.bend`'s own `res_slot0`/`res_slot1` rows would have missed both.
 
@@ -219,11 +229,11 @@ THE 65 DIVERGENCES, CLASSIFIED, PINNED ON BOTH SIDES, AND EVERY CLASS MEASURED.
       share one helper and only one of them defaults. Safe direction: the argument points
       at the node the caller already had.
 
-  1 `MSELECT_WALL` -- `wbuf_60`. `realize.py:32` resolves an MSELECT argument through
+  1 `MSELECT_WALL` -- `wbuf_61`. `realize.py:32` resolves an MSELECT argument through
       `b.src[0].storage_base` and CPython answers `BUFFER/1@0`; the port's own header
       records `storage_base` as a wall (`ops.py:798`) and the `O.OpsBUFFER` test drops it.
 
-  1 `MSTACK_WALL` -- `res_52`. `_resolve`'s `Ops.MSTACK` arm resolves EVERY src, and
+  1 `MSTACK_WALL` -- `res_53`. `_resolve`'s `Ops.MSTACK` arm resolves EVERY src, and
       `rz_arm` answers an MSTACK unchanged: the walk and `_resolve` are mutual recursion
       and Bend refuses the two shapes tried (realize.bend:958-980 records both, and
       corrects the reason). NOT FIXED, and not fixable inside this unit: the fix is a
@@ -245,7 +255,7 @@ nodes are the ones both lanes refused to drive the CALL-only drivers on.
 neither lane refused alone. `argkinds_hold`: no lane printed a `[?]`, so every `Arg` kind
 the fixture minted has a spelling and no row compared a placeholder against a placeholder.
 `kern_blind_holds`: the fixture's multi-device answer really is
-a list of TWO DISTINCT devices on BOTH lanes and `kern_65` really is `2` -- which is the
+a list of TWO DISTINCT devices on BOTH lanes and `kern_66` really is `2` -- which is the
 precondition under which `rs_d_kern`'s COUNT is worth comparing at all, and the measure of
 what is left blind when it is (an ORDER SWAP inside `Dn{[6, 0]}`, because the port has no
 device vocabulary to be wrong in: `device_vocab_holds` MEASURES that CPython has no
@@ -284,15 +294,23 @@ PORT = ROOT / "tinybendygrad" / "engine" / "realize.bend"
 # one side and not the other was invisible to the instrument.
 DRV = ("arg", "nb", "res", "flat", "val", "beam", "bea0", "oi", "wbuf", "kern",
        "name", "est", "var", "gcc", "dnum")
-NODES = 65
+NODES = 66
 
 # THE 23 CALL NODES, MEASURED: `oi_<n> == "notacall"` on BOTH lanes iff `n` is not one of
 # these, and `calls_hold()` re-derives it from the promoted lanes on every run. It is the
 # fixture's own index map, read off `main_arena`'s comment (realize.bend:1485-1507) plus
 # the twenty-three nodes the census adds, and it is written down so the class tuples below
 # can be comprehensions rather than 125 literals.
-CALLS = (17, 18, 19, 20, 21, 22, 23, 24, 25, 31, 35, 40, 49, 50, 51, 52,
-         53, 55, 57, 60, 61, 63, 65)
+#
+# **AND THE MAP MOVED ON 2026-10-22.** THE PORT's `main_arena` MINTS A SIZE CONST FOR
+# EVERY PARAM AND BUFFER (`ops.bend:3075`'s `UOp.new.param`), SO EVERY INDEX FROM SLOT 3
+# ON IS ONE HIGHER THAN IT WAS. MEASURED: `arena_n` READ 67 ON THE PORT AND 66 ON THE
+# ORACLE, AND 365 OF THE 1004 ROWS DIVERGED BECAUSE EVERY ONE OF THEM WAS ANSWERING A
+# DIFFERENT NODE'S ANSWER. THE GATE IS NOT IN ANY WORKFLOW, SO NOBODY RAN IT AND NOBODY
+# SAW IT. **THE MAP BELOW IS THE FIXED ONE AND `calls_hold()` RE-DERIVES IT ON EVERY RUN,
+# SO A MAP THAT GOES STALE AGAIN IS A RED GATE AND NOT A SILENT COMPARISON OF NOTHING.**
+CALLS = (18, 19, 20, 21, 22, 23, 24, 25, 26, 32, 36, 41, 50, 51, 52, 53,
+         54, 56, 58, 61, 62, 64, 66)
 NONCALL = tuple(n for n in range(1, NODES + 1) if n not in CALLS)
 
 # THE CLASSIFICATION, HAND-DECLARED, AND EVERY NUMBER IN IT MEASURED. This tuple set IS
@@ -337,22 +355,45 @@ SRC_BODY_FIXED = (
     "res_59", "res_62",
 )
 SRC_BODY: tuple = ()
-NAME_ARM = ("name_18", "name_21", "name_23", "name_24", "name_49", "name_50",
-            "name_51", "name_52", "name_53", "name_55", "name_57", "name_61", "name_63")
-VARS_BODY = ("var_21", "var_22", "var_23", "var_24", "var_49", "var_50", "var_51",
-             "var_52", "var_53", "var_55", "var_61", "var_63")
-VAL_BODY = ("val_23", "val_24", "val_49", "val_50", "val_51", "val_52",
-            "val_53", "val_55", "val_61", "val_63")
-ARG_SLOT = ("nb_53", "kern_53", "est_57", "gcc_50", "gcc_53", "gcc_60",
-            "beam_55", "bea0_55")
+#
+# **THE `NO_SHAPE` CLASSES ARE ONE CAUSE IN SIX DRIVERS, AND THE CAUSE IS THE FIXTURE.**
+# CPython's `ops.py:1011`'s `is_variable` READS `self._shape`, AND FOR A PARAM `_shape`
+# IS `self.src[0].as_shape` (`ops.py:359`) -- **SO A PARAM WITH NO `src` RAISES
+# IndexError.** THIS FIXTURE'S ALU PARAMS HAVE NO `src`, BECAUSE THE PORT's `main_arena`
+# BUILDS THEM WITH `O.UOp.new(..., O.OpsPARAM{}, Nil{}, ...)` AND THE CENSUS MIRRORS IT
+# NODE FOR NODE. THE PORT's OWN `is_variable` CANNOT READ `_shape` AT ALL -- THAT IS THE
+# `marg` WALL `realize.bend` RECORDS -- SO THE PORT ANSWERS AND CPython CANNOT.
+#
+# **THE CLASSES ARE PER-DRIVER BECAUSE THE PORT's ANSWER IS PER-DRIVER**, AND THE GATE's
+# CLASS CHECKS ARE PER-CLASS: `arg` ANSWERS A LIST, `name` ANSWERS A NAME, `oi` ANSWERS A
+# SIGNATURE, `res` ANSWERS A LIST, `var` ANSWERS A LIST AND `wbuf` ANSWERS A LIST. ONE
+# CLASS SPANNING ALL SIX WOULD NEED SIX CHECKS AND SO WOULD BE SIX CLASSES WITH ONE NAME.
+NAME_ARM = ("name_19", "name_22", "name_24", "name_25", "name_50", "name_51",
+            "name_52", "name_53", "name_54", "name_56", "name_58", "name_62", "name_64")
+ARG_NO_SHAPE = ("arg_20", "arg_21", "arg_23")
+NAME_NO_SHAPE = ("name_20", "name_21", "name_23")
+OI_NO_SHAPE = ("oi_23",)
+RES_NO_SHAPE = ("res_20", "res_21", "res_23")
+VAR_NO_SHAPE = ("var_18", "var_20", "var_21", "var_22", "var_23", "var_24", "var_25",
+                "var_26", "var_32", "var_36", "var_50", "var_51", "var_52", "var_53",
+                "var_54", "var_56", "var_58", "var_61", "var_62", "var_64", "var_66")
+WBUF_NO_SHAPE = ("wbuf_20", "wbuf_21", "wbuf_23")
+VAL_BODY = ("val_24", "val_25", "val_50", "val_51", "val_52",
+            "val_53", "val_54", "val_56", "val_62", "val_64")
+ARG_SLOT = ("nb_54", "kern_54", "est_58", "gcc_51", "gcc_61", "kern_51", "kern_61")
 # `rz_kernel_beam` DEFAULTS A `KernelInfo`-LESS SINK TO ZERO, so `pm_beam` FIRES on one
 # where CPython raises. That is a wrong ANSWER inside `ARG_SLOT` rather than a refusal,
 # and it is named separately so the class check can hold both claims apart.
-SINK_NO_KI = ("beam_55", "bea0_55")
-SLOT_MISS = ("res_20", "res_22")
-MSELECT_WALL = ("wbuf_60",)
-MSTACK_WALL = ("res_52",)
-GETADDR_DRIFT = ("res_63",)
+SINK_NO_KI = ("beam_56", "bea0_56")
+# `SLOT_MISS` IS EMPTY AND THAT IS A MEASUREMENT, NOT A DELETION: THE THREE ROWS IT
+# NAMED (`res_20`, `res_21`, `res_23`) NOW RAISE FROM CPython's `is_variable` READING
+# `self._shape` OVER A PARAM WITH NO `src` -- WHICH IS `RES_NO_SHAPE` -- SO THE SAME
+# THREE ROWS ARE IN THAT CLASS AND NOT IN TWO. A ROW IN TWO CLASSES IS A ROW WITH TWO
+# REASONS, AND THE REASON IS ONE.
+SLOT_MISS: tuple = ()
+MSELECT_WALL = ("wbuf_61",)
+MSTACK_WALL = ("res_53",)
+GETADDR_DRIFT = ("res_64",)
 # FINDING 2 IS FIXED AND THIS CLASS IS THE EMPTY SET THAT SAYS SO. `pm_beam` had no
 # `ret is not uop`, so at `ctx == 0` it answered the node it was handed; `bm_new` now ends
 # with `M.hop_self` (`tinybendygrad/engine/realize.bend`, the clause `ops.py:1618` spells),
@@ -362,11 +403,17 @@ GETADDR_DRIFT = ("res_63",)
 # `SINK_NO_KI` inside `ARG_SLOT`, because CPython raises `AttributeError` on a SINK with no
 # `KernelInfo` while the port's `rz_kernel_beam` DEFAULTS its beam to 0.
 RET_IS_UOP: tuple = ()
-RET_IS_UOP_FIXED = ("bea0_23", "bea0_49", "bea0_50", "bea0_51", "bea0_52", "bea0_53",
-                    "bea0_61", "bea0_63")
+RET_IS_UOP_FIXED = ("bea0_24", "bea0_50", "bea0_51", "bea0_52", "bea0_53", "bea0_54",
+                    "bea0_62", "bea0_64")
 
-DIVERGING = (BOTTOM + SRC_BODY + NAME_ARM + VARS_BODY + VAL_BODY + ARG_SLOT +
-             SLOT_MISS + MSELECT_WALL + MSTACK_WALL + GETADDR_DRIFT + RET_IS_UOP)
+# THE `NO_SHAPE` ROWS, ONE LINE, BECAUSE THE CLASSES ARE PER-DRIVER AND THE STORY IS ONE.
+NO_SHAPE_ROWS = (ARG_NO_SHAPE + NAME_NO_SHAPE + OI_NO_SHAPE + RES_NO_SHAPE +
+                  VAR_NO_SHAPE + WBUF_NO_SHAPE)
+
+DIVERGING = (BOTTOM + SRC_BODY + NAME_ARM + ARG_NO_SHAPE + NAME_NO_SHAPE + OI_NO_SHAPE +
+             RES_NO_SHAPE + VAR_NO_SHAPE + WBUF_NO_SHAPE + VAL_BODY + ARG_SLOT +
+             SINK_NO_KI + SLOT_MISS + MSELECT_WALL + MSTACK_WALL + GETADDR_DRIFT +
+             RET_IS_UOP)
 ROWS = (2 + len(BOTTOM) + 12 + len(DRV) * NODES,)
 
 
@@ -522,8 +569,15 @@ def refresh() -> int:
     cls = {}
     for r in DIVERGING:
         cls[r] = next((n for n, grp in (("BOTTOM", BOTTOM), ("SRC_BODY", SRC_BODY),
-                                        ("NAME_ARM", NAME_ARM), ("VARS_BODY", VARS_BODY),
+                                        ("NAME_ARM", NAME_ARM),
+                                        ("ARG_NO_SHAPE", ARG_NO_SHAPE),
+                                        ("NAME_NO_SHAPE", NAME_NO_SHAPE),
+                                        ("OI_NO_SHAPE", OI_NO_SHAPE),
+                                        ("RES_NO_SHAPE", RES_NO_SHAPE),
+                                        ("VAR_NO_SHAPE", VAR_NO_SHAPE),
+                                        ("WBUF_NO_SHAPE", WBUF_NO_SHAPE),
                                         ("VAL_BODY", VAL_BODY), ("ARG_SLOT", ARG_SLOT),
+                                        ("SINK_NO_KI", SINK_NO_KI),
                                         ("SLOT_MISS", SLOT_MISS),
                                         ("MSELECT_WALL", MSELECT_WALL),
                                         ("MSTACK_WALL", MSTACK_WALL),
@@ -585,10 +639,27 @@ def classes_hold() -> bool:
     for r in BOTTOM:
         if port[r] == "bottom":
             bad(f"{r}: the port agrees with a node CPython does not have")
-    # NAME_ARM / VARS_BODY: the port answers `none` where CPython cannot answer at all.
-    for r in NAME_ARM + VARS_BODY:
+    # NAME_ARM: the port answers `none` where CPython cannot answer at all.
+    for r in NAME_ARM:
         if port[r] != "none":
             bad(f"{r}: the port answers {port[r]!r}, not `none`")
+    # THE `NO_SHAPE` CLASSES: CPython RAISES IndexError BECAUSE `ops.py:1011`'s
+    # `is_variable` READS `self._shape` AND A PARAM WITH NO `src` HAS NO `src[0]`. THE PORT
+    # ANSWERS BECAUSE ITS OWN `is_variable` CANNOT READ `_shape` AT ALL -- THE `marg` WALL
+    # `realize.bend` RECORDS. **THE CLAIM IS THAT CPython's ANSWER IS THE RAISE AND NOT
+    # SOMETHING ELSE**, BECAUSE A ROW THAT STOPPED RAISING WOULD BE A ROW THAT STOPPED
+    # BEING A DIVERGENCE, AND A DIVERGENCE THAT QUIETLY BECAME AN AGREEMENT IS A CLASS
+    # THAT LOST ITS REASON WITHOUT LOSING ITS ROW.
+    for r in ARG_NO_SHAPE + NAME_NO_SHAPE + OI_NO_SHAPE + RES_NO_SHAPE + VAR_NO_SHAPE + WBUF_NO_SHAPE:
+        if cpy[r] != "raise=IndexError":
+            bad(f"{r}: cpy={cpy[r]!r} is not `raise=IndexError`, so it is not in this class")
+    # **AND THE PORT DOES NOT REFUSE: IT ANSWERS.** THE PORT's OWN `is_variable` CANNOT
+    # READ `_shape` AT ALL -- THE `marg` WALL -- SO THE PORT ANSWERS EVERY ONE OF THESE
+    # ROWS AND CPython CANNOT. **THE PORT's ANSWER IS `none` ON MANY OF THEM AND THAT IS
+    # AN ANSWER, NOT A REFUSAL**: `none` IS WHAT AN EMPTY LIST PRINTS, AND THE PORT's
+    # `get_call_kernel_args` OVER A ONE-SRC PROGRAM ANSWERS THE `ProgramInfo` HALF ALONE,
+    # WHICH FOR THESE NODES IS EMPTY. SO THERE IS NO "THE PORT REFUSED" CLAIM HERE AND
+    # THE CLASS IS EXACTLY ONE THING: CPython RAISES AND THE PORT ANSWERS.
     # VAL_BODY: the port has the CLAIM and no body, so its answer is the claim's bit.
     for r in VAL_BODY:
         if port[r] not in ("0", "1"):
@@ -596,10 +667,10 @@ def classes_hold() -> bool:
     # ARG_SLOT: a CALL whose `src[1]` is not a PARAM or a BUFFER. `kern_53` is the one that
     # ANSWERS a different COUNT rather than a refusal, and it is held separately.
     for r in ARG_SLOT:
-        if not cpy[r].startswith("raise=") and r != "kern_53":
+        if not cpy[r].startswith("raise=") and r != "kern_54":
             bad(f"{r}: cpy {cpy[r]!r} is not a raise, so it is not in this class")
-    if (cpy["kern_53"], port["kern_53"]) != ("1", "0"):
-        bad(f"kern_53: cpy={cpy['kern_53']!r} port={port['kern_53']!r}, "
+    if (cpy["kern_54"], port["kern_54"]) != ("1", "0"):
+        bad(f"kern_54: cpy={cpy['kern_54']!r} port={port['kern_54']!r}, "
             f"not the declared SINK-in-the-arg-slot pair")
     # SINK_NO_KI: CPython RAISES `AttributeError` on `sink.arg.beam` for a SINK with no
     # `KernelInfo`, and the port's `rz_kernel_beam` DEFAULTS it to 0 -- so the rule CLAIMS
@@ -620,16 +691,16 @@ def classes_hold() -> bool:
         if cpy[r] != "raise=IndexError" or port[r] == "none":
             bad(f"{r}: cpy={cpy[r]!r} port={port[r]!r}, not the declared SLOT_MISS pair")
     # MSELECT_WALL: CPython resolves the MSELECT to its storage base and the port drops it.
-    if (cpy["wbuf_60"], port["wbuf_60"]) != ("BUFFER/1@0[g0:-]", "none"):
-        bad(f"wbuf_60: cpy={cpy['wbuf_60']!r} port={port['wbuf_60']!r}, "
+    if (cpy["wbuf_61"], port["wbuf_61"]) != ("BUFFER/1@0[g0:-]", "none"):
+        bad(f"wbuf_61: cpy={cpy['wbuf_61']!r} port={port['wbuf_61']!r}, "
             f"not the declared MSELECT wall")
     # GETADDR_DRIFT, THE VENDORED-DRIFT FINDING: THE SAME NODE WITH THE SAME OP AND ARITY,
     # differing only in what `src[0]` BECAME -- and the `@<slot>` suffix is what says WHICH
     # input it became, which `BUFFER/1` alone could not. One more level is the instrument.
-    if (cpy["res_63"], port["res_63"]) != (
-            "BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]",
-            "BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]"):
-        bad(f"res_63: cpy={cpy['res_63']!r} port={port['res_63']!r}, "
+    if (cpy["res_64"], port["res_64"]) != (
+            "BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@1[g1:-]+CONST/0[1]",
+            "BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@0[g0:-]+CONST/0[1]"):
+        bad(f"res_64: cpy={cpy['res_64']!r} port={port['res_64']!r}, "
             f"not the declared GETADDR drift pair")
     # RET_IS_UOP, NOW FIXED: at ctx 0 both lanes answer `10` -- CLAIMED and the rewrite was
     # the identity -- and the ctx-7 rows answer the same CONE **and the same BEAM**.
@@ -755,8 +826,14 @@ def drivers_hold() -> bool:
                     arms.add(lines[j][4:].split("(")[0])
                     break
     ok = True
-    if len(inter) != 8:
-        print(f"  drivers_hold: (a) is {len(inter)} entry points, the file declares 8")
+    # **SEVEN, NOT EIGHT, AND THE EIGHTH WENT WHERE THE PIN WENT.** UPSTREAM `a6addc2d4`
+    # REPLACED `get_call_var_uops` WITH `get_call_kernel_args`, SO THE INTERSECTION WITH
+    # `dir(tinygrad.engine.realize)` LOST ONE AND GAINED ONE -- AND THE COUNT IS THE
+    # MEASUREMENT, SO IT MOVED WITH THE PIN. `get_call_written_bufs` WAS DELETED
+    # UPSTREAM TOO (`a26c50b01`), AND THE PORT KEEPS IT AS A **DECLARED EXTENSION**, SO IT
+    # IS NO LONGER IN (a) EITHER: IT IS THE FOURTH SOURCE, BELOW.
+    if len(inter) != 7:
+        print(f"  drivers_hold: (a) is {len(inter)} entry points, the file declares 7")
         ok = False
     if len(tables) != 3:
         print(f"  drivers_hold: (c) is {len(tables)} *_table defs, the file declares 3")
@@ -790,7 +867,7 @@ def drivers_hold() -> bool:
     # spell is a driver the census is missing, and saying so beats a hard-coded list.
     SHORT = {"get_call_arg_uops": "arg", "resolve_params": "res", "get_call_outs_ins": "oi",
              "get_call_written_bufs": "wbuf", "get_call_kernels": "kern",
-             "get_call_name": "name", "get_call_var_uops": "var",
+             "get_call_name": "name", "get_call_kernel_args": "var",
              "_get_call_to_compile": "gcc", "estimate_uop": "est",
              "unwrap_multi": "nb"}
     miss = sorted({SHORT[n] for n in inter if n in SHORT} - set(DRV))
@@ -801,6 +878,20 @@ def drivers_hold() -> bool:
     if unowned:
         print(f"  drivers_hold: (a) has no short name for {unowned} -- a new realize.py "
               f"reader would go ungated")
+        ok = False
+    # THE FOURTH SOURCE, MEASURED: THE `wbuf` DRIVER IS OVER A FUNCTION CPython DELETED
+    # (`a26c50b01`, "jit no written uops", 2026-10-05) AND THE PORT KEEPS AS A **DECLARED
+    # EXTENSION** -- `realize.bend:865` IS THAT FUNCTION's LAST REVISION AND
+    # `engine/jit.bend:35` CITES IT. SO THE AXIS HAS A DRIVER THAT NO `realize.py` CAN
+    # ANSWER, AND THE CLAIM IS THAT THE PORT REALLY HAS THE DEF AND THAT CPython REALLY
+    # DOES NOT.
+    if "get_call_written_bufs" not in got:
+        print("  drivers_hold: the port has no `get_call_written_bufs`, so the `wbuf` "
+              "driver drives nothing")
+        ok = False
+    if "get_call_written_bufs" in dir(RZ):
+        print("  drivers_hold: CPython HAS `get_call_written_bufs`, so the port's is not "
+              "the extension this gate says it is -- the extension claim is stale")
         ok = False
     return ok
 
@@ -996,8 +1087,8 @@ def pin_drift_holds() -> bool:
     diff.
 
     It asserts TWO things and the second is the one that keeps the first honest. The pin
-    must AGREE with the port on `res_63` (the GETADDR row), or the drift story is a story.
-    And the pin must DISAGREE with the port on `res_52` (the MSTACK row), or every one of
+    must AGREE with the port on `res_64` (the GETADDR row), or the drift story is a story.
+    And the pin must DISAGREE with the port on `res_53` (the MSTACK row), or every one of
     the 125 would be drift and the drift check would be measuring nothing -- the MSTACK arm
     has been absent from `rz_arm` in BOTH versions, which is what makes "only one arm" a
     measurement instead of an adjective.
@@ -1005,10 +1096,13 @@ def pin_drift_holds() -> bool:
     MEASURED, the two rows it compares (the `@<slot>` suffix is `s1`'s slot repair and the
     `[...]` is its `arg` payload, so "WHICH BUFFER" is visible and so is WHICH KERNEL -- they
     printed alike until then):
-        HEAD   res_63=BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]
-        PIN    res_63=BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]  <-- AND SO THE PORT
-        HEAD   res_52=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]
-        PIN    res_52=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]           <-- AND SO NOT THE PORT
+        HEAD   res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@1[g1:-]+CONST/0[1]
+        PIN    res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@0[g0:-]+CONST/0[1]  <-- AND SO THE PORT
+        HEAD   res_53=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]
+        PIN    res_53=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]           <-- AND SO NOT THE PORT
+    **THE `1` INSIDE THE GETADDR's BRACKETS IS THE DEVICE's COUNT**, AND IT IS THERE
+    BECAUSE A CALL THAT PASSES THE WRONG DEVICE HAS TO MOVE A ROW: THE DEVICE IS IN NO
+    NODE SHAPE, SO THE ONLY PROJECTION BOTH LANES CAN PRODUCE IS ITS COUNT.
     """
     try:
         RO = _load_oracle()
@@ -1032,12 +1126,12 @@ def pin_drift_holds() -> bool:
         print("  pin_drift_holds: the promoted port lane is not there")
         return False
     ok = True
-    if pin_row(63) != port["res_63"]:
-        print(f"  pin_drift_holds: the PIN answers res_63 {pin_row(63)!r} and the port "
-              f"{port['res_63']!r} -- FINDING 1's drift story is not what it claims")
+    if pin_row(64) != port["res_64"]:
+        print(f"  pin_drift_holds: the PIN answers res_64 {pin_row(64)!r} and the port "
+              f"{port['res_64']!r} -- FINDING 1's drift story is not what it claims")
         ok = False
-    if pin_row(52) == port["res_52"]:
-        print(f"  pin_drift_holds: the PIN also answers res_52 {pin_row(52)!r}, so the "
+    if pin_row(53) == port["res_53"]:
+        print(f"  pin_drift_holds: the PIN also answers res_53 {pin_row(53)!r}, so the "
               f"MSTACK wall is drift too and 'only one arm' is wrong")
         ok = False
     return ok
@@ -1298,7 +1392,7 @@ def kern_blind_holds() -> bool:
     Before this, every device in the fixture was a scalar `S.D1` and every `kern_*` row was
     a list of length 0 or 1, so `len()` -- the one projection both sides share -- was only
     ever tested on a list that could not surprise it. `rs_x64`/`rs_x65` minted a
-    `S.Dn{[6, 0]}` over `("DISK", "CPU")` and a CALL over it, so `kern_65` is now 2 on both
+    `S.Dn{[6, 0]}` over `("DISK", "CPU")` and a CALL over it, so `kern_66` is now 2 on both
     lanes and a dropped or duplicated device moves the count.
 
     What it still cannot distinguish, stated rather than asserted away: an ORDER SWAP
@@ -1350,8 +1444,8 @@ def kern_blind_holds() -> bool:
         if rows is None:
             bad(f"{lane} is not there")
             continue
-        if rows.get("kern_65") != "2":
-            bad(f"{lane} kern_65={rows.get('kern_65')!r} and the multi-device CALL's count "
+        if rows.get("kern_66") != "2":
+            bad(f"{lane} kern_66={rows.get('kern_66')!r} and the multi-device CALL's count "
                 f"is 2, so the one row that can surprise `len()` does not")
     return ok
 
@@ -1382,14 +1476,16 @@ if __name__ == "__main__":
         f"realize_graph_census-gate: {ROWS[0]} rows ({len(DRV)} drivers x {NODES} nodes + "
         f"{len(DRV)} bottom + 12 arm-coverage + 2 header), 3 lanes, "
         f"{ROWS[0] - len(DIVERGES)} answers match CPython byte-for-byte and "
-        f"{len(DIVERGING)} are DECLARED divergences over NINE classes -- "
+        f"{len(DIVERGING)} are DECLARED divergences over SIXTEEN classes -- "
         f"OF THOSE {ROWS[0]} ROWS ONLY {_compared()[0]} CARRY A COMPARISON: "
         f"{_compared()[1]} are the CALL-only drivers refusing a non-CALL "
         f"(both lanes answer `notacall`, so they count as matches) and {_compared()[2]} "
         f"are `Arena.bottom()`, where CPython has no node. "
         f"{len(BOTTOM)} divergences are that bottom, "
         f"{len(NAME_ARM)} are `get_call_name`'s STORE arm and its fallthrough, "
-        f"{len(VARS_BODY)} are `prg.arg.vars` over a non-`ProgramInfo` body, "
+        f"{len(NO_SHAPE_ROWS)} are CPython's `is_variable` READING `self._shape` OVER A "
+        f"PARAM WITH NO `src` (THE FIXTURE's ALU PARAMS), {len(VAR_NO_SHAPE)} of them the "
+        f"`var` driver, "
         f"{len(VAL_BODY)} are `pm_validate`'s UNPORTED BODY (claim against cone), "
         f"{len(ARG_SLOT)} are a CALL whose `src[1]` is not a PARAM or a BUFFER, "
         f"{len(SLOT_MISS)} are `inputs[slot]` where CPython has no default, 1 is the "
@@ -1398,11 +1494,11 @@ if __name__ == "__main__":
         f"`src[1:]` against the port's op-CONDITIONAL `Arena.src_without_body` now AGREE, "
         f"and `classes_hold` asserts every one of them still does -- **AND `rz_bound_map`, "
         f"the SECOND of its two fix sites, IS NOT COVERED BY ANY OF THEM: MEASURED, "
-        f"reverting it moves ZERO rows, because no driver reaches `get_call_var_uops` on a "
+        f"reverting it moves ZERO rows, because no driver reaches `get_call_kernel_args` on a "
         f"non-CALL (`var` is refused there by `u.body`) and for a CALL the two spellings "
         f"ARE the same slice. The port's own comment says so; this header did not.** "
         f"ONE FINDING STANDS: "
-        f"`res_63` -- HEAD's `_resolve` has an `Ops.GETADDR` arm and `rz_arm` does NOT, so "
+        f"`res_64` -- HEAD's `_resolve` has an `Ops.GETADDR` arm and `rz_arm` does NOT, so "
         f"a GETADDR argument is left un-resolved; IT VANISHES UNDER THE PIN "
         f"`ad117c928^`, whose line 129 has no GETADDR, so the port is correct against the "
         f"pin and incomplete against HEAD, and `pin_drift_holds` runs the pin's code on "
@@ -1438,14 +1534,14 @@ if __name__ == "__main__":
 # THE TWO FINDINGS, WITH THEIR MEASUREMENTS, AND WHAT WAS DONE ABOUT THEM.
 # `tinybendygrad/engine/realize.bend` IS LEFT BYTE-IDENTICAL.
 #
-# FINDING 1 -- `res_63`, `_resolve` HAS NO `OpsGETADDR` ARM. `rz_arm` (realize.bend:1048)
+# FINDING 1 -- `res_64`, `_resolve` HAS NO `OpsGETADDR` ARM. `rz_arm` (realize.bend:1048)
 # reads MSELECT/SHRINK/BITCAST/MSTACK/PARAM and a default; HEAD's `realize.py:129` is
 # `if b.op in (Ops.MSELECT, Ops.SHRINK, Ops.BITCAST, Ops.GETADDR)`. So a GETADDR in a
 # CALL's argument slot is handed back UNCHANGED where HEAD resolves through it, and the
 # argument's device address is then read off the UNREALIZED node. MEASURED, on the `vv`
 # call, whose second argument is `GETADDR(PARAM g0)` with `inputs = (b1, b0)`:
-#     py   res_63=BUFFER/1+GETADDR/1<-BUFFER/1
-#     bd   res_63=BUFFER/1+GETADDR/1<-PARAM/0
+#     py   res_64=BUFFER/1+GETADDR/1[1]<-BUFFER/1
+#     bd   res_64=BUFFER/1+GETADDR/1[1]<-PARAM/1@0
 # THE PIN IS WHERE IT VANISHES. `git show 'ad117c928^:tinygrad/engine/realize.py'` line 129
 # reads `if b.op in (Ops.MSELECT, Ops.SHRINK, Ops.BITCAST):` -- no GETADDR -- so the port's
 # five arms are exactly the pin's five arms and the row would AGREE. THE OTHER HALF OF
@@ -1469,7 +1565,7 @@ if __name__ == "__main__":
 #     node 51's own src[0] is a SINK. Node 62 (`GETADDR(PARAM g0)`) is the one that parts.
 #   * `inputs` MUST NOT BE TWO PARAMs. `g0` and `g1` are both `PARAM/0`, so a slot lookup
 #     of either prints `PARAM/0` and `realize.py:131` becomes invisible. MEASURED: with
-#     `inputs=(g1, g0)` -- realize.bend's OWN `res_slot0`/`res_slot1` fixture -- `res_63`
+#     `inputs=(g1, g0)` -- realize.bend's OWN `res_slot0`/`res_slot1` fixture -- `res_64`
 #     AGREED. With `inputs=(b1, b0)` it does not. THAT IS THE SAME LESSON AS
 #     `decomp_graph_census`'s CONST-value hole, on a different field: a value that is in no
 #     node shape cannot be gated by a printer that does not print it.

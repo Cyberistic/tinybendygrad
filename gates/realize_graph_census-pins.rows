@@ -5,7 +5,7 @@
 # check is `want not in raw[lane]` -- a LIST-MEMBERSHIP test, so a bare value would never be
 # found. MEASURED: with the values alone the first run answered `py's arg_10 is not 'none'`.
 #
-# 63 DIVERGENCES, 941 OF THE 1004 ROWS AGREE EXACTLY. It is git-resident and
+# 84 DIVERGENCES, 935 OF THE 1019 ROWS AGREE EXACTLY. It is git-resident and
 # beside the gate because `AGENTS.md`'s own rule is that a gate's required inputs live in
 # git and not in `gates/artifacts/`: `gatekit` EMPTIES that directory before it runs and
 # UNLINKS what it staged when the run was not green, so a divergence list read from there
@@ -64,6 +64,12 @@
 #     finding: it had been quoted forward from `realize.bend`'s own header, which is how a
 #     wall becomes a fact without anyone measuring it.
 
+# arg_20        ARG_NO_SHAPE                             cpy     23 B 294e7b0387bd | port     22 B 0237068e8c49
+arg_20	arg_20=raise=IndexError	arg_20=PARAM/1@0[g0:-]
+# arg_21        ARG_NO_SHAPE                             cpy     23 B 8337c1a42a93 | port     22 B 001502647e76
+arg_21	arg_21=raise=IndexError	arg_21=PARAM/1@0[g0:-]
+# arg_23        ARG_NO_SHAPE                             cpy     23 B 74c76e353409 | port     38 B c81670afc81b
+arg_23	arg_23=raise=IndexError	arg_23=PARAM/1@0[g0:-]+PARAM/1@1[g1:-]
 # b_arg         BOTTOM                                   cpy     12 B 96814c40b8d9 | port     10 B eff9cf9b9d91
 b_arg	b_arg=bottom	b_arg=none
 # b_bea0        BOTTOM                                   cpy     13 B 1fa991fcc5a4 | port      9 B c7a1bd8a398c
@@ -94,30 +100,36 @@ b_val	b_val=bottom	b_val=0
 b_var	b_var=bottom	b_var=notacall
 # b_wbuf        BOTTOM                                   cpy     13 B edc024d5882c | port     15 B 02c2adf7bd30
 b_wbuf	b_wbuf=bottom	b_wbuf=notacall
-# bea0_55       ARG_SLOT                                 cpy     28 B f403bef1d2dc | port     10 B e4d9f78b3b21
-bea0_55	bea0_55=raise=AttributeError	bea0_55=10
-# beam_55       ARG_SLOT                                 cpy     28 B 69d03d075ea3 | port     10 B dc760d24932c
-beam_55	beam_55=raise=AttributeError	beam_55=10
-# est_57        ARG_SLOT                                 cpy     27 B c2fd98029b2d | port      8 B f0a85ba71c8c
-est_57	est_57=raise=AttributeError	est_57=0
-# gcc_50        ARG_SLOT                                 cpy     27 B 9699d90b0720 | port      8 B 34638d9aa500
-gcc_50	gcc_50=raise=AssertionError	gcc_50=1
-# gcc_53        ARG_SLOT                                 cpy     22 B c77ff3aa2c93 | port      8 B e961bd91615f
-gcc_53	gcc_53=raise=TypeError	gcc_53=1
-# gcc_60        ARG_SLOT                                 cpy     27 B 7bde73571b99 | port      8 B b4128eceda29
-gcc_60	gcc_60=raise=AssertionError	gcc_60=1
-# kern_53       ARG_SLOT                                 cpy      9 B ed57e5081bb1 | port      9 B f607d7cfb1e8
-kern_53	kern_53=1	kern_53=0
-# name_18       NAME_ARM                                 cpy     24 B cafbf919a256 | port     12 B ce42084ce155
-name_18	name_18=raise=IndexError	name_18=none
-# name_21       NAME_ARM                                 cpy     33 B f7bee84e8e24 | port     12 B 4771e0f2db0a
-name_21	name_21=raise=NotImplementedError	name_21=none
-# name_23       NAME_ARM                                 cpy     33 B 64ef2579ae0c | port     12 B 4bf27d2898ee
-name_23	name_23=raise=NotImplementedError	name_23=none
+# bea0_56       SINK_NO_KI                               cpy     28 B fa6a757863d0 | port     10 B aa01b242ac37
+bea0_56	bea0_56=raise=AttributeError	bea0_56=10
+# beam_56       SINK_NO_KI                               cpy     28 B d9356d98cea9 | port     10 B 9b58b840951e
+beam_56	beam_56=raise=AttributeError	beam_56=10
+# est_58        ARG_SLOT                                 cpy     27 B 69081d7aa2d5 | port      8 B 358dc9683aa3
+est_58	est_58=raise=AttributeError	est_58=0
+# gcc_51        ARG_SLOT                                 cpy     27 B a954fdb069e0 | port      8 B 9e97981a93f9
+gcc_51	gcc_51=raise=AssertionError	gcc_51=1
+# gcc_61        ARG_SLOT                                 cpy     27 B 8240052bcfcd | port      8 B 63363af1f47d
+gcc_61	gcc_61=raise=AssertionError	gcc_61=1
+# kern_51       ARG_SLOT                                 cpy     28 B 5ae99148e022 | port      9 B 0b6a09683a12
+kern_51	kern_51=raise=AssertionError	kern_51=1
+# kern_54       ARG_SLOT                                 cpy      9 B 05023f36bbf5 | port      9 B a7d0b763d3c4
+kern_54	kern_54=1	kern_54=0
+# kern_61       ARG_SLOT                                 cpy     28 B 75fcaa0fda9b | port      9 B b50ae6e681d6
+kern_61	kern_61=raise=AssertionError	kern_61=1
+# name_19       NAME_ARM                                 cpy     24 B 53764803ad6a | port     12 B 7be077ee9c4d
+name_19	name_19=raise=IndexError	name_19=none
+# name_20       NAME_NO_SHAPE                            cpy     24 B fe29498fcda8 | port     10 B 2c547951c6a4
+name_20	name_20=raise=IndexError	name_20=k1
+# name_21       NAME_NO_SHAPE                            cpy     24 B d6fc9ee2d9a9 | port     10 B f968e9a0566d
+name_21	name_21=raise=IndexError	name_21=k1
+# name_22       NAME_ARM                                 cpy     33 B 47c7449e5dd2 | port     12 B 9468bbc7b8b6
+name_22	name_22=raise=NotImplementedError	name_22=none
+# name_23       NAME_NO_SHAPE                            cpy     24 B f474b235e7a6 | port     29 B 213f8fd25f36
+name_23	name_23=raise=IndexError	name_23=[33menc/dec 64 B[0m
 # name_24       NAME_ARM                                 cpy     33 B 3c13776e4bb9 | port     12 B b9260396558b
 name_24	name_24=raise=NotImplementedError	name_24=none
-# name_49       NAME_ARM                                 cpy     33 B 09966a125516 | port     12 B f11c69e09c98
-name_49	name_49=raise=NotImplementedError	name_49=none
+# name_25       NAME_ARM                                 cpy     33 B fdf6cff41a2c | port     12 B c784dd6a159b
+name_25	name_25=raise=NotImplementedError	name_25=none
 # name_50       NAME_ARM                                 cpy     33 B 7df085cd7c89 | port     12 B e6170cfcf56e
 name_50	name_50=raise=NotImplementedError	name_50=none
 # name_51       NAME_ARM                                 cpy     33 B 6c785c1137ca | port     12 B 43917559f40d
@@ -126,67 +138,97 @@ name_51	name_51=raise=NotImplementedError	name_51=none
 name_52	name_52=raise=NotImplementedError	name_52=none
 # name_53       NAME_ARM                                 cpy     33 B e2e294625fa7 | port     12 B 8ef71ab2bf47
 name_53	name_53=raise=NotImplementedError	name_53=none
-# name_55       NAME_ARM                                 cpy     33 B 31268210fd0d | port     12 B a83038dee702
-name_55	name_55=raise=NotImplementedError	name_55=none
-# name_57       NAME_ARM                                 cpy     28 B fd3efff64759 | port     12 B 04082c778b7b
-name_57	name_57=raise=AttributeError	name_57=none
-# name_61       NAME_ARM                                 cpy     33 B 66a9fced017e | port     12 B e8f343294976
-name_61	name_61=raise=NotImplementedError	name_61=none
-# name_63       NAME_ARM                                 cpy     33 B bb11885cb041 | port     12 B 7ece286dcdd6
-name_63	name_63=raise=NotImplementedError	name_63=none
-# nb_53         ARG_SLOT                                 cpy     24 B d50c4f7db6fd | port      7 B 5db513c3a47a
-nb_53	nb_53=raise=RuntimeError	nb_53=0
-# res_20        SLOT_MISS                                cpy     23 B 94f45b274cfa | port     38 B ff612f018c8f
-res_20	res_20=raise=IndexError	res_20=BUFFER/1@1[g1:-]+PARAM/0@3[m:-]
-# res_22        SLOT_MISS                                cpy     23 B 9c97015ac14a | port     55 B 23ffb7267753
-res_22	res_22=raise=IndexError	res_22=BUFFER/1@1[g1:-]+BUFFER/1@0[g0:-]+PARAM/0@2[n:-]
-# res_52        MSTACK_WALL                              cpy     50 B e08d5e4fe44c | port     49 B 881b1a9a5013
-res_52	res_52=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]	res_52=BUFFER/1@0[g0:-]+MSTACK/2<-PARAM/0@0[g0:-]
-# res_63        GETADDR_DRIFT                            cpy     62 B fef4fab34eec | port     61 B ebccf802f1ed
-res_63	res_63=BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]	res_63=BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]
-# val_23        VAL_BODY                                 cpy    158 B 77de5bf49913 | port      8 B 0aeeee859a8a
-val_23	val_23=1:LINEAR/3,CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@0[-:-],PARAM/0@0[g0:-],CALL/2[l],SINK/0[k1:0],CALL/3[-],CUSTOM_FUNCTION/1[validate]	val_23=1
-# val_24        VAL_BODY                                 cpy    158 B 6db4a57b4949 | port      8 B 64771c012034
-val_24	val_24=1:LINEAR/3,CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@1[-:-],PARAM/0@0[g0:-],CALL/2[m],SINK/0[k2:2],CALL/3[-],CUSTOM_FUNCTION/1[validate]	val_24=1
-# val_49        VAL_BODY                                 cpy    282 B 5f3826c8999b | port      8 B 2589eb1b95c3
-val_49	val_49=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@2[-:-],PARAM/0@1[g1:-],CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@3[-:-],SHRINK/3,BUFFER/1@0[g0:-],CONST/0[3],CONST/0[0],CONST/0[2],CALL/3[vs],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_49=1
-# val_50        VAL_BODY                                 cpy     27 B ca901e289822 | port      8 B 8bda50029d04
-val_50	val_50=raise=AssertionError	val_50=1
-# val_51        VAL_BODY                                 cpy    261 B a60f6bfec6d9 | port      8 B 3499c94ca464
-val_51	val_51=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@5[-:-],PARAM/0@1[g1:-],CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@6[-:-],GETADDR/1,BUFFER/1@0[g0:-],CONST/0[3],CALL/3[vg],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_51=1
-# val_52        VAL_BODY                                 cpy    271 B d63f7c6c4b62 | port      8 B fd3dc3448111
-val_52	val_52=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@7[-:-],PARAM/0@1[g1:-],CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/1@8[-:-],RANGE/1[d-],CONST/0[2],MSTACK/2,PARAM/0@0[g0:-],CALL/3[vk],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_52=1
-# val_53        VAL_BODY                                 cpy     25 B 528addeb151b | port      8 B a9281814ae38
-val_53	val_53=raise=RuntimeError	val_53=1
-# val_55        VAL_BODY                                 cpy    153 B 40b7a204e4c3 | port      8 B 445eae475a8e
-val_55	val_55=1:LINEAR/3,CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@9[-:-],PARAM/0@0[g0:-],CALL/2[nk],SINK/0,CALL/3[-],CUSTOM_FUNCTION/1[validate]	val_55=1
-# val_61        VAL_BODY                                 cpy    218 B 302027958a2a | port      8 B 26f431517628
-val_61	val_61=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/0@0[-:-],PARAM/0@1[-:-],BUFFER/0@10[-:-],PARAM/0@0[g0:-],CALL/3[-],BUFFER/0@11[-:-],BITCAST/1[i32],PARAM/0@1[g1:-],CALL/3[vb],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_61=1
-# val_63        VAL_BODY                                 cpy     25 B c3a35acf68cb | port      8 B 4e925b102d0e
-val_63	val_63=raise=RuntimeError	val_63=1
-# var_21        VARS_BODY                                cpy     27 B 69ed81b77eb4 | port     11 B 4bed6169dfde
-var_21	var_21=raise=AttributeError	var_21=none
-# var_22        VARS_BODY                                cpy     27 B 2b9697ada29e | port     11 B 30a253a97ecc
-var_22	var_22=raise=AttributeError	var_22=none
-# var_23        VARS_BODY                                cpy     27 B 59f0c851855f | port     11 B ba0ddfceeb42
-var_23	var_23=raise=AttributeError	var_23=none
-# var_24        VARS_BODY                                cpy     27 B e6155a487989 | port     11 B 8edfb99c9fe9
-var_24	var_24=raise=AttributeError	var_24=none
-# var_49        VARS_BODY                                cpy     27 B 453c37ed61c1 | port     11 B 770e997e5ffc
-var_49	var_49=raise=AttributeError	var_49=none
-# var_50        VARS_BODY                                cpy     27 B 26862c1e0216 | port     11 B cd0ce66bafbc
-var_50	var_50=raise=AttributeError	var_50=none
-# var_51        VARS_BODY                                cpy     27 B 730a7f870bb2 | port     11 B 1b5c76320db9
-var_51	var_51=raise=AttributeError	var_51=none
-# var_52        VARS_BODY                                cpy     27 B 3eaf72936c95 | port     11 B 5b1a736db353
-var_52	var_52=raise=AttributeError	var_52=none
-# var_53        VARS_BODY                                cpy     27 B 20b92bc7757d | port     11 B 2f985f72a11c
-var_53	var_53=raise=AttributeError	var_53=none
-# var_55        VARS_BODY                                cpy     27 B 0b451c252f3d | port     11 B d22d27a0239e
-var_55	var_55=raise=AttributeError	var_55=none
-# var_61        VARS_BODY                                cpy     27 B 0b19d18067a4 | port     11 B 4e9e7e297c40
-var_61	var_61=raise=AttributeError	var_61=none
-# var_63        VARS_BODY                                cpy     27 B ea0d21ed4032 | port     11 B cec7d51e0ddd
-var_63	var_63=raise=AttributeError	var_63=none
-# wbuf_60       MSELECT_WALL                             cpy     24 B 612c02cef1f7 | port     12 B 287071527627
-wbuf_60	wbuf_60=BUFFER/1@0[g0:-]	wbuf_60=none
+# name_54       NAME_ARM                                 cpy     33 B 99da60283ca5 | port     12 B 6c633e292b29
+name_54	name_54=raise=NotImplementedError	name_54=none
+# name_56       NAME_ARM                                 cpy     33 B 6c43dd43ac5a | port     12 B dd90e01c34e2
+name_56	name_56=raise=NotImplementedError	name_56=none
+# name_58       NAME_ARM                                 cpy     28 B 74561b47718f | port     12 B 03b2cbf5c1b6
+name_58	name_58=raise=AttributeError	name_58=none
+# name_62       NAME_ARM                                 cpy     33 B 091cac7e018e | port     12 B ea293dce1f14
+name_62	name_62=raise=NotImplementedError	name_62=none
+# name_64       NAME_ARM                                 cpy     33 B 5ca327c55550 | port     12 B af0f09f725e8
+name_64	name_64=raise=NotImplementedError	name_64=none
+# nb_54         ARG_SLOT                                 cpy     24 B 2c95bb017ad5 | port      7 B 9b1199e49f44
+nb_54	nb_54=raise=RuntimeError	nb_54=0
+# oi_23         OI_NO_SHAPE                              cpy     22 B 6a525c924e16 | port     13 B a97d25556d44
+oi_23	oi_23=raise=IndexError	oi_23=o=0;i=1
+# res_20        RES_NO_SHAPE                             cpy     23 B 94f45b274cfa | port     23 B ec18d17bdc2d
+res_20	res_20=raise=IndexError	res_20=BUFFER/1@1[g1:-]
+# res_21        RES_NO_SHAPE                             cpy     23 B b49b9ba027cc | port     23 B bd875466385b
+res_21	res_21=raise=IndexError	res_21=BUFFER/1@1[g1:-]
+# res_23        RES_NO_SHAPE                             cpy     23 B bed628e26cf7 | port     40 B 26b4e095a8e4
+res_23	res_23=raise=IndexError	res_23=BUFFER/1@1[g1:-]+BUFFER/1@0[g0:-]
+# res_53        MSTACK_WALL                              cpy     50 B a8bd5d01dcc0 | port     49 B 06088f6bab80
+res_53	res_53=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]	res_53=BUFFER/1@0[g0:-]+MSTACK/2<-PARAM/1@0[g0:-]
+# res_64        GETADDR_DRIFT                            cpy     65 B 0750b5d755ea | port     64 B fca768af2d8c
+res_64	res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-BUFFER/1@1[g1:-]+CONST/0[1]	res_64=BUFFER/1@0[g0:-]+GETADDR/1[1]<-PARAM/1@0[g0:-]+CONST/0[1]
+# val_24        VAL_BODY                                 cpy    170 B 8d0f06bf1d7b | port      8 B 64771c012034
+val_24	val_24=1:LINEAR/3,CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[16],PARAM/1@1[-:-],BUFFER/1@0[-:-],PARAM/1@0[g0:-],CALL/2[l],SINK/0[k1:0],CALL/3[-],CUSTOM_FUNCTION/1[validate]	val_24=1
+# val_25        VAL_BODY                                 cpy    170 B 5799caee34f5 | port      8 B 7ac1f2475848
+val_25	val_25=1:LINEAR/3,CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[16],PARAM/1@1[-:-],BUFFER/1@1[-:-],PARAM/1@0[g0:-],CALL/2[m],SINK/0[k2:2],CALL/3[-],CUSTOM_FUNCTION/1[validate]	val_25=1
+# val_50        VAL_BODY                                 cpy    283 B 068a46fdabc5 | port      8 B 8bda50029d04
+val_50	val_50=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[16],PARAM/1@1[-:-],BUFFER/1@2[-:-],PARAM/1@1[g1:-],CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[2],PARAM/1@1[-:-],BUFFER/1@3[-:-],SHRINK/3,BUFFER/1@0[g0:-],CONST/0[0],CALL/3[vs],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_50=1
+# val_51        VAL_BODY                                 cpy     27 B 9cbe38b86428 | port      8 B 3499c94ca464
+val_51	val_51=raise=AssertionError	val_51=1
+# val_52        VAL_BODY                                 cpy    284 B 2aebc03549e8 | port      8 B fd3dc3448111
+val_52	val_52=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[16],PARAM/1@1[-:-],BUFFER/1@5[-:-],PARAM/1@1[g1:-],CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[1],PARAM/1@1[-:-],STACK/0,BUFFER/1@6[-:-],GETADDR/1[1],BUFFER/1@0[g0:-],CALL/3[vg],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_52=1
+# val_53        VAL_BODY                                 cpy    283 B a87d3ad855ce | port      8 B a9281814ae38
+val_53	val_53=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[16],PARAM/1@1[-:-],BUFFER/1@7[-:-],PARAM/1@1[g1:-],CALL/3[-],STORE/2,PARAM/1@0[-:-],PARAM/1@1[-:-],BUFFER/2@8[-:-],RANGE/1[d-],CONST/0[2],MSTACK/2,PARAM/1@0[g0:-],CALL/3[vk],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_53=1
+# val_54        VAL_BODY                                 cpy     25 B e4e85d56402f | port      8 B 75975d4b6b66
+val_54	val_54=raise=RuntimeError	val_54=1
+# val_56        VAL_BODY                                 cpy    165 B 41ec39779e62 | port      8 B e79d769d3585
+val_56	val_56=1:LINEAR/3,CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[16],PARAM/1@1[-:-],BUFFER/1@9[-:-],PARAM/1@0[g0:-],CALL/2[nk],SINK/0,CALL/3[-],CUSTOM_FUNCTION/1[validate]	val_56=1
+# val_62        VAL_BODY                                 cpy    230 B f3c8b71bf287 | port      8 B 69e329b252e0
+val_62	val_62=1:LINEAR/4,CALL/3[-],STORE/2,PARAM/1@0[-:-],CONST/0[16],PARAM/1@1[-:-],BUFFER/1@10[-:-],PARAM/1@0[g0:-],CALL/3[-],BUFFER/1@11[-:-],BITCAST/1[i32],PARAM/1@1[g1:-],CALL/3[vb],SINK/0[k1:0],CALL/5[-],CUSTOM_FUNCTION/1[validate]	val_62=1
+# val_64        VAL_BODY                                 cpy     25 B e6d58e18f478 | port      8 B 59fa15775d2c
+val_64	val_64=raise=RuntimeError	val_64=1
+# var_18        VAR_NO_SHAPE                             cpy     23 B 7c483ede4d51 | port     11 B 4b2099e2c1de
+var_18	var_18=raise=IndexError	var_18=none
+# var_20        VAR_NO_SHAPE                             cpy     23 B 8e372d4e7fda | port     18 B c6cbe11f7463
+var_20	var_20=raise=IndexError	var_20=CAST/1[i32]
+# var_21        VAR_NO_SHAPE                             cpy     23 B cbab8e1bbc44 | port     30 B 417150e2fb54
+var_21	var_21=raise=IndexError	var_21=PARAM/0@4294967295[m:-]
+# var_22        VAR_NO_SHAPE                             cpy     23 B b14967ffb3fa | port     11 B 30a253a97ecc
+var_22	var_22=raise=IndexError	var_22=none
+# var_23        VAR_NO_SHAPE                             cpy     23 B 4d3e941ff3d1 | port     11 B ba0ddfceeb42
+var_23	var_23=raise=IndexError	var_23=none
+# var_24        VAR_NO_SHAPE                             cpy     23 B d752a9717930 | port     11 B 8edfb99c9fe9
+var_24	var_24=raise=IndexError	var_24=none
+# var_25        VAR_NO_SHAPE                             cpy     23 B 2654214b9317 | port     11 B fdbf432b1253
+var_25	var_25=raise=IndexError	var_25=none
+# var_26        VAR_NO_SHAPE                             cpy     23 B 62c2bab9bc0f | port     11 B 86f3a968e447
+var_26	var_26=raise=IndexError	var_26=none
+# var_32        VAR_NO_SHAPE                             cpy     23 B 28bd8c5144a7 | port     11 B d10f57920c55
+var_32	var_32=raise=IndexError	var_32=none
+# var_36        VAR_NO_SHAPE                             cpy     23 B ca9389cc971d | port     11 B 1c62d221be91
+var_36	var_36=raise=IndexError	var_36=none
+# var_50        VAR_NO_SHAPE                             cpy     23 B 44bed04ffd1b | port     11 B cd0ce66bafbc
+var_50	var_50=raise=IndexError	var_50=none
+# var_51        VAR_NO_SHAPE                             cpy     23 B 0c501a5042f0 | port     11 B 1b5c76320db9
+var_51	var_51=raise=IndexError	var_51=none
+# var_52        VAR_NO_SHAPE                             cpy     23 B 7d1c8ffab0e9 | port     11 B 5b1a736db353
+var_52	var_52=raise=IndexError	var_52=none
+# var_53        VAR_NO_SHAPE                             cpy     23 B 85f5e441b6fb | port     11 B 2f985f72a11c
+var_53	var_53=raise=IndexError	var_53=none
+# var_54        VAR_NO_SHAPE                             cpy     23 B f57c94cc85bb | port     11 B 0873d8afb44d
+var_54	var_54=raise=IndexError	var_54=none
+# var_56        VAR_NO_SHAPE                             cpy     23 B 0135f6f356d6 | port     11 B 401129435954
+var_56	var_56=raise=IndexError	var_56=none
+# var_58        VAR_NO_SHAPE                             cpy     23 B 35f6c4216e62 | port     11 B f7ed1be1912b
+var_58	var_58=raise=IndexError	var_58=none
+# var_61        VAR_NO_SHAPE                             cpy     23 B 96863985fab5 | port     11 B 4e9e7e297c40
+var_61	var_61=raise=IndexError	var_61=none
+# var_62        VAR_NO_SHAPE                             cpy     23 B 90a6a319686c | port     11 B cf8c7b60e170
+var_62	var_62=raise=IndexError	var_62=none
+# var_64        VAR_NO_SHAPE                             cpy     23 B b6b116b20c51 | port     11 B aea478bc8901
+var_64	var_64=raise=IndexError	var_64=none
+# var_66        VAR_NO_SHAPE                             cpy     23 B 928bb3038ff1 | port     11 B a091d38e6610
+var_66	var_66=raise=IndexError	var_66=none
+# wbuf_20       WBUF_NO_SHAPE                            cpy     24 B c77787b986c6 | port     12 B 01b9a3c6ab6b
+wbuf_20	wbuf_20=raise=IndexError	wbuf_20=none
+# wbuf_21       WBUF_NO_SHAPE                            cpy     24 B 418e9dd80154 | port     12 B 2c9f627aa583
+wbuf_21	wbuf_21=raise=IndexError	wbuf_21=none
+# wbuf_23       WBUF_NO_SHAPE                            cpy     24 B 141e8ff3a409 | port     12 B 7fc034696072
+wbuf_23	wbuf_23=raise=IndexError	wbuf_23=none
+# wbuf_61       MSELECT_WALL                             cpy     24 B 6ae7810c98ac | port     12 B b390673ebfdd
+wbuf_61	wbuf_61=BUFFER/1@0[g0:-]	wbuf_61=none

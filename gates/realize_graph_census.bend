@@ -11,11 +11,20 @@
 # exactly those. DRIVER ranges over the port's own group-[a] entry points: the eight
 # whose signature `(fuel: Nat, )?+ar: O.Arena` INTERSECTS the names `realize.py` itself
 # defines (`get_call_arg_uops`, `resolve_params`, `get_call_outs_ins`,
-# `get_call_written_bufs`, `get_call_kernels`, `get_call_name`, `get_call_var_uops`,
+# `get_call_written_bufs`, `get_call_kernels`, `get_call_name`, `get_call_kernel_args`,
 # `_get_call_to_compile`), the three more that own a `case O.Ops*` arm with no name in
 # `realize.py` (`rz_est_of`/`rz_nbytes_of`/`has_dnum` -- `estimate_uop` and
 # `unwrap_multi`), and the three `*_table` defs (`grep -c '^def [a-z]*_table'` = 3).
 # FIFTEEN, and the gate re-measures that intersection on every run.
+#
+# **TWO OF THOSE EIGHT NAMES ARE NAMES THE PIN NO LONGER HAS, AND BOTH FACTS BELOW ARE
+# WHY THE LANE STILL RUNS.** `get_call_var_uops` WAS REPLACED BY `get_call_kernel_args`
+# (UPSTREAM `a6addc2d4`), AND `get_call_written_bufs` WAS DELETED (UPSTREAM `a26c50b01`).
+# THE PORT KEEPS BOTH: THE FIRST AS A NEW FUNCTION AND THE SECOND AS A **DECLARED
+# EXTENSION**, BECAUSE `tinybendygrad/engine/jit.bend` READS IT. THE ORACLE THEREFORE
+# CALLS THE PIN's `get_call_kernel_args` AND TRANSCRIBES THE DELETED
+# `get_call_written_bufs` -- THE ONLY TRANSCRIPTION IN EITHER LANE, AND IT IS DECLARED
+# AND PINNED BY THE GATE.
 #
 # EVERY PAIR IS EMITTED, refusals included, so the two lanes carry the same row count BY
 # CONSTRUCTION: 15 x 60 = 900 driver rows, 12 arm-coverage rows and 15 bottom rows =
@@ -41,7 +50,7 @@
 #
 # THE STALE-ARENA TRAP IS THE TRAP THIS TREE HAS FALLEN IN NINE PLACES, so both lanes
 # read their answers off the ANSWER'S OWN ARENA and not off the one handed in:
-# `resolve_params` and `get_call_var_uops` grow it, and they answer `RZ.RList{ar, xs}`
+# `resolve_params` and `get_call_kernel_args` grow it, and they answer `RZ.RList{ar, xs}`
 # for exactly that reason. Every reader below takes `RList.ar(r)` / `O.Found.ar(f)`.
 #
 # DEF ORDER IS THE BEND TRAP, not a style note: a def must be defined BEFORE its caller.
@@ -54,7 +63,7 @@ import ./../tinybendygrad/engine/realize.bend as RZ
 
 # ============================================================ the printers
 
-def rs_n() -> Nat: 65n
+def rs_n() -> Nat: 66n
 def rs_drv_n() -> Nat: 15n
 def rs_arms_n() -> Nat: 12n
 
@@ -187,18 +196,23 @@ def rs_pay.var(f: Nat, +ar: O.Arena, xs: List<&2, U32>, +acc: String, first: Boo
           s = rs_join2.add(first, acc, rs_pay.paname(O.Arena.arg(ar, h)))
           rs_pay.var(q, ar, t, s, False{})
 
-# VARS ; GLOBALS ; OUTS ; INS -- `realize.py:24-27`'s two lists, `realize.py:18`'s `vars`
-# and `realize.py:139`'s `globals`. `global_size`/`local_size` are `4,1,1`/`1,1,1` on all
-# nine PROGRAMs and no `realize.py` reader touches them. THE DESTRUCTURING IS NOT STYLE: a
-# record holding `List<&2, ...>` is AFFINE, so `O.ProgramInfo.globals(pi)` after
-# `O.ProgramInfo.vars(pi)` is `consumed more than once` -- MEASURED, that is the error.
+# PARAMS ; GLOBALS ; OUTS ; INS -- `realize.py:24-27`'s two lists, `realize.py:17`'s
+# `prg.kernel_params` and `realize.py:139`'s `globals`. `global_size`/`local_size` are
+# `4,1,1`/`1,1,1` on all nine PROGRAMs and no `realize.py` reader touches them. THE
+# DESTRUCTURING IS NOT STYLE: a record holding `List<&2, ...>` is AFFINE, so
+# `O.ProgramInfo.globals(pi)` after `O.ProgramInfo.params(pi)` is `consumed more than
+# once` -- MEASURED, that is the error. AND THE PATTERN NAMES EVERY FIELD, SO IT NAMES
+# THE FIELD COUNT: UPSTREAM `a6addc2d4` RENAMED `vars` TO `params` (`ops.py:1346` READS
+# `params`) AND `ProgramInfo` ALSO GREW A `target` FIELD. **THE CONSTRUCTION SIDE DOES
+# NOT HAVE TO: `rs_pi` CALLS THE PORT's OWN `pi`, SO A `ProgramInfo` THAT GROWS A FIELD
+# IS THE PORT's PROBLEM AND NOT THIS FILE's.**
 def rs_pay.pi(+ar: O.Arena, pi: O.ProgramInfo) -> String:
   match pi:
-    case O.ProgramInfo{gs, ls, vars, globals, outs, ins}:
+    case O.ProgramInfo{gs, ls, params, globals, outs, ins, target}:
       g = rs_ids(rs_fuel(ar), globals, "", True{})
       o = rs_ids(rs_fuel(ar), outs, "", True{})
       i = rs_ids(rs_fuel(ar), ins, "", True{})
-      v = rs_pay.var(rs_fuel(ar), ar, vars, "", True{})
+      v = rs_pay.var(rs_fuel(ar), ar, params, "", True{})
       String.concat([v, ";", g, ";", o, ";", i])
 
 # `Ops.RANGE`'s arg is `(axis_type, *dims)` (`ops.py:201`'s key) and this port spells it
@@ -215,13 +229,25 @@ def rs_pay.pi(+ar: O.Arena, pi: O.ProgramInfo) -> String:
 def rs_pay.ax(at: O.AxisType) -> String:
   Bool.pick(String, O.eq_axis(at, O.AXIS_DEVICE{}), "d", "-")
 
+# HOW MANY DEVICES A `S.Dev` NAMES. `D1` IS ONE AND `Dn` IS THAT MANY. THE COUNT IS THE
+# DEVICE PROJECTION BOTH LANES CAN PRODUCE -- CPython's `devs` IS A TUPLE OF NAMES AND
+# THIS IS A LIST OF TAGS, AND THERE IS NO `str -> int` INDEX TO CHECK ONE AGAINST THE
+# OTHER. `device.bend:757`'s `dev_name` IS NOT A WAY OUT: IT IS THE OTHER TABLE, AND IT
+# DISAGREES WITH `device.bend:344`'s `tag_of` -- `tag_of("CPU")` IS 0 AND `dev_name(0)` IS
+# THE EMPTY STRING, WHILE `dev_name(6)` IS "CL" AND `tag_of("DISK")` IS 6. SO THE PORT HAS
+# NO DEVICE NAME TO PRINT FOR `S.D1{0}` AND THE COUNT IS WHAT IS LEFT.
+def rs_dev_n(d: S.Dev) -> U32:
+  match d:
+    case S.D1{tag}: 1
+    case S.Dn{tags}: U32.from_nat(List.length(&2, U32, tags))
+
 # A `ParamArg` IS AFFINE, so `O.ParamArg.name(pa)` and `O.ParamArg.val(pa)` in ONE
 # expression is `consumed more than once` -- MEASURED -- and `O.AParam` binds its ONE field
 # (`pa`) rather than the record's thirteen, so the record is destructured in a NESTED
 # match. Both halves are `PArg.of` (`realize.bend:231`), verbatim.
 def rs_pay.pa(pa: O.ParamArg) -> String:
   match pa:
-    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device,
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device,
                     volatile, image, buffer, bind_on_realize, val}:
       rs_pay.box(String.concat([rs_opt_str(name), ":", rs_opt_const(val)]))
 
@@ -285,18 +311,19 @@ def rs_pay(a: O.Arg, ar: O.Arena) -> String:
     case O.ARange{ids, at}: rs_pay.box(String.concat([rs_pay.ax(at),
                                                      rs_ids(rs_fuel(ar), ids, "", True{})]))
     case O.AStr{s}: rs_pay.box(s)
-    # `Ops.GETADDR`'s `arg` IS A DEVICE AND NEITHER LANE CAN SPELL IT. CPython's is
-    # `str|tuple[str, ...]` (`ops.py:611`, and `ops.py:844`'s `self.device`), this port's is
-    # `ADev{S.D1{tag}}` / `ADev{S.Dn{tags}}` (`ops.bend:7815` mints `ADev{dev}`) -- and
-    # CPYTHON HAS NO `str -> int` DEVICE INDEX for a tag to be checked
-    # against (`device_vocab_holds` measures that every run: `hasattr(Device,'tag')` is False),
-    # so a tag printed here would be compared against a NAME
-    # the other lane cannot produce from a tag. MEASURED, printing it anyway answers `[?]`
-    # here and `[CPU]` there and takes FIVE rows red: `arg_51`, `arg_63`, `beam_51`,
-    # `beam_63` and `res_51`. SO THIS ARM PRINTS NOTHING, and the blindness is the SAME ONE
-    # Box 1 names: a GETADDR over the WRONG DEVICE prints identically. It is also why
-    # `ParamArg.device` is omitted above -- one fact, two sites.
-    case O.ADev{dev}: ""
+    # `Ops.GETADDR`'s `arg` IS A DEVICE. CPython's is `str|tuple[str, ...]` (`ops.py:611`,
+    # and `ops.py:825`'s `self.device`), this port's is `ADev{S.D1{tag}}` /
+    # `ADev{S.Dn{tags}}` (`ops.bend:7944` mints `ADev{dev}`) -- and CPYTHON HAS NO
+    # `str -> int` DEVICE INDEX for a tag to be checked against a name
+    # (`device_vocab_holds` measures that every run: `hasattr(Device,'tag')` is False), so
+    # THE NAME IS NOT COMPARABLE. **THE COUNT IS.** AND THE COUNT IS COMPLETE FOR THIS
+    # FIXTURE's DEVICE VOCABULARY, WHICH HAS EXACTLY TWO MEMBERS WHOSE COUNTS DIFFER:
+    # `CPU` (ONE DEVICE) AND `("DISK","CPU")` (TWO). SO A CALL THAT PASSES THE WRONG
+    # DEVICE NOW MOVES A ROW INSTEAD OF PRINTING ALIKE -- WHICH IS THE PLANT THAT
+    # `gates/realize_graph_census-plant.py` NAMES AND LANDS. THE RESIDUAL, STATED: A
+    # WRONG DEVICE OF THE SAME COUNT IS STILL INVISIBLE, AND THAT IS THE SAME WALL
+    # `rs_d_kern` STATES.
+    case O.ADev{dev}: rs_pay.box(U32.show(rs_dev_n(dev)))
     # THE BYTES THEMSELVES, comma-joined by the `rs_ids` `oi` already uses, and NOT a
     # length: `List.length` is `Quant` and this is a `List<&2, U32>`, while `rs_ids` folds
     # the affine list and prints every byte. `b'a'` is `[97]` on CPython and `[97]` here.
@@ -418,18 +445,18 @@ def rs_zf() -> O.PyRange:
 # `ParamArg` field cannot be chosen by a caller that was handed the tag. The 13 fields
 # are `main_arena`'s `buf_arg` (`realize.bend:1552`) index for index; only the 8th moves.
 def rs_buf_dev(slot: U32, nm: String, d: S.Dev) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{16}, None{}, None{}, Some{nm}, S.AGlobal{},
+  O.ParamArg{slot, S.int32(), None{}, None{}, Some{nm}, S.AGlobal{},
              Some{d}, False{}, None{}, Some{0}, False{}, None{}}
 
 def rs_buf(slot: U32, nm: String) -> O.ParamArg:
   rs_buf_dev(slot, nm, rs_cpu())
 
 def rs_var(slot: U32, nm: String) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), None{}, Some{rs_zf()}, Some{1}, Some{nm}, S.Aalu{},
+  O.ParamArg{slot, S.int32(), Some{rs_zf()}, Some{1}, Some{nm}, S.Aalu{},
              None{}, False{}, None{}, Some{0}, False{}, None{}}
 
 def rs_bnd(slot: U32, nm: String) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), None{}, Some{rs_zf()}, Some{1}, Some{nm}, S.Aalu{},
+  O.ParamArg{slot, S.int32(), Some{rs_zf()}, Some{1}, Some{nm}, S.Aalu{},
              None{}, False{}, None{}, Some{0}, False{}, Some{O.CInt{H.i64_of_i32(4)}}}
 
 def rs_ci(nm: String) -> O.CallInfo:
@@ -439,8 +466,7 @@ def rs_ki(nm: String, beam: U32) -> O.KernelInfo:
   O.KernelInfo{nm, Nil{}, None{}, beam}
 
 def rs_pi(gs: List<&2, U32>, vars: List<&2, U32>, outs: List<&2, U32>, ins: List<&2, U32>) -> O.ProgramInfo:
-  O.ProgramInfo{[H.i64_of_i32(4), H.i64_of_i32(1), H.i64_of_i32(1)],
-               [H.i64_of_i32(1), H.i64_of_i32(1), H.i64_of_i32(1)], vars, gs, outs, ins}
+  RZ.pi(vars, gs, outs, ins)
 
 # `AInt` is MSELECT's shard index (`UOp.mselect`, ops.py:769) and `ADev` is `GETADDR`'s
 # device (ops.py:844); `UOp.new_buffer` mints them, and this file builds the nodes
@@ -458,11 +484,30 @@ def rs_call(nm: String, +ar: O.Arena, src: List<&2, U32>) -> O.Found:
 # ... has no MULTI-DEVICE buffer either, so `len()` was only ever tested on lists of
 # length 0 and 1 -- `rs_x64`/`rs_x65` are that node.
 #
+# THE SRC LISTS ARE THE INDEX MAP, AND THE MAP MOVED UNDER THIS FILE.
+#
+# **MEASURED 2026-10-22: 365 OF THE 1004 ROWS DIVERGED, AND THE CAUSE WAS ONE NODE.**
+# THE PORT's `main_arena` MINTS A **SIZE CONST** FOR EVERY PARAM AND BUFFER --
+# `ops.bend:3075`'s `UOp.new.param` CALLS `shape_to_shape_arg.of`, WHICH IS
+# `UOp.const(made, CInt{k})` FOR A SCALAR SIZE -- SO `main_arena`'s ARENA HAS ONE MORE
+# NODE THAN IT HAD, AND EVERY INDEX FROM SLOT 3 ON MOVED BY ONE. THE ORACLE's FIXTURE DID
+# NOT MINT THE CONST, SO IT DID NOT MOVE. **THE SYMPTOM WAS THAT EVERY ROW AFTER THE
+# INSERTION POINT ANSWERED A DIFFERENT NODE'S ANSWER** (`arg_15` ANSWERED WITH THE
+# BUFFER `arg_14` WAS SUPPOSED TO ANSWER WITH), AND **ONE ROW SAID SO: `arena_n` READ 67
+# ON THE PORT AND 66 ON THE ORACLE.** THE GATE IS NOT IN ANY WORKFLOW, SO NOBODY RAN IT
+# AND NOBODY SAW IT.
+#
+# **SO THE MAP IS HERE AGAIN, AND `arena_n` IS THE GUARD.** IT READS 67, AND A
+# HASH-CONSED NODE MAKES IT 66 AND TAKES THE LANE RED. THE MAP IS FRAGILE BY
+# CONSTRUCTION -- A HAND-KEPT INDEX MAP IS A LIST NOTHING READS BACK -- AND THE FRAGILITY
+# IS NOW MEASURED AND VISIBLE INSTEAD OF INVISIBLE. **THE PORT's OWN INDEX MAP IS IN
+# `realize.bend:1826`'s `Land`, AND ASKING IT FOR THE NODES INSTEAD OF NAMING THEM IS
+# THE NEXT STEP; IT IS NOT DONE HERE BECAUSE `rs_inputs` HAS NO `Land` TO ASK.**
+#
 # THE SRC LISTS ARE LITERAL INDICES, and that is the same invariant `main_arena` states
 # for itself: node k is at index k because the ORDER of the `UOp.new` calls IS the arena.
 # It holds only while every node here is DISTINCT -- `UOp.new` hash-conses, so a repeat
-# would take no slot and renumber everything after it. `arena_n` is the guard: it reads
-# 66, and a hash-consed node makes it 65 and takes the lane red.
+# would take no slot and renumber everything after it.
 def rs_x42(+ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CInt{H.i64_of_i32(1)})
 
@@ -473,55 +518,55 @@ def rs_x44(+ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CInt{H.i64_of_i32(2)})
 
 def rs_x45(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsSHRINK{}, [9, 43, 44], O.ANone{}, O.TNone{})
+  O.UOp.new(ar, O.OpsSHRINK{}, [10, 44, 45], O.ANone{}, O.TNone{})
 
 def rs_x46(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsMSELECT{}, [9], O.AInt{0}, O.TNone{})
+  O.UOp.new(ar, O.OpsMSELECT{}, [10], O.AInt{0}, O.TNone{})
 
 def rs_x47(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsGETADDR{}, [9], O.ADev{S.D1{0}}, O.TNone{})
+  O.UOp.new(ar, O.OpsGETADDR{}, [10], O.ADev{S.D1{0}}, O.TNone{})
 
 def rs_x48(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsMSTACK{}, [2, 3], O.ANone{}, O.TNone{})
+  O.UOp.new(ar, O.OpsMSTACK{}, [3, 4], O.ANone{}, O.TNone{})
 
 def rs_x49(+ar: O.Arena) -> O.Found:
-  rs_call("vs", ar, [7, 3, 45])
+  rs_call("vs", ar, [8, 4, 46])
 
 def rs_x50(+ar: O.Arena) -> O.Found:
-  rs_call("vm", ar, [7, 3, 46])
+  rs_call("vm", ar, [8, 4, 47])
 
 def rs_x51(+ar: O.Arena) -> O.Found:
-  rs_call("vg", ar, [7, 3, 47])
+  rs_call("vg", ar, [8, 4, 48])
 
 def rs_x52(+ar: O.Arena) -> O.Found:
-  rs_call("vk", ar, [7, 3, 48])
+  rs_call("vk", ar, [8, 4, 49])
 
 def rs_x53(+ar: O.Arena) -> O.Found:
-  rs_call("ss", ar, [7, 7])
+  rs_call("ss", ar, [8, 8])
 
 def rs_x54(+ar: O.Arena) -> O.Found:
   O.UOp.new(ar, O.OpsSINK{}, Nil{}, O.ANone{}, O.TNone{})
 
 def rs_x55(+ar: O.Arena) -> O.Found:
-  rs_call("nk", ar, [54, 2])
+  rs_call("nk", ar, [55, 3])
 
 def rs_x56(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsPROGRAM{}, [54], O.AProgram{rs_pi([0, 1], Nil{}, [0], [1])}, O.TNone{})
+  O.UOp.new(ar, O.OpsPROGRAM{}, [55], O.AProgram{rs_pi([0, 1], Nil{}, [0], [1])}, O.TNone{})
 
 def rs_x57(+ar: O.Arena) -> O.Found:
-  rs_call("nb", ar, [56, 9, 10])
+  rs_call("nb", ar, [57, 10, 11])
 
 def rs_x58(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsLINEAR{}, [52, 49], O.ANone{}, O.TNone{})
+  O.UOp.new(ar, O.OpsLINEAR{}, [53, 50], O.ANone{}, O.TNone{})
 
 def rs_x59(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsPROGRAM{}, [7], O.AProgram{rs_pi([0, 1, 2], Nil{}, [2], [1])}, O.TNone{})
+  O.UOp.new(ar, O.OpsPROGRAM{}, [8], O.AProgram{rs_pi([0, 1, 2], Nil{}, [2], [1])}, O.TNone{})
 
 def rs_x60(+ar: O.Arena) -> O.Found:
-  rs_call("mb", ar, [59, 9, 10, 46])
+  rs_call("mb", ar, [60, 10, 11, 47])
 
 def rs_x61(+ar: O.Arena) -> O.Found:
-  rs_call("vb", ar, [7, 2, 41])
+  rs_call("vb", ar, [8, 3, 42])
 
 # THE GETADDR OVER A **PARAM**, AND IT IS THE POINT OF THE NODE. `ops.py:844` builds
 # `UOp(Ops.GETADDR, src=(self,), ...)` and `self` is a PARAM as often as a BUFFER. A
@@ -531,7 +576,7 @@ def rs_x61(+ar: O.Arena) -> O.Found:
 # `res_51` AGREES on both sides. Over a PARAM, `inputs[b.arg.slot]` fires and the two
 # sides part, which is the whole vendored-drift answer.
 def rs_x62(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsGETADDR{}, [2], O.ADev{S.D1{0}}, O.TNone{})
+  O.UOp.new(ar, O.OpsGETADDR{}, [3], O.ADev{S.D1{0}}, O.TNone{})
 
 # AND THE CALL CARRIES THE THIRD CONSTANT TOO, so that NO SLOT IN THIS ARENA IS
 # UNREFERENCED. MEASURED before this line: the census fixture had ONE dead node, slot
@@ -542,7 +587,7 @@ def rs_x62(+ar: O.Arena) -> O.Found:
 # (`run_linear` iterates `linear.src`, `lower_and_compile` walks `linear.toposort()`),
 # so "unreferenced" is a fact about roots and not about garbage.
 def rs_x63(+ar: O.Arena) -> O.Found:
-  rs_call("vv", ar, [7, 3, 62, 42])
+  rs_call("vv", ar, [8, 4, 63, 43])
 
 # THE MULTI-DEVICE BUFFER, AND IT IS THE ROW `kern` HAD NO ANSWER FOR. `realize.py:41` is
 # `[(d, call, None) for d in to_tuple(call.src[1].device)]` and `to_tuple`
@@ -568,7 +613,7 @@ def rs_x64(+ar: O.Arena) -> O.Found:
 
 # THE CALL WHOSE `src[1]` IS IT, so `kern` has a row with TWO devices in the answer.
 def rs_x65(+ar: O.Arena) -> O.Found:
-  rs_call("dm", ar, [11, 64])
+  rs_call("dm", ar, [12, 65])
 
 # THE ARENA. `main_arena`'s 42 slots, index for index, plus the twenty-two above chained onto
 # its arena -- `O.UOp.new` returns the GROWN arena inside an `O.Found`, so handing back a
@@ -610,7 +655,7 @@ def rs_arena() -> O.Arena:
 # PARAM, and the two part. realize.bend's own `res_slot0`/`res_slot1` rows use `(g1, g0)`
 # and would not have caught it; that is the difference between a fixture and a claim.
 def rs_inputs() -> List<&2, U32>:
-  [10, 9]
+  [11, 10]
 
 # ==================================================================== the drivers
 #
@@ -763,10 +808,53 @@ def rs_rl(+r: RZ.RList) -> String:
   +xs = RZ.RList.xs(r)
   rs_lst(rs_fuel(a), a, xs, "", True{})
 
+# THE CALL's OWN DEVICE, AS THE PORT's ONE `S.Dev`.
+#
+# THE PIN TAKES A DEVICE **TUPLE** AND THE PORT TAKES ONE `S.Dev`, AND THAT IS THE
+# WHOLE MISMATCH. THE PIN's CALLERS PASS A TUPLE: `tinygrad/runtime/ops_{amd,nv,cl,
+# metal,cuda,qcom,null}.py` ALL PASS `self.devs`, THE RUNTIME's DEVICE RANGE. THE PIN's
+# OWN `get_call_kernels` READS THE CALL's DEVICES FROM `to_tuple(call.src[1].device)`
+# (`realize.py:41`), SO THE CALL's DEVICE IS THE SAME DEVICE THE PIN's RUNTIMES PASS
+# FOR A SINGLE-DEVICE KERNEL.
+#
+# **SO THE BRIDGE IS: THE CALL's DEVICE, READ THROUGH THE PORT's OWN `gk_dev.of` -- THE
+# READER `get_call_kernels` ITSELF USES.** NOT A CONSTANT: `rs_x64`/`rs_x65` ARE A
+# TWO-DEVICE BUFFER (`S.Dn{[6, 0]}`), SO A CONSTANT `rs_cpu()` WOULD PASS THE WRONG
+# DEVICE ON THAT ROW, AND THE PORT's ANSWER WOULD CARRY IT IN THE GETADDR's PAYLOAD --
+# WHICH IS WHY THE PAYLOAD PRINTS THE DEVICE's COUNT (`rs_pay`'s `ADev` arm).
+#
+# `gk_dev.of` ANSWERS THE TAGS OF `call.src[1]`'s DEVICE, AND THE COUNT IS WHAT PICKS
+# THE SPELLING: ONE TAG IS `rs_cpu()` AND TWO ARE `rs_duo()`. THAT IS COMPLETE FOR THIS
+# FIXTURE, WHOSE DEVICE VOCABULARY HAS EXACTLY TWO MEMBERS.
+def rs_call_dev(+ar: O.Arena, call: U32) -> S.Dev:
+  +tags = RZ.gk_dev.of(O.Arena.src(ar, call, 1), ar)
+  n = U32.from_nat(List.length(&2, U32, tags))
+  Bool.pick(S.Dev, U32.is_eq(n, 2), rs_duo(), rs_cpu())
+
+# `realize.py:17` AT THE PIN: `get_call_kernel_args(call, prg, devs)`.
+#
+# **THIS IS NOT THE `get_call_var_uops` IT REPLACED.** UPSTREAM `a6addc2d4` ("buffers and
+# args in any input order", 2026-10-14) REPLACED `get_call_var_uops` -- ONE ENTRY PER
+# VARIABLE, OUT OF `ProgramInfo.vars` -- WITH `get_call_kernel_args` -- ONE ENTRY PER
+# KERNEL PARAM, IN SLOT ORDER, OUT OF `prg.kernel_params`, AND A PARAM MAY BE A BUFFER, IN
+# WHICH CASE THE ENTRY IS THE ADDRESS OF THE CALL's ARGUMENT AT THAT SLOT. THE PORT's
+# COPY IS `tinybendygrad/engine/realize.bend:750`.
+#
+# **AND THE FIXTURE CANNOT ANSWER THE PIN.** MEASURED: THE PIN's
+# `get_call_kernel_args` READS `s.is_bound_var` OVER `call.src[1:]`, AND
+# `ops.py:1011`'s `is_variable` READS `self._shape`, WHICH FOR A PARAM IS
+# `self.src[0].as_shape` -- SO A PARAM WITH NO `src` RAISES IndexError. THIS FIXTURE's
+# ALU PARAMS HAVE NO `src` (THE PORT's `main_arena` HAS NONE, AND THE CENSUS MIRRORS IT
+# NODE FOR NODE), SO 21 OF THE 23 `var_*` ROWS ARE `raise=IndexError` ON THE CPython
+# SIDE. THE PORT's OWN `is_variable` CANNOT READ `_shape` AT ALL -- THAT IS THE `marg`
+# WALL `realize.bend` RECORDS -- SO THE PORT ANSWERS AND CPython CANNOT. THE FULL
+# SEMANTICS OF THIS FUNCTION ARE COMPARED BY `gates/realize_kernel_args-gate.py`, OVER
+# THE PLANT FIXTURE, WHERE THE PARAMS ARE BUILT BY `UOp.param` AND THE PROGRAMs HAVE THE
+# PIN's COMPILED SHAPE.
 def rs_d_var(ar: O.Arena, +n: U32) -> String:
   +a = ar
   +prg = RZ.rz_body(a, n)
-  rs_rl(RZ.get_call_var_uops(a, n, prg))
+  rs_rl(RZ.get_call_kernel_args(a, n, prg, rs_call_dev(a, n)))
 
 def rs_d_res(ar: O.Arena, +n: U32) -> String:
   +a = ar
