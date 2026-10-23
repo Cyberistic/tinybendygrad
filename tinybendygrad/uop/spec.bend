@@ -940,7 +940,7 @@ def ids_nonempty(a: O.Arg) -> Bool:
 # is the arm, `len(arg) >= 2` is a non-empty `ids`, and `all(isinstance(ra, int))`
 # is `List<&2, U32>` being well-formed.
 def sh_12(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsRANGE{}), nsrc_ge(fx, self, 1)), sp_vb(ids_nonempty(sp_arg(fx, self))))
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsRANGE{}), nsrc_is(fx, self, 1)), sp_vb(ids_nonempty(sp_arg(fx, self))))
 
 def sh_13.body(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(nsrc_ge(fx, self, 1), all_int_or_base_invalid(sp_src_from(fx, self, 1), fx, True{}))
@@ -964,15 +964,15 @@ def sh_14.body(+fx: F.Folded, +self: U32) -> Bool:
 def sh_14(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_14.pat(fx, self), sp_vb(sh_14.body(fx, self)))
 
-def sh_15.pat.of(op: Bool, d: Bool, s: Bool, n: Bool) -> Bool:
-  Bool.and(op, Bool.and(d, Bool.and(s, n)))
+def sh_15.pat.of(op: Bool, d: Bool, s: Bool, c: Bool, n: Bool) -> Bool:
+  Bool.and(op, Bool.and(d, Bool.and(s, Bool.and(c, n))))
 
 def sh_15.src(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(sp_src_op(fx, self, 1, O.OpsRANGE{}), sp_src_dt(fx, self, 1, S.void()))
 
 def sh_15.pat(+fx: F.Folded, +self: U32) -> Bool:
   sh_15.pat.of(sp_op(fx, self, O.OpsBACKEDGE{}), sp_dt_is(fx, self, S.void()),
-               sh_15.src(fx, self), nsrc_is(fx, self, 3))
+               sh_15.src(fx, self), sp_src_dt(fx, self, 2, S.boolean()), nsrc_is(fx, self, 3))
 
 def sh_15.body.pick(no_arg: Bool, scalar: Bool, cond_bad: Bool) -> Bool:
   Bool.and(no_arg, Bool.and(scalar, Bool.not(cond_bad)))
@@ -1652,7 +1652,8 @@ def te_1.guard(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Pa.ok(pa_of(fx, self)), addr_eq(addr_of(sp_addr(fx, self)), S.AGlobal{}))
 
 def te_1(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op(fx, self, O.OpsBUFFER{}), sp_vd(sp_tri_v(te_1.guard(fx, self), te_1.body(fx, self))))
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsBUFFER{}), nsrc_ge(fx, self, 1)),
+             sp_vd(sp_tri_v(te_1.guard(fx, self), te_1.body(fx, self))))
 
 def te_2.size_ok(+present: Bool) -> Bool:
   Bool.or(Bool.not(present), present)
@@ -1702,7 +1703,7 @@ def te_2.body(+fx: F.Folded, +self: U32) -> Bool:
 # multi-device ALLOC whose range this port has not checked, and a validator that
 # accepts what it has not checked is worse than one that refuses.
 def te_2(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op(fx, self, O.OpsALLOC{}), sp_vb(te_2.body(fx, self)))
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsALLOC{}), nsrc_ge(fx, self, 1)), sp_vb(te_2.body(fx, self)))
 
 def te_3.guard.of(rng: Bool, alu: Bool, scalar: Bool) -> Bool:
   Bool.and(rng, Bool.and(alu, scalar))
@@ -1728,9 +1729,15 @@ def te_4(+fx: F.Folded, +self: U32) -> O.Verdict:
 def OP_REEXP() -> List<&2, O.Op>:
   [O.OpsRESHAPE{}, O.OpsEXPAND{}]
 
-# spec.py:164 (UPat((Ops.RESHAPE, Ops.EXPAND), src=(UPat(), UPat())), lambda: True)
+# `dtypes.ints+(dtypes.weakint, dtypes.void)` -- the ints, the weak int and the void.
+# `sp_is_int` is the ints PLUS the weak int, so the void is the only one left.
+def te_5.dtype(+fx: F.Folded, +s: U32) -> Bool:
+  Bool.or(sp_is_int(fx, s), sp_dt_is(fx, s, S.void()))
+
+# spec.py:166 (UPat((Ops.RESHAPE, Ops.EXPAND), src=(UPat(), UPat(dtype=dtypes.ints+(dtypes.weakint, dtypes.void)))), lambda: True)
 def te_5(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op_in(fx, self, OP_REEXP()), nsrc_is(fx, self, 2)), O.VTrue{})
+  O.pm_when(Bool.and(Bool.and(sp_op_in(fx, self, OP_REEXP()), nsrc_is(fx, self, 2)),
+                   te_5.dtype(fx, sp_src(fx, self, 1))), O.VTrue{})
 
 def OP_PADSHRINK() -> List<&2, O.Op>:
   [O.OpsPAD{}, O.OpsSHRINK{}]
@@ -2175,7 +2182,8 @@ def OP_BA() -> List<&2, O.Op>:
 # spec.py:214 (UPat((Ops.BUFFER, Ops.ALLOC), name="x"),
 #              lambda x: isinstance(x.arg, ParamArg) and x.addrspace in (AddrSpace.REG, AddrSpace.LOCAL))
 def pr_4(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op_in(fx, self, OP_BA()), sp_vb(Bool.and(Pa.ok(pa_of(fx, self)), is_reg_or_local(addr_of(sp_addr(fx, self))))))
+  O.pm_when(Bool.and(sp_op_in(fx, self, OP_BA()), nsrc_is(fx, self, 1)),
+             sp_vb(Bool.and(Pa.ok(pa_of(fx, self)), is_reg_or_local(addr_of(sp_addr(fx, self))))))
 
 # spec.py:217 (UPat(Ops.CONST, arg=Invalid), lambda: False)
 def pr_5(+fx: F.Folded, +self: U32) -> O.Verdict:
@@ -2581,7 +2589,7 @@ def kg_5.body(+fx: F.Folded, +self: U32) -> Bool:
 #              (x.arg.buffer is not None if x.addrspace is AddrSpace.GLOBAL
 #                            else x.addrspace in (AddrSpace.LOCAL, AddrSpace.REG)))
 def kg_5(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op(fx, self, O.OpsBUFFER{}), sp_vb(kg_5.body(fx, self)))
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsBUFFER{}), nsrc_ge(fx, self, 1)), sp_vb(kg_5.body(fx, self)))
 
 def kg_6.body.pin(facts: Bool, vdr: Maybe<&1, Bool>) -> Bool:
   match vdr:
@@ -2599,7 +2607,7 @@ def kg_6.body(+fx: F.Folded, +self: U32) -> Bool:
 #              x.addrspace is AddrSpace.GLOBAL and x.arg.buffer is None and
 #              valid_device_range(x.arg.device, x.src))
 def kg_6(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sp_op(fx, self, O.OpsALLOC{}), sp_vb(kg_6.body(fx, self)))
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsALLOC{}), nsrc_ge(fx, self, 1)), sp_vb(kg_6.body(fx, self)))
 
 # spec.py:269 (UPat(Ops.BITCAST), lambda: True)
 def kg_7(+fx: F.Folded, +self: U32) -> O.Verdict:
