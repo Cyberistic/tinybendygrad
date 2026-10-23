@@ -210,7 +210,64 @@ The plant asserts, and FAILS if any of these stop holding:
 
 ---
 
-## 6. THE FILES
+## 6. THE COMMITS AND THE CORPUS DIGEST
+
+**COMMIT** `a81328d36e8503f415ba51c8b5f15d1421c482cc` --
+`gates/pin-cite-gate.py: the 516 false positives were the GATE's OWN two defects`.
+20 files, 5380 insertions, 58 deletions. **`git show --stat` AND `git fsck --no-progress`
+IN ONE COMMAND:**
+
+```
+ .agents/TODO.md                                  |   56 +
+ .agents/TOOLS.md                                 |    2 +-
+ .agents/slop/pincite/CITATION-CLASSES.rows       | 2623 ++++++++++++++++++++++
+ .agents/slop/pincite/DANGLE.out                  |   52 +
+ .agents/slop/pincite/FALSIFICATION.md            |   56 +
+ .agents/slop/pincite/PLANT.err                   |    1 +
+ .agents/slop/pincite/PLANT.out                   |   13 +
+ .agents/slop/pincite/REPORT.md                   |  229 ++
+ .agents/slop/pincite/analyze.py                  |   53 +
+ .agents/slop/pincite/bench/gatekit.py            |    1 +
+ .agents/slop/pincite/bench/header-census-gate.py |    1 +
+ .agents/slop/pincite/bench/pin-cite-ORIGINAL.py  |  734 ++++++
+ .agents/slop/pincite/classes.py                  |   91 +
+ .agents/slop/pincite/dangle.py                   |   50 +
+ .agents/slop/pincite/diffrows.py                 |   42 +
+ .agents/slop/pincite/falsify.py                  |  111 +
+ .agents/slop/pincite/pin-cite-gate.ORIGINAL.py   |  731 ++++++
+ .agents/slop/pincite/probe.py                    |   21 +
+ .agents/slop/pincite/table.py                    |   74 +
+ gates/pin-cite-gate.py                           |  497 +++-
+ 20 files changed, 5380 insertions(+), 58 deletions(-)
+FSCK: error in tree d57bc484ab5ae82df254865a4c2622df263e6f80: duplicateEntries: contains duplicate file entries
+FSCK: error in tree d83cf685f89af04f607a49a3c6d2c8ef0c1eec65: duplicateEntries: contains duplicate file entries
+FSCK: error in tree 3a60f33f57a4bb2fe120a97720b6bb2af38d9593: duplicateEntries: contains duplicate file entries
+```
+
+**THE THREE `fsck` ERRORS ARE PRE-EXISTING** -- they are the three malformed trees
+`AGENTS.md` already names, and **NONE OF THEM IS AN ANCESTOR OF HEAD**
+(`git merge-base --is-ancestor` answers NO for each), and **MY COMMIT'S TREE IS NOT ONE OF
+THEM** (`6556c1de64be3617c038860b7d30526a65e71bb3`).
+
+**THE CORPUS DIGEST, COMPUTED BY IMPORTING IT AND NEVER BY RUNNING THE CORPUS:**
+
+```
+.venv/bin/python -c "import sys; sys.path.insert(0,'checks'); import differ; print(differ.substrate_digest())"
+```
+
+| when | digest |
+|---|---|
+| before my change | `cfeb41ea869fc2861969065393ee9cf73ffb355d7399f1561a69673941cd14c5` |
+| after my change | `d3b3288b800f1376d01b97fc195ad9625eaec216d9afbb3a691fe5b5445c6781` |
+
+**THE DIGEST MOVED, AND IT WAS NOT ME.** MEASURED: **0 of the 20 paths my commit touched
+are in the substrate** -- `gates/` is not in it at all, the seven `.agents/` members it
+names are `.agents/slop/graphcmp*` (not mine), and `tinybendygrad/` was not touched. The
+movement is `tinybendygrad/uop/ops.bend`, which another unit edited DURING this session
+(it is the only dirty substrate member afterwards). **THE DIGEST IS A FACT ABOUT THE
+WORKING TREE, AND THE WORKING TREE IS NOT MINE.**
+
+## 7. THE FILES
 
 | file | what it is |
 |---|---|
@@ -218,7 +275,7 @@ The plant asserts, and FAILS if any of these stop holding:
 | `.agents/slop/pincite/bench/pin-cite-ORIGINAL.py` | the pre-repair gate, plus `--tree` ONLY, for the before/after reading |
 | `.agents/slop/pincite/falsify.py` | the falsification (four arms on copies) |
 | `.agents/slop/pincite/diffrows.py` | the row-level movement table |
-| `.agents/slop/pincite/dangle.py` | where the 28 old dangling claims went |
+| `.agents/slop/pincite/dangle.py` | where the 29 old dangling claims went |
 | `.agents/slop/pincite/analyze.py`, `classes.py`, `table.py`, `probe.py` | the analysis harness and its caches (the caches are regenerable and were NOT committed) |
 | `.agents/slop/pincite/CITATION-CLASSES.rows` | EVERY citation with its class BEFORE and AFTER, on one tree -- the complete before/after, one row per citation |
 | `.agents/slop/pincite/FALSIFICATION.md` | the falsification transcript |
