@@ -1981,6 +1981,35 @@ mixin-op-closed      [##] 3/3  **THE WALL THAT `mo-squeeze-row` NAMED HAS FALLEN
                                        `meanN` AMONG THEM; THE MEASUREMENT ABOVE IS 2026-10-23 AND READS 38 OF 38.
 
 
+corpus-green-again   [##] 3/3  **THE CORPUS IS GREEN, REPRODUCIBLE **AND** CURRENT AGAIN, WITH THE `mo_at` FIX IN THE
+                                       TREE -- AND THE FIX'S OWN EVIDENCE IS **NOT** THE CORPUS, WHICH IS THE POINT OF
+                                       THIS ROW.** MEASURED 2026-10-22T23:14Z (`checks/differ.py run`) AND
+                                       2026-10-22T23:18Z (`checks/differ.py repro`), TAKEN BY THE ORCHESTRATOR BECAUSE
+                                       **THE `mo_at` FIX MOVED THE SUBSTRATE AND THEREFORE INVALIDATED THE WITNESS**
+                                       (`repro_bad()` HAD SAID *"this witness describes a tree that NO LONGER
+                                       EXISTS"*). **AFTER BOTH RUNS: `unhealthy() -> 0 line(s)`, `artefacts_ok() -> 0
+                                       line(s)`, `repro_bad() -> 0 row(s)`; `graphs=35  graphs-answered=35  graphs-
+                                       agree=35  graphs-disagree=0  byte-identical=35  graphs-refused=0`; `selfcheck=#
+                                       SELFCHECK: OK`; `oracle-selfcheck=# ORACLE SELFCHECK: OK`; `census-rc=rc=0`;
+                                       `substrate-start == substrate-end == live ==
+                                       c910ded1f2689d709f58768ddc6270f50cf704427b37735fa22e952d8cda9675`; AND `REPRO:
+                                       319 of 319 files identical across two clean runs` WITH `repro-files=319  repro-
+                                       identical=319  repro-rc=rc=0`.** **⇒ ALL THREE HELD AT ONCE, AND THE
+                                       `substrate-head` MOVED (`6ce0514b0` -> `6c972bf768a8`, THE CONCURRENT SESSION'S
+                                       COMMIT) DURING THE RUN **WITHOUT** THE DIGEST MOVING -- WHICH IS EXACTLY THE
+                                       SHAPE `AGENTS.md` DESCRIBES: A COMMIT THAT FOLLOWS THE RUN AND TOUCHES NOTHING
+                                       IN THE SUBSTRATE DOES NOT MAKE THE RUN STALE, AND THE DIGEST IS WHAT SAYS SO.**
+                                       **⇒ AND NOW THE ROW THAT MATTERS MOST: **THE CORPUS'S GREENNESS IS **NOT**
+                                       EVIDENCE FOR THE `mo_at` FIX, AND IT COULD NOT BE.** THE CORPUS'S FIXTURES ARE
+                                       ONE-DIMENSIONAL OR SQUARE -- **AND THOSE ARE EXACTLY THE SHAPES WHERE THE
+                                       FORWARD INDEX AND THE BACKWARD ONE AGREE** -- SO `graphs-disagree=0` IS THE
+                                       EXPECTED OUTCOME AND NOT A CONFIRMATION. **THE FIX'S EVIDENCE IS THE THREE NEW
+                                       ROWS THAT GO `void` UNDER THE ORIGINAL FORMULA** (`sh_sum0kd_23`, `sh_sq0_123`,
+                                       AND THE PRE-EXISTING `sh_sum0kd`'S BLINDNESS), **PLUS THE `mixin-op` GATE'S 38
+                                       OF 38.** **⇒ A GREEN CORPUS IS A STATEMENT ABOUT THE CORPUS'S COVERAGE, AND A
+                                       CORPUS THAT CANNOT SEE A DEFECT IS A CORPUS THAT CANNOT CONFIRM A FIX EITHER.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
