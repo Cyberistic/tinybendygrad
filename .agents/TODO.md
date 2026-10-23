@@ -2473,6 +2473,38 @@ cite-slice        [######...] 3/5    **THE 603 ARE THE CLASS, AND THE SLICE THAT
                                         `.agents/slop/citefix/left-tok9.rows`. See
                                         `.agents/slop/citefix/REPORT.md`.
 
+cite-runtime      [#########] 5/5  **THE OTHER HALF OF THE 603 IS `runtime/**`, AND IT IS 0.**
+                                        The census's slice under `tinybendygrad/runtime/`
+                                        went from **225 FALSE to 0**, measured with the SAME
+                                        instruments on FROZEN trees (`git archive` of the base
+                                        and of the fix): BEFORE 225 false of 1343 runtime
+                                        citations that `gates/todo-cite-gate.py` does not
+                                        read, AFTER **0**; and EVERY ONE of the 225 original
+                                        rows was re-checked BY `(rel, at)` against the fix,
+                                        **0** of those lines still carries a false citation.
+                                        **35 FILES, 374 INSERTS / 362 DELETES, ALL
+                                        COMMENT-ONLY** (every file strips to the same code
+                                        as HEAD through `checks/port-compile-gate.py`'s own
+                                        `strip_comments()`, blank lines dropped). **35 of 35
+                                        COMPILE `WITHIN-LIMITS`** under
+                                        `checks/bounded.py --mb 2048`, one `bend` at a time
+                                        (peak `ops_python.bend` 1542 MB, ceiling 2048).
+                                        **THE DURABLE FORM IS `symbol=`, AND EVERY
+                                        RE-POINTED CITATION NAMES ITS FILE BY THE FULL
+                                        UPSTREAM PATH** -- the pin-cite census REFUSES an
+                                        ambiguous bare basename (`helpers.py` is SEVEN
+                                        upstream files), so `helpers.py:161` names no file
+                                        and lands in `at_no_revision`, which is FALSE.
+                                        **THE PLANT** edits a COPY (never `git show HEAD:`)
+                                        and moves ONE cited line by six: CONTROL 0 false
+                                        rows in the 35 files, PLANT 1 NEW `WRONG-LINE`.
+                                        **NOT FIXED: 2**, and both are rows that SAY the
+                                        upstream construct is GONE at this pin
+                                        (`ops_amd.bend:231` the md5 slice,
+                                        `ops_cl.bend:159` the old `OSX_TIMING_RATIO`), which
+                                        is a claim the census has no class for. See
+                                        `.agents/slop/citefix-runtime/REPORT.md`.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
