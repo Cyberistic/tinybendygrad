@@ -141,8 +141,10 @@ show `names_hold`, `axis_hold` and `claims_hold` go red rather than being decora
 AND THE CITATIONS ARE CHECKED TOO, because A CITATION IS A CLAIM AND A CLAIM NOBODY
 CHECKS IS A LABEL. Every `ptx.py:NNN` in this census's five files is DECLARED -- which
 citations each file makes, IN ORDER, and what the cited line CARRIES -- and `cites_hold()`
-reads the tree and says whether the two agree. The audit that added it found THIRTY-SEVEN
-stale citations in the port alone, all from ONE upstream line INSERTED by `975127a10`.
+reads the tree and says whether the two agree. The audit that added it found FIFTY-FIVE of
+the port's upstream-line references stale by one -- FORTY `ptx.py:NNN` citations, NINE ARM
+SELECTOR rows and SIX bare continuations -- all from ONE upstream line INSERTED by
+`975127a10`.
 `cites_hold()` is red when a file's citations are not the declared ones (a citation that
 MOVED, one ADDED, one DROPPED), when a cited line no longer carries what the declaration
 names (UPSTREAM MOVED), and when what the declaration names is no longer UNIQUE to the line
@@ -1301,11 +1303,13 @@ def fmt_plant() -> int:
 
 # ---- the citations ---------------------------------------------------------------------
 # EVERY `ptx.py:NNN` IN THIS CENSUS'S OWN FIVE FILES IS A CLAIM ABOUT UPSTREAM'S `ptx.py`,
-# AND A CLAIM NOBODY CHECKS IS A LABEL. THE AUDIT THAT PRODUCED THIS SECTION FOUND THIRTY-
-# SEVEN STALE CLAIMS IN THE PORT ALONE, AND THE CAUSE WAS ONE LINE: upstream `975127a10`
-# ("use AFTER for RANGE ordering deps instead of multiple srcs", #18618) INSERTED ONE LINE
-# at upstream's 189, and every citation at or after it moved by one. A re-vendor does that
-# again, and until this section NOTHING IN THE TREE WAS WATCHING.
+# AND A CLAIM NOBODY CHECKS IS A LABEL. THE AUDIT THAT PRODUCED THIS SECTION FOUND FIFTY-
+# FIVE OF THE PORT'S UPSTREAM-LINE REFERENCES STALE BY ONE -- FORTY `ptx.py:NNN`
+# CITATIONS, NINE ARM SELECTOR ROWS AND SIX BARE CONTINUATIONS -- AND THE CAUSE WAS ONE
+# LINE: upstream `975127a10` ("use AFTER for RANGE ordering deps instead of multiple srcs",
+# #18618) INSERTED ONE LINE at upstream's 189, and every reference to a line at or after it
+# moved by one. A re-vendor does that again, and until this section NOTHING IN THE TREE WAS
+# WATCHING.
 #
 # THE DECLARATION IS TWO TABLES, AND THE SECOND ONE IS THE ONE THAT DOES THE WORK:
 #   * `PTX_CITE_CONTENT` -- what a cited LINE CARRIES: a fragment of the line, and for a
@@ -1323,7 +1327,7 @@ def fmt_plant() -> int:
 #   3. the content the declaration names is no longer UNIQUE to the line it names.
 #
 # AND THE ORDER IS NOT A STRAWMAN: it is the property the audit's own failure had. The
-# audit moved thirty-seven numbers and found the moves WRONG, because a number is a
+# audit moved fifty-five numbers and found the moves WRONG, because a number is a
 # claim about a LINE and the line is what upstream moved.
 UPSTREAM_PTX = ROOT / "tinygrad" / "renderer" / "ptx.py"
 # THE POPULATION IS DISCOVERED BY A REGEX OVER THE TREE'S OWN WRITE SITES, never by a hand
