@@ -158,6 +158,11 @@ DRIFT_PIN = {
 # `gates/rand_census-oracle.py`; NEITHER is transcribed here, because a transcribed pin is a
 # pin that agrees with whatever was copied out of the lane it was meant to check. Both were
 # captured from the two lanes on 2026-10-16 and are reproduced in the commit message.
+# **AND ON 2026-10-23 THE TRAILING-SPACE HALF OF THIS PARAGRAPH WAS MEASURED AND IT IS NOW
+# FALSE**: AFTER THE `mixin/rand.bend` FIX **NEITHER** SIDE'S LINE ENDS IN A SPACE
+# (`st_zero_g` NOW ENDS `RESHAPE/2`), **AND ALL FOUR PORT-SIDE PINS WERE RE-DERIVED FROM
+# THE LANE AND ARE NOW BYTE-IDENTICAL TO IT.** THE PARAGRAPHS BELOW ARE ABOUT THE
+# **2026-10-16 CAPTURE**, WHICH IS WHY THEY ARE IN THE PAST TENSE NOW.
 # THE PINS ARE WHOLE LINES, NOT VALUES. `gatekit` tests `want not in raw[lane]` against
 # the lane's LINES, so a value without its `row=` prefix can never match and the first
 # run of this gate reported `py's st_zero_g is not '30 op=...'`. `rd_graph_census-gate.py`
@@ -166,7 +171,7 @@ DRIFT_PIN = {
 # THE PINS ARE WHOLE LINES, NOT VALUES. `gatekit` tests `want not in raw[lane]` against the
 # lane's LINES, so a value without its `row=` prefix can never match and the first run of this
 # gate reported `py's st_zero_g is not '30 op=...'. `rd_graph_census-gate.py` says the same
-# thing about its trailing space: the port's `cr_g` prints a separator after EVERY op, so
+# thing about its trailing space: the port's `cr_g` PRINTED a separator after EVERY op, so
 # these lines end in a space and the pins carry it. THEY ARE WRAPPED AS ADJACENT LITERALS and
 # each chunk ends on a space, so the concatenated value is byte-identical to the lane's line;
 # the gate is what verifies that, because a pin that stopped matching would fail it.
@@ -176,7 +181,7 @@ DRIFT_PIN = {
 # each chunk ending on a space, so the concatenation is byte-identical to the lane's line.
 #
 # THE TWO SIDES DO NOT END THE SAME WAY, AND THAT IS NOT A TYPO. The PORT's `cr_g` prints a
-# separator after EVERY op (`rd_graph_census-gate.py` records the same), so `bd`'s line ends
+# separator after EVERY op (`rd_graph_census-gate.py` records the same), SO `bd`'s line ENDED
 # in a space; the ORACLE's `sig()` ends in the last token. The first wrapped attempt gave
 # BOTH a trailing space and the gate said so: `py's st_zero_g is not '...RESHAPE/2 '`.
 # THE PINS ARE WHOLE LINES, NOT VALUES. `gatekit` tests `want not in raw[lane]` against the
@@ -185,7 +190,7 @@ DRIFT_PIN = {
 # each chunk ending on a space, so the concatenation is byte-identical to the lane's line.
 #
 # THE TWO SIDES DO NOT END THE SAME WAY, AND THAT IS NOT A TYPO. The PORT's `cr_g` prints a
-# separator after EVERY op (`rd_graph_census-gate.py` records the same), so `bd`'s line ends
+# separator after EVERY op (`rd_graph_census-gate.py` records the same), SO `bd`'s line ENDED
 # in a space and the oracle's does not. Two wrapped attempts got this wrong -- the first gave
 # the oracle side a trailing space it does not have, the second gave both -- and the GATE is
 # what said so, by printing the pin it could not match. A pin is not a constant; it is a
@@ -196,7 +201,7 @@ DRIFT_PIN = {
 # chunk ending on a space, so the concatenation is byte-identical to the lane's line.
 #
 # THE TWO SIDES DO NOT END THE SAME WAY, AND THAT IS NOT A TYPO. The PORT's `cr_g` prints a
-# separator after EVERY op (`rd_graph_census-gate.py` records the same), so `bd`'s line ends in
+# separator after EVERY op (`rd_graph_census-gate.py` records the same), SO `bd`'s line ENDED in
 # a space and the oracle's does not. TWO wrapped attempts got this wrong -- the first gave the
 # oracle side a trailing space it does not have, the second removed the closing quote -- and
 # the GATE is what said so both times, by printing the pin it could not match. A pin is not a
