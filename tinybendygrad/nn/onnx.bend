@@ -1912,12 +1912,12 @@ def main() -> IO(Unit):
 # TODO(p3) onnx.py:121  OnnxPBParser -- all seventeen `_parse_*` defs and `parse`.
 #   WALL: the reader above, and `pathlib`, `enum`-free `struct`, and
 #   `Tensor(pathlib.Path)` for the external-data path (:226-232).
-# TODO(p3) onnx.py:361  _to_python_const -- `t.data().tobytes()` / `t.tolist()`.
+# TODO(p3) onnx.py:281  _to_python_const -- `t.data().tobytes()` / `t.tolist()`.
 #   WALL: a host read of a realized buffer.
-# TODO(p3) onnx.py:367  OnnxRunner.__init__ / _init_from_graph / _from_subgraph /
-#   _parse_input / to / _get_python_const / __call__ -- :374-470.
+# TODO(p3) onnx.py:294  OnnxRunner.__init__ / _init_from_graph / _from_subgraph /
+#   _parse_input / to / _get_python_const / __call__ -- :294-390.
 #   WALL: the parser, plus `Device.DEFAULT`, `Context(TRAINING=...)`, `ContextVar`,
-#   `warnings.warn`, `RuntimeError`, and the debug/limit getenv pair (:365-366).
+#   `warnings.warn`, `RuntimeError`, and the debug/limit getenv pair (:285-286).
 # TODO(p3) onnx.py:475  get_onnx_ops -- the 167 bodies. The NAME TABLE and
 #   `_select_op` are PORTED (:1067, :1240); everything below is not, and every one
 #   of these is a mixin method belonging to another file:
@@ -1925,13 +1925,13 @@ def main() -> IO(Unit):
 #   :575 Range / :578 ImageDecoder / :587 EyeLike / :591 OptionalHasElement /
 #   :593 ConstantOfShape / :597 Size / :598 Shape
 # WALL(p3) onnx.py:601  Not / Clip / IsInf -- BLOCKED: needs x.clip (elementwise.bend:880) and x.isinf (:832) (NOT defs); x.logical_not IS ported (ew_logical_not).
-# TODO(p3) onnx.py:606  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
+# TODO(p3) onnx.py:526  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
 #   FastGelu / PRelu / LeakyRelu / ThresholdedRelu / LogSoftmax / Hardmax /
 #   Binarizer / Swish -- the Softmax ROUTING is PORTED, its two bodies are not.
 # WALL(p3) onnx.py:622  Add / Sub / Div / Pow / Less / LessOrEqual / Greater / -- BLOCKED: needs the broadcasted binop mixins in mixin/elementwise.bend (ew_add/ew_sub/ew_div/ew_pow/ew_ge reverse=True for LessOrEqual/ew_fmod/ew_bitwise_*); not inlined here because a callee is its own file, not a second port (:63-66).
 #   GreaterOrEqual / Equal / And / Or / Xor / BitwiseAnd / BitwiseOr /
 #   BitwiseXor / BitwiseNot / Mod
-# TODO(p3) onnx.py:643  Cast / CastLike -- `OnnxDataType(to).to_dtype()` is
+# TODO(p3) onnx.py:563  Cast / CastLike -- `OnnxDataType(to).to_dtype()` is
 #   PORTED (`onx_odt_dt`), so only `x.cast` is missing.
 # WALL(p3) onnx.py:647  Max / Min / Sum / Mean / ReduceMax / ReduceMin / -- BLOCKED: needs x.argmax and x.argmin (NOT defs, op.bend:11); the reduce mixins ARE ported (mo_max/mo_min/mo_sum/mo_mean, op.bend:819/:1117/:803/:883) and _axes is PORTED and GATED (:479).
 #   ReduceSum / ReduceMean / ReduceSumSquare / ReduceProd / ReduceL1 / ReduceL2 /
@@ -1945,9 +1945,9 @@ def main() -> IO(Unit):
 # WALL(p3) onnx.py:896  BatchNormalization / GroupNormalization / -- BLOCKED: needs x.batchnorm and x.layernorm (mixin/op.bend SIDE B, not built) and x.one_hot/x.unsqueeze (NOT defs).
 #   InstanceNormalization / LayerNormalization / SkipLayerNormalization /
 #   EmbedLayerNormalization / MeanVarianceNormalization / LpNormalization / OneHot
-# TODO(p3) onnx.py:963  DepthToSpace / SpaceToDepth -- `X.rearrange` is a REWRITE
+# TODO(p3) onnx.py:875  DepthToSpace / SpaceToDepth -- `X.rearrange` is a REWRITE
 #   of the whole index expression and has no mixin method of its own.
-# TODO(p3) onnx.py:969  dropout_7 / dropout_6 -- legacy `numpy.random.RandomState`,
+# TODO(p3) onnx.py:881  dropout_7 / dropout_6 -- legacy `numpy.random.RandomState`,
 #   which is a NUMPY seeding requirement the port cannot state.
 # WALL(p3) onnx.py:982  _window / HannWindow / HammingWindow / BlackmanWindow / -- BLOCKED: needs x.rearrange (movement.bend WALL 2, a STRING FORMULA) and x.nll_loss (NOT a def); _window's x.cos is on the F32/`Word` wall (elementwise.bend:41-50); the three mixin chains' _select_op ROUTING is PORTED and GATED (:73-76), their bodies are not.
 #   LRN / NegativeLogLikelihoodLoss / SoftmaxCrossEntropyLoss / AffineGrid /
@@ -1958,13 +1958,13 @@ def main() -> IO(Unit):
 # WALL(p3) onnx.py:1211 QuantizeLinear / DynamicQuantizeLinear / DequantizeLinear / -- BLOCKED: needs x.repeat_interleave and x.scatter_reduce (NOT defs); the numeric dtypes predicate it also uses IS ported (dt_is_int/dt_is_float), contrary to the header note at :70-71.
 #   QLinearConv / QLinearMatMul / QLinearAdd / QLinearMul /
 #   QLinearGlobalAveragePool / ConvInteger / MatMulInteger
-# TODO(p3) onnx.py:1265 Adagrad / Adam / Momentum -- the `@_onnx_training`
-#   decorator (:532-540) SPLITS a variadic `*inputs` into `groups` slices and
+# TODO(p3) onnx.py:1177 Adagrad / Adam / Momentum -- the `@_onnx_training`
+#   decorator (:452-460) SPLITS a variadic `*inputs` into `groups` slices and
 #   `flatten(zip(*ret))`s them, which is a variadic-rest-and-transpose with no
 #   Bend spelling; `Adam` additionally needs `opt.m`/`opt.v`/`opt.lr` assignment
-#   and a `b1_t`/`b2_t` special case at `T == 0` (:1286-1290). The ROUTING
+#   and a `b1_t`/`b2_t` special case at `T == 0` (:1196-1201). The ROUTING
 #   (`___wrapper` for all three) is PORTED and GATED.
-# TODO(p3) onnx.py:1305 Gradient -- `intermediate_tensors[y].gradient(*inputs)`.
+# TODO(p3) onnx.py:1216 Gradient -- `intermediate_tensors[y].gradient(*inputs)`.
 
 # ===========================================================================
 # THE MUTATION TABLE, MEASURED by `.agents/slop/onnx-mutate.py`, which mutates

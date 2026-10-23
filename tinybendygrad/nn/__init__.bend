@@ -220,10 +220,11 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # THE WALLS. One TODO per Python line, and no prose pretending otherwise.
 # ===========================================================================
 
-# TODO(p3) mixin/rand.py:190  Tensor.uniform / Tensor.glorot_uniform -- `creation.py`'s
-#   `full` plus `randstate`. The CONST `low=-scale, high=scale` needs the F32 values
-#   above and those need `U32.to_f32`, an UNFILLED LAW (tensor.bend's header names
-#   it), which is why the three formulas take `F32` factors.
+# TODO(p3) mixin/rand.py:158  symbol=uniform  -- `Tensor.uniform` / `Tensor.glorot_uniform`
+#   (`mixin/rand.py:192` is `glorot_uniform`) -- `creation.py`'s `full` plus
+#   `randstate`. The CONST `low=-scale, high=scale` needs the F32 values above and
+#   those need `U32.to_f32`, an UNFILLED LAW (tensor.bend's header names it), which is
+#   why the three formulas take `F32` factors.
 # TODO(p3) mixin/op.py:1254  x.linear           -- `linear_with_vars` (movement.py) is
 #   P3 and mixin/op.bend's W8 already names the WMMA lowering as its own wall.
 # TODO(p3) mixin/op.py:1678  x.batchnorm        -- mixin/op.bend SIDE B, not built.
@@ -234,10 +235,10 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #   exists in ops.bend but `movement.bend`'s defs are a separate unit's.
 # TODO(p3) mixin/op.py:166   x.arange           -- and mixin/op.bend's W4 says `_pool`
 #   is buildable but not CHECKABLE, so everything reaching it inherits that.
-# TODO(p3) mixin/reduce.py:20 x.mean / x.sum    -- `mo_sum`/`mo_mean` EXIST in
-#   mixin/op.bend (they are the reduce.py:73/:20/:47 hoists) and are callable. They
-#   are not inlined here because every `__call__` in this file is a mixin METHOD and
-#   naming the call IS the port; inlining a callee would be a second port.
+# TODO(p3) mixin/reduce.py:20  symbol=sum  -- x.sum (`x.mean` is mixin/op.py:496) --
+#   `mo_sum`/`mo_mean` EXIST in mixin/op.bend (the reduce.py:20 and op.py:496 hoists)
+#   and are callable. They are not inlined here because every `__call__` in this file
+#   is a mixin METHOD and naming the call IS the port; inlining a callee would be a second port.
 # PARTIALLY PORTED. `Tensor.sqrt` is ported as `tn_sqrt` and
 # gated at `gates/tn_sqrt-gate.py` 5/5 rows. `Tensor.detach` is ported
 # as `tn_detach` and gated at `gates/tn_detach-gate.py` 5/5 rows.

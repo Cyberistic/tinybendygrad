@@ -8,8 +8,8 @@
 # empty -- tinygrad spells it `randn` + a threshold). The example reaches FOUR of its six
 # symbols through here (`rand` :50, `randn` :106, `normal` :141, `uniform` :158, via
 # `Tensor.randint` :122); its other two are `arange` and `linspace`, both W1 below.
-# `examples/beautiful_mnist.bend:78` records `TODO(p3) examples/beautiful_mnist.py:25` for
-# exactly that chain.
+# THE EXAMPLE IS GONE AT THIS PIN -- upstream's `tinygrad/examples/` is EMPTY, and the
+# port's `examples/beautiful_mnist.bend` with it -- so the chain IS here: TODO(p3) mixin/rand.py:50  symbol=rand
 #
 # THE GENERATOR STATE, the one design decision here. Python's is a mutable per-device
 # process-wide dict plus a clock (tensor.py:438-440); the port makes all three explicit: the

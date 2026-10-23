@@ -399,7 +399,7 @@ def lt_rc(vmaxs: List<&2, U32>) -> U32:
 # `lin_exmix` COUNTS the pairs that tie on (run_count, priority) and disagree on
 # whether `extra` is None -- so it is a gate, not a comment.
 #
-# `# TODO(p3) linearizer.py:50  the DEBUG_LINEARIZE print reads `extra` -- the one
+# `# TODO(p3) linearizer.py:50  symbol=linearize  the DEBUG_LINEARIZE print reads `extra` -- the one
 # place Python reads the field, and env-gated.`
 #
 # W4: the BUFFER/ALLOC arm's `u.addrspace == AddrSpace.LOCAL` is a PARAMETER. The

@@ -96,9 +96,9 @@
 # node per element. That is a cartesian product whose size is the node's numel,
 # and this architecture has no product and no way to name "the i-th element of a
 # STACK". `movement.bend` owns `UOp.index` as `mp_index`, and movement.bend:235
-# carries the `# TODO(p3) ops.py:581 def index` marker (581 is the `return`
-# inside `ops.py:578`'s `def index`) -- and even it answers one index, not a
-# product.
+# carries a `TODO(p3) ... def index` marker -- TODO(p3) ops.py:559  symbol=index --
+# `UOp.index` is DECLARED at ops.py:559 and its `return UOp(Ops.INDEX, ...)` is at
+# ops.py:562 -- and even it answers one index, not a product.
 #
 # The second wall is `UOp.replace`-with-a-NEW-OP: `pm_add_loads` and
 # `pm_cast_float_alu` both build `x.replace(src=...)` with the SAME op, which is
@@ -469,7 +469,7 @@ def kn_range_map_n(+tb: F.Table, +ar: O.Arena) -> U32:
 #
 # `u.shape != u.src[0].shape` is the WALL -- it is the double-`Maybe` of the fold's
 # shape and the deferred `_ranges`-alike shape comparison, and movement.bend's
-# `shp_same` is the reader that would answer it. `# TODO(p3) __init__.py:226
+# `shp_same` is the reader that would answer it. `# TODO(p3) __init__.py:221  symbol=is_shape_changing_bitcast
 # u.shape != u.src[0].shape`. What IS here is the op test, and `bitcast_op` is its
 # row: a rule that read only `u.op is BITCAST` and dropped the shape half would
 # fire on every bitcast, which is Python's `and` with the second conjunct missing.
@@ -533,15 +533,15 @@ def al_store_src(+tb: F.Table, +ar: O.Arena, +self: U32) -> List<&2, U32>:
 def al_1(+tb: F.Table, +ar: O.Arena, +self: U32) -> Ker:
   al_0.of(kn_is(ar, self, O.OpsSTORE{}), ar, self, al_store_src(tb, ar, self))
 
-# The table: `pm_add_loads`, __init__.py:228-232. TWO rules, and the first is a
+# The table: `pm_add_loads`, __init__.py:223-227. TWO rules, and the first is a
 # GroupOp over `{REDUCE, WMMA, STACK}` plus every Elementwise op -- an op SET this
 # port cannot name, because `GroupOp.Elementwise` is a computed membership over 60
-# ops and `ops.bend`'s `Op` is a closed enumeration. `# TODO(p3) __init__.py:229
+# ops and `ops.bend`'s `Op` is a closed enumeration. `# TODO(p3) __init__.py:224  symbol=pm_add_loads
 # GroupOp.Elementwise`: `al_0`'s `ops` list therefore holds the three NAMED ops and
 # `al_elem_len` is the row for what that costs.
 def al_table() -> List<&2, O.PMEntry>:
-  [O.PMEntry{0, [O.OpsREDUCE{}, O.OpsWMMA{}, O.OpsSTACK{}], Nil{}},   # :229 Elementwise|{REDUCE,WMMA,STACK}
-   O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]                                # :231 STORE
+  [O.PMEntry{0, [O.OpsREDUCE{}, O.OpsWMMA{}, O.OpsSTACK{}], Nil{}},   # :224 Elementwise|{REDUCE,WMMA,STACK}
+   O.PMEntry{1, [O.OpsSTORE{}], Nil{}}]                                # :226 STORE
 
 def kn_map_load(ss: List<&2, U32>, +tb: F.Table, +ar: O.Arena) -> List<&2, U32>:
   kn_map_load.go(ss, tb, ar)
@@ -586,13 +586,13 @@ def ib_local(+tb: F.Table, +ar: O.Arena, +i: U32) -> Bool:
   Bool.and(kn_is(ar, i, O.OpsSTORE{}), ib_local.addr(F.fold.addr(ar, tb, i), False{}))
 
 # ===========================================================================
-# `pm_implicit_barriers` -- __init__.py:270-273. TWO rules, and BOTH are WALLS, but
+# `pm_implicit_barriers` -- __init__.py:266-269. TWO rules, and BOTH are WALLS, but
 # for the SAME wall and it is the wall this whole lowerer keeps hitting:
 #
-#     (UPat(Ops.AFTER, name="after"),   add_raw_barrier)   # :271  -- :251-257
-#     (UPat((Ops.END, Ops.BACKEDGE), name="end"), add_war_barrier)  # :272  -- :259-268
+#     (UPat(Ops.AFTER, name="after"),   add_raw_barrier)   # :267  -- :247-253
+#     (UPat((Ops.END, Ops.BACKEDGE), name="end"), add_war_barrier)  # :268  -- :255-264
 #
-# `# TODO(p3) __init__.py:255  UOp.sink(...).toposort(gate=...)` -- BOTH bodies open
+# `# TODO(p3) __init__.py:251  symbol=add_raw_barrier  UOp.sink(...).toposort(gate=...)` -- BOTH bodies open
 # with a toposort over the node's deps (`add_raw_barrier` gates out BARRIERs,
 # `add_war_barrier` walks `backward_slice_with_self`), and a rule here cannot run a
 # fixpoint: that is the whole of movement.bend's header. What IS here is the OP

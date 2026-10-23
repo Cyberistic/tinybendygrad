@@ -151,7 +151,7 @@
 # `beam_round` once per round with the round's `SCORE` table, and the row
 # `beam_exits` is the exit predicate on its own.
 #
-# TODO(p3) search.py:138-141 the 1000x compute filter
+# TODO(p3) search.py:140-142  symbol=beam_search  -- the 1000x compute filter
 #                                         (`if least_compute_ops*1000 < this_compute_ops:
 #                                         continue`). WALL: the whole conjunct reads
 #                                         `this` twice -- once in `min(least, this)`
@@ -168,10 +168,12 @@
 #                                         counted, and the census is what makes
 #                                         the count checkable. `acts_n` is a sum
 #                                         of the eight group sizes.
-# TODO(p3) search.py:108-111 `diskcache_get`/`diskcache_put` -- a persistent
-#                                         cache keyed on `s.ast.key`; WALL: no
-#                                         stable key without `UOp.key`.
-# TODO(p3) search.py:116-122 `get_worker_pool` / `terminate_worker_pool` --
+# TODO(p3) search.py:107-110  symbol=beam_search  -- `diskcache_get`/`diskcache_put`
+#                                         (`diskcache_put` is at search.py:172) -- a
+#                                         persistent cache keyed on `s.ast.key`; WALL:
+#                                         no stable key without `UOp.key`.
+# TODO(p3) search.py:115  symbol=beam_search  -- `get_worker_pool` / `terminate_worker_pool`
+#                                         (`terminate_worker_pool` is at search.py:169) --
 #                                         `multiprocessing`, a foreign effect.
 
 import Base

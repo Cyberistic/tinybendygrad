@@ -605,15 +605,15 @@ def gr_13(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_13.go(ar, ctx, self)
 #   `symbolic.py`'s `resolve` is not ported. Phase P3 owns `symbolic`.
 def gr_14(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
-# --- 15. CONTIGUOUS_BACKWARD -- gradient.py:83. `(ctx.contiguous(),)`
+# --- 15. CONTIGUOUS_BACKWARD -- gradient.py:82. `(ctx.contiguous(),)`
 #
 # `contiguous` (elementwise.py:59) is a real body, not an alias: it returns `self` for a
 # weak dtype, for a STAGE, for `device is None` or for `has_buffer_identity()`, and
-# otherwise `uop.alu(Ops.STAGE)`. `has_buffer_identity` (ops.py:952) walks BASE and is a
+# otherwise `uop.alu(Ops.STAGE)`. `has_buffer_identity` (ops.py:943) walks BASE and is a
 # fold read plus a walk.
 #
-# TODO(p3) mixin/gradient.py:83  ctx.contiguous -- needs `has_buffer_identity`
-#   (ops.py:952), a BASE walk with an `after_ok` argument that fold.bend does not carry.
+# TODO(p3) mixin/gradient.py:82  symbol=pm_gradient  -- ctx.contiguous -- needs `has_buffer_identity`
+#   (ops.py:943), a BASE walk with an `after_ok` argument that fold.bend does not carry.
 #   The rule's OBSERVABLE effect for a non-weak, device-bearing, non-identity node is
 #   exactly `alu(Ops.STAGE)`, and `stage_*` covers that node; the four early returns are
 #   what is missing.
@@ -684,10 +684,10 @@ def gr_21(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 #   i.e. `op.py`'s indexing machinery. Phase P3 owns `op.py`.
 def gr_22(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
-# --- 24. COPY -- gradient.py:92.
+# --- 24. COPY -- gradient.py:90.
 #   (ctx.copy_to_device(ret.src[0].device),) + (None,)*(len(ret.src)-1)
 #
-# `copy_to_device` (ops.py:761) raises for a DISK device, asserts `arg is None or
+# `copy_to_device` (ops.py:738) raises for a DISK device, asserts `arg is None or
 # isinstance(self.device, tuple)`, wraps in an MSELECT when `arg` is set, and RAISES for
 # a weak dtype. `ret.src[0].device` is a FOLD read.
 #
@@ -696,19 +696,19 @@ def gr_22(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # UOp whose `*` is not what the tuple concat expects at that arity. So this rule is a
 # measured Python failure, and the port records it rather than reproducing a crash.
 #
-# TODO(p3) mixin/gradient.py:92  COPY -- `copy_to_device` (ops.py:761) needs a device
+# TODO(p3) mixin/gradient.py:90  symbol=pm_gradient  -- COPY -- `copy_to_device` (ops.py:738) needs a device
 #   fold plus the DISK and weak-dtype refusals; and the rule RAISES at 1 src in
 #   Python (measured, `t_copy_raises`).
 def gr_23(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
-# --- 25. UNSHARD -- gradient.py:93. `ctx.shard(ret.device, ret.axis).src`
+# --- 25. UNSHARD -- gradient.py:91. `ctx.shard(ret.device, ret.axis).src`
 #
-# `shard` (ops.py:757) is `copy_to_device` then `_shard` then `.unshard`, and `_shard`
-# (ops.py:751) reads `int(rng.vmax)+1` -- THAT IS `UOp.vmax`, i.e. `_min_max`
-# (ops.py:1104-1163). The rule then takes `.src` of the resulting UNSHARD, which is a
+# `shard` (ops.py:734) is `copy_to_device` then `_shard` then `.unshard`, and `_shard`
+# (ops.py:728) reads `int(rng.vmax)+1` -- THAT IS `UOp.vmax`, i.e. `_min_max`
+# (ops.py:1094-1155). The rule then takes `.src` of the resulting UNSHARD, which is a
 # per-shard list.
 #
-# TODO(p3) mixin/gradient.py:93  UNSHARD -- `_shard` (ops.py:751) reads `int(rng.vmax)`,
+# TODO(p3) mixin/gradient.py:91  symbol=pm_gradient  -- UNSHARD -- `_shard` (ops.py:728) reads `int(rng.vmax)`,
 #   which is `_min_max`. `_min_max` is the single largest wall in the fold and
 #   `mixin/dtype.bend`'s header already names it as the blocker for `commit_dtype`.
 def gr_24(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
@@ -732,16 +732,16 @@ def gr_25(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes: fired(O.Arena.srcs(ar, c
 # the holes and the NOOPs share an encoding here.
 def gr_26(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
-# --- 28. AFTER, ordering-only -- gradient.py:98-99.
+# --- 28. AFTER, ordering-only -- gradient.py:96-97.
 #   lambda ctx, dest, t: (ctx, None) if t.buf_uop is not dest.buf_uop else None
 #
 # This is a rule that MATCHES the pattern and then RETURNS `None`, so the scan
 # continues -- a fourth state beyond `GSkip`/`GFired` from the pattern's side, and it is
 # why `GSkip` means "no answer from this def" rather than "this pattern did not match".
-# `t.buf_uop` is ops.py:925, a walk to the BUFFER/ALLOC/PARAM (or STAGE/MSTACK)
+# `t.buf_uop` is ops.py:911, a walk to the BUFFER/ALLOC/PARAM (or STAGE/MSTACK)
 # underneath.
 #
-# TODO(p3) mixin/gradient.py:98  ordering-only AFTER -- `buf_uop` (ops.py:925) walks
+# TODO(p3) mixin/gradient.py:96  symbol=pm_gradient  -- ordering-only AFTER -- `buf_uop` (ops.py:911) walks
 #   through `base` and stops at BUFFER/ALLOC/PARAM/STAGE/MSTACK, and `base` needs the
 #   fold plus a second walk. fold.bend carries `fold.base` but not `buf_uop`.
 def gr_27(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
@@ -799,19 +799,21 @@ def gr_28.go(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_28.pick(gr_29_same(
 
 def gr_28(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_28.go(ar, ctx, self)
 
-# --- 30. AFTER, partial store -- gradient.py:102-103. `partial_store_gradient(ctx, dest, view)`
+# --- 30. AFTER, partial store -- gradient.py:100-101. `partial_store_gradient(ctx, dest, view)`
 #
 # THE HELPER IS A `while` LOOP plus a RE-ENTRY INTO THE MATCHER, and both halves are
 # walls here. `gradient.py:54-58` walks `base` up through
-# `{RESHAPE, SHRINK, PERMUTE, FLIP}` accumulating a `path`, and returns `None` if it
-# never reaches `dest`; `gradient.py:62` then calls `pm_gradient.rewrite(mop, ctx=mask)`
-# -- THE MATCHER CALLING ITSELF. That is mutual recursion between `gr_29` and
+# `{RESHAPE, SHRINK, PERMUTE, PAD}` accumulating a `path`, and returns `None` if it
+# never reaches `dest`; `gradient.py:61` then calls `compute_gradient`, whose own
+# `pm_gradient.rewrite` (gradient.py:124) is THE MATCHER CALLING ITSELF. That is
+# mutual recursion between `gr_29` and
 # `gr_rewrite`, and Bend refuses mutual recursion outright (notes, "There is no mutual
 # recursion"). The loop itself is a `while` with a mutable list, which Bend expresses as
 # a self-call on the tail, but it cannot be entered FROM the rewrite.
 #
-# TODO(p3) mixin/gradient.py:102  partial_store_gradient -- the body RE-ENTERS
-#   `pm_gradient.rewrite` (gradient.py:62), so `gr_29` and `gr_rewrite` would be mutually
+# TODO(p3) mixin/gradient.py:52  partial_store_gradient -- the body RE-ENTERS
+#   `pm_gradient.rewrite` (gradient.py:124, reached through `compute_gradient` at
+#   gradient.py:61), so `gr_29` and `gr_rewrite` would be mutually
 #   recursive and Bend refuses that. It also needs `mop.replace(src=(grad,)+mop.src[1:])`
 #   (a src rewrite with an `Arg` preserved) and `grad.const_like(1)`.
 def gr_29(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
@@ -891,11 +893,12 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 #   `view_as`/`shard_shape`/`sharding` (`mixin/op.py`, ops.py:707/461/1248) and two
 #   `substitute(walk=True)` passes. Five subsystems, none of them this file's.
 #
-# `partial_store_gradient` -- gradient.py:52-63, the helper tag 30 calls. Its WALL is
+# `partial_store_gradient` -- gradient.py:52-62, the helper tag 30 calls. Its WALL is
 # MUTUAL RECURSION and it is the one wall in this file that is a Bend LAW rather than a
 # missing dependency, so it is stated under `gr_29` and repeated here:
-# TODO(p3) mixin/gradient.py:102  partial_store_gradient -- the body calls
-#   `pm_gradient.rewrite` (gradient.py:62), so `gr_29` and `gr_rewrite` would be mutually
+# TODO(p3) mixin/gradient.py:52  partial_store_gradient -- the body calls
+#   `pm_gradient.rewrite` (gradient.py:124, reached through `compute_gradient` at
+#   gradient.py:61), so `gr_29` and `gr_rewrite` would be mutually
 #   recursive and Bend refuses mutual recursion outright.
 #
 # WHAT NEXT, in the order the walls fall.
@@ -1079,7 +1082,7 @@ def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 #       `k`'s INSERTION position. Both are stated where they are written.
 #
 # TWO THINGS DID NOT LAND, and both are the walls already recorded in the header of this
-# file (see the `TODO(p3) mixin/gradient.py:132` note below, which is RETAINED):
+# file (see the `TODO(p3) mixin/gradient.py:132 compute_gradient` note below, which is RETAINED):
 #   * the SHAPED-EDGE REDUCE (:132-133), which needs `broadcast_axes` and
 #     `sum_acc_dtype`. It is not merely deferred here -- MEASURED, it is a place where
 #     CPython ITSELF raises: `oracle-cg.py`'s second fixture drives `compute_gradient`

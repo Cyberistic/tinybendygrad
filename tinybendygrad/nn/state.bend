@@ -495,7 +495,7 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
 # THE WALLS. One TODO per Python line, and no prose pretending otherwise.
 # ---------------------------------------------------------------------------
 
-# TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17) needs
+# TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17, symbol=readinto) needs
 #   `.data()` (REALIZATION, tensor.bend WALL 4) and `buffer[:n] = data` mutates a
 #   Python bytearray, which no `Data` record can express. `seek` is above.
 # TODO(p3) state.py:38  accept_filename  -- a decorator; `functools.wraps` copies

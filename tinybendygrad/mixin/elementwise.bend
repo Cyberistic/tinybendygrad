@@ -834,8 +834,8 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # is NOT gated here; it is its own unit.
 # TODO(p3) elementwise.py:500  cos  -- math.pi/2 is `F32.div(F32.pi(), 2.0)`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:511  exp  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
-# TODO(p3) elementwise.py:840  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
-# TODO(p3) elementwise.py:852  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
+# TODO(p3) elementwise.py:838  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
+# TODO(p3) elementwise.py:850  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
 # TODO(p3) elementwise.py:613  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000. `mo_eqmul` is one arm (mixin/op.bend:998); the second arm + add is the remainder, and a `tn_isinf` would still need the same `isinf` body. UNDIAGNOSED
 # TODO(p3) elementwise.py:633  isclose  -- rtol=1e-05 and atol=1e-08 are literals, bit-exact. the rule body is the remainder; UNDIAGNOSED
 # TODO(p3) elementwise.py:654  ceil  -- b+1 is fine and was always fine -- the marker said so. `round` is the remainder; see 890

@@ -66,7 +66,8 @@
 #    is everything that is not the import: that it is ONE call, that it happens
 #    AFTER the path append, that its failure is the sole trigger for the raise,
 #    and the raise's own text and cause.
-#    TODO(p3) nn/torch.py:4  the import -- `sys.modules` and the module search.
+#    TODO(p3) nn/torch.py:4  the import -- `import extra.torch_backend.backend` binds
+#      names in `sys.modules`, and the module search is the wall.
 #
 # ===========================================================================
 # THE SPLIT, stated once and then obeyed. A def here EITHER derives the argument

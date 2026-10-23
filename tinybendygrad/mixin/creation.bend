@@ -83,14 +83,14 @@
 #      the CONST and loses the CAST entirely. `cr_cast` is `DTypeMixin.cast`
 #      (dtype.py:36) with the fold, which is the only one of the three that is right.
 #   3. `full(shape, 0.0, dtype=int32)` CONSTS AN INT, NOT A FLOAT. `DType.const`
-#      (dtype.py:79-84) truncates, `int(truncate[int32](0.0))` is `0`, an `int`, and
+#      (tinygrad/dtype.py:79-84) truncates, `int(truncate[int32](0.0))` is `0`, an `int`, and
 #      `from_py` reads the VALUE -- so `zeros(2,3,dtype=int32)` has an INT CONST cast
 #      to int32 (10 nodes) where `zeros(2,3)` has a FLOAT CONST (9). The truncation
-#      is P3 (dtype.py:84, and ops.bend's own `UOp.const` TODO), so `cr_full`'s
+#      is P3 (tinygrad/dtype.py:84, and ops.bend's own `UOp.const` TODO), so `cr_full`'s
 #      `fill_value` is the ALREADY-TRUNCATED `O.Const` and `cr_zeros_i` passes
 #      `MO.mo_ki(0)`. That is CPython's own answer, which is why `row_zeros23i_g` is a
 #      row and not a restatement.
-#      TODO(p3) dtype.py:84  `DType.const`'s `truncate` -- THE INT ARM ONLY. THE FLOAT
+#      TODO(p3) tinygrad/dtype.py:84  symbol=DType.const  -- `DType.const`'s `truncate` -- THE INT ARM ONLY. THE FLOAT
 #      ARM IS PORTED: `DT.truncate_float` (dtype.bend) is `truncate.get(self, float)`,
 #      and `cr_const_of.trunc` applies it, so a float CONST holds the value IN ITS
 #      DTYPE. MEASURED on CPython, `UOp.const(0.1, dtypes.float16)` holds

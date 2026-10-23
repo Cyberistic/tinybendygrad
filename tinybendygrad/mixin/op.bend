@@ -289,7 +289,7 @@ def mo_ndim(+fx: F.Folded, i: U32) -> Nat:
 # `F.sint_of` builds for every count under 2^31 and `H.lo32` is exact on one.
 # `O.SU` is a dim that is a UOP, and `ssimplify` (ops.py:94, reached by
 # `_shape`'s movement arms) is what turns one into a number; it is not ported.
-# TODO(p3) mixin/op.py:62  self.shape[k] for a SYMBOLIC dim -- `O.SU` needs
+# TODO(p3) mixin/movement.py:18  symbol=MovementMixin.shape  -- self.shape[k] for a SYMBOLIC dim -- `O.SU` needs
 #   `ssimplify`/`resolve` from `uop/symbolic.py` (P3, and W3's wall). The wall is
 #   named at every user of this def, which is why `mo_dim_u32` answers 0 and not 1:
 #   0 is what `Arena.src` gives for an out-of-range read, and a symbolic dim that

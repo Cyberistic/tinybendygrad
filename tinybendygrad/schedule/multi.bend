@@ -11,15 +11,19 @@
 # shrink resolves its own UNSHARD, whether an INDEX is contiguously or strided owned, and
 # the three-way per-source decision in `shard_srcs` that the resharding fallbacks all call.
 #
-# THE ONE WALL THAT CUTS ACROSS EVERY LINE: `UOp._min_max` (ops.py:1104), which
+# THE ONE WALL THAT CUTS ACROSS EVERY LINE: `UOp._min_max` (ops.py:1094), which
 # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
-# `copy_multi`. `fold.bend` lists it as `TODO(p3) ops.py:1104` and it is not a fold at
-# all -- it is arithmetic over the srcs. What `mu_count`
+# `copy_multi`. `fold.bend` names it `ops.py:1104` in its own PROSE and carries it as
+# its `_min_max` WALK -- there is no `TODO(p3)` marker for it there -- and it is not a
+# fold at all -- it is arithmetic over the srcs. What `mu_count`
 # ports is the NARROW case that is exact and load-bearing: a RANGE over a CONST end, where
-# ops.py:1135 reads `(self.src[0]-1).vmax` so `int(rng.vmax)+1 == src[0]`, which is exactly
+# ops.py:1137 reads `(self.src[0]-1).vmax` so `int(rng.vmax)+1 == src[0]`, which is exactly
 # what `UOp.range(len(devices[0]), -1, AxisType.DEVICE)` builds. A RANGE over a SYMBOLIC
 # end answers `mu_sym_count()`, the named wall, and every caller that must not silently get
 # it says so.
+#
+# TODO(p3) ops.py:1094  symbol=_min_max  -- `UOp._min_max` is DECLARED here and
+# `fold.bend` carries its WALK.
 #
 # DEPENDENCY ON SIBLINGS, both named because both are call sites this file does not make.
 # `schedule/allreduce.bend` owns the BODY of `replace_allreduce`'s `_early_allreduce` arm
@@ -3448,5 +3452,5 @@ def main() -> IO(Unit):
 #
 # THE GRAPH BUILDERS, one line per call site.
 #
-#   `_mop` (ops.py:614..:653) -- every `.arg`-carrying rewrite is a `_mop`.
-#   TODO(p3) ops.py:646 multi.py:12   `_apply_shrink`, SHRINK  -- BLOCKED.-- BLOCKED. needs `UOp._mop` -- which is PORTED as `tn_mop` in `tensor.bend:1476`, but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.
+#   `_mop` (ops.py:799) -- every `.arg`-carrying rewrite is a `_mop`.
+#   TODO(p3) schedule/multi.py:12  symbol=_apply_shrink  -- `_apply_shrink`, SHRINK  -- BLOCKED. needs `UOp._mop` (ops.py:799) -- which is PORTED as `tn_mop` in `tensor.bend:1476`, but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.

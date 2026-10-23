@@ -78,20 +78,20 @@
 # 1. THE DOWNLOAD. `Tensor.from_url(url, gunzip=True)` at :6 and :11: a socket,
 #    a TLS handshake, a content-length check and a gzip stream. The URL is
 #    ported; the request is not.
-#    TODO(p3) nn/datasets.py:6   -- Tensor.from_url(..., gunzip=True).
-#    TODO(p3) nn/datasets.py:11  -- the cifar tarball, and tar_extract with it.
+#    TODO(p3) nn/datasets.py:6  symbol=_mnist  -- Tensor.from_url(..., gunzip=True).
+#    TODO(p3) nn/datasets.py:11  symbol=cifar  -- the cifar tarball, and tar_extract with it.
 #
 # 2. `tar_extract` (nn/state.py), indexed by MEMBER NAME with `[]`. `cifar_batches`
 #    names the five members the comprehension asks for and nothing reads them.
-#    TODO(p3) nn/datasets.py:12  -- tt["cifar-10-batches-bin/data_batch_i.bin"].
+#    TODO(p3) nn/datasets.py:12  symbol=cifar  -- tt["cifar-10-batches-bin/data_batch_i.bin"].
 #
 # 3. THE TENSORS. `reshape`, `.to(device)`, `Tensor.cat` and the `[:, 1:]`
 #    column slice are `tensor.bend` and `mixin/movement.bend` and are not
 #    re-derived here. What IS here is the SHAPE ARGUMENT each is handed,
 #    because `reshape(-1,1,28,28)` and `reshape(-1,3,32,32)` differ only in
 #    that list, and the list is the claim.
-#    TODO(p3) nn/datasets.py:7   -- reshape(-1,1,28,28).to(device).
-#    TODO(p3) nn/datasets.py:14  -- train[:, 1:] and train[:, 0].
+#    TODO(p3) nn/datasets.py:7  symbol=mnist  -- reshape(-1,1,28,28).to(device).
+#    TODO(p3) nn/datasets.py:14  symbol=cifar  -- train[:, 1:] and train[:, 0].
 #
 # `-1` IS A FLAG AND NOT AN ELEMENT. `reshape(-1, 1, 28, 28)` is a list whose
 # head is negative, and Bend has no negative `U32` (there is no `Nat.to_u32`, and

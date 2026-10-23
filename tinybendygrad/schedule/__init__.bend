@@ -1508,13 +1508,13 @@ def copy_kernel_to_store(disk: List<&2, U32>, +ar: O.Arena, +call: U32, +dst: U3
 #     graph_rewrite(ast, sym+pm_mops+pm_flatten_range+pm_simplify_ranges,
 #                   ctx={}, name="simplify ranges in copy")
 #
-# a bottom-up rewrite over FOUR matchers, two of them imported at :168-170.
+# a bottom-up rewrite over FOUR matchers, two of them imported at :164-166.
 # Naming a def `simplify_copy_kernel` that answers the guard's BOOLEAN would put
 # a WRONG ANSWER under an UPSTREAM NAME and a caller would take it for the rule.
-#   TODO(p3) __init__.py:167  the four-matcher rewrite -- THE WALL.
+#   TODO(p3) __init__.py:167  symbol=simplify_copy_kernel  -- the four-matcher rewrite -- THE WALL.
 #   TODO(p3) __init__.py:164-166  `sym` / `pm_flatten_range` /
 #     `pm_simplify_ranges` -- no port. `pm_mops` is `schedule/prepare.bend`'s.
-#   (ops.py:171 is the COMMENT `# simplify copy kernels`; the rewrite itself is
+#   (__init__.py:171 is the COMMENT `# simplify copy kernels`; the rewrite itself is
 #   `sink = graph_rewrite(ast, sym+pm_mops+pm_flatten_range+pm_simplify_ranges,
 #   init_ctx=MapCtx, name="simplify ranges in copy")` at __init__.py:167 -- and
 #   it is TOP-DOWN: upstream's `graph_rewrite` takes `bottom_up=False` by
@@ -1546,7 +1546,7 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 # THE THREE-WAY SELECTOR IS ONE `match` AND NOT A NESTED ONE, because a `match`
 # nested inside a `case h <> t:` LIST arm is REFUSED in bend 2.0.34 (this file's
 # rule 1). Class 1 is "a PARAM with a device we have not kept yet".
-#   TODO(p3) __init__.py:155  the RuntimeError -- a raise.
+#   TODO(p3) __init__.py:155  symbol=assert_all_same_devices  -- the RuntimeError -- a raise.
 #   (__init__.py:159 is `return call.replace(src=(dst.store(src),) +
 #   call.src[1:])`, the LAST LINE of `copy_kernel_to_store`; the RuntimeError
 #   is at __init__.py:155, inside `assert_all_same_devices` at :153-155.)
@@ -1606,16 +1606,16 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 #
 # ARM 3 needs `UOp.variables` and `UOp.substitute` and NEITHER IS IN THE TREE:
 # `fold.bend`'s own header names `variables` as one of the three readers waiting
-# on the RANGES FOLD, and `ops.py:1239 UOp.substitute` waits behind it.
+# on the RANGES FOLD, and `ops.py:514 UOp.substitute` waits behind it.
 # `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is NOT in `uop/ops.bend` --
 # an earlier revision of this sentence said it was "already ... as tag 42's table", AND THAT IS
 # FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4044`) and no `def ...resolve_linear_call`
-# exists anywhere. See the corrected note at `__init__.py:279` for the measurement. Arm 1 is
-# therefore ALSO blocked on it, not on `binds` alone (:107-109), which is `dict[int,UOp]` keyed by a
+# exists anywhere. See the corrected note at `__init__.py:274` for the measurement. Arm 1 is
+# therefore ALSO blocked on it, not on `binds` alone (:104-106), which is `dict[int,UOp]` keyed by a
 # Python int -- the same String-keyed-`Map` bill `Aa` pays above.
 #   TODO(p3) __init__.py:110  `s.variables()` -- no reader in the tree.
-#   TODO(p3) __init__.py:114  `s.substitute`   -- no reader in the tree.
-#   TODO(p3) __init__.py:107-109  `binds`, a `dict[int,UOp]` -- arm 1.
+#   TODO(p3) __init__.py:111  symbol=resolve_linear_call  -- `s.substitute`   -- no reader in the tree.
+#   TODO(p3) __init__.py:104-106  `binds`, a `dict[int,UOp]` -- arm 1.
 # ---------------------------------------------------------------------------
 def apply_binds.arm(iscall: Bool, linear: Bool, program: Bool) -> U32:
   match iscall linear program:
@@ -1722,64 +1722,64 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 
 # THE TWO WALLS THAT REMAIN, each with `file:line`, and each NOT a `graph_rewrite`:
 #
-# 10. `canonicalize_call_body` -- __init__.py:239-240. NO ctx. IT IS A ONE-LINE
+# 10. `canonicalize_call_body` -- __init__.py:235-236. NO ctx. IT IS A ONE-LINE
 #     BODY WHOSE ONE LINE IS THE REWRITER:
 #         c.replace(src=(graph_rewrite(c.body, pm_canonicalize_alloc,
-#                                     ctx=CallifyCtx(), bottom_up=True),)+c.src[1:])
+#                                     init_ctx=CallifyCtx, bottom_up=True),)+c.src[1:])
 #     The `c.replace(src=(X,)+c.src[1:])` half is `cks_rep` above and is PORTED;
 #     the `graph_rewrite` half is the bottom_up engine over `PMEntrys`, which is
 #     `uop/ops.bend`'s `pm_rewrite_m` and is not exported. There is no ctx work
 #     left to do here -- `CallifyCtx` exists above -- so the wall is the ENGINE.
-#     TODO(p3) __init__.py:240  `graph_rewrite(..., bottom_up=True)` -- no
+#     TODO(p3) __init__.py:236  symbol=canonicalize_call_body  -- `graph_rewrite(..., bottom_up=True)` -- no
 #     bottom_up entry point; `ops.bend` has the top-down scan only.
 #
-# 11. `replace_input_buffer` -- __init__.py:248-250. NEEDS ctx, and it is the
+# 11. `replace_input_buffer` -- __init__.py:244-246. NEEDS ctx, and it is the
 #     ONLY ctx body left, so it is the last C2 item:
 #         ctx.replacements.append(b)
 #         return b.param_like(len(ctx.replacements)-1)
 #     The append is one `List.append` and the `len` is one `List.length`; the
-#     mint is the wall. `UOp.param_like` is `TODO(p3) ops.py:1239` in
+#     mint is the wall. `UOp.param_like` is `TODO(p3) ops.py:1228  symbol=UOp.param_like` in
 #     `uop/ops.bend:4453` -- named, unported, and named as a TODO, so this is a
 #     recorded deferral and not a gap I found.
-#     TODO(p3) ops.py:1228  `UOp.param_like` -- no port. Blocks this body.
+#     TODO(p3) ops.py:1228  symbol=UOp.param_like  -- no port. Blocks this body.
 #
-# 12. `contiguous_mops_to_view` -- __init__.py:199-215. It is the one of the
+# 12. `contiguous_mops_to_view` -- __init__.py:195-211. It is the one of the
 #     twelve that `06-UNBLOCKED.md` found passes NO ctx on any call, and that is
-#     right about the CALL SITES but not about the SIGNATURE: :207 recurses with
-#     `ctx` and :213 writes `ctx.views.add(view)`. So it needs ctx, weakly --
-#     `if ctx is not None` at :213 makes the write optional.
+#     right about the CALL SITES but not about the SIGNATURE: :203 recurses with
+#     `ctx` and :209 writes `ctx.views.add(view)`. So it needs ctx, weakly --
+#     `if ctx is not None` at :209 makes the write optional.
 #     It is the LARGEST of the twelve (17 lines) and every one of its five
 #     helpers is missing or walled:
-#     TODO(p3) ops.py:559  `all_int(c.shape)` -- `c.shape` needs `fold.bend`'s
+#     TODO(p3) __init__.py:197  symbol=contiguous_mops_to_view  -- `all_int(c.shape)` -- `c.shape` needs `fold.bend`'s
 #       `UOp.shape` and a whole-arena `Table`; `all_int` itself is
 #       `helpers.bend`'s `all_int_nest` over a `Nest`.
 #     TODO(p3) ops.py:762  `src.base` is ported; the `while buf.op is BITCAST`
 #       peel is `UOp.base` with BITCAST added and is NOT a reader here.
-#     TODO(p3) __init__.py:206  `graph_rewrite(src, multi_pm)` --
+#     TODO(p3) __init__.py:202  symbol=contiguous_mops_to_view  -- `graph_rewrite(src, multi_pm)` --
 #       `schedule/multi.py`'s table.
 #     TODO(p3) ops.py    `src.contiguous_view()` -- ABSENT from the tree. This is
-#       the binding one: `:210` returns None when it is None, so without it the
+#       the binding one: `:206` returns None when it is None, so without it the
 #       rule has no fallthrough case and answering anything else would be a
 #       fabrication.
-#     WALL(p3) __init__.py:212  `buf[a:b]` (SHRINK) and `.bitcast` -- BLOCKED: needs `UOp.shrink` (tinygrad/uop/ops.py:192, `apply_movement_op`), the SHRINK builder `rangeify.bend` records as a WALL; `.bitcast` is NOT missing -- it is `mixin/dtype.bend`'s `bitcast_at` (:372), which mints `OpsBITCAST`.
-#     TODO(p3) __init__.py:214  `.reshape` -- `mixin/movement.bend`'s.
-#     TODO(p3) __init__.py:208  `.unshard` -- ABSENT from the tree.
+#     WALL(p3) __init__.py:208  `buf[a:b]` (SHRINK) and `.bitcast` -- BLOCKED: needs `UOp.shrink` (tinygrad/uop/ops.py:192, `apply_movement_op`), the SHRINK builder `rangeify.bend` records as a WALL; `.bitcast` is NOT missing -- it is `mixin/dtype.bend`'s `bitcast_at` (:372), which mints `OpsBITCAST`.
+#     TODO(p3) __init__.py:210  symbol=contiguous_mops_to_view  -- `.reshape` -- `mixin/movement.bend`'s.
+#     TODO(p3) __init__.py:204  symbol=contiguous_mops_to_view  -- `.unshard` -- ABSENT from the tree.
 #
-# 13. `create_linear_with_vars` -- __init__.py:273-301. NO ctx, and it is the
-#     TOP: five `graph_rewrite` passes at :276, :279, :282 plus the two at :240
-#     and :267 inside the bodies above, `capturing[0].add_linear` at :297,
-#     `memory_plan_rewrite` at :301, `used_vars` at :285 (which needs
+# 13. `create_linear_with_vars` -- __init__.py:268-296. NO ctx, and it is the
+#     TOP: five `graph_rewrite` passes at :271, :274, :277 plus the two at :236
+#     and :262 inside the bodies above, `capturing[0].add_linear` at :292,
+#     `memory_plan_rewrite` at :296, `used_vars` at :280 (which needs
 #     `UOp.variables`, the same reader arm 3 of `apply_binds` needs) and the
-#     `RuntimeError` bind-mismatch check at :292. Porting it before any of the
+#     `RuntimeError` bind-mismatch check at :287. Porting it before any of the
 #     five matchers it calls would be a name with no body.
-#     WALL(p3) __init__.py:276  `pm_schedule` -> `lower_sink_to_linear` (ported
+#     WALL(p3) __init__.py:271  `pm_schedule` -> `lower_sink_to_linear` (ported
 #       above) but the PASS is a rewriter -- BLOCKED: needs the `pm_schedule` PatternMatcher + its `graph_rewrite` pass; the rule body `lower_sink_to_linear` IS ported (:1362) and `pm_schedule` has no def in the tree.
-#     WALL(p3) __init__.py:279  `pm_resolve_linear_call` -> `resolve_linear_call`
+#     WALL(p3) __init__.py:274  `pm_resolve_linear_call` -> `resolve_linear_call`
 #       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4044), and `pm_flatten_linear` is absent too.
-#     WALL(p3) __init__.py:282  `pm_copy_from_store` -> the two bodies above plus
+#     WALL(p3) __init__.py:277  `pm_copy_from_store` -> the two bodies above plus
 #       `assert_all_same_devices`, and the PASS is a rewriter -- BLOCKED: needs the `pm_copy_from_store` PatternMatcher + `graph_rewrite` pass. The THREE rule bodies are ALL PORTED (`cks_*` :1407, `simplify_copy_kernel` :1466, `assert_all_same_devices` :1527); only the PASS is absent.
-#     TODO(p3) __init__.py:285  `used_vars` -- `UOp.variables`.
-#     TODO(p3) __init__.py:301  `memory_plan_rewrite` -- `schedule/memory.py`.
+#     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.
+#     TODO(p3) schedule/memory.py:19  symbol=memory_plan_rewrite  -- `memory_plan_rewrite` -- `schedule/memory.py`.
 
 # ===========================================================================
 # THE GATE.
