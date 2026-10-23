@@ -233,13 +233,23 @@ def verify_pin() -> tuple[str, str]:
 
 # --------------------------------------------------------------------------- the population
 
+#: THE SCRATCH RULE, AND IT IS THE TREE's OWN. `.gitignore:36` is `*mut.bend` -- a
+#: mutation-probe scratch copy, NOT a source file. The gate walked the FILESYSTEM, so it
+#: counted a scratch copy's markers as citations of the port, and one of them was a false
+#: citation (`codegen/late/.linearizer-mut.bend:402`) that NOBODY COULD FIX, because the
+#: file is not the port's. A NAME RULE, NOT A GIT CALL: `git ls-files` reads the INDEX, and
+#: this tree's index is armed (see `checks/index-arm-gate.py`).
+def is_scratch(name: str) -> bool:
+  return name.endswith("-mut.bend") or name.endswith(".bak")
+
+
 def walk_bend(root: Path) -> list[Path]:
-  """Every `.bend` file under `root`, DISCOVERED. `glob` is a trap here."""
+  """Every `.bend` SOURCE file under `root`, DISCOVERED. `glob` is a trap here."""
   out: list[Path] = []
   for dp, dn, fn in os.walk(root):
     dn[:] = [d for d in dn if d not in {".git", "__pycache__", "node_modules"}]
     for f in fn:
-      if f.endswith(".bend"):
+      if f.endswith(".bend") and not is_scratch(f):
         out.append(Path(dp) / f)
   return sorted(out, key=lambda p: str(p))
 
