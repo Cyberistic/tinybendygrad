@@ -2446,6 +2446,32 @@ cite-class        [#########] 4/5  **FOURTEEN UPSTREAM CITATIONS IN `uop/ops.ben
                                        line numbers are an interface). **NOT FIXED:** the 603 false citations
                                        outside the tagged population -- they belong to the units that own
                                        those files. See `.agents/slop/citeclass/REPORT.md`.
+cite-slice        [######...] 3/5    **THE 603 ARE THE CLASS, AND THE SLICE THAT IS NOT `runtime/**`
+                                        WENT FROM 331 FALSE TO 78.** Measured on TWO FROZEN trees
+                                        (`git archive` of the base and of the fix) with the SAME
+                                        instruments: BEFORE `65b333037` 331 false of 1211 citations
+                                        in my slice, AFTER `52c9f5ce5` **78** of 1212. `runtime/**`
+                                        is 269 before AND 269 after -- another unit's, untouched.
+                                        **61 FILES, 237 LINES, ALL COMMENT-ONLY** (every file strips
+                                        to the same code as HEAD through `strip_comments()`, and every
+                                        LINE COUNT is unchanged because 61 of them are cited by other
+                                        files). **61 of 61 COMPILE `WITHIN-LIMITS`** under
+                                        `checks/bounded.py --mb 2048`, one `bend` at a time. **THE
+                                        DURABLE FORM IS `symbol=`, AND IT IS ONLY ADDED WHERE THE
+                                        GATE CAN RESOLVE THE SUBJECT** -- that gate's corpus is
+                                        `tinygrad/` only, so `examples/llama.py` and an ambiguous
+                                        `dtype.py` would be UNRESOLVABLE, a RED row. **THE GEOMETRY IS
+                                        A CONSTRAINT AND NOT A STYLE:** a backticked name is a claim
+                                        token of a citation only if it is within 40 CHARACTERS of every
+                                        OTHER citation on the line, so a line with three citations
+                                        cannot carry a `symbol=` on each of them without the
+                                        attribution moving. **NOT FIXED: 78**, and they are a CLASS --
+                                        the port's prose names a PORT symbol (`mxm_marg`,
+                                        `mo_eqmul`, `scaled_dot_product_attention`) that the upstream
+                                        file does not contain AT ANY REVISION, so no re-point can make
+                                        the claim hold; the fix is the PROSE. Queue:
+                                        `.agents/slop/citefix/left-tok9.rows`. See
+                                        `.agents/slop/citefix/REPORT.md`.
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
