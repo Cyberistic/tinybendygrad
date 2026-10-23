@@ -121,7 +121,7 @@
 #   :179 BufferStorage              PORTED  gpuAddress then contents
 #   :180 _free                      PORTED  synchronize, mark_resident, release
 #   :185 _offset                    PORTED  `D.host_offset`, device.bend's own
-#   :189 pm_encode / :192 pm_lower  WALL 5  THE UOp MATCHER
+#   :185 pm_encode / :188 pm_lower  WALL 5  THE UOp MATCHER
 #   :196 __init__                   PORTED  the twelve statements, in order
 #   :201 the queue refusal          PORTED  refusal 4
 #   :204-206 the residency set      PORTED  three calls, conditional
