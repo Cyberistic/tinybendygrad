@@ -1517,23 +1517,34 @@ corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OW
                                        `checks/differ.py`'s own note about it. **⇒ AND `POPULATION_PIN` DID
                                        NOT MOVE** (`4a44f98e...` before and after): the edit touched no graph.
 
-imagenet-distance    [##] 2/3  **THE MEASURED DISTANCE TO "RUN IMAGENET USING BEND", BY A WALK OF THE PORT'S 3,285
-                                       `.bend` FILES AND 102,269 DEFS (not a hand list).** MEASURED 2026-10-22T04:05Z.
-                                       **PRESENT**: `nn_conv2d`, `pool_bn`, `nn_linear`, `vt_sequential`, `mx_cat`,
-                                       `mo_reshape`, and a fetch FRAMEWORK (`fetch_cifar`, `fetch_mnist`,
-                                       `fetch_done`, `fetch_fail`, `fetch_end`). **ABSENT**: `argmax` (0 of 102,269
-                                       defs, and no index-reduce either -- no `reduce_*idx`, no `where_max`); `item`
-                                       (no `read_scalar`, `to_host`, `d2h` or `o2h` ANYWHERE, so `item` is NOT a
-                                       wrapper around something that exists under another name -- it is a real gap).
-                                       **A STUB, NOT A PORT**: `tinybendygrad/extra/datasets/imagenet.bend` (46 lines)
-                                       REFUSES all three upstream defs; `extra/models/resnet.bend` (279 lines) refuses
-                                       too. **AND THE PORT'S `extra/datasets/` IS A DIFFERENT MODULE FROM UPSTREAM'S
-                                       `nn/datasets.py`** -- upstream's `ImageNet` class is in
-                                       `tinygrad/nn/datasets.py` while the port's `extra/datasets/imagenet.py` is the
-                                       FILE-LIST half. **THE CHAIN, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE
-                                       SHAPE (see `nn-rows-vacuous`) -> `argmax` -> `item` -> A REAL MODEL -> THE 150
-                                       GB OF DATA, WHICH IS A HOST CONCERN AND NOT THE PORT'S.** The first three are
-                                       the port's; the last two are not.
+imagenet-distance    [###] 3/3  **THE MEASURED DISTANCE TO *"RUN IMAGENET USING BEND"*, RE-TAKEN 2026-10-23 AFTER THIS
+                                       SESSION'S THREE UNITS LANDED. THE CHAIN HAS SHORTENED: TWO OF THE THREE EVAL
+                                       PRIMITIVES ARE NOW REAL, AND THE THIRD IS REAL AS FAR AS THE PORT CAN GO.** **⇒
+                                       THE CHAIN, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE SHAPE -- **DONE**: ALL
+                                       FIVE `conv_*` ROWS READ UPSTREAM'S ANSWERS (`1,8,32,32` / `1,8,30,30` /
+                                       `1,8,16,16` / `1,8,32,34` / `1,8,32,32`)**; `argmax` -- **DONE AT THE GRAPH
+                                       LEVEL**: `tinybendygrad/nn/argmax.bend` BUILDS UPSTREAM'S FOUR NODES WITH **20
+                                       ROWS, ALL GREEN, EVERY `want` TAKEN FROM CPYTHON ITSELF** (AND THE BLOCKER WAS
+                                       **TWO BUGS IN `mixin/rand.bend`**, NOT A MISSING CAPABILITY -- SEE `argmax-
+                                       graph`); `item` -- **DONE AS FAR AS THE PORT CAN GO**: THE PRECONDITION IS
+                                       UPSTREAM'S `AssertionError` **VERBATIM** (THE PORT DOES NOT RETURN THE FIRST
+                                       ELEMENT), THE CONST PATH WORKS, AND THE **DEVICE** PATH **REFUSES BY NAME** --
+                                       `uop/ops.bend:5296` SAYS *"NO LIVE `Buffer`"* AND `engine/realize.bend:60`
+                                       LISTS `realize.py:145 exec_copy` AS A FOREIGN EFFECT, **SO THAT IS AN EXECUTOR
+                                       GAP, NOT AN `item` GAP**; **THE LOADER** -- **DONE**:
+                                       `tinybendygrad/extra/datasets/imagenet.bend` IS **520 LINES** (IT WAS A 46-LINE
+                                       STUB), ALL THREE DEFS ARE REAL, AND **8 OF 8 ROWS AGREE WITH CPYTHON'S OWN
+                                       `glob`/`json` BYTE-IDENTICALLY**; **THEN A REAL MODEL -- STILL A STUB**
+                                       (`extra/models/resnet.bend` REFUSES); **THEN THE 150 GB OF DATA -- THE
+                                       HOST'S**, NOT THE PORT'S. **⇒ AND THE THREE REMAINING PORT-SIDE GAPS, NAMED:
+                                       (1) `item`'s DEVICE READ NEEDS A LIVE BUFFER, WHICH IS AN EXECUTOR; (2) **THE
+                                       ARANGE's VALUES ARE NOT UPSTREAM's** -- IT IS **24 NODES AGAINST CPYTHON'S
+                                       31**, BECAUSE THE `_pad_constant`'s PAD IS ABSENT (`op_padc` PASSES `[i]` WHERE
+                                       UPSTREAM PASSES `[2i-1]`), **SO A LIST FORM IS WHAT CHECKS VALUES UNTIL THE
+                                       PORT HAS A VALUE FOLD**; AND (3) A REAL MODEL.** **⇒ AND THE PORT HAS NO
+                                       EXECUTOR AND NO VALUE FOLD, WHICH IS THE UNDERLYING TRUTH UNDER ALL THREE:
+                                       `uop/fold.bend` ANSWERS dtype/shape/device/addr/base/ended AND NOTHING ELSE.**
+
 
 commit-recipe-race   [##] 2/3  **THE PRESCRIBED COMMIT RECIPE SWEEPS 40 OF 40 TRIALS UNDER A RACE, AND THE HAZARD
                                        FIRED ON ME.** MEASURED 2026-10-22 at HEAD `a50ec806e`, instrument
