@@ -41,7 +41,7 @@ import ./../datasets/__init__.bend as D
 #   nn_bound   :210   `1/sqrt(n)`                         nn_glorot :217  `(6/(fan_in+fan_out))**0.5`
 # Its own wall list named the three this file needs first:
 #   :231  `TODO(p3) mixin/op.py  x.conv2d           -- SIDE B, not built.`
-#   :229  `TODO(p3) mixin/op.py:1662  x.batchnorm   -- SIDE B, not built.`
+#   :229  `TODO(p3) mixin/op.py:1678  x.batchnorm   -- SIDE B, not built.`
 # -- both are now BUILT, and that list is kept above ONLY as the record of what was true on
 # 2026-10-19, because a deleted blocker is how the NEXT reader thinks nothing was ever missing.
 #   :227  `TODO(p3) mixin/op.py:1254  x.linear       -- ...`

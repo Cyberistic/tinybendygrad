@@ -16,7 +16,7 @@
 #   5  43      fold  fold_add_divmod_recombine  PORTED
 #   6  63-70   data  invalid_pat/gate/bare_const/casted_const/const_arg  PORTED
 #   7  72      fold  lift_reduce_gate    DEFERRED `UOp.ranges` (fold.bend
-#                                            TODO(p3) ops.py:483)
+#                                            TODO(p3) ops.py:479  symbol=ranges)
 #   8  79-102  table pm_data_invalid      13 of 14  (rule 6 is #7)
 #   9  104-108 table pm_remove_invalid    2 of 2
 #  10  110     fold  fold_const_where     PORTED
@@ -3664,13 +3664,13 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   `gcd`), `sum(u.vmin for u in p)` and `sum(u.vmax for u in p)`. Two of the
 #   three are `_min_max` (ops.py:1104, the largest single piece `fold.bend`
 #   defers). P3.
-# TODO(p3) symbolic.py:209 def canonicalize_simplex -- `u.vmin >= 0` and
+# TODO(p3) symbolic.py:214 def canonicalize_simplex -- `u.vmin >= 0` and
 #   `GroupOp.Irreducible`, i.e. `_min_max` again. P3.
 # TODO(p3) symbolic.py:233 def fold_where_closure -- `bool_slice`
 #   (ops.py:290, a frozenset union down the srcs), `op_in_backward_slice_with_self`
 #   (a toposort plus a pop) and `substitute` + `simplify` (which are
 #   `graph_rewrite`). P3, and it is the largest single unlock after `_min_max`.
-# TODO(p3) symbolic.py:236-323 table `symbolic` -- ALL 47. Every one of the 47
+# TODO(p3) symbolic.py:240-325  symbol=symbolic  -- ALL 47. Every one of the 47
 #   reaches for `vmin`/`vmax` (`_min_max`), `const_factor` (-> `gcd`),
 #   `tuplize`, `bool_slice`, `backward_slice` or `substitute`. There is no
 #   sub-block of it that is answerable without one of those, which is why the
@@ -3688,7 +3688,7 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 # TODO(p3) symbolic.py:427 def gated_given_valid -- `IMAGE.value`, a
 #   `ContextVar` (helpers.py), which is a process-wide mutable Bend has no home
 #   for, plus `uop_given_valid` from the block above. P3/P6 for the flag.
-# TODO(p3) symbolic.py:452 the `xpow` rule -- `xpow` is
+# TODO(p3) symbolic.py:451  symbol=sym  the `xpow` rule -- `xpow` is
 #   `tinygrad/codegen/decomp/transcendental.py`, a foreign import (symbolic.py:12
 #   says "TODO: symbolic shouldn't be importing from codegen"). It is seven UOp
 #   expressions and every one of them needs `log2`/`exp2`/`cast`/`mod`/`where`
@@ -3698,7 +3698,7 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #   `UOp.valid`, `UOp.store` with a `ConstType` src and `UOp.load`, all of which
 #   are `movement.bend`'s and `weak.bend`'s (both now present in the tree, both
 #   concurrent work, neither read as authoritative here). P3.
-# TODO(p3) symbolic.py:466-468 the three `1 - d` reciprocal rules -- and the wall is
+# TODO(p3) symbolic.py:465-467  symbol=sym  the three `1 - d` reciprocal rules -- and the wall is
 #   the PROMOTION, not an engine. `:472`'s `-(x+y)` and `:474`'s `(x+y)*c` below are
 #   the same two facts. `1 - d` is `mixin/elementwise.py`'s `__rsub__` =
 #   `SUB(CONST(1), d)` AT THE PROMOTED DTYPE.

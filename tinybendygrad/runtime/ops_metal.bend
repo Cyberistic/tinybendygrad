@@ -185,21 +185,21 @@
 # 3. PICKLE (:41). `__reduce__` exists only so a forked multiprocessing worker
 #    builds a fresh `MTLCodeGenService`; it is `(MetalCompiler, ())` and it has
 #    no reader in this tree.
-#    TODO(p3) runtime/ops_metal.py:41  -- `__reduce__`.
+#    TODO(p3) runtime/ops_metal.py:41  symbol=__reduce__  -- the pickle hook.
 #
 # 4. A SUBPROCESS (:72-80). `disassemble` shells out to
 #    `extra/disassemblers/applegpu/compiler_explorer.py` and prints stdout. It
 #    is a developer tool with no caller in the port.
-#    TODO(p3) runtime/ops_metal.py:76  -- `subprocess.Popen` of compiler_explorer.
+#    TODO(p3) runtime/ops_metal.py:72  symbol=disassemble  -- the SUBPROCESS.
 #
-# 5. THE UOp MATCHER (:189, :192). `pm_encode` and `pm_lower` match on UOps and
+# 5. THE UOp MATCHER (:185, :188). `pm_encode` and `pm_lower` match on UOps and
 #    their bodies are UOp graphs, and building one needs `./uop/ops.bend` and the
 #    HCQ2 lowering this file does not own, so the port carries neither.
-#    `pm_bufferize` (:216) WAS a third one and it is GONE from upstream at the
-#    pin, so the port carries it no longer -- see the section that used to hold
-#    it.
-#    TODO(p3) runtime/ops_metal.py:190  -- `encode_submit(MetalQueue(submit))`.
-#    TODO(p3) runtime/ops_metal.py:193  -- `mtl_poll(tl) if …timeline…`.
+#    `pm_bufferize` WAS a third one and it is GONE from upstream at the pin, so
+#    the port carries it no longer -- see the section that used to hold it.
+#    The `pm_encode` rule is at :186 and the `pm_lower` rule at :190.
+#    TODO(p3) runtime/ops_metal.py:186  symbol=MetalQueue  -- `MetalQueue(s).encode()`.
+#    TODO(p3) runtime/ops_metal.py:192  symbol=mtl_msg  -- the `pm_lower` fence poll.
 #
 # NOT A WALL, and named because it looks like one: every `mtl_msg` goes through
 # `ccall(MSGSEND[ret], obj, sel, *args)`, and `ccall` builds a UOp
@@ -214,7 +214,7 @@
 #    nanosecond conversion cannot happen here. `dev.sync` computes the WORD
 #    INDICES the scan visits and records `waitUntilCompleted`, and the times
 #    themselves are the seam's.
-#    TODO(p3) runtime/ops_metal.py:281  -- `GPUStartTime/GPUEndTime * 1e9`.
+#    TODO(p3) runtime/ops_metal.py:281  symbol=synchronize  -- `GPUStartTime/GPUEndTime * 1e9`.
 #  * `f"{self.device} signal wait timed out"` and
 #    `f"Invalid Metal library. {ret!r}"` interpolate a value this port has no
 #    spelling for (a `bytes` repr). The gate diffs the PREFIX of each, beside

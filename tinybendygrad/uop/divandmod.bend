@@ -851,7 +851,7 @@ def trees() -> Gate:
 
 # NOT PORTED, one line each, with the WALL and the phase that owns it. The block
 # is the same shape `ops.bend` and `fold.bend` use.
-# TODO(p3) divandmod.py:13 the RANGE HALF of `x//y` being a point -- PORTED for
+# TODO(p3) divandmod.py:13  symbol=fold_divmod_general  the RANGE HALF of `x//y` being a point -- PORTED for
 #   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
 #   the test is always true. Outside CONST/CONST it needs `_min_max`. WALL:
 #   `UOp._min_max`, P3. See fold.bend:2178.
@@ -860,7 +860,7 @@ def trees() -> Gate:
 #   src list. Neither has a caller once line 23 is gone, so neither is written.
 #   WALL: none -- these ARE expressible; they are P3 for SCOPE, not for
 #   impossibility, and they land with line 23.
-# TODO(p3) divandmod.py:13-15 a FLOAT CONST -- `_min_max` returns PyConst and
+# TODO(p3) divandmod.py:13-15  symbol=fold_divmod_general  a FLOAT CONST -- `_min_max` returns PyConst and
 #   `dm_val` reads `CInt` only, so rules 0 and 1 SKIP on a `CFloat` divisor where
 #   Python rewrites. WALL: PyConst (float | bool | Invalid), P3.
 #
@@ -872,7 +872,7 @@ def trees() -> Gate:
 #   needs a `Counter` fold. fold.bend:2174.
 # TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
 #   `divides`, same wall.
-# TODO(p3) divandmod.py:37 `Shared decomposition for folding rules` and :41-48
+# TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
 #   `fold_divmod_congruence: fold if a is congruent to an expression whose range is
 #   between 0 and c` -- the WORST one. `itertools.product` over per-term sign
 #   choices (`try both signs of the remainder for a lone term ... otherwise pick
@@ -882,7 +882,7 @@ def trees() -> Gate:
 #   never built, AND a cartesian product, AND `min(r, r-c, key=abs)`. WALL:
 #   `_min_max`; the product is a fold over a `List<List<U32>>` and Bend has no
 #   cartesian product and no `min` over three with a key function. P3.
-# TODO(p3) divandmod.py:50-55 `gcd_with_remainder: factor out common gcd from
+# TODO(p3) divandmod.py:50-55  symbol=fold_divmod_general  `gcd_with_remainder: factor out common gcd from
 #   numerator` -- `math.gcd(*factors, c)`, `divides`, `.simplify()` and
 #   `new_x.vmin >= 0`. WALL: `gcd`, `_min_max`, `simplify`. `math.gcd` over a
 #   VARIADIC fold is a fold over a list, which is expressible; the rest is not.
@@ -898,12 +898,12 @@ def trees() -> Gate:
 # ** Variable Denominator / Fallback Rules ** -- divandmod.py:72-96. These rules
 # apply to variables OR constants that failed the checks above, and reconstruct all
 # uops including const for these checks. Both are behind the same walls:
-# TODO(p3) divandmod.py:77-81 `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
+# TODO(p3) divandmod.py:77-81  symbol=fold_divmod_general  `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
 #   `factor_remainder: (d*x+y)//d -> x+y//d` -- `UOp.gcd(*all_uops, y)`,
 #   `.simplify()`, `divide_exact` (which needs `divides`), `const_factor` (a
 #   `Counter` fold), `u.divides(c)*(c%y.val)` and `y.vmin<0` / `x.vmin<0`. WALL:
 #   `gcd`, `const_factor`, `simplify`, `_min_max`. P3.
-# TODO(p3) divandmod.py:11 the `raise` itself -- Python's
+# TODO(p3) divandmod.py:11  symbol=fold_divmod_general  the `raise` itself -- Python's
 #   `ZeroDivisionError(f"{'Division' if d.op is Ops.FLOORDIV else 'Mod'} by zero
 #   trying to rewrite {x.alu(d.op, y)}")` needs a `raise` and an f-string over a
 #   UOp. `dm_zero` REPORTS the condition and `zero_r04`/`zero_r11`/`zero_r23` are

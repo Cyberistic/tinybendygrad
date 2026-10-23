@@ -3210,25 +3210,25 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #
 # THE FOUR THAT ARE GENUINELY UNAVAILABLE, and they are all P3 or later.
 # ===========================================================================
-# TODO(p3) spec.py:286 def pyrender_globals -- imports `tinygrad.codegen.opt`,
-#   `tinygrad.schedule.rangeify` and `tinygrad.renderer` into a dict of names and
-#   is `@functools.cache`d. WALL: none of the three modules is ported, and the
-#   thing they exist to feed does not exist here at all -- see spec.py:292. P3/VIZ.
-# TODO(p3) spec.py:292 def eval_pyrender -- `exec` of GENERATED SOURCE. WALL: the
-#   point of `upat.py` is to EMIT Python, and this port emits defs instead, so the
-#   pyrender round-trip has no representation: there is no source to exec and no
-#   AST to compare it against. P3/VIZ.
-# TODO(p3) spec.py:296 def test_pyrender -- renders a UOp to source and compares
-#   the re-evaluated AST BY IDENTITY, recursing over parents on a mismatch. WALL:
-#   the whole feature is a debug view and it rests on the two above. P3/VIZ.
-# TODO(p3) spec.py:37  type_verify's `SPEC > 1` arm -- calls `test_pyrender(lst[-1])`
-#   and `SPEC` is a `ContextVar`, i.e. a process-wide mutable that Bend has no
-#   home for. WALL: the call is the one above; the flag is the configuration
-#   module `helpers.bend` lists as P6. P3/VIZ.
+# TODO(p3) upat.py:173  symbol=upat_compile  -- the pyrender GLOBALS: NOT IN
+#   upstream at this pin -- `grep -r pyrender tinygrad/` is EMPTY -- and the
+#   surviving construct is `upat_compile`, `@functools.cache`d, which builds the
+#   dict of names the generated source runs in. WALL: `tinygrad.codegen.opt` is
+#   a PACKAGE at the pin and none of the three modules is ported. P3/VIZ.
+# TODO(p3) upat.py:181  symbol=upat_compile  -- the pyrender EVAL: NOT IN
+#   upstream at this pin; the surviving `exec` of GENERATED SOURCE is this
+#   line. WALL: `upat.py` EMITS Python and this port emits defs. P3/VIZ.
+# TODO(p3) render.py:65  symbol=render_uir  -- the pyrender TEST: NOT IN
+#   upstream at this pin; the surviving "renders a UOp to source" is
+#   `render_uir`, and the compare-BY-IDENTITY half is GONE. P3/VIZ.
+# TODO(p3) spec.py:37  type_verify's `SPEC > 1` arm -- GONE from upstream at this
+#   pin: `type_verify` has no such arm, and `SPEC` is a `ContextVar`, i.e. a
+#   process-wide mutable that Bend has no home for. WALL: the flag is the
+#   configuration module `helpers.bend` lists as P6. P3/VIZ.
 # TODO(p3) spec.py:26  validate_index_with_z3 -- `from tinygrad.uop.validate import
 #   validate_index_with_z3`, and `tinygrad/uop/validate.py` is not ported. WALL: a
 #   solver over a z3 encoding of the index expression; Bend has no z3. P3.
-# TODO(p3) spec.py:7   is_disk_device -- `from tinygrad.device import is_disk_device`
+# TODO(p3) device.py:71  symbol=is_disk_device  -- `from tinygrad.device import is_disk_device`
 #   and `tinygrad/device.py` is not ported: there is no device, so "is this device
 #   a DISK" has nothing to ask. The only reader is `te_9` (spec.py:177) and the
 #   wall is stated there. P6.
@@ -3252,7 +3252,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #   OFFENDING NODE, because Bend has no `raise` and a validator that cannot report
 #   is a validator nobody can use. The two lines not here are the `SPEC > 1` arm
 #   and the `DEBUG >= 3` print. WALL: P3/VIZ for both.
-# TODO(p3) spec.py:133 lambda x: `b := x.storage_base` -- a `while` over BITCAST,
+# TODO(p3) spec.py:136  symbol=spec_shared  lambda x: `b := x.storage_base` -- a `while` over BITCAST,
 #   AFTER and UNSHARD on top of `base`, so it is not a fold this port has. `sh_32`
 #   IS ported for every node where `b is x` -- the common case, a STORE straight
 #   into a BUFFER -- and answers `None` for a view of a view. A STORE into a

@@ -1208,9 +1208,9 @@ def tn_wrap_uop(+ar: O.Arena, uop: U32) -> Tensor:
 # CONST, because `dtypes.from_py` and `truncate` are P3 (ops.py:632). A CONST of a
 # CONCRETE dtype is ONE node here and `CONST`+`CAST` in Python; the value arrives
 # already truncated and the dtype is the CONST's own.
-# TODO(p3) tensor.py:74  a float `ConstType` -- `F32{data: Word(32n)}` has no
-# reachable constructor (`Word` is not exported and `U32.to_f32` is a LAW), so
-# `Tensor(1.0)` has no constant to intern. INT and BOOL do.
+# TODO(p3) tinygrad/dtype.py:39  symbol=ConstType  -- a float `ConstType` --
+# `F32{data: Word(32n)}` has no reachable constructor (`Word` is not exported and
+# `U32.to_f32` is a LAW), so `Tensor(1.0)` has no constant to intern. INT and BOOL do.
 def tn_const(+ar: O.Arena, v: O.Const) -> Tensor:
   tn_alu.put(O.UOp.const(ar, v))
 
@@ -1347,7 +1347,7 @@ type Data1 is Data:
 # literal is constructible, so this def answers the `None` DATA only through a value
 # the caller supplies, and the `DNone` arm is the one row of `__init__` the gate
 # cannot pin.
-# TODO(p3) tensor.py:73  UOp.const(0.0, _dtype) -- an F32 literal.
+# TODO(p3) ops.py:610  symbol=UOp.const  -- `UOp.const(0.0, _dtype)`, an F32 literal.
 def tn_init.none() -> Maybe<&2, O.Found>:
   None{}
 
@@ -1577,10 +1577,10 @@ def tn_shape_arg(+a: SArg) -> O.Found:
 # THE MOVEMENT DISPATCH. `_mop` (tensor.py:499) is
 # `self._apply_uop(UOp._mop, op=op, arg=arg)` and `_rop` (tensor.py:500) is
 # `self._apply_uop(UOp._rop, op=op, axis=axis)`: ONE LINE each, and the node
-# construction they forward to is `ops.py:821` and `ops.py:655`.
+# construction they forward to is `UOp._mop` (ops.py:799) and `UOp._rop` (ops.py:633).
 #
 # HOISTED, WITH A NOTICE, and the notice is fold.bend's: ops.bend is READ-ONLY to
-# this file and carries both as `TODO(p3) ops.py:821` and `TODO(p3) ops.py:655`. A
+# this file and carries both as `TODO(p3) ops.py:799  symbol=_mop` and `:633  symbol=_rop`. A
 # one-line def whose callee does not exist cannot be gated at all, and the movement
 # dispatch is the largest share of this file that builds a graph, so the body is
 # written here. When ops.bend lands it, `tn_mop` and `tn_rop` become the one-liners
@@ -1858,9 +1858,9 @@ def tn_rop(+ar: O.Arena, +self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
 # `TODO(p3)`.
 # ===========================================================================
 
-# `UOp.after(self, *src)` is ops.py:621 and ops.bend HAS it (`O.UOp.after`); the STORE
-# it wraps is ops.py:616, `UOp(Ops.STORE, src=(self,)+src)`, and ops.bend carries it
-# as `TODO(p3) ops.py:616` -- written here for the same reason `tn_mop` is.
+# `UOp.after(self, *src)` is ops.py:599 and ops.bend HAS it (`O.UOp.after`); the
+# STORE it wraps is `UOp.store` (ops.py:594), `UOp(Ops.STORE, src=srcs, **kwargs)`.
+# TODO(p3) ops.py:594  symbol=UOp.store  -- written here for `tn_mop`'s reason.
 def tn_assign_store(+ar: O.Arena, +self: U32, +x: U32) -> O.Found:
   +st = O.UOp.new(ar, O.OpsSTORE{}, [self, x], O.ANone{}, O.TNone{})
   O.UOp.after(O.Found.ar(st), self, [O.Found.i(st)])
@@ -2107,7 +2107,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
 #   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
 #   `self.assign(self.add(x))` has no counterpart to overload.
-# TODO(p3) tensor.py:547  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
+# TODO(p3) tensor.py:545  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
 # TODO(p3) tensor.py:549  __eq__          elementwise.py eq (Ops.CMPEQ)
 #   -- BLOCKED. `==` IS THE TYPE COMPARISON IN BEND, NOT A VALUE ONE: bend guide:632 --
 #   "Equality of values is a call, `T.is_eq(a, b)`; `==` is only the type." So `__eq__` has no
@@ -2168,7 +2168,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # TODO(p3) tensor.py:156  call         -- `UOp.call_with_output` + a `grad_fxn` kwarg
 # TODO(p3) tensor.py:159  custom_kernel -- `UOp.custom_kernel`
 # TODO(p3) tensor.py:276  _buffer      -- `x.realize().uop.buffer`
-# TODO(p3) tensor.py:285  _data        -- `memoryview`
+# TODO(p3) tensor.py:283  _data        -- `memoryview`
 # TODO(p3) tensor.py:287  data         -- WALL 2, and `dtypes.fmt` with it
 # TODO(p3) tensor.py:306  tolist       -- WALL 2, and the `_tolist` recursion is a
 #                                         nested-forward tree printer, which
@@ -2200,8 +2200,8 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # `contextvars`-free mutable class (`_ContextVar`), a decorator (`_metadata_wrapper`)
 # and a REFLECTION loop that wraps every Tensor method with it. Bend has no `setattr`,
 # no `inspect` and no mutable class state, and the metadata itself is
-# `all_metadata[new_uop] = (metadata,)` at :106.
-# TODO(p3) tensor.py:106  all_metadata     -- ops.bend has the READER
+# `all_metadata[new_uop] = (metadata,)` at tensor.py:106.
+# TODO(p3) ops.py:208  symbol=all_metadata  -- ops.bend has the READER
 #                                             (`O.UOp.metadata`, ops.bend:2697) and no
 #                                             writer, because the writer needs a scope
 #                                             threaded through `_apply_uop`

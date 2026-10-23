@@ -41,7 +41,7 @@ import ./../datasets/__init__.bend as D
 #   THE SECOND BLOCKER, AND IT IS ONE UNBELIEVABLY SHORT LINE: upstream:29
 #       x = x.layernorm().linear(*self.encoder_norm)
 #   `Tensor.layernorm` does not exist. `nn/__init__.bend:230` names it as an
-#   open wall -- "TODO(p3) mixin/op.py:1644 x.layernorm -- SIDE B, not built" --
+#   open wall -- "TODO(p3) mixin/op.py:1661 x.layernorm -- SIDE B, not built" --
 #   and that line is STILL TRUE even though the `x.conv2d` (:231), `x.batchnorm`
 #   (:229) and `x.linear` (:227) walls beside it stopped being true, because
 #   `nn/layers.bend` and `nn/pool.bend` were written to close exactly those

@@ -247,8 +247,8 @@ def fn_implicit(+f: O.Found, start: U32) -> Bool:
           Bool.or(O.eq_op(fn_op(f), O.OpsBUFFER{}), fn_implicit.alloc(f, start)))
 
 # ===========================================================================
-# SECTION B -- `UOp.buf_uop` (ops.py:925). `ops.bend` carries it as
-# `# TODO(p3) ops.py:925  def buf_uop`, and it is not optional here: it is the
+# SECTION B -- `UOp.buf_uop` (ops.py:911). `ops.bend` carries it as
+# `# TODO(p3) ops.py:911  def buf_uop`, and it is not optional here: it is the
 # identity `add_to_ctx` refuses on and the value `invalid_outputs` collects. It
 # is ported locally and the owner is named above, which is what `mixin/rand.bend`
 # does for `op_pad`/`op_shr`.
@@ -1070,12 +1070,12 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # it. Nothing here is silently dropped, and every one names a wall rather than an
 # effort.
 #
-# TODO(p3) ops.py:1239  `UOp.param_like` -- `x.param_like(len(ctx[0]))`. The SLOT
+# TODO(p3) ops.py:1228  `UOp.param_like` -- `x.param_like(len(ctx[0]))`. The SLOT
 #   is answered by `fn_add` and the NODE is not built. Owner: `uop/ops.bend`, and
 #   the reason is structural: `param_like` reads `self.addrspace` and
 #   `self.axis`, which are fold properties, so it belongs beside the fold and not
 #   in a caller.
-# TODO(p3) ops.py:532   `UOp.substitute` -- `uret.substitute(subs)` and
+# TODO(p3) ops.py:514   `UOp.substitute` -- `uret.substitute(subs)` and
 #   `uret.substitute({b: ...})`. It IS `graph_rewrite`, so it needs the matcher
 #   machinery `uop/spec.bend` owns and a closure the port does not have.
 # TODO(p3) ops.py:1272  `UOp.call_with_outputs` -- `uret.call_with_outputs(...)`.
@@ -1107,7 +1107,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # TODO(p3) function.py:82  `getattr(self.fxn, '__qualname__', None)` -- the name
 #   of a Python callable. `fn_name` takes the name as a parameter, which is what
 #   the gate does and what the seam forces.
-# TODO(p3) ops.py:925  `buf_uop`'s MSELECT and MSTACK arms -- the multi-device
+# TODO(p3) ops.py:911  `buf_uop`'s MSELECT and MSTACK arms -- the multi-device
 #   cluster (`mselect`, per-shard buffers). Neither op is reachable from a
 #   `@function` body before the multi-device allocator exists. The walk and the
 #   AFTER arm ARE ported above, as `fn_buf`.

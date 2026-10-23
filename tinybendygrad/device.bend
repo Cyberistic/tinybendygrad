@@ -480,7 +480,7 @@ def count(has_iface: Bool, n: U32) -> U32:
 # device.py:55, `assert (dev:=next((d for d in self._devices if d not in
 # ["DISK","NPY"] and getenv(d) == 1), None)) is None` -- the DEPRECATION assert
 # and the only other read of `_devices`. `stems()` is that walk's RESULT.
-# TODO(p3) device.py:23  _Device._devices -- `pathlib.Path(...).iterdir()`.
+# TODO(p3) device.py:23  symbol=_Device  -- `_Device._devices`, set in `_Device.__init__`: `pathlib.Path(...).iterdir()`.
 #   WALL: a directory read. The sixteen stems are spelled out, so a new
 #   `ops_*.py` needs one row in `registry()` and one here.
 def stems() -> List<&2, AEnt>:

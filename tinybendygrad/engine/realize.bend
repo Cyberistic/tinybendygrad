@@ -1160,7 +1160,7 @@ def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
 # ===========================================================================
 # **************** run linear ****************
 #
-# TODO(p3) realize.py:116  capturing -- a module-level list of Python CLASSES
+# TODO(p3) realize.py:114  capturing -- a module-level list of Python CLASSES
 #   with an `add_linear` method, commented "put classes with an add_linear method
 #   in here". WALL: no first-class type values at all (a function value forces a
 #   `Type` field, and a CLASS value has no representation whatsoever), no

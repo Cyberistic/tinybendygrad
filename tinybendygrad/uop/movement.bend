@@ -231,8 +231,8 @@ def const_is(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
     case Some{v}: Cmp.is_eq(H.i64_cmp(v, H.i64_of_i32(U32.from_nat(n))))
     case None{}: False{}
 
-# `UOp.index` -- ops.py:581. Three of these nine rules call it and it belongs in ops.bend
-# the next time that file is edited (`# TODO(p3) ops.py:581  def index`).
+# `UOp.index` -- ops.py:559. Three of these nine rules call it and it belongs in ops.bend
+# the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
 #
 #     def index(self, *srcs, **kwargs):
 #       new_srcs = [UOp.const(x) if isinstance(x, int) else x for x in srcs if x is not None]
@@ -429,7 +429,7 @@ def marg_add(+ar: O.Arena, +x: U32, +s: U32) -> Maybe<&1, List<&2, Marg>>:
 #   lambda s,x: x.src[0]._mop(Ops.SHRINK, tuple((o+p, n) for (o,_),(p,n) in zip(x.marg, s.marg)))
 # `_mop`'s SHRINK node is `SHRINK(x.src[0], <o>, <n>)`, and `shape_to_shape_arg` of a ONE
 # element shape is a bare CONST (ops.py:106).
-# TODO(p3) movement.py:7  rank >= 2: `UOp.sink(*usrcs).simplify()` there sees a
+# TODO(p3) movement.py:7  symbol=mop_cleanup  rank >= 2: `UOp.sink(*usrcs).simplify()` there sees a
 #   SINK of STACKs and calls `graph_rewrite(self, symbolic)`, which is
 #   tinygrad/uop/symbolic.py. A rule that called `graph_rewrite` is the rewrite
 #   engine calling itself. WALL: structural, not a missing import. Measured on
