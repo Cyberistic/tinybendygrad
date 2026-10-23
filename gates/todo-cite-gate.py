@@ -28,6 +28,38 @@ tag. A marker is not a note about the port: it is a CITATION of an upstream `.py
 and it sits in the same text as the claim it supports. `AGENTS.md`: "THE MARKERS ARE
 CITATIONS, SO A RE-POINTED CITATION MUST BE CHECKED AGAINST THE PIN".
 
+THE POPULATION IS TWO RULES NOW, AND THE SECOND ONE IS NEW (2026-10-23). **THE POPULATION
+OF THIS GATE IS CHANGING, AND IT IS A REAL CHANGE: THE GATE IS A SHARED INSTRUMENT.**
+A `TODO(pN)` marker is ONE way the port says "this line is upstream's `foo`", and it is
+the way the port says it when the line is a work item. The OTHER way is the DURABLE
+FORM: an explicit `symbol=` field, which names the construct and survives a
+line-number move. A citation that carries a `symbol=` is a checkable claim about a
+NAMED construct -- and a checkable claim that no instrument reads is a claim nobody can
+be wrong about.
+
+MEASURED 2026-10-23, AND THIS IS WHY IT MATTERS. `tinybendygrad/uop/ops.bend` carried
+**FOURTEEN** stale upstream citations that NO instrument read. Not this gate (no
+`TODO(pN)` marker on the lines), and not `gates/pin-cite-gate.py` either -- that gate
+reads a file's HEADER BLOCK, and every one of the fourteen sat in the BODY, in a
+comment that explained a rule and pointed at the upstream line it came from. The
+fourteen were wrong by two to twenty-six lines, and the tree had no instrument that
+could see them. `symbol=` was ALREADY the tree's durable form -- 278 of them, every
+one of them on a marker line -- so the field was ALREADY the port's own way of saying
+"this is upstream's `foo`", and the rule that read it did not read it on its own.
+
+**SO: A CITATION WITH AN EXPLICIT `symbol=` IS IN THE POPULATION, WITH OR WITHOUT A
+MARKER.** The binding is PER LINE and NEAREST-PRECEDING: the `symbol=` that FOLLOWS a
+citation and PRECEDES the next citation is that citation's symbol. A citation with no
+`symbol=` after it does NOT say what it claims, so it is NOT measured -- a rule that
+guessed would be a guess, and a guess in a gate is a false row.
+
+WHAT THIS DOES NOT DO. It does not weaken a check: it ADDS rows, and every added row
+is judged by the same `judge()` the marker rows are judged by, at the same verified
+pin. It does not change the marker path's behaviour at all: a line that carries a
+marker is read ONCE, by the marker path, exactly as before. And the `symbol=` field
+was already required to name a construct the upstream file DECLARES, so a `symbol=`
+that names nothing is `WRONG-SYMBOL`, not a pass.
+
 THE RESOLUTION IS BY SYMBOL WHERE THE MARKER NAMES ONE, AND BY LINE ONLY WHERE IT DOES
 NOT. A marker's own words name the upstream symbol -- `TODO(p3) ops.py:93  def sym_infer`
 names `sym_infer`, and `TODO(p3) x86.py:90` in a bullet about `extra_matcher` names
@@ -416,6 +448,7 @@ def marker_records(path: Path, rel: str, census_mod=None) -> list[dict]:
         "prefer_dir": prefer_dir,
         "item_text": "\n".join(lines[item - 1:i]),
         "block_text": "\n".join(lines[blk[0] - 1:blk[1]]),
+        "source": "marker",
       })
   # THE SUBJECT OF EACH MARKER, AND THE INHERITANCE. A work-queue list writes
   # `TODO(p3) ops.py:502  def ssimplify` and then `TODO(p3) ops.py:503  -- the body is the
@@ -447,6 +480,94 @@ def marker_records(path: Path, rel: str, census_mod=None) -> list[dict]:
         rec["subject_kind"] = "own" if name else "none"
         if name:
           last = name
+  return out
+
+
+def symbol_field_records(path: Path, rel: str, census_mod=None) -> list[dict]:
+  """Every citation that names its construct with an explicit `symbol=` field.
+
+  THE POPULATION'S SECOND RULE. A `TODO(pN)` marker is how the port says "this line is
+  upstream's `foo`" when the line is a WORK ITEM; the `symbol=` field is how it says it
+  when the line is prose. Both are the same claim about the same upstream construct,
+  and a claim that one instrument reads and the other does not is a claim that is
+  HALF-MEASURED -- which is the class this gate was extended to close.
+
+  THE BINDING IS PER LINE AND NEAREST-PRECEDING: the `symbol=` that FOLLOWS a
+  citation and PRECEDES the next citation is that citation's symbol. A citation with no
+  `symbol=` after it is NOT measured -- it does not say what it claims, and this gate
+  does not guess.
+
+  A LINE WITH A MARKER IS NOT READ TWICE. The marker path owns it, with its own
+  inheritance rules, and this path is for the lines that carry a `symbol=` and NO
+  marker.
+
+  A `symbol=` NAMES AN UPSTREAM CONSTRUCT, so only a `.py` subject is admitted: a
+  `.bend` subject is the port's own file and is not an upstream citation at all."""
+  lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+  blocks = comment_blocks(lines)
+  prefer_dir = ""
+  if census_mod is not None:
+    _first, _last, blk0 = census_mod.header_block(lines)
+    tgt = census_mod.declared_target(blk0)
+    rel_tgt = tgt[len("tinygrad/"):] if tgt.startswith("tinygrad/") else tgt
+    prefer_dir = rel_tgt.rsplit("/", 1)[0] if "/" in rel_tgt else ""
+  out: list[dict] = []
+  for i, ln in enumerate(lines, 1):
+    if "TODO(" in ln or "symbol" not in ln:
+      continue
+    if not ln.lstrip().startswith("#"):
+      continue
+    # THE CITATION SLOTS ON THIS LINE, IN TEXT ORDER. An EXPLICIT `file.py:N` names its
+    # own subject; a BARE `:N` continues the subject of the explicit citation before
+    # it, which is the port's own convention (`x86.py:456 symbol=a, :464 symbol=b`).
+    slots: list[dict] = []
+    last_subject = ""
+    for m in CITE.finditer(ln):
+      if not m.group(1).endswith(".py"):
+        continue
+      last_subject = m.group(1)
+      slots.append({"subject": last_subject, "lo": int(m.group(2)),
+                    "hi": int(m.group(3)) if m.group(3) else int(m.group(2)),
+                    "start": m.start(), "end": m.end(), "symbol": ""})
+    for m in BARE.finditer(ln):
+      if any(s["start"] <= m.start() < s["end"] for s in slots):
+        continue
+      if not last_subject:
+        continue
+      slots.append({"subject": last_subject, "lo": int(m.group(1)),
+                    "hi": int(m.group(2)) if m.group(2) else int(m.group(1)),
+                    "start": m.start(), "end": m.end(), "symbol": ""})
+    if not slots:
+      continue
+    # THE SYMBOLS. The `symbol=` that follows a slot and precedes the next slot is that
+    # slot's symbol.
+    syms = [(m.start(), m.group(1)) for m in SYMBOL_FIELD.finditer(ln)]
+    for n, s in enumerate(slots):
+      nxt = slots[n + 1]["start"] if n + 1 < len(slots) else len(ln)
+      for pos, name in syms:
+        if s["end"] <= pos < nxt:
+          s["symbol"] = name
+          break
+    blk = next((b for b in blocks if b[0] <= i <= b[1]), (i, i))
+    for n, s in enumerate(slots):
+      if not s["symbol"]:
+        continue
+      nxt = slots[n + 1]["start"] if n + 1 < len(slots) else len(ln)
+      # THE TEXT AFTER THIS CITATION AND BEFORE THE NEXT ONE, with the `symbol=` field
+      # removed: it is a FIELD and not prose, and a reader that took it for prose would
+      # read the word "symbol".
+      tail = SYMBOL_FIELD.sub(" ", ln[s["end"]:nxt])
+      out.append({
+        "rel": rel, "at": i, "line": ln.strip(), "tag": "",
+        "after": tail.strip(), "after_cite": tail.strip(),
+        "before": ln[:s["start"]].strip(),
+        "cites": [{"subject": s["subject"], "lo": s["lo"], "hi": s["hi"], "where": "own",
+                   "span": (s["start"], s["end"]), "symbol": s["symbol"]}],
+        "block": blk, "item": i, "prefer_dir": prefer_dir,
+        "item_text": ln, "block_text": "\n".join(lines[blk[0] - 1:blk[1]]),
+        "subject_name": s["symbol"], "subject_kind": "explicit",
+        "source": "symbol-field",
+      })
   return out
 
 
@@ -711,11 +832,16 @@ def symbol_candidates(rec: dict) -> list[str]:
 # --------------------------------------------------------------------------- the census
 
 def census(port: Path, corpus: Corpus, pin_cite, census_mod=None) -> list[dict]:
-  """One row per MARKER CITATION, with its verdict."""
+  """One row per CITATION, with its verdict.
+
+  THE POPULATION IS TWO RULES: the `TODO(pN)` markers, and the citations that carry an
+  explicit `symbol=` field. A LINE WITH A MARKER IS READ BY THE MARKER PATH ONLY, so
+  the two do not double-count."""
   rows: list[dict] = []
   for p in walk_bend(port):
     rel = str(p.relative_to(port.parent)) if port.parent != port else str(p)
-    for rec in marker_records(p, rel, census_mod):
+    recs = marker_records(p, rel, census_mod) + symbol_field_records(p, rel, census_mod)
+    for rec in recs:
       rec["portrel"] = str(p.relative_to(port))
       if not rec["cites"]:
         rows.append({**rec, "subject": "", "lo": 0, "hi": 0, "verdict": "NO-CITATION",
@@ -1039,8 +1165,11 @@ VERDICT_ORDER = ("RESOLVES", "WRONG-LINE", "WRONG-SYMBOL", "UNRESOLVABLE",
 def report(rows: list[dict], pin: str, detail: str) -> None:
   counts = collections.Counter(r["verdict"] for r in rows)
   nfiles = len({r["rel"] for r in rows})
+  srcs = collections.Counter(r.get("source") or "marker" for r in rows)
   print(f"PIN        : {pin[:12]} -- {detail}")
-  print(f"POPULATION : {len(rows)} marker citations in {nfiles} `.bend` files")
+  print(f"POPULATION : {len(rows)} citations in {nfiles} `.bend` files")
+  print(f"             {srcs.get('marker', 0)} carried by a `TODO(pN)` marker, "
+        f"{srcs.get('symbol-field', 0)} by an explicit `symbol=` field")
   print()
   for v in VERDICT_ORDER:
     print(f"  {counts.get(v, 0):5d}  {v}")
@@ -1269,21 +1398,35 @@ def held_paths() -> set[str]:
 def fix_citation(line: str, subject: str, new_lo: int, new_hi: int) -> str:
   """The marker line with its OWN citation's line numbers replaced.
 
-  ONLY THE FIRST CITATION AFTER THE `TODO(pN)` TAG IS TOUCHED, because that is the one
-  the marker makes its claim with; a later `elementwise.py:101` in the same line is a
-  different claim about a different file."""
+  WITH A MARKER, ONLY THE FIRST CITATION AFTER THE `TODO(pN)` TAG IS TOUCHED, because
+  that is the one the marker makes its claim with; a later `elementwise.py:101` in the
+  same line is a different claim about a different file.
+
+  WITHOUT A MARKER -- the `symbol=` shape -- the citation to rewrite is the one whose
+  SUBJECT is the subject the gate resolved, and a line with two of them gets the right
+  one. A row the gate can NAME A FIX FOR is a row the gate can FIX, and a fixer that
+  silently skips half the population is a fixer that leaves half the population
+  standing."""
   m = MARKER.search(line)
-  if not m:
-    return line
-  tail = line[m.end():]
-  cm = CITE.search(tail)
-  if not cm or cm.group(1) != subject:
-    return line
-  if cm.group(3):
-    repl = f"{subject}:{new_lo}-{new_hi}"
-  else:
-    repl = f"{subject}:{new_lo}"
-  return line[:m.end()] + tail[:cm.start()] + repl + tail[cm.end():]
+  if m:
+    tail = line[m.end():]
+    cm = CITE.search(tail)
+    if not cm or cm.group(1) != subject:
+      return line
+    if cm.group(3):
+      repl = f"{subject}:{new_lo}-{new_hi}"
+    else:
+      repl = f"{subject}:{new_lo}"
+    return line[:m.end()] + tail[:cm.start()] + repl + tail[cm.end():]
+  for cm in CITE.finditer(line):
+    if cm.group(1) != subject:
+      continue
+    if cm.group(3):
+      repl = f"{subject}:{new_lo}-{new_hi}"
+    else:
+      repl = f"{subject}:{new_lo}"
+    return line[:cm.start()] + repl + line[cm.end():]
+  return line
 
 
 def apply_fixes(rows: list[dict], port: Path) -> tuple[int, list[dict]]:

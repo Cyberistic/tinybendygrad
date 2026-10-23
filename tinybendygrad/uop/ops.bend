@@ -802,7 +802,7 @@ type Const is Data:
   CFloat{f: F32}
   CInvalid{}
 
-# `Sint` is ops.py:1925's `sint = int|UOp`, spelled out. It is the element type
+# `Sint` is ops.py:1923 symbol=sint -- `sint = int|UOp`, spelled out. It is the element type
 # of every shape in this file, so the distinction between "the literal 4" and
 # "the uop that may be 4" survives into the arena, which is exactly what
 # `_shape`'s `isinstance(ps[-1], int)` and `_min_max`'s `isinstance(s0_vmin,
@@ -2338,7 +2338,7 @@ def eq_node(x: Node, y: Node) -> Bool:
         Bool.and(eq_u32(src, s2), Bool.and(eq_arg(arg, a2), eq_tag(tag, t2))))
 
 # ===========================================================================
-# UOpMetaClass.__call__ -- ops.py:196-212. THE CONSTRUCTOR.
+# UOpMetaClass.__call__ -- ops.py:193 symbol=UOpMetaClass.__call__. THE CONSTRUCTOR.
 #
 # `ucache.get(key) or super().__call__(...)` is one lookup and one append, and
 # in an arena the lookup IS a scan for a node with the same key, because the
@@ -4242,15 +4242,19 @@ def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_r_alloc_m.at(ctx, 2n)
 
 # ===========================================================================
-# THE OPS.PY RULE TABLES -- ops.py:1896, 1897, 1904, 1907. These four are the
-# WHOLE of `PatternMatcher` surface in ops.py, and until now `pm_dispatch_m`
-# could reach none of them: it answered three placeholder bodies (SINK, NOOP,
-# CAST) and codegen's two. `engine/realize.bend:1072-1080` records the wall this
+# THE OPS.PY RULE TABLES -- ops.py:1898 symbol=_substitute,
+# ops.py:1899 symbol=_pm_resolve_params, ops.py:1908 symbol=pm_drop_after, and
+# tinygrad/uop/spec.py:207 symbol=spec_program. The FOURTH is NOT IN upstream's
+# `ops.py` AT ALL -- upstream has NO `remove_all_tags`, which is THIS port's own
+# table -- and the surviving construct is `spec.py`'s `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`.
+# These four are the WHOLE of `PatternMatcher` surface in ops.py, and until now
+# `pm_dispatch_m` could reach none of them: it answered three placeholder bodies
+# (SINK, NOOP, CAST) and codegen's two. `engine/realize.bend:1072-1080` records the wall this
 # creates -- "a `PMEntrys` built in THIS file can only ever reach those three
 # bodies" -- and the cost is that eleven files in this tree each grew their own
 # scan. What follows puts the four in the table that already exists.
 #
-# `ops.py:1602-1606` is where a `PMEntry` comes from, and it is three lines:
+# `ops.py:1591-1593` symbol=PatternMatcher.__init__ is where a `PMEntry` comes from, and it is three lines:
 #
 #     entry: list = [p, None, p.early_reject]
 #     entry[1] = upat_deferred_compile(p, fxn, entry) if compiled else upat_interpret(p, fxn)
@@ -4258,27 +4262,23 @@ def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 #
 # `p.early_reject` is field three and `entry[1]` -- the compiled function -- is
 # the TAG. `for uop in p.op` is the fan-out that makes `PMEntry.ops` a CLAIMED
-# SET, and it is `ops.py:1614`'s `self.pdict.get(uop.op, [])`, which `pm_claimed`
-# already reads.
+# SET, and it is `ops.py:1601` symbol=PatternMatcher.rewrite's
+# `self.pdict.get(uop.op, [])`, which `pm_claimed` already reads.
 #
 # ALL FOUR REJECT SETS ARE EMPTY, and that is ops.py's arithmetic rather than a
-# shortcut. `ops.py:1480-1483` is
-#
-#     upat_match = [src] if isinstance(src, UPat) else ([] if src is None else self.src[0])
-#     self.early_reject = {pp.op[0] for pp in upat_match if pp.op is not None and len(pp.op) == 1}
-#
-# and all four patterns are built with `src=` OMITTED, so `src is None`, so
-# `upat_match == []`, so `early_reject == set()`. `ops.py:1617`'s
-# `if not early_reject.issubset(ler): continue` therefore never skips any of
-# them, and `PMEntry.rej` is `Nil{}` four times. A non-empty reject set here
-# would be an invention.
+# shortcut. `ops.py:1469-1470` symbol=UPat.__init__ computes `upat_match` and
+# `self.early_reject`, and all four patterns are built with `src=` OMITTED, so
+# `src is None`, so `upat_match == []`, so `early_reject == set()`.
+# `ops.py:1604` symbol=PatternMatcher.rewrite's `if not early_reject.issubset(ler): continue`
+# therefore never skips any of them, and `PMEntry.rej` is `Nil{}` four times. A
+# non-empty reject set here would be an invention.
 # ===========================================================================
 
-# `tuple(Ops)` -- the claim of ops.py:1896's `UPat(tuple(Ops), name="x")` and of
-# ops.py:1904's `UPat(GroupOp.All, name="x")`. `GroupOp.All` IS `set(Ops)`
-# (tinygrad/uop/__init__.py:135), measured by CPython: `len(tuple(Ops))` is 77
-# and `GroupOp.All == set(Ops)` is `True`. So one list serves both rules, and it
-# is the same 77 for both.
+# `tuple(Ops)` -- the claim of ops.py:1898 symbol=_substitute's
+# `UPat(tuple(Ops), name="x")` and of tinygrad/uop/spec.py:207 symbol=spec_program's
+# `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`. `GroupOp.All` IS `set(Ops)`
+# (tinygrad/uop/__init__.py:134 symbol=GroupOp.All), measured by CPython:
+# `len(tuple(Ops))` is 77 and `GroupOp.All == set(Ops)` is `True`. One list serves both rules -- 77 for both.
 #
 # `pm_claimed` SCANS (`op_in`), so the ORDER IS FREE. This is Python's
 # enumeration order only so the literal can be diffed against CPython entry by
@@ -4293,8 +4293,8 @@ def all_ops() -> List<&2, Op>:
    OpsENDIF{} OpsBACKEDGE{} OpsCONST{} OpsCUSTOM{} OpsCUSTOMI{} OpsINS{} OpsCONTIGUOUS_BACKWARD{} OpsDETACH{} OpsSTAGE{} OpsCOPY{} OpsMSELECT{},
    OpsMSTACK{} OpsCUSTOM_FUNCTION{} OpsRESHAPE{} OpsPERMUTE{} OpsEXPAND{} OpsPAD{} OpsUNSHARD{} OpsREDUCE{} OpsALLREDUCE{} OpsPYLITERAL{}]
 
-# `x.tag is not None` -- the guard of ops.py:1904's
-# `lambda x: x.replace(tag=None) if x.tag is not None else None`. `Tag`'s bottom
+# `x.tag is not None` -- the guard of the port's OWN `remove_all_tags` lambda,
+# which is NOT IN upstream's `ops.py` at this pin (upstream has NO `remove_all_tags`); the surviving upstream construct is tinygrad/uop/spec.py:207 symbol=spec_program's `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`. `Tag`'s bottom
 # is `TNone{}` (this file's `type Tag is Data`, whose five constructors are
 # TNone/TBool/TStr/TInt/TTuple), so Python's `None` IS `TNone{}` and the guard is
 # the other four. The same shape as `eq_tag.TNone` above, which is why it is a
@@ -4305,7 +4305,7 @@ def tag_is_none(t: Tag) -> Bool:
     case TNone{}: True{}
     case _: False{}
 
-# TAG 40 -- ops.py:1907. `pm_drop_after`:
+# TAG 40 -- ops.py:1908 symbol=pm_drop_after. `pm_drop_after`:
 #     pm_drop_after = PatternMatcher([(UPat(Ops.AFTER, name="a"), lambda a: a.src[0])])
 # The body is `a.src[0]`, which is an EXISTING node, so this family answers
 # `Maybe<&2, U32>` and needs no arena of its own -- it is the one ops.py rule in
@@ -4316,7 +4316,7 @@ def tag_is_none(t: Tag) -> Bool:
 def pm_r_drop_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   Some{Arena.src(ar, self, 0)}
 
-# TAG 42 -- ops.py:1897. `_pm_resolve_params`:
+# TAG 42 -- ops.py:1899 symbol=_pm_resolve_params. `_pm_resolve_params`:
 #     _pm_resolve_params = PatternMatcher([(UPat(Ops.PARAM, name="p"), lambda ctx,p: ctx[p.arg.slot] if p.arg.slot >= 0 else None)])
 #
 # TWO DIFFERENCES FROM `pm_r_param_m` (tag 3) above, and both are the source:
@@ -4392,7 +4392,7 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> 
 # TWO MORE TABLES, AND EACH EXISTS BECAUSE OF A TYPE, NOT A PREFERENCE.
 #
 # ONE TABLE CANNOT HOLD ALL FOUR of ops.py's rules, and the blocker is not
-# linearity. `ops.py:1888` types the pass's `ctx` as `ctx=None` and each lambda
+# linearity. `ops.py:1600` symbol=PatternMatcher.rewrite and `ops.py:1698` symbol=TrackedPatternMatcher.rewrite type the pass's `ctx` as `ctx=None`, and each lambda
 # reads whatever shape it likes off it, so Python has no reason for the four to
 # agree. A Bend parameter has a type, so:
 #
@@ -4402,7 +4402,7 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> 
 #     pm_drop_after        (ctx unused)         -> List<&2, U32>   tag 40, above
 #
 # And there is a second, sharper blocker, which is the one `pm_r_alloc_m` above
-# already paid for: `remove_all_tags` MINTS. `ops.py:253-257`'s `replace` returns
+# already paid for: `remove_all_tags` MINTS. `ops.py:245-249` symbol=UOp.replace returns
 # a NEW UOp, so `UOp.new` returns `Found{ar, i}` and the arena it grew is part of
 # the answer. `pm_rewrite_m` answers `Maybe<&2, U32>` -- an INDEX and no arena --
 # so a rebuilding rule cannot be carried by that family at all. Hence `_f`, whose
@@ -4415,15 +4415,15 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> 
 # than reading the one entry.
 # ===========================================================================
 
-# TAG 41 -- ops.py:1904. `remove_all_tags`:
+# TAG 41 -- tinygrad/uop/spec.py:207 symbol=spec_program. `remove_all_tags`:
 #     remove_all_tags = PatternMatcher([(UPat(GroupOp.All, name="x"), lambda x: x.replace(tag=None) if x.tag is not None else None)])
 #
-# `ops.py:253-257` is what `replace(tag=None)` is:
+# `remove_all_tags` is NOT IN upstream's `ops.py` AT THIS PIN; the surviving upstream construct that matches "every op" is `spec.py`'s `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`.
+# `ops.py:245-249` symbol=UOp.replace is what `replace(tag=None)` is:
 #     new_args = (kwargs.pop("op", self.op), kwargs.pop("src", self.src), kwargs.pop("arg", self.arg), kwargs.pop("tag", self.tag))
 #     if (self.op, self.src, self.arg, self.tag) == new_args: return self
 #     return UOp(*new_args)
-# so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in
-# the tag slot -- which is `ops.bend:6649`'s inline `replace`, already written.
+# so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in the tag slot -- which is `ops.bend:6649`'s inline `replace`, already written.
 #
 # THE MINT IS EAGER, and that is safe rather than lazy. `Bool.pick` CHOOSES an arm
 # and does not SEQUENCE one, so the `UOp.new` runs on both paths. For an
@@ -4435,12 +4435,12 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> 
 # THE PARAMETER IS NAMED `untagged`, NOT `tagged`, and the first draft called it
 # `tagged` while passing it `tag_is_none(...)`. That compiled, typechecked, answered
 # CORRECTLY for every input, and the probe's `pick_t_rule`/`pick_f_rule` pair is what
-# found it: those two rows are written from ops.py:1904's guard -- "True means the
-# node HAS a tag, so it gets a replacement" -- and the implementation answered the
-# other way round, so the row and the code disagreed and the ROW was right about
-# what the name claims. A name that is the negation of the value it holds is the
-# same defect as a shadowed binder with better manners: both compile, both report
-# their flag correctly, and both mislead whoever writes the next mutation.
+# found it: those two rows are written from the port's OWN `remove_all_tags` guard,
+# which is NOT IN upstream's `ops.py`; the surviving upstream construct that matches
+# "every op" is tinygrad/uop/spec.py:207 symbol=spec_program. And the implementation
+# answered the other way round, so the row and the code disagreed and the ROW was
+# right about what the name claims. A name that is the negation of the value it holds
+# is the same defect as a shadowed binder with better manners: both compile, both report their flag correctly, and both mislead whoever writes the next mutation.
 def pm_r_tag_m.of(untagged: Bool, made: Found) -> Maybe<&2, Found>:
   Bool.pick(Maybe<&2, Found>, untagged, None{}, Some{made})
 
@@ -4448,10 +4448,10 @@ def pm_r_tag_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, Found>:
   pm_r_tag_m.of(tag_is_none(Arena.tag(ar, self)),
     UOp.new(ar, Arena.op(ar, self), Arena.srcs(ar, self), Arena.arg(ar, self), TNone{}))
 
-# TAG 43 -- ops.py:1896. `_substitute`:
+# TAG 43 -- ops.py:1898 symbol=_substitute. `_substitute`:
 #     _substitute = PatternMatcher([(UPat(tuple(Ops), name="x"), lambda ctx,x: ctx.get(x,None))])
 #
-# The ctx is `dvars: dict[UOp, UOp]` (`ops.py:530`), so it is keyed by the NODE
+# The ctx is `dvars: dict[UOp, UOp]` (`ops.py:514` symbol=UOp.substitute), so it is keyed by the NODE
 # and not by a slot. Bend's `Map` is STRING-keyed -- `Map.set(a, -V, m, key:
 # String, x)` and `Map.has(-a, -V, m, key: String)` in the compiler's `base.bend`
 # -- so the key is `U32.show(self)`, which is the arena index in string form and
@@ -4941,7 +4941,7 @@ def UOp.split_uop.pop(fuel: Nat, +ar: Arena, +sep: Op, w: Wk) -> Wk:
 def UOp.split_uop(fuel: Nat, +ar: Arena, self: U32, +sep: Op) -> List<&2, U32>:
   Wk.out(UOp.split_uop.pop(fuel, ar, sep, Wk{[self], Nil{}}))
 
-# `sint_to_uop` -- ops.py:1893. `UOp.const(x, dtype=dtypes.weakint)`, and the
+# `sint_to_uop` -- ops.py:1895 symbol=sint_to_uop. `UOp.const(x, dtype=dtypes.weakint)`, and the
 # whole of it is that a `sint` is either already a UOp or a literal CONST. The
 # port's `Sint` is exactly that union (`SI{i64}` | `SU{uop}`), so the def is the
 # two arms and nothing else: the `SU` arm is the node itself and the `SI` arm
@@ -4952,7 +4952,7 @@ def UOp.sint_to_uop(ar: Arena, s: Sint) -> Found:
     case SU{u}: Found{ar, u}
     case SI{i}: UOp.new(ar, OpsCONST{}, Nil{}, APy{CInt{i}}, TNone{})
 
-# `gate_kernel_sink` -- ops.py:1901. Three arms, two of them NEGATIVE tests, and
+# `gate_kernel_sink` -- ops.py:1915 symbol=gate_kernel_sink. Three arms, two of them NEGATIVE tests, and
 # the third is `isinstance(x.arg, KernelInfo)` -- an ARG-TYPE test, which in the
 # arena is a `match` on the `Arg` and NOT on `Arena.arg(ar, x)` for the reason
 # the `Nd` record above exists. The rows are one per arm: `s5_gate_linear` (0),
@@ -5433,7 +5433,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   ops.py:1046  def unbind_all
 #     `{x: x.unbound() for x in self.backward_slice_with_self if x.is_bound_var}` and
 #     then `self.substitute(bound, walk=True)`. The slice and the dict build are
-#     `bsl.go`'s shape and readable; `substitute` (ops.py:530) is not ported, and
+#     `bsl.go`'s shape and readable; `substitute` (ops.py:514 symbol=UOp.substitute) is not ported, and
 #     the dict is keyed by a `UOp` in Python, which in this arena means keyed by an
 #     INDEX whose validity is a session property. P3, with `substitute`.
 
@@ -8184,7 +8184,7 @@ def vr.expr.rows(+ar: Arena) -> IO(Unit):
 #   Recurses over ADD/MUL srcs and calls `divides`, `const_like` and `__floordiv__`.
 
 
-# ==== ops.py:1899  `resolve_returned_after` ===============================
+# ==== ops.py:1901 symbol=resolve_returned_after  ===============================
 #
 # `"""Extract a call output's matching store, preserving writes to the enclosing
 # scope's output PARAMs."""` -- `[st for st in t.src if st.op is Ops.STORE and
@@ -8558,7 +8558,7 @@ def vv_has(v: VarVals, k: String) -> Bool:
 # AND THE SECOND CALLER I NAMED WAS WRONG TOO. I wrote that `pyrender`'s `Ctx` walk
 # wanted the same fold; `render.bend:1878`'s `render_with_splits` answers
 # `List<&2, Bind>` and not a `Maybe`, so it does not. The REAL second caller is
-# `unified_rewrite`'s fixpoint (ops.py:1828-1835), where `test_n: UOp|None` is
+# `unified_rewrite`'s fixpoint (ops.py:1826-1837 symbol=RewriteContext.unified_rewrite), where `test_n: UOp|None` is
 # carried through a loop and a `BottomUpGate` breaks out of it -- and THAT is the
 # engine's remaining named wall. Two real callers, and the second one is why the
 # idiom was worth looking for.

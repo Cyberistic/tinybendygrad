@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=371 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/uop/ops.bend  out=10499B err=0B
+  MACHINE: **VIOLATED** -- loadavg 3.8 on 12 cores, swap free 1.21 of 9.00 GiB; swap free 1.21 of 9.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD
