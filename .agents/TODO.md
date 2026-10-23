@@ -23341,3 +23341,59 @@ specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIV
                          **⇒ BOTH **CORPUS **PROCESSES **WERE **STOPPED**, **AND **THE **CORPUS **IS **A
                          **SINGLETON**: **TWO **CONCURRENT **RUNS **CORRUPT **EACH **OTHER's **ARTEFACTS
                          **BY **CONSTRUCTION.**
+
+## Session 2026-10-23 — `gates/pin-cite-gate.py`: the 516 false positives were the GATE's OWN two defects
+
+```
+pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS **THAT **HOLD
+                                          **AT **NO **UPSTREAM **REVISION **AND **CALLED **29 **OF
+                                          **THEM **"DANGLING".** **⇒ MEASURED: **MOSTLY **THE
+                                          **GATE's **OWN **FALSE **POSITIVES**, **AND **THE **TWO
+                                          **CAUSES **ARE **REPAIRABLE.** **⇒ REPAIR 1 (**THE
+                                          **RANGE**):** **`holds()` **TESTED **THE **CLAIM **TOKENS
+                                          **AGAINST **`lines[lo-1]` **-- **THE **FIRST **LINE **OF
+                                          **THE **CITED **RANGE** -- **SO **A **CITATION **TO **A
+                                          **FUNCTION **BODY **FAILED **EVEN **WHEN **THE **CLAIM
+                                          **WAS **RIGHT.** **⇒ REPAIR 2 (**THE **VOCABULARY**):** **A
+                                          **CITATION **WHOSE **CLAIM **TOKENS **ARE **THE **PORT's
+                                          **OWN **NAMES **MAKES **NO **CLAIM **ABOUT **THE **CITED
+                                          **FILE**, **SO **IT **IS **COUNTED **AND **NOT
+                                          **VERDICTED.** **⇒ MEASURED **ON **ONE **FROZEN **TREE:
+                                          **at_pin **696 -> **760**, **dangling **29 -> **14**,
+                                          **unverifiable **-- -> **240**, **and **THE **GATE **STILL
+                                          **FAILS.** **⇒ EVERY **SURVIVOR **NAMES **A **TOKEN
+                                          **THAT **DOES **OCCUR **IN **THE **CITED **FILE**, **SO
+                                          **REPAIR 2 **RESCUED **NONE **OF **THEM** -- **AND **THE
+                                          **PLANT's **`danger-arm`** **PROVES **IT.** **⇒ AND
+                                          **`--tree DIR`** **WAS **ADDED**, **BECAUSE **THE **PORT
+                                          **TREE **IS **OWNED **BY **OTHER **UNITS **AND **MOVES.**
+                                          **⇒ SEE **`gates/pin-cite-gate.py`'s **HEADER **AND
+                                          **`.agents/slop/pincite/REPORT.md`.**
+```
+
+- [x] **THE RANGE REPAIR.** The claim tokens are now tested against the WHOLE cited range,
+      not only against its first line. **SAFE IN ONE DIRECTION: it can only turn a
+      FAILURE into a HOLD, so it cannot turn a dangling claim into a pass.** MEASURED on one
+      frozen tree: 50 rows `only_older_revision -> at_pin`, 14 `at_no_revision -> at_pin`,
+      13 `at_no_revision -> only_older_revision`, 4 `at_no_revision -> ambient_relocated`.
+- [x] **THE VOCABULARY REPAIR, AND THE NEW CLASS IS REPORTED, NOT HIDDEN.**
+      `cite.unverifiable_no_claim_about_the_file` is a NEW row, the rows that landed in it
+      are PRINTED with their reason, and the rows file carries the class as a column.
+- [x] **THE FAIL CLASS IS NOT WEAKENED.** The gate still exits 1 on **14** dangling claims,
+      and every one of them was asserted to have a NON-EMPTY `present_in_file` and
+      `at_pin=NO`. **NOT ONE ROW LEFT A HOLDING CLASS**, which is the proof that the
+      vocabulary repair cannot weaken a holding claim.
+- [x] **THE FALSIFICATION, ON TEXT-EDITED COPIES (NEVER `git show HEAD:`).** A byte-identical
+      copy leaves every number unchanged; moving the cited line out of the file goes
+      `dangling` (14 -> 15); changing the claim token to one that IS in the file but NOT at
+      the cited line goes `dangling` (14 -> 15) -- **the genuine dangling claim that stayed
+      red**; changing the claim token to one that is in NO revision of the file goes
+      `unverifiable` (240 -> 241) and NOT dangling.
+- [x] **THE PLANT GREW THREE ARMS** (`range-arm`, `vocab-arm`, `danger-arm`), each with a
+      byte-identical control, and it FAILS if any of them stops holding.
+- [ ] **THE RESIDUAL, REPORTED AND NOT REPAIRED.** 14 of the old dangling claims are now
+      `unverifiable`, and **THREE OF THEM LOOK LIKE REAL DEFECTS** --
+      `tinybendygrad/mixin/dtype.bend:10` says "`commit_dtype` (`tinygrad/dtype.py:17`)
+      reads `self._uop.vmin`", and upstream's `dtype.py` has NEITHER name. The port's
+      comment uses the PORT's name while citing an upstream line, and a token-matching
+      gate cannot see that. **IT IS A PORT FIX, NOT A GATE FIX.**

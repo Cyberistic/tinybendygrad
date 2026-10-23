@@ -1,0 +1,13 @@
+PLANT file tinygrad/helpers.py declares `prod` at :14 (local ref, not fetched)
+PLANT range arm  : tinygrad/helpers.py:23-24 token `len` -- NOT on the first line
+PLANT danger arm : tinygrad/helpers.py:1 token `Context` -- IS elsewhere in the file
+PLANT control      tinygrad/helpers.py:14 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='prod' -- the cited line names `prod`
+PLANT control-copy tinygrad/helpers.py:14 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='prod' -- the cited line names `prod`
+PLANT half-lie     tinygrad/helpers.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='prod' -- the cited line is 'from __future__ import annotations'
+PLANT gone-name    tinygrad/helpers.py:14 at_pin=NO newest=NONE class=unverifiable           present_in_file='' -- the cited line is 'def prod(x:Iterable[T]) -> T|int: return functoo'
+PLANT range-arm    tinygrad/helpers.py:23 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='len' -- the cited range :23-24 names `len`
+PLANT range-copy   tinygrad/helpers.py:23 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='len' -- the cited range :23-24 names `len`
+PLANT vocab-arm    tinygrad/helpers.py:1 at_pin=NO newest=NONE class=unverifiable           present_in_file='' -- the cited line is 'from __future__ import annotations'
+PLANT danger-arm   tinygrad/helpers.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='Context' -- the cited line is 'from __future__ import annotations'
+PLANT danger-copy  tinygrad/helpers.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='Context' -- the cited line is 'from __future__ import annotations'
+PLANT OK: the control holds at the pin, its byte copy holds, the moved line is seen, a name that exists nowhere is not held, the RANGE arm holds (REPAIR 1), the vocabulary arm is UNVERIFIABLE (REPAIR 2), the danger arm is STILL DANGLING (REPAIR 2 did not rescue it), and a wrong date is REFUSED
