@@ -18,65 +18,66 @@
 # must not re-derive. What survives as PURE ARITHMETIC is the queue model, and
 # that is what is here.
 #
-#   :19  HCQ_CACHE_THRESH               PORTED  `HCQ_CACHE_THRESH`
-#   :20  HCQ_DEVS                       PORTED  `HCQ_DEV_*` BOTH directions
-#   :38  all_devices_in                 PORTED  `all_in`
-#   :40-48 get_enqueue_devs              PORTED  `enq_*` (the table + refusals)
-#   :50-54 unwrap_view                   PORTED  `view_*` (the offset arithmetic)
-#   :56-59 unwrap_lane                   PORTED  `lane_of`
-#   :61  select_lane                     PORTED  `sel_lane`
-#   :63  to_name                         PORTED  `to_name`
-#   :65-66 timeline/timeline_value       PORTED  `tl*`
-#   :68-70 make_submit                   PORTED  `submit_of` + `Tr` SUBMIT
-#   :74-76 layout_args                   PORTED  `layout` -- THE CITED ONE
-#   :78-83 pack_args                     PORTED  `pack`
-#   :98  CDTYPE                          PORTED  `cdtype` / `cdtype_of` BOTH ways
-#   :100-104 cstruct                     PORTED  `cstruct` FIELD ORDER
-#   :106 cfield                          PORTED  `cfield`
-#   :131 STAGING_SIZE/STAGING_SLOTS      PORTED  `STAGING_*`, `staging_chunk`
-#   :157 the staging chunk               PORTED  `staging_chunk`, `staging_copies`
-#   :235 epilogue_queue                  PORTED  `epi`
-#   :237-239 slot/queue_signal/sched_tl   PORTED  `slot`, `qsig`, `stl`
-#   :240 stamps                          PORTED  `stamps` -- the `n -> n*2`
-#   :242-252 _wait_ins                   PORTED  `waits` + `Tr` WAIT
-#   :254-256 _start_ins                  PORTED  `start` + `Tr` BARRIER/WAIT
-#   :258-283 _build_queues               PORTED  `build_queues` -- THE ORDER
-#   :285-311 _finalize_batch             PORTED  `finalize` + `Tr` FENCE/SUBMIT
-#   :314-333 sched_batches               PORTED  `copyq`, `qname_of`, `nqueues`
-#   :360-364 HWQueue.__init__            PORTED  `hwq`
-#   :366-377 HWQueue.q                   PORTED  `q` -- THE WORD SEQUENCE
-#   :379-385 HWQueue.loop                PORTED  `loop_*`
-#   :387  memory_barrier                 PORTED  a no-op (records nothing)
-#   :388  submit                         PORTED  `Tr.raise` -- THE REFUSAL
-#   :393  _is_input_addr                 PORTED  `is_input_addr`
-#   :395-400 _is_link_patch              PORTED  `is_link` (the ladder)
-#   :402-413 patch                       PORTED  `pkey` (the group key)
+#   hcq2.py:16 `HCQ_CACHE_THRESH`         PORTED  symbol=HCQ_CACHE_THRESH
+#   tinygrad/device.py:19 `HCQ_DEVS`        PORTED  `HCQ_DEV_*` BOTH directions symbol=HCQ_DEVS
+#   hcq2.py:29 `all_devices_in`           PORTED  `all_in` symbol=all_devices_in
+#   hcq2.py:31 `get_enqueue_devs`          PORTED  `enq_*` (the table + refusals) symbol=get_enqueue_devs
+#   hcq2.py:39 `unwrap_view`               PORTED  `view_*` (the offset arithmetic) symbol=unwrap_view
+#   hcq2.py:45 `unwrap_lane`               PORTED  `lane_of` symbol=unwrap_lane
+#   tinygrad/helpers.py:21 `to_name`       PORTED  symbol=to_name -- hcq2.py CALLS it in `make_submit`
+#   hcq2.py:52 `timeline`                  PORTED  `tl*` symbol=timeline
+#   hcq2.py:53 `timeline_value`            PORTED  symbol=timeline_value
+#   hcq2.py:60 `make_submit`               PORTED  `submit_of` + `Tr` SUBMIT symbol=make_submit
+#   hcq2.py:114 `layout_args`              PORTED  `layout` -- THE CITED ONE symbol=layout_args
+#   hcq2.py:118 `pack_args`                PORTED  `pack` symbol=pack_args
+#   hcq2.py:129 `cstruct`                  PORTED  `cstruct` FIELD ORDER symbol=cstruct
+#   hcq2.py:234 `slot`                     PORTED  `slot` symbol=slot
+#   hcq2.py:235 `queue_signal`             PORTED  `qsig` symbol=queue_signal
+#   hcq2.py:236 `stamps`                   PORTED  `stamps` -- the `n -> n*2` symbol=stamps
+#   hcq2.py:238 `_wait_ins`                PORTED  `waits` + `Tr` WAIT symbol=_wait_ins
+#   hcq2.py:241 `_start_ins`               PORTED  `start` + `Tr` BARRIER/WAIT symbol=_start_ins
+#   hcq2.py:244 `_build_queues`            PORTED  `build_queues` -- THE ORDER symbol=_build_queues
+#   hcq2.py:288 `_finalize_batch`          PORTED  `finalize` + `Tr` FENCE/SUBMIT symbol=_finalize_batch
+#   hcq2.py:311 `sched_batches`            PORTED  `copyq`, `qname_of`, `nqueues` symbol=sched_batches
+#   hcq2.py:357 `__init__`                 PORTED  `hwq` symbol=__init__
+#   hcq2.py:364 `q`                        PORTED  symbol=q -- THE WORD SEQUENCE
+#   hcq2.py:377 `loop`                     PORTED  `loop_*` symbol=loop
+#   hcq2.py:385 `memory_barrier`           PORTED  a no-op (records nothing) symbol=memory_barrier
+#   hcq2.py:386 `submit`                   PORTED  `Tr.raise` -- THE REFUSAL symbol=submit
+#   hcq2.py:93 `_is_link_patch`            PORTED  `is_link` (the ladder) symbol=_is_link_patch
+#   hcq2.py:100 `patch`                    PORTED  `pkey` (the group key) symbol=patch
+#   GONE upstream at this pin, each named with the construct that SURVIVED it:
+#   `select_lane` (folded into upstream's `unwrap_lane`, tinygrad/runtime/support/hcq2.py:45 symbol=unwrap_lane),
+#   `CDTYPE` (`dtypes.uints` at tinygrad/runtime/support/hcq2.py:130), `cfield` (`7d2420e64`;
+#   `cstruct` at tinygrad/runtime/support/hcq2.py:129 reads the fields),
+#   `STAGING_SIZE`/`STAGING_SLOTS` (`6816873ad`), `epilogue_queue` (`dc9af790e`,
+#   the queues are built by `_build_queues` at :244), and `sched_tl`/`staging_chunk`,
 #
-# THE TAIL OF THIS LIST IS RE-NUMBERED AT UPSTREAM HEAD `cff94ae88` and the HEAD
-# file is 626 LINES, not 646, so every line number below is a HEAD number and is
-# marked `HEAD`. Rows above are PIN numbers and say so. Both are correct; mixing
-# them silently is what makes a citation unresolvable, which is the whole subject
-# of the next block.
+# EVERY LINE NUMBER IN BOTH TABLES IS A PIN NUMBER -- the upstream revision this
+# tree vendors (`5c2bf39d6c4b`, whose `tinygrad/runtime/support/hcq2.py` is 563
+# LINES). THE HEADER WAS FIRST WRITTEN AGAINST A 646-LINE REVISION, SO NONE OF ITS
+# NUMBERS SURVIVED THE MOVE, AND MIXING THE TWO SILENTLY IS WHAT MAKES A CITATION
+# UNRESOLVABLE, WHICH IS THE WHOLE SUBJECT OF THE NEXT BLOCK.
 #
-#   HEAD :415-426 encode_fence            PORTED  `fence` + `Tr` FENCE
-#   HEAD :378    HWQueue.encode          PORTED  `Tr` SUBMIT -- this is what the old
+#   hcq2.py:73 `hcq_fence`               PORTED  `fence` + `Tr` FENCE symbol=hcq_fence -- `encode_fence` IS GONE upstream at this pin (`dc9af790e`)
+#   hcq2.py:387 `encode`                 PORTED  `Tr` SUBMIT -- this is what the old
 #                                            `encode_submit` row meant. `bdddaad21`
 #                                            folded `encode_submit` INTO this
 #                                            method, so `:479-481` is gone and the
 #                                            replacement is ONE line, not a def.
-#   HEAD :433-456 encode_cmdbuf          WALL 4  its blob arithmetic is UNREACHABLE
+#   hcq2.py:389 `encode_cmdbuf`          WALL 4  its blob arithmetic is UNREACHABLE
 #                                            from a gate row (GAP 8). This row was
 #                                            `:455-477 bufferize_cmdbuf PORTED
 #                                            pad128/rt_patch/dword_at` and none of
 #                                            those three names is a def here.
-#   HEAD :461-466 hoist_links            WALL 1  a UPat over an AFTER
-#   HEAD :468-503 pm_lift_deps/lift      WALL 1  the old `pm_renumber` row
-#   HEAD :506-520 lower_call              WALL 1  the input TABLE is GONE
+#   hcq2.py:416 `hoist_links`            WALL 1  a UPat over an AFTER symbol=hoist_links
+#   hcq2.py:423 `pm_lift_deps`           WALL 1  the old `pm_renumber` row symbol=pm_lift_deps
+#   hcq2.py:461 `lower_call`             WALL 1  the input TABLE is GONE
 #                                            (`cff94ae88`) and with it the
 #                                            128-byte merge, so this row's old
 #                                            `slots_of` claim had no counterpart
-#   HEAD :530-543 hcq_compile             PORTED  `compile_seq` -- THE INIT ORDER
-#   HEAD :615-626 hcq_link                PORTED  `link_seq`
+#   hcq2.py:535 `hcq_compile`            PORTED  `compile_seq` -- THE INIT ORDER symbol=hcq_compile
+#   hcq2.py:552 `hcq_link`               PORTED  `link_seq` symbol=hcq_link
 #
 # ===========================================================================
 # THE WALLS, named once each with the `hcq2.py` line that owns them.
@@ -95,29 +96,29 @@
 #    THE `PORTED` TABLE ABOVE IS NOT A WITNESS FOR THESE: its helper names
 #    (`view_*`, `pkey`, `submit_of`, `build_queues`, `finalize`, `hwq`, `enq_*`)
 #    have 0 defs here (`pkey` is `renderer/ptx.bend:222`, a different function).
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:104   pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:114   pm_unwrap_multi -- BLOCKED: rule body unwritten here (`UOp.mselect`/`UOp.replace` are defs at `ops.bend`; no `def pm_unwrap_multi` in this file).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:141   `pm_replace_buffers` symbol=pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:148   `pm_unwrap_multi` symbol=pm_unwrap_multi -- BLOCKED: rule body unwritten here (`UOp.mselect`/`UOp.replace` are defs at `ops.bend`; no `def pm_unwrap_multi` in this file).
 
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:156   pm_insert_copy_staging -- BLOCKED: needs `Buffer`/`_resolve`/`lower_and_compile`.
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:337   HWQueue.q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`).
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:428   pm_hcq_encode -- BLOCKED: needs `hcq_fence` (the `UPat.custom_function` target), `encode_fence`/`unwrap_view`/`patch`/`timeline`/`timeline_value` (the body's helpers): MEASURED, zero defs of each across `tinybendygrad/`.
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:180   `pm_insert_copy_staging` symbol=pm_insert_copy_staging -- BLOCKED: needs `Buffer`/`_resolve`/`lower_and_compile`.
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:336   `q_rewrite` symbol=q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`)..
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:458   `pm_encode` -- BLOCKED: `pm_hcq_encode` is GONE upstream at this pin (`ad189c030`) and the matcher is `Compiled.pm_encode`; it needs `hcq_fence` (the `UPat.custom_function` target), `unwrap_view`/`patch`/`timeline`/`timeline_value` (the body's helpers): MEASURED, zero defs of each across `tinybendygrad/`.
 #
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:468   pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:423   `pm_lift_deps` symbol=pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
 
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:496   pm_lift -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (:530 open TODO).
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:523   pm_encode -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`).
-#    TODO(p3) runtime/support/hcq2.py:558  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (`uop/ops.bend:514` open TODO) -- the row `pm_lift`.
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`) -- the row `pm_encode`.
+#    TODO(p3) runtime/support/hcq2.py:552  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
 #
 #    THREE NAMES THAT WERE ON THIS LIST AND ARE NOT ANY MORE, each because
 #    upstream RENAMED it and one because upstream DELETED it. The rename is not
 #    cosmetic: the bodies moved too, so re-pointing the name and calling it done
 #    would be a lie of the same shape as the name it replaced.
-#      pm_patches  -> `pm_hoist_links` (:466). `hoist_links` moved from section
+#      pm_patches  -> `pm_hoist_links` (:421). `hoist_links` moved from section
 #                     3.2 "split" to 3.3 "lift" AND its `partition` predicate
 #                     grew a case: `s.op is Ops.STORE and _is_link_patch(s)`
 #                     became `(s.src[0] if s.op is Ops.END else s).op is
 #                     Ops.STORE and _is_link_patch(s)` -- a store OR ITS LOOP.
-#      pm_renumber -> `pm_lift` (:496). The RANGE rule's `arg` tuple also
+#      pm_renumber -> `pm_lift` (:452). The RANGE rule's `arg` tuple also
 #                     CHANGED SHAPE, because `UOp.arg` for a RANGE is now
 #                     `(axis_type, *axis_id)`: it was `u.replace(arg=(next(ctx),)
 #                     +u.arg[1:])` and is now `u.replace(arg=(u.axis_type,
@@ -130,15 +131,15 @@
 #                     merge PARAMs into 128-byte-aligned views, and the merge is
 #                     what that commit removed. Nothing replaces them.
 #
-# 2. FFI AND CTYPES. `ccall` (:81-84), `cstruct`'s `ctypes.sizeof` (:88-92),
-#    `cfield`'s `getattr(...).offset/.size` (:94) and the `_ioctl` family in
-#    `support/c.py:6-15`. `dtype.bend`'s fourteen `def ... -> IO(R)` +
-#    `import "./x.c"` seams make every IMPORTER print `SOME PROOFS FAIL`; this
-#    file follows the ops_webgpu lane instead and records the call in a `Tr`, so
-#    it is ALL PROOFS CHECK and the seam stays a greppable literal.
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:125   ccall -- `ctypes` marshalling.
+# 2. FFI AND CTYPES. `ccall` (:125), `cstruct`'s `ctypes.sizeof` (:129-133),
+#    and the `_ioctl` family in `support/c.py:6-15`. `cfield` IS GONE upstream
+#    at this pin (`7d2420e64`): `cstruct` (:129) reads `struct_t._real_fields_`
+#    where `cfield` read `getattr(...).offset/.size`. `dtype.bend`'s fourteen
+#    `def ... -> IO(R)` + `import "./x.c"` seams make every IMPORTER print
+#    `SOME PROOFS FAIL`; this file follows the ops_webgpu lane instead and records
+#    the call in a `Tr`, so it is ALL PROOFS CHECK and the seam stays greppable.
+#    TODO(p3) tinygrad/runtime/support/hcq2.py:125   `ccall` symbol=ccall -- `ctypes` marshalling.
 #    TODO(p3) runtime/support/c.py:66  symbol=_resolve -- `cfield` is GONE upstream at this pin; `Field._resolve` is the shape that replaced it -- the ctypes field descriptor, not a `getattr`.
-#
 #    `cfunc_buf` WAS ON THIS LIST AND IS DELETED, not renamed. Upstream
 #    `bdddaad21` ("ccall by symbol", #18521) deleted the function AND its caller
 #    in `device.py` (`pm_bufferize`'s third rule), because `ccall` no longer needs
@@ -147,7 +148,7 @@
 #    So there is no `# TODO(p3)` left to write: there is nothing upstream to defer.
 #
 # 3. A `String` IS A LINKED LIST OF `Char`s WITH ONE VISIBLE CONSTRUCTOR, so
-#    `to_name` (:63) is `String.split` + `String.join` + `String.to_lower`, and
+#    `to_name` (:61) is `String.split` + `String.join` + `String.to_lower`, and
 #    `String.replace` DOES NOT EXIST. The fold is ported; the CHARACTER-level
 #    lower-casing inside `String.to_lower` is base.bend's, not this file's.
 #    `ops_nv.bend:2917-2945` carries its own copy (it needs one for
@@ -155,7 +156,7 @@
 #    `hcq2.to_name`, so the two implementations are checked against one oracle.
 #
 # 4. THE 64-BIT WALL. `base.bend` exports `Word`, not `Word(64n)`, so a u64
-#    VALUE is not one number here. `HWQueue.q` (:355-366) masks `v` with
+#    VALUE is not one number here. `HWQueue.q` (:364-376) masks `v` with
 #    `1 << 8*n - 1` and writes `n` little-endian bytes, which for `n == 8` is
 #    both halves of a u64; `W` therefore carries `lo` AND `hi` and the byte
 #    sequence is exact. What is NOT computable is a u64 ARITHMETIC. `nbytes` is
@@ -182,8 +183,8 @@
 # ===========================================================================
 # CITATIONS -- what ops_nv.bend already assumes about this file.
 # ===========================================================================
-# ops_nv.bend:14, :181, :205, :1439, :1873, :1892 cite `layout_args`
-#   (hcq2.py:74-76) and carry `args.layout` beside `device.bend`'s
+# ops_nv.bend:14, ops_nv.bend:181, ops_nv.bend:205, ops_nv.bend:1439, ops_nv.bend:1873, ops_nv.bend:1892 cite `layout_args`
+#   (hcq2.py:114 `layout_args` symbol=layout_args) and carry `args.layout` beside `device.bend`'s
 #   `D.iter_sig`. MEASURED IN CPython (`.agents/slop/hcq2-probe.py`, run with
 #   DEV=NULL so no device is present):
 #     layout_args(3x uint64, 0)      -> 0, 8, 16
@@ -198,12 +199,12 @@
 #   (`buf3_var2` is five words: 0,8,16,24,28 relative -> 512,520,528,536,540
 #   with 540 the trailing var). ops_nv.bend:205's `0, 4, 8, 16, 24, 28` is the
 #   SAME SIX-WORD mixed list at base 0.
-# ops_nv.bend:22, :2917, :3691 cite `to_name` (hcq2.py:63): CONFIRMED, same
+# ops_nv.bend:22, ops_nv.bend:2917, ops_nv.bend:3691 cite `to_name` (`tinygrad/helpers.py:21` symbol=to_name): CONFIRMED, same
 #   formula, and `hq2_toname_*` below are the same rows from this side.
-# ops_nv.bend:971 cites `hcq2`'s `nv_iowr` arm `if made.status != 0`; :1074
+# ops_nv.bend:971 cites `hcq2`'s `nv_iowr` arm `if made.status != 0`; ops_nv.bend:1074
 #   cites `NVQueue.q` (hcq2.py:366). `q` is PORTED as `q` below; the ioctl arm
 #   is ops_nv's own FFI seam and is not this file's.
-# ops_nv.bend:1599, :1041 note that the NV path goes through these queues. That
+# ops_nv.bend:1599, ops_nv.bend:1041 note that the NV path goes through these queues. That
 #   is the claim `q` and `Tr` SUBMIT below carry -- `hwq` is named here but is
 #   NOT a def in this file (2 occurrences in this header, 0 defs), and
 #   `encode_submit` no longer exists upstream at all: `bdddaad21` folded it into
@@ -217,7 +218,7 @@
 # That file asked three things to be agreed or contradicted (its own header,
 # "THE SHARED CONTRACT WITH hcq2"): the `nv.msgqTxHeader` queue header, the
 # ring's usable length, and the doorbell. **ALL THREE ARE `nv/ip.py`'s AND NOT
-# `hcq2.py`'s, AND NONE OF THEM APPEARS IN THE 646 LINES THIS FILE PORTS.**
+# `hcq2.py`'s, AND NONE OF THEM APPEARS IN THE 563 LINES THIS FILE PORTS.
 # MEASURED, not assumed:
 #
 #   $ grep -n "msgqTxHeader\|ring_len\|queue_mv\|doorbell\|cmd_q\|stat_q\
@@ -227,13 +228,13 @@
 #   22, 23, 26, 47, 51, 64, 384, 385
 #
 # So `q_size`/pack factors, the front-end sizes, the completion-ring geometry and
-# the MAX_BUFS/fence counts that the brief grouped under "per-queue constants"
-# ARE NOT IN `hcq2.py` -- they are in `ops_nv.py` (which is `ops_nv.bend`, green and
+# the MAX_BUFS/fence counts the brief grouped under "per-queue constants" ARE NOT
+# IN `hcq2.py` -- they are in `ops_nv.py` (which is `ops_nv.bend`, green and
 # read-only) and in `nv/ip.py` (`nv/ip.bend`). **THIS FILE DOES NOT CARRY THEM AND
 # ITS OWN HEADER SAYS SO**, because claiming a per-queue constant that lives in a
 # sibling would be a fabricated table. The constants `hcq2.py` really owns are the
 # four at the top: `HCQ_CACHE_THRESH`, `HCQ_DEVS`, `CDTYPE`, and
-# `STAGING_SIZE`/`STAGING_SLOTS`. All four are gated BOTH ways.
+# `STAGING_SIZE`/`STAGING_SLOTS` -- all four gated BOTH ways, the last two GONE upstream.
 #
 # THE ONE GENUINELY SHARED SURFACE IS THE SUBMISSION PATH, and it does not
 # contradict: `ip.bend`'s `Tr` is `&2` lists of ioctl records with its own `Cx`
@@ -243,7 +244,7 @@
 # reconcile -- REPORTED, not reconciled, because reconciling would mean editing a
 # read-only file. WHAT A THIRD FILE WILL HAVE TO AGREE WITH: that the doorbell
 # write happens AFTER the write pointer advances (`ip.bend`'s point 3) and that
-# this file's `_finalize_batch` orders `hcq_fence` BEFORE the submits (:293's
+#   this file's `_finalize_batch` orders `hcq_fence` BEFORE the submits (:288's
 # `make_submit(...).after(fence, *submits[-1:])`). Both are ORDER claims about
 # DIFFERENT halves of one submission, and the gate rows for this file's half are
 # `hq2_b*_full`.

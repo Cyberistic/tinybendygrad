@@ -22,12 +22,14 @@
 #     INVERTED, which made a correct computation look wrong.
 #   * the DISCOVERY WALK (:356-397) -- the die/IP nesting, the `ip_offset` stride
 #     (8 + 8-or-4 per base address), the `hw_id_map` gate, and the HARVEST table parse.
-#   * `hwid_names` (:400) and `hw_id_map` (:380) -- TWO-WAY TABLES, both directions.
+#   * (tinygrad/runtime/support/am/amdev.py:402 symbol=hwid_names) `hwid_names` and
+#     (tinygrad/runtime/support/am/amdev.py:382 symbol=_run_discovery) `hw_id_map` -- TWO-WAY TABLES, both directions.
 #   * the REGISTER ARITHMETIC that is 64-BIT and therefore where a `U32` would be a
-#     silently wrong register write: `indirect_wreg_pcie`'s `1 << 34` (:341) and
+#     silently wrong register write: `indirect_wreg_pcie`'s `1 << 34` (tinygrad/runtime/support/am/amdev.py:342 symbol=indirect_wreg_pcie) and
 #     `rlcg_rw`'s `(addr | 1<<28) << 32 | val` (:320), plus `ucode_start`'s `<< 32` (:82).
-#   * the REQUEST TRACES -- the VF mailbox protocol (:268-281), `_read_vram` (:347-354),
-#     the ASPM capability walk (:147-154), `indirect_wreg`/`_pcie`, and the boot order.
+#   * the REQUEST TRACES -- the VF mailbox protocol (`_vf_mailbox_request`, tinygrad/runtime/support/am/amdev.py:268-281 symbol=_vf_mailbox_request),
+#     `_read_vram` (tinygrad/runtime/support/am/amdev.py:349-357 symbol=_read_vram),
+#     the ASPM capability walk (tinygrad/runtime/support/am/amdev.py:147-154 symbol=_disable_aspm) -- upstream's `_disable_aspm` --, `indirect_wreg`/`_pcie`, and the boot order.
 #   * the AID ALIVE-MASK (:417-421), the palloc ladder (:233), the reserved-vram ladder
 #     (:397) and the module ladder (:405-407).
 #   * every REFUSAL, as a TRUNCATION of the trace.
@@ -69,7 +71,7 @@
 #     `struct_gfx_firmware_header_v2_0` is the struct's OWN member and NOT the
 #     common header's -- a fixture that set only the common one yields a
 #     ZERO-LENGTH descriptor, silently.
-#   * :364's window is `(10 << 10)` bytes, so a `table_list[].offset` past it
+#   * tinygrad/runtime/support/am/amdev.py:364's window is `(10 << 10)` bytes -- upstream's `tmr_size` -- so a `table_list[].offset` past it
 #     reads back as version 0_0 rather than as an error.
 import ../../../helpers.bend as H
 

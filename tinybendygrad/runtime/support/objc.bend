@@ -47,13 +47,13 @@
 #
 # The failure is NOT a failed dlsym. `hcq2.py:84` names a DEVICE symbol after
 # `fn.__name__`, so `ccall(SELNAME, sel)` becomes `custom_function
-# ("sel_registerName")`, `cstyle.py:268` emits `extern void sel_registerName();`
+# ("sel_registerName"), `tinygrad/renderer/cstyle.py:271` emits `extern void sel_registerName();`
 # into the generated host kernel, and `elf.py:13` then fails to link it
 # against `[libm, libSystem]` -- neither of which exports it either. Measured
 # end to end: `(a@a.T).realize()` raises `RuntimeError: Attempting to relocate
 # against an undefined symbol sel_registerName`. The fix belongs in
-# `ops_cpu.py:19/21` (libobjc is missing from `CPUProgram.link_libs`), NOT in
-# `objc.py` and NOT in `ops_metal.py:86`. Reported, not fixed.
+# `tinygrad/runtime/ops_cpu.py:18-19 symbol=CPUProgram` (upstream's `rt_lib` -- libobjc is missing from `CPUProgram.link_libs`), NOT in
+# `objc.py` and NOT in `tinygrad/runtime/ops_metal.py:86` (upstream's `objc_msgSend` binding). Reported, not fixed.
 #
 # ===========================================================================
 # WALLS, and they are four narrow ones.
@@ -97,7 +97,7 @@
 #     both MEASURED, not assumed.
 #     `returns_retained_name=f` is the sharp version of that: the wrapped
 #     function is named `f`, NOT the selector, because `returns_retained(f)`
-#     wraps the INNER `f` from :37 and not `msg`'s return.
+#     wraps the INNER `f` from tinygrad/runtime/support/objc.py:37 -- upstream's `sender` -- and not `msg`'s return.
 #
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF.

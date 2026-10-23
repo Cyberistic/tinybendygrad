@@ -16,7 +16,7 @@
 # WHAT IS PORTED, DEF BY DEF.
 #
 #   :10  backend_types               PORTED  `backend_names`, `backend_of`
-#   :11  the module-level instance    PORTED  `dev.create_instance`
+#   tinygrad/runtime/ops_webgpu.py:12 `instance`      PORTED  `dev.create_instance` symbol=instance
 #   :13  from_wgpu_str               WALL 1  STRING VIEWS
 #   :14  to_wgpu_str                 WALL 1  STRING VIEWS
 #   :17  buf_to_mv                   PORTED  `copy.read`
@@ -26,8 +26,8 @@
 #   :45  BufferMapAsync              PORTED  a WAIT, in `copy.read`
 #   :46  DevicePopErrorScope         PORTED  a WAIT, in `Tr.pop`
 #   :47  DeviceCreateComputePipeline PORTED  a WAIT, in `pass.pipeline`
-#   :48  InstanceRequestAdapter      PORTED  a WAIT, in `dev.request_adapter`
-#   :49  AdapterRequestDevice        PORTED  a WAIT, in `dev.request_device`
+#   tinygrad/runtime/ops_webgpu.py:49 `InstanceRequestAdapter` PORTED  a WAIT, in `dev.request_adapter` symbol=InstanceRequestAdapter
+#   tinygrad/runtime/ops_webgpu.py:50 `AdapterRequestDevice` PORTED  a WAIT, in `dev.request_device` symbol=AdapterRequestDevice
 #   :50  QueueOnSubmittedWorkDone    DEAD   the only caller was `dev.synchronize`,
 #                                             which nothing called. The status
 #                                             enum is still in `sync_name`.
@@ -81,7 +81,7 @@
 #
 # 2. THE 64-BIT WALL, and it is two lines of Python.
 #      :37  `wgpuInstanceWaitAny(instance, 1, WGPUFutureWaitInfo(future), 2**64-1)`
-#      :141 `((timestamps:=…)[1] - timestamps[0]) / 1e9`
+#      tinygrad/runtime/ops_webgpu.py:142 `((timestamps:=…)[1] - timestamps[0]) / 1e9` symbol=__call__
 #    The query set answers two TIMESTAMPS in NANOSECONDS as u64 and
 #    `buf_to_mv(...).cast("Q")` reads them as such. Bend has no 64-bit integer
 #    (`base.bend` exports `Word`, not `Word(64n)`) and no F64, so neither the
@@ -91,7 +91,7 @@
 #    TODO(p3) runtime/ops_webgpu.py:38  symbol=wrapper  -- the 2**64-1 wait timeout.
 #    TODO(p3) runtime/ops_webgpu.py:142  symbol=__call__ -- the u64 timestamp delta and its /1e9.
 #
-# 3. FLOAT UNIFORMS (:204). `val.to_bytes(4,'little',signed=val<0)` for an int,
+# 3. FLOAT UNIFORMS (tinygrad/runtime/ops_webgpu.py:202 symbol=create_uniform). `val.to_bytes(4,'little',signed=val<0)` for an int,
 #    `struct.pack('<f', val)` for a float, and :97 passes `float('inf')`.
 #    `base.bend`'s F32 has no infinity literal, no bitcast and no to_bits, so the
 #    f32 PATTERN cannot be built here at all. The INT arm is ported exactly
@@ -100,8 +100,8 @@
 #    TODO(p3) runtime/ops_webgpu.py:205  symbol=create_uniform  -- struct.pack('<f', val).
 #
 # CTYPES SHAPING is not a wall and is named once: the
-# `(WGPUBindGroupLayoutEntry * n)(...)` array constructions at :77, :87, :97, :99,
-# :129 and :215 are how Python spells "an array of n descriptors", and
+#   `(WGPUBindGroupLayoutEntry * n)(...)` array constructions at tinygrad/runtime/ops_webgpu.py:77 -- the ONLY one
+#   of that type at this pin -- and the `WGPUBindGroupEntry * n` one at tinygrad/runtime/ops_webgpu.py:97 are how Python spells "an array of n descriptors", and
 # `ctypes.pointer`/`cast` at :59 and :116 spell the chained struct. The port has
 # the array as a `List` and the chain as an explicit argument, which is the same
 # information without the ctypes shape.
@@ -122,7 +122,7 @@
 #     is [type, message, None] and index 1 is the message. Four of the six
 #     wrapped calls pass has_emsg=True (:45,47,48,49) and two pass False (:46,50)
 #     -- `sync_has_emsg` is that table and `sync_payload` is the arithmetic.
-#   - The :41 collapse therefore NEVER takes its `None` branch for these six
+#   - The tinygrad/runtime/ops_webgpu.py:42 collapse therefore NEVER takes its `None` branch for these six
 #     calls, because their payload is never empty. `sync_ret` ports the collapse
 #     anyway, because the branch structure is the thing.
 #
@@ -137,17 +137,17 @@
 # be checked without them and does not pretend otherwise.
 #
 # device.bend owes:
-#   1. `Compiled.__init__` (device.py:391) is handed
+#   1. `Compiled.__init__` (tinygrad/device.py:379 symbol=__init__) is handed
 #      `arch="shader-f16" * (… in features)` at :190. `dev.init` produces that
 #      arch string and the feature list; whoever wires the device records it.
-#   2. `Program.__call__` (device.py:372) is called from engine/realize.py:168
-#      with `bufs` = `ast.arg.globals` resolved and `vals` = `ProgramInfo.vals`.
+#   2. `Program.__call__` (tinygrad/device.py:360 symbol=__call__) is called from
+#      tinygrad/engine/realize.py:167 -- the `ets.append(rt(*args, ...))` line -- with `bufs` = `ast.arg.globals` resolved
 #      THIS FILE NEEDS THE BUFFER LIST AND THE VAL COUNT AND NOTHING ELSE --
 #      they are what `bgl.of` turns into entries. See THE LAYOUT DERIVATION.
-#   3. `BufferStorage` (device.py:110) is `_alloc`'s return (:152) and its `.buf`
-#      is what `_free` (:163) and `_copyout` (:160) hand back. `Buf` is that
-#      pair, and `alloc.of` is the `BufferStorage`.
-#   4. `TinyELF` (device.py:355) carries `name`, which is the entry point (:54)
+#   3. `BufferStorage` (tinygrad/device.py:109 symbol=BufferStorage) is `_alloc`'s return (tinygrad/runtime/ops_webgpu.py:151 symbol=_alloc) and its `.buf`
+#      is what `_copyout` (tinygrad/runtime/ops_webgpu.py:160 symbol=_copyout) and `_free`
+#      (tinygrad/runtime/ops_webgpu.py:164 symbol=_free) hand back. `Buf` is that pair, and `alloc.of` is the `BufferStorage`.
+#   4. `TinyELF` (tinygrad/device.py:343-345 symbol=TinyELF) carries `name`, which is the entry point (:54)
 #      and the pipeline's `entryPoint` (:106). `prog.init` takes it as a String.
 #
 # wgsl.bend owes:
@@ -156,11 +156,11 @@
 #      `@group(0) @binding(0)  var<uniform> INFINITY : f32;`. Those two facts
 #      must agree or every kernel faults at bind time. MEASURED by calling
 #      `WGSLRenderer.render_kernel` in CPython -- see THE LAYOUT DERIVATION.
-#   2. `WGPUBufferBindingType_Storage` for a GLOBAL buffer, because :78 keys the
-#      type off the POSITION (`i < len(bufs)`) while wgsl.py:116 keys it off the
-#      ADDRSPACE. They agree only because every `ProgramInfo.globals` entry is
-#      GLOBAL (ops.py:1378). If wgsl.bend ever emits a non-GLOBAL global, the two
-#      derivations part company.
+#   2. `WGPUBufferBindingType_Storage` for a GLOBAL buffer: AT THIS PIN upstream's tinygrad/runtime/ops_webgpu.py:78 -- its `AddrSpace` --
+#      keys the type off the ADDRSPACE (`'Uniform' if a is AddrSpace.ALU else 'Storage'`), and
+#      tinygrad/renderer/wgsl.py:116 keys it off the ADDRSPACE too. They agree because BOTH key off the
+#      ADDRSPACE, not because every `ProgramInfo.globals` entry is
+#      GLOBAL (tinygrad/uop/ops.py:1347 symbol=globals).
 #   3. `@workgroup_size(...)` (wgsl.py:118). `Program.__call__` takes a
 #      `local_size` and ops_webgpu.py NEVER READS IT -- the workgroup size comes
 #      from the WGSL attribute. `prog.call` takes `local_size`, RECORDS it in
@@ -194,7 +194,7 @@
 #
 # so the shader declares 1+len(bufs) bindings, in the order `bufs` was handed to
 # it (cstyle.py:264 "this relies on bufs dict preserving order"), and
-# `ProgramInfo.globals` (ops.py:1378, sorted+deduped by slot) is that same order.
+# `ProgramInfo.globals` (tinygrad/uop/ops.py:1347 symbol=globals, sorted+deduped by slot) is that same order.
 # `pass.uniforms` binds layout entry k+1 to bufs[k]. THAT IS THE WHOLE INTERFACE
 # between this file and wgsl.bend, and a divergence there is silent in both.
 #

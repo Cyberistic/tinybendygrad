@@ -26,18 +26,18 @@
 #   :53    ipv4_to_gid            PORTED  `gid.*` -- 16 bytes of multicast group
 #   :56-59 write_sysfs            PORTED  `sysfs.*` + `sysfs.wrote` -- the `sudo`
 #                                               STRING
-#   :61-65 atomic_lib / libsys    PORTED  `cap.*` -- the PLATFORM gate, which is
+#   tinygrad/runtime/support/system.py:61-65 `atomic_lib` / libsys PORTED  `cap.*` -- the PLATFORM gate, which is
 #                                               `cap.barrier_lib`'s `osx`
 #   :67-70 pagemap                PORTED  `sys.pagemap`
 #   :72-82 vfio                   PORTED  `pci.probe.vfio` -- its `except OSError:
 #                                               None`
 #   :84-87 reserve_va             PORTED  `sys.reserve_va` -- the CACHE negative case
-#   :89    memory_barrier         PORTED  `cap.barrier_lib` -- which library is
+#   tinygrad/runtime/support/system.py:88 `memory_barrier`  PORTED  `cap.barrier_lib` -- which library is
 #                                               consulted
 #   :91-92 lock_memory            PORTED  `sys.lock_memory` -- the refusal
-#   :94-96 system_paddrs          PARTIAL `paddr.*` -- the mask; the u64 read is FFI
+#   tinygrad/runtime/support/system.py:93 `system_paddrs`   PARTIAL `paddr.*` -- the mask; the u64 read is FFI
 #   :98-102 alloc_sysmem          PORTED  `sys.alloc_sysmem` -- the flag arithmetic
-#   :104-126 pci_scan_bus         PORTED  `scan.*` -- the mask filter + both id formats
+#   tinygrad/runtime/support/system.py:103 `pci_scan_bus`  PORTED  `scan.*` -- the mask filter + both id formats
 #   :128-136 list_devices/probe   PORTED  `pci.probe.*`
 #   :138-186 pci_setup_usb_bars   PORTED  `bars.*` -- THE HEADLINE. 7 ordered writes,
 #                                               the REBAR control, the BAR sizing
@@ -63,7 +63,7 @@
 #
 # 1. THE u64 WALL, and it is three Python lines and one struct format.
 #      :96   `[(x & ((1<<55)-1)) * mmap.PAGESIZE for x in array.array('Q', ...)]`
-#      :175  `((~(((hi << 32) | lo) & ~0xf)) + 1) & (0xffff... if bar_64 else ...)`
+#      :174  the BAR size -- `bar_64` -- `((~(((hi << 32) | lo) & ~0xf)) + 1) & (0xffff... if bar_64 else ...)`
 #      :448  `struct.unpack('<Q', data)[0]`
 #    The PAGEFRAME entry, the 64-bit BAR size and the remote bar's host address
 #    are all 64-bit. `base.bend` exports `Word`, not `Word(64n)`, so the port
@@ -91,13 +91,13 @@
 #    TODO(p3) runtime/support/system.py:195  symbol=flock_acquire -- `os.system("sudo lsof ...")`, in a message.
 #    TODO(p3) runtime/support/system.py:244  symbol=reset -- `os.system(...)`, in `PCIDevice.reset`.
 #
-# 3. THE CTYPES LIBRARY GATE, :61-65 and :89. `atomic_lib` is
+# 3. THE CTYPES LIBRARY GATE, tinygrad/runtime/support/system.py:61-65 and tinygrad/runtime/support/system.py:88. `atomic_lib` is
 #    `ctypes.CDLL(ctypes.util.find_library('atomic')) if sys.platform == "linux"
 #    else None` and `libsys` has NO such gate. So the two libraries are NOT
 #    symmetric, and `memory_barrier`'s `self.libsys if OSX else self.atomic_lib`
 #    is a SECOND, different predicate over the same two facts -- one per
 #    platform, and the two do not agree. That is the whole branching story at
-#    :89 and it is pure, so it is ported as `cap.barrier_lib`, and the gate asks
+#    tinygrad/runtime/support/system.py:88 and it is pure, so it is ported as `cap.barrier_lib` -- upstream's `memory_barrier` -- and the gate asks
 #    the question twice: which library, and whether it is a real fence at all.
 #    `ctypes.CDLL` and `find_library` are the FFI and are the trace.
 #    TODO(p3) runtime/support/system.py:61  symbol=atomic_lib -- `ctypes.CDLL(find_library('atomic'))`.
@@ -124,7 +124,7 @@
 # `mmap.madvise` (:263) is one; `select.poll` (:234-235) is two; the `vfio.*`
 # ctypes structs (:79/:228/:230/:231/:237-239) are a ctypes packing of
 # `struct_vfio_irq_set` and belong to `autogen.py`; `socket.create_connection`
-# and the five `setsockopt` calls (:391-393) are a socket; `_recvall`'s
+# and the five `setsockopt` calls (tinygrad/runtime/support/system.py:389-390) are a socket; `_recvall`'s
 # `sock.recv` loop (:410-415) is a socket; `struct.pack`/`struct.unpack` (:239,
 # :374, :378, :418, :424, :426, :437, :448) are byte layout and are FFI, EXCEPT
 # the two rules they are driven by -- `elemsize` (:370) and `post_args` (:418) --

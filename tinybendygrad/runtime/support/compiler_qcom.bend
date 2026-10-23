@@ -62,7 +62,7 @@
 #
 # WALL 2 -- the two persistent-pipe paths. `self.server(...)` is
 #   `subprocess.Popen(argv.split() + [...], stdout=PIPE, stdin=PIPE, bufsize=0)`
-#   (device.py:352) and `compile_server` writes a length-prefixed frame and
+#   (tinygrad/device.py:333-339 symbol=server) and `compile_server` writes a length-prefixed frame and
 #   reads one back on the SAME long-lived pipe. `Process.run` spawns and
 #   collects; it cannot hold a duplex pipe open. **This is the one seam in the
 #   whole unit that `Process.run` does NOT close**, and it is why

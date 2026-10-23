@@ -20,7 +20,7 @@ import ./ops_cuda.bend as CU
 #
 # WHAT IS HERE: `HP_*`, the HIP column of the vendor table `vend.hp`,
 # `hp_unchecked` (hp:16), `hp_err_of` (hp:10), `timing.scale_hp` (hp:57's
-# `ret.value * 1e-3`), `iter_sig` (TinyELF.iter_sig, device.py:365), `hp.*` and
+# `ret.value * 1e-3`), `iter_sig` (TinyELF.iter_sig, tinygrad/device.py:352 symbol=iter_sig), `hp.*` and
 # `HpDev`.
 #
 # PART 3 -- HIP. `ops_hip.py`, all 71 lines.

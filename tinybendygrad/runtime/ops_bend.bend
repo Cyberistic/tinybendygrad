@@ -1,4 +1,4 @@
-# ops_bend.bend -- port of tinygrad/runtime/ops_bend.py
+# ops_bend.bend -- the BEND TARGET: the port of the PORT'S OWN `ops_bend.py` (the repo root -- upstream tinygrad HAS NO `ops_bend.py` AT ANY REVISION; it was OURS until the purge c2a66ea41 moved it out of `tinygrad/`), WHICH FORKS upstream's `tinygrad/runtime/ops_python.py`
 #
 # THE BEND TARGET ITSELF. Every other port in this repo hands its IR to a
 # GPU. This one compiles the port's own IR to Bend source and RUNS it, so the
@@ -48,25 +48,25 @@
 # uop order, because ops_python pops pbufs in exactly that order.
 #
 # ===========================================================================
-# WHAT IS PORTED, DEF BY DEF.
+# WHAT IS PORTED, DEF BY DEF. THE PORT'S OWN DEFS ARE IN `ops_bend.py` (REPO ROOT; UPSTREAM HAS NO `ops_bend.py` AT ANY REVISION) AND FORK upstream's `tinygrad/runtime/ops_python.py`, SO EVERY ROW BELOW NAMES THE UPSTREAM CONSTRUCT IT FORKS:
 #
-#   :90  LANES                    PORTED  `lanes`, `lanes_sorted`
-#   :92  wire_dtype               PORTED  `wire_dtype` -- the NAME and the
-#                                           refusal, message included
-#   :103 wire_width               PORTED  `wire_width` (node.numel)
-#   :110 wire_arg                 PORTED  `wire_arg` -- every arm but the float
-#                                           CONST's `struct.pack` (WALL 2)
-#   :133 encode                   PORTED  `encode`
-#   :149 executor                 SEAM   the build/cache of the executor
-#   :169 UOpLine                  PORTED  `Line`
-#   :175 is_buf                   PORTED  `is_buf`
-#   :178 buf_extent               PORTED  `buf_extent`
-#   :180 parse                    PORTED  `parse`
-#   :195 BendProgram.__init__     PORTED  `prog.of` -- in_bufs AND out_bufs
-#   :211 BendProgram.__call__     PORTED  `prog.call` as a TRUNCATED TRACE
-#   :231 BendCompiler.compile     PORTED  `compiler.of` -- pass-through
-#   :234 BendRenderer             PORTED  `render`, `has_local`
-#   :243 BendDevice.__init__      SEAM   HostAllocator + Compiled wiring
+#   tinygrad/runtime/ops_python.py:186 `supported_dtypes`  LANES  PORTED  `lanes`, `lanes_sorted`
+#   tinygrad/dtype.py:60 `name`  wire_dtype  PORTED  `wire_dtype` -- the NAME and the refusal,
+#                        message included
+#   tinygrad/runtime/ops_python.py:106 `itemsize`  wire_width  PORTED  `wire_width` (node.numel) symbol=__call__
+#   tinygrad/runtime/ops_python.py:109 `arg`  wire_arg  PORTED  `wire_arg` -- every arm but the float
+#                      CONST's `struct.pack` (WALL 2)
+#   tinygrad/runtime/ops_python.py:184 `render`  encode  PORTED  `encode`
+#   tinygrad/runtime/ops_python.py:184 `render`  executor  SEAM   the build/cache of the executor
+#   tinygrad/runtime/ops_python.py:64 `uops`  UOpLine  PORTED  `Line` symbol=__call__
+#   tinygrad/runtime/ops_python.py:107 `pargs`  is_buf  PORTED  `is_buf` symbol=__call__
+#   tinygrad/runtime/ops_python.py:106 `itemsize`  buf_extent  PORTED  `buf_extent` symbol=__call__
+#   tinygrad/runtime/ops_python.py:50 `uops`  parse  PORTED  `parse` symbol=__init__
+#   tinygrad/runtime/ops_python.py:49 `__init__`  BendProgram.__init__  PORTED  `prog.of` -- in_bufs AND out_bufs
+#   tinygrad/runtime/ops_python.py:55 `__call__`  BendProgram.__call__  PORTED  `prog.call` as a TRUNCATED TRACE
+#   tinygrad/runtime/ops_python.py:164 `compile`  BendCompiler.compile  PORTED  `compiler.of` -- pass-through
+#   tinygrad/runtime/ops_python.py:166 `PythonRenderer`  BendRenderer  PORTED  `render`, `has_local`
+#   tinygrad/runtime/ops_python.py:189 `__init__`  BendDevice.__init__  SEAM   HostAllocator + Compiled wiring
 #
 # ===========================================================================
 # THE SPLIT, stated once and then obeyed. A def here EITHER builds the argument
@@ -108,15 +108,15 @@
 #    `@extern`; they are steps in the trace, so the trace stays greppable.
 #      :150-164  `executor()`  -- exists(), stat(), hashlib, subprocess.run
 #               over ./bin/bend, os.replace. The build and the cache.
-#      :214      `to_mv(b, nb)` -- a ctypes memoryview over a device pointer.
+#      tinygrad/helpers.py:575 symbol=to_mv  `to_mv(b, nb)` -- a ctypes memoryview over a device pointer.
 #      :217      `pkt.write_text(...)` -- the PACKET.in on disk.
 #      :222      `subprocess.run([exe, pkt, gx, gy, gz, vals...])` -- the launch.
 #      :225      `read_text()` of PACKET.out.
 #      :228      `views[i][:] = bytes.fromhex(...)` -- the copy-back.
 #      :232      `src.encode()` -- BendCompiler, which is a pass-through.
-#      :219      `time.perf_counter()` -- the returned duration. Not modelled:
+#      tinygrad/runtime/ops_python.py:56 symbol=__call__  `time.perf_counter()` -- the returned duration. Not modelled:
 #               the only thing this port does with a time is hand it back, and
-#               no caller of `Program.__call__` reads it (engine/realize.py:168
+#               no caller of `Program.__call__` reads it (tinygrad/engine/realize.py:167 -- the `ets.append` line --
 #               discards it).
 #
 # `ctypes` is not one of the seams: `to_mv` is the only ctypes in the file, and
@@ -124,7 +124,7 @@
 # which is what `in_bufs` is, and drops the pointer.
 #
 # ===========================================================================
-# `has_local = False` (:238) is a CONSTANT the scheduler consults
+# `has_local = False` (tinygrad/renderer/__init__.py:68 symbol=has_local) is a CONSTANT the scheduler consults
 # (opt/heuristic.py:163), so it is a `def` and not a field: a def nothing calls
 # is invisible to every other check, and `bend_has_local` is its only reader.
 #

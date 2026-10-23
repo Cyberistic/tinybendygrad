@@ -7,7 +7,7 @@
 #      (:42-51) hands the NIC a page list, a size, a LOG PAGE SIZE and the GPU
 #      virtual address, and the NIC answers a KEY. From that moment the GPU
 #      address is not usable by the NIC and the key is not usable by the GPU, and
-#      `rdma_copies` (:140) puts BOTH in every work queue element. So there is a
+#      `rdma_copies` (tinygrad/runtime/ops_rdma.py:107 symbol=rdma_copies) puts BOTH in every work queue element. So there is a
 #      TRANSLATION TABLE and a wrong entry in it is a silently wrong transfer --
 #      which is why `Pdt` carries it in BOTH directions and why `ops.wqe`
 #      REFUSES to post a work queue element whose key is missing.
@@ -41,7 +41,7 @@
 # WHAT IS PORTED, DEF BY DEF. Line numbers are ops_rdma.py.
 #
 #   :16  RDMA_CHUNK                  PORTED  `RDMA_CHUNK()`
-#   :18  BNXT_IDS                     PORTED  the four constants and `vram_bar`
+#   tinygrad/runtime/ops_rdma.py:18 `BNXT_IDS`          PORTED  the four constants and `vram_bar` symbol=BNXT_IDS
 #   :22  `BNXTIface.__init__`         PORTED  `Iface.of`  -- vram_bar=2,
 #                                               base_class, dev_impl_t, the PCs
 #   :24  `device_fini`                PORTED  `iface.fini`
@@ -72,7 +72,7 @@
 #   :61  the `except RuntimeError`    NOT PORTED -- inside `rdma_nic_for`
 #   :64  the closest NIC              NOT PORTED -- inside `rdma_nic_for`, a `min(...)`
 #   THE FOUR ABOVE SAID "PORTED" AND WERE NOT. `node`/`bus` are nested defs INSIDE `rdma_nic_for`
-#   (ops_rdma.py:57-58) and the closest nic is a `min(...)` at :64; MEASURED, there is no `def
+#   (tinygrad/runtime/ops_rdma.py:57-64 symbol=node) `node` and the closest nic is a `min(...)` at the END of that range; MEASURED, there is no `def
 #   nic.node` (or `.bus`/`.list`/`.closest`) anywhere in the port, and no `rdma_nic_for` either. The
 #   error's shape: a NAME was read in the CPython and a SAME-NAMED def assumed in the port.
 #   :67  `ifaces = [BNXTIface]`       PORTED  `Rdma.ifaces`
@@ -84,7 +84,7 @@
 #   :83  the three uint64s + `db`     PORTED  `qp_name`/`qp_itemsize` -- sq_seq
 #                                               rq_seq psn, db
 #   :84  the UPat rules               PORTED  `qp.rules_len` -- 8 tags, FIRST-WINS
-#   :85  `PatternMatcher(rules) + pm_bufferize` PORTED `qp_len`
+#   tinygrad/runtime/ops_rdma.py:166 `PatternMatcher(rules)` PORTED `qp_len` -- upstream's `pm_bufferize` is GONE (9ff6db7b0)
 #   :86  `connect` both ways          PORTED  `qp.connect` -- nics THEN reversed
 #   :89  `rdma_mem`                   PORTED  `mem.of` -- volatile, dtype, tag
 #   :91-92 `rdma_ring`                PORTED  `mem.ring` -- send is WQE+8
@@ -93,22 +93,22 @@
 #   :95  `rdma_psn`                   PORTED  `mem.psn`
 #   :96  `rdma_db`                    PORTED  `mem.db`   -- one whole page
 #   :99-100 `rdma_wire`               PORTED  `wire.of`  -- CALL/STORE, then RDMA
-#   :101 `is_rdma`                    PORTED  `wire.is_rdma`
+#   tinygrad/runtime/ops_rdma.py:100 `is_rdma`           PORTED  `wire.is_rdma` symbol=is_rdma
 #   :104-106 `queue_of`               PORTED  `queue.hi`/`queue.lo` -- the SORTED
 #                                               pair and
 #                                               `wire is src`
-#   :109 `ins`                        PORTED  `queue.is_recv` -- every int is a uint32
+#   tinygrad/runtime/ops_rdma.py:108 `ins`                PORTED  `queue.is_recv` -- every int is a uint32 symbol=rdma_copies
 #   :112 `queue_of(calls[0])`         PORTED  `copies.cap_ok` + `Tr.count`
 #   :113 `rdma_qp(pair)[nic.device]`  PORTED  `qp.new`
 #   :116 `bufs = [args[c][0 if recv else 1]]` PORTED `ops.wqe`
 #   :117 the chunks comprehension     PORTED  `chunks_of` / `nchunks` / `psns_len`
-#   :118 `len(chunks), sum(chunks)`   PORTED  `nchunks`, `ops.n_writes`
+#   tinygrad/runtime/ops_rdma.py:114 `len(chunks), sum(chunks)` PORTED  `nchunks`, `ops.n_writes` symbol=rdma_copies
 #   :120 the ring-cap ASSERT          PORTED  `copies.guard`  (the REFUSAL)
 #   :123 the bumps                    PORTED  `bump.seq` / `bump.psn`
-#   :125 `accumulate(chunks, 0)`      PORTED  `psns_of`
-#   :126 `n`, `p`                     PORTED  `ops.n_of` / `ops.p_of`
+#   tinygrad/runtime/ops_rdma.py:121 `accumulate(chunks, 0)` PORTED  `psns_of` symbol=rdma_copies
+#   tinygrad/runtime/ops_rdma.py:122 `n`, `p`            PORTED  `ops.n_of` / `ops.p_of` -- upstream's `psns` symbol=rdma_copies
 #   :128 `ring.getaddr`, `cq.getaddr` PORTED  `ins.write` / `ins.cq_db`
-#   :129 the `db` address             PORTED  `ins.ring_db` -- low 12 bits only
+#   tinygrad/runtime/ops_rdma.py:126 the `db` address      PORTED  `ins.ring_db` -- low 12 bits only symbol=rdma_copies
 #   :130-131 `db_value`               PORTED  `db_value.hi` / `db_value.lo`
 #   :136-137 the chunk loop           PORTED  `ops.chunk_size` / `ops.wqe`
 #   :140 `hdr` and `key`              PORTED  `hdr.of` and `key_of`
@@ -116,15 +116,15 @@
 #   :144-145 the msn entry            PORTED  `ins.msn` -- 48/24/24, two halves
 #   :148 the ring doorbell            PORTED  `ins.ring_db`
 #   :151 `wait_eq`                    PORTED  `ins.wait` -- the inverted epoch
-#   :152 the cq doorbell              PORTED  `ins.cq_db`
+#   tinygrad/runtime/ops_rdma.py:127 the cq doorbell       PORTED  `ins.cq_db` symbol=rdma_copies
 #   :155 the recv barrier             PORTED  `ins.barrier`
 #   :162 the `{i: queue_of(u)}` dict  PORTED  `submit.fires`
 #   :164 `ops = [[u] for u in lin.src]` PORTED `submit.src_replaced` -- a NON-rdma src
 #                                               keeps ITSELF
 #   :165 `dict.fromkeys(queues.values())` PORTED `submit.srcs_kept`
-#   :166 `positions`                  PORTED  `submit.pos_at`
-#   :167 the zip                      PORTED  `psns_at` + `ops.n_of`
-#   :169 `pm_rdma_encode`             PORTED  `encode_len`
+#   tinygrad/runtime/ops_rdma.py:163 `positions`           PORTED  `submit.pos_at` symbol=rdma_submit
+#   tinygrad/runtime/ops_rdma.py:164 the zip                 PORTED  `psns_at` + `ops.n_of` symbol=rdma_submit
+#   tinygrad/runtime/ops_rdma.py:157 `rdma_submit`          PORTED  `encode_len` -- upstream's `pm_rdma_encode` is GONE (9ff6db7b0)
 #
 # ===========================================================================
 # THE FIVE WALLS.
@@ -147,7 +147,7 @@
 #    and everything else is translated -- because the branch is what decides
 #    whether the registration is right.
 #    TODO(p3) ops_rdma.py:46  symbol=_map  PCIIfaceBase.p2p_paddrs.
-# 4. `unwrap_view` (:140). Collapsing a view chain to (base, offset) and then
+# 4. `unwrap_view` (tinygrad/runtime/ops_rdma.py:136 symbol=rdma_copies). Collapsing a view chain to (base, offset) and then
 #    `getaddr(nic.device)` on it. The NIC-side address IS the key the
 #    registration handed back, so the port reads it out of `Pdt` -- which is the
 #    same number, arrived at by the other direction, and that is the point of
@@ -162,7 +162,7 @@
 #        TRUNCATES the high half away and the doorbell the NIC receives carries
 #        only the slot and the epoch. MEASURED, and it is the sharpest thing in
 #        this file: `rdma_db_hi_dropped`. REPORTED, not fixed.
-#      the msn entry (:145) is `slot << 48 | next << 24 | psn`, all three fields
+#      the msn entry (tinygrad/runtime/ops_rdma.py:141 symbol=rdma_copies) is `slot << 48 | next << 24 | psn` -- upstream's `psns` -- all three fields
 #        24 bits wide and `slot` in the TOP 16. So `msn.hi(slot, next)` and
 #        `msn.lo(next, psn)` are exact halves and no shift is missing.
 #

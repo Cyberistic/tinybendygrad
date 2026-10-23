@@ -9,7 +9,9 @@
 # driver, and the arithmetic in it is where a wrong constant becomes a
 # silently wrong DMA:
 #
-#   1. THE DOORBELL AND THE RING (:13-15, :42-45, :162-164). `db_value` is a
+#   1. THE DOORBELL AND THE RING: upstream's `db_value` (tinygrad/runtime/support/rdma/bnxtdev.py:13-16 symbol=db_value),
+#      the queue's `read`/`write` (tinygrad/runtime/support/rdma/bnxtdev.py:42-45) and the `doorbell`
+#      (tinygrad/runtime/support/rdma/bnxtdev.py:162-164). `db_value` is a
 #      64-bit word whose HIGH half says WHICH QUEUE and whose LOW half says
 #      WHERE in it. There is no U64 in Bend 2.0.34, so the word is two U32
 #      halves, and they are not symmetric -- see THE 64-BIT WORD.
@@ -56,7 +58,7 @@
 #   :25  `cqe_ready`               PORTED  `cqe.ready`, off `cqe_type_toggle`
 #   :27  `build_pbl`               PORTED  `pbl.level_of` / `pbl.entry` /
 #                                              `pbl.decode`, encode AND decode
-#   :33  the one-paddr shortcut    PORTED  `pbl.level_of(1) == 0`
+#   tinygrad/runtime/support/rdma/bnxtdev.py:28 the one-paddr shortcut    PORTED  `pbl.level_of(1) == 0` -- upstream's `paddrs` symbol=build_pbl
 #   :34  `assert len <= 512`       PORTED  the REFUSAL, a truncated trace
 #   :42  `BNXTQueue.read`          PORTED  `q.read_off`, `q.read_len`
 #   :44  `BNXTQueue.write`         PORTED  `q.write_off` -- and the `aux`
@@ -85,8 +87,8 @@
 #   :78  `(seq+1) & 0xffff`        PORTED  `hwrm.seq_of`, with the wrap
 #   :79  `cmpl_ring`/`target_id`   PORTED  `hwrm.header`
 #   :81  the 0x1000-byte clear     PORTED  a WRITE, in the trace
-#   :83  the word loop into bar0  PORTED  `hwrm.bar0_at`
-#   :84  the trigger dword         PORTED  `hwrm.trig_at`
+#   tinygrad/runtime/support/rdma/bnxtdev.py:83 the word loop into bar0  PORTED  `hwrm.bar0_at` -- upstream's `bar0` symbol=hwrm
+#   tinygrad/runtime/support/rdma/bnxtdev.py:84 the trigger dword         PORTED  `hwrm.trig_at` -- upstream's `bar0` symbol=hwrm
 #   :86  `resp_len` / `seq_id`     PORTED  `hwrm.gate_ok`
 #   :88  `assert error_code == 0`  PORTED  the REFUSAL
 #   :110 `_open_rcfw`              PORTED  `dev.open_rcfw`, the ordered trace
@@ -98,11 +100,11 @@
 #   :130 `rcfw`                    PORTED  `rcfw`, in the trace
 #   :133 `ceildiv(sizeof(req_t),16)` PORTED `rcfw.slots_of`
 #   :136-137 the producer index    PORTED  `rcfw.write_idx` / `rcfw.prod`
-#   :138 the FIRMWARE_FIRST flag   PORTED  `rcfw.first_flag`
+#   tinygrad/runtime/support/rdma/bnxtdev.py:138 the FIRMWARE_FIRST flag   PORTED  `rcfw.first_flag` -- upstream's `FIRMWARE_FIRST_FLAG` symbol=rcfw
 #   :142-143 the prod/trig dwords  PORTED  `rcfw.prod_at` / `rcfw.trig_at`
 #   :146 the CREQ valid test       PORTED  `creq.ready`
-#   :153 the NQ_ARM consumer db    PORTED  `rcfw.nq_arm`
-#   :154 the QP_EVENT filter       PORTED  `rcfw.is_final`, and its threshold
+#   tinygrad/runtime/support/rdma/bnxtdev.py:153 the NQ_ARM consumer db    PORTED  `rcfw.nq_arm` -- upstream's `DBC_DBC_TYPE_NQ_ARM` symbol=rcfw
+#   tinygrad/runtime/support/rdma/bnxtdev.py:154 the QP_EVENT filter       PORTED  `rcfw.is_final`, and its threshold -- upstream's `CREQ_BASE_TYPE_QP_EVENT` symbol=rcfw
 #   :155 `assert ret.status == 0`  PORTED  the REFUSAL
 #   :160 `fini`                    PORTED  `dev.fini`
 #   :167 `_open_l2`                PORTED  `dev.open_l2`, the enable masks
@@ -148,7 +150,7 @@
 #   :185/189 `register_mr`/`deregister_mr`    CALL_MR
 #   :160 `func_drv_unrgtr`                    CALL_FINI
 #   :164 `self.db[...] = db_value(...)`       CALL_DB
-#   :54/72 the `getattr(bnxt, ...)` struct
+#   tinygrad/runtime/support/rdma/bnxtdev.py:77,131 the `getattr(bnxt, ...)` struct
 #         construction and `from_buffer_copy` WALL 1 -- see below
 #
 # ===========================================================================
@@ -177,16 +179,18 @@
 #      `pbl_hi_untouched` is the row that says the high half is the paddr's.
 # | WALL(p3) bnxtdev.py:32  struct.pack(f"<{len(values)}Q", *values). -- BLOCKED. #   A FORMAT STRING BUILT FROM THE ARGUMENT COUNT -- `struct.pack(f"<{len(values)}Q", *values)` --
 #   and `*values` splats a variable-length tuple.
-#   3. `MMIOInterface` (:42-45). A byte-addressed slice of host memory over a
+#   3. `MMIOInterface` (tinygrad/runtime/support/rdma/bnxtdev.py:40-41 symbol=BNXTQueue). A byte-addressed slice of host memory over a
 #      BAR. `read` and `write` COMPUTE the offsets, and that arithmetic is
 #      ported and gated; the slice itself is the seam.
 #      TODO(p3) bnxtdev.py:45  self.ring[off:off + len(data)] = data.
 #   4. `ctypes.from_buffer_copy` and the `struct` module's C types. WALL 1 plus
 #      this: the field LISTS are ported by name and the BYTES are computed as
 #      U32 words, but nothing constructs a ctypes object.
-#   5. `self.pci_dev.pcibus` (:54), `DEBUG`/`BNXT_DEBUG` and `print` (:61,:74,
-#      :157,:217). The verbosity levels are WALLS (`getenv` is IO); the device
+#   5. `self.pci_dev.pcibus` (tinygrad/runtime/support/rdma/bnxtdev.py:54), and the verbosity
+#      levels `DEBUG`/`BNXT_DEBUG` (tinygrad/runtime/support/rdma/bnxtdev.py:8 symbol=BNXT_DEBUG;
+#      upstream prints them at 61, 74, 157 and 217) are WALLS (`getenv` is IO); the device
 #      node string is `nic.node` in `ops_rdma.bend`, which already ports it.
+#
 # | WALL(p3) bnxtdev.py:54  self.devfmt = pci_dev.pcibus. -- BLOCKED. #   `self.devfmt = pci_dev.pcibus` READS A FIELD OFF A LIVE PCI DEVICE OBJECT. There is no live
 #   device object in the port: `Dev` is a `U32` tag (`LAWS/spec.bend:85`).
 #      TODO(p3) bnxtdev.py:157  symbol=rcfw `if BNXT_DEBUG >= 1: print(...)`.

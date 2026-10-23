@@ -19,7 +19,7 @@
 #      HAPPENS HERE, ONLY NAME RESOLUTION -- which is exactly the kind of
 #      table this project gates best, because a wrong entry is a silent
 #      wrong kernel and a table gates in both directions.
-#   2. `flag` (:303) over the four kgsl `_SHIFT`/`_MASK` pairs.
+#   2. `flag` (tinygrad/runtime/ops_qcom.py:298 symbol=flag) over the four kgsl `_SHIFT`/`_MASK` pairs.
 #   3. The six DERIVED program sizes (:232-237), pure U32 arithmetic over
 #      `pvtmem`, `shmem`, `fregs`, `hregs`, `tex_cnt`, `ibo_cnt`, `samp_cnt`.
 #
@@ -41,12 +41,12 @@
 #   :20  BUFTYPE_*                PORTED  `buftype_names`, both directions
 #   :34-41 the qreg format        PORTED  `mesa_name`, `qreg_name`
 #   :36-41 _qreg_exec             PORTED  `qregs`, `qfields`, `qreg.of`
-#   :43  ctz                      PORTED  `ctz` (see THE Ctz PRECONDITION)
+#   tinygrad/runtime/ops_qcom.py:42  ctz               PORTED  `ctz` (see THE Ctz PRECONDITION) symbol=ctz
 #   :45-47 parity                 PORTED  `parity`
-#   :49  pkt7_hdr                 PORTED  `pkt7_hdr`
-#   :51  pkt4_hdr                 PORTED  `pkt4_hdr`
+#   tinygrad/runtime/ops_qcom.py:48  pkt7_hdr          PORTED  `pkt7_hdr` symbol=pkt7_hdr
+#   tinygrad/runtime/ops_qcom.py:50  pkt4_hdr          PORTED  `pkt4_hdr` symbol=pkt4_hdr
 #   :53  _read_lib                PORTED  `read_lib` (little-endian u32)
-#   :303 flag                     PORTED  `kgsl_flags`, both directions, `flag`
+#   tinygrad/runtime/ops_qcom.py:298 flag              PORTED  `kgsl_flags`, both directions, `flag` symbol=flag
 #   :18-19 autogen imports        PORTED  `MESA_*`/`KGSL_*` constants (62)
 #
 # NOT YET PORTED, and every one of these is a SEAM or a later stage:
@@ -87,10 +87,10 @@
 #   :20   BUFTYPE_*                  PORTED  `buftype_names`, both directions
 #   :34-41 the qreg name format      PORTED  `mesa_of`, `qreg_of`, `is_reg_name`
 #   :36-41 `_qreg_exec`              PORTED  `qregs`, `qfields`, `qreg.of`
-#   :43   ctz                        PORTED  `ctz` (see THE ctz PRECONDITION)
+#   tinygrad/runtime/ops_qcom.py:42   ctz                PORTED  `ctz` (see THE ctz PRECONDITION) symbol=ctz
 #   :45-47 parity                    PORTED  `parity`
-#   :49   pkt7_hdr                   PORTED  `pkt7_hdr`
-#   :51   pkt4_hdr                   PORTED  `pkt4_hdr`
+#   tinygrad/runtime/ops_qcom.py:48   pkt7_hdr          PORTED  `pkt7_hdr` symbol=pkt7_hdr
+#   tinygrad/runtime/ops_qcom.py:50   pkt4_hdr          PORTED  `pkt4_hdr` symbol=pkt4_hdr
 #   :53   _read_lib                  PORTED  `read_lib`, `read_words`
 #   :57-59 the cmd/reg word count    PORTED  `qwords`
 #   :61-70 `_cache_flush`            PORTED  `flush.of` + `Tr`
@@ -99,29 +99,29 @@
 #   :118  the resources refusal      PORTED  `rf.resources` + `Tr.refuse`
 #   :119-120 the dims refusal        PORTED  `rf.dims` + `Tr.refuse`
 #   :115-192 exec                    PORTED  `exec.of` and its 27-call trace
-#   :202-203 the ioctl command word  PORTED  `ioctl_cmd`
-#   :206-283 QCOMProgramData         PORTED  `pd.parse_full`, `desc.*`, `const.*`
+#   tinygrad/runtime/ops_qcom.py:57 the ioctl command word  PORTED  `ioctl_cmd` symbol=qcom_submit
+#   tinygrad/runtime/ops_qcom.py:206 `QCOMProgramData`    PORTED  `pd.parse_full`, `desc.*`, `const.*` symbol=QCOMProgramData
 #   :228/272 the two offset rules    PORTED  `pd.nir_*`, `pd.cl_*`
 #   :232-237 the six derived sizes   PORTED  `pd.*`
 #   :239-283 `_parse_lib`            PORTED  the two binary walks
 #   :285-292 `qcom_build_program`    PORTED  `qcom.get`, `ce.find`, `ce.put`
 #   :294-301 QCOMAllocator           WALL 3  `:301 _offset` is device.bend's own
-#   :303  `flag`                     PORTED  `kgsl_flags`, both directions
+#   tinygrad/runtime/ops_qcom.py:298 `flag`              PORTED  `kgsl_flags`, both directions symbol=flag
 #   :314-345 QCOMDevice.__init__     PARTIAL the flags and the gpu_id refusal
 #   :331-345 the init SEQUENCE       WALL 4  the ioctls and mmap are seams
 #   :347-352 dummy / border_color    PARTIAL the SIZES only, in `FLUSH_*`
 #   :354-379 _gpu_alloc/_gpu_free   WALL 4  ioctls, mmap, memset, munmap
 #   :364-372 _gpu_map                WALL 4  the ioctl, the EFAULT arm
 #   :381-386 _wait_signal            WALL 4  the timestamp ioctls
-#   :388-392 _ensure_stack_size      WALL 3  it is `Buffer` and device.bend's
+#   tinygrad/runtime/ops_qcom.py:378 _ensure_stack_size  WALL 3  it is `Buffer` and device.bend's
 #   :394-396 _at_profile_finalize    WALL 4  sysfs
 #
 # NOT PORTED AT ALL, and these are the gaps a reader should weigh first:
 #
 #   :89-113 `kernargs`               WALL 1+2  the argument trace proper. What
-#        survives here is `layout_args`/`pack_args` (hcq2.py:69-83), the two
+#        survives here is `layout_args`/`pack_args` (tinygrad/runtime/support/hcq2.py:114-124 symbol=layout_args), the two
 #        functions `kernargs` is built from, and the pad SEQUENCE they produce.
-#        The buffer/image/sampler SELECTION at :91-94 and the `tex_to_image`
+#        The buffer/image/sampler SELECTION at tinygrad/runtime/ops_qcom.py:98 symbol=kernargs and the `tex_to_image`
 #        permutation at :94 are not ported.
 #   :104-112 `_tex`                   WALL 1  the 16-word image descriptor
 #   :194-204 `submit`                PARTIAL the ioctl word only; the
@@ -160,10 +160,10 @@
 #   gates/qcom_cache-oracle.py   the REAL `_qcom_program_cache` dict
 #   .agents/slop/qc_exec_oracle.py    the REAL `QCOMComputeQueue.exec` -- **NOT RESTORED, IT IS
 #                                     RED**: its own stub device `D` has no `tag`, and the live
-#                                     `ops_qcom.py:132` calls `self.dev.tag("stack")`, so it dies
-#                                     `AttributeError: 'D' object has no attribute 'tag'`. It
-#                                     measured a thing that still exists; the FIXTURE is one
-#                                     method behind it. Reported, not fabricated.
+#                                     `tinygrad/runtime/ops_qcom.py:130` allocates the stack with `name="stack"`; upstream's `self.dev.tag` is GONE
+#                                     at this pin (9ff6db7b0), so the stub's own `AttributeError: 'D' object has no
+#                                     attribute 'tag'` is about the PORT's stub, not about upstream. It measured a
+#                                     thing upstream no longer has; the FIXTURE is one method behind it. Reported, not fabricated.
 #   .agents/slop/qc_check.py         diffs the gate's output against all four
 #
 # THE FIRST THREE WERE RESTORED 2026-10-16 from `.agents/slop/{qc,qc_stage3,qc_cache}_oracle.py`

@@ -67,7 +67,7 @@
 #      record's field order is the port's `Q.*` readers.
 #   2. The ring's usable length is `msgSize*msgCount`, and the wrap threshold is
 #      `wp*msgSize + msgSize*msgCount` -- i.e. `ring_len`, NOT `size`. :30 slices
-#      the ring at `entryOff` but :48 measures the wrap against
+#      the ring at `entryOff` but tinygrad/runtime/support/nv/ip.py:48 measures the wrap against `queue_mv`,
 #      `len(self.queue_mv)`, which is `msgSize*msgCount`. `Q.ring_len` is the
 #      second number and `Q.rx_hdr_off` is the first; a port that confuses them
 #      wraps one message early. (This header previously named three q.*
@@ -150,7 +150,8 @@
 #     `match/case` over two code types and then walks three token tables; the
 #     WALKS are over bytes this file does not have. The one thing ported is the
 #     arithmetic that survives without the bytes -- `frts_offset` (:145),
-#     `desc_v3` size arithmetic (:141-143) -- and the refusal at :123.
+#     `desc_v3` size arithmetic (tinygrad/runtime/support/nv/ip.py:139-143) -- and the refusal
+#     at tinygrad/runtime/support/nv/ip.py:123 (`bit_header`).
 #       # TODO(p3) support/nv/ip.py:111  symbol=prep_ucode  the PCI expansion ROM walk
 #       # TODO(p3) support/nv/ip.py:123  assert bit_header.Signature == 0x00544942
 #
@@ -214,7 +215,7 @@
 # CTYPES SHAPING is not a wall and is named once: `(FALCON_APPLICATION_INTERFACE_ENTRY_V1
 # * hdr.entryCount)(...)` at :156 spells "an array of n descriptors", so the
 # layout of `FALCON_APPLICATION_INTERFACE_ENTRY_V1` is one row of the table and
-# the array is a `List`. `memoryview(...).cast('I'/'Q')` (:111,:419,:306) is the
+# the array is a `List`. `memoryview(...).cast('I'/'Q')` (tinygrad/runtime/support/nv/ip.py:306) is the
 # same statement about width.
 #
 # ---------------------------------------------------------------------------

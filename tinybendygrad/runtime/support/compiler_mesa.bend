@@ -46,18 +46,18 @@
 #   :82-94 disas_adreno            PORTED  `da.*` -- `data64`, the `%04d [%08x_
 #                                         %08x] ` line format, the decode-option
 #                                         field ORDER and its four values
-#   :98    the a630 assert         PORTED  `ir3.arch_ok`
-#   :99    the dev id              PORTED  `ir3.gpu_id` `ir3.chip_id`
+#   tinygrad/runtime/support/compiler_mesa.py:98 the a630 assert PORTED  `ir3.arch_ok` -- upstream's `a630` symbol=__init__
+#   tinygrad/runtime/support/compiler_mesa.py:99 the dev id    PORTED  `ir3.gpu_id` `ir3.chip_id` -- upstream's `dev_id` symbol=__init__
 #   :101   disable_cache=True      PORTED  `ir3.disable_cache`
 #   :104   the IR3 cache key       PORTED  `ir3.key`
 #   :119   the uav count           PORTED  `ir3.num_uavs` -- `num_ssbos + num_images`
-#   :118   the three-field store   PORTED  `ir3.variant_fields`
-#   :123   the four-way concat     PORTED  `ir3.ret_parts` -- four LENGTHS, and
+#   tinygrad/runtime/support/compiler_mesa.py:118 the three-field store PORTED  `ir3.variant_fields` -- upstream's `const_state` symbol=compile
+#   tinygrad/runtime/support/compiler_mesa.py:123 the four-way concat PORTED  `ir3.ret_parts` -- upstream's `info.size` symbol=compile
 #                                         the fourth is `info.size`
 #   :127-131 unpack_lib            PORTED  `ul.*` -- THE HEADLINE. Two successive
 #                                         `sizeof` offsets and then a split at
 #                                         `count * 4`
-#   :133   the disassemble call    PORTED  `ir3.dis_row`
+#   tinygrad/runtime/support/compiler_mesa.py:133 `disassemble` PORTED  `ir3.dis_row` symbol=disassemble
 #
 # ===========================================================================
 # THE FOUR WALLS, each with its Python line.

@@ -19,7 +19,7 @@
 # seam calls are gateable even though none of them is made.
 #
 # THIS FILE ALSO CARRIES WHAT BOTH HALVES NEED, and `ops_null.bend` imports it as `C`:
-#   * `Cn`/`cn_slot`/`cn_walk` -- ops_cpu.py:70's `struct.pack_into` slot walk, with
+#   * `Cn`/`cn_slot`/`cn_walk` -- upstream's `struct.pack_into` slot walk (`tinygrad/runtime/ops_cpu.py:58-59 symbol=__call__`), with
 #     the CORRECT `iter_sig` semantics; see the `device.bend` DEFECT report below,
 #     which is why they are declared here and not read from `device.bend`.
 #   * `Ca`/`Cam`/`Ca.lookup` -- the `.get(m, m)` arch map. TWO callers share the scan
@@ -58,23 +58,23 @@
 #    NOTHING into a stream with no TIMESTAMP word -- rather than inventing a result.
 #
 # WHAT device.bend AND helpers.bend LEND, AND WHAT IS OWED BACK.
-# LENT: `D.isig.go` (the offset-carrying body of `TinyELF.iter_sig`, device.py:365 --
+# LENT: `D.isig.go` (the offset-carrying body of `TinyELF.iter_sig`, tinygrad/device.py:352 symbol=iter_sig --
 # device.bend's `iter_sig` entry point hard-codes 0, so BOTH uses here need `go`;
 # REPORTED, not fixed, device.bend is read-only to this unit); `D.dev_id` (device.py:397,
-# inherited by both); `D.timeline_bytes` (`ops_null.py:58`'s `timeline` IS that call);
+# inherited by both); `D.timeline_bytes` (`tinygrad/runtime/ops_null.py:65 symbol=timeline` IS that call);
 # `H.round_up_u32`, `H.u32_list_eq`, `H.dedup_str`.
-# OWED: the renderer ORDER is the policy -- `Compiled._select_renderer` (device.py:489)
+# OWED: the renderer ORDER is the policy -- `Compiled._select_renderer` (tinygrad/device.py:462 symbol=_select_renderer)
 # walks it and the FIRST INITIALISED renderer wins, and `cpu.renderers`/`ndev.renderers`
 # are those two orders transcribed and both are rows. `Compiled.has_copy_queue` is True
 # and ops_cpu.py:84 overrides it to False while `NullDevice` does NOT, so
 # `cpu_has_copy_queue` and `nr_has_copy_queue_inherited` are two rows with DIFFERENT
 # answers -- either constant could be wrong without the other noticing.
-# `Compiled.peer_group` (device.py:398) means a CPU device with no remote and no iface
+# `Compiled.peer_group` (tinygrad/device.py:384 symbol=__init__) means a CPU device with no remote and no iface
 # answers its own device-class prefix -- `Device['CPU:1'].peer_group == 'CPU'`, MEASURED
 # -- and ops_cpu.py:92 overwrites it with the REMOTE's when there is one;
 # `cpu.peer_of` is that two-arm choice and both arms are rows. `Compiled.wait_timeout_ms`
 # is `30000.0` (a float) and ops_cpu.py:81 writes the INT `30000`, so the row name says
-# so. `Compiled.synchronize` (device.py:450) is what ops_cpu.py:96 adds a remote PING to.
+# so. `Compiled.synchronize` (tinygrad/device.py:429 symbol=synchronize) is what tinygrad/runtime/ops_cpu.py:80 `synchronize` adds a remote PING to.
 #
 # THE TWO GATES. For ops_cpu: the ORDER AND IDENTITY of the init call sequence --
 # `__init__` is six lines of POSIX in a fixed order and four fixture facts (OSX, whether
@@ -111,7 +111,7 @@
 #    hoisting the matcher means a shared module both backends import, which is a decision
 #    about the tree's shape. The four defs are generic in `List<&2, Call>` and lift
 #    unchanged if the coordinator wants them hoisted.
-# 2. `int(parts[2])` (:89) is a DECIMAL PARSE and is a WALL: `String.to_u32` does not
+# 2. `int(parts[2])` (`tinygrad/runtime/ops_cpu.py:73 symbol=__init__`) is a DECIMAL PARSE and is a WALL: `String.to_u32` does not
 #    exist in 2.0.34, so a parse is a fold over `String.to_list(s)` feeding
 #    `U32.add(U32.mul(acc,10), Char.to_u32(c)-48)` and it raises on a non-numeric port --
 #    a refusal this file does not model. The peer-group STRING beside it is ported,

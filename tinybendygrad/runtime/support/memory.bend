@@ -5,17 +5,18 @@
 # the crossing to Bend is DATA:
 #   * the OFFSET AND LAYOUT ARITHMETIC -- `round_up(size, 0x1000)` in `palloc`
 #     and `valloc` (:284, :249, :253), the `MMIOInterface.view` window
-#     arithmetic (:12), the `BumpAllocator` bump-and-align sequence (:16-21),
+#     arithmetic (tinygrad/runtime/support/memory.py:11-12 symbol=view) `view`, `BumpAllocator`
+#     (tinygrad/runtime/support/memory.py:15-21 symbol=BumpAllocator) bump-and-align sequence,
 #     and the TLSF bucket arithmetic (:43, :46, :91). A wrong offset is a
 #     silently wrong memory access and no row about counts can see it.
 #   * the FIELD LISTS, BY NAME AND IN ORDER. `VirtMapping` (:121-122) is six
 #     fields and `map_range` builds it with THREE POSITIONAL and three keyword
 #     arguments, so a field swap is a silent remapping. `blocks`' 4-tuple is
 #     `(size, next, prev, is_free)` (:39) and `pt_stack`'s is
-#     `(pt, pte_idx, pte_size)` (:127) while `next()` YIELDS the five-tuple
+#     `(pt, pte_idx, pte_size)` (tinygrad/runtime/support/memory.py:127 symbol=__init__) -- upstream's `pt_stack` -- while `next()` YIELDS the five-tuple
 #     `(off, pt, pte_idx, entries, pte_covers)` (:175) -- three different
 #     orders in 136 lines.
-#   * the TWO REVERSALS in `MemoryManager.__init__` (:187):
+#   * the TWO REVERSALS in `MemoryManager.__init__` (tinygrad/runtime/support/memory.py:187 symbol=__init__) -- upstream's `pte_covers`:
 #     `pte_covers = [1 << x for x in va_shifts][::-1]` and
 #     `pte_cnt = [1 << (lvl_msb[i+1] - lvl_msb[i]) for ...][::-1]`. Both are
 #     `[::-1]` and a port that drops one computes a page table one level off,

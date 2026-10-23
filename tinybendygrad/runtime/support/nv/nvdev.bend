@@ -22,10 +22,11 @@
 # `nvdev.py` imports are `time`, `functools`, `tinygrad.runtime.autogen.
 # nv_regs`, `tinygrad.helpers`, `tinygrad.runtime.autogen.pci` and the support
 # modules. It has NO ctypes and NO ioctl. What it is: the MMIO REGISTER file
-# (`NVReg`, :12-31), the PAGE TABLE entry codec (`NVPageTableEntry`, :33-67), the
+# (tinygrad/runtime/support/nv/nvdev.py:12-19 symbol=NVReg) `NVReg`, the PAGE TABLE entry codec
+# (`NVPageTableEntry`, tinygrad/runtime/support/nv/nvdev.py:33-67), the
 # device's early MMIO/MMU bring-up (`NVDev._early_ip_init` :97-121 and
 # `_early_mmu_init` :123-147), a boot-memory allocator (`_alloc_boot_mem`
-# :149-159) and the generated-register loader (`include`, :161-163).
+# and the generated-register loader (`include`, tinygrad/runtime/support/nv/nvdev.py:158 symbol=include).
 #
 # The ioctl layer is `ops_nv.py`'s `NVKIface` (:337-399), a different `.py` in a
 # different directory, and both walls above name `ops_nv.py` lines. SO:
@@ -67,7 +68,7 @@
 #      But every one is a NUMERIC CONVERSION. Not one is a syscall, an `mmap`,
 #      an `open`, or an `ioctl`.
 #   2. `system.bend` HAS an `ioctl`: `system.bend:471 def CALL_IOCTL() -> U32: 21`,
-#      `:489` lists "ioctl" among `sys.call_names()`, `:517` dispatches it. But
+#      `system.bend:489` lists "ioctl" among `sys.call_names()`, `system.bend:517` dispatches it. But
 #      `rg 'def sys.ioctl' tinybendygrad/runtime/support/system.bend` returns ZERO
 #      hits and there is no `system.c` under `tinybendygrad/`. It is a NAME IN A
 #      TABLE, i.e. a trace tag, not a binding. `system.bend:123` says so itself:
@@ -154,7 +155,7 @@
 #      bend2-constraints.md.
 #
 # W2. THE 128-BIT PAGE-TABLE ENTRY. `NV_MMU_VER2_DUAL_PDE.address_small_sys` is
-#     bits (72,117) -- 46 bits, at offset 72 -- and `entry()` (:52) recombines two
+#     and `entry()` (tinygrad/runtime/support/nv/nvdev.py:51 symbol=entry) recombines two
 #     64-bit halves as `(entries[2e+1] << 64) | entries[2e]`. Bend has no 64-bit
 #     integer, so `nv.pte_idx` ports the INDEX (`2e+1` for a dual level, `e`
 #     otherwise) and NOT the value. MEASURED: 10 of the 86 fields across the eleven

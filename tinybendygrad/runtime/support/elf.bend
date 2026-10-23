@@ -134,7 +134,7 @@
 #                                         `Img.write_at`, `Shdr.put_addr`
 #   :42-48 the reloc loop          PORTED  `type Rctx`, `Rc.walk`, `Rc.mk`,
 #                                         `Trg.off`, `Rc.defined`, `Rc.undefined`
-#   :50  the return                PORTED  `type ElfImage` + its four readers
+#   tinygrad/runtime/support/elf.py:50 symbol=elf_loader  the return  PORTED  `type ElfImage` + its four readers -- upstream's `relocs`
 #   :52  jit_loader                PORTED  `jit_loader`, `Jit.go`, `Jit.step`
 #   :56  relocate                  PORTED  `Jit.relocate`..`Jit.relocate8`, the ten
 #                                         `Reloc.a_*` arms, `type Sdiff` (the one

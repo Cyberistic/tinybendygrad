@@ -19,16 +19,16 @@
 #     bytes that exists on the host and could be read back.
 #
 # THE PLACE A RESULT CAN BE CHECKED RATHER THAN A TRACE, and it is
-# `_copyout_sharded` (:101-116). Every segment it yields is
-# `(copy_batch, copied_in, minor_offset, real_copy_size)` and `copied_in` is where
-# the segment LANDS in the destination. So the `real_copy_size`s must sum to
-# exactly `size` AND consecutive `copied_in`s must be contiguous -- statements
-# about the DATA, not about the spelling of a call. `dk_shard_cover_*` and
-# `dk_shard_contig_*` assert them. Everything else in this file is a trace.
+# `_copyout_sharded` -- GONE at this pin: upstream 4e4f6b9fb ("hcq2 fast disk") REPLACED
+# it with the uring `disk_read`. The surviving construct is `DiskAllocator._copyout`
+# (`tinygrad/runtime/ops_disk.py:69-77 symbol=_copyout` `_copyout`). Every segment the GONE
+# was `(copy_batch, copied_in, minor_offset, real_copy_size)` and `copied_in` is where the
+# segment LANDS in the destination. So the `real_copy_size`s must sum to exactly `size` AND
+# consecutive `copied_in`s must be contiguous -- statements about the DATA, not about the spelling of a call. `dk_shard_cover_*` and `dk_shard_contig_*` assert them. Everything else in this file is a trace.
 #
 # And the sharper version of the same fact, which is a RESULT a trace cannot see:
 # **a wrong `minor_offset` leaves the total CORRECT.** The skew is subtracted from
-# exactly ONE segment (it is zeroed at :115) and the LAST segment is truncated by
+# exactly ONE segment (it is zeroed by the GONE upstream `_copyout_sharded`) and the LAST segment is truncated by
 # `size - copied_in` anyway, so dropping it moves the destination of every byte
 # without changing the sum. The `cin` column is the only thing that sees it, and
 # `dk_shard_b` is the row that carries it. See the gate's section 7.
@@ -64,10 +64,10 @@
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF.
 #
-#   :12  synchronize               PORTED  `dev_sync` -- it is `pass`
-#   :14-20 __init__                 PORTED  `dev_init`
-#   :15  the io_uring guard         PORTED  `dev_ioring_setup`, `Dev.tried`
-#   :21-40 _might_open              PORTED  `dev_might_open` and its steps
+#   tinygrad/runtime/ops_disk.py:14  synchronize               PORTED  `dev_sync` -- it is `pass`
+#   tinygrad/runtime/ops_disk.py:16-20 __init__                 PORTED  `dev_init`
+#   GONE  the io_uring guard         PORTED  `dev_ioring_setup`, `Dev.tried` -- upstream DELETED it
+#   tinygrad/runtime/ops_disk.py:21-41 _might_open              PORTED  `dev_might_open` and its steps
 #                                             `dev_warm`, `dev_shm.on`,
 #                                             `dev_file.at`, `dev_finish.at`
 #   :22  the assert                 PORTED  `dev_fits`, `dev_reopen_msg`
@@ -80,27 +80,27 @@
 #                                             THE EXCEPT IS NOT A BRANCH
 #   :35  the block-device guard     PORTED  `dev_file.trunc.at`, `dev_trunc`
 #   :36  the mapping                PORTED  `dev_file.mmap.at`
-#   :37-40 the tail                  PORTED  `dev_sized`, `dev_bumped`,
+#   tinygrad/runtime/ops_disk.py:37-41 the tail                  PORTED  `dev_sized`, `dev_bumped`,
 #                                             `dev_finish.at`
-#   :38-39 madvise                  PORTED  `dev_finish.at` (the condition)
-#   :41-49 _might_close             PORTED  `dev_might_close`
-#   :50-71 _iouring_setup           PARTIAL `dev_ioring.*` -- the call ORDER and
+#   tinygrad/runtime/ops_disk.py:39-40 madvise                  PORTED  `dev_finish.at` (the condition)
+#   tinygrad/runtime/ops_disk.py:42-49 _might_close             PORTED  `dev_might_close`
+#   tinygrad/runtime/ops_disk.py:160-164 uring                 PARTIAL `dev_ioring.*` -- the call ORDER and
 #                                             the four numbers Python spells
 #                                             itself; the three mmap LENGTHS are
 #                                             WALL 2
-#   :73-79 DiskBuffer               PORTED  `Db.of`, `db_repr`, `db_buf`
-#   :81  MAP_LOCKED/MAP_POPULATE    PORTED  `map_locked`, `map_populate`
-#   :83  lru = False                PORTED  `ALLOC_LRU`
-#   :84-86 _alloc                   PORTED  `alloc_of` (`mv_address` is WALL 1)
-#   :88  _free                      PORTED  `alloc_free`
-#   :89  _as_buffer                 PORTED  `alloc_as_buffer`
-#   :90  _copyin                    PORTED  `alloc_copyin`
-#   :91-99 _copyout                 PORTED  `alloc_copyout`
-#   :101-116 the NON-uring shard    PORTED  `shard_at`, `shard.go`, `shard_read`,
-#                                             `shard_real`
-#   :118-142 the io_uring shard     PARTIAL `shard_ioring` -- the two submission
+#   tinygrad/runtime/ops_disk.py:51-57 DiskBuffer               PORTED  `Db.of`, `db_repr`, `db_buf`
+#   tinygrad/runtime/ops_disk.py:59  MAP_LOCKED/MAP_POPULATE    PORTED  `map_locked`, `map_populate`
+#   tinygrad/runtime/ops_disk.py:61  lru = False                PORTED  `ALLOC_LRU`
+#   tinygrad/runtime/ops_disk.py:62-64 _alloc                   PORTED  `alloc_of` (`mv_address` is WALL 1)
+#   tinygrad/runtime/ops_disk.py:66  _free                      PORTED  `alloc_free`
+#   tinygrad/runtime/ops_disk.py:67  _as_buffer                 PORTED  `alloc_as_buffer`
+#   tinygrad/runtime/ops_disk.py:68  _copyin                    PORTED  `alloc_copyin`
+#   tinygrad/runtime/ops_disk.py:69-77 _copyout                 PORTED  `alloc_copyout`
+#   GONE  the NON-uring shard    PORTED  `shard_at`, `shard.go`, `shard_read`,
+#                                             `shard_real` -- upstream 4e4f6b9fb DELETED it
+#   tinygrad/runtime/ops_disk.py:88-111 the io_uring path       PARTIAL `shard_ioring` -- the two submission
 #                                             calls and the segment arithmetic
-#   :144 _offset                    PORTED  `alloc_offset`
+#   tinygrad/runtime/ops_disk.py:79 _offset                    PORTED  `alloc_offset`
 #
 # ===========================================================================
 # THE FOUR WALLS.
@@ -173,7 +173,7 @@
 #    `dk_close_keeps_mem`, `dk_close_keeps_fd` and `dk_warm_needs_both` are the
 #    rows.
 #
-# C. `MAP_LOCKED`/`MAP_POPULATE` (:81) ARE PLATFORM CONSTANTS AND THE `getattr`
+# C. `MAP_LOCKED`/`MAP_POPULATE` (tinygrad/runtime/ops_disk.py:59) ARE PLATFORM CONSTANTS AND THE `getattr`
 #    IS VACUOUS. `map_populate` therefore takes ONE Bool (`osx`), not two, and the
 #    file says why rather than carrying a `hasattr` no fixture can falsify. The
 #    SAME vacuity does NOT apply to `getattr(os,"O_DIRECT",0)` (:33): Linux has

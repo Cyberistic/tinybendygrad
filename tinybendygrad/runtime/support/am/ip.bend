@@ -16,7 +16,7 @@
 #   * the KIQ `flush_tlb` PM4 PACKET (:108-110), 17 words, built in order.
 #   * the PTE FLAG TABLES (:178-195), four generations, `|` of five constants
 #     and a version-selected MTYPE field.
-#   * the DOORBELL ARITHMETIC: `KIQ + xcc*0x20` (:354), `sDMA_ENGINE0 +
+#   * the DOORBELL ARITHMETIC: `KIQ + xcc*0x20` (tinygrad/runtime/support/am/ip.py:354 symbol=setup_ring) -- upstream's `doorbell` --, `sDMA_ENGINE0 +
 #     (pipe+queue*4)*0xA` (:592), `(ring_size//4).bit_length()-2` (:367), the
 #     `(regf pair)-1) * 0xA) * 2` s2a entry ladder (:570-571).
 #   * the VERSION LADDERS -- `ip_ver[am.GC_HWIP] >= (12,0,0)` and its forty-odd

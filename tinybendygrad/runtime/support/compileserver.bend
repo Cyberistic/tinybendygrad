@@ -32,7 +32,7 @@
 #      response is a VALID frame carrying ZERO bytes, and the diagnostic goes to
 #      stderr. So the reader cannot distinguish "the compiler failed" from "the
 #      compiler returned an empty library" by the protocol -- which is exactly
-#      what `device.py:355` relies on when it raises `CompileError` on an empty
+#      what `tinygrad/device.py:339 symbol=CompileError` relies on when it raises `CompileError` on an empty
 #      read. MEASURED end to end: a frame set of four requests where two fail
 #      still answers four frames, and the server's exit code is 0.
 #   3. THE LOOP IS DRIVEN BY THE PIPE, NOT BY EOF ON THE SOURCE. A zero-length

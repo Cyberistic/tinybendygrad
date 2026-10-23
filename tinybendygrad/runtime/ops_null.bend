@@ -31,11 +31,11 @@
 #
 # `nr.has_copy_queue` is a NULL fact -- `ops_null.py` does not override
 # `@property def has_copy_queue` at all, so NULL inherits `Compiled`'s `True` while
-# `ops_cpu.py:84` returns `False`. `C.cpu.has_copy_queue` is the other half of that
+# `tinygrad/runtime/ops_cpu.py:68 symbol=has_copy_queue` returns `False`. `C.cpu.has_copy_queue` is the other half of that
 # pair and it lives in `ops_cpu.bend` beside the comment explaining why two rows exist.
 #
 # ONE FILE IN HERE IS NOT MINE TO MOVE. `pk`/`Pk`/`fx_pk`/`pkend` and the `pk_*` rows
-# port `pack_args`, which is `runtime/support/hcq2.py:78-83` -- a file with its own
+# port `pack_args`, which is `tinygrad/runtime/support/hcq2.py:118-124 symbol=pack_args` -- a file with its own
 # `.bend` and another unit's. They stay here because `ops_null.py:29-30` builds the
 # kernargs through them. THE FIX IS TO MOVE THEM to `runtime/support/hcq2.bend`;
 # flagged here and in the report, not done, because hcq2.bend is read-only here.

@@ -23,7 +23,7 @@
 #
 # ===========================================================================
 # THE SECOND HEADLINE: `getenv("LLVMOPT", 1)` IS A PROCESS-BOOT CONSTANT.
-# helpers.py:161 carries `@functools.cache`, so `LLVMOPT` is read ONCE per
+# tinygrad/helpers.py:161 symbol=getenv carries `@functools.cache` on upstream's `getenv`, so `LLVMOPT` is read ONCE per
 # interpreter. `LLVMCompiler.__init__` therefore answers `default<O2>` and sets
 # FOUR PassBuilderOptions, or `default<O0>` and sets NONE, and there is no way to
 # see both in one process. `LLVMCompiler.passes` takes the flag as a PARAMETER
@@ -53,7 +53,7 @@
 #   :8-10 expect()             PORTED `expect.fails` `expect.ret_str` `expect.msg`
 #   :14-15 the five inits      PORTED `LLVMCompiler.prefix` `.components`
 #   :17  the triple map        PORTED `LLVMCompiler.triple` `.triple_ok`
-#   :18  expect(#1)            PORTED `LLVMCompiler.triple_ok`
+#   tinygrad/runtime/support/compiler_llvm.py:18 `expect`   PORTED `LLVMCompiler.triple_ok` symbol=__init__
 #   :20-21 the target machine  PORTED `LLVMCompiler.tm_processor` `.tm_feats`
 #   :23-31 the pass options    PORTED `LLVMCompiler.passes` `.pbosets`
 #   :34-35 the context         PORTED `LLVMCompiler.diags` `.append`
@@ -67,7 +67,7 @@
 #   :79-82 AMDLLVMCompiler     PORTED `AMDLLVMCompiler.reduce` `.tm_feats`
 #   :83-87 the RuntimeError    PORTED `AMDLLVMCompiler.remap` `.remap_msg`
 #                                       `.remap_kind`
-#   :76,88 disassemble         PORTED `CPULLVMCompiler.dis_row`
+#   tinygrad/runtime/support/compiler_llvm.py:76-88 `disassemble` PORTED `CPULLVMCompiler.dis_row` symbol=disassemble
 #                                       `AMDLLVMCompiler.dis_row`
 #
 # ===========================================================================

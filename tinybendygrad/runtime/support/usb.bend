@@ -31,7 +31,7 @@
 # burned on -- `ops_nv`'s audit found 33 of 219 constants wrong in a file already
 # printing 590 green rows, and `ops_rdma` shipped `BNXT_VENDOR` as 5356 where the
 # header says 5348. `struct_libusb_transfer`'s thirteen field names, in order, are
-# what `usb_chunk` (:350-351) addresses three times by name, so a transposed pair
+# what `usb_chunks` (tinygrad/runtime/support/usb.py:368 symbol=usb_chunks) addresses three times by name, so a transposed pair
 # is a silently wrong transfer.
 #
 # ===========================================================================
@@ -54,7 +54,7 @@
 #     sizes that make them. `usb_win_*` is that derivation.
 #   * AND A CORRECTION TO CARRY BACK. ops_amd's 4096 is `0x1000`, which is NOT
 #     `usb_cq`'s offset: `usb_cq` is `usb_asm24[0x100c:0x1010]` = 4108..4112, and
-#     0x1000 is `USB3`'s own CONTROL buffer size (:42, `alloc_cbuffer(0x1000)`). Both
+#     0x1000 is `USB3`'s own CONTROL buffer size (tinygrad/runtime/support/usb.py:41 symbol=USB3, `alloc_cbuffer(0x1000)`). Both
 #     are real, they are different numbers, and this file rows both -- so a port
 #     that conflated them shows up as a disagreement rather than as a plausible
 #     constant. `usb_sram_win_fits_asm24` is the row that says the SRAM pair EXACTLY
@@ -62,7 +62,7 @@
 #   * `ops_disk.bend`'s `_might_open` ladder -- USB3's open is the same shape (a
 #     walk of state that ends in a CLAIM) and `usb_open` is its trace.
 #
-# NOT CLOSED, DELIBERATELY. `dma_view` (ops_amd.py:824) is a `PCIDevice` method
+# NOT CLOSED, DELIBERATELY. `dma_view` (tinygrad/runtime/ops_amd.py:784-798 symbol=USBIface) is a `PCIDevice` method
 # that lives in ops_amd.bend's own wall 2 and is not usb.py's to answer.
 #
 # ===========================================================================

@@ -118,12 +118,12 @@
 #                                           emit_returns_retained, emit_in_dll,
 #                                           emit_macro/_fn, emit_cfunctype,
 #                                           emit_pointer, emit_array
-#   :107  the `types` dict      PORTED   `Gt{nm, tnm, defd, ln}` and its readers
+#   tinygrad/runtime/support/autogen.py:107 `typehint`      PORTED   `Gt{nm, tnm, defd, ln}` and its readers symbol=typehint
 #   :273  the main prologue     PORTED   prolog_head, prolog_objc, emit_dll_line
 #   :112  tname, its DISPATCH   WALL 4   the ten-arm `match t.kind` and its
 #                                           record arm -- see WALL 4 above
 #   :5-80 the libclang FFI      WALL 1   46 functions MEASURED, 0 bound
-#   :30   all_fields            WALL 4   it is a loop over `fields(t)` calling
+#   tinygrad/runtime/support/autogen.py:30 `all_fields`      WALL 4   it is a loop over `fields(t)` calling
 #                                           into tname, so it inherits WALL 4
 #   :73   readext               WALL 1   file IO at a source offset
 #   :194  parse_objc_spec       WALL 4   same two-descents shape, over methods

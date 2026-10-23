@@ -9,11 +9,11 @@
 # WHAT SURVIVES THE CROSSING is exactly what the other five backends also
 # survive, which is why this file is worth the gate:
 #
-#   * the KERNEL ARGUMENT TRACE -- `kernargs` (:361-364) is `layout_args` then
-#     `pack_args` over a list whose widths are `8` per global and
-#     `v.dtype.itemsize` per var. That is `hcq2.py:74-80` and it is the SAME
-#     contract `ops_webgpu.bend`, `ops_cl.bend` and `ops_nv.bend` port. Getting
-#     it consistent across six files matters more here than anywhere.
+#   * the KERNEL ARGUMENT TRACE -- `kernargs` (tinygrad/runtime/ops_amd.py:374 symbol=kernargs) is `layout_args` then
+#     `pack_args` over a list whose widths are `8` per global and `v.dtype.itemsize` per var.
+#     That is upstream's `layout_args`/`pack_args` (tinygrad/runtime/support/hcq2.py:114-118 symbol=layout_args) -- the SAME
+#     contract `ops_webgpu.bend`, `ops_cl.bend` and `ops_nv.bend` port. Getting it consistent across six files
+#     matters more here than anywhere.
 #   * the PROGRAM/PROGRAM-BUFFER CACHE KEYS and the one eviction policy
 #     ops_amd.py has, which is `device.py:280`'s four conjuncts reached through
 #     a `BufferSpec`. `BufferSpec(nolru=True)` on a program buffer and NOT on a
@@ -65,7 +65,7 @@
 # THIS file, all of them real:
 #
 #   * `args.ks` used `LANES_PER_WAVE` (64) for a `getaddr`, which is EIGHT bytes.
-#   * `pd.lds` used `ceildiv` where `ops_amd.py:551` uses `//`, i.e. FLOOR, so
+#   * `pd.lds` used `ceildiv` where `tinygrad/runtime/ops_amd.py:522 symbol=_amd_program_image` uses `//`, i.e. FLOOR, so
 #     512 granules read back as 2 instead of 1 and the `rsrc2` bit was wrong.
 #   * `dev_max_copy` compared a three-part version COMPONENTWISE where
 #     `ops_amd.py:880` compares it LEXICOGRAPHICALLY, and three of the eight
@@ -181,38 +181,38 @@
 # | WALL(p3) runtime/ops_amd.py:772  AMDev.{sdma,gfx}.setup_ring. -- BLOCKED: needs `AMDev.{sdma,gfx}.setup_ring`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 # | WALL(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap. -- BLOCKED: needs `struct_drm_amdgpu_info_device.cu_bitmap`, a ctypes STRUCT FIELD: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 #
-# 3. USB3 (USBIface, :810-833). `USB3.list_devices`, `dma_view`, the
-#    `0/4096/20480` controller window and its `AddrSpace.SYS` mapping.
+# 3. USB3: `USB3.list_devices`, `dma_view`, the `0/4096/20480` controller window and its `AddrSpace.SYS` mapping -- upstream's
+#    `USBIface` block, tinygrad/runtime/ops_amd.py:784-808 symbol=USBIface.
 # | WALL(p3) runtime/ops_amd.py:812  USB3.list_devices. -- BLOCKED: needs `USB3.list_devices`, which ENUMERATES devices through libusb: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 # | WALL(p3) runtime/ops_amd.py:822  USBIface.ctrl's three map_range pieces. -- BLOCKED: needs `USBIface.ctrl`'s three `map_range` pieces -- an `mmap` of a BAR: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 # | WALL(p3) runtime/ops_amd.py:824  pci_dev.dma_view(40960, 544768). -- BLOCKED: needs `pci_dev.dma_view(40960, 544768)`, a DMA mapping: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 #
-# 4. THE UOp MATCHER (:841-844, :888-892, :895-896, :905-906). `pm_encode`
-#    matches `CUSTOM_FUNCTION` nodes and `pm_bufferize` PREPENDS three rules to
-#    `Compiled`'s. The port carries the three rules' PATTERNS and their
-#    first-wins fold and the profiling rules' four names, in order; a rule's
-#    body is a UOp graph and building one needs `./uop/ops.bend` and the HCQ2
-#    lowering this file does not own. `amd_pmb_order` and `amd_pmb_prof` are the
-#    rows, and they are about ORDER, which is all that is portable here.
+# 4. THE UOp MATCHER. AT THIS PIN upstream's `Compiled.pm_encode` is tinygrad/runtime/ops_amd.py:1026 and its TWO rules match SINK nodes
+#    carrying `KernelInfo("amd_compute_submit")` / `KernelInfo("amd_copy_submit")` -- NOT `CUSTOM_FUNCTION` nodes, which is what
+#    the OLD `AMDDevice.pm_encode` matched. `pm_bufferize` is GONE at this pin (upstream 9ff6db7b0, "hcq2 no tags"): the
+#    surviving construct is `Compiled.link_bufs` (`tinygrad/device.py:377 symbol=link_bufs`), which upstream fills at
+#    `tinygrad/runtime/ops_amd.py:862` (scratch) and `tinygrad/runtime/ops_amd.py:872` (the four profiling names). The port carries the three rules'
+#    PATTERNS and their first-wins fold and the profiling rules' four names, in order; a rule's body is a UOp graph
+#    and building one needs `./uop/ops.bend` and the HCQ2 lowering this file does not own. `amd_pmb_order` and
 # | WALL(p3) runtime/ops_amd.py:842  encode_submit(amd_compute_queue(submit)). -- BLOCKED: needs `encode_submit(amd_compute_queue(submit))` -- a queue SUBMIT written into a mapped ring: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 # | WALL(p3) runtime/ops_amd.py:843  encode_submit(AMDSDMAQueue(submit)). -- BLOCKED: needs `encode_submit(AMDSDMAQueue(submit))`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 # | WALL(p3) runtime/ops_amd.py:889  ctx.scratch_buffer(b.max_numel()). -- BLOCKED: needs `ctx.scratch_buffer(b.max_numel())`, a device BUFFER: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 # | WALL(p3) runtime/ops_amd.py:890  ctx.program_buffer(b). -- BLOCKED: needs `ctx.program_buffer(b)`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 # | WALL(p3) runtime/ops_amd.py:891  ctx.queue_buffer(b.tag). -- BLOCKED: needs `ctx.queue_buffer(b.tag)`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 #
-# 5. THE HANG PATH (:705-717, :800-802, :798). `on_device_hang` builds its
-#    report out of `queue_event_arr[i].memory_exception_data.failure`, whose
-#    `_real_fields_` it walks by name. A field NAME is a Python string table and
-#    a walk over it is a `dict`, so the port keeps the two refusal MESSAGES and
-#    the trace truncation and nothing of the report's body.
-# | WALL(p3) runtime/ops_amd.py:706  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
+# 5. THE HANG PATH. AT THIS PIN `on_device_hang` is KFDIface's (tinygrad/runtime/ops_amd.py:675-688 symbol=on_device_hang) -- the one that builds the
+#    report out of `queue_event_arr[i].memory_exception_data.failure`, whose `_real_fields_` it walks by name -- PCIIface's
+#    (tinygrad/runtime/ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (tinygrad/runtime/ops_amd.py:1024 symbol=on_device_hang). A field NAME is a
+#    Python string table and a walk over it is a `dict`, so the port keeps the two refusal MESSAGES and the trace
+#    truncation and nothing of the report's body.
+# | WALL(p3) tinygrad/runtime/ops_amd.py:676 symbol=on_device_hang  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
 # | WALL(p3) runtime/ops_amd.py:714  the MMU-fault f-string. -- BLOCKED: an MMU-FAULT f-string inside a signal-handler path the port does not have; the FORMAT is not the blocker.
 #    TODO(p3) runtime/ops_amd.py:685  symbol=on_device_hang  the HW-fault f-string.
 #
 # ===========================================================================
 # TWO THINGS THAT ARE NOT IN THE PORT AT ALL, and why.
 #
-#  * `_amd_program_image`'s ELF WALK (:544-548). `elf_loader(lib)` returns the
+#  * `_amd_program_image`'s ELF WALK (`tinygrad/runtime/ops_amd.py:515-519 symbol=_amd_program_image`). `elf_loader(lib)` returns the
 #    image, the section headers and the relocation list, and the loop
 #    `image[off:off+8] = struct.pack('<q', sym - off + addent)` rewrites eight
 #    bytes per R_AMDGPU_REL64. The ARITHMETIC of the eleven fields that follow
@@ -245,7 +245,7 @@
 #     expects the wrong answer, so the disagreement is load-bearing evidence
 #     rather than a stale comment. `sig.slot` below is the CPython form and
 #     `amd_arg_at_*` is generated from the CPython call.
-#  2. `D.round_up` is `helpers.py:69`, and `H.round_up_u32` / `H.ceildiv_u32` /
+#  2. `D.round_up` is `tinygrad/helpers.py:70 symbol=round_up`, and `H.round_up_u32` / `H.ceildiv_u32` /
 #     `H.floordiv_u32` are the same three functions under the names
 #     `tmpring_size` and `wg_data_size` use. Nothing re-derives a rounding.
 #  3. `D.recycled` is `Allocator.free`'s FOUR conjuncts, and every BufferSpec

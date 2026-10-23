@@ -17,8 +17,10 @@ import ./ops_cl.bend as CL
 #
 # PART 2 -- CUDA. `ops_cuda.py`. STALE-LINE NOTE: the pre-split header said
 # "all 136 lines" and cited `cu:132` and `cu:134-136`; MEASURED against this
-# tree `ops_cuda.py` is 129 lines, `count` is at :125 and `_wait_signal` at
-# :126. The citations are NOT renumbered here: `tinygrad/` is mid-rebase.
+# tree `ops_cuda.py` is 126 lines: `count` is at tinygrad/runtime/ops_cuda.py:122 symbol=count and
+# `_wait_signal` at tinygrad/runtime/ops_cuda.py:124 symbol=_wait_signal. The citations
+# ARE renumbered here because the pin is settled.
+# (the pre-split header's `cu:132` and `cu:134-136` are the SAME two lines, renumbered.)
 #
 # THE ONLY ONE OF THE THREE THAT IS NOT A SEQUENCE OF DRIVER CALLS. `CUDAQueue`
 # is a COMMAND ENCODER: its six methods do not talk to the GPU, they append to a

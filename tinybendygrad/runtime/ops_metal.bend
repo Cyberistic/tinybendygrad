@@ -14,27 +14,27 @@
 # `cstyle.py:398-403` gives a Metal kernel EXACTLY ONE buffer argument --
 # `constant args_t& args [[buffer(0)]]` -- with every global pointer and every
 # ALU scalar packed into that struct. And `ops_metal.py:263` binds it with
-# `cmd.setKernelBuffer_offset_atIndex(buf.get_storage().meta, off, 0)`:
-# buffer index 0, the ICB header Buffer, byte offset `off`. `:264` then sets the
-# geometry with `concurrentDispatchThreadgroups_threadsPerThreadgroup(MTLSize
-# (*dims[:3]), MTLSize(*dims[3:]))`, and `dims` is
-# `(*prg.arg.global_size, *prg.arg.local_size)` at :116.
+# `cmd.setKernelBuffer_offset_atIndex(buf.meta, buf.offset + off, 0)`:
+# buffer index 0, the ICB header Buffer, byte offset `off` (tinygrad/runtime/ops_metal.py:263
+# symbol=new_icb). `:264` then sets the geometry with `concurrentDispatchThreadgroups_threadsPerThreadgroup`
+# (MTLSize(*dims[0:3]), MTLSize(*dims[3:])), and `dims` is
+# `(*prg.arg.global_size, *prg.arg.local_size)` at tinygrad/runtime/ops_metal.py:140.
 #
 # So the four numbers the two files have to agree on, and DO, are:
 #
 #   1. ONE binding, at index 0.        `:256 setMaxKernelBufferBindCount(1)`
-#   2. the struct's byte offset,       `:112 off = round_up(self.nbytes, 256)`
-#   3. the global size and the local   `:116 dims = (*global_size, *local_size)`
+#   2. the struct's byte offset,       `:136 off = round_up(self.nbytes, 256)`
+#   3. the global size and the local   `:140 dims = (*global_size, *local_size)`
 #      size, as two MTLSizes,          `:264 MTLSize(*dims[:3]), MTLSize(*dims[3:])`
 #   4. the entry point NAME,           `:247 newFunctionWithName(to_ns_str(name))`
 #      which is `TinyELF.name`, the same string cstyle's `function_name`.
 #
 # The one thing still missing for a RUN on this host is `MetalCompiler.compile`
-# (:42-71). **AND THAT IS NOW MEASURED RATHER THAN ASSERTED** -- see `t_seam`.
+# (tinygrad/runtime/ops_metal.py:42-70). **AND THAT IS NOW MEASURED RATHER THAN ASSERTED** -- see `t_seam`.
 #
 # `compile` is FFI at EXACTLY TWO points: `MTLCodeGenServiceCreate` (:39) and
 # `MTLCodeGenServiceBuildRequest` (:68). Both are already in the trace. Everything
-# else in :42-71 is a Python closure and a `struct`, and it is all ported and gated:
+# else in tinygrad/runtime/ops_metal.py:42-70 is a Python closure and a `struct`, and it is all ported and gated:
 # the four-way `-std=` ladder, the `params` f-string, the 4-byte-padded source blob,
 # the NUL, the 16-byte `<QQ` request header, the two blob lengths, the callback's
 # `error == 0` arm AND its other arm, the header sum, the slice, and both refusals.
@@ -90,7 +90,7 @@
 #                                               travels as `Cmd.name`
 #   :41   __reduce__                WALL 3  PICKLE (a multiprocessing detail)
 #   :42   compile                   PARTIAL  the layout and the refusals
-#   :55   macos_major/metal_version PORTED  the four-way `-std=` ladder
+#   tinygrad/runtime/ops_metal.py:60 macos_major/metal_version PORTED  the four-way `-std=` ladder
 #   :60   params                    PORTED  the f-string
 #   :62   src_padded/params_padded  PORTED  the 4-byte pad and the NUL
 #   :63   request                   PORTED  the 16-byte `<QQ` header
@@ -106,14 +106,14 @@
 #   :101 mtl_poll                   PORTED  one msgSend
 #   :105 MetalQueue.__init__        PORTED  the five accumulators
 #   :109 exec                       PORTED  the whole argument layout
-#   :111 args                       PORTED  `getaddr` is 8 bytes, a var is its own
-#   :112 rows / :113 nbytes         PORTED  `layout_args` and the `max`
+#   tinygrad/runtime/ops_metal.py:135 `args`         PORTED  `getaddr` is 8 bytes, a var is its own symbol=exec
+#   tinygrad/runtime/ops_metal.py:136 `rows` / tinygrad/runtime/ops_metal.py:137 `nbytes` PORTED  `layout_args` and the `max` symbol=exec
 #   :116-121 dims / sizes / cmds    PORTED  the symbolic-size arm and the tuple
 #   :123 wait                       PORTED  a no-op, ON PURPOSE
 #   :124 timestamp / :125 signal    PORTED  two appends
 #   :127 submit                     PORTED  the ICB size and the header
 #   :129 the placeholder size       PORTED  and it EQUALS :253's buffer size
-#   :131 patch                      PORTED  three zero rows at `zero`
+#   tinygrad/runtime/ops_metal.py:155 patch          PORTED  three zero rows at `zero` symbol=submit
 #   :135 the sizes loop             PORTED  one msgSend per symbolic command
 #   :138 run                        PORTED  thirteen calls, four arms
 #   :166-168 the submit tail        PORTED  three paths
@@ -130,8 +130,8 @@
 #   :216 pm_bufferize               GONE    upstream deleted it; the section below
 #   :222 sels                       PORTED  18 u64 = 144 bytes, and the [3:5]
 #   :228 mark_resident              PORTED  both paths, and they are exclusive
-#   :239 new_slots                  GONE    upstream deleted it; `link_buffer` replaced it
-#   :243 pipeline                   PORTED  four calls and `checked` twice
+#   tinygrad/runtime/ops_metal.py:238 `link_buffer`  GONE    upstream deleted `new_slots` (9ff6db7b0); `link_buffer` replaced it symbol=link_buffer
+#   tinygrad/runtime/ops_metal.py:244 `pipeline`     PORTED  four calls and `checked` twice symbol=pipeline
 #   :251 new_icb                    PORTED  the size and the eleven steps
 #   :258 the ICB refusal           PORTED  refusal 5
 #   :262 the local-size refusal     PORTED  refusal 6, PER COMMAND
@@ -139,14 +139,14 @@
 #   :275 synchronize                PARTIAL the index arithmetic, not the times
 #   :284-285 the autorelease pool   PORTED  pop-then-push, in that order
 #   :267 the ICB weak-dict         PORTED  `icb_keep`, and it WAS NOT CALLED
-#   :276-281 the profile scan      PORTED  `dev.sync_scan`, and it WAS NOT CALLED
+#   tinygrad/runtime/ops_metal.py:276-281 the profile scan PORTED  `dev.sync_scan` -- upstream's `profile_slots` scan -- and it WAS NOT CALLED symbol=synchronize
 #   :23   to_ns_str                PORTED  `cns_string`, and it WAS NOT WIRED
 #   :42-71 compile                 CLOSED  all of it but the block pointer
 #   --    THE CONSTANTS            PORTED  65 with a CPython authority, all gated
 #
 # ---------------------------------------------------------------------------
 # THREE DEFS WERE WRITTEN AND NOTHING REACHED THEM, and that is the finding this
-# session started from. `icb_keep` (:267), `dev.sync_scan`'s list (`sync_starts`,
+# session started from. `icb_keep` -- upstream's `icbs` (tinygrad/runtime/ops_metal.py:267 symbol=new_icb) --, `dev.sync_scan`'s list (`sync_starts`,
 # :276-281) and `cns_string` (:23) each carried a comment saying a row checked it,
 # and each was DEAD: correct, unread, and unreachable from `main`. A file whose
 # gate prints 332 rows had a `Dev.nics` that was always 0, a profile scan that was
@@ -197,7 +197,7 @@
 #    HCQ2 lowering this file does not own, so the port carries neither.
 #    `pm_bufferize` WAS a third one and it is GONE from upstream at the pin, so
 #    the port carries it no longer -- see the section that used to hold it.
-#    The `pm_encode` rule is at :186 and the `pm_lower` rule at :190.
+#    The `pm_encode` and `pm_lower` rules are tinygrad/runtime/ops_metal.py:185-188.
 #    TODO(p3) runtime/ops_metal.py:186  symbol=MetalQueue  -- `MetalQueue(s).encode()`.
 #    TODO(p3) runtime/ops_metal.py:192  symbol=mtl_msg  -- the `pm_lower` fence poll.
 #
@@ -228,15 +228,15 @@
 #     `buf.get_storage().meta` -- so the arena travels with the answer, in
 #     `Made`, by the same rule `D.bnew` follows. `nbytes` is `size * itemsize`
 #     and a view's offset ACCUMULATES, so neither is a field here.
-#  2. `D.iter_sig` IS `layout_args`' engine. `hcq2.py:74-76` is
-#     `[(offset + o, w) for (o,_),w in zip(TinyELF.iter_sig(item sizes), words)]`
-#     and `device.py:364-368` is what `D.iter_sig` ports. `q.layout` is the one
+#  2. `D.iter_sig` IS `layout_args`' engine. `tinygrad/runtime/support/hcq2.py:114-116 symbol=layout_args` is
+#     `[(offset + o, w) for (o, _), w in zip(TinyELF.iter_sig(...), words)]`
+#     and `tinygrad/device.py:352-356 symbol=iter_sig` is what `D.iter_sig` ports. `q.layout` is the one
 #     `zip` and nothing else -- re-deriving the rounding would be a SECOND
-#     transcription of device.py:364 and the two could disagree silently.
-#  3. `D.round_up` is `helpers.py:69`, and `off = round_up(self.nbytes, 256)`
+#     transcription of tinygrad/device.py:352 and the two could disagree silently.
+#  3. `D.round_up` is `tinygrad/helpers.py:70 symbol=round_up`, and `off = round_up(self.nbytes, 256)`
 #     (:112) and `at = round_up(self.nbytes, 8)` (:118) are both it.
 #  4. `D.recycled` is `Allocator.free`'s FOUR conjuncts, and `new_icb`'s
-#     `BufferSpec(nolru=True)` (:253) is one of them: a Metal ICB is NEVER
+#     `BufferSpec(nolru=True)` -- GONE at this pin: upstream b41c51306 ("metal icb rm nolru")
 #     recycled, which is a decision this file does not have to make and gets
 #     from `D.Bspec` by naming it. `mt_nolru` is the row.
 #

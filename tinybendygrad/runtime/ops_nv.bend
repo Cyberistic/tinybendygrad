@@ -10,9 +10,9 @@
 #            (NVAllocator), :613-662 (fifos), :688-697
 #            (_ensure_has_local_memory), :449-451 (alloc's page size).
 #   STAGE 2  LANDED AND CHECKED. the queue and command-submission structure: the
-#            `nvm` word encoding (:47-48), `hilo` (:33), `nv_flags` (:40-41), the
-#            `layout_args` kernel-argument trace (hcq2.py:74-76), and the four
-#            queues' command vocabularies (:99-225).
+#            (tinygrad/runtime/ops_nv.py:45 symbol=nvm) `nvm` word encoding, `hilo` (tinygrad/runtime/ops_nv.py:31 symbol=hilo),
+#            the `layout_args` kernel-argument trace (tinygrad/runtime/support/hcq2.py:114 symbol=layout_args) and
+#            `nv_flags` (tinygrad/runtime/ops_nv.py:38 symbol=nv_flags) -- the queue's word flags -- and the four queues' command vocabularies (:99-225).
 #   STAGE 3  LANDED AND CHECKED. the program cache (:313-320 -- the lookup is
 #            `pc.find`/`pc.same`, NOT a key reader), the reloc table both ways
 #            (:261-265), the image padding and the `NVProgramData` derivations
@@ -20,7 +20,7 @@
 #            refusals (:161-186).
 #   STAGE 4  LANDED AND CHECKED. the QMD version/slot/grid layer (:50-94), the
 #            ioctl command encoding (:43-45), the video-HW sizing (:699-715),
-#            `to_name` (hcq2.py:63), `reg_ops`'s chunking (:818-824), the
+#            (tinygrad/helpers.py:21 symbol=to_name) `to_name` (tinygrad/runtime/support/hcq2.py:61 uses it), `reg_ops` (tinygrad/runtime/ops_nv.py:811 symbol=reg_ops)'s chunking, the
 #            profiler register addresses (:793-816), the error-string tables
 #            (:35, :37-38) and the GPA-info index fallback (:664-665).
 #
@@ -63,7 +63,7 @@
 # does not import dtype.
 #   TODO(p3) ops_nv.py:349-380  NVKIface.__init__      WALL: /dev/nvidiactl,
 #     /dev/nvidia-uvm opens and the three rm_controls that pick the driver
-#     version table. `nv_iowr` (:43-45) is PORTED as an ENCODER and the actual
+#     version table. `nv_iowr` (tinygrad/runtime/ops_nv.py:41 symbol=nv_iowr) is PORTED as an ENCODER and the actual
 #     `fd.ioctl(...)` is the seam.
 #   TODO(p3) ops_nv.py:385-401  rm_alloc/rm_control/uvm -- NVOS21/NVOS54/
 #     UVM_* parameter structs. The two raises are PORTED as `qmd`/trace

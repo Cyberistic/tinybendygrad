@@ -21,7 +21,7 @@
 #     permute -- NESTED RANGE loops. The first eight outputs of `permute` are
 #     right and the remaining 120 are untouched, so the inner loop is right and
 #     the OUTER one's back edge is not: `Prog.loop`/`Prog.rng` walk
-#     `loop_ends` and the nested END at ops_python.py:70 jumps to the inner head.
+# `loop_ends` and the nested END (tinygrad/runtime/ops_python.py:54-73 symbol=PythonProgram) jump to the inner head.
 #   * pad -- refused. The refusal is `Prog.bad`, so it is an oob load or store.
 #
 # `run` is a real interpreter: an arena threaded through a fuel recursion, with a
@@ -46,7 +46,7 @@
 #   :81  BARRIER/SINK/NOOP/GROUP/CUSTOM_FUNCTION, RANGE(void)  PORTED (no-ops)
 #   :85  STORE          PORTED  gated, vector, stepped
 #   :93  AFTER, BITCAST@GLOBAL/LOCAL    PORTED (pass-through)
-#   :94  PARAM@ALU      PORTED  reads a `vals` entry
+#   tinygrad/runtime/ops_python.py:97 PARAM@ALU      PORTED  reads a `vals` entry -- upstream's `pargs.pop(0)` symbol=__call__
 #   :95  PARAM, BUFFER  PORTED  binds a buffer, or allocates zeros
 #   :106 BINARY         WALL  ops_python.py:106 -- `memoryview(u.arg)` is raw
 #                              bytes carried inside the UOp, with no wire spelling
@@ -78,7 +78,7 @@
 #    runs. So "a REDUCE fixture" is a RANGE loop, and this file needs no REDUCE
 #    arm at all.
 # 2. `Ops.FDIV` AND `Ops.THREEFRY` ARE IN `GroupOp.ALU` BUT NOT IN `python_alu`
-#    (ops.py:1417-1424), so ops_python.py:154 raises `KeyError` on them. They are
+#    (tinygrad/uop/ops.py:1412-1420 symbol=python_alu) `python_alu`, so tinygrad/uop/ops.py:1427 raises `KeyError` on them. They are
 #    WALL 3 below for the same reason rather than given an invented meaning.
 # 3. THERE ARE NO `DEFINE_*` OPS in this tinygrad. `Ops` has PARAM and BUFFER and
 #    an AddrSpace; the emitted stream uses `Ops.PARAM` with
@@ -95,7 +95,7 @@
 #    narrower than the dtype: f16/bf16/fp8 (2 or 1 bytes) or i64/u64 (8). The v1
 #    lanes are i32, u32, f32 and bool, where `w == dtype.itemsize` always, so
 #    that arm is DEAD here and the four lanes take the first branch verbatim.
-#    `truncate` has the same shape: dtype.py:296-297 answers float16, bfloat16,
+#    `truncate` has the same shape: tinygrad/dtype.py:289 symbol=truncate answers float16, bfloat16,
 #    the four fp8s, float64, six narrow ints and int64/uint64 through ctypes and
 #    struct, and only bool/int32/uint32/float32 are pure in Bend. So CAST is
 #    ported for those four and REFUSES the rest -- a 64-bit truncate has no U32
@@ -105,14 +105,14 @@
 #    TODO(p3) runtime/ops_python.py:33  symbol=_store -- the multi-word store arm.
 #    TODO(p3) tinygrad/dtype.py:289  symbol=truncate -- `truncate` for the ten C widths.
 #
-# 2. TENSOR CORES. `wmma` (ops_python.py:33) needs `tcore.frag_coords()` and a
+# 2. TENSOR CORES. `wmma` (tinygrad/runtime/ops_python.py:35 symbol=wmma) needs
 #    three-way fragment layout, and its `arg` is a `(dims, dtype_in, threads)`
 #    tuple. There is no v1 spelling and no scalar lane for a fragment.
 #    TODO(p3) runtime/ops_python.py:33  symbol=_store.
 #
 # 3. `Ops.FDIV` AND `Ops.THREEFRY` -- see MEASURED FACT 2.
 #
-# 4. THE TUPLE OPERAND BRANCH. `exec_alu`'s first line (ops.py:1429) is
+# 4. THE TUPLE OPERAND BRANCH. `exec_alu`'s body (tinygrad/uop/ops.py:1422 symbol=exec_alu) opens with
 #    `if any(isinstance(x, tuple) for x in operands)` and it recurses per lane.
 #    symbolic.bend ports only the scalar spine, so `alu1/2/3` below call the same
 #    two lanes directly -- `exec_alu_i32` and `exec_alu_f32` -- and choose between
@@ -121,7 +121,7 @@
 #    The Invalid poison (ops.py:1432) has no v1 spelling, because nothing in a v1
 #    packet is `CONST(Invalid)`.
 #    ONE DIVERGENCE IS INHERITED, and it is named where it bites: `safe_pow`
-#    (ops.py:1412) answers `inf if x > 0 else -inf` for a negative base with a
+#    (tinygrad/uop/ops.py:1406-1410 symbol=safe_pow) answers `inf if x > 0 else -inf` for a negative base with a
 #    fractional exponent, where IEEE -- and therefore `exec_alu_f32` -- answers
 #    nan. Taking IEEE over a Python-shaped branch nobody can compute is
 #    symbolic.bend's call and this file does not relitigate it.
@@ -141,7 +141,7 @@
 # this file ports.
 #
 # A1. There are no `DEFINE_*` ops (MEASURED FACT 3); the arms are `PARAM` and
-#     `BUFFER` plus an AddrSpace (ops_python.py:99,105). So the brief's
+#     `BUFFER` plus an AddrSpace (tinygrad/runtime/ops_python.py:98-107). So the brief's
 #     DEFINE_GLOBAL/LOCAL/REG/VAR/BUF are spelled `PARAM`/`BUFFER` and the
 #     addrspace rides in `<arg>`:
 #       PARAM  k:param:<nbytes>:<g|l|r|a>
@@ -153,7 +153,7 @@
 #     memoryview, and the storage word width follows from the dtype, so the
 #     encoder never has to repeat it.
 #     PACKET BUFFER ORDER: packet buffer i is the i-th `PARAM` of addrspace g or l
-#     in uop order, because ops_python.py:104 pops `pbufs` in exactly that order.
+#     in uop order, because tinygrad/runtime/ops_python.py:107 symbol=__call__ pops upstream's `pargs` in exactly that order.
 #     A PARAM inside a RANGE loop would pop a second time in Python too, so
 #     resolving the index once at parse time is the same answer.
 #

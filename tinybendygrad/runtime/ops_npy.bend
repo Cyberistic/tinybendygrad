@@ -15,7 +15,7 @@
 #     []       -> self.renderers                               device.py:396
 #     None     -> self.runtime_t                               device.py:396
 #
-# THE ARGUMENT NOBODY EXPECTS. `renderers or [Renderer]` at device.py:396 is an
+# THE ARGUMENT NOBODY EXPECTS. `renderers or [Renderer]` at tinygrad/device.py:382 symbol=__init__ is an
 # `or`, and `[]` is FALSY, so `NpyDevice` is NOT the renderer-less device its
 # source line suggests -- it is handed `[Renderer]`, the same default every
 # `Compiled` without a renderer gets. MEASURED: `[r.__name__ for r in
@@ -25,18 +25,18 @@
 # THE SECOND THING THE FOUR LINES SAY, by what they DO NOT contain:
 # `RDMADevice.__init__` (ops_rdma.py:70) calls `self._select_iface(device)`.
 # `NpyDevice.__init__` does not. So:
-#   * `self.iface` is never set, and `peer_group` (device.py:398) falls all the
+#   * `self.iface` is never set, and `peer_group` (tinygrad/device.py:384 symbol=__init__) falls all the
 #     way through `getattr(getattr(self,'iface',None),'peer_group', …)` to
 #     `device.split(":")[0]` -- the head, "NPY".
-#   * `device_id` comes from `Compiled.__init__` (device.py:397) and NOT from
-#     `_select_iface` (device.py:494), which sets it FIRST and then asserts on
+#   * `device_id` comes from `Compiled.__init__` (tinygrad/device.py:383 symbol=__init__) and NOT from
+#     `_select_iface` (tinygrad/device.py:469 symbol=_select_iface), which sets it FIRST and then asserts on
 #     the deprecated `NPY_IFACE` env var. Two lines of Python set the same
 #     field and only one of them can run here.
 #   * `self.host` is device.py:418, `host_name(peer_group, HCQ_RUNTIME_DEV)`,
 #     which for a local peer group is the string "CPU".
-#   * `arch` is None, so `_select_renderer` (device.py:488) passes NO `arch`
+#   * `arch` is None, so `_select_renderer` (tinygrad/device.py:462 symbol=_select_renderer) passes NO `arch`
 #     kwarg at all: `**({"arch": self.arch} if self.arch else {})`.
-#   * `NpyDevice.ifaces` is `[]`, inherited from `Compiled` (device.py:377).
+#   * `NpyDevice.ifaces` is `[]`, inherited from `Compiled` (tinygrad/device.py:363 symbol=ifaces).
 #
 # ===========================================================================
 # THE PORTABLE END-TO-END DEVICE. The brief asked for a judgement here and the
@@ -56,7 +56,7 @@
 #
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF. The first block is `ops_npy.py` and the second is
-# `HostAllocator` (device.py:304-330), which is the surface those four lines
+# `HostAllocator` (tinygrad/device.py:293 symbol=HostAllocator), which is the surface those four lines
 # expose and which nothing else in `runtime/` re-implements.
 #
 # ops_npy.py
@@ -80,17 +80,17 @@
 # ===========================================================================
 # THE THREE WALLS.
 #
-# 1. MMAP (device.py:307). `mmap.mmap(-1, size, access=ACCESS_WRITE)` is a
+# 1. MMAP (tinygrad/device.py:297 symbol=_alloc). `mmap.mmap(-1, size, access=ACCESS_WRITE)` is a
 #    syscall and this file reaches host memory the way `device.bend` reaches
 #    it -- by NAMING the call in a trace. `mmap`/`munmap`/`memcpy` and
-#    `to_mv` (helpers.py:573, `ctypes.from_address`) are FFI seams.
+#    `to_mv` (tinygrad/helpers.py:575 symbol=to_mv, `ctypes.from_address`) are FFI seams.
 #    TODO(p3) device.py:297  symbol=_alloc  mmap.mmap -- the mapping syscall.
 #    TODO(p3) helpers.py:575  symbol=to_mv  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
 # 2. `cpu_profile` (device.py:315,:317). A `with` around the copy that writes a
 #    profile event and re-reads `DEBUG`. It wraps the copy, it does not change
 #    it, and the three calls inside it are what the gate pins.
 #    TODO(p3) device.py:310  symbol=_copyin  cpu_profile -- the `with` and its profile event.
-# 3. `Device[buf.device]` (device.py:328). Opening a device by string is a
+# 3. `Device[buf.device]` (tinygrad/device.py:315 symbol=_map). Opening a device by string is a
 #    registry lookup and a hardware open. `device.bend` OWES this file the
 #    already-opened set, so the port compares host NAMES rather than
 #    interning a device object -- and the host names are interned into two tags
@@ -107,8 +107,8 @@
 # `(size, addr)` pairs.
 #
 # THE RAISES ARE IN THE TRACE, both of them, and they are the device's two
-# refusals: `Allocator.alloc`'s `assert size > 0` (device.py:270) and
-# `HostAllocator._map`'s host guard (device.py:328). A refusal records itself
+# refusals: `Allocator.alloc`'s `assert size > 0` (tinygrad/device.py:257-258 symbol=alloc) and
+# `HostAllocator._map`'s host guard (tinygrad/device.py:314-315 symbol=_map). A refusal records itself
 # and truncates: `Tr.emit` records NOTHING once `refused` is set, so
 # `alloc(0)` shows as `[REFUSE]` and never reaches `mmap`, which is what
 # `npy_alloc0_n` and `npy_alloc0_no_mmap` read.

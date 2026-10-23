@@ -55,16 +55,16 @@
 # UPSTREAM names where upstream HAS one.
 #
 #   :7   the assert                PORTED `ClangCompiler.ge2` `ClangCompiler.msg`
-#   :8   the unpack                PORTED `ClangCompiler.arch_of` `.cpu_of`
+#   tinygrad/runtime/support/compiler_cpu.py:8 the unpack    PORTED `ClangCompiler.arch_of` `.cpu_of` -- upstream's `arch` symbol=__init__
 #                                          `.feats`
 #   :10  the x86_64 arm            PORTED `ClangCompiler.x86_feat` `ClangCompiler.args`
 #   :13  the arm64 arm             PORTED `ClangCompiler.arm64_feat` `ClangCompiler.args`
-#   :14  the riscv64 arm           PORTED `ClangCompiler.riscv64_cpu`
+#   tinygrad/runtime/support/compiler_cpu.py:14 the riscv64 arm PORTED `ClangCompiler.riscv64_cpu` -- upstream's `riscv64` symbol=__init__
 #                                          `ClangCompiler.args`
 #   :15  the refusal               PORTED `ClangCompiler.supported` `ClangCompiler.unsupported`
 #   :16  the cache key             PORTED `ClangCompiler.key`
 #   :21-22 the spawn               PORTED `ClangCompiler.compile_argv` `.argv_n`
-#   :24  disassemble               PORTED `ClangCompiler.dis_row`
+#   tinygrad/runtime/support/compiler_cpu.py:24 `disassemble`  PORTED `ClangCompiler.dis_row` symbol=disassemble
 #   :28  X86Compiler.__init__      PORTED `X86Compiler.key`
 #   :29  X86Compiler.compile       PORTED `X86Compiler.nibble` `X86Compiler.hex_ok`
 #                                          `X86Compiler.hex_n` `X86Compiler.bad_pos`
@@ -88,7 +88,7 @@
 #   TODO(p3) compiler_cpu.py:24 -- `cpu_objdump(lib)`.
 #   TODO(p3) compiler_cpu.py:30 -- `capstone_flatdump(lib, "x86_64")`.
 #
-# WALL 3 -- `getenv("CC", 'clang')` is a PROCESS-BOOT CONSTANT: helpers.py:161
+# WALL 3 -- `getenv("CC", 'clang')` is a PROCESS-BOOT CONSTANT: tinygrad/helpers.py:161 symbol=getenv
 #   carries `@functools.cache`, so `CC` is read ONCE per interpreter and
 #   setting it later is invisible. `ClangCompiler.prog` therefore takes the
 #   compiler as a PARAMETER, and the oracle measures it in a SECOND, FRESH
@@ -100,7 +100,7 @@
 #   TODO(p3) compiler_cpu.py:21 -- `getenv("CC", 'clang')`.
 #
 # WALL 4 -- `CCACHE`. `Compiler.__init__` is
-#   `self.cachekey = cachekey if CCACHE else None` (device.py:337), so the key
+#   `self.cachekey = cachekey if CCACHE else None` (tinygrad/device.py:324 symbol=__init__), so the key
 #   the port builds is the one that EXISTS only when CCACHE is on -- and CCACHE
 #   is a `ContextVar`, which is the same cached `getenv`. So `cpu.x86key` is
 #   `None` on this host ONLY because... it is measured, and the port's

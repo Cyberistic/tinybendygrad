@@ -32,32 +32,32 @@
 #   :71  the timer divide       PORTED  `prog.scale_micros` (the u64 read is WALL)
 #   :73  DSPBuffer              PORTED  `DspBuf`, `buf.of`
 #   :78  _alloc                 PORTED  `alloc.alloc` (MOCKDSP and real arms)
-#   :79    the MOCKDSP arm      PORTED  `alloc.mock_flags`
+#   tinygrad/runtime/ops_dsp.py:79 the MOCKDSP arm    PORTED  `alloc.mock_flags` -- upstream's `MOCKDSP` arm symbol=_alloc
 #   :81    the ION arm          PORTED  `ION_ALIGN`, `ion.aligned`
 #   :83    the mmap + BufferStorage PORTED `alloc.alloc.real.go`
-#   :86-91 _free                PORTED  `alloc.free_calls`
-#   :93  _as_buffer             PORTED  `alloc.as_buffer_bytes`
-#   :94  _copyin                PORTED  `alloc.copyin_bytes`
-#   :95  _copyout               PORTED  `alloc.copyout_bytes`
+#   tinygrad/runtime/ops_dsp.py:87-91 `_free`       PORTED  `alloc.free_calls` symbol=_free
+#   tinygrad/runtime/ops_dsp.py:93 `_as_buffer`     PORTED  `alloc.as_buffer_bytes` symbol=_as_buffer
+#   tinygrad/runtime/ops_dsp.py:94 `_copyin`        PORTED  `alloc.copyin_bytes` symbol=_copyin
+#   tinygrad/runtime/ops_dsp.py:95 `_copyout`       PORTED  `alloc.copyout_bytes` symbol=_copyout
 #   :96  _offset                PORTED  `alloc.offset` -- offsets ACCUMULATE
 #   :100 DSPCompiler.args       PORTED  `COMPILER_ARGS`, `compiler_args_first`
 #   :104-105 the fifteen sections PORTED `link_section`, `link_sections`
 #   :106 the ALIGN(4096) lines  PORTED  `link_line`, `link_line.go`
 #   :108 the whole script       PORTED  `link_script`
 #   :111 the -T flag            PORTED  `compiler_args_has_T`
-#   :113 the cachekey           PORTED  `compiler.cachekey_of`
-#   :115 __del__                PORTED  `compiler.del_unlinks`
+#   tinygrad/runtime/ops_dsp.py:113 the cachekey    PORTED  `compiler.cachekey_of` -- upstream's `compile_dsp` key symbol=__init__
+#   tinygrad/runtime/ops_dsp.py:115 `__del__`        PORTED  `compiler.del_unlinks` symbol=__del__
 #   :118 compile                WALL 1  the clang spawn + the .so read-back
 #   :125 disassemble            WALL 1  cpu_objdump / llvm-objdump
-#   :129 DSPDevice.__init__     PORTED  `dev.is_mock` (the ONE branch, :129-139)
+#   tinygrad/runtime/ops_dsp.py:129 `DSPDevice.__init__` PORTED  `dev.is_mock` (the ONE branch, tinygrad/runtime/ops_dsp.py:129-139) symbol=__init__
 #   :132 the ion_fd open        PORTED  `dev.open_ion`
-#   :134-136 the shell buffer   PORTED  `dev.shell_size`, `dev.shell_copy`
-#   :135 BufferSpec(nolru=True) PORTED  `dev.shell_spec` -- the eviction NEGATIVE
+#   tinygrad/runtime/ops_dsp.py:134-136 the shell buffer PORTED  `dev.shell_size`, `dev.shell_copy` -- upstream's `shell_buf` symbol=__init__
+#   tinygrad/runtime/ops_dsp.py:135 `BufferSpec(nolru=True)` PORTED  `dev.shell_spec` -- the eviction NEGATIVE symbol=__init__
 #   :141 open_lib               PORTED  `dev.open_lib`, `dev.open_lib_sc`
 #   :143 the tinylib URL        PORTED  `OPEN_LIB_FP`, `open_lib_len`
 #   :145 the two outs           PORTED  `open_lib_out0`, `open_lib_out1`
 #   :147 the raise              PORTED  `open_lib_bad`, `open_lib_err`
-#   :148 the handle answer      PORTED  `dev.open_lib_handle`
+#   tinygrad/runtime/ops_dsp.py:141-148 `open_lib`   PORTED  `dev.open_lib_handle` -- the handle answer symbol=open_lib
 #   :150 close_lib              PORTED  `dev.close_lib`, `dev.close_lib_sc`
 #   :154-164 exec_lib           PORTED  `dev.exec_lib` -- open/invoke/close, retry
 #   :166-176 init_dsp           PORTED  `dev.init_dsp` -- seven ordered calls
@@ -152,7 +152,7 @@
 #                      dtypes have `fmt is None` -- void, weakint, weakfloat, all
 #                      four fp8s and bfloat16 -- and `unwrap` on that is a hard
 #                      failure. bfloat16 is the interesting one: `fmt is None` with
-#                      itemsize 2, and `supported_dtypes` (:46) exists to keep it
+#                      itemsize 2, and `supported_dtypes` (tinygrad/runtime/ops_dsp.py:45 symbol=supported_dtypes) exists to keep it
 #                      out of the signature. That is the whole reason :46 is there.
 #   `dt_itemsize` (:68)  the WIDTH `struct.pack` writes, hence how many of an
 #                      8-byte slot's eight bytes it touches. weakint/weakfloat are
@@ -179,12 +179,12 @@
 #   in_fds = [b.share_info.fd for b in bufs]
 #
 # so `pra` has `3 + len(bufs)` entries: two ins, one out, then one dma per buffer.
-# `fds` is `[-1]*(ins+outs) ++ in_fds` (:53) and `attrs` is
-# `[0]*(ins+outs) ++ [1]*len(in_fds)` (:54) -- SAME length as `pra`, and the `1`
+# `fds` is `[-1]*(ins+outs) ++ in_fds` (tinygrad/runtime/ops_dsp.py:52 symbol=rpc_prep_args) and `attrs` is
+# `[0]*(ins+outs) ++ [1]*len(in_fds)` (tinygrad/runtime/ops_dsp.py:53 symbol=rpc_prep_args) -- SAME length as `pra`, and the `1`
 # is the only thing besides the length that tells a dma slot from a buffer slot.
 # `rpc_sc(method=2, ins=2, outs=1, fds=len(bufs))` (:70), so the selector is a
 # function of ONE number. `pra_of` is gated at nine (ins,outs,fds) fixtures
-# INCLUDING (2,1,16) -- one past the :63 refusal -- so a `pra` that grows where
+# INCLUDING (2,1,16) -- one past upstream's `bufs` refusal (tinygrad/runtime/ops_dsp.py:63 symbol=__call__) -- so a `pra` that grows where
 # Python's does not is visible.
 #
 # var_vals_mv (:67,:68) is eight bytes per ARGUMENT: words 0..len(bufs)-1 are
@@ -239,8 +239,8 @@
 # TWO MEASURED FACTS WORTH THEIR OWN ROWS:
 #
 #   * `ClangRenderer(Target("DSP","CLANG","hexagonv65,hexagonv65"))` RAISES
-#     `RuntimeError: unsupported arch: 'hexagonv65'` from ClangCompiler
-#     (compiler_cpu.py:15). That is WHY `DSPRenderer.__init__` (:18) does not call
+#     `RuntimeError: unsupported arch: 'hexagonv65'` from ClangCompiler (tinygrad/runtime/support/compiler_cpu.py:15).
+#     That is WHY `DSPRenderer.__init__` (tinygrad/runtime/ops_dsp.py:17 symbol=__init__) does not call
 #     `super().__init__`: a DSP target must never build the host CPU clang
 #     compiler. `dsp_no_super_init` pins that the compiler is the DSP one.
 #   * `rpc_sc(2,2,1,0)` is 33685760 and the listener's `sc=0x04020200` is 67240448.

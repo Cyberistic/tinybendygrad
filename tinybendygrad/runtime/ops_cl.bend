@@ -161,14 +161,14 @@
 #
 # 3. `ctypes.create_string_buffer` / `ctypes.string_at` (:29-32, :105-116) are a
 #    `(ptr, len)` pair the seam frees as soon as the call returns. The port keeps
-#    the decoded String, because the decoded String IS what :106 stores in
-#    `self.device_name` and what :100 prints.
+#    the decoded String, because the decoded String IS what tinygrad/runtime/ops_cl.py:108 stores in
+#    `self.device_name` (`tinygrad/runtime/ops_cl.py:108 symbol=__init__`) and tinygrad/runtime/ops_cl.py:109 prints.
 #    TODO(p3) runtime/ops_cl.py:31  symbol=compile  -- the build-log string buffer.
 #    TODO(p3) runtime/ops_cl.py:108  symbol=__init__ -- the device-info string buffer.
 #
-# 4. `CC_CB` / `BP_CB` (:10-11) are `CFUNCTYPE` signatures handed as the
+# 4. `CC_CB` / `BP_CB` (`tinygrad/runtime/ops_cl.py:13-14 symbol=CC_CB`) are `CFUNCTYPE` signatures handed as the
 #    `pfn_notify` argument of `clCreateContext` and `clBuildProgram`. cl:110
-#    passes a fresh `CC_CB()` and cl:27,46 pass `BP_CB()`, and a callback that
+#    passes a fresh `CC_CB()` and cl:30,132 pass `BP_CB()`, and a callback that
 #    does nothing is indistinguishable from NULL at the trace level.
 #    TODO(p3) runtime/ops_cl.py:13  symbol=CC_CB  -- CC_CB / BP_CB.
 #
@@ -213,7 +213,7 @@
 #   `status == CUDA_ERROR_HOST_MEMORY_ALREADY_REGISTERED` is entry 712 of it.
 #
 # ===========================================================================
-# THE ERROR TABLES, :16 and cu:18 and hp:10, which are the three `check`s.
+# THE ERROR TABLES, `cl_errors` (`tinygrad/runtime/ops_cl.py:16 symbol=cl_errors`) and cu:18 and hp:10, which are the three `check`s.
 #
 # `cl_errors = {attr: k for k in dir(cl) if k.startswith("CL_") and isinstance(
 # attr:=getattr(cl, k), int) and attr <= 0}` is keyed by the ATTRIBUTE, i.e. by
@@ -256,7 +256,7 @@
 #      `self.dev.synchronize()` and `_copyin` does NOT -- that asymmetry is
 #      `copy.copyin` / `copy.copyout` and it is two rows in the gate.
 #   3. `TinyELF.signature` is `tuple[(name, slot, DType, shape)]` and
-#      `TinyELF.iter_sig` (device.py:365) is the `round_up(offset, dt.itemsize)`
+#      `TinyELF.iter_sig` (`tinygrad/device.py:352 symbol=iter_sig`) is the `round_up(offset, dt.itemsize)`
 #      walk. hp:41 calls it, and so does `hcq2.layout_args` for CUDA -- the SAME
 #      walk in two of the three vendors. `iter_sig` is not in any of the three
 #      files, so this file carries a local copy with device.py named as owner.
@@ -269,17 +269,17 @@
 #      VAL COUNT AND NOTHING ELSE.
 #
 # cstyle.bend owes, and this is the interesting half:
-#   1. `OpenCLRenderer` (cstyle.py:348) is the renderer cl:124 registers. Its
+#   1. `OpenCLRenderer` (`tinygrad/renderer/cstyle.py:324 symbol=OpenCLRenderer`) is the renderer cl:118 registers. Its
 #      kernel text names the arguments `data0_4, data1_4` in BUFFER ORDER, and
-#      cl:57's `for i, (_, slot, dt, shape) in enumerate(self.signature)` walks
+#      kernel text names the arguments `data0_4, data1_4` in BUFFER ORDER, and cl:56's
 #      the SAME order. So `clSetKernelArg(kernel, i, ...)` with `i` the ENUMERATE
 #      INDEX is what binds `data0_4` -- NOT the slot. `Arg` carries both `i` and
 #      `slot` and `cl_call_args_skew` is the row that pins that they differ.
-#   2. `{2:cl.CL_HALF_FLOAT, 4:cl.CL_FLOAT}[dt.itemsize]` at cl:61 is keyed on
+#   2. `{2:cl.CL_HALF_FLOAT, 4:cl.CL_FLOAT}[dt.itemsize]` at cl:59 is keyed on the
 #      the ITEMSIZE and not on the dtype, so a dtype of 2 bytes is HALF and 4
 #      bytes is FLOAT regardless of signedness. `img.fmt_of` is that table and it
 #      is a two-entry table, which is what makes it gateable at all.
-#   3. `is_image_shape(shape)` (helpers.py:37) is `shape is not None and
+#   3. `is_image_shape(shape)` (`tinygrad/helpers.py:35 symbol=is_image_shape`) is `shape is not None and
 #      len(shape) == 3 and shape[-1] == 4` -- the LAST dim is 4, not the first.
 #      `img.is_image` is that and the gate has a fixture whose image is 4 in the
 #      LAST dim beside one that is 4 in the FIRST dim.

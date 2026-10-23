@@ -65,7 +65,7 @@
 #
 # ===========================================================================
 # `CUDA_PATH = getenv("CUDA_PATH", "")` IS A PROCESS-BOOT CONSTANT, and it is
-# read at IMPORT: `helpers.py:161` carries `@functools.cache`, so the module
+# read at IMPORT: `tinygrad/helpers.py:161 symbol=getenv` carries `@functools.cache` on upstream's `getenv`, so the module
 # constant is fixed before any caller can change the environment. Measured, in
 # one process: `os.environ["CUDA_PATH"] = "/mutated"` AFTER the import leaves
 # `compiler_cuda.CUDA_PATH` at `''` while `os.environ` says `/mutated`
@@ -90,7 +90,7 @@
 #                                       `.key` `nvrtc_ge_12_4`
 #   :55-62 NVRTCCompiler.compile PORTED `NVRTCCompiler.calls` `.calls_n` `.first`
 #                                        `.last` `NVRTCCompiler.getter`
-#   :63    disassemble          PORTED `NVRTCCompiler.dis_row`
+#   tinygrad/runtime/support/compiler_cuda.py:63 `disassemble` PORTED `NVRTCCompiler.dis_row` symbol=disassemble
 #   :65-76 NVCCCompiler         PORTED `NVCCCompiler.mode` `.suffix` `.cmd`
 #                                       `.join` `.keystr` `.key`
 #   :78-84 PTXCompiler          PORTED `PTXCompiler.key` `PTXCompiler.ver`
