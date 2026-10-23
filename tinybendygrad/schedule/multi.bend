@@ -4,7 +4,7 @@
 # WHAT THIS FILE IS. `multi.py` is 311 lines and THIRTY defs, and almost none of it is
 # arithmetic. Two thirds of the defs are GRAPH BUILDERS (`.unshard`, `.alu`, `.mselect`,
 # `.copy_to_device`, `._shard`, `.cat`, `.store`, `.replace`, `UOp(Ops.STACK, ...)`) and not
-# one of those is ported (ops.py:614 through :853, every one a `TODO(p3)` in `ops.bend`).
+# one of those is ported (ops.py:423 through :32, every one a `TODO(p3)` in `ops.bend`).
 # What IS here is the DECISION and the INDEX ARITHMETIC each of those thirty defs makes
 # before it reaches for a builder -- which axes a REDUCE consumes, where a RESHAPE's shard
 # boundary lands, which axis a PERMUTE sends a shard to and which it FLIPs, whether a
@@ -27,18 +27,18 @@
 #
 # DEPENDENCY ON SIBLINGS, both named because both are call sites this file does not make.
 # `schedule/allreduce.bend` owns the BODY of `replace_allreduce`'s `_early_allreduce` arm
-# (multi.py:48) and of `reduce_multi`'s ALLREDUCE_CAST arm (multi.py:116-118); this file's
+# (multi.py:106 symbol=reduce_multi) and of `reduce_multi`'s ALLREDUCE_CAST arm (multi.py:116-118); this file's
 # `mu_ea_0` dispatches to it and says so. `schedule/__init__.bend` runs `multi_pm` and owns
 # the `MULTI` flag that selects it.
 #
 # THE FLAGS ARE PARAMETERS, the one convention shared with `allreduce.bend`:
-# `LATE_ALLREDUCE` (multi.py:50) and `ALLREDUCE_CAST` (multi.py:116) are `ContextVar`s and
+# `LATE_ALLREDUCE` (multi.py:50) and `ALLREDUCE_CAST` (multi.py:115) are `ContextVar`s and
 # Bend has no `Config` and no process environment, so they are fields of a `Cfg` record.
 # `MULTI` is not read anywhere in this checkout's `multi.py` -- it is `__init__.py`'s -- so
 # it is named at the foot and not a field here.
 #
 # THE THREE TABLES, and there are three because Python has three objects.
-# `PatternMatcher.__add__` (ops.py:1603) is `self.patterns+more.patterns`, so `multi_pm` is
+# `PatternMatcher.__add__` (ops.py:1598 symbol=__add__) is `self.patterns+more.patterns`, so `multi_pm` is
 # NINETEEN own rules with `replace_allreduce`'s SIX APPENDED, and `replace_allreduce` is
 # `_early_allreduce`'s ONE prepended when `LATE_ALLREDUCE` is off. That composition moves
 # every tag after the prefix, so `mu_table` CONCATENATES rather than counts, and `mt_own_n`,
@@ -47,7 +47,7 @@
 # `uop/spec.bend` writes six times and `schedule/rangeify.bend` eleven times.
 #
 # `PMEntry.rej` is `early_reject` and it is a NECESSARY CONDITION despite the name
-# (ops.py:1609 is `if not early_reject.issubset(ler): continue`): the rule FIRES when its op
+# (ops.py:1701 is `if not early_reject.issubset(ler): continue`): the rule FIRES when its op
 # set IS a subset of the node's src ops, and the empty set is a subset of everything.
 
 import Base

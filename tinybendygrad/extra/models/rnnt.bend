@@ -22,7 +22,7 @@ import ./../datasets/__init__.bend as D
 # HAS NEVER HAD AT ALL. resnet.bend asked for more of the layers that exist
 # (conv2d, batchnorm, linear). bert/t5/llama asked for more normalizers and one
 # embedding. RNN-T asks for RECURRENCE: `class LSTM` (rnnt.py:118) and
-# `class LSTMCell` (rnnt.py:97), with a `self.cells` LIST (:124) and a
+# `class LSTMCell` (rnnt.py:88), with a `self.cells` LIST (:124) and a
 # `Tensor.stack(*new_hc[1:])` over it (:148).
 #
 #   `grep -rnE "^def .*(lstm|LSTMCell|rnn|GRU|gru|cell)\(" --include='*.bend'

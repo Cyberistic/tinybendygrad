@@ -25,7 +25,7 @@
 #
 # BUFFERS ARE (NBYTES, CONTENT-ADDRESS) PARAMETERS. Python's `Buffer` is an
 # object whose IDENTITY `_base_storage is base._storage` depends on
-# (device.py:167), so a Bend `Buffer` is a slot in a `Bar` arena rather than a
+# (device.py:111), so a Bend `Buffer` is a slot in a `Bar` arena rather than a
 # value: `Bn` carries the dtype, the size, the byte offset, the base slot and a
 # content address standing in for `_storage`. That is everything the class's
 # decisions read, and it is why `view` can be checked at all.
@@ -33,14 +33,14 @@
 # ---------------------------------------------------------------------------
 # ONE FIRST-WINS CLAIM, and it is an ORDER.
 #
-# 1. `_canonicalize` (device.py:26) collapses `cpu:0` and `CPU` onto ONE
+# 1. `_canonicalize` (device.py:28 symbol=_canonicalize) collapses `cpu:0` and `CPU` onto ONE
 #    registry slot, so `Device['cpu:0'] is Device['CPU']` and opening both
 #    opens one device. `open_one` is that count, and nothing else notices a
 #    canonicalize that forgets the `:0` strip -- it would print `open_two`.
 #
-# 2. AND IT IS AN ORDER RATHER THAN A RULE: `ALL_DEVICES` (device.py:20) is
-#    nine names and `get_available_devices` (device.py:46) yields in that order
-#    and `_select_device` (device.py:58) takes `next(...)`. AMD is second and CPU
+# 2. AND IT IS AN ORDER RATHER THAN A RULE: `ALL_DEVICES` (device.py:18) is
+#    nine names and `get_available_devices` (device.py:48 symbol=get_available_devices) yields in that order
+#    and `_select_device` (device.py:56 symbol=_select_device) takes `next(...)`. AMD is second and CPU
 #    is seventh, so with both openable the default is AMD. `first_amd` is that row
 #    and a last-wins fold prints CPU.
 #

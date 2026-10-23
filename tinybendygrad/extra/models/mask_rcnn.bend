@@ -77,7 +77,7 @@ import ./../datasets/__init__.bend as D
 #                      / `:903 op_vstep` exist and go unused, as in all seven.
 #
 # THE BIGGEST SINGLE DELEGATION IS TO THE SIBLING STUB. mask_rcnn.py:1186
-# `MaskRCNN.__init__` takes `backbone:ResNet` and :1211 builds
+# `MaskRCNN.__init__` takes `backbone:ResNet` and :117 symbol=__init__ builds
 # `ResNet(50, num_classes=None, stride_in_1x1=True)`. `tinybendygrad/extra/models/
 # resnet.bend` EXISTS, is 264 lines, and REFUSES -- `rs_resnet_init` at its :214
 # refuses with "extra/models/resnet.py:65 ResNet.__init__ -- FIRST MISSING SYMBOL

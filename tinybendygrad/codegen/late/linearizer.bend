@@ -43,7 +43,7 @@
 #   linearizer.py:83-85   pm_add_control_flow  cfg_tbl, cfg_rewrite     cfg_hits, cfg_tbl_*
 #   linearizer.py:87-91   do_split_ends        se_rngs_of, se_split     se_rngs, se_ops,
 #                                                                        se_len, se_nsrc
-#   linearizer.py:89      the `else s.ranges`  W1                       --
+#   linearizer.py:90      the `else s.ranges`  W1                       --
 #   linearizer.py:93-96   pm_split_ends        se_tbl, se_fired         se_tbl_*, se_fired,
 #                                                                        se_miss
 #   regalloc.py:8         PSEUDO_OPS           ra_is_pseudo, ra_pseudo_n rw_pseudo_n

@@ -23,15 +23,15 @@
 #
 # PORTED AND GATED: the reduction family -- `min` (op.py:473), `mean` (:496),
 # `var` (:523), `var_mean` (:551), `std` (:568), `std_mean` (:592), `logsumexp`
-# (:630), `_softmax` (:657), `softmax` (:663), `log_softmax` (:686), `softmin`
-# (:709) -- and `max`/`sum`/`prod` (reduce.py:73/:20/:47), which they call. Plus
+# (:657), `_softmax` (:657), `softmax` (:663), `log_softmax` (:686), `softmin`
+# (:713) -- and `max`/`sum`/`prod` (reduce.py:73/:20/:47), which they call. Plus
 # the three dtype helpers their bodies read: `weak_dtype` (tinygrad/dtype.py:175),
-# `sum_acc_dtype` (tinygrad/dtype.py:220) and the `commit_dtype` refusal (tinygrad/dtype.py:16).
+# `sum_acc_dtype` (tinygrad/dtype.py:220) and the `commit_dtype` refusal (tinygrad/dtype.py:213 symbol=sum_acc_dtype).
 #
 # The `min`/`max`/`sum`/`prod` hoists are reduce.py's lines and they move back with
 # `mixin/reduce.bend`. They are hoisted because `mixin/reduce.bend` does not exist
-# yet, and `tensor.bend` already sets that precedent by hoisting `_mop` (ops.py:818)
-# and `_rop` (ops.py:652). `mo_reduce` here IS `T.tn_rop` plus `_reduce`'s two lines
+# yet, and `tensor.bend` already sets that precedent by hoisting `_mop` (ops.py:799 symbol=_mop)
+# and `_rop` (ops.py:633 symbol=_rop). `mo_reduce` here IS `T.tn_rop` plus `_reduce`'s two lines
 # around it (mixin/reduce.py:13-18), and `T.tn_rop` is the `_rop` hoist.
 #
 # ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@
 #      `int|slice|Tensor|None|list|tuple|Ellipsis`, a SEVEN-WAY sum type of
 #      heterogeneous payloads (movement.py:86 `_parse_view_index` matches on the
 #      Python TYPE), and the body then threads a list of FIVE-FIELD DICTS
-#      (op.py:82). Bend's sum types hold one value per arm, so the `Ellipsis`
+#      (op.py:38). Bend's sum types hold one value per arm, so the `Ellipsis`
 #      sentinel and the slice triple have no spelling, and `raise IndexError` has
 #      no form.
 #   W2 mixin/op.py:413 `einsum` -- a STRING FORMULA. `formula.split("->")`,
@@ -51,12 +51,12 @@
 #      formula, plus `dict.fromkeys` and `merge_dicts` over letter->size. Bend's
 #      `String.split` takes a Char separator, so `split("->")` and `split(",")` do
 #      not exist, and this is a whole PARSER.
-#   W3 mixin/op.py:450 `gradient` -- `compute_gradient` is `mixin/gradient.py:132`,
+#   W3 mixin/op.py:450 `gradient` -- `compute_gradient` is `mixin/gradient.py:114 symbol=compute_gradient`,
 #      which `mixin/gradient.bend` records as `TODO(p3)` ITSELF: the shaped-edge
 #      reduce needs `broadcast_axes` (ops.py:89) which reads `resolve` on a `Sint`,
 #      and `uop/symbolic.py`'s `resolve` is not ported. A wall whose own port
 #      names it is the cheapest kind of wall to accept.
-#   W4 mixin/op.py:752 `_cumalu` -> mixin/movement.py:598 `_pool` -- `_pool` is
+#   W4 mixin/op.py:752 `_cumalu` -> mixin/movement.py:614 symbol=_pool `_pool` -- `_pool` is
 #      TWELVE lines of shape arithmetic (`ceildiv`, `smax`, `flatten`, `repeat`,
 #      `shrink_to`, four reshapes, a permute) and `fold.bend`'s `dt_shape`
 #      (fold.bend:1622-1625) leaves PERMUTE, EXPAND, PAD, SHRINK and FLIP
@@ -67,16 +67,16 @@
 #      `_tri` (:233), `triu` (:236), `tril` (:259), and `sort`'s index count
 #      (:958).
 #   W5 mixin/op.py:913 `sort` -> `.contiguous()` (elementwise.py:59) is
-#      `graph_rewrite` (ops.py:1888), which is P3 and lives in another module.
+#      `graph_rewrite` (ops.py:1886 symbol=graph_rewrite), which is P3 and lives in another module.
 #      The bitonic loop is four nested `for` loops over stage counts, which Bend
 #      spells as a fuel-carrying self-call; that part is mechanical, which is why
 #      the wall is named at `contiguous` and not at the loop.
 #   W6 mixin/op.py:731 `cat` -- `stack`/`flatten` are ops over a VARIADIC
-#      `*args` tuple, `_pad_constant` needs `identity_element` (ops.py:61, and
+#      `*args` tuple, `_pad_constant` needs `identity_element` (ops.py:58 symbol=identity_element, and
 #      `identity_element` is not in ops.bend), and the shape arithmetic is
 #      `itertools.accumulate` over `t.shape[dim]`.
 #   W7 mixin/op.py:609 `normalize` -- see the PARITY row below. `sign`
-#      (elementwise.py:901) needs `const_like` (creation.py) plus `_broadcast_to`
+#      (elementwise.py:907) needs `const_like` (creation.py) plus `_broadcast_to`
 #      (movement.py:128), and `_broadcast_to` calls `broadcast_axes` (ops.py:89),
 #      which is `resolve` on a `Sint` -- W3's wall, reached a second time. The
 #      `p == 0` arm needs nothing but `ne`, so `mo_norm0` IS ported and gated;
@@ -154,8 +154,8 @@
 #      which `reduce_ds` (:1530) answers. MEASURED, both, over a BUFFER-rooted AND
 #      over a RESHAPE-rooted source.
 #   4. `commit_dtype` (tinygrad/dtype.py:16) answers a `Maybe` because `UOp._min_max`
-#      (ops.py:1104) is not ported, and `mixin/dtype.bend` measures that refusal
-#      rather than guessing. `_reduce` (reduce.py:14) reads it, so this file needs
+#      (ops.py:239 symbol=dtype) is not ported, and `mixin/dtype.bend` measures that refusal
+#      rather than guessing. `_reduce` (reduce.py:13 symbol=_reduce) reads it, so this file needs
 #      it, and the honest totalisation is the node's OWN dtype -- which makes the
 #      `cast` the identity. A weakint node is therefore NOT committed, and
 #      `t_commit_weak` says so.
@@ -192,7 +192,7 @@
 # here rather than filtered silently.
 #
 # THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`. `softmax` (op.py:663) and
-# `log_softmax` (op.py:686) are TWO defs that both call `_softmax` (op.py:657), so
+# `log_softmax` (op.py:686 symbol=log_softmax) are TWO defs that both call `_softmax` (op.py:657 symbol=_softmax), so
 # the thirteen nodes `_softmax` builds are interned ONCE. `softmax` prints 15 and
 # `log_softmax` prints 18 over a graph whose shared prefix is 13 nodes -- MEASURED on
 # both sides: the first thirteen op names of the longer row are the shorter row minus
@@ -214,7 +214,7 @@
 #   M6  reduce.py:45's trailing half/bfloat16/fp8 cast, inverted. NEGATIVE for a
 #       float32 fixture, and the gate says so -- it is the only way to know the cast
 #       is guarded rather than applied.
-#   M7  `smax(n - correction, 0)` (uop/ops.py:72) with the saturation dropped. Both
+#   M7  `smax(n - correction, 0)` (uop/ops.py:74 symbol=smax) with the saturation dropped. Both
 #       arms agree at `correction=0`, which is what `t_var0c0` uses. A float32
 #       fixture cannot see `smax`, and saying so is the measurement.
 #   M8  `log_softmax` reading `_softmax`'s `e` instead of its `m` (op.py:706).
@@ -239,7 +239,7 @@
 # off-by-one (a head element's index is `len(t)`, and `RESHAPE(REDUCE, CONST(4))`
 # and `RESHAPE(REDUCE, CONST(1))` print identically, so only `sh_sum0kd` saw it);
 # `mo_reshape`'s one-element-RESHAPE fold gap; `mo_squeeze`'s negated test
-# (mixin/movement.py:287); `mo_eqmul`'s `bool` against `int` (mixin/elementwise.py:612);
+# (mixin/movement.py:301); `mo_eqmul`'s `bool` against `int` (mixin/elementwise.py:611);
 # `mo_exp`'s cast ordering.
 #
 # ---------------------------------------------------------------------------

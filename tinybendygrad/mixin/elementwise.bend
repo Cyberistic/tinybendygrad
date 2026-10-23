@@ -4,7 +4,7 @@
 #
 # WHAT IS IN HERE, and it is the whole of the part of Python that is a GRAPH
 # FACT. `_broadcasted`'s promotion (elementwise.py:24-34), `_binop` (:36), `remint`
-# (:12), `ufix` (:21), and the sixty methods whose body is an `alu` over a promoted
+# (:21), `ufix` (:21), and the sixty methods whose body is an `alu` over a promoted
 # operand. Those are the twelve ops tensor.bend's dunder table names, the three
 # comparison binops plus their three negations, the unary alu family, and the
 # composed ones (`neg`, `sub`, `logical_not`, `where`, `mod`, `fmod`, `div`,
@@ -85,7 +85,7 @@
 # THE ONE IS `ew_promo_nc`, and it is UNFALSIFIABLE, which is a stronger statement
 # than "three rows disagree". `ew-gate.py` NOW PRINTS the other two of that family
 # (`ew_dt_promo_nc=i32`, `ew_op_promo_nc=CAST`) from live CPython, both for the
-# fixture at :1253-1260 -- `Tensor(3) + Tensor(5)` is weakint with base op ADD;
+# fixture at :1085-1092 -- `Tensor(3) + Tensor(5)` is weakint with base op ADD;
 # after `+ Tensor(7, dtype=dtypes.i32)` its src0 is `int` with op CAST -- and both
 # AGREE with this port, so M13's conjunct is gated by CPython rather than by a
 # paragraph. The SIGNATURE row stays unpaired because this file builds it from a

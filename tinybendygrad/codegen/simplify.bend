@@ -55,21 +55,21 @@
 # ported.** `rw_ranges` is the reader, it is DEFERRED to `fold.bend`, and
 # `codegen/rewriter.bend` carries the whole argument. Two rules here need it and
 # both are PORTED with every other conjunct reachable: `flatten_range`
-# (simplify.py:8-12) and `reduce_unparented` (simplify.py:87-101). `ru_range` is
+# (simplify.py:81-85 symbol=reduce_unparented) and `reduce_unparented` (simplify.py:87-101). `ru_range` is
 # the row that pins the wall: it is the ONLY fixture node for which the answer is
 # not `None`, and it is the one whose srcs are all RANGEs.
 #
 # ---------------------------------------------------------------------------
 # FOUR THINGS THAT ARE EASY TO INVERT, all measured against the real tables.
 #
-# 1. `range_start` IS NOT ZERO FOR REDUCE OR END. ops.py:58 is
+# 1. `range_start` IS NOT ZERO FOR REDUCE OR END. ops.py:55 is
 #    `{STAGE: 1, REDUCE: 1, END: 1, CALL: 1, LINEAR: 0}`, so `flatten_range`'s
 #    `off` is 1 for both ops `pm_flatten_range` claims and 0 only for LINEAR,
 #    which that table never claims. `fr_off` is the row for it.
 # 2. `flatten_range` RETURNS `r` ITSELF WHEN NOTHING MOVES -- no, it returns
-#    `r.replace(src=r.src[:off]+...)`, and `ops.py:252`'s
+#    `r.replace(src=r.src[:off]+...)`, and `ops.py:107`'s
 #    `if (self.op, self.src, self.arg, self.tag) == new_args: return self`
-#    turns that into `self`, and `ops.py:1610`'s `ret is not uop` drops it.
+#    turns that into `self`, and `ops.py:83`'s `ret is not uop` drops it.
 #    `fr_same` is the row.
 # 3. `reduce_unparented` MULTIPLIES BY THE RANGE'S **END**, not by its id:
 #    `ret * r.src[0]` where `r` is a RANGE, so `r.src[0]` is the RANGE's bound
@@ -81,9 +81,9 @@
 # ---------------------------------------------------------------------------
 # THE NAME CORRESPONDENCE, because the tables are the whole of this file and they
 # now carry UPSTREAM names: `pm_flatten_range` (simplify.py:14), `flatten_range`
-# (simplify.py:8), `pm_simplify_ranges` (:58), `pm_split_ranges` (:71),
+# (simplify.py:58), `pm_simplify_ranges` (:58), `pm_split_ranges` (:71),
 # `reduce_unparented` (:81) and `pm_reduce_unparented` (:93), `pm_reduce_collapse`
-# (:98) and `pm_load_collapse` (:152) -- eight of the nineteen, and the eight that
+# (:153) and `pm_load_collapse` (:153) -- eight of the nineteen, and the eight that
 # ARE in the file as upstream tables or rules. The merged file called them
 # `fr_table`, `pm_flatten_range` (for the RULE), `sr_table`, `xr_table`, `ru_1`,
 # `ru_table`, `rc_table`, `lc_table`, so this is EIGHT renames and every one of

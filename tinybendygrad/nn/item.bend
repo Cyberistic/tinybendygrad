@@ -61,7 +61,7 @@
 #     (`runtime/webgpu_call.bend:204-252`) and the comment above. NONE of them
 #     is an allocated buffer with contents.
 #   * `tinybendygrad/engine/realize.bend` -- the FOREIGN-EFFECT list, [b]:
-#     "realize.py:145 exec_copy -- allocators, `_transfer`, `host[:]`". The
+#     "realize.py:148 exec_copy -- allocators, `_transfer`, `host[:]`". The
 #     device-to-host copy that `data()` needs is EXACTLY that line, and it is
 #     NOT PORTED.
 #   * `tinybendygrad/nn/onnx.bend:49` -- the port's own words: "Nothing in

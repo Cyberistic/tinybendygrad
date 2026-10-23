@@ -67,18 +67,18 @@
 # ---------------------------------------------------------------------------
 # THREE PROPERTIES THIS FILE NEEDS FROM ops.py AND DOES NOT GET FOR FREE.
 #
-# * `gate_kernel_sink` (ops.py:1901) is three lines and its `arg is KernelInfo`
+# * `gate_kernel_sink` (ops.py:1915 symbol=gate_kernel_sink) is three lines and its `arg is KernelInfo`
 #   is a `match` on `O.Arg`, so `sc_gate` is three defs. It is a def and not a
 #   parameter because a Python `Callable` is not a Bend value, and `sc_topo`
 #   inlines it -- the same bill `Topo.step` pays for having no gate.
-# * `UOp.is_bound_var` (ops.py:1023) reads `is_variable` (ops.py:1020), whose
-#   last conjunct is `self._shape == ()`. For a PARAM that is ops.py:368, which
+# * `UOp.is_bound_var` (ops.py:1015 symbol=is_bound_var) reads `is_variable` (ops.py:1020), whose
+#   last conjunct is `self._shape == ()`. For a PARAM that is ops.py:323 symbol=_shape, which
 #   is `image`/`size` off the arg and nothing else -- so it is `fold.bend`'s
 #   `param_shape`, NOT the fold table, and no `Folded` is threaded anywhere in
 #   this file.  TODO(p3) ops.py:323  `UOp._shape` -- STAYS IN ops.bend.
-#   (ops.py:3370 DOES NOT EXIST at the pin: `tinygrad/uop/ops.py` is 1926 lines
+#   (ops.py:1756 DOES NOT EXIST at the pin: `tinygrad/uop/ops.py` is 1926 lines
 #   there.  `_shape` is ops.py:323 and `shape` is ops.py:439.)
-# * `UOp.buf_uop` (ops.py:925) is a fuel fold here and NOT the recursive property
+# * `UOp.buf_uop` (ops.py:911 symbol=buf_uop) is a fuel fold here and NOT the recursive property
 #   it is in Python, because of the two arms that CONSTRUCT:
 #       if self.op is Ops.MSELECT: return self.src[0].buf_uop.mselect(self.arg)
 #       if self.op is Ops.MSTACK: return UOp(Ops.MSTACK, src=tuple(x.buf_uop for x in self.src))
@@ -110,15 +110,15 @@
 # measures Python's cost and not the port's.
 #
 # NOT PORTED, one line each, with the wall behind it:
-# TODO(p3) __init__.py:22  `_states`' assert -- a raise, as above.
-# WALL(p3) __init__.py:29  the AssertionError in _split_after (see above) -- BLOCKED: needs Python's `raise AssertionError`; the port DROPS the invalid src instead (`Split` carries only Python's two fields) and `split_bad_ks` pins the drop.
-# WALL(p3) __init__.py:61  `t not in k.backward_slice` is read as a nocalls
+# TODO(p3) __init__.py:18 symbol=_states  `_states`' assert -- a raise, as above.
+# WALL(p3) __init__.py:28  the AssertionError in _split_after (see above) -- BLOCKED: needs Python's `raise AssertionError`; the port DROPS the invalid src instead (`Split` carries only Python's two fields) and `split_bad_ks` pins the drop.
+# WALL(p3) __init__.py:62  `t not in k.backward_slice` is read as a nocalls
 #   toposort; that is EXACT, and the header explains why -- NOT A GAP: `sc_in_bs` reads `O.UOp.toposort_nocalls` and `wt_keep` applies `t is not k` FIRST (:885-886), so the two predicates are the SAME.
 # TODO(p3) __init__.py:78  `raise RuntimeError("cycle detected in assign graph")`
 #   -- a raise, as above. `COUNT_fx*_cyc` in the gate is the observable it guards,
 #   and it is 1 for fx2 and fx5 and 0 for fx1, so a cycle is visible as a
 #   non-empty answer even though the raise is not.
-# WALL(p3) ops.py:925     `buf_uop`'s MSELECT and MSTACK arms (see above) -- BLOCKED: needs the arena threaded through a walk that CONSTRUCTS (interns) a UOp: MSELECT is `src[0].buf_uop.mselect(self.arg)` (tinygrad/uop/ops.py:924) and MSTACK rebuilds `UOp(MSTACK, ...)` (:925). Both arms are multi-device (`schedule/multi.py`) and read only by `create_schedule`'s `buf_uops` line; the port's walk is a fuel fold that STOPS at MSTACK.
+# WALL(p3) ops.py:107     `buf_uop`'s MSELECT and MSTACK arms (see above) -- BLOCKED: needs the arena threaded through a walk that CONSTRUCTS (interns) a UOp: MSELECT is `src[0].buf_uop.mselect(self.arg)` (tinygrad/uop/ops.py:911 symbol=buf_uop) and MSTACK rebuilds `UOp(MSTACK, ...)` (:925). Both arms are multi-device (`schedule/multi.py`) and read only by `create_schedule`'s `buf_uops` line; the port's walk is a fuel fold that STOPS at MSTACK.
 # TODO(p3) __init__.py:66-80  the `while queue` loop is a fuel fold, not a while.
 #   The queue is a `List` in Python's DEQUE ORDER -- `popleft` is a head pop and
 #   `append` is `List.append`, which is `qs ++ [x]` and O(n) -- so the loop's own

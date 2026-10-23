@@ -71,7 +71,7 @@ import ./../uop/ops.bend as O
 # wrong. `Map` would answer this for free but is a `Type` (affine), so it cannot
 # be a `Data` field and cannot be returned from a fold without threading it.
 #
-# `safe_dtypes` (state.py:33) and `inverse_safe_dtypes` (state.py:36) are PURE
+# `safe_dtypes` (state.py:36) and `inverse_safe_dtypes` (:36) are PURE
 # TABLES and are ported as TABLES, as a `List` of pairs in the source's order
 # rather than as a `Map`, for the reason above plus one more: `inverse_safe_dtypes`
 # is a dict COMPREHENSION and its insertion order is `safe_dtypes`'s, so a
@@ -84,7 +84,7 @@ import ./../uop/ops.bend as O
 #   * `TensorIO` (state.py:8-31) is an `io.RawIOBase`. `readinto` (:17) slices a
 #     tensor and calls `.data()` -- REALIZATION, which is tensor.bend's WALL 4 --
 #     and `buffer[:len(data)] = data` is a MUTATION of a Python bytearray, which
-#     a `Data` record cannot express at all. `seek` (:25) IS pure integer
+#     a `Data` record cannot express at all. `seek` (:24 symbol=seek) IS pure integer
 #     clamping and IS ported, because it is the one method in the class that
 #     touches no bytes; the row is `sd_seek`.
 #   * `accept_filename` (state.py:38-41) is a DECORATOR over four functions, and

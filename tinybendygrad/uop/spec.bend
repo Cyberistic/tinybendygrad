@@ -39,7 +39,7 @@
 # TWO FACTS THAT ARE EASY TO INVERT, both measured against `spec.py`.
 #
 # 1. `early_reject` IS A NECESSARY CONDITION, not a veto, despite the name:
-#    `ops.py:1617` is `if not early_reject.issubset(ler): continue`, so the rule
+#    `ops.py:1701` is `if not early_reject.issubset(ler): continue`, so the rule
 #    FIRES when the op set IS a subset of `ler`, and an empty set is a subset of
 #    everything, which is why most rules always fire. It is built from the ops of
 #    the pattern's FIRST src (`ops.py:1483`), and for a pattern whose first src is

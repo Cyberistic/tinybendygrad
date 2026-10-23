@@ -29,22 +29,22 @@
 #
 # WHY THE MUL IS NOT A WALL HERE, and this is the one non-obvious thing here.
 # `nn/__init__.bend:299` says the broadcasting case of `__mul__` is walled on
-# the SHAPE FOLD. THE FOLD IS NOT THE WALL: `_broadcast_shape` (ops.py:78) is
+# the SHAPE FOLD. THE FOLD IS NOT THE WALL: `_broadcast_shape` (ops.py:80 symbol=_broadcast_shape) is
 # PORTED -- `F.bcast_shape` (uop/fold.bend:672) over `bcast.first(_align_left
 # (sh))` -- and `F.alu_ds` (fold.bend:999) is where every elementwise `OpsMUL` /
 # `OpsADD` node's SHAPE is read from. A `T.tn_mul` of two DIFFERENTLY SHAPED
 # tensors therefore builds the right node and folds to the right shape. What
 # `nn/__init__` calls walled is the other half of `_broadcasted`
-# (elementwise.py:24): `ufix`, then `least_upper_dtype`, then `cast(out_dtype)`.
+# (elementwise.py:21 symbol=ufix): `ufix`, then `least_upper_dtype`, then `cast(out_dtype)`.
 # THAT is the half this file refuses rather than assumes, and `nn_dot.dts`
 # refuses it by NAME.
 #
 # ONE REFUSAL POINT, AND IT IS A `Maybe` RATHER THAN A SILENT ZERO. Every dim
-# `dot` does arithmetic on is a `sint` -- `tinygrad/uop/ops.py:1925`'s
+# `dot` does arithmetic on is a `sint` -- `tinygrad/uop/ops.py:1923`'s
 # `int|UOp`, spelled `SI{i64} | SU{uop}` at `uop/ops.bend:810`. The port has FOUR
 # defs on that union (`SInt.of`, `SInt.uop`, `SInt.i`, `SInt.u`; ops.bend:814-822
-# and :1422-1429) and NOT ONE ARITHMETIC DEF: `ceildiv` and `smax` on a `Sint`
-# are ABSENT, and `smax` upstream is `UOp.maximum` (uop/ops.py:71), i.e. a
+# and :74-81 symbol=smax) and NOT ONE ARITHMETIC DEF: `ceildiv` and `smax` on a `Sint`
+# are ABSENT, and `smax` upstream is `UOp.maximum` (uop/ops.py:233), i.e. a
 # symbolic MAX NODE, not a function. So `nn_u32` projects a shape to `U32` and
 # answers `None` on the `SU` arm, and every def downstream of a shape is a
 # `Maybe`. That is the whole of the wall, stated in one place.

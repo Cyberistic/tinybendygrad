@@ -25,7 +25,7 @@ import ./../dtype.bend as DT
 # FOUR WALLS, and the first is the one that shapes the file.
 #
 #   1. THE REALIZED PARAMETER IS A HANDLE. `Tensor.zeros(n, dtype=..., device=...)`
-#      (creation.py:108 -> :64 `full`) is `const(0).expand(shape)` and then
+#      (creation.py:108 -> :53 `full`) is `const(0).expand(shape)` and then
 #      `empty_like(...)._uop.after(store(val))`, and `empty_like` needs a Buffer.
 #      So `_new_optim_param`'s THREE arms return SHAPES here and the tensors come
 #      in as parameters. `Optim` carries the `O.Arena` they live in, because an
@@ -37,14 +37,14 @@ import ./../dtype.bend as DT
 #      Python builds, and `Tensor.realize(*xs)` is a void call over it.
 #   3. `t.grad` is `Tensor`'s `grad` field with 0 as Python's `None`, so
 #      `unwrap(t.grad)` (optim.py:52, :55) -- which RAISES on None -- is a
-#      `Maybe<U32>`, and `zero_grad` (optim.py:33) is `Tensor.grad_set(t, 0)`.
+#      `Maybe<U32>`, and `zero_grad` (optim.py:29 symbol=zero_grad) is `Tensor.grad_set(t, 0)`.
 #   4. `Tensor.cat`, `.contiguous`, `.flatten`, `.reshape` on the fused path
 #      (optim.py:51-53) are mixin: `cat` is mixin/op.py:731 and the reshape is
 #      mixin/movement.py. NOT MINE. The fused arm's SLICE BOUNDS are optim.py's, so
 #      they are ported and gated; the mixin calls are named at the def.
 #
 # A FIFTH ITEM IS A DIVERGENCE, NOT A WALL, and it is the one that matters for
-# the gate: `_step` is IN-PLACE on `self.b[i]` and `self.m[i]` (optim.py:121,
+# the gate: `_step` is IN-PLACE on `self.b[i]` and `self.m[i]` (optim.py:59 symbol=_step,
 # :167, :168). A `Data` record is immutable, so each of those RETURNS a new
 # `Optim`. `op_mom_b` is the half both lanes can agree on (the buffer's graph now
 # carries the new STORE) and `op_mom_b_old` is the BEND-ONLY half -- the ORIGINAL
@@ -56,12 +56,12 @@ import ./../dtype.bend as DT
 #   * `mul`, `add`, `sub`, `div` -- elementwise.py:36 `_binop`. Every arithmetic
 #     line of `_step` is one of these four.
 #   * `cast` -- mixin/dtype.py. `.cast(t.dtype)` at optim.py:128, :167, :168, :178.
-#   * `sqrt` -- elementwise.py:480 (`Ops.SQRT`), optim.py:113, :114, :173, :174.
-#   * `square` -- elementwise.py:575, and it is `self * self` i.e. `Ops.MUL`.
-#   * `where` -- elementwise.py:426 (`Ops.WHERE` ternary), optim.py:115, :175.
+#   * `sqrt` -- elementwise.py:479 symbol=sqrt (`Ops.SQRT`), optim.py:113, :114, :173, :174.
+#   * `square` -- elementwise.py:573 symbol=square, and it is `self * self` i.e. `Ops.MUL`.
+#   * `where` -- elementwise.py:436 (`Ops.WHERE` ternary), optim.py:115, :175.
 #   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.
 #   * `detach` -- elementwise.py:43 (`Ops.DETACH`), optim.py:60, :113, :117, :171.
-#   * `newton_schulz` -- mixin/op.py:1873, optim.py:123. P3 and BIG.
+#   * `newton_schulz` -- mixin/op.py:1889 symbol=newton_schulz, optim.py:123. P3 and BIG.
 #   * `reshape` -- mixin/movement.py, optim.py:123.
 # My gate needs NONE of them: a layer's graph is a graph whether or not the mixin
 # method that builds it has landed, and every row below is a graph SHAPE over the

@@ -28,7 +28,7 @@
 # THE SEAMS, all I/O or all argparse:
 #   cli.py:8    os.environ["VIZ"] = "0"
 #   cli.py:9    signal.signal(SIGPIPE, SIG_DFL)
-#   cli.py:99   emit(val, to_str)          -- `args.json` selects the branch
+#   cli.py:98   emit(val, to_str)          -- `args.json` selects the branch
 #   cli.py:100  print_step                 -- IO
 #   cli.py:135  heapq.merge                -- a k-way merge of N+1 sorted lists is
 #                                              a priority queue; Bend has neither

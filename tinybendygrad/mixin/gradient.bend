@@ -20,7 +20,7 @@
 # and it still typechecks and still runs -- so it is LOAD-BEARING, not decorative. `gr_28`
 # emits it; the `rebind`/`rebind_off` gate rows are the two-sided check, and `gr_29_nocheck`
 # is the mutation that proves it. THE TAG SPACE is Python's own: 0..32 in `pm_gradient.pdict`
-# insertion order, which is the compiled form (`UPAT_COMPILE=1` is the default, ops.py:1588).
+# insertion order, which is the compiled form (`UPAT_COMPILE=1` is the default, ops.py:1583).
 # Tag 29 is the rebind, tags 27/28/30 are its AFTER siblings, and `t_claims` pins the COUNT.
 #
 # THE SHAPE OF A RULE'S ANSWER, the one design decision here. Python's rule bodies return

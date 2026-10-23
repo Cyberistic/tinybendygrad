@@ -17,10 +17,10 @@
 #
 # WHAT IS PORTED HERE, gated against CPython -- read it as a list of what exists, not a
 # summary of the file:
-#   1. `_pool` (movement.py:614-632 symbol=_pool) in full as SHAPE ARITHMETIC: `noop`, `i_`, `o_` (movement.py:618),
+#   1. `_pool` in full as SHAPE ARITHMETIC (movement.py:614-632 symbol=_pool): `noop`, `i_`, `o_` (movement.py:618),
 #      `f_` (movement.py:622), the dilation window `k*(i*f+d)` (movement.py:624-626), the permute order (movement.py:632).
-#   2. `marg` (ops.py:792 symbol=marg) in all THREE arms, and `as_shape` (ops.py:786 symbol=as_shape) on its
-#      CONCRETE arm. This is the W1/W2 answer.
+#   2. `marg` (ops.py:792 symbol=marg) in all THREE arms, and `as_shape` on its
+#      CONCRETE arm (`as_shape`, ops.py:786 symbol=as_shape). This is the W1/W2 answer.
 #   3. `_shape`'s movement arms (ops.py:395-414 symbol=_shape) for RESHAPE, EXPAND, PERMUTE, PAD, SHRINK
 #      and FLIP -- FIVE arms upstream: `Ops.FLIP` is NOT IN upstream at this pin.
 #   4. The `PERMUTE` validity check (ops.py:402-404 symbol=_shape), as `mxm_perm_lt` + `mxm_dup`.
@@ -36,22 +36,22 @@
 # `broadcast_axes` (ops.py:89) needs `resolve` on a `Sint`, i.e. `uop/symbolic.bend`,
 # i.e. `mixin/op.bend`'s W3. `repeat` (movement.py:591 symbol=repeat) is blocked on `expand` and is the first
 # thing `_pool`'s chain needs. `stack` (movement.py:270 symbol=stack) -- WALL
-# in `tensor.bend`: `_mop`'s `case Ops.STACK` (ops.py:831) needs `dtype_from_uop` and
+# in `tensor.bend`: `_mop`'s `case Ops.STACK` (ops.py:809-812 symbol=_mop) needs `dtype_from_uop` and
 # `ccast`, and `MopArg` has no STACK constructor; nothing here can route around it.
-# `split` (movement.py:438 symbol=split) / `chunk` (movement.py:464 symbol=chunk) -- PORTABLE, NOT DONE: each is a LIST of shrinks whose
-# boundaries are `sum(sizes[:i])`. `squeeze` (movement.py:301 symbol=squeeze), `unsqueeze` (movement.py:323 symbol=unsqueeze), `flatten` (movement.py:360 symbol=flatten),
-# `unflatten` (movement.py:376 symbol=unflatten), `transpose` (movement.py:343 symbol=transpose) -- PORTABLE, NOT DONE: each is `mxw_reshape` or
+# `split` (movement.py:438) / `chunk` (movement.py:464 symbol=chunk) -- PORTABLE, NOT DONE: each is a LIST of shrinks whose
+# boundaries are `sum(sizes[:i])`. `squeeze` (movement.py:301), `unsqueeze` (movement.py:323), `flatten` (movement.py:360 symbol=flatten),
+# `unflatten` (movement.py:376), `transpose` (movement.py:343 symbol=transpose) -- PORTABLE, NOT DONE: each is `mxw_reshape` or
 # `mxw_permute` plus a shape-list builder; `mixin/op.bend` already carries `mo_squeeze` and
-# `mo_resolve` at the Tensor level. `pad_to` (movement.py:293 symbol=pad_to), `shrink_to` (movement.py:290 symbol=shrink_to), `view` (movement.py:297 symbol=view) --
-# PORTABLE, NOT DONE, one line each. `diag` (movement.py:516 symbol=diag), `diagonal` (movement.py:527 symbol=diagonal), `roll` (movement.py:551 symbol=roll),
-# `unfold` (movement.py:634 symbol=unfold), `repeat_interleave` (movement.py:575 symbol=repeat_interleave), `meshgrid` (movement.py:489 symbol=meshgrid) -- PARTLY, NOT DONE:
+# `mo_resolve` at the Tensor level. `pad_to` (movement.py:293), `shrink_to` (movement.py:290), `view` (movement.py:297 symbol=view) --
+# PORTABLE, NOT DONE, one line each. `diag` (movement.py:516), `diagonal` (movement.py:527), `roll` (movement.py:551 symbol=roll),
+# `unfold` (movement.py:634), `meshgrid` (movement.py:489 symbol=meshgrid), `repeat_interleave` (movement.py:575) -- PARTLY, NOT DONE:
 # `meshgrid` also needs `_broadcast_shape` (ops.py:80), which needs `dedup` over a `Sint`;
 # `roll`'s `delta := n - s%n` is a `Sint` expression whose canonical form is `ssimplify`'s
 # business. `ndim` (movement.py:27 symbol=ndim), `numel` (movement.py:38 symbol=numel), `size` (movement.py:59 symbol=size) -- PORTABLE, NOT DONE as PUBLIC DEFS,
 # but every internal caller here goes through `mxw_dims_of` instead. `contiguous`, `detach`,
-# `to`, `f`, `fs` -- NOT IN `movement.py` AT ALL: `contiguous`/`detach` are
-# `mixin/elementwise.py:59`/`mixin/elementwise.py:43`, `Tensor.to` is `tensor.py:353 symbol=to`, and `f` is `UPat.f` (ops.py:1504),
-# a pattern-builder method with no Tensor analogue. They are reported rather than ported,
+# `to`, `f`, `fs` -- NOT IN `movement.py` AT ALL: `contiguous` (elementwise.py:59) and
+# `detach` (elementwise.py:43), `Tensor.to` is `tensor.py:353 symbol=to`, and `f` is
+# `UPat.f` (ops.py:1499 symbol=f) -- a pattern-builder method with no Tensor analogue. They are reported rather than ported,
 # because porting a method that is not in the file this unit owns would be a
 # change-detector test against a neighbour. `_normalize_indices` (movement.py:73) --
 # WALL 1: `indices` is a Python list whose elements are `int | slice | Tensor | None | list

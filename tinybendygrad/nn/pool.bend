@@ -31,7 +31,7 @@ import ./../extra/datasets/__init__.bend as D
 # SECOND MEASUREMENT, and it decides the shapes of the records here: the
 # vendored `tinygrad/nn/__init__.py` (429 lines of classes, 8 of them) HAS NO
 # `MaxPool2d`, NO `AdaptiveAvgPool2d` and NO `Sequential` --
-# `grep -n "^class \|^def " tinygrad/nn/__init__.py` = BatchNorm(:8), Conv1d(:62),
+# `grep -n "^class \|^def " tinygrad/nn/__init__.py` = BatchNorm(:6), Conv1d(:32),
 # Conv2d(:80), ConvTranspose1d(:111), ConvTranspose2d(:130), Linear(:156),
 # GroupNorm(:179), InstanceNorm(:209), LayerNorm(:235), LayerNorm2d(:263),
 # RMSNorm(:281), Embedding(:374), LSTMCell(:395) and no others. So `max_pool`

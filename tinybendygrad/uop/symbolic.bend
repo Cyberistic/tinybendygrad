@@ -48,8 +48,8 @@
 #                                            ones and the store/load four are not
 #
 # WHAT THE LAST PASS FOUND, and two of the three are NOT walls.
-#   * `UPat.alu` (ops.py:1543) hands a COMMUTATIVE op a LIST src, and a list is
-#     every permutation (ops.py:1464). So a `CMPNE`, `AND`, `OR` or `MUL` pattern
+#   * `UPat.alu` (ops.py:608 symbol=alu) hands a COMMUTATIVE op a LIST src, and a list is
+#     every permutation (ops.py:1417). So a `CMPNE`, `AND`, `OR` or `MUL` pattern
 #     arrives with its two captured names on either side, and the question a rule
 #     has to answer is "which src is the CONST" and NOT "src[0]". `Sw` is that
 #     question and SIX rules share it. Every `early_reject` in the table was read
@@ -95,7 +95,7 @@
 #    RAW node. This is the single largest divergence in the file: a rule here is
 #    only faithful on a fixture whose src dtypes already agree. The `promo` gate
 #    row is where that restriction is stated.
-# 3. `graph_rewrite` (ops.py:1880) IS NOT THIS FILE and is not ported. What IS
+# 3. `graph_rewrite` (ops.py:1886 symbol=graph_rewrite) IS NOT THIS FILE and is not ported. What IS
 #    here is the part symbolic.py owns: the table, the first-wins fold over it,
 #    and the `ret is not uop` test that ops.py:1605 makes load-bearing. So
 #    `sym_rewrite(fx, u) -> Maybe<&1, U32>` is `PatternMatcher.rewrite` and the
@@ -110,7 +110,7 @@
 # is a global cache and the discarded node is simply garbage, and here it is a
 # DEAD INDEX in a monotone arena, which is the same thing with a name.
 #
-# `early_reject` IS A NECESSARY CONDITION, not a veto: ops.py:1609 is
+# `early_reject` IS A NECESSARY CONDITION, not a veto: ops.py:1604 is
 # `if not early_reject.issubset(ler): continue`, so the rule FIRES when the op
 # set IS a subset of the node's src ops. It is built from the op of the
 # pattern's FIRST src and only when that src is a SINGLE-op UPat

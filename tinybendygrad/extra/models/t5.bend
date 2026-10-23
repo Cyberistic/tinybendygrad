@@ -81,7 +81,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `T5Attention.__init__` (extra/models/t5.py:101).
 # FIRST MISSING SYMBOL: `nn.Embedding(self.relative_attention_num_buckets,
 # self.n_heads)` at t5.py:118, reached from `T5LayerSelfAttention` (:226) from
-# `T5Block` (:237) from `T5Stack.__init__` (:254).
+# `T5Block` (:234) from `T5Stack.__init__` (:249).
 # ===========================================================================
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))

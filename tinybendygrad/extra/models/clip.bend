@@ -41,8 +41,8 @@ import ./../datasets/__init__.bend as D
 #   `Tensor.scaled_dot_product_attention` MISSING (:176,:271) -- BOTH attention sites.
 #   `Tensor.quick_gelu` EXISTS, mixin/elementwise.bend:1217 `ew_quick_gelu` (:157).
 #   `Tensor.gelu`    AS A BODY, MISSING (mixin/elementwise.bend:772 has only the
-#                     CONSTANT `ew_k.gelu`). clip.py:11 binds `Tensor.gelu`, NOT
-#                     `Tensor.quick_gelu`, so :157's `h.quick_gelu()` reaches the
+#                     CONSTANT `ew_k.gelu`). clip.py:12 binds `Tensor.gelu`, NOT
+#                     `Tensor.quick_gelu`, so :156's `h.quick_gelu()` reaches the
 #                     body that EXISTS while the module-level alias points at one
 #                     that does not. Both facts are recorded because both are true.
 #   `Tensor.argmax`  MISSING (:335,:470) -- the EOS-pooling index.
@@ -72,9 +72,9 @@ import ./../datasets/__init__.bend as D
 #                     (mixin/op.bend:1095) EXISTS and would serve T5 but not this.
 #
 # THE FIRST 140 LINES ARE A BPE TOKENIZER AND ARE NOT A PORTING PROBLEM.
-# clip.py:15 `default_bpe()` `fetch`es a gzip file (:16), clip.py:37
-# `bytes_to_unicode` is a 256-entry dict, and clip.py:64 `gzip.open` +
-# `:88 re.compile` are Python string machinery. `helpers.bend:3193` already
+# clip.py:15 `default_bpe()` `fetch`es a gzip file (:17), clip.py:17
+# `bytes_to_unicode` is a 256-entry dict, and clip.py:60 `gzip.open` +
+# `:75 re.compile` are Python string machinery. `helpers.bend:3193` already
 # records the whole HTTP/download seam as unported. Named here so the LOC count
 # is not read as arithmetic left undone.
 #

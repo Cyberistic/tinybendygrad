@@ -6,7 +6,7 @@ import ./../tensor.bend as T
 import ./../uop/ops.bend as O
 
 # ===========================================================================
-# nn/onnx.bend -- tinygrad/nn/onnx.py (1319 lines).
+# nn/onnx.bend -- tinygrad/nn/onnx.py (1230 lines).
 #
 # STAGE 1 -- WHAT IS PORTED, WHAT IS NOT, AND WHICH PYTHON LINES THE REST
 # COVERS. Staged on purpose: this file is 40% of what is left to port, and a
@@ -21,7 +21,7 @@ import ./../uop/ops.bend as O
 #     tables; the ONNX->tinygrad DTYPE NAME TABLE (:29-37 `OnnxDataType`, all
 #     thirteen entries, both directions, plus the four HOLES at codes 0/8/14/15);
 #     the ATTRIBUTE NAME TABLE (:20-27 `to_field_name`, all eight, both ways);
-#     the WIRE TYPE table (:13-18); the nine `Domain` members (:40-51) and
+#     the WIRE TYPE table (onnx.py:40-45 symbol=WireType); the nine `Domain` members (onnx.py:40-51 symbol=Domain) and
 #     `from_onnx`'s four-way answer; `required_input_python_consts` (:352-359, all
 #     thirty-eight); and the four frozen records the parser builds toward
 #     (:53-70 `OpSetId`, `OnnxValue`, `OnnxNode`) with the attribute-VALUE sum
@@ -30,12 +30,12 @@ import ./../uop/ops.bend as O
 #     and 171 count), the four VERSIONED ops' seven (domain, version, impl) rows,
 #     the three-way IMPLEMENTATION IDENTITY, `_select_op`'s version ROUTER
 #     (:415-423) with 22 fixtures over all three arms and both Python raises, and
-#     the whole pure-integer PADDING block: `_resolve_pool_pads` (:495-500),
-#     `_auto_pad` (:491-493), `_onnx_pads_to_tiny_pads` (:481-484) and `_axes`
-#     (:479).
-#   STAGE 3 -- NOT DONE. The RUNNERS (`OnnxRunner.__init__` :374-376,
-#     `_init_from_graph` :378-390, `_from_subgraph` :393-396, `_parse_input`
-#     :398-413, `to` :425-430, `_get_python_const` :432-439, `__call__` :441-470)
+#     the whole pure-integer PADDING block: `_resolve_pool_pads` (onnx.py:415-421 symbol=_resolve_pool_pads),
+#     `_auto_pad` (onnx.py:418-421 symbol=_auto_pad), `_onnx_pads_to_tiny_pads` (onnx.py:402-405 symbol=_onnx_pads_to_tiny_pads) and `_axes`
+#     (onnx.py:399 symbol=_axes).
+#   STAGE 3 -- NOT DONE. The RUNNERS (`OnnxRunner.__init__` onnx.py:294 symbol=OnnxRunner.__init__,
+#     `_init_from_graph` onnx.py:298 symbol=_init_from_graph, `_from_subgraph` onnx.py:313 symbol=_from_subgraph, `_parse_input`
+#     onnx.py:318 symbol=_parse_input, `to` onnx.py:345 symbol=to, `_get_python_const` onnx.py:352 symbol=_get_python_const, `__call__` onnx.py:361 symbol=__call__)
 #     and the protobuf layer they stand on. THE WALL IS NAMED PER ARM below.
 #   STAGE 4 -- NOT DONE. The 167 op BODIES (:475-1307), the node-shape arithmetic
 #     that goes with them, and the quantization family. THE WALL per family is
@@ -48,7 +48,7 @@ import ./../uop/ops.bend as O
 #     (`self.read(1)`, `self.read(4)`), `seek`, `tell`, `io.BufferedReader` and
 #     `struct.unpack`. Nothing in this port can read a byte out of a tensor --
 #     `state.bend`'s `TensorIO.readinto` is the same wall and says so.
-#     `read_int64`'s 64-bit varint accumulate (:79-89, :103) is a SECOND,
+#     `read_int64`'s 64-bit varint accumulate (`decode_varint` onnx.py:103-113 symbol=decode_varint, `read_int64` onnx.py:103 symbol=read_int64) is a SECOND,
 #     independent wall on top: `H.I64` has add/sub/cmp but the decode needs a
 #     64-bit SHIFT, and `Word` is not exported (bend2-constraints' `divandmod`
 #     rule 1).
@@ -64,31 +64,31 @@ import ./../uop/ops.bend as O
 #     calling a mixin method that belongs to another file (`x.reshape`,
 #     `x.conv2d`, `x.softmax`, `x.pad`, ...). Each is a `# TODO(p3)` naming its
 #     line; none is inlined, because inlining a callee would be a second port.
-#   * `If`'s branch runner (:547-562) and `Gradient` (:1305-1306) need an
+#   * `If`'s branch runner (onnx.py:468 symbol=run_branch) and `Gradient` (onnx.py:1216 symbol=Gradient) need an
 #     `OnnxRunner` VALUE -- this file's own class -- and `Gradient` also needs
 #     `.gradient()`.
-#   * the quantization family (:1210-1261) needs `x.repeat_interleave`,
+#   * the quantization family (onnx.py:424-450 symbol=_prepare_quantize) needs `x.repeat_interleave`,
 #     `x.scatter_reduce`, and `dtypes.is_int`/`is_float` predicates.
-#   * `ImageDecoder` (:578-585) needs PIL.
-#   * `Attention` (:1011-1099), `EmbedLayerNormalization` (:929-949) and
-#     `RotaryEmbedding` (:1106-1130) are three of the largest bodies and are pure
-#     mixin chains; their `_select_op` ROUTING is ported and gated, their bodies
-#     are not.
+#   * `ImageDecoder` (onnx.py:498 symbol=ImageDecoder) needs PIL.
+#   * `Attention` (onnx.py:1011; body `attention_onnx` onnx.py:969 symbol=attention_onnx),
+#     `EmbedLayerNormalization` (onnx.py:841 symbol=EmbedLayerNormalization) and
+#     `RotaryEmbedding` (onnx.py:1017 symbol=RotaryEmbedding) name the three largest
+#     op bodies, pure mixin chains; their `_select_op` ROUTING is ported, the bodies are not.
 #
 # THE NODE TYPES LEFT UNPORTED, WITH THE WALL FOR EACH. The brief's list, and the
 # honest answer for every one: the PADS and the ROUTING are ported (Stage 2), the
 # node that CONSUMES them is not, and the wall is the same for all of them.
 #
 #   CONV, CONVTRANSPOSE, MAXPOOL, AVGPOOL -- `_resolve_pool_pads` is PORTED and
-#     GATED; the bodies (:724-757) then call `x.max_pool2d` / `x.avg_pool2d` /
+#     GATED; the bodies (onnx.py:642-675) then call `x.max_pool2d` / `x.avg_pool2d` /
 #     `x.conv2d` / `x.conv_transpose2d`, which reach `mixin/op.bend`'s `_pool`
 #     (its W4/W8) and `fold.bend:1620-1626`'s refusal to answer EXPAND/SHRINK/
 #     PAD/FLIP. So the padding is decidable and the OUTPUT SHAPE is not, and the
 #     file does NOT fake a shape row for them.
 #   GATE / BN / LIN / GLOBALPOOL / LEAKYRELU / SCALE -- these are not node types
 #     in onnx.py at all; they are the brief's names for `BatchNormalization`
-#     (:896-909), `Gemm` (:769-772, the `alpha`/`beta`/`transA`/`transB`
-#     parameters), `GlobalAveragePool`/`GlobalMaxPool` (:766-767, whose axes are
+#     (onnx.py:835-842 symbol=BatchNormalization), `Gemm` (onnx.py:687-691 symbol=Gemm, the `alpha`/`beta`/`transA`/`transB`
+#     parameters), `GlobalAveragePool`/`GlobalMaxPool` (onnx.py:684-686 symbol=GlobalAveragePool, whose axes are
 #     `tuple(range(2, X.ndim))` -- pure, and the trivial arithmetic of which is
 #     the same walk as `_axes`'s), and `LeakyRelu` (:614, a scalar `alpha=0.01`
 #     handed to `X.leaky_relu`). Every one of those bodies calls a mixin method,

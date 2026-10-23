@@ -155,8 +155,8 @@
 #     value anywhere -- on hardware `(int)inf` is undefined too.  It gets a
 #     predicate row and no value row, which is the honest shape.
 #
-# **`U32 -> F32` bitcast** -- absent.  `pow2if` (:30), `frexp`'s mantissa (:61)
-# and `ldexp3k`'s exponent add (:45) are integer fields written into a float;
+# **`U32 -> F32` bitcast** -- absent.  `pow2if` (:27), `frexp`'s mantissa (:52)
+# and `ldexp3k`'s exponent add (:39) are integer fields written into a float;
 # each is computed ARITHMETICALLY and the pattern recovered with `F32.bits`, so
 # the gate compares against the bitcast tinygrad performs.  `xf_pow2if_*`,
 # `xf_frexp_*` and `xf_ldexp3k_*` are those claims.

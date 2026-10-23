@@ -80,7 +80,7 @@
 # ---------------------------------------------------------------------------
 # THE WALL, stated once and honestly, because it is ONE wall and it is not in
 # this file: **`UOp.ranges` is not ported.** fold.bend:4819-4823 marks
-# `ops.py:483 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
+# `ops.py:465 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
 # `dict[UOp, None]`, i.e. a SET, taken as the union of the srcs' `ranges` minus
 # the union of the `ended_ranges`'. That is set union followed by set difference
 # over the transitive closure, and fold.bend defers it to "the set algebra

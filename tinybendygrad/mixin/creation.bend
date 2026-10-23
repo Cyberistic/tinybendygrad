@@ -1,5 +1,5 @@
 # mixin/creation.bend -- tinygrad/mixin/creation.py, all 165 lines. `CreationMixin`,
-# which is ALSO `UOp.empty` / `UOp.empty_like` / `UOp.const_like` (ops.py:864, :603,
+# which is ALSO `UOp.empty` / `UOp.empty_like` / `UOp.const_like` (ops.py:581 symbol=const_like, :603,
 # MEASURED: `UOp.empty.__qualname__ == "CreationMixin.empty"`).
 #
 # ---------------------------------------------------------------------------
@@ -12,33 +12,33 @@
 # op.bend` already owns op.py's half. So the WHOLE of creation.py is eleven bodies
 # plus one `raise NotImplementedError`, and they are the ones `examples/
 # beautiful_mnist.bend`'s W3 wall is built FROM: `full` is the ONLY `expand` in
-# `creation.py` (creation.py:84) and `zeros`/`ones`/`*_like` are all `full`.
+# `creation.py` (creation.py:112 symbol=zeros) and `zeros`/`ones`/`*_like` are all `full`.
 #
 # ---------------------------------------------------------------------------
 # THE WALLS. W1 AND W2 ARE MINE; W3 AND W4 ARE OTHER FILES' AND NAMED TWICE BECAUSE
 # THIS FILE REACHES BOTH.
 #
-#   W1 mixin/creation.py:41 `empty` -- `canonicalize_device` is `tinygrad/device.py`,
+#   W1 mixin/creation.py:23 symbol=empty `empty` -- `canonicalize_device` is `tinygrad/device.py`,
 #      which is a C-effect module (the boundary `bend2-constraints` section 4 draws),
 #      so `dev: S.Dev` is a PARAMETER here. `UOp.device_range_src` (ops.py:849) is `()`
 #      unless the device is a TUPLE, and the tuple case is W2, so every ALLOC in this
 #      file has NO srcs -- `row_empty23_g` (`ALLOC/0`) is the row that says so.
 #   W2 mixin/creation.py:16 `_multi_like` -- `fxn` is a Python CALLBACK and the body
-#      needs `shard`/`unshard`/`mstack`/`shard_shape`/`axis` (ops.py:461/692/757/773),
+#      needs `shard`/`unshard`/`mstack`/`shard_shape`/`axis` (ops.py:635 symbol=axis/692/757/773),
 #      none of which is ported. `_multi_like` is the whole reason `full_like` has a
 #      device-tuple arm, so `cr_full_like` is single-device and the tuple arm is a
 #      `TODO(p3)`.
 #   W3 mixin/dtype.py:16 `commit_dtype` -- reached TWICE, by `full`'s
-#      `None if dt in dtypes.weaks else dt` (creation.py:86) and by `empty_like`'s
-#      `self.commit_dtype()` (ops.py:867). It reads `UOp._min_max` (ops.py:1104), and
+#      `None if dt in dtypes.weaks else dt` (creation.py:49 symbol=empty_like) and by `empty_like`'s
+#      `self.commit_dtype()` (ops.py:867). It reads `UOp._min_max` (ops.py:1094 symbol=_min_max), and
 #      `mixin/dtype.bend`'s OWN header names that as its wall. This file does not
 #      re-implement `commit_int`, `strong_dtype` or `_min_max`; it calls
 #      `D.commit_dtype` and passes the two bounds in.
 #      WHAT IT DOES PASS IS `fill_value` ITSELF, and that is exact rather than a
 #      substitute: Python's graph here is `EXPAND(CONST v)` and `_min_max` on that is
-#      the CONST arm `(self.val, self.val)` (ops.py:1160). `fill_value` IS that
+#      the CONST arm `(self.val, self.val)` (ops.py:40 symbol=val). `fill_value` IS that
 #      `val`, so the bound is `cr_bounds(v)` and the fold is not needed.
-#      TODO(p3) mixin/creation.py:83  `full` with a `fill_value` that is a UOp -- then
+#      TODO(p3) mixin/creation.py:68 symbol=full  `full` with a `fill_value` that is a UOp -- then
 #        `dt` is `fill_value.dtype` and the bounds really are `UOp._min_max` over an
 #        arbitrary graph. `cr_bounds` refuses it, and a refusal here is a
 #        `void`-typed ALLOC rather than a wrong int width, which is what
@@ -53,7 +53,7 @@
 #      `n_left == len(ds)` and every added axis is `< n_left`, so `expand_at` is EMPTY,
 #      `kept` is empty, `squeezed = self.reshape(())` is `self` (its shape already
 #      matches, movement.py:187), `perm` is `range(len(ds))`, and `permute` returns
-#      `self` on an identity order (movement.py:229). ONE `_mop(Ops.EXPAND, ds)` and
+#      `self` on an identity order (movement.py:14 symbol=_mop). ONE `_mop(Ops.EXPAND, ds)` and
 #      nothing else. `row_full_nobuf_g` and `row_full4i7_g` are what say so, and the
 #      `_broadcast_to` they skip is named here so nobody reads the one line as the
 #      whole of `expand`.
@@ -86,7 +86,7 @@
 #      (tinygrad/dtype.py:79-84) truncates, `int(truncate[int32](0.0))` is `0`, an `int`, and
 #      `from_py` reads the VALUE -- so `zeros(2,3,dtype=int32)` has an INT CONST cast
 #      to int32 (10 nodes) where `zeros(2,3)` has a FLOAT CONST (9). The truncation
-#      is P3 (tinygrad/dtype.py:84, and ops.bend's own `UOp.const` TODO), so `cr_full`'s
+#      is P3 (tinygrad/dtype.py:79 symbol=const, and ops.bend's own `UOp.const` TODO), so `cr_full`'s
 #      `fill_value` is the ALREADY-TRUNCATED `O.Const` and `cr_zeros_i` passes
 #      `MO.mo_ki(0)`. That is CPython's own answer, which is why `row_zeros23i_g` is a
 #      row and not a restatement.
@@ -100,12 +100,12 @@
 #      `H.I64`.
 #   4. `u.reshape(max_shape).shrink_to(new_shape)` (creation.py:42) IS AN ALLOC AND A
 #      CONDITIONAL RESHAPE, and `shrink_to` CONTRIBUTES NOTHING. `reshape`'s identity
-#      test is `ret.shape == self.shape` (movement.py:187) and an ALLOC's shape is
-#      `(size,)` (ops.py:362; fold.bend's `param_ds`), so the test is
+#      test is `ret.shape == self.shape` (movement.py:18 symbol=shape) and an ALLOC's shape is
+#      `(size,)` (ops.py:386; fold.bend's `param_ds`), so the test is
 #      `max_shape == [size]`: FALSE for two or more dims, TRUE for `(4,)`. That is why
 #      `row_empty4_g` is ONE node and `row_empty23_g` is five. After the reshape
 #      `u.shape` IS `new_shape`, `shrink_to` builds `_mop(SHRINK, ((0,n0),(0,n1)))`
-#      and then returns `self` because `ret.shape == self.shape` (movement.py:204).
+#      and then returns `self` because `ret.shape == self.shape` (movement.py:18 symbol=shape).
 #      Spelling it would add a SHRINK node to every `empty` row and CPython has none.
 #   5. A `Maybe` IS AFFINE, SO IT CANNOT BE A FOLD'S ACCUMULATOR -- and the FIELD half of
 #      the old claim was FALSE. MEASURED: 20 in-tree `type ... is Data` records carry 38
@@ -166,7 +166,7 @@
 #   int_*  THE INTERNING ROWS: how many of the SECOND equal call's nodes are not the
 #          FIRST's, and whether the node that must be shared IS. The only rows that can
 #          see rule 1 of the header, and the only rows that would notice M4.
-#   ref_*  `empty` raises on a weak dtype (creation.py:37) and a pure Bend def cannot
+#   ref_*  `empty` raises on a weak dtype (creation.py:23 symbol=empty) and a pure Bend def cannot
 #          raise, so the row is `dt in dtypes.weaks` -- creation.py:37's own guard, and
 #          CPython's oracle is asked that predicate rather than this port's behaviour.
 #          `ref_commit_none` is the ONE BEND-ONLY row (the port refuses a weakint node

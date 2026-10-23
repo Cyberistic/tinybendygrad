@@ -144,7 +144,7 @@
 #     i.e. the flat `(AxisType, int, ...)` arg. So `UOp.axis_id`'s RETURN TYPE is
 #     forced by a file six levels away, and a port that returned the axis type with
 #     the ids would break there. That is why the accessors above return two things.
-#   * `runtime/support/hcq2.py:69,87` is `UOp.custom_function(name).call(...)` with
+#   * `runtime/support/hcq2.py:68,87` is `UOp.custom_function(name).call(...)` with
 #     and without `dtype=`. Upstream that is `UOp(Ops.CUSTOM_FUNCTION, src=srcs,
 #     arg=CustomFunction(name, dtype))`, and `CallInfo` LOST its `dtype` field
 #     because the return dtype moved into the CUSTOM_FUNCTION's arg. The rebase

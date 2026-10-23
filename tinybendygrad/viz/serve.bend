@@ -64,7 +64,7 @@
 # TWO MORE SEAMS THAT ARE NOT SOCKETS, and both are measured facts about
 # ANOTHER FILE rather than choices:
 #
-#   serve.py:68-87    load_rewrites    needs `RewriteTrace` (uop/ops.py:1726)
+#   serve.py:61-80    load_rewrites    needs `RewriteTrace` (uop/ops.py:1726)
 #   serve.py:171-200  _reconstruct,    needs `TrackedGraphRewrite`
 #                     get_full_rewrite,  (uop/ops.py:1619)
 #                     get_sink_at

@@ -1,4 +1,4 @@
-# jit.bend -- tinygrad/engine/jit.py:185. `TinyJit`: the input spec, the run counter, the
+# jit.bend -- tinygrad/engine/jit.py:180 symbol=TinyJit. `TinyJit`: the input spec, the run counter, the
 # `captured` record and the dispatch that decides, on every call, whether to EAGERLY RUN, to
 # CAPTURE, or to REPLAY.
 #
@@ -14,7 +14,7 @@
 # So the unit brief's "input spec / count / misc / vars / JitMatchError" are from an OLDER
 # `engine/jit.py`. THIS checkout's match is
 # `self.captured.expected_input_info != expected_input_info` (jit.py:173), the counter is
-# `self.cnt` (jit.py:109), the error is `JitError` (jit.py:40), and the gate below is built
+# `self.cnt` (jit.py:107), the error is `JitError` (jit.py:44), and the gate below is built
 # against THIS file's messages, byte for byte, against CPython.
 # `examples/beautiful_mnist.ts` (committed) reimplements the same idea in TypeScript with a
 # SHAPE string and a DIFFERENT message -- `train_step was captured with 1568/2 and called with
@@ -31,9 +31,9 @@
 #   jit.py:29-38   jit_lower               the five steps in order; 3 are seams
 #   jit.py:40      JitError                the exception CLASS -> `Maybe<&2,String>`
 #   jit.py:42-47   _check_no_non_tensor_return   the walk and its message
-#   jit.py:51-60   CapturedJit fields, `linear`
+#   jit.py:34-43 symbol=linear   CapturedJit fields, `linear`
 #   jit.py:62-64   _written_uops           PORTED, via realize.bend's `get_call_written_bufs`
-#   jit.py:66-68   _symbolic_ret           the comprehension; `get_parameters` is a seam
+#   jit.py:71-73   _symbolic_ret           the comprehension; `get_parameters` is a seam
 #   jit.py:70-75   CapturedJit.__call__    the `concrete` fold, the `jit execs` threshold,
 #                                           the var rebind
 #   jit.py:77-82   free_intermediates      the predicate chain; Buffer is a seam
@@ -63,7 +63,7 @@
 #     owns each.
 #
 # ONE MEASURED FACT THAT CHANGES WHAT THIS FILE IS FOR, and it is why the gate prints a shape
-# and a `True` next to each other. `expected_input_info` (jit.py:55) is `(view, variables,
+# and a `True` next to each other. `expected_input_info` (jit.py:99) is `(view, variables,
 # dtype, device)` per input, and jit.py:98 builds `view` as
 # `u.substitute({u.base: UOp(Ops.NOOP)}, extra_pm=mop_cleanup)`. The base is REPLACED BY A
 # NOOP, so the view carries no SHAPE, no size and no dtype beyond its own. Measured in CPython:

@@ -12,7 +12,7 @@
 # NEEDS at the foot of this file.
 #
 # THE THREE WALLS, stated where they bite.
-# 1. THE ALLOCATOR. `offsets` come from `TLSFAllocator` (memory.py:48,50,51), which is
+# 1. THE ALLOCATOR. `offsets` come from `TLSFAllocator` (memory.py:46,50,51), which is
 #    `tinygrad/runtime/support/memory.py:23` -- a different file, not ported, and a MUTABLE
 #    Python object whose `self.blocks` is a dict of linked-list tuples that `alloc` splits
 #    and coalesces in place. Bend has no mutable state and no first-class functions, so a
@@ -28,7 +28,7 @@
 #    `mem_numel` reads `ParamArg.size` and is exact for every node this file can see.
 #    `mem_raw` is the honest spelling of the product and is what the peak fold uses.
 # 3. The return, `linear.substitute(replace_map, name="memory plan", walk=True)`
-#    (memory.py:62), needs `UOp.substitute` (ops.py:532) and `UOp.new_buffer` (ops.py:853,
+#    (memory.py:61), needs `UOp.substitute` (ops.py:514 symbol=substitute) and `UOp.new_buffer` (ops.py:835 symbol=new_buffer,
 #    a P6 device). `mem_replace_map` builds the map and the count of arenas is gated; the
 #    substitute is the wall. See the TODO block at the foot.
 

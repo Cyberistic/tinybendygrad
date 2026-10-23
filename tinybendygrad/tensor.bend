@@ -25,17 +25,17 @@ import ./mixin/dtype.bend as D
 #      REGISTRATION (tensor.py:112) has no counterpart and does not need one: the
 #      registry is only ever READ, and what it is read for is "does some live
 #      Tensor hold this uop", which `Tensors.holds` answers from the same list.
-#   2. A `Buffer` (tensor.py:250, :283, :422) is device state. `new_buffer`
-#      (ops.py:853) and `_frompy` (ops.py:870) build a BUFFER node PLUS an opaque
+#   2. A `Buffer` (tensor.py:249, :281, :422) is device state. `new_buffer`
+#      (ops.py:835 symbol=new_buffer) and `_frompy` (ops.py:855 symbol=_frompy) build a BUFFER node PLUS an opaque
 #      allocation, and only the NODE is a graph fact. So `__init__`'s
 #      list/tuple/bytes arm takes the already-built uop, and `_buffer`, `data`,
 #      `clone`, `to` and `from_blob` are `TODO(p3)`.
-#   3. `UOp.substitute` (ops.py:532) is `graph_rewrite`, which is P3 and lives in
-#      another module. `_apply_map_to_tensors` (tensor.py:27) needs it, so the
+#   3. `UOp.substitute` (ops.py:514 symbol=substitute) is `graph_rewrite`, which is P3 and lives in
+#      another module. `_apply_map_to_tensors` (tensor.py:18 symbol=_apply_map_to_tensors) needs it, so the
 #      SCOPE WALK is ported and the substitution is not.
 #   4. The schedule cluster. `linear_with_vars` (tensor.py:167) is 44 lines of
 #      `create_linear_with_vars`, `contiguous_mops_to_view`, `is_store_after`,
-#      `pm_drop_after` and `UOp.new_buffer`; `realize` (tensor.py:219) needs
+#      `pm_drop_after` and `UOp.new_buffer`; `realize` (tensor.py:218 symbol=realize) needs
 #      `needs_storage` and `run_linear`. None of that is built, so the whole
 #      realize path is a named seam and this file's gate does not touch it.
 #
@@ -49,13 +49,13 @@ import ./mixin/dtype.bend as D
 #
 # WHAT I NEED FROM THE SCHEDULE CLUSTER (`tinybendygrad/schedule/`, READ-ONLY to
 # me, five files in flight), named so the hand-off is unambiguous:
-#   * `create_linear_with_vars(sink) -> (UOp, var_vals)` -- tensor.py:210. The
+#   * `create_linear_with_vars(sink) -> (UOp, var_vals)` -- tensor.py:26. The
 #     return is a pair, so it is a two-field `Data`, and `var_vals` is read by
 #     `realize`.
-#   * `contiguous_mops_to_view(uop, src) -> Maybe<UOp>` -- tensor.py:194.
-#   * `is_store_after(uop) -> Bool` -- tensor.py:205.
-#   * `run_linear(linear, var_vals)` -- tensor.py:224, an effect.
-#   * from `tinybendygrad/engine/`, `capturing` -- tensor.py:278.
+#   * `contiguous_mops_to_view(uop, src) -> Maybe<UOp>` -- tensor.py:391.
+#   * `is_store_after(uop) -> Bool` -- tensor.py:392.
+#   * `run_linear(linear, var_vals)` -- tensor.py:223, an effect.
+#   * from `tinybendygrad/engine/`, `capturing` -- tensor.py:277.
 # My gate is built so it needs NONE of them: every row is a graph SHAPE, which is
 # what tensor.py decides, not what the schedule does with it.
 #

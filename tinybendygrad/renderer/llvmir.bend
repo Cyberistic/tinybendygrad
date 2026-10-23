@@ -5,7 +5,7 @@
 # `llvm_intrinsics`, `code_for_op`, `code_for_workitem`, `barrier`, the two NAMES
 # the naming walk assigns (`%data{slot}`, `%{local|reg}_{slot}`), the
 # `getelementptr` line and the AMD `f32_to_fp8` prefix. Its own header names
-# STAGE 2 as "`_render_fn` (:156-160), `_render_footer` (:210, :265), the per-op
+# STAGE 2 as "`_render_fn` (:231-235 symbol=_render_fn), `_render_footer` (:232 symbol=_render_footer, :281 symbol=_render_footer), the per-op
 # emitter strings of `base_rewrite` (:77-144) and `_render_kernel`'s naming walk
 # (:161-202)". This file is that list MINUS the walk, and the reason is in the
 # NOT-PORTED section: the walk needs a UOp model this tree does not have.
@@ -45,8 +45,8 @@
 # only remaining loss is the `lt 1 ptr f32` duplicate, which no separator can fix.
 #
 # ONLY THE SEPARATOR MOVED, once per key, and `=` was never load-bearing:
-#   `abi=`  `abi` IS upstream's own class attribute (llvmir.py:147), read at :160 and
-#          assigned `'win64cc'` at :207 and `"amdgpu_kernel"` at :230. `abi=None` is the
+#   `abi=`  `abi` IS upstream's own class attribute (llvmir.py:165), read at :177 and
+#          assigned `None` at :225 and `"amdgpu_kernel"` at :254. `abi=None` is the
 #          falsy case of `{' ' + self.abi if self.abi else ''}`. Python keyword-argument
 #          spelling in a LABEL; upstream has no `abi=` anywhere.
 #   `vol=`  upstream has NO identifier `vol`. `is_volatile` (llvmir.py:10) is the function and
@@ -167,7 +167,7 @@
 #     `li-oracle.py` KEEPS `walk_rows()` and it RUNS -- it is dead only in the
 #     `rows` path -- so the moment `ops.bend` grows the three readers this is a
 #     `Nd` record and a fold, not a re-derivation.
-#   * `render` (llvmir.py:209 and :251-264). Both are
+#   * `render` (llvmir.py:227 symbol=render and :227-240 symbol=render). Both are
 #     `(k:=_render_kernel(uops))[0] + (k[1], _render_footer(uops))` joined -- they
 #     need the walk. `li-oracle.py` keeps `render_rows()` for the same reason, and
 #     it already found a real refusal: `amd_fp8s("gfx1100")` is EMPTY, so an fp8
@@ -181,10 +181,10 @@
 #     `tc_ptx.bend`'s. `li-oracle.py` keeps `wmma_rows()` and it runs.
 #   * `AMDLLVMRenderer.asm` (llvmir.py:248-250) is `renderer/amd/elf.py`'s
 #     `assemble_linear` -- FFI plus a linker. One Python line, no rows.
-#   * `__init__` (llvmir.py:211-214, :274-284) binds `CPULLVMCompiler` /
+#   * `__init__` (llvmir.py:169-172 symbol=__init__, :169-179 symbol=__init__) binds `CPULLVMCompiler` /
 #     `AMDLLVMCompiler` / `tc.get_amd` -- `runtime/support/compiler_llvm.py` and
 #     `renderer/tc.py`, both other units' work.
-#   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :23) are
+#   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :21 symbol=lconst) are
 #     `float_to_fp8` (dtype.py:244) and `truncate` (dtype.py:295), so they are
 #     `dtype.bend`'s. What is HERE is the FOUR-WAY DISPATCH (`lconst branch <d>`,
 #     eighteen rows, one per dtype) and the inf/nan hex, which is llvmir.py's own
@@ -197,7 +197,7 @@
 #     is rule N's emitter.
 #   * `range_str` (uop/ops.py:95-97) -- only its LABEL GRAMMAR is here, because
 #     that is all `base_rewrite` reads. `axis_id`'s derivation (`self.arg[1:]`,
-#     ops.py:502) is `uop/ops.bend`'s, so the ids are parameters and the `m`
+#     ops.py:499) is `uop/ops.bend`'s, so the ids are parameters and the `m`
 #     PREFIX is three rows of its own with ONE caller group.
 #   * `SPECIAL`'s `d.vmax` is `uop/ops.bend`'s `nc`/Variable machinery. The AMD
 #     footer gate is llvmir's own half -- the `u.arg[0] == "l"` FILTER and `prod`

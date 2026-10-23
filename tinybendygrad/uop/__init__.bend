@@ -19,7 +19,7 @@
 #     `__repr__` are both `str(self)`, which is `ops.bend:301 Ops.name`.
 #   * `GroupOp.Unary .. GroupOp.Comparison` are `ops.bend:387-493`.
 #
-# SO WHAT IS LEFT IS `GroupOp.All` (`__init__.py:135`, `All = set(Ops)`), the one
+# SO WHAT IS LEFT IS `GroupOp.All` (`__init__.py:134`, `All = set(Ops)`), the one
 # member of the file's vocabulary `ops.bend` does not have. It is here because
 # it is LOAD-BEARING: ten call sites read it, and two read a SET DIFFERENCE.
 #

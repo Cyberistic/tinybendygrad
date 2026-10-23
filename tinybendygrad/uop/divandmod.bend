@@ -3,7 +3,7 @@
 # `div_and_mod_symbolic` is a three-entry `PatternMatcher`: two fast inline rules
 # and `fold_divmod_general`. Upstream, four of the 109 lines are the matcher and
 # eighty-nine are the big rule, so this file ports the matcher in full and THREE
-# arms of `fold_divmod_general` -- :11, :13 and :15 -- and the TODO block names
+# arms of `fold_divmod_general` -- :8, :61 and :108 -- and the TODO block names
 # every line of the rest with the wall behind it. The one wall is `UOp._min_max`
 # (ops.py:1104), P3 and not written (`fold.bend:2176`): the remaining 60 lines are
 # all interval arithmetic over symbolic UOps, which :11 needs too except that a

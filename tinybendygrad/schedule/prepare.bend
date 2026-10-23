@@ -30,14 +30,14 @@
 # approximated and nothing here is faked: a row that cannot be computed prints
 # the wall's name, so a diff can tell a wall from a value.
 #
-# W1. `graph_rewrite` -- ops.py:1611, called FOUR TIMES at prepare.py:274-277.
+# W1. `graph_rewrite` -- ops.py:1886 symbol=graph_rewrite, called FOUR TIMES at prepare.py:280-283.
 #     It is a fixpoint over a worklist: rewrite every node, push the result
 #     back, repeat until nothing fires. Bend refuses mutual recursion and a
 #     worklist with a REBUILT todo is not a subterm, so ONE pass per table is
 #     the most this file can spell. The per-step rows are labelled `1p` (one
 #     pass) and a one-pass row is not a fixpoint row.
-# W2. `UOp.substitute` -- ops.py:1273, and `dict_map` / `dict_map.update` at
-#     prepare.py:139-149. `forward_call_outputs`'s `placed` map and
+# W2. `UOp.substitute` -- ops.py:514 symbol=substitute, and `dict_map` / `dict_map.update` at
+#     prepare.py:11-21 symbol=forward_call_outputs. `forward_call_outputs`'s `placed` map and
 #     `resolve_function`'s `flat_storage` are both substitutions, so both inherit
 #     W1.
 # W3. THE BUILDERS. `UOp.index`, `.after`, `.store`, `.contiguous`, `.pad_to`,
@@ -46,7 +46,7 @@
 #     has `UOp.after`, `UOp.new`, `UOp.group` and `UOp.alu` but NOT the
 #     move-mixin half, so every rule whose body IS a builder is ported as its
 #     DECISION: the arm, and the arithmetic that chose it.
-# W4. `is_expanded` -- prepare.py:113-115. `indexed.substitute({x.base:NOOP},
+# W4. `is_expanded` -- prepare.py:123-125. `indexed.substitute({x.base:NOOP},
 #     extra_pm=pm_mops).ranges` needs `substitute` (W2) AND `pm_mops`'s own
 #     rewrite (W1). `split_reduceop`'s candidate SEARCH takes the vector as a
 #     PARAMETER and the oracle supplies it from tinygrad's own call, so the
@@ -63,13 +63,13 @@
 #
 # `O.PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:2966), so the
 # oracle's `<t>_<k>_dt` and `_src` columns have no field to read: those are
-# `UPat` facts (`match_dtype`, and the src permutation tuple at upat.py:47) and
+# `UPat` facts (`match_dtype`, and the src permutation tuple at upat.py:39) and
 # `UPat` does not survive into the compiled IR. `schedule/indexing.bend` records
 # the same wall for its three tables.
 #
 # THE TABLES. Five `PatternMatcher`s plus `mop_cleanup`, which `earliest_rewrites`
-# prepends (`prepare.py:199`), so SIX tables live here. `PatternMatcher.__add__`
-# is `functools.cache`d over `(self.patterns + more.patterns)` (ops.py:1603), so
+# prepends (`prepare.py:195`), so SIX tables live here. `PatternMatcher.__add__`
+# is `functools.cache`d over `(self.patterns + more.patterns)` (ops.py:290), so
 # a `+` composition is a CONCATENATION with a TAG SHIFT: `pm_mops` is 3 rules and
 # `earliest_rewrites` is 29, so `pr_t_mix2` is `pm_mops` then `pm_inline_calls`
 # then `pm_disk_copy` (3+2+2 = 7 rules, tags 0..6) and `pr_t_mix3` is `pm_mops`

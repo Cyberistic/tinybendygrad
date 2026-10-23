@@ -111,7 +111,7 @@
 #      `PR.Sched.group_for_reduces`, i.e. the count of WARP/LOCAL axes.
 #   `up_go` is `prod(full_shape[i] for i, t in zip(full_shape, axis_types) if t
 #   in (UPCAST, UNROLL))`, which is `get_kernel_actions`' `up` AND
-#   `Scheduler.upcast_size` -- the SAME fold at search.py:96 and postrange.py:97.
+#   `Scheduler.upcast_size` -- the SAME fold at search.py:84 and postrange.py:82.
 #   It is here because `heuristic.py:115` guards the MORE-UPCAST loop on
 #   `k.upcast_size() < 32`, so it is the block's own predicate. All three
 #   fixtures answer 1, and that is the CORRECT answer: a base kernel from the
@@ -120,7 +120,7 @@
 #   instead of 1 moves all three.
 #
 # WHAT IS NEXT, AND IT IS NOT A ONE-LINER. The GROUPING guard at
-# heuristic.py:82 is `prod(k.full_shape[i] for i in k.upcastable_dims) <= 2048`,
+# heuristic.py:81 is `prod(k.full_shape[i] for i in k.upcastable_dims) <= 2048`,
 # and `upcastable_dims` is GLOBAL/LOCAL/WEAK with size > 1 -- a DIFFERENT index
 # set from `up_go`'s UPCAST/UNROLL, so the product is a different number and
 # `up_go` does not compute it. On the 16x32 reduce kernel that product is 16 and

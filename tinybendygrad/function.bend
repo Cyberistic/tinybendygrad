@@ -1,4 +1,4 @@
-# function.bend -- tinygrad/function.py:113. The `@function` decorator: the
+# function.bend -- tinygrad/function.py:102 symbol=function. The `@function` decorator: the
 # implicit-input capture that turns a traced graph into a CALL, and the two
 # refusals that guard it.
 #
@@ -39,8 +39,8 @@
 #   function.py:101-113 `function` + two overloads both decorator spellings
 #
 # WHAT IS A SEAM, with the owner and the Python line, at Section I:
-#   `UOp.param_like`  ops.py:1239       `UOp.substitute`  ops.py:532
-#   `UOp.call_with_outputs` ops.py:1272  `UOp.replace`     ops.py:245
+#   `UOp.param_like`  ops.py:1228 symbol=param_like       `UOp.substitute`  ops.py:514 symbol=substitute
+#   `UOp.call_with_outputs` ops.py:1260 symbol=call_with_outputs  `UOp.replace`     ops.py:245
 #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
 #   `self.fxn(*args, **kwargs)`          `__get__`         `functools.partial`
 #

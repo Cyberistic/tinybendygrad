@@ -66,11 +66,11 @@
 # ---------------------------------------------------------------------------
 # FIVE DIVERGENCES, stated rather than hidden.
 #
-# A. `UOp.const(v, dt)` IS A PAIR. `ops.py:631` is
+# A. `UOp.const(v, dt)` IS A PAIR. `ops.py:630` is
 # `UOp(Ops.CONST, arg=dt.const(v), src=()).cast(dt)`, and the cast folds only
 # when the CONST's own dtype already IS `dt`. A CONST's dtype is read off its
 # ARG (`ops.py:246`), so it is `dtypes.from_py(arg)`, and `from_py`
-# (`dtype.py:100-104`) returns ONLY `bool`, `weakint` or `weakfloat`. So for
+# (`dtype.py:30-34`) returns ONLY `bool`, `weakint` or `weakfloat`. So for
 # every CONCRETE `dt` the cast cannot fold and the pair is what Python builds:
 # `UOp.const(0, dtypes.uint)` is TWO nodes. `UOp.const(v)` with no dtype folds
 # and is ONE, which is every constant `shl`/`shr` and every bare `(1 << k) - 1`
@@ -124,8 +124,8 @@
 # CONTROL, dd-fix round 1 (2026-10-04): this comment block is a comment and nothing
 # else, and the gate is required to read the SAME 172 rows byte for byte. Recorded
 # because the THREE arena-aliasing defects fixed this round -- `l2i_shl.hi`
-# (dtype.py:41-44), `l2i_cdiv.abs` (dtype.py:58-61) and `l2i_cdiv.signed`
-# (dtype.py:71) -- are the kind a green gate cannot tell from a fixed one: each read
+# (dtype.py:47-50), `l2i_cdiv.abs` (dtype.py:47-50) and `l2i_cdiv.signed`
+# (dtype.py:69-72) -- are the kind a green gate cannot tell from a fixed one: each read
 # as a plausible string, and `--check-only` said `ALL PROOFS CHECK` on every one of
 # them. See `.agents/slop/notes/bend2-constraints.md` at the end.
 #
@@ -138,9 +138,9 @@
 #   1. `l2i_cdiv.step` (dtype.py:65) built `AND` over the SHL result's low word and over
 #      the ARENA INDEX of `C(1)` where upstream says the SHR result's low word and the
 #      literal `1`. The SHR subtree was built, dead, and off the cone.
-#   2. `l2i_cdiv.step` (dtype.py:67) handed `l2i(SUB, ...)` the CMPLT ARM'S ANSWER where
+#   2. `l2i_cdiv.step` (dtype.py:21) handed `l2i(SUB, ...)` the CMPLT ARM'S ANSWER where
 #      dtype.py:66 and :67 spell the SAME `*r`.
-#   3. `l2i_cdiv.abs.c` (dtype.py:61) handed the B-side `.where` pair the A-SIDE
+#   3. `l2i_cdiv.abs.c` (dtype.py:60) handed the B-side `.where` pair the A-SIDE
 #      negation's words, so `nb`'s own low word was built and never read.
 #   4. `l2i_cdiv.abs` (dtype.py:59) minted four BITCASTs that `mixin/dtype.py:53` folds
 #      on a `u32` source, which is why `xdt` is a parameter of `abs`, `sign`, `cdiv`.

@@ -54,9 +54,9 @@ import ./../datasets/__init__.bend as D
 # AND TWO MORE, BOTH BERT-ONLY:
 #   (5) `gelu` as BERT DEFINES IT, at :236 -- `x * 0.5 * (1.0 + (x / 1.41421).erf())`.
 #       `ew_gelu` is MISSING (mixin/elementwise.bend:772 has only the CONSTANT `ew_k.gelu`)
-#       and `.erf` is MISSING entirely. clip.py:11 `gelu = Tensor.gelu` is the OTHER
+#       and `.erf` is MISSING entirely. clip.py:12 `gelu = Tensor.gelu` is the OTHER
 #       gelu, the openai one, so the two files disagree about what the word means.
-#   (6) `Tensor.binary_crossentropy_logits` MISSING (:61,:72).
+#   (6) `Tensor.binary_crossentropy_logits` MISSING (bert.py:61, bert.py:72).
 #   (7) `Tensor.argmax` MISSING (:66,:70) -- resnet.bend's census names it MISSING too, so
 #       this is NOT a new ask; it is the FIRST one that BERT hits and resnet only reaches
 #       it in `postprocess`.

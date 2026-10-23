@@ -92,7 +92,7 @@ import ./../extra/datasets/__init__.bend as D
 #         readinto (:17) needs ...` and `nn/onnx.bend` names the same wall in
 #         its own words: "Nothing in this port can read a byte out of a tensor".
 #         So there is no byte source for the pickle OR for the images.
-#     `imagenet_dataloader` (:4,:13)  MISSING. It is `examples/test_onnx_imagenet.py:25`
+#     `imagenet_dataloader` (:25,:53)  MISSING. It is `examples/test_onnx_imagenet.py:25`
 #         upstream and the port has no such file. Note that `nn/datasets.bend`
 #         (469 lines) has the MNIST AND CIFAR URL TABLES and no ImageNet one:
 #         `grep -c imagenet tinybendygrad/nn/datasets.bend` = 0.

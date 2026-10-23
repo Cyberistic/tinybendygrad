@@ -43,7 +43,7 @@
 # dims (29, 30, 31).
 #
 # THE NAME CORRESPONDENCE: `pm_device_to_var` (gpudims.py:91), `pm_group_gpudims`
-# (:101) and `pm_range_to_special` (:103) -- three of the eight, and the three
+# (:103) and `pm_range_to_special` (:103) -- three of the eight, and the three
 # that ARE tables upstream. The merged file called them `dv_table`, `gd_table` and
 # `rs_table`, so this is THREE renames, all inside this file, all applied in ONE
 # single-pass token rewrite by `.agents/slop/split-codegen3.py`, whose `--check`

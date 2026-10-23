@@ -18,15 +18,15 @@
 # names the owning file.
 #
 # WALL: THE ROOT, NOT THE CHILD. `.f()` rebuilds the pattern with the op passed to `f`
-# at the ROOT and the receiver as the CHILD, and `pdict` is keyed on `p.op` (ops.py:1449,
+# at the ROOT and the receiver as the CHILD, and `pdict` is keyed on `p.op` (ops.py:1587,
 # 1607) -- so a `.f()` entry's op set is the one handed to `f`, and the RECEIVER's op
 # belongs in the rule BODY test. The wrong op makes the rule unfireable rather than
 # wrong: the engine never looks the node up. MEASURED `ct` roots, tags 0..8:
 # INDEX AFTER END STAGE STAGE STAGE INDEX INDEX INDEX. The reject sets are the
-# CHILDREN's ops, read off `UPat.early_reject` (ops.py:1477), which is why they were
+# CHILDREN's ops, read off `UPat.early_reject` (ops.py:1442), which is why they were
 # RIGHT in the port while the op sets were not.
 #
-# MEASURED: `early_reject` IS A NECESSARY CONDITION, not a veto (ops.py:1609 is
+# MEASURED: `early_reject` IS A NECESSARY CONDITION, not a veto (ops.py:1604 is
 # `if not early_reject.issubset(ler): continue`). Every reject set in these tables is
 # empty or a singleton (`max(len) == 1`) and every `.f()` rule re-checks its own pattern,
 # so mutating the subset test moves NOTHING (M3, M36).

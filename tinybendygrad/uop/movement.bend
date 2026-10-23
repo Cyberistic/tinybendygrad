@@ -13,7 +13,7 @@
 # node or a strict ancestor, and neither changes `self`'s srcs.
 #
 # `early_reject` IS A NECESSARY CONDITION, not a veto: a rule FIRES when the op set
-# IS a subset of `ler` (ops.py:1609). Rule 6's `{STACK, CONST}`, from `UPat.cvar`,
+# IS a subset of `ler` (ops.py:1701). Rule 6's `{STACK, CONST}`, from `UPat.cvar`,
 # is the only non-empty set and its own src-op tests already imply it, so no verdict
 # here is decided by the subset test. No pattern in movement.py binds a name twice,
 # so no rule emits the identity check `upat.py:100-105` builds for one.

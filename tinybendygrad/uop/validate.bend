@@ -64,7 +64,7 @@
 # from its own arg, so only non-CONST bounds wait on `_min_max`.
 #
 # ---------------------------------------------------------------------------
-# `_min_max` BLOCKS MORE THAN ITSELF. `spec.py:23` reads `idx.vmin` and
+# `_min_max` BLOCKS MORE THAN ITSELF. `spec.py:22` reads `idx.vmin` and
 # `idx.vmax` for the fast path, and `z3_bv`/`z3_shift` need per-operand bounds
 # for the BV width and the shift amount, so this file cannot render a gate with
 # a `&` or a `<<` in it until `fold.bend` grows the fold. `dv_bitcast_21` is

@@ -13,7 +13,7 @@
 #   TODO(p3) wgsl.py:7   sign_extend  -- `.bitcast`/`.alu` CONSTRUCTOR SUGAR
 #   TODO(p3) wgsl.py:15  packed_store -- ditto, plus `.load`/`.store`
 #   TODO(p3) wgsl.py:24  packed_load  -- ditto, plus `.index`
-#   TODO(p3) wgsl.py:35  is_nan       -- ditto (`.bitcast` and the compare)
+#   TODO(p3) wgsl.py:37  is_nan       -- ditto (`.bitcast` and the compare)
 #   TODO(p3) wgsl.py:42  wgsl_matcher -- ditto; the seven RULES return arenas,
 #                                  so a rule table here would have nothing to
 #                                  return but the input it was handed
@@ -46,7 +46,7 @@
 #                       packed store's string rule, which IS ported
 #   :41  wgsl_matcher   the seven GUARDS ported, the seven rewrites walled
 #   :53  WGSLRenderer   every attribute and every method below
-#   :65  string_rewrite ALL SEVENTEEN RULES' STRINGS AND THEIR SEVENTEEN `UPat`s,
+#   :67  string_rewrite ALL SEVENTEEN RULES' STRINGS AND THEIR SEVENTEEN `UPat`s,
 #                       in Python's order. This was the largest wall in the file
 #                       and it was not a big one: `ctx[x]` is `self.r[x]`, a dict
 #                       the naming pass has already filled, so `ctx[x]` is the

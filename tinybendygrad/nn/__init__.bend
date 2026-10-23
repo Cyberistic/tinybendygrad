@@ -53,7 +53,7 @@ import ./state.bend as ST
 # table are at the gate section at the foot of the file.
 #   nn_conv nn_convb nn_conv0   the four `beautiful_mnist` convs' weight shapes,
 #                              the bias, and the DEGENERATE `in//groups == 0`
-#   nn_same nn_same_rev        `padding='same'` at :102, and the REVERSAL
+#   nn_same nn_same_rev        `padding='same'` at :103, and the REVERSAL
 #   nn_ks2  nn_c1d             `make_tuple(ks, 2)` and `Conv1d`'s 1-tuple
 #   nn_lin                     `Linear(576, 10)`'s two shapes
 #   nn_bn_mask nn_bn_axes      `shape_mask` (:42) and `reduce_axes` (:47)
@@ -67,17 +67,17 @@ import ./state.bend as ST
 #   nn_lstm nn_lstm_st         LSTMCell's four shapes and four keys
 #   nn_formula                 `1/sqrt(f*n)` and `1/sqrt(n)` with literal factors
 #
-#   Conv2d.__init__  make_tuple(:98), the `padding='same'` comprehension (:102),
-#                    `flatten(pad)` (:103), the weight/bias shapes (:106-107)
+#   Conv2d.__init__  make_tuple(:99), the `padding='same'` comprehension (:101),
+#                    `flatten(pad)` (:103), the weight/bias shapes (:103-104)
 #   BatchNorm        `shape_mask` (:42), `reduce_axes` (:47), and the `__dict__`
 #                    entries in ASSIGNMENT order (:33-39)
 #   Linear           `bound` (:173) and the two shapes (:174-175)
-#   LayerNorm        `axis` (:253) and the shapes (:254-255)
+#   LayerNorm        `axis` (:253) and the shapes (:253-254)
 #   GroupNorm /      the two `reshape` shapes (:203, :207, :231, :233)
 #   InstanceNorm
-#   RMSNorm          the `-1` axis of `mean(-1, keepdim=True{})` (:300)
+#   RMSNorm          the `-1` axis of `mean(-1, keepdim=True{})` (:296)
 #   LSTMCell         the four parameter shapes (:409-412)
-#   Embedding        the `glorot_uniform` bound (mixin/rand.py:197) and the shape
+#   Embedding        the `glorot_uniform` bound (mixin/rand.py:192 symbol=glorot_uniform) and the shape
 #
 # TWO WALLS SHAPE THE FILE AND NEITHER IS A SURPRISE.
 #   1. REALIZATION. `Tensor.uniform` (:106, :174), `Tensor.ones` (:35, :197, :254),

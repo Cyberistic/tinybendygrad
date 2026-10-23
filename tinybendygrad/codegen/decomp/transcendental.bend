@@ -87,7 +87,7 @@
 #    float16 -- only the float64 arm of `_reduce_d` reads it. A root-walking
 #    oracle would not see those nine nodes; this one prints every node interned,
 #    so `n_cw` counts them and the port builds them. Divergence B's note.
-# 5. `dtypes.finfo` (dtype.py:113) IS NOT `(bits-1-x, ...)`: bfloat16 and
+# 5. `dtypes.finfo` (dtype.py:202) IS NOT `(bits-1-x, ...)`: bfloat16 and
 #    float16 both have `bits == 16` and mantissas 7 and 10. It is a TABLE, and
 #    `mt_f16`/`mt_f32`/`mt_f64` are its three rows here.
 # 6. `polyN` (helpers.py:153) IS SEEDED WITH THE PYTHON FLOAT `0.0`, so its
@@ -100,7 +100,7 @@
 #
 # A. NO PROMOTION CASTS and NO `UOp.const` FOLD. `mixin/elementwise.py`'s
 #    `_broadcasted` casts a non-CONST operand up to the least upper dtype, and
-#    `ops.py:638` writes `UOp.const` as `CONST(b).cast(dtype)`. `ops.bend`'s
+#    `ops.py:233` writes `UOp.const` as `CONST(b).cast(dtype)`. `ops.bend`'s
 #    `UOp.new` runs the first and its `UOp.const` IS the second, because the
 #    port's `Const` carries the VALUE and a bare CONST node has no dtype to
 #    promote into. Both sets are MEASURED -- `.agents/slop/tx-arena.py` traces
@@ -116,7 +116,7 @@
 #    for this file and is NOT used: it eats `cody_waite`'s `.cast(int64)`, merges
 #    two arena slots into one, and silently rewires every src index.
 # B. A CONST HAS NO DTYPE IN THE PORT. Python's `CONST` derives one
-#    (`ops.py:186`: `weakint`/`weakfloat`/`bool`) and `UOp.const(b, dt)` folds
+#    (`ops.py:116`: `weakint`/`weakfloat`/`bool`) and `UOp.const(b, dt)` folds
 #    it into the value; the port's `Const` is `CInt{H.I64}`/`CFloat{F32}` and a
 #    bare CONST node has no dtype field. So the ORACLE prints `ci`/`cf`/`cb` --
 #    which encode the value KIND and therefore the weak dtype -- and nothing
@@ -130,7 +130,7 @@
 # `get_transcendental_patterns(supported_ops, TRANSCENDENTAL>=2)`, so `ops` and
 # `force` are PARAMETERS here -- `tx_tab` takes five Bools and returns a `Data`
 # table -- because `Config` does not exist in Bend and neither does a renderer.
-# `supports_float4` (renderer/__init__.py:67, set False by wgsl.py:58) is NOT
+# `supports_float4` (renderer/__init__.py:67, set False by wgsl.py:59) is NOT
 # reachable from this file: MEASURED, the identifier occurs nowhere in
 # transcendental.py or in anything it calls. `TRANSCENDENTAL` is the only flag
 # and it is `force`.

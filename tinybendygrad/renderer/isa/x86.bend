@@ -23,7 +23,7 @@
 #   STAGE 2  THE OP ENUM AND THE OPERAND CLASSES    py:15-87, 73 lines   DONE
 #     `X86Ops`'s eighty-eight names with their `auto()` numbers in BOTH directions,
 #     the seven `X86GroupOp` / module-level op sets, and `GPR_DEST_OPS` /
-#     `XMM_OPS`. 105 rows. `Rm1st` is a FORMULA in the source (x86.py:87,
+#     `XMM_OPS`. 105 rows. `Rm1st` is a FORMULA in the source (x86.py:86,
 #     `... | (Rm2nd & TwoAddress)`) and `XMM_OPS` is a FILTER
 #     (`{op for op in X86Ops if op.name.startswith('V')} - GPR_DEST_OPS`), so
 #     porting the FORMULA and diffing its twenty-six- and forty-four-member results
@@ -81,7 +81,7 @@
 #
 # * `extra_matcher` (py:92-132, 41 lines) -- NINETEEN `(UPat, lambda)` pairs. `UPat`
 #   is a PATTERN LANGUAGE with backreferences, `allow_any_len` and a compiled
-#   matcher (`tinygrad/uop/ops.py:1582`); a `List<&2, Pattern>` needs a pattern
+#   matcher (`tinygrad/uop/ops.py:1789`); a `List<&2, Pattern>` needs a pattern
 #   AST and an interpreter, which is `ops.bend`'s substrate, not this file. The
 #   *rewrites* these lambdas express (`bool CMPNE is XOR`, `-x -> 0 - x`,
 #   `x % y -> x - y*floor(x/y)`) are pure and are recorded as a TODO rather than

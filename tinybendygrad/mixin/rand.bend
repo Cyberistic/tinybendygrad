@@ -3,7 +3,7 @@
 # (`grep -c "^  def " tinygrad/mixin/rand.py` = 20), in Python's order.
 #
 # NOT IN rand.py, despite a brief that lists them: `arange` (op.py:166) and `linspace`
-# (op.py:198) are W1 below; `permute` is `mixin/movement.bend`'s `mxw_permute`, CALLED not
+# (op.py:1844) are W1 below; `permute` is `mixin/movement.bend`'s `mxw_permute`, CALLED not
 # re-implemented; and `bernoulli` DOES NOT EXIST (`grep -rn "def bernoulli" tinygrad/` is
 # empty -- tinygrad spells it `randn` + a threshold). The example reaches FOUR of its six
 # symbols through here (`rand` :50, `randn` :106, `normal` :141, `uniform` :158, via
@@ -49,17 +49,17 @@
 #      `_pad_constant`'s `where` half is never built, and `_pool` is called with
 #      `stride=1, dilation=1` on a 1-D source. Gated by `arange3`/`arange5`.
 #      TODO(p3) mixin/op.py:166  `arange` -- delete the `op_` block and call `mixin/op.bend`'s
-#        `mo_arange` when that file grows it. `arange` is also reached by `mixin/op.py:198
+#        `mo_arange` when that file grows it. `arange` is also reached by `mixin/op.py:166 symbol=arange
 #        linspace`, `:215 eye`, `:233 _tri`, `:236 triu`, `:259 tril` and
-#        `nn/__init__.py:370` (`_embedding_fwd`), so this block is worth more than this file.
+#        `nn/__init__.py:366 symbol=_embedding_fwd` (`_embedding_fwd`), so this block is worth more than this file.
 #   W2 `cat` (op.py:731), reached from rand.py:15, :29 and tensor.py:471, is `mixin/op.bend`'s
 #      W6. PORTED: `op_cat1`, the two-operand all-equal `dim=0` case -- the only one
 #      `_threefry_random_bits`, `random_bits` and `_next_counter` reach. `stack`
-#      (movement.py:256) needs `dtype_from_uop` and `ccast` (ops.py:833-834), which is
+#      (movement.py:256) needs `dtype_from_uop` and `ccast` (ops.py:618-619 symbol=ccast), which is
 #      `tensor.bend`'s own `TODO(p3)`, so that is why `cat` is W2 at all.
 #      TODO(p3) mixin/op.py:731  `cat`'s unequal-shape arm (`itertools.accumulate` plus a
 #        `pad` and a `usum` per tensor) and its `dim != 0` case.
-#   W3 `_getitem` (op.py:74), reached from rand.py:14, :101 and tensor.py:466-470, is
+#   W3 `_getitem` (op.py:74), reached from rand.py:14, :101 and tensor.py:520-524, is
 #      `mixin/op.bend`'s W1 (a seven-way index sum type). PORTED: `rd_take`/`rd_slice`/
 #      `rd_scalar` -- the only arms this file reaches.
 #      WALL(p3) mixin/op.py:74  `_getitem` for a negative int, a two-sided slice, an -- BLOCKED: needs the other INDEX FORMS -- a negative int, a two-sided slice, an `Ellipsis`, a `list`, a `Tensor` index and `None`. Each is a Python index TYPE, and Bend has one index form.
@@ -67,10 +67,10 @@
 #   W4 `cos`/`log`, reached from rand.py:103, are three lines of already-ported ops each, but
 #      `mixin/elementwise.bend` has neither. PORTED: `rd_cos`/`rd_log`, each CALLING
 #      `E.ew_sin`/`E.ew_log2` rather than re-deriving them.
-#      WALL(p3) tinygrad/mixin/elementwise.py:500  `cos` for half/bfloat16, where -- BLOCKED: needs the half/bfloat16 ARM. `least_upper_float` EXISTS and `least_upper_dtype` does NOT (checked as defs), and the two folds become CASTs rather than the identity, so f32's `rd_cos` does not reach them.
+#      WALL(p3) tinygrad/mixin/elementwise.py:499 symbol=cos  `cos` for half/bfloat16, where -- BLOCKED: needs the half/bfloat16 ARM. `least_upper_float` EXISTS and `least_upper_dtype` does NOT (checked as defs), and the two folds become CASTs rather than the identity, so f32's `rd_cos` does not reach them.
 #        `least_upper_float` and `least_upper_dtype` are NOT the identity and the two folds
 #        become CASTs.
-#      DONE(p3) tinygrad/mixin/elementwise.py:830  `log`. -- DONE, NOT BLOCKED: `ew_log` IS in `mixin/elementwise.bend` and `rd_log` below CALLS it; gated at `gates/ew-explog-gate.py` (3 rows, 3 lanes byte-identical). MEASURED with `^def ew_log\(`. The header's `has neither` was true before that landed.
+#      DONE(p3) tinygrad/mixin/elementwise.py:828 symbol=log  `log`. -- DONE, NOT BLOCKED: `ew_log` IS in `mixin/elementwise.bend` and `rd_log` below CALLS it; gated at `gates/ew-explog-gate.py` (3 rows, 3 lanes byte-identical). MEASURED with `^def ew_log\(`. The header's `has neither` was true before that landed.
 #   W5 `multinomial`'s two arms are `topk` (op.py:976, the bitonic sort -- `mixin/op.bend`'s
 #      W5) and `cumsum` (op.py:770 -> `_cumalu` -> `identity_element`). PORTED: the
 #      `unsqueeze` selection and both guards, and the trailing `.cast(dtypes.i32)`.
@@ -84,10 +84,10 @@
 #        division by a Python float whose promotion is not the same rule as every other
 #        binop here.)
 #      TODO(p3) tinygrad/helpers.py  `TRAINING` -- the ContextVar read.
-#      WALL(p3) mixin/rand.py:315  `scaled_dot_product_attention`'s GQA arm. -- BLOCKED: needs the GQA arm -- a head-group reshape around the same matmul.
-#      WALL(p3) mixin/rand.py:319  `scaled_dot_product_attention`'s matmul. -- BLOCKED: needs the batched matmul.
-#      WALL(p3) mixin/rand.py:323  `scaled_dot_product_attention`'s causal mask. -- BLOCKED: needs the causal mask.
-#      WALL(p3) mixin/rand.py:327  `scaled_dot_product_attention`'s `attn_mask` arm. -- BLOCKED: needs the `attn_mask` arm.
+#      WALL(p3) mixin/rand.py:315 `repeat_interleave`  `scaled_dot_product_attention`'s GQA arm. -- BLOCKED: needs the GQA arm -- a head-group reshape around the same matmul.
+#      WALL(p3) mixin/rand.py:319 `matmul`  `scaled_dot_product_attention`'s matmul. -- BLOCKED: needs the batched matmul.
+#      WALL(p3) mixin/rand.py:323 `tril`  `scaled_dot_product_attention`'s causal mask. -- BLOCKED: needs the causal mask.
+#      WALL(p3) mixin/rand.py:327 `softmax`  `scaled_dot_product_attention`'s `attn_mask` arm. -- BLOCKED: needs the `attn_mask` arm.
 #      WALL(p3) mixin/rand.py:82  `rand_like`'s device-tuple arm. -- BLOCKED: needs a MULTI-DEVICE `Tensor`: this is `rand_like`'s `isinstance(self.device, tuple)` arm, and the port's `Tensor{ar, uop, ...}` carries ONE arena.
 #      TODO(p3) mixin/rand.py:249  `randperm` -- `argsort`.
 #

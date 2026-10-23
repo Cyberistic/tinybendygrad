@@ -35,7 +35,7 @@
 #       CHAR, so a MULTI-CHARACTER substring replace has no primitive at all.
 #       `render.py` needs one, in `Ops.SPECIAL`'s renderer arm
 #       (`x.arg.name is not None else f"p{x.arg.slot}"` -- no) and in
-#       `renderer`'s CAST arm, `str(x.dtype)[7:]` (render.py:56), which strips
+#       `renderer`'s CAST arm, `str(x.dtype)[7:]` (render.py:102), which strips
 #       the literal prefix `"dtypes."` off the front of a string. A PREFIX strip
 #       is `String.drop(s, 7n)`, which base.bend has, so THAT one is closed too.
 #       A general `replace` would need a char-wise scan; nothing here needs it.

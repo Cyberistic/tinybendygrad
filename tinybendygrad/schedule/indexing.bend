@@ -13,8 +13,8 @@
 #
 # THE ORDER OF THE FILE IS PYTHON'S ORDER, and one piece of it is load-bearing:
 # `ALWAYS_CONTIGUOUS` (indexing.py:24) is named at the TOP of the file because
-# `create_bufferize_and_index_srcs` (indexing.py:90) and `realize_srcs`
-# (indexing.py:32) read it, and `broadcast_axes` (indexing.py:64) reads
+# `create_bufferize_and_index_srcs` (indexing.py:73 symbol=create_bufferize_and_index_srcs) and `realize_srcs`
+# (indexing.py:5) read it, and `broadcast_axes` (indexing.py:64) reads
 # `GroupOp.Broadcastable`, which `ops.bend` already has as
 # `O.GroupOp.broadcastable`.
 #
@@ -28,8 +28,8 @@
 #          if isinstance(x, bool): return x
 #          return bool(sx.vmin) if (sx:=x.simplify()).vmin == sx.vmax else default
 #     Two arms, and only the first is writable: a Python `bool` is identity, and
-#     the second is `_min_max`. `new_range` (indexing.py:21) calls
-#     `resolve(s != 1)` on a `sint`, and `broadcast_axes` (ops.py:91) calls
+#     the second is `_min_max`. `new_range` (indexing.py:18 symbol=new_range) calls
+#     `resolve(s != 1)` on a `sint`, and `broadcast_axes` (ops.py:89 symbol=broadcast_axes) calls
 #     `resolve(s == 1, default=False)` on a shape dim. When the dim is a
 #     CONCRETE `int` both reduce to plain arithmetic and BOTH ARE PORTED --
 #     `ix_resolve_concrete` below is the whole of the first arm plus the int
@@ -48,12 +48,12 @@
 #     `ix_min_max_miss()`.
 # W3. The BUILDERS. `UOp.index`, `.end`, `.valid`, `.const_like`, `UOp(Ops.STAGE,
 #     arg=BufferizeOpts(...))` and `graph_rewrite` are not ported (ops.py:614
-#     through :853). `create_bufferize_and_index_srcs` is therefore a DECISION
+#     through :73 symbol=create_bufferize_and_index_srcs). `create_bufferize_and_index_srcs` is therefore a DECISION
 #     port: it answers which src gets which treatment, and the node it would
 #     build is named at the call site.
 #
 # `BufferizeOpts` (indexing.py:56-61) is a frozen dataclass read at
-# `indexing.py:91-92`, and `ops.bend`'s `Arg` has NO constructor for a STAGE's
+# `indexing.py:6-7`, and `ops.bend`'s `Arg` has NO constructor for a STAGE's
 # arg at all -- so `s.device`, `s.removable` and `s.addrspace` are all walls.
 # `rangeify.bend` states the same fact for its own three rules, and the two
 # files are the same wall.
@@ -69,7 +69,7 @@
 # `_scan` three times over. `uop/spec.bend` does it six times and
 # `schedule/rangeify.bend` eleven; `schedule/multi.bend` says why in its header
 # and there is no generic dispatch here either. `PMEntry.rej` is
-# `early_reject` and is a NECESSARY CONDITION despite the name (ops.py:1609 is
+# `early_reject` and is a NECESSARY CONDITION despite the name (ops.py:1604 is
 # `if not early_reject.issubset(ler): continue`): a rule FIRES when its op set
 # IS a SUBSET of the node's src ops, and the empty set is a subset of
 # everything. Every reject slot in these three tables is EMPTY -- measured by

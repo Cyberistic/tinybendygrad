@@ -25,7 +25,7 @@
 #   (upstream:23,29-30). `os.cpu_count` is not needed -- 64 is a literal upstream.
 # NOT PORTED, AND NAMED SO NOBODY INVENTS IT: `gen` (upstream:32) and the
 #   `__main__` block (upstream:40), and the `create_fake_mnist_imagenet(BASEDIR)`
-#   call that `imagenet.py:20` makes -- so `imagenet.bend`'s MNISTMOCK branch is
+#   call that `imagenet.py:25` makes -- so `imagenet.bend`'s MNISTMOCK branch is
 #   still unreachable.
 import Base
 import ./__init__.bend as D

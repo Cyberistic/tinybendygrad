@@ -12,7 +12,7 @@
 # `commit_dtype` COMPLETELY -- the weakint branch, the `strong_dtype` branch, the
 # `default_int` default -- and takes `(lo, hi)` as parameters, because `_min_max` is ops.py's
 # def and ops.py is not this file. What that buys is the whole of `commit_int`
-# (tinygrad/dtype.py:171), which `tinybendygrad/dtype.bend` already had.
+# (tinygrad/dtype.py:314), which `tinybendygrad/dtype.bend` already had.
 #
 # `uop/weak.bend`'s header says `tinybendygrad/dtype.bend` "is unreachable to any importer
 # (it prints a foreign-code notice for `Dt.bf16`, `Dt.fp16`, the `fp8_*` and the `i64_*` /

@@ -10,8 +10,8 @@
 #
 # WHAT IS STILL A WALL is named at `unified_rewrite` and not here, because a
 # wall listed in a header is a wall nobody re-reads: upstream's `bottom_up` /
-# `bpm` TABLE SELECTION (ops.py:1889) has no second table in `uop/ops.bend`,
-# and neither driver honours `enter_calls` (ops.py:1833/1841).
+# `bpm` TABLE SELECTION (ops.py:1886) has no second table in `uop/ops.bend`,
+# and neither driver honours `enter_calls` (ops.py:1886/1841).
 #
 # This file is the rewrite engine's SHAPE. The `pm_rewrite_m`/
 # `pm_dispatch_m` family in `uop/ops.bend` returns `Maybe<&2, U32>` (the
@@ -37,7 +37,7 @@
 # ORIGINAL node. Upstream tries it on the REBUILT one (ops.py:1812). For
 # `pm_post_sched_cache` the two arguments are the same object, so it is
 # unobservable: both of upstream's patterns are bare `UPat(Ops.X)` with no
-# `src=` clause (so neither can read a src), and ops.py:1810 hands back `n`
+# `src=` clause (so neither can read a src), and ops.py:107 hands back `n`
 # itself whenever `new_src == n.src`, which is every src-free node. MEASURED
 # over a 10-fixture sweep, the two spellings are byte-identical on all 10
 # (`.agents/slop/unobservable-gr-oracle.py` Q1). No fixture over this table

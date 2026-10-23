@@ -23,7 +23,7 @@
 # **AND THE GRAPH FORM IS BUILDABLE ONLY BECAUSE OF A FIX IN `mixin/rand.bend`, AND THE
 # FIX IS THE WHOLE OF THE STORY.** MEASURED 2026-10-23, `.agents/slop/nnargmax2/`:
 # the port's `arange` chain contained TWO nodes whose products disagree with their
-# source's, so `uop/fold.bend`'s `reshape_ds` -- which is upstream's `ops.py:395-399`
+# source's, so `uop/fold.bend`'s `reshape_ds` -- which is upstream's `ops.py:499-503`
 # INCLUDING ITS `raise` -- REFUSED them, and a node whose source has no shape has no
 # shape either, so THE WHOLE ARANGE GRAPH WAS UNREADABLE. `mixin/rand.bend`'s
 # `op_expand_lead` and `op_pool1.sh` are the two sites and both are FIXED. **BEFORE

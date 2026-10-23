@@ -120,7 +120,7 @@
 #            the per-op emitter strings of `base_rewrite` (:77-144) and
 #            `_render_kernel`'s naming walk (:161-202).
 #   STAGE 3  NOT STARTED. `nir.py`: `glsl_type` (:14), `u_aop`/`s_aop`/`f_aop`
-#            (:19-23), `c` (:26), `ncast` (:27-28), `scope` (:83),
+#            (:27-31), `c` (:83), `ncast` (:27-28), `scope` (:83),
 #            `padded_idx` (:246), the intrinsic bounds arithmetic
 #            (`num_components`, `ALIGN_MUL`, `WRITE_MASK`, `bit_size`), and
 #            `NIRRenderer` / `NAKRenderer` / `LVPRenderer` / `IR3Renderer`'s

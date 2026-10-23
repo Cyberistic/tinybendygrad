@@ -17,7 +17,7 @@
 # What tc_ptx.bend's header calls STAGE 3 and names NOT STARTED is here: the
 # `ssa` COUNTER (ptx.py:180-183), the per-op register assignment (ptx.py:185-221),
 # the `.reg` DECLARATIONS `render_kernel` prepends from `c.items()` (ptx.py:165),
-# the `bufs` collection (ptx.py:210), the entry-point NAME (ptx.py:185, 192-193)
+# the `bufs` collection (ptx.py:210), the entry-point NAME (ptx.py:173, 192-193)
 # and the ONE REFUSAL the walk raises (ptx.py:204).
 #
 # NOT HERE, and named rather than faked:

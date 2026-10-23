@@ -10,7 +10,7 @@
 #
 # THE FIX is the shape `toposort` already has in `ops.bend`: ONE def that walks
 # the graph in topological order, so a node is answered only after every node it
-# reads is. Python's `recursive_property` (ops.py:218) replaces
+# reads is. Python's `recursive_property` (ops.py:211) replaces
 # `functools.cached_property` in recursive UOp functions to prevent
 # RecursionError; this is the same answer with no recursion at all. The dependency
 # graph of the fold is a DAG BY CONSTRUCTION rather than by discipline, and
@@ -28,7 +28,7 @@
 # THE FIVE MOVEMENT ARMS ARE LANDED, and THREE OF THEM WERE NOT BEHIND THE WALL THE
 # TODO LIST RECORDED FOR THEM. It said EXPAND, PERMUTE and FLIP wait on
 # "`marg` -> `as_shape` -> `ssimplify`", which is TRUE of `marg`'s first two arms and
-# FALSE of the other two ops: `marg` for PERMUTE and FLIP is `self.arg` (ops.py:818),
+# FALSE of the other two ops: `marg` for PERMUTE and FLIP is `self.arg` (ops.py:236),
 # the arena's `ATuple` of plain indices, so neither reads `as_shape` at all. They were
 # answerable from the day the arena existed. `expand_ds`, `pad_ds`, `shrink_ds`,
 # `perm_ds` and `flip_ds` are the five arms; UNSHARD still defers, and it defers on
@@ -52,7 +52,7 @@
 #
 # WHAT IS LEFT, NAMED, because a closed wall with an unnamed remainder is a lie: a
 # PARAM or SPECIAL whose interval is EMPTY (`vmin > vmax`) or NEGATIVE is refused --
-# ops.py:408's `all(x >= 0)` is then DECIDABLE and this file cannot decide it -- and
+# ops.py:407's `all(x >= 0)` is then DECIDABLE and this file cannot decide it -- and
 # `resolve`'s `False` default is only reached when the two products' intervals are
 # not DISJOINT, which a fold that cannot multiply intervals cannot see. Those are
 # `mv_expsym` and `mv_reshbare_dis`, both in the oracle's DIVERGES block, and they are
@@ -87,7 +87,7 @@
 # word and `Nat` refuses past 2**48-1), and that left three pieces. All three are now here,
 # in this order:
 #
-#   1. `int(x).bit_length()` (ops.py:1110) -- SOLVED, NOT ROUTED AROUND. The previous unit
+#   1. `int(x).bit_length()` (ops.py:1111) -- SOLVED, NOT ROUTED AROUND. The previous unit
 #      recorded it as a structural wall and the reasoning was sound: a zero test cannot be a
 #      `match` scrutinee (Bend refuses a call), a growing counter cannot lead a self-call
 #      (each argument must pass unchanged until one shrinks, and a `U32` that HALVES does
