@@ -725,7 +725,7 @@ def anon_name(g: G, tag: String) -> String:
 # `::`-to-`_` and space-to-`_` rewrites that make a C++ name a Python
 # identifier. BOTH are `str.replace`, and `String.replace` DOES NOT EXIST in
 # bend -- `references/bend/bend2/base.bend` has no such def and no intrinsic
-# backs it (re-measured against the tree's pin, v2.0.37), so this is WALL 2's
+# backs it (re-measured against the tree's pin, v2.0.38), so this is WALL 2's
 # second mouth.
 #
 # THE WALK IS ONE CHAR PER STEP AND CARRIES A PENDING STATE, and the reason is

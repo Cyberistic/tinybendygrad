@@ -518,9 +518,12 @@ D10 = "D10-zerorow-guard"
 # EXACTLY THE EMPTY-STDERR TRANSCRIPT:**
 #     stderr empty                      -> 9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84  (WAS)
 #     stderr "bend 2.0.38 is available" -> f35b2d90bdbe49b0361af9fe392e162fc51b44b63caf22d6c2e75062eee343f9  (NOW)
-# The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`, and the LOCAL
-# compiler is 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13) -- so upstream's 2.0.38
-# release is what turned the notice on, and nothing in THIS repository turned it on.
+# The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`. **THE LOCAL
+# COMPILER WAS 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13) UNTIL 2026-10-23, WHEN IT
+# WAS UPGRADED TO `v2.0.38` (`references/bend` at `0a57ca0d21de`, 2026-10-20) -- SO THE
+# LOCAL COMPILER NOW *IS* THE VERSION THE NOTICE NAMES, AND THE NOTICE WILL GO QUIET ON ITS
+# OWN.** UPSTREAM'S 2.0.38 RELEASE IS WHAT TURNED THE NOTICE ON, AND NOTHING IN THIS
+# REPOSITORY TURNED IT ON.
 # **⇒ AND THIS PIN WAS A PIN ON A NETWORK ANSWER, AND IT IS NO LONGER ONE.** The next upstream
 # release moved it again with NO REPO CHANGE AT ALL. `BEND_NO_TELEMETRY=1` (`main.ts:186-188`)
 # suppresses the check and puts the transcript BACK on the empty-stderr value, and it is NOW

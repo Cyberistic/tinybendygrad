@@ -181,7 +181,7 @@ def nn_item_numel(+t: T.Tensor) -> U32:
 # is an `O.Const` (`uop/ops.bend:799-803`).
 #
 # `match` MAY NOT SCRUTINISE A COMPUTED VALUE, AND NOT A LET-BOUND ONE
-# EITHER (bend 2.0.37 refuses both, MEASURED: "a match cannot scrutinize a
+# EITHER (bend 2.0.38 refuses both, RE-MEASURED 2026-10-23 AFTER THE UPGRADE: "a match cannot scrutinize a
 # computed value" and "a match cannot scrutinize a local binder: give it its
 # own def"), so the OP and the ARG are read first and handed to a def that
 # matches on its own PARAMETERS.

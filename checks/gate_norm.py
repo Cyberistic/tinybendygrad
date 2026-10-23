@@ -202,15 +202,16 @@ def main() -> int:
         lanes = {lane: emit(work, lane) for lane in ("js", "c")}
 
     # THE `"Bend 2.0.34"` DEFAULT ON THE NEXT LINE IS A LITERAL, NOT A MEASUREMENT, AND IT IS
-    # STALE. MEASURED 2026-10-17: `tools/get-bend.sh:6` DECLARES `REF=${BEND_REF:-v2.0.37}`,
-    # `sh tools/get-bend.sh` ANSWERS `references/bend already at v2.0.37`, AND
-    # `git -C references/bend describe --tags --exact-match HEAD` ANSWERS `v2.0.37` AT
-    # `4ff8545f19b09b7d2b8ca2303668100eac8efd66` -- THE SHA IS THE PIN, AND NOTHING HERE RECORDS
+    # STALE. MEASURED 2026-10-23, AFTER THE UPGRADE: `tools/get-bend.sh:6` DECLARES
+    # `REF=${BEND_REF:-v2.0.38}`,
+    # `sh tools/get-bend.sh` ANSWERS `references/bend already at v2.0.38`, AND
+    # `git -C references/bend describe --tags --exact-match HEAD` ANSWERS `v2.0.38` AT
+    # `0a57ca0d21de94a3724d8be21afb0eb89f88b4d8` -- THE SHA IS THE PIN, AND `checks/bend-health.py` NOW RECORDS
     # IT, BECAUSE A TAG IS A NAME ON A REMOTE THAT CAN MOVE.
     # THE FALLBACK PATH WAS **NOT** TAKEN ON THIS MACHINE, WHICH IS THE MEASUREMENT: `./bin/bend
     # --help` UNDER `checks/bounded.py --mb 2048` IS `[bounded] WITHIN-LIMITS rc=0`, 1198 B OF
     # STDOUT, 5 LINES CONTAINING `Bend`, AND THIS EXPRESSION EVALUATED ON THAT STDOUT YIELDS
-    # `Bend 2.0.37: check, run, build and publish Bend programs.` -- SO TODAY THE LINE IS RIGHT.
+    # `Bend 2.0.38: check, run, build and publish Bend programs.` -- SO TODAY THE LINE IS RIGHT.
     # THE TRIGGER IS REAL AND `rc` IS NEVER CONSULTED: THE SAME EXPRESSION OVER A STUB WITH rc=1
     # AND 0 B OF STDOUT YIELDS `Bend 2.0.34`. `:84`'s `BEND.is_file()` CHECKS EXISTENCE, NOT
     # RUNNABILITY, AND `:204` IS THE ONE BEND CALL IN THIS FILE WITH NO `bounded.py` AND NO
