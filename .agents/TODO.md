@@ -23204,3 +23204,22 @@ specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIV
                          **POPULATION **TO **COVER **THE **FIVE **CELLS **IT **CURRENTLY **GRADES **OUT
                          **BY **NAME** (**AND **THE **POPULATION **MUST **BE **DERIVED, **NOT **HANDED**),
                          **AND **RE-MEASURE **THE **LANE **BOTH **WAYS.**
+
+  corpus-rerun [##] 0/2  **THE **CORPUS **ARTEFACTS **ARE **A **STRADDLING **RUN **AND **THE **WITNESS
+                         **IS **RED **ON **4 **OF **7**, **AND **THE **CORPUS **MUST **BE **RE-RUN
+                         **ONCE **THE **TREE **IS **QUIET.** MEASURED 2026-10-23 03:45: A **`differ.py run`**
+                         **(03:45:43) **AND **A **`differ.py repro`** **(03:37:12) **RAN **CONCURRENTLY **WITH
+                         **EACH **OTHER, **OVER **A **MOVING **TREE** (**27 **DIRTY **PORT **FILES**), **AND
+                         **THE **`run` **OVERWROTE **THE **GREEN **`D0-run-summary.txt`**. **⇒ THE **RUN's
+                         **VERDICT **WAS **GREEN** (**35/35 **agree**, **35/35 **byte-identical**, **8/8
+                         **plants**, **5/5 **stable**) **AND **ITS **OWN **TWO **DIGESTS **DISAGREE**
+                         (**`substrate-start=0c950c47...` **!=** **`substrate-end=074e0233...`**) -- **⇒ ⇒
+                         **A **GREEN **RUN **OVER **A **MOVING **TREE **IS **NOT **A **CERTIFICATE**, **AND
+                         **THE **RUN's **OWN **TWO **DIGESTS **ARE **WHAT **SAY **SO.** **⇒ AND **THE
+                         **WITNESS **CAUGHT **IT**: **`verdict.current` FAIL**, **`witness.fresh` FAIL**
+                         **(OUT-OF-ORDER)**, **`witness.substrate` FAIL**, **`claim` FAIL** -- **WHILE
+                         **`verdict.reported` **IS **STILL **OK** (**`rc=0`, **35/35**) -- **⇒ ⇒ A **SUMMARY
+                         **SAYS **GREEN **AND **A **WITNESS **SAYS **THE **CLAIM **IS **NOT **ESTABLISHED.**
+                         **⇒ BOTH **CORPUS **PROCESSES **WERE **STOPPED**, **AND **THE **CORPUS **IS **A
+                         **SINGLETON**: **TWO **CONCURRENT **RUNS **CORRUPT **EACH **OTHER's **ARTEFACTS
+                         **BY **CONSTRUCTION.**
