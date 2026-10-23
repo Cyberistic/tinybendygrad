@@ -620,13 +620,23 @@ class Port:
 
 # --------------------------------------------------------------------------- the census
 
+#: A SCRATCH COPY IS NOT A SOURCE FILE. The tree's own `.gitignore` carries `*mut.bend`
+#: for exactly this: a mutation-probe copy of a file, kept beside the original so a probe
+#: can mutate it. A census that walked the FILESYSTEM counted a scratch copy's markers as
+#: the port's citations, and one of them was a FALSE CITATION that NOBODY COULD FIX,
+#: because the file is not the port's. A NAME RULE, NOT A GIT CALL: `git ls-files` reads
+#: the INDEX, and this tree's index is armed (see `checks/index-arm-gate.py`).
+def is_scratch(name: str) -> bool:
+    return name.endswith("-mut.bend") or name.endswith(".bak")
+
+
 def walk_bend(base: Path) -> list[Path]:
-    """The port's `.bend` files. DISCOVERED, NOT NAMED."""
+    """The port's `.bend` SOURCE files. DISCOVERED, NOT NAMED."""
     out: list[Path] = []
     for dp, dn, fn in os.walk(base):
         dn[:] = [d for d in dn if d not in SKIP_DIRS]
         for n in sorted(fn):
-            if n.endswith(".bend"):
+            if n.endswith(".bend") and not is_scratch(n):
                 out.append(Path(dp) / n)
     return out
 
