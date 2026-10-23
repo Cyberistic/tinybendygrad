@@ -1,0 +1,36 @@
+st_zero_g=30 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 BUFFER/1 CONST/0 CONST/0 SHRINK/3 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 STORE/2 AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2
+st_six_g=32 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 BUFFER/1 CONST/0 CONST/0 SHRINK/3 CONST/0 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 STORE/2 AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 MUL/2 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2
+st_after_g=44 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 BUFFER/1 CONST/0 CONST/0 SHRINK/3 CONST/0 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 STORE/2 AFTER/2 SHRINK/3 ADD/2 SHRINK/3 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 STORE/2 AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 MUL/2 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2
+st_max_g=32 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 BUFFER/1 CONST/0 CONST/0 SHRINK/3 CONST/0 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 STORE/2 AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 MUL/2 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2
+st_zero_v=0:0
+st_six_v=0:0
+st_wrap_v=0:4294967295
+st_max_v=0:0
+ref_rand_weak_f32=True
+ref_rand_weak_wf=False
+ref_rand_weak_h=True
+ref_rand_weak_i32=False
+ref_shape_u32=True
+ref_uniform_lt=True
+ref_uniform_not=False
+ref_normal_std=True
+ref_normal_not=False
+ref_randint_int=True
+ref_randint_not=False
+ref_dropout_p=True
+ref_dropout_p1=True
+ref_dropout_p1n=True
+ref_dropout_not=False
+ref_multi_n11=True
+ref_multi_n23=True
+ref_multi_n31=False
+ref_multi_rep=True
+ref_sdpa_dt=f32
+ref_shift_f32=9
+ref_shift_h=6
+ref_one_bits_f32=1065353216
+ref_one_bits_h=15360
+ref_nmant_f32=23
+ref_uint_dt_f32=u32
+ref_bits_num23=6
+ref_bits_num223=12

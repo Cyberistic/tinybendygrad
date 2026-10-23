@@ -208,18 +208,19 @@ DIVERGES = {
       "AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 "
       "STACK/2 RESHAPE/2",
     # the port: rd_next(ctr, 0, ctr) -- 26 nodes
-    "st_zero_g=26 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=ALLOC/0 CONST/0 SHRINK/3 CONST/0 ADD/2 "
-    "SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 CONST/0 RESHAPE/2 SHRINK/3 "
-    "RESHAPE/2 CMPLT/2 CAST/1 CAST/1 CONST/0 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2"),
+    "st_zero_g=26 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 ALLOC/1 CONST/0 SHRINK/3 "
+    "CONST/0 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 "
+    "SHRINK/3 RESHAPE/2 CMPLT/2 CAST/1 CAST/1 CONST/0 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2"),
   "st_six_g": (
       "st_six_g=32 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 BUFFER/1 CONST/0 CONST/0 SHRINK/3 "
       "CONST/0 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 STORE/2 "
       "AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 MUL/2 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 "
       "STACK/2 RESHAPE/2",
     # the port: rd_next(ctr, 6, ctr) -- 27 nodes
-    "st_six_g=27 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=ALLOC/0 CONST/0 CONST/0 SHRINK/3 SHRINK/3 "
-    "ADD/2 CONST/0 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 CONST/0 RESHAPE/2 SHRINK/3 "
-    "RESHAPE/2 CMPLT/2 CAST/1 CAST/1 CONST/0 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2"),
+    "st_six_g=27 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 ALLOC/1 CONST/0 CONST/0 "
+    "SHRINK/3 SHRINK/3 ADD/2 CONST/0 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 "
+    "RESHAPE/2 SHRINK/3 RESHAPE/2 CMPLT/2 CAST/1 CAST/1 CONST/0 CAST/1 MUL/2 ADD/2 STACK/2 "
+    "RESHAPE/2"),
   "st_after_g": (
       "st_after_g=44 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 BUFFER/1 CONST/0 CONST/0 "
       "SHRINK/3 CONST/0 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 "
@@ -227,20 +228,20 @@ DIVERGES = {
       "STORE/2 AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 MUL/2 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 "
       "MUL/2 ADD/2 STACK/2 RESHAPE/2",
     # the port: rd_next(ctr, 6, ctr) -- 47 nodes
-    "st_after_g=47 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=ALLOC/0 CONST/0 CONST/0 SHRINK/3 "
-    "SHRINK/3 ADD/2 CONST/0 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 CONST/0 RESHAPE/2 "
-    "SHRINK/3 RESHAPE/2 CMPLT/2 CAST/1 CAST/1 CONST/0 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2 SHRINK/3 "
-    "CAST/1 ADD/2 SHRINK/3 CAST/1 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 SHRINK/3 "
-    "RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2"),
+    "st_after_g=47 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 ALLOC/1 CONST/0 CONST/0 "
+    "SHRINK/3 SHRINK/3 ADD/2 CONST/0 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 "
+    "RESHAPE/2 SHRINK/3 RESHAPE/2 CMPLT/2 CAST/1 CAST/1 CONST/0 CAST/1 MUL/2 ADD/2 STACK/2 "
+    "RESHAPE/2 SHRINK/3 CAST/1 ADD/2 SHRINK/3 CAST/1 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 "
+    "STACK/2 RESHAPE/2 SHRINK/3 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2"),
   "st_max_g": (
       "st_max_g=32 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 BUFFER/1 CONST/0 CONST/0 SHRINK/3 "
       "CONST/0 ADD/2 SHRINK/3 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 RESHAPE/2 STORE/2 "
       "AFTER/2 SHRINK/3 CONST/0 MUL/2 ADD/2 SHRINK/3 MUL/2 ADD/2 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 "
       "STACK/2 RESHAPE/2",
     # the port: rd_next(ctr, 4294967295, ctr) -- 24 nodes
-    "st_max_g=24 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=ALLOC/0 CONST/0 CONST/0 SHRINK/3 SHRINK/3 "
-    "ADD/2 CONST/0 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 CONST/0 RESHAPE/2 SHRINK/3 "
-    "RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2"),
+    "st_max_g=24 op=RESHAPE nsrc=2 srcops=STACK|CONST topo=CONST/0 ALLOC/1 CONST/0 CONST/0 "
+    "SHRINK/3 SHRINK/3 ADD/2 CONST/0 ADD/2 STACK/0 RESHAPE/2 CMPLT/2 CAST/1 ADD/2 STACK/2 "
+    "RESHAPE/2 SHRINK/3 RESHAPE/2 CMPLT/2 CAST/1 MUL/2 ADD/2 STACK/2 RESHAPE/2"),
 }
 
 # THE NINETEEN PORT-ONLY ROWS, NAMED. `gatekit` derives the oracle's expected count as
@@ -328,9 +329,22 @@ def _lane_text():
 
 # THE NEGATIVE FIXTURES: every `ref_*_not`, every `absent`, and the `_d`/`_np` rows whose
 # whole claim is that the fold CANNOT answer -- a class whose expected answer is False.
+# **AND ON 2026-10-23 `fold_np` AND `fold5_np` LEFT THIS CLASS.** THEY WERE HERE BECAUSE THE
+# FOLD COULD NOT ANSWER THEM, AND **THE `mixin/rand.bend` FIX MADE THE FOLD ANSWER BOTH** --
+# MEASURED: THEY NOW READ `True` (`.agents/slop/randcensus/pinwalk.py` WALKS THEM). **=> A
+# CLASS WHOSE MEMBERS HAVE LEFT IT IS NOT A CLASS, AND LEAVING IT IS PROGRESS, NOT A
+# LOOSENING.** THEY STAY IN `PORT_ONLY`, WHOSE ONLY CLAIM IS THAT THE PORT PRINTS THEM.
+# **AND THE HOLE THIS EXPOSED, WHICH IS NOT MINE TO CLOSE HERE: `state_census.py`'s
+# `classify()` POPULATES `C-NEG` **BY NAME** -- `[k for k, _ in rows if k in neg]` -- SO IT
+# NEVER CHECKS THAT A DECLARED NEGATIVE FIXTURE'S VALUE **IS** `False`. **A ROW THAT HAS
+# LEFT THE CLASS SAT IN IT, UNSEEN, AND THE GATE WAS GREEN.** THAT IS *"A ROW THAT CANNOT GO
+# RED"* INSIDE THE TREE'S OWN CLASS CENSUS, AND **THE FIX IS FOR `class_census()` TO CHECK
+# THAT EVERY DECLARED NEG ROW'S VALUE IS `False` AND FAIL IF ONE IS NOT.** IT TOUCHES
+# `gates/state_census.py`, WHICH SEVERAL GATES SHARE, SO IT IS NOT A CHANGE TO MAKE
+# CASUALLY.**
 NEG = tuple(k for k in ("ref_rand_weak_wf", "ref_rand_weak_i32", "ref_uniform_not",
                         "ref_normal_not", "ref_randint_not", "ref_dropout_not",
-                        "ref_multi_n31", "fold_np", "fold5_np"))
+                        "ref_multi_n31"))
 CONST = ("ref_drop_arm0", "ref_drop_arm1", "ref_drop_arm2")
 
 
@@ -342,8 +356,10 @@ def class_census() -> bool:
   # the layer does not have. MEASURED 0, and stated rather than floored, because a floor a
   # layer cannot meet is a floor that will be lowered to 0 by the next unit and the class will
   # have stopped meaning anything.
+  # **AND THE `C-NEG` FLOOR IS 7 BECAUSE THE CLASS IS: `NEG` HAD NINE MEMBERS AND NOW
+  # HAS SEVEN, THE TWO THAT LEAVING BEING `fold_np` AND `fold5_np`.**
   ok = _class_census(rows, neg=NEG, const=CONST,
-                     floors={"C-CTRL": 1, "C-NEG": 8, "C-BOOL": 1, "C-VALUE": 1})
+                     floors={"C-CTRL": 1, "C-NEG": 7, "C-BOOL": 1, "C-VALUE": 1})
   # The PORT-ONLY rows are a class of their own: they are in no lane that has a peer, so
   # nothing can move them and the only claim they carry is that the port still prints them.
   missing = [r for r in PORT_ONLY if not any(k == r for k, _ in rows)]
