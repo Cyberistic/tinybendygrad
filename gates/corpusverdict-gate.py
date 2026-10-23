@@ -15,22 +15,26 @@ itself. **The verdict is not merely old; it describes a tree that is gone.**
 
 WHAT MAKES THE RE-RUN THE OBVIOUS FIX, AND WHY IT IS NOT ONE. `differ.py`'s own readiness
 probe is `./bin/bend .agents/slop/graphcmp.bend --check-only` (`settled()`, differ.py:1038), and
-on this tree it answers `SOME PROOFS FAIL`: `graphcmp.bend:791` constructs `O.OpsGROUP{}`, and
-`tinybendygrad/uop/ops.bend` declares no such constructor (MEASURED: 0 occurrences in the file,
-0 in the whole port; upstream reimplemented GROUP/FLIP, so the `Op` union now has 75 members).
-`differ.ready(0)` returns False, MEASURED BY CALLING IT. So:
+it answers `ALL PROOFS CHECK` on this tree (MEASURED 2026-10-23, and the `bend` row below
+reads it), so the substrate DOES settle today and a re-run is possible.
 
-  * `differ.py run` dispatches DIRECTLY to `cmd_run` (differ.py:1357) with NO readiness gate,
-    and `cmd_run` overwrites `D/` artifact by artifact. Running it would replace 243 files of
-    evidence with a dead bend lane. This gate's `run.gated` row MEASURES that from
-    `cmd_run`'s own source instead of asserting it.
+  * `differ.py run` dispatches DIRECTLY to `cmd_run` with NO readiness gate, and `cmd_run`
+    overwrites `D/` artifact by artifact. So `run` is not readiness-gated, and the
+    `run.readiness` row below says so.
   * `differ.py repro` DOES gate on `ready()` (`clean_run`, differ.py:1288) and therefore
-    refuses -- correctly, labelling itself "NOT a measurement". MEASURED: `repro 0` printed
-    `# run A: no healthy run in 0 attempts -- this is NOT a measurement` and left all 243
-    files of `runs/graphcmp/` byte-identical (digest-of-digests `8fc35f67...` before and after).
+    refuses -- correctly, labelling itself "NOT a measurement".
 
-So the number cannot be REFRESHED today, and this gate is what makes that a machine-checked
-fact rather than a claim in a report.
+AND THE CORPUS IS A SINGLETON, WHICH IS A DIFFERENT HAZARD AND A DIFFERENT ROW. `checks/
+differ.py` writes the ONE directory `runs/graphcmp/D`, so two corpus runs at once interleave
+two verdicts into one directory. MEASURED 2026-10-23: a `repro` at 03:37 and a `run` at 03:45
+ran CONCURRENTLY; the `run` overwrote a green `D0-run-summary.txt` with one that was green
+too while its own two substrate digests DISAGREED, and `gates/corpuswitness-gate.py` went
+red on 4 of its 7 readings while `verdict.reported` stayed OK. `checks/differ.py` now holds
+a corpus lock (`CORPUS_LOCK`, an `fcntl.flock`), and a second `run` REFUSES and names the
+holder. **THE `run.gated` ROW MEASURES THAT, and it measures it by RUNNING the command**
+(`singleton()` below): it holds the lock, starts a real `checks/differ.py run` against a
+scratch artefact directory, and asserts that the run REFUSED, that the refusal NAMED THE
+HOLDER, and that NOTHING WAS WRITTEN.
 
 IT NEEDS NO `bend` AND CANNOT DAMAGE ANYTHING. It reads two files and hashes a declared
 population; it never writes under `runs/graphcmp/`. The bend compile state is reported as its
@@ -56,8 +60,10 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import inspect
+import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
@@ -130,6 +136,94 @@ def rel(path: pathlib.Path) -> str:
     return str(path)
 
 
+def refused(rc, said, holder, wrote) -> bool:
+  """THE COMPARATOR: DID THE SECOND RUN REFUSE, NAME THE HOLDER, AND WRITE NOTHING?
+
+  **IT IS A FUNCTION AND NOT A BLOCK**, so the control below can plant its INPUT and assert
+  that it says NO. A comparator that cannot say no is a comparator that always says yes,
+  which is a label -- and `differ.py`'s own PLANT 3 names that shape: "if it does not go
+  red, the row is a label"."""
+  return (rc == 3 and "another corpus run holds the lock" in said
+          and str(holder) in said and not wrote)
+
+
+def control_singleton() -> str:
+  """THE POSITIVE CONTROL FOR THE REFUSAL COMPARATOR, and the reason `refused()` is a
+  function.
+
+  `control()` above plants a digest for the STALENESS comparator. This one plants what a
+  second run DID, and demands that the comparator read each case as NOT refused: a run
+  that exited 0, a run that never mentioned a lock, a run that named the WRONG holder, and
+  a run that refused AND wrote anyway. A comparator that cannot say no is a comparator that
+  always says yes."""
+  cases = [((0, "wrote 35 artifacts", 1234, ["D0-run-summary.txt"]), "exited 0"),
+           ((3, "some other failure", 1234, []), "never mentioned the lock"),
+           ((3, "another corpus run holds the lock: pid 1234", 9999, []), "named another holder"),
+           ((3, "another corpus run holds the lock: pid 1234", 1234, ["D0-run-summary.txt"]),
+            "refused and wrote anyway")]
+  for args, why in cases:
+    if refused(*args):
+      return f"a second run that {why} read as REFUSED"
+  return "planted second-runs all read NOT-refused"
+
+
+def singleton(differ) -> dict:
+  """MEASURE THE PROPERTY: A SECOND CORPUS RUN IS REFUSED, IT NAMES THE HOLDER, AND IT
+  WRITES NOTHING.
+
+  **THE ROW THIS REPLACES READ `differ.cmd_run`'s SOURCE** and asked whether the string
+  `ready(` appeared in it. That was a PROXY, and it was a proxy for the WRONG PROPERTY: the
+  corpus is a SINGLETON. `checks/differ.py` writes the ONE directory `runs/graphcmp/D`, so two
+  of them at once interleave two verdicts into one directory.
+
+  MEASURED 2026-10-23, and it is why this row exists: a `differ.py repro` started at 03:37
+  and a `differ.py run` started at 03:45 ran CONCURRENTLY. The `run` overwrote a green
+  `D0-run-summary.txt` -- and the summary it wrote was green too (35/35 agree, 35/35
+  byte-identical, 8/8 plants) while its OWN two substrate digests DISAGREED
+  (`substrate-start=0c950c47...` vs `substrate-end=074e0233...`), because a `.bend` edit
+  landed mid-run. `gates/corpuswitness-gate.py` then went RED on 4 of its 7 readings
+  (`verdict.current`, `witness.fresh`, `witness.substrate`, `claim`) while `verdict.reported`
+  stayed OK: a summary that says green and a witness that says the claim is not established.
+  Both processes had to be killed by hand.
+
+  **SO THIS MEASURES IT.** It holds the corpus lock, runs the REAL command
+  (`checks/differ.py run`) against a SCRATCH artefact directory, and asserts three things:
+  the command REFUSED, the refusal NAMED THE HOLDER, and NOTHING WAS WRITTEN. The scratch
+  directory is `GRAPHCMP_ARTIFACTS`, and it exists for exactly this: a gate that measures
+  the corpus must not be able to overwrite the corpus -- and if the lock were broken, the
+  damage would land in the scratch directory instead of in the tree's evidence.
+
+  **IF A REAL RUN HOLDS THE LOCK, THE MEASUREMENT IS BETTER, NOT SKIPPED.** The gate then
+  cannot take the lock, and the real holder IS the thing the second run must be refused by --
+  so the gate reads the holder and asks the same three questions of the same command."""
+  scratch = ROOT / "runs" / "graphcmp" / f".singleton-{os.getpid()}"
+  env = {k: v for k, v in os.environ.items() if k != "GRAPHCMP_ARTIFACTS"}
+  env["GRAPHCMP_ARTIFACTS"] = str(scratch)
+  out = {"holder": "?", "rc": "?", "note": "?"}
+  ours = differ.take_lock()
+  holder = os.getpid() if ours is None else differ.lock_holder()[0]
+  out["holder"] = str(holder)
+  try:
+    scratch.mkdir(parents=True, exist_ok=True)
+    try:
+      p = subprocess.run([sys.executable, str(ROOT / "checks" / "differ.py"), "run"],
+                         cwd=ROOT, env=env, capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired:
+      out.update(rc="TIMED-OUT", note="the second run did not refuse within 120s")
+      return out
+    said = p.stdout + p.stderr
+    wrote = sorted(q.name for q in scratch.iterdir())
+    out.update(rc=str(p.returncode),
+               note=("refused and named the holder" if refused(p.returncode, said, holder, wrote)
+                     else f"the second run was not refused: {said.strip()[:160]!r}"),
+               wrote=str(len(wrote)))
+    out["ok"] = refused(p.returncode, said, holder, wrote)
+  finally:
+    differ.drop_lock()
+    shutil.rmtree(scratch, ignore_errors=True)
+  return out
+
+
 def main(argv=None) -> int:
   ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
   ap.add_argument("--summary", type=pathlib.Path, default=SUMMARY,
@@ -185,12 +279,37 @@ def main(argv=None) -> int:
                                   "inputs": len(differ.substrate_entries()),
                                   "verdict": "CURRENT" if same else "STALE"}))
 
-  # --- IS `differ.py run` SAFE TO INVOKE? READ FROM `cmd_run`'s OWN SOURCE ----------------
+  # --- IS THE CORPUS A SINGLETON? MEASURED, NOT INFERRED FROM A SOURCE STRING -------------
+  # **THE CONTROL COMES FIRST**, and it is the gate's own rule: an instrument that cannot
+  # recognise a failure reports the project's load-bearing number as healthy.  The control
+  # plants what a second run DID and demands the comparator read each case as NOT refused.
+  note2 = control_singleton()
+  rows.append(emit("control.singleton", **{STATE: "OK" if note2.startswith("planted") else "REFUSED",
+                                           TOK: "NOTOKEN?NOTOKEN", "note": note2}))
+  if not note2.startswith("planted"):
+    print("\n".join(rows))
+    print(f"corpusverdict-gate: REFUSED -- the refusal comparator cannot say no ({note2}); "
+          f"a clean read from it would be a read over nothing")
+    return REFUSED
+
+  single = singleton(differ)
+  rows.append(emit("run.gated", **{STATE: "OK" if single.get("ok") else "FAIL",
+                                  "verdict": "SINGLETON" if single.get("ok") else "SHARED",
+                                  "holder": single["holder"], "rc": single["rc"],
+                                  "note": single["note"]}))
+
+  # --- IS `differ.py run` READINESS-GATED? THE OLD SOURCE-LEVEL PROXY, KEPT AS ITS OWN ROW --
+  # **THIS CHECK IS NOT THE ROW ABOVE AND IT IS NOT WEAKENED BY MOVING.** It asked whether
+  # `cmd_run` consults the readiness probe, and it still does; what changed is that it is no
+  # longer asked to stand in for a DIFFERENT property. A run that does not wait for the
+  # substrate to settle overwrites 243 files of evidence with a dead bend lane, and that is
+  # a separate hazard from two runs interleaving into one directory.
   src = inspect.getsource(differ.cmd_run)
-  gated = ("clean_run(" in src) or re.search(r"\bready\s*\(", src) is not None
-  rows.append(emit("run.gated", **{STATE: "OK" if gated else "FAIL",
-                                  "verdict": "GATED" if gated else "UNGATED",
-                                  "cmd": "differ.py run -> cmd_run"}))
+  ready_gated = ("clean_run(" in src) or re.search(r"\bready\s*\(", src) is not None
+  rows.append(emit("run.readiness", **{STATE: "OK" if ready_gated else "FAIL",
+                                      "verdict": "READINESS-GATED" if ready_gated
+                                      else "NOT-READINESS-GATED",
+                                      "cmd": "differ.py run -> cmd_run"}))
 
   # --- THE BEND LANE, ITS OWN ROW, SO A bend-LESS MACHINE IS NOT GREEN --------------------
   bend = ROOT / "bin" / "bend"
@@ -223,7 +342,11 @@ def main(argv=None) -> int:
     print(f"corpusverdict-gate: {verdict_of(FAIL)} -- "
           + (f"the recorded verdict is {'CURRENT but ' if same else ''}the tree cannot re-run it"
              if same else "the recorded verdict is STALE (recorded substrate != live substrate)")
-          + ("" if gated else "; and `differ.py run` is UNGATED, so it would overwrite D/"))
+          + ("" if single.get("ok") else
+             "; and the corpus is NOT a singleton -- a second `differ.py run` was not refused")
+          + ("" if ready_gated else
+             "; and `differ.py run` is not readiness-gated, so it would overwrite D/ with a "
+             "dead bend lane"))
     return FAIL
   print(f"corpusverdict-gate: PASS -- the recorded verdict describes THIS tree "
         f"(substrate {live[:16]}, {got.get('graphs')} graphs, "

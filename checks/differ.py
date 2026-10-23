@@ -29,11 +29,24 @@ nobody can check:
 
   snap    the snapshot primitive both of those are built from, so a third party can compare
           two runs of either driver without re-implementing the hashing.
+
+EVERY COMMAND HERE IS UNDER THE CORPUS LOCK, and the corpus is a SINGLETON: `run` and
+`repro` both write the ONE directory `runs/graphcmp/D`, so two of them at once interleave two
+verdicts into one directory.  MEASURED 2026-10-23: a `repro` at 03:37 and a `run` at 03:45 ran
+CONCURRENTLY, the `run` overwrote a green `D0-run-summary.txt` with one that was green too
+while its own two substrate digests DISAGREED, and `gates/corpuswitness-gate.py` went red on
+4 of its 7 readings while `verdict.reported` stayed OK.  A second run now REFUSES, names the
+holder, and exits 3 (`REFUSED`) without touching the directory -- and the lock is an
+`fcntl.flock`, so the kernel releases it when the holder dies and it cannot be stolen.
+See `CORPUS_LOCK` below.
 """
 import argparse
+import contextlib
+import fcntl
 import hashlib
 import importlib.util
 import inspect
+import io
 import os
 import re
 import shutil
@@ -67,6 +80,170 @@ PY, GCMP = ".venv/bin/python", ".agents/slop/graphcmp.py"
 # to explain it. The flag is the compiler's OWN switch (`main.ts:186-188`), so this asks the
 # compiler to be quiet, not to be different.
 ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C", "DEV": "NULL", "PYTHONHASHSEED": "0", "NOOPT": "0", "BEND_NO_TELEMETRY": "1"}
+
+# --------------------------------------------------------------------------- THE CORPUS LOCK
+#
+# ONE WRITER, ONE ARTEFACT DIRECTORY.  `runs/graphcmp/D/` is a SINGLETON: `run` and `repro`
+# both write it, artifact by artifact, and a second run over the first one's artifacts
+# interleaves two verdicts into one directory.
+#
+# MEASURED 2026-10-23, AND IT IS THE DEFECT THIS LOCK EXISTS FOR: a `repro` started at 03:37
+# and a `run` started at 03:45 ran CONCURRENTLY.  The `run` overwrote a green
+# `D0-run-summary.txt` -- and the summary it wrote was green too (35/35 agree, 35/35
+# byte-identical, 8/8 plants) while its OWN two substrate digests DISAGREED
+# (`substrate-start=0c950c47...` vs `substrate-end=074e0233...`), because a `.bend` edit landed
+# mid-run.  `gates/corpuswitness-gate.py` then went RED on 4 of its 7 readings
+# (`verdict.current`, `witness.fresh`, `witness.substrate`, `claim`) while `verdict.reported`
+# stayed OK: a summary that says green and a witness that says the claim is not established.
+# Both processes had to be killed by hand.
+#
+# IT IS NOT THE BEND LOCK, AND THE MEASUREMENT IS WHY.  `checks/bendlock.sh` serialises
+# COMPILER invocations; this serialises WRITERS to one directory -- two different resources,
+# and a lock is only a lock if every form of it shares one path.  `bendlock.sh`'s own header
+# says a command that runs MANY bends MONOPOLISES the lock for the WHOLE command (MEASURED: 26
+# minutes for an 11-bend gate), and the corpus runs ~100 bends and takes 271 s (AGENTS.md,
+# 2026-10-22), so holding the bend lock for a corpus run would park every other unit's
+# compiler for the whole run.  MEASURED: the corpus takes NO bend lock at all today -- 0
+# references to `bendlock` in `checks/differ.py` and in `.agents/slop/graphcmp.py`, and the
+# bends are spawned by `graphcmp.py` as `subprocess.run([str(BEND), ...])`.  So a corpus-wide
+# lock MUST BE ITS OWN LOCK; and the corpus taking the bend lock PER BEND, which is what
+# `bendlock.sh`'s header prescribes for a many-bend command, is a SEPARATE change and is NOT
+# this one.
+#
+# THE OWNER IS A PID, AND THIS PROCESS IS THE WRITER.  The owner is the process that writes
+# the artifacts -- `clean_run` calls `cmd_run` IN-PROCESS (see `one_run()`) -- so "is the owner
+# alive" is the whole liveness question.  There is no `bun` child to check, because there is no
+# shell in between: the bend lock's second check exists because its owner is a shell, and this
+# owner is not.
+#
+# **THE KERNEL IS THE LOCK, AND THAT IS THE SHAPE THAT CANNOT FAIL.**  `fcntl.flock` on an open
+# file description has three properties that the mkdir-and-write-a-PID shape does not:
+#   * THE LOCK IS RELEASED WHEN THE HOLDER DIES -- there is no stale lock to reclaim, and no
+#     window in which a killed run blocks the next one.  `checks/bendlock.sh` needs 300 s of
+#     stale-owner reclamation and a SECOND check for the `bun` child, because its owner is a
+#     shell that can die while its child lives; this lock has no such owner.
+#   * IT CANNOT BE STOLEN -- the kernel refuses, so there is no read-then-remove window in
+#     which a live holder's lock is deleted by a second process that read it a moment earlier.
+#   * IT CANNOT BE DOUBLE-HELD -- one `flock` per open file description, so two processes
+#     cannot both win it, and a refusal is a REFUSAL rather than a race.
+# `checks/bendlock.sh` cannot use it: it is POSIX `sh`, where `flock(2)` does not exist.
+CORPUS_LOCK = ROOT / "runs/graphcmp/.corpus.lock"
+#: THE HOLDER'S OWN RECORD OF ITSELF, written into the lock file AFTER the lock is taken, so
+#: a refusal can NAME the holder: `<pid> <epoch>`.  It is a NAME, not the lock -- the lock is
+#: the `flock`, and this file says who holds it.
+_LOCK_FD: int | None = None
+
+
+def relpath(path: Path) -> str:
+    """THE PATH AS THE TREE WOULD NAME IT, and ABSOLUTE when it is outside the tree.
+
+    A `relative_to` that raises turns a redirected artefact directory into a traceback
+    instead of a verdict, and the redirected directory is a supported configuration."""
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def lock_holder() -> tuple[int, float]:
+    """THE HOLDER, as `(pid, age_seconds)`, and `(0, 0.0)` when the file names nobody.
+
+    THE PID IS THE HOLDER'S OWN RECORD OF ITSELF, so `(0, 0.0)` means "the holder has not
+    named itself yet" and NEVER "there is no holder" -- the kernel is the authority on
+    whether there is one, and this only says who."""
+    try:
+        pid_s, epoch_s = CORPUS_LOCK.read_text().split()
+        return int(pid_s), max(0.0, time.time() - float(epoch_s))
+    except (OSError, ValueError):
+        return (0, 0.0)
+
+
+def holder_command(pid: int) -> str:
+    """THE HOLDER's COMMAND LINE, so a refusal names WHO and not merely a number."""
+    if pid <= 0:
+        return "the holder has not named itself yet"
+    q = subprocess.run(["ps", "-o", "command=", "-p", str(pid)], capture_output=True, text=True)
+    return q.stdout.strip() or "no such process"
+
+
+def process_alive(pid: int) -> bool:
+    """`kill -0` ASKS THE KERNEL.  This is not how the lock is held -- the kernel is -- it is
+    how a refusal knows that the name it is about to print is still a live process."""
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def take_lock() -> str | None:
+    """HOLD THE CORPUS LOCK, OR NAME THE HOLDER THAT HAS IT.
+
+    `None` means this process holds the lock now.  A STRING IS A REFUSAL: it names the
+    holder, and the caller must print it and exit WITHOUT touching `runs/graphcmp/D/` --
+    because a refusal that has already pruned the artifact directory is not a refusal."""
+    global _LOCK_FD
+    if _LOCK_FD is not None:
+        return None  # WE ALREADY HOLD IT
+    CORPUS_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(3):
+        fd = os.open(CORPUS_LOCK, os.O_RDWR | os.O_CREAT, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            os.close(fd)
+            return _refusal()
+        # THE FILE WE LOCKED MUST STILL BE THE FILE AT THAT PATH.  A sweep that deletes
+        # `runs/` would leave this process holding an INODE nobody else can find, and the
+        # next holder would lock a NEW file -- two holders, one directory.
+        try:
+            same = os.fstat(fd).st_ino == os.stat(CORPUS_LOCK).st_ino
+        except OSError:
+            same = False
+        if not same:
+            os.close(fd)
+            continue
+        os.ftruncate(fd, 0)
+        os.write(fd, f"{os.getpid()} {time.time()}\n".encode())
+        _LOCK_FD = fd
+        return None
+    return _refusal()
+
+
+def _refusal() -> str:
+    """THE REFUSAL, AND IT NAMES THE HOLDER.
+
+    **A REFUSAL IS NOT A CORRUPTION**, and the difference is the whole point: the second run
+    says who has the lock and exits, and the artifacts the first run is writing are left
+    exactly as they were.
+
+    **A NAME IS ONLY PRINTED IF IT IS STILL ALIVE.**  The kernel is the authority on whether
+    there IS a holder, and the file is only the holder's own record of itself -- so a name
+    whose process is gone is not printed, because a refusal that names a dead process is a
+    lie about a live lock."""
+    pid, age = lock_holder()
+    if pid and not process_alive(pid):
+        pid = 0
+    return (f"another corpus run holds the lock: {relpath(CORPUS_LOCK)} is held by "
+            f"pid {pid or 'UNKNOWN'} (held for {age:.0f}s, {holder_command(pid)}).  This run "
+            f"refuses to start: the corpus is a SINGLETON -- two runs write the SAME directory "
+            f"({relpath(D)}) and would overwrite each other's artifacts.  Wait for the holder.")
+
+
+def drop_lock() -> None:
+    """RELEASE THE LOCK.  Closing the descriptor releases the `flock` -- that is the kernel's
+    promise, and it is why there is no stale lock and nothing to reclaim.  The NAME is
+    cleared on the way out, so the file never carries a holder that is gone."""
+    global _LOCK_FD
+    if _LOCK_FD is None:
+        return
+    os.ftruncate(_LOCK_FD, 0)
+    os.close(_LOCK_FD)
+    _LOCK_FD = None
+
+
 
 # THE FROZEN SHELL ORACLE IS PINNED HERE, IN CODE, AND CHECKED ON EVERY RUN.
 #
@@ -1253,7 +1430,7 @@ def cmd_run(_a):
         # consumers and a fifth file would be a second place the run is claimed.
         *substrate_rows(substrate_start, substrate_digest())
          + [f"substrate-head={substrate_head()}"]]) + "\n")
-    print(f"wrote {D.relative_to(ROOT)}")
+    print(f"wrote {relpath(D)}")
     # **A RUN WHOSE ROWS ARE WRONG IS A SEPARATE REFUSAL, AND IT USED NOT TO BE RAISED.**
     # MEASURED: the exit was `if unset` and nothing else, so with every graph answered a run
     # in which a row was simply WRONG returned 0 and read HEALTHY -- and the one pin that could
@@ -1578,7 +1755,7 @@ def snap(stream=sys.stdout):
     for p in sorted((q for q in D.rglob("*")
                      if q.is_file() and not q.is_symlink()
                      and not any(part.startswith(".") for part in q.relative_to(D).parts)),
-                    key=lambda q: q.relative_to(ROOT).as_posix()):
+                    key=relpath):
         body = b"".join(ln + b"\n" for ln in p.read_bytes().split(b"\n")[:-1] if ln.strip())
         # **AN OBSERVER ROW IS NOT PART OF THE SUBJECT, AND HASHING IT MAKES A PIN FLAKY.**
         # MEASURED 2026-10-20: `substrate-head=` was added to the summary to make a run comparable to
@@ -1592,7 +1769,7 @@ def snap(stream=sys.stdout):
             body = b"".join(ln + b"\n" for ln in body.split(b"\n")[:-1]
                              if ln.strip() and not any(ln.startswith(r.encode() + b"=")
                                                   for r in OBSERVER_ROWS))
-        print(f"{hashlib.sha256(body).hexdigest()}  {p.relative_to(ROOT)}", file=stream)
+        print(f"{hashlib.sha256(body).hexdigest()}  {relpath(p)}", file=stream)
 
 
 def d10_sha(shot: str) -> str:
@@ -1776,8 +1953,8 @@ def artefacts_ok():
     run_writes = declared() - {f"{n}.txt" for n in REPRO_LITERALS}
     return [f"MISSING {n}" for n in sorted(run_writes - present)] \
         + [f"UNEXPECTED {n}" for n in sorted(present - declared())] \
-        + [f"EMPTY {(D / n).relative_to(ROOT)}" for n in sorted(here) if not (D / n).stat().st_size] \
-        + [f"ONE-LINE {(D / n).relative_to(ROOT)}" for n in sorted(here)
+        + [f"EMPTY {relpath(D / n)}" for n in sorted(here) if not (D / n).stat().st_size] \
+        + [f"ONE-LINE {relpath(D / n)}" for n in sorted(here)
            if n.startswith(REPORTS) and one_line(n)]
 
 
@@ -2078,6 +2255,56 @@ def plant(only=None):
     return report_plants(checks, only)
 
 
+@contextlib.contextmanager
+def redirected(path):
+    """THE ARTEFACT DIRECTORY, FOR THE DURATION OF ONE COMMAND.
+
+    **THE CORPUS IS A SINGLETON, AND A SINGLETON NEEDS A WAY TO BE EXERCISED WITHOUT BEING
+    THE ONE.**  `GRAPHCMP_ARTIFACTS` names the directory the corpus writes, so a run can be
+    pointed at a scratch directory instead of the tree's evidence.  It exists for two
+    reasons that are the same reason: a gate that MEASURES the corpus must not be able to
+    overwrite the corpus, and a plant that proves two runs exclude each other must not
+    destroy 319 files of evidence to do it.
+
+    **THE SAVE/RESTORE SHAPE IS NOT COSMETIC.**  `checks/runs-artifacts.py` derives the
+    artifact directory from `checks/differ.py`'s OWN SOURCE by resolving its module-level
+    bindings (`_env`), and it reads the LAST binding of `D` it finds.  A redirect that did
+    not restore `D` would leave that resolver reading an empty path, and the 14 readers of
+    `runs/graphcmp/D` would silently become readers of NOTHING -- a clean zero from a
+    broken instrument, which is that file's own named failure mode.  `plant()` above keeps
+    the same shape for the same reason."""
+    global D
+    live = D
+    D = Path(path).resolve()
+    try:
+        yield D
+    finally:
+        D = live
+
+
+def one_run() -> int:
+    """ONE `run`, IN THIS PROCESS.
+
+    **THIS USED TO BE A SUBPROCESS, AND THE CORPUS LOCK IS WHY IT IS NOT.**  `run` holds the
+    corpus lock, and the lock is held by the process that WRITES the artifacts -- so a `run` in
+    a CHILD would be a second writer, and the only ways out are a re-entrancy rule that any
+    second `differ.py` could forge, or a parent-death check that a killed parent fails.  One
+    process, one writer, one lock.  MEASURED 2026-10-23: the child's two streams were
+    `DEVNULL`, so they are captured here and RE-EMITTED ONLY WHEN THE RUN FAILED -- a refusal
+    that exists only in a swallowed stream is a refusal nobody can read, and the run's own
+    summary names the artefacts anyway."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        try:
+            rc = cmd_run(None)
+        except Exception as e:  # a child that died used to be a non-zero rc, and nothing more
+            rc = 1
+            err.write(f"run raised {type(e).__name__}: {e}\n")
+    if rc:
+        sys.stderr.write(err.getvalue())
+    return rc
+
+
 def clean_run(label, wait):
     """Run until healthy, BOUNDED, and say how long the bound was. Record the DEFECT below.
 
@@ -2120,8 +2347,7 @@ def clean_run(label, wait):
     t0 = time.monotonic()
     for attempt in range(wait):
         if ready(wait):
-            subprocess.run([sys.executable, str(Path(__file__).resolve()), "run"], cwd=ROOT,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            one_run()
         if bad := unhealthy():
             print(f"# {label}: run {attempt + 1} summary was NOT healthy -- waiting: "
                   + "; ".join(bad))
@@ -2256,6 +2482,34 @@ def main():
                    help=f"run ONE plant of {list(PLANT_NAMES)}; an unknown name is REFUSED "
                         f"(exit 3), never PASS")
     a = ap.parse_args()
+    # THE ARTEFACT DIRECTORY IS A PARAMETER, and this is where it is read.  The corpus is a
+    # SINGLETON, so a run that must not touch `runs/graphcmp/D` needs somewhere else to write:
+    # a gate that MEASURES the corpus, and a plant that proves two runs exclude each other,
+    # both need that, and neither may destroy 319 files of evidence to get it.
+    if override := os.environ.get("GRAPHCMP_ARTIFACTS"):
+        with redirected(override):
+            return command(a)
+    return command(a)
+
+
+def command(a):
+    """THE COMMANDS, AND EVERY ONE OF THEM IS UNDER THE CORPUS LOCK.
+
+    **THE LOCK IS TAKEN BEFORE ANYTHING ELSE, INCLUDING `D.mkdir` AND THE STALE-TEMP SWEEP**,
+    because a refusal that has already created or pruned the artifact directory is not a
+    refusal.  `run` and `repro` WRITE `runs/graphcmp/D`; `plant` copies it and `snap` hashes
+    it, and a reader that reads a directory a writer is halfway through is the same corruption
+    as two writers, so all four are serialised."""
+    if refusal := take_lock():
+        print(refusal, file=sys.stderr)
+        return gatekit().REFUSED
+    try:
+        return _command(a)
+    finally:
+        drop_lock()
+
+
+def _command(a):
     if a.cmd == "plant":
         return plant(a.name)
     D.mkdir(parents=True, exist_ok=True)

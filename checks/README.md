@@ -23,6 +23,43 @@ driver twice, and the driver runs `graphcmp.py` 37 times plus a 155-second censu
 `runs/graphcmp/D/D0-run-summary.txt` first: it is the run's verdict, one `key=value` per
 line, and it is what `repro` pins.
 
+## The corpus is a singleton, and a second run is REFUSED
+
+`runs/graphcmp/D/` is ONE directory that `run` and `repro` both write, artifact by artifact.
+Two of them at once interleave two verdicts into one directory.
+
+MEASURED 2026-10-23: a `repro` started at 03:37 and a `run` started at 03:45 ran
+CONCURRENTLY. The `run` overwrote a green `D0-run-summary.txt` — and the summary it wrote was
+green too (35/35 agree, 35/35 byte-identical, 8/8 plants) while its OWN two substrate digests
+DISAGREED (`substrate-start=0c950c47…` vs `substrate-end=074e0233…`), because a `.bend` edit
+landed mid-run. `gates/corpuswitness-gate.py` then went red on 4 of its 7 readings
+(`verdict.current`, `witness.fresh`, `witness.substrate`, `claim`) while `verdict.reported`
+stayed OK: a summary that says green and a witness that says the claim is not established.
+
+So every command here takes `CORPUS_LOCK` (`runs/graphcmp/.corpus.lock`, an `fcntl.flock`)
+BEFORE it touches the directory, and a second run refuses:
+
+```
+another corpus run holds the lock: runs/graphcmp/.corpus.lock is held by pid 15333 (held for
+1s, …/checks/differ.py run).  This run refuses to start: the corpus is a SINGLETON -- two runs
+write the SAME directory (runs/graphcmp/D) and would overwrite each other's artifacts.  Wait
+for the holder.
+```
+
+The exit is **3** (`REFUSED`, `gates/gatekit.py`), and nothing was written. The lock is an
+`flock` and not a `mkdir`-and-a-PID directory because the kernel releases it when the holder
+dies (so there is no stale lock to reclaim) and refuses to let anybody take it (so a live
+holder's lock cannot be stolen). `checks/bendlock.sh` cannot use it — it is POSIX `sh`, where
+`flock(2)` does not exist — and it is a DIFFERENT resource anyway: the bend lock serialises
+COMPILER invocations, this one serialises WRITERS to one directory.
+
+`gates/corpusverdict-gate.py`'s `run.gated` row MEASURES this: it holds the lock, starts a
+real `checks/differ.py run` against a scratch directory (`GRAPHCMP_ARTIFACTS`), and asserts
+that the run refused, that the refusal named the holder, and that nothing was written.
+
+`GRAPHCMP_ARTIFACTS=<dir>` points the corpus at another directory, which is how a gate or a
+plant exercises the corpus without overwriting the tree's evidence.
+
 ## The artifacts, by name
 
 | file | what it is |
