@@ -228,33 +228,31 @@ def nn_reduce.pick(+rn: List<&2, U32>, +t: T.Tensor, +kept: List<&2, U32>, +n: U
 # substituted for the values it minted a second RESHAPE to `(0, 1)`, which the
 # fold could not read, and the row printed nothing.
 # `1 if i in axis else s for i,s in enumerate(self.shape)` -- reduce.py:18,
-# THE KEEPDIM TARGET. IT IS SPELLED HERE AND NOT READ FROM
-# `mixin/op.bend:781 mo_keep_ds`, AND THE REASON IS MEASURED: `mo_keep_ds`'s
-# index is `mixin/op.bend:316 mo_at`'s, and `mo_at` answers `len(t)` -- the
-# index COUNTED FROM THE END. `.agents/slop/nnconv/probe/moat.bend` measures
-# `idx(10,20,30) = 2,1,0` over a FORWARD walk, so `mo_keep_ds` is right on a
-# ONE-DIMENSIONAL shape -- where the two readings agree, and where
-# `mixin/op.bend:1411`'s `sh_sum0kd` row lives -- and wrong on every other.
-# MEASURED HERE: `mo_keep_ds` on `(2,4,3)` with axis `[2]` answers `(1,4,3)`
-# where CPython answers `(2,4,1)` (tinygrad/mixin/reduce.py:18).
-def nn_reduce.keepd.go(+ns: List<&2, U32>, +axis: List<&2, U32>, +ds: List<&2, U32>,
-  +acc: List<&2, U32>) -> List<&2, U32>:
-  match ns ds:
-    case i <> it s <> st: nn_reduce.keepd.go(it, axis, st,
-      List.append(&2, U32, acc, [Bool.pick(U32, nn_reduce.mem(axis, i), 1, s)]))
-    case _ _: acc
-
-def nn_reduce.keepd(+ds: List<&2, U32>, +axis: List<&2, U32>) -> List<&2, U32>:
-  nn_reduce.keepd.go(nn_range(nn_len32(ds)), axis, ds, Nil{})
-
-# THE KEEPDIM RESHAPE. `M.mo_reduce.keep` (mixin/op.bend:790) IS THE SAME SHAPE
-# AND IS NOT CALLED, because it reads `mo_keep_ds`; the ONE thing that changes
-# is WHICH INDEX the axis membership is tested against.
-def nn_reduce.keep(kd: Bool, +r: T.Tensor, +ds: List<&2, U32>,
+# THE KEEPDIM TARGET. **THIS IS NOW READ FROM `mixin/op.bend`'s `mo_keep_ds` AND NOT
+# SPELLED HERE, AND THE REASON THE LOCAL COPY EXISTED IS GONE.**
+# THE HISTORY, BECAUSE IT IS WHY THE BUG WAS HARD TO SEE: THE LOCAL COPY WAS WRITTEN
+# WHEN `mo_keep_ds`'S INDEX WAS WRONG -- `mixin/op.bend`'s `mo_at` ANSWERED `len(t)`, THE
+# INDEX **COUNTED FROM THE END**, WHILE EVERY NEIGHBOUR IS FORWARD (`mo_dim_at` READS
+# `mo_dims` AT A FORWARD INDEX, `mo_resolve` ADDS `total` TO A NEGATIVE AXIS, `mo_range`
+# BUILDS `0..n-1`). `.agents/slop/nnconv/probe/moat.bend` MEASURED `idx(10,20,30) = 2,1,0`
+# OVER A FORWARD WALK, SO `mo_keep_ds` WAS RIGHT ON A ONE-DIMENSIONAL SHAPE -- WHERE THE
+# TWO READINGS AGREE, AND WHERE `mixin/op.bend`'s `sh_sum0kd` ROW LIVES -- **AND WRONG ON
+# EVERY OTHER**: IT ANSWERED `(1,4,3)` ON `(2,4,3)` WITH AXIS `[2]` WHERE CPython ANSWERS
+# `(2,4,1)` (tinygrad/mixin/reduce.py:18).
+# **⇒ SO THE PORT HAD *TWO* IMPLEMENTATIONS OF ONE RULE, ONE RIGHT AND ONE WRONG, AND THE
+# NN LAYER USED THE RIGHT ONE -- WHICH IS EXACTLY WHY THE WRONGNESS WAS INVISIBLE: THE ROW
+# THAT CAUGHT IT, `fold_smk`, EXPECTED `2,1,3`, WHICH IS CPython's ANSWER FOR AXIS `[1]`
+# **AND ALSO WHAT THE PORT'S `mo_keep_ds` ANSWERED FOR EVERY AXIS**. A WRONG ANSWER THAT
+# COINCIDES WITH A RIGHT ONE IS THE DEEPEST FORM OF *\"A ROW THAT CANNOT GO RED IS A
+# LABEL\"*.**
+# **⇒ AND `mo_at` IS NOW FIXED** (`mixin/op.bend`: `n - len(ds)`, THE ORIGINAL LENGTH
+# THREADED, BECAUSE `ds` AT THE CALL SITE IS THE *REMAINING* LIST), SO `mo_keep_ds` IS
+# FORWARD AND CORRECT, AND THE LOCAL COPY IS DEAD WEIGHT. **⇒ AND THE TWO READ THE SAME
+# SHAPE: `nn_shape` IS `nn_u32(M.mo_dims(...))` AND `mo_keep_ds` IS `mo_dims(...)` -- THE
+# FOLD'S SHAPE, BOTH OF THEM -- SO THE SWAP CHANGES THE INDEX AND NOTHING ELSE.**
+def nn_reduce.keep(kd: Bool, +src: T.Tensor, +r: T.Tensor,
   +axis: List<&2, U32>) -> T.Tensor:
-  match kd:
-    case True{}: M.mo_reshape(r, nn_ks(nn_reduce.keepd(ds, axis)))
-    case _: r
+  M.mo_reduce.keep(kd, src, r, axis)
 
 def nn_reduce(+t: T.Tensor, +axis: List<&2, U32>, op: O.Op, kd: Bool) -> T.Tensor:
   +ds = Maybe.default(&2, List<&2, U32>, nn_shape(t), Nil{})
@@ -262,7 +260,7 @@ def nn_reduce(+t: T.Tensor, +axis: List<&2, U32>, op: O.Op, kd: Bool) -> T.Tenso
   +rn = nn_reduce.rn(axis, ds)
   +red = M.mo_reshape(nn_reduce.pick(rn, t, nn_reduce.kept(ds, axis), n, op),
     nn_ks(nn_reduce.kept(ds, axis)))
-  nn_reduce.keep(kd, red, ds, axis)
+  nn_reduce.keep(kd, t, red, axis)
 
 # `sum` -- mixin/reduce.py:20, on top of `nn_reduce`. The HEAD is `mo_sum`'s own
 # (mixin/op.bend:811): `sum_acc_dtype(commit_dtype())` then a cast back iff the

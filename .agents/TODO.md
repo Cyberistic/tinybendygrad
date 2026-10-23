@@ -2164,6 +2164,32 @@ rand-census-expired  [##] 2/3  **A GATE'S CLAIM HAS EXPIRED BECAUSE A FIX WORKED
                                        MEASUREMENT TO RE-TAKE IS ITS OWN ROW COUNT.**
 
 
+keepdim-dedup        [##] 3/3  **THE PORT HAD *TWO* IMPLEMENTATIONS OF THE KEEPDIM TARGET -- ONE RIGHT AND ONE WRONG
+                                       -- AND THE WRONGNESS WAS INVISIBLE BECAUSE A WRONG ANSWER COINCIDED WITH A
+                                       RIGHT ONE.** MEASURED 2026-10-23. `nn/layers.bend` SPELLED `1 if i in axis else
+                                       s for i,s in enumerate(self.shape)` (reduce.py:18) LOCALLY, IN
+                                       `nn_reduce.keepd`, **BECAUSE `mixin/op.bend`'s `mo_keep_ds` WAS WRONG**: ITS
+                                       INDEX CAME FROM `mo_at`, WHICH ANSWERED `len(t)` -- **THE INDEX COUNTED FROM
+                                       THE END** -- WHILE EVERY NEIGHBOUR IS FORWARD. **⇒ SO THE NN LAYER USED A
+                                       CORRECT LOCAL COPY AND THE OP LAYER USED THE WRONG SHARED ONE, AND THE ROW THAT
+                                       CAUGHT IT, `fold_smk`, EXPECTED `2,1,3` -- WHICH IS **CPython's ANSWER FOR AXIS
+                                       `[1]`** AND **ALSO WHAT THE PORT'S `mo_keep_ds` ANSWERED FOR *EVERY* AXIS**.
+                                       **A WRONG ANSWER THAT COINCIDES WITH A RIGHT ONE IS THE DEEPEST FORM OF *"A ROW
+                                       THAT CANNOT GO RED IS A LABEL"*.** **⇒ AND NOW THAT `mo_at` IS FIXED, THE LOCAL
+                                       COPY IS DEAD WEIGHT AND IS GONE: `nn_reduce.keep` READS `M.mo_reduce.keep`,
+                                       WHICH READS `mo_keep_ds`.** **⇒ AND THE SWAP CHANGES THE INDEX AND NOTHING
+                                       ELSE, BECAUSE THE TWO READ THE SAME SHAPE: `nn_shape` IS
+                                       `nn_u32(M.mo_dims(...))` AND `mo_keep_ds` IS `mo_dims(...)` -- THE FOLD'S
+                                       SHAPE, BOTH OF THEM.** **⇒ AND IT IS BEHAVIOUR-PRESERVING, MEASURED BY THE
+                                       TREE'S OWN GATE: `gates/nn-rows-gate.py` READS **IDENTICALLY** BEFORE AND AFTER
+                                       -- `rows_declared=31  rows_printed=31  MATCH=18/31  MISMATCH=8/31
+                                       UNCHECKABLE=5/31  DEAD-ROW=0/31  SHRUNK=0/31  EXTRA=0/31  DUPLICATE=0/31` --
+                                       AND `fold_smk` READS `got=2,4,1 want=2,4,1`.** **⇒ AND THE POINT IS THE TREE'S
+                                       OWN RULE, *"SHAREABLE LOGIC SHOULD BE REUSED. AVOID COPY-PASTING CODE"*: **TWO
+                                       SPELLINGS OF ONE RULE IS HOW A BUG HIDES, BECAUSE EACH SPELLING IS RIGHT ABOUT
+                                       SOMETHING.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
