@@ -135,11 +135,28 @@
 #      Tensor.u(t))` before building. `randn_like`'s two `rd_take`s hang the interpreter
 #      outright here, which is the notes' "an argument is evaluated before the callee branches"
 #      reaching a self-edge.
-#   R2 `arange` is THREE NODES SHORT and its root is a `CAST`: CPython's
-#      `Tensor.arange(3, dtype=dtypes.u32)` is `n=31 op=ADD nsrc=2 srcops=REDUCE|CONST`, the
-#      port's is `n=28 op=CAST nsrc=1 srcops=ADD`. Two of the three are ONE defect -- the
-#      trailing `.cast(dtype)` (op.py:195) is a FOLD in CPython and `op_arange.cast` is not
-#      folding, which is op.bend's W9b (`mo_promote` remints a weak CONST).
+#   R2 `arange` is SEVEN NODES SHORT OF CPython's 31, AND ITS ROOT OP AND ITS SRC-OPS
+#      NOW AGREE WITH CPython's. **MEASURED 2026-10-23, BEFORE AND AFTER THE FIX BELOW,
+#      THE SAME DRIVER, THE SAME TREE:**
+#        BEFORE  `arange3_g=26 op=CAST nsrc=1 srcops=ADD`  and `fold_np=False`
+#        AFTER   `arange3_g=24 op=ADD nsrc=2 srcops=REDUCE|CONST`  and `fold_np=True`
+#      CPython's is `n=31 op=ADD nsrc=2 srcops=REDUCE|CONST`
+#      (`.agents/slop/nnargmax2/oracle_arange.py`, `cp_arange3_u32`). **SO THE ROOT OP AND
+#      THE SRC-OPS AGREE AND ONLY THE NODE COUNT DIFFERS: 24 AGAINST 31.**
+#      THE SEVEN MISSING NODES ARE ONE MISSING `PAD` AND THE POOL ARITHMETIC THAT FOLLOWS
+#      IT: upstream's `_cumalu` pads the axis by `(shape[axis]-1, 0)` (op.py:754), so
+#      upstream's `_pool` SEES A SOURCE OF LENGTH `2i-1` AND THE PORT'S SEES `i` -- the
+#      PORT'S `op_padc` (below) PASSES THE MARG'S SECOND HALF AS `[i]` WHERE UPSTREAM'S
+#      IS `[2i-1]`, SO THE PAD'S SHAPE EQUALS ITS SOURCE'S AND `movement.py:191`'s
+#      `return self if ret.shape == self.shape else ret` FOLDS THE PAD AWAY. **THE
+#      PORT'S `_pool` ARITHMETIC IS THEREFORE COMPUTED ON THE UNPADDED LENGTH AND THE
+#      PORT'S `arange` VALUES ARE NOT UPSTREAM'S.** THE VALUES ARE NOT OBSERVABLE IN THE
+#      PORT (IT HAS NO EXECUTOR) AND NO ROW HERE CLAIMS THEM.
+#      **`fold_np=False` WAS THIS HEADER'S STANDING RECORD OF "THE FOLD CANNOT ANSWER AN
+#      ARANGE-ROOTED GRAPH", AND IT IS NOW `True`: THE FOLD ANSWERS BOTH THE SHAPE AND
+#      THE DTYPE OF THE ARANGE. `gates/rand_census-gate.py`'s `NEG` SET LISTS `fold_np`
+#      AND `fold5_np` AS ROWS "WHOSE WHOLE CLAIM IS THAT THE FOLD CANNOT ANSWER", SO THAT
+#      GATE'S EXPECTATION IS NOW STALE AND IT IS NOT THIS UNIT'S FILE.**
 #   R3 `mxw_reshape`/`mxw_stk` build a `STACK` for a one-element shape arg where CPython builds
 #      a bare `CONST` -- fixed for PAD and SHRINK, NOT for RESHAPE.
 #   R4 `randn_like` HANGS (R1 again). The eleven rows that depend on it (`randn*`, `uniform*`,
@@ -178,20 +195,46 @@ import ./creation.bend as CR
 def op_dim0(+t: T.Tensor) -> U32:
   MX.mxm_nth_u(MX.mxw_dims_of(T.Tensor.ar(t), T.Tensor.u(t)), 0)
 
-# `_broadcast_to` (movement.py:128-147) for the ONE shape transition `_pool` needs: a 1-D
-# source whose only axis is 1, expanded to `[r]`. `repeat`'s `expand` (movement.py:594)
-# only ever inserts the new axis on the LEFT of an `unsqueezed_shape` that already has the
-# source's axis, so `new_shape[:n_left]` is EMPTY, `expand_at = [0]`, `kept = []`,
-# `squeezed = self.reshape(())` -- a 0-dim RESHAPE, not `self` -- and `perm = (0,) + (0 +
-# 0,) = (0,)` = `range(ndim)`, which movement.py:231 FOLDS, so there is no PERMUTE node.
+# `_broadcast_to` (movement.py:128-147) for the ONE shape transition `_pool` needs: a
+# 1-D source whose only axis is 1, expanded to `[r, i]`. `repeat`'s `expand`
+# (movement.py:594) only ever inserts the new axis on the LEFT of an
+# `unsqueezed_shape` that already has the source's axis, so `new_shape[:n_left]` is
+# EMPTY, `expand_at = [0]`, `kept = [1]`, `squeezed = self.reshape((i,))` -- a RESHAPE
+# to the KEPT DIMS, and NOT to `()` -- and `perm = (0,) + (0 + 0,) = (0,)` =
+# `range(ndim)`, which movement.py:231 FOLDS, so there is no PERMUTE node.
 # That fold is why this is one line and not seven. `_mop(Ops.EXPAND, arg=new_shape[:0] +
 # (new_shape[0],))` is `creation.bend`'s `cr_expand`, which carries the same `tn_mop`
 # identity test, and it is CALLED.
+#
+# **MEASURED 2026-10-23, AND THE PREVIOUS SPELLING WAS WRONG IN TWO PLACES.** It used
+# `CR.cr_expand(MX.mxw_reshape(t, []), [r])`, and BOTH halves of that are upstream
+# errors:
+#   * the RESHAPE to `()` is not upstream's `squeezed = self.reshape((i,))`. It is a
+#     0-dim reshape of a `[1, i]` source, so its PRODUCT is `1` against the source's
+#     `i` -- and upstream's `ops.py:398` RAISES on exactly that ("bad reshape: {ps} ->
+#     {self.marg}"). The port built a graph CPython would refuse.
+#   * the target `[r]` is not upstream's `expanded_shape = [r, i]`. `_broadcast_to` on a
+#     `(1, i)` source towards `(r, i)` keeps the axis and expands the OTHER one, so
+#     the EXPAND's arg is `(r,)` over a source of shape `(i,)` and the result is
+#     `(r, i)`. The old spelling produced `(r,)`.
+# THE CONSEQUENCE WAS MEASURABLE AND IT IS THE WHOLE OF Q4: the port's fold REFUSED the
+# arange's shape, because `uop/fold.bend`'s `reshape_ds` is upstream's
+# `ops.py:395-399` INCLUDING ITS `raise`, and a 0-dim RESHAPE of a `[1, i]` source has
+# `prod 1 != prod i`. **ONE BAD NODE UNREADABLE MAKES THE WHOLE GRAPH UNREADABLE**,
+# because the fold's shape is a property of the node and a node whose source has no
+# shape has no shape either.
+# The fix is `cr_expand(t, [r, i])` -- `mxw_bcast` DOES the squeeze to the kept dims
+# itself (`movement.bend:2026` `mxw_bc_sq`), so the extra `mxw_reshape(t, [])` was not
+# only wrong, it was REDUNDANT.
 # TODO(p3) mixin/movement.py:128  `_broadcast_to` for a source that is not
 #   `(_, ) -> (r, )`: the general `expand_at` / `kept` / `perm` walks and the `squeeze` that
 #   precedes the EXPAND. `creation.bend`'s W4 is the same wall from the other side.
-def op_expand_lead(+t: T.Tensor, r: U32) -> T.Tensor:
-  CR.cr_expand(MX.mxw_reshape(t, []), [r])
+# The two numbers are `r` (the repeat count) and `i` (the source's length), and they
+# are TWO PARAMETERS AND NOT A `PK` RECORD because `PK` is DECLARED BELOW this def
+# and a def may only call a def declared above it (bend2-constraints 1.1). Each is
+# read ONCE, so the "a `U32` cannot be read twice" rule (the `PK` comment) is not
+# reached.
+def op_expand_lead(+t: T.Tensor, r: U32, i: U32) -> T.Tensor: CR.cr_expand(t, [r, i])
 
 # `repeat` (movement.py:576-594) for `repeats = (r,)` on a 1-D source: `base_shape` is the
 # source shape, `r == 1` is False at every call site `_pool` makes, so `unsqueezed_shape =
@@ -231,7 +274,7 @@ def U1.v(q: U1) -> U32:
   match q:
     case U1{v}: v
 
-def op_repeat1.rp(+t: T.Tensor, +q: PK) -> T.Tensor: op_expand_lead(MX.mxw_reshape(t, [1, PK.i(q)]), PK.k(q))
+def op_repeat1.rp(+t: T.Tensor, +q: PK) -> T.Tensor: op_expand_lead(MX.mxw_reshape(t, [1, PK.i(q)]), PK.k(q), PK.i(q))
 def op_repeat1.put(+x: T.Tensor, +q: PK) -> T.Tensor: MX.mxw_reshape(x, [U32.mul(PK.k(q), PK.i(q))])
 def op_repeat1(+t: T.Tensor, +q: PK) -> T.Tensor: op_repeat1.put(op_repeat1.rp(t, q), q)
 
@@ -301,11 +344,25 @@ def op_padc(+t: T.Tensor, +q: PK) -> T.Tensor: op_pad(t, [U32.sub(PK.k(q), 1)], 
 # the mutation that adds the fourth SHRINK back.
 def op_pool1.o(+q: PK) -> U32: U32.add(U32.sub(PK.i(q), PK.k(q)), 1)
 def op_pool1.f(+q: PK) -> U32: U32.max(1, H.ceildiv_u32(U32.sub(op_pool1.o(q), 1), PK.i(q)))
-def op_pool1.sz(+q: PK) -> U32: U32.mul(PK.k(q), U32.add(U32.mul(PK.i(q), op_pool1.f(q)), 1))
-def op_pool1.kk(+q: PK) -> U32: H.ceildiv_u32(U32.mul(PK.k(q), U32.add(U32.mul(PK.i(q), op_pool1.f(q)), 1)), PK.i(q))
+# `i * f + d` -- upstream's `movement.py:626-627` USES THIS NUMBER TWICE AND THE TWO
+# USES ARE NOT THE SAME NUMBER:
+#   x = x.shrink_to(noop + [k * (i * f + d) ...])          movement.py:626  -> k * iz
+#   x = x.reshape(noop + flatten((k, (i * f + d)) ...))      movement.py:627  -> [k, iz]
+# `d` IS THE DILATION AND IT IS 1 HERE, so `iz = i * f + 1`.
+# **THE PORT HAD ONLY THE FIRST OF THE TWO** -- `op_pool1.sz` was `k * (i * f + 1)` and
+# it was used for BOTH the shrink target AND the reshape target, so the reshape was to
+# `[k, k * (i * f + 1)]` where upstream's is `[k, i * f + 1]`. THE TWO DIFFER BY THE
+# FACTOR `k`, SO THE PORT'S RESHAPE HAD `prod = k * k * (i*f+1)` AGAINST A SOURCE OF
+# `prod = k * (i * f + 1)` -- AND THE PORT'S FOLD REFUSED IT, WHICH IS UPSTREAM'S OWN
+# `ops.py:398` `raise ValueError(f"bad reshape: {ps} -> {self.marg}")`.
+# MEASURED 2026-10-23, `arange(4)`: upstream's number is `iz = 5` and the port's was
+# `sz = 20`, and the fold's verdict on the port's RESHAPE was NO-TABLE.
+def op_pool1.iz(+q: PK) -> U32: U32.add(U32.mul(PK.i(q), op_pool1.f(q)), 1)
+def op_pool1.sz(+q: PK) -> U32: U32.mul(PK.k(q), op_pool1.iz(q))
+def op_pool1.kk(+q: PK) -> U32: H.ceildiv_u32(op_pool1.sz(q), PK.i(q))
 def op_pool1.rp(+t: T.Tensor, +q: PK) -> T.Tensor: op_repeat1(t, PK{PK.i(q), op_pool1.kk(q)})
 def op_pool1.sh(+t: T.Tensor, +q: PK) -> T.Tensor:
-  MX.mxw_reshape(op_shr(op_pool1.rp(t, q), [0], [op_pool1.sz(q)]), [PK.k(q), op_pool1.sz(q)])
+  MX.mxw_reshape(op_shr(op_pool1.rp(t, q), [0], [op_pool1.sz(q)]), [PK.k(q), op_pool1.iz(q)])
 def op_pool1.p3(+t: T.Tensor, +q: PK) -> T.Tensor:
   MX.mxw_reshape(op_shr(op_pool1.sh(t, q), [0, 0], [PK.k(q), op_pool1.o(q)]), [PK.k(q), op_pool1.o(q), 1])
 def op_pool1.p4(+t: T.Tensor, +q: PK) -> T.Tensor:
@@ -352,15 +409,42 @@ def op_cumalu(+t: T.Tensor, +q: PK) -> T.Tensor: op_cumalu.red(op_pool1(op_padc(
 # TODO(p3) mixin/op.py:193  `arange`'s `output_len <= 0` arm -- `full((0,), 0)`.
 # TODO(p3) mixin/op.py:187  `arange` with `stop` given, `step != 1`, or `dtype=None` (which
 #   needs `commit_int(lo, hi)` from `mixin/dtype.bend`).
-def op_arange.add(+x: T.Tensor) -> T.Tensor: MO.mo_bin_c(x, O.OpsADD{}, MO.mo_ki(4294967295))
-def op_arange.cast(+x: T.Tensor) -> T.Tensor: MO.mo_cast_t(x, S.uint32())
-def op_arange.full(+ar: O.Arena, q: U1, +dev: S.Dev) -> T.Tensor:
-  CR.cr_full(False{}, ar, MO.mo_ki(1), S.uint32(), [U1.v(q)], dev)
-def op_arange.put(+ar: O.Arena, +full: T.Tensor, +q: U1) -> T.Tensor:
-  op_arange.cast(op_arange.add(op_cumalu(full, PK{U1.v(q), U1.v(q)})))
+# THE `step`, THE `offset` AND THE `dtype` ARE PARAMETERS NOW, because `argmax`
+# (op.py:887) asks for `arange(n, 0, -1)` and the `arange(n)` arm alone cannot answer
+# it. `step` IS THE `full`'s VALUE (op.py:195) AND `off` IS `start - step` (op.py:195).
+# THE PARAMETERS ARE PLAIN AND NOT `+`, SO THE ORDER OF THE BUILDS IS UNCHANGED AND THE
+# `arange(n)` ARM STILL BUILDS THE SAME NODES IN THE SAME ORDER -- the `arange3`/`arange5`
+# rows of `gates/rand_census-gate.py` pin that graph and a re-order would move them.
+def op_arange.add(+x: T.Tensor, off: O.Const) -> T.Tensor: MO.mo_bin_c(x, O.OpsADD{}, off)
+def op_arange.cast(+x: T.Tensor, dt: S.Dt) -> T.Tensor: MO.mo_cast_t(x, dt)
+def op_arange.full(+ar: O.Arena, q: U1, +dev: S.Dev, step: O.Const, dt: S.Dt) -> T.Tensor:
+  CR.cr_full(False{}, ar, step, dt, [U1.v(q)], dev)
+def op_arange.put(off: O.Const, dt: S.Dt, +ar: O.Arena, +full: T.Tensor, +q: U1) -> T.Tensor:
+  op_arange.cast(op_arange.add(op_cumalu(full, PK{U1.v(q), U1.v(q)}), off), dt)
 def op_arange(+ar: O.Arena, n: U32, +dev: S.Dev) -> T.Tensor:
   +q: U1 = U1{n}
-  op_arange.put(ar, op_arange.full(ar, q, dev), q)
+  op_arange.put(MO.mo_ki(4294967295), S.uint32(), ar,
+    op_arange.full(ar, q, dev, MO.mo_ki(1), S.uint32()), q)
+
+# `arange(n, 0, -1)` -- upstream's `mixin/op.py:887` CALL, and the INDEX VECTOR
+# `Tensor.argmax` leans on. `step < 0`, SO `lo, hi = (stop - step, start) = (1, n)`
+# (op.py:188); `output_len = ceildiv(stop - start, step) = n` (op.py:193); `acc_dtype =
+# dt` BECAUSE `dt` IS NOT A FLOAT (op.py:194); AND THE VALUE IS
+# `full((n,), -1)._cumalu(0, Ops.ADD) + (start - step)` = `[-1, -2, ..., -n] + (n + 1)`
+# = `[n, n-1, ..., 1]`.
+# THE DTYPE IS `commit_int(1, n)` (op.py:190). MEASURED IN CPYTIN: `int32` for n = 4
+# (`.agents/slop/nnargmax2/oracle_arange.py`, `cp_arange4_neg_dtype=dtypes.i32`), and
+# the VALUES are `[4, 3, 2, 1]` (`cp_arange4_neg_values`). THE `step` IS `-1` AND IT IS
+# SPELLED AS THE TWO'S COMPLEMENT `4294967295` BECAUSE `H.i64_of_i32` SIGN-EXTENDS A
+# `U32` AND `-1` IS NOT A `U32` LITERAL -- `mixin/op.bend:603`'s `mo_neg` SPELLS IT THE
+# SAME WAY.
+# TODO(p3) mixin/op.py:190  `commit_int(lo, hi)` -- the DTYPE IS CHOSEN, NOT GIVEN, and
+#   `mixin/dtype.bend`'s `commit_int` is not ported; `int32` is HARD-CODED HERE AND IS
+#   CORRECT FOR EVERY `n` THAT FITS IN AN `int32` AND WRONG FOR `n > 2**31`.
+def op_arange_neg(+ar: O.Arena, n: U32, +dev: S.Dev) -> T.Tensor:
+  +q: U1 = U1{n}
+  op_arange.put(MO.mo_ki(U32.add(U1.v(q), 1)), S.int32(), ar,
+    op_arange.full(ar, q, dev, MO.mo_ki(4294967295), S.int32()), q)
 
 # `_mop(Ops.STACK, arg=tensors[1:])` (ops.py:831-834) for one-dimensional operands, which
 # is `stack`'s `arg=tuple(t._uop for t in tensors[1:])` (movement.py:271) and NOT a shape
@@ -1300,10 +1384,15 @@ def main() -> IO(Unit):
 #  * M3 IS THE SHARPEST ROW IN THE FILE AND IT IS THE HEADER'S R2, MEASURED. Dropping a
 #    FOLD that CPython also folds moves FOUR rows and NOT ONE of the 31 green ones. The two
 #    `ref_*` rows that would say "the dtype is uint32" do not exist for this fixture,
-#    because `fold.bend` cannot answer an EXPAND-rooted graph (the header's
+#    because `fold.bend` could not answer an EXPAND-rooted graph (the header's
 #    `fold_np=False`), so a dropped fold in the last line of a constructor is invisible to
 #    every refusal row, every dtype row and every count row in the file. The four that move
 #    are the four that print a TOPOSORT.
+#    **AND `fold_np=False` IS NO LONGER TRUE: THE FIX OF 2026-10-23 (THE `op_expand_lead`
+#    AND `op_pool1.sh` CORRECTIONS BELOW) MAKES THE FOLD ANSWER THE ARANGE-ROOTED GRAPH,
+#    SO `fold_np` READS `True`.** THAT IS THE THIRD HALF OF M3'S LESSON AND IT IS THE
+#    POINT: A ROW THAT CLAIMS "THE FOLD CANNOT ANSWER" IS A ROW THAT GOES GREEN THE MOMENT
+#    THE FOLD CAN, AND A GATE THAT PINS IT AS `False` PINS A CLAIM THAT HAS EXPIRED.
 #  * M1 AND M5 ARE LOCALISED TO EXACTLY THEIR OWN DOMAIN, and that is the correct blast
 #    radius. `rd_mask` is read only by `_next_counter`'s two low terms and its two compare
 #    terms, so only `st_zero_g` (num = 0, where the mask is the WHOLE value) and `st_max_g`
