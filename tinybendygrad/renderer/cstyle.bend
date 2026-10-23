@@ -57,7 +57,7 @@
 #       values, which is exactly what Python's `_render_dtype(dtype, sz,
 #       addrspace, ...)` takes too.
 #   (b) `u.max_numel()` is `prod(to_max_shape(shape))` and `to_max_shape` is a
-#       SYMBOLIC `vmax` (`TODO(p3) ops.py:1886`). `max_numel` below is the
+#       SYMBOLIC `vmax` (`TODO(p3) ops.py:1896 symbol=to_max_shape`). `max_numel` below is the
 #       product of the CONCRETE dims; a shape carrying a symbolic `SU` is the
 #       case it does not have, and `max_numel_sym` is the marker for it.
 #   (c) `is_image_shape` is `helpers.bend`'s and takes a `ShapeRes`, while the
@@ -1348,7 +1348,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 #     [[buffer(0)]], uint3 gid [[...]], uint3 lid [[...]])`. The port takes
 #     `extra_args` as a `List<&2, String>` and joins it into the same list.
 #   * `launch_bounds` comes from `d.vmax` -- a SYMBOLIC maximum, and the
-#     `TODO(p3) ops.py:1886` wall again. It is a `U32` PARAMETER here, and the
+#     `TODO(p3) ops.py:1092 symbol=UOp.vmax` wall again. It is a `U32` PARAMETER here, and the
 #     SPECIAL's `vmax` on a linearized kernel is its CONST end.
 #   * `kernel_typedef.format(launch_bounds=..)` is a `str.format`, and there is no
 #     `format` in base.bend, so the `{launch_bounds}` FIELD is substituted by a
@@ -1360,8 +1360,8 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # and then `prod([d.vmax ...])`: `launch_bounds` is a `U32` PARAMETER above, and
 # this is where it would be computed. NEITHER HALF IS PORTED and the reason is
 # the same on both sides: the fold (wall (a)) owns the uop list, and `d.vmax` is
-# the SYMBOLIC maximum that is `TODO(p3) ops.py:1886`. The SPECIAL filter itself
+# the SYMBOLIC maximum that is `TODO(p3) ops.py:1092 symbol=UOp.vmax`. The SPECIAL filter itself
 # is one string test on the arg -- `arg[0]` of `("l", 0, "lidx0", "l")` is `"l"`
 # -- so it is a `head_char` over an `AStr` once the arena is walkable, and the
 # gate's `kern lb 1` rows are the no-local case it has to agree with.
-#   TODO(p3) cstyle.py:157, :160 -- BLOCKED. needs `local_dims` and `launch_bounds` -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.
+#   TODO(p3) cstyle.py:162 symbol=render_kernel, :163 -- BLOCKED. needs `local_dims` (py:162) and `launch_bounds` (py:163) -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.

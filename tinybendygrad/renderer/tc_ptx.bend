@@ -72,7 +72,7 @@
 #
 # `self.compiler` (ptx.py:145) is `runtime/support/compiler_cuda.py` and is a C
 # effect in the port's own boundary table, so `ptx_of` does not carry it:
-#   TODO(p3) ptx.py:145  self.compiler -- NVPTXCompiler / PTXCompiler
+#   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
 # ===========================================================================
 import Base
 import ./../helpers.bend as H
@@ -89,7 +89,7 @@ import ./tc.bend as T
 #
 # `self.compiler` (ptx.py:145) is `runtime/support/compiler_cuda.py` and is a C
 # effect in the port's own boundary table, so `ptx_of` does not carry it:
-#   TODO(p3) ptx.py:145  self.compiler -- NVPTXCompiler / PTXCompiler
+#   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
 # ===========================================================================
 type Px is Data:
   Px{suffix: String, prefix: String, barrier: String, gmax: List<&2, U32>, lmax: List<&2, U32>, smax: U32, ver: U32}
@@ -216,7 +216,7 @@ def w_float() -> String: types_pri(S.Dt.pri(S.single()))
 # The three tables read the SAME three arms first, because the three dtypes `pri`
 # cannot tell apart are exactly the three that need it. `CVoid` answers `""` --
 # LOUD, where `pred` was quiet -- and is the one of the three with no upstream
-# guard: `ptx.py:219` clears a `void` RANGE's prefix, so today no path asks, and
+# guard: `ptx.py:220` clears a `void` RANGE's prefix, so today no path asks, and
 # the row that says so is `types void`.
 #
 # THE pri ARMS LIVE IN THEIR OWN DEFS because Bend refuses a `match` over a

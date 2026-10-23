@@ -67,8 +67,8 @@
 #     own; `cstyle.bend` records it where it bites.
 #
 # 11. `u.max_numel()` IS `prod(to_max_shape(shape))` AND `to_max_shape` IS A
-#     SYMBOLIC `vmax` -- a WALL (`TODO(p3) ops.py:1886` in the port, at
-#     ops.bend:3870). The shape
+#     SYMBOLIC `vmax` -- a WALL (`TODO(p3) ops.py:1896 symbol=to_max_shape` in the port,
+#     at ops.bend:5472). The shape
 #     the port CAN answer is the CONCRETE one, whose every dim is an `SInt` `SI`
 #     rather than a symbolic `SU`, so `max_numel` here is the product of the
 #     concrete dims and a shape carrying an `SU` is the case this file does not
@@ -173,8 +173,8 @@ def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
 # (codegen/__init__.py:437) and it passes `lin.src` -- the LINEARIZED list -- on
 # which there is no RANGE, no END, no BACKEDGE and no SPECIAL, so `mults` is 1
 # at every step and the `mult_stack` never pushes. The symbolic branch of
-# `mults` (`UOp.simplify` is `# TODO(p3) ops.py:513`; the `vmax` under
-# `to_max_shape` is `# TODO(p3) ops.py:1886`) is unreachable from that call site,
+# `mults` (`UOp.simplify` is `# TODO(p3) ops.py:495 symbol=UOp.simplify`; the `vmax` under
+# `to_max_shape` is `# TODO(p3) ops.py:1092 symbol=UOp.vmax`) is unreachable from that call site,
 # so counting the linear list needs none of it.
 #
 # THE `mem` DICT IS THE ONE PLACE THE PORT'S SHAPE DEPARTS FROM 1:1, and the
@@ -391,7 +391,7 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 #   arms are the identity, which is exact for the only call site (a linearized
 #   list) and wrong for an unlinearized one -- and `ignore_indexing` is a no-op
 #   because the multi-root toposort its `excluded` set needs is not in the
-#   substrate. `TODO(p3) __init__.py:26`.
+#   substrate. `TODO(p3) __init__.py:26 symbol=from_uops`.
 # * `Estimates.__add__` / `.simplify` (:23, :24) -- PORTED, with `simplify` the
 #   identity and the reason said out loud.
 # * `Renderer.__init__` / `__reduce__` (:81, :82) -- the target is a
@@ -405,14 +405,14 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 #   `NotImplementedError`, and Bend has no exceptions. They are the two `Bool`s
 #   in the record a caller tests before dispatching, and every subclass
 #   OVERRIDES the reader rather than setting a flag, so the flag is the base's
-#   answer and nothing else can be true of it. `TODO(p3) __init__.py:83`, `:84`.
+#   answer and nothing else can be true of it. `TODO(p3) __init__.py:83 symbol=render`, `:84 symbol=asm`.
 # * `Renderer.extra_matcher` (:76) -- a `PatternMatcher` of UOps, which is
 #   `cstyle.bend`'s tables (`create_non_native_float_pats`,
 #   `pm_manual_bf16_cast`, and each device's own). A `Bool` has-matcher here.
 # * `Renderer.code_for_op` (:77) -- `dict[Ops, Callable]`. The tag plus the
-#   `match` is `cstyle.bend`'s `code_for_op.of`. `TODO(p3) __init__.py:77`.
+#   `match` is `cstyle.bend`'s `code_for_op.of`. `TODO(p3) __init__.py:77 symbol=code_for_op`.
 # * `Renderer.tensor_cores` (:75) -- `list[TensorCore]` from `renderer/tc.py`,
-#   which is not this unit's file and has no port. `TODO(p3) __init__.py:75`.
+#   which is not this unit's file and has no port. `TODO(p3) __init__.py:75 symbol=tensor_cores`.
 # * `Renderer.supported_dtypes` (:85) -- PORTED, as above.
 #
 # DONE(p3) __init__.py:11  with_storage     (done; kept for the line map) -- DONE: `with_storage` IS ported -- EIGHT defs, `with_storage` / `.arg` / `.arg.of` / `.at` / .fuel` / `.is_store` / `.leaf` / `.rebuild` -- MEASURED with `^ *def with_storage`. The marker's own note already said `(done; kept for the line map)`; this makes it visible to the census.

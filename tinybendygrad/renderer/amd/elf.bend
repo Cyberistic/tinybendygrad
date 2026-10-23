@@ -16,8 +16,8 @@
 #               (`runtime/autogen/amd/{rdna3,rdna4,cdna}/ins.py`). The scan
 #               below runs on an explicit field list; the UOp-to-Inst
 #               extraction is that generated table.
-#   elf.py:38-42  the sink `toposort`
-#               BLOCKER: `u.addrspace` is `ops.py:910`, still
+#   elf.py:41-46  the sink `toposort`
+#               BLOCKER: `u.addrspace` is `ops.py:896`, still
 #               `TODO(p3)` in `uop/ops.bend:3773`. `u.dtype.itemsize` is
 #               `Dt.itemsize` in `LAWS/spec.bend:176`, not a UOp method.
 #               `u.max_numel` is `mixin/movement.py:55` (`prod(max_shape)`),
@@ -32,21 +32,21 @@
 #               `itemsize if ALU else 8` choice, `lds_sum` is
 #               `numel * itemsize`, `gid_of` is `startswith("gidx")` plus
 #               `int(arg[-1])`. The walk that feeds them is the blocker.
-#   elf.py:43   `inst.to_bytes()`
+#   elf.py:47   `inst.to_bytes()`
 #               BLOCKER: the autogen encoder (`dsl.py:416`). The two padding
 #               encodings are constants, called out of CPython, not a general
 #               encoder. `code_len` is therefore a parameter.
-#   elf.py:103-109  the `bytearray` splice
+#   elf.py:108-113  the `bytearray` splice
 #               The offsets, sizes and header fields the splice WRITES are
 #               ported and gated against a real `assemble_linear` ELF. The
 #               mutable buffer itself is not a Bend value. A wrong offset is
 #               a wrong section, and that is what the `roff` / `text` rows see.
 #
-# TODO(p3) elf.py:16,38-42,43,103-109  the four blockers above.
+# TODO(p3) elf.py:16 symbol=assemble_linear, :41-46 symbol=assemble_linear, :47 symbol=assemble_linear, :108-113 symbol=assemble_linear  the four blockers above.
 #
 # ===========================================================================
 # A MEASURED UPSTREAM FACT, because it looks like a bug and it is not one
-# to "fix". elf.py:49 is
+# to "fix". elf.py:52 is
 #
 #   text = code_bytes + padding_inst * ((ALIGN - len(code) % ALIGN) % ALIGN)
 #

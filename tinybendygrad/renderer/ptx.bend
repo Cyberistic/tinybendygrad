@@ -24,8 +24,10 @@
 #   * `string_rewrite` (ptx.py:81-135) -- twenty-three graph-pattern rules whose BODY
 #     is an f-string over `ctx.r[x]`. It is CONSUMABLE exactly once the walk
 #     below supplies `ctx.r`, so it is the natural NEXT file and not a wall.
-#   * `ptx_matcher` (ptx.py:40-57) -- eight graph REWRITES, tc_ptx.bend's
-#     `TODO(p3) ptx.py:42`-`56` block.
+#   * `ptx_matcher` (ptx.py:40-57) -- eight graph REWRITES, and tc_ptx.bend's
+#     `DONE(p3)`/`WALL(p3)` block over ptx.py:42-56 is where each of the eight
+#     is recorded.
+#     `TODO(p3) ptx.py:42 symbol=ptx_matcher`.
 #   * `to_function_name`'s `ansistrip` (helpers.py:157) -- a regex ANSI strip.
 #     The KEEP/HEX branch is ported and gated; the strip is the wall.
 #   * `Ops.WMMA`'s `wmma_r` (ptx.py:211-216) -- it needs the three fragment

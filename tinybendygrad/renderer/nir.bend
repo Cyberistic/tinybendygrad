@@ -35,7 +35,7 @@
 # (:49-52) raises before it reaches its own `assert idx > 0, "invalid intrinsic.
 # mesa version mismatch?"`. But the `NIR_INTRINSIC_*` ENUM values it would index
 # with are generated INTS and ARE present, so this file audits all eight of them
-# and records the `index_map` SLOTS as the wall. `TODO(p3) nir.py:50`.
+# and records the `index_map` SLOTS as the wall. `TODO(p3) nir.py:50 symbol=nir_instr`.
 #
 # THE CONVENTIONS are `renderer/__init__.bend`'s HEADER, read in full. Four that
 # bite here:
@@ -1657,26 +1657,26 @@ def main() -> IO(Unit):
 # * `nir_instr`'s `index_map` SLOT for each `NIR_INTRINSIC_*` key (nir.py:50).
 #   The eight ENUM values are audited and gated; the array that maps them to
 #   `const_index` slots is `nir_intrinsic_infos`, an `in_dll` DATA ARRAY that is
-#   ABSENT on this tree (mesa.py:989). `TODO(p3) nir.py:50`.
+#   ABSENT on this tree (mesa.py:989). `TODO(p3) nir.py:50 symbol=nir_instr`.
 # * `glsl_type`'s CONSTANTS (nir.py:15-16). All twelve `glsl_type_builtin_*`
 #   symbols are `in_dll` DATA symbols and none is bound. The SYMBOL NAMES are
 #   ported and gated; the constants are a refusal that names the symbol.
 # * `extra_matcher` (:121-143) and `def_rewrite` (:145-167) and `IR3Renderer`'s
 #   (:290-296). These are `PatternMatcher` lists of UOp patterns; the matcher's
 #   machinery is `cstyle.bend`'s and the rewriting needs the ctypes builder.
-#   `TODO(p3) nir.py:121`, `:145`, `:290`.
+#   `TODO(p3) nir.py:121 symbol=extra_matcher`, `:145 symbol=def_rewrite`, `:290 symbol=IR3Renderer.def_rewrite`.
 # * `__init__` (:169-174), `__del__` (:176-177), `param` (:179), `prerender`
 #   (:180), `postrender` (:182), `render` (:184-242). Every one is mesa FFI.
 #   `render`'s control flow over a uop list is `nir_llvmir.bend`'s lane and its
 #   emitted text is a `nir_shader` serialization, not a string this file can
-#   diff. `TODO(p3) nir.py:169`.
+#   diff. `TODO(p3) nir.py:169 symbol=NIRRenderer.__init__`.
 # * `nif`/`if_phi` (:30-35, :103) and `njump` (:99-101) and `nidx` (:105-113):
 #   builder stack operations. `nidx`'s REG arm builds a deref and its other arm
 #   spells `iadd`/`imul` with an `nimm` of the itemsize -- those two op names
 #   ARE gated (`mesa alu`), the control flow is not.
 # * `nimm_set` (:69-71): a `struct.pack_into` of `truncate[dtype](x)`. The dtype
 #   fmt strings live in `dtype.bend`, which fails its own `--check-only` (see
-#   `renderer/__init__.bend`'s convention 11 note). `TODO(p3) nir.py:69`.
+#   `renderer/__init__.bend`'s convention 11 note). `TODO(p3) nir.py:69 symbol=nimm_set`.
 # * `tovec` (:273) and `nfloat` (:274): `nfloat` is one `match` on `half`, and
 #   its two values (`nir_type_float16`=144, `nir_type_float32`=160) are gated;
 #   `tovec`'s ARITY is gated (`mesa alu`'s `vec4`) and its four-src composition
@@ -1686,7 +1686,7 @@ def main() -> IO(Unit):
 #   `load_ubo` builders. Their INTRINSIC constants are gated; the builders are
 #   not. `padded_idx`, which they reduce over (:271, :309), IS gated.
 # * `IR3Renderer.postrender` (:312-319): `num_ubos` / `num_images` bookkeeping
-#   over `itertools.count`. `TODO(p3) nir.py:312`.
+#   over `itertools.count`. `TODO(p3) nir.py:312 symbol=IR3Renderer.postrender`.
 #
 # ---------------------------------------------------------------------------
 # THE WALLS `nir_llvmir.bend` NAMES, and which of them THIS PORT CLOSES.
