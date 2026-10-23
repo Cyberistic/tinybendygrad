@@ -1,0 +1,158 @@
+== tinybendygrad/runtime/ops_qcom.bend:22  tinygrad/runtime/ops_qcom.py:303 [only_older_revision] toks=flag,_SHIFT,_MASK
+   runtime/ops_qcom.py (386 lines) via exact
+   flag                   :298   def flag(nm, val): return (val << getattr(kgsl, f"{nm}_SHIFT")) & getattr(kgsl, f"{nm}_MAS
+                                 enclosing: _offset (declared :296)
+   flag                   :314   | flag("KGSL_CONTEXT_PRIORITY", getenv("QCOM_PRIORITY", 8)) | flag("KGSL_CONTEXT_PREEMPT_S
+                                 enclosing: __init__ (declared :310)
+   flag                   :345   flags |= flag("KGSL_MEMALIGN", alignment_hint:=12) | kgsl.KGSL_MEMFLAGS_USE_CPU_MAP
+                                 enclosing: _gpu_alloc (declared :344)
+   flag                   :346   if uncached: flags |= flag("KGSL_CACHEMODE", kgsl.KGSL_CACHEMODE_UNCACHED)
+                                 enclosing: _gpu_alloc (declared :344)
+   _SHIFT                 :298   def flag(nm, val): return (val << getattr(kgsl, f"{nm}_SHIFT")) & getattr(kgsl, f"{nm}_MAS
+                                 enclosing: _offset (declared :296)
+   _MASK                  :298   def flag(nm, val): return (val << getattr(kgsl, f"{nm}_SHIFT")) & getattr(kgsl, f"{nm}_MAS
+                                 enclosing: _offset (declared :296)
+
+== tinybendygrad/runtime/ops_qcom.bend:44  tinygrad/runtime/ops_qcom.py:43 [only_older_revision] toks=ctz
+   runtime/ops_qcom.py (386 lines) via exact
+   ctz                    :42    def ctz(v): return (v & -v).bit_length() - 1
+                                 enclosing: _qreg_exec (declared :35)
+   ctz                    :114   qreg.a6xx_tex_const_2(type=mesa.A6XX_TEX_2D, pitch=pitch, pitchalign=ctz(pitch)-6), 0, add
+                                 enclosing: _tex (declared :108)
+
+== tinybendygrad/runtime/ops_qcom.bend:46  tinygrad/runtime/ops_qcom.py:49 [only_older_revision] toks=pkt7_hdr
+   runtime/ops_qcom.py (386 lines) via exact
+   pkt7_hdr               :48    def pkt7_hdr(opcode: int, cnt: int): return mesa.CP_TYPE7_PKT | cnt & 0x3FFF | parity(cnt)
+                                 enclosing: parity (declared :44)
+   pkt7_hdr               :62    def cmd(self, opcode:int, *vals): self.q(pkt7_hdr(opcode, sum(x.dtype.itemsize // 4 if isi
+                                 enclosing: QCOMComputeQueue (declared :60)
+
+== tinybendygrad/runtime/ops_qcom.bend:47  tinygrad/runtime/ops_qcom.py:51 [only_older_revision] toks=pkt4_hdr
+   runtime/ops_qcom.py (386 lines) via exact
+   pkt4_hdr               :50    def pkt4_hdr(reg: int, cnt: int): return mesa.CP_TYPE4_PKT | cnt & 0x7F | parity(cnt) << 7
+                                 enclosing: pkt7_hdr (declared :48)
+   pkt4_hdr               :64    def reg(self, reg:int, *vals): self.q(pkt4_hdr(reg, sum(x.dtype.itemsize // 4 if isinstanc
+                                 enclosing: cmd (declared :62)
+
+== tinybendygrad/runtime/ops_qcom.bend:49  tinygrad/runtime/ops_qcom.py:303 [only_older_revision] toks=kgsl_flags,flag
+   runtime/ops_qcom.py (386 lines) via exact
+   flag                   :298   def flag(nm, val): return (val << getattr(kgsl, f"{nm}_SHIFT")) & getattr(kgsl, f"{nm}_MAS
+                                 enclosing: _offset (declared :296)
+   flag                   :314   | flag("KGSL_CONTEXT_PRIORITY", getenv("QCOM_PRIORITY", 8)) | flag("KGSL_CONTEXT_PREEMPT_S
+                                 enclosing: __init__ (declared :310)
+   flag                   :345   flags |= flag("KGSL_MEMALIGN", alignment_hint:=12) | kgsl.KGSL_MEMFLAGS_USE_CPU_MAP
+                                 enclosing: _gpu_alloc (declared :344)
+   flag                   :346   if uncached: flags |= flag("KGSL_CACHEMODE", kgsl.KGSL_CACHEMODE_UNCACHED)
+                                 enclosing: _gpu_alloc (declared :344)
+
+== tinybendygrad/runtime/ops_qcom.bend:90  tinygrad/runtime/ops_qcom.py:43 [only_older_revision] toks=ctz
+   runtime/ops_qcom.py (386 lines) via exact
+   ctz                    :42    def ctz(v): return (v & -v).bit_length() - 1
+                                 enclosing: _qreg_exec (declared :35)
+   ctz                    :114   qreg.a6xx_tex_const_2(type=mesa.A6XX_TEX_2D, pitch=pitch, pitchalign=ctz(pitch)-6), 0, add
+                                 enclosing: _tex (declared :108)
+
+== tinybendygrad/runtime/ops_qcom.bend:92  tinygrad/runtime/ops_qcom.py:49 [only_older_revision] toks=pkt7_hdr
+   runtime/ops_qcom.py (386 lines) via exact
+   pkt7_hdr               :48    def pkt7_hdr(opcode: int, cnt: int): return mesa.CP_TYPE7_PKT | cnt & 0x3FFF | parity(cnt)
+                                 enclosing: parity (declared :44)
+   pkt7_hdr               :62    def cmd(self, opcode:int, *vals): self.q(pkt7_hdr(opcode, sum(x.dtype.itemsize // 4 if isi
+                                 enclosing: QCOMComputeQueue (declared :60)
+
+== tinybendygrad/runtime/ops_qcom.bend:93  tinygrad/runtime/ops_qcom.py:51 [only_older_revision] toks=pkt4_hdr
+   runtime/ops_qcom.py (386 lines) via exact
+   pkt4_hdr               :50    def pkt4_hdr(reg: int, cnt: int): return mesa.CP_TYPE4_PKT | cnt & 0x7F | parity(cnt) << 7
+                                 enclosing: pkt7_hdr (declared :48)
+   pkt4_hdr               :64    def reg(self, reg:int, *vals): self.q(pkt4_hdr(reg, sum(x.dtype.itemsize // 4 if isinstanc
+                                 enclosing: cmd (declared :62)
+
+== tinybendygrad/runtime/ops_qcom.bend:102  tinygrad/runtime/ops_qcom.py:202-203 [only_older_revision] toks=ioctl_cmd
+   runtime/ops_qcom.py (386 lines) via exact
+   ioctl_cmd              :57    ioctl_cmd = (idir << 30) | (ctypes.sizeof(struct_t) << 16) | (base << 8) | nr
+                                 enclosing: qcom_submit (declared :55)
+   ioctl_cmd              :58    return ret.index(0).store(ccall(libc.dll.ioctl, fd, UOp.const(ioctl_cmd, dtypes.uint32), r
+                                 enclosing: qcom_submit (declared :55)
+
+== tinybendygrad/runtime/ops_qcom.bend:103  tinygrad/runtime/ops_qcom.py:206-283 [only_older_revision] toks=parse_full,desc,const
+   runtime/ops_qcom.py (386 lines) via exact
+   const                  :58    return ret.index(0).store(ccall(libc.dll.ioctl, fd, UOp.const(ioctl_cmd, dtypes.uint32), r
+                                 enclosing: qcom_submit (declared :55)
+   const                  :100   args = [(off, UOp.const(val, dtypes.uint32 if sz == 4 else dtypes.uint16)) for val,off,sz 
+                                 enclosing: kernargs (declared :94)
+   const                  :156   # the kernargs sit in the cmdbuf, so the const upload is sized to them (in vec4s) rather t
+                                 enclosing: cast_int (declared :126)
+
+== tinybendygrad/runtime/ops_qcom.bend:109  tinygrad/runtime/ops_qcom.py:303 [only_older_revision] toks=flag,kgsl_flags
+   runtime/ops_qcom.py (386 lines) via exact
+   flag                   :298   def flag(nm, val): return (val << getattr(kgsl, f"{nm}_SHIFT")) & getattr(kgsl, f"{nm}_MAS
+                                 enclosing: _offset (declared :296)
+   flag                   :314   | flag("KGSL_CONTEXT_PRIORITY", getenv("QCOM_PRIORITY", 8)) | flag("KGSL_CONTEXT_PREEMPT_S
+                                 enclosing: __init__ (declared :310)
+   flag                   :345   flags |= flag("KGSL_MEMALIGN", alignment_hint:=12) | kgsl.KGSL_MEMFLAGS_USE_CPU_MAP
+                                 enclosing: _gpu_alloc (declared :344)
+   flag                   :346   if uncached: flags |= flag("KGSL_CACHEMODE", kgsl.KGSL_CACHEMODE_UNCACHED)
+                                 enclosing: _gpu_alloc (declared :344)
+
+== tinybendygrad/runtime/ops_qcom.bend:116  tinygrad/runtime/ops_qcom.py:388-392 [only_older_revision] toks=Buffer
+   runtime/ops_qcom.py (386 lines) via exact
+   Buffer                 :4     from tinygrad.device import Compiled, BufferStorage, BufferSpec, Buffer, Device, Allocator
+   Buffer                 :316   self._stack:Buffer|None = None # private-memory stack
+                                 enclosing: __init__ (declared :310)
+   Buffer                 :339   dummy = Buffer(self.device, 0x1000, options=BufferSpec(nolru=True), preallocate=True, allo
+                                 enclosing: __init__ (declared :310)
+   Buffer                 :340   border_color = Buffer(self.device, 0x1000, options=BufferSpec(nolru=True), initial_value=b
+                                 enclosing: __init__ (declared :310)
+   Buffer                 :378   def _ensure_stack_size(self, sz:int) -> Buffer: # one stack for the device, grown to the d
+                                 enclosing: _wait_signal (declared :371)
+   Buffer                 :381   self._stack = Buffer(self.device, sz, options=BufferSpec(nolru=True), preallocate=True)
+                                 enclosing: _ensure_stack_size (declared :378)
+
+== tinybendygrad/runtime/ops_qcom.bend:122  hcq2.py:69-83 [only_older_revision] toks=layout_args,pack_args
+   runtime/support/hcq2.py (563 lines) via unique
+   layout_args            :114   def layout_args(args:Sequence[UOp|int], offset:int=0) -> list[tuple[int, UOp]]:
+                                 enclosing: patch (declared :100)
+   pack_args              :118   def pack_args(args:list[tuple[int, UOp]], size:int) -> list[UOp]:
+                                 enclosing: layout_args (declared :114)
+
+== tinybendygrad/runtime/ops_qcom.bend:124  tinygrad/runtime/ops_qcom.py:91-94 [only_older_revision] toks=tex_to_image
+   runtime/ops_qcom.py (386 lines) via exact
+   tex_to_image           :98    ibos, texs = uavs[:data.ibo_cnt], [uavs[data.ibo_cnt + (data.tex_to_image[i] if data.NIR e
+                                 enclosing: kernargs (declared :94)
+   tex_to_image           :223   self.tex_to_image = v.image_mapping.tex_to_image[:]
+                                 enclosing: __init__ (declared :207)
+
+== tinybendygrad/runtime/ops_qcom.bend:163  ops_qcom.py:132 [only_older_revision] toks=dev,tag,stack
+   runtime/ops_qcom.py (386 lines) via unique
+   dev                    :61    dev:QCOMDevice
+                                 enclosing: QCOMComputeQueue (declared :60)
+   dev                    :79    if self.dev.gpu_id[:2] < (7, 3):
+                                 enclosing: signal (declared :77)
+   dev                    :120   data, lib = qcom_build_program(self.dev, prg, self.devs)
+                                 enclosing: exec (declared :119)
+   dev                    :207   def __init__(self, dev:QCOMDevice, obj:TinyELF):
+                                 enclosing: QCOMProgramData (declared :206)
+   dev                    :208   self.signature, self.name, self.NIR = obj.signature, obj.name, isinstance(dev.renderer, IR
+                                 enclosing: __init__ (declared :207)
+   dev                    :285   def qcom_build_program(dev:QCOMDevice, prg:UOp, devs:tuple[str, ...]) -> tuple[QCOMProgram
+                                 enclosing: _parse_lib (declared :239)
+   dev                    :286   image = bytes((data:=QCOMProgramData(dev, prg.to_elf())).image).ljust(round_up(len(data.im
+                                 enclosing: qcom_build_program (declared :285)
+   dev                    :291   return self.dev._gpu_map(options.external_ptr, size) if options.external_ptr else self.dev
+                                 enclosing: _alloc (declared :290)
+   dev                    :294   self.dev.synchronize()
+                                 enclosing: _free (declared :293)
+   dev                    :295   self.dev._gpu_free(storage)
+                                 enclosing: _free (declared :293)
+   dev                    :311   self.fd = FileIOInterface('/dev/kgsl-3d0', os.O_RDWR)
+                                 enclosing: __init__ (declared :310)
+   stack                  :130   stack_addr = UOp.alloc((data.hw_stack_offset * 4,), dtypes.uint8, 0, device=self.devs[0], 
+                                 enclosing: cast_int (declared :126)
+   stack                  :316   self._stack:Buffer|None = None # private-memory stack
+                                 enclosing: __init__ (declared :310)
+   stack                  :341   stack = {to_name(self.device, "stack"): lambda b: self._ensure_stack_size(b.max_numel())}
+                                 enclosing: __init__ (declared :310)
+   stack                  :342   Compiled.link_bufs |= stack | {to_name(self.device, "dummy"): dummy, to_name(self.device, 
+                                 enclosing: __init__ (declared :310)
+   stack                  :378   def _ensure_stack_size(self, sz:int) -> Buffer: # one stack for the device, grown to the d
+                                 enclosing: _wait_signal (declared :371)
+

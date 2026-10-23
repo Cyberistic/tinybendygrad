@@ -1,0 +1,159 @@
+== tinybendygrad/runtime/support/compiler_cpu.bend:58  tinygrad/runtime/support/compiler_cpu.py:8 [at_no_revision] toks=ClangCompiler,arch_of,cpu_of
+   runtime/support/compiler_cpu.py (30 lines) via exact
+   ClangCompiler          :5     class ClangCompiler(Compiler):
+
+== tinybendygrad/runtime/support/compiler_cpu.bend:62  tinygrad/runtime/support/compiler_cpu.py:14 [at_no_revision] toks=ClangCompiler,riscv64_cpu
+   runtime/support/compiler_cpu.py (30 lines) via exact
+   ClangCompiler          :5     class ClangCompiler(Compiler):
+
+== tinybendygrad/runtime/support/compiler_cpu.bend:67  tinygrad/runtime/support/compiler_cpu.py:24 [at_no_revision] toks=ClangCompiler,dis_row
+   runtime/support/compiler_cpu.py (30 lines) via exact
+   ClangCompiler          :5     class ClangCompiler(Compiler):
+
+== tinybendygrad/runtime/support/compiler_cpu.bend:91  helpers.py:161 [at_no_revision] toks=getenv,clang
+   helpers.py (648 lines) via unique
+   getenv                 :159   def getenv(key:str) -> int: ...
+                                 enclosing: to_function_name (declared :157)
+   getenv                 :161   def getenv(key:str, default:T) -> T: ...
+                                 enclosing: getenv (declared :159)
+   getenv                 :163   def getenv(key:str, default:Any=0): return type(default)(os.getenv(key, default))
+                                 enclosing: getenv (declared :161)
+   getenv                 :187   self.value, self.key = getenv(key, default_value), key
+                                 enclosing: __init__ (declared :184)
+   getenv                 :233   assert (v:=getenv(k:=f"{dev}_CC", "")) == "", \
+                                 enclosing: target (declared :232)
+   getenv                 :275   PARALLEL = ContextVar("PARALLEL", CPU_COUNT // max(1, getenv("PYTEST_XDIST_WORKER_COUNT", 
+                                 enclosing: _get_cpu_count (declared :258)
+   getenv                 :391   if getenv("DEBUG_GC"):
+                                 enclosing: profile_marker (declared :388)
+   getenv                 :402   cache_dir: str = os.path.join(getenv("XDG_CACHE_HOME", os.path.expanduser("~/Library/Cache
+                                 enclosing: my_gc_callback (declared :393)
+   getenv                 :403   CACHEDB: str = getenv("CACHEDB", os.path.abspath(os.path.join(cache_dir, "cache.db")))
+                                 enclosing: my_gc_callback (declared :393)
+   getenv                 :471   def fetch(url:str, name:pathlib.Path|str|None=None, subdir:str|None=None, gunzip:bool=Fals
+                                 enclosing: _ensure_downloads_dir (declared :460)
+
+== tinybendygrad/runtime/support/compiler_cpu.bend:103  device.py:337 [only_older_revision] toks=cachekey,CCACHE,None
+   device.py (540 lines) via unique
+   cachekey               :324   def __init__(self, cachekey:str|None=None): self.cachekey = cachekey if CCACHE else None
+                                 enclosing: Compiler (declared :323)
+   cachekey               :327   if self.cachekey is None or (lib := diskcache_get(self.cachekey, src)) is None:
+                                 enclosing: compile_cached (declared :326)
+   cachekey               :330   if self.cachekey is not None: diskcache_put(self.cachekey, src, lib)
+                                 enclosing: compile_cached (declared :326)
+   CCACHE                 :7     from tinygrad.helpers import Context, CCACHE, ALLOW_DEVICE_USAGE, MAX_BUFFER_SIZE, cpu_eve
+   CCACHE                 :324   def __init__(self, cachekey:str|None=None): self.cachekey = cachekey if CCACHE else None
+                                 enclosing: Compiler (declared :323)
+   None                   :24    def __init__(self) -> None:
+                                 enclosing: _Device (declared :23)
+   None                   :30    def canonicalize(self, device:str|None) -> str: return self._canonicalize(device if device
+                                 enclosing: _canonicalize (declared :28)
+   None                   :57    assert (dev:=next((d for d in self._devices if d not in ["DISK", "NPY"] and getenv(d) == 1
+                                 enclosing: _select_device (declared :56)
+   None                   :67    def canonicalize_device(device:str|tuple|list|None) -> str|tuple[str, ...]:
+                                 enclosing: _select_device (declared :56)
+   None                   :77    class ProfileDeviceEvent(ProfileEvent): device:str; tdiff:decimal.Decimal=decimal.Decimal(
+                                 enclosing: is_disk_device (declared :71)
+   None                   :80    class ProfileProgramEvent(ProfileEvent): device:str; name:str; lib:bytes|None; base:int|No
+                                 enclosing: ProfileDeviceEvent (declared :77)
+   None                   :83    class ProfileGraphEntry: device:str; name:str|TracingKey; st_id:int; en_id:int; profile_ke
+                                 enclosing: ProfileProgramEvent (declared :80)
+   None                   :96    external_ptr: int|None = None
+                                 enclosing: BufferSpec (declared :91)
+   None                   :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   None                   :113   def __init__(self, device:str, nbytes:int, opaque:Any=None, options:BufferSpec|None=None,
+                                 enclosing: Buffer (declared :111)
+   None                   :114   initial_value:bytes|pickle.PickleBuffer|None=None, base:Buffer|None=None, offset:int=0, pr
+                                 enclosing: __init__ (declared :113)
+   None                   :115   allocator:Allocator|None=None):
+                                 enclosing: __init__ (declared :113)
+   None                   :117   if allocator is not None: self.allocator = allocator
+                                 enclosing: __init__ (declared :113)
+   None                   :118   self.options = options if options is not None else BufferSpec()
+                                 enclosing: __init__ (declared :113)
+   None                   :119   self._storage:BufferStorage|None = None
+                                 enclosing: __init__ (declared :113)
+   None                   :120   if base is None:
+                                 enclosing: __init__ (declared :113)
+   None                   :122   if opaque is not None: self.allocate(opaque)
+                                 enclosing: __init__ (declared :113)
+   None                   :123   if initial_value is not None:
+                                 enclosing: __init__ (declared :113)
+   None                   :125   if (host:=self.get_storage().host) is not None: host[:] = memoryview(initial_value).cast('
+                                 enclosing: __init__ (declared :113)
+   None                   :129   assert base._base is None, "base can't have a base"
+                                 enclosing: __init__ (declared :113)
+   None                   :134   def __del__(self): self._storage is None or self.deallocate()
+                                 enclosing: __init__ (declared :113)
+   None                   :138   (f" offset:{self.offset}" if self._base is not None else "") + (f" {self.options=}" if sel
+                                 enclosing: __repr__ (declared :136)
+   None                   :141   def base(self) -> Buffer: return self._base if self._base is not None else self
+                                 enclosing: __repr__ (declared :136)
+   None                   :143   def allocator(self) -> Allocator: return self.base.allocator if self._base is not None els
+                                 enclosing: base (declared :141)
+   None                   :151   def get_storage(self, device:str|None=None) -> BufferStorage:
+                                 enclosing: meta (declared :149)
+   None                   :153   device = Device.canonicalize(device) if device is not None else self.device
+                                 enclosing: get_storage (declared :151)
+   None                   :163   def is_allocated(self) -> bool: return self._storage is not None and (self._base is None o
+                                 enclosing: get_buf (declared :161)
+   None                   :165   def allocate(self, opaque=None, external_ptr=None) -> Buffer:
+                                 enclosing: ensure_allocated (declared :164)
+   None                   :169   if not self.device.startswith("NULL") and self.nbytes > MAX_BUFFER_SIZE > 0 and self.optio
+                                 enclosing: allocate (declared :165)
+   None                   :171   if external_ptr is not None: self.options = replace(self.options, external_ptr=external_pt
+                                 enclosing: allocate (declared :165)
+   None                   :172   if self._base is not None:
+                                 enclosing: allocate (declared :165)
+   None                   :174   elif opaque is not None:
+                                 enclosing: allocate (declared :165)
+   None                   :183   storage = replace(storage, host=storage.host.view(self.offset, self.nbytes, fmt='B') if st
+                                 enclosing: allocate (declared :165)
+   None                   :184   if self._base is None:
+                                 enclosing: allocate (declared :165)
+   None                   :185   if not self.device.startswith("DISK") and self.options.external_ptr is None:
+                                 enclosing: allocate (declared :165)
+   None                   :189   self._storage, self._base_storage = storage, self.base._storage if self._base else None
+                                 enclosing: allocate (declared :165)
+   None                   :193   assert self._storage is not None, "buffer must be allocated to deallocate"
+                                 enclosing: deallocate (declared :192)
+   None                   :194   if DEBUG is not None and DEBUG >= 7: print(f"buffer: deallocate {self.nbytes} bytes on {se
+                                 enclosing: deallocate (declared :192)
+   None                   :195   if self._base is None:
+                                 enclosing: deallocate (declared :192)
+   None                   :196   if GlobalCounters is not None and not self.device.startswith("DISK") and self.options.exte
+                                 enclosing: deallocate (declared :192)
+   None                   :201   self._storage, self._base_storage = None, None
+                                 enclosing: deallocate (declared :192)
+   None                   :204   buf:bytearray|pickle.PickleBuffer|None = None
+                                 enclosing: __reduce_ex__ (declared :203)
+   None                   :205   if self._base is not None:
+                                 enclosing: __reduce_ex__ (declared :203)
+   None                   :206   return self.__class__, (self.device, self.nbytes, None, None, None, self.base, self.offset
+                                 enclosing: __reduce_ex__ (declared :203)
+   None                   :210   return self.__class__, (self.device, self.nbytes, arr, self.options, None)
+                                 enclosing: __reduce_ex__ (declared :203)
+   None                   :213   return self.__class__, (self.device, self.nbytes, None, self.options, buf)
+                                 enclosing: __reduce_ex__ (declared :203)
+   None                   :220   def _host_mv(self) -> memoryview|None:
+                                 enclosing: trace_num (declared :216)
+   None                   :223   return None
+                                 enclosing: _host_mv (declared :220)
+   None                   :226   if (mv:=self._host_mv()) is not None:
+                                 enclosing: as_memoryview (declared :225)
+   None                   :255   self.cache:dict[tuple[int, BufferSpec|None], list[BufferStorage]] = defaultdict(list)
+                                 enclosing: __init__ (declared :252)
+   None                   :257   def alloc(self, size:int, options:BufferSpec|None=None) -> BufferStorage:
+                                 enclosing: __init__ (declared :252)
+   None                   :260   spec = options if options is not None else self.default_buffer_spec
+                                 enclosing: alloc (declared :257)
+   None                   :267   def free(self, storage:BufferStorage, size:int, options:BufferSpec|None=None):
+                                 enclosing: alloc (declared :257)
+   None                   :268   spec = options if options is not None else self.default_buffer_spec
+                                 enclosing: free (declared :267)
+   None                   :269   if LRU and self.lru and not spec.nolru and spec.external_ptr is None: self.cache[(size, op
+                                 enclosing: free (declared :267)
+   None                   :274   for storage in storages: self.do_free(storage, options if options is not None else self.de
+                                 enclosing: free_cache (declared :272)
+

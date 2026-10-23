@@ -1,0 +1,38 @@
+rel	at	old	new
+tinybendygrad/runtime/support/am/amdev.bend	25	(amdev.py:402 symbol=hwid_names)	"#   * (tinygrad/runtime/support/am/amdev.py:402 symbol=hwid_names) `hwid_names` and
+#     (tinygrad/runtime/support/am/amdev.py:382 symbol=_run_discovery) `hw_id_map` -- TWO-WAY TABLES, both directions."
+tinybendygrad/runtime/support/am/amdev.bend	29	the VF mailbox protocol (tinygrad/runtime/support/am/amdev.py:268-281	#   * the REQUEST TRACES -- the VF mailbox protocol (`_vf_mailbox_request`, tinygrad/runtime/support/am/amdev.py:268-281 symbol=_vf_mailbox_request),
+tinybendygrad/runtime/support/am/amdev.bend	30	`_read_vram` (tinygrad/runtime/support/am/amdev.py:349-357	#     `_read_vram` (tinygrad/runtime/support/am/amdev.py:349-357 symbol=_read_vram),
+tinybendygrad/runtime/support/am/amdev.bend	31	the ASPM capability walk (tinygrad/runtime/support/am/amdev.py:147-154	#     the ASPM capability walk (tinygrad/runtime/support/am/amdev.py:147-154 symbol=_disable_aspm) -- upstream's `_disable_aspm` --, `indirect_wreg`/`_pcie`, and the boot order.
+tinybendygrad/runtime/support/am/ip.bend	19	`KIQ + xcc*0x20` (tinygrad/runtime/support/am/ip.py:354	#   * the DOORBELL ARITHMETIC: `KIQ + xcc*0x20` (tinygrad/runtime/support/am/ip.py:354 symbol=setup_ring) -- upstream's `doorbell` --, `sDMA_ENGINE0 +
+tinybendygrad/runtime/support/compiler_cuda.bend	68	read at IMPORT: `tinygrad/helpers.py:161 symbol=getenv` carries `@functools.cache`, so the module	# read at IMPORT: `tinygrad/helpers.py:161 symbol=getenv` carries `@functools.cache` on upstream's `getenv`, so the module
+tinybendygrad/runtime/support/compiler_llvm.bend	26	tinygrad/helpers.py:161 symbol=getenv carries `@functools.cache`, so `LLVMOPT` is read ONCE per	# tinygrad/helpers.py:161 symbol=getenv carries `@functools.cache` on upstream's `getenv`, so `LLVMOPT` is read ONCE per
+tinybendygrad/runtime/support/hcq2.bend	50	`select_lane` (folded into `unwrap_lane`	#   `select_lane` (folded into upstream's `unwrap_lane`, tinygrad/runtime/support/hcq2.py:45 symbol=unwrap_lane),
+tinybendygrad/runtime/support/hcq2.bend	51	`cfield` (`7d2420e64`	#   `CDTYPE` (`dtypes.uints` at tinygrad/runtime/support/hcq2.py:130), `cfield` (`7d2420e64`; `cstruct` at :129 reads the fields),
+tinybendygrad/runtime/support/hcq2.bend	108	BLOCKED: the row `pm_encode` needs `HCQInfo`	#    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`) -- the row `pm_encode`.
+tinybendygrad/runtime/support/memory.bend	8	arithmetic (tinygrad/runtime/support/memory.py:12 symbol=view) `view`, `BumpAllocator`	"#     arithmetic (tinygrad/runtime/support/memory.py:12 symbol=view) `view`, `BumpAllocator`
+#     (tinygrad/runtime/support/memory.py:15-21 symbol=BumpAllocator) bump-and-align sequence,"
+tinybendygrad/runtime/support/memory.bend	15	`(pt, pte_idx, pte_size)` (tinygrad/runtime/support/memory.py:128	#     `(pt, pte_idx, pte_size)` (tinygrad/runtime/support/memory.py:127 symbol=__init__) -- upstream's `pt_stack` -- while `next()` YIELDS the five-tuple
+tinybendygrad/runtime/support/nv/ip.bend	153	`desc_v3` size arithmetic (tinygrad/runtime/support/nv/ip.py:139-143) -- and the refusal at tinygrad/runtime/support/nv/ip.py:123 (`bit_header`).	"#     `desc_v3` size arithmetic (tinygrad/runtime/support/nv/ip.py:139-143) -- and the refusal
+#     at tinygrad/runtime/support/nv/ip.py:123 (`bit_header`)."
+tinybendygrad/runtime/support/nv/nvdev.bend	25	(tinygrad/runtime/support/nv/nvdev.py:12-19 symbol=NVReg), the PAGE TABLE entry codec (`NVPageTableEntry`, :33-67), the	"(tinygrad/runtime/support/nv/nvdev.py:12-19 symbol=NVReg) `NVReg`, the PAGE TABLE entry codec
+(`NVPageTableEntry`, :33-67), the"
+tinybendygrad/runtime/support/nv/nvdev.bend	70	"`:489` lists ""ioctl"" among `sys.call_names()`, `:517` dispatches it. But"	"#      `system.bend:489` lists ""ioctl"" among `sys.call_names()`, `system.bend:517` dispatches it. But"
+tinybendygrad/runtime/support/objc.bend	55	tinygrad/runtime/ops_cpu.py:19 symbol=CPUProgram` (libobjc is missing from `CPUProgram.link_libs`), NOT in	# `tinygrad/runtime/ops_cpu.py:19 symbol=CPUProgram` (upstream's `rt_lib` -- libobjc is missing from `CPUProgram.link_libs`), NOT in
+tinybendygrad/runtime/support/objc.bend	100	wraps the INNER `f` from tinygrad/runtime/support/objc.py:37 and not `msg`'s return.	#     wraps the INNER `f` from tinygrad/runtime/support/objc.py:37 -- upstream's `sender` -- and not `msg`'s return.
+tinybendygrad/runtime/support/system.bend	66	:175  `((~(((hi << 32) | lo) & ~0xf)) + 1) & (0xffff... if bar_64 else ...)`	#      :175  the BAR size -- `bar_64` -- `((~(((hi << 32) | lo) & ~0xf)) + 1) & (0xffff... if bar_64 else ...)`
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	12	1. THE DOORBELL AND THE RING (:13-15, :42-45, :162-164). `db_value` is a	"#   1. THE DOORBELL AND THE RING: upstream's `db_value` (tinygrad/runtime/support/rdma/bnxtdev.py:13-16 symbol=db_value),
+#      the queue's `read`/`write` (tinygrad/runtime/support/rdma/bnxtdev.py:42-45) and the `doorbell`
+#      (tinygrad/runtime/support/rdma/bnxtdev.py:162-164). `db_value` is a"
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	59	:33  the one-paddr shortcut	#   tinygrad/runtime/support/rdma/bnxtdev.py:28 the one-paddr shortcut    PORTED  `pbl.level_of(1) == 0` -- upstream's `paddrs` symbol=build_pbl
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	88	:83  the word loop into bar0	#   tinygrad/runtime/support/rdma/bnxtdev.py:82 the word loop into bar0  PORTED  `hwrm.bar0_at` -- upstream's `bar0` symbol=hwrm
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	89	:84  the trigger dword	#   tinygrad/runtime/support/rdma/bnxtdev.py:83 the trigger dword         PORTED  `hwrm.trig_at` -- upstream's `bar0` symbol=hwrm
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	101	:138 the FIRMWARE_FIRST flag	#   tinygrad/runtime/support/rdma/bnxtdev.py:137 the FIRMWARE_FIRST flag   PORTED  `rcfw.first_flag` -- upstream's `FIRMWARE_FIRST_FLAG` symbol=rcfw
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	104	:153 the NQ_ARM consumer db	#   tinygrad/runtime/support/rdma/bnxtdev.py:151 the NQ_ARM consumer db    PORTED  `rcfw.nq_arm` -- upstream's `NQ_ARM` symbol=rcfw
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	105	:154 the QP_EVENT filter	#   tinygrad/runtime/support/rdma/bnxtdev.py:152 the QP_EVENT filter       PORTED  `rcfw.is_final`, and its threshold -- upstream's `QP_EVENT` symbol=rcfw
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	151	:54/72 the `getattr(bnxt, ...)` struct	#   tinygrad/runtime/support/rdma/bnxtdev.py:77,131 the `getattr(bnxt, ...)` struct
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	180	3. `MMIOInterface` (:42-45). A byte-addressed slice of host memory over a	#   3. `MMIOInterface` (tinygrad/runtime/support/rdma/bnxtdev.py:41 symbol=BNXTQueue). A byte-addressed slice of host memory over a
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	187	5. `self.pci_dev.pcibus` (:54), `DEBUG`/`BNXT_DEBUG` and `print` (:61,:74,	"#   5. `self.pci_dev.pcibus` (tinygrad/runtime/support/rdma/bnxtdev.py:54), and the verbosity
+#      levels `DEBUG`/`BNXT_DEBUG` (tinygrad/runtime/support/rdma/bnxtdev.py:8 symbol=BNXT_DEBUG;
+#      upstream prints them at 61, 74, 157 and 217) are WALLS (`getenv` is IO); the device"
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	188	:157,:217). The verbosity levels are WALLS (`getenv` is IO); the device	#      node string is `nic.node` in `ops_rdma.bend`, which already ports it.

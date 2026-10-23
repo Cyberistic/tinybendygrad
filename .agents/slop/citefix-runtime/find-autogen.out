@@ -1,0 +1,106 @@
+== tinybendygrad/runtime/support/autogen.bend:121  tinygrad/runtime/support/autogen.py:107 [at_no_revision] toks=types,tnm,defd
+   runtime/support/autogen.py (289 lines) via exact
+   types                  :102   def gen(name, files, dll="", args=[], prolog=[], rules=[], epilog=[], recsym=False, errno=
+                                 enclosing: normalize (declared :100)
+   types                  :104   extras, lines, anoncnt, types, objc, fns = [], [], itertools.count().__next__, {k:(v,True)
+                                 enclosing: gen (declared :102)
+   types                  :106   # ctypes automatically "unboxes" simple types
+                                 enclosing: gen (declared :102)
+   types                  :114   nonlocal lines, types, anoncnt, objc
+                                 enclosing: tname (declared :112)
+   types                  :117   if nm(t) in types and types[nm(t)][1]: return types[nm(t)][0]
+                                 enclosing: tname (declared :112)
+   types                  :127   defined, cnm = nm(canon:=clang.clang_getCanonicalType(t)) in types, tname(canon, typedef=n
+                                 enclosing: tname (declared :112)
+   types                  :128   types[nm(t)] = cnm if nm(t).startswith("__") else nm(t).replace('::', '_'), True
+                                 enclosing: tname (declared :112)
+   types                  :131   return types[nm(t)][0]
+                                 enclosing: tname (declared :112)
+   types                  :135   if (_nm:=re.sub(r"^const ", "", nm(t))) in types and types[_nm][1]: return types[_nm][0]
+                                 enclosing: tname (declared :112)
+   types                  :138   if _nm in types: types[_nm] = (tnm:=types[_nm][0]), types[_nm][1] or len(fields(t)) != 0, 
+                                 enclosing: tname (declared :112)
+   types                  :142   types[_nm] = (tnm:=real_nm.replace(' ', '_').replace('::', '_')), len(fields(t)) != 0, (ln
+                                 enclosing: tname (declared :112)
+   types                  :146   types[typedef] = typedef.replace('::', '_'), True
+                                 enclosing: tname (declared :112)
+   types                  :157   types[nm(t)] = tname(ety:=clang.clang_getEnumDeclIntegerType(decl)), True
+                                 enclosing: tname (declared :112)
+   types                  :162   return types[nm(t)][0]
+                                 enclosing: value (declared :159)
+   types                  :169   if (tnm:=nm(t)) not in types: lines.append(f"class {tnm}(objc.Spec): pass")
+                                 enclosing: value (declared :159)
+   types                  :170   types[tnm] = tnm, is_defn
+                                 enclosing: value (declared :159)
+   types                  :182   types[nm(t)] = "objc.id_", True
+                                 enclosing: value (declared :159)
+   types                  :185   types[nm(t)] = ps[0], True
+                                 enclosing: value (declared :159)
+   types                  :187   types[nm(t)] = (tnm:=f"_anondynamic{anoncnt()}"), True
+                                 enclosing: value (declared :159)
+   types                  :195   nonlocal lines, types
+                                 enclosing: parse_objc_spec (declared :194)
+   types                  :198   rollback = lines, types
+                                 enclosing: parse_objc_spec (declared :194)
+   types                  :205   lines, types = rollback
+                                 enclosing: parse_objc_spec (declared :194)
+   types                  :210   nonlocal lines, types
+                                 enclosing: proto (declared :209)
+   types                  :211   if (dnm:=nm(decl)) in types and types[dnm][1]: return types[dnm][0]
+                                 enclosing: proto (declared :209)
+   types                  :214   if dnm not in types: lines.append(f"class {dnm}(objc.Spec): pass")
+                                 enclosing: proto (declared :209)
+   types                  :215   types[dnm] = dnm, is_defn
+                                 enclosing: proto (declared :209)
+   types                  :232   rollback = lines, types
+                                 enclosing: proto (declared :209)
+   types                  :270   lines, types = rollback
+                                 enclosing: proto (declared :209)
+   tnm                    :138   if _nm in types: types[_nm] = (tnm:=types[_nm][0]), types[_nm][1] or len(fields(t)) != 0, 
+                                 enclosing: tname (declared :112)
+   tnm                    :142   types[_nm] = (tnm:=real_nm.replace(' ', '_').replace('::', '_')), len(fields(t)) != 0, (ln
+                                 enclosing: tname (declared :112)
+   tnm                    :143   lines.append(f"class {tnm}(c.Struct): pass")
+                                 enclosing: tname (declared :112)
+   tnm                    :145   lines.append(f"{typedef.replace('::', '_')}: TypeAlias = {tnm}")
+                                 enclosing: tname (declared :112)
+   tnm                    :147   ff = [(normalize(f), clang.clang_getCanonicalType(ty:=clang.clang_getCursorType(f)), tname
+                                 enclosing: tname (declared :112)
+   tnm                    :151   lines[ln] = "\n".join(["@c.record", f"class {tnm}(c.Struct):", f"  SIZE = {clang.clang_Typ
+                                 enclosing: tname (declared :112)
+   tnm                    :153   lines.append(f"{tnm}.register_fields([" + ", ".join([f"('{f}', {', '.join(str(a) for a in 
+                                 enclosing: tname (declared :112)
+   tnm                    :154   return tnm
+                                 enclosing: tname (declared :112)
+   tnm                    :169   if (tnm:=nm(t)) not in types: lines.append(f"class {tnm}(objc.Spec): pass")
+                                 enclosing: value (declared :159)
+   tnm                    :170   types[tnm] = tnm, is_defn
+                                 enclosing: value (declared :159)
+   tnm                    :172   ims, cms = parse_objc_spec(decl, tnm, clang.CXCursor_ObjCInstanceMethodDecl), parse_objc_s
+                                 enclosing: value (declared :159)
+   tnm                    :174   lines.extend([*([f"{tnm}._bases_ = [{', '.join(bases)}]"] if bases else []),
+                                 enclosing: value (declared :159)
+   tnm                    :175   *([f"{tnm}._methods_ = [", *ims, ']'] if ims else []), *([f"{tnm}._classmethods_ = [", *cm
+                                 enclosing: value (declared :159)
+   tnm                    :176   return tnm
+                                 enclosing: value (declared :159)
+   tnm                    :187   types[nm(t)] = (tnm:=f"_anondynamic{anoncnt()}"), True
+                                 enclosing: value (declared :159)
+   tnm                    :188   lines.append(f"class {tnm}({', '.join(ps)}): pass # {nm(t)}")
+                                 enclosing: value (declared :159)
+   tnm                    :189   return tnm
+                                 enclosing: value (declared :159)
+
+== tinybendygrad/runtime/support/autogen.bend:126  tinygrad/runtime/support/autogen.py:30 [only_older_revision] toks=fields
+   runtime/support/autogen.py (289 lines) via exact
+   fields                 :19    def fields(t: clang.CXType) -> list[clang.CXCursor]:
+                                 enclosing: visitor (declared :12)
+   fields                 :31    for f in fields(t):
+                                 enclosing: all_fields (declared :30)
+   fields                 :34    elif nm(f): yield f, off+clang.clang_Cursor_getOffsetOfField(f) // 8 # ignores unnamed fie
+                                 enclosing: all_fields (declared :30)
+   fields                 :138   if _nm in types: types[_nm] = (tnm:=types[_nm][0]), types[_nm][1] or len(fields(t)) != 0, 
+                                 enclosing: tname (declared :112)
+   fields                 :142   types[_nm] = (tnm:=real_nm.replace(' ', '_').replace('::', '_')), len(fields(t)) != 0, (ln
+                                 enclosing: tname (declared :112)
+

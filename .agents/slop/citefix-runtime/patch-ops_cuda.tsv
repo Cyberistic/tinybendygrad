@@ -1,0 +1,3 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_cuda.bend	20	`count` is at :125	# tree `ops_cuda.py` is 126 lines, `count` is at :122 and `_wait_signal` at :124; the citations
+tinybendygrad/runtime/ops_cuda.bend	21	:126. The citations are NOT renumbered	# ARE renumbered here because the pin is settled: `count` is ops_cuda.py:122 symbol=count and `_wait_signal` is ops_cuda.py:124 symbol=_wait_signal.

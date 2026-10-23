@@ -1,0 +1,11 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_cl.bend	164	:106 stores in	#    the decoded String, because the decoded String IS what :108 stores in
+tinybendygrad/runtime/ops_cl.bend	165	and what :100 prints.	#    `self.device_name` (`ops_cl.py:108 symbol=__init__`) and :109 prints.
+tinybendygrad/runtime/ops_cl.bend	169	(:10-11)	# 4. `CC_CB` / `BP_CB` (`ops_cl.py:13-14 symbol=CC_CB`) are `CFUNCTYPE` signatures handed as the
+tinybendygrad/runtime/ops_cl.bend	171	cl:27,46 pass	#    passes a fresh `CC_CB()` and cl:30,132 pass `BP_CB()`, and a callback that
+tinybendygrad/runtime/ops_cl.bend	216	THE ERROR TABLES, :16	# THE ERROR TABLES, `cl_errors` (`ops_cl.py:16 symbol=cl_errors`) and cu:18 and hp:10, which are the three `check`s.
+tinybendygrad/runtime/ops_cl.bend	259	device.py:365	#      `TinyELF.iter_sig` (`device.py:352 symbol=iter_sig`) is the `round_up(offset, dt.itemsize)`
+tinybendygrad/runtime/ops_cl.bend	272	cstyle.py:348	#   1. `OpenCLRenderer` (`cstyle.py:324 symbol=OpenCLRenderer`) is the renderer cl:118 registers. Its
+tinybendygrad/runtime/ops_cl.bend	274	cl:57's	#      kernel text names the arguments `data0_4, data1_4` in BUFFER ORDER, and cl:56's
+tinybendygrad/runtime/ops_cl.bend	278	at cl:61	#   2. `{2:cl.CL_HALF_FLOAT, 4:cl.CL_FLOAT}[dt.itemsize]` at cl:59 is keyed on the
+tinybendygrad/runtime/ops_cl.bend	282	helpers.py:37	#   3. `is_image_shape(shape)` (`helpers.py:35 symbol=is_image_shape`) is `shape is not None and

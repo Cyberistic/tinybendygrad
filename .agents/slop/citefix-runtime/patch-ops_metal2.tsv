@@ -1,0 +1,7 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_metal.bend	20	(*dims[:3]), MTLSize(*dims[3:]))`, and `dims` is	# (MTLSize(*dims[:3]), MTLSize(*dims[3:])), and `dims` is
+tinybendygrad/runtime/ops_metal.bend	21	at :116.	# `(*prg.arg.global_size, *prg.arg.local_size)` at ops_metal.py:140.
+tinybendygrad/runtime/ops_metal.bend	26	:112 off = round_up	#   2. the struct's byte offset,       `:136 off = round_up(self.nbytes, 256)`
+tinybendygrad/runtime/ops_metal.bend	27	:116 dims = (*global_size	#   3. the global size and the local   `:140 dims = (*global_size, *local_size)`
+tinybendygrad/runtime/ops_metal.bend	33	(:42-71)	# (:42-70). **AND THAT IS NOW MEASURED RATHER THAN ASSERTED** -- see `t_seam`.
+tinybendygrad/runtime/ops_metal.bend	37	:42-71 is a Python closure	# else in :42-70 is a Python closure and a `struct`, and it is all ported and gated:

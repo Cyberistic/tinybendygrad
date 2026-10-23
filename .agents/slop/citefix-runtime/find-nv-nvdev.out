@@ -1,0 +1,55 @@
+== tinybendygrad/runtime/support/nv/nvdev.bend:25  tinygrad/runtime/support/nv/nvdev.py:12-31 [only_older_revision] toks=NVPageTableEntry
+   runtime/support/nv/nvdev.py (160 lines) via exact
+   NVPageTableEntry       :33    class NVPageTableEntry:
+                                 enclosing: decode (declared :31)
+   NVPageTableEntry       :143   self.mm = NVMemoryManager(self, self.vram_size - (64 << 20), boot_size=(2 << 20), pt_t=NVP
+                                 enclosing: _early_mmu_init (declared :120)
+
+== tinybendygrad/runtime/support/nv/nvdev.bend:28  tinygrad/runtime/support/nv/nvdev.py:161-163 [only_older_revision] toks=include
+   runtime/support/nv/nvdev.py (160 lines) via exact
+   include                :98    self.include("nv_ref", "")
+                                 enclosing: _early_ip_init (declared :97)
+   include                :99    self.include("dev_fb", "tu102")
+                                 enclosing: _early_ip_init (declared :97)
+   include                :100   self.include("dev_gc6_island", "ga102")
+                                 enclosing: _early_ip_init (declared :97)
+   include                :121   self.include("dev_vm", "tu102")
+                                 enclosing: _early_mmu_init (declared :120)
+   include                :124   self.include("dev_mmu", "gh100" if self.mmu_ver == 3 else "tu102")
+                                 enclosing: _early_mmu_init (declared :120)
+   include                :158   def include(self, name:str, arch:str):
+                                 enclosing: _alloc_boot_mem (declared :146)
+
+== tinybendygrad/runtime/support/nv/nvdev.bend:70  tinygrad/runtime/support/nv/nvdev.py:489 [at_no_revision] toks=sys,call_names
+   runtime/support/nv/nvdev.py (160 lines) via exact
+   sys                    :44    small, sys = ("_small" if self._is_dual_pde() else ""), "" if self.nvdev.mmu_ver == 3 else
+                                 enclosing: set_entry (declared :38)
+   sys                    :45    x = pde.encode(is_pte=False, **{f'aperture{small}': 1 if valid else 0, f'address{small}{sy
+                                 enclosing: set_entry (declared :38)
+   sys                    :66    small, sys = ("_small" if self._is_dual_pde() else ""), "_sys" if self.nvdev.mmu_ver == 2 
+                                 enclosing: address (declared :65)
+   sys                    :67    return self.read_fields(entry_id)[f'address{small}{sys}'] << 12
+                                 enclosing: address (declared :65)
+
+== tinybendygrad/runtime/support/nv/nvdev.bend:70  tinygrad/runtime/support/nv/nvdev.py:517 [at_no_revision] toks=sys,call_names
+   runtime/support/nv/nvdev.py (160 lines) via exact
+   sys                    :44    small, sys = ("_small" if self._is_dual_pde() else ""), "" if self.nvdev.mmu_ver == 3 else
+                                 enclosing: set_entry (declared :38)
+   sys                    :45    x = pde.encode(is_pte=False, **{f'aperture{small}': 1 if valid else 0, f'address{small}{sy
+                                 enclosing: set_entry (declared :38)
+   sys                    :66    small, sys = ("_small" if self._is_dual_pde() else ""), "_sys" if self.nvdev.mmu_ver == 2 
+                                 enclosing: address (declared :65)
+   sys                    :67    return self.read_fields(entry_id)[f'address{small}{sys}'] << 12
+                                 enclosing: address (declared :65)
+
+== tinybendygrad/runtime/support/nv/nvdev.bend:157  tinygrad/runtime/support/nv/nvdev.py:52 [only_older_revision] toks=entry
+   runtime/support/nv/nvdev.py (160 lines) via exact
+   entry                  :51    def entry(self, entry_id:int) -> int:
+                                 enclosing: set_entry (declared :38)
+   entry                  :55    if self.is_page(entry_id): return self.nvdev.pte_t.decode(self.entry(entry_id))
+                                 enclosing: read_fields (declared :54)
+   entry                  :56    return (self.nvdev.dual_pde_t if self._is_dual_pde() else self.nvdev.pde_t).decode(self.en
+                                 enclosing: read_fields (declared :54)
+   entry                  :58    def is_page(self, entry_id) -> bool: return (self.entry(entry_id) & 1 == 1) if self.lv < s
+                                 enclosing: read_fields (declared :54)
+

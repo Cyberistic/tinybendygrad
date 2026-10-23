@@ -1,0 +1,47 @@
+rel	at	old	new
+tinybendygrad/runtime/support/am/amdev.bend	25	`hwid_names` (:400) and `hw_id_map` (:380)	#   * (amdev.py:402 symbol=hwid_names) `hwid_names` and (amdev.py:382 symbol=_run_discovery) `hw_id_map` -- TWO-WAY TABLES, both directions.
+tinybendygrad/runtime/support/am/amdev.bend	27	`indirect_wreg_pcie`'s `1 << 34` (:341)	#     silently wrong register write: `indirect_wreg_pcie`'s `1 << 34` (amdev.py:342 symbol=indirect_wreg_pcie) and
+tinybendygrad/runtime/support/am/amdev.bend	29	the VF mailbox protocol (:268-281), `_read_vram` (:347-354),	#   * the REQUEST TRACES -- the VF mailbox protocol (amdev.py:268-281 symbol=_vf_mailbox_request), `_read_vram` (amdev.py:349-357 symbol=_read_vram),
+tinybendygrad/runtime/support/am/amdev.bend	30	the ASPM capability walk (:147-154), `indirect_wreg`/`_pcie`, and the boot order.	#     the ASPM capability walk (amdev.py:147-154 symbol=_disable_aspm), `indirect_wreg`/`_pcie`, and the boot order.
+tinybendygrad/runtime/support/am/amdev.bend	72	* :364's window is `(10 << 10)` bytes, so a `table_list[].offset` past it	#   * amdev.py:364's window is `(10 << 10)` bytes -- upstream's `tmr_size` -- so a `table_list[].offset` past it
+tinybendygrad/runtime/support/am/ip.bend	19	the DOORBELL ARITHMETIC: `KIQ + xcc*0x20` (:354), `sDMA_ENGINE0 +	#   * the DOORBELL ARITHMETIC: `KIQ + xcc*0x20` (am/ip.py:354 symbol=setup_ring), `sDMA_ENGINE0 +
+tinybendygrad/runtime/support/autogen.bend	121	:107  the `types` dict	#   autogen.py:107 `typehint`      PORTED   `Gt{nm, tnm, defd, ln}` and its readers symbol=typehint
+tinybendygrad/runtime/support/autogen.bend	126	:30   all_fields	#   autogen.py:30 `all_fields`      WALL 4   it is a loop over `fields(t)` calling
+tinybendygrad/runtime/support/compiler_cpu.bend	58	:8   the unpack	#   compiler_cpu.py:8 the unpack    PORTED `ClangCompiler.arch_of` `.cpu_of` -- upstream's `arch` symbol=__init__
+tinybendygrad/runtime/support/compiler_cpu.bend	62	:14  the riscv64 arm	#   compiler_cpu.py:14 the riscv64 arm PORTED `ClangCompiler.riscv64_cpu` -- upstream's `riscv64` symbol=__init__
+tinybendygrad/runtime/support/compiler_cpu.bend	67	:24  disassemble	#   compiler_cpu.py:24 `disassemble`  PORTED `ClangCompiler.dis_row` symbol=disassemble
+tinybendygrad/runtime/support/compiler_cpu.bend	91	PROCESS-BOOT CONSTANT: helpers.py:161	"# WALL 3 -- `getenv(""CC"", 'clang')` is a PROCESS-BOOT CONSTANT: helpers.py:161 symbol=getenv"
+tinybendygrad/runtime/support/compiler_cpu.bend	103	`self.cachekey = cachekey if CCACHE else None` (device.py:337)	#   `self.cachekey = cachekey if CCACHE else None` (device.py:324 symbol=__init__), so the key
+tinybendygrad/runtime/support/compiler_cuda.bend	68	read at IMPORT: `helpers.py:161` carries `@functools.cache`, so the module	# read at IMPORT: `helpers.py:161 symbol=getenv` carries `@functools.cache`, so the module
+tinybendygrad/runtime/support/compiler_cuda.bend	93	:63    disassemble	#   compiler_cuda.py:63 `disassemble` PORTED `NVRTCCompiler.dis_row` symbol=disassemble
+tinybendygrad/runtime/support/compiler_llvm.bend	26	helpers.py:161 carries `@functools.cache`, so `LLVMOPT` is read ONCE per	# helpers.py:161 symbol=getenv carries `@functools.cache`, so `LLVMOPT` is read ONCE per
+tinybendygrad/runtime/support/compiler_llvm.bend	56	:18  expect(#1)	#   compiler_llvm.py:18 `expect`   PORTED `LLVMCompiler.triple_ok` symbol=__init__
+tinybendygrad/runtime/support/compiler_llvm.bend	70	:76,88 disassemble	#   compiler_llvm.py:76-88 `disassemble` PORTED `CPULLVMCompiler.dis_row` symbol=disassemble
+tinybendygrad/runtime/support/compiler_mesa.bend	49	:98    the a630 assert	#   compiler_mesa.py:98 the a630 assert PORTED  `ir3.arch_ok` -- upstream's `a630` symbol=__init__
+tinybendygrad/runtime/support/compiler_mesa.bend	50	:99    the dev id	#   compiler_mesa.py:99 the dev id    PORTED  `ir3.gpu_id` `ir3.chip_id` -- upstream's `dev_id` symbol=__init__
+tinybendygrad/runtime/support/compiler_mesa.bend	54	:118   the three-field store	#   compiler_mesa.py:118 the three-field store PORTED  `ir3.variant_fields` -- upstream's `const_state` symbol=compile
+tinybendygrad/runtime/support/compiler_mesa.bend	55	:123   the four-way concat	#   compiler_mesa.py:123 the four-way concat PORTED  `ir3.ret_parts` -- upstream's `info.size` symbol=compile
+tinybendygrad/runtime/support/compiler_mesa.bend	60	:133   the disassemble call	#   compiler_mesa.py:133 `disassemble` PORTED  `ir3.dis_row` symbol=disassemble
+tinybendygrad/runtime/support/memory.bend	8	arithmetic (:12), the `BumpAllocator` bump-and-align sequence (:16-21),	#     arithmetic (memory.py:12 symbol=view) `view`, `BumpAllocator` (memory.py:15-21 symbol=BumpAllocator) bump-and-align sequence,
+tinybendygrad/runtime/support/memory.bend	15	`(pt, pte_idx, pte_size)` (:127) while `next()` YIELDS the five-tuple	#     `(pt, pte_idx, pte_size)` (memory.py:128 symbol=__init__) -- upstream's `pt_stack` -- while `next()` YIELDS the five-tuple
+tinybendygrad/runtime/support/memory.bend	18	the TWO REVERSALS in `MemoryManager.__init__` (:187):	#   * the TWO REVERSALS in `MemoryManager.__init__` (memory.py:187 symbol=__init__) -- upstream's `pte_covers`:
+tinybendygrad/runtime/support/nv/ip.bend	70	the ring at `entryOff` but :48 measures the wrap against	#      the ring at `entryOff` but nv/ip.py:48 measures the wrap against `queue_mv`,
+tinybendygrad/runtime/support/nv/ip.bend	153	`desc_v3` size arithmetic (:141-143) -- and the refusal at :123.	#     `desc_v3` size arithmetic (nv/ip.py:139-143) -- and the refusal at :123 (`bit_header`).
+tinybendygrad/runtime/support/nv/ip.bend	217	`memoryview(...).cast('I'/'Q')` (:111,:419,:306) is the	# the array is a `List`. `memoryview(...).cast('I'/'Q')` (nv/ip.py:306) is the
+tinybendygrad/runtime/support/nv/nvdev.bend	25	(`NVReg`, :12-31), the PAGE TABLE entry codec (`NVPageTableEntry`, :33-67), the	# (nvdev.py:12-19 symbol=NVReg), the PAGE TABLE entry codec (`NVPageTableEntry`, :33-67), the
+tinybendygrad/runtime/support/nv/nvdev.bend	28	and the generated-register loader (`include`, :161-163).	# and the generated-register loader (`include`, nvdev.py:158 symbol=include).
+tinybendygrad/runtime/support/nv/nvdev.bend	157	and `entry()` (:52) recombines two	#     and `entry()` (nvdev.py:51 symbol=entry) recombines two
+tinybendygrad/runtime/support/objc.bend	50	`cstyle.py:268` emits `extern void sel_registerName();`	"# (""sel_registerName""), `cstyle.py:271` emits `extern void sel_registerName();`"
+tinybendygrad/runtime/support/objc.bend	55	`ops_cpu.py:19/21` (libobjc is missing from `CPUProgram.link_libs`), NOT in	# `ops_cpu.py:19 symbol=CPUProgram` (libobjc is missing from `CPUProgram.link_libs`), NOT in
+tinybendygrad/runtime/support/objc.bend	56	`objc.py` and NOT in `ops_metal.py:86`. Reported, not fixed.	# `objc.py` and NOT in `ops_metal.py:86` (upstream's `objc_msgSend` binding). Reported, not fixed.
+tinybendygrad/runtime/support/objc.bend	100	wraps the INNER `f` from :37 and not `msg`'s return.	#     wraps the INNER `f` from objc.py:37 and not `msg`'s return.
+tinybendygrad/runtime/support/system.bend	29	:61-65 atomic_lib / libsys	#   system.py:61-65 `atomic_lib` / libsys PORTED  `cap.*` -- the PLATFORM gate, which is
+tinybendygrad/runtime/support/system.bend	35	:89    memory_barrier	#   system.py:88 `memory_barrier`  PORTED  `cap.barrier_lib` -- which library is
+tinybendygrad/runtime/support/system.bend	38	:94-96 system_paddrs	#   system.py:93 `system_paddrs`   PARTIAL `paddr.*` -- the mask; the u64 read is FFI
+tinybendygrad/runtime/support/system.bend	40	:104-126 pci_scan_bus	#   system.py:103 `pci_scan_bus`  PORTED  `scan.*` -- the mask filter + both id formats
+tinybendygrad/runtime/support/system.bend	94	THE CTYPES LIBRARY GATE, :61-65 and :89. `atomic_lib` is	# 3. THE CTYPES LIBRARY GATE, system.py:61-65 and system.py:88. `atomic_lib` is
+tinybendygrad/runtime/support/system.bend	100	:89 and it is pure, so it is ported as `cap.barrier_lib`, and the gate asks	#    system.py:88 and it is pure, so it is ported as `cap.barrier_lib` -- upstream's `memory_barrier` -- and the gate asks
+tinybendygrad/runtime/support/system.bend	127	and the five `setsockopt` calls (:391-393) are a socket; `_recvall`'s	# and the five `setsockopt` calls (system.py:389-390) are a socket; `_recvall`'s
+tinybendygrad/runtime/support/usb.bend	34	what `usb_chunk` (:350-351) addresses three times by name, so a transposed pair	# what `usb_chunks` (usb.py:368 symbol=usb_chunks) addresses three times by name, so a transposed pair
+tinybendygrad/runtime/support/usb.bend	57	0x1000 is `USB3`'s own CONTROL buffer size (:42, `alloc_cbuffer(0x1000)`). Both	#     0x1000 is `USB3`'s own CONTROL buffer size (usb.py:41 symbol=USB3, `alloc_cbuffer(0x1000)`). Both
+tinybendygrad/runtime/support/usb.bend	65	`dma_view` (ops_amd.py:824) is a `PCIDevice` method	# NOT CLOSED, DELIBERATELY. `dma_view` (ops_amd.py:798 symbol=USBIface) is a `PCIDevice` method

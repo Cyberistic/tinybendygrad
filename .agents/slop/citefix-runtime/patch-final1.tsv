@@ -1,0 +1,30 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_bend.bend	54	dtype.py:60 `name`	#   tinygrad/dtype.py:60 `name`  wire_dtype  PORTED  `wire_dtype` -- the NAME and the refusal,
+tinybendygrad/runtime/ops_bend.bend	56	ops_python.py:106 `__call__`	#   tinygrad/runtime/ops_python.py:106 `itemsize`  wire_width  PORTED  `wire_width` (node.numel) symbol=__call__
+tinybendygrad/runtime/ops_bend.bend	57	ops_python.py:109 `__call__`	#   tinygrad/runtime/ops_python.py:109 `arg`  wire_arg  PORTED  `wire_arg` -- every arm but the float
+tinybendygrad/runtime/ops_bend.bend	61	ops_python.py:64 `__call__`	#   tinygrad/runtime/ops_python.py:64 `uops`  UOpLine  PORTED  `Line` symbol=__call__
+tinybendygrad/runtime/ops_bend.bend	62	ops_python.py:107 `__call__`	#   tinygrad/runtime/ops_python.py:107 `pargs`  is_buf  PORTED  `is_buf` symbol=__call__
+tinybendygrad/runtime/ops_bend.bend	63	ops_python.py:106 `__call__`	#   tinygrad/runtime/ops_python.py:106 `itemsize`  buf_extent  PORTED  `buf_extent` symbol=__call__
+tinybendygrad/runtime/ops_bend.bend	64	ops_python.py:50 `__init__`	#   tinygrad/runtime/ops_python.py:50 `uops`  parse  PORTED  `parse` symbol=__init__
+tinybendygrad/runtime/ops_cuda.bend	20	tree `ops_cuda.py` is 126 lines	"# tree `ops_cuda.py` is 126 lines: `count` is at tinygrad/runtime/ops_cuda.py:122 symbol=count and
+# `_wait_signal` at tinygrad/runtime/ops_cuda.py:124 symbol=_wait_signal. The citations
+# ARE renumbered here because the pin is settled."
+tinybendygrad/runtime/ops_cuda.bend	21	ARE renumbered here because the pin is settled	
+tinybendygrad/runtime/ops_disk.bend	24	symbol=_copyout`). Every segment	# (`tinygrad/runtime/ops_disk.py:69-77 symbol=_copyout` `_copyout`). Every segment the GONE
+tinybendygrad/runtime/ops_dsp.bend	38	ops_dsp.py:87-91 _free	#   tinygrad/runtime/ops_dsp.py:87-91 `_free`       PORTED  `alloc.free_calls` symbol=_free
+tinybendygrad/runtime/ops_dsp.bend	39	ops_dsp.py:93 _as_buffer	#   tinygrad/runtime/ops_dsp.py:93 `_as_buffer`     PORTED  `alloc.as_buffer_bytes` symbol=_as_buffer
+tinybendygrad/runtime/ops_dsp.bend	40	ops_dsp.py:94 _copyin	#   tinygrad/runtime/ops_dsp.py:94 `_copyin`        PORTED  `alloc.copyin_bytes` symbol=_copyin
+tinybendygrad/runtime/ops_dsp.bend	41	ops_dsp.py:95 _copyout	#   tinygrad/runtime/ops_dsp.py:95 `_copyout`       PORTED  `alloc.copyout_bytes` symbol=_copyout
+tinybendygrad/runtime/ops_dsp.bend	60	ops_dsp.py:141-148 open_lib	#   tinygrad/runtime/ops_dsp.py:141-148 `open_lib`   PORTED  `dev.open_lib_handle` -- the handle answer symbol=open_lib
+tinybendygrad/runtime/ops_hip.bend	23	`iter_sig` (TinyELF.iter_sig, device.py:365)	# `ret.value * 1e-3`), `iter_sig` (TinyELF.iter_sig, tinygrad/device.py:352 symbol=iter_sig), `hp.*` and
+tinybendygrad/runtime/ops_nv.bend	13	ops_nv.py:45 symbol=nvm	#            (tinygrad/runtime/ops_nv.py:45 symbol=nvm) `nvm` word encoding, `hilo` (tinygrad/runtime/ops_nv.py:31 symbol=hilo),
+tinybendygrad/runtime/ops_nv.bend	14	ops_nv.py:38 symbol=nv_flags	#            (tinygrad/runtime/ops_nv.py:38 symbol=nv_flags) `nv_flags`, the `layout_args` kernel-argument trace (tinygrad/runtime/support/hcq2.py:114 symbol=layout_args),
+tinybendygrad/runtime/ops_nv.bend	15	hcq2.py:114 symbol=layout_args) and the four	#            and the four queues' command vocabularies (:99-225).
+tinybendygrad/runtime/ops_nv.bend	23	helpers.py:21 symbol=to_name	#            (tinygrad/helpers.py:21 symbol=to_name) `to_name` (tinygrad/runtime/support/hcq2.py:61 uses it), `reg_ops` (tinygrad/runtime/ops_nv.py:811 symbol=reg_ops)'s chunking, the
+tinybendygrad/runtime/ops_python.bend	81	ops.py:1412-1420 symbol=python_alu	#    (tinygrad/uop/ops.py:1412-1420 symbol=python_alu) `python_alu`, so tinygrad/uop/ops.py:1427 raises `KeyError` on them. They are
+tinybendygrad/runtime/ops_rdma.bend	75	ops_rdma.py:57-58 symbol=node	#   (tinygrad/runtime/ops_rdma.py:57-58 symbol=node) `node` and the closest nic is a `min(...)` at tinygrad/runtime/ops_rdma.py:64; MEASURED, there is no `def
+tinybendygrad/runtime/ops_rdma.bend	165	ops_rdma.py:141 symbol=rdma_copies	#      the msn entry (tinygrad/runtime/ops_rdma.py:141 symbol=rdma_copies) is `slot << 48 | next << 24 | psn` -- upstream's `psns` -- all three fields
+tinybendygrad/runtime/ops_webgpu.bend	125	The :41 collapse therefore NEVER	#   - The tinygrad/runtime/ops_webgpu.py:42 collapse therefore NEVER takes its `None` branch for these six
+tinybendygrad/runtime/ops_webgpu.bend	148	symbol=_copyout) hand back	#      is what `_free` (tinygrad/runtime/ops_webgpu.py:164 symbol=_free) and `_copyout` (tinygrad/runtime/ops_webgpu.py:160 symbol=_copyout) hand back -- upstream's `Buf` is that
+tinybendygrad/runtime/ops_webgpu.bend	159	`WGPUBufferBindingType_Storage` for a GLOBAL buffer: AT THIS PIN	#   2. `WGPUBufferBindingType_Storage` for a GLOBAL buffer: AT THIS PIN upstream's tinygrad/runtime/ops_webgpu.py:78 -- its `AddrSpace` --
+tinybendygrad/runtime/webgpu_call.bend	65	`Uniform` -- tinygrad/runtime/ops_webgpu.py:202-206	# `Uniform` (upstream's `WGPUBufferUsage_Uniform`) -- tinygrad/runtime/ops_webgpu.py:202-206 symbol=create_uniform AS ONE UNIT, create-and-initialise -- and

@@ -1,0 +1,22 @@
+pin.record_state=VERIFIED
+pin.commit=45fc5ae734a2673c7837835f25e5dbab8b1385d7
+pin.tree=6c91e89777907c7b5b575372418750dec6068687
+head.tinygrad_tree=6c91e89777907c7b5b575372418750dec6068687
+upstream.tinygrad_tree=6c91e89777907c7b5b575372418750dec6068687
+pin.declared_shas=1
+pin.declaration_agrees=1
+pin.declaration_disagrees=0
+pin.declaration_unresolvable=0
+cite.total=2549
+cite.checkable=1605
+cite.uncheckable_no_claim_token=944
+cite.at_pin=1019
+cite.only_older_revision=188
+cite.at_no_revision=398
+cite.at_no_revision_dangling=13
+cite.ambient_relocated=2
+cite.unverifiable_no_claim_about_the_file=218
+cite.local_sided_excluded=550
+cite.distinct_older_revisions=103
+ROWS       : 2549 -> .agents/slop/citefix-runtime/pin-B.rows
+# pin-cite-gate: FAIL -- 13 citations name ONE upstream file and hold at NO upstream revision (a dangling claim)

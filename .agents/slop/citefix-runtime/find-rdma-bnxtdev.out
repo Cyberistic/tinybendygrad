@@ -1,0 +1,292 @@
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:12  tinygrad/runtime/support/rdma/bnxtdev.py:42-45 [at_no_revision] toks=db_value
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   db_value               :13    def db_value(xid, typ, index, epoch):
+   db_value               :164   self.db[self.db_off // 8] = db_value(xid, typ, index, epoch)
+                                 enclosing: doorbell (declared :162)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:59  tinygrad/runtime/support/rdma/bnxtdev.py:33 [at_no_revision] toks=pbl,level_of
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   pbl                    :34    assert len(table_paddrs) <= 512, f"a pbl has two levels: {len(values)} pages need bigger p
+                                 enclosing: build_pbl (declared :27)
+   pbl                    :188   log2_pbl_pg_size=12, pbl=base, va=paddrs[0] if va is None else va, mr_size=size).xid
+                                 enclosing: register_mem (declared :183)
+   pbl                    :195   self.scq_id, self.rcq_id = (dev.rcfw("create_cq", cq_size=CQ_ENTRIES, pbl=q.pbl_addr, pg_s
+                                 enclosing: __init__ (declared :192)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:88  tinygrad/runtime/support/rdma/bnxtdev.py:83 [at_no_revision] toks=hwrm,bar0_at
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   hwrm                   :60    ver = self.hwrm("ver_get")
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :62    self.hwrm("func_reset", timeout_ms=40000)
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :63    caps = self.hwrm("func_qcaps", fid=0xffff)
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :65    self.hwrm("func_drv_rgtr")
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :66    self.db_off = self.hwrm("func_qcfg", fid=0xffff).legacy_l2_db_size_kb * 1024
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :76    def hwrm(self, name, timeout_ms=10000, **fields):
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :94    caps = self.hwrm("func_backing_store_qcaps_v2", type=typ)
+                                 enclosing: setup_backing_store (declared :91)
+   hwrm                   :105   self.hwrm("func_backing_store_cfg_v2", type=typ, instance=instance, entry_size=size, num_e
+                                 enclosing: setup_backing_store (declared :91)
+   hwrm                   :112   self.creq_id = self.hwrm("ring_alloc", ring_type=bnxt.RING_ALLOC_REQ_RING_TYPE_NQ, page_tb
+                                 enclosing: _open_rcfw (declared :110)
+   hwrm                   :122   self.rcfw("initialize_fw", stat_ctx_id=self.hwrm("stat_ctx_alloc", stats_dma_addr=p[0], st
+                                 enclosing: _open_rcfw (declared :110)
+   hwrm                   :127   self.nq_id = self.hwrm("ring_alloc", ring_type=bnxt.RING_ALLOC_REQ_RING_TYPE_NQ, page_tbl_
+                                 enclosing: _open_rcfw (declared :110)
+   hwrm                   :160   def fini(self): self.hwrm("func_drv_unrgtr")
+                                 enclosing: rcfw (declared :130)
+   hwrm                   :169   ci = self.hwrm("ring_alloc", enables=bnxt.RING_ALLOC_REQ_ENABLES_NQ_RING_ID_VALID, ring_ty
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :172   ri = self.hwrm("ring_alloc", enables=bnxt.RING_ALLOC_REQ_ENABLES_NQ_RING_ID_VALID |
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :175   vi = self.hwrm("vnic_alloc").vnic_id
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :176   self.hwrm("vnic_cfg", enables=bnxt.VNIC_CFG_REQ_ENABLES_MRU | bnxt.VNIC_CFG_REQ_ENABLES_DE
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :178   self.hwrm("cfa_l2_filter_alloc", flags=bnxt.CFA_L2_FILTER_ALLOC_REQ_FLAGS_PATH_RX,
+                                 enclosing: _open_l2 (declared :167)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:89  tinygrad/runtime/support/rdma/bnxtdev.py:84 [at_no_revision] toks=hwrm,trig_at
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   hwrm                   :60    ver = self.hwrm("ver_get")
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :62    self.hwrm("func_reset", timeout_ms=40000)
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :63    caps = self.hwrm("func_qcaps", fid=0xffff)
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :65    self.hwrm("func_drv_rgtr")
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :66    self.db_off = self.hwrm("func_qcfg", fid=0xffff).legacy_l2_db_size_kb * 1024
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :76    def hwrm(self, name, timeout_ms=10000, **fields):
+                                 enclosing: __init__ (declared :53)
+   hwrm                   :94    caps = self.hwrm("func_backing_store_qcaps_v2", type=typ)
+                                 enclosing: setup_backing_store (declared :91)
+   hwrm                   :105   self.hwrm("func_backing_store_cfg_v2", type=typ, instance=instance, entry_size=size, num_e
+                                 enclosing: setup_backing_store (declared :91)
+   hwrm                   :112   self.creq_id = self.hwrm("ring_alloc", ring_type=bnxt.RING_ALLOC_REQ_RING_TYPE_NQ, page_tb
+                                 enclosing: _open_rcfw (declared :110)
+   hwrm                   :122   self.rcfw("initialize_fw", stat_ctx_id=self.hwrm("stat_ctx_alloc", stats_dma_addr=p[0], st
+                                 enclosing: _open_rcfw (declared :110)
+   hwrm                   :127   self.nq_id = self.hwrm("ring_alloc", ring_type=bnxt.RING_ALLOC_REQ_RING_TYPE_NQ, page_tbl_
+                                 enclosing: _open_rcfw (declared :110)
+   hwrm                   :160   def fini(self): self.hwrm("func_drv_unrgtr")
+                                 enclosing: rcfw (declared :130)
+   hwrm                   :169   ci = self.hwrm("ring_alloc", enables=bnxt.RING_ALLOC_REQ_ENABLES_NQ_RING_ID_VALID, ring_ty
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :172   ri = self.hwrm("ring_alloc", enables=bnxt.RING_ALLOC_REQ_ENABLES_NQ_RING_ID_VALID |
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :175   vi = self.hwrm("vnic_alloc").vnic_id
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :176   self.hwrm("vnic_cfg", enables=bnxt.VNIC_CFG_REQ_ENABLES_MRU | bnxt.VNIC_CFG_REQ_ENABLES_DE
+                                 enclosing: _open_l2 (declared :167)
+   hwrm                   :178   self.hwrm("cfa_l2_filter_alloc", flags=bnxt.CFA_L2_FILTER_ALLOC_REQ_FLAGS_PATH_RX,
+                                 enclosing: _open_l2 (declared :167)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:101  tinygrad/runtime/support/rdma/bnxtdev.py:138 [at_no_revision] toks=rcfw,first_flag
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   rcfw                   :72    self.gid_id = self.rcfw("add_gid", gid=struct.unpack(">4I", self.local_gid)[::-1], src_mac
+                                 enclosing: __init__ (declared :53)
+   rcfw                   :122   self.rcfw("initialize_fw", stat_ctx_id=self.hwrm("stat_ctx_alloc", stats_dma_addr=p[0], st
+                                 enclosing: _open_rcfw (declared :110)
+   rcfw                   :130   def rcfw(self, name, timeout_ms=20000, **fields):
+                                 enclosing: _open_rcfw (declared :110)
+   rcfw                   :157   if BNXT_DEBUG >= 1: print(f"bnxt {self.devfmt}: rcfw {name} xid={getattr(ret, 'xid', 0):#x
+                                 enclosing: rcfw (declared :130)
+   rcfw                   :185   return self.rcfw("register_mr", flags=bnxt.CMDQ_REGISTER_MR_FLAGS_ALLOC_MR,
+                                 enclosing: register_mem (declared :183)
+   rcfw                   :189   def unregister_mem(self, key:int): self.rcfw("deregister_mr", lkey=key)
+                                 enclosing: register_mem (declared :183)
+   rcfw                   :195   self.scq_id, self.rcq_id = (dev.rcfw("create_cq", cq_size=CQ_ENTRIES, pbl=q.pbl_addr, pg_s
+                                 enclosing: __init__ (declared :192)
+   rcfw                   :198   self.qpn = dev.rcfw("create_qp", type=bnxt.CMDQ_CREATE_QP_TYPE_RC, scq_cid=self.scq_id, rc
+                                 enclosing: __init__ (declared :192)
+   rcfw                   :204   self.dev.rcfw("modify_qp", qp_cid=self.qpn, modify_mask=mask, network_type_en_sqd_async_no
+                                 enclosing: modify_qp (declared :203)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:104  tinygrad/runtime/support/rdma/bnxtdev.py:153 [at_no_revision] toks=rcfw,nq_arm
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   rcfw                   :72    self.gid_id = self.rcfw("add_gid", gid=struct.unpack(">4I", self.local_gid)[::-1], src_mac
+                                 enclosing: __init__ (declared :53)
+   rcfw                   :122   self.rcfw("initialize_fw", stat_ctx_id=self.hwrm("stat_ctx_alloc", stats_dma_addr=p[0], st
+                                 enclosing: _open_rcfw (declared :110)
+   rcfw                   :130   def rcfw(self, name, timeout_ms=20000, **fields):
+                                 enclosing: _open_rcfw (declared :110)
+   rcfw                   :157   if BNXT_DEBUG >= 1: print(f"bnxt {self.devfmt}: rcfw {name} xid={getattr(ret, 'xid', 0):#x
+                                 enclosing: rcfw (declared :130)
+   rcfw                   :185   return self.rcfw("register_mr", flags=bnxt.CMDQ_REGISTER_MR_FLAGS_ALLOC_MR,
+                                 enclosing: register_mem (declared :183)
+   rcfw                   :189   def unregister_mem(self, key:int): self.rcfw("deregister_mr", lkey=key)
+                                 enclosing: register_mem (declared :183)
+   rcfw                   :195   self.scq_id, self.rcq_id = (dev.rcfw("create_cq", cq_size=CQ_ENTRIES, pbl=q.pbl_addr, pg_s
+                                 enclosing: __init__ (declared :192)
+   rcfw                   :198   self.qpn = dev.rcfw("create_qp", type=bnxt.CMDQ_CREATE_QP_TYPE_RC, scq_cid=self.scq_id, rc
+                                 enclosing: __init__ (declared :192)
+   rcfw                   :204   self.dev.rcfw("modify_qp", qp_cid=self.qpn, modify_mask=mask, network_type_en_sqd_async_no
+                                 enclosing: modify_qp (declared :203)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:105  tinygrad/runtime/support/rdma/bnxtdev.py:154 [only_older_revision] toks=rcfw,is_final
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   rcfw                   :72    self.gid_id = self.rcfw("add_gid", gid=struct.unpack(">4I", self.local_gid)[::-1], src_mac
+                                 enclosing: __init__ (declared :53)
+   rcfw                   :122   self.rcfw("initialize_fw", stat_ctx_id=self.hwrm("stat_ctx_alloc", stats_dma_addr=p[0], st
+                                 enclosing: _open_rcfw (declared :110)
+   rcfw                   :130   def rcfw(self, name, timeout_ms=20000, **fields):
+                                 enclosing: _open_rcfw (declared :110)
+   rcfw                   :157   if BNXT_DEBUG >= 1: print(f"bnxt {self.devfmt}: rcfw {name} xid={getattr(ret, 'xid', 0):#x
+                                 enclosing: rcfw (declared :130)
+   rcfw                   :185   return self.rcfw("register_mr", flags=bnxt.CMDQ_REGISTER_MR_FLAGS_ALLOC_MR,
+                                 enclosing: register_mem (declared :183)
+   rcfw                   :189   def unregister_mem(self, key:int): self.rcfw("deregister_mr", lkey=key)
+                                 enclosing: register_mem (declared :183)
+   rcfw                   :195   self.scq_id, self.rcq_id = (dev.rcfw("create_cq", cq_size=CQ_ENTRIES, pbl=q.pbl_addr, pg_s
+                                 enclosing: __init__ (declared :192)
+   rcfw                   :198   self.qpn = dev.rcfw("create_qp", type=bnxt.CMDQ_CREATE_QP_TYPE_RC, scq_cid=self.scq_id, rc
+                                 enclosing: __init__ (declared :192)
+   rcfw                   :204   self.dev.rcfw("modify_qp", qp_cid=self.qpn, modify_mask=mask, network_type_en_sqd_async_no
+                                 enclosing: modify_qp (declared :203)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:151  tinygrad/runtime/support/rdma/bnxtdev.py:54 [at_no_revision] toks=getattr,bnxt
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   getattr                :77    inp, out = getattr(bnxt, f"struct_hwrm_{name}_input"), getattr(bnxt, f"struct_hwrm_{name}_
+                                 enclosing: hwrm (declared :76)
+   getattr                :79    data = bytes(inp(req_type=getattr(bnxt, f"HWRM_{name.upper()}"), cmpl_ring=bnxt.BNXT_HWRM_
+                                 enclosing: hwrm (declared :76)
+   getattr                :95    size, splits = caps.entry_size, tuple(getattr(caps, f"split_entry_{j}") for j in range(cap
+                                 enclosing: setup_backing_store (declared :91)
+   getattr                :131   req_t, resp_t = getattr(bnxt, f"struct_cmdq_{name}"), getattr(bnxt, f"struct_creq_{name}_r
+                                 enclosing: rcfw (declared :130)
+   getattr                :132   data = bytes(req_t(opcode=getattr(bnxt, f"CMDQ_BASE_OPCODE_{name.upper()}"),
+                                 enclosing: rcfw (declared :130)
+   getattr                :157   if BNXT_DEBUG >= 1: print(f"bnxt {self.devfmt}: rcfw {name} xid={getattr(ret, 'xid', 0):#x
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :4     from tinygrad.runtime.autogen import bnxt, pci
+   bnxt                   :14    return (xid & bnxt.DBC_DBC_XID_MASK | bnxt.DBC_DBC_PATH_ROCE | typ | bnxt.BNXT_QPLIB_DBR_V
+                                 enclosing: db_value (declared :13)
+   bnxt                   :15    index & bnxt.DBC_DBC_INDEX_MASK | epoch << bnxt.BNXT_QPLIB_DBR_EPOCH_SHIFT
+                                 enclosing: db_value (declared :13)
+   bnxt                   :18    def send_wqe(va:int, key:int, size:int) -> bytes: return struct.pack("<BBB5xI20xQII", 0, b
+                                 enclosing: db_value (declared :13)
+   bnxt                   :24    return (wqe_idx % RING_ENTRIES) << bnxt.SQ_MSN_SEARCH_START_IDX_SFT | nxt << bnxt.SQ_MSN_S
+                                 enclosing: msn_entry (declared :20)
+   bnxt                   :25    def cqe_ready(cqe:bytes, cons:int) -> bool: return (cqe[24] & bnxt.CQ_BASE_TOGGLE) != (con
+                                 enclosing: msn_entry (declared :20)
+   bnxt                   :29    values = [p | bnxt.PTU_PTE_VALID for p in paddrs]
+                                 enclosing: build_pbl (declared :27)
+   bnxt                   :30    if queue: values[-1], values[-2] = values[-1] | bnxt.PTU_PTE_LAST, values[-2] | bnxt.PTU_P
+                                 enclosing: build_pbl (declared :27)
+   bnxt                   :36    top[:len(table_paddrs) * 8] = struct.pack(f"<{len(table_paddrs)}Q", *(p | bnxt.PTU_PTE_VAL
+                                 enclosing: build_pbl (declared :27)
+   bnxt                   :61    if DEBUG >= 2: print(f"bnxt {self.devfmt}: firmware {ver.hwrm_fw_maj_8b}.{ver.hwrm_fw_min_
+                                 enclosing: __init__ (declared :53)
+   bnxt                   :74    if DEBUG >= 2: print(f"bnxt {self.devfmt}: booted mac={self.mac.to_bytes(6, 'big').hex(':'
+                                 enclosing: __init__ (declared :53)
+   bnxt                   :77    inp, out = getattr(bnxt, f"struct_hwrm_{name}_input"), getattr(bnxt, f"struct_hwrm_{name}_
+                                 enclosing: hwrm (declared :76)
+   bnxt                   :79    data = bytes(inp(req_type=getattr(bnxt, f"HWRM_{name.upper()}"), cmpl_ring=bnxt.BNXT_HWRM_
+                                 enclosing: hwrm (declared :76)
+   bnxt                   :80    seq_id=self.seq, target_id=bnxt.BNXT_HWRM_TARGET, resp_addr=self.resp_pa[0], **fields))
+                                 enclosing: hwrm (declared :76)
+   bnxt                   :83    for i, w in enumerate(memoryview(data.ljust(bnxt.HWRM_MAX_REQ_LEN, b'\0')).cast('I')): sel
+                                 enclosing: hwrm (declared :76)
+   bnxt                   :85    def hdr(): return bnxt.struct_hwrm_resp_hdr.from_buffer_copy(bytes(self.resp[:8]))
+                                 enclosing: hwrm (declared :76)
+   bnxt                   :107   flags=bnxt.FUNC_BACKING_STORE_CFG_V2_REQ_FLAGS_BS_CFG_ALL_DONE if typ == 15 else 0,
+                                 enclosing: setup_backing_store (declared :91)
+   bnxt                   :112   self.creq_id = self.hwrm("ring_alloc", ring_type=bnxt.RING_ALLOC_REQ_RING_TYPE_NQ, page_tb
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :113   page_size=12, page_tbl_depth=self.creq.pbl_level, length=256, int_mode=bnxt.RING_ALLOC_REQ
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :115   self.doorbell(self.creq_id, bnxt.DBC_DBC_TYPE_NQ_ARM, 0, 0)
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :116   init = bnxt.struct_cmdq_init(cmdq_pbl=self.cmdq.pbl_addr, creq_ring_id=self.creq_id, cmdq_
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :119   for i, w in enumerate(memoryview(bytes(init)).cast('I')): self.bar0[bnxt.RCFW_COMM_BASE_OF
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :123   flags=bnxt.CMDQ_INITIALIZE_FW_FLAGS_HW_REQUESTER_RETX_SUPPORTED)
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :127   self.nq_id = self.hwrm("ring_alloc", ring_type=bnxt.RING_ALLOC_REQ_RING_TYPE_NQ, page_tbl_
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :128   page_size=12, page_tbl_depth=nq.pbl_level, length=16, logical_id=1, int_mode=bnxt.RING_ALL
+                                 enclosing: _open_rcfw (declared :110)
+   bnxt                   :131   req_t, resp_t = getattr(bnxt, f"struct_cmdq_{name}"), getattr(bnxt, f"struct_creq_{name}_r
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :132   data = bytes(req_t(opcode=getattr(bnxt, f"CMDQ_BASE_OPCODE_{name.upper()}"),
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :138   if self.rcfw_first: prod, self.rcfw_first = prod | 1 << bnxt.FIRMWARE_FIRST_FLAG, False
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :142   self.bar0[(bnxt.RCFW_COMM_BASE_OFFSET + bnxt.RCFW_PF_VF_COMM_PROD_OFFSET) // 4] = prod
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :143   self.bar0[(bnxt.RCFW_COMM_BASE_OFFSET + bnxt.RCFW_COMM_TRIG_OFFSET) // 4] = bnxt.RCFW_CMDQ
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :146   wait_cond(lambda: (self.creq.read(self.creq.read_idx)[8] & bnxt.CREQ_BASE_V) != (self.creq
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :153   self.doorbell(self.creq_id, bnxt.DBC_DBC_TYPE_NQ_ARM, self.creq.read_idx & 255, (self.creq
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :154   if ret.type == bnxt.CREQ_BASE_TYPE_QP_EVENT and ret.event < bnxt.CREQ_QP_EVENT_EVENT_QP_ER
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :157   if BNXT_DEBUG >= 1: print(f"bnxt {self.devfmt}: rcfw {name} xid={getattr(ret, 'xid', 0):#x
+                                 enclosing: rcfw (declared :130)
+   bnxt                   :169   ci = self.hwrm("ring_alloc", enables=bnxt.RING_ALLOC_REQ_ENABLES_NQ_RING_ID_VALID, ring_ty
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :172   ri = self.hwrm("ring_alloc", enables=bnxt.RING_ALLOC_REQ_ENABLES_NQ_RING_ID_VALID |
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :173   bnxt.RING_ALLOC_REQ_ENABLES_RX_BUF_SIZE_VALID, ring_type=bnxt.RING_ALLOC_REQ_RING_TYPE_RX,
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :176   self.hwrm("vnic_cfg", enables=bnxt.VNIC_CFG_REQ_ENABLES_MRU | bnxt.VNIC_CFG_REQ_ENABLES_DE
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :177   bnxt.VNIC_CFG_REQ_ENABLES_DEFAULT_CMPL_RING_ID, vnic_id=vi, mru=9018, default_rx_ring_id=r
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :178   self.hwrm("cfa_l2_filter_alloc", flags=bnxt.CFA_L2_FILTER_ALLOC_REQ_FLAGS_PATH_RX,
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :179   enables=bnxt.CFA_L2_FILTER_ALLOC_REQ_ENABLES_L2_ADDR | bnxt.CFA_L2_FILTER_ALLOC_REQ_ENABLE
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :180   bnxt.CFA_L2_FILTER_ALLOC_REQ_ENABLES_DST_ID, l2_addr=tuple(self.mac.to_bytes(6, 'big')), l
+                                 enclosing: _open_l2 (declared :167)
+   bnxt                   :185   return self.rcfw("register_mr", flags=bnxt.CMDQ_REGISTER_MR_FLAGS_ALLOC_MR,
+                                 enclosing: register_mem (declared :183)
+   bnxt                   :186   log2_pg_size_lvl=level << bnxt.CMDQ_REGISTER_MR_LVL_SFT | log_page_size << bnxt.CMDQ_REGIS
+                                 enclosing: register_mem (declared :183)
+   bnxt                   :187   access=bnxt.CMDQ_REGISTER_MR_ACCESS_LOCAL_WRITE | bnxt.CMDQ_REGISTER_MR_ACCESS_REMOTE_WRIT
+                                 enclosing: register_mem (declared :183)
+   bnxt                   :194   self.scq, self.rcq = (alloc_queue(dev, ctypes.sizeof(bnxt.struct_cq_base), entries=CQ_ENTR
+                                 enclosing: __init__ (declared :192)
+   bnxt                   :198   self.qpn = dev.rcfw("create_qp", type=bnxt.CMDQ_CREATE_QP_TYPE_RC, scq_cid=self.scq_id, rc
+                                 enclosing: __init__ (declared :192)
+   bnxt                   :207   network_type = bnxt.CMDQ_MODIFY_QP_NETWORK_TYPE_ROCEV2_IPV4
+                                 enclosing: connect (declared :206)
+   bnxt                   :210   self.modify_qp(2, BNXT_RTR_MASK, network_type=network_type, qp_type=bnxt.CMDQ_MODIFY_QP_QP
+                                 enclosing: connect (declared :206)
+   bnxt                   :212   path_mtu_pingpong_push_enable=bnxt.CMDQ_MODIFY_QP_PATH_MTU_MTU_4096, max_dest_rd_atomic=4,
+                                 enclosing: connect (declared :206)
+   bnxt                   :214   self.modify_qp(3, BNXT_RTS_MASK, network_type=network_type, qp_type=bnxt.CMDQ_MODIFY_QP_QP
+                                 enclosing: connect (declared :206)
+   bnxt                   :217   if BNXT_DEBUG >= 1: print(f"bnxt: QP {self.qpn:#x} connected (remote={qpn:#x})")
+                                 enclosing: connect (declared :206)
+   bnxt                   :223   self.dev.doorbell(cq_id, bnxt.DBC_DBC_TYPE_CQ, cq.read_idx % CQ_ENTRIES, (cq.read_idx // C
+                                 enclosing: poll (declared :219)
+   bnxt                   :232   self.dev.doorbell(self.qpn, bnxt.DBC_DBC_TYPE_SQ, self.sq.write_idx % RING_ENTRIES, (self.
+                                 enclosing: post_send (declared :227)
+   bnxt                   :237   self.dev.doorbell(self.qpn, bnxt.DBC_DBC_TYPE_RQ, self.rq.write_idx % RING_ENTRIES, (self.
+                                 enclosing: post_recv (declared :234)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:180  tinygrad/runtime/support/rdma/bnxtdev.py:42-45 [at_no_revision] toks=MMIOInterface
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   MMIOInterface          :5     from tinygrad.runtime.support.memory import MMIOInterface
+   MMIOInterface          :41    ring:MMIOInterface; paddrs:list[int]; stride:int; pbl_level:int; pbl_addr:int; size:int=0x
+                                 enclosing: BNXTQueue (declared :40)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:188  tinygrad/runtime/support/rdma/bnxtdev.py:157 [at_no_revision] toks=getenv
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   getenv                 :3     from tinygrad.helpers import ceildiv, getenv, wait_cond, DEBUG
+   getenv                 :8     BNXT_DEBUG = getenv("BNXT_DEBUG", 0)
+
+== tinybendygrad/runtime/support/rdma/bnxtdev.bend:188  tinygrad/runtime/support/rdma/bnxtdev.py:217 [at_no_revision] toks=getenv
+   runtime/support/rdma/bnxtdev.py (237 lines) via exact
+   getenv                 :3     from tinygrad.helpers import ceildiv, getenv, wait_cond, DEBUG
+   getenv                 :8     BNXT_DEBUG = getenv("BNXT_DEBUG", 0)
+

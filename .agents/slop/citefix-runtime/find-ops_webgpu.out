@@ -1,0 +1,476 @@
+== tinybendygrad/runtime/ops_webgpu.bend:19  tinygrad/runtime/ops_webgpu.py:11 [at_no_revision] toks=dev,create_instance
+   runtime/ops_webgpu.py (222 lines) via exact
+   dev                    :54    def __init__(self, dev:'WebGpuDevice', obj:TinyELF):
+                                 enclosing: WebGPUProgram (declared :53)
+   dev                    :55    self.dev, self.name, self.signature = dev, to_wgpu_str(obj.name), obj.signature
+                                 enclosing: __init__ (declared :54)
+   dev                    :63    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: __init__ (declared :54)
+   dev                    :64    self.prg = webgpu.wgpuDeviceCreateShaderModule(self.dev.device_res, module)
+                                 enclosing: __init__ (declared :54)
+   dev                    :65    if err := self.dev.pop_error(): raise RuntimeError(f"Shader compilation failed: {err}")
+                                 enclosing: __init__ (declared :54)
+   dev                    :71    wait = wait and webgpu.WGPUFeatureName_TimestampQuery in self.dev.features
+                                 enclosing: __call__ (declared :70)
+   dev                    :80    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :81    bind_layout = webgpu.wgpuDeviceCreateBindGroupLayout(self.dev.device_res,
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :84    if err := self.dev.pop_error(): raise RuntimeError(f"Error creating bind group layout: {er
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :89    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :90    pipeline_layout = webgpu.wgpuDeviceCreatePipelineLayout(self.dev.device_res, pipeline_layo
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :91    if err := self.dev.pop_error(): raise RuntimeError(f"Error creating pipeline layout: {err}
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :95    buf = x if isinstance(x, webgpu.WGPUBuffer) else self.dev.create_uniform(x)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :100   webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :101   bind_group = webgpu.wgpuDeviceCreateBindGroup(self.dev.device_res, bind_group_desc)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :103   if err := self.dev.pop_error(): raise RuntimeError(f"Error creating bind group: {err}")
+                                 enclosing: bg_entry (declared :94)
+   dev                    :108   pipeline_result = DeviceCreateComputePipeline(self.dev.device_res, compute_desc)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :110   command_encoder = webgpu.wgpuDeviceCreateCommandEncoder(self.dev.device_res, webgpu.WGPUCo
+                                 enclosing: bg_entry (declared :94)
+   dev                    :114   query_set = webgpu.wgpuDeviceCreateQuerySet(self.dev.device_res, webgpu.WGPUQuerySetDescri
+                                 enclosing: bg_entry (declared :94)
+   dev                    :116   self.dev.device_res, webgpu.WGPUBufferDescriptor(size=16, usage=webgpu.WGPUBufferUsage_Que
+                                 enclosing: bg_entry (declared :94)
+   dev                    :130   webgpu.wgpuQueueSubmit(self.dev.queue, 1, (webgpu.WGPUCommandBuffer*1)(cmd_buf))
+                                 enclosing: bg_entry (declared :94)
+   dev                    :142   time = ((timestamps:=buf_to_mv(tmp_buf:=self.dev._readable_buffer(query_buf)).cast("Q").to
+                                 enclosing: bg_entry (declared :94)
+   dev                    :143   self.dev.free(query_buf)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :144   self.dev.free(tmp_buf)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :153   return BufferStorage(webgpu.wgpuDeviceCreateBuffer(self.dev.device_res, webgpu.WGPUBufferD
+                                 enclosing: _alloc (declared :151)
+   dev                    :159   self.dev.write_buffer(dest, padded_src if src.nbytes % 4 else src)
+                                 enclosing: _copyin (declared :155)
+   dev                    :161   dest[:] = buf_to_mv(tmp_buf:=self.dev._readable_buffer(src))[:dest.nbytes]
+                                 enclosing: _copyout (declared :160)
+   dev                    :162   self.dev.free(tmp_buf)
+                                 enclosing: _copyout (declared :160)
+   dev                    :164   def _free(self, storage:BufferStorage, options:BufferSpec): self.dev.free(storage.buf)
+                                 enclosing: _copyout (declared :160)
+
+== tinybendygrad/runtime/ops_webgpu.bend:29  tinygrad/runtime/ops_webgpu.py:48 [only_older_revision] toks=dev,request_adapter
+   runtime/ops_webgpu.py (222 lines) via exact
+   dev                    :54    def __init__(self, dev:'WebGpuDevice', obj:TinyELF):
+                                 enclosing: WebGPUProgram (declared :53)
+   dev                    :55    self.dev, self.name, self.signature = dev, to_wgpu_str(obj.name), obj.signature
+                                 enclosing: __init__ (declared :54)
+   dev                    :63    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: __init__ (declared :54)
+   dev                    :64    self.prg = webgpu.wgpuDeviceCreateShaderModule(self.dev.device_res, module)
+                                 enclosing: __init__ (declared :54)
+   dev                    :65    if err := self.dev.pop_error(): raise RuntimeError(f"Shader compilation failed: {err}")
+                                 enclosing: __init__ (declared :54)
+   dev                    :71    wait = wait and webgpu.WGPUFeatureName_TimestampQuery in self.dev.features
+                                 enclosing: __call__ (declared :70)
+   dev                    :80    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :81    bind_layout = webgpu.wgpuDeviceCreateBindGroupLayout(self.dev.device_res,
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :84    if err := self.dev.pop_error(): raise RuntimeError(f"Error creating bind group layout: {er
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :89    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :90    pipeline_layout = webgpu.wgpuDeviceCreatePipelineLayout(self.dev.device_res, pipeline_layo
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :91    if err := self.dev.pop_error(): raise RuntimeError(f"Error creating pipeline layout: {err}
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :95    buf = x if isinstance(x, webgpu.WGPUBuffer) else self.dev.create_uniform(x)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :100   webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :101   bind_group = webgpu.wgpuDeviceCreateBindGroup(self.dev.device_res, bind_group_desc)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :103   if err := self.dev.pop_error(): raise RuntimeError(f"Error creating bind group: {err}")
+                                 enclosing: bg_entry (declared :94)
+   dev                    :108   pipeline_result = DeviceCreateComputePipeline(self.dev.device_res, compute_desc)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :110   command_encoder = webgpu.wgpuDeviceCreateCommandEncoder(self.dev.device_res, webgpu.WGPUCo
+                                 enclosing: bg_entry (declared :94)
+   dev                    :114   query_set = webgpu.wgpuDeviceCreateQuerySet(self.dev.device_res, webgpu.WGPUQuerySetDescri
+                                 enclosing: bg_entry (declared :94)
+   dev                    :116   self.dev.device_res, webgpu.WGPUBufferDescriptor(size=16, usage=webgpu.WGPUBufferUsage_Que
+                                 enclosing: bg_entry (declared :94)
+   dev                    :130   webgpu.wgpuQueueSubmit(self.dev.queue, 1, (webgpu.WGPUCommandBuffer*1)(cmd_buf))
+                                 enclosing: bg_entry (declared :94)
+   dev                    :142   time = ((timestamps:=buf_to_mv(tmp_buf:=self.dev._readable_buffer(query_buf)).cast("Q").to
+                                 enclosing: bg_entry (declared :94)
+   dev                    :143   self.dev.free(query_buf)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :144   self.dev.free(tmp_buf)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :153   return BufferStorage(webgpu.wgpuDeviceCreateBuffer(self.dev.device_res, webgpu.WGPUBufferD
+                                 enclosing: _alloc (declared :151)
+   dev                    :159   self.dev.write_buffer(dest, padded_src if src.nbytes % 4 else src)
+                                 enclosing: _copyin (declared :155)
+   dev                    :161   dest[:] = buf_to_mv(tmp_buf:=self.dev._readable_buffer(src))[:dest.nbytes]
+                                 enclosing: _copyout (declared :160)
+   dev                    :162   self.dev.free(tmp_buf)
+                                 enclosing: _copyout (declared :160)
+   dev                    :164   def _free(self, storage:BufferStorage, options:BufferSpec): self.dev.free(storage.buf)
+                                 enclosing: _copyout (declared :160)
+
+== tinybendygrad/runtime/ops_webgpu.bend:30  tinygrad/runtime/ops_webgpu.py:49 [only_older_revision] toks=dev,request_device
+   runtime/ops_webgpu.py (222 lines) via exact
+   dev                    :54    def __init__(self, dev:'WebGpuDevice', obj:TinyELF):
+                                 enclosing: WebGPUProgram (declared :53)
+   dev                    :55    self.dev, self.name, self.signature = dev, to_wgpu_str(obj.name), obj.signature
+                                 enclosing: __init__ (declared :54)
+   dev                    :63    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: __init__ (declared :54)
+   dev                    :64    self.prg = webgpu.wgpuDeviceCreateShaderModule(self.dev.device_res, module)
+                                 enclosing: __init__ (declared :54)
+   dev                    :65    if err := self.dev.pop_error(): raise RuntimeError(f"Shader compilation failed: {err}")
+                                 enclosing: __init__ (declared :54)
+   dev                    :71    wait = wait and webgpu.WGPUFeatureName_TimestampQuery in self.dev.features
+                                 enclosing: __call__ (declared :70)
+   dev                    :80    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :81    bind_layout = webgpu.wgpuDeviceCreateBindGroupLayout(self.dev.device_res,
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :84    if err := self.dev.pop_error(): raise RuntimeError(f"Error creating bind group layout: {er
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :89    webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :90    pipeline_layout = webgpu.wgpuDeviceCreatePipelineLayout(self.dev.device_res, pipeline_layo
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :91    if err := self.dev.pop_error(): raise RuntimeError(f"Error creating pipeline layout: {err}
+                                 enclosing: bgl_entry (declared :74)
+   dev                    :95    buf = x if isinstance(x, webgpu.WGPUBuffer) else self.dev.create_uniform(x)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :100   webgpu.wgpuDevicePushErrorScope(self.dev.device_res, webgpu.WGPUErrorFilter_Validation)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :101   bind_group = webgpu.wgpuDeviceCreateBindGroup(self.dev.device_res, bind_group_desc)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :103   if err := self.dev.pop_error(): raise RuntimeError(f"Error creating bind group: {err}")
+                                 enclosing: bg_entry (declared :94)
+   dev                    :108   pipeline_result = DeviceCreateComputePipeline(self.dev.device_res, compute_desc)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :110   command_encoder = webgpu.wgpuDeviceCreateCommandEncoder(self.dev.device_res, webgpu.WGPUCo
+                                 enclosing: bg_entry (declared :94)
+   dev                    :114   query_set = webgpu.wgpuDeviceCreateQuerySet(self.dev.device_res, webgpu.WGPUQuerySetDescri
+                                 enclosing: bg_entry (declared :94)
+   dev                    :116   self.dev.device_res, webgpu.WGPUBufferDescriptor(size=16, usage=webgpu.WGPUBufferUsage_Que
+                                 enclosing: bg_entry (declared :94)
+   dev                    :130   webgpu.wgpuQueueSubmit(self.dev.queue, 1, (webgpu.WGPUCommandBuffer*1)(cmd_buf))
+                                 enclosing: bg_entry (declared :94)
+   dev                    :142   time = ((timestamps:=buf_to_mv(tmp_buf:=self.dev._readable_buffer(query_buf)).cast("Q").to
+                                 enclosing: bg_entry (declared :94)
+   dev                    :143   self.dev.free(query_buf)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :144   self.dev.free(tmp_buf)
+                                 enclosing: bg_entry (declared :94)
+   dev                    :153   return BufferStorage(webgpu.wgpuDeviceCreateBuffer(self.dev.device_res, webgpu.WGPUBufferD
+                                 enclosing: _alloc (declared :151)
+   dev                    :159   self.dev.write_buffer(dest, padded_src if src.nbytes % 4 else src)
+                                 enclosing: _copyin (declared :155)
+   dev                    :161   dest[:] = buf_to_mv(tmp_buf:=self.dev._readable_buffer(src))[:dest.nbytes]
+                                 enclosing: _copyout (declared :160)
+   dev                    :162   self.dev.free(tmp_buf)
+                                 enclosing: _copyout (declared :160)
+   dev                    :164   def _free(self, storage:BufferStorage, options:BufferSpec): self.dev.free(storage.buf)
+                                 enclosing: _copyout (declared :160)
+
+== tinybendygrad/runtime/ops_webgpu.bend:84  tinygrad/runtime/ops_webgpu.py:141 [only_older_revision] toks=timestamps
+   runtime/ops_webgpu.py (222 lines) via exact
+   timestamps             :142   time = ((timestamps:=buf_to_mv(tmp_buf:=self.dev._readable_buffer(query_buf)).cast("Q").to
+                                 enclosing: bg_entry (declared :94)
+
+== tinybendygrad/runtime/ops_webgpu.bend:94  tinygrad/runtime/ops_webgpu.py:204 [only_older_revision] toks=val,to_bytes,little,signed
+   runtime/ops_webgpu.py (222 lines) via exact
+   val                    :202   def create_uniform(self, val:int|float) -> webgpu.WGPUBuffer:
+                                 enclosing: pop_error (declared :201)
+   val                    :205   self.write_buffer(buf, val.to_bytes(4, "little", signed=val < 0) if isinstance(val, int) e
+                                 enclosing: create_uniform (declared :202)
+   to_bytes               :205   self.write_buffer(buf, val.to_bytes(4, "little", signed=val < 0) if isinstance(val, int) e
+                                 enclosing: create_uniform (declared :202)
+   little                 :205   self.write_buffer(buf, val.to_bytes(4, "little", signed=val < 0) if isinstance(val, int) e
+                                 enclosing: create_uniform (declared :202)
+   signed                 :205   self.write_buffer(buf, val.to_bytes(4, "little", signed=val < 0) if isinstance(val, int) e
+                                 enclosing: create_uniform (declared :202)
+
+== tinybendygrad/runtime/ops_webgpu.bend:103  tinygrad/runtime/ops_webgpu.py:87 [at_no_revision] toks=WGPUBindGroupLayoutEntry
+   runtime/ops_webgpu.py (222 lines) via exact
+   WGPUBindGroupLayoutEntry :75    return webgpu.WGPUBindGroupLayoutEntry(binding=n, visibility=webgpu.WGPUShaderStage_Comput
+                                 enclosing: bgl_entry (declared :74)
+   WGPUBindGroupLayoutEntry :77    bind_entries = (webgpu.WGPUBindGroupLayoutEntry * (1+len(args)))(
+                                 enclosing: bgl_entry (declared :74)
+
+== tinybendygrad/runtime/ops_webgpu.bend:103  tinygrad/runtime/ops_webgpu.py:97 [at_no_revision] toks=WGPUBindGroupLayoutEntry
+   runtime/ops_webgpu.py (222 lines) via exact
+   WGPUBindGroupLayoutEntry :75    return webgpu.WGPUBindGroupLayoutEntry(binding=n, visibility=webgpu.WGPUShaderStage_Comput
+                                 enclosing: bgl_entry (declared :74)
+   WGPUBindGroupLayoutEntry :77    bind_entries = (webgpu.WGPUBindGroupLayoutEntry * (1+len(args)))(
+                                 enclosing: bgl_entry (declared :74)
+
+== tinybendygrad/runtime/ops_webgpu.bend:103  tinygrad/runtime/ops_webgpu.py:99 [at_no_revision] toks=WGPUBindGroupLayoutEntry
+   runtime/ops_webgpu.py (222 lines) via exact
+   WGPUBindGroupLayoutEntry :75    return webgpu.WGPUBindGroupLayoutEntry(binding=n, visibility=webgpu.WGPUShaderStage_Comput
+                                 enclosing: bgl_entry (declared :74)
+   WGPUBindGroupLayoutEntry :77    bind_entries = (webgpu.WGPUBindGroupLayoutEntry * (1+len(args)))(
+                                 enclosing: bgl_entry (declared :74)
+
+== tinybendygrad/runtime/ops_webgpu.bend:125  tinygrad/runtime/ops_webgpu.py:41 [only_older_revision] toks=None
+   runtime/ops_webgpu.py (222 lines) via exact
+   None                   :28    status, payload, emsg = 0, [], None
+                                 enclosing: wrapper (declared :27)
+   None                   :35    status, (*payload, emsg) = s, [from_wgpu_str(a) if type(a) is webgpu.WGPUStringView else a
+                                 enclosing: cb (declared :31)
+   None                   :42    return payload if len(payload) > 1 else payload[0] if len(payload) == 1 else None
+                                 enclosing: cb (declared :31)
+   None                   :70    def __call__(self, *args, global_size:tuple[int,int,int]=(1,1,1), local_size:tuple[int,int
+                                 enclosing: __del__ (declared :68)
+   None                   :123   webgpu.wgpuComputePassEncoderSetBindGroup(compute_pass, 0, bind_group, 0, None)
+                                 enclosing: bg_entry (declared :94)
+   None                   :148   return None
+                                 enclosing: bg_entry (declared :94)
+   None                   :193   def synchronize(self, timeout:int|None=None): QueueOnSubmittedWorkDone(self.queue)
+                                 enclosing: __init__ (declared :167)
+
+== tinybendygrad/runtime/ops_webgpu.bend:140  device.py:391 [only_older_revision] toks=Compiled,__init__
+   device.py (540 lines) via unique
+   Compiled               :31    def __getitem__(self, ix:str) -> Compiled:
+                                 enclosing: canonicalize (declared :30)
+   Compiled               :41    def __get_canonicalized_item(self, ix:str) -> Compiled:
+                                 enclosing: get_class (declared :36)
+   Compiled               :47    def default(self) -> Compiled: return self[self.DEFAULT]
+                                 enclosing: __get_canonicalized_item (declared :41)
+   Compiled               :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   Compiled               :246   DeviceType = TypeVar('DeviceType', bound='Compiled')
+                                 enclosing: view (declared :242)
+   Compiled               :319   # **************** for Compiled Devices ****************
+                                 enclosing: _offset (declared :317)
+   Compiled               :362   class Compiled:
+                                 enclosing: __call__ (declared :360)
+   Compiled               :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   Compiled               :499   Compiled.profile_events.append(ProfileDeviceEvent(self.device, statistics.median(tdiffs), 
+                                 enclosing: _at_profile_finalize (declared :487)
+   Compiled               :508   with open(fn:=temp("profile.pkl", append_user=True), "wb") as f: pickle.dump(cpu_events+Co
+                                 enclosing: finalize_profile (declared :503)
+   __init__               :24    def __init__(self) -> None:
+                                 enclosing: _Device (declared :23)
+   __init__               :99    def __init__(self, device:tuple[str, ...], nbytes:int):
+                                 enclosing: MultiBuffer (declared :98)
+   __init__               :113   def __init__(self, device:str, nbytes:int, opaque:Any=None, options:BufferSpec|None=None,
+                                 enclosing: Buffer (declared :111)
+   __init__               :252   def __init__(self, dev:DeviceType):
+                                 enclosing: Allocator (declared :249)
+   __init__               :324   def __init__(self, cachekey:str|None=None): self.cachekey = cachekey if CCACHE else None
+                                 enclosing: Compiler (declared :323)
+   __init__               :359   def __init__(self, dev:DeviceType, obj:TinyELF): pass
+                                 enclosing: Program (declared :358)
+   __init__               :379   def __init__(self, device:str, allocator:Allocator, renderers:list[type[Renderer]], runtim
+                                 enclosing: Compiled (declared :362)
+
+== tinybendygrad/runtime/ops_webgpu.bend:143  device.py:372 [only_older_revision] toks=Program,__call__
+   device.py (540 lines) via unique
+   Program                :358   class Program(Generic[DeviceType]):
+                                 enclosing: iter_sig (declared :352)
+   Program                :379   def __init__(self, device:str, allocator:Allocator, renderers:list[type[Renderer]], runtim
+                                 enclosing: Compiled (declared :362)
+   Program                :402   def runtime(self, obj:TinyELF) -> Program[Self]: return unwrap(self.runtime_t)(self, obj)
+                                 enclosing: compiler (declared :400)
+   __call__               :360   def __call__(self, *args, global_size:tuple[int,int,int]=(1,1,1), local_size:tuple[int,int
+                                 enclosing: __init__ (declared :359)
+
+== tinybendygrad/runtime/ops_webgpu.bend:143  engine/realize.py:168 [dangling] toks=Program,__call__
+   engine/realize.py (299 lines) via unique
+
+== tinybendygrad/runtime/ops_webgpu.bend:147  device.py:110 [only_older_revision] toks=BufferStorage,_alloc,buf
+   device.py (540 lines) via unique
+   BufferStorage          :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   BufferStorage          :119   self._storage:BufferStorage|None = None
+                                 enclosing: __init__ (declared :113)
+   BufferStorage          :151   def get_storage(self, device:str|None=None) -> BufferStorage:
+                                 enclosing: meta (declared :149)
+   BufferStorage          :157   storage.maps[dev] = BufferStorage(alloc._offset(self.base.get_buf(device), self.nbytes, se
+                                 enclosing: get_storage (declared :151)
+   BufferStorage          :178   opaque = BufferStorage(addr:=opaque.ctypes.data, memoryview(opaque), MMIOInterface(addr, s
+                                 enclosing: allocate (declared :165)
+   BufferStorage          :180   opaque = BufferStorage(addr:=mv_address(opaque) if self.nbytes else 0, opaque, MMIOInterfa
+                                 enclosing: allocate (declared :165)
+   BufferStorage          :181   storage = opaque if isinstance(opaque, BufferStorage) else BufferStorage(opaque)
+                                 enclosing: allocate (declared :165)
+   BufferStorage          :255   self.cache:dict[tuple[int, BufferSpec|None], list[BufferStorage]] = defaultdict(list)
+                                 enclosing: __init__ (declared :252)
+   BufferStorage          :257   def alloc(self, size:int, options:BufferSpec|None=None) -> BufferStorage:
+                                 enclosing: __init__ (declared :252)
+   BufferStorage          :267   def free(self, storage:BufferStorage, size:int, options:BufferSpec|None=None):
+                                 enclosing: alloc (declared :257)
+   BufferStorage          :277   def do_free(self, storage:BufferStorage, options:BufferSpec):
+                                 enclosing: free_cache (declared :272)
+   BufferStorage          :282   def map(self, buf:Buffer) -> BufferStorage: return self._map(buf.ensure_allocated())
+                                 enclosing: do_free (declared :277)
+   BufferStorage          :285   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage: raise NotImplementedError
+                                 enclosing: map (declared :282)
+   BufferStorage          :286   def _free(self, storage:BufferStorage, options:BufferSpec): pass  # if opaque is a Python 
+                                 enclosing: _alloc (declared :285)
+   BufferStorage          :289   def _map(self, buf) -> BufferStorage: raise NotImplementedError("need map")
+                                 enclosing: _copyout (declared :288)
+   BufferStorage          :294   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage:
+                                 enclosing: HostAllocator (declared :293)
+   BufferStorage          :298   return BufferStorage(view.addr, meta, view)
+                                 enclosing: _alloc (declared :294)
+   BufferStorage          :300   def _free(self, storage:BufferStorage, options:BufferSpec):
+                                 enclosing: _alloc (declared :294)
+   BufferStorage          :314   def _map(self, buf:Buffer) -> BufferStorage:
+                                 enclosing: _copyout (declared :311)
+   BufferStorage          :316   return BufferStorage(buf.host.addr)
+                                 enclosing: _map (declared :314)
+   _alloc                 :261   try: return self._alloc(size, spec)
+                                 enclosing: alloc (declared :257)
+   _alloc                 :263   try: return self._alloc(size, spec)
+                                 enclosing: alloc (declared :257)
+   _alloc                 :285   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage: raise NotImplementedError
+                                 enclosing: map (declared :282)
+   _alloc                 :294   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage:
+                                 enclosing: HostAllocator (declared :293)
+   buf                    :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   buf                    :137   return f"<buf real:{self.is_allocated()} device:{self.device} nbytes:{self.nbytes}" + \
+                                 enclosing: __repr__ (declared :136)
+   buf                    :145   def _buf(self) -> Any: return self.get_storage().buf
+                                 enclosing: allocator (declared :143)
+   buf                    :161   def get_buf(self, device:str) -> Any: return self.get_storage(device).buf
+                                 enclosing: get_storage (declared :151)
+   buf                    :173   storage = replace(self.base.get_storage(), buf=self.allocator._offset(self.base._buf, self
+                                 enclosing: allocate (declared :165)
+   buf                    :204   buf:bytearray|pickle.PickleBuffer|None = None
+                                 enclosing: __reduce_ex__ (declared :203)
+   buf                    :212   buf = pickle.PickleBuffer(self.as_memoryview()) if protocol >= 5 else bytearray(self.as_me
+                                 enclosing: __reduce_ex__ (declared :203)
+   buf                    :213   return self.__class__, (self.device, self.nbytes, None, self.options, buf)
+                                 enclosing: __reduce_ex__ (declared :203)
+   buf                    :282   def map(self, buf:Buffer) -> BufferStorage: return self._map(buf.ensure_allocated())
+                                 enclosing: do_free (declared :277)
+   buf                    :289   def _map(self, buf) -> BufferStorage: raise NotImplementedError("need map")
+                                 enclosing: _copyout (declared :288)
+   buf                    :291   def _offset(self, buf, size:int, offset:int): raise NotImplementedError("need offset")
+                                 enclosing: _unmap (declared :290)
+   buf                    :314   def _map(self, buf:Buffer) -> BufferStorage:
+                                 enclosing: _copyout (declared :311)
+   buf                    :315   if Device[buf.device].host != self.dev.host: raise RuntimeError(f"host memory is not on th
+                                 enclosing: _map (declared :314)
+   buf                    :316   return BufferStorage(buf.host.addr)
+                                 enclosing: _map (declared :314)
+   buf                    :317   def _offset(self, buf:int, size:int, offset:int) -> int: return buf + offset
+                                 enclosing: _map (declared :314)
+   buf                    :483   for buf, g in itertools.groupby(self.prof_ents.items(), key=lambda x: x[0][0]) if PROFILE 
+                                 enclosing: collect_prof (declared :481)
+   buf                    :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   buf                    :497   gpu = max(buf.host.view(fmt='Q')[e.en_id] for (buf, _), e in ents)/decimal.Decimal(self.ti
+                                 enclosing: _at_profile_finalize (declared :487)
+
+== tinybendygrad/runtime/ops_webgpu.bend:147  tinygrad/runtime/ops_webgpu.py:152 [only_older_revision] toks=BufferStorage,_alloc,buf
+   runtime/ops_webgpu.py (222 lines) via exact
+   BufferStorage          :2     from tinygrad.device import BufferStorage, Compiled, Allocator, BufferSpec, Program, TinyE
+   BufferStorage          :151   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage:
+                                 enclosing: WebGpuAllocator (declared :150)
+   BufferStorage          :153   return BufferStorage(webgpu.wgpuDeviceCreateBuffer(self.dev.device_res, webgpu.WGPUBufferD
+                                 enclosing: _alloc (declared :151)
+   BufferStorage          :164   def _free(self, storage:BufferStorage, options:BufferSpec): self.dev.free(storage.buf)
+                                 enclosing: _copyout (declared :160)
+   _alloc                 :151   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage:
+                                 enclosing: WebGpuAllocator (declared :150)
+   buf                    :18    def buf_to_mv(buf:webgpu.WGPUBuffer) -> memoryview:
+                                 enclosing: to_wgpu_str (declared :15)
+   buf                    :19    BufferMapAsync(buf, webgpu.WGPUMapMode_Read, 0, size:=webgpu.wgpuBufferGetSize(buf))
+                                 enclosing: buf_to_mv (declared :18)
+   buf                    :20    return to_mv(webgpu.wgpuBufferGetConstMappedRange(buf, 0, size), size)
+                                 enclosing: buf_to_mv (declared :18)
+   buf                    :95    buf = x if isinstance(x, webgpu.WGPUBuffer) else self.dev.create_uniform(x)
+                                 enclosing: bg_entry (declared :94)
+   buf                    :96    return webgpu.WGPUBindGroupEntry(binding=n, buffer=buf, offset=0, size=webgpu.wgpuBufferGe
+                                 enclosing: bg_entry (declared :94)
+   buf                    :164   def _free(self, storage:BufferStorage, options:BufferSpec): self.dev.free(storage.buf)
+                                 enclosing: _copyout (declared :160)
+   buf                    :196   def free(self, buf:webgpu.WGPUBuffer):
+                                 enclosing: synchronize (declared :193)
+   buf                    :197   if webgpu.wgpuBufferGetMapState(buf) == webgpu.WGPUBufferMapState_Mapped: webgpu.wgpuBuffe
+                                 enclosing: free (declared :196)
+   buf                    :198   webgpu.wgpuBufferDestroy(buf)
+                                 enclosing: free (declared :196)
+   buf                    :199   webgpu.wgpuBufferRelease(buf)
+                                 enclosing: free (declared :196)
+   buf                    :203   buf = webgpu.wgpuDeviceCreateBuffer(self.device_res,
+                                 enclosing: create_uniform (declared :202)
+   buf                    :205   self.write_buffer(buf, val.to_bytes(4, "little", signed=val < 0) if isinstance(val, int) e
+                                 enclosing: create_uniform (declared :202)
+   buf                    :206   return buf
+                                 enclosing: create_uniform (declared :202)
+   buf                    :207   def _readable_buffer(self, buf:webgpu.WGPUBuffer) -> webgpu.WGPUBuffer:
+                                 enclosing: create_uniform (declared :202)
+   buf                    :208   size = webgpu.wgpuBufferGetSize(buf)
+                                 enclosing: _readable_buffer (declared :207)
+   buf                    :214   webgpu.wgpuCommandEncoderCopyBufferToBuffer(encoder, buf, 0, ret, 0, size)
+                                 enclosing: _readable_buffer (declared :207)
+   buf                    :221   def write_buffer(self, buf:webgpu.WGPUBuffer, src:memoryview|bytearray|bytes):
+                                 enclosing: _readable_buffer (declared :207)
+   buf                    :222   webgpu.wgpuQueueWriteBuffer(self.queue, buf, 0, (ctypes.c_uint8 * len(src)).from_buffer_co
+                                 enclosing: write_buffer (declared :221)
+
+== tinybendygrad/runtime/ops_webgpu.bend:148  tinygrad/runtime/ops_webgpu.py:163 [only_older_revision] toks=_free,_copyout,Buf
+   runtime/ops_webgpu.py (222 lines) via exact
+   _free                  :164   def _free(self, storage:BufferStorage, options:BufferSpec): self.dev.free(storage.buf)
+                                 enclosing: _copyout (declared :160)
+   _copyout               :160   def _copyout(self, dest:memoryview, src:webgpu.WGPUBuffer):
+                                 enclosing: _copyin (declared :155)
+
+== tinybendygrad/runtime/ops_webgpu.bend:150  device.py:355 [only_older_revision] toks=name
+   device.py (540 lines) via unique
+   name                   :80    class ProfileProgramEvent(ProfileEvent): device:str; name:str; lib:bytes|None; base:int|No
+                                 enclosing: ProfileDeviceEvent (declared :77)
+   name                   :83    class ProfileGraphEntry: device:str; name:str|TracingKey; st_id:int; en_id:int; profile_ke
+                                 enclosing: ProfileProgramEvent (declared :80)
+   name                   :345   name: str
+                                 enclosing: TinyELF (declared :343)
+   name                   :347   # tuple of (name, addrspace, dtype, shape), one per arg in the kernel's order. an ALU arg 
+                                 enclosing: TinyELF (declared :343)
+   name                   :523   name = iface.__name__[:-5]
+                                 enclosing: enumerate_devices_str (declared :514)
+   name                   :524   default_text, count = ("(default)", d.count()) if type(d.iface) is iface else (f"(DEV={nam
+                                 enclosing: enumerate_devices_str (declared :514)
+   name                   :525   iface_results.append(f"{colored('+', 'green')} {name}: {pluralize('device', count)} {defau
+                                 enclosing: enumerate_devices_str (declared :514)
+
+== tinybendygrad/runtime/ops_webgpu.bend:159  tinygrad/runtime/ops_webgpu.py:78 [at_no_revision] toks=WGPUBufferBindingType_Storage
+   runtime/ops_webgpu.py (222 lines) via exact
+
+== tinybendygrad/runtime/ops_webgpu.bend:160  wgsl.py:116 [at_no_revision] toks=len,bufs
+   renderer/wgsl.py (122 lines) via unique
+   len                    :109   bind_it = iter(range(len(bufs)))
+                                 enclosing: render_kernel (declared :106)
+   bufs                   :106   def render_kernel(self, function_name:str, kernel:list[str], bufs:list[tuple[str,tuple[UOp
+                                 enclosing: buf_map (declared :105)
+   bufs                   :109   bind_it = iter(range(len(bufs)))
+                                 enclosing: render_kernel (declared :106)
+   bufs                   :117   f"{name}:{f'array<{self.buf_map(u)}>' if u.addrspace == AddrSpace.GLOBAL else self.buf_map
+                                 enclosing: render_kernel (declared :106)
+
+== tinybendygrad/runtime/ops_webgpu.bend:197  ops.py:1378 [at_no_revision] toks=ProgramInfo,globals
+   uop/ops.py (1926 lines) via unique
+   ProgramInfo            :1343  class ProgramInfo:
+                                 enclosing: function_name (declared :1340)
+   ProgramInfo            :1358  def from_sink(sink:UOp, target:Target=Target()) -> ProgramInfo:
+                                 enclosing: launch_dims (declared :1352)
+   ProgramInfo            :1374  return ProgramInfo(tuple(global_size), tuple(local_size),
+                                 enclosing: from_sink (declared :1358)
+   globals                :1347  globals: tuple[int, ...] = ()
+                                 enclosing: ProgramInfo (declared :1343)
+   globals                :1552  # globals can be referenced from arbitrarily nested code objects (comprehensions/lambdas, 
+                                 enclosing: deconstruct_function (declared :1551)
+

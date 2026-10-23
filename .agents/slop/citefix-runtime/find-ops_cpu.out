@@ -1,0 +1,154 @@
+== tinybendygrad/runtime/ops_cpu.bend:22  ops_cpu.py:70 [only_older_revision] toks=cn_slot,cn_walk,struct,pack_into
+   runtime/ops_cpu.py (80 lines) via unique
+   struct                 :2     import platform, ctypes, mmap, struct
+   struct                 :51    data = struct.pack(f'<{len(args)}Q', *(a & 0xffffffffffffffff for a in args))
+                                 enclosing: __call__ (declared :48)
+   struct                 :58    struct.pack_into('<3I', lvp_args, 0, *data64_le(addr+12), len(args)*2)
+                                 enclosing: __call__ (declared :48)
+   struct                 :59    for a,(off,dt) in zip(args, TinyELF.iter_sig(self.signature)): struct.pack_into(f'<{dt.fmt
+                                 enclosing: __call__ (declared :48)
+   pack_into              :58    struct.pack_into('<3I', lvp_args, 0, *data64_le(addr+12), len(args)*2)
+                                 enclosing: __call__ (declared :48)
+   pack_into              :59    for a,(off,dt) in zip(args, TinyELF.iter_sig(self.signature)): struct.pack_into(f'<{dt.fmt
+                                 enclosing: __call__ (declared :48)
+
+== tinybendygrad/runtime/ops_cpu.bend:61  device.py:365 [only_older_revision] toks=isig,TinyELF,iter_sig
+   device.py (540 lines) via unique
+   TinyELF                :343   class TinyELF:
+                                 enclosing: compile_server (declared :336)
+   TinyELF                :359   def __init__(self, dev:DeviceType, obj:TinyELF): pass
+                                 enclosing: Program (declared :358)
+   TinyELF                :402   def runtime(self, obj:TinyELF) -> Program[Self]: return unwrap(self.runtime_t)(self, obj)
+                                 enclosing: compiler (declared :400)
+   iter_sig               :352   def iter_sig(signature:tuple[tuple[str|None, AddrSpace, DType, tuple], ...], offset:int=0)
+                                 enclosing: TinyELF (declared :343)
+
+== tinybendygrad/runtime/ops_cpu.bend:64  ops_null.py:58 [only_older_revision] toks=timeline_bytes,timeline
+   runtime/ops_null.py (77 lines) via unique
+   timeline               :65    timeline = functools.cached_property(lambda self: self.host_buffer(16))
+                                 enclosing: NullDevice (declared :63)
+
+== tinybendygrad/runtime/ops_cpu.bend:66  device.py:489 [at_no_revision] toks=Compiled,_select_renderer
+   device.py (540 lines) via unique
+   Compiled               :31    def __getitem__(self, ix:str) -> Compiled:
+                                 enclosing: canonicalize (declared :30)
+   Compiled               :41    def __get_canonicalized_item(self, ix:str) -> Compiled:
+                                 enclosing: get_class (declared :36)
+   Compiled               :47    def default(self) -> Compiled: return self[self.DEFAULT]
+                                 enclosing: __get_canonicalized_item (declared :41)
+   Compiled               :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   Compiled               :246   DeviceType = TypeVar('DeviceType', bound='Compiled')
+                                 enclosing: view (declared :242)
+   Compiled               :319   # **************** for Compiled Devices ****************
+                                 enclosing: _offset (declared :317)
+   Compiled               :362   class Compiled:
+                                 enclosing: __call__ (declared :360)
+   Compiled               :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   Compiled               :499   Compiled.profile_events.append(ProfileDeviceEvent(self.device, statistics.median(tdiffs), 
+                                 enclosing: _at_profile_finalize (declared :487)
+   Compiled               :508   with open(fn:=temp("profile.pkl", append_user=True), "wb") as f: pickle.dump(cpu_events+Co
+                                 enclosing: finalize_profile (declared :503)
+   _select_renderer       :397   def renderer(self) -> Renderer: return self._select_renderer()
+                                 enclosing: host (declared :394)
+   _select_renderer       :462   def _select_renderer(self, cv=DEV) -> Renderer:
+                                 enclosing: _renderer_name (declared :459)
+
+== tinybendygrad/runtime/ops_cpu.bend:72  device.py:398 [only_older_revision] toks=Compiled,peer_group
+   device.py (540 lines) via unique
+   Compiled               :31    def __getitem__(self, ix:str) -> Compiled:
+                                 enclosing: canonicalize (declared :30)
+   Compiled               :41    def __get_canonicalized_item(self, ix:str) -> Compiled:
+                                 enclosing: get_class (declared :36)
+   Compiled               :47    def default(self) -> Compiled: return self[self.DEFAULT]
+                                 enclosing: __get_canonicalized_item (declared :41)
+   Compiled               :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   Compiled               :246   DeviceType = TypeVar('DeviceType', bound='Compiled')
+                                 enclosing: view (declared :242)
+   Compiled               :319   # **************** for Compiled Devices ****************
+                                 enclosing: _offset (declared :317)
+   Compiled               :362   class Compiled:
+                                 enclosing: __call__ (declared :360)
+   Compiled               :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   Compiled               :499   Compiled.profile_events.append(ProfileDeviceEvent(self.device, statistics.median(tdiffs), 
+                                 enclosing: _at_profile_finalize (declared :487)
+   Compiled               :508   with open(fn:=temp("profile.pkl", append_user=True), "wb") as f: pickle.dump(cpu_events+Co
+                                 enclosing: finalize_profile (declared :503)
+   peer_group             :384   self.peer_group = getattr(getattr(self, 'iface', None), 'peer_group', device.split(":")[0]
+                                 enclosing: __init__ (declared :379)
+   peer_group             :394   def host(self) -> str: return f"CPU:{self.peer_group[7:]}" if self.peer_group.startswith("
+                                 enclosing: has_copy_queue (declared :391)
+
+== tinybendygrad/runtime/ops_cpu.bend:77  device.py:450 [only_older_revision] toks=Compiled,synchronize
+   device.py (540 lines) via unique
+   Compiled               :31    def __getitem__(self, ix:str) -> Compiled:
+                                 enclosing: canonicalize (declared :30)
+   Compiled               :41    def __get_canonicalized_item(self, ix:str) -> Compiled:
+                                 enclosing: get_class (declared :36)
+   Compiled               :47    def default(self) -> Compiled: return self[self.DEFAULT]
+                                 enclosing: __get_canonicalized_item (declared :41)
+   Compiled               :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   Compiled               :246   DeviceType = TypeVar('DeviceType', bound='Compiled')
+                                 enclosing: view (declared :242)
+   Compiled               :319   # **************** for Compiled Devices ****************
+                                 enclosing: _offset (declared :317)
+   Compiled               :362   class Compiled:
+                                 enclosing: __call__ (declared :360)
+   Compiled               :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   Compiled               :499   Compiled.profile_events.append(ProfileDeviceEvent(self.device, statistics.median(tdiffs), 
+                                 enclosing: _at_profile_finalize (declared :487)
+   Compiled               :508   with open(fn:=temp("profile.pkl", append_user=True), "wb") as f: pickle.dump(cpu_events+Co
+                                 enclosing: finalize_profile (declared :503)
+   synchronize            :227   self.allocator.dev.synchronize()
+                                 enclosing: as_memoryview (declared :225)
+   synchronize            :278   for dev in storage.maps: dev.synchronize()
+                                 enclosing: do_free (declared :277)
+   synchronize            :302   self.dev.synchronize()
+                                 enclosing: _free (declared :300)
+   synchronize            :309   self.dev.synchronize()
+                                 enclosing: _copyin (declared :308)
+   synchronize            :312   self.dev.synchronize()
+                                 enclosing: _copyout (declared :311)
+   synchronize            :388   self.prof_ents:dict[tuple[Buffer, int], ProfileGraphEntry] = {} # (a batch's timestamps, s
+                                 enclosing: __init__ (declared :379)
+   synchronize            :429   def synchronize(self, timeout:int|None=None):
+                                 enclosing: _wait_signal (declared :420)
+   synchronize            :453   try: self.synchronize() # try to finalize the device in any case
+                                 enclosing: finalize (declared :449)
+   synchronize            :496   self.synchronize()
+                                 enclosing: _at_profile_finalize (declared :487)
+   synchronize            :505   for dev in devs: dev.synchronize()
+                                 enclosing: finalize_profile (declared :503)
+
+== tinybendygrad/runtime/ops_cpu.bend:77  ops_cpu.py:96 [only_older_revision] toks=Compiled,synchronize
+   runtime/ops_cpu.py (80 lines) via unique
+   Compiled               :5     from tinygrad.device import Compiled, TinyELF, Program, HostAllocator
+   Compiled               :64    class CPUDevice(Compiled):
+                                 enclosing: __call__ (declared :48)
+   synchronize            :78    def synchronize(self, timeout:int|None=None):
+                                 enclosing: __init__ (declared :70)
+   synchronize            :80    super().synchronize(timeout)
+                                 enclosing: synchronize (declared :78)
+
+== tinybendygrad/runtime/ops_cpu.bend:114  tinygrad/runtime/ops_cpu.py:89 [only_older_revision] toks=int,parts,String,to_u32
+   runtime/ops_cpu.py (80 lines) via exact
+   int                    :48    def __call__(self, *args:int, global_size:tuple[int,int,int]=(1,1,1), local_size:tuple[int
+                                 enclosing: __init__ (declared :23)
+   int                    :49    wait:bool=False, timeout:int|None=None) -> float|None:
+                                 enclosing: __call__ (declared :48)
+   int                    :52    ret = (remote._rpc if wait else remote._post)(remote.sock, RemoteCmd.EXEC_PROG, self.fxn, 
+                                 enclosing: __call__ (declared :48)
+   int                    :73    self.remote = RemotePCIDevice("CPU", f"remote:{device[4:]}:0", RemotePCIDevice.connect(par
+                                 enclosing: __init__ (declared :70)
+   int                    :78    def synchronize(self, timeout:int|None=None):
+                                 enclosing: __init__ (declared :70)
+   parts                  :72    if len(parts:=device.split(':')) == 3:
+                                 enclosing: __init__ (declared :70)
+   parts                  :73    self.remote = RemotePCIDevice("CPU", f"remote:{device[4:]}:0", RemotePCIDevice.connect(par
+                                 enclosing: __init__ (declared :70)
+

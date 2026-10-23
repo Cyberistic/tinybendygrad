@@ -1,0 +1,20 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_metal.bend	17	cmd.setKernelBuffer_offset_atIndex	# `cmd.setKernelBuffer_offset_atIndex(buf.meta, buf.offset + off, 0)`:
+tinybendygrad/runtime/ops_metal.bend	18	byte offset `off`. `:264` then sets the	# buffer index 0, the ICB header Buffer, byte offset `off` (ops_metal.py:263
+tinybendygrad/runtime/ops_metal.bend	19	geometry with `concurrentDispatchThreadgroups_threadsPerThreadgroup(MTLSize	# symbol=new_icb). `:264` then sets the geometry with `concurrentDispatchThreadgroups_threadsPerThreadgroup`
+tinybendygrad/runtime/ops_metal.bend	20	(*dims[:3]), MTLSize(*dims[3:])), and `dims` is	# (MTLSize(*dims[:3]), MTLSize(*dims[3:])), and `dims` is
+tinybendygrad/runtime/ops_metal.bend	93	:55   macos_major/metal_version	#   ops_metal.py:60 macos_major/metal_version PORTED  the four-way `-std=` ladder
+tinybendygrad/runtime/ops_metal.bend	109	:111 args	#   ops_metal.py:135 `args`         PORTED  `getaddr` is 8 bytes, a var is its own symbol=exec
+tinybendygrad/runtime/ops_metal.bend	110	:112 rows / :113 nbytes	#   ops_metal.py:136 `rows` / :137 `nbytes` PORTED  `layout_args` and the `max` symbol=exec
+tinybendygrad/runtime/ops_metal.bend	116	:131 patch	#   ops_metal.py:155 patch          PORTED  three zero rows at `zero` symbol=submit
+tinybendygrad/runtime/ops_metal.bend	133	:239 new_slots	#   ops_metal.py:238 `link_buffer`  GONE    upstream deleted `new_slots` (9ff6db7b0); `link_buffer` replaced it symbol=link_buffer
+tinybendygrad/runtime/ops_metal.bend	134	:243 pipeline	#   ops_metal.py:244 `pipeline`     PORTED  four calls and `checked` twice symbol=pipeline
+tinybendygrad/runtime/ops_metal.bend	142	:276-281 the profile scan	#   ops_metal.py:276-281 the profile scan PORTED  `dev.sync_scan` -- upstream's `profile_slots` scan -- and it WAS NOT CALLED symbol=synchronize
+tinybendygrad/runtime/ops_metal.bend	149	`icb_keep` (:267)	# session started from. `icb_keep` -- upstream's `icbs` (ops_metal.py:267 symbol=new_icb) --, `dev.sync_scan`'s list (`sync_starts`,
+tinybendygrad/runtime/ops_metal.bend	200	The `pm_encode` rule is at :186	#    The `pm_encode` and `pm_lower` rules are ops_metal.py:185-188.
+tinybendygrad/runtime/ops_metal.bend	231	`hcq2.py:74-76` is	#  2. `D.iter_sig` IS `layout_args`' engine. `hcq2.py:114-116 symbol=layout_args` is
+tinybendygrad/runtime/ops_metal.bend	232	TinyELF.iter_sig(item sizes)	#     `[(offset + o, w) for (o, _), w in zip(TinyELF.iter_sig(...), words)]`
+tinybendygrad/runtime/ops_metal.bend	233	`device.py:364-368` is what	#     and `device.py:352-356 symbol=iter_sig` is what `D.iter_sig` ports. `q.layout` is the one
+tinybendygrad/runtime/ops_metal.bend	235	transcription of device.py:364	#     transcription of device.py:352 and the two could disagree silently.
+tinybendygrad/runtime/ops_metal.bend	236	`helpers.py:69`	#  3. `D.round_up` is `helpers.py:70 symbol=round_up`, and `off = round_up(self.nbytes, 256)`
+tinybendygrad/runtime/ops_metal.bend	239	`BufferSpec(nolru=True)` (:253)	"#     `BufferSpec(nolru=True)` -- GONE at this pin: upstream b41c51306 (""metal icb rm nolru"")"

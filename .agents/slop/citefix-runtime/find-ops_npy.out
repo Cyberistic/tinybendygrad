@@ -1,0 +1,454 @@
+== tinybendygrad/runtime/ops_npy.bend:18  device.py:396 [only_older_revision] toks=renderers,Renderer
+   device.py (540 lines) via unique
+   renderers              :379   def __init__(self, device:str, allocator:Allocator, renderers:list[type[Renderer]], runtim
+                                 enclosing: Compiled (declared :362)
+   renderers              :382   self.device, self.allocator, self.runtime_t, self.renderers = device, allocator, runtime, 
+                                 enclosing: __init__ (declared :379)
+   renderers              :463   assert (rn:=next((self._renderer_name(r) for r in self.renderers if getenv(f"{self.device}
+                                 enclosing: _select_renderer (declared :462)
+   renderers              :466   return select_first_inited(select_by_name(self.renderers, self._renderer_name, t.renderer,
+                                 enclosing: _select_renderer (declared :462)
+   renderers              :527   for r in d.renderers:
+                                 enclosing: enumerate_devices_str (declared :514)
+   renderers              :535   (("\n"+" "*12+"renderers:\n") + '\n'.join([" "*13+x for x in ren_results]) if len(ren_resu
+                                 enclosing: enumerate_devices_str (declared :514)
+   Renderer               :13    from tinygrad.renderer import Renderer
+   Renderer               :379   def __init__(self, device:str, allocator:Allocator, renderers:list[type[Renderer]], runtim
+                                 enclosing: Compiled (declared :362)
+   Renderer               :380   from tinygrad.renderer import Renderer
+                                 enclosing: __init__ (declared :379)
+   Renderer               :382   self.device, self.allocator, self.runtime_t, self.renderers = device, allocator, runtime, 
+                                 enclosing: __init__ (declared :379)
+   Renderer               :385   self.cached_renderer:dict[Any, Renderer] = {}
+                                 enclosing: __init__ (declared :379)
+   Renderer               :397   def renderer(self) -> Renderer: return self._select_renderer()
+                                 enclosing: host (declared :394)
+   Renderer               :459   def _renderer_name(self, r:type[Renderer]) -> str:
+                                 enclosing: finalize (declared :449)
+   Renderer               :462   def _select_renderer(self, cv=DEV) -> Renderer:
+                                 enclosing: _renderer_name (declared :459)
+
+== tinybendygrad/runtime/ops_npy.bend:28  device.py:398 [only_older_revision] toks=iface,peer_group
+   device.py (540 lines) via unique
+   iface                  :290   def _unmap(self, mb): pass  # default no-op; override if _map allocates iface-side state
+                                 enclosing: _map (declared :289)
+   iface                  :384   self.peer_group = getattr(getattr(self, 'iface', None), 'peer_group', device.split(":")[0]
+                                 enclosing: __init__ (declared :379)
+   iface                  :440   return self.iface.count if hasattr(self, 'iface') else 1
+                                 enclosing: count (declared :436)
+   iface                  :445   if (iface:=getattr(self, "iface", None)) is not None and hasattr(iface, "sleep"): iface.sl
+                                 enclosing: on_sleep (declared :444)
+   iface                  :455   if hasattr(self, 'iface') and hasattr(self.iface, 'device_fini'): self.iface.device_fini()
+                                 enclosing: finalize (declared :449)
+   iface                  :476   return select_first_inited([functools.partial(iface, self, self.device_id) for iface in fi
+                                 enclosing: _select_iface (declared :469)
+   iface                  :521   for iface in [i for i in d.ifaces if not i.__name__.startswith("MOCK")]:
+                                 enclosing: enumerate_devices_str (declared :514)
+   iface                  :523   name = iface.__name__[:-5]
+                                 enclosing: enumerate_devices_str (declared :514)
+   iface                  :524   default_text, count = ("(default)", d.count()) if type(d.iface) is iface else (f"(DEV={nam
+                                 enclosing: enumerate_devices_str (declared :514)
+   iface                  :526   except Exception as e: iface_results.append(f"{colored('-', 'red')} {iface.__name__[:-5]}:
+                                 enclosing: enumerate_devices_str (declared :514)
+   peer_group             :384   self.peer_group = getattr(getattr(self, 'iface', None), 'peer_group', device.split(":")[0]
+                                 enclosing: __init__ (declared :379)
+   peer_group             :394   def host(self) -> str: return f"CPU:{self.peer_group[7:]}" if self.peer_group.startswith("
+                                 enclosing: has_copy_queue (declared :391)
+
+== tinybendygrad/runtime/ops_npy.bend:31  device.py:397 [only_older_revision] toks=device_id,Compiled,__init__
+   device.py (540 lines) via unique
+   device_id              :383   self.device_id, self.arch = (int(idx) if ":" in device and (idx:=device.split(":")[1]).isd
+                                 enclosing: __init__ (declared :379)
+   device_id              :470   self.device_id = int(device.split(":")[1]) if ":" in device else 0
+                                 enclosing: _select_iface (declared :469)
+   device_id              :476   return select_first_inited([functools.partial(iface, self, self.device_id) for iface in fi
+                                 enclosing: _select_iface (declared :469)
+   device_id              :477   f"No interface for {dev}:{self.device_id} is available")
+                                 enclosing: _select_iface (declared :469)
+   Compiled               :31    def __getitem__(self, ix:str) -> Compiled:
+                                 enclosing: canonicalize (declared :30)
+   Compiled               :41    def __get_canonicalized_item(self, ix:str) -> Compiled:
+                                 enclosing: get_class (declared :36)
+   Compiled               :47    def default(self) -> Compiled: return self[self.DEFAULT]
+                                 enclosing: __get_canonicalized_item (declared :41)
+   Compiled               :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   Compiled               :246   DeviceType = TypeVar('DeviceType', bound='Compiled')
+                                 enclosing: view (declared :242)
+   Compiled               :319   # **************** for Compiled Devices ****************
+                                 enclosing: _offset (declared :317)
+   Compiled               :362   class Compiled:
+                                 enclosing: __call__ (declared :360)
+   Compiled               :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   Compiled               :499   Compiled.profile_events.append(ProfileDeviceEvent(self.device, statistics.median(tdiffs), 
+                                 enclosing: _at_profile_finalize (declared :487)
+   Compiled               :508   with open(fn:=temp("profile.pkl", append_user=True), "wb") as f: pickle.dump(cpu_events+Co
+                                 enclosing: finalize_profile (declared :503)
+   __init__               :24    def __init__(self) -> None:
+                                 enclosing: _Device (declared :23)
+   __init__               :99    def __init__(self, device:tuple[str, ...], nbytes:int):
+                                 enclosing: MultiBuffer (declared :98)
+   __init__               :113   def __init__(self, device:str, nbytes:int, opaque:Any=None, options:BufferSpec|None=None,
+                                 enclosing: Buffer (declared :111)
+   __init__               :252   def __init__(self, dev:DeviceType):
+                                 enclosing: Allocator (declared :249)
+   __init__               :324   def __init__(self, cachekey:str|None=None): self.cachekey = cachekey if CCACHE else None
+                                 enclosing: Compiler (declared :323)
+   __init__               :359   def __init__(self, dev:DeviceType, obj:TinyELF): pass
+                                 enclosing: Program (declared :358)
+   __init__               :379   def __init__(self, device:str, allocator:Allocator, renderers:list[type[Renderer]], runtim
+                                 enclosing: Compiled (declared :362)
+
+== tinybendygrad/runtime/ops_npy.bend:32  device.py:494 [at_no_revision] toks=_select_iface
+   device.py (540 lines) via unique
+   _select_iface          :469   def _select_iface(self, device:str):
+                                 enclosing: _select_renderer (declared :462)
+
+== tinybendygrad/runtime/ops_npy.bend:37  device.py:488 [only_older_revision] toks=arch,_select_renderer
+   device.py (540 lines) via unique
+   arch                   :333   def server(self, cmd:str, arch:str, *args) -> subprocess.Popen:
+                                 enclosing: disassemble (declared :332)
+   arch                   :334   argv = f"{cmd} {pathlib.Path(__file__).parent}/runtime/support/compileserver.py {type(self
+                                 enclosing: server (declared :333)
+   arch                   :379   def __init__(self, device:str, allocator:Allocator, renderers:list[type[Renderer]], runtim
+                                 enclosing: Compiled (declared :362)
+   arch                   :383   self.device_id, self.arch = (int(idx) if ":" in device and (idx:=device.split(":")[1]).isd
+                                 enclosing: __init__ (declared :379)
+   arch                   :465   t = cv.target(self.device.split(':')[0], **({"arch":self.arch} if self.arch else {}))
+                                 enclosing: _select_renderer (declared :462)
+   _select_renderer       :397   def renderer(self) -> Renderer: return self._select_renderer()
+                                 enclosing: host (declared :394)
+   _select_renderer       :462   def _select_renderer(self, cv=DEV) -> Renderer:
+                                 enclosing: _renderer_name (declared :459)
+
+== tinybendygrad/runtime/ops_npy.bend:39  device.py:377 [only_older_revision] toks=NpyDevice,ifaces,Compiled
+   device.py (540 lines) via unique
+   ifaces                 :363   ifaces:list[Callable] = []
+                                 enclosing: Compiled (declared :362)
+   ifaces                 :474   filtered = select_by_name(self.ifaces, lambda i: i.__name__[:-5], t.interface, f"{dev} has
+                                 enclosing: _select_iface (declared :469)
+   ifaces                 :475   filtered = [i for i in filtered if t.interface.startswith("MOCK") or not i.__name__[:-5].s
+                                 enclosing: _select_iface (declared :469)
+   ifaces                 :521   for iface in [i for i in d.ifaces if not i.__name__.startswith("MOCK")]:
+                                 enclosing: enumerate_devices_str (declared :514)
+   Compiled               :31    def __getitem__(self, ix:str) -> Compiled:
+                                 enclosing: canonicalize (declared :30)
+   Compiled               :41    def __get_canonicalized_item(self, ix:str) -> Compiled:
+                                 enclosing: get_class (declared :36)
+   Compiled               :47    def default(self) -> Compiled: return self[self.DEFAULT]
+                                 enclosing: __get_canonicalized_item (declared :41)
+   Compiled               :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   Compiled               :246   DeviceType = TypeVar('DeviceType', bound='Compiled')
+                                 enclosing: view (declared :242)
+   Compiled               :319   # **************** for Compiled Devices ****************
+                                 enclosing: _offset (declared :317)
+   Compiled               :362   class Compiled:
+                                 enclosing: __call__ (declared :360)
+   Compiled               :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   Compiled               :499   Compiled.profile_events.append(ProfileDeviceEvent(self.device, statistics.median(tdiffs), 
+                                 enclosing: _at_profile_finalize (declared :487)
+   Compiled               :508   with open(fn:=temp("profile.pkl", append_user=True), "wb") as f: pickle.dump(cpu_events+Co
+                                 enclosing: finalize_profile (declared :503)
+
+== tinybendygrad/runtime/ops_npy.bend:59  device.py:304-330 [only_older_revision] toks=HostAllocator
+   device.py (540 lines) via unique
+   HostAllocator          :293   class HostAllocator(Allocator):
+                                 enclosing: _offset (declared :291)
+
+== tinybendygrad/runtime/ops_npy.bend:83  device.py:307 [only_older_revision] toks=mmap,size,access,ACCESS_WRITE
+   device.py (540 lines) via unique
+   mmap                   :5     import importlib, inspect, functools, itertools, pathlib, os, contextlib, re, atexit, pick
+   mmap                   :296   elif (remote:=getattr(self.dev, "remote", None)) is not None: view, meta = remote.alloc_sy
+                                 enclosing: _alloc (declared :294)
+   mmap                   :297   else: view = self._view(mv_address(meta:=mmap.mmap(-1, size, access=mmap.ACCESS_WRITE)), s
+                                 enclosing: _alloc (declared :294)
+   size                   :27    @functools.cache  # this class is a singleton, pylint: disable=method-cache-max-size-none
+                                 enclosing: __init__ (declared :24)
+   size                   :35    @functools.cache  # this class is a singleton, pylint: disable=method-cache-max-size-none
+                                 enclosing: __getitem__ (declared :31)
+   size                   :40    @functools.cache  # this class is a singleton, pylint: disable=method-cache-max-size-none
+                                 enclosing: get_class (declared :36)
+   size                   :170   raise RuntimeError(f"buffer of size {self.nbytes/1e6:.2f}MB is too large")
+                                 enclosing: allocate (declared :165)
+   size                   :234   assert self.nbytes == src.nbytes, f"copy size mismatch, {self.nbytes} != {src.nbytes}"
+                                 enclosing: copy_from (declared :233)
+   size                   :248   # TODO: size, dest, src are the same type. can we enforce this?
+                                 enclosing: view (declared :242)
+   size                   :257   def alloc(self, size:int, options:BufferSpec|None=None) -> BufferStorage:
+                                 enclosing: __init__ (declared :252)
+   size                   :258   assert size > 0, f"alloc size must be positive, getting {size}"
+                                 enclosing: alloc (declared :257)
+   size                   :259   if len(c:=self.cache[(size, options)]): return c.pop()
+                                 enclosing: alloc (declared :257)
+   size                   :261   try: return self._alloc(size, spec)
+                                 enclosing: alloc (declared :257)
+   size                   :263   try: return self._alloc(size, spec)
+                                 enclosing: alloc (declared :257)
+   size                   :264   except (RuntimeError, MemoryError) as e: raise MemoryError(f"Allocation of {size_to_str(si
+                                 enclosing: alloc (declared :257)
+   size                   :267   def free(self, storage:BufferStorage, size:int, options:BufferSpec|None=None):
+                                 enclosing: alloc (declared :257)
+   size                   :269   if LRU and self.lru and not spec.nolru and spec.external_ptr is None: self.cache[(size, op
+                                 enclosing: free (declared :267)
+   size                   :285   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage: raise NotImplementedError
+                                 enclosing: map (declared :282)
+   size                   :291   def _offset(self, buf, size:int, offset:int): raise NotImplementedError("need offset")
+                                 enclosing: _unmap (declared :290)
+   size                   :294   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage:
+                                 enclosing: HostAllocator (declared :293)
+   size                   :295   if options.external_ptr is not None: view, meta = self._view(options.external_ptr, size), 
+                                 enclosing: _alloc (declared :294)
+   size                   :296   elif (remote:=getattr(self.dev, "remote", None)) is not None: view, meta = remote.alloc_sy
+                                 enclosing: _alloc (declared :294)
+   size                   :297   else: view = self._view(mv_address(meta:=mmap.mmap(-1, size, access=mmap.ACCESS_WRITE)), s
+                                 enclosing: _alloc (declared :294)
+   size                   :305   def _view(self, addr:int, size:int) -> MMIOInterface:
+                                 enclosing: _free (declared :300)
+   size                   :306   return remote.cpu_view(addr, size) if (remote:=getattr(self.dev, "remote", None)) is not N
+                                 enclosing: _view (declared :305)
+   size                   :317   def _offset(self, buf:int, size:int, offset:int) -> int: return buf + offset
+                                 enclosing: _map (declared :314)
+   size                   :409   return Buffer(self.device, self.rt_allocator(spec).size, options=spec, preallocate=True)
+                                 enclosing: rt_buffer (declared :408)
+   access                 :297   else: view = self._view(mv_address(meta:=mmap.mmap(-1, size, access=mmap.ACCESS_WRITE)), s
+                                 enclosing: _alloc (declared :294)
+   ACCESS_WRITE           :297   else: view = self._view(mv_address(meta:=mmap.mmap(-1, size, access=mmap.ACCESS_WRITE)), s
+                                 enclosing: _alloc (declared :294)
+
+== tinybendygrad/runtime/ops_npy.bend:86  helpers.py:573 [at_no_revision] toks=to_mv,ctypes,from_address
+   helpers.py (648 lines) via unique
+   to_mv                  :575   def to_mv(ptr:int, sz:int) -> memoryview: return memoryview((ctypes.c_uint8 * sz).from_add
+                                 enclosing: from_mv (declared :573)
+   ctypes                 :4     import os, functools, re, contextlib, operator, hashlib, pickle, sqlite3, tempfile, pathli
+   ctypes                 :570   # *** ctypes helpers
+                                 enclosing: wait_cond (declared :564)
+   ctypes                 :573   def from_mv(mv:memoryview, to_type:type[ctypes._SimpleCData]=ctypes.c_char) -> ctypes.Arra
+                                 enclosing: wait_cond (declared :564)
+   ctypes                 :574   return ctypes.cast(ctypes.addressof(to_type.from_buffer(mv)), ctypes.POINTER(to_type * len
+                                 enclosing: from_mv (declared :573)
+   ctypes                 :575   def to_mv(ptr:int, sz:int) -> memoryview: return memoryview((ctypes.c_uint8 * sz).from_add
+                                 enclosing: from_mv (declared :573)
+   ctypes                 :576   def mv_address(mv): return ctypes.addressof(ctypes.c_char.from_buffer(mv))
+                                 enclosing: to_mv (declared :575)
+   ctypes                 :577   def to_char_p_p(options: list[bytes], to_type=ctypes.c_char):
+                                 enclosing: mv_address (declared :576)
+   ctypes                 :578   return (ctypes.POINTER(to_type) * len(options))(*[ctypes.cast(ctypes.create_string_buffer(
+                                 enclosing: to_char_p_p (declared :577)
+   from_address           :575   def to_mv(ptr:int, sz:int) -> memoryview: return memoryview((ctypes.c_uint8 * sz).from_add
+                                 enclosing: from_mv (declared :573)
+
+== tinybendygrad/runtime/ops_npy.bend:93  device.py:328 [only_older_revision] toks=Device,buf,device
+   device.py (540 lines) via unique
+   Device                 :16    # **************** Device ****************
+   Device                 :29    # NOTE: you can't cache canonicalize in case Device.DEFAULT changes
+                                 enclosing: _canonicalize (declared :28)
+   Device                 :30    def canonicalize(self, device:str|None) -> str: return self._canonicalize(device if device
+                                 enclosing: _canonicalize (declared :28)
+   Device                 :54    def DEFAULT(self, v): raise AttributeError(f'setting Device.DEFAULT is deprecated, use "wi
+                                 enclosing: DEFAULT (declared :52)
+   Device                 :64    Device: _Device = _Device()
+                                 enclosing: _select_device (declared :56)
+   Device                 :65    atexit.register(lambda: [Device[dn].finalize() for dn in tuple(Device._opened_devices)])
+                                 enclosing: _select_device (declared :56)
+   Device                 :68    if not isinstance(device, (tuple, list)): return Device.canonicalize(device)
+                                 enclosing: canonicalize_device (declared :67)
+   Device                 :69    return canonical[0] if len(canonical:=tuple(Device.canonicalize(d) for d in device)) == 1 
+                                 enclosing: canonicalize_device (declared :67)
+   Device                 :116   self.device, self.nbytes, self.offset, self._base = Device.canonicalize(device), nbytes, o
+                                 enclosing: __init__ (declared :113)
+   Device                 :143   def allocator(self) -> Allocator: return self.base.allocator if self._base is not None els
+                                 enclosing: base (declared :141)
+   Device                 :153   device = Device.canonicalize(device) if device is not None else self.device
+                                 enclosing: get_storage (declared :151)
+   Device                 :155   if (dev:=Device[device]) not in storage.maps:
+                                 enclosing: get_storage (declared :151)
+   Device                 :315   if Device[buf.device].host != self.dev.host: raise RuntimeError(f"host memory is not on th
+                                 enclosing: _map (declared :314)
+   Device                 :504   devs = [Device[d] for d in Device._opened_devices]
+                                 enclosing: finalize_profile (declared :503)
+   Device                 :515   from tinygrad import Tensor, Device
+                                 enclosing: enumerate_devices_str (declared :514)
+   Device                 :520   d = Device[device]
+                                 enclosing: enumerate_devices_str (declared :514)
+   Device                 :537   yield f"{'*' if device == Device.DEFAULT else ' '} {device:8s}: {result}"
+                                 enclosing: enumerate_devices_str (declared :514)
+   buf                    :109   class BufferStorage: buf:Any; meta:Any=None; host:MMIOInterface|None=None; maps:dict[Compi
+                                 enclosing: __repr__ (declared :106)
+   buf                    :137   return f"<buf real:{self.is_allocated()} device:{self.device} nbytes:{self.nbytes}" + \
+                                 enclosing: __repr__ (declared :136)
+   buf                    :145   def _buf(self) -> Any: return self.get_storage().buf
+                                 enclosing: allocator (declared :143)
+   buf                    :161   def get_buf(self, device:str) -> Any: return self.get_storage(device).buf
+                                 enclosing: get_storage (declared :151)
+   buf                    :173   storage = replace(self.base.get_storage(), buf=self.allocator._offset(self.base._buf, self
+                                 enclosing: allocate (declared :165)
+   buf                    :204   buf:bytearray|pickle.PickleBuffer|None = None
+                                 enclosing: __reduce_ex__ (declared :203)
+   buf                    :212   buf = pickle.PickleBuffer(self.as_memoryview()) if protocol >= 5 else bytearray(self.as_me
+                                 enclosing: __reduce_ex__ (declared :203)
+   buf                    :213   return self.__class__, (self.device, self.nbytes, None, self.options, buf)
+                                 enclosing: __reduce_ex__ (declared :203)
+   buf                    :282   def map(self, buf:Buffer) -> BufferStorage: return self._map(buf.ensure_allocated())
+                                 enclosing: do_free (declared :277)
+   buf                    :289   def _map(self, buf) -> BufferStorage: raise NotImplementedError("need map")
+                                 enclosing: _copyout (declared :288)
+   buf                    :291   def _offset(self, buf, size:int, offset:int): raise NotImplementedError("need offset")
+                                 enclosing: _unmap (declared :290)
+   buf                    :314   def _map(self, buf:Buffer) -> BufferStorage:
+                                 enclosing: _copyout (declared :311)
+   buf                    :315   if Device[buf.device].host != self.dev.host: raise RuntimeError(f"host memory is not on th
+                                 enclosing: _map (declared :314)
+   buf                    :316   return BufferStorage(buf.host.addr)
+                                 enclosing: _map (declared :314)
+   buf                    :317   def _offset(self, buf:int, size:int, offset:int) -> int: return buf + offset
+                                 enclosing: _map (declared :314)
+   buf                    :483   for buf, g in itertools.groupby(self.prof_ents.items(), key=lambda x: x[0][0]) if PROFILE 
+                                 enclosing: collect_prof (declared :481)
+   buf                    :484   Compiled.profile_events.append(ProfileGraphEvent([e for _, e in g], [], [t/div for t in bu
+                                 enclosing: collect_prof (declared :481)
+   buf                    :497   gpu = max(buf.host.view(fmt='Q')[e.en_id] for (buf, _), e in ents)/decimal.Decimal(self.ti
+                                 enclosing: _at_profile_finalize (declared :487)
+   device                 :28    def _canonicalize(self, device:str) -> str: return re.sub(r":0$", "", (d:=device.split(":"
+                                 enclosing: __init__ (declared :24)
+   device                 :30    def canonicalize(self, device:str|None) -> str: return self._canonicalize(device if device
+                                 enclosing: _canonicalize (declared :28)
+   device                 :33    assert ALLOW_DEVICE_USAGE or ix.split(":")[0] in ["DISK", "NPY", "PYTHON"], f"usage of dev
+                                 enclosing: __getitem__ (declared :31)
+   device                 :39    return [cls for cname, cls in inspect.getmembers(importlib.import_module(f'{base}.runtime.
+                                 enclosing: get_class (declared :36)
+   device                 :43    if DEBUG >= 1: print(f"opened device {ix} from pid:{os.getpid()}")
+                                 enclosing: __get_canonicalized_item (declared :41)
+   device                 :49    for device in ALL_DEVICES:
+                                 enclosing: get_available_devices (declared :48)
+   device                 :50    with contextlib.suppress(Exception): yield self[device].device
+                                 enclosing: get_available_devices (declared :48)
+   device                 :52    def DEFAULT(self) -> str: return DEV.device or self._select_device
+                                 enclosing: get_available_devices (declared :48)
+   device                 :60    device = next(self.get_available_devices())
+                                 enclosing: _select_device (declared :56)
+   device                 :61    os.environ["DEV"] = device   # we set this in environment for spawned children
+                                 enclosing: _select_device (declared :56)
+   device                 :62    return device
+                                 enclosing: _select_device (declared :56)
+   device                 :67    def canonicalize_device(device:str|tuple|list|None) -> str|tuple[str, ...]:
+                                 enclosing: _select_device (declared :56)
+   device                 :68    if not isinstance(device, (tuple, list)): return Device.canonicalize(device)
+                                 enclosing: canonicalize_device (declared :67)
+   device                 :69    return canonical[0] if len(canonical:=tuple(Device.canonicalize(d) for d in device)) == 1 
+                                 enclosing: canonicalize_device (declared :67)
+   device                 :71    def is_disk_device(device:str|tuple[str, ...]) -> bool:
+                                 enclosing: canonicalize_device (declared :67)
+   device                 :72    return any(d.split(":", 1)[0].upper() == "DISK" for d in to_tuple(device))
+                                 enclosing: is_disk_device (declared :71)
+   device                 :77    class ProfileDeviceEvent(ProfileEvent): device:str; tdiff:decimal.Decimal=decimal.Decimal(
+                                 enclosing: is_disk_device (declared :71)
+   device                 :80    class ProfileProgramEvent(ProfileEvent): device:str; name:str; lib:bytes|None; base:int|No
+                                 enclosing: ProfileDeviceEvent (declared :77)
+   device                 :83    class ProfileGraphEntry: device:str; name:str|TracingKey; st_id:int; en_id:int; profile_ke
+                                 enclosing: ProfileProgramEvent (declared :80)
+   device                 :99    def __init__(self, device:tuple[str, ...], nbytes:int):
+                                 enclosing: MultiBuffer (declared :98)
+   device                 :100   self.bufs = [Buffer(d, nbytes) for d in device]
+                                 enclosing: __init__ (declared :99)
+   device                 :102   def device(self): return tuple(x.device for x in self.bufs)
+                                 enclosing: __init__ (declared :99)
+   device                 :106   def __repr__(self): return f"<multibuf real:{self.is_allocated()} device:{tuple(x.device f
+                                 enclosing: is_allocated (declared :105)
+   device                 :113   def __init__(self, device:str, nbytes:int, opaque:Any=None, options:BufferSpec|None=None,
+                                 enclosing: Buffer (declared :111)
+   device                 :116   self.device, self.nbytes, self.offset, self._base = Device.canonicalize(device), nbytes, o
+                                 enclosing: __init__ (declared :113)
+   device                 :130   assert self.device == base.device, "base must have the same device"
+                                 enclosing: __init__ (declared :113)
+
+== tinybendygrad/runtime/ops_npy.bend:110  device.py:270 [only_older_revision] toks=Allocator,alloc,size
+   device.py (540 lines) via unique
+   Allocator              :115   allocator:Allocator|None=None):
+                                 enclosing: __init__ (declared :113)
+   Allocator              :143   def allocator(self) -> Allocator: return self.base.allocator if self._base is not None els
+                                 enclosing: base (declared :141)
+   Allocator              :249   class Allocator(Generic[DeviceType]):
+                                 enclosing: view (declared :242)
+   Allocator              :293   class HostAllocator(Allocator):
+                                 enclosing: _offset (declared :291)
+   Allocator              :379   def __init__(self, device:str, allocator:Allocator, renderers:list[type[Renderer]], runtim
+                                 enclosing: Compiled (declared :362)
+   alloc                  :156   alloc = dev.allocator
+                                 enclosing: get_storage (declared :151)
+   alloc                  :157   storage.maps[dev] = BufferStorage(alloc._offset(self.base.get_buf(device), self.nbytes, se
+                                 enclosing: get_storage (declared :151)
+   alloc                  :182   else: storage = self.allocator.alloc(self.nbytes, self.options)
+                                 enclosing: allocate (declared :165)
+   alloc                  :188   if PROFILE: Buffer.profile_events.append(ProfilePointEvent(self.device, "alloc", self.trac
+                                 enclosing: allocate (declared :165)
+   alloc                  :257   def alloc(self, size:int, options:BufferSpec|None=None) -> BufferStorage:
+                                 enclosing: __init__ (declared :252)
+   alloc                  :258   assert size > 0, f"alloc size must be positive, getting {size}"
+                                 enclosing: alloc (declared :257)
+   alloc                  :285   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage: raise NotImplementedError
+                                 enclosing: map (declared :282)
+   size                   :27    @functools.cache  # this class is a singleton, pylint: disable=method-cache-max-size-none
+                                 enclosing: __init__ (declared :24)
+   size                   :35    @functools.cache  # this class is a singleton, pylint: disable=method-cache-max-size-none
+                                 enclosing: __getitem__ (declared :31)
+   size                   :40    @functools.cache  # this class is a singleton, pylint: disable=method-cache-max-size-none
+                                 enclosing: get_class (declared :36)
+   size                   :170   raise RuntimeError(f"buffer of size {self.nbytes/1e6:.2f}MB is too large")
+                                 enclosing: allocate (declared :165)
+   size                   :234   assert self.nbytes == src.nbytes, f"copy size mismatch, {self.nbytes} != {src.nbytes}"
+                                 enclosing: copy_from (declared :233)
+   size                   :248   # TODO: size, dest, src are the same type. can we enforce this?
+                                 enclosing: view (declared :242)
+   size                   :257   def alloc(self, size:int, options:BufferSpec|None=None) -> BufferStorage:
+                                 enclosing: __init__ (declared :252)
+   size                   :258   assert size > 0, f"alloc size must be positive, getting {size}"
+                                 enclosing: alloc (declared :257)
+   size                   :259   if len(c:=self.cache[(size, options)]): return c.pop()
+                                 enclosing: alloc (declared :257)
+   size                   :261   try: return self._alloc(size, spec)
+                                 enclosing: alloc (declared :257)
+   size                   :263   try: return self._alloc(size, spec)
+                                 enclosing: alloc (declared :257)
+   size                   :264   except (RuntimeError, MemoryError) as e: raise MemoryError(f"Allocation of {size_to_str(si
+                                 enclosing: alloc (declared :257)
+   size                   :267   def free(self, storage:BufferStorage, size:int, options:BufferSpec|None=None):
+                                 enclosing: alloc (declared :257)
+   size                   :269   if LRU and self.lru and not spec.nolru and spec.external_ptr is None: self.cache[(size, op
+                                 enclosing: free (declared :267)
+   size                   :285   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage: raise NotImplementedError
+                                 enclosing: map (declared :282)
+   size                   :291   def _offset(self, buf, size:int, offset:int): raise NotImplementedError("need offset")
+                                 enclosing: _unmap (declared :290)
+   size                   :294   def _alloc(self, size:int, options:BufferSpec) -> BufferStorage:
+                                 enclosing: HostAllocator (declared :293)
+   size                   :295   if options.external_ptr is not None: view, meta = self._view(options.external_ptr, size), 
+                                 enclosing: _alloc (declared :294)
+   size                   :296   elif (remote:=getattr(self.dev, "remote", None)) is not None: view, meta = remote.alloc_sy
+                                 enclosing: _alloc (declared :294)
+   size                   :297   else: view = self._view(mv_address(meta:=mmap.mmap(-1, size, access=mmap.ACCESS_WRITE)), s
+                                 enclosing: _alloc (declared :294)
+   size                   :305   def _view(self, addr:int, size:int) -> MMIOInterface:
+                                 enclosing: _free (declared :300)
+   size                   :306   return remote.cpu_view(addr, size) if (remote:=getattr(self.dev, "remote", None)) is not N
+                                 enclosing: _view (declared :305)
+   size                   :317   def _offset(self, buf:int, size:int, offset:int) -> int: return buf + offset
+                                 enclosing: _map (declared :314)
+   size                   :409   return Buffer(self.device, self.rt_allocator(spec).size, options=spec, preallocate=True)
+                                 enclosing: rt_buffer (declared :408)
+
+== tinybendygrad/runtime/ops_npy.bend:111  device.py:328 [at_no_revision] toks=HostAllocator,_map
+   device.py (540 lines) via unique
+   HostAllocator          :293   class HostAllocator(Allocator):
+                                 enclosing: _offset (declared :291)
+   _map                   :282   def map(self, buf:Buffer) -> BufferStorage: return self._map(buf.ensure_allocated())
+                                 enclosing: do_free (declared :277)
+   _map                   :289   def _map(self, buf) -> BufferStorage: raise NotImplementedError("need map")
+                                 enclosing: _copyout (declared :288)
+   _map                   :290   def _unmap(self, mb): pass  # default no-op; override if _map allocates iface-side state
+                                 enclosing: _map (declared :289)
+   _map                   :314   def _map(self, buf:Buffer) -> BufferStorage:
+                                 enclosing: _copyout (declared :311)
+

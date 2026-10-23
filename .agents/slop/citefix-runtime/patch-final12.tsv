@@ -1,0 +1,2 @@
+rel	at	old	new
+tinybendygrad/runtime/support/hcq2.bend	108	hcq2.py:452   `pm_lift` symbol=pm_lift -- BLOCKED	#    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (`uop/ops.bend:514` open TODO) -- the row `pm_lift`.

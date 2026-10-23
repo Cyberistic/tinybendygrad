@@ -1,0 +1,18 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_dsp.bend	35	:79    the MOCKDSP arm	#   ops_dsp.py:79 the MOCKDSP arm    PORTED  `alloc.mock_flags` -- upstream's `MOCKDSP` arm symbol=_alloc
+tinybendygrad/runtime/ops_dsp.bend	38	:86-91 _free	#   ops_dsp.py:87-91 _free          PORTED  `alloc.free_calls` symbol=_free
+tinybendygrad/runtime/ops_dsp.bend	39	:93  _as_buffer	#   ops_dsp.py:93 _as_buffer       PORTED  `alloc.as_buffer_bytes` symbol=_as_buffer
+tinybendygrad/runtime/ops_dsp.bend	40	:94  _copyin	#   ops_dsp.py:94 _copyin          PORTED  `alloc.copyin_bytes` symbol=_copyin
+tinybendygrad/runtime/ops_dsp.bend	41	:95  _copyout	#   ops_dsp.py:95 _copyout         PORTED  `alloc.copyout_bytes` symbol=_copyout
+tinybendygrad/runtime/ops_dsp.bend	48	:113 the cachekey	#   ops_dsp.py:113 the cachekey    PORTED  `compiler.cachekey_of` -- upstream's `compile_dsp` key symbol=__init__
+tinybendygrad/runtime/ops_dsp.bend	49	:115 __del__	#   ops_dsp.py:115 `__del__`        PORTED  `compiler.del_unlinks` symbol=__del__
+tinybendygrad/runtime/ops_dsp.bend	52	:129 DSPDevice.__init__	#   ops_dsp.py:129 `DSPDevice.__init__` PORTED  `dev.is_mock` (the ONE branch, :129-139) symbol=__init__
+tinybendygrad/runtime/ops_dsp.bend	54	:134-136 the shell buffer	#   ops_dsp.py:134-136 the shell buffer PORTED  `dev.shell_size`, `dev.shell_copy` -- upstream's `shell_buf` symbol=__init__
+tinybendygrad/runtime/ops_dsp.bend	55	:135 BufferSpec(nolru=True)	#   ops_dsp.py:135 `BufferSpec(nolru=True)` PORTED  `dev.shell_spec` -- the eviction NEGATIVE symbol=__init__
+tinybendygrad/runtime/ops_dsp.bend	60	:148 the handle answer	#   ops_dsp.py:141-148 open_lib     PORTED  `dev.open_lib_handle` -- the handle answer symbol=open_lib
+tinybendygrad/runtime/ops_dsp.bend	155	`supported_dtypes` (:46)	#                      itemsize 2, and `supported_dtypes` (ops_dsp.py:45 symbol=supported_dtypes) exists to keep it
+tinybendygrad/runtime/ops_dsp.bend	182	`[-1]*(ins+outs) ++ in_fds` (:53)	# `fds` is `[-1]*(ins+outs) ++ in_fds` (ops_dsp.py:52 symbol=rpc_prep_args) and `attrs` is
+tinybendygrad/runtime/ops_dsp.bend	183	`[0]*(ins+outs) ++ [1]*len(in_fds)` (:54)	# `[0]*(ins+outs) ++ [1]*len(in_fds)` (ops_dsp.py:53 symbol=rpc_prep_args) -- SAME length as `pra`, and the `1`
+tinybendygrad/runtime/ops_dsp.bend	187	one past the :63 refusal	# INCLUDING (2,1,16) -- one past upstream's `bufs` refusal (ops_dsp.py:63 symbol=__call__) -- so a `pra` that grows where
+tinybendygrad/runtime/ops_dsp.bend	242	from ClangCompiler	#     `RuntimeError: unsupported arch: 'hexagonv65'` from ClangCompiler (compiler_cpu.py:15).
+tinybendygrad/runtime/ops_dsp.bend	243	(compiler_cpu.py:15). That is WHY	#     That is WHY `DSPRenderer.__init__` (ops_dsp.py:17 symbol=__init__) does not call

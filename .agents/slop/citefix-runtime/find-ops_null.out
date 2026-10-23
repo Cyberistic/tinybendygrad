@@ -1,0 +1,16 @@
+== tinybendygrad/runtime/ops_null.bend:34  ops_cpu.py:84 [only_older_revision] toks=False,cpu,has_copy_queue
+   runtime/ops_cpu.py (80 lines) via unique
+   False                  :33    if OSX: unwrap(CPUProgram.rt_lib).pthread_jit_write_protect_np(False)
+                                 enclosing: __init__ (declared :23)
+   False                  :49    wait:bool=False, timeout:int|None=None) -> float|None:
+                                 enclosing: __call__ (declared :48)
+   False                  :68    def has_copy_queue(self) -> bool: return False
+                                 enclosing: CPUDevice (declared :64)
+   has_copy_queue         :68    def has_copy_queue(self) -> bool: return False
+                                 enclosing: CPUDevice (declared :64)
+
+== tinybendygrad/runtime/ops_null.bend:38  runtime/support/hcq2.py:78-83 [only_older_revision] toks=pack_args
+   runtime/support/hcq2.py (563 lines) via unique
+   pack_args              :118   def pack_args(args:list[tuple[int, UOp]], size:int) -> list[UOp]:
+                                 enclosing: layout_args (declared :114)
+

@@ -1,0 +1,5 @@
+== tinybendygrad/runtime/support/elf.bend:137  tinygrad/runtime/support/elf.py:50 [at_no_revision] toks=type,ElfImage
+   runtime/support/elf.py (86 lines) via exact
+   type                   :81    raise NotImplementedError(f"Encountered unknown relocation type {r_type}")
+                                 enclosing: relocate (declared :56)
+

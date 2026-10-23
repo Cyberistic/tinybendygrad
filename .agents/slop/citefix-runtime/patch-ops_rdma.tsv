@@ -1,0 +1,17 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_rdma.bend	10	`rdma_copies` (:140) puts BOTH	#      `rdma_copies` (ops_rdma.py:107 symbol=rdma_copies) puts BOTH in every work queue element. So there is a
+tinybendygrad/runtime/ops_rdma.bend	44	:18  BNXT_IDS 	#   ops_rdma.py:18 `BNXT_IDS`          PORTED  the four constants and `vram_bar` symbol=BNXT_IDS
+tinybendygrad/runtime/ops_rdma.bend	75	(ops_rdma.py:57-58) and the closest nic	#   (ops_rdma.py:57-58 symbol=node) and the closest nic is a `min(...)` at :64; MEASURED, there is no `def
+tinybendygrad/runtime/ops_rdma.bend	87	:85  `PatternMatcher(rules) + pm_bufferize`	#   ops_rdma.py:166 `PatternMatcher(rules)` PORTED `qp_len` -- upstream's `pm_bufferize` is GONE (9ff6db7b0)
+tinybendygrad/runtime/ops_rdma.bend	96	:101 `is_rdma` 	#   ops_rdma.py:100 `is_rdma`           PORTED  `wire.is_rdma` symbol=is_rdma
+tinybendygrad/runtime/ops_rdma.bend	100	:109 `ins` 	#   ops_rdma.py:108 `ins`                PORTED  `queue.is_recv` -- every int is a uint32 symbol=rdma_copies
+tinybendygrad/runtime/ops_rdma.bend	105	:118 `len(chunks), sum(chunks)`	#   ops_rdma.py:114 `len(chunks), sum(chunks)` PORTED  `nchunks`, `ops.n_writes` symbol=rdma_copies
+tinybendygrad/runtime/ops_rdma.bend	108	:125 `accumulate(chunks, 0)`	#   ops_rdma.py:121 `accumulate(chunks, 0)` PORTED  `psns_of` symbol=rdma_copies
+tinybendygrad/runtime/ops_rdma.bend	109	:126 `n`, `p` 	#   ops_rdma.py:122 `n`, `p`            PORTED  `ops.n_of` / `ops.p_of` -- upstream's `psns` symbol=rdma_copies
+tinybendygrad/runtime/ops_rdma.bend	111	:129 the `db` address	#   ops_rdma.py:126 the `db` address      PORTED  `ins.ring_db` -- low 12 bits only symbol=rdma_copies
+tinybendygrad/runtime/ops_rdma.bend	119	:152 the cq doorbell	#   ops_rdma.py:127 the cq doorbell       PORTED  `ins.cq_db` symbol=rdma_copies
+tinybendygrad/runtime/ops_rdma.bend	125	:166 `positions` 	#   ops_rdma.py:163 `positions`           PORTED  `submit.pos_at` symbol=rdma_submit
+tinybendygrad/runtime/ops_rdma.bend	126	:167 the zip 	#   ops_rdma.py:164 the zip                 PORTED  `psns_at` + `ops.n_of` symbol=rdma_submit
+tinybendygrad/runtime/ops_rdma.bend	127	:169 `pm_rdma_encode`	#   ops_rdma.py:157 `rdma_submit`          PORTED  `encode_len` -- upstream's `pm_rdma_encode` is GONE (9ff6db7b0)
+tinybendygrad/runtime/ops_rdma.bend	150	4. `unwrap_view` (:140).	# 4. `unwrap_view` (ops_rdma.py:136 symbol=rdma_copies). Collapsing a view chain to (base, offset) and then
+tinybendygrad/runtime/ops_rdma.bend	165	the msn entry (:145) is	#      the msn entry (ops_rdma.py:141 symbol=rdma_copies) is `slot << 48 | next << 24 | psn`, all three fields

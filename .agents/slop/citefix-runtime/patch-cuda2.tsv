@@ -1,0 +1,2 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_cuda.bend	23	ARE renumbered here because the pin is settled: `count` is	# (the pre-split header's `cu:132` and `cu:134-136` are the SAME two lines, renumbered.)

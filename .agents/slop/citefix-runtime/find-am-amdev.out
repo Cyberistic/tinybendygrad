@@ -1,0 +1,56 @@
+== tinybendygrad/runtime/support/am/amdev.bend:25  tinygrad/runtime/support/am/amdev.py:400 [only_older_revision] toks=hwid_names,hw_id_map
+   runtime/support/am/amdev.py (423 lines) via exact
+   hwid_names             :402   def hwid_names(self) -> dict[int, str]: return {v:k.removesuffix('_HWID') for k,v in vars(
+                                 enclosing: _run_discovery (declared :358)
+   hw_id_map              :382   if hw_ip in am.hw_id_map and am.hw_id_map[hw_ip] == ip.hw_id:
+                                 enclosing: _run_discovery (declared :358)
+   hw_id_map              :393   inv_hw_id = {hw_id: hw_ip for hw_ip, hw_id in am.hw_id_map.items()}
+                                 enclosing: _run_discovery (declared :358)
+
+== tinybendygrad/runtime/support/am/amdev.bend:25  tinygrad/runtime/support/am/amdev.py:380 [only_older_revision] toks=hwid_names,hw_id_map
+   runtime/support/am/amdev.py (423 lines) via exact
+   hwid_names             :402   def hwid_names(self) -> dict[int, str]: return {v:k.removesuffix('_HWID') for k,v in vars(
+                                 enclosing: _run_discovery (declared :358)
+   hw_id_map              :382   if hw_ip in am.hw_id_map and am.hw_id_map[hw_ip] == ip.hw_id:
+                                 enclosing: _run_discovery (declared :358)
+   hw_id_map              :393   inv_hw_id = {hw_id: hw_ip for hw_ip, hw_id in am.hw_id_map.items()}
+                                 enclosing: _run_discovery (declared :358)
+
+== tinybendygrad/runtime/support/am/amdev.bend:27  tinygrad/runtime/support/am/amdev.py:341 [at_no_revision] toks=indirect_wreg_pcie
+   runtime/support/am/amdev.py (423 lines) via exact
+   indirect_wreg_pcie     :342   def indirect_wreg_pcie(self, reg:int, val:int, aid:int=0):
+                                 enclosing: indirect_wreg (declared :338)
+
+== tinybendygrad/runtime/support/am/amdev.bend:29  tinygrad/runtime/support/am/amdev.py:268-281 [only_older_revision] toks=_read_vram
+   runtime/support/am/amdev.py (423 lines) via exact
+   _read_vram             :349   def _read_vram(self, addr, size) -> bytes:
+                                 enclosing: indirect_wreg_pcie (declared :342)
+   _read_vram             :366   disc_tbl = self.vram.view(tmr_offset, tmr_size)[:] if self.large_bar else self._read_vram(
+                                 enclosing: _run_discovery (declared :358)
+
+== tinybendygrad/runtime/support/am/amdev.bend:30  tinygrad/runtime/support/am/amdev.py:147-154 [at_no_revision] toks=indirect_wreg,_pcie
+   runtime/support/am/amdev.py (423 lines) via exact
+   indirect_wreg          :313   elif reg >= len(self.mmio): self.indirect_wreg(reg, val)
+                                 enclosing: wreg (declared :310)
+   indirect_wreg          :338   def indirect_wreg(self, reg:int, val:int):
+                                 enclosing: indirect_rreg (declared :334)
+
+== tinybendygrad/runtime/support/am/amdev.bend:72  tinygrad/runtime/support/am/amdev.py:364 [only_older_revision] toks=table_list,offset
+   runtime/support/am/amdev.py (423 lines) via exact
+   table_list             :368   ihdr = am.struct_ip_discovery_header.from_address(ctypes.addressof(self.bhdr) + self.bhdr.
+                                 enclosing: _run_discovery (declared :358)
+   table_list             :391   if (harv_off:=self.bhdr.table_list[am.HARVEST_INFO].offset) != 0 and \
+                                 enclosing: _run_discovery (declared :358)
+   table_list             :397   gc_info = am.struct_gc_info_v1_0.from_address(gc_addr:=ctypes.addressof(self.bhdr) + self.
+                                 enclosing: _run_discovery (declared :358)
+   offset                 :119   def desc(self, blob:memoryview, offset:int, size:int, *types:int) -> tuple[list[int], memo
+                                 enclosing: load_fw (declared :111)
+   offset                 :368   ihdr = am.struct_ip_discovery_header.from_address(ctypes.addressof(self.bhdr) + self.bhdr.
+                                 enclosing: _run_discovery (declared :358)
+   offset                 :391   if (harv_off:=self.bhdr.table_list[am.HARVEST_INFO].offset) != 0 and \
+                                 enclosing: _run_discovery (declared :358)
+   offset                 :397   gc_info = am.struct_gc_info_v1_0.from_address(gc_addr:=ctypes.addressof(self.bhdr) + self.
+                                 enclosing: _run_discovery (declared :358)
+   offset                 :415   ext = {seg: max(r.offset for r in regs.values() if r.segment == seg) for seg in {r.segment
+                                 enclosing: _build_regs (declared :406)
+

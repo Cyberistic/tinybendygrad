@@ -1,0 +1,55 @@
+== tinybendygrad/runtime/support/objc.bend:50  cstyle.py:268 [at_no_revision] toks=emits
+   renderer/cstyle.py (620 lines) via unique
+   emits                  :617   # QCOM's load vectorizer emits invalid IR for vectorized bool loads ("Range types must mat
+                                 enclosing: supported_dtypes (declared :613)
+
+== tinybendygrad/runtime/support/objc.bend:55  ops_cpu.py:19 [only_older_revision] toks=CPUProgram,link_libs
+   runtime/ops_cpu.py (80 lines) via unique
+   CPUProgram             :18    class CPUProgram(Program['CPUDevice']):
+   CPUProgram             :33    if OSX: unwrap(CPUProgram.rt_lib).pthread_jit_write_protect_np(False)
+                                 enclosing: __init__ (declared :23)
+   CPUProgram             :35    if OSX: unwrap(CPUProgram.rt_lib).pthread_jit_write_protect_np(True)
+                                 enclosing: __init__ (declared :23)
+   CPUProgram             :41    if 'rt' in DLL._loaded_: CPUProgram.rt_lib["__clear_cache"](ctypes.c_void_p(self.addr), ct
+                                 enclosing: __init__ (declared :23)
+   CPUProgram             :74    super().__init__(device, HostAllocator(self), [ClangRenderer, CPULLVMRenderer, LVPRenderer
+                                 enclosing: __init__ (declared :70)
+   link_libs              :21    def _load(self, lib, base=0): return lib if lib[:4] != libc.ELFMAG.encode() else jit_loade
+                                 enclosing: CPUProgram (declared :18)
+
+== tinybendygrad/runtime/support/objc.bend:56  ops_metal.py:86 [at_no_revision] toks=objc
+   runtime/ops_metal.py (287 lines) via unique
+   objc                   :4     import tinygrad.runtime.support.objc as objc
+   objc                   :17    # Must be loaded for default Metal Device: https://developer.apple.com/documentation/metal
+   objc                   :20    # FIXME: these need autogen to support objc categories
+   objc                   :23    def to_ns_str(s:str): return ctypes.cast(objc.msg("stringWithUTF8String:")(metal.NSString.
+   objc                   :26    if err.value is not None: raise RuntimeError(bytes(objc.msg("UTF8String", ctypes.c_char_p)
+                                 enclosing: checked (declared :24)
+   objc                   :206   rsd = ctypes.cast(objc.msg("new", clsmeth=True)(metal.MTLResidencySetDescriptor), metal.MT
+                                 enclosing: __init__ (declared :198)
+   objc                   :229   objc.msg("addAllocation:" if add else "removeAllocation:", None, [objc.id_])(self.residenc
+                                 enclosing: mark_resident (declared :227)
+   objc                   :230   return objc.msg("commit", None)(self.residency)
+                                 enclosing: mark_resident (declared :227)
+   objc                   :245   library = checked(self.sysdevice.newLibraryWithData_error, objc.dispatch_data_create(lib, 
+                                 enclosing: pipeline (declared :244)
+   objc                   :272   wait = objc.msg("waitUntilSignaledValue:timeoutMS:", ctypes.c_bool, [ctypes.c_uint64, ctyp
+                                 enclosing: _wait_signal (declared :270)
+   objc                   :284   if (pool:=getattr(pools, "pool", None)) is not None: objc.lib.objc_autoreleasePoolPop(pool
+                                 enclosing: synchronize (declared :275)
+   objc                   :285   pools.pool = objc.lib.objc_autoreleasePoolPush()
+                                 enclosing: synchronize (declared :275)
+
+== tinybendygrad/runtime/support/objc.bend:100  tinygrad/runtime/support/objc.py:37 [at_no_revision] toks=msg
+   runtime/support/objc.py (77 lines) via exact
+   msg                    :15    def release(self): msg("release")(self)
+                                 enclosing: __del__ (declared :13)
+   msg                    :20    msg("retain")(self)
+                                 enclosing: own (declared :19)
+   msg                    :34    def msg(sel:str, restype=id_, argtypes=[], retain=False, clsmeth=False):
+                                 enclosing: returns_retained (declared :23)
+   msg                    :71    if clsmeth: setattr(cls, nm, classmethod(msg(m[0], cls if m[1] == 'instancetype' else m[1]
+                                 enclosing: _addmeth (declared :69)
+   msg                    :73    else: setattr(cls, nm, msg(m[0], cls if m[1] == 'instancetype' else m[1], [cls if a == 'in
+                                 enclosing: _addmeth (declared :69)
+

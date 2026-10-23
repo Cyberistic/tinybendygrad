@@ -1,0 +1,325 @@
+== tinybendygrad/runtime/ops_nv.bend:13  tinygrad/runtime/ops_nv.py:47-48 [only_older_revision] toks=nvm,hilo,nv_flags
+   runtime/ops_nv.py (834 lines) via exact
+   nvm                    :45    def nvm(subc:int, mthd:int|UOp, *vals, typ=2) -> list:
+                                 enclosing: nv_iowr (declared :41)
+   nvm                    :111   def nvm(self, subc:int, mthd:int|UOp, *vals, typ=2): self.q(*nvm(subc, mthd, *vals, typ=ty
+                                 enclosing: NVQueue (declared :105)
+   nvm                    :114   self.nvm(0, nv_gpu.NVC56F_SEM_ADDR_LO, addr, value.ccast(dtypes.uint64), nv_flags("NVC56F_
+                                 enclosing: sem (declared :113)
+   nvm                    :121   if not timestamp: self.nvm(0, nv_gpu.NVC56F_NON_STALL_INTERRUPT, 0x0)
+                                 enclosing: release (declared :119)
+   nvm                    :158   self.nvm(1, nv_gpu.NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI,
+                                 enclosing: memory_barrier (declared :156)
+   nvm                    :181   if self.dev.pma_enabled: self.nvm(1, nv_gpu.NVC6C0_PM_TRIGGER, 0)
+                                 enclosing: exec (declared :161)
+   nvm                    :182   self.nvm(1, nv_gpu.NVC6C0_SEND_PCAS_A, (qmd_addr >> 8).cast(dtypes.uint32))
+                                 enclosing: exec (declared :161)
+   nvm                    :183   self.nvm(1, nv_gpu.NVC6C0_SEND_SIGNALING_PCAS2_B, nv_gpu.NVC6C0_SEND_SIGNALING_PCAS2_B_PCA
+                                 enclosing: exec (declared :161)
+   nvm                    :192   self.nvm(4, nv_gpu.NVC6B5_OFFSET_IN_UPPER, *hilo(src + UOp.const(off, dtypes.uint64)), *hi
+                                 enclosing: copy (declared :189)
+   nvm                    :193   self.nvm(4, nv_gpu.NVC6B5_LINE_LENGTH_IN, min(sz - off, step))
+                                 enclosing: copy (declared :189)
+   nvm                    :194   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA,
+                                 enclosing: copy (declared :189)
+   nvm                    :198   self.nvm(4, nv_gpu.NVC6B5_SET_SEMAPHORE_A, *hilo(addr), value.ccast(dtypes.uint32))
+                                 enclosing: semaphore (declared :197)
+   nvm                    :199   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA, nv_flags("NVC6B5_LAUNCH_DMA", flush_enable="true", s
+                                 enclosing: semaphore (declared :197)
+   nvm                    :213   self.nvm(4, nv_gpu.NVC9B0_SET_APPLICATION_ID, nv_gpu.NVC9B0_SET_APPLICATION_ID_ID_HEVC)
+                                 enclosing: encdec (declared :204)
+   nvm                    :214   self.nvm(4, nv_gpu.NVC9B0_SET_CONTROL_PARAMS, nv_flags("NVC9B0_SET_CONTROL_PARAMS", codec_
+                                 enclosing: encdec (declared :204)
+   nvm                    :216   self.nvm(4, nv_gpu.NVC9B0_SET_DRV_PIC_SETUP_OFFSET, desc, bufin)
+                                 enclosing: encdec (declared :204)
+   nvm                    :218   self.nvm(4, nv_gpu.NVC9B0_SET_PICTURE_LUMA_OFFSET0 + pos*4, buf)
+                                 enclosing: encdec (declared :204)
+   nvm                    :219   self.nvm(4, nv_gpu.NVC9B0_SET_PICTURE_CHROMA_OFFSET0 + pos*4, buf + (round_up(w, 64) * rou
+                                 enclosing: encdec (declared :204)
+   nvm                    :220   self.nvm(4, nv_gpu.NVC9B0_SET_COLOC_DATA_OFFSET, coloc)
+                                 enclosing: encdec (declared :204)
+   nvm                    :221   self.nvm(4, nv_gpu.NVC9B0_SET_NVDEC_STATUS_OFFSET, stat)
+                                 enclosing: encdec (declared :204)
+   nvm                    :222   self.nvm(4, nv_gpu.NVC9B0_HEVC_SET_TILE_SIZES_OFFSET, desc + 2, filt)
+                                 enclosing: encdec (declared :204)
+   nvm                    :223   self.nvm(4, nv_gpu.NVC9B0_SET_INTRA_TOP_BUF_OFFSET, filt + (self.dev.intra_top_off >> 8))
+                                 enclosing: encdec (declared :204)
+   nvm                    :224   if self.dev.intra_unk_off is not None: self.nvm(4, 0x4dc, filt + (self.dev.intra_unk_off >
+                                 enclosing: encdec (declared :204)
+   nvm                    :225   self.nvm(4, nv_gpu.NVC9B0_EXECUTE, 0)
+                                 enclosing: encdec (declared :204)
+   nvm                    :620   self._submit_cmds("COMPUTE:0", *nvm(1, nv_gpu.NVC6C0_SET_OBJECT, self.iface.compute_class)
+                                 enclosing: fifos (declared :611)
+   nvm                    :621   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_WINDOW_A, *data64(self.local_mem_window)),
+                                 enclosing: fifos (declared :611)
+   nvm                    :622   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_SHARED_MEMORY_WINDOW_A, *data64(self.shared_mem_window)))
+                                 enclosing: fifos (declared :611)
+   nvm                    :623   self._submit_cmds("COPY:0", *nvm(4, nv_gpu.NVC6C0_SET_OBJECT, self.iface.dma_class))
+                                 enclosing: fifos (declared :611)
+   nvm                    :690   self._submit_cmds("COMPUTE:0", *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_A, *data64(se
+                                 enclosing: _ensure_has_local_memory (declared :682)
+   nvm                    :691   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_NON_THROTTLED_A, *data64(bytes_per_tpc), 0xf
+                                 enclosing: _ensure_has_local_memory (declared :682)
+   nvm                    :706   self._submit_cmds("ENCDEC:0", *nvm(4, nv_gpu.NVC6C0_SET_OBJECT, self.iface.viddec_class))
+                                 enclosing: _vid_buf (declared :702)
+   hilo                   :31    def hilo(addr:UOp) -> tuple[UOp, UOp]: return (addr >> 32).cast(dtypes.uint32), addr.cast(
+                                 enclosing: ProfilePMAEvent (declared :29)
+   hilo                   :192   self.nvm(4, nv_gpu.NVC6B5_OFFSET_IN_UPPER, *hilo(src + UOp.const(off, dtypes.uint64)), *hi
+                                 enclosing: copy (declared :189)
+   hilo                   :198   self.nvm(4, nv_gpu.NVC6B5_SET_SEMAPHORE_A, *hilo(addr), value.ccast(dtypes.uint32))
+                                 enclosing: semaphore (declared :197)
+   nv_flags               :38    def nv_flags(reg, **kwargs): return functools.reduce(int.__or__, ((getattr(nv_gpu, f"{reg}
+                                 enclosing: get_error_str (declared :33)
+   nv_flags               :114   self.nvm(0, nv_gpu.NVC56F_SEM_ADDR_LO, addr, value.ccast(dtypes.uint64), nv_flags("NVC56F_
+                                 enclosing: sem (declared :113)
+   nv_flags               :159   nv_flags("NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI", instruction="true", global_data="true",
+                                 enclosing: memory_barrier (declared :156)
+   nv_flags               :195   nv_flags("NVC6B5_LAUNCH_DMA", data_transfer_type="non_pipelined", src_memory_layout="pitch
+                                 enclosing: copy (declared :189)
+   nv_flags               :199   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA, nv_flags("NVC6B5_LAUNCH_DMA", flush_enable="true", s
+                                 enclosing: semaphore (declared :197)
+   nv_flags               :214   self.nvm(4, nv_gpu.NVC9B0_SET_CONTROL_PARAMS, nv_flags("NVC9B0_SET_CONTROL_PARAMS", codec_
+                                 enclosing: encdec (declared :204)
+   nv_flags               :721   flags=nv_flags("NV2080_CTRL_FB_FLUSH_GPU_CACHE_FLAGS", write_back="yes", invalidate="yes",
+                                 enclosing: invalidate_caches (declared :717)
+
+== tinybendygrad/runtime/ops_nv.bend:13  tinygrad/runtime/ops_nv.py:33 [only_older_revision] toks=nvm,hilo,nv_flags
+   runtime/ops_nv.py (834 lines) via exact
+   nvm                    :45    def nvm(subc:int, mthd:int|UOp, *vals, typ=2) -> list:
+                                 enclosing: nv_iowr (declared :41)
+   nvm                    :111   def nvm(self, subc:int, mthd:int|UOp, *vals, typ=2): self.q(*nvm(subc, mthd, *vals, typ=ty
+                                 enclosing: NVQueue (declared :105)
+   nvm                    :114   self.nvm(0, nv_gpu.NVC56F_SEM_ADDR_LO, addr, value.ccast(dtypes.uint64), nv_flags("NVC56F_
+                                 enclosing: sem (declared :113)
+   nvm                    :121   if not timestamp: self.nvm(0, nv_gpu.NVC56F_NON_STALL_INTERRUPT, 0x0)
+                                 enclosing: release (declared :119)
+   nvm                    :158   self.nvm(1, nv_gpu.NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI,
+                                 enclosing: memory_barrier (declared :156)
+   nvm                    :181   if self.dev.pma_enabled: self.nvm(1, nv_gpu.NVC6C0_PM_TRIGGER, 0)
+                                 enclosing: exec (declared :161)
+   nvm                    :182   self.nvm(1, nv_gpu.NVC6C0_SEND_PCAS_A, (qmd_addr >> 8).cast(dtypes.uint32))
+                                 enclosing: exec (declared :161)
+   nvm                    :183   self.nvm(1, nv_gpu.NVC6C0_SEND_SIGNALING_PCAS2_B, nv_gpu.NVC6C0_SEND_SIGNALING_PCAS2_B_PCA
+                                 enclosing: exec (declared :161)
+   nvm                    :192   self.nvm(4, nv_gpu.NVC6B5_OFFSET_IN_UPPER, *hilo(src + UOp.const(off, dtypes.uint64)), *hi
+                                 enclosing: copy (declared :189)
+   nvm                    :193   self.nvm(4, nv_gpu.NVC6B5_LINE_LENGTH_IN, min(sz - off, step))
+                                 enclosing: copy (declared :189)
+   nvm                    :194   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA,
+                                 enclosing: copy (declared :189)
+   nvm                    :198   self.nvm(4, nv_gpu.NVC6B5_SET_SEMAPHORE_A, *hilo(addr), value.ccast(dtypes.uint32))
+                                 enclosing: semaphore (declared :197)
+   nvm                    :199   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA, nv_flags("NVC6B5_LAUNCH_DMA", flush_enable="true", s
+                                 enclosing: semaphore (declared :197)
+   nvm                    :213   self.nvm(4, nv_gpu.NVC9B0_SET_APPLICATION_ID, nv_gpu.NVC9B0_SET_APPLICATION_ID_ID_HEVC)
+                                 enclosing: encdec (declared :204)
+   nvm                    :214   self.nvm(4, nv_gpu.NVC9B0_SET_CONTROL_PARAMS, nv_flags("NVC9B0_SET_CONTROL_PARAMS", codec_
+                                 enclosing: encdec (declared :204)
+   nvm                    :216   self.nvm(4, nv_gpu.NVC9B0_SET_DRV_PIC_SETUP_OFFSET, desc, bufin)
+                                 enclosing: encdec (declared :204)
+   nvm                    :218   self.nvm(4, nv_gpu.NVC9B0_SET_PICTURE_LUMA_OFFSET0 + pos*4, buf)
+                                 enclosing: encdec (declared :204)
+   nvm                    :219   self.nvm(4, nv_gpu.NVC9B0_SET_PICTURE_CHROMA_OFFSET0 + pos*4, buf + (round_up(w, 64) * rou
+                                 enclosing: encdec (declared :204)
+   nvm                    :220   self.nvm(4, nv_gpu.NVC9B0_SET_COLOC_DATA_OFFSET, coloc)
+                                 enclosing: encdec (declared :204)
+   nvm                    :221   self.nvm(4, nv_gpu.NVC9B0_SET_NVDEC_STATUS_OFFSET, stat)
+                                 enclosing: encdec (declared :204)
+   nvm                    :222   self.nvm(4, nv_gpu.NVC9B0_HEVC_SET_TILE_SIZES_OFFSET, desc + 2, filt)
+                                 enclosing: encdec (declared :204)
+   nvm                    :223   self.nvm(4, nv_gpu.NVC9B0_SET_INTRA_TOP_BUF_OFFSET, filt + (self.dev.intra_top_off >> 8))
+                                 enclosing: encdec (declared :204)
+   nvm                    :224   if self.dev.intra_unk_off is not None: self.nvm(4, 0x4dc, filt + (self.dev.intra_unk_off >
+                                 enclosing: encdec (declared :204)
+   nvm                    :225   self.nvm(4, nv_gpu.NVC9B0_EXECUTE, 0)
+                                 enclosing: encdec (declared :204)
+   nvm                    :620   self._submit_cmds("COMPUTE:0", *nvm(1, nv_gpu.NVC6C0_SET_OBJECT, self.iface.compute_class)
+                                 enclosing: fifos (declared :611)
+   nvm                    :621   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_WINDOW_A, *data64(self.local_mem_window)),
+                                 enclosing: fifos (declared :611)
+   nvm                    :622   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_SHARED_MEMORY_WINDOW_A, *data64(self.shared_mem_window)))
+                                 enclosing: fifos (declared :611)
+   nvm                    :623   self._submit_cmds("COPY:0", *nvm(4, nv_gpu.NVC6C0_SET_OBJECT, self.iface.dma_class))
+                                 enclosing: fifos (declared :611)
+   nvm                    :690   self._submit_cmds("COMPUTE:0", *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_A, *data64(se
+                                 enclosing: _ensure_has_local_memory (declared :682)
+   nvm                    :691   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_NON_THROTTLED_A, *data64(bytes_per_tpc), 0xf
+                                 enclosing: _ensure_has_local_memory (declared :682)
+   nvm                    :706   self._submit_cmds("ENCDEC:0", *nvm(4, nv_gpu.NVC6C0_SET_OBJECT, self.iface.viddec_class))
+                                 enclosing: _vid_buf (declared :702)
+   hilo                   :31    def hilo(addr:UOp) -> tuple[UOp, UOp]: return (addr >> 32).cast(dtypes.uint32), addr.cast(
+                                 enclosing: ProfilePMAEvent (declared :29)
+   hilo                   :192   self.nvm(4, nv_gpu.NVC6B5_OFFSET_IN_UPPER, *hilo(src + UOp.const(off, dtypes.uint64)), *hi
+                                 enclosing: copy (declared :189)
+   hilo                   :198   self.nvm(4, nv_gpu.NVC6B5_SET_SEMAPHORE_A, *hilo(addr), value.ccast(dtypes.uint32))
+                                 enclosing: semaphore (declared :197)
+   nv_flags               :38    def nv_flags(reg, **kwargs): return functools.reduce(int.__or__, ((getattr(nv_gpu, f"{reg}
+                                 enclosing: get_error_str (declared :33)
+   nv_flags               :114   self.nvm(0, nv_gpu.NVC56F_SEM_ADDR_LO, addr, value.ccast(dtypes.uint64), nv_flags("NVC56F_
+                                 enclosing: sem (declared :113)
+   nv_flags               :159   nv_flags("NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI", instruction="true", global_data="true",
+                                 enclosing: memory_barrier (declared :156)
+   nv_flags               :195   nv_flags("NVC6B5_LAUNCH_DMA", data_transfer_type="non_pipelined", src_memory_layout="pitch
+                                 enclosing: copy (declared :189)
+   nv_flags               :199   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA, nv_flags("NVC6B5_LAUNCH_DMA", flush_enable="true", s
+                                 enclosing: semaphore (declared :197)
+   nv_flags               :214   self.nvm(4, nv_gpu.NVC9B0_SET_CONTROL_PARAMS, nv_flags("NVC9B0_SET_CONTROL_PARAMS", codec_
+                                 enclosing: encdec (declared :204)
+   nv_flags               :721   flags=nv_flags("NV2080_CTRL_FB_FLUSH_GPU_CACHE_FLAGS", write_back="yes", invalidate="yes",
+                                 enclosing: invalidate_caches (declared :717)
+
+== tinybendygrad/runtime/ops_nv.bend:13  tinygrad/runtime/ops_nv.py:40-41 [only_older_revision] toks=nvm,hilo,nv_flags
+   runtime/ops_nv.py (834 lines) via exact
+   nvm                    :45    def nvm(subc:int, mthd:int|UOp, *vals, typ=2) -> list:
+                                 enclosing: nv_iowr (declared :41)
+   nvm                    :111   def nvm(self, subc:int, mthd:int|UOp, *vals, typ=2): self.q(*nvm(subc, mthd, *vals, typ=ty
+                                 enclosing: NVQueue (declared :105)
+   nvm                    :114   self.nvm(0, nv_gpu.NVC56F_SEM_ADDR_LO, addr, value.ccast(dtypes.uint64), nv_flags("NVC56F_
+                                 enclosing: sem (declared :113)
+   nvm                    :121   if not timestamp: self.nvm(0, nv_gpu.NVC56F_NON_STALL_INTERRUPT, 0x0)
+                                 enclosing: release (declared :119)
+   nvm                    :158   self.nvm(1, nv_gpu.NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI,
+                                 enclosing: memory_barrier (declared :156)
+   nvm                    :181   if self.dev.pma_enabled: self.nvm(1, nv_gpu.NVC6C0_PM_TRIGGER, 0)
+                                 enclosing: exec (declared :161)
+   nvm                    :182   self.nvm(1, nv_gpu.NVC6C0_SEND_PCAS_A, (qmd_addr >> 8).cast(dtypes.uint32))
+                                 enclosing: exec (declared :161)
+   nvm                    :183   self.nvm(1, nv_gpu.NVC6C0_SEND_SIGNALING_PCAS2_B, nv_gpu.NVC6C0_SEND_SIGNALING_PCAS2_B_PCA
+                                 enclosing: exec (declared :161)
+   nvm                    :192   self.nvm(4, nv_gpu.NVC6B5_OFFSET_IN_UPPER, *hilo(src + UOp.const(off, dtypes.uint64)), *hi
+                                 enclosing: copy (declared :189)
+   nvm                    :193   self.nvm(4, nv_gpu.NVC6B5_LINE_LENGTH_IN, min(sz - off, step))
+                                 enclosing: copy (declared :189)
+   nvm                    :194   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA,
+                                 enclosing: copy (declared :189)
+   nvm                    :198   self.nvm(4, nv_gpu.NVC6B5_SET_SEMAPHORE_A, *hilo(addr), value.ccast(dtypes.uint32))
+                                 enclosing: semaphore (declared :197)
+   nvm                    :199   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA, nv_flags("NVC6B5_LAUNCH_DMA", flush_enable="true", s
+                                 enclosing: semaphore (declared :197)
+   nvm                    :213   self.nvm(4, nv_gpu.NVC9B0_SET_APPLICATION_ID, nv_gpu.NVC9B0_SET_APPLICATION_ID_ID_HEVC)
+                                 enclosing: encdec (declared :204)
+   nvm                    :214   self.nvm(4, nv_gpu.NVC9B0_SET_CONTROL_PARAMS, nv_flags("NVC9B0_SET_CONTROL_PARAMS", codec_
+                                 enclosing: encdec (declared :204)
+   nvm                    :216   self.nvm(4, nv_gpu.NVC9B0_SET_DRV_PIC_SETUP_OFFSET, desc, bufin)
+                                 enclosing: encdec (declared :204)
+   nvm                    :218   self.nvm(4, nv_gpu.NVC9B0_SET_PICTURE_LUMA_OFFSET0 + pos*4, buf)
+                                 enclosing: encdec (declared :204)
+   nvm                    :219   self.nvm(4, nv_gpu.NVC9B0_SET_PICTURE_CHROMA_OFFSET0 + pos*4, buf + (round_up(w, 64) * rou
+                                 enclosing: encdec (declared :204)
+   nvm                    :220   self.nvm(4, nv_gpu.NVC9B0_SET_COLOC_DATA_OFFSET, coloc)
+                                 enclosing: encdec (declared :204)
+   nvm                    :221   self.nvm(4, nv_gpu.NVC9B0_SET_NVDEC_STATUS_OFFSET, stat)
+                                 enclosing: encdec (declared :204)
+   nvm                    :222   self.nvm(4, nv_gpu.NVC9B0_HEVC_SET_TILE_SIZES_OFFSET, desc + 2, filt)
+                                 enclosing: encdec (declared :204)
+   nvm                    :223   self.nvm(4, nv_gpu.NVC9B0_SET_INTRA_TOP_BUF_OFFSET, filt + (self.dev.intra_top_off >> 8))
+                                 enclosing: encdec (declared :204)
+   nvm                    :224   if self.dev.intra_unk_off is not None: self.nvm(4, 0x4dc, filt + (self.dev.intra_unk_off >
+                                 enclosing: encdec (declared :204)
+   nvm                    :225   self.nvm(4, nv_gpu.NVC9B0_EXECUTE, 0)
+                                 enclosing: encdec (declared :204)
+   nvm                    :620   self._submit_cmds("COMPUTE:0", *nvm(1, nv_gpu.NVC6C0_SET_OBJECT, self.iface.compute_class)
+                                 enclosing: fifos (declared :611)
+   nvm                    :621   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_WINDOW_A, *data64(self.local_mem_window)),
+                                 enclosing: fifos (declared :611)
+   nvm                    :622   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_SHARED_MEMORY_WINDOW_A, *data64(self.shared_mem_window)))
+                                 enclosing: fifos (declared :611)
+   nvm                    :623   self._submit_cmds("COPY:0", *nvm(4, nv_gpu.NVC6C0_SET_OBJECT, self.iface.dma_class))
+                                 enclosing: fifos (declared :611)
+   nvm                    :690   self._submit_cmds("COMPUTE:0", *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_A, *data64(se
+                                 enclosing: _ensure_has_local_memory (declared :682)
+   nvm                    :691   *nvm(1, nv_gpu.NVC6C0_SET_SHADER_LOCAL_MEMORY_NON_THROTTLED_A, *data64(bytes_per_tpc), 0xf
+                                 enclosing: _ensure_has_local_memory (declared :682)
+   nvm                    :706   self._submit_cmds("ENCDEC:0", *nvm(4, nv_gpu.NVC6C0_SET_OBJECT, self.iface.viddec_class))
+                                 enclosing: _vid_buf (declared :702)
+   hilo                   :31    def hilo(addr:UOp) -> tuple[UOp, UOp]: return (addr >> 32).cast(dtypes.uint32), addr.cast(
+                                 enclosing: ProfilePMAEvent (declared :29)
+   hilo                   :192   self.nvm(4, nv_gpu.NVC6B5_OFFSET_IN_UPPER, *hilo(src + UOp.const(off, dtypes.uint64)), *hi
+                                 enclosing: copy (declared :189)
+   hilo                   :198   self.nvm(4, nv_gpu.NVC6B5_SET_SEMAPHORE_A, *hilo(addr), value.ccast(dtypes.uint32))
+                                 enclosing: semaphore (declared :197)
+   nv_flags               :38    def nv_flags(reg, **kwargs): return functools.reduce(int.__or__, ((getattr(nv_gpu, f"{reg}
+                                 enclosing: get_error_str (declared :33)
+   nv_flags               :114   self.nvm(0, nv_gpu.NVC56F_SEM_ADDR_LO, addr, value.ccast(dtypes.uint64), nv_flags("NVC56F_
+                                 enclosing: sem (declared :113)
+   nv_flags               :159   nv_flags("NVC6C0_INVALIDATE_SHADER_CACHES_NO_WFI", instruction="true", global_data="true",
+                                 enclosing: memory_barrier (declared :156)
+   nv_flags               :195   nv_flags("NVC6B5_LAUNCH_DMA", data_transfer_type="non_pipelined", src_memory_layout="pitch
+                                 enclosing: copy (declared :189)
+   nv_flags               :199   self.nvm(4, nv_gpu.NVC6B5_LAUNCH_DMA, nv_flags("NVC6B5_LAUNCH_DMA", flush_enable="true", s
+                                 enclosing: semaphore (declared :197)
+   nv_flags               :214   self.nvm(4, nv_gpu.NVC9B0_SET_CONTROL_PARAMS, nv_flags("NVC9B0_SET_CONTROL_PARAMS", codec_
+                                 enclosing: encdec (declared :204)
+   nv_flags               :721   flags=nv_flags("NV2080_CTRL_FB_FLUSH_GPU_CACHE_FLAGS", write_back="yes", invalidate="yes",
+                                 enclosing: invalidate_caches (declared :717)
+
+== tinybendygrad/runtime/ops_nv.bend:14  hcq2.py:74-76 [only_older_revision] toks=layout_args
+   runtime/support/hcq2.py (563 lines) via unique
+   layout_args            :114   def layout_args(args:Sequence[UOp|int], offset:int=0) -> list[tuple[int, UOp]]:
+                                 enclosing: patch (declared :100)
+
+== tinybendygrad/runtime/ops_nv.bend:23  hcq2.py:63 [only_older_revision] toks=to_name,reg_ops
+   runtime/support/hcq2.py (563 lines) via unique
+   to_name                :6     from tinygrad.helpers import dedup, pluralize, unwrap, to_tuple, ContextVar, Context, pani
+   to_name                :61    kind = to_name(dev.split(":")[0], queue.split(":")[0], "submit") # nv_compute_submit: the 
+                                 enclosing: make_submit (declared :60)
+   to_name                :81    fences = [hcq_fence(patch(b, [], bytes(b.nbytes())), timeline(dev), 2 * num_queues[dev], n
+                                 enclosing: make_fence (declared :80)
+   to_name                :410   buf = UOp.alloc((len(stream),), dtypes.u8, device=device or hq.devs[0], name=to_name(name,
+                                 enclosing: encode_cmdbuf (declared :389)
+   to_name                :488   owned = Compiled.link_bufs.get(b.arg.name, Compiled.link_bufs.get(to_name(b.device, b.arg.
+                                 enclosing: bufferize_buf (declared :483)
+
+== tinybendygrad/runtime/ops_nv.bend:23  tinygrad/runtime/ops_nv.py:818-824 [only_older_revision] toks=to_name,reg_ops
+   runtime/ops_nv.py (834 lines) via exact
+   to_name                :5     from tinygrad.runtime.support.hcq2 import HWQueue, patch, to_name, unwrap_view, make_submi
+   to_name                :127   ring, gpput, doorbell, put = [UOp.alloc((sz,), dt, device=d, name=to_name(self.dev.device,
+                                 enclosing: submit (declared :123)
+   to_name                :137   self.qmd_buf = UOp.alloc((len(progs) * self.stride,), dtypes.uint8, device=self.devs[0], n
+                                 enclosing: __init__ (declared :131)
+   to_name                :657   Compiled.link_bufs |= {to_name(self.device, n, name): getattr(fifo, n) for n in ("ring", "
+                                 enclosing: _new_gpu_fifo (declared :628)
+   reg_ops                :777   if not is_bw: self.reg_ops(*[(PMAGPC_BASE + gpc * 0x200, 0x100, 0x100) for gpc in range(le
+                                 enclosing: _prof_setup_pc_sampling (declared :768)
+   reg_ops                :788   self.reg_ops(*[op for i in range(3) for op in [(PMASYS_BASE + 0x128 + i*8, 480), (PMASYS_B
+                                 enclosing: _prof_setup_pc_sampling (declared :768)
+   reg_ops                :789   self.reg_ops((PMAGPC_BASE + 0xa24, 0x04000001), (PMAGPC_BASE + 0xa10, 0x80000002))
+                                 enclosing: _prof_setup_pc_sampling (declared :768)
+   reg_ops                :790   self.reg_ops(*[(GPC_BASE + gpc * 0x4000 + 0x200 + tpc * 0x200 + reg, 0)
+                                 enclosing: _prof_setup_pc_sampling (declared :768)
+   reg_ops                :795   self.reg_ops(*[(PMASYS_BASE + 0x65c + off * 4, 0xffffffff) for off in range(self.num_gpcs 
+                                 enclosing: SM_REG (declared :793)
+   reg_ops                :796   self.reg_ops((PMASYS_BASE + 0x620, 0x2000007))
+                                 enclosing: SM_REG (declared :793)
+   reg_ops                :801   self.reg_ops((GR_GPC_BASE + 0x304, 0x80808a))
+                                 enclosing: SM_REG (declared :798)
+   reg_ops                :804   self.reg_ops(*[op for gpc in range(len(tpc_masks)) for tpc in range(tpc_cnt[gpc]) for sm i
+                                 enclosing: SM_REG (declared :798)
+   reg_ops                :809   self.reg_ops((GR_GPC_BASE + 0x3dc, 0x1), reg_type=1)
+                                 enclosing: SM_REG (declared :798)
+   reg_ops                :811   def reg_ops(self, *ops, reg_type=0, op=nv_gpu.NV2080_CTRL_GPU_REG_OP_WRITE_32):
+                                 enclosing: SM_REG (declared :798)
+
+== tinybendygrad/runtime/ops_nv.bend:66  tinygrad/runtime/ops_nv.py:43-45 [only_older_revision] toks=nv_iowr
+   runtime/ops_nv.py (834 lines) via exact
+   nv_iowr                :41    def nv_iowr(fd:FileIOInterface, nr, args, cmd=None):
+                                 enclosing: nv_flags (declared :38)
+   nv_iowr                :368   nv_iowr(NVKIface.fd_ctl, nv_gpu.NV_ESC_CARD_INFO, gpus_info:=(nv_gpu.nv_ioctl_card_info_t*
+                                 enclosing: __init__ (declared :349)
+   nv_iowr                :383   nv_iowr(self.fd_ctl, nv_gpu.NV_ESC_RM_ALLOC, made:=nv_gpu.NVOS21_PARAMETERS(hRoot=root if 
+                                 enclosing: rm_alloc (declared :382)
+   nv_iowr                :390   nv_iowr(self.fd_ctl, nv_gpu.NV_ESC_RM_CONTROL, made:=nv_gpu.NVOS54_PARAMETERS(hClient=self
+                                 enclosing: rm_control (declared :389)
+   nv_iowr                :397   nv_iowr(fd or self.fd_uvm, None, params, cmd=cmd)
+                                 enclosing: uvm (declared :396)
+   nv_iowr                :433   nv_iowr(fd_dev, nv_gpu.NV_ESC_REGISTER_FD, nv_gpu.nv_ioctl_register_fd_t(ctl_fd=self.fd_ct
+                                 enclosing: _new_gpu_fd (declared :431)
+   nv_iowr                :440   nv_iowr(self.fd_ctl, nv_gpu.NV_ESC_RM_MAP_MEMORY, made)
+                                 enclosing: _gpu_map_to_cpu (declared :436)
+   nv_iowr                :461   nv_iowr(self.fd_dev, nv_gpu.NV_ESC_RM_ALLOC_MEMORY, made)
+                                 enclosing: alloc (declared :444)
+   nv_iowr                :489   nv_iowr(self.fd_ctl, nv_gpu.NV_ESC_RM_FREE, made)
+                                 enclosing: free (declared :485)
+   nv_iowr                :504   nv_iowr(self.fd_ctl, nv_gpu.NV_ESC_RM_MAP_MEMORY_DMA, made)
+                                 enclosing: _gpu_uvm_map (declared :498)
+

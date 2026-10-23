@@ -1,0 +1,24 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_amd.bend	12	the KERNEL ARGUMENT TRACE	#   * the KERNEL ARGUMENT TRACE -- `kernargs` (ops_amd.py:374 symbol=kernargs) is `layout_args` then
+tinybendygrad/runtime/ops_amd.bend	13	`pack_args` over a list	#     `pack_args` over a list whose widths are `8` per global and `v.dtype.itemsize` per var.
+tinybendygrad/runtime/ops_amd.bend	14	That is `hcq2.py:74-80`	#     That is upstream's `layout_args`/`pack_args` (hcq2.py:114-118 symbol=layout_args) -- the SAME
+tinybendygrad/runtime/ops_amd.bend	15	contract `ops_webgpu.bend`	#     contract `ops_webgpu.bend`, `ops_cl.bend` and `ops_nv.bend` port. Getting it consistent across six files
+tinybendygrad/runtime/ops_amd.bend	16	it consistent across six files	#     matters more here than anywhere.
+tinybendygrad/runtime/ops_amd.bend	68	ops_amd.py:551	#   * `pd.lds` used `ceildiv` where `ops_amd.py:522 symbol=_amd_program_image` uses `//`, i.e. FLOOR, so
+tinybendygrad/runtime/ops_amd.bend	184	3. USB3 (USBIface, :810-833)	# 3. USB3: `USB3.list_devices`, `dma_view`, the `0/4096/20480` controller window and its `AddrSpace.SYS` mapping -- upstream's
+tinybendygrad/runtime/ops_amd.bend	185	`0/4096/20480` controller window	#    `USBIface` block, ops_amd.py:784-808 symbol=USBIface.
+tinybendygrad/runtime/ops_amd.bend	190	4. THE UOp MATCHER	# 4. THE UOp MATCHER. AT THIS PIN upstream's `Compiled.pm_encode` is ops_amd.py:1026 and its TWO rules match SINK nodes
+tinybendygrad/runtime/ops_amd.bend	191	matches `CUSTOM_FUNCTION` nodes	"#    carrying `KernelInfo(""amd_compute_submit"")` / `KernelInfo(""amd_copy_submit"")` -- NOT `CUSTOM_FUNCTION` nodes, which is what"
+tinybendygrad/runtime/ops_amd.bend	192	`Compiled`'s. The port carries	"#    the OLD `AMDDevice.pm_encode` matched. `pm_bufferize` is GONE at this pin (upstream 9ff6db7b0, ""hcq2 no tags""): the"
+tinybendygrad/runtime/ops_amd.bend	193	first-wins fold and the profiling	#    surviving construct is `Compiled.link_bufs` (`device.py:377 symbol=link_bufs`), which upstream fills at
+tinybendygrad/runtime/ops_amd.bend	194	body is a UOp graph	#    `ops_amd.py:862` (scratch) and `ops_amd.py:872` (the four profiling names). The port carries the three rules'
+tinybendygrad/runtime/ops_amd.bend	195	lowering this file does not own	#    PATTERNS and their first-wins fold and the profiling rules' four names, in order; a rule's body is a UOp graph
+tinybendygrad/runtime/ops_amd.bend	196	rows, and they are about ORDER	#    and building one needs `./uop/ops.bend` and the HCQ2 lowering this file does not own. `amd_pmb_order` and
+tinybendygrad/runtime/ops_amd.bend	203	5. THE HANG PATH	# 5. THE HANG PATH. AT THIS PIN `on_device_hang` is KFDIface's (ops_amd.py:675-688 symbol=on_device_hang) -- the one that builds the
+tinybendygrad/runtime/ops_amd.bend	204	report out of `queue_event_arr	#    report out of `queue_event_arr[i].memory_exception_data.failure`, whose `_real_fields_` it walks by name -- PCIIface's
+tinybendygrad/runtime/ops_amd.bend	205	`_real_fields_` it walks by name	#    (ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (ops_amd.py:1024 symbol=on_device_hang). A field NAME is a
+tinybendygrad/runtime/ops_amd.bend	206	a walk over it is a `dict`	#    Python string table and a walk over it is a `dict`, so the port keeps the two refusal MESSAGES and the trace
+tinybendygrad/runtime/ops_amd.bend	207	the trace truncation and nothing	#    truncation and nothing of the report's body.
+tinybendygrad/runtime/ops_amd.bend	208	runtime/ops_amd.py:706	# | WALL(p3) runtime/ops_amd.py:676 symbol=on_device_hang  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
+tinybendygrad/runtime/ops_amd.bend	215	ELF WALK (:544-548)	#  * `_amd_program_image`'s ELF WALK (`ops_amd.py:515-519 symbol=_amd_program_image`). `elf_loader(lib)` returns the
+tinybendygrad/runtime/ops_amd.bend	248	`helpers.py:69`	#  2. `D.round_up` is `helpers.py:70 symbol=round_up`, and `H.round_up_u32` / `H.ceildiv_u32` /

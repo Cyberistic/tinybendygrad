@@ -1,0 +1,28 @@
+== tinybendygrad/runtime/support/usb.bend:34  tinygrad/runtime/support/usb.py:350-351 [only_older_revision] toks=usb_chunk
+   runtime/support/usb.py (450 lines) via exact
+
+== tinybendygrad/runtime/support/usb.bend:57  tinygrad/runtime/support/usb.py:42 [only_older_revision] toks=USB3,alloc_cbuffer,x1000
+   runtime/support/usb.py (450 lines) via exact
+   USB3                   :19    class USB3:
+                                 enclosing: wrapper (declared :14)
+   USB3                   :95    def __init__(self, usb:USB3):
+                                 enclosing: CustomASM24Controller (declared :94)
+   USB3                   :444   words = [ctypes.addressof(x.contents) for x in (dev.iface.pci_dev.usb.usb.handle, USB3.ctx
+                                 enclosing: setup_usb_rules (declared :441)
+   USB3                   :450   if DEV.interface.startswith("MOCK"): from test.mockgpu.usb import MockUSB3 as USB3  # type
+                                 enclosing: setup_usb_rules (declared :441)
+   alloc_cbuffer          :11    def alloc_cbuffer(sz:int) -> tuple[ctypes.Array, memoryview]: return (buf:=(ctypes.c_ubyte
+   alloc_cbuffer          :40    self._bulk_buf, self._bulk_mv = alloc_cbuffer(4 << 20)
+                                 enclosing: __init__ (declared :38)
+   alloc_cbuffer          :41    self._ctrl_buf, self._ctrl_mv = alloc_cbuffer(0x1000)
+                                 enclosing: __init__ (declared :38)
+   alloc_cbuffer          :74    if len(payload) > len(self._bulk_mv): self._bulk_buf, self._bulk_mv = alloc_cbuffer(len(pa
+                                 enclosing: bulk_write (declared :73)
+   alloc_cbuffer          :81    if length > len(self._bulk_mv): self._bulk_buf, self._bulk_mv = alloc_cbuffer(length)
+                                 enclosing: bulk_read (declared :80)
+
+== tinybendygrad/runtime/support/usb.bend:65  ops_amd.py:824 [only_older_revision] toks=dma_view,PCIDevice
+   runtime/ops_amd.py (1030 lines) via unique
+   dma_view               :798   view = self.pci_dev.dma_view(0xa000, 0x85000)
+                                 enclosing: ctrl (declared :793)
+

@@ -1,0 +1,31 @@
+== tinybendygrad/runtime/support/compiler_mesa.bend:49  tinygrad/runtime/support/compiler_mesa.py:98 [at_no_revision] toks=ir3,arch_ok
+   runtime/support/compiler_mesa.py (133 lines) via exact
+   ir3                    :110   # ir3_shader_variant info: https://elixir.bootlin.com/mesa/mesa-25.3.0/source/src/freedren
+                                 enclosing: __reduce__ (declared :108)
+
+== tinybendygrad/runtime/support/compiler_mesa.bend:50  tinygrad/runtime/support/compiler_mesa.py:99 [only_older_revision] toks=ir3,gpu_id,chip_id
+   runtime/support/compiler_mesa.py (133 lines) via exact
+   ir3                    :110   # ir3_shader_variant info: https://elixir.bootlin.com/mesa/mesa-25.3.0/source/src/freedren
+                                 enclosing: __reduce__ (declared :108)
+   gpu_id                 :82    def disas_adreno(lib:bytes, gpu_id=630):
+                                 enclosing: disassemble (declared :75)
+   gpu_id                 :91    mesa.ir3_isa_disasm(lib, len(lib), mesa_fp, mesa.struct_isa_decode_options(gpu_id, True, 0
+                                 enclosing: hd (declared :86)
+   gpu_id                 :133   def disassemble(self, lib: bytes): disas_adreno(self.unpack_lib(lib)[3], self.dev_id.gpu_i
+                                 enclosing: unpack_lib (declared :128)
+
+== tinybendygrad/runtime/support/compiler_mesa.bend:54  tinygrad/runtime/support/compiler_mesa.py:118 [at_no_revision] toks=ir3,variant_fields
+   runtime/support/compiler_mesa.py (133 lines) via exact
+   ir3                    :110   # ir3_shader_variant info: https://elixir.bootlin.com/mesa/mesa-25.3.0/source/src/freedren
+                                 enclosing: __reduce__ (declared :108)
+
+== tinybendygrad/runtime/support/compiler_mesa.bend:55  tinygrad/runtime/support/compiler_mesa.py:123 [at_no_revision] toks=ir3,ret_parts
+   runtime/support/compiler_mesa.py (133 lines) via exact
+   ir3                    :110   # ir3_shader_variant info: https://elixir.bootlin.com/mesa/mesa-25.3.0/source/src/freedren
+                                 enclosing: __reduce__ (declared :108)
+
+== tinybendygrad/runtime/support/compiler_mesa.bend:60  tinygrad/runtime/support/compiler_mesa.py:133 [at_no_revision] toks=ir3,dis_row
+   runtime/support/compiler_mesa.py (133 lines) via exact
+   ir3                    :110   # ir3_shader_variant info: https://elixir.bootlin.com/mesa/mesa-25.3.0/source/src/freedren
+                                 enclosing: __reduce__ (declared :108)
+

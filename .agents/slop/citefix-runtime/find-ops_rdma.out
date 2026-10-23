@@ -1,0 +1,286 @@
+== tinybendygrad/runtime/ops_rdma.bend:10  tinygrad/runtime/ops_rdma.py:140 [at_no_revision] toks=rdma_copies
+   runtime/ops_rdma.py (166 lines) via exact
+   rdma_copies            :107   def rdma_copies(devs:tuple[str, ...], calls:list[UOp]) -> list[list[UOp]]: # the ops of ea
+                                 enclosing: queue_of (declared :102)
+   rdma_copies            :164   for i, copy_ops in zip(positions, rdma_copies((queue.device,), [lin.src[i] for i in positi
+                                 enclosing: rdma_submit (declared :157)
+
+== tinybendygrad/runtime/ops_rdma.bend:44  tinygrad/runtime/ops_rdma.py:18 [at_no_revision] toks=vram_bar
+   runtime/ops_rdma.py (166 lines) via exact
+   vram_bar               :22    super().__init__(dev, index, *BNXT_IDS[:2], vram_bar=2, va_start=MemoryManager.va_allocato
+                                 enclosing: __init__ (declared :21)
+
+== tinybendygrad/runtime/ops_rdma.bend:75  ops_rdma.py:57-58 [at_no_revision] toks=min
+   runtime/ops_rdma.py (166 lines) via unique
+   min                    :64    return cast(RDMADevice, Device[f"RDMA:{min(nics, key=lambda x: abs(bus(x[1]) - bus(anchor.
+                                 enclosing: bus (declared :58)
+   min                    :79    nics = [unwrap(rdma_nic_for(Device[d], Device[min(pair)])) for d in pair]
+                                 enclosing: rdma_qp (declared :77)
+   min                    :105   return (min(gpu, peer), max(gpu, peer)), wire is src
+                                 enclosing: queue_of (declared :102)
+   min                    :113   chunks = [ceildiv(min(RDMA_CHUNK, b.nbytes() - o), MTU) for b in bufs for o in range(0, b.
+                                 enclosing: rdma_copies (declared :107)
+   min                    :116   assert wqes <= min(RING_ENTRIES, CQ_ENTRIES), "a batch posts at most a ring of wqes per pa
+                                 enclosing: rdma_copies (declared :107)
+   min                    :133   size = min(RDMA_CHUNK, buf.nbytes() - off)
+                                 enclosing: rdma_copies (declared :107)
+
+== tinybendygrad/runtime/ops_rdma.bend:87  tinygrad/runtime/ops_rdma.py:85 [only_older_revision] toks=PatternMatcher,rules,pm_bufferize,qp_len
+   runtime/ops_rdma.py (166 lines) via exact
+   PatternMatcher         :14    from tinygrad.uop.ops import Ops, PatternMatcher, UOp, UPat
+   PatternMatcher         :166   Compiled.pm_encode = PatternMatcher([(UPat.sink().call(UPat(Ops.PARAM)).after(allow_any_le
+                                 enclosing: rdma_submit (declared :157)
+
+== tinybendygrad/runtime/ops_rdma.bend:96  tinygrad/runtime/ops_rdma.py:101 [only_older_revision] toks=is_rdma,wire
+   runtime/ops_rdma.py (166 lines) via exact
+   is_rdma                :100   def is_rdma(call:UOp) -> bool: return rdma_wire(call) is not None
+                                 enclosing: rdma_wire (declared :97)
+   is_rdma                :159   if not (queues:={i: queue_of(u) for i, u in enumerate(lin.src) if is_rdma(u)}): return Non
+                                 enclosing: rdma_submit (declared :157)
+   wire                   :103   (dst, src), wire = get_call_arg_uops(call), unwrap(rdma_wire(call))
+                                 enclosing: queue_of (declared :102)
+   wire                   :104   gpu, peer = to_tuple((dst if wire is src else src).device)[0], wire.base.arg.name
+                                 enclosing: queue_of (declared :102)
+   wire                   :105   return (min(gpu, peer), max(gpu, peer)), wire is src
+                                 enclosing: queue_of (declared :102)
+
+== tinybendygrad/runtime/ops_rdma.bend:100  tinygrad/runtime/ops_rdma.py:109 [only_older_revision] toks=ins,queue,is_recv
+   runtime/ops_rdma.py (166 lines) via exact
+   ins                    :10    from tinygrad.runtime.support.hcq2 import unwrap_view, to_name, ins
+   ins                    :137   ops += [ins("write", ring_addr + (n % RING_ENTRIES) * WQE_SIZE, *hdr, buf.getaddr(devs) + 
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :140   if not is_recv: ops += [ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRI
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :144   ops += [ins("write", db, ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << bnxt.B
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :147   ops += [ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24, (n // CQ_ENTRIES & 1 ^ 1 | (2
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :148   ins("write", db, ((n + 1) % CQ_ENTRIES | ((n + 1) // CQ_ENTRIES & 1) << bnxt.BNXT_QPLIB_DB
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :151   copies.append(ops + ([ins("barrier")] if is_recv else []))
+                                 enclosing: rdma_copies (declared :107)
+   queue                  :107   def rdma_copies(devs:tuple[str, ...], calls:list[UOp]) -> list[list[UOp]]: # the ops of ea
+                                 enclosing: queue_of (declared :102)
+   queue                  :158   lin, queue = s.without_after.body, s.without_after.src[1]
+                                 enclosing: rdma_submit (declared :157)
+   queue                  :164   for i, copy_ops in zip(positions, rdma_copies((queue.device,), [lin.src[i] for i in positi
+                                 enclosing: rdma_submit (declared :157)
+   queue                  :165   return s.without_after.replace(src=(lin.replace(src=tuple(flatten(ops))), queue)).after(*s
+                                 enclosing: rdma_submit (declared :157)
+   is_recv                :90    def rdma_ring(nic:str, pair:tuple[str, str], is_recv:bool) -> UOp:
+                                 enclosing: rdma_mem (declared :88)
+   is_recv                :91    return rdma_mem(nic, pair, "rq" if is_recv else "sq", RING_ENTRIES * (WQE_SIZE if is_recv 
+                                 enclosing: rdma_ring (declared :90)
+   is_recv                :92    def rdma_cq(nic:str, pair:tuple[str, str], is_recv:bool) -> UOp: return rdma_mem(nic, pair
+                                 enclosing: rdma_ring (declared :90)
+   is_recv                :93    def rdma_seq(nic:str, pair:tuple[str, str], is_recv:bool) -> UOp: return rdma_mem(nic, pai
+                                 enclosing: rdma_cq (declared :92)
+   is_recv                :108   (pair, is_recv), nic = queue_of(calls[0]), cast(RDMADevice, Device[unwrap(rdma_wire(calls[
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :110   ring, cq = rdma_ring(nic.device, pair, is_recv), rdma_cq(nic.device, pair, is_recv)
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :111   seq, psn = rdma_seq(nic.device, pair, is_recv), rdma_psn(nic.device, pair)
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :112   bufs = [get_call_arg_uops(c)[0 if is_recv else 1] for c in calls]
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :119   bumps = [seq.index(0).store(seq.index(0).load() + wqes)] + ([] if is_recv else [psn.index(
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :126   ring_db = db_value(qp.qpn, bnxt.DBC_DBC_TYPE_RQ if is_recv else bnxt.DBC_DBC_TYPE_SQ, 0, 0
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :127   cq_db = db_value(qp.rcq_id if is_recv else qp.scq_id, bnxt.DBC_DBC_TYPE_CQ, 0, 0)
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :136   hdr, key = struct.unpack("<8I", (recv_wqe if is_recv else send_wqe)(0, 0, size)[:32]), unw
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :140   if not is_recv: ops += [ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRI
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :147   ops += [ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24, (n // CQ_ENTRIES & 1 ^ 1 | (2
+                                 enclosing: rdma_copies (declared :107)
+   is_recv                :151   copies.append(ops + ([ins("barrier")] if is_recv else []))
+                                 enclosing: rdma_copies (declared :107)
+
+== tinybendygrad/runtime/ops_rdma.bend:105  tinygrad/runtime/ops_rdma.py:118 [only_older_revision] toks=len,chunks,sum,nchunks,ops,n_writes
+   runtime/ops_rdma.py (166 lines) via exact
+   len                    :41    def _copyin(self, dest:BufferStorage, src:memoryview): unwrap(dest.host)[:len(src)] = src
+                                 enclosing: _alloc (declared :39)
+   len                    :114   wqes, packets = len(chunks), sum(chunks)
+                                 enclosing: rdma_copies (declared :107)
+   chunks                 :113   chunks = [ceildiv(min(RDMA_CHUNK, b.nbytes() - o), MTU) for b in bufs for o in range(0, b.
+                                 enclosing: rdma_copies (declared :107)
+   chunks                 :114   wqes, packets = len(chunks), sum(chunks)
+                                 enclosing: rdma_copies (declared :107)
+   chunks                 :121   psns = UOp(Ops.BINARY, arg=struct.pack(f"<{wqes + 1}I", *itertools.accumulate(chunks, init
+                                 enclosing: rdma_copies (declared :107)
+   sum                    :114   wqes, packets = len(chunks), sum(chunks)
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :14    from tinygrad.uop.ops import Ops, PatternMatcher, UOp, UPat
+   ops                    :107   def rdma_copies(devs:tuple[str, ...], calls:list[UOp]) -> list[list[UOp]]: # the ops of ea
+                                 enclosing: queue_of (declared :102)
+   ops                    :131   ops:list[UOp] = []
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :137   ops += [ins("write", ring_addr + (n % RING_ENTRIES) * WQE_SIZE, *hdr, buf.getaddr(devs) + 
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :140   if not is_recv: ops += [ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRI
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :144   ops += [ins("write", db, ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << bnxt.B
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :147   ops += [ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24, (n // CQ_ENTRIES & 1 ^ 1 | (2
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :151   copies.append(ops + ([ins("barrier")] if is_recv else []))
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :161   ops = [[u] for u in lin.src]
+                                 enclosing: rdma_submit (declared :157)
+   ops                    :164   for i, copy_ops in zip(positions, rdma_copies((queue.device,), [lin.src[i] for i in positi
+                                 enclosing: rdma_submit (declared :157)
+   ops                    :165   return s.without_after.replace(src=(lin.replace(src=tuple(flatten(ops))), queue)).after(*s
+                                 enclosing: rdma_submit (declared :157)
+
+== tinybendygrad/runtime/ops_rdma.bend:108  tinygrad/runtime/ops_rdma.py:125 [only_older_revision] toks=accumulate,chunks,psns_of
+   runtime/ops_rdma.py (166 lines) via exact
+   accumulate             :121   psns = UOp(Ops.BINARY, arg=struct.pack(f"<{wqes + 1}I", *itertools.accumulate(chunks, init
+                                 enclosing: rdma_copies (declared :107)
+   chunks                 :113   chunks = [ceildiv(min(RDMA_CHUNK, b.nbytes() - o), MTU) for b in bufs for o in range(0, b.
+                                 enclosing: rdma_copies (declared :107)
+   chunks                 :114   wqes, packets = len(chunks), sum(chunks)
+                                 enclosing: rdma_copies (declared :107)
+   chunks                 :121   psns = UOp(Ops.BINARY, arg=struct.pack(f"<{wqes + 1}I", *itertools.accumulate(chunks, init
+                                 enclosing: rdma_copies (declared :107)
+
+== tinybendygrad/runtime/ops_rdma.bend:109  tinygrad/runtime/ops_rdma.py:126 [only_older_revision] toks=ops,n_of,p_of
+   runtime/ops_rdma.py (166 lines) via exact
+   ops                    :14    from tinygrad.uop.ops import Ops, PatternMatcher, UOp, UPat
+   ops                    :107   def rdma_copies(devs:tuple[str, ...], calls:list[UOp]) -> list[list[UOp]]: # the ops of ea
+                                 enclosing: queue_of (declared :102)
+   ops                    :131   ops:list[UOp] = []
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :137   ops += [ins("write", ring_addr + (n % RING_ENTRIES) * WQE_SIZE, *hdr, buf.getaddr(devs) + 
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :140   if not is_recv: ops += [ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRI
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :144   ops += [ins("write", db, ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << bnxt.B
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :147   ops += [ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24, (n // CQ_ENTRIES & 1 ^ 1 | (2
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :151   copies.append(ops + ([ins("barrier")] if is_recv else []))
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :161   ops = [[u] for u in lin.src]
+                                 enclosing: rdma_submit (declared :157)
+   ops                    :164   for i, copy_ops in zip(positions, rdma_copies((queue.device,), [lin.src[i] for i in positi
+                                 enclosing: rdma_submit (declared :157)
+   ops                    :165   return s.without_after.replace(src=(lin.replace(src=tuple(flatten(ops))), queue)).after(*s
+                                 enclosing: rdma_submit (declared :157)
+
+== tinybendygrad/runtime/ops_rdma.bend:111  tinygrad/runtime/ops_rdma.py:129 [only_older_revision] toks=ins,ring_db
+   runtime/ops_rdma.py (166 lines) via exact
+   ins                    :10    from tinygrad.runtime.support.hcq2 import unwrap_view, to_name, ins
+   ins                    :137   ops += [ins("write", ring_addr + (n % RING_ENTRIES) * WQE_SIZE, *hdr, buf.getaddr(devs) + 
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :140   if not is_recv: ops += [ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRI
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :144   ops += [ins("write", db, ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << bnxt.B
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :147   ops += [ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24, (n // CQ_ENTRIES & 1 ^ 1 | (2
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :148   ins("write", db, ((n + 1) % CQ_ENTRIES | ((n + 1) // CQ_ENTRIES & 1) << bnxt.BNXT_QPLIB_DB
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :151   copies.append(ops + ([ins("barrier")] if is_recv else []))
+                                 enclosing: rdma_copies (declared :107)
+   ring_db                :126   ring_db = db_value(qp.qpn, bnxt.DBC_DBC_TYPE_RQ if is_recv else bnxt.DBC_DBC_TYPE_SQ, 0, 0
+                                 enclosing: rdma_copies (declared :107)
+   ring_db                :144   ops += [ins("write", db, ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << bnxt.B
+                                 enclosing: rdma_copies (declared :107)
+
+== tinybendygrad/runtime/ops_rdma.bend:119  tinygrad/runtime/ops_rdma.py:152 [only_older_revision] toks=ins,cq_db
+   runtime/ops_rdma.py (166 lines) via exact
+   ins                    :10    from tinygrad.runtime.support.hcq2 import unwrap_view, to_name, ins
+   ins                    :137   ops += [ins("write", ring_addr + (n % RING_ENTRIES) * WQE_SIZE, *hdr, buf.getaddr(devs) + 
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :140   if not is_recv: ops += [ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRI
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :144   ops += [ins("write", db, ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << bnxt.B
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :147   ops += [ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24, (n // CQ_ENTRIES & 1 ^ 1 | (2
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :148   ins("write", db, ((n + 1) % CQ_ENTRIES | ((n + 1) // CQ_ENTRIES & 1) << bnxt.BNXT_QPLIB_DB
+                                 enclosing: rdma_copies (declared :107)
+   ins                    :151   copies.append(ops + ([ins("barrier")] if is_recv else []))
+                                 enclosing: rdma_copies (declared :107)
+   cq_db                  :127   cq_db = db_value(qp.rcq_id if is_recv else qp.scq_id, bnxt.DBC_DBC_TYPE_CQ, 0, 0)
+                                 enclosing: rdma_copies (declared :107)
+   cq_db                  :148   ins("write", db, ((n + 1) % CQ_ENTRIES | ((n + 1) // CQ_ENTRIES & 1) << bnxt.BNXT_QPLIB_DB
+                                 enclosing: rdma_copies (declared :107)
+
+== tinybendygrad/runtime/ops_rdma.bend:125  tinygrad/runtime/ops_rdma.py:166 [only_older_revision] toks=positions,submit,pos_at
+   runtime/ops_rdma.py (166 lines) via exact
+   positions              :163   positions = [i for i in queues if queues[i] == q]
+                                 enclosing: rdma_submit (declared :157)
+   positions              :164   for i, copy_ops in zip(positions, rdma_copies((queue.device,), [lin.src[i] for i in positi
+                                 enclosing: rdma_submit (declared :157)
+   submit                 :107   def rdma_copies(devs:tuple[str, ...], calls:list[UOp]) -> list[list[UOp]]: # the ops of ea
+                                 enclosing: queue_of (declared :102)
+   submit                 :118   # next slot and psn persist in nic memory. read once per submit and own it
+                                 enclosing: rdma_copies (declared :107)
+
+== tinybendygrad/runtime/ops_rdma.bend:126  tinygrad/runtime/ops_rdma.py:167 [only_older_revision] toks=psns_at,ops,n_of
+   runtime/ops_rdma.py (166 lines) via exact
+   ops                    :14    from tinygrad.uop.ops import Ops, PatternMatcher, UOp, UPat
+   ops                    :107   def rdma_copies(devs:tuple[str, ...], calls:list[UOp]) -> list[list[UOp]]: # the ops of ea
+                                 enclosing: queue_of (declared :102)
+   ops                    :131   ops:list[UOp] = []
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :137   ops += [ins("write", ring_addr + (n % RING_ENTRIES) * WQE_SIZE, *hdr, buf.getaddr(devs) + 
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :140   if not is_recv: ops += [ins("write", ring_addr + RING_ENTRIES * WQE_SIZE + (n % RING_ENTRI
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :144   ops += [ins("write", db, ((n + 1) % RING_ENTRIES | ((n + 1) // RING_ENTRIES & 1) << bnxt.B
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :147   ops += [ins("wait_eq", cq_addr + (n % CQ_ENTRIES) * 32 + 24, (n // CQ_ENTRIES & 1 ^ 1 | (2
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :151   copies.append(ops + ([ins("barrier")] if is_recv else []))
+                                 enclosing: rdma_copies (declared :107)
+   ops                    :161   ops = [[u] for u in lin.src]
+                                 enclosing: rdma_submit (declared :157)
+   ops                    :164   for i, copy_ops in zip(positions, rdma_copies((queue.device,), [lin.src[i] for i in positi
+                                 enclosing: rdma_submit (declared :157)
+   ops                    :165   return s.without_after.replace(src=(lin.replace(src=tuple(flatten(ops))), queue)).after(*s
+                                 enclosing: rdma_submit (declared :157)
+
+== tinybendygrad/runtime/ops_rdma.bend:127  tinygrad/runtime/ops_rdma.py:169 [only_older_revision] toks=pm_rdma_encode,encode_len
+   runtime/ops_rdma.py (166 lines) via exact
+
+== tinybendygrad/runtime/ops_rdma.bend:150  tinygrad/runtime/ops_rdma.py:140 [only_older_revision] toks=unwrap_view
+   runtime/ops_rdma.py (166 lines) via exact
+   unwrap_view            :10    from tinygrad.runtime.support.hcq2 import unwrap_view, to_name, ins
+   unwrap_view            :136   hdr, key = struct.unpack("<8I", (recv_wqe if is_recv else send_wqe)(0, 0, size)[:32]), unw
+                                 enclosing: rdma_copies (declared :107)
+
+== tinybendygrad/runtime/ops_rdma.bend:165  tinygrad/runtime/ops_rdma.py:145 [at_no_revision] toks=slot,next,psn
+   runtime/ops_rdma.py (166 lines) via exact
+   slot                   :118   # next slot and psn persist in nic memory. read once per submit and own it
+                                 enclosing: rdma_copies (declared :107)
+   slot                   :139   # a send also fills in its msn entry: the slot, the psn after it (a psn per packet), its f
+                                 enclosing: rdma_copies (declared :107)
+   slot                   :143   # rings the doorbell: the slot after the wqe and the epoch of its pass
+                                 enclosing: rdma_copies (declared :107)
+   next                   :94    def rdma_psn(nic:str, pair:tuple[str, str]) -> UOp: return rdma_mem(nic, pair, "psn", 1, d
+                                 enclosing: rdma_seq (declared :93)
+   next                   :99    return next((b for b in get_call_arg_uops(call) if to_tuple(b.device)[0].startswith("RDMA"
+                                 enclosing: rdma_wire (declared :97)
+   next                   :118   # next slot and psn persist in nic memory. read once per submit and own it
+                                 enclosing: rdma_copies (declared :107)
+   next                   :120   i = UOp.range(wqes, next(UOp.unique_num), dtype=dtypes.uint64)
+                                 enclosing: rdma_copies (declared :107)
+   psn                    :83    bufs |= {name: Buffer(nic.device, 8, initial_value=bytes(8)) for name in ("sq_seq", "rq_se
+                                 enclosing: rdma_qp (declared :77)
+   psn                    :94    def rdma_psn(nic:str, pair:tuple[str, str]) -> UOp: return rdma_mem(nic, pair, "psn", 1, d
+                                 enclosing: rdma_seq (declared :93)
+   psn                    :111   seq, psn = rdma_seq(nic.device, pair, is_recv), rdma_psn(nic.device, pair)
+                                 enclosing: rdma_copies (declared :107)
+   psn                    :118   # next slot and psn persist in nic memory. read once per submit and own it
+                                 enclosing: rdma_copies (declared :107)
+   psn                    :119   bumps = [seq.index(0).store(seq.index(0).load() + wqes)] + ([] if is_recv else [psn.index(
+                                 enclosing: rdma_copies (declared :107)
+   psn                    :122   n, p = seq.after(*bumps).index(0).load() - wqes + i, psn.after(*bumps).index(0).load() - p
+                                 enclosing: rdma_copies (declared :107)
+   psn                    :139   # a send also fills in its msn entry: the slot, the psn after it (a psn per packet), its f
+                                 enclosing: rdma_copies (declared :107)
+

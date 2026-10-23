@@ -1,0 +1,8 @@
+rel	at	old	new
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	192	are WALLS (`getenv` is IO); the device	#      are WALLS (`getenv` is IO); the device node string is `nic.node` in `ops_rdma.bend`,
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	193	node string is `nic.node` in `ops_rdma.bend`, which already ports it.	#      which already ports it.
+tinybendygrad/runtime/ops_nv.bend	14	ops_nv.py:38 symbol=nv_flags) `nv_flags`, the `layout_args` kernel-argument trace (tinygrad/runtime/support/hcq2.py:114 symbol=layout_args),	#            the `layout_args` kernel-argument trace (tinygrad/runtime/support/hcq2.py:114 symbol=layout_args) and
+tinybendygrad/runtime/ops_nv.bend	15	and the four queues' command vocabularies (:99-225).	#            `nv_flags` (tinygrad/runtime/ops_nv.py:38 symbol=nv_flags) -- the queue's word flags -- and the four queues' command vocabularies (:99-225).
+tinybendygrad/runtime/ops_webgpu.bend	148	symbol=_copyout) hand back. `Buf` is that	#      is what `_copyout` (tinygrad/runtime/ops_webgpu.py:160 symbol=_copyout) and `_free`
+tinybendygrad/runtime/ops_webgpu.bend	149	pair, and `alloc.of` is the `BufferStorage`.	#      (tinygrad/runtime/ops_webgpu.py:164 symbol=_free) hand back. `Buf` is that pair, and `alloc.of` is the `BufferStorage`.
+tinybendygrad/runtime/support/memory.bend	8	memory.py:12 symbol=view) `view`	#     arithmetic (tinygrad/runtime/support/memory.py:11-12 symbol=view) `view`, `BumpAllocator`

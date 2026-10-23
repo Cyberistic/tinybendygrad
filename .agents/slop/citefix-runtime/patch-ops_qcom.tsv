@@ -1,0 +1,19 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_qcom.bend	22	`flag` (:303) over the four kgsl	#   2. `flag` (ops_qcom.py:298 symbol=flag) over the four kgsl `_SHIFT`/`_MASK` pairs.
+tinybendygrad/runtime/ops_qcom.bend	44	:43  ctz 	#   ops_qcom.py:42  ctz               PORTED  `ctz` (see THE Ctz PRECONDITION) symbol=ctz
+tinybendygrad/runtime/ops_qcom.bend	46	:49  pkt7_hdr	#   ops_qcom.py:48  pkt7_hdr          PORTED  `pkt7_hdr` symbol=pkt7_hdr
+tinybendygrad/runtime/ops_qcom.bend	47	:51  pkt4_hdr	#   ops_qcom.py:50  pkt4_hdr          PORTED  `pkt4_hdr` symbol=pkt4_hdr
+tinybendygrad/runtime/ops_qcom.bend	49	:303 flag 	#   ops_qcom.py:298 flag              PORTED  `kgsl_flags`, both directions, `flag` symbol=flag
+tinybendygrad/runtime/ops_qcom.bend	90	:43   ctz 	#   ops_qcom.py:42   ctz                PORTED  `ctz` (see THE ctz PRECONDITION) symbol=ctz
+tinybendygrad/runtime/ops_qcom.bend	92	:49   pkt7_hdr	#   ops_qcom.py:48   pkt7_hdr          PORTED  `pkt7_hdr` symbol=pkt7_hdr
+tinybendygrad/runtime/ops_qcom.bend	93	:51   pkt4_hdr	#   ops_qcom.py:50   pkt4_hdr          PORTED  `pkt4_hdr` symbol=pkt4_hdr
+tinybendygrad/runtime/ops_qcom.bend	102	:202-203 the ioctl command word	#   ops_qcom.py:57 the ioctl command word  PORTED  `ioctl_cmd` symbol=qcom_submit
+tinybendygrad/runtime/ops_qcom.bend	103	:206-283 QCOMProgramData	#   ops_qcom.py:206 `QCOMProgramData`    PORTED  `pd.parse_full`, `desc.*`, `const.*` symbol=QCOMProgramData
+tinybendygrad/runtime/ops_qcom.bend	109	:303  `flag`	#   ops_qcom.py:298 `flag`              PORTED  `kgsl_flags`, both directions symbol=flag
+tinybendygrad/runtime/ops_qcom.bend	116	:388-392 _ensure_stack_size	#   ops_qcom.py:378 _ensure_stack_size  WALL 3  it is `Buffer` and device.bend's
+tinybendygrad/runtime/ops_qcom.bend	122	(hcq2.py:69-83), the two	#        survives here is `layout_args`/`pack_args` (hcq2.py:114-124 symbol=layout_args), the two
+tinybendygrad/runtime/ops_qcom.bend	124	The buffer/image/sampler SELECTION at :91-94	#        The buffer/image/sampler SELECTION at ops_qcom.py:98 symbol=kernargs and the `tex_to_image`
+tinybendygrad/runtime/ops_qcom.bend	163	"`ops_qcom.py:132` calls `self.dev.tag(""stack"")`, so it dies"	"#                                     `ops_qcom.py:130` allocates the stack with `name=""stack""`; upstream's `self.dev.tag` is GONE"
+tinybendygrad/runtime/ops_qcom.bend	164	`AttributeError: 'D' object has no attribute 'tag'`. It	#                                     at this pin (9ff6db7b0), so the stub's own `AttributeError: 'D' object has no
+tinybendygrad/runtime/ops_qcom.bend	165	measured a thing that still exists; the FIXTURE is one	#                                     attribute 'tag'` is about the PORT's stub, not about upstream. It measured a
+tinybendygrad/runtime/ops_qcom.bend	166	method behind it. Reported, not fabricated.	#                                     thing upstream no longer has; the FIXTURE is one method behind it. Reported, not fabricated.

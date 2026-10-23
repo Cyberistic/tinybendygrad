@@ -1,0 +1,2 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_metal.bend	20	MTLSize(*dims[:3])	# (MTLSize(*dims[0:3]), MTLSize(*dims[3:])), and `dims` is

@@ -1,0 +1,30 @@
+== tinybendygrad/runtime/ops_disk.bend:22  tinygrad/runtime/ops_disk.py:101-116 [only_older_revision] toks=_copyout_sharded
+   runtime/ops_disk.py (170 lines) via exact
+
+== tinybendygrad/runtime/ops_disk.bend:94  tinygrad/runtime/ops_disk.py:84-86 [only_older_revision] toks=alloc_of,mv_address
+   runtime/ops_disk.py (170 lines) via exact
+   mv_address             :4     from tinygrad.helpers import OSX, mv_address, flatten, to_tuple, unwrap, ceildiv
+   mv_address             :37    self.info.host.view()[:16] = struct.pack("2Q", self.fd, mv_address(memoryview(self.mem)))
+                                 enclosing: _might_open (declared :21)
+   mv_address             :64    return BufferStorage(opaque:=DiskBuffer(self.dev, size), None, MMIOInterface(mv_address(op
+                                 enclosing: _alloc (declared :62)
+
+== tinybendygrad/runtime/ops_disk.bend:176  tinygrad/runtime/ops_disk.py:81 [only_older_revision] toks=MAP_LOCKED,MAP_POPULATE,getattr
+   runtime/ops_disk.py (170 lines) via exact
+   MAP_LOCKED             :30    self.mem = mmap.mmap(fd, size, mmap.MAP_SHARED | MAP_POPULATE | MAP_LOCKED)
+                                 enclosing: _might_open (declared :21)
+   MAP_LOCKED             :59    MAP_LOCKED, MAP_POPULATE = 0 if OSX else 0x2000, getattr(mmap, "MAP_POPULATE", 0 if OSX el
+                                 enclosing: _buf (declared :55)
+   MAP_POPULATE           :30    self.mem = mmap.mmap(fd, size, mmap.MAP_SHARED | MAP_POPULATE | MAP_LOCKED)
+                                 enclosing: _might_open (declared :21)
+   MAP_POPULATE           :59    MAP_LOCKED, MAP_POPULATE = 0 if OSX else 0x2000, getattr(mmap, "MAP_POPULATE", 0 if OSX el
+                                 enclosing: _buf (declared :55)
+   getattr                :33    try: self.fd, rdonly = os.open(filename, os.O_RDWR|os.O_CREAT|getattr(os, "O_DIRECT", 0)),
+                                 enclosing: _might_open (declared :21)
+   getattr                :39    if hasattr(self.mem, 'madvise') and (hp := getattr(mmap, "MADV_HUGEPAGE", None)) is not No
+                                 enclosing: _might_open (declared :21)
+   getattr                :59    MAP_LOCKED, MAP_POPULATE = 0 if OSX else 0x2000, getattr(mmap, "MAP_POPULATE", 0 if OSX el
+                                 enclosing: _buf (declared :55)
+   getattr                :119   and not getattr(Device[dev], "is_usb", False)
+                                 enclosing: is_disk_read (declared :116)
+

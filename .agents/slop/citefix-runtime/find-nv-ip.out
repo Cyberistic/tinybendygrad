@@ -1,0 +1,56 @@
+== tinybendygrad/runtime/support/nv/ip.bend:70  tinygrad/runtime/support/nv/ip.py:48 [at_no_revision] toks=entryOff
+   runtime/support/nv/ip.py (661 lines) via exact
+   entryOff               :22    wait_cond(lambda: self.tx_view[getattr(nv.msgqTxHeader, 'entryOff').offset // 4], value=0x
+                                 enclosing: __init__ (declared :20)
+   entryOff               :30    self.queue_mv = view.view(self.tx.entryOff, self.tx.msgSize * self.tx.msgCount)
+                                 enclosing: __init__ (declared :20)
+   entryOff               :384   self.cmd_q_view[:ctypes.sizeof(nv.msgqTxHeader)] = bytes(nv.msgqTxHeader(version=0, size=q
+                                 enclosing: init_rm_args (declared :364)
+
+== tinybendygrad/runtime/support/nv/ip.bend:153  tinygrad/runtime/support/nv/ip.py:123 [at_no_revision] toks=desc_v3
+   runtime/support/nv/ip.py (661 lines) via exact
+   desc_v3                :139   self.desc_v3 = nv.FALCON_UCODE_DESC_V3.from_buffer_copy(vbios_bytes[ucode_desc_off:ucode_d
+                                 enclosing: prep_ucode (declared :110)
+   desc_v3                :143   image = vbios_bytes[ucode_desc_off + ucode_desc_size:][:round_up(self.desc_v3.StoredSize, 
+                                 enclosing: prep_ucode (declared :110)
+   desc_v3                :155   hdr = nv.FALCON_APPLICATION_INTERFACE_HEADER_V1.from_buffer_copy(image[(app_hdr_off:=self.
+                                 enclosing: __patch (declared :151)
+   desc_v3                :161   dmem = nv.FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3.from_buffer_copy(image[(dmem_mapper_
+                                 enclosing: __patch (declared :151)
+   desc_v3                :164   patched_image[(cmd_off:=self.desc_v3.IMEMLoadSize+dmem.cmd_in_buffer_offset) : cmd_off+len
+                                 enclosing: __patch (declared :151)
+   desc_v3                :165   patched_image[(sig_off:=self.desc_v3.IMEMLoadSize+self.desc_v3.PKCDataOffset) : sig_off+0x
+                                 enclosing: __patch (declared :151)
+   desc_v3                :190   self.execute_hs(self.falcon, self.frts_image_paddr, code_off=0x0, data_off=self.desc_v3.IM
+                                 enclosing: init_hw (declared :186)
+   desc_v3                :191   imemPa=self.desc_v3.IMEMPhysBase, imemVa=self.desc_v3.IMEMVirtBase, imemSz=self.desc_v3.IM
+                                 enclosing: init_hw (declared :186)
+   desc_v3                :192   dmemPa=self.desc_v3.DMEMPhysBase, dmemVa=0x0, dmemSz=self.desc_v3.DMEMLoadSize,
+                                 enclosing: init_hw (declared :186)
+   desc_v3                :193   pkc_off=self.desc_v3.PKCDataOffset, engid=self.desc_v3.EngineIdMask, ucodeid=self.desc_v3.
+                                 enclosing: init_hw (declared :186)
+
+== tinybendygrad/runtime/support/nv/ip.bend:217  tinygrad/runtime/support/nv/ip.py:419 [at_no_revision] toks=List,memoryview,cast
+   runtime/support/nv/ip.py (661 lines) via exact
+   memoryview             :111   vbios_bytes, vbios_off = memoryview(bytes(array.array('I', self.nvdev.mmio[0x00300000//4:(
+                                 enclosing: prep_ucode (declared :110)
+   memoryview             :306   self.fmc_booter_image, self.fmc_booter_hash = _section("image"), memoryview(_section("hash
+                                 enclosing: _section (declared :305)
+   memoryview             :307   self.fmc_booter_sig, self.fmc_booter_pkey = memoryview(_section("signature")).cast('I'), m
+                                 enclosing: _section (declared :305)
+   memoryview             :631   cmd_iter = iter(memoryview(seq_buf[hdr_sz:]).cast('I')[:hdr.cmdIndex])
+                                 enclosing: run_cpu_seq (declared :629)
+   cast                   :3     from typing import cast, Any
+   cast                   :113   pci_blck = vbios_bytes[vbios_off + nv.OFFSETOF_PCI_EXP_ROM_PCI_DATA_STRUCT_PTR:].cast('H')
+                                 enclosing: prep_ucode (declared :110)
+   cast                   :114   imglen = vbios_bytes[vbios_off + pci_blck + nv.OFFSETOF_PCI_DATA_STRUCT_IMAGE_LEN:].cast('
+                                 enclosing: prep_ucode (declared :110)
+   cast                   :306   self.fmc_booter_image, self.fmc_booter_hash = _section("image"), memoryview(_section("hash
+                                 enclosing: _section (declared :305)
+   cast                   :307   self.fmc_booter_sig, self.fmc_booter_pkey = memoryview(_section("signature")).cast('I'), m
+                                 enclosing: _section (declared :305)
+   cast                   :590   cast(nv_gpu.NVC36F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS, st).workSubmitToken |= (s
+                                 enclosing: rpc_rm_control (declared :571)
+   cast                   :631   cmd_iter = iter(memoryview(seq_buf[hdr_sz:]).cast('I')[:hdr.cmdIndex])
+                                 enclosing: run_cpu_seq (declared :629)
+

@@ -1,0 +1,21 @@
+== tinybendygrad/runtime/ops_cuda.bend:20  ops_cuda.py:125 [only_older_revision] toks=ops_cuda,count,_wait_signal
+   runtime/ops_cuda.py (126 lines) via unique
+   count                  :122   def count(self) -> int: return init_c_var(ctypes.c_int, lambda x: check(self.api.cuDeviceG
+                                 enclosing: function (declared :115)
+   _wait_signal           :124   def _wait_signal(self, sig:MMIOInterface|memoryview, value:int, timeout:int|None=None): # 
+                                 enclosing: count (declared :122)
+
+== tinybendygrad/runtime/ops_cuda.bend:21  tinygrad/runtime/ops_cuda.py:126 [at_no_revision] toks=tinygrad
+   runtime/ops_cuda.py (126 lines) via exact
+   tinygrad               :4     from tinygrad.helpers import DEBUG, DEV, getenv, unwrap, to_name
+   tinygrad               :5     from tinygrad.device import Device, Buffer, BufferStorage, BufferSpec, Allocator, Compiled
+   tinygrad               :6     from tinygrad.dtype import dtypes
+   tinygrad               :7     from tinygrad.uop.ops import Ops, UOp, UPat, PatternMatcher, KernelInfo
+   tinygrad               :8     from tinygrad.engine.realize import get_call_kernel_args
+   tinygrad               :9     from tinygrad.renderer.cstyle import CUDARenderer, NVCCRenderer
+   tinygrad               :10    from tinygrad.renderer.ptx import PTXRenderer
+   tinygrad               :11    from tinygrad.runtime.autogen import cuda
+   tinygrad               :12    from tinygrad.runtime.support.compiler_cuda import pretty_ptx
+   tinygrad               :13    from tinygrad.runtime.support.c import init_c_var
+   tinygrad               :14    from tinygrad.runtime.support.hcq2 import ccall, layout_args, patch, make_program
+

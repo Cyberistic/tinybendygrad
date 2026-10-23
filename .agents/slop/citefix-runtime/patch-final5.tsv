@@ -1,0 +1,9 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_rdma.bend	75	ops_rdma.py:57-58 symbol=node	#   (tinygrad/runtime/ops_rdma.py:57-64 symbol=node) `node` and the closest nic is a `min(...)` at the END of that range; MEASURED, there is no `def
+tinybendygrad/runtime/support/hcq2.bend	51	`CDTYPE` (`dtypes.uints` at tinygrad/runtime/support/hcq2.py:130), `cfield` (`7d2420e64`; `cstruct` at :129 reads the fields),	"#   `CDTYPE` (`dtypes.uints` at tinygrad/runtime/support/hcq2.py:130), `cfield` (`7d2420e64`;
+#   `cstruct` at tinygrad/runtime/support/hcq2.py:129 reads the fields),"
+tinybendygrad/runtime/support/system.bend	66	:175  the BAR size	#      :174  the BAR size -- `bar_64` -- `((~(((hi << 32) | lo) & ~0xf)) + 1) & (0xffff... if bar_64 else ...)`
+tinybendygrad/runtime/support/objc.bend	55	tinygrad/runtime/ops_cpu.py:19 symbol=CPUProgram	# `tinygrad/runtime/ops_cpu.py:18-19 symbol=CPUProgram` (upstream's `rt_lib` -- libobjc is missing from `CPUProgram.link_libs`), NOT in
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	182	bnxtdev.py:41 symbol=BNXTQueue	#   3. `MMIOInterface` (tinygrad/runtime/support/rdma/bnxtdev.py:40-41 symbol=BNXTQueue). A byte-addressed slice of host memory over a
+tinybendygrad/runtime/support/usb.bend	65	ops_amd.py:798 symbol=USBIface	# NOT CLOSED, DELIBERATELY. `dma_view` (tinygrad/runtime/ops_amd.py:784-798 symbol=USBIface) is a `PCIDevice` method
+tinybendygrad/runtime/ops_webgpu.bend	150	device.py:345 symbol=name	#   4. `TinyELF` (tinygrad/device.py:343-345 symbol=TinyELF) carries `name`, which is the entry point (:54)

@@ -1,0 +1,6 @@
+rel	at	old	new
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	88	bnxtdev.py:82 the word loop into bar0	#   tinygrad/runtime/support/rdma/bnxtdev.py:83 the word loop into bar0  PORTED  `hwrm.bar0_at` -- upstream's `bar0` symbol=hwrm
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	89	bnxtdev.py:83 the trigger dword	#   tinygrad/runtime/support/rdma/bnxtdev.py:84 the trigger dword         PORTED  `hwrm.trig_at` -- upstream's `bar0` symbol=hwrm
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	103	bnxtdev.py:137 the FIRMWARE_FIRST flag	#   tinygrad/runtime/support/rdma/bnxtdev.py:138 the FIRMWARE_FIRST flag   PORTED  `rcfw.first_flag` -- upstream's `FIRMWARE_FIRST_FLAG` symbol=rcfw
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	106	bnxtdev.py:151 the NQ_ARM consumer db	#   tinygrad/runtime/support/rdma/bnxtdev.py:153 the NQ_ARM consumer db    PORTED  `rcfw.nq_arm` -- upstream's `NQ_ARM` symbol=rcfw
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	107	bnxtdev.py:152 the QP_EVENT filter	#   tinygrad/runtime/support/rdma/bnxtdev.py:154 the QP_EVENT filter       PORTED  `rcfw.is_final`, and its threshold -- upstream's `CREQ_BASE_TYPE_QP_EVENT` symbol=rcfw

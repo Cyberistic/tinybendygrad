@@ -1,0 +1,20 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_null.bend	34	`ops_cpu.py:84` returns `False`	# `ops_cpu.py:68 symbol=has_copy_queue` returns `False`. `C.cpu.has_copy_queue` is the other half of that
+tinybendygrad/runtime/ops_null.bend	38	`runtime/support/hcq2.py:78-83`	# port `pack_args`, which is `runtime/support/hcq2.py:118-124 symbol=pack_args` -- a file with its own
+tinybendygrad/runtime/ops_python.bend	24	the nested END at ops_python.py:70	# `loop_ends` and the nested END (ops_python.py:54-73 symbol=PythonProgram) jump to the inner head.
+tinybendygrad/runtime/ops_python.bend	49	:94  PARAM@ALU	#   ops_python.py:97 PARAM@ALU      PORTED  reads a `vals` entry -- upstream's `pargs.pop(0)` symbol=__call__
+tinybendygrad/runtime/ops_python.bend	81	(ops.py:1417-1424), so ops_python.py:154 raises	#    (ops.py:1412-1420 symbol=python_alu), so ops.py:1427 raises `KeyError` on them. They are
+tinybendygrad/runtime/ops_python.bend	98	`truncate` has the same shape: dtype.py:296-297 answers float16, bfloat16,	#    `truncate` has the same shape: tinygrad/dtype.py:289 symbol=truncate answers float16, bfloat16,
+tinybendygrad/runtime/ops_python.bend	108	`wmma` (ops_python.py:33) needs	# 2. TENSOR CORES. `wmma` (ops_python.py:35 symbol=wmma) needs
+tinybendygrad/runtime/ops_python.bend	115	`exec_alu`'s first line (ops.py:1429) is	# 4. THE TUPLE OPERAND BRANCH. `exec_alu`'s body (ops.py:1422 symbol=exec_alu) opens with
+tinybendygrad/runtime/ops_python.bend	124	answers `inf if x > 0 else -inf`	#    (ops.py:1406-1410 symbol=safe_pow) answers `inf if x > 0 else -inf` for a negative base with a
+tinybendygrad/runtime/ops_python.bend	144	`BUFFER` plus an AddrSpace (ops_python.py:99,105). So the brief's	#     `BUFFER` plus an AddrSpace (ops_python.py:98-107). So the brief's
+tinybendygrad/runtime/ops_python.bend	156	because ops_python.py:104 pops `pbufs`	#     in uop order, because ops_python.py:107 symbol=__call__ pops upstream's `pargs` in exactly that order.
+tinybendygrad/runtime/support/hcq2.bend	50	`CDTYPE` (`dtypes.uints` at	#   `select_lane` (folded into `unwrap_lane`, :45), `CDTYPE` (`dtypes.uints` at hcq2.py:130),
+tinybendygrad/runtime/support/hcq2.bend	51	:130), `cfield`	#   `cfield` (`7d2420e64`; `cstruct` at :129 reads the fields),
+tinybendygrad/runtime/support/hcq2.bend	108	BLOCKED: needs `HCQInfo`	#    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: the row `pm_encode` needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`).
+tinybendygrad/runtime/support/elf.bend	137	:50  the return	#   elf.py:50 symbol=elf_loader  the return  PORTED  `type ElfImage` + its four readers -- upstream's `relocs`
+tinybendygrad/runtime/support/compileserver.bend	35	what `device.py:355` relies on	#      what `device.py:339 symbol=CompileError` relies on when it raises `CompileError` on an empty
+tinybendygrad/runtime/support/compiler_qcom.bend	65	(device.py:352) and `compile_server` writes	#   (device.py:333-339 symbol=server) and `compile_server` writes a length-prefixed frame and
+tinybendygrad/runtime/webgpu_call.bend	60	calls `dev.create_uniform(x)` (:202-205)	# ops_webgpu.py:95 `bg_entry` calls `dev.create_uniform(x)` (ops_webgpu.py:202-206 symbol=create_uniform), which
+tinybendygrad/runtime/webgpu_call.bend	65	`Uniform` -- :202-205 AS ONE UNIT	# `Uniform` -- ops_webgpu.py:202-206 symbol=create_uniform AS ONE UNIT, create-and-initialise -- and

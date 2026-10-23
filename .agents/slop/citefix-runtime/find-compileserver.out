@@ -1,0 +1,7 @@
+== tinybendygrad/runtime/support/compileserver.bend:35  device.py:355 [at_no_revision] toks=CompileError
+   device.py (540 lines) via unique
+   CompileError           :321   class CompileError(Exception): pass
+                                 enclosing: _offset (declared :317)
+   CompileError           :339   raise CompileError("Compilation Error")
+                                 enclosing: compile_server (declared :336)
+

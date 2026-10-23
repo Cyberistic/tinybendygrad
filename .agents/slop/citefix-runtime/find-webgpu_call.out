@@ -1,0 +1,5 @@
+== tinybendygrad/runtime/webgpu_call.bend:65  ops_webgpu.py:202-205 [at_no_revision] toks=Uniform
+   runtime/ops_webgpu.py (222 lines) via unique
+   Uniform                :78    bgl_entry(0, 'Uniform'), *(bgl_entry(i+1, 'Uniform' if a is AddrSpace.ALU else 'Storage') 
+                                 enclosing: bgl_entry (declared :74)
+

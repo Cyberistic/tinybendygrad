@@ -1,0 +1,64 @@
+== tinybendygrad/runtime/ops_python.bend:24  ops_python.py:70 [only_older_revision] toks=loop_ends
+   runtime/ops_python.py (190 lines) via unique
+   loop_ends              :54    self.loop_ends: dict[UOp, int] = {u.src[1]:i for i, u in enumerate(self.uops) if u.op in {
+                                 enclosing: __init__ (declared :49)
+   loop_ends              :133   i = self.loop_ends[u] + 1
+                                 enclosing: __call__ (declared :55)
+
+== tinybendygrad/runtime/ops_python.bend:49  tinygrad/runtime/ops_python.py:94 [at_no_revision] toks=vals
+   runtime/ops_python.py (190 lines) via exact
+
+== tinybendygrad/runtime/ops_python.bend:81  ops.py:1417-1424 [at_no_revision] toks=KeyError
+   uop/ops.py (1926 lines) via unique
+   KeyError               :243   except (AttributeError, KeyError): pass
+                                 enclosing: __del__ (declared :240)
+
+== tinybendygrad/runtime/ops_python.bend:98  dtype.py:296-297 [at_no_revision] toks=truncate
+   NO UPSTREAM FILE  (ambiguous:3)
+== tinybendygrad/runtime/ops_python.bend:108  ops_python.py:33 [only_older_revision] toks=wmma,tcore,frag_coords
+   runtime/ops_python.py (190 lines) via unique
+   wmma                   :35    def wmma(tensor_cores:list[tc.TensorCore], arg, inp, warp_size:int):
+                                 enclosing: _store (declared :29)
+   wmma                   :154   elif u.op is Ops.WMMA: values[u] = wmma(self.tensor_cores, u.arg, src_values, warp_size)
+                                 enclosing: __call__ (declared :55)
+   tcore                  :37    tcore = next(x for x in tensor_cores if (x.dims, x.dtype_in, x.threads) == arg[:3])
+                                 enclosing: wmma (declared :35)
+   tcore                  :38    frags = tcore.frag_coords()
+                                 enclosing: wmma (declared :35)
+   tcore                  :40    assert warp_size % tcore.threads == 0, f"must have multiples of {tcore.threads} warp threa
+                                 enclosing: wmma (declared :35)
+   tcore                  :42    for goff in range(0, warp_size, tcore.threads):
+                                 enclosing: wmma (declared :35)
+   tcore                  :45    for e,(m,n) in enumerate(lc): out[e][goff+lane] += sum(a[m,k]*b[k,n] for k in range(tcore.
+                                 enclosing: wmma (declared :35)
+   frag_coords            :38    frags = tcore.frag_coords()
+                                 enclosing: wmma (declared :35)
+
+== tinybendygrad/runtime/ops_python.bend:115  ops.py:1429 [only_older_revision] toks=exec_alu
+   uop/ops.py (1926 lines) via unique
+   exec_alu               :1422  def exec_alu(op:Ops, dtype:DType, operands, truncate_output=True):
+                                 enclosing: safe_pow (declared :1406)
+   exec_alu               :1425  return tuple([exec_alu(op, dtype, [x[i] if isinstance(x, tuple) else x for x in operands])
+                                 enclosing: exec_alu (declared :1422)
+
+== tinybendygrad/runtime/ops_python.bend:124  ops.py:1412 [only_older_revision] toks=inf
+   uop/ops.py (1926 lines) via unique
+   inf                    :1404  except OverflowError: return math.inf
+                                 enclosing: safe_exp2 (declared :1402)
+   inf                    :1409  except ZeroDivisionError: return math.inf
+                                 enclosing: safe_pow (declared :1406)
+   inf                    :1410  except ValueError: return math.inf if x > 0 else -math.inf
+                                 enclosing: safe_pow (declared :1406)
+   inf                    :1413  Ops.LOG2: lambda x: math.log2(x) if x > 0 else -math.inf if x == 0 else math.nan, Ops.EXP2
+                                 enclosing: safe_pow (declared :1406)
+   inf                    :1414  Ops.SQRT: lambda x: math.sqrt(x) if x >= 0 else math.nan, Ops.RECIPROCAL: lambda x: 1/x if
+                                 enclosing: safe_pow (declared :1406)
+
+== tinybendygrad/runtime/ops_python.bend:144  ops_python.py:99 [only_older_revision] toks=BUFFER
+   runtime/ops_python.py (190 lines) via unique
+   BUFFER                 :98    elif u.op in {Ops.PARAM, Ops.BUFFER}:
+                                 enclosing: __call__ (declared :55)
+
+== tinybendygrad/runtime/ops_python.bend:156  ops_python.py:104 [only_older_revision] toks=pbufs
+   runtime/ops_python.py (190 lines) via unique
+

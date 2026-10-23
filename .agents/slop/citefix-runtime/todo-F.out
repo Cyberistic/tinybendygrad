@@ -1,0 +1,51 @@
+PIN        : 5c2bf39d6c4b -- tinygrad/ tree 6c91e8977790, 230 blobs match the vendored copy, 360 local-only
+POPULATION : 1132 citations in 97 `.bend` files
+             754 carried by a `TODO(pN)` marker, 378 by an explicit `symbol=` field
+
+   1086  RESOLVES
+     13  WRONG-LINE
+      0  WRONG-SYMBOL
+      0  UNRESOLVABLE
+      4  PORT-CITATION
+     29  NO-CITATION
+
+--- WRONG-LINE (13) ---
+  tinybendygrad/function.bend:42  ops.py:1225  symbol=param_like  how=symbol-moved  the cited line does not hold the claim; `param_like` is declared at :1228
+      #   `UOp.param_like`  ops.py:1225 symbol=param_like       `UOp.substitute`  ops.py:514 symbol=substitute
+  tinybendygrad/mixin/op.bend:195  op.py:683  symbol=log_softmax  how=symbol-moved  the cited line does not hold the claim; `log_softmax` is declared at :686
+      # `log_softmax` (op.py:683 symbol=log_softmax) are TWO defs that both call `_softmax` (op.py:686 symbol=_softmax), so
+  tinybendygrad/mixin/op.bend:195  op.py:686  symbol=_softmax  how=symbol-moved  the cited line does not hold the claim; `_softmax` is declared at :657
+      # `log_softmax` (op.py:683 symbol=log_softmax) are TWO defs that both call `_softmax` (op.py:686 symbol=_softmax), so
+  tinybendygrad/nn/onnx.bend:37  onnx.py:313  symbol=_init_from_graph  how=symbol-moved  the cited line does not hold the claim; `_init_from_graph` is declared at :298
+      #     `_init_from_graph` onnx.py:313 symbol=_init_from_graph, `_from_subgraph` onnx.py:313 symbol=_from_subgraph, `_parse_input`
+  tinybendygrad/nn/onnx.bend:38  onnx.py:352  symbol=_parse_input  how=symbol-moved  the cited line does not hold the claim; `_parse_input` is declared at :318
+      #     onnx.py:352 symbol=_parse_input, `to` onnx.py:361 symbol=to, `_get_python_const` onnx.py:352 symbol=_get_python_const, `__call__` onnx.py:361 sy
+  tinybendygrad/nn/onnx.bend:38  onnx.py:361  symbol=to  how=symbol-moved  the cited line does not hold the claim; `to` is declared at :345
+      #     onnx.py:352 symbol=_parse_input, `to` onnx.py:361 symbol=to, `_get_python_const` onnx.py:352 symbol=_get_python_const, `__call__` onnx.py:361 sy
+  tinybendygrad/nn/onnx.bend:67  onnx.py:373-378  symbol=run_branch  how=symbol-moved  the cited line does not hold the claim; `run_branch` is declared at :468
+      #   * `If`'s branch runner (onnx.py:373-378 symbol=run_branch) and `Gradient` (onnx.py:1216 symbol=Gradient) need an
+  tinybendygrad/nn/optim.bend:59  elementwise.py:477  symbol=sqrt  how=symbol-moved  the cited line does not hold the claim; `sqrt` is declared at :479
+      #   * `sqrt` -- elementwise.py:477 symbol=sqrt (`Ops.SQRT`), optim.py:113, :114, :173, :174.
+  tinybendygrad/renderer/isa/x86.bend:156  x86.py:243  symbol=alloc_vregs  how=symbol-moved  the cited line does not hold the claim; `alloc_vregs` is declared at :293
+      #   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:243 symbol=alloc_vregs`.
+  tinybendygrad/renderer/isa/x86.bend:158  x86.py:684  symbol=X86LinearContext  how=symbol-moved  the cited line does not hold the claim; `X86LinearContext` is declared at :681
+      #   `lock` / `stack_allocated` / `stack_size` state above. `TODO(p3) x86.py:684 symbol=X86LinearContext`.
+  tinybendygrad/renderer/wgsl.bend:14  wgsl.py:14  symbol=packed_store  how=symbol-moved  the cited line does not hold the claim; `packed_store` is declared at :15
+      #   TODO(p3) wgsl.py:14  packed_store -- ditto, plus `.load`/`.store`
+  tinybendygrad/renderer/wgsl.bend:15  wgsl.py:12  symbol=packed_load  how=symbol-moved  the cited line does not hold the claim; `packed_load` is declared at :24
+      #   TODO(p3) wgsl.py:12  packed_load  -- ditto, plus `.index`
+  tinybendygrad/tensor.bend:29  ops.py:855  symbol=new_buffer  how=symbol-moved  the cited line does not hold the claim; `new_buffer` is declared at :835
+      #      (ops.py:855 symbol=new_buffer) and `_frompy` (ops.py:855 symbol=_frompy) build a BUFFER node PLUS an opaque
+
+--- RESOLVES, BY WHAT HELD IT ---
+    587  symbol-decl
+    336  symbol-body
+     82  snippet
+     43  loose
+     18  symbol-named
+     11  range-of-symbols
+      7  short-form
+      2  symbol-range
+
+ROWS       : 1132 -> .agents/slop/citefix-runtime/todo-F.rows
+# todo-cite-gate: FAIL -- 13 of 1132 marker citations are false

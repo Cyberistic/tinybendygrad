@@ -1,0 +1,7 @@
+rel	at	old	new
+tinybendygrad/runtime/support/am/amdev.bend	25	symbol=hwid_names) `hwid_names` and	"#   * (tinygrad/runtime/support/am/amdev.py:402 symbol=hwid_names) `hwid_names` and
+#     (tinygrad/runtime/support/am/amdev.py:382 symbol=_run_discovery) `hw_id_map` -- TWO-WAY TABLES, both directions."
+tinybendygrad/runtime/support/am/amdev.bend	30	the ASPM capability walk (tinygrad/runtime/support/am/amdev.py:147-154	"#     `_read_vram` (tinygrad/runtime/support/am/amdev.py:349-357 symbol=_read_vram),
+#     the ASPM capability walk (tinygrad/runtime/support/am/amdev.py:147-154 symbol=_disable_aspm) -- upstream's `_disable_aspm` --, `indirect_wreg`/`_pcie`, and the boot order."
+tinybendygrad/runtime/support/nv/nvdev.bend	25	symbol=NVReg), the PAGE TABLE entry codec	"(tinygrad/runtime/support/nv/nvdev.py:12-19 symbol=NVReg) `NVReg`, the PAGE TABLE entry codec
+(`NVPageTableEntry`, tinygrad/runtime/support/nv/nvdev.py:33-67), the"

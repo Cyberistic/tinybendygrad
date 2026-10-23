@@ -1,0 +1,57 @@
+== tinybendygrad/runtime/support/compiler_llvm.bend:26  helpers.py:161 [at_no_revision] toks=functools,cache,LLVMOPT
+   helpers.py (648 lines) via unique
+   functools              :4     import os, functools, re, contextlib, operator, hashlib, pickle, sqlite3, tempfile, pathli
+   functools              :14    def prod(x:Iterable[T]) -> T|int: return functools.reduce(operator.mul, x, 1)
+   functools              :118   @functools.cache
+                                 enclosing: panic (declared :116)
+   functools              :122   @functools.cache
+                                 enclosing: canonicalize_strides (declared :119)
+   functools              :154   def polyN(x:T, p:list[float]) -> T: return functools.reduce(lambda acc,c: acc*x+c, p, 0.0)
+                                 enclosing: pluralize (declared :151)
+   functools              :156   @functools.cache
+                                 enclosing: polyN (declared :154)
+   functools              :162   @functools.cache
+                                 enclosing: getenv (declared :161)
+   functools              :345   @functools.cache
+                                 enclosing: perf_counter_us (declared :343)
+   cache                  :118   @functools.cache
+                                 enclosing: panic (declared :116)
+   cache                  :122   @functools.cache
+                                 enclosing: canonicalize_strides (declared :119)
+   cache                  :140   def select_first_inited(candidates:Sequence[Callable[...,T]], err_msg:str, cache:dict|None
+                                 enclosing: select_by_name (declared :135)
+   cache                  :143   if cache is not None and (typ,) + args in cache: return cache[(typ,) + args]
+                                 enclosing: select_first_inited (declared :140)
+   cache                  :146   if cache is not None: cache[(typ,) + args] = x
+                                 enclosing: select_first_inited (declared :140)
+   cache                  :156   @functools.cache
+                                 enclosing: polyN (declared :154)
+   cache                  :162   @functools.cache
+                                 enclosing: getenv (declared :161)
+   cache                  :283   # set to 0 to disable the compiler cache
+                                 enclosing: _get_cpu_count (declared :258)
+   cache                  :287   # set to 0 to disable the scheduler cache, 2 to also persist it to disk
+                                 enclosing: _get_cpu_count (declared :258)
+   cache                  :345   @functools.cache
+                                 enclosing: perf_counter_us (declared :343)
+   cache                  :400   # *** universal database cache ***
+                                 enclosing: my_gc_callback (declared :393)
+   cache                  :402   cache_dir: str = os.path.join(getenv("XDG_CACHE_HOME", os.path.expanduser("~/Library/Cache
+                                 enclosing: my_gc_callback (declared :393)
+   cache                  :403   CACHEDB: str = getenv("CACHEDB", os.path.abspath(os.path.join(cache_dir, "cache.db")))
+                                 enclosing: my_gc_callback (declared :393)
+
+== tinybendygrad/runtime/support/compiler_llvm.bend:56  tinygrad/runtime/support/compiler_llvm.py:18 [at_no_revision] toks=LLVMCompiler,triple_ok
+   runtime/support/compiler_llvm.py (88 lines) via exact
+   LLVMCompiler           :12    class LLVMCompiler(Compiler):
+                                 enclosing: expect (declared :8)
+   LLVMCompiler           :65    class CPULLVMCompiler(LLVMCompiler):
+                                 enclosing: compile (declared :50)
+   LLVMCompiler           :78    class AMDLLVMCompiler(LLVMCompiler):
+                                 enclosing: disassemble (declared :76)
+
+== tinybendygrad/runtime/support/compiler_llvm.bend:70  tinygrad/runtime/support/compiler_llvm.py:76 [at_no_revision] toks=CPULLVMCompiler,dis_row
+   runtime/support/compiler_llvm.py (88 lines) via exact
+   CPULLVMCompiler        :65    class CPULLVMCompiler(LLVMCompiler):
+                                 enclosing: compile (declared :50)
+

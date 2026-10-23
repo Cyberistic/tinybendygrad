@@ -1,0 +1,2 @@
+rel	at	old	new
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	107	upstream's `QP_EVENT` symbol=rcfw	#   tinygrad/runtime/support/rdma/bnxtdev.py:152 the QP_EVENT filter       PORTED  `rcfw.is_final`, and its threshold -- upstream's `CREQ_BASE_TYPE_QP_EVENT` symbol=rcfw

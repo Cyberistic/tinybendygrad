@@ -1,0 +1,5 @@
+== tinybendygrad/runtime/support/compiler_qcom.bend:65  device.py:352 [at_no_revision] toks=compile_server
+   device.py (540 lines) via unique
+   compile_server         :336   def compile_server(self, src:str, proc:subprocess.Popen) -> bytes:
+                                 enclosing: server (declared :333)
+

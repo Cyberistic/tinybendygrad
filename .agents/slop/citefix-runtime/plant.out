@@ -1,0 +1,6 @@
+PLANT   : moved 1 citation(s) in the COPY /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/citefix-plant-dymw4izz/planted/tinybendygrad/runtime/ops_amd.bend
+CONTROL : 0 false row(s) in the 35 file(s) this unit touched
+PLANT   : 1 false row(s) in the 35 file(s) this unit touched
+   NEW  tinybendygrad/runtime/ops_amd.bend:12  tinygrad/runtime/ops_amd.py:380  [WRONG-LINE]  symbol-moved
+        #   * the KERNEL ARGUMENT TRACE -- `kernargs` (tinygrad/runtime/ops_amd.py:380 symbol=kernargs) is `layout_arg
+PLANT OK

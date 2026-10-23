@@ -1,0 +1,876 @@
+rel	at	subject	lo	hi	verdict	symbol	how	decl_line	upstream	line
+tinybendygrad/__init__.bend	25		0	0	NO-CITATION		-	0		#                                                        TODO(p3) per `engine/jit.bend`).
+tinybendygrad/__init__.bend	30		0	0	NO-CITATION		-	0		#                                                        a TODO(p3) in `uop/ops.bend`).
+tinybendygrad/__init__.bend	38		0	0	NO-CITATION		-	0		#                                                                                seam is a TODO(p3)).
+tinybendygrad/__init__.bend	50		0	0	NO-CITATION		-	0		# definition lives in the named module, `False` if it is a TODO(p3).
+tinybendygrad/codegen/decomp/op.bend	1012	op.py	9	18	RESOLVES	magicgu	symbol-range	10	codegen/decomp/op.py	# TODO(p3) op.py:9-18 `magicgu`. THE WALL, MEASURED, and it is NOT the one the
+tinybendygrad/codegen/decomp/transcendental.bend	1993	transcendental.py	126	126	RESOLVES	cody_waite_reduction	symbol-body	115	codegen/decomp/transcendental.py	#        `# TODO(p3) transcendental.py:126  cody_waite_reduction f64 arm`
+tinybendygrad/codegen/decomp/transcendental.bend	1998	transcendental.py	135	135	RESOLVES	cody_waite_reduction	symbol-body	115	codegen/decomp/transcendental.py	#        `# TODO(p3) transcendental.py:135  cody_waite_reduction f16 arm`
+tinybendygrad/codegen/decomp/transcendental.bend	2001	transcendental.py	79	79	RESOLVES		short-form	66	codegen/decomp/transcendental.py	#        `# TODO(p3) transcendental.py:79  payne_hanek intermediate_dtype`
+tinybendygrad/codegen/kernel.bend	99	ops.py	559	559	RESOLVES	index	symbol-decl	559	uop/ops.py	# carries a `TODO(p3) ... def index` marker -- TODO(p3) ops.py:559  symbol=index --
+tinybendygrad/codegen/kernel.bend	213	__init__.py	242	242	RESOLVES		snippet	0	codegen/__init__.py	# `# TODO(p3) __init__.py:242  x.dtype != u.dtype` -- the guard, and the `cast` it
+tinybendygrad/codegen/kernel.bend	400	codegen/__init__.py	43	43	RESOLVES	build_range_map	symbol-body	40	codegen/__init__.py	#   TODO(p3) codegen/__init__.py:43  `build_range_map`'s set is `{UPCAST}` and its
+tinybendygrad/codegen/kernel.bend	472	__init__.py	221	221	RESOLVES	is_shape_changing_bitcast	symbol-decl	221	codegen/__init__.py	# `shp_same` is the reader that would answer it. `# TODO(p3) __init__.py:221  symbol=is_shape_changing_bitcast
+tinybendygrad/codegen/kernel.bend	480		0	0	NO-CITATION		-	0		# not a dtype, so the read is `F.fold.addr`'s inner `Maybe`. `# TODO(p3)
+tinybendygrad/codegen/kernel.bend	539	__init__.py	224	224	RESOLVES	pm_add_loads	symbol-body	223	codegen/__init__.py	# ops and `ops.bend`'s `Op` is a closed enumeration. `# TODO(p3) __init__.py:224  symbol=pm_add_loads
+tinybendygrad/codegen/kernel.bend	595	__init__.py	251	251	RESOLVES	add_raw_barrier	symbol-body	247	codegen/__init__.py	# `# TODO(p3) __init__.py:251  symbol=add_raw_barrier  UOp.sink(...).toposort(gate=...)` -- BOTH bodies open
+tinybendygrad/codegen/kernel.bend	654	__init__.py	411	411	RESOLVES		snippet	0	codegen/__init__.py	# `# TODO(p3) __init__.py:411  replaced.get(x, x)` -- the substitution map is a
+tinybendygrad/codegen/kernel.bend	742	__init__.py	412	412	RESOLVES		snippet	0	codegen/__init__.py	# `# TODO(p3) __init__.py:412  pm.rewrite(nu, ctx)` -- `ctx` is the RENDERER for
+tinybendygrad/codegen/kernel.bend	778	__init__.py	409	409	RESOLVES		snippet	0	codegen/__init__.py	# `# TODO(p3) __init__.py:409  replaced: dict[UOp, UOp]` -- a mutable dict becomes a
+tinybendygrad/codegen/kernel.bend	806	__init__.py	508	508	RESOLVES	to_program_config	symbol-decl	508	codegen/__init__.py	# the cache key hashes. `# TODO(p3) __init__.py:508  to_program_config` -- the flags
+tinybendygrad/codegen/kernel.bend	833	__init__.py	442	442	RESOLVES		snippet	0	codegen/__init__.py	# `# TODO(p3) __init__.py:442  UOp(Ops.LINEAR, src=tuple(lst))` -- `do_linearize`'s
+tinybendygrad/codegen/late/linearizer.bend	402	linearizer.py	50	50	RESOLVES	linearize	symbol-body	8	codegen/late/linearizer.py	# `# TODO(p3) linearizer.py:50  symbol=linearize  the DEBUG_LINEARIZE print reads `extra` -- the one
+tinybendygrad/codegen/late/linearizer.bend	835	linearizer.py	48	50	RESOLVES		snippet	0	codegen/late/linearizer.py	# the `extra` field W2. `# TODO(p3) linearizer.py:48-50  getenv("DEBUG_LINEARIZE")`
+tinybendygrad/codegen/opt/search.bend	154	search.py	140	142	RESOLVES	beam_search	symbol-body	105	codegen/opt/search.py	# TODO(p3) search.py:140-142  symbol=beam_search  -- the 1000x compute filter
+tinybendygrad/codegen/opt/search.bend	164	search.py	128	166	RESOLVES		loose	0	codegen/opt/search.py	# TODO(p3) search.py:128-166 `while not exiting:` -- the round loop itself.
+tinybendygrad/codegen/opt/search.bend	167	search.py	14	22	RESOLVES	actions	symbol-decl	14	codegen/opt/search.py	# TODO(p3) search.py:14-22 `actions` -- the 209 `OPT`s are not built, only
+tinybendygrad/codegen/opt/search.bend	171	search.py	107	110	RESOLVES	beam_search	symbol-body	105	codegen/opt/search.py	# TODO(p3) search.py:107-110  symbol=beam_search  -- `diskcache_get`/`diskcache_put`
+tinybendygrad/codegen/opt/search.bend	175	search.py	115	115	RESOLVES	beam_search	symbol-body	105	codegen/opt/search.py	# TODO(p3) search.py:115  symbol=beam_search  -- `get_worker_pool` / `terminate_worker_pool`
+tinybendygrad/device.bend	289	device.py	37	37	RESOLVES	get_class	symbol-body	36	device.py	# TODO(p3) device.py:37  get_class -- `importlib` + `inspect.getmembers`. WALL:
+tinybendygrad/device.bend	330	device.py	41	41	RESOLVES	__get_canonicalized_item	symbol-decl	41	device.py	# TODO(p3) device.py:41  __get_canonicalized_item -- `functools.cache` and
+tinybendygrad/device.bend	483	device.py	23	23	RESOLVES	_Device	symbol-decl	23	device.py	# TODO(p3) device.py:23  symbol=_Device  -- `_Device._devices`, set in `_Device.__init__`: `pathlib.Path(...).iterdir()`.
+tinybendygrad/device.bend	570	device.py	110	110	RESOLVES		short-form	109	device.py	# TODO(p3) device.py:110  BufferStorage.maps -- `dict[Compiled, BufferStorage]`.
+tinybendygrad/device.bend	809	device.py	112	112	RESOLVES	Buffer.profile_events	symbol-decl	112	device.py	# TODO(p3) device.py:112  Buffer.profile_events -- a class-level list appended
+tinybendygrad/device.bend	909	device.py	344	344	RESOLVES	TinyELF.lib	symbol-decl	344	device.py	# TODO(p3) device.py:344  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
+tinybendygrad/device.bend	1084		0	0	NO-CITATION		-	0		# TODO(p3) helpers.bend  `to_name` -- upstream keeps it in helpers.py:21, and
+tinybendygrad/device.bend	1265	device.py	344	344	RESOLVES	TinyELF.lib	symbol-decl	344	device.py	# TODO(p3) device.py:344  TinyELF.lib -- `bytes`. WALL: a byte buffer. The C
+tinybendygrad/engine/jit.bend	435	tinybendygrad/LAWS/spec.bend	75	75	PORT-CITATION		port	0		# TODO(p3) tinybendygrad/LAWS/spec.bend:75  Dt.nm -- BLOCKED. needs a `dt_nm` / `nm_of(Dt)` reader for the `nm: String` field of `Dt{pri, bits, cls, nm}` (`LAWS/spec.bend:77`). MEASURED, no `def dt_nm` / `nm_of` / `nm` exists; the port's `dn_gate` (`LAWS/spec.bend:853`) is an unrelated debug gate. The field is THERE, the reader is NOT.
+tinybendygrad/engine/realize.bend	1149	realize.py	107	107	RESOLVES	runtime_cache	symbol-named	105	engine/realize.py	# TODO(p3) realize.py:107  runtime_cache -- a module-level `dict[tuple[bytes,str],
+tinybendygrad/engine/realize.bend	1153	realize.py	108	108	RESOLVES	get_runtime	snippet	0	engine/realize.py	# TODO(p3) realize.py:108  get_runtime -- `Device[device].runtime(ast.to_elf())`.
+tinybendygrad/engine/realize.bend	1163	realize.py	114	114	RESOLVES	capturing	symbol-decl	114	engine/realize.py	# TODO(p3) realize.py:114  capturing -- a module-level list of Python CLASSES
+tinybendygrad/engine/realize.bend	1701	realize.py	135	135	RESOLVES	unwrap_multi	symbol-body	132	engine/realize.py	# TODO(p3) realize.py:135  unwrap_multi's `bufs = [b.buffer for b in resolved]` --
+tinybendygrad/engine/realize.bend	1704	realize.py	141	141	RESOLVES	unwrap_multi	snippet	0	engine/realize.py	# TODO(p3) realize.py:141  unwrap_multi's `lanes` -- `max(len(b.bufs) for b in bufs
+tinybendygrad/examples/test_pkl_imagenet.bend	91	state.py	8	8	RESOLVES	TensorIO	symbol-decl	8	nn/state.py	#         `nn/state.bend:498` is `# TODO(p3) state.py:8 TensorIO -- io.RawIOBase;
+tinybendygrad/extra/datasets/imagenet.bend	68		0	0	NO-CITATION		-	0		# TODO(p3) `@functools.cache` (upstream:8/16/32) AND `@diskcache` (upstream:27).
+tinybendygrad/extra/models/convnext.bend	47	mixin/op.py	1661	1661	RESOLVES	layernorm	symbol-decl	1661	mixin/op.py	#   words at `nn/__init__.bend:230`: "TODO(p3) mixin/op.py:1661 x.layernorm --
+tinybendygrad/extra/models/llama.bend	165		0	0	NO-CITATION		-	0		D.refuse("extra/models/llama.py:145 sample -- FIRST MISSING SYMBOL logits.argmax (:151); mo_softmax EXISTS (:165), arange EXISTS (:167), pad EXISTS (mixin/movement.bend:1517), and Tensor.multinomial (:184,:187) is MISSING BEHIND `argsort` (mixin/rand.bend:880 TODO(p3))")
+tinybendygrad/extra/models/mask_rcnn.bend	124		0	0	NO-CITATION		-	0		D.refuse("extra/models/mask_rcnn.py:29 topk -- FIRST MISSING SYMBOL argsort, which mixin/rand.bend:880 marks TODO(p3): a BITONIC SORT over four nested Python `for` loops. `sorted=False` (:30) is a Python-visible optimization flag, so the port's sort cannot silently replace it")
+tinybendygrad/extra/models/resnet.bend	44	mixin/op.py	1678	1678	RESOLVES	batchnorm	symbol-decl	1678	mixin/op.py	#   :229  `TODO(p3) mixin/op.py:1678  x.batchnorm   -- SIDE B, not built.`
+tinybendygrad/extra/models/resnet.bend	47	mixin/op.py	1254	1254	RESOLVES	linear	symbol-decl	1254	mixin/op.py	#   :227  `TODO(p3) mixin/op.py:1254  x.linear       -- ...`
+tinybendygrad/extra/models/vit.bend	44	mixin/op.py	1661	1661	RESOLVES	layernorm	symbol-decl	1661	mixin/op.py	#   open wall -- "TODO(p3) mixin/op.py:1661 x.layernorm -- SIDE B, not built" --
+tinybendygrad/function.bend	251	ops.py	911	911	RESOLVES	buf_uop	symbol-decl	911	uop/ops.py	# `# TODO(p3) ops.py:911  def buf_uop`, and it is not optional here: it is the
+tinybendygrad/function.bend	1073	ops.py	1228	1228	RESOLVES	UOp.param_like	symbol-decl	1228	uop/ops.py	# TODO(p3) ops.py:1228  `UOp.param_like` -- `x.param_like(len(ctx[0]))`. The SLOT
+tinybendygrad/function.bend	1078	ops.py	514	514	RESOLVES	UOp.substitute	symbol-decl	514	uop/ops.py	# TODO(p3) ops.py:514   `UOp.substitute` -- `uret.substitute(subs)` and
+tinybendygrad/function.bend	1081	ops.py	1272	1272	RESOLVES	UOp.call_with_outputs	symbol-body	1260	uop/ops.py	# TODO(p3) ops.py:1272  `UOp.call_with_outputs` -- `uret.call_with_outputs(...)`.
+tinybendygrad/function.bend	1091	function.py	53	53	RESOLVES		loose	0	function.py	# TODO(p3) function.py:53  `get_state_dict((args, kwargs))` -- `nn/state.bend` has
+tinybendygrad/function.bend	1094	function.py	61	61	RESOLVES		loose	0	function.py	# TODO(p3) function.py:61  `with Context(ALLOW_DEVICE_USAGE=getenv(..., 0))` --
+tinybendygrad/function.bend	1099	function.py	64	64	RESOLVES		snippet	0	function.py	# TODO(p3) function.py:64  `self.fxn(*args, **kwargs)` -- no function values in
+tinybendygrad/function.bend	1101	function.py	51	51	RESOLVES		snippet	0	function.py	# TODO(p3) function.py:51  `time.perf_counter()` -- an effect. `fn_trace` takes
+tinybendygrad/function.bend	1103	function.py	48	48	RESOLVES	__get__	snippet	0	function.py	# TODO(p3) function.py:48  `__get__` -- `functools.partial(self.__call__, obj)`.
+tinybendygrad/function.bend	1107	function.py	82	82	RESOLVES		snippet	0	function.py	# TODO(p3) function.py:82  `getattr(self.fxn, '__qualname__', None)` -- the name
+tinybendygrad/function.bend	1110	ops.py	911	911	RESOLVES	buf_uop	symbol-decl	911	uop/ops.py	# TODO(p3) ops.py:911  `buf_uop`'s MSELECT and MSTACK arms -- the multi-device
+tinybendygrad/helpers.bend	438	helpers.py	176	176	RESOLVES	ContextVar._cache	snippet	0	helpers.py	# TODO(p6) helpers.py:176  `ContextVar._cache[k]` is a KeyError for a name that is
+tinybendygrad/helpers.bend	2573	helpers.py	306	306	RESOLVES	time_sum_s	symbol-decl	306	helpers.py	# TODO(p4) helpers.py:306  `time_sum_s` needs the engine's clock, which is a C effect.
+tinybendygrad/mixin/creation.bend	41	mixin/creation.py	83	83	RESOLVES	full	symbol-body	68	mixin/creation.py	#      TODO(p3) mixin/creation.py:83  `full` with a `fill_value` that is a UOp -- then
+tinybendygrad/mixin/creation.bend	60	mixin/movement.py	128	128	RESOLVES	_broadcast_to	symbol-decl	128	mixin/movement.py	#      TODO(p3) mixin/movement.py:128  `_broadcast_to` for a source that is NOT
+tinybendygrad/mixin/creation.bend	93	tinygrad/dtype.py	84	84	RESOLVES	DType.const	symbol-body	79	dtype.py	#      TODO(p3) tinygrad/dtype.py:84  symbol=DType.const  -- `DType.const`'s `truncate` -- THE INT ARM ONLY. THE FLOAT
+tinybendygrad/mixin/creation.bend	508		0	0	NO-CITATION		-	0		# buffer)` -- creation.py:105. The device-tuple arm is W2 and is a `TODO(p3)` in the
+tinybendygrad/mixin/creation.bend	510	mixin/creation.py	102	104	RESOLVES	full_like	symbol-body	93	mixin/creation.py	# TODO(p3) mixin/creation.py:102-104  full_like's multi-device arm -- `_multi_like` (W2).
+tinybendygrad/mixin/elementwise.bend	835	elementwise.py	500	500	RESOLVES	cos	symbol-body	499	mixin/elementwise.py	# TODO(p3) elementwise.py:500  cos  -- math.pi/2 is `F32.div(F32.pi(), 2.0)`, bit-exact. nothing else was named; UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	836	elementwise.py	511	511	RESOLVES	exp	symbol-body	510	mixin/elementwise.py	# TODO(p3) elementwise.py:511  exp  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	837	elementwise.py	838	838	RESOLVES	log	symbol-body	828	mixin/elementwise.py	# TODO(p3) elementwise.py:838  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	838	elementwise.py	850	850	RESOLVES	log10	symbol-body	840	mixin/elementwise.py	# TODO(p3) elementwise.py:850  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
+tinybendygrad/mixin/elementwise.bend	839	elementwise.py	613	613	RESOLVES	isinf	symbol-body	611	mixin/elementwise.py	# TODO(p3) elementwise.py:613  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000. `mo_eqmul` is one arm (mixin/op.bend:998); the second arm + add is the remainder, and a `tn_isinf` would still need the same `isinf` body. UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	840	elementwise.py	633	633	RESOLVES	isclose	symbol-body	631	mixin/elementwise.py	# TODO(p3) elementwise.py:633  isclose  -- rtol=1e-05 and atol=1e-08 are literals, bit-exact. the rule body is the remainder; UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	841	elementwise.py	654	654	RESOLVES	ceil	symbol-body	652	mixin/elementwise.py	# TODO(p3) elementwise.py:654  ceil  -- b+1 is fine and was always fine -- the marker said so. `round` is the remainder; see 890
+tinybendygrad/mixin/elementwise.bend	842	elementwise.py	709	709	RESOLVES	hardswish	symbol-body	707	mixin/elementwise.py	# TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	843	elementwise.py	721	721	RESOLVES	hardsigmoid	symbol-body	719	mixin/elementwise.py	# TODO(p3) elementwise.py:721  hardsigmoid  -- alpha=1/6 and beta=0.5 are both available, bit-exact. nothing else was named; UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	844	elementwise.py	744	744	RESOLVES	leaky_relu	symbol-body	742	mixin/elementwise.py	# TODO(p3) elementwise.py:744  leaky_relu  -- neg_slope=0.01 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
+tinybendygrad/mixin/elementwise.bend	846	elementwise.py	854	854	RESOLVES	atanh	symbol-body	852	mixin/elementwise.py	# TODO(p3) elementwise.py:854  atanh        -- .log()
+tinybendygrad/mixin/elementwise.bend	847	elementwise.py	866	866	RESOLVES	asinh	symbol-body	864	mixin/elementwise.py	# TODO(p3) elementwise.py:866  asinh        -- .log()
+tinybendygrad/mixin/elementwise.bend	848	elementwise.py	878	878	RESOLVES	acosh	symbol-body	876	mixin/elementwise.py	# TODO(p3) elementwise.py:878  acosh        -- .log()
+tinybendygrad/mixin/elementwise.bend	849	elementwise.py	890	890	RESOLVES	round	symbol-body	888	mixin/elementwise.py	# TODO(p3) elementwise.py:890  round  -- 0.5 and 2.0 are available. THE REMAINDER IS NOT A CONSTANT: it is the rounding mode, and it still is
+tinybendygrad/mixin/elementwise.bend	850	elementwise.py	921	921	RESOLVES	tan	symbol-body	919	mixin/elementwise.py	# TODO(p3) elementwise.py:921  tan          -- .cos()
+tinybendygrad/mixin/elementwise.bend	851	elementwise.py	1000	1000	RESOLVES	softplus	symbol-body	998	mixin/elementwise.py	# TODO(p3) elementwise.py:1000 softplus     -- beta=1.0
+tinybendygrad/mixin/elementwise.bend	852	elementwise.py	1010	1010	RESOLVES	mish	symbol-body	1008	mixin/elementwise.py	# TODO(p3) elementwise.py:1010 mish         -- softplus()
+tinybendygrad/mixin/elementwise.bend	853	elementwise.py	1022	1022	RESOLVES	logsigmoid	symbol-body	1020	mixin/elementwise.py	# TODO(p3) elementwise.py:1022 logsigmoid   -- softplus()
+tinybendygrad/mixin/elementwise.bend	854	elementwise.py	1034	1034	RESOLVES	sinh	symbol-body	1032	mixin/elementwise.py	# TODO(p3) elementwise.py:1034 sinh         -- exp()
+tinybendygrad/mixin/elementwise.bend	855	elementwise.py	1046	1046	RESOLVES	cosh	symbol-body	1044	mixin/elementwise.py	# TODO(p3) elementwise.py:1046 cosh         -- exp()
+tinybendygrad/mixin/elementwise.bend	856	elementwise.py	1058	1058	RESOLVES	erf	symbol-body	1056	mixin/elementwise.py	# TODO(p3) elementwise.py:1058 erf          -- polyN, 0.3275911
+tinybendygrad/mixin/elementwise.bend	857	elementwise.py	410	410	RESOLVES	copysign	symbol-body	409	mixin/elementwise.py	# TODO(p3) elementwise.py:410  copysign     -- -(mag := a.abs()) with a float 0 path
+tinybendygrad/mixin/elementwise.bend	858	elementwise.py	418	418	RESOLVES	logaddexp	symbol-body	417	mixin/elementwise.py	# TODO(p3) elementwise.py:418  logaddexp    -- .isfinite(), 0
+tinybendygrad/mixin/elementwise.bend	918	elementwise.py	40	40	RESOLVES	usum	symbol-decl	40	mixin/elementwise.py	# TODO(p3) elementwise.py:40  usum   -- functools.reduce + argfix + *uops
+tinybendygrad/mixin/elementwise.bend	919	elementwise.py	41	41	RESOLVES	uprod	symbol-decl	41	mixin/elementwise.py	# TODO(p3) elementwise.py:41  uprod  -- ditto
+tinybendygrad/mixin/elementwise.bend	924	elementwise.py	59	59	RESOLVES	contiguous	symbol-decl	59	mixin/elementwise.py	# TODO(p3) elementwise.py:59  contiguous -- has_buffer_identity + device
+tinybendygrad/mixin/elementwise.bend	930	elementwise.py	586	586	RESOLVES	clamp	symbol-body	584	mixin/elementwise.py	# TODO(p3) elementwise.py:586  clamp   -- min_/max_ are `DTypeLike|None`
+tinybendygrad/mixin/elementwise.bend	931	elementwise.py	599	599	RESOLVES	clip	symbol-body	597	mixin/elementwise.py	# TODO(p3) elementwise.py:599  clip    -- clamp's alias
+tinybendygrad/mixin/gradient.bend	603	mixin/gradient.py	8	8	RESOLVES	reduce_gradient	symbol-decl	8	mixin/gradient.py	# TODO(p3) mixin/gradient.py:8  reduce_gradient -- `_rop`'s `resolve(self.shape[x]!=1)`
+tinybendygrad/mixin/gradient.bend	615	mixin/gradient.py	82	82	RESOLVES	pm_gradient	symbol-body	65	mixin/gradient.py	# TODO(p3) mixin/gradient.py:82  symbol=pm_gradient  -- ctx.contiguous -- needs `has_buffer_identity`
+tinybendygrad/mixin/gradient.bend	655	mixin/gradient.py	87	87	RESOLVES		loose	0	mixin/gradient.py	# TODO(p3) mixin/gradient.py:87  PAD -- `ret.marg` is `zip(src[1].as_shape,
+tinybendygrad/mixin/gradient.bend	665	mixin/gradient.py	88	88	RESOLVES		loose	0	mixin/gradient.py	# TODO(p3) mixin/gradient.py:88  SHRINK -- same `marg`/`Sint` wall as tag 19.
+tinybendygrad/mixin/gradient.bend	683	mixin/gradient.py	91	91	RESOLVES		loose	0	mixin/gradient.py	# TODO(p3) mixin/gradient.py:91  STACK -- `ctx[i]` is `Tensor.__getitem__` with an int,
+tinybendygrad/mixin/gradient.bend	699	mixin/gradient.py	90	90	RESOLVES	pm_gradient	symbol-body	65	mixin/gradient.py	# TODO(p3) mixin/gradient.py:90  symbol=pm_gradient  -- COPY -- `copy_to_device` (ops.py:738) needs a device
+tinybendygrad/mixin/gradient.bend	711	mixin/gradient.py	91	91	RESOLVES	pm_gradient	symbol-body	65	mixin/gradient.py	# TODO(p3) mixin/gradient.py:91  symbol=pm_gradient  -- UNSHARD -- `_shard` (ops.py:728) reads `int(rng.vmax)`,
+tinybendygrad/mixin/gradient.bend	744	mixin/gradient.py	96	96	RESOLVES	pm_gradient	symbol-body	65	mixin/gradient.py	# TODO(p3) mixin/gradient.py:96  symbol=pm_gradient  -- ordering-only AFTER -- `buf_uop` (ops.py:911) walks
+tinybendygrad/mixin/gradient.bend	814	mixin/gradient.py	52	52	RESOLVES	partial_store_gradient	symbol-decl	52	mixin/gradient.py	# TODO(p3) mixin/gradient.py:52  partial_store_gradient -- the body RE-ENTERS
+tinybendygrad/mixin/gradient.bend	869	mixin/gradient.py	132	132	RESOLVES	compute_gradient	symbol-body	114	mixin/gradient.py	# TODO(p3) mixin/gradient.py:132  compute_gradient -- the shaped-edge reduce needs
+tinybendygrad/mixin/gradient.bend	891	mixin/gradient.py	20	20	RESOLVES	call_gradient	symbol-decl	20	mixin/gradient.py	# TODO(p3) mixin/gradient.py:20  call_gradient -- needs `CallArg.grad_fxn` (a callback
+tinybendygrad/mixin/gradient.bend	899	mixin/gradient.py	52	52	RESOLVES	partial_store_gradient	symbol-decl	52	mixin/gradient.py	# TODO(p3) mixin/gradient.py:52  partial_store_gradient -- the body calls
+tinybendygrad/mixin/gradient.bend	1085	mixin/gradient.py	132	132	RESOLVES	compute_gradient	symbol-body	114	mixin/gradient.py	# file (see the `TODO(p3) mixin/gradient.py:132 compute_gradient` note below, which is RETAINED):
+tinybendygrad/mixin/movement.bend	5	ops.py	233	233	RESOLVES	UOp	symbol-decl	233	uop/ops.py	# AND over `UOp` (ops.py:233 symbol=UOp), and the two halves are not the same:
+tinybendygrad/mixin/movement.bend	20	movement.py	614	632	RESOLVES	_pool	symbol-decl	614	mixin/movement.py	#   1. `_pool` (movement.py:614-632 symbol=_pool) in full as SHAPE ARITHMETIC: `noop`, `i_`, `o_` (movement.py:618),
+tinybendygrad/mixin/movement.bend	22	ops.py	792	792	RESOLVES	marg	symbol-decl	792	uop/ops.py	#   2. `marg` (ops.py:792 symbol=marg) in all THREE arms, and `as_shape` (ops.py:786 symbol=as_shape) on its
+tinybendygrad/mixin/movement.bend	22	ops.py	786	786	RESOLVES	as_shape	symbol-decl	786	uop/ops.py	#   2. `marg` (ops.py:792 symbol=marg) in all THREE arms, and `as_shape` (ops.py:786 symbol=as_shape) on its
+tinybendygrad/mixin/movement.bend	24	ops.py	395	414	RESOLVES	_shape	symbol-body	323	uop/ops.py	#   3. `_shape`'s movement arms (ops.py:395-414 symbol=_shape) for RESHAPE, EXPAND, PERMUTE, PAD, SHRINK
+tinybendygrad/mixin/movement.bend	26	ops.py	402	404	RESOLVES	_shape	symbol-body	323	uop/ops.py	#   4. The `PERMUTE` validity check (ops.py:402-404 symbol=_shape), as `mxm_perm_lt` + `mxm_dup`.
+tinybendygrad/mixin/movement.bend	37	movement.py	591	591	RESOLVES	repeat	symbol-decl	591	mixin/movement.py	# i.e. `mixin/op.bend`'s W3. `repeat` (movement.py:591 symbol=repeat) is blocked on `expand` and is the first
+tinybendygrad/mixin/movement.bend	38	movement.py	270	270	RESOLVES	stack	symbol-decl	270	mixin/movement.py	# thing `_pool`'s chain needs. `stack` (movement.py:270 symbol=stack) -- WALL
+tinybendygrad/mixin/movement.bend	41	movement.py	438	438	RESOLVES	split	symbol-decl	438	mixin/movement.py	# `split` (movement.py:438 symbol=split) / `chunk` (movement.py:464 symbol=chunk) -- PORTABLE, NOT DONE: each is a LIST of shrinks whose
+tinybendygrad/mixin/movement.bend	41	movement.py	464	464	RESOLVES	chunk	symbol-decl	464	mixin/movement.py	# `split` (movement.py:438 symbol=split) / `chunk` (movement.py:464 symbol=chunk) -- PORTABLE, NOT DONE: each is a LIST of shrinks whose
+tinybendygrad/mixin/movement.bend	42	movement.py	301	301	RESOLVES	squeeze	symbol-decl	301	mixin/movement.py	# boundaries are `sum(sizes[:i])`. `squeeze` (movement.py:301 symbol=squeeze), `unsqueeze` (movement.py:323 symbol=unsqueeze), `flatten` (movement.py:360 symbol=flatten),
+tinybendygrad/mixin/movement.bend	42	movement.py	323	323	RESOLVES	unsqueeze	symbol-decl	323	mixin/movement.py	# boundaries are `sum(sizes[:i])`. `squeeze` (movement.py:301 symbol=squeeze), `unsqueeze` (movement.py:323 symbol=unsqueeze), `flatten` (movement.py:360 symbol=flatten),
+tinybendygrad/mixin/movement.bend	42	movement.py	360	360	RESOLVES	flatten	symbol-decl	360	mixin/movement.py	# boundaries are `sum(sizes[:i])`. `squeeze` (movement.py:301 symbol=squeeze), `unsqueeze` (movement.py:323 symbol=unsqueeze), `flatten` (movement.py:360 symbol=flatten),
+tinybendygrad/mixin/movement.bend	43	movement.py	376	376	RESOLVES	unflatten	symbol-decl	376	mixin/movement.py	# `unflatten` (movement.py:376 symbol=unflatten), `transpose` (movement.py:343 symbol=transpose) -- PORTABLE, NOT DONE: each is `mxw_reshape` or
+tinybendygrad/mixin/movement.bend	43	movement.py	343	343	RESOLVES	transpose	symbol-decl	343	mixin/movement.py	# `unflatten` (movement.py:376 symbol=unflatten), `transpose` (movement.py:343 symbol=transpose) -- PORTABLE, NOT DONE: each is `mxw_reshape` or
+tinybendygrad/mixin/movement.bend	45	movement.py	293	293	RESOLVES	pad_to	symbol-decl	293	mixin/movement.py	# `mo_resolve` at the Tensor level. `pad_to` (movement.py:293 symbol=pad_to), `shrink_to` (movement.py:290 symbol=shrink_to), `view` (movement.py:297 symbol=view) --
+tinybendygrad/mixin/movement.bend	45	movement.py	290	290	RESOLVES	shrink_to	symbol-decl	290	mixin/movement.py	# `mo_resolve` at the Tensor level. `pad_to` (movement.py:293 symbol=pad_to), `shrink_to` (movement.py:290 symbol=shrink_to), `view` (movement.py:297 symbol=view) --
+tinybendygrad/mixin/movement.bend	45	movement.py	297	297	RESOLVES	view	symbol-decl	297	mixin/movement.py	# `mo_resolve` at the Tensor level. `pad_to` (movement.py:293 symbol=pad_to), `shrink_to` (movement.py:290 symbol=shrink_to), `view` (movement.py:297 symbol=view) --
+tinybendygrad/mixin/movement.bend	46	movement.py	516	516	RESOLVES	diag	symbol-decl	516	mixin/movement.py	# PORTABLE, NOT DONE, one line each. `diag` (movement.py:516 symbol=diag), `diagonal` (movement.py:527 symbol=diagonal), `roll` (movement.py:551 symbol=roll),
+tinybendygrad/mixin/movement.bend	46	movement.py	527	527	RESOLVES	diagonal	symbol-decl	527	mixin/movement.py	# PORTABLE, NOT DONE, one line each. `diag` (movement.py:516 symbol=diag), `diagonal` (movement.py:527 symbol=diagonal), `roll` (movement.py:551 symbol=roll),
+tinybendygrad/mixin/movement.bend	46	movement.py	551	551	RESOLVES	roll	symbol-decl	551	mixin/movement.py	# PORTABLE, NOT DONE, one line each. `diag` (movement.py:516 symbol=diag), `diagonal` (movement.py:527 symbol=diagonal), `roll` (movement.py:551 symbol=roll),
+tinybendygrad/mixin/movement.bend	47	movement.py	634	634	RESOLVES	unfold	symbol-decl	634	mixin/movement.py	# `unfold` (movement.py:634 symbol=unfold), `repeat_interleave` (movement.py:575 symbol=repeat_interleave), `meshgrid` (movement.py:489 symbol=meshgrid) -- PARTLY, NOT DONE:
+tinybendygrad/mixin/movement.bend	47	movement.py	575	575	RESOLVES	repeat_interleave	symbol-decl	575	mixin/movement.py	# `unfold` (movement.py:634 symbol=unfold), `repeat_interleave` (movement.py:575 symbol=repeat_interleave), `meshgrid` (movement.py:489 symbol=meshgrid) -- PARTLY, NOT DONE:
+tinybendygrad/mixin/movement.bend	47	movement.py	489	489	RESOLVES	meshgrid	symbol-decl	489	mixin/movement.py	# `unfold` (movement.py:634 symbol=unfold), `repeat_interleave` (movement.py:575 symbol=repeat_interleave), `meshgrid` (movement.py:489 symbol=meshgrid) -- PARTLY, NOT DONE:
+tinybendygrad/mixin/movement.bend	50	movement.py	27	27	RESOLVES	ndim	symbol-decl	27	mixin/movement.py	# business. `ndim` (movement.py:27 symbol=ndim), `numel` (movement.py:38 symbol=numel), `size` (movement.py:59 symbol=size) -- PORTABLE, NOT DONE as PUBLIC DEFS,
+tinybendygrad/mixin/movement.bend	50	movement.py	38	38	RESOLVES	numel	symbol-decl	38	mixin/movement.py	# business. `ndim` (movement.py:27 symbol=ndim), `numel` (movement.py:38 symbol=numel), `size` (movement.py:59 symbol=size) -- PORTABLE, NOT DONE as PUBLIC DEFS,
+tinybendygrad/mixin/movement.bend	50	movement.py	59	59	RESOLVES	size	symbol-decl	59	mixin/movement.py	# business. `ndim` (movement.py:27 symbol=ndim), `numel` (movement.py:38 symbol=numel), `size` (movement.py:59 symbol=size) -- PORTABLE, NOT DONE as PUBLIC DEFS,
+tinybendygrad/mixin/movement.bend	53	tensor.py	353	353	RESOLVES	to	symbol-decl	353	tensor.py	# `mixin/elementwise.py:59`/`mixin/elementwise.py:43`, `Tensor.to` is `tensor.py:353 symbol=to`, and `f` is `UPat.f` (ops.py:1504),
+tinybendygrad/mixin/movement.bend	62	movement.py	393	393	RESOLVES	rearrange	symbol-decl	393	mixin/movement.py	# WALL 1, built entirely on the two above. `rearrange` (movement.py:393 symbol=rearrange) -- WALL 2, a STRING FORMULA
+tinybendygrad/mixin/movement.bend	63	movement.py	50	50	RESOLVES	max_shape	symbol-decl	50	mixin/movement.py	# PARSER, the same wall as `mixin/op.bend`'s W2 (`einsum`). `max_shape` (movement.py:50 symbol=max_shape) /
+tinybendygrad/mixin/movement.bend	64	movement.py	55	55	RESOLVES	max_numel	symbol-decl	55	mixin/movement.py	# `max_numel` (movement.py:55 symbol=max_numel) -- it needs `to_max_shape`, a deferred import.
+tinybendygrad/mixin/movement.bend	68	movement.py	614	614	RESOLVES	_pool	symbol-decl	614	mixin/movement.py	# in `_pool` (`movement.py:614 symbol=_pool`), both recorded there as "BUILDABLE, NOT CHECKABLE" because
+tinybendygrad/mixin/movement.bend	75	ops.py	495	495	RESOLVES	simplify	symbol-decl	495	uop/ops.py	# `UOp.simplify` (ops.py:495 symbol=simplify) opens with `if self.op is Ops.CONST: return self`, and a shape
+tinybendygrad/mixin/movement.bend	88	ops.py	501	501	RESOLVES	simplify	symbol-body	495	uop/ops.py	# (`graph_rewrite`, ops.py:501 symbol=simplify), so `mxm_marg` answers `None{}` and the row is `mxm_sym_NONE`. That is a WALL
+tinybendygrad/mixin/op.bend	292	mixin/movement.py	18	18	RESOLVES	MovementMixin.shape	symbol-decl	18	mixin/movement.py	# TODO(p3) mixin/movement.py:18  symbol=MovementMixin.shape  -- self.shape[k] for a SYMBOLIC dim -- `O.SU` needs
+tinybendygrad/mixin/op.bend	431	tinygrad/dtype.py	213	213	RESOLVES	sum_acc_dtype	symbol-decl	213	dtype.py	# TODO(p3) tinygrad/dtype.py:213  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
+tinybendygrad/mixin/rand.bend	12	mixin/rand.py	50	50	RESOLVES	rand	symbol-decl	50	mixin/rand.py	# port's `examples/beautiful_mnist.bend` with it -- so the chain IS here: TODO(p3) mixin/rand.py:50  symbol=rand
+tinybendygrad/mixin/rand.bend	51	mixin/op.py	166	166	RESOLVES	arange	symbol-decl	166	mixin/op.py	#      TODO(p3) mixin/op.py:166  `arange` -- delete the `op_` block and call `mixin/op.bend`'s
+tinybendygrad/mixin/rand.bend	60	mixin/op.py	731	731	RESOLVES	cat	symbol-decl	731	mixin/op.py	#      TODO(p3) mixin/op.py:731  `cat`'s unequal-shape arm (`itertools.accumulate` plus a
+tinybendygrad/mixin/rand.bend	77	mixin/rand.py	270	270	RESOLVES	multinomial	symbol-body	251	mixin/rand.py	#      TODO(p3) mixin/rand.py:270  `multinomial`'s cdf arm -- `cumsum` -> `identity_element`.
+tinybendygrad/mixin/rand.bend	78	mixin/rand.py	275	275	RESOLVES	multinomial	symbol-body	251	mixin/rand.py	#      TODO(p3) mixin/rand.py:275  `multinomial`'s Efraimidis-Spirakis arm -- `topk`.
+tinybendygrad/mixin/rand.bend	82	mixin/rand.py	296	296	RESOLVES	dropout	symbol-body	278	mixin/rand.py	#      TODO(p3) mixin/rand.py:296  `dropout`'s general arm -- `where` over a float mask.
+tinybendygrad/mixin/rand.bend	86		0	0	NO-CITATION		-	0		#      TODO(p3) tinygrad/helpers.py  `TRAINING` -- the ContextVar read.
+tinybendygrad/mixin/rand.bend	92	mixin/rand.py	249	249	RESOLVES	randperm	symbol-body	240	mixin/rand.py	#      TODO(p3) mixin/rand.py:249  `randperm` -- `argsort`.
+tinybendygrad/mixin/rand.bend	229	mixin/movement.py	128	128	RESOLVES	_broadcast_to	symbol-decl	128	mixin/movement.py	# TODO(p3) mixin/movement.py:128  `_broadcast_to` for a source that is not
+tinybendygrad/mixin/rand.bend	322	mixin/op.py	282	282	RESOLVES	_pad_constant	symbol-decl	282	mixin/op.py	# TODO(p3) mixin/op.py:282  `_pad_constant`'s negative-pad arm (`has_neg`, op.py:284) and
+tinybendygrad/mixin/rand.bend	409	mixin/op.py	193	193	RESOLVES	arange	symbol-body	166	mixin/op.py	# TODO(p3) mixin/op.py:193  `arange`'s `output_len <= 0` arm -- `full((0,), 0)`.
+tinybendygrad/mixin/rand.bend	410	mixin/op.py	187	187	RESOLVES	arange	symbol-body	166	mixin/op.py	# TODO(p3) mixin/op.py:187  `arange` with `stop` given, `step != 1`, or `dtype=None` (which
+tinybendygrad/mixin/rand.bend	441	mixin/op.py	190	190	RESOLVES		snippet	0	mixin/op.py	# TODO(p3) mixin/op.py:190  `commit_int(lo, hi)` -- the DTYPE IS CHOSEN, NOT GIVEN, and
+tinybendygrad/mixin/rand.bend	573	mixin/rand.py	21	21	RESOLVES	random_bits	symbol-body	18	mixin/rand.py	# TODO(p3) mixin/rand.py:21  `random_bits`'s SECOND AND LATER CHUNKS -- `i & 0xffffffff`
+tinybendygrad/mixin/rand.bend	632	tinygrad/dtype.py	113	113	RESOLVES	finfo	symbol-decl	113	dtype.py	# TODO(p3) tinygrad/dtype.py:113  `finfo` -- the eight-member table; `rd_nmant` answers
+tinybendygrad/mixin/rand.bend	634	tinygrad/dtype.py	302	302	RESOLVES	bitcast	symbol-body	295	dtype.py	# TODO(p3) tinygrad/dtype.py:302  `bitcast(1.0, in_dtype, out_dtype)` for float64 /
+tinybendygrad/mixin/rand.bend	759	tinygrad/tensor.py	468	468	RESOLVES	assign	symbol-named	235	tensor.py	# TODO(p3) tinygrad/tensor.py:468  `counter.assign(...)` -- the DEVICE write itself, the
+tinybendygrad/mixin/rand.bend	961	mixin/rand.py	249	249	RESOLVES	randperm	symbol-body	240	mixin/rand.py	# TODO(p3) mixin/rand.py:249  `randperm` -- `argsort` (op.py:965), a bitonic sort over four
+tinybendygrad/mixin/rand.bend	972	mixin/rand.py	270	270	RESOLVES	multinomial	symbol-body	251	mixin/rand.py	# TODO(p3) mixin/rand.py:270  `multinomial`'s cdf arm -- `cumsum` -> `identity_element`.
+tinybendygrad/mixin/rand.bend	973	mixin/rand.py	275	275	RESOLVES	multinomial	symbol-body	251	mixin/rand.py	# TODO(p3) mixin/rand.py:275  `multinomial`'s Efraimidis-Spirakis arm -- `topk`.
+tinybendygrad/mixin/rand.bend	990	mixin/rand.py	296	296	RESOLVES	dropout	symbol-body	278	mixin/rand.py	# TODO(p3) mixin/rand.py:296  `dropout`'s general arm -- `where` over a float mask, then a
+tinybendygrad/nn/__init__.bend	223	mixin/rand.py	158	158	RESOLVES	uniform	symbol-decl	158	mixin/rand.py	# TODO(p3) mixin/rand.py:158  symbol=uniform  -- `Tensor.uniform` / `Tensor.glorot_uniform`
+tinybendygrad/nn/__init__.bend	228	mixin/op.py	1254	1254	RESOLVES	linear	symbol-decl	1254	mixin/op.py	# TODO(p3) mixin/op.py:1254  x.linear           -- `linear_with_vars` (movement.py) is
+tinybendygrad/nn/__init__.bend	230	mixin/op.py	1678	1678	RESOLVES	batchnorm	symbol-decl	1678	mixin/op.py	# TODO(p3) mixin/op.py:1678  x.batchnorm        -- mixin/op.bend SIDE B, not built.
+tinybendygrad/nn/__init__.bend	231	mixin/op.py	1661	1661	RESOLVES	layernorm	symbol-decl	1661	mixin/op.py	# TODO(p3) mixin/op.py:1661  x.layernorm        -- SIDE B, not built.
+tinybendygrad/nn/__init__.bend	232		0	0	NO-CITATION		-	0		# TODO(p3) mixin/op.py       x.conv2d           -- SIDE B, not built.
+tinybendygrad/nn/__init__.bend	233		0	0	NO-CITATION		-	0		# TODO(p3) mixin/op.py       x.conv_transpose2d -- SIDE B, not built.
+tinybendygrad/nn/__init__.bend	234		0	0	NO-CITATION		-	0		# TODO(p3) mixin/movement.py x.reshape / x.permute / x.squeeze -- `GroupOp.movement`
+tinybendygrad/nn/__init__.bend	236	mixin/op.py	166	166	RESOLVES	arange	symbol-decl	166	mixin/op.py	# TODO(p3) mixin/op.py:166   x.arange           -- and mixin/op.bend's W4 says `_pool`
+tinybendygrad/nn/__init__.bend	238	mixin/reduce.py	20	20	RESOLVES	sum	symbol-decl	20	mixin/reduce.py	# TODO(p3) mixin/reduce.py:20  symbol=sum  -- x.sum (`x.mean` is mixin/op.py:496) --
+tinybendygrad/nn/datasets.bend	81	nn/datasets.py	6	6	RESOLVES	_mnist	symbol-decl	6	nn/datasets.py	#    TODO(p3) nn/datasets.py:6  symbol=_mnist  -- Tensor.from_url(..., gunzip=True).
+tinybendygrad/nn/datasets.bend	82	nn/datasets.py	11	11	RESOLVES	cifar	symbol-body	10	nn/datasets.py	#    TODO(p3) nn/datasets.py:11  symbol=cifar  -- the cifar tarball, and tar_extract with it.
+tinybendygrad/nn/datasets.bend	86	nn/datasets.py	12	12	RESOLVES	cifar	symbol-body	10	nn/datasets.py	#    TODO(p3) nn/datasets.py:12  symbol=cifar  -- tt["cifar-10-batches-bin/data_batch_i.bin"].
+tinybendygrad/nn/datasets.bend	93	nn/datasets.py	7	7	RESOLVES	mnist	symbol-body	4	nn/datasets.py	#    TODO(p3) nn/datasets.py:7  symbol=mnist  -- reshape(-1,1,28,28).to(device).
+tinybendygrad/nn/datasets.bend	94	nn/datasets.py	14	14	RESOLVES	cifar	symbol-body	10	nn/datasets.py	#    TODO(p3) nn/datasets.py:14  symbol=cifar  -- train[:, 1:] and train[:, 0].
+tinybendygrad/nn/onnx.bend	1908	onnx.py	73	73	RESOLVES	PBBufferedReader	symbol-decl	73	nn/onnx.py	# TODO(p3) onnx.py:73   PBBufferedReader -- `io.BufferedReader(TensorIO(tensor))`,
+tinybendygrad/nn/onnx.bend	1912	onnx.py	121	121	RESOLVES	OnnxPBParser	symbol-decl	121	nn/onnx.py	# TODO(p3) onnx.py:121  OnnxPBParser -- all seventeen `_parse_*` defs and `parse`.
+tinybendygrad/nn/onnx.bend	1915	onnx.py	281	281	RESOLVES	_to_python_const	symbol-decl	281	nn/onnx.py	# TODO(p3) onnx.py:281  _to_python_const -- `t.data().tobytes()` / `t.tolist()`.
+tinybendygrad/nn/onnx.bend	1917	onnx.py	294	294	RESOLVES	OnnxRunner.__init__	symbol-decl	294	nn/onnx.py	# TODO(p3) onnx.py:294  OnnxRunner.__init__ / _init_from_graph / _from_subgraph /
+tinybendygrad/nn/onnx.bend	1921	onnx.py	475	475	RESOLVES	get_onnx_ops	symbol-body	395	nn/onnx.py	# TODO(p3) onnx.py:475  get_onnx_ops -- the 167 bodies. The NAME TABLE and
+tinybendygrad/nn/onnx.bend	1928	onnx.py	526	526	RESOLVES	softmax_1	symbol-decl	526	nn/onnx.py	# TODO(p3) onnx.py:526  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
+tinybendygrad/nn/onnx.bend	1934	onnx.py	563	563	RESOLVES	Cast	snippet	0	nn/onnx.py	# TODO(p3) onnx.py:563  Cast / CastLike -- `OnnxDataType(to).to_dtype()` is
+tinybendygrad/nn/onnx.bend	1948	onnx.py	875	875	RESOLVES	DepthToSpace	symbol-decl	875	nn/onnx.py	# TODO(p3) onnx.py:875  DepthToSpace / SpaceToDepth -- `X.rearrange` is a REWRITE
+tinybendygrad/nn/onnx.bend	1950	onnx.py	881	881	RESOLVES	dropout_7	symbol-decl	881	nn/onnx.py	# TODO(p3) onnx.py:881  dropout_7 / dropout_6 -- legacy `numpy.random.RandomState`,
+tinybendygrad/nn/onnx.bend	1961	onnx.py	1177	1177	RESOLVES	Adagrad	symbol-decl	1177	nn/onnx.py	# TODO(p3) onnx.py:1177 Adagrad / Adam / Momentum -- the `@_onnx_training`
+tinybendygrad/nn/onnx.bend	1967	onnx.py	1216	1216	RESOLVES	Gradient	symbol-decl	1216	nn/onnx.py	# TODO(p3) onnx.py:1216 Gradient -- `intermediate_tensors[y].gradient(*inputs)`.
+tinybendygrad/nn/pool.bend	245	mixin/op.py	282	282	RESOLVES	_pad_constant	symbol-decl	282	mixin/op.py	# `TODO(p3) mixin/op.py:282 _pad_constant's ... value != 0 arm ... and needs
+tinybendygrad/nn/state.bend	498	state.py	8	8	RESOLVES	TensorIO	symbol-decl	8	nn/state.py	# TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17, symbol=readinto) needs
+tinybendygrad/nn/state.bend	498	state.py	17	17	RESOLVES	readinto	symbol-decl	17	nn/state.py	# TODO(p3) state.py:8   TensorIO        -- `io.RawIOBase`; `readinto` (:17, symbol=readinto) needs
+tinybendygrad/nn/state.bend	501	state.py	38	38	RESOLVES	accept_filename	symbol-decl	38	nn/state.py	# TODO(p3) state.py:38  accept_filename  -- a decorator; `functools.wraps` copies
+tinybendygrad/nn/state.bend	504	state.py	44	44	RESOLVES	safe_load_metadata	symbol-decl	44	nn/state.py	# TODO(p3) state.py:44  safe_load_metadata -- `int.from_bytes(t[0:8].data(), "little")`
+tinybendygrad/nn/state.bend	506	state.py	51	51	RESOLVES	safe_load	symbol-decl	51	nn/state.py	# TODO(p3) state.py:51  safe_load        -- as above, plus `bitcast` (mixin/dtype.py)
+tinybendygrad/nn/state.bend	508	state.py	64	64	RESOLVES	safe_save	symbol-decl	64	nn/state.py	# TODO(p3) state.py:64  safe_save        -- `json.dumps` is a PARSER,
+tinybendygrad/nn/state.bend	514	state.py	128	128	RESOLVES	load_state_dict	symbol-decl	128	nn/state.py	# TODO(p3) state.py:128 load_state_dict  -- `v.replace` (:159, `UOp.replace` IS PORTED at
+tinybendygrad/nn/state.bend	514	state.py	159	159	RESOLVES	load_state_dict	symbol-body	128	nn/state.py	# TODO(p3) state.py:128 load_state_dict  -- `v.replace` (:159, `UOp.replace` IS PORTED at
+tinybendygrad/nn/state.bend	519	state.py	168	168	RESOLVES	zip_extract	symbol-decl	168	nn/state.py	# TODO(p3) state.py:168 zip_extract      -- `zipfile.ZipFile(TensorIO(t))`: a zip
+tinybendygrad/nn/state.bend	522	state.py	188	188	RESOLVES	tar_extract	symbol-decl	188	nn/state.py	# TODO(p3) state.py:188 tar_extract      -- `tarfile.open(fileobj=TensorIO(t))`,
+tinybendygrad/nn/state.bend	524	state.py	207	207	RESOLVES	torch_load	symbol-decl	207	nn/state.py	# TODO(p3) state.py:207 torch_load       -- a `pickle.Unpickler` SUBCLASS with
+tinybendygrad/nn/torch.bend	57	nn/torch.py	3	3	RESOLVES		loose	0	nn/torch.py	#    TODO(p3) nn/torch.py:3  `pathlib.Path` -- normalisation of '.', '..', '//'
+tinybendygrad/nn/torch.bend	63	nn/torch.py	3	3	RESOLVES		loose	0	nn/torch.py	#    TODO(p3) nn/torch.py:3  `sys.path` -- module-level list mutation.
+tinybendygrad/nn/torch.bend	69	nn/torch.py	4	4	RESOLVES		loose	0	nn/torch.py	#    TODO(p3) nn/torch.py:4  the import -- `import extra.torch_backend.backend` binds
+tinybendygrad/renderer/__init__.bend	70	ops.py	1896	1896	RESOLVES	to_max_shape	symbol-decl	1896	uop/ops.py	#     SYMBOLIC `vmax` -- a WALL (`TODO(p3) ops.py:1896 symbol=to_max_shape` in the port,
+tinybendygrad/renderer/__init__.bend	176	ops.py	495	495	RESOLVES	UOp.simplify	symbol-decl	495	uop/ops.py	# `mults` (`UOp.simplify` is `# TODO(p3) ops.py:495 symbol=UOp.simplify`; the `vmax` under
+tinybendygrad/renderer/__init__.bend	177	ops.py	1092	1092	RESOLVES	UOp.vmax	symbol-decl	1092	uop/ops.py	# `to_max_shape` is `# TODO(p3) ops.py:1092 symbol=UOp.vmax`) is unreachable from that call site,
+tinybendygrad/renderer/__init__.bend	394	__init__.py	26	26	RESOLVES	from_uops	symbol-decl	26	renderer/__init__.py	#   substrate. `TODO(p3) __init__.py:26 symbol=from_uops`.
+tinybendygrad/renderer/__init__.bend	408	__init__.py	83	83	RESOLVES	render	symbol-decl	83	renderer/__init__.py	#   answer and nothing else can be true of it. `TODO(p3) __init__.py:83 symbol=render`, `:84 symbol=asm`.
+tinybendygrad/renderer/__init__.bend	408	__init__.py	84	84	RESOLVES	asm	symbol-decl	84	renderer/__init__.py	#   answer and nothing else can be true of it. `TODO(p3) __init__.py:83 symbol=render`, `:84 symbol=asm`.
+tinybendygrad/renderer/__init__.bend	413	__init__.py	77	77	RESOLVES	code_for_op	symbol-decl	77	renderer/__init__.py	#   `match` is `cstyle.bend`'s `code_for_op.of`. `TODO(p3) __init__.py:77 symbol=code_for_op`.
+tinybendygrad/renderer/__init__.bend	415	__init__.py	75	75	RESOLVES	tensor_cores	symbol-decl	75	renderer/__init__.py	#   which is not this unit's file and has no port. `TODO(p3) __init__.py:75 symbol=tensor_cores`.
+tinybendygrad/renderer/__init__.bend	420	__init__.py	75	75	RESOLVES	tensor_cores	symbol-decl	75	renderer/__init__.py	# TODO(p3) __init__.py:75  tensor_cores     (renderer/tc.py is not this unit)
+tinybendygrad/renderer/__init__.bend	424	__init__.py	84	84	RESOLVES	asm	symbol-decl	84	renderer/__init__.py	# TODO(p3) __init__.py:84  asm              (NotImplementedError -> a has-asm flag)
+tinybendygrad/renderer/amd/elf.bend	45	elf.py	16	16	RESOLVES	assemble_linear	symbol-body	15	renderer/amd/elf.py	# TODO(p3) elf.py:16 symbol=assemble_linear, :41-46 symbol=assemble_linear, :47 symbol=assemble_linear, :108-113 symbol=assemble_linear  the four blockers above.
+tinybendygrad/renderer/amd/elf.bend	45	elf.py	41	46	RESOLVES	assemble_linear	symbol-body	15	renderer/amd/elf.py	# TODO(p3) elf.py:16 symbol=assemble_linear, :41-46 symbol=assemble_linear, :47 symbol=assemble_linear, :108-113 symbol=assemble_linear  the four blockers above.
+tinybendygrad/renderer/amd/elf.bend	45	elf.py	47	47	RESOLVES	assemble_linear	symbol-body	15	renderer/amd/elf.py	# TODO(p3) elf.py:16 symbol=assemble_linear, :41-46 symbol=assemble_linear, :47 symbol=assemble_linear, :108-113 symbol=assemble_linear  the four blockers above.
+tinybendygrad/renderer/amd/elf.bend	45	elf.py	108	113	RESOLVES	assemble_linear	symbol-body	15	renderer/amd/elf.py	# TODO(p3) elf.py:16 symbol=assemble_linear, :41-46 symbol=assemble_linear, :47 symbol=assemble_linear, :108-113 symbol=assemble_linear  the four blockers above.
+tinybendygrad/renderer/amd/sqtt.bend	74		0	0	NO-CITATION		-	0		#                     gate would be 17 rows about a CSS palette. TODO(p3).
+tinybendygrad/renderer/amd/sqtt.bend	78		0	0	NO-CITATION		-	0		#                     LAYOUT), so it is downstream of the reader above. TODO(p3).
+tinybendygrad/renderer/amd/sqtt.bend	79		0	0	NO-CITATION		-	0		#   sqtt.py:752-754  `print_packets` -- one `skip` set and a filter. TODO(p3).
+tinybendygrad/renderer/cstyle.bend	60	ops.py	1896	1896	RESOLVES	to_max_shape	symbol-decl	1896	uop/ops.py	#       SYMBOLIC `vmax` (`TODO(p3) ops.py:1896 symbol=to_max_shape`). `max_numel` below is the
+tinybendygrad/renderer/cstyle.bend	441	cstyle.py	55	56	RESOLVES	base_rewrite	symbol-body	11	renderer/cstyle.py	#   TODO(p3) cstyle.py:55-56  `base_rewrite`'s `Ops.STACK` arm. It needs
+tinybendygrad/renderer/cstyle.bend	1317	cstyle.py	110	113	RESOLVES	uops_to_dtypes	symbol-decl	110	renderer/cstyle.py	#   TODO(p3) cstyle.py:110-113  `uops_to_dtypes`. Needs the fold (wall (a)); its
+tinybendygrad/renderer/cstyle.bend	1351	ops.py	1092	1092	RESOLVES	UOp.vmax	symbol-decl	1092	uop/ops.py	#     `TODO(p3) ops.py:1092 symbol=UOp.vmax` wall again. It is a `U32` PARAMETER here, and the
+tinybendygrad/renderer/cstyle.bend	1363	ops.py	1092	1092	RESOLVES	UOp.vmax	symbol-decl	1092	uop/ops.py	# the SYMBOLIC maximum that is `TODO(p3) ops.py:1092 symbol=UOp.vmax`. The SPECIAL filter itself
+tinybendygrad/renderer/cstyle.bend	1367	cstyle.py	162	162	RESOLVES	render_kernel	symbol-body	155	renderer/cstyle.py	#   TODO(p3) cstyle.py:162 symbol=render_kernel, :163 -- BLOCKED. needs `local_dims` (py:162) and `launch_bounds` (py:163) -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.
+tinybendygrad/renderer/cstyle.bend	1367	cstyle.py	163	163	RESOLVES	render_kernel	symbol-body	155	renderer/cstyle.py	#   TODO(p3) cstyle.py:162 symbol=render_kernel, :163 -- BLOCKED. needs `local_dims` (py:162) and `launch_bounds` (py:163) -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.
+tinybendygrad/renderer/isa/x86.bend	66	x86.py	761	761	RESOLVES	render	symbol-body	760	renderer/isa/x86.py	#     NOT PORTED). `TODO(p3) x86.py:761 symbol=render`.
+tinybendygrad/renderer/isa/x86.bend	89	x86.py	92	92	RESOLVES	extra_matcher	symbol-decl	92	renderer/isa/x86.py	#   different program. `TODO(p3) x86.py:92 symbol=extra_matcher`.
+tinybendygrad/renderer/isa/x86.bend	91	x86.py	156	156	RESOLVES	pre_isel_matcher	symbol-decl	156	renderer/isa/x86.py	# * `pre_isel_matcher` (py:156-170, 15 lines) -- same wall. `TODO(p3) x86.py:156 symbol=pre_isel_matcher`.
+tinybendygrad/renderer/isa/x86.bend	94	x86.py	312	312	RESOLVES	isel_matcher	symbol-decl	312	renderer/isa/x86.py	#   `TODO(p3) x86.py:312 symbol=isel_matcher`.
+tinybendygrad/renderer/isa/x86.bend	102	x86.py	456	456	RESOLVES	flag_rematerialize	symbol-decl	456	renderer/isa/x86.py	#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+tinybendygrad/renderer/isa/x86.bend	102	x86.py	464	464	RESOLVES	alloc_buffer	symbol-decl	464	renderer/isa/x86.py	#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+tinybendygrad/renderer/isa/x86.bend	102	x86.py	476	476	RESOLVES	lower_range	symbol-decl	476	renderer/isa/x86.py	#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+tinybendygrad/renderer/isa/x86.bend	102	x86.py	490	490	RESOLVES	lower_end	symbol-decl	490	renderer/isa/x86.py	#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+tinybendygrad/renderer/isa/x86.bend	102	x86.py	496	496	RESOLVES	lower_loop	symbol-decl	496	renderer/isa/x86.py	#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+tinybendygrad/renderer/isa/x86.bend	102	x86.py	502	502	RESOLVES	post_regalloc_matcher	symbol-decl	502	renderer/isa/x86.py	#   `TODO(p3) x86.py:456 symbol=flag_rematerialize, :464 symbol=alloc_buffer, :476 symbol=lower_range, :490 symbol=lower_end, :496 symbol=lower_loop, :502 symbol=post_regalloc_matcher`.
+tinybendygrad/renderer/isa/x86.bend	106	x86.py	135	135	RESOLVES	scratch_buffer	symbol-decl	135	renderer/isa/x86.py	#   `TODO(p3) x86.py:135 symbol=scratch_buffer`.
+tinybendygrad/renderer/isa/x86.bend	111	x86.py	137	137	RESOLVES	gated_load	symbol-decl	137	renderer/isa/x86.py	#   `TODO(p3) x86.py:137 symbol=gated_load, :144 symbol=gated_store`.
+tinybendygrad/renderer/isa/x86.bend	111	x86.py	144	144	RESOLVES	gated_store	symbol-decl	144	renderer/isa/x86.py	#   `TODO(p3) x86.py:137 symbol=gated_load, :144 symbol=gated_store`.
+tinybendygrad/renderer/isa/x86.bend	117	x86.py	152	152	RESOLVES	flag_gate	symbol-decl	152	renderer/isa/x86.py	#   1502 records three such defs in `schedule/indexing.bend`). `TODO(p3) x86.py:152 symbol=flag_gate`.
+tinybendygrad/renderer/isa/x86.bend	124	x86.py	192	192	RESOLVES	stack_pointer	symbol-decl	192	renderer/isa/x86.py	#   `TODO(p3) x86.py:192 symbol=stack_pointer`.
+tinybendygrad/renderer/isa/x86.bend	126	x86.py	197	197	RESOLVES	base	symbol-decl	197	renderer/isa/x86.py	#   `Ops.INDEX`. Arena reads. `TODO(p3) x86.py:197 symbol=base`.
+tinybendygrad/renderer/isa/x86.bend	140	x86.py	200	200	RESOLVES	imm	symbol-decl	200	renderer/isa/x86.py	#   differ only in the tag. `TODO(p3) x86.py:200 symbol=imm`.
+tinybendygrad/renderer/isa/x86.bend	143	x86.py	208	208	RESOLVES	cmp	symbol-decl	208	renderer/isa/x86.py	#   `TODO(p3) x86.py:208 symbol=cmp`.
+tinybendygrad/renderer/isa/x86.bend	146	x86.py	219	219	RESOLVES	vinsertps	symbol-decl	219	renderer/isa/x86.py	#   `TODO(p3) x86.py:219 symbol=vinsertps`.
+tinybendygrad/renderer/isa/x86.bend	151	x86.py	250	250	RESOLVES	fold_address	symbol-decl	250	renderer/isa/x86.py	#   `TODO(p3) x86.py:250 symbol=fold_address`.
+tinybendygrad/renderer/isa/x86.bend	154	x86.py	265	265	RESOLVES	abi	symbol-decl	265	renderer/isa/x86.py	#   `TODO(p3) x86.py:265 symbol=abi`.
+tinybendygrad/renderer/isa/x86.bend	156	x86.py	293	293	RESOLVES	alloc_vregs	symbol-decl	293	renderer/isa/x86.py	#   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:293 symbol=alloc_vregs`.
+tinybendygrad/renderer/isa/x86.bend	158	x86.py	681	681	RESOLVES	X86LinearContext	symbol-decl	681	renderer/isa/x86.py	#   `lock` / `stack_allocated` / `stack_size` state above. `TODO(p3) x86.py:681 symbol=X86LinearContext`.
+tinybendygrad/renderer/isa/x86.bend	162	x86.py	720	720	RESOLVES	X86Renderer.__init__	symbol-decl	720	renderer/isa/x86.py	#   PROCESS SPAWN. FFI. `TODO(p3) x86.py:720 symbol=X86Renderer.__init__`.
+tinybendygrad/renderer/isa/x86.bend	165	x86.py	726	726	RESOLVES	copy	symbol-decl	726	renderer/isa/x86.py	#   `TODO(p3) x86.py:726 symbol=copy`.
+tinybendygrad/renderer/isa/x86.bend	168	x86.py	728	728	RESOLVES	spill	symbol-decl	728	renderer/isa/x86.py	#   class the gate ports. The node build is not. `TODO(p3) x86.py:728 symbol=spill`.
+tinybendygrad/renderer/isa/x86.bend	171	x86.py	761	761	RESOLVES	render	symbol-body	760	renderer/isa/x86.py	#   change. `TODO(p3) x86.py:761 symbol=render`.
+tinybendygrad/renderer/isa/x86.bend	1584	x86.py	776	776	RESOLVES	render	symbol-body	760	renderer/isa/x86.py	# `TODO(p3) x86.py:776 symbol=render`.
+tinybendygrad/renderer/nir.bend	38	nir.py	50	50	RESOLVES	nir_instr	symbol-body	40	renderer/nir.py	# and records the `index_map` SLOTS as the wall. `TODO(p3) nir.py:50 symbol=nir_instr`.
+tinybendygrad/renderer/nir.bend	1660	nir.py	50	50	RESOLVES	nir_instr	symbol-body	40	renderer/nir.py	#   ABSENT on this tree (mesa.py:989). `TODO(p3) nir.py:50 symbol=nir_instr`.
+tinybendygrad/renderer/nir.bend	1667	nir.py	121	121	RESOLVES	extra_matcher	symbol-decl	121	renderer/nir.py	#   `TODO(p3) nir.py:121 symbol=extra_matcher`, `:145 symbol=def_rewrite`, `:290 symbol=IR3Renderer.def_rewrite`.
+tinybendygrad/renderer/nir.bend	1667	nir.py	145	145	RESOLVES	def_rewrite	symbol-decl	145	renderer/nir.py	#   `TODO(p3) nir.py:121 symbol=extra_matcher`, `:145 symbol=def_rewrite`, `:290 symbol=IR3Renderer.def_rewrite`.
+tinybendygrad/renderer/nir.bend	1667	nir.py	290	290	RESOLVES	IR3Renderer.def_rewrite	symbol-decl	290	renderer/nir.py	#   `TODO(p3) nir.py:121 symbol=extra_matcher`, `:145 symbol=def_rewrite`, `:290 symbol=IR3Renderer.def_rewrite`.
+tinybendygrad/renderer/nir.bend	1672	nir.py	169	169	RESOLVES	NIRRenderer.__init__	symbol-decl	169	renderer/nir.py	#   diff. `TODO(p3) nir.py:169 symbol=NIRRenderer.__init__`.
+tinybendygrad/renderer/nir.bend	1679	nir.py	69	69	RESOLVES	nimm_set	symbol-decl	69	renderer/nir.py	#   `renderer/__init__.bend`'s convention 11 note). `TODO(p3) nir.py:69 symbol=nimm_set`.
+tinybendygrad/renderer/nir.bend	1689	nir.py	312	312	RESOLVES	IR3Renderer.postrender	symbol-decl	312	renderer/nir.py	#   over `itertools.count`. `TODO(p3) nir.py:312 symbol=IR3Renderer.postrender`.
+tinybendygrad/renderer/ptx.bend	30	ptx.py	42	42	RESOLVES	ptx_matcher	symbol-body	40	renderer/ptx.py	#     `TODO(p3) ptx.py:42 symbol=ptx_matcher`.
+tinybendygrad/renderer/tc_ptx.bend	75	ptx.py	145	145	RESOLVES	PTXRenderer.__init__	symbol-body	142	renderer/ptx.py	#   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
+tinybendygrad/renderer/tc_ptx.bend	92	ptx.py	145	145	RESOLVES	PTXRenderer.__init__	symbol-body	142	renderer/ptx.py	#   TODO(p3) ptx.py:145 symbol=PTXRenderer.__init__  self.compiler -- NVPTXCompiler / PTXCompiler
+tinybendygrad/renderer/tc_ptx.bend	292	ptx.py	13	13	RESOLVES	render_val	symbol-body	11	renderer/ptx.py	#   TODO(p3) ptx.py:13  render_val's DOUBLE arm -- `struct.pack("d", ...)` is 64
+tinybendygrad/renderer/tc_ptx.bend	706	ptx.py	231	231	RESOLVES	supported_dtypes	symbol-decl	231	renderer/ptx.py	#   TODO(p3) ptx.py:231  supported_dtypes' BASE set -- `dtypes.all` minus an
+tinybendygrad/renderer/wgsl.bend	13	wgsl.py	7	7	RESOLVES	sign_extend	symbol-decl	7	renderer/wgsl.py	#   TODO(p3) wgsl.py:7   sign_extend  -- `.bitcast`/`.alu` CONSTRUCTOR SUGAR
+tinybendygrad/renderer/wgsl.bend	14	wgsl.py	15	15	RESOLVES	packed_store	symbol-decl	15	renderer/wgsl.py	#   TODO(p3) wgsl.py:15  packed_store -- ditto, plus `.load`/`.store`
+tinybendygrad/renderer/wgsl.bend	15	wgsl.py	24	24	RESOLVES	packed_load	symbol-decl	24	renderer/wgsl.py	#   TODO(p3) wgsl.py:24  packed_load  -- ditto, plus `.index`
+tinybendygrad/renderer/wgsl.bend	16	wgsl.py	35	35	RESOLVES	is_nan	symbol-decl	35	renderer/wgsl.py	#   TODO(p3) wgsl.py:35  is_nan       -- ditto (`.bitcast` and the compare)
+tinybendygrad/renderer/wgsl.bend	17	wgsl.py	42	42	RESOLVES	wgsl_matcher	symbol-decl	42	renderer/wgsl.py	#   TODO(p3) wgsl.py:42  wgsl_matcher -- ditto; the seven RULES return arenas,
+tinybendygrad/runtime/ops_amd.bend	210	runtime/ops_amd.py	685	685	RESOLVES	on_device_hang	symbol-body	675	runtime/ops_amd.py	#    TODO(p3) runtime/ops_amd.py:685  symbol=on_device_hang  the HW-fault f-string.
+tinybendygrad/runtime/ops_amd.bend	223	runtime/ops_amd.py	515	515	RESOLVES	_amd_program_image	symbol-body	514	runtime/ops_amd.py	#    TODO(p3) runtime/ops_amd.py:515  symbol=_amd_program_image  elf_loader(lib) and the reloc loop.
+tinybendygrad/runtime/ops_amd.bend	231	runtime/ops_amd.py	515	515	RESOLVES	_amd_program_image	symbol-body	514	runtime/ops_amd.py	#    TODO(p3) runtime/ops_amd.py:515  symbol=_amd_program_image -- the md5 digest slice -- NOT IN upstream at this pin: upstream's `runtime/ops_amd.py` has NO `hashlib.md5` and the slice is CPython's `hashlib`, so it is a WALL.
+tinybendygrad/runtime/ops_amd.bend	12	ops_amd.py	374	374	RESOLVES	kernargs	symbol-decl	374	runtime/ops_amd.py	#   * the KERNEL ARGUMENT TRACE -- `kernargs` (ops_amd.py:374 symbol=kernargs) is `layout_args` then
+tinybendygrad/runtime/ops_amd.bend	14	hcq2.py	114	118	RESOLVES	layout_args	symbol-decl	114	runtime/support/hcq2.py	#     That is upstream's `layout_args`/`pack_args` (hcq2.py:114-118 symbol=layout_args) -- the SAME
+tinybendygrad/runtime/ops_amd.bend	68	ops_amd.py	522	522	RESOLVES	_amd_program_image	symbol-body	514	runtime/ops_amd.py	#   * `pd.lds` used `ceildiv` where `ops_amd.py:522 symbol=_amd_program_image` uses `//`, i.e. FLOOR, so
+tinybendygrad/runtime/ops_amd.bend	185	ops_amd.py	784	808	RESOLVES	USBIface	symbol-decl	784	runtime/ops_amd.py	#    `USBIface` block, ops_amd.py:784-808 symbol=USBIface.
+tinybendygrad/runtime/ops_amd.bend	193	device.py	377	377	RESOLVES	link_bufs	symbol-decl	377	device.py	#    surviving construct is `Compiled.link_bufs` (`device.py:377 symbol=link_bufs`), which upstream fills at
+tinybendygrad/runtime/ops_amd.bend	203	ops_amd.py	675	688	RESOLVES	on_device_hang	symbol-decl	675	runtime/ops_amd.py	# 5. THE HANG PATH. AT THIS PIN `on_device_hang` is KFDIface's (ops_amd.py:675-688 symbol=on_device_hang) -- the one that builds the
+tinybendygrad/runtime/ops_amd.bend	205	ops_amd.py	774	777	RESOLVES	on_device_hang	symbol-decl	774	runtime/ops_amd.py	#    (ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (ops_amd.py:1024 symbol=on_device_hang). A field NAME is a
+tinybendygrad/runtime/ops_amd.bend	205	ops_amd.py	1024	1024	RESOLVES	on_device_hang	symbol-decl	1024	runtime/ops_amd.py	#    (ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (ops_amd.py:1024 symbol=on_device_hang). A field NAME is a
+tinybendygrad/runtime/ops_amd.bend	208	runtime/ops_amd.py	676	676	RESOLVES	on_device_hang	symbol-body	675	runtime/ops_amd.py	# | WALL(p3) runtime/ops_amd.py:676 symbol=on_device_hang  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
+tinybendygrad/runtime/ops_amd.bend	215	ops_amd.py	515	519	RESOLVES	_amd_program_image	snippet	0	runtime/ops_amd.py	#  * `_amd_program_image`'s ELF WALK (`ops_amd.py:515-519 symbol=_amd_program_image`). `elf_loader(lib)` returns the
+tinybendygrad/runtime/ops_amd.bend	248	helpers.py	70	70	RESOLVES	round_up	symbol-decl	70	helpers.py	#  2. `D.round_up` is `helpers.py:70 symbol=round_up`, and `H.round_up_u32` / `H.ceildiv_u32` /
+tinybendygrad/runtime/ops_bend.bend	105	runtime/ops_bend.bend	1	1	PORT-CITATION		port	0		#    TODO(p3) runtime/ops_bend.bend:1  symbol= -- the FLOAT CONST's `struct.pack('<f', u.arg).hex()` -- UPSTREAM'S `runtime/ops_bend.py` IS GONE AT THIS PIN, so this is a claim about the PORT's own encoder.
+tinybendygrad/runtime/ops_bend.bend	710	runtime/ops_bend.bend	1	1	PORT-CITATION		port	0		#   TODO(p3) runtime/ops_bend.bend:1  symbol= -- split a packet into LINES -- UPSTREAM'S `runtime/ops_bend.py` IS GONE AT THIS PIN, so this is a claim about the PORT's own decoder.
+tinybendygrad/runtime/ops_cl.bend	146	runtime/ops_cl.py	85	85	RESOLVES	_alloc	symbol-body	83	runtime/ops_cl.py	#    TODO(p3) runtime/ops_cl.py:85  symbol=_alloc   -- clCreateBuffer's cl_mem.
+tinybendygrad/runtime/ops_cl.bend	147	runtime/ops_cuda.py	67	67	RESOLVES	_alloc	symbol-body	65	runtime/ops_cuda.py	#    TODO(p3) runtime/ops_cuda.py:67  symbol=_alloc  -- extern()'s BufferStorage(ptr, meta).
+tinybendygrad/runtime/ops_cl.bend	148	runtime/ops_cuda.py	87	87	RESOLVES	_offset	symbol-decl	87	runtime/ops_cuda.py	#    TODO(p3) runtime/ops_cuda.py:87  symbol=_offset -- _offset returns a hipDeviceptr_t; upstream's HIPDevice has none of its own and inherits CUDAAllocator._offset.
+tinybendygrad/runtime/ops_cl.bend	159	runtime/ops_cl.py	139	139	RESOLVES	_wait_signal	symbol-body	136	runtime/ops_cl.py	#    TODO(p3) runtime/ops_cl.py:139  symbol=_wait_signal -- the u64 nanosecond delta -- upstream's old `OSX_TIMING_RATIO` form is GONE at this pin and the u64 profiling timestamps are read here.
+tinybendygrad/runtime/ops_cl.bend	160	runtime/ops_cuda.py	104	104	RESOLVES	__init__	snippet	0	runtime/ops_cuda.py	#    TODO(p3) runtime/ops_cuda.py:104  symbol=__init__ -- the f32 millisecond elapsed -- upstream's `ret.value * 1e-3` is GONE at this pin and the clock is `time.perf_counter_ns()` here.
+tinybendygrad/runtime/ops_cl.bend	166	runtime/ops_cl.py	31	31	RESOLVES	compile	symbol-body	28	runtime/ops_cl.py	#    TODO(p3) runtime/ops_cl.py:31  symbol=compile  -- the build-log string buffer.
+tinybendygrad/runtime/ops_cl.bend	167	runtime/ops_cl.py	108	108	RESOLVES	__init__	symbol-body	99	runtime/ops_cl.py	#    TODO(p3) runtime/ops_cl.py:108  symbol=__init__ -- the device-info string buffer.
+tinybendygrad/runtime/ops_cl.bend	173	runtime/ops_cl.py	13	13	RESOLVES	CC_CB	symbol-decl	13	runtime/ops_cl.py	#    TODO(p3) runtime/ops_cl.py:13  symbol=CC_CB  -- CC_CB / BP_CB.
+tinybendygrad/runtime/ops_cl.bend	179	runtime/ops_cl.py	27	27	RESOLVES	__init__	symbol-body	25	runtime/ops_cl.py	#    TODO(p3) runtime/ops_cl.py:27  symbol=__init__ -- the md5 digest.
+tinybendygrad/runtime/ops_cl.bend	204	runtime/autogen/hip.py	960	960	RESOLVES	hipGetErrorString	symbol-decl	960	runtime/autogen/hip.py	#    TODO(p3) runtime/autogen/hip.py:960  symbol=hipGetErrorString -- hipGetErrorString's text.
+tinybendygrad/runtime/ops_cl.bend	165	ops_cl.py	108	108	RESOLVES	__init__	symbol-body	99	runtime/ops_cl.py	#    `self.device_name` (`ops_cl.py:108 symbol=__init__`) and :109 prints.
+tinybendygrad/runtime/ops_cl.bend	169	ops_cl.py	13	14	RESOLVES	CC_CB	symbol-decl	13	runtime/ops_cl.py	# 4. `CC_CB` / `BP_CB` (`ops_cl.py:13-14 symbol=CC_CB`) are `CFUNCTYPE` signatures handed as the
+tinybendygrad/runtime/ops_cl.bend	216	ops_cl.py	16	16	RESOLVES	cl_errors	symbol-decl	16	runtime/ops_cl.py	# THE ERROR TABLES, `cl_errors` (`ops_cl.py:16 symbol=cl_errors`) and cu:18 and hp:10, which are the three `check`s.
+tinybendygrad/runtime/ops_cl.bend	259	device.py	352	352	RESOLVES	iter_sig	symbol-decl	352	device.py	#      `TinyELF.iter_sig` (`device.py:352 symbol=iter_sig`) is the `round_up(offset, dt.itemsize)`
+tinybendygrad/runtime/ops_cl.bend	272	cstyle.py	324	324	RESOLVES	OpenCLRenderer	symbol-decl	324	renderer/cstyle.py	#   1. `OpenCLRenderer` (`cstyle.py:324 symbol=OpenCLRenderer`) is the renderer cl:118 registers. Its
+tinybendygrad/runtime/ops_cl.bend	282	helpers.py	35	35	RESOLVES	is_image_shape	symbol-decl	35	helpers.py	#   3. `is_image_shape(shape)` (`helpers.py:35 symbol=is_image_shape`) is `shape is not None and
+tinybendygrad/runtime/ops_cpu.bend	45	runtime/ops_cpu.py	51	51	RESOLVES	__call__	symbol-body	48	runtime/ops_cpu.py	#    TODO(p3) runtime/ops_cpu.py:51  symbol=__call__  -- struct.pack('<nQ', a & 0xffffffffffffffff).
+tinybendygrad/runtime/ops_cpu.bend	50	runtime/ops_cpu.py	21	21	RESOLVES	_load	symbol-decl	21	runtime/ops_cpu.py	#    TODO(p3) runtime/ops_cpu.py:21  symbol=_load -- the first FOUR bytes of `lib` against `b'\x7fELF'`.
+tinybendygrad/runtime/ops_cpu.bend	54	runtime/ops_cpu.py	59	59	RESOLVES	__call__	symbol-body	48	runtime/ops_cpu.py	#    TODO(p3) runtime/ops_cpu.py:59  symbol=__call__  -- struct.pack_into('<{dt.fmt}', ...).
+tinybendygrad/runtime/ops_cuda.bend	282	runtime/ops_cuda.py	57	57	RESOLVES	cuda_submit	symbol-named	47	runtime/ops_cuda.py	# TODO(p3) runtime/ops_cuda.py:57  symbol=cuda_submit  -- the rule's PATTERN also moved, from
+tinybendygrad/runtime/ops_disk.bend	112	helpers.py	576	576	RESOLVES	mv_address	symbol-decl	576	helpers.py	#    TODO(p3) helpers.py:576  symbol=mv_address  -- mv_address -> the mapping's base address.
+tinybendygrad/runtime/ops_disk.bend	121	ops_disk.py	164	164	RESOLVES	uring	symbol-body	160	runtime/ops_disk.py	#    TODO(p3) ops_disk.py:164  symbol=uring  -- the three mmap lengths.
+tinybendygrad/runtime/ops_disk.bend	122	ops_disk.py	164	164	RESOLVES	uring	symbol-body	160	runtime/ops_disk.py	#    TODO(p3) ops_disk.py:164  symbol=uring  -- ditto.
+tinybendygrad/runtime/ops_disk.bend	123	ops_disk.py	164	164	RESOLVES	uring	symbol-body	160	runtime/ops_disk.py	#    TODO(p3) ops_disk.py:164  symbol=uring  -- ditto.
+tinybendygrad/runtime/ops_disk.bend	129	ops_disk.py	35	35	RESOLVES	_might_open	symbol-body	21	runtime/ops_disk.py	#    TODO(p3) ops_disk.py:35  symbol=_might_open  -- is_block_device() and fstat().st_size.
+tinybendygrad/runtime/ops_disk.bend	1362	ops_disk.py	105	105	RESOLVES	disk_read	symbol-body	88	runtime/ops_disk.py	# TODO(p3) ops_disk.py:105  symbol=disk_read  -- the two while-loops of the io_uring arm.
+tinybendygrad/runtime/ops_disk.bend	1363	ops_disk.py	125	125	RESOLVES	disk_copy_rewriter	symbol-body	121	runtime/ops_disk.py	# TODO(p3) ops_disk.py:125  symbol=disk_copy_rewriter  -- ktail/kring_mask and the sqe array.
+tinybendygrad/runtime/ops_disk.bend	1364	ops_disk.py	105	105	RESOLVES	disk_read	symbol-body	88	runtime/ops_disk.py	# TODO(p3) ops_disk.py:105  symbol=disk_read  -- sq.array[sqe_index] = sqe_index; ktail[0] += 1.
+tinybendygrad/runtime/ops_disk.bend	1365	ops_disk.py	140	140	RESOLVES	disk_copy_rewriter	symbol-body	121	runtime/ops_disk.py	# TODO(p3) ops_disk.py:140  symbol=disk_copy_rewriter  -- `assert cqe.res >= 0`, the third assert in the file.
+tinybendygrad/runtime/ops_dsp.bend	95	runtime/ops_dsp.py	118	118	RESOLVES	compile	symbol-decl	118	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:118  symbol=compile -- the clang spawn and the .so read-back.
+tinybendygrad/runtime/ops_dsp.bend	96	runtime/ops_dsp.py	125	125	RESOLVES	disassemble	symbol-decl	125	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:125  symbol=disassemble -- cpu_objdump / llvm-objdump.
+tinybendygrad/runtime/ops_dsp.bend	104	runtime/ops_dsp.py	81	81	RESOLVES	_alloc	symbol-body	78	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:81  symbol=_alloc  -- ION_IOC_ALLOC / ION_IOC_SHARE.
+tinybendygrad/runtime/ops_dsp.bend	105	runtime/ops_dsp.py	83	83	RESOLVES	_alloc	symbol-body	78	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:83  symbol=_alloc  -- libc.mmap.
+tinybendygrad/runtime/ops_dsp.bend	106	runtime/ops_dsp.py	132	132	RESOLVES	__init__	symbol-body	129	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:132  symbol=__init__ -- os.open('/dev/ion').
+tinybendygrad/runtime/ops_dsp.bend	107	runtime/ops_dsp.py	172	172	RESOLVES	init_dsp	symbol-body	166	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:172  symbol=init_dsp -- os.open('/dev/adsprpc-smd').
+tinybendygrad/runtime/ops_dsp.bend	115	runtime/ops_dsp.py	199	199	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:199  symbol=run -- the in_ptr/out_ptr walk over in_buf.
+tinybendygrad/runtime/ops_dsp.bend	116	runtime/ops_dsp.py	215	215	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:215  symbol=run -- os.open(name) for name != "tinylib".
+tinybendygrad/runtime/ops_dsp.bend	117	runtime/ops_dsp.py	218	218	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:218  symbol=run -- os.close(fd) for fd != TINYFD.
+tinybendygrad/runtime/ops_dsp.bend	118	runtime/ops_dsp.py	223	223	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:223  symbol=run -- os.lseek.
+tinybendygrad/runtime/ops_dsp.bend	119	runtime/ops_dsp.py	227	227	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:227 -- the TINYFD read out of `binded_lib`.
+tinybendygrad/runtime/ops_dsp.bend	120	runtime/ops_dsp.py	229	229	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:229  symbol=run -- os.read.
+tinybendygrad/runtime/ops_dsp.bend	121	runtime/ops_dsp.py	233	233	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:233  symbol=run -- os.stat and the apps_std_STAT fill.
+tinybendygrad/runtime/ops_dsp.bend	122	runtime/ops_dsp.py	237	237	RESOLVES	run	symbol-body	183	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:237  symbol=run -- FASTRPC_IOCTL_MMAP.
+tinybendygrad/runtime/ops_dsp.bend	129	runtime/ops_dsp.py	71	71	RESOLVES	__call__	symbol-body	61	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:71  symbol=__call__  -- the u64 read and the /1e6.
+tinybendygrad/runtime/ops_dsp.bend	130	runtime/ops_dsp.py	292	292	RESOLVES	__call__	symbol-body	278	runtime/ops_dsp.py	#    TODO(p3) runtime/ops_dsp.py:292  symbol=__call__ -- the u32 inscount read and the /1e9.
+tinybendygrad/runtime/ops_dsp.bend	678	LAWS/spec.bend	76	76	PORT-CITATION		port	0		# TODO(p3) LAWS/spec.bend:76  Dt.nm -- the name reader this file matches on.
+tinybendygrad/runtime/ops_metal.bend	171	runtime/ops_metal.py	18	18	RESOLVES		snippet	0	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:18  -- `DLL("CoreGraphics", "CoreGraphics")`.
+tinybendygrad/runtime/ops_metal.bend	172	runtime/ops_metal.py	35	35	RESOLVES		snippet	0	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:35  -- `DLL("MTLCompiler", "MTLCompiler")`.
+tinybendygrad/runtime/ops_metal.bend	183	runtime/ops_metal.py	23	23	RESOLVES		loose	0	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:23  -- `stringWithUTF8String:` -> NSString.
+tinybendygrad/runtime/ops_metal.bend	188	runtime/ops_metal.py	41	41	RESOLVES	__reduce__	symbol-decl	41	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:41  symbol=__reduce__  -- the pickle hook.
+tinybendygrad/runtime/ops_metal.bend	193	runtime/ops_metal.py	72	72	RESOLVES	disassemble	symbol-decl	72	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:72  symbol=disassemble  -- the SUBPROCESS.
+tinybendygrad/runtime/ops_metal.bend	201	runtime/ops_metal.py	186	186	RESOLVES	MetalQueue	snippet	0	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:186  symbol=MetalQueue  -- `MetalQueue(s).encode()`.
+tinybendygrad/runtime/ops_metal.bend	202	runtime/ops_metal.py	192	192	RESOLVES	mtl_msg	symbol-named	97	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:192  symbol=mtl_msg  -- the `pm_lower` fence poll.
+tinybendygrad/runtime/ops_metal.bend	217	runtime/ops_metal.py	281	281	RESOLVES	synchronize	symbol-body	275	runtime/ops_metal.py	#    TODO(p3) runtime/ops_metal.py:281  symbol=synchronize  -- `GPUStartTime/GPUEndTime * 1e9`.
+tinybendygrad/runtime/ops_metal.bend	277		0	0	NO-CITATION		-	0		# TODO(p1): NOT A PHASE CLAIM -- a severity (.agents/TODO.md:11110). THIS FILE IS A PORT OF A SUPERSEDED `ops_metal.py`, and its whole
+tinybendygrad/runtime/ops_metal.bend	824	runtime/ops_metal.py	26	26	RESOLVES		loose	0	runtime/ops_metal.py	# TODO(p3) runtime/ops_metal.py:26  -- `localizedDescription` -> RuntimeError.
+tinybendygrad/runtime/ops_metal.bend	828	runtime/ops_metal.py	52	52	RESOLVES		loose	0	runtime/ops_metal.py	# TODO(p3) runtime/ops_metal.py:52  -- the callback's `errorMessage`.
+tinybendygrad/runtime/ops_metal.bend	957	runtime/ops_metal.py	68	68	RESOLVES		snippet	0	runtime/ops_metal.py	# TODO(p3) runtime/ops_metal.py:68  -- the block ABI, `byref(callback, -0x10)`.
+tinybendygrad/runtime/ops_npy.bend	87	device.py	297	297	RESOLVES	_alloc	symbol-body	294	device.py	#    TODO(p3) device.py:297  symbol=_alloc  mmap.mmap -- the mapping syscall.
+tinybendygrad/runtime/ops_npy.bend	88	helpers.py	575	575	RESOLVES	to_mv	symbol-decl	575	helpers.py	#    TODO(p3) helpers.py:575  symbol=to_mv  to_mv -- `memoryview((ctypes.c_uint8*sz).from_address(ptr))`.
+tinybendygrad/runtime/ops_npy.bend	92	device.py	310	310	RESOLVES	_copyin	symbol-body	308	device.py	#    TODO(p3) device.py:310  symbol=_copyin  cpu_profile -- the `with` and its profile event.
+tinybendygrad/runtime/ops_npy.bend	98	device.py	315	315	RESOLVES	Device	snippet	0	device.py	#    TODO(p3) device.py:315  `Device[buf.device]` -- the registry open.
+tinybendygrad/runtime/ops_nv.bend	64	ops_nv.py	349	380	RESOLVES	NVKIface.__init__	symbol-decl	349	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:349-380  NVKIface.__init__      WALL: /dev/nvidiactl,
+tinybendygrad/runtime/ops_nv.bend	68	ops_nv.py	385	401	RESOLVES	rm_alloc	symbol-named	382	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:385-401  rm_alloc/rm_control/uvm -- NVOS21/NVOS54/
+tinybendygrad/runtime/ops_nv.bend	71	ops_nv.py	403	432	RESOLVES	setup_usermode	range-of-symbols	400	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:403-432  setup_usermode/setup_vm/setup_gpfifo_vm --
+tinybendygrad/runtime/ops_nv.bend	75	ops_nv.py	434	445	RESOLVES	_new_gpu_fd	symbol-named	431	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:434-445  _new_gpu_fd/_gpu_map_to_cpu -- mmap + MAP_FIXED.
+tinybendygrad/runtime/ops_nv.bend	76	ops_nv.py	447	514	RESOLVES	alloc	symbol-named	444	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:447-514  alloc/free/unmap/_gpu_uvm_map -- the VA bump
+tinybendygrad/runtime/ops_nv.bend	79	ops_nv.py	516	527	RESOLVES	map	range-of-symbols	514	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:516-527  map/_alloc_gpu_vaddr -- `storage.meta` is a
+tinybendygrad/runtime/ops_nv.bend	81	ops_nv.py	527	553	RESOLVES	PCIIface	symbol-decl	527	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:527-553  PCIIface -- GSP RPC. It inherits NVKIface's
+tinybendygrad/runtime/ops_nv.bend	83	ops_nv.py	664	675	RESOLVES	_query_gpu_info	range-of-symbols	660	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:664-675  _query_gpu_info -- two rm_controls and an
+tinybendygrad/runtime/ops_nv.bend	85	ops_nv.py	677	686	RESOLVES	_submit_cmds	range-of-symbols	673	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:677-686  _submit_cmds -- it builds, LOWERS, COMPILES and
+tinybendygrad/runtime/ops_nv.bend	89	ops_nv.py	717	748	RESOLVES	collect_prof	range-of-symbols	711	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:717-748  collect_prof/invalidate_caches/on_device_hang
+tinybendygrad/runtime/ops_nv.bend	91	ops_nv.py	750	839	RESOLVES	_prof_init	range-of-symbols	743	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:750-839  _prof_init/_prof_setup_pc_sampling/reg_ops/
+tinybendygrad/runtime/ops_nv.bend	95	ops_nv.py	22	22	RESOLVES	_prof_init	snippet	0	runtime/ops_nv.py	#   TODO(p3) ops_nv.py:22 -- BLOCKED. needs `extra.nv_gpu_driver` -- an FFI seam that lives behind the `IOCTL` flag: MEASURED, zero defs anywhere in the port. The conditional `if getenv("IOCTL"):` is the line that keeps the normal import free of it.
+tinybendygrad/runtime/ops_python.bend	104	runtime/ops_python.py	21	21	RESOLVES	_load	symbol-body	17	runtime/ops_python.py	#    TODO(p3) runtime/ops_python.py:21  symbol=_load -- the multi-word bitcast load arm.
+tinybendygrad/runtime/ops_python.bend	105	runtime/ops_python.py	33	33	RESOLVES	_store	symbol-body	29	runtime/ops_python.py	#    TODO(p3) runtime/ops_python.py:33  symbol=_store -- the multi-word store arm.
+tinybendygrad/runtime/ops_python.bend	106	tinygrad/dtype.py	289	289	RESOLVES	truncate	symbol-decl	289	dtype.py	#    TODO(p3) tinygrad/dtype.py:289  symbol=truncate -- `truncate` for the ten C widths.
+tinybendygrad/runtime/ops_python.bend	111	runtime/ops_python.py	33	33	RESOLVES	_store	symbol-body	29	runtime/ops_python.py	#    TODO(p3) runtime/ops_python.py:33  symbol=_store.
+tinybendygrad/runtime/ops_python.bend	255	runtime/ops_python.py	138	138	RESOLVES	__call__	symbol-body	55	runtime/ops_python.py	# TODO(p3) runtime/ops_python.py:138  symbol=__call__ -- the float lane's input for an int dtype.
+tinybendygrad/runtime/ops_python.bend	2401	runtime/ops_python.py	164	164	RESOLVES	compile	symbol-decl	164	runtime/ops_python.py	# TODO(p3) runtime/ops_python.py:164  symbol=compile -- the base64 quartet fold.
+tinybendygrad/runtime/ops_rdma.bend	136	ops_rdma.py	56	56	RESOLVES	rdma_nic_for	symbol-decl	56	runtime/ops_rdma.py	#    TODO(p3) ops_rdma.py:56  symbol=rdma_nic_for  `functools.cache` on a device object.
+tinybendygrad/runtime/ops_rdma.bend	143	ops_rdma.py	22	22	RESOLVES	__init__	symbol-body	21	runtime/ops_rdma.py	#    TODO(p3) ops_rdma.py:22  symbol=__init__  PCIDevice -- bar probing and firmware.
+tinybendygrad/runtime/ops_rdma.bend	149	ops_rdma.py	46	46	RESOLVES	_map	symbol-body	42	runtime/ops_rdma.py	#    TODO(p3) ops_rdma.py:46  symbol=_map  PCIIfaceBase.p2p_paddrs.
+tinybendygrad/runtime/ops_rdma.bend	155	ops_rdma.py	136	136	RESOLVES	rdma_copies	symbol-body	107	runtime/ops_rdma.py	#    TODO(p3) ops_rdma.py:136  symbol=rdma_copies  unwrap_view(...)[0].getaddr(nic.device).
+tinybendygrad/runtime/ops_webgpu.bend	79	runtime/ops_webgpu.py	14	14	RESOLVES	from_wgpu_str	symbol-decl	14	runtime/ops_webgpu.py	#    TODO(p3) runtime/ops_webgpu.py:14  symbol=from_wgpu_str  -- WGPUStringView -> String.
+tinybendygrad/runtime/ops_webgpu.bend	80	runtime/ops_webgpu.py	15	15	RESOLVES	to_wgpu_str	symbol-decl	15	runtime/ops_webgpu.py	#    TODO(p3) runtime/ops_webgpu.py:15  symbol=to_wgpu_str  -- String -> WGPUStringView.
+tinybendygrad/runtime/ops_webgpu.bend	91	runtime/ops_webgpu.py	38	38	RESOLVES	wrapper	symbol-body	27	runtime/ops_webgpu.py	#    TODO(p3) runtime/ops_webgpu.py:38  symbol=wrapper  -- the 2**64-1 wait timeout.
+tinybendygrad/runtime/ops_webgpu.bend	92	runtime/ops_webgpu.py	142	142	RESOLVES	__call__	symbol-body	70	runtime/ops_webgpu.py	#    TODO(p3) runtime/ops_webgpu.py:142  symbol=__call__ -- the u64 timestamp delta and its /1e9.
+tinybendygrad/runtime/ops_webgpu.bend	100	runtime/ops_webgpu.py	205	205	RESOLVES	create_uniform	symbol-body	202	runtime/ops_webgpu.py	#    TODO(p3) runtime/ops_webgpu.py:205  symbol=create_uniform  -- struct.pack('<f', val).
+tinybendygrad/runtime/support/am/amdev.bend	2161	runtime/support/am/amdev.py	379	379	RESOLVES	_run_discovery	symbol-body	358	runtime/support/am/amdev.py	#     TODO(p3) runtime/support/am/amdev.py:379  symbol=_run_discovery  struct_ip_v4.from_address.
+tinybendygrad/runtime/support/am/amdev.bend	2166	runtime/support/am/amdev.py	21	21	RESOLVES	write	symbol-body	20	runtime/support/am/amdev.py	#     TODO(p3) runtime/support/am/amdev.py:21  symbol=write  AMRegister.encode / fields_mask.
+tinybendygrad/runtime/support/am/amdev.bend	2174	runtime/support/am/amdev.py	73	73	RESOLVES	__init__	symbol-body	26	runtime/support/am/amdev.py	#     TODO(p3) runtime/support/am/amdev.py:73  symbol=__init__  the per-image descriptor descent.
+tinybendygrad/runtime/support/amd.bend	74	amd.py	34	34	RESOLVES		snippet	0	runtime/support/amd.py	#   TODO(p3) amd.py:34 -- `getattr(tinygrad.runtime.autogen.am, submod)`.
+tinybendygrad/runtime/support/amd.bend	75	amd.py	36	36	RESOLVES		snippet	0	runtime/support/amd.py	#   TODO(p3) amd.py:36 -- `getattr(mod, children[-1])` over the real `__all__`.
+tinybendygrad/runtime/support/amd.bend	76	amd.py	47	47	RESOLVES		loose	0	runtime/support/amd.py	#   TODO(p3) amd.py:47 -- the `{reg: (off, seg, fields)}` tables themselves.
+tinybendygrad/runtime/support/amd.bend	82	amd.py	47	47	RESOLVES		loose	0	runtime/support/amd.py	#   TODO(p3) amd.py:47 -- `import_module(...).items()` for every child.
+tinybendygrad/runtime/support/amd.bend	90	amd.py	20	20	RESOLVES		loose	0	runtime/support/amd.py	#   TODO(p3) amd.py:20 -- `@functools.cached_property def regs`.
+tinybendygrad/runtime/support/amd.bend	91	amd.py	21	21	RESOLVES		snippet	0	runtime/support/amd.py	#   TODO(p3) amd.py:21 -- `functools.partial(AMDReg, bases=self.bases)`.
+tinybendygrad/runtime/support/amd.bend	98	amd.py	26	26	RESOLVES		loose	0	runtime/support/amd.py	#   TODO(p3) amd.py:26 -- `raise AttributeError(...)`.
+tinybendygrad/runtime/support/amd.bend	99	amd.py	37	37	RESOLVES		loose	0	runtime/support/amd.py	#   TODO(p3) amd.py:37 -- `raise ImportError(...)`.
+tinybendygrad/runtime/support/c.bend	70	c.py	68	68	RESOLVES		loose	0	runtime/support/c.py	#   `TODO(p3) c.py:68` -- a `U64` and a widened `mask`.
+tinybendygrad/runtime/support/c.bend	74	c.py	69	69	RESOLVES	b2i	symbol-decl	69	runtime/support/c.py	#   `TODO(p3) c.py:69  symbol=b2i`.
+tinybendygrad/runtime/support/c.bend	160	c.py	11	11	RESOLVES	_do_ioctl	symbol-body	6	runtime/support/c.py	# `TODO(p3) c.py:11  symbol=_do_ioctl` -- a signed integer type.
+tinybendygrad/runtime/support/c.bend	179	c.py	34	34	RESOLVES	Array	symbol-decl	34	runtime/support/c.py	# `TODO(p3) c.py:34  symbol=Array`.
+tinybendygrad/runtime/support/c.bend	398	c.py	69	69	RESOLVES	b2i	symbol-decl	69	runtime/support/c.py	# in `sz` bytes. Exact on the range the port supports; `TODO(p3) c.py:69  symbol=b2i` owns
+tinybendygrad/runtime/support/c.bend	608	c.py	83	83	RESOLVES	init_c_struct_t	symbol-decl	83	runtime/support/c.py	# module-level mutable state to hold it. `TODO(p3) c.py:83  symbol=init_c_struct_t`.
+tinybendygrad/runtime/support/c.bend	776	c.py	88	88	RESOLVES	DLL	symbol-decl	88	runtime/support/c.py	# `DLL._loaded_` is a process-wide MUTABLE SET. `TODO(p3) c.py:88  symbol=DLL`.
+tinybendygrad/runtime/support/c.bend	781	c.py	127	127	RESOLVES	bind	symbol-body	126	runtime/support/c.py	# `TODO(p3) c.py:127  symbol=bind`.
+tinybendygrad/runtime/support/c.bend	813	c.py	20	20	RESOLVES	U	symbol-decl	20	runtime/support/c.py	#                         `TODO(p3) c.py:20  symbol=U`.
+tinybendygrad/runtime/support/c.bend	816	c.py	25	25	RESOLVES	__class_getitem__	symbol-decl	25	runtime/support/c.py	#                         `TODO(p3) c.py:25  symbol=__class_getitem__`.
+tinybendygrad/runtime/support/c.bend	818	c.py	31	31	RESOLVES	CFUNCTYPE	symbol-decl	31	runtime/support/c.py	#                         TYPE. `TODO(p3) c.py:31  symbol=CFUNCTYPE`.
+tinybendygrad/runtime/support/compiler_amd.bend	112	compiler_amd.py	3	3	RESOLVES		loose	0	runtime/support/compiler_amd.py	#   TODO(p3) compiler_amd.py:3  -- `from tinygrad.runtime.autogen import comgr`.
+tinybendygrad/runtime/support/compiler_amd.bend	113	compiler_amd.py	36	77	RESOLVES	compile_hip	symbol-body	35	runtime/support/compiler_amd.py	#   TODO(p3) compiler_amd.py:36-77  symbol=compile_hip -- the 28 comgr calls of `compile_hip`.
+tinybendygrad/runtime/support/compiler_amd.bend	114	compiler_amd.py	21	23	RESOLVES	_get_comgr_data	symbol-body	20	runtime/support/compiler_amd.py	#   TODO(p3) compiler_amd.py:21-23  symbol=_get_comgr_data -- the two `amd_comgr_get_data` calls.
+tinybendygrad/runtime/support/compiler_amd.bend	121	compiler_amd.py	93	93	RESOLVES	__init__	symbol-body	91	runtime/support/compiler_amd.py	#   TODO(p3) compiler_amd.py:93  symbol=__init__ -- the first EIGHT characters of the sha256 hexdigest.
+tinybendygrad/runtime/support/compiler_amd.bend	132	compiler_amd.py	97	98	RESOLVES	compile	symbol-body	95	runtime/support/compiler_amd.py	#   TODO(p3) compiler_amd.py:97-98  symbol=compile -- the three NamedTemporaryFile names.
+tinybendygrad/runtime/support/compiler_amd.bend	136	compiler_amd.py	108	108	RESOLVES	compile	snippet	0	runtime/support/compiler_amd.py	#   TODO(p3) compiler_amd.py:108 -- `read_bytes()`.
+tinybendygrad/runtime/support/compiler_cpu.bend	21	compiler_cpu.py	21	21	RESOLVES		loose	0	runtime/support/compiler_cpu.py	#   TODO(p3) compiler_cpu.py:21 -- the `subprocess.check_output` CALL itself.
+tinybendygrad/runtime/support/compiler_cpu.bend	22	compiler_cpu.py	22	22	RESOLVES		snippet	0	runtime/support/compiler_cpu.py	#   TODO(p3) compiler_cpu.py:22 -- `input=src.encode('utf-8')` (bend has no
+tinybendygrad/runtime/support/compiler_cpu.bend	82	compiler_cpu.py	22	22	RESOLVES		snippet	0	runtime/support/compiler_cpu.py	#   TODO(p3) compiler_cpu.py:22 -- `src.encode('utf-8')`.
+tinybendygrad/runtime/support/compiler_cpu.bend	83	compiler_cpu.py	29	29	RESOLVES		snippet	0	runtime/support/compiler_cpu.py	#   TODO(p3) compiler_cpu.py:29 -- `bytes.fromhex(src)`.
+tinybendygrad/runtime/support/compiler_cpu.bend	88	compiler_cpu.py	24	24	RESOLVES		snippet	0	runtime/support/compiler_cpu.py	#   TODO(p3) compiler_cpu.py:24 -- `cpu_objdump(lib)`.
+tinybendygrad/runtime/support/compiler_cpu.bend	89	compiler_cpu.py	30	30	RESOLVES		snippet	0	runtime/support/compiler_cpu.py	#   TODO(p3) compiler_cpu.py:30 -- `capstone_flatdump(lib, "x86_64")`.
+tinybendygrad/runtime/support/compiler_cpu.bend	100	compiler_cpu.py	21	21	RESOLVES		snippet	0	runtime/support/compiler_cpu.py	#   TODO(p3) compiler_cpu.py:21 -- `getenv("CC", 'clang')`.
+tinybendygrad/runtime/support/compiler_cpu.bend	108	device.py	324	324	RESOLVES	__init__	symbol-decl	324	device.py	#   TODO(p3) device.py:324  symbol=__init__ -- `cachekey if CCACHE else None`.
+tinybendygrad/runtime/support/compiler_cuda.bend	24	compiler_cuda.py	28	35	RESOLVES		loose	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:28-35 -- the six `re.sub` SCANS.
+tinybendygrad/runtime/support/compiler_cuda.bend	63	compiler_cuda.py	29	29	RESOLVES		loose	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:29 -- `colored(...)` in each of the six lambdas.
+tinybendygrad/runtime/support/compiler_cuda.bend	64	helpers.py	39	39	RESOLVES	colored	symbol-body	38	helpers.py	#   TODO(p3) helpers.py:39  symbol=colored -- `if NO_COLOR: return st`.
+tinybendygrad/runtime/support/compiler_cuda.bend	75	compiler_cuda.py	7	7	RESOLVES		snippet	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:7 -- `CUDA_PATH = getenv("CUDA_PATH", "")`.
+tinybendygrad/runtime/support/compiler_cuda.bend	109	compiler_cuda.py	4	4	RESOLVES		loose	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:4  -- `from tinygrad.runtime.autogen import nvrtc, nvjitlink`.
+tinybendygrad/runtime/support/compiler_cuda.bend	110	compiler_cuda.py	52	52	RESOLVES		loose	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:52 -- `nvrtcVersion`.
+tinybendygrad/runtime/support/compiler_cuda.bend	111	compiler_cuda.py	57	61	RESOLVES		loose	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:57-61 -- the five `nvrtc*` calls of `compile`.
+tinybendygrad/runtime/support/compiler_cuda.bend	112	compiler_cuda.py	93	97	RESOLVES	compile	symbol-body	91	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:93-97  symbol=compile -- the six `nvJitLink*` calls.
+tinybendygrad/runtime/support/compiler_cuda.bend	115	compiler_cuda.py	28	35	RESOLVES	pretty_ptx	symbol-body	26	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:28-35  symbol=pretty_ptx -- `re.sub` x6.
+tinybendygrad/runtime/support/compiler_cuda.bend	124	compiler_cuda.py	40	40	RESOLVES	pretty_ptx	snippet	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:40 -- `hashlib.md5(lib).hexdigest()`.
+tinybendygrad/runtime/support/compiler_cuda.bend	125	compiler_cuda.py	41	41	RESOLVES	pretty_ptx	snippet	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:41 -- `open(fn, "wb")`.
+tinybendygrad/runtime/support/compiler_cuda.bend	132	compiler_cuda.py	41	41	RESOLVES	pretty_ptx	snippet	0	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:41 -- `lib.rstrip(b'\x00')`.
+tinybendygrad/runtime/support/compiler_cuda.bend	133	compiler_cuda.py	71	71	RESOLVES	compile	symbol-body	69	runtime/support/compiler_cuda.py	#   TODO(p3) compiler_cuda.py:71  symbol=compile -- the two `tempfile.NamedTemporaryFile` names.
+tinybendygrad/runtime/support/compiler_llvm.bend	35	compiler_llvm.py	24	24	RESOLVES		snippet	0	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:24 -- `getenv("LLVMOPT", 1)`.
+tinybendygrad/runtime/support/compiler_llvm.bend	47	compiler_llvm.py	36	42	RESOLVES	__init__	symbol-body	13	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:36-42  symbol=__init__ -- the ctypes callback.
+tinybendygrad/runtime/support/compiler_llvm.bend	80	runtime/autogen/llvm.py	8	8	RESOLVES	dll	symbol-decl	8	runtime/autogen/llvm.py	#   TODO(p3) runtime/autogen/llvm.py:8  symbol=dll -- the autogen import: `compiler_llvm.py`'s `from tinygrad.runtime.autogen import llvm`, and the autogen's own ctypes DLL binding is the wall.
+tinybendygrad/runtime/support/compiler_llvm.bend	81	compiler_llvm.py	15	15	RESOLVES		loose	0	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:15 -- the five `LLVMInitialize*` calls per arch.
+tinybendygrad/runtime/support/compiler_llvm.bend	82	compiler_llvm.py	52	61	RESOLVES	compile	symbol-body	50	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:52-61  symbol=compile -- the nine calls `compile` makes.
+tinybendygrad/runtime/support/compiler_llvm.bend	83	compiler_llvm.py	62	62	RESOLVES	compile	symbol-body	50	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:62  symbol=compile -- `ctypes.string_at(LLVMGetBufferStart(...))`.
+tinybendygrad/runtime/support/compiler_llvm.bend	93	compiler_llvm.py	6	6	RESOLVES	cerr	symbol-decl	6	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:6  symbol=cerr  -- `cerr()`.
+tinybendygrad/runtime/support/compiler_llvm.bend	94	compiler_llvm.py	9	9	RESOLVES	cerr	snippet	0	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:9  -- `ctypes.cast(err.contents, ctypes.c_char_p)`.
+tinybendygrad/runtime/support/compiler_llvm.bend	98	compiler_llvm.py	76	76	RESOLVES	cerr	snippet	0	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:76 -- `cpu_objdump(lib)`.
+tinybendygrad/runtime/support/compiler_llvm.bend	99	compiler_llvm.py	88	88	RESOLVES	cerr	snippet	0	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:88 -- `amdgpu_disassemble(lib)`.
+tinybendygrad/runtime/support/compiler_llvm.bend	105	compiler_llvm.py	36	42	RESOLVES	cerr	range-of-symbols	6	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:36-42 -- `@llvm.LLVMDiagnosticHandler`.
+tinybendygrad/runtime/support/compiler_llvm.bend	106	compiler_llvm.py	51	51	RESOLVES	cerr	snippet	0	runtime/support/compiler_llvm.py	#   TODO(p3) compiler_llvm.py:51 -- `self.diag_msgs.clear()`.
+tinybendygrad/runtime/support/compiler_mesa.bend	73	runtime/autogen/mesa.py	9	9	RESOLVES	dll	symbol-decl	9	runtime/autogen/mesa.py	#   TODO(p3) runtime/autogen/mesa.py:9  symbol=dll -- the autogen imports: `compiler_mesa.py`'s `from tinygrad.runtime.autogen import mesa, llvm, libc`, and the autogen's own ctypes DLL binding is the wall.
+tinybendygrad/runtime/support/compiler_mesa.bend	74	compiler_mesa.py	10	10	RESOLVES		loose	0	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:10   -- `mesa.rzalloc_size`.
+tinybendygrad/runtime/support/compiler_mesa.bend	75	compiler_mesa.py	16	17	RESOLVES		loose	0	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:16-17 -- `blob_reader_init` + `nir_deserialize`.
+tinybendygrad/runtime/support/compiler_mesa.bend	76	compiler_mesa.py	23	42	RESOLVES	compile	symbol-body	22	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:23-42  symbol=compile -- the sixteen LVP gallivm calls.
+tinybendygrad/runtime/support/compiler_mesa.bend	77	compiler_mesa.py	59	60	RESOLVES	__init__	symbol-body	57	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:59-60  symbol=__init__ -- `nak_compiler_create` / `nak_nir_options`.
+tinybendygrad/runtime/support/compiler_mesa.bend	78	compiler_mesa.py	68	68	RESOLVES	compile	symbol-body	67	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:68  symbol=compile -- `nak_preprocess_nir` / `nak_compile_shader`.
+tinybendygrad/runtime/support/compiler_mesa.bend	79	compiler_mesa.py	89	89	RESOLVES	hd	symbol-body	86	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:89  symbol=hd   -- `f"{n:04} [{fst:08x}_{snd:08x}] "` reaches
+tinybendygrad/runtime/support/compiler_mesa.bend	81	compiler_mesa.py	91	91	RESOLVES	hd	symbol-named	86	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:91   -- `ir3_isa_disasm` + `struct_isa_decode_options`.
+tinybendygrad/runtime/support/compiler_mesa.bend	82	compiler_mesa.py	112	124	RESOLVES	compile	symbol-body	111	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:112-124  symbol=compile -- the twelve IR3 lowering calls.
+tinybendygrad/runtime/support/compiler_mesa.bend	83	compiler_mesa.py	119	119	RESOLVES	compile	symbol-body	111	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:119  -- `info.num_ssbos` / `info.num_images`
+tinybendygrad/runtime/support/compiler_mesa.bend	85	compiler_mesa.py	131	131	RESOLVES	unpack_lib	symbol-body	128	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:131  symbol=unpack_lib  -- `v.imm_state.count` (same).
+tinybendygrad/runtime/support/compiler_mesa.bend	86	compiler_mesa.py	133	133	RESOLVES	disassemble	symbol-decl	133	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:133  symbol=disassemble  -- `self.dev_id.gpu_id` (same).
+tinybendygrad/runtime/support/compiler_mesa.bend	92	compiler_mesa.py	77	77	RESOLVES	disassemble	snippet	0	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:77 -- `hashlib.md5(lib).hexdigest()`.
+tinybendygrad/runtime/support/compiler_mesa.bend	97	compiler_mesa.py	16	16	RESOLVES	deserialize	symbol-body	14	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:16  symbol=deserialize -- `base64.b64decode`.
+tinybendygrad/runtime/support/compiler_mesa.bend	98	compiler_mesa.py	45	45	RESOLVES	compile	symbol-body	22	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:45  symbol=compile -- `ctypes.string_at(LLVMGetBufferStart(..))`.
+tinybendygrad/runtime/support/compiler_mesa.bend	99	compiler_mesa.py	78	78	RESOLVES	disassemble	symbol-body	75	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:78  symbol=disassemble -- `f.write(lib[sizeof(struct_nak_shader_info):])`.
+tinybendygrad/runtime/support/compiler_mesa.bend	100	compiler_mesa.py	77	77	RESOLVES	disassemble	symbol-body	75	runtime/support/compiler_mesa.py	#   TODO(p3) compiler_mesa.py:77  symbol=disassemble -- `pathlib.Path(libf.name).read_bytes()`.
+tinybendygrad/runtime/support/compiler_mesa.bend	106	helpers.py	526	526	RESOLVES		loose	0	helpers.py	#   TODO(p3) helpers.py:526 -- `subprocess.check_output(cmd.split(), stderr=STDOUT)`.
+tinybendygrad/runtime/support/compiler_qcom.bend	56	compiler_qcom.py	6	6	RESOLVES		loose	0	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:6  -- `from tinygrad.runtime.autogen import llvm_qcom`.
+tinybendygrad/runtime/support/compiler_qcom.bend	57	compiler_qcom.py	17	17	RESOLVES		loose	0	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:17 -- `fetch('https://git.tinygrad.win/...')`.
+tinybendygrad/runtime/support/compiler_qcom.bend	58	compiler_qcom.py	18	18	RESOLVES		snippet	0	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:18 -- `shutil.which("qemu-aarch64-static")` when the
+tinybendygrad/runtime/support/compiler_qcom.bend	60	compiler_qcom.py	36	41	RESOLVES	compile	symbol-body	34	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:36-41  symbol=compile -- the five `cl_compiler_*` calls.
+tinybendygrad/runtime/support/compiler_qcom.bend	61	compiler_qcom.py	42	42	RESOLVES	compile	snippet	0	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:42 -- `ctypes.string_at(ptr, sz.value)`.
+tinybendygrad/runtime/support/compiler_qcom.bend	70	device.py	335	335	RESOLVES	server	symbol-body	333	device.py	#   TODO(p3) device.py:335  symbol=server -- `subprocess.Popen(..., stdout=PIPE, stdin=PIPE)`.
+tinybendygrad/runtime/support/compiler_qcom.bend	71	device.py	337	337	RESOLVES	compile_server	symbol-body	336	device.py	#   TODO(p3) device.py:337  symbol=compile_server -- `compile_server`'s write/read/read.
+tinybendygrad/runtime/support/compiler_qcom.bend	72	compiler_qcom.py	35	35	RESOLVES		snippet	0	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:35 -- `self.compile_server(src, self.compiler_process)`.
+tinybendygrad/runtime/support/compiler_qcom.bend	79	compiler_qcom.py	8	8	RESOLVES		snippet	0	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:8  -- `lib[off:off+4]`.
+tinybendygrad/runtime/support/compiler_qcom.bend	80	compiler_qcom.py	46	46	RESOLVES		short-form	34	runtime/support/compiler_qcom.py	#   TODO(p3) compiler_qcom.py:46 -- `lib[ofs:ofs + n2]`.
+tinybendygrad/runtime/support/compileserver.bend	64	compileserver.py	7	7	RESOLVES		snippet	0	runtime/support/compileserver.py	#   TODO(p3) compileserver.py:7  -- `sys.stdin.buffer.read(4)` as a loop head.
+tinybendygrad/runtime/support/compileserver.bend	65	compileserver.py	8	8	RESOLVES		loose	0	runtime/support/compileserver.py	#   TODO(p3) compileserver.py:8  -- `sys.stdin.buffer.read(n)`.
+tinybendygrad/runtime/support/compileserver.bend	66	compileserver.py	12	12	RESOLVES		loose	0	runtime/support/compileserver.py	#   TODO(p3) compileserver.py:12 -- `sys.stdout.buffer.write(...)`.
+tinybendygrad/runtime/support/compileserver.bend	67	compileserver.py	13	13	RESOLVES		snippet	0	runtime/support/compileserver.py	#   TODO(p3) compileserver.py:13 -- `sys.stdout.buffer.flush()`.
+tinybendygrad/runtime/support/compileserver.bend	68	device.py	335	335	RESOLVES	server	symbol-body	333	device.py	#   TODO(p3) device.py:335  symbol=server      -- the Popen that holds the pipe open.
+tinybendygrad/runtime/support/compileserver.bend	75	compileserver.py	6	6	RESOLVES		snippet	0	runtime/support/compileserver.py	#   TODO(p3) compileserver.py:6 -- `ast.literal_eval(arg)`.
+tinybendygrad/runtime/support/hcq2.bend	109	runtime/support/hcq2.py	552	552	RESOLVES	hcq_link	symbol-decl	552	runtime/support/hcq2.py	#    TODO(p3) runtime/support/hcq2.py:552  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
+tinybendygrad/runtime/support/hcq2.bend	140	tinygrad/runtime/support/hcq2.py	125	125	RESOLVES	ccall	symbol-decl	125	runtime/support/hcq2.py	#    TODO(p3) tinygrad/runtime/support/hcq2.py:125   `ccall` symbol=ccall -- `ctypes` marshalling.
+tinybendygrad/runtime/support/hcq2.bend	141	runtime/support/c.py	66	66	RESOLVES	_resolve	symbol-decl	66	runtime/support/c.py	#    TODO(p3) runtime/support/c.py:66  symbol=_resolve -- `cfield` is GONE upstream at this pin; `Field._resolve` is the shape that replaced it -- the ctypes field descriptor, not a `getattr`.
+tinybendygrad/runtime/support/hcq2.bend	21	hcq2.py	16	16	RESOLVES	HCQ_CACHE_THRESH	symbol-decl	16	runtime/support/hcq2.py	#   hcq2.py:16 `HCQ_CACHE_THRESH`         PORTED  symbol=HCQ_CACHE_THRESH
+tinybendygrad/runtime/support/hcq2.bend	22	tinygrad/device.py	19	19	RESOLVES	HCQ_DEVS	symbol-decl	19	device.py	#   tinygrad/device.py:19 `HCQ_DEVS`        PORTED  `HCQ_DEV_*` BOTH directions symbol=HCQ_DEVS
+tinybendygrad/runtime/support/hcq2.bend	23	hcq2.py	29	29	RESOLVES	all_devices_in	symbol-decl	29	runtime/support/hcq2.py	#   hcq2.py:29 `all_devices_in`           PORTED  `all_in` symbol=all_devices_in
+tinybendygrad/runtime/support/hcq2.bend	24	hcq2.py	31	31	RESOLVES	get_enqueue_devs	symbol-decl	31	runtime/support/hcq2.py	#   hcq2.py:31 `get_enqueue_devs`          PORTED  `enq_*` (the table + refusals) symbol=get_enqueue_devs
+tinybendygrad/runtime/support/hcq2.bend	25	hcq2.py	39	39	RESOLVES	unwrap_view	symbol-decl	39	runtime/support/hcq2.py	#   hcq2.py:39 `unwrap_view`               PORTED  `view_*` (the offset arithmetic) symbol=unwrap_view
+tinybendygrad/runtime/support/hcq2.bend	26	hcq2.py	45	45	RESOLVES	unwrap_lane	symbol-decl	45	runtime/support/hcq2.py	#   hcq2.py:45 `unwrap_lane`               PORTED  `lane_of` symbol=unwrap_lane
+tinybendygrad/runtime/support/hcq2.bend	27	tinygrad/helpers.py	21	21	RESOLVES	to_name	symbol-decl	21	helpers.py	#   tinygrad/helpers.py:21 `to_name`       PORTED  symbol=to_name -- hcq2.py CALLS it in `make_submit`
+tinybendygrad/runtime/support/hcq2.bend	28	hcq2.py	52	52	RESOLVES	timeline	symbol-decl	52	runtime/support/hcq2.py	#   hcq2.py:52 `timeline`                  PORTED  `tl*` symbol=timeline
+tinybendygrad/runtime/support/hcq2.bend	29	hcq2.py	53	53	RESOLVES	timeline_value	symbol-decl	53	runtime/support/hcq2.py	#   hcq2.py:53 `timeline_value`            PORTED  symbol=timeline_value
+tinybendygrad/runtime/support/hcq2.bend	30	hcq2.py	60	60	RESOLVES	make_submit	symbol-decl	60	runtime/support/hcq2.py	#   hcq2.py:60 `make_submit`               PORTED  `submit_of` + `Tr` SUBMIT symbol=make_submit
+tinybendygrad/runtime/support/hcq2.bend	31	hcq2.py	114	114	RESOLVES	layout_args	symbol-decl	114	runtime/support/hcq2.py	#   hcq2.py:114 `layout_args`              PORTED  `layout` -- THE CITED ONE symbol=layout_args
+tinybendygrad/runtime/support/hcq2.bend	32	hcq2.py	118	118	RESOLVES	pack_args	symbol-decl	118	runtime/support/hcq2.py	#   hcq2.py:118 `pack_args`                PORTED  `pack` symbol=pack_args
+tinybendygrad/runtime/support/hcq2.bend	33	hcq2.py	129	129	RESOLVES	cstruct	symbol-decl	129	runtime/support/hcq2.py	#   hcq2.py:129 `cstruct`                  PORTED  `cstruct` FIELD ORDER symbol=cstruct
+tinybendygrad/runtime/support/hcq2.bend	34	hcq2.py	234	234	RESOLVES	slot	symbol-decl	234	runtime/support/hcq2.py	#   hcq2.py:234 `slot`                     PORTED  `slot` symbol=slot
+tinybendygrad/runtime/support/hcq2.bend	35	hcq2.py	235	235	RESOLVES	queue_signal	symbol-decl	235	runtime/support/hcq2.py	#   hcq2.py:235 `queue_signal`             PORTED  `qsig` symbol=queue_signal
+tinybendygrad/runtime/support/hcq2.bend	36	hcq2.py	236	236	RESOLVES	stamps	symbol-decl	236	runtime/support/hcq2.py	#   hcq2.py:236 `stamps`                   PORTED  `stamps` -- the `n -> n*2` symbol=stamps
+tinybendygrad/runtime/support/hcq2.bend	37	hcq2.py	238	238	RESOLVES	_wait_ins	symbol-decl	238	runtime/support/hcq2.py	#   hcq2.py:238 `_wait_ins`                PORTED  `waits` + `Tr` WAIT symbol=_wait_ins
+tinybendygrad/runtime/support/hcq2.bend	38	hcq2.py	241	241	RESOLVES	_start_ins	symbol-decl	241	runtime/support/hcq2.py	#   hcq2.py:241 `_start_ins`               PORTED  `start` + `Tr` BARRIER/WAIT symbol=_start_ins
+tinybendygrad/runtime/support/hcq2.bend	39	hcq2.py	244	244	RESOLVES	_build_queues	symbol-decl	244	runtime/support/hcq2.py	#   hcq2.py:244 `_build_queues`            PORTED  `build_queues` -- THE ORDER symbol=_build_queues
+tinybendygrad/runtime/support/hcq2.bend	40	hcq2.py	288	288	RESOLVES	_finalize_batch	symbol-decl	288	runtime/support/hcq2.py	#   hcq2.py:288 `_finalize_batch`          PORTED  `finalize` + `Tr` FENCE/SUBMIT symbol=_finalize_batch
+tinybendygrad/runtime/support/hcq2.bend	41	hcq2.py	311	311	RESOLVES	sched_batches	symbol-decl	311	runtime/support/hcq2.py	#   hcq2.py:311 `sched_batches`            PORTED  `copyq`, `qname_of`, `nqueues` symbol=sched_batches
+tinybendygrad/runtime/support/hcq2.bend	42	hcq2.py	357	357	RESOLVES	__init__	symbol-decl	357	runtime/support/hcq2.py	#   hcq2.py:357 `__init__`                 PORTED  `hwq` symbol=__init__
+tinybendygrad/runtime/support/hcq2.bend	43	hcq2.py	364	364	RESOLVES	q	symbol-decl	364	runtime/support/hcq2.py	#   hcq2.py:364 `q`                        PORTED  symbol=q -- THE WORD SEQUENCE
+tinybendygrad/runtime/support/hcq2.bend	44	hcq2.py	377	377	RESOLVES	loop	symbol-decl	377	runtime/support/hcq2.py	#   hcq2.py:377 `loop`                     PORTED  `loop_*` symbol=loop
+tinybendygrad/runtime/support/hcq2.bend	45	hcq2.py	385	385	RESOLVES	memory_barrier	symbol-decl	385	runtime/support/hcq2.py	#   hcq2.py:385 `memory_barrier`           PORTED  a no-op (records nothing) symbol=memory_barrier
+tinybendygrad/runtime/support/hcq2.bend	46	hcq2.py	386	386	RESOLVES	submit	symbol-decl	386	runtime/support/hcq2.py	#   hcq2.py:386 `submit`                   PORTED  `Tr.raise` -- THE REFUSAL symbol=submit
+tinybendygrad/runtime/support/hcq2.bend	47	hcq2.py	93	93	RESOLVES	_is_link_patch	symbol-decl	93	runtime/support/hcq2.py	#   hcq2.py:93 `_is_link_patch`            PORTED  `is_link` (the ladder) symbol=_is_link_patch
+tinybendygrad/runtime/support/hcq2.bend	48	hcq2.py	100	100	RESOLVES	patch	symbol-decl	100	runtime/support/hcq2.py	#   hcq2.py:100 `patch`                    PORTED  `pkey` (the group key) symbol=patch
+tinybendygrad/runtime/support/hcq2.bend	61	hcq2.py	73	73	RESOLVES	hcq_fence	symbol-decl	73	runtime/support/hcq2.py	#   hcq2.py:73 `hcq_fence`               PORTED  `fence` + `Tr` FENCE symbol=hcq_fence -- `encode_fence` IS GONE upstream at this pin (`dc9af790e`)
+tinybendygrad/runtime/support/hcq2.bend	72	hcq2.py	416	416	RESOLVES	hoist_links	symbol-decl	416	runtime/support/hcq2.py	#   hcq2.py:416 `hoist_links`            WALL 1  a UPat over an AFTER symbol=hoist_links
+tinybendygrad/runtime/support/hcq2.bend	73	hcq2.py	423	423	RESOLVES	pm_lift_deps	symbol-decl	423	runtime/support/hcq2.py	#   hcq2.py:423 `pm_lift_deps`           WALL 1  the old `pm_renumber` row symbol=pm_lift_deps
+tinybendygrad/runtime/support/hcq2.bend	78	hcq2.py	535	535	RESOLVES	hcq_compile	symbol-decl	535	runtime/support/hcq2.py	#   hcq2.py:535 `hcq_compile`            PORTED  `compile_seq` -- THE INIT ORDER symbol=hcq_compile
+tinybendygrad/runtime/support/hcq2.bend	79	hcq2.py	552	552	RESOLVES	hcq_link	symbol-decl	552	runtime/support/hcq2.py	#   hcq2.py:552 `hcq_link`               PORTED  `link_seq` symbol=hcq_link
+tinybendygrad/runtime/support/hcq2.bend	98	tinygrad/runtime/support/hcq2.py	141	141	RESOLVES	pm_replace_buffers	symbol-decl	141	runtime/support/hcq2.py	#    WALL(p3) tinygrad/runtime/support/hcq2.py:141   `pm_replace_buffers` symbol=pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
+tinybendygrad/runtime/support/hcq2.bend	99	tinygrad/runtime/support/hcq2.py	148	148	RESOLVES	pm_unwrap_multi	symbol-decl	148	runtime/support/hcq2.py	#    WALL(p3) tinygrad/runtime/support/hcq2.py:148   `pm_unwrap_multi` symbol=pm_unwrap_multi -- BLOCKED: rule body unwritten here (`UOp.mselect`/`UOp.replace` are defs at `ops.bend`; no `def pm_unwrap_multi` in this file).
+tinybendygrad/runtime/support/hcq2.bend	101	tinygrad/runtime/support/hcq2.py	180	180	RESOLVES	pm_insert_copy_staging	symbol-decl	180	runtime/support/hcq2.py	#    WALL(p3) tinygrad/runtime/support/hcq2.py:180   `pm_insert_copy_staging` symbol=pm_insert_copy_staging -- BLOCKED: needs `Buffer`/`_resolve`/`lower_and_compile`.
+tinybendygrad/runtime/support/hcq2.bend	102	tinygrad/runtime/support/hcq2.py	336	336	RESOLVES	q_rewrite	symbol-decl	336	runtime/support/hcq2.py	#    WALL(p3) tinygrad/runtime/support/hcq2.py:336   `q_rewrite` symbol=q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`)..
+tinybendygrad/runtime/support/hcq2.bend	105	tinygrad/runtime/support/hcq2.py	423	423	RESOLVES	pm_lift_deps	symbol-decl	423	runtime/support/hcq2.py	#    WALL(p3) tinygrad/runtime/support/hcq2.py:423   `pm_lift_deps` symbol=pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
+tinybendygrad/runtime/support/hcq2.bend	107	tinygrad/runtime/support/hcq2.py	452	452	RESOLVES	pm_lift	symbol-decl	452	runtime/support/hcq2.py	#    WALL(p3) tinygrad/runtime/support/hcq2.py:452   `pm_lift` symbol=pm_lift -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (`uop/ops.bend:514` open TODO).
+tinybendygrad/runtime/support/hcq2.bend	186	hcq2.py	114	114	RESOLVES	layout_args	symbol-decl	114	runtime/support/hcq2.py	#   (hcq2.py:114 `layout_args` symbol=layout_args) and carry `args.layout` beside `device.bend`'s
+tinybendygrad/runtime/support/hcq2.bend	201	tinygrad/helpers.py	21	21	RESOLVES	to_name	symbol-decl	21	helpers.py	# ops_nv.bend:22, ops_nv.bend:2917, ops_nv.bend:3691 cite `to_name` (`tinygrad/helpers.py:21` symbol=to_name): CONFIRMED, same
+tinybendygrad/runtime/support/nv/ip.bend	102	support/nv/ip.py	39	39	RESOLVES	_send_rpc_record	symbol-body	38	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:39  symbol=_send_rpc_record  rpc_message_header_v(...)
+tinybendygrad/runtime/support/nv/ip.bend	103	support/nv/ip.py	43	43	RESOLVES	_send_rpc_record	symbol-body	38	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:43  symbol=_send_rpc_record  GSP_MSG_QUEUE_ELEMENT(...)
+tinybendygrad/runtime/support/nv/ip.bend	104	support/nv/ip.py	146	146	RESOLVES	prep_ucode	symbol-body	110	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:146  symbol=prep_ucode FWSECLIC_READ_VBIOS_DESC(...)
+tinybendygrad/runtime/support/nv/ip.bend	105	support/nv/ip.py	147	147	RESOLVES	prep_ucode	symbol-body	110	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:147  symbol=prep_ucode FWSECLIC_FRTS_REGION_DESC(...)
+tinybendygrad/runtime/support/nv/ip.bend	106	support/nv/ip.py	374	374	RESOLVES	init_rm_args	symbol-body	364	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:374  symbol=init_rm_args MESSAGE_QUEUE_INIT_ARGUMENTS(...)
+tinybendygrad/runtime/support/nv/ip.bend	107	support/nv/ip.py	394	394	RESOLVES	init_libos_args	symbol-body	389	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:394  symbol=init_libos_args LibosMemoryRegionInitArgument(...)
+tinybendygrad/runtime/support/nv/ip.bend	108	support/nv/ip.py	438	438	RESOLVES	init_wpr_meta	symbol-body	434	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:438  symbol=init_wpr_meta GspFwWprMeta(**common, ...)
+tinybendygrad/runtime/support/nv/ip.bend	109	support/nv/ip.py	530	530	RESOLVES		short-form	526	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:530 rpc_alloc_memory_v(...)
+tinybendygrad/runtime/support/nv/ip.bend	110	support/nv/ip.py	551	551	RESOLVES	rpc_rm_alloc	symbol-body	538	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:551  symbol=rpc_rm_alloc rpc_gsp_rm_alloc_v(...)
+tinybendygrad/runtime/support/nv/ip.bend	111	support/nv/ip.py	582	582	RESOLVES	rpc_rm_control	symbol-body	571	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:582  symbol=rpc_rm_control rpc_gsp_rm_control_v(...)
+tinybendygrad/runtime/support/nv/ip.bend	112	support/nv/ip.py	595	595	RESOLVES	rpc_set_page_directory	symbol-body	594	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:595  symbol=rpc_set_page_directory struct_NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_...
+tinybendygrad/runtime/support/nv/ip.bend	113	support/nv/ip.py	597	597	RESOLVES		short-form	594	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:597 rpc_set_page_directory_v(...)
+tinybendygrad/runtime/support/nv/ip.bend	114	support/nv/ip.py	605	605	RESOLVES	rpc_set_gsp_system_info	symbol-body	601	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:605  symbol=rpc_set_gsp_system_info GspSystemInfo(...)
+tinybendygrad/runtime/support/nv/ip.bend	115	support/nv/ip.py	612	612	RESOLVES		short-form	611	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:612 rpc_unloading_guest_driver_v(...)
+tinybendygrad/runtime/support/nv/ip.bend	116	support/nv/ip.py	622	622	RESOLVES	rpc_set_registry_table	symbol-body	616	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:622  symbol=rpc_set_registry_table PACKED_REGISTRY_ENTRY(...)
+tinybendygrad/runtime/support/nv/ip.bend	117	support/nv/ip.py	626	626	RESOLVES	rpc_set_registry_table	symbol-body	616	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:626  symbol=rpc_set_registry_table PACKED_REGISTRY_TABLE(...)
+tinybendygrad/runtime/support/nv/ip.bend	123	support/nv/ip.py	99	99	RESOLVES		snippet	0	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:99   self.nvdev.include("dev_gsp", "ga102")
+tinybendygrad/runtime/support/nv/ip.bend	124	support/nv/ip.py	111	111	RESOLVES	prep_ucode	symbol-body	110	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:111  symbol=prep_ucode  self.nvdev.mmio[0x300000//4:...]
+tinybendygrad/runtime/support/nv/ip.bend	125	support/nv/ip.py	167	167	RESOLVES	__patch	symbol-body	151	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:167  symbol=__patch  self.nvdev._alloc_boot_mem(...)
+tinybendygrad/runtime/support/nv/ip.bend	126	support/nv/ip.py	199	199	RESOLVES	init_hw	symbol-body	186	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:199  symbol=init_hw  self.nvdev.NV_PGSP_FALCON_MAILBOX0.write
+tinybendygrad/runtime/support/nv/ip.bend	132	support/nv/ip.py	174	174	RESOLVES	prep_booter	symbol-body	171	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:174  symbol=prep_booter  fetch_fw(... "booter_load-570.144.bin" ...)
+tinybendygrad/runtime/support/nv/ip.bend	133	support/nv/ip.py	303	303	RESOLVES	init_fmc_image	symbol-body	302	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:303  symbol=init_fmc_image  elf_loader(fetch_fw(... "fmc-570.144.bin" ...))
+tinybendygrad/runtime/support/nv/ip.bend	134	support/nv/ip.py	402	402	RESOLVES	init_gsp_image	symbol-body	401	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:402  symbol=init_gsp_image  elf_loader(fetch_fw(... "gsp-570.144.bin" ...))
+tinybendygrad/runtime/support/nv/ip.bend	135	support/nv/ip.py	429	429	RESOLVES	init_boot_binary_image	symbol-body	425	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:429  symbol=init_boot_binary_image  fetch_fw(... "bootloader-570.144.bin" ...)
+tinybendygrad/runtime/support/nv/ip.bend	144	support/nv/ip.py	22	22	RESOLVES	__init__	symbol-body	20	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:22  symbol=__init__   wait_cond(... "RPC queue not initialized")
+tinybendygrad/runtime/support/nv/ip.bend	145	support/nv/ip.py	52	52	RESOLVES	_send_rpc_record	symbol-body	38	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:52  symbol=_send_rpc_record   System.memory_barrier()  [PORTED: C_BARRIER]
+tinybendygrad/runtime/support/nv/ip.bend	146	support/nv/ip.py	274	274	RESOLVES		snippet	0	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:274  time.sleep(0.1)
+tinybendygrad/runtime/support/nv/ip.bend	147	support/nv/ip.py	640	640	RESOLVES	run_cpu_seq	symbol-body	629	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:640  symbol=run_cpu_seq  wait_cond(lambda a, m: ...)
+tinybendygrad/runtime/support/nv/ip.bend	154	support/nv/ip.py	111	111	RESOLVES	prep_ucode	symbol-body	110	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:111  symbol=prep_ucode  the PCI expansion ROM walk
+tinybendygrad/runtime/support/nv/ip.bend	155	support/nv/ip.py	123	123	RESOLVES		snippet	0	runtime/support/nv/ip.py	#       # TODO(p3) support/nv/ip.py:123  assert bit_header.Signature == 0x00544942
+tinybendygrad/runtime/support/nv/ip.bend	190	support/nv/ip.py	442	442	RESOLVES	init_wpr_meta	symbol-body	434	runtime/support/nv/ip.py	#      # TODO(p3) support/nv/ip.py:442  symbol=init_wpr_meta  GSP_FW_WPR_META_MAGIC
+tinybendygrad/runtime/support/nv/ip.bend	191	support/nv/ip.py	605	605	RESOLVES	rpc_set_gsp_system_info	symbol-body	601	runtime/support/nv/ip.py	#      # TODO(p3) support/nv/ip.py:605  symbol=rpc_set_gsp_system_info  GspSystemInfo.gpuPhysAddr / maxUserVa
+tinybendygrad/runtime/support/nv/ip.bend	210	support/nv/ip.py	242	242	RESOLVES	execute_hs	symbol-body	236	runtime/support/nv/ip.py	#      # TODO(p3) support/nv/ip.py:242  symbol=execute_hs  NV_PFALCON_FALCON_DMATRFCMD.encode(...)
+tinybendygrad/runtime/support/nv/ip.bend	211	support/nv/ip.py	253	253	RESOLVES	execute_hs	symbol-body	236	runtime/support/nv/ip.py	#      # TODO(p3) support/nv/ip.py:253  symbol=execute_hs  NV_PFALCON2_FALCON_MOD_SEL_ALGO_RSA3K
+tinybendygrad/runtime/support/nv/ip.bend	212	support/nv/ip.py	99	99	RESOLVES		loose	0	runtime/support/nv/ip.py	#      # TODO(p3) support/nv/ip.py:99   the register map `include` produces
+tinybendygrad/runtime/support/nv/ip.bend	1376	support/nv/ip.py	448	448	RESOLVES	init_wpr_meta	symbol-body	434	runtime/support/nv/ip.py	#   # TODO(p3) support/nv/ip.py:448  init_wpr_meta's offsets for a real card
+tinybendygrad/runtime/support/nv/ip.bend	1531	support/nv/ip.py	395	395	RESOLVES	init_libos_args	symbol-body	389	runtime/support/nv/ip.py	#   # TODO(p3) support/nv/ip.py:395  symbol=init_libos_args  id8=int.from_bytes(...)
+tinybendygrad/runtime/support/nv/nvdev.bend	12	ops_nv.py	349	380	RESOLVES	NVKIface.__init__	symbol-decl	349	runtime/ops_nv.py	#     TODO(p3) ops_nv.py:349-380  NVKIface.__init__      WALL: /dev/nvidiactl,
+tinybendygrad/runtime/support/nv/nvdev.bend	13	ops_nv.py	385	401	RESOLVES	rm_alloc	symbol-named	382	runtime/ops_nv.py	#     TODO(p3) ops_nv.py:385-401  rm_alloc/rm_control/uvm -- NVOS21/NVOS54/
+tinybendygrad/runtime/support/objc.bend	64	runtime/support/objc.py	25	25	RESOLVES		loose	0	runtime/support/objc.py	#     TODO(p3) runtime/support/objc.py:25 -- `CDLL(find_library('objc'))`.
+tinybendygrad/runtime/support/objc.bend	65	runtime/support/objc.py	30	30	RESOLVES		snippet	0	runtime/support/objc.py	#     TODO(p3) runtime/support/objc.py:30 -- `CDLL("/usr/lib/libSystem.dylib")`.
+tinybendygrad/runtime/support/objc.bend	79	runtime/support/objc.py	13	13	RESOLVES	__del__	symbol-decl	13	runtime/support/objc.py	#     TODO(p3) runtime/support/objc.py:13  symbol=__del__ -- the `__del__` hook itself.
+tinybendygrad/runtime/support/objc.bend	88	runtime/support/objc.py	49	49	RESOLVES	__del__	snippet	0	runtime/support/objc.py	#     TODO(p3) runtime/support/objc.py:49 -- `lib.objc_getClass(name.encode())`.
+tinybendygrad/runtime/support/objc.bend	89	runtime/support/objc.py	71	71	RESOLVES	_addmeth	symbol-body	69	runtime/support/objc.py	#     TODO(p3) runtime/support/objc.py:71  symbol=_addmeth -- `classmethod(...)` wrapping.
+tinybendygrad/runtime/support/objc.bend	1073	runtime/support/objc.py	25	25	RESOLVES	lib	symbol-decl	25	runtime/support/objc.py	# TODO(p3) runtime/support/objc.py:25  symbol=lib  -- CDLL(find_library('objc'))
+tinybendygrad/runtime/support/objc.bend	1074	runtime/support/objc.py	30	30	RESOLVES	dispatch_data_create	symbol-decl	30	runtime/support/objc.py	# TODO(p3) runtime/support/objc.py:30  symbol=dispatch_data_create  -- CDLL("/usr/lib/libSystem.dylib")
+tinybendygrad/runtime/support/objc.bend	1075	runtime/ops_cpu.py	18	18	RESOLVES	CPUProgram	symbol-decl	18	runtime/ops_cpu.py	# TODO(p3) runtime/ops_cpu.py:18  symbol=CPUProgram       -- libobjc is missing from
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	172	bnxtdev.py	149	149	RESOLVES	rcfw	symbol-body	130	runtime/support/rdma/bnxtdev.py	#      TODO(p3) bnxtdev.py:149  symbol=rcfw resp_t.from_buffer_copy(self.creq.read(...)).
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	183	bnxtdev.py	45	45	RESOLVES	ring	snippet	0	runtime/support/rdma/bnxtdev.py	#      TODO(p3) bnxtdev.py:45  self.ring[off:off + len(data)] = data.
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	192	bnxtdev.py	157	157	RESOLVES	rcfw	symbol-body	130	runtime/support/rdma/bnxtdev.py	#      TODO(p3) bnxtdev.py:157  symbol=rcfw `if BNXT_DEBUG >= 1: print(...)`.
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	200	bnxtdev.py	95	95	RESOLVES	setup_backing_store	symbol-body	91	runtime/support/rdma/bnxtdev.py	#      closed table. TODO(p3) bnxtdev.py:95  symbol=setup_backing_store tuple(getattr(caps, ...) for j ...).
+tinybendygrad/runtime/support/system.bend	77	runtime/support/system.py	95	95	RESOLVES	system_paddrs	symbol-body	93	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:95  symbol=system_paddrs  -- the u64 pagemap read.
+tinybendygrad/runtime/support/system.bend	78	runtime/support/system.py	174	174	RESOLVES	pci_setup_usb_bars	symbol-body	137	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:174  symbol=pci_setup_usb_bars -- the u64 BAR size.
+tinybendygrad/runtime/support/system.bend	79	runtime/support/system.py	445	445	RESOLVES	pci_setup_usb_bars	snippet	0	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:445 -- `struct.unpack('<Q', data)[0]`.
+tinybendygrad/runtime/support/system.bend	89	runtime/support/system.py	58	58	RESOLVES	write_sysfs	symbol-body	55	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:58  symbol=write_sysfs  -- `os.system(cmd)`.
+tinybendygrad/runtime/support/system.bend	90	runtime/support/system.py	74	74	RESOLVES	vfio	symbol-body	72	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:74  symbol=vfio  -- `os.system("sudo modprobe ...")`.
+tinybendygrad/runtime/support/system.bend	91	runtime/support/system.py	195	195	RESOLVES	flock_acquire	symbol-body	187	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:195  symbol=flock_acquire -- `os.system("sudo lsof ...")`, in a message.
+tinybendygrad/runtime/support/system.bend	92	runtime/support/system.py	244	244	RESOLVES	reset	symbol-decl	244	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:244  symbol=reset -- `os.system(...)`, in `PCIDevice.reset`.
+tinybendygrad/runtime/support/system.bend	103	runtime/support/system.py	61	61	RESOLVES	atomic_lib	symbol-decl	61	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:61  symbol=atomic_lib -- `ctypes.CDLL(find_library('atomic'))`.
+tinybendygrad/runtime/support/system.bend	104	runtime/support/system.py	64	64	RESOLVES	libsys	symbol-decl	64	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:64  symbol=libsys -- `ctypes.CDLL(find_library("System"))`.
+tinybendygrad/runtime/support/system.bend	105	runtime/support/system.py	88	88	RESOLVES	memory_barrier	symbol-decl	88	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:88  symbol=memory_barrier -- `lib.atomic_thread_fence(5)`.
+tinybendygrad/runtime/support/system.bend	113	runtime/support/system.py	109	109	RESOLVES	read_prop	symbol-body	107	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:109  symbol=read_prop -- the ctypes cast chain.
+tinybendygrad/runtime/support/system.bend	114	runtime/support/system.py	109	109	RESOLVES	read_prop	symbol-body	107	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:109  symbol=read_prop -- `IORegistryEntryCreateCFProperty`.
+tinybendygrad/runtime/support/system.bend	115	runtime/support/system.py	110	110	RESOLVES	read_prop	symbol-body	107	runtime/support/system.py	#    TODO(p3) runtime/support/system.py:110  symbol=read_prop -- `CFDataGetBytes` into `(c_uint8*8)()`.
+tinybendygrad/runtime/support/system.bend	772	runtime/support/system.py	52	52	RESOLVES		snippet	0	runtime/support/system.py	# TODO(p3) runtime/support/system.py:52 -- `socket.inet_aton(ip)`.
+tinybendygrad/runtime/support/system.bend	1607	runtime/support/system.py	205	205	RESOLVES	__init__	symbol-body	204	runtime/support/system.py	# `lower()`. TODO(p3) runtime/support/system.py:205  symbol=__init__ -- the two `lower()` calls.
+tinybendygrad/runtime/support/system.bend	2266	runtime/support/system.py	17	17	RESOLVES	FileIOInterface	symbol-decl	17	runtime/support/system.py	# TODO(p3) runtime/support/system.py:17  symbol=FileIOInterface -- the MockFileIOInterface rebind -- upstream's LAST line rebinds this name to the mock.
+tinybendygrad/runtime/support/usb.bend	42	runtime/ops_amd.py	786	786	RESOLVES	__init__	symbol-body	785	runtime/ops_amd.py	# `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices` and
+tinybendygrad/runtime/support/usb.bend	43	runtime/ops_amd.py	798	798	RESOLVES	ctrl	symbol-body	793	runtime/ops_amd.py	# `TODO(p3) runtime/ops_amd.py:798  symbol=ctrl  pci_dev.dma_view(40960, 544768)`. This file
+tinybendygrad/runtime/support/usb.bend	682	tinygrad/runtime/support/usb.py	107	107	RESOLVES		loose	0	runtime/support/usb.py	#     TODO(p3) tinygrad/runtime/support/usb.py:107  `address >> 32`.
+tinybendygrad/runtime/support/usb.bend	1758	runtime/ops_amd.py	786	786	RESOLVES	__init__	symbol-body	785	runtime/ops_amd.py	# ops_amd.bend records as `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices`.
+tinybendygrad/runtime/support/usb.bend	2328		0	0	NO-CITATION		-	0		# outside-the-arena owner, and each is a TODO(p3) with the line that owns it. An
+tinybendygrad/schedule/__init__.bend	13		0	0	NO-CITATION		-	0		# TODO(p3).
+tinybendygrad/schedule/__init__.bend	50		0	0	NO-CITATION		-	0		#    exactly Python's two fields and the assertion is `# TODO(p3)
+tinybendygrad/schedule/__init__.bend	78	ops.py	323	323	RESOLVES	UOp._shape	symbol-decl	323	uop/ops.py	#   this file.  TODO(p3) ops.py:323  `UOp._shape` -- STAYS IN ops.bend.
+tinybendygrad/schedule/__init__.bend	113	__init__.py	22	22	RESOLVES	_states	symbol-body	18	schedule/__init__.py	# TODO(p3) __init__.py:22  `_states`' assert -- a raise, as above.
+tinybendygrad/schedule/__init__.bend	117	__init__.py	78	78	RESOLVES		snippet	0	schedule/__init__.py	# TODO(p3) __init__.py:78  `raise RuntimeError("cycle detected in assign graph")`
+tinybendygrad/schedule/__init__.bend	122	__init__.py	66	80	RESOLVES		loose	0	schedule/__init__.py	# TODO(p3) __init__.py:66-80  the `while queue` loop is a fuel fold, not a while.
+tinybendygrad/schedule/__init__.bend	301	ops.py	543	543	RESOLVES	UOp.body	symbol-decl	543	uop/ops.py	#   TODO(p3) ops.py:543  `UOp.body`  -- LOCAL COPY; ops.bend has no def.
+tinybendygrad/schedule/__init__.bend	302	ops.py	594	594	RESOLVES	UOp.store	symbol-decl	594	uop/ops.py	#   TODO(p3) ops.py:594  `UOp.store` -- LOCAL COPY; ops.bend has no def.
+tinybendygrad/schedule/__init__.bend	1377	__init__.py	127	131	RESOLVES		loose	0	schedule/__init__.py	#   TODO(p3) __init__.py:127-131  `time.perf_counter` and `function.key` --
+tinybendygrad/schedule/__init__.bend	1381	__init__.py	119	120	RESOLVES	schedule_cache	symbol-decl	119	schedule/__init__.py	#   TODO(p3) __init__.py:119-120  `schedule_cache` and `diskcache_get`. THIS is
+tinybendygrad/schedule/__init__.bend	1391	__init__.py	132	132	RESOLVES		snippet	0	schedule/__init__.py	#   TODO(p3) __init__.py:132      `get_kernel_graph(prepare_rangeify(function))`
+tinybendygrad/schedule/__init__.bend	1393	__init__.py	139	148	RESOLVES		snippet	0	schedule/__init__.py	#   TODO(p3) __init__.py:139-148  the `inspect.stack()` DEBUG block.
+tinybendygrad/schedule/__init__.bend	1452	ops.py	889	895	RESOLVES	device	symbol-named	875	uop/ops.py	#   TODO(p3) ops.py:889-895  `.device`'s non-PARAM arms -- `fold.device`.
+tinybendygrad/schedule/__init__.bend	1514	__init__.py	167	167	RESOLVES	simplify_copy_kernel	symbol-body	161	schedule/__init__.py	#   TODO(p3) __init__.py:167  symbol=simplify_copy_kernel  -- the four-matcher rewrite -- THE WALL.
+tinybendygrad/schedule/__init__.bend	1515	__init__.py	164	166	RESOLVES		loose	0	schedule/__init__.py	#   TODO(p3) __init__.py:164-166  `sym` / `pm_flatten_range` /
+tinybendygrad/schedule/__init__.bend	1549	__init__.py	155	155	RESOLVES	assert_all_same_devices	symbol-body	153	schedule/__init__.py	#   TODO(p3) __init__.py:155  symbol=assert_all_same_devices  -- the RuntimeError -- a raise.
+tinybendygrad/schedule/__init__.bend	1616	__init__.py	110	110	RESOLVES		snippet	0	schedule/__init__.py	#   TODO(p3) __init__.py:110  `s.variables()` -- no reader in the tree.
+tinybendygrad/schedule/__init__.bend	1617	__init__.py	111	111	RESOLVES	resolve_linear_call	symbol-body	100	schedule/__init__.py	#   TODO(p3) __init__.py:111  symbol=resolve_linear_call  -- `s.substitute`   -- no reader in the tree.
+tinybendygrad/schedule/__init__.bend	1618	__init__.py	104	106	RESOLVES		loose	0	schedule/__init__.py	#   TODO(p3) __init__.py:104-106  `binds`, a `dict[int,UOp]` -- arm 1.
+tinybendygrad/schedule/__init__.bend	1733	__init__.py	236	236	RESOLVES	canonicalize_call_body	symbol-body	235	schedule/__init__.py	#     TODO(p3) __init__.py:236  symbol=canonicalize_call_body  -- `graph_rewrite(..., bottom_up=True)` -- no
+tinybendygrad/schedule/__init__.bend	1741	ops.py	1228	1228	RESOLVES	UOp.param_like	symbol-decl	1228	uop/ops.py	#     mint is the wall. `UOp.param_like` is `TODO(p3) ops.py:1228  symbol=UOp.param_like` in
+tinybendygrad/schedule/__init__.bend	1744	ops.py	1228	1228	RESOLVES	UOp.param_like	symbol-decl	1228	uop/ops.py	#     TODO(p3) ops.py:1228  symbol=UOp.param_like  -- no port. Blocks this body.
+tinybendygrad/schedule/__init__.bend	1753	__init__.py	197	197	RESOLVES	contiguous_mops_to_view	snippet	0	schedule/__init__.py	#     TODO(p3) __init__.py:197  symbol=contiguous_mops_to_view  -- `all_int(c.shape)` -- `c.shape` needs `fold.bend`'s
+tinybendygrad/schedule/__init__.bend	1756	ops.py	762	762	RESOLVES	base	symbol-decl	762	uop/ops.py	#     TODO(p3) ops.py:762  `src.base` is ported; the `while buf.op is BITCAST`
+tinybendygrad/schedule/__init__.bend	1758	__init__.py	202	202	RESOLVES	contiguous_mops_to_view	symbol-body	195	schedule/__init__.py	#     TODO(p3) __init__.py:202  symbol=contiguous_mops_to_view  -- `graph_rewrite(src, multi_pm)` --
+tinybendygrad/schedule/__init__.bend	1760		0	0	NO-CITATION		-	0		#     TODO(p3) ops.py    `src.contiguous_view()` -- ABSENT from the tree. This is
+tinybendygrad/schedule/__init__.bend	1765	__init__.py	210	210	RESOLVES	contiguous_mops_to_view	symbol-body	195	schedule/__init__.py	#     TODO(p3) __init__.py:210  symbol=contiguous_mops_to_view  -- `.reshape` -- `mixin/movement.bend`'s.
+tinybendygrad/schedule/__init__.bend	1766	__init__.py	204	204	RESOLVES	contiguous_mops_to_view	symbol-body	195	schedule/__init__.py	#     TODO(p3) __init__.py:204  symbol=contiguous_mops_to_view  -- `.unshard` -- ABSENT from the tree.
+tinybendygrad/schedule/__init__.bend	1781	__init__.py	280	280	RESOLVES	create_linear_with_vars	symbol-body	268	schedule/__init__.py	#     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.
+tinybendygrad/schedule/__init__.bend	1782	schedule/memory.py	19	19	RESOLVES	memory_plan_rewrite	symbol-decl	19	schedule/memory.py	#     TODO(p3) schedule/memory.py:19  symbol=memory_plan_rewrite  -- `memory_plan_rewrite` -- `schedule/memory.py`.
+tinybendygrad/schedule/multi.bend	25	ops.py	1094	1094	RESOLVES	_min_max	symbol-decl	1094	uop/ops.py	# TODO(p3) ops.py:1094  symbol=_min_max  -- `UOp._min_max` is DECLARED here and
+tinybendygrad/schedule/multi.bend	3456	schedule/multi.py	12	12	RESOLVES	_apply_shrink	symbol-body	9	schedule/multi.py	#   TODO(p3) schedule/multi.py:12  symbol=_apply_shrink  -- `_apply_shrink`, SHRINK  -- BLOCKED. needs `UOp._mop` (ops.py:799) -- which is PORTED as `tn_mop` in `tensor.bend:1476`, but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.
+tinybendygrad/sz.bend	120		0	0	NO-CITATION		-	0		# TODO(p3) base.bend: File.list(path) -> List<String>  -- no opendir/readdir, so the
+tinybendygrad/sz.bend	128		0	0	NO-CITATION		-	0		# TODO(p3) base.bend: Path.is_dir(path) -> Bool  -- no stat, so "is this name a
+tinybendygrad/tensor.bend	1198	tensor.py	104	104	RESOLVES	_apply_uop	symbol-body	103	tensor.py	# TODO(p3) tensor.py:104  _apply_uop's `fxn` -- no function values, so the twelve
+tinybendygrad/tensor.bend	1207	tensor.py	122	122	RESOLVES	const	symbol-body	121	tensor.py	# TODO(p3) tensor.py:122  const's `dtype` -- ops.bend's `UOp.const` is the BARE
+tinybendygrad/tensor.bend	1211	tinygrad/dtype.py	39	39	RESOLVES	ConstType	symbol-decl	39	dtype.py	# TODO(p3) tinygrad/dtype.py:39  symbol=ConstType  -- a float `ConstType` --
+tinybendygrad/tensor.bend	1230	tensor.py	136	136	RESOLVES	__bool__	symbol-body	135	tensor.py	# TODO(p3) tensor.py:136  __bool__ -- a pure Bend def cannot raise and there is no
+tinybendygrad/tensor.bend	1350	ops.py	610	610	RESOLVES	UOp.const	symbol-decl	610	uop/ops.py	# TODO(p3) ops.py:610  symbol=UOp.const  -- `UOp.const(0.0, _dtype)`, an F32 literal.
+tinybendygrad/tensor.bend	1583	ops.py	799	799	RESOLVES	_mop	symbol-decl	799	uop/ops.py	# this file and carries both as `TODO(p3) ops.py:799  symbol=_mop` and `:633  symbol=_rop`. A
+tinybendygrad/tensor.bend	1583	ops.py	633	633	RESOLVES	_rop	symbol-decl	633	uop/ops.py	# this file and carries both as `TODO(p3) ops.py:799  symbol=_mop` and `:633  symbol=_rop`. A
+tinybendygrad/tensor.bend	1863	ops.py	594	594	RESOLVES	UOp.store	symbol-decl	594	uop/ops.py	# TODO(p3) ops.py:594  symbol=UOp.store  -- written here for `tn_mop`'s reason.
+tinybendygrad/tensor.bend	1882	tensor.py	236	236	RESOLVES	assign	symbol-body	235	tensor.py	# TODO(p3) tensor.py:236  assign's other eight arms -- WALL 2 (`_buffer`,
+tinybendygrad/tensor.bend	2018	tensor.py	492	492	RESOLVES	backward	snippet	0	tensor.py	# TODO(p3) tensor.py:492  backward's other three arms -- `g.clone(device=t.device)` is
+tinybendygrad/tensor.bend	2055	tensor.py	534	534	RESOLVES	__iadd__	symbol-decl	534	tensor.py	# TODO(p3) tensor.py:534  __iadd__        assign + elementwise.py:101 (Ops.ADD)
+tinybendygrad/tensor.bend	2060	tensor.py	535	535	RESOLVES	__isub__	symbol-decl	535	tensor.py	# TODO(p3) tensor.py:535  __isub__        assign + elementwise.py sub (Ops.SUB)
+tinybendygrad/tensor.bend	2065	tensor.py	536	536	RESOLVES	__imul__	symbol-decl	536	tensor.py	# TODO(p3) tensor.py:536  __imul__        assign + elementwise.py:143 (Ops.MUL)
+tinybendygrad/tensor.bend	2070	tensor.py	537	537	RESOLVES	__itruediv__	symbol-decl	537	tensor.py	# TODO(p3) tensor.py:537  __itruediv__    assign + elementwise.py div (Ops.FDIV)
+tinybendygrad/tensor.bend	2075	tensor.py	538	538	RESOLVES	__ifloordiv__	symbol-decl	538	tensor.py	# TODO(p3) tensor.py:538  __ifloordiv__   assign + elementwise.py floordiv
+tinybendygrad/tensor.bend	2080	tensor.py	539	539	RESOLVES	__ipow__	symbol-decl	539	tensor.py	# TODO(p3) tensor.py:539  __ipow__        assign + elementwise.py pow (Ops.POW)
+tinybendygrad/tensor.bend	2085	tensor.py	540	540	RESOLVES	__iand__	symbol-decl	540	tensor.py	# TODO(p3) tensor.py:540  __iand__        assign + elementwise.py:171 (Ops.AND)
+tinybendygrad/tensor.bend	2090	tensor.py	541	541	RESOLVES	__ior__	symbol-decl	541	tensor.py	# TODO(p3) tensor.py:541  __ior__         assign + elementwise.py:185 (Ops.OR)
+tinybendygrad/tensor.bend	2095	tensor.py	542	542	RESOLVES	__ixor__	symbol-decl	542	tensor.py	# TODO(p3) tensor.py:542  __ixor__        assign + elementwise.py:200 (Ops.XOR)
+tinybendygrad/tensor.bend	2100	tensor.py	543	543	RESOLVES	__ilshift__	symbol-decl	543	tensor.py	# TODO(p3) tensor.py:543  __ilshift__     assign + elementwise.py:353 (Ops.SHL)
+tinybendygrad/tensor.bend	2105	tensor.py	544	544	RESOLVES	__irshift__	symbol-decl	544	tensor.py	# TODO(p3) tensor.py:544  __irshift__     assign + elementwise.py:364 (Ops.SHR)
+tinybendygrad/tensor.bend	2110	tensor.py	545	545	RESOLVES	__imatmul__	symbol-decl	545	tensor.py	# TODO(p3) tensor.py:545  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
+tinybendygrad/tensor.bend	2111	tensor.py	549	549	RESOLVES	__eq__	symbol-body	547	tensor.py	# TODO(p3) tensor.py:549  __eq__          elementwise.py eq (Ops.CMPEQ)
+tinybendygrad/tensor.bend	2142	tensor.py	167	167	RESOLVES	linear_with_vars	symbol-decl	167	tensor.py	# TODO(p3) tensor.py:167  linear_with_vars -- SCHEDULE (`create_linear_with_vars`,
+tinybendygrad/tensor.bend	2150	tensor.py	212	212	RESOLVES	schedule_linear	symbol-body	211	tensor.py	# TODO(p3) tensor.py:212  schedule_linear -- `linear_with_vars`, unchanged.
+tinybendygrad/tensor.bend	2155	tensor.py	219	219	RESOLVES	realize	symbol-body	218	tensor.py	# TODO(p3) tensor.py:219  realize -- P3's `needs_storage` and `engine/realize.py`'s
+tinybendygrad/tensor.bend	2166	tensor.py	38	38	RESOLVES	_fromnp	symbol-body	37	tensor.py	# TODO(p3) tensor.py:38   _fromnp      -- `UOp.new_buffer` + `buffer.allocate`
+tinybendygrad/tensor.bend	2167	tensor.py	153	153	RESOLVES	as_param	symbol-body	152	tensor.py	# TODO(p3) tensor.py:153  as_param     -- `UOp.param_like` is ops.py:1239, P3
+tinybendygrad/tensor.bend	2168	tensor.py	156	156	RESOLVES	call	symbol-body	155	tensor.py	# TODO(p3) tensor.py:156  call         -- `UOp.call_with_output` + a `grad_fxn` kwarg
+tinybendygrad/tensor.bend	2169	tensor.py	159	159	RESOLVES	custom_kernel	symbol-body	158	tensor.py	# TODO(p3) tensor.py:159  custom_kernel -- `UOp.custom_kernel`
+tinybendygrad/tensor.bend	2170	tensor.py	276	276	RESOLVES	_buffer	symbol-body	274	tensor.py	# TODO(p3) tensor.py:276  _buffer      -- `x.realize().uop.buffer`
+tinybendygrad/tensor.bend	2171	tensor.py	283	283	RESOLVES	_data	symbol-decl	283	tensor.py	# TODO(p3) tensor.py:283  _data        -- `memoryview`
+tinybendygrad/tensor.bend	2172	tensor.py	287	287	RESOLVES	data	symbol-body	285	tensor.py	# TODO(p3) tensor.py:287  data         -- WALL 2, and `dtypes.fmt` with it
+tinybendygrad/tensor.bend	2173	tensor.py	306	306	RESOLVES	tolist	symbol-body	304	tensor.py	# TODO(p3) tensor.py:306  tolist       -- WALL 2, and the `_tolist` recursion is a
+tinybendygrad/tensor.bend	2176	tensor.py	328	328	RESOLVES	numpy	symbol-body	326	tensor.py	# TODO(p3) tensor.py:328  numpy        -- WALL 2, and numpy is a foreign module
+tinybendygrad/tensor.bend	2177	tensor.py	344	344	RESOLVES	clone	symbol-decl	344	tensor.py	# TODO(p3) tensor.py:344  clone        -- `UOp.clone` is ops.py:882, `empty_like` plus
+tinybendygrad/tensor.bend	2181	tensor.py	353	353	RESOLVES	to	symbol-decl	353	tensor.py	# TODO(p3) tensor.py:353  to           -- `canonicalize_device`, `is_disk_device`,
+tinybendygrad/tensor.bend	2183	tensor.py	369	369	RESOLVES	to_	symbol-decl	369	tensor.py	# TODO(p3) tensor.py:369  to_          -- `to` + `replace`
+tinybendygrad/tensor.bend	2184	tensor.py	377	377	RESOLVES	shard	symbol-decl	377	tensor.py	# TODO(p3) tensor.py:377  shard        -- `UOp.shard` is ops.py:757 and `_resolve_dim`
+tinybendygrad/tensor.bend	2186	tensor.py	395	395	RESOLVES	shard_	symbol-decl	395	tensor.py	# TODO(p3) tensor.py:395  shard_       -- `shard` + `replace`
+tinybendygrad/tensor.bend	2187	tensor.py	401	401	RESOLVES	shard_like	symbol-decl	401	tensor.py	# TODO(p3) tensor.py:401  shard_like   -- `shard` + `to`
+tinybendygrad/tensor.bend	2188	tensor.py	412	412	RESOLVES	from_blob	symbol-decl	412	tensor.py	# TODO(p3) tensor.py:412  from_blob    -- an external pointer
+tinybendygrad/tensor.bend	2189	tensor.py	426	426	RESOLVES	from_url	symbol-decl	426	tensor.py	# TODO(p3) tensor.py:426  from_url     -- `helpers.fetch`
+tinybendygrad/tensor.bend	2190	tensor.py	442	442	RESOLVES	manual_seed	symbol-decl	442	tensor.py	# TODO(p3) tensor.py:442  manual_seed  -- class-level mutable state
+tinybendygrad/tensor.bend	2191	tensor.py	460	460	RESOLVES	_next_counter	symbol-decl	460	tensor.py	# TODO(p3) tensor.py:460  _next_counter -- the same, plus slicing and `assign`
+tinybendygrad/tensor.bend	2192	tensor.py	502	502	RESOLVES	__setitem__	symbol-decl	502	tensor.py	# TODO(p3) tensor.py:502  __setitem__  -- `backward_slice`, `is_realized`,
+tinybendygrad/tensor.bend	2195	tensor.py	530	530	RESOLVES	__delitem__	symbol-body	528	tensor.py	# TODO(p3) tensor.py:530  __delitem__  -- `raise TypeError`, and `__bool__`'s wall
+tinybendygrad/tensor.bend	2196	tensor.py	553	553	RESOLVES	decode_hevc_frame	symbol-body	551	tensor.py	# TODO(p3) tensor.py:553  decode_hevc_frame -- `Variable.unbound` and
+tinybendygrad/tensor.bend	2204	ops.py	208	208	RESOLVES	all_metadata	symbol-decl	208	uop/ops.py	# TODO(p3) ops.py:208  symbol=all_metadata  -- ops.bend has the READER
+tinybendygrad/uop/divandmod.bend	854	divandmod.py	13	13	RESOLVES	fold_divmod_general	symbol-body	8	uop/divandmod.py	# TODO(p3) divandmod.py:13  symbol=fold_divmod_general  the RANGE HALF of `x//y` being a point -- PORTED for
+tinybendygrad/uop/divandmod.bend	858	divandmod.py	17	19	RESOLVES		loose	0	uop/divandmod.py	# TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
+tinybendygrad/uop/divandmod.bend	863	divandmod.py	13	15	RESOLVES	fold_divmod_general	symbol-body	8	uop/divandmod.py	# TODO(p3) divandmod.py:13-15  symbol=fold_divmod_general  a FLOAT CONST -- `_min_max` returns PyConst and
+tinybendygrad/uop/divandmod.bend	869	divandmod.py	23	25	RESOLVES		snippet	0	uop/divandmod.py	# TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
+tinybendygrad/uop/divandmod.bend	873	divandmod.py	27	35	RESOLVES		snippet	0	uop/divandmod.py	# TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
+tinybendygrad/uop/divandmod.bend	875	divandmod.py	37	37	RESOLVES	fold_divmod_general	symbol-body	8	uop/divandmod.py	# TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
+tinybendygrad/uop/divandmod.bend	875	divandmod.py	41	48	RESOLVES	fold_divmod_general	symbol-body	8	uop/divandmod.py	# TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
+tinybendygrad/uop/divandmod.bend	885	divandmod.py	50	55	RESOLVES	fold_divmod_general	symbol-body	8	uop/divandmod.py	# TODO(p3) divandmod.py:50-55  symbol=fold_divmod_general  `gcd_with_remainder: factor out common gcd from
+tinybendygrad/uop/divandmod.bend	889	divandmod.py	57	70	RESOLVES		snippet	0	uop/divandmod.py	# TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
+tinybendygrad/uop/divandmod.bend	901	divandmod.py	77	81	RESOLVES	fold_divmod_general	snippet	0	uop/divandmod.py	# TODO(p3) divandmod.py:77-81  symbol=fold_divmod_general  `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
+tinybendygrad/uop/divandmod.bend	901	divandmod.py	83	96	RESOLVES	fold_divmod_general	symbol-body	8	uop/divandmod.py	# TODO(p3) divandmod.py:77-81  symbol=fold_divmod_general  `divide_by_gcd: x//y -> (x//gcd)//(y//gcd)` and :83-96
+tinybendygrad/uop/divandmod.bend	906	divandmod.py	11	11	RESOLVES	fold_divmod_general	symbol-body	8	uop/divandmod.py	# TODO(p3) divandmod.py:11  symbol=fold_divmod_general  the `raise` itself -- Python's
+tinybendygrad/uop/fold.bend	6896	ops.py	95	95	RESOLVES	sym_infer	symbol-decl	95	uop/ops.py	# TODO(p3) ops.py: 95  def sym_infer            -- `exec` of generated source; P3/P6.
+tinybendygrad/uop/fold.bend	6897	ops.py	199	199	RESOLVES	__call__	symbol-body	193	uop/ops.py	# TODO(p3) ops.py:199  __call__ (ucache key)   -- PORTED, as the `dtype_key` gate row:
+tinybendygrad/uop/fold.bend	6900	ops.py	211	211	RESOLVES	recursive_property	symbol-decl	211	uop/ops.py	# TODO(p3) ops.py:211  class recursive_property -- PORTED as the fold itself.
+tinybendygrad/uop/fold.bend	6901	ops.py	239	239	RESOLVES	dtype	symbol-decl	239	uop/ops.py	# TODO(p3) ops.py:239  def dtype                -- PORTED, as `UOp.dtype` over a table.
+tinybendygrad/uop/fold.bend	6902	ops.py	261	261	RESOLVES	key	symbol-decl	261	uop/ops.py	# TODO(p3) ops.py:261  def key                  -- `hashlib.sha256`. Bend has no rotate
+tinybendygrad/uop/fold.bend	6906	ops.py	272	272	RESOLVES	backward_slice	symbol-decl	272	uop/ops.py	# TODO(p3) ops.py:272  def backward_slice       -- a `toposort(enter_calls=False)` plus
+tinybendygrad/uop/fold.bend	6908	ops.py	284	284	RESOLVES	_bool_slice	symbol-decl	284	uop/ops.py	# TODO(p3) ops.py:284  def _bool_slice          -- a `frozenset` union down the srcs. It
+tinybendygrad/uop/fold.bend	6911	ops.py	316	316	RESOLVES	tuplize	symbol-decl	316	uop/ops.py	# TODO(p3) ops.py:316  def tuplize              -- `repr(self.arg)` for the sort, and
+tinybendygrad/uop/fold.bend	6914	ops.py	323	323	RESOLVES	_shape	symbol-decl	323	uop/ops.py	# TODO(p3) ops.py:323  def _shape               -- PORTED, with `UOp.shape` over a table.
+tinybendygrad/uop/fold.bend	6921	ops.py	439	439	RESOLVES	shape	symbol-decl	439	uop/ops.py	# TODO(p3) ops.py:439  def shape                -- `if (ret:=self._shape) is None: raise`,
+tinybendygrad/uop/fold.bend	6925	ops.py	444	444	RESOLVES	shard_shape	symbol-decl	444	uop/ops.py	# TODO(p3) ops.py:444  def shard_shape          -- `self.device`, `self.axis` and
+tinybendygrad/uop/fold.bend	6927	ops.py	453	453	RESOLVES	ended_ranges	symbol-decl	453	uop/ops.py	# TODO(p3) ops.py:453  def ended_ranges         -- PORTED, as `UOp.ended_ranges`.
+tinybendygrad/uop/fold.bend	6928	ops.py	465	465	RESOLVES	_ranges	symbol-decl	465	uop/ops.py	# TODO(p3) ops.py:465  def _ranges              -- PORTED, and the set algebra is NOT the
+tinybendygrad/uop/fold.bend	6936	ops.py	479	479	RESOLVES	ranges	symbol-decl	479	uop/ops.py	# TODO(p3) ops.py:479  def ranges               -- PORTED with it, as the reader
+tinybendygrad/uop/fold.bend	6939	ops.py	484	484	RESOLVES	axis_id	symbol-decl	484	uop/ops.py	# TODO(p3) ops.py:484  def axis_id              -- PORTED, and NOT a fold property:
+tinybendygrad/uop/fold.bend	6942	ops.py	489	489	RESOLVES	axis_type	symbol-decl	489	uop/ops.py	# TODO(p3) ops.py:489  def axis_type            -- PORTED, same reason. `UOp.axis_type`.
+tinybendygrad/uop/fold.bend	6943	ops.py	495	495	RESOLVES	simplify	symbol-decl	495	uop/ops.py	# TODO(p3) ops.py:495  def simplify             -- `graph_rewrite`. STILL NOT PORTED, and
+tinybendygrad/uop/fold.bend	6947	ops.py	502	502	RESOLVES	ssimplify	symbol-decl	502	uop/ops.py	# TODO(p3) ops.py:502  def ssimplify            -- PARTIAL, and the partial is measured.
+tinybendygrad/uop/fold.bend	6953	ops.py	503	503	RESOLVES	ssimplify	symbol-body	502	uop/ops.py	# TODO(p3) ops.py:503                        -- the body is the line above.
+tinybendygrad/uop/fold.bend	6954	ops.py	526	526	RESOLVES	trace_num	symbol-decl	526	uop/ops.py	# TODO(p3) ops.py:526  def trace_num            -- replaces the UOps in a tag tuple with
+tinybendygrad/uop/fold.bend	6957	ops.py	543	543	RESOLVES	body	symbol-decl	543	uop/ops.py	# TODO(p3) ops.py:543  def body                 -- PORTED, inlined into `ended_of.call`:
+tinybendygrad/uop/fold.bend	6965	ops.py	696	696	RESOLVES	axis	symbol-decl	696	uop/ops.py	# TODO(p3) ops.py:696  def axis                 -- `self.arg` for a movement op, so it is
+tinybendygrad/uop/fold.bend	6967	ops.py	762	762	RESOLVES	base	symbol-decl	762	uop/ops.py	# TODO(p3) ops.py:762  def base                 -- PORTED, as `UOp.base` over the table.
+tinybendygrad/uop/fold.bend	6982	ops.py	782	782	RESOLVES	storage_base	symbol-decl	782	uop/ops.py	# TODO(p3) ops.py:782  def storage_base         -- PORTED, as `Derived.sbase`, the
+tinybendygrad/uop/fold.bend	7019	ops.py	999	999	RESOLVES	is_realized	symbol-decl	999	uop/ops.py	# TODO(p3) ops.py:999 def is_realized          -- `has_buffer_identity`, a graph walk
+tinybendygrad/uop/fold.bend	7021	ops.py	1009	1009	RESOLVES	is_variable	symbol-decl	1009	uop/ops.py	# TODO(p3) ops.py:1009 def is_variable        -- `self.op is Ops.PARAM and
+tinybendygrad/uop/fold.bend	7030	ops.py	1037	1037	RESOLVES	variables	symbol-decl	1037	uop/ops.py	# TODO(p3) ops.py:1037 def variables            -- the `unbind`/`unbind_all` set walk.
+tinybendygrad/uop/fold.bend	7032	ops.py	1048	1048	RESOLVES	const_factor	symbol-decl	1048	uop/ops.py	# TODO(p3) ops.py:1048 def const_factor         -- `divides` on a symbolic factor list,
+tinybendygrad/uop/fold.bend	7132	ops.py	1158	1158	RESOLVES	_sym_fxn	symbol-decl	1158	uop/ops.py	# TODO(p3) ops.py:1158 def _sym_fxn             -- `exec` of generated source. P3/P6.
+tinybendygrad/uop/fold.bend	7133	ops.py	1188	1188	RESOLVES	alloc	symbol-decl	1188	uop/ops.py	# TODO(p3) ops.py:1188 def alloc                -- `new_buffer`, which is P6's device
+tinybendygrad/uop/fold.bend	7135	ops.py	1218	1218	RESOLVES	param	symbol-decl	1218	uop/ops.py	# TODO(p3) ops.py:1218 def param                -- P6, same reason.
+tinybendygrad/uop/fold.bend	7136	ops.py	1395	1395	RESOLVES	__reduce__	symbol-decl	1395	uop/ops.py	# TODO(p3) ops.py:1395 def __reduce__           -- pickling; the arena is monotone and
+tinybendygrad/uop/fold.bend	7144	ops.py	1422	1422	RESOLVES	exec_alu	symbol-decl	1422	uop/ops.py	# TODO(p3) ops.py:1422 def exec_alu             -- its tuple operand case is a
+tinybendygrad/uop/movement.bend	235	ops.py	559	559	RESOLVES	index	symbol-decl	559	uop/ops.py	# the next time that file is edited (`# TODO(p3) ops.py:559  def index`).
+tinybendygrad/uop/movement.bend	432	movement.py	7	7	RESOLVES	mop_cleanup	symbol-body	5	uop/movement.py	# TODO(p3) movement.py:7  symbol=mop_cleanup  rank >= 2: `UOp.sink(*usrcs).simplify()` there sees a
+tinybendygrad/uop/ops.bend	3009	ops.py	610	610	RESOLVES	const	symbol-decl	610	uop/ops.py	# TODO(p3) ops.py:610  def const -- `UOp.const` needs `dtypes.from_py` (dtype.py:100, which also needs
+tinybendygrad/uop/ops.bend	3171		0	0	NO-CITATION		-	0		# list — `List<U32>` cannot hold `((0, 1),)`. TODO(p3): a reader that needs that tuple.
+tinybendygrad/uop/ops.bend	3346		0	0	NO-CITATION		-	0		# fuel can never cut a DAG short. TODO(p3): fold.bend's `Kahn.budget` and
+tinybendygrad/uop/ops.bend	3421		0	0	NO-CITATION		-	0		# TODO(p3): the visitor is a Callable. It is a P4 concern (every rewrite rule
+tinybendygrad/uop/ops.bend	3438	ops.py	1457	1457	RESOLVES	UPat.__init__	symbol-body	1444	uop/ops.py	# OR, XOR, all of them. Arity >= 3 is TODO(p3) ops.py:1457  def UPat.__init__ --
+tinybendygrad/uop/ops.bend	5070	ops.py	76	76	RESOLVES	srender	symbol-decl	76	uop/ops.py	# TODO(p3) ops.py:76  def srender
+tinybendygrad/uop/ops.bend	5073	ops.py	1169	1169	RESOLVES	sym_infer	symbol-decl	1169	uop/ops.py	# TODO(p3) ops.py:1169  def sym_infer
+tinybendygrad/uop/ops.bend	5082	ops.py	216	216	RESOLVES	__get__	symbol-decl	216	uop/ops.py	# TODO(p3) ops.py:216  def __get__
+tinybendygrad/uop/ops.bend	5100	ops.py	261	261	RESOLVES	key	symbol-decl	261	uop/ops.py	# TODO(p3) ops.py:261  def key
+tinybendygrad/uop/ops.bend	5111	ops.py	287	287	RESOLVES	bool_slice	symbol-decl	287	uop/ops.py	# TODO(p3) ops.py:287  def bool_slice
+tinybendygrad/uop/ops.bend	5124	ops.py	444	444	RESOLVES	shard_shape	symbol-decl	444	uop/ops.py	# TODO(p3) ops.py:444  def shard_shape
+tinybendygrad/uop/ops.bend	5125	ops.py	450	450	RESOLVES	max_shard_shape	symbol-decl	450	uop/ops.py	# TODO(p3) ops.py:450  def max_shard_shape
+tinybendygrad/uop/ops.bend	5135	ops.py	479	479	RESOLVES	ranges	symbol-decl	479	uop/ops.py	# TODO(p3) ops.py:479  def ranges
+tinybendygrad/uop/ops.bend	5142	ops.py	495	495	RESOLVES	simplify	symbol-decl	495	uop/ops.py	# TODO(p3) ops.py:495  def simplify
+tinybendygrad/uop/ops.bend	5169	ops.py	511	511	RESOLVES	__bool__	symbol-decl	511	uop/ops.py	# TODO(p3) ops.py:511  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
+tinybendygrad/uop/ops.bend	5171	ops.py	512	512	RESOLVES	__int__	symbol-decl	512	uop/ops.py	# TODO(p3) ops.py:512  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
+tinybendygrad/uop/ops.bend	5173	ops.py	513	513	RESOLVES	__float__	symbol-decl	513	uop/ops.py	# TODO(p3) ops.py:513  def __float__  -- DONE, same gate (`float_weakfloat`,
+tinybendygrad/uop/ops.bend	5176	ops.py	514	514	RESOLVES	substitute	symbol-decl	514	uop/ops.py	# TODO(p3) ops.py:514  def substitute
+tinybendygrad/uop/ops.bend	5178	ops.py	521	521	RESOLVES	__index__	symbol-decl	521	uop/ops.py	# TODO(p3) ops.py:521  def __index__
+tinybendygrad/uop/ops.bend	5181	ops.py	526	526	RESOLVES	trace_num	symbol-decl	526	uop/ops.py	# TODO(p3) ops.py:526  def trace_num
+tinybendygrad/uop/ops.bend	5213	ops.py	581	581	RESOLVES	const_like	symbol-decl	581	uop/ops.py	# TODO(p3) ops.py:581  def const_like
+tinybendygrad/uop/ops.bend	5216	ops.py	587	587	RESOLVES	ufix	symbol-decl	587	uop/ops.py	# TODO(p3) ops.py:587  def ufix
+tinybendygrad/uop/ops.bend	5218	ops.py	594	594	RESOLVES	store	symbol-decl	594	uop/ops.py	# TODO(p3) ops.py:594  def store
+tinybendygrad/uop/ops.bend	5221	ops.py	603	603	RESOLVES	ins	symbol-decl	603	uop/ops.py	# TODO(p3) ops.py:603  def ins
+tinybendygrad/uop/ops.bend	5223	ops.py	604	604	RESOLVES	contract	symbol-decl	604	uop/ops.py	# TODO(p3) ops.py:604  def contract
+tinybendygrad/uop/ops.bend	5228	ops.py	621	621	RESOLVES	cconst	symbol-decl	621	uop/ops.py	# TODO(p3) ops.py:621  def cconst
+tinybendygrad/uop/ops.bend	5232	ops.py	630	630	RESOLVES	wmma	symbol-decl	630	uop/ops.py	# TODO(p3) ops.py:630  def wmma
+tinybendygrad/uop/ops.bend	5236	ops.py	644	644	RESOLVES	invalid	symbol-decl	644	uop/ops.py	# TODO(p3) ops.py:644  def invalid
+tinybendygrad/uop/ops.bend	5257	ops.py	646	646	RESOLVES	get_idx	symbol-decl	646	uop/ops.py	# TODO(p3) ops.py:646  def get_idx
+tinybendygrad/uop/ops.bend	5260	ops.py	652	652	RESOLVES	reduce	symbol-decl	652	uop/ops.py	# TODO(p3) ops.py:652  def reduce
+tinybendygrad/uop/ops.bend	5262	ops.py	661	661	RESOLVES	overflows	symbol-decl	661	uop/ops.py	# TODO(p3) ops.py:661  def overflows
+tinybendygrad/uop/ops.bend	5306	ops.py	715	715	RESOLVES	axis	symbol-body	696	uop/ops.py	# TODO(p3) ops.py:715  def axis
+tinybendygrad/uop/ops.bend	5308	ops.py	728	728	RESOLVES	_shard	symbol-decl	728	uop/ops.py	# TODO(p3) ops.py:728  def _shard
+tinybendygrad/uop/ops.bend	5315	ops.py	746	746	RESOLVES	store_call	symbol-decl	746	uop/ops.py	# TODO(p3) ops.py:746  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
+tinybendygrad/uop/ops.bend	5318	ops.py	755	755	RESOLVES	on_disk	snippet	0	uop/ops.py	# TODO(p3) ops.py:755  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
+tinybendygrad/uop/ops.bend	5319	ops.py	756	756	RESOLVES	on_creation_device	symbol-decl	756	uop/ops.py	# TODO(p3) ops.py:756  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
+tinybendygrad/uop/ops.bend	5330	ops.py	835	835	RESOLVES	new_buffer	symbol-decl	835	uop/ops.py	# TODO(p3) ops.py:835  def new_buffer
+tinybendygrad/uop/ops.bend	5332	ops.py	843	843	RESOLVES	from_buffer	symbol-decl	843	uop/ops.py	# TODO(p3) ops.py:843  def from_buffer
+tinybendygrad/uop/ops.bend	5335	ops.py	849	849	RESOLVES	empty_like	symbol-decl	849	uop/ops.py	# TODO(p3) ops.py:849  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
+tinybendygrad/uop/ops.bend	5336	ops.py	867	867	RESOLVES	clone	symbol-decl	867	uop/ops.py	# TODO(p3) ops.py:867  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
+tinybendygrad/uop/ops.bend	5338	ops.py	855	855	RESOLVES	_frompy	symbol-decl	855	uop/ops.py	# TODO(p3) ops.py:855  def _frompy
+tinybendygrad/uop/ops.bend	5352	ops.py	931	931	RESOLVES	contiguous_view	symbol-body	920	uop/ops.py	# TODO(p3) ops.py:931  def contiguous_view
+tinybendygrad/uop/ops.bend	5355	ops.py	941	941	RESOLVES	contiguous_view_offset	snippet	0	uop/ops.py	# TODO(p3) ops.py:941  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
+tinybendygrad/uop/ops.bend	5356	ops.py	957	957	RESOLVES	_buffer_view	symbol-decl	957	uop/ops.py	# TODO(p3) ops.py:957  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
+tinybendygrad/uop/ops.bend	5359	ops.py	950	950	RESOLVES	_base_buffer_is_realized	symbol-decl	950	uop/ops.py	# TODO(p3) ops.py:950  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
+tinybendygrad/uop/ops.bend	5360	ops.py	988	988	RESOLVES	realized	symbol-decl	988	uop/ops.py	# TODO(p3) ops.py:988  def realized  -- BLOCKED, and ANSWERS a Buffer.
+tinybendygrad/uop/ops.bend	5361	ops.py	999	999	RESOLVES	is_realized	symbol-decl	999	uop/ops.py	# TODO(p3) ops.py:999  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
+tinybendygrad/uop/ops.bend	5362	ops.py	757	757	RESOLVES	needs_storage	symbol-decl	757	uop/ops.py	# TODO(p3) ops.py:757  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
+tinybendygrad/uop/ops.bend	5365	ops.py	974	974	RESOLVES	buffer	symbol-body	963	uop/ops.py	# TODO(p3) ops.py:974  def buffer
+tinybendygrad/uop/ops.bend	5452	ops.py	1048	1048	RESOLVES	const_factor	symbol-decl	1048	uop/ops.py	# TODO(p3) ops.py:1048  def const_factor
+tinybendygrad/uop/ops.bend	5455	ops.py	1069	1069	RESOLVES	divides	symbol-body	1057	uop/ops.py	# TODO(p3) ops.py:1069  def divides
+tinybendygrad/uop/ops.bend	5466	ops.py	1073	1073	RESOLVES	gcd	symbol-decl	1073	uop/ops.py	# TODO(p3) ops.py:1073  def gcd
+tinybendygrad/uop/ops.bend	5468	ops.py	1079	1079	RESOLVES	divide_exact	symbol-decl	1079	uop/ops.py	# TODO(p3) ops.py:1079  def divide_exact
+tinybendygrad/uop/ops.bend	5470	ops.py	1090	1090	RESOLVES	vmin	symbol-decl	1090	uop/ops.py	# TODO(p3) ops.py:1090  def vmin
+tinybendygrad/uop/ops.bend	5472	ops.py	1092	1092	RESOLVES	vmax	symbol-decl	1092	uop/ops.py	# TODO(p3) ops.py:1092  def vmax
+tinybendygrad/uop/ops.bend	5474	ops.py	1106	1106	RESOLVES	_min_max	symbol-body	1094	uop/ops.py	# TODO(p3) ops.py:1106  def _min_max
+tinybendygrad/uop/ops.bend	5476	ops.py	1168	1168	RESOLVES	_sym_fxn	symbol-body	1158	uop/ops.py	# TODO(p3) ops.py:1168  def _sym_fxn
+tinybendygrad/uop/ops.bend	5478	ops.py	1169	1169	RESOLVES	sym_infer	symbol-decl	1169	uop/ops.py	# TODO(p3) ops.py:1169  def sym_infer
+tinybendygrad/uop/ops.bend	5480	ops.py	1173	1173	RESOLVES	render	symbol-decl	1173	uop/ops.py	# TODO(p3) ops.py:1173  def render
+tinybendygrad/uop/ops.bend	5482	ops.py	1181	1181	RESOLVES	render_uir	symbol-decl	1181	uop/ops.py	# TODO(p3) ops.py:1181  def render_uir  -- upstream's `pyrender` was DELETED before this pin.
+tinybendygrad/uop/ops.bend	5485	ops.py	1188	1188	RESOLVES	alloc	symbol-decl	1188	uop/ops.py	# TODO(p3) ops.py:1188  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
+tinybendygrad/uop/ops.bend	5486	ops.py	1194	1194	RESOLVES	alloc_like	symbol-decl	1194	uop/ops.py	# TODO(p3) ops.py:1194  def alloc_like  -- BLOCKED, and delegates to `alloc`.
+tinybendygrad/uop/ops.bend	5487	ops.py	1206	1206	RESOLVES	placeholder	symbol-body	1197	uop/ops.py	# TODO(p3) ops.py:1206  def placeholder  -- BLOCKED, and ends `view_as`.
+tinybendygrad/uop/ops.bend	5488	ops.py	1208	1208	RESOLVES	placeholder_like	symbol-decl	1208	uop/ops.py	# TODO(p3) ops.py:1208  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
+tinybendygrad/uop/ops.bend	5548	ops.py	1228	1228	RESOLVES	param_like	symbol-decl	1228	uop/ops.py	# TODO(p3) ops.py:1228  def param_like
+tinybendygrad/uop/ops.bend	5550	ops.py	1236	1236	RESOLVES	view_as	symbol-decl	1236	uop/ops.py	# TODO(p3) ops.py:1236  def view_as
+tinybendygrad/uop/ops.bend	5562	ops.py	1247	1247	RESOLVES	call	symbol-decl	1247	uop/ops.py	# TODO(p3) ops.py:1247  def call
+tinybendygrad/uop/ops.bend	5579	ops.py	1312	1312	RESOLVES	to_elf	symbol-decl	1312	uop/ops.py	# TODO(p3) ops.py:1312  def to_elf
+tinybendygrad/uop/ops.bend	5581	ops.py	1319	1319	RESOLVES	uopfunc	symbol-decl	1319	uop/ops.py	# TODO(p3) ops.py:1319  def uopfunc
+tinybendygrad/uop/ops.bend	7920		0	0	NO-CITATION		-	0		# one CPython would have refused. TODO(p3) on both, and `s5_copy_*` does not
+tinybendygrad/uop/ops.bend	8139	ops.py	1048	1048	RESOLVES	const_factor	symbol-decl	1048	uop/ops.py	# TODO(p3) ops.py:1048  def const_factor
+tinybendygrad/uop/ops.bend	8172	ops.py	1069	1069	RESOLVES	divides	symbol-body	1057	uop/ops.py	# TODO(p3) ops.py:1069  def divides
+tinybendygrad/uop/ops.bend	8178	ops.py	1073	1073	RESOLVES	gcd	symbol-decl	1073	uop/ops.py	# TODO(p3) ops.py:1073  def gcd
+tinybendygrad/uop/ops.bend	8183	ops.py	1079	1079	RESOLVES	divide_exact	symbol-decl	1079	uop/ops.py	# TODO(p3) ops.py:1079  def divide_exact
+tinybendygrad/uop/ops.bend	8882	ops.py	1169	1169	RESOLVES	sym_infer	symbol-decl	1169	uop/ops.py	# WALL, named at this file's `TODO(p3) ops.py:1169 def sym_infer` and at
+tinybendygrad/uop/ops.bend	805	ops.py	1923	1923	RESOLVES	sint	snippet	0	uop/ops.py	# `Sint` is ops.py:1923 symbol=sint -- `sint = int|UOp`, spelled out. It is the element type
+tinybendygrad/uop/ops.bend	2341	ops.py	193	193	RESOLVES	UOpMetaClass.__call__	symbol-decl	193	uop/ops.py	# UOpMetaClass.__call__ -- ops.py:193 symbol=UOpMetaClass.__call__. THE CONSTRUCTOR.
+tinybendygrad/uop/ops.bend	4245	ops.py	1898	1898	RESOLVES	_substitute	symbol-decl	1898	uop/ops.py	# THE OPS.PY RULE TABLES -- ops.py:1898 symbol=_substitute,
+tinybendygrad/uop/ops.bend	4246	ops.py	1899	1899	RESOLVES	_pm_resolve_params	symbol-decl	1899	uop/ops.py	# ops.py:1899 symbol=_pm_resolve_params, ops.py:1908 symbol=pm_drop_after, and
+tinybendygrad/uop/ops.bend	4246	ops.py	1908	1908	RESOLVES	pm_drop_after	symbol-decl	1908	uop/ops.py	# ops.py:1899 symbol=_pm_resolve_params, ops.py:1908 symbol=pm_drop_after, and
+tinybendygrad/uop/ops.bend	4247	tinygrad/uop/spec.py	207	207	RESOLVES	spec_program	symbol-body	204	uop/spec.py	# tinygrad/uop/spec.py:207 symbol=spec_program. The FOURTH is NOT IN upstream's
+tinybendygrad/uop/ops.bend	4257	ops.py	1591	1593	RESOLVES	PatternMatcher.__init__	symbol-body	1583	uop/ops.py	# `ops.py:1591-1593` symbol=PatternMatcher.__init__ is where a `PMEntry` comes from, and it is three lines:
+tinybendygrad/uop/ops.bend	4265	ops.py	1601	1601	RESOLVES	PatternMatcher.rewrite	symbol-body	1600	uop/ops.py	# SET, and it is `ops.py:1601` symbol=PatternMatcher.rewrite's
+tinybendygrad/uop/ops.bend	4269	ops.py	1469	1470	RESOLVES	UPat.__init__	symbol-body	1444	uop/ops.py	# shortcut. `ops.py:1469-1470` symbol=UPat.__init__ computes `upat_match` and
+tinybendygrad/uop/ops.bend	4272	ops.py	1604	1604	RESOLVES	PatternMatcher.rewrite	snippet	0	uop/ops.py	# `ops.py:1604` symbol=PatternMatcher.rewrite's `if not early_reject.issubset(ler): continue`
+tinybendygrad/uop/ops.bend	4277	ops.py	1898	1898	RESOLVES	_substitute	symbol-decl	1898	uop/ops.py	# `tuple(Ops)` -- the claim of ops.py:1898 symbol=_substitute's
+tinybendygrad/uop/ops.bend	4278	tinygrad/uop/spec.py	207	207	RESOLVES	spec_program	symbol-body	204	uop/spec.py	# `UPat(tuple(Ops), name="x")` and of tinygrad/uop/spec.py:207 symbol=spec_program's
+tinybendygrad/uop/ops.bend	4280	tinygrad/uop/__init__.py	134	134	RESOLVES	GroupOp.All	symbol-decl	134	uop/__init__.py	# (tinygrad/uop/__init__.py:134 symbol=GroupOp.All), measured by CPython:
+tinybendygrad/uop/ops.bend	4297	tinygrad/uop/spec.py	207	207	RESOLVES	spec_program	snippet	0	uop/spec.py	# which is NOT IN upstream's `ops.py` at this pin (upstream has NO `remove_all_tags`); the surviving upstream construct is tinygrad/uop/spec.py:207 symbol=spec_program's `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`. `Tag`'s bottom
+tinybendygrad/uop/ops.bend	4308	ops.py	1908	1908	RESOLVES	pm_drop_after	symbol-decl	1908	uop/ops.py	# TAG 40 -- ops.py:1908 symbol=pm_drop_after. `pm_drop_after`:
+tinybendygrad/uop/ops.bend	4319	ops.py	1899	1899	RESOLVES	_pm_resolve_params	symbol-decl	1899	uop/ops.py	# TAG 42 -- ops.py:1899 symbol=_pm_resolve_params. `_pm_resolve_params`:
+tinybendygrad/uop/ops.bend	4395	ops.py	1600	1600	RESOLVES	PatternMatcher.rewrite	symbol-decl	1600	uop/ops.py	# linearity. `ops.py:1600` symbol=PatternMatcher.rewrite and `ops.py:1698` symbol=TrackedPatternMatcher.rewrite type the pass's `ctx` as `ctx=None`, and each lambda
+tinybendygrad/uop/ops.bend	4395	ops.py	1698	1698	RESOLVES	TrackedPatternMatcher.rewrite	symbol-decl	1698	uop/ops.py	# linearity. `ops.py:1600` symbol=PatternMatcher.rewrite and `ops.py:1698` symbol=TrackedPatternMatcher.rewrite type the pass's `ctx` as `ctx=None`, and each lambda
+tinybendygrad/uop/ops.bend	4405	ops.py	245	249	RESOLVES	UOp.replace	symbol-decl	245	uop/ops.py	# already paid for: `remove_all_tags` MINTS. `ops.py:245-249` symbol=UOp.replace returns
+tinybendygrad/uop/ops.bend	4418	tinygrad/uop/spec.py	207	207	RESOLVES	spec_program	symbol-body	204	uop/spec.py	# TAG 41 -- tinygrad/uop/spec.py:207 symbol=spec_program. `remove_all_tags`:
+tinybendygrad/uop/ops.bend	4422	ops.py	245	249	RESOLVES	UOp.replace	symbol-decl	245	uop/ops.py	# `ops.py:245-249` symbol=UOp.replace is what `replace(tag=None)` is:
+tinybendygrad/uop/ops.bend	4440	tinygrad/uop/spec.py	207	207	RESOLVES	spec_program	symbol-body	204	uop/spec.py	# "every op" is tinygrad/uop/spec.py:207 symbol=spec_program. And the implementation
+tinybendygrad/uop/ops.bend	4451	ops.py	1898	1898	RESOLVES	_substitute	symbol-decl	1898	uop/ops.py	# TAG 43 -- ops.py:1898 symbol=_substitute. `_substitute`:
+tinybendygrad/uop/ops.bend	4454	ops.py	514	514	RESOLVES	UOp.substitute	symbol-decl	514	uop/ops.py	# The ctx is `dvars: dict[UOp, UOp]` (`ops.py:514` symbol=UOp.substitute), so it is keyed by the NODE
+tinybendygrad/uop/ops.bend	4944	ops.py	1895	1895	RESOLVES	sint_to_uop	symbol-decl	1895	uop/ops.py	# `sint_to_uop` -- ops.py:1895 symbol=sint_to_uop. `UOp.const(x, dtype=dtypes.weakint)`, and the
+tinybendygrad/uop/ops.bend	4955	ops.py	1915	1915	RESOLVES	gate_kernel_sink	symbol-decl	1915	uop/ops.py	# `gate_kernel_sink` -- ops.py:1915 symbol=gate_kernel_sink. Three arms, two of them NEGATIVE tests, and
+tinybendygrad/uop/ops.bend	5436	ops.py	514	514	RESOLVES	UOp.substitute	symbol-decl	514	uop/ops.py	#     `bsl.go`'s shape and readable; `substitute` (ops.py:514 symbol=UOp.substitute) is not ported, and
+tinybendygrad/uop/ops.bend	8187	ops.py	1901	1901	RESOLVES	resolve_returned_after	symbol-decl	1901	uop/ops.py	# ==== ops.py:1901 symbol=resolve_returned_after  ===============================
+tinybendygrad/uop/ops.bend	8561	ops.py	1826	1837	RESOLVES	RewriteContext.unified_rewrite	symbol-body	1814	uop/ops.py	# `unified_rewrite`'s fixpoint (ops.py:1826-1837 symbol=RewriteContext.unified_rewrite), where `test_n: UOp|None` is
+tinybendygrad/uop/render.bend	132	render.py	102	102	RESOLVES	renderer	symbol-decl	102	uop/render.py	# `# TODO(p3) render.py:102  renderer` -- not ported -- so the arm has no def in this file.
+tinybendygrad/uop/render.bend	1874		0	0	NO-CITATION		-	0		# * `print_uops` (:18) -- BLOCKED on `UOp.ranges`, which is `# TODO(p3)
+tinybendygrad/uop/render.bend	1879	ops.py	1173	1173	RESOLVES	render	symbol-decl	1173	uop/ops.py	#   `a.render()`, and `render` is `# TODO(p3) ops.py:1173  def render` in ops.bend; it needs
+tinybendygrad/uop/render.bend	1880	ops.py	495	495	RESOLVES	simplify	symbol-decl	495	uop/ops.py	#   `simplify()` (`# TODO(p3) ops.py:495  def simplify`) and the whole `renderer` matcher, whose
+tinybendygrad/uop/render.bend	1882	ops.py	792	792	RESOLVES	marg	symbol-decl	792	uop/ops.py	#   by ordering. `render_marg` itself is `x.marg`, which is `# TODO(p3) ops.py:792  def marg`.
+tinybendygrad/uop/render.bend	1913	render.py	7	7	RESOLVES	pretty_print	symbol-decl	7	uop/render.py	# TODO(p3) render.py:7   def pretty_print
+tinybendygrad/uop/spec.bend	3214	upat.py	173	173	RESOLVES	upat_compile	symbol-decl	173	uop/upat.py	# TODO(p3) upat.py:173  symbol=upat_compile  -- the pyrender GLOBALS: NOT IN
+tinybendygrad/uop/spec.bend	3219	upat.py	181	181	RESOLVES	upat_compile	symbol-body	173	uop/upat.py	# TODO(p3) upat.py:181  symbol=upat_compile  -- the pyrender EVAL: NOT IN
+tinybendygrad/uop/spec.bend	3222	render.py	65	65	RESOLVES	render_uir	symbol-decl	65	uop/render.py	# TODO(p3) render.py:65  symbol=render_uir  -- the pyrender TEST: NOT IN
+tinybendygrad/uop/spec.bend	3225	spec.py	37	37	RESOLVES	type_verify	symbol-body	34	uop/spec.py	# TODO(p3) spec.py:37  type_verify's `SPEC > 1` arm -- GONE from upstream at this
+tinybendygrad/uop/spec.bend	3229	spec.py	26	26	RESOLVES		short-form	10	uop/spec.py	# TODO(p3) spec.py:26  validate_index_with_z3 -- `from tinygrad.uop.validate import
+tinybendygrad/uop/spec.bend	3232	device.py	71	71	RESOLVES	is_disk_device	symbol-decl	71	device.py	# TODO(p3) device.py:71  symbol=is_disk_device  -- `from tinygrad.device import is_disk_device`
+tinybendygrad/uop/spec.bend	3241	spec.py	11	11	RESOLVES	validate_index	symbol-body	10	uop/spec.py	# TODO(p3) spec.py:11  def validate_index -- the first two returns
+tinybendygrad/uop/spec.bend	3248	spec.py	30	30	RESOLVES	valid_device_range	symbol-body	28	uop/spec.py	# TODO(p3) spec.py:30  def valid_device_range -- PORTED, INCLUDING the `vmax + 1`
+tinybendygrad/uop/spec.bend	3252	spec.py	35	35	RESOLVES	type_verify	symbol-body	34	uop/spec.py	# TODO(p3) spec.py:35  def type_verify -- PORTED as six folds that return the
+tinybendygrad/uop/spec.bend	3256	spec.py	136	136	RESOLVES	spec_shared	symbol-body	48	uop/spec.py	# TODO(p3) spec.py:136  symbol=spec_shared  lambda x: `b := x.storage_base` -- a `while` over BITCAST,
+tinybendygrad/uop/spec.bend	3263	spec.py	56	56	RESOLVES		snippet	0	uop/spec.py	# TODO(p3) spec.py:56  lambda x: `type(x.val) is type(x.dtype.const(x.val))` --
+tinybendygrad/uop/spec.bend	3269	spec.py	151	151	RESOLVES		snippet	0	uop/spec.py	# TODO(p3) spec.py:151 lambda buf: `isinstance(buf.dtype, DType)` -- vacuous in this
+tinybendygrad/uop/symbolic.bend	19	ops.py	479	479	RESOLVES	ranges	symbol-decl	479	uop/ops.py	#                                            TODO(p3) ops.py:479  symbol=ranges)
+tinybendygrad/uop/symbolic.bend	3663	symbolic.py	207	207	RESOLVES	lt_folding	symbol-decl	207	uop/symbolic.py	# TODO(p3) symbolic.py:207 def lt_folding -- `u.const_factor()` (-> `divides` ->
+tinybendygrad/uop/symbolic.bend	3667	symbolic.py	214	214	RESOLVES	canonicalize_simplex	symbol-decl	214	uop/symbolic.py	# TODO(p3) symbolic.py:214 def canonicalize_simplex -- `u.vmin >= 0` and
+tinybendygrad/uop/symbolic.bend	3669	symbolic.py	233	233	RESOLVES	fold_where_closure	symbol-decl	233	uop/symbolic.py	# TODO(p3) symbolic.py:233 def fold_where_closure -- `bool_slice`
+tinybendygrad/uop/symbolic.bend	3673	symbolic.py	240	325	RESOLVES	symbolic	symbol-decl	240	uop/symbolic.py	# TODO(p3) symbolic.py:240-325  symbol=symbolic  -- ALL 47. Every one of the 47
+tinybendygrad/uop/symbolic.bend	3678	symbolic.py	328	386	RESOLVES	parse_valid	symbol-range	330	uop/symbolic.py	# TODO(p3) symbolic.py:328-386 parse_valid / uop_given_valid / _valid_priority /
+tinybendygrad/uop/symbolic.bend	3683	symbolic.py	390	390	RESOLVES	reduce_mul_chain	symbol-body	388	uop/symbolic.py	# TODO(p3) symbolic.py:390 def reduce_mul_chain -- `backward_slice` and `vmin`.
+tinybendygrad/uop/symbolic.bend	3685	symbolic.py	400	403	RESOLVES	drop_and_clauses	symbol-decl	400	uop/symbolic.py	# TODO(p3) symbolic.py:400-403 def drop_and_clauses + pm_drop_and_clauses --
+tinybendygrad/uop/symbolic.bend	3688	symbolic.py	427	427	RESOLVES	gated_given_valid	symbol-decl	427	uop/symbolic.py	# TODO(p3) symbolic.py:427 def gated_given_valid -- `IMAGE.value`, a
+tinybendygrad/uop/symbolic.bend	3691	symbolic.py	451	451	RESOLVES	sym	symbol-body	449	uop/symbolic.py	# TODO(p3) symbolic.py:451  symbol=sym  the `xpow` rule -- `xpow` is
+tinybendygrad/uop/symbolic.bend	3697	symbolic.py	454	462	RESOLVES		loose	0	uop/symbolic.py	# TODO(p3) symbolic.py:454-462 the four load/store folding rules -- `UOp.index`,
+tinybendygrad/uop/symbolic.bend	3701	symbolic.py	465	467	RESOLVES	sym	symbol-body	449	uop/symbolic.py	# TODO(p3) symbolic.py:465-467  symbol=sym  the three `1 - d` reciprocal rules -- and the wall is
+tinybendygrad/uop/symbolic.bend	3705	symbolic.py	472	474	RESOLVES		snippet	0	uop/symbolic.py	# TODO(p3) symbolic.py:472-474 `-(x+y)` and `(x+y)*c -> x*c+y*c` -- after this pass
+tinybendygrad/uop/symbolic.bend	3712	symbolic.py	306	313	RESOLVES		loose	0	uop/symbolic.py	# TODO(p3) symbolic.py:306-313 the two long/cast folding rules -- `x.overflows(a)`
+tinybendygrad/uop/symbolic.bend	3716	mixin/elementwise.py	50	50	RESOLVES	logical_not	symbol-body	49	mixin/elementwise.py	# TODO(p3) mixin/elementwise.py:50 def logical_not -- BORROWED, not this file's.
+tinybendygrad/uop/upat.bend	1656	ops.py	1561	1561	RESOLVES	upat_interpret	symbol-decl	1561	uop/ops.py	# TODO(p3) ops.py:1561 def upat_interpret -- `types.FunctionType(
+tinybendygrad/uop/upat.bend	1660	ops.py	1433	1433	RESOLVES	get_location	symbol-decl	1433	uop/ops.py	# TODO(p3) ops.py:1433 def get_location -- `sys._getframe`, the
+tinybendygrad/uop/upat.bend	1662	upat.py	181	181	RESOLVES	upat_compile	symbol-body	173	uop/upat.py	# TODO(p3) upat.py:181  upat_compile -- exec -- `namespace["compiled_match"]`. The rendered `Code`
+tinybendygrad/uop/weak.bend	1066	weak.py	40	40	RESOLVES	pm_commit_weak	symbol-body	35	uop/weak.py	# TODO(p3) weak.py:40  pm_commit_weak rule 2 -- (UPat(Ops.CAST, src=(UPat(GroupOp.ALU, dtype=dtypes.weaks,
+tinybendygrad/uop/weak.bend	1091	weak.py	69	69	RESOLVES	pm_lower_weak	symbol-body	67	uop/weak.py	# TODO(p3) weak.py:69  pm_lower_weak rule 0 -- INDEX/SHRINK gated long index -- `buf.max_numel()` is
+tinybendygrad/uop/weak.bend	1093	weak.py	73	73	RESOLVES	pm_lower_weak	symbol-body	67	uop/weak.py	# TODO(p3) weak.py:73  pm_lower_weak rule 1 -- two stacked weak casts -- `commit_dtype` twice.
+tinybendygrad/uop/weak.bend	1094	weak.py	75	75	RESOLVES	pm_lower_weak	symbol-body	67	uop/weak.py	# TODO(p3) weak.py:75  pm_lower_weak rule 2 -- PARAM/BUFFER/ALLOC weakint -- `u.commit_dtype(dtypes.i32)`.
+tinybendygrad/uop/weak.bend	1095	weak.py	77	77	RESOLVES	lower_weak_node	symbol-named	53	uop/weak.py	# TODO(p3) weak.py:77 lower_weak_node             -- see the TODO on that def.
+tinybendygrad/uop/weak.bend	1104	weak.py	98	98	RESOLVES	cast_consts	symbol-named	92	uop/weak.py	# TODO(p3) weak.py:98 cast_consts -- `UOp.cconst(s.val, s.commit_dtype(dtypes.i32))`.
+tinybendygrad/uop/weak.bend	1763	weak.py	27	27	RESOLVES	cast_weak_srcs	symbol-decl	27	uop/weak.py	# TODO(p3) weak.py:27 def cast_weak_srcs -- `weak_dtype(c.dtype)` is ported, and the
+tinybendygrad/uop/weak.bend	1768	weak.py	48	48	RESOLVES	absorb_weak_src	symbol-decl	48	uop/weak.py	# TODO(p3) weak.py:48 def absorb_weak_src -- `s.commit_dtype(dtypes.i32)` on the
+tinybendygrad/uop/weak.bend	1770	weak.py	53	53	RESOLVES	lower_weak_node	symbol-decl	53	uop/weak.py	# TODO(p3) weak.py:53 def lower_weak_node -- reads `commit_dtype` (line 57) and
+tinybendygrad/uop/weak.bend	1774	weak.py	92	92	RESOLVES	cast_consts	symbol-decl	92	uop/weak.py	# TODO(p3) weak.py:92 def cast_consts -- `UOp.cconst(s.val, s.commit_dtype(dtypes.i32))`
+tinybendygrad/uop/weak.bend	1777	weak.py	69	69	RESOLVES	pm_lower_weak	symbol-body	67	uop/weak.py	# TODO(p3) weak.py:69 pm_lower_weak rule 0 -- `buf.max_numel()` is
+tinybendygrad/uop/weak.bend	1781	weak.py	73	73	RESOLVES	pm_lower_weak	symbol-body	67	uop/weak.py	# TODO(p3) weak.py:73 pm_lower_weak rule 1 -- two `commit_dtype` reads.
+tinybendygrad/uop/weak.bend	1782	weak.py	75	75	RESOLVES	pm_lower_weak	symbol-body	67	uop/weak.py	# TODO(p3) weak.py:75 pm_lower_weak rule 2 -- one `commit_dtype` read.
+tinybendygrad/uop/weak.bend	1783	weak.py	98	98	RESOLVES	pm_cast_const	symbol-decl	98	uop/weak.py	# TODO(p3) weak.py:98 pm_cast_const -- the whole table; see `cast_consts`.

@@ -1,0 +1,23 @@
+PIN        : 5c2bf39d6c4b -- tinygrad/ tree 6c91e8977790, 230 blobs match the vendored copy, 360 local-only
+POPULATION : 875 citations in 82 `.bend` files
+             754 carried by a `TODO(pN)` marker, 121 by an explicit `symbol=` field
+
+    842  RESOLVES
+      0  WRONG-LINE
+      0  WRONG-SYMBOL
+      0  UNRESOLVABLE
+      4  PORT-CITATION
+     29  NO-CITATION
+
+--- RESOLVES, BY WHAT HELD IT ---
+    414  symbol-decl
+    281  symbol-body
+     76  snippet
+     43  loose
+     12  symbol-named
+      7  range-of-symbols
+      7  short-form
+      2  symbol-range
+
+ROWS       : 875 -> .agents/slop/citefix-runtime/todo-live1.rows
+# todo-cite-gate: PASS

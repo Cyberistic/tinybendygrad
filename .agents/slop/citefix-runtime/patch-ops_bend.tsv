@@ -1,0 +1,24 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_bend.bend	1	port of tinygrad/runtime/ops_bend.py	# ops_bend.bend -- the BEND TARGET: the port of the PORT'S OWN `ops_bend.py` (the repo root -- upstream tinygrad HAS NO `ops_bend.py` AT ANY REVISION; it was OURS until the purge c2a66ea41 moved it out of `tinygrad/`), WHICH FORKS upstream's `tinygrad/runtime/ops_python.py`
+tinybendygrad/runtime/ops_bend.bend	51	WHAT IS PORTED, DEF BY DEF.	# WHAT IS PORTED, DEF BY DEF. THE PORT'S OWN DEFS ARE IN `ops_bend.py` (REPO ROOT; UPSTREAM HAS NO `ops_bend.py` AT ANY REVISION) AND FORK upstream's `tinygrad/runtime/ops_python.py`, SO EVERY ROW BELOW NAMES THE UPSTREAM CONSTRUCT IT FORKS:
+tinybendygrad/runtime/ops_bend.bend	53	:90  LANES	#   ops_python.py:186 `supported_dtypes`  LANES  PORTED  `lanes`, `lanes_sorted`
+tinybendygrad/runtime/ops_bend.bend	54	:92  wire_dtype	#   dtype.py:60 `name`  wire_dtype  PORTED  `wire_dtype` -- the NAME and the refusal,
+tinybendygrad/runtime/ops_bend.bend	55	refusal, message included	#                        message included
+tinybendygrad/runtime/ops_bend.bend	56	:103 wire_width	#   ops_python.py:106 `__call__`  wire_width  PORTED  `wire_width` (node.numel)
+tinybendygrad/runtime/ops_bend.bend	57	:110 wire_arg	#   ops_python.py:109 `__call__`  wire_arg  PORTED  `wire_arg` -- every arm but the float
+tinybendygrad/runtime/ops_bend.bend	58	CONST's `struct.pack` (WALL 2)	#                      CONST's `struct.pack` (WALL 2)
+tinybendygrad/runtime/ops_bend.bend	59	:133 encode	#   ops_python.py:184 `render`  encode  PORTED  `encode`
+tinybendygrad/runtime/ops_bend.bend	60	:149 executor	#   ops_python.py:184 `render`  executor  SEAM   the build/cache of the executor
+tinybendygrad/runtime/ops_bend.bend	61	:169 UOpLine	#   ops_python.py:64 `__call__`  UOpLine  PORTED  `Line`
+tinybendygrad/runtime/ops_bend.bend	62	:175 is_buf	#   ops_python.py:107 `__call__`  is_buf  PORTED  `is_buf`
+tinybendygrad/runtime/ops_bend.bend	63	:178 buf_extent	#   ops_python.py:106 `__call__`  buf_extent  PORTED  `buf_extent`
+tinybendygrad/runtime/ops_bend.bend	64	:180 parse	#   ops_python.py:50 `__init__`  parse  PORTED  `parse`
+tinybendygrad/runtime/ops_bend.bend	65	:195 BendProgram.__init__	#   ops_python.py:49 `__init__`  BendProgram.__init__  PORTED  `prog.of` -- in_bufs AND out_bufs
+tinybendygrad/runtime/ops_bend.bend	66	:211 BendProgram.__call__	#   ops_python.py:55 `__call__`  BendProgram.__call__  PORTED  `prog.call` as a TRUNCATED TRACE
+tinybendygrad/runtime/ops_bend.bend	67	:231 BendCompiler.compile	#   ops_python.py:164 `compile`  BendCompiler.compile  PORTED  `compiler.of` -- pass-through
+tinybendygrad/runtime/ops_bend.bend	68	:234 BendRenderer	#   ops_python.py:166 `PythonRenderer`  BendRenderer  PORTED  `render`, `has_local`
+tinybendygrad/runtime/ops_bend.bend	69	:243 BendDevice.__init__	#   ops_python.py:189 `__init__`  BendDevice.__init__  SEAM   HostAllocator + Compiled wiring
+tinybendygrad/runtime/ops_bend.bend	111	:214      `to_mv(b, nb)`	#      helpers.py:575 symbol=to_mv  `to_mv(b, nb)` -- a ctypes memoryview over a device pointer.
+tinybendygrad/runtime/ops_bend.bend	117	:219      `time.perf_counter()`	#      ops_python.py:56 symbol=__call__  `time.perf_counter()` -- the returned duration. Not modelled:
+tinybendygrad/runtime/ops_bend.bend	119	no caller of `Program.__call__` reads it (engine/realize.py:168	#               no caller of `Program.__call__` reads it (realize.py:167 -- the `ets.append` line --
+tinybendygrad/runtime/ops_bend.bend	127	`has_local = False` (:238)	# `has_local = False` (renderer/__init__.py:68 symbol=has_local) is a CONSTANT the scheduler consults

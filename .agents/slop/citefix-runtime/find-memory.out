@@ -1,0 +1,71 @@
+== tinybendygrad/runtime/support/memory.bend:8  tinygrad/runtime/support/memory.py:12 [at_no_revision] toks=BumpAllocator
+   runtime/support/memory.py (288 lines) via exact
+   BumpAllocator          :14    class BumpAllocator:
+                                 enclosing: view (declared :11)
+
+== tinybendygrad/runtime/support/memory.bend:15  tinygrad/runtime/support/memory.py:127 [only_older_revision] toks=pte_idx,pte_size,next
+   runtime/support/memory.py (288 lines) via exact
+   pte_idx                :134   pt, pte_idx, _ = self.pt_stack[-1]
+                                 enclosing: level_down (declared :133)
+   pte_idx                :136   if not pt.valid(pte_idx):
+                                 enclosing: level_down (declared :133)
+   pte_idx                :138   pt.set_entry(pte_idx, self.dev.mm.palloc(0x1000, zero=True, boot=self.boot, ptable=True), 
+                                 enclosing: level_down (declared :133)
+   pte_idx                :140   assert not pt.is_page(pte_idx), f"Must be table pt={pt.paddr:#x}, {pt.lv=} {pte_idx=} {pt.
+                                 enclosing: level_down (declared :133)
+   pte_idx                :141   child_page_table = self.dev.mm.pt_t(self.dev, pt.address(pte_idx), lv=pt.lv+1)
+                                 enclosing: level_down (declared :133)
+   pte_idx                :162   pt, pte_idx, pte_covers = self.pt_stack[-1]
+                                 enclosing: next (declared :160)
+   pte_idx                :169   while pte_covers > size or not pt.supports_huge_page(paddr+off) or self.vaddr&(pte_covers-
+                                 enclosing: next (declared :160)
+   pte_idx                :171   while not pt.is_page(pte_idx) and (self.free_pts or pt.valid(pte_idx)): pt, pte_idx, pte_c
+                                 enclosing: next (declared :160)
+   pte_idx                :173   entries = max(min(size // pte_covers, self._pt_pte_cnt(pt.lv) - pte_idx), 1 if self.inspec
+                                 enclosing: next (declared :160)
+   pte_idx                :175   yield off, pt, pte_idx, entries, pte_covers
+                                 enclosing: next (declared :160)
+   pte_idx                :178   self.pt_stack[-1] = (pt, pte_idx + entries, pte_covers)
+                                 enclosing: next (declared :160)
+   pte_idx                :214   for _, pt, pte_idx, pte_cnt, _ in ctx.next(size):
+                                 enclosing: map_range (declared :208)
+   pte_idx                :215   for pte_off in range(pte_cnt): assert not pt.valid(pte_idx + pte_off), f"PTE already mappe
+                                 enclosing: map_range (declared :208)
+   pte_idx                :219   for off, pt, pte_idx, pte_cnt, pte_covers in ctx.next(psize, paddr=paddr):
+                                 enclosing: map_range (declared :208)
+   pte_idx                :221   pt.set_entry(pte_idx + pte_off, paddr + off + pte_off * pte_covers, uncached=uncached, asp
+                                 enclosing: map_range (declared :208)
+   pte_idx                :231   for _, pt, pte_idx, pte_cnt, _ in ctx.next(size):
+                                 enclosing: unmap_range (declared :227)
+   pte_idx                :232   for pte_id in range(pte_idx, pte_idx + pte_cnt):
+                                 enclosing: unmap_range (declared :227)
+   next                   :39    self.blocks:dict[int, tuple[int, int|None, int|None, bool]] = {0: (size, None, None, True)
+                                 enclosing: __init__ (declared :33)
+   next                   :90    # Round up the allocation size to the next bucket, so any entry there can fit the requeste
+                                 enclosing: alloc (declared :86)
+   next                   :160   def next(self, size:int, paddr:int|None=None, off:int=0):
+                                 enclosing: level_up (declared :155)
+   next                   :206   for _ in ctx.next(size, paddr=0): return [pt for pt, _, _ in ctx.pt_stack]
+                                 enclosing: page_tables (declared :204)
+   next                   :214   for _, pt, pte_idx, pte_cnt, _ in ctx.next(size):
+                                 enclosing: map_range (declared :208)
+   next                   :219   for off, pt, pte_idx, pte_cnt, pte_covers in ctx.next(psize, paddr=paddr):
+                                 enclosing: map_range (declared :208)
+   next                   :231   for _, pt, pte_idx, pte_cnt, _ in ctx.next(size):
+                                 enclosing: unmap_range (declared :227)
+
+== tinybendygrad/runtime/support/memory.bend:18  tinygrad/runtime/support/memory.py:187 [at_no_revision] toks=MemoryManager,__init__
+   runtime/support/memory.py (288 lines) via exact
+   MemoryManager          :181   class MemoryManager:
+                                 enclosing: next (declared :160)
+   __init__               :7     def __init__(self, addr:int, nbytes:int, fmt='B'): self.mv, self.addr, self.nbytes, self.f
+                                 enclosing: MMIOInterface (declared :6)
+   __init__               :15    def __init__(self, size:int, base:int=0, wrap:bool=True): self.size, self.ptr, self.base, 
+                                 enclosing: BumpAllocator (declared :14)
+   __init__               :33    def __init__(self, size:int, base:int=0, block_size:int=16, lv2_cnt:int=16):
+                                 enclosing: TLSFAllocator (declared :23)
+   __init__               :125   def __init__(self, dev, pt, vaddr, create_pts=False, free_pts=False, inspect=False, boot=F
+                                 enclosing: PageTableTraverseContext (declared :124)
+   __init__               :184   def __init__(self, dev, vram_size:int, boot_size:int, pt_t, va_bits:int, va_shifts:list[in
+                                 enclosing: MemoryManager (declared :181)
+

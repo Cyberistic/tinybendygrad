@@ -1,0 +1,18 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_npy.bend	18	`renderers or [Renderer]` at device.py:396	# THE ARGUMENT NOBODY EXPECTS. `renderers or [Renderer]` at device.py:382 symbol=__init__ is an
+tinybendygrad/runtime/ops_npy.bend	28	`peer_group` (device.py:398)	#   * `self.iface` is never set, and `peer_group` (device.py:384 symbol=__init__) falls all the
+tinybendygrad/runtime/ops_npy.bend	31	`Compiled.__init__` (device.py:397)	#   * `device_id` comes from `Compiled.__init__` (device.py:383 symbol=__init__) and NOT from
+tinybendygrad/runtime/ops_npy.bend	32	`_select_iface` (device.py:494)	#     `_select_iface` (device.py:469 symbol=_select_iface), which sets it FIRST and then asserts on
+tinybendygrad/runtime/ops_npy.bend	37	`_select_renderer` (device.py:488)	#   * `arch` is None, so `_select_renderer` (device.py:462 symbol=_select_renderer) passes NO `arch`
+tinybendygrad/runtime/ops_npy.bend	39	inherited from `Compiled` (device.py:377).	#   * `NpyDevice.ifaces` is `[]`, inherited from `Compiled` (device.py:363 symbol=ifaces).
+tinybendygrad/runtime/ops_npy.bend	59	`HostAllocator` (device.py:304-330)	# `HostAllocator` (device.py:293 symbol=HostAllocator), which is the surface those four lines
+tinybendygrad/runtime/ops_npy.bend	83	1. MMAP (device.py:307).	# 1. MMAP (device.py:297 symbol=_alloc). `mmap.mmap(-1, size, access=ACCESS_WRITE)` is a
+tinybendygrad/runtime/ops_npy.bend	86	`to_mv` (helpers.py:573, `ctypes.from_address`)	#    `to_mv` (helpers.py:575 symbol=to_mv, `ctypes.from_address`) are FFI seams.
+tinybendygrad/runtime/ops_npy.bend	93	3. `Device[buf.device]` (device.py:328).	# 3. `Device[buf.device]` (device.py:315 symbol=_map). Opening a device by string is a
+tinybendygrad/runtime/ops_npy.bend	110	`assert size > 0` (device.py:270)	# refusals: `Allocator.alloc`'s `assert size > 0` (device.py:257-258 symbol=alloc) and
+tinybendygrad/runtime/ops_npy.bend	111	`HostAllocator._map`'s host guard (device.py:328).	# `HostAllocator._map`'s host guard (device.py:314-315 symbol=_map). A refusal records itself
+tinybendygrad/runtime/ops_nv.bend	13	`nvm` word encoding (:47-48)	#            (ops_nv.py:45 symbol=nvm) `nvm` word encoding, (ops_nv.py:31 symbol=hilo) `hilo`,
+tinybendygrad/runtime/ops_nv.bend	14	`layout_args` kernel-argument trace (hcq2.py:74-76)	#            (ops_nv.py:38 symbol=nv_flags) `nv_flags`, the `layout_args` kernel-argument trace
+tinybendygrad/runtime/ops_nv.bend	15	queues' command vocabularies (:99-225).	#            (hcq2.py:114 symbol=layout_args) and the four queues' command vocabularies (:99-225).
+tinybendygrad/runtime/ops_nv.bend	23	`to_name` (hcq2.py:63), `reg_ops`'s chunking (:818-824), the	#            (helpers.py:21 symbol=to_name) `to_name` (hcq2.py:61 uses it), (ops_nv.py:811 symbol=reg_ops) `reg_ops`'s chunking, the
+tinybendygrad/runtime/ops_nv.bend	66	`nv_iowr` (:43-45) is PORTED	#     version table. `nv_iowr` (ops_nv.py:41 symbol=nv_iowr) is PORTED as an ENCODER and the actual

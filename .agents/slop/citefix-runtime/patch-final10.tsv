@@ -1,0 +1,3 @@
+rel	at	old	new
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	90	bnxtdev.py:82 the word loop into bar0	#   tinygrad/runtime/support/rdma/bnxtdev.py:83 the word loop into bar0  PORTED  `hwrm.bar0_at` -- upstream's `bar0` symbol=hwrm
+tinybendygrad/runtime/support/rdma/bnxtdev.bend	91	bnxtdev.py:83 the trigger dword	#   tinygrad/runtime/support/rdma/bnxtdev.py:84 the trigger dword         PORTED  `hwrm.trig_at` -- upstream's `bar0` symbol=hwrm

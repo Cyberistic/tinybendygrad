@@ -1,0 +1,29 @@
+rel	at	old	new
+tinybendygrad/runtime/ops_disk.bend	22	`_copyout_sharded` (:101-116)	"# `_copyout_sharded` -- GONE at this pin: upstream 4e4f6b9fb (""hcq2 fast disk"") REPLACED"
+tinybendygrad/runtime/ops_disk.bend	23	`(copy_batch, copied_in, minor_offset	# it with the uring `disk_read`. The surviving construct is `DiskAllocator._copyout`
+tinybendygrad/runtime/ops_disk.bend	24	the segment LANDS in the destination	# (`ops_disk.py:69-77 symbol=_copyout`). Every segment the GONE `_copyout_sharded` yielded
+tinybendygrad/runtime/ops_disk.bend	25	exactly `size` AND consecutive	# was `(copy_batch, copied_in, minor_offset, real_copy_size)` and `copied_in` is where the
+tinybendygrad/runtime/ops_disk.bend	26	about the DATA, not about the spelling	# segment LANDS in the destination. So the `real_copy_size`s must sum to exactly `size` AND
+tinybendygrad/runtime/ops_disk.bend	27	`dk_shard_contig_*` assert them	# consecutive `copied_in`s must be contiguous -- statements about the DATA, not about the spelling of a call. `dk_shard_cover_*` and `dk_shard_contig_*` assert them. Everything else in this file is a trace.
+tinybendygrad/runtime/ops_disk.bend	31	(it is zeroed at :115)	# exactly ONE segment (it is zeroed by the GONE upstream `_copyout_sharded`) and the LAST segment is truncated by
+tinybendygrad/runtime/ops_disk.bend	67	:12  synchronize	#   :14  synchronize               PORTED  `dev_sync` -- it is `pass`
+tinybendygrad/runtime/ops_disk.bend	68	:14-20 __init__	#   :16-20 __init__                 PORTED  `dev_init`
+tinybendygrad/runtime/ops_disk.bend	69	:15  the io_uring guard	#   GONE  the io_uring guard         PORTED  `dev_ioring_setup`, `Dev.tried` -- upstream DELETED it
+tinybendygrad/runtime/ops_disk.bend	70	:21-40 _might_open	#   :21-41 _might_open              PORTED  `dev_might_open` and its steps
+tinybendygrad/runtime/ops_disk.bend	83	:37-40 the tail	#   :37-41 the tail                  PORTED  `dev_sized`, `dev_bumped`,
+tinybendygrad/runtime/ops_disk.bend	85	:38-39 madvise	#   :39-40 madvise                  PORTED  `dev_finish.at` (the condition)
+tinybendygrad/runtime/ops_disk.bend	86	:41-49 _might_close	#   :42-49 _might_close             PORTED  `dev_might_close`
+tinybendygrad/runtime/ops_disk.bend	87	:50-71 _iouring_setup	#   :160-164 uring                 PARTIAL `dev_ioring.*` -- the call ORDER and
+tinybendygrad/runtime/ops_disk.bend	91	:73-79 DiskBuffer	#   :51-57 DiskBuffer               PORTED  `Db.of`, `db_repr`, `db_buf`
+tinybendygrad/runtime/ops_disk.bend	92	:81  MAP_LOCKED/MAP_POPULATE	#   :59  MAP_LOCKED/MAP_POPULATE    PORTED  `map_locked`, `map_populate`
+tinybendygrad/runtime/ops_disk.bend	93	:83  lru = False	#   :61  lru = False                PORTED  `ALLOC_LRU`
+tinybendygrad/runtime/ops_disk.bend	94	:84-86 _alloc	#   :62-64 _alloc                   PORTED  `alloc_of` (`mv_address` is WALL 1)
+tinybendygrad/runtime/ops_disk.bend	95	:88  _free	#   :66  _free                      PORTED  `alloc_free`
+tinybendygrad/runtime/ops_disk.bend	96	:89  _as_buffer	#   :67  _as_buffer                 PORTED  `alloc_as_buffer`
+tinybendygrad/runtime/ops_disk.bend	97	:90  _copyin	#   :68  _copyin                    PORTED  `alloc_copyin`
+tinybendygrad/runtime/ops_disk.bend	98	:91-99 _copyout	#   :69-77 _copyout                 PORTED  `alloc_copyout`
+tinybendygrad/runtime/ops_disk.bend	99	:101-116 the NON-uring shard	#   GONE  the NON-uring shard    PORTED  `shard_at`, `shard.go`, `shard_read`,
+tinybendygrad/runtime/ops_disk.bend	100	`shard_real`	#                                             `shard_real` -- upstream 4e4f6b9fb DELETED it
+tinybendygrad/runtime/ops_disk.bend	101	:118-142 the io_uring shard	#   :88-111 the io_uring path       PARTIAL `shard_ioring` -- the two submission
+tinybendygrad/runtime/ops_disk.bend	103	:144 _offset	#   :79 _offset                    PORTED  `alloc_offset`
+tinybendygrad/runtime/ops_disk.bend	176	(:81) ARE PLATFORM CONSTANTS	# C. `MAP_LOCKED`/`MAP_POPULATE` (:59) ARE PLATFORM CONSTANTS AND THE `getattr`

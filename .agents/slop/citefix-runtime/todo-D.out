@@ -1,0 +1,35 @@
+PIN        : 5c2bf39d6c4b -- tinygrad/ tree 6c91e8977790, 230 blobs match the vendored copy, 360 local-only
+POPULATION : 1132 citations in 97 `.bend` files
+             754 carried by a `TODO(pN)` marker, 378 by an explicit `symbol=` field
+
+   1095  RESOLVES
+      3  WRONG-LINE
+      1  WRONG-SYMBOL
+      0  UNRESOLVABLE
+      4  PORT-CITATION
+     29  NO-CITATION
+
+--- WRONG-LINE (3) ---
+  tinybendygrad/runtime/support/objc.bend:55  tinygrad/runtime/ops_cpu.py:19  symbol=CPUProgram  how=symbol-moved  the cited line does not hold the claim; `CPUProgram` is declared at :18
+      # `tinygrad/runtime/ops_cpu.py:19 symbol=CPUProgram` (upstream's `rt_lib` -- libobjc is missing from `CPUProgram.link_libs`), NOT in
+  tinybendygrad/runtime/support/rdma/bnxtdev.bend:182  tinygrad/runtime/support/rdma/bnxtdev.py:41  symbol=BNXTQueue  how=symbol-moved  the cited line does not hold the claim; `BNXTQueue` is declared at :40
+      #   3. `MMIOInterface` (tinygrad/runtime/support/rdma/bnxtdev.py:41 symbol=BNXTQueue). A byte-addressed slice of host memory over a
+  tinybendygrad/runtime/support/usb.bend:65  tinygrad/runtime/ops_amd.py:798  symbol=USBIface  how=symbol-moved  the cited line does not hold the claim; `USBIface` is declared at :784
+      # NOT CLOSED, DELIBERATELY. `dma_view` (tinygrad/runtime/ops_amd.py:798 symbol=USBIface) is a `PCIDevice` method
+
+--- WRONG-SYMBOL (1) ---
+  tinybendygrad/runtime/ops_webgpu.bend:150  tinygrad/device.py:345  symbol=name  how=symbol-absent  the marker names `name`, which `device.py` does not declare at the pin
+      #   4. `TinyELF` (tinygrad/device.py:345 symbol=name) carries `name`, which is the entry point (tinygrad/runtime/ops_webgpu.py:54)
+
+--- RESOLVES, BY WHAT HELD IT ---
+    601  symbol-decl
+    335  symbol-body
+     82  snippet
+     43  loose
+     16  symbol-named
+      9  range-of-symbols
+      7  short-form
+      2  symbol-range
+
+ROWS       : 1132 -> .agents/slop/citefix-runtime/todo-D.rows
+# todo-cite-gate: FAIL -- 4 of 1132 marker citations are false

@@ -1,0 +1,21 @@
+== tinybendygrad/runtime/support/hcq2.bend:51  tinygrad/runtime/support/hcq2.py:130 [only_older_revision] toks=cfield,d2420e64,cstruct
+   runtime/support/hcq2.py (563 lines) via exact
+   cstruct                :129   def cstruct(struct_t, **fields:UOp|int) -> UOp:
+                                 enclosing: ccall (declared :125)
+
+== tinybendygrad/runtime/support/hcq2.bend:108  tinygrad/runtime/support/hcq2.py:458 [only_older_revision] toks=HCQInfo,CallInfo,aux
+   runtime/support/hcq2.py (563 lines) via exact
+   HCQInfo                :19    class HCQInfo:
+   HCQInfo                :306   info = HCQInfo(tuple(ctx.queues), skip_wait=skip_wait, kernels=kerns, estimates=sum(estima
+                                 enclosing: _finalize_batch (declared :288)
+   HCQInfo                :462   if not isinstance(call.arg.aux, HCQInfo): return None
+                                 enclosing: lower_call (declared :461)
+   HCQInfo                :536   if any(isinstance(getattr(c.without_after.arg, "aux", None), HCQInfo) for c in linear.src)
+                                 enclosing: hcq_compile (declared :535)
+   aux                    :308   return sink.call(*slots.values(), aux=info)
+                                 enclosing: _finalize_batch (declared :288)
+   aux                    :462   if not isinstance(call.arg.aux, HCQInfo): return None
+                                 enclosing: lower_call (declared :461)
+   aux                    :536   if any(isinstance(getattr(c.without_after.arg, "aux", None), HCQInfo) for c in linear.src)
+                                 enclosing: hcq_compile (declared :535)
+
