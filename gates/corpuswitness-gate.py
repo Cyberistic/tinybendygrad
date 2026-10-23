@@ -63,10 +63,19 @@ its comparator is checked by its OWN `control()`, and its rows are emitted by it
 population it measures; that is why it is `--run`-parameterised and why the plant works on copies.
 
 **THE RC IT RETURNS IS DELIBERATELY NOT READ.** On this tree `corpusverdict-gate.py` exits
-non-zero today: its `run.gated` row is FAIL because `cmd_run` has no readiness gate
-(`differ.py:1357`), which is a TRUE reading and not this gate's business. Its `substrate` row
-reads `CURRENT` and its `bend` row reads `rc=0` at the same moment. A gate that inherited that rc
-would red a fresh witness for an unrelated reason -- a wrong reason, which is worse than none.
+non-zero today: its `run.readiness` row is FAIL because `cmd_run` has no readiness gate, which is
+a TRUE reading and not this gate's business. Its `substrate` row reads `CURRENT` and its `bend`
+row reads `rc=0` at the same moment. A gate that inherited that rc would red a fresh witness for
+an unrelated reason -- a wrong reason, which is worse than none.
+
+**AND THE ROW THAT REDS MOVED, AND THIS FILE DID NOT MOVE WITH IT.** `corpusverdict-gate.py`
+used to ask, of `differ.cmd_run`'s SOURCE, whether `run` was gated, and to answer that question
+in a row called `run.gated`. The corpus is now a real SINGLETON -- it holds an `flock` and a second
+run is REFUSED -- and that property is MEASURED by RUNNING the command, in a row that kept the
+name `run.gated`. The old source-level question was not dropped: it is now the row
+`run.readiness`, and it is still red, because a run that does not wait for the substrate to settle
+is a DIFFERENT hazard from two runs interleaving into one directory. **⇒ A DOCSTRING THAT NAMES A
+ROW IS A CITATION, AND A CITATION THAT NAMES A ROW MUST MOVE WHEN THE ROW MOVES.**
 
 DOCTRINE 2 -- `SKIP` IS NOT `PASS`, AND A ROW THAT CANNOT BE JUDGED IS NOT EMITTED. An absent
 witness is `REFUSED` (a precondition was absent -- the measurement was never taken), a value that
@@ -281,7 +290,8 @@ def main(argv=None) -> int:
   # --- READING 1: IS W1'S VERDICT CURRENT? READ FROM THE INSTRUMENT THAT OWNS THE COMPARISON --
   # `cvg().main` is RUN, not restated. Its stdout is captured and its `substrate` ROW is read;
   # its return code is deliberately ignored, because on this tree it is non-zero for a reason
-  # (`run.gated`, about `differ.py run` being ungated) that has nothing to do with currency.
+  # (the `run.readiness` row, about `differ.py run` not being readiness-gated) that has nothing
+  # to do with currency.
   buf = io.StringIO()
   with contextlib.redirect_stdout(buf):
     cvg_rc = C.main(["--summary", str(run)])
@@ -320,8 +330,8 @@ def main(argv=None) -> int:
   # THE ROW USED TO SAY `judge("freshness.source", True, False, ...)` -- A LITERAL `True`, WHICH
   # IS THE SAME DEFECT THE `claim` ROW HAD: a row that cannot go red. The claim is that this
   # gate's only clock still reads the FILESYSTEM, and `inspect.getsource` is the sibling's own
-  # instrument for a claim about an instrument's SOURCE (`corpusverdict-gate.py:189` asks
-  # `differ.cmd_run`'s source whether `run` is gated), so the check is in house style.
+  # instrument for a claim about an instrument's SOURCE (the sibling's `run.readiness` row asks
+  # `differ.cmd_run`'s source whether `run` is readiness-gated), so the check is in house style.
   #
   # **THE DOCSTRING IS EXCLUDED ON PURPOSE.** These docstrings TALK ABOUT GIT -- the rule that
   # git is not asked is written down three times above -- so a check that grepped the whole

@@ -139,12 +139,25 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `319 of 319 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=319 repro-identical=319 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == 62c5dd903b864c69dcb4dc9421b84c67ac41f65408e57a7bd93ef90a0ba6fe79`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == repro-substrate == eb6ef8608ec64647a195d5521a4712dd1a288cf9f1cefef9e08e83c003dc56bc`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=b5c16d646b8ed992c2e238bca6a9ae4cd8800f57` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=db20caf0618f1f79d4e0733fdd042cc6cf61eb7c` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `b5c16d646`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
+  `db20caf06`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
   **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
+  **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION **WORK **LEFT**: **175 **FALSE
+  **UPSTREAM **CITATIONS **RE-POINTED** (**225 **UNDER **`runtime/`**, **331 -> 78 **ELSEWHERE**), **AND
+  **`gates/todo-cite-gate.py` **READS **`1131 **ROWS **AND **0 **FALSE**.**
+  **⇒ AND **THE **CORPUS **IS **A **SINGLETON **NOW**, **WHICH **IS **WHAT **THE **2026-10-23 **COLLISION
+  **PROVED **IT **NEEDED**: **`checks/differ.py`'s **`run`/`repro`/`plant`/`snap` **TAKE **AN
+  **`fcntl.flock` **ON **`runs/graphcmp/.corpus.lock`** **BEFORE **ANYTHING **TOUCHES **`D/`**, **AND **A
+  **SECOND **CORPUS **RUN **EXITS **3 **WITH **"another **corpus **run **holds **the **lock" **AND **THE
+  **HOLDER'S **PID**.  **⇒ AND **`gates/corpusverdict-gate.py`'s **`run.gated` **ROW **NOW **MEASURES **THE
+  **PROPERTY **BY **RUNNING **THE **REAL **COMMAND** (it holds the lock, runs `differ.py run` against a
+  **`GRAPHCMP_ARTIFACTS` **SCRATCH **DIR**, and asserts the command REFUSED, NAMED THE HOLDER, and WROTE
+  **NOTHING**), **AND **THE **OLD **SOURCE-LEVEL **QUESTION **WAS **NOT **DROPPED**: **IT **IS **THE
+  **`run.readiness` **ROW, **AND **IT **IS **STILL **RED** -- **A **RUN **THAT **DOES **NOT **WAIT **FOR **THE
+  **SUBSTRATE **TO **SETTLE **IS **A **DIFFERENT **HAZARD **FROM **TWO **RUNS **INTERLEAVING.**
   **⚠ AND **THE **STRONGEST **FORM **OF **THE **CLAIM **IS **ALSO **THE **FRAILEST**, **AND **THIS **TREE
   **DEMONSTRATED **IT **WITHIN **A **MINUTE **OF **ITS **BEING **WRITTEN**: **MY **OWN **NEXT **COMMIT
   **TOUCHED **ONLY `AGENTS.md`**, **SO **HEAD **MOVED **TO `c978aabcb` **AND **THE **RUN's **`substrate-head`
