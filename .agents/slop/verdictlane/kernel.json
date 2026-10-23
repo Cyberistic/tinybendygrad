@@ -1,0 +1,55 @@
+{
+  "build": {
+    "build_peak_rss_bytes": {
+      "lean -c": 1058111488,
+      "leanc -O3": 232210432
+    },
+    "build_peak_rss_bytes_max": 1058111488,
+    "build_seconds": {
+      "lean -c": 14.11,
+      "leanc -O3": 5.885
+    },
+    "build_seconds_total": 19.995,
+    "built": true,
+    "dest": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/bendtt-verdictlane/cc78aa9ff3491ff1",
+    "lean": "/Users/cyberistic/.elan/toolchains/leanprover--lean4---v4.34.0/bin/lean",
+    "lean_version": "4.34.0",
+    "lean_version_seconds": 0.262,
+    "leanc": "/Users/cyberistic/.elan/toolchains/leanprover--lean4---v4.34.0/bin/leanc",
+    "source": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/references/bend/bend2/bendtt.lean"
+  },
+  "built": false,
+  "cached": true,
+  "head": "8dde14ef7460f4cf9d5c9ef3d3aee23601bd428b",
+  "home": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/verdictlane-home-lnao2s65",
+  "kernel_bytes": 3307264,
+  "kernel_path": "/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/bendtt-verdictlane/cc78aa9ff3491ff1/bendtt",
+  "kernel_sha256": "7e7a4899bfd6b793fae3253cfee1f297ae9239f0e858795985dab6a5e990905b",
+  "law_files": [
+    "tinybendygrad/LAWS.bend",
+    "tinybendygrad/PROOF.bend",
+    "tinybendygrad/runtime/autogen/libclang.bend"
+  ],
+  "lean_version": "4.34.0",
+  "pin_ok": true,
+  "pinned_kernel_bytes": 3307264,
+  "pinned_kernel_sha256": "7e7a4899bfd6b793fae3253cfee1f297ae9239f0e858795985dab6a5e990905b",
+  "pinned_source_sha256": "cc78aa9ff3491ff1b788797bdcab4cb98107dcb1730ed99834f6933b11d88335",
+  "population": [
+    "tinybendygrad/LAWS/PROOF-ALL.bend",
+    "tinybendygrad/LAWS/alu.bend",
+    "tinybendygrad/LAWS/spec.bend",
+    "tinybendygrad/LAWS.bend",
+    "tinybendygrad/PROOF.bend",
+    "tinybendygrad/PROOF2.bend",
+    "tinybendygrad/runtime/autogen/libclang.bend"
+  ],
+  "roots": [
+    "tinybendygrad/LAWS/PROOF-ALL.bend",
+    "tinybendygrad/runtime/autogen/libclang.bend"
+  ],
+  "source_bytes": 174222,
+  "source_sha256": "cc78aa9ff3491ff1b788797bdcab4cb98107dcb1730ed99834f6933b11d88335",
+  "timestamp_utc": "2026-10-23T00:36:08Z",
+  "verdict": "PASS"
+}

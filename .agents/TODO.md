@@ -2046,6 +2046,124 @@ bend-upgrade-38      [##] 3/3  **THE PROJECT IS ON BEND `v2.0.38`, AND EVERY PIN
                                        IN 2.0.38** (RE-MEASURED, NOT ASSUMED), **SO BEND'S RULE 1 IS UNCHANGED.**
 
 
+argmax-graph         [####] 4/4  **THE GRAPH-LEVEL `argmax` IS BUILT AND GREEN, AND THE BLOCKER WAS **TWO BUGS**, NOT
+                                       A MISSING CAPABILITY.** MEASURED 2026-10-23. **Q4 -- *"CAN THE PORT PRODUCE AN
+                                       INDEX VECTOR ALONG THE AXIS?"* -- IS ANSWERED, AND THE ANSWER IS THAT THE OLD
+                                       PROBE'S "EMPTY" WAS **THREE DIFFERENT THINGS**: `mo_dims` ANSWERS `Nil{}` FOR
+                                       *A NODE THE FOLD CANNOT RESOLVE*, *A NODE WITH NO SHAPE*, **AND *A 0-DIM
+                                       SHAPE***, AND `nn_u32` MAPS `Nil{}` BACK TO `Some{[]}` -- **SO THE OLD PROBE
+                                       ASKED TWO READERS AND GOT THE SAME EMPTY STRING FROM BOTH, WHICH IS THE SAME
+                                       AMBIGUITY TWICE AND NOT CONFIRMATION.** **THE REAL CAUSE: THE ARANGE'S FIRST
+                                       UNRESOLVABLE NODE WAS `RESHAPE([1,4] -> ())` -- A 0-DIM RESHAPE, WHICH UPSTREAM
+                                       **RAISES** ON (`tinygrad/uop/ops.py:398`) AND THE PORT'S FOLD IS FAITHFUL
+                                       (`uop/fold.bend:2146-2189`). **SO THE PORT WAS BUILDING A GRAPH CPYTHON WOULD
+                                       REFUSE, AND ONE ILLEGAL NODE MAKES THE WHOLE GRAPH UNREADABLE.**** TWO SITES,
+                                       BOTH IN `mixin/rand.bend`: `op_expand_lead` RESHAPED TO `()` WHERE UPSTREAM'S
+                                       `_broadcast_to` KEEPS THE DIMS (`movement.py:142`), AND TARGETED `[r]` WHERE
+                                       UPSTREAM TARGETS `[r, i]`; AND `op_pool1.sh` USED `k*(i*f+1)` FOR BOTH OF
+                                       UPSTREAM'S TWO DISTINCT NUMBERS (`movement.py:626` VS `:627`), WHICH DIFFER BY
+                                       A FACTOR OF `k`. **⇒ AFTER THE FIX THE ARANGE ROOT READS `SHAPE[4]` AND
+                                       `fold_np` FLIPPED `False` -> `True`.** **⇒ AND `tinybendygrad/nn/argmax.bend`
+                                       NOW BUILDS UPSTREAM'S FOUR NODES WITH **20 ROWS, ALL GREEN**, EVERY `want`
+                                       TAKEN FROM CPYTHON ITSELF (`oracle_argmax.py`), AND THE CONTROL (`g_ar_shape`
+                                       PERTURBED TO `(5,)` PRINTS `got=(4,) want=(5,)`).** **⇒ AND TWO THINGS ARE
+                                       **NAMED AS NOT DONE**: THE ARANGE IS STILL **24 NODES AGAINST CPYTHON'S 31** --
+                                       THE `_pad_constant`'s PAD IS ABSENT (`op_padc` PASSES `[i]` WHERE UPSTREAM
+                                       PASSES `[2i-1]`) -- **SO THE PORT'S ARANGE **VALUES** ARE NOT UPSTREAM'S**
+                                       (UNOBSERVABLE, THERE IS NO EXECUTOR; THE LIST FORM IS WHAT CHECKS VALUES); AND
+                                       IT IS **1-D F32 ONLY**, BECAUSE THE AXIS WIDENING NEEDS BOTH THE MULTI-AXIS
+                                       REDUCE CORRECTED **AND** THE INDEX VECTOR'S RESHAPE BUILT. **⇒ AND A GATE WILL
+                                       GO RED BECAUSE THE FIX WORKED: `gates/rand_census-gate.py:328-333` CLAIMS *"THE
+                                       FOLD CANNOT ANSWER THIS"* ABOUT `fold_np`/`fold5_np`, AND **THAT CLAIM HAS
+                                       EXPIRED** -- SEE `rand-census-expired`.
+
+imagenet-loader      [####] 4/4  **THE IMAGENET LOADER IS NO LONGER A STUB: ALL THREE DEFS ARE REAL.**
+                                       `tinybendygrad/extra/datasets/imagenet.bend` IS **520 LINES, REPLACING THE
+                                       46-LINE STUB** -- **`get_train_files(root)`/`get_val_files(root)`** EXPAND
+                                       `<root>/<split>/*/*` FROM THE PORT'S ONLY TWO DIRECTORY PRIMITIVES, SORTED,
+                                       REFUSING BY NAME; AND **`get_imagenet_categories(root)`** READS
+                                       `<root>/imagenet_class_index.json` AND RETURNS `{wnid: index}` AS A `Map<&2,
+                                       U32>`, UPSTREAM'S DICT. **THE ANSWER TYPE IS `Load` WITH
+                                       `Has{value}`/`Lacks{why: D.Refused}` -- THE REFUSAL IS **NEVER** AN EMPTY
+                                       LIST** (`__init__.bend:28-34`'s RULE) -- AND IT USES THE PORT'S `D.refuse`
+                                       VOCABULARY. **⇒ AND THE PRIMITIVES WERE **READ, NOT ASSUMED** (THIS SESSION HAS
+                                       ALREADY CAUGHT ONE AGENT ASSERTING A PRIMITIVE'S SEMANTICS WITHOUT READING ITS
+                                       BODY): `Sz.read_dir` (`sz.bend:124`, `@unsafe`, NAMES EXCEPT `.`/`..`, READDIR
+                                       ORDER, **A DIRECTORY IT CANNOT OPEN IS NO NAMES**); `Sz.is_dir` (`sz.bend:132`,
+                                       `@unsafe`, AN **`lstat`**); `File.open`/`File.read`/`File.close`
+                                       (`base.bend:288/293/323`, THE FAIL ARM IS THE MISSING FILE); **NO GLOB EXISTS**
+                                       (MEASURED BY GREP) AND IT WAS EXPANDED HERE; AND **NO JSON PARSER EXISTS**
+                                       (`viz/serve.bend:804`: *"`json.loads` IS NOT PORTED"*).** **⇒ THE CLASS INDEX
+                                       IS READ BY A **CHARACTER-AT-A-TIME DECODER** (SZ.BEND'S OWN LEXER IDIOM),
+                                       **BECAUSE A RECURSIVE-DESCENT JSON PARSER CANNOT BE WRITTEN IN BEND** -- THE
+                                       AGENT MEASURED THAT A COMPUTED SUFFIX IS NOT A SYNTACTICALLY SMALLER ARGUMENT.
+                                       **A GENERAL JSON PARSER IS SPECIFIED, NOT BUILT**: IT NEEDS MUTUAL RECURSION
+                                       (ONE DEF WITH A MODE), A STACK, AND IT BELONGS IN A **NEW
+                                       `tinybendygrad/json.bend`**, NOT `LAWS/spec.bend` (THAT FILE IS A PURE FOLD
+                                       OVER AN EFFECTLESS IR).** **⇒ VERIFICATION: 8 OF 8 ROWS AGREE, AND CPYTHON'S
+                                       OWN `glob`/`json` ANSWER IS **BYTE-IDENTICAL** ON EVERY ROW WHERE THE ORACLE
+                                       HAS ONE; THE EXPECTATIONS LIVE IN A SEPARATE HAND-WRITTEN LITERAL, NOT COPIED
+                                       FROM THE OUTPUT; AND THE CONTROL (PERTURBING ONE PATH) MADE EXACTLY ONE ROW RED
+                                       AND LEFT THE OTHER SEVEN GREEN. THE PROBE FOUND **THREE REAL DEFECTS** BEFORE
+                                       IT WENT GREEN (A HIDDEN-DIRECTORY LEAK AT DEPTH ONE, AND TWO PLACES WHERE A
+                                       STATE CONSUMED A CHARACTER IT SHOULD NOT).** **⇒ ONE DIVERGENCE, MEASURED: A
+                                       SYMLINKED CLASS DIRECTORY IS **FOLLOWED** BY CPYTHON'S GLOB AND **SKIPPED** BY
+                                       THE PORT (`lstat` VS `stat`).** **⇒ AND THE SAFETY VERDICT IS THE FIRST IN THIS
+                                       TREE TO USE 2.0.38's NEW LANE: `imagenet.bend --verdict` ANSWERS *"Error: 15
+                                       defs rely on unsafe or foreign code"*, NAMING `Sz.read_dir` AND `Sz.is_dir` --
+                                       THE PORT'S ONLY TWO DIRECTORY PRIMITIVES -- AND **THE READER ALONE, ISOLATED IN
+                                       A MEASUREMENT COPY, READS `ALL PROOFS CHECK` UNDER BEND2 **AND THE LEAN
+                                       KERNEL**.**
+
+verdict-lane         [####] 4/4  **THE FIRST INSTRUMENT THAT CHECKS THIS PORT'S PROOFS AGAINST THE LEAN-VERIFIED
+                                       KERNEL, AND IT IS PINNED AND IT CAN GO RED.** `gates/verdict-lane-gate.py`
+                                       **BUILDS THE KERNEL FROM THE REPO'S `bendtt.lean`, PINS IT, RUNS BOTH LANES,
+                                       AND REPORTS THE AGREEMENT CLASSES.** MEASURED 2026-10-23: **THE BUILD,
+                                       REPRODUCED FROM `safe.ts`'s OWN `kernel_bin()`** -- `lean --version` -> `lean
+                                       -c bendtt.c bendtt.lean` -> `leanc -O3 -DNDEBUG bendtt.c -o bendtt`, **IN A
+                                       DIRECTORY THE GATE OWNS**. **THE COST IS MEASURED, FOUR READINGS: `lean -c` IS
+                                       13-17 s AND ~1.0 GB (996-1009 MiB); `leanc` IS 4.7-5.9 s AND 221-250 MiB** (the
+                                       instrument is `/usr/bin/time -o FILE -l`). **⇒ AND IT READS **7 FILES, 2
+                                       DISCOVERED ROOTS, 0 DISAGREEMENTS**, AND ITS VERDICT IS *"PASS -- 7 file(s)
+                                       judged, no disagreement, and 3 of them reached the kernel"*: `LAWS/PROOF-
+                                       ALL.bend`, `LAWS/alu.bend`, `LAWS/spec.bend` -> `AGREE-VERIFIED`; `LAWS.bend`,
+                                       `PROOF.bend`, `PROOF2.bend` -> `AGREE-INCOMPLETE` (34/18/16 TODOs);
+                                       `libclang.bend` -> `AGREE-FOREIGN` (336). **THE POPULATION IS **DISCOVERED**,
+                                       NOT LISTED: PROOF ROOTS = FILES NOTHING IMPORTS WHOSE IMPORT CLOSURE DECLARES A
+                                       LAW.** **⇒ AND THE PLANT HAS **7 CASES**, ALL AS EXPECTED: A *TARGETED* TREATED
+                                       KERNEL (FAILS IFF THE ELABORATION MENTIONS `powf`) MAKES EXACTLY `{alu.bend,
+                                       PROOF-ALL.bend}` DISAGREE AND LEAVES `spec.bend` ALONE -- **THE SET, NOT JUST
+                                       THE VERDICT**; AND PIN MISMATCH -> `REFUSED`, SILENT COMPILER -> `DEAD`,
+                                       POISONED `~/.bend/` -> ROWS BYTE-IDENTICAL, COMMENT-ONLY COPY -> JUDGED
+                                       IDENTICALLY.** **⇒ AND ITS INDEPENDENCE IS MEASURED**: `~/.bend/bendtt/` --
+                                       WITH THE POISON AT THE COMPILER'S OWN CACHE KEY, `BENDTT` UNSET FLIPS THE
+                                       VERDICT TO `SOME PROOFS FAIL`/MISMATCH/rc 1, AND `BENDTT` SET TO THE PINNED
+                                       KERNEL GIVES `ALL PROOFS CHECK`/rc 0; `~/.bend/check.json` -- BYTES AND MTIME
+                                       UNCHANGED AFTER A FULL RUN; `~/.elan` -- PINNED OUT: IT CAN ONLY REACH THE
+                                       VERDICT THROUGH A BINARY THAT FAILS THE PIN.** **⇒ AND THE PIN IS THE ARGUMENT
+                                       FOR THE WHOLE THING: THE REFERENCE CLONE MOVED UNDER THE AGENT (2.0.37 ->
+                                       2.0.38 AT 00:10 UTC), AND **A GATE THAT MERELY *BUILT* THE KERNEL WOULD HAVE
+                                       SILENTLY CHANGED ITS VERDICT WITH NO REPOSITORY CHANGE TO POINT AT** -- SO THE
+                                       DELIVERED GATE PINS THE CURRENT REVISION, AND IF THE CLONE MOVES AGAIN IT
+                                       **REFUSES (3) WITH BOTH SHAS**. **⇒ AND IT FOUND A DEFECT OF ITS OWN BY RUNNING
+                                       IT: THE GATE'S ARTIFACT-CLEAR (INHERITED FROM `gatekit._clear()`) DELETED THE
+                                       REPORT SITTING BESIDE THE ROWS, BECAUSE `--artifacts` MAY POINT AT A DIRECTORY
+                                       THE GATE DOES NOT OWN -- FIXED TO CLEAR ONLY THE THREE FILES THE GATE WRITES,
+                                       AND A CANARY NOW SURVIVES.**
+
+rand-census-expired  [##] 2/3  **A GATE'S CLAIM HAS EXPIRED BECAUSE A FIX WORKED, AND THAT IS THE CLASS THIS TREE
+                                       KEEPS FIXING.** MEASURED 2026-10-23: `gates/rand_census-gate.py:328-333` CLAIMS
+                                       THAT THE FOLD **CANNOT** ANSWER `fold_np`/`fold5_np` -- **AND AFTER THE
+                                       `mixin/rand.bend` FIX (THE ARANGE'S 0-DIM RESHAPE AND THE `k*(i*f+1)` POOL
+                                       ARITHMETIC) `fold_np` FLIPPED `False` -> `True`**, SO **THE GATE'S WHOLE CLAIM
+                                       HAS EXPIRED AND IT WILL GO RED.** **⇒ A GATE THAT GOES RED BECAUSE THE TREE GOT
+                                       BETTER IS NOT A GATE TO BE SUPPRESSED -- IT IS A GATE TO BE **UPDATED**, AND
+                                       THE UPDATE MUST RECORD *WHAT THE FIX WAS* SO THE RED IS READ AS PROGRESS AND
+                                       NOT AS REGRESSION.** **⇒ THE GATE IS NOT MINE AND ITS OWNER MAY BE IN IT; THE
+                                       NAMED NEXT MOVE IS TO UPDATE IT WITH THE `mixin/rand.bend` FIX CITED, AND THE
+                                       MEASUREMENT TO RE-TAKE IS ITS OWN ROW COUNT.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

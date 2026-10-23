@@ -1,0 +1,14 @@
+CONTROL-REAL-TREE	want=PASS	got=PASS	OK	the gate on the tree as it stands
+PLANT-TARGETED-KERNEL	want=FAIL	got=FAIL	OK	disagree=['tinybendygrad/LAWS/PROOF-ALL.bend', 'tinybendygrad/LAWS/alu.bend'] agree-verified=['tinybendygrad/LAWS/spec.bend']
+PLANT-TARGETED-KERNEL	tinybendygrad/LAWS/PROOF-ALL.bend	check=VERIFIED	verdict=MISMATCH	agreement=DISAGREE	check-rc=0	verdict-rc=1
+PLANT-TARGETED-KERNEL	tinybendygrad/LAWS/alu.bend	check=VERIFIED	verdict=MISMATCH	agreement=DISAGREE	check-rc=0	verdict-rc=1
+PLANT-TARGETED-KERNEL	tinybendygrad/LAWS/spec.bend	check=VERIFIED	verdict=VERIFIED	agreement=AGREE-VERIFIED	check-rc=0	verdict-rc=0
+PLANT-TARGETED-KERNEL	tinybendygrad/LAWS.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+PLANT-TARGETED-KERNEL	tinybendygrad/PROOF.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+PLANT-TARGETED-KERNEL	tinybendygrad/PROOF2.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+PLANT-TARGETED-KERNEL	tinybendygrad/runtime/autogen/libclang.bend	check=FOREIGN	verdict=FOREIGN	agreement=AGREE-FOREIGN	check-rc=1	verdict-rc=1
+PLANT-BLANKET-KERNEL	want=FAIL	got=FAIL	OK	disagree=3 of 7
+PLANT-PIN-MISMATCH	want=REFUSED	got=REFUSED	OK	the kernel is not the pinned one: 01254cd74fa9cc0e283a39233d29f8d431d519342e24f9ccc0420962b7662118 != 7e7a4899bfd6b793fae3253cfee1f297ae9239f0e858795985dab6a5e990905b. It was NOT run.
+PLANT-SILENT-COMPILER	want=DEAD	got=DEAD	OK	a lane ran and emitted nothing on tinybendygrad/LAWS/PROOF-ALL.bend -- that is DEAD, not a FAIL
+PLANT-HOME-POISON	want=PASS	got=PASS	OK	the rows are identical to the control: True
+PLANT-COMMENT-CONTROL	want=VERIFIED	got=VERIFIED	OK	a comment-only copy must be judged exactly as the original is

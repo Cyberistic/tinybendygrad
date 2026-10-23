@@ -1,0 +1,11 @@
+verdict-lane-gate: the kernel is 7e7a4899bfd6b793fae3253cfee1f297ae9239f0e858795985dab6a5e990905b (3307264 bytes), built=False, lean=4.34.0, source=cc78aa9ff3491ff1
+verdict-lane-gate: the population is 7 file(s), from 2 discovered root(s): tinybendygrad/LAWS/PROOF-ALL.bend, tinybendygrad/runtime/autogen/libclang.bend
+  tinybendygrad/LAWS/PROOF-ALL.bend	check=VERIFIED	verdict=VERIFIED	agreement=AGREE-VERIFIED	check-rc=0	verdict-rc=0
+  tinybendygrad/LAWS/alu.bend	check=VERIFIED	verdict=VERIFIED	agreement=AGREE-VERIFIED	check-rc=0	verdict-rc=0
+  tinybendygrad/LAWS/spec.bend	check=VERIFIED	verdict=VERIFIED	agreement=AGREE-VERIFIED	check-rc=0	verdict-rc=0
+  tinybendygrad/LAWS.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+  tinybendygrad/PROOF.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+  tinybendygrad/PROOF2.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+  tinybendygrad/runtime/autogen/libclang.bend	check=FOREIGN	verdict=FOREIGN	agreement=AGREE-FOREIGN	check-rc=1	verdict-rc=1
+verdict-lane-gate: PASS -- 7 file(s) judged, no disagreement, and 3 of them reached the kernel
+verdict-lane-gate: the five verdicts are PASS 0, FAIL 1, REFUSED 3, SKIP 4 (not produced by this gate), DEAD 5

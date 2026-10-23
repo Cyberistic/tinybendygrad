@@ -1,0 +1,7 @@
+tinybendygrad/LAWS/PROOF-ALL.bend	check=VERIFIED	verdict=VERIFIED	agreement=AGREE-VERIFIED	check-rc=0	verdict-rc=0
+tinybendygrad/LAWS/alu.bend	check=VERIFIED	verdict=VERIFIED	agreement=AGREE-VERIFIED	check-rc=0	verdict-rc=0
+tinybendygrad/LAWS/spec.bend	check=VERIFIED	verdict=VERIFIED	agreement=AGREE-VERIFIED	check-rc=0	verdict-rc=0
+tinybendygrad/LAWS.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+tinybendygrad/PROOF.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+tinybendygrad/PROOF2.bend	check=INCOMPLETE	verdict=INCOMPLETE	agreement=AGREE-INCOMPLETE	check-rc=1	verdict-rc=1
+tinybendygrad/runtime/autogen/libclang.bend	check=FOREIGN	verdict=FOREIGN	agreement=AGREE-FOREIGN	check-rc=1	verdict-rc=1
