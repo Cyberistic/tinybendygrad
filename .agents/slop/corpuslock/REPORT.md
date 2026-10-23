@@ -104,11 +104,29 @@ scratch tree and the copy's `singleton()` really does spawn the copy's `run`:
 
 ```
 control.singleton	state=OK	note=planted second-runs all read NOT-refused
-run.gated	state=FAIL	verdict=SHARED	holder=21453	rc=0	note=the second run was not refused: ''
+run.gated	state=FAIL	verdict=SHARED	holder=62800	rc=0	note=the second run was not refused: ''
 # CONTROL PASSED -- the row went RED without the lock
 ```
 
 The real tree reads `run.gated state=OK verdict=SINGLETON`. **The row can go red.**
+
+## The probe that found a defect in the lock itself
+
+`.agents/slop/corpuslock/onerun.py` measures `one_run()`'s plumbing, the `clean_run`
+composition, and the lock's WIRING into the command path — 15 checks, GREEN 15 of 15. It
+also found a real defect, in the lock this unit had just written:
+
+* `take_lock()` is re-entrant inside one process (`repro` runs `cmd_run` in the process that
+  holds the lock), and the re-entrant path returned `None` WITHOUT counting the hold, while
+  `drop_lock()` always decremented. The inner `drop_lock()` that `command()` runs in its
+  `finally` therefore released the OUTER hold.
+* The probe's child — started to measure the refusal — was NOT refused, and it ran a corpus
+  into the tree's `runs/graphcmp/D`: **315 of the 319 evidence files were rewritten by that
+  killed run**, and `D0-coverage-census.txt` was left 0 bytes.
+* Fixed in `84f9c7925`: the hold is COUNTED (`take_lock` increments the depth on the
+  re-entrant path too; `drop_lock` releases one hold and closes the descriptor only at depth
+  0), and the probe is now SANDBOXED — its child gets `GRAPHCMP_ARTIFACTS=<tempdir>` and the
+  probe asserts the child wrote nothing there.
 
 ## The gate's row, before and after
 
@@ -120,17 +138,33 @@ The real tree reads `run.gated state=OK verdict=SINGLETON`. **The row can go red
 
 ## What I could NOT make true, and why
 
+* **THE TREE'S ARTEFACT SET IS A MIXTURE, AND THIS UNIT MADE IT WORSE.** The recorded
+  summary's own two substrate digests already disagreed (`81101a6a…` vs `cfeb41ea…`) — that
+  is the incident of 2026-10-23, still in place — so the live set was ALREADY a mixture
+  before this unit touched it. Then a probe of this unit's own making found a REAL DEFECT in
+  the lock: `take_lock()` is re-entrant inside one process (`repro` runs `cmd_run` in the
+  process that holds the lock) and the re-entrant path returned `None` WITHOUT counting the
+  hold, while `drop_lock()` always decremented — so the inner release released the OUTER
+  hold. A child the probe started to measure the refusal was therefore NOT refused, and it
+  ran a corpus into `runs/graphcmp/D`: **315 of the 319 evidence files were rewritten by that
+  killed run, and `D0-coverage-census.txt` was left 0 bytes.** The fix is committed
+  (`84f9c7925`): the hold is COUNTED, and the probe is now SANDBOXED (its child gets
+  `GRAPHCMP_ARTIFACTS=<tempdir>` and the probe asserts the child wrote nothing there).
+  **A FULL CORPUS RE-RUN IS NOW REQUIRED** to restore a coherent set, and this unit did not
+  do it: the machine measured loadavg 16.61 on 12 cores with ~800 MB of free pages, a corpus
+  run is 271 s and ~975 MB over ~100 bend compiles, and — the reason that decides it — a
+  re-run on a tree this busy would probably land a `.bend` edit mid-run and produce ANOTHER
+  mixture. The damage is REPORTED and not silent: `differ.unhealthy()` says "THE SUBSTRATE
+  MOVED WHILE THE RUN WAS IN FLIGHT, so D/ holds a MIXTURE of two substrates", and
+  `artefacts_ok()` reports the 0-byte artifact.
 * **THE RECORDED CORPUS VERDICT IS STILL STALE, AND IT WAS ALREADY STALE BEFORE THIS WORK.**
   Measured: recorded `81101a6a…`/`cfeb41ea…` against a live `88551f9d…` before any edit, so
   `gates/corpusverdict-gate.py`'s `substrate` row and `gates/corpuswitness-gate.py`'s
   `verdict.current`, `witness.fresh`, `witness.substrate` and `claim` rows were ALREADY red
   (4 of 7 — exactly the set the incident of 2026-10-23 produced). Editing `checks/differ.py`
-  moves the digest again (`abc68898…`), because that file is in `SUBSTRATE_INPUTS`. Making the
-  verdict CURRENT needs a full corpus re-run (271 s, ~975 MB peak, ~100 bend compiles), and
-  this unit did not do it: it would rewrite the tree's 319 files of evidence with a run whose
-  health it cannot afterwards guarantee, and the brief forbids a long-lived corpus run. The
-  `bend` row now reads `ALL PROOFS CHECK` rc=0, so the substrate DOES settle today and a
-  re-run is possible — that is the next unit's move, not this one's.
+  moves the digest again, because that file is in `SUBSTRATE_INPUTS`. The `bend` row now reads
+  `ALL PROOFS CHECK` rc=0, so the substrate DOES settle today and a re-run is possible — that
+  is the next unit's move, on a quiet tree.
 * **`run.readiness` IS STILL RED.** `cmd_run` has no readiness gate, so a `run` against an
   unsettled substrate would overwrite the evidence with a dead bend lane. That is a real
   hazard and a DIFFERENT one from two runs interleaving; the check was kept, not weakened,
@@ -139,11 +173,12 @@ The real tree reads `run.gated state=OK verdict=SINGLETON`. **The row can go red
   no bend lock today, and taking it PER BEND (as `bendlock.sh`'s header prescribes for a
   many-bend command) would mean editing `.agents/slop/graphcmp.py`, which is a path other
   units hold. The corpus lock does not address that and is not the right lock for it.
-* **`repro` WAS NOT RUN END TO END.** `one_run()`'s plumbing is measured with a stubbed
-  `cmd_run` (7/7, `.agents/slop/corpuslock/onerun.py`) and the REAL `cmd_run` is exercised by
-  the plant, but a full `repro` is two corpus runs (~9 minutes) and the brief forbids a
-  long-lived corpus run. The failure mode if `one_run()` were wrong is a `REFUSED` repro, not
-  a corrupted one.
+* **`repro` WAS NOT RUN END TO END.** `one_run()`'s plumbing and the `clean_run` ->
+  `ready` -> `one_run` -> `cmd_run` -> health-check composition are measured with a stubbed
+  `cmd_run` (15 of 15, `.agents/slop/corpuslock/onerun.py`), and the REAL `cmd_run` is
+  exercised by the plant — but a full `repro` is two corpus runs (~9 minutes) and the brief
+  forbids a long-lived corpus run. The failure mode if `one_run()` were wrong is a `REFUSED`
+  repro, not a corrupted one.
 * **THE WITNESS GATE'S PROSE IS NOW STALE.** `gates/corpuswitness-gate.py`'s header says
   "`corpusverdict-gate.py` exits non-zero today: its `run.gated` row is FAIL because
   `cmd_run` has no readiness gate". `run.gated` now reads OK and `run.readiness` reads FAIL,

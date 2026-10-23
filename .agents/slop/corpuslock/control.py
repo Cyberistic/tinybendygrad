@@ -42,9 +42,9 @@ def main() -> int:
         d = tmp / "checks" / "differ.py"
         src = d.read_text()
         edits = [
-            ("    global _LOCK_FD\n    if _LOCK_FD is not None:",
+            ("    global _LOCK_FD, _LOCK_DEPTH\n    if _LOCK_DEPTH:",
              "    return None  # PLANTED: THE LOCK DOES NOT EXIST\n"
-             "    global _LOCK_FD\n    if _LOCK_FD is not None:"),
+             "    global _LOCK_FD, _LOCK_DEPTH\n    if _LOCK_DEPTH:"),
             ("def _command(a):\n    if a.cmd == \"plant\":",
              "def _command(a):\n    return 0  # PLANTED: THE RUN DOES NOTHING\n"
              "    if a.cmd == \"plant\":"),
