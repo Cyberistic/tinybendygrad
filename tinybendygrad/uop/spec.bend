@@ -999,23 +999,24 @@ def is_param.go(pa: Maybe<&1, O.ParamArg>) -> Bool:
 def is_param(a: O.Arg) -> Bool:
   is_param.go(arg_param(a))
 
-# spec.py:92  (UPat(Ops.PARAM, src=(), name="x"), lambda x: isinstance(x.arg, ParamArg))
+# spec.py:92  (UPat(Ops.PARAM, src=(p_size,), name="x"), lambda x: isinstance(x.arg, ParamArg))
+# `p_size` is ONE src, so the port's count is one and not zero.
 def sh_16(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 0)), sp_vb(is_param(sp_arg(fx, self))))
-
-def sh_17.body(+fx: F.Folded, +self: U32) -> Bool:
-  Bool.and(is_param(sp_arg(fx, self)), addr_eq(addr_of(sp_addr(fx, self)), S.ALocal{}))
-
-# spec.py:93  (UPat(Ops.BUFFER, src=(), name="x"),
-#              lambda x: isinstance(x.arg, ParamArg) and x.addrspace in (AddrSpace.REG, AddrSpace.LOCAL))
-def sh_17(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsBUFFER{}), nsrc_is(fx, self, 0)), sp_vb(sh_17.body(fx, self)))
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 1)), sp_vb(is_param(sp_arg(fx, self))))
 
 def is_reg_or_local.go(+m: Maybe<&2, S.Addr>) -> Bool:
   Bool.or(addr_eq.go(m, S.AReg{}), addr_eq.go(m, S.ALocal{}))
 
 def is_reg_or_local(m: Maybe<&2, S.Addr>) -> Bool:
   is_reg_or_local.go(m)
+
+def sh_17.body(+fx: F.Folded, +self: U32) -> Bool:
+  Bool.and(is_param(sp_arg(fx, self)), is_reg_or_local(addr_of(sp_addr(fx, self))))
+
+# spec.py:93  (UPat(Ops.BUFFER, src=(p_size,), name="x"),
+#              lambda x: isinstance(x.arg, ParamArg) and x.addrspace in (AddrSpace.REG, AddrSpace.LOCAL))
+def sh_17(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsBUFFER{}), nsrc_is(fx, self, 1)), sp_vb(sh_17.body(fx, self)))
 
 def sh_18.pat(+fx: F.Folded, +self: U32) -> Bool:
   Bool.and(Bool.and(sp_op(fx, self, O.OpsBINARY{}), sp_dt_is(fx, self, S.uint8())), nsrc_is(fx, self, 0))
@@ -1714,11 +1715,11 @@ def te_3.guard(+fx: F.Folded, +self: U32) -> Bool:
 def te_3.body(fx: F.Folded, self: U32) -> Bool:
   dopt_none(Pa.dev(pa_of(fx, self)))
 
-# spec.py:158 (UPat(Ops.PARAM, src=(), name="buf"), lambda buf: buf.arg.device is None if buf.is_variable else None)
+# spec.py:160 (UPat(Ops.PARAM, src=(UPat(Ops.STACK, src=()),), name="buf"), lambda buf: buf.arg.device is None if buf.is_variable else None)
 # `is_variable` (ops.py:1018) is a PARAM with a ParamArg carrying a value range,
 # the ALU addrspace AND a scalar shape -- all four, and all four are here.
 def te_3(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 0)),
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 1)),
             sp_vd(sp_tri(te_3.guard(fx, self), te_3.body(fx, self))))
 
 # spec.py:161 (UPat(Ops.SPECIAL, src=(UPat(dtype=dtypes.weakint),), name="s"), lambda s: isinstance(s.arg, str))
@@ -2556,9 +2557,9 @@ def kg_2(+fx: F.Folded, +self: U32) -> O.Verdict:
 def kg_3(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsSTACK{}), sp_vd(sp_tri(all_const_or_param(sp_srcs(fx, self), fx, True{}), True{})))
 
-# spec.py:264 (UPat(Ops.PARAM, src=(), name="x"), lambda x: isinstance(x.arg, ParamArg))
+# spec.py:263 (UPat(Ops.PARAM, src=(p_size,), name="x"), lambda x: isinstance(x.arg, ParamArg))
 def kg_4(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 0)), sp_vb(Pa.ok(pa_of(fx, self))))
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsPARAM{}), nsrc_is(fx, self, 1)), sp_vb(Pa.ok(pa_of(fx, self))))
 
 def kg_5.holder.pin(is_global: Bool, small: Bool, buf: Bool) -> Bool:
   match is_global:
