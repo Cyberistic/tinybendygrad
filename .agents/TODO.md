@@ -2341,6 +2341,32 @@ render-derive     [##########] 10/10  **744 `py=` CELLS WERE TRANSCRIPTIONS, AND
                                        THIS CHANGE'S OWN ENTRIES, not by a raw before/after
                                        pair, which another unit's commits move too.
 
+cite-class        [#########] 4/5  **FOURTEEN UPSTREAM CITATIONS IN `uop/ops.bend` WERE WRONG BY TWO
+                                       TO TWENTY-SIX LINES, AND NO INSTRUMENT COULD SEE THEM.** The
+                                       `TODO(pN)` population is a SUBSET: `gates/pin-cite-gate.py` reads a
+                                       file's HEADER BLOCK and `gates/todo-cite-gate.py` reads the lines a
+                                       marker touches, and these sat in the BODY -- in the comment that
+                                       explains a rule and points at the upstream line it came from.
+                                       **THE CENSUS** (`.agents/slop/citeclass/census.py`, the instrument,
+                                       and the rows): 2624 citations tree-wide, **302** carry a marker on
+                                       their own line, **2322** are outside the tagged population, and
+                                       **603** of those are false at the pin. `remove_all_tags` IS NOT IN
+                                       upstream's `ops.py` AT ALL, so the port's rule is named as the port's
+                                       own and the SURVIVING construct is cited (`tinygrad/uop/spec.py:207`,
+                                       `UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks)`). **THE POPULATION
+                                       CHANGED** -- a citation carrying an explicit `symbol=` is now in
+                                       `gates/todo-cite-gate.py`'s population, marker or not, and NO CHECK IS
+                                       WEAKENED: BEFORE 754 rows / 0 false, AFTER 783 rows (754 marker + 29
+                                       symbol-field) / 0 false, and all 29 RESOLVES. **THE PLANT** breaks
+                                       two re-pointed citations by one line on a COPY (never `git show
+                                       HEAD:`) and the gate goes RED on both; a byte-identical control is
+                                       unchanged. `checks/port-compile-gate.py`'s `strip_comments()` says the
+                                       code hash is UNCHANGED, and the file's line count is 9806 -> 9806
+                                       (**156** citations in other files name a line of `ops.bend`, so the
+                                       line numbers are an interface). **NOT FIXED:** the 603 false citations
+                                       outside the tagged population -- they belong to the units that own
+                                       those files. See `.agents/slop/citeclass/REPORT.md`.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
