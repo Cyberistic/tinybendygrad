@@ -1,0 +1,35 @@
+PASS  train_files
+      got  = train=train/n01440764/n01440764_10026.JPEG|train/n01440764/n01440764_10027.JPEG|train/n01440764/subdir|train/n01443537/n01443537_10007.JPEG
+      want = train=train/n01440764/n01440764_10026.JPEG|train/n01440764/n01440764_10027.JPEG|train/n01440764/subdir|train/n01443537/n01443537_10007.JPEG
+      cpy  = train=train/n01440764/n01440764_10026.JPEG|train/n01440764/n01440764_10027.JPEG|train/n01440764/subdir|train/n01443537/n01443537_10007.JPEG
+PASS  val_files
+      got  = val=val/n01440764/n01440764_10026.JPEG|val/n01443537/n01443537_10007.JPEG
+      want = val=val/n01440764/n01440764_10026.JPEG|val/n01443537/n01443537_10007.JPEG
+      cpy  = val=val/n01440764/n01440764_10026.JPEG|val/n01443537/n01443537_10007.JPEG
+PASS  categories
+      got  = cat=goldfish=1|great white shark=2|tench=0
+      want = cat=goldfish=1|great white shark=2|tench=0
+      cpy  = cat=goldfish=1|great white shark=2|tench=0
+PASS  mock_categories
+      got  = cat=0=0|1=1|2=2
+      want = cat=0=0|1=1|2=2
+      cpy  = cat=0=0|1=1|2=2
+PASS  train_files_absent
+      got  = train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/mock/train is not a directory
+      want = train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/mock/train is not a directory
+      cpy  = (the oracle refuses with upstream's FileNotFoundError here)
+PASS  train_files_empty
+      got  = train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: No training files in /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/empty/train/*/*
+      want = train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: No training files in /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/empty/train/*/*
+      cpy  = (the oracle refuses with upstream's FileNotFoundError here)
+PASS  categories_absent
+      got  = cat=REFUSED: extra/datasets/imagenet.py:9 get_imagenet_categories: no /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/empty/imagenet_class_index.json
+      want = cat=REFUSED: extra/datasets/imagenet.py:9 get_imagenet_categories: no /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/empty/imagenet_class_index.json
+      cpy  = (the oracle refuses with upstream's FileNotFoundError here)
+PASS  root_absent
+      got  = train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/absent/train is not a directory
+      want = train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/imagenet-fixture/absent/train is not a directory
+      cpy  = (the oracle refuses with upstream's FileNotFoundError here)
+
+8 of 8 rows agree with the literal expectations
+ARTIFACT /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/imagenet2/rows.rows

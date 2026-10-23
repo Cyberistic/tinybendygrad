@@ -1,0 +1,26 @@
+# THE EXPECTATIONS, WRITTEN BEFORE THE PROBE WAS RUN AGAINST THEM.
+#
+# TAB-separated: name <TAB> want.
+#
+# The `want` column is a LITERAL, and it comes from a source that is not the
+# thing it checks:
+#   * the FILE LISTS and the CLASS MAP come from CPython's own answer for the
+#     same tree -- `glob.glob` and `json.load` (`oracle.py`), which is upstream's
+#     logic verbatim;
+#   * the REFUSALS come from the port's OWN message templates, read off the
+#     code (`split.files.pick`, `split.files.empty`, `cats.pick`), not from a
+#     run of the thing under test.
+#
+# A row whose `want` were copied from its `got` would check nothing, so the two
+# columns are written apart and the harness compares them.
+#
+# THE ROOT is in the rows because the port's refusal NAMES the path it could not
+# find, and the answer is the same tree at the same path every time.
+train_files	train=train/n01440764/n01440764_10026.JPEG|train/n01440764/n01440764_10027.JPEG|train/n01440764/subdir|train/n01443537/n01443537_10007.JPEG
+val_files	val=val/n01440764/n01440764_10026.JPEG|val/n01443537/n01443537_10007.JPEG
+categories	cat=goldfish=1|great white shark=2|tench=0
+mock_categories	cat=0=0|1=1|2=2
+train_files_absent	train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: <ROOT>/mock/train is not a directory
+train_files_empty	train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: No training files in <ROOT>/empty/train/*/*
+categories_absent	cat=REFUSED: extra/datasets/imagenet.py:9 get_imagenet_categories: no <ROOT>/empty/imagenet_class_index.json
+root_absent	train=REFUSED: extra/datasets/imagenet.py:28 get_train_files: <ROOT>/absent/train is not a directory
