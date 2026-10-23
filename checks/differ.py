@@ -132,6 +132,11 @@ CORPUS_LOCK = ROOT / "runs/graphcmp/.corpus.lock"
 #: a refusal can NAME the holder: `<pid> <epoch>`.  It is a NAME, not the lock -- the lock is
 #: the `flock`, and this file says who holds it.
 _LOCK_FD: int | None = None
+#: **HOW DEEP THE HOLD IS.**  The lock is RE-ENTRANT inside one process, because `repro` runs
+#: `cmd_run` in the process that holds it -- and a re-entrant lock that released on the inner
+#: `drop_lock()` would let a SECOND HOLDER in while the outer one still believed it held the
+#: directory.  MEASURED 2026-10-23: that exact bug ran a corpus into the tree's evidence.
+_LOCK_DEPTH = 0
 
 
 def relpath(path: Path) -> str:
@@ -183,9 +188,13 @@ def take_lock() -> str | None:
 
     `None` means this process holds the lock now.  A STRING IS A REFUSAL: it names the
     holder, and the caller must print it and exit WITHOUT touching `runs/graphcmp/D/` --
-    because a refusal that has already pruned the artifact directory is not a refusal."""
-    global _LOCK_FD
-    if _LOCK_FD is not None:
+    because a refusal that has already pruned the artifact directory is not a refusal.
+
+    **IT IS RE-ENTRANT INSIDE ONE PROCESS**, and that is what `repro` needs: `clean_run` runs
+    `cmd_run` in the process that holds the lock.  A second HOLDER is a second PROCESS."""
+    global _LOCK_FD, _LOCK_DEPTH
+    if _LOCK_DEPTH:
+        _LOCK_DEPTH += 1
         return None  # WE ALREADY HOLD IT
     CORPUS_LOCK.parent.mkdir(parents=True, exist_ok=True)
     for _ in range(3):
@@ -208,6 +217,7 @@ def take_lock() -> str | None:
         os.ftruncate(fd, 0)
         os.write(fd, f"{os.getpid()} {time.time()}\n".encode())
         _LOCK_FD = fd
+        _LOCK_DEPTH = 1
         return None
     return _refusal()
 
@@ -235,9 +245,17 @@ def _refusal() -> str:
 def drop_lock() -> None:
     """RELEASE THE LOCK.  Closing the descriptor releases the `flock` -- that is the kernel's
     promise, and it is why there is no stale lock and nothing to reclaim.  The NAME is
-    cleared on the way out, so the file never carries a holder that is gone."""
-    global _LOCK_FD
-    if _LOCK_FD is None:
+    cleared on the way out, so the file never carries a holder that is gone.
+
+    **IT RELEASES ONE HOLD, NOT THE LOCK.**  The hold is counted, so an inner `drop_lock()`
+    (the one `command()` does around a `repro`'s inner `cmd_run`) cannot release the outer
+    hold.  MEASURED 2026-10-23: without the count, the inner release let a SECOND process
+    into the tree's artefacts while the outer one still believed it held the directory."""
+    global _LOCK_FD, _LOCK_DEPTH
+    if _LOCK_DEPTH <= 0:
+        return
+    _LOCK_DEPTH -= 1
+    if _LOCK_DEPTH:
         return
     os.ftruncate(_LOCK_FD, 0)
     os.close(_LOCK_FD)

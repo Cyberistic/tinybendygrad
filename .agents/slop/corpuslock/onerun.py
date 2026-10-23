@@ -14,12 +14,28 @@ non-zero code instead of a traceback that kills the `repro`.
 
 The real `cmd_run` is exercised by `.agents/slop/corpuslock/plant.py`.
 """
+import argparse
 import importlib.util
 import io
+import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+
+#: A SECOND HOLDER IS A SECOND PROCESS, and this is it: the real `command()` path, in a
+#: child, with the real `cmd_run` -- which is never reached, because the lock is refused
+#: first.
+CHILD = """
+import argparse, importlib.util, sys
+from pathlib import Path
+ROOT = Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location("differ_child", ROOT / "checks/differ.py")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+sys.exit(m.command(argparse.Namespace(cmd="run")))
+"""
 
 
 def load():
@@ -67,6 +83,46 @@ def main() -> int:
         sys.stderr = keep
     checks.append(("an exception becomes a non-zero code, not a traceback", rc != 0))
     checks.append(("the exception is named", "the run exploded" in err.getvalue()))
+
+    # **THE LOCK IS TAKEN BY THE COMMAND, NOT BY `cmd_run`**, so the wiring is what has to be
+    # measured: the command path takes the lock, and a second HOLDER is refused while it is
+    # held.  `cmd_run` is stubbed so this costs nothing and writes nothing.
+    #
+    # **INSIDE ONE PROCESS THE LOCK IS RE-ENTRANT**, and that is not a hole: the `repro` path
+    # needs it, because `clean_run` runs `cmd_run` in the SAME process that holds the lock.  A
+    # SECOND HOLDER is a second PROCESS, and that is what the child below is.
+    import argparse
+    differ.cmd_run = lambda _a: 7
+    a = argparse.Namespace(cmd="run")
+    checks.append(("a command runs and returns its code", differ.command(a) == 7))
+    differ.take_lock()
+    checks.append(("the lock is RE-ENTRANT inside one process (the `repro` path needs that)",
+                   differ.command(a) == 7))
+    checks.append(("the inner release did NOT release the outer hold",
+                   differ.lock_holder()[0] == os.getpid()))
+    # **THE CHILD IS SANDBOXED.**  MEASURED 2026-10-23: a probe of this shape once let its
+    # child reach the tree's `runs/graphcmp/D` -- the lock had been released by an inner
+    # `drop_lock()`, so the child was not refused and it ran a corpus into 315 of the 319
+    # evidence files.  A probe that can reach the evidence must not exist, so the child
+    # writes to a scratch directory and the assertion is that it never got that far.
+    with tempfile.TemporaryDirectory() as td:
+        env = dict(os.environ, GRAPHCMP_ARTIFACTS=td)
+        child = subprocess.run([sys.executable, "-c", CHILD, str(ROOT)], env=env,
+                                capture_output=True, text=True, timeout=120)
+        checks.append(("a second PROCESS is REFUSED while the lock is held", child.returncode == 3))
+        checks.append(("the refusal names the holder", "another corpus run holds the lock" in
+                       (child.stdout + child.stderr)))
+        checks.append(("the refused process wrote nothing", not os.listdir(td)))
+    differ.drop_lock()
+    checks.append(("the lock is released, so a command runs again", differ.command(a) == 7))
+
+    # **THE COMPOSITION `repro` USES**: `clean_run` -> `ready` -> `one_run` -> `cmd_run` -> the
+    # health check.  `cmd_run` is stubbed, so the corpus is not run: what is measured is that
+    # the composition does not raise, does not write, and says "this is NOT a measurement"
+    # when the run left nothing healthy behind it.
+    differ.ready = lambda _w: True
+    checks.append(("`clean_run` on a run that left nothing healthy is NOT a measurement",
+                   differ.clean_run("probe", 1) is False))
 
     ok = True
     for why, good in checks:
