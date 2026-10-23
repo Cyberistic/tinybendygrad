@@ -2,7 +2,7 @@
 # arithmetic and the `marg` reader. Read the split before the code.
 #
 # THE SPLIT IN THIS FILE IS PYTHON'S. `mixin/movement.py` is a `MovementMixin` over `Tensor`
-# AND over `UOp` (ops.py:609), and the two halves are not the same:
+# AND over `UOp` (ops.py:233 symbol=UOp), and the two halves are not the same:
 #   (1) the `ssimplify` RULE TABLE that cleans up movement ops, ported at
 #       `tinybendygrad/uop/movement.bend` (24 gate rows). Its header says
 #       `tinygrad/uop/movement.py`, the path movement.py had BEFORE it moved to `mixin/`, so
@@ -17,13 +17,13 @@
 #
 # WHAT IS PORTED HERE, gated against CPython -- read it as a list of what exists, not a
 # summary of the file:
-#   1. `_pool` (movement.py:598-616) in full as SHAPE ARITHMETIC: `noop`, `i_`, `o_` (:604),
-#      `f_` (:606), the dilation window `k*(i*f+d)` (:608/:610), the permute order (:616).
-#   2. `marg` (ops.py:814-819) in all THREE arms, and `as_shape` (ops.py:812) on its
+#   1. `_pool` (movement.py:614-632 symbol=_pool) in full as SHAPE ARITHMETIC: `noop`, `i_`, `o_` (movement.py:618),
+#      `f_` (movement.py:622), the dilation window `k*(i*f+d)` (movement.py:624-626), the permute order (movement.py:632).
+#   2. `marg` (ops.py:792 symbol=marg) in all THREE arms, and `as_shape` (ops.py:786 symbol=as_shape) on its
 #      CONCRETE arm. This is the W1/W2 answer.
-#   3. `_shape`'s movement arms (ops.py:409-431) for RESHAPE, EXPAND, PERMUTE, PAD, SHRINK
-#      and FLIP -- the six `fold.bend:1620-1626` defers.
-#   4. ops.py:416's PERMUTE validity check, as `mxm_perm_lt` + `mxm_dup`.
+#   3. `_shape`'s movement arms (ops.py:395-414 symbol=_shape) for RESHAPE, EXPAND, PERMUTE, PAD, SHRINK
+#      and FLIP -- FIVE arms upstream: `Ops.FLIP` is NOT IN upstream at this pin.
+#   4. The `PERMUTE` validity check (ops.py:402-404 symbol=_shape), as `mxm_perm_lt` + `mxm_dup`.
 #   5. The WRITE half (Section I): `reshape` (:164), `permute` (:214), `pad` (:186),
 #      `shrink` (:192), `flip` (:233), plus `mxw_dims_of` (the shape of ANY node, the merge
 #      point that makes the identity test answerable) and `mxw_sig` (node count + root op +
@@ -34,23 +34,23 @@
 # `broadcast_axes`'s `resolve` dropped, and `mixin/creation.bend`'s `cr_expand` and
 # `nn/layers.bend`'s `nn_expand` are both it. The SYMBOLIC shape is still the WALL --
 # `broadcast_axes` (ops.py:89) needs `resolve` on a `Sint`, i.e. `uop/symbolic.bend`,
-# i.e. `mixin/op.bend`'s W3. `repeat` (:576) is blocked on `expand` and is the first
-# thing `_pool`'s chain needs. `stack` (:256) -- WALL
+# i.e. `mixin/op.bend`'s W3. `repeat` (movement.py:591 symbol=repeat) is blocked on `expand` and is the first
+# thing `_pool`'s chain needs. `stack` (movement.py:270 symbol=stack) -- WALL
 # in `tensor.bend`: `_mop`'s `case Ops.STACK` (ops.py:831) needs `dtype_from_uop` and
 # `ccast`, and `MopArg` has no STACK constructor; nothing here can route around it.
-# `split` (:423) / `chunk` (:449) -- PORTABLE, NOT DONE: each is a LIST of shrinks whose
-# boundaries are `sum(sizes[:i])`. `squeeze` (:287), `unsqueeze` (:308), `flatten` (:345),
-# `unflatten` (:361), `transpose` (:328) -- PORTABLE, NOT DONE: each is `mxw_reshape` or
+# `split` (movement.py:438 symbol=split) / `chunk` (movement.py:464 symbol=chunk) -- PORTABLE, NOT DONE: each is a LIST of shrinks whose
+# boundaries are `sum(sizes[:i])`. `squeeze` (movement.py:301 symbol=squeeze), `unsqueeze` (movement.py:323 symbol=unsqueeze), `flatten` (movement.py:360 symbol=flatten),
+# `unflatten` (movement.py:376 symbol=unflatten), `transpose` (movement.py:343 symbol=transpose) -- PORTABLE, NOT DONE: each is `mxw_reshape` or
 # `mxw_permute` plus a shape-list builder; `mixin/op.bend` already carries `mo_squeeze` and
-# `mo_resolve` at the Tensor level. `pad_to` (:279), `shrink_to` (:276), `view` (:283) --
-# PORTABLE, NOT DONE, one line each. `diag` (:501), `diagonal` (:512), `roll` (:536),
-# `unfold` (:618), `repeat_interleave` (:560), `meshgrid` (:474) -- PARTLY, NOT DONE:
+# `mo_resolve` at the Tensor level. `pad_to` (movement.py:293 symbol=pad_to), `shrink_to` (movement.py:290 symbol=shrink_to), `view` (movement.py:297 symbol=view) --
+# PORTABLE, NOT DONE, one line each. `diag` (movement.py:516 symbol=diag), `diagonal` (movement.py:527 symbol=diagonal), `roll` (movement.py:551 symbol=roll),
+# `unfold` (movement.py:634 symbol=unfold), `repeat_interleave` (movement.py:575 symbol=repeat_interleave), `meshgrid` (movement.py:489 symbol=meshgrid) -- PARTLY, NOT DONE:
 # `meshgrid` also needs `_broadcast_shape` (ops.py:80), which needs `dedup` over a `Sint`;
 # `roll`'s `delta := n - s%n` is a `Sint` expression whose canonical form is `ssimplify`'s
-# business. `ndim` (:27), `numel` (:38), `size` (:59) -- PORTABLE, NOT DONE as PUBLIC DEFS,
+# business. `ndim` (movement.py:27 symbol=ndim), `numel` (movement.py:38 symbol=numel), `size` (movement.py:59 symbol=size) -- PORTABLE, NOT DONE as PUBLIC DEFS,
 # but every internal caller here goes through `mxw_dims_of` instead. `contiguous`, `detach`,
 # `to`, `f`, `fs` -- NOT IN `movement.py` AT ALL: `contiguous`/`detach` are
-# `mixin/elementwise.py:59`/`:43`, `to` is `tensor.py:353`, and `f` is `UPat.f` (ops.py:1504),
+# `mixin/elementwise.py:59`/`mixin/elementwise.py:43`, `Tensor.to` is `tensor.py:353 symbol=to`, and `f` is `UPat.f` (ops.py:1504),
 # a pattern-builder method with no Tensor analogue. They are reported rather than ported,
 # because porting a method that is not in the file this unit owns would be a
 # change-detector test against a neighbour. `_normalize_indices` (movement.py:73) --
@@ -59,20 +59,20 @@
 # spelling (`mixin/op.bend`'s W1 from the other side). `_parse_view_index` (:86) -- WALL 1
 # again, and the body then threads a list of FIVE-FIELD DICTS (op.py:82); the four fields
 # that survive are `(boundary, stride, size, collapse_dim)`. `_apply_view_ops` (:115) --
-# WALL 1, built entirely on the two above. `rearrange` (:378) -- WALL 2, a STRING FORMULA
-# PARSER, the same wall as `mixin/op.bend`'s W2 (`einsum`). `max_shape` (:19) / `max_numel`
-# (:55) -- they need `to_max_shape`, a deferred import.
+# WALL 1, built entirely on the two above. `rearrange` (movement.py:393 symbol=rearrange) -- WALL 2, a STRING FORMULA
+# PARSER, the same wall as `mixin/op.bend`'s W2 (`einsum`). `max_shape` (movement.py:50 symbol=max_shape) /
+# `max_numel` (movement.py:55 symbol=max_numel) -- it needs `to_max_shape`, a deferred import.
 #
 # THE WALL THIS FILE EXISTS TO ANSWER. `examples/beautiful_mnist.bend` names two walls, W1
 # (conv2d, `mixin/op.py:1562`) and W2 (max_pool2d, `mixin/op.py:1333`), and both bottom out
-# in `_pool` (`movement.py:598`), both recorded there as "BUILDABLE, NOT CHECKABLE" because
+# in `_pool` (`movement.py:614 symbol=_pool`), both recorded there as "BUILDABLE, NOT CHECKABLE" because
 # `fold.bend:1620-1626` answers `None{}` for PERMUTE, EXPAND, PAD, SHRINK and FLIP and
 # gives the reason: `marg` -> `as_shape` -> `ssimplify`.
 #
 # **`ssimplify` IS THE WHOLE WALL, AND FOR A CONCRETE SHAPE IT IS THE IDENTITY.** Two
 # CPython facts (`.agents/slop/notes/mxm-oracle.py`): (1) `ssimplify` (ops.py:94) is
 # `uop.ssimplify() if isinstance(uop, UOp) else uop`, so an `int` comes back UNCHANGED; (2)
-# `UOp.simplify` (ops.py:513) opens with `if self.op is Ops.CONST: return self`, and a shape
+# `UOp.simplify` (ops.py:495 symbol=simplify) opens with `if self.op is Ops.CONST: return self`, and a shape
 # arg is built by `shape_to_shape_arg` (ops.py:106) as `UOp.const(x)`. So for an INTEGER
 # shape every element of `marg` is either a Python int or a CONST and the whole `as_shape`
 # walk is an UNWRAP of `STACK -> CONST`. The oracle confirms it directly: for pad, shrink,
@@ -85,7 +85,7 @@
 # rather than installed in the fold; that is the one structural cost of this answer.
 # **AND THE ARM THAT DOES NOT CLOSE IS NAMED, NOT HIDDEN:** a SYMBOLIC shape puts a
 # `UOp(PARAM)` in the marg and `ssimplify(PARAM)` is `graph_rewrite(PARAM, symbolic)`
-# (ops.py:515), so `mxm_marg` answers `None{}` and the row is `mxm_sym_NONE`. That is a WALL
+# (`graph_rewrite`, ops.py:501 symbol=simplify), so `mxm_marg` answers `None{}` and the row is `mxm_sym_NONE`. That is a WALL
 # in `uop/symbolic.py`, another unit.
 #
 # THE EXACT INTERFACE `examples/beautiful_mnist.bend` SHOULD CALL -- three defs, and nothing
