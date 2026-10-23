@@ -1,0 +1,33 @@
+control: BASELINE (the live tree, copied) rc=0 rows=31 MATCH=31 MISMATCH=0 UNCHECKABLE=0 DEAD-ROW=0 SHRUNK=0 EXTRA=0 DUPLICATE=0
+
+control: C1 class=class one (a DTYPE row)
+control: C1 row=where_xdt
+control: C1 mutation=the `want` was spelled `f32` (the port's `E.ew_dtnm` spelling, and CPython's own `DType.name`); it is now a wrong-but-non-empty `f16`
+control: C1 before: rc=0 MATCH=31 MISMATCH=0 UNCHECKABLE=0 DEAD-ROW=0 SHRUNK=0 EXTRA=0 DUPLICATE=0
+control: C1 after:  rc=1 MATCH=30 MISMATCH=1 UNCHECKABLE=0 DEAD-ROW=0 SHRUNK=0 EXTRA=0 DUPLICATE=0
+control: C1 rows_that_went_red=[('MISMATCH', 'where_xdt')]
+control: C1 rows_that_stopped_being_red=NONE
+control: C1 rows_still_green=30 of 31
+control: C1 MISMATCH where_xdt got='f32' want='f16'
+
+control: C2 class=class two (a GRAPH row)
+control: C2 row=fold_xw_sig
+control: C2 mutation=the `want` was the whole signature with `srcops=Ops.RESHAPE|Ops.PERMUTE`; it is now a wrong-but-non-empty signature whose `srcops` list is truncated -- a graph with a PERMUTE source and a signature that does not say so
+control: C2 before: rc=0 MATCH=31 MISMATCH=0 UNCHECKABLE=0 DEAD-ROW=0 SHRUNK=0 EXTRA=0 DUPLICATE=0
+control: C2 after:  rc=1 MATCH=30 MISMATCH=1 UNCHECKABLE=0 DEAD-ROW=0 SHRUNK=0 EXTRA=0 DUPLICATE=0
+control: C2 rows_that_went_red=[('MISMATCH', 'fold_xw_sig')]
+control: C2 rows_that_stopped_being_red=NONE
+control: C2 rows_still_green=30 of 31
+control: C2 MISMATCH fold_xw_sig got='n=18 op=Ops.MUL nsrc=2 srcops=Ops.RESHAPE|Ops.PERMUTE' want='n=18 op=Ops.MUL nsrc=2 srcops=Ops.RESHAPE'
+
+control: C3 class=the control on the control
+control: C3 row=fold_xw_sig
+control: C3 mutation=the `want` is EMPTY again -- this is the VACUITY class, and it must be a DIFFERENT class from C2's WRONGNESS
+control: C3 before: rc=0 MATCH=31 MISMATCH=0 UNCHECKABLE=0 DEAD-ROW=0 SHRUNK=0 EXTRA=0 DUPLICATE=0
+control: C3 after:  rc=1 MATCH=30 MISMATCH=0 UNCHECKABLE=1 DEAD-ROW=0 SHRUNK=0 EXTRA=0 DUPLICATE=0
+control: C3 rows_that_went_red=[('UNCHECKABLE', 'fold_xw_sig')]
+control: C3 rows_that_stopped_being_red=NONE
+control: C3 rows_still_green=30 of 31
+control: C3 UNCHECKABLE fold_xw_sig want is empty, so the row cannot fail (got='n=18 op=Ops.MUL nsrc=2 srcops=Ops.RESHAPE|Ops.PERMUTE')
+
+control: all three controls OK: one row went red each time, the class fired was the one the control claims, and every other row stayed green

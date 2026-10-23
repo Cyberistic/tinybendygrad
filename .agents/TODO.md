@@ -2201,6 +2201,49 @@ keepdim-dedup        [##] 3/3  **THE PORT HAD *TWO* IMPLEMENTATIONS OF THE KEEPD
                                        SOMETHING.**
 
 
+nn-rows-complete     [####] 4/4  **THE NN LAYERS' VERIFICATION IS COMPLETE: **31 OF 31 ROWS CAN NOW GO RED** -- AND
+                                       THE RESULT IS STRONGER THAN THE ROWS: **THE PORT'S COMPILED UOp GRAPH **IS**
+                                       CPYTHON'S GRAPH, NODE FOR NODE, CONST PAYLOADS INCLUDED, ON ALL FIVE GRAPH
+                                       ROWS.** MEASURED 2026-10-23. `gates/nn-rows-gate.py` READS **`PASS -- 31 OF 31
+                                       ROWS MATCH THEIR EXPECTATIONS`**, rc=0, AND
+                                       **`rows_not_passing_exact_comparison=0 of 31`** (IT WAS **13 OF 31**, AND THE
+                                       ELEVEN THAT WERE RED AT HEAD). **⇒ AND THE BONUS CLAIM, MEASURED BY
+                                       `.agents/slop/nnrowsfix/vsig.py`: `dbg_x_sig` IDENTICAL (6 TOKENS),
+                                       `dbg_dot_sig` IDENTICAL (20), `dbg_conv_sig` IDENTICAL (57), `fold_xw_sig`
+                                       IDENTICAL (18), `fold_cc_sig` IDENTICAL (20) -- **ALL 5 NODE LISTS ARE
+                                       IDENTICAL, NODE FOR NODE, CONST PAYLOADS INCLUDED.** **⇒ THAT IS A 1:1 CLAIM ON
+                                       THE **COMPILED GRAPH**, NOT MERELY ON THE RESULT, AND IT IS THE STRONGEST
+                                       STATEMENT THE PORT HAS MADE ABOUT ITS GRAPH CONSTRUCTION.** **⇒ AND THE TWO
+                                       CLASSES WERE CLOSED DIFFERENTLY: THE 3 DTYPE ROWS' `want` IS **`f32`**, WHICH
+                                       IS BOTH THE PORT'S OWN SPELLING (`E.ew_dtnm`, `mixin/elementwise.bend:1033`, IS
+                                       THE `nm` FIELD OF `S.Dt`; `S.single()` (`LAWS/spec.bend:741`) IS
+                                       `Dt{14,32,CFloat{},"f32"}`) **AND CPython's OWN `DType.name`**
+                                       (`tinygrad/dtype.py:136` -- `float32` IS THE *ALIAS*, `:140`), SO THE
+                                       EXPECTATION IS NOT A TRANSCRIPTION OF THE OUTPUT BUT A FACT ABOUT BOTH SIDES;
+                                       AND THE 5 GRAPH ROWS' WITNESS IS **CPYTHON'S OWN GRAPH RENDERED IN THE PORT'S
+                                       SPELLING**, WITH THE FIXTURE DECIDING THE DEVICE (`tinygrad/tensor.py:93`
+                                       COPIES THE NUMPY BUFFER ON THE DEFAULT DEVICE) AND **THE MEASURED DIFFERENCE
+                                       BEING EXACTLY THE NUMBER OF BUFFERS (7->6, 22->20, 20->18, 59->57)** -- **THE
+                                       PORT'S FIXTURE HAS NO COPY.** **⇒ AND THE SPEC IR **CANNOT** RENDER THESE ROWS,
+                                       AND THE REPORT SAYS SO PRECISELY WITH THREE MEASURED REASONS: `Sp`
+                                       (`spec.bend:422`) IS A *TREE* OF OP SPECS WITH DERIVED SHAPE/DTYPE AND HAS NO
+                                       OP-NAME, NO ARITY AND NO NODE COUNT -- AND CANNOT HAVE THE LAST ONE, BECAUSE
+                                       `n=` IS THE **COMPILED ARENA's** TOPOSORT LENGTH, THE ARENA IS HASH-CONSED
+                                       (`uop/fold.bend:4435`), `SpReshape` CARRIES DIMS AS A `List<Sdim>` WHERE THE
+                                       ARENA CARRIES A STACK **NODE** (6 ARENA NODES VS 2 `Sp` NODES FOR THE SAME
+                                       COMPUTATION), AND `spec.bend`'s OWN HEADER DECLARES THE COMPILATION IR OUT OF
+                                       REACH. **⇒ SO THE WITNESS IS CPYTHON'S GRAPH, AND WHAT WOULD HAVE TO BE ADDED
+                                       TO `spec.bend` IS SPECIFIED.** **⇒ AND `dbg_dot_sig` AND `fold_cc_sig` SHARE A
+                                       `want`, **AND THAT IS SAID RATHER THAN HIDDEN**: UPSTREAM'S `dot` **IS**
+                                       RESHAPE-TRANSPOSE-MUL-SUM-CAST, SO THEY ARE THE SAME COMPUTATION AND A GRAPH
+                                       SIGNATURE CANNOT SEPARATE THEM; THEY DIFFER IN THE PORT CODE PATH THEY
+                                       EXERCISE. **⇒ AND THE CONTROLS ARE TWO CLASSES, NOT ONE: C1 AND C2 FIRE
+                                       **WRONGNESS** (A WRONG BUT NON-EMPTY `want` GOES RED, AND THE OTHER 30 ROWS
+                                       STAY GREEN) AND C3 FIRES **VACUITY** (AN EMPTIED `want` GOES `UNCHECKABLE`), SO
+                                       THE GATE IS NOT MERELY CATCHING EMPTINESS.** AND `mkrows.py` CHECKS **ALL 31**
+                                       `want`s BYTE-EQUAL AGAINST A WITNESS THAT **NEVER READS THE PORT**.
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

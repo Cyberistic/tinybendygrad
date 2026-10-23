@@ -1,0 +1,8 @@
+
+vsig: THE WHOLE NODE LIST, the port's against the witness's:
+vsig: dbg_x_sig: IDENTICAL (6 tokens)
+vsig: dbg_dot_sig: IDENTICAL (20 tokens)
+vsig: dbg_conv_sig: IDENTICAL (57 tokens)
+vsig: fold_xw_sig: IDENTICAL (18 tokens)
+vsig: fold_cc_sig: IDENTICAL (20 tokens)
+vsig: all 5 node lists are IDENTICAL, node for node, CONST payloads included

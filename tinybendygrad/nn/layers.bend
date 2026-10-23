@@ -931,11 +931,92 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
       ws => nn_conv2d.go(x, w, xs, ws, groups, stride, dilation, pad_v, padding, bias)))
 
 # ===========================================================================
-# THE ROWS. Every expected value below was READ OFF CPython in this repo's
-# `.venv` on 2026-10-19, from `tinygrad`'s own `Tensor`, and the command is in
-# `.agents/slop/export/nncore/REPORT.md`. A row that prints its expectation next
-# to its answer cannot pass by having both be wrong, which is the whole point of
-# printing the pair and not the answer alone.
+# THE ROWS. Every expected value below is CPython's own answer, read off
+# `tinygrad` in this repo's `.venv`, and the ONE witness for all 31 of them is
+# `.agents/slop/nnrowsfix/nn-oracle.py` (re-runnable; its output is
+# `.agents/slop/nnrowsfix/nn-oracle.rows`). A row that prints its expectation
+# next to its answer cannot pass by having both be wrong, which is the whole
+# point of printing the pair and not the answer alone.
+#
+# THE SPELLING IS THE PORT'S AND THE VALUE IS CPython's, and the two are
+# separate questions. The port prints in three spellings and the expectations
+# are written in those three:
+#
+#   SHAPE  `MX.mx_show` (mixin/movement.bend:878) is
+#          `String.join(mx_shows.go(xs, Nil{}), ",")` -- the dims joined by a
+#          comma, with NO parentheses. CPython's `Tensor.shape` is a TUPLE and
+#          prints `(1, 4, 8, 8)`, so the shape rows' `want` is the DIMS in the
+#          port's punctuation.
+#   DTYPE  `E.ew_dtnm` (mixin/elementwise.bend:1033) is the `nm` field of
+#          `S.Dt`, and `S.single()` (LAWS/spec.bend:741) is
+#          `Dt{14, 32, CFloat{}, "f32"}`. CPython's own `DType.name` for
+#          float32 is "f32" (tinygrad/dtype.py:136, `DType.new(14, 32, "f32",
+#          'f')`); `float32` is the ALIAS (dtype.py:140), not the name. So the
+#          port's spelling and CPython's NAME are the same string.
+#   GRAPH  `MX.mxw_sig` (mixin/movement.bend:1380) is
+#          `n=<count> op=Ops.<root> nsrc=<n> srcops=Ops.<a>|Ops.<b>`, and the
+#          witness renders CPython's graph in that spelling. CPython's own
+#          oracle format (`gates/mixin-op-oracle.py`) is
+#          `n OP/nsrc OP/nsrc ...` -- a DIFFERENT format, so it cannot be a
+#          `want`; the witness prints both, and the port's own
+#          `M.mo_valsig.of` (mixin/op.bend:1255) prints the same value-carrying
+#          list the witness prints, CONST payloads included.
+#
+# THE GRAPH WITNESS IS CPython's OWN GRAPH, AND THE FIXTURE IS WHY. The port's
+# fixture `nn_row.t` is a BUFFER and a RESHAPE, with NO COPY: `mxw_buf`
+# (mixin/movement.bend:1231) builds `Ops.BUFFER` directly. Upstream's numpy
+# path builds the same node -- `Tensor.__init__` calls `_fromnp`
+# (tinygrad/tensor.py:37-40), which is `UOp.new_buffer("NPY", x.size, ...)` --
+# but ONLY while the requested device IS "NPY": `tinygrad/tensor.py:93` is
+# `data if data.device is None or data.device == _device else
+# data.copy_to_device(_device)`, so on the DEFAULT device the numpy buffer is
+# COPIED and CPython's graph grows an `Ops.COPY` the port has no node for.
+# MEASURED, both arms: the default device answers `n=7 ... srcops=Ops.COPY|
+# Ops.STACK` and the "NPY" device answers `n=6 ... srcops=Ops.BUFFER|Ops.STACK`
+# -- and the port's own `dbg_x_sig` row says `Ops.BUFFER`, so the "NPY" arm is
+# the one that matches the fixture. A witness built on the default device would
+# go red on a FIXTURE MISMATCH and call it a port defect.
+#
+# WHY NOT THE SPEC IR. `LAWS/spec.bend` is the SPECIFICATION IR: `Sp`
+# (spec.bend:422) is one constructor per op in tinyspec.tex, a TREE, with the
+# derived properties `Sp.shape` (:546) and `Sp.dtype` (:750). It has NO op-name
+# function, NO arity function and NO node count, and it CANNOT have the last
+# one: `mxw_sig`'s `n=` is `mxw_count` (mixin/movement.bend:1359) -- the
+# COMPILED ARENA's toposort length -- and `Sp` is not that arena. Three
+# measured reasons. (1) `Sp` is a tree and the arena is HASH-CONSED: the
+# port's own fixture says "The two CONSTs HASH-CONS to one node"
+# (uop/fold.bend:4435), so equal spec subtrees collapse to one arena node and a
+# tree count over-counts. (2) `Sp` is the PRE-compilation form: `SpReshape`
+# carries its target dims as a VALUE (`dst: List<&2, Sdim>`, spec.bend:436),
+# while the arena's RESHAPE carries a STACK node (mixin/movement.bend:1234) --
+# so the spec tree has no node where the arena has one. CONCRETE: the port's
+# `dbg_x_sig` arena graph is 6 nodes (CONST(size) BUFFER CONST(2) CONST(3)
+# STACK RESHAPE) and the spec-level description of the same computation is
+# `SpReshape{SpBuffer{6,...}, SpInvalid{}, [SN{2n},SN{3n}]}` -- two `Sp` nodes
+# and no node at all for the two CONSTs or the STACK. (3) spec.bend's own
+# header says it (spec.bend:9-14): "The compilation IR (tinygrad/uop/ops.py) is
+# a cyclic hash-consed graph in an arena ... That IR cannot be a pure tree, so
+# the laws cannot reach it." WHAT WOULD HAVE TO BE ADDED: `Sp.opname` and
+# `Sp.srcs` (one arm per constructor) would give `op=`, `nsrc=` and `srcops=`,
+# and then `n=` would still have to come from somewhere that models the
+# hash-consed arena -- which is the compilation IR, out of reach by that
+# file's own design. A spec-IR `want` could therefore only be a DIFFERENT
+# signature (no `n=`), and `mxw_sig` always prints `n=`, so the row could not
+# use it. THE WITNESS IS CPython's graph, which is a DIFFERENT IMPLEMENTATION
+# of the same computation and is independent of the port's fold.
+#
+# TWO OF THE FIVE GRAPH ROWS ARE THE SAME STRING, AND THAT IS NOT A DEFECT.
+# `dbg_dot_sig` and `fold_cc_sig` both answer
+# `n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE`, on BOTH sides, because they
+# ARE the same computation: upstream's `dot` IS a reshape-transpose-multiply-
+# sum-cast (`tinygrad/mixin/op.py:367-392`: `x.reshape(...)`, `w.reshape(...)
+# .transpose(...)`, `(x*w).sum(-1)`, `.cast(...)`), and the port's `fold_cc` is
+# that same chain spelled out of the port's own `reshape`/`permute`/`mul`/
+# `sum`/`cast`. So the two rows differ in the CODE PATH they exercise (the
+# port's `nn_dot` against the port's `nn_sum`+`tn_mul`+`mo_cast_t`) and not in
+# the graph they produce, and a GRAPH SIGNATURE cannot tell them apart. The
+# other three are distinct: `fold_xw_sig` is `n=18 ... Ops.MUL`, `dbg_x_sig` is
+# `n=6 ... Ops.BUFFER|Ops.STACK` and `dbg_conv_sig` is `n=57`.
 #
 # THE FIXTURE IS `mixin/movement.bend`'s (`mxw_base`, movement.bend:1724): a
 # BUFFER plus a RESHAPE. A BUFFER ALONE IS UNUSABLE HERE -- `fold.shape` does not
@@ -970,27 +1051,29 @@ def nn_row.line(nm: String, got: String, want: String) -> IO(Unit):
   IO.print(String.concat([nm, " got=", got, " want=", want]))
 
 # `Tensor.relu` -- elementwise.py:674. `(1, 4, 8, 8)` in, `(1, 4, 8, 8)` out.
+# The `want` is CPython's dims in the PORT's shape spelling (`mx_show`, no
+# parentheses): CPython's `Tensor.relu().shape` is the tuple `(1, 4, 8, 8)`.
 def nn_row_relu() -> IO(Unit):
-  nn_row.line("relu", nn_row.shp(Some{nn_relu(nn_row.t([1, 4, 8, 8], 0, 256))}), "(1,4,8,8)")
+  nn_row.line("relu", nn_row.shp(Some{nn_relu(nn_row.t([1, 4, 8, 8], 0, 256))}), "1,4,8,8")
 
 # `Tensor.dot` -- op.py:367. `x(2,3) . w(3,4)` -> `(2, 4)`.
 def nn_row_dot() -> IO(Unit):
-  nn_row.line("dot_2d", nn_row.shp(nn_dot(nn_row.t([2, 3], 0, 6), nn_row.t([3, 4], 1, 12))), "(2,4)")
+  nn_row.line("dot_2d", nn_row.shp(nn_dot(nn_row.t([2, 3], 0, 6), nn_row.t([3, 4], 1, 12))), "2,4")
 
 # THE 1-D WEIGHT ARM of `dot` (`axis_w = 0`, op.py:383): `x(2,3) . w(3)` -> `(2,)`.
 def nn_row_dot1() -> IO(Unit):
-  nn_row.line("dot_1d", nn_row.shp(nn_dot(nn_row.t([2, 3], 0, 6), nn_row.t([3], 1, 3))), "(2,)")
+  nn_row.line("dot_1d", nn_row.shp(nn_dot(nn_row.t([2, 3], 0, 6), nn_row.t([3], 1, 3))), "2")
 
 # `nn.Linear.__call__` -- nn/__init__.py:180. `x(2,576)`, `weight(10,576)`, `bias(10)`.
 def nn_row_linear() -> IO(Unit):
   nn_row.line("linear",
     nn_row.shp(nn_linear(nn_row.t([2, 576], 0, 1152), nn_row.t([10, 576], 1, 5760), Some{nn_row.t([10], 2, 10)})),
-    "(2,10)")
+    "2,10")
 
 # THE `bias is None` ARM of op.py:1269 -- CPython's `nn.Linear(576, 10, bias=False)`.
 def nn_row_linear_nb() -> IO(Unit):
   nn_row.line("linear_nobias",
-    nn_row.shp(nn_linear(nn_row.t([2, 576], 0, 1152), nn_row.t([10, 576], 1, 5760), None{})), "(2,10)")
+    nn_row.shp(nn_linear(nn_row.t([2, 576], 0, 1152), nn_row.t([10, 576], 1, 5760), None{})), "2,10")
 
 # `Tensor.conv2d` -- op.py:1562, `x(1,3,32,32)`, `weight(8,3,3,3)`.
 #   padding=1 (the 'same' a ResNet block uses) -> (1, 8, 32, 32)
@@ -1060,9 +1143,9 @@ def nn_row_where() -> IO(Unit):
   do IO<Unit>:
     nn_row.line("where_xshape", nn_row_shp2(nn_shape(x)), "2,3")
     nn_row.line("where_wshape", nn_row_shp2(nn_shape(w)), "3,4")
-    nn_row.line("where_xdt", nn_row_dt(T.tn_dtype(x)), "float32")
-    nn_row.line("where_wdt", nn_row_dt(T.tn_dtype(w)), "float32")
-    nn_row.line("where_dts", nn_row_dt(nn_dot.dts(T.tn_dtype(x), T.tn_dtype(w))), "float32")
+    nn_row.line("where_xdt", nn_row_dt(T.tn_dtype(x)), "f32")
+    nn_row.line("where_wdt", nn_row_dt(T.tn_dtype(w)), "f32")
+    nn_row.line("where_dts", nn_row_dt(nn_dot.dts(T.tn_dtype(x), T.tn_dtype(w))), "f32")
 
 # THE GRAPH, not just the shape: `mxw_sig` (mixin/movement.bend:1377) prints
 # node count, root op and the SOURCE OP SEQUENCE in one string, so a row cannot
@@ -1080,9 +1163,9 @@ def nn_row_dbg() -> IO(Unit):
   +c = nn_conv2d(nn_row.t([1, 3, 32, 32], 0, 3072), nn_row.t([8, 3, 3, 3], 1, 216),
     1, 1, 1, 1, None{}, None{})
   do IO<Unit>:
-    nn_row.line("dbg_dot_sig", nn_row.sig(nn_dot(x, w)), "")
-    nn_row.line("dbg_conv_sig", nn_row.sig(c), "")
-    nn_row.line("dbg_x_sig", MX.mxw_sig(T.Tensor.ar(x), T.Tensor.u(x)), "")
+    nn_row.line("dbg_dot_sig", nn_row.sig(nn_dot(x, w)), "n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE")
+    nn_row.line("dbg_conv_sig", nn_row.sig(c), "n=57 op=Ops.RESHAPE nsrc=2 srcops=Ops.RESHAPE|Ops.STACK")
+    nn_row.line("dbg_x_sig", MX.mxw_sig(T.Tensor.ar(x), T.Tensor.u(x)), "n=6 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.STACK")
 
 # THE REDUCE CHAIN, LAYER BY LAYER, against CPython's own shapes. `fold.shape`
 # is what `nn_shape` reads, and these five rows are the depths at which the
@@ -1111,8 +1194,8 @@ def nn_row_fold() -> IO(Unit):
     # answers the axis [1] target for every axis.
     nn_row.line("fold_smk", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(smk), Nil{})), "2,4,1")
     nn_row.line("fold_cc", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(cc), Nil{})), "2,4")
-    nn_row.line("fold_cc_sig", MX.mxw_sig(T.Tensor.ar(cc), T.Tensor.u(cc)), "")
-    nn_row.line("fold_xw_sig", MX.mxw_sig(T.Tensor.ar(xw), T.Tensor.u(xw)), "")
+    nn_row.line("fold_cc_sig", MX.mxw_sig(T.Tensor.ar(cc), T.Tensor.u(cc)), "n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE")
+    nn_row.line("fold_xw_sig", MX.mxw_sig(T.Tensor.ar(xw), T.Tensor.u(xw)), "n=18 op=Ops.MUL nsrc=2 srcops=Ops.RESHAPE|Ops.PERMUTE")
 
 def main() -> IO(Unit):
   do IO<Unit>:

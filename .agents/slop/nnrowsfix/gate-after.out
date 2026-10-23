@@ -1,0 +1,9 @@
+nn-rows-gate: measured_at=2026-10-23T18:42:07Z head=95ab45bbacd232eea6c7618d010f79be6e38cbf9
+nn-rows-gate: port=live copy of tinybendygrad (HEAD 95ab45bbacd2)
+nn-rows-gate: rows_declared=31 (28 literal name(s), 1 computed name(s) x 3 invocation(s))
+nn-rows-gate: computed-name pattern=conv_p\d+_s\d+ declared_by=nn_row_conv expected=3
+nn-rows-gate: rows_printed=31
+nn-rows-gate: MATCH=31/31 MISMATCH=0/31 UNCHECKABLE=0/31 DEAD-ROW=0/31 SHRUNK=0/31 EXTRA=0/31 DUPLICATE=0/31
+nn-rows-gate: mismatching rows that differ only in SPELLING=0 of 0 (the rule: punctuation dropped, case folded, f32==float32)
+nn-rows-gate: rows_not_passing_exact_comparison=0 of 31
+nn-rows-gate: PASS -- 31 of 31 rows match their expectations, and the declared population is 31

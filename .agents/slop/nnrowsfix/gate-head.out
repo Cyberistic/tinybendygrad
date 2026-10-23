@@ -1,0 +1,22 @@
+nn-rows-gate: measured_at=2026-10-23T18:45:04Z head=95ab45bbacd232eea6c7618d010f79be6e38cbf9
+nn-rows-gate: port=tinybendygrad at 95ab45bbacd232eea6c7618d010f79be6e38cbf9
+nn-rows-gate: rows_declared=31 (28 literal name(s), 1 computed name(s) x 3 invocation(s))
+nn-rows-gate: computed-name pattern=conv_p\d+_s\d+ declared_by=nn_row_conv expected=3
+nn-rows-gate: rows_printed=31
+nn-rows-gate: MATCH=18/31 MISMATCH=8/31 UNCHECKABLE=5/31 DEAD-ROW=0/31 SHRUNK=0/31 EXTRA=0/31 DUPLICATE=0/31
+nn-rows-gate: mismatching rows that differ only in SPELLING=8 of 8 (the rule: punctuation dropped, case folded, f32==float32)
+nn-rows-gate: rows_not_passing_exact_comparison=13 of 31
+nn-rows-gate: MISMATCH where_xdt got='f32' want='float32' [SPELLING]
+nn-rows-gate: MISMATCH where_wdt got='f32' want='float32' [SPELLING]
+nn-rows-gate: MISMATCH where_dts got='f32' want='float32' [SPELLING]
+nn-rows-gate: MISMATCH relu got='1,4,8,8' want='(1,4,8,8)' [SPELLING]
+nn-rows-gate: MISMATCH dot_2d got='2,4' want='(2,4)' [SPELLING]
+nn-rows-gate: MISMATCH dot_1d got='2' want='(2,)' [SPELLING]
+nn-rows-gate: MISMATCH linear got='2,10' want='(2,10)' [SPELLING]
+nn-rows-gate: MISMATCH linear_nobias got='2,10' want='(2,10)' [SPELLING]
+nn-rows-gate: UNCHECKABLE fold_cc_sig want is empty, so the row cannot fail (got='n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE')
+nn-rows-gate: UNCHECKABLE fold_xw_sig want is empty, so the row cannot fail (got='n=18 op=Ops.MUL nsrc=2 srcops=Ops.RESHAPE|Ops.PERMUTE')
+nn-rows-gate: UNCHECKABLE dbg_dot_sig want is empty, so the row cannot fail (got='n=20 op=Ops.REDUCE nsrc=1 srcops=Ops.PERMUTE')
+nn-rows-gate: UNCHECKABLE dbg_conv_sig want is empty, so the row cannot fail (got='n=57 op=Ops.RESHAPE nsrc=2 srcops=Ops.RESHAPE|Ops.STACK')
+nn-rows-gate: UNCHECKABLE dbg_x_sig want is empty, so the row cannot fail (got='n=6 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.STACK')
+nn-rows-gate: FAIL -- 13 of 31 rows do not pass under exact comparison (18 match, 8 mismatch of which 8 differ only in spelling, 5 uncheckable, 0 dead)

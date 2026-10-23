@@ -1,0 +1,4 @@
+mkrows: gate_rc=0 rows_printed=31 rows_declared=31 duplicates=none
+mkrows: witness_rows=31 witness_names_not_in_the_port=[] port_names_not_in_the_witness=[]
+mkrows: wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nnrowsfix/rows.rows with 31 rows
+mkrows: every one of the 31 `want`s is byte-equal to the witness's value for the same name
