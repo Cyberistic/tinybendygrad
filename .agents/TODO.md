@@ -23173,3 +23173,34 @@ specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIV
                        **SRCS**) **WHERE **THE **CURRENT **UPSTREAM **CARRIES **EXACTLY **ONE**, **SO **A **ZERO-SRC **BUFFER **IS
                        **CLAIMED **BY **THE **PORT** (`False`) **AND **NOT **BY **UPSTREAM** (`None`)**, **AND **THE **GATE **REPORTS
                        **THOSE **FIVE **CELLS **BY **NAME **INSTEAD **OF **HIDING **THEM.**
+
+  spec-rules-at-pin [##] 1/3  **THE **PORT's **`uop/spec.bend` **MIRRORS **THE **PRE-RE-VENDOR **UPSTREAM **IN **FOUR
+                         **RULES, **AND **TWO **INDEPENDENT **INSTRUMENTS **NAME **THE **SAME **FOUR.**
+                         **⇒ MEASURED 2026-10-23: THE **RE-VENDOR **`86c4f1343` **("RE-VENDOR `tinygrad/`
+                         **TO **UPSTREAM **`002630241`")** **CHANGED **UPSTREAM's **SPEC **RULES, **AND **THE
+                         **PORT's **RULES **DID **NOT **MOVE **WITH **THEM.**
+                         **⇒ THE **ROOT **CAUSE **IS **NAMED**: **UPSTREAM's **`spec.py:92/93/160/263`
+                         **CHANGED **`src=()` **(ZERO **SRCS**) **-> **`src=(p_size,)` / **`src=(UPat(Ops.STACK,
+                         **src=()),)`** (EXACTLY **ONE **SRC), **AND **THE **PORT's **`sh_16`**, **`sh_17`**,
+                         **`te_3`** **AND **`kg_4`** **STILL **SAY **`nsrc_is(fx, self, 0)`.**
+                         **⇒ THE **SECOND **DIVERGENCE **IS **IN **THE **BODY**: **UPSTREAM's **`spec.py:93`
+                         **SAYS **`x.addrspace in (AddrSpace.REG, AddrSpace.LOCAL)` **AND **THE **PORT's
+                         **`sh_17.body` **TESTS **ONLY **`addr_eq(..., S.ALocal{})` -- **⇒ **THE **PORT
+                         **REJECTS **A **REG-ADDRSPACE **BUFFER **THAT **UPSTREAM **ACCEPTS** -- **AND
+                         **THE **PORT's **`is_reg_or_local` **HELPER **IS **DEFINED **THREE **LINES
+                         **BELOW **AND **UNUSED **BY **THAT **RULE.**
+                         **⇒ TWO **INDEPENDENT **INSTRUMENTS **AGREE**: **THE **`gates/specfold*` **LANE**
+                         (**WHOSE **REVERSE-APPLY **MOVES **FIVE **CELLS **THE **PORT **GETS **WRONG**)**
+                         **AND **THE **UPSTREAM **RULE-LIST **DIFF** (`86c4f1343^` **vs **the **pin**,
+                         **31 **CHANGED **RULE **LINES**). **⇒ AND **THE **REMAINING **UPSTREAM **CHANGES**
+                         **ARE **ALREADY **IN **THE **PORT**: **`pr_0` **ALREADY **HANDLES
+                         **`GroupOp.All-GroupOp.Defines`** (it **reasons **about **`Defines = {PARAM,
+                         **BUFFER, **ALLOC}`** **EXPLICITLY**), **AND **THE **ALU **RULE's **`all_mdw`/
+                         **`sp_mdw` **ALREADY **IMPLEMENTS **THE **NEW **`weak_dtype` **SEMANTICS** -- **ONLY
+                         **ITS **QUOTED **COMMENT **IS **STALE.**
+                         **⇒ THE **REST **OF **THE **CLASS: **THE **PORT **HAS **84 **`pm_when` **RULES
+                         **AND **UPSTREAM **HAS **84 **`UPat` **RULES -- **THE **COUNTS **MATCH.** **⇒ AND
+                         **THE **OPEN **STEP: **MAKE **THE **FOUR **EDITS**, **EXTEND **THE **LANE's
+                         **POPULATION **TO **COVER **THE **FIVE **CELLS **IT **CURRENTLY **GRADES **OUT
+                         **BY **NAME** (**AND **THE **POPULATION **MUST **BE **DERIVED, **NOT **HANDED**),
+                         **AND **RE-MEASURE **THE **LANE **BOTH **WAYS.**
