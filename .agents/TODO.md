@@ -23112,3 +23112,28 @@ spec-pattern-vs-body [##] 2/3  **A **RULE **WHOSE **MATCH **TEST **IS **IN **THE
                        **⇒ AND **THE **DISTINCTION **IS **THE **AUDIT**: **A **TEST **ON **THE **MATCHED
                        **NODE **IS **LEGITIMATELY **A **BODY **TEST**; **A **TEST **OF **WHETHER **IT
                        **MATCHES **IS **A **PATTERN **TEST** -- **⇒ SO **COUNT **BOTH.**
+
+specfold-lane        [###] 3/3  **A **LANE **THAT **EXHIBITS `d4160980e`'s **DIVERGENCE **EXISTS, **AND **IT **GOES **RED **WHEN **THE
+                       **COMMIT **IS **REVERSED.** MEASURED 2026-10-23 AT `db98a9bfd`. `gates/specfold.bend` (the **PORT**,
+                       minting eight shapes from `uop/ops.bend`'s constructors) AND `gates/specfold-oracle.py` (CPython, minting
+                       the **SAME **eight **from **upstream's **own `UOp` **AND **asking **upstream's **six **PatternMatcher`s **THE
+                       WAY **UPSTREAM's **OWN `type_verify` **DOES**) AND `gates/specfold-gate.py` (the **GATE**). **⇒ THE
+                       **POPULATION **IS **TWELVE **CELLS **AND **THE **CRITERION **IS **MECHANICAL**: **A **CELL **IS **DECIDED
+                       **BY **THE **COMMIT **WHEN **THE **COMMIT's **CHANGED **RULE **FOR **THAT **SHAPE's **OP **LIVES **IN
+                       **THAT **TABLE **AND **IT **IS **THE **ONLY **RULE **OF **THE **TABLE **THAT **CAN **CLAIM **THE **SHAPE**,
+                       **SO **BOTH **FOLDS **ANSWER `9`** -- **AND **THE **GATE **CHECKS **THE **SECOND **HALF **AT **RUN **TIME
+                       **FROM **THE **LANES' **OWN **ROWS**, **SO **A **STALE **POPULATION **IS **A **FAIL.** **⇒ AND **THE
+                       **FALSIFICATION **WORKS**: **REVERSE-APPLIED, **THE **GATE **PRINTS **`FAIL: 24 problem(s)`** **AND **EXITS
+                       **1**, **AND **ALL **TWELVE **DECLARED **CELLS **MOVE**; **RESTORED, **IT **PRINTS **`PASS`** **AND
+                       **`tinybendygrad/uop/spec.bend` **IS **BYTE-IDENTICAL **TO **HEAD** (`0925493c1d72c0f417a2b0ffc42be1f298c3c7fa`).**
+                       **⇒ AND **THE **PLANT **IS **A **TEXT **EDIT **ON **A **COPY **OF **THE **DRIVER** -- **THE **RESHAPE's
+                       **SHAPE **GOES **FROM **f32 **TO **int32** -- **AND **THE **WHOLE **GATE **GOES **RED**, **WHILE **A
+                       **BYTE-IDENTICAL **COPY **LEAVES **IT **GREEN**; **IT **NEVER **READS `git show HEAD:`.** **⇒ AND **THREE
+                       **MORE **CELLS **MOVE **UNDER **THE **REVERSE** (`reshape_f32_sf`, `range2_sf`, `backedge_int_sf`), **AND **THEY
+                       **ARE **OUT **OF **THE **POPULATION **BECAUSE **AT **THE **COMMITTED **TREE **THEIR **VERDICT **BELONGS **TO
+                       **`spec_program`'s **FIRST **RULE**, **NOT **TO **THE **COMMIT's.** **⇒ AND **THE **FINDING **THAT
+                       **MATTERS**: **THE **COMMIT **FIXED **EIGHT **OF **THE **TWELVE **RULES **OF **ITS **CLASS** -- **THE **PORT's
+                       **`sh_16`**, **`sh_17`**, **`te_3`** **AND **`kg_4`** **STILL **CARRY **THE **OLD **UPSTREAM's **`src=()`** (ZERO
+                       **SRCS**) **WHERE **THE **CURRENT **UPSTREAM **CARRIES **EXACTLY **ONE**, **SO **A **ZERO-SRC **BUFFER **IS
+                       **CLAIMED **BY **THE **PORT** (`False`) **AND **NOT **BY **UPSTREAM** (`None`)**, **AND **THE **GATE **REPORTS
+                       **THOSE **FIVE **CELLS **BY **NAME **INSTEAD **OF **HIDING **THEM.**
