@@ -129,7 +129,7 @@
 # in the mutation table at the foot of this file; the other three are in the section headers.
 #
 # THE LATTICE IS HOISTED, with a notice. `promo_dtype` needs `least_upper_dtype`
-# (dtype.py:193), which `./../dtype.bend` already has in a form this file cannot
+# (tinygrad/dtype.py:193), which `./../dtype.bend` already has in a form this file cannot
 # reach: that file's fp16/bf16/fp8/i64 conversions are C effects, so importing it
 # makes the checker print "14 defs rely on unsafe or foreign code" and exit 1 for
 # ANY importer. The lattice is twenty integers and a lowest-set-bit, all of it
