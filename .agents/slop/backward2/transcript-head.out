@@ -1,0 +1,31 @@
+=== DATE: Sun Oct 25 15:15:26 UTC 2026
+=== HEAD: 652ff34f39bac5f23aa57b4c3c023682ebd3ef98
+=== bend: bend 2.0.38
+
+############ check (the gate)
+=== arm=check  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+=== THE GATE: the port's new rows against rows.rows (CPython's values)
+    rows compared: 14 of 14   mismatched: 0   VERDICT: PASS
+
+############ head (the pre-existing rows)
+    HEAD's gradient.bend installed: 1a1d034d3c5561ea0566181e88823b1b76ff95bed9d11cfa8f07460d13d22b0b
+=== arm=head  check-only: ALL PROOFS CHECK  run rc=0  rows=88
+=== HEAD vs LIVE: rows head=88 live=102
+--- rows HEAD has that LIVE does NOT (must be EMPTY):
+--- rows LIVE has that HEAD does NOT (must be EXACTLY the new rows):
+    bw_distinct=11
+    bw_nodes=11
+    bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+    gs_grads_n=6
+    gs_hole_n=1
+    gs_inpath=0 0 0 1 1 1 1
+    gs_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 EXPAND/2 BUFFER/1
+    gs_n_inpath=4
+    gs_set_n=3
+    gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 2 root=CAST/1
+    gs_skip_n=0
+    gs_walk_n=4
+    gs_walk=MUL/2 EXPAND/2 ADD/2 ADD/2
+    gs_zero_n=1
+--- rows that CHANGED VALUE (must be EMPTY):
+    rows whose VALUE changed: 0

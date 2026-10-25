@@ -1,0 +1,41 @@
+############ plant_gswap
+    plant_gswap: the MUL rule's operands UNCROSSED (gradient.py:80): applied and VERIFIED
+    rows that MOVED: 3
+
+############ plant_nozero
+    plant_nozero: the ZERO SUBSTITUTE replaced by the reserved index 0: applied and VERIFIED
+    rows that MOVED: 4
+
+############ plant_setorder
+    plant_setorder: the gradient SET built in REVERSE order: applied and VERIFIED
+    rows that MOVED: 1
+
+############ plant_nohole
+    plant_nohole: the EXPAND's HOLE filled in (gradient.py:86): applied and VERIFIED
+    rows that MOVED: 3
+
+############ plant_noguard
+    plant_noguard: the in_target_path GUARD dropped (gradient.py:114): applied and VERIFIED
+    rows that MOVED: 6
+
+############ plant_skipseed
+    plant_skipseed: the SEED dropped, so the root SKIPS (gradient.py:120): applied and VERIFIED
+    rows that MOVED: 19
+
+############ plant_droptarget
+    plant_droptarget: the THIRD TARGET dropped, so the set is one shorter: applied and VERIFIED
+    rows that MOVED: 6
+
+############ plant_flags
+    plant_flags: the in_target_path FLAG always true (gradient.py:112): applied and VERIFIED
+    rows that MOVED: 4
+
+############ disarm_comment
+    disarm_comment: comment text: applied and VERIFIED
+    rows that MOVED: 0
+
+############ disarm_name
+    disarm_name: parameter v (signature): applied and VERIFIED
+    disarm_name: parameter v (body): applied and VERIFIED
+    rows that MOVED: 0
+

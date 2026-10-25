@@ -1,0 +1,18 @@
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=138
+THE BASE: 138 rows
+THE ROWS THAT MUST BE COVERED: 36
+    noargsort        moved  1 row(s): pm_rule_arg
+    argsortbyindex   moved 14 row(s): pm_argsort_0_2_1 pm_argsort_1_0 pm_argsort_1_0_2 pm_argsort_1_2_0 pm_argsort_2_0_1 pm_argsort_2_1_0 pm_bw_distinct pm_bw_nodes pm_bw_sig pm_rule_arg pm_rule_is_ctx pm_rule_op pm_rule_tok pm_set_sig
+    flagfalse        moved  8 row(s): pm1_bw_distinct pm1_bw_nodes pm1_bw_sig pm1_rule_arg pm1_rule_is_ctx pm1_rule_op pm1_rule_tok pm1_set_sig
+    neverpermute     moved  8 row(s): pm_bw_distinct pm_bw_nodes pm_bw_sig pm_rule_arg pm_rule_is_ctx pm_rule_op pm_rule_tok pm_set_sig
+    zerograds        moved 11 row(s): pm_bw_distinct pm_bw_nodes pm_bw_sig pm_grads_n pm_keys pm_rule_arg pm_rule_len pm_rule_op pm_rule_tok pm_set_sig pm_zero_n
+    twograds         moved  1 row(s): pm1_rule_len
+    nosrc            moved  6 row(s): pm_bw_distinct pm_bw_nodes pm_bw_sig pm_rule_op pm_rule_tok pm_set_sig
+    emptytargets     moved  9 row(s): pm_bw_distinct pm_bw_nodes pm_bw_sig pm_grads_n pm_keys pm_set_n pm_set_sig pm_walk pm_walk_n
+    targetsub        moved  7 row(s): pm_bw_distinct pm_bw_nodes pm_bw_sig pm_set_sig pm_walk pm_walk_n pm_zero_n
+    collide          moved  1 row(s): pm_bw_sig
+    emptyP1targets   moved  9 row(s): pm1_bw_distinct pm1_bw_nodes pm1_bw_sig pm1_grads_n pm1_keys pm1_set_n pm1_set_sig pm1_walk pm1_walk_n
+    targetsubP1      moved  7 row(s): pm1_bw_distinct pm1_bw_nodes pm1_bw_sig pm1_set_sig pm1_walk pm1_walk_n pm1_zero_n
+THE COVERAGE: 36 of 36 new row(s) are moved by some plant
+    every new row is moved by at least one plant
+PLANTS: 12 mutations, 0 VACUOUS/FAILED, 0 UNCOVERED row(s)

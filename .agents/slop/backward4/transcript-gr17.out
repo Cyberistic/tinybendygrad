@@ -1,0 +1,15 @@
+=== gr_17: RESHAPE, on a STATIC shape
+    upstream's own reshape: op=RESHAPE nsrc=2 arg=None shape=(2, 3)
+    grads: RESHAPE/2->RESHAPE/2 BUFFER/1->RESHAPE/2
+    resolve calls: 1   of which SYMBOLIC (a UOp argument): 0   ['bool']
+    the gradient of RESHAPE/2 is RESHAPE/2 arg=None shape=(2, 3)
+    the gradient of BUFFER/1 is RESHAPE/2 arg=None shape=(6,)
+=== gr_14: REDUCE, on a STATIC shape
+    the REDUCE node: op=REDUCE nsrc=1 arg=(Ops.ADD, 1) shape=()
+    grads: REDUCE/1->BUFFER/1 BUFFER/1->BUFFER/1
+    resolve calls: 0   of which SYMBOLIC (a UOp argument): 0   []
+    the gradient of REDUCE/1 is BUFFER/1 arg=ParamArg(1, dtypes.f32) shape=(6,)
+    the gradient of BUFFER/1 is BUFFER/1 arg=ParamArg(1, dtypes.f32) shape=(6,)
+=== the RESHAPE ARITY, on upstream's OWN reshape (2 srcs) and on a 1-src one
+    upstream's own reshape: len(lgrads)=2  len(t0.src)=2  -> ARITY MATCHES
+    a ONE-src RESHAPE:      len(lgrads)=2  len(t0.src)=1  -> MISMATCH

@@ -1,0 +1,17 @@
+FINAL TRANSCRIPT -- backward2
+date: Sun Oct 25 15:17:58 UTC 2026
+HEAD: 652ff34f39bac5f23aa57b4c3c023682ebd3ef98
+bend: bend 2.0.38
+
+---- 1. check
+=== arm=check  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+=== THE GATE: the port's new rows against rows.rows (CPython's values)
+    rows compared: 14 of 14   mismatched: 0   VERDICT: PASS
+
+---- 2. head (the 88 pre-existing rows)
+=== HEAD vs LIVE: rows head=88 live=102
+--- rows HEAD has that LIVE does NOT (must be EMPTY):
+    rows whose VALUE changed: 0
+
+---- 3. controls
+CONTROLS: 14 rows x 2 perturbations + the clean run -> failures: 0

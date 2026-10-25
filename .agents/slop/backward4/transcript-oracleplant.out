@@ -1,0 +1,8 @@
+    oracleplant: the fixture's PERMUTE order (1,2,0) became (2,1,0)
+transcribed 36 oracle rows -> 36 port rows in /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//bw4/perm-planted.rows
+=== the EXPECTATIONS moved (the oracle moved, the port did NOT):
+    < pm_rule_arg=2,0,1
+    > pm_rule_arg=2,1,0
+=== the PORT's rows did NOT move (this arm never touched it):
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=138
+    the port's output is byte-identical to the base -- NOTHING MOVED

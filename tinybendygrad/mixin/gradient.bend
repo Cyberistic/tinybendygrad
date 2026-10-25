@@ -667,12 +667,84 @@ def gr_20(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 21. PERMUTE -- gradient.py:89. `(ctx.permute(argsort(ret.marg)),)`
 #
-# The inverse permutation, computed by `argsort` (helpers.py). `ret.marg` for a PERMUTE
-# is `self.arg` (ops.py:818) -- an `ATuple{ys: List<U32>}` in ops.bend, so the margin
-# IS a list of U32 and needs no `as_shape`. `helpers.bend`'s `argsort_u32` is exactly
-# that function, so it is imported and the whole rule is: read the ATuple, argsort it,
-# build the PERMUTE. This is the one MOVEMENT rule with no `Sint` arithmetic in it.
-def gr_21(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+# THE RULE, IN THREE PIECES, AND EVERY PIECE IS UPSTREAM'S OWN:
+#
+#   1. `ret.marg` for a PERMUTE is `self.arg` (ops.py:792) -- an `ATuple{ys}` here.
+#   2. `argsort` (helpers.py:28) SORTS BY VALUE AND RETURNS INDICES, and
+#      `helpers.bend`'s `argsort_u32` IS that function: it pairs each value with its
+#      index (`Ix{i, v}`), sorts by `(value, index)` -- Python's `sorted` is stable, so
+#      the INDEX breaks the ties -- and projects the INDEX back out.  **⇒ IT IS NOT
+#      "A SORT OF ARENA INDICES": THE SORT KEY IS THE VALUE AND THE PROJECTION IS
+#      THE INDEX.**  MEASURED against upstream's own `argsort` on six inputs, in the
+#      `pm_argsort_*` rows.
+#   3. `ctx.permute(order)` (movement.py:214-231) has THREE observable behaviours:
+#      a. `_resolve_dim` (movement.py:81-84) is PURE INTEGER ARITHMETIC over
+#         `self.ndim` -- `total = self.ndim + extra`, a range test, and
+#         `dim + total if dim < 0 else dim` -- and it NEVER calls `resolve`.  **⇒
+#         THERE IS NO `resolve` WALL AT `gr_21`.**
+#      b. THE IDENTITY EARLY-RETURN: `return self._mop(Ops.PERMUTE, arg=order_arg)
+#         if order_arg != tuple(range(self.ndim)) else self` (movement.py:231).  For
+#         the IDENTITY order the answer is `ctx` ITSELF and NO PERMUTE NODE IS BUILT.
+#      c. THE VALIDITY RAISE: `if sorted(order_arg) != list(range(self.ndim)):
+#         raise RuntimeError(...)` (movement.py:230).
+#
+# (a) AND (c) BOTH READ `ctx.ndim`, AND THE PORT HAS NO `ndim`: `ops.bend` has no
+# `as_shape` and no `shape`, so a node's DIMENSION COUNT is not available here.  **⇒
+# (c) IS NOT REPRODUCED.  THAT IS A NAMED DIVERGENCE AND IT IS BOUNDED BY A
+# MEASUREMENT, NOT BY AN ARGUMENT:** upstream's `compute_gradient` guarantees
+# `ctx.ndim == len(ret.marg)`, because the gradient flowing into a node is reshaped
+# to THAT NODE'S SHAPE by the shaped-edge reduce at gradient.py:131-133 -- so the two
+# agree BY CONSTRUCTION and (c) is UNREACHABLE from `compute_gradient`.  The
+# `pm_raise_*` rows MEASURE both of upstream's raises on the fixtures that DO reach
+# them, and the report names the one case where the port and upstream differ.
+#
+# (b) IS REPRODUCED, AND IT IS THE ONE THAT MATTERS: the identity order is reachable
+# in a hand-built graph, and upstream's answer for it is `ctx` itself -- a rule that
+# builds a PERMUTE node for it would produce a DIFFERENT GRAPH.
+#
+# WHAT THE PORT USES INSTEAD OF `ctx.ndim`: `len(ret.marg)`, which is the length of
+# the ATuple.  It is `ret.ndim` by upstream's own construction (`permute()` validates
+# `sorted(order_arg) == list(range(self.ndim))`, so the arg's length IS the ndim), and
+# `ctx.ndim == ret.ndim` by the shaped-edge reduce.  **⇒ THE TWO NUMBERS ARE EQUAL
+# ON EVERY REACHABLE FIXTURE, AND THE PORT'S IS THE ONE IT CAN READ.**
+# THE MARGIN, READ OFF THE NODE'S ARG.  The `match` scrutinises a PARAMETER -- Bend
+# refuses to match a computed value (notes, rule 2) -- so the read and the match are
+# two defs.
+def gr_21_marg.of(a: O.Arg) -> List<&2, U32>:
+  match a:
+    case O.ATuple{ys}: ys
+    case _: Nil{}
+
+def gr_21_marg(ar: O.Arena, self: U32) -> List<&2, U32>:
+  gr_21_marg.of(O.Arena.arg(ar, self))
+
+# IS THE ORDER THE IDENTITY?  `order_arg == tuple(range(self.ndim))` -- i.e. the i-th
+# element is i.  The list is walked ONCE, with the position as the counter.
+def gr_21_id.go(xs: List<&2, U32>, +i: U32, acc: Bool) -> Bool:
+  match xs:
+    case Nil{}: acc
+    case h <> t: gr_21_id.go(t, U32.add(i, 1), Bool.and(acc, U32.is_eq(h, i)))
+
+def gr_21_is_id(xs: List<&2, U32>) -> Bool: gr_21_id.go(xs, 0, True{})
+
+# THE PERMUTE NODE: `ctx._mop(Ops.PERMUTE, arg=order_arg)` -- ops.py:799-815.  For a
+# PERMUTE `src_args = []`, so `len(usrcs) == 0` and the node is `UOp(op, src=(self,),
+# arg=arg)`: ONE src and the ORDER AS ITS ARG.  Here the arg is the `ATuple` the port
+# spells a `tuple[int, ...]` with (ops.bend:1171).
+def gr_21.build(+ar: O.Arena, +ctx: U32, inv: List<&2, U32>) -> GRes:
+  +n = gnew(ar, O.OpsPERMUTE{}, [ctx], O.ATuple{inv})
+  fired([O.Found.i(n)], O.Found.ar(n))
+
+def gr_21.pick(is_id: Bool, +ar: O.Arena, +ctx: U32, inv: List<&2, U32>) -> GRes:
+  match is_id:
+    case True{}: fired([ctx], ar)
+    case _: gr_21.build(ar, ctx, inv)
+
+def gr_21.go(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
+  +inv = H.argsort_u32(gr_21_marg(ar, self))
+  gr_21.pick(gr_21_is_id(inv), ar, ctx, inv)
+
+def gr_21(ar: O.Arena, ctx: U32, self: U32) -> GRes: gr_21.go(ar, ctx, self)
 
 # --- 23. STACK -- gradient.py:91. `tuple(ctx[i] for i in range(len(ret.src)))`
 #
@@ -2777,6 +2849,290 @@ def bw_distinct.of(+run: GRun) -> U32:
 
 def bw_distinct() -> U32: bw_distinct.of(gs_run(gs()))
 
+# ===========================================================================
+# THE PERMUTE LANE -- `gr_21`'s own fixture, and the FIRST fixture in this file whose
+# BACKWARD GRAPH IS ONE RULE DEEP.
+#
+# EVERY CLAUSE OF THE FIXTURE IS A MEASUREMENT, and the measurements are in
+# `.agents/slop/backward4/oracle-pm.py` (upstream's own `compute_gradient`, run) and
+# `.agents/slop/backward4/probe.py` (upstream's own node shapes).
+#
+#   * A MULTI-DIMENSIONAL NODE WITH NO RESHAPE.  upstream's `_shape` for a BUFFER reads
+#     `self.src[0].as_shape` (ops.py:359) and ASSERTS `len(self.src[0].as_shape) <= 1`,
+#     so a BUFFER IS AT MOST 1-D.  A node with MORE dimensions has to come from
+#     somewhere else, and a STACK is it: upstream's `_shape` for a STACK is
+#     `(len(self.src),) + self.src[0].shape` (ops.py:352-354), so a STACK of two 1-D
+#     nodes is 2-D and a STACK of a 2-D node and a 1-D node is 3-D.  MEASURED:
+#     `STACK(x, y)` has `shape=(2, 2)` and `ndim=2`.
+#   * THE TARGET IS THE 3-D NODE ITSELF.  upstream's `_deepwalk` sets
+#     `in_target_path[u] = any(in_target_path[x] or x in targets for x in u.src)`
+#     (gradient.py:112), so a node is in the WALK only if one of its SRCS reaches a
+#     target -- A TARGET IS NEVER ITSELF IN THE WALK.  So the target's own rule is
+#     never needed, and the target here is a STACK, whose rule (`ctx[i]`,
+#     gradient.py:91) this port cannot do (`gr_22` is `GSkip`).  **⇒ MAKING THE 3-D
+#     NODE THE TARGET IS WHAT KEEPS THE FIXTURE INSIDE `gr_21` ALONE.**
+#   * THE ROOT GRAD IS A STACK TOO, for the same reason plus one more: `ctx` must
+#     have `ndim == 3` or upstream's `_resolve_dim` (movement.py:81-84) rejects a
+#     3-element order, and a BUFFER is at most 1-D.
+#   * THE SHAPES AGREE -- both `(2, 2, 2)` -- so the SHAPED-EDGE REDUCE at gradient.py:131
+#     never fires, and this file's OMISSION of that line (named in its own header) is
+#     not observable here.
+#
+# ⇒ THE BACKWARD GRAPH IS EXACTLY: `PERMUTE(ctx, ATuple{[2, 0, 1]})`, and the `bw` graph
+# over it is TWELVE nodes.  CPython's own answer, from `oracle-pm.py`, is the same twelve.
+# ===========================================================================
+
+# A CONST AT AN INT VALUE -- the shape src's value.  A BARE CONST, because upstream's
+# `UOp(Ops.CONST, arg=2)` is ONE node with `dtype=dtypes.weakint` (MEASURED in
+# `probe.py`) and the port's `O.UOp.const` is the bare one too.  **⇒ THE IDENT IS
+# `@i2` ON BOTH SIDES, AND THE `bw` SIGNATURE'S `CONST/0@i2` TOKEN IS THE SAME TOKEN.**
+def pm_c(+ar: O.Arena, n: U32) -> O.Found: O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})
+
+# THE 1-D LEAF WITH A STATIC SHAPE: `BUFFER(STACK(CONST n))`.  The STACK is the shape
+# src and it is NOT EMPTY, so the leaf's `_shape` is `(n,)` and not `()`.
+def pm_leaf(+ar: O.Arena, slot: U32, size: U32) -> O.Found:
+  +c = pm_c(ar, size)
+  +sh = gnew(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(c)], O.ANone{})
+  gnew(O.Found.ar(sh), O.OpsBUFFER{}, [O.Found.i(sh)], O.AParam{fx_pa(slot)})
+
+type Pm is Data:
+  Pm{ar: O.Arena, a: U32, per: U32, ctx: U32}
+
+# THE 3-D FIXTURE.  `a` is the TARGET, `per` is the ROOT, `ctx` is the ROOT GRAD.
+#
+# *** WHY IT IS 3-D AND NOT 2-D, AND IT IS NOT A TASTE: A 2-ELEMENT PERMUTATION IS AN
+# INVOLUTION, SO ITS ARGSORT IS ITSELF. ***  `argsort((1,0))` is `(1,0)` (MEASURED, §1.4),
+# so on a 2-D fixture the rule's ORDER row would read the same whether the rule ARGSORTED
+# or merely copied the order -- **A ROW THAT CANNOT GO RED IS A LABEL.**  With the order
+# `(1, 2, 0)` the argsort is `(2, 0, 1)`, so the row distinguishes them.
+#
+# AND WHY EVERY DIMENSION IS 2: the shape of `per` is the shape of `a` PERMUTED, and the
+# shape of `ctx` must EQUAL it or the shaped-edge reduce at gradient.py:131 fires and
+# upstream raises (it needs `broadcast_axes`, which is symbolic).  With every dimension
+# equal, the permuted shape IS the shape.
+def pm() -> Pm:
+  +l0 = pm_leaf(O.Arena.empty(), 0, 2)
+  +l1 = pm_leaf(O.Found.ar(l0), 1, 2)
+  +l2 = pm_leaf(O.Found.ar(l1), 2, 2)
+  +s01 = gnew(O.Found.ar(l2), O.OpsSTACK{}, [O.Found.i(l0), O.Found.i(l1)], O.ANone{})
+  +a = gnew(O.Found.ar(s01), O.OpsSTACK{}, [O.Found.i(s01), O.Found.i(l2)], O.ANone{})
+  +per = gnew(O.Found.ar(a), O.OpsPERMUTE{}, [O.Found.i(a)], O.ATuple{[1, 2, 0]})
+  +m0 = pm_leaf(O.Found.ar(per), 3, 2)
+  +m1 = pm_leaf(O.Found.ar(m0), 4, 2)
+  +m2 = pm_leaf(O.Found.ar(m1), 5, 2)
+  +n01 = gnew(O.Found.ar(m2), O.OpsSTACK{}, [O.Found.i(m0), O.Found.i(m1)], O.ANone{})
+  +ctx = gnew(O.Found.ar(n01), O.OpsSTACK{}, [O.Found.i(n01), O.Found.i(m2)], O.ANone{})
+  Pm{O.Found.ar(ctx), O.Found.i(a), O.Found.i(per), O.Found.i(ctx)}
+
+# THE TARGETS, IN ORDER -- `gs_targets`' twin.  THE LIST LITERAL NEEDS ITS TYPE
+# ANNOTATED (`+ts = [a]` cannot infer it), and upstream's order is the CALLER's order
+# (mixin/op.py:471), so it is ONE def and ONE caller.
+def pm_targets.of(a: U32) -> List<&2, U32>: [a]
+
+def pm_run.of(+fx: Pm) -> GRun:
+  match fx:
+    case Pm{ar, a, per, ctx}:
+      +ts = pm_targets.of(a)
+      GRun{ar, compute_gradient(per, ctx, ts, ar), ts, per}
+
+def pm_run() -> GRun: pm_run.of(pm())
+
+# THE 1-D IDENTITY FIXTURE -- the CONTROL for the one above, and the arm where
+# upstream's `permute()` returns `ctx` ITSELF (movement.py:231).  `perm`'s order is
+# `(0,)`, so `argsort((0,))` is `(0,)`, which IS `tuple(range(1))`, so the answer is
+# `ctx` and NO PERMUTE NODE IS BUILT.  **⇒ THE BACKWARD GRAPH IS `g`'s OWN NODE SET
+# AND NOTHING ELSE -- THREE NODES.**
+type Pm1 is Data:
+  Pm1{ar: O.Arena, leaf: U32, per: U32, g: U32}
+
+def pm1() -> Pm1:
+  +lf = pm_leaf(O.Arena.empty(), 0, 6)
+  +per = gnew(O.Found.ar(lf), O.OpsPERMUTE{}, [O.Found.i(lf)], O.ATuple{[0]})
+  +g = pm_leaf(O.Found.ar(per), 1, 6)
+  Pm1{O.Found.ar(g), O.Found.i(lf), O.Found.i(per), O.Found.i(g)}
+
+def pm1_targets.of(leaf: U32) -> List<&2, U32>: [leaf]
+
+def pm1_run.of(+fx: Pm1) -> GRun:
+  match fx:
+    case Pm1{ar, leaf, per, g}:
+      +ts = pm1_targets.of(leaf)
+      GRun{ar, compute_gradient(per, g, ts, ar), ts, per}
+
+def pm1_run() -> GRun: pm1_run.of(pm1())
+
+# THE RULE'S ANSWER, AS A RECORD.  `rw` is the WHOLE TABLE, so this asks upstream's
+# question ("what does `pm_gradient.rewrite` answer for this node?") and not the rule's
+# question ("what does `gr_21` answer?").  The `ctx` is carried so the IDENTITY
+# EARLY-RETURN can be READ as "the answer IS the ctx" -- and the answer and the ctx
+# are both indices into ONE arena, which is what makes that comparison MEANINGFUL.
+type PmRule is Data:
+  PmRule{ar: O.Arena, ans: U32, n: U32, ctx: U32}
+
+def pm_rule.of(+fx: Pm) -> PmRule:
+  match fx:
+    case Pm{ar, a, per, ctx}:
+      +r = rw(ar, ctx, per)
+      PmRule{gs_ar(r), gs_get(r, 0n), gs_len(r), ctx}
+
+def pm_rule() -> PmRule: pm_rule.of(pm())
+
+type PmRule1 is Data:
+  PmRule1{ar: O.Arena, ans: U32, n: U32, ctx: U32}
+
+def pm1_rule.of(+fx: Pm1) -> PmRule1:
+  match fx:
+    case Pm1{ar, leaf, per, g}:
+      +r = rw(ar, g, per)
+      PmRule1{gs_ar(r), gs_get(r, 0n), gs_len(r), g}
+
+def pm1_rule() -> PmRule1: pm1_rule.of(pm1())
+
+# THE ORDER, AS TEXT.  **THIS ROW IS WHAT PINS THE ARGSORT.**  The `bw` signature's
+# token is `OP/nsrc` plus the IDENT, and a PERMUTE's IDENT IS EMPTY -- so the
+# signature CANNOT SEE WHICH PERMUTATION WAS BUILT.  A rule that answered
+# `PERMUTE(ctx, (0, 1))` where upstream answers `PERMUTE(ctx, (1, 0))` would produce a
+# BYTE-IDENTICAL `bw_sig`.  The ORDER is therefore a row of its own.
+def pm_join.go(xs: List<&2, U32>, first: Bool, acc: String) -> String:
+  match xs:
+    case Nil{}: Bool.pick(String, first, "none", acc)
+    case h <> t: pm_join.go(t, False{}, String.concat([acc, Bool.pick(String, first, "", ","), U32.show(h)]))
+
+# THE ORDER, OR THE WORD `none`.  **NEVER AN EMPTY STRING**: an empty expectation is
+# the gate's VACUITY class -- `UNCHECKABLE`, which is RED -- and "there is no order
+# here" is a REAL, MEASURED value (the answer IS the ctx, and the ctx's arg is a
+# PARAM, not a tuple).  A row whose value is legitimately empty needs a SENTINEL, or
+# the gate cannot tell "the answer is nothing" from "the instrument measured nothing".
+def pm_arg.of(a: O.Arg) -> String:
+  match a:
+    case O.ATuple{ys}: pm_join.go(ys, True{}, "")
+    case _: "none"
+
+def pm_arg_read(+ar: O.Arena, +n: U32) -> String: pm_arg.of(O.Arena.arg(ar, n))
+
+# THE ARGSORT, MEASURED.  **THE BRIEF'S SUSPICION WAS WRONG AND THIS IS THE PROOF:**
+# `argsort_u32` SORTS BY THE VALUE and projects the INDEX back out -- it is
+# upstream's `argsort` (helpers.py:28) and not "a sort of arena indices".  The rows
+# are upstream's own `argsort` on the same six inputs.
+#
+# AND ALL SIX INPUTS ARE UNSORTED, and that is not decoration: **AN ALREADY-SORTED
+# INPUT HAS THE SAME ANSWER UNDER A VALUE-SORT AND UNDER AN INDEX-SORT**, so a sorted
+# input would make its row a LABEL -- and the `argsortbyindex` plant would not move it.
+# The first version of these rows used `(0,)` and `(0, 1)` and the plant sweep FOUND
+# exactly that: 34 of 36 rows covered, and the two gaps were those two.
+def pm_argsort.of(xs: List<&2, U32>) -> String: pm_join.go(H.argsort_u32(xs), True{}, "")
+
+def pm_argsort_0_2_1() -> String: pm_argsort.of([0, 2, 1])
+def pm_argsort_1_2_0() -> String: pm_argsort.of([1, 2, 0])
+def pm_argsort_2_1_0() -> String: pm_argsort.of([2, 1, 0])
+def pm_argsort_1_0_2() -> String: pm_argsort.of([1, 0, 2])
+def pm_argsort_2_0_1() -> String: pm_argsort.of([2, 0, 1])
+def pm_argsort_1_0() -> String: pm_argsort.of([1, 0])
+
+# ---- the PERMUTE rows --------------------------------------------------------
+def pm_walk.of(+run: GRun) -> String:
+  match run:
+    case GRun{ar, cs, ts, r}: dag_walk_sig.go(Deep.walk_of(_deepwalk(r, ts, ar)), ar, "")
+
+def pm_walk() -> String: pm_walk.of(pm_run())
+
+def pm_walk_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: U32.from_nat(List.length(&2, U32, Deep.walk_of(_deepwalk(r, ts, ar))))
+
+def pm_walk_n() -> U32: pm_walk_n.of(pm_run())
+
+def pm_rule_len.of(+r: PmRule) -> U32:
+  match r:
+    case PmRule{ar, ans, n, ctx}: n
+
+def pm_rule_len() -> U32: pm_rule_len.of(pm_rule())
+
+def pm_rule_is_ctx.of(+r: PmRule) -> U32:
+  match r:
+    case PmRule{ar, ans, n, ctx}: b32(U32.is_eq(ans, ctx))
+
+def pm_rule_is_ctx() -> U32: pm_rule_is_ctx.of(pm_rule())
+
+def pm_rule_tok.of(+r: PmRule) -> String:
+  match r:
+    case PmRule{ar, ans, n, ctx}: bw_tok.go(ar, ans)
+
+def pm_rule_tok() -> String: pm_rule_tok.of(pm_rule())
+
+def pm_rule_op.of(+r: PmRule) -> String:
+  match r:
+    case PmRule{ar, ans, n, ctx}: dag_one(ar, ans)
+
+def pm_rule_op() -> String: pm_rule_op.of(pm_rule())
+
+def pm_rule_arg.of(+r: PmRule) -> String:
+  match r:
+    case PmRule{ar, ans, n, ctx}: pm_arg_read(ar, ans)
+
+def pm_rule_arg() -> String: pm_rule_arg.of(pm_rule())
+
+def pm_grads_n() -> U32: gs_grads_n.of(pm_run())
+def pm_keys() -> String: gs_keys.of(pm_run())
+def pm_set_n() -> U32: gs_set_n.of(pm_run())
+def pm_zero_n() -> U32: gs_zero_n.of(pm_run())
+def pm_set_sig() -> String: gs_set_sig.of(pm_run())
+def pm_bw_nodes() -> U32: bw_nodes.of(pm_run())
+def pm_bw_sig() -> String: bw_sig.of(pm_run())
+def pm_bw_distinct() -> U32: bw_distinct.of(pm_run())
+
+# ---- the 1-D IDENTITY rows ---------------------------------------------------
+def pm1_walk.of(+run: GRun) -> String:
+  match run:
+    case GRun{ar, cs, ts, r}: dag_walk_sig.go(Deep.walk_of(_deepwalk(r, ts, ar)), ar, "")
+
+def pm1_walk() -> String: pm1_walk.of(pm1_run())
+
+def pm1_walk_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: U32.from_nat(List.length(&2, U32, Deep.walk_of(_deepwalk(r, ts, ar))))
+
+def pm1_walk_n() -> U32: pm1_walk_n.of(pm1_run())
+
+def pm1_rule_len.of(+r: PmRule1) -> U32:
+  match r:
+    case PmRule1{ar, ans, n, ctx}: n
+
+def pm1_rule_len() -> U32: pm1_rule_len.of(pm1_rule())
+
+def pm1_rule_is_ctx.of(+r: PmRule1) -> U32:
+  match r:
+    case PmRule1{ar, ans, n, ctx}: b32(U32.is_eq(ans, ctx))
+
+def pm1_rule_is_ctx() -> U32: pm1_rule_is_ctx.of(pm1_rule())
+
+def pm1_rule_tok.of(+r: PmRule1) -> String:
+  match r:
+    case PmRule1{ar, ans, n, ctx}: bw_tok.go(ar, ans)
+
+def pm1_rule_tok() -> String: pm1_rule_tok.of(pm1_rule())
+
+def pm1_rule_op.of(+r: PmRule1) -> String:
+  match r:
+    case PmRule1{ar, ans, n, ctx}: dag_one(ar, ans)
+
+def pm1_rule_op() -> String: pm1_rule_op.of(pm1_rule())
+
+def pm1_rule_arg.of(+r: PmRule1) -> String:
+  match r:
+    case PmRule1{ar, ans, n, ctx}: pm_arg_read(ar, ans)
+
+def pm1_rule_arg() -> String: pm1_rule_arg.of(pm1_rule())
+
+def pm1_grads_n() -> U32: gs_grads_n.of(pm1_run())
+def pm1_keys() -> String: gs_keys.of(pm1_run())
+def pm1_set_n() -> U32: gs_set_n.of(pm1_run())
+def pm1_zero_n() -> U32: gs_zero_n.of(pm1_run())
+def pm1_set_sig() -> String: gs_set_sig.of(pm1_run())
+def pm1_bw_nodes() -> U32: bw_nodes.of(pm1_run())
+def pm1_bw_sig() -> String: bw_sig.of(pm1_run())
+def pm1_bw_distinct() -> U32: bw_distinct.of(pm1_run())
+
 # ---- the gate ----------------------------------------------------------------
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
@@ -2892,3 +3248,39 @@ def main() -> IO(Unit):
     row("bw_nodes", bw_nodes())
     srow("bw_sig", bw_sig())
     row("bw_distinct", bw_distinct())
+    srow("pm_walk", pm_walk())
+    row("pm_walk_n", pm_walk_n())
+    row("pm_rule_len", pm_rule_len())
+    row("pm_rule_is_ctx", pm_rule_is_ctx())
+    srow("pm_rule_tok", pm_rule_tok())
+    srow("pm_rule_op", pm_rule_op())
+    srow("pm_rule_arg", pm_rule_arg())
+    row("pm_grads_n", pm_grads_n())
+    srow("pm_keys", pm_keys())
+    row("pm_set_n", pm_set_n())
+    row("pm_zero_n", pm_zero_n())
+    srow("pm_set_sig", pm_set_sig())
+    row("pm_bw_nodes", pm_bw_nodes())
+    srow("pm_bw_sig", pm_bw_sig())
+    row("pm_bw_distinct", pm_bw_distinct())
+    srow("pm1_walk", pm1_walk())
+    row("pm1_walk_n", pm1_walk_n())
+    row("pm1_rule_len", pm1_rule_len())
+    row("pm1_rule_is_ctx", pm1_rule_is_ctx())
+    srow("pm1_rule_tok", pm1_rule_tok())
+    srow("pm1_rule_op", pm1_rule_op())
+    srow("pm1_rule_arg", pm1_rule_arg())
+    row("pm1_grads_n", pm1_grads_n())
+    srow("pm1_keys", pm1_keys())
+    row("pm1_set_n", pm1_set_n())
+    row("pm1_zero_n", pm1_zero_n())
+    srow("pm1_set_sig", pm1_set_sig())
+    row("pm1_bw_nodes", pm1_bw_nodes())
+    srow("pm1_bw_sig", pm1_bw_sig())
+    row("pm1_bw_distinct", pm1_bw_distinct())
+    srow("pm_argsort_0_2_1", pm_argsort_0_2_1())
+    srow("pm_argsort_1_2_0", pm_argsort_1_2_0())
+    srow("pm_argsort_2_1_0", pm_argsort_2_1_0())
+    srow("pm_argsort_1_0_2", pm_argsort_1_0_2())
+    srow("pm_argsort_2_0_1", pm_argsort_2_0_1())
+    srow("pm_argsort_1_0", pm_argsort_1_0())

@@ -1,0 +1,38 @@
+=== P2: the 2-D PERMUTE, order (1,0)
+oracle_pm_walk=PERMUTE/1
+oracle_pm_walk_n=1
+oracle_pm_rule_len=1
+oracle_pm_rule_is_ctx=0
+oracle_pm_rule_tok=PERMUTE/1 [STACK/2]
+oracle_pm_rule_op=PERMUTE/1
+oracle_pm_rule_arg=2,0,1
+oracle_pm_grads_n=2
+oracle_pm_keys=PERMUTE/1 STACK/2
+oracle_pm_zero_n=0
+oracle_pm_set_n=1
+oracle_pm_set_sig=G 8 root=PERMUTE/1
+oracle_pm_bw_nodes=8
+oracle_pm_bw_sig=BUFFER/1@s3 [STACK/1] BUFFER/1@s4 [STACK/1] BUFFER/1@s5 [STACK/1] CONST/0@i0:2 [] PERMUTE/1 [STACK/2] STACK/1 [CONST/0@i0:2] STACK/2 [BUFFER/1@s3 BUFFER/1@s4] STACK/2 [BUFFER/1@s5 STACK/2]
+oracle_pm_bw_distinct=8
+=== P1: the 1-D IDENTITY PERMUTE, order (0,)
+oracle_pm1_walk=PERMUTE/1
+oracle_pm1_walk_n=1
+oracle_pm1_rule_len=1
+oracle_pm1_rule_is_ctx=1
+oracle_pm1_rule_tok=BUFFER/1@s1 [STACK/1]
+oracle_pm1_rule_op=BUFFER/1
+oracle_pm1_rule_arg=none
+oracle_pm1_grads_n=2
+oracle_pm1_keys=PERMUTE/1 BUFFER/1
+oracle_pm1_zero_n=0
+oracle_pm1_set_n=1
+oracle_pm1_set_sig=G 3 root=BUFFER/1
+oracle_pm1_bw_nodes=3
+oracle_pm1_bw_sig=BUFFER/1@s1 [STACK/1] CONST/0@i0:6 [] STACK/1 [CONST/0@i0:6]
+oracle_pm1_bw_distinct=3
+oracle_pm_argsort_0_2_1=0,2,1
+oracle_pm_argsort_1_2_0=2,0,1
+oracle_pm_argsort_2_1_0=2,1,0
+oracle_pm_argsort_1_0_2=1,0,2
+oracle_pm_argsort_2_0_1=1,2,0
+oracle_pm_argsort_1_0=1,0

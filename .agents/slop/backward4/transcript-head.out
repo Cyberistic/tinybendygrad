@@ -1,0 +1,46 @@
+    HEAD's gradient.bend installed: 4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=102
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=138
+=== HEAD vs LIVE: rows head=102 live=138
+--- rows whose VALUE changed (must be EMPTY: this unit must not move a pre-existing row):
+    rows whose VALUE changed: 0 of 102
+--- rows LIVE has that HEAD does NOT (must be EXACTLY this unit's 36):
+    pm1_bw_distinct
+    pm1_bw_nodes
+    pm1_bw_sig
+    pm1_grads_n
+    pm1_keys
+    pm1_rule_arg
+    pm1_rule_is_ctx
+    pm1_rule_len
+    pm1_rule_op
+    pm1_rule_tok
+    pm1_set_n
+    pm1_set_sig
+    pm1_walk
+    pm1_walk_n
+    pm1_zero_n
+    pm_argsort_0_2_1
+    pm_argsort_1_0
+    pm_argsort_1_0_2
+    pm_argsort_1_2_0
+    pm_argsort_2_0_1
+    pm_argsort_2_1_0
+    pm_bw_distinct
+    pm_bw_nodes
+    pm_bw_sig
+    pm_grads_n
+    pm_keys
+    pm_rule_arg
+    pm_rule_is_ctx
+    pm_rule_len
+    pm_rule_op
+    pm_rule_tok
+    pm_set_n
+    pm_set_sig
+    pm_walk
+    pm_walk_n
+    pm_zero_n
+    gained: 36   of which NOT in this unit's row set: 0 
+--- rows HEAD has that LIVE does NOT (must be EMPTY):
+VERDICT: PASS -- no pre-existing row moved

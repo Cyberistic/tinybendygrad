@@ -1,0 +1,11 @@
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=138
+=== THE GATE (a): this unit's pm_*/pm1_* rows against perm.rows -- CPython's own bytes
+    rows expected: 36   PASS: 36   MISMATCH: 0   UNCHECKABLE: 0   MISSING: 0
+    VERDICT: PASS
+=== THE GATE (b): the prior art's walk_* rows against backward3/walk.rows
+    rows expected: 16   PASS: 16   MISMATCH: 0   UNCHECKABLE: 0   MISSING: 0
+    VERDICT: PASS
+=== THE GATE (c): the prior art's gs_*/bw_* rows against backward2/rows.rows
+    rows expected: 14   PASS: 14   MISMATCH: 0   UNCHECKABLE: 0   MISSING: 0
+    VERDICT: PASS
+=== VERDICT: pm-rows rc=0   walk-rows rc=0   gs/bw-rows rc=0
