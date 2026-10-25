@@ -25,14 +25,14 @@
 # properties there and separate defs here. `derived` is the one place they are
 # assembled, and it is the only def that knows about all of them.
 #
-# THE FIVE MOVEMENT ARMS ARE LANDED, and THREE OF THEM WERE NOT BEHIND THE WALL THE
-# TODO LIST RECORDED FOR THEM. It said EXPAND, PERMUTE and FLIP wait on
-# "`marg` -> `as_shape` -> `ssimplify`", which is TRUE of `marg`'s first two arms and
-# FALSE of the other two ops: `marg` for PERMUTE and FLIP is `self.arg` (ops.py:236),
-# the arena's `ATuple` of plain indices, so neither reads `as_shape` at all. They were
-# answerable from the day the arena existed. `expand_ds`, `pad_ds`, `shrink_ds`,
-# `perm_ds` and `flip_ds` are the five arms; UNSHARD still defers, and it defers on
-# `vmax` rather than on `ssimplify`.
+# THE FIVE MOVEMENT ARMS ARE LANDED, and ONE OF THEM WAS NOT BEHIND THE WALL THE
+# TODO LIST RECORDED FOR IT. The old list said EXPAND, PERMUTE and FLIP wait on
+# "`marg` -> `as_shape` -> `ssimplify`", TRUE of `marg`'s first two arms and FALSE of
+# PERMUTE: `marg` for PERMUTE is `self.arg` (ops.py:236 symbol=arg), the arena's
+# `ATuple` of plain indices, so it does not read `as_shape` at all. `reshape_ds`,
+# `expand_ds`, `pad_ds`, `shrink_ds` and `perm_ds` are the five arms -- upstream's
+# `GroupOp.Movement` is EXACTLY those five. FLIP IS GONE: `900880433` deleted it,
+# so there is no sixth arm. UNSHARD still defers, and it defers on `vmax`.
 #
 # PAD AND SHRINK ARE ONE WALK WITH A `Bool`, not two arms, because their checks differ
 # only in which of the same three numbers is added to which -- `o+s<=sz` against
@@ -1157,7 +1157,7 @@ def late() -> Maybe<&2, DtShape>:
 # named `call_ds.go` and `ins_ds.shape`. The 2026-10-05 fix landed in `custom_ds.of`'s
 # copy and LEFT BOTH TWINS WRONG, which is the whole of the lesson: A FIX TO ONE ARM OF
 # A RULE IS NOT A FIX TO THE RULE. What both twins got wrong is that their OUTER `None`
-# is the PORT-ONLY "the fold produced no `Derived`", which `derived.put` (fold.bend:2477)
+# is the PORT-ONLY "the fold produced no `Derived`", which `derived.put` (fold.bend:2828)
 # passes on and `Kahn.ans.of` turns into A MISSING TABLE ENTRY -- so the node reads `?` in
 # BOTH columns, a hole CPython cannot print, rather than reading `R`. MEASURED on
 # `--graph loop`: ONE node of 26 absent, and `?=2/2` is ONE absence read twice.
@@ -2015,7 +2015,7 @@ def perm_ds.of(ys: List<&2, U32>, ps: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2,
     case Some{+p}: perm_ds.of_walk(perm_init(ys, p), ss)
     case None{}  : None{}
 
-# `self.arg` -- the arena's `ATuple{ys}` -- which is `marg` for PERMUTE and FLIP both.
+# `self.arg` -- the arena's `ATuple{ys}` -- which is `marg` for PERMUTE (ops.py:796 symbol=marg).
 def order_arg(arg: O.Arg) -> List<&2, U32>:
   match arg:
     case O.ATuple{ys}: ys
@@ -2025,24 +2025,24 @@ def perm_ds(+ar: O.Arena, i: U32, arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&
   perm_ds.of(order_arg(arg), src_shape(0, ss), ss)
 
 # ===========================================================================
-# FLIP -- ops.py:429-431. `if len(ps) != len(self.marg) or not all(isinstance(x,
-# bool) for x in self.marg): raise` then `return ps`.
+# THERE IS NO FLIP ARM HERE, and there is no FLIP in upstream either: `900880433`
+# ("remove Ops.FLIP [pr] (#18729)", 2026-10-11) DELETED the member. Upstream's
+# `GroupOp.Movement` is FIVE ops -- `tinygrad/uop/__init__.py:117 symbol=Movement`
+# says `Movement = {Ops.RESHAPE, Ops.EXPAND, Ops.PERMUTE, Ops.PAD, Ops.SHRINK}`, and
+# the enum went 76 -> 75. `Ops.FLIP` IS NOT IN upstream at this pin, so there is
+# no `case Ops.FLIP:` arm to port and no upstream line to cite for one. The arm
+# that used to be here was `flip_ds`, and it went with the op.
 #
-# THE BOOL HALF OF THAT CHECK IS NOT IN THE ARENA, and this is a MEASURED fact about
-# CPython rather than a Bend limitation, so it is worth stating carefully:
-#   * `movement.py:253` builds `flip_arg = tuple([i in axis_arg for i in
-#     range(len(self.shape))])` -- always a tuple of Python bools, one per dim.
-#   * The arena spells that arg `ABoolList{bs}` with `bs: List<&2, Bool>`, which is
-#     what CPython holds and what `repr` prints.
-#   * MEASURED, and this is the part that matters: CPython's own `all(isinstance(x,
-#     bool))` is UNREACHABLE as a rejection. `UOp(Ops.FLIP, src, (1, 0))` raises
-#     `bad flip on (4, 3), (1, 0)` -- but only if the int node was interned FIRST.
-#     Intern the bool spelling first and `UOp(Ops.FLIP, src, (1, 0))` returns THE
-#     BOOL NODE (`b is a` measured True, because the ucache key is
-#     `(op, src, arg, tag, type(arg))` and `type(arg)` is `tuple` for both, while
-#     `True == 1` as dict keys). So the answer for a given src is whichever spelling
-#     the arena saw first, and a Flip built through `movement.py` always answers.
-# The length check IS in the arena and IS ported, and it is the reachable one.
+# WHAT UPSTREAM DOES INSTEAD: `Tensor.flip` is a COMPOSITION -- upstream's
+# `tinygrad/mixin/movement.py:233 symbol=flip` -- of `_mop(Ops.PAD, ...)`,
+# `_mop(Ops.SHRINK, ...)`, `.reshape` and `.transpose` -- and it mints NO node of
+# its own, so the shape upstream answers for a flip is a PAD/SHRINK/RESHAPE/
+# TRANSPOSE chain's answer, and every arm of that chain is one this file answers.
+#
+# THE SURVIVING CONSTRUCT THIS BLOCK USED TO POINT AT IS `case Ops.PERMUTE:` --
+# ops.py:402-404 symbol=_shape -- `if sorted(self.marg) != list(range(len(ps))):
+# raise` then `return tuple(ps[i] for i in self.marg)`, and `marg`'s PERMUTE arm is
+# `case Ops.PERMUTE: return self.arg` (ops.py:796 symbol=marg); `perm_ds` is that arm.
 # ===========================================================================
 
 def pair_ds.put(+pad: Bool, x: Maybe<&1, Pairs>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
@@ -2639,10 +2639,10 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # order, and both answer the sizes. `pad_shrink` above.
     case O.OpsPAD{}: pad_ds(ar, i, ss)
     case O.OpsSHRINK{}: shrink_ds(ar, i, ss)
-    # `case Ops.PERMUTE` / `case Ops.FLIP` -- ops.py:415-428. PORTED, and never behind
-    # the `ssimplify` wall the header used to record for them: `marg` for both is
-    # `self.arg` (ops.py:815), which is the arena's `ATuple` of plain indices, so
-    # neither reads `as_shape`. See `perm_ds` and `flip_ds` above.
+    # `case Ops.PERMUTE:` -- ops.py:402-404 symbol=_shape. PORTED, and never behind the
+    # `ssimplify` wall the header used to record for it: `marg` for PERMUTE is
+    # `self.arg` (ops.py:796 symbol=marg) -- the arena's `ATuple` of plain indices --
+    # so it does not read `as_shape`. See `perm_ds` above. There is no `Ops.FLIP` arm.
     case O.OpsPERMUTE{}: perm_ds(ar, i, arg, ss)
 
     # RANGE | SPECIAL: pass through first, then `return ()`
@@ -2722,7 +2722,7 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsMULACC{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
 
     # THE DEFERRED OPS, and there are now only TWO of them -- the five movement arms
-    # this unit added are `expand_ds`, `pad_ds`, `shrink_ds`, `perm_ds`, `flip_ds`
+    # this unit added are `reshape_ds`, `expand_ds`, `pad_ds`, `shrink_ds`, `perm_ds`
     # above, and CUSTOM/CUSTOMI left on 2026-10-05 (see `custom_ds`). Each is an arm
     # `dtype_from_uop` or `_shape` reaches through a rule this
     # file does not port, so the fold does not answer the node. The list is closed:
@@ -5408,7 +5408,7 @@ def g_mv_r23_of(+b: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(k), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
 
 
-# RESHAPE(BUFFER(6), STACK(2, 3)) -- shape (2, 3), the PERMUTE and FLIP src. SIX and
+# RESHAPE(BUFFER(6), STACK(2, 3)) -- shape (2, 3), the PERMUTE src. SIX and
 # not twelve: the RESHAPE's own product check is `prod(ps) != prod(marg)`, so the
 # buffer must hold 2*3 elements. MEASURED, not assumed -- a size-12 buffer answers
 # `bad reshape: (12,) -> (2, 3)` in CPython and is refused here, and the first
@@ -6997,10 +6997,10 @@ def main() -> IO(Unit):
 #   place:
 #     RESHAPE | EXPAND -> `src[1].as_shape`      `marg` (already landed with RESHAPE)
 #     PAD | SHRINK    -> `zip(src[1], src[2])`   `marg.at(1)`/`marg.at(2)` + `pad_shrink.go`
-#     PERMUTE | FLIP  -> `self.arg`              `order_arg` -- NO `as_shape` AT ALL.
+#     PERMUTE         -> `self.arg`              `order_arg` -- NO `as_shape` AT ALL.
 #   So the `ssimplify` wall was behind `marg` only for the ops whose marg is a SHAPE,
-#   and behind none of the five this unit landed. RESHAPE, EXPAND, PAD, SHRINK, PERMUTE
-#   and FLIP all answer now, INCLUDING OVER A SYMBOLIC DIM -- `mv_reshsym_nm` and
+#   and behind none of the five this unit landed. RESHAPE, EXPAND, PAD, SHRINK and
+#   PERMUTE all answer now, INCLUDING OVER A SYMBOLIC DIM -- `mv_reshsym_nm` and
 #   `mv_reshbare` are its rows and `mv_expsym_pos` is EXPAND's. UNSHARD does not, and its
 #   wall is `_min_max`.
 # DONE(p3) ops.py:875  def device               -- PORTED, as `UOp.device`.
@@ -7238,25 +7238,25 @@ def main() -> IO(Unit):
 #
 # ===========================================================================
 # THE MUTATION TABLE for the FIVE MOVEMENT ARMS, MEASURED, run in BOTH lanes.
-# `oracles/fold-mut.py` applies each edit, re-runs both lanes and diffs
-# the rows; the table is its output and nothing here is transcribed by hand.
+# `oracles/fold-mut.py` applies each edit, re-runs both lanes and diffs the rows;
+# the table is its output and nothing here is transcribed by hand. RE-TAKEN 2026-10-25.
 #
 # | # | mutation | rows MOVED | what it is testing |
 # |---|---|---|---|
-# | M1 | `expand_ds`: `both(marg, ps)` -> `both(ps, marg)` | `mv_exp1` `mv_exp23` `mv_expnoop` (3) | `tuple(self.marg) + ps` puts the MARG FIRST. All three node counts stay RIGHT -- which is the point: a count cannot see an order. |
-# | M2 | `Tri.le`: PAD's and SHRINK's sums exchanged | `mv_pad1` `mv_pad23` `mv_padr2` `mv_shr1` `mv_shr23` (5) | `o+s<=sz` vs `o+sz<=s`. This is the ONLY mutation that separates the two arms, and it moves five rows across both -- M2 is the whole reason the arms share one walk with a `Bool`. |
+# | M1 | `expand_ds`: `both(marg, ps)` -> `both(ps, marg)` | `mv_exp1` `mv_exp23` `mv_expnoop` `mv_expsym_pos` (4) | `tuple(self.marg) + ps` puts the MARG FIRST. All four node counts stay RIGHT -- which is the point: a count cannot see an order. |
+# | M2 | `Tri.le`: PAD's and SHRINK's sums exchanged | `mmk_pad5` `mv_pad1` `mv_pad23` `mv_padr2` `mv_shr1` `mv_shr23` (6) | `o+s<=sz` vs `o+sz<=s`. This is the ONLY mutation that separates the two arms, and it moves six rows across both -- M2 is the whole reason the arms share one walk with a `Bool`. |
 # | M3 | `pad_shrink.go`: the `_ _ _` cover arm returns `x` | `mv_padr` (1) | `len(ps) != len(self.marg)`. A localised row: the ONE fixture with a marg longer than the shape. |
 # | M4 | `perm_add.go`: drop the no-repeat half | `mv_permrep` (1) | `sorted(marg) == range(n)` needs BOTH halves; `(0,0)` is in range twice and is not a permutation. |
 # | M5 | `perm_init`: seed `ps` with `Nil{}` | `mv_perm` (1) | the walk reads the shape, not an empty list. This is the real state of the FIRST version of this arm, which read ABSENT on a valid `(1,0)`. |
-# | M6 | `flip_ds.put`: `Nat.is_eq(...)` -> `True{}` | `mv_fliplen` (1) | `len(ps) != len(self.marg)` -- the one reachable half of FLIP's `if`. |
+# | M6 | `flip_ds.put`: `Nat.is_eq(...)` -> `True{}` | **NOT APPLIED (0)** | **DEAD WITH THE OP, AND IT SAYS SO.** The anchor is `flip_ds.put`, and that def is GONE: upstream removed `Ops.FLIP` at `900880433` and the port's FLIP arm went with it, so the harness reports "the anchor text is not in the file" and the mutation cannot run at all. The upstream check it stood for -- `len(ps) != len(self.marg)` -- is gone from upstream too. |
 # | M7 | `perm_add.go`: prepend the picked dim instead of appending | `mv_perm` (1) | `tuple(ps[i] for i in marg)` is in ARG order. `(1,0)` over `(2,3)` reads `(3,2)` and the reversed walk reads `(2,3)` -- a real answer that a node count cannot see. |
 # | M8 | `pair_ds.put`: `src_dt(0, ss)` -> `S.void()` | `mv_pad1` `mv_pad23` `mv_shr1` `mv_shr23` (4) | `GroupOp.Movement` is `return src[0].dtype`, and "a movement's dtype is always void" is the plausible wrong answer. |
 # | M9 | `count_of`: `case O.SU{u}: None{}` -> `Some{0}` | **NOTHING (0)** | **A FIXTURE GAP, and its old reason is DEAD.** This entry used to read "an UNREACHABLE STATE: nothing in this tree can mint an `O.SU`", which was true until `sym_dim` landed and made `SInt.uop` (ops.bend:823) its FIRST caller. The state is REACHABLE now and the mutation still moves nothing, because no PAD/SHRINK/BITCAST fixture carries a symbolic dim -- and the wall that stops one is a DIFFERENT one: upstream's `resolve` DEFAULTS TRUE over the sums (ops.py:64) while `Tri.of`'s `count_of` refuses a `SU`. `mv_padsym` is that row and `mv_padsym_pos` is the fixture this entry asks for. A `0` is a request for a fixture and this is one. |
 # | M10 | `pad_ds`: `ps` reads `marg.at(1,...)` -- SOURCE and OFFSETS exchanged | **NOTHING (0)** | **AN ALGEBRAIC EQUIVALENCE, not a gap.** PAD's test is `resolve(o+s<=sz)`, which is SYMMETRIC in `o` and `s`: the swap evaluates the same sum. The answer is the SIZES, untouched; and the length check compares against `len(marg) = min(len(o), len(z))`, which the swap cannot satisfy differently (`padr` has `len(ps)=1` and `len(o)=2`, so both spellings fail it). No fixture can move it -- verified by exhausting the four `(ps,o,sz)` one-dim cases. |
 # | M10b | ...the same exchange in `shrink_ds` | `mv_shr1` `mv_shr23` (2) | SHRINK's `o+sz<=s` is NOT symmetric, so the same edit DOES move two rows here. M10 and M10b together are the measurement that M10 is an equivalence of the FORMULA and not a blindness of the gate. |
-# | M11 | `pad_ds`: `ps` reads `marg.at(2,...)` -- SOURCE and SIZES exchanged | `mv_pad1` `mv_pad23` (2) | the classic shape-arg swap, the one that "moves one row in 67". It moves two of sixteen here, and the `srcops` field is what keeps the two rows identifiable as the same defect. |
-# | M12 | `order_arg`: answer `Nil{}` instead of the `ATuple` | `mv_perm` `mv_permrep` `mv_permlen` `mv_flip` `mv_fliplen` (4) | `marg` for PERMUTE and FLIP is `self.arg`, so reading anything else empties the arg. It moves FIVE rows including both FLIPs, which is the half of `GroupOp.Movement` that is about the ARG and not the srcs. |
-# | M13 | `expand_ds`: `src_dt(0, ss)` -> `S.void()` | `mv_exp1` `mv_exp23` (2) | the dtype arm of EXPAND specifically, so M8's four PAD/SHRINK rows plus these two cover all five ops. |
+# | M11 | `pad_ds`: `ps` reads `marg.at(2,...)` -- SOURCE and SIZES exchanged | `mmk_pad5` `mv_pad1` `mv_pad23` (3) | the classic shape-arg swap, the one that "moves one row in 67". It moves three rows here, and the `srcops` field is what keeps the three rows identifiable as the same defect. |
+# | M12 | `order_arg`: answer `Nil{}` instead of the `ATuple` | `mv_perm` `mv_permrep` `mv_permlen` (3) | `marg` for PERMUTE is `self.arg` (ops.py:796 symbol=marg), so reading anything else empties the arg. It moves THREE rows; the two FLIP rows it used to move are gone with the op, and what is left is the half of `GroupOp.Movement` that is about the ARG and not the srcs. |
+# | M13 | `expand_ds`: `src_dt(0, ss)` -> `S.void()` | `mv_exp1` `mv_exp23` `mv_expsym` `mv_expsym_pos` (4) | the dtype arm of EXPAND specifically, so M8's four PAD/SHRINK rows plus these four cover all five ops. |
 # | L2 | a NO-OP edit: a comment line in `sym_dim.signable` | **NOTHING (0)** | **THE CONTROL for M14-M17b**, and it is here because the harness once reported a no-op as a blind spot: the first version of M14 took its edit LIST as a string, `zip` silently paired nothing, and a mutation that changed no file printed "0 rows moved". A control that reads 0 is what makes the other 0s interpretable -- the same reason L1 and L3 are in this file's other table. |
 # | M14 | `sym_dim.range`: the POINT arm answers `SU` instead of `SI{lo}` | `mv_reshsym_pt` `mv_reshbare_pt` (2) | **THE "JUST RETURN SU" FIX, AND IT IS WRONG.** A PARAM whose interval is a point is folded to a CONST by symbolic.py:269, so `ssimplify` hands back the int; answering `SU` instead leaves `(3,1)` as `(U(Ops.PARAM:p),1)`. Two rows, and they are the ONLY two with no `U` in the correct answer -- which is the point: a fixture whose dims are all symbolic cannot tell this mutation from a correct simplifier. |
 # | M15 | `dim_str`: a symbolic dim renders as a bare `U` | `mv_reshsym_nm` `mv_reshbare` `mv_expsym_pos` `mv_reshbare_dis` (4) | **THE FLATTEN-EVERYTHING BUG, AND THIS IS THE ROW THAT CATCHES IT.** Four rows, every one of them a dim that was `U(Ops.PARAM:n)` or `U(Ops.SPECIAL:N)` and is now an `U` indistinguishable from any other. `mv_reshsym_nm` carries TWO dims in one shape, so it goes to `(U,U)` -- and the brief's trap is exactly this: a fixture whose two symbolic dims were EQUAL could not tell a correct simplifier from a flattening one, so this fixture's two dims are DIFFERENT (`n` and `m`, two arena nodes, two `ParamArg` names) and the renderer has to carry the name. |
@@ -7264,17 +7264,17 @@ def main() -> IO(Unit):
 # | M17 | `sym_dim.spec`: the EMPTY-interval arm dropped | `mv_expsym` `resh_reject` (2) | `mv_expsym`'s SPECIAL `'N'` is over an END OF ZERO, so its interval is `[0,-1]` and `vmin > vmax`. Dropping the arm makes it mint a `SU`, so the one EXPAND row that DIVERGES from CPython starts answering -- and `resh_reject` goes `False`, which is the `Bool` row that holds the refusal in place. |
 # | M17b | `sym_dim.signable`: the `lo <= hi` half dropped | **NOTHING (0)** | **A FIXTURE GAP, named.** The PARAM half of the empty-interval refusal (`vmin_vmax = (5,3)`, which no caller of `UOp.variable` can produce but which a hand-built `ParamArg` can) has no fixture. `M17` covers the SPECIAL half of the same rule, so the rule is not ungated -- one of its two inputs is. |
 #
-# **EIGHTEEN OF TWENTY-ONE MOVE ROWS.** The three zero-movers are `M9` and `M17b`, both
-# FIXTURE GAPS with the row that would close each named above, and `M10`, a measured
-# symmetry of PAD's own formula. `L2` is the control. That is the honest reading: the
-# gate cannot see M9 and M17b because no fixture asks, and neither is closed with a row
-# that would encode the gap as a check.
+# **FIFTEEN OF TWENTY MOVE ROWS.** The five non-movers are `M6`, whose subject went
+# with the op; `M9` and `M17b`, both FIXTURE GAPS with the row that would close each
+# named above; `M10`, a measured symmetry of PAD's own formula; and `L2`, the control.
+# That is the honest reading: the gate cannot see M9 and M17b because no fixture asks,
+# and neither is closed with a row that would encode the gap as a check.
 #
 # WHAT NO MUTATION COULD REACH, and it is the row the gate is THINNEST on: nothing
 # here can detect a movement op whose `ATuple` arg is a bool rather than a 0/1 flag.
-# `ops.bend:763` spells that arg `List<&2, U32>`, which erases the distinction, and
-# `ops.bend` is not this unit's file. See `flip_ds`'s header: CPython's own
-# `isinstance(x, bool)` is measured to be unreachable as a rejection anyway.
+# `ops.bend:1237` spells that arg `List<&2, U32>`, which erases the distinction, and
+# `ops.bend` is not this unit's file. The upstream op that carried such an arg is
+# GONE (`900880433`), so this is about the ARENA now, and not about an upstream arm.
 #
 # **AND THE TWO DIVERGES ARE PRINTED, NOT SMOOTHED.** `mv_expsym` and
 # `mv_reshbare_dis` are the only two `mv_` rows that disagree with CPython, each in a
