@@ -53,13 +53,13 @@ import NAMES the path a bare `ops.bend` means. THE IMPORT IS THE ANSWER, AND IT 
 DISCOVERED.
 
 THE CLAIM, AND WHAT MAKES ONE CHECKABLE. The port writes the thing it means in
-BACKTICKS, and `gates/pin-cite-gate.py`'s `claim_tokens` / `window_tokens` -- LOADED BY
-PATH, not copied -- are the rules for reading them: a backticked span that IS a citation
-is the citation and not the claim, and a name belongs to the NEAREST citation. A
-citation is CHECKABLE only if one of its claim tokens OCCURS in the cited file at all
-(`pin-cite-gate.py`'s REPAIR 2, and the same reason): a pointer whose line names nothing
-the target holds makes no claim about that target, so it is COUNTED AND NOT VERDICTED.
-An unfalsifiable claim is not a passing claim, and it is not a failing one either.
+BACKTICKS, and `gates/pin-cite-gate.py`'s `claim_tokens` -- LOADED BY PATH, not copied --
+is the rule for reading them: a backticked span that IS a citation is the citation and
+not the claim, and a name belongs to the NEAREST citation. A citation is CHECKABLE only
+if one of its claim tokens is a CONSTRUCT the cited file DECLARES: a pointer whose line
+names nothing the target holds makes no claim about that target, so it is COUNTED AND
+NOT VERDICTED. An unfalsifiable claim is not a passing claim, and it is not a failing
+one either.
 
 **THE CLAIM TOKEN IS THE WHOLE DOTTED NAME, AND THAT IS LOAD-BEARING.** The port writes
 `SInt.uop` for a `def SInt.uop(...)` and `F.alu_ds` for a `def alu_ds(...)` under the
@@ -251,7 +251,6 @@ class Corpus:
     self.aliases: dict[str, dict[str, str]] = {}
     self.constructs: dict[str, list[tuple[str, int, int, int]]] = {}
     self.words: dict[str, set[str]] = {}
-    self.code_words: dict[str, set[str]] = {}
     self.excluded: list[str] = []
     self.is_scratch = load_sibling("bendcite_census", "header-census-gate.py").is_scratch
     self._scan()
@@ -288,16 +287,6 @@ class Corpus:
       self.constructs[rel] = bend_constructs(body)
       self.words[rel] = {w for l in body
                          for w in re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\b", l)}
-      # THE CODE VOCABULARY: the identifiers the file uses in CODE, not in prose.
-      # **A NAME THAT APPEARS ONLY IN THE TARGET's COMMENTS CANNOT FALSIFY A POINTER.**
-      # MEASURED: `tinybendygrad/tensor.bend:448` cites `nn/__init__.bend:241` and the
-      # block names `The` and `wall` -- PROSE -- and a vocabulary test called the
-      # pointer stale on two English words. `w32` and `f32_of` in
-      # `tinybendygrad/base.bend:21` are LOCALS of `runtime/ops_python.bend` and they
-      # live in its CODE, so the rule keeps them.
-      self.code_words[rel] = {w for l in body if l.strip() and not l.lstrip().startswith("#")
-                              for w in re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\b", l)}
-    self.port_set = set(self.port)
 
   # ---- the resolver ------------------------------------------------------------
 
@@ -413,21 +402,6 @@ class Corpus:
       return [(d, s, e) for (n, d, s, e) in self.constructs.get(rel, []) if n == last]
     return []
 
-  def checkable(self, rel: str, token: str) -> bool:
-    """Is `token` a thing the target file HOLDS -- a construct it DECLARES, or a name it
-    uses in its CODE?
-
-    **A NAME THAT APPEARS ONLY IN THE TARGET's PROSE CANNOT FALSIFY A POINTER.** The
-    port's comments are English, and a backticked English word is a word and not a
-    claim about a construct. MEASURED: `tinybendygrad/tensor.bend:448` cites
-    `nn/__init__.bend:241` and the block names `The` and `wall`; on the whole-file
-    vocabulary both counted, and the pointer read as stale on two English words.
-    """
-    if token in self.code_words.get(rel, ()):
-      return True
-    last = token.rsplit(".", 1)[-1]
-    return last in self.code_words.get(rel, ())
-
   def strip_alias(self, citing: str, target: str, token: str) -> str:
     """The construct name `token` names IN `target`, with the citing file's IMPORT ALIAS
     removed -- or "" when the token names a construct of ANOTHER file.
@@ -463,7 +437,6 @@ class Judge:
     self.corpus = corpus
     pc = load_sibling("bendcite_pincite", "pin-cite-gate.py")
     self.claim_tokens = pc.claim_tokens
-    self.window_tokens = pc.window_tokens
     self.comment_blocks = load_sibling("bendcite_todo", "todo-cite-gate.py").comment_blocks
     self._decl_cache: dict[tuple[str, str], list[tuple[int, int, int]]] = {}
     self._blocks: dict[str, list[tuple[int, int]]] = {}
