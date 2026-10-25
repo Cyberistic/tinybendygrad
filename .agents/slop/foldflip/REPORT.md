@@ -148,7 +148,13 @@ the one that reads the re-pointed citations):
     BEFORE   1131 citations in 97 files   0 WRONG-LINE  0 WRONG-SYMBOL  0 UNRESOLVABLE   PASS
     AFTER    1141 citations in 97 files   0 WRONG-LINE  0 WRONG-SYMBOL  0 UNRESOLVABLE   PASS
 
-(The +10 are the ten new `symbol=` fields, and all ten RESOLVE.) `gates/pin-cite-gate.py`
+(**NINE** of the ten are this change's new `symbol=` fields, and all NINE RESOLVE:
+`fold.bend:31` `ops.py:236 symbol=arg` (symbol-decl), `:2018`/`:2045`/`:2644`/`:7258`
+`ops.py:796 symbol=marg` (symbol-body), `:2030`
+`tinygrad/uop/__init__.py:117 symbol=Movement` (symbol-decl), `:2037`
+`tinygrad/mixin/movement.py:233 symbol=flip` (symbol-decl), `:2043`/`:2642`
+`ops.py:402-404 symbol=_shape`. The tenth is another unit's in-flight change.)
+`gates/pin-cite-gate.py`
 reads only the HEADER BLOCK, and fold.bend's five header citations are all still
 `at_pin`; the ONE remaining dangling claim in the tree is
 `tinybendygrad/renderer/ptx.bend:31`, which is not mine. **BEFORE and AFTER were
@@ -227,4 +233,18 @@ any `.bend` edit moves it):
    another unit's file. **`oracles/fold-mut.rows` IS A STALE RECORD** (dated Oct 5,
    baseline "27 rows"; today 339) and it disagrees with the table in fold.bend. It is
    another unit's file and I did not edit it.
-6. **THE COMMIT** -- see below.
+6. **THE COMMIT.** `329a3a16dea891e2c8fea38ffc0fb4f59c070d99` -- "fold.bend: the
+   FLIP-era COMMENTS re-pointed at the pin, and the port's code UNTOUCHED". **TWO
+   FILES**: `tinybendygrad/uop/fold.bend` and this report. `git show --stat` names
+   both and nothing else; `git fsck --no-progress` reports the THREE PRE-EXISTING
+   malformed trees (`d57bc484`, `d83cf685`, `3a60f33f`) and no fourth. The commit is
+   ON THE DETACHED HEAD the tree was already on (its parent is `9f76ec7dd`, whose
+   parent is the `origin/master` merge `b873f3ae4`); **IT IS NOT PUSHED**, because
+   the tree carries the three malformed trees that made a push fail before, and the
+   brief did not ask for one.
+7. **`.agents/TODO.md` WAS NOT TOUCHED**, and that is the tree's own rule: "If it's an
+   implementation detail or a small task, do not add it to TODO.md. Only add tasks
+   that are meaningful and require tracking." **THIS IS A ONE-FILE COMMENT FIX**, and
+   `TODO.md` is the highest-traffic SHARED file in the tree -- the commit before mine
+   was another unit's TODO commit. Adding a row there would put my text in a file
+   another unit holds.
