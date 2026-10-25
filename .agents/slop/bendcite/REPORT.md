@@ -230,6 +230,20 @@ DISCOVERED (the first row that resolves BY A DECLARATION, on the pointer's own l
 moves under the gate's feet, and a control taken from it would compare two different
 trees.
 
+## THE COMMITS
+
+    0832ac87a  bendcite-gate: MEASURE the port's internal `.bend` -> `.bend` line pointers
+                4 files changed, 2544 insertions: the gate, this report, the rows, the sampler
+    3886f5bf1  bendcite-gate: drop the DEAD vocabulary test, the dead window_tokens,
+                and the dead port_set
+                1 file changed, 7 insertions, 34 deletions -- NO VERDICT MOVES
+
+Both committed with `git commit --only -F <msgfile> -- <paths>` after `git add -- <path>`
+for each NEW path (a bare `--only` refuses an untracked path on this git). `git show
+--stat` and `git fsck --no-progress` were run in the SAME command as each commit;
+`git fsck` names the THREE PRE-EXISTING malformed trees (`d57bc484`, `d83cf685`,
+`3a60f33f`) and nothing else. No `tinybendygrad/` file was touched.
+
 ## THE CORPUS DIGEST
 
 `checks/differ.py`'s `SUBSTRATE_INPUTS` are `checks/differ.py`, `checks/devpin.py`,
