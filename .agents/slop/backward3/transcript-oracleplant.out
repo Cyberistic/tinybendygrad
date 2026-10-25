@@ -1,0 +1,16 @@
+    oracleplant: the DAG's second ADD became a MUL: applied and VERIFIED
+transcribed 15 oracle rows -> 16 port rows in /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//bw3/walk-planted.rows
+=== the EXPECTATIONS moved (the oracle moved, the port did NOT):
+    < walk_row=MUL/2 ADD/2 ADD/2 | grads_n=6
+    > walk_row=MUL/2 MUL/2 ADD/2 | grads_n=6
+    < walk_sig=MUL/2 ADD/2 ADD/2
+    > walk_sig=MUL/2 MUL/2 ADD/2
+    < walk_grad_a=6 root=ADD/2
+    > walk_grad_a=8 root=ADD/2
+    < walk_grad_c=2 root=CAST/1
+    > walk_grad_c=5 root=MUL/2
+    < walk_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 BUFFER/1 BUFFER/1
+    > walk_keys=ADD/2 MUL/2 MUL/2 BUFFER/1 BUFFER/1 BUFFER/1
+=== the PORT's rows did NOT move (this arm never touched it):
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=102
+    the port's output is byte-identical to the base -- NOTHING MOVED

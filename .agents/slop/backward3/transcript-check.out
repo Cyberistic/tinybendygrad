@@ -1,0 +1,8 @@
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=102
+=== THE GATE (a): the port's walk rows against walk.rows -- CPython's own bytes
+    rows expected: 16   PASS: 16   MISMATCH: 0   UNCHECKABLE: 0   MISSING: 0
+    VERDICT: PASS
+=== THE GATE (b): the previous unit's gs_*/bw_* rows against backward2/rows.rows
+    rows expected: 14   PASS: 14   MISMATCH: 0   UNCHECKABLE: 0   MISSING: 0
+    VERDICT: PASS
+=== VERDICT: walk-rows rc=0   gs/bw-rows rc=0

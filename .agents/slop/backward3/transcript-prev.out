@@ -1,0 +1,162 @@
+################ ARM base
+  === arm=base  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+      (this IS the base; persisted at /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//bw2base.rows)
+################ ARM check
+  === arm=check  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === THE GATE: the port's new rows against rows.rows (CPython's values)
+      rows compared: 14 of 14   mismatched: 0   VERDICT: PASS
+################ ARM plant_gswap
+      plant_gswap: the MUL rule's operands UNCROSSED (gradient.py:80): applied and VERIFIED
+  === arm=plant_gswap  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 3
+      < bw_nodes=11
+      < bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+      < bw_distinct=11
+      > bw_nodes=9
+      > bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] STACK/0 []
+      > bw_distinct=9
+################ ARM plant_nozero
+      plant_nozero: the ZERO SUBSTITUTE replaced by the reserved index 0: applied and VERIFIED
+  === arm=plant_nozero  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 4
+      < gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 2 root=CAST/1
+      < bw_nodes=11
+      < bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+      < bw_distinct=11
+      > gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 1 root=NOOP/0
+      > bw_nodes=10
+      > bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f1065353216] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] NOOP/0 [] STACK/0 []
+      > bw_distinct=10
+################ ARM plant_setorder
+      plant_setorder: the gradient SET built in REVERSE order: applied and VERIFIED
+  === arm=plant_setorder  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 1
+      < gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 2 root=CAST/1
+      > gs_set_sig=G 6 root=MUL/2 | G 7 root=ADD/2 | Z 2 root=CAST/1
+################ ARM plant_nohole
+      plant_nohole: the EXPAND's HOLE filled in (gradient.py:86): applied and VERIFIED
+  === arm=plant_nohole  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 3
+      < gs_grads_n=6
+      < gs_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 EXPAND/2 BUFFER/1
+      > gs_grads_n=7
+      > gs_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 EXPAND/2 STACK/0 BUFFER/1
+      < gs_hole_n=1
+      > gs_hole_n=0
+################ ARM plant_noguard
+      plant_noguard: the in_target_path GUARD dropped (gradient.py:114): applied and VERIFIED
+  === arm=plant_noguard  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 7
+      < walk_row=MUL/2 ADD/2 ADD/2 | grads_n=6
+      < walk_sig=MUL/2 ADD/2 ADD/2
+      > walk_row=STACK/0 BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2 | grads_n=6
+      > walk_sig=STACK/0 BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2
+      < walk_walk_n=3
+      > walk_walk_n=7
+      < walk_skip_n=0
+      > walk_skip_n=1
+      < gs_walk=MUL/2 EXPAND/2 ADD/2 ADD/2
+      < gs_walk_n=4
+      > gs_walk=STACK/0 BUFFER/1 BUFFER/1 MUL/2 EXPAND/2 ADD/2 ADD/2
+      > gs_walk_n=7
+      < gs_skip_n=0
+      > gs_skip_n=1
+################ ARM plant_skipseed
+      plant_skipseed: the SEED dropped, so the root SKIPS (gradient.py:120): applied and VERIFIED
+  === arm=plant_skipseed  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 19
+      < walk_row=MUL/2 ADD/2 ADD/2 | grads_n=6
+      > walk_row=MUL/2 ADD/2 ADD/2 | grads_n=1
+      < walk_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 BUFFER/1 BUFFER/1
+      < walk_grad_a=6 root=ADD/2
+      < walk_grad_b=5 root=MUL/2
+      < walk_grad_c=2 root=CAST/1
+      < walk_grad_p=2 root=CAST/1
+      < walk_grad_q=2 root=CAST/1
+      < walk_grad_r=2 root=CAST/1
+      > walk_keys=ADD/2
+      > walk_grad_a=NONE
+      > walk_grad_b=NONE
+      > walk_grad_c=NONE
+      > walk_grad_p=NONE
+      > walk_grad_q=NONE
+      > walk_grad_r=1 root=NOOP/0
+      < walk_grads_n=6
+      < walk_skip_n=0
+      > walk_grads_n=1
+      > walk_skip_n=3
+      < gs_grads_n=6
+      < gs_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 EXPAND/2 BUFFER/1
+      < gs_skip_n=0
+      < gs_hole_n=1
+      > gs_grads_n=1
+      > gs_keys=ADD/2
+      > gs_skip_n=4
+      > gs_hole_n=0
+      < gs_zero_n=1
+      < gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 2 root=CAST/1
+      < bw_nodes=11
+      < bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+      < bw_distinct=11
+      > gs_zero_n=3
+      > gs_set_sig=Z 2 root=CAST/1 | Z 2 root=CAST/1 | Z 2 root=CAST/1
+      > bw_nodes=2
+      > bw_sig=CAST/1 [CONST/0@f0] CONST/0@f0 []
+      > bw_distinct=2
+################ ARM plant_droptarget
+      plant_droptarget: the THIRD TARGET dropped, so the set is one shorter: applied and VERIFIED
+  === arm=plant_droptarget  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 6
+      < gs_set_n=3
+      < gs_zero_n=1
+      < gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 2 root=CAST/1
+      < bw_nodes=11
+      < bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+      < bw_distinct=11
+      > gs_set_n=2
+      > gs_zero_n=0
+      > gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2
+      > bw_nodes=9
+      > bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f1065353216] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+      > bw_distinct=9
+################ ARM plant_flags
+      plant_flags: the in_target_path FLAG always true (gradient.py:112): applied and VERIFIED
+  === arm=plant_flags  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 9
+      < walk_row=MUL/2 ADD/2 ADD/2 | grads_n=6
+      < walk_sig=MUL/2 ADD/2 ADD/2
+      < walk_inpath=0 0 0 1 0 1 1
+      > walk_row=BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2 | grads_n=6
+      > walk_sig=BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2
+      > walk_inpath=0 1 1 1 1 1 1
+      < walk_walk_n=3
+      < walk_n_inpath=3
+      > walk_walk_n=6
+      > walk_n_inpath=6
+      < gs_walk=MUL/2 EXPAND/2 ADD/2 ADD/2
+      < gs_walk_n=4
+      < gs_inpath=0 0 0 1 1 1 1
+      < gs_n_inpath=4
+      > gs_walk=BUFFER/1 BUFFER/1 MUL/2 EXPAND/2 ADD/2 ADD/2
+      > gs_walk_n=6
+      > gs_inpath=0 1 1 1 1 1 1
+      > gs_n_inpath=6
+################ ARM disarm_comment
+      disarm_comment: comment text: applied and VERIFIED
+  === arm=disarm_comment  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 0
+################ ARM disarm_name
+      disarm_name: parameter v (signature): applied and VERIFIED
+      disarm_name: parameter v (body): applied and VERIFIED
+  === arm=disarm_name  check-only: ALL PROOFS CHECK  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      rows that MOVED: 0

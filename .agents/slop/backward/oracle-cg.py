@@ -20,10 +20,48 @@ in `targets`; every node in the walk is visited in reverse toposort order.
 THE ORACLE PRINTS SIGNATURES (node count, then root op/root nsrc/src op sequence) and
 COUNTS -- never a name and never a boolean.  The gate's `py=` values are this file's
 output, transcribed BY SCRIPT, never by hand.
+
+===============================================================================
+THE LEAF, AND WHY IT IS `BUFFER(STACK())` AND NOT `BUFFER()`
+===============================================================================
+Upstream's `_shape` for a BUFFER reads `self.src[0].as_shape` (`ops.py:359`):
+
+    case Ops.BUFFER | Ops.ALLOC | Ops.PARAM:
+      assert len(self.src[0].as_shape) <= 1
+
+so a SRC-LESS BUFFER has no `src[0]` and `_shape` raises `IndexError: tuple index
+out of range`.  `compute_gradient` reads `k._shape` at `gradient.py:130`, so a
+src-less leaf makes the whole walk UNCOMPUTABLE.
+
+MEASURED 2026-10-25, on this tree's own `tinygrad/`: this file died at
+`oracle-cg.py:83` with exactly that `IndexError`, AFTER printing five rows.  The
+15 `walk_*` rows the prior art transcribed from it therefore could not be
+re-verified -- they were a RECORD, not a measurement.
+
+THE FIX IS THE LEAF.  `as_shape` of an EMPTY STACK is `()` (`ops.py:789`), so
+`BUFFER(STACK())` has `_shape` `()` -- SCALAR -- and the shaped-edge reduce at
+`gradient.py:131` never fires.  Every leaf in this file is built by `leaf()` so
+that no two leaves disagree about their shape: a fixture that is half-changed is a
+fixture that compares two different graphs.
+
+THE SECOND FIXTURE (`build2`, the EXPAND) STILL CANNOT BE COMPUTED, and now for a
+NAMED reason rather than an accident: its EXPAND's shape src is `ADD(a, d)`, whose
+`as_shape` is the ONE-tuple `(ssimplify(c),)` (`ops.py:788`), so the EXPAND's
+`_shape` is a 1-tuple, the shaped-edge reduce fires, and CPython raises there.
+`main()` catches that and PRINTS IT AS A ROW, because an instrument that dies
+without saying so is the failure mode this tree calls DEAD.
 """
 from tinygrad.uop.ops import UOp, Ops, ParamArg
 from tinygrad.dtype import dtypes
 from tinygrad.mixin.gradient import compute_gradient, pm_gradient, _deepwalk
+
+
+def leaf(slot):
+  """A BUFFER whose src is an EMPTY STACK.  `as_shape` of an empty STACK is `()`
+  (`ops.py:789`), so the leaf's `_shape` is `()` -- SCALAR -- and `compute_gradient`
+  returns instead of raising.  MEASURED: `ops.py:359` reads `self.src[0].as_shape`,
+  so a src-less BUFFER raises `IndexError` there."""
+  return UOp(Ops.BUFFER, src=(UOp(Ops.STACK, src=()),), arg=ParamArg(slot, dtypes.float32))
 
 
 def sig(u):
@@ -33,9 +71,9 @@ def sig(u):
 
 def build1():
     """The DAG.  Pins the ACCUMULATE (gradient.py:134-138)."""
-    a = UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.float32))
-    b = UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.float32))
-    c = UOp(Ops.BUFFER, arg=ParamArg(2, dtypes.float32))
+    a = leaf(0)
+    b = leaf(1)
+    c = leaf(2)
     p = UOp(Ops.MUL, src=(a, b))
     q = UOp(Ops.ADD, src=(a, c))
     return a, b, c, p, q, UOp(Ops.ADD, src=(p, q))
@@ -48,11 +86,16 @@ def build2():
     receives a gradient.  That src is ON the target path (it is `ADD(a,d)` and `a` is
     a target) so it IS in the walk, and it is NOT in `grads` when the walk reaches it,
     which is gradient.py:120's `continue` firing for real rather than by construction.
+
+    THE LEAVES ARE `BUFFER(STACK())` -- the same `leaf()` as `build1` -- so the two
+    fixtures agree about what a leaf IS.  What this fixture CANNOT do is compute:
+    its EXPAND's shape src is an ADD, so the shaped-edge reduce fires and CPython
+    raises.  `main()` prints that raise as a row.
     """
-    a = UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.float32))
-    b = UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.float32))
-    d = UOp(Ops.BUFFER, arg=ParamArg(2, dtypes.float32))
-    f = UOp(Ops.BUFFER, arg=ParamArg(3, dtypes.float32))
+    a = leaf(0)
+    b = leaf(1)
+    d = leaf(2)
+    f = leaf(3)
     c = UOp(Ops.ADD, src=(a, d))
     p = UOp(Ops.MUL, src=(a, b))
     e = UOp(Ops.EXPAND, src=(p, c))
@@ -109,13 +152,11 @@ def one(tag, root, targets, names):
     print("oracle_%s_hole_n=%d" % (tag, holes))
 
 
-def main():
-    a, b, c, p, q, r = build1()
-    one("dag", r, {a, b, c}, (("a", a), ("b", b), ("c", c), ("p", p), ("q", q), ("r", r)))
-    a2, b2, d2, f2, c2, p2, e2, r2 = build2()
-    one("hole", r2, {a2, b2, d2},
-        (("a", a2), ("b", b2), ("c", c2), ("d", d2), ("p", p2), ("e", e2), ("r", r2)))
-
+def rule_rows(p, r, a):
+    """THE RULE TABLE ON ITS OWN, and the forward-walk counterfactual -- BOTH built
+    from the FIRST fixture only, so they are emitted whether or not the second
+    fixture can be computed.  (Before the leaf was fixed, `main()` died in the FIRST
+    fixture and NONE of these rows was ever printed.)"""
     # the rule table on its own, the one-step comparison the census did
     lg = pm_gradient.rewrite(p, ctx=UOp.const(1.0, dtypes.float32))
     print("oracle_pmul=%s" % ("GSKIP" if lg is None else
@@ -139,6 +180,24 @@ def main():
     print("oracle_fwdwalk_n=%d" % len(g2))
     print("oracle_fwdwalk_skipped=%d" % skipped)
     print("oracle_fwdwalk_a=%s" % ("NONE" if a not in g2 else osig(g2[a])))
+
+
+def main():
+    a, b, c, p, q, r = build1()
+    one("dag", r, {a, b, c}, (("a", a), ("b", b), ("c", c), ("p", p), ("q", q), ("r", r)))
+    rule_rows(p, r, a)
+
+    # THE SECOND FIXTURE, GUARDED.  It cannot be computed -- the shaped-edge reduce
+    # fires on its EXPAND -- and the instrument SAYS SO instead of dying.
+    try:
+        a2, b2, d2, f2, c2, p2, e2, r2 = build2()
+        one("hole", r2, {a2, b2, d2},
+            (("a", a2), ("b", b2), ("c", c2), ("d", d2), ("p", p2), ("e", e2), ("r", r2)))
+    except Exception as exc:
+        # ONE LINE: a row is one `name=value` line, and upstream's message is
+        # multi-line (it prints the whole UOp), so the newlines are folded.
+        print("oracle_hole_error=%s: %s" % (type(exc).__name__, " ".join(str(exc).split())))
+        print("oracle_hole_computed=no")
 
 
 main()

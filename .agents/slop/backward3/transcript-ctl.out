@@ -1,0 +1,37 @@
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=102
+=== THE CONTROLS
+(0) the UNPERTURBED expectations
+    PASS  OK  (16 rows)
+    (a) walk_grad_a      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_grad_a      empty              -> UNCHECKABLE  OK
+    (a) walk_grad_b      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_grad_b      empty              -> UNCHECKABLE  OK
+    (a) walk_grad_c      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_grad_c      empty              -> UNCHECKABLE  OK
+    (a) walk_grad_p      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_grad_p      empty              -> UNCHECKABLE  OK
+    (a) walk_grad_q      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_grad_q      empty              -> UNCHECKABLE  OK
+    (a) walk_grad_r      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_grad_r      empty              -> UNCHECKABLE  OK
+    (a) walk_grads_n     wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_grads_n     empty              -> UNCHECKABLE  OK
+    (a) walk_hole_n      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_hole_n      empty              -> UNCHECKABLE  OK
+    (a) walk_inpath      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_inpath      empty              -> UNCHECKABLE  OK
+    (a) walk_keys        wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_keys        empty              -> UNCHECKABLE  OK
+    (a) walk_n_inpath    wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_n_inpath    empty              -> UNCHECKABLE  OK
+    (a) walk_n_toposort  wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_n_toposort  empty              -> UNCHECKABLE  OK
+    (a) walk_row         wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_row         empty              -> UNCHECKABLE  OK
+    (a) walk_sig         wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_sig         empty              -> UNCHECKABLE  OK
+    (a) walk_skip_n      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_skip_n      empty              -> UNCHECKABLE  OK
+    (a) walk_walk_n      wrong-but-non-empty -> MISMATCH     OK
+    (b) walk_walk_n      empty              -> UNCHECKABLE  OK
+CONTROLS: 16 rows x 2 perturbations + the clean run = 33 checks, failures: 0

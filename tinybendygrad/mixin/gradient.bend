@@ -1088,7 +1088,8 @@ def gr_rewrite(+ts: O.PMEntrys, +ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 #     CPython ITSELF raises: `oracle-cg.py`'s second fixture drives `compute_gradient`
 #     into `RuntimeError: cannot broadcast ... into ()` at gradient.py:133, so the
 #     fixture cannot gate a port of that line either. The walk is gated on the fixture
-#     that does NOT reach it, and every node in that fixture is a SCALAR, so the guard
+#     that does NOT reach it, and every node in that fixture is a SCALAR -- the leaves
+#     are `BUFFER(STACK())`, whose `_shape` is `()` (ops.py:359, :789) -- so the guard
 #     `k._shape is not None and v._shape is not None and k._shape != v._shape` is FALSE
 #     throughout -- the port omits a branch that is not taken, which is stated rather
 #     than hidden.
@@ -1517,8 +1518,20 @@ type Fix is Data:
 # the two-sided identity gate is built on.
 def fx_pa(slot: U32) -> O.ParamArg: O.ParamArg.of(slot, S.single())
 
+# *** THE LEAF IS `BUFFER(STACK())` AND NOT `BUFFER()`. ***
+# upstream's `_shape` for a BUFFER reads `self.src[0].as_shape` (ops.py:359), so a
+# SRC-LESS buffer has no `src[0]` and `_shape` raises `IndexError: tuple index out of
+# range` -- and `compute_gradient` reads `k._shape` at gradient.py:130, so a src-less
+# leaf makes the WHOLE WALK uncomputable.  MEASURED 2026-10-25: the prior art's oracle
+# (`.agents/slop/backward/oracle-cg.py`) died exactly there, so the `walk_*` rows were a
+# RECORD rather than a measurement.
+# `as_shape` of an EMPTY STACK is `()` (ops.py:789), so `BUFFER(STACK())` has `_shape`
+# `()` -- SCALAR -- and the shaped-edge reduce at gradient.py:131 never fires.  EVERY
+# leaf in this file is built HERE, so no two leaves can disagree about their shape: a
+# fixture that is half-changed is a fixture that compares two different graphs.
 def fx_buf(+ar: O.Arena, slot: U32) -> O.Found:
-  gnew(ar, O.OpsBUFFER{}, Nil{}, O.AParam{fx_pa(slot)})
+  +sh = gnew(ar, O.OpsSTACK{}, Nil{}, O.ANone{})
+  gnew(O.Found.ar(sh), O.OpsBUFFER{}, [O.Found.i(sh)], O.AParam{fx_pa(slot)})
 
 def fix.put(fx: F.Folded, t1: U32, t4: U32, t5: U32, t6: U32, t7: U32, t8: U32, t9: U32,
             t10: U32, t11: U32, t12: U32, t13: U32, t14: U32, t15: U32, t16: U32, t17: U32,
@@ -2123,15 +2136,19 @@ def t_rej_len27() -> U32:
 #     r = ADD(p, q)        <- root, seed CONST 1.0
 #   targets = {a, b, c}, `root_grad = UOp.const(1.0, dtypes.float32)`.
 #
-# *** THE DENOMINATOR, AND IT IS NOT 2/2. *** The committed oracle prints twenty rows for
-# this fixture and then DIES: its SECOND fixture (`build2`, the EXPAND) drives CPython's
-# own `compute_gradient` into `RuntimeError: cannot broadcast ... into ()` at
-# gradient.py:133, so the rows after `main()`'s `one("hole", ...)` call -- including its
-# `pmul`, `fwdwalk` and forward-walk-counterfactual lines -- are NEVER EMITTED. That is
-# why this file's rows are the ten that oracle DOES print, and why the EXPAND fixture --
-# the one that would exercise gradient.py:130's HOLE and gradient.py:120's SKIP for real
-# -- is not a fixture here. The hole/skip counters are gated at 0, which is the truth for
-# THIS fixture and no coverage statement about the other.
+# *** THE DENOMINATOR, AND IT IS NOT 2/2. *** The oracle's FIRST fixture (`build1`, this
+# one) prints its FIFTEEN rows and the oracle's SECOND fixture (`build2`, the EXPAND)
+# drives CPython's own `compute_gradient` into `RuntimeError: cannot broadcast ... into
+# ()` at gradient.py:133 -- the SHAPED-EDGE REDUCE, because `build2`'s EXPAND's shape src
+# is an ADD whose `as_shape` is a ONE-tuple (ops.py:788) while a leaf's is `()`.
+# **⇒ THE ORACLE NO LONGER DIES SILENTLY: `main()` catches that raise and PRINTS IT AS A
+# ROW** (`oracle_hole_error=...`), and the seven rows that used to be unreachable
+# (`oracle_pmul`, `oracle_pmul0/1`, `oracle_seed`, `oracle_fwdwalk_n`,
+# `oracle_fwdwalk_skipped`, `oracle_fwdwalk_a`) are now emitted, because they are built
+# from the FIRST fixture alone.
+# **⇒ WHAT THE HOLE FIXTURE STILL CANNOT GATE IS ITS GRADIENTS**, and that is why the
+# hole/skip counters are gated at 0 here: 0 is the truth for THIS fixture and no coverage
+# statement about the other.
 type Dag is Data:
   Dag{ar: O.Arena, a: U32, b: U32, c: U32, p: U32, q: U32, r: U32, seed: U32}
 
@@ -2170,6 +2187,10 @@ def Dag.seed_of(d: Dag) -> U32:
 # THE THREE BUFFERS ARE ON DISTINCT SLOTS (ParamArg 0/1/2), which is what makes `a` and
 # `b` DIFFERENT NODES -- interning would otherwise collapse them and `grad_b` would be
 # `root=MUL/2` over the wrong buffer. `fx_pa`/`fx_buf` are the fixture builders above.
+# **`fx_buf` GIVES EVERY LEAF AN EMPTY-STACK SRC** (`BUFFER(STACK())`), which is what
+# upstream's `_shape` needs (ops.py:359) and what the oracle's `leaf()` builds; so the
+# port's graph and CPython's are the SAME GRAPH, node for node, and not merely two
+# graphs that happen to produce the same numbers.
 def dag() -> Dag:
   +n0 = fx_buf(O.Arena.empty(), 0)
   +n1 = fx_buf(O.Found.ar(n0), 1)
@@ -2245,10 +2266,15 @@ def dag_row.of(+d: Dag) -> String:
 def dag_row() -> String: dag_row.of(dag())
 
 # `in_target_path` OVER THE TOPOSORT -- `oracle_dag_inpath`, and it is the ROW THAT SEES
-# THE LATTICE. `oracle_dag_inpath=0 0 1 0 1 1` is NOT the walk: `a` and `b` are TARGETS
-# and are answered `0`, because the rule is `any(src is on the path)` and they have no
-# srcs, while `p` at position 2 is `1` because `a` IS a target. A port that answered "in
-# targets" instead of "on the path" prints `1 1 1 0 1 1` and this row is what says so.
+# THE LATTICE. `oracle_dag_inpath=0 0 0 1 0 1 1` is NOT the walk, and it is read over
+# the TOPOSORT's SEVEN nodes -- the empty STACK, `a`, `b`, `p`, `c`, `q`, `r`:
+#   * the STACK is `0` because it has NO SRCS at all -- `any(...)` over an empty list.
+#   * `a` and `b` are `0` because the rule is `any(src is on the path)` and their ONLY
+#     src is that STACK, which is on no path and is not a target.  A port that answered
+#     "in targets" instead of "on the path" prints `1 1 1 1 0 1 1` and this row is what
+#     says so.
+#   * `p` and `q` are `1` because `a` IS a target, and `r` is `1` because `p` is on the
+#     path; `c` is `0` because it is a LEAF that is nobody's ancestor.
 def dag_inpath.go(ns: List<&2, U32>, fs: List<&2, Bool>, +acc: String) -> String:
   match ns fs:
     case _ <> t f <> u: dag_inpath.go(t, u, dag_join(U32.show(b32(f)), acc))
@@ -2279,9 +2305,10 @@ def dag_n_inpath() -> U32: dag_n_inpath.of(dag())
 # `compute_gradient`'s two counters -- `oracle_dag_skip_n` and `oracle_dag_hole_n`. Both
 # are 0 ON THIS FIXTURE and that is a MEASUREMENT, not a stub: `p`, `q` and `r` are all in
 # `grads` by the time the walk reaches them, and none of their rules answers a hole. The
-# EXPAND fixture is the one that makes `hole_n` non-zero and CPython cannot compute it at
-# all (see the DENOMINATOR note above), so 0 here is a fact about THIS walk and no
-# coverage statement about the other.
+# EXPAND fixture is the one that makes `hole_n` non-zero, and CPython computes its WALK
+# but NOT its gradients (the shaped-edge reduce raises -- see the DENOMINATOR note above),
+# so there is no CPython answer for its counters to be gated against. 0 here is a fact
+# about THIS walk and no coverage statement about the other.
 def dag_skip_n() -> U32: CState.skip_of(dag_grads(dag()))
 
 def dag_hole_n() -> U32: CState.hole_of(dag_grads(dag()))
@@ -2305,8 +2332,12 @@ def dag_keys() -> String:
 # prints the node COUNT and the ROOT's op and arity and stops there. **THE `srcs=`
 # MULTISET IS A NAMED LOSS**, stated here rather than quietly dropped: two of the
 # oracle's three `osig` fields are gated and the third is not. Those two are the ones
-# that separate all four cases (`grad_a` accumulated -> `5 root=ADD/2`, `grad_b` fresh ->
-# `4 root=MUL/2`, and `grad_c`/`_p`/`_q`/`_r` the seed verbatim -> `2 root=CAST/1`).
+# that separate all four cases (`grad_a` accumulated -> `6 root=ADD/2`, `grad_b` fresh ->
+# `5 root=MUL/2`, and `grad_c`/`_p`/`_q`/`_r` the seed verbatim -> `2 root=CAST/1`).
+# **THE COUNTS MOVED WHEN THE LEAF MOVED** -- `5`/`4` before the leaf carried a STACK
+# src and `6`/`5` after -- because a leaf's node set grew by the STACK, and a gradient's
+# operands ARE the leaves.  That is the count row moving for a STRUCTURAL reason and not
+# for a wrong walk.
 # *** `size1` IS NOT A TOPOSORT COUNT, AND HERE IS WHERE IT SHOWS. *** `size` is
 # `1 + sum(size(s) for s in u.src)`, so it counts a SHARED subtree ONCE PER PATH. CPython's
 # `len(u.toposort())` counts it once. The two agree on every `*_n` row above because
@@ -2353,6 +2384,398 @@ def dag_grad_r(+d: Dag) -> String: dag_grad_root.put(d, Dag.r_of(d))
 # ONE FIXTURE FOR THE SIX `walk_grad_*` ROWS, so every one of them reads the SAME arena's
 # key indices and the same arena's value indices (see `dag_grad_root.put`).
 def walk_dag() -> Dag: dag()
+
+# ===========================================================================
+# THE GRADIENT SET -- mixin/op.py:471 -- AND THE `bw` GRAPH.
+#
+# WHAT UPSTREAM SAYS.  `tinygrad/mixin/op.py:470-471`:
+#
+#     grads = compute_gradient(self._uop, gradient._uop, set(target_uops))
+#     return [self._wrap_uop(grads[x] if x in grads else x.const_like(0)) for x in target_uops]
+#
+# so the GRADIENT SET is ONE SLOT PER TARGET, IN TARGET ORDER, and a target with no
+# entry in `grads` gets the `const_like(0)` SUBSTITUTE rather than a hole.
+#
+# WHY IT LIVES HERE AND NOT IN `tensor.bend`.  `tensor.bend`'s `tn_bwd_slot` implements
+# the SELECTION and answers the substitute with the arena's RESERVED INDEX 0 -- a NAMED
+# DIVERGENCE, because `tensor.bend` has no way to intern a float literal.  THIS file
+# owns `gconst`, and `gconst` is exactly upstream's `UOp.const(v, f32)` -- the
+# `CAST(CONST)` pair `ops.py:632` builds.  So the substitute is buildable HERE, and
+# `grad_set` is the def that builds it.  `tensor.bend` keeps the SELECTION; this file
+# owns the VALUE.
+#
+# THE `bw` GRAPH is the backward UOp GRAPH that `compute_gradient` builds: the union of
+# the node sets of the gradient values, READ OUT OF THE ARENA.  The arena is
+# HASH-CONSED (`ops.bend`'s `UOp.make.intern`), so a node IS its own key -- the graph
+# is READ, never rebuilt as a list of records.
+# ===========================================================================
+
+# THE FIXTURE.  `Gs` is the `Dag` fixture's shape plus an EXPAND (so a HOLE fires for
+# real) plus a DETACHED target (so the `const_like(0)` substitute fires for real).
+#
+# THE LEAF IS `BUFFER(STACK())` AND NOT `BUFFER()`.  upstream's `_shape` for a BUFFER
+# reads `self.src[0].as_shape` (ops.py:359), so a src-less BUFFER makes
+# `compute_gradient` raise `IndexError: tuple index out of range` -- MEASURED 2026-10-25,
+# and that is exactly how the prior art's oracle (`.agents/slop/backward/oracle-cg.py`)
+# died, which is why `fx_buf` above now gives EVERY leaf the same empty-STACK src.
+# An EMPTY STACK's `as_shape` is `()` (ops.py:789), so the leaf's
+# `_shape` is `()` -- SCALAR -- and the shaped-edge reduce at gradient.py:131 never
+# fires.  The same empty STACK is the EXPAND's shape src, so the EXPAND's `marg` is
+# `()` (ops.py:794) and the EXPAND's `_shape` is `()` too.
+type Gs is Data:
+  Gs{ar: O.Arena, a: U32, b: U32, z: U32, r: U32, seed: U32}
+
+# THE LEAF.  `BUFFER(STACK())` -- the STACK is the shape src and it is EMPTY.
+def gs_leaf(+ar: O.Arena, slot: U32, sh: U32) -> O.Found:
+  gnew(ar, O.OpsBUFFER{}, [sh], O.AParam{fx_pa(slot)})
+
+# THE FIXTURE, built in the ORDER CPython's `build()` builds it:
+#
+#     a = BUFFER(0)   sh = STACK()   p = MUL(a, b)
+#     b = BUFFER(1)   e = EXPAND(p, sh)   q = ADD(a, e)
+#     z = BUFFER(9)   r = ADD(p, q)       <- the root
+#
+# `sh` is the EXPAND's second src, and upstream's EXPAND rule answers `(ctx, None)`
+# (gradient.py:86), so `sh` receives a HOLE (gradient.py:130's `if v is None: continue`).
+# `z` is a DETACHED TARGET -- it is on no path at all -- so `grads` has no entry for it
+# and the `const_like(0)` substitute fires.  TWO DIFFERENT REASONS FOR NO GRADIENT, and
+# they are different reasons.
+def gs() -> Gs:
+  +s0 = gnew(O.Arena.empty(), O.OpsSTACK{}, Nil{}, O.ANone{})
+  +n0 = gs_leaf(O.Found.ar(s0), 0, O.Found.i(s0))
+  +n1 = gs_leaf(O.Found.ar(n0), 1, O.Found.i(s0))
+  +n2 = gs_leaf(O.Found.ar(n1), 9, O.Found.i(s0))
+  +m = gnew(O.Found.ar(n2), O.OpsMUL{}, [O.Found.i(n0), O.Found.i(n1)], O.ANone{})
+  +x = gnew(O.Found.ar(m), O.OpsEXPAND{}, [O.Found.i(m), O.Found.i(s0)], O.ANone{})
+  +q = gnew(O.Found.ar(x), O.OpsADD{}, [O.Found.i(n0), O.Found.i(x)], O.ANone{})
+  +t = gnew(O.Found.ar(q), O.OpsADD{}, [O.Found.i(m), O.Found.i(q)], O.ANone{})
+  +sd = gconst(O.Found.ar(t), k_fone())
+  Gs{O.Found.ar(sd), O.Found.i(n0), O.Found.i(n1), O.Found.i(n2), O.Found.i(t), O.Found.i(sd)}
+
+# THE TARGETS, IN ORDER.  The order IS part of the contract: upstream's list
+# comprehension iterates `target_uops` in the order the caller passed them.
+def gs_targets.of(a: U32, b: U32, z: U32) -> List<&2, U32>: [a, b, z]
+
+# ---------------------------------------------------------------------------
+# THE RUN.  ONE record, ONE fixture, ONE arena: the walk's arena (the FIXTURE's) and
+# the walk's own grown arena (the CState's) are DIFFERENT arenas, and every row below
+# reads indices out of exactly one of them.  The notes' T-4 shape -- reading a key
+# index out of one arena and a value index out of another -- is what this record
+# exists to make impossible.
+# ---------------------------------------------------------------------------
+type GRun is Data:
+  GRun{ar: O.Arena, cs: CState, ts: List<&2, U32>, r: U32}
+
+# THE TARGETS COME FROM `gs_targets` AND FROM NOWHERE ELSE.  An earlier revision spelled
+# `[a, b, z]` in here as well, and `gs_targets` was then a def with NO CALLER -- which is
+# the tree's own "a def claiming a CPython expression with no caller is a claim of
+# unknown value" (this file's `gbool` note).  ONE spelling, one caller.
+def gs_run(+g: Gs) -> GRun:
+  match g:
+    case Gs{ar, a, b, z, r, seed}:
+      +ts = gs_targets.of(a, b, z)
+      GRun{ar, compute_gradient(r, seed, ts, ar), ts, r}
+
+# ---------------------------------------------------------------------------
+# THE GRADIENT SET.  `GSet` is the answer: the slots, the per-slot IS-SUBSTITUTE flags,
+# the arena the substitute was interned into, and the substitute COUNT.
+# ---------------------------------------------------------------------------
+type GSet is Data:
+  GSet{slots: List<&2, U32>, zs: List<&2, Bool>, ar: O.Arena, zeros: U32}
+
+def GSet.slots_of(g: GSet) -> List<&2, U32>:
+  match g:
+    case GSet{slots, zs, ar, zeros}: slots
+
+def GSet.zs_of(g: GSet) -> List<&2, Bool>:
+  match g:
+    case GSet{slots, zs, ar, zeros}: zs
+
+def GSet.ar_of(g: GSet) -> O.Arena:
+  match g:
+    case GSet{slots, zs, ar, zeros}: ar
+
+def GSet.zeros_of(g: GSet) -> U32:
+  match g:
+    case GSet{slots, zs, ar, zeros}: zeros
+
+# THE TARGET'S DTYPE -- the `dtype or self.dtype` half of `const_like` (ops.py:582).
+def gs_dt(+ar: O.Arena, +x: U32) -> Maybe<&2, S.Dt>:
+  +fx = F.folded(ar)
+  gcast.dt(fx, x)
+
+# `x.const_like(0)` -- ops.py:581-583:
+#     ret = UOp.const(b, dtype or self.dtype)
+#     return ret._mop(Ops.EXPAND, arg=self._shape) if self._shape and ret._shape != self._shape else ret
+# THE EXPAND ARM IS UNREACHABLE HERE and that is a NAMED OMISSION: a target's `_shape`
+# is `None` or `()` in every fixture, and `()` is FALSY, so the arm never fires.  The
+# CONST is `gconst_raw` (a BARE `CONST` at weakfloat) and the CAST is `gcast` to the
+# target's dtype -- so a float32 target gets `CAST(CONST 0.0)`, upstream's
+# `UOp.const(0, dtypes.float32)`, and a weakfloat target gets the bare `CONST`.
+def gs_zero.of(dt: Maybe<&2, S.Dt>, +ar: O.Arena, +x: U32) -> O.Found:
+  match dt:
+    case Some{d}: gcast(ar, x, d)
+    case None{}: O.Found{ar, x}
+
+# THE SUBSTITUTE SLOT: the target had no gradient, so the zero is minted and interned.
+# THE ARENA GROWS and the grown one is handed on -- the same rule as `cg_sum.grow`.
+def gs_slot.sub(+acc: GSet, +t: U32) -> GSet:
+  +c = gconst_raw(GSet.ar_of(acc), k_fzero())
+  +z = gs_zero.of(gs_dt(O.Found.ar(c), t), O.Found.ar(c), O.Found.i(c))
+  GSet{List.append(&2, U32, GSet.slots_of(acc), [O.Found.i(z)]),
+       List.append(&2, Bool, GSet.zs_of(acc), [True{}]),
+       O.Found.ar(z), U32.add(GSet.zeros_of(acc), 1)}
+
+# THE SLOT: `grads[x] if x in grads else x.const_like(0)`.  `gslot` IS the `x in grads`
+# half and `GSlot.v_of` the `grads[x]` half, so the ONLY thing this def adds is the
+# ELSE -- and the ELSE BUILDS A NODE, which is why the arena is threaded through.
+def gs_slot.of(hit: Maybe<&2, GSlot>, +acc: GSet, +t: U32) -> GSet:
+  match hit:
+    case Some{sl}: GSet{List.append(&2, U32, GSet.slots_of(acc), [GSlot.v_of(sl)]),
+                         List.append(&2, Bool, GSet.zs_of(acc), [False{}]),
+                         GSet.ar_of(acc), GSet.zeros_of(acc)}
+    case None{}: gs_slot.sub(acc, t)
+
+# THE GRADIENT SET -- mixin/op.py:471, one slot per target, IN TARGET ORDER.  The
+# accumulator is LAST and `+`, and the recursion shrinks the TARGET list.
+def grad_set.go(+s: CState, targets: List<&2, U32>, +acc: GSet) -> GSet:
+  match targets:
+    case Nil{}: acc
+    case +t <> ts: grad_set.go(s, ts, gs_slot.of(gslot(CState.g_of(s), t), acc, t))
+
+def grad_set(+s: CState, targets: List<&2, U32>) -> GSet:
+  grad_set.go(s, targets, GSet{Nil{}, Nil{}, CState.ar_of(s), 0})
+
+# ---------------------------------------------------------------------------
+# THE `bw` GRAPH -- the backward UOp graph, read out of the arena.
+#
+# THE SIGNATURE IS INDEX-FREE ON PURPOSE.  The port's arena indices and CPython's
+# construction order are not comparable -- they are two different numberings of two
+# different interning processes -- so a signature that keyed on them would be comparing
+# two different things.  What IS comparable is the GRAPH: each node contributes
+#   `<OP>/<nsrc><ident> [<the SORTED tokens of its srcs>]`
+# and the whole signature is those tokens SORTED.
+#
+# *** AND THE LIMIT IS NAMED, BECAUSE A SIGNATURE WITH AN UNNAMED LIMIT IS A CLAIM:
+# this is the 1-ROUND WEISFEILER-LEMAN refinement, so two graphs that differ only in
+# WHICH node of the same class a src points to share this signature -- UNLESS the two
+# nodes carry different IDENTs, and on THIS fixture every node's token is DISTINCT
+# (the `bw_distinct` row MEASURES that, it does not assert it), so here the signature
+# IS the graph.  What it catches: a wrong op, a wrong arity, a wrong src class, a
+# missing node, a wrong CONST value and a swapped pair of same-class leaves.
+# ---------------------------------------------------------------------------
+
+# THE IDENT: what tells two nodes of the SAME CLASS apart.  A CONST's VALUE and a
+# BUFFER's PARAM SLOT.  WITHOUT IT `a` and `b` are both `BUFFER/1` and the signature
+# cannot see a swap of the MUL rule's two operands -- which is THE bug this row exists
+# for, because upstream's MUL rule CROSSES them (gradient.py:80, `ret.src[1]*ctx`).
+#
+# THE OP LIST IS UPSTREAM'S: a CONST carries a value, and BUFFER/ALLOC/PARAM carry a
+# ParamArg with a slot.  Every other op's arg carries no identity and gets an EMPTY
+# ident -- and is told apart by its SRCS, which do carry one.
+# THE CONST's VALUE, as the F32 BITS -- the same spelling the corpus uses
+# (`graphcmp.py`'s `f32bits`) and the same one `F32.bits` produces.  A TEXTUAL
+# spelling cannot separate two floats that agree to seven digits and cannot tell
+# -0.0 from 0.0; the bits can.
+def bw_ident.const(v: O.Const) -> String:
+  match v:
+    case O.CFloat{f}: String.concat(["@f", U32.show(F32.bits(f))])
+    case O.CInt{i}: String.concat(["@i", H.i64_text(i)])
+    case O.CBool{b}: String.concat(["@b", U32.show(Bool.to_u32(b))])
+    case _: ""
+
+def bw_ident.apy(a: O.Arg) -> String:
+  match a:
+    case O.APy{v}: bw_ident.const(v)
+    case _: ""
+
+def bw_ident.aparam(a: O.Arg) -> String:
+  match a:
+    case O.AParam{pa}: String.concat(["@s", U32.show(O.ParamArg.slot(pa))])
+    case _: ""
+
+def bw_ident.op(op: O.Op, a: O.Arg) -> String:
+  match op:
+    case O.OpsCONST{}: bw_ident.apy(a)
+    case O.OpsBUFFER{}: bw_ident.aparam(a)
+    case O.OpsALLOC{}: bw_ident.aparam(a)
+    case O.OpsPARAM{}: bw_ident.aparam(a)
+    case _: ""
+
+def bw_ident.of(+ar: O.Arena, +n: U32) -> String: bw_ident.op(O.Arena.op(ar, n), O.Arena.arg(ar, n))
+
+# THE NODE'S OWN TOKEN: the class (`OP/nsrc`) AND the ident.
+def bw_token.of(+ar: O.Arena, +n: U32) -> String:
+  String.concat([dag_one(ar, n), bw_ident.of(ar, n)])
+
+# THE SRC CLASSES, SORTED.
+def bw_srcs.go(xs: List<&2, U32>, +ar: O.Arena, acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case n <> t: bw_srcs.go(t, ar, List.append(&2, String, acc, [bw_token.of(ar, n)]))
+
+# THE STRING ORDER.  `String.is_le` is the order the oracle's `sorted()` produces for
+# ASCII, and `List.sort` needs the comparison as a top-level def.
+def gs_str_le(a: String, b: String) -> Bool: String.is_le(a, b)
+
+# ONE NODE'S TOKEN: its own, then the SORTED tokens of its srcs.
+def bw_tok.go(+ar: O.Arena, +n: U32) -> String:
+  +ss = O.Arena.srcs(ar, n)
+  +sorted = List.sort(String, gs_str_le, bw_srcs.go(ss, ar, Nil{}))
+  String.concat([bw_token.of(ar, n), " [", String.join(sorted, " "), "]"])
+
+# THE NODE SET: the union of the roots' toposorts.  The arena is HASH-CONSED, so a node
+# that appears twice IS one node and the union is a membership test on the index.
+def bw_add.put(seen: Bool, h: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match seen:
+    case True{}: acc
+    case _: List.append(&2, U32, acc, [h])
+
+def bw_add.hit(h: U32, +acc: List<&2, U32>) -> Bool: List.contains(U32, U32.is_eq, acc, h)
+
+def bw_add.go(xs: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: bw_add.go(t, bw_add.put(bw_add.hit(h, acc), h, acc))
+
+def bw_union.go(roots: List<&2, U32>, +ar: O.Arena, +acc: List<&2, U32>) -> List<&2, U32>:
+  match roots:
+    case Nil{}: acc
+    case r <> t: bw_union.go(t, ar, bw_add.go(O.UOp.toposort(O.Arena.budget(ar), ar, r), acc))
+
+def bw_sig.go(xs: List<&2, U32>, +ar: O.Arena, acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case n <> t: bw_sig.go(t, ar, List.append(&2, String, acc, [bw_tok.go(ar, n)]))
+
+# ---------------------------------------------------------------------------
+# THE ROWS.
+# ---------------------------------------------------------------------------
+
+# THE WALK on the `gs` fixture -- `oracle_gs_walk`.
+def gs_walk.of(+run: GRun) -> String:
+  match run:
+    case GRun{ar, cs, ts, r}: dag_walk_sig.go(Deep.walk_of(_deepwalk(r, ts, ar)), ar, "")
+
+def gs_walk() -> String: gs_walk.of(gs_run(gs()))
+
+def gs_walk_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: U32.from_nat(List.length(&2, U32, Deep.walk_of(_deepwalk(r, ts, ar))))
+
+def gs_walk_n() -> U32: gs_walk_n.of(gs_run(gs()))
+
+# THE `in_target_path` FLAGS over the root's toposort -- `oracle_gs_inpath`.
+def gs_inpath.of(+run: GRun) -> String:
+  match run:
+    case GRun{ar, cs, ts, r}: dag_inpath.put(_deepwalk.vis(ar, ts, r))
+
+def gs_inpath() -> String: gs_inpath.of(gs_run(gs()))
+
+def gs_n_inpath.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: dag_count.of(_deepwalk.vis(ar, ts, r))
+
+def gs_n_inpath() -> U32: gs_n_inpath.of(gs_run(gs()))
+
+# THE GRADS COUNT and the KEY SET -- `oracle_gs_grads_n` and `oracle_gs_keys`.
+def gs_grads_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: U32.from_nat(Grads.n(CState.g_of(cs)))
+
+def gs_grads_n() -> U32: gs_grads_n.of(gs_run(gs()))
+
+def gs_keys.go(+ks: List<&2, U32>, +ar: O.Arena, +acc: String) -> String:
+  match ks:
+    case Nil{}: acc
+    case +k <> t: gs_keys.go(t, ar, dag_join(dag_one(ar, k), acc))
+
+def gs_keys.of(+run: GRun) -> String:
+  match run:
+    case GRun{ar, cs, ts, r}: gs_keys.go(Grads.ks_of(CState.g_of(cs)), CState.ar_of(cs), "")
+
+def gs_keys() -> String: gs_keys.of(gs_run(gs()))
+
+# THE TWO COUNTERS -- `oracle_gs_skip_n` and `oracle_gs_hole_n`.  THE HOLE IS NON-ZERO
+# HERE and it is the point of this fixture: the prior art's `walk_hole_n=0` was a fact
+# about ITS fixture and not a coverage statement.
+def gs_skip_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: CState.skip_of(cs)
+
+def gs_skip_n() -> U32: gs_skip_n.of(gs_run(gs()))
+
+def gs_hole_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: CState.hole_of(cs)
+
+def gs_hole_n() -> U32: gs_hole_n.of(gs_run(gs()))
+
+# THE GRADIENT SET -- `oracle_gs_set_n`, `oracle_gs_zero_n`, `oracle_gs_set_sig`.
+def gs_set_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: U32.from_nat(List.length(&2, U32, GSet.slots_of(grad_set(cs, ts))))
+
+def gs_set_n() -> U32: gs_set_n.of(gs_run(gs()))
+
+def gs_zero_n.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}: GSet.zeros_of(grad_set(cs, ts))
+
+def gs_zero_n() -> U32: gs_zero_n.of(gs_run(gs()))
+
+# ONE SLOT'S TOKEN: `G` for a gradient and `Z` for the SUBSTITUTE, then the slot's node
+# COUNT and its root class.  THE COUNT IS `O.UOp.toposort` and NOT `size1` -- `size1` is
+# `1 + sum(size(s))` and counts a SHARED subtree once per PATH (see `dag_nnodes`).
+def gs_slot_n(+ar: O.Arena, v: U32) -> String:
+  U32.show(U32.from_nat(List.length(&2, U32, O.UOp.toposort(O.Arena.budget(ar), ar, v))))
+
+def gs_slot_tok.of(zero: Bool, +ar: O.Arena, +v: U32) -> String:
+  String.concat([Bool.pick(String, zero, "Z", "G"), " ", gs_slot_n(ar, v), " root=", dag_one(ar, v)])
+
+def gs_set_sig.go(slots: List<&2, U32>, zs: List<&2, Bool>, +ar: O.Arena,
+                   acc: List<&2, String>) -> List<&2, String>:
+  match slots zs:
+    case v <> t z <> u: gs_set_sig.go(t, u, ar, List.append(&2, String, acc, [gs_slot_tok.of(z, ar, v)]))
+    case _ _: acc
+
+def gs_set_sig.of(+run: GRun) -> String:
+  match run:
+    case GRun{ar, cs, ts, r}:
+      +set = grad_set(cs, ts)
+      String.join(gs_set_sig.go(GSet.slots_of(set), GSet.zs_of(set), GSet.ar_of(set), Nil{}), " | ")
+
+def gs_set_sig() -> String: gs_set_sig.of(gs_run(gs()))
+
+# THE `bw` GRAPH over the gradient SET's slots.
+def bw_nodes.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}:
+      +set = grad_set(cs, ts)
+      U32.from_nat(List.length(&2, U32, bw_union.go(GSet.slots_of(set), GSet.ar_of(set), Nil{})))
+
+def bw_nodes() -> U32: bw_nodes.of(gs_run(gs()))
+
+def bw_sig.of(+run: GRun) -> String:
+  match run:
+    case GRun{ar, cs, ts, r}:
+      +set = grad_set(cs, ts)
+      +ns = bw_union.go(GSet.slots_of(set), GSet.ar_of(set), Nil{})
+      String.join(List.sort(String, gs_str_le, bw_sig.go(ns, GSet.ar_of(set), Nil{})), " ")
+
+def bw_sig() -> String: bw_sig.of(gs_run(gs()))
+
+# THE INJECTIVITY ROW.  `bw_sig` is a COMPLETE description of this graph only if no
+# two nodes share a token; if two did, the signature would be a lossy encoding and the
+# claim would be FALSE.  So the row MEASURES it rather than asserting it.
+def bw_distinct.of(+run: GRun) -> U32:
+  match run:
+    case GRun{ar, cs, ts, r}:
+      +set = grad_set(cs, ts)
+      +ns = bw_union.go(GSet.slots_of(set), GSet.ar_of(set), Nil{})
+      U32.from_nat(List.length(&2, String, H.dedup_str(bw_sig.go(ns, GSet.ar_of(set), Nil{}))))
+
+def bw_distinct() -> U32: bw_distinct.of(gs_run(gs()))
 
 # ---- the gate ----------------------------------------------------------------
 def row(nm: String, v: U32) -> IO(Unit):
@@ -2455,3 +2878,17 @@ def main() -> IO(Unit):
     row("walk_grads_n", dag_grads_n())
     row("walk_skip_n", dag_skip_n())
     row("walk_hole_n", dag_hole_n())
+    srow("gs_walk", gs_walk())
+    row("gs_walk_n", gs_walk_n())
+    srow("gs_inpath", gs_inpath())
+    row("gs_n_inpath", gs_n_inpath())
+    row("gs_grads_n", gs_grads_n())
+    srow("gs_keys", gs_keys())
+    row("gs_skip_n", gs_skip_n())
+    row("gs_hole_n", gs_hole_n())
+    row("gs_set_n", gs_set_n())
+    row("gs_zero_n", gs_zero_n())
+    srow("gs_set_sig", gs_set_sig())
+    row("bw_nodes", bw_nodes())
+    srow("bw_sig", bw_sig())
+    row("bw_distinct", bw_distinct())

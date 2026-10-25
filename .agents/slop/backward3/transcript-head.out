@@ -1,0 +1,48 @@
+    HEAD's gradient.bend installed: 1a1d034d3c5561ea0566181e88823b1b76ff95bed9d11cfa8f07460d13d22b0b
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=88
+=== check-only: ALL PROOFS CHECK  run rc=0  rows=102
+=== HEAD vs LIVE: rows head=88 live=102
+--- rows HEAD has whose WHOLE LINE is not in LIVE (a row whose VALUE changed shows up here too -- the VALUE diff at the foot is the precise one):
+    walk_grad_a=5 root=ADD/2
+    walk_grad_b=4 root=MUL/2
+    walk_inpath=0 0 1 0 1 1
+    walk_keys=ADD/2 MUL/2 ADD/2 BUFFER/0 BUFFER/0 BUFFER/0
+    walk_n_toposort=6
+--- rows LIVE has that HEAD does NOT (must be EXACTLY the previous unit's 14):
+    bw_distinct=11
+    bw_nodes=11
+    bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+    gs_grads_n=6
+    gs_hole_n=1
+    gs_inpath=0 0 0 1 1 1 1
+    gs_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 EXPAND/2 BUFFER/1
+    gs_n_inpath=4
+    gs_set_n=3
+    gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 2 root=CAST/1
+    gs_skip_n=0
+    gs_walk_n=4
+    gs_walk=MUL/2 EXPAND/2 ADD/2 ADD/2
+    gs_zero_n=1
+    walk_grad_a=6 root=ADD/2
+    walk_grad_b=5 root=MUL/2
+    walk_inpath=0 0 0 1 0 1 1
+    walk_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 BUFFER/1 BUFFER/1
+    walk_n_toposort=7
+--- rows whose VALUE changed (must be EXACTLY the five the leaf fix moved):
+    walk_inpath:
+      head: 0 0 1 0 1 1
+      live: 0 0 0 1 0 1 1
+    walk_keys:
+      head: ADD/2 MUL/2 ADD/2 BUFFER/0 BUFFER/0 BUFFER/0
+      live: ADD/2 MUL/2 ADD/2 BUFFER/1 BUFFER/1 BUFFER/1
+    walk_grad_a:
+      head: 5 root=ADD/2
+      live: 6 root=ADD/2
+    walk_grad_b:
+      head: 4 root=MUL/2
+      live: 5 root=MUL/2
+    walk_n_toposort:
+      head: 6
+      live: 7
+    rows whose VALUE changed: 5
+    rows byte-identical: 83 of 88

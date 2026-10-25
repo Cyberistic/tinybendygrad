@@ -1,0 +1,16 @@
+transcribed 15 oracle rows -> 16 port rows in .agents/slop/backward3/walk.rows
+--- the oracle's rows that are NOT gated (named, not dropped):
+    oracle_pmul=FIRED n=2 solid=2
+    oracle_pmul0=5 STACK/0 BUFFER/1 CONST/0 CAST/1 MUL/2
+    oracle_pmul1=5 STACK/0 BUFFER/1 CONST/0 CAST/1 MUL/2
+    oracle_seed=2 CONST/0 CAST/1
+    oracle_fwdwalk_n=3
+    oracle_fwdwalk_skipped=6
+    oracle_fwdwalk_a=NONE
+    oracle_hole_n_toposort=9
+    oracle_hole_walk=MUL/2 ADD/2 EXPAND/2 ADD/2
+    oracle_hole_walk_n=4
+    oracle_hole_inpath=0 0 0 1 0 1 1 0 1
+    oracle_hole_n_inpath=4
+    oracle_hole_error=RuntimeError: cannot broadcast (UOp(Ops.ADD, arg=None, src=( UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.f32), src=( x1:=UOp(Ops.STACK, arg=None, src=()),)), UOp(Ops.BUFFER, arg=ParamArg(2, dtypes.f32), src=( x1,)),)),) into ()
+    oracle_hole_computed=no

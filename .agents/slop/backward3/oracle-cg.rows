@@ -1,0 +1,29 @@
+oracle_dag_n_toposort=7
+oracle_dag_walk=MUL/2 ADD/2 ADD/2
+oracle_dag_walk_n=3
+oracle_dag_inpath=0 0 0 1 0 1 1
+oracle_dag_n_inpath=3
+oracle_dag_grads_n=6
+oracle_dag_grad_a=6 root=ADD/2 srcs=ADD/2 BUFFER/1 CAST/1 CONST/0 MUL/2 STACK/0
+oracle_dag_grad_b=5 root=MUL/2 srcs=BUFFER/1 CAST/1 CONST/0 MUL/2 STACK/0
+oracle_dag_grad_c=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_p=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_q=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_r=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 BUFFER/1 BUFFER/1
+oracle_dag_skip_n=0
+oracle_dag_hole_n=0
+oracle_pmul=FIRED n=2 solid=2
+oracle_pmul0=5 STACK/0 BUFFER/1 CONST/0 CAST/1 MUL/2
+oracle_pmul1=5 STACK/0 BUFFER/1 CONST/0 CAST/1 MUL/2
+oracle_seed=2 CONST/0 CAST/1
+oracle_fwdwalk_n=3
+oracle_fwdwalk_skipped=6
+oracle_fwdwalk_a=NONE
+oracle_hole_n_toposort=9
+oracle_hole_walk=MUL/2 ADD/2 EXPAND/2 ADD/2
+oracle_hole_walk_n=4
+oracle_hole_inpath=0 0 0 1 0 1 1 0 1
+oracle_hole_n_inpath=4
+oracle_hole_error=RuntimeError: cannot broadcast (UOp(Ops.ADD, arg=None, src=( UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.f32), src=( x1:=UOp(Ops.STACK, arg=None, src=()),)), UOp(Ops.BUFFER, arg=ParamArg(2, dtypes.f32), src=( x1,)),)),) into ()
+oracle_hole_computed=no

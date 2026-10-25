@@ -1,0 +1,93 @@
+################ ARM base
+  === arm=base  live tree NOT touched; working copy sha256=4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783
+  === arm=base  check-only: ALL PROOFS CHECK
+  === arm=base  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      (this IS the base; persisted at /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//walkbase.txt)
+################ ARM plant_reverse
+  === arm=plant_reverse  live tree NOT touched; working copy sha256=4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783
+      plant_reverse: reversed(walk) -> walk: applied and VERIFIED (the file on disk differs and contains the new text)
+  === arm=plant_reverse  check-only: ALL PROOFS CHECK
+  === arm=plant_reverse  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      sha256 of the planted file: 81a829266d528944e6130d25b5fe3bc601e3bc8b642c5239f09e48ecf6d5f3c2  (base was 4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783)
+      sha256 of the port's OUTPUT: b4c1b4de228bb7bf60941c03677bd276e8c3f7636326c103c123b07724b64525
+      sha256 of the BASE OUTPUT : 5028744e4028fd6944c49070e98483bb9a0d393ae0d45046c5ad321aef728082
+      rows that MOVED: 16
+      < walk_row=MUL/2 ADD/2 ADD/2 | grads_n=6
+      > walk_row=MUL/2 ADD/2 ADD/2 | grads_n=3
+      < walk_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 BUFFER/1 BUFFER/1
+      < walk_grad_a=6 root=ADD/2
+      < walk_grad_b=5 root=MUL/2
+      < walk_grad_c=2 root=CAST/1
+      > walk_keys=ADD/2 MUL/2 ADD/2
+      > walk_grad_a=NONE
+      > walk_grad_b=NONE
+      > walk_grad_c=NONE
+      < walk_grads_n=6
+      < walk_skip_n=0
+      > walk_grads_n=3
+      > walk_skip_n=2
+      < gs_grads_n=6
+      < gs_keys=ADD/2 MUL/2 ADD/2 BUFFER/1 EXPAND/2 BUFFER/1
+      < gs_skip_n=0
+      < gs_hole_n=1
+      > gs_grads_n=3
+      > gs_keys=ADD/2 MUL/2 ADD/2
+      > gs_skip_n=3
+      > gs_hole_n=0
+      < gs_zero_n=1
+      < gs_set_sig=G 7 root=ADD/2 | G 6 root=MUL/2 | Z 2 root=CAST/1
+      < bw_nodes=11
+      < bw_sig=ADD/2 [CAST/1 CAST/1] ADD/2 [CAST/1 MUL/2] BUFFER/1@s0 [STACK/0] BUFFER/1@s1 [STACK/0] CAST/1 [CONST/0@f0] CAST/1 [CONST/0@f1065353216] CONST/0@f0 [] CONST/0@f1065353216 [] MUL/2 [ADD/2 BUFFER/1@s0] MUL/2 [ADD/2 BUFFER/1@s1] STACK/0 []
+      < bw_distinct=11
+      > gs_zero_n=3
+      > gs_set_sig=Z 2 root=CAST/1 | Z 2 root=CAST/1 | Z 2 root=CAST/1
+      > bw_nodes=2
+      > bw_sig=CAST/1 [CONST/0@f0] CONST/0@f0 []
+      > bw_distinct=2
+################ ARM plant_noguard
+  === arm=plant_noguard  live tree NOT touched; working copy sha256=4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783
+      plant_noguard: in_target_path[node] -> True{}: applied and VERIFIED (the file on disk differs and contains the new text)
+  === arm=plant_noguard  check-only: ALL PROOFS CHECK
+  === arm=plant_noguard  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      sha256 of the planted file: ffca4ac58587a0aff0d04869860aee601453db92345f6000779bd020615488f8  (base was 4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783)
+      sha256 of the port's OUTPUT: 8d65e780b5f61b2aab4b7ce38373d309686b33dd31a07bd8980670b9e046ce0e
+      sha256 of the BASE OUTPUT : 5028744e4028fd6944c49070e98483bb9a0d393ae0d45046c5ad321aef728082
+      rows that MOVED: 7
+      < walk_row=MUL/2 ADD/2 ADD/2 | grads_n=6
+      < walk_sig=MUL/2 ADD/2 ADD/2
+      > walk_row=STACK/0 BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2 | grads_n=6
+      > walk_sig=STACK/0 BUFFER/1 BUFFER/1 MUL/2 BUFFER/1 ADD/2 ADD/2
+      < walk_walk_n=3
+      > walk_walk_n=7
+      < walk_skip_n=0
+      > walk_skip_n=1
+      < gs_walk=MUL/2 EXPAND/2 ADD/2 ADD/2
+      < gs_walk_n=4
+      > gs_walk=STACK/0 BUFFER/1 BUFFER/1 MUL/2 EXPAND/2 ADD/2 ADD/2
+      > gs_walk_n=7
+      < gs_skip_n=0
+      > gs_skip_n=1
+################ ARM disarm_comment
+  === arm=disarm_comment  live tree NOT touched; working copy sha256=4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783
+      disarm_comment: comment text: applied and VERIFIED (the file on disk differs and contains the new text)
+  === arm=disarm_comment  check-only: ALL PROOFS CHECK
+  === arm=disarm_comment  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      sha256 of the planted file: 4eee548c76d03b1d3cf6b0639b50aa79be6fcb8238db5a3c4c692197816f636e  (base was 4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783)
+      sha256 of the port's OUTPUT: 5028744e4028fd6944c49070e98483bb9a0d393ae0d45046c5ad321aef728082
+      sha256 of the BASE OUTPUT : 5028744e4028fd6944c49070e98483bb9a0d393ae0d45046c5ad321aef728082
+      rows that MOVED: 0
+################ ARM disarm_name
+  === arm=disarm_name  live tree NOT touched; working copy sha256=4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783
+      disarm_name: parameter tok -> tok_renamed_for_disarm (signature): applied and VERIFIED (the file on disk differs and contains the new text)
+      disarm_name: parameter tok -> tok_renamed_for_disarm (body): applied and VERIFIED (the file on disk differs and contains the new text)
+  === arm=disarm_name  check-only: ALL PROOFS CHECK
+  === arm=disarm_name  run rc=0  rows=102
+  === DIFFER vs base (whole name=value lines, NOT row names):
+      sha256 of the planted file: abd060b1496c1c15ce6c3b6d7cf5f34d9c76eb99f42a1df9a7b128741606c4e8  (base was 4477a826f04dc9d440bc04d63f884857f20d21d7227660b2828330bb0686e783)
+      sha256 of the port's OUTPUT: 5028744e4028fd6944c49070e98483bb9a0d393ae0d45046c5ad321aef728082
+      sha256 of the BASE OUTPUT : 5028744e4028fd6944c49070e98483bb9a0d393ae0d45046c5ad321aef728082
+      rows that MOVED: 0
