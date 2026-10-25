@@ -2275,6 +2275,50 @@ nn-rows-complete     [####] 4/4  **THE NN LAYERS' VERIFICATION IS COMPLETE: **31
                                        `want`s BYTE-EQUAL AGAINST A WITNESS THAT **NEVER READS THE PORT**.
 
 
+backward-pass        [###] 3/4  **THE BACKWARD PASS HAS FOUR OF ITS PIECES, AND THE TWO NAMED HOLES ARE NOT IN THEM --
+                                       THEY ARE BELOW THEM.** MEASURED 2026-10-23 AND 2026-10-25, AT HEAD `9a8b1729`.
+                                       **⇒ THE PARTS THAT ARE DONE: THE WALK (`_deepwalk`), `compute_gradient`,
+                                       **`grad_set`** (gradient.bend:2514) AND **THE `bw` GRAPH** (`:2597`-`:2746`,
+                                       THE BACKWARD UOp GRAPH READ OUT OF THE HASH-CONSED ARENA WITH AN INDEX-FREE
+                                       SIGNATURE: ONE TOKEN PER NODE CARRYING THE CLASS (`OP/nsrc`), AN **IDENT** (A
+                                       CONST's f32 BITS, A BUFFER's PARAM SLOT) AND THE SORTED SRC TOKENS).** **⇒ THE
+                                       ROWS: **16 OF 16** FOR THE WALK AND **14 OF 14** FOR `gs_*`/`bw_*`, ALL AGAINST
+                                       CPython's BYTES, WITH THE EXPECTATIONS TRANSCRIBED **BY SCRIPT** AND NONE
+                                       TYPED; **83 OF 88** PRE-EXISTING ROWS BYTE-IDENTICAL AND **5 CHANGED** (EXACTLY
+                                       THE ROWS THE LEAF FIX MOVED) PLUS 14 ADDITIONS; **THE 72 `fix` ROWS DID NOT
+                                       MOVE**; **8 PLANTS MOVE AND 2 DISARMS DO NOT**; AND **33 CONTROL CHECKS, 0
+                                       FAILURES** -- WRONG-BUT-NON-EMPTY -> `MISMATCH`, EMPTY -> `UNCHECKABLE`, **TWO
+                                       CLASSES, NOT ONE**. **⇒ AND THE CONTROL ON THE CONTROL IS THE ONE THAT MATTERS
+                                       MOST: AN *ORACLE* PLANT MOVES 5 EXPECTATION ROWS WHILE **THE PORT's OUTPUT IS
+                                       BYTE-IDENTICAL**, AND A *PORT* PLANT MOVES THE PORT AND NOT THE FILE. **THAT IS
+                                       WHAT PROVES THE TRANSCRIPTION IS A WITNESS AND NOT A TRANSCRIPT OF THE
+                                       OUTPUT.** **⇒ AND THE CPYTHON SIDE WAS RESTORED, NOT MERELY ADDED:
+                                       `.agents/slop/backward/oracle-cg.py` HAD STOPPED RUNNING BECAUSE
+                                       `tinygrad/uop/ops.py:359` READS `self.src[0].as_shape` FOR A BUFFER's `_shape`
+                                       AND BOTH SIDES HAD **SRC-LESS** LEAVES -- THE ORACLE's AND THE PORT's
+                                       (`gradient.bend:1521`) -- SO THE 15 `walk_*` ROWS' CPYTHON SIDE WAS A *RECORD*,
+                                       NOT A MEASUREMENT. THE FIX IS A BUFFER WHOSE SRC IS AN EMPTY `STACK`, **AND IT
+                                       CHANGES THE GRAPH, SO THE EXPECTATIONS MOVED WITH IT ON BOTH SIDES.**
+
+backward-holes       [##] 2/3  **⇒ THE TWO NAMED HOLES BELOW THE BACKWARD PASS, BOTH MEASURED 2026-10-25.** **(1)
+                                       `gr_21` (PERMUTE) IS NOT LANDABLE AS ITS COMMENT CLAIMS.** UPSTREAM's
+                                       `UOp.permute` IS `mixin/movement.py:228` -- IT READS `ctx.ndim`, RETURNS `ctx`
+                                       *ITSELF* FOR THE IDENTITY, AND RAISES TWICE. **MEASURED: ON A SCALAR ctx, MARG
+                                       `(1,0)` -> `IndexError` AND `(0,)` -> `RuntimeError`, AND EVERY FIXTURE IN THE
+                                       FILE IS SCALAR -- SO THERE IS NO CPYTHON ANSWER TO GATE IT AGAINST.** THE FIRST
+                                       NON-DEGENERATE FIXTURE NEEDS A **SHAPED** ONE, **WHICH IS THE `resolve` WALL
+                                       (`gr_17`, `gr_14`)** -- **⇒ SO THE CORPUS's `bw` GRAPH IS NOT IN THE POPULATION
+                                       AND CANNOT BE YET: IT NEEDS ALL THREE MOVEMENT RULES, IT IS HAND-BUILT IN BOTH
+                                       LANGUAGES, AND ITS CORPUS DRIVER IS NOT THE PORT's FILE. THE NAMED NEXT STEP IS
+                                       `gr_17`/`gr_14` (`resolve`), THEN `gr_21` (PERMUTE), THEN THE `bw` GRAPH ENTERS
+                                       THE POPULATION.** **(2) THE 72 `fix` ROWS' ORACLE
+                                       (`.agents/slop/notes/grad_oracle.py`) IS GONE, SO THOSE 72 ROWS ARE **CHANGE-
+                                       DETECTORS AND NOT CPYTHON-GATED**.** **⇒ A ROW WHOSE WITNESS IS MISSING IS A
+                                       ROW THAT CANNOT FAIL, AND THE LEDGER MUST SAY SO RATHER THAN LET A READER
+                                       BELIEVE THEY ARE CPYTHON-GATED** -- THE NAMED NEXT MOVE IS TO RESTORE THE
+                                       ORACLE OR TO RE-DECLARE THE CLASS AS CHANGE-DETECTORS IN THE LEDGER.
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
@@ -23658,11 +23702,21 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       claim hold -- **the comment has to say what upstream actually does.** 40+ of the rest are an
       **AMBIGUOUS BASENAME** and one names a PORT file (`llvmir-oracle.py`) as if it were upstream.
       Queue: `.agents/slop/citefix/left-tok9.rows`.
-- [ ] **THE CENSUS HAS NO CLASS FOR A TRUE ABSENCE** (DISPATCHED). A citation may legitimately say
+- [x] **THE CENSUS HAS NO CLASS FOR A TRUE ABSENCE** (DISPATCHED, DONE 2026-10-25). A citation may legitimately say
       "upstream DELETED this construct at commit X; the survivors are Y and Z". MEASURED, two such
       rows survive today: `tinybendygrad/runtime/ops_amd.bend:231` (the md5 slice) and
       `tinybendygrad/runtime/ops_cl.bend:159` (the old `OSX_TIMING_RATIO`). **THEY READ AS
       `at_no_revision_dangling`, WHICH IS A FALSE READING OF A TRUE CLAIM.**
+      **⇒ `gates/pin-cite-gate.py` NOW HAS THE CLASS `upstream_removed`, AND IT IS DEFINED BY
+      SIX NECESSARY CONDITIONS, NOT BY A PHRASE:** the row names a revision; that revision is an
+      upstream commit at or before the pin; the construct is ABSENT at it; the construct was
+      PRESENT before it; the removal is attributable to a commit; and the row ASSERTS the absence.
+      **⇒ THE MARKER ALONE QUALIFIES NOTHING: 44 citation lines carry an absence marker and the
+      EVIDENCE selects 2 of them.** **⇒ THE CLASS CAN GO RED: the plant has FOUR arms that differ
+      only in the tail of one line, and the wrong-revision, no-revision and not-a-claim arms are
+      all STILL `dangling`.** **⇒ AND NO OTHER CLASS MOVED: elementwise over 2547 rows, 2 moved
+      (`dangling -> upstream_removed`) and 0 verdict fields moved.** See
+      `.agents/slop/absence/REPORT.md`.
 - [ ] **`tinybendygrad/uop/fold.bend`'s COMMENTS DESCRIBE AN OP THAT DOES NOT EXIST AT THE PIN**
       (DISPATCHED). MEASURED: upstream's `Ops` enum has **NO `FLIP`** (`tinygrad/uop/__init__.py`
       contains no `FLIP`; it was removed in `900880433`, which took the enum 76 -> 75), the port's
@@ -23680,3 +23734,55 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       `gates/{.wgsl-mut-oracle.py,amd-mut-gate.py,amd-mut-oracle.py,cstyle-mut-oracle.py,
       realize-mut-oracle.py}` -- **MEASURED untracked AND NOT IGNORED** (four of them), so the ledger
       sees them as gates that owe an owner. **⇒ THE FIX IS A NAME RULE, NOT A GIT CALL.**
+
+## Session 2026-10-25 — `gates/pin-cite-gate.py`: a TRUE ABSENCE is not a false citation
+
+```
+absence-class     [#####] 5/5  **THE **CENSUS **HAD **NO **CLASS **FOR **A **CITATION **WHOSE
+                                         **CLAIM **IS **THE **ABSENCE**, **SO **A **TRUE **CLAIM
+                                         **ABOUT **UPSTREAM **READ **AS
+                                         **`at_no_revision_dangling`** -- **A **FALSE **READING
+                                         **OF **A **TRUE **CLAIM.** **⇒ THE **CLASS
+                                         **`upstream_removed`** **IS **DEFINED **BY **SIX
+                                         **NECESSARY **CONDITIONS: **THE **ROW **NAMES **A
+                                         **REVISION; **THAT **REVISION **IS **AN **UPSTREAM
+                                         **COMMIT **AT **OR **BEFORE **THE **PIN; **THE
+                                         **CONSTRUCT **IS **ABSENT **AT **IT; **THE
+                                         **CONSTRUCT **WAS **PRESENT **BEFORE **IT; **THE
+                                         **REMOVAL **IS **ATTRIBUTABLE **TO **A **COMMIT; **AND
+                                         **THE **ROW **ASSERTS **THE **ABSENCE.** **⇒ THE
+                                         **MARKER **ALONE **QUALIFIES **NOTHING: **44
+                                         **CITATION **LINES **CARRY **AN **ABSENCE **MARKER **AND
+                                         **THE **EVIDENCE **SELECTS **2.** **⇒ THE **CLASS **CAN
+                                         **GO **RED: **THE **PLANT **HAS **FOUR **ARMS **THAT
+                                         **DIFFER **ONLY **IN **THE **TAIL **OF **ONE **LINE, **AND
+                                         **THE **WRONG-REVISION, **NO-REVISION **AND
+                                         **NOT-A-CLAIM **ARMS **ARE **ALL **STILL
+                                         **`dangling`.** **⇒ AND **NO **OTHER **CLASS **MOVED:
+                                         **ELEMENTWISE **OVER **2547 **ROWS, **2 **MOVED
+                                         **(`dangling` **->** **`upstream_removed`**) **AND **0
+                                         **VERDICT **FIELDS **MOVED.** **⇒ SEE
+                                         **`.agents/slop/absence/REPORT.md`.**
+```
+
+- [x] **THE CLASS EXISTS AND IS NAMED.** `cite.upstream_removed` is a REPORTED row, the rows
+      that landed in it are PRINTED with their evidence, and the rows file carries the class as
+      a column (`absence`, `absence_removed_at`) -- APPENDED, so every old column keeps its index.
+- [x] **THE EVIDENCE IS UPSTREAM's, NOT THE PORT's.** The removal commit is DERIVED from the
+      corpus's own history and REPORTED: `fa0f9af3b` for `hashlib`/`md5` in
+      `tinygrad/runtime/ops_amd.py`, `38cbec532` for `OSX_TIMING_RATIO` in
+      `tinygrad/runtime/ops_cl.py`. **A ROW THAT NAMES A REVISION THAT DOES NOT REMOVE THE
+      CONSTRUCT STILL FAILS.**
+- [x] **"CONSISTENT WITH THE PIN'S HISTORY" IS MEASURED, NOT ASSUMED.** 91 distinct hex runs
+      in the port's headers: 70 are not commits, 18 are upstream commits at or before the pin,
+      and **3 are commits of THIS repo** -- so the condition is not vacuous.
+- [x] **NO EXISTING CLASS WAS WEAKENED.** The new class sits BELOW `at_pin`,
+      `only_older_revision`, `ambient_relocated` and `unverifiable` in the precedence, so it can
+      only take a row OUT of `dangling` or `at_no_revision`.
+- [ ] **THE MARKER IS A HAND LIST, AND IT IS THE ONE LOOSE END.** Six words. A row that asserts
+      an absence in wording the list does not cover stays `dangling` -- the SAFE direction, but
+      the class is too tight for that row. **THE DIRECTION CANNOT BE READ FROM THE CONTENT:**
+      a claim that upstream DELETED a construct and a claim that upstream HAS one are the SAME
+      SHAPE to every content test, so the direction comes from the row and the truth comes from
+      upstream's history. The looseness is documented in the gate's header and in
+      `.agents/slop/absence/REPORT.md`.

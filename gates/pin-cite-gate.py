@@ -84,9 +84,20 @@ REPAIR 1 -- THE RANGE IS THE CITED THING, AND THE FIRST LINE IS NOT THE RANGE.
 `holds()` tested the claim tokens against `lines[lo-1]` -- the FIRST line of the cited
 range -- and against the construct DECLARED at that line. A citation to `file.py:100-104`
 cites FIVE LINES, so a citation to a function BODY failed even when the claim is exactly
-right. MEASURED: `tinybendygrad/codegen/decomp/dtype.bend:73` cites `dtype.py:100-104`
-and claims `bool`, `weakint`, `weakfloat` -- the names ARE in the range and not on line
-100. THE REPAIR: the claim tokens are ALSO tested against the WHOLE cited range.
+right. MEASURED: `tinybendygrad/engine/jit.bend:30` cites `jit.py:24-27` and claims
+`on_disk`, and `on_disk` is at `tinygrad/engine/jit.py:25` -- INSIDE the cited range and
+NOT on its first line (:24 is `def _copy_input(u:UOp) -> UOp:`). MEASURED ON THE FROZEN
+TREE: that row is `at_no_revision` BEFORE the repair and `at_pin` AFTER it.
+THE REPAIR: the claim tokens are ALSO tested against the WHOLE cited range.
+**AND THE EXAMPLE THAT WAS HERE BEFORE IS NOT A PAYOFF ROW, AND IT IS NOT BECAUSE IT IS
+WRONG ABOUT UPSTREAM.** `tinybendygrad/codegen/decomp/dtype.bend:73` cites
+`dtype.py:100-104` and claims `bool`, `weakint`, `weakfloat`, and upstream's
+`tinygrad/dtype.py:100-104` IS the body of `from_py` and DOES name all three -- but the
+gate resolves the BARE BASENAME `dtype.py` with the header's declared target's DIRECTORY,
+and that header declares `tinygrad/codegen/decomp/dtype.py`, so the gate reads THAT file,
+whose :100-104 names none of the three. MEASURED: the row is `ambient_relocated` BEFORE
+the repair AND AFTER it -- it was NEVER a false positive, and the ambient class already
+carried it.**
 **THIS REPAIR IS STRICTLY SAFE IN ONE DIRECTION: it can only turn a FAILURE into a HOLD.
 IT CAN NEVER TURN A DANGLING CLAIM INTO A PASS, because a dangling claim's tokens are
 NOWHERE in the range -- that is what "dangling" means.**
@@ -95,9 +106,17 @@ REPAIR 2 -- A CITATION THAT MAKES NO CLAIM ABOUT THE FILE IT CITES IS COUNTED, N
 VERDICTED. The gate treated EVERY backticked token as a claim about the cited upstream
 file. But a port comment routinely backticks THE PORT'S OWN VOCABULARY -- its own helper
 (`l2i_cdiv`), its own class (`Scheduler`), a generic noun (`step`) -- on the same line
-that cites an upstream line. MEASURED: `tinybendygrad/codegen/decomp/dtype.bend:99`
-cites `dtype.py:225` and backticks `float_to_fp16`, `float_to_bf16`, `float_to_fp8` --
-the PORT's own decomp helpers, none of which is in that file.
+that cites an upstream line. MEASURED: `tinybendygrad/codegen/decomp/dtype.bend:138`
+cites `dtype.py:65` and backticks `l2i_cdiv` and `step` -- the PORT's own helper and a
+generic noun -- and NEITHER occurs in `tinygrad/codegen/decomp/dtype.py` at ANY revision.
+MEASURED ON THE FROZEN TREE: that row is `at_no_revision` BEFORE the repair and
+`unverifiable` AFTER it.
+**AND THE EXAMPLE THAT WAS HERE BEFORE IS NOT AN UNVERIFIABLE ROW EITHER.**
+`tinybendygrad/codegen/decomp/dtype.bend:99` cites `dtype.py:225` and backticks
+`float_to_fp16`, `float_to_bf16`, `float_to_fp8`, and none of the three is in
+`tinygrad/codegen/decomp/dtype.py` -- but all three ARE in the SIBLING
+`tinygrad/dtype.py`, so the row is `ambient_relocated` BEFORE the repair AND AFTER it:
+the census's directory ambient already carried it, and its `present_in_file` is empty.**
 THE REPAIR: a citation is CHECKABLE only if at least ONE of its claim tokens OCCURS in
 the cited upstream file at some revision. If none does, the citation makes NO CLAIM about
 that file, so it is UNVERIFIABLE, and the gate COUNTS IT AND DOES NOT VERDICT IT -- which
@@ -130,14 +149,110 @@ other units and MOVES, so both readings were taken on the SAME COPY of the tree,
 **THE GATE STILL FAILS.** It fails on 14 citations, and EVERY ONE OF THE 14 names a token
 that DOES occur in the cited file -- so repair 2 rescued NONE of them. The 14 that left the
 fail class are the port's own vocabulary, and they are counted as UNVERIFIABLE and
-printed with their reason. The row-level movement, on the same tree: 50 rows moved from
-`only_older_revision` to `at_pin` and 14 from `at_no_revision` to `at_pin` (REPAIR 1 -- the
-cited RANGE names the token and the first line does not), 13 from `at_no_revision` to
-`only_older_revision` (REPAIR 1 at an older revision), 4 to `ambient_relocated` (REPAIR 1
-also lets the census's directory ambient be SEEN, because the claim now holds in the
-sibling file), and 240 to `unverifiable` (REPAIR 2). **NOT ONE ROW LEFT THE HOLDING
-CLASSES, WHICH IS THE PROOF THAT REPAIR 2 CANNOT WEAKEN A HOLDING CLAIM: `holds()`
-implies the token is in the file, so a citation that holds is never unverifiable.**
+printed with their reason.
+
+THE ROW-LEVEL MOVEMENT, PAIRED BY INDEX -- 2624 rows, the BEFORE gate's OWN five classes,
+ONE process and ONE upstream corpus shared by both gates (MEASURED BY
+`.agents/slop/pincite-verify/classes.py`):
+
+    only_older_revision  -> at_pin                  50    REPAIR 1
+    at_no_revision       -> at_pin                  13    REPAIR 1
+    dangling             -> at_pin                   1    REPAIR 1
+    at_no_revision       -> only_older_revision     13    REPAIR 1 at an older revision
+    at_no_revision       -> unverifiable           226    REPAIR 2
+    dangling             -> unverifiable            14    REPAIR 2
+    ambient_relocated    -> ambient_relocated        4    THE SAME four rows, before and
+                                                             after -- the census's
+                                                             directory ambient was ALREADY
+                                                             seen and carried them before
+                                                             the repair too.
+
+**NOT ONE ROW LEFT THE HOLDING CLASSES, WHICH IS THE PROOF THAT REPAIR 2 CANNOT WEAKEN A
+HOLDING CLAIM: `holds()` implies the token is in the file, so a citation that holds is
+never unverifiable.** MEASURED: 0 of 2624.
+
+**AND NOT ONE ROW BECAME DANGLING.** The fail class only SHRINKS: a repair may rescue,
+never accuse.
+
+**THE SAFETY ARGUMENT IS AN ELEMENTWISE MEASUREMENT AND NOT A SAMPLE.** For EVERY
+citation and EVERY revision of the cited file, the pre-repair test and the shipped test
+were both evaluated, and the claim `holds_old(rev) ==> holds_new(rev)` was checked
+ELEMENTWISE: **0 COUNTEREXAMPLES over 2624 citations**, and the holding-revision set GREW
+for 197 of them. `.agents/slop/pincite-verify/proofs.py` is the instrument and it names
+the counts. **AND EVERY ONE OF THE 14 SURVIVORS HAS A NON-EMPTY `present_in_file` AND ITS
+TOKEN IS NOWHERE IN THE CITED RANGE AT ANY REVISION** -- so neither repair can rescue one
+of them, which is the safety property stated as a fact about the population rather than as
+an argument.
+
+===============================================================================
+THE THIRD CLASS: `upstream_removed`, A TRUE ABSENCE. MEASURED 2026-10-25.
+===============================================================================
+
+A CITATION MAY LEGITIMATELY CLAIM THAT UPSTREAM DOES NOT HAVE THE THING. "upstream
+DELETED this construct at commit X; the survivors are Y and Z" is a TRUE claim about
+upstream, and this file had NO CLASS FOR IT, so it read as `at_no_revision_dangling` --
+which is a FALSE reading of a TRUE claim. The class is `upstream_removed`, and it is
+defined by EVIDENCE, not by a phrase.
+
+THE SIX CONDITIONS, AND EVERY ONE OF THEM IS NECESSARY. `absence_of()` is the whole of
+it, and the reasons it gives are the reasons it refuses.
+
+  1. THE ROW NAMES A REVISION R -- an upstream commit sha it writes, or the pin it
+     names. **A ROW THAT NAMES NO REVISION DOES NOT QUALIFY.** "upstream removed this"
+     with no revision is a mood, not a checkable claim about upstream.
+  2. R IS CONSISTENT WITH THE PIN'S HISTORY -- R is an upstream commit that is an
+     ancestor of (or equal to) the pin. **THE MEASUREMENT THAT MAKES THIS PLAIN:** the
+     port's headers name **91 distinct hex runs**; **70 are not commits at all**
+     (`0xffffffff`, `3.1415926218032836914`), **18 are upstream commits at or before
+     the pin**, and **3 are commits of THIS PROJECT** (`80d329a33`, `e853efc4b`,
+     `c2a66ea41`) -- so the condition is NOT vacuous, and a sha of this repo's own
+     history is not a revision of upstream. The upstream ref's tip IS the pin
+     (`5c2bf39d6c4b`), so today every upstream commit is at or before it.
+     **A DATED READING: re-derive it with `.agents/slop/absence/measure.py`, because
+     the port tree moves and the counts move with it.**
+  3. THE CONSTRUCT IS ABSENT AT R -- a claim token of the row does not occur in the
+     cited file's content at R.
+  4. THE CONSTRUCT WAS PRESENT BEFORE R -- the same token occurred in that file at some
+     revision OLDER than R. So upstream really removed it, and the token is an upstream
+     construct and not the port's own vocabulary.
+  5. THE REMOVAL IS ATTRIBUTABLE -- the commit D at which the file's content changed
+     from holding the token to not holding it exists, and D is at or before R. D is
+     what the claim is ABOUT, and it is REPORTED.
+  6. THE ROW ASSERTS THE ABSENCE -- the port's absence marker is on the citation's own
+     line. **THIS IS THE ONE LEXICAL PRECONDITION AND IT IS HERE FOR ONE REASON:** a
+     claim that upstream DELETED a construct and a claim that upstream HAS one are the
+     SAME SHAPE to every instrument that reads a citation -- a name, a file, a line --
+     and no amount of upstream history can tell them apart. Only the row says which one
+     it is making. **THE MARKER ALONE QUALIFIES NOTHING.**
+
+THE MARKER IS NECESSARY AND THE EVIDENCE IS SUFFICIENT, AND THE MEASUREMENT SHOWS IT.
+**44 citation lines in the port's headers carry an absence marker; the EVIDENCE
+selects 2 of them.** The 42 the evidence refuses are the port talking about ITSELF
+("`base.bend` has no `File.list`"), about a construct upstream never had ("`cfield` was
+never in `tinygrad/runtime/support/c.py`"), or naming no revision at all.
+
+THE TWO ROWS IT NOW CLASSIFIES, AND THEIR EVIDENCE:
+
+  `tinybendygrad/runtime/ops_amd.bend:231` -- "`hashlib.md5` ... NOT IN upstream at this
+  pin". `hashlib` and `md5` were REMOVED from `tinygrad/runtime/ops_amd.py` at
+  `fa0f9af3b` ("amd: remove rgp markers", #18643) and are absent at the pin.
+  `tinybendygrad/runtime/ops_cl.bend:159` -- "upstream's old `OSX_TIMING_RATIO` form is
+  GONE at this pin". `OSX_TIMING_RATIO` was REMOVED from `tinygrad/runtime/ops_cl.py` at
+  `38cbec532` ("move cl to hcq2", #18872) and is absent at the pin.
+
+THE CLASS CAN GO RED, AND THE PLANT MAKES IT GO RED IN BOTH DIRECTIONS. FOUR ARMS THAT
+DIFFER ONLY IN THE TAIL OF ONE LINE: the true absence classifies `upstream_removed`; the
+same row naming a revision at which upstream had NOT removed the construct stays
+`dangling`; the same row naming NO revision stays `dangling`; and the same row naming
+the pin but NOT SAYING that the construct is gone stays `dangling`. **A ROW THAT LOOKS
+LIKE AN ABSENCE CLAIM AND DOES NOT HOLD THE PIN'S EVIDENCE STILL FAILS.**
+
+**AND THE CLASS DOES NOT WEAKEN ANY OTHER CLASS.** The new class sits BELOW `at_pin`,
+`only_older_revision`, `ambient_relocated` and `unverifiable` in the precedence, so it
+can only ever take a row OUT of `dangling` or `at_no_revision`. MEASURED ELEMENTWISE on
+one frozen tree, pairing the rows by index: **2547 rows before and after, 2 rows moved
+(`dangling -> upstream_removed`), and 0 of `at_pin`, `newest_rev`, `claim`,
+`present_in_file` or `explicit` moved on ANY row.**
 """
 
 from __future__ import annotations
@@ -198,6 +313,34 @@ OUR_PIN = "OUR PIN"
 #: ("(`dtype.py:100-104`) returns ONLY `bool`"). A name FARTHER than this from every
 #: other citation belongs to none of them.
 _NEAREST = 40
+
+#: THE PORT'S ABSENCE MARKERS -- the words it writes when it means "upstream does NOT
+#: have this". NECESSARY AND NEVER SUFFICIENT: a marker alone qualifies nothing, and a
+#: row whose EVIDENCE does not hold stays red however it is worded.
+#:
+#: WHY A MARKER IS HERE AT ALL, AND IT IS NOT A HACK. A claim that upstream DELETED a
+#: construct and a claim that upstream HAS a construct are the SAME SHAPE to every
+#: instrument that reads a citation -- a name, a file, a line -- and the CONTENT cannot
+#: tell them apart. A citation to `ops_cl.py:139` whose token is nowhere in that file is
+#: a DANGLING claim if the port says "upstream's `OSX_TIMING_RATIO` is at :139" and a
+#: TRUE ABSENCE claim if it says "`OSX_TIMING_RATIO` is GONE at this pin". So the
+#: DIRECTION has to come from the row, and the TRUTH has to come from upstream's
+#: history. The marker says which direction the claim runs; the evidence says whether it
+#: is right. The marker is searched on the CITATION'S OWN LINE, because that is the line
+#: that makes the claim.
+#:
+#: MEASURED over the port's header lines, 2026-10-25, by `.agents/slop/absence/
+#: measure.py`: 317 header lines carry a marker, and 44 of them also carry a citation.
+#: The marker is a PRECONDITION, not the test: it says which DIRECTION the claim runs,
+#: and the EVIDENCE says whether it is true.
+ABSENCE_MARKER = re.compile(
+  r"\bGONE\b|\bDELETED\b|\bREMOVED\b|\bNOT IN\b|\bDOES NOT EXIST\b|\bhas NO\b",
+  re.IGNORECASE)
+#: A REVISION THE ROW NAMES: an upstream commit sha, in the port's own abbreviation.
+REVISION_SHA = re.compile(r"(?<![0-9a-f])([0-9a-f]{7,40})(?![0-9a-f])")
+#: THE PORT'S OWN NAME FOR ITS PIN. MEASURED over the port's header lines: "at the pin"
+#: 27, "at this pin" 21, "the pin" 5, "the pin's" 14.
+PIN_REF = re.compile(r"\b(?:this|the) pin\b", re.IGNORECASE)
 
 
 def load_census():
@@ -264,6 +407,67 @@ def our_pin_shas(text: str) -> list[str]:
     if OUR_PIN not in line:
       continue
     out.extend(re.findall(r"\b[0-9a-f]{7,40}\b", line))
+  return out
+
+
+def declared_pin() -> str:
+  """The DECLARATION's OUR PIN -- the commit the vendored `tinygrad/` is based on.
+
+  READ OUT OF THE DECLARATION, not remembered, and CROSS-CHECKED against the pin
+  RECORD's own tree: the sha on the OUR-PIN row that carries the pin's `tinygrad/`
+  tree. MEASURED 2026-10-25: `5c2bf39d6c4b`, and the upstream ref's tip is the SAME
+  commit -- so "the pin" and "the tip of upstream" are one revision today, and the
+  class below does not depend on their being the same.
+  """
+  state, commit, _detail = verify_record(PIN_RECORD_DATE, PIN_RECORD_DERIVE)
+  if state != "VERIFIED" or not DECLARATION.is_file():
+    return ""
+  tree = tree_of(commit)
+  for sha in our_pin_shas(DECLARATION.read_text(errors="replace")):
+    full = git_opt("rev-parse", "--verify", "--quiet", sha).strip()
+    if full and tree_of(full) == tree:
+      return full
+  return ""
+
+
+def abbreviation_map(corpus) -> dict[str, list[str]]:
+  """`{7-char prefix: [full shas]}` for upstream's whole history, ONCE per corpus.
+
+  THE ROWS NAME SHAS IN ABBREVIATION -- "upstream 9ff6db7b0" -- and the abbreviation
+  has to be resolved AGAINST UPSTREAM'S HISTORY AND NOT AGAINST THIS REPO'S OBJECT
+  STORE, because a seven-character prefix can name a commit of THIS PROJECT, and a
+  commit of this project is not a revision of upstream."""
+  m = getattr(corpus, "_abbrev", None)
+  if m is None:
+    m = {}
+    for c in corpus.order:
+      m.setdefault(c[:7], []).append(c)
+    corpus._abbrev = m
+  return m
+
+
+def upstream_sha(abbrev: str, corpus) -> str:
+  """The UPSTREAM commit whose sha starts with `abbrev`, or "" when there is none or
+  when the abbreviation is ambiguous."""
+  if not abbrev:
+    return ""
+  hits = [c for c in abbreviation_map(corpus).get(abbrev[:7], []) if c.startswith(abbrev)]
+  return hits[0] if len(hits) == 1 else ""
+
+
+def named_revisions(line: str, corpus, pin: str) -> list[tuple[str, str]]:
+  """`(revision, how)` for every revision the row NAMES.
+
+  An upstream commit sha the row writes, or the pin the row names. A hex run that does
+  not resolve IN UPSTREAM'S HISTORY is not a revision of upstream and is not named --
+  which is how a sha of THIS PROJECT's own history is kept out of the class."""
+  out: list[tuple[str, str]] = []
+  for m in REVISION_SHA.finditer(line):
+    full = upstream_sha(m.group(1), corpus)
+    if full:
+      out.append((full, "sha"))
+  if pin and PIN_REF.search(line):
+    out.append((pin, "the pin"))
   return out
 
 
@@ -369,14 +573,16 @@ def holds(lines: list[str], lo: int, hi: int, toks: list[str]) -> tuple[bool, st
   REPAIR 1 -- THE RANGE IS THE CITED THING, AND THE FIRST LINE IS NOT THE RANGE. A
   citation to `file.py:100-104` cites FIVE LINES, and the claim tokens are about the
   RANGE. The three checks above are FIRST-LINE-ONLY, so a citation to a function BODY
-  failed even when the claim is exactly right: MEASURED, `tinybendygrad/codegen/decomp/
-  dtype.bend:73` cites `dtype.py:100-104` and claims `bool`, `weakint`, `weakfloat` --
-  the names are IN the range and not on line 100. So the claim tokens are ALSO tested
-  against the whole cited range.
+  failed even when the claim is exactly right: MEASURED, `tinybendygrad/engine/jit.bend:30`
+  cites `jit.py:24-27` and claims `on_disk` -- and `on_disk` is at
+  `tinygrad/engine/jit.py:25`, inside the range and NOT on its first line. So the claim
+  tokens are ALSO tested against the whole cited range.
 
   THIS REPAIR IS STRICTLY SAFE IN ONE DIRECTION: it can only turn a FAILURE into a HOLD.
   It can never turn a DANGLING claim into a pass, because a dangling claim's tokens are
-  NOWHERE in the range -- that is what "dangling" means.
+  NOWHERE in the range -- that is what "dangling" means. MEASURED ELEMENTWISE, over every
+  citation and every revision of every cited file: 0 counterexamples, and the
+  holding-revision set GREW for 197 of the 2624 citations.
   """
   if not (0 < lo <= len(lines)):
     return (False, f"the file has {len(lines)} lines, the citation is at :{lo}")
@@ -411,8 +617,10 @@ def file_words(texts) -> set[str]:
   same line that cites an upstream line. Such a citation makes NO claim about the cited
   upstream file, so the gate cannot verdict it: an unfalsifiable claim is not a passing
   claim, and it is not a failing one either. MEASURED, `tinybendygrad/codegen/decomp/
-  dtype.bend:99` cites `dtype.py:225` and backticks `float_to_fp16`, `float_to_bf16`,
-  `float_to_fp8` -- the PORT's own decomp helpers, none of which is in that file.
+  dtype.bend:138` cites `dtype.py:65` and backticks `l2i_cdiv` and `step` -- the PORT's
+  own helper and a generic noun -- and NEITHER occurs in
+  `tinygrad/codegen/decomp/dtype.py` at ANY revision. MEASURED ON THE FROZEN TREE: that
+  row is `at_no_revision` before the repair and `unverifiable` after it.
 
   THE WORD SET IS THE SAME ONE `holds()` MATCHES AGAINST, so the two tests agree about
   what "the file names `x`" means: `\b` on both sides, so `src` is not found inside
@@ -444,6 +652,92 @@ def batch_blobs(specs: list[str]) -> dict[str, str]:
     out[spec] = buf[pos:pos + size].decode("utf-8", "replace")
     pos += size + 1
   return out
+
+
+# --------------------------------------------------------------------------- the absence class
+
+def absence_of(c: dict, path: str, corpus, pin: str, revs: list[str], gidx: list[int],
+               words: list[set[str]]) -> tuple[str, str]:
+  """`(evidence, removed_at)` for a citation whose claim may BE an absence, and
+  `("", why)` when it is not.
+
+  THE SIX CONDITIONS, AND EVERY ONE OF THEM IS NECESSARY:
+
+  1. THE ROW NAMES A REVISION R.  An upstream commit sha the row writes, or the pin the
+     row names.  A row that names no revision does not qualify: "upstream removed
+     this" with no revision is a mood, not a checkable claim about upstream.
+  2. R IS CONSISTENT WITH THE PIN'S HISTORY.  R is an upstream commit that is an
+     ancestor of (or equal to) the pin.  THE PIN SHIPS THE TREE THIS PORT IS BASED ON,
+     so a revision the pin does not contain is a revision the port cannot be checked
+     against, and a hex run that is not a revision of upstream at all is not a
+     revision of anything.
+  3. THE CONSTRUCT IS ABSENT AT R.  A claim token of the row does not occur in the
+     cited file's content at R.
+  4. THE CONSTRUCT WAS PRESENT BEFORE R.  The same token occurred in that file at some
+     revision OLDER than R -- so upstream really removed it, and the token is an
+     upstream construct rather than the port's own vocabulary.
+  5. THE REMOVAL IS ATTRIBUTABLE.  The commit D at which the file's content changed
+     from holding the token to not holding it exists, and D is at or before R.  D is
+     what the row's claim is ABOUT, and it is reported.
+  6. THE ROW ASSERTS THE ABSENCE.  The port's absence marker is on the citation's own
+     line.  See `ABSENCE_MARKER` for why the direction has to come from the row.
+
+  A ROW THAT FAILS ANY ONE OF THEM IS NOT IN THE CLASS, AND A ROW THAT IS IN THE
+  CLASS IS A ROW THAT WAS NEVER A FALSE CITATION: the claim is TRUE, and it was true
+  all along.
+  """
+  if not ABSENCE_MARKER.search(c["line"]):
+    return ("", "the row does not assert an absence")
+  named = named_revisions(c["line"], corpus, pin)
+  if not named:
+    return ("", "the row names no revision of upstream")
+  pin_i = corpus.index.get(pin) if pin else None
+  why = "the row names no revision of upstream"
+  for rev, _how in named:
+    ri = corpus.index.get(rev)
+    if ri is None:
+      why = f"{rev[:12]} is not a revision of upstream"
+      continue
+    if pin_i is not None and ri < pin_i:
+      why = f"{rev[:12]} is NEWER than the pin"
+      continue
+    # THE FILE'S CONTENT AT `rev`: the newest touching commit that is OLDER THAN OR
+    # EQUAL TO `rev`.  The global index counts BACKWARDS from the tip, so "older or
+    # equal" is "gi >= ri", and the newest of those is the SMALLEST such gi.
+    older_eq = [i for i, gi in enumerate(gidx) if gi >= ri]
+    if not older_eq:
+      why = f"{path} does not exist at {rev[:12]}"
+      continue
+    at = min(older_eq, key=lambda i: gidx[i])
+    gone = [t for t in c["toks"] if t not in words[at]]
+    if not gone:
+      why = f"the cited file still holds {','.join(c['toks'])} at {rev[:12]}"
+      continue
+    # WAS IT THERE BEFORE?  "strictly older" is "gi > ri".
+    was = [t for t in gone
+           if any(t in words[i] for i, gi in enumerate(gidx) if gi > ri)]
+    if not was:
+      why = f"{','.join(gone)} was never in {path}"
+      continue
+    # THE REMOVAL COMMIT: the newest touching commit AT OR OLDER THAN `rev` whose
+    # content lacks the token, given that the next-older one's content holds it.
+    # `gidx` ASCENDS, so the commits older-or-equal to `rev` are the TAIL of the list
+    # and the ones newer than `rev` are its head.
+    removed = ""
+    for i, gi in enumerate(gidx):
+      if gi < ri:
+        continue                       # a commit NEWER than the row's revision
+      if any(t in words[i] for t in was):
+        continue
+      if i + 1 < len(gidx) and any(t in words[i + 1] for t in was):
+        removed = revs[i]
+        break
+    if not removed:
+      why = "the removal is not attributable to a commit"
+      continue
+    return (f"`{','.join(was)}` was REMOVED from {path} at {removed[:12]}, and it is "
+            f"absent at {rev[:12]}", removed)
+  return ("", why)
 
 
 # --------------------------------------------------------------------------- the census
@@ -500,24 +794,28 @@ def collect(census, base: Path) -> tuple[list[dict], list[dict]]:
   return (up, local)
 
 
-def resolve_all(census, up: list[dict], corpus=None) -> None:
+def resolve_all(census, up: list[dict], corpus=None, pin: str = "") -> None:
   """Attach the upstream path and the CONTENT-REVISION to every citation.
 
   `corpus` is the SHARED upstream history. `census.Upstream(UPSTREAM)` costs one
   `git log --format=%H` over the whole upstream history, so a caller that judges many
   trees (the plant) passes ONE corpus in instead of paying for it per tree.
+  `pin` is the DECLARATION's OUR PIN, and it is what the absence class measures
+  against; without it the class is simply not computed.
   """
   if corpus is None:
     corpus = census.Upstream(UPSTREAM)
-  blobs_cache: dict[str, tuple[list[str], dict[str, str]]] = {}
+  blobs_cache: dict[str, tuple[list[str], dict[str, str], list[int]]] = {}
   words_cache: dict[str, set[str]] = {}
 
-  def blobs_for(path: str) -> tuple[list[str], dict[str, str]]:
+  def blobs_for(path: str) -> tuple[list[str], dict[str, str], list[int]]:
+    """`(touching shas newest-first, their blobs, their global indices)`."""
     if path not in blobs_cache:
       corpus.load(path)
       pairs = corpus._steps.get(path) or []
       revs = [corpus.order[gi] for gi, _c in pairs]      # NEWEST FIRST
-      blobs_cache[path] = (revs, batch_blobs([f"{r}:{path}" for r in revs]))
+      gidx = [gi for gi, _c in pairs]
+      blobs_cache[path] = (revs, batch_blobs([f"{r}:{path}" for r in revs]), gidx)
     return blobs_cache[path]
 
   def words_for(path: str) -> set[str]:
@@ -525,13 +823,13 @@ def resolve_all(census, up: list[dict], corpus=None) -> None:
     "does this token occur in the cited file", and so the SAFEST: a token that occurs at
     ANY revision keeps the citation in the verdict population."""
     if path not in words_cache:
-      _revs, blobs = blobs_for(path)
+      _revs, blobs, _gidx = blobs_for(path)
       words_cache[path] = file_words(blobs.values())
     return words_cache[path]
 
   def eval_path(path: str, c: dict) -> tuple[str, str, str, str]:
     """`(newest_rev, why, at_pin, pin_why)` for one citation against ONE upstream path."""
-    revs, blobs = blobs_for(path)
+    revs, blobs, _gidx = blobs_for(path)
     toks = c["toks"]
     newest, why = "", ""
     for r in revs:
@@ -552,6 +850,8 @@ def resolve_all(census, up: list[dict], corpus=None) -> None:
     c["at_pin"] = "NO"
     c["pin_why"] = "the cited upstream file does not resolve"
     c["relocated_to"] = ""
+    c["absence"] = ""
+    c["absence_removed_at"] = ""
     # REPAIR 2 -- DOES THIS CITATION MAKE A CLAIM ABOUT THE FILE IT CITES? `None` means
     # UNKNOWN: the subject did not resolve to one upstream file, so there is no file to
     # read a vocabulary from, and the citation stays in the verdict population. `False`
@@ -564,10 +864,19 @@ def resolve_all(census, up: list[dict], corpus=None) -> None:
       by_path[path].append(c)
   for path, cs in by_path.items():
     words = words_for(path)
+    revs, blobs, gidx = blobs_for(path)
+    per_rev: list[set[str]] = []
     for c in cs:
       c["present"] = [t for t in c["toks"] if t in words]
       c["claims_the_file"] = bool(c["present"])
       c["newest_rev"], c["why"], c["at_pin"], c["pin_why"] = eval_path(path, c)
+      # THE ABSENCE CLASS. The per-revision vocabularies are computed ONCE per path and
+      # only when a row of that path could ask for them.
+      if pin and ABSENCE_MARKER.search(c["line"]):
+        if not per_rev:
+          per_rev = [file_words([blobs.get(f"{r}:{path}", "")]) for r in revs]
+        c["absence"], c["absence_removed_at"] = absence_of(c, path, corpus, pin, revs, gidx,
+                                                           per_rev)
 
   # THE AMBIENT MIS-RESOLUTION, AND IT IS A DEFECT IN THE HEADER CENSUS, NOT IN THE PORT.
   # A bare basename is ambiguous upstream (`dtype.py` is three files) and the census
@@ -696,6 +1005,50 @@ def _danger_case(lines: list[str], spans: dict[str, list[tuple[int, int]]]) -> t
   return None
 
 
+def _removal_case(corpus, path: str) -> tuple[str, str, str] | None:
+  """`(token, removed_at, present_at)` -- a construct upstream DELETED from `path`.
+
+  DISCOVERED, NOT NAMED: the corpus's own history is walked for a token that one
+  revision holds and the next-older one does not, and that is STILL GONE at the pin.
+  The plant must not depend on a name someone remembered."""
+  corpus.load(path)
+  pairs = corpus._steps.get(path) or []
+  revs = [corpus.order[gi] for gi, _c in pairs]
+  if len(revs) < 2:
+    return None
+  blobs = batch_blobs([f"{r}:{path}" for r in revs])
+  sets = [file_words([blobs.get(f"{r}:{path}", "")]) for r in revs]
+  now = sets[0]
+  for i in range(len(revs) - 1):
+    for t in sorted(sets[i + 1] - sets[i]):
+      if len(t) < 4 or t.lower() in KEYWORDS or not IDENT.fullmatch(t):
+        continue
+      if t in now:
+        continue                      # it came BACK later, so it is not an absence
+      return (t, revs[i], revs[i + 1])
+  return None
+
+
+def _line_without(revs: list[str], blobs: dict[str, str], path: str, token: str) -> int:
+  """A line number in the pin's content that holds `token` at NO revision.
+
+  THE PLANT'S ABSENCE ARMS CITE A LINE THE TOKEN NEVER SAT ON. A line the token DID
+  sit on would resolve the citation at an older revision and the arm would be GREEN
+  for the wrong reason -- the wrong reason being "the citation is true", which is not
+  what these arms are about."""
+  pat = re.compile(rf"\b{re.escape(token)}\b")
+  hist = [blobs.get(f"{r}:{path}", "").splitlines() for r in revs]
+  if not hist:
+    return 0
+  for i, line in enumerate(hist[0]):
+    if pat.search(line):
+      continue
+    if any(i < len(h) and pat.search(h[i]) for h in hist):
+      continue
+    return i + 1
+  return 0
+
+
 def _plant() -> int:
   if not git_opt("rev-parse", "--verify", UPSTREAM):
     print(f"PLANT REFUSED: {UPSTREAM} is absent. This file does not fetch.", file=sys.stderr)
@@ -753,10 +1106,45 @@ def _plant() -> int:
     print("PLANT REFUSED: the vocabulary arm's name is in the file", file=sys.stderr)
     return REFUSED
 
+  # THE ABSENCE ARM'S SUBJECT: a construct upstream DELETED, DISCOVERED from the
+  # corpus's own history. The plant must not depend on a name someone remembered.
+  pin = declared_pin()
+  if not pin:
+    print("PLANT REFUSED: the declaration names no OUR PIN", file=sys.stderr)
+    return REFUSED
+  rpath, atok, aremoved, apresent = "", "", "", ""
+  for paths in corpus.files().values():
+    for cand in sorted(paths):
+      if not cand.startswith("tinygrad/"):
+        continue
+      case = _removal_case(corpus, cand)
+      if case:
+        rpath, (atok, aremoved, apresent) = cand, case
+        break
+    if rpath:
+      break
+  if not rpath:
+    print("PLANT REFUSED: no upstream file has a construct that was deleted", file=sys.stderr)
+    return REFUSED
+  corpus.load(rpath)
+  _pairs = corpus._steps.get(rpath) or []
+  rrevs = [corpus.order[gi] for gi, _c in _pairs]
+  rblobs = batch_blobs([f"{r}:{rpath}" for r in rrevs])
+  alo = _line_without(rrevs, rblobs, rpath, atok)
+  if not alo:
+    print("PLANT REFUSED: no line of the deleted construct's file avoids it", file=sys.stderr)
+    return REFUSED
+
   def cite(path: str, token: str, lo: int, hi: int | None = None) -> str:
     span = f"{lo}-{hi}" if hi else f"{lo}"
     return (f"# synthetic -- port of {path}\n"
             f"# the thing is `{token}`, and it is at {path}:{span}.\n")
+
+  def absence_cite(path: str, token: str, lo: int, tail: str) -> str:
+    """A header whose claim IS an absence. `tail` carries the revision, or the marker,
+    or neither -- and the arms below differ ONLY in the tail."""
+    return (f"# synthetic -- port of {path}\n"
+            f"# the thing is `{token}`, and it is at {path}:{lo} -- {tail}\n")
 
   true_src = cite(path, name, n)
   half_src = cite(path, name, m)
@@ -764,6 +1152,15 @@ def _plant() -> int:
   range_src = cite(path, rtok, rlo, rhi)
   vocab_src = cite(path, vocab, dlo)
   danger_src = cite(path, dtok, dlo)
+  # THE FOUR ABSENCE ARMS. They differ ONLY in the tail of one line, so the class
+  # cannot be decided by anything but that tail.
+  absent_true = absence_cite(rpath, atok, alo,
+                              f"upstream DELETED `{atok}` at {aremoved}.")
+  absent_wrong = absence_cite(rpath, atok, alo,
+                               f"upstream DELETED `{atok}` at {apresent}.")
+  absent_norev = absence_cite(rpath, atok, alo, f"upstream DELETED `{atok}`.")
+  absent_claim = absence_cite(rpath, atok, alo,
+                               f"upstream's `{atok}` is there at this pin.")
 
   def write(root: Path, src: str) -> None:
     dest = root / PORT_REL / "plant.bend"
@@ -772,7 +1169,7 @@ def _plant() -> int:
 
   def judge(root: Path) -> tuple[dict[str, list[dict]], list[dict]]:
     cites, _local = collect(census, root)
-    resolve_all(census, cites, corpus)
+    resolve_all(census, cites, corpus, pin)
     return (classify(cites), cites)
 
   with tempfile.TemporaryDirectory(prefix="pin-cite-plant-") as raw:
@@ -787,6 +1184,10 @@ def _plant() -> int:
         "vocab-arm": vocab_src,
         "danger-arm": danger_src,
         "danger-copy": danger_src,
+        "absence-arm": absent_true,
+        "absence-wrong-rev": absent_wrong,
+        "absence-no-rev": absent_norev,
+        "absence-not-a-claim": absent_claim,
     }
     trees = {k: td / k for k in arms}
     for k, src in arms.items():
@@ -801,11 +1202,21 @@ def _plant() -> int:
        (trees["control"] / PORT_REL / "plant.bend").read_bytes():
       print("PLANT DEAD: the half-lie copy is identical to the control", file=sys.stderr)
       return DEAD
+    # THE FOUR ABSENCE ARMS MUST DIFFER ONLY IN THEIR TAIL, or the class could be
+    # decided by something other than the tail.
+    tails = {k: (trees[k] / PORT_REL / "plant.bend").read_text().splitlines()[-1]
+             for k in ("absence-arm", "absence-wrong-rev", "absence-no-rev",
+                       "absence-not-a-claim")}
+    if len({t.split("-- ")[0] for t in tails.values()}) != 1:
+      print("PLANT FAILED: the absence arms differ in more than their tail", file=sys.stderr)
+      return FAIL
 
     judged = {k: judge(trees[k]) for k in arms}
     print(f"PLANT file {path} declares `{name}` at :{n} (local ref, not fetched)")
     print(f"PLANT range arm  : {path}:{rlo}-{rhi} token `{rtok}` -- NOT on the first line")
     print(f"PLANT danger arm : {path}:{dlo} token `{dtok}` -- IS elsewhere in the file")
+    print(f"PLANT absence arm: {rpath}:{alo} token `{atok}` -- DELETED at {aremoved[:12]}, "
+          f"and STILL PRESENT at {apresent[:12]}")
     for label in arms:
       cls, cs = judged[label]
       for c in cs:
@@ -827,6 +1238,10 @@ def _plant() -> int:
     cr, crc = one("range-arm"), one("range-copy")
     cv = one("vocab-arm")
     cd, cdc = one("danger-arm"), one("danger-copy")
+    cat = one("absence-arm")
+    cwr = one("absence-wrong-rev")
+    cnr = one("absence-no-rev")
+    cnc = one("absence-not-a-claim")
 
     # THE CONTROL AND ITS BYTE COPY.
     if ca and (ca["at_pin"] != "HOLDS" or not ca["newest_rev"]):
@@ -863,6 +1278,40 @@ def _plant() -> int:
     if cd and cdc and (cd["at_pin"], cd["newest_rev"], row_class(cd)) != \
        (cdc["at_pin"], cdc["newest_rev"], row_class(cdc)):
       bad.append("the danger arm's byte copy moved")
+    # THE ABSENCE CLASS -- FOUR ARMS THAT DIFFER ONLY IN THEIR TAIL.
+    #
+    # 1. THE TRUE ABSENCE: the row names the revision at which upstream removed the
+    #    construct, and upstream's history confirms it. THE ROW IS NOT A FALSE
+    #    CITATION, so it must leave the fail class.
+    if cat and row_class(cat) != "upstream_removed":
+      bad.append(f"the absence arm was not an absence claim: {row_class(cat)}")
+    if cat and cat in judged["absence-arm"][0]["dangling"]:
+      bad.append("the absence arm is still reported as a dangling claim")
+    if cat and cat["absence_removed_at"] != aremoved:
+      bad.append(f"the absence arm's removal commit moved: {cat['absence_removed_at']}")
+    # 2. THE WRONG REVISION: the row names a revision at which upstream had NOT
+    #    removed the construct. THE EVIDENCE FAILS, so the row must stay RED.
+    if cwr and row_class(cwr) == "upstream_removed":
+      bad.append("the wrong-revision arm was classified as an absence claim")
+    if cwr and row_class(cwr) != "dangling":
+      bad.append(f"the wrong-revision arm did not stay red: {row_class(cwr)}")
+    if cwr and cwr["at_pin"] != "NO":
+      bad.append(f"the wrong-revision arm was reported as holding: {cwr['pin_why']}")
+    # 3. NO REVISION: a row that merely mentions a deleted name is not a checkable
+    #    claim about upstream, and it must not qualify.
+    if cnr and row_class(cnr) == "upstream_removed":
+      bad.append("the no-revision arm was classified as an absence claim")
+    if cnr and row_class(cnr) != "dangling":
+      bad.append(f"the no-revision arm did not stay red: {row_class(cnr)}")
+    # 4. NOT AN ABSENCE CLAIM: the row names the pin, and the construct really is
+    #    gone at the pin, but the row does not SAY so. THE DIRECTION IS THE ROW'S TO
+    #    STATE, so the row must stay red.
+    if cnc and row_class(cnc) == "upstream_removed":
+      bad.append("a row that is not an absence claim was swept into the class")
+    if cnc and row_class(cnc) != "dangling":
+      bad.append(f"the not-a-claim arm did not stay red: {row_class(cnc)}")
+    if cnc and not cnc["present"]:
+      bad.append("the not-a-claim arm's token is not in the file, so it proves nothing")
     # A WRONG DATE ON THE RECORD IS REFUSED.
     fresh = Path(__file__).read_text()
     broken = fresh.replace(f'PIN_RECORD_DATE = "{PIN_RECORD_DATE}"',
@@ -882,13 +1331,20 @@ def _plant() -> int:
     print("PLANT OK: the control holds at the pin, its byte copy holds, the moved line is "
           "seen, a name that exists nowhere is not held, the RANGE arm holds (REPAIR 1), "
           "the vocabulary arm is UNVERIFIABLE (REPAIR 2), the danger arm is STILL DANGLING "
-          "(REPAIR 2 did not rescue it), and a wrong date is REFUSED")
+          "(REPAIR 2 did not rescue it), the ABSENCE arm is a TRUE ABSENCE, and the "
+          "wrong-revision, no-revision and not-a-claim arms are all STILL DANGLING")
     return PASS
 
 
 def row_class(c: dict) -> str:
   """The class of ONE citation, by the SAME rules `classify()` applies. The rows file
-  carries it, so a reader can see WHICH row went where instead of counting."""
+  carries it, so a reader can see WHICH row went where instead of counting.
+
+  THE ORDER IS A PRECEDENCE AND IT IS NOT AN ARBITRARY ONE. `upstream_removed` sits
+  BELOW `at_pin`, `only_older_revision`, `ambient_relocated` and `unverifiable`, so the
+  new class can only ever take a row OUT of `dangling` or `at_no_revision`: it can
+  never re-label a row another class already holds, and it can never accuse.
+  """
   if not c["toks"]:
     return "uncheckable_no_claim_token"
   if c["at_pin"] == "HOLDS":
@@ -899,6 +1355,8 @@ def row_class(c: dict) -> str:
     return "ambient_relocated"
   if c.get("claims_the_file") is False:
     return "unverifiable"
+  if c.get("absence"):
+    return "upstream_removed"
   if c["explicit"] and "/" in c["subject"]:
     return "dangling"
   return "at_no_revision"
@@ -911,6 +1369,10 @@ def classify(up: list[dict]) -> dict[str, list[dict]]:
   `uncheckable`    a citation with NO claim token -- counted, not verdicted.
   `at_pin`         holds at the declared pin.
   `only_older`     holds only at a revision older than the pin.
+  `removed`        of those: the row's claim IS an absence, and upstream's history
+                   confirms it -- the construct is absent at the revision the row names
+                   and was present before it. A TRUE claim about upstream, and NOT a
+                   false citation.
   `nowhere`        holds at NO upstream revision.
   `relocated`      of those: holds at ANOTHER upstream file with the same basename. A
                    defect in the CENSUS's directory ambient, not in the port.
@@ -928,24 +1390,22 @@ def classify(up: list[dict]) -> dict[str, list[dict]]:
   """
   checkable = [c for c in up if c["toks"]]
   uncheckable = [c for c in up if not c["toks"]]
-  at_pin = [c for c in checkable if c["at_pin"] == "HOLDS"]
-  only_older = [c for c in checkable if c["at_pin"] == "NO" and c["newest_rev"]]
-  nowhere = [c for c in checkable if c["at_pin"] == "NO" and not c["newest_rev"]]
-  relocated = [c for c in nowhere if c["relocated_to"]]
-  unverifiable = [c for c in nowhere
-                  if not c["relocated_to"] and c.get("claims_the_file") is False]
+  buckets: dict[str, list[dict]] = collections.defaultdict(list)
+  for c in checkable:
+    buckets[row_class(c)].append(c)
   # THE FAIL CLASS IS THE ONE THE AMBIENT CANNOT REACH. A citation whose subject is a
   # FULL PATH names one upstream file, so the census's directory ambient cannot have
   # pointed it at the wrong one, and a claim that holds at NO upstream revision is a
   # DANGLING CLAIM. A bare basename is not in this class: the ambient may have pointed it
   # at a file the header never meant, and that is a defect in the CENSUS, reported as
   # `cite.ambient_relocated` and not as a defect in the port.
-  dangling = [c for c in nowhere
-              if not c["relocated_to"] and c.get("claims_the_file") is not False
-              and c["explicit"] and "/" in c["subject"]]
-  return {"checkable": checkable, "uncheckable": uncheckable, "at_pin": at_pin,
-          "only_older": only_older, "nowhere": nowhere, "relocated": relocated,
-          "unverifiable": unverifiable, "dangling": dangling}
+  nowhere = (buckets["ambient_relocated"] + buckets["unverifiable"]
+             + buckets["dangling"] + buckets["at_no_revision"])
+  return {"checkable": checkable, "uncheckable": uncheckable,
+          "at_pin": buckets["at_pin"], "only_older": buckets["only_older_revision"],
+          "removed": buckets["upstream_removed"], "nowhere": nowhere,
+          "relocated": buckets["ambient_relocated"], "unverifiable": buckets["unverifiable"],
+          "dangling": buckets["dangling"]}
 
 
 # --------------------------------------------------------------------------- main
@@ -990,7 +1450,8 @@ def main(argv: list[str]) -> int:
   # ---- lane C -----------------------------------------------------------------
   census = load_census()
   up, local = collect(census, tree_root)
-  resolve_all(census, up)
+  our_pin = declared_pin()
+  resolve_all(census, up, pin=our_pin)
   if not up:
     print("DEAD  no upstream citation was collected", file=sys.stderr)
     return DEAD
@@ -1000,6 +1461,7 @@ def main(argv: list[str]) -> int:
   uncheckable = cls["uncheckable"]
   at_pin = cls["at_pin"]
   only_older = cls["only_older"]
+  removed = cls["removed"]
   nowhere = cls["nowhere"]
   relocated = cls["relocated"]
   unverifiable = cls["unverifiable"]
@@ -1010,6 +1472,7 @@ def main(argv: list[str]) -> int:
     "pin.record_state": state,
     "pin.commit": pin_commit,
     "pin.tree": pin_tree,
+    "pin.our_pin": our_pin,
     "head.tinygrad_tree": head_tree,
     "upstream.tinygrad_tree": up_tree,
     "pin.declared_shas": len(decl_shas),
@@ -1025,6 +1488,7 @@ def main(argv: list[str]) -> int:
     "cite.at_no_revision_dangling": len(dangling),
     "cite.ambient_relocated": len(relocated),
     "cite.unverifiable_no_claim_about_the_file": len(unverifiable),
+    "cite.upstream_removed": len(removed),
     "cite.local_sided_excluded": len(local),
     "cite.distinct_older_revisions": len(revs),
   }
@@ -1034,6 +1498,8 @@ def main(argv: list[str]) -> int:
     print(f"           tree {pin_tree[:12] if pin_tree else '(none)'}  "
           f"HEAD {head_tree[:12] if head_tree else '(none)'}  "
           f"upstream {up_tree[:12] if up_tree else '(none)'}")
+    print(f"OUR PIN    : {our_pin[:12] if our_pin else '(none)'}  -- the commit the "
+          f"vendored tinygrad/ is based on; the absence class measures against it")
     print(f"DECLARATION: {DECLARATION.relative_to(ROOT)} names {len(decl_shas)} sha(s) on its "
           f"OUR PIN row; {len(agreeing)} carry the pin's tree, {len(disagreeing)} carry another, "
           f"{len(unnamed)} name no tinygrad/ tree at all")
@@ -1050,8 +1516,15 @@ def main(argv: list[str]) -> int:
           f"basename (the census's directory ambient pointed them at the wrong one)")
     print(f"           {len(unverifiable):5d} of those name NO claim token that occurs in the "
           f"cited file at ANY revision (the port's own vocabulary -- counted, not verdicted)")
+    print(f"           {len(removed):5d} are TRUE ABSENCES: the row's claim IS the absence, "
+          f"and upstream's history confirms it")
     print(f"           {len(local):5d} bare cites taken out of the upstream population "
           f"(they name a file that is not a .py)")
+    print()
+    print("THE TRUE ABSENCES, the rows whose claim IS that upstream does NOT have the thing:")
+    for c in sorted(removed, key=lambda c: (c["rel"], c["at"])):
+      print(f"  {c['rel']}:{c['at']}  {c['subject']}:{c['lo']}  -- {c['absence']}")
+      print(f"        {c['line'][:110]}")
     print()
     print("THE DANGLING CLAIMS, the ones whose subject names ONE upstream file outright:")
     for c in sorted(dangling, key=lambda c: (c["rel"], c["at"]))[:40]:
@@ -1073,14 +1546,16 @@ def main(argv: list[str]) -> int:
     print(f"{k}={v}")
 
   if rows_out:
+    # THE NEW COLUMNS ARE APPENDED, NOT INSERTED, so a reader of the old rows file
+    # keeps every column it had at the index it had it at.
     head = ("rel\tat\tsubject\tlo\thi\texplicit\tat_pin\tnewest_rev\tclaim\t"
-            "present_in_file\tclass\tline\n")
+            "present_in_file\tclass\tline\tabsence\tabsence_removed_at\n")
     body = []
     for c in up:
       body.append(f"{c['rel']}\t{c['at']}\t{c['subject']}\t{c['lo']}\t{c['hi']}\t"
                   f"{int(c['explicit'])}\t{c['at_pin']}\t{c['newest_rev']}\t"
                   f"{','.join(c['toks'])}\t{','.join(c['present'])}\t{row_class(c)}\t"
-                  f"{c['line']}\n")
+                  f"{c['line']}\t{c.get('absence', '')}\t{c.get('absence_removed_at', '')}\n")
     Path(rows_out).write_text(head + "".join(body))
     print(f"ROWS       : {len(up)} -> {rows_out}")
 
