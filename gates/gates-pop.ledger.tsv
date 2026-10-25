@@ -98,9 +98,9 @@ checks/vz_gate.py	py-main	__file__.parent	0	1
 checks/walk-mutate.sh	sh-selfref	-	1	1
 checks/wallcheck.py	py-main	-	0	1
 checks/wt-sync.sh	sh-selfref	-	1	1
-gates/.wgsl-mut-oracle.py	py-main	-	0	1
-gates/amd-mut-gate.py	py-main	__file__.parent	0	1
-gates/amd-mut-oracle.py	py-main	-	0	1
+gates/.wgsl-mut-oracle.py	gone	-	0	1
+gates/amd-mut-gate.py	gone	__file__.parent	0	1
+gates/amd-mut-oracle.py	gone	-	0	1
 gates/amd_dsl_census-gate.py	py-main	__file__.parent	0	1
 gates/amd_dsl_census-mutate.py	py-main	__file__.parent	0	1
 gates/amd_dsl_census-oracle.py	py-main	-	0	1
@@ -117,7 +117,7 @@ gates/cr_graph_census-gate.py	py-main	-	0	1
 gates/crp_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/crp_graph_census-mutate.py	py-main	__file__.parent	0	1
 gates/crp_graph_census-oracle.py	py-main	-	0	1
-gates/cstyle-mut-oracle.py	py-main	-	0	1
+gates/cstyle-mut-oracle.py	gone	-	0	1
 gates/cstyle_render_census-gate.py	py-main	-	0	1
 gates/cstyle_render_census-mutate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/cstyle_render_census-oracle.py	py-main	-	0	1
@@ -200,7 +200,7 @@ gates/randrows-gate.py	py-main	__file__.parent	0	1
 gates/rd_graph_census-gate.py	py-main	-	0	1
 gates/reachability-gate.py	py-main	__file__.parent	0	1
 gates/reachability-plant.py	py-main	__file__.parent	0	1
-gates/realize-mut-oracle.py	py-main	-	0	1
+gates/realize-mut-oracle.py	gone	-	0	1
 gates/realize_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/realize_graph_census-mutate.py	py-main	__file__.parent	0	1
 gates/realize_graph_census-oracle.py	py-main	-	0	1
