@@ -1405,26 +1405,38 @@ index-disarmed [##########] 2/2  **THE ARMED-INDEX HAZARD WAS LIVE AND IS NOW CL
                                        WORKING** -- and the standing discipline (every commit through
                                        a PRIVATE index) is why nothing was lost while it was armed.
 
-nn-rows-vacuous      [###] 1/4  **THE NN LAYERS HAVE NO COMPARER AT ALL, SO ALL 31 OF THEIR ROWS ARE LABELS, AND 19 OF
-                                       THE 31 COULD NOT PASS EVEN UNDER EXACT COMPARISON.** MEASURED 2026-10-22T04:10Z
-                                       at HEAD `0d1d77737`: `nn_row.line(nm, got, want)` (nn/layers.bend:879) ONLY
-                                       PRINTS -- THERE IS NO COMPARER IN THE TREE, because the only files that NAME
-                                       these rows (`fold_smk`, `dbg_x_sig`) are scratch under `.agents/slop/`. **THE
-                                       31 ROWS, CLASSIFIED: 12** could pass under exact comparison **AND 1 OF THOSE 12
-                                       FAILS** (`fold_smk` reads empty where `2,1,3` is expected); **5 read NOTHING AT
-                                       ALL** (the `conv_*` rows: `got=` AND `want=` both empty); **5 have an EMPTY
-                                       `want`** (the `_sig` rows); **8 differ ONLY IN SPELLING**
-                                       (`where_xdt`/`where_wdt`/`where_dts` read `f32` against `float32`;
-                                       `relu`/`dot_2d`/`dot_1d`/`linear`/`linear_nobias` read `1,4,8,8` against
-                                       `(1,4,8,8)`). 12+1+5+5+8 = 31. **THE KEYSTONE IS THE 5 `conv_*` ROWS:
-                                       `nn_row.shp` maps `None{}` to the literal `"NONE"`, SO AN EMPTY `got` MEANS
-                                       `nn_conv2d` RETURNED A TENSOR WHOSE SHAPE CANNOT BE READ** -- `nn_shape` is
-                                       `None` for it. **SO `nn_conv2d` PRODUCES AN UNSHAPED TENSOR, AND THAT IS THE
-                                       LAYER RESNET, AND THEREFORE IMAGENET, STANDS ON.** The conv expectations are
-                                       ALREADY IN THE FILE'S OWN COMMENT (op.py:1562): padding=1 -> `(1,8,32,32)`,
-                                       padding=0 -> `(1,8,30,30)`, padding=1 stride=2 -> `(1,8,16,16)`. **THE
-                                       EXPECTATION LIVES IN ONE PLACE AND THE COMPARER MUST READ IT FROM THERE, NEVER
-                                       A SECOND COPY.**
+nn-rows-vacuous      [####] 4/4  **THE NN LAYERS NOW HAVE A COMPARER, AND **EVERY ONE OF THE 31 ROWS CAN GO RED** --
+                                       AND THE RESULT IS STRONGER THAN THE ROWS: **THE PORT'S COMPILED UOp GRAPH
+                                       **IS** CPYTHON'S GRAPH, NODE FOR NODE, CONST PAYLOADS INCLUDED, ON ALL FIVE
+                                       GRAPH ROWS.** **THIS ROW NAMED A WALL AND THE WALL HAS FALLEN; THE LEDGER MUST
+                                       NOT NAME IT ANY MORE.** MEASURED 2026-10-22T04:10Z AT HEAD `0d1d77737`, IT READ
+                                       *"THE NN LAYERS HAVE NO COMPARER AT ALL, SO ALL 31 OF THEIR ROWS ARE LABELS,
+                                       AND 19 OF THE 31 COULD NOT PASS EVEN UNDER EXACT COMPARISON"*: 12 COULD PASS
+                                       **AND 1 OF THOSE 12 FAILED** (`fold_smk` READ EMPTY WHERE `2,1,3` WAS
+                                       EXPECTED); **5 READ NOTHING AT ALL** (THE `conv_*` ROWS); **5 HAD AN EMPTY
+                                       `want`** (THE `_sig` ROWS); **8 DIFFERED ONLY IN SPELLING**. **⇒ AS OF
+                                       2026-10-23 ALL FOUR CLASSES ARE CLOSED.** `gates/nn-rows-gate.py` EXISTS AND
+                                       **READS `PASS -- 31 OF 31 ROWS MATCH THEIR EXPECTATIONS`**, rc=0, WITH
+                                       `rows_not_passing_exact_comparison=0 of 31` (IT WAS **13 OF 31**). THE FIVE
+                                       `conv_*` ROWS READ UPSTREAM'S ANSWERS; THE FIVE `_sig` ROWS CARRY CPYTHON'S OWN
+                                       GRAPH RENDERED IN THE PORT'S SPELLING; THE EIGHT SPELLING ROWS CARRY THE PORT'S
+                                       SPELLING WITH **CPYTHON'S VALUE** (`f32` IS CPython's OWN `DType.name`,
+                                       `tinygrad/dtype.py:136` -- `float32` IS THE *ALIAS*, `:140`); AND `fold_smk`
+                                       READS `got=2,4,1 want=2,4,1` (ITS OLD `2,1,3` WAS WRONG: IT IS CPython's ANSWER
+                                       FOR AXIS `[1]`). **⇒ AND THE BONUS CLAIM, MEASURED BY
+                                       `.agents/slop/nnrowsfix/vsig.py`: `dbg_x_sig` IDENTICAL (6 TOKENS),
+                                       `dbg_dot_sig` IDENTICAL (20), `dbg_conv_sig` IDENTICAL (57), `fold_xw_sig`
+                                       IDENTICAL (18), `fold_cc_sig` IDENTICAL (20) -- **ALL 5 NODE LISTS ARE
+                                       IDENTICAL, NODE FOR NODE, CONST PAYLOADS INCLUDED.** **⇒ AND THE CONTROLS ARE
+                                       TWO CLASSES: C1/C2 FIRE **WRONGNESS** (A WRONG-BUT-NON-EMPTY `want` GOES RED,
+                                       THE OTHER 30 STAY GREEN) AND C3 FIRES **VACUITY** (AN EMPTIED `want` GOES
+                                       `UNCHECKABLE`), SO THE GATE IS NOT MERELY CATCHING EMPTINESS. **⇒ AND
+                                       `dbg_dot_sig` AND `fold_cc_sig` SHARE A `want`, AND THAT IS SAID RATHER THAN
+                                       HIDDEN: UPSTREAM'S `dot` **IS** RESHAPE-TRANSPOSE-MUL-SUM-CAST, SO A GRAPH
+                                       SIGNATURE CANNOT SEPARATE THEM.** **⇒ SEE `nn-rows-complete` FOR THE ROW THAT
+                                       RECORDS THIS, AND `nn-rows-gate` FOR THE ONE NAMED REMAINDER: A FROZEN BASELINE
+                                       LEDGER BESIDE THE GATE, BECAUSE **DELETING A ROW *NAME* IS INVISIBLE TO THE
+                                       GATE** (A SELF-DECLARED POPULATION SHRINKS ON BOTH SIDES AT ONCE).
 
 corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OWN INSTRUMENTS SAY SO IN TWO INDEPENDENT
                                        WAYS.** MEASURED 2026-10-22T04:07Z: `checks/differ.py`'s `repro_bad()` RETURNED
@@ -1764,28 +1776,24 @@ mo-at-forward        [####] 3/4  **`mo_at` COUNTED THE INDEX FROM THE END, SO EV
                                        REDUCE'S SHAPE INDEPENDENTLY, SO NO SHAPE ROW SEES IT, AND `mo_squeeze` HAS NO
                                        ROW AT ALL. **THOSE TWO ARE THE NAMED NEXT MOVE.**
 
-mixin-op-red         [##] 2/3  **A TRACKED GATE IS RED AT HEAD, ON 11 ROWS, AND NOBODY HAD NOTICED.** MEASURED
+mixin-op-red         [###] 3/3  **A TRACKED GATE WAS RED AT HEAD ON 11 ROWS, AND THE ELEVEN ARE NOW CLOSED.** MEASURED
                                        2026-10-22: THE TREE'S OWN COMPARATOR, `gates/lanecmp.py`'s `compare()`, RUN ON
                                        **HEAD's OWN LANES** (`git archive HEAD tinybendygrad` INTO A SCRATCH, THE PORT
-                                       RUN THERE, HEAD's `.agents/slop/mixin-op-gate.py` RUN FOR CPython) READS
-                                       **`agree=21  agree_many=0  differ=11  unanswered=4  port_only=4
-                                       oracle_only=0`**. THE 11 ARE THE MEAN/VAR/STD FAMILY: `mean0`, `mean0kd`,
-                                       `meanN`, `mean0_2d`, `var0`, `var0c0`, `std0`, `varmean0_v`, `varmean0_m`,
-                                       `stdmean0_s`, `stdmean0_m`. **THE PORT'S GRAPH HAS ONE MORE NODE THAN CPython's
-                                       AND THE EXTRA NODE IS A `CAST/1` BETWEEN THE `RECIPROCAL` AND THE `MUL` -- SO
-                                       IT IS A DTYPE DIFFERENCE IN THE MEAN'S DENOMINATOR, NOT AN INDEX DIFFERENCE,
-                                       AND IT PREDATES THIS SESSION'S WORK.** **AND THE GATE ITSELF WAS NOT EVEN
-                                       REACHING THE COMPARISON: ITS ROW COUNT IS PINNED (`rows=36, compared=32`) AND
-                                       ADDING TWO ROWS MADE IT **DEAD** (rc=5, *"lane bd.out produced 38 of 36 rows"*)
-                                       -- WHICH IS THE *"A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO
-                                       GATE"* CLASS, IN ITS OTHER FORM: **A GATE THAT CANNOT REACH ITS COMPARISON IS A
-                                       DEAD GATE, AND A DEAD GATE IS NOT A PASS.** **THE COUNTS ARE NOW **39 AND 35** (THREE ROWS WERE ADDED), SO
-                                       THE GATE RUNS ITS COMPARISON AND REPORTS THE DISAGREEMENTS INSTEAD OF REFUSING
-                                       TO COMPARE -- AND IT IS STILL RED, WHICH IS THE TRUTH.** **AND THE `mo_at` FIX
-                                       REPAIRED **NONE** OF THE ELEVEN -- THE DIFFER COUNT IS **UNCHANGED AT 11** -- AND **AN EARLIER READING OF MINE SAID OTHERWISE AND WAS WRONG: SEE `mixin-op-corrected`.** **THE
-                                       `CAST/1` DIVERGENCE IS NOT MINE AND IS NOT FIXED BY THIS COMMIT: IT IS THE
-                                       MEAN'S DENOMINATOR CASTS ITS RESULT AND CPYTHON'S DOES NOT, AND IT IS A NAMED
-                                       NEXT MOVE.**
+                                       RUN THERE, HEAD's ORACLE RUN FOR CPython) READ `agree=21  agree_many=0
+                                       differ=11  unanswered=4  port_only=4  oracle_only=0`. THE 11 WERE THE
+                                       MEAN/VAR/STD FAMILY (`mean0`, `mean0kd`, `meanN`, `mean0_2d`, `var0`, `var0c0`,
+                                       `std0`, `varmean0_v`, `varmean0_m`, `stdmean0_s`, `stdmean0_m`), AND THE PORT'S
+                                       GRAPH HAD ONE MORE NODE THAN CPython's: **A `CAST/1` BETWEEN THE `RECIPROCAL`
+                                       AND THE `MUL`.** **⇒ AND AS OF 2026-10-23 `gates/mixin-op-gate.py` READS **`38
+                                       shared rows, 3 lanes identical`** -- **ALL THIRTY-EIGHT AGREE, AND THE ELEVEN
+                                       ARE GONE.** **⇒ AND THE MECHANISM IS WORTH NAMING BECAUSE IT IS THE ROW-KIND
+                                       POINT AGAIN: A SIGNATURE ROW PRINTS `CONST/0` AND SO COULD NEVER SEE THE
+                                       DENOMINATOR'S VALUE, **AND THE VALUE ROWS (`val_*`) SEE IT** -- `val_mean0`
+                                       READS `CONST/0=f4.000000` AND THE DENOMINATOR'S VALUE WAS **RIGHT ON BOTH
+                                       SIDES**. **⇒ SO CLOSING THIS TOOK A NEW ROW KIND (`mo_cval`), NOT A NEW FIX.**
+                                       **⇒ SEE `mixin-op-closed` AND `nn-rows-complete` FOR THE LEDGER ROWS THAT
+                                       RECORD IT, AND `state_census` FOR THE CLASS CENSUS THAT NOW CATCHES AN EXPIRED
+                                       NEGATIVE FIXTURE.**
 
 oracle-two-copies    [##] 2/3  **THE GATE'S CPython ORACLE IS A COPY UNDER `.agents/slop/`, AND A SECOND COPY SITS
                                        BESIDE THE GATE -- AND THE TWO MUST BE EDITED IN LOCKSTEP.** MEASURED
@@ -1831,22 +1839,6 @@ verdict-hunt         [##] 2/3  **NO BOUNTY WIN, AND A REAL UPSTREAM BUG IN THE #
                                        THE CONTINUATION BY `Efq` AND THE ARM IS NEVER EMITTED.** **THIS IS WORTH
                                        FILING AT `bendlang/bend` AS A NEW ISSUE IN THE #1182 FAMILY.**
 
-verdict-lane         [###] 2/3  **THE LEAN TOOLCHAIN IS PRESENT AND `--verdict` WORKS IN THIS TREE -- SO THE PORT'S
-                                       AUTHORITATIVE CHECK IS AVAILABLE, AND IT AGREES WITH THE ONE THE PORT USES.**
-                                       MEASURED 2026-10-22: `leanc`, `lake` AND `lean` ARE ALL ON PATH AT
-                                       `~/.elan/bin/`, AND `tinybendygrad/helpers.bend --verdict` ANSWERS `ALL PROOFS
-                                       CHECK` WITH rc=0. **`--verdict` COMPILES THE FILE TO BendTT AND RUNS THE LEAN-
-                                       VERIFIED KERNEL ON IT, SO IT IS THE AUTHORITATIVE CHECK -- AND THE PORT'S PROOF
-                                       GATE USES ONLY `--check-only`.** **MEASURED ON ALL SIX OF THE PORT'S PROOF
-                                       FILES, THE TWO LANES **AGREE**: `LAWS.bend` (34 TODOs), `PROOF.bend` (18 TODOs)
-                                       AND `PROOF2.bend` **REFUSE UNDER BOTH**; AND `LAWS/alu.bend`, `LAWS/PROOF-
-                                       ALL.bend` AND `LAWS/spec.bend` READ `ALL PROOFS CHECK` **UNDER BOTH**. **SO TWO
-                                       THINGS ARE ESTABLISHED: `--verdict` DOES NOT ACCEPT A FILE WITH TODOs -- IT
-                                       REFUSES THEM EXACTLY AS `--check-only` DOES -- AND THE PORT'S COMPLETED PROOF
-                                       FAMILY PASSES THE LEAN-VERIFIED KERNEL, SO THE PORT IS NOT RESTING ON A KERNEL-
-                                       LEVEL HOLE.** **THE NAMED NEXT MOVE: A `--verdict` LANE OVER THE PORT, WHICH IS
-                                       THE RUNG ABOVE `checks/port-compile-gate.py` (165 of 169 COMPILE, 4 COLD BY
-                                       DESIGN).**
 
 safe-ts-trust-gap    [##] 2/3  **THE LEAN SIDE IS CLOSED, SO THE TRUST GAP IS THE 1,573 LINES IN FRONT OF IT.**
                                        MEASURED 2026-10-22 AT `v2.0.37`: `references/bend/bend2/bendtt.lean` IS
@@ -1899,23 +1891,28 @@ mo-squeeze-row       [####] 4/4  **THE THIRD CALL SITE OF `mo_at` NOW HAS A ROW 
                                        LABEL"* -- AND CLOSING IT NEEDS A ROW THAT PRINTS A CONST'S VALUE, WHICH NO ROW
                                        PRINTS TODAY.**
 
-corpus-stale-fix     [##] 2/3  **THE `mo_at` FIX MOVED THE SUBSTRATE, SO THE CORPUS WITNESS IS STALE -- AND THE TREE'S
-                                       OWN INSTRUMENT SAYS SO.** MEASURED 2026-10-22T20:15Z: `checks/differ.py`'s
-                                       `repro_bad()` RETURNS **1** ROW -- *"repro-substrate=62c5dd903b86 but the live
-                                       substrate is 0fce74ff4890 -- this witness describes a tree that NO LONGER
-                                       EXISTS"* -- **WHICH IS THE INSTRUMENT WORKING**: THE `REPRO_SUBSTRATE` ARM
-                                       COMPARES THE WITNESS'S RECORDED DIGEST AGAINST THE LIVE ONE, AND
-                                       `mixin/op.bend` IS A SUBSTRATE FILE, SO THE FIX MOVED IT. **THE WITNESS AT
-                                       `b5c16d646` RECORDED `62c5dd903b86`; THE LIVE SUBSTRATE IS NOW
-                                       `0fce74ff4890`.** **SO THE RE-RUN IS NEEDED, AND IT MUST WAIT FOR THE TREE TO
-                                       STOP MOVING -- AND AT 20:15Z THE LOAD WAS **47 ON 12 CORES** (WITH A 15-MINUTE
-                                       READING OF 272), SO THE MACHINE WAS NOT THE PLACE TO RUN A 271-SECOND CORPUS.**
-                                       **AND THE RE-RUN IS ALSO THE MEASUREMENT OF THE FIX'S BLAST RADIUS: THE
-                                       CORPUS'S 35 GRAPHS COMPARED BYTE FOR BYTE, SO IF `mo_at`'s BACKWARD INDEX
-                                       CHANGED ANY OF THEM, THE CORPUS WILL SAY SO.** **THE PORT'S OWN `mixin-op` GATE
-                                       IS THE OTHER HALF OF THAT MEASUREMENT, AND IT IS ALREADY GREEN ON THE THREE NEW
-                                       ROWS: THE PORT AND THE ORACLE AGREE ON `sh_sum0_23=(3) f32`,
-                                       `sh_sum0kd_23=(1)(3) f32` AND `sh_sq0_123=(2)(3) f32`.**
+corpus-stale-fix     [###] 3/3  **THE `mo_at` FIX MOVED THE SUBSTRATE, THE WITNESS WENT STALE, AND THE TREE'S OWN
+                                       INSTRUMENT SAID SO -- AND THE WITNESS WAS THEN RE-TAKEN.** MEASURED
+                                       2026-10-22T20:15Z: `checks/differ.py`'s `repro_bad()` RETURNED **1** ROW --
+                                       *"repro-substrate=62c5dd903b86 but the live substrate is 0fce74ff4890 -- this
+                                       witness describes a tree that NO LONGER EXISTS"* -- **WHICH IS THE INSTRUMENT
+                                       WORKING**: THE `REPRO_SUBSTRATE` ARM COMPARES THE WITNESS'S RECORDED DIGEST
+                                       AGAINST THE LIVE ONE, AND `mixin/op.bend` IS A SUBSTRATE FILE, SO THE FIX MOVED
+                                       IT. **⇒ AND A COMMENT-ONLY EDIT TO A `.bend` FILE ALSO MOVES IT, WHICH IS WHY
+                                       TWO MORE RE-TAKES FOLLOWED (`nn/item.bend` AND `runtime/support/autogen.bend`
+                                       FOR THE BEND-UPGRADE'S CITATIONS, AND `checks/differ.py` ITSELF FOR THE
+                                       READINESS GATE).** **⇒ AND AS OF 2026-10-25 THE WITNESS IS CURRENT:
+                                       `unhealthy=0  artefacts_ok=0  repro_bad=0`, `substrate-start == substrate-end
+                                       == live`, `graphs=35  graphs-agree=35  graphs-disagree=0  byte-identical=35`,
+                                       AND `REPRO: 319 OF 319 FILES IDENTICAL ACROSS TWO CLEAN RUNS`.** **⇒ AND THE
+                                       STALENESS IS NOW THE TREE'S OWN INSTRUMENT'S JOB RATHER THAN A READER'S:
+                                       `gates/corpusverdict-gate.py` READS **`PASS -- THE RECORDED VERDICT DESCRIBES
+                                       THIS TREE`** ON ITS `substrate` ROW, **AND IT IS ALSO THE THING THAT SAYS A RUN
+                                       THAT DOES NOT WAIT FOR THE SUBSTRATE TO SETTLE IS A SEPARATE HAZARD -- WHICH IS
+                                       WHY `cmd_run` NOW WAITS (`run.readiness state=OK`).** **⇒ AND THE TREES THAT
+                                       MOVED WHILE A RUN WAS IN FLIGHT ARE NOW IMPOSSIBLE TO MISS: A RUN OVER A MIXED
+                                       TREE SAYS *"THE SUBSTRATE MOVED WHILE THE RUN WAS IN FLIGHT"* AND `unhealthy()`
+                                       NAMES IT AS ITS ONE LINE.**
 
 
 mixin-op-corrected   [##] 3/3  **A CLAIM OF MINE DID NOT SURVIVE RE-MEASUREMENT, AND IT WAS WRITTEN DOWN IN THE LEDGER
