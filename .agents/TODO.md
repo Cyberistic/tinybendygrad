@@ -2428,32 +2428,37 @@ repro-subject-verdict [###] 3/3  **TWO RUNS THAT MEASURED DIFFERENT SUBJECTS WER
                                        VERDICT.**
 
 
-exec-broadcast-max   [##] 2/3  **THE PORT'S BEND EXECUTOR COMPUTES ONLY THE FIRST OUTER SLICE OF A BROADCAST, AND
-                                       `max` OVER AN AXIS DOES NOT REDUCE AT ALL -- SO A 4×4 MATMUL IS
-                                       `[[180,200,220,240],[0,0,0,0],[0,0,0,0],[0,0,0,0]]` INSTEAD OF THE FULL
-                                       MATRIX.** MEASURED 2026-10-25 ON THE BEND DEVICE AGAINST CPython's OWN PYTHON
-                                       DEVICE, WITH ITS OWN INPUTS. **⇒ THE SUBJECT IS
-                                       `tinybendygrad/runtime/ops_python.bend` (2,805 LINES), THE PORT OF UPSTREAM's
-                                       `tinygrad/runtime/ops_python.py`, WHICH IS THE ORACLE. THE WIRE IS v1.1, ONE
-                                       LAUNCH PER PACKET: `bendexec1 <nuops> <nbuffers>`, THEN ONE `<idx>: <OP>
-                                       <dtype|-> <arg|-> <src1> <src2> ...` LINE PER UOP IN POST-ORDER, THEN ONE
-                                       `<nbytes> <hex-bytes>` LINE PER BUFFER.** **⇒ THE MEASUREMENTS: (1) A BROADCAST
-                                       MULTIPLY `(4×1×4) * (1×4×4)` GIVES THE FIRST OUTER SLICE EXACTLY RIGHT AND THE
-                                       OTHER THREE ALL ZERO. (2) `max(axis=0)` ON A 4×4 GIVES `[0,1,2,3]` -- THE FIRST
-                                       ROW -- AGAINST `[12,13,14,15]`; `max(axis=1)` GIVES `[0,4,8,12]` -- THE FIRST
-                                       COLUMN -- AGAINST `[3,7,11,15]`. (3) **AND WHAT IS *NOT* BROKEN, SO IT MUST NOT
-                                       BE 'FIXED': `sum` IS CORRECT** -- `sum(axis=0)` ON 4×4, 2×8, 8×2 AND IN F32 ALL
-                                       MATCH; `sum(axis=1)` MATCHES; `sum(axis=-1)` MATCHES; `sum()` OF A 1-D VECTOR
-                                       MATCHES (16→120, 8→28, 4→6, 2→1); A 4×4 ELEMENTWISE ADD MATCHES; `transpose()`
-                                       MATCHES; **AND ALL SIX OF THE INSTRUMENT'S OTHER CASES MATCH** (`add4`, `sum4`,
-                                       `addi32`, `addu32`, `cast`, `cmp`). **⇒ BOTH DEFECTS PRODUCE *'THE FIRST
-                                       ELEMENT ALONG THE AXIS'*, WHICH IS THE SHAPE TO LOOK FOR: A LOOP OVER THE
-                                       OUTPUT INDEX SPACE THAT RUNS ONCE, OR AN AXIS DROPPED WHEN THE OUTPUT IS
-                                       INDEXED.** **⇒ AND THE PINNED DIVERGENCES MUST BE CHECKED FIRST: THE EXECUTOR
-                                       CENSUS HAS **365 ROWS, 314 IDENTICAL, AND 52 PINNED DIVERGENCES IN TWO NAMED
-                                       FAMILIES** -- *'VECTOR-STORE LANES'* AND *'LOOP-CARRIED LOCAL REDUCTION'* --
-                                       **SO THESE DEFECTS MAY ALREADY BE PINNED, AND A FIX THAT SILENTLY MOVES A PIN
-                                       IS A REGRESSION, NOT A FIX.**
+exec-broadcast-max   [###] 3/3  **THE BROADCAST LANE AND THE `max` LANE ARE FIXED, AND NEITHER WAS WHAT IT LOOKED
+                                       LIKE: **THE CAUSE WAS A NESTED RANGE WHOSE COUNTER WAS NEVER RESET, AND THE
+                                       INTEGER `max` WAS A `min`.** MEASURED 2026-10-25. **⇒ (1) A RANGE's COUNTER IS
+                                       NEVER RESET WHEN THE LOOP EXITS**
+                                       (`tinybendygrad/runtime/ops_python.bend:1712`). UPSTREAM'S OWN ARM
+                                       (`tinygrad/runtime/ops_python.py:126-134`) DOES `del values[u]` ON THE EXIT
+                                       TEST, **SO THE NEXT VISIT IS A FIRST VISIT AND THE BODY READS 0 AGAIN.** THE
+                                       PORT MODELS *"never visited"* WITH A SECOND SLOT (THE COUNTER's SLOT + 1) AND
+                                       NEVER CLEARED THAT SLOT, **SO ON THE OUTER LOOP's SECOND ITERATION THE INNER
+                                       RANGE WAS *"ALREADY VISITED"*, ITS COUNTER WAS INCREMENTED ONCE MORE (`nxt =
+                                       trip + 1`), `nxt == trip` WAS FALSE, AND THE INNER BODY NEVER RAN -- SO THE
+                                       STORE NEVER RAN AND THE OUTPUT KEPT ONLY THE FIRST OUTER SLAB.** THE FIX IS
+                                       `Prog.rng.del`: **ZERO THE COUNTER AND CLEAR THE FLAG, WHICH IS EXACTLY THE
+                                       STATE THE ARENA IS IN BEFORE THE FIRST VISIT.** **⇒ (2) THE INTEGER LANE's
+                                       `max` WAS A `min`** (`tinybendygrad/uop/symbolic.bend:644`): `i32_max` READ
+                                       `Bool.pick(U32, i32_lt(uns, y, x), y, x)` -- *"y IF y < x ELSE x"* -- **WHICH
+                                       IS `min(x, y)`**; THE FLOAT LANE HAS ITS OPERANDS THE OTHER WAY ROUND AND IS
+                                       RIGHT. MEASURED: `i32_max(3,7)` AND `i32_max(7,3)` BOTH ANSWERED 3, AND
+                                       `max(axis=0)` OVER A 4×4 int32 TENSOR ANSWERED THE FIRST ROW. **UPSTREAM'S OWN
+                                       TABLE IS `python_alu[Ops.MAX] = max`, SO THE ORACLE SAYS `max` AND THE PORT WAS
+                                       WRONG.** **⇒ AND THE `max` DEFECT WAS THE **INTEGER LANE ONLY** -- THE FLOAT
+                                       LANE'S `max` WAS RIGHT AND THE TWO PACKETS ARE BYTE-IDENTICAL APART FROM THE
+                                       DTYPE, WHICH IS HOW THE FAULT WAS LOCALISED TO ONE FUNCTION.** **⇒ THE
+                                       MEASUREMENTS: `gates/ops_bend_exec-e2e.py` READS **`7 match, 0 mismatch-or-
+                                       refused`, rc=0** -- **THE MATMUL MATCHES THE FULL MATRIX**; `max(axis=0)`,
+                                       `max(axis=1)`, `min(axis=0)`, `sum(axis=0)`, `argmax(axis=0)` AND
+                                       `argmax(axis=1)` ON A 4×4 ALL MATCH CPython's PYTHON DEVICE; AND
+                                       `gates/ops_python_exec-gate.py` READS **`PASS -- 153 fixtures, 365 rows x 2
+                                       lanes, 314 unpinned identical, 52 pinned`** -- **⇒ NO UNPINNED ROW MOVED.**
+
+
 
 exec-e2e-instrument  [###] 3/3  **THE INSTRUMENT THAT MEASURES THE EXECUTOR WAS DEAD, AND WRONG IN THREE WAYS AT ONCE,
                                        AND ALL THREE COMPOUNDED.** MEASURED 2026-10-25. **⇒ (1) THE DEVICE NAME DID
@@ -2485,6 +2490,34 @@ exec-e2e-instrument  [###] 3/3  **THE INSTRUMENT THAT MEASURES THE EXECUTOR WAS 
                                        SEVENTH CASE IS A MATMUL AND THE MATMUL IS WRONG (SEE `exec-broadcast-max`).
                                        **⇒ AND THE INSTRUMENT IS THE CONTROL: IT IS RED NOW AND IT MUST GO GREEN, AND
                                        FOR THE RIGHT REASON.**
+
+
+pins-exempt-rows     [##] 2/3  **A PIN THAT EXEMPTS A ROW FROM THE COMPARISON IS NOT A PIN, IT IS AN EXEMPTION -- AND
+                                       SO A FIX CAN MOVE A PINNED ROW's VALUE WITHOUT ANYTHING GOING RED.** MEASURED
+                                       2026-10-25, ON THE EXECUTOR's OWN CENSUS. **⇒ `gates/ops_python_exec-pins.rows`
+                                       READS AS `{l.split()[0] ...}` -- A SET OF NAMES, **WITH NO VALUES** -- AND
+                                       `gates/ops_python_exec-gate.py:326` COMPUTES `unpinned = (set(dpy) | set(dbd))
+                                       - pinned`, **⇒ SO THE 52 PINNED ROWS ARE NEVER COMPARED AT ALL, AND A ROW'S
+                                       VALUE CAN CHANGE FREELY WHILE THE GATE STAYS GREEN.** **⇒ MEASURED, AND IT
+                                       HAPPENED: THE EXECUTOR's FIX MOVED **THREE** PINNED ROWS -- `f32.argmax.0.b0`,
+                                       `i32.maxpair.0.b0` AND `u32.maxpair.0.b0`, **ALL MAX/ARGMAX CASES, WHICH IS
+                                       EXACTLY THE NESTED-LOOP SHAPE THE FIX TOUCHED** -- AND THE GATE DID NOT NOTICE,
+                                       BECAUSE IT DOES NOT LOOK AT PINNED ROWS. ADJUDICATED AGAINST CPython's OWN LANE
+                                       (`gates/ops_python_exec-gen.py`): CPython READS `03000000`, `10000000`,
+                                       `10000000`; THE FIXED PORT READS `40000000`, `00080000`, `00080000` -- **⇒ THEY
+                                       ARE STILL DIVERGENCES, SO THE PINS STAY AND THE GATE IS HONEST, AND THE GAP IS
+                                       THE FINDING.** **⇒ THE NAMED FIX: THE PINS FILE SHOULD CARRY **THE VALUE IT
+                                       PINS**, AS THE TREE's OTHER PINS DO -- `checks/differ.py`'s `ORACLE_PIN`
+                                       CARRIES A SHA256 AND `checks/substrate.py`'s CARRIES A HASH -- SO A MOVED VALUE
+                                       GOES RED.** **⇒ AND A SECOND, RELATED FINDING: THE ROW THE FIX ADDED, `t_max_i`
+                                       IN `symbolic.bend`, IS **A LABEL**: `row(...)` IS `IO.print`, A PRINT AND NOT
+                                       AN OBLIGATION, AND **MEASURED: REVERTING THE ONE-LINE FIX IN A COPY LEAVES
+                                       `bend --check-only` GREEN** (`ALL PROOFS CHECK`, rc=0). **⇒ THE PORT's
+                                       COMPILATION IR IS OUTSIDE THE LAW SYSTEM BY DESIGN** (`LAWS.bend`'s OWN HEADER
+                                       SAYS SO: THE COMPILATION IR *"CANNOT BE A PURE TREE, SO IT IS NOT COVERED
+                                       HERE"*), **⇒ SO A ROW LIKE `max_i` NEEDS A GATE COMPARING THE PORT's
+                                       `symbolic.bend` ALU AGAINST CPython's OWN, AND NONE EXISTS TODAY. THE FIX IS
+                                       VERIFIED BY THE EXECUTOR E2E, WHICH DOES GO RED ON IT.**
 
 
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
