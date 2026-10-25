@@ -1795,22 +1795,41 @@ mixin-op-red         [###] 3/3  **A TRACKED GATE WAS RED AT HEAD ON 11 ROWS, AND
                                        RECORD IT, AND `state_census` FOR THE CLASS CENSUS THAT NOW CATCHES AN EXPIRED
                                        NEGATIVE FIXTURE.**
 
-oracle-two-copies    [##] 2/3  **THE GATE'S CPython ORACLE IS A COPY UNDER `.agents/slop/`, AND A SECOND COPY SITS
-                                       BESIDE THE GATE -- AND THE TWO MUST BE EDITED IN LOCKSTEP.** MEASURED
-                                       2026-10-22: `gates/mixin-op-gate.py`'s `oracle=` IS **`.agents/slop/mixin-op-
-                                       gate.py`**, AND THE FROZEN SHELL ORACLE (`gates/oracles/mixin-op-oracle.sh`,
-                                       sha256-PINNED VIA `ORACLE_PIN`) RUNS THAT SAME PATH TOO -- WHILE `gates/mixin-
-                                       op-oracle.py` IS A **BYTE-IDENTICAL** COPY THAT **NOTHING RUNS**. `AGENTS.md`
-                                       NAMES THIS EXACT ANTI-PATTERN: *"A GATE'S REQUIRED INPUT BELONGS BESIDE THE
-                                       GATE **IN GIT** -- AND NOT IN `.agents/slop/`, WHICH THIS LINE USED TO
-                                       RECOMMEND"*. **SO THE REPONT IS THE RIGHT END-STATE AND IT IS NOT FREE: THE
-                                       FROZEN SHELL'S BYTES CHANGE, SO **ITS `ORACLE_PIN` MUST MOVE IN THE SAME
-                                       COMMIT**, AND BOTH EXTANT COPIES OF THE SHELL (`gates/oracles/` AND
-                                       `oracles/gateport/oracles/`) ARE BYTE-IDENTICAL BY DESIGN AND MUST STAY SO.**
-                                       **THE TWO COPIES ARE NOW BYTE-IDENTICAL AGAIN (I COPIED THE EDITED ONE OVER THE
-                                       LIVE ONE), BUT THAT IS A LOCKSTEP EDIT AND NOT A FIX, AND **A SECOND COPY OF A
-                                       LIST IS A CONTRACT WITH NO GENERATOR** -- THE REPOINT IS THE NAMED NEXT MOVE,
-                                       AND IT MUST MOVE THE PIN.**
+oracle-two-copies    [###] 3/3  **THE GATE'S CPython ORACLE WAS A COPY UNDER `.agents/slop/` AND A SECOND COPY SAT
+                                       BESIDE THE GATE, AND THE TWO HAD TO BE EDITED IN LOCKSTEP -- NOW THERE IS ONE
+                                       PATH AND IT IS BESIDE THE GATE, IN GIT.** MEASURED 2026-10-22, AND THE REPOINT
+                                       LANDED 2026-10-25. **⇒ THE DEFECT: `gates/mixin-op-gate.py`'s `oracle=` WAS
+                                       `.agents/slop/mixin-op-gate.py`, AND THE FROZEN SHELL ORACLE
+                                       (`gates/oracles/mixin-op-oracle.sh`, sha256-PINNED VIA `ORACLE_PIN`) RAN THAT
+                                       SAME PATH TOO -- WHILE `gates/mixin-op-oracle.py` WAS A **BYTE-IDENTICAL** COPY
+                                       THAT **NOTHING RAN**. MEASURED: BOTH AT sha256 `061c5029355e197e`, **9,747
+                                       BYTES EACH.** **⇒ `AGENTS.md` NAMES THIS EXACT ANTI-PATTERN: *"A GATE'S
+                                       REQUIRED INPUT BELONGS BESIDE THE GATE **IN GIT** -- AND NOT IN
+                                       `.agents/slop/`, WHICH THIS LINE USED TO RECOMMEND"*.** **⇒ SO THE FIX, AND IT
+                                       IS NOT FREE: THE FROZEN SHELL's BYTES CHANGE, SO **ITS `ORACLE_PIN` MUST MOVE
+                                       IN THE SAME COMMIT** -- AND **BOTH EXTANT COPIES OF THE SHELL (`gates/oracles/`
+                                       AND `oracles/gateport/oracles/`) ARE BYTE-IDENTICAL BY DESIGN AND MUST STAY
+                                       SO.** **⇒ WHAT LANDED: THE GATE's `oracle=` AND THE SHELL's py LANE BOTH NOW
+                                       NAME `gates/mixin-op-oracle.py`; THE PIN MOVED FROM `e8792d0ff1ad` TO
+                                       `90eb25aed53ca517` **IN THE SAME COMMIT** (AND THE PIN's OWN DRIFT CHECK, WHICH
+                                       IS CHECKED IN CODE ON EVERY RUN, READS **0 ROWS** AFTER THE EDIT); BOTH SHELL
+                                       COPIES ARE BYTE-IDENTICAL AT `90eb25aed53ca517`; AND THE `.agents/slop/` COPY
+                                       IS DELETED.** **⇒ AND THE CONSEQUENCE WAS MEASURED, AND IT IS THE POINT:
+                                       `gates/oracleblind.rows` WAS MEASURING **ONE ORACLE FILE TWICE** -- ROW 8
+                                       `.agents/slop/mixin-op-gate.py` CLASS `GATE-DECLARED` AND ROW 46 `gates/mixin-
+                                       op-oracle.py` CLASS `WALK-ONLY`, **AND THE TWO ROWS ARE IDENTICAL FROM COLUMN 3
+                                       ON: `SENSITIVE 2 32 587288325f33 27 2`** -- SAME VERDICT, SAME FLOOR, SAME ROW
+                                       COUNT, SAME BASE SHA, SAME SITE COUNT, SAME UNREACHABLE COUNT. **⇒ A POPULATION
+                                       WITH A DUPLICATE IS A POPULATION THAT COUNTS ONE SUBJECT TWICE.** **⇒ AND THE
+                                       NAMED NEXT MOVE: RE-TAKE `gates/oracleblind.rows` -- ITS POPULATION SHRINKS BY
+                                       ONE AND ROW 46's CLASS MOVES FROM `WALK-ONLY` TO `GATE-DECLARED` -- AND A
+                                       CENSUS RE-TAKE NEEDS A **BEND-FREE WINDOW**, BECAUSE THE CENSUS's OWN
+                                       POPULATION INCLUDES ORACLES THAT SHELL OUT TO `./bin/bend`
+                                       (`.agents/slop/beautiful-mnist-gate.py`, `.agents/slop/nn-gate.py`,
+                                       `.agents/slop/dtype-gate.py`, ...), SO IT CANNOT BE RE-TAKEN WHILE A `bend`
+                                       PROCESS IS ALREADY RUNNING.**
+
+
 
 
 verdict-hunt         [##] 2/3  **NO BOUNTY WIN, AND A REAL UPSTREAM BUG IN THE #1182 FAMILY -- IN THE OPPOSITE
@@ -4267,7 +4286,7 @@ language limitation. Consequence for this plan: a share of lever 3 and of the
       `topk` is op.py:976-996 and 997 is its blank, so SIDE A ends on a whole def and
       SIDE B (998-1980, another agent) starts on `allclose`. **32 shared rows,
       CPython == interpreted == native, byte for byte**; `--check-only` = `ALL PROOFS
-      CHECK`. Oracles `.agents/slop/mixin-op-gate.py` (CPython) and
+      CHECK`. Oracles `gates/mixin-op-oracle.py` (CPython) and
       `oracles/gateport/oracles/mixin-op-gate.sh` (three lanes), mutator
       `.agents/slop/mixin-op-mutate.py`.
 - [x] PORTED AND GATED: `min` (op.py:473), `mean` (:496), `var` (:523), `var_mean`

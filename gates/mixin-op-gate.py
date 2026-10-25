@@ -7,7 +7,7 @@ WHAT IT GATES, AND THE DENOMINATOR THE VERDICT TRAVELS WITH, because a gate whos
 in a comment is a gate nobody can check.
 
     42 rows, THREE LANES, and the DENOMINATOR IS 38.
-      py    CPython, `.agents/slop/mixin-op-gate.py` -- 38 rows
+      py    CPython, `gates/mixin-op-oracle.py` -- 38 rows
       bd    the port, interpreted, `./bin/bend tinybendygrad/mixin/op.bend` -- 42 rows
       bn    the port, NATIVE, `bend -o` then run                       -- 42 rows
     38 rows are COMPARED byte for byte across all three lanes.
@@ -75,20 +75,25 @@ from gatekit import Gate, oracle_drift, VERDICT
 # cannot resolve a relative import, and this copy is at the same level.
 ORACLE_PIN = {
     "gates/oracles/mixin-op-oracle.sh":
-            # RE-FROZEN 2026-10-06. THE PIN NAMED `178cf5f74e92`, WHICH WAS CORRECT AT
-    # `2f4ffc7a0` AND STOPPED BEING CORRECT WHEN **MY OWN** REPOINTING REWRITE CHANGED THE
-    # SHELL'S BYTES IN `558b4c3a5`/`cf2d14fa4` WITHOUT RE-FREEZING. **BOTH EXTANT COPIES ARE
-    # BYTE-IDENTICAL AT `e8792d0ff1ad`** (`.agents/slop/mixinop/` AND `oracles/gateport/oracles/`),
-    # SO THE FILE IS CONSISTENT AND ONLY THE PIN WAS STALE.
-    # **THIS IS THE SAME FAILURE AS THE `checks/e2e.py` PIN FIRING ON A TODO *COMMENT*: A PIN
-    # GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE SAME COMMIT.**
-    "e8792d0ff1ad9d1a0a6e11aae6b4d52b135ea6c5664dd05510cae868b834e0c6",
+            # RE-FROZEN 2026-10-25, IN THE SAME COMMIT AS THE REPOINT THAT MOVED IT -- WHICH
+            # IS THE ONLY WAY A PIN MAY MOVE. THE SHELL's BYTES CHANGED BECAUSE **THE CPYTHON
+            # LANE's PATH CHANGED**: IT USED TO RUN `.agents/slop/mixin-op-gate.py`, AND IT NOW
+            # RUNS `gates/mixin-op-oracle.py` -- **THE COPY BESIDE THE GATE, IN GIT** -- BECAUSE
+            # THE OTHER ONE WAS A SECOND COPY OF ONE FILE THAT HAD TO BE EDITED IN LOCKSTEP, AND
+            # **A SECOND COPY OF A LIST IS A CONTRACT WITH NO GENERATOR.** THE PIN WAS AT
+            # `e8792d0ff1ad`, WHICH WAS CORRECT UNTIL THIS EDIT.
+            # **THE TWO EXTANT COPIES OF THE SHELL ARE BYTE-IDENTICAL AT `90eb25aed53ca517`**
+            # (`gates/oracles/` AND `oracles/gateport/oracles/`), BY DESIGN.
+            # **THIS IS THE SAME FAILURE AS THE `checks/e2e.py` PIN FIRING ON A TODO *COMMENT*: A
+            # PIN GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE SAME
+            # COMMIT.**
+            "90eb25aed53ca517f83eeb993957c6614acdc2d04265bc061e886010972abcbf",
 }
 
 GATE = Gate(
     "mixin-op-gate",
     bend="tinybendygrad/mixin/op.bend",
-    oracle=".agents/slop/mixin-op-gate.py",
+    oracle="gates/mixin-op-oracle.py",
     rows=42,
     compared=38,
     # THE FOUR, BY NAME, AND WHY BY NAME. These name a refusal or a defect rather than a graph,

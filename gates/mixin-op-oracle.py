@@ -5,7 +5,7 @@ Prints one row per claim, in the same ORDER and the same
 `name=<count> OP/<nsrc> ...` format `tinybendygrad/mixin/op.bend` prints, so the two
 lanes diff byte for byte:
 
-    .venv/bin/python .agents/slop/mixin-op-gate.py           > /tmp/py.txt
+    .venv/bin/python gates/mixin-op-oracle.py           > /tmp/py.txt
     ./bin/bend tinybendygrad/mixin/op.bend                  > /tmp/bd.txt
     ./bin/bend tinybendygrad/mixin/op.bend -o /tmp/bn && /tmp/bn > /tmp/bn.txt
     diff /tmp/py.txt /tmp/bd.txt && diff /tmp/py.txt /tmp/bn.txt

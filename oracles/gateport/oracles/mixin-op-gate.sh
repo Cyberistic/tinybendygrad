@@ -6,7 +6,7 @@
 #
 # THREE LANES and they must agree byte for byte:
 #
-#   py    CPython, .venv/bin/python .agents/slop/mixin-op-gate.py
+#   py    CPython, .venv/bin/python gates/mixin-op-oracle.py
 #   bend  the interpreted lane, ./bin/bend tinybendygrad/mixin/op.bend
 #   bn    the NATIVE lane, compiled with -o and then run
 #
@@ -25,7 +25,7 @@ BEND_ONLY='rop_gap|exp_cast|commit_weak|bin_promote'
 
 ./bin/bend tinybendygrad/mixin/op.bend --check-only
 
-.venv/bin/python .agents/slop/mixin-op-gate.py | grep -vE "^($BEND_ONLY)=" > $FOLD.py
+.venv/bin/python gates/mixin-op-oracle.py | grep -vE "^($BEND_ONLY)=" > $FOLD.py
 ./bin/bend tinybendygrad/mixin/op.bend | grep -vE "^($BEND_ONLY)=" > $FOLD.bd
 ./bin/bend tinybendygrad/mixin/op.bend -o $FOLD.bin
 $FOLD.bin | grep -vE "^($BEND_ONLY)=" > $FOLD.bn
