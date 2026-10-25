@@ -1,0 +1,153 @@
+# exit vocabulary: {0: 'PASS', 1: 'FAIL', 3: 'REFUSED', 4: 'SKIP', 5: 'DEAD'}
+UPSTREAM   : refs/remotes/upstream/master (local ref, not fetched)
+PIN RECORD : VERIFIED  45fc5ae734a2  date matches (2026-10-19T22:06:46+08:00)
+           tree 6c91e8977790  HEAD 6c91e8977790  upstream 6c91e8977790
+OUR PIN    : 5c2bf39d6c4b  -- the commit the vendored tinygrad/ is based on; the absence class measures against it
+DECLARATION: .agents/UPSTREAM-PIN.md names 1 sha(s) on its OUR PIN row; 1 carry the pin's tree, 0 carry another, 0 name no tinygrad/ tree at all
+
+LANE C -- THE PORT'S UPSTREAM CITATIONS, BY CONTENT.
+           2540 citations, 1517 with a checkable claim, 1023 without one (counted, not verdicted)
+            1261 HOLD AT THE DECLARED PIN
+              29 hold ONLY AT AN OLDER REVISION (17 distinct revisions)
+             225 hold AT NO UPSTREAM REVISION (2 of them name one upstream file outright)
+               0 of those hold at ANOTHER upstream file with the same basename (the census's directory ambient pointed them at the wrong one)
+             207 of those name NO claim token that occurs in the cited file at ANY revision (the port's own vocabulary -- counted, not verdicted)
+               2 are TRUE ABSENCES: the row's claim IS the absence, and upstream's history confirms it
+             557 bare cites taken out of the upstream population (they name a file that is not a .py)
+
+THE TRUE ABSENCES, the rows whose claim IS that upstream does NOT have the thing:
+  tinybendygrad/runtime/ops_amd.bend:231  runtime/ops_amd.py:515  -- `hashlib,md5` was REMOVED from tinygrad/runtime/ops_amd.py at fa0f9af3badc, and it is absent at 5c2bf39d6c4b
+        #    TODO(p3) runtime/ops_amd.py:515  symbol=_amd_program_image -- the md5 digest slice -- NOT IN upstream at 
+  tinybendygrad/runtime/ops_cl.bend:159  runtime/ops_cl.py:139  -- `OSX_TIMING_RATIO` was REMOVED from tinygrad/runtime/ops_cl.py at 38cbec532fd2, and it is absent at 5c2bf39d6c4b
+        #    TODO(p3) runtime/ops_cl.py:139  symbol=_wait_signal -- the u64 nanosecond delta -- upstream's old `OSX_TI
+
+THE DANGLING CLAIMS, the ones whose subject names ONE upstream file outright:
+  tinybendygrad/mixin/op.bend:242  mixin/movement.py:301  -- the cited line is 'def squeeze(self, dim: int | Sequence[int] | Non'
+        # (mixin/movement.py:301); `mo_eqmul`'s `bool` against `int` (mixin/elementwise.py:611);
+  tinybendygrad/runtime/webgpu_call.bend:60  tinygrad/runtime/ops_webgpu.py:95  -- the cited line is 'buf = x if isinstance(x, webgpu.WGPUBuffer) else'
+        # tinygrad/runtime/ops_webgpu.py:95 `bg_entry` calls `dev.create_uniform(x)` (tinygrad/runtime/ops_webgpu.py:2
+
+THE UNVERIFIABLE CITATIONS, the ones whose claim tokens are NOT IN THE CITED FILE AT ALL (counted, not verdicted):
+  tinybendygrad/codegen/decomp/dtype.bend:138  dtype.py:65  tokens=l2i_cdiv,step
+        #   1. `l2i_cdiv.step` (dtype.py:65) built `AND` over the SHL result's low word and over
+  tinybendygrad/codegen/decomp/dtype.bend:145  dtype.py:59  tokens=l2i_cdiv,abs
+        #   4. `l2i_cdiv.abs` (dtype.py:59) minted four BITCASTs that `mixin/dtype.py:53` folds
+  tinybendygrad/codegen/decomp/dtype.bend:150  dtype.py:34  tokens=l2i_cast1,quo,mixin,elementwise
+        #   6. `l2i_cast1.quo` (dtype.py:34) did not model `mixin/elementwise.py`'s weak-CONST
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:169  tinygrad/codegen/decomp/transcendental.py:9  tokens=xf_lazy0_,xf_lazy1_
+        #   :9-11 _lazy_map_numbers       PORTED  `xf_lazy0_*`, `xf_lazy1_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:170  tinygrad/codegen/decomp/transcendental.py:14  tokens=cu_mb_,cx_mb_,cu_mant64
+        #   :14   mantissa_bits           PORTED  `cu_mb_*`, `cx_mb_*`, `cu_mant64.*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:171  tinygrad/codegen/decomp/transcendental.py:15  tokens=cu_eb_,cx_eb_,cu_eb64
+        #   :15   exponent_bias           PORTED  `cu_eb_*`, `cx_eb_*`, `cu_eb64.*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:172  tinygrad/codegen/decomp/transcendental.py:16  tokens=cu_em_,cx_em_,cu_em64
+        #   :16   exponent_mask           PORTED  `cu_em_*`, `cx_em_*`, `cu_em64.*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:173  tinygrad/codegen/decomp/transcendental.py:19  tokens=xf_shr23_
+        #   :19   shr                     PORTED  `xf_shr23_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:174  tinygrad/codegen/decomp/transcendental.py:20  tokens=xf_shl23_
+        #   :20   shl                     PORTED  `xf_shl23_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:175  tinygrad/codegen/decomp/transcendental.py:22  tokens=xf_rintk_
+        #   :22   rintk                   PORTED  `xf_rintk_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:176  tinygrad/codegen/decomp/transcendental.py:27  tokens=xf_pow2if_
+        #   :27   pow2if                  PORTED  `xf_pow2if_*` (see THE BITCAST)
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:177  tinygrad/codegen/decomp/transcendental.py:32  tokens=xf_ilogb2k_
+        #   :32   ilogb2k                 PORTED  `xf_ilogb2k_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:178  tinygrad/codegen/decomp/transcendental.py:39  tokens=xf_ldexp3k_
+        #   :39   ldexp3k                 PORTED  `xf_ldexp3k_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:179  tinygrad/codegen/decomp/transcendental.py:47  tokens=xf_ldexp2k_
+        #   :47   ldexp2k                 PORTED  `xf_ldexp2k_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:180  tinygrad/codegen/decomp/transcendental.py:52  tokens=xf_frexp_
+        #   :52   frexp                   PORTED  `xf_frexp_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:183  tinygrad/codegen/decomp/transcendental.py:115  tokens=xf_cody_waite_
+        #   :115  cody_waite_reduction    PORTED  `xf_cody_waite_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:186  tinygrad/codegen/decomp/transcendental.py:152  tokens=xf_sin_poly_
+        #   :152  sin_poly                PORTED  `xf_sin_poly_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:187  tinygrad/codegen/decomp/transcendental.py:158  tokens=xf_sps_,xf_spl_
+        #   :158  _ifand                  PORTED  `xf_sps_*`, `xf_spl_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:188  tinygrad/codegen/decomp/transcendental.py:160  tokens=xf_sps_
+        #   :160  sin_poly_small          PORTED  `xf_sps_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:189  tinygrad/codegen/decomp/transcendental.py:164  tokens=xf_spl_
+        #   :164  sin_poly_large          PORTED  `xf_spl_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:191  tinygrad/codegen/decomp/transcendental.py:193  tokens=xf_xexp2_,xf_xexp2_sp_
+        #   :193  xexp2                   PORTED  `xf_xexp2_*`, `xf_xexp2_sp_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:192  tinygrad/codegen/decomp/transcendental.py:219  tokens=xf_xlog2_,xf_xlog2_sp_
+        #   :219  xlog2                   PORTED  `xf_xlog2_*`, `xf_xlog2_sp_*`
+  tinybendygrad/codegen/decomp/transcendental_f32.bend:193  tinygrad/codegen/decomp/transcendental.py:257  tokens=xp_xpow_
+        #   :257  xpow                    GATES   `xp_xpow_*`
+  tinybendygrad/codegen/opt/heuristic.bend:43  tinygrad/codegen/opt/heuristic.py:3  tokens=then
+        #               False)` then `for axis in k.axes_of(REDUCE)[:3]: apply_opt(SPLIT,
+  tinybendygrad/codegen/opt/search.bend:34  search.py:89  tokens=dedup
+        #   7  85-103 def   get_kernel_actions  PART: `dedup` (search.py:89-90) PORTED,
+  tinybendygrad/codegen/opt/search.bend:62  codegen/__init__.py:298  tokens=Scheduler
+        # `Scheduler` is built on the way to beam search (codegen/__init__.py:298) -- and
+  tinybendygrad/device.bend:39  tinygrad/device.py:0  tokens=open_two
+        #    canonicalize that forgets the `:0` strip -- it would print `open_two`.
+  tinybendygrad/device.bend:82  device.py:374  tokens=answers,NOTHING,carries
+        # tinygrad/` answers NOTHING, and `device.py:374-377` carries `pm_encode`,
+  tinybendygrad/engine/jit.bend:32  jit.py:40  tokens=Maybe,String
+        #   jit.py:40      JitError                the exception CLASS -> `Maybe<&2,String>`
+  tinybendygrad/engine/jit.bend:37  jit.py:73  tokens=a26c50b01
+        #   jit.py:73-78   CapturedJit.__call__    in `a26c50b01`), so the PORT's copy of the
+  tinybendygrad/extra/models/llama.bend:66  rand.py:83  tokens=cache_kv
+        #   * `cache_kv` (:83,:86,:90,:92,:93) -- the kv cache is an IN-PLACE slice-assign on a
+  tinybendygrad/extra/models/t5.bend:25  t5.py:210  tokens=scaled_dot_product_attention
+        # `scaled_dot_product_attention`. t5.py:210 is
+  tinybendygrad/mixin/creation.bend:10  mixin/op.py:166  tokens=names
+        # randn\|def normal\|def uniform" tinygrad/` names `mixin/op.py:166/215/198/236/259`
+  tinybendygrad/mixin/dtype.bend:10  tinygrad/dtype.py:17  tokens=commit_dtype,_uop,vmin
+        # THE WALL IS ONE LINE: `commit_dtype` (tinygrad/dtype.py:17) reads `self._uop.vmin` and
+  tinybendygrad/mixin/op.bend:29  tinygrad/dtype.py:213  tokens=commit_dtype
+        # `sum_acc_dtype` (tinygrad/dtype.py:220) and the `commit_dtype` refusal (tinygrad/dtype.py:213 symbol=sum_acc
+  tinybendygrad/mixin/op.bend:154  tinygrad/mixin/op.py:1530  tokens=reduce_ds
+        #      which `reduce_ds` (:1530) answers. MEASURED, both, over a BUFFER-rooted AND
+  tinybendygrad/mixin/op.bend:156  tinygrad/dtype.py:16  tokens=commit_dtype,Maybe,UOp,_min_max
+        #   4. `commit_dtype` (tinygrad/dtype.py:16) answers a `Maybe` because `UOp._min_max`
+  tinybendygrad/mixin/rand.bend:12  mixin/rand.py:50  tokens=examples,beautiful_mnist,bend
+        # port's `examples/beautiful_mnist.bend` with it -- so the chain IS here: TODO(p3) mixin/rand.py:50  symbol=ra
+  tinybendygrad/mixin/rand.bend:58  movement.py:256  tokens=dtype_from_uop
+        #      (movement.py:256) needs `dtype_from_uop` and `ccast` (ops.py:618-619 symbol=ccast), which is
+  tinybendygrad/nn/__init__.bend:116  state.py:107  tokens=num_batches_tracked
+        # (state.py:107). The optimizer therefore receives `num_batches_tracked` and both
+
+THE REVISIONS THE CITATIONS RESOLVE AT, the top twenty:
+  1f521c430184  6
+  956e956e2b3a  5
+  70fe8742691b  3
+  c52b227c7beb  2
+  07ff64a547c5  1
+  200488ef082a  1
+  dded67ecb156  1
+  d5059900d715  1
+  c509335eaa34  1
+  bdddaad21948  1
+  6ee16eb1faa2  1
+  72236bbd3d5c  1
+  fec703cbecad  1
+  48ed17396ac9  1
+  3bffcdf219b3  1
+  d3345b93b18d  1
+  c38b7684dc7d  1
+pin.record_state=VERIFIED
+pin.commit=45fc5ae734a2673c7837835f25e5dbab8b1385d7
+pin.tree=6c91e89777907c7b5b575372418750dec6068687
+pin.our_pin=5c2bf39d6c4b6b201abdf2865dd4a14228de4e60
+head.tinygrad_tree=6c91e89777907c7b5b575372418750dec6068687
+upstream.tinygrad_tree=6c91e89777907c7b5b575372418750dec6068687
+pin.declared_shas=1
+pin.declaration_agrees=1
+pin.declaration_disagrees=0
+pin.declaration_unresolvable=0
+cite.total=2540
+cite.checkable=1517
+cite.uncheckable_no_claim_token=1023
+cite.at_pin=1261
+cite.only_older_revision=29
+cite.at_no_revision=225
+cite.at_no_revision_dangling=2
+cite.ambient_relocated=0
+cite.unverifiable_no_claim_about_the_file=207
+cite.upstream_removed=2
+cite.local_sided_excluded=557
+cite.distinct_older_revisions=17
+ROWS       : 2540 -> .agents/slop/pinwindow/live.rows
+# pin-cite-gate: FAIL -- 2 citations name ONE upstream file and hold at NO upstream revision (a dangling claim)

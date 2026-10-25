@@ -99,6 +99,19 @@ paired **BY INDEX**. The freeze is `cp -R tinybendygrad .agents/slop/pinwindow/f
 the rows are `before.rows` and `after.rows` beside this report, and
 `.agents/slop/pinwindow/diffrows.py` prints the pairing.
 
+**THE FREEZE IS DATED, AND THE LIVE READING IS IN `live.rows`.** The frozen copy is the
+port tree as of **19:34**, and one other unit's commit (`670ee9811`, "fold.bend: the LAST
+false citation") landed at **19:39**, so the tree moved by exactly one file
+(`tinybendygrad/uop/fold.bend`) after the freeze. That is WHY the freeze exists, and the
+before/after pair is unaffected by it -- both readings are of the SAME bytes. **THE LIVE
+TREE, read after that commit, reads:** `cite.total` 2540, `cite.checkable` 1517,
+`cite.uncheckable_no_claim_token` 1023, `cite.at_pin` **1261**,
+`cite.only_older_revision` **29**, `cite.at_no_revision` **225**,
+`cite.at_no_revision_dangling` **2**, `cite.ambient_relocated` 0,
+`cite.unverifiable_no_claim_about_the_file` 207, `cite.upstream_removed` **2** -- i.e.
+**the same numbers, except that ONE row moved from `at_no_revision` to
+`only_older_revision`**, which is the other unit's fix landing.
+
 | class | BEFORE | AFTER | moved |
 |---|---|---|---|
 | `cite.total` | 2540 | 2540 | 0 |
@@ -320,7 +333,8 @@ is not UNIQUELY nearest one of the two citations, so it cannot pass on a tie.
 | `.agents/slop/pinwindow/dump.py` | every row that changes class, with its tokens and its line |
 | `.agents/slop/pinwindow/diff_rules.py` | the rows that tell `NEAREST` and `NEAREST+CUTOFF-1` apart |
 | `.agents/slop/pinwindow/diffrows.py` | the row-level movement, before -> after, paired BY INDEX |
-| `.agents/slop/pinwindow/before.rows`, `after.rows`, `live.rows` | the census's own rows, before, after, and on the live tree |
+| `.agents/slop/pinwindow/before.rows`, `after.rows`, `live.rows` | the census's own rows: before, after, and on the live tree |
+| `.agents/slop/pinwindow/before.out`, `after.out`, `live.out` | the census's own report text, the same three readings |
 | `.agents/slop/pinwindow/movement.rows.out` | the 160 rows, one by one |
 | `.agents/slop/pinwindow/plant.out`, `plant.err` | the plant's output, fixed and broken |
 | `.agents/slop/pinwindow/frozen/` | the frozen copy of the port tree (LOCAL ONLY: it is in `.git/info/exclude`, so it can never be swept into a commit) |
