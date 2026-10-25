@@ -804,7 +804,16 @@ LITERALS = ("D0-selfcheck", "D1-verdicts", "D2-bytediff", "D0-run-summary", "D4-
 # written down in its docstring. `declared()` below names it anyway, because the union is what the
 # `.txt` carve-out and the `UNEXPECTED` arm ask about: a `.txt` this file writes that nothing
 # declares is an orphan artifact, which is a different complaint from a declared one being absent.
-REPRO_LITERALS = ("D0-repro",)
+# **AND `D0-repro-diff.txt` WAS FORGOTTEN HERE, AND THE CONSEQUENCE WAS THAT THE CORPUS'S
+# CENTRAL INSTRUMENT COULD NOT COMPLETE.** `cmd_repro` WRITES IT WHEN THE TWO RUNS DIFFER, AND
+# IT LIVES IN `D/` -- **SO IT IS IN `present` BUT NOT IN `declared()`, WHICH IS
+# `UNEXPECTED` (`present - declared()`).** MEASURED 2026-10-25: ONE FAILED REPRO LEFT THE
+# FILE BEHIND, AND FROM THEN ON **EVERY** `clean_run` ATTEMPT SAW IT -- **SO `artefacts_ok()`
+# FAILED, `clean_run` RETRIED UP TO 9 TIMES AT ~278 s A RUN, AND THE REPRO TOOK ~84 MINUTES
+# INSTEAD OF ~9 AND STILL FAILED.** THE POISON IS SELF-PERPETUATING BECAUSE THE RESIDUE OF
+# A PAST FAILURE LINGERS. **=> AND THE FIX IS ONE TOKEN, BECAUSE `declared()` IS DERIVED FROM
+# THIS TUPLE.**
+REPRO_LITERALS = ("D0-repro", "D0-repro-diff")
 # THE `diff` REPORTS, by the prefix a glob in the frozen oracle spells. Named here rather than
 # inline at the one call site because `oracle-repro.sh:114` uses the identical five, so this is
 # the same list twice in two languages.
@@ -1937,6 +1946,11 @@ def repro_bad() -> list[str]:
                 "denominator for `repro-rc` is 0 runs rather than 2. Run `checks/differ.py repro` "
                 "to take it. `PINS` above stays green on one run and says nothing about this."]
     got = dict(ln.split("=", 1) for ln in text(REPRO_ARTIFACT).splitlines() if "=" in ln)
+    # **AND THE REFUSAL'S REASON IS IN THE ARTIFACT, SO IT IS NAMED HERE RATHER THAN READ
+    # OUT OF THE FILE BY HAND.** A WITNESS THAT SAYS `repro-rc=rc=3` AND NOTHING ELSE MAKES A
+    # READER GUESS, AND A GUESS IS NOT A VERDICT.
+    if got.get("repro-refused"):
+        got["repro-rc"] = f"{got['repro-rc']} ({got['repro-refused']})"
     bad = [f"{k}={v} (expected {REPRO_PINS[k]}, from {REPRO_ARTIFACT})" for k, v in got.items()
            if k in REPRO_PINS and v != REPRO_PINS[k]] \
         + [f"{k} ABSENT from {REPRO_ARTIFACT}" for k in REPRO_PINS if k not in got]
@@ -2438,9 +2452,44 @@ def gatekit():
     return mod
 
 
+def run_subject() -> str:
+    """THE SUBJECT A RUN MEASURED: the substrate digest that run's OWN summary recorded.
+
+    **TWO RUNS OF A MOVING TREE ARE NOT A REPRODUCIBILITY FAILURE -- THEY ARE TWO
+    MEASUREMENTS OF DIFFERENT SUBJECTS**, AND THE SUMMARY'S `substrate-start=` ROW SAYS WHICH
+    DIGEST EACH RUN MEASURED, SO THE TWO RUNS CAN BE TELLEN APART.
+    MEASURED 2026-10-25: the tree moved between the two clean runs, the snapshots differed,
+    and the repro wrote `repro-rc=rc=1` -- **WHICH READS AS "THE PORT IS NON-DETERMINISTIC",
+    A CLAIM ABOUT THE PORT THAT IS FALSE.** `FAIL` (1) IS "A COMPARISON CAME OUT WRONG";
+    `REFUSED` (3) IS "A PRECONDITION WAS ABSENT". **=> SO THE REPRO MUST READ THE SUBJECT
+    BEFORE IT COMPARES, AND A MOVED TREE IS A REFUSAL.**
+    """
+    f = D / "D0-run-summary.txt"
+    if not f.is_file():
+        return ""
+    for ln in f.read_text().splitlines():
+        if ln.startswith("substrate-start="):
+            return ln.split("=", 1)[1].strip()
+    return ""
+
+
+def repro_subject_reason(subject_a: str, subject_b: str) -> str:
+    """WHY TWO RUNS' SNAPSHOTS MAY NOT BE COMPARABLE, OR "" IF THEY MAY BE.
+
+    **A PURE FUNCTION, SO A CONTROL CAN PROVE THE DECISION WITHOUT A MOVING TREE.**
+    An absent subject is not a reason: the row is missing, and a missing row is the witness's
+    own problem, not evidence that the tree moved.
+    """
+    if not subject_a or not subject_b or subject_a == subject_b:
+        return ""
+    return (f"the two runs measured DIFFERENT SUBJECTS (run A: {subject_a[:16]}, "
+            f"run B: {subject_b[:16]})")
+
+
 def cmd_repro(a):
     with tempfile.TemporaryDirectory() as tmp:
         shots = {}
+        subjects = {}
         for label, run_label in (("A", "run A"), ("B", "run B")):
             if not clean_run(run_label, a.wait):
                 # MEASURED 2026-10-18: this was `return 2`, and 2 IS A CODE NO VOCABULARY NAMES.
@@ -2469,6 +2518,10 @@ def cmd_repro(a):
             with path.open("w") as f:
                 snap(f)
             shots[label] = path
+            # **THE SUBJECT THIS RUN MEASURED, READ FROM ITS OWN SUMMARY BEFORE THE NEXT RUN
+            # OVERWRITES IT.** THE SNAPSHOT ITSELF HOLDS SHA256s, NOT THE SUMMARY'S CONTENT,
+            # SO THE DIGEST HAS TO BE READ HERE, WHILE IT IS STILL THERE.
+            subjects[label] = run_subject()
             print(f"# run {label} done: {len(path.read_text().splitlines())} files snapshotted")
         n = len(shots["B"].read_text().splitlines())
         # `repro` IS the tree's only INDEPENDENT measurement. Every one of `PINS` reads
@@ -2484,7 +2537,34 @@ def cmd_repro(a):
                                   f"d10-transcript={d10}\n" + base)
             print(f"REPRO: {n} of {n} files identical across two clean runs "
                   "(sha256 over non-blank lines)")
+            # **AND A PASSING REPRO CLEARS THE RESIDUE OF A PAST FAILURE.** THE DIFF FILE
+            # DESCRIBES A FAILURE THAT NO LONGER HOLDS, AND LEAVING IT IS THE STALE-RESIDUE
+            # CLASS. **=> THE FILE'S PRESENCE IS THEN EXACTLY "THE LAST REPRO FAILED".**
+            stale = D / f"{REPRO_DIFF_ARTIFACT}"
+            if stale.is_file():
+                stale.unlink()
+                print(f"  removed the stale {REPRO_DIFF_ARTIFACT} from a past failure")
             return 0
+        # **A MOVED TREE IS A REFUSAL AND NOT A FAIL, AND THE DISTINCTION IS THE WHOLE CLAIM.**
+        # MEASURED 2026-10-25: the two runs measured different subjects, so their snapshots
+        # differed, and the repro said `repro-rc=rc=1` -- **WHICH READS AS "THE PORT IS
+        # NON-DETERMINISTIC", A CLAIM ABOUT THE PORT THAT IS FALSE.** `FAIL` (1) IS "A
+        # COMPARISON CAME OUT WRONG"; `REFUSED` (3) IS "A PRECONDITION WAS ABSENT", AND A
+        # PRECONDITION WAS ABSENT: THE TWO RUNS DID NOT MEASURE THE SAME TREE, SO NO
+        # REPRODUCIBILITY CLAIM WAS EITHER MADE OR REFUTED.
+        reason = repro_subject_reason(subjects.get("A", ""), subjects.get("B", ""))
+        if reason:
+            gk = gatekit()
+            write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical=0\nrepro-rc=rc=3\n"
+                                  f"repro-refused={reason}\n"
+                                  f"repro-subject-a={subjects.get('A', '')}\n"
+                                  f"repro-subject-b={subjects.get('B', '')}\n"
+                                  f"d10-transcript={d10}\n" + base)
+            print(f"REPRO: {gk.VERDICT[gk.REFUSED]} -- {reason}, so the snapshots differ because "
+                  f"THE TREE MOVED BETWEEN THEM AND NOT because the port is non-deterministic. "
+                  f"NO REPRODUCIBILITY CLAIM WAS MADE OR REFUTED. Re-take it when the substrate "
+                  f"holds still.", file=sys.stderr)
+            return gk.REFUSED
         write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical=0\nrepro-rc=rc=1\n"
                               f"d10-transcript={d10}\n" + base)
         print(f"REPRO: NOT IDENTICAL -- {n} files:")

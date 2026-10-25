@@ -2319,6 +2319,49 @@ backward-holes       [##] 2/3  **⇒ THE TWO NAMED HOLES BELOW THE BACKWARD PASS
                                        ORACLE OR TO RE-DECLARE THE CLASS AS CHANGE-DETECTORS IN THE LEDGER.
 
 
+repro-diff-poison    [###] 3/3  **A NAME `cmd_repro` WRITES WAS NOT DECLARED, AND IT POISONED THE CORPUS'S CENTRAL
+                                       INSTRUMENT FOREVER.** MEASURED 2026-10-25. `checks/differ.py`'s
+                                       `REPRO_LITERALS` WAS `("D0-repro",)` -- **BUT `cmd_repro` ALSO WRITES
+                                       `D0-repro-diff.txt` WHEN THE TWO RUNS DIFFER, AND IT LIVES IN `D/`.**
+                                       `declared()` IS DERIVED FROM `(*LITERALS, *REPRO_LITERALS)`, SO THE NAME WAS IN
+                                       `present` BUT NOT IN `declared()`, **AND `UNEXPECTED` IS EXACTLY `present -
+                                       declared()`.** **⇒ AND THE POISON IS SELF-PERPETUATING: ONE FAILED REPRO LEFT
+                                       THE FILE BEHIND, AND FROM THEN ON **EVERY** `clean_run` ATTEMPT SAW IT AS
+                                       `UNEXPECTED` -- **SO `artefacts_ok()` FAILED, `clean_run` RETRIED UP TO 9 TIMES
+                                       AT ~278 s A RUN, AND THE REPRO TOOK ~84 MINUTES INSTEAD OF ~9 AND STILL
+                                       FAILED.** MEASURED: ONE CORPUS RUN IS **278 s** AND `settled()` IS **1.46 s**,
+                                       SO THE FLOOR IS TWO RUNS PLUS THE PROBES; **THE OBSERVED REPRO TIME WENT FROM
+                                       449 s TO OVER 1800 s BECAUSE OF THE RETRIES, NOT BECAUSE THE RUNS GOT SLOWER.**
+                                       **⇒ AND THE FIX IS ONE TOKEN, BECAUSE `declared()` IS DERIVED FROM THAT TUPLE:
+                                       `REPRO_LITERALS = ("D0-repro", "D0-repro-diff")`.** **⇒ AND A PASSING REPRO NOW
+                                       ALSO CLEARS THE RESIDUE OF A PAST FAILURE, SO **THE FILE'S PRESENCE IS EXACTLY
+                                       *"THE LAST REPRO FAILED"* RATHER THAN A LINGERING ARTEFACT.** **⇒ AND THE
+                                       CONTROL IS HERMETIC AND IMMEDIATE, BECAUSE THE STALE FILE WAS ON DISK: BEFORE,
+                                       `artefacts_ok()` RETURNED **1** ROW (*`UNEXPECTED D0-repro-diff.txt`*); AFTER,
+                                       IT RETURNS **0** WITH THE FILE STILL THERE, AND `declared()` CONTAINS THE
+                                       NAME.** **⇒ AND THE REPRO NOW COMPLETES: **320 OF 320 FILES IDENTICAL ACROSS
+                                       TWO CLEAN RUNS**, rc=0, IN **449 s**.
+
+repro-subject-verdict [###] 3/3  **TWO RUNS THAT MEASURED DIFFERENT SUBJECTS WERE REPORTED AS *FAIL*, WHICH READS AS
+                                       *"THE PORT IS NON-DETERMINISTIC"* -- A CLAIM ABOUT THE PORT THAT IS FALSE.**
+                                       MEASURED 2026-10-25: THE TREE MOVED BETWEEN THE TWO CLEAN RUNS, THEIR SNAPSHOTS
+                                       DIFFERED, AND THE REPRO WROTE `repro-rc=rc=1` -- **WHICH IS THE TREE'S WORD FOR
+                                       *"A COMPARISON CAME OUT WRONG"*, AND NO COMPARISON CAME OUT WRONG: THE TWO RUNS
+                                       SIMPLY MEASURED DIFFERENT TREES.** `REFUSED` (3) IS *"A PRECONDITION WAS
+                                       ABSENT"*, **AND A PRECONDITION WAS ABSENT.** **⇒ SO THE REPRO NOW READS THE
+                                       SUBJECT EACH RUN MEASURED -- `substrate-start=` OUT OF THAT RUN'S OWN SUMMARY,
+                                       CAPTURED BEFORE THE NEXT RUN OVERWRITES IT, BECAUSE THE SNAPSHOT ITSELF HOLDS
+                                       SHA256s AND NOT THE SUMMARY'S CONTENT** -- AND REFUSES (3) WITH BOTH DIGESTS
+                                       NAMED, INSTEAD OF FAILING (1).** **⇒ AND THE DECISION IS A PURE FUNCTION,
+                                       `repro_subject_reason(subject_a, subject_b)`, SO THE CONTROL NEEDS NO MOVING
+                                       TREE: THE SAME SUBJECT GIVES *""* (THE TWO RUNS ARE COMPARABLE), A DIFFERENT
+                                       SUBJECT GIVES THE REASON, **AND AN ABSENT SUBJECT GIVES *""*, BECAUSE A MISSING
+                                       ROW IS THE WITNESS's OWN PROBLEM AND NOT EVIDENCE THAT THE TREE MOVED.** **⇒
+                                       AND `repro_bad()` NOW NAMES THE REFUSAL's REASON, BECAUSE A WITNESS THAT SAYS
+                                       `repro-rc=rc=3` AND NOTHING ELSE MAKES A READER GUESS, AND A GUESS IS NOT A
+                                       VERDICT.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
