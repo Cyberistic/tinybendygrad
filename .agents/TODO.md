@@ -1529,33 +1529,38 @@ corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OW
                                        `checks/differ.py`'s own note about it. **⇒ AND `POPULATION_PIN` DID
                                        NOT MOVE** (`4a44f98e...` before and after): the edit touched no graph.
 
-imagenet-distance    [###] 3/3  **THE MEASURED DISTANCE TO *"RUN IMAGENET USING BEND"*, RE-TAKEN 2026-10-23 AFTER THIS
-                                       SESSION'S THREE UNITS LANDED. THE CHAIN HAS SHORTENED: TWO OF THE THREE EVAL
-                                       PRIMITIVES ARE NOW REAL, AND THE THIRD IS REAL AS FAR AS THE PORT CAN GO.** **⇒
-                                       THE CHAIN, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE SHAPE -- **DONE**: ALL
-                                       FIVE `conv_*` ROWS READ UPSTREAM'S ANSWERS (`1,8,32,32` / `1,8,30,30` /
-                                       `1,8,16,16` / `1,8,32,34` / `1,8,32,32`)**; `argmax` -- **DONE AT THE GRAPH
-                                       LEVEL**: `tinybendygrad/nn/argmax.bend` BUILDS UPSTREAM'S FOUR NODES WITH **20
-                                       ROWS, ALL GREEN, EVERY `want` TAKEN FROM CPYTHON ITSELF** (AND THE BLOCKER WAS
-                                       **TWO BUGS IN `mixin/rand.bend`**, NOT A MISSING CAPABILITY -- SEE `argmax-
-                                       graph`); `item` -- **DONE AS FAR AS THE PORT CAN GO**: THE PRECONDITION IS
-                                       UPSTREAM'S `AssertionError` **VERBATIM** (THE PORT DOES NOT RETURN THE FIRST
-                                       ELEMENT), THE CONST PATH WORKS, AND THE **DEVICE** PATH **REFUSES BY NAME** --
-                                       `uop/ops.bend:5296` SAYS *"NO LIVE `Buffer`"* AND `engine/realize.bend:60`
-                                       LISTS `realize.py:145 exec_copy` AS A FOREIGN EFFECT, **SO THAT IS AN EXECUTOR
-                                       GAP, NOT AN `item` GAP**; **THE LOADER** -- **DONE**:
-                                       `tinybendygrad/extra/datasets/imagenet.bend` IS **520 LINES** (IT WAS A 46-LINE
-                                       STUB), ALL THREE DEFS ARE REAL, AND **8 OF 8 ROWS AGREE WITH CPYTHON'S OWN
-                                       `glob`/`json` BYTE-IDENTICALLY**; **THEN A REAL MODEL -- STILL A STUB**
-                                       (`extra/models/resnet.bend` REFUSES); **THEN THE 150 GB OF DATA -- THE
-                                       HOST'S**, NOT THE PORT'S. **⇒ AND THE THREE REMAINING PORT-SIDE GAPS, NAMED:
-                                       (1) `item`'s DEVICE READ NEEDS A LIVE BUFFER, WHICH IS AN EXECUTOR; (2) **THE
-                                       ARANGE's VALUES ARE NOT UPSTREAM's** -- IT IS **24 NODES AGAINST CPYTHON'S
-                                       31**, BECAUSE THE `_pad_constant`'s PAD IS ABSENT (`op_padc` PASSES `[i]` WHERE
-                                       UPSTREAM PASSES `[2i-1]`), **SO A LIST FORM IS WHAT CHECKS VALUES UNTIL THE
-                                       PORT HAS A VALUE FOLD**; AND (3) A REAL MODEL.** **⇒ AND THE PORT HAS NO
-                                       EXECUTOR AND NO VALUE FOLD, WHICH IS THE UNDERLYING TRUTH UNDER ALL THREE:
-                                       `uop/fold.bend` ANSWERS dtype/shape/device/addr/base/ended AND NOTHING ELSE.**
+imagenet-distance    [###] 3/3  **THE MEASURED DISTANCE TO *"RUN IMAGENET USING BEND"*, RE-TAKEN 2026-10-25. THE CHAIN
+                                       HAS SHORTENED AGAIN, AND THE ONE PIECE THAT WAS MISSING -- **AN EXECUTOR THAT
+                                       ACTUALLY EXECUTES** -- IS NOW MEASURED, AND SO IS THE ONE LANE THAT IS WRONG.**
+                                       **⇒ WHAT IS REAL, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE SHAPE --
+                                       **DONE**: ALL FIVE `conv_*` ROWS READ UPSTREAM'S ANSWERS; `argmax` -- **DONE AT
+                                       THE GRAPH LEVEL**: `tinybendygrad/nn/argmax.bend` BUILDS UPSTREAM's FOUR NODES
+                                       WITH **20 ROWS, ALL GREEN**; `item` -- **DONE AS FAR AS THE PORT CAN GO**: THE
+                                       PRECONDITION IS UPSTREAM's `AssertionError` **VERBATIM**, THE CONST PATH WORKS,
+                                       AND THE **DEVICE** PATH **REFUSES BY NAME** (`uop/ops.bend:5296` SAYS *"NO LIVE
+                                       `Buffer`"*) -- **SO THAT IS AN EXECUTOR GAP, NOT AN `item` GAP**; **THE
+                                       LOADER** -- **DONE**: `tinybendygrad/extra/datasets/imagenet.bend` IS **520
+                                       LINES** AND **8 OF 8 ROWS AGREE WITH CPython's OWN `glob`/`json` BYTE-
+                                       IDENTICALLY**; **⇒ AND THE EXECUTOR -- **NOW REAL AND MEASURED**:
+                                       `gates/ops_bend_exec-e2e.py` **COMPILES `tinybendygrad/runtime/ops_python.bend`
+                                       WITH `bin/bend -o` AND RUNS IT AS A SUBPROCESS ON REAL PACKETS**, AND **SIX OF
+                                       ITS SEVEN CASES MATCH CPython's PYTHON DEVICE** (`add4`, `sum4`, `addi32`,
+                                       `addu32`, `cast`, `cmp`) -- **THAT IS THE PORT COMPILING ITS OWN KERNELS AND
+                                       RUNNING THEM, NOT A SIMULATION.** **⇒ AND THE SEVENTH CASE IS A MATMUL, AND IT
+                                       IS RED: **THE EXECUTOR COMPUTES ONLY THE FIRST OUTER SLICE OF A BROADCAST**, SO
+                                       A 4×4 MATMUL IS `[[180,200,220,240],[0,0,0,0],[0,0,0,0],[0,0,0,0]]` INSTEAD OF
+                                       THE FULL MATRIX -- SEE `exec-broadcast-max`, AND SEE `exec-e2e-instrument` FOR
+                                       THE THREE DEFECTS THAT WERE IN THE INSTRUMENT THAT MEASURES IT (THE DEVICE NAME
+                                       DID NOT RESOLVE; THE `dot` CASE WAS CONSTANT-FOLDED; AND THE ORACLE RE-USED THE
+                                       SUBJECT's BUFFERS). **⇒ AND `max` OVER AN AXIS DOES NOT REDUCE.** **⇒ SO THE
+                                       ANSWER IS NOW SPECIFIC RATHER THAN A MOOD: THE EXECUTOR EXISTS, THE ELEMENTWISE
+                                       AND SUM LANES ARE RIGHT, AND **THE BROADCAST LANE IS WRONG** -- **AND A
+                                       CONVOLUTION AND A MATMUL ARE BOTH A BROADCAST.** **⇒ WHAT IS STILL MISSING,
+                                       NAMED: (1) **THE BROADCAST LANE**; (2) `item`'s DEVICE READ, WHICH NEEDS A LIVE
+                                       `Buffer`; (3) **A REAL MODEL** (`extra/models/resnet.bend` REFUSES); (4) THE
+                                       150 GB OF DATA -- **THE HOST's**, NOT THE PORT's.**
+
+
 
 
 commit-recipe-race   [##] 2/3  **THE PRESCRIBED COMMIT RECIPE SWEEPS 40 OF 40 TRIALS UNDER A RACE, AND THE HAZARD
@@ -2391,6 +2396,65 @@ repro-subject-verdict [###] 3/3  **TWO RUNS THAT MEASURED DIFFERENT SUBJECTS WER
                                        AND `repro_bad()` NOW NAMES THE REFUSAL's REASON, BECAUSE A WITNESS THAT SAYS
                                        `repro-rc=rc=3` AND NOTHING ELSE MAKES A READER GUESS, AND A GUESS IS NOT A
                                        VERDICT.**
+
+
+exec-broadcast-max   [##] 2/3  **THE PORT'S BEND EXECUTOR COMPUTES ONLY THE FIRST OUTER SLICE OF A BROADCAST, AND
+                                       `max` OVER AN AXIS DOES NOT REDUCE AT ALL -- SO A 4×4 MATMUL IS
+                                       `[[180,200,220,240],[0,0,0,0],[0,0,0,0],[0,0,0,0]]` INSTEAD OF THE FULL
+                                       MATRIX.** MEASURED 2026-10-25 ON THE BEND DEVICE AGAINST CPython's OWN PYTHON
+                                       DEVICE, WITH ITS OWN INPUTS. **⇒ THE SUBJECT IS
+                                       `tinybendygrad/runtime/ops_python.bend` (2,805 LINES), THE PORT OF UPSTREAM's
+                                       `tinygrad/runtime/ops_python.py`, WHICH IS THE ORACLE. THE WIRE IS v1.1, ONE
+                                       LAUNCH PER PACKET: `bendexec1 <nuops> <nbuffers>`, THEN ONE `<idx>: <OP>
+                                       <dtype|-> <arg|-> <src1> <src2> ...` LINE PER UOP IN POST-ORDER, THEN ONE
+                                       `<nbytes> <hex-bytes>` LINE PER BUFFER.** **⇒ THE MEASUREMENTS: (1) A BROADCAST
+                                       MULTIPLY `(4×1×4) * (1×4×4)` GIVES THE FIRST OUTER SLICE EXACTLY RIGHT AND THE
+                                       OTHER THREE ALL ZERO. (2) `max(axis=0)` ON A 4×4 GIVES `[0,1,2,3]` -- THE FIRST
+                                       ROW -- AGAINST `[12,13,14,15]`; `max(axis=1)` GIVES `[0,4,8,12]` -- THE FIRST
+                                       COLUMN -- AGAINST `[3,7,11,15]`. (3) **AND WHAT IS *NOT* BROKEN, SO IT MUST NOT
+                                       BE 'FIXED': `sum` IS CORRECT** -- `sum(axis=0)` ON 4×4, 2×8, 8×2 AND IN F32 ALL
+                                       MATCH; `sum(axis=1)` MATCHES; `sum(axis=-1)` MATCHES; `sum()` OF A 1-D VECTOR
+                                       MATCHES (16→120, 8→28, 4→6, 2→1); A 4×4 ELEMENTWISE ADD MATCHES; `transpose()`
+                                       MATCHES; **AND ALL SIX OF THE INSTRUMENT'S OTHER CASES MATCH** (`add4`, `sum4`,
+                                       `addi32`, `addu32`, `cast`, `cmp`). **⇒ BOTH DEFECTS PRODUCE *'THE FIRST
+                                       ELEMENT ALONG THE AXIS'*, WHICH IS THE SHAPE TO LOOK FOR: A LOOP OVER THE
+                                       OUTPUT INDEX SPACE THAT RUNS ONCE, OR AN AXIS DROPPED WHEN THE OUTPUT IS
+                                       INDEXED.** **⇒ AND THE PINNED DIVERGENCES MUST BE CHECKED FIRST: THE EXECUTOR
+                                       CENSUS HAS **365 ROWS, 314 IDENTICAL, AND 52 PINNED DIVERGENCES IN TWO NAMED
+                                       FAMILIES** -- *'VECTOR-STORE LANES'* AND *'LOOP-CARRIED LOCAL REDUCTION'* --
+                                       **SO THESE DEFECTS MAY ALREADY BE PINNED, AND A FIX THAT SILENTLY MOVES A PIN
+                                       IS A REGRESSION, NOT A FIX.**
+
+exec-e2e-instrument  [###] 3/3  **THE INSTRUMENT THAT MEASURES THE EXECUTOR WAS DEAD, AND WRONG IN THREE WAYS AT ONCE,
+                                       AND ALL THREE COMPOUNDED.** MEASURED 2026-10-25. **⇒ (1) THE DEVICE NAME DID
+                                       NOT RESOLVE: THE GATE DIED WITH `ModuleNotFoundError: No module named
+                                       'tinygrad.runtime.ops_bend'`, BECAUSE TINYGRAD's LOADER
+                                       (`tinygrad/device.py:39`) DOES
+                                       `importlib.import_module(f'tinygrad.runtime.ops_{x}')` -- **AND `ops_bend.py`
+                                       USED TO LIVE AT `tinygrad/runtime/ops_bend.py`, UNTIL `c2a66ea41` MOVED IT TO
+                                       THE REPO ROOT** SO THAT `tinygrad/` WOULD HOLD NO FILE OF OURS AND STAY
+                                       PRISTINE AS THE ORACLE. **THE MOVE WAS RIGHT AND IT BROKE THE DEVICE NAME, AND
+                                       NOTHING RE-CHECKED IT.** **⇒ THE FIX PUTS NO FILE BACK INTO `tinygrad/`:
+                                       `importlib.import_module` CHECKS `sys.modules` FIRST, SO REGISTERING THE MODULE
+                                       UNDER THE NAME TINYGRAD LOOKS FOR MAKES THE DEVICE RESOLVE.** **⇒ (2) THE `dot`
+                                       CASE'S INPUTS WERE CONSTANT-FOLDED: `T.arange(16, dtype=f32) + 1` IS A
+                                       **CONSTANT** TENSOR -- UPSTREAM's `Tensor.arange` CALLS `r.const()` UNLESS IT
+                                       NEEDS REALIZATION -- SO `xs @ ys` WAS CONSTANT-FOLDED **IN PYTHON** AND
+                                       LAUNCHED NO KERNEL ON ANY DEVICE. IT RENDERED NO PACKET (`CAP entries=0`), AND
+                                       THE INSTRUMENT PRINTED `MATCH` FOR IT. **⇒ A CASE THAT PRODUCES NO PACKET IS A
+                                       CASE THAT DID NOT RUN, AND THAT IS NOW A **REFUSAL** RATHER THAN A MATCH.** **⇒
+                                       (3) THE ORACLE WAS NOT INDEPENDENT: THE INPUTS WERE BUILT ONCE UNDER
+                                       `Context(DEV='BEND')` AND THE REFERENCE RE-USED THEM, SO `ref(thunk)` RE-
+                                       COMPUTED THE SAME THING **ON THE SAME BEND BUFFERS** AND THE INSTRUMENT
+                                       COMPARED THE WRONG ANSWER WITH ITSELF. **⇒ SO EACH CASE IS NOW A *MAKER*: IT
+                                       BUILDS ITS OWN INPUTS **ON THE CURRENT DEVICE**, AND THE ORACLE BUILDS ITS
+                                       OWN.** **⇒ AND `Device.DEFAULT` IS `METAL` ON THIS MACHINE, SO A CASE COULD RUN
+                                       ON THE GPU AND STILL BE REPORTED -- EVERY CASE NOW RUNS INSIDE
+                                       `Context(DEV='BEND')`.** **⇒ THE RESULT: THE INSTRUMENT READS **`6 match, 1
+                                       mismatch-or-refused`, rc=1** -- **AND IT IS CORRECT TO BE RED**, BECAUSE THE
+                                       SEVENTH CASE IS A MATMUL AND THE MATMUL IS WRONG (SEE `exec-broadcast-max`).
+                                       **⇒ AND THE INSTRUMENT IS THE CONTROL: IT IS RED NOW AND IT MUST GO GREEN, AND
+                                       FOR THE RIGHT REASON.**
 
 
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit

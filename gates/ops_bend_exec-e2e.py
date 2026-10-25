@@ -39,6 +39,20 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import ops_bend as OB
 OB.executor  # the cached builder; reading it is what makes the import real
+
+# **THE DEVICE NAME `BEND` MUST RESOLVE, AND IT STOPPED RESOLVING WHEN A FILE MOVED.**
+# MEASURED 2026-10-25: THIS INSTRUMENT DIED WITH `ModuleNotFoundError: No module named
+# 'tinygrad.runtime.ops_bend'`, BECAUSE TINYGRAD's LOADER (`tinygrad/device.py:39`) DOES
+# `importlib.import_module(f'tinygrad.runtime.ops_{x}')` -- **AND `ops_bend.py` USED TO LIVE
+# AT `tinygrad/runtime/ops_bend.py`, UNTIL `c2a66ea41` MOVED IT TO THE REPO ROOT** SO THAT
+# `tinygrad/` WOULD HOLD NO FILE OF OURS AND STAY PRISTINE AS THE ORACLE. **⇒ THE MOVE WAS
+# RIGHT AND IT BROKE THE DEVICE NAME, AND NOTHING RE-CHECKED IT.**
+# `importlib.import_module` CHECKS `sys.modules` FIRST, SO REGISTERING THE MODULE UNDER THE
+# NAME TINYGRAD LOOKS FOR MAKES THE DEVICE RESOLVE **WITHOUT PUTTING A FILE OF OURS BACK INTO
+# `tinygrad/`** -- WHICH IS THE WHOLE POINT OF THE MOVE. `get_class` THEN FINDS `BendDevice`
+# BY ITS NAME (`device.py:40`: `cname.lower() == x + "device"`), WHICH IS EXACTLY WHAT
+# `ops_bend.py` NAMES ITS DEVICE.
+sys.modules['tinygrad.runtime.ops_bend'] = OB
 _orn = OB.BendRenderer.render
 def _render(self, uops):
     CAP.append(uops)
@@ -52,25 +66,65 @@ OB.BendProgram.__init__ = _init
 
 
 def cases():
+  """THE CASES, AND **EACH ONE IS A MAKER**: IT BUILDS ITS OWN INPUTS **ON THE CURRENT DEVICE**.
+
+  **⇒ THE ORACLE MUST NOT BE THE SUBJECT.** MEASURED 2026-10-25: THE FIRST VERSION BUILT THE
+  INPUTS ONCE, UNDER `Context(DEV='BEND')`, AND THE REFERENCE RE-USED THEM -- SO
+  `ref(thunk)` RE-COMPUTED THE SAME THING **ON THE SAME BEND BUFFERS**, AND THE INSTRUMENT
+  COMPARED THE WRONG ANSWER WITH ITSELF AND SAID `MATCH`. **THE THREE DEFECTS BELOW WERE ALL
+  IN ONE INSTRUMENT, AND THEY COMPOUNDED:** THE DEVICE NAME DID NOT RESOLVE; THE `dot` CASE'S
+  INPUTS WERE CONSTANT-FOLDED SO IT LAUNCHED NO KERNEL; AND THE REFERENCE RE-USED THE SUBJECT's
+  BUFFERS. **⇒ SO EACH CASE IS A MAKER, AND THE ORACLE BUILDS ITS OWN INPUTS.**
+
+  **AND THE MATMUL's INPUTS MUST NOT BE CONSTANT-FOLDABLE.** `T.arange(16, dtype=f32) + 1` IS
+  A **CONSTANT** TENSOR -- upstream's `Tensor.arange` CALLS `r.const()` UNLESS IT NEEDS
+  REALIZATION -- SO `xs @ ys` WAS CONSTANT-FOLDED **IN PYTHON** AND LAUNCHED NO KERNEL ON ANY
+  DEVICE. A REALIZED BUFFER IS NOT CONSTANT-FOLDABLE, SO THE INPUTS ARE LISTS.
+  """
   T = Tensor
-  with Context(DEV='BEND'):
+
+  def add4():
     a = T([1.0, 2.0, 3.0, 4.0]).realize()
     b = T([10.0, 20.0, 30.0, 40.0]).realize()
+    return lambda: a + b
+
+  def sum4():
+    a = T([1.0, 2.0, 3.0, 4.0]).realize()
+    return lambda: a[:4].sum(axis=0)
+
+  def addi32():
     i = T([1, 2, 3, 4], dtype=dtypes.int32).realize()
+    return lambda: i + i
+
+  def addu32():
     j = T([7, 8, 9, 10], dtype=dtypes.uint32).realize()
-    xs = (T.arange(16, dtype=dtypes.float32) + 1).realize().reshape(4, 4)
-    ys = (T.arange(16, dtype=dtypes.float32) * 2).realize().reshape(4, 4)
-    return [('add4', lambda: (a + b)), ('sum4', lambda: a[:4].sum(axis=0)),
-            ('addi32', lambda: i + i), ('addu32', lambda: j + 1),
-            ('cast', lambda: (i + 1).cast(dtypes.float32)),
-            ('cmp', lambda: a > 2.0), ('dot', lambda: (xs @ ys))]
+    return lambda: j + 1
+
+  def cast():
+    i = T([1, 2, 3, 4], dtype=dtypes.int32).realize()
+    return lambda: (i + 1).cast(dtypes.float32)
+
+  def cmp():
+    a = T([1.0, 2.0, 3.0, 4.0]).realize()
+    return lambda: a > 2.0
+
+  def dot():
+    xs = T([float(i + 1) for i in range(16)]).realize().reshape(4, 4)
+    ys = T([float(2 * i + 2) for i in range(16)]).realize().reshape(4, 4)
+    return lambda: xs @ ys
+
+  return [('add4', add4), ('sum4', sum4), ('addi32', addi32), ('addu32', addu32),
+          ('cast', cast), ('cmp', cmp), ('dot', dot)]
 
 
-def ref(thunk):
+def ref(mk):
   """CPython's own answer, from the PYTHON device -- the emulator ops_bend.py
-  was forked from, and the oracle for this file."""
+  was forked from, and the oracle for this file.
+
+  **THE MAKER RUNS HERE, SO THE ORACLE BUILDS ITS OWN INPUTS ON THE PYTHON DEVICE.** THE
+  SUBJECT's BUFFERS ARE NOT RE-USED: SEE `cases()`."""
   with Context(DEV='PYTHON'):
-    return thunk().tolist()
+    return mk()().tolist()
 
 
 def main():
@@ -78,20 +132,37 @@ def main():
   print('# executor built once, keyed by executor.bend mtime+size:')
   print('#   ', exe)
   ok = bad = 0
-  for name, thunk in cases():
+  for name, mk in cases():
     CAP.clear()
     try:
-      got = thunk().tolist()
+      # **THE CASE MUST RUN ON THE BEND DEVICE, AND NOT ON WHATEVER THE DEFAULT IS.**
+      # MEASURED 2026-10-25: THE FIRST VERSION REALIZED THE INPUTS INSIDE
+      # `with Context(DEV='BEND')` BUT RAN THE `thunk` OUTSIDE IT -- **AND `Device.DEFAULT`
+      # IS `METAL` ON THIS MACHINE** -- SO A CASE COULD RUN ON THE GPU AND STILL BE REPORTED.
+      with Context(DEV='BEND'):
+        got = mk()().tolist()
     except Exception as e:
       print(f'== {name}: FAILED {type(e).__name__}: {e}'); bad += 1; continue
-    want = ref(thunk)
+    try:
+      want = ref(mk)
+    except Exception as e:
+      print(f'== {name}: REFUSED -- the oracle failed: {type(e).__name__}: {e}')
+      bad += 1
+      continue
     same = repr(got) == repr(want)
+    # **AND A CASE THAT RENDERED NO PACKET DID NOT RUN ON THE DEVICE AT ALL.** THAT IS A
+    # REFUSAL, NOT A MATCH: THE COMPARISON WAS AGAINST A NUMBER THIS DEVICE NEVER PRODUCED.
+    if not CAP:
+      print(f'== {name}: REFUSED -- no packet was rendered, so this case did not run on BEND; '
+            f'the answer {got} came from somewhere else')
+      bad += 1
+      continue
     ok, bad = (ok + 1, bad) if same else (ok, bad + 1)
     print(f'== {name}: bend={got} python={want} {"MATCH" if same else "MISMATCH"}')
     if CAP:
       OUT.mkdir(parents=True, exist_ok=True)
       (OUT / f'packet-{name}.rows').write_text(CAP[-1][1].lib.decode())
-  print(f'# {ok} match, {bad} mismatch')
+  print(f'# {ok} match, {bad} mismatch-or-refused')
   return 0 if bad == 0 else 1
 
 
