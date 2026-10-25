@@ -5,6 +5,10 @@ The denominator is the live diff, re-derived from ``gates/gates-pop.py`` by path
 ``cd450ea61``'s 70/5 is a recorded reading to compare against, not the count.
 This gate does not write ``gates/gates-pop.ledger.tsv``. A write attempt is REFUSED.
 
+THE POPULATION IS ``gates/gates-pop.py``'s, and that file excludes a mutation harness's STAGED
+REVISION by its NAME (``is_scratch``): a copy is not a gate, and a copy the ledger admitted is a
+row no commit can owe -- which is what the five UNOWNED rows were.
+
     .venv/bin/python gates/ledgerdue-gate.py
     .venv/bin/python gates/ledgerdue-gate.py --plant
 """
@@ -114,6 +118,46 @@ def write_copy(pop, rows, path):
   return pop.write_ledger(rows, dest)
 
 
+def scratch_plants(pop):
+  """A mutation harness's STAGED REVISION is excluded BY ITS NAME, and a name that merely
+  CONTAINS `mut` is not.
+
+  **THE FIVE UNOWNED ROWS THIS GATE REPORTS ARE FIVE OF THESE.** `gates/gates-pop.py`'s
+  `is_scratch` is the rule; this is the plant that says the rule is BOUNDED, in both directions:
+  a copy the COMMIT TREE carries is still excluded (so the exclusion is not the commit tree's
+  rule wearing a new hat), and a real name that happens to contain `mut` is still counted (so the
+  exclusion is not "everything with mut in it").
+  """
+  os.environ.pop("GIT_INDEX_FILE", None)
+  checks = []
+  with tempfile.TemporaryDirectory() as tmp:
+    root = Path(tmp) / "tree"
+    root.mkdir()
+    pop._tree(root, "gates")
+    copies = ("gates/stage-mut-gate.py", "gates/stage-mut-oracle.py")
+    keeps = ("gates/keep-mutate.py", "gates/keep-mut-keeper.py", "gates/commutative-gate.py")
+    for rel in (*copies, *keeps):
+      (root / rel).write_text(pop.GOOD_ROOT)
+    committed = pop._commit(root) == 0
+    pop._MEASURED.clear()
+    rows = {row[0] for row in rows_of(pop, root)}
+    carried = set(pop._measure(root)[1]["paths"])
+    excluded = [rel for rel in copies if rel not in rows]
+    counted = [rel for rel in keeps if rel in rows]
+    checks.append((
+      "a mutation harness's staged revision is NOT a gate, and the commit tree CARRIES it",
+      committed and all(rel in carried for rel in copies) and len(excluded) == len(copies),
+      f"committed={committed} carried={sorted(rel for rel in copies if rel in carried)} "
+      f"excluded={excluded}",
+    ))
+    checks.append((
+      "a real name that merely CONTAINS `mut` is still counted",
+      len(counted) == len(keeps),
+      f"counted={counted} of {list(keeps)}",
+    ))
+  return checks
+
+
 def copy_plants(pop):
   """A synthetic new path is due; the unmutated ledger does not gain that row."""
   os.environ.pop("GIT_INDEX_FILE", None)
@@ -183,6 +227,7 @@ def write_plant():
 def run_plants(pop):
   before = git_blob(LEDGER) if LEDGER.is_file() else None
   checks = copy_plants(pop)
+  checks += scratch_plants(pop)
   checks.append(write_plant())
   after = git_blob(LEDGER) if LEDGER.is_file() else None
   checks.append(("real ledger hash unchanged by the plant", before == after,

@@ -38,7 +38,10 @@ POPULATION:
       HOMES COME FROM IS A SEPARATE MEASUREMENT AND IS PRINTED SEPARATELY** -- `gate_homes()`
       derives them from the commit tree and `report_roots()` prints every candidate it rejected
       with its own denominator, so the one hand list this file used to carry is gone and a reader
-      sees the root set move without reading code.
+      sees the root set move without reading code. **AND A NAME THAT SAYS "I AM A COPY" IS NOT A
+      GATE**, whatever the commit tree says about it: `is_scratch()` excludes a mutation harness's
+      staged revision (`-mut-{gate,oracle,plant}.py`) BY ITS NAME -- no repository consulted --
+      and the names it eats are printed, so the exclusion is visible rather than silent.
   II  A POPULATION IS NOT EMPTY and not vacuously green. Reported per clause, always.
   III THE SET MOVED OR THE LEDGER SAYS WHY. **A READ CANNOT WRITE, AND A WRITE NAMES ITS PATHS.**
       `--write-ledger --only PATH` is this file's ONLY writer of `gates/gates-pop.ledger.tsv`. It
@@ -246,6 +249,36 @@ def suffix_of(p):
     does), so a wrong answer here mislabels a count and cannot lose a gate."""
     i = p.name.rfind(".")
     return p.name[i:] if i > 0 else "(none)"
+
+
+# A MUTATION HARNESS'S STAGED REVISION IS A COPY, AND A COPY IS NOT A GATE. MEASURED 2026-10-25:
+# `gates/__pycache__/` still holds the COMPILED forms of the SEVEN staging copies this tree's
+# mutation runs left in `gates/` -- `amd-mut-gate.py`, `amd-mut-oracle.py`, `crp-mut-gate.py`,
+# `crp-mut-oracle.py`, `cstyle-mut-oracle.py`, `.crp-mut-gate.py`, `.wgsl-mut-oracle.py` -- and
+# EVERY ONE NAMES THE FILE IT COPIES IN ITS OWN FIRST DOCSTRING LINE (`amd-mut-gate.py` opens
+# `"""amd_dsl_census-gate.py -- ...`), which is the tree's `.gitignore` convention in words: "a
+# mutation harness stages a REVISION of a file". **THE FIVE UNOWNED ROWS `gates/ledgerdue-gate.py`
+# REPORTS ARE FIVE OF THIS FAMILY**, and a copy the ledger admitted is a row NOBODY CAN PAY: that
+# gate names the COMMIT that owes a movement, and a file the tree never carried has no commit to
+# owe it.
+#
+# A NAME RULE AND NOT A GIT CALL: `git ls-files` reads the INDEX, and this tree's index is armed
+# (`checks/index-arm-gate.py`). `gates/header-census-gate.py`'s `is_scratch` is the model -- a name
+# shape, no repository consulted.
+#
+# **THE LINE, and it is a line and not a fog.** The token `mut` STANDALONE, then `-`, then one of
+# the three role words the tree gives a file a mutation run reads or asserts (`gate`, `oracle`,
+# `plant`), then `.py`. `mutate` IS A DIFFERENT WORD, so the SIXTEEN tracked `-mutate.py` harnesses
+# under the gate homes, `gates/mutkit.py` and `checks/walk-mutate.sh` all keep their place, and so
+# does a name that merely CONTAINS the letters. MEASURED 2026-10-25: this shape matches **0** of
+# the tracked files in the tree, **0** of the live entry points, and **5** of the ledger's rows --
+# the five stale ones, which is the defect. It matches nothing else.
+MUT_SCRATCH = re.compile(r"-mut-(?:gate|oracle|plant)\.py$")
+
+
+def is_scratch(name):
+    """Is this file a mutation harness's STAGED REVISION of another file? BY ITS NAME."""
+    return MUT_SCRATCH.search(name) is not None
 
 
 def refuse(*why):
@@ -549,8 +582,8 @@ def carried(root, homes, paths):
 
 
 def _buckets(root):
-    """`(entries, libs, opaque, uncarried)`, by walking every REGULAR file in the DERIVED homes.
-    NEVER a literal list of files, NEVER a suffix set, and NEVER a literal list of homes: the
+    """`(entries, libs, opaque, uncarried, scratch)`, by walking every REGULAR file in the DERIVED
+    homes. NEVER a literal list of files, NEVER a suffix set, and NEVER a literal list of homes: the
     homes come from `gate_homes(root)` -- which is why a plant has to DECLARE its homes by
     planting a gate that certifies one, and why `_tree` below does exactly that.
 
@@ -578,8 +611,15 @@ def _buckets(root):
     writer reads this list, and a ledger that can absorb another unit's scratch is the defect
     this bucket exists to close. MEASURED 2026-10-20T17:58Z: **4 files**, all of them
     `checks/.tmp-*`, another unit's in-flight scratch, none of them in the commit tree.
+
+    **AND THE FIFTH BUCKET IS THE SCRATCH ONE: A NAME THAT SAYS "I AM A COPY" IS NOT A GATE**,
+    whatever the commit tree says about it. `is_scratch()` is asked FIRST, so a staging copy the
+    commit tree DOES carry is still a copy: the copy is named and counted, and it is not admitted.
+    MEASURED 2026-10-25: the commit tree carries **0** such files today, and the seven this tree
+    left behind are gone from disk -- but the LEDGER still carried five of their rows, which is
+    the defect `gates/ledgerdue-gate.py` reported as five UNOWNED rows nobody can pay.
     """
-    entries, libs, opaque, uncarried = [], [], [], []
+    entries, libs, opaque, uncarried, scratch = [], [], [], [], []
     homes = _homes(root)
     keep = carried(root, homes, _measure(root)[1]["paths"])
     for home in homes:
@@ -590,6 +630,10 @@ def _buckets(root):
             if not stat.S_ISREG(os.lstat(p).st_mode):
                 continue
             r = entry_reason(p)
+            if is_scratch(p.name):
+                # A COPY. The commit tree may carry it, and it is still not a gate.
+                scratch.append((p, r))
+                continue
             if str(p.relative_to(root)) not in keep:
                 # NOT CARRIED BY THE COMMIT TREE. It is not a gate of this repository, and it is
                 # not one of the repository's unreadable files either -- so it is counted and
@@ -602,7 +646,7 @@ def _buckets(root):
                 entries.append(p)
             else:
                 libs.append(p)
-    return entries, libs, opaque, uncarried
+    return entries, libs, opaque, uncarried, scratch
 
 
 def discover(root):
@@ -616,8 +660,10 @@ def discover(root):
 
     **AND THE FOURTH BUCKET LEAVES THE SAME WAY, FOR THE SAME REASON.** `discover()` is read by
     `checks/gatesweep.py` (its `CONTROL`), so its arity is a contract with a second instrument.
+
+    **AND SO DOES THE FIFTH.** The scratch bucket leaves through `scratch()`.
     """
-    entries, libs, _opaque, _uncarried = _buckets(root)
+    entries, libs, _opaque, _uncarried, _scratch = _buckets(root)
     return entries, libs
 
 
@@ -639,6 +685,17 @@ def uncarried(root):
     answer it asks.
     """
     return _buckets(root)[3]
+
+
+def scratch(root):
+    """The FIFTH bucket: `(path, reason)` for the immediate files of the homes whose NAME says
+    they are a mutation harness's staged revision of another file (`is_scratch`).
+
+    **THE BUCKET IS NAMED SO THE EXCLUSION IS NOT SILENT.** A rule that excludes files without
+    naming them is the `artefacts_ok()` shape wearing a population, and this one is a rule about
+    a NAME, so the names it eats are the evidence that it is bounded.
+    """
+    return _buckets(root)[4]
 
 
 # ---- clause II: what each gate POPS FOR, and whether it can fail -----------------------
@@ -1379,7 +1436,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
     """
     lpath = ledger_path or Path(root).resolve() / HERE.relative_to(ROOT) / LEDGER.name
     homes, derivation = _measure(root)
-    entries, libs, opaque, uncarried = _buckets(root)
+    entries, libs, opaque, uncarried, scratch_files = _buckets(root)
     report_roots(derivation)
     print(f"     {derivation['read']} tracked file(s) read to answer that question; a rejected "
           f"candidate is a DIRECTORY, and each of the\n     {len(derivation['rejected'])} below "
@@ -1425,6 +1482,17 @@ def report(root, ledger_mode, ledger_path=None, only=None):
           f"the census measures.")
     for p, r in would_be:
         print(f"       not carried: {str(p.relative_to(root)):46} {r}")
+    # **THE SCRATCH RULE, PRINTED WITH ITS OWN DENOMINATOR AND THE NAMES IT EATS.** A mutation
+    # harness stages a REVISION of a file (`.gitignore`), and a name that says so is not a gate --
+    # MEASURED 2026-10-25 on the eight copies this tree left behind, each of which names the file
+    # it copies in its own first docstring line. The rule is a NAME (`is_scratch`), so the names
+    # are the evidence that it is bounded: a file whose name merely CONTAINS `mut` is not one.
+    print(f"     SCRATCH RULE: a name that is a mutation harness's staged revision "
+          f"(`-mut-{{gate,oracle,plant}}.py`) is a COPY, and a copy is not a gate; the commit tree\n"
+          f"     carries {len(scratch_files)} of them today. The names are below, and a name that "
+          f"merely CONTAINS `mut`\n     (`-mutate.py`, `mutkit.py`) is NOT one of them.")
+    for p, r in scratch_files:
+        print(f"       scratch: {str(p.relative_to(root)):46} {r}")
     print()
     for p in entries:
         const, asserts, onroot = root_facts(p, root)
@@ -1808,7 +1876,7 @@ def _plants():
             '#!/bin/sh\n_d=${0%/*}; case $_d in "$0") _d=.;; esac\n'
             'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
         (r / "checks" / "mod.py").write_text("X = 1\n")
-        e, libs, _opaque, _uncarried = _buckets(r)
+        e, libs, _opaque, _uncarried, _scratch = _buckets(r)
         got = {str(p.relative_to(r)) for p in e}
         # `len(e) == 2`, and the SECOND is the home witness `_tree` planted: the synthetic tree
         # earns `checks/` by holding a gate that certifies it, exactly as the live tree does.
@@ -1878,7 +1946,7 @@ def _plants():
         # the exclusion is visible rather than silent. `checks/bounded.py` is the live instance.
         (r / "checks" / "driver.py").write_text("def drive(): pass\n")
         (r / "gates" / "gatekit.py").write_text("class Gate: pass\n")
-        e, libs, _opaque, _uncarried = _buckets(r)
+        e, libs, _opaque, _uncarried, _scratch = _buckets(r)
         libs_named = sorted(str(p.relative_to(r)) for p in libs)
         out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
                   and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
@@ -2133,7 +2201,7 @@ def _plants():
             'import Base\ndef f(x):\n  import "../tinybendygrad/runtime/sz.c"\n')
         (r / "checks" / "expected.rows").write_text(
             "2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 3:n()\n2:i4 5:STACK 7:weakint 3:n(i2,i3)\n")
-        pe, pl, po, _pu = _buckets(r)
+        pe, pl, po, _pu, _ps = _buckets(r)
         got = sorted(str(p.relative_to(r)) for p in pe)
         mjs_ok = "checks/nan.mjs" in got
         shim_ok = "checks/shim" in got
@@ -2147,7 +2215,7 @@ def _plants():
         # WITNESS; THE TREE IS.** Asserted live so a moved or re-spelled fixture is a FAIL.
         live_rows = [p for h in HOMES for p in sorted((HERE.parent / h).iterdir())
                      if p.is_file() and p.name.endswith(".rows")]
-        _, _, live_opaque, live_uncarried = _buckets(HERE.parent)
+        _, _, live_opaque, live_uncarried, _live_scratch = _buckets(HERE.parent)
         # **THE POPULATION RULE MOVED THE DENOMINATOR, AND THE OLD ASSERTION DID NOT MOVE WITH IT.**
         # `_buckets` now excludes a file the commit tree does not carry BEFORE classification, so an
         # untracked `.rows` is `uncarried`, not `opaque`. Requiring it to be opaque fails the plant
