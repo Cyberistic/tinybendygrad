@@ -23595,3 +23595,91 @@ pin-cite-false-positives [#####] 5/5  **THE **GATE **REPORTED **516 **CITATIONS 
       reads `self._uop.vmin`", and upstream's `dtype.py` has NEITHER name. The port's
       comment uses the PORT's name while citing an upstream line, and a token-matching
       gate cannot see that. **IT IS A PORT FIX, NOT A GATE FIX.**
+
+## Session 2026-10-24/25 — the corpus is GREEN, CURRENT and REPRODUCIBLE, and it is a SINGLETON
+
+- [x] **THE ARTEFACTS WERE DAMAGED, AND THE DAMAGE WAS MEASURED BEFORE ANY FIX.** The corpus-lock
+      unit's own probe let a second `differ.py run` into `runs/graphcmp/D/`: **315 of 319 evidence
+      files rewritten by a killed run, `D0-coverage-census.txt` left 0 BYTES.**
+      `differ.unhealthy()` read `substrate-start=81101a6a04be but substrate-end=cfeb41ea869f -- THE
+      SUBSTRATE MOVED WHILE THE RUN WAS IN FLIGHT`, and `differ.artefacts_ok()` read
+      `EMPTY runs/graphcmp/D/D0-coverage-census.txt`. **⇒ A GREEN SUMMARY AND A DAMAGED ARTEFACT SET
+      CAN COEXIST, AND THE ARTEFACT SET IS WHAT THE WITNESS READS.**
+- [x] **THE CORPUS IS A SINGLETON NOW** (`8a2ecc335`, `42c5eca55`, `65b333037`). `checks/differ.py`'s
+      `run`/`repro`/`plant`/`snap` take an **`fcntl.flock` on `runs/graphcmp/.corpus.lock`** BEFORE
+      anything touches `D/`, and a second corpus run exits **3** with
+      `another corpus run holds the lock: ... is held by pid <N>`. **⇒ `fcntl.flock` and not
+      mkdir-and-a-PID: the kernel releases it when the holder dies, so there is no stale lock to
+      reclaim and no read-then-remove window to steal through.**
+      **⇒ AND `gates/corpusverdict-gate.py`'s `run.gated` ROW NOW MEASURES THE PROPERTY BY RUNNING THE
+      REAL COMMAND** (it holds the lock, runs `differ.py run` against a `GRAPHCMP_ARTIFACTS` scratch
+      directory, and asserts the command REFUSED, NAMED THE HOLDER, and WROTE NOTHING).
+      **⇒ AND THE OLD SOURCE-LEVEL QUESTION WAS NOT DROPPED: IT IS THE `run.readiness` ROW, AND IT
+      IS STILL RED.** A run that does not wait for the substrate to settle is a DIFFERENT hazard from
+      two runs interleaving into one directory.
+- [x] **THE CORPUS IS GREEN, CURRENT AND REPRODUCIBLE, AND ALL THREE AT ONCE** (`1bb56edaa`).
+      `run`: `graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0 byte-identical=35
+      graphs-refused=0 stable-pairs=5 of 5 stable-failed=0 of 5 stable-differ=0 of 5 expect-moved=0
+      plants-disagree=8 of 8 cross=1 of 1 conflations=4 of 4 controls=5 of 5`,
+      `selfcheck=# SELFCHECK: OK`, `oracle-selfcheck=# ORACLE SELFCHECK: OK`, `census-rc=rc=0`,
+      **`unhealthy() -> []`** and **`artefacts_ok() -> []`** (THE READING IS **EMPTY**, NOT "0
+      COMPLAINTS"). `repro`: **`319 of 319 files identical across two clean runs`**,
+      `repro-files=319 repro-identical=319 repro-rc=rc=0`.
+      **⇒ AND `substrate-start == substrate-end == live == repro-substrate ==
+      eb6ef8608ec64647a195d5521a4712dd1a288cf9f1cefef9e08e83c003dc56bc`, AND `substrate-head=
+      db20caf0618f1f79d4e0733fdd042cc6cf61eb7c` IS THE COMMIT THE RUN WAS TAKEN ON.**
+      `gates/corpuswitness-gate.py` reads **`PASS -- the claim is ESTABLISHED`** and
+      `checks/corpus-figure.py` reads **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS
+      agrees`**. **⇒ AND THE `d10-transcript` PIN READS `9bfb8517...` -- THE TELEMETRY-FREE VALUE, NOT
+      THE COMPILER's DAILY "A NEWER BEND IS AVAILABLE" NOTICE, WHICH IS NOT A FUNCTION OF THIS
+      REPOSITORY.**
+      **⇒ AND `git diff --name-only db20caf0618f HEAD -- tinybendygrad/ tinygrad/` IS EMPTY AFTER THE
+      COMMIT THAT MOVED HEAD: A COMMIT THAT TOUCHES NOTHING IN THE SUBSTRATE DOES NOT MAKE THE RUN
+      STALE, AND THE DIGEST IS WHAT SAYS SO.**
+- [x] **THE 603 FALSE CITATIONS OUTSIDE THE `TODO(pN)` POPULATION ARE NEARLY GONE.** `runtime/**`:
+      **225 -> 0** over 35 files (`056eeb1d5`, `e06e48249`). The rest: **331 -> 78** over 60 files
+      (`5f2eeaf1a`, `52c9f5ce5`, `a3f4b20b2`). **`gates/todo-cite-gate.py` READS 1131 ROWS AND 0 FALSE.**
+      **⇒ AND THE CLASS THAT MADE IT POSSIBLE WAS A BASENAME: `helpers.py` IS SEVEN UPSTREAM FILES AND
+      `dtype.py` IS SEVEN, SO A CITATION NAMING ONLY A BASENAME RESOLVES TO NOTHING. EVERY RE-POINTED
+      CITATION NOW NAMES ITS FILE BY THE FULL UPSTREAM PATH.**
+- [x] **THE LAST FALSE CITATION IN THE TREE WAS A SCRATCH COPY's MARKER** (`39724887d`).
+      `gates/header-census-gate.py`'s `walk_bend` -- **THE ONE DISCOVERY POINT**, which
+      `gates/pin-cite-gate.py` reads by path -- walked the FILESYSTEM, so it counted
+      `tinybendygrad/codegen/late/.linearizer-mut.bend:402`'s marker as the port's citation, and that
+      row was FALSE and **NOBODY COULD FIX IT, BECAUSE THE FILE IS NOT THE PORT's**.
+      **⇒ THE FIX IS A NAME RULE, AND DELIBERATELY NOT A GIT CALL: `git ls-files` READS THE INDEX, AND
+      THIS TREE's INDEX IS ARMED.** `cite.total` 2618 -> 2545 (73 scratch rows gone),
+      `cite.ambient_relocated` 4 -> 2.
+- [x] **A DOCSTRING THAT NAMES A ROW IS A CITATION, AND IT MUST MOVE WHEN THE ROW MOVES**
+      (`1bb56edaa`). `gates/corpuswitness-gate.py` said `corpusverdict-gate.py`'s `run.gated` row read
+      FAIL "because `cmd_run` has no readiness gate" -- and that reason moved to `run.readiness` when
+      `run.gated` became a MEASUREMENT OF THE SINGLETON PROPERTY.
+- [ ] **THE 78 THAT REMAIN ARE A CLASS, AND THE FIX IS THE PROSE** (DISPATCHED). 59 of them have **NO
+      CLAIM TOKEN THAT OCCURS ANYWHERE IN THE CITED FILE**: the port's prose names a **PORT** symbol
+      (`mxm_marg`, `mo_eqmul`, `scaled_dot_product_attention`, `copy_multi`, `strong_dtype`,
+      `float_to_fp8`) that upstream does not contain **AT ANY REVISION**, so no re-point can make the
+      claim hold -- **the comment has to say what upstream actually does.** 40+ of the rest are an
+      **AMBIGUOUS BASENAME** and one names a PORT file (`llvmir-oracle.py`) as if it were upstream.
+      Queue: `.agents/slop/citefix/left-tok9.rows`.
+- [ ] **THE CENSUS HAS NO CLASS FOR A TRUE ABSENCE** (DISPATCHED). A citation may legitimately say
+      "upstream DELETED this construct at commit X; the survivors are Y and Z". MEASURED, two such
+      rows survive today: `tinybendygrad/runtime/ops_amd.bend:231` (the md5 slice) and
+      `tinybendygrad/runtime/ops_cl.bend:159` (the old `OSX_TIMING_RATIO`). **THEY READ AS
+      `at_no_revision_dangling`, WHICH IS A FALSE READING OF A TRUE CLAIM.**
+- [ ] **`tinybendygrad/uop/fold.bend`'s COMMENTS DESCRIBE AN OP THAT DOES NOT EXIST AT THE PIN**
+      (DISPATCHED). MEASURED: upstream's `Ops` enum has **NO `FLIP`** (`tinygrad/uop/__init__.py`
+      contains no `FLIP`; it was removed in `900880433`, which took the enum 76 -> 75), the port's
+      enum is exactly upstream's (**75 = 75, 0 missing, 0 extra**), and **the port implements NO FLIP
+      arm -- every `FLIP` mention in `fold.bend` is inside a COMMENT.** So **THE CODE IS RIGHT AND THE
+      COMMENTS ARE STALE**, and they cite `ops.py:429-431` and `ops.py:415-428` for constructs that are
+      not there. `fold.bend` is cited by 29 other files, so a stale claim here propagates.
+- [ ] **THE SPECFOLD LANE's POPULATION IS STILL TIED TO ONE COMMIT** (DISPATCHED, fourth attempt).
+      `gates/specfold-gate.py` grades "the 12 cells that commit `d4160980e` decides". The five cells it
+      grades OUT by name -- `buffer0` and `alloc0` across the tables -- already AGREE
+      (`port=9 cpython=9` in all six tables) but are still OUT of the population, **so the population is
+      still commit-tied.**
+- [ ] **THE LEDGER GATE's 5 UNOWNED ROWS ARE MUTATION-HARNESS SCRATCH** (DISPATCHED).
+      `gates/ledgerdue-gate.py` reads `OWNED 126 UNOWNED 5 DUE 131`, and the five are
+      `gates/{.wgsl-mut-oracle.py,amd-mut-gate.py,amd-mut-oracle.py,cstyle-mut-oracle.py,
+      realize-mut-oracle.py}` -- **MEASURED untracked AND NOT IGNORED** (four of them), so the ledger
+      sees them as gates that owe an owner. **⇒ THE FIX IS A NAME RULE, NOT A GIT CALL.**
