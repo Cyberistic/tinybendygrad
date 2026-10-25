@@ -23786,3 +23786,50 @@ absence-class     [#####] 5/5  **THE **CENSUS **HAD **NO **CLASS **FOR **A **CIT
       SHAPE to every content test, so the direction comes from the row and the truth comes from
       upstream's history. The looseness is documented in the gate's header and in
       `.agents/slop/absence/REPORT.md`.
+
+## Session 2026-10-25 — `gates/ledgerdue-gate.py`: a mutation harness's STAGED REVISION is not a gate
+
+```
+ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **REPORTED **WERE
+                                         **FIVE **MUTATION-HARNESS **STAGING **COPIES**, **AND
+                                         **A **COPY **THE **LEDGER **ADMITTED **IS **A **ROW
+                                         **NO **COMMIT **CAN **OWE.** **⇒ THE **POPULATION
+                                         **NOW **EXCLUDES **THEM **BY **NAME**, **AND **THE
+                                         **LEDGER **RETIRES **THE **FIVE **ROWS.**
+```
+
+- [x] **THE FIVE UNOWNED ROWS WERE STAGING COPIES.** `gates/.wgsl-mut-oracle.py`,
+      `gates/amd-mut-gate.py`, `gates/amd-mut-oracle.py`, `gates/cstyle-mut-oracle.py`,
+      `gates/realize-mut-oracle.py`. MEASURED: **no A or D event anywhere in this tree's
+      history** (never committed), and each one's own first docstring line names the file it
+      COPIES (`amd-mut-gate.py` opens `"""amd_dsl_census-gate.py -- ...`) -- the tree's
+      `.gitignore` convention in words: "a mutation harness stages a REVISION of a file".
+- [x] **THE RULE IS A NAME, NOT A GIT CALL.** `git ls-files` reads the INDEX and this tree's
+      index is armed (`checks/index-arm-gate.py`). `gates/gates-pop.py`'s new `is_scratch()`
+      matches the token `mut` STANDALONE, then `-`, then one of the three role words the tree
+      gives a file a mutation run reads or asserts (`gate`, `oracle`, `plant`), then `.py`.
+      MEASURED: **0** tracked files, **0** live entry points, **5** ledger rows.
+- [x] **THE LINE IS TIGHT BOTH WAYS.** `mutate` is a DIFFERENT WORD, so the sixteen tracked
+      `-mutate.py` harnesses under the gate homes, `gates/mutkit.py` and `checks/walk-mutate.sh`
+      keep their place -- and so does a name that merely CONTAINS the letters.
+- [x] **THE EXCLUSION IS NAMED, NOT SILENT.** A FIFTH bucket, with its own denominator and its
+      own printed names: a rule that excludes files without naming them is the
+      `artefacts_ok()` shape wearing a population.
+- [x] **THE PLANT GOES RED IN BOTH DIRECTIONS.** `gates/ledgerdue-gate.py --plant`: a copy the
+      COMMIT TREE carries is still excluded, and `keep-mutate.py`, `keep-mut-keeper.py` and
+      `commutative-gate.py` are still counted. **Broadening** the rule to "any name containing
+      `mut`" turns the second RED; **disabling** it turns the first RED. **7 of 7 GREEN** as
+      shipped.
+- [x] **THE LEDGER WAS RE-WRITTEN BY THE TOOL THAT OWNS IT, one path at a time:**
+      `gates/gates-pop.py --write-ledger --only <path>`, 262 -> 262 rows, **5 retired, none
+      dropped**. `gates/ledgerdue-gate.py` moves **OWNED 126 UNOWNED 5 DUE 131 -> OWNED 126
+      UNOWNED 0 DUE 126**, and `gates/gates-pop.py --ledger check` from "5 UNRECORDED
+      departure(s)" to "0 UNRECORDED departure(s), 5 retired".
+- [x] **NO GATE LEFT THE POPULATION.** MEASURED, the live buckets are IDENTICAL to HEAD's:
+      entries 383, modules 90, opaque 154, not-carried 152, scratch 0 -- so `discover()`'s
+      two-value arity is still the contract `checks/gatesweep.py` and `gates/gate-surface.py`
+      read.
+- [ ] **THE 126 ROWS FOR REAL GATES ARE STILL OWED, AND THAT IS CORRECT.** The verdict stays
+      FAIL, and it is the **PAYABLE** rows that keep it there: each is owed by the commit that
+      introduced it, and `--write-ledger --only <path>` discharges it one path at a time. **NO
+      CHECK WAS WEAKENED: A TOMBSTONE IS A RECORD, NOT A CLAIM, AND A ROW WAS NOT DELETED.**
