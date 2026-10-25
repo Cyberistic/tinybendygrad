@@ -66,7 +66,7 @@ import ./../datasets/__init__.bend as D
 # THE WEIGHT LOADER (:44-52) is the same seam every model in this directory
 # stops at, and `resnet.bend:99-111` already measures it for `fetch`. Its extra
 # member here is `Tensor.assign` at :51 -- `pool.bend:408` names the instrument
-# ("`Tensor.assign` -- op.py:56-57 `self.running_mean.assign(...)`", and
+# ("`Tensor.assign` -- tinygrad/nn/__init__.py:56 `self.running_mean.assign(...)`", and
 # `tensor.bend:2539` states the divergence: "Python's `is_param_` mutates in
 # place; this returns a new [tensor]"), so `mv.assign(...)` and `.realize()` are
 # both refused for the same reason BatchNorm's running stats are.

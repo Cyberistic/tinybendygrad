@@ -13,7 +13,7 @@
 #
 # THE ONE WALL THAT CUTS ACROSS EVERY LINE: `UOp._min_max` (ops.py:1094), which
 # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
-# `copy_multi`. `fold.bend` names it `ops.py:1104` in its own PROSE and carries it as
+# `copy_multi`. `fold.bend:5081` names it at 1104 in its own PROSE and carries it as
 # its `_min_max` WALK -- there is no `TODO(p3)` marker for it there -- and it is not a
 # fold at all -- it is arithmetic over the srcs. What `mu_count`
 # ports is the NARROW case that is exact and load-bearing: a RANGE over a CONST end, where

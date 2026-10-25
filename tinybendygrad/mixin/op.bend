@@ -192,8 +192,8 @@
 # here rather than filtered silently.
 #
 # THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`. `softmax` (op.py:663) and
-# `log_softmax` (op.py:686 symbol=log_softmax) are TWO defs that both call `_softmax` (op.py:657 symbol=_softmax), so
-# the thirteen nodes `_softmax` builds are interned ONCE. `softmax` prints 15 and
+# `log_softmax` (op.py:686 symbol=log_softmax) are TWO defs that both call `_softmax`, so
+# the thirteen nodes `_softmax` (op.py:657 symbol=_softmax) builds are interned ONCE.
 # `log_softmax` prints 18 over a graph whose shared prefix is 13 nodes -- MEASURED on
 # both sides: the first thirteen op names of the longer row are the shorter row minus
 # its last two -- and the tails are `RECIPROCAL MUL` against `LOG2 CONST MUL MUL ADD`.

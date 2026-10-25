@@ -28,7 +28,7 @@
 #     `DONE(p3)`/`WALL(p3)` block over ptx.py:42-56 is where each of the eight
 #     is recorded.
 #     `TODO(p3) ptx.py:42 symbol=ptx_matcher`.
-#   * `to_function_name`'s `ansistrip` (helpers.py:157) -- a regex ANSI strip.
+#   * `to_function_name`'s `ansistrip` (tinygrad/helpers.py:157) -- a regex ANSI strip.
 #     The KEEP/HEX branch is ported and gated; the strip is the wall.
 #   * `Ops.WMMA`'s `wmma_r` (ptx.py:211-216) -- it needs the three fragment
 #     tables, which are tc_ptx.bend's `Tc`, and it is named in its ARM.

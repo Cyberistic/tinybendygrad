@@ -32,10 +32,10 @@
 #   jit.py:40      JitError                the exception CLASS -> `Maybe<&2,String>`
 #   jit.py:42-47   _check_no_non_tensor_return   the walk and its message
 #   jit.py:34-43 symbol=linear   CapturedJit fields, `linear`
-#   jit.py:62-64   _written_uops           PORTED, via realize.bend's `get_call_written_bufs`
-#   jit.py:71-73   _symbolic_ret           the comprehension; `get_parameters` is a seam
-#   jit.py:70-75   CapturedJit.__call__    the `concrete` fold, the `jit execs` threshold,
-#                                           the var rebind
+#   jit.py:67 symbol=_jit_bufs   `_jit_bufs` IS UPSTREAM AT THE PIN: `_written_uops` IS GONE
+#   jit.py:70-73   `_symbolic_ret`         DELETED it AND realize.py's `get_call_written_bufs`
+#   jit.py:73-78   CapturedJit.__call__    in `a26c50b01`), so the PORT's copy of the
+#                                           latter has NO upstream counterpart at the pin
 #   jit.py:77-82   free_intermediates      the predicate chain; Buffer is a seam
 #   jit.py:84-102  _prepare_jit_inputs     names, the shallow container sweep, the UNSHARD
 #                                           unwrap, two refusals, and `expected_input_info`

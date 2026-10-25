@@ -72,7 +72,7 @@
 #    and sign semantics are RIGHT for the 32-bit widths. `U32.add/sub/mul` wrap mod
 #    2^32, which IS int32/uint32 wrap; `H.asr` supplies the arithmetic shift `>>`
 #    needs and Bend does not have; and the zero-divisor reading agrees because
-#    `U32.div(a,0) = 0` is the number Python's `floordiv` is given by helpers.py:76.
+#    `U32.div(a,0) = 0` is the number Python's `floordiv` is given by tinygrad/helpers.py:77.
 #    WHAT IT CANNOT DO, and this is a wall rather than a choice:
 #      a. weakint is MATHEMATICAL in tinygrad ("ints stay mathematical past the
 #         fold", symbolic.py:28) and the honest 64-bit carrier is `H.I64`.
@@ -82,7 +82,7 @@
 #         Python's "the fold does not apply" -- the node is left alone. A NEGATIVE
 #         const is refused by the same lane for a second reason, and it is named
 #         with its measurement at `exec_alu.pick`.
-#      b. `truncate` (dtype.py:297) is a C-effect table for int8/16/64,
+#      b. `truncate` (tinygrad/dtype.py:289) is
 #         uint8/16/64, float16, bfloat16, the four fp8s and float64. Those
 #         widths answer `None{}`.
 #    So `exec_alu_i32` and `exec_alu_f32` are the two lanes, they are exact, and

@@ -26,7 +26,7 @@ import ./mixin/dtype.bend as D
 #      registry is only ever READ, and what it is read for is "does some live
 #      Tensor hold this uop", which `Tensors.holds` answers from the same list.
 #   2. A `Buffer` (tensor.py:249, :281, :422) is device state. `new_buffer`
-#      (ops.py:835 symbol=new_buffer) and `_frompy` (ops.py:855 symbol=_frompy) build a BUFFER node PLUS an opaque
+#      (tinygrad/uop/ops.py:835 symbol=new_buffer) `new_buffer` and `_frompy`
 #      allocation, and only the NODE is a graph fact. So `__init__`'s
 #      list/tuple/bytes arm takes the already-built uop, and `_buffer`, `data`,
 #      `clone`, `to` and `from_blob` are `TODO(p3)`.

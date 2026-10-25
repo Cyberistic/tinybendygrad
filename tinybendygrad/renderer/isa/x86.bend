@@ -153,9 +153,9 @@
 #   `ctx.func_args`, which is a `sorted(...)` over `sink.toposort()`.
 #   `TODO(p3) x86.py:265 symbol=abi`.
 # * `alloc_vregs` (py:293-307) -- reads `ctx.reg_n`, calls `ctx.vreg`, which
-#   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:293 symbol=alloc_vregs`.
+#   MINTS a `Register` with `itertools.count()`. `alloc_vregs` -- `TODO(p3) x86.py:293 symbol=alloc_vregs`.
 # * `X86LinearContext` (py:681-707) and `assign_spill_slot` (py:703-707) -- the
-#   `lock` / `stack_allocated` / `stack_size` state above. `TODO(p3) x86.py:681 symbol=X86LinearContext`.
+#   `lock` / `stack_allocated` / `stack_size` state above -- `X86LinearContext`. `TODO(p3) x86.py:681-707 symbol=X86LinearContext`.
 # * `X86Renderer.__init__` (py:720-724) -- the arch check is `arch.split(",")[0]
 #   != "x86_64"` (one `String.split`, P3) and then `from
 #   tinygrad.runtime.support.compiler_cpu import X86Compiler`, which is a Clang

@@ -96,7 +96,7 @@
 # D. NO `float16`, `bfloat16` OR `float64` SOURCE FOR `f2f` / `f2f_clamp`.
 # `f2f_clamp` mints `mx` with `val.const_like(...)` and `val` is `v.bitcast(fr)`,
 # so `mx` is a CONST at the SOURCE's width: CPython truncates it with
-# `float_to_fp16` / `float_to_bf16` / `float_to_fp8` (`dtype.py:225/229/244`,
+# `float_to_fp16` / `float_to_bf16` / `float_to_fp8` (`tinygrad/dtype.py:219/223/238`,
 # all `struct` and bit-twiddling C code) and this file has none of them. THE
 # WIDENING BRANCH HAS NO `f2f_clamp` AND NO FLOAT CONSTANT, so an fp8 source IS
 # gated there: the four widening fixtures are the fnuz arm and the `fp8e4m3`

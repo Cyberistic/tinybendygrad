@@ -60,7 +60,7 @@ import ./../datasets/__init__.bend as D
 #   `x @ proj`       nn/layers.bend:383 `nn_dot` EXISTS but RETURNS `Maybe`, so
 #                     `pooled = x @ self.text_projection` (:337,:361,:471) is not
 #                     a call that type-checks today.
-#   `x.sin`/`x.cos`  NOT NAMED BY clip.py. (llama.py:10 needs `.cos` and there is
+#   `x.sin`/`x.cos`  NOT NAMED BY clip.py. (extra/models/llama.py:10 needs `.cos` and there is
 #                     no `def ew_cos`; clip.py does not share that wall.)
 #   `square().sum().sqrt()`  ALL THREE EXIST: ew_square (mixin/elementwise.bend:557),
 #                     mo_mean/mo_sum (mixin/op.bend:891 / nn/layers.bend:242),

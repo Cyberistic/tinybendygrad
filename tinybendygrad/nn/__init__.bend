@@ -90,7 +90,7 @@ import ./state.bend as ST
 #      `x.conv_transpose2d` are in the same file, `reshape`/`permute`/`squeeze`
 #      are mixin/movement.py, `chunk`/`sigmoid`/`tanh`/`rsqrt`/`square`/
 #      `unsqueeze`/`where`/`detach` are mixin/elementwise.py, `mean`/`sum` are
-#      mixin/reduce.py, `arange` is op.py:166. NONE is mine and none is built, so
+#     mixin/reduce.py, `arange` is tinygrad/mixin/op.py:166. NONE is mine and none is built, so
 #      every `__call__` is a `TODO(p3)` naming the line: 11 of the 13 classes.
 #      I am NOT writing defs that return a `TODO` -- a def with no body is a
 #      paragraph pretending to be code, and the honest form is the comment.

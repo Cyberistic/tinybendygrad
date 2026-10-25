@@ -34,9 +34,9 @@ import ./../uop/ops.bend as O
 #     `_auto_pad` (onnx.py:418-421 symbol=_auto_pad), `_onnx_pads_to_tiny_pads` (onnx.py:402-405 symbol=_onnx_pads_to_tiny_pads) and `_axes`
 #     (onnx.py:399 symbol=_axes).
 #   STAGE 3 -- NOT DONE. The RUNNERS (`OnnxRunner.__init__` onnx.py:294 symbol=OnnxRunner.__init__,
-#     `_init_from_graph` onnx.py:298 symbol=_init_from_graph, `_from_subgraph` onnx.py:313 symbol=_from_subgraph, `_parse_input`
-#     onnx.py:318 symbol=_parse_input, `to` onnx.py:345 symbol=to, `_get_python_const` onnx.py:352 symbol=_get_python_const, `__call__` onnx.py:361 symbol=__call__)
-#     and the protobuf layer they stand on. THE WALL IS NAMED PER ARM below.
+#     onnx.py:298 symbol=_init_from_graph, `_from_subgraph` `_init_from_graph` onnx.py:313 symbol=_from_subgraph,
+#     onnx.py:318 symbol=_parse_input, `_parse_input` `to(device)` onnx.py:345 symbol=to,
+#     onnx.py:352 symbol=_get_python_const, `__call__` `_get_python_const` onnx.py:361 symbol=__call__) and the protobuf layer they stand on.
 #   STAGE 4 -- NOT DONE. The 167 op BODIES (:475-1307), the node-shape arithmetic
 #     that goes with them, and the quantization family. THE WALL per family is
 #     below.
@@ -64,8 +64,8 @@ import ./../uop/ops.bend as O
 #     calling a mixin method that belongs to another file (`x.reshape`,
 #     `x.conv2d`, `x.softmax`, `x.pad`, ...). Each is a `# TODO(p3)` naming its
 #     line; none is inlined, because inlining a callee would be a second port.
-#   * `If`'s branch runner (onnx.py:468 symbol=run_branch) and `Gradient` (onnx.py:1216 symbol=Gradient) need an
-#     `OnnxRunner` VALUE -- this file's own class -- and `Gradient` also needs
+#   * `If`'s `run_branch` (onnx.py:468 symbol=run_branch) and `Gradient` need an
+#     `OnnxRunner` VALUE -- this file's own class -- and `Gradient` (onnx.py:1216 symbol=Gradient) also needs
 #     `.gradient()`.
 #   * the quantization family (onnx.py:424-450 symbol=_prepare_quantize) needs `x.repeat_interleave`,
 #     `x.scatter_reduce`, and `dtypes.is_int`/`is_float` predicates.

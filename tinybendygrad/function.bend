@@ -39,7 +39,7 @@
 #   function.py:101-113 `function` + two overloads both decorator spellings
 #
 # WHAT IS A SEAM, with the owner and the Python line, at Section I:
-#   `UOp.param_like`  ops.py:1228 symbol=param_like       `UOp.substitute`  ops.py:514 symbol=substitute
+#   `UOp.param_like`  ops.py:1228-1234 symbol=param_like  `UOp.substitute`  ops.py:514 symbol=substitute
 #   `UOp.call_with_outputs` ops.py:1260 symbol=call_with_outputs  `UOp.replace`     ops.py:245
 #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
 #   `self.fxn(*args, **kwargs)`          `__get__`         `functools.partial`

@@ -59,7 +59,7 @@
 #      whole of `expand`.
 #      TODO(p3) mixin/movement.py:128  `_broadcast_to` for a source that is NOT
 #        0-dim. Note `const_like` is NOT one of them: it reads `self._shape`
-#        (ops.py:605) directly and never goes through `_broadcast_to`.
+#        (`const_like`, tinygrad/uop/ops.py:581-583) directly and never goes through `_broadcast_to`.
 #
 # ---------------------------------------------------------------------------
 # FIVE BEND FACTS THIS FILE LEARNS, each of which cost a cycle or a wrong answer.
@@ -117,7 +117,7 @@
 #      its RESOLVED `S.Dt` plus the two `Maybe` bounds SEPARATELY (`cr_committed`).
 #      `D.commit_dtype`'s own signature already wants them separately, so this costs
 #      nothing and is not a workaround.
-#   6. `argfix(*shape)` (helpers.py:24) COLLAPSES `empty(2,3)` and `empty((2,3))` into
+#   6. `argfix(*shape)` (tinygrad/helpers.py:22) COLLAPSES
 #      one shape and REJECTS `empty((2,3),4)`. So the shape is ONE `List<&2, U32>` in
 #      this port and the "one or many args" split is gone; the reject has no Bend form
 #      and is a caller's problem, which is stated rather than faked.

@@ -64,13 +64,13 @@
 # `.agents/slop/li/rename-audit.txt`, `.agents/slop/llvmir-nameshape-control.md`
 #
 # `lt 1 ptr f32` IS PRINTED TWICE, ON BOTH SIDES, AND IS NOT FIXED HERE. `r_lts()` below
-# and `llvmir-oracle.py:647-648` each list the tuple `(1, dtypes.f32, True)` twice in the
-# same `lt` count/ptr table, so the fourth entry is the first again. This is the
-# `nv_query_litter` shape agent-core.md records -- wrong in the PORT and in the ORACLE, so
-# the differ reports 0 disagreements over a mistake made twice. Deleting the repeat costs no
-# coverage (the claim is identical); GUESSING what the fourth entry was meant to be would
-# invent a row, so it is REPORTED. `llvmir-gate.py --drop-dup` shows what the lane reads like
-# without it: 470 rows, 470 names, AGREE, rc=0.
+# and the PORT'S OWN ORACLE (`llvmir-oracle.py`, lines 647-648) each list the tuple
+# `(1, dtypes.f32, True)` twice in the same `lt` count/ptr table, so the fourth entry is
+# the first again. This is the `nv_query_litter` shape agent-core.md records -- wrong in
+# the PORT and in the ORACLE, so the differ reports 0 disagreements over a mistake made
+# twice. Deleting the repeat costs no coverage (the claim is identical); GUESSING what the
+# fourth entry was meant to be would invent a row, so it is REPORTED. `llvmir-gate.py --drop-dup`
+# shows what the lane reads like without it: 470 rows, 470 names, AGREE, rc=0.
 # ---------------------------------------------------------------------------
 # THE `py=` HALVES ARE DERIVED, NOT TRANSCRIBED. `rd` is the row builder's derived
 # half: the `py=` half IS the port's own value, re-read through the same code the
@@ -185,11 +185,11 @@
 #     `AMDLLVMCompiler` / `tc.get_amd` -- `runtime/support/compiler_llvm.py` and
 #     `renderer/tc.py`, both other units' work.
 #   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :21 symbol=lconst) are
-#     `float_to_fp8` (dtype.py:244) and `truncate` (dtype.py:295), so they are
+#     (tinygrad/dtype.py:238) `float_to_fp8` and `truncate` (tinygrad/dtype.py:289), so they are
 #     `dtype.bend`'s. What is HERE is the FOUR-WAY DISPATCH (`lconst branch <d>`,
 #     eighteen rows, one per dtype) and the inf/nan hex, which is llvmir.py's own
 #     code (:22) and is fully expressed without an `F64`.
-#   * `float_to_fp8`'s `_fp8_cfg` (dtype.py:236-241) is dtype.py's.
+#   * `float_to_fp8`'s `_fp8_cfg` (tinygrad/dtype.py:231-236) is dtype.py's.
 #   * `float_to_fp16` / `float_to_bf16` are `codegen/decomp/transcendental.bend`'s
 #     and reach this file only through `truncate`.
 #   * `PatternMatcher` itself is `uop/ops.bend`'s. This file ports the EIGHTEEN

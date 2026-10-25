@@ -74,12 +74,12 @@ import ./../datasets/__init__.bend as D
 #   (5) `Tensor.argmax` (:46) -- MISSING.
 #   (6) `Tensor.clip`   (:43) -- MISSING.
 #   (7) `Tensor.numpy`  (:28,:45,:46) -- MISSING, and it is the DEVICE-STATE SEAM:
-#       `mixin/op.bend:87-89` already names it -- "`item` (op.py:22) and `data`
-#       (op.py:20) are NOT WALLS and are not ports: `data` is a
+#       `mixin/op.bend:87-89` already names it -- "`item` (mixin/op.py:22) and `data`
+#       (mixin/op.py:20) are NOT WALLS and are not ports: `data` is a
 #       `raise NotImplementedError` declaration and `item` reads host memory
-#       through it". `_greedy_decode` reads a TENSOR BACK to the host at :45 and
-#       :46 and writes it into a fresh Tensor, so it cannot be a graph.
-#   (8) `unsqueeze` (:26,:38,:195,:196,:197) -- `grep -rnE "^def (mo|tn|ew)_unsqueeze"` = 0.
+#       through it". `_greedy_decode` (extra/models/rnnt.py:32) reads a TENSOR BACK to the host
+#       at extra/models/rnnt.py:45 with `numpy` and extra/models/rnnt.py:46 and writes it into a fresh Tensor, so it cannot be a graph.
+#   (8) `unsqueeze` (extra/models/rnnt.py:26, :38, :196, :197) --
 #       `nn/layers.bend:520 nn_expand` covers the `expand` half and NOT the
 #       `unsqueeze` half.
 #   (9) `TinyJit` (:15,:54,:127) -- PARTIAL, per resnet.bend:116-123:
@@ -94,7 +94,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `Prediction.__init__` (extra/models/rnnt.py:175).
 # FIRST MISSING SYMBOL: `Embedding(vocab_size - 1, hidden_size)` at rnnt.py:178.
 # NOTE THE ORDER, because it is the whole distance: `RNNT.__init__` (:10) builds
-# `Encoder` (:11) -- FOUR `Linear`s and two `LSTM`s -- before it reaches `Prediction`,
+# `Encoder` (extra/models/rnnt.py:11) -- FOUR `Linear`s and two `LSTM`s -- before it reaches `Prediction`,
 # so `LSTMCell.__init__` (:98) and `LSTM.__init__` (:119) are hit FIRST in the
 # call order even though `Embedding` is the first missing symbol of the file's
 # FIRST def. The honest statement is that RNN-T has ELEVEN missing symbols and the

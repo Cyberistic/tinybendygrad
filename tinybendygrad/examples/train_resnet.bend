@@ -66,7 +66,7 @@ import ./../extra/datasets/__init__.bend as D
 #
 # THE SYMBOL CENSUS. In upstream source order, every symbol :1-45 names:
 #
-#   `numpy` (:2, used :24,:26,:36,:37,:38)  MISSING. No n-d array library: the
+#   `numpy` (examples/train_resnet.py:2), used at :24 (`.astype`), :25 (`.astype`), :36 (`np.stack`) and :38 (`np.tile`). MISSING. No n-d array library: the
 #       `.reshape`, `.astype`, `np.stack`, `np.tile`, `np.expand_dims` and
 #       `np.asarray` at :24-38 have no counterpart.
 #   `PIL.Image` (:3, used :35)             MISSING. `Image.fromarray(...).resize(

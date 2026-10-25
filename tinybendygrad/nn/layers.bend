@@ -10,9 +10,9 @@
 # THE WALL TEXT NAMED THE WRONG BLOCKER, MEASURED AGAINST WHAT IS ON DISK.
 #   `nn/__init__.bend:227` -- `x.linear` "walled on `linear_with_vars`
 #     (movement.py) P3 and mixin/op.bend's W8 (the WMMA lowering)". NOT REACHED.
-#     `Tensor.linear` (op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
+#     `Tensor.linear` (mixin/op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
 #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
-#     `dot` (op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
+#     `dot` (mixin/op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
 #     All six are built today: `M.mo_reshape` (mixin/op.bend:664),
 #     `M.mo_permute` (:680), `T.tn_mul` (tensor.bend:656), `M.mo_sum` (:811),
 #     `M.mo_cast_t` (:370), `DT.least_upper_dtypes` (dtype.bend:218). WMMA is

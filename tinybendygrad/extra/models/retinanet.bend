@@ -45,8 +45,8 @@ import ./../datasets/__init__.bend as D
 #                 the closest thing to a new ask and it is one that bert, t5 and
 #                 llama ALSO hit (bert.py:40, t5.py:285, rnnt.py:59). FOUR files in
 #                 eight ask for it and it has no `def`.
-#   `Tensor.one_hot`   MISSING (:151) -- new to this slice, and shared with bert.py
-#                 (:164) and transformer.py (:54).
+#   `Tensor.one_hot`   MISSING (extra/models/retinanet.py:151) -- new to this slice, and
+#                 shared with bert.py's `onehot` (extra/models/bert.py:164) and `one_hot` (extra/models/transformer.py:54).
 #   `Tensor.argmax`    MISSING -- NOT HIT HERE. `scores.argsort()` at :15 and :93 is
 #                 the numpy spelling and `np.argsort` is MISSING; `mo_argmax` does
 #                 not exist either, which resnet.bend:89-93 already names.

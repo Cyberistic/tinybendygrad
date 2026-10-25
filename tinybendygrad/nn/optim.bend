@@ -56,7 +56,7 @@ import ./../dtype.bend as DT
 #   * `mul`, `add`, `sub`, `div` -- elementwise.py:36 `_binop`. Every arithmetic
 #     line of `_step` is one of these four.
 #   * `cast` -- mixin/dtype.py. `.cast(t.dtype)` at optim.py:128, :167, :168, :178.
-#   * `sqrt` -- elementwise.py:479 symbol=sqrt (`Ops.SQRT`), optim.py:113, :114, :173, :174.
+#   * `sqrt` -- tinygrad/mixin/elementwise.py:479 symbol=sqrt (`sqrt`, `Ops.SQRT`), optim.py:113, :114, :173, :174.
 #   * `square` -- elementwise.py:573 symbol=square, and it is `self * self` i.e. `Ops.MUL`.
 #   * `where` -- elementwise.py:436 (`Ops.WHERE` ternary), optim.py:115, :175.
 #   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.

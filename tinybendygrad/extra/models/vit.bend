@@ -64,7 +64,7 @@ import ./../datasets/__init__.bend as D
 #
 # `np.load` (upstream:40) AND `Tensor.assign` (upstream:45-71, TWENTY-SEVEN
 # CALLS) ARE THE LOADER. `pool.bend:408` names the second: "`Tensor.assign` --
-# op.py:56-57 `self.running_mean.assign(...)`", and `tensor.bend:2539` states the
+# nn/__init__.py:56 `self.running_mean.assign(...)`
 # divergence outright ("Python's `is_param_` mutates in place; this returns a
 # new [tensor]"). So `ViT` cannot load a single one of its parameters, which is
 # worth saying plainly: a ViT whose weights cannot be written is a ViT that can

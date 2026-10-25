@@ -7,8 +7,8 @@
 # UPSTREAM IS BROKEN, MEASURED, AND THAT IS THE FIRST THING TO KNOW. Line 2 is
 #     from extra.datasets.imagenet import iterate, get_val_files
 # and `extra/datasets/imagenet.py` DEFINES NO `iterate`. Measured at HEAD: the only
-# `def iterate` under `extra/datasets/` is `kits19.py:73`, `squad.py:133` and
-# `librispeech.py:67`; `grep -n iterate extra/datasets/imagenet.py` is empty. So this
+# `def iterate` under `extra/datasets/` is `datasets/kits19.py:73`,
+# `squad.py:133` and `librispeech.py:67`; `grep -n iterate extra/datasets/imagenet.py` is empty. So this
 # file raises `ImportError` at import time and has never run. That is why the stop
 # point below is line 2 and not line 6, and why `imagenet.bend` in this directory
 # ports `get_val_files` but must NOT be given an `iterate` to make this import work:

@@ -66,19 +66,19 @@
 # ===========================================================================
 # THE WALL THAT IS NOT ABOUT STRINGS AT ALL: `eval_pyrender`.
 #
-# `tinygrad/uop/spec.py:293` does `exec(code, pyrender_globals(), lcls)` on the
-# string `pyrender` produced and reads back `lcls['ast']`. That is not a missing
-# primitive; it is a missing language. The generated text names `UOp`, `Ops`,
-# `dtypes`, `KernelInfo`, `ParamArg` and a dozen other CPython objects as GLOBALS
-# in a namespace built by a Python `import`. Bend has no `exec`, no globals dict
-# and no value that knows its own type's name, so the round trip has no
-# representation at all -- not a hard one, not a deferred one.
-#
-# `upat.bend` already settled the precedent for this repo: the pattern COMPILER
-# EMITS PYTHON TEXT and the Bend side is a hand-written dispatch instead. So the
-# correct port of `pyrender` is to emit the text and NOT round-trip it, and
-# `test_pyrender` (`spec.py:296`) becomes the string-diff gate at the foot of
-# this file instead of an `exec`. Recording it, not engineering around it.
+# `tinygrad/uop/spec.py` HAS NO `exec` AT THE PIN: upstream DELETED the whole
+# `pyrender` round-trip in `81157efb0` ("use render_uir instead of pyrender"), and
+# `tinygrad/uop/spec.py:41` now PRINTS `render_uir(lst)` under `DEBUG >= 3` instead of
+# EXECUTING a rendered string. `render_uir` is `tinygrad/uop/render.py:65
+# symbol=render_uir` and a METHOD on `UOp` (`tinygrad/uop/ops.py:1181
+# symbol=render_uir`). So there is NO upstream round trip to port, and
+# `test_pyrender` IS GONE UPSTREAM TOO: that is not a missing primitive, it is a
+# missing language. The generated text names `UOp`, `Ops`, `dtypes`, `KernelInfo`,
+# `ParamArg` and a dozen other CPython objects as GLOBALS in a namespace built by
+# a Python `import`. Bend has no `exec`, no globals dict and no value that knows
+# its own type's name, so the round trip has no representation at all.
+# `upat.bend` settled the precedent: the pattern COMPILER EMITS PYTHON TEXT and the
+# Bend side is a hand-written dispatch; the string-diff gate at the foot of this file
 #
 # ===========================================================================
 # DEPENDENCIES. `render.py:3-4` imports NINE names -- eight from `uop.ops` and

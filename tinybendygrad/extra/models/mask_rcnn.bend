@@ -63,7 +63,7 @@ import ./../datasets/__init__.bend as D
 #     ALL THREE OF WHICH EXIST. The def does not exist; its ingredients do.
 #   `Tensor.round` -- MISSING, and `nearest_interpolate` (:20) is `Tensor.round`
 #     followed by a `.unsqueeze(-1)` repeat. `Tensor.cos`/`Tensor.sin` are MISSING
-#     and llama.py:10 needs `.cos` too -- `mixin/elementwise.bend:550` has
+#     and extra/models/llama.py:10 needs `.cos` too -- `mixin/elementwise.bend:550` has
 #     `def ew_sin` and there is no `def ew_cos`.
 #   `_bilinear_interpolate` (:743) and `ROIAlign` (:869) -- the ROIAlign FORWARD
 #     is a gather-and-weight bilinear sample. Its ingredients (`ew_where`,

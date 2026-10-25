@@ -56,15 +56,15 @@ import ./../datasets/__init__.bend as D
 #       `ew_gelu` is MISSING (mixin/elementwise.bend:772 has only the CONSTANT `ew_k.gelu`)
 #       and `.erf` is MISSING entirely. clip.py:12 `gelu = Tensor.gelu` is the OTHER
 #       gelu, the openai one, so the two files disagree about what the word means.
-#   (6) `Tensor.binary_crossentropy_logits` MISSING (bert.py:61, bert.py:72).
+#   (6) `Tensor.binary_crossentropy_logits` MISSING (extra/models/bert.py:61, extra/models/bert.py:72).
 #   (7) `Tensor.argmax` MISSING (:66,:70) -- resnet.bend's census names it MISSING too, so
 #       this is NOT a new ask; it is the FIRST one that BERT hits and resnet only reaches
 #       it in `postprocess`.
 #   (8) `Tensor.chunk` MISSING (:36).
 #
 # TODO(port): STOPPED AT `BertEmbeddings.__init__` (extra/models/bert.py:180).
-# FIRST MISSING SYMBOL: `Embedding(vocab_size, hidden_size)` at bert.py:182, where
-# `Embedding = nn.Embedding` is the module-level alias at bert.py:9 and there is no `def Embedding`
+# FIRST MISSING SYMBOL: `Embedding(vocab_size, hidden_size)` at extra/models/bert.py:182, where
+# `Embedding = nn.Embedding` is the module-level alias at extra/models/bert.py:9 and there is no `def Embedding`
 # anywhere under `tinybendygrad/`, and no `def mo_i` either.
 # **THE `mo_fx` HALF OF THIS EVIDENCE WAS FALSE. CORRECTED 2026-10-20:** `def mo_fx1d` is at
 # `mixin/op.bend:1181` and `def mo_fx2d` at `:1189`, so "no `def mo_fx` anywhere" was falsifiable
@@ -74,11 +74,11 @@ import ./../datasets/__init__.bend as D
 # EVIDENCE AND RIGHT ON ITS CONCLUSION STILL MISLEADS THE NEXT READER, WHO CHECKS THE EVIDENCE.**
 #
 # THE TWO `load_from_pretrained` ARE NOT A PORTING PROBLEM AND SHOULD NOT BE
-# TREATED AS ONE. bert.py:78-124 reads a TENSORFLOW checkpoint through
-# `tf.train.list_variables`, and bert.py:24-31 reads a TORCH checkpoint through
-# `torch.load`. `helpers.bend:3193` already records the whole weight-download
-# seam as unported I/O, and neither framework has a counterpart. Named here so no
-# reader counts them as arithmetic left undone.
+# TREATED AS ONE. extra/models/bert.py:78-124 reads a TENSORFLOW checkpoint through
+# `tf.train.list_variables` (extra/models/bert.py:85), and the TORCH loader is
+# `extra/models/bert.py:24-31`, whose `torch.load` is at extra/models/bert.py:26. `helpers.bend:3193`
+# already records the whole weight-download seam as unported I/O, and neither framework
+# has a counterpart. Named here so no reader counts them as arithmetic left undone.
 #
 # `gelu` (:235-236) and `gather` (:161-164) are module-level functions and both are
 # NOT PORTED: `gather` (:164) is `onehot @ prediction_logits` and `one_hot` is MISSING,

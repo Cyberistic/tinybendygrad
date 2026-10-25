@@ -90,7 +90,7 @@
 # 5. `dtypes.finfo` (dtype.py:202) IS NOT `(bits-1-x, ...)`: bfloat16 and
 #    float16 both have `bits == 16` and mantissas 7 and 10. It is a TABLE, and
 #    `mt_f16`/`mt_f32`/`mt_f64` are its three rows here.
-# 6. `polyN` (helpers.py:153) IS SEEDED WITH THE PYTHON FLOAT `0.0`, so its
+# 6. `polyN` (tinygrad/helpers.py:154) IS SEEDED WITH THE PYTHON FLOAT `0.0`, so its
 #    FIRST step is a real `MUL(C(0.0), x)` and not a fold-away. A port that
 #    starts the Horner at `c[0]` builds five fewer nodes in `sin_poly` alone
 #    and `a_sp9` is the row.

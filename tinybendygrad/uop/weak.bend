@@ -32,7 +32,7 @@
 # the rows that discriminate are the ranges int32 CANNOT hold, and a gate without them
 # would pass a reader that always answered `i32`.
 #
-# THE SECOND WALL is `DType.const` (dtype.py:79-84) for float16, bfloat16 and the four
+# THE SECOND WALL is `DType.const` (tinygrad/dtype.py:79-84) for
 # fp8s, whose `truncate` entry is a C-effect seam. `wk_sealed` names those six dtypes and
 # `wk_blocked` turns "this rule wants a sealed `dt.const`" into "no answer" -- which is
 # `fold.bend`'s stated policy: the fold reports the absence and the caller decides.

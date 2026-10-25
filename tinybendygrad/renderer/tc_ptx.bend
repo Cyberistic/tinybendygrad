@@ -53,7 +53,7 @@
 # file prints nine rows the oracle printed NONE of: `types`/`mem_types`/
 # `cast_types` over `void`, `weakint` and `weakfloat`.  They are not
 # divergences: the raw lookup raises for all three, and CPython's OWN answer is
-# `strong_dtype(dtype)`'s PTX type (`dtype.py:169-170`), so `types[strong_dtype
+# `strong_dtype(dtype)`'s PTX type (`tinygrad/dtype.py:169-170`), so `types[strong_dtype
 # (weakint)]` is `types[i32]` is "s32".  The oracle computes them from live
 # `tinygrad/` now, and they are the rows that go red when the `pri` collision
 # comes back.

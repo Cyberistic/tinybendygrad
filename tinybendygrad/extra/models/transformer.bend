@@ -20,7 +20,7 @@ import ./../datasets/__init__.bend as D
 #
 # THE HEADLINE, AND IT IS THE ANSWER TO "DO THESE MODELS NEED ANYTHING THE VISION
 # MODELS DID NOT ASK FOR": YES, AND IT IS EXACTLY ONE NAME.
-# `Tensor.scaled_dot_product_attention` (transformer.py:27, :60) is MISSING, and
+# `Tensor.scaled_dot_product_attention` (extra/models/transformer.py:27) is MISSING, and
 # `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend' tinybendygrad/`
 # returns 0. A vision model never names it -- resnet.bend's own census at :40-123
 # asks for conv2d, batchnorm, linear, sequential, argmax, item, torch_load, fetch,
@@ -49,14 +49,14 @@ import ./../datasets/__init__.bend as D
 #
 # TODO(port): STOPPED AT `TransformerBlock.attn` (extra/models/transformer.py:24).
 # MISSING:
-#   (1) `Tensor.scaled_dot_product_attention` -- transform.py's `op.py:1177`. It is
+#   (1) `Tensor.scaled_dot_product_attention` -- `mixin/rand.py:298`. It is
 #       the ONLY symbol in this file with no counterpart, and it is the wall for
 #       `attn` (:27), for `Transformer.forward`'s `log_softmax` half (:60 needs only
 #       `mo_log_softmax`, which EXISTS), and for every other transformer-shaped file
 #       in this directory -- bert.py:279, clip.py:176, clip.py:271, llama.py:101,
 #       llama.py:104.
 #   (2) `x.layernorm` -- `grep -rnwE "def .*layernorm" --include='*.bend'` = 0.
-#       `TransformerBlock.__call__` (:32, :36, :38) and nothing else in this file
+#       `TransformerBlock.__call__`'s `x.layernorm()` (extra/models/transformer.py:32, :36, :38) and nothing else in this file
 #       runs without it. It is the SECOND wall and the one that survives fixing (1).
 #   (3) `x.dropout` -- `grep -rnwE "def .*dropout" --include='*.bend'` = 0 (:32,:33,:35,:37).
 #   (4) `Tensor.eye` (:51) -- MISSING; `mixin/creation.bend:9` names `eye` in the

@@ -25,17 +25,17 @@ import ./../datasets/__init__.bend as D
 #
 # THE NAMED CENSUS FOR THIS FILE:
 #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
-#   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200) FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: llama.py:53 `self.q_norm = nn.RMSNorm(dim, qk_norm)` is reached from `Attention.__init__`, which `TransformerBlock.__init__` (:135) builds, which `Transformer.__init__` (:198) builds. NOTHING in this file is constructible without it.
+#   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200)  FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: extra/models/llama.py:53 `self.q_norm
 #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
 #   `softmax`       EXISTS, mixin/op.bend:1095 `mo_softmax` (:165 in `sample`).
 #   `adam`          EXISTS and UNUSED BY THIS FILE. nn/optim.bend:898 `op_mstep` is
-#                   `(self.b1 * self.m[i] + (1.0 - self.b1) * g).cast(...)` -- optim.py:167,
-#                   verbatim -- and :903 `op_vstep` is optim.py:168, and `op_mhat`/`op_vhat`
-#                   are optim.py:169,:170. The optimizer llama.py would train with is
-#                   ALREADY PORTED. llama.py only INFERENCES, and inference needs no adam.
-#                   THAT IS THE ANSWER TO "DOES A TRAINING LOOP NEED SOMETHING NEW":
-#                   NO. The adam half of this slice is DONE; what a training loop would
-#                   add is a loss (`binary_crossentropy_logits`, bert.py:61, MISSING).
+#                   `(self.b1 * self.m[i] + (1.0 - self.b1) * g).cast(...)` -- verbatim, upstream's
+#                   `assign` at nn/optim.py:167, and nn/optim.bend:903 `op_vstep`
+#                   is upstream's `assign` at nn/optim.py:168; `op_mhat`/`op_vhat` are
+#                   upstream's `m_hat`/`v_hat` at nn/optim.py:169-170. The optimizer
+#                   llama.py would train with is ALREADY PORTED; llama.py only INFERENCES.
+#                   THAT IS THE ANSWER TO "DOES A TRAINING LOOP NEED SOMETHING NEW": NO. The
+#                   adam half is DONE; a training loop would add a loss (`binary_crossentropy_logits`, extra/models/bert.py:61, MISSING).
 #
 # WHAT EXISTS AND LLAMA GETS IT FROM THE VISION WORK, WITH ITS INSTRUMENT:
 #   `nn.Linear`           nn/layers.bend:427 `nn_linear`   (:45,:46,:47,:48,:51,:123,:124,:125,:202)
@@ -56,7 +56,7 @@ import ./../datasets/__init__.bend as D
 # THE THREE THAT ARE LLAMA-ONLY AND NOT ATTENTION-ANYWHERE-ELSE:
 #   (1) `Tensor.cos`   MISSING. (:10) mixin/elementwise.bend:550 has `def ew_sin` and there is
 #                     NO `def ew_cos`. RoPE needs the pair and only half of it landed.
-#   (2) `Tensor.erf`   MISSING. bert.py:236 needs it too. Shared wall, named twice.
+#   (2) `Tensor.erf`   MISSING. extra/models/bert.py:236 needs it too.
 #   (3) `Tensor.multinomial` MISSING. (:184,:187) and `logits.argmax()` MISSING (:151).
 #                     `mixin/rand.bend:880 rd_randperm` records at rand.py:249 that
 #                     `argsort` is a bitonic sort over four nested Python `for` loops and
@@ -75,11 +75,11 @@ import ./../datasets/__init__.bend as D
 #     by anything the port has; both refuse on the weights dict itself.
 #
 # TODO(port): STOPPED AT `Attention.__init__` (extra/models/llama.py:36).
-# FIRST MISSING SYMBOL: `nn.RMSNorm(dim, qk_norm)` at llama.py:53, which the `if` at
+# FIRST MISSING SYMBOL: `nn.RMSNorm(dim, qk_norm)` at extra/models/llama.py:53, which the `if` at
 # :53 guards on `qk_norm is not None` -- so it is the SECOND statement of the
 # constructor, after four `linear(...)` calls that EXIST, and it is unconditional in
-# every configuration llama.py actually builds (`Transformer.__init__` :202 passes
-# `qk_norm` through, and every public config in meta's llama sets it).
+# every configuration llama.py actually builds -- `Transformer.__init__` at extra/models/llama.py:195-196
+# passes `qk_norm` through at :199, and every public config in meta's llama sets it).
 # ===========================================================================
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))

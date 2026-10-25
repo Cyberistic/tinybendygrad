@@ -120,7 +120,7 @@ import ./../extra/datasets/__init__.bend as D
 #     `Tensor.item`         (:17)     MISSING. `grep -rnE "^def .*item"
 #         --include='*.bend' tinybendygrad/` -- every hit is a renderer or an
 #         ELF symbol reader (`renderer/*`, `Lds.item`). None is `Tensor.item`.
-#     `hit += y == t`       (:18)     host integer arithmetic over a REALIZED
+#     `hit += y == t`       (examples/test_pkl_imagenet.py:18)  host integer arithmetic over a REALIZED
 #         value. Blocked by `.item()`, and by nothing else.
 #
 #   4 of the 16 upstream symbols are present, 11 are missing and 1 is
