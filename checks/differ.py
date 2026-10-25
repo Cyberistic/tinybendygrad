@@ -1131,7 +1131,13 @@ def one_line(out):
     return (D / out).read_bytes().count(b"\n") <= 1
 
 
-def cmd_run(a):
+def cmd_run(a, wait=None):
+    # **THE BOUND IS THE CLI'S OWN `wait` WHEN THERE IS A NAMESPACE, AND A PARAMETER
+    # OTHERWISE, BECAUSE `one_run()` CALLS THIS IN-PROCESS WITH `None` (differ.py:2345).**
+    # READING `a.wait` DIRECTLY WOULD RAISE THERE, AND `one_run`'s `except Exception` WOULD
+    # TURN THAT INTO rc=1 AND *"run raised AttributeError"* -- **WHICH WOULD BREAK
+    # `cmd_repro` QUIETLY RATHER THAN LOUDLY.**
+    bound = getattr(a, "wait", 9) if wait is None else wait
     # **THE POPULATION MUST BE DECIDED BEFORE THE RUN, OR THE RUN CERTIFIES NOTHING.**
     # A graph that joins the corpus and is not re-decided leaves `POPULATION_PIN` stale, and a
     # run over it would be a measurement of a population nobody has an opinion about -- which is
@@ -1169,9 +1175,9 @@ def cmd_run(a):
     # COMPLAINT), AND NOT 0 (A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO
     # GATE).** AND `D/` IS LEFT EXACTLY AS IT WAS, SO A READER FINDS THE PREVIOUS RUN'S
     # EVIDENCE AND NOT A HALF-WRITTEN SET.
-    if not ready(a.wait):
+    if not ready(bound):
         gk = gatekit()
-        print(f"RUN: {gk.VERDICT[gk.REFUSED]} -- the bend lane did not settle in {a.wait} "
+        print(f"RUN: {gk.VERDICT[gk.REFUSED]} -- the bend lane did not settle in {bound} "
               f"probe(s), so the run would have OVERWRITTEN `D/` WITH A DEAD BEND LANE. "
               f"`{D}` IS EXACTLY WHAT IT WAS BEFORE THIS COMMAND STARTED, and `unhealthy()` "
               f"will now say so: it refuses a witness that names no bytes or names bytes that "
@@ -2328,7 +2334,7 @@ def redirected(path):
         D = live
 
 
-def one_run() -> int:
+def one_run(wait=9) -> int:
     """ONE `run`, IN THIS PROCESS.
 
     **THIS USED TO BE A SUBPROCESS, AND THE CORPUS LOCK IS WHY IT IS NOT.**  `run` holds the
@@ -2342,7 +2348,7 @@ def one_run() -> int:
     out, err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
         try:
-            rc = cmd_run(None)
+            rc = cmd_run(None, wait)
         except Exception as e:  # a child that died used to be a non-zero rc, and nothing more
             rc = 1
             err.write(f"run raised {type(e).__name__}: {e}\n")
@@ -2393,7 +2399,7 @@ def clean_run(label, wait):
     t0 = time.monotonic()
     for attempt in range(wait):
         if ready(wait):
-            one_run()
+            one_run(wait)
         if bad := unhealthy():
             print(f"# {label}: run {attempt + 1} summary was NOT healthy -- waiting: "
                   + "; ".join(bad))
