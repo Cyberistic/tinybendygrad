@@ -289,11 +289,19 @@ is not UNIQUELY nearest one of the two citations, so it cannot pass on a tie.
    answers the same thing -- **`FAIL -- 299 of 1251 internal pointers do not hold`** --
    so its verdict is PRE-EXISTING and this change did not move it. (bendcite implements
    its own rule and does not call `window_tokens()`.)
-* **THE CORPUS DIGEST DID NOT MOVE**, because `gates/` is not in the substrate:
-  `4090cdcf7210ddd906e77459a93a81d97ba6e8cf12cf6da984301a9330e9e362` before and
-  after. (`checks/differ.py`'s `SUBSTRATE_WALKS` are `tinybendygrad` and `tinygrad`, and
-  `SUBSTRATE_INPUTS` names `checks/differ.py`, `checks/devpin.py`, `bin/bend` and eight
-  `.agents/slop/graphcmp*` files -- `gates/pin-cite-gate.py` is in none of them.)
+* **THE CORPUS DIGEST DID NOT MOVE BECAUSE OF THIS CHANGE, AND IT HAS SINCE MOVED FOR
+  SOMEONE ELSE'S REASON.** `gates/` is not in the substrate: `checks/differ.py`'s
+  `SUBSTRATE_WALKS` are `tinybendygrad` and `tinygrad`, and `SUBSTRATE_INPUTS` names
+  `checks/differ.py`, `checks/devpin.py`, `bin/bend` and eight `.agents/slop/graphcmp*`
+  files. MEASURED IMMEDIATELY BEFORE AND AFTER THIS CHANGE:
+  `4090cdcf7210ddd906e77459a93a81d97ba6e8cf12cf6da984301a9330e9e362` **both times**.
+  **THE DIGEST HAS SINCE MOVED TO
+  `abcd7433618dfef1a06b1a9c240488d206956ccc7719619a4bfecea7cbf5f0bd`, AND THE MOVE IS
+  ENTIRELY ANOTHER UNIT'S EDIT TO `checks/differ.py`** (mtime 20:10:09), which IS a
+  declared substrate input. MEASURED by recomputing the digest with the COMMITTED
+  `checks/differ.py` in place of the working tree's, which gives `4090cdcf...` again.
+  **A DIGEST THAT MOVED FOR A REASON THAT IS NOT YOURS IS NOT YOUR VERDICT, AND SAYING
+  WHICH IT IS, IS THE POINT.**
 
 ---
 
