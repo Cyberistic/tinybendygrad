@@ -190,7 +190,8 @@ silent falsehood.
 any `.bend` edit moves it):
 
     BEFORE (session start)          a48f77449a582ba868191c371270c3fb1f3750dae2300e20a593ef64236da85b
-    AFTER  (this change committed)   123ad85e6722fc5145d04bc4c51c7dfc7498ff5c749aee6d9cd64faf6d996937
+    AFTER  (the edit, pre-commit)    123ad85e6722fc5145d04bc4c51c7dfc7498ff5c749aee6d9cd64faf6d996937
+    NOW    (post-commit)            820ff6e0a895fb1305e2ca7e86e2afb8c83a5b6fac13450fa65f43f26b4aefec
 
     CONTROLLED ATTRIBUTION (computed by re-hashing the 416 digest entries with
     fold.bend's blob swapped, WITHOUT touching the tree):
@@ -203,6 +204,11 @@ any `.bend` edit moves it):
       under `tinybendygrad/` (measured with `git status --porcelain -- tinybendygrad/`),
       which is why the controlled attribution is stated and the raw move is not
       attributed to this change alone.
+    ⇒ **AFTER THE COMMIT, `fold.bend`'s LIVE BLOB EQUALS HEAD's** (measured), so the
+      digest with fold.bend at HEAD and the digest with fold.bend at LIVE are the SAME
+      NUMBER, `820ff6e0...`, and the move from `123ad85e` to `820ff6e0` is other
+      units' work and not this change's. **A COMMITTED `.bend` EDIT STOPS MOVING THE
+      PIN; AN UNCOMMITTED ONE KEEPS MOVING IT.**
 
 ## 5. WHAT I DID NOT FIX, AND WHY
 
