@@ -2162,17 +2162,51 @@ verdict-lane         [####] 4/4  **THE FIRST INSTRUMENT THAT CHECKS THIS PORT'S 
                                        THE GATE DOES NOT OWN -- FIXED TO CLEAR ONLY THE THREE FILES THE GATE WRITES,
                                        AND A CANARY NOW SURVIVES.**
 
-rand-census-expired  [##] 2/3  **A GATE'S CLAIM HAS EXPIRED BECAUSE A FIX WORKED, AND THAT IS THE CLASS THIS TREE
-                                       KEEPS FIXING.** MEASURED 2026-10-23: `gates/rand_census-gate.py:328-333` CLAIMS
-                                       THAT THE FOLD **CANNOT** ANSWER `fold_np`/`fold5_np` -- **AND AFTER THE
-                                       `mixin/rand.bend` FIX (THE ARANGE'S 0-DIM RESHAPE AND THE `k*(i*f+1)` POOL
-                                       ARITHMETIC) `fold_np` FLIPPED `False` -> `True`**, SO **THE GATE'S WHOLE CLAIM
-                                       HAS EXPIRED AND IT WILL GO RED.** **⇒ A GATE THAT GOES RED BECAUSE THE TREE GOT
-                                       BETTER IS NOT A GATE TO BE SUPPRESSED -- IT IS A GATE TO BE **UPDATED**, AND
-                                       THE UPDATE MUST RECORD *WHAT THE FIX WAS* SO THE RED IS READ AS PROGRESS AND
-                                       NOT AS REGRESSION.** **⇒ THE GATE IS NOT MINE AND ITS OWNER MAY BE IN IT; THE
-                                       NAMED NEXT MOVE IS TO UPDATE IT WITH THE `mixin/rand.bend` FIX CITED, AND THE
-                                       MEASUREMENT TO RE-TAKE IS ITS OWN ROW COUNT.**
+rand-census-expired  [###] 3/3  **A GATE'S CLAIM EXPIRED BECAUSE A FIX WORKED, THE GATE WAS UPDATED, AND THE UPDATE
+                                       EXPOSED A HOLE IN THE TREE'S OWN CLASS CENSUS -- WHICH IS NOW CLOSED, WITH A
+                                       CORRECTION TO MY OWN FIRST DRAFT.** MEASURED 2026-10-23 AND 2026-10-25.
+                                       `gates/rand_census-gate.py:328-333` CLAIMED THE FOLD **CANNOT** ANSWER
+                                       `fold_np`/`fold5_np`; **AFTER THE `mixin/rand.bend` FIX (THE ARANGE'S 0-DIM
+                                       RESHAPE AND THE `k*(i*f+1)` POOL ARITHMETIC) `fold_np` FLIPPED `False` ->
+                                       `True`**, SO THE GATE'S CLAIM EXPIRED. **⇒ AND A GATE THAT GOES RED BECAUSE THE
+                                       TREE GOT BETTER IS NOT A GATE TO BE SUPPRESSED -- IT IS A GATE TO BE
+                                       **UPDATED**, AND THE UPDATE MUST RECORD *WHAT THE FIX WAS* SO THE RED IS READ
+                                       AS PROGRESS AND NOT AS REGRESSION.** **⇒ AND IT IS UPDATED (2026-10-25): THE
+                                       FOUR `st_*` PORT-SIDE PINS WERE **RE-DERIVED FROM THE LANE** -- THE DRIVER IS
+                                       THE PORT FILE ITSELF (`DRIVER = "tinybendygrad/mixin/rand.bend"`, `main` IS 55
+                                       ROWS), SO THE LANE IS `bin/bend tinybendygrad/mixin/rand.bend` -- **NEVER
+                                       TRANSCRIBED**, BECAUSE THE PRIOR ATTEMPT'S `oldpins.py` RECORDS WHY: ITS FIRST
+                                       VERSION DROPPED `ADD/2 SHRINK/3 CAST/1 ADD/2` FROM `st_after_g`, AND THE WRONG
+                                       TRANSCRIPTION READ AS *"THE GATE'S PIN WAS DEAD FROM BIRTH"*, WHICH IS A FALSE
+                                       CLAIM ABOUT THE TREE. **THE MOVEMENT IS A PURE TOKEN REORDERING OF EQUAL LENGTH
+                                       (`topo=ALLOC/0 CONST/0` -> `topo=CONST/0 ALLOC/1`), THE NODE COUNTS ARE
+                                       UNCHANGED (26, 27, 47, 24), AND ALL FOUR PINS ARE NOW BYTE-IDENTICAL TO THE
+                                       LANE.** `fold_np` AND `fold5_np` LEFT THE `NEG` CLASS (THEY ARE NO LONGER
+                                       NEGATIVE FIXTURES) AND THE `C-NEG` FLOOR MOVED 8 -> 7 BECAUSE THE CLASS IS.
+                                       **AND THE FILE'S REPEATED TRAILING-SPACE CLAIM WAS MEASURED AND IS FALSE ON
+                                       BOTH SIDES** (AFTER THE FIX NEITHER SIDE'S LINE ENDS IN A SPACE), SO THE FOUR
+                                       REPETITIONS ARE IN THE PAST TENSE AND AN AUTHORITATIVE NOTE SAYS SO -- **A
+                                       COMMENT THAT DESCRIBES A SPELLING THE LANE NO LONGER HAS IS A WALL THAT FELL
+                                       STILL NAMED AS A WALL, AND IT IS EXACTLY WHAT MAKES THE NEXT PERSON ADD A SPACE
+                                       AND BREAK THE GATE.** THE GATE IS GREEN (`rc=0`, 55 PORT ROWS, 32 COMPARED
+                                       AGAINST CPYTHON AND ALL 32 AGREE BYTE-FOR-BYTE, 4 `st_*` DIVERGENCES PINNED)
+                                       AND ITS PLANT IS GREEN (*"ALL SEVEN STATES OK"*). **⇒ AND THE HOLE THE UPDATE
+                                       EXPOSED IS NOW CLOSED IN `gates/state_census.py`: `classify()` POPULATES
+                                       `C-NEG` **BY NAME**, SO IT COULD NOT CHECK THAT A DECLARED NEGATIVE FIXTURE'S
+                                       VALUE STILL SAYS *THE ABSENT CASE IS ABSENT* -- **A ROW THAT HAD LEFT THE CLASS
+                                       SAT IN IT, UNSEEN, AND THE GATE WAS GREEN.** `class_census()` NOW FAILS WHEN A
+                                       DECLARED NEG ROW'S VALUE IS `True`, **THE ONE SPELLING THAT MATTERS, BECAUSE IT
+                                       IS THE ONE THAT SAYS THE ABSENT CASE IS **PRESENT** -- AND THE OTHER SPELLINGS
+                                       ARE PER-GATE: `rand_census-gate.py`'s NEGATIVE FIXTURES PRINT `False`,
+                                       `state_census-gate.py`'s PRINT `-`, AND `onnx_census-gate.py`'s PRINT `-` OR AN
+                                       EMPTY STRING. **⇒ AND MY FIRST DRAFT DEMANDED THE VALUE BE `False`, WHICH IS
+                                       **NOT** UNIVERSAL, AND IT TURNED TWO GATES RED ON PERFECTLY GOOD FIXTURES --
+                                       WHICH IS HOW A CORRECTION FOUNDS OUT WHAT IT GOT WRONG.** THE FIX IS THE ONE
+                                       SPELLING, AND ALL SEVEN GATES THAT USE `state_census` ARE GREEN (THE FOUR THAT
+                                       DECLARE A NEG LIST PLUS THREE THAT DO NOT, AND FOR THE LATTER THE CHECK IS A
+                                       NO-OP BY CONSTRUCTION). **⇒ AND THE CONTROL: A DECLARED NEG ROW WHOSE VALUE IS
+                                       `True` MAKES `class_census` REFUSE, WHILE `False`, `-` AND A ROW THE LANE NEVER
+                                       EMITTED ALL ACCEPT.**
 
 
 keepdim-dedup        [##] 3/3  **THE PORT HAD *TWO* IMPLEMENTATIONS OF THE KEEPDIM TARGET -- ONE RIGHT AND ONE WRONG

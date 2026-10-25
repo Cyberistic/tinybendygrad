@@ -168,6 +168,34 @@ def class_census(rows, neg=(), const=(), floors=None):
   for sub in ("C-CONST", "C-CTRL", "C-EMPTY", "C-NEG"):
     if not set(cls[sub]) <= universe:
       bad.append(f"{sub} names rows that are in no class at all")
+  # **A DECLARED NEGATIVE FIXTURE WHOSE VALUE IS NOT `False` HAS STOPPED BEING NEGATIVE, AND
+  # THE CENSUS WAS COUNTING IT AS IF IT STILL WERE.** `CANNOT["C-NEG"]` SAYS WHAT A NEGATIVE
+  # FIXTURE CLAIMS: *"A NEGATIVE FIXTURE ONLY SAYS THE ABSENT CASE IS ABSENT"* -- SO ITS VALUE
+  # **IS** THE CLAIM, AND A VALUE OF `True` SAYS THE ABSENT CASE IS **PRESENT**. THE CLASS WAS
+  # POPULATED **BY NAME** (`[k for k, _ in rows if k in neg]`), SO A FIXTURE WHOSE CLAIM HAD
+  # EXPIRED SAT IN THE CLASS, AND THE ONLY CLAIM THE CLASS MAKES IS ABOUT WHAT IT CANNOT
+  # DISTINGUISH -- **SO THE EXPIRY WAS INVISIBLE AND THE CENSUS STAYED GREEN.**
+  # MEASURED 2026-10-25: `gates/rand_census-gate.py`'s `fold_np` AND `fold5_np` ANSWERED `True`
+  # AFTER THE `mixin/rand.bend` FIX MADE THE FOLD ANSWER THEM, WHILE BOTH WERE STILL DECLARED
+  # NEGATIVE -- **AND THE GATE WAS GREEN.** TAKING THEM OUT OF `NEG` IS THE PROGRESS; **THIS IS
+  # THE CHECK THAT MAKES THE NEXT ONE IMPOSSIBLE TO MISS.**
+  # **=> AND THE CLASSIFICATION IS NOT AFFECTED: `classify`'s DOCSTRING SAYS THE CLASSES ARE NOT
+  # *DECIDABLE FROM THE VALUE ALONE*, WHICH IS TRUE OF *WHICH* ROWS ARE NEGATIVE -- BUT A ROW
+  # **ALREADY** DECLARED NEGATIVE IS CHECKED, NOT CLASSIFIED.**
+  # **=> AND THE SPELLING THAT MATTERS IS `True` AND ONLY `True`, BECAUSE IT IS THE ONE THAT
+  # SAYS *THE ABSENT CASE IS PRESENT*.** **THE OTHER SPELLINGS ARE PER-GATE AND THE GATES'
+  # OWN DATA PROVED IT: `rand_census-gate.py`'s NEGATIVE FIXTURES PRINT `False`, WHILE
+  # `state_census-gate.py`'s PRINT `-` AND `onnx_census-gate.py`'s PRINT `-` OR AN EMPTY
+  # STRING. **⇒ A FIRST DRAFT OF THIS CHECK DEMANDED THE VALUE BE `False`, AND IT TURNED TWO
+  # GATES RED ON FIXTURES THAT ARE PERFECTLY GOOD -- WHICH IS HOW A CORRECTION FOUNDS OUT
+  # WHAT IT GOT WRONG.**
+  emitted = dict(rows)
+  for k in sorted(neg):
+    v = emitted.get(k)
+    if v == "True":
+      bad.append(f"C-NEG names {k}, whose value is 'True', so the negative "
+                 f"fixture's claim (the absent case is absent) HAS EXPIRED -- it is no longer a "
+                 f"negative fixture and must leave the class")
   for name, want in (floors or {}).items():
     if len(cls[name]) < want:
       bad.append(f"{name} has {len(cls[name])} rows and needs {want}; a class with too few "
