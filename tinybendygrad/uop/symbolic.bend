@@ -631,8 +631,17 @@ type F3 is Data:
 def i32_lt(uns: Bool, +x: U32, +y: U32) -> Bool:
   Bool.pick(Bool, uns, U32.is_lt(x, y), Cmp.is_lt(H.i64_cmp(H.i64_of_i32(x), H.i64_of_i32(y))))
 
+# THE MAX, AND IT IS NOT THE MIN. The float lane's `f32_max` (below) is
+# `Bool.pick(F32, F32.is_lt(x, y), y, x)` -- "y if x < y else x", which is max.
+# THIS ONE HAD ITS COMPARISON'S OPERANDS THE OTHER WAY ROUND, so it answered
+# "y if y < x else x", WHICH IS min(x, y). MEASURED 2026-10-25 (the executor's
+# `max` lane, `tinybendygrad/runtime/ops_python.bend`): `i32_max(3, 7)` and
+# `i32_max(7, 3)` BOTH ANSWERED 3, and a `max(axis=0)` over a 4x4 int32 tensor
+# ANSWERED THE FIRST ROW. UPSTREAM'S OWN TABLE IS `python_alu[Ops.MAX] = max`
+# (tinygrad/uop/ops.py, and `PythonRenderer.code_for_op` points at that table),
+# SO THE ORACLE SAYS `max` AND THE PORT WAS WRONG.
 def i32_max(uns: Bool, +x: U32, +y: U32) -> U32:
-  Bool.pick(U32, i32_lt(uns, y, x), y, x)
+  Bool.pick(U32, i32_lt(uns, x, y), y, x)
 
 # `H.floordiv_i32` / `H.floormod_i32` ARE NOT USED because they are WRONG for a
 # non-negative dividend with an INEXACT division -- the common case: measured
@@ -3429,6 +3438,14 @@ def t_fdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsFLOORDIV{},
 
 def t_cdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsCDIV{}, I3{2, 7, 2, 0}), H.i64_of_i32(3)))
 
+# THE INTEGER LANE'S `max`, WHICH WAS A `min` (see `i32_max`). THE ROW IS
+# SYMMETRIC ON PURPOSE: `max(3, 7)` AND `max(7, 3)` MUST BOTH BE 7, AND A `min`
+# ANSWERS 3 FOR BOTH -- SO A ONE-SIDED ROW WOULD PASS ON THE BUG.
+def t_max_i() -> U32:
+  Bool.to_u32(Bool.and(
+    i32_is(exec_alu_i32(False{}, O.OpsMAX{}, I3{2, 3, 7, 0}), H.i64_of_i32(7)),
+    i32_is(exec_alu_i32(False{}, O.OpsMAX{}, I3{2, 7, 3, 0}), H.i64_of_i32(7))))
+
 def neg7() -> U32: H.i32_neg(7)
 
 def t_cdiv_neg() -> U32:
@@ -3838,6 +3855,7 @@ def fz.gate() -> IO(Unit):
     m : Unit <- row("fdiv", t_fdiv())
     n : Unit <- row("fdiv_i", t_fdiv_i())
     o : Unit <- row("cdiv_i", t_cdiv_i())
+    row("max_i", t_max_i())
     p : Unit <- row("cdiv_neg", t_cdiv_neg())
     q : Unit <- row("inval", t_inval())
     r : Unit <- row("inval_st", t_inval_st())

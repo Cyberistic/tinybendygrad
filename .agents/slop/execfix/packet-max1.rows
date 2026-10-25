@@ -1,0 +1,29 @@
+bendexec1 28 2
+1: CONST weakint c:4
+2: PARAM i32 k:param:16:g 1
+3: CONST weakint c:16
+4: PARAM i32 k:param:64:g 3
+5: CONST weakint c:0
+6: CAST i32 - 5
+7: CONST weakint c:1
+8: CAST i32 - 7
+9: CONST weakint c:2
+10: CAST i32 - 9
+11: CONST weakint c:3
+12: CAST i32 - 11
+13: CAST i32 - 1
+14: RANGE i32 - 13
+15: SHL i32 - 14 10
+16: SHRINK i32 - 4 15 13
+17: LOAD i32 k:vec:4 16
+18: INDEX i32 - 2 14
+19: INDEX i32 k:idx:0 17 6
+20: INDEX i32 k:idx:0 17 8
+21: INDEX i32 k:idx:0 17 10
+22: INDEX i32 k:idx:0 17 12
+23: MAX i32 - 19 20
+24: MAX i32 - 23 21
+25: MAX i32 - 24 22
+26: STORE void - 18 25
+27: END void - 26 14
+28: SINK void - 27

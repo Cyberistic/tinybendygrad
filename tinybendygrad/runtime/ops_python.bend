@@ -1709,9 +1709,29 @@ def Prog.rng.put(+p: Prog, +u: Uop, +seen: Bool, +nxt: U32) -> Prog:
 def Prog.seen(+p: Prog, +u: Uop) -> Bool:
   Elem.is_true(Val.at(Prog.vs(p), U32.add(Uop.slot(u), 1)))
 
+# THE COUNTER IS DELETED WHEN THE LOOP EXITS. ops_python.py:132 does
+# `del values[u]` on the exit test, and that deletion is the WHOLE OF "this RANGE
+# has not run yet": the next visit takes the `u not in values` arm, so the counter
+# is 0 again and the body reads 0.
+#
+# MEASURED, AND THE SYMPTOM IS THE WHOLE CLASS OF NESTED-LOOP DEFECTS: WITHOUT
+# THE DELETION THE INNER RANGE OF A NESTED PAIR KEEPS ITS "VISITED" FLAG AND ITS
+# LAST COUNTER, SO ON THE OUTER LOOP'S SECOND ITERATION `nxt = trip + 1`,
+# `nxt == trip` IS FALSE, AND THE INNER BODY NEVER RUNS AGAIN -- THE STORE NEVER
+# RUNS, AND THE OUTPUT KEEPS ONLY THE FIRST OUTER SLAB. MEASURED on the
+# `bcast_mul` packet (`.agents/slop/execfix/packet-bcast_mul.rows`): the answer
+# WAS the first 4x4 slab and three slabs of zeros, and on the `dot` packet it WAS
+# the first row and three rows of zeros.
+#
+# SO THE DELETE IS SPELLED AS "ZERO THE COUNTER AND CLEAR THE FLAG", which is
+# EXACTLY THE STATE THE ARENA IS IN BEFORE THE FIRST VISIT (see Uop.run_of.op).
+def Prog.rng.del(+p: Prog, +u: Uop) -> Prog:
+  Prog.vs1(p, Val.put(Val.put(Prog.vs(p), Uop.slot(u), elem_of(0, Uop.dt(u))),
+    U32.add(Uop.slot(u), 1), elem_of(0, Uop.dt(u))))
+
 def Prog.rng.over(+p: Prog, +u: Uop, +over: Bool, +seen: Bool, +nxt: U32) -> Prog:
   match over:
-    case True{}: Prog.at(p, U32.add(Prog.loop(p, Prog.pc(p)), 1))
+    case True{}: Prog.at(Prog.rng.del(p, u), U32.add(Prog.loop(p, Prog.pc(p)), 1))
     case False{}: Prog.rng.put(p, u, seen, nxt)
 
 # ===========================================================================
