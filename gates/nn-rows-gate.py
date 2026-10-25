@@ -95,6 +95,11 @@ DRIVER = Path("nn") / "layers.bend"
 BEND = ROOT / "bin" / "bend"
 GATE = "nn-rows-gate"
 OUT = ART / GATE
+# THE FROZEN BASELINE, BESIDE THE GATE AND IN GIT -- `AGENTS.md`'s own rule, and the reason it
+# is here and not under `.agents/slop/`: A GATE'S REQUIRED INPUT BELONGS BESIDE THE GATE.
+# **A BASELINE IS A RECORD, NOT A POPULATION.** THE POPULATION IS STILL THE HARNESS's OWN
+# DECLARATION; THE BASELINE IS WHAT MAKES A DELETED ROW NAME VISIBLE.
+BASELINE = HERE / "nn-rows-baseline.rows"
 
 # THE CLASS NAMES ARE THE OUTPUT'S VOCABULARY, and every one of them is a name a reader
 # can look up. A class with no name is a count nobody can check.
@@ -107,10 +112,18 @@ C_SHRUNK = "SHRUNK"
 C_EXTRA = "EXTRA"
 C_DUPLICATE = "DUPLICATE"
 C_MALFORMED = "MALFORMED"
+# THE TWO CLASSES THE FROZEN BASELINE ADDS. `DROPPED` IS A DEFECT AND `ADDED` IS NOT, AND
+# THE DIFFERENCE IS THE WHOLE POINT: A ROW NAME THAT LEAVES THE HARNESS IS A ROW THAT STOPPED
+# BEING CHECKED, WHILE A ROW NAME THAT ARRIVES IS A ROW THAT STARTED BEING CHECKED.
+C_DROPPED = "DROPPED"
+C_ADDED = "ADDED"
 
 # THE CLASSES THAT MAKE A GATE RED. `MATCH` is not one of them, and `SPELLING` is a
 # SUBSET of `MISMATCH` rather than a class of its own.
-FIRED = (C_MISMATCH, C_UNCHECKABLE, C_DEAD_ROW, C_SHRUNK, C_EXTRA, C_DUPLICATE)
+FIRED = (C_MISMATCH, C_UNCHECKABLE, C_DEAD_ROW, C_SHRUNK, C_EXTRA, C_DUPLICATE, C_DROPPED)
+# `C_ADDED` IS DELIBERATELY NOT IN `FIRED`. A NEW ROW IS A LEGITIMATE ADDITION, AND A GATE
+# THAT GOES RED FOR ONE FORCES EVERY ADDITION TO RE-FREEZE THE BASELINE. IT IS REPORTED SO
+# THE ADDITION IS VISIBLE, AND THE FREEZE IS A DELIBERATE ACT WITH A VISIBLE DIFF.
 
 # THE MARK a `MISMATCH` row carries when it differs only in SPELLING. It is written in
 # ONE place and read in ONE place, so the tag and the count that reports it cannot
@@ -342,16 +355,68 @@ def parse_source(text: str):
 # ---------------------------------------------------------------- the classification
 
 
-def classify(rows, expected: Expected) -> dict:
-    """THE DECISION, and it is a pure function of the rows and the population.
+def read_baseline():
+    """THE FROZEN BASELINE, LOADED BY PATH. `(names, meta)`.
+
+    **A MISSING BASELINE IS A REFUSAL, NOT A PASS.** The baseline is the thing that makes a
+    DELETED ROW NAME visible, so a gate with no baseline is a gate with the hole OPEN, and
+    **an absent witness is not a green one.** `names` is `None` when the file is absent or
+    holds no row name; `meta` is the header, which is printed so a reader knows WHICH freeze
+    the rows came from.
+    """
+    if not BASELINE.is_file():
+        return None, [f"the frozen baseline {BASELINE.name} is absent"]
+    try:
+        text = BASELINE.read_text()
+    except OSError as exc:
+        return None, [f"the frozen baseline cannot be read: {exc}"]
+    names, meta = set(), []
+    for ln in text.splitlines():
+        if ln.startswith("#"):
+            meta.append(ln)
+            continue
+        name = ln.strip()
+        if name:
+            names.add(name)
+    if not names:
+        return None, [f"the frozen baseline {BASELINE.name} holds no row name"]
+    return names, meta
+
+
+def baseline_delta(baseline_names, printed_names):
+    """THE FROZEN BASELINE's DELTA, as a value. `(dropped, added)`.
+
+    A PURE FUNCTION, so a plant can drive it with no bend run at all.
+
+    `dropped` -- a name the baseline has and THIS RUN DID NOT PRINT. **THIS IS THE HOLE THE
+    BASELINE CLOSES.** The gate's population is declared by the very file the row was removed
+    FROM, so deleting a row name shrinks the declaration AND the output together and nothing
+    fires; the baseline is the ONE thing that does not shrink with them.
+    `added` -- a name this run printed and the baseline does not have. **NOT A DEFECT**: a new
+    row is a legitimate addition, and it is reported so the reader can see that the baseline
+    wants re-freezing.
+    """
+    dropped = [(n, "the frozen baseline has this row name and this run did not print it")
+               for n in sorted(baseline_names - printed_names)]
+    added = [(n, "this run printed this row name and the frozen baseline does not have it")
+             for n in sorted(printed_names - baseline_names)]
+    return dropped, added
+
+
+def classify(rows, expected: Expected, baseline=None) -> dict:
+    """THE DECISION, and it is a pure function of the rows, the population and the baseline.
 
     It returns the CLASS COUNTS -- a class -> [(name, detail)] map -- and nothing else:
     the exit is decided by the caller from the classes, so there is one place where the
     verdict is computed. Every class this gate can report is decided here, and the PLANT
     drives this function directly -- `gates/README.md` records why: "a plant that drives a
-    helper is not a plant of the decision"."""
+    helper is not a plant of the decision."
+
+    `baseline` IS THE FROZEN ROW-NAME SET, OR `None` FOR "NO BASELINE WAS ASKED FOR" -- WHICH
+    IS WHAT A PLANT THAT IS ABOUT THE OTHER CLASSES PASSES. **THE BASELINE's TWO CLASSES ARE
+    DECIDED HERE AND NOT IN `measure()`, SO A PLANT DRIVES THEM TOO.**"""
     counts = {C_MATCH: [], C_MISMATCH: [], C_UNCHECKABLE: [], C_DEAD_ROW: [],
-              C_SHRUNK: [], C_EXTRA: [], C_DUPLICATE: []}
+              C_SHRUNK: [], C_EXTRA: [], C_DUPLICATE: [], C_DROPPED: [], C_ADDED: []}
     printed = {}
     for row in rows:
         printed.setdefault(row.name, []).append(row)
@@ -396,6 +461,10 @@ def classify(rows, expected: Expected) -> dict:
             counts[C_MISMATCH].append(
                 (name, f"got={row.got!r} want={row.want!r}"
                        + (f" {SPELLING_MARK}" if spelling else "")))
+    if baseline is not None:
+        dropped, added = baseline_delta(baseline, {r.name for r in rows})
+        counts[C_DROPPED] = dropped
+        counts[C_ADDED] = added
     return counts
 
 
@@ -472,7 +541,7 @@ def _drive(port: Path):
     return rows, malformed, proc.returncode, (proc.stdout or ""), (proc.stderr or "")
 
 
-def measure(port: Path, label: str):
+def measure(port: Path, label: str, use_baseline: bool = True):
     """THE GATE'S DECISION, as a value. `(code, counts, n_rows, n_expected, lines, rows)`.
 
     This is the function the CONTROLS drive, and it is the SAME one `run_gate` prints:
@@ -542,7 +611,19 @@ def measure(port: Path, label: str):
         lines.append(f"{GATE}: DEAD")
         return DEAD, {}, 0, 0, lines, ()
 
-    counts = classify(rows, expected)
+    # **THE FROZEN BASELINE, AND IT CROSS-CHECKS THE POPULATION RATHER THAN REPLACING IT.**
+    # THE POPULATION IS STILL THE HARNESS's OWN DECLARATION.
+    if use_baseline:
+        baseline, meta = read_baseline()
+        if baseline is None:
+            return refuse("; ".join(meta) + " -- the gate would be BLIND TO A DELETED ROW NAME, "
+                          "and an absent witness is not a green one. Re-freeze it with "
+                          "`--freeze`, and let the diff be the change.")
+    else:
+        baseline, meta = None, []
+    counts = classify(rows, expected, baseline)
+    dropped = counts.get(C_DROPPED, [])
+    added = counts.get(C_ADDED, [])
     n_rows = len(rows)
     n_expected = len(expected.literals) + sum(n for _, n, _, _ in expected.patterns)
     spelling = [c for c in counts[C_MISMATCH] if SPELLING_MARK in c[1]]
@@ -569,7 +650,13 @@ def measure(port: Path, label: str):
                  f"{len(counts[C_MISMATCH])} (the rule: punctuation dropped, case folded, "
                  f"f32==float32)")
     lines.append(f"{GATE}: rows_not_passing_exact_comparison={not_passing} of {n_rows}")
-    for cls in (C_MISMATCH, C_UNCHECKABLE, C_DEAD_ROW, C_SHRUNK, C_EXTRA, C_DUPLICATE):
+    if use_baseline:
+        lines.append(f"{GATE}: baseline={BASELINE.name} baseline_rows={len(baseline)} "
+                     f"baseline_dropped={len(dropped)} baseline_added={len(added)}")
+        for ln in meta:
+            lines.append(f"{GATE}: baseline| {ln}")
+    for cls in (C_MISMATCH, C_UNCHECKABLE, C_DEAD_ROW, C_SHRUNK, C_EXTRA, C_DUPLICATE,
+                C_DROPPED, C_ADDED):
         for name, detail in counts[cls]:
             lines.append(f"{GATE}: {cls} {name} {detail}")
     for line in malformed:
@@ -637,7 +724,30 @@ def plant() -> int:
               + (f" class={cls}" if cls else " class=DEAD-LANE"))
         if got != want:
             bad.append(f"{name}: rc={got}, expected {want}")
-    ok = f"all {len(cases)} plants OK"
+    # **THE BASELINE's TWO CLASSES, PLANTED THE SAME WAY** -- THE PLANTS DRIVE THE SHIPPED
+    # DECISION, AND THE SHIPPED DECISION IS `classify`, SO A PLANT OF `baseline_delta` ALONE
+    # WOULD BE A PLANT OF A HELPER.
+    base_cases = [
+        # (name, baseline, expected, rows, want_rc, want_class)
+        # **THE EXPECTATION EACH PLANT CARRIES IS THE ONE THAT MAKES ITS OWN ROW NOT `EXTRA`:**
+        # A ROW THAT IS PRINTED AND NOT DECLARED IS `EXTRA`, WHICH IS A FIRING CLASS, SO THE
+        # `ADDED` PLANT DECLARES THE ROW IT ADDS.
+        ("DROPPED", {"a", "b"}, exp_one, [Row("a", "1", "1")], FAIL, C_DROPPED),
+        ("ADDED", {"a"}, exp_two, [Row("a", "1", "1"), Row("b", "1", "1")], PASS, C_ADDED),
+        ("BASELINE-AGREES", {"a"}, exp_one, [Row("a", "1", "1")], PASS, None),
+    ]
+    for name, base, exp, rows, want, cls in base_cases:
+        r = classify(rows, exp, base)
+        got = FAIL if any(r[c] for c in FIRED) else PASS
+        if cls and not r.get(cls):
+            got = FAIL
+            bad.append(f"{name}: the {cls} class did not fire")
+        print(f"  {name:<12} rc={got} want={want}"
+              + (f" class={cls}" if cls else " class=-")
+              + f" dropped={len(r.get(C_DROPPED, []))} added={len(r.get(C_ADDED, []))}")
+        if got != want:
+            bad.append(f"{name}: rc={got}, expected {want}")
+    ok = f"all {len(cases) + len(base_cases)} plants OK"
     print(f"--plant: {ok if not bad else 'FAILED: ' + '; '.join(bad)}")
     return 1 if bad else 0
 
@@ -794,10 +904,14 @@ CONTROLS = {
     "c": "an EMPTY `want` on a row whose `got` IS empty -> DEAD-ROW -> FAIL (1)",
     "d": "a row the harness's `main` no longer calls -> SHRUNK -> FAIL (1)",
     "e": "the driver printing ZERO rows -> DEAD (5), NOT PASS (0)",
-    "f": "a row NAME removed from the `.bend` copy -> NOTHING FIRES: the population is "
-         "declared by the file the row was removed FROM, so both sides shrink together. "
-         "This is the MEASURED LIMIT of a self-declared population, and it is a negative "
-         "control: the class counts must NOT move and the row count must drop.",
+    "f": "a row NAME removed from the `.bend` copy -> DROPPED -> FAIL (1). **THE HOLE, "
+         "CLOSED.** THE POPULATION IS DECLARED BY THE FILE THE ROW WAS REMOVED FROM, SO "
+         "BOTH SIDES SHRINK TOGETHER -- AND THE FROZEN BASELINE IS THE ONE THING THAT DOES "
+         "NOT SHRINK WITH THEM.",
+    "g": "a row ADDED to the `.bend` copy -> ADDED and NOTHING ELSE, and the gate STAYS "
+         "GREEN. **THE NEGATIVE CONTROL FOR THE BASELINE ITSELF:** A BASELINE THAT GOES RED "
+         "FOR A LEGITIMATE ADDITION WOULD FORCE A RE-FREEZE ON EVERY NEW ROW, SO ADDED IS "
+         "REPORTED AND NOT FIRED.",
 }
 
 # WHAT EACH CONTROL MUST SHOW: the class that must fire, and the exit the GATE must
@@ -811,7 +925,8 @@ WANTS = {
     "c": (C_DEAD_ROW, FAIL),
     "d": (C_SHRUNK, FAIL),
     "e": (None, DEAD),
-    "f": (None, None),
+    "f": (C_DROPPED, FAIL),
+    "g": (C_ADDED, PASS),
 }
 
 
@@ -830,6 +945,28 @@ def _set_got_and_want(text: str, row_name: str, value: str) -> str:
         a, b = spans[1]
         return text[:a] + '"' + value + '"' + text[b:]
     raise KeyError(f"no row named {row_name!r} in the harness")
+
+
+def _add_row_function(text: str) -> str:
+    """A NEW ROW FUNCTION, AND A CALL TO IT FROM `main`'s `do` BLOCK.
+
+    **A FUNCTION BODY IN BEND IS ONE EXPRESSION** -- MEASURED 2026-10-25: a second
+    `nn_row.line(...)` inside `nn_row_relu` made `bend` answer *"expected : 'def', 'type' or
+    'law'"* AT THAT LINE, IN BOTH POSITIONS. `main`'s BODY IS A `do IO<Unit>:` BLOCK, WHICH IS
+    WHY THE CALL GOES THERE.
+    """
+    lines = text.split("\n")
+    mi = next((k for k, l in enumerate(lines) if l.startswith("def main()")), None)
+    if mi is None:
+        raise KeyError("the copy has no `def main()`")
+    di = next((k for k in range(mi, len(lines)) if "do IO<Unit>:" in lines[k]), None)
+    if di is None:
+        raise KeyError("the copy's `main` has no `do IO<Unit>:` block")
+    lines.insert(di + 1, "    nn_row_added()")
+    lines.insert(mi, "def nn_row_added() -> IO(Unit):")
+    lines.insert(mi + 1, '  nn_row.line("added_probe", "1", "1")')
+    lines.insert(mi + 2, "")
+    return "\n".join(lines)
 
 
 def _mutate(text: str, rows, name: str):
@@ -868,11 +1005,24 @@ def _mutate(text: str, rows, name: str):
         return (_drop_main_call(text, pick),
                 f"main no longer calls {pick}, so the {counts[pick]} row(s) it declared are "
                 f"still DECLARED by the file and are no longer PRINTED")
+    if name == "g":
+        # A ROW ARRIVES: A NEW ROW FUNCTION, AND `main`'s OWN `do` BLOCK CALLS IT -- so the new
+        # row is declared AND printed, and the FROZEN BASELINE, which does not have it, is the
+        # only thing that can see the difference.
+        #
+        # **A NEW `def` AND NOT A SECOND STATEMENT IN AN EXISTING ONE.** MEASURED 2026-10-25:
+        # putting a second `nn_row.line(...)` inside `nn_row_relu` -- BEFORE the existing call
+        # AND AFTER IT -- made `bend` answer *"expected : 'def', 'type' or 'law'"* AT THAT LINE,
+        # **IN BOTH POSITIONS**. **A FUNCTION BODY IN BEND IS ONE EXPRESSION, NOT A BLOCK OF
+        # STATEMENTS.** `main` IS THE EXCEPTION BECAUSE ITS BODY IS A `do IO<Unit>:` BLOCK.
+        return (_add_row_function(text),
+                "a new row function `nn_row_added` was added and `main` now calls it, so the "
+                "run prints one row the frozen baseline does not have")
     if name == "f":
         # THE ROW NAME LEAVES THE FILE: the function that declared it and its call in
-        # `main` both go. The population is declared by THIS file, so the declaration
-        # and the output shrink together and the gate has nothing to catch. That is the
-        # limit, and the control measures it rather than assuming it.
+        # `main` both go. **THE POPULATION IS DECLARED BY THIS FILE, SO THE DECLARATION AND
+        # THE OUTPUT SHRINK TOGETHER** -- AND THE FROZEN BASELINE IS THE ONE THING THAT DOES
+        # NOT SHRINK WITH THEM, SO THE GATE NOW CATCHES IT. THAT IS THE HOLE, CLOSED.
         _expected, sites = parse_source(text)
         counts = {}
         for s in sites:
@@ -890,7 +1040,7 @@ def _mutate(text: str, rows, name: str):
 def _summary(counts) -> str:
     return " ".join(f"{c}={len(counts.get(c, []))}" for c in
                      (C_MATCH, C_MISMATCH, C_UNCHECKABLE, C_DEAD_ROW, C_SHRUNK, C_EXTRA,
-                      C_DUPLICATE))
+                      C_DUPLICATE, C_DROPPED, C_ADDED))
 
 
 def control(name: str, rev: str | None) -> int:
@@ -988,14 +1138,24 @@ def control(name: str, rev: str | None) -> int:
             print(f"{GATE}: control={name} gate| {line}")
 
         bad = []
-        if name == "f":
-            # THE NEGATIVE CONTROL: nothing may fire, and the row count must drop.
-            if real_fired or green_fired:
-                bad.append("a class fired, but the population shrank on BOTH sides and "
-                           "nothing should have fired")
-            if a_n >= b_n or ga_n >= gb_n:
-                bad.append(f"the row count did not drop (real {b_n} -> {a_n}, "
-                           f"green {gb_n} -> {ga_n})")
+        if name == "g":
+            # THE NEGATIVE CONTROL FOR THE BASELINE: the ADDED class must fire and NOTHING
+            # ELSE may, and the gate must stay GREEN -- because a baseline that goes red for a
+            # legitimate addition would force a re-freeze on every new row.
+            for tag, b, a in (("real", b_counts, a_counts), ("green", gb_counts, ga_counts)):
+                if len(a.get(C_ADDED, [])) <= len(b.get(C_ADDED, [])):
+                    bad.append(f"the {C_ADDED} class did not fire on the {tag} baseline")
+                if len(a.get(C_DROPPED, [])) != len(b.get(C_DROPPED, [])):
+                    bad.append(f"the {C_DROPPED} class moved on the {tag} baseline, and an "
+                               f"ADDITION MUST NOT DROP ANYTHING")
+                fired_here = [c for c in FIRED
+                              if len(a.get(c, [])) > len(b.get(c, []))]
+                if fired_here:
+                    bad.append(f"{tag}: a firing class moved on an ADDITION: "
+                               f"{','.join(fired_here)}")
+            if ga_code != PASS:
+                bad.append(f"the gate returned {ga_code} ({verdict_of(ga_code)}) under an "
+                           f"ADDITION, and an addition must not make it red")
         else:
             if want_class is not None and want_class not in real_fired:
                 bad.append(f"the {want_class} class did not fire on the real baseline")
@@ -1010,13 +1170,65 @@ def control(name: str, rev: str | None) -> int:
             print(f"{GATE}: control={name} FAILED: " + "; ".join(bad), file=sys.stderr)
             return FAIL
         print(f"{GATE}: control={name} OK: "
-              + ("nothing fired and the row count dropped, which is the limit measured"
-                 if name == "f"
-                 else f"the class fired and the gate went {gb_code} -> {ga_code}"))
+              + ("the class fired and the gate went {0} -> {1}".format(gb_code, ga_code)
+                 if name != "g"
+                 else "the ADDED class fired, nothing else did, and the gate stayed green"))
         return PASS
 
 
 # ---------------------------------------------------------------- the entry point
+
+
+def freeze() -> int:
+    """RE-FREEZE THE BASELINE FROM THE LIVE TREE, and say WHAT CHANGED.
+
+    **A BASELINE IS GENERATED, NOT TYPED.** A hand-written list of row names is a contract
+    with no generator, and it rots without anyone noticing -- and a baseline that rots is
+    WORSE than no baseline, because it fires `DROPPED` for rows that are still there. So the
+    baseline is written by this file, from the live tree's own printed rows, and the DIFF
+    between the old and the new IS the change a reader has to approve.
+    """
+    with tempfile.TemporaryDirectory(prefix="nn-rows-freeze-") as td:
+        try:
+            port = _materialize(Path(td), None)
+        except (OSError, RuntimeError) as exc:
+            print(f"{GATE}: REFUSED, NOT A VERDICT: the port will not copy: {exc}", file=sys.stderr)
+            return REFUSED
+        code, _counts, n_rows, _n, lines, rows = measure(port, "the live tree, for the freeze",
+                                                          use_baseline=False)
+        if code != PASS:
+            for ln in lines:
+                print(ln)
+            print(f"{GATE}: REFUSED, NOT A VERDICT: the live tree is not green (rc={code}), so "
+                  f"a baseline frozen from it would freeze a defect", file=sys.stderr)
+            return REFUSED
+        names = sorted({r.name for r in rows})
+        old, _meta = read_baseline()
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        head = _head()
+        body = [
+            f"# {BASELINE.name} -- ONE COLUMN, NO SEPARATOR. Generated; the generator is "
+            f"`gates/nn-rows-gate.py --freeze`.",
+            "# columns: name",
+            f"# written {now} HEAD={head}",
+            "# A FROZEN BASELINE, NOT A POPULATION: THE POPULATION IS STILL THE HARNESS's OWN",
+            "# DECLARATION. THIS FILE IS WHAT MAKES A **DELETED ROW NAME** VISIBLE, BECAUSE THE",
+            "# DECLARATION AND THE OUTPUT SHRINK TOGETHER WHEN A ROW IS REMOVED.",
+            "# RE-FREEZE WITH `--freeze`, AND THE DIFF IS THE CHANGE.",
+        ] + names
+        BASELINE.write_text("\n".join(body) + "\n")
+        print(f"{GATE}: froze {len(names)} row name(s) into {BASELINE.name} at HEAD={head}")
+        if old is None:
+            print(f"{GATE}: there was no baseline to compare against")
+        else:
+            added = sorted(set(names) - old)
+            gone = sorted(old - set(names))
+            print(f"{GATE}: baseline added={len(added)} removed={len(gone)}")
+            for n in added:
+                print(f"{GATE}: baseline| + {n}")
+            for n in gone:
+                print(f"{GATE}: baseline| - {n}")
+        return PASS
 
 
 def main(argv=None) -> int:
@@ -1026,8 +1238,12 @@ def main(argv=None) -> int:
                     help="'live' (the working tree) or a commit to extract the port from")
     ap.add_argument("--control", choices=sorted(CONTROLS), help="run one control")
     ap.add_argument("--plant", action="store_true", help="the class plants, no bend")
+    ap.add_argument("--freeze", action="store_true",
+                    help="re-freeze the baseline from the live tree, and print the diff")
     args = ap.parse_args(argv)
 
+    if args.freeze:
+        return freeze()
     if args.plant:
         return plant()
     if args.control:

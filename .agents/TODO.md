@@ -1654,47 +1654,59 @@ argmax-ported        [####] 3/4  **THE RECIPE IS PORTED AND VERIFIED; THE GRAPH 
                                        ANSWERS THE SHAPE OF AN INDEX VECTOR ALONG AN AXIS.** **SCOPE: A 1-D F32
                                        FORMULA; UPSTREAM TAKES AN AXIS AND ANY DTYPE, AND THAT WIDENING IS NOT DONE.**
 
-nn-rows-gate         [####] 3/4  **THE NN LAYERS NOW HAVE A COMPARER, AND THE CONV2D SHAPE IS FIXED.** `gates/nn-rows-
-                                       gate.py` (1,058 LINES) **DERIVES ITS POPULATION FROM THE COPY'S OWN
-                                       `nn_row.line(...)` CALL SITES** (28 LITERAL NAMES + 1 COMPUTED-NAME SITE x 3
-                                       INVOCATIONS = 31 -- NEVER A HAND LIST, NEVER A BASENAME SHAPE), RUNS THE PORT'S
-                                       OWN `nn/layers.bend` `main` (SO THE HARNESS DECIDES WHICH ROWS RUN), AND
-                                       **TAKES THE EXPECTED VALUES ONLY FROM THE PRINTED `want=` COLUMN, SO THERE IS
-                                       EXACTLY ONE COPY OF EVERY EXPECTATION.** IT CLASSIFIES
-                                       MATCH/MISMATCH/UNCHECKABLE/DEAD-ROW/SHRUNK, AND **ON A COMPILING COMMIT IT
-                                       READS `MATCH=12/31  MISMATCH=9/31  UNCHECKABLE=5/31  DEAD-ROW=5/31
-                                       SHRUNK=0/31` -- 19 OF 31 NOT PASSING EXACT COMPARISON** -- WHICH
-                                       **INDEPENDENTLY CONFIRMS THE ORCHESTRATOR'S OWN 19** (12 COULD PASS, 1 OF THOSE
-                                       12 FAILING, 5 DEAD, 5 UNCHECKABLE, 8 SPELLING-ONLY). **SIX CONTROLS, EACH A 0
-                                       -> 1 (OR 0 -> 5) TRANSITION.** **AND IT REFUSED (3) ON THE LIVE TREE WHILE THE
-                                       PORT DID NOT COMPILE, WHICH IS THE CORRECT VERDICT: A GATE MUST NOT ANSWER
-                                       ABOUT A FILE IT NEVER RAN.** **ONE LIMIT, STATED RATHER THAN PAPERED OVER:
-                                       DELETING A ROW *NAME* IS INVISIBLE TO IT (EXIT 0), BECAUSE A SELF-DECLARED
-                                       POPULATION SHRINKS ON BOTH SIDES AT ONCE; CATCHING THAT NEEDS A FROZEN BASELINE
-                                       LEDGER BESIDE THE GATE, WHICH IS NOT YET WRITTEN.** MEANWHILE `nn/layers.bend`
-                                       (`+146/-33`) FIXED **FOUR** DEFECTS: `nn_ones` WAS `range(n)` NOT ONES;
-                                       `nn_pool.go` WAS NOT UPSTREAM'S `_pool`; THE KEEPDIM TARGET WAS COUNTED FROM
-                                       THE END (`mo_at` ANSWERS `len(t)`, UPSTREAM IS THE FORWARD INDEX); AND
-                                       `nn_cnv.wt`/`bias` INHERITED (1). **ALL FIVE `conv_*` ROWS NOW READ UPSTREAM'S
-                                       ANSWERS** (`1,8,32,32` / `1,8,30,30` / `1,8,16,16` / `1,8,32,34` /
-                                       `1,8,32,32`), **AND `fold_smk`'s EXPECTATION WAS WRONG** (`2,1,3` IS CPython'S
-                                       ANSWER FOR AXIS `[1]`, NOT `[2]`) AND WAS CORRECTED TO `2,4,1`. **A REAL DEFECT
-                                       IS STILL OPEN AND IS NOT THE AGENT'S FILE: `mixin/op.bend:316` `mo_at` MUST
-                                       ANSWER `len(ds)-len(t)-1`; IT BREAKS `mo_keep_ds`, `mo_squeeze` AND
-                                       `mo_reduced` FOR RANK >= 2, AND THE 1-D FIXTURE AT `mixin/op.bend:1411` IS
-                                       BLIND TO IT.**
- **AND ON THE LIVE TREE, AFTER THE `layers.bend` FIX LANDED AND THE SUBSTRATE COMPILED AGAIN (MEASURED
-                                       2026-10-22T05:08Z), THE SAME GATE READS `MATCH=18  MISMATCH=8 (ALL 8 SPELLING-
-                                       ONLY)  UNCHECKABLE=5` -- **13 OF 31** -- SO THE FIX MOVED **19 -> 13** AND
-                                       **THE FIVE DEAD `conv_*` ROWS NOW MATCH UPSTREAM'S ANSWERS.** WHAT IS LEFT IS
-                                       THE TWO CLASSES THAT NEED A `.bend` EDIT IN `nn/layers.bend` AND THAT NOBODY
-                                       OWNS YET: THE 8 SPELLING MISMATCHES (`f32` AGAINST `float32`, `1,4,8,8` AGAINST
-                                       `(1,4,8,8)`) AND THE 5 `_sig` ROWS WHOSE `want` IS EMPTY. **THE `_sig` ROWS'
-                                       EXPECTATION MUST COME FROM A SOURCE INDEPENDENT OF THE FOLD BEING CHECKED** --
-                                       THE PORT'S OWN SPEC IR (`tinybendygrad/LAWS/spec.bend`) IS THE RIGHT WITNESS,
-                                       BECAUSE THE WHOLE POINT OF THE SPEC IS THAT IT IS NOT THE COMPILED FOLD --
-                                       **AND A ROW WHOSE `want` IS COPIED FROM THE `got` IT CHECKS IS NOT A FIX, IT IS
-                                       THE SAME VACUITY WITH MORE STEPS.**
+nn-rows-gate         [####] 4/4  **THE NN LAYERS HAVE A COMPARER, AND **THE HOLE IN IT IS CLOSED**: A DELETED ROW
+                                       *NAME* IS NO LONGER INVISIBLE.** `gates/nn-rows-gate.py` **DERIVES ITS
+                                       POPULATION FROM THE COPY's OWN `nn_row.line(...)` CALL SITES** (28 LITERAL
+                                       NAMES + 1 COMPUTED-NAME SITE x 3 INVOCATIONS = 31 -- NEVER A HAND LIST, NEVER A
+                                       BASENAME SHAPE), RUNS THE PORT's OWN `nn/layers.bend` `main` (SO THE HARNESS
+                                       DECIDES WHICH ROWS RUN), AND **TAKES THE EXPECTED VALUES ONLY FROM THE PRINTED
+                                       `want=` COLUMN, SO THERE IS EXACTLY ONE COPY OF EVERY EXPECTATION.** MEASURED
+                                       2026-10-25: `PASS -- 31 OF 31 ROWS MATCH THEIR EXPECTATIONS`, `rows_declared=31
+                                       rows_printed=31  MATCH=31/31  MISMATCH=0/31 UNCHECKABLE=0/31  DEAD-ROW=0/31
+                                       SHRUNK=0/31  EXTRA=0/31  DUPLICATE=0/31`, AND `baseline=nn-rows-baseline.rows
+                                       baseline_rows=31 baseline_dropped=0 baseline_added=0`. **⇒ AND THE HOLE: **A
+                                       SELF-DECLARED POPULATION SHRINKS ON BOTH SIDES AT ONCE**, SO DELETING A ROW
+                                       *NAME* REMOVED THE DECLARATION *AND* THE OUTPUT AND NOTHING FIRED -- **AND THE
+                                       GATE ITSELF MEASURED THAT LIMIT AND CALLED IT ONE: CONTROL `f` WAS A *NEGATIVE*
+                                       CONTROL THAT MEASURED *NOTHING FIRED*.** **⇒ THE FIX IS A FROZEN BASELINE
+                                       BESIDE THE GATE IN GIT, `gates/nn-rows-baseline.rows`, 31 NAMES, GENERATED BY
+                                       `gates/nn-rows-gate.py --freeze` AT HEAD `196252ba3` -- **A BASELINE IS
+                                       GENERATED, NOT TYPED, BECAUSE A HAND-WRITTEN LIST OF ROW NAMES IS A CONTRACT
+                                       WITH NO GENERATOR AND IT ROTS WITHOUT ANYONE NOTICING, AND A ROTTEN BASELINE IS
+                                       WORSE THAN NO BASELINE** (IT WOULD FIRE `DROPPED` FOR ROWS THAT ARE STILL
+                                       THERE). **⇒ AND THE RE-FREEZE PRINTS ITS OWN DIFF: `baseline added=0
+                                       removed=0`, **SO THE FREEZE IS IDEMPOTENT AND THE DIFF IS THE CHANGE A READER
+                                       HAS TO APPROVE.** **⇒ AND THE CONTROL THAT PROVES THE HOLE IS CLOSED: CONTROL
+                                       `f` -- A ROW NAME REMOVED FROM THE `.bend` COPY -- NOW READS `real
+                                       class_fired=DROPPED  green class_fired=DROPPED  gate_rc_under_mutation=1 (FAIL)
+                                       [green baseline 0 -> 1]  DROPPED relu`. **⇒ AND THE GATE's OWN FAILURE LINE IS
+                                       THE STRONGEST FORM OF THE PROOF: `FAIL -- 0 of 30 rows do not pass under exact
+                                       comparison (30 match, 0 mismatch, 0 uncheckable, 0 dead)` -- **THE GATE IS RED
+                                       ON A SET IN WHICH EVERY ROW IS PERFECTLY CORRECT, BECAUSE A ROW THAT USED TO BE
+                                       CHECKED IS NOT CHECKED ANY MORE.** **⇒ AND THE NEGATIVE CONTROL FOR THE
+                                       BASELINE ITSELF: CONTROL `g` -- A ROW *ADDED* -- READS `the ADDED class fired,
+                                       nothing else did, and the gate stayed green`, **BECAUSE A BASELINE THAT WENT
+                                       RED FOR A LEGITIMATE ADDITION WOULD FORCE A RE-FREEZE ON EVERY NEW ROW, SO
+                                       `ADDED` IS REPORTED AND NOT FIRED** (`DROPPED` IS THE FIRING CLASS AND `ADDED`
+                                       IS NOT). **⇒ AND AN ABSENT BASELINE IS A **REFUSAL**, NOT A PASS: WITH THE FILE
+                                       MOVED ASIDE THE GATE READS `REFUSED, NOT A VERDICT: the frozen baseline nn-
+                                       rows-baseline.rows is absent -- the gate would be BLIND TO A DELETED ROW NAME`,
+                                       rc=3. **⇒ AND THE PLANTS ARE NINE (WAS SIX), AND THE EIGHTH IS THE ONE THE
+                                       PLANTS CAUGHT: `FIRED` GREW BY `C_DROPPED` AND `classify` WITHOUT A BASELINE
+                                       NEVER FILLED THAT KEY, SO `any(r[c] for c in FIRED)` RAISED `KeyError:
+                                       'DROPPED'` -- **A CLASS THAT IS ONLY SOMETIMES PRESENT IS A CLASS THAT CAN
+                                       CRASH ITS OWN GATE**, AND THE COUNTS DICT NOW ALWAYS CARRIES EVERY CLASS's KEY.
+                                       **⇒ AND THE MEASURED BEND FACT THE NEW CONTROL NEEDED: **A FUNCTION BODY IN
+                                       BEND IS ONE EXPRESSION, NOT A BLOCK OF STATEMENTS** -- MEASURED 2026-10-25,
+                                       PUTTING A SECOND `nn_row.line(...)` INSIDE `nn_row_relu` -- BEFORE THE EXISTING
+                                       CALL AND AFTER IT -- MADE `bend` ANSWER *"expected : 'def', 'type' or 'law'"*
+                                       AT THAT LINE, **IN BOTH POSITIONS**, SO THE ADDED ROW IS A NEW `def` PLUS A
+                                       CALL IN `main`'s `do IO<Unit>:` BLOCK, WHICH IS A BLOCK. **⇒ AND WHAT IS NOT
+                                       CLAIMED: THE BASELINE IS A FROZEN RECORD OF THE ROW *NAMES*, NOT A SECOND
+                                       SOURCE OF TRUTH FOR THE EXPECTATIONS -- THE EXPECTATIONS STILL LIVE ONLY IN THE
+                                       PRINTED `want=` COLUMN.
+
+
 
 item-ported          [###] 3/4  **`Tensor.item` IS PORTED TO THE EDGE THE PORT CAN REACH, AND THE WALL IS NAMED.**
                                        UPSTREAM (`tinygrad/mixin/op.py:22-32`) IS AN `assert self.numel() == 1` AND

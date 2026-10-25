@@ -1,0 +1,38 @@
+# nn-rows-baseline.rows -- ONE COLUMN, NO SEPARATOR. Generated; the generator is `gates/nn-rows-gate.py --freeze`.
+# columns: name
+# written 2026-10-25T18:13:04Z HEAD=196252ba35969260bbed96200e848cefe4f51923
+# A FROZEN BASELINE, NOT A POPULATION: THE POPULATION IS STILL THE HARNESS's OWN
+# DECLARATION. THIS FILE IS WHAT MAKES A **DELETED ROW NAME** VISIBLE, BECAUSE THE
+# DECLARATION AND THE OUTPUT SHRINK TOGETHER WHEN A ROW IS REMOVED.
+# RE-FREEZE WITH `--freeze`, AND THE DIFF IS THE CHANGE.
+conv_bias
+conv_p0_s1
+conv_p1_s1
+conv_p1_s2
+conv_seq
+dbg_conv_sig
+dbg_dot_sig
+dbg_x_sig
+dot_1d
+dot_2d
+fold_base
+fold_cc
+fold_cc_sig
+fold_sm
+fold_smk
+fold_wr
+fold_xr
+fold_xw
+fold_xw_sig
+linear
+linear_nobias
+pads_int1
+pads_seq11
+pads_seq12
+relu
+shape_x
+where_dts
+where_wdt
+where_wshape
+where_xdt
+where_xshape
