@@ -1,0 +1,25 @@
+PLANT file tinygrad/helpers.py declares `prod` at :14 (local ref, not fetched)
+PLANT range arm  : tinygrad/helpers.py:23-24 token `len` -- NOT on the first line
+PLANT danger arm : tinygrad/helpers.py:1 token `Context` -- IS elsewhere in the file
+PLANT absence arm: tinygrad/__init__.py:1 token `shape` -- DELETED at 5ae2de9845e4, and STILL PRESENT at 5132bab48d1a
+PLANT attribution: `prod` sits beside tinygrad/helpers.py:14 in the control and beside tinygrad/helpers.py:1 after the edit
+PLANT control      tinygrad/helpers.py:14 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='prod' -- the cited line names `prod`
+PLANT control-copy tinygrad/helpers.py:14 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='prod' -- the cited line names `prod`
+PLANT half-lie     tinygrad/helpers.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='prod' -- the cited line is 'from __future__ import annotations'
+PLANT gone-name    tinygrad/helpers.py:14 at_pin=NO newest=NONE class=unverifiable           present_in_file='' -- the cited line is 'def prod(x:Iterable[T]) -> T|int: return functoo'
+PLANT range-arm    tinygrad/helpers.py:23 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='len' -- the cited range :23-24 names `len`
+PLANT range-copy   tinygrad/helpers.py:23 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 present_in_file='len' -- the cited range :23-24 names `len`
+PLANT vocab-arm    tinygrad/helpers.py:1 at_pin=NO newest=NONE class=unverifiable           present_in_file='' -- the cited line is 'from __future__ import annotations'
+PLANT danger-arm   tinygrad/helpers.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='Context' -- the cited line is 'from __future__ import annotations'
+PLANT danger-copy  tinygrad/helpers.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='Context' -- the cited line is 'from __future__ import annotations'
+PLANT absence-arm  tinygrad/__init__.py:1 at_pin=NO newest=NONE class=upstream_removed       present_in_file='shape' -- the cited line is 'import os'
+PLANT absence-wrong-rev tinygrad/__init__.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='shape' -- the cited line is 'import os'
+PLANT absence-no-rev tinygrad/__init__.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='shape' -- the cited line is 'import os'
+PLANT absence-not-a-claim tinygrad/__init__.py:1 at_pin=NO newest=NONE class=dangling               present_in_file='shape' -- the cited line is 'import os'
+PLANT attrib       tinygrad/helpers.py:14 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 tokens='prod' -- the cited line names `prod`
+PLANT attrib       tinygrad/helpers.py:1 at_pin=NO newest=NONE class=uncheckable_no_claim_token tokens='' -- the cited line is 'from __future__ import annotations'
+PLANT attrib-moved tinygrad/helpers.py:14 at_pin=NO newest=NONE class=uncheckable_no_claim_token tokens='' -- the cited line is 'def prod(x:Iterable[T]) -> T|int: return functoo'
+PLANT attrib-moved tinygrad/helpers.py:1 at_pin=NO newest=NONE class=dangling               tokens='prod' -- the cited line is 'from __future__ import annotations'
+PLANT attrib-twin  tinygrad/helpers.py:14 at_pin=HOLDS newest=95b7c56b426d class=at_pin                 tokens='prod' -- the cited line names `prod`
+PLANT attrib-twin  tinygrad/helpers.py:1 at_pin=NO newest=NONE class=uncheckable_no_claim_token tokens='' -- the cited line is 'from __future__ import annotations'
+PLANT OK: the control holds at the pin, its byte copy holds, the moved line is seen, a name that exists nowhere is not held, the RANGE arm holds (REPAIR 1), the vocabulary arm is UNVERIFIABLE (REPAIR 2), the danger arm is STILL DANGLING (REPAIR 2 did not rescue it), the ABSENCE arm is a TRUE ABSENCE, and the wrong-revision, no-revision and not-a-claim arms are all STILL DANGLING; and the ATTRIBUTION follows the name: a text edit that moves the name beside the other citation moves the claim with it, and a byte-identical copy does not

@@ -253,6 +253,58 @@ can only ever take a row OUT of `dangling` or `at_no_revision`. MEASURED ELEMENT
 one frozen tree, pairing the rows by index: **2547 rows before and after, 2 rows moved
 (`dangling -> upstream_removed`), and 0 of `at_pin`, `newest_rev`, `claim`,
 `present_in_file` or `explicit` moved on ANY row.**
+
+===============================================================================
+THE FOURTH REPAIR: THE ATTRIBUTION. MEASURED 2026-10-25.
+===============================================================================
+
+`window_tokens()` DECIDES WHICH CITATION A BACKTICKED NAME BELONGS TO, AND THEREFORE
+WHICH ROW THE NAME IS JUDGED UNDER: `at_pin` and `unverifiable` and `dangling` are all
+read off a row's claim tokens. **THE SHIPPED RULE WAS THE INVERSE OF ITS OWN
+DOCSTRING.** The docstring said "A BACKTICKED NAME BELONGS TO THE NEAREST CITATION",
+and the code kept a name for citation `i` when the name was within 40 characters of
+some OTHER citation -- so on a line with two citations the name went to the FARTHER one
+and was DROPPED from the nearest.
+
+THE MEASURED INSTANCE: `tinybendygrad/extra/models/clip.bend:105` reads
+`"mixin/elementwise.bend:772 has the CONSTANT ew_k.gelu and :1217 has `def
+ew_quick_gelu`"`. The name is 5 characters from `:1217` and 42 from `:772`, and the
+shipped rule gave it to `:772` -- which holds NEITHER the name NOR the claim, and
+`:1217`, which DOES hold it, was given nothing at all.
+
+THE RULE NOW IS `gates/bendcite-gate.py`'s RULE, AND THE TWO INSTRUMENTS AGREE: a name
+belongs to the citation(s) NEAREST to it, and a name EXACTLY BETWEEN two citations
+belongs to BOTH. **THE DISTANCE CUTOFF IS GONE, AND IT HAD TO GO:** MEASURED, a
+uniform 40-character cutoff takes the two `upstream_removed` rows out of their class
+(the gate can no longer see the claim token, so it cannot ask the evidence), and it
+takes EIGHTEEN REAL CHECKS with it -- `tinybendygrad/runtime/ops_amd.bend`'s `WALL(p3)`
+rows name their construct 47 characters from the citation that holds it, and the cutoff
+left them UNCHECKABLE. A proximity rule with a cutoff is a proximity rule with a
+fudge; the reference implementation has no cutoff and neither does this one now.
+
+**THE CLASS COUNTS, BEFORE AND AFTER, ON ONE FROZEN COPY OF THE PORT TREE** (the tree
+is owned by other units and moves under the gate's feet, so both readings were taken
+with `--tree`, and the rows were paired BY INDEX):
+
+    class                                     BEFORE    AFTER
+    cite.total                                 2540     2540
+    cite.checkable                             1596     1517
+    cite.uncheckable_no_claim_token             944     1023
+    cite.at_pin                                1359     1261
+    cite.only_older_revision                      4       28
+    cite.at_no_revision                         231      226
+    cite.at_no_revision_dangling                  0        2
+    cite.ambient_relocated                        0        0
+    cite.unverifiable_no_claim_about_the_file   224      207
+    cite.upstream_removed                         2        2
+
+**THE FAIL CLASS GREW AND NO HOLDING CLASS SHRANK BY A LOOSENED CRITERION.** The
+`dangling` criterion is untouched, `upstream_removed` is untouched, and `at_pin` LOST 98
+rows because the shipped rule was INFLATING IT: a row whose only token belonged to
+another citation was being read as holding the pin, and a row that says nothing about
+its own file is not a row that holds the pin. `only_older_revision` gained 24 rows for
+the same reason in reverse: the shipped rule DROPPED their names and left them
+UNCHECKABLE. **THE CLASS THAT SHRANK IS THE CLASS THAT WAS LYING.**
 """
 
 from __future__ import annotations
@@ -307,12 +359,6 @@ finally for from global if import in is lambda nonlocal not or pass raise return
 with yield None True False self cls""".split())
 #: The row of the declaration that says which sha is THE pin.
 OUR_PIN = "OUR PIN"
-#: How far, in characters, a backticked name may sit from a citation and still belong to
-#: it. A name and the citation it belongs to are usually adjacent ("`dedup`
-#: (search.py:89-90)"), and the port also writes a claim and its citation a clause apart
-#: ("(`dtype.py:100-104`) returns ONLY `bool`"). A name FARTHER than this from every
-#: other citation belongs to none of them.
-_NEAREST = 40
 
 #: THE PORT'S ABSENCE MARKERS -- the words it writes when it means "upstream does NOT
 #: have this". NECESSARY AND NEVER SUFFICIENT: a marker alone qualifies nothing, and a
@@ -496,20 +542,33 @@ def window_tokens(line: str, spans: list[tuple[int, int]], i: int) -> list[str]:
   that belongs to a DIFFERENT citation on the same line must not make this one look like
   it holds. **SO A BACKTICKED NAME BELONGS TO THE NEAREST CITATION.** The port writes
   "`l2i_cdiv.abs` (dtype.py:58-61)", and the name belongs to the citation it sits beside,
-  not to the one before it. A citation no name is near makes no CHECKABLE claim, and it is
-  counted and not verdicted.
+  not to the one before it. A name EXACTLY BETWEEN two citations is about both, and
+  dropping it from one of them would make that citation's claim unverifiable.
+
+  **THIS IS `gates/bendcite-gate.py`'s RULE, AND THE TWO INSTRUMENTS NOW AGREE.** The
+  nearest citation is the one whose span the name sits CLOSEST to -- the distance
+  between the two character ranges -- and a name that is EQUALLY close to two of them
+  belongs to BOTH.
+
+  THE SHIPPED RULE WAS THE INVERSE OF THIS ONE, AND IT IS NOT A LINE-NUMBER BUG: it kept
+  a name for citation `i` when the name was within 40 characters of some OTHER citation,
+  so on a line with two citations the name went to the FARTHER one and was DROPPED from
+  the nearest. MEASURED, `tinybendygrad/extra/models/clip.bend:105`: the name is 5
+  characters from `:1217` and 42 from `:772`, and the shipped rule gave
+  `ew_quick_gelu` to `:772`, which holds NEITHER the name NOR the claim. **A TOKEN ON
+  THE WRONG ROW IS A ROW WHOSE VERDICT IS ABOUT THE WRONG CLAIM**, and every class
+  this census reports -- `at_pin`, `unverifiable`, `dangling` -- is read off a row's
+  claim tokens.
   """
   if i >= len(spans):
     return []
-  pos = sorted(enumerate(spans), key=lambda t: t[1][0])
   out: list[str] = []
   for m in BACKTICK.finditer(line):
     if CITE_SPAN.search(m.group(1)):
       continue
-    if len(pos) > 1:
-      gap = min(max(0, s - m.end(), m.start() - e) for j, (s, e) in pos if j != i)
-      if gap > _NEAREST:
-        continue
+    gaps = [max(0, s - m.end(), m.start() - e) for (s, e) in spans]
+    if not gaps or gaps[i] != min(gaps):
+      continue
     for t in IDENT.findall(m.group(1)):
       if len(t) < 3 or t.lower() in KEYWORDS:
         continue
@@ -1172,6 +1231,27 @@ def _plant() -> int:
     resolve_all(census, cites, corpus, pin)
     return (classify(cites), cites)
 
+  # THE ATTRIBUTION ARM. ONE line, TWO citations, ONE backticked name, and the name is
+  # MOVED from beside the first citation to beside the second by A TEXT EDIT ON A COPY.
+  # The attribution must FOLLOW the name: the row that held the name holds it before
+  # the edit and does not hold it after, and a BYTE-IDENTICAL copy holds it exactly as
+  # the control does.
+  #
+  # **THIS ARM IS RED UNDER THE SHIPPED RULE**, which gave a name to the FARTHER
+  # citation: the control's name would sit with the SECOND row and the moved name with
+  # the FIRST, so BOTH assertions fail and the plant refuses to pass. That is what makes
+  # the arm a witness and not a label.
+  #
+  # THE FILLER KEEPS THE TWO CITATIONS FAR APART, so the nearest is UNAMBIGUOUS -- the
+  # plant asserts the geometry, so the arm cannot pass on a tie.
+  filler = ("and the SECOND pointer, which is about a different construct entirely and "
+            "is a long way away on this line,")
+  attrib_control = (f"# synthetic -- port of {path}\n"
+                    f"# `{name}` {path}:{n} || {filler} || {path}:{m}\n")
+  # THE EDIT, AND IT IS ONE: it takes the name out from beside the FIRST citation and
+  # writes it beside the SECOND. Everything else on the line is untouched.
+  attrib_edit = (f"`{name}` {path}:{n} || {filler} ||", f"{path}:{n} || {filler} || `{name}`")
+
   with tempfile.TemporaryDirectory(prefix="pin-cite-plant-") as raw:
     td = Path(raw)
     arms = {
@@ -1211,18 +1291,45 @@ def _plant() -> int:
       print("PLANT FAILED: the absence arms differ in more than their tail", file=sys.stderr)
       return FAIL
 
+    # THE ATTRIBUTION TREES. The control is WRITTEN; the moved arm is a COPY of it with
+    # the edit applied; the twin is a COPY of it, byte for byte. **NEVER `git show
+    # HEAD:`** -- the copy is of the file on disk, so the arm measures the file.
+    attrib_trees = {k: td / k for k in ("attrib", "attrib-moved", "attrib-twin")}
+    for root in attrib_trees.values():
+      (root / PORT_REL).mkdir(parents=True, exist_ok=True)
+    ctrl_file = attrib_trees["attrib"] / PORT_REL / "plant.bend"
+    ctrl_file.write_text(attrib_control)
+    moved_file = attrib_trees["attrib-moved"] / PORT_REL / "plant.bend"
+    moved_file.write_bytes(ctrl_file.read_bytes())
+    twin_file = attrib_trees["attrib-twin"] / PORT_REL / "plant.bend"
+    twin_file.write_bytes(ctrl_file.read_bytes())
+    moved_text = moved_file.read_text()
+    if attrib_edit[0] not in moved_text:
+      print("PLANT DEAD: the attribution edit does not match the control", file=sys.stderr)
+      return DEAD
+    moved_file.write_text(moved_text.replace(attrib_edit[0], attrib_edit[1], 1))
+
     judged = {k: judge(trees[k]) for k in arms}
+    attrib_judged = {k: judge(attrib_trees[k]) for k in attrib_trees}
     print(f"PLANT file {path} declares `{name}` at :{n} (local ref, not fetched)")
     print(f"PLANT range arm  : {path}:{rlo}-{rhi} token `{rtok}` -- NOT on the first line")
     print(f"PLANT danger arm : {path}:{dlo} token `{dtok}` -- IS elsewhere in the file")
     print(f"PLANT absence arm: {rpath}:{alo} token `{atok}` -- DELETED at {aremoved[:12]}, "
           f"and STILL PRESENT at {apresent[:12]}")
+    print(f"PLANT attribution: `{name}` sits beside {path}:{n} in the control and beside "
+          f"{path}:{m} after the edit")
     for label in arms:
       cls, cs = judged[label]
       for c in cs:
         print(f"PLANT {label:12s} {c['subject']}:{c['lo']} at_pin={c['at_pin']} "
               f"newest={(c['newest_rev'] or 'NONE')[:12]} class={row_class(c):22s} "
               f"present_in_file={','.join(c['present'])!r} -- {c['pin_why']}")
+    for label in attrib_trees:
+      cls, cs = attrib_judged[label]
+      for c in cs:
+        print(f"PLANT {label:12s} {c['subject']}:{c['lo']} at_pin={c['at_pin']} "
+              f"newest={(c['newest_rev'] or 'NONE')[:12]} class={row_class(c):22s} "
+              f"tokens={','.join(c['toks'])!r} -- {c['pin_why']}")
 
     bad: list[str] = []
 
@@ -1242,6 +1349,45 @@ def _plant() -> int:
     cwr = one("absence-wrong-rev")
     cnr = one("absence-no-rev")
     cnc = one("absence-not-a-claim")
+
+    # THE ATTRIBUTION ARM -- THE CONTROL, THE MOVED COPY, AND THE BYTE COPY.
+    ac = attrib_judged["attrib"][1]
+    am = attrib_judged["attrib-moved"][1]
+    atwin = attrib_judged["attrib-twin"][1]
+    for label, rows in (("attrib", ac), ("attrib-moved", am), ("attrib-twin", atwin)):
+      if len(rows) != 2:
+        bad.append(f"the {label} tree has {len(rows)} citations, expected two")
+    # THE NEAREST MUST BE UNAMBIGUOUS, or the arm could pass on a tie.
+    for label, text, near in (("attrib", attrib_control, 0),
+                              ("attrib-moved", moved_file.read_text(), 1)):
+      line = text.splitlines()[-1]
+      spans = line_spans(census, line)
+      marks = list(BACKTICK.finditer(line))
+      if len(spans) != 2 or len(marks) != 1:
+        bad.append(f"the {label} line has {len(spans)} citations and {len(marks)} names")
+        continue
+      m = marks[0]
+      gaps = [max(0, s - m.end(), m.start() - e) for (s, e) in spans]
+      if gaps[near] >= gaps[1 - near]:
+        bad.append(f"the {label} line's name is not nearest the citation it sits beside: {gaps}")
+    if len(ac) == 2 and len(am) == 2 and len(atwin) == 2:
+      # THE NAME FOLLOWS THE TEXT.
+      if name not in ac[0]["toks"] or name in ac[1]["toks"]:
+        bad.append(f"the attribution control did not give `{name}` to the first citation: "
+                   f"{ac[0]['toks']} / {ac[1]['toks']}")
+      if name in am[0]["toks"] or name not in am[1]["toks"]:
+        bad.append(f"the attribution edit did not move `{name}` to the second citation: "
+                   f"{am[0]['toks']} / {am[1]['toks']}")
+      # AND THE VERDICT FOLLOWS THE NAME, THROUGH THE CENSUS AND NOT ONLY THE HELPER.
+      if ac[0]["at_pin"] != "HOLDS":
+        bad.append(f"the attribution control's row does not hold at the pin: {ac[0]['pin_why']}")
+      if am[1]["at_pin"] == "HOLDS":
+        bad.append(f"the attribution edit's row still holds at the pin: {am[1]['pin_why']}")
+      # AND THE BYTE COPY IS THE CONTROL.
+      if atwin[0]["toks"] != ac[0]["toks"] or atwin[1]["toks"] != ac[1]["toks"]:
+        bad.append("the attribution arm's byte copy moved")
+      if twin_file.read_bytes() != ctrl_file.read_bytes():
+        bad.append("the attribution arm's byte copy is not byte-identical to the control")
 
     # THE CONTROL AND ITS BYTE COPY.
     if ca and (ca["at_pin"] != "HOLDS" or not ca["newest_rev"]):
@@ -1332,7 +1478,9 @@ def _plant() -> int:
           "seen, a name that exists nowhere is not held, the RANGE arm holds (REPAIR 1), "
           "the vocabulary arm is UNVERIFIABLE (REPAIR 2), the danger arm is STILL DANGLING "
           "(REPAIR 2 did not rescue it), the ABSENCE arm is a TRUE ABSENCE, and the "
-          "wrong-revision, no-revision and not-a-claim arms are all STILL DANGLING")
+          "wrong-revision, no-revision and not-a-claim arms are all STILL DANGLING; and "
+          "the ATTRIBUTION follows the name: a text edit that moves the name beside the "
+          "other citation moves the claim with it, and a byte-identical copy does not")
     return PASS
 
 

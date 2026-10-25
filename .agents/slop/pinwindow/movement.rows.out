@@ -1,0 +1,975 @@
+# 2540 rows, 160 changed class
+# class movement
+#   at_pin                       -> uncheckable_no_claim_token   93
+#   uncheckable_no_claim_token   -> only_older_revision          19
+#   unverifiable                 -> uncheckable_no_claim_token   17
+#   uncheckable_no_claim_token   -> at_pin                       9
+#   at_pin                       -> at_no_revision               8
+#   at_pin                       -> only_older_revision          4
+#   at_pin                       -> dangling                     2
+#   at_pin                       -> unverifiable                 2
+#   uncheckable_no_claim_token   -> at_no_revision               2
+#   unverifiable                 -> at_pin                       2
+#   uncheckable_no_claim_token   -> unverifiable                 1
+#   unverifiable                 -> only_older_revision          1
+
+tinybendygrad/codegen/decomp/dtype.bend:127  dtype.py:47
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: l2i_cdiv,abs,signed  ->  
+    in_file:signed  ->  
+    at_pin : HOLDS -> NO    newest: ca2a699b6870 -> NONE
+    line  : # (dtype.py:47-50), `l2i_cdiv.abs` (dtype.py:47-50) and `l2i_cdiv.signed`
+tinybendygrad/codegen/decomp/dtype.bend:145  dtype.py:59
+    class : uncheckable_no_claim_token -> unverifiable
+    tokens:   ->  l2i_cdiv,abs
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   4. `l2i_cdiv.abs` (dtype.py:59) minted four BITCASTs that `mixin/dtype.py:53` folds
+tinybendygrad/codegen/decomp/dtype.bend:145  mixin/dtype.py:53
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: l2i_cdiv,abs  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   4. `l2i_cdiv.abs` (dtype.py:59) minted four BITCASTs that `mixin/dtype.py:53` folds
+tinybendygrad/codegen/decomp/op.bend:36  op.py:92
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: powers_of_two,get,val  ->  
+    in_file:powers_of_two,get,val  ->  
+    at_pin : HOLDS -> NO    newest: 9fc9e60cb412 -> NONE
+    line  : #    op.py:92 and op.py:96 all spell `if (v := powers_of_two.get(c.val, 0))`,
+tinybendygrad/codegen/decomp/transcendental.bend:133  wgsl.py:59
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: supports_float4  ->  
+    in_file:supports_float4  ->  
+    at_pin : HOLDS -> NO    newest: d2ce31d8fb0c -> NONE
+    line  : # `supports_float4` (renderer/__init__.py:67, set False by wgsl.py:59) is NOT
+tinybendygrad/codegen/decomp/transcendental_f32.bend:158  tinygrad/codegen/decomp/transcendental.py:52
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: U32,F32,pow2if,frexp  ->  
+    in_file:pow2if,frexp  ->  
+    at_pin : HOLDS -> NO    newest: 868263e04934 -> NONE
+    line  : # **`U32 -> F32` bitcast** -- absent.  `pow2if` (:27), `frexp`'s mantissa (:52)
+tinybendygrad/codegen/gpudims.bend:46  tinygrad/codegen/gpudims.py:103
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: pm_range_to_special  ->  
+    in_file:pm_range_to_special  ->  
+    at_pin : HOLDS -> NO    newest: 78d482262f91 -> NONE
+    line  : # (:103) and `pm_range_to_special` (:103) -- three of the eight, and the three
+tinybendygrad/codegen/opt/heuristic.bend:114  postrange.py:82
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: Scheduler,upcast_size  ->  
+    in_file:Scheduler,upcast_size  ->  
+    at_pin : HOLDS -> NO    newest: 753a62ae0135 -> NONE
+    line  : #   `Scheduler.upcast_size` -- the SAME fold at search.py:84 and postrange.py:82.
+tinybendygrad/codegen/rewriter.bend:83  ops.py:465
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: _ranges  ->  
+    in_file:_ranges  ->  
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> NONE
+    line  : # `ops.py:465 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
+tinybendygrad/codegen/rewriter.bend:83  ops.py:497
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  _ranges
+    in_file:  ->  _ranges
+    at_pin : NO -> NO    newest: NONE -> 07ff64a547c5
+    line  : # `ops.py:465 _ranges` and `ops.py:497 ranges` P3, and says why: `_ranges` is a
+tinybendygrad/codegen/simplify.bend:58  simplify.py:81
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: reduce_unparented,ru_range  ->  
+    in_file:reduce_unparented  ->  
+    at_pin : HOLDS -> NO    newest: 07d7e144ab44 -> NONE
+    line  : # (simplify.py:81-85 symbol=reduce_unparented) and `reduce_unparented` (simplify.py:87-101). `ru_range` is
+tinybendygrad/codegen/simplify.bend:84  simplify.py:58
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: pm_simplify_ranges,pm_split_ranges  ->  
+    in_file:pm_simplify_ranges,pm_split_ranges  ->  
+    at_pin : HOLDS -> NO    newest: 07d7e144ab44 -> NONE
+    line  : # (simplify.py:58), `pm_simplify_ranges` (:58), `pm_split_ranges` (:71),
+tinybendygrad/codegen/simplify.bend:86  tinygrad/codegen/simplify.py:153
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: pm_load_collapse  ->  
+    in_file:pm_load_collapse  ->  
+    at_pin : HOLDS -> NO    newest: 07d7e144ab44 -> NONE
+    line  : # (:153) and `pm_load_collapse` (:153) -- eight of the nineteen, and the eight that
+tinybendygrad/engine/realize.bend:67  ops.py:514
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: linear,substitute  ->  
+    in_file:linear,substitute  ->  
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> NONE
+    line  : # [b] realize.py:275  `linear.substitute`   -- ops.py:514 symbol=substitute
+tinybendygrad/examples/test_pkl_imagenet.bend:53  jit.py:55
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: ii_vars  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #         jit.py:55, and jit.bend:38-41 says it is ported "IN FULL"; `ii_vars`
+tinybendygrad/examples/test_pkl_imagenet.bend:95  examples/test_onnx_imagenet.py:25
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: imagenet_dataloader  ->  
+    in_file:imagenet_dataloader  ->  
+    at_pin : HOLDS -> NO    newest: 285534ce646b -> NONE
+    line  : #     `imagenet_dataloader` (:25,:53)  MISSING. It is `examples/test_onnx_imagenet.py:25`
+tinybendygrad/examples/test_pkl_imagenet.bend:95  examples/test_onnx_imagenet.py:53
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: imagenet_dataloader  ->  
+    in_file:imagenet_dataloader  ->  
+    at_pin : HOLDS -> NO    newest: 285534ce646b -> NONE
+    line  : #     `imagenet_dataloader` (:25,:53)  MISSING. It is `examples/test_onnx_imagenet.py:25`
+tinybendygrad/examples/train_resnet.bend:82  extra/training.py:7
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: extra,training,train  ->  
+    in_file:extra,training,train  ->  
+    at_pin : HOLDS -> NO    newest: 36c0e81979e7 -> NONE
+    line  : #   `extra.training.train` (:8, used :42)  MISSING. `extra/training.py:7`.
+tinybendygrad/examples/train_resnet.bend:83  extra/training.py:41
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: extra,training,evaluate  ->  
+    in_file:extra,training,evaluate  ->  
+    at_pin : HOLDS -> NO    newest: 36c0e81979e7 -> NONE
+    line  : #   `extra.training.evaluate` (:8, :43)    MISSING. `extra/training.py:41`.
+tinybendygrad/extra/datasets/preprocess_imagenet.bend:11  squad.py:133
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: grep,iterate,extra,datasets,imagenet  ->  
+    in_file:iterate,extra,datasets  ->  
+    at_pin : HOLDS -> NO    newest: d87a246439fd -> NONE
+    line  : # `squad.py:133` and `librispeech.py:67`; `grep -n iterate extra/datasets/imagenet.py` is empty. So this
+tinybendygrad/extra/models/bert.bend:59  extra/models/bert.py:72
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: Tensor,binary_crossentropy_logits  ->  
+    in_file:Tensor,binary_crossentropy_logits  ->  
+    at_pin : HOLDS -> NO    newest: 0faaf6df26f2 -> NONE
+    line  : #   (6) `Tensor.binary_crossentropy_logits` MISSING (extra/models/bert.py:61, extra/models/bert.py:72).
+tinybendygrad/extra/models/bert.bend:79  extra/models/bert.py:24
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: torch,load  ->  
+    in_file:torch,load  ->  
+    at_pin : HOLDS -> NO    newest: 0faaf6df26f2 -> NONE
+    line  : # `extra/models/bert.py:24-31`, whose `torch.load` is at extra/models/bert.py:26. `helpers.bend:3193`
+tinybendygrad/extra/models/clip.bend:75  clip.py:17
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: default_bpe,fetch  ->  
+    in_file:default_bpe,fetch  ->  
+    at_pin : HOLDS -> NO    newest: 0faaf6df26f2 -> NONE
+    line  : # clip.py:15 `default_bpe()` `fetch`es a gzip file (:17), clip.py:17
+tinybendygrad/extra/models/llama.bend:28  extra/models/llama.py:53
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: RMSNorm  ->  
+    in_file:RMSNorm  ->  
+    at_pin : HOLDS -> NO    newest: a3278fa76ffb -> NONE
+    line  : #   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200)  FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: extra/models/llama.py:53 `self.q_norm
+tinybendygrad/extra/models/llama.bend:66  rand.py:86
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: cache_kv  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   * `cache_kv` (:83,:86,:90,:92,:93) -- the kv cache is an IN-PLACE slice-assign on a
+tinybendygrad/extra/models/llama.bend:66  rand.py:90
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: cache_kv  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   * `cache_kv` (:83,:86,:90,:92,:93) -- the kv cache is an IN-PLACE slice-assign on a
+tinybendygrad/extra/models/llama.bend:66  rand.py:92
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: cache_kv  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   * `cache_kv` (:83,:86,:90,:92,:93) -- the kv cache is an IN-PLACE slice-assign on a
+tinybendygrad/extra/models/llama.bend:66  rand.py:93
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: cache_kv  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   * `cache_kv` (:83,:86,:90,:92,:93) -- the kv cache is an IN-PLACE slice-assign on a
+tinybendygrad/extra/models/retinanet.bend:49  extra/models/bert.py:164
+    class : unverifiable -> at_pin
+    tokens: one_hot  ->  onehot
+    in_file:  ->  onehot
+    at_pin : NO -> HOLDS    newest: NONE -> 0faaf6df26f2
+    line  : #                 shared with bert.py's `onehot` (extra/models/bert.py:164) and `one_hot` (extra/models/transformer.py:54).
+tinybendygrad/extra/models/rnnt.bend:25  rnnt.py:88
+    class : at_pin -> at_no_revision
+    tokens: cells  ->  LSTMCell
+    in_file:cells  ->  LSTMCell
+    at_pin : HOLDS -> NO    newest: dcee90aa3f1e -> NONE
+    line  : # `class LSTMCell` (rnnt.py:88), with a `self.cells` LIST (:124) and a
+tinybendygrad/extra/models/rnnt.bend:81  extra/models/rnnt.py:45
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: numpy  ->  
+    in_file:numpy  ->  
+    at_pin : HOLDS -> NO    newest: dcee90aa3f1e -> NONE
+    line  : #       at extra/models/rnnt.py:45 with `numpy` and extra/models/rnnt.py:46 and writes it into a fresh Tensor, so it cannot be a graph.
+tinybendygrad/extra/models/rnnt.bend:82  extra/models/rnnt.py:38
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: unsqueeze  ->  
+    in_file:unsqueeze  ->  
+    at_pin : HOLDS -> NO    newest: dcee90aa3f1e -> NONE
+    line  : #   (8) `unsqueeze` (extra/models/rnnt.py:26, :38, :196, :197) --
+tinybendygrad/extra/models/rnnt.bend:82  extra/models/rnnt.py:196
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: unsqueeze  ->  
+    in_file:unsqueeze  ->  
+    at_pin : HOLDS -> NO    newest: dcee90aa3f1e -> NONE
+    line  : #   (8) `unsqueeze` (extra/models/rnnt.py:26, :38, :196, :197) --
+tinybendygrad/extra/models/rnnt.bend:82  extra/models/rnnt.py:197
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: unsqueeze  ->  
+    in_file:unsqueeze  ->  
+    at_pin : HOLDS -> NO    newest: dcee90aa3f1e -> NONE
+    line  : #   (8) `unsqueeze` (extra/models/rnnt.py:26, :38, :196, :197) --
+tinybendygrad/extra/models/t5.bend:69  clip.py:11
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: erf  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #       clip.py:11 binds. bert.py:235 defines the BERT gelu over `.erf`, which is a
+tinybendygrad/extra/models/t5.bend:69  bert.py:235
+    class : uncheckable_no_claim_token -> at_no_revision
+    tokens:   ->  erf
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #       clip.py:11 binds. bert.py:235 defines the BERT gelu over `.erf`, which is a
+tinybendygrad/mixin/creation.bend:33  ops.py:867
+    class : at_pin -> only_older_revision
+    tokens: commit_dtype,UOp,_min_max  ->  commit_dtype
+    in_file:commit_dtype,UOp,_min_max  ->  commit_dtype
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> 200488ef082a
+    line  : #      `self.commit_dtype()` (ops.py:867). It reads `UOp._min_max` (ops.py:1094 symbol=_min_max), and
+tinybendygrad/mixin/elementwise.bend:7  tinygrad/mixin/elementwise.py:21
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: ufix  ->  
+    in_file:ufix  ->  
+    at_pin : HOLDS -> NO    newest: b8089eaa7819 -> NONE
+    line  : # (:21), `ufix` (:21), and the sixty methods whose body is an `alu` over a promoted
+tinybendygrad/mixin/movement.bend:53  tensor.py:353
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: detach,Tensor  ->  
+    in_file:detach,Tensor  ->  
+    at_pin : HOLDS -> NO    newest: 2eadf30ab92f -> NONE
+    line  : # `detach` (elementwise.py:43), `Tensor.to` is `tensor.py:353 symbol=to`, and `f` is
+tinybendygrad/mixin/op.bend:26  tinygrad/mixin/op.py:657
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: _softmax,softmax,log_softmax,softmin  ->  
+    in_file:_softmax,softmax,log_softmax,softmin  ->  
+    at_pin : HOLDS -> NO    newest: 9c85c766f0fb -> NONE
+    line  : # (:657), `_softmax` (:657), `softmax` (:663), `log_softmax` (:686), `softmin`
+tinybendygrad/mixin/op.bend:27  reduce.py:73
+    class : at_pin -> at_no_revision
+    tokens: max,sum,prod  ->  sum,prod
+    in_file:max,sum,prod  ->  sum,prod
+    at_pin : HOLDS -> NO    newest: dded67ecb156 -> NONE
+    line  : # (:713) -- and `max`/`sum`/`prod` (reduce.py:73/:20/:47), which they call. Plus
+tinybendygrad/mixin/op.bend:27  tinygrad/mixin/op.py:713
+    class : at_pin -> at_no_revision
+    tokens: max,sum,prod  ->  max
+    in_file:max,sum,prod  ->  max
+    at_pin : HOLDS -> NO    newest: 9c85c766f0fb -> NONE
+    line  : # (:713) -- and `max`/`sum`/`prod` (reduce.py:73/:20/:47), which they call. Plus
+tinybendygrad/mixin/op.bend:29  tinygrad/dtype.py:220
+    class : unverifiable -> only_older_revision
+    tokens: commit_dtype  ->  sum_acc_dtype,commit_dtype
+    in_file:  ->  sum_acc_dtype
+    at_pin : NO -> NO    newest: NONE -> dded67ecb156
+    line  : # `sum_acc_dtype` (tinygrad/dtype.py:220) and the `commit_dtype` refusal (tinygrad/dtype.py:213 symbol=sum_acc_dtype).
+tinybendygrad/mixin/op.bend:29  tinygrad/dtype.py:213
+    class : at_pin -> unverifiable
+    tokens: sum_acc_dtype,commit_dtype  ->  commit_dtype
+    in_file:sum_acc_dtype  ->  
+    at_pin : HOLDS -> NO    newest: 075101b69a2d -> NONE
+    line  : # `sum_acc_dtype` (tinygrad/dtype.py:220) and the `commit_dtype` refusal (tinygrad/dtype.py:213 symbol=sum_acc_dtype).
+tinybendygrad/mixin/op.bend:59  mixin/movement.py:614
+    class : unverifiable -> at_pin
+    tokens: _cumalu  ->  _pool
+    in_file:  ->  _pool
+    at_pin : NO -> HOLDS    newest: NONE -> 9c85c766f0fb
+    line  : #   W4 mixin/op.py:752 `_cumalu` -> mixin/movement.py:614 symbol=_pool `_pool` -- `_pool` is
+tinybendygrad/mixin/op.bend:242  mixin/movement.py:301
+    class : at_pin -> dangling
+    tokens: mo_eqmul,bool,int  ->  mo_eqmul,bool
+    in_file:bool,int  ->  bool
+    at_pin : HOLDS -> NO    newest: 9c85c766f0fb -> NONE
+    line  : # (mixin/movement.py:301); `mo_eqmul`'s `bool` against `int` (mixin/elementwise.py:611);
+tinybendygrad/mixin/rand.bend:55  rand.py:15
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: cat,mixin,bend  ->  
+    in_file:cat,mixin  ->  
+    at_pin : HOLDS -> NO    newest: 719692bf6db0 -> NONE
+    line  : #   W2 `cat` (op.py:731), reached from rand.py:15, :29 and tensor.py:471, is `mixin/op.bend`'s
+tinybendygrad/mixin/rand.bend:55  tensor.py:471
+    class : at_pin -> at_no_revision
+    tokens: cat,mixin,bend  ->  mixin,bend
+    in_file:cat,mixin  ->  mixin
+    at_pin : HOLDS -> NO    newest: 2eadf30ab92f -> NONE
+    line  : #   W2 `cat` (op.py:731), reached from rand.py:15, :29 and tensor.py:471, is `mixin/op.bend`'s
+tinybendygrad/mixin/rand.bend:55  tinygrad/mixin/rand.py:29
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: cat,mixin,bend  ->  
+    in_file:cat,mixin  ->  
+    at_pin : HOLDS -> NO    newest: 719692bf6db0 -> NONE
+    line  : #   W2 `cat` (op.py:731), reached from rand.py:15, :29 and tensor.py:471, is `mixin/op.bend`'s
+tinybendygrad/mixin/rand.bend:62  rand.py:14
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: _getitem  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   W3 `_getitem` (op.py:74), reached from rand.py:14, :101 and tensor.py:520-524, is
+tinybendygrad/mixin/rand.bend:62  tensor.py:520
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: _getitem  ->  
+    in_file:_getitem  ->  
+    at_pin : HOLDS -> NO    newest: 2eadf30ab92f -> NONE
+    line  : #   W3 `_getitem` (op.py:74), reached from rand.py:14, :101 and tensor.py:520-524, is
+tinybendygrad/mixin/rand.bend:62  tinygrad/mixin/rand.py:101
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: _getitem  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   W3 `_getitem` (op.py:74), reached from rand.py:14, :101 and tensor.py:520-524, is
+tinybendygrad/nn/__init__.bend:70  tinygrad/nn/__init__.py:101
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: padding,same  ->  
+    in_file:padding,same  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #   Conv2d.__init__  make_tuple(:99), the `padding='same'` comprehension (:101),
+tinybendygrad/nn/__init__.bend:71  tinygrad/nn/__init__.py:103
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: flatten,pad  ->  
+    in_file:flatten,pad  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #                    `flatten(pad)` (:103), the weight/bias shapes (:103-104)
+tinybendygrad/nn/__init__.bend:74  tinygrad/nn/__init__.py:174
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: bound  ->  
+    in_file:bound  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #   Linear           `bound` (:173) and the two shapes (:174-175)
+tinybendygrad/nn/__init__.bend:75  tinygrad/nn/__init__.py:253
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: axis  ->  
+    in_file:axis  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #   LayerNorm        `axis` (:253) and the shapes (:253-254)
+tinybendygrad/nn/__init__.bend:76  tinygrad/nn/__init__.py:207
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: reshape  ->  
+    in_file:reshape  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #   GroupNorm /      the two `reshape` shapes (:203, :207, :231, :233)
+tinybendygrad/nn/__init__.bend:76  tinygrad/nn/__init__.py:231
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: reshape  ->  
+    in_file:reshape  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #   GroupNorm /      the two `reshape` shapes (:203, :207, :231, :233)
+tinybendygrad/nn/__init__.bend:76  tinygrad/nn/__init__.py:233
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: reshape  ->  
+    in_file:reshape  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #   GroupNorm /      the two `reshape` shapes (:203, :207, :231, :233)
+tinybendygrad/nn/onnx.bend:24  onnx.py:40
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: Domain  ->  
+    in_file:Domain  ->  
+    at_pin : HOLDS -> NO    newest: ef2e7173be0a -> NONE
+    line  : #     the WIRE TYPE table (onnx.py:40-45 symbol=WireType); the nine `Domain` members (onnx.py:40-51 symbol=Domain) and
+tinybendygrad/nn/onnx.bend:37  onnx.py:298
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: _from_subgraph,_init_from_graph  ->  
+    in_file:_from_subgraph,_init_from_graph  ->  
+    at_pin : HOLDS -> NO    newest: ef2e7173be0a -> NONE
+    line  : #     onnx.py:298 symbol=_init_from_graph, `_from_subgraph` `_init_from_graph` onnx.py:313 symbol=_from_subgraph,
+tinybendygrad/nn/onnx.bend:38  onnx.py:318
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: _parse_input,device  ->  
+    in_file:_parse_input,device  ->  
+    at_pin : HOLDS -> NO    newest: ef2e7173be0a -> NONE
+    line  : #     onnx.py:318 symbol=_parse_input, `_parse_input` `to(device)` onnx.py:345 symbol=to,
+tinybendygrad/nn/onnx.bend:39  onnx.py:352
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: __call__,_get_python_const  ->  
+    in_file:__call__,_get_python_const  ->  
+    at_pin : HOLDS -> NO    newest: ef2e7173be0a -> NONE
+    line  : #     onnx.py:352 symbol=_get_python_const, `__call__` `_get_python_const` onnx.py:361 symbol=__call__) and the protobuf layer they stand on.
+tinybendygrad/nn/onnx.bend:90  onnx.py:835
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: Gemm,alpha,beta,transA  ->  
+    in_file:Gemm,alpha,beta,transA  ->  
+    at_pin : HOLDS -> NO    newest: ef2e7173be0a -> NONE
+    line  : #     (onnx.py:835-842 symbol=BatchNormalization), `Gemm` (onnx.py:687-691 symbol=Gemm, the `alpha`/`beta`/`transA`/`transB`
+tinybendygrad/nn/optim.bend:28  creation.py:108
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: full,const,expand,shape  ->  
+    in_file:full,const,expand,shape  ->  
+    at_pin : HOLDS -> NO    newest: 92f4c8ae1837 -> NONE
+    line  : #      (creation.py:108 -> :53 `full`) is `const(0).expand(shape)` and then
+tinybendygrad/nn/optim.bend:42  optim.py:51
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: cat  ->  
+    in_file:cat  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #      (optim.py:51-53) are mixin: `cat` is mixin/op.py:731 and the reshape is
+tinybendygrad/nn/optim.bend:48  tinygrad/nn/optim.py:167
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: Data  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : # :167, :168). A `Data` record is immutable, so each of those RETURNS a new
+tinybendygrad/nn/optim.bend:59  optim.py:113
+    class : at_pin -> unverifiable
+    tokens: sqrt,Ops,SQRT  ->  Ops,SQRT
+    in_file:sqrt  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #   * `sqrt` -- tinygrad/mixin/elementwise.py:479 symbol=sqrt (`sqrt`, `Ops.SQRT`), optim.py:113, :114, :173, :174.
+tinybendygrad/nn/optim.bend:61  optim.py:115
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: where,Ops,WHERE  ->  
+    in_file:where  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #   * `where` -- elementwise.py:436 (`Ops.WHERE` ternary), optim.py:115, :175.
+tinybendygrad/nn/optim.bend:62  optim.py:113
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: sum  ->  
+    in_file:sum  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.
+tinybendygrad/nn/optim.bend:62  tinygrad/nn/optim.py:114
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: sum  ->  
+    in_file:sum  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.
+tinybendygrad/nn/optim.bend:62  tinygrad/nn/optim.py:173
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: sum  ->  
+    in_file:sum  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.
+tinybendygrad/nn/optim.bend:63  optim.py:60
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: detach,Ops,DETACH  ->  
+    in_file:detach  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #   * `detach` -- elementwise.py:43 (`Ops.DETACH`), optim.py:60, :113, :117, :171.
+tinybendygrad/nn/optim.bend:64  mixin/op.py:1889
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  newton_schulz
+    in_file:  ->  newton_schulz
+    at_pin : NO -> HOLDS    newest: NONE -> 9c85c766f0fb
+    line  : #   * `newton_schulz` -- mixin/op.py:1889 symbol=newton_schulz, optim.py:123. P3 and BIG.
+tinybendygrad/nn/optim.bend:64  optim.py:123
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: newton_schulz  ->  
+    in_file:newton_schulz  ->  
+    at_pin : HOLDS -> NO    newest: 5aabbb199181 -> NONE
+    line  : #   * `newton_schulz` -- mixin/op.py:1889 symbol=newton_schulz, optim.py:123. P3 and BIG.
+tinybendygrad/nn/pool.bend:26  tinygrad/uop/__init__.py:1285
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: max_pool2d,avg_pool2d  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : # `max_pool2d`/`avg_pool2d` (`mixin/op.py:1333`, `:1285`) are a REDUCE over it.
+tinybendygrad/nn/pool.bend:34  tinygrad/nn/__init__.py:32
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: grep,tinygrad,__init__  ->  
+    in_file:tinygrad,__init__  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : # `grep -n "^class \|^def " tinygrad/nn/__init__.py` = BatchNorm(:6), Conv1d(:32),
+tinybendygrad/nn/pool.bend:37  tinygrad/uop/__init__.py:281
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: max_pool  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : # RMSNorm(:281), Embedding(:374), LSTMCell(:395) and no others. So `max_pool`
+tinybendygrad/nn/pool.bend:37  tinygrad/uop/__init__.py:374
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: max_pool  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : # RMSNorm(:281), Embedding(:374), LSTMCell(:395) and no others. So `max_pool`
+tinybendygrad/renderer/llvmir.bend:8  tinygrad/renderer/llvmir.py:231
+    class : at_pin -> at_no_revision
+    tokens: _render_footer  ->  _render_fn
+    in_file:_render_footer  ->  _render_fn
+    at_pin : HOLDS -> NO    newest: f987b843db75 -> NONE
+    line  : # STAGE 2 as "`_render_fn` (:231-235 symbol=_render_fn), `_render_footer` (:232 symbol=_render_footer, :281 symbol=_render_footer), the per-op
+tinybendygrad/renderer/llvmir.bend:8  tinygrad/renderer/llvmir.py:281
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: _render_fn,_render_footer  ->  
+    in_file:_render_fn,_render_footer  ->  
+    at_pin : HOLDS -> NO    newest: f987b843db75 -> NONE
+    line  : # STAGE 2 as "`_render_fn` (:231-235 symbol=_render_fn), `_render_footer` (:232 symbol=_render_footer, :281 symbol=_render_footer), the per-op
+tinybendygrad/renderer/llvmir.bend:48  llvmir.py:165
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  abi
+    in_file:  ->  abi
+    at_pin : NO -> HOLDS    newest: NONE -> f987b843db75
+    line  : #   `abi=`  `abi` IS upstream's own class attribute (llvmir.py:165), read at :177 and
+tinybendygrad/renderer/llvmir.bend:48  tinygrad/renderer/llvmir.py:177
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: abi  ->  
+    in_file:abi  ->  
+    at_pin : HOLDS -> NO    newest: f987b843db75 -> NONE
+    line  : #   `abi=`  `abi` IS upstream's own class attribute (llvmir.py:165), read at :177 and
+tinybendygrad/renderer/llvmir.bend:53  tinygrad/renderer/llvmir.py:95
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: volatile,is_volatile,idx  ->  
+    in_file:volatile,is_volatile,idx  ->  
+    at_pin : HOLDS -> NO    newest: f987b843db75 -> NONE
+    line  : #          the emitters interpolate `{'volatile ' if is_volatile(idx) else ''}` (:90, :95,
+tinybendygrad/renderer/llvmir.bend:170  tinygrad/renderer/llvmir.py:227
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: render  ->  
+    in_file:render  ->  
+    at_pin : HOLDS -> NO    newest: f987b843db75 -> NONE
+    line  : #   * `render` (llvmir.py:227 symbol=render and :227-240 symbol=render). Both are
+tinybendygrad/renderer/llvmir.bend:184  tinygrad/renderer/llvmir.py:169
+    class : at_pin -> at_no_revision
+    tokens: __init__  ->  CPULLVMCompiler
+    in_file:__init__  ->  CPULLVMCompiler
+    at_pin : HOLDS -> NO    newest: f987b843db75 -> NONE
+    line  : #   * `__init__` (llvmir.py:169-172 symbol=__init__, :169-179 symbol=__init__) binds `CPULLVMCompiler` /
+tinybendygrad/renderer/llvmir.bend:187  llvmir.py:20
+    class : uncheckable_no_claim_token -> at_no_revision
+    tokens:   ->  lconst
+    in_file:  ->  lconst
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :21 symbol=lconst) are
+tinybendygrad/renderer/llvmir.bend:187  tinygrad/renderer/llvmir.py:21
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: lconst  ->  
+    in_file:lconst  ->  
+    at_pin : HOLDS -> NO    newest: f987b843db75 -> NONE
+    line  : #   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :21 symbol=lconst) are
+tinybendygrad/renderer/nir_llvmir.bend:119  tinygrad/renderer/nir.py:265
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: _render_fn,_render_footer  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #   STAGE 2  NOT STARTED. `_render_fn` (:156-160), `_render_footer` (:210, :265),
+tinybendygrad/renderer/nir_llvmir.bend:123  tinygrad/renderer/nir.py:27
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: ncast,scope  ->  
+    in_file:ncast,scope  ->  
+    at_pin : HOLDS -> NO    newest: c04397442b17 -> NONE
+    line  : #            (:27-31), `c` (:83), `ncast` (:27-28), `scope` (:83),
+tinybendygrad/renderer/nir_llvmir.bend:123  tinygrad/renderer/nir.py:83
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: ncast,scope  ->  
+    in_file:ncast,scope  ->  
+    at_pin : HOLDS -> NO    newest: c04397442b17 -> NONE
+    line  : #            (:27-31), `c` (:83), `ncast` (:27-28), `scope` (:83),
+tinybendygrad/renderer/nir_llvmir.bend:127  tinygrad/renderer/nir.py:253
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: supported_dtypes,code_for_op  ->  
+    in_file:supported_dtypes,code_for_op  ->  
+    at_pin : HOLDS -> NO    newest: c04397442b17 -> NONE
+    line  : #            `supported_dtypes` (:244, :253, :321) and `code_for_op` (:119, :262).
+tinybendygrad/renderer/nir_llvmir.bend:127  tinygrad/renderer/nir.py:321
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: supported_dtypes,code_for_op  ->  
+    in_file:supported_dtypes,code_for_op  ->  
+    at_pin : HOLDS -> NO    newest: c04397442b17 -> NONE
+    line  : #            `supported_dtypes` (:244, :253, :321) and `code_for_op` (:119, :262).
+tinybendygrad/renderer/nir_llvmir.bend:127  tinygrad/renderer/nir.py:262
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: supported_dtypes,code_for_op  ->  
+    in_file:supported_dtypes,code_for_op  ->  
+    at_pin : HOLDS -> NO    newest: c04397442b17 -> NONE
+    line  : #            `supported_dtypes` (:244, :253, :321) and `code_for_op` (:119, :262).
+tinybendygrad/renderer/ptx.bend:18  ptx.py:180
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  ssa
+    in_file:  ->  ssa
+    at_pin : NO -> HOLDS    newest: NONE -> fd6bbc182580
+    line  : # `ssa` COUNTER (ptx.py:180-183), the per-op register assignment (ptx.py:185-221),
+tinybendygrad/renderer/ptx.bend:18  ptx.py:185
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: ssa  ->  
+    in_file:ssa  ->  
+    at_pin : HOLDS -> NO    newest: fd6bbc182580 -> NONE
+    line  : # `ssa` COUNTER (ptx.py:180-183), the per-op register assignment (ptx.py:185-221),
+tinybendygrad/renderer/ptx.bend:20  ptx.py:210
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  bufs
+    in_file:  ->  bufs
+    at_pin : NO -> HOLDS    newest: NONE -> fd6bbc182580
+    line  : # the `bufs` collection (ptx.py:210), the entry-point NAME (ptx.py:173, 192-193)
+tinybendygrad/renderer/ptx.bend:20  ptx.py:173
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: bufs  ->  
+    in_file:bufs  ->  
+    at_pin : HOLDS -> NO    newest: fd6bbc182580 -> NONE
+    line  : # the `bufs` collection (ptx.py:210), the entry-point NAME (ptx.py:173, 192-193)
+tinybendygrad/runtime/ops_amd.bend:166  runtime/ops_amd.py:596
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  FileIOInterface,dev,kfd
+    in_file:  ->  FileIOInterface,dev,kfd
+    at_pin : NO -> HOLDS    newest: NONE -> 9ff6db7b0edb
+    line  : # | WALL(p3) runtime/ops_amd.py:596  FileIOInterface("/dev/kfd"). -- BLOCKED: needs `FileIOInterface("/dev/kfd")`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write,
+tinybendygrad/runtime/ops_amd.bend:167  runtime/ops_amd.py:613
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  AMDKFD_IOC_ACQUIRE_VM
+    in_file:  ->  AMDKFD_IOC_ACQUIRE_VM
+    at_pin : NO -> NO    newest: NONE -> 956e956e2b3a
+    line  : # | WALL(p3) runtime/ops_amd.py:613  AMDKFD_IOC_ACQUIRE_VM. -- BLOCKED: needs the `AMDKFD_IOC_ACQUIRE_VM` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, a
+tinybendygrad/runtime/ops_amd.bend:168  runtime/ops_amd.py:631
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU
+    in_file:  ->  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU
+    at_pin : NO -> NO    newest: NONE -> 956e956e2b3a
+    line  : # | WALL(p3) runtime/ops_amd.py:631  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU. -- BLOCKED: needs the `AMDKFD_IOC_ALLOC_MEMORY_OF_GPU` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes
+tinybendygrad/runtime/ops_amd.bend:169  runtime/ops_amd.py:665
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  AMDKFD_IOC_MAP_MEMORY_TO_GPU
+    in_file:  ->  AMDKFD_IOC_MAP_MEMORY_TO_GPU
+    at_pin : NO -> NO    newest: NONE -> 956e956e2b3a
+    line  : # | WALL(p3) runtime/ops_amd.py:665  AMDKFD_IOC_MAP_MEMORY_TO_GPU. -- BLOCKED: needs the `AMDKFD_IOC_MAP_MEMORY_TO_GPU` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes reg
+tinybendygrad/runtime/ops_amd.bend:170  runtime/ops_amd.py:685
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  AMDKFD_IOC_CREATE_QUEUE
+    in_file:  ->  AMDKFD_IOC_CREATE_QUEUE
+    at_pin : NO -> NO    newest: NONE -> 956e956e2b3a
+    line  : # | WALL(p3) runtime/ops_amd.py:685  AMDKFD_IOC_CREATE_QUEUE. -- BLOCKED: needs the `AMDKFD_IOC_CREATE_QUEUE` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register writ
+tinybendygrad/runtime/ops_amd.bend:171  runtime/ops_amd.py:702
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  AMDKFD_IOC_WAIT_EVENTS
+    in_file:  ->  AMDKFD_IOC_WAIT_EVENTS
+    at_pin : NO -> NO    newest: NONE -> 956e956e2b3a
+    line  : # | WALL(p3) runtime/ops_amd.py:702  AMDKFD_IOC_WAIT_EVENTS. -- BLOCKED: needs the `AMDKFD_IOC_WAIT_EVENTS` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write,
+tinybendygrad/runtime/ops_amd.bend:179  runtime/ops_amd.py:740
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  PCIIfaceBase,__init__
+    in_file:  ->  PCIIfaceBase,__init__
+    at_pin : NO -> NO    newest: NONE -> 70fe8742691b
+    line  : # | WALL(p3) runtime/ops_amd.py:740  PCIIfaceBase.__init__ (vendor 4098). -- BLOCKED: needs `PCIIfaceBase.__init__` to claim vendor 4098 -- a PCI config read: an FFI SEAM
+tinybendygrad/runtime/ops_amd.bend:180  runtime/ops_amd.py:753
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  AMDev,gc_info,gfx,xccs
+    in_file:  ->  AMDev,gc_info,gfx,xccs
+    at_pin : NO -> NO    newest: NONE -> c52b227c7beb
+    line  : # | WALL(p3) runtime/ops_amd.py:753  AMDev.gc_info / AMDev.gfx.xccs. -- BLOCKED: needs `AMDev.gc_info` / `AMDev.gfx.xccs`, which read a DEVICE PROPERTY through an ioctl: 
+tinybendygrad/runtime/ops_amd.bend:181  runtime/ops_amd.py:772
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  AMDev,sdma,gfx,setup_ring
+    in_file:  ->  AMDev,sdma,gfx,setup_ring
+    at_pin : NO -> NO    newest: NONE -> d5059900d715
+    line  : # | WALL(p3) runtime/ops_amd.py:772  AMDev.{sdma,gfx}.setup_ring. -- BLOCKED: needs `AMDev.{sdma,gfx}.setup_ring`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write,
+tinybendygrad/runtime/ops_amd.bend:182  runtime/ops_amd.py:731
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  struct_drm_amdgpu_info_device,cu_bitmap
+    in_file:  ->  struct_drm_amdgpu_info_device,cu_bitmap
+    at_pin : NO -> NO    newest: NONE -> 70fe8742691b
+    line  : # | WALL(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap. -- BLOCKED: needs `struct_drm_amdgpu_info_device.cu_bitmap`, a ctypes STRUCT FIELD: an F
+tinybendygrad/runtime/ops_amd.bend:186  runtime/ops_amd.py:812
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  USB3,list_devices
+    in_file:  ->  USB3,list_devices
+    at_pin : NO -> NO    newest: NONE -> 1f521c430184
+    line  : # | WALL(p3) runtime/ops_amd.py:812  USB3.list_devices. -- BLOCKED: needs `USB3.list_devices`, which ENUMERATES devices through libusb: an FFI SEAM -- an `ioctl`/`mmap`/c
+tinybendygrad/runtime/ops_amd.bend:187  runtime/ops_amd.py:822
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  USBIface,ctrl,map_range,mmap
+    in_file:  ->  USBIface,ctrl,map_range,mmap
+    at_pin : NO -> NO    newest: NONE -> 70fe8742691b
+    line  : # | WALL(p3) runtime/ops_amd.py:822  USBIface.ctrl's three map_range pieces. -- BLOCKED: needs `USBIface.ctrl`'s three `map_range` pieces -- an `mmap` of a BAR: an FFI SE
+tinybendygrad/runtime/ops_amd.bend:188  runtime/ops_amd.py:824
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  pci_dev,dma_view
+    in_file:  ->  pci_dev,dma_view
+    at_pin : NO -> NO    newest: NONE -> 1f521c430184
+    line  : # | WALL(p3) runtime/ops_amd.py:824  pci_dev.dma_view(40960, 544768). -- BLOCKED: needs `pci_dev.dma_view(40960, 544768)`, a DMA mapping: an FFI SEAM -- an `ioctl`/`mmap`
+tinybendygrad/runtime/ops_amd.bend:197  runtime/ops_amd.py:842
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  encode_submit,amd_compute_queue,submit
+    in_file:  ->  encode_submit,amd_compute_queue,submit
+    at_pin : NO -> NO    newest: NONE -> 1f521c430184
+    line  : # | WALL(p3) runtime/ops_amd.py:842  encode_submit(amd_compute_queue(submit)). -- BLOCKED: needs `encode_submit(amd_compute_queue(submit))` -- a queue SUBMIT written into
+tinybendygrad/runtime/ops_amd.bend:198  runtime/ops_amd.py:843
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  encode_submit,AMDSDMAQueue,submit
+    in_file:  ->  encode_submit,AMDSDMAQueue,submit
+    at_pin : NO -> NO    newest: NONE -> 1f521c430184
+    line  : # | WALL(p3) runtime/ops_amd.py:843  encode_submit(AMDSDMAQueue(submit)). -- BLOCKED: needs `encode_submit(AMDSDMAQueue(submit))`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes
+tinybendygrad/runtime/ops_amd.bend:199  runtime/ops_amd.py:889
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  ctx,scratch_buffer,max_numel
+    in_file:  ->  ctx,scratch_buffer,max_numel
+    at_pin : NO -> NO    newest: NONE -> 1f521c430184
+    line  : # | WALL(p3) runtime/ops_amd.py:889  ctx.scratch_buffer(b.max_numel()). -- BLOCKED: needs `ctx.scratch_buffer(b.max_numel())`, a device BUFFER: an FFI SEAM -- an `ioctl`/
+tinybendygrad/runtime/ops_amd.bend:200  runtime/ops_amd.py:890
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  ctx,program_buffer,ioctl
+    in_file:  ->  ctx,program_buffer,ioctl
+    at_pin : NO -> NO    newest: NONE -> 1f521c430184
+    line  : # | WALL(p3) runtime/ops_amd.py:890  ctx.program_buffer(b). -- BLOCKED: needs `ctx.program_buffer(b)`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of
+tinybendygrad/runtime/ops_amd.bend:201  runtime/ops_amd.py:891
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  ctx,queue_buffer,tag,ioctl
+    in_file:  ->  ctx,queue_buffer,tag,ioctl
+    at_pin : NO -> NO    newest: NONE -> c52b227c7beb
+    line  : # | WALL(p3) runtime/ops_amd.py:891  ctx.queue_buffer(b.tag). -- BLOCKED: needs `ctx.queue_buffer(b.tag)`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NON
+tinybendygrad/runtime/ops_amd.bend:205  tinygrad/runtime/ops_amd.py:774
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: on_device_hang  ->  
+    in_file:on_device_hang  ->  
+    at_pin : HOLDS -> NO    newest: 9ff6db7b0edb -> NONE
+    line  : #    (tinygrad/runtime/ops_amd.py:774-777 symbol=on_device_hang) and AMDDevice's `on_device_hang` (tinygrad/runtime/ops_amd.py:1024 symbol=on_device_hang). A field NAME i
+tinybendygrad/runtime/ops_cl.bend:162  tinygrad/runtime/ops_cl.py:105
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: ctypes,create_string_buffer,string_at  ->  
+    in_file:ctypes,create_string_buffer,string_at  ->  
+    at_pin : HOLDS -> NO    newest: cc4d0091dad1 -> NONE
+    line  : # 3. `ctypes.create_string_buffer` / `ctypes.string_at` (:29-32, :105-116) are a
+tinybendygrad/runtime/ops_cl.bend:165  tinygrad/runtime/ops_cl.py:108
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  device_name
+    in_file:  ->  device_name
+    at_pin : NO -> HOLDS    newest: NONE -> cc4d0091dad1
+    line  : #    `self.device_name` (`tinygrad/runtime/ops_cl.py:108 symbol=__init__`) and tinygrad/runtime/ops_cl.py:109 prints.
+tinybendygrad/runtime/ops_cl.bend:165  tinygrad/runtime/ops_cl.py:109
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: device_name  ->  
+    in_file:device_name  ->  
+    at_pin : HOLDS -> NO    newest: cc4d0091dad1 -> NONE
+    line  : #    `self.device_name` (`tinygrad/runtime/ops_cl.py:108 symbol=__init__`) and tinygrad/runtime/ops_cl.py:109 prints.
+tinybendygrad/runtime/ops_disk.bend:184  tinygrad/runtime/ops_disk.py:33
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: O_RDWR,O_CREAT,O_DIRECT  ->  
+    in_file:O_RDWR,O_CREAT,O_DIRECT  ->  
+    at_pin : HOLDS -> NO    newest: 4109f3a747a3 -> NONE
+    line  : #    RECORDED. :33 asks for `O_RDWR|O_CREAT|O_DIRECT` and :34 retries with
+tinybendygrad/runtime/ops_metal.bend:150  tinygrad/runtime/ops_metal.py:276
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: cns_string  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : # :276-281) and `cns_string` (:23) each carried a comment saying a row checked it,
+tinybendygrad/runtime/ops_metal.bend:166  tinygrad/runtime/ops_metal.py:18
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: DLL,CoreGraphics  ->  
+    in_file:DLL,CoreGraphics  ->  
+    at_pin : HOLDS -> NO    newest: 9ff6db7b0edb -> NONE
+    line  : # 1. A DYNAMIC LIBRARY LOAD (:18, :35). `DLL("CoreGraphics", "CoreGraphics")`
+tinybendygrad/runtime/ops_metal.bend:174  tinygrad/runtime/ops_metal.py:23
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: to_ns_str  ->  
+    in_file:to_ns_str  ->  
+    at_pin : HOLDS -> NO    newest: 9ff6db7b0edb -> NONE
+    line  : # 2. AN NSString (:23, :247). `to_ns_str` is
+tinybendygrad/runtime/ops_metal.bend:195  tinygrad/runtime/ops_metal.py:185
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: pm_encode,pm_lower  ->  
+    in_file:pm_encode,pm_lower  ->  
+    at_pin : HOLDS -> NO    newest: 9ff6db7b0edb -> NONE
+    line  : # 5. THE UOp MATCHER (:185, :188). `pm_encode` and `pm_lower` match on UOps and
+tinybendygrad/runtime/ops_npy.bend:89  tinygrad/runtime/ops_npy.py:317
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: cpu_profile  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : # 2. `cpu_profile` (device.py:315,:317). A `with` around the copy that writes a
+tinybendygrad/runtime/ops_nv.bend:15  tinygrad/runtime/ops_nv.py:38
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  nv_flags
+    in_file:  ->  nv_flags
+    at_pin : NO -> HOLDS    newest: NONE -> 453197e71bc4
+    line  : #            `nv_flags` (tinygrad/runtime/ops_nv.py:38 symbol=nv_flags) -- the queue's word flags -- and the four queues' command vocabularies (:99-225).
+tinybendygrad/runtime/ops_nv.bend:15  tinygrad/runtime/ops_nv.py:99
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: nv_flags  ->  
+    in_file:nv_flags  ->  
+    at_pin : HOLDS -> NO    newest: 453197e71bc4 -> NONE
+    line  : #            `nv_flags` (tinygrad/runtime/ops_nv.py:38 symbol=nv_flags) -- the queue's word flags -- and the four queues' command vocabularies (:99-225).
+tinybendygrad/runtime/ops_nv.bend:23  tinygrad/helpers.py:21
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: to_name,reg_ops  ->  
+    in_file:to_name  ->  
+    at_pin : HOLDS -> NO    newest: 95b7c56b426d -> NONE
+    line  : #            (tinygrad/helpers.py:21 symbol=to_name) `to_name` (tinygrad/runtime/support/hcq2.py:61 uses it), `reg_ops` (tinygrad/runtime/ops_nv.py:811 symbol=reg_ops)'s 
+tinybendygrad/runtime/ops_python.bend:51  ops_python.py:106
+    class : uncheckable_no_claim_token -> only_older_revision
+    tokens:   ->  memoryview,arg
+    in_file:  ->  memoryview,arg
+    at_pin : NO -> NO    newest: NONE -> bdddaad21948
+    line  : #   :106 BINARY         WALL  ops_python.py:106 -- `memoryview(u.arg)` is raw
+tinybendygrad/runtime/ops_python.bend:81  tinygrad/uop/ops.py:1412
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: python_alu,KeyError  ->  
+    in_file:python_alu,KeyError  ->  
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> NONE
+    line  : #    (tinygrad/uop/ops.py:1412-1420 symbol=python_alu) `python_alu`, so tinygrad/uop/ops.py:1427 raises `KeyError` on them. They are
+tinybendygrad/runtime/ops_python.bend:244  tinygrad/runtime/ops_python.py:129
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: values  ->  
+    in_file:values  ->  
+    at_pin : HOLDS -> NO    newest: a6addc2d4344 -> NONE
+    line  : #     (ops_python.py:125-127 increments `values[u]` in place, and :129 `del`s
+tinybendygrad/runtime/ops_webgpu.bend:150  tinygrad/runtime/ops_webgpu.py:54
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: TinyELF,name  ->  
+    in_file:TinyELF,name  ->  
+    at_pin : HOLDS -> NO    newest: a6addc2d4344 -> NONE
+    line  : #   4. `TinyELF` (tinygrad/device.py:343-345 symbol=TinyELF) carries `name`, which is the entry point (:54)
+tinybendygrad/runtime/support/am/amdev.bend:29  tinygrad/runtime/support/am/amdev.py:82
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: rlcg_rw,addr,val,ucode_start  ->  
+    in_file:rlcg_rw,addr,val,ucode_start  ->  
+    at_pin : HOLDS -> NO    newest: 3a2fb612cf13 -> NONE
+    line  : #     `rlcg_rw`'s `(addr | 1<<28) << 32 | val` (:320), plus `ucode_start`'s `<< 32` (:82).
+tinybendygrad/runtime/support/am/ip.bend:74  tinygrad/runtime/support/am/ip.py:250
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: from_buffer,int,round,watts  ->  
+    in_file:from_buffer,int,round,watts  ->  
+    at_pin : HOLDS -> NO    newest: 471a3aeb6924 -> NONE
+    line  : #   WALL 4  firmware BLOBS, `from_buffer`, `int(round(watts))`           :228 :250
+tinybendygrad/runtime/support/hcq2.bend:108  tinygrad/runtime/support/hcq2.py:452
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: UOp,param,substitute,pm_lift  ->  
+    in_file:UOp,param,substitute,pm_lift  ->  
+    at_pin : HOLDS -> NO    newest: d305e91bdd3b -> NONE
+    line  : #    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (`uop/ops.bend:514` open TODO) -- the row `pm_lift`.
+tinybendygrad/runtime/support/hcq2.bend:109  tinygrad/runtime/support/hcq2.py:458
+    class : at_pin -> only_older_revision
+    tokens: HCQInfo,CallInfo,aux,pm_encode  ->  HCQInfo
+    in_file:HCQInfo,aux,pm_encode  ->  HCQInfo
+    at_pin : HOLDS -> NO    newest: d305e91bdd3b -> 48ed17396ac9
+    line  : #    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`) -- the row `pm_encode`.
+tinybendygrad/runtime/support/memory.bend:44  tinygrad/runtime/support/memory.py:12
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: to_mv,cast,fmt  ->  
+    in_file:to_mv,cast,fmt  ->  
+    at_pin : HOLDS -> NO    newest: 7a90986f23ff -> NONE
+    line  : #   `to_mv` / `.cast(fmt)`          :7, :12    TO_MV, TO_MV_CAST
+tinybendygrad/runtime/support/nv/ip.bend:128  tinygrad/runtime/support/nv/ip.py:303
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: fetch_fw,elf_loader  ->  
+    in_file:fetch_fw,elf_loader  ->  
+    at_pin : HOLDS -> NO    newest: d5059900d715 -> NONE
+    line  : #   * `fetch_fw` (:174,:303,:402,:429) and `elf_loader` (:303) -- firmware
+tinybendygrad/runtime/support/nv/ip.bend:128  tinygrad/runtime/support/nv/ip.py:402
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: fetch_fw,elf_loader  ->  
+    in_file:fetch_fw,elf_loader  ->  
+    at_pin : HOLDS -> NO    newest: d5059900d715 -> NONE
+    line  : #   * `fetch_fw` (:174,:303,:402,:429) and `elf_loader` (:303) -- firmware
+tinybendygrad/runtime/support/nv/ip.bend:128  tinygrad/runtime/support/nv/ip.py:429
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: fetch_fw,elf_loader  ->  
+    in_file:fetch_fw,elf_loader  ->  
+    at_pin : HOLDS -> NO    newest: d5059900d715 -> NONE
+    line  : #   * `fetch_fw` (:174,:303,:402,:429) and `elf_loader` (:303) -- firmware
+tinybendygrad/runtime/support/nv/ip.bend:138  tinygrad/runtime/support/nv/ip.py:63
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: System,memory_barrier  ->  
+    in_file:System,memory_barrier  ->  
+    at_pin : HOLDS -> NO    newest: d5059900d715 -> NONE
+    line  : #     and `System.memory_barrier` (:52,:63,:78). `System.memory_barrier` IS a
+tinybendygrad/runtime/support/system.bend:94  tinygrad/runtime/support/system.py:61
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: atomic_lib  ->  
+    in_file:atomic_lib  ->  
+    at_pin : HOLDS -> NO    newest: 95b7c56b426d -> NONE
+    line  : # 3. THE CTYPES LIBRARY GATE, tinygrad/runtime/support/system.py:61-65 and tinygrad/runtime/support/system.py:88. `atomic_lib` is
+tinybendygrad/runtime/support/system.bend:94  tinygrad/runtime/support/system.py:88
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  atomic_lib
+    in_file:  ->  atomic_lib
+    at_pin : NO -> HOLDS    newest: NONE -> 95b7c56b426d
+    line  : # 3. THE CTYPES LIBRARY GATE, tinygrad/runtime/support/system.py:61-65 and tinygrad/runtime/support/system.py:88. `atomic_lib` is
+tinybendygrad/runtime/webgpu_call.bend:60  tinygrad/runtime/ops_webgpu.py:95
+    class : at_pin -> dangling
+    tokens: bg_entry,dev,create_uniform  ->  bg_entry
+    in_file:bg_entry,dev,create_uniform  ->  bg_entry
+    at_pin : HOLDS -> NO    newest: a6addc2d4344 -> NONE
+    line  : # tinygrad/runtime/ops_webgpu.py:95 `bg_entry` calls `dev.create_uniform(x)` (tinygrad/runtime/ops_webgpu.py:202-206 symbol=create_uniform), which
+tinybendygrad/schedule/__init__.bend:74  ops.py:1015
+    class : at_pin -> only_older_revision
+    tokens: is_variable  ->  UOp,is_bound_var
+    in_file:is_variable  ->  UOp,is_bound_var
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> 3bffcdf219b3
+    line  : # * `UOp.is_bound_var` (ops.py:1015 symbol=is_bound_var) reads `is_variable` (ops.py:1020), whose
+tinybendygrad/schedule/__init__.bend:74  ops.py:1020
+    class : at_pin -> only_older_revision
+    tokens: UOp,is_bound_var,is_variable  ->  is_variable
+    in_file:UOp,is_bound_var,is_variable  ->  is_variable
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> d3345b93b18d
+    line  : # * `UOp.is_bound_var` (ops.py:1015 symbol=is_bound_var) reads `is_variable` (ops.py:1020), whose
+tinybendygrad/schedule/__init__.bend:121  ops.py:107
+    class : at_pin -> at_no_revision
+    tokens: src,buf_uop,mselect,arg,UOp,MSTACK,schedule,multi  ->  buf_uop
+    in_file:src,buf_uop,mselect,arg,UOp,MSTACK,schedule,multi  ->  buf_uop
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> NONE
+    line  : # WALL(p3) ops.py:107     `buf_uop`'s MSELECT and MSTACK arms (see above) -- BLOCKED: needs the arena threaded through a walk that CONSTRUCTS (interns) a UOp: MSELECT is 
+tinybendygrad/schedule/indexing.bend:17  indexing.py:5
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: broadcast_axes  ->  
+    in_file:broadcast_axes  ->  
+    at_pin : HOLDS -> NO    newest: 42045f1651f9 -> NONE
+    line  : # (indexing.py:5) read it, and `broadcast_axes` (indexing.py:64) reads
+tinybendygrad/schedule/memory.bend:31  memory.py:61
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: UOp,substitute,new_buffer  ->  
+    in_file:UOp,substitute,new_buffer  ->  
+    at_pin : HOLDS -> NO    newest: 3bffcdf219b3 -> NONE
+    line  : #    (memory.py:61), needs `UOp.substitute` (ops.py:514 symbol=substitute) and `UOp.new_buffer` (ops.py:835 symbol=new_buffer,
+tinybendygrad/schedule/multi.bend:7  ops.py:423
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: TODO,ops,bend  ->  
+    in_file:TODO,ops  ->  
+    at_pin : HOLDS -> NO    newest: 928d228da2cf -> NONE
+    line  : # one of those is ported (ops.py:423 through :32, every one a `TODO(p3)` in `ops.bend`).
+tinybendygrad/schedule/multi.bend:30  multi.py:106
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: reduce_multi  ->  
+    in_file:reduce_multi  ->  
+    at_pin : HOLDS -> NO    newest: 9008804338a4 -> NONE
+    line  : # (multi.py:106 symbol=reduce_multi) and of `reduce_multi`'s ALLREDUCE_CAST arm (multi.py:116-118); this file's
+tinybendygrad/schedule/prepare.bend:33  ops.py:1886
+    class : uncheckable_no_claim_token -> at_pin
+    tokens:   ->  graph_rewrite
+    in_file:  ->  graph_rewrite
+    at_pin : NO -> HOLDS    newest: NONE -> 928d228da2cf
+    line  : # W1. `graph_rewrite` -- ops.py:1886 symbol=graph_rewrite, called FOUR TIMES at prepare.py:280-283.
+tinybendygrad/schedule/prepare.bend:33  prepare.py:280
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: graph_rewrite  ->  
+    in_file:graph_rewrite  ->  
+    at_pin : HOLDS -> NO    newest: beaf54974398 -> NONE
+    line  : # W1. `graph_rewrite` -- ops.py:1886 symbol=graph_rewrite, called FOUR TIMES at prepare.py:280-283.
+tinybendygrad/tensor.bend:28  tinygrad/tensor.py:281
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: Buffer,new_buffer  ->  
+    in_file:Buffer,new_buffer  ->  
+    at_pin : HOLDS -> NO    newest: 2eadf30ab92f -> NONE
+    line  : #   2. A `Buffer` (tensor.py:249, :281, :422) is device state. `new_buffer`
+tinybendygrad/tensor.bend:28  tinygrad/tensor.py:422
+    class : at_pin -> at_no_revision
+    tokens: Buffer,new_buffer  ->  new_buffer
+    in_file:Buffer,new_buffer  ->  new_buffer
+    at_pin : HOLDS -> NO    newest: 2eadf30ab92f -> NONE
+    line  : #   2. A `Buffer` (tensor.py:249, :281, :422) is device state. `new_buffer`
+tinybendygrad/uop/divandmod.bend:6  tinygrad/uop/divandmod.py:61
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: fold_divmod_general  ->  
+    in_file:fold_divmod_general  ->  
+    at_pin : HOLDS -> NO    newest: 41c4dc014942 -> NONE
+    line  : # arms of `fold_divmod_general` -- :8, :61 and :108 -- and the TODO block names
+tinybendygrad/uop/divandmod.bend:6  tinygrad/uop/divandmod.py:108
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: fold_divmod_general  ->  
+    in_file:fold_divmod_general  ->  
+    at_pin : HOLDS -> NO    newest: 41c4dc014942 -> NONE
+    line  : # arms of `fold_divmod_general` -- :8, :61 and :108 -- and the TODO block names
+tinybendygrad/uop/symbolic.bend:46  tinygrad/uop/symbolic.py:464
+    class : unverifiable -> uncheckable_no_claim_token
+    tokens: sym_463,sym_464  ->  
+    in_file:  ->  
+    at_pin : NO -> NO    newest: NONE -> NONE
+    line  : #                                            (`sym_463` at :463, `sym_464` at :464,
+tinybendygrad/viz/serve.bend:67  serve.py:61
+    class : at_pin -> uncheckable_no_claim_token
+    tokens: RewriteTrace  ->  
+    in_file:RewriteTrace  ->  
+    at_pin : HOLDS -> NO    newest: 48a0df9092eb -> NONE
+    line  : #   serve.py:61-80    load_rewrites    needs `RewriteTrace` (uop/ops.py:1726)
