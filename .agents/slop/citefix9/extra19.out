@@ -1,0 +1,168 @@
+====================================================================================================
+### tinybendygrad/examples/train_resnet.bend
+     66| #
+     67| # THE SYMBOL CENSUS. In upstream source order, every symbol :1-45 names:
+     68| #
+>>   69| #   `numpy` (:2, used :24,:26,:36,:37,:38)  MISSING. No n-d array library: the
+     70| #       `.reshape`, `.astype`, `np.stack`, `np.tile`, `np.expand_dims` and
+     71| #       `np.asarray` at :24-38 have no counterpart.
+      ROW subj=extra/training.py 2-2 class=only_older_revision claim=numpy
+
+     66| #
+     67| # THE SYMBOL CENSUS. In upstream source order, every symbol :1-45 names:
+     68| #
+>>   69| #   `numpy` (:2, used :24,:26,:36,:37,:38)  MISSING. No n-d array library: the
+     70| #       `.reshape`, `.astype`, `np.stack`, `np.tile`, `np.expand_dims` and
+     71| #       `np.asarray` at :24-38 have no counterpart.
+      ROW subj=extra/training.py 24-24 class=at_no_revision claim=numpy
+
+     66| #
+     67| # THE SYMBOL CENSUS. In upstream source order, every symbol :1-45 names:
+     68| #
+>>   69| #   `numpy` (:2, used :24,:26,:36,:37,:38)  MISSING. No n-d array library: the
+     70| #       `.reshape`, `.astype`, `np.stack`, `np.tile`, `np.expand_dims` and
+     71| #       `np.asarray` at :24-38 have no counterpart.
+      ROW subj=extra/training.py 26-26 class=only_older_revision claim=numpy
+
+     66| #
+     67| # THE SYMBOL CENSUS. In upstream source order, every symbol :1-45 names:
+     68| #
+>>   69| #   `numpy` (:2, used :24,:26,:36,:37,:38)  MISSING. No n-d array library: the
+     70| #       `.reshape`, `.astype`, `np.stack`, `np.tile`, `np.expand_dims` and
+     71| #       `np.asarray` at :24-38 have no counterpart.
+      ROW subj=extra/training.py 36-36 class=only_older_revision claim=numpy
+
+     66| #
+     67| # THE SYMBOL CENSUS. In upstream source order, every symbol :1-45 names:
+     68| #
+>>   69| #   `numpy` (:2, used :24,:26,:36,:37,:38)  MISSING. No n-d array library: the
+     70| #       `.reshape`, `.astype`, `np.stack`, `np.tile`, `np.expand_dims` and
+     71| #       `np.asarray` at :24-38 have no counterpart.
+      ROW subj=extra/training.py 37-37 class=at_no_revision claim=numpy
+
+     66| #
+     67| # THE SYMBOL CENSUS. In upstream source order, every symbol :1-45 names:
+     68| #
+>>   69| #   `numpy` (:2, used :24,:26,:36,:37,:38)  MISSING. No n-d array library: the
+     70| #       `.reshape`, `.astype`, `np.stack`, `np.tile`, `np.expand_dims` and
+     71| #       `np.asarray` at :24-38 have no counterpart.
+      ROW subj=extra/training.py 38-38 class=at_no_revision claim=numpy
+
+====================================================================================================
+### tinybendygrad/function.bend
+     39| #   function.py:101-113 `function` + two overloads both decorator spellings
+     40| #
+     41| # WHAT IS A SEAM, with the owner and the Python line, at Section I:
+>>   42| #   `UOp.param_like`  ops.py:1228 symbol=param_like       `UOp.substitute`  ops.py:514 symbol=substitute
+     43| #   `UOp.call_with_outputs` ops.py:1260 symbol=call_with_outputs  `UOp.replace`     ops.py:245
+     44| #   `get_state_dict((args, kwargs))`     `Context(...)`    `time.perf_counter`
+      ROW subj=ops.py 1228-1228 class=only_older_revision claim=UOp,substitute
+
+====================================================================================================
+### tinybendygrad/mixin/op.bend
+    192| # here rather than filtered silently.
+    193| #
+    194| # THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`. `softmax` (op.py:663) and
+>>  195| # `log_softmax` (op.py:686 symbol=log_softmax) are TWO defs that both call `_softmax` (op.py:657 symbol=_softmax), so
+    196| # the thirteen nodes `_softmax` builds are interned ONCE. `softmax` prints 15 and
+    197| # `log_softmax` prints 18 over a graph whose shared prefix is 13 nodes -- MEASURED on
+      ROW subj=op.py 686-686 class=only_older_revision claim=_softmax
+
+    192| # here rather than filtered silently.
+    193| #
+    194| # THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`. `softmax` (op.py:663) and
+>>  195| # `log_softmax` (op.py:686 symbol=log_softmax) are TWO defs that both call `_softmax` (op.py:657 symbol=_softmax), so
+    196| # the thirteen nodes `_softmax` builds are interned ONCE. `softmax` prints 15 and
+    197| # `log_softmax` prints 18 over a graph whose shared prefix is 13 nodes -- MEASURED on
+      ROW subj=op.py 657-657 class=at_no_revision claim=log_softmax
+
+====================================================================================================
+### tinybendygrad/nn/onnx.bend
+     34| #     `_auto_pad` (onnx.py:418-421 symbol=_auto_pad), `_onnx_pads_to_tiny_pads` (onnx.py:402-405 symbol=_onnx_pads_to_tiny_pads) and `_axes`
+     35| #     (onnx.py:399 symbol=_axes).
+     36| #   STAGE 3 -- NOT DONE. The RUNNERS (`OnnxRunner.__init__` onnx.py:294 symbol=OnnxRunner.__init__,
+>>   37| #     `_init_from_graph` onnx.py:298 symbol=_init_from_graph, `_from_subgraph` onnx.py:313 symbol=_from_subgraph, `_parse_input`
+     38| #     onnx.py:318 symbol=_parse_input, `to` onnx.py:345 symbol=to, `_get_python_const` onnx.py:352 symbol=_get_python_const, `__call__` onnx.py:361 symbol=__call__)
+     39| #     and the protobuf layer they stand on. THE WALL IS NAMED PER ARM below.
+      ROW subj=onnx.py 298-298 class=at_no_revision claim=_from_subgraph,_parse_input
+
+     35| #     (onnx.py:399 symbol=_axes).
+     36| #   STAGE 3 -- NOT DONE. The RUNNERS (`OnnxRunner.__init__` onnx.py:294 symbol=OnnxRunner.__init__,
+     37| #     `_init_from_graph` onnx.py:298 symbol=_init_from_graph, `_from_subgraph` onnx.py:313 symbol=_from_subgraph, `_parse_input`
+>>   38| #     onnx.py:318 symbol=_parse_input, `to` onnx.py:345 symbol=to, `_get_python_const` onnx.py:352 symbol=_get_python_const, `__call__` onnx.py:361 symbol=__call__)
+     39| #     and the protobuf layer they stand on. THE WALL IS NAMED PER ARM below.
+     40| #   STAGE 4 -- NOT DONE. The 167 op BODIES (:475-1307), the node-shape arithmetic
+      ROW subj=onnx.py 318-318 class=at_no_revision claim=_get_python_const,__call__
+
+     35| #     (onnx.py:399 symbol=_axes).
+     36| #   STAGE 3 -- NOT DONE. The RUNNERS (`OnnxRunner.__init__` onnx.py:294 symbol=OnnxRunner.__init__,
+     37| #     `_init_from_graph` onnx.py:298 symbol=_init_from_graph, `_from_subgraph` onnx.py:313 symbol=_from_subgraph, `_parse_input`
+>>   38| #     onnx.py:318 symbol=_parse_input, `to` onnx.py:345 symbol=to, `_get_python_const` onnx.py:352 symbol=_get_python_const, `__call__` onnx.py:361 symbol=__call__)
+     39| #     and the protobuf layer they stand on. THE WALL IS NAMED PER ARM below.
+     40| #   STAGE 4 -- NOT DONE. The 167 op BODIES (:475-1307), the node-shape arithmetic
+      ROW subj=onnx.py 345-345 class=at_no_revision claim=_get_python_const,__call__
+
+     64| #     calling a mixin method that belongs to another file (`x.reshape`,
+     65| #     `x.conv2d`, `x.softmax`, `x.pad`, ...). Each is a `# TODO(p3)` naming its
+     66| #     line; none is inlined, because inlining a callee would be a second port.
+>>   67| #   * `If`'s branch runner (onnx.py:468 symbol=run_branch) and `Gradient` (onnx.py:1216 symbol=Gradient) need an
+     68| #     `OnnxRunner` VALUE -- this file's own class -- and `Gradient` also needs
+     69| #     `.gradient()`.
+      ROW subj=onnx.py 468-468 class=only_older_revision claim=Gradient
+
+====================================================================================================
+### tinybendygrad/nn/optim.bend
+     56| #   * `mul`, `add`, `sub`, `div` -- elementwise.py:36 `_binop`. Every arithmetic
+     57| #     line of `_step` is one of these four.
+     58| #   * `cast` -- mixin/dtype.py. `.cast(t.dtype)` at optim.py:128, :167, :168, :178.
+>>   59| #   * `sqrt` -- elementwise.py:479 symbol=sqrt (`Ops.SQRT`), optim.py:113, :114, :173, :174.
+     60| #   * `square` -- elementwise.py:573 symbol=square, and it is `self * self` i.e. `Ops.MUL`.
+     61| #   * `where` -- elementwise.py:436 (`Ops.WHERE` ternary), optim.py:115, :175.
+      ROW subj=elementwise.py 479-479 class=only_older_revision claim=Ops,SQRT
+
+====================================================================================================
+### tinybendygrad/renderer/isa/x86.bend
+    153| #   `ctx.func_args`, which is a `sorted(...)` over `sink.toposort()`.
+    154| #   `TODO(p3) x86.py:265 symbol=abi`.
+    155| # * `alloc_vregs` (py:293-307) -- reads `ctx.reg_n`, calls `ctx.vreg`, which
+>>  156| #   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:293 symbol=alloc_vregs`.
+    157| # * `X86LinearContext` (py:681-707) and `assign_spill_slot` (py:703-707) -- the
+    158| #   `lock` / `stack_allocated` / `stack_size` state above. `TODO(p3) x86.py:681 symbol=X86LinearContext`.
+      ROW subj=x86.py 293-293 class=at_no_revision claim=Register,itertools,count
+
+    155| # * `alloc_vregs` (py:293-307) -- reads `ctx.reg_n`, calls `ctx.vreg`, which
+    156| #   MINTS a `Register` with `itertools.count()`. `TODO(p3) x86.py:293 symbol=alloc_vregs`.
+    157| # * `X86LinearContext` (py:681-707) and `assign_spill_slot` (py:703-707) -- the
+>>  158| #   `lock` / `stack_allocated` / `stack_size` state above. `TODO(p3) x86.py:681 symbol=X86LinearContext`.
+    159| # * `X86Renderer.__init__` (py:720-724) -- the arch check is `arch.split(",")[0]
+    160| #   != "x86_64"` (one `String.split`, P3) and then `from
+      ROW subj=x86.py 681-681 class=at_no_revision claim=lock,stack_allocated,stack_size
+
+====================================================================================================
+### tinybendygrad/renderer/wgsl.bend
+     11| # `uop/ops.bend`, not in this file:
+     12| #
+     13| #   TODO(p3) wgsl.py:7   sign_extend  -- `.bitcast`/`.alu` CONSTRUCTOR SUGAR
+>>   14| #   TODO(p3) wgsl.py:15  packed_store -- ditto, plus `.load`/`.store`
+     15| #   TODO(p3) wgsl.py:24  packed_load  -- ditto, plus `.index`
+     16| #   TODO(p3) wgsl.py:37  is_nan       -- ditto (`.bitcast` and the compare)
+      ROW subj=wgsl.py 15-15 class=only_older_revision claim=load,store
+
+     12| #
+     13| #   TODO(p3) wgsl.py:7   sign_extend  -- `.bitcast`/`.alu` CONSTRUCTOR SUGAR
+     14| #   TODO(p3) wgsl.py:15  packed_store -- ditto, plus `.load`/`.store`
+>>   15| #   TODO(p3) wgsl.py:24  packed_load  -- ditto, plus `.index`
+     16| #   TODO(p3) wgsl.py:37  is_nan       -- ditto (`.bitcast` and the compare)
+     17| #   TODO(p3) wgsl.py:42  wgsl_matcher -- ditto; the seven RULES return arenas,
+      ROW subj=wgsl.py 24-24 class=at_no_revision claim=index
+
+====================================================================================================
+### tinybendygrad/tensor.bend
+     26| #      registry is only ever READ, and what it is read for is "does some live
+     27| #      Tensor hold this uop", which `Tensors.holds` answers from the same list.
+     28| #   2. A `Buffer` (tensor.py:249, :281, :422) is device state. `new_buffer`
+>>   29| #      (ops.py:835 symbol=new_buffer) and `_frompy` (ops.py:855 symbol=_frompy) build a BUFFER node PLUS an opaque
+     30| #      allocation, and only the NODE is a graph fact. So `__init__`'s
+     31| #      list/tuple/bytes arm takes the already-built uop, and `_buffer`, `data`,
+      ROW subj=ops.py 835-835 class=only_older_revision claim=_frompy
+

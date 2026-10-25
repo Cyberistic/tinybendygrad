@@ -2548,6 +2548,37 @@ cite-slice        [######...] 3/5    **THE 603 ARE THE CLASS, AND THE SLICE THAT
                                         `.agents/slop/citefix/left-tok9.rows`. See
                                         `.agents/slop/citefix/REPORT.md`.
 
+cite-slice2     [#########] 5/5  **THE 78 WERE A CLASS, AND THE CLASS IS 1 -- AND THE 1 IS
+                                        ANOTHER UNIT'S FILE.** Measured on TWO FROZEN COPIES of the
+                                        port tree with the SAME instruments (`gates/pin-cite-gate.py`
+                                        + `.agents/slop/citeclass/census.py`): BEFORE **78** false
+                                        citations outside `tinybendygrad/runtime/`, AFTER **1**.
+                                        `gates/todo-cite-gate.py` reads 1140 rows and 0 false
+                                        (WRONG-LINE / WRONG-SYMBOL / UNRESOLVABLE all 0).
+                                        **32 FILES, 92 LINES, ALL COMMENT-ONLY** (every file strips
+                                        to the same code as HEAD through `strip_comments()`, and every
+                                        LINE COUNT is unchanged because 32 of them are cited by other
+                                        files). **32 of 32 COMPILE `WITHIN-LIMITS`** under
+                                        `checks/bounded.py --mb 2048`, one `bend` at a time.
+                                        **THE AMBIENT IS A CONSTRAINT AND NOT A STYLE:**
+                                        `gates/header-census-gate.py`'s `declared_target` is the
+                                        FIRST `tinygrad/...py` path in a header block and EVERY bare
+                                        `:N` in that block resolves against it, so a `tinygrad/...py`
+                                        path can silently RE-AIM every bare citation in the file --
+                                        MEASURED: 9 NEW false rows when one was introduced. Where
+                                        the target was already something else the spelling is
+                                        `dir/name.py`, unique in BOTH instruments and moving NO
+                                        ambient. **THE PLANT** breaks one re-pointed citation by one
+                                        line on a COPY (never `git show HEAD:`) and the gate goes RED
+                                        (1 false row -> 2); a byte-identical control stays GREEN.
+                                        **THE QUEUE WAS 19 SHORT OF THE SLICE**
+                                        (`.agents/slop/citefix/left-tok9.rows` has 59 rows and the
+                                        slice is 78) and the 19 are fixed too. **NOT FIXED: 1** --
+                                        `tinybendygrad/uop/fold.bend:132` (`dtype.py:193`), another
+                                        unit's file; the fix is the FULL PATH `tinygrad/dtype.py:193`,
+                                        and the port's `least_upper_dtype` IS at that line at the pin.
+                                        See `.agents/slop/citefix9/REPORT.md`.
+
 cite-runtime      [#########] 5/5  **THE OTHER HALF OF THE 603 IS `runtime/**`, AND IT IS 0.**
                                         The census's slice under `tinybendygrad/runtime/`
                                         went from **225 FALSE to 0**, measured with the SAME

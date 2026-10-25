@@ -1,0 +1,490 @@
+==============================================================================================================
+tinybendygrad/codegen/decomp/dtype.bend:99   subject=dtype.py  cited=225-225  class=ambient_relocated
+   tokens: ['float_to_fp16', 'float_to_bf16', 'float_to_fp8']
+   tinygrad/codegen/decomp/dtype.py: only 220 lines -- cited :225 is OUT OF RANGE
+   tinygrad/dtype.py: holds=False  the cited line is "u = struct.unpack('I', struct.pack('f', truncate"
+        tokens present in file: ['float_to_fp16', 'float_to_bf16', 'float_to_fp8']
+        line 225: "u = struct.unpack('I', struct.pack('f', truncate[dtypes.float](x)))[0]"
+   tinygrad/mixin/dtype.py: only 142 lines -- cited :225 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/codegen/decomp/transcendental.bend:93   subject=helpers.py  cited=153-153  class=at_no_revision
+   tokens: ['polyN']
+   examples/mlperf/helpers.py: holds=False  the cited line is 'orig_end_position = None'
+        tokens present in file: []
+        line 153: 'orig_end_position = None'
+   examples/openpilot/helpers.py: only 61 lines -- cited :153 is OUT OF RANGE
+   test/amd/helpers.py: only 132 lines -- cited :153 is OUT OF RANGE
+   test/amd/hw/helpers.py: holds=False  the cited line is 'epilogue.append(global_store_b32(addr=v[240], da'
+        tokens present in file: []
+        line 153: 'epilogue.append(global_store_b32(addr=v[240], data=v[i], saddr=s[92:93], offset=i * n_lanes * 4))'
+   test/helpers.py: holds=False  the cited line is 'return out_buf.as_memoryview().cast(uop.dtype.fm'
+        tokens present in file: []
+        line 153: 'return out_buf.as_memoryview().cast(uop.dtype.fmt or "").tolist()[0]'
+   test/mockgpu/helpers.py: only 21 lines -- cited :153 is OUT OF RANGE
+   tinygrad/helpers.py: holds=False  the cited line is '# for length N coefficients `p`, returns p[0] * '
+        tokens present in file: ['polyN']
+        line 153: '# for length N coefficients `p`, returns p[0] * x**(N-1) + p[1] * x**(N-2) + ... + p[-2] * x + p[-1]'
+==============================================================================================================
+tinybendygrad/engine/jit.bend:35   subject=jit.py  cited=62-64  class=only_older_revision
+   tokens: ['get_call_written_bufs']
+   tinygrad/engine/jit.py: holds=False  the cited line is 'def linear(self) -> UOp: return link_linear(self'
+        tokens present in file: []
+        line 62: 'def linear(self) -> UOp: return link_linear(self._linear, allow_cache=False) # do not cache jit'
+==============================================================================================================
+tinybendygrad/examples/test_pkl_imagenet.bend:123   subject=tensor.py  cited=18-18  class=at_no_revision
+   tokens: ['hit']
+   tinygrad/tensor.py: holds=False  the cited line is 'def _apply_map_to_tensors(applied_map:dict[UOp, '
+        tokens present in file: []
+        line 18: 'def _apply_map_to_tensors(applied_map:dict[UOp, UOp], name:str) -> None:'
+==============================================================================================================
+tinybendygrad/extra/datasets/preprocess_imagenet.bend:10   subject=kits19.py  cited=73-73  class=at_no_revision
+   tokens: ['extra', 'datasets']
+   extra/datasets/kits19.py: holds=False  the cited line is 'def iterate(files, preprocessed_dir=None, val=Tr'
+        tokens present in file: []
+        line 73: 'def iterate(files, preprocessed_dir=None, val=True, shuffle=False, bs=1):'
+   test/external/mlperf_unet3d/kits19.py: holds=False  the cited line is 'return self._rand_crop(image, label)'
+        tokens present in file: []
+        line 73: 'return self._rand_crop(image, label)'
+==============================================================================================================
+tinybendygrad/extra/models/bert.bend:59   subject=bert.py  cited=61-61  class=at_no_revision
+   tokens: ['Tensor', 'binary_crossentropy_logits']
+   extra/hcqfuzz/tests/bert.py: holds=False  the cited line is ''
+        tokens present in file: []
+        line 61: ''
+   extra/models/bert.py: holds=True  the cited line names `binary_crossentropy_logits`
+        tokens present in file: ['Tensor', 'binary_crossentropy_logits']
+==============================================================================================================
+tinybendygrad/extra/models/bert.bend:59   subject=bert.py  cited=72-72  class=at_no_revision
+   tokens: ['Tensor', 'binary_crossentropy_logits']
+   extra/hcqfuzz/tests/bert.py: holds=False  the cited line is '"RESET_STEP": 1,'
+        tokens present in file: []
+        line 72: '"RESET_STEP": 1,'
+   extra/models/bert.py: holds=True  the cited line names `binary_crossentropy_logits`
+        tokens present in file: ['Tensor', 'binary_crossentropy_logits']
+==============================================================================================================
+tinybendygrad/extra/models/bert.bend:66   subject=bert.py  cited=182-182  class=at_no_revision
+   tokens: ['Embedding', 'vocab_size', 'hidden_size']
+   extra/hcqfuzz/tests/bert.py: only 81 lines -- cited :182 is OUT OF RANGE
+   extra/models/bert.py: holds=True  the cited line names `Embedding`
+        tokens present in file: ['Embedding', 'vocab_size', 'hidden_size']
+==============================================================================================================
+tinybendygrad/extra/models/bert.bend:67   subject=bert.py  cited=9-9  class=at_no_revision
+   tokens: ['Embedding']
+   extra/hcqfuzz/tests/bert.py: holds=False  the cited line is '"EVAL_BS": 96,'
+        tokens present in file: []
+        line 9: '"EVAL_BS": 96,'
+   extra/models/bert.py: holds=True  the cited line names `Embedding`
+        tokens present in file: ['Embedding']
+==============================================================================================================
+tinybendygrad/extra/models/bert.bend:78   subject=bert.py  cited=24-31  class=at_no_revision
+   tokens: ['train', 'list_variables']
+   extra/hcqfuzz/tests/bert.py: holds=False  the cited line is '"BEAM_MIN_PROGRESS": 5,'
+        tokens present in file: ['train']
+        line 24: '"BEAM_MIN_PROGRESS": 5,'
+   extra/models/bert.py: holds=False  the cited line is 'import torch'
+        tokens present in file: ['train', 'list_variables']
+        line 24: 'import torch'
+==============================================================================================================
+tinybendygrad/extra/models/clip.bend:63   subject=llama.py  cited=10-10  class=at_no_revision
+   tokens: ['sin', 'cos']
+   examples/llama.py: holds=False  the cited line is 'from tinygrad.helpers import Context, Timing, Pr'
+        tokens present in file: ['sin']
+        line 10: 'from tinygrad.helpers import Context, Timing, Profiling, DEBUG, JIT, getenv, colored'
+   extra/models/llama.py: holds=True  the cited line names `sin`
+        tokens present in file: ['sin', 'cos']
+==============================================================================================================
+tinybendygrad/extra/models/convnext.bend:69   subject=op.py  cited=56-57  class=at_no_revision
+   tokens: ['Tensor', 'assign', 'running_mean']
+   tinygrad/codegen/decomp/op.py: holds=False  the cited line is 'return a.alu(Ops.CDIV, b) - (a.alu(Ops.CMOD, b).'
+        tokens present in file: []
+        line 56: 'return a.alu(Ops.CDIV, b) - (a.alu(Ops.CMOD, b).ne(0) & (a<0).ne(b<0))'
+   tinygrad/mixin/op.py: holds=True  the cited line names `Tensor`
+        tokens present in file: ['Tensor']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:28   subject=llama.py  cited=53-53  class=at_no_revision
+   tokens: ['RMSNorm', 'Attention', '__init__', 'TransformerBlock', 'Transformer']
+   examples/llama.py: holds=False  the cited line is ''
+        tokens present in file: ['__init__', 'Transformer']
+        line 53: ''
+   extra/models/llama.py: holds=True  the cited line names `RMSNorm`
+        tokens present in file: ['RMSNorm', 'Attention', '__init__', 'TransformerBlock', 'Transformer']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:28   subject=llama.py  cited=53-53  class=at_no_revision
+   tokens: ['RMSNorm', 'q_norm', 'dim', 'qk_norm', 'Attention', '__init__', 'TransformerBlock', 'Transformer']
+   examples/llama.py: holds=False  the cited line is ''
+        tokens present in file: ['dim', '__init__', 'Transformer']
+        line 53: ''
+   extra/models/llama.py: holds=True  the cited line names `RMSNorm`
+        tokens present in file: ['RMSNorm', 'q_norm', 'dim', 'qk_norm', 'Attention', '__init__', 'TransformerBlock', 'Transformer']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:29   subject=llama.py  cited=101-101  class=at_no_revision
+   tokens: ['Tensor', 'scaled_dot_product_attention', 'grep', 'rnwE', 'include', 'bend']
+   examples/llama.py: holds=False  the cited line is '"8B": {'
+        tokens present in file: ['Tensor', 'include']
+        line 101: '"8B": {'
+   extra/models/llama.py: holds=True  the cited line names `scaled_dot_product_attention`
+        tokens present in file: ['Tensor', 'scaled_dot_product_attention']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:29   subject=llama.py  cited=104-104  class=at_no_revision
+   tokens: ['Tensor', 'scaled_dot_product_attention', 'grep', 'rnwE', 'include', 'bend']
+   examples/llama.py: holds=False  the cited line is '},'
+        tokens present in file: ['Tensor', 'include']
+        line 104: '},'
+   extra/models/llama.py: holds=True  the cited line names `scaled_dot_product_attention`
+        tokens present in file: ['Tensor', 'scaled_dot_product_attention']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:32   subject=optim.py  cited=167-167  class=at_no_revision
+   tokens: ['cast']
+   examples/mlperf/optim.py: only 138 lines -- cited :167 is OUT OF RANGE
+   tinygrad/nn/optim.py: holds=True  the cited line names `cast`
+        tokens present in file: ['cast']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:33   subject=optim.py  cited=168-168  class=at_no_revision
+   tokens: ['op_vstep', 'op_mhat']
+   examples/mlperf/optim.py: only 138 lines -- cited :168 is OUT OF RANGE
+   tinygrad/nn/optim.py: holds=False  the cited line is 'self.v[i].assign((self.b2 * self.v[i] + (1.0 - s'
+        tokens present in file: []
+        line 168: 'self.v[i].assign((self.b2 * self.v[i] + (1.0 - self.b2) * (g * g)).cast(self.v[i].dtype))'
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:33   subject=optim.py  cited=903-903  class=at_no_revision
+   tokens: ['op_vstep', 'op_mhat', 'op_vhat']
+   examples/mlperf/optim.py: only 138 lines -- cited :903 is OUT OF RANGE
+   tinygrad/nn/optim.py: only 179 lines -- cited :903 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:38   subject=bert.py  cited=61-61  class=at_no_revision
+   tokens: ['binary_crossentropy_logits']
+   extra/hcqfuzz/tests/bert.py: holds=False  the cited line is ''
+        tokens present in file: []
+        line 61: ''
+   extra/models/bert.py: holds=True  the cited line names `binary_crossentropy_logits`
+        tokens present in file: ['binary_crossentropy_logits']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:59   subject=bert.py  cited=236-236  class=at_no_revision
+   tokens: ['Tensor', 'erf']
+   extra/hcqfuzz/tests/bert.py: only 81 lines -- cited :236 is OUT OF RANGE
+   extra/models/bert.py: holds=True  the cited line names `erf`
+        tokens present in file: ['Tensor', 'erf']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:78   subject=llama.py  cited=53-53  class=at_no_revision
+   tokens: ['RMSNorm', 'dim', 'qk_norm']
+   examples/llama.py: holds=False  the cited line is ''
+        tokens present in file: ['dim']
+        line 53: ''
+   extra/models/llama.py: holds=True  the cited line names `RMSNorm`
+        tokens present in file: ['RMSNorm', 'dim', 'qk_norm']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:79   subject=llama.py  cited=53-53  class=at_no_revision
+   tokens: ['qk_norm', 'None']
+   examples/llama.py: holds=False  the cited line is ''
+        tokens present in file: ['None']
+        line 53: ''
+   extra/models/llama.py: holds=True  the cited line names `qk_norm`
+        tokens present in file: ['qk_norm', 'None']
+==============================================================================================================
+tinybendygrad/extra/models/llama.bend:81   subject=llama.py  cited=202-202  class=at_no_revision
+   tokens: ['Transformer', '__init__']
+   examples/llama.py: holds=False  the cited line is 'elif quantize == "nf4":'
+        tokens present in file: ['Transformer', '__init__']
+        line 202: 'elif quantize == "nf4":'
+   extra/models/llama.py: holds=False  the cited line is 'self.output = nn.Linear(dim, vocab_size, bias=Fa'
+        tokens present in file: ['Transformer', '__init__']
+        line 202: 'self.output = nn.Linear(dim, vocab_size, bias=False) if embedding == nn.Embedding else linear(dim, v'
+==============================================================================================================
+tinybendygrad/extra/models/mask_rcnn.bend:66   subject=llama.py  cited=10-10  class=at_no_revision
+   tokens: ['cos']
+   examples/llama.py: holds=False  the cited line is 'from tinygrad.helpers import Context, Timing, Pr'
+        tokens present in file: []
+        line 10: 'from tinygrad.helpers import Context, Timing, Profiling, DEBUG, JIT, getenv, colored'
+   extra/models/llama.py: holds=True  the cited line names `cos`
+        tokens present in file: ['cos']
+==============================================================================================================
+tinybendygrad/extra/models/retinanet.bend:48   subject=bert.py  cited=151-151  class=at_no_revision
+   tokens: ['Tensor', 'one_hot']
+   extra/hcqfuzz/tests/bert.py: only 81 lines -- cited :151 is OUT OF RANGE
+   extra/models/bert.py: holds=True  the cited line names `Tensor`
+        tokens present in file: ['Tensor']
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:77   subject=op.py  cited=22-22  class=at_no_revision
+   tokens: ['item']
+   tinygrad/codegen/decomp/op.py: holds=False  the cited line is 'if (vmax:=min(x.vmax, x.dtype.max)) < d: return '
+        tokens present in file: []
+        line 22: 'if (vmax:=min(x.vmax, x.dtype.max)) < d: return x.const_like(0)'
+   tinygrad/mixin/op.py: holds=True  the cited line names `item`
+        tokens present in file: ['item']
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:78   subject=op.py  cited=20-20  class=at_no_revision
+   tokens: ['data']
+   tinygrad/codegen/decomp/op.py: holds=False  the cited line is 'def fast_idiv(ren: Renderer, x: UOp, d: int, don'
+        tokens present in file: []
+        line 20: 'def fast_idiv(ren: Renderer, x: UOp, d: int, dont_cast=False) -> UOp|None:'
+   tinygrad/mixin/op.py: holds=True  the cited line names `data`
+        tokens present in file: ['data']
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:80   subject=op.py  cited=45-45  class=at_no_revision
+   tokens: ['_greedy_decode']
+   tinygrad/codegen/decomp/op.py: holds=False  the cited line is 'xr:list[UOp] = [x0 + ks[-1], x1 + ks[0]]'
+        tokens present in file: []
+        line 45: 'xr:list[UOp] = [x0 + ks[-1], x1 + ks[0]]'
+   tinygrad/mixin/op.py: holds=False  the cited line is ''
+        tokens present in file: []
+        line 45: ''
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:82   subject=op.py  cited=26-26  class=at_no_revision
+   tokens: ['unsqueeze', 'grep', 'rnE', '_unsqueeze']
+   tinygrad/codegen/decomp/op.py: holds=False  the cited line is 'if (k := (d & -d).bit_length()-1) > 0:'
+        tokens present in file: []
+        line 26: 'if (k := (d & -d).bit_length()-1) > 0:'
+   tinygrad/mixin/op.py: holds=False  the cited line is '```python exec="true" source="above" session="te'
+        tokens present in file: ['unsqueeze', '_unsqueeze']
+        line 26: '```python exec="true" source="above" session="tensor" result="python"'
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:82   subject=op.py  cited=38-38  class=at_no_revision
+   tokens: ['unsqueeze', 'grep', 'rnE', '_unsqueeze']
+   tinygrad/codegen/decomp/op.py: holds=False  the cited line is 'def threefry2x32(x: UOp, key: UOp):'
+        tokens present in file: []
+        line 38: 'def threefry2x32(x: UOp, key: UOp):'
+   tinygrad/mixin/op.py: holds=False  the cited line is 'Supported Index Types: `int | slice | Tensor | N'
+        tokens present in file: ['unsqueeze', '_unsqueeze']
+        line 38: 'Supported Index Types: `int | slice | Tensor | None | list | tuple | Ellipsis`'
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:82   subject=op.py  cited=195-195  class=at_no_revision
+   tokens: ['unsqueeze', 'grep', 'rnE', '_unsqueeze']
+   tinygrad/codegen/decomp/op.py: only 126 lines -- cited :195 is OUT OF RANGE
+   tinygrad/mixin/op.py: holds=False  the cited line is 'return (cls.full((output_len,), step, dtype=acc_'
+        tokens present in file: ['unsqueeze', '_unsqueeze']
+        line 195: 'return (cls.full((output_len,), step, dtype=acc_dtype, buffer=False)._cumalu(0, Ops.ADD) + (start - '
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:82   subject=op.py  cited=196-196  class=at_no_revision
+   tokens: ['unsqueeze', 'grep', 'rnE', '_unsqueeze']
+   tinygrad/codegen/decomp/op.py: only 126 lines -- cited :196 is OUT OF RANGE
+   tinygrad/mixin/op.py: holds=False  the cited line is ''
+        tokens present in file: ['unsqueeze', '_unsqueeze']
+        line 196: ''
+==============================================================================================================
+tinybendygrad/extra/models/rnnt.bend:82   subject=op.py  cited=197-197  class=at_no_revision
+   tokens: ['unsqueeze', 'grep', 'rnE', '_unsqueeze']
+   tinygrad/codegen/decomp/op.py: only 126 lines -- cited :197 is OUT OF RANGE
+   tinygrad/mixin/op.py: holds=False  the cited line is '@classmethod'
+        tokens present in file: ['unsqueeze', '_unsqueeze']
+        line 197: '@classmethod'
+==============================================================================================================
+tinybendygrad/extra/models/transformer.bend:23   subject=transformer.py  cited=27-27  class=at_no_revision
+   tokens: ['Tensor', 'scaled_dot_product_attention']
+   examples/transformer.py: holds=False  the cited line is 'X_train, Y_train, X_test, Y_test = make_dataset('
+        tokens present in file: []
+        line 27: 'X_train, Y_train, X_test, Y_test = make_dataset()'
+   extra/models/transformer.py: holds=True  the cited line names `Tensor`
+        tokens present in file: ['Tensor', 'scaled_dot_product_attention']
+==============================================================================================================
+tinybendygrad/extra/models/transformer.bend:23   subject=transformer.py  cited=60-60  class=at_no_revision
+   tokens: ['Tensor', 'scaled_dot_product_attention']
+   examples/transformer.py: only 42 lines -- cited :60 is OUT OF RANGE
+   extra/models/transformer.py: holds=False  the cited line is 'x = x.reshape((-1, x.shape[-1])).dot(self.final)'
+        tokens present in file: ['Tensor', 'scaled_dot_product_attention']
+        line 60: 'x = x.reshape((-1, x.shape[-1])).dot(self.final).log_softmax()'
+==============================================================================================================
+tinybendygrad/extra/models/transformer.bend:52   subject=op.py  cited=1177-1177  class=at_no_revision
+   tokens: ['Tensor', 'scaled_dot_product_attention']
+   tinygrad/codegen/decomp/op.py: only 126 lines -- cited :1177 is OUT OF RANGE
+   tinygrad/mixin/op.py: holds=False  the cited line is 'return mask.where(values, self)'
+        tokens present in file: ['Tensor']
+        line 1177: 'return mask.where(values, self)'
+==============================================================================================================
+tinybendygrad/extra/models/transformer.bend:59   subject=llama.py  cited=32-32  class=at_no_revision
+   tokens: ['TransformerBlock', '__call__']
+   examples/llama.py: holds=False  the cited line is '"<|reserved_special_token_1|>",'
+        tokens present in file: []
+        line 32: '"<|reserved_special_token_1|>",'
+   extra/models/llama.py: holds=False  the cited line is 'if n_rep == 1: return x'
+        tokens present in file: ['TransformerBlock', '__call__']
+        line 32: 'if n_rep == 1: return x'
+==============================================================================================================
+tinybendygrad/extra/models/transformer.bend:59   subject=llama.py  cited=36-36  class=at_no_revision
+   tokens: ['TransformerBlock', '__call__']
+   examples/llama.py: holds=False  the cited line is '"<|end_header_id|>",'
+        tokens present in file: []
+        line 36: '"<|end_header_id|>",'
+   extra/models/llama.py: holds=False  the cited line is 'class Attention:'
+        tokens present in file: ['TransformerBlock', '__call__']
+        line 36: 'class Attention:'
+==============================================================================================================
+tinybendygrad/extra/models/transformer.bend:59   subject=llama.py  cited=38-38  class=at_no_revision
+   tokens: ['TransformerBlock', '__call__']
+   examples/llama.py: holds=False  the cited line is '"<|eot_id|>",  # end of turn'
+        tokens present in file: []
+        line 38: '"<|eot_id|>",  # end of turn'
+   extra/models/llama.py: holds=False  the cited line is 'self.n_heads = n_heads'
+        tokens present in file: ['TransformerBlock', '__call__']
+        line 38: 'self.n_heads = n_heads'
+==============================================================================================================
+tinybendygrad/extra/models/vit.bend:67   subject=op.py  cited=56-57  class=at_no_revision
+   tokens: ['running_mean', 'assign']
+   tinygrad/codegen/decomp/op.py: holds=False  the cited line is 'return a.alu(Ops.CDIV, b) - (a.alu(Ops.CMOD, b).'
+        tokens present in file: []
+        line 56: 'return a.alu(Ops.CDIV, b) - (a.alu(Ops.CMOD, b).ne(0) & (a<0).ne(b<0))'
+   tinygrad/mixin/op.py: holds=False  the cited line is '- Tensor Indexing: Use another tensor as indices'
+        tokens present in file: []
+        line 56: '- Tensor Indexing: Use another tensor as indices for advanced indexing. Using `tuple` or `list` here'
+==============================================================================================================
+tinybendygrad/mixin/creation.bend:62   subject=ops.py  cited=605-605  class=at_no_revision
+   tokens: ['_broadcast_to']
+   tinygrad/uop/ops.py: holds=False  the cited line is 'assert all(x.axis_type == AxisType.UPCAST for x '
+        tokens present in file: []
+        line 605: 'assert all(x.axis_type == AxisType.UPCAST for x in rngs), "all contract ranges must be upcast"'
+==============================================================================================================
+tinybendygrad/mixin/creation.bend:120   subject=helpers.py  cited=24-24  class=at_no_revision
+   tokens: ['argfix', 'shape', 'empty']
+   examples/mlperf/helpers.py: holds=False  the cited line is "train_state = {'model': model, 'optimizer': opti"
+        tokens present in file: ['shape', 'empty']
+        line 24: "train_state = {'model': model, 'optimizer': optimizer, 'scheduler': scheduler}"
+   examples/openpilot/helpers.py: holds=False  the cited line is 'offset = (off:=offset) + buffers.write(b.as_memo'
+        tokens present in file: ['shape']
+        line 24: 'offset = (off:=offset) + buffers.write(b.as_memoryview())'
+   test/amd/helpers.py: holds=False  the cited line is 'if dpp in _DPP16_EXACT_OPS: return _DPP16_EXACT_'
+        tokens present in file: []
+        line 24: 'if dpp in _DPP16_EXACT_OPS: return _DPP16_EXACT_OPS[dpp]'
+   test/amd/hw/helpers.py: holds=False  the cited line is ''
+        tokens present in file: []
+        line 24: ''
+   test/helpers.py: holds=False  the cited line is 'if sink.arg is None: sink = sink.replace(arg=Ker'
+        tokens present in file: ['shape', 'empty']
+        line 24: 'if sink.arg is None: sink = sink.replace(arg=KernelInfo())'
+   test/mockgpu/helpers.py: only 21 lines -- cited :24 is OUT OF RANGE
+   tinygrad/helpers.py: holds=False  the cited line is 'if len(x) != 1: raise ValueError(f"bad arg {x}")'
+        tokens present in file: ['argfix', 'shape', 'empty']
+        line 24: 'if len(x) != 1: raise ValueError(f"bad arg {x}")'
+==============================================================================================================
+tinybendygrad/nn/__init__.bend:93   subject=op.py  cited=166-166  class=at_no_revision
+   tokens: ['arange']
+   tinygrad/codegen/decomp/op.py: only 126 lines -- cited :166 is OUT OF RANGE
+   tinygrad/mixin/op.py: holds=True  the cited line names `arange`
+        tokens present in file: ['arange']
+==============================================================================================================
+tinybendygrad/nn/layers.bend:13   subject=op.py  cited=1254-1254  class=at_no_revision
+   tokens: ['Tensor', 'linear']
+   tinygrad/codegen/decomp/op.py: only 126 lines -- cited :1254 is OUT OF RANGE
+   tinygrad/mixin/op.py: holds=True  the cited line names `linear`
+        tokens present in file: ['Tensor', 'linear']
+==============================================================================================================
+tinybendygrad/nn/layers.bend:15   subject=op.py  cited=367-367  class=at_no_revision
+   tokens: ['dot']
+   tinygrad/codegen/decomp/op.py: only 126 lines -- cited :367 is OUT OF RANGE
+   tinygrad/mixin/op.py: holds=True  the cited line names `dot`
+        tokens present in file: ['dot']
+==============================================================================================================
+tinybendygrad/renderer/llvmir.bend:67   subject=llvmir-oracle.py  cited=647-648  class=at_no_revision
+   tokens: ['dtypes', 'f32', 'True']
+   NO UPSTREAM FILE WITH THAT BASENAME
+   ever existed: []
+==============================================================================================================
+tinybendygrad/renderer/llvmir.bend:188   subject=dtype.py  cited=244-244  class=at_no_revision
+   tokens: ['float_to_fp8', 'truncate']
+   tinygrad/codegen/decomp/dtype.py: only 220 lines -- cited :244 is OUT OF RANGE
+   tinygrad/dtype.py: holds=False  the cited line is 'if dtype == dtypes.fp8e5m2 and not math.isfinite'
+        tokens present in file: ['float_to_fp8', 'truncate']
+        line 244: 'if dtype == dtypes.fp8e5m2 and not math.isfinite(x): return (0 if math.copysign(1, x) > 0 else 0x80)'
+   tinygrad/mixin/dtype.py: only 142 lines -- cited :244 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/renderer/llvmir.bend:188   subject=dtype.py  cited=295-295  class=at_no_revision
+   tokens: ['float_to_fp8', 'truncate']
+   tinygrad/codegen/decomp/dtype.py: only 220 lines -- cited :295 is OUT OF RANGE
+   tinygrad/dtype.py: holds=False  the cited line is 'def bitcast(x, in_dtype:DType, out_dtype:DType):'
+        tokens present in file: ['float_to_fp8', 'truncate']
+        line 295: 'def bitcast(x, in_dtype:DType, out_dtype:DType):'
+   tinygrad/mixin/dtype.py: only 142 lines -- cited :295 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/renderer/llvmir.bend:192   subject=dtype.py  cited=236-241  class=at_no_revision
+   tokens: ['float_to_fp8', '_fp8_cfg']
+   tinygrad/codegen/decomp/dtype.py: only 220 lines -- cited :241 is OUT OF RANGE
+   tinygrad/dtype.py: holds=True  the cited range :236-241 names `float_to_fp8`
+        tokens present in file: ['float_to_fp8', '_fp8_cfg']
+   tinygrad/mixin/dtype.py: only 142 lines -- cited :241 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/renderer/ptx.bend:31   subject=helpers.py  cited=157-157  class=at_no_revision
+   tokens: ['to_function_name', 'ansistrip']
+   examples/mlperf/helpers.py: holds=False  the cited line is 'if orig_end_position is None:'
+        tokens present in file: []
+        line 157: 'if orig_end_position is None:'
+   examples/openpilot/helpers.py: only 61 lines -- cited :157 is OUT OF RANGE
+   test/amd/helpers.py: only 132 lines -- cited :157 is OUT OF RANGE
+   test/amd/hw/helpers.py: holds=False  the cited line is '# Scalar stores: only thread 0. Use v[240]=vgpr_'
+        tokens present in file: []
+        line 157: '# Scalar stores: only thread 0. Use v[240]=vgpr_bytes as base offset so immediate offsets stay small'
+   test/helpers.py: holds=False  the cited line is 'for r in sink.ranges: sink = sink.end(r)'
+        tokens present in file: []
+        line 157: 'for r in sink.ranges: sink = sink.end(r)'
+   test/mockgpu/helpers.py: only 21 lines -- cited :157 is OUT OF RANGE
+   tinygrad/helpers.py: holds=True  the cited line names `to_function_name`
+        tokens present in file: ['to_function_name', 'ansistrip']
+==============================================================================================================
+tinybendygrad/renderer/tc_ptx.bend:56   subject=dtype.py  cited=169-170  class=at_no_revision
+   tokens: ['strong_dtype', 'dtype']
+   tinygrad/codegen/decomp/dtype.py: holds=False  the cited line is "(UPat(Ops.INDEX, src=(UPat(Ops.STACK, name='s'),"
+        tokens present in file: ['dtype']
+        line 169: "(UPat(Ops.INDEX, src=(UPat(Ops.STACK, name='s'), UPat.cvar('w'))), lambda s,w: s.src[w.arg]),"
+   tinygrad/dtype.py: holds=True  the cited line names `strong_dtype`
+        tokens present in file: ['strong_dtype', 'dtype']
+   tinygrad/mixin/dtype.py: only 142 lines -- cited :170 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/schedule/multi.bend:16   subject=ops.py  cited=1104-1104  class=at_no_revision
+   tokens: ['copy_multi', 'fold', 'bend']
+   tinygrad/uop/ops.py: holds=False  the cited line is 'if self.op is Ops.SHR and s1_vmin == s1_vmax and'
+        tokens present in file: ['fold']
+        line 1104: 'if self.op is Ops.SHR and s1_vmin == s1_vmax and all_int(t:=(s0_vmin, s0_vmax, s1_vmin)): return t[0'
+==============================================================================================================
+tinybendygrad/uop/fold.bend:132   subject=dtype.py  cited=193-193  class=at_no_revision
+   tokens: ['dtype', 'bend']
+   tinygrad/codegen/decomp/dtype.py: holds=False  the cited line is '(UPat(Ops.STORE, src=(UPat.var("idx"), UPat(Ops.'
+        tokens present in file: ['dtype']
+        line 193: '(UPat(Ops.STORE, src=(UPat.var("idx"), UPat(Ops.BITCAST, dtypes.floats, name="val")), name=\'st\'), la'
+   tinygrad/dtype.py: holds=False  the cited line is 'def least_upper_dtype(*ds:DType) -> DType:'
+        tokens present in file: ['dtype']
+        line 193: 'def least_upper_dtype(*ds:DType) -> DType:'
+   tinygrad/mixin/dtype.py: only 142 lines -- cited :193 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/uop/render.bend:69   subject=tinygrad/uop/spec.py  cited=293-293  class=only_older_revision
+   tokens: ['exec', 'code', 'pyrender_globals', 'lcls']
+   tinygrad/uop/spec.py: only 280 lines -- cited :293 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/uop/render.bend:80   subject=spec.py  cited=296-296  class=only_older_revision
+   tokens: ['test_pyrender']
+   extra/hcqfuzz/spec.py: only 42 lines -- cited :296 is OUT OF RANGE
+   tinygrad/uop/spec.py: only 280 lines -- cited :296 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/uop/symbolic.bend:75   subject=helpers.py  cited=76-76  class=at_no_revision
+   tokens: ['U32', 'div', 'floordiv']
+   examples/mlperf/helpers.py: holds=False  the cited line is 'if char == " " or char == "\\t" or char == "\\n" o'
+        tokens present in file: []
+        line 76: 'if char == " " or char == "\\t" or char == "\\n" or char == "\\r":'
+   examples/openpilot/helpers.py: only 61 lines -- cited :76 is OUT OF RANGE
+   test/amd/helpers.py: holds=False  the cited line is '"""Extract .text section from ELF object bytes."'
+        tokens present in file: []
+        line 76: '"""Extract .text section from ELF object bytes."""'
+   test/amd/hw/helpers.py: holds=False  the cited line is ''
+        tokens present in file: []
+        line 76: ''
+   test/helpers.py: holds=False  the cited line is ''
+        tokens present in file: []
+        line 76: ''
+   test/mockgpu/helpers.py: only 21 lines -- cited :76 is OUT OF RANGE
+   tinygrad/helpers.py: holds=True  the cited line names `div`
+        tokens present in file: ['div', 'floordiv']
+==============================================================================================================
+tinybendygrad/uop/symbolic.bend:85   subject=dtype.py  cited=297-297  class=at_no_revision
+   tokens: ['truncate']
+   tinygrad/codegen/decomp/dtype.py: only 220 lines -- cited :297 is OUT OF RANGE
+   tinygrad/dtype.py: holds=False  the cited line is 'packed = struct.pack(storage_fmt_for_dtype(in_dt'
+        tokens present in file: ['truncate']
+        line 297: 'packed = struct.pack(storage_fmt_for_dtype(in_dtype), to_storage_scalar(x, in_dtype))'
+   tinygrad/mixin/dtype.py: only 142 lines -- cited :297 is OUT OF RANGE
+==============================================================================================================
+tinybendygrad/uop/weak.bend:35   subject=dtype.py  cited=79-84  class=at_no_revision
+   tokens: ['DType', 'const']
+   tinygrad/codegen/decomp/dtype.py: holds=False  the cited line is 'case Ops.MAX: return l2i(Ops.WHERE, dt, l2i(Ops.'
+        tokens present in file: ['DType', 'const']
+        line 79: 'case Ops.MAX: return l2i(Ops.WHERE, dt, l2i(Ops.CMPLT, dt, *uops), b0, b1, a0, a1)'
+   tinygrad/dtype.py: holds=True  the cited line names `const`
+        tokens present in file: ['DType', 'const']
+   tinygrad/mixin/dtype.py: holds=False  the cited line is 'def float(self) -> Self:'
+        tokens present in file: ['DType']
+        line 79: 'def float(self) -> Self:'

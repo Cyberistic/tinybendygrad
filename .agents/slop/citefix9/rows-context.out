@@ -1,0 +1,1179 @@
+====================================================================================================
+### tinybendygrad/codegen/decomp/dtype.bend  (3072 lines)
+    1| # dtype.bend -- tinygrad/codegen/decomp/dtype.py (224 lines).
+    2| #
+    3| # THE LONG AND FLOAT DECOMPOSITIONS. `dtype.py` splits a 64-bit or an
+    4| # fp8/half/bfloat16 arithmetic node into 32-bit words (`l2i`) or into a
+    5| # bit-level float conversion (`f2f`), and rewrites the graph so the 32-bit nodes
+    6| # reach the hardware. This file is the SPLIT half -- `l2i`, `f2f`, `f2f_clamp`,
+    7| # `reindex`, `unpack32`, `rne`, `l2i_define` and the three pattern tables --
+    8| # which is most of the 224 lines. The REWRITE half (`split_l2i`,
+    9| # `l2i_rewrite_idx`, `f2f_load`, `f2f_store`, `f2f_rewrite`,
+   10| # `do_dtype_decomps`) is PORTED IN SHAPE, and each def says so.
+   11| #
+   12| # `decomp/op.bend` is the sibling (`decomp/op.py`) and
+   13| # `decomp/transcendental.bend` is the other half of `decomp/transcendental.py`.
+   14| # BOTH ARE IMPORTED, not re-derived: `P.dc_*` is `op.bend`'s node vocabulary
+   15| # (its `dc_sub` IS `__sub__`'s shape, its `dc_band` IS `x & k`, its `dc_cint` IS
+   16| # `UOp.const(v)`) and `T.tx_*` / `T.exponent_bias` / `T.tx_is_fnuz` /
+   17| # `T.tx_finfo_*` is `transcendental.bend`'s. `dtype.py` itself imports
+   18| # `exponent_bias`, `shl` and `shr` FROM `transcendental.py`, so those three are
+   19| # used under `transcendental.bend`'s names and are not re-derived here.
+   20| #
+   21| # ---------------------------------------------------------------------------
+   22| # THE INVENTORY, def by def, against dtype.py's 224 lines.
+   23| #
+   24| #   #  PY        KIND    STATE
+   25| #   1  12        data    l2i_dt                     PORTED IN FULL
+   26| #   2  13        graph   unpack32                   PORTED IN FULL
+   27| #   3  14-18     graph   reindex                    PORTED IN FULL
+   28| #   4  21-81     graph   l2i                        15 of 17 arms, every arm shape
+   29| #   5  83-86     graph   l2i_define                 PORTED IN FULL
+   30| #   6  88-92     rewrite split_l2i                 PORTED IN SHAPE
+  ... cited lines ...
+     97| # `f2f_clamp` mints `mx` with `val.const_like(...)` and `val` is `v.bitcast(fr)`,
+     98| # so `mx` is a CONST at the SOURCE's width: CPython truncates it with
+>>   99| # `float_to_fp16` / `float_to_bf16` / `float_to_fp8` (`dtype.py:225/229/244`,
+    100| # all `struct` and bit-twiddling C code) and this file has none of them. THE
+      ROW: subj=dtype.py 225-225 class=ambient_relocated tokens=float_to_fp16,float_to_bf16,float_to_fp8
+
+====================================================================================================
+### tinybendygrad/codegen/decomp/transcendental.bend  (2028 lines)
+    1| # transcendental.bend -- tinygrad/codegen/decomp/transcendental.py (277 lines).
+    2| #
+    3| # THE GRAPH HALF.  `tinybendygrad/codegen/transcendental_f32.bend` ports the OTHER
+    4| # half of these same 277 lines -- the COEFFICIENTS and the float32 VALUES -- and
+    5| # the two are complementary, not duplicates.  Both headers state the split; read
+    6| # that one for why they are not merged (two oracles, and a 0.17 s coefficient lane
+    7| # against a 21 min value lane).  Neither file imports the other.
+    8| #
+    9| # THE SOFTWARE TRANSCENDENTAL EXPANSIONS: `exp2`/`log2`/`sin`/`sqrt` as
+   10| # polynomial-plus-bit-trick trees, and the seven-entry pattern table that fires
+   11| # them. `decomp.bend` is the sibling (`decomp/op.py`); its header says so and it
+   12| # carries NONE of this.
+   13| #
+   14| # ---------------------------------------------------------------------------
+   15| # THE INVENTORY, def by def, against transcendental.py's 277 lines. Python's
+   16| # order is kept; two blocks move and each says why.
+   17| #
+   18| #   #  PY        KIND    STATE
+   19| #   1  7         data    TRANSCENDENTAL_DTYPES      PORTED, a dtype CLASS test
+   20| #   2  9-11      fold    _lazy_map_numbers          PORTED IN FULL
+   21| #   3  14        fold    mantissa_bits              PORTED (the finfo TABLE)
+   22| #   4  15        fold    exponent_bias              PORTED (the fp8_fnuz arm too)
+   23| #   5  16        fold    exponent_mask              PORTED
+   24| #   6  19        fold    shr                        PORTED, the UOp arm DEAD
+   25| #   7  20        fold    shl                        PORTED, the UOp arm DEAD
+   26| #   8  22-25     fold    rintk                      PORTED IN FULL
+   27| #   9  27-30     fold    pow2if                     PORTED IN FULL
+   28| #  10  32-37     fold    ilogb2k                    PORTED IN FULL
+   29| #  11  39-45     fold    ldexp3k                    PORTED IN FULL
+   30| #  12  47-50     fold    ldexp2k                    PORTED IN FULL
+  ... cited lines ...
+     91| #    float16 both have `bits == 16` and mantissas 7 and 10. It is a TABLE, and
+     92| #    `mt_f16`/`mt_f32`/`mt_f64` are its three rows here.
+>>   93| # 6. `polyN` (helpers.py:153) IS SEEDED WITH THE PYTHON FLOAT `0.0`, so its
+     94| #    FIRST step is a real `MUL(C(0.0), x)` and not a fold-away. A port that
+      ROW: subj=helpers.py 153-153 class=at_no_revision tokens=polyN
+
+====================================================================================================
+### tinybendygrad/engine/jit.bend  (435 lines)
+    1| # jit.bend -- tinygrad/engine/jit.py:180 symbol=TinyJit. `TinyJit`: the input spec, the run counter, the
+    2| # `captured` record and the dispatch that decides, on every call, whether to EAGERLY RUN, to
+    3| # CAPTURE, or to REPLAY.
+    4| #
+    5| # THE SIBLING THAT OWNS MY TYPES. `tinybendygrad/function.bend` is porting
+    6| # `tinygrad/function.py`, which is where the OTHER decorator lives. NOTHING FROM THAT FILE IS
+    7| # RE-PORTED HERE, and the reason is a fact about the PYTHON rather than about taste:
+    8| # `engine/jit.py`'s `TinyJit` and `function.py`'s `_function` are two different wrappers on
+    9| # two different hooks. `_function` rewrites a traced graph into a `CALL`; `TinyJit` captures
+   10| # LINEARs produced by `capturing` and replays them. Measured:
+   11| #     rg -n "JitMatchError|input_spec|assigned_vars" tinygrad/   -> no hits
+   12| #     rg -n "class TinyJit"    tinygrad/                         -> engine/jit.py:104
+   13| #     rg -n "class _function"  tinygrad/                         -> function.py:39
+   14| # So the unit brief's "input spec / count / misc / vars / JitMatchError" are from an OLDER
+   15| # `engine/jit.py`. THIS checkout's match is
+   16| # `self.captured.expected_input_info != expected_input_info` (jit.py:173), the counter is
+   17| # `self.cnt` (jit.py:107), the error is `JitError` (jit.py:44), and the gate below is built
+   18| # against THIS file's messages, byte for byte, against CPython.
+   19| # `examples/beautiful_mnist.ts` (committed) reimplements the same idea in TypeScript with a
+   20| # SHAPE string and a DIFFERENT message -- `train_step was captured with 1568/2 and called with
+   21| # 1568/3` -- and that difference is itself a measured finding: see `ref_shape_drift` in
+   22| # Section 11. WHAT I EXPECT `function.bend` TO EXPORT, so the merge is mechanical: NOTHING.
+   23| # `function.py` imports nothing from `engine/jit.py`; the dependency runs the other way. If
+   24| # `function.bend` ever wants the `@TinyJit` decorator it needs `tiny_jit.of3(f)` /
+   25| # `tiny_jit.of2(prune, f)` from Section 9, and those take a function VALUE, so the two files
+   26| # compose without a cycle.
+   27| #
+   28| # WHAT IS PORTED, AND THAT IS THE WHOLE LIST.
+   29| #   jit.py:14-22   prune_linear            the fold, `needed |= si_bufs`, both replaces
+   30| #   jit.py:24-27   _copy_input             the DISK refusal and `on_disk()`
+  ... cited lines ...
+     33| #   jit.py:42-47   _check_no_non_tensor_return   the walk and its message
+     34| #   jit.py:34-43 symbol=linear   CapturedJit fields, `linear`
+>>   35| #   jit.py:62-64   _written_uops           PORTED, via realize.bend's `get_call_written_bufs`
+     36| #   jit.py:71-73   _symbolic_ret           the comprehension; `get_parameters` is a seam
+      ROW: subj=jit.py 62-64 class=only_older_revision tokens=get_call_written_bufs
+
+====================================================================================================
+### tinybendygrad/examples/test_pkl_imagenet.bend  (193 lines)
+    1| import Base
+    2| import ./../tensor.bend as T
+    3| import ./../helpers.bend as H
+    4| import ./../LAWS/spec.bend as S
+    5| import ./../nn/state.bend as ST
+    6| import ./../nn/onnx.bend as ONNX
+    7| import ./../engine/jit.bend as JIT
+    8| import ./../extra/datasets/__init__.bend as D
+    9| 
+   10| # ===========================================================================
+   11| # STUB -- 1:1 PATH MIRROR of examples/test_pkl_imagenet.py (19 LOC).
+   12| # NOT YET PORTED.
+   13| #
+   14| # THIS IS THE EVAL PATH AND IT IS THE FIRST MILESTONE TOWARD IMAGENET,
+   15| # BECAUSE IT IS THE ONE OF THE THREE FILES THAT NEEDS NO BACKWARD PASS. Every
+   16| # other thing about it is bad news, and the news is measured rather than felt.
+   17| # Measured 2026-10-19 03:46-04:15Z at HEAD 80d329a33.
+   18| #
+   19| # WHY EVAL AND NOT TRAIN. The forward corpus is 34 of 34 byte-identical
+   20| # (`unhealthy() -> 0`, `artefacts_ok() -> 0`, `repro_bad() -> 0`, `310 of 310
+   21| # files identical across two clean runs`) and every one of those 34 graphs is a
+   22| # FORWARD graph. `mixin/gradient.bend`'s 61 rules and `tensor.bend:2015
+   23| # tn_backward` exist and NOTHING CALLS THEM. So the forward pass is exercised,
+   24| # the backward pass is not, and this file is the one that only needs the
+   25| # forward pass. `train_resnet.bend` is the mirror image and is blocked twice
+   26| # over. That asymmetry is the entire reason this file is the milestone.
+   27| #
+   28| # BUT "NEEDS NO BACKWARD PASS" IS NOT "NEEDS NOTHING", AND THE HEADLINE FINDING
+   29| # IS THAT THE EVAL PATH AND THE MODEL PATH CONVERGE ON THE SAME WALL.
+   30| # This file LOOKS like it dodges ResNet entirely, because it runs a
+  ... cited lines ...
+    121| #         --include='*.bend' tinybendygrad/` -- every hit is a renderer or an
+    122| #         ELF symbol reader (`renderer/*`, `Lds.item`). None is `Tensor.item`.
+>>  123| #     `hit += y == t`       (:18)     host integer arithmetic over a REALIZED
+    124| #         value. Blocked by `.item()`, and by nothing else.
+      ROW: subj=tensor.py 18-18 class=at_no_revision tokens=hit
+
+====================================================================================================
+### tinybendygrad/extra/datasets/preprocess_imagenet.bend  (31 lines)
+    1| # STUB -- 1:1 PATH MIRROR of extra/datasets/preprocess_imagenet.py (21 LOC upstream). NOT YET PORTED.
+    2| #
+    3| # WHAT UPSTREAM IS. An `if __name__ == "__main__":` block and NOTHING else -- all 21
+    4| # lines are a top-level script that packs 3200 ImageNet rows into two `disk:` buffers.
+    5| # There is no def to mirror, so the ported unit is `main`.
+    6| #
+    7| # UPSTREAM IS BROKEN, MEASURED, AND THAT IS THE FIRST THING TO KNOW. Line 2 is
+    8| #     from extra.datasets.imagenet import iterate, get_val_files
+    9| # and `extra/datasets/imagenet.py` DEFINES NO `iterate`. Measured at HEAD: the only
+   10| # `def iterate` under `extra/datasets/` is `kits19.py:73`, `squad.py:133` and
+   11| # `librispeech.py:67`; `grep -n iterate extra/datasets/imagenet.py` is empty. So this
+   12| # file raises `ImportError` at import time and has never run. That is why the stop
+   13| # point below is line 2 and not line 6, and why `imagenet.bend` in this directory
+   14| # ports `get_val_files` but must NOT be given an `iterate` to make this import work:
+   15| # inventing the symbol would port a fix upstream does not have and hide the defect.
+   16| # TODO(port): STOPPED AT LINE 2 (extra/datasets/preprocess_imagenet.py:2) --
+   17| #   `from extra.datasets.imagenet import iterate, get_val_files` cannot resolve.
+   18| #   BEFORE anything else, upstream needs `iterate` added to `imagenet.py` or this
+   19| #   import narrowed to `get_val_files`; that is a decision for the upstream port, not
+   20| #   a stub's to paper over. AFTER that, MISSING: the packing loop itself --
+   21| #   `Tensor.empty(sz, *x.shape[1:], device="disk:/tmp/imagenet_x",
+   22| #   dtype=dtypes.uint8)` (upstream:14-15), the `X[idx:idx+bs].assign(x)` slice-assign
+   23| #   (upstream:18-19) which is the same wall `device.bend:872` records as "disk is a
+   24| #   WALL; what is PORTED is the DECISION", and `iterate`/`get_val_files` from
+   25| #   `imagenet.bend`, both of which are `Refused` there.
+   26| import Base
+   27| import ./__init__.bend as D
+   28| 
+   29| # upstream: the `if __name__ == "__main__":` block at extra/datasets/preprocess_imagenet.py:4
+   30| def main() -> D.Refused:
+  ... cited lines ...
+      8| #     from extra.datasets.imagenet import iterate, get_val_files
+      9| # and `extra/datasets/imagenet.py` DEFINES NO `iterate`. Measured at HEAD: the only
+>>   10| # `def iterate` under `extra/datasets/` is `kits19.py:73`, `squad.py:133` and
+     11| # `librispeech.py:67`; `grep -n iterate extra/datasets/imagenet.py` is empty. So this
+      ROW: subj=kits19.py 73-73 class=at_no_revision tokens=extra,datasets
+
+====================================================================================================
+### tinybendygrad/extra/models/bert.bend  (293 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/state.bend as ST
+    8| import ./../../nn/layers.bend as LN
+    9| import ./../../mixin/op.bend as MO
+   10| import ./../../mixin/movement.bend as MX
+   11| import ./../../mixin/reduce.bend as RC
+   12| import ./../../mixin/elementwise.bend as EW
+   13| import ./../../mixin/creation.bend as CR
+   14| import ./../../mixin/rand.bend as RD
+   15| import ./../../nn/optim.bend as OPT
+   16| import ./../datasets/__init__.bend as D
+   17| 
+   18| # ===========================================================================
+   19| # STUB -- 1:1 PATH MIRROR of extra/models/bert.py (300 LOC). NOT YET PORTED.
+   20| #
+   21| # THE FIRST MISSING THING IS `nn.Embedding`, AND IT IS ONE OF THE FOUR THE
+   22| # VISION MODELS NEVER ASKED FOR. `grep -rnwE "def .*Embedding" --include='*.bend'
+   23| # tinybendygrad/` = 0, and so is `grep -rnwE "def .*mo_i\(|def .*mo_fx\("`. The
+   24| # resnet.bend census at :40-123 asks for conv2d, batchnorm, linear, sequential,
+   25| # argmax, item, torch_load, fetch, get_child, rand and TinyJit; `Embedding` is not
+   26| # among them because a convnet indexes a weight tensor by spatial offset, never by
+   27| # a token id. Three of the eight files in this directory cannot name one weight
+   28| # without it.
+   29| #
+   30| # WHAT BERT GETS FOR FREE FROM THE VISION WORK, and this is measured, not hoped:
+  ... cited lines ...
+     57| #       and `.erf` is MISSING entirely. clip.py:12 `gelu = Tensor.gelu` is the OTHER
+     58| #       gelu, the openai one, so the two files disagree about what the word means.
+>>   59| #   (6) `Tensor.binary_crossentropy_logits` MISSING (bert.py:61, bert.py:72).
+     60| #   (7) `Tensor.argmax` MISSING (:66,:70) -- resnet.bend's census names it MISSING too, so
+      ROW: subj=bert.py 61-61 class=at_no_revision tokens=Tensor,binary_crossentropy_logits
+
+     57| #       and `.erf` is MISSING entirely. clip.py:12 `gelu = Tensor.gelu` is the OTHER
+     58| #       gelu, the openai one, so the two files disagree about what the word means.
+>>   59| #   (6) `Tensor.binary_crossentropy_logits` MISSING (bert.py:61, bert.py:72).
+     60| #   (7) `Tensor.argmax` MISSING (:66,:70) -- resnet.bend's census names it MISSING too, so
+      ROW: subj=bert.py 72-72 class=at_no_revision tokens=Tensor,binary_crossentropy_logits
+
+     64| #
+     65| # TODO(port): STOPPED AT `BertEmbeddings.__init__` (extra/models/bert.py:180).
+>>   66| # FIRST MISSING SYMBOL: `Embedding(vocab_size, hidden_size)` at bert.py:182, where
+     67| # `Embedding = nn.Embedding` is the module-level alias at bert.py:9 and there is no `def Embedding`
+      ROW: subj=bert.py 182-182 class=at_no_revision tokens=Embedding,vocab_size,hidden_size
+
+     65| # TODO(port): STOPPED AT `BertEmbeddings.__init__` (extra/models/bert.py:180).
+     66| # FIRST MISSING SYMBOL: `Embedding(vocab_size, hidden_size)` at bert.py:182, where
+>>   67| # `Embedding = nn.Embedding` is the module-level alias at bert.py:9 and there is no `def Embedding`
+     68| # anywhere under `tinybendygrad/`, and no `def mo_i` either.
+      ROW: subj=bert.py 9-9 class=at_no_revision tokens=Embedding
+
+     76| # THE TWO `load_from_pretrained` ARE NOT A PORTING PROBLEM AND SHOULD NOT BE
+     77| # TREATED AS ONE. bert.py:78-124 reads a TENSORFLOW checkpoint through
+>>   78| # `tf.train.list_variables`, and bert.py:24-31 reads a TORCH checkpoint through
+     79| # `torch.load`. `helpers.bend:3193` already records the whole weight-download
+      ROW: subj=bert.py 24-31 class=at_no_revision tokens=train,list_variables
+
+====================================================================================================
+### tinybendygrad/extra/models/clip.bend  (246 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/state.bend as ST
+    8| import ./../../nn/layers.bend as LN
+    9| import ./../../mixin/op.bend as MO
+   10| import ./../../mixin/movement.bend as MX
+   11| import ./../../mixin/reduce.bend as RC
+   12| import ./../../mixin/elementwise.bend as EW
+   13| import ./../../mixin/creation.bend as CR
+   14| import ./../../mixin/rand.bend as RD
+   15| import ./../../nn/optim.bend as OPT
+   16| import ./../datasets/__init__.bend as D
+   17| 
+   18| # ===========================================================================
+   19| # STUB -- 1:1 PATH MIRROR of extra/models/clip.py (480 LOC). NOT YET PORTED.
+   20| #
+   21| # CLIP IS BOTH HALVES AT ONCE, AND THAT IS WHY IT IS THE ONE FILE IN THIS SLICE
+   22| # WHOSE WALLS OVERLAP resnet.bend's AND bert.bend's RATHER THAN CHOOSING.
+   23| # Its vision half (`ClipVisionTransformer`, :338) asks for `nn.Conv2d`, which
+   24| # resnet.bend's census at :68-81 called MISSING and which is NOW BUILT --
+   25| # nn/layers.bend:756 `nn_conv2d`. Its text half (`ClipTextTransformer`, :318)
+   26| # asks for `nn.Embedding` (:319) and `nn.LayerNorm` (:322), both of which
+   27| # resnet.bend NEVER ASKED FOR and both of which are MISSING.
+   28| # So the honest reading of resnet.bend:21 -- "`nn.Conv2d`, `nn.BatchNorm2d` AND
+   29| # `nn.Linear` ARE ALL MISSING" -- is STALE for conv2d and linear, and
+   30| # `nn/layers.bend:14-27` says so in its own words: "THE WALL TEXT NAMED THE WRONG
+  ... cited lines ...
+     61| #                     `pooled = x @ self.text_projection` (:337,:361,:471) is not
+     62| #                     a call that type-checks today.
+>>   63| #   `x.sin`/`x.cos`  NOT NAMED BY clip.py. (llama.py:10 needs `.cos` and there is
+     64| #                     no `def ew_cos`; clip.py does not share that wall.)
+      ROW: subj=llama.py 10-10 class=at_no_revision tokens=sin,cos
+
+====================================================================================================
+### tinybendygrad/extra/models/convnext.bend  (241 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/layers.bend as LN
+    8| import ./../../nn/state.bend as ST
+    9| import ./../../mixin/op.bend as MO
+   10| import ./../../mixin/movement.bend as MX
+   11| import ./../../mixin/elementwise.bend as E
+   12| import ./../datasets/__init__.bend as D
+   13| 
+   14| # ===========================================================================
+   15| # STUB -- 1:1 PATH MIRROR of extra/models/convnext.py (63 LOC). NOT YET PORTED.
+   16| #
+   17| # WHAT CHANGED SINCE `resnet.bend` WAS WRITTEN, AND THIS FILE IS THE EVIDENCE:
+   18| # `resnet.bend:21` still reads "nn.Conv2d, nn.BatchNorm2d AND nn.Linear ARE ALL
+   19| # MISSING", and `resnet.bend:35` cites `mixin/op.bend:1523` as "SIDE B IS THE
+   20| # EMPTY HALF". BOTH ARE NOW STALE. `tinybendygrad/nn/layers.bend` (941 lines)
+   21| # BUILT THE OPS:
+   22| #   `Tensor.conv2d`  nn/layers.bend:756 `nn_conv2d`   -- from the primitives,
+   23| #                        `mixin/op.bend`'s SIDE B never having been filled
+   24| #   `Tensor.linear`   nn/layers.bend:427 `nn_linear`
+   25| #   `Tensor.relu`     nn/layers.bend:262 `nn_relu` (a NAME onto `tn_relu`,
+   26| #                        tensor.bend:774, not a second copy)
+   27| # and `tinybendygrad/nn/pool.bend` built `Tensor.batchnorm` (pool.bend:381) and
+   28| # the pools. So the arithmetic a ConvNeXt block needs IS in the tree. What is
+   29| # still absent is every LAYER CLASS: `nn/__init__.bend` has 17 defs
+   30| # (`grep -cE '^def ' nn/__init__.bend` = 17) and all 17 are shape arithmetic --
+  ... cited lines ...
+     67| # stops at, and `resnet.bend:99-111` already measures it for `fetch`. Its extra
+     68| # member here is `Tensor.assign` at :51 -- `pool.bend:408` names the instrument
+>>   69| # ("`Tensor.assign` -- op.py:56-57 `self.running_mean.assign(...)`", and
+     70| # `tensor.bend:2539` states the divergence: "Python's `is_param_` mutates in
+      ROW: subj=op.py 56-57 class=at_no_revision tokens=Tensor,assign,running_mean
+
+====================================================================================================
+### tinybendygrad/extra/models/llama.bend  (207 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/state.bend as ST
+    8| import ./../../nn/layers.bend as LN
+    9| import ./../../mixin/op.bend as MO
+   10| import ./../../mixin/movement.bend as MX
+   11| import ./../../mixin/reduce.bend as RC
+   12| import ./../../mixin/elementwise.bend as EW
+   13| import ./../../mixin/creation.bend as CR
+   14| import ./../../mixin/rand.bend as RD
+   15| import ./../../nn/optim.bend as OPT
+   16| import ./../datasets/__init__.bend as D
+   17| 
+   18| # ===========================================================================
+   19| # STUB -- 1:1 PATH MIRROR of extra/models/llama.py (286 LOC). NOT YET PORTED.
+   20| #
+   21| # LLAMA IS THE FURTHEST OF THE THREE TRANSFORMERS AND IT IS FURTHEST BY A
+   22| # DIFFERENT REASON THAN THE OTHER TWO. bert.bend and t5.bend both fail on a LAYER
+   23| # (`nn.Embedding`, `nn.LayerNorm`/`nn.RMSNorm`). llama fails on a STACK: FOUR
+   24| # norms where BERT has one kind and T5 has a hand-written one.
+   25| #
+   26| # THE NAMED CENSUS FOR THIS FILE:
+   27| #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
+   28| #   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200) FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: llama.py:53 `self.q_norm = nn.RMSNorm(dim, qk_norm)` is reached from `Attention.__init__`, which `TransformerBlock.__init__` (:135) builds, which `Transformer.__init__` (:198) builds. NOTHING in this file is constructible without it.
+   29| #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
+   30| #   `softmax`       EXISTS, mixin/op.bend:1095 `mo_softmax` (:165 in `sample`).
+  ... cited lines ...
+     26| # THE NAMED CENSUS FOR THIS FILE:
+     27| #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
+>>   28| #   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200) FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: llama.py:53 `self.q_norm = nn.RMSNorm(dim, qk_norm)` is reached from `Attention.__init__`, which `TransformerBlock.__init__` (:135) builds, which `Transformer.__init__` (:198) builds. NOTHING in this file is constructible without it.
+     29| #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
+      ROW: subj=llama.py 53-53 class=at_no_revision tokens=RMSNorm,Attention,__init__,TransformerBlock,Transformer
+
+     26| # THE NAMED CENSUS FOR THIS FILE:
+     27| #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
+>>   28| #   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200) FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: llama.py:53 `self.q_norm = nn.RMSNorm(dim, qk_norm)` is reached from `Attention.__init__`, which `TransformerBlock.__init__` (:135) builds, which `Transformer.__init__` (:198) builds. NOTHING in this file is constructible without it.
+     29| #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
+      ROW: subj=llama.py 53-53 class=at_no_revision tokens=RMSNorm,q_norm,dim,qk_norm,Attention,__init__,TransformerBlock,Transformer
+
+     27| #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
+     28| #   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200) FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: llama.py:53 `self.q_norm = nn.RMSNorm(dim, qk_norm)` is reached from `Attention.__init__`, which `TransformerBlock.__init__` (:135) builds, which `Transformer.__init__` (:198) builds. NOTHING in this file is constructible without it.
+>>   29| #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
+     30| #   `softmax`       EXISTS, mixin/op.bend:1095 `mo_softmax` (:165 in `sample`).
+      ROW: subj=llama.py 101-101 class=at_no_revision tokens=Tensor,scaled_dot_product_attention,grep,rnwE,include,bend
+
+     27| #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
+     28| #   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200) FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: llama.py:53 `self.q_norm = nn.RMSNorm(dim, qk_norm)` is reached from `Attention.__init__`, which `TransformerBlock.__init__` (:135) builds, which `Transformer.__init__` (:198) builds. NOTHING in this file is constructible without it.
+>>   29| #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
+     30| #   `softmax`       EXISTS, mixin/op.bend:1095 `mo_softmax` (:165 in `sample`).
+      ROW: subj=llama.py 104-104 class=at_no_revision tokens=Tensor,scaled_dot_product_attention,grep,rnwE,include,bend
+
+     30| #   `softmax`       EXISTS, mixin/op.bend:1095 `mo_softmax` (:165 in `sample`).
+     31| #   `adam`          EXISTS and UNUSED BY THIS FILE. nn/optim.bend:898 `op_mstep` is
+>>   32| #                   `(self.b1 * self.m[i] + (1.0 - self.b1) * g).cast(...)` -- optim.py:167,
+     33| #                   verbatim -- and :903 `op_vstep` is optim.py:168, and `op_mhat`/`op_vhat`
+      ROW: subj=optim.py 167-167 class=at_no_revision tokens=cast
+
+     31| #   `adam`          EXISTS and UNUSED BY THIS FILE. nn/optim.bend:898 `op_mstep` is
+     32| #                   `(self.b1 * self.m[i] + (1.0 - self.b1) * g).cast(...)` -- optim.py:167,
+>>   33| #                   verbatim -- and :903 `op_vstep` is optim.py:168, and `op_mhat`/`op_vhat`
+     34| #                   are optim.py:169,:170. The optimizer llama.py would train with is
+      ROW: subj=optim.py 168-168 class=at_no_revision tokens=op_vstep,op_mhat
+
+     31| #   `adam`          EXISTS and UNUSED BY THIS FILE. nn/optim.bend:898 `op_mstep` is
+     32| #                   `(self.b1 * self.m[i] + (1.0 - self.b1) * g).cast(...)` -- optim.py:167,
+>>   33| #                   verbatim -- and :903 `op_vstep` is optim.py:168, and `op_mhat`/`op_vhat`
+     34| #                   are optim.py:169,:170. The optimizer llama.py would train with is
+      ROW: subj=optim.py 903-903 class=at_no_revision tokens=op_vstep,op_mhat,op_vhat
+
+     36| #                   THAT IS THE ANSWER TO "DOES A TRAINING LOOP NEED SOMETHING NEW":
+     37| #                   NO. The adam half of this slice is DONE; what a training loop would
+>>   38| #                   add is a loss (`binary_crossentropy_logits`, bert.py:61, MISSING).
+     39| #
+      ROW: subj=bert.py 61-61 class=at_no_revision tokens=binary_crossentropy_logits
+
+     57| #   (1) `Tensor.cos`   MISSING. (:10) mixin/elementwise.bend:550 has `def ew_sin` and there is
+     58| #                     NO `def ew_cos`. RoPE needs the pair and only half of it landed.
+>>   59| #   (2) `Tensor.erf`   MISSING. bert.py:236 needs it too. Shared wall, named twice.
+     60| #   (3) `Tensor.multinomial` MISSING. (:184,:187) and `logits.argmax()` MISSING (:151).
+      ROW: subj=bert.py 236-236 class=at_no_revision tokens=Tensor,erf
+
+     76| #
+     77| # TODO(port): STOPPED AT `Attention.__init__` (extra/models/llama.py:36).
+>>   78| # FIRST MISSING SYMBOL: `nn.RMSNorm(dim, qk_norm)` at llama.py:53, which the `if` at
+     79| # :53 guards on `qk_norm is not None` -- so it is the SECOND statement of the
+      ROW: subj=llama.py 53-53 class=at_no_revision tokens=RMSNorm,dim,qk_norm
+
+     77| # TODO(port): STOPPED AT `Attention.__init__` (extra/models/llama.py:36).
+     78| # FIRST MISSING SYMBOL: `nn.RMSNorm(dim, qk_norm)` at llama.py:53, which the `if` at
+>>   79| # :53 guards on `qk_norm is not None` -- so it is the SECOND statement of the
+     80| # constructor, after four `linear(...)` calls that EXIST, and it is unconditional in
+      ROW: subj=llama.py 53-53 class=at_no_revision tokens=qk_norm,None
+
+     79| # :53 guards on `qk_norm is not None` -- so it is the SECOND statement of the
+     80| # constructor, after four `linear(...)` calls that EXIST, and it is unconditional in
+>>   81| # every configuration llama.py actually builds (`Transformer.__init__` :202 passes
+     82| # `qk_norm` through, and every public config in meta's llama sets it).
+      ROW: subj=llama.py 202-202 class=at_no_revision tokens=Transformer,__init__
+
+====================================================================================================
+### tinybendygrad/extra/models/mask_rcnn.bend  (422 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/state.bend as ST
+    8| import ./../../nn/layers.bend as LN
+    9| import ./../../nn/pool.bend as PL
+   10| import ./../../mixin/op.bend as MO
+   11| import ./../../mixin/movement.bend as MX
+   12| import ./../../mixin/reduce.bend as RC
+   13| import ./../../mixin/elementwise.bend as EW
+   14| import ./../../mixin/creation.bend as CR
+   15| import ./../../mixin/rand.bend as RD
+   16| import ./../../nn/optim.bend as OPT
+   17| import ./../datasets/__init__.bend as D
+   18| 
+   19| # ===========================================================================
+   20| # STUB -- 1:1 PATH MIRROR of extra/models/mask_rcnn.py (1214 LOC). NOT YET PORTED.
+   21| #
+   22| # MASK R-CNN IS THE BIGGEST FILE IN THIS SLICE AND IT HAS **ONE** SYMBOL THE OTHER
+   23| # SEVEN DO NOT ASK FOR. Everything else it names is on resnet.bend's list, or on
+   24| # bert/t5/llama's, or already built. The census below is by HIT COUNT, because
+   25| # the count is what makes `Tensor.cat` the file's real subject: it is named
+   26| # EIGHTEEN TIMES here, and there is no `def mo_cat`, `def tn_cat` or `def ew_cat`
+   27| # under `tinybendygrad/`.
+   28| #
+   29| # THE CENSUS OF THIS FILE'S OWN CALLS, MEASURED BY
+   30| # `grep -onE "Tensor\.[a-z_0-9]+|x\.(...)\(|nn\.[A-Z][a-zA-Z]*|get_child|torch_load"
+  ... cited lines ...
+     64| #   `Tensor.round` -- MISSING, and `nearest_interpolate` (:20) is `Tensor.round`
+     65| #     followed by a `.unsqueeze(-1)` repeat. `Tensor.cos`/`Tensor.sin` are MISSING
+>>   66| #     and llama.py:10 needs `.cos` too -- `mixin/elementwise.bend:550` has
+     67| #     `def ew_sin` and there is no `def ew_cos`.
+      ROW: subj=llama.py 10-10 class=at_no_revision tokens=cos
+
+====================================================================================================
+### tinybendygrad/extra/models/retinanet.bend  (230 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/state.bend as ST
+    8| import ./../../nn/layers.bend as LN
+    9| import ./../../nn/pool.bend as PL
+   10| import ./../../mixin/op.bend as MO
+   11| import ./../../mixin/movement.bend as MX
+   12| import ./../../mixin/reduce.bend as RC
+   13| import ./../../mixin/elementwise.bend as EW
+   14| import ./../../mixin/creation.bend as CR
+   15| import ./../../mixin/rand.bend as RD
+   16| import ./../../nn/optim.bend as OPT
+   17| import ./../datasets/__init__.bend as D
+   18| 
+   19| # ===========================================================================
+   20| # STUB -- 1:1 PATH MIRROR of extra/models/retinanet.py (263 LOC). NOT YET PORTED.
+   21| #
+   22| # RETINANET IS THE ONE FILE IN THIS SLICE THAT ASKS FOR **NOTHING NEW**. Its
+   23| # layer needs are a SUBSET of resnet.bend's, and that is the measured finding of
+   24| # this slice: `nn.Conv2d`, `nn.Linear`, `max_pool2d`, `pad`, `permute`,
+   25| # `reshape`, `relu`, `where`, `sigmoid` and `sum` are ALL the same symbols
+   26| # resnet.bend's census at :40-123 already asked for, and three of them have
+   27| # since landed.
+   28| #
+   29| # WHAT LANDED SINCE resnet.bend WAS WRITTEN, WITH ITS INSTRUMENT:
+   30| #   `nn.Conv2d`  nn/layers.bend:756 `nn_conv2d`  -- resnet.bend:69-81 records this as
+  ... cited lines ...
+     46| #                 llama ALSO hit (bert.py:40, t5.py:285, rnnt.py:59). FOUR files in
+     47| #                 eight ask for it and it has no `def`.
+>>   48| #   `Tensor.one_hot`   MISSING (:151) -- new to this slice, and shared with bert.py
+     49| #                 (:164) and transformer.py (:54).
+      ROW: subj=bert.py 151-151 class=at_no_revision tokens=Tensor,one_hot
+
+====================================================================================================
+### tinybendygrad/extra/models/rnnt.bend  (224 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/state.bend as ST
+    8| import ./../../nn/layers.bend as LN
+    9| import ./../../mixin/op.bend as MO
+   10| import ./../../mixin/movement.bend as MX
+   11| import ./../../mixin/reduce.bend as RC
+   12| import ./../../mixin/elementwise.bend as EW
+   13| import ./../../mixin/creation.bend as CR
+   14| import ./../../mixin/rand.bend as RD
+   15| import ./../../nn/optim.bend as OPT
+   16| import ./../datasets/__init__.bend as D
+   17| 
+   18| # ===========================================================================
+   19| # STUB -- 1:1 PATH MIRROR of extra/models/rnnt.py (202 LOC). NOT YET PORTED.
+   20| #
+   21| # RNN-T IS THE ONLY FILE IN THIS SLICE THAT ASKS FOR A KIND OF LAYER THE PORT
+   22| # HAS NEVER HAD AT ALL. resnet.bend asked for more of the layers that exist
+   23| # (conv2d, batchnorm, linear). bert/t5/llama asked for more normalizers and one
+   24| # embedding. RNN-T asks for RECURRENCE: `class LSTM` (rnnt.py:118) and
+   25| # `class LSTMCell` (rnnt.py:88), with a `self.cells` LIST (:124) and a
+   26| # `Tensor.stack(*new_hc[1:])` over it (:148).
+   27| #
+   28| #   `grep -rnE "^def .*(lstm|LSTMCell|rnn|GRU|gru|cell)\(" --include='*.bend'
+   29| #   tinybendygrad/` = 0.
+   30| #
+  ... cited lines ...
+     75| #   (6) `Tensor.clip`   (:43) -- MISSING.
+     76| #   (7) `Tensor.numpy`  (:28,:45,:46) -- MISSING, and it is the DEVICE-STATE SEAM:
+>>   77| #       `mixin/op.bend:87-89` already names it -- "`item` (op.py:22) and `data`
+     78| #       (op.py:20) are NOT WALLS and are not ports: `data` is a
+      ROW: subj=op.py 22-22 class=at_no_revision tokens=item
+
+     76| #   (7) `Tensor.numpy`  (:28,:45,:46) -- MISSING, and it is the DEVICE-STATE SEAM:
+     77| #       `mixin/op.bend:87-89` already names it -- "`item` (op.py:22) and `data`
+>>   78| #       (op.py:20) are NOT WALLS and are not ports: `data` is a
+     79| #       `raise NotImplementedError` declaration and `item` reads host memory
+      ROW: subj=op.py 20-20 class=at_no_revision tokens=data
+
+     78| #       (op.py:20) are NOT WALLS and are not ports: `data` is a
+     79| #       `raise NotImplementedError` declaration and `item` reads host memory
+>>   80| #       through it". `_greedy_decode` reads a TENSOR BACK to the host at :45 and
+     81| #       :46 and writes it into a fresh Tensor, so it cannot be a graph.
+      ROW: subj=op.py 45-45 class=at_no_revision tokens=_greedy_decode
+
+     80| #       through it". `_greedy_decode` reads a TENSOR BACK to the host at :45 and
+     81| #       :46 and writes it into a fresh Tensor, so it cannot be a graph.
+>>   82| #   (8) `unsqueeze` (:26,:38,:195,:196,:197) -- `grep -rnE "^def (mo|tn|ew)_unsqueeze"` = 0.
+     83| #       `nn/layers.bend:520 nn_expand` covers the `expand` half and NOT the
+      ROW: subj=op.py 26-26 class=at_no_revision tokens=unsqueeze,grep,rnE,_unsqueeze
+
+     80| #       through it". `_greedy_decode` reads a TENSOR BACK to the host at :45 and
+     81| #       :46 and writes it into a fresh Tensor, so it cannot be a graph.
+>>   82| #   (8) `unsqueeze` (:26,:38,:195,:196,:197) -- `grep -rnE "^def (mo|tn|ew)_unsqueeze"` = 0.
+     83| #       `nn/layers.bend:520 nn_expand` covers the `expand` half and NOT the
+      ROW: subj=op.py 38-38 class=at_no_revision tokens=unsqueeze,grep,rnE,_unsqueeze
+
+     80| #       through it". `_greedy_decode` reads a TENSOR BACK to the host at :45 and
+     81| #       :46 and writes it into a fresh Tensor, so it cannot be a graph.
+>>   82| #   (8) `unsqueeze` (:26,:38,:195,:196,:197) -- `grep -rnE "^def (mo|tn|ew)_unsqueeze"` = 0.
+     83| #       `nn/layers.bend:520 nn_expand` covers the `expand` half and NOT the
+      ROW: subj=op.py 195-195 class=at_no_revision tokens=unsqueeze,grep,rnE,_unsqueeze
+
+     80| #       through it". `_greedy_decode` reads a TENSOR BACK to the host at :45 and
+     81| #       :46 and writes it into a fresh Tensor, so it cannot be a graph.
+>>   82| #   (8) `unsqueeze` (:26,:38,:195,:196,:197) -- `grep -rnE "^def (mo|tn|ew)_unsqueeze"` = 0.
+     83| #       `nn/layers.bend:520 nn_expand` covers the `expand` half and NOT the
+      ROW: subj=op.py 196-196 class=at_no_revision tokens=unsqueeze,grep,rnE,_unsqueeze
+
+     80| #       through it". `_greedy_decode` reads a TENSOR BACK to the host at :45 and
+     81| #       :46 and writes it into a fresh Tensor, so it cannot be a graph.
+>>   82| #   (8) `unsqueeze` (:26,:38,:195,:196,:197) -- `grep -rnE "^def (mo|tn|ew)_unsqueeze"` = 0.
+     83| #       `nn/layers.bend:520 nn_expand` covers the `expand` half and NOT the
+      ROW: subj=op.py 197-197 class=at_no_revision tokens=unsqueeze,grep,rnE,_unsqueeze
+
+====================================================================================================
+### tinybendygrad/extra/models/transformer.bend  (137 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/state.bend as ST
+    8| import ./../../nn/layers.bend as LN
+    9| import ./../../mixin/op.bend as MO
+   10| import ./../../mixin/movement.bend as MX
+   11| import ./../../mixin/reduce.bend as RC
+   12| import ./../../mixin/elementwise.bend as EW
+   13| import ./../../mixin/creation.bend as CR
+   14| import ./../../mixin/rand.bend as RD
+   15| import ./../../nn/optim.bend as OPT
+   16| import ./../datasets/__init__.bend as D
+   17| 
+   18| # ===========================================================================
+   19| # STUB -- 1:1 PATH MIRROR of extra/models/transformer.py (61 LOC). NOT YET PORTED.
+   20| #
+   21| # THE HEADLINE, AND IT IS THE ANSWER TO "DO THESE MODELS NEED ANYTHING THE VISION
+   22| # MODELS DID NOT ASK FOR": YES, AND IT IS EXACTLY ONE NAME.
+   23| # `Tensor.scaled_dot_product_attention` (transformer.py:27, :60) is MISSING, and
+   24| # `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend' tinybendygrad/`
+   25| # returns 0. A vision model never names it -- resnet.bend's own census at :40-123
+   26| # asks for conv2d, batchnorm, linear, sequential, argmax, item, torch_load, fetch,
+   27| # get_child, rand and TinyJit, and `scaled_dot_product_attention` is not among them
+   28| # because no convolution has ever attended to anything.
+   29| #
+   30| # EVERYTHING ELSE IN THIS FILE IS ALREADY HERE, which is the other half of the
+  ... cited lines ...
+     21| # THE HEADLINE, AND IT IS THE ANSWER TO "DO THESE MODELS NEED ANYTHING THE VISION
+     22| # MODELS DID NOT ASK FOR": YES, AND IT IS EXACTLY ONE NAME.
+>>   23| # `Tensor.scaled_dot_product_attention` (transformer.py:27, :60) is MISSING, and
+     24| # `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend' tinybendygrad/`
+      ROW: subj=transformer.py 27-27 class=at_no_revision tokens=Tensor,scaled_dot_product_attention
+
+     21| # THE HEADLINE, AND IT IS THE ANSWER TO "DO THESE MODELS NEED ANYTHING THE VISION
+     22| # MODELS DID NOT ASK FOR": YES, AND IT IS EXACTLY ONE NAME.
+>>   23| # `Tensor.scaled_dot_product_attention` (transformer.py:27, :60) is MISSING, and
+     24| # `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend' tinybendygrad/`
+      ROW: subj=transformer.py 60-60 class=at_no_revision tokens=Tensor,scaled_dot_product_attention
+
+     50| # TODO(port): STOPPED AT `TransformerBlock.attn` (extra/models/transformer.py:24).
+     51| # MISSING:
+>>   52| #   (1) `Tensor.scaled_dot_product_attention` -- transform.py's `op.py:1177`. It is
+     53| #       the ONLY symbol in this file with no counterpart, and it is the wall for
+      ROW: subj=op.py 1177-1177 class=at_no_revision tokens=Tensor,scaled_dot_product_attention
+
+     57| #       llama.py:104.
+     58| #   (2) `x.layernorm` -- `grep -rnwE "def .*layernorm" --include='*.bend'` = 0.
+>>   59| #       `TransformerBlock.__call__` (:32, :36, :38) and nothing else in this file
+     60| #       runs without it. It is the SECOND wall and the one that survives fixing (1).
+      ROW: subj=llama.py 32-32 class=at_no_revision tokens=TransformerBlock,__call__
+
+     57| #       llama.py:104.
+     58| #   (2) `x.layernorm` -- `grep -rnwE "def .*layernorm" --include='*.bend'` = 0.
+>>   59| #       `TransformerBlock.__call__` (:32, :36, :38) and nothing else in this file
+     60| #       runs without it. It is the SECOND wall and the one that survives fixing (1).
+      ROW: subj=llama.py 36-36 class=at_no_revision tokens=TransformerBlock,__call__
+
+     57| #       llama.py:104.
+     58| #   (2) `x.layernorm` -- `grep -rnwE "def .*layernorm" --include='*.bend'` = 0.
+>>   59| #       `TransformerBlock.__call__` (:32, :36, :38) and nothing else in this file
+     60| #       runs without it. It is the SECOND wall and the one that survives fixing (1).
+      ROW: subj=llama.py 38-38 class=at_no_revision tokens=TransformerBlock,__call__
+
+====================================================================================================
+### tinybendygrad/extra/models/vit.bend  (198 lines)
+    1| import Base
+    2| import ./../../tensor.bend as T
+    3| import ./../../helpers.bend as H
+    4| import ./../../LAWS/spec.bend as S
+    5| import ./../../dtype.bend as DT
+    6| import ./../../nn/__init__.bend as NN
+    7| import ./../../nn/layers.bend as LN
+    8| import ./../../nn/state.bend as ST
+    9| import ./../../mixin/op.bend as MO
+   10| import ./../../mixin/movement.bend as MX
+   11| import ./../../mixin/creation.bend as CR
+   12| import ./../../mixin/rand.bend as RD
+   13| import ./transformer.bend as TR
+   14| import ./../datasets/__init__.bend as D
+   15| 
+   16| # ===========================================================================
+   17| # STUB -- 1:1 PATH MIRROR of extra/models/vit.py (73 LOC). NOT YET PORTED.
+   18| #
+   19| # THE ONLY MODEL IN THIS DIRECTORY THAT DOES NOT BEGIN WITH A CONVOLUTION, AND
+   20| # THAT IS THE WHOLE OF ITS DISTINCTIVE BLOCKER. Every other file here names
+   21| # `nn.Conv2d` in its first constructor; `ViT.__init__` names `Tensor.uniform`,
+   22| # `Tensor.zeros` and `Tensor.ones` (upstream:8-11,16-17) -- all FOUR are built
+   23| # (`rd_uniform` mixin/rand.bend:836, `cr_zeros` mixin/creation.bend:446,
+   24| # `cr_ones` mixin/creation.bend:487) -- and then names `TransformerBlock` at
+   25| # upstream:13.
+   26| #
+   27| # TODO(port): STOPPED AT `ViT.__init__` (extra/models/vit.py:6), at upstream:13
+   28| #       TransformerBlock(embed_dim=embed_dim, num_heads=num_heads,
+   29| #                        ff_dim=embed_dim*4, prenorm=True, act=lambda x: x.gelu())
+   30| #   `extra/models/transformer.py` IS PORTED AS A FILE -- `transformer.bend` is on
+  ... cited lines ...
+     65| # `np.load` (upstream:40) AND `Tensor.assign` (upstream:45-71, TWENTY-SEVEN
+     66| # CALLS) ARE THE LOADER. `pool.bend:408` names the second: "`Tensor.assign` --
+>>   67| # op.py:56-57 `self.running_mean.assign(...)`", and `tensor.bend:2539` states the
+     68| # divergence outright ("Python's `is_param_` mutates in place; this returns a
+      ROW: subj=op.py 56-57 class=at_no_revision tokens=running_mean,assign
+
+====================================================================================================
+### tinybendygrad/mixin/creation.bend  (1010 lines)
+    1| # mixin/creation.bend -- tinygrad/mixin/creation.py, all 165 lines. `CreationMixin`,
+    2| # which is ALSO `UOp.empty` / `UOp.empty_like` / `UOp.const_like` (ops.py:581 symbol=const_like, :603,
+    3| # MEASURED: `UOp.empty.__qualname__ == "CreationMixin.empty"`).
+    4| #
+    5| # ---------------------------------------------------------------------------
+    6| # THE SCOPE IS SMALLER THAN MY UNIT BRIEF'S INVENTORY, and that is a FINDING, not a
+    7| # shortfall. The brief lists `eye`, `arange`, `linspace`, `tril`/`triu`, `rand`,
+    8| # `randn`, `uniform`, `normal`. None of them is in this file. MEASURED:
+    9| # `grep -rn "def arange\|def eye\|def linspace\|def tril\|def triu\|def rand\b\|def
+   10| # randn\|def normal\|def uniform" tinygrad/` names `mixin/op.py:166/215/198/236/259`
+   11| # and `mixin/rand.py:50/106/141/158` and NOTHING else -- and `tinybendygrad/mixin/
+   12| # op.bend` already owns op.py's half. So the WHOLE of creation.py is eleven bodies
+   13| # plus one `raise NotImplementedError`, and they are the ones `examples/
+   14| # beautiful_mnist.bend`'s W3 wall is built FROM: `full` is the ONLY `expand` in
+   15| # `creation.py` (creation.py:112 symbol=zeros) and `zeros`/`ones`/`*_like` are all `full`.
+   16| #
+   17| # ---------------------------------------------------------------------------
+   18| # THE WALLS. W1 AND W2 ARE MINE; W3 AND W4 ARE OTHER FILES' AND NAMED TWICE BECAUSE
+   19| # THIS FILE REACHES BOTH.
+   20| #
+   21| #   W1 mixin/creation.py:23 symbol=empty `empty` -- `canonicalize_device` is `tinygrad/device.py`,
+   22| #      which is a C-effect module (the boundary `bend2-constraints` section 4 draws),
+   23| #      so `dev: S.Dev` is a PARAMETER here. `UOp.device_range_src` (ops.py:849) is `()`
+   24| #      unless the device is a TUPLE, and the tuple case is W2, so every ALLOC in this
+   25| #      file has NO srcs -- `row_empty23_g` (`ALLOC/0`) is the row that says so.
+   26| #   W2 mixin/creation.py:16 `_multi_like` -- `fxn` is a Python CALLBACK and the body
+   27| #      needs `shard`/`unshard`/`mstack`/`shard_shape`/`axis` (ops.py:635 symbol=axis/692/757/773),
+   28| #      none of which is ported. `_multi_like` is the whole reason `full_like` has a
+   29| #      device-tuple arm, so `cr_full_like` is single-device and the tuple arm is a
+   30| #      `TODO(p3)`.
+  ... cited lines ...
+     60| #      TODO(p3) mixin/movement.py:128  `_broadcast_to` for a source that is NOT
+     61| #        0-dim. Note `const_like` is NOT one of them: it reads `self._shape`
+>>   62| #        (ops.py:605) directly and never goes through `_broadcast_to`.
+     63| #
+      ROW: subj=ops.py 605-605 class=at_no_revision tokens=_broadcast_to
+
+    118| #      `D.commit_dtype`'s own signature already wants them separately, so this costs
+    119| #      nothing and is not a workaround.
+>>  120| #   6. `argfix(*shape)` (helpers.py:24) COLLAPSES `empty(2,3)` and `empty((2,3))` into
+    121| #      one shape and REJECTS `empty((2,3),4)`. So the shape is ONE `List<&2, U32>` in
+      ROW: subj=helpers.py 24-24 class=at_no_revision tokens=argfix,shape,empty
+
+====================================================================================================
+### tinybendygrad/nn/__init__.bend  (431 lines)
+    1| import Base
+    2| import ./../tensor.bend as T
+    3| import ./../helpers.bend as H
+    4| import ./../LAWS/spec.bend as S
+    5| 
+    6| import ./../uop/ops.bend as O
+    7| import ./state.bend as ST
+    8| 
+    9| # ===========================================================================
+   10| # nn/__init__.bend -- tinygrad/nn/__init__.py (420 lines).
+   11| #
+   12| # FIRST, THE FINDING THAT CHANGES THE SHAPE OF THIS FILE: THERE IS NO
+   13| # `nn.Module`. I went looking for one and it is not there -- `nn/__init__.py` is
+   14| # eleven plain classes with no base class, no `parameters()`, no `state_dict()`
+   15| # method and no registry, and `get_state_dict` (state.py:89) reaches a layer by
+   16| # walking `obj.__dict__` by REFLECTION. So the "Module base" the hand-off asked
+   17| # for is not a thing to port; it is `state.bend`'s `Obj` tree, and this file's
+   18| # job is to be the thing that tree is built from. That is why this file imports
+   19| # `state.bend` and not the other way round, which is also Python's own direction
+   20| # (`nn/__init__.py:6`, `from tinygrad.nn import optim, state, datasets`).
+   21| #
+   22| # WHY A LAYER IS NOT A `Data` RECORD HERE, and it is the second real finding. In
+   23| # Python a layer is an OBJECT: its parameters are attributes, so `get_state_dict`
+   24| # finds them by reflection without the layer cooperating, and
+   25| # `self.eps: float`/`self.bias: Tensor|None` are just attributes. In Bend a
+   26| # `Data` record has NO REFLECTION and a `Data` field cannot hold a `Maybe`
+   27| # (measured: bend2-constraints rule 15), so every field read would need a paired
+   28| # accessor def (`Tensor.ar`/`Tensor.u` in tensor.bend is that pattern) and
+   29| # `Tensor|None` would need a third type. So each layer here is a def over its
+   30| # CONSTRUCTOR ARGUMENTS that answers a SHAPE, plus a `*_st` def that answers the
+  ... cited lines ...
+     91| #      are mixin/movement.py, `chunk`/`sigmoid`/`tanh`/`rsqrt`/`square`/
+     92| #      `unsqueeze`/`where`/`detach` are mixin/elementwise.py, `mean`/`sum` are
+>>   93| #      mixin/reduce.py, `arange` is op.py:166. NONE is mine and none is built, so
+     94| #      every `__call__` is a `TODO(p3)` naming the line: 11 of the 13 classes.
+      ROW: subj=op.py 166-166 class=at_no_revision tokens=arange
+
+====================================================================================================
+### tinybendygrad/nn/layers.bend  (1216 lines)
+    1| # nn/layers.bend -- the LAYER vocabulary, which `nn/__init__.bend` is not.
+    2| #
+    3| # `nn/__init__.bend` (429 lines, 17 defs) is SHAPE ARITHMETIC: `nn_scale`,
+    4| # `nn_bound`, `nn_groups`, `nn_same`, `nn_mt`, `nn_glorot`. It builds no graph.
+    5| # Its own WALL block says why -- every `__call__` in tinygrad's nn is a Tensor
+    6| # MIXIN METHOD (`x.conv2d` mixin/op.py:1562, `x.linear` mixin/op.py:1254,
+    7| # `Tensor.relu` mixin/elementwise.py:672) and NONE of them was built. THIS FILE
+    8| # IS THE OTHER HALF: the defs that INTERN UOps.
+    9| #
+   10| # THE WALL TEXT NAMED THE WRONG BLOCKER, MEASURED AGAINST WHAT IS ON DISK.
+   11| #   `nn/__init__.bend:227` -- `x.linear` "walled on `linear_with_vars`
+   12| #     (movement.py) P3 and mixin/op.bend's W8 (the WMMA lowering)". NOT REACHED.
+   13| #     `Tensor.linear` (op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
+   14| #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
+   15| #     `dot` (op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
+   16| #     All six are built today: `M.mo_reshape` (mixin/op.bend:664),
+   17| #     `M.mo_permute` (:680), `T.tn_mul` (tensor.bend:656), `M.mo_sum` (:811),
+   18| #     `M.mo_cast_t` (:370), `DT.least_upper_dtypes` (dtype.bend:218). WMMA is
+   19| #     `dot`'s HANDLER, and the layer's own arithmetic never selects it.
+   20| #   `nn/__init__.bend:231` -- `x.conv2d` "SIDE B, not built". `mixin/op.bend`'s
+   21| #     SIDE B is EMPTY: `tinybendygrad/mixin/op.bend:1523` is the last line and
+   22| #     reads `# SIDE B's SECTION GOES BELOW THIS LINE.`. Nothing there to wait on
+   23| #     -- `mixin/op.bend:246` reserves that half for a unit that writes it, and
+   24| #     this file is not that unit, so `conv2d` is built HERE from the same
+   25| #     primitives.
+   26| #   `Tensor.relu` is ALREADY PORTED at `tensor.bend:774` as `tn_relu`. So the
+   27| #     wall line naming it as missing is STALE; `nn_relu` below is a NAME onto it
+   28| #     and not a second copy of its body.
+   29| #
+   30| # WHY THE MUL IS NOT A WALL HERE, and this is the one non-obvious thing here.
+  ... cited lines ...
+     11| #   `nn/__init__.bend:227` -- `x.linear` "walled on `linear_with_vars`
+     12| #     (movement.py) P3 and mixin/op.bend's W8 (the WMMA lowering)". NOT REACHED.
+>>   13| #     `Tensor.linear` (op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
+     14| #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
+      ROW: subj=op.py 1254-1254 class=at_no_revision tokens=Tensor,linear
+
+     13| #     `Tensor.linear` (op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
+     14| #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
+>>   15| #     `dot` (op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
+     16| #     All six are built today: `M.mo_reshape` (mixin/op.bend:664),
+      ROW: subj=op.py 367-367 class=at_no_revision tokens=dot
+
+====================================================================================================
+### tinybendygrad/renderer/llvmir.bend  (1209 lines)
+    1| # llvmir.bend -- tinygrad/renderer/llvmir.py (286 lines), STAGE 2 ONLY.
+    2| #
+    3| # `nir_llvmir.bend` (1142 lines, 205 rows) owns STAGE 1: `ldt`'s type map,
+    4| # `lcast`, the three `lop` tables, the renderer record, `supported_dtypes`,
+    5| # `llvm_intrinsics`, `code_for_op`, `code_for_workitem`, `barrier`, the two NAMES
+    6| # the naming walk assigns (`%data{slot}`, `%{local|reg}_{slot}`), the
+    7| # `getelementptr` line and the AMD `f32_to_fp8` prefix. Its own header names
+    8| # STAGE 2 as "`_render_fn` (:231-235 symbol=_render_fn), `_render_footer` (:232 symbol=_render_footer, :281 symbol=_render_footer), the per-op
+    9| # emitter strings of `base_rewrite` (:77-144) and `_render_kernel`'s naming walk
+   10| # (:161-202)". This file is that list MINUS the walk, and the reason is in the
+   11| # NOT-PORTED section: the walk needs a UOp model this tree does not have.
+   12| #
+   13| # ---------------------------------------------------------------------------
+   14| # THE GATE. 471 rows + the one framing newline `IO.print` supplies, all diffed
+   15| # byte-for-byte against the oracle's own stdout:
+   16| #   .venv/bin/python .agents/slop/llvmir-oracle.py rows > .agents/slop/li/py.txt
+   17| #   .venv/bin/python .agents/slop/llvmir-oracle.py bend > .agents/slop/li/stage2.bend
+   18| #   ./bin/bend tinybendygrad/renderer/llvmir.bend > .agents/slop/li/port.txt
+   19| #   diff .agents/slop/li/port.txt .agents/slop/li/py.txt
+   20| # ONE `IO.print` for the whole table, so `IO.print`'s own newline is the only
+   21| # frame and the oracle's single trailing "\n" is its match. BOTH LANES WERE
+   22| # MEASURED BYTE-IDENTICAL TO EACH OTHER AND TO THE ORACLE.
+   23| # ⚠ THE ORACLE MOVED. This header used to say `.agents/slop/li/li-oracle.py`, and that
+   24| # file does not exist: `rebase-gate.py`'s roster points at `.agents/slop/llvmir-oracle.py`,
+   25| # which is where it lives. `.agents/slop/li/` holds CAPTURES, not the oracle.
+   26| # ⚠ AND A BYTE DIFF IS NOT A COVERAGE STATEMENT. The two lanes print the SAME BYTES, so a
+   27| # value comparison over them agrees by construction no matter what this file computes --
+   28| # `disagree` is 0 for free. What the diff cannot see is how many of the 471 printed rows any
+   29| # NAME can reach, and for most of this file's life that was 323. See the next section.
+   30| #
+  ... cited lines ...
+     65| #
+     66| # `lt 1 ptr f32` IS PRINTED TWICE, ON BOTH SIDES, AND IS NOT FIXED HERE. `r_lts()` below
+>>   67| # and `llvmir-oracle.py:647-648` each list the tuple `(1, dtypes.f32, True)` twice in the
+     68| # same `lt` count/ptr table, so the fourth entry is the first again. This is the
+      ROW: subj=llvmir-oracle.py 647-648 class=at_no_revision tokens=dtypes,f32,True
+
+    186| #     `renderer/tc.py`, both other units' work.
+    187| #   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :21 symbol=lconst) are
+>>  188| #     `float_to_fp8` (dtype.py:244) and `truncate` (dtype.py:295), so they are
+    189| #     `dtype.bend`'s. What is HERE is the FOUR-WAY DISPATCH (`lconst branch <d>`,
+      ROW: subj=dtype.py 244-244 class=at_no_revision tokens=float_to_fp8,truncate
+
+    186| #     `renderer/tc.py`, both other units' work.
+    187| #   * `lconst`'s fp8 and finite-float VALUES (llvmir.py:20, :21 symbol=lconst) are
+>>  188| #     `float_to_fp8` (dtype.py:244) and `truncate` (dtype.py:295), so they are
+    189| #     `dtype.bend`'s. What is HERE is the FOUR-WAY DISPATCH (`lconst branch <d>`,
+      ROW: subj=dtype.py 295-295 class=at_no_revision tokens=float_to_fp8,truncate
+
+    190| #     eighteen rows, one per dtype) and the inf/nan hex, which is llvmir.py's own
+    191| #     code (:22) and is fully expressed without an `F64`.
+>>  192| #   * `float_to_fp8`'s `_fp8_cfg` (dtype.py:236-241) is dtype.py's.
+    193| #   * `float_to_fp16` / `float_to_bf16` are `codegen/decomp/transcendental.bend`'s
+      ROW: subj=dtype.py 236-241 class=at_no_revision tokens=float_to_fp8,_fp8_cfg
+
+====================================================================================================
+### tinybendygrad/renderer/ptx.bend  (1341 lines)
+    1| # ptx.bend -- tinygrad/renderer/ptx.py: `render`'s NAMING WALK, ptx.py:171-229
+    2| #
+    3| # ===========================================================================
+    4| # WHAT IS HERE, WHAT IS NOT, AND WHY NEITHER IS A SECOND COPY
+    5| # ===========================================================================
+    6| # `renderer/tc_ptx.bend` already ports ptx.py's EMITTERS -- `render_val`, the
+    7| # twenty-one `asm_for_op` entries, `supports_half`/`doesnt_support_half`,
+    8| # `modifier`, `mem_type`, `render_wmma` and its two `dt_map`s, the three dtype
+    9| # tables, `supported_dtypes`, `tensor_cores`, `fmt` and `render_kernel`'s HEADER
+   10| # -- because tc.py and ptx.py are one feature. This file redefines NONE of it.
+   11| # It IMPORTS `tc_ptx.bend` as `P` and calls `P.types_of` (the three dtype
+   12| # tables), `P.fmt` (the line formatter) and `P.esc`; the row builder is `T.r`,
+   13| # which the 1:1 split moved out of `tc_ptx.bend` into `tc.bend`.
+   14| # ONE definition per shared name: the second copy is the drift bug, and a dtype
+   15| # rename in `LAWS/spec.bend` moves BOTH copies or neither.
+   16| #
+   17| # What tc_ptx.bend's header calls STAGE 3 and names NOT STARTED is here: the
+   18| # `ssa` COUNTER (ptx.py:180-183), the per-op register assignment (ptx.py:185-221),
+   19| # the `.reg` DECLARATIONS `render_kernel` prepends from `c.items()` (ptx.py:165),
+   20| # the `bufs` collection (ptx.py:210), the entry-point NAME (ptx.py:173, 192-193)
+   21| # and the ONE REFUSAL the walk raises (ptx.py:204).
+   22| #
+   23| # NOT HERE, and named rather than faked:
+   24| #   * `string_rewrite` (ptx.py:81-135) -- twenty-three graph-pattern rules whose BODY
+   25| #     is an f-string over `ctx.r[x]`. It is CONSUMABLE exactly once the walk
+   26| #     below supplies `ctx.r`, so it is the natural NEXT file and not a wall.
+   27| #   * `ptx_matcher` (ptx.py:40-57) -- eight graph REWRITES, and tc_ptx.bend's
+   28| #     `DONE(p3)`/`WALL(p3)` block over ptx.py:42-56 is where each of the eight
+   29| #     is recorded.
+   30| #     `TODO(p3) ptx.py:42 symbol=ptx_matcher`.
+  ... cited lines ...
+     29| #     is recorded.
+     30| #     `TODO(p3) ptx.py:42 symbol=ptx_matcher`.
+>>   31| #   * `to_function_name`'s `ansistrip` (helpers.py:157) -- a regex ANSI strip.
+     32| #     The KEEP/HEX branch is ported and gated; the strip is the wall.
+      ROW: subj=helpers.py 157-157 class=at_no_revision tokens=to_function_name,ansistrip
+
+====================================================================================================
+### tinybendygrad/renderer/tc_ptx.bend  (1185 lines)
+    1| # renderer/tc_ptx.bend -- port of tinygrad/renderer/ptx.py
+    2| #
+    3| # ONE BEND FILE PER UPSTREAM .py, AT THE SAME PATH. This file used to hold
+    4| # `renderer/ptx.py` AND `renderer/tc.py`; the 1:1 ruling separates them and
+    5| # `renderer/tc.bend` is the other half. This file is the ptx.py HALF and it is
+    6| # 343 rows; `tc.bend` is the tc.py half's 289. The union is 632 rows, and the
+    7| # ONE frame line between the two stages is the only byte a `diff` of the union
+    8| # would report.
+    9| #
+   10| # THE TENSOR-CORE TABLES ARE IMPORTED, NOT COPIED: `renderer/ptx.py` calls
+   11| # `get_nvidia`/`get_amd` for its warp-level `wmma` and `mma` shapes, and those are
+   12| # `tc.py:96-141`. They live in `tc.bend` and every use here is `T.`. `renderer/ptx.bend`
+   13| # imports this file as `P` and is unaffected.
+   14| #
+   15| # ---------------------------------------------------------------------------
+   16| # THE GATE, AND IT IS CODE.  `gates/tc_ptx_render_census-gate.py` runs BOTH lanes
+   17| # and diffs them BYTE FOR BYTE:
+   18| #   .venv/bin/python gates/tc_ptx_render_census-gate.py
+   19| # It asks the oracle's `stage2` for this file's rows and the oracle's `stage1`
+   20| # for `tc.bend`'s, and it ALSO asks the oracle's `bend` selector for the PORT'S
+   21| # OWN SOURCE for the four dtype-table row builders: A DIFF CANNOT SEE A ROW THAT
+   22| # IS MISSING FROM BOTH LANES, and `bend` is the independent statement of the row
+   23| # set.  The plant is `gates/tc_ptx_render_census-plant.py` -- four arms and a
+   24| # control, each on a copy.  Before this, the recipe was PROSE in this header,
+   25| # and a prose recipe is not a gate.
+   26| #
+   27| # MEASURED 2026-10-22, at the commit that landed this text: `stage1` 290 lines
+   28| # and `stage2` 344 lines, BYTE-IDENTICAL on both sides; the `bend` check
+   29| # matches; the `wmma` selector answers 1440 rows.
+   30| #
+  ... cited lines ...
+     54| # `cast_types` over `void`, `weakint` and `weakfloat`.  They are not
+     55| # divergences: the raw lookup raises for all three, and CPython's OWN answer is
+>>   56| # `strong_dtype(dtype)`'s PTX type (`dtype.py:169-170`), so `types[strong_dtype
+     57| # (weakint)]` is `types[i32]` is "s32".  The oracle computes them from live
+      ROW: subj=dtype.py 169-170 class=at_no_revision tokens=strong_dtype,dtype
+
+====================================================================================================
+### tinybendygrad/schedule/multi.bend  (3456 lines)
+    1| # multi.bend -- tinygrad/schedule/multi.py. Multi-device scheduling: the UNSHARD-splitting
+    2| # rules, the device-group COPY rules, and the MSELECT/MSTACK rewrites.
+    3| #
+    4| # WHAT THIS FILE IS. `multi.py` is 311 lines and THIRTY defs, and almost none of it is
+    5| # arithmetic. Two thirds of the defs are GRAPH BUILDERS (`.unshard`, `.alu`, `.mselect`,
+    6| # `.copy_to_device`, `._shard`, `.cat`, `.store`, `.replace`, `UOp(Ops.STACK, ...)`) and not
+    7| # one of those is ported (ops.py:423 through :32, every one a `TODO(p3)` in `ops.bend`).
+    8| # What IS here is the DECISION and the INDEX ARITHMETIC each of those thirty defs makes
+    9| # before it reaches for a builder -- which axes a REDUCE consumes, where a RESHAPE's shard
+   10| # boundary lands, which axis a PERMUTE sends a shard to and which it FLIPs, whether a
+   11| # shrink resolves its own UNSHARD, whether an INDEX is contiguously or strided owned, and
+   12| # the three-way per-source decision in `shard_srcs` that the resharding fallbacks all call.
+   13| #
+   14| # THE ONE WALL THAT CUTS ACROSS EVERY LINE: `UOp._min_max` (ops.py:1094), which
+   15| # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
+   16| # `copy_multi`. `fold.bend` names it `ops.py:1104` in its own PROSE and carries it as
+   17| # its `_min_max` WALK -- there is no `TODO(p3)` marker for it there -- and it is not a
+   18| # fold at all -- it is arithmetic over the srcs. What `mu_count`
+   19| # ports is the NARROW case that is exact and load-bearing: a RANGE over a CONST end, where
+   20| # ops.py:1137 reads `(self.src[0]-1).vmax` so `int(rng.vmax)+1 == src[0]`, which is exactly
+   21| # what `UOp.range(len(devices[0]), -1, AxisType.DEVICE)` builds. A RANGE over a SYMBOLIC
+   22| # end answers `mu_sym_count()`, the named wall, and every caller that must not silently get
+   23| # it says so.
+   24| #
+   25| # TODO(p3) ops.py:1094  symbol=_min_max  -- `UOp._min_max` is DECLARED here and
+   26| # `fold.bend` carries its WALK.
+   27| #
+   28| # DEPENDENCY ON SIBLINGS, both named because both are call sites this file does not make.
+   29| # `schedule/allreduce.bend` owns the BODY of `replace_allreduce`'s `_early_allreduce` arm
+   30| # (multi.py:106 symbol=reduce_multi) and of `reduce_multi`'s ALLREDUCE_CAST arm (multi.py:116-118); this file's
+  ... cited lines ...
+     14| # THE ONE WALL THAT CUTS ACROSS EVERY LINE: `UOp._min_max` (ops.py:1094), which
+     15| # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
+>>   16| # `copy_multi`. `fold.bend` names it `ops.py:1104` in its own PROSE and carries it as
+     17| # its `_min_max` WALK -- there is no `TODO(p3)` marker for it there -- and it is not a
+      ROW: subj=ops.py 1104-1104 class=at_no_revision tokens=copy_multi,fold,bend
+
+====================================================================================================
+### tinybendygrad/uop/fold.bend  (7393 lines)
+    1| # fold.bend -- the derived properties of tinygrad/uop/ops.py, as ONE topological
+    2| # fold over the arena.
+    3| #
+    4| # WHAT THIS FILE IS. `ops.bend` builds the arena: a UOp is a `U32` index into an
+    5| # append-only `List<Node>`, so every property read goes through the store. That
+    6| # store is what stops the property folds -- a self-call must pass a FIELD of its
+    7| # own parameter and the arena's field is a U32 read back out of a store -- and
+    8| # mutual recursion is refused, and `dtype_from_uop` <-> `_shape` <->
+    9| # `simplify()` -> `graph_rewrite` -> the rules -> `dtype` is a cycle.
+   10| #
+   11| # THE FIX is the shape `toposort` already has in `ops.bend`: ONE def that walks
+   12| # the graph in topological order, so a node is answered only after every node it
+   13| # reads is. Python's `recursive_property` (ops.py:211) replaces
+   14| # `functools.cached_property` in recursive UOp functions to prevent
+   15| # RecursionError; this is the same answer with no recursion at all. The dependency
+   16| # graph of the fold is a DAG BY CONSTRUCTION rather than by discipline, and
+   17| # `graph_rewrite` is not called, so nothing in the rewrite engine can call back
+   18| # into this file.
+   19| #
+   20| # dtype and shape are answered TOGETHER, as one `DtShape`, because they read each
+   21| # other -- `_shape`'s CALL/INS/BITCAST arms read `self.dtype`, and
+   22| # `dtype_from_uop`'s INDEX arm reads `b.shape` -- and because a pair is what a
+   23| # caller wants. The other properties keep their own `match op`, which is what
+   24| # Python has: `device`, `addrspace`, `base` and `ended_ranges` are separate
+   25| # properties there and separate defs here. `derived` is the one place they are
+   26| # assembled, and it is the only def that knows about all of them.
+   27| #
+   28| # THE FIVE MOVEMENT ARMS ARE LANDED, and THREE OF THEM WERE NOT BEHIND THE WALL THE
+   29| # TODO LIST RECORDED FOR THEM. It said EXPAND, PERMUTE and FLIP wait on
+   30| # "`marg` -> `as_shape` -> `ssimplify`", which is TRUE of `marg`'s first two arms and
+  ... cited lines ...
+    130| #
+    131| # THE LATTICE IS HOISTED, with a notice. `promo_dtype` needs `least_upper_dtype`
+>>  132| # (dtype.py:193), which `./../dtype.bend` already has in a form this file cannot
+    133| # reach: that file's fp16/bf16/fp8/i64 conversions are C effects, so importing it
+      ROW: subj=dtype.py 193-193 class=at_no_revision tokens=dtype,bend
+
+====================================================================================================
+### tinybendygrad/uop/render.bend  (3120 lines)
+    1| # render.bend -- tinygrad/uop/render.py.
+    2| #
+    3| # THE FIRST STRING-BUILDING UNIT IN THE PORT. Everything ported so far was DATA:
+    4| # an arena of U32 indices, a fold of derived properties, six rule tables. This
+    5| # file turns a UOp back into PYTHON SOURCE TEXT, and it is the first place where
+    6| # a dropped literal produces plausible wrong output instead of a type error.
+    7| #
+    8| # ===========================================================================
+    9| # WHAT base.bend HAS, MEASURED 2026-09-30 against bend 2.0.34
+   10| # (`./bin/bend` on a probe file). This list is the whole substrate, and the
+   11| # absences are the walls.
+   12| #
+   13| #   String.append(a, b)                          concat two
+   14| #   String.concat(xs: List<&2, String>)           concat a list
+   15| #   String.join(xs, +sep: String)                 join with a separator
+   16| #   String.split(s, +sep: CHAR) -> List<String>   split -- on ONE CHARACTER
+   17| #   String.starts_with / ends_with / contains
+   18| #   String.take(s, n: Nat) / drop / get(s, n) / length(s) -> Nat
+   19| #   String.to_list(s) -> List<Char> / from_list
+   20| #   String.repeat(+s, n: Nat)
+   21| #   String.to_upper / to_lower / trim_start / trim_end / trim / reverse
+   22| #   String.is_empty / eq / order / is_lt / is_le / is_gt / is_ge
+   23| #   U32.show Nat.show Bool.show Char.show Maybe.show List.show F32.show
+   24| #   (helpers.bend: pad_left pad_right ansilen colored Flags)
+   25| #
+   26| # ===========================================================================
+   27| # WHAT IS MISSING. Four gaps, and only the first is cosmetic.
+   28| #
+   29| #   (a) NO `sprintf`, NO field-width specifier, NO `format`. Every `f"{i:4d}"`,
+   30| #       `f"{str(u.op):20s}"`, `f"{str(u.dtype):40s}"`, `f"{str(srcs):32s}"` and
+  ... cited lines ...
+     67| # THE WALL THAT IS NOT ABOUT STRINGS AT ALL: `eval_pyrender`.
+     68| #
+>>   69| # `tinygrad/uop/spec.py:293` does `exec(code, pyrender_globals(), lcls)` on the
+     70| # string `pyrender` produced and reads back `lcls['ast']`. That is not a missing
+      ROW: subj=tinygrad/uop/spec.py 293-293 class=only_older_revision tokens=exec,code,pyrender_globals,lcls
+
+     78| # EMITS PYTHON TEXT and the Bend side is a hand-written dispatch instead. So the
+     79| # correct port of `pyrender` is to emit the text and NOT round-trip it, and
+>>   80| # `test_pyrender` (`spec.py:296`) becomes the string-diff gate at the foot of
+     81| # this file instead of an `exec`. Recording it, not engineering around it.
+      ROW: subj=spec.py 296-296 class=only_older_revision tokens=test_pyrender
+
+====================================================================================================
+### tinybendygrad/uop/symbolic.bend  (4395 lines)
+    1| # symbolic.bend -- tinygrad/uop/symbolic.py. The REWRITER: four rule tables,
+    2| # the fold-like rule bodies, and `exec_alu`'s numeric evaluation.
+    3| #
+    4| # THE INVENTORY, def by def: 475 Python lines, and the honest question is not
+    5| # "how much is ported" but "which is a TABLE, which is a FOLD, and which is a
+    6| # REWRITE that needs a property the substrate does not have".
+    7| #
+    8| #   #  PY      KIND                  STATE
+    9| #   1  16      fold  simplify_pow        PARTIAL  (the int arms; the half
+   10| #                                            exponent needs an F32<->I64 compare
+   11| #                                            helpers.bend cannot express)
+   12| #   2  23      fold  fold_bitcast        PORTED   (truncate reaches only the six
+   13| #                                            dtypes Bend can state -- see below)
+   14| #   3  29      fold  fold_const_alu      PORTED   (exec_alu over U32 and F32)
+   15| #   4  31      fold  _quotient_base      PORTED   (index arithmetic + pop_const)
+   16| #   5  43      fold  fold_add_divmod_recombine  PORTED
+   17| #   6  63-70   data  invalid_pat/gate/bare_const/casted_const/const_arg  PORTED
+   18| #   7  72      fold  lift_reduce_gate    DEFERRED `UOp.ranges` (fold.bend
+   19| #                                            TODO(p3) ops.py:479  symbol=ranges)
+   20| #   8  79-102  table pm_data_invalid      13 of 14  (rule 6 is #7)
+   21| #   9  104-108 table pm_remove_invalid    2 of 2
+   22| #  10  110     fold  fold_const_where     PORTED
+   23| #  11  115-199 table symbolic_simple      23 of 47 PORTED. The 23 are every rule
+   24| #                                            whose substrate need is `alu`, `where`,
+   25| #                                            `const_like`, a `U32` bit pattern,
+   26| #                                            or a PERMUTED src list -- and "a
+   27| #                                            permuted src list" was the wall ten of
+   28| #                                            them were deferred behind, and it is
+   29| #                                            `Sw`.
+   30| #  12  203     fold  lt_folding           DEFERRED `const_factor` -> gcd on I64
+  ... cited lines ...
+     73| #    2^32, which IS int32/uint32 wrap; `H.asr` supplies the arithmetic shift `>>`
+     74| #    needs and Bend does not have; and the zero-divisor reading agrees because
+>>   75| #    `U32.div(a,0) = 0` is the number Python's `floordiv` is given by helpers.py:76.
+     76| #    WHAT IT CANNOT DO, and this is a wall rather than a choice:
+      ROW: subj=helpers.py 76-76 class=at_no_revision tokens=U32,div,floordiv
+
+     83| #         const is refused by the same lane for a second reason, and it is named
+     84| #         with its measurement at `exec_alu.pick`.
+>>   85| #      b. `truncate` (dtype.py:297) is a C-effect table for int8/16/64,
+     86| #         uint8/16/64, float16, bfloat16, the four fp8s and float64. Those
+      ROW: subj=dtype.py 297-297 class=at_no_revision tokens=truncate
+
+====================================================================================================
+### tinybendygrad/uop/weak.bend  (1844 lines)
+    1| # weak.bend -- tinygrad/uop/weak.py: the four `PatternMatcher` tables that commit
+    2| # weak dtypes at lowering boundaries. 5 of weak.py's 9 defs and 3 of its 8 rules.
+    3| #
+    4| # TWO DEPENDENCIES, measured. `dtype.bend` is unreachable to any importer (it prints a
+    5| # foreign-code notice for `Dt.bf16`, `Dt.fp16`, the `fp8_*` and the `i64_*`/`float_to_*`
+    6| # helpers), so `strong_dtype` and `weak_dtype` are spelled HERE, as `fold.bend` did for
+    7| # `least_upper_dtype`. `least_upper_dtype` is `F.promo_dtype`. `dtype_from_uop` over a
+    8| # chosen src list is NOT a wall: `F.dt_shape` is `dtype_from_uop` with its src half
+    9| # factored out as `List<Derived>`, and `Derived` is `Data`, so a fold rebuilds one per
+   10| # hypothetical src (`wk_derived`/`wk_dtype_at` below). Asking the fold about a node that
+   11| # does not exist would need a scratch arena and a second Kahn worklist per query.
+   12| #
+   13| # `UOp._min_max` (ops.py:1104-1158) IS LANDED, and the reader that joins it to
+   14| # `commit_dtype` is landed with it. `fold.bend:2176-2184` once recorded the sweep as the
+   15| # biggest single piece left in that half of ops.py and named what was missing (`i64_mul`,
+   16| # `i64_div`, `i64_mod`; there is no F32 min/max) -- all of which now exist, and the
+   17| # arithmetic core is at `fold.bend:2648` under a "when helpers.bend grows them these defs
+   18| # go there" notice that has been kept.
+   19| #
+   20| # SO THE NINE MARKERS BELOW THAT SAY "`commit_dtype` IS MISSING" ARE OUT OF DATE, and the
+   21| # wall was never a LANGUAGE limit. It was an IMPORT TOPOLOGY: the arithmetic is
+   22| # `D.commit_dtype` in `mixin/dtype.bend`, which does not import this file, and `wk_dt` is
+   23| # here -- so one call could not be written. `wk_commit_dtype` is that call, and
+   24| # `.agents/slop/wk-cd-gate.sh` is its gate: 7 rows, three lanes, 6 identical and ONE
+   25| # DOCUMENTED DIVERGENCE (`cd_none`, a PARAM with no `vmin_vmax`, where the sweep has no
+   26| # interval to report and CPython answers `i64`). The nine markers are now blocked on their
+   27| # own RULE BODIES and not on a reader.
+   28| #
+   29| # WHAT THE GATE HAS TO CONTAIN, because the obvious fixture proves nothing: a PARAM whose
+   30| # dtype is int32 answers `i32` on EVERY row, because the weakint branch is not taken. And
+  ... cited lines ...
+     33| # would pass a reader that always answered `i32`.
+     34| #
+>>   35| # THE SECOND WALL is `DType.const` (dtype.py:79-84) for float16, bfloat16 and the four
+     36| # fp8s, whose `truncate` entry is a C-effect seam. `wk_sealed` names those six dtypes and
+      ROW: subj=dtype.py 79-84 class=at_no_revision tokens=DType,const
+
