@@ -1131,7 +1131,7 @@ def one_line(out):
     return (D / out).read_bytes().count(b"\n") <= 1
 
 
-def cmd_run(_a):
+def cmd_run(a):
     # **THE POPULATION MUST BE DECIDED BEFORE THE RUN, OR THE RUN CERTIFIES NOTHING.**
     # A graph that joins the corpus and is not re-decided leaves `POPULATION_PIN` stale, and a
     # run over it would be a measurement of a population nobody has an opinion about -- which is
@@ -1149,6 +1149,34 @@ def cmd_run(_a):
               "and move POPULATION_PIN in this file in the SAME COMMIT as the change.",
               file=sys.stderr)
         return gatekit().REFUSED
+
+    # **AND THE RUN MUST NOT BEGIN OVER A BEND LANE THAT IS NOT HEALTHY.** `cmd_repro` HAS
+    # ALWAYS GATED ON THIS -- `clean_run` (differ.py:2326) WAITS FOR A HEALTHY RUN AND
+    # REFUSES (3) IF NONE COMES -- **AND `cmd_run` DID NOT, WHICH IS A DIFFERENT HAZARD FROM
+    # TWO RUNS INTERLEAVING.** THE DIFFERENCE IS THE WHOLE CLAIM: THE CORPUS IS NOW A SINGLETON
+    # (AN `fcntl.flock` ON `runs/graphcmp/.corpus.lock`, AND A SECOND RUN EXITS 3 WITH THE
+    # HOLDER'S PID), SO TWO RUNS CANNOT INTERLEAVE -- **BUT A SINGLE RUN OVER A DEAD BEND LANE
+    # STILL OVERWRITES 243 FILES OF EVIDENCE WITH A DEAD LANE, AND THE ARTEFACT DIRECTORY
+    # THEN HOLDS A MIXTURE.** MEASURED 2026-10-23, REPEATEDLY, ON THIS TREE: A RUN WHOSE
+    # `substrate-start` AND `substrate-end` DIFFER SAYS EXACTLY THAT -- *"THE SUBSTRATE MOVED
+    # WHILE THE RUN WAS IN FLIGHT"* -- AND `unhealthy()` NAMES IT AS ITS ONE LINE.
+    # **⇒ SO THE GATE IS HERE, BEFORE `D.mkdir`, AND IT IS THE SAME SHAPE AS `cmd_repro`'s:**
+    # `ready()` IS A **PURE PROBE** (`settled()` RUNS THE DRIVER'S `--check-only` AND READS
+    # ITS FIRST LINE; IT WRITES NOTHING TO `D/`), SO WAITING ON IT CANNOT DAMAGE THE EVIDENCE
+    # IT IS PROTECTING.
+    # **⇒ AND IT IS `REFUSED` (3) AND NOT `FAIL` (1), BECAUSE A PRECONDITION WAS ABSENT AND
+    # NOTHING WAS DETERMINED: NOT `SKIP` (THE RUN NEVER EXECUTED), NOT `DEAD` (IT EMITTED NO
+    # COMPLAINT), AND NOT 0 (A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO
+    # GATE).** AND `D/` IS LEFT EXACTLY AS IT WAS, SO A READER FINDS THE PREVIOUS RUN'S
+    # EVIDENCE AND NOT A HALF-WRITTEN SET.
+    if not ready(a.wait):
+        gk = gatekit()
+        print(f"RUN: {gk.VERDICT[gk.REFUSED]} -- the bend lane did not settle in {a.wait} "
+              f"probe(s), so the run would have OVERWRITTEN `D/` WITH A DEAD BEND LANE. "
+              f"`{D}` IS EXACTLY WHAT IT WAS BEFORE THIS COMMAND STARTED, and `unhealthy()` "
+              f"will now say so: it refuses a witness that names no bytes or names bytes that "
+              f"have moved. THIS IS NOT A MEASUREMENT.", file=sys.stderr)
+        return gk.REFUSED
 
     D.mkdir(parents=True, exist_ok=True)
     for tmp in D.glob(".tmp.*"):
@@ -2485,7 +2513,15 @@ def main():
         prog="checks/differ.py", description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("run", help="write every graphcmp artifact under runs/graphcmp/D")
+    run_p = sub.add_parser("run", help="write every graphcmp artifact under runs/graphcmp/D")
+    # **AND THE RUN GETS THE SAME BOUND `repro` HAS.** `cmd_run` WAITS FOR THE BEND LANE TO
+    # SETTLE BEFORE IT WRITES ANYTHING, AND THE BOUND IS HOW MANY PROBES THAT WAIT MAY
+    # TAKE -- SO THE BOUND BELONGS IN THE PARSER, NEXT TO `repro`'s, NOT INSIDE THE
+    # FUNCTION. IT IS A POSITIONAL WITH A DEFAULT, SO EVERY EXISTING INVOCATION
+    # (`differ.py run`) IS UNCHANGED.
+    run_p.add_argument("wait", nargs="?", type=int, default=9,
+                       help="substrate probes before the run writes anything (the same bound "
+                            "`repro` uses; default 9)")
     r = sub.add_parser("repro", help="two clean runs of `run`, byte-compared (the gate)")
     r.add_argument("wait", nargs="?", type=int, default=9,
                    help="attempts per run, and 60s substrate probes per attempt "
