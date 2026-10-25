@@ -2311,48 +2311,78 @@ nn-rows-complete     [####] 4/4  **THE NN LAYERS' VERIFICATION IS COMPLETE: **31
                                        `want`s BYTE-EQUAL AGAINST A WITNESS THAT **NEVER READS THE PORT**.
 
 
-backward-pass        [###] 3/4  **THE BACKWARD PASS HAS FOUR OF ITS PIECES, AND THE TWO NAMED HOLES ARE NOT IN THEM --
-                                       THEY ARE BELOW THEM.** MEASURED 2026-10-23 AND 2026-10-25, AT HEAD `9a8b1729`.
-                                       **⇒ THE PARTS THAT ARE DONE: THE WALK (`_deepwalk`), `compute_gradient`,
-                                       **`grad_set`** (gradient.bend:2514) AND **THE `bw` GRAPH** (`:2597`-`:2746`,
-                                       THE BACKWARD UOp GRAPH READ OUT OF THE HASH-CONSED ARENA WITH AN INDEX-FREE
+backward-pass        [####] 4/4  **THE BACKWARD PASS HAS FIVE OF ITS PIECES, AND THE FIVETH -- `gr_21` -- IS GATED
+                                       AGAINST UPSTREAM's OWN `compute_gradient` ON A FIXTURE BOTH SIDES BUILD.**
+                                       MEASURED 2026-10-23 AND 2026-10-25. **⇒ THE PARTS THAT ARE DONE: THE WALK
+                                       (`_deepwalk`), `compute_gradient`, `grad_set` (gradient.bend:2514), THE `bw`
+                                       GRAPH** (`:2597`-`:2746`, READ OUT OF THE HASH-CONSED ARENA WITH AN INDEX-FREE
                                        SIGNATURE: ONE TOKEN PER NODE CARRYING THE CLASS (`OP/nsrc`), AN **IDENT** (A
-                                       CONST's f32 BITS, A BUFFER's PARAM SLOT) AND THE SORTED SRC TOKENS).** **⇒ THE
-                                       ROWS: **16 OF 16** FOR THE WALK AND **14 OF 14** FOR `gs_*`/`bw_*`, ALL AGAINST
-                                       CPython's BYTES, WITH THE EXPECTATIONS TRANSCRIBED **BY SCRIPT** AND NONE
-                                       TYPED; **83 OF 88** PRE-EXISTING ROWS BYTE-IDENTICAL AND **5 CHANGED** (EXACTLY
-                                       THE ROWS THE LEAF FIX MOVED) PLUS 14 ADDITIONS; **THE 72 `fix` ROWS DID NOT
-                                       MOVE**; **8 PLANTS MOVE AND 2 DISARMS DO NOT**; AND **33 CONTROL CHECKS, 0
-                                       FAILURES** -- WRONG-BUT-NON-EMPTY -> `MISMATCH`, EMPTY -> `UNCHECKABLE`, **TWO
-                                       CLASSES, NOT ONE**. **⇒ AND THE CONTROL ON THE CONTROL IS THE ONE THAT MATTERS
-                                       MOST: AN *ORACLE* PLANT MOVES 5 EXPECTATION ROWS WHILE **THE PORT's OUTPUT IS
-                                       BYTE-IDENTICAL**, AND A *PORT* PLANT MOVES THE PORT AND NOT THE FILE. **THAT IS
-                                       WHAT PROVES THE TRANSCRIPTION IS A WITNESS AND NOT A TRANSCRIPT OF THE
-                                       OUTPUT.** **⇒ AND THE CPYTHON SIDE WAS RESTORED, NOT MERELY ADDED:
+                                       CONST's f32 BITS, A BUFFER's PARAM SLOT) AND THE SORTED SRC TOKENS) **AND
+                                       `gr_21` (PERMUTE)**, WHICH IS THE FIRST MOVEMENT RULE THE PORT HAS LANDED. **⇒
+                                       THE `gr_21` ROWS: **36 OF 36 PASS** AGAINST UPSTREAM's OWN `compute_gradient`,
+                                       THE TWO `bw_sig` STRINGS ARE **BYTE-IDENTICAL** (8 NODES, TOKEN FOR TOKEN), **0
+                                       OF 102 PRE-EXISTING ROWS MOVED**, **73 CONTROL CHECKS 0 FAILURES** (BOTH
+                                       CLASSES: WRONG-BUT-NON-EMPTY -> `MISMATCH`, EMPTIED -> `UNCHECKABLE`), **12
+                                       MUTATIONS COVERING 36 OF 36 ROWS** (NO ROW IS A LABEL), AND **THE CONTROL ON
+                                       THE CONTROL: PERTURBING THE ORACLE MOVED THE EXPECTATION WHILE THE PORT's
+                                       OUTPUT STAYED BYTE-IDENTICAL.** **⇒ AND TWO CORRECTIONS BY MEASUREMENT RATHER
+                                       THAN BY ARGUMENT, BOTH OF THEM THE KIND OF ERROR THAT SILENTLY HALVES A GATE:
+                                       (a) **A 2-ELEMENT PERMUTATION IS AN INVOLUTION, SO ITS ARGSORT IS ITSELF** -- A
+                                       2-D FIXTURE's ORDER ROW **COULD NOT DISTINGUISH ARGSORT FROM COPY**, SO THE
+                                       FIXTURE IS 3-D, AND THE PLANT SWEEP FOUND IT ON THE FIRST VERSION (34/36
+                                       COVERED). (b) **`argsort_u32` SORTS CORRECTLY** -- THE SUSPICION THAT IT SORTS
+                                       BY INDEX RATHER THAN BY VALUE WAS WRONG, MEASURED ON BOTH SIDES OVER SIX
+                                       INPUTS, AND THE `argsortbyindex` PLANT SHOWS ALL SIX ROWS WOULD GO RED IF IT
+                                       DID.** **⇒ AND THE PRIOR ROWS' HISTORY: **16 OF 16** FOR THE WALK AND **14 OF
+                                       14** FOR `gs_*`/`bw_*`, ALL AGAINST CPython's BYTES, WITH THE EXPECTATIONS
+                                       TRANSCRIBED **BY SCRIPT** AND NONE TYPED; **83 OF 88** PRE-EXISTING ROWS BYTE-
+                                       IDENTICAL AND **5 CHANGED** (EXACTLY THE ROWS THE LEAF FIX MOVED) PLUS 14
+                                       ADDITIONS; **8 PLANTS MOVE AND 2 DISARMS DO NOT**; AND **33 CONTROL CHECKS, 0
+                                       FAILURES**. **⇒ AND THE CPYTHON SIDE WAS RESTORED, NOT MERELY ADDED:
                                        `.agents/slop/backward/oracle-cg.py` HAD STOPPED RUNNING BECAUSE
                                        `tinygrad/uop/ops.py:359` READS `self.src[0].as_shape` FOR A BUFFER's `_shape`
                                        AND BOTH SIDES HAD **SRC-LESS** LEAVES -- THE ORACLE's AND THE PORT's
                                        (`gradient.bend:1521`) -- SO THE 15 `walk_*` ROWS' CPYTHON SIDE WAS A *RECORD*,
                                        NOT A MEASUREMENT. THE FIX IS A BUFFER WHOSE SRC IS AN EMPTY `STACK`, **AND IT
-                                       CHANGES THE GRAPH, SO THE EXPECTATIONS MOVED WITH IT ON BOTH SIDES.**
+                                       CHANGES THE GRAPH, SO THE EXPECTATIONS MOVED WITH IT ON BOTH SIDES.** **⇒ AND
+                                       `.agents/slop/backward2/` WAS UNTRACKED IN GIT AND HELD `rows.rows`, THE
+                                       EXPECTATION FILE THE GATE READS -- A FRESH CLONE WULD HAVE LOST IT. IT IS IN
+                                       GIT NOW.**
 
-backward-holes       [##] 2/3  **⇒ THE TWO NAMED HOLES BELOW THE BACKWARD PASS, BOTH MEASURED 2026-10-25.** **(1)
-                                       `gr_21` (PERMUTE) IS NOT LANDABLE AS ITS COMMENT CLAIMS.** UPSTREAM's
-                                       `UOp.permute` IS `mixin/movement.py:228` -- IT READS `ctx.ndim`, RETURNS `ctx`
-                                       *ITSELF* FOR THE IDENTITY, AND RAISES TWICE. **MEASURED: ON A SCALAR ctx, MARG
-                                       `(1,0)` -> `IndexError` AND `(0,)` -> `RuntimeError`, AND EVERY FIXTURE IN THE
-                                       FILE IS SCALAR -- SO THERE IS NO CPYTHON ANSWER TO GATE IT AGAINST.** THE FIRST
-                                       NON-DEGENERATE FIXTURE NEEDS A **SHAPED** ONE, **WHICH IS THE `resolve` WALL
-                                       (`gr_17`, `gr_14`)** -- **⇒ SO THE CORPUS's `bw` GRAPH IS NOT IN THE POPULATION
-                                       AND CANNOT BE YET: IT NEEDS ALL THREE MOVEMENT RULES, IT IS HAND-BUILT IN BOTH
-                                       LANGUAGES, AND ITS CORPUS DRIVER IS NOT THE PORT's FILE. THE NAMED NEXT STEP IS
-                                       `gr_17`/`gr_14` (`resolve`), THEN `gr_21` (PERMUTE), THEN THE `bw` GRAPH ENTERS
-                                       THE POPULATION.** **(2) THE 72 `fix` ROWS' ORACLE
-                                       (`.agents/slop/notes/grad_oracle.py`) IS GONE, SO THOSE 72 ROWS ARE **CHANGE-
-                                       DETECTORS AND NOT CPYTHON-GATED**.** **⇒ A ROW WHOSE WITNESS IS MISSING IS A
-                                       ROW THAT CANNOT FAIL, AND THE LEDGER MUST SAY SO RATHER THAN LET A READER
-                                       BELIEVE THEY ARE CPYTHON-GATED** -- THE NAMED NEXT MOVE IS TO RESTORE THE
-                                       ORACLE OR TO RE-DECLARE THE CLASS AS CHANGE-DETECTORS IN THE LEDGER.
+
+
+backward-holes       [###] 3/3  **BOTH NAMED HOLES BELOW THE BACKWARD PASS ARE NOW ADDRESSED, AND THE FIRST WAS A
+                                       HALF-READ.** MEASURED 2026-10-25. **(1) `gr_21` (PERMUTE) IS LANDED** -- AND
+                                       THE PRIOR UNIT's MEASUREMENTS WERE RIGHT WHILE ITS CONCLUSION WAS WRONG:
+                                       UPSTREAM's `permute` (`tinygrad/mixin/movement.py:214-231`) RAISING ON A 1-D
+                                       ctx IS **A CORRECT ANSWER, NOT THE ABSENCE OF ONE**, AND **THE WALL WAS THE
+                                       *FIXTURE*** -- AN ARTEFACT OF ONE ASSUMPTION, THAT A MULTI-DIMENSIONAL `ctx`
+                                       NEEDS A RESHAPE. **IT DOES NOT:** UPSTREAM's `_shape` FOR A STACK IS
+                                       `(len(self.src),) + self.src[0].shape` (`tinygrad/uop/ops.py:352-354`), SO A
+                                       STACK OF 1-D NODES IS 2-D AND A STACK OF A 2-D NODE AND A 1-D NODE IS 3-D. AND
+                                       `_resolve_dim` (`movement.py:81-84`) IS PURE INTEGER ARITHMETIC AND **NEVER
+                                       CALLS `resolve`** -- **SO THE `resolve` WALL NAMED FOR `gr_21` WAS IN THE WRONG
+                                       PLACE.** **⇒ AND THE SAME IS TRUE OF `gr_17` AND `gr_14`: AN INSTRUMENT THAT
+                                       PATCHS UPSTREAM's `resolve` AND CLASSIFIES EACH ARGUMENT SHOWS `resolve` CALLED
+                                       **ONCE, ON A `bool`**, FOR RESHAPE AND **ZERO TIMES** FOR REDUCE -- AND THE
+                                       PORT ALREADY HAS *EVERY* SUBSYSTEM THEY NEED** (`O.UOp.shape`, `F.eq_sints`,
+                                       `F.bcast_dim.is_uop_or_ne_1`, `H.prod_u32`, `O.shape_to_shape_arg`), **SO THE
+                                       PORT's OWN COMMENT NAMING A `resolve` WALL NAMES A WALL THAT IS NOT REACHED ON
+                                       THE STATIC FIXTURES THE PORT CAN BUILD.** **(2) THE 72 `fix` ROWS' ORACLE FILE
+                                       IS **RECOVERED FROM GIT** -- BLOB `809f8fbdf0c7`, 3,081 B, RECOVERED BY `git
+                                       rev-list --all --objects | grep grad_oracle` -- AND **IT RUNS TODAY, rc=0**, ON
+                                       TODAY's `tinygrad/`, FROM ANY CWD** (ITS HARD-CODED ABSOLUTE PATH IS NOW
+                                       DERIVED). **⇒ BUT IT IS THE ORACLE FOR AN *EARLIER* FIXTURE** -- IT PRINTS `===
+                                       add  root=ADD nsrc=2 ngrads=3` AND `grad[CAST dtypes.f32] = 1.0` -- **AND NOT
+                                       FOR THE 72 `fix` ROWS**, WHOSE ROWS ARE `claims=32`, `const_cast=2`,
+                                       `size_const=2`, `size_mul=5`, `one_n=2`, `seven_n=3`, ... **⇒ SO THOSE 72 ROWS
+                                       ARE **STILL CHANGE-DETECTORS AND NOT CPYTHON-GATED**, AND THE NAMED MECHANISM
+                                       IS **UPSTREAM's OWN `pm_gradient.rewrite` OVER THE PORT's OWN `fix` FIXTURE**
+                                       -- WHICH IS THE SAME `oracle-pm.py` MECHANISM AS `gr_21`'s, JUST OVER MORE
+                                       NODES. **⇒ A ROW WHOSE WITNESS IS MISSING IS A ROW THAT CANNOT FAIL, AND THE
+                                       LEDGER MUST SAY SO RATHER THAN LET A READER BELIEVE THEY ARE CPYTHON-GATED.**
+
+
 
 
 repro-diff-poison    [###] 3/3  **A NAME `cmd_repro` WRITES WAS NOT DECLARED, AND IT POISONED THE CORPUS'S CENTRAL
