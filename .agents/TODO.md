@@ -1529,36 +1529,37 @@ corpus-witness-stale [###] 3/3  **THE CORPUS WITNESS IS STALE, AND THE TREE'S OW
                                        `checks/differ.py`'s own note about it. **⇒ AND `POPULATION_PIN` DID
                                        NOT MOVE** (`4a44f98e...` before and after): the edit touched no graph.
 
-imagenet-distance    [###] 3/3  **THE MEASURED DISTANCE TO *"RUN IMAGENET USING BEND"*, RE-TAKEN 2026-10-25. THE CHAIN
-                                       HAS SHORTENED AGAIN, AND THE ONE PIECE THAT WAS MISSING -- **AN EXECUTOR THAT
-                                       ACTUALLY EXECUTES** -- IS NOW MEASURED, AND SO IS THE ONE LANE THAT IS WRONG.**
-                                       **⇒ WHAT IS REAL, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE SHAPE --
-                                       **DONE**: ALL FIVE `conv_*` ROWS READ UPSTREAM'S ANSWERS; `argmax` -- **DONE AT
-                                       THE GRAPH LEVEL**: `tinybendygrad/nn/argmax.bend` BUILDS UPSTREAM's FOUR NODES
-                                       WITH **20 ROWS, ALL GREEN**; `item` -- **DONE AS FAR AS THE PORT CAN GO**: THE
-                                       PRECONDITION IS UPSTREAM's `AssertionError` **VERBATIM**, THE CONST PATH WORKS,
-                                       AND THE **DEVICE** PATH **REFUSES BY NAME** (`uop/ops.bend:5296` SAYS *"NO LIVE
-                                       `Buffer`"*) -- **SO THAT IS AN EXECUTOR GAP, NOT AN `item` GAP**; **THE
-                                       LOADER** -- **DONE**: `tinybendygrad/extra/datasets/imagenet.bend` IS **520
-                                       LINES** AND **8 OF 8 ROWS AGREE WITH CPython's OWN `glob`/`json` BYTE-
-                                       IDENTICALLY**; **⇒ AND THE EXECUTOR -- **NOW REAL AND MEASURED**:
-                                       `gates/ops_bend_exec-e2e.py` **COMPILES `tinybendygrad/runtime/ops_python.bend`
-                                       WITH `bin/bend -o` AND RUNS IT AS A SUBPROCESS ON REAL PACKETS**, AND **SIX OF
-                                       ITS SEVEN CASES MATCH CPython's PYTHON DEVICE** (`add4`, `sum4`, `addi32`,
-                                       `addu32`, `cast`, `cmp`) -- **THAT IS THE PORT COMPILING ITS OWN KERNELS AND
-                                       RUNNING THEM, NOT A SIMULATION.** **⇒ AND THE SEVENTH CASE IS A MATMUL, AND IT
-                                       IS RED: **THE EXECUTOR COMPUTES ONLY THE FIRST OUTER SLICE OF A BROADCAST**, SO
-                                       A 4×4 MATMUL IS `[[180,200,220,240],[0,0,0,0],[0,0,0,0],[0,0,0,0]]` INSTEAD OF
-                                       THE FULL MATRIX -- SEE `exec-broadcast-max`, AND SEE `exec-e2e-instrument` FOR
-                                       THE THREE DEFECTS THAT WERE IN THE INSTRUMENT THAT MEASURES IT (THE DEVICE NAME
-                                       DID NOT RESOLVE; THE `dot` CASE WAS CONSTANT-FOLDED; AND THE ORACLE RE-USED THE
-                                       SUBJECT's BUFFERS). **⇒ AND `max` OVER AN AXIS DOES NOT REDUCE.** **⇒ SO THE
-                                       ANSWER IS NOW SPECIFIC RATHER THAN A MOOD: THE EXECUTOR EXISTS, THE ELEMENTWISE
-                                       AND SUM LANES ARE RIGHT, AND **THE BROADCAST LANE IS WRONG** -- **AND A
-                                       CONVOLUTION AND A MATMUL ARE BOTH A BROADCAST.** **⇒ WHAT IS STILL MISSING,
-                                       NAMED: (1) **THE BROADCAST LANE**; (2) `item`'s DEVICE READ, WHICH NEEDS A LIVE
-                                       `Buffer`; (3) **A REAL MODEL** (`extra/models/resnet.bend` REFUSES); (4) THE
-                                       150 GB OF DATA -- **THE HOST's**, NOT THE PORT's.**
+imagenet-distance    [###] 3/3  **THE MEASURED DISTANCE TO *"RUN IMAGENET USING BEND"*, RE-TAKEN 2026-10-26. THE CHAIN
+                                       HAS SHORTENED TWICE IN TWO DAYS, AND THE TWO PIECES THAT WERE MISSING -- **AN
+                                       EXECUTOR THAT ACTUALLY EXECUTES** AND **A CONVOLUTION THAT RUNS ON IT** -- ARE
+                                       NOW MEASURED.** **⇒ WHAT IS REAL, IN ORDER: `nn_conv2d` MUST PRODUCE A READABLE
+                                       SHAPE -- **DONE**: ALL FIVE `conv_*` ROWS READ UPSTREAM's ANSWERS; `argmax` --
+                                       **DONE AT THE GRAPH LEVEL**: `tinybendygrad/nn/argmax.bend` BUILDS UPSTREAM's
+                                       FOUR NODES WITH **20 ROWS, ALL GREEN**; `item` -- **DONE AS FAR AS THE PORT CAN
+                                       GO**: THE PRECONDITION IS UPSTREAM's `AssertionError` **VERBATIM**, THE CONST
+                                       PATH WORKS, AND THE **DEVICE** PATH **REFUSES BY NAME** (`uop/ops.bend:5296`
+                                       SAYS *"NO LIVE `Buffer`"*) -- **SO THAT IS AN EXECUTOR GAP, NOT AN `item`
+                                       GAP**; **THE LOADER** -- **DONE**: `tinybendygrad/extra/datasets/imagenet.bend`
+                                       IS **520 LINES** AND **8 OF 8 ROWS AGREE WITH CPython's OWN `glob`/`json` BYTE-
+                                       IDENTICALLY**; **⇒ AND THE EXECUTOR -- **REAL, AND IT RUNS REAL COMPILED
+                                       KERNELS**: `gates/ops_bend_exec-e2e.py` COMPILES
+                                       `tinybendygrad/runtime/ops_python.bend` WITH `bin/bend -o` AND RUNS IT AS A
+                                       SUBPROCESS ON REAL PACKETS, AND **ALL SEVEN CASES MATCH** -- `add4`, `sum4`,
+                                       `addi32`, `addu32`, `cast`, `cmp` AND A 4×4 MATMUL; **⇒ AND A CONVOLUTION RUNS
+                                       ON IT**: THE PORT's OWN conv SHAPE -- `x(1,3,32,32) conv2d w(8,3,3,3)
+                                       padding=1` -> `(1,8,32,32)`, **THE SHAPE `tinybendygrad/nn/layers.bend`'s FIVE
+                                       `conv_*` ROWS USE** -- **AGREES WITH CPython's PYTHON DEVICE ON ALL 8192
+                                       VALUES**, AND THE SAME PACKET THROUGH UPSTREAM's OWN `PythonProgram.__call__`
+                                       GIVES **BYTE-IDENTICAL** BUFFERS. **⇒ AND WHAT IS STILL MISSING, NAMED: (1)
+                                       **THE VECTOR-STORE LANE** -- 29 PINNED DIVERGENCES REMAIN, ONE FAMILY (THE
+                                       PACKET's STORE COVERS LANES 0-3 AND CPython LEAVES LANES 4-7 UNTOUCHED, WHILE
+                                       THE PORT WRITES THE LANES IT SHOULD HAVE COMPUTED); (2) `item`'s DEVICE READ,
+                                       WHICH NEEDS A LIVE `Buffer`; (3) **A REAL MODEL** (`extra/models/resnet.bend`
+                                       REFUSES); (4) THE 150 GB OF DATA -- **THE HOST's**, NOT THE PORT's. **⇒ AND THE
+                                       NEXT WALL IS **PERFORMANCE, NOT CORRECTNESS**: THE PORT's OWN CONV TAKES **9
+                                       MINUTES 18 SECONDS** ON THE BEND DEVICE (373 s USER) FOR ONE 32×32 IMAGE.**
+
+
 
 
 
@@ -2492,32 +2493,84 @@ exec-e2e-instrument  [###] 3/3  **THE INSTRUMENT THAT MEASURES THE EXECUTOR WAS 
                                        FOR THE RIGHT REASON.**
 
 
-pins-exempt-rows     [##] 2/3  **A PIN THAT EXEMPTS A ROW FROM THE COMPARISON IS NOT A PIN, IT IS AN EXEMPTION -- AND
-                                       SO A FIX CAN MOVE A PINNED ROW's VALUE WITHOUT ANYTHING GOING RED.** MEASURED
-                                       2026-10-25, ON THE EXECUTOR's OWN CENSUS. **⇒ `gates/ops_python_exec-pins.rows`
-                                       READS AS `{l.split()[0] ...}` -- A SET OF NAMES, **WITH NO VALUES** -- AND
+pins-exempt-rows     [###] 3/3  **A PIN THAT EXEMPTS A ROW FROM THE COMPARISON IS NOT A PIN, IT IS AN EXEMPTION -- AND
+                                       THE DECLARATION WAS NEVER CHECKED AGAINST THE RUN IT DESCRIBES.** MEASURED
+                                       2026-10-25 AND 2026-10-26. **⇒ `gates/ops_python_exec-pins.rows` READS AS
+                                       `{l.split()[0] ...}` -- A SET OF NAMES, WITH NO VALUES -- AND
                                        `gates/ops_python_exec-gate.py:326` COMPUTES `unpinned = (set(dpy) | set(dbd))
-                                       - pinned`, **⇒ SO THE 52 PINNED ROWS ARE NEVER COMPARED AT ALL, AND A ROW'S
-                                       VALUE CAN CHANGE FREELY WHILE THE GATE STAYS GREEN.** **⇒ MEASURED, AND IT
-                                       HAPPENED: THE EXECUTOR's FIX MOVED **THREE** PINNED ROWS -- `f32.argmax.0.b0`,
-                                       `i32.maxpair.0.b0` AND `u32.maxpair.0.b0`, **ALL MAX/ARGMAX CASES, WHICH IS
-                                       EXACTLY THE NESTED-LOOP SHAPE THE FIX TOUCHED** -- AND THE GATE DID NOT NOTICE,
-                                       BECAUSE IT DOES NOT LOOK AT PINNED ROWS. ADJUDICATED AGAINST CPython's OWN LANE
-                                       (`gates/ops_python_exec-gen.py`): CPython READS `03000000`, `10000000`,
-                                       `10000000`; THE FIXED PORT READS `40000000`, `00080000`, `00080000` -- **⇒ THEY
-                                       ARE STILL DIVERGENCES, SO THE PINS STAY AND THE GATE IS HONEST, AND THE GAP IS
-                                       THE FINDING.** **⇒ THE NAMED FIX: THE PINS FILE SHOULD CARRY **THE VALUE IT
-                                       PINS**, AS THE TREE's OTHER PINS DO -- `checks/differ.py`'s `ORACLE_PIN`
-                                       CARRIES A SHA256 AND `checks/substrate.py`'s CARRIES A HASH -- SO A MOVED VALUE
-                                       GOES RED.** **⇒ AND A SECOND, RELATED FINDING: THE ROW THE FIX ADDED, `t_max_i`
-                                       IN `symbolic.bend`, IS **A LABEL**: `row(...)` IS `IO.print`, A PRINT AND NOT
-                                       AN OBLIGATION, AND **MEASURED: REVERTING THE ONE-LINE FIX IN A COPY LEAVES
-                                       `bend --check-only` GREEN** (`ALL PROOFS CHECK`, rc=0). **⇒ THE PORT's
-                                       COMPILATION IR IS OUTSIDE THE LAW SYSTEM BY DESIGN** (`LAWS.bend`'s OWN HEADER
-                                       SAYS SO: THE COMPILATION IR *"CANNOT BE A PURE TREE, SO IT IS NOT COVERED
-                                       HERE"*), **⇒ SO A ROW LIKE `max_i` NEEDS A GATE COMPARING THE PORT's
-                                       `symbolic.bend` ALU AGAINST CPython's OWN, AND NONE EXISTS TODAY. THE FIX IS
-                                       VERIFIED BY THE EXECUTOR E2E, WHICH DOES GO RED ON IT.**
+                                       - pinned`, **⇒ SO THE PINNED ROWS ARE NEVER COMPARED AT ALL, AND A ROW THAT NO
+                                       LONGER DIVERGES STAYS EXEMPTED.** **⇒ AND THE FILE's OWN HEADER SAYS WHY ON
+                                       PURPOSE -- *"THE VALUES LIVE IN THE GATE's ARTIFACTS AND ARE RE-DERIVED EVERY
+                                       RUN; PINNING THEM HERE WOULD PIN A NUMBER THIS GATE DOES NOT OWN"* -- **⇒ THAT
+                                       REASON IS SOUND, AND IT IS NOT THE GAP. THE GAP IS THAT THE DECLARATION WAS
+                                       NEVER CHECKED.** **⇒ MEASURED: THE EXECUTOR's FIX LEFT **23 STALE NAMES** IN
+                                       THE FILE -- ROWS THAT NO LONGER DIVERGE -- **⇒ SO 23 ROWS WERE EXEMPTED WHEN
+                                       THEY SHOULD HAVE BEEN COMPARED, AND NOTHING SAID SO. AND A STALE PIN IS NOT
+                                       COSMETIC: A ROW THAT DIVERGES AGAIN WOULD BE EXEMPTED AND THE GATE WOULD STAY
+                                       GREEN.** **⇒ WHAT LANDED: (1) **EVERY PINNED ROW MUST STILL DIVERGE** -- A
+                                       STALE PIN IS `FAIL` (1) AND SAYS WHICH; (2) **`--refresh` NOW EXISTS AND
+                                       IMPLEMENTS WHAT THE DOCSTRING HAS ALWAYS PROMISED** -- IT WAS DECLARED AS AN
+                                       ARGUMENT AND **NEVER READ**, AND THE FILE IT WRITES SAYS *"GENERATED BY HAND"*,
+                                       **⇒ A FILE THAT SAYS "GENERATED" AND IS HAND-MADE IS A CONTRACT WITH NO
+                                       GENERATOR.** `--refresh` KEEPS THE COMMENTS AND THE FILE's OWN ROW ORDER (SO
+                                       THE FAMILY BLOCKS AND THEIR DIAGNOSIS SURVIVE), DROPS THE ROWS THAT NO LONGER
+                                       DIVERGE, AND RECORDS THE DROPPED NAMES IN THE FILE. **⇒ MEASURED: BEFORE, `314
+                                       unpinned identical, 52 pinned`; AFTER, `336 unpinned identical, 29 pinned,
+                                       every pin still a divergence` -- **22 MORE ROWS ARE NOW COMPARED**, BECAUSE
+                                       THOSE 22 WERE EXEMPTIONS.** **⇒ AND THE CONTROL IS THE SEQUENCE ITSELF: THE
+                                       CHECK FIRED `22 pins are stale`, rc=1, ON THE FILE AS IT WAS; `--refresh`
+                                       RETIRED THEM; AND THE GATE READS `PASS`, rc=0.** **⇒ AND THE NAMED NEXT MOVE,
+                                       WHICH IS NOT THE ONE I FIRST WROTE: **THE VALUE COLUMN IS STILL ABSENT**, SO
+                                       **A PINNED ROW's VALUE CAN STILL MOVE WITHOUT ANYTHING GOING RED** -- MEASURED,
+                                       THE NESTED-RANGE FIX MOVED EXACTLY THREE PINNED ROWS (`f32.argmax.0.b0`,
+                                       `i32.maxpair.0.b0`, `u32.maxpair.0.b0`) AND NOTHING NOTICED. **THE FILE's OWN
+                                       REASON FOR NOT CARRYING VALUES IS ABOUT PINNING A NUMBER THE GATE DOES NOT OWN;
+                                       THE PORT's VALUE IS THE GATE's OWN LANE's, SO IT IS ONE THE GATE DOES OWN, AND
+                                       THE NAMED MOVE IS TO CARRY BOTH SIDES' VALUES** -- WHICH IS ALSO WHAT THE
+                                       GATE's OWN EXIT STATUS ALREADY SAID BEFORE ANYBODY IMPLEMENTED IT: *"1 ... a
+                                       pin moved"*.
+
+
+
+
+exec-conv-lane       [###] 3/3  **THE PORT's BEND EXECUTOR DID NOT RUN A CONVOLUTION AT ALL. IT NOW DOES, AND IT TOOK
+                                       TWO DEFECTS, NEITHER OF WHICH WAS *"THE CONV".** MEASURED 2026-10-26, IN
+                                       `.agents/slop/convfix/REPORT.md`. **⇒ (1) **THE POISON CHECK WAS NOT BEHIND THE
+                                       GATE**: THE PORT's `Prog.live` (`tinybendygrad/runtime/ops_python.bend:1950`)
+                                       CHECKED **EVERY** LOAD AND STORE FOR OUT-OF-BOUNDS, WHILE UPSTREAM's `load()`
+                                       TOUCHES MEMORY **`if gate`** (`tinygrad/runtime/ops_python.py:26`) AND ITS
+                                       `STORE` ONLY WRITES **`if g`** (`:93`) -- **SO UPSTREAM's `IndexError` IS ONLY
+                                       REACHABLE THROUGH AN ACCESS THAT *HAPPENS*.** PROOF IT WAS THE PORT's OWN
+                                       REFUSAL: A DIAGNOSTIC BUILD NAMED IT (`pc=333 off=3100 buf=1` -- THE CONV's
+                                       `base+32` TAP, WHOSE GATE `(counter121 < 31)` IS FALSE THERE), AND UPSTREAM's
+                                       OWN `_load`/`_store`, MONKEYPATCHED AT RUNTIME, MADE **154,968 ACCESSES, NONE
+                                       OUT OF RANGE, AND TOUCHED OFFSET 3100 ZERO TIMES** -- WHILE UPSTREAM's
+                                       `PythonProgram.__call__` RAN **THE SAME PACKET, SAME BUFFERS, SAME GRID** FINE.
+                                       **⇒ (2) **THE SCRATCH `BUFFER`'s BYTE REGION WAS IN THE WRONG PLACE**:
+                                       `Prog.zeros` PADDED WITH `Buf.e` (ELEMENTS) WHERE THE BASE ARITHMETIC
+                                       (`Prog.bases.next`) COUNTS `w*e` **BYTES**, **AND THE ZEROS WERE *PREPENDED*
+                                       WHILE `Prog.bases` PUTS THE SCRATCH *AFTER* THE PACKET's BUFFERS** -- **⇒ EVERY
+                                       PACKET WITH A LOCAL SCRATCH WAS SHIFTED BY `e` BYTES.** **⇒ AND THAT SECOND
+                                       DEFECT WAS ALREADY IN THE TREE's OWN CENSUS: `bool.maxpair.0.b1` IS
+                                       `0100010001000100` UPSTREAM AND `0001000100010001` IN THE PORT** -- **AND THE
+                                       PIN FILE's OWN DIAGNOSIS OF THAT FAMILY (*"A NESTED END JUMPS TO THE INNER
+                                       HEAD"*) WAS **A DIFFERENT STORY**.** **⇒ THE MEASUREMENTS: THE CONV
+                                       (1,3,32,32)×(8,3,3,3) p1 WENT **REFUSED -> MATCH, ALL 8192 VALUES**; THE
+                                       153-FIXTURE CENSUS WENT **53 DIVERGENCES FROM UPSTREAM -> 30** (23 FIXED, **0
+                                       NEW**); `gates/ops_bend_exec-e2e.py` STAYS AT **7 MATCH**; AND **ALL 23 MOVED
+                                       ROWS WERE PINNED** -- THE TRAP THE LEDGER's `pins-exempt-rows` ROW NAMES. **⇒
+                                       AND THE FIXTURE IS `.agents/slop/convfix/fixture-conv.rows`, ONE RECORD IN THE
+                                       TREE's OWN `PACKET.in` SPELLING (`f32.conv2d.0`, 140 UOPS), AND **IT REFUSES ON
+                                       THE PRE-FIX EXECUTOR AND MATCHES UPSTREAM ON THE POST-FIX ONE** -- **⇒ SO IT IS
+                                       A WITNESS, NOT A TRANSCRIPT.** **⇒ THE NAMED NEXT MOVE: WIRE IT IN -- AND IT
+                                       TAKES **A GENERATOR ARM**, NOT A HAND EDIT, BECAUSE `gates/ops_python_exec-
+                                       fixtures.rows` SAYS *"GENERATED BY `gates/ops_python_exec-gen.py` --write ...
+                                       IT IS NOT HAND-EDITED AND NOTHING ELSE WRITES IT"* **⇒ SO THE CONV NEEDS A SEED
+                                       THAT BUILDS ITS OWN TENSORS (THE EXISTING `SEEDS` ARE ELEMENTWISE BINARY OPS
+                                       OVER TWO SAME-SHAPE TENSORS, WHICH A CONV IS NOT), AND `--write` THEN
+                                       REGENERATES THE FILE. THE GATE's `population_hold` COMPARES THE FILE's NAMES
+                                       AGAINST THE GENERATOR's RE-HARVEST, **SO A RECORD WITHOUT A SEED IS A RED
+                                       RUN**.**
 
 
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit

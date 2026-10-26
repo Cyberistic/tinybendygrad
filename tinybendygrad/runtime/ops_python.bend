@@ -2,27 +2,36 @@
 # BEND device. `bend-executor PACKET gx gy gz vals...` reads a packet, walks its
 # toposorted uops once per global work item, and writes PACKET.out.
 #
-# STATE OF THIS FILE, MEASURED. `--check-only` is clean apart from the inherited
-# "relies on unsafe or foreign code" notice that `dtype.bend` already produces on
-# its own, and `-o` builds. The 28-fixture end-to-end gate against the NATIVE
-# binary is 18 pass / 10 fail / 3 skip, where the three skips are dtypes the v1
-# wire has no lane for (f16, bf16, i64 -- ops_bend raises, which is the contract).
-# A pass means `Device['BEND']` and `Device['PYTHON']` agree to 1e-6 on the same
-# program, so the loop, the arena, the wire and the ALU lane are all exercised.
+# STATE OF THIS FILE, MEASURED 2026-10-26. `--check-only` is clean and `-o`
+# builds. `gates/ops_bend_exec-e2e.py` reads `7 match, 0 mismatch-or-refused` --
+# add4, sum4, addi32, addu32, cast, cmp AND a 4x4 matmul -- so the loop, the
+# arena, the wire and the ALU lane are all exercised. The 153-fixture census
+# (`gates/ops_python_exec-fixtures.rows`, run through this file's own compiled
+# executor) leaves 29 rows that disagree with upstream's own interpreter, and
+# every one of them is in `gates/ops_python_exec-pins.rows`.
 #
-# WHAT PASSES: const_f32, every elementwise fixture (add, mul, broadcast, i32, u32,
-# ishl_shr, compare_where, gated_mul), bool_copy, matmul_vec, reshape, flip, shrink,
-# copy_through, mulacc_rowsum, reduce_sum_axis, reduce_rowsum, permute's first
-# eighth.
+# **AND A CONVOLUTION NOW RUNS.** MEASURED: the port's OWN conv shape --
+# `x(1,3,32,32) conv2d w(8,3,3,3) padding=1` -> `(1,8,32,32)`, the shape
+# `tinybendygrad/nn/layers.bend`'s five `conv_*` rows use -- agrees with
+# CPython's PYTHON device on all 8192 values, and the SAME PACKET run through
+# upstream's own `PythonProgram.__call__` gives BYTE-IDENTICAL buffers. The
+# report is `.agents/slop/convfix/REPORT.md`.
 #
-# WHAT DOES NOT, and where to look -- all three are ONE defect each:
-#   * idiv, imod, reduce_i32 -- the i32 lane's DIV and MOD.
-#   * reduce_sum_1d, reduce_sum_2step, reduce_max, reduce_exp2, matmul,
-#     permute -- NESTED RANGE loops. The first eight outputs of `permute` are
-#     right and the remaining 120 are untouched, so the inner loop is right and
-#     the OUTER one's back edge is not: `Prog.loop`/`Prog.rng` walk
-# `loop_ends` and the nested END (tinygrad/runtime/ops_python.py:54-73 symbol=PythonProgram) jump to the inner head.
-#   * pad -- refused. The refusal is `Prog.bad`, so it is an oob load or store.
+# WHAT PASSES: every elementwise fixture, bool_copy, matmul_vec, reshape, flip,
+# shrink, copy_through, mulacc_rowsum, reduce_sum_axis, reduce_rowsum, permute,
+# the loop-carried LOCAL reduction family (argmax, cumsum, localmax, localprod,
+# localsum, localsumsq), the maxpair family, AND conv2d.
+#
+# WHAT DOES NOT, and where to look -- ONE family, ONE defect:
+#   * THE VECTOR-STORE LANE: the packet's STORE covers lanes 0-3 and CPython
+#     leaves lanes 4-7 untouched, while the port writes the lanes it should
+#     have computed. MEASURED on `f32.sqrt.0`: input b1 = [1..8], CPython's
+#     output b0 = [1.0, 1.4142135, 1.7320508, 2.0, <b0's own input unchanged>]
+#     and the port answers [0,0,0,0, <unchanged>]. The same shape on sqrt,
+#     log2, exp2, recip, shl, shr, cmod, ne, CMPNE and bitcast.
+#   * NOTHING ELSE. The conv lane, the nested RANGE loops, the loop-carried
+#     LOCAL reduction family and the maxpair family all AGREE with upstream's
+#     own interpreter now -- see `.agents/slop/convfix/REPORT.md`.
 #
 # `run` is a real interpreter: an arena threaded through a fuel recursion, with a
 # DIE on fuel exhaustion, which is also the "stay turing-incomplete" answer since
@@ -1035,15 +1044,40 @@ def Prog.pad(+n: Nat, acc: List<&2, U32>) -> List<&2, U32>:
 def Prog.zeros(+fs: List<&2, Buf>, acc: List<&2, U32>) -> List<&2, U32>:
   match fs:
     case Nil{}: acc
-    case f <> t: Prog.zeros(t, Prog.pad(U32.to_nat(Buf.e(f)), acc))
+    case f <> t: Prog.zeros(t, Prog.pad(U32.to_nat(U32.mul(Buf.w(f), Buf.e(f))), acc))
 
 # THE STORE: the packet's bytes in packet order, then `nbytes` zeros for each
 # scratch buffer (ops_python.py:101,104 allocate `bytearray(n)`, and two scratch
-# buffers must not share bytes). The zeros' order inside their region is not
-# observable -- they are all zero -- so they are prepended, which is the cheap
-# direction.
+# buffers must not share bytes).
+#
+# **THE ZEROS GO AFTER THE PACKET'S BYTES, AND THERE ARE `w*e` OF THEM.**
+#
+# `Prog.bases` gives the scratch buffer the base that FOLLOWS the packet's
+# buffers -- `base + w*e` for each of them (`Prog.bases.next`) -- so the flat
+# byte list has to be the packet's bytes FOLLOWED BY the scratch's region, and
+# the region is `w*e` BYTES long. `Buf.e` is the ELEMENT count, so `w*e` is the
+# byte count and `e` is not.
+#
+# MEASURED 2026-10-26, and this was the port's SECOND defect, hidden behind the
+# first: with the zeros PREPENDED and counted in ELEMENTS, every packet with a
+# scratch `BUFFER` was shifted by `e` BYTES -- the packet's own bytes sat at the
+# wrong offset, so every load and every store read and wrote the wrong place.
+# The shift is visible in the tree's OWN census: `bool.maxpair.0.b1` is
+# `0100010001000100` upstream and `0001000100010001` in the port -- the same
+# bytes, shifted right by ONE, because that fixture's scratch is `k:buffer:1`
+# (a bool, `w=1`, so `e=1`). The port's OWN conv packet has a `k:buffer:64`
+# scratch (an f32, `w=4`, so `e=16`) and is shifted by 16 bytes -- four floats.
+# ⇒ EVERY PINNED DIVERGENCE OF THE "loop-carried LOCAL reduction family" AND of
+# the "VECTOR-STORE LANE family" IS THIS SHIFT, and the pin file's diagnosis
+# ("a nested END jumps to the inner head") is a DIFFERENT STORY.
+#
+# THE ORDER IS THE OTHER HALF: prepending the zeros puts the PACKET's bytes at
+# offset `len(zeros)` while `Prog.bases` says their base is 0, so the shift is
+# `len(zeros)` however the zeros are counted. The zeros belong AT THE END, and
+# the one reversal that puts them there is the SAME reversal the byte order
+# needs.
 def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, U32>:
-  Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))), List.reverse(&2, U32, Build.bp(b)))
+  List.reverse(&2, U32, Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))), Build.bp(b)))
 
 def Prog.load.put(+b: Build, us: List<&2, Uop>, +fs: List<&2, Buf>) -> Load:
   Load{us, fs, Prog.bytes(b, fs), List.replicate(Elem, U32.to_nat(Build.slot(b)), Elem.zero()),
@@ -1947,8 +1981,25 @@ def Prog.oob(+p: Prog, +u: Uop, +j: U32, +n: Nat) -> Bool:
 # THE POISON. ops_python raises IndexError on a load or a store past the end of a
 # buffer (:17, :28); Bend answers a default instead, so the check runs here and
 # the launch is refused at the end rather than answering a plausible wrong number.
-def Prog.live(+p: Prog, +u: Uop) -> Prog:
-  Prog.live.at(p, Prog.oob(p, u, 0, U32.to_nat(Uop.run(u))))
+#
+# **BUT UPSTREAM ONLY TOUCHES THE MEMORY WHERE THE GATE IS OPEN**, and this check
+# stands in for upstream's IndexError, so IT has to be behind the same gate.
+# MEASURED 2026-10-26 on the port's OWN conv packet (1,3,32,32)x(8,3,3,3)
+# padding=1: the port refused the packet at `pc=333 off=3100 buf=1` -- offset
+# 3100 into the 3072-element input buffer -- while UPSTREAM'S OWN
+# `PythonProgram.__call__` RAN THE SAME PACKET, THE SAME BUFFERS AND THE SAME
+# GRID, and upstream's own `_load`/`_store` (monkeypatched at runtime) made
+# 154,968 accesses, NONE of them out of range, and accessed offset 3100 ZERO
+# times. The refused access is the tap `base + 32` of the conv's 3x3 window, and
+# its gate is `(counter121 < 31)`, which is FALSE at the iteration that produced
+# the offset: upstream reads `alt` and never touches the buffer.
+#
+#   ops_python.py:26  `[_load(m, ...) if gate else alt for ...]`
+#   ops_python.py:93  `if g: _store(m, ...)`
+#
+# ⇒ THE GATE IS PART OF THE ACCESS, AND THE CHECK IS PART OF THE GATE.
+def Prog.live(+p: Prog, +u: Uop, +happens: Bool) -> Prog:
+  Prog.live.at(p, Bool.and(happens, Prog.oob(p, u, 0, U32.to_nat(Uop.run(u)))))
 
 def Prog.ld.gate(+got: Elem, +three: Bool, +alt: Elem, +open: Bool) -> Elem:
   Bool.pick(Elem, Bool.and(three, Bool.not(open)), alt, got)
@@ -1974,9 +2025,17 @@ def Prog.ld.read(+p: Prog, +u: Uop, +ptr: Elem, +j: U32) -> Elem:
 
 def Prog.ld.three(+u: Uop) -> Bool: U32.is_eq(Uop.nsrc(u), 3)
 
+# THE GATE OF A LOAD (src 2) AND WHETHER THE ACCESS HAPPENS. ops_python reads
+# the buffer only when the gate is open (ops_python.py:26) and takes `alt` when
+# it is closed, so a one- or two-src LOAD -- which has no gate -- always reads.
+def Prog.ld.open(+p: Prog, +u: Uop) -> Bool: Elem.is_true(Prog.src(p, u, 2n))
+
+def Prog.ld.happens(+p: Prog, +u: Uop) -> Bool:
+  Bool.not(Bool.and(Prog.ld.three(u), Bool.not(Prog.ld.open(p, u))))
+
 def Prog.ld.lane(+p: Prog, +u: Uop, +j: U32) -> Elem:
   Prog.ld.gate(Prog.ld.read(p, u, Prog.src(p, u, 0n), j), Prog.ld.three(u),
-    Prog.src(p, u, 1n), Elem.is_true(Prog.src(p, u, 2n)))
+    Prog.src(p, u, 1n), Prog.ld.open(p, u))
 
 # `n` is the FIRST parameter because the store list is REBUILT each step, and a
 # recursive call's arguments are read left to right: nothing rebuilt may come
@@ -1988,7 +2047,7 @@ def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, Elem>, +j: U32, +p: Prog) -> List<
       U32.add(j, 1), p)
 
 def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.live(Prog.vs1(p, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.vs(p), 0, p)), u))
+  Prog.next(Prog.live(Prog.vs1(p, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.vs(p), 0, p)), u, Prog.ld.happens(p, u)))
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
 # is computed and discarded rather than branched over (Bool.pick is not a branch)
@@ -2025,7 +2084,7 @@ def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, U32>, +j: U32, +p: Prog) -> Lis
     case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, p, u, j), U32.add(j, 1), p)
 
 def Prog.store(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.live(Prog.ms1(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, p)), u))
+  Prog.next(Prog.live(Prog.ms1(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, p)), u, Prog.open(p)))
 
 def Prog.after(+p: Prog, +u: Uop) -> Prog: Prog.put(p, u, Prog.src(p, u, 0n))
 

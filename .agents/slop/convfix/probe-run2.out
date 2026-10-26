@@ -1,0 +1,33 @@
+# executor: /Users/cyberistic/Library/Caches/tinygrad/bend-executor-3c0579eace384167
+== conv1x1x3x3_k1x1x3x3_p0
+#   python: n=1 head=[27.75] tail=[]
+#   bend:   n=1 head=[27.75] tail=[]
+#   launch 0: gsize=(1, 1, 1) lsize=(1, 1, 1) nbuf=3 -> /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/convfix/packets/conv1x1x3x3_k1x1x3x3_p0/PACKET-0.in
+#     port:   rc=0
+#     oracle: ran, 3 buffers
+#     bytes:  b0: SAME b1: SAME b2: SAME
+#   VERDICT: MATCH
+== conv1x1x4x4_k1x1x3x3_p0
+#   python: n=4 head=[7.75, -10.0, -5.5, -9.5] tail=[]
+#   bend:   n=4 head=[7.75, -10.0, -5.5, -9.5] tail=[]
+#   launch 0: gsize=(1, 1, 1) lsize=(1, 1, 1) nbuf=3 -> /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/convfix/packets/conv1x1x4x4_k1x1x3x3_p0/PACKET-0.in
+#     port:   rc=0
+#     oracle: ran, 3 buffers
+#     bytes:  b0: SAME b1: SAME b2: SAME
+#   VERDICT: MATCH
+== conv1x1x4x4_k1x1x3x3_p1
+#   python: n=16 head=[5.25, 6.125, -3.625, -1.75, 6.75, 7.75, -10.0, -5.5] tail=[12.0, -5.5, -9.5, 0.0, 4.5, -4.625, -6.625, -1.0]
+#   bend:   n=16 head=[5.25, 6.125, -3.625, -1.75, 6.75, 7.75, -10.0, -5.5] tail=[12.0, -5.5, -9.5, 0.0, 4.5, -4.625, -6.625, -1.0]
+#   launch 0: gsize=(1, 1, 1) lsize=(1, 1, 1) nbuf=3 -> /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/convfix/packets/conv1x1x4x4_k1x1x3x3_p1/PACKET-0.in
+#     port:   rc=0
+#     oracle: ran, 3 buffers
+#     bytes:  b0: SAME b1: SAME b2: SAME
+#   VERDICT: MATCH
+== conv1x3x32x32_k8x3x3x3_p1
+#   python: n=8192 head=[-19.5, 6.625, 9.375, -18.125, 14.875, 17.625, -9.875, 23.125] tail=[-14.125, 18.375, 20.625, 0.875, 5.875, -11.125, 4.875, 3.5]
+#   bend:   REFUSED/FAILED -- RuntimeError: the Bend executor exited 1 on:
+#   launch 0: gsize=(1, 1, 1) lsize=(1, 1, 1) nbuf=3 -> /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/convfix/packets/conv1x3x32x32_k8x3x3x3_p1/PACKET-0.in
+#     port:   rc=1 stderr=executor: refused the packet -- a line it does not port, or a load or store past the end of its buffer, where ops_python raises IndexError
+#     oracle: ran, 3 buffers
+#   VERDICT: MISMATCH-or-REFUSED
+# 3 match, 1 mismatch-or-refused

@@ -25,18 +25,6 @@
 # the loop-carried LOCAL reduction family: `Prog.loop` walks `loop_ends` and a
 # # nested END jumps to the inner head (ops_python.bend's own header, WHAT DOES
 # # NOT). The port's `f32.localsum.0.b0` is 717.0 where CPython's is 10.0.
-f32.argmax.0.b0
-f32.argmax.0.b1
-f32.cumsum.0
-f32.cumsum.0.b0
-f32.cumsum.0.b1
-f32.localmax.0.b0
-f32.localmax.0.b1
-f32.localprod.0.b1
-f32.localsum.0.b0
-f32.localsum.0.b1
-f32.localsumsq.0.b0
-f32.localsumsq.0.b1
 #
 # the VECTOR-STORE LANE family: the packet's STORE covers lanes 0-3 and CPython
 # # leaves lanes 4-7 untouched (verified by hand on `f32.sqrt.0`: input b1 =
@@ -44,10 +32,11 @@ f32.localsumsq.0.b1
 # # input unchanged>], and the port writes [0,0,0,0, <unchanged>]). So the port
 # # zeroes the lanes it should have computed. Same shape on sqrt, log2, exp2,
 # # recip, shl, shr, maxpair, cmod, ne, CMPNE, bitcast.
+# --refresh: 29 declared divergences kept, 0 added, 23 dropped as no longer diverging.
+# --refresh: DROPPED (the divergence is gone): f32.argmax.0.b0, f32.argmax.0.b1, f32.cumsum.0, f32.cumsum.0.b0, f32.cumsum.0.b1, f32.localmax.0.b0, f32.localmax.0.b1, f32.localprod.0.b1, f32.localsum.0.b0, f32.localsum.0.b1, f32.localsumsq.0.b0, f32.localsumsq.0.b1, bool.maxpair.0.b1, bool.maxpair.0.b2, f32.maxpair.0.b0, f32.maxpair.0.b1, f32.maxpair.0.b2, i32.maxpair.0.b0, i32.maxpair.0.b1, i32.maxpair.0.b2, u32.maxpair.0.b0, u32.maxpair.0.b1, u32.maxpair.0.b2
+
 alu.CMPNE.f.b0
 bool.matmul.0.b0
-bool.maxpair.0.b1
-bool.maxpair.0.b2
 bool.ne.0.b0
 bool.neg.0.b0
 bool.sub.0.b0
@@ -55,9 +44,6 @@ f32.bitcast.0.b0
 f32.cmod.0.b0
 f32.exp2.0.b0
 f32.log2.0.b0
-f32.maxpair.0.b0
-f32.maxpair.0.b1
-f32.maxpair.0.b2
 f32.recip.0.b0
 f32.shl.0.b0
 f32.shr.0.b0
@@ -65,9 +51,6 @@ f32.sqrt.0.b0
 i32.cmod.0.b0
 i32.exp2.0.b0
 i32.log2.0.b0
-i32.maxpair.0.b0
-i32.maxpair.0.b1
-i32.maxpair.0.b2
 i32.ne.0.b0
 i32.recip.0.b0
 i32.shl.0.b0
@@ -76,9 +59,6 @@ i32.sqrt.0.b0
 u32.cmod.0.b0
 u32.exp2.0.b0
 u32.log2.0.b0
-u32.maxpair.0.b0
-u32.maxpair.0.b1
-u32.maxpair.0.b2
 u32.ne.0.b0
 u32.recip.0.b0
 u32.shl.0.b0

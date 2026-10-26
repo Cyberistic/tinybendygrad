@@ -1,0 +1,580 @@
+1: CONST weakint c:8192 []
+2: PARAM f32 k:param:32768:g [1]
+3: CONST weakint c:3072 []
+4: PARAM f32 k:param:12288:g [3]
+5: CONST weakint c:216 []
+6: PARAM f32 k:param:864:g [5]
+7: CONST weakint c:16 []
+8: BUFFER f32 k:buffer:64 [7]
+9: STACK void - []
+10: CONST weakfloat f:00000000 []
+11: CAST f32 - [10]
+12: STACK f32 - [11, 11, 11, 11]
+13: CONST weakint c:-1 []
+14: CAST i32 - [13]
+15: CONST weakint c:-28 []
+16: CAST i32 - [15]
+17: CONST weakint c:-32 []
+18: CAST i32 - [17]
+19: CONST weakint c:-33 []
+20: CAST i32 - [19]
+21: CONST weakint c:0 []
+22: CAST i32 - [21]
+23: CONST weakint c:1 []
+24: CAST i32 - [23]
+25: CONST weakint c:10 []
+26: CAST i32 - [25]
+27: CONST weakint c:1024 []
+28: CAST i32 - [27]
+29: CONST weakint c:108 []
+30: CAST i32 - [29]
+31: CONST weakint c:11 []
+32: CAST i32 - [31]
+33: CONST weakint c:12 []
+34: CAST i32 - [33]
+35: CONST weakint c:13 []
+36: CAST i32 - [35]
+37: CONST weakint c:14 []
+38: CAST i32 - [37]
+39: CONST weakint c:15 []
+40: CAST i32 - [39]
+41: CONST weakint c:2 []
+42: CAST i32 - [41]
+43: CONST weakint c:2048 []
+44: CAST i32 - [43]
+45: CONST weakint c:27 []
+46: CAST i32 - [45]
+47: CONST weakint c:28 []
+48: CAST i32 - [47]
+49: CONST weakint c:29 []
+50: CAST i32 - [49]
+51: CONST weakint c:3 []
+52: CAST i32 - [51]
+53: CONST weakint c:30 []
+54: CAST i32 - [53]
+55: CAST i32 - [3]
+56: CONST weakint c:31 []
+57: CAST i32 - [56]
+58: CONST weakint c:32 []
+59: CAST i32 - [58]
+60: CONST weakint c:33 []
+61: CAST i32 - [60]
+62: CONST weakint c:34 []
+63: CAST i32 - [62]
+64: CONST weakint c:35 []
+65: CAST i32 - [64]
+66: CONST weakint c:36 []
+67: CAST i32 - [66]
+68: CONST weakint c:4 []
+69: CAST i32 - [68]
+70: CONST weakint c:4096 []
+71: CAST i32 - [70]
+72: CONST weakint c:5 []
+73: CAST i32 - [72]
+74: CONST weakint c:54 []
+75: CAST i32 - [74]
+76: CONST weakint c:55 []
+77: CAST i32 - [76]
+78: CONST weakint c:56 []
+79: CAST i32 - [78]
+80: CONST weakint c:57 []
+81: CAST i32 - [80]
+82: CONST weakint c:58 []
+83: CAST i32 - [82]
+84: CONST weakint c:59 []
+85: CAST i32 - [84]
+86: CONST weakint c:6 []
+87: CAST i32 - [86]
+88: CONST weakint c:60 []
+89: CAST i32 - [88]
+90: CONST weakint c:61 []
+91: CAST i32 - [90]
+92: CONST weakint c:62 []
+93: CAST i32 - [92]
+94: CONST weakint c:7 []
+95: CAST i32 - [94]
+96: CONST weakint c:8 []
+97: CAST i32 - [96]
+98: CONST weakint c:81 []
+99: CAST i32 - [98]
+100: CONST weakint c:82 []
+101: CAST i32 - [100]
+102: CONST weakint c:83 []
+103: CAST i32 - [102]
+104: CONST weakint c:84 []
+105: CAST i32 - [104]
+106: CONST weakint c:85 []
+107: CAST i32 - [106]
+108: CONST weakint c:86 []
+109: CAST i32 - [108]
+110: CONST weakint c:87 []
+111: CAST i32 - [110]
+112: CONST weakint c:88 []
+113: CAST i32 - [112]
+114: CONST weakint c:89 []
+115: CAST i32 - [114]
+116: CONST weakint c:9 []
+117: CAST i32 - [116]
+118: RANGE i32 - [42]  ; trip=c:2
+119: AFTER i32 - [59, 118]
+120: MUL i32 - [118, 30]  ; s119=RANGE s31=c:108
+121: RANGE i32 - [119]  ; trip=AFTER
+122: AFTER i32 - [97, 121]
+123: CMPLT bool - [22, 121]  ; s23=c:0 s122=RANGE
+124: CMPLT bool - [121, 57]  ; s122=RANGE s58=c:31
+125: RANGE i32 - [122]  ; trip=AFTER
+126: AFTER i32 - [52, 125]
+127: AFTER f32 - [8, 125, 121, 118]
+128: INDEX f32 - [127, 22]  ; scale-arg=- src1=c:0
+129: INDEX f32 - [127, 24]  ; scale-arg=- src1=c:1
+130: INDEX f32 - [127, 26]  ; scale-arg=- src1=c:10
+131: INDEX f32 - [127, 32]  ; scale-arg=- src1=c:11
+132: INDEX f32 - [127, 34]  ; scale-arg=- src1=c:12
+133: INDEX f32 - [127, 36]  ; scale-arg=- src1=c:13
+134: INDEX f32 - [127, 38]  ; scale-arg=- src1=c:14
+135: INDEX f32 - [127, 40]  ; scale-arg=- src1=c:15
+136: INDEX f32 - [127, 42]  ; scale-arg=- src1=c:2
+137: INDEX f32 - [127, 52]  ; scale-arg=- src1=c:3
+138: INDEX f32 - [127, 69]  ; scale-arg=- src1=c:4
+139: INDEX f32 - [127, 73]  ; scale-arg=- src1=c:5
+140: INDEX f32 - [127, 87]  ; scale-arg=- src1=c:6
+141: INDEX f32 - [127, 95]  ; scale-arg=- src1=c:7
+142: INDEX f32 - [127, 97]  ; scale-arg=- src1=c:8
+143: INDEX f32 - [127, 117]  ; scale-arg=- src1=c:9
+144: SHL i32 - [125, 42]  ; s126=RANGE s43=c:2
+145: CMPLT bool - [22, 125]  ; s23=c:0 s126=RANGE
+146: CMPLT bool - [125, 95]  ; s126=RANGE s96=c:7
+147: AND bool - [145, 123]
+148: AND bool - [145, 124]
+149: AND bool - [146, 123]
+150: AND bool - [146, 124]
+151: MULACC i32 - [121, 59, 144]  ; s122=RANGE s60=c:32 s145=SHL
+152: STORE void - [128, 11]
+153: STORE void - [129, 11]
+154: STORE void - [130, 11]
+155: STORE void - [131, 11]
+156: STORE void - [132, 11]
+157: STORE void - [133, 11]
+158: STORE void - [134, 11]
+159: STORE void - [135, 11]
+160: STORE void - [136, 11]
+161: STORE void - [137, 11]
+162: STORE void - [138, 11]
+163: STORE void - [139, 11]
+164: STORE void - [140, 11]
+165: STORE void - [141, 11]
+166: STORE void - [142, 11]
+167: STORE void - [143, 11]
+168: RANGE i32 - [126]  ; trip=AFTER
+169: MULACC i32 - [168, 28, 151]  ; s169=RANGE s29=c:1024 s152=MULACC
+170: ADD i32 - [169, 14]  ; s170=MULACC s15=c:-1
+171: INDEX f32 - [4, 170]  ; scale-arg=- src1=ADD
+172: LOAD f32 - [171, 11, 145]
+173: ADD i32 - [169, 16]  ; s170=MULACC s17=c:-28
+174: INDEX f32 - [4, 173]  ; scale-arg=- src1=ADD
+175: LOAD f32 - [174, 11, 149]
+176: ADD i32 - [169, 20]  ; s170=MULACC s21=c:-33
+177: INDEX f32 - [4, 176]  ; scale-arg=- src1=ADD
+178: LOAD f32 - [177, 11, 147]
+179: ADD i32 - [169, 57]  ; s170=MULACC s58=c:31
+180: INDEX f32 - [4, 179]  ; scale-arg=- src1=ADD
+181: LOAD f32 - [180, 11, 148]
+182: ADD i32 - [169, 67]  ; s170=MULACC s68=c:36
+183: INDEX f32 - [4, 182]  ; scale-arg=- src1=ADD
+184: LOAD f32 - [183, 11, 150]
+185: ADD i32 - [169, 69]  ; s170=MULACC s70=c:4
+186: INDEX f32 - [4, 185]  ; scale-arg=- src1=ADD
+187: LOAD f32 - [186, 11, 146]
+188: MULACC i32 - [168, 117, 120]  ; s169=RANGE s118=c:9 s121=MUL
+189: ADD i32 - [188, 24]  ; s189=MULACC s25=c:1
+190: INDEX f32 - [6, 189]  ; scale-arg=- src1=ADD
+191: LOAD f32 - [190]
+192: ADD i32 - [188, 42]  ; s189=MULACC s43=c:2
+193: INDEX f32 - [6, 192]  ; scale-arg=- src1=ADD
+194: LOAD f32 - [193]
+195: ADD i32 - [188, 46]  ; s189=MULACC s47=c:27
+196: INDEX f32 - [6, 195]  ; scale-arg=- src1=ADD
+197: LOAD f32 - [196]
+198: ADD i32 - [188, 48]  ; s189=MULACC s49=c:28
+199: INDEX f32 - [6, 198]  ; scale-arg=- src1=ADD
+200: LOAD f32 - [199]
+201: ADD i32 - [188, 50]  ; s189=MULACC s51=c:29
+202: INDEX f32 - [6, 201]  ; scale-arg=- src1=ADD
+203: LOAD f32 - [202]
+204: ADD i32 - [188, 52]  ; s189=MULACC s53=c:3
+205: INDEX f32 - [6, 204]  ; scale-arg=- src1=ADD
+206: LOAD f32 - [205]
+207: ADD i32 - [188, 54]  ; s189=MULACC s55=c:30
+208: INDEX f32 - [6, 207]  ; scale-arg=- src1=ADD
+209: LOAD f32 - [208]
+210: ADD i32 - [188, 57]  ; s189=MULACC s58=c:31
+211: INDEX f32 - [6, 210]  ; scale-arg=- src1=ADD
+212: LOAD f32 - [211]
+213: ADD i32 - [188, 59]  ; s189=MULACC s60=c:32
+214: INDEX f32 - [6, 213]  ; scale-arg=- src1=ADD
+215: LOAD f32 - [214]
+216: ADD i32 - [188, 61]  ; s189=MULACC s62=c:33
+217: INDEX f32 - [6, 216]  ; scale-arg=- src1=ADD
+218: LOAD f32 - [217]
+219: ADD i32 - [188, 63]  ; s189=MULACC s64=c:34
+220: INDEX f32 - [6, 219]  ; scale-arg=- src1=ADD
+221: LOAD f32 - [220]
+222: ADD i32 - [188, 65]  ; s189=MULACC s66=c:35
+223: INDEX f32 - [6, 222]  ; scale-arg=- src1=ADD
+224: LOAD f32 - [223]
+225: ADD i32 - [188, 69]  ; s189=MULACC s70=c:4
+226: INDEX f32 - [6, 225]  ; scale-arg=- src1=ADD
+227: LOAD f32 - [226]
+228: ADD i32 - [188, 73]  ; s189=MULACC s74=c:5
+229: INDEX f32 - [6, 228]  ; scale-arg=- src1=ADD
+230: LOAD f32 - [229]
+231: ADD i32 - [188, 75]  ; s189=MULACC s76=c:54
+232: INDEX f32 - [6, 231]  ; scale-arg=- src1=ADD
+233: LOAD f32 - [232]
+234: ADD i32 - [188, 77]  ; s189=MULACC s78=c:55
+235: INDEX f32 - [6, 234]  ; scale-arg=- src1=ADD
+236: LOAD f32 - [235]
+237: ADD i32 - [188, 79]  ; s189=MULACC s80=c:56
+238: INDEX f32 - [6, 237]  ; scale-arg=- src1=ADD
+239: LOAD f32 - [238]
+240: ADD i32 - [188, 81]  ; s189=MULACC s82=c:57
+241: INDEX f32 - [6, 240]  ; scale-arg=- src1=ADD
+242: LOAD f32 - [241]
+243: ADD i32 - [188, 83]  ; s189=MULACC s84=c:58
+244: INDEX f32 - [6, 243]  ; scale-arg=- src1=ADD
+245: LOAD f32 - [244]
+246: ADD i32 - [188, 85]  ; s189=MULACC s86=c:59
+247: INDEX f32 - [6, 246]  ; scale-arg=- src1=ADD
+248: LOAD f32 - [247]
+249: ADD i32 - [188, 87]  ; s189=MULACC s88=c:6
+250: INDEX f32 - [6, 249]  ; scale-arg=- src1=ADD
+251: LOAD f32 - [250]
+252: ADD i32 - [188, 89]  ; s189=MULACC s90=c:60
+253: INDEX f32 - [6, 252]  ; scale-arg=- src1=ADD
+254: LOAD f32 - [253]
+255: ADD i32 - [188, 91]  ; s189=MULACC s92=c:61
+256: INDEX f32 - [6, 255]  ; scale-arg=- src1=ADD
+257: LOAD f32 - [256]
+258: ADD i32 - [188, 93]  ; s189=MULACC s94=c:62
+259: INDEX f32 - [6, 258]  ; scale-arg=- src1=ADD
+260: LOAD f32 - [259]
+261: ADD i32 - [188, 95]  ; s189=MULACC s96=c:7
+262: INDEX f32 - [6, 261]  ; scale-arg=- src1=ADD
+263: LOAD f32 - [262]
+264: ADD i32 - [188, 97]  ; s189=MULACC s98=c:8
+265: INDEX f32 - [6, 264]  ; scale-arg=- src1=ADD
+266: LOAD f32 - [265]
+267: ADD i32 - [188, 99]  ; s189=MULACC s100=c:81
+268: INDEX f32 - [6, 267]  ; scale-arg=- src1=ADD
+269: LOAD f32 - [268]
+270: ADD i32 - [188, 101]  ; s189=MULACC s102=c:82
+271: INDEX f32 - [6, 270]  ; scale-arg=- src1=ADD
+272: LOAD f32 - [271]
+273: ADD i32 - [188, 103]  ; s189=MULACC s104=c:83
+274: INDEX f32 - [6, 273]  ; scale-arg=- src1=ADD
+275: LOAD f32 - [274]
+276: ADD i32 - [188, 105]  ; s189=MULACC s106=c:84
+277: INDEX f32 - [6, 276]  ; scale-arg=- src1=ADD
+278: LOAD f32 - [277]
+279: ADD i32 - [188, 107]  ; s189=MULACC s108=c:85
+280: INDEX f32 - [6, 279]  ; scale-arg=- src1=ADD
+281: LOAD f32 - [280]
+282: ADD i32 - [188, 109]  ; s189=MULACC s110=c:86
+283: INDEX f32 - [6, 282]  ; scale-arg=- src1=ADD
+284: LOAD f32 - [283]
+285: ADD i32 - [188, 111]  ; s189=MULACC s112=c:87
+286: INDEX f32 - [6, 285]  ; scale-arg=- src1=ADD
+287: LOAD f32 - [286]
+288: ADD i32 - [188, 113]  ; s189=MULACC s114=c:88
+289: INDEX f32 - [6, 288]  ; scale-arg=- src1=ADD
+290: LOAD f32 - [289]
+291: ADD i32 - [188, 115]  ; s189=MULACC s116=c:89
+292: INDEX f32 - [6, 291]  ; scale-arg=- src1=ADD
+293: LOAD f32 - [292]
+294: INDEX f32 - [6, 188]  ; scale-arg=- src1=MULACC
+295: LOAD f32 - [294]
+296: AFTER f32 - [8, 152, 153, 160, 161, 162, 163, 164, 165, 166, 167, 154, 155, 156, 157, 158, 159, 168]
+297: INDEX f32 - [296, 22]  ; scale-arg=- src1=c:0
+298: LOAD f32 - [297]
+299: INDEX f32 - [296, 24]  ; scale-arg=- src1=c:1
+300: LOAD f32 - [299]
+301: INDEX f32 - [296, 26]  ; scale-arg=- src1=c:10
+302: LOAD f32 - [301]
+303: INDEX f32 - [296, 32]  ; scale-arg=- src1=c:11
+304: LOAD f32 - [303]
+305: INDEX f32 - [296, 34]  ; scale-arg=- src1=c:12
+306: LOAD f32 - [305]
+307: INDEX f32 - [296, 36]  ; scale-arg=- src1=c:13
+308: LOAD f32 - [307]
+309: INDEX f32 - [296, 38]  ; scale-arg=- src1=c:14
+310: LOAD f32 - [309]
+311: INDEX f32 - [296, 40]  ; scale-arg=- src1=c:15
+312: LOAD f32 - [311]
+313: INDEX f32 - [296, 42]  ; scale-arg=- src1=c:2
+314: LOAD f32 - [313]
+315: INDEX f32 - [296, 52]  ; scale-arg=- src1=c:3
+316: LOAD f32 - [315]
+317: INDEX f32 - [296, 69]  ; scale-arg=- src1=c:4
+318: LOAD f32 - [317]
+319: INDEX f32 - [296, 73]  ; scale-arg=- src1=c:5
+320: LOAD f32 - [319]
+321: INDEX f32 - [296, 87]  ; scale-arg=- src1=c:6
+322: LOAD f32 - [321]
+323: INDEX f32 - [296, 95]  ; scale-arg=- src1=c:7
+324: LOAD f32 - [323]
+325: INDEX f32 - [296, 97]  ; scale-arg=- src1=c:8
+326: LOAD f32 - [325]
+327: INDEX f32 - [296, 117]  ; scale-arg=- src1=c:9
+328: LOAD f32 - [327]
+329: ADD i32 - [169, 18]  ; s170=MULACC s19=c:-32
+330: SHRINK f32 - [4, 329, 69]  ; scale-arg=- src1=ADD
+331: LOAD f32 k:vec:4 [330, 12, 123]
+332: ADD i32 - [169, 59]  ; s170=MULACC s60=c:32
+333: SHRINK f32 - [4, 332, 69]  ; scale-arg=- src1=ADD
+334: LOAD f32 k:vec:4 [333, 12, 124]
+335: SHRINK f32 - [4, 169, 69]  ; scale-arg=- src1=MULACC
+336: LOAD f32 k:vec:4 [335]
+337: INDEX f32 k:idx:0 [331, 22]  ; scale-arg=k:idx:0 src1=c:0
+338: INDEX f32 k:idx:0 [331, 24]  ; scale-arg=k:idx:0 src1=c:1
+339: INDEX f32 k:idx:0 [331, 42]  ; scale-arg=k:idx:0 src1=c:2
+340: INDEX f32 k:idx:0 [331, 52]  ; scale-arg=k:idx:0 src1=c:3
+341: INDEX f32 k:idx:0 [334, 22]  ; scale-arg=k:idx:0 src1=c:0
+342: INDEX f32 k:idx:0 [334, 24]  ; scale-arg=k:idx:0 src1=c:1
+343: INDEX f32 k:idx:0 [334, 42]  ; scale-arg=k:idx:0 src1=c:2
+344: INDEX f32 k:idx:0 [334, 52]  ; scale-arg=k:idx:0 src1=c:3
+345: INDEX f32 k:idx:0 [336, 22]  ; scale-arg=k:idx:0 src1=c:0
+346: INDEX f32 k:idx:0 [336, 24]  ; scale-arg=k:idx:0 src1=c:1
+347: INDEX f32 k:idx:0 [336, 42]  ; scale-arg=k:idx:0 src1=c:2
+348: INDEX f32 k:idx:0 [336, 52]  ; scale-arg=k:idx:0 src1=c:3
+349: MUL f32 - [337, 191]  ; s338=INDEX s192=LOAD
+350: MULACC f32 - [178, 295, 349]  ; s179=LOAD s296=LOAD s350=MUL
+351: MULACC f32 - [338, 194, 350]  ; s339=INDEX s195=LOAD s351=MULACC
+352: MULACC f32 - [172, 206, 351]  ; s173=LOAD s207=LOAD s352=MULACC
+353: MULACC f32 - [345, 227, 352]  ; s346=INDEX s228=LOAD s353=MULACC
+354: MULACC f32 - [346, 230, 353]  ; s347=INDEX s231=LOAD s354=MULACC
+355: MULACC f32 - [181, 251, 354]  ; s182=LOAD s252=LOAD s355=MULACC
+356: MULACC f32 - [341, 263, 355]  ; s342=INDEX s264=LOAD s356=MULACC
+357: MULACC f32 - [342, 266, 356]  ; s343=INDEX s267=LOAD s357=MULACC
+358: ADD f32 - [298, 357]  ; s299=LOAD s358=MULACC
+359: MUL f32 - [337, 200]  ; s338=INDEX s201=LOAD
+360: MULACC f32 - [178, 197, 359]  ; s179=LOAD s198=LOAD s360=MUL
+361: MULACC f32 - [338, 203, 360]  ; s339=INDEX s204=LOAD s361=MULACC
+362: MULACC f32 - [172, 209, 361]  ; s173=LOAD s210=LOAD s362=MULACC
+363: MULACC f32 - [345, 212, 362]  ; s346=INDEX s213=LOAD s363=MULACC
+364: MULACC f32 - [346, 215, 363]  ; s347=INDEX s216=LOAD s364=MULACC
+365: MULACC f32 - [181, 218, 364]  ; s182=LOAD s219=LOAD s365=MULACC
+366: MULACC f32 - [341, 221, 365]  ; s342=INDEX s222=LOAD s366=MULACC
+367: MULACC f32 - [342, 224, 366]  ; s343=INDEX s225=LOAD s367=MULACC
+368: ADD f32 - [300, 367]  ; s301=LOAD s368=MULACC
+369: MUL f32 - [339, 236]  ; s340=INDEX s237=LOAD
+370: MULACC f32 - [338, 233, 369]  ; s339=INDEX s234=LOAD s370=MUL
+371: MULACC f32 - [340, 239, 370]  ; s341=INDEX s240=LOAD s371=MULACC
+372: MULACC f32 - [346, 242, 371]  ; s347=INDEX s243=LOAD s372=MULACC
+373: MULACC f32 - [347, 245, 372]  ; s348=INDEX s246=LOAD s373=MULACC
+374: MULACC f32 - [348, 248, 373]  ; s349=INDEX s249=LOAD s374=MULACC
+375: MULACC f32 - [342, 254, 374]  ; s343=INDEX s255=LOAD s375=MULACC
+376: MULACC f32 - [343, 257, 375]  ; s344=INDEX s258=LOAD s376=MULACC
+377: MULACC f32 - [344, 260, 376]  ; s345=INDEX s261=LOAD s377=MULACC
+378: ADD f32 - [302, 377]  ; s303=LOAD s378=MULACC
+379: MUL f32 - [339, 272]  ; s340=INDEX s273=LOAD
+380: MULACC f32 - [338, 269, 379]  ; s339=INDEX s270=LOAD s380=MUL
+381: MULACC f32 - [340, 275, 380]  ; s341=INDEX s276=LOAD s381=MULACC
+382: MULACC f32 - [346, 278, 381]  ; s347=INDEX s279=LOAD s382=MULACC
+383: MULACC f32 - [347, 281, 382]  ; s348=INDEX s282=LOAD s383=MULACC
+384: MULACC f32 - [348, 284, 383]  ; s349=INDEX s285=LOAD s384=MULACC
+385: MULACC f32 - [342, 287, 384]  ; s343=INDEX s288=LOAD s385=MULACC
+386: MULACC f32 - [343, 290, 385]  ; s344=INDEX s291=LOAD s386=MULACC
+387: MULACC f32 - [344, 293, 386]  ; s345=INDEX s294=LOAD s387=MULACC
+388: ADD f32 - [304, 387]  ; s305=LOAD s388=MULACC
+389: MUL f32 - [340, 191]  ; s341=INDEX s192=LOAD
+390: MULACC f32 - [339, 295, 389]  ; s340=INDEX s296=LOAD s390=MUL
+391: MULACC f32 - [175, 194, 390]  ; s176=LOAD s195=LOAD s391=MULACC
+392: MULACC f32 - [347, 206, 391]  ; s348=INDEX s207=LOAD s392=MULACC
+393: MULACC f32 - [348, 227, 392]  ; s349=INDEX s228=LOAD s393=MULACC
+394: MULACC f32 - [187, 230, 393]  ; s188=LOAD s231=LOAD s394=MULACC
+395: MULACC f32 - [343, 251, 394]  ; s344=INDEX s252=LOAD s395=MULACC
+396: MULACC f32 - [344, 263, 395]  ; s345=INDEX s264=LOAD s396=MULACC
+397: MULACC f32 - [184, 266, 396]  ; s185=LOAD s267=LOAD s397=MULACC
+398: ADD f32 - [306, 397]  ; s307=LOAD s398=MULACC
+399: MUL f32 - [340, 200]  ; s341=INDEX s201=LOAD
+400: MULACC f32 - [339, 197, 399]  ; s340=INDEX s198=LOAD s400=MUL
+401: MULACC f32 - [175, 203, 400]  ; s176=LOAD s204=LOAD s401=MULACC
+402: MULACC f32 - [347, 209, 401]  ; s348=INDEX s210=LOAD s402=MULACC
+403: MULACC f32 - [348, 212, 402]  ; s349=INDEX s213=LOAD s403=MULACC
+404: MULACC f32 - [187, 215, 403]  ; s188=LOAD s216=LOAD s404=MULACC
+405: MULACC f32 - [343, 218, 404]  ; s344=INDEX s219=LOAD s405=MULACC
+406: MULACC f32 - [344, 221, 405]  ; s345=INDEX s222=LOAD s406=MULACC
+407: MULACC f32 - [184, 224, 406]  ; s185=LOAD s225=LOAD s407=MULACC
+408: ADD f32 - [308, 407]  ; s309=LOAD s408=MULACC
+409: MUL f32 - [340, 236]  ; s341=INDEX s237=LOAD
+410: MULACC f32 - [339, 233, 409]  ; s340=INDEX s234=LOAD s410=MUL
+411: MULACC f32 - [175, 239, 410]  ; s176=LOAD s240=LOAD s411=MULACC
+412: MULACC f32 - [347, 242, 411]  ; s348=INDEX s243=LOAD s412=MULACC
+413: MULACC f32 - [348, 245, 412]  ; s349=INDEX s246=LOAD s413=MULACC
+414: MULACC f32 - [187, 248, 413]  ; s188=LOAD s249=LOAD s414=MULACC
+415: MULACC f32 - [343, 254, 414]  ; s344=INDEX s255=LOAD s415=MULACC
+416: MULACC f32 - [344, 257, 415]  ; s345=INDEX s258=LOAD s416=MULACC
+417: MULACC f32 - [184, 260, 416]  ; s185=LOAD s261=LOAD s417=MULACC
+418: ADD f32 - [310, 417]  ; s311=LOAD s418=MULACC
+419: MUL f32 - [340, 272]  ; s341=INDEX s273=LOAD
+420: MULACC f32 - [339, 269, 419]  ; s340=INDEX s270=LOAD s420=MUL
+421: MULACC f32 - [175, 275, 420]  ; s176=LOAD s276=LOAD s421=MULACC
+422: MULACC f32 - [347, 278, 421]  ; s348=INDEX s279=LOAD s422=MULACC
+423: MULACC f32 - [348, 281, 422]  ; s349=INDEX s282=LOAD s423=MULACC
+424: MULACC f32 - [187, 284, 423]  ; s188=LOAD s285=LOAD s424=MULACC
+425: MULACC f32 - [343, 287, 424]  ; s344=INDEX s288=LOAD s425=MULACC
+426: MULACC f32 - [344, 290, 425]  ; s345=INDEX s291=LOAD s426=MULACC
+427: MULACC f32 - [184, 293, 426]  ; s185=LOAD s294=LOAD s427=MULACC
+428: ADD f32 - [312, 427]  ; s313=LOAD s428=MULACC
+429: MUL f32 - [337, 236]  ; s338=INDEX s237=LOAD
+430: MULACC f32 - [178, 233, 429]  ; s179=LOAD s234=LOAD s430=MUL
+431: MULACC f32 - [338, 239, 430]  ; s339=INDEX s240=LOAD s431=MULACC
+432: MULACC f32 - [172, 242, 431]  ; s173=LOAD s243=LOAD s432=MULACC
+433: MULACC f32 - [345, 245, 432]  ; s346=INDEX s246=LOAD s433=MULACC
+434: MULACC f32 - [346, 248, 433]  ; s347=INDEX s249=LOAD s434=MULACC
+435: MULACC f32 - [181, 254, 434]  ; s182=LOAD s255=LOAD s435=MULACC
+436: MULACC f32 - [341, 257, 435]  ; s342=INDEX s258=LOAD s436=MULACC
+437: MULACC f32 - [342, 260, 436]  ; s343=INDEX s261=LOAD s437=MULACC
+438: ADD f32 - [314, 437]  ; s315=LOAD s438=MULACC
+439: MUL f32 - [337, 272]  ; s338=INDEX s273=LOAD
+440: MULACC f32 - [178, 269, 439]  ; s179=LOAD s270=LOAD s440=MUL
+441: MULACC f32 - [338, 275, 440]  ; s339=INDEX s276=LOAD s441=MULACC
+442: MULACC f32 - [172, 278, 441]  ; s173=LOAD s279=LOAD s442=MULACC
+443: MULACC f32 - [345, 281, 442]  ; s346=INDEX s282=LOAD s443=MULACC
+444: MULACC f32 - [346, 284, 443]  ; s347=INDEX s285=LOAD s444=MULACC
+445: MULACC f32 - [181, 287, 444]  ; s182=LOAD s288=LOAD s445=MULACC
+446: MULACC f32 - [341, 290, 445]  ; s342=INDEX s291=LOAD s446=MULACC
+447: MULACC f32 - [342, 293, 446]  ; s343=INDEX s294=LOAD s447=MULACC
+448: ADD f32 - [316, 447]  ; s317=LOAD s448=MULACC
+449: MUL f32 - [338, 191]  ; s339=INDEX s192=LOAD
+450: MULACC f32 - [337, 295, 449]  ; s338=INDEX s296=LOAD s450=MUL
+451: MULACC f32 - [339, 194, 450]  ; s340=INDEX s195=LOAD s451=MULACC
+452: MULACC f32 - [345, 206, 451]  ; s346=INDEX s207=LOAD s452=MULACC
+453: MULACC f32 - [346, 227, 452]  ; s347=INDEX s228=LOAD s453=MULACC
+454: MULACC f32 - [347, 230, 453]  ; s348=INDEX s231=LOAD s454=MULACC
+455: MULACC f32 - [341, 251, 454]  ; s342=INDEX s252=LOAD s455=MULACC
+456: MULACC f32 - [342, 263, 455]  ; s343=INDEX s264=LOAD s456=MULACC
+457: MULACC f32 - [343, 266, 456]  ; s344=INDEX s267=LOAD s457=MULACC
+458: ADD f32 - [318, 457]  ; s319=LOAD s458=MULACC
+459: MUL f32 - [338, 200]  ; s339=INDEX s201=LOAD
+460: MULACC f32 - [337, 197, 459]  ; s338=INDEX s198=LOAD s460=MUL
+461: MULACC f32 - [339, 203, 460]  ; s340=INDEX s204=LOAD s461=MULACC
+462: MULACC f32 - [345, 209, 461]  ; s346=INDEX s210=LOAD s462=MULACC
+463: MULACC f32 - [346, 212, 462]  ; s347=INDEX s213=LOAD s463=MULACC
+464: MULACC f32 - [347, 215, 463]  ; s348=INDEX s216=LOAD s464=MULACC
+465: MULACC f32 - [341, 218, 464]  ; s342=INDEX s219=LOAD s465=MULACC
+466: MULACC f32 - [342, 221, 465]  ; s343=INDEX s222=LOAD s466=MULACC
+467: MULACC f32 - [343, 224, 466]  ; s344=INDEX s225=LOAD s467=MULACC
+468: ADD f32 - [320, 467]  ; s321=LOAD s468=MULACC
+469: MUL f32 - [338, 236]  ; s339=INDEX s237=LOAD
+470: MULACC f32 - [337, 233, 469]  ; s338=INDEX s234=LOAD s470=MUL
+471: MULACC f32 - [339, 239, 470]  ; s340=INDEX s240=LOAD s471=MULACC
+472: MULACC f32 - [345, 242, 471]  ; s346=INDEX s243=LOAD s472=MULACC
+473: MULACC f32 - [346, 245, 472]  ; s347=INDEX s246=LOAD s473=MULACC
+474: MULACC f32 - [347, 248, 473]  ; s348=INDEX s249=LOAD s474=MULACC
+475: MULACC f32 - [341, 254, 474]  ; s342=INDEX s255=LOAD s475=MULACC
+476: MULACC f32 - [342, 257, 475]  ; s343=INDEX s258=LOAD s476=MULACC
+477: MULACC f32 - [343, 260, 476]  ; s344=INDEX s261=LOAD s477=MULACC
+478: ADD f32 - [322, 477]  ; s323=LOAD s478=MULACC
+479: MUL f32 - [338, 272]  ; s339=INDEX s273=LOAD
+480: MULACC f32 - [337, 269, 479]  ; s338=INDEX s270=LOAD s480=MUL
+481: MULACC f32 - [339, 275, 480]  ; s340=INDEX s276=LOAD s481=MULACC
+482: MULACC f32 - [345, 278, 481]  ; s346=INDEX s279=LOAD s482=MULACC
+483: MULACC f32 - [346, 281, 482]  ; s347=INDEX s282=LOAD s483=MULACC
+484: MULACC f32 - [347, 284, 483]  ; s348=INDEX s285=LOAD s484=MULACC
+485: MULACC f32 - [341, 287, 484]  ; s342=INDEX s288=LOAD s485=MULACC
+486: MULACC f32 - [342, 290, 485]  ; s343=INDEX s291=LOAD s486=MULACC
+487: MULACC f32 - [343, 293, 486]  ; s344=INDEX s294=LOAD s487=MULACC
+488: ADD f32 - [324, 487]  ; s325=LOAD s488=MULACC
+489: MUL f32 - [339, 191]  ; s340=INDEX s192=LOAD
+490: MULACC f32 - [338, 295, 489]  ; s339=INDEX s296=LOAD s490=MUL
+491: MULACC f32 - [340, 194, 490]  ; s341=INDEX s195=LOAD s491=MULACC
+492: MULACC f32 - [346, 206, 491]  ; s347=INDEX s207=LOAD s492=MULACC
+493: MULACC f32 - [347, 227, 492]  ; s348=INDEX s228=LOAD s493=MULACC
+494: MULACC f32 - [348, 230, 493]  ; s349=INDEX s231=LOAD s494=MULACC
+495: MULACC f32 - [342, 251, 494]  ; s343=INDEX s252=LOAD s495=MULACC
+496: MULACC f32 - [343, 263, 495]  ; s344=INDEX s264=LOAD s496=MULACC
+497: MULACC f32 - [344, 266, 496]  ; s345=INDEX s267=LOAD s497=MULACC
+498: ADD f32 - [326, 497]  ; s327=LOAD s498=MULACC
+499: MUL f32 - [339, 200]  ; s340=INDEX s201=LOAD
+500: MULACC f32 - [338, 197, 499]  ; s339=INDEX s198=LOAD s500=MUL
+501: MULACC f32 - [340, 203, 500]  ; s341=INDEX s204=LOAD s501=MULACC
+502: MULACC f32 - [346, 209, 501]  ; s347=INDEX s210=LOAD s502=MULACC
+503: MULACC f32 - [347, 212, 502]  ; s348=INDEX s213=LOAD s503=MULACC
+504: MULACC f32 - [348, 215, 503]  ; s349=INDEX s216=LOAD s504=MULACC
+505: MULACC f32 - [342, 218, 504]  ; s343=INDEX s219=LOAD s505=MULACC
+506: MULACC f32 - [343, 221, 505]  ; s344=INDEX s222=LOAD s506=MULACC
+507: MULACC f32 - [344, 224, 506]  ; s345=INDEX s225=LOAD s507=MULACC
+508: ADD f32 - [328, 507]  ; s329=LOAD s508=MULACC
+509: STORE void - [297, 358]
+510: STORE void - [299, 368]
+511: STORE void - [301, 378]
+512: STORE void - [303, 388]
+513: STORE void - [305, 398]
+514: STORE void - [307, 408]
+515: STORE void - [309, 418]
+516: STORE void - [311, 428]
+517: STORE void - [313, 438]
+518: STORE void - [315, 448]
+519: STORE void - [317, 458]
+520: STORE void - [319, 468]
+521: STORE void - [321, 478]
+522: STORE void - [323, 488]
+523: STORE void - [325, 498]
+524: STORE void - [327, 508]
+525: AFTER void - [9, 509, 510, 517, 518, 519, 520, 521, 522, 523, 524, 511, 512, 513, 514, 515, 516]
+526: END void - [525, 168]
+527: AFTER f32 - [8, 526]
+528: INDEX f32 - [527, 22]  ; scale-arg=- src1=c:0
+529: LOAD f32 - [528]
+530: INDEX f32 - [527, 24]  ; scale-arg=- src1=c:1
+531: LOAD f32 - [530]
+532: INDEX f32 - [527, 26]  ; scale-arg=- src1=c:10
+533: LOAD f32 - [532]
+534: INDEX f32 - [527, 32]  ; scale-arg=- src1=c:11
+535: LOAD f32 - [534]
+536: INDEX f32 - [527, 34]  ; scale-arg=- src1=c:12
+537: LOAD f32 - [536]
+538: INDEX f32 - [527, 36]  ; scale-arg=- src1=c:13
+539: LOAD f32 - [538]
+540: INDEX f32 - [527, 38]  ; scale-arg=- src1=c:14
+541: LOAD f32 - [540]
+542: INDEX f32 - [527, 40]  ; scale-arg=- src1=c:15
+543: LOAD f32 - [542]
+544: INDEX f32 - [527, 42]  ; scale-arg=- src1=c:2
+545: LOAD f32 - [544]
+546: INDEX f32 - [527, 52]  ; scale-arg=- src1=c:3
+547: LOAD f32 - [546]
+548: INDEX f32 - [527, 69]  ; scale-arg=- src1=c:4
+549: LOAD f32 - [548]
+550: INDEX f32 - [527, 73]  ; scale-arg=- src1=c:5
+551: LOAD f32 - [550]
+552: INDEX f32 - [527, 87]  ; scale-arg=- src1=c:6
+553: LOAD f32 - [552]
+554: INDEX f32 - [527, 95]  ; scale-arg=- src1=c:7
+555: LOAD f32 - [554]
+556: INDEX f32 - [527, 97]  ; scale-arg=- src1=c:8
+557: LOAD f32 - [556]
+558: INDEX f32 - [527, 117]  ; scale-arg=- src1=c:9
+559: LOAD f32 - [558]
+560: STACK f32 - [529, 549, 557, 537]
+561: STACK f32 - [531, 551, 559, 539]
+562: STACK f32 - [545, 553, 533, 541]
+563: STACK f32 - [547, 555, 535, 543]
+564: MULACC i32 - [118, 71, 151]  ; s119=RANGE s72=c:4096 s152=MULACC
+565: ADD i32 - [564, 28]  ; s565=MULACC s29=c:1024
+566: SHRINK f32 - [2, 565, 69]  ; scale-arg=- src1=ADD
+567: ADD i32 - [564, 44]  ; s565=MULACC s45=c:2048
+568: SHRINK f32 - [2, 567, 69]  ; scale-arg=- src1=ADD
+569: ADD i32 - [564, 55]  ; s565=MULACC s56=c:3072
+570: SHRINK f32 - [2, 569, 69]  ; scale-arg=- src1=ADD
+571: SHRINK f32 - [2, 564, 69]  ; scale-arg=- src1=MULACC
+572: STORE void k:vec:4 [566, 561]
+573: STORE void k:vec:4 [568, 562]
+574: STORE void k:vec:4 [570, 563]
+575: STORE void k:vec:4 [571, 560]
+576: AFTER void - [9, 575, 572, 573, 574]
+577: END void - [576, 125]
+578: END void - [577, 121]
+579: END void - [578, 118]
+580: SINK void - [579]
