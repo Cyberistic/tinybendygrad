@@ -5,10 +5,24 @@
 # STATE OF THIS FILE, MEASURED 2026-10-26. `--check-only` is clean and `-o`
 # builds. `gates/ops_bend_exec-e2e.py` reads `7 match, 0 mismatch-or-refused` --
 # add4, sum4, addi32, addu32, cast, cmp AND a 4x4 matmul -- so the loop, the
-# arena, the wire and the ALU lane are all exercised. The 153-fixture census
+# arena, the wire and the ALU lane are all exercised. **The 153-fixture census
 # (`gates/ops_python_exec-fixtures.rows`, run through this file's own compiled
-# executor) leaves 29 rows that disagree with upstream's own interpreter, and
-# every one of them is in `gates/ops_python_exec-pins.rows`.
+# executor) NOW LEAVES **0** ROWS THAT DISAGREE WITH UPSTREAM's OWN
+# INTERPRETER.** IT LEFT 29, AND EVERY ONE OF THEM WAS IN
+# `gates/ops_python_exec-pins.rows`; THE 29 ARE FIXED AND THE REPORT IS
+# `.agents/slop/vslane/REPORT.md`.
+#
+# **⇒ THE 29 WERE NOT ONE DEFECT AND THEY WERE NOT THE "VECTOR-STORE LANE".**
+# MEASURED, WITH THE PLANTS AS THE CONTROL: UPSTREAM's `exec_alu` TUPLE BRANCH
+# (`ops.py:1423`) **NEVER FIRES** ON THIS POPULATION -- **192899** `exec_alu`
+# CALLS OVER **153** FIXTURES AND **0** OF THEM HAD A TUPLE OPERAND -- SO
+# UPSTREAM's ALU IS SCALAR HERE TOO, AND THE PORT's WAS NOT THE PROBLEM. THE
+# FOUR CAUSES WERE: `symbolic.bend`'s `f32_where` (THE ARMS SWAPPED),
+# `symbolic.bend`'s `exec_alu_i32.cmp` (**CMPNE WAS `==`**), THIS FILE's
+# `Prog.cast.dt` (A FLOAT-TO-INT CAST KEPT THE **FLOAT's** BIT PATTERN), AND
+# THIS FILE's STORE (THE VALUE IS **CONVERTED TO THE BUFFER** BY UPSTREAM AND
+# NOT WRITTEN AS ITS OWN BITS). REVERTING ALL FOUR REPRODUCES THE 29 PRE-FIX
+# ROWS **BYTE FOR BYTE** (29 of 29).
 #
 # **AND A CONVOLUTION NOW RUNS.** MEASURED: the port's OWN conv shape --
 # `x(1,3,32,32) conv2d w(8,3,3,3) padding=1` -> `(1,8,32,32)`, the shape
@@ -22,16 +36,9 @@
 # the loop-carried LOCAL reduction family (argmax, cumsum, localmax, localprod,
 # localsum, localsumsq), the maxpair family, AND conv2d.
 #
-# WHAT DOES NOT, and where to look -- ONE family, ONE defect:
-#   * THE VECTOR-STORE LANE: the packet's STORE covers lanes 0-3 and CPython
-#     leaves lanes 4-7 untouched, while the port writes the lanes it should
-#     have computed. MEASURED on `f32.sqrt.0`: input b1 = [1..8], CPython's
-#     output b0 = [1.0, 1.4142135, 1.7320508, 2.0, <b0's own input unchanged>]
-#     and the port answers [0,0,0,0, <unchanged>]. The same shape on sqrt,
-#     log2, exp2, recip, shl, shr, cmod, ne, CMPNE and bitcast.
-#   * NOTHING ELSE. The conv lane, the nested RANGE loops, the loop-carried
-#     LOCAL reduction family and the maxpair family all AGREE with upstream's
-#     own interpreter now -- see `.agents/slop/convfix/REPORT.md`.
+# WHAT DOES NOT: **NOTHING IN THE 153-FIXTURE CENSUS** -- it is 0 of 365 rows
+# against upstream's own interpreter. WHAT IS STILL OPEN IS NAMED IN
+# `.agents/slop/vslane/REPORT.md` (SECTION 8) AND NONE OF IT IS IN THE CENSUS.
 #
 # `run` is a real interpreter: an arena threaded through a fuel recursion, with a
 # DIE on fuel exhaustion, which is also the "stay turing-incomplete" answer since
@@ -129,6 +136,16 @@
 #    reuse, not a re-implementation: the two lanes are ops.py:1432-1435's body.
 #    The Invalid poison (ops.py:1432) has no v1 spelling, because nothing in a v1
 #    packet is `CONST(Invalid)`.
+#    **MEASURED 2026-10-26: THE BRANCH IS DEAD ON THIS TREE's POPULATION.**
+#    WRAPPING UPSTREAM's OWN `exec_alu` OVER EVERY FIXTURE OF
+#    `gates/ops_python_exec-fixtures.rows` COUNTS **192899** CALLS AND **0** OF
+#    THEM HAD A TUPLE OPERAND, SO THE BRANCH NEVER FIRES AND **UPSTREAM's ALU IS
+#    SCALAR HERE TOO**. THE VECTOR LANES LIVE IN THE **LOAD** (ops_python.py:142,
+#    `values[u] = [load(...) for j in range(load_sz)]`) AND IN THE **STACK**
+#    (ops_python.py:135, `values[u] = src_values`), AND THE PORT's MODEL OF
+#    THOSE IS ALREADY RIGHT (see THE PROGRAM TABLE). THE INSTRUMENT IS
+#    `.agents/slop/vslane/tuple_census.py` AND ITS READING IS
+#    `.agents/slop/vslane/tuple-census.rows`.
 #    ONE DIVERGENCE IS INHERITED, and it is named where it bites: `safe_pow`
 #    (tinygrad/uop/ops.py:1406-1410 symbol=safe_pow) answers `inf if x > 0 else -inf` for a negative base with a
 #    fractional exponent, where IEEE -- and therefore `exec_alu_f32` -- answers
@@ -827,25 +844,41 @@ def Uop.run1(+u: Uop) -> Uop: Uop.run2(u, Uop.run_of(u))
 # arithmetic ops_python does on `m.nbytes // len(m)`.
 # ===========================================================================
 
+# THE BUFFER CARRIES ITS **DTYPE**, and that is the FOURTH FIELD AND IT IS NOT
+# COSMETIC. ops_python.py:29-33's `_store` writes
+#     if (w:=m.nbytes // len(m)) >= dtype.itemsize: m[i] = to_storage_scalar(v, dtype)
+# INTO THE BUFFER'S OWN MEMORYVIEW, AND `m`'s ELEMENT TYPE IS THE BUFFER'S OWN
+# (`storage_fmt_for_dtype(u.dtype)`, ops_python.py:99) -- SO THE VALUE IS
+# **CONVERTED TO THE BUFFER** AND IS NOT WRITTEN AS ITS OWN BITS. THE TWO AGREE
+# WHEN THE VALUE'S DTYPE IS THE BUFFER'S (THE COMMON CASE) AND DIFFER WHEN THEY
+# ARE NOT: A BOOL STORED INTO AN F32 BUFFER IS UPSTREAM'S `m[0] = True`, WHICH
+# IS 1.0f, AND NOT THE INTEGER 1.
+# MEASURED 2026-10-26 on `alu.CMPNE.f`: CPython's output buffer 0 is
+# `0000803f00000000` (1.0f) AND THE PORT'S IS `0100000000000000` (THE INTEGER 1).
 type Buf is Data:
-  Buf{base: U32, w: U32, e: U32}
+  Buf{base: U32, w: U32, e: U32, dt: S.Dt}
 
 def Buf.base(+f: Buf) -> U32:
   match f:
-    case Buf{base, w, e}: base
+    case Buf{base, w, e, dt}: base
 
 def Buf.w(+f: Buf) -> U32:
   match f:
-    case Buf{base, w, e}: w
+    case Buf{base, w, e, dt}: w
 
 def Buf.e(+f: Buf) -> U32:
   match f:
-    case Buf{base, w, e}: e
+    case Buf{base, w, e, dt}: e
+
+def Buf.dt(+f: Buf) -> S.Dt:
+  match f:
+    case Buf{base, w, e, dt}: dt
 
 def Buf.at(fs: List<&2, Buf>, +b: U32) -> Buf:
-  Maybe.default(&2, Buf, List.get(&2, Buf, fs, U32.to_nat(b)), Buf{0, 4, 0})
+  Maybe.default(&2, Buf, List.get(&2, Buf, fs, U32.to_nat(b)), Buf{0, 4, 0, S.int32()})
 
-def Buf.make(+w: U32, +n: U32) -> Buf: Buf{0, w, U32.div(n, w)}
+def Buf.make(+dt: S.Dt, +n: U32) -> Buf:
+  Buf{0, S.Dt.itemsize(dt), U32.div(n, S.Dt.itemsize(dt)), dt}
 
 # ===========================================================================
 # THE VALUES ARENA AND THE STORE. `Val` is ops_python's `values[u]`, total and
@@ -976,7 +1009,7 @@ def Prog.bases.put(+fs: List<&2, Buf>, +at: U32) -> List<&2, Buf>:
     # PREPENDED, not appended: a buffer id is an INDEX into this list (A1), so
     # the list has to come out in `fs`'s own order. `List.append(tail, [f])`
     # would reverse it and every id after the first would name the wrong buffer.
-    case f <> t: Buf{at, Buf.w(f), Buf.e(f)} <> Prog.bases.put(t, Prog.bases.next(f, at))
+    case f <> t: Buf{at, Buf.w(f), Buf.e(f), Buf.dt(f)} <> Prog.bases.put(t, Prog.bases.next(f, at))
 
 # A `Build` field is readable as `b.x` inside a record literal but not as an
 # ARGUMENT, so the fields the parse hands to another def have accessors. The
@@ -1132,6 +1165,11 @@ def Prog.alloc.ss(+b: Build, +f: Buf) -> Build:
   Build{Build.us(b), Build.sp(b), List.append(&2, Buf, Build.ss(b), [f]), Build.bp(b), Build.nu(b), Build.nb(b), Build.nbp(b),
         U32.add(Build.sbn(b), 1), Build.pn(b), Build.slot(b), Build.ok(b)}
 
+# THE STORAGE WORD WIDTH OF A PARAM, WHICH IS ITS DTYPE's ITEMSIZE. `Buf.make`
+# READS THE DTYPE ITSELF NOW (the buffer's dtype is the PARAM's), so this is
+# THE READER THE BUFFER MAKES OF ITS OWN UOP -- KEPT BECAUSE IT IS THE SPELLING
+# OF `storage_fmt_for_dtype(u.dtype)`'s width AND IT IS WHAT `Buf.make` USED TO
+# TAKE.
 def Prog.w(+u: Uop) -> U32: S.Dt.itemsize(Uop.dt(u))
 
 def Prog.alloc.sp(+b: Build, +f: Buf) -> Build:
@@ -1139,8 +1177,8 @@ def Prog.alloc.sp(+b: Build, +f: Buf) -> Build:
         Build.sbn(b), Build.pn(b), Build.slot(b), Build.ok(b)}
 
 def Prog.alloc.at(+u: Uop, +b: Build, +scratch: Bool) -> Build:
-  Bool.pick(Build, scratch, Prog.alloc.ss(b, Buf.make(Prog.w(u), Uop.a(u))),
-    Prog.alloc.sp(b, Buf.make(Prog.w(u), Uop.a(u))))
+  Bool.pick(Build, scratch, Prog.alloc.ss(b, Buf.make(Uop.dt(u), Uop.a(u))),
+    Prog.alloc.sp(b, Buf.make(Uop.dt(u), Uop.a(u))))
 
 # addrspace r (4) and a BUFFER (5) allocate scratch; g (2) and l (3) bind a packet
 # buffer; a (6) reads a `vals` entry and binds NO buffer.
@@ -1893,10 +1931,35 @@ def Prog.stack(+p: Prog, +u: Uop) -> Prog:
   Prog.next(Prog.vs1(p, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), Prog.vs(p), Prog.us(p), Nil{}),
     Prog.vs(p), Uop.slot(u), 0n)))
 
+# ===========================================================================
+# :134 CAST -- `values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x))
+# for x in src_values[0]]` (ops_python.py:137-138). `DType.const` (dtype.py:84) IS
+# THE VALUE CONVERSION: `float(val)` FOR A FLOAT, `bool(val)` FOR A BOOL, AND
+# **`int(val)`** FOR AN INTEGER -- PYTHON'S TRUNCATION TOWARD ZERO. `truncate.get`
+# (dtype.py:289) IS THEN THE RANGE: `ctypes.c_int32(...)`/`ctypes.c_uint32(...)`.
+#
+# **THE FLOAT-TO-INTEGER ARM WAS THE FLOAT's OWN BIT PATTERN.** IT READ
+# `F32.bits(F32.trunc(f_of(e)))`, WHICH IS THE BIT PATTERN OF THE **FLOAT** 1.0
+# (0x3F800000) AND NOT THE INTEGER 1 (0x00000001) THAT `int(1.0)` IS. MEASURED
+# 2026-10-26: `f32.bitcast.0`'s OUTPUT BUFFER 0 WAS CPYTHON'S
+# `01000000020000000300000004000000...` (THE INTEGERS 1,2,3,4) AND THE PORT'S WAS
+# `0000803f0000004000004040000080...` (THE FLOATS' OWN BIT PATTERNS). THE SAME
+# ARM IS WHAT `x.abs().cast(dtypes.int32)` GOES THROUGH, SO IT ALSO BROKE
+# `f32.shl.0`, `f32.shr.0` AND `f32.cmod.0` -- FOUR of the 29 pinned rows.
+# ===========================================================================
+
+# `int(x)` AS THE TWO's-COMPLEMENT BITS OF A 32-BIT INT. `F32.to_u32`
+# TRUNCATES TOWARD ZERO, WHICH IS HALF OF WHAT IS WANTED, BUT IT **CLAMPS A
+# NEGATIVE TO ZERO**: MEASURED 2026-10-26, `F32.to_u32(-1.0)` IS 0 AND NOT
+# 4294967295. SO THE MAGNITUDE IS TAKEN AND THE SIGN IS PUT BACK BY THE
+# SUBTRACTION, WHICH IS THE TWO's COMPLEMENT OF THE MAGNITUDE.
+def f32_int_bits(+x: F32) -> U32:
+  Bool.pick(U32, F32.is_lt(x, 0.0), U32.sub(0, F32.to_u32(F32.abs(x))), F32.to_u32(x))
+
 def Prog.cast.dt(+dst: S.Dt, src: S.Dt, +e: Elem) -> Elem:
   Bool.pick(Elem, S.Dt.is_bool(dst), elem_of(Bool.to_u32(Elem.is_true(e)), dst),
     Bool.pick(Elem, S.Dt.is_float(dst), elem_of(F32.bits(f_of(e)), dst),
-      Bool.pick(Elem, S.Dt.is_float(src), elem_of(F32.bits(F32.trunc(f_of(e))), dst),
+      Bool.pick(Elem, S.Dt.is_float(src), elem_of(f32_int_bits(f_of(e)), dst),
         elem_of(Elem.bits(e), dst))))
 
 # ===========================================================================
@@ -2058,8 +2121,30 @@ def Prog.store.addr(+p: Prog, +u: Uop, +j: U32) -> U32:
   U32.add(Buf.base(Prog.buf(p, u)), U32.mul(Prog.store.i(p, u, j), Buf.w(Prog.buf(p, u))))
 
 # lane j of the value run: the 1st src's own run, indexed
-def Prog.store.v(+p: Prog, +u: Uop, +j: U32) -> U32:
-  Elem.bits(Val.at(Prog.vs(p), U32.add(Prog.slot(p, u, 1n), j)))
+def Prog.store.elem(+p: Prog, +u: Uop, +j: U32) -> Elem:
+  Val.at(Prog.vs(p), U32.add(Prog.slot(p, u, 1n), j))
+
+# THE VALUE IN THE **BUFFER'S** OWN TYPE, AND WHY THE STORE CONVERTS AT ALL.
+# ops_python.py:29-33's `_store` writes
+#     if (w:=m.nbytes // len(m)) >= dtype.itemsize: m[i] = to_storage_scalar(v, dtype)
+# INTO THE BUFFER'S OWN MEMORYVIEW, AND `m`'s ELEMENT TYPE IS THE BUFFER'S OWN
+# (`storage_fmt_for_dtype(u.dtype)`, ops_python.py:99) -- SO THE VALUE IS
+# **CONVERTED TO THE BUFFER** AND IS NOT WRITTEN AS ITS OWN BITS. THE TWO AGREE
+# WHEN THE VALUE'S DTYPE IS THE BUFFER'S (THE COMMON CASE) AND DIFFER WHEN THEY
+# ARE NOT: A BOOL STORED INTO AN F32 BUFFER IS UPSTREAM'S `m[0] = True`, WHICH
+# IS 1.0f, AND NOT THE INTEGER 1.
+# MEASURED 2026-10-26 on `alu.CMPNE.f`: CPython's output buffer 0 IS
+# `0000803f00000000` (1.0f) AND THE PORT'S WAS `0100000000000000` (THE INTEGER 1).
+#
+# THE CONVERSION IS THE **CAST'S** CONVERSION AND NOT A SECOND ONE: upstream's
+# CAST is `truncate.get(u.dtype)(u.dtype.const(x))` AND upstream's STORE is
+# `m[i] = value` INTO A MEMORYVIEW OF THE BUFFER'S TYPE, AND `DType.const`
+# (dtype.py:84) AND THE MEMORYVIEW ARE THE SAME CONVERSION FOR THE FOUR v1
+# LANES. SO `Prog.cast.dt` IS REUSED HERE, AND IT IS THE IDENTITY WHEN THE TWO
+# DTYPES ARE THE SAME.
+def Prog.store.bits(+p: Prog, +u: Uop, +j: U32) -> U32:
+  Elem.bits(Prog.cast.dt(Buf.dt(Prog.buf(p, u)), Elem.dt(Prog.store.elem(p, u, j)),
+    Prog.store.elem(p, u, j)))
 
 # THE ACCUMULATED BYTE LIST, not `Prog.ms(p)`. Every lane must see the previous
 # lanes' writes: reading the arena afresh per lane makes each write a copy of the
@@ -2067,13 +2152,15 @@ def Prog.store.v(+p: Prog, +u: Uop, +j: U32) -> U32:
 # per pass with the last lane's value (MEASURED: `elementwise_add` wrote 6, 10,
 # 14, 18 at indices 3, 7, 11, 15 where it wanted 3..18).
 def Prog.store.lane.at(+ms: List<&2, U32>, +p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
-  Mem.st(ms, Prog.store.addr(p, u, j), Buf.w(Prog.buf(p, u)), Prog.store.v(p, u, j))
+  Mem.st(ms, Prog.store.addr(p, u, j), Buf.w(Prog.buf(p, u)), Prog.store.bits(p, u, j))
 
 def Prog.store.open(+p: Prog, +u: Uop, +j: U32) -> Bool:
   Bool.and(Prog.open(p), U32.is_lt(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u))))
 
 # `_store(m, o + j*_step, v, src_dtypes[1])` -- `to_storage_scalar` is the
-# identity for the three 4-byte lanes and `bool(x)` for bool
+# identity for the three 4-byte lanes and `bool(x)` for bool, AND THE WRITE
+# ITSELF IS `m[i] = v` INTO THE BUFFER'S MEMORYVIEW, WHICH IS THE CONVERSION
+# `Prog.store.bits` MAKES.
 def Prog.store.lane(+ms: List<&2, U32>, +p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
   Prog.store.go(ms, Prog.store.lane.at(ms, p, u, j), Prog.store.open(p, u, j))
 

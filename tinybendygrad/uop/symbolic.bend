@@ -720,11 +720,25 @@ def exec_alu_i32.bit(+uns: Bool, op: O.Op, o: I3) -> Maybe<&1, O.Const>:
     case O.OpsSHR{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_shr(uns, a, b))}
     case _ _: None{}
 
+# `python_alu`'s COMPARISONS (ops.py:1416-1417) are `operator.lt`, `operator.eq` and
+# `operator.ne`, so CMPNE IS **NOT EQUAL** and NOT "equal" -- and this line said
+# `U32.is_eq`, WHICH IS **EQUAL**. MEASURED 2026-10-26 (the executor's
+# "vector-store lane" family): `SY.exec_alu_i32(False, OpsCMPNE, I3{2, 0, 1, 0})`
+# ANSWERED `CBool(0)` WHERE CPython's `exec_alu(Ops.CMPNE, dtypes.i32, [0, 1])`
+# ANSWERS `True` (`operator.ne(0, 1)`). THE FLOAT LANE AT `exec_alu_f32.cmp` WAS
+# RIGHT (`F32.is_ne`) AND THIS ONE WAS NOT, SO THE TWO LANES DISAGREED WITH EACH
+# OTHER ON THE SAME OP.
+#
+# WHY IT MATTERS: `x != y` IS THE `abs` LOWERING'S SECOND HALF -- tinygrad spells
+# `abs` AS `WHERE(x < 0, -x, x)` AND THAT WHERE'S CONDITION IS A CMPNE -- SO THE
+# WRONG COMPARISON MADE **EVERY** `abs` IN AN INTEGER KERNEL WRONG, AND WITH IT
+# EVERY `sqrt`/`log2`/`exp2`/`recip`/`shl`/`shr`/`cmod` OF AN INTEGER TENSOR.
+# MEASURED: 20 of the 29 pinned rows in `gates/ops_python_exec-pins.rows`.
 def exec_alu_i32.cmp(+uns: Bool, op: O.Op, o: I3) -> Maybe<&1, O.Const>:
   match op o:
     case O.OpsCMPLT{} I3{2, +a, +b, _}: Some{sy_bool_c(i32_lt(uns, a, b))}
     case O.OpsCMPEQ{} I3{2, +a, +b, _}: Some{sy_bool_c(U32.is_eq(a, b))}
-    case O.OpsCMPNE{} I3{2, +a, +b, _}: Some{sy_bool_c(U32.is_eq(a, b))}
+    case O.OpsCMPNE{} I3{2, +a, +b, _}: Some{sy_bool_c(U32.is_ne(a, b))}
     case _ _: None{}
 
 def exec_alu_i32.div(+uns: Bool, op: O.Op, o: I3) -> Maybe<&1, O.Const>:
@@ -855,7 +869,25 @@ def exec_alu_f32.arith(op: O.Op, a: F32, b: F32) -> Maybe<&1, O.Const>:
 
 # `MULACC` is `(x*y)+z` and `WHERE` is `y if x else z`; only WHERE tests its
 # first operand as a condition, and `bool(x)` on a float is `x != 0.0`.
-def f32_where(cond: Bool, b: F32, c: F32) -> F32: Bool.pick(F32, cond, c, b)
+#
+# **THE ARMS WERE THE OTHER WAY ROUND.** `Bool.pick(T, cond, then, else)` PICKS
+# `then` WHEN `cond` HOLDS, SO `y if x else z` IS `pick(cond, y, z)` -- AND THIS
+# LINE SAID `pick(cond, c, b)`, WHICH IS `z if x else y`. MEASURED 2026-10-26:
+# `SY.exec_alu_f32(OpsWHERE, 3, 0.0, -1.0, 1.0)` ANSWERED `CFloat(-1.0)` WHERE
+# CPython's `exec_alu(Ops.WHERE, dtypes.f32, [0.0, -1.0, 1.0])` ANSWERS `1.0`.
+#
+# WHY IT MATTERS: `abs` IS `WHERE(x < 0, -x, x)` AND `abs` IS THE FIRST HALF OF
+# EVERY `sqrt`/`log2`/`exp2`/`recip`/`shl`/`shr`/`cmod` OF A FLOAT TENSOR, SO THE
+# SWAPPED ARMS MADE EVERY ONE OF THEM READ A ZERO AND ANSWER 0.0. MEASURED: the
+# executor's `f32.sqrt.0` ANSWERED `[0, 0, 0, 0, <unchanged>]` WHERE UPSTREAM
+# ANSWERS `[1.0, 1.4142135, 1.7320508, 2.0, <unchanged>]` -- 7 of the 29 pinned
+# rows in `gates/ops_python_exec-pins.rows`.
+#
+# THE INTEGER LANE AT `exec_alu_i32.where` WAS RIGHT, AND IT IS RIGHT **BECAUSE IT
+# INVERTS THE CONDITION INSTEAD**: IT PICKS `c` WHEN `U32.is_zero(a)`, WHICH IS
+# "z IF x IS FALSY ELSE y" -- THE SAME SENTENCE. THIS LANE PICKS THE CONDITION
+# ITSELF, SO ITS ARMS ARE THE PLAIN ONES.
+def f32_where(cond: Bool, b: F32, c: F32) -> F32: Bool.pick(F32, cond, b, c)
 
 def exec_alu_f32.tern(op: O.Op, +a: F32, +b: F32, +c: F32) -> Maybe<&1, O.Const>:
   match op:

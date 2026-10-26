@@ -34,33 +34,6 @@
 # # recip, shl, shr, maxpair, cmod, ne, CMPNE, bitcast.
 # --refresh: 29 declared divergences kept, 0 added, 23 dropped as no longer diverging.
 # --refresh: DROPPED (the divergence is gone): f32.argmax.0.b0, f32.argmax.0.b1, f32.cumsum.0, f32.cumsum.0.b0, f32.cumsum.0.b1, f32.localmax.0.b0, f32.localmax.0.b1, f32.localprod.0.b1, f32.localsum.0.b0, f32.localsum.0.b1, f32.localsumsq.0.b0, f32.localsumsq.0.b1, bool.maxpair.0.b1, bool.maxpair.0.b2, f32.maxpair.0.b0, f32.maxpair.0.b1, f32.maxpair.0.b2, i32.maxpair.0.b0, i32.maxpair.0.b1, i32.maxpair.0.b2, u32.maxpair.0.b0, u32.maxpair.0.b1, u32.maxpair.0.b2
+# --refresh: 0 declared divergences kept, 0 added, 29 dropped as no longer diverging.
+# --refresh: DROPPED (the divergence is gone): alu.CMPNE.f.b0, bool.matmul.0.b0, bool.ne.0.b0, bool.neg.0.b0, bool.sub.0.b0, f32.bitcast.0.b0, f32.cmod.0.b0, f32.exp2.0.b0, f32.log2.0.b0, f32.recip.0.b0, f32.shl.0.b0, f32.shr.0.b0, f32.sqrt.0.b0, i32.cmod.0.b0, i32.exp2.0.b0, i32.log2.0.b0, i32.ne.0.b0, i32.recip.0.b0, i32.shl.0.b0, i32.shr.0.b0, i32.sqrt.0.b0, u32.cmod.0.b0, u32.exp2.0.b0, u32.log2.0.b0, u32.ne.0.b0, u32.recip.0.b0, u32.shl.0.b0, u32.shr.0.b0, u32.sqrt.0.b0
 
-alu.CMPNE.f.b0
-bool.matmul.0.b0
-bool.ne.0.b0
-bool.neg.0.b0
-bool.sub.0.b0
-f32.bitcast.0.b0
-f32.cmod.0.b0
-f32.exp2.0.b0
-f32.log2.0.b0
-f32.recip.0.b0
-f32.shl.0.b0
-f32.shr.0.b0
-f32.sqrt.0.b0
-i32.cmod.0.b0
-i32.exp2.0.b0
-i32.log2.0.b0
-i32.ne.0.b0
-i32.recip.0.b0
-i32.shl.0.b0
-i32.shr.0.b0
-i32.sqrt.0.b0
-u32.cmod.0.b0
-u32.exp2.0.b0
-u32.log2.0.b0
-u32.ne.0.b0
-u32.recip.0.b0
-u32.shl.0.b0
-u32.shr.0.b0
-u32.sqrt.0.b0
