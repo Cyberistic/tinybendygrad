@@ -2014,7 +2014,20 @@ def artefacts_ok():
     # 2026-10-15 on the live run: 242 files, of which 176 are this population and 66 are `.err`;
     # `D.glob("*.txt")` reads **the same 176**, and a walk-based `UNEXPECTED` returns **0** against
     # the live tree -- so this is a correctness gain at ZERO current cost, not a re-baseline.
-    present = {p.name for p in D.iterdir() if p.is_file() and not p.name.endswith(".err")}
+    # **⇒ AND THE DOTFILE EXCLUSION, WHICH `snap()` ALREADY HAS AND THIS ARM DID NOT.**
+    # `snap()` (the sha256 over the artefacts) PRUNES ANY PATH WITH A DOT COMPONENT, AND ITS
+    # OWN COMMENT SAYS WHY: *"run() stages each output as `.tmp.<name>` inside this
+    # directory, so a run killed mid-write leaves a temp whose presence in one snapshot and
+    # absence in the other is a difference in the HARNESS's staging and not in the artifact."*
+    # **⇒ AND `cmd_run` CLEANS THOSE STAGING NAMES AT ITS START (`:1197`), SO THEY ARE NOT
+    # ARTEFACTS.** MEASURED 2026-10-27: A RUN KILLED BY THE SERVER RESTART LEFT
+    # `.tmp.D1-graph-flip.txt` BEHIND, AND `artefacts_ok()` CALLED IT `UNEXPECTED` -- **WHILE
+    # `snap()` DID NOT COUNT IT, SO THE TWO ARMS OF ONE INSTRUMENT DISAGREED ON WHAT A FILE
+    # IS.** **⇒ THIS IS THE THIRD INSTANCE OF THE CLASS IN ONE SESSION** (THE FIRST WAS THE
+    # UNDECLARED `D0-repro-diff.txt`; THE SECOND WAS THIS STAGING NAME), **⇒ AND THE GENERAL
+    # FIX IS ALREADY IN `snap()` AND WAS NOT IN HERE: ONE POPULATION, ONE MECHANISM.**
+    present = {p.name for p in D.iterdir()
+               if p.is_file() and not p.name.endswith(".err") and not p.name.startswith(".")}
     here = present & declared()
     run_writes = declared() - {f"{n}.txt" for n in REPRO_LITERALS}
     return [f"MISSING {n}" for n in sorted(run_writes - present)] \
