@@ -24311,3 +24311,58 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       FAIL, and it is the **PAYABLE** rows that keep it there: each is owed by the commit that
       introduced it, and `--write-ledger --only <path>` discharges it one path at a time. **NO
       CHECK WAS WEAKENED: A TOMBSTONE IS A RECORD, NOT A CLAIM, AND A ROW WAS NOT DELETED.**
+
+## Session 2026-10-27 — the citation census goes GREEN, and the SPECFOLD population stops being COMMIT-TIED
+
+- [x] **THE CITATION CENSUS IS GREEN.** `gates/pin-cite-gate.py` reads
+      **`cite.at_no_revision_dangling=0`** and exits **0**; `gates/todo-cite-gate.py` reads
+      **`1139 citations in 97 .bend files`**, **`1106 RESOLVES`**, **`0 WRONG-LINE`**,
+      **`0 WRONG-SYMBOL`**, **`0 UNRESOLVABLE`**, **`PASS`**.
+      **⇒ AND THE TWO REDS **THE **ATTRIBUTION **REPAIR **EXPOSED** WERE **BOTH **PROSE, **NOT
+      **CODE** (`7ac60c161`):** **`runtime/webgpu_call.bend:60`** **WAS **A **REAL **OFF-BY-ONE**
+      (**`bg_entry` **IS **AT **`tinygrad/runtime/ops_webgpu.py:94`**, **NOT **`:95`**), **AND
+      **`mixin/op.bend:242`** **WAS **THE **CLASS **THE **CENSUS **NAMED**: **THE **PORT's
+      **COMMENT **CLAIMED **`bool` **AGAINST **`int`**, **AND **`int` **IS **NOT **AT **THE
+      **CITED **UPSTREAM **LINE** — **IT **IS **THE **PORT's **OWN **DTYPE **VOCABULARY**.
+      **⇒ SO **THE **COMMENT **NOW **NAMES **UPSTREAM's **`isinf`** (WHICH **DOES **CARRY **A
+      **`bool`**: **`detect_positive: bool = True`**) **AND **SAYS **THAT **`int` **IS **THE
+      **PORT's **OWN.**  **⇒ A **CITATION **MUST **NOT **CLAIM **A **TOKEN **UPSTREAM **DOES **NOT
+      **HOLD**, **EVEN **WHEN **THE **CLAIM **IS **TRUE **OF **THE **PORT.**
+- [x] **THE LAST **FALSE **CITATION **IN **THE **TREE **IS **GONE** (`670ee9811`).**
+      **`tinybendygrad/uop/fold.bend:132`** **CITED **`dtype.py:193`** — **AND **`dtype.py` **IS
+      **THREE **UPSTREAM **FILES**, **SO **THE **CITATION **NAMED **NO **FILE.**  **⇒ THE **LINE
+      **WAS **RIGHT** (`tinygrad/dtype.py:193` **IS **`def least_upper_dtype(...)`**) **AND **THE
+      **SPELLING **WAS **THE **DEFECT.**
+- [x] **THE **SPECFOLD **POPULATION **IS **NO **LONGER **TIED **TO **ONE **COMMIT** (`1523eb428`).**
+      **⇒ THE **OLD **POPULATION **WAS **TWELVE **CELLS **NAMED **BY **HAND**, **ON **THE
+      **CRITERION **"THE **COMMIT `d4160980e` **DECIDES **THESE"**.  **⇒ THE **NEW **POPULATION
+      **IS **EVERY **CELL **THE **TWO **LANES **THEMSELVES **PRINT** — **48 **CELLS**, **DISCOVERED
+      **FROM **THE **LANES' **ROWS**, **AND **THE **GATE **REFUSES **IF **EITHER **LANE **STOPS
+      **PRINTING **ONE.**
+      **⇒ AND **THE **MEASUREMENT **THAT **PROVES **THE **OLD **POPULATION **COULD **NOT **SEE **A
+      **DEFECT**: **IN **A **FROZEN **COPY** (**A `git archive` **OF **HEAD **WITH
+      **`tinybendygrad/uop/spec.bend` **REVERSED **BY **A **TEXT **EDIT**), **THE **PORT's
+      **`sh_17` **WAS **CHANGED **FROM **`nsrc_is(..., 1)` **TO **`nsrc_is(..., 0)`** — **A
+      **DEFECT **CONFINED **TO **THE **`buffer0` **CELLS**, **WHICH **THE **OLD **GATE **GRADED
+      **OUT **BY **NAME.  **⇒ THE **OLD **GATE **READ **FIVE **DISAGREEING **CELLS**, **PRINTED
+      **THEM **AS **"NOT-DECIDED-BY-THE-COMMIT"**, **AND **EXITED **`0`.**
+      **⇒ AND **THE **FALSIFICATION **IS **STRONGER**: **REVERSING **`d4160980e` **AND
+      **`32e6633d0` **MAKES **20 **OF **THE **48 **CELLS **DISAGREE**; **THE **OLD **TWELVE
+      **CAUGHT **12**, **AND **THE **EIGHT **IT **MISSED **WERE **ALL **OUTSIDE **ITS
+      **POPULATION**, **FOUR **OF **THE **EIGHT **BEING **THE **`buffer0` **CELLS.**
+      **⇒ AND **"BOTH **FOLDS **SKIP" **IS **NOW **AN **ANNOTATION, **NOT **A **CRITERION**; **THE
+      **COMMIT's **RULE **NAME **IS **KEPT **AS **PROVENANCE **AND **IS **NOT **CONSULTED **WHEN
+      **GRADING.**  **⇒ AND **AT **THE **COMMITTED **TREE: **`48 cell(s) graded; 48 agree`**, **`PASS`.**
+- [ ] **THE **208 **`unverifiable_no_claim_about_the_file` **ROWS** (DISPATCHED **AS **FOUR
+      **DISJOINT **SLICES**). **THE **CLASS **IS **A **PROSE **DEFECT**: **THE **PORT's **COMMENT
+      **NAMES **A **PORT **SYMBOL **THAT **UPSTREAM **DOES **NOT **CONTAIN **AT **ANY
+      **REVISION**, **SO **NO **RE-POINT **CAN **MAKE **THE **CLAIM **HOLD.**  **THE **FIX **IS
+      **THE **COMMENT**: **SAY **WHAT **UPSTREAM **ACTUALLY **DOES**, **OR **SAY **THE **PORT's
+      **SYMBOL **HAS **NO **UPSTREAM **COUNTERPART** (**THE **TREE's **EXISTING **PATTERN **IS
+      **`runtime/ops_amd.bend`: **"NOT **IN **upstream **at **this **pin"**).
+- [ ] **THE **299 **STALE **INTERNAL **`.bend` **POINTERS** (DISPATCHED **WITH **THE **208**).
+      **`gates/bendcite-gate.py` **MEASURES **1251 **`.bend`→**`.bend` **LINE **CITATIONS**, **AND
+      **NO **INSTRUMENT **READ **ONE **BEFORE.**  **⇒ THE **DURABLE **FIX **IS **`symbol=<name>`** —
+      **A **CITATION **THAT **NAMES **A **CONSTRUCT **DOES **NOT **ROT **WHEN **THE **LINES
+      **MOVE.**  **⇒ AND **THE **WORK **IS **MERGED **INTO **THE **SAME **FOUR **UNITS** **SO **NO
+      **FILE **IS **TOUCHED **BY **TWO **UNITS.**
