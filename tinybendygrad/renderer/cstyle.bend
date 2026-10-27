@@ -81,6 +81,7 @@ import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../LAWS/spec.bend as S
 import ./../helpers.bend as H
+import ./../uop/render.bend as U
 
 # ===========================================================================
 # THE DEVICE TAGS. Six renderers plus the abstract `CStyleLanguage`, whose own
@@ -111,6 +112,51 @@ import ./../helpers.bend as H
 # a comment.
 # ===========================================================================
 
+type Uses is Data:
+  Uses{half: Bool, bf16: Bool, fp8: Bool, nonfinite: Bool, special: Bool, half_any: Bool}
+
+type Emit_ is Data:
+  Emit_{uses: Uses, vecs: List<&2, String>, ockl: List<&2, String>, ocml: List<&2, String>,
+       caller: List<&2, String>, has_prefix: Bool}
+
+type Kv is Data:
+  Kv{k: String, v: String, t: Kv}
+  KvEnd{}
+
+type KU is Data:
+  KU{op: O.Op, dtype: S.Dt, addr: S.Addr, numel: U32, shape: List<&2, U32>,
+     arg: KUArg, srcs: List<&2, U32>}
+
+type KUArg is Data:
+  KANone{}
+  KAConst{v: O.Const}
+  KAParam{slot: U32, name: Maybe<&2, String>, volatile_: Bool, bytes: U32}
+  KARange{axis: O.AxisType, ids: List<&2, U32>}
+  KAIndex{off: U32, is_add: Bool}
+  KASink{name: String}
+
+type St is Data:
+  St{r: List<&2, String>, kernel: List<&2, String>, bufs: List<&2, BArg>,
+     c: List<&2, U32>, depth: U32, name: String}
+
+type DtN is Data:
+  DtN{dt: S.Dt, n: U32}
+
+type BArg is Data:
+  BArg{name: String, dtype: S.Dt, addr: S.Addr, mutable: Bool, volatile_: Bool, image: Bool}
+
+
+# THE READERS. A LOCALLY-DECLARED `Data` RECORD HAS NO PROJECTION SYNTAX AT ALL,
+# so `BArg.addr(b)` is "a defined name" until `def BArg.addr` is written by hand.
+# MEASURED on 2.0.34 with a three-field record: `BArg.image(b)` and `BArg.name(b)`
+# are both refused, and so is a field whose NAME ENDS IN `_` -- which is the
+# `volatile` escape of bend2-constraints rule 25 turning out to have no
+# projection even after it, so the escape buys the reader and costs nothing else.
+# An IMPORTED record's projections DO exist -- `O.Arena.op(ar, i)` and
+# `O.ParamArg.slot(pa)` are the whole of `renderer/__init__.bend`'s vocabulary --
+# so this is a rule about where the type was DECLARED and not about its kind.
+# Each reader is one `match` naming EVERY field, which is convention 6 and is also
+# why adding a field to one of these records is a one-line change per reader.
 def dev_base() -> U32: 0
 def dev_clang() -> U32: 1
 def dev_opencl() -> U32: 2
@@ -141,32 +187,17 @@ def dev_name(+dev: U32) -> String:
 # The uop contributes exactly six things to the emitted string, so those six are
 # the fields. `is_alu` is not one of them: it is `u.addrspace == AddrSpace.ALU`,
 # which `buftype` reads off `addr` rather than carrying a seventh flag.
-type BArg is Data:
-  BArg{name: String, dtype: S.Dt, addr: S.Addr, mutable: Bool, volatile_: Bool, image: Bool}
-
-
-# THE READERS. A LOCALLY-DECLARED `Data` RECORD HAS NO PROJECTION SYNTAX AT ALL,
-# so `BArg.addr(b)` is "a defined name" until `def BArg.addr` is written by hand.
-# MEASURED on 2.0.34 with a three-field record: `BArg.image(b)` and `BArg.name(b)`
-# are both refused, and so is a field whose NAME ENDS IN `_` -- which is the
-# `volatile` escape of bend2-constraints rule 25 turning out to have no
-# projection even after it, so the escape buys the reader and costs nothing else.
-# An IMPORTED record's projections DO exist -- `O.Arena.op(ar, i)` and
-# `O.ParamArg.slot(pa)` are the whole of `renderer/__init__.bend`'s vocabulary --
-# so this is a rule about where the type was DECLARED and not about its kind.
-# Each reader is one `match` naming EVERY field, which is convention 6 and is also
-# why adding a field to one of these records is a one-line change per reader.
 def BArg.name(b: BArg) -> String:
   match b:
     case BArg{name, dtype, addr, mutable, volatile_, image}: name
 
-def BArg.dtype(b: BArg) -> S.Dt:
-  match b:
-    case BArg{name, dtype, addr, mutable, volatile_, image}: dtype
-
 def BArg.addr(b: BArg) -> S.Addr:
   match b:
     case BArg{name, dtype, addr, mutable, volatile_, image}: addr
+
+def BArg.dtype(b: BArg) -> S.Dt:
+  match b:
+    case BArg{name, dtype, addr, mutable, volatile_, image}: dtype
 
 def BArg.mutable(b: BArg) -> Bool:
   match b:
@@ -175,26 +206,6 @@ def BArg.mutable(b: BArg) -> Bool:
 def BArg.volatile_(b: BArg) -> Bool:
   match b:
     case BArg{name, dtype, addr, mutable, volatile_, image}: volatile_
-
-def BArg.image(b: BArg) -> Bool:
-  match b:
-    case BArg{name, dtype, addr, mutable, volatile_, image}: image
-
-
-# `uops_to_dtypes(uops)` and the four `any(...)` scans in the six `render_kernel`
-# overrides, each reduced to the Bool it is tested for. `nonfinite` is the CAST
-# of a non-finite CONST (cstyle.py:559) and `special` is `any(Ops.SPECIAL)`
-# (cstyle.py:561) -- both are one `any` in Python and one `Bool` here.
-#
-# `half_any` IS A SECOND HALF FLAG AND NOT A TYPO. OpenCL tests
-# `any(uop.dtype == dtypes.f16 for uop in uops)` over EVERY uop (cstyle.py:349)
-# while CUDA and HIP test the ALU-FILTERED `used_dtypes` (cstyle.py:458, :558) --
-# and `uops_to_dtypes` drops anything that is not `AddrSpace.ALU`
-# (cstyle.py:113). MEASURED: a kernel whose only half is a half BUFFER gets
-# OpenCL's `#pragma` and NOT CUDA's `#include <cuda_fp16.h>`. One Bool would have
-# to be wrong for one of them, and `kern2H` is the row that says which.
-type Uses is Data:
-  Uses{half: Bool, bf16: Bool, fp8: Bool, nonfinite: Bool, special: Bool, half_any: Bool}
 
 def Uses.half(u: Uses) -> Bool:
   match u:
@@ -238,10 +249,6 @@ def Uses.half_any(u: Uses) -> Bool:
 # property of the TARGET, not of the uop list, so it travels as the `cdna4`
 # ARGUMENT of `render_kernel` and stops there. Putting it in the record as well
 # would be two spellings of one fact and the gate would only see one of them.
-type Emit_ is Data:
-  Emit_{uses: Uses, vecs: List<&2, String>, ockl: List<&2, String>, ocml: List<&2, String>,
-       caller: List<&2, String>, has_prefix: Bool}
-
 def Emit_.uses(e: Emit_) -> Uses:
   match e:
     case Emit_{uses, vecs, ockl, ocml, caller, has_prefix}: uses
@@ -415,33 +422,6 @@ def nan.of(+dev: U32) -> String:
 # `barrier` -- cstyle.py:133, :285, :328, :368, :428, :536. HIP's is THREE
 # statements concatenated with NO separator, which is a fact about the string and
 # not about the three fences.
-def barrier.of(+dev: U32) -> String:
-  match dev:
-    case 1: "__atomic_thread_fence(__ATOMIC_SEQ_CST);"
-    case 2: "barrier(CLK_LOCAL_MEM_FENCE);"
-    case 3: "threadgroup_barrier(mem_flags::mem_threadgroup);"
-    case 4: "__syncthreads();"
-    case 5: "__builtin_amdgcn_fence(__ATOMIC_RELEASE, \"workgroup\");__builtin_amdgcn_s_barrier();__builtin_amdgcn_fence(__ATOMIC_ACQUIRE, \"workgroup\");"
-    case _: ""
-
-# `float4` -- cstyle.py:136, :276, :329, :369, :429, :538. THE BASE IS `None`,
-# AND `""` IS NOT `None`: the `Ops.STACK` rule (cstyle.py:55-56) does
-# `self.float4.replace('float4', render_type(x))`, so `None` there is an
-# `AttributeError` and `""` would emit a bare `float4{...}` with no constructor.
-# THE ANSWER IS THE STRING `"None"`, and that is `dsl.bend`'s standing rule for an
-# ABSENT value rather than a refusal -- `_variant_suffix` answers a suffix or `None`,
-# and `dsl.bend:2066-2069` records that "an empty string is NOT the same answer, so the
-# port prints `None`". CPython prints `None` too (`str(None)`), so this row now AGREES
-# instead of being a declared divergence.
-#
-# WHAT IT STILL DOES NOT BUY: the STACK arm is not ported, so nothing reads it yet, and
-# `"None"` is still a string rather than an absence -- `.replace` on it is a no-op where
-# CPython raises `AttributeError`. That gap is named rather than papered over with a
-# `has_float4` Bool that nothing reads.
-#   TODO(p3) cstyle.py:55-56  `base_rewrite`'s `Ops.STACK` arm. It needs
-#   `float4` to be `None`-distinguishable, which is the one place a `Data` cannot
-#   carry the answer and a device TAG cannot either: the base is the only `None`
-#   and the tag already says it. Unblocked when the arena rewrite lands.
 def float4.of(+dev: U32) -> String:
   match dev:
     case 1: "(float4)"
@@ -536,10 +516,6 @@ def type_name(+m: Map<&2, String>, +d: S.Dt) -> String: tm_get.of(tm_get(m, dt_n
 # the cons cell has to BE the value. That is the same lesson `Ops` and `Arg` in
 # `uop/ops.bend` carry -- a `match` arm names a constructor of the scrutinee's
 # own type, and a `List`'s constructors are `Nil` and `<>` and nothing else.
-type Kv is Data:
-  Kv{k: String, v: String, t: Kv}
-  KvEnd{}
-
 def Kv.go(ks: Kv, +m: Map<&2, String>) -> Map<&2, String>:
   match ks:
     case KvEnd{}: m
@@ -777,44 +753,6 @@ def rd_image(mutable: Bool) -> String:
 # THE WHOLE DEF. Seven parameters because Python's has six plus a `self`, and
 # the `sz > 1` test lives in `rd_body` rather than here so the image arm can
 # return before any of it is computed.
-def render_dtype(+dev: U32, +d: S.Dt, sz: U32, +a: S.Addr, mutable: Bool, override_ptr: Bool, img: Bool) -> String:
-  Bool.pick(String, img, rd_image(mutable),
-    String.concat([rd_prefix(dev, a), rd_body(dev, d, sz), rd_suffix(a, override_ptr)]))
-
-# `render_dtype(dt, mutable=True)` -- cstyle.py:203, marked `# LEGACY`. It is
-# `_render_dtype(dt, 1, AddrSpace.REG)`, so the REG address space is the load-
-# bearing argument: it is what makes the answer carry no `*` and no prefix, and
-# `render_cast`'s `({render_type(u)})({val})` depends on that.
-def render_dtype_legacy(+dev: U32, +d: S.Dt) -> String:
-  render_dtype(dev, d, 1, S.AReg{}, True{}, False{}, False{})
-
-# ===========================================================================
-# `render_type` / `render_ptr` / `render_access` / `render_cast` -- cstyle.py:
-# 192-200. Four defs, and together they are the pointer/cast vocabulary every
-# load and store is written in.
-#
-#     def render_type(self, u): return self._render_dtype(u.dtype, u.max_numel(), u.addrspace,
-#         shape=u._shape, override_ptr=u.op is Ops.INDEX and u.addrspace is AddrSpace.REG)
-#     def render_ptr(self, u):
-#       if u.max_numel() > 1 or u.dtype != u.src[0].dtype:
-#         return f"(({self._render_dtype(u.dtype, u.max_numel(), u.addrspace, override_ptr=True, shape=u._shape)})({self[u]}))"
-#       else: return f"{self[u]}"
-#     def render_access(self, u): return f"*{self.render_ptr(u)}"
-#     def render_cast(self, u, val): return f"({self.render_type(u)})({val})"
-#
-# `render_type` is the one that needs the FOLD (dtype, addrspace, shape, op) and
-# so it is where wall (a) bites; it is ported with those as PARAMETERS, which is
-# the same argument as `_render_dtype` and for the same reason. The Python
-# signature takes a `u`, and the values Python reads off it are exactly these
-# four, so the port's signature is the same set of facts with the read moved to
-# the caller -- which is where the fold lives.
-#
-# `override_ptr=u.op is Ops.INDEX and u.addrspace is AddrSpace.REG` is the one to
-# watch: a REG-space INDEX is a VECTOR REGISTER and renders as a pointer, so
-# `render_type` of a REG INDEX is `float4*` and not `float4`. That is measured
-# and it is a gate row on its own.
-# ===========================================================================
-
 def is_index(op: O.Op) -> Bool:
   match op:
     case O.OpsINDEX{}: True{}
@@ -824,50 +762,6 @@ def is_reg(+a: S.Addr) -> Bool:
   match a:
     case S.AReg{}: True{}
     case _: False{}
-
-def render_type(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, op: O.Op, img: Bool) -> String:
-  render_dtype(dev, d, numel, a, True{}, Bool.and(is_index(op), is_reg(a)), img)
-
-# `render_ptr`. The `dtype != u.src[0].dtype` half is a DTYPE COMPARISON between
-# the access and its buffer, and it is the half that decides whether a load goes
-# through a cast pointer: a `float4` read of a `float` buffer is
-# `((float4*)(buf))` and a `float` read of the same buffer is `buf`. `vec` is the
-# `max_numel() > 1` half and `diff` the dtype half, kept apart so the gate can
-# pin each: `ptr stack4` is the `vec` arm and `ptr bitcast` the `diff` arm.
-def render_ptr(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, sdt: S.Dt, +name: String, op: O.Op, img: Bool) -> String:
-  Bool.pick(String, Bool.or(U32.is_gt(numel, 1), Bool.not(O.eq_dt(d, sdt))),
-    String.concat(["((", render_dtype(dev, d, numel, a, True{}, True{}, img), ")(", name, "))"]), name)
-
-def render_access(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, +sdt: S.Dt, +name: String, op: O.Op, img: Bool) -> String:
-  String.concat(["*", render_ptr(dev, d, numel, a, sdt, name, op, img)])
-
-def render_cast(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bool, val: String) -> String:
-  String.concat(["(", render_type(dev, d, numel, a, op, img), ")(", val, ")"])
-
-# ===========================================================================
-# `render_index` -- cstyle.py:168-173. SIX branches in Python and they reduce to
-# TWO, and the reduction is the interesting part of this def:
-#
-#     if buf.addrspace == AddrSpace.ALU:
-#       if not (idx.op is Ops.CAST and idx.src[0].op is Ops.CONST): return f"({self[buf]})[{self[idx]}]"
-#       return self[buf]+(f"[{idx.src[0].val}]" if buf.max_numel() > self.gep_arr_threshold
-#                         else f".{'xyzwabcd'[idx.src[0].val]}")
-#     return f"({self[buf]}+{strip_parens(self[idx]) if idx.arg == Ops.ADD else self[idx]})"
-#
-# THE ALU BRANCH HAS THREE OUTCOMES, NOT TWO. The "this is lane access in C"
-# comment above it covers the array form, but a CONST index BELOW the threshold
-# is rendered as a SWIZZLE -- `buf.x` -- and that is neither `buf[i]` nor
-# `buf[0]`. `gep_arr_threshold` decides which, and it is read in the direction
-# that is easy to get backwards: above it, index; at or below it, swizzle. So
-# Clang's 0 means a ONE-ELEMENT buffer still gets `.x` (0 > 0 is false) and
-# CUDA's 8 means an EIGHT-ELEMENT buffer still gets `[0]` (8 > 8 is false). Both
-# are measured and both are gate rows.
-#
-# `'xyzwabcd'[val]` IS A STRING INDEX and a CONST's value is a `U32`. A value of
-# 8 or more is an `IndexError` in Python; the port's `String.get` is total with a
-# default, and the default is the FIRST letter. Stated because it is a
-# difference, not because it is reachable -- tinygrad never swizzles past `d`.
-# ===========================================================================
 
 def is_cast(op: O.Op) -> Bool:
   match op:
@@ -1289,6 +1183,632 @@ def wmma_in.of(+a: O.Arg) -> String:
 def wmma_name_of(dims: String, din: String, dout: String) -> String:
   under(String.concat(["WMMA_", dims, "_", din, "_", dout]))
 
+def KU.op(k: KU) -> O.Op:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs}: op
+
+def KU.dtype(k: KU) -> S.Dt:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs}: dtype
+
+def KU.addr(k: KU) -> S.Addr:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs}: addr
+
+def KU.numel(k: KU) -> U32:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs}: numel
+
+def KU.shape(k: KU) -> List<&2, U32>:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs}: shape
+
+def KU.arg(k: KU) -> KUArg:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs}: arg
+
+def KU.srcs(k: KU) -> List<&2, U32>:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs}: srcs
+
+def KU.nsrc(k: KU) -> U32:
+  U32.from_nat(List.length(&2, U32, KU.srcs(k)))
+
+def KU.src0(k: KU) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, KU.srcs(k), 0n), 0)
+
+def KU.src1(k: KU) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, KU.srcs(k), 1n), 0)
+
+def KU.src2(k: KU) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, KU.srcs(k), 2n), 0)
+
+def KUArg.is_const(a: KUArg) -> Bool:
+  match a:
+    case KAConst{v}: True{}
+    case _: False{}
+
+def ku_const_int(c: O.Const) -> Maybe<&1, H.I64>:
+  match c:
+    case O.CInt{i}: Some{i}
+    case _: None{}
+
+def ku_const_float(c: O.Const) -> Maybe<&1, F32>:
+  match c:
+    case O.CFloat{f}: Some{f}
+    case _: None{}
+
+def KUArg.const_int(a: KUArg) -> Maybe<&1, H.I64>:
+  match a:
+    case KAConst{v}: ku_const_int(v)
+    case _: None{}
+
+def KUArg.const_float(a: KUArg) -> Maybe<&1, F32>:
+  match a:
+    case KAConst{v}: ku_const_float(v)
+    case _: None{}
+
+def KUArg.param_slot(a: KUArg) -> U32:
+  match a:
+    case KAParam{slot, name, volatile_, bytes}: slot
+    case _: 0
+
+def KUArg.param_name(a: KUArg) -> Maybe<&2, String>:
+  match a:
+    case KAParam{slot, name, volatile_, bytes}: name
+    case _: None{}
+
+def KUArg.param_volatile(a: KUArg) -> Bool:
+  match a:
+    case KAParam{slot, name, volatile_, bytes}: volatile_
+    case _: False{}
+
+def KUArg.param_bytes(a: KUArg) -> U32:
+  match a:
+    case KAParam{slot, name, volatile_, bytes}: bytes
+    case _: 0
+
+def KUArg.range_axis(a: KUArg) -> O.AxisType:
+  match a:
+    case KARange{axis, ids}: axis
+    case _: O.AXIS_WEAK{}
+
+def KUArg.range_ids(a: KUArg) -> List<&2, U32>:
+  match a:
+    case KARange{axis, ids}: ids
+    case _: Nil{}
+
+def KUArg.index_off(a: KUArg) -> U32:
+  match a:
+    case KAIndex{off, is_add}: off
+    case _: 0
+
+# `idx.arg == Ops.ADD` (cstyle.py:174) -- the INDEX's OWN arg is the `Ops` enum
+# `Ops.ADD`, and that is the ONLY test that decides whether the index's parens
+# are stripped. It is `AOpLit{OpsADD{}}` in the port's arena spelling.
+def KUArg.index_is_add(a: KUArg) -> Bool:
+  match a:
+    case KAIndex{off, is_add}: is_add
+    case _: False{}
+
+def KUArg.sink_name(a: KUArg) -> String:
+  match a:
+    case KASink{name}: name
+    case _: "test"
+
+# ===========================================================================
+# THE PREFIX TABLE. Upstream's `cstyle.py:242-244`:
+#
+#     prefix = {Ops.WMMA: "wmma", Ops.BUFFER: "buf", Ops.CAST: "cast", Ops.BITCAST: "cast",
+#               Ops.STACK: "cast", Ops.INDEX: "bidx", Ops.LOAD: "val"}.get(u.op, "alu")
+#     r[u] = f"{prefix}{c[prefix]}"
+#
+# SIX PREFIXES, SO SIX COUNTERS, AND THE COUNTER IS A LIST INDEXED BY THE
+# PREFIX'S NUMBER -- not a `Map`, because the key set is CLOSED and a number is
+# a number. `c[prefix]` IS THE COUNTER AND IT IS ONLY INCREMENTED WHEN THE
+# UOP BECAME A STATEMENT (`cstyle.py:261`: `if prefix: c[prefix] += 1`), which
+# is why an INLINED uop does NOT BURN A NUMBER.
+# ===========================================================================
+def ku_pfx_ix(op: O.Op) -> U32:
+  match op:
+    case O.OpsWMMA{}: 5
+    case O.OpsBUFFER{}: 4
+    case O.OpsCAST{}: 2
+    case O.OpsBITCAST{}: 2
+    case O.OpsSTACK{}: 2
+    case O.OpsINDEX{}: 3
+    case O.OpsLOAD{}: 1
+    case _: 0
+
+def ku_pfx(ix: U32) -> String:
+  match ix:
+    case 5: "wmma"
+    case 4: "buf"
+    case 2: "cast"
+    case 3: "bidx"
+    case 1: "val"
+    case _: "alu"
+
+# `axis_letters` -- tinygrad/uop/ops.py:50:
+#   {AxisType.DEVICE: "d", AxisType.GLOBAL: "g", AxisType.LOCAL: "l",
+#    AxisType.WARP: "w", AxisType.WEAK: "L", AxisType.UPCAST: "u", ...}
+def range_str.go(+ids: List<&2, U32>, +acc: String) -> String:
+  match ids:
+    case Nil{}: acc
+    case h <> t:
+      range_str.go(t, Bool.pick(String, U32.is_eq(h, 2147483648),
+        String.concat([acc, Bool.pick(String, String.is_empty(acc), "", "_"), "m", U32.show(U32.sub(0, h))]),
+        String.concat([acc, Bool.pick(String, String.is_empty(acc), "", "_"), U32.show(h)])))
+def range_str(+ids: List<&2, U32>) -> String:
+  range_str.go(ids, "")
+
+def rt(r: List<&2, String>, i: U32) -> String:
+  Maybe.default(&2, String, List.get(&2, String, r, U32.to_nat(i)), "")
+
+def ku_at(+kus: List<&2, KU>, i: U32) -> Maybe<&2, KU>:
+  List.get(&2, KU, kus, U32.to_nat(i))
+
+# EVERY `match` IN THIS BLOCK HAS A PARAMETER FOR ITS SCRUTINEE, because Bend
+# REFUSES A COMPUTED VALUE: `match ku_at(kus, i):` IS REFUSED ("a match cannot
+# scrutinize a computed value"), AND SO IS A NESTED `match` ON A CALL. THE
+# `.go` SHAPE IS THEREFORE THE HOUSE STYLE HERE: THE HELPER TAKES THE `Maybe`
+# AS A PARAMETER AND THE CALLER PASSES THE CALL.
+def ku_op_at.go(m: Maybe<&2, KU>) -> O.Op:
+  match m:
+    case Some{k}: KU.op(k)
+    case None{}: O.OpsNOOP{}
+
+def ku_op_at(+kus: List<&2, KU>, i: U32) -> O.Op: ku_op_at.go(ku_at(kus, i))  def ku_is_const_at.go(m: Maybe<&2, KU>) -> Bool:
+  match m:
+    case Some{k}: KUArg.is_const(KU.arg(k))
+    case None{}: False{}
+
+def ku_is_const_at(+kus: List<&2, KU>, +i: U32) -> Bool: ku_is_const_at.go(ku_at(kus, i))  def ku_is_cast_at.go(m: Maybe<&2, KU>) -> Bool:
+  match m:
+    case Some{k}: O.eq_op(KU.op(k), O.OpsCAST{})
+    case None{}: False{}
+
+def ku_is_cast_at(+kus: List<&2, KU>, +i: U32) -> Bool: ku_is_cast_at.go(ku_at(kus, i))  def ku_src0_at.go(m: Maybe<&2, KU>) -> U32:
+  match m:
+    case Some{k}: KU.src0(k)
+    case None{}: 0
+
+def ku_src0_at(+kus: List<&2, KU>, i: U32) -> U32: ku_src0_at.go(ku_at(kus, i))  def ku_const_int_at.go(m: Maybe<&2, KU>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{k}: KUArg.const_int(KU.arg(k))
+    case None{}: None{}
+
+def ku_const_int_at(+kus: List<&2, KU>, i: U32) -> Maybe<&1, H.I64>:
+  ku_const_int_at.go(ku_at(kus, i))
+
+def ku_const_float_at.go(m: Maybe<&2, KU>) -> Maybe<&1, F32>:
+  match m:
+    case Some{k}: KUArg.const_float(KU.arg(k))
+    case None{}: None{}
+
+def ku_const_float_at(+kus: List<&2, KU>, i: U32) -> Maybe<&1, F32>:
+  ku_const_float_at.go(ku_at(kus, i))
+
+def ku_const_val.go(m: Maybe<&1, H.I64>) -> U32:
+  match m:
+    case Some{v}: H.lo32(v)
+    case None{}: 0
+
+def ku_swizzle(n: U32) -> String:
+  match n:
+    case 0: "x"
+    case 1: "y"
+    case 2: "z"
+    case 3: "w"
+    case 4: "a"
+    case 5: "b"
+    case 6: "c"
+    case _: "d"
+
+def ku_index_is_const_cast(+kus: List<&2, KU>, +idx: U32) -> Bool:
+  Bool.and(ku_is_cast_at(kus, idx), ku_is_const_at(kus, ku_src0_at(kus, idx)))
+
+def ku_render_index.global(dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  String.concat(["(", rt(r, KU.src0(k)), "+",
+    Bool.pick(String, KUArg.index_is_add(KU.arg(k)), H.strip_parens(rt(r, KU.src1(k))), rt(r, KU.src1(k))), ")"])
+
+# ===========================================================================
+# THE TEXT OF ONE UOP -- the port of `base_rewrite` (cstyle.py:11-77), FOR THE
+# OPS THE CPU LANE NEEDS. THE ORDER IS UPSTREAM'S ORDER, AND THE ORDER IS THE
+# RULE: the CONST arms come BEFORE the generic CAST arm.
+# ===========================================================================
+def ku_text_if(dev: U32, k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  String.concat(["if (", rt(r, KU.src0(k)), ") {"])
+
+# `  if (!({ctx[c]})) {\n break;\n}\n}` -- cstyle.py:20.
+def ku_text_backedge(dev: U32, k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  String.concat(["  if (!(", rt(r, KU.src0(k)), ")) {\n break;\n}\n}"])
+
+def ku_text_buffer(dev: U32, i: U32, +k: KU, +r: List<&2, String>) -> String:
+  render_buffer(dev, KU.dtype(k), KU.numel(k), KU.addr(k), rt(r, i))
+
+# `f"__{_wmma_name(x)}({ctx[x.src[0]]}, {ctx[x.src[1]]}, {ctx[x.src[2]]})"` -- cstyle.py:63.
+def ku_text_wmma(dev: U32, +k: KU, +r: List<&2, String>) -> String:
+  String.concat(["__wmma(", rt(r, KU.src0(k)), ", ", rt(r, KU.src1(k)), ", ", rt(r, KU.src2(k)), ")"])
+
+# THE ALU ARM -- cstyle.py:64-65:
+#   `ctx.code_for_op[x.op](*([strip_parens(ctx[v]) if v.op == x.op and x.op in {ADD, MUL, XOR, OR, AND} else ctx[v] for v in x.src]), x.dtype)`
+# THE STRIP IS THE SAME-OP TEST AND IT IS NOT COSMETIC: it is what makes
+# `((x)+(y))` AND `((x)+(y)+(z))` COMPOSE.
+def ku_strips(+op: O.Op) -> Bool:
+  Bool.or(Bool.or(O.eq_op(op, O.OpsADD{}), O.eq_op(op, O.OpsMUL{})),
+    Bool.or(O.eq_op(op, O.OpsXOR{}), Bool.or(O.eq_op(op, O.OpsOR{}), O.eq_op(op, O.OpsAND{}))))
+
+# ===========================================================================
+# THE WALK -- the port of `cstyle.py:208-266`'s BODY. THE STATE IS SIX THINGS
+# AND THEY ARE SIX THINGS BECAUSE BEND HAS NO MUTABLE MAP: `r` (the name/text
+# map, INDEXED BY THE UOP'S POSITION), `kernel` (the emitted lines), `bufs` (the
+# kernel's arguments), `c` (the six prefix counters), `depth` (the indent) and
+# `name` (the kernel's name, from the SINK).
+# ===========================================================================
+def St.r(s: St) -> List<&2, String>:
+  match s:
+    case St{r, kernel, bufs, c, depth, name}: r
+
+def St.kernel(s: St) -> List<&2, String>:
+  match s:
+    case St{r, kernel, bufs, c, depth, name}: kernel
+
+def St.bufs(s: St) -> List<&2, BArg>:
+  match s:
+    case St{r, kernel, bufs, c, depth, name}: bufs
+
+def St.c(s: St) -> List<&2, U32>:
+  match s:
+    case St{r, kernel, bufs, c, depth, name}: c
+
+def St.depth(s: St) -> U32:
+  match s:
+    case St{r, kernel, bufs, c, depth, name}: depth
+
+def St.name(s: St) -> String:
+  match s:
+    case St{r, kernel, bufs, c, depth, name}: name
+
+def St.of(+r: List<&2, String>, +kernel: List<&2, String>, +bufs: List<&2, BArg>,
+          +c: List<&2, U32>, depth: U32, name: String) -> St: St{r, kernel, bufs, c, depth, name}
+
+# `r` GROWS BY ONE ENTRY PER UOP, INCLUDING THE SKIPPED ONES, because `r` IS
+# INDEXED BY THE UOP'S POSITION AND THE POSITIONS OF THE LATER UOPS MUST NOT
+# MOVE.
+def st_put(+st: St, x: String) -> St:
+  St.of(List.append(&2, String, St.r(st), [x]), St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+
+def st_set(+st: St, i: U32, x: String) -> St:
+  St.of(List.set(&2, String, St.r(st), U32.to_nat(i), x), St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+
+def st_kernel(+st: St, x: String) -> St:
+  St.of(St.r(st), List.append(&2, String, St.kernel(st), [x]), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+
+def st_bufs(+st: St, x: BArg) -> St:
+  St.of(St.r(st), St.kernel(st), List.append(&2, BArg, St.bufs(st), [x]), St.c(st), St.depth(st), St.name(st))
+
+def st_c(+st: St, +ix: U32) -> St:
+  St.of(St.r(st), St.kernel(st), St.bufs(st),
+    List.set(&2, U32, St.c(st), U32.to_nat(ix),
+      U32.add(Maybe.default(&2, U32, List.get(&2, U32, St.c(st), U32.to_nat(ix)), 0), 1)), St.depth(st), St.name(st))
+
+def st_depth(+st: St, d: U32) -> St:
+  St.of(St.r(st), St.kernel(st), St.bufs(st), St.c(st), d, St.name(st))
+
+def st_name(+st: St, nm: String) -> St:
+  St.of(St.r(st), St.kernel(st), St.bufs(st), St.c(st), St.depth(st), nm)
+
+# THE INDENT: `"  "*depth` (cstyle.py:260).
+def ku_indent.go(depth: Nat, acc: String) -> String:
+  match depth:
+    case 0n: acc
+    case 1n+p: ku_indent.go(p, String.concat([acc, "  "]))
+
+# THE CHILD COUNT -- cstyle.py:212:
+#   `child_count = Counter(v for ru in uops for v in ru.src)`
+# IT IS THE HISTOGRAM OF "HOW MANY TIMES IS THIS UOP A SOURCE", AND IT IS THE
+# WHOLE OF THE INLINE-vs-STATEMENT DECISION.
+def ku_indent(depth: U32) -> String:
+  ku_indent.go(U32.to_nat(depth), "")
+
+def cc_one.go(+ss: List<&2, U32>, +cc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: cc
+    case h <> t: cc_one.go(t, List.set(&2, U32, cc, U32.to_nat(h),
+      U32.add(Maybe.default(&2, U32, List.get(&2, U32, cc, U32.to_nat(h)), 0), 1)))
+
+def cc_one(k: KU, +cc: List<&2, U32>) -> List<&2, U32>:
+  cc_one.go(KU.srcs(k), cc)
+
+def ku_inline2a(+op: O.Op, k: KU, +kus: List<&2, KU>) -> Bool:
+  Bool.or(Bool.and(O.eq_op(op, O.OpsCAST{}), ku_is_const_at(kus, KU.src0(k))),
+    Bool.or(O.eq_op(op, O.OpsINDEX{}), O.eq_op(op, O.OpsSHRINK{})))
+
+# `(u.op is Ops.LOAD and u.src[0].addrspace == AddrSpace.REG and child_count[u] == 1)`
+def ku_inline2b2a(+op: O.Op, +k: KU) -> Bool:
+  Bool.and(Bool.or(O.eq_op(op, O.OpsCAST{}), O.eq_op(op, O.OpsBITCAST{})),
+    Bool.or(is_global(KU.addr(k)), is_local(KU.addr(k))))
+
+# `(u.op in {Ops.STACK, *(GroupOp.ALU-{Ops.WHERE}), Ops.CAST, Ops.BITCAST} and child_count[u] == 1)`
+def cc_at(+cc: List<&2, U32>, i: U32) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, cc, U32.to_nat(i)), 0)
+
+def ku_src_is_reg.go(m: Maybe<&2, KU>) -> Bool:
+  match m:
+    case Some{s}: is_reg(KU.addr(s))
+    case None{}: False{}
+
+def ku_src_is_reg(+kus: List<&2, KU>, k: KU) -> Bool:
+  ku_src_is_reg.go(ku_at(kus, KU.src0(k)))
+
+def ku_is_alu_ex_where(+op: O.Op) -> Bool:
+  Bool.and(R.is_alu(op), Bool.not(O.eq_op(op, O.OpsWHERE{})))
+
+# ===========================================================================
+# THE WALK, ONE UOP AT A TIME. cstyle.py:221-262.
+# ===========================================================================
+def ku_param_base.go(m: Maybe<&2, String>, arg: KUArg) -> String:
+  match m:
+    case Some{nm}: String.join(String.split(nm, ':'), "_")
+    case None{}: String.concat(["data", U32.show(KUArg.param_slot(arg))])
+
+def ku_param_base(+arg: KUArg) -> String: ku_param_base.go(KUArg.param_name(arg), arg)
+
+def ku_shape_str.go(+ss: List<&2, U32>, +acc: String) -> String:
+  match ss:
+    case Nil{}: acc
+    case h <> t: ku_shape_str.go(t, String.concat([acc, Bool.pick(String, String.is_empty(acc), "", "_"), U32.show(h)]))
+
+def ku_shape_str(+ss: List<&2, U32>) -> String:
+  ku_shape_str.go(ss, "")
+
+def ku_not_stmt_op(+op: O.Op) -> Bool:
+  Bool.not(Bool.or(Bool.or(O.eq_op(op, O.OpsRANGE{}), O.eq_op(op, O.OpsBUFFER{})),
+    O.eq_op(op, O.OpsBINARY{})))
+
+def _render.pop(+st: St, +k: KU) -> St:
+  Bool.pick(St, Bool.or(O.eq_op(KU.op(k), O.OpsENDIF{}),
+    Bool.or(O.eq_op(KU.op(k), O.OpsEND{}), O.eq_op(KU.op(k), O.OpsBACKEDGE{}))),
+    st_depth(st, U32.sub(St.depth(st), 1)), st)
+
+def _render.push(+st: St, +k: KU) -> St:
+  Bool.pick(St, Bool.or(O.eq_op(KU.op(k), O.OpsIF{}), O.eq_op(KU.op(k), O.OpsRANGE{})),
+    st_depth(st, U32.add(St.depth(st), 1)), st)
+def DtN.dt(x: DtN) -> S.Dt:
+  match x:
+    case DtN{dt, n}: dt
+
+def DtN.n(x: DtN) -> U32:
+  match x:
+    case DtN{dt, n}: n
+
+def uops_to_dtypes.has(+x: DtN, +acc: List<&2, DtN>) -> Bool:
+  match acc:
+    case Nil{}: False{}
+    case h <> t:
+      Bool.or(Bool.and(O.eq_dt(DtN.dt(h), DtN.dt(x)), U32.is_eq(DtN.n(h), DtN.n(x))),
+        uops_to_dtypes.has(x, t))
+
+# `render_vector_prefix` -- cstyle.py:302-306:
+#   `alignment = dt.itemsize if self.target.device == "CPU" else (...)`
+#   `vec = self._render_dtype(dt, count, AddrSpace.REG)`
+#   `return f"typedef {self.render_dtype(dt)} {vec} __attribute__((aligned({alignment}),ext_vector_type({count})));"`
+def ku_align(cpu: Bool, +dt: S.Dt) -> U32:
+  Bool.pick(U32, cpu, S.Dt.itemsize(dt), 4)
+
+# `_render_defines` -- cstyle.py:308.
+def axis_letter(a: O.AxisType) -> String:
+  match a:
+    case O.AXIS_DEVICE{}: "d"
+    case O.AXIS_GLOBAL{}: "g"
+    case O.AXIS_LOCAL{}: "l"
+    case O.AXIS_WARP{}: "w"
+    case O.AXIS_WEAK{}: "L"
+    case O.AXIS_UPCAST{}: "u"
+    case _: "L"
+
+# `range_str(u)` -- tinygrad/uop/ops.py:97-99:
+#   `'_'.join([str(x) if x >= 0 else "m"+str(-x) for x in u.axis_id])`
+# `axis_id` IS `u.arg[1:]` (ops.py:486), so it is the RANGE's ids.
+def ku_range_name(+arg: KUArg) -> String:
+  String.concat([axis_letter(KUArg.range_axis(arg)), "idx", range_str(KUArg.range_ids(arg))])
+
+# ===========================================================================
+# THE TEXT OF ONE UOP -- the port of `base_rewrite` (cstyle.py:11-77), FOR THE
+# OPS THE CPU LANE NEEDS. THE ORDER IS UPSTREAM'S ORDER, AND THE ORDER IS THE
+# RULE: the CONST arms come BEFORE the generic CAST arm, and that is what
+# decides `56` AND NOT `(int)(56)`.
+#
+# `r` IS THE NAME/TEXT MAP AND IT IS INDEXED BY THE UOP'S POSITION, because the
+# uop list is POST-ORDER. `rt` READS IT.
+# ===========================================================================
+def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, KU>, +r: List<&2, String>,                    +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ss:
+    case Nil{}: acc
+    case h <> t:
+      ku_alu_srcs.go(op, k, kus, r, t, List.append(&2, String, acc,
+        [Bool.pick(String, Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)),
+          H.strip_parens(rt(r, h)), rt(r, h))]))
+
+def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> List<&2, String>:
+  ku_alu_srcs.go(op, k, kus, r, KU.srcs(k), Nil{})
+
+def ku_inline2b1(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
+  Bool.and(O.eq_op(op, O.OpsLOAD{}),
+    Bool.and(ku_src_is_reg(kus, k), U32.is_eq(cc_at(cc, i), 1)))
+def ku_inline_op_set(+op: O.Op) -> Bool:
+  Bool.or(O.eq_op(op, O.OpsSTACK{}),
+    Bool.or(ku_is_alu_ex_where(op),
+      Bool.or(O.eq_op(op, O.OpsCAST{}), O.eq_op(op, O.OpsBITCAST{}))))
+
+def ku_inline2b2b(+op: O.Op, +cc: List<&2, U32>, +i: U32) -> Bool:
+  Bool.and(ku_inline_op_set(op), U32.is_eq(cc_at(cc, i), 1))
+
+def ku_param_name(+k: KU) -> String:
+  String.concat([ku_param_base(KU.arg(k)), "_", ku_shape_str(KU.shape(k))])
+
+def ku_is_decl(+k: KU) -> Bool:
+  Bool.and(ku_not_stmt_op(KU.op(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void())))
+
+def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
+                  +st: St, +l: String, nm: String, ix: U32) -> St:
+  +st0 = _render.pop(st, k)
+  +st1 = Bool.pick(St, O.eq_op(KU.op(k), O.OpsCAST{}),
+    st_kernel(st0, String.concat([ku_indent(St.depth(st0)), l, ";"])),
+    st_kernel(st0, String.concat([ku_indent(St.depth(st0)), l])))
+  +st2 = st_c(st1, ix)
+  _render.push(st2, k)
+def uops_to_dtypes.put(+x: DtN, +acc: List<&2, DtN>) -> List<&2, DtN>:
+  Bool.pick(List<&2, DtN>, uops_to_dtypes.has(x, acc),
+    acc, List.append(&2, DtN, acc, [x]))
+
+def ku_text_alu(dev: U32, +op: O.Op, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  code_for_op.of(dev, op, ku_alu_srcs(op, k, kus, r), KU.dtype(k))
+def ku_inline2b2(+op: O.Op, k: KU, +cc: List<&2, U32>, +i: U32) -> Bool:
+  Bool.or(ku_inline2b2a(op, k), ku_inline2b2b(op, cc, i))
+
+def uops_to_dtypes.one(+k: KU, +acc: List<&2, DtN>) -> List<&2, DtN>:
+  Bool.pick(List<&2, DtN>,
+    Bool.and(is_alu_addr(KU.addr(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void()))),
+    uops_to_dtypes.put(DtN{KU.dtype(k), KU.numel(k)}, acc), acc)
+
+def ku_inline2b(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
+  Bool.or(ku_inline2b1(op, k, kus, cc, i), ku_inline2b2(op, k, cc, i))
+def ku_inline2(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
+  Bool.or(ku_inline2a(op, k, kus), ku_inline2b(op, k, kus, cc, i))
+
+# `(u.op is Ops.CAST and u.src[0].op is Ops.CONST) or u.op in {Ops.INDEX, Ops.SHRINK, Ops.CUSTOMI}`
+def ku_inline(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
+  Bool.and(Bool.or(Bool.not(O.eq_op(op, O.OpsCAST{})), U32.is_eq(KU.numel(k), 1)),
+    ku_inline2(op, k, kus, cc, i))
+
+def BArg.image(b: BArg) -> Bool:
+  match b:
+    case BArg{name, dtype, addr, mutable, volatile_, image}: image
+
+
+# `uops_to_dtypes(uops)` and the four `any(...)` scans in the six `render_kernel`
+# overrides, each reduced to the Bool it is tested for. `nonfinite` is the CAST
+# of a non-finite CONST (cstyle.py:559) and `special` is `any(Ops.SPECIAL)`
+# (cstyle.py:561) -- both are one `any` in Python and one `Bool` here.
+#
+# `half_any` IS A SECOND HALF FLAG AND NOT A TYPO. OpenCL tests
+# `any(uop.dtype == dtypes.f16 for uop in uops)` over EVERY uop (cstyle.py:349)
+# while CUDA and HIP test the ALU-FILTERED `used_dtypes` (cstyle.py:458, :558) --
+# and `uops_to_dtypes` drops anything that is not `AddrSpace.ALU`
+# (cstyle.py:113). MEASURED: a kernel whose only half is a half BUFFER gets
+# OpenCL's `#pragma` and NOT CUDA's `#include <cuda_fp16.h>`. One Bool would have
+# to be wrong for one of them, and `kern2H` is the row that says which.
+def barrier.of(+dev: U32) -> String:
+  match dev:
+    case 1: "__atomic_thread_fence(__ATOMIC_SEQ_CST);"
+    case 2: "barrier(CLK_LOCAL_MEM_FENCE);"
+    case 3: "threadgroup_barrier(mem_flags::mem_threadgroup);"
+    case 4: "__syncthreads();"
+    case 5: "__builtin_amdgcn_fence(__ATOMIC_RELEASE, \"workgroup\");__builtin_amdgcn_s_barrier();__builtin_amdgcn_fence(__ATOMIC_ACQUIRE, \"workgroup\");"
+    case _: ""
+
+# `float4` -- cstyle.py:136, :276, :329, :369, :429, :538. THE BASE IS `None`,
+# AND `""` IS NOT `None`: the `Ops.STACK` rule (cstyle.py:55-56) does
+# `self.float4.replace('float4', render_type(x))`, so `None` there is an
+# `AttributeError` and `""` would emit a bare `float4{...}` with no constructor.
+# THE ANSWER IS THE STRING `"None"`, and that is `dsl.bend`'s standing rule for an
+# ABSENT value rather than a refusal -- `_variant_suffix` answers a suffix or `None`,
+# and `dsl.bend:2066-2069` records that "an empty string is NOT the same answer, so the
+# port prints `None`". CPython prints `None` too (`str(None)`), so this row now AGREES
+# instead of being a declared divergence.
+#
+# WHAT IT STILL DOES NOT BUY: the STACK arm is not ported, so nothing reads it yet, and
+# `"None"` is still a string rather than an absence -- `.replace` on it is a no-op where
+# CPython raises `AttributeError`. That gap is named rather than papered over with a
+# `has_float4` Bool that nothing reads.
+#   TODO(p3) cstyle.py:55-56  `base_rewrite`'s `Ops.STACK` arm. It needs
+#   `float4` to be `None`-distinguishable, which is the one place a `Data` cannot
+#   carry the answer and a device TAG cannot either: the base is the only `None`
+#   and the tag already says it. Unblocked when the arena rewrite lands.
+def render_dtype(+dev: U32, +d: S.Dt, sz: U32, +a: S.Addr, mutable: Bool, override_ptr: Bool, img: Bool) -> String:
+  Bool.pick(String, img, rd_image(mutable),
+    String.concat([rd_prefix(dev, a), rd_body(dev, d, sz), rd_suffix(a, override_ptr)]))
+
+# `render_dtype(dt, mutable=True)` -- cstyle.py:203, marked `# LEGACY`. It is
+# `_render_dtype(dt, 1, AddrSpace.REG)`, so the REG address space is the load-
+# bearing argument: it is what makes the answer carry no `*` and no prefix, and
+# `render_cast`'s `({render_type(u)})({val})` depends on that.
+def render_dtype_legacy(+dev: U32, +d: S.Dt) -> String:
+  render_dtype(dev, d, 1, S.AReg{}, True{}, False{}, False{})
+
+# ===========================================================================
+# `render_type` / `render_ptr` / `render_access` / `render_cast` -- cstyle.py:
+# 192-200. Four defs, and together they are the pointer/cast vocabulary every
+# load and store is written in.
+#
+#     def render_type(self, u): return self._render_dtype(u.dtype, u.max_numel(), u.addrspace,
+#         shape=u._shape, override_ptr=u.op is Ops.INDEX and u.addrspace is AddrSpace.REG)
+#     def render_ptr(self, u):
+#       if u.max_numel() > 1 or u.dtype != u.src[0].dtype:
+#         return f"(({self._render_dtype(u.dtype, u.max_numel(), u.addrspace, override_ptr=True, shape=u._shape)})({self[u]}))"
+#       else: return f"{self[u]}"
+#     def render_access(self, u): return f"*{self.render_ptr(u)}"
+#     def render_cast(self, u, val): return f"({self.render_type(u)})({val})"
+#
+# `render_type` is the one that needs the FOLD (dtype, addrspace, shape, op) and
+# so it is where wall (a) bites; it is ported with those as PARAMETERS, which is
+# the same argument as `_render_dtype` and for the same reason. The Python
+# signature takes a `u`, and the values Python reads off it are exactly these
+# four, so the port's signature is the same set of facts with the read moved to
+# the caller -- which is where the fold lives.
+#
+# `override_ptr=u.op is Ops.INDEX and u.addrspace is AddrSpace.REG` is the one to
+# watch: a REG-space INDEX is a VECTOR REGISTER and renders as a pointer, so
+# `render_type` of a REG INDEX is `float4*` and not `float4`. That is measured
+# and it is a gate row on its own.
+# ===========================================================================
+
+def render_type(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, op: O.Op, img: Bool) -> String:
+  render_dtype(dev, d, numel, a, True{}, Bool.and(is_index(op), is_reg(a)), img)
+
+# `render_ptr`. The `dtype != u.src[0].dtype` half is a DTYPE COMPARISON between
+# the access and its buffer, and it is the half that decides whether a load goes
+# through a cast pointer: a `float4` read of a `float` buffer is
+# `((float4*)(buf))` and a `float` read of the same buffer is `buf`. `vec` is the
+# `max_numel() > 1` half and `diff` the dtype half, kept apart so the gate can
+# pin each: `ptr stack4` is the `vec` arm and `ptr bitcast` the `diff` arm.
+def render_ptr(+dev: U32, +d: S.Dt, +numel: U32, +a: S.Addr, sdt: S.Dt, +name: String, op: O.Op, img: Bool) -> String:
+  Bool.pick(String, Bool.or(U32.is_gt(numel, 1), Bool.not(O.eq_dt(d, sdt))),
+    String.concat(["((", render_dtype(dev, d, numel, a, True{}, True{}, img), ")(", name, "))"]), name)
+
+def render_access(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, +sdt: S.Dt, +name: String, op: O.Op, img: Bool) -> String:
+  String.concat(["*", render_ptr(dev, d, numel, a, sdt, name, op, img)])
+
+def render_cast(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, op: O.Op, img: Bool, val: String) -> String:
+  String.concat(["(", render_type(dev, d, numel, a, op, img), ")(", val, ")"])
+
+# ===========================================================================
+# `render_index` -- cstyle.py:168-173. SIX branches in Python and they reduce to
+# TWO, and the reduction is the interesting part of this def:
+#
+#     if buf.addrspace == AddrSpace.ALU:
+#       if not (idx.op is Ops.CAST and idx.src[0].op is Ops.CONST): return f"({self[buf]})[{self[idx]}]"
+#       return self[buf]+(f"[{idx.src[0].val}]" if buf.max_numel() > self.gep_arr_threshold
+#                         else f".{'xyzwabcd'[idx.src[0].val]}")
+#     return f"({self[buf]}+{strip_parens(self[idx]) if idx.arg == Ops.ADD else self[idx]})"
+#
+# THE ALU BRANCH HAS THREE OUTCOMES, NOT TWO. The "this is lane access in C"
+# comment above it covers the array form, but a CONST index BELOW the threshold
+# is rendered as a SWIZZLE -- `buf.x` -- and that is neither `buf[i]` nor
+# `buf[0]`. `gep_arr_threshold` decides which, and it is read in the direction
+# that is easy to get backwards: above it, index; at or below it, swizzle. So
+# Clang's 0 means a ONE-ELEMENT buffer still gets `.x` (0 > 0 is false) and
+# CUDA's 8 means an EIGHT-ELEMENT buffer still gets `[0]` (8 > 8 is false). Both
+# are measured and both are gate rows.
+#
+# `'xyzwabcd'[val]` IS A STRING INDEX and a CONST's value is a `U32`. A value of
+# 8 or more is an `IndexError` in Python; the port's `String.get` is total with a
+# default, and the default is the FIRST letter. Stated because it is a
+# difference, not because it is reachable -- tinygrad never swizzles past `d`.
+# ===========================================================================
+
 def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
   wmma_name_of(wmma_dims.of(a), wmma_in.of(a), dt_name(dout))
 
@@ -1365,3 +1885,422 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # -- so it is a `head_char` over an `AStr` once the arena is walkable, and the
 # gate's `kern lb 1` rows are the no-local case it has to agree with.
 #   TODO(p3) cstyle.py:162 symbol=render_kernel, :163 -- BLOCKED. needs `local_dims` (py:162) and `launch_bounds` (py:163) -- two kernel-shape helpers: MEASURED, both NO DEF under `cstyle.bend` (comments excluded). They are the last two `TODO` markers left in this file's wall list.
+#
+# ===========================================================================
+# LANDED 2026-10-27. `_render` AND `render_kernel` ARE HERE. WHAT FOLLOWS IS
+# THE PORT, AND THE TWO PARAGRAPHS THAT SAY WHAT IT IS.
+#
+# ===========================================================================
+# WHAT `_render` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:208-266`.
+#
+#     def _render(self, uops:list[UOp]) -> tuple[str, list[str], list[tuple[str,tuple[UOp,bool]]]]:
+#
+# IT IS THE UOP LIST -> C BODY RENDERER. It takes the uop list and answers
+# THREE THINGS: the kernel's NAME, the kernel BODY as a list of source LINES,
+# and the BUFFER list -- the kernel's ARGUMENT LIST. It is ONE left-to-right
+# walk (`for u in uops:`, :221) and per uop it does four things:
+#
+#   * it SKIPS the uops that render to nothing (:222-223): `NOOP`, `CONST`,
+#     `CUSTOM_FUNCTION`, and an empty `STACK`;
+#   * it ALIASES `AFTER` onto its first source (:224-227): `r[u] = r[u.src[0]]`;
+#   * it NAMES the uop (:238-244): a `SPECIAL` names itself, a `RANGE` names
+#     itself `f"{axis_letters[u.axis_type]}idx{range_str(u)}"`, and everything
+#     else takes a PREFIX out of `{WMMA:"wmma", BUFFER:"buf", CAST:"cast",
+#     BITCAST:"cast", STACK:"cast", INDEX:"bidx", LOAD:"val"}` and otherwise
+#     `"alu"`, with a PER-PREFIX COUNTER, so the second ALU is `alu1`;
+#   * and it RENDERS it with the `base_rewrite` matcher (:11-77), deciding
+#     INLINE vs STATEMENT by a `child_count` HISTOGRAM (:212,
+#     `Counter(v for ru in uops for v in ru.src)`): a uop used EXACTLY ONCE is
+#     INLINED into its consumer, and a uop used TWICE OR MORE becomes a
+#     STATEMENT `"{type} {name} = {text};"` at the current INDENT DEPTH
+#     (:249-262). The depth is a counter: `IF` and `RANGE` push a level,
+#     `ENDIF`/`END`/`BACKEDGE` pop one (:249, :262), and every emitted line is
+#     prefixed with `"  "*depth` (:260).
+#
+# THE `r` MAP IS ONE MAP WITH TWO JOBS, and that is the load-bearing detail:
+# `r[u]` is the NAME before the rewrite and the TEXT after it, but only in the
+# INLINE case (:255). In the STATEMENT case `r[u]` STAYS THE NAME, so a later
+# uop that reads `r[u]` reads `"alu0"`, not the text. The PORT's `r` IS A LIST
+# INDEXED BY THE UOP'S POSITION, because the list is POST-ORDER (every uop's
+# srcs sit at a lower index) -- which is the same property
+# `.agents/slop/cpuseam/`'s oracle relies on.
+#
+# ===========================================================================
+# WHAT `render_kernel` DOES UPSTREAM -- `tinygrad/renderer/cstyle.py:155-167`.
+#
+#     def render_kernel(self, function_name:str, kernel:list[str], bufs:list[tuple[str,tuple[UOp,bool]]], uops:list[UOp], prefix=None) -> str:
+#
+# IT IS THE KERNEL-BODY ASSEMBLER: it takes the three things `_render`
+# answered and emits the C FUNCTION. It builds each buffer's TYPE from the
+# device's `var_prefix`/`buffer_prefix`/`buffer_suffix` and `_render_dtype`
+# (:159-161), computes `launch_bounds = prod([d.vmax for d in local_dims])`
+# where the `local_dims` are the `SPECIAL`s with axis `"l"` (:162-163) -- and
+# `prod(())` is 1, NOT 0 (:1338-1341) -- and writes
+# `f"{kernel_typedef} {function_name}({', '.join(buf_types + extra_args)}) {{\n{tmp}\n{body}\n}}"`
+# (:164-166), prefixing the whole thing with `prefix` when `prefix` is not
+# `None` -- and `[]` is not `None`, so an EMPTY prefix list must NOT gain a
+# leading newline (:167).
+#
+# AND `ClangRenderer` OVERRIDES IT (:312-314): the C it emits carries the
+# VECTOR TYPEDEFS (`typedef float float2 __attribute__((aligned(4),
+# ext_vector_type(2)));`) BEFORE the function, and they come from
+# `_render_defines` (:308) -> `uops_to_dtypes` (:110-111) ->
+# `render_vector_prefix` (:302-306). `uops_to_dtypes` KEEPS ITS LIST ORDER
+# (`dedup` is `list(dict.fromkeys(x))`, helpers.py:23) and the ORDER IS THE
+# GATE, because the typedefs come out in it.
+#
+# ===========================================================================
+# WHAT THEY MUST DO HERE. THE SAME TWO FUNCTIONS, OVER THE PORT's OWN UOP
+# REPRESENTATION. AND THE DERIVED FACTS TRAVEL WITH THE UOP, WHICH IS WHAT
+# `BArg` ALREADY DOES FOR THE BUFFER ARGUMENTS (this file's :131-146: "they
+# arrive as records the CALLER fills"). THE FOLD CANNOT SUPPLY THEM: wall
+# (a) (this file's :49-54) says `F.fold.dt` answers `None` for `Ops.SHRINK`,
+# `Ops.LOAD` and every ALU above one, so `render_type` cannot be run end to end
+# on a REAL kernel, and the REAL kernels are what `render_kernel` is FOR.
+#
+# ⇒ THE SPELLINGS REUSED, BY NAME: `render_dtype` (:780), `render_type`
+# (:828), `render_ptr` (:837), `render_access` (:841), `render_cast` (:844),
+# `render_buffer` (:1013), `code_for_op.of` (:1206), `code_for_workitem.g`
+# (:1241), `type_map.of` (:620), `kernel_typedef.of` (:346),
+# `buffer_prefix.of` (:352), `buffer_suffix.of` (:383), `var_prefix.of` (:391),
+# `var_suffix.of` (:396), `smem_prefix.of` (:364), `smem_align.of` (:375),
+# `float4.of` (:445), `gep_arr_threshold.of` (:470), `infinity.of` (:405),
+# `nan.of` (:410), `barrier.of` (:418), `H.strip_parens`.
+# ===========================================================================
+def ku_const_val(+kus: List<&2, KU>, i: U32) -> U32: ku_const_val.go(ku_const_int_at(kus, i))  # =========================================================================== # THE CONST-OF-A-CONST CAST -- cstyle.py:25-37. THE ARMS, IN ORDER:
+#   1. a FLOAT dtype and a NON-FINITE value -> `(INFINITY)` / `(NAN)` / `(-INFINITY)`
+#   2. f32 -> `{val}f`
+#   3. i64 -> `{val}l`
+#   4. u64 -> `{truncate}ul`
+#   5. u32 -> `{truncate}u`
+#   6. bool -> `1` / `0`
+#   7. fp8/bf16/f16 -> `({render_cast(x, "{val}f")})`
+#   8. u8/u16 -> `({render_cast(x, "{val}u")})`
+#   9. i8/i16 -> `({render_cast(x, "{val}")})`
+#  10. EVERYTHING ELSE -> `{val}`
+# ARM 1 IS A `None` FOR A FINITE FLOAT, so arm 2 takes it, and arm 10 takes
+# every INTEGER: THAT is why the port's `i32` const renders as `56` AND NOT
+# `(int)(56)`, and it is the FIRST thing a port gets wrong.
+#
+# MEASURED 2026-10-27: THE FIVE UPSTREAM CPU KERNELS HAVE **NO FLOAT CONST AT
+# ALL** (the census is over `.agents/slop/cpuseam/uops/*.rows`: 100 `const`
+# rows, 0 with a `.` in the value), so the FLOAT ARMS ARE NOT EXERCISED BY
+# THE ORACLE AND ARE NAMED AS A GAP RATHER THAN CLAIMED.
+def ku_cast_wrapped(dev: U32, d: S.Dt, v: String) -> String:
+  String.concat(["(", render_cast(dev, d, 1, S.Aalu{}, O.OpsCAST{}, False{}, v), ")"])
+
+def ku_const_cast_int(+dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
+  match dt:
+    case d:
+      Bool.pick(String, O.eq_dt(d, S.int64()), String.concat([H.i64_dec(i), "l"]),
+        Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([H.i64_dec(i), "ul"]),
+          Bool.pick(String, O.eq_dt(d, S.uint32()), String.concat([H.i64_dec(i), "u"]),
+            Bool.pick(String, O.eq_dt(d, S.boolean()), Bool.pick(String, H.i64_is_neg(i), "0", "1"),
+              Bool.pick(String, O.eq_dt(d, S.uint8()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
+                Bool.pick(String, O.eq_dt(d, S.uint16()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
+                  Bool.pick(String, O.eq_dt(d, S.int8()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
+                    Bool.pick(String, O.eq_dt(d, S.int16()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
+                      H.i64_dec(i)))))))))
+
+def ku_const_cast_f32(+dt: S.Dt, +dev: U32, k: KU, +f: F32) -> String:
+  match dt:
+    case d:
+      Bool.pick(String, O.eq_dt(d, S.single()), String.concat([U.f32_repr(f), "f"]),
+        Bool.pick(String, O.eq_dt(d, S.half()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
+          Bool.pick(String, O.eq_dt(d, S.bfloat16()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
+            ku_cast_wrapped(dev, d, U.f32_repr(f)))))
+
+# THE GENERIC CAST: `f"({ctx.render_cast(x, ctx[x.src[0]])})"` (cstyle.py:40).
+def ku_cast_generic(dev: U32, +k: KU, +r: List<&2, String>) -> String:
+  String.concat(["(", render_cast(dev, KU.dtype(k), KU.numel(k), KU.addr(k), O.OpsCAST{}, False{}, rt(r, KU.src0(k))), ")"])
+
+# ===========================================================================
+# `render_index` -- cstyle.py:169-174. THE `KU`-WORLD TWIN OF THIS FILE'S
+# `render_index` (:982), AND THE DIFFERENCE IS THE INPUT: the arena-bound one
+# reads the INDEX's arg and its CONST index OUT OF AN `O.Arena`, and the `KU`
+# LIST CARRIES BOTH. The TEXT is the same, arm for arm.
+#
+#     def render_index(self, x:UOp, buf:UOp, idx:UOp):
+#       if buf.addrspace == AddrSpace.ALU:
+#         if not (idx.op is Ops.CAST and idx.src[0].op is Ops.CONST): return f"({self[buf]})[{self[idx]}]"
+#         return self[buf]+(f"[{idx.src[0].val}]" if buf.max_numel() > self.gep_arr_threshold else f".{'xyzwabcd'[idx.src[0].val]}")
+#       return f"({self[buf]}+{strip_parens(self[idx]) if idx.arg == Ops.ADD else self[idx]})"
+#
+# THREE ARMS AND THE FIRST IS THE ONE THAT DECIDES `val1[0]`:
+#   * the ALU arm with a CONST-cast index is `buf[idx]`, and `buf[idx]` NOT
+#     `buf.x` ONLY because CLANG's `gep_arr_threshold` is 0 (cstyle.py:283) and
+#     the buffer's element count is 2, so `2 > 0`;
+#   * the ALU arm with any OTHER index is `(buf)[idx]`;
+#   * the GLOBAL arm is `(buf+idx)`, and the index's parens are stripped ONLY
+#     when the index's OWN arg is `Ops.ADD`.
+# ===========================================================================
+def ku_const_cast_flt.go(m: Maybe<&1, F32>, dev: U32, +k: KU, +r: List<&2, String>) -> String:
+  match m:
+    case Some{f}: ku_const_cast_f32(KU.dtype(k), dev, k, f)
+    case None{}: ku_cast_generic(dev, k, r)
+
+def ku_const_cast_flt(dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  ku_const_cast_flt.go(ku_const_float_at(kus, KU.src0(k)), dev, k, r)
+
+def ku_const_cast2.go(m: Maybe<&1, H.I64>, dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  match m:
+    case Some{i}: ku_const_cast_int(KU.dtype(k), dev, k, i)
+    case None{}: ku_const_cast_flt(dev, k, kus, r)
+
+def ku_const_cast2(dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  ku_const_cast2.go(ku_const_int_at(kus, KU.src0(k)), dev, k, kus, r)
+
+def ku_const_cast(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
+    ku_const_cast2(dev, k, kus, r), ku_cast_generic(dev, k, r))
+
+def ku_render_index.aluconst.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, KU>,                                  +r: List<&2, String>) -> String:
+  match m:
+    case Some{b}:
+      Bool.pick(String, U32.is_gt(KU.numel(b), gep_arr_threshold.of(dev)),
+        String.concat([rt(r, KU.src0(k)), "[", U32.show(ku_const_val(kus, ku_src0_at(kus, KU.src1(k)))), "]"]),
+        String.concat([rt(r, KU.src0(k)), ".", ku_swizzle(ku_const_val(kus, ku_src0_at(kus, KU.src1(k))))]))
+    case None{}: ""
+
+def ku_render_index.aluconst(dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  ku_render_index.aluconst.go(ku_at(kus, KU.src0(k)), dev, k, kus, r)
+
+def ku_render_index.aluarm.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  match m:
+    case Some{b}:
+      Bool.pick(String, ku_index_is_const_cast(kus, KU.src1(k)),
+        ku_render_index.aluconst(dev, k, kus, r),
+        String.concat(["(", rt(r, KU.src0(k)), ")[", rt(r, KU.src1(k)), ")"]))
+    case None{}: ""
+def ku_render_index.aluarm(dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  ku_render_index.aluarm.go(ku_at(kus, KU.src0(k)), dev, k, kus, r)
+
+def ku_render_index(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  Bool.pick(String, is_alu_addr(KU.addr(k)), ku_render_index.aluarm(dev, k, kus, r),
+    ku_render_index.global(dev, k, kus, r))
+
+def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  Bool.pick(String, O.eq_dt(KU.dtype(k), S.void()), "for (;;) {",
+    String.concat(["for (", render_dtype(dev, KU.dtype(k), 1, S.Aalu{}, True{}, False{}, False{}), " ",
+      rt(r, i), " = 0; ", rt(r, i), " < ", rt(r, KU.src0(k)), "; ", rt(r, i), "++) {"]))
+
+def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
+    ku_const_cast(dev, k, kus, r), ku_cast_generic(dev, k, r))
+
+# `f"({ctx.render_access(bidx)})"` (cstyle.py:57) AND
+# `f"({ctx[gate]}?{ctx.render_access(bidx)}:{ctx[var]})"` (cstyle.py:58-59).
+def ku_ptr.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, +b: KU, kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  match m:
+    case Some{s}:
+      Bool.pick(String, Bool.or(U32.is_gt(KU.numel(b), 1), Bool.not(O.eq_dt(KU.dtype(b), KU.dtype(s)))),
+        String.concat(["((", render_dtype(dev, KU.dtype(b), KU.numel(b), KU.addr(b), True{}, True{}, False{}), ")(",
+          rt(r, ai), "))"]),
+        rt(r, ai))
+    case None{}: ""
+def ku_ptr(dev: U32, +ai: U32, +b: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  ku_ptr.go(ku_at(kus, KU.src0(b)), dev, ai, b, kus, r)
+def ku_access.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, k: KU, kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  match m:
+    case Some{b}: String.concat(["*", ku_ptr(dev, ai, b, kus, r)])
+    case None{}: "*"
+def ku_access(dev: U32, +ai: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  ku_access.go(ku_at(kus, KU.src0(k)), dev, ai, k, kus, r)
+def ku_text_load(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  Bool.pick(String, U32.is_eq(KU.nsrc(k), 3),
+    String.concat(["(", rt(r, KU.src2(k)), "?", ku_access(dev, KU.src0(k), k, kus, r), ":", rt(r, KU.src1(k)), ")"]),
+    String.concat(["(", ku_access(dev, KU.src0(k), k, kus, r), ")"]))
+def ku_text_store(dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  String.concat([ku_access(dev, KU.src0(k), k, kus, r), " = ", rt(r, KU.src1(k)), ";"])
+def ku_stack_srcs.go(+ss: List<&2, U32>, +kus: List<&2, KU>, +r: List<&2, String>,
+                    acc: List<&2, String>) -> List<&2, String>:
+  match ss:
+    case Nil{}: acc
+    case h <> t: ku_stack_srcs.go(t, kus, r, List.append(&2, String, acc, [rt(r, h)]))
+
+def ku_stack_srcs(+k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> List<&2, String>:
+  ku_stack_srcs.go(KU.srcs(k), kus, r, Nil{})
+
+def ku_text_stack(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  String.concat([float4.of(dev), float4_open(dev),
+    String.join(ku_stack_srcs(k, kus, r), ","), float4_close(dev)])
+
+def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  match op:
+    case O.OpsRANGE{}: ku_text_range(dev, i, k, kus, r)
+    case O.OpsEND{}: "}"
+    case O.OpsENDIF{}: "}"
+    case O.OpsIF{}: ku_text_if(dev, k, kus, r)
+    case O.OpsBACKEDGE{}: ku_text_backedge(dev, k, kus, r)
+    case O.OpsCAST{}: ku_text_cast(dev, k, kus, r)
+    case O.OpsBARRIER{}: barrier.of(dev)
+    case O.OpsINDEX{}: ku_render_index(dev, k, kus, r)
+    case O.OpsSHRINK{}: ku_render_index(dev, k, kus, r)
+    case O.OpsLOAD{}: ku_text_load(dev, k, kus, r)
+    case O.OpsSTORE{}: ku_text_store(dev, k, kus, r)
+    case O.OpsBUFFER{}: ku_text_buffer(dev, i, k, r)
+    case O.OpsWMMA{}: ku_text_wmma(dev, k, r)
+    case O.OpsSTACK{}: ku_text_stack(dev, k, kus, r)
+    case op2: ku_text_alu(dev, op2, k, kus, r)
+
+# `for (;;) {` FOR A VOID RANGE AND `for ({dt} {name} = 0; {name} < {src0}; {name}++) {`
+# OTHERWISE -- cstyle.py:17-19.
+# `UPat(Ops.STACK, name="x")` -- cstyle.py:52-54:
+#   `f"{ctx.float4.replace('float4', ctx.render_type(x))}" + f"{ctx.float4_style[0]}{','.join([ctx[y] for y in x.src])}{ctx.float4_style[1]}"`
+
+def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  ku_text.go(KU.op(k), dev, i, k, kus, r)
+
+def cc_go.go(+kus: List<&2, KU>, cc: List<&2, U32>) -> List<&2, U32>:
+  match kus:
+    case Nil{}: cc
+    case h <> t: cc_go.go(t, cc_one(h, cc))
+def cc_go(kus: List<&2, KU>, cc: List<&2, U32>) -> List<&2, U32>:
+  cc_go.go(kus, cc)
+
+def child_count(+kus: List<&2, KU>) -> List<&2, U32>:
+  cc_go(kus, List.replicate(U32, List.length(&2, KU, kus), 0))
+
+# THE WRITABLE PARAMS -- cstyle.py:214-215:
+#   `writable_params = {u for u in UOp.sink(*[u.src[0] for u in uops if u.op is Ops.STORE]).toposort(...) if u.op is Ops.PARAM}`
+# I.E. THE PARAMS A STORE REACHES. THE PORT WALKS BACKWARD FROM EACH STORE'S
+# BUFFER THROUGH THE INDEXING OPS, WHICH IS THE SAME SET.
+def ku_is_writable(kus: List<&2, KU>, k: KU) -> Bool: False{}
+def _render.param(dev: U32, +k: KU, +kus: List<&2, KU>, st: St) -> St:
+  +nm = ku_param_name(k)
+  st_bufs(st_put(st, nm), BArg{nm, KU.dtype(k), KU.addr(k), ku_is_writable(kus, k),
+    KUArg.param_volatile(KU.arg(k)), False{}})
+
+# `mutable` IS `u in writable_params` UPSTREAM (cstyle.py:214-215), AND
+# `mutable` IS READ BY `_render_dtype` FOR AN **IMAGE** ONLY (cstyle.py:182:
+# `if is_image_shape(shape): return f"{'write_only' if mutable else 'read_only'} image2d_t"`).
+# NO CPU KERNEL IS AN IMAGE, SO THE FLAG IS NOT READ BY THE C THE PORT EMITS --
+# AND THE PORT SAYS SO INSTEAD OF GUESSING A BACKWARD WALK.
+def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
+                 +st: St, +l: String, nm: String, ix: U32) -> St:
+  +st0 = _render.pop(st, k)
+  +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), render_type(dev, KU.dtype(k),
+    KU.numel(k), KU.addr(k), KU.op(k), False{}), " ", nm, " = ", l, ";"]))
+  +st2 = st_c(st1, ix)
+  _render.push(st2, k)
+def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32) -> St:
+  Bool.pick(St, ku_is_decl(k),
+    _render.decl(dev, i, k, kus, cc, st, l, nm, ix),
+    _render.plain(dev, i, k, kus, cc, st, l, nm, ix))
+
+# `if u.op not in {Ops.RANGE, Ops.BUFFER, Ops.BINARY} and u.dtype != dtypes.void:`
+# -- cstyle.py:257. IT IS THE TEST FOR "IS THIS A DECLARATION", AND THE
+# DECLARATION IS `"{type} {name} = {text};"`.
+def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, nm: String, ix: U32) -> St:
+  Bool.pick(St, ku_inline(KU.op(k), k, kus, cc, i),
+    st_set(st, i, l),
+    _render.stmt(dev, i, k, kus, cc, st, l, nm, ix))
+
+# THE STATEMENT -- cstyle.py:256-261.
+def _render.range(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, st: St) -> St:
+  +nm = ku_range_name(KU.arg(k))
+  +st1 = st_put(st, nm)
+  +l = ku_text(dev, i, k, kus, St.r(st1))
+  _render.emit(dev, i, k, kus, cc, st1, l, nm, 255)
+
+def _render.named(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, +st: St) -> St:
+  +ix = ku_pfx_ix(KU.op(k))
+  +nm = String.concat([ku_pfx(ix), U32.show(cc_at(St.c(st), ix))])
+  +st1 = st_put(st, nm)
+  +l = ku_text(dev, i, k, kus, St.r(st1))
+  _render.emit(dev, i, k, kus, cc, st1, l, nm, ix)
+def _render.one.go(op: O.Op, dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +st: St) -> St:
+  match op:
+    case O.OpsNOOP{}: st_put(st, "")
+    case O.OpsCONST{}: st_put(st, "")
+    case O.OpsCUSTOM_FUNCTION{}: st_put(st, "")
+    case O.OpsSINK{}: st_put(st_name(st, KUArg.sink_name(KU.arg(k))), "")
+    case O.OpsSTACK{}: Bool.pick(St, U32.is_eq(KU.nsrc(k), 0), st_put(st, ""),
+      _render.named(dev, i, k, kus, cc, st))
+    case O.OpsAFTER{}: st_put(st, rt(St.r(st), KU.src0(k)))
+    case O.OpsPARAM{}: _render.param(dev, k, kus, st)
+    case O.OpsRANGE{}: _render.range(dev, i, k, kus, cc, st)
+    case op2: _render.named(dev, i, k, kus, cc, st)
+
+# THE PARAM -- cstyle.py:231-235. THE NAME IS
+# `(arg.name or "data{slot}") + "_" + "_".join(shape)` AND THE PARAM BECOMES
+# ONE OF THE KERNEL'S ARGUMENTS.
+def _render.one(dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, st: St) -> St:
+  _render.one.go(KU.op(k), dev, i, k, kus, cc, st)
+
+def _render.go(+kus: List<&2, KU>, +all: List<&2, KU>, +dev: U32, +i: U32, +cc: List<&2, U32>, +st: St) -> St:
+  match kus:
+    case Nil{}: st
+    case h <> t: _render.go(t, all, dev, U32.add(i, 1), cc, _render.one(dev, i, h, all, cc, st))
+def _render(dev: U32, +kus: List<&2, KU>) -> St:
+  _render.go(kus, kus, dev, 0, child_count(kus), St.of(Nil{}, Nil{}, Nil{},
+    List.replicate(U32, 6n, 0), 1, "test"))
+def uops_to_dtypes.go(+kus: List<&2, KU>, acc: List<&2, DtN>) -> List<&2, DtN>:
+  match kus:
+    case Nil{}: acc
+    case h <> t: uops_to_dtypes.go(t, uops_to_dtypes.one(h, acc))
+def uops_to_dtypes(kus: List<&2, KU>) -> List<&2, DtN>:
+  uops_to_dtypes.go(kus, Nil{})
+def render_vector_prefix(+dev: U32, cpu: Bool, +dt: S.Dt, +count: U32) -> String:
+  String.concat(["typedef ", render_dtype(dev, dt, 1, S.Aalu{}, True{}, False{}, False{}), " ",
+    render_dtype(dev, dt, count, S.AReg{}, True{}, False{}, False{}),
+    " __attribute__((aligned(", U32.show(ku_align(cpu, dt)), "),ext_vector_type(", U32.show(count), ")));"])
+
+def _render_defines.go(+xs: List<&2, DtN>, +dev: U32, +cpu: Bool, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case h <> t:
+      Bool.pick(List<&2, String>, U32.is_gt(DtN.n(h), 1),
+        _render_defines.go(t, dev, cpu, List.append(&2, String, acc,
+          [render_vector_prefix(dev, cpu, DtN.dt(h), DtN.n(h))])),
+        _render_defines.go(t, dev, cpu, acc))
+
+# ===========================================================================
+# `render_kernel` -- cstyle.py:155-167 (THE BODY) AND cstyle.py:312-314 (THE
+# CLANG OVERRIDE). TWO FUNCTIONS, BECAUSE UPSTREAM HAS TWO.
+#
+# THE BODY: the buffer TYPES, the function SIGNATURE, and the braces.
+# THE CLANG OVERRIDE: the VECTOR TYPEDEFS BEFORE IT AND THE ENTRY AFTER IT.
+# ===========================================================================
+def _render_defines(dev: U32, cpu: Bool, +kus: List<&2, KU>) -> List<&2, String>:
+  _render_defines.go(uops_to_dtypes(kus), dev, cpu, Nil{})
+
+def ku_buftype(+dev: U32, +b: BArg) -> String:
+  String.concat([Bool.pick(String, BArg.volatile_(b), "volatile ", ""),
+    Bool.pick(String, is_alu_addr(BArg.addr(b)), var_prefix.of(dev), ""),
+    render_dtype(dev, BArg.dtype(b), 1, BArg.addr(b), BArg.mutable(b), False{}, BArg.image(b)),
+    Bool.pick(String, is_alu_addr(BArg.addr(b)), var_suffix.of(dev), buffer_suffix.of(dev))])
+
+def ku_args.go(+bs: List<&2, BArg>, +dev: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match bs:
+    case Nil{}: acc
+    case h <> t: ku_args.go(t, dev, List.append(&2, String, acc,
+      [String.concat([ku_buftype(dev, h), " ", BArg.name(h)])]))
+
+# THE BODY -- cstyle.py:155-167.
+def ku_args(dev: U32, +bufs: List<&2, BArg>) -> List<&2, String>:
+  ku_args.go(bufs, dev, Nil{})
+
+def render_kernel_body(+dev: U32, +fn: String, +kernel: List<&2, String>,
+                       +bufs: List<&2, BArg>, +lb: U32) -> String:
+  String.concat([kernel_typedef(dev, lb), " ", fn, "(",
+    String.join(ku_args(dev, bufs), ", "), ") {\n", String.join(kernel, "\n"), "\n}"])
+
+# THE CLANG OVERRIDE -- cstyle.py:312-314.
+def render_kernel(+dev: U32, cpu: Bool, +fn: String, +kernel: List<&2, String>,
+                  +bufs: List<&2, BArg>, +kus: List<&2, KU>, +lb: U32) -> String:
+  String.concat([String.join(_render_defines(dev, cpu, kus), "\n"), "\n",
+    render_kernel_body(dev, fn, kernel, bufs, lb)])
+
+# THE WHOLE KERNEL, FROM THE UOP LIST -- cstyle.py:268-278's `render`, FOR THE
+# ONE-LINE CASE (NO LINEAR BODIES, NO EXTERN DECLARATIONS).
+def render(+dev: U32, cpu: Bool, +kus: List<&2, KU>) -> String:
+  +st = _render(dev, kus)
+  render_kernel(dev, cpu, St.name(st), St.kernel(st), St.bufs(st), kus, 1)
+
+# THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
+
+# THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
+def render_r(dev: U32, kus: List<&2, KU>) -> List<&2, String>:
+  St.r(_render(dev, kus))
+

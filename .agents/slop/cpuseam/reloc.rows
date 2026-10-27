@@ -1,0 +1,6 @@
+# reloc_cmp.py -- the port's own jit_loader against upstream's own
+r_10_98_4 port_bytes=92 upstream_bytes=92 identical=YES
+r_2_14_14_4_4_3_3 port_bytes=668 upstream_bytes=668 identical=YES
+r_4_28_7_4_3_3 port_bytes=628 upstream_bytes=628 identical=YES
+r_56_14_2_2 port_bytes=92 upstream_bytes=92 identical=YES
+r_56_7_2_2 port_bytes=192 upstream_bytes=192 identical=YES

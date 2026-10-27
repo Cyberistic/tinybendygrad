@@ -1,0 +1,6 @@
+# compare.py -- the port's own numbers against CPython's own numbers
+r_10_98_4 bufs=4 sizes=[40, 1568, 15680, 40] output_match=4/4 changed_vs_input=1/4 max_abs=0 max_rel=0 verdict=PASS
+r_2_14_14_4_4_3_3 bufs=4 sizes=[6272, 3136, 1152, 32] output_match=4/4 changed_vs_input=1/4 max_abs=0 max_rel=0 verdict=PASS
+r_4_28_7_4_3_3 bufs=4 sizes=[12544, 3136, 144, 16] output_match=4/4 changed_vs_input=1/4 max_abs=0 max_rel=0 verdict=PASS
+r_56_14_2_2 bufs=2 sizes=[3136, 12544] output_match=2/2 changed_vs_input=1/2 max_abs=0 max_rel=0 verdict=PASS
+r_56_7_2_2 bufs=2 sizes=[1568, 6272] output_match=2/2 changed_vs_input=1/2 max_abs=0 max_rel=0 verdict=PASS

@@ -2687,6 +2687,45 @@ exec-fast-lane       [###] 3/3  **A MNIST FORWARD PASS IN THE PORT's OWN LANGUAG
                                        THEY WERE TAKEN UNDER.**
 
 
+exec-cpu-seam        [###] 3/3  **THE PORT's OWN `CPU` DEVICE NOW COMPILES AND RUNS A KERNEL, AND ITS C IS BYTE-
+                                       IDENTICAL TO UPSTREAM's AND ITS OUTPUT IS BYTE-IDENTICAL TO **CPython's OWN CPU
+                                       DEVICE** ON FIVE REAL MNIST KERNELS.** MEASURED 2026-10-27, IN
+                                       `.agents/slop/cpuseam/REPORT.md` (750 LINES). **=> THE GAP WAS PRECISE:
+                                       `renderer/cstyle.bend` HAD EVERY C *SPELLING* AND NOT THE C *KERNEL* --
+                                       **`render_kernel` (UPSTREAM `tinygrad/renderer/cstyle.py:155`) AND `_render`
+                                       (UPSTREAM `:208`) WERE ABSENT**, SO **THE HARD PART -- THE C TYPE, CAST AND
+                                       POINTER SPELLING -- WAS **DONE** AND WHAT WAS MISSING WAS THE UOP LIST -> C
+                                       SOURCE RENDERER AND THE KERNEL-BODY ASSEMBLER.** **=> AND BOTH LANDED, AND THE
+                                       SEAM WAS REWRITTEN INTO UPSTREAM's OWN SHAPE: `Cpu.compile` (`cc` -> ELF
+                                       OBJECT, UPSTREAM's ARGV) -> **THE PORT's OWN `jit_loader`** (`elf.bend:1816`,
+                                       **NOW BYTE-IDENTICAL TO UPSTREAM's ON 5/5** -- THE GAP THAT WAS OPEN) ->
+                                       `Cpu.exec` (`mmap` `MAP_JIT` -> COPY -> `pthread_jit_write_protect_np` ->
+                                       CALL). **=> AND THE MEASUREMENT, ON FIVE REAL MNIST CPU KERNELS: THE PORT's C
+                                       **IDENTICAL** TO UPSTREAM's, THE RELOCATED IMAGE **IDENTICAL**, AND THE OUTPUT
+                                       BYTES vs **CPython's OWN CPU DEVICE** **4/4, 4/4, 4/4, 2/2, 2/2 WITH
+                                       `max_abs=0** -- **=> BYTE IDENTITY, NOT A TOLERANCE** -- WITH
+                                       `changed_vs_input=1/N` AS THE IN-ROW CONTROL. **=> AND THE PLANT IS A WRAPPER
+                                       `cc` THAT REWRITES **ONE TOKEN** OF THE RENDERED C AND **REFUSES IF THE TOKEN
+                                       IS ABSENT**, AND IT GOES RED **5 OF 5**. **=> AND `ops_cpu.bend` IS NOW **COLD-
+                                       BY-DESIGN** (THE COMPILE GATE's COLD SET WENT 4 -> 5) -- **=> WHICH IS THE
+                                       GATE's OWN DOCUMENTED BEHAVIOUR: *"THE SET MOVES WITH THE FILES: A PROOF FILE
+                                       WHOSE TODOs LAND STOPS BEING COLD, AND A FILE THAT STOPS BINDING FOREIGN CODE
+                                       STOPS BEING FOREIGN."*** **=> AND THE BLOCKER IS **THIS MACHINE's POLICY, NOT
+                                       THE CODE**: EVERY LOCALLY-BUILT BINARY IS KILLED BY THE KERNEL (`AMFI: Launch
+                                       Constraint Violation (enforcing)`, `ASP: Security policy would not allow
+                                       process`) AND `DevToolsSecurity -status` SAYS *"DEVELOPER MODE IS CURRENTLY
+                                       DISABLED"* -- **=> `sudo DevToolsSecurity -enable` UNBLOCKS THE NATIVE LANE.**
+                                       A BYTE-IDENTICAL COPY OF `/bin/echo` IS KILLED TOO, **SO IT IS NOT THE
+                                       SIGNATURE AND NOT THE FILE.** **=> => SO THE MEASUREMENT RUNS IN THE JS LANE
+                                       (`bend -o out.js` + `bun` -- THE SAME DEFS, A DIFFERENT BACKEND), AND THE ONE
+                                       STAGE THAT IS NOT THE PORT's SOURCE (THE 30 LINES THAT MMAP AND CALL) IS
+                                       SPELLED IN PYTHON EXACTLY AS UPSTREAM SPELLS IT -- **NAMED IN THE REPORT, NOT
+                                       HIDDEN.** **=> AND WHAT IS **NOT** QUOTED, BECAUSE IT IS NOT TRUE YET: **THE
+                                       PORT's `Device` LANE HAS NO SCHEDULER, SO THE WHOLE-MNIST-FORWARD-PASS AND
+                                       SECONDS/IMAGE *THROUGH `Device`* ARE NOT CLAIMED** -- THE STANDALONE KERNEL's
+                                       0.46 s (NATIVE) AND 0.17 s (JS) STAND.
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

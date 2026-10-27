@@ -1,0 +1,6 @@
+# pipeline.py -- the port's own code, end to end
+r_10_98_4 real c=IDENTICAL reloc=IDENTICAL bufs=4 output_match=4/4 changed_vs_input=1/4 max_abs=0 max_rel=0 verdict=PASS
+r_2_14_14_4_4_3_3 real c=IDENTICAL reloc=IDENTICAL bufs=4 output_match=4/4 changed_vs_input=1/4 max_abs=0 max_rel=0 verdict=PASS
+r_4_28_7_4_3_3 real c=IDENTICAL reloc=IDENTICAL bufs=4 output_match=4/4 changed_vs_input=1/4 max_abs=0 max_rel=0 verdict=PASS
+r_56_14_2_2 real c=IDENTICAL reloc=IDENTICAL bufs=2 output_match=2/2 changed_vs_input=1/2 max_abs=0 max_rel=0 verdict=PASS
+r_56_7_2_2 real c=IDENTICAL reloc=IDENTICAL bufs=2 output_match=2/2 changed_vs_input=1/2 max_abs=0 max_rel=0 verdict=PASS

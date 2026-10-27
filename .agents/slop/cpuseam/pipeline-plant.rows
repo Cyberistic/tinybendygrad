@@ -1,0 +1,6 @@
+# pipeline.py -- THE PLANT: one token of the rendered C, per kernel
+r_10_98_4 plant c=IDENTICAL bufs=4 output_match=3/4 max_abs=0.187092 max_rel=0.0327156 verdict=FAIL
+r_2_14_14_4_4_3_3 plant c=IDENTICAL bufs=4 output_match=3/4 max_abs=7.11137 max_rel=1 verdict=FAIL
+r_4_28_7_4_3_3 plant c=IDENTICAL bufs=4 output_match=3/4 max_abs=3.36113 max_rel=1 verdict=FAIL
+r_56_14_2_2 plant c=IDENTICAL bufs=2 output_match=1/2 max_abs=1.3119 max_rel=1 verdict=FAIL
+r_56_7_2_2 plant c=IDENTICAL bufs=2 output_match=1/2 max_abs=3.16214 max_rel=1 verdict=FAIL

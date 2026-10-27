@@ -124,6 +124,7 @@
 import ../helpers.bend as H
 import ../device.bend as D
 import ../LAWS/spec.bend as S
+import ./support/compiler_cpu.bend as CC
 
 # ===========================================================================
 # A DEFECT FOUND IN device.bend, REPORTED AND NOT FIXED (device.bend is
@@ -1523,3 +1524,61 @@ def main() -> IO(Unit):
 #   M100    2  prog.win: the GET_PROCESS step dropped
 #   M103    3  cpu.peer.at: the local arm returns the REMOTE peer (the arms swapped)
 #   M106    2  the op tags: EXEC is 5, not 0 (the whole range renumbered)
+# ===========================================================================
+# THE SEAM -- LANDED 2026-10-27. THE TRACE TAGS ABOVE ARE STILL THERE AND
+# THEY STILL RECORD WHAT UPSTREAM's `CPUProgram` DOES; WHAT FOLLOWS IS THE PART
+# THAT ACTUALLY DOES IT.
+#
+# UPSTREAM's SEQUENCE, `tinygrad/runtime/ops_cpu.py:23-46`:
+#   1. `cc` COMPILES THE C TO AN ELF OBJECT (support/compiler_cpu.py:21-22)
+#   2. `jit_loader` RELOCATES IT (support/elf.py:52-86) -- THE PORT's OWN
+#      `runtime/support/elf.bend:1816`
+#   3. `mmap` AN ANONYMOUS RWX REGION (ops_cpu.py:30) AND COPY THE IMAGE IN
+#   4. `pthread_jit_write_protect_np` ON macOS (ops_cpu.py:33, :35)
+#   5. `__clear_cache` OR `msync` (ops_cpu.py:41-44)
+#   6. `ctypes.CFUNCTYPE(None)(self.addr)` (ops_cpu.py:46)
+#   7. CALL IT WITH 64-BIT POINTERS (ops_cpu.py:61)
+#
+# ⇒ STEP 2 IS THE PORT's OWN `jit_loader`, SO IT IS NOT AN EFFECT: THE BEND SIDE
+# RELOCATES. STEPS 1 AND 3-7 ARE THE EFFECT (`runtime/ops_cpu.c`), AND THEY ARE
+# TWO EFFECTS BECAUSE UPSTREAM's ORDER HAS THE RELOCATION BETWEEN THEM.
+# ===========================================================================
+
+# THE ARGV. UPSTREAM'S `ClangCompiler.compile_argv` (support/compiler_cpu.py:21-22)
+# IS `[cc, '-c', '-x', 'c', '-O2', '-fPIC', '-ffreestanding', '-fno-math-errno',
+# '-nostdlib', '-fno-ident', '--target=<arch>-none-unknown-elf', *args, '-', '-o',
+# '-']`, AND `support/compiler_cpu.bend:268` IS THE PORT's SPELLING OF IT.
+#
+# ⇒ THE ARGV CROSSES THE SEAM AS ONE "\n"-JOINED STRING AND THE C SIDE SPLITS
+# IT, BECAUSE THE ARGV IS THE PORT's OWN SPELLING AND THE C SIDE MUST NOT HAVE
+# A SECOND COPY OF IT. A PATH AND A FLAG CANNOT CONTAIN A NEWLINE, SO THE JOIN
+# IS UNAMBIGUOUS.
+#
+# ⇒ AND THE ARCH IS THE PORT's OWN TOO: `cpu.arch_of` (ops_cpu.py:91) IS
+# UPSTREAM's `{'amd64':'x86_64', 'aarch64':'arm64'}.get(m, m) + ",native"`, AND
+# UPSTREAM SPLITS THAT STRING INTO THE LIST `ClangCompiler` TAKES.
+def cpu.cc_argv_str(cc: String, arch: String) -> String:
+  String.join(CC.ClangCompiler.compile_argv(cc, String.split(arch, ',')), "\n")
+
+# THE TWO EFFECTS.
+#
+# ⇒ THEY ANSWER A `Result`, NOT A `String`, AND THIS IS MEASURED, NOT CHOSEN:
+# THE C EFFECT's RETURN VALUE IS THE VALUE THE CONTINUATION RECEIVES, SO A
+# `Done{...}` BOX WHERE THE TYPE SAYS `String` PRINTS AN EMPTY LINE. MEASURED:
+# THE FIRST RUN PRINTED `sizes=1568,6272` AND THEN A BLANK LINE, AND THE CAUSE
+# WAS THE `io_done` BOX. ⇒ SO THE TYPE IS `Result<&1, &1, U32 & String, String>`,
+# THE `Done`/`Fail` BOXES ARE THE `Result`'s OWN TWO CASES, AND `IO.try` (BASE's
+# OWN) TURNS A `Fail` INTO A `Halt` WITH ITS MESSAGE ON STDERR. THIS IS
+# EXACTLY WHAT `Process.run` DOES IN THIS SAME TREE, AND IT IS UPSTREAM's SHAPE:
+# UPSTREAM's `CPUProgram.__call__` RAISES.
+#
+# ⇒ `Cpu.compile` IS UPSTREAM's STEP 1: THE C SOURCE AND THE ARGV GO IN, THE
+# ELF OBJECT'S HEX COMES OUT. `Cpu.exec` IS UPSTREAM's STEPS 3-7: THE RELOCATED
+# IMAGE AND THE BUFFERS GO IN, THE BUFFERS' HEX COMES OUT.
+def Cpu.compile(src: String, argv: String) -> IO(Result<&1, &1, U32 & String, String>):
+  import "./ops_cpu.c"
+  import "./ops_cpu.js"
+
+def Cpu.exec(img: String, bufs: String, sizes: String) -> IO(Result<&1, &1, U32 & String, String>):
+  import "./ops_cpu.c"
+  import "./ops_cpu.js"
