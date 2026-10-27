@@ -1,0 +1,9 @@
+# measure-native.rows -- the SAME measurement in the NATIVE INTERPRETER lane
+#   ./bin/bend .agents/slop/kucvt/harness/<name>.bend   (NO -o, NO bun)
+# the oracle is upstream's own whole file: .agents/slop/cpuseam/csrc/<name>.c
+# columns: kernel|verdict|got_bytes|want_bytes|seconds
+r_10_98_4|IDENTICAL|675|675|1.447
+r_2_14_14_4_4_3_3|IDENTICAL|4427|4427|14.481
+r_4_28_7_4_3_3|IDENTICAL|2535|2535|5.333
+r_56_14_2_2|IDENTICAL|606|606|1.798
+r_56_7_2_2|IDENTICAL|603|603|2.916

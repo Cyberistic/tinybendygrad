@@ -1,0 +1,367 @@
+#!/usr/bin/env python3
+"""gen_arena.py -- BUILD THE PORT's OWN ARENA FOR A CAPTURED UPSTREAM KERNEL.
+
+    .venv/bin/python .agents/slop/kucvt/gen_arena.py
+
+WHAT IT READS
+-------------
+`.agents/slop/cpuseam/uops/<name>.rows` -- UPSTREAM's OWN uop list, captured
+from upstream's live objects by `.agents/slop/cpuseam/dump_kernel.py`.  The
+fixture is NOT re-captured and NOT re-derived here: THE ORACLE IS UPSTREAM AND
+THE EXPECTATION IS NEVER TYPED.
+
+WHAT IT WRITES
+--------------
+FOR EACH KERNEL:
+
+  `gen/<name>.bend`         -- THE PORT's OWN ARENA.  `def g_<name>() -> G_<name>`
+                               and `G_<name>{ar: O.Arena, sink: U32, ix: List<&2, U32>}`.
+                               THE BODY IS THE PORT's OWN `O.UOp.new` /
+                               `O.UOp.const` CALLS -- THE PORT's OWN INTERNING,
+                               THE PORT's OWN ARENA, THE PORT's OWN NODE TABLE.
+
+  `harness/<name>.bend`     -- THE MEASUREMENT: BUILD THE ARENA, FOLD IT, RUN
+                               THE PORT's OWN CONVERTER (`renderer/kuconv.bend`),
+                               AND RENDER IT WITH THE PORT's OWN RENDERER
+                               (`renderer/cstyle.bend`'s `render`).
+
+  `harness_plant/<name>.bend` -- THE SAME, WITH THE PLANT's COPY OF THE
+                               CONVERTER (`.agents/slop/kucvt/kuconv_plant.bend`,
+                               WRITTEN BY `mutate.py`).  THE PLANT IS A SEPARATE
+                               FILE IN THE HARNESS'S OWN DIRECTORY: THE PORT's
+                               CONVERTER IS NEVER SHIPPED BROKEN.
+
+WHAT IS *NOT* TRANSCRIBED
+--------------------------
+THE DERIVED FIELDS.  The rows carry `dtype`, `addrspace`, `shape`, `numel` and
+the src POSITIONS, and THIS GENERATOR THROWS ALL OF THOSE AWAY except what is
+part of the NODE ITSELF:
+
+  * the CONST's VALUE (the arg), and
+  * the PARAM's/BUFFER's `slot`, `name`, `volatile`, `dtype` and `addrspace`
+    (the arg), and
+  * the RANGE's axis and ids (the arg), and
+  * the INDEX's arg (an `Ops`, so `Ops.ADD`), and
+  * the SINK's function name (the arg).
+
+Everything the CONVERTER computes -- the dtype, the addrspace, the shape, the
+numel, the src POSITIONS -- is computed BY THE PORT, from the port's own fold
+and the port's own arena.  That is the whole difference between this file and
+`.agents/slop/cpuseam/gen_kus.py`, which transcribes upstream's DERIVED fields
+straight into a `KU` list and therefore never exercises the fold, the arg
+mapping or the re-index at all.
+
+THE ORDER
+---------
+`G_<name>.ix` IS THE ROW ORDER, WHICH IS UPSTREAM's OWN LINEARIZED ORDER.  The
+converter's contract is "an arena and a list of arena indices in post-order",
+and the ORDER IS AN INPUT TO THE CONVERTER, NOT ITS OUTPUT.  The port's own
+`codegen/late/linearizer.bend:836 linearize` is the producer upstream, and
+WHETHER THE PORT's OWN `linearize` REPRODUCES THIS ORDER IS MEASURED, IN THE
+HARNESS, NOT ASSUMED -- SEE `.agents/slop/kucvt/REPORT.md`.
+"""
+import pathlib
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+UOPS = HERE.parent / "cpuseam" / "uops"
+GEN = HERE / "gen"
+HARNESS = HERE / "harness"
+HARNESS_PLANT = HERE / "harness_plant"
+DUMP = HERE / "dump"
+
+OPS = {
+    "CONST": "O.OpsCONST{}", "PARAM": "O.OpsPARAM{}", "CAST": "O.OpsCAST{}",
+    "RANGE": "O.OpsRANGE{}", "AFTER": "O.OpsAFTER{}", "MUL": "O.OpsMUL{}",
+    "ADD": "O.OpsADD{}", "SHL": "O.OpsSHL{}", "SHRINK": "O.OpsSHRINK{}",
+    "LOAD": "O.OpsLOAD{}", "INDEX": "O.OpsINDEX{}", "CMPLT": "O.OpsCMPLT{}",
+    "WHERE": "O.OpsWHERE{}", "STORE": "O.OpsSTORE{}", "END": "O.OpsEND{}",
+    "SINK": "O.OpsSINK{}", "BUFFER": "O.OpsBUFFER{}", "SPECIAL": "O.OpsSPECIAL{}",
+    "BITCAST": "O.OpsBITCAST{}", "IF": "O.OpsIF{}", "BARRIER": "O.OpsBARRIER{}",
+    "ENDIF": "O.OpsENDIF{}", "SUB": "O.OpsSUB{}", "MAX": "O.OpsMAX{}",
+    "AND": "O.OpsAND{}", "OR": "O.OpsOR{}", "XOR": "O.OpsXOR{}",
+    "DIV": "O.OpsFDIV{}", "CMOD": "O.OpsCMOD{}", "NEG": "O.OpsNEG{}",
+    "SQRT": "O.OpsSQRT{}", "EXP2": "O.OpsEXP2{}", "LOG2": "O.OpsLOG2{}",
+    "SIN": "O.OpsSIN{}", "RECIPROCAL": "O.OpsRECIPROCAL{}", "TRUNC": "O.OpsTRUNC{}",
+    "SHR": "O.OpsSHR{}", "STACK": "O.OpsSTACK{}", "WMMA": "O.OpsWMMA{}",
+}
+
+DTS = {
+    "f32": "S.single()", "i32": "S.int32()", "u32": "S.uint32()",
+    "i64": "S.int64()", "u64": "S.uint64()", "u8": "S.uint8()",
+    "i8": "S.int8()", "u16": "S.uint16()", "i16": "S.int16()",
+    "bool": "S.boolean()", "void": "S.void()", "weakint": "S.weakint()",
+    "weakfloat": "S.weakfloat()", "f16": "S.half()", "bf16": "S.bfloat16()",
+    "f64": "S.double()",
+}
+
+ADDRS = {"GLOBAL": "S.AGlobal{}", "LOCAL": "S.ALocal{}", "REG": "S.AReg{}",
+         "ALU": "S.Aalu{}", "NONE": "S.Aalu{}"}
+
+AXES = {"WEAK": "O.AXIS_WEAK{}", "GLOBAL": "O.AXIS_GLOBAL{}", "LOCAL": "O.AXIS_LOCAL{}",
+        "DEVICE": "O.AXIS_DEVICE{}", "UPCAST": "O.AXIS_UPCAST{}", "WARP": "O.AXIS_WARP{}",
+        "LOOP": "O.AXIS_LOOP{}", "PLACEHOLDER": "O.AXIS_PLACEHOLDER{}"}
+
+ARENA_HEADER = """# {name}.bend -- GENERATED by .agents/slop/kucvt/gen_arena.py FROM
+# .agents/slop/cpuseam/uops/{name}.rows. DO NOT HAND-EDIT.
+#
+# THE ARENA IS BUILT BY THE PORT's OWN `O.UOp.new` / `O.UOp.const`; THE DERIVED
+# FIELDS ARE NOT TRANSCRIBED.  SEE THE GENERATOR's HEADER.
+import Base
+import ./../../../../tinybendygrad/uop/ops.bend as O
+import ./../../../../tinybendygrad/LAWS/spec.bend as S
+import ./../../../../tinybendygrad/helpers.bend as H
+
+type {g} is Data:
+  {g}{{ar: O.Arena, sink: U32, ix: List<&2, U32>}}
+
+def {g}.ar(x: {g}) -> O.Arena:
+  match x:
+    case {g}{{ar, sink, ix}}: ar
+
+def {g}.sink(x: {g}) -> U32:
+  match x:
+    case {g}{{ar, sink, ix}}: sink
+
+def {g}.ix(x: {g}) -> List<&2, U32>:
+  match x:
+    case {g}{{ar, sink, ix}}: ix
+
+def g_{name}() -> {g}:
+"""
+
+HARNESS_HEADER = """# {name}.bend -- GENERATED by .agents/slop/kucvt/gen_arena.py. DO NOT HAND-EDIT.
+#
+# THE MEASUREMENT: THE PORT's OWN ARENA -> THE PORT's OWN FOLD -> THE PORT's
+# OWN CONVERTER ({conv}) -> THE PORT's OWN RENDERER (`renderer/cstyle.bend`'s
+# `render`) -> C ON STDOUT.  THE COMPARER IS `.agents/slop/kucvt/diff.py` AND IT
+# COMPARES WHOLE FILES AGAINST UPSTREAM's OWN `csrc/{name}.c`.
+import Base
+import ./../gen/{name}.bend as K
+import ./../../../../tinybendygrad/uop/fold.bend as F
+import ./../../../../tinybendygrad/renderer/cstyle.bend as C
+import {conv} as KUC
+
+def main() -> IO(Unit):
+  +g = K.g_{name}()
+  +ar = K.{g}.ar(g)
+  +ix = K.{g}.ix(g)
+  +fx = F.folded(ar)
+  +kus = KUC.kuconv.convert(fx, ix)
+  IO.print(C.render(C.dev_clang(), True{{}}, kus))
+"""
+
+DUMP_HEADER = """# {name}.bend -- GENERATED by .agents/slop/kucvt/gen_arena.py. DO NOT HAND-EDIT.
+#
+# THE ROW-LEVEL INSTRUMENT: THE CONVERTER's OUTPUT, IN THE `uops/<name>.rows`
+# FORMAT, SO THE DIFF NAMES THE FIELD THAT IS WRONG INSTEAD OF ONLY SAYING
+# THAT THE C DIFFERS.
+import Base
+import ./../gen/{name}.bend as K
+import ./../../../../tinybendygrad/uop/fold.bend as F
+import ./../../../../tinybendygrad/uop/ops.bend as O
+import ./../../../../tinybendygrad/LAWS/spec.bend as S
+import ./../../../../tinybendygrad/renderer/cstyle.bend as C
+import {conv} as KUC
+
+def dtname(+d: S.Dt) -> String:
+  match d:
+    case S.Dt{{pri, bits, cls, nm}}: nm
+
+def addrname(+a: S.Addr) -> String:
+  match a:
+    case S.AGlobal{{}}: "GLOBAL"
+    case S.ALocal{{}}: "LOCAL"
+    case S.AReg{{}}: "REG"
+    case S.Aalu{{}}: "ALU"
+
+def shpstr.go(+ss: List<&2, U32>, +acc: String) -> String:
+  match ss:
+    case Nil{{}}: acc
+    case h <> t: shpstr.go(t, String.concat([acc, Bool.pick(String, String.is_empty(acc), "", "x"), U32.show(h)]))
+
+def shpstr(+ss: List<&2, U32>) -> String: shpstr.go(ss, "")
+
+def srcsstr.go(+ss: List<&2, U32>, +acc: String) -> String:
+  match ss:
+    case Nil{{}}: acc
+    case h <> t: srcsstr.go(t, String.concat([acc, Bool.pick(String, String.is_empty(acc), "", " "), U32.show(h)]))
+
+def srcsstr(+ss: List<&2, U32>) -> String: srcsstr.go(ss, "")
+
+def row.of(i: U32, +k: C.KU, +acc: List<&2, String>) -> List<&2, String>:
+  List.append(&2, String, acc, [String.concat([
+    U32.show(i), "|", O.Ops.name.of(C.KU.op(k)), "|", dtname(C.KU.dtype(k)), "|",
+    addrname(C.KU.addr(k)), "|", shpstr(C.KU.shape(k)), "|", U32.show(C.KU.numel(k)),
+    "|", srcsstr(C.KU.srcs(k))])])
+
+def rows.go(+kus: List<&2, C.KU>, +n: U32, +acc: List<&2, String>) -> List<&2, String>:
+  match kus:
+    case Nil{{}}: acc
+    case h <> t: rows.go(t, U32.add(n, 1), row.of(n, h, acc))
+
+def main() -> IO(Unit):
+  +g = K.g_{name}()
+  +ar = K.{g}.ar(g)
+  +ix = K.{g}.ix(g)
+  +fx = F.folded(ar)
+  +kus = KUC.kuconv.convert(fx, ix)
+  +hdr = String.concat(["# settled=", Bool.show(F.Kahn.settled(ar, F.Folded.t(fx))),
+    " nodes=", U32.show(U32.from_nat(List.length(&2, O.Node, O.Arena.nodes(ar)))),
+    " kus=", U32.show(U32.from_nat(List.length(&2, C.KU, kus)))])
+  +rows = String.join(rows.go(kus, 0, Nil{{}}), "\\n")
+  IO.print(String.concat([hdr, "\\n", rows]))
+"""
+
+
+def const_value(payload: str) -> str:
+    """the CONST's VALUE -- the only part of a CONST's arg that is not a dtype.
+
+    `H.i64_of_i32` TAKES A `U32`, SO A NEGATIVE CONST IS SPELLED AS ITS TWO's
+    COMPLEMENT -- THE PORT's OWN `H.i64_of_i32` IS A BIT PATTERN, NOT A
+    SIGNED LITERAL, AND `H.i64_of_i32(-1)` IS NOT A BEND TERM (MEASURED: the
+    parser reads the `-` as the start of a term)."""
+    p = payload.strip()
+    if p.startswith("ConstFloat(") and p.endswith(")"):
+        p = p[len("ConstFloat("):-1]
+    if "." in p or "e" in p or "E" in p or p in ("inf", "-inf", "nan"):
+        return "O.CFloat{" + p + "}"
+    return "O.CInt{H.i64_of_i32(" + str(int(p) & 0xFFFFFFFF) + ")}"
+
+
+def record(name: str, fields: list) -> str:
+    """A RECORD LITERAL, BUILT FROM ITS FIELDS, SO THE BRACE COUNT IS NEVER
+    COUNTED BY HAND.  `None{}` IS A FIELD VALUE AND NOT A CLOSING BRACE."""
+    return name + "{" + ", ".join(fields) + "}"
+
+
+def param_arg(payload: str, dt: str, addr: str, slot: str) -> str:
+    """`ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device,
+    volatile, image, buffer, bind_on_realize, val}` -- THE PORT's OWN FIELD
+    ORDER (`uop/ops.bend:869`)."""
+    f = payload.split("~")
+    name = "None{}" if f[1] == "-" else 'Some{"' + f[1] + '"}'
+    vol = "True{}" if f[2] == "1" else "False{}"
+    return record("O.ParamArg", [
+        slot, dt, "None{}", "None{}", name, addr,
+        "None{}", vol, "None{}", "None{}", "False{}", "None{}"])
+
+
+def range_arg(payload: str) -> str:
+    """`ARange{{ids, at}}` -- THE PORT SPELLS THE AXIS LAST AND THE IDS FIRST
+    (`uop/ops.bend:1225`), WHERE UPSTREAM SPELLS IT `(axis_type, *axis_id)`
+    (`ops.py:486`).  THE ORDER IS THE PORT's AND IT IS NOT A TRANSCRIPTION."""
+    f = payload.split("~")
+    ax = AXES.get(f[0])
+    if ax is None:
+        raise SystemExit("unknown axis " + f[0])
+    ids = ", ".join(str(int(x)) for x in f[1:])
+    return "O.ARange{[" + ids + "], " + ax + "}"
+
+
+def one(name: str, row: str) -> str:
+    f = row.split("|")
+    idx, op, dt, addr, shape, numel, srcs, kind, payload = f
+    o = OPS.get(op)
+    if o is None:
+        raise SystemExit(name + ": unknown op " + op)
+    d = DTS.get(dt)
+    if d is None:
+        raise SystemExit(name + ": unknown dtype " + dt)
+    a = ADDRS.get(addr)
+    if a is None:
+        raise SystemExit(name + ": unknown addrspace " + addr)
+    ss = "Nil{}" if not srcs.strip() else "[" + ", ".join(
+        "O.Found.i(n" + str(int(x)) + ")" for x in srcs.split()) + "]"
+    if kind == "const":
+        arg = "O.APy{" + const_value(payload) + "}"
+        call = "O.UOp.const(" + prev(idx) + ", " + const_value(payload) + ")"
+    elif kind == "param":
+        slot = payload.split("~")[0]
+        arg = "O.AParam{" + param_arg(payload, d, a, slot) + "}"
+        call = None
+    elif kind == "buffer":
+        # THE DUMP RECORDS ONLY `volatile~bytes` FOR A BUFFER, SO THE SLOT IS
+        # THE PORT's OWN "NO SLOT" SENTINEL (`uop/ops.bend:1494`).
+        vol = "True{}" if payload.split("~")[0] == "1" else "False{}"
+        arg = record("O.AParam", [record("O.ParamArg", [
+            "O.ParamArg.no_slot()", d, "None{}", "None{}", "None{}", a,
+            "None{}", vol, "None{}", "None{}", "False{}", "None{}"])])
+        call = None
+    elif kind == "range":
+        arg = range_arg(payload)
+        call = None
+    elif kind == "index":
+        # "-" MEANS "THE ARG IS AN `Ops`", AND THE CAPTURED FIXTURE DOES **NOT**
+        # CARRY WHICH `Ops` (`dump_kernel.py` writes `str(arg) if isinstance(arg,
+        # int) else "-"`).
+        #
+        # THE ONLY FIELD THE CONVERTER READS FROM THAT ARG IS `is_add`
+        # (`cstyle.py:174`'s `idx.arg == Ops.ADD`), AND **THE BYTE COMPARISON
+        # MEASURED THAT IT IS NOT `Ops.ADD` FOR THESE FIVE KERNELS**: WITH
+        # `Ops.ADD` THE PORT RENDERS `*(data0_392+(Lidx2*7)+Lidx4)` AND
+        # UPSTREAM RENDERS `*(data0_392+((Lidx2*7)+Lidx4))` -- THE PARENS ARE
+        # KEPT, SO `idx.arg != Ops.ADD`.  A NON-ADD `Ops` IS THEREFORE SPELLED
+        # HERE, AND IT IS THE ONLY DIFFERENCE BETWEEN THE TWO SPELLINGS THAT
+        # ANYBODY CAN SEE.
+        if payload.strip() in ("-", "", "None"):
+            arg = "O.AOpLit{O.OpsMUL{}}"
+        else:
+            arg = "O.AInt{" + str(int(payload.strip())) + "}"
+        call = None
+    elif kind == "sink":
+        arg = record("O.AKernel", [record("O.KernelInfo", [
+            '"' + payload.strip() + '"', "Nil{}", "None{}", "0"])])
+        call = None
+    elif op == "CAST":
+        # A CAST's ARG IS ITS TARGET DTYPE (`ops.py:137`'s `arg=dt`), AND THE
+        # PORT SPELLS IT `ADt{dt}` (`uop/ops.bend:1196`).
+        arg = "O.ADt{" + d + "}"
+        call = None
+    else:
+        arg = "O.ANone{}"
+        call = None
+    if call is None:
+        call = "O.UOp.new(" + prev(idx) + ", " + o + ", " + ss + ", " + arg + ", O.TNone{})"
+    return "  +n" + idx + " = " + call
+
+
+def prev(idx: str) -> str:
+    """the ARENA the next node is built in -- the PREVIOUS node's `Found`."""
+    i = int(idx)
+    return "O.Arena.empty()" if i == 1 else "O.Found.ar(n" + str(i - 1) + ")"
+
+
+def main() -> int:
+    GEN.mkdir(parents=True, exist_ok=True)
+    HARNESS.mkdir(parents=True, exist_ok=True)
+    HARNESS_PLANT.mkdir(parents=True, exist_ok=True)
+    DUMP.mkdir(parents=True, exist_ok=True)
+    names = sorted(p.stem for p in UOPS.glob("*.rows"))
+    if len(sys.argv) > 1:
+        names = [n for n in names if n in sys.argv[1:]]
+    for name in names:
+        rows = [ln for ln in (UOPS / f"{name}.rows").read_text().splitlines()
+                if ln and not ln.startswith("#")]
+        body = "\n".join(one(name, ln) for ln in rows)
+        ix = "[" + ", ".join("O.Found.i(n" + ln.split("|")[0] + ")" for ln in rows) + "]"
+        last = rows[-1].split("|")[0]
+        g = "G_" + name
+        (GEN / f"{name}.bend").write_text(
+            ARENA_HEADER.format(name=name, g=g) + body + "\n"
+            + "  " + g + "{O.Found.ar(n" + last + "), O.Found.i(n" + last + "), " + ix + "}\n")
+        for out, conv in ((HARNESS, "./../../../../tinybendygrad/renderer/kuconv.bend"),
+                          (HARNESS_PLANT, "./../kuconv_plant.bend")):
+            (out / f"{name}.bend").write_text(
+                HARNESS_HEADER.format(name=name, g=g, conv=conv))
+        (DUMP / f"{name}.bend").write_text(
+            DUMP_HEADER.format(name=name, g=g,
+                               conv="./../../../../tinybendygrad/renderer/kuconv.bend"))
+        print("# %s: %d uops -> gen/%s.bend, harness/%s.bend, harness_plant/%s.bend"
+              % (name, len(rows), name, name, name))
+    print("# wrote %d kernels" % len(names))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
