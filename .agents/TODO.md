@@ -24366,3 +24366,39 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **A **CITATION **THAT **NAMES **A **CONSTRUCT **DOES **NOT **ROT **WHEN **THE **LINES
       **MOVE.**  **⇒ AND **THE **WORK **IS **MERGED **INTO **THE **SAME **FOUR **UNITS** **SO **NO
       **FILE **IS **TOUCHED **BY **TWO **UNITS.**
+
+- [ ] **THE `symbol=` **FORM **IS **A **DURABLE **FORM **ONLY **WHEN **THE **SYMBOL **IS
+      **DECLARED **IN **THE **CITED **FILE** — **OTHERWISE **IT **IS **A **NEW **WAY **TO **BE
+      **WRONG** (MEASURED **2026-10-27**, **AND **THE **GATE **CAUGHT **ALL **OF **THESE).**
+      **`symbol=Ops.REDUCE`** **NEXT **TO **`tinygrad/uop/ops.py:641`** — **WRONG**, **`Ops.REDUCE`
+      **IS **DECLARED **IN **`tinygrad/uop/__init__.py:97`**; **`symbol=GroupOp.Unary`** — **WRONG**,
+      **IT **IS **DECLARED **AT **`tinygrad/uop/__init__.py:104`**; **`symbol=AssertionError`** —
+      **WRONG**, **A **PYTHON **BUILTIN **HAS **NO **DECLARATION **TO **CITE**;
+      **`symbol=verify_tensor`** **NEXT **TO **AN **UPSTREAM **CITATION** — **WRONG**, **THAT **IS
+      **THE **PORT's **OWN **SYMBOL**; **`symbol=num_batches_tracked`** — **WRONG**, **IT **IS **AN
+      **ATTRIBUTE **ASSIGNED **AT **`tinygrad/nn/__init__.py:38`**, **NOT **A **DECLARATION.**
+      **⇒ AND **THE **GATE **ATTRIBUTES **THE **NEAREST **`symbol=` **TO **A **CITATION**, **SO **A
+      **PORT **SYMBOL **WRITTEN **AS **`symbol=` **NEXT **TO **AN **UPSTREAM **CITATION **IS
+      **ATTRIBUTED **TO **THE **UPSTREAM **ONE** **AND **FAILS.**  **⇒ AND **A **PORT **SYMBOL
+      **BELONGS **IN **PROSE** (**"the **port's **own **`verify_tensor` **is **at
+      **`uop/spec.bend:2833`"**), **NOT **AS **`symbol=`.**
+- [ ] **`tinygrad/extra/` **DOES **NOT **EXIST **AT **THIS **PIN** (MEASURED).** `ls tinygrad/`
+      **SHOWS **`codegen device.py dtype.py engine examples function.py helpers.py llm mixin nn
+      py.typed renderer runtime schedule tensor.py uop viz` **AND **NO **`extra`.**  **⇒ SO **A
+      **CITATION **TO **`extra/models/*.py` **OR **`extra/datasets/*.py` **NAMES **NO **UPSTREAM
+      **FILE**, **AND **THE **GATE **READS **IT **`UNRESOLVABLE`/`no-file`.**  **⇒ THE **PORT's
+      **OWN **`extra/…`** **FILES **ARE **NAMED **AS **THE **PORT's **OWN.**  **⇒ AND
+      **`tinygrad/examples/` **DOES **EXIST**, **SO **THOSE **CITATIONS **ARE **FINE.**
+- [x] **TWO **PLANTS **THAT **MEASURED **NOTHING **READ **AS **CLEAN **ZEROS** (`e8b92ea30`).**
+      **`checks/no-txt.py`'s **PLANT **CRASHED** — **`ROOT` **IS **A **`str`** (`:63`) **AND **THE
+      **PLANT **WROTE **`ROOT / ".agents" / "slop"`**, **SO **IT **DIED **WITH **A **`TypeError`**
+      **AT **`:260`**; **THE **FIX **IS **THE **FILE's **OWN **`os.path.join` **IDIOM**, **AND **NOW
+      **THE **PLANT **WRITES **ITS **FILE**, **THE **GATE **COUNTS **IT** (**187** **VS **186**),
+      **AND **THE **FILE **IS **REMOVED **ON **EVERY **EXIT.**  **⇒ AND **`checks/rn-gate.py`'s
+      **`literal` **LANE **PLANTED **A **STRING **THAT **IS **NOT **IN **THE **CAPTURE** — **THE
+      **`4` **MOVED **OUT **OF **`ParamArg` **AND **INTO **`UOp.range(4, ...)`**, **SO **THE **PLANT
+      **MATCHED **NO **LITERAL **AND **LEFT **`stale` **AT **0** — **A **PLANT **THAT **MEASURED
+      **NOTHING **READ **AS **A **CLEAN **0**, **WHICH **IS **EXACTLY **THE **FAILURE **THE **LANE
+      **EXISTS **TO **RULE **OUT.**  **⇒ NOW: **THE **`literal` **LANE **READS **`stale=1/80`**,
+      **THE **`control` **LANE **READS **`stale=0/80`**, **AND **THE **SELFTEST **IS **`SELFTEST
+      OK`** (rc=0).**  **⇒ AND **BOTH **GATES' **OWN **VERDICTS **ARE **UNCHANGED.**
