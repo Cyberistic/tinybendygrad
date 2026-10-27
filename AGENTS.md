@@ -130,6 +130,15 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **AND AS OF **2026-10-22T17:2xZ** (`b5c16d646`, **AFTER **TONIGHT's **247 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
+  **⚠ AND **THIS **RUN **IS **NOW **STALE, **MEASURED **2026-10-27**: **THE **SUBSTRATE **MOVED**
+  (**THE **CITATION **WORK **TOUCHED **`tinybendygrad/uop/fold.bend`**, **`mixin/op.bend`**,
+  **`runtime/webgpu_call.bend`** **AND **FORTY **MORE **`.bend` **FILES**), **SO **THE **LIVE
+  **DIGEST **IS **`ed6a074fe1aa0dfe54df4a768e226f3781df814999e9f7ccafcead1437163cb9`** **AND **NOT
+  **THE **`eb6ef860…`** **BELOW**.  **⇒ THE **RUN **MUST **BE **RE-TAKEN **ONCE **THE **PORT
+  **STOPS **MOVING**, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**  **⇒ AND **THE **CLAIM
+  **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** -- **AND **A **GOVERNING
+  **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY **BRIEF **THAT
+  **CITES **IT.**
   `graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0 byte-identical=35 graphs-refused=0`,
   `population=4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2`,
   `?=0`, `SHARED cores 52`, `controls 5 of 5`, `conflations 4 of 4`,
