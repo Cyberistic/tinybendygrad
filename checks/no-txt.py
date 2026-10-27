@@ -257,7 +257,7 @@ def plant() -> int:
     including a crash, so a plant cannot leave the residue that makes the next run disagree --
     which is the failure `.agents/slop/zerogate/REPORT.md` §7b records against `dup-census.py`.
     """
-    with tempfile.TemporaryDirectory(dir=ROOT / ".agents" / "slop") as td:
+    with tempfile.TemporaryDirectory(dir=os.path.join(ROOT, ".agents", "slop")) as td:
         (Path(td) / "planted.txt").write_text("one .txt this gate owns, for the length of a run\n")
         return main()
 

@@ -768,14 +768,23 @@ def selftest():
     "collide": (plant_shape(live, [("pyrender const", "pyrender ast"),
                                    ("pyrender cast", "pyrender ast")])[0],) * 2,
     # ⚠ THE LITERAL LANE: THE FALSIFICATION OF "0 BECAUSE THEY AGREE".  The capture is the port
-    # BEFORE `cc2d21f6d`, so its EMULATION and its LITERAL BOTH carry the `4` and the two AGREE;
-    # taking the `4` out of the LITERAL alone makes the capture contradict ITSELF, which is the
-    # same shape of defect the live plant makes.  ⚠ AND THE SUBSTITUTION IS SCOPED TO THE
-    # LITERAL: the same `ParamArg(...)` string is in the row's EMULATION, and a plant that
+    # BEFORE `cc2d21f6d`, so its EMULATION and its LITERAL BOTH carry the same `4` and the two
+    # AGREE; taking that `4` out of the LITERAL alone makes the capture contradict ITSELF, which
+    # is the same shape of defect the live plant makes.  ⚠ AND THE SUBSTITUTION IS SCOPED TO THE
+    # LITERAL: the same `UOp.range(4, ...)` string is in the row's EMULATION, and a plant that
     # changed both would have left the port self-consistent and read as a clean 0.
+    # ⚠ AND THE `4` MOVED.  THIS PLANT USED TO REWRITE `ParamArg(0, dtypes.i32, 4, device='CPU')`
+    # -> `ParamArg(0, dtypes.i32, device='CPU')`, BECAUSE THE `4` USED TO BE **INSIDE** THE
+    # `ParamArg`.  IT IS NOT: MEASURED, THE CAPTURE'S `pyrender buffer` LITERAL IS
+    #     c1 = UOp.range(4, 0, AxisType.WEAK)
+    #     ast = UOp(Ops.BUFFER, (c1,), ParamArg(0, dtypes.i32, device='CPU'))
+    # -- THE `4` IS IN THE **RANGE**, AND THE `ParamArg` CARRIES NO SIZE.  SO THE OLD PLANT
+    # MATCHED NO LITERAL, PRINTED "this cell measured nothing and proves nothing", AND LEFT
+    # `stale` AT 0 -- **A PLANT THAT MEASURED NOTHING READ AS A CLEAN 0**, WHICH IS EXACTLY THE
+    # FAILURE THIS LANE EXISTS TO RULE OUT.  THE PLANT IS RE-AIMED AT THE `4` THAT IS THERE.
     "literal": (plant_literal(live, "pyrender buffer",
-                               "ParamArg(0, dtypes.i32, 4, device='CPU')",
-                               "ParamArg(0, dtypes.i32, device='CPU')")[0], orc),
+                               "UOp.range(4, 0, AxisType.WEAK)",
+                               "UOp.range(5, 0, AxisType.WEAK)")[0], orc),
     # THE UNBROKEN CONTROL: a copy of the port with a plant that matches NOTHING must be
     # BYTE-IDENTICAL to the lane it was copied from, so the literal lane's difference is the
     # PLANT's and not the copying's.
