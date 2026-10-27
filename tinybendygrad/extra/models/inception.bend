@@ -27,9 +27,9 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `BasicConv2d.__init__` (extra/models/inception.py:12),
 # at upstream:14
 #       self.conv = Conv2d(in_ch, out_ch, bias=False, **kwargs)
-#   `Tensor.conv2d` IS BUILT (`nn_conv2d`, nn/layers.bend:756, and its bias IS a
+#   `Tensor.conv2d` IS BUILT (`nn_conv2d`, nn/layers.bend:927 symbol=nn_conv2d, and its bias IS a
 #   `Maybe<&2, T.Tensor>` so `bias=False` is `None{}` -- exactly the arm
-#   `nn_cnv.add` at :714 spells). WHAT IS MISSING IS THE CLASS: `nn/__init__.bend`
+#   `nn_cnv.add` at nn/layers.bend:885 symbol=nn_cnv.add spells). WHAT IS MISSING IS THE CLASS: `nn/__init__.bend`
 #   has 17 defs and ZERO classes, so there is no `nn.Conv2d` to construct, no
 #   `**kwargs` to forward and no weight to hold a shape.
 #   AND THE VERY NEXT LINE IS A HARDER ONE: upstream:15

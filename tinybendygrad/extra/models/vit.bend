@@ -20,8 +20,8 @@ import ./../datasets/__init__.bend as D
 # THAT IS THE WHOLE OF ITS DISTINCTIVE BLOCKER. Every other file here names
 # `nn.Conv2d` in its first constructor; `ViT.__init__` names `Tensor.uniform`,
 # `Tensor.zeros` and `Tensor.ones` (upstream:8-11,16-17) -- all FOUR are built
-# (`rd_uniform` mixin/rand.bend:836, `cr_zeros` mixin/creation.bend:446,
-# `cr_ones` mixin/creation.bend:487) -- and then names `TransformerBlock` at
+# (`rd_uniform` mixin/rand.bend:920 symbol=rd_uniform, `cr_zeros` mixin/creation.bend:515 symbol=cr_zeros,
+# `cr_ones` mixin/creation.bend:556 symbol=cr_ones) -- and then names `TransformerBlock` at
 # upstream:13.
 #
 # TODO(port): STOPPED AT `ViT.__init__` (extra/models/vit.py:6), at upstream:13
@@ -55,7 +55,7 @@ import ./../datasets/__init__.bend as D
 # ("`-1` is NOT spelled because no def here infers an axis (that is
 # `Tensor.reshape`'s `get_shape`, and the port writes its targets out)"). So
 # :21 needs a `get_shape`/`prod` inference the port does not have, and :30's
-# `x[:, 0]` needs a SLICE, which `rd_slice` (mixin/rand.bend:392) is not.
+# `x[:, 0]` needs a SLICE, which `rd_slice` (mixin/rand.bend:476 symbol=rd_slice) is not.
 #
 # `Tensor.gelu` is named twice -- `act=lambda x: x.gelu()` at :14 and nothing
 # else in this file. Plain `gelu` is NOT a def: `mixin/elementwise.bend:1217`

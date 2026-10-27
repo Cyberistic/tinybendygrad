@@ -48,7 +48,9 @@
 #    DROPS Python's `remaining`. Python raises `AssertionError` when a source is
 #    neither CALL/END/AFTER/STORE; a raise is not a value, so `Split` here has
 #    exactly Python's two fields and the assertion is `# TODO(p3)
-#    __init__.py:29`. Not carrying `remaining` is the price of a total function,
+#    tinygrad/schedule/__init__.py:28` -- upstream RAISES `AssertionError` there (the
+#    builtin, so it has no declaration to cite).
+#    Not carrying `remaining` is the price of a total function,
 #    and it is the same trade `helpers.bend`'s `unwrap_or` documents. The gate's
 #    `split_bad_ks` pins the DROP where Python raises.
 # 2. `prev_kernels` is a `set`, but `k not in prev_kernels` is membership, and
@@ -1387,7 +1389,7 @@ def cs_run(c: CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> CallifyCtx:
 #     and not the guard. The guard below is therefore cache-free BY CONSTRUCTION
 #     -- it takes no cache at all -- and `lsl_none_*` are real CPython calls of
 #     the real function, so they exercise the same early return.
-#   WALL(p3) __init__.py:133      `if SPEC: type_verify(function, spec_tensor)` -- BLOCKED: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor` over `tensor_table()`; `type_verify`/`spec_tensor` are PORTED there (spec.bend:3121), NOT missing defs, and only the `SPEC > 1` and `DEBUG >= 3` arms are absent.
+#   WALL(p3) tinygrad/schedule/__init__.py:133      `if SPEC: type_verify(function, spec_tensor)` -- BLOCKED: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor` over `tensor_table()`; upstream's `type_verify` is DECLARED at tinygrad/uop/spec.py:34 and its `spec_tensor` at tinygrad/uop/spec.py:145, and BOTH are PORTED in the port -- the port's own `verify_tensor` is at uop/spec.bend:2833 and its `tensor_table` at uop/spec.bend:2074 -- so these are NOT missing defs, and only the `SPEC > 1` and `DEBUG >= 3` arms are absent.
 #   TODO(p3) __init__.py:132      `get_kernel_graph(prepare_rangeify(function))`
 #     -- `schedule/rangeify.py` and `schedule/prepare.py`, out of scope.
 #   TODO(p3) __init__.py:139-148  the `inspect.stack()` DEBUG block.
@@ -1531,7 +1533,7 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 #                      if x.op is Ops.PARAM and x.device is not None])
 #     if len(devices) >= 2: raise RuntimeError(...)
 #
-# `UOp.toposort` (ops.bend:2894) is the ungated one, so no `sc_topo` copy is
+# `UOp.toposort` (uop/ops.bend:3366 symbol=UOp.toposort) is the ungated one, so no `sc_topo` copy is
 # needed. `dedup` preserves FIRST-OCCURRENCE order and the arena interns, so two
 # structurally equal UOps are ONE index: the dedup is over INDICES and a
 # `List.contains` over the kept ones is the same set -- the argument `sc_newks`
@@ -1796,8 +1798,8 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #          19 TOP1 20 BAD            (so `fx1_nodes`=21 and `fx1_topo`=19)
 #   THE TABLE IS A READING, NOT A CONTRACT.  It was written against the
 #   substrate of 2026-10-07, whose `param_src` DROPPED the size CONST and the
-#   PARAM's STACK (ops.bend:3035-3036); `UOp.new.param` interns BOTH
-#   (ops.bend:3062-3064), so every index after the first PARAM moved and 18
+#   PARAM's STACK (uop/ops.bend:3050 symbol=param_src); `UOp.new.param` interns BOTH
+#   (uop/ops.bend:3077 symbol=UOp.new.param), so every index after the first PARAM moved and 18
 #   rows were reading the WRONG NODE.  The rows no longer READ this table: they
 #   read GRAPH POSITIONS (`fx1.a()`, `fx2.kb()`, ...), which cannot move.  The
 #   three `fx*_nodes` rows are the only rows that still count arena slots, and
@@ -1915,8 +1917,8 @@ def fx4() -> O.Found:
 # by its arena index.
 #
 # WHY, MEASURED.  The arena is a MOVING TARGET: `UOp.new.param` interns the
-# shape node that the old `param_src` DROPPED (ops.bend:3035-3036 and
-# :3062-3064), so one substrate change moved every index after the first
+# shape node that the old `param_src` DROPPED (uop/ops.bend:3050 symbol=param_src
+# and uop/ops.bend:3077 symbol=UOp.new.param), so one substrate change moved every index after the first
 # PARAM.  The port's rows were ADDRESSED by index and 18 of them went on
 # reading the WRONG NODE -- `unwrap_A1` answered 9 (a CONST) where CPython
 # answers 1 (a BUFFER) -- and the gate did not see it because its CPython

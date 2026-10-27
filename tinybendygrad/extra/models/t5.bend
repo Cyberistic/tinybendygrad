@@ -21,37 +21,41 @@ import ./../datasets/__init__.bend as D
 # T5 IS THE CHEAPEST OF THE ATTENTION FILES AND THE REASON IS WORTH NAMING:
 # OF THE FIVE IN THIS SLICE THAT HAVE ATTENTION -- transformer:27, bert:279,
 # clip:176 and :271, llama:101 and :104 -- t5 IS THE ONLY ONE THAT SPELLS ITS
-# ATTENTION OUT INSTEAD OF CALLING `scaled_dot_product_attention`.
-# `scaled_dot_product_attention`. t5.py:210 is
-# `Tensor.matmul(query_states, key_states.transpose(3, 2))` and :218 is
+# ATTENTION OUT INSTEAD OF CALLING `scaled_dot_product_attention`. **UPSTREAM
+# `extra/models/t5.py` HAS NO `scaled_dot_product_attention` AT ALL -- NOT AT THE
+# PIN AND NOT AT ANY REVISION** -- so the claim is an ABSENCE, and the claim about
+# what IS there is the one the citation has to carry: extra/models/t5.py:210
+# symbol=Tensor.matmul is `Tensor.matmul(query_states, key_states.transpose(3, 2))`
+# and the PORT's OWN extra/models/t5.py:217 (upstream has NO extra/models/ AT THIS PIN) is
 # `Tensor.matmul(attn_weights, value_states)` -- it never reaches the fused op.
 # So T5's SECOND wall is `Tensor.matmul`, which is MISSING
 # (`grep -rnE "^def mo_matmul" --include='*.bend' tinybendygrad/` = 0), while
-# `Tensor.softmax` at :216 IS PRESENT as mixin/op.bend:1095 `mo_softmax`.
+# `Tensor.softmax` at the PORT's own extra/models/t5.py:215 IS PRESENT as
+# mixin/op.bend:1155 symbol=mo_softmax.
 # `mixin/op.bend:85` names `matmul` as WALL 8 -- "a WMMA lowering over
 # `UOp(Ops.WMMA, ...)` with a device-specific arg" -- but `nn/layers.bend:1-27`
 # says the same name is a LIE for the LAYER's arithmetic: `nn_dot` there is
 # RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST, all six of which EXIST.
-# So `Tensor.matmul` is `nn_dot` renamed, and t5.py is CLOSER THAN BERT.
+# So `Tensor.matmul` is `nn_dot` renamed, and extra/models/t5.py is CLOSER THAN BERT.
 #
 # WHAT EXISTS, WITH ITS INSTRUMENT:
-#   `nn.Linear`        nn/layers.bend:427 `nn_linear`   (:77,:78,:79,:112,:113,:114,:115)
-#   `Tensor.softmax`   mixin/op.bend:1095 `mo_softmax`  (:216)  <-- the named family, PRESENT
-#   `Tensor.mean`      mixin/op.bend:891 `mo_mean`      (:65)
-#   `Tensor.min`       mixin/op.bend:1130 `mo_min`      (:158) the REDUCTION; matches the
+#   `nn.Linear`        nn/layers.bend:520 symbol=nn_linear   (:77,:78,:79,:112,:113,:114,:115)
+#   `Tensor.softmax`   mixin/op.bend:1155 symbol=mo_softmax  (:216)  <-- the named family, PRESENT
+#   `Tensor.mean`      mixin/op.bend:951 symbol=mo_mean      (:65)
+#   `Tensor.min`       mixin/op.bend:1190 symbol=mo_min      (:158) the REDUCTION; matches the
 #                                                      `axis=0` at :162
-#   `Tensor.where`     mixin/elementwise.bend:571 `ew_where` (:164)
-#   `Tensor.log`       mixin/elementwise.bend:1252 `ew_log`  (:153)
-#   `Tensor.pow(2)`    mixin/elementwise.bend:518 `ew_pow`  (:65) -- a BINOP, which is what
+#   `Tensor.where`     mixin/elementwise.bend:571 symbol=ew_where (:164)
+#   `Tensor.log`       mixin/elementwise.bend:1278 symbol=ew_log  (:153)
+#   `Tensor.pow(2)`    mixin/elementwise.bend:518 symbol=ew_pow  (:65) -- a BINOP, which is what
 #                                                      `pow(2)` is here
-#   `Tensor.ones`      mixin/creation.bend:487 `cr_ones`  (:56)
-#   `Tensor.zeros_like` mixin/creation.bend:481 `cr_zeros_like` (:142)
-#   `Tensor.full_like` mixin/creation.bend:442 `cr_full_like`  (:160)
-#   `Tensor.arange`    mixin/rand.bend:361 `op_arange`  (:169,:170)
-#   `Tensor.stack`     mixin/movement.bend:1269 `mxw_stk` (:159)
-#   `x.reshape`/`view` mixin/movement.bend:1431 `mxw_reshape` (:178,:190,:194,:258)
-#   `x.transpose`      mixin/movement.bend:1449 `mxw_permute` (:178,:190,:194,:210)
-#   `x.cast`           mixin/op.bend:370 `mo_cast_t`     (:10,:65,:156,:216)
+#   `Tensor.ones`      mixin/creation.bend:556 symbol=cr_ones  (:56)
+#   `Tensor.zeros_like` mixin/creation.bend:550 symbol=cr_zeros_like (:142)
+#   `Tensor.full_like` mixin/creation.bend:511 symbol=cr_full_like  (:160)
+#   `Tensor.arange`    mixin/rand.bend:424 symbol=op_arange  (:169,:170)
+#   `Tensor.stack`     mixin/movement.bend:1272 symbol=mxw_stk (:159)
+#   `x.reshape`/`view` mixin/movement.bend:1434 symbol=mxw_reshape (:178,:190,:194,:258)
+#   `x.transpose`      mixin/movement.bend:1452 symbol=mxw_permute (:178,:190,:194,:210)
+#   `x.cast`           mixin/op.bend:388 symbol=mo_cast_t     (:10,:65,:156,:216)
 #
 # WHAT IS MISSING, NAMED:
 #   (1) `nn.Embedding`  MISSING. (:118,:251,:270) THE FIRST MISSING SYMBOL.

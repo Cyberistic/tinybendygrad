@@ -20,7 +20,7 @@
 #
 # `ops.bend` named the sugar in its own NOT PORTED block (`UOp.cast`,
 # `UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`, `UOp.where` were all
-# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:2880`, the
+# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:2970` symbol=UOp.cast, the
 # always-builds-new shape (no identity check), gated at `gates/uop_cast-gate.py`
 # 8/8 rows. The FOLD the identity check needs (`dtype_from_uop`) is the same FOLD
 # the remaining four (`UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`) need:
@@ -55,7 +55,9 @@
 #                       dtype, a src count and src[0]'s op and dtype off a node,
 #                       so each rule took the two or three of those its own
 #                       pattern constrains and answers `NOMATCH` otherwise.
-#                       MEASURED: `patterns[:17]` are these and `patterns[17:]`
+#                       MEASURED: upstream's `string_rewrite` (tinygrad/renderer/wgsl.py:66
+#                       symbol=string_rewrite) is a `PatternMatcher` and the port's
+#                       `patterns[:17]` are these and `patterns[17:]`
 #                       is `base_rewrite`'s 33, and the gate's `rules_hold()`
 #                       re-derives both numbers and each rule's op and dtypes
 #                       from CPython on every run. `sr_pick_bitcast`,

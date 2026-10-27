@@ -28,16 +28,16 @@ import ./../datasets/__init__.bend as D
 # without it.
 #
 # WHAT BERT GETS FOR FREE FROM THE VISION WORK, and this is measured, not hoped:
-#   `nn.Linear`             nn/layers.bend:427 `nn_linear`  (:16,:130,:225,:264,:265,:266,:292,:310,:239)
-#   `Tensor.stack`          mixin/movement.bend:1269 `mxw_stk` (:40)
-#   `reshape`               mixin/movement.bend:1431 `mxw_reshape` (:37,:38,:282,:287)
-#   `transpose`             mixin/movement.bend:1449 `mxw_permute` (:281,:288)
-#   `log_softmax`           mixin/op.bend:1109 `mo_log_softmax` (:54)
-#   `Tensor.arange`         mixin/rand.bend:361 `op_arange`     (:55,:192)
-#   `Tensor.zeros`          mixin/creation.bend:446 `cr_zeros`  (:141)
-#   `Tensor.ones`           mixin/creation.bend:487 `cr_ones`   -- needed by T5, not here
-#   `Tensor.cast`/`.float()`mixin/op.bend:370 `mo_cast_t`     (:54,:70)
-#   `x.relu`                nn/layers.bend:262 `nn_relu` -- BERT has none; recorded so the
+#   `nn.Linear`             nn/layers.bend:520 symbol=nn_linear  (:16,:130,:225,:264,:265,:266,:292,:310,:239)
+#   `Tensor.stack`          mixin/movement.bend:1272 symbol=mxw_stk (:40)
+#   `reshape`               mixin/movement.bend:1434 symbol=mxw_reshape (:37,:38,:282,:287)
+#   `transpose`             mixin/movement.bend:1452 symbol=mxw_permute (:281,:288)
+#   `log_softmax`           mixin/op.bend:1169 symbol=mo_log_softmax (:54)
+#   `Tensor.arange`         mixin/rand.bend:424 symbol=op_arange     (:55,:192)
+#   `Tensor.zeros`          mixin/creation.bend:515 symbol=cr_zeros  (:141)
+#   `Tensor.ones`           mixin/creation.bend:556 symbol=cr_ones   -- needed by T5, not here
+#   `Tensor.cast`/`.float()`mixin/op.bend:388 symbol=mo_cast_t     (:54,:70)
+#   `x.relu`                nn/layers.bend:289 symbol=nn_relu -- BERT has none; recorded so the
 #                           census is a census and not a list of what is convenient
 #   `x +` / `x *`           mixin/elementwise.bend:509/510 `ew_add`/`ew_mul` (:56,:67,:197,:232)
 #   `Adam`                   nn/optim.bend -- `op_mstep` :898 `op_vstep` :903 `op_mhat` `op_vhat`.
@@ -67,9 +67,9 @@ import ./../datasets/__init__.bend as D
 # `Embedding = nn.Embedding` is the module-level alias at extra/models/bert.py:9 and there is no `def Embedding`
 # anywhere under `tinybendygrad/`, and no `def mo_i` either.
 # **THE `mo_fx` HALF OF THIS EVIDENCE WAS FALSE. CORRECTED 2026-10-20:** `def mo_fx1d` is at
-# `mixin/op.bend:1181` and `def mo_fx2d` at `:1189`, so "no `def mo_fx` anywhere" was falsifiable
+# `mixin/op.bend:1305` and `def mo_fx2d` at `mixin/op.bend:1313`, so "no `def mo_fx` anywhere" was falsifiable
 # and falsified -- the audit's grep demanded a literal `(` after the name and matched neither.
-# **THE CONCLUSION IS UNCHANGED AND WAS NEVER IN DOUBT:** `op.bend:1193` shows both are FIXTURES
+# **THE CONCLUSION IS UNCHANGED AND WAS NEVER IN DOUBT:** `mixin/op.bend:1313` symbol=mo_fx2d shows both are FIXTURES
 # returning `r` unchanged, not a gather, and `def mo_i` is still absent. **A CITATION WRONG ON ITS
 # EVIDENCE AND RIGHT ON ITS CONCLUSION STILL MISLEADS THE NEXT READER, WHO CHECKS THE EVIDENCE.**
 #

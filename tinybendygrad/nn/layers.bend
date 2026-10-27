@@ -13,9 +13,19 @@
 #     `Tensor.linear` (mixin/op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
 #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
 #     `dot` (mixin/op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
-#     All six are built today: `M.mo_reshape` (mixin/op.bend:664),
-#     `M.mo_permute` (:680), `T.tn_mul` (tensor.bend:656), `M.mo_sum` (:811),
-#     `M.mo_cast_t` (:370), `DT.least_upper_dtypes` (dtype.bend:218). WMMA is
+#     All six are built today: `M.mo_reshape` (mixin/op.bend:702 symbol=mo_reshape),
+#     `M.mo_permute` (mixin/op.bend:718 symbol=mo_permute), `T.tn_mul` (tensor.bend:656
+#     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:851 symbol=mo_sum),
+#     `M.mo_cast_t` (mixin/op.bend:388 symbol=mo_cast_t),
+#     `DT.least_upper_dtypes` (dtype.bend:257 symbol=least_upper_dtypes). The UPSTREAM
+#     half of those six is tinygrad/uop/ops.py:799 symbol=_mop, whose
+#     `Ops.RESHAPE`/`Ops.PERMUTE` arms build the first two and whose
+#     `Ops.REDUCE` arm (tinygrad/uop/ops.py:641; the enum member is DECLARED at
+#     tinygrad/uop/__init__.py:97 symbol=Ops.REDUCE) builds the third;
+#     the cast is tinygrad/uop/ops.py:422 (the group is DECLARED at
+#     tinygrad/uop/__init__.py:104 symbol=GroupOp.Unary), and the
+#     least-upper-dtype rule is tinygrad/dtype.py:193 symbol=least_upper_dtype.
+#     WMMA is
 #     `dot`'s HANDLER, and the layer's own arithmetic never selects it.
 #   `nn/__init__.bend:231` -- `x.conv2d` "SIDE B, not built". `mixin/op.bend`'s
 #     SIDE B is EMPTY: `tinybendygrad/mixin/op.bend:1523` is the last line and
@@ -95,8 +105,8 @@ def nn_shape(+t: T.Tensor) -> Maybe<&2, List<&2, U32>>:
   nn_u32(M.mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
 
 # `U32` -> `O.Const`, so a projected shape is a legal movement ARG.
-# `mo_reshape` (mixin/op.bend:664) takes `List<&2, O.Const>` and `mo_ki`
-# (:340) is the tree's one def for the conversion, so it is CALLED.
+# `mo_reshape` (mixin/op.bend:702 symbol=mo_reshape) takes `List<&2, O.Const>` and `mo_ki`
+# (mixin/op.bend:358 symbol=mo_ki) is the tree's one def for the conversion, so it is CALLED.
 def nn_ks.go(+xs: List<&2, U32>, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
   match xs:
     case Nil{}: acc
@@ -116,8 +126,8 @@ def nn_range(n: U32) -> List<&2, U32>: M.mo_range(U32.to_nat(n))
 # CPython SAYS IT IN A COMMENT: "permute so reduced axes are at the FRONT"
 # (ops.py:636), then `UOp(Ops.REDUCE, src=(self.permute(perm),), arg=(op,
 # len(reduce_axis)))` (:637). The port's TWO HALVES AGREE WITH EACH OTHER --
-# `F.reduce_dims.put` (uop/fold.bend:892) answers `drop_n(shape, num_axes)` and
-# `S.drop_n` (LAWS/spec.bend:270) drops FROM THE HEAD -- SO THE PORT'S REDUCE
+# `F.reduce_dims.put` (uop/fold.bend:904 symbol=reduce_dims.put) answers `drop_n(shape, num_axes)` and
+# `S.drop_n` (LAWS/spec.bend:270 symbol=drop_n) drops FROM THE HEAD -- SO THE PORT'S REDUCE
 # REDUCES THE FIRST `num_axes` AXES. THE PERMUTE THAT WOULD MAKE THAT TRUE FOR
 # AN ARBITRARY AXIS IS NOT BUILT: `tn_rop.perm.of` (tensor.bend:1815) answers
 # `self` IN BOTH ARMS and its own comment says so.
@@ -221,7 +231,7 @@ def nn_reduce.pick(+rn: List<&2, U32>, +t: T.Tensor, +kept: List<&2, U32>, +n: U
 
 # `ret.reshape(kept) if axis != reduce_axis else ret` -- ops.py:638. APPLIED
 # UNCONDITIONALLY, which is the same thing: `axis == reduce_axis` makes `kept`
-# the identity, and `M.mo_reshape` (mixin/op.bend:664) answers its source
+# the identity, and `M.mo_reshape` (mixin/op.bend:702 symbol=mo_reshape) answers its source
 # unchanged on an identity target rather than minting a RESHAPE. MEASURED: with
 # the reshape applied, `sum(axis=[2])` over `(2, 4, 3)` is a 20-node graph whose
 # root IS the REDUCE and whose folded shape is `(2, 4)`; with the INDICES
@@ -325,14 +335,14 @@ def nn_dotk(+dx: U32, +dw: U32) -> U32:
 
 # `xs[0:-n]` -- CPython's TAIL SLICE, WHICH `List.drop` CANNOT SPELL.
 #
-# `List.drop` (references/bend/bend2/base.bend:993) IS A HEAD DROP: IT ANSWERS
-# `xs[n:]`, AND `List.take` (base.bend:984) IS ITS COMPLEMENT, SO
+# `List.drop` (references/bend/bend2/base.bend:1000 symbol=List.drop) IS A HEAD DROP: IT ANSWERS
+# `xs[n:]`, AND `List.take` (references/bend/bend2/base.bend:991 symbol=List.take) IS ITS COMPLEMENT, SO
 # `take(xs, k)` ANSWERS `xs[:k]`. MEASURED, `.agents/slop/dotfix/sem.bend`:
 # `drop([2,4,3], 1)` = `[4,3]` AND `drop([2,4,3], 2)` = `[3]`.
 #
 # CPython's `x.shape[0:-1]` (op.py:390) IS THE OTHER END: IT KEEPS EVERY DIM
 # BUT THE LAST, AND ITS ANSWER IS `xs[:len-1]`. `Nat.sub` SATURATES AT 0
-# (base.bend:657), SO A SHAPE SHORTER THAN `n` ANSWERS `Nil{}` -- WHICH IS
+# (references/bend/bend2/base.bend:664 symbol=Nat.sub), SO A SHAPE SHORTER THAN `n` ANSWERS `Nil{}` -- WHICH IS
 # WHAT `xs[0:-2]` ANSWERS FOR A 1-D OR A 2-D `w`.
 #
 # `uop/fold.bend`'s `take_n`/`drop_last` ARE THE SAME IDIOM ON `O.Sint`, AND
@@ -352,7 +362,7 @@ def nn_dot.xshape(+xs: List<&2, U32>, k: U32) -> List<&2, U32>:
 # dw<=2 AND `(w0,)` FOR dw==3.
 #
 # SO THE TARGET IS `DROP_LAST 2` ++ `ONES k` ++ `DROP_FIRST (dw-min(dw,2))`, AND
-# `Nat.sub` SATURATES AT 0 (base.bend:657) SO `dw-min(dw,2)` IS 0 FOR dw==1
+# `Nat.sub` SATURATES AT 0 (references/bend/bend2/base.bend:664 symbol=Nat.sub) SO `dw-min(dw,2)` IS 0 FOR dw==1
 # AND dw==2 -- WHICH IS EXACTLY CPython's `w.shape[axis_w:]` THERE. THE HEAD
 # DROP `List.drop(ws, 2n)` THIS USED TO SPELL ANSWERED `ws[2:]`, WHICH IS
 # `(w2,)` FOR dw==3 WHERE CPython'S FIRST SLICE ANSWERS `(w0,)`.
@@ -376,7 +386,7 @@ def nn_dot.order(+len: U32, +dw: U32) -> List<&2, U32>:
     U32.to_nat(U32.sub(len, 1)), b)
 
 # `sum(-1)` -- :392. PYTHON'S `-1` HAS NO `U32` IMAGE, and the port's own
-# `mo_ax`/`mo_resolve` (mixin/op.bend:753/:719) cannot spell it:
+# `mo_ax`/`mo_resolve` (mixin/op.bend:792 symbol=mo_ax / mixin/op.bend:758 symbol=mo_resolve) cannot spell it:
 # `mo_resolve(neg, dim, total) = dim + total`, so `neg=True, dim=1` answers
 # `ndim+1`, one PAST the last axis. THE RESOLVED INDEX IS TAKEN FROM THE OTHER
 # END -- `nn_last_ax` -- which is the same value and is total.
@@ -386,8 +396,8 @@ def nn_umax(a: U32, b: U32) -> U32: U32.max(a, b)
 
 # `_broadcasted`'s dtype half (elementwise.py:24) -- THE REFUSAL. `tn_mul`
 # (tensor.bend:651) is the NODE, and the node's shape comes from the fold
-# (`F.alu_ds`, fold.bend:999), but the `cast(out_dtype)` is `mo_promote`'s job
-# (mixin/op.bend:246's W9b) and it is what the no-broadcasting gates do not
+# (`F.alu_ds`, uop/fold.bend:1011 symbol=alu_ds), but the `cast(out_dtype)` is `mo_promote`'s job
+# (mixin/op.bend:508 symbol=mo_promote) and it is what the no-broadcasting gates do not
 # cover. `dot` multiplies two tensors of the SAME dtype, where that cast is the
 # identity, so this answers `None` rather than assuming it -- and `None` for an
 # UNREADABLE dtype too, so a caller can never `least_upper_dtype` from `void`.

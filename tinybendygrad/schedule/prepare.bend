@@ -61,7 +61,7 @@
 #     body that lives in another file is named at the call site. Their RULES are
 #     in the table and their DATA (`slen`/`rlen`/`nalts`/`rej`) is gated.
 #
-# `O.PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:2966), so the
+# `O.PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (uop/ops.bend:4005 symbol=PMEntry), so the
 # oracle's `<t>_<k>_dt` and `_src` columns have no field to read: those are
 # `UPat` facts (`match_dtype`, and the src permutation tuple at upat.py:39) and
 # `UPat` does not survive into the compiled IR. `schedule/indexing.bend` records
@@ -118,7 +118,7 @@ def len_ops(xs: List<&2, O.Op>) -> U32: U32.from_nat(List.length(&2, O.Op, xs))
 # are the two cases. The rendering is `U32.show` for the unsigned arm and the
 # I64 spelling for the signed one, and a `Data` match is the only way to read a
 # sum type's arms.
-# `H.i64_text` renders an I64 as `hi:lo` (helpers.bend:1706, "an I64 prints as its
+# `H.i64_text` renders an I64 as `hi:lo` (helpers.bend:1712 symbol=i64_text, "an I64 prints as its
 # two words"), which is right for a 64-BIT pointer and wrong for a shape dim, where
 # CPython prints the plain integer.  `H.i64_is_neg` / `H.i64_add` / `H.lo32` are
 # the pieces, and a shape dim in this tree is either a small positive I64 or the
@@ -275,8 +275,8 @@ def pr_perm(ar: O.Arena, +x: O.Found, +a: U32, b: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPERMUTE{}, [O.Found.i(x)], O.ATuple{[a, b]}, O.TNone{})
 
 # ---------------------------------------------------------------------------
-# REPORTED, NOT USED: `ops.bend`'s `UOp.after` (ops.bend:2085) and `UOp.end`
-# (ops.bend:2094) build `List.append(srcs, [self])`, which is `srcs ++ [self]`.
+# REPORTED, NOT USED: `ops.bend`'s `UOp.after` (uop/ops.bend:2859 symbol=UOp.after) and `UOp.end`
+# (uop/ops.bend:2897 symbol=UOp.end) build `List.append(srcs, [self])`, which is `srcs ++ [self]`.
 # `ops.py:621` is `src=(self,)+src` and `ops.py:619` is `src=(self,)+src`, so the
 # two helpers put the node LAST where Python puts it FIRST.  That is an INVERTED
 # FIELD ORDER and it is exactly the class of defect `agent-core.md` names
@@ -529,13 +529,14 @@ def g_t6() -> IO(Unit):
 # at all, so the rows are `wm_<nm>_same` (the answer IS the input) and
 # `wm_<nm>_wmx` (the answer IS `u.src[0]`) -- neither is a count, and a movement
 # node and its un-moved alias have the same op, the same nsrc, the same src op
-# sequence and the same shape.  `GroupOp.movement` is `ops.bend:443` and owns the
+# sequence and the same shape.  `GroupOp.movement` is `uop/ops.bend:504` symbol=GroupOp.movement and owns the
 # predicate; the three extra ops are written out because they are three.
 # ---------------------------------------------------------------------------
 # The SHAPE is `fold.bend`'s: ONE self-recursive def with the decreasing fuel
 # first, and a `Data` RECORD for the rest of the state, because a `match` on a
 # record's field binder is legal where a `match` on a computed value is not.  That
-# is `Kahn.run` / `Kahn.step` / `Kahn.pop` exactly (fold.bend:2635-2646), and it is
+# is `Kahn.run` / `Kahn.step` / `Kahn.pop` exactly (uop/fold.bend:4833 symbol=Kahn.run,
+# uop/fold.bend:4824 symbol=Kahn.step, uop/fold.bend:4818 symbol=Kahn.pop), and it is
 # the only reason this walk is writable at all: Python's two `if`s become one
 # `match` on `WmSt{kind}`, and the AFTER arm's "build or keep" becomes a
 # `Bool.pick` inside `pr_wm_fork`, which is a FUNCTION and not a scrutinee -- which
@@ -635,7 +636,7 @@ def pr_wm_last(+st: WmSp) -> List<&2, U32>: pr_wm_last.of(WmSp.done(st), st)
 
 # THE SPINE.  `ns` is the fuel and it is the FIRST parameter, because a
 # self-recursive def's decreasing argument must be first and read left to right
-# (`Kahn.seed.work`, fold.bend:2186, is the precedent for a list fuel).  The tail is
+# (`Kahn.seed.work`, uop/fold.bend:2927 symbol=Kahn.seed.work, is the precedent for a list fuel).  The tail is
 # what shrinks, so `pr_wm_turn` cannot shorten it -- which is what `done` is for.
 def pr_wm_spine(+ns: List<&2, Nat>, st: WmSp) -> List<&2, U32>:
   match ns:
@@ -705,7 +706,7 @@ def pr_wm_arm(+n: U32, +a: WmA) -> WmA:
   pr_wm_keep.of(pr_wm_hop(O.Arena.op(WmA.ar(a), n)), O.op_is(WmA.ar(a), n, O.OpsAFTER{}), n, a)
 
 # The SPINE is the fuel and it is the FIRST parameter with the accumulator LAST,
-# which is `Kahn.run(fuel, ar, k)` exactly (fold.bend:2650): the tail is the
+# which is `Kahn.run(fuel, ar, k)` exactly (uop/fold.bend:4833 symbol=Kahn.run): the tail is the
 # decreasing argument, so it is read first, and the changed accumulator rides in
 # the last position where nothing else has to be read twice.
 def pr_wm_fold(+ns: List<&2, U32>, a: WmA) -> WmA:
@@ -971,7 +972,7 @@ def g_wm() -> IO(Unit):
 #     separates them.
 #   * `<t>_<k>_{dt,src}` (2 per rule) -- `UPat.match_dtype` and the src permutation
 #     tuple (upat.py:47).  `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE
-#     (ops.bend:2966), so `UPat` does not survive into the compiled IR.
+#     (uop/ops.bend:4005 symbol=PMEntry), so `UPat` does not survive into the compiled IR.
 # ===========================================================================
 def main() -> IO(Unit):
   do IO<Unit>:

@@ -38,10 +38,10 @@ import ./../datasets/__init__.bend as D
 #
 # THE NAMED CENSUS FOR THIS FILE:
 #   `nn.Embedding` MISSING (:178). THE FIRST MISSING SYMBOL.
-#   `nn.Linear`    EXISTS, nn/layers.bend:427 `nn_linear` (:191,:192,:107).
-#   `Tensor.sigmoid` EXISTS, mixin/elementwise.bend:1196 `ew_sigmoid` (:110).
-#   `Tensor.tanh`    EXISTS, mixin/elementwise.bend:1232 `ew_tanh`    (:110).
-#   `softmax`        NOT USED BY THIS FILE. (`mo_softmax` mixin/op.bend:1095 exists.)
+#   `nn.Linear`    EXISTS, nn/layers.bend:520 symbol=nn_linear (:191,:192,:107).
+#   `Tensor.sigmoid` EXISTS, mixin/elementwise.bend:1206 symbol=ew_sigmoid (:110).
+#   `Tensor.tanh`    EXISTS, mixin/elementwise.bend:1255 symbol=ew_tanh    (:110).
+#   `softmax`        NOT USED BY THIS FILE. (`mo_softmax` mixin/op.bend:1155 symbol=mo_softmax exists.)
 #   `adam`           NOT USED BY THIS FILE. `nn/optim.bend:898 op_mstep` / `:903
 #                    op_vstep` EXIST and go unused here, as in every other file in
 #                    this slice.
@@ -51,16 +51,16 @@ import ./../datasets/__init__.bend as D
 #   `LSTM`/`LSTMCell` MISSING, and this is the RECURRENCE wall.
 #
 # WHAT EXISTS, WITH ITS INSTRUMENT:
-#   `Tensor.uniform`  mixin/rand.bend:836 `rd_uniform`  (:101,:102,:103,:104)
-#   `Tensor.zeros`    mixin/creation.bend:446 `cr_zeros` (:33,:35,:36)
-#   `Tensor.ones`     mixin/creation.bend:487 `cr_ones`  (:18)
-#   `x.linear`        nn/layers.bend:427 `nn_linear`    (:107,:191,:192)
-#   `x.reshape`       mixin/movement.bend:1431 `mxw_reshape` (:157)
-#   `x.transpose`     mixin/movement.bend:1449 `mxw_permute` (:171,:183)
-#   `x.expand`        nn/layers.bend:520 `nn_expand`     (:196,:197)
-#   `x.pad`           mixin/movement.bend:1517 `mxw_pad.go` (:58,:156)
-#   `Tensor.stack`    mixin/movement.bend:1269 `mxw_stk`  (:148)
-#   `x.relu`          nn/layers.bend:262 `nn_relu`      (:200)
+#   `Tensor.uniform`  mixin/rand.bend:920 symbol=rd_uniform  (:101,:102,:103,:104)
+#   `Tensor.zeros`    mixin/creation.bend:515 symbol=cr_zeros (:33,:35,:36)
+#   `Tensor.ones`     mixin/creation.bend:556 symbol=cr_ones  (:18)
+#   `x.linear`        nn/layers.bend:520 symbol=nn_linear    (:107,:191,:192)
+#   `x.reshape`       mixin/movement.bend:1434 symbol=mxw_reshape (:157)
+#   `x.transpose`     mixin/movement.bend:1452 symbol=mxw_permute (:171,:183)
+#   `x.expand`        nn/layers.bend:628 symbol=nn_expand     (:196,:197)
+#   `x.pad`           mixin/movement.bend:1523 symbol=mxw_pad (:58,:156)
+#   `Tensor.stack`    mixin/movement.bend:1272 symbol=mxw_stk  (:148)
+#   `x.relu`          nn/layers.bend:289 symbol=nn_relu      (:200)
 #   `x +`/`x *`       mixin/elementwise.bend:509/510 `ew_add`/`ew_mul` (:112,:182)
 #
 # WHAT IS MISSING, NAMED -- AND MOST OF IT IS NOT RECURRENCE, WHICH IS THE

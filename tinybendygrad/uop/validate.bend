@@ -2544,12 +2544,12 @@ def bv_w.ofneg() -> U32:
 #     port's `k` is `Maybe<&2, U32>`, and a guard written as "no shard index means no shard"
 #     passes `c2d_761 argzero`. That row is here for that reason alone.
 # ----------------------------------------------------------------------------
-# ⚠ `S.Dev` IS A TAG, NOT A NAME, AND THAT BOUNDS THIS LANE. `device.bend:340`'s `tag_of`
+# ⚠ `S.Dev` IS A TAG, NOT A NAME, AND THAT BOUNDS THIS LANE. `device.bend:381`'s `tag_of`
 # gives DISK the tag 6, so `c2d_759 disk` is `S.D1{6}` and `c2d_759 disktuple` is
 # `S.Dn{[6, 0]}`. The port cannot spell `'disk'`, `'DISK:0'`, `'NODISK'` or `'DISKX'`, because
 # `S.D1{tag: U32}` has no name to case-fold or colon-split, so those four rows are ORACLE-ONLY
 # (`c2d_oracle_only_n = 5` counts them with `c2d_892 deviceread`). A second tag space exists
-# and disagrees: `schedule/memory.bend:999` says `disk() = S.D1{1}`. Until one is chosen the
+# and disagrees: `schedule/memory.bend:1011` says `disk() = S.D1{1}`. Until one is chosen the
 # DISK guard is not decidable in `ops.bend`, and that is REPORTED rather than gated.
 # ===========================================================================
 
@@ -2571,7 +2571,7 @@ def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
 def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
 
-# node 4 of `s5.ga.arena()` -- ops.bend:6490 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
+# node 4 of `s5.ga.arena()` -- uop/ops.bend:7282 symbol=s5.ga.arena -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
 # here over a `c2d_buf` so the arena is this file's own and no index is inherited.
 def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
   O.UOp.new(ar, O.OpsSHRINK{}, [src], O.ATuple{Nil{}}, O.TNone{})
@@ -2581,7 +2581,7 @@ def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
 # `assert` is a DIFFERENT upstream behaviour from `RuntimeError` from a `raise`, and a row that
 # accepted either would be testing neither.
 #
-# ⚠ AND THIS IS THE `BUILT` ARM ONLY. `UOp.copy_to_device` (ops.bend:7064) answers `Found`,
+# ⚠ AND THIS IS THE `BUILT` ARM ONLY. `UOp.copy_to_device` (uop/ops.bend:7927 symbol=UOp.copy_to_device) answers `Found`,
 # so the port cannot refuse; the `REFUSED` arm arrives with the owner's guard, which changes
 # `copy_to_device`'s return type because a refusal is not a `Found`. When it does, this def is
 # the one line to change and the twenty-four rows are the ones that go green.
@@ -2610,7 +2610,7 @@ def c2d_arg_is_param(a: O.Arg) -> Bool:
     case O.AParam{pa}: True{}
     case _: False{}
 
-# `O.ParamArg.slot` on node 4's src0 -- `s5.pa(1)`, ops.bend:6165. `ops-501-oracle.py:164`'s
+# `O.ParamArg.slot` on node 4's src0 -- `s5.pa(1)`, uop/ops.bend:1468 symbol=ParamArg.slot. `ops-501-oracle.py:164`'s
 # `multi` is `ParamArg(3, ...)`, so this is one of the four differences `sig()` cannot see.
 def c2d_arg_slot(a: O.Arg) -> U32:
   match a:

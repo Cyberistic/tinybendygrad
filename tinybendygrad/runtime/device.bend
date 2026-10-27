@@ -116,7 +116,8 @@ def program(name: String, kus: List<&2, C.KU>) -> Prog:
 # ===========================================================================
 # THE SCHEDULER. Upstream's `create_schedule(sched_sink)`
 # (`tinygrad/schedule/__init__.py:32-80`) IS THE PORT's `schedule()`
-# (`schedule/__init__.bend:1139`), and `linear` (`:1135`) IS upstream's
+# (`schedule/__init__.bend:1139` symbol=schedule), and `linear`
+# (`schedule/__init__.bend:1136` symbol=linear) IS upstream's
 # `return UOp(Ops.LINEAR, src=tuple(linearized))` (`__init__.py:80`).
 #
 # ⇒ THIS IS THE CALLER THE PORT's SCHEDULER DID NOT HAVE, AND IT IS WHY THE

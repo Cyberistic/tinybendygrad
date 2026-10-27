@@ -300,7 +300,7 @@ def onx_at_name_rev.of(m: Maybe<&1, U32>) -> U32:
 # name it does not spell itself (`uint8`->uchar, `int8`->char, `int32`->int,
 # `int64`->long, `int16`->short, `uint16`->ushort, `uint32`->uint,
 # `uint64`->ulong, `float`->float32, `float16`->half, `double`->float64).
-# `DT.to_dtype_of` (dtype.bend:450) IS that table, already ported, so it is
+# `DT.to_dtype_of` (dtype.bend:509 symbol=to_dtype_of) IS that table, already ported, so it is
 # CALLED and not re-spelled -- which is what makes `onx_odt_dt` a real lookup
 # through the production path rather than a restatement of it.
 # ---------------------------------------------------------------------------
