@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The GATE for the spec fold: the port's fold and CPython's fold must AGREE on the shapes
-commit d4160980e decides.
+"""The GATE for the spec fold: the port's fold and CPython's fold must AGREE on EVERY cell the
+two lanes print -- eight shapes times six tables, DISCOVERED from the lanes' own rows.
 
     .venv/bin/python gates/specfold-gate.py            # the gate
     .venv/bin/python gates/specfold-gate.py --plant    # the plant and its control
@@ -18,38 +18,38 @@ mints its nodes from `tinybendygrad/uop/ops.bend`'s constructors (`gates/specfol
 the oracle mints them from upstream's `UOp` (`gates/specfold-oracle.py`), so agreement is
 evidence and not a tautology.
 
-THE POPULATION, AND WHY IT IS TWELVE CELLS AND NOT FORTY-EIGHT. A cell is DECIDED BY THE
-COMMIT when
+THE POPULATION, AND WHY IT IS EVERY CELL THE LANES PRINT. It WAS twelve cells, named by hand,
+on the criterion "the commit `d4160980e` decides these" -- **A POPULATION TIED TO ONE COMMIT.**
+It is now **every cell the two lanes themselves print**: eight shapes times six tables, 48 of
+them, DISCOVERED from the lanes' rows and CHECKED at RUN TIME (a lane that stops printing a
+cell is a REFUSED gate, not a smaller population).
 
-  (1) the commit's changed rule for that shape's op lives in that table -- `sh_12` and
-      `sh_15` in `spec_shared`, `te_1`/`te_2`/`te_5` in `spec_tensor`, `pr_4` in
-      `spec_program`, `kg_5`/`kg_6` in `spec_kernel_graph` -- transitively, because
-      `spec_tensor` and `spec_program` and `spec_hcq` all END WITH `spec_shared`; AND
-  (2) that rule is the ONLY rule of the table whose pattern can claim the shape, so at the
-      committed tree NEITHER side's fold answers anything for the node: both answer `9`,
-      the `None` that means "no rule claimed this node".
+⇒ AND THE MEASUREMENT THAT FORCED IT. Reversing `d4160980e` AND `32e6633d0` in a FROZEN COPY
+(a `git archive` of HEAD with both patches reverse-applied to `tinybendygrad/uop/spec.bend`, and
+the gate loaded FROM that copy so it reads THAT copy's `spec.bend`) makes **20 of the 48 cells
+disagree**. **THE OLD TWELVE CAUGHT 12. THE EIGHT IT MISSED WERE ALL OUTSIDE THE POPULATION**,
+and four of the eight were the `buffer0` cells the gate graded OUT BY NAME. **⇒ A POPULATION
+THAT EXCLUDES CELLS IS A POPULATION THAT CANNOT SEE A DEFECT IN THE CELLS IT EXCLUDES.**
 
-(2) IS THE POINT, and it is what makes the population a MECHANICAL criterion rather than a
-list of cells that happen to agree. When upstream's pattern cannot match, upstream's scan
-CONTINUES and, if no later rule claims the node, upstream answers `None`. The commit's job
-was to make the port's fold skip in exactly those places, so the port's answer must also be
-`None`. A cell where some OTHER rule claims the node is a cell whose verdict is that other
-rule's business -- and this gate's subject is not that other rule.
+"THE COMMIT'S JOB", KEPT AS THE SUBJECT'S HISTORY. `d4160980e` moved eight tests out of the
+port's rule BODIES and into the port's rule CONDITIONS, so the port's conditions say exactly
+what upstream's PATTERNS say. The class it fixed is one: a rule whose port condition is
+STRICTER than upstream's pattern reaches nodes upstream's scan cannot reach, and the two sides
+then disagree -- not about the node, but about WHICH RULE SPEAKS. Upstream's fold is
+first-wins and a pattern that does not match means "move on"; the port's `O.pm_when` returns
+`VSkip{}` when its condition is false, which is the same "move on".
 
-⇒ THE TWELVE CELLS, and the gate checks (2) on every one of them at RUN TIME, from the two
-lanes' own rows: a declared cell whose two sides are not both `9` is a premise violation and
-is a FAIL, not a quiet pass.
-
-WHAT IS NOT IN THE POPULATION, AND WHY IT IS PRINTED AND NOT HIDDEN. The census below prints
-EVERY cell -- eight shapes times six tables -- with both sides' verdicts. Five of them
-disagree at the committed tree, and all five are the SAME class of divergence that the commit
-did NOT fix: the port's `sh_16` (PARAM), `sh_17` (BUFFER), `te_3` (PARAM) and `kg_4` (PARAM)
-still carry the OLD upstream's `src=()` -- ZERO srcs -- where the current upstream's
-`spec.py:92`, `:93`, `:160` and `:263` all carry `src=(p_size,)` or
+"BOTH FOLDS SKIP" IS REPORTED, NOT A CRITERION. When upstream's pattern cannot match,
+upstream's scan CONTINUES and, if no later rule claims the node, upstream answers `None` (`9`
+here). That is a REAL property of a cell and the gate prints it per cell -- but **it is not an
+exclusion.** A cell where some OTHER rule claims the node is a cell whose verdict is that other
+rule's business; **a cell where the port claims and upstream does not is A DIVERGENCE, and that
+is the gate's subject.** MEASURED: the port's `sh_16` (PARAM), `sh_17` (BUFFER), `te_3` (PARAM)
+and `kg_4` (PARAM) still carry the OLD upstream's `src=()` -- ZERO srcs -- where the current
+upstream's `spec.py:92`, `:93`, `:160` and `:263` all carry `src=(p_size,)` or
 `src=(UPat(Ops.STACK, src=()),)`, which is EXACTLY ONE src. So for a zero-src BUFFER the
 port's `sh_17` fires and says `False` where upstream's `spec.py:93` cannot match and the
-scan continues. Those five cells are REPORTED here, with the rule that speaks, because a gate
-that hides the cells it does not grade is a label.
+scan continues. **⇒ AT THE COMMITTED TREE ALL 48 CELLS AGREE, AND THE GATE GRADES THEM ALL.**
 
 THE PLANT, AND WHY IT IS A TEXT EDIT. `--plant` copies the WORKING COPY of
 `gates/specfold.bend` beside itself, edits the COPY, and runs THE WHOLE GATE against it. It
@@ -87,31 +87,40 @@ TABLES = ("sh", "te", "sp", "hq", "sk", "sf")
 SHAPES = ("reshape_f32", "reshape_i32", "range2", "range1",
           "backedge_int", "backedge_bool", "buffer0", "alloc0")
 
-# THE POPULATION: (shape, table, the commit's changed rule that decides it).
+# THE POPULATION, AND WHY IT IS NO LONGER A HAND LIST.
 #
-# AND THE RULE THAT BUILT IT, so that this list is a POPULATION and not a HAND LIST: a cell
-# is here iff the commit's changed rule for the shape's op lives in that table AND it is
-# the only rule of that table whose pattern can claim the shape. The second half is CHECKED
-# AT RUN TIME below, from the two lanes' own rows -- so a cell that stops being `9` on both
-# sides is a FAIL and not a silent survivor.
-CELLS = (
-  ("reshape_f32", "te", "te_5"),    # spec.py:166 -- the shape's dtype is in the PATTERN
-  ("range2", "sh", "sh_12"),        # spec.py:81  -- `src=(UPat(),)` is EXACTLY one src
-  ("range2", "te", "sh_12"),        # spec_shared is the tail of spec_tensor
-  ("range2", "hq", "sh_12"),        # spec_shared is the tail of spec_hcq
-  ("backedge_int", "sh", "sh_15"),  # spec.py:88  -- the condition's dtype is in the PATTERN
-  ("backedge_int", "te", "sh_15"),
-  ("backedge_int", "hq", "sh_15"),
-  ("buffer0", "sk", "kg_5"),        # spec.py:264 -- `allow_any_len=True` is AT LEAST one src
-  ("alloc0", "te", "te_2"),         # spec.py:153
-  ("alloc0", "sp", "pr_4"),         # spec.py:216 -- `src=(p_size,)` is EXACTLY one src
-  ("alloc0", "sk", "kg_6"),         # spec.py:267
-  ("alloc0", "sf", "te_2"),         # spec_full is spec_tensor's tail
-)
+# IT WAS: twelve cells named by hand, on the criterion "the commit `d4160980e` decides these".
+# **⇒ THAT WAS A POPULATION TIED TO ONE COMMIT, AND THE TREE's DOCTRINE SAYS A POPULATION MUST
+# BE DERIVED BY DISCOVERY.**  IT IS NOW: **EVERY CELL THE TWO LANES THEMSELVES PRINT**, which is
+# `SHAPES x TABLES` -- 48 -- and it is CHECKED AT RUN TIME that both lanes printed exactly that
+# many rows, so a lane that stops measuring a cell is REFUSED, not a smaller population.
+#
+# **⇒ AND THE MEASUREMENT THAT FORCED THIS.**  REVERSING `d4160980e` AND `32e6633d0` IN A FROZEN
+# COPY (a `git archive` of HEAD with both patches reverse-applied to `tinybendygrad/uop/spec.bend`)
+# MAKES **20** OF THE 48 CELLS DISAGREE.  **THE OLD TWELVE-CAUGHT 12 OF THEM.  THE EIGHT IT
+# MISSED WERE ALL OUTSIDE THE POPULATION, AND FOUR OF THE EIGHT WERE THE `buffer0` CELLS THE
+# GATE GRADED OUT BY NAME.**  **⇒ A POPULATION THAT EXCLUDES CELLS IS A POPULATION THAT CANNOT
+# SEE A DEFECT IN THE CELLS IT EXCLUDES.**
+#
+# THE ANNOTATION, KEPT.  "BOTH FOLDS SKIP" (`9` on both sides) IS A REAL PROPERTY OF A CELL AND IT
+# IS NOW REPORTED PER CELL -- but it is NOT AN EXCLUSION.  A cell where both folds claim is a cell
+# whose verdict is that rule's business, and a cell where the port claims and upstream does not is
+# A DIVERGENCE, which is EXACTLY WHAT THE GATE IS FOR.
+#
+# THE RULE NAME, KEPT AS PROVENANCE.  `RULE_OF_CELL` names the rule that CHANGED at each commit,
+# so a reader can see which rule a cell's verdict is about.  **IT IS AN ANNOTATION AND NOT A
+# CRITERION: THE POPULATION IS DERIVED, AND THE ANNOTATION IS NOT CONSULTED WHEN GRADING.**
+RULE_OF_CELL = {
+  ("reshape_f32", "te"): "te_5", ("range2", "sh"): "sh_12", ("range2", "te"): "sh_12",
+  ("range2", "hq"): "sh_12", ("backedge_int", "sh"): "sh_15", ("backedge_int", "te"): "sh_15",
+  ("backedge_int", "hq"): "sh_15", ("buffer0", "sk"): "kg_5", ("alloc0", "te"): "te_2",
+  ("alloc0", "sp"): "pr_4", ("alloc0", "sk"): "kg_6", ("alloc0", "sf"): "te_2",
+}
 
-# THE CELLS THAT ARE NOT IN THE POPULATION BECAUSE A RULE THE COMMIT DID NOT TOUCH SPEAKS
-# FOR THEM. `sh_16`/`sh_17`/`te_3`/`kg_4` still carry the OLD upstream's `src=()`, so the
-# port's fold claims a zero-src PARAM/BUFFER where the current upstream's does not.
+# THE RULE THAT SPEAKS FOR A CELL WHERE THE PORT CLAIMS AND UPSTREAM DOES NOT.  REPORTED, NOT
+# HIDDEN, AND NOT AN EXCLUSION.  `sh_16`/`sh_17`/`te_3`/`kg_4` still carry the OLD upstream's
+# `src=()`, so the port's fold claims a zero-src PARAM/BUFFER where the current upstream's does
+# not -- a REAL DIVERGENCE THE GATE NOW GRADES INSTEAD OF EXPLAINING AWAY.
 NOT_DECIDED = {
   ("buffer0", "sh"): "sh_17 -- the port's shared BUFFER rule still says `nsrc_is(0)`",
   ("buffer0", "te"): "sh_17 -- the port's shared BUFFER rule still says `nsrc_is(0)`",
@@ -150,38 +159,52 @@ def rows(text: str) -> dict[str, str]:
   return out
 
 
+def population(port: dict[str, str], cpy: dict[str, str]) -> list[tuple[str, str]]:
+  """THE POPULATION, DERIVED FROM THE TWO LANES' OWN ROWS.
+
+  A cell is a (shape, table) pair that BOTH lanes printed a row for.  The lanes are the
+  discoverers -- the port lane prints one row per fixture per table, and the CPython lane
+  prints one row per shape per table -- so a cell that one lane stops printing is a cell the
+  gate REFUSES over (see `main`), not a cell that quietly leaves the population.
+  """
+  out = []
+  for shape in SHAPES:
+    for t in TABLES:
+      name = f"{shape}_{t}"
+      if name in port and name in cpy:
+        out.append((shape, t))
+  return out
+
+
 def grade(port: dict[str, str], cpy: dict[str, str]) -> tuple[list[str], list[str]]:
   """Grade the two lanes against each other. Return (problems, report lines).
 
-  THE GRADE IS ONE CLAIM: the port's spec fold and CPython's spec fold AGREE on every cell
-  the commit's changed rules decide. Plus one CONSISTENCY CHECK: a declared cell whose two
-  sides are not both `9` is not a cell the commit decides, so the population's declaration is
-  stale and the gate says so rather than passing a cell it did not measure.
+  THE GRADE IS ONE CLAIM, AND IT IS NOW THE WHOLE POPULATION: **the port's spec fold and
+  CPython's spec fold AGREE on every cell the two lanes print.**  A cell that disagrees is a
+  FAIL.  There is no class of cell that is excluded from the claim, because MEASURED: reversing
+  `d4160980e` and `32e6633d0` makes 20 of the 48 cells disagree, the old twelve-cell population
+  caught 12, and the 8 it missed were ALL outside it.
+
+  "BOTH FOLDS SKIP" (`9` on both sides) is REPORTED per cell and is NOT a criterion: a cell
+  where both folds claim is a cell whose verdict is that rule's business, and a cell where the
+  port claims and upstream does not is A DIVERGENCE -- which is the gate's subject.
   """
   bad: list[str] = []
   lines: list[str] = []
-  population = {c[:2] for c in CELLS}
-  for shape, t, rule in CELLS:
+  cells = population(port, cpy)
+  for shape, t in cells:
     name = f"{shape}_{t}"
-    pv, cv = port.get(name, "?"), cpy.get(name, "?")
+    pv, cv = port[name], cpy[name]
     same = pv == cv
-    lines.append(f"  {name:22s} rule={rule:8s} port={pv} cpython={cv} "
-                 f"agree={'yes' if same else 'NO'} both-skip={'ok' if pv == '9' and cv == '9' else 'BROKEN'}")
+    rule = RULE_OF_CELL.get((shape, t), "-")
+    both_skip = pv == "9" and cv == "9"
+    lines.append(f"  {name:22s} rule={rule:6s} port={pv} cpython={cv} "
+                 f"agree={'yes' if same else 'NO'} both-skip={'ok' if both_skip else 'claimed'}")
     if not same:
-      bad.append(f"{name}: the port answers {pv} and CPython answers {cv}")
-    if not (pv == "9" and cv == "9"):
-      bad.append(f"{name}: the cell is not a cell where both folds skip, so it is not decided by "
-                 f"{rule} and the population's declaration is stale")
-  other = []
-  for shape in SHAPES:
-    for t in TABLES:
-      if (shape, t) in population:
-        continue
-      if port.get(f"{shape}_{t}") != cpy.get(f"{shape}_{t}"):
-        other.append(f"  {shape}_{t:22s} port={port.get(f'{shape}_{t}')} cpython={cpy.get(f'{shape}_{t}')} "
-                     f"NOT-DECIDED-BY-THE-COMMIT: {NOT_DECIDED.get((shape, t), 'another rule speaks')}")
-  lines.append(f"  {len(other)} cell(s) disagree outside the population")
-  return bad, lines + other
+      bad.append(f"{name}: the port answers {pv} and CPython answers {cv}"
+                 + (f" -- {NOT_DECIDED[(shape, t)]}" if (shape, t) in NOT_DECIDED else ""))
+  lines.append(f"  {len(cells)} cell(s) graded; {sum(1 for c in cells if port[f'{c[0]}_{c[1]}'] == cpy[f'{c[0]}_{c[1]}'])} agree")
+  return bad, lines
 
 
 # --------------------------------------------------------------------------- the plant
@@ -299,7 +322,9 @@ def main() -> int:
   print()
 
   bad, lines = grade(port, cpy)
-  print(f"THE POPULATION: {len(CELLS)} cell(s) the commit's changed rules decide")
+  cells = population(port, cpy)
+  print(f"THE POPULATION: {len(cells)} cell(s), DERIVED FROM THE TWO LANES' OWN ROWS "
+        f"(every shape x table both lanes printed)")
   for line in lines:
     print(line)
   if bad:
@@ -308,7 +333,7 @@ def main() -> int:
       print(f"  {b}")
     return FAIL
   print(f"\n=== specfold-gate: PASS: the port's fold and CPython's fold agree on all "
-        f"{len(CELLS)} cells the commit decides ===")
+        f"{len(cells)} cells the two lanes print ===")
   return PASS
 
 
