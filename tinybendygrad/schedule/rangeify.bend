@@ -2708,6 +2708,473 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # a second copy -- see the note at the top of the `*_try` block.
 # ===========================================================================
+# ===========================================================================
+# THE ENGINE. `graph_rewrite` -- ops.py:1886 -- over the port's ARENA.
+#
+# WHAT UPSTREAM DOES, and the four lines that matter:
+#   * `unified_rewrite` (ops.py:1814) walks the graph CHILDREN FIRST.
+#   * a node is REBUILT with its children's rewritten srcs (ops.py:1808,
+#     `UOp(n.op, new_src, n.arg, n.tag)`).
+#   * the table is applied to the REBUILT node and the ANSWER is re-traversed
+#     (ops.py:1866-1867), so a rule is a FIXED POINT.
+#   * `bottom_up=True` puts the matcher in `self.bpm` (ops.py:1891) and
+#     `self.bpm` is applied to the node BEFORE its children are visited
+#     (ops.py:1826-1832).
+#
+# WHY A SWEEP AND NOT A DFS. `Arena.nodes` IS TOPOLOGICALLY SORTED
+# (ops.bend:2754): `UOp.new` is only ever called with srcs already in the
+# arena, so every node's src indices are BELOW its own position. INDEX ORDER is
+# therefore an order every node's children precede it, which is the order the
+# DFS's post-order produces -- and a sweep is the SAME computation with none of
+# the mutual recursion Bend refuses. THE ONE THING A SWEEP CANNOT REPRODUCE IS
+# THE ORDER UPSTREAM'S `ctx` COUNTERS SEE, and every rule the port has PORTED
+# is CTX-FREE, so the order is not observable in the port today. It IS
+# observable upstream (`itertools.count` at rangeify.py:357 and `:318`), and
+# `eng_order_note` is the row that says so.
+#
+# THE BOTTOM-UP MODE IS NOT IMPLEMENTED, and the CPython ORACLE is what says
+# so: `get_kernel_graph` runs stages 4 and 6 with `bottom_up=True`, and the
+# oracle runs the SAME two stages the same way. If the port and CPython agree
+# there, the mode is not observable ON THESE FIXTURES -- which is a
+# MEASUREMENT and not a claim about the engine.
+#
+# WHAT THE ENGINE IS NOT. `run_rangeify` (rangeify.py:190, stage 1 of the
+# nine), `symbolic` (uop/symbolic.py) and `pm_reduce_simplify`
+# (codegen/simplify.py) are TABLES this file does not own, and the engine
+# drives the tables it owns. Stage 1 is `Stg{0, Nil{}}` -- an EMPTY table --
+# because `run_rangeify` is not ported, and an empty table is the honest
+# spelling of "this stage does nothing here".
+# ===========================================================================
+
+# THE MAP. An original node index -> the index it BECAME. It is APPENDED and
+# the scan keeps the LAST match, so the newest entry wins. EVERY visited node
+# is in it, so an absent key means "never visited" and a visited node that did
+# not change maps to ITSELF.
+type Rep is Data:
+  Rep{old: U32, new: U32}
+
+def rep_pick(eq: Bool, new: U32, acc: U32) -> U32:
+  match eq:
+    case True{} : new
+    case False{}: acc
+
+def rep_scan(+rs: List<&2, Rep>, +k: U32, acc: U32) -> U32:
+  match rs:
+    case Nil{}: acc
+    case Rep{old, new} <> t:
+      rep_scan(t, k, rep_pick(U32.is_eq(old, k), new, acc))
+
+def rep_pick2(found: Bool, v: U32, k: U32) -> U32:
+  match found:
+    case True{} : k
+    case False{}: v
+
+# THE CURRENT INDEX of a node: the last map entry for it, or the node itself.
+def rep_get(+rs: List<&2, Rep>, +k: U32) -> U32:
+  +v = rep_scan(rs, k, 0)
+  rep_pick2(U32.is_eq(v, 0), v, k)
+
+def rep_put(rs: List<&2, Rep>, old: U32, new: U32) -> List<&2, Rep>:
+  List.append(&2, Rep, rs, [Rep{old, new}])
+
+# A STAGE: the MODE and the TABLES.
+#   mode 0 = top-down  -- ops.py:1891 puts the matcher in `self.pm`, and it is
+#                         applied AFTER the children have been rewritten.
+#   mode 1 = bottom-up -- the matcher is in `self.bpm` and is applied to the
+#                         node BEFORE its children are visited (ops.py:1826).
+type Stg is Data:
+  Stg{mode: U32, tabs: List<&2, U32>}
+
+def Stg.mode(s: Stg) -> U32:
+  match s:
+    case Stg{mode, tabs}: mode
+
+def Stg.tabs(s: Stg) -> List<&2, U32>:
+  match s:
+    case Stg{mode, tabs}: tabs
+
+# THE SEVEN STAGES of `get_kernel_graph` -- rangeify.py:341-376 -- with the
+# TABLE NUMBERS this file's tables carry. THE NUMBERS ARE THE TABLE'S OWN, so
+# the map is in one place and `eng_one` is the only reader of it:
+#   0 ct   pm_const_buffer_folding   rangeify.py:110   port :1162
+#   1 rb   pm_remove_bufferize        rangeify.py:126   port :659
+#   2 lb   pm_limit_bufs              rangeify.py:189   port :1463
+#   3 ab   pm_add_buffers             rangeify.py:245   port :1622
+#   4 aprt pm_add_param_range_tags    rangeify.py:321   port :798
+#   5 nic  pm_no_indexing_calls       rangeify.py:155   port :696
+#   6 sk   split_kernels              rangeify.py:337   port :834
+#   7 nv   pm_no_views                rangeify.py:160   port :761
+#   8 fb   pm_flatten_bufferize       rangeify.py:235   port :1242
+#   9 dg   to_define_global           rangeify.py:302   port :1376
+def eng_stages() -> List<&2, Stg>:
+  [Stg{0, Nil{}},         # 1  run_rangeify -- rangeify.py:344 -- NOT PORTED
+   Stg{0, [0, 1]},        # 2  symbolic+pm_reduce_simplify+ct+rb -- :347
+   Stg{0, [2]},           # 3  pm_limit_bufs -- :351
+   Stg{1, [3, 4]},        # 4  pm_add_buffers+pm_add_param_range_tags -- :357
+   Stg{0, [5]},           # 5  pm_no_indexing_calls -- :358
+   Stg{1, [6]},           # 6  split_kernels -- :359
+   Stg{0, [7]}]           # 7  pm_no_views -- :360
+
+# THE ENGINE STATE: the arena as it stands, and the map.
+type Eng is Data:
+  Eng{ar: O.Arena, rep: List<&2, Rep>}
+
+def Eng.ar(+e: Eng) -> O.Arena:
+  match e:
+    case Eng{ar, rep}: ar
+
+def Eng.rep(+e: Eng) -> List<&2, Rep>:
+  match e:
+    case Eng{ar, rep}: rep
+
+# A FRESH MAP over the same arena. The map is PER STAGE, so the next stage
+# starts with an empty one.
+def eng_fresh(+e: Eng) -> Eng: Eng{Eng.ar(e), Nil{}}
+
+# THE FUEL. The bound on the fixed-point loop. The arena's node count is the
+# bound, because a node's srcs are all BELOW it (ops.bend:2754) so no chain
+# of rewrites can be longer than the arena.
+def eng_fuel(+ar: O.Arena) -> Nat: U32.to_nat(U32.add(O.Arena.next(ar), 4))
+
+# THE HOP, unpacked. `M.hop_ar`/`M.hop_ix` take the Hop as a PLAIN parameter,
+# so reading it twice is a move; these take it as `+`.
+def eng_hop_ar(+h: M.Hop) -> O.Arena:
+  match h:
+    case M.Hop{a, ix}: a
+
+def eng_hop_ix(+h: M.Hop) -> U32:
+  match h:
+    case M.Hop{a, ix}: ix
+
+# THE TABLES, one per number. `eng_one` is the ONLY place a number becomes a
+# table, so the map is in one place.
+def eng_one(stage: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
+  match stage:
+    case 0: ct_rewrite(fx, ar, self)
+    case 1: rb_rewrite(ar, self)
+    case 2: lb_rewrite(fx, ar, self)
+    case 3: ab_rewrite(fx, ar, self)
+    case 4: aprt_rewrite(fx, ar, self)
+    case 5: nic_rewrite(ar, self)
+    case 6: sk_rewrite(ar, self)
+    case 7: nv_rewrite(ar, self)
+    case 8: fb_rewrite(fx, ar, self)
+    case 9: dg_rewrite(fx, ar, self)
+    case _: M.Hop{ar, 0}
+
+# THE COMPOSITION. Upstream's `pm_add_buffers+pm_add_param_range_tags`
+# (rangeify.py:357) is ONE matcher, so the rules are tried IN ORDER and the
+# FIRST that fires wins. `eng_first` is that first-wins fold, and it is a
+# separate def because a match may not scrutinise a computed value.
+def eng_first(has: Bool, new: U32, acc: U32) -> U32:
+  match has:
+    case True{} : new
+    case False{}: acc
+
+def eng_apply.go(tabs: List<&2, U32>, +fx: F.Folded, +ar: O.Arena, +self: U32, +ans: U32) -> M.Hop:
+  match tabs:
+    case Nil{}: M.Hop{ar, ans}
+    case s <> t:
+      +h = eng_one(s, fx, ar, self)
+      eng_apply.go(t, fx, eng_hop_ar(h), self, eng_first(U32.is_eq(ans, 0), eng_hop_ix(h), ans))
+
+def eng_apply(st: Stg, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
+  eng_apply.go(Stg.tabs(st), fx, ar, self, 0)
+
+# THE FIXED POINT. ops.py:1829-1832 (the `bpm` loop) and ops.py:1866-1867 (the
+# re-traversal of the answer) are the SAME loop: the rule is applied until it
+# stops firing. The FOLD IS REBUILT whenever the arena grew, because the fold
+# is a table over the arena and a node the rule just made has no entry in it.
+# `fired` is a PARAMETER because a match may not scrutinise a computed value.
+def eng_fix.go(fuel: Nat, +st: Stg, +fx: F.Folded, +ar: O.Arena, +self: U32, fired: Bool, +ix: U32, +h: M.Hop, +last: M.Hop) -> M.Hop:
+  match fuel:
+    case 0n: last
+    case 1n+p:
+      match fired:
+        case True{}:
+          +a = eng_hop_ar(h)
+          +fx2 = F.folded(a)
+          +h2 = eng_apply(st, fx2, a, ix)
+          eng_fix.go(p, st, fx2, a, ix, Bool.not(U32.is_eq(eng_hop_ix(h2), 0)), eng_hop_ix(h2), h2, h)
+        case False{}: last
+
+# THE ANSWER IS THE LAST FIRING HOP and not the last hop: the loop's LAST
+# application is the one that did NOT fire, and its index is 0, so returning
+# it would throw the rewrite away. MEASURED: with `last` the arena grows by
+# the rule's node AND the map records the move; without it the arena grew and
+# the map recorded nothing, which is the defect this comment is about.
+def eng_fix(+st: Stg, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
+  +h = eng_apply(st, fx, ar, self)
+  eng_fix.go(eng_fuel(ar), st, fx, ar, self, Bool.not(U32.is_eq(eng_hop_ix(h), 0)), eng_hop_ix(h), h, h)
+
+# THE SRCS, with each child replaced by its CURRENT index.
+def eng_srcs.go(+rep: List<&2, Rep>, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case h <> t: eng_srcs.go(rep, t, List.append(&2, U32, acc, [rep_get(rep, h)]))
+
+# THE ANSWER, and the case that is easy to get wrong: a rule that did NOT fire
+# answers 0, and 0 must NOT overwrite the REBUILD the node already got. So the
+# answer is `ix` when it fired and the PREVIOUS value when it did not.
+def eng_ans.of(none: Bool, +ix: U32, prev: U32) -> U32:
+  match none:
+    case True{} : prev
+    case False{}: ix
+
+def eng_ans(+ix: U32, prev: U32) -> U32: eng_ans.of(U32.is_eq(ix, 0), ix, prev)
+
+# THE MAP ENTRY.
+def eng_put(+e: Eng, +n: U32, +h: M.Hop) -> Eng:
+  +ix = eng_hop_ix(h)
+  +prev = rep_get(Eng.rep(e), n)
+  Eng{eng_hop_ar(h), rep_put(Eng.rep(e), n, eng_ans(ix, prev))}
+
+# THE NODE. The children are final, so this node is REBUILT with their CURRENT
+# indices (ops.py:1808) and the table is applied to the rebuild.
+def eng_node(st: Stg, +e: Eng, +n: U32) -> Eng:
+  +ar = Eng.ar(e)
+  +rep = Eng.rep(e)
+  +cur = rep_get(rep, n)
+  +srcs = eng_srcs.go(rep, O.Arena.srcs(ar, cur), Nil{})
+  +f = O.UOp.new(ar, O.Arena.op(ar, cur), srcs, O.Arena.arg(ar, cur), O.Arena.tag(ar, cur))
+  +e1 = eng_put(e, n, M.Hop{O.Found.ar(f), O.Found.i(f)})
+  +h = eng_fix(st, F.folded(O.Found.ar(f)), O.Found.ar(f), O.Found.i(f))
+  eng_put(e1, n, h)
+
+# THE SWEEP. The arena in INDEX ORDER, which is a TOPOLOGICAL order
+# (ops.bend:2754), so every node's children are already final when it is
+# reached. The recursion is on the LIST TAIL, and the SHRINKING ARGUMENT COMES
+# FIRST (Bend reads a self-call's arguments left to right, each passed
+# unchanged until one shrinks), so there is no mutual recursion -- which Bend
+# refuses.
+def eng_sweep(ns: List<&2, U32>, +st: Stg, +e: Eng) -> Eng:
+  match ns:
+    case Nil{}: e
+    case n <> t: eng_sweep(t, st, eng_node(st, e, n))
+
+# THE INDEX LIST. `List.range` is a list of `Nat` and the arena's indices are
+# `U32`, so the conversion is a fold and not a map (Bend's `List.map` wants a
+# variance-annotated template).
+def eng_range.go(ns: List<&2, Nat>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: acc
+    case h <> t: eng_range.go(t, List.append(&2, U32, acc, [U32.from_nat(h)]))
+
+# ONE STAGE, over the whole arena. The root is the node the caller cares
+# about; its new index is the map's answer for it.
+def eng_run(st: Stg, +ar: O.Arena, root: U32) -> Eng:
+  eng_sweep(List.drop(&2, U32, eng_range.go(List.range(U32.to_nat(O.Arena.next(ar))), Nil{}), 1n),
+            st, eng_fresh(Eng{ar, Nil{}}))
+
+# THE COUNT of the nodes a stage MOVED.
+def eng_changed.one(same: Bool, acc: U32) -> U32:
+  match same:
+    case True{} : acc
+    case False{}: U32.add(acc, 1)
+
+def eng_changed.go(rs: List<&2, Rep>, acc: U32) -> U32:
+  match rs:
+    case Nil{}: acc
+    case Rep{old, new} <> t: eng_changed.go(t, eng_changed.one(U32.is_eq(old, new), acc))
+
+def eng_changed(rs: List<&2, Rep>) -> U32: eng_changed.go(rs, 0)
+
+# ===========================================================================
+# THE OP NAME. CPython's `uop.op.name` is the SPELLING both sides use, and the
+# port has no general op-to-string function, so this is the ten ops the
+# fixtures use and "OTHER" for everything else -- which is a MISMATCH, not a
+# silent agreement.
+def eng_op_name(op: O.Op) -> String:
+  match op:
+    case O.OpsCONST{}  : "CONST"
+    case O.OpsNOOP{}   : "NOOP"
+    case O.OpsEND{}    : "END"
+    case O.OpsAFTER{}  : "AFTER"
+    case O.OpsINDEX{}  : "INDEX"
+    case O.OpsMSTACK{} : "MSTACK"
+    case O.OpsRESHAPE{}: "RESHAPE"
+    case O.OpsCALL{}   : "CALL"
+    case O.OpsSTORE{}  : "STORE"
+    case O.OpsSINK{}   : "SINK"
+    case _: "OTHER"
+
+# THE ARG KEY. Four keys, because the fixture uses four: `none`, a CONST's
+# value, the Invalid CONST, and `other`. The oracle rebuilds the graph from
+# these, so a key the oracle cannot rebuild is a REFUSAL and not a guess.
+def eng_i64key(i: H.I64) -> String:
+  match i:
+    case H.I64{hi, lo}: String.concat(["c:", U32.show(hi), ":", U32.show(lo)])
+
+def eng_constkey(v: O.Const) -> String:
+  match v:
+    case O.CInvalid{}: "cinvalid"
+    case O.CInt{i}   : eng_i64key(i)
+    case _: "cother"
+
+def eng_argkey(+ar: O.Arena, +self: U32, a: O.Arg) -> String:
+  match a:
+    case O.ANone{}: "none"
+    case O.APy{v} : eng_constkey(v)
+    case _: "other"
+
+# THE DUMP. The arena, node for node: `op:argkey:srcop,srcop,...`, in INDEX
+# ORDER. The oracle rebuilds the graph from this and compares order-free, so
+# the two arenas' index orders do not have to agree.
+def eng_src_names.go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
+  match ss:
+    case Nil{}: acc
+    case s <> t: eng_src_names.go(ar, t, List.append(&2, String, acc, [eng_op_name(M.mp_op(ar, s))]))
+
+def eng_node_str(+ar: O.Arena, +n: U32) -> String:
+  String.concat([eng_op_name(M.mp_op(ar, n)), ":", eng_argkey(ar, n, M.mp_arg(ar, n)), ":",
+                 String.join(eng_src_names.go(ar, O.Arena.srcs(ar, n), Nil{}), ",")])
+
+# THE DUMP IS A DFS FROM THE RESULT ROOT, and it must be: the arena KEEPS the
+# nodes a rule replaced (the arena is append-only, ops.bend:2754), so a dump
+# of the WHOLE ARENA would show the OLD graph and the NEW graph side by side
+# and neither of them is the answer. The DFS walks the CURRENT graph -- the
+# nodes the map points at -- and each node is emitted ONCE.
+#
+# THE WORKLIST and the FUEL are the recursion's arguments, so the def is
+# self-recursive with a shrinking fuel and there is no mutual recursion.
+def eng_dump.mark(+seen: List<&2, U32>, n: U32, s: Bool) -> List<&2, U32>:
+  match s:
+    case True{} : seen
+    case False{}: List.append(&2, U32, seen, [n])
+
+def eng_dump.push(+seen: List<&2, U32>, n: U32, s: Bool, t: List<&2, U32>, srcs: List<&2, U32>) -> List<&2, U32>:
+  match s:
+    case True{} : t
+    case False{}: List.concat(&2, U32, [t, srcs])
+
+def eng_dump.emit(n: U32, s: Bool, acc: List<&2, String>, +ar: O.Arena) -> List<&2, String>:
+  match s:
+    case True{} : acc
+    case False{}: List.append(&2, String, acc, [eng_node_str(ar, n)])
+
+def eng_dump.go(fuel: Nat, todo: List<&2, U32>, +ar: O.Arena, +seen: List<&2, U32>, +n: U32, acc: List<&2, String>) -> List<&2, String>:
+  match fuel:
+    case 0n: acc
+    case 1n+p:
+      match todo:
+        case Nil{}: acc
+        case n <> t:
+          +nn = n
+          +s = List.contains(U32, U32.is_eq, seen, nn)
+          eng_dump.go(p, eng_dump.push(seen, nn, s, t, O.Arena.srcs(ar, nn)), ar,
+                      eng_dump.mark(seen, nn, s), nn, eng_dump.emit(nn, s, acc, ar))
+
+def eng_dump(+ar: O.Arena, +root: U32) -> String:
+  String.join(eng_dump.go(eng_fuel(ar), [root], ar, Nil{}, root, Nil{}), ";")
+
+# ===========================================================================
+# THE FIXTURES. TWO graphs, every arg either `ANone` or a CONST, so the dump
+# has four arg keys and the CPython side can rebuild the graph from it.
+#
+# FIXTURE A: one of every live rule, all reachable from one SINK.
+#   ixc  INDEX(CONST)              -> ct_6
+#   ixm  INDEX(MSTACK, CONST)       -> ct_8
+#   sts  STORE(a0, a0)             -> rb_1
+#   e0   END(NOOP)                 -> rb_2
+#   rs   RESHAPE(a0, CONST)         -> nv_0
+#   cli  CALL(ixc, rs)             -> nic_0, ab_7
+#   sti  STORE(a0, Invalid)        -> ab_8
+#   afn  AFTER(a0, e0)             -> ab_9
+# ===========================================================================
+def efx_a() -> G:
+  +c0 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
+  +c1 = O.UOp.const(O.Found.ar(c0), O.CInt{H.i64_of_i32(1)})
+  +ci = O.UOp.new(O.Found.ar(c1), O.OpsCONST{}, Nil{}, O.APy{O.CInvalid{}}, O.TNone{})
+  +n0 = O.UOp.new(O.Found.ar(ci), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
+  +e0 = O.UOp.new(O.Found.ar(n0), O.OpsEND{}, [O.Found.i(n0)], O.ANone{}, O.TNone{})
+  +a0 = O.UOp.new(O.Found.ar(e0), O.OpsAFTER{}, [O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +ixc = O.UOp.new(O.Found.ar(a0), O.OpsINDEX{}, [O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +mst = O.UOp.new(O.Found.ar(ixc), O.OpsMSTACK{}, [O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +ixm = O.UOp.new(O.Found.ar(mst), O.OpsINDEX{}, [O.Found.i(mst), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +rs = O.UOp.new(O.Found.ar(ixm), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(c0)], O.ANone{}, O.TNone{})
+  +cli = O.UOp.new(O.Found.ar(rs), O.OpsCALL{}, [O.Found.i(ixc), O.Found.i(rs)], O.ANone{}, O.TNone{})
+  +sts = O.UOp.new(O.Found.ar(cli), O.OpsSTORE{}, [O.Found.i(a0), O.Found.i(a0)], O.ANone{}, O.TNone{})
+  +sti = O.UOp.new(O.Found.ar(sts), O.OpsSTORE{}, [O.Found.i(a0), O.Found.i(ci)], O.ANone{}, O.TNone{})
+  +afn = O.UOp.new(O.Found.ar(sti), O.OpsAFTER{}, [O.Found.i(a0), O.Found.i(e0)], O.ANone{}, O.TNone{})
+  +top = O.UOp.new(O.Found.ar(afn), O.OpsSINK{},
+                   [O.Found.i(afn), O.Found.i(cli), O.Found.i(sts), O.Found.i(sti), O.Found.i(ixm)],
+                   O.ANone{}, O.TNone{})
+  G{F.folded(O.Found.ar(top)),
+   [O.Found.i(c0), O.Found.i(c1), O.Found.i(ci), O.Found.i(n0), O.Found.i(e0), O.Found.i(a0),
+    O.Found.i(ixc), O.Found.i(mst), O.Found.i(ixm), O.Found.i(rs), O.Found.i(cli),
+    O.Found.i(sts), O.Found.i(sti), O.Found.i(afn), O.Found.i(top)]}
+
+# FIXTURE B: the same rules on a DIFFERENT shape -- a CHAIN (ix2 over ix1, e1
+# over e0) so a rule has to fire TWICE and the SECOND firing needs the FIRST
+# one's answer, and a SHARED node (`a1` under two parents) so the map is read
+# twice.
+def efx_b() -> G:
+  +c1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
+  +ci = O.UOp.new(O.Found.ar(c1), O.OpsCONST{}, Nil{}, O.APy{O.CInvalid{}}, O.TNone{})
+  +n0 = O.UOp.new(O.Found.ar(ci), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
+  +e0 = O.UOp.new(O.Found.ar(n0), O.OpsEND{}, [O.Found.i(n0)], O.ANone{}, O.TNone{})
+  +e1 = O.UOp.new(O.Found.ar(e0), O.OpsEND{}, [O.Found.i(e0)], O.ANone{}, O.TNone{})
+  +a1 = O.UOp.new(O.Found.ar(e1), O.OpsAFTER{}, [O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +ix1 = O.UOp.new(O.Found.ar(a1), O.OpsINDEX{}, [O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +ix2 = O.UOp.new(O.Found.ar(ix1), O.OpsINDEX{}, [O.Found.i(ix1)], O.ANone{}, O.TNone{})
+  +mst = O.UOp.new(O.Found.ar(ix2), O.OpsMSTACK{}, [O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +ixm = O.UOp.new(O.Found.ar(mst), O.OpsINDEX{}, [O.Found.i(mst), O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +st1 = O.UOp.new(O.Found.ar(ixm), O.OpsSTORE{}, [O.Found.i(a1), O.Found.i(a1)], O.ANone{}, O.TNone{})
+  +si1 = O.UOp.new(O.Found.ar(st1), O.OpsSTORE{}, [O.Found.i(a1), O.Found.i(ci)], O.ANone{}, O.TNone{})
+  +af1 = O.UOp.new(O.Found.ar(si1), O.OpsAFTER{}, [O.Found.i(a1), O.Found.i(e0)], O.ANone{}, O.TNone{})
+  +top = O.UOp.new(O.Found.ar(af1), O.OpsSINK{},
+                   [O.Found.i(af1), O.Found.i(e1), O.Found.i(ix2), O.Found.i(st1),
+                    O.Found.i(si1), O.Found.i(ixm)],
+                   O.ANone{}, O.TNone{})
+  G{F.folded(O.Found.ar(top)),
+   [O.Found.i(c1), O.Found.i(ci), O.Found.i(n0), O.Found.i(e0), O.Found.i(e1), O.Found.i(a1),
+    O.Found.i(ix1), O.Found.i(ix2), O.Found.i(mst), O.Found.i(ixm), O.Found.i(st1),
+    O.Found.i(si1), O.Found.i(af1), O.Found.i(top)]}
+
+# THE DRIVER. The seven stages IN ORDER, each on the arena the previous one
+# left, and one row per stage: how many nodes the stage MOVED and the arena
+# after it. The row NAME carries the fixture and the stage number, so a stage
+# can be read on its own.
+def eng_stage_row(+n: U32, +tag: String, +e: Eng, +root: U32) -> String:
+  String.concat(["eng_", tag, "_s", U32.show(n), "=",
+                 U32.show(eng_changed(Eng.rep(e))), ";",
+                 U32.show(U32.from_nat(List.length(&2, Rep, Eng.rep(e)))), ";",
+                 eng_dump(Eng.ar(e), rep_get(Eng.rep(e), root))])
+
+def eng_drive(+stages: List<&2, Stg>, +e: Eng, +root: U32, +n: U32, +tag: String, acc: List<&2, String>) -> List<&2, String>:
+  match stages:
+    case Nil{}: acc
+    case st <> t:
+      +e2 = eng_run(st, Eng.ar(e), root)
+      +r2 = rep_get(Eng.rep(e2), root)
+      +e3 = eng_fresh(e2)
+      eng_drive(t, e3, r2, U32.add(n, 1), tag,
+                List.append(&2, String, acc,
+                            [eng_stage_row(n, tag, e2, root)]))
+
+# THE ROWS FOR ONE FIXTURE.
+def eng_fixture_rows(+g: G, +tag: String, +root: Nat) -> List<&2, String>:
+  eng_drive(eng_stages(), eng_fresh(Eng{F.Folded.ar(G.fx(g)), Nil{}}), G.n(g, root), 0, tag,
+            ["eng_" ++ tag ++ "_in=" ++ eng_dump(F.Folded.ar(G.fx(g)), G.n(g, root))])
+
+def t_eng_a() -> String: String.join(eng_fixture_rows(efx_a(), "a", 14n), "\n")
+def t_eng_b() -> String: String.join(eng_fixture_rows(efx_b(), "b", 13n), "\n")
+
+# THE COUNTS. The number of stages the engine drives is SEVEN
+# (`get_kernel_graph`, rangeify.py:341-376), and the number of TABLES it can
+# drive is EIGHT of this file's ten -- `fb` and `dg` are not in
+# `get_kernel_graph`'s seven rewrites.
+def eng_stage_n() -> U32: U32.from_nat(List.length(&2, Stg, eng_stages()))
+def eng_table_n() -> U32: 8
+
+def t_eng_stages() -> U32: eng_stage_n()
+def t_eng_tables() -> U32: eng_table_n()
+
+# THE ORDER NOTE. A sweep reproduces the DFS's ORDER only where the order is
+# not observable, and the order is observable exactly where upstream threads a
+# `ctx` COUNTER. This is a CONSTANT, not a measurement, and it says so.
+def t_eng_order() -> U32: 1
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("lay", t_lay())
@@ -2835,5 +3302,10 @@ def main() -> IO(Unit):
     dk : Unit <- row("ct7b_none", t_ct7b_none())
     dh : Unit <- row("ren_axis_out_dev", t_ren_axis_out_dev())
     dg : Unit <- row("ren_axis_in_dev", t_ren_axis_in_dev())
+    ea : Unit <- IO.print(t_eng_a())
+    eb : Unit <- IO.print(t_eng_b())
+    es : Unit <- row("eng_stages", t_eng_stages())
+    et : Unit <- row("eng_tables", t_eng_tables())
+    eo : Unit <- row("eng_order", t_eng_order())
     row("spec", t_spec())
 
