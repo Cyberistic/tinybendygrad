@@ -1,0 +1,383 @@
+loading libc from /usr/lib/libc.dylib
+opened device PYTHON from pid:13920
+loading mesa failed: not found on system
+loading libusb from /opt/homebrew/lib/libusb-1.0.dylib
+loading rt from /System/Library/Frameworks/System.framework/System
+loading m from /usr/lib/libm.dylib
+opened device CPU from pid:13920
+scheduled     1 kernels in    14.12 ms | CACHE MISS 01157d6f |     558 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mnist/model.py:102
+opened device NPY from pid:13920
+[32m*** NPY        1[0m [33mcopy      144 B,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm    455.67us/     0.46ms (      0 GFLOPS    0|0      GB/s)
+scheduled     1 kernels in     1.21 ms | CACHE MISS 888e203b |     489 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mnist/model.py:102
+[32m*** NPY        2[0m [33mcopy       16 B,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm     56.79us/     0.51ms (      0 GFLOPS    0|0      GB/s)
+scheduled     1 kernels in     1.16 ms | CACHE MISS 20270f54 |     420 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mnist/model.py:102
+[32m*** NPY        3[0m [33mcopy    1.12 KB,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm     55.29us/     0.57ms (      0 GFLOPS    0|0      GB/s)
+scheduled     1 kernels in     1.10 ms | CACHE MISS ee593bf9 |     349 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mnist/model.py:102
+[32m*** NPY        4[0m [33mcopy       32 B,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm     49.67us/     0.62ms (      0 GFLOPS    0|0      GB/s)
+scheduled     1 kernels in     1.16 ms | CACHE MISS 4b7e3930 |     280 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mnist/model.py:102
+[32m*** NPY        5[0m [33mcopy   15.31 KB,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm     54.38us/     0.67ms (      0 GFLOPS    0|0      GB/s)
+scheduled     1 kernels in     1.10 ms | CACHE MISS ea1a43b6 |     186 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mnist/model.py:102
+[32m*** NPY        6[0m [33mcopy       40 B,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm     47.54us/     0.72ms (      0 GFLOPS    0|0      GB/s)
+scheduled     1 kernels in     1.09 ms | CACHE MISS c18a4903 |     206 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/seams/upstream_device.py:65
+[32m*** NPY        7[0m [33mcopy    3.06 KB,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm     49.04us/     0.77ms (      0 GFLOPS    0|0      GB/s)
+scheduled     7 kernels in    80.86 ms | CACHE MISS 48cd86d9 |    2276 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/seams/upstream_device.py:69
+memory reduced from 0.02 MB -> 0.02 MB, 6 -> 1 bufs
+compiling r[90m_[0m[31m4[0m[90m_[0m[31m28[0m[90m_[0m[31m7[0m[90m_[0m[33m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                          : 100%|█| 7/7 [00:00<00:00, 32.10it/s]
+compiling r[90m_[0m[31m2[0m[90m_[0m[31m14[0m[90m_[0m[31m14[0m[90m_[0m[33m4[0m[90m_[0m[31m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                       : 100%|█| 1/1 [00:00<00:00,  9.55it/s]
+[32m*** CPU        8[0m r[90m_[0m[31m4[0m[90m_[0m[31m28[0m[90m_[0m[31m7[0m[90m_[0m[33m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                                 arg  4 mem   0.00 GB tm     11.67us/     0.78ms (      6 GFLOPS    1|6      GB/s)
+[32m*** CPU        9[0m r[90m_[0m[31m56[0m[90m_[0m[31m14[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                    arg  2 mem   0.00 GB tm      3.50us/     0.78ms (      1 GFLOPS    4|4      GB/s)
+[32m*** CPU       10[0m r[90m_[0m[31m2[0m[90m_[0m[31m14[0m[90m_[0m[31m14[0m[90m_[0m[33m4[0m[90m_[0m[31m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                              arg  4 mem   0.00 GB tm     15.54us/     0.80ms (      8 GFLOPS    1|19     GB/s)
+[32m*** CPU       11[0m r[90m_[0m[31m56[0m[90m_[0m[31m7[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                     arg  2 mem   0.00 GB tm      2.21us/     0.80ms (      1 GFLOPS    4|4      GB/s)
+[32m*** CPU       12[0m r[90m_[0m[31m10[0m[90m_[0m[31m98[0m[90m_[0m[33m4[0m                                      arg  4 mem   0.00 GB tm      7.71us/     0.81ms (      1 GFLOPS    2|4      GB/s)
+[32m*** CPU       13[0m r[90m_[0m[33m10[0m                                           arg  2 mem   0.00 GB tm      1.96us/     0.81ms (      0 GFLOPS    0|0      GB/s)
+[32m*** CPU       14[0m r[90m_[0m[33m10[0m                                           arg  3 mem   0.00 GB tm      5.46us/     0.82ms (      0 GFLOPS    0|0      GB/s)
+scheduled     5 kernels in    26.47 ms | CACHE MISS f1c10a7d |    3318 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/seams/upstream_device.py:70
+memory reduced from 0.02 MB -> 0.02 MB, 4 -> 1 bufs
+more upcast axis : [(2, 233, 0, 4)]
+r_2_14_14_4_4_3_3         opts: (Opt(op=OptOps.SPLIT, axis=0, arg=(4, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=6, arg=(0, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=5, arg=(0, AxisType.UPCAST)))
+typedef float float4 __attribute__((aligned(4),ext_vector_type(4)));
+void r_2_14_14_4_4_3_3(float* restrict data0_1568, float* restrict data1_784, float* restrict data2_288, float* restrict data3_8) {
+  float buf0[4];
+  for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
+    float4 val0 = (*((float4*)((data3_8+(Lidx3<<2)))));
+    for (int Lidx4 = 0; Lidx4 < 14; Lidx4++) {
+      _Bool alu0 = (0<Lidx4);
+      _Bool alu1 = (Lidx4<13);
+      for (int Lidx5 = 0; Lidx5 < 14; Lidx5++) {
+        int alu2 = ((Lidx4*14)+Lidx5);
+        _Bool alu3 = (0<Lidx5);
+        _Bool alu4 = (Lidx5<13);
+        *(buf0+0) = 0.0f;
+        *(buf0+1) = 0.0f;
+        *(buf0+2) = 0.0f;
+        *(buf0+3) = 0.0f;
+        for (int Lidx0 = 0; Lidx0 < 4; Lidx0++) {
+          int alu9 = (alu2+(Lidx0*196));
+          float val1 = (alu3?*(data1_784+(alu9+-1)):0.0f);
+          float val2 = ((alu4&alu0)?*(data1_784+(alu9+-13)):0.0f);
+          float val3 = (alu0?*(data1_784+(alu9+-14)):0.0f);
+          float val4 = ((alu3&alu0)?*(data1_784+(alu9+-15)):0.0f);
+          float val5 = (alu4?*(data1_784+(alu9+1)):0.0f);
+          float val6 = ((alu3&alu1)?*(data1_784+(alu9+13)):0.0f);
+          float val7 = (alu1?*(data1_784+(alu9+14)):0.0f);
+          float val8 = ((alu4&alu1)?*(data1_784+(alu9+15)):0.0f);
+          float val9 = (*(data1_784+alu9));
+          int alu10 = ((Lidx0*9)+(Lidx3*144));
+          float val10 = (*(data2_288+(alu10+1)));
+          float val11 = (*(data2_288+(alu10+108)));
+          float val12 = (*(data2_288+(alu10+109)));
+          float val13 = (*(data2_288+(alu10+110)));
+          float val14 = (*(data2_288+(alu10+111)));
+          float val15 = (*(data2_288+(alu10+112)));
+          float val16 = (*(data2_288+(alu10+113)));
+          float val17 = (*(data2_288+(alu10+114)));
+          float val18 = (*(data2_288+(alu10+115)));
+          float val19 = (*(data2_288+(alu10+116)));
+          float val20 = (*(data2_288+(alu10+2)));
+          float val21 = (*(data2_288+(alu10+3)));
+          float val22 = (*(data2_288+(alu10+36)));
+          float val23 = (*(data2_288+(alu10+37)));
+          float val24 = (*(data2_288+(alu10+38)));
+          float val25 = (*(data2_288+(alu10+39)));
+          float val26 = (*(data2_288+(alu10+4)));
+          float val27 = (*(data2_288+(alu10+40)));
+          float val28 = (*(data2_288+(alu10+41)));
+          float val29 = (*(data2_288+(alu10+42)));
+          float val30 = (*(data2_288+(alu10+43)));
+          float val31 = (*(data2_288+(alu10+44)));
+          float val32 = (*(data2_288+(alu10+5)));
+          float val33 = (*(data2_288+(alu10+6)));
+          float val34 = (*(data2_288+(alu10+7)));
+          float val35 = (*(data2_288+(alu10+72)));
+          float val36 = (*(data2_288+(alu10+73)));
+          float val37 = (*(data2_288+(alu10+74)));
+          float val38 = (*(data2_288+(alu10+75)));
+          float val39 = (*(data2_288+(alu10+76)));
+          float val40 = (*(data2_288+(alu10+77)));
+          float val41 = (*(data2_288+(alu10+78)));
+          float val42 = (*(data2_288+(alu10+79)));
+          float val43 = (*(data2_288+(alu10+8)));
+          float val44 = (*(data2_288+(alu10+80)));
+          float val45 = (*(data2_288+alu10));
+          *(buf0+0) = ((*(buf0+0))+(val4*val45)+(val3*val10)+(val2*val20)+(val1*val21)+(val9*val26)+(val5*val32)+(val6*val33)+(val7*val34)+(val8*val43));
+          *(buf0+1) = ((*(buf0+1))+(val4*val22)+(val3*val23)+(val2*val24)+(val1*val25)+(val9*val27)+(val5*val28)+(val6*val29)+(val7*val30)+(val8*val31));
+          *(buf0+2) = ((*(buf0+2))+(val4*val35)+(val3*val36)+(val2*val37)+(val1*val38)+(val9*val39)+(val5*val40)+(val6*val41)+(val7*val42)+(val8*val44));
+          *(buf0+3) = ((*(buf0+3))+(val4*val11)+(val3*val12)+(val2*val13)+(val1*val14)+(val9*val15)+(val5*val16)+(val6*val17)+(val7*val18)+(val8*val19));
+        }
+        int alu16 = (alu2+(Lidx3*784));
+        float alu17 = ((*(buf0+0))+val0[0]);
+        float alu18 = ((*(buf0+1))+val0[1]);
+        float alu19 = ((*(buf0+2))+val0[2]);
+        float alu20 = ((*(buf0+3))+val0[3]);
+        float alu21 = ((0.0f<alu17)?alu17:0.0f);
+        float alu22 = ((0.0f<alu18)?alu18:0.0f);
+        float alu23 = ((0.0f<alu19)?alu19:0.0f);
+        float alu24 = ((0.0f<alu20)?alu20:0.0f);
+        *(data0_1568+(alu16+196)) = alu22;
+        *(data0_1568+(alu16+392)) = alu23;
+        *(data0_1568+(alu16+588)) = alu24;
+        *(data0_1568+alu16) = alu21;
+      }
+    }
+  }
+}
+
+*** CPU       15 r[90m_[0m[31m4[0m[90m_[0m[31m28[0m[90m_[0m[31m7[0m[90m_[0m[33m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                                 arg  4 mem   0.00 GB tm      9.25us/     0.83ms (      7 GFLOPS    2|7      GB/s)
+*** CPU       16 r[90m_[0m[31m56[0m[90m_[0m[31m14[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                    arg  2 mem   0.00 GB tm      4.04us/     0.83ms (      1 GFLOPS    4|4      GB/s)
+*** CPU       17 r[90m_[0m[31m2[0m[90m_[0m[31m14[0m[90m_[0m[31m14[0m[90m_[0m[33m4[0m[90m_[0m[31m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                              arg  4 mem   0.00 GB tm     15.83us/     0.85ms (      8 GFLOPS    1|18     GB/s)
+*** CPU       18 r[90m_[0m[31m56[0m[90m_[0m[31m7[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                     arg  2 mem   0.00 GB tm      2.29us/     0.85ms (      1 GFLOPS    3|3      GB/s)
+*** CPU       19 r[90m_[0m[31m10[0m[90m_[0m[31m98[0m[90m_[0m[33m4[0m                                      arg  4 mem   0.00 GB tm      7.38us/     0.86ms (      1 GFLOPS    2|4      GB/s)
+# img 0 pred=7 secs=0.002248 logits=-5.667755126953125,-8.617269515991211,-2.3225889205932617,3.247025728225708,-7.484077453613281,-5.531640529632568,-23.383066177368164,14.83681583404541,-5.152935028076172,0.6054852604866028
+scheduled     1 kernels in     0.88 ms |  cache hit c18a4903 |    3331 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/seams/upstream_device.py:65
+*** NPY       20 [33mcopy    3.06 KB,     CPU <- NPY    [0m            arg  2 mem   0.00 GB tm     62.46us/     0.92ms (      0 GFLOPS    0|0      GB/s)
+scheduled     7 kernels in     1.13 ms |  cache hit 48cd86d9 |    3471 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/seams/upstream_device.py:69
+memory reduced from 0.02 MB -> 0.02 MB, 6 -> 1 bufs
+*** CPU       21 r[90m_[0m[31m4[0m[90m_[0m[31m28[0m[90m_[0m[31m7[0m[90m_[0m[33m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                                 arg  4 mem   0.00 GB tm      5.67us/     0.92ms (     12 GFLOPS    3|12     GB/s)
+*** CPU       22 r[90m_[0m[31m56[0m[90m_[0m[31m14[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                    arg  2 mem   0.00 GB tm      3.00us/     0.93ms (      2 GFLOPS    5|5      GB/s)
+*** CPU       23 r[90m_[0m[31m2[0m[90m_[0m[31m14[0m[90m_[0m[31m14[0m[90m_[0m[33m4[0m[90m_[0m[31m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                              arg  4 mem   0.00 GB tm     12.62us/     0.94ms (     10 GFLOPS    1|23     GB/s)
+*** CPU       24 r[90m_[0m[31m56[0m[90m_[0m[31m7[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                     arg  2 mem   0.00 GB tm      2.62us/     0.94ms (      1 GFLOPS    3|3      GB/s)
+*** CPU       25 r[90m_[0m[31m10[0m[90m_[0m[31m98[0m[90m_[0m[33m4[0m                                      arg  4 mem   0.00 GB tm      5.54us/     0.95ms (      1 GFLOPS    3|6      GB/s)
+*** CPU       26 r[90m_[0m[33m10[0m                                           arg  2 mem   0.00 GB tm      1.96us/     0.95ms (      0 GFLOPS    0|0      GB/s)
+*** CPU       27 r[90m_[0m[33m10[0m                                           arg  3 mem   0.00 GB tm      1.96us/     0.95ms (      0 GFLOPS    0|0      GB/s)
+scheduled     5 kernels in     1.04 ms |  cache hit f1c10a7d |    3429 uops in cache | /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/seams/upstream_device.py:70
+memory reduced from 0.02 MB -> 0.02 MB, 4 -> 1 bufs
+*** CPU       28 r[90m_[0m[31m4[0m[90m_[0m[31m28[0m[90m_[0m[31m7[0m[90m_[0m[33m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                                 arg  4 mem   0.00 GB tm      5.12us/     0.96ms (     13 GFLOPS    3|13     GB/s)
+*** CPU       29 r[90m_[0m[31m56[0m[90m_[0m[31m14[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                    arg  2 mem   0.00 GB tm      2.62us/     0.96ms (      2 GFLOPS    6|6      GB/s)
+*** CPU       30 r[90m_[0m[31m2[0m[90m_[0m[31m14[0m[90m_[0m[31m14[0m[90m_[0m[33m4[0m[90m_[0m[31m4[0m[90m_[0m[33m3[0m[90m_[0m[33m3[0m                              arg  4 mem   0.00 GB tm     12.00us/     0.97ms (     10 GFLOPS    1|24     GB/s)
+*** CPU       31 r[90m_[0m[31m56[0m[90m_[0m[31m7[0m[90m_[0m[33m2[0m[90m_[0m[33m2[0m                                     arg  2 mem   0.00 GB tm      1.96us/     0.97ms (      1 GFLOPS    4|4      GB/s)
+*** CPU       32 r[90m_[0m[31m10[0m[90m_[0m[31m98[0m[90m_[0m[33m4[0m                                      arg  4 mem   0.00 GB tm      4.92us/     0.98ms (      2 GFLOPS    4|6      GB/s)
+# img 1 pred=2 secs=0.002008 logits=-2.832993984222412,1.5212652683258057,14.75653076171875,-0.3132881820201874,-18.999916076660156,-2.709949254989624,-3.003460168838501,-20.71800994873047,-2.6896581649780273,-16.033205032348633
+r_10                      opts: (Opt(op=OptOps.SPLIT, axis=0, arg=(0, AxisType.UPCAST)),)
+typedef float float4 __attribute__((aligned(4),ext_vector_type(4)));
+typedef float float2 __attribute__((aligned(4),ext_vector_type(2)));
+void r_10(float* restrict data0_1, float* restrict data1_10) {
+  float4 val0 = (*((float4*)((data1_10+0))));
+  float4 val1 = (*((float4*)((data1_10+4))));
+  float2 val2 = (*((float2*)((data1_10+8))));
+  float alu0 = ((val0[0]<val0[1])?val0[1]:val0[0]);
+  float alu1 = ((alu0<val0[2])?val0[2]:alu0);
+  float alu2 = ((alu1<val0[3])?val0[3]:alu1);
+  float alu3 = ((alu2<val1[0])?val1[0]:alu2);
+  float alu4 = ((alu3<val1[1])?val1[1]:alu3);
+  float alu5 = ((alu4<val1[2])?val1[2]:alu4);
+  float alu6 = ((alu5<val1[3])?val1[3]:alu5);
+  float alu7 = ((alu6<val2[0])?val2[0]:alu6);
+  float alu8 = ((alu7<val2[1])?val2[1]:alu7);
+  *(data0_1+0) = alu8;
+}
+
+r_56_14_2_2               opts: (Opt(op=OptOps.SPLIT, axis=3, arg=(0, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=2, arg=(0, AxisType.UPCAST)))
+typedef float float2 __attribute__((aligned(4),ext_vector_type(2)));
+void r_56_14_2_2(float* restrict data0_784, float* restrict data1_3136) {
+  for (int Lidx2 = 0; Lidx2 < 56; Lidx2++) {
+    for (int Lidx4 = 0; Lidx4 < 14; Lidx4++) {
+      int alu0 = ((Lidx2*56)+(Lidx4<<1));
+      float2 val0 = (*((float2*)((data1_3136+(alu0+28)))));
+      float2 val1 = (*((float2*)((data1_3136+alu0))));
+      float alu1 = ((val1[0]<val1[1])?val1[1]:val1[0]);
+      float alu2 = ((alu1<val0[0])?val0[0]:alu1);
+      float alu3 = ((alu2<val0[1])?val0[1]:alu2);
+      *(data0_784+((Lidx2*14)+Lidx4)) = alu3;
+    }
+  }
+}
+
+r_10                      opts: (Opt(op=OptOps.SPLIT, axis=0, arg=(0, AxisType.UPCAST)),)
+typedef float float4 __attribute__((aligned(4),ext_vector_type(4)));
+typedef float float2 __attribute__((aligned(4),ext_vector_type(2)));
+void r_10(int* restrict data0_1, float* restrict data1_10, float* restrict data2_1) {
+  float val0 = (*(data2_1+0));
+  float4 val1 = (*((float4*)((data1_10+0))));
+  float4 val2 = (*((float4*)((data1_10+4))));
+  float2 val3 = (*((float2*)((data1_10+8))));
+  int cast0 = ((int)((val3[1]==val0)));
+  int alu0 = (((int)((val1[0]==val0)))*10);
+  int alu1 = (((int)((val1[1]==val0)))*9);
+  int alu2 = (((int)((val1[3]==val0)))*7);
+  int alu3 = (((int)((val2[0]==val0)))*6);
+  int alu4 = (((int)((val2[1]==val0)))*5);
+  int alu5 = (((int)((val2[3]==val0)))*3);
+  int alu6 = (((int)((val1[2]==val0)))<<3);
+  int alu7 = (((int)((val2[2]==val0)))<<2);
+  int alu8 = (((int)((val3[0]==val0)))<<1);
+  int alu9 = ((alu0<alu1)?alu1:alu0);
+  int alu10 = ((alu9<alu6)?alu6:alu9);
+  int alu11 = ((alu10<alu2)?alu2:alu10);
+  int alu12 = ((alu11<alu3)?alu3:alu11);
+  int alu13 = ((alu12<alu4)?alu4:alu12);
+  int alu14 = ((alu13<alu7)?alu7:alu13);
+  int alu15 = ((alu14<alu5)?alu5:alu14);
+  int alu16 = ((alu15<alu8)?alu8:alu15);
+  int alu17 = ((alu16<cast0)?cast0:alu16);
+  *(data0_1+0) = (10-alu17);
+}
+
+r_10_98_4                 opts: (Opt(op=OptOps.SPLIT, axis=1, arg=(4, AxisType.UPCAST)),)
+typedef float float4 __attribute__((aligned(4),ext_vector_type(4)));
+void r_10_98_4(float* restrict data0_10, float* restrict data1_392, float* restrict data2_3920, float* restrict data3_10) {
+  float buf0[1];
+  for (int Lidx1 = 0; Lidx1 < 10; Lidx1++) {
+    *(buf0+0) = 0.0f;
+    for (int Lidx0 = 0; Lidx0 < 98; Lidx0++) {
+      int alu1 = (Lidx0<<2);
+      float4 val0 = (*((float4*)((data1_392+alu1))));
+      float4 val1 = (*((float4*)((data2_3920+(alu1+(Lidx1*392))))));
+      *(buf0+0) = ((*(buf0+0))+(val0[0]*val1[0])+(val0[1]*val1[1])+(val0[2]*val1[2])+(val0[3]*val1[3]));
+    }
+    float val2 = (*(data3_10+Lidx1));
+    *(data0_10+Lidx1) = ((*(buf0+0))+val2);
+  }
+}
+
+r_56_7_2_2                opts: (Opt(op=OptOps.SPLIT, axis=3, arg=(0, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=2, arg=(0, AxisType.UPCAST)))
+typedef float float2 __attribute__((aligned(4),ext_vector_type(2)));
+void r_56_7_2_2(float* restrict data0_392, float* restrict data1_1568) {
+  for (int Lidx2 = 0; Lidx2 < 56; Lidx2++) {
+    for (int Lidx4 = 0; Lidx4 < 7; Lidx4++) {
+      int alu0 = ((Lidx2*28)+(Lidx4<<1));
+      float2 val0 = (*((float2*)((data1_1568+(alu0+14)))));
+      float2 val1 = (*((float2*)((data1_1568+alu0))));
+      float alu1 = ((val1[0]<val1[1])?val1[1]:val1[0]);
+      float alu2 = ((alu1<val0[0])?val0[0]:alu1);
+      float alu3 = ((alu2<val0[1])?val0[1]:alu2);
+      *(data0_392+((Lidx2*7)+Lidx4)) = alu3;
+    }
+  }
+}
+
+more upcast axis : [(2, 233, 0, 4)]
+r_2_14_14_4_4_3_3         opts: (Opt(op=OptOps.SPLIT, axis=0, arg=(4, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=6, arg=(0, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=5, arg=(0, AxisType.UPCAST)))
+typedef float float4 __attribute__((aligned(4),ext_vector_type(4)));
+void r_2_14_14_4_4_3_3(float* restrict data0_1568, float* restrict data1_784, float* restrict data2_288, float* restrict data3_8) {
+  float buf0[4];
+  for (int Lidx3 = 0; Lidx3 < 2; Lidx3++) {
+    float4 val0 = (*((float4*)((data3_8+(Lidx3<<2)))));
+    for (int Lidx4 = 0; Lidx4 < 14; Lidx4++) {
+      _Bool alu0 = (0<Lidx4);
+      _Bool alu1 = (Lidx4<13);
+      for (int Lidx5 = 0; Lidx5 < 14; Lidx5++) {
+        int alu2 = ((Lidx4*14)+Lidx5);
+        _Bool alu3 = (0<Lidx5);
+        _Bool alu4 = (Lidx5<13);
+        *(buf0+0) = 0.0f;
+        *(buf0+1) = 0.0f;
+        *(buf0+2) = 0.0f;
+        *(buf0+3) = 0.0f;
+        for (int Lidx0 = 0; Lidx0 < 4; Lidx0++) {
+          int alu9 = (alu2+(Lidx0*196));
+          float val1 = (alu3?*(data1_784+(alu9+-1)):0.0f);
+          float val2 = ((alu4&alu0)?*(data1_784+(alu9+-13)):0.0f);
+          float val3 = (alu0?*(data1_784+(alu9+-14)):0.0f);
+          float val4 = ((alu3&alu0)?*(data1_784+(alu9+-15)):0.0f);
+          float val5 = (alu4?*(data1_784+(alu9+1)):0.0f);
+          float val6 = ((alu3&alu1)?*(data1_784+(alu9+13)):0.0f);
+          float val7 = (alu1?*(data1_784+(alu9+14)):0.0f);
+          float val8 = ((alu4&alu1)?*(data1_784+(alu9+15)):0.0f);
+          float val9 = (*(data1_784+alu9));
+          int alu10 = ((Lidx0*9)+(Lidx3*144));
+          float val10 = (*(data2_288+(alu10+1)));
+          float val11 = (*(data2_288+(alu10+108)));
+          float val12 = (*(data2_288+(alu10+109)));
+          float val13 = (*(data2_288+(alu10+110)));
+          float val14 = (*(data2_288+(alu10+111)));
+          float val15 = (*(data2_288+(alu10+112)));
+          float val16 = (*(data2_288+(alu10+113)));
+          float val17 = (*(data2_288+(alu10+114)));
+          float val18 = (*(data2_288+(alu10+115)));
+          float val19 = (*(data2_288+(alu10+116)));
+          float val20 = (*(data2_288+(alu10+2)));
+          float val21 = (*(data2_288+(alu10+3)));
+          float val22 = (*(data2_288+(alu10+36)));
+          float val23 = (*(data2_288+(alu10+37)));
+          float val24 = (*(data2_288+(alu10+38)));
+          float val25 = (*(data2_288+(alu10+39)));
+          float val26 = (*(data2_288+(alu10+4)));
+          float val27 = (*(data2_288+(alu10+40)));
+          float val28 = (*(data2_288+(alu10+41)));
+          float val29 = (*(data2_288+(alu10+42)));
+          float val30 = (*(data2_288+(alu10+43)));
+          float val31 = (*(data2_288+(alu10+44)));
+          float val32 = (*(data2_288+(alu10+5)));
+          float val33 = (*(data2_288+(alu10+6)));
+          float val34 = (*(data2_288+(alu10+7)));
+          float val35 = (*(data2_288+(alu10+72)));
+          float val36 = (*(data2_288+(alu10+73)));
+          float val37 = (*(data2_288+(alu10+74)));
+          float val38 = (*(data2_288+(alu10+75)));
+          float val39 = (*(data2_288+(alu10+76)));
+          float val40 = (*(data2_288+(alu10+77)));
+          float val41 = (*(data2_288+(alu10+78)));
+          float val42 = (*(data2_288+(alu10+79)));
+          float val43 = (*(data2_288+(alu10+8)));
+          float val44 = (*(data2_288+(alu10+80)));
+          float val45 = (*(data2_288+alu10));
+          *(buf0+0) = ((*(buf0+0))+(val4*val45)+(val3*val10)+(val2*val20)+(val1*val21)+(val9*val26)+(val5*val32)+(val6*val33)+(val7*val34)+(val8*val43));
+          *(buf0+1) = ((*(buf0+1))+(val4*val22)+(val3*val23)+(val2*val24)+(val1*val25)+(val9*val27)+(val5*val28)+(val6*val29)+(val7*val30)+(val8*val31));
+          *(buf0+2) = ((*(buf0+2))+(val4*val35)+(val3*val36)+(val2*val37)+(val1*val38)+(val9*val39)+(val5*val40)+(val6*val41)+(val7*val42)+(val8*val44));
+          *(buf0+3) = ((*(buf0+3))+(val4*val11)+(val3*val12)+(val2*val13)+(val1*val14)+(val9*val15)+(val5*val16)+(val6*val17)+(val7*val18)+(val8*val19));
+        }
+        int alu16 = (alu2+(Lidx3*784));
+        float alu17 = ((*(buf0+0))+val0[0]);
+        float alu18 = ((*(buf0+1))+val0[1]);
+        float alu19 = ((*(buf0+2))+val0[2]);
+        float alu20 = ((*(buf0+3))+val0[3]);
+        float alu21 = ((0.0f<alu17)?alu17:0.0f);
+        float alu22 = ((0.0f<alu18)?alu18:0.0f);
+        float alu23 = ((0.0f<alu19)?alu19:0.0f);
+        float alu24 = ((0.0f<alu20)?alu20:0.0f);
+        *(data0_1568+(alu16+196)) = alu22;
+        *(data0_1568+(alu16+392)) = alu23;
+        *(data0_1568+(alu16+588)) = alu24;
+        *(data0_1568+alu16) = alu21;
+      }
+    }
+  }
+}
+
+more upcast axis : [(2, 2, 2, 4), (2, 56, 1, 4), (2, 794, 0, 4)]
+r_4_28_7_4_3_3            opts: (Opt(op=OptOps.SPLIT, axis=2, arg=(4, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=5, arg=(0, AxisType.UPCAST)), Opt(op=OptOps.SPLIT, axis=4, arg=(0, AxisType.UPCAST)))
+typedef float float4 __attribute__((aligned(4),ext_vector_type(4)));
+void r_4_28_7_4_3_3(float* restrict data0_3136, float* restrict data1_784, float* restrict data2_36, float* restrict data3_4) {
+  float4 cast0 = (float4){0.0f,0.0f,0.0f,0.0f};
+  for (int Lidx2 = 0; Lidx2 < 4; Lidx2++) {
+    int alu0 = (Lidx2*9);
+    float val0 = (*(data2_36+(alu0+1)));
+    float val1 = (*(data2_36+(alu0+2)));
+    float val2 = (*(data2_36+(alu0+3)));
+    float val3 = (*(data2_36+(alu0+4)));
+    float val4 = (*(data2_36+(alu0+5)));
+    float val5 = (*(data2_36+(alu0+6)));
+    float val6 = (*(data2_36+(alu0+7)));
+    float val7 = (*(data2_36+(alu0+8)));
+    float val8 = (*(data2_36+alu0));
+    float val9 = (*(data3_4+Lidx2));
+    for (int Lidx3 = 0; Lidx3 < 28; Lidx3++) {
+      _Bool alu1 = (0<Lidx3);
+      _Bool alu2 = (Lidx3<27);
+      for (int Lidx4 = 0; Lidx4 < 7; Lidx4++) {
+        int alu3 = ((Lidx3*28)+(Lidx4<<2));
+        _Bool alu4 = (0<Lidx4);
+        float val10 = (alu4?*(data1_784+(alu3+-1)):0.0f);
+        _Bool alu5 = (Lidx4<6);
+        float val11 = ((alu5&alu1)?*(data1_784+(alu3+-24)):0.0f);
+        float val12 = ((alu4&alu1)?*(data1_784+(alu3+-29)):0.0f);
+        float val13 = ((alu4&alu2)?*(data1_784+(alu3+27)):0.0f);
+        float val14 = ((alu5&alu2)?*(data1_784+(alu3+32)):0.0f);
+        float val15 = (alu5?*(data1_784+(alu3+4)):0.0f);
+        float4 val16 = (alu1?*((float4*)((data1_784+(alu3+-28)))):cast0);
+        float4 val17 = (alu2?*((float4*)((data1_784+(alu3+28)))):cast0);
+        float4 val18 = (*((float4*)((data1_784+alu3))));
+        float alu6 = ((val16[0]*val8)+(val16[1]*val0)+(val16[2]*val1)+(val18[0]*val2)+(val18[1]*val3)+(val18[2]*val4)+(val17[0]*val5)+(val17[1]*val6)+(val17[2]*val7)+val9);
+        float alu7 = ((val16[1]*val8)+(val16[2]*val0)+(val16[3]*val1)+(val18[1]*val2)+(val18[2]*val3)+(val18[3]*val4)+(val17[1]*val5)+(val17[2]*val6)+(val17[3]*val7)+val9);
+        float alu8 = ((val16[2]*val8)+(val16[3]*val0)+(val11*val1)+(val18[2]*val2)+(val18[3]*val3)+(val15*val4)+(val17[2]*val5)+(val17[3]*val6)+(val14*val7)+val9);
+        float alu9 = ((val12*val8)+(val16[0]*val0)+(val16[1]*val1)+(val10*val2)+(val18[0]*val3)+(val18[1]*val4)+(val13*val5)+(val17[0]*val6)+(val17[1]*val7)+val9);
+        float alu10 = ((0.0f<alu6)?alu6:0.0f);
+        float alu11 = ((0.0f<alu7)?alu7:0.0f);
+        float alu12 = ((0.0f<alu8)?alu8:0.0f);
+        float alu13 = ((0.0f<alu9)?alu9:0.0f);
+        *((float4*)((data0_3136+(alu3+(Lidx2*784))))) = (float4){alu13,alu10,alu11,alu12};
+      }
+    }
+  }
+}
+

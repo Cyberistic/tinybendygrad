@@ -2642,6 +2642,51 @@ exec-seams-trace-only [###] 3/3  **THE PORT's FAST DEVICES EXIST AS PORTS AND TH
                                        PROGRAM.**
 
 
+exec-fast-lane       [###] 3/3  **A MNIST FORWARD PASS IN THE PORT's OWN LANGUAGE RUNS IN 0.17 s (THE JS LANE) OR 0.46
+                                       s (NATIVE) -- 2,700x AND 950x FASTER THAN THE PORT's BEND DEVICE -- AND IT
+                                       AGREES WITH CPython TO worst_rel=1.37e-07 WITH THE ARGMAX MATCHING.** MEASURED
+                                       2026-10-27, IN `.agents/slop/seams/REPORT.md` (474 LINES, 27 COST-LOGGED
+                                       COMMANDS). **=> THE TABLE: **CPython `CPU` 0.0117 s/image** (UPSTREAM's OWN C
+                                       RENDERER -> `cc` -> MMAP), **CPython `METAL` 0.0124 s** (SO METAL IS **NOT**
+                                       FASTER ON THIS MODEL), **THE PORT, STANDALONE Bend KERNEL, NATIVE 0.46 s (39x
+                                       CPython)**, **THE PORT, THE SAME PROGRAM ON THE JS LANE, 0.17 s (15x
+                                       CPython)**, **AND THE PORT's BEND DEVICE 437.688 s (37,400x CPython)** -- **=>
+                                       => SO THE **INTERPRETER WAS THE WHOLE PROBLEM**, AND **THE PORT's OWN COMPILED
+                                       OUTPUT IS *SLOWER* THAN ITS OWN JAVASCRIPT** (0.46 s vs 0.17 s), **WHICH IS THE
+                                       JAVASCRIPT PRIORITY TURNING OUT TO BE **THE FASTEST LANE THE PORT HAS**.** **=>
+                                       AND WHAT LANDED IS **NOT** THE DEVICE SEAM:
+                                       `.agents/slop/seams/kernel_mnist.bend` (421 LINES) IS **EXPLICITLY NOT** THE
+                                       PORT's `Device`/`UOp`/`renderer` LANE -- IT BYPASSES THE ALLOCATOR, THE
+                                       RENDERER, THE ELF EMITTER AND THE LOADER -- **=> SO IT PROVES THE ARITHMETIC
+                                       AND THE CORRECTNESS, AND `runtime/ops_cpu.bend`'s SEAM IS **STILL NOT MADE**.**
+                                       **=> AND THE CORRECTNESS IS EXACT WHERE IT CAN BE: A NumPy float32 CONVOLUTION
+                                       IN SOURCE ORDER IS **BIT-IDENTICAL** TO THE PORT's `conv1` ON **3136/3136**
+                                       ELEMENTS, AND THE 421 THAT DIFFER FROM CPython DIFFER **BECAUSE CPython's
+                                       BACKEND RUNS AN im2col GEMM AND float32 ADDITION IS NOT ASSOCIATIVE** -- **=>
+                                       SO THE GATE USES `tol_rel = 1e-05` AGAINST A MEASURED 1.37e-07, BECAUSE A BIT-
+                                       IDENTITY GATE WOULD BE A GATE ON THE *ORACLE's* ACCUMULATION ORDER.** **=> AND
+                                       THE PLANT IS REAL: IT RE-INTRODUCES THE EIGHT-TAP DEFECT AND THE GATE READS
+                                       `RED -- outside tol_rel 1e-05: conv1, relu1, pool1, conv2, relu2, pool2, flat,
+                                       logits; worst_rel=0.144906`, rc=1, AND THE GREEN STATE RETURNS.** **=> AND
+                                       THREE BUGS FOUND BY MEASUREMENT, NOT BY READING: (1) **THE TAP COUNT WAS OFF BY
+                                       ONE** -- `conv1.tap(k, ..)` STOPS AT `k == 0`, SO `8n` PERFORMED *EIGHT* TAPS
+                                       AND NEVER REACHED `ki = 8`; THE FIRST RUN WAS BIT-IDENTICAL TO AN EIGHT-TAP
+                                       CONVOLUTION ON 3136/3136 OUTPUTS. (2) **`List.append` RECURSED 43,904 DEEP**
+                                       AND KILLED THE JS LANE WITH `memory fault (machine stack overflow?)`; EIGHT
+                                       APPEND-MODE WRITES COST +0.02 s AND REMOVED IT. (3) **THE UNIT's OWN METAL
+                                       CENSUS WAS WRONG** -- IT GREPPED FOR `MSL` AND GOT 0, BUT THE PORT NEVER WRITES
+                                       THAT WORD; **THE REAL FINDING IS THAT THE METAL RENDERER's SPELLINGS ARE ALL
+                                       PORTED (9/9) AND THE **KERNEL ASSEMBLER IS NOT** (0 `render_kernel` IN
+                                       `cstyle.bend`).** **=> AND THE METAL LANE IS **REFUSED**, WITH EIGHT NAMED
+                                       WALLS: **THE PORT CAN CONSUME A `.metallib`; NOTHING IN THE PORT PRODUCES ONE**
+                                       (`newLibraryWithSource` = 0, `newLibraryWithData_error` = 3, METAL COMPILER
+                                       BINDINGS = 0 of 6). **=> AND TWO DEVIATIONS, NAMED RATHER THAN PAPERED OVER:
+                                       (a) **THE PORT's `Device`/`UOp`/`renderer` LANE IS **STILL NOT USED** -- SO
+                                       THIS IS A BENCHMARK KERNEL, NOT A DEVICE. (b) **THE TREE IS SHARED, SO EVERY
+                                       TIMING IS A **MINIMUM OVER REPEATS** AND THE PER-STAGE NUMBERS CARRY THE LOAD
+                                       THEY WERE TAKEN UNDER.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
