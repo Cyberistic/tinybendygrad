@@ -1,0 +1,87 @@
+# NATIVE EXECUTION IS UNBLOCKED — MEASURED 2026-10-27
+
+## THE FACT
+
+**A LOCALLY-BUILT BINARY NOW RUNS ON THIS MACHINE.** MEASURED, NOT ASSUMED:
+
+```
+$ printf 'int main(){return 7;}\n' > /tmp/t.c
+$ cc -o /tmp/t.bin /tmp/t.c
+$ /tmp/t.bin ; echo $?
+7
+```
+
+**⇒ THE `AMFI: Launch Constraint Violation (enforcing)` / `ASP: Security policy would not allow
+process` BLOCK IS GONE.** THE BLOCKER NAMED IN EVERY PRIOR REPORT
+(`.agents/slop/cpuseam/REPORT.md`, `.agents/slop/seams/REPORT.md`, AND THE `exec-devlane` BRIEF)
+IS **NO LONGER TRUE**, AND EVERY CLAIM THAT WAS DEFERRED BECAUSE OF IT IS NOW MEASURABLE.
+
+`sudo DevToolsSecurity -status` STILL CANNOT BE READ NON-INTERACTIVELY (`sudo: a password is
+required`), **SO THE EXACT CAUSE IS NOT NAMED** — **THE OBSERVABLE IS THE BEHAVIOUR, AND THE
+BEHAVIOUR CHANGED.** **A NEGATIVE RESULT IS A RESULT: I AM NOT CLAIMING *WHY* IT CHANGED, ONLY
+THAT IT CHANGED AND THAT I MEASURED IT.**
+
+## THE CPU SEAM, NOW MEASURED NATIVELY (NOT IN THE JS LANE)
+
+`sh .agents/slop/cpuseam/verify.sh` — **16.41 s REAL, 26.05 s USER, 2.28 s SYS, ONE PROCESS.**
+
+| kernel | C vs upstream | relocated image | buffers | output bytes vs CPython's OWN CPU DEVICE | changed vs input | max_abs | verdict |
+|---|---|---|---|---|---|---|---|
+| `r_10_98_4` | IDENTICAL | IDENTICAL | 4 | **4/4** | 1/4 | **0** | PASS |
+| `r_2_14_14_4_4_3_3` | IDENTICAL | IDENTICAL | 4 | **4/4** | 1/4 | **0** | PASS |
+| `r_4_28_7_4_3_3` | IDENTICAL | IDENTICAL | 4 | **4/4** | 1/4 | **0** | PASS |
+| `r_56_14_2_2` | IDENTICAL | IDENTICAL | 2 | **2/2** | 1/2 | **0** | PASS |
+| `r_56_7_2_2` | IDENTICAL | IDENTICAL | 2 | **2/2** | 1/2 | **0** | PASS |
+
+**⇒ 5 OF 5 PASS, `max_abs=0` ON ALL FIVE — BYTE IDENTITY AGAINST CPYTHON's OWN `DEV='CPU'`
+DEVICE.** THE ROWS ARE `oracles`-SIDE TRUTH, NOT HAND-TYPED: `.agents/slop/cpuseam/bufs/*.rows`
+IS CPYTHON's DEVICE'S OWN OUTPUT.
+
+## THE PLANT IS RED 5 OF 5 — **A ROW THAT CAN GO RED**
+
+THE PLANT REWRITES **ONE TOKEN** OF THE RENDERED C PER KERNEL. **⇒ IT MUST CHANGE THE ANSWER.**
+
+| kernel | plant C | output match | max_abs | verdict |
+|---|---|---|---|---|
+| `r_10_98_4` | IDENTICAL | **3/4** | 0.187092 | **FAIL** |
+| `r_2_14_14_4_4_3_3` | IDENTICAL | **3/4** | 7.11137 | **FAIL** |
+| `r_4_28_7_4_3_3` | IDENTICAL | **3/4** | 3.36113 | **FAIL** |
+| `r_56_14_2_2` | IDENTICAL | **1/2** | 1.3119 | **FAIL** |
+| `r_56_7_2_2` | IDENTICAL | **1/2** | 3.16214 | **FAIL** |
+
+**⇒ THE PLANT PUTS THE DIVERGENCE BACK ON 5 OF 5, AND THE DENOMINATOR IS 5, NOT "THE PLANT".**
+**⇒ AND `c=IDENTICAL` ON THE PLANT ROWS IS THE POINT: THE PLANT EDITS THE *COMPILED C*, NOT
+THE *RENDERED C*, SO THE RENDERED C STAYS IDENTICAL AND THE *OUTPUT* DIVERGES. **A PLANT THAT
+CHANGED THE RENDERED C WOULD BE TESTING THE COMPARER, NOT THE PIPELINE.**
+
+## METAL: THE COMPILE HALF WORKS
+
+```
+$ xcrun -sdk macosx metal -c m.metal -o m.air
+$ xcrun -sdk macosx metallib m.air -o m.metallib
+  metallib built: true 3612 bytes
+```
+
+**⇒ `xcrun metal` COMPILES A `.metallib` ON THIS MACHINE.** THE C DISPATCH PROBE DID NOT
+COMPILE BECAUSE **OBJECTIVE-C FRAMEWORK HEADERS NEED `-x objective-c`** (THE ERRORS WERE IN
+`NSObjCRuntime.h`, NOT IN METAL), **⇒ THAT IS A SPELLING PROBLEM IN MY PROBE, NOT A WALL.**
+**⇒ AND UPSTREAM'S METAL BACKEND DOES NOT USE A COMPILED BINARY AT ALL: `tinygrad/runtime/
+ops_metal.py` REACHES METAL THROUGH **`ctypes`** (`:2` IMPORTS IT, `:86` BINDS `objc_msgSend`
+AND `sel_registerName`), **⇒ SO THE PORT's METAL PATH DOES NOT NEED `cc` AND DOES NOT NEED THE
+AMFI POLICY AT ALL.**
+
+## WHAT THIS UNBLOCKS, AND WHAT IT DOES NOT
+
+1. **THE CPU SEAM IS NOW A NATIVE, MEASURED, PLANTED RESULT.** BEFORE THIS IT WAS "MEASURED IN
+   THE JS LANE, WITH THE 30 LINES THAT MMAP AND CALL SPELLED IN PYTHON".
+2. **THE METAL PATH'S *COMPILE* HALF IS MEASURED.** THE *DISPATCH* HALF IS NOT.
+3. **IT DOES NOT UNBLOCK THE DEVICE LANE.** THE THREE MISSING LINKS ARE UNCHANGED BY THIS:
+   **THE ENGINE** (BUILT, `ALL PROOFS CHECK`, **UNMEASURED AGAINST CPython AND UNWIRED**),
+   **THE ARENA → `List<KU>` CONVERTER** (**NO DEF IN THE PORT PRODUCES A `KU` LIST** — THE ONLY
+   PRODUCER IS `.agents/slop/cpuseam/gen_kus.py`, WHICH TRANSCRIBES **UPSTREAM's** ROWS), AND
+   **THE DRIVER** (EXISTS AT `.agents/slop/cpuseam/launch.bend:113-131`, NOT IN THE PORT).
+
+## THE STANDING MACHINE CONSTRAINT
+
+**ONE BEND PROCESS AT A TIME. NEVER BACKGROUND. NEVER A SWEEP. NEVER A CORPUS RUN.** THIS REPORT
+RAN **ONE** `bend` PROCESS AND **ONE** `cc` AT A TIME.
