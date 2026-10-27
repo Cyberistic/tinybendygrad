@@ -57,7 +57,7 @@
 # `wgc_call_len` is the length half of it.
 #
 # ONE PLACE THE TRACE IS COARSER THAN PYTHON, and it is load-bearing.
-# tinygrad/runtime/ops_webgpu.py:95 `bg_entry` calls `dev.create_uniform(x)` (tinygrad/runtime/ops_webgpu.py:202-206 symbol=create_uniform), which
+# tinygrad/runtime/ops_webgpu.py:94 `bg_entry` calls `dev.create_uniform(x)` (tinygrad/runtime/ops_webgpu.py:202-206 symbol=create_uniform), which
 # CREATES a 4-byte buffer AND writes the value into it -- two calls. The committed
 # trace records ONE `CALL_CREATE OBJ_BUFFER` per uniform slot, because
 # `pass.uniforms.put` emits only the create. So the write has no trace entry of

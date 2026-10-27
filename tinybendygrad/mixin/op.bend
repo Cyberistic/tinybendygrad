@@ -239,7 +239,8 @@
 # off-by-one (a head element's index is `len(t)`, and `RESHAPE(REDUCE, CONST(4))`
 # and `RESHAPE(REDUCE, CONST(1))` print identically, so only `sh_sum0kd` saw it);
 # `mo_reshape`'s one-element-RESHAPE fold gap; `mo_squeeze`'s negated test
-# (mixin/movement.py:301); `mo_eqmul`'s `bool` against `int` (mixin/elementwise.py:611);
+  # (upstream's `squeeze`, mixin/movement.py:301); `mo_eqmul`'s `bool` against the port's own `int`
+  # (upstream's `isinf`, mixin/elementwise.py:611);
 # `mo_exp`'s cast ordering.
 #
 # ---------------------------------------------------------------------------
