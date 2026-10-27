@@ -2726,6 +2726,46 @@ exec-cpu-seam        [###] 3/3  **THE PORT's OWN `CPU` DEVICE NOW COMPILES AND R
                                        0.46 s (NATIVE) AND 0.17 s (JS) STAND.
 
 
+exec-devlane         [###] 3/3  **THE PORT's `Device` LANE HAS EVERY STAGE AND NOTHING DRIVES THEM -- AND THE GAP IS
+                                       **THREE LINKS**, NOT A SCHEDULER.** MEASURED 2026-10-27, IN
+                                       `.agents/slop/devlane/REPORT.md`. **=> **THE SCHEDULER IS PORTED**:
+                                       `schedule/__init__.bend:1139` `schedule(+ar, +sink) -> Lin` IS UPSTREAM's
+                                       `create_schedule` (`tinygrad/schedule/__init__.py:32-80`) AND `:1135`
+                                       `linear(+x) -> O.Found` IS UPSTREAM's `return UOp(Ops.LINEAR,
+                                       src=tuple(linearized))` (`:80`). THE WHOLE CHAIN IS THERE (`rangeify.bend`,
+                                       `prepare.bend`, `memory.bend`, `multi.bend`) **AND IT IS MEASURED AGAINST
+                                       CPython** (`.agents/slop/schedport/` 109 ROWS, `oracles/schedule-bodies/BEFORE-
+                                       rows.rows` 81 ROWS, `checks/sb-gate.sh`). **=> => SO THE GAP IS **THREE
+                                       LINKS**, AND THE FIRST IS NAMED **IN THE TREE's OWN WORDS**:
+                                       `schedule/rangeify.bend:2669` SAYS *"WALL(p3) rangeify.py:351 get_kernel_graph
+                                       -- the order is here, the engine is not -- BLOCKED: NOT A GAP: the ORDER is
+                                       here; the ENGINE that would consume it is not, so this is a downstream unit."**
+                                       UPSTREAM's `get_kernel_graph` IS **SEVEN `graph_rewrite` CALLS**; THE PORT HAS
+                                       ALL SEVEN TABLES (`rangeify.bend:2577-2600`, `rf_stage_count() -> 9` AT
+                                       `:2586`, `rf_stages()` AT `:2592`) **AND NOT THE ENGINE THAT APPLIES THEM TO AN
+                                       ARENA.** **=> (2) THE ARENA -> RENDERER LINK: `renderer/cstyle.bend:2297`
+                                       `render(+dev, cpu, +kus: List<KU>)` TAKES A `List<KU>`, **AND NO DEF IN THE
+                                       PORT PRODUCES ONE FROM THE PORT's ARENA.** `KU` IS A FLATTENED UOP LIST WHOSE
+                                       `srcs` ARE POSITIONS IN THAT LIST; UPSTREAM's RENDERER TAKES `list[UOp]` (ARENA
+                                       INDICES), WHICH THE PORT's `codegen/late/linearizer.bend:836` `linearize(+ar,
+                                       +lst, vms, +sink) -> List<&2, U32>` DOES PRODUCE. **=> SO THE MISSING LINK IS
+                                       EXACTLY `List<&2, U32> -> List<&2, KU>`, **AND IT IS ONE DEF.** **=> (3) THE
+                                       DRIVER: **NOTHING IN THE PORT CALLS `Cpu.compile`/`Cpu.exec`** -- `grep -rn
+                                       "Cpu.compile\|Cpu.exec" tinybendygrad/` ANSWERS ONLY THE TWO DEFINITIONS --
+                                       **WHILE THE SEVEN-STEP DRIVER ALREADY EXISTS, IN A SCRATCH DIRECTORY**:
+                                       `.agents/slop/cpuseam/launch.bend:113-131` IS IT (RENDER -> ARGV -> `cc` ->
+                                       `jit_loader` -> MMAP+CALL -> READ THE ORACLE's BUFFERS -> PRINT). **=> AND THE
+                                       PRIOR ART's `KU` LIST IS A TRANSCRIPTION OF UPSTREAM's TEXTUAL ROWS, **NOT THE
+                                       PORT's ARENA**: `.agents/slop/cpuseam/gen_kus.py:104-150` READS
+                                       `.agents/slop/cpuseam/uops/<name>.rows` (WRITTEN FROM UPSTREAM's LIVE UOP
+                                       OBJECTS) AND EMITS `C.KU{...}` LITERALS. **=> => SO **THE PORT's ARENA, THE
+                                       PORT's `schedule()`, AND THE PORT's RENDERER HAVE NEVER MET** -- AND THAT IS
+                                       THE ONE SENTENCE THE NEXT UNIT NEEDS.** **=> AND WHAT LANDED:
+                                       `tinybendygrad/runtime/device.bend` (179 LINES) -- THE PORT's `Device` LANE's
+                                       PROGRAM, ITS SCHEDULER HOOK, AND ITS COMPILE/EXEC ENTRIES. IT IS **COLD-BY-
+                                       DESIGN** NOW (IT BINDS FOREIGN CODE, LIKE `ops_cpu.bend`), AND IT COMPILES.
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
