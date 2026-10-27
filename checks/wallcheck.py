@@ -692,6 +692,22 @@ def main() -> int:
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED", 4: "SKIP", 5: "DEAD"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--selftest"], 1: ["--plant", "fail"], 2: ["--ledger", "/no/such/walls.tsv"],
           3: ["--plant", "story"], 4: ["NO-SUCH-ID"], 5: ["--plant", "dead"]}
+# WHY THE RED IS A FINDING: this file's FAIL is "something moved" -- a wall LANDED, a wall's defect
+# was GONE, or the two trees SPLIT -- and that is the CENSUS'S NUMBER, not a claim that the gate is
+# broken. WALL/1's own subject is a prerequisite arriving: "when the prerequisite lands the wall is
+# STALE, not retired", so a wall that landed is the wall WORKING, and the file's header says it
+# "produces that number and nothing else". A red here is a finding about the TREE's walls -- which
+# moved, and whose home carries no REOPEN, so the copy nobody owns is the forwarding hazard.
+#
+# THE OTHER EXITS ARE NOT EXCUSED BY THIS, AND THE WORD SAYS SO. `2` is an UNMAPPED code, so
+# `gates/gate-surface.py` charges it under clause V regardless of this declaration, and a runner
+# charges a FINDING gate's unowned code too ("RED_IS is a claim about meaning, not about the NUMBER
+# an aggregator sums"). `3` is REFUSED (a row is a STORY: the ledger row cannot be read as a claim),
+# `4` is SKIP, and `5` is DEAD -- the house's own words for "measured nothing", and no runner charges
+# a REFUSED, a SKIP or a DEAD as a failure of the tree. The class is earned, not asserted: `0` is
+# PLANTED and REACHES 0 (`--selftest`, and the live ledger is green), so this gate has a green to
+# fall from.
+RED_IS = "FINDING"
 
 
 if __name__ == "__main__":
