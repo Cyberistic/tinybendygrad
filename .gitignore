@@ -129,6 +129,13 @@ gates/.*
 # carry it, and jj refuses to snapshot the whole fileset over one file.
 examples/webgpu/mnist/net.json
 examples/webgpu/mnist/*.gz
+
+# The MNIST dataset for the port's own end-to-end run: the four upstream IDX archives
+# AND the `.npy` this tree's own `ops_npy` device reads. 63 MB of downloaded data, and
+# `prepare_npy.py` DOCUMENTS WHERE TO GET IT RATHER THAN FETCHING IT -- THE PORT HAS NO
+# HTTP, WHICH IS WHY IT READS A `.npy` INSTEAD OF A URL. A page fetches it; a repo does
+# not carry it.
+.agents/slop/mnist/data/
 .agents/slop/mirror/
 
 # Per-unit probe/working trees. An ORACLE (.py that calls CPython) and a GATE (.py/.sh that runs

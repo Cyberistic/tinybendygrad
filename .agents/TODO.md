@@ -2576,6 +2576,72 @@ comment-is-a-hypothesis [###] 3/3  **A CAUSE NAMED IN A COMMENT IS A HYPOTHESIS,
                                        **TRUE** -- **⇒ A TRUE STATEMENT IN A COMMENT IS NOT A CAUSE.**
 
 
+mnist-e2e            [###] 3/4  **AN END-TO-END MNIST RUNS ON THE BEND DEVICE AND AGREES WITH CPython -- AND IT COSTS
+                                       7 MINUTES 17 SECONDS PER IMAGE, WHICH IS 303.9 DAYS PER EPOCH.** MEASURED
+                                       2026-10-27, IN `.agents/slop/mnist/REPORT.md`. **⇒ THE MODEL:
+                                       `tinybendygrad/nn/mnist_cnn.bend` (278 LINES) IS **GENERATED** BY
+                                       `.agents/slop/mnist/gen_mnist_cnn.py` FROM THE CPython MODEL's CONSTANTS -- SO
+                                       NO `want=` IN IT IS TYPED BY HAND, **AND THE PORT's COPY OF THE MODEL AND THE
+                                       RUNNING MODEL CANNOT DRIFT APART SILENTLY.** **⇒ THE GATE:
+                                       `.agents/slop/mnist/oracle_shapes.py` READS **15 ROWS, 15 MATCH, 0 MISMATCH**
+                                       -- NINE SHAPE ROWS COMPARED AGAINST CPython's OWN `nn.Conv2d(...)(x).shape`,
+                                       `Tensor.max_pool2d(...)`, `Tensor.flatten(1)` AND `nn.Linear(...)(x).shape`,
+                                       THREE GRAPH ROWS COMPARED AGAINST A FIXTURE-MATCHED CPython CONSTRUCTION, AND
+                                       TWO POOL ROWS COMPARED AGAINST THE GENERATED `want=`. **⇒ THE DATA PATH: MNIST
+                                       PREPARED AS `.npy` AND READ WITH **THE PORT's OWN `ops_npy` DEVICE** -- **NO
+                                       HTTP, NO GZIP, NO TAR, NO JPEG, NO PIL.** **⇒ THE TRAINING: ON CPython's `CPU`
+                                       DEVICE (UPSTREAM's OWN C RENDERER), 8 EPOCHS, 20,000 IMAGES, BATCH 64, ADAM AT
+                                       lr 0.002, LOSS **0.7271 -> 0.0728**, 4266 PARAMETERS**, WITH THE WEIGHTS IN
+                                       `weights.npz` AND A DIGEST PER PARAMETER TENSOR IN `weights.rows`. **⇒ AND THE
+                                       PORT's FORWARD PASS ON THE BEND DEVICE **AGREES WITH CPython**: `pred=7
+                                       label=7`, AND CPython's OWN `pred=7` ON THE SAME IMAGE WITH THE SAME WEIGHTS.**
+                                       **⇒ AND THE COST: **ONE MNIST FORWARD PASS ON BEND = 437.688 s = 7 MIN 17.7 s,
+                                       IN 12 LAUNCHES** (55.39, 9.72, 123.92, 8.62, 12.85, 7.63, 9.32, 42.43, 9.41,
+                                       **141.55**, 5.35, 10.74 s) -- **⇒ THE PER-MAC COST IS ~2.5 TO 4.4 ms, AND THE
+                                       12 LAUNCHES ARE 12 PROCESSES, SO ~39 s IS PER-LAUNCH OVERHEAD AND ~398 s IS
+                                       ARITHMETIC.** **⇒ ONE EPOCH (60,000 IMAGES, FORWARD ONLY) = **303.9 DAYS**;
+                                       WITH A BACKWARD PASS AT THE USUAL ~2x, **~608 DAYS**. **⇒ AND THE BEND DEVICE
+                                       IS THE *EVALUATION* DEVICE, NOT THE *TRAINING* DEVICE, AND THAT IS A
+                                       MEASUREMENT AND NOT A PREFERENCE.** **⇒ AND THE WALL THAT IS STILL UP:
+                                       `max_pool2d`'s `repeat`/`shrink_to`/`reshape`/`permute` CHAIN
+                                       (`tinygrad/mixin/movement.py:608-616`) IS NOT BUILT BY THE SUBSTRATE -- **SO
+                                       THE POOL IS A SHAPE HERE AND NOT A GRAPH**, AND THE PORT SAYS SO INSTEAD OF
+                                       FAKING THE POOL. **⇒ AND THE WALL THAT HAS FALLEN IS STILL NAMED AS A WALL:
+                                       `examples/train_resnet.bend`'s HEADER SAYS *"THIS FILE IS BLOCKED ON A BACKWARD
+                                       PASS THAT NOBODY HAS EVER EXECUTED"*, AND THE BACKWARD PASS IS NOW GATED AT
+                                       **36 OF 36 ROWS AGAINST UPSTREAM's OWN `compute_gradient`** -- **⇒ SO THAT
+                                       HEADER IS NOW FALSE.**
+
+exec-seams-trace-only [###] 3/3  **THE PORT's FAST DEVICES EXIST AS PORTS AND THEIR SEAMS ARE *TRACE-ONLY* -- **THAT
+                                       IS WHY ONE MNIST IMAGE TAKES 7 MINUTES 17 SECONDS, AND IT IS THE ANSWER TO
+                                       *"WHY IS IT TAKING SO LONG"*.** MEASURED 2026-10-27. **⇒ THE PORT's "BEND
+                                       DEVICE" IS **UPSTREAM's `ops_python.py`** -- THE **INTERPRETER** DEBUG DEVICE
+                                       -- PORTED TO BEND. **TINYGRAD's *"RESNET IN SECONDS"* IS THE **COMPILED**
+                                       PATH**: `ops_cpu.py` (C RENDERER -> `cc` -> MACHINE CODE) OR `ops_metal.py`
+                                       (METAL SOURCE -> THE GPU). **⇒ ⇒ THE PORT IS RUNNING THE WRONG LANE FOR A
+                                       BENCHMARK, AND THE RIGHT LANES ARE RIGHT THERE:** `runtime/ops_cpu.bend` (1,524
+                                       LINES), `runtime/ops_metal.bend` (3,817), `renderer/cstyle.bend` (1,366, EMITS
+                                       C), `renderer/nir.bend` (1,739, EMITS METAL SOURCE), AND THE LOWERER `codegen/`
+                                       (23,475 LINES: LINEARIZER 1,954, REGALLOC 1,493, POSTRANGE 1,057, DECOMP
+                                       3,292). **⇒ BUT THE SEAMS ARE NOT MADE. `runtime/ops_cpu.bend`'s OWN HEADER
+                                       SAYS: *"EVERY SEAM IS A TRACE TAG AND NOTHING ELSE, SO THE ORDER AND IDENTITY
+                                       OF THE SEAM CALLS ARE GATEABLE EVEN THOUGH **NONE OF THEM IS MADE**."** **⇒ ⇒
+                                       SO *"FIX IT AND RUN IT ON CPU AND METAL"* IS **ONE WORK ITEM, NOT TWO**: **THE
+                                       PORT's `Program` MUST TAKE THE IR THROUGH THE LOWERER -> THE RENDERER -> C OR
+                                       METAL SOURCE -> COMPILE -> RUN.** **⇒ AND THE ARITHMETIC SAYS WHY IT IS WORTH
+                                       IT: THE INTERPRETER'S ~2.5-4.4 ms PER MAC IS ~300 MACs/s, AND A COMPILED KERNEL
+                                       IS ~10^9 MACs/s -- **SO THE GAP IS 10^6, NOT 10^2, AND NO AMOUNT OF TUNING THE
+                                       INTERPRETER CLOSES IT.** **⇒ AND THE JAVASCRIPT PRIORITY IS THE **SAME
+                                       INVESTMENT IN A DIFFERENT RUNTIME**: THE WIRE IS RUNTIME-AGNOSTIC
+                                       (`runtime/ops_python.bend` IS THE BEND EXECUTOR OVER THE v1 PACKET), **⇒ SO A
+                                       JS EXECUTOR IS THE SAME PACKET UNDER node's JIT**, AND `runtime/dtype.js` (236
+                                       LINES) AND `runtime/sz.c` ARE ALREADY THE JS AND C ABI LANES. **⇒ ⇒ AND ONE
+                                       MORE THING THE MEASUREMENT SAYS: **THE 12 LAUNCHES ARE 12 PROCESSES, ~600 MB
+                                       EACH, ~39 s OF OVERHEAD PER RUN** -- **⇒ SO EVEN THE INTERPRETER IS PAYING A
+                                       PROCESS PER KERNEL, AND THE FIRST CHEAP WIN IS ONE PROCESS FOR THE WHOLE
+                                       PROGRAM.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
