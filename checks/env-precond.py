@@ -450,6 +450,16 @@ def main() -> int:
 # because import RUNS a gate -- and EXECUTES each plant, requiring the observed rc to be the
 # declared one. A declared verdict with no plant is RED, named.
 EXIT_SURFACE = VERDICTS = {0: "OK", 1: "FAIL", 2: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
+# WHY THE RED IS A FINDING.  Exit 1 is `check()`'s `bad` list: a pin the tree's OWN source no
+# longer carries (METHOD A, anchored on the line's JOB so an edit above it cannot move the pin), or
+# a value the run RECORDED that differs from the declaration (METHOD B).  BOTH are facts ABOUT THE
+# TREE'S ENVIRONMENT PLUMBING -- the declared precondition MOVED, and this file exists to say which
+# one and where -- so the red is information about the tree, NAMED, and not a claim that this gate
+# cannot measure.  A REFUSED (an absent input) is a different thing and is not a verdict at all.
+# THE DECLARATION IS EARNED, NOT ASSERTED: `PLANTS[0]` runs the whole instrument against a
+# FABRICATED tree whose three values MATCH the declaration and must exit 0, so the rc-0 green this
+# red falls from is demonstrated in this run and not assumed.
+RED_IS = "FINDING"
 PLANTS = {0: ["--plant", "satisfied"], 2: ["--plant", "nonsense"]}
 
 

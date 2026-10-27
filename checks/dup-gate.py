@@ -371,6 +371,17 @@ def main():
 # the same collision one level down.  `2` is UNOWNED BY `gatekit`, which is `gates/gate-surface.py`'s
 # `UNOWNED` class doing its job, and NOT a defect in this file.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
+# WHY THE RED IS A FINDING.  Exit 1 here is the CENSUS SPEAKING: a name printed more than once,
+# a measurement no name can reach, a line the shipped row rule refuses, no shared name at all, or
+# two lanes that disagree on a shared row's value.  Every one of those is a fact ABOUT THE TREE'S
+# OWN ROWS -- the guard's FIRST job is to make the loss visible (`:13`), and a duplicated name costs
+# `n-1` measurements -- so the red is that loss, NAMED, not a claim that this gate cannot measure.
+# IT IS NOT "THE TREE DISAGREES WITH CPYTHON": the value comparison is what it does AFTERWARDS, and
+# on a lane whose two sides print the same bytes it is a tautological zero (`:16`).
+# THE DECLARATION IS EARNED, NOT ASSERTED: `PLANTS[1]` compares the tracked repaired fixture against
+# `oracles/usb-oracle-BEFORE.rows`, a lane that ALREADY carries two duplicate names, so the red
+# plant reaches 1 on the tree's OWN rows and not on a synthetic file.
+RED_IS = "FINDING"
 PLANTS = {
   0: ["--compare", "gates/cstyle-live.rows", "gates/cstyle-live.rows"],
   1: ["--compare", "gates/cstyle-live.rows", "oracles/usb-oracle-BEFORE.rows"],

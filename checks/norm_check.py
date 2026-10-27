@@ -144,6 +144,15 @@ def main() -> None:
 # named, which is the honest state -- rather than planted with a `.txt`-style mutation of a
 # tracked oracle in `.agents/slop/`.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
+# WHY THE RED IS A FINDING.  The file's own title is "prove `norm` round-trips, **or does not**",
+# and exit 1 is the "or does not": the SUBJECT's `norm` does not round-trip the f32 pair, or the
+# negative case no longer discriminates.  The subject is a FILE IN THE TREE
+# (`.agents/slop/jslane2/gen_f32_seam.py`), so the red is a fact ABOUT THE TREE'S NORMALISER,
+# NAMED, and not a claim that this gate cannot measure.  `3` IS NOT A RED: it is the refusal for
+# an absent subject, and a refusal is not a verdict.
+# THE DECLARATION IS EARNED, NOT ASSERTED: `PLANTS[0]` is the gate's OWN run over the tree's own
+# subject, and it reaches 0 -- so the green this red falls from is demonstrated in this run.
+RED_IS = "FINDING"
 PLANTS = {0: [], 1: ["--plant"]}
 
 

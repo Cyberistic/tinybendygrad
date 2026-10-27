@@ -24402,3 +24402,41 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **EXISTS **TO **RULE **OUT.**  **⇒ NOW: **THE **`literal` **LANE **READS **`stale=1/80`**,
       **THE **`control` **LANE **READS **`stale=0/80`**, **AND **THE **SELFTEST **IS **`SELFTEST
       OK`** (rc=0).**  **⇒ AND **BOTH **GATES' **OWN **VERDICTS **ARE **UNCHANGED.**
+
+## Session 2026-10-28 — the `RED_IS` class, and FOUR declarations that are NOT decoration
+
+- [x] **FOUR OF THE FIVE GATES THAT DEMONSTRATE GREEN AND DECLARE NO `RED_IS` NOW DECLARE ONE, AND
+      THE FIFTH DOES NOT.** `gates/gate-surface.py` classes a red `FINDING` when the gate declared
+      `RED_IS="FINDING"` in its OWN source AND its own rc-0 plant reached 0; `FAILURE` is the
+      default and the default is **the ABSENCE of a declaration** ("An undeclared red is CHARGED",
+      `gate-surface.py:66`). **⇒ THE CENSUS: `FINDING` 2 -> 7, `FAILURE` 9 -> 4, `UNTAKEN` 11 -> 11,
+      `45/70` verdicts reached UNCHANGED** (a `RED_IS` changes a CLASS and never a VERDICT, and
+      every issue the census charged before is still charged after). **⇒ AND `checks/wallcheck.py`
+      ALSO MOVED `FAILURE` -> `FINDING` AND IT IS NOT MINE** — another unit is editing it — so
+      **4 of the 7 `FINDING` rows are mine.**
+      | gate | decision | the red |
+      |---|---|---|
+      | `checks/dup-gate.py` | **FINDING** | a name printed twice / a measurement no name reaches / a value disagreement — all facts ABOUT THE TREE'S OWN ROWS, and the guard's FIRST job is to make the loss visible (`:13`) |
+      | `checks/env-precond.py` | **FINDING** | a pin the tree's OWN source no longer carries, or a value the run RECORDED that differs from the declaration — a fact ABOUT THE TREE'S ENVIRONMENT PLUMBING |
+      | `checks/norm_check.py` | **FINDING** | the SUBJECT's `norm` does not round-trip — the file's own title is "prove `norm` round-trips, **or does not**" |
+      | `checks/render-gate-oracle-gate.py` | **FINDING** | the PIN moved, or the oracle's rows differ from `checks/rn-orc.rows` — "a pin that goes red is the only thing a pin is for" (`:38`) |
+      | `checks/residue.py` | **NOT A FINDING — LEFT ALONE** | its ONLY exit-1 is `plant()`'s `1 if bad else 0` (`:569`), where `bad` is the classifier disagreeing with the hand-written `expect` column — **the instrument disagreeing with its own oracle** — and its normal mode ALWAYS exits 0. **⇒ AND IT DECLARES `VERDICTS = {0, 3}` WITH NO EXIT 1 AT ALL**, so a `RED_IS` there would be decoration on a verdict that does not exist. |
+- [x] **THE DECLARATIONS ARE FALSIFIABLE, MEASURED, NOT ASSERTED.** `gates/gate-surface.py`'s own
+      plant 4b is "the same gate with one constant deleted", and it is now run against the REAL
+      gates: `.agents/slop/redis-class/falsify.py` places each gate in a synthetic tree as a
+      TEMPLATE with its root constants rewritten (a copy in the working tree is INVISIBLE —
+      `gates/gates-pop.py` admits only files the COMMIT TREE carries — and a copy in a temp tree
+      resolves `HERE.parents[0]` against the temp tree and REFUSES), and reads the class both ways.
+      **`checks/dup-gate.py`, `checks/env-precond.py`, `checks/norm_check.py` and
+      `checks/render-gate-oracle-gate.py` are `FINDING` as-is and `FAILURE` with the line deleted;
+      `checks/residue.py` is `FAILURE` BOTH WAYS.** `REDIS: OK -- 0 declared RED_IS that does NOT
+      move the class.` **⇒ AND EACH GATE GOES RED ON ITS OWN PLANT** (rc=1 measured on all three
+      rc-1 plants). See `.agents/slop/redis-class/REPORT.md`.
+- [ ] **`checks/env-precond.py`'s EXIT-CODE VOCABULARY IS A SEPARATE DEFECT AND IS NOT FIXED BY A
+      DECLARATION.** It spells exit 2 `REFUSED` where `gates/gatekit.py` spells 3 `REFUSED` (two
+      meanings on one number) and spells exit 0 `OK` where `gatekit.py` spells it `PASS`; the
+      census charges both as `UNOWNED` and `RENAMED`, and `checks/dup-gate.py` spells 2 `USAGE`
+      for the same reason its own comment explains at length. **⇒ AND `checks/dup-gate.py`'s exit 3
+      remains `UNPLANTED` and `checks/env-precond.py`'s exit 1 remains `UNPLANTED` — NOTHING WAS
+      WEAKENED TO HIDE EITHER.** Fixing the vocabulary means CHANGING THE EXIT CODES, which is a
+      different change from a declaration, and `gates/gatekit.py` is not this unit's to edit.

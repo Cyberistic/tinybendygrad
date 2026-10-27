@@ -297,6 +297,16 @@ def main():
 # reader that knows either name reads the same table -- `3b12f5c878` moved a dozen gates
 # onto that spelling and the reader has not caught up with them yet.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+# WHY THE RED IS A FINDING.  Exit 1 is the PIN SPEAKING, and a pin that goes red is the only thing
+# a pin is for: "This is a PIN ON THE ANSWER, not a change-detector: it goes RED when the answer
+# moves" (`:38`).  Concretely it is one of two facts ABOUT THE TREE: the pinned upstream subject
+# MOVED (the ops or the render revision is no longer the one this oracle answers from), or the
+# oracle's rows now DIFFER from `checks/rn-orc.rows`, the tree's own capture of them.  Either way
+# the red is INFORMATION about the tree, NAMED, and not a claim that this gate cannot measure.
+# `3` IS NOT A RED: it is the refusal for a lane that cannot run, and a refusal is not a verdict.
+# THE DECLARATION IS EARNED, NOT ASSERTED: `PLANTS[0]` runs the same check against an UNMODIFIED
+# COPY of the oracle and must exit 0, so the green this red falls from is demonstrated in this run.
+RED_IS = "FINDING"
 PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 3: ["--plant", "refused"]}
 
 if __name__ == "__main__":
