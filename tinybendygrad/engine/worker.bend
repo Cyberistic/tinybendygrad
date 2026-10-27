@@ -86,7 +86,7 @@ def has_pool(pool: Maybe<&2, Pool>) -> Bool:
     case _: False{}
 
 # `Maybe` equality, which `_without_main`'s restore needs and base does not have.
-# `ops.bend:1228` has `eq_opt_str` for its OWN `Maybe<&2, String>` -- the same
+# `ops.bend:1721` has `eq_opt_str` for its OWN `Maybe<&2, String>` -- the same
 # constructor, since `Maybe` lives in base -- so this is a local re-spelling of a
 # def that already exists, named so the merge is a deletion rather than a hunt.
 def eq_mstr.go(l: Maybe<&2, String>, r: Maybe<&2, String>) -> Bool:

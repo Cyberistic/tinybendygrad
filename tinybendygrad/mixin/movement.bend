@@ -551,7 +551,7 @@ def mxm_dim_op(op: O.Op) -> Bool:
 def mxm_pair_op(op: O.Op) -> Bool:
   O.op_in([O.OpsPAD{}, O.OpsSHRINK{}], op)
 
-# `self.arg` for PERMUTE/FLIP, which the arena spells `ATuple{ys}` (ops.bend:762).
+# `self.arg` for PERMUTE/FLIP, which the arena spells `ATuple{ys}` (ops.bend:1237).
 # The `Arg` match is exhaustive over the sum type, and `case _:` is LAST because
 # every arm after a catch-all is dead code that still typechecks.
 def mxm_ys.of(y: O.Arg) -> List<&2, U32>:
@@ -1351,7 +1351,7 @@ def mxw_same(+ar: O.Arena, +ret: U32, +self: U32) -> Bool:
 
 # --- THE GRAPH INSPECTOR, part two: the numbers and the base ---------------
 #
-# NODE COUNT, and the fuel is `Arena.budget` (ops.bend:2295) = `next + edges`, which is
+# NODE COUNT, and the fuel is `Arena.budget` (ops.bend:3355) = `next + edges`, which is
 # the worklist bound the notes record. A cheaper fuel HANGS rather than answering short
 # and `toposort` on a fuel that runs out returns a PARTIAL list -- so a wrong fuel is a
 # wrong node count that looks like a plausible number, which is the failure mode a count

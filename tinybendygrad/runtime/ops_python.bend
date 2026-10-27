@@ -217,7 +217,7 @@
 # one-element list, and a `lidxK` SPECIAL the constant 0. A sibling encoder that
 # wants a real local size must ADD it to the argv; until then it must launch the
 # BEND device with local_size (1,1,1), and tinygrad will then emit `gidx` instead
-# of `lidx`, which is what the `g` arm of ops_python.py:108 answers.
+# of `lidx`, which is what the `g` arm of tinygrad/runtime/ops_python.py:111 (`__call__`) answers -- it reads `idxs`.
 #
 # The consequence for the data model is large and it is why this file is shaped
 # the way it is: `values[u]` in Python is a LIST over warp_size, and at warp 1
@@ -256,7 +256,7 @@
 # ===========================================================================
 # THE SHAPE OF THE MACHINE, and the two parts that were not obvious.
 #
-# `run` carries the mutable state ops_python.py:52-157 keeps in four locals: the
+# `run` carries the mutable state ops_python.py:52-157 (`__call__`) keeps in four locals: the
 # `values` dict, the buffer bytearrays, `exec_masks`, and `pbufs`/`pvals`. Under
 # the rules above that is one `Prog` record threaded through a fuel recursion.
 #
@@ -293,7 +293,7 @@ import ../uop/symbolic.bend as SY
 # carry one: `F.F32.from_bits` (`../base.bend:54`). It is one destructuring and
 # one constructor -- both payloads are the same type `Word(32n)`, so the
 # constructor `F32{..}` WAS already the bitcast -- and its inverse is
-# `F32.bits` (the `law` at `base.bend:1697`), which is where `bits_of` and
+# `F32.bits` (the `law` at `base.bend:1807`), which is where `bits_of` and
 # `Prog.cast.dt` below read. ONE name per direction: importing both is what
 # stops this file disagreeing with `base.bend` about either. This used to be a
 # local `w32`/`f32_of` pair and is now a duplicate retired; the measurement
@@ -648,8 +648,8 @@ def cf_of(+e: Elem) -> F32: f_of(e)
 # they ARE ops.py:1432-1435's body, and reusing them is the point.
 #
 # WHY NOT `SY.exec_alu1/2/3`, which wrap the same two lanes with a selector? MEASURED:
-# `symbolic.bend`'s `ci_fits` (symbolic.bend:840) is wired to `i64_big`
-# (symbolic.bend:831), which asks "does NOT fit an i32" -- and `exec_alu.of2`
+# `symbolic.bend`'s `ci_fits` (symbolic.bend:917) is wired to `i64_big`
+# (symbolic.bend:1041), which asks "does NOT fit an i32" -- and `exec_alu.of2`
 # (symbolic.bend:928) reads it as "fits", so the INTEGER lane is skipped for every
 # small value. Measured: `SY.exec_alu2(Ops.MUL, int32, [CInt(6), CInt(7)])` answers
 # `None{}`, and so has no `MUL` for an int at all. A fold that never fires is a

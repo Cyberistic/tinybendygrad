@@ -30,7 +30,7 @@
 #      which is `TinyELF.name`, the same string cstyle's `function_name`.
 #
 # The one thing still missing for a RUN on this host is `MetalCompiler.compile`
-# (tinygrad/runtime/ops_metal.py:42-70). **AND THAT IS NOW MEASURED RATHER THAN ASSERTED** -- see `t_seam`.
+# (tinygrad/runtime/ops_metal.py:42-70). **AND THAT IS NOW MEASURED RATHER THAN ASSERTED** -- see `t_seam`. Upstream's `compile` lives in `compile`.
 #
 # `compile` is FFI at EXACTLY TWO points: `MTLCodeGenServiceCreate` (:39) and
 # `MTLCodeGenServiceBuildRequest` (:68). Both are already in the trace. Everything
@@ -86,7 +86,7 @@
 #   :24  checked                    PORTED  the WRAPPER, i.e. the refusal
 #   :29  class MetalCompiler        PORTED  the four tables and three refs
 #   :35   support = DLL(MTLCompiler) WALL 1
-#   :38   __init__                  PORTED  `cgs_create`, and the ENTRY name
+#   :38   __init__                  PORTED  `cgs_create`, and the ENTRY name -- upstream creates the code-gen service in `__init__`
 #                                               travels as `Cmd.name`
 #   :41   __reduce__                WALL 3  PICKLE (a multiprocessing detail)
 #   :42   compile                   PARTIAL  the layout and the refusals
@@ -120,7 +120,7 @@
 #   :174 _alloc                     PORTED  the storage mode and refusal 3
 #   :179 BufferStorage              PORTED  gpuAddress then contents
 #   :180 _free                      PORTED  synchronize, mark_resident, release
-#   :185 _offset                    PORTED  `D.host_offset`, device.bend's own
+#   :185 _offset                    PORTED  `D.host_offset`, device.bend's own -- upstream offsets a buffer in `_offset`
 #   :185 pm_encode / :188 pm_lower  WALL 5  THE UOp MATCHER
 #   :196 __init__                   PORTED  the twelve statements, in order
 #   :201 the queue refusal          PORTED  refusal 4
@@ -138,16 +138,16 @@
 #   :270 _wait_signal               PORTED  and refusal 7
 #   :275 synchronize                PARTIAL the index arithmetic, not the times
 #   :284-285 the autorelease pool   PORTED  pop-then-push, in that order
-#   :267 the ICB weak-dict         PORTED  `icb_keep`, and it WAS NOT CALLED
+#   :267 the ICB weak-dict         PORTED  `icb_keep`, and it WAS NOT CALLED -- upstream stores the ICB entry in `self.icbs`
 #   tinygrad/runtime/ops_metal.py:276-281 the profile scan PORTED  `dev.sync_scan` -- upstream's `profile_slots` scan -- and it WAS NOT CALLED symbol=synchronize
-#   :23   to_ns_str                PORTED  `cns_string`, and it WAS NOT WIRED
+#   :23   to_ns_str                PORTED  `cns_string`, and it WAS NOT WIRED -- upstream builds the NSString in `to_ns_str`
 #   :42-71 compile                 CLOSED  all of it but the block pointer
 #   --    THE CONSTANTS            PORTED  65 with a CPython authority, all gated
 #
 # ---------------------------------------------------------------------------
 # THREE DEFS WERE WRITTEN AND NOTHING REACHED THEM, and that is the finding this
 # session started from. `icb_keep` -- upstream's `icbs` (tinygrad/runtime/ops_metal.py:267 symbol=new_icb) --, `dev.sync_scan`'s list (`sync_starts`,
-# :276-281) and `cns_string` (:23) each carried a comment saying a row checked it,
+# :276-281) and `cns_string` (:23, `to_ns_str`) each carried a comment saying a row checked it,
 # and each was DEAD: correct, unread, and unreachable from `main`. A file whose
 # gate prints 332 rows had a `Dev.nics` that was always 0, a profile scan that was
 # a no-op, and a `newFunctionWithName:` with no name in it.

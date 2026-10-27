@@ -31,7 +31,7 @@
 #   4  50-53  type/def TimeoutException WALL #2: `signal.alarm` is a foreign call
 #   5  55-78  def   _try_compile        WALL #2: `to_program` and its cache
 #   6  80     def   _ensure_buffer_alloc WALL #2: Buffer allocation
-#   7  85-103 def   get_kernel_actions  PART: `dedup` (search.py:89-90) PORTED,
+#   7  85-103 def   get_kernel_actions  PART: `dedup` (search.py:89-90, `get_kernel_actions`) PORTED,
 #                                         the axis guard PORTED, and the rest is
 #                                         `postrange.bend`'s `opt_ok` + `ul_ok`
 #   8  105    data  BEAM_DEBUG          NOT PORTED: debug printing only
@@ -59,7 +59,7 @@
 #
 # AND IT IS THE REASON A COUNT IS NOT ENOUGH A GATE. MEASURED AT HEAD on CPython,
 # DEV=PYTHON, `PythonRenderer`, by patching `apply_opts` -- the only place a
-# `Scheduler` is built on the way to beam search (codegen/__init__.py:298) -- and
+# `Scheduler` is built on the way to beam search (`tinygrad/codegen/opt/postrange.py:241`, `apply_opts`) -- and
 # reading `get_kernel_actions(s, include_0=False).keys()`. Reproduce with
 # `.agents/slop/measure-search-keys.py`; the DEDUP figures below come from
 # `.agents/slop/measure-search-dedup.py`, which WRAPS `search.replace` so the set of

@@ -49,7 +49,7 @@
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
-#   :6   cerr()                PORTED `cerr_depth` -- the pointer-to-pointer shape
+#   :6   cerr()                PORTED `cerr_depth` -- the pointer-to-pointer shape -- upstream builds the error pointer in `cerr`
 #   :8-10 expect()             PORTED `expect.fails` `expect.ret_str` `expect.msg`
 #   :14-15 the five inits      PORTED `LLVMCompiler.prefix` `.components`
 #   :17  the triple map        PORTED `LLVMCompiler.triple` `.triple_ok`

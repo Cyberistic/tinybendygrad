@@ -11,7 +11,7 @@ import ./ops_cl.bend as CL
 # from `ops_cl.bend` as `CL.`, which is the DAG's only edge in one direction.
 #
 # WHAT IS HERE: `CU_*` (autogen/cuda.py), the CUDA column of the vendor table
-# `vend.cu`, `cu_unchecked` (cu:17-18), `cu_err_*` (cu:18), `Spec` (device.py:89)
+# `vend.cu`, `cu_unchecked` (cu:17-18, `check`), `cu_err_*` (cu:18, `check`), `Spec` (tinygrad/device.py:89, `BufferSpec`)
 # and `CUDA_HOST_REGISTERED` (cu:90), `cu_handle_words`/`cu_handles_tail`/
 # `cu_nstreams` (cu:119/109/120), `cu.*` and `CuDev`.
 #

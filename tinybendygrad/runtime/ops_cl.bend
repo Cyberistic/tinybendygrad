@@ -73,7 +73,7 @@
 # ops_cl.py
 #   :10-11  CC_CB / BP_CB          WALL 4  CALLBACK SIGNATURES
 #   :14     OSX_TIMING_RATIO       PORTED  `timing.ratio`
-#   :16     cl_errors              PORTED  `cl_err_code`, `cl_err_of`
+#   :16     cl_errors              PORTED  `cl_err_code`, `cl_err_of` -- upstream builds the code->name dict in `cl_errors`
 #   :17-18  check                  PORTED  `Tr.emit` + `vend.checked`
 #   :19     checked                PORTED  `Tr.checked`
 #   :22-24  CLCompiler.__init__    PARTIAL `cl.key` (the md5 is WALL 5)
@@ -86,7 +86,7 @@
 #   :84-86  _copyin                PORTED  `copy.copyin`
 #   :87-89  _copyout               PORTED  `copy.copyout`
 #   :93-124 CLDevice.__init__      PORTED  `cl.init`
-#   :121-123 the arch suffix       PORTED  `cl.arch_of`
+#   :121-123 the arch suffix       PORTED  `cl.arch_of` -- upstream joins the extensions in `__init__`
 #   :126    count                  PORTED  `cl.count`
 #   :128-130 synchronize           PORTED  `cl.sync`
 #
@@ -95,8 +95,8 @@
 #   :20     as_int                 WALL 6  POINTERS
 #   :22     host_stamp             WALL 6  POINTERS
 #   :23     extern                 WALL 6  POINTERS
-#   :30-34  CUDAQueue.__init__     PORTED  `cu.q_init`
-#   :36-37  the stream property    PORTED  `cu.stream_slot`
+#   tinygrad/runtime/ops_cuda.py:47  cuda_submit     PORTED  `cu.q_init` -- upstream's `CUDAQueue` class is GONE at this pin (the hwqueue was removed); the surviving construct is `cuda_submit`
+#   tinygrad/runtime/ops_cuda.py:52  the stream slot PORTED  `cu.stream_slot` -- upstream picks the stream slot in `cuda_submit` (the `stream` local)
 #   :38     extern                 WALL 6  POINTERS (was PORTED as `cu.extern`;
 #                                              nothing read it, so the claim was
 #                                              what kept the def alive)
@@ -111,22 +111,22 @@
 #   :80-82  _free                  PORTED  `cu.free`
 #   :84-92  _map                   PORTED  `cu.map`
 #   :93-94  _unmap                 PORTED  `cu.unmap`
-#   :98-101 pm_encode              PORTED  `cu.encode_pick`
+#   :76-77 pm_encode              PORTED  `cu.encode_pick` -- upstream adds the encode rule in `pm_encode`
 #   :104-110 __init__              PORTED  `cu.init`
-#   :111-115 pm_bufferize          PORTED  `cu.encode_tags` + the three
+#   tinygrad/runtime/ops_cuda.py:56 pm_encode  PORTED  `cu.encode_tags` + the three -- upstream's `pm_bufferize` rules are GONE at this pin; the surviving construct is `pm_encode`
 #                                               `CU_TAGWORD_*` rows
 #   :117-122 handles / stamp       PORTED  `cu.handles` (the pack is WALL 6)
 #   :124-130 function              PORTED  `cu.function`
 #   :132    count                  PORTED  `cu.count`
-#   :134-136 _wait_signal          PORTED  `cu.wait_signal`
+#   :134-136 _wait_signal          PORTED  `cu.wait_signal` -- upstream waits on the context in `_wait_signal`
 #
 # ops_hip.py
-#   :9-10   check                  PARTIAL `hp_err_of` (the STRING is WALL 7)
+#   tinygrad/runtime/ops_cuda.py:18 check      PARTIAL `hp_err_of` (the STRING is WALL 7) -- upstream's own HIP `check` is GONE at this pin; HIP imports CUDA's `check`
 #   :14-18  HIPDevice.__init__     PORTED  `hp.init`
 #   :20     count                  PORTED  `hp.count`
 #   :22-24  synchronize            PORTED  `hp.sync`
-#   :27-31  HIPProgram.__init__    PORTED  `hp.prog_init`
-#   :33-35  __del__                PORTED  `hp.prog_del`
+#   tinygrad/runtime/ops_hip.py:35  HIPDevice        PORTED  `hp.prog_init` -- upstream's `HIPProgram` class is GONE at this pin; the surviving construct is `HIPDevice`
+#   tinygrad/runtime/ops_hip.py:35  HIPDevice        PORTED  `hp.prog_del` -- upstream's `HIPProgram.__del__` is GONE at this pin; the surviving construct is `HIPDevice`
 #   :37-57  __call__               PORTED  `hp.call`
 #   :60-62  _alloc                 PORTED  `hp.alloc`
 #   :64     _free                  PORTED  `hp.free`

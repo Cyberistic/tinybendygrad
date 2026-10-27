@@ -31,23 +31,23 @@ import ./../datasets/__init__.bend as D
 # extra/models/mask_rcnn.py | sort | uniq -c | sort -rn`:
 #
 #   HIT  SYMBOL                     PORT
-#   18   Tensor.cat                  MISSING. mixin/movement.bend:124 `mx_cat` is
+#   18   Tensor.cat                  MISSING. mixin/movement.bend:127 `mx_cat` is
 #                                   SHAPE ARITHMETIC `(a,b) -> a+b`, NOT the op.
-#   10   Tensor.arange               EXISTS, mixin/rand.bend:361 `op_arange`.
+#   10   Tensor.arange               EXISTS, mixin/rand.bend:424 `op_arange`.
 #    8   Tensor.where                EXISTS, mixin/elementwise.bend:571 `ew_where`.
-#    7   nn.Conv2d                   EXISTS, nn/layers.bend:756 `nn_conv2d`.
+#    7   nn.Conv2d                   EXISTS, nn/layers.bend:937 `nn_conv2d`.
 #    5   x.clip                      MISSING.
-#    5   Tensor.stack                EXISTS, mixin/movement.bend:1269 `mxw_stk`.
-#    5   Tensor.relu                 EXISTS, nn/layers.bend:262 `nn_relu`.
+#    5   Tensor.stack                EXISTS, mixin/movement.bend:1272 `mxw_stk`.
+#    5   Tensor.relu                 EXISTS, nn/layers.bend:299 `nn_relu`.
 #    4   x.reshape                   EXISTS, mixin/movement.bend:1431 `mxw_reshape`.
-#    4   nn.Linear                   EXISTS, nn/layers.bend:427 `nn_linear`.
+#    4   nn.Linear                   EXISTS, nn/layers.bend:530 `nn_linear`.
 #    2   torch_load                  MISSING, resnet.bend:97-98 already names it.
 #    2   Tensor.sqrt                 EXISTS, mixin/elementwise.bend:549 `ew_sqrt`.
-#    2   Tensor.full                 EXISTS, mixin/creation.bend:417 `cr_full`.
+#    2   Tensor.full                 EXISTS, mixin/creation.bend:489 `cr_full`.
 #    2   get_child                   MISSING, resnet.bend:112-113 already names it.
-#    1   x.cast                      EXISTS, mixin/op.bend:370 `mo_cast_t`.
-#    1   Tensor.softmax              EXISTS, mixin/op.bend:1095 `mo_softmax`.
-#    1   Tensor.ones                 EXISTS, mixin/creation.bend:487 `cr_ones`.
+#    1   x.cast                      EXISTS, mixin/op.bend:390 `mo_cast_t`.
+#    1   Tensor.softmax              EXISTS, mixin/op.bend:1157 `mo_softmax`.
+#    1   Tensor.ones                 EXISTS, mixin/creation.bend:559 `cr_ones`.
 #    1   Tensor.max_pool2d           EXISTS, nn/pool.bend:250 `pool_maxpool`.
 #    1   Tensor.log2                 EXISTS, mixin/elementwise.bend:551 `ew_log2`.
 #    1   Tensor.chunk                MISSING.
@@ -81,7 +81,7 @@ import ./../datasets/__init__.bend as D
 # `ResNet(50, num_classes=None, stride_in_1x1=True)`. `tinybendygrad/extra/models/
 # resnet.bend` EXISTS, is 264 lines, and REFUSES -- `rs_resnet_init` at its :214
 # refuses with "extra/models/resnet.py:65 ResNet.__init__ -- FIRST MISSING SYMBOL
-# Conv2d (:87)", which is STALE, because nn/layers.bend:756 `nn_conv2d` now
+# Conv2d (:87)", which is STALE, because nn/layers.bend:937 `nn_conv2d` now
 # exists. So the FIRST missing symbol of THIS file is a refusal three files over,
 # and correcting it is a two-line edit to a file this unit may not touch.
 #
@@ -223,7 +223,7 @@ def mr_resnetfpn_call(+x: T.Tensor) -> D.Refused:
 
 # :352 def __init__(self, sizes=((32,64,...),), aspect_ratios=((0.5,1.0,2.0),), stride=None)
 def mr_anchor_gen_init() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:352 AnchorGenerator.__init__ -- FIRST MISSING SYMBOL np.array over the default `sizes` tuple (:354); nn/pool.bend:534 `pool_flatten` exists and is NOT numpy")
+  D.refuse("extra/models/mask_rcnn.py:352 AnchorGenerator.__init__ -- FIRST MISSING SYMBOL np.array over the default `sizes` tuple (:354); nn/pool.bend:326 `pool_flatten` exists and is NOT numpy")
 
 # :383 def grid_anchors(self, grid_sizes)
 def mr_anchor_grid() -> D.Refused:

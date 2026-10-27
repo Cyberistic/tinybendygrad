@@ -1384,7 +1384,7 @@ type Dev is Data:
 # `mmap.mmap(-1, size)` and returns a raw address -- and there is no address.
 #
 # What IS ported is the CONTRACT: one byte store, a base offset per buffer, and
-# an extent. `Buf` in `ops_python.bend:819` is exactly `Buf{base, w, e}` and
+# an extent. `Buf` in `ops_python.bend:858` is exactly `Buf{base, w, e}` and
 # `Mem.byte`/`Mem.put` at :855/:858 are exactly the read and the write. So the
 # allocator here has the SAME shape as the executor's, deliberately: the wire is
 # one wire, and two disagreeing memory models over it would be a second silent
@@ -1516,7 +1516,7 @@ def raw_free(+m: Mem) -> Mem: m
 #     import and must not become hostage to another unit's transient breakage.
 #     The dependency bought ONE nine-line fold. REPORTED, not fixed: `uop/ops.bend`
 #     is not this unit's to touch.
-#   * `ops_python.bend:398`'s `hexdig_str` is DEAD and WRONG -- see THE FINDING
+#   * `ops_python.bend:427`'s `hexdig_str` is DEAD and WRONG -- see THE FINDING
 #     above -- so reusing that side of the codec was never an option.
 #
 # THE NIBBLE RULES ARE `ops_python.bend:382-396` verbatim in shape: three range
@@ -1670,7 +1670,7 @@ def drop.go(xs: List<&2, U32>, +n: Nat) -> List<&2, U32>:
 # The copy into a fresh `&2` list is the depth hop again, and it is free because
 # the store is already `&2` and `List.append` rebuilds at the callee's depth.
 # THE COUNT IS A `Nat`, NOT A `U32`, and that is forced by the substrate rather
-# than chosen: `U32` is `U32{data: Word(32n)}` (base.bend:57), an OPAQUE record,
+# than chosen: `U32` is `U32{data: Word(32n)}` (base.bend:64), an OPAQUE record,
 # so it cannot be destructured into a countdown at all (MEASURED: "expected a
 # constructor of U32"). `Nat` is `Zero{}/Succ{pred}` and a `case 1n+p` arm consumes
 # it -- which is ALSO what stops the walk, where a saturating `U32.sub` would not.

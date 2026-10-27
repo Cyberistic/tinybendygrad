@@ -34,8 +34,9 @@ import ./../extra/datasets/__init__.bend as D
 # `grep -n "^class \|^def " tinygrad/nn/__init__.py` = BatchNorm(:6), Conv1d(:32),
 # Conv2d(:80), ConvTranspose1d(:111), ConvTranspose2d(:130), Linear(:156),
 # GroupNorm(:179), InstanceNorm(:209), LayerNorm(:235), LayerNorm2d(:263),
-# RMSNorm(:281), Embedding(:374), LSTMCell(:395) and no others. So `max_pool`
-# and `adaptive_avg_pool` are PORTED FROM THE TENSOR METHODS THEY ARE MADE OF,
+# RMSNorm(tinygrad/nn/__init__.py:281), Embedding(tinygrad/nn/__init__.py:374) and
+# LSTMCell(tinygrad/nn/__init__.py:395) and no others. So the pool ops below are
+# PORTED FROM THE TENSOR METHODS THEY ARE MADE OF,
 # and that is stated per def below rather than dressed up as a layer port.
 # `flatten` is `tinygrad/helpers.py:53`, `[item for sublist in l for item in
 # sublist]`, a list helper and NOT a layer; the LAYER of that name in a ResNet
@@ -350,7 +351,7 @@ def pool_head(+ds: List<&2, U32>) -> U32: pool_head.of(List.get(&2, U32, ds, 0n)
 #
 # `axis = 1` is the default (op.py:1678), so `shape` is `[1, c, 1, 1]` on an
 # NCHW input and that is `BN.sh`. Every one of the five operations is a def
-# here: `mo_sub` (`mixin/op.bend:601`), `mo_mul` (`:581`), `mo_add` (`:580`),
+# here: `mo_sub` (`mixin/op.bend:620`), `mo_mul` (`:581`), `mo_add` (`:580`),
 # `mo_reshape` (`:664`).
 # ===========================================================================
 type BN is Data:
@@ -383,7 +384,7 @@ def pool_bn(+x: T.Tensor, +w: T.Tensor, +b: T.Tensor, +m: T.Tensor, +iv: T.Tenso
 
 # `batch_var.add(self.eps).rsqrt()` (nn/__init__.py:59). `mo_rsqrt` IS NOT A DEF
 # ANYWHERE IN THIS TREE (`grep -rn "mo_rsqrt" tinybendygrad/` = 0 HITS), and the
-# two halves ARE: `rsqrt(x) = 1/sqrt(x)`, `mo_recip` is `mixin/op.bend:838` and
+# two halves ARE: `rsqrt(x) = 1/sqrt(x)`, `mo_recip` is `mixin/op.bend:880` and
 # `ew_sqrt` is `mixin/elementwise.bend:549`.
 def pool_rsqrt(+t: T.Tensor) -> T.Tensor: MO.mo_recip(E.ew_sqrt(t))
 
@@ -496,7 +497,7 @@ def W4.out(+q: W4) -> List<&2, U32>:
 def A.out(+q: AP) -> List<&2, U32>:
   [A.b0(q), A.b1(q), A.o0(q), A.o1(q)]
 
-# the `Refused` accessor, in `extra/models/resnet.bend:157-159`'s shape, so `main`
+# the `Refused` accessor, in `extra/models/resnet.bend:275-275`'s shape, so `main`
 # can print the address a refusal carries rather than discarding it.
 def pool_ref_at(r: D.Refused) -> String:
   match r:

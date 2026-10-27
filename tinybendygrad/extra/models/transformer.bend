@@ -29,18 +29,18 @@ import ./../datasets/__init__.bend as D
 #
 # EVERYTHING ELSE IN THIS FILE IS ALREADY HERE, which is the other half of the
 # finding and the reason the distance is this short:
-#   `Tensor.scaled_uniform`  mixin/rand.bend:855 `rd_scaled_uniform`   (:12,:13,:14,:16,:18,:19,:44,:46)
-#   `Tensor.zeros`           mixin/creation.bend:446 `cr_zeros`         (:12,:13,:14,:16,:18,:19,:21,:22)
-#   `Tensor.ones`            mixin/creation.bend:487 `cr_ones`          (:21,:22)
-#   `x.linear`               nn/layers.bend:427 `nn_linear`            (:26,:28,:32,:33,:36,:37)
+#   `Tensor.scaled_uniform`  mixin/rand.bend:939 `rd_scaled_uniform`   (:12,:13,:14,:16,:18,:19,:44,:46)
+#   `Tensor.zeros`           mixin/creation.bend:518 `cr_zeros`         (:12,:13,:14,:16,:18,:19,:21,:22)
+#   `Tensor.ones`            mixin/creation.bend:559 `cr_ones`          (:21,:22)
+#   `x.linear`               nn/layers.bend:530 `nn_linear`            (:26,:28,:32,:33,:36,:37)
 #   `reshape`                mixin/movement.bend:1431 `mxw_reshape`     (:26,:28)
 #   `transpose`              mixin/movement.bend:1449 `mxw_permute`     (:26,:27)
-#   `x.relu`                 nn/layers.bend:262 `nn_relu`              (the `act` default, :4)
-#   `x.dot`                  nn/layers.bend:383 `nn_dot`               (:58,:60)
-#   `log_softmax`            mixin/op.bend:1109 `mo_log_softmax`       (:60)
-#   `softmax` (its sibling)  mixin/op.bend:1095 `mo_softmax`            EXISTS -- the ONE named family that is present
-#   `x.expand`               nn/layers.bend:520 `nn_expand`             (:52)
-#   `x.cast` / `.int()`      mixin/op.bend:370 `mo_cast_t`             (:54)
+#   `x.relu`                 nn/layers.bend:299 `nn_relu`              (the `act` default, :4)
+#   `x.dot`                  nn/layers.bend:486 `nn_dot`               (:58,:60)
+#   `log_softmax`            mixin/op.bend:1171 `mo_log_softmax`       (:60)
+#   `softmax` (its sibling)  mixin/op.bend:1157 `mo_softmax`            EXISTS -- the ONE named family that is present
+#   `x.expand`               nn/layers.bend:638 `nn_expand`             (:52)
+#   `x.cast` / `.int()`      mixin/op.bend:390 `mo_cast_t`             (:54)
 #
 # SO `TransformerBlock.__init__` IS PORTABLE TODAY. `rd_scaled_uniform` + `cr_zeros`
 # + `cr_ones` + `NN.nn_scale` are all callable and all gated upstream, so the eight
@@ -63,7 +63,7 @@ import ./../datasets/__init__.bend as D
 #       inventory it measures itself AGAINST and records that it is NOT in that file.
 #   (5) `x.int().one_hot(...)` (:54) -- `one_hot` MISSING.
 #   (6) `Tensor.cat` (:56) and `Tensor.flatten` (:56) -- `mo_cat`/`mx_flatten` MISSING.
-#       `mixin/movement.bend:124` `mx_cat` is SHAPE ARITHMETIC (`(a,b) -> a+b`), not
+#       `mixin/movement.bend:127` `mx_cat` is SHAPE ARITHMETIC (`(a,b) -> a+b`), not
 #       the op, so it does not close this.
 #   (7) `x.sequential(self.tbs)` (:59) -- MISSING, and resnet.bend's own census names
 #       it MISSING too, so this one is NOT a new ask.

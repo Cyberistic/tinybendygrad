@@ -51,7 +51,7 @@
 #          spelling in a LABEL; upstream has no `abi=` anywhere.
 #   `vol=`  upstream has NO identifier `vol`. `is_volatile` (llvmir.py:10) is the function and
 #          the emitters interpolate `{'volatile ' if is_volatile(idx) else ''}` (:90, :95,
-#          :98); `vol` is this file's standing abbreviation and the `ivol`/`volsp`
+#          :99, `is_volatile`); `vol` is this file's standing abbreviation and the `ivol`/`volsp`
 #          parameter's name. One abbreviation, one separator, no upstream text.
 #   `n=`    upstream has NO identifier `n`. The STACK rule writes `len(x.src)` (:103) and
 #          `enumerate(x.src)`'s `i`; `n` is `br5.name`'s third parameter, standing for that
@@ -103,7 +103,7 @@
 #
 # `nir_llvmir.bend:181-191` spells `ldt.fp` as EIGHT `case`s on the dtype NAME
 # (`"float"`, `"half"`, `"__bf16"`, `"double"`, `"float8_e4m3"`, ...).
-# `LAWS/spec.bend:694-701` now spells those names `"fp8e4m3"`, `"f16"`, `"bf16"`,
+# `LAWS/spec.bend:735-735` now spells those names `"fp8e4m3"`, `"f16"`, `"bf16"`,
 # `"f32"`, `"f64"`. So EVERY arm of that ladder stopped matching and fell through
 # to `case _: "KeyError"`, and that file's gate is RED on 79 of its 205 rows:
 #
@@ -171,7 +171,7 @@
 #     `(k:=_render_kernel(uops))[0] + (k[1], _render_footer(uops))` joined -- they
 #     need the walk. `li-oracle.py` keeps `render_rows()` for the same reason, and
 #     it already found a real refusal: `amd_fp8s("gfx1100")` is EMPTY, so an fp8
-#     uop on gfx1100 raises `IndexError` at llvmir.py:252 and that IS a row when
+#     uop on gfx1100 raises `IndexError` at llvmir.py:252 (`render`) and that IS a row when
 #     the walk lands.
 #   * `render_wmma_amd` (llvmir.py:38-65). Two emitters and four inputs that
 #     change between them -- `cdna`, `rdna4`, `arg[1]` and `arg[0]`'s N,M,K -- over
@@ -188,7 +188,7 @@
 #     (tinygrad/dtype.py:238) `float_to_fp8` and `truncate` (tinygrad/dtype.py:289), so they are
 #     `dtype.bend`'s. What is HERE is the FOUR-WAY DISPATCH (`lconst branch <d>`,
 #     eighteen rows, one per dtype) and the inf/nan hex, which is llvmir.py's own
-#     code (:22) and is fully expressed without an `F64`.
+#     code (:22, `lconst`) and is fully expressed without an `F64` -- upstream's own `dtypes.floats` branch is at :22, guarded by `dtype in dtypes.floats`.
 #   * `float_to_fp8`'s `_fp8_cfg` (tinygrad/dtype.py:231-236) is dtype.py's.
 #   * `float_to_fp16` / `float_to_bf16` are `codegen/decomp/transcendental.bend`'s
 #     and reach this file only through `truncate`.

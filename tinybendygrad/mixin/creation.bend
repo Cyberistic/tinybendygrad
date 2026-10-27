@@ -7,7 +7,10 @@
 # shortfall. The brief lists `eye`, `arange`, `linspace`, `tril`/`triu`, `rand`,
 # `randn`, `uniform`, `normal`. None of them is in this file. MEASURED:
 # `grep -rn "def arange\|def eye\|def linspace\|def tril\|def triu\|def rand\b\|def
-# randn\|def normal\|def uniform" tinygrad/` names `mixin/op.py:166/215/198/236/259`
+# randn\|def normal\|def uniform" tinygrad/ -- the SURVIVORS ARE
+# `arange` tinygrad/mixin/op.py:166, `eye` tinygrad/mixin/op.py:215,
+# `linspace` tinygrad/mixin/op.py:198, `triu` tinygrad/mixin/op.py:236 and
+# `tril` tinygrad/mixin/op.py:259
 # and `mixin/rand.py:50/106/141/158` and NOTHING else -- and `tinybendygrad/mixin/
 # op.bend` already owns op.py's half. So the WHOLE of creation.py is eleven bodies
 # plus one `raise NotImplementedError`, and they are the ones `examples/
@@ -78,7 +81,7 @@
 #      `weakint.const(42)` is the int `42`, the CONST is weakint, and `.cast(weakint)`
 #      folds. So `full(shape, 42)` is 9 nodes and `full(shape, 42, dtype=half)` is 10,
 #      and the ONLY difference is one CAST -- same root op, same nsrc, same srcs.
-#      `weak.bend`'s `wk_const_at` (weak.bend:401) spells the CAST UNCONDITIONALLY and
+#      `weak.bend`'s `wk_const_at` (weak.bend:621) spells the CAST UNCONDITIONALLY and
 #      is the wrong shape here, and `wk_ccast` is the other wrong shape: it rebuilds
 #      the CONST and loses the CAST entirely. `cr_cast` is `DTypeMixin.cast`
 #      (dtype.py:36) with the fold, which is the only one of the three that is right.
@@ -155,7 +158,7 @@
 #          either way. `int_full_expand` is the row that sees it and the only row in
 #          this file that is about an INDEX rather than a shape or a count.
 #   <n>_d  shape and dtype, read off the FOLD (`F.fold.shape` / `F.fold.dt`), not off
-#          the construction. AFTER is `thru0` (fold.bend:1565) and RESHAPE is
+#          the construction. AFTER is `thru0` (fold.bend:917) and RESHAPE is
 #          `reshape_ds`, so every `full`'s shape comes back THROUGH THE AFTER even
 #          though its EXPAND is unanswerable (fold.bend:1629).
 #   <n>_t  THE DTYPE HALF ONLY, for the two EXPAND-rooted fixtures. `GroupOp.Movement`
@@ -222,7 +225,7 @@ def cr_bounds(v: O.Const) -> Maybe<&1, H.I64>:
 # `DTypeMixin.cast` -- dtype.py:36, `self if self.dtype == (dt := to_dtype(dtype)) else
 # self._uop.alu(Ops.CAST, arg=dt)`. `O.UOp.alu` takes no arg (ops.bend:2072), so the
 # CAST is spelled with `UOp.new` and the `ADt` arg -- `mixin/dtype.bend`'s `cast_at`
-# (dtype.bend:309) and `weak.bend`'s `wk_cast_at` (weak.bend:391) use the same SPELLING
+# (dtype.bend:309) and `weak.bend`'s `wk_cast_at` (weak.bend:613) use the same SPELLING
 # for a different REASON: both of those read the source dtype off a FOLD, and
 # `UOp.const`'s `.cast` reads it off the value it just built, which `cr_from_py` has
 # already answered. Same one line, two sources for the `same` test.
@@ -356,7 +359,7 @@ def cr_after(+r: T.Tensor, +v: T.Tensor) -> T.Tensor:
 
 # `ParamArg(next(UOp.unique_num), dt, prod(max_shape), device=dev,
 # bind_on_realize=True)` -- creation.py:41. The thirteen fields are `ops.bend`'s
-# `ParamArg` in ITS order (ops.bend:696-712), which is NOT the prose order: `addrspace`
+# `ParamArg` in ITS order (ops.bend:869-869), which is NOT the prose order: `addrspace`
 # is the eighth field and `device` the ninth. `bind_on_realize` is the ALLOC's one
 # difference from a BUFFER (creation.py:41 vs ops.py:852) and it is `True`.
 def cr_alloc.arg(slot: U32, +dt: S.Dt, dev: S.Dev) -> O.ParamArg:
@@ -364,7 +367,7 @@ def cr_alloc.arg(slot: U32, +dt: S.Dt, dev: S.Dev) -> O.ParamArg:
     False{}, None{}, None{}, True{}, None{}}
 
 # `next(UOp.unique_num)` -- ops.py:1208 -- is a MONOTONE slot counter that "must never be
-# reset", and `ops.bend:940` says the arena's length IS that counter. `Arena.next` on
+# reset", and `ops.bend:1361` says the arena's length IS that counter. `Arena.next` on
 # the arena the ALLOC is about to be interned into is therefore this port's
 # `next(UOp.unique_num)`, and it is WHAT MAKES TWO `full`s NOT SHARE AN ALLOC. CPython
 # says so (`int_full_new=4`) and no `row_*` row can see it, because both graphs are
@@ -640,7 +643,7 @@ def cr_g.of(nm: String, +ar: O.Arena, +c: CU, +xs: List<&2, U32>) -> IO(Unit):
 # fold.bend:1629's `Ops.EXPAND` arm answers `None{}`, and an unresolved node never
 # releases its consumers in the Kahn worklist. That is W3's wall (the EXPAND's `marg`
 # needs `ssimplify`) and it is the SAME one op.bend names.
-# SO THE `_d` ROW READS `AFTER.src[0]`, which is exactly what `thru0` (fold.bend:726)
+# SO THE `_d` ROW READS `AFTER.src[0]`, which is exactly what `thru0` (fold.bend:917)
 # would have returned for the AFTER -- `dt_of(src_dt(0), src_shape(0))` -- and is the
 # node the fold DOES answer. `full`'s shape and dtype are therefore gated, and the only
 # part that is not gated is whether the AFTER passes src[0] through, which is a line of

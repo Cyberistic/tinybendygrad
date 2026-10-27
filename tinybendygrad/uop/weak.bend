@@ -782,7 +782,7 @@ def derived_dtypes.put(ok: Bool, meet: S.Dt, result: Maybe<&2, S.Dt>) -> Dts:
 #
 # the concrete dtypes u commits its srcs at: the operands' meet and u's own derived dtype,
 # None if either is weak.
-# `GroupOp.Broadcastable` is `Binary | Ternary`, ops.bend:493 `GroupOp.broadcastable`.
+# `GroupOp.Broadcastable` is `Binary | Ternary`, ops.bend:562 `GroupOp.broadcastable`.
 # Both guards are `dtypes.weaks`; Python's `tuple[DType,DType]|None` is `Dts` with
 # `dts_some`.
 def derived_dtypes(+fx: F.Folded, +self: U32, +ss: List<&2, U32>) -> Dts:
@@ -1113,7 +1113,7 @@ def wk_cast_table() -> O.PMEntrys:
 # only per-table difference is WHICH of the two already-written dispatches a tag goes to,
 # and a `Bool` selects between them. The two dispatches and the tables stay separate.
 #
-# `wk_keep` is first-wins, the same shape as ops.bend:2915 `pm_keep`: a `Some` accumulator
+# `wk_keep` is first-wins, the same shape as ops.bend:4050 `pm_keep`: a `Some` accumulator
 # keeps what it holds and discards a later hit.
 
 def wk_keep.take(acc: Maybe<&2, O.Found>, v: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:

@@ -20,7 +20,7 @@
 # here:
 #
 #   1. THE PRECONDITION. `self.numel() == 1` -- `prod(self.shape)`
-#      (`tinygrad/mixin/movement.py:38-46`) -- or an `AssertionError` whose
+#      (`tinygrad/mixin/movement.py:38-46`, `numel`) -- or an `AssertionError` whose
 #      MESSAGE is a literal in the source. THE PORT HAS THIS: the shape is
 #      `fold.shape` (`uop/fold.bend`) and the product is `H.prod_u32`
 #      (`helpers.bend:485`). This is the half that decides whether a
@@ -47,7 +47,7 @@
 # `(bitsize + 7) // 8`, exactly `tinygrad/dtype.py:63`. `MD.commit_dtype`
 # (`mixin/dtype.bend:326-328`) IS `commit_dtype` (`tinygrad/mixin/dtype.py:16-17`)
 # and `MD.commit_int` (`mixin/dtype.bend:273-275`) IS `commit_int`
-# (`tinygrad/dtype.py:171-174`), so the weak-dtype branch of `data()` -- the
+# (`tinygrad/dtype.py:171-174`, `commit_int`), so the weak-dtype branch of `data()` -- the
 # one that decides int32-vs-int64 and float32 -- is PORTED.
 #
 # IT DOES NOT HAVE THE BUFFER HALF, and this is the port's WALL, measured not
@@ -69,7 +69,7 @@
 #
 # SO THE PORT'S `item` READS A VALUE FROM THE ONE PLACE A VALUE EXISTS, and
 # REFUSES, BY NAME, EVERYWHERE ELSE. The one place is a CONST node: its arg is
-# `APy{v}` (`uop/ops.bend:1197`) and `v` is an `O.Const`
+# `APy{v}` (`uop/ops.bend:1222`) and `v` is an `O.Const`
 # (`uop/ops.bend:799-803`) -- `CBool`/`CInt`/`CFloat`. That is the port's
 # `PyConst`, which is exactly what upstream's `item` returns.
 #
@@ -107,7 +107,7 @@
 # ===========================================================================
 # THE RESULT IS A SUM TYPE, NOT A `Maybe`, because the three outcomes are
 # THREE different things and a `None` would flatten a refusal into a value.
-# `Itm` is the name (not `Item`: `viz/cli.bend:94` already owns that
+# `Itm` is the name (not `Item`: `viz/cli.bend:97` already owns that
 # constructor, and Bend has ONE constructor namespace across modules).
 #
 #   ItmVal{dt, v}     -- the scalar, read, under the dtype it was read under.
@@ -149,8 +149,8 @@ def nn_item_wall() -> String:
 # 1. THE PRECONDITION. `prod(self.shape)` -- upstream's `numel()`
 # (`tinygrad/mixin/movement.py:38-46`).
 #
-# THE DIMS COME FROM THE FOLD (`M.mo_dims`, `mixin/op.bend:281`) AND THE
-# PRODUCT IS `H.prod_u32` (`helpers.bend:485`). `M.mo_reduced` IS **NOT** THE
+# THE DIMS COME FROM THE FOLD (`M.mo_dims`, `mixin/op.bend:284`) AND THE
+# PRODUCT IS `H.prod_u32` (`helpers.bend:486`). `M.mo_reduced` IS **NOT** THE
 # PRODUCT DEF: it is `prod([si for si, so in zip(shape, sum.shape) if
 # resolve(si != so)])` (`mixin/op.bend:876`), which is the product of the
 # dims the REDUCTION TOUCHED, so `mo_reduced(t, Nil{})` is the EMPTY product
@@ -177,7 +177,7 @@ def nn_item_numel(+t: T.Tensor) -> U32:
   H.prod_u32(nn_item_dims(M.mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))))
 
 # ===========================================================================
-# 2. THE VALUE. A CONST node's arg is `APy{v}` (`uop/ops.bend:1197`) and `v`
+# 2. THE VALUE. A CONST node's arg is `APy{v}` (`uop/ops.bend:1222`) and `v`
 # is an `O.Const` (`uop/ops.bend:799-803`).
 #
 # `match` MAY NOT SCRUTINISE A COMPUTED VALUE, AND NOT A LET-BOUND ONE
@@ -206,7 +206,7 @@ def nn_item_const(+t: T.Tensor) -> Maybe<&2, O.Const>:
 #
 #     if self.dtype in dtypes.weaks: return self.cast(self.commit_dtype()).data()
 #
-# `MD.md_weak` (`mixin/dtype.bend:121`) IS `dtype in dtypes.weaks`, and
+# `MD.md_weak` (`mixin/dtype.bend:124`) IS `dtype in dtypes.weaks`, and
 # `MD.commit_dtype` (`mixin/dtype.bend:326-328`) IS `commit_dtype`
 # (`tinygrad/mixin/dtype.py:16-17`). For a weakint the commit is
 # `commit_int(vmin, vmax, default_int)` -- the ladder
@@ -215,7 +215,7 @@ def nn_item_const(+t: T.Tensor) -> Maybe<&2, O.Const>:
 #
 # THE BOUNDS ARE THE CONST'S OWN VALUE, because for a CONST `vmin == vmax ==
 # the value` (`tinygrad/uop/ops.py:259-262` reads `self.arg` for a CONST).
-# `F.const_i64` (`uop/fold.bend:1401-1410`) is that read, and it answers
+# `F.const_i64` (`uop/fold.bend:1420-1420`) is that read, and it answers
 # `None{}` for a `CFloat` -- which is FINE, because the weakfloat branch of
 # `commit_dtype` ignores the bounds and takes `strong_dtype`.
 #
@@ -283,10 +283,10 @@ def nn_item(+t: T.Tensor) -> Itm: nn_item.of(nn_item_numel(t), t)
 # THE VALUE IS A PYTHON NUMBER, AND THE PORT SPELLS IT THE WAY PYTHON DOES
 # WHERE IT CAN:
 #   * `H.i64_dec` (`helpers.bend:2180`) is the SIGNED DECIMAL -- `str(int)` in
-#     Python -- and NOT `H.i64_text` (`helpers.bend:1712`), which is the
+#     Python -- and NOT `H.i64_text` (`helpers.bend:1713`), which is the
 #     `hi:lo` bit pattern and would print `0:7` where Python prints `7`.
 #   * `Bool.show` is `str(bool)`.
-#   * `H.f32_show` (`helpers.bend:1029`) is NOT Python's `repr`: it prints an
+#   * `H.f32_show` (`helpers.bend:1030`) is NOT Python's `repr`: it prints an
 #     integer-valued float as an integer and every other float with SIX
 #     decimals (`helpers.bend:1001-1006`), where Python prints the shortest
 #     decimal that reads back. `helpers.bend:999` CLAIMS it is "the shortest
@@ -367,11 +367,11 @@ def nn_item_line(nm: String, got: String, want: String) -> IO(Unit):
 
 # THE FIXTURES.
 #
-# A CONST TENSOR. `M.mo_const_t` (`mixin/op.bend:350-352`) is the port's
+# A CONST TENSOR. `M.mo_const_t` (`mixin/op.bend:370-370`) is the port's
 # `UOp.const` in a tensor's arena: it interns a CONST node and wraps it. The
 # BASE is `MX.mxw_buf` (`mixin/movement.bend:1231-1232`), a BUFFER node, and
 # it is there only to give the arena something to hold the CONST next to; the
-# CONST's own SHAPE is `()` (`uop/fold.bend:2207`, `const_ds`), so its `numel`
+# CONST's own SHAPE is `()` (`uop/fold.bend:2219`, `const_ds`), so its `numel`
 # is 1 -- which is upstream's `Tensor(3.5).shape == ()`.
 def nn_item_const_t(v: O.Const) -> T.Tensor:
   M.mo_const_t(MX.mxw_buf(O.Arena.empty(), 0, 4), v)

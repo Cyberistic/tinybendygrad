@@ -175,7 +175,7 @@ def Rewritten.capped(w: Rewritten) -> Bool: match w: case Rewritten{ar, sink, re
 
 # The drivers' `Maybe` is `None{}` exactly when `repl[sink]` is the arena bottom
 # (`walk_rewrite.of`), which a SINK can never intern to because the bottom holds
-# `OpsNOOP` (`uop/ops.bend:1167`). So this total read is not a fallback.
+# `OpsNOOP` (`uop/ops.bend:178`). So this total read is not a fallback.
 def Rewritten.index(w: Rewritten, fallback: U32) -> U32: Maybe.default(&2, U32, Rewritten.sink(w), fallback)
 
 # THE TWO OUTCOMES. Both rebuild the record from the pass's own fields, so the
@@ -239,7 +239,7 @@ def walk_rewrite.pass(+sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>, +w: Rewr
 #
 # ---------------------------------------------------------------------------
 # THE STOP IS "the sink index did not move", AND IT IS SOUND BECAUSE THE ARENA
-# INTERNS. `uop/ops.bend:2212 UOp.make` calls `intern.find` and a HIT returns the
+# INTERNS. `uop/ops.bend:2484 UOp.make` calls `intern.find` and a HIT returns the
 # arena UNTOUCHED, so two passes handing back the same sink INDEX handed back the
 # same `Node{op, src, arg, tag}`. The reachable graph is identical,
 # `pm_rewrite_m` is a pure function of that graph and of `ctx`, and the next pass

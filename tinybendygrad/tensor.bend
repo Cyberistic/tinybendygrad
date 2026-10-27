@@ -41,7 +41,7 @@ import ./mixin/dtype.bend as D
 #
 # A FIFTH WALL is not device state but arithmetic, and it is the one that cost the
 # most gate rows: `UOp._shape`'s RESHAPE arm (fold.bend's documented gap,
-# `t_gap_ok`) does not answer a movement op's shape, and `mixin/movement.py:185` is
+# `t_gap_ok`) does not answer a movement op's shape, and `tinygrad/mixin/movement.py:164-185` (`reshape`) is
 # `return self if ret.shape == self.shape else ret` -- a SHAPE comparison on a node
 # the fold cannot answer. `tn_rop` therefore gates on 1-D fixtures whose source is a
 # BUFFER, and the multi-dimensional `_rop` cases are on the wall list. `tn_rop_gap`
@@ -96,7 +96,7 @@ import ./mixin/dtype.bend as D
 #     ops the dunders name. NOT MINE, NOT BUILT, so every `__i*__` here is a named
 #     `TODO(p3)` with the op it resolves to written down.
 #   * `mixin/movement.py` -- `reshape` (:164), `permute` (:214), `_broadcast_to`
-#     (:128). NOT MINE. `tn_rop` hoists the two IDENTITY tests it needs, because
+#     (tinygrad/mixin/movement.py:128, `_broadcast_to`). NOT MINE. `tn_rop` hoists the two IDENTITY tests it needs, because
 #     without them `_rop` builds a PERMUTE where Python returns `self`; the hoist
 #     is marked at the def.
 #   * `mixin/gradient.py` -- `compute_gradient` and its `Grads` table. WAS "NOT MINE", and
@@ -104,14 +104,14 @@ import ./mixin/dtype.bend as D
 #     `tensor.bend` imports `./mixin/gradient.bend as G`. THE IMPORT CLOSURE IS UNCHANGED --
 #     `gradient.bend` imports the same five files this one already did -- so the closure's
 #     root (`uop/ops.bend`) has no new leaf under it.
-#   * `mixin/dtype.bend` -- `D.cast_at` (dtype.bend:342), the FOLDING `cast` of
+#   * `mixin/dtype.bend` -- `D.cast_at` (dtype.bend:350), the FOLDING `cast` of
 #     dtype.bend:36, and nothing else. Added for `tn_logical_not`, whose `cast(bool)` must
 #     fold away on an already-bool node the way CPython's does (dtype.py:38 returns `self`).
 #     Same reasoning as the `gradient.bend` line above: `dtype.bend` imports only
 #     `uop/ops.bend` and `uop/fold.bend`, both already in this file's closure, so the ONE new
 #     import adds ONE file and NO new leaf. It is `cast_at` and NOT `uop/weak.bend`'s
 #     `wk_cast_at` because `wk_eq_dt` is stale (weak.bend:132 compares only `pri` and `bits`;
-#     dtype.bend:96-98 records that it is missing `CWeakFloat`) while `cast_at` compares
+#     dtype.bend:350-350 records that it is missing `CWeakFloat`) while `cast_at` compares
 #     with the shared `O.eq_dt`.
 #
 # FIVE BEND RULES THIS FILE LEARNS THE HARD WAY, between them about twenty compile
@@ -288,7 +288,7 @@ def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
   tn_alu.put(O.UOp.alu(ar, op, List.append(&2, U32, [uop], srcs)))
 
 # THE ARENA RULE IN ONE SPELLING, AND NOW IT IS TOTAL. `Arena` is an IMMUTABLE `Data` VALUE
-# (`ops.bend:1255`, `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the
+# (`ops.bend:2718`, `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the
 # arena it was built in and an index is legal only in an arena DESCENDING FROM the one that
 # minted it -- append-only, so a prefix's indices still name the same nodes. `O.Arena.merge`
 # (`ops.bend`, beside `UOp.new`) is what makes the rule total: it re-interns `other`'s nodes
@@ -327,7 +327,7 @@ def tn_where_srcs_are(+r: Tensor, +cond: Tensor, +x: Tensor, +y: Tensor) -> Bool
 # `tn_xor.go`, `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`,
 # `tn_pow.go`, `tn_fdiv.go`, `tn_mod.go`) and `tn_max` used to build with
 # `tn_alu(lhs, OP, [Tensor.u(rhs)])`, which builds in `lhs.ar` and reads `rhs.u` THERE.
-# MEASURED, `O.Rng.sig` (`ops.bend:5857`) on `tn_add` with `lhs` a bare `CInt{3}` and `rhs`
+# MEASURED, `O.Rng.sig` (`ops.bend:801`) on `tn_add` with `lhs` a bare `CInt{3}` and `rhs`
 # derived to depth N in its OWN arena:
 #
 #   rhs depth 0 (a bare const)   ok=True   sig `2 Ops.ADD/2 Ops.CONST Ops.CONST`
@@ -471,12 +471,12 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # CAST(self, bool) -> CMPNE(cast, CONST(True)) when self is NOT bool and NO CAST AT ALL when
 # it is, and that is not a carve-out: it is the whole of `cast`.
 #
-# `O.UOp.cast` (ops.bend:2919) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
+# `O.UOp.cast` (ops.bend:2738) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
 # That was the one extra `CAST` on `tn_eq`, `tn_dunder_ge`, `tn_dunder_le`,
 # `tn_dunder_invert` and `tn_isfinite`, every one of which is a `logical_not` over a node the
 # fold already knows is `bool` (a CMPNE, a CMPLT or an OR -- fold.bend:2608-2630 answers
 # `bool` for the first two and `promo_dtype` for the third). The fold-aware cast is
-# `D.cast_at` (dtype.bend:342), the same `cast_at.of` two-arm match `mixin/elementwise.bend`'s
+# `D.cast_at` (dtype.bend:350), the same `cast_at.of` two-arm match `mixin/elementwise.bend`'s
 # `ew_cast` reaches through `W.wk_cast_at`, and it is `D` rather than `W` because
 # `wk_eq_dt` is stale (see the header). `F.folded(Tensor.ar(t))` is `ew_fx`'s exact call:
 # the fold is taken from the tensor's OWN arena at the point of use, never handed down.
@@ -588,7 +588,7 @@ def tn_bitwise_not(+t: Tensor) -> Maybe<&2, Tensor>:
 # SIGN-EXTENDS a U32 (`mixin/elementwise.bend:484`'s `ew_neg.go` builds the same).
 # `tn_alu` handles the binary op with `self` at src[0], so the call is
 # `tn_alu(t, O.OpsMUL{}, [c])` for a CONST `c`. The dtype gate is `tn_dtype` -- a
-# fold property (`UOp.dtype`, fold.bend:4443), and the `None{}` arm falls through
+# fold property (`UOp.dtype`, fold.bend:4783), and the `None{}` arm falls through
 # to the arith branch as the conservative answer (the fold cannot answer, the dtype
 # is NOT bool by elimination, and the value is whatever `self * (-1)` is). The two
 # arms are split into helper defs because a `match` arm body is a single expression.
@@ -803,13 +803,13 @@ def tn_relu6(+t: Tensor) -> Tensor:
 # `ceil` -- elementwise.py:656. `(self > (b := self.trunc())).where(b+1, b)`. The
 # `+1` is a CONST added to the trunc'd tensor `b`, and the wall at
 # `nn/__init__.bend:241` cited `b+1` (Tensor `+` Tensor arith) and `tn_trunc` as
-# the blockers. `tn_trunc` is ported (tensor.bend:320), and the arith is
-# `tn_add(b, c1t)` -- `tn_add` is ported (tensor.bend:523), the CONST 1 is
+# the blockers. `tn_trunc` is ported (tensor.bend:406), and the arith is
+# `tn_add(b, c1t)` -- `tn_add` is ported (tensor.bend:685), the CONST 1 is
 # `tn_ceil.c1` (a `O.UOp.const`, ported at ops.bend:2922), and `c1t` is a
 # Tensor wrapping the CONST -- `tn_alu.put` over the `Found`, the one spelling
 # that cannot name the wrong arena (see the note above `tn_alu.put`). The cond `(self > b)` is
-# `tn_rcmplt(self, b)` (tensor.bend:568, the `reverse=True` arm of `tn_cmplt`),
-# the `where(cond, b+1, b)` is `tn_where` (tensor.bend:369). The body is a
+# `tn_rcmplt(self, b)` (tensor.bend:744, the `reverse=True` arm of `tn_cmplt`),
+# the `where(cond, b+1, b)` is `tn_where` (tensor.bend:462). The body is a
 # 4-step chain built in the same shape `tn_relu` / `tn_relu6` use: `b :=
 # tn_trunc(self)`, `gt := tn_rcmplt(self, b)`, `bp1 := tn_add(b, c1t)`, and
 # the final `tn_where(gt, bp1, b)`. The defs are placed AFTER `tn_rcmplt`,
@@ -838,8 +838,8 @@ def tn_ceil(+t: Tensor) -> Tensor:
   tn_ceil.go(t, tn_ceil.gt(t, b), tn_ceil.bp1(t, b, c1), b)
 
 # `floor` -- elementwise.py:662. `(self < (b := self.trunc())).where(b-1, b)`.
-# Same shape as `tn_ceil` with `b-1` (a CONST SUB via `tn_sub`, tensor.bend:541,
-# instead of `tn_add`) and `tn_cmplt` (the forward CMPLT, tensor.bend:559,
+# Same shape as `tn_ceil` with `b-1` (a CONST SUB via `tn_sub`, tensor.bend:726,
+# instead of `tn_add`) and `tn_cmplt` (the forward CMPLT, tensor.bend:685,
 # instead of the reverse). The `b-1` is `tn_sub(b, c1t)` -- `tn_sub` builds
 # `SUB(b, c1)` (the same shape `tn_ceil.bp1` builds `ADD(b, c1)`, with `OpsSUB`
 # instead of `OpsADD`). The cond is `tn_cmplt(self, b)` (NOT `tn_rcmplt` --
@@ -1050,7 +1050,7 @@ def tn_rfdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # is `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype): return a.alu(Ops.FLOORMOD, b)`
 # -- the same op the port covers. The float arm (`return a - a.div(b,
 # rounding_mode="floor") * b`, elementwise.py:214) stays walled on the dtype fold
-# (the same wall `tn_bitwise_not`'s arith arms name at tensor.bend:385) and on
+# (the same wall `tn_bitwise_not`'s arith arms name at tensor.bend:580) and on
 # `div`'s float arm. The `reverse` arm is the `__rmod__` shape, mirroring
 # `tn_pow.go`'s `reverse` arm. The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_mod.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
@@ -1090,7 +1090,7 @@ def tn_eq(+t: Tensor, +x: Tensor) -> Tensor:
 # `isnan` -- elementwise.py:603. `return self != self`. The CMPNE node has the
 # SAME tensor on both srcs, and a NaN is the only float where `x == x` is false,
 # so CMPNE against self IS the NaN test. The graph is one node (CMPNE), the
-# `mo_isnan` (`mixin/op.bend:986`) calls `mo_neq(t, t)` -- the same shape at the
+# `mo_isnan` (`mixin/op.bend:1061`) calls `mo_neq(t, t)` -- the same shape at the
 # reduction layer. Gated at `gates/tn_isnan-gate.py` 5/5 rows.
 def tn_isnan(+t: Tensor) -> Tensor:
   tn_cmpne(t, t)
@@ -1098,10 +1098,10 @@ def tn_isnan(+t: Tensor) -> Tensor:
 # `isfinite` -- elementwise.py:623. `(self.isinf() | self.isnan()).logical_not()`.
 # `isinf` itself is `self.eq(inf) + self.eq(-inf)` with the default `detect_*=True`
 # (the bool arm collapses to a plain `+` of two bool-eq results); inlined here in
-# the same shape as `mo_isfinite` (`mixin/op.bend:1008`) because the `tn_*` layer
+# the same shape as `mo_isfinite` (`mixin/op.bend:1083`) because the `tn_*` layer
 # has no `tn_isinf` to call. The four CONSTs (`+inf`, `-inf`, two `True`s) are
 # built off the NEWEST arena each time -- the same `mo_arena` rule
-# (`mixin/op.bend:460`) `mo_isfinite` was written against. The dtype stays bool
+# (`mixin/op.bend:1083`) `mo_isfinite` was written against. The dtype stays bool
 # throughout: `+` of two bools is `xor` (bool), `or` of two bools is bool,
 # `logical_not` of a bool is `cast(bool).cmpne(True)`. Gated at
 # `gates/tn_isfinite-gate.py` 4/4 rows.
@@ -1249,7 +1249,7 @@ def tn_len(+t: Tensor) -> Maybe<&2, U32>:
   tn_len.of(tn_dims(t))
 
 # ===========================================================================
-# `__repr__` -- tensor.py:128-131.
+# `__repr__` -- tinygrad/tensor.py:127-130, `__repr__`.
 # `f"<UOp {ld.device} {ld.shape} {str(ld.dtype)[7:]}>"`, and all three interpolations
 # are a reader above. `str(dtypes.weakint)` is `"dtypes.weakint"`, so `[7:]` is the
 # bare name, which is `S.Dt.nm`. THE DEVICE COLUMN is the divergence the header

@@ -61,7 +61,7 @@ def u32_text(v: U32) -> String: U32.show(v)
 def nat_text(v: Nat) -> String: U32.show(U32.from_nat(v))
 
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
-# 2. `H.I64` EXISTS (helpers.bend:1169, `I64{hi: U32, lo: U32}`), so the
+# 2. `H.I64` EXISTS (helpers.bend:1648, `I64{hi: U32, lo: U32}`), so the
 #    64-BIT WALL is narrower than "no 64-bit type": a `_raw` wider than 32 bits
 #    and the 64-bit `literal` field can both be held. What CANNOT be held is a
 #    field WIDER than 64 bits, of which there are none.
@@ -90,7 +90,7 @@ type Res is Data:
 # a scalar is meant. `Wrd` is what `bf_set` and `raw_walk` answer with, and
 # nothing else.
 #
-# `H.I64` IS THE WORD. `bend` has no 64-bit primitive (helpers.bend:1642) and
+# `H.I64` IS THE WORD. `bend` has no 64-bit primitive (helpers.bend:1648) and
 # `H.I64{hi: U32, lo: U32}` is this tree's own two-limb answer, already carried
 # by `dtype.bend` and `uop/fold.bend`. MEASURED on `helpers.bend`'s own algebra
 # against CPython's, all four exact:
@@ -1258,7 +1258,7 @@ def mod_hi(+v: Ov, has: Bool) -> U32: Bool.pick(U32, Bool.and(has, Bool.and(U32.
 # THIS DEF WAS AN OUTER `Bool.pick` OVER THAT ANSWER, WITH THE LITERAL `0` AS ITS ELSE
 # ARM AND `Bool.and(has, U32.is_zero(bits))` AS ITS CONDITION -- so it returned 0 for
 # every case where `has` is false OR `bits` is nonzero, i.e. for every case that was
-# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:504` is
+# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:595` is
 # `match c: case False{}: b / case True{}: a`, and `Bool.pick(U32, Bool.and(has,
 # U32.is_zero(bits)), ..., 0)` reads exactly as written. The cause was here and not
 # there, and `mod_merge(2, True{}, 1)` was CPython `3` against port `0`.

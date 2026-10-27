@@ -608,7 +608,7 @@ def ix_asort(+ys: List<&2, U32>) -> List<&2, U32>:
 #  * The `case _` raise is `ix_mv_is_movement` and `ix_mv_raise`, and
 #    `mv_add_raises=raise` is the row.
 #
-# A RANGE is `O.Arg` `ARange{ids, at}` (ops.bend:1504), and `UOp.axis_id`
+# A RANGE is `O.Arg` `ARange{ids, at}` (ops.bend:1228), and `UOp.axis_id`
 # (ops.py:502) and `UOp.axis_type` (:507) are BOTH readers over that one arg, so
 # they are TWO readers over the SAME pair. `ids` is a LIST -- a broadcast range
 # carries several -- which is why every `*_ids` row prints the whole sequence.
@@ -1897,7 +1897,7 @@ def ix_tbl_of(+tag: String, +ts: O.PMEntrys) -> IO(Unit):
   ix_tbl_go(tag, O.PMEntrys.es(ts), 0n)
 
 
-# `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:2966), so the
+# `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:4005), so the
 # oracle's `<tag>_<k>_slen`, `_rlen`, `_anylen`, `_name`, `_nalts` and `_src`
 # columns have no field to read: those are `UPat` facts (`strict_length`,
 # `required_len`, `name`, the src permutation tuple -- upat.py:47) and `UPat`
@@ -1975,7 +1975,7 @@ def main() -> IO(Unit):
 #
 #   * `<tag>_<k>_{slen,rlen,anylen,name,nalts,src}` -- 55 rows. These are `UPat`
 #     fields (`strict_length`, `required_len`, `name`, the src permutation tuple
-#     at upat.py:47) and `PMEntry` (ops.bend:2966) is `tag`/`ops`/`rej` and
+#     at upat.py:47) and `PMEntry` (ops.bend:4005) is `tag`/`ops`/`rej` and
 #     nothing else. `UPat` does not survive into the compiled IR.
 #   * `par_3_ops` -- the tag -> `Op` INVERSE, which `ops.bend` does not have
 #     (`Ops.name` and `Ops.value` go the other way).

@@ -32,7 +32,7 @@
 # so mutating the subset test moves NOTHING (M3, M36).
 #
 # A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it as a
-# literal `"{0} is {1}"`). The ONE place it happens here is `rb_1` (rangeify.py:135);
+# literal `"{0} is {1}"`). The ONE place it happens here is `rb_1` (tinygrad/schedule/rangeify.py:126, `pm_remove_bufferize`);
 # without it every two-src STORE would rewrite to a NOOP. `uop/spec.bend`'s wall list
 # cites this note by its first line, so that line is kept verbatim:
 # 2. A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it
@@ -2255,7 +2255,7 @@ def t_ab7_cli_nsrc() -> U32:
 # `Kernel`, so `clik` is the node that separates the two and `clik0` is the negative one
 # row from it at the same shape.
 #
-# `eq_arg(x, y)` DISPATCHES ON `x` and matches `y` (ops.bend:1559), so the expected arg
+# `eq_arg(x, y)` DISPATCHES ON `x` and matches `y` (ops.bend:2270), so the expected arg
 # goes first. `py=` from `.agents/slop/rf-arg-oracle.py`, which reports
 # `arg_is_own_kernel=1` and `arg_is_none=0` for the rebuild.
 def t_ab7_clik_nsrc() -> U32:
