@@ -82,7 +82,7 @@
 #    it.  `PI_A` is transcendental.py:125's `3.1415926218032836914`; CPython says
 #    the f32 is 1078530010 (0x40490fda) for BOTH spellings, and Bend says
 #    1078530011.  This is NOT a deliberate over-approximation and NOT this port's
-#    bug: `F32.read` is a `law` in `base.bend:1705` and a primitive of the Bend
+#    bug: `F32.read` is a `law` in `base.bend:1811 symbol=F32.read` and a primitive of the Bend
 #    compiler, not a def, so nothing here can fix it.  REPRO, one line, with a
 #    23-of-24 control sweep in which every other string agrees:
 #         F32.read("3.1415926218032837")     -> 0x40490fdb   WRONG
@@ -105,7 +105,7 @@
 #      (-3.7, 0.5, 0.0) -- all twelve answers equal
 #      `struct.unpack('<I', struct.pack('<f', np.float32(...)))`, and
 #      `F32.div(0.0, 0.0)` is the canonical NaN 0x7fc00000.
-#   2. `F32.read` (base.bend:1705) parses a DECIMAL STRING into an F32 and
+#   2. `F32.read` (base.bend:1811 symbol=F32.read) parses a DECIMAL STRING into an F32 and
 #      agrees with CPython on 145 of the 146 constants audited -- see defect 2
 #      for the one.  It accepts "inf", "-inf" and "nan", which is how the
 #      specials get CONSTRUCTED (there is no inf literal), and answers `None`
@@ -165,33 +165,39 @@
 # THE INVENTORY, in upstream's order.  PORTED = the float32 lane is evaluated and
 # gated.  GATES = only the predicate is gated.  W1/W2 as above.
 #
-#   :7    TRANSCENDENTAL_DTYPES   PORTED  `tx_dt.transcendental`
-#   :9-11 _lazy_map_numbers       PORTED  `xf_lazy0_*`, `xf_lazy1_*`
-#   :14   mantissa_bits           PORTED  `cu_mb_*`, `cx_mb_*`, `cu_mant64.*`
-#   :15   exponent_bias           PORTED  `cu_eb_*`, `cx_eb_*`, `cu_eb64.*`
-#   :16   exponent_mask           PORTED  `cu_em_*`, `cx_em_*`, `cu_em64.*`
-#   :19   shr                     PORTED  `xf_shr23_*`
-#   :20   shl                     PORTED  `xf_shl23_*`
-#   :22   rintk                   PORTED  `xf_rintk_*`
-#   :27   pow2if                  PORTED  `xf_pow2if_*` (see THE BITCAST)
-#   :32   ilogb2k                 PORTED  `xf_ilogb2k_*`
-#   :39   ldexp3k                 PORTED  `xf_ldexp3k_*`
-#   :47   ldexp2k                 PORTED  `xf_ldexp2k_*`
-#   :52   frexp                   PORTED  `xf_frexp_*`
-#   :66   payne_hanek_reduction   W1 for the uint64 product; its CONSTANTS and
+# THE LEFT COLUMN IS UPSTREAM'S OWN NAME, BACKTICKED, AND THE CITED LINE IS
+# UPSTREAM'S.  The right column is THIS PORT's row name, and it is NOT in upstream --
+# `xf_lazy0_*` and `cu_mb_*` are the port's own gate-row prefixes.  So the port
+# symbol is written as the port's and the upstream construct is named beside it:
+# a citation that names the construct does not rot when the lines move.
+#
+#   :7    `TRANSCENDENTAL_DTYPES` PORTED  `tx_dt.transcendental`
+#   tinygrad/codegen/decomp/transcendental.py:9-11 `_lazy_map_numbers` PORTED  `xf_lazy0_*`, `xf_lazy1_*`
+#   tinygrad/codegen/decomp/transcendental.py:14 `mantissa_bits` PORTED  `cu_mb_*`, `cx_mb_*`, `cu_mant64.*`
+#   tinygrad/codegen/decomp/transcendental.py:15 `exponent_bias` PORTED  `cu_eb_*`, `cx_eb_*`, `cu_eb64.*`
+#   tinygrad/codegen/decomp/transcendental.py:16 `exponent_mask` PORTED  `cu_em_*`, `cx_em_*`, `cu_em64.*`
+#   tinygrad/codegen/decomp/transcendental.py:19 `shr` PORTED  `xf_shr23_*`
+#   tinygrad/codegen/decomp/transcendental.py:20 `shl` PORTED  `xf_shl23_*`
+#   tinygrad/codegen/decomp/transcendental.py:22 `rintk` PORTED  `xf_rintk_*`
+#   tinygrad/codegen/decomp/transcendental.py:27 `pow2if` PORTED  `xf_pow2if_*` (see THE BITCAST)
+#   tinygrad/codegen/decomp/transcendental.py:32 `ilogb2k` PORTED  `xf_ilogb2k_*`
+#   tinygrad/codegen/decomp/transcendental.py:39 `ldexp3k` PORTED  `xf_ldexp3k_*`
+#   tinygrad/codegen/decomp/transcendental.py:47 `ldexp2k` PORTED  `xf_ldexp2k_*`
+#   tinygrad/codegen/decomp/transcendental.py:52 `frexp` PORTED  `xf_frexp_*`
+#   :66   `payne_hanek_reduction`   W1 for the uint64 product; its CONSTANTS and
 #                                         its window arithmetic are PORTED
-#   :115  cody_waite_reduction    PORTED  `xf_cody_waite_*`
-#   :150  trig_poly               PORTED (float32 table); the float64 table is
+#   tinygrad/codegen/decomp/transcendental.py:115 `cody_waite_reduction` PORTED  `xf_cody_waite_*`
+#   :150  `trig_poly`               PORTED (float32 table); the float64 table is
 #                                         gated as exact DECIMALS
-#   :152  sin_poly                PORTED  `xf_sin_poly_*`
-#   :158  _ifand                  PORTED  `xf_sps_*`, `xf_spl_*`
-#   :160  sin_poly_small          PORTED  `xf_sps_*`
-#   :164  sin_poly_large          PORTED  `xf_spl_*`
-#   :170  xsin                    PORTED for fast=True; W1 past 30.0
-#   :193  xexp2                   PORTED  `xf_xexp2_*`, `xf_xexp2_sp_*`
-#   :219  xlog2                   PORTED  `xf_xlog2_*`, `xf_xlog2_sp_*`
-#   :257  xpow                    GATES   `xp_xpow_*`
-#   :267  get_transcendental_patterns
+#   tinygrad/codegen/decomp/transcendental.py:152 `sin_poly` PORTED  `xf_sin_poly_*`
+#   tinygrad/codegen/decomp/transcendental.py:158 `_ifand` PORTED  `xf_sps_*`, `xf_spl_*`
+#   tinygrad/codegen/decomp/transcendental.py:160 `sin_poly_small` PORTED  `xf_sps_*`
+#   tinygrad/codegen/decomp/transcendental.py:164 `sin_poly_large` PORTED  `xf_spl_*`
+#   :170  `xsin`                    PORTED for fast=True; W1 past 30.0
+#   tinygrad/codegen/decomp/transcendental.py:193 `xexp2` PORTED  `xf_xexp2_*`, `xf_xexp2_sp_*`
+#   tinygrad/codegen/decomp/transcendental.py:219 `xlog2` PORTED  `xf_xlog2_*`, `xf_xlog2_sp_*`
+#   tinygrad/codegen/decomp/transcendental.py:257 `xpow` GATES   `xp_xpow_*`
+#   :267  `get_transcendental_patterns`
 #         GRAPH, so `transcendental.bend`'s subject; the tables it selects
 #         between ARE gated here.
 #
@@ -801,7 +807,7 @@ def tc.cody_waite(+x: F32) -> Red:
 # is MEASURED and loud: with the OUTER arm inverted, `tc.mask0` sends every
 # finite input to the `inf` replacement and all three expansions answer NaN.
 # `x.ne(inf)` is a BITWISE test, not an IEEE one.  MEASURED: tinygrad's
-# `eq_const.CFloat` compares the packed bits (ops.bend:1406, and commit
+# `eq_const.CFloat` compares the packed bits (ops.bend:1954 symbol=eq_const.CFloat, and commit
 # 65b585e1 for the same reason), so `-0.0 != 0.0` is TRUE there while IEEE says
 # FALSE -- and `xf_lazy0_-0.0` is `-0.0`, not `+0.0`.  Reading it with `F32.is_eq`
 # loses the sign of zero, and `xf_lazy0_-0.0` is the row that says so.

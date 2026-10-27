@@ -56,7 +56,8 @@
 #
 # `set_options` (:32) is `options.split(b' ')` and `IR3Compiler`/`QCOMCompiler`
 # are `arch.split(',')`, so the WHOLE port depends on what a literal-separator
-# split does with empty fields. `base.bend:2009`'s `String.split` was MEASURED
+# split does with empty fields. `String.split`
+# (references/bend/bend2/base.bend:2191 symbol=String.split) was MEASURED
 # against CPython's `str.split(sep)` on all nine fixtures the oracle uses, and
 # they agree on every one, INCLUDING the empty-field case that a hand-rolled
 # splitter gets wrong:
@@ -87,16 +88,23 @@
 #   :49-55 the `asm` branch       PORTED  `h.dataname` `h.asm_actions`
 #   :56-70 the compile branch     PORTED  `h.options` `h.opt_n` `h.opt_codegen`
 #                                        `h.compile_actions`
-#   :52-68 the two refusals       PORTED  `c.asm_fail` `c.compile_fail`
-#   :72-73 link                   PORTED  `h.opt_empty` `h.link_action`
-#   :81-84 HIPCompiler            PORTED  `C.hip_key`
+#   tinygrad/runtime/support/compiler_amd.py:52-68 the two refusals PORTED  `c.asm_fail` `c.compile_fail` -- upstream's `RuntimeError`
+#   tinygrad/runtime/support/compiler_amd.py:55 upstream's `RuntimeError` (the assemble refusal)
+#   tinygrad/runtime/support/compiler_amd.py:68 upstream's `RuntimeError` (the compile refusal)
+#   tinygrad/runtime/support/compiler_amd.py:72-73 link PORTED  `h.opt_empty` `h.link_action` -- upstream's `set_options`
+#   tinygrad/runtime/support/compiler_amd.py:72 upstream's `set_options` (the empty option string)
+#   tinygrad/runtime/support/compiler_amd.py:73 upstream's
+#                                     `AMD_COMGR_ACTION_LINK_RELOCATABLE_TO_EXECUTABLE`
+#   tinygrad/runtime/support/compiler_amd.py:80-84 `HIPCompiler` PORTED  `C.hip_key`
 #   :85-87 HIPCompiler.compile    PORTED  `C.is_asm` -- `split('\n',1)[0].strip()
 #                                        == '.text'`, and the RuntimeError remap
 #   :88    disassemble            PORTED  `C.dis_row` (the `amdgpu_disassemble` call)
-#   :91-94 HIPCCCompiler          PORTED  `C.hipcc_key` `C.join_extra`
-#   :95-96 the NO_HIPCC short-cut PORTED  `C.short_circuit`
+#   tinygrad/runtime/support/compiler_amd.py:90-94 `HIPCCCompiler` PORTED  `C.hipcc_key` `C.join_extra`
+#   tinygrad/runtime/support/compiler_amd.py:95-96 the NO_HIPCC short-cut PORTED  `C.short_circuit` -- upstream's `self.no_hipcc`
+#   tinygrad/runtime/support/compiler_amd.py:96 upstream's `self.no_hipcc`
 #   :97-98 the temp suffixes      PORTED  `C.suffixes`
-#   :102   the ROCM default       PORTED  `C.rocm_include`
+#   tinygrad/runtime/support/compiler_amd.py:102 the ROCM default PORTED  `C.rocm_include` -- upstream's `ROCM_PATH`
+#   tinygrad/runtime/support/compiler_amd.py:102 upstream's `ROCM_PATH`
 #   :103-104 argv 1               PORTED  `C.argv1`  (element COUNT pinned)
 #   :105-106 argv 2               PORTED  `C.argv2`  (element COUNT pinned)
 #

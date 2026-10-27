@@ -36,7 +36,9 @@
 # 1. `_canonicalize` (device.py:28 symbol=_canonicalize) collapses `cpu:0` and `CPU` onto ONE
 #    registry slot, so `Device['cpu:0'] is Device['CPU']` and opening both
 #    opens one device. `open_one` is that count, and nothing else notices a
-#    canonicalize that forgets the `:0` strip -- it would print `open_two`.
+#    canonicalize that forgets the "zero" suffix strip -- it would print
+#    `open_two`.  (the port's own row names `open_one` and `open_two` are NOT
+#    in upstream)
 #
 # 2. AND IT IS AN ORDER RATHER THAN A RULE: `ALL_DEVICES` (device.py:18) is
 #    nine names and `get_available_devices` (device.py:48 symbol=get_available_devices) yields in that order
@@ -78,8 +80,9 @@
 #    placeholders it owns, its tags start with its name`
 # and the rules were a `PatternMatcher` a backend PREPENDED to -- two rules,
 # `UPat(Ops.PARAM, tag="timeline")` and `UPat(Ops.PARAM, tag="program",
-# name="b")`. AT THE PIN THAT CLASS ATTRIBUTE IS GONE: `rg -n 'pm_bufferize'
-# tinygrad/` answers NOTHING, and `device.py:374-377` carries `pm_encode`,
+# name="b")`. AT THE PIN THAT CLASS ATTRIBUTE IS GONE: the grep
+# `rg -n pm_bufferize tinygrad/` answers NOTHING, and
+# `device.py:374-377` carries `pm_encode`,
 # `pm_lower`, `pm_link` and `link_bufs`, with `link_buffer` a per-device
 # method at `device.py:411`.
 #

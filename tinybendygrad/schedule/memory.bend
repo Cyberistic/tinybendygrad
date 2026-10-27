@@ -69,7 +69,8 @@ type Lane is Data:
 # is MEASURED here rather than assumed, because it is the one property of
 # `List.sort` this file's correctness hangs on, and an unstable sort would
 # silently permute the allocs and change every arena size:
-#   * `List.merge.step` (base.bend:1015-1023) takes the FIRST run's head whenever
+#   * `List.merge.step` (references/bend/bend2/base.bend:1121 symbol=List.merge.step)
+#     takes the FIRST run's head whenever
 #     `le(x, y)` holds, and `le` here is a `<=`, so a tie keeps `x`. That is a
 #     stable merge.
 #   * MEASURED on bend 2.0.34 with `probe_sort.bend`: tied runs of 2, 4 and 6
@@ -191,7 +192,7 @@ def mem_collect_of(fuel: Nat, ar: O.Arena, u: U32) -> List<&2, U32>:
 # the question. The unplannable TAGS are therefore a PARAMETER (`unpl`), and WHO
 # SUPPLIES IT IS A MEASUREMENT, not a plan: `unpl() = [1, 4]` (`:1002`) is a LITERAL
 # beside the fixtures, and `disk() = S.D1{1}` (`:999`) is this file's OWN tag space,
-# which DISAGREES with `device.bend:344`'s `tag_of("DISK") = 6` -- `uop/validate.bend`'s
+# which DISAGREES with `device.bend:381 symbol=tag_of`'s `tag_of("DISK") = 6` -- `uop/validate.bend`'s
 # `c2d` note records the disagreement and refuses to arbitrate it. So the two tag
 # spaces are the reason the literal is hand-written, and a `U32 -> String` table (P6)
 # is what would replace it with the prefix test itself. That table is THE PORT'S OWN

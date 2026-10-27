@@ -31,7 +31,8 @@
 #                                         blob-reader length, which is what
 #                                         `blob_reader_init` is handed
 #   :20    LVPCompiler.__init__    PORTED  `lvp.archs` -- `arch.split(",")`
-#   :27-28 lp_type's four flags    PORTED  `lpt.*` -- floating/sign/width/length
+#   tinygrad/runtime/support/compiler_mesa.py:27-28 `struct_lp_type`'s four flags
+#                                         PORTED  `lpt.*` -- floating/sign/width/length
 #   :35    LP_JIT_RES_CONSTANTS    PORTED  `lpt.res` (autogen value, declared)
 #   :51    cpu_objdump             PORTED  `dso.cmd` -- the argv `objdump -d <p>`
 #   :56    warps_per_sm            PORTED  `w.*` -- THE TABLE. Five arch strings
@@ -39,7 +40,8 @@
 #                                         answers 64, including `sm_86x` and
 #                                         `"SM_86"`, which is why the membership
 #                                         test cannot be a prefix test
-#   :58    int(arch[3:])           PORTED  `a3.*` -- the digits after `sm_`
+#   tinygrad/runtime/support/compiler_mesa.py:59 `struct_nv_device_info`'s `sm`
+#                                         PORTED  `a3.*` -- the digits after `sm_`
 #   :61    the NAK cache key       PORTED  `nak.key`
 #   :75-80 NAKCompiler.disassemble PORTED  `nv.*` -- the temp path and the
 #                                         `nvdisasm -b SM<n> <path>` command
@@ -299,7 +301,8 @@ def de.b64_chars(+encoded: String) -> U32: U32.from_nat(String.length(encoded))
 # because a `String` has no structural subterm -- bend2-constraints.md POSITION
 # 3191 -- and two reads of the fuel then forced a `.of` split, which is mutual
 # recursion. The two tests are four lines and none of that.)
-# MEASURED, and it cost a row: `String.take` in base.bend:1932 takes a PREFIX,
+# MEASURED, and it cost a row: `String.take` in
+# references/bend/bend2/base.bend:2114 symbol=String.take takes a PREFIX,
 # not a suffix. The last character is `String.take(String.drop(s, len-1), 1)`.
 def de.at(+encoded: String, +from_end: U32) -> String:
   String.take(String.drop(encoded, U32.to_nat(U32.sub(de.b64_chars(encoded), from_end))), 1n)

@@ -2611,10 +2611,12 @@ def fx_ps() -> List<&2, PK>:
 # for 91 rows, 84 shared with the oracle, the other 149 naming text the oracle
 # calls `tag | line`.  The fix `cstyle.bend:1760` writes down for this --
 # `esc_row`, a newline turned into a backslash and an `n` -- FAILS TWICE OVER
-# HERE.  `String.split` is one frame per CHARACTER (base.bend:2009) and the file
+# HERE.  `String.split` is one frame per CHARACTER
+# (references/bend/bend2/base.bend:2191 symbol=String.split) and the file
 # is 16,815 characters; and even handed the lines as a list, `String.join` is
-# O(total length) in stack depth, because base.bend:1980 appends onto a growing
-# prefix (base.bend:1806).  Probe: 177 lines of 95 characters, 6 of 6 through
+# O(total length) in stack depth, because `String.append`
+# (references/bend/bend2/base.bend:1968 symbol=String.append) appends onto a growing
+# prefix (references/bend/bend2/base.bend:1973 symbol=String.append).  Probe: 177 lines of 95 characters, 6 of 6 through
 # `String.concat`, and on the real file 10 of 20 through either join.  THE
 # ORIGINAL, ONE WHOLE-FILE ROW AND NO ESCAPE AT ALL, WAS 5 OF 12 -- so the flake
 # predates this change and no lane on this port was reliably runnable.
@@ -2627,7 +2629,9 @@ def fx_ps() -> List<&2, PK>:
 # from a line break.
 #
 # `want` IS A LIST, NOT ONE STRING, and that is measured too: walking `want`
-# with `String.take`/`String.drop` (base.bend:1932/1941) recurses over the prefix
+# with `String.take`/`String.drop` (references/bend/bend2/base.bend:2114
+# symbol=String.take and references/bend/bend2/base.bend:2123 symbol=String.drop)
+# recurses over the prefix
 # it consumes, so one 177-line file was 9 of 12 while the same 177 rows over two
 # list arguments were 20 of 20.  `write_*` RETURNS a list (generate.py:276-282,
 # :457, :469, :494), so the expectation is written in the shape the function

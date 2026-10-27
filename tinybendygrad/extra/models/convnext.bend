@@ -19,10 +19,10 @@ import ./../datasets/__init__.bend as D
 # MISSING", and `resnet.bend:35` cites `mixin/op.bend:1523` as "SIDE B IS THE
 # EMPTY HALF". BOTH ARE NOW STALE. `tinybendygrad/nn/layers.bend` (941 lines)
 # BUILT THE OPS:
-#   `Tensor.conv2d`  nn/layers.bend:756 `nn_conv2d`   -- from the primitives,
+#   `Tensor.conv2d`  nn/layers.bend:937 symbol=nn_conv2d `nn_conv2d`   -- from the primitives,
 #                        `mixin/op.bend`'s SIDE B never having been filled
-#   `Tensor.linear`   nn/layers.bend:427 `nn_linear`
-#   `Tensor.relu`     nn/layers.bend:262 `nn_relu` (a NAME onto `tn_relu`,
+#   `Tensor.linear`   nn/layers.bend:530 symbol=nn_linear `nn_linear`
+#   `Tensor.relu`     nn/layers.bend:299 symbol=nn_relu `nn_relu` (a NAME onto `tn_relu`,
 #                        tensor.bend:774, not a second copy)
 # and `tinybendygrad/nn/pool.bend` built `Tensor.batchnorm` (pool.bend:381) and
 # the pools. So the arithmetic a ConvNeXt block needs IS in the tree. What is
@@ -37,7 +37,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `Block.__init__` (extra/models/convnext.py:5).
 #   The FIRST line of that constructor (:7) is
 #       self.dwconv = Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim)
-#   `Tensor.conv2d` is BUILT (`nn_conv2d`, nn/layers.bend:756, and it already
+#   `Tensor.conv2d` is BUILT (`nn_conv2d`, nn/layers.bend:937 symbol=nn_conv2d, and it already
 #   takes `groups` and a `Maybe<&2, List<&2, U32>>` padding, so both arguments
 #   are expressible) -- but there is NO `nn.Conv2d` CLASS: nothing builds the
 #   `(dim, dim, 7, 7)` weight, nothing gives the layer a name, and nothing makes
@@ -52,7 +52,7 @@ import ./../datasets/__init__.bend as D
 #
 # THE TWO SPELLINGS OF A VALUE, because upstream keeps them apart and this file
 # must too: `Tensor.gelu` is named at :16 and `x.gelu()` inside the `act` is
-# the same method. `mixin/elementwise.bend:1217` is `ew_quick_gelu`, which uses
+# the same method. `mixin/elementwise.bend:1227 symbol=ew_quick_gelu` is `ew_quick_gelu`, which uses
 # the `1.702` constant (`ew_k.quick_gelu`, :774). Plain `gelu` is NOT a def:
 # elementwise.bend:43 lists `erf` among the operations this file does not have,
 # and :758 records that the `0.044715` cubic is a CLOSE APPROXIMATION that
@@ -82,7 +82,7 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 
-# the `Refused` accessor, in nn/state.bend:227's shape, so `main` can print the
+# the `Refused` accessor, in nn/state.bend:838 symbol=main's shape, so `main` can print the
 # address the refusal carries rather than discarding it.
 def cn_at(r: D.Refused) -> String:
   match r:

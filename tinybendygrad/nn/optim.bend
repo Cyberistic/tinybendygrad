@@ -45,7 +45,8 @@ import ./../dtype.bend as DT
 #
 # A FIFTH ITEM IS A DIVERGENCE, NOT A WALL, and it is the one that matters for
 # the gate: `_step` is IN-PLACE on `self.b[i]` and `self.m[i]` (optim.py:59 symbol=_step,
-# :167, :168). A `Data` record is immutable, so each of those RETURNS a new
+# :167, :168). The in-place write is upstream's `assign`, at optim.py:167 and :168.
+# A `Data` record is immutable, so each of those RETURNS a new
 # `Optim`. `op_mom_b` is the half both lanes can agree on (the buffer's graph now
 # carries the new STORE) and `op_mom_b_old` is the BEND-ONLY half -- the ORIGINAL
 # still reads the old graph -- which is the whole cost of the divergence and which
@@ -56,7 +57,8 @@ import ./../dtype.bend as DT
 #   * `mul`, `add`, `sub`, `div` -- elementwise.py:36 `_binop`. Every arithmetic
 #     line of `_step` is one of these four.
 #   * `cast` -- mixin/dtype.py. `.cast(t.dtype)` at optim.py:128, :167, :168, :178.
-#   * `sqrt` -- tinygrad/mixin/elementwise.py:479 symbol=sqrt (`sqrt`, `Ops.SQRT`), optim.py:113, :114, :173, :174.
+#   * `sqrt` -- tinygrad/mixin/elementwise.py:479 symbol=sqrt (`sqrt`, `Ops.SQRT`), and
+#     upstream's own calls are `sqrt` at optim.py:113, :114, :173, :174.
 #   * `square` -- elementwise.py:573 symbol=square, and it is `self * self` i.e. `Ops.MUL`.
 #   * `where` -- elementwise.py:436 (`Ops.WHERE` ternary), optim.py:115, :175.
 #   * `sum` -- mixin/reduce.py:20, optim.py:113, :114, :173, :174. `.sum()`, no axis.

@@ -18,12 +18,12 @@
 # WHAT IS PORTED, DEF BY DEF. "FFI" means there is nothing to check: the call
 # itself is the port's job and the Python line is the whole of it.
 #
-#   :11-16 filter_visible_devices PORTED  `vis.*` -- the index-string parser
-#   :18-48 FileIOInterface        FFI     open/close/ioctl/mmap/read/write.
-#                                              :37's `-1` mmap sentinel and :43-48's
+#   tinygrad/runtime/support/system.py:10-15 `filter_visible_devices` PORTED  `vis.*` -- the index-string parser
+#   :17-47 FileIOInterface        FFI     open/close/ioctl/mmap/read/write.
+#                                              :36's `-1` mmap sentinel and :42-47's
 #                                              three statics are the trace
-#   :50-51 the mmap constants     PORTED  `MAP_*` -- both directions, per PLATFORM
-#   :53    ipv4_to_gid            PORTED  `gid.*` -- 16 bytes of multicast group
+#   tinygrad/runtime/support/system.py:49-50 `MAP_FIXED` `MAP_LOCKED` PORTED  `MAP_*` -- both directions, per PLATFORM
+#   tinygrad/runtime/support/system.py:52 `ipv4_to_gid` PORTED  `gid.*` -- 16 bytes of multicast group
 #   :56-59 write_sysfs            PORTED  `sysfs.*` + `sysfs.wrote` -- the `sudo`
 #                                               STRING
 #   tinygrad/runtime/support/system.py:61-65 `atomic_lib` / libsys PORTED  `cap.*` -- the PLATFORM gate, which is
@@ -48,12 +48,12 @@
 #                                               flags, bar_info, read/write_config,
 #                                               resize_bar, map_bar
 #   :270-290 USBPCIDevice         PORTED  `usb.*` -- the constants and the DMA window
-#   :292-293 PCIAllocationMeta    PORTED  `Meta.*` -- field order and names
-#   :295-355 PCIIfaceBase         PORTED  `face.*` -- peer_group, is_bar_small, the
+#   tinygrad/runtime/support/system.py:290 `PCIAllocationMeta` PORTED  `Meta.*` -- field order and names
+#   tinygrad/runtime/support/system.py:292-352 `PCIIfaceBase` PORTED  `face.*` -- peer_group, is_bar_small, the
 #                                               alloc size ladder, map()'s refusals
-#   :359-363 RemoteCmd            PORTED  `Rcmd.*` -- 16 names, both directions,
+#   tinygrad/runtime/support/system.py:356-360 `RemoteCmd` PORTED  `Rcmd.*` -- 16 names, both directions,
 #                                               REMOTE_REQ/REMOTE_RESP field order
-#   :365-383 RemoteMMIOInterface  PORTED  `rmm.*` -- the element-size table
+#   tinygrad/runtime/support/system.py:362-380 `RemoteMMIOInterface` PORTED  `rmm.*` -- the element-size table
 #   :385-452 RemotePCIDevice      PORTED  `rpc.*` -- the pad-to-3 rule, the REMOTE
 #                                               parser, the socket-option table
 #   :454   the MOCK swap          FFI     DEV.interface, a module rebind
@@ -127,7 +127,11 @@
 # and the five `setsockopt` calls (tinygrad/runtime/support/system.py:389-390) are a socket; `_recvall`'s
 # `sock.recv` loop (:410-415) is a socket; `struct.pack`/`struct.unpack` (:239,
 # :374, :378, :418, :424, :426, :437, :448) are byte layout and are FFI, EXCEPT
-# the two rules they are driven by -- `elemsize` (:370) and `post_args` (:418) --
+# the two rules they are driven by -- `elemsize` (this file's own name for
+# upstream's `struct.calcsize(self.fmt)`, tinygrad/runtime/support/system.py:367
+# symbol=RemoteMMIOInterface) and `post_args` (this file's own name for
+# upstream's `struct.pack(REMOTE_REQ, ...)`,
+# tinygrad/runtime/support/system.py:415 symbol=_post) --
 # which are this file's own arithmetic and are ported and gated; and
 # `BumpAllocator`, `MMIOInterface`, `VirtMapping` and `AddrSpace` are
 # `support/memory.py`, `CustomASM24Controller` and `USB3` are `support/usb.py`,

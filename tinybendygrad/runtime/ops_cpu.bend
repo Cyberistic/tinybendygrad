@@ -60,16 +60,20 @@
 # WHAT device.bend AND helpers.bend LEND, AND WHAT IS OWED BACK.
 # LENT: `D.isig.go` (the offset-carrying body of `TinyELF.iter_sig`, tinygrad/device.py:352 symbol=iter_sig --
 # device.bend's `iter_sig` entry point hard-codes 0, so BOTH uses here need `go`;
-# REPORTED, not fixed, device.bend is read-only to this unit); `D.dev_id` (device.py:397,
-# inherited by both); `D.timeline_bytes` (`tinygrad/runtime/ops_null.py:65 symbol=timeline` IS that call);
+# REPORTED, not fixed, device.bend is read-only to this unit); the port's `D.dev_id`
+# (upstream's `device_id`, tinygrad/device.py:383 symbol=Compiled.__init__,
+# inherited by both); the port's `D.timeline_bytes` (upstream's `timeline`,
+# `tinygrad/runtime/ops_null.py:65 symbol=timeline` IS that call);
 # `H.round_up_u32`, `H.u32_list_eq`, `H.dedup_str`.
 # OWED: the renderer ORDER is the policy -- `Compiled._select_renderer` (tinygrad/device.py:462 symbol=_select_renderer)
 # walks it and the FIRST INITIALISED renderer wins, and `cpu.renderers`/`ndev.renderers`
 # are those two orders transcribed and both are rows. `Compiled.has_copy_queue` is True
-# and ops_cpu.py:84 overrides it to False while `NullDevice` does NOT, so
+# (tinygrad/device.py:391 symbol=has_copy_queue) and
+# `tinygrad/runtime/ops_cpu.py:68 symbol=has_copy_queue` overrides it to False while
+# upstream's `NullDevice` (tinygrad/runtime/ops_null.py:63 symbol=NullDevice) does NOT, so
 # `cpu_has_copy_queue` and `nr_has_copy_queue_inherited` are two rows with DIFFERENT
 # answers -- either constant could be wrong without the other noticing.
-# `Compiled.peer_group` (tinygrad/device.py:384 symbol=__init__) means a CPU device with no remote and no iface
+# `Compiled.peer_group` (tinygrad/device.py:384 symbol=Compiled.__init__) means a CPU device with no remote and no iface
 # answers its own device-class prefix -- `Device['CPU:1'].peer_group == 'CPU'`, MEASURED
 # -- and ops_cpu.py:92 overwrites it with the REMOTE's when there is one;
 # `cpu.peer_of` is that two-arm choice and both arms are rows. `Compiled.wait_timeout_ms`
@@ -128,7 +132,7 @@ import ./support/compiler_cpu.bend as CC
 
 # ===========================================================================
 # A DEFECT FOUND IN device.bend, REPORTED AND NOT FIXED (device.bend is
-# read-only to this unit). `device.bend:869-871` ports `TinyELF.iter_sig`
+# read-only to this unit). `device.bend:988 symbol=TinyELF.iter_sig` ports `TinyELF.iter_sig`
 # (device.py:365-368) as
 #
 #     def go_slot.go(e: Ent) -> Sig:

@@ -27,9 +27,9 @@ import ./../datasets/__init__.bend as D
 #       freqs = (-math.log(max_period) * Tensor.arange(half) / half).exp()
 #   `Tensor.arange` is MISSING. `grep -rnE '^def (rd|cr)_[a-z_]*arange\('
 #   --include='*.bend' tinybendygrad/` returns 0; the nearest defs are
-#   `cr_full` (mixin/creation.bend:417) and `mo_range`/`mx_range` (nn/layers.bend
+#   `cr_full` (mixin/creation.bend:489 symbol=cr_full) and `mo_range`/`mx_range` (nn/layers.bend
 #   :110), and those answer a RANGE OF INDICES for a permute order, not a TENSOR.
-#   `Tensor.exp` IS built (`ew_exp`, mixin/elementwise.bend:1286), so :12 is
+#   `Tensor.exp` IS built (`ew_exp`, mixin/elementwise.bend:1312 symbol=ew_exp), so :12 is
 #   blocked by its SECOND half only -- and the sentence above says which.
 #
 #   THE HEADLINE, WHICH IS FARTHER UP AND WORTH NAMING FIRST: upstream:7 binds
@@ -50,7 +50,7 @@ import ./../datasets/__init__.bend as D
 #                  typo rather than a gap.
 #   `Tensor.chunk` MISSING (:68). `Tensor.unsqueeze` MISSING (:13).
 #   `Tensor.layernorm` MISSING (:87,:88,:89) -- nn/__init__.bend:230.
-#   `GroupNorm` MISSING (:20,:29,:105,:227). `pool_bn` (nn/pool.bend:381) IS
+#   `GroupNorm` MISSING (:20,:29,:105,:227). `pool_bn` (nn/pool.bend:382 symbol=pool_bn) IS
 #   BUILT, but it is BatchNorm's decomposition: mean/variance over CHANNELS with
 #   a learned affine. GroupNorm's `num_groups` split is a different reduction
 #   and `nn/__init__.bend` holds no class for it.
@@ -60,10 +60,10 @@ import ./../datasets/__init__.bend as D
 #   def.
 #
 # WHAT IS ALREADY HERE IS WORTH SAYING TOO, BECAUSE IT REMOVES THE OBVIOUS
-# GUESS: `Tensor.silu` IS built (`ew_silu`, mixin/elementwise.bend:1209, which is
+# GUESS: `Tensor.silu` IS built (`ew_silu`, mixin/elementwise.bend:1219 symbol=ew_silu, which is
 # `ew_swish` at :1208) and this file names it FIVE times (:21,:25,:27,:229,:240).
-# `Tensor.expand` IS built (`cr_expand`, mixin/creation.bend:271) and :137 needs
-# it. `Tensor.conv2d` (`nn_conv2d`, nn/layers.bend:756) and `Tensor.linear`
+# `Tensor.expand` IS built (`cr_expand`, mixin/creation.bend:343 symbol=cr_expand) and :137 needs
+# it. `Tensor.conv2d` (`nn_conv2d`, nn/layers.bend:937 symbol=nn_conv2d) and `Tensor.linear`
 # (`nn_linear`, :427) EXIST. So this file is not far; it is far in FOUR PLACES
 # AT ONCE, which is the shape a diffusion UNet has.
 #

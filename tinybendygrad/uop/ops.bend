@@ -1483,7 +1483,7 @@ def ParamArg.slot(x: ParamArg) -> U32:
 # the two. `from_buffer` is P6, so nothing collides today; saying it now costs one
 # line and a wrong sentinel costs a miscompiled buffer later.
 #
-# WHY NOT 0: `Arena.empty` spends arena index 0 on the bottom (ops.bend:1166), so
+# WHY NOT 0: `Arena.empty` spends arena index 0 on the bottom (ops.bend:1356 symbol=Arena.empty), so
 # `unique_num` starts at 1 and 0 is a REACHABLE real slot. `codegen/kernel.bend:269`
 # already argues this for its own copy.
 #
@@ -2739,7 +2739,7 @@ def UOp.new(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> F
   UOp.new.of(ar, UOp.make(ar, op, src, arg, tag), op, src, arg, tag)
 
 # ===========================================================================
-# MERGING TWO ARENAS. `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1255`), so a
+# MERGING TWO ARENAS. `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1293 symbol=Arena`), so a
 # `Found` SNAPSHOTS the arena it was built in and an index is legal only in an arena
 # DESCENDING FROM the one that minted it. Two tensors built from two `Arena.empty()`
 # values are SIBLINGS with no common ancestor, and there was no way to name both in
@@ -2965,7 +2965,7 @@ def UOp.replace(+ar: Arena, +self: U32, +mop: Maybe<&2, Op>, +msrc: Maybe<&2, Li
 # this def as a wall (renderer/tc_ptx.bend:46, :49, :52, :55, :56, plus
 # rangeify.bend:259 weak-CAST INDEX) get a `UOp.cast` to resolve against, which is
 # what unblocks the port. The full identity check would need a FOLD CONTEXT, which
-# is what `cast_at` in `mixin/dtype.bend:335` IS, and a future unit that wires
+# is what `cast_at` in `mixin/dtype.bend:350 symbol=cast_at` IS, and a future unit that wires
 # rule bodies into the fold can call THAT instead.
 def UOp.cast(ar: Arena, self: U32, dt: S.Dt) -> Found:
   UOp.new(ar, OpsCAST{}, [self], ADt{dt}, TNone{})
@@ -3051,7 +3051,7 @@ def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
   [shape_to_shape_arg(ar, n)]
 
 # `UOp.new.param` IS THE ONLY SAFE WAY TO BUILD ONE OF THESE THREE NODES, and
-# `param_src` is NOT. An `Arena` is an immutable `Data` VALUE (`ops.bend:1255`), so
+# `param_src` is NOT. An `Arena` is an immutable `Data` VALUE (`ops.bend:1293 symbol=Arena`), so
 # `shape_to_shape_arg` -- which hands back `Found.i(...)` and DROPS the arena it interned
 # the size node into -- returns an index into an arena the caller does not hold. The
 # caller then interns the node into the arena it DOES hold, where that index names
@@ -4423,7 +4423,7 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> 
 #     new_args = (kwargs.pop("op", self.op), kwargs.pop("src", self.src), kwargs.pop("arg", self.arg), kwargs.pop("tag", self.tag))
 #     if (self.op, self.src, self.arg, self.tag) == new_args: return self
 #     return UOp(*new_args)
-# so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in the tag slot -- which is `ops.bend:6649`'s inline `replace`, already written.
+# so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in the tag slot -- which is `ops.bend:895 symbol=TNone`'s inline `replace`, already written.
 #
 # THE MINT IS EAGER, and that is safe rather than lazy. `Bool.pick` CHOOSES an arm
 # and does not SEQUENCE one, so the `UOp.new` runs on both paths. For an
@@ -5128,14 +5128,14 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `Sint` list. Every input is the worklist's, so these are fold.bend's rows;
 #   `schedule/multi.bend` is the caller and it inlines what it can today.
 # PORTED -- `ops.py:481 _ranges` and `ops.py:495 ranges` are `fold.bend`'s
-# `Ranged` / `UOp.ranges` (fold.bend:4372), 12 `rg_*` rows byte-identical to
+# `Ranged` / `UOp.ranges` (fold.bend:5055 symbol=UOp.ranges), 12 `rg_*` rows byte-identical to
 # CPython. The reason these two carried for a month -- "Dict set algebra over the
 # fold's memo" -- was wrong: the arena interns, so `dict[UOp, None]` IS a list
 # with a membership test, and `ended_ranges` is ported too (fold.bend:4059).
 # TODO(p3) ops.py:479  def ranges
 #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
 #   ones the ended ranges close. The wall is named where it is HIT --
-#   `schedule/rangeify.bend:189`, whose `rf_in_ranges` is the standing stub.
+#   `schedule/rangeify.bend:205 symbol=rf_in_ranges`, whose `rf_in_ranges` is the standing stub.
 
 
 
@@ -5231,7 +5231,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:630  def wmma
 
-# PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop` (tensor.bend:868).
+# PORTED -- `ops.py:652 _rop` is `tensor.bend`'s `tn_rop`, which is
+# `tensor.bend:1843` symbol=tn_rop.
 
 # TODO(p3) ops.py:644  def invalid
 
@@ -5323,7 +5324,8 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 
 
-# PORTED -- `ops.py:818 _mop` is `tensor.bend`'s `tn_mop` (tensor.bend:729).
+# PORTED -- `ops.py:818 _mop` is `tensor.bend`'s `tn_mop`, which is
+# `tensor.bend:1704` symbol=tn_mop.
 
 
 
@@ -8556,7 +8558,7 @@ def vv_has(v: VarVals, k: String) -> Bool:
 # through `Ctx` while the note here said the rule did not exist.
 #
 # AND THE SECOND CALLER I NAMED WAS WRONG TOO. I wrote that `pyrender`'s `Ctx` walk
-# wanted the same fold; `render.bend:1878`'s `render_with_splits` answers
+# wanted the same fold; `render.bend:1718 symbol=render_with_splits`'s `render_with_splits` answers
 # `List<&2, Bind>` and not a `Maybe`, so it does not. The REAL second caller is
 # `unified_rewrite`'s fixpoint (ops.py:1826-1837 symbol=RewriteContext.unified_rewrite), where `test_n: UOp|None` is
 # carried through a loop and a `BottomUpGate` breaks out of it -- and THAT is the
@@ -8745,7 +8747,7 @@ def vd_put(nm: String, x: H.I64, base: VarVals) -> VarVals:
 # accumulates. A fold that compiles and returns nothing is worse than one that does
 # not compile, and this is the second time this session that bit (the first was
 # `rra.filter`).
-# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:5793): collect the
+# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:6514 symbol=ax_names_str): collect the
 # pieces, `List.reverse`, `String.join`. Three attempts got here and the third is
 # the file's own idiom --
 #   1. a `+acc` String that COMPILED and answered `()` for every input, because a
@@ -8767,7 +8769,7 @@ def vd_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, String>
 # NO `match` HERE, and that is the fourth attempt's only content. A match on
 # `vd_text.go(ys, Nil{})` -- a computed value -- is refused, so the empty case is
 # handled by the JOIN: `String.join` of an empty list is "", and "" wrapped in
-# parentheses is "()". `ax_names_str` at ops.bend:5792 is the same shape and it has
+# parentheses is "()". `ax_names_str` at ops.bend:6514 symbol=ax_names_str is the same shape and it has
 # no `match` either.
 def vd_text(ys: List<&2, H.I64>) -> String:
   String.concat(["(", String.join(vd_text.go(ys, Nil{}), ","), ")"])
@@ -9523,7 +9525,7 @@ def set_ar() -> Arena:
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(9)}}, TNone{}},
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}}], [0]}
 
-# THE PRINTER IS `Rng.srcops.seeded` (ops.bend:5127) AND NOT A NEW ONE. It folds
+# THE PRINTER IS `Rng.srcops.seeded` (ops.bend:6060) AND NOT A NEW ONE. It folds
 # op names in SOURCE ORDER with no trailing separator, which is the whole of what
 # these rows need: `set` is a composition whose only failure modes are the SHAPE and
 # the ORDER, and a row that printed a top-level op name could not tell `END` from a

@@ -154,7 +154,8 @@ def getenv_str(k: String, d: String) -> IO(String):
 
 # ===========================================================================
 # `getenv_int` -- THE OTHER ARM OF THE SAME `getenv`. This is NOT a second
-# environment mechanism: `IO.get_env` (base.bend:172) is the only reader and both
+# environment mechanism: `IO.get_env` (references/bend/bend2/base.bend:185
+# symbol=IO.get_env) is the only reader and both
 # arms call it. helpers.py:163 is the whole of `getenv`:
 #
 #     @functools.cache
@@ -2566,7 +2567,7 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
 #
 # `time_sum_s` is a CPython `float`, i.e. an F64, and it is the one field that cannot
 # be incremented here: `base.bend` has no F32 addition. `F32.add` is a `law`
-# (base.bend:1556) -- an axiom with no body -- and live code may not call a law, so a
+# (references/bend/bend2/base.bend:1662 symbol=F32.add) -- an axiom with no body -- and live code may not call a law, so a
 # float accumulator has no expression. The field is carried, typed `F32`, and is
 # never written here; `.agents/slop/helpers-oracle.py` measures what CPython does with
 # it and prints those rows to STDERR so they are recorded without being diffed.
@@ -2876,7 +2877,7 @@ def Target.indices(+t: Target) -> String:
 # 4. TWO REFUSALS, AND THEY ARE NOT THE SAME REFUSAL. A third '+' is "too
 #    many '+'"; a fourth ':' IN THE DEVICE HALF is "too many ':'". Upstream
 #    raises `RuntimeError`; the port's `None` IS that RuntimeError
-#    (helpers.bend:2382), so `Target.parse` answers a `Maybe`. The port cannot
+#    (helpers.bend:3072 symbol=Target.parse), so `Target.parse` answers a `Maybe`. The port cannot
 #    carry upstream's MESSAGE -- `None` is a value with no room for one -- but
 #    the BOUNDARY, which strings are refused and which are not, is the fact
 #    that matters and it is carried exactly.
@@ -3217,7 +3218,8 @@ def Target.replacedefault(+t: Target, dev: String, ren: String, arch: String, if
 # `GlobalCounters` is ported above as `Counters`: six fields, `init`, `reset`, five
 # bumps and the per-device dict, threaded like the arena rather than global. Its
 # remaining gap is `time_sum_s`, which needs an F32 add that `base.bend` does not
-# have (`F32.add` is a law at base.bend:1556), so in P4 the engine's clock writes
+# have (`F32.add` is a law at references/bend/bend2/base.bend:1662
+# symbol=F32.add), so in P4 the engine's clock writes
 # that one field. Nothing else in the class is outstanding.
 # `disable_gc` and the DEBUG_GC `gc.callbacks` hook control CPython's collector.
 # Bend's collector is the reference count in the runtime, which no def can

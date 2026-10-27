@@ -49,9 +49,10 @@ import ./../extra/datasets/__init__.bend as D
 #     `Tensor.shape`        (:16)     tensor.bend:216 `tn_shape` -- for the half
 #         that has an object to inspect.
 #     `captured.expected_input_info` (:10)  PARTIAL-EXISTS: `engine/jit.bend`
-#         :370-389 `InInfo` IS `(view, variables, dtype, device)`, which is
-#         jit.py:55, and jit.bend:38-41 says it is ported "IN FULL"; `ii_vars`
-#         :393 is the name list. The RECORD EXISTS. The object that carries it
+#         :380-401 `InInfo` IS `(view, variables, dtype, device)`, which is
+#         jit.py:55 (upstream's `CapturedJit`), and the port says it is ported "IN FULL":
+#         `jit.bend:403` symbol=ii_vars
+#         :403 is the name list. The RECORD EXISTS. The object that carries it
 #         does not -- see `pickle` below.
 #     `TinyJit`             (:15, indirectly, via the pickle's payload)
 #         PARTIAL-EXISTS, and this one deserves the nuance rather than a MISS:
@@ -164,7 +165,7 @@ def pkl_device() -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:10 BLOCKED ON pickle.load; InInfo.dev engine/jit.bend:385 exists but the object does not")
 
 # :13  for i,(img,y) in enumerate(imagenet_dataloader(cnt=getenv("CNT", 100))):
-# `getenv("CNT", 100)` IS PORTED -- helpers.bend:306 `getenv_int` is the typed
+# `getenv("CNT", 100)` IS PORTED -- helpers.bend:307 symbol=getenv_int `getenv_int` is the typed
 # spelling of exactly this call -- and the dataloader is not.
 def pkl_dataloader(cnt: U32) -> D.Refused:
   D.refuse("examples/test_pkl_imagenet.py:13 FIRST MISSING SYMBOL imagenet_dataloader (examples/test_onnx_imagenet.py:25); nn/datasets.bend has no imagenet table")

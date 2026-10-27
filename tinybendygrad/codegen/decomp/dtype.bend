@@ -135,21 +135,30 @@
 # plausible string and `--check-only` said `ALL PROOFS CHECK` on every one of them -- and
 # three of the six were not operand errors at all:
 #
-#   1. `l2i_cdiv.step` (dtype.py:65) built `AND` over the SHL result's low word and over
-#      the ARENA INDEX of `C(1)` where upstream says the SHR result's low word and the
+#   1. the port's `l2i_cdiv.step` built `AND` over the SHL
+#      result's low word and over
+#      the ARENA INDEX of `C(1)` where upstream's `l2i` says the SHR result's low word
+#      and the
 #      literal `1`. The SHR subtree was built, dead, and off the cone.
+#      upstream's `l2i` -- tinygrad/codegen/decomp/dtype.py:64 symbol=l2i
 #   2. `l2i_cdiv.step` (dtype.py:21) handed `l2i(SUB, ...)` the CMPLT ARM'S ANSWER where
 #      dtype.py:66 and :67 spell the SAME `*r`.
 #   3. `l2i_cdiv.abs.c` (dtype.py:60) handed the B-side `.where` pair the A-SIDE
 #      negation's words, so `nb`'s own low word was built and never read.
-#   4. `l2i_cdiv.abs` (dtype.py:59) minted four BITCASTs that `mixin/dtype.py:53` folds
+#   4. the port's `l2i_cdiv.abs` minted four BITCASTs that
+#      upstream's `Ops.BITCAST` folds
 #      on a `u32` source, which is why `xdt` is a parameter of `abs`, `sign`, `cdiv`.
+#      upstream's `l2i` -- tinygrad/codegen/decomp/dtype.py:59 symbol=l2i
+#      upstream's `Ops.BITCAST` -- tinygrad/mixin/dtype.py:53 symbol=bitcast
 #   5. `dd_fuel` was `32 * (to - from)` -- the CREATION WINDOW -- so a fixture that
 #      interns NOTHING got fuel 64 and `lgtsig`/`lgrsig` read 57 and 112 nodes against
 #      CPython's 2184 and 2218. A TRUNCATED WALK, not a small graph.
-#   6. `l2i_cast1.quo` (dtype.py:34) did not model `mixin/elementwise.py`'s weak-CONST
+#   6. the port's `l2i_cast1.quo` did not model
+#      upstream's `remint`'s weak-CONST
 #      REMINT, so `2**32` stayed the integer `C(1:0)` instead of `F(1333788672)` and
 #      `x < 0` reused the `C(0)` that `lo.ne(0)` owns.
+#      upstream's `l2i` -- tinygrad/codegen/decomp/dtype.py:21 symbol=l2i
+#      upstream's `remint` -- tinygrad/mixin/elementwise.py:12 symbol=remint
 #
 # WHAT IS STILL RED AND WHY, so the next reader does not re-derive it: `c7`, `lgu` and
 # `lgun` are DECLARED refusals (`refused:unported`), and `lg1n`/`lg6n`/`lg9n`/`lgqn` are
@@ -719,7 +728,7 @@ def l2i_shift.words(+isu: Bool, +ar: O.Arena, +ws: List<&2, U32>) -> W2:
 
 # THE ARENA IS THREADED AND EVERY INDEX IS TAKEN FROM THE `Found` THAT OWNS IT.
 # This body did neither: it handed the SAME `ar` to all six node builders, and
-# `O.Arena` is an immutable `Arena{nodes: List<Node>}` (uop/ops.bend:1099-1100),
+# `O.Arena` is an immutable `Arena{nodes: List<Node>}` (uop/ops.bend:1293 symbol=Arena),
 # so `O.UOp.new(ar, ...)` returns a Found over `ar ++ [node]` and the NEXT builder
 # appends to `ar` again -- at the SAME index. `a1u << n` was therefore overwritten
 # by `C(1)` before the final `|` read it, and the `hi` word came out as a `WHERE`
@@ -1083,7 +1092,7 @@ def l2i_cdiv.abs.b(+ar: O.Arena, +ani: U32, +zi: U32, +ua0: U32, +ua1: U32, +n0:
 # THE ARENA IS HANDED ON, NOT RE-USED, and every index below belongs to the arena
 # named beside it. This body handed `abs.b` the arena `l2i` started with, while
 # `ani`/`ua0`/`ua1`/`ub0`/`ub1` are indices into the arena six builders LATER.
-# `O.Arena` is immutable (`uop/ops.bend:1099-1100`), so `abs.b`'s first
+# `O.Arena` is immutable (`uop/ops.bend:1293 symbol=Arena`), so `abs.b`'s first
 # `dd_where` re-used the very slot `a_neg` occupies and `a_neg` then read back as
 # whatever node that WHERE became. It is invisible while the node COUNT happens to
 # line up: `lgq`/`lgqp` agreed at one bitcast configuration and printed

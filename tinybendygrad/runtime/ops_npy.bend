@@ -62,7 +62,11 @@
 # ops_npy.py
 #   :3  `class NpyDevice(Compiled)`   PORTED  `Npy` -- four fields and the trace
 #   :4  the four arguments            PORTED  `Npy.of` and the five constant defs
-#   :4  `[]` becoming `[Renderer]`    PORTED  `RENDERER_EFFECTIVE`
+#   :4  `[]` becoming `[Renderer]`    PORTED  `RENDERER_EFFECTIVE` -- upstream's `HostAllocator` sits beside the `[]`
+#                                        and upstream's `Compiled.__init__`
+#                                        (tinygrad/device.py:382
+#                                        symbol=Compiled.__init__) makes it
+#                                        `[Renderer]`
 #   --  the missing `_select_iface`   PORTED  `Npy.peer`, `Npy.did`, `Npy.host`
 #
 # device.py, `HostAllocator`

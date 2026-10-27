@@ -22,11 +22,13 @@ import ./../datasets/__init__.bend as D
 # "`nn.Conv2d`, `nn.BatchNorm2d` AND `nn.Linear` ARE ALL MISSING", and **THREE UNITS REPORTED IT AS
 # STALE WHILE IT WAS STILL TRUE-ISH**: `nn/layers.bend` and `nn/pool.bend` landed and CLOSED IT, and a
 # wall that has FALLEN is still NAMED as a wall. Measured now, by NAME, not by count --
-#   nn_conv2d     nn/layers.bend:756      nn_linear    nn/layers.bend:427
-#   nn_relu       nn/layers.bend:262      pool_bn      nn/pool.bend:381
-#   pool_maxpool  nn/pool.bend:250
+#   nn_conv2d     nn/layers.bend:937 symbol=nn_conv2d      nn_linear    nn/layers.bend:530 symbol=nn_linear
+#   nn_relu       nn/layers.bend:299 symbol=nn_relu      pool_bn      nn/pool.bend:382 symbol=pool_bn
+#   pool_maxpool  nn/pool.bend:251 symbol=pool_maxpool
 # **WHAT IS ACTUALLY STILL MISSING**, named and checked, and the distinction MATTERS: `vt_sequential`
-# and `vt_layernorm` DO exist -- at `extra/models/vit.bend:153` and `:157` -- **but both are STUB
+# and `vt_layernorm` DO exist -- one at upstream's `vt_sequential`
+# (`extra/models/vit.bend:153` symbol=vt_sequential) and upstream's
+# `vt_layernorm` at `extra/models/vit.bend:157` symbol=vt_layernorm -- **but both are STUB
 # REFUSALS inside another model's stub, not ported layers.** So "the name is absent" and "the layer is
 # absent" are DIFFERENT QUESTIONS, and a census that answers the first while being read as the second
 # is the same defect as this headline was. Genuinely ABSENT everywhere, 0 defs:
@@ -56,13 +58,13 @@ import ./../datasets/__init__.bend as D
 #
 #   EXISTS
 #     `Tensor`            tensor.bend (Tensors, tn_*)
-#     `dtypes`            dtype.bend:518 `to_dtype` (upstream:2)
+#     `dtypes`            dtype.bend:557 symbol=to_dtype `to_dtype` (upstream:2)
 #     `Tensor.relu`       tensor.bend:774 `tn_relu`                      (:29,:32,:57,:58,:61,:62,:109)
 #     `Tensor.cast`       tensor.bend:1389 `tn_cast.put`                (:121)
 #     `Tensor.shape`      tensor.bend:216 `tn_shape`                    (:148,:152)
 #     `Tensor.dtype`      tensor.bend:219 `tn_dtype`                    (:153)
 #     `Tensor.device`     tensor.bend:213 `tn_device`                   (:153)
-#     `Tensor.mean`       mixin/op.bend:891 `mo_mean`                    (:120)
+#     `Tensor.mean`       mixin/op.bend:953 symbol=mo_mean `mo_mean`                    (:120)
 #     `Tensor.sequential` SIDE B -- see MISSING
 #     `get_state_dict`    nn/state.bend:318                              (indirectly, :141)
 #     `GlobalCounters.reset` helpers.bend:2584                           (:168)
@@ -71,12 +73,12 @@ import ./../datasets/__init__.bend as D
 #
 #   PARTIAL
 #     `Tensor.reshape`    `mxw_reshape` mixin/movement.bend:1431 and
-#                         `mo_reshape` mixin/op.bend:664 EXIST (:153) but the
+#                         `mo_reshape` mixin/op.bend:704 symbol=mo_reshape EXIST (:153) but the
 #                         upstream call is `reshape(obj.shape)` on a shape list
 #                         read back out of the layer, and there is no layer.
 #     `Tensor.pad`        `mxw_pad` mixin/movement.bend:1520 EXISTS. The
 #                         `:110` call `out.pad([1,1,1,1])` needs the layer first.
-#     `Tensor.max_pool2d` `mx_pool_f` mixin/movement.bend:297 and
+#     `Tensor.max_pool2d` `mx_pool_f` mixin/movement.bend:300 symbol=mx_pool_f and
 #                         `mx_pool_shape` :902 are the POOL SHAPE ARITHMETIC and
 #                         the pool BODIES are SIDE B, so there is nothing to call.
 #
@@ -167,7 +169,7 @@ def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]
 def row(nm: String, b: Bool) -> IO(Unit): IO.print(String.concat([nm, "=", Bool.show(b)]))
 def urow(nm: String, v: U32) -> IO(Unit): IO.print(String.concat([nm, "=", U32.show(v)]))
 
-# the `Refused` accessor, in nn/state.bend:227's shape, so `main` can print the
+# the `Refused` accessor, in nn/state.bend:838 symbol=main's shape, so `main` can print the
 # address the refusal carries rather than discarding it.
 def rs_at(r: D.Refused) -> String:
   match r:

@@ -6,7 +6,7 @@
 # NOTHING IS PORTED HERE. `heuristic.py` is 193 lines and every one of its
 # decisions reads something out of the AST -- `k.bufs`, `k.reduceop`,
 # `idx.get_idx()`, `idx.get_valid()`, `u.ranges`, `backward_slice` -- and all of
-# those are WALL #1 (`UOp.ranges`, which `uop/fold.bend:2431` marks P3 and defers
+# those are WALL #1 (`UOp.ranges`, which `uop/fold.bend:5055 symbol=UOp.ranges` marks P3 and defers
 # to "the set algebra `_bool_slice` also wants"). So the whole function is one
 # wall wearing thirteen coats, and the honest thing is to say which coat is which
 # rather than to write a stub ladder that computes nothing.
@@ -39,10 +39,13 @@
 #               `all(r in idx1.ranges for r in idx0.ranges)`
 #               WALL #1. Note `k.reduceop` itself is WALL #1 in postrange.bend.
 #   4  82-87   the GROUPING block
-#               `resolve(prod(k.full_shape[i] for i in k.upcastable_dims) <= 2048,
-#               False)` then `for axis in k.axes_of(REDUCE)[:3]: apply_opt(SPLIT,
+#               upstream's `resolve` (tinygrad/codegen/opt/heuristic.py:81
+#               symbol=hand_coded_optimizations) over `prod(k.full_shape[i] for i
+#               in k.upcastable_dims()) <= 2048`, then `for axis in
+#               k.axes_of(AxisType.WEAK, reduce=True)[:3]: apply_opt(SPLIT,
 #               axis, (16, LOCAL, True))` and `break` on the first that does not
-#               raise.
+#               raise (tinygrad/codegen/opt/heuristic.py:84
+#               symbol=hand_coded_optimizations).
 #               PORTABLE IN ISOLATION -- both halves are pure over `Sched` -- but
 #               the `break`-on-first-success is a `try`/`except` over a
 #               MUTATION, so it needs `Sched.split` (which postrange.bend has)

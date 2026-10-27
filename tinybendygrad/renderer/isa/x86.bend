@@ -114,7 +114,8 @@
 #   set and `dtypes.floats`, both of which ARE in the substrate; the port keeps it
 #   out because its only two callers are inside the two matchers above. Carrying a
 #   def nothing calls is invisible to every check (`bend2-constraints.md` line
-#   1502 records three such defs in `schedule/indexing.bend`). `TODO(p3) x86.py:152 symbol=flag_gate`.
+#   1502 records three such defs in `schedule/indexing.bend`).
+#   TODO(p3) x86.py:152 symbol=flag_gate -- upstream's `flag_gate` is that one line.
 # * `def_reg` (py:162) and `undef` (py:164) -- NOT IN upstream at this pin: upstream
 #   DELETED both (the `DEFINE` placeholder went with it, and `undef()` became an
 #   inline `UOp(Ops.NOOP)`), and `stack_pointer` is now
@@ -971,7 +972,8 @@ def Enc.imm_int(+k: Nat, +n: Nat, +imm: U32) -> List<&2, U32>:
 
 def Enc.or2(+a: U32, +b: U32) -> U32: U32.or(a, b)
 
-# `List.concat` takes a LIST OF LISTS (`base.bend:829`), so every join of two byte
+# `List.concat` takes a LIST OF LISTS (references/bend/bend2/base.bend:920
+# symbol=List.concat), so every join of two byte
 # lists is one of these. Writing `List.concat(.., a, b)` is a TYPE error naming
 # `List<&2, List<&2, List<&2, U32>>>`, which is how Bend says so.
 

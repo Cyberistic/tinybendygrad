@@ -1020,7 +1020,7 @@ def dc_s3(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 #     * `i64_div` and `i64_mod` by a 32-bit divisor -- a restoring divider, and
 #       `(2**s - 1) % d` at `s = 2*nbits` is a 65-bit modulus.
 #     * `i64_shl`  -- `2**s` for `s` up to `2*nbits = 64`.
-#     * an UNSIGNED 64-bit compare -- `H.i64_cmp` (helpers.bend:1696) is SIGNED,
+#     * an UNSIGNED 64-bit compare -- `H.i64_cmp` (helpers.bend:1697 symbol=i64_cmp) is SIGNED,
 #       and `2**64` reads negative in it.
 #     * a 65-bit third limb, for `2**64 + d`, which is the numerator of `m`.
 #   `helpers.bend` has `i64_add`, `i64_sub`, `i64_cmp`, `i64_of_hi_lo` and
@@ -1142,7 +1142,8 @@ def dc_tfg.keys(+st: TFP, +ks: List<&2, U32>,+i: U32) -> TFP:
 # is THREADED rather than derived from the fuel: the fuel is the self-call's
 # first argument and `dc_tfg.step` wants the group index in the same arm, and a
 # value may not be consumed twice in one expression. `i + 1` is what the five
-# groups increment and `U32.is_even` (base.bend:1542) is `i % 2`, so there is no
+# groups increment and `U32.is_even` (references/bend/bend2/base.bend:1648
+# symbol=U32.is_even) is `i % 2`, so there is no
 # `Nat` parity walk and no second countdown.
 def dc_tfg.step(+st: TFP, +i: U32, +ks: List<&2, U32>, +a: List<&2, U32>,
                 +b: List<&2, U32>) -> TFP:

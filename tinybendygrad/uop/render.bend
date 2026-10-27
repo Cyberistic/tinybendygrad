@@ -70,8 +70,8 @@
 # `pyrender` round-trip in `81157efb0` ("use render_uir instead of pyrender"), and
 # `tinygrad/uop/spec.py:41` now PRINTS `render_uir(lst)` under `DEBUG >= 3` instead of
 # EXECUTING a rendered string. `render_uir` is `tinygrad/uop/render.py:65
-# symbol=render_uir` and a METHOD on `UOp` (`tinygrad/uop/ops.py:1181
-# symbol=render_uir`). So there is NO upstream round trip to port, and
+# symbol=render_uir` and a METHOD on `UOp` -- upstream's `render_uir`
+# (tinygrad/uop/ops.py:1181 symbol=render_uir). So there is NO upstream round trip to port, and
 # `test_pyrender` IS GONE UPSTREAM TOO: that is not a missing primitive, it is a
 # missing language. The generated text names `UOp`, `Ops`, `dtypes`, `KernelInfo`,
 # `ParamArg` and a dozen other CPython objects as GLOBALS in a namespace built by
@@ -625,7 +625,7 @@ def axis_repr(a: O.AxisType) -> String:
 # the ids as the flat tail, because that is the one `UOp.axis_id` /
 # `UOp.axis_type` in ops.bend already implement and the one the `Ops.RANGE`
 # rule's `len(axis_id) == 1` guard is stated in. The collision is ops.bend's
-# `ARange{ids, at}` wall (ops.bend:2330-2345) SEEN FROM THE OTHER SIDE, and it
+# `ARange{ids, at}` wall (ops.bend:1228 symbol=ARange) SEEN FROM THE OTHER SIDE, and it
 # is recorded here rather than papered over.
 def arange_repr(ids: List<&2, U32>, at: O.AxisType) -> String:
   String.concat(["(", axis_repr(at), ", ", String.join(u32_list_repr.go(ids), ", "), ")"])
@@ -2119,7 +2119,7 @@ def py_row(nm: String, +f: O.Found) -> IO(Unit):
 #
 # `u.body` is `u.src[0]` -- ops.py:562-565 -- and it is a `# TODO(p3)` in
 # ops.bend, so it is read as `Arena.src0` here rather than ported there.
-# `grad_fxn` and `aux` are DROPPED from ops.bend's `CallInfo` (ops.bend:1011-1018:
+# `grad_fxn` and `aux` are DROPPED from ops.bend's `CallInfo` (ops.bend:1145 symbol=CallInfo:
 # a Python function object cannot be a `Data` field, and `aux` is the hcq side
 # channel, P6), so in THIS port those two conjuncts are CONSTANT FALSE and the
 # refusal reduces to `body.op is PROGRAM`. That is a WALL, stated: a call with a

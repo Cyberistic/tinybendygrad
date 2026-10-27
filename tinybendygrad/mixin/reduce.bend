@@ -81,7 +81,7 @@ import ./op.bend as M
 #   axis = tuple(self._resolve_dim(x) for x in (range(self.ndim) if axis is None
 #                                                   else make_tuple(axis, 1)))
 #
-# `mo_ax` (op.bend:752) is the `make_tuple(axis, 1)` -> `[resolve(axis)]` arm for
+# `mo_ax` (op.bend:794 symbol=mo_ax) is the `make_tuple(axis, 1)` -> `[resolve(axis)]` arm for
 # ONE axis; this is the fold over a LIST of them. `make_tuple` on a tuple is the
 # tuple, so `axis=(0,)` and `axis=0` are the same list and the same graph, which
 # is the `sum_axs0` row.
@@ -164,7 +164,7 @@ def rc_all(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 
 # `_rop` -- reduce.py:10-11. `raise NotImplementedError`: a DECLARATION, not a
 # body, and Bend has no `raise`. The concrete one is `UOp._rop` (ops.py:655),
-# `T.tn_rop` (tensor.bend:867), and this is the forwarding line so the reader of
+# `T.tn_rop` (tensor.bend:1843 symbol=tn_rop), and this is the forwarding line so the reader of
 # reduce.py finds the name where reduce.py has it.
 def rc_rop(+ar: O.Arena, self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
   T.tn_rop(ar, self, op, axis)
@@ -227,7 +227,7 @@ def rc_find.go(xs: List<&2, U32>, +ar: O.Arena, +acc: RcRed) -> RcRed:
 def rc_find(+ar: O.Arena, i: U32) -> RcRed:
   rc_find.go(O.UOp.toposort(O.Arena.budget(ar), ar, i), ar, RcRed{False{}, O.OpsNOOP{}, 0})
 
-# THE ROW. `mo_shape`'s shape string (op.bend:1395) and `mo_sig`'s signature
+# THE ROW. `mo_shape`'s shape string (op.bend:1555 symbol=mo_shape) and `mo_sig`'s signature
 # (op.bend:1143) are REUSED -- they are defs in another file and Bend has no
 # privacy -- so this is the three new columns and the assembly.
 def rc_red_str(ok: Bool, +r: RcRed) -> String:
@@ -256,7 +256,7 @@ def rc_b1d() -> T.Tensor:
 
 # THE 0-d SOURCE. `Tensor(7.0)` is `1 CONST/0` with dtype `weakfloat`, and it is
 # the fixture for `reduce.py:16`'s `if self.ndim == 0: axis = ()` -- which
-# `M.mo_axis0` (op.bend:745) answers by emptying the list. Every 0-d row is
+# `M.mo_axis0` (op.bend:787 symbol=mo_axis0) answers by emptying the list. Every 0-d row is
 # `2 CONST/0 CAST/1` with NO REDUCE, and that is the identity: `_rop`'s
 # `reduce_axis` is empty so it returns the cast source unchanged.
 def rc_z0() -> T.Tensor:

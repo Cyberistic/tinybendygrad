@@ -196,7 +196,9 @@
 #    `table` in `rpc_set_registry_table` (:617) are Python dicts, so they are
 #    INSERTION-ORDERED, and two of them are read with a MISS HANDLER that
 #    returns a default (`self.runlists.get(..., 0)` :557,
-#    `(bufs or {}).get(buf, ...) :461`). A `List` here is the same information
+#    `(bufs or {}).get(buf, ...) :461`). That site is upstream's `promote_ctx`
+#    (tinygrad/runtime/support/nv/ip.py:457 symbol=promote_ctx), and the port's
+#    `List` here is the same information
 #    plus an explicit key list, and every miss is an explicit arm. What is lost
 #    is dict ITERATION order under mutation, which none of these sites relies on.
 #

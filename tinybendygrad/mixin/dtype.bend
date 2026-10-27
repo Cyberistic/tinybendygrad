@@ -7,8 +7,11 @@
 # fourteen are bodies here and two are the abstract properties Python raises
 # `NotImplementedError` from, which are declarations and not ports.
 #
-# THE WALL IS ONE LINE: `commit_dtype` (tinygrad/dtype.py:17) reads `self._uop.vmin` and
-# `self._uop.vmax`, and THOSE ARE `UOp._min_max` (ops.py:1104-1163). This file ports
+# THE WALL IS ONE LINE: upstream's `commit_dtype`
+# (tinygrad/mixin/dtype.py:17 symbol=commit_dtype) reads `self._uop.vmin` and
+# `self._uop.vmax` (upstream's `vmin`/`vmax`, tinygrad/uop/ops.py:1090
+# symbol=vmin), and THOSE ARE `UOp._min_max` (tinygrad/uop/ops.py:1094
+# symbol=_min_max). This file ports
 # `commit_dtype` COMPLETELY -- the weakint branch, the `strong_dtype` branch, the
 # `default_int` default -- and takes `(lo, hi)` as parameters, because `_min_max` is ops.py's
 # def and ops.py is not this file. What that buys is the whole of `commit_int`

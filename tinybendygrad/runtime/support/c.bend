@@ -1034,7 +1034,8 @@ def arr_default_row() -> String: String.concat([Array_._type_name(), ",", U32.sh
 # `/usr/lib/libc.dylib`; the oracle prints the first and the port computes both.
 # `String.length(String.drop(p, k))` IS `len(p) - k`, and Bend has no `Nat`
 # subtraction with a saturating floor, so that is how the drop count is written.
-# `String.drop` is FROM THE FRONT (base.bend:1941 recurses on the tail), so
+# `String.drop` is FROM THE FRONT (references/bend/bend2/base.bend:2123
+# symbol=String.drop recurses on the tail), so
 # dropping `len(p) - 5` leaves the LAST five characters, which for
 # `/usr/lib/libc.dylib` is `.dylib`.
 def findlib.osx_lib_at.put(+p: String) -> String:
