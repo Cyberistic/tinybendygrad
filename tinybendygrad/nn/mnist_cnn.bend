@@ -40,9 +40,11 @@
 #      IT IS STILL THE RIGHT WALL TO ROUTE AROUND**: the bytes are prepared on
 #      the HOST (`.agents/slop/mnist/prepare_npy.py`, from the SAME four
 #      `storage.googleapis.com/cvdf-datasets/mnist` files upstream's
-#      `datasets.py:5` names) and written as `.npy`. The port's `.npy` path in
-#      `tinybendygrad/nn/datasets.bend` owns the SHAPE ARITHMETIC of those
-#      files, which is the part that is arithmetic and not a socket.
+#      `base_url` names (tinygrad/nn/datasets.py:5)); upstream writes them as
+#      `.gz` and the port's OWN host script un-gzips them into the port's own
+#      `.npy`. The port's `.npy` path in `tinybendygrad/nn/datasets.bend`
+#      owns the SHAPE ARITHMETIC of those files, which is the part that is
+#      arithmetic and not a socket.
 #   W2 THE TENSORS THEMSELVES -- "`.reshape`, `.astype` AND `np.frombuffer`
 #      HAVE NO COUNTERPART HERE: `Tensor` IN `tensor.bend` IS A UOP SLOT IN AN
 #      ARENA, NOT A BUFFER". **THIS WALL IS THE ONE THE END-TO-END RUN GOES
@@ -150,7 +152,7 @@ def mn_pool_full(shp: List<&2, U32>) -> List<&2, U32>:
 def mn_pool_out(shp: List<&2, U32>) -> List<&2, U32>:
   List.take(&2, U32, mn_pool_full(shp), 4n)
 
-# THE CONV, through the port's OWN `nn_conv2d` (layers.bend:937 symbol=nn_conv2d). The
+# THE CONV, through the port's OWN `nn_conv2d` (layers.bend:927). The
 # argument order is `groups, stride, dilation, pad_v, padding, bias`, and
 # `padding = None{}` with `pad_v = 1` is upstream's `padding=1` --
 # `nn_pads` (layers.bend) turns the int into the flat four-element list

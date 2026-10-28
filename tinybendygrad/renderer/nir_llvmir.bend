@@ -116,9 +116,14 @@
 # the same shape as the `SQRT` rot in the sibling `renderer/nir.bend`, and the
 # same lesson: a `py=` half that AGREES with a stale port can never have said
 # otherwise, because it was generated FROM that port's own upstream.
-#   STAGE 2  NOT STARTED. `_render_fn` (:156-160), `_render_footer` (:210, :265),
-#            the per-op emitter strings of `base_rewrite` (:77-144) and
-#            `_render_kernel`'s naming walk (:161-202).
+#   STAGE 2  NOT STARTED, AND EVERY ONE OF THESE FOUR IS AN LLVMIR CONSTRUCT AND NOT
+#            A NIR ONE -- upstream's tinygrad/renderer/nir.py has NONE of them, so
+#            a `nir.py` pointer here named a file that does not hold the thing.
+#            LLVMIR's `_render_fn` (tinygrad/renderer/llvmir.py:173),
+#            `_render_footer` (tinygrad/renderer/llvmir.py:232 and
+#            tinygrad/renderer/llvmir.py:281),
+#            the per-op emitter strings of `base_rewrite` (tinygrad/renderer/llvmir.py:81-156) and
+#            `_render_kernel`'s naming walk (tinygrad/renderer/llvmir.py:178).
 #   STAGE 3  NOT STARTED. `nir.py`: `glsl_type` (:14), `u_aop`/`s_aop`/`f_aop`
 #            (:27-31), `c` (:83), `ncast` (:27-28), `scope` (:83),
 #            `padded_idx` (:246), the intrinsic bounds arithmetic

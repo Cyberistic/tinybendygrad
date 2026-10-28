@@ -77,8 +77,11 @@
 #     this file.
 #
 #   serve.py:99,132  `srender` and `word_wrap`
-#     `srender` is a `# TODO(p3)` row for it in `ops.bend`; upstream's is at
-#     `uop/ops.py:76`. `word_wrap` has NO row in helpers.bend at all.
+#     `srender` is a `# TODO(p3)` row for it in `ops.bend`; upstream's
+#     `srender` is the def at `uop/ops.py:76`.
+#     `word_wrap` has NO row in helpers.bend at all -- upstream's lives in
+#     tinygrad/helpers.py and is imported by
+#     tinygrad/viz/serve.py:9, where `word_wrap` wraps the argument string.
 #     `shape_to_str` is PORTED over `sint` rendered as its integer form, which
 #     is `srender`'s answer for every `sint` that is an int -- and the gate's
 #     fixtures are exactly those.

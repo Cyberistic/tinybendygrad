@@ -47,9 +47,9 @@
 # 1. `_split_after` KEEPS A KERNEL LIST AND A DEP LIST, and the second partition
 #    DROPS Python's `remaining`. Python raises `AssertionError` when a source is
 #    neither CALL/END/AFTER/STORE; a raise is not a value, so `Split` here has
-#    exactly Python's two fields and the assertion is `# TODO(p3)
-#    tinygrad/schedule/__init__.py:28` -- upstream RAISES `AssertionError` there (the
-#    builtin, so it has no declaration to cite).
+#    exactly Python's two fields and the assertion is a work item:
+#    TODO(p3) tinygrad/schedule/__init__.py:28 -- upstream RAISES `AssertionError`
+#    there (the builtin, so it has no declaration to cite).
 #    Not carrying `remaining` is the price of a total function,
 #    and it is the same trade `helpers.bend`'s `unwrap_or` documents. The gate's
 #    `split_bad_ks` pins the DROP where Python raises.

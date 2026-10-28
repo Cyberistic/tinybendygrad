@@ -25,8 +25,10 @@
 #
 # THE SUBSTRATE IS IMPORTED, NOT COPIED: `C.Tr`/`C.Tr.*` (the trace), `C.CALL_PING` (the
 # seam tag the `EMULATE` assert probes with), `C.Cn`/`C.cn_slot` (the slot walk the
-# kernargs layout shares with ops_cpu.py:70), `C.Cr`, `C.nth` and the row printers live
-# in `ops_cpu.bend` and every use here is `C.`. `Ca`/`Cam` are there too because
+# kernargs layout shares with upstream's `struct.pack_into` value slots, tinygrad/runtime/ops_cpu.py:58-59 symbol=__call__),
+# `C.Cr`, the port's own `C.nth`
+# and the row printers live in `ops_cpu.bend` and every use here is `C.`. `Ca`/`Cam`
+# are there too because
 # ops_cpu.py:91's arch map and ops_null.py:62's EMULATE map are the same scan.
 #
 # `nr.has_copy_queue` is a NULL fact -- `ops_null.py` does not override
@@ -36,8 +38,10 @@
 #
 # ONE FILE IN HERE IS NOT MINE TO MOVE. `pk`/`Pk`/`fx_pk`/`pkend` and the `pk_*` rows
 # port `pack_args`, which is `tinygrad/runtime/support/hcq2.py:118-124 symbol=pack_args` -- a file with its own
-# `.bend` and another unit's. They stay here because `ops_null.py:29-30` builds the
-# kernargs through them. THE FIX IS TO MOVE THEM to `runtime/support/hcq2.bend`;
+# `.bend` and another unit's. They stay here because upstream builds the kernargs
+# through `pack_args` at `tinygrad/runtime/ops_null.py:33`, the `kernargs` line --
+# and `pack_args` is imported at `tinygrad/runtime/ops_null.py:9`.
+# THE FIX IS TO MOVE THEM to `runtime/support/hcq2.bend`;
 # flagged here and in the report, not done, because hcq2.bend is read-only here.
 #
 import Base

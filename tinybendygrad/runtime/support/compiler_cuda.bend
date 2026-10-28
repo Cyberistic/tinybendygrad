@@ -109,7 +109,9 @@
 #   TODO(p3) compiler_cuda.py:4  -- `from tinygrad.runtime.autogen import nvrtc, nvjitlink`.
 #   TODO(p3) compiler_cuda.py:52 -- `nvrtcVersion`.
 #   TODO(p3) compiler_cuda.py:57-61 -- the five `nvrtc*` calls of `compile`.
-#   TODO(p3) compiler_cuda.py:93-97  symbol=compile -- the six `nvJitLink*` calls.
+#   TODO(p3) compiler_cuda.py:93-97  symbol=compile -- the six `jitlink` calls
+#     (`nvJitLinkCreate`, `nvJitLinkAddData`, `nvJitLinkComplete`,
+#     `nvJitLinkGetLinkedCubin`, `nvJitLinkGetLinkedCubinSize`, `nvJitLinkDestroy`).
 #
 # WALL 2 -- the six `re.sub` SCANS (see the header).
 #   TODO(p3) compiler_cuda.py:28-35  symbol=pretty_ptx -- `re.sub` x6.

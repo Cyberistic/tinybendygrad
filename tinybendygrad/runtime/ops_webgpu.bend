@@ -15,14 +15,13 @@
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF.
 #
-#   :10  backend_types               PORTED  `backend_names`, `backend_of`
+#   :11  `backend_types`            PORTED  the port's own backend_names/backend_of
 #   tinygrad/runtime/ops_webgpu.py:12 `instance`      PORTED  `dev.create_instance` symbol=instance
 #   :13  from_wgpu_str               WALL 1  STRING VIEWS
 #   :14  to_wgpu_str                 WALL 1  STRING VIEWS
 #   :17  buf_to_mv                   PORTED  `copy.read`
-#   :23  synchronous                 PORTED  `sync_ret`, `sync_has_emsg`,
-#                                             `sync_payload`, `sync_name`,
-#                                             `sync_error`
+#   :24  `synchronous`                 PORTED  the port's own sync_ret/sync_has_emsg,
+#                                             sync_payload/sync_name/sync_error
 #   :45  BufferMapAsync              PORTED  a WAIT, in `copy.read`
 #   :46  DevicePopErrorScope         PORTED  a WAIT, in `Tr.pop`
 #   :47  DeviceCreateComputePipeline PORTED  a WAIT, in `pass.pipeline`
@@ -35,7 +34,7 @@
 #   :67  __del__                     DEAD   `prog.del` reached nothing. This row
 #                                             WAS what kept it alive: a PORTED
 #                                             claim in this table is a use.
-#   :71  wait                        PORTED  `prog.wants_wait`
+#   :71  the `wait` flag                 PORTED  the port's own prog.wants_wait
 #   :74  bgl_entry                   PORTED  `bgl.entry`
 #   :77  bind_entries                PORTED  `bgl.of`  <- the layout derivation
 #   :81  CreateBindGroupLayout       PORTED  `pass.layout`

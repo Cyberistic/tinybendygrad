@@ -70,8 +70,8 @@
 #                                              REUSE of `counts[0]`
 #   :98  the instance bitmap walk  PORTED  `bs.instances`
 #   :99  `ceildiv(n*size, 0x1000)*0x1000` PORTED `bs.alloc_bytes`
-#   :102 the `ctx_init` sweep       PORTED  `bs.init_npos` / `bs.init_stride`
-#   :107 the ALL_DONE flags        PORTED  `bs.flags_of`
+#   :100 the `ctx_init_value` sweep   PORTED  the port's own bs.init_npos / bs.init_stride
+#   :107 the ALL_DONE `flags`         PORTED  the port's own bs.flags_of
 #   :53  `BNXTDev.__init__`        PORTED  `dev.init`, the ordered trace
 #   :56  the PCI_COMMAND write     PORTED  `pci.master_enable`
 #   :57  `map_bar(0,'I')/(2,'Q')`  PORTED  `BAR0` / `BAR2`

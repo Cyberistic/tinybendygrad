@@ -8,8 +8,10 @@
 # empty -- tinygrad spells it `randn` + a threshold). The example reaches FOUR of its six
 # symbols through here (`rand` :50, `randn` :106, `normal` :141, `uniform` :158, via
 # `Tensor.randint` :122); its other two are `arange` and `linspace`, both W1 below.
-# THE EXAMPLE IS GONE AT THIS PIN -- upstream's `tinygrad/examples/` is EMPTY, and the
-# port's `examples/beautiful_mnist.bend` with it -- so the chain IS here: TODO(p3) mixin/rand.py:50  symbol=rand
+# THE EXAMPLE IS GONE AT THIS PIN -- upstream's tinygrad/examples/ DIRECTORY IS EMPTY
+# (`git ls-tree refs/remotes/upstream/master tinygrad/examples/` lists nothing), and the
+# port's OWN examples/beautiful_mnist.bend with it -- so the chain IS here, and upstream's
+# `rand` is the def the port owes: TODO(p3) mixin/rand.py:50  symbol=rand
 #
 # THE GENERATOR STATE, the one design decision here. Python's is a mutable per-device
 # process-wide dict plus a clock (tensor.py:438-440); the port makes all three explicit: the
@@ -55,7 +57,9 @@
 #   W2 `cat` (op.py:731), reached from rand.py:15, :29 and tensor.py:471, is `mixin/op.bend`'s
 #      W6. PORTED: `op_cat1`, the two-operand all-equal `dim=0` case -- the only one
 #      `_threefry_random_bits`, `random_bits` and `_next_counter` reach. `stack`
-#      (movement.py:256) needs `dtype_from_uop` and `ccast` (ops.py:618-619 symbol=ccast), which is
+#      (movement.py:270) is upstream's `stack` def, and the `Ops.STACK` arm of upstream's
+#      `_mop` (ops.py:809-812) calls both `dtype_from_uop` (ops.py:116
+#      symbol=dtype_from_uop) and `ccast` (ops.py:618 symbol=ccast) -- which is
 #      `tensor.bend`'s own `TODO(p3)`, so that is why `cat` is W2 at all.
 #      TODO(p3) mixin/op.py:731  `cat`'s unequal-shape arm (`itertools.accumulate` plus a
 #        `pad` and a `usum` per tensor) and its `dim != 0` case.

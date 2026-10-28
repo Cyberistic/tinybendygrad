@@ -57,8 +57,9 @@
 #                       pattern constrains and answers `NOMATCH` otherwise.
 #                       MEASURED: upstream's `string_rewrite` (tinygrad/renderer/wgsl.py:66
 #                       symbol=string_rewrite) is a `PatternMatcher` and the port's
-#                       `patterns[:17]` are these and `patterns[17:]`
-#                       is `base_rewrite`'s 33, and the gate's `rules_hold()`
+#                       own rule table's FIRST SEVENTEEN are these, while the REST are
+#                       `base_rewrite`'s 33 (tinygrad/renderer/wgsl.py:93
+#                       symbol=base_rewrite), and the gate's `rules_hold()`
 #                       re-derives both numbers and each rule's op and dtypes
 #                       from CPython on every run. `sr_pick_bitcast`,
 #                       `sr_pick_load` and `sr_pick_store` are the TABLE's order,
@@ -872,7 +873,8 @@ def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, 
 #
 # MEASURED, and this is the census's population statement for the block:
 # `len(WGSLRenderer.string_rewrite.patterns)` is 50 and
-# `patterns[:17]` are these seventeen while `patterns[17:]` is `base_rewrite`'s
+# the FIRST SEVENTEEN of that table are these seventeen while the REST are
+# `base_rewrite`'s
 # 33 -- `cstyle.py:153`'s table, which is `renderer/cstyle.bend`'s and not this
 # file's. The gate's `rules_hold()` re-measures both numbers and re-derives each
 # rule's op and dtype from CPython, so the seventeen are DISCOVERED and not this
