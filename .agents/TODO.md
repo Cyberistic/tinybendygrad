@@ -2867,6 +2867,24 @@ exec-devmap          [####] 4/4  **THE PORT's OWN `Device` LANE: STAGES **4-9** 
                                        PORTED**, AND ITS **THREE WALLS ARE **NAMED** IN THE PORT's OWN HEADER**.
 
 
+exec-apply           [###.] 3/4  **THE APPLY REWRITE: **THE **GRAPH'S SHAPE** NOW MATCHES CPYTHON's.**
+                                       MEASURED 2026-10-29, IN `.agents/slop/rangify/APPLY.md`. **⇒ THE PORT's OWN
+                                       `tinybendygrad/schedule/rangify.bend` NOW APPLIES UPSTREAM's
+                                       `pm_apply_rangeify` **AS A **FIXED POINT** (UPSTREAM's
+                                       `unified_rewrite` LOOP, `ops.py`), **⇒ AND THE **FIVE RULES** IN
+                                       UPSTREAM's ORDER (`.agents/slop/rangify/rr-rules.py` **ASKS UPSTREAM's OWN
+                                       MATCHER ABOUT EVERY NODE**), **⇒ AND THE MAP IS **THE (OLD, FINAL) PAIRS**
+                                       WITH **THE FRESH NODES** (`INDEX`, `END`, `STAGE`) FINALISED TOO.
+                                       **⇒ ⇒ ⇒ THE PORT's `rr_out` IS **20** NODES AND CPython's IS **27**,
+                                       **8** AGREE, **⇒ AND THE **OP CENSUS MATCHES** EXCEPT FOR `ADD` — **⇒ AND
+                                       `ADD` IS **THE AFFINE EXPRESSION** (`_apply_reshape`), **⇒ AND THAT IS
+                                       **THE `symbolic` REWRITER** WALL (W-A). **⇒ AND THE COMPARISON IS
+                                       `.agents/slop/rangify/cmp-out.py`, **NODE FOR NODE**.**
+                                       **⇒ ⇒ ⇒ **WHAT IS STILL OPEN:** **THE `symbolic` REWRITER** (W-A) **AND THE
+                                       SIX `get_kernel_graph` PASSES THAT FOLLOW** (`rangeify.py:347-360`) — **⇒ AND
+                                       EVERY ONE OF THOSE IS **A `symbolic` REWRITER** TOO.**
+
+
 exec-rmap            [####] 4/4  **THE RANGE MAP: **5 OF 11** ENTRIES AGREE, AND **ALL SIX DIFFERENCES ARE **ONE**
                                        NAMED WALL — **⇒ AND THE MISSING `symbolic` REWRITER IS **THE** MISSING PIECE
                                        OF STAGE 1.** MEASURED 2026-10-29, IN `.agents/slop/rmap/RANGE.md`. **=> THE

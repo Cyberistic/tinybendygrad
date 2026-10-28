@@ -411,6 +411,11 @@ def rr_cons(+ar: O.Arena, +topo: List<&2, U32>, x: U32) -> List<&2, U32>:
 # FOR A NODE'S CONSUMERS, WHICH ARE PROCESSED FIRST -- SO THE FLAG LIST IS
 # INDEXED BY THE POSITION IN THE **REVERSED** TOPOSORT.
 # ===========================================================================
+def rr_rev_dbg(+ns: List<&2, U32>) -> List<&2, U32>:
+  match ns:
+    case Nil{}: Nil{}
+    case h <> t: List.append(&2, U32, Nil{}, [h])
+
 def rr_rev.go(+ns: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ns:
     case Nil{}: acc
@@ -893,9 +898,799 @@ def rr_row_range() -> String:
   String.join(rr_range_row.go(O.UOp.toposort(O.Arena.budget(ar), ar, sink), 0n,
                               RrMap.ctx(m), RrMap.tbl(m), ar, Nil{}), ";")
 
+# ===========================================================================
+# THE APPLY REWRITE -- THE **SECOND HALF** OF `run_rangeify`.
+#
+# UPSTREAM'S `pm_apply_rangeify` (`tinygrad/schedule/indexing.py:130-140`) IS FIVE
+# RULES, AND THE **BULK** IS RULE 4, `create_bufferize_and_index_based_on_ranges`
+# (`:97-98`), WHICH CALLS `create_bufferize_and_index_srcs` (`:73-95`) -- **23 LINES AND
+# THE WHOLE OF THE TRANSFORMATION.**
+#
+# **=> AND THE PORT HAS **THE RANGE MAP** ALREADY (IT IS `rr_range_map`), **=> SO THE
+# **RANGES** EXIST AND THE ONLY THING MISSING IS **THE REWRITE THAT USES THEM.**
+#
+# **=> AND THE FIVE RULES ARE (`indexing.py:130-140`):**
+#   1. `convert_reduce_to_reduce_with_ranges`  (`:106-112`)
+#   2. `convert_pad_to_where_to_keep_behavior_local` (`:100-104`)
+#   3. `convert_stack_to_where` (`:120-125`)
+#   4. **`create_bufferize_and_index_based_on_ranges` (`:97-98`)** -- **EVERY OTHER NODE
+#      GETS ITS SRCS REBUILT**: ITS PARAM/BUFFER/ALLOC/MSTACK/MSELECT/AFTER SRCS ARE
+#      **INDEXED BY THE RANGES**, AND ITS **REALIZED** SRCS BECOME A `STAGE` (OR AN `END`
+#      FOR A STORE).**
+#   5. `remove_movement_op_after_rangeify` (`:127-128`) -- A MOVEMENT OP **IS REPLACED BY
+#      ITS `src[0]`** WHEN IT IS IN THE RANGE MAP.
+#
+# **=> AND THE REWRITE IS **`bottom_up=True`** (`indexing.py:308`), **=> SO THE PORT WALKS
+# THE ARENA **IN REVERSE INDEX ORDER** (WHICH IS **CHILDREN FIRST**, BECAUSE THE ARENA's
+# INDEX ORDER IS TOPOLOGICAL -- `ops.bend:2754`).
+#
+# **=> AND THE **RANGE MAP's ENTRIES** ARE **THE INPUT RANGES** OF A NODE (`IxRngs.inp`)
+# AND **THE OUTPUT RANGES** (`IxRngs.outp`), AND **THE APPLY USES BOTH**: THE **INPUT**
+# RANGES INDEX THE SRCS (`broadcast_rngs`) AND THE **OUTPUT** RANGES BECOME THE `STAGE`'s
+# CLOSED RANGES.
+# ===========================================================================
+
+# THE OP TESTS THE FIVE RULES NEED. **=> A `match` MAY NOT SCRUTINIZE A COMPUTED VALUE, SO
+# EACH TEST IS ITS OWN DEF.**
+def rr_ap_reduce(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsREDUCE{})
+def rr_ap_pad(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsPAD{})
+def rr_ap_stack(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsSTACK{})
+def rr_ap_index(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsINDEX{})
+def rr_ap_store(+ar: O.Arena, x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsSTORE{})
+
+# THE SRCS THAT GET **INDEXED** BY THE RANGES (`indexing.py:80`):
+# `{Ops.PARAM, Ops.BUFFER, Ops.ALLOC, Ops.MSTACK, Ops.MSELECT, Ops.AFTER}`.
+def rr_ap_indexable.of(op: O.Op) -> Bool:
+  match op:
+    case O.OpsPARAM{}: True{}
+    case O.OpsBUFFER{}: True{}
+    case O.OpsALLOC{}: True{}
+    case O.OpsMSTACK{}: True{}
+    case O.OpsMSELECT{}: True{}
+    case O.OpsAFTER{}: True{}
+    case _: False{}
+
+def rr_ap_indexable(+ar: O.Arena, x: U32) -> Bool: rr_ap_indexable.of(O.Arena.op(ar, x))
+
+# THE DATA SRCS (`indexing.py:68-71`) -- **THE PORT's OWN `rr_dsrcs` IS THIS ALREADY**
+# (`:393`), **=> SO THE COUNT IS THE LENGTH OF THAT LIST.**
+def rr_ap_dsrc_n(+ar: O.Arena, +x: U32) -> U32:
+  U32.from_nat(List.length(&2, U32, rr_dsrcs(ar, O.Arena.op(ar, x), O.Arena.srcs(ar, x))))
+
+# THE REALIZED SRCS (`indexing.py:82`): `s in ctx.realize_map`.
+def rr_ap_realized(+ctx: IX.IxCtx, s: U32) -> Bool: IX.ix_rmap_has(IX.IxCtx.rmap(ctx), s)
+
+# THE CLOSED RANGES OF A REALIZED SRC (`indexing.py:84`): `ctx.range_map[s][1]`.
+# **THE CLOSED RANGES OF A REALIZED SRC** (`indexing.py:84`): `ctx.range_map[s][1]`.
+def rr_ap_closed.of(m: Maybe<&2, IX.IxRngs>) -> List<&2, U32>:
+  match m:
+    case Some{e}: IX.IxRngs.outp(e)
+    case _: Nil{}
+
+# THE INPUT RANGES OF A NODE (`indexing.py:79`): `ctx.range_map[x][0]`.
+# **THE INPUT RANGES OF A NODE** (`indexing.py:79`): `ctx.range_map[x][0]`.
+#
+# **=> ⇒ ⇒ AND THEY ARE **TABLE INDICES**, NOT NODES** -- **=> BECAUSE THE PORT's
+# RANGE MAP IS **A TABLE** (`rangify.bend`'s `RrRs{i, rs, tbl}`) **AND A TABLE
+# ENTRY BECOMES A NODE ONLY AT **THE BOUNDARY** (`indexing.bend:901` `ix_rg_node`).
+# **=> ⇒ ⇒ SO THE APPLY MATERIALISES THEM, **=> AND THE PORT's ARENA INTERNES
+# THEM** (`indexing.bend:899`), **=> SO ONE RANGE IS ONE NODE EVERYWHERE.**
+def rr_ap_inp.of(m: Maybe<&2, IX.IxRngs>) -> List<&2, U32>:
+  match m:
+    case Some{e}: IX.IxRngs.inp(e)
+    case _: Nil{}
+
+# THE **INDEXED** CASE (`indexing.py:80-81`): `new_src = new_src.index(*src_rngs)`, AND
+# **ONLY IF THE NODE IS IN THE RANGE MAP AND `i < data_src_count`**.
+# THE INPUT RANGES, **BROADCAST** (`indexing.py:79`):
+# `broadcast_rngs(x, s, ctx.range_map[x][0])` -- **THE NODE FIRST**, **=> AND THE PORT's OWN
+# `broadcast_rngs(op, src, x, rngs)` HAS THE OP FIRST, **=> AND `src` IS **THE NODE's**
+# SHAPE AND `x` IS **THE SRC's** SHAPE** -- **=> ⇒ ⇒ AND THE PORT's OWN `ix_bax_nleft(src, x)`
+# COMPUTES `len(x) - len(src)`, WHICH IS UPSTREAM's `len(s.shape) - len(x.shape)`.**
+# **THE INPUT RANGES, **BROADCAST** (`indexing.py:79`):
+# `broadcast_rngs(x, s, ctx.range_map[x][0])` -- **THE NODE FIRST**, **=> AND THE
+# PORT's OWN `broadcast_rngs(op, src, x, rngs)` HAS THE OP FIRST, **=> AND `src` IS
+# **THE NODE's** SHAPE AND `x` IS **THE SRC's** SHAPE** -- **=> ⇒ ⇒ AND THE
+# PORT's OWN `ix_bax_nleft(src, x)` COMPUTES `len(x) - len(src)`, WHICH IS
+# UPSTREAM's `len(s.shape) - len(x.shape)`.**
+# **=> ⇒ ⇒ AND THE RANGES ARE **TABLE INDICES** HERE TOO, **=> SO THE
+# MATERIALISATION IS **AFTER** THE BROADCAST** (`broadcast_rngs` SUBSTITUTES **THE
+# CONST 0** FOR A BROADCAST AXIS, **=> AND THAT IS A **TABLE** SUBSTITUTION**).
+def rr_ap_bcast(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +x: U32, +s: U32) -> List<&2, U32>:
+  IX.broadcast_rngs(O.Arena.op(ar, x), rr_dims(ar, tb, x), rr_dims(ar, tb, s),
+                    rr_ap_inp.of(IX.ix_rngm_get(IX.IxCtx.rngm(ctx), x)))
+
+# ONE SRC, REBUILT (`indexing.py:78-94`). **=> AND THE TWO CASES ARE **DISJOINT**: A SRC IS
+# EITHER **INDEXED** (IT IS A PARAM/BUFFER/ALLOC/MSTACK/MSELECT/AFTER) **OR** **REALIZED**
+# (IT IS IN THE REALIZE MAP), **=> AND UPSTREAM'S `if/elif` IS THAT DISJOINTION.**
+# THE **REALIZED** CASE (`indexing.py:85-93`): A **STORE** BECOMES AN `END` WITH ITS CLOSED
+# RANGES, **=> AND EVERYTHING ELSE BECOMES A `STAGE`** -- **=> AND THE STAGE IS **THEN INDEXED**
+# IF THE NODE IS IN THE RANGE MAP.
+def rr_ap_is_range.of(k: U32) -> Bool:
+  match k:
+    case 0: True{}
+    case _: False{}
+
+def rr_ap_is_range(+tbl: List<&2, IX.IxRange>, r: U32) -> Bool:
+  rr_ap_is_range.of(IX.IxRange.kind(IX.ix_tbl_at(tbl, r)))
+
+def rr_ap_ranges_only.go(+tbl: List<&2, IX.IxRange>, +closed: List<&2, U32>,
+                          +acc: List<&2, U32>) -> List<&2, U32>:
+  match closed:
+    case Nil{}: acc
+    case h <> t: rr_ap_ranges_only.go(tbl, t,
+      Bool.pick(List<&2, U32>, rr_ap_is_range(tbl, h),
+                List.append(&2, U32, acc, [h]), acc))
+
+def rr_ap_ranges_only(+tbl: List<&2, IX.IxRange>, +closed: List<&2, U32>) -> List<&2, U32>:
+  rr_ap_ranges_only.go(tbl, closed, Nil{})
+
+# EVERYTHING ELSE BECOMES A `STAGE` (`indexing.py:90-92`): `new_src =
+# UOp(Ops.STAGE, src=(new_src,)+closed_ranges, arg=opts)`, **=> AND THEN IT IS INDEXED IF
+# THE NODE IS IN THE RANGE MAP.**
+# THE RANGES AMONG THE CLOSED ONES (`indexing.py:87`'s `if r.op is Ops.RANGE`). **=> AND THE
+# TABLE's INDEX 0 IS THE CONST 0, WHICH IS **NOT** A RANGE, **=> SO THE CLOSED LIST's
+# TABLE INDICES ARE FILTERED THROUGH THE TABLE.**
+# ALL OF A NODE's SRCS, REBUILT (`indexing.py:73-95`).
+# THE STAGE NODE. **=> AND THE `BufferizeOpts` ARG IS A **NAMED WALL**: `indexing.py:56-61` IS
+# A FROZEN DATACLASS READ AT `indexing.py:6-7`, AND **`ops.bend`'s `Arg` HAS NO CONSTRUCTOR
+# FOR A STAGE's ARG AT ALL** -- **=> SO `s.device`, `s.removable` AND `s.addrspace` ARE ALL
+# WALLS** (`indexing.bend`'s HEADER, `:22-50`).
+# **=> ⇒ ⇒ SO THE STAGE IS BUILT **WITHOUT** THE OPTS ARG, **=> AND THAT IS NAMED HERE
+# RATHER THAN HIDDEN: **A STAGE WITH NO OPTS IS A DIFFERENT GRAPH**, AND THE COMPARISON
+# AGAINST THE ORACLE WILL SHOW IT.**
+# A STORE BECOMES AN `END` (`indexing.py:87`): `new_src = s.end(*[r for r in closed_ranges
+# if r.op is Ops.RANGE])`. **=> AND "IS A RANGE" IS A TABLE LOOKUP: THE TABLE's ENTRIES ARE
+# `IxRange{kind, idx, ext}` AND **KIND 0 IS A RANGE** (`indexing.bend:153` `ix_rg_r`).**
+# THE **INDEXED** CASE (`indexing.py:80-81`).
+# ===========================================================================
+# THE APPLY DRIVER. THE REWRITE IS **`bottom_up=True`** (`indexing.py:308`), **=> SO THE
+# PORT WALKS THE ARENA **IN REVERSE INDEX ORDER** -- **=> WHICH IS **CHILDREN FIRST**,
+# BECAUSE THE ARENA's INDEX ORDER IS TOPOLOGICAL (`ops.bend:2754`: *"UOp.new IS ONLY EVER
+# CALLED WITH SRCS ALREADY IN THE ARENA, SO EVERY NODE's SRC INDICES ARE ALL BELOW ITS OWN
+# POSITION"*).**
+#
+# **=> ⇒ ⇒ AND EACH NODE's REBUILT SRCS ARE **THE **REBUILT** SRCS OF ITS CHILDREN** --
+# **=> AND THE PORT's OWN `UOp.replace` (`ops.bend:2939`) IS **EXACTLY** UPSTREAM's
+# `x.replace(src=tuple(...))`.**
+#
+# **=> ⇒ ⇒ AND THE **MAP** IS **THE **OLD INDEX -> NEW INDEX** MAP, **=> AND THE PORT's OWN
+# `Rep{old, new}` (`rangeify.bend:2753`) IS **THE SAME SHAPE** -- **=> ⇒ ⇒ AND SO THE
+# APPLY's OUTPUT IS **THE SAME KIND OF THING** THE ENGINE's `eng_*` PRODUCES, **=> WHICH
+# IS WHAT MAKES THE TWO COMPOSE.**
+# ===========================================================================
+
+# ===========================================================================
+# THE REBUILD MAP -- **THE (OLD NODE, REBUILT NODE) PAIRS**, IN WALK ORDER.
+#
+# **=> ⇒ ⇒ AND THE PORT's ARENA IS **APPEND-ONLY** (`ops.bend:2754`: *"UOp.new IS ONLY EVER
+# CALLED WITH SRCS ALREADY IN THE ARENA"*), **=> ⇒ ⇒ SO A REBUILT NODE **CANNOT** REPLACE
+# AN OLD ONE IN PLACE -- **=> ⇒ ⇒ AND UPSTREAM's `graph_rewrite` **DOES** REPLACE IN
+# PLACE** (`x.replace(src=...)` RETURNS A NEW UOP AND THE REWRITE'S WORKLIST CARRIES IT),
+# **=> ⇒ ⇒ ⇒ SO **THE PORT NEEDS AN EXPLICIT MAP** -- **=> ⇒ ⇒ ⇒ AND THAT IS **WHY** THE
+# PORT's OWN `Rep{old, new}` MAP EXISTS (`rangeify.bend:2753`) **AND WHY THE ENGINE's
+# `eng_put` EXISTS.**
+#
+# **=> ⇒ ⇒ AND THE MAP IS **THE (OLD, NEW) PAIRS** SO THAT A **CHILD's** REBUILT NODE CAN
+# BE FOUND BY ITS **OLD** NODE -- **=> ⇒ ⇒ ⇒ AND THE PAIRS ARE IN **WALK ORDER**, **=> ⇒ ⇒
+# ⇒ AND THE WALK IS **THE REVERSED TOPOSORT**, **=> ⇒ ⇒ ⇒ ⇒ SO **A NODE's CHILDREN ARE
+# WALKED **BEFORE** IT** AND THE REBUILT SRCS ARE **THE PAIRS' NEW** VALUES FOR THE OLD
+# CHILDREN.**
+# ===========================================================================
+type ApRep is Data:
+  ApRep{old: U32, new: U32}
+
+def ApRep.old(x: ApRep) -> U32:
+  match x:
+    case ApRep{old, new}: old
+
+def ApRep.new(x: ApRep) -> U32:
+  match x:
+    case ApRep{old, new}: new
+# THE MAP's LOOKUP: **THE **NEW** NODE FOR AN **OLD** NODE**, **=> AND A NODE **NOT** IN
+# THE MAP IS **THE **UNCHANGED** ONE** (IT IS **OUTSIDE** THE WALK -- THE TOPOSORT DROPS
+# THE BOTTOM).
+def ApRep.of(old: U32, new: U32) -> ApRep: ApRep{old, new}
+
+def ap_rep_get.one(hit: Bool, v: U32, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  Bool.pick(Maybe<&2, U32>, hit, Some{v}, acc)
+
+def ap_rep_get.go(+es: List<&2, ApRep>, +k: U32, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  match es:
+    case Nil{}: acc
+    case e <> t:
+      ap_rep_get.go(t, k, ap_rep_get.one(U32.is_eq(ApRep.old(e), k), ApRep.new(e), acc))
+
+# THE MAP's PUT: **THE (OLD, NEW) PAIR**.
+def ap_rep_put(+es: List<&2, ApRep>, old: U32, new: U32) -> List<&2, ApRep>:
+  List.append(&2, ApRep, es, [ApRep.of(old, new)])
+
+def ap_rep_get(+es: List<&2, ApRep>, k: U32) -> Maybe<&2, U32>:
+  ap_rep_get.go(es, k, None{})
+
+# ===========================================================================
+# THE APPLY. `pm_apply_rangeify` (`indexing.py:130-141`) IS **FIVE RULES IN A
+# LIST**, AND **THE LIST's ORDER IS THE ORDER `PatternMatcher.rewrite` TRIES
+# THEM** -- **MEASURED, NOT ASSUMED**: `.agents/slop/rangify/rr-rules.py` ASKS
+# UPSTREAM's OWN MATCHER ABOUT **EVERY** NODE OF **THE SAME PROGRAM** AND
+# PRINTS WHAT EACH ONE BECOMES.  **THE MEASURED READINGS:**
+#
+#   RESHAPE -> RESHAPE   (RULE 4 CHANGED IT)
+#   PERMUTE -> MUL       (RULE 5 REPLACED IT WITH ITS `src[0]`)
+#   REDUCE  -> REDUCE    (RULE 1)
+#   STORE   -> None      (NO RULE FIRED)
+#
+# **=> ⇒ ⇒ AND THE ORDER IS NOT A MATTER OF STYLE: **THE FIXED POINT** MAKES IT
+# MATTER.**  UPSTREAM's `unified_rewrite` (`ops.py`) RUNS
+#
+#     test_n = n
+#     while test_n is not None:
+#       new_n, test_n = test_n, self.cached_bpm_rewrite(test_n)
+#
+# **=> ⇒ ⇒ SO A `RESHAPE` IS REWRITTEN **TWICE**: **ONCE BY RULE 4** (WHICH PUTS
+# AN `INDEX` IN ITS `src[0]`) **AND THEN AGAIN**, **AND THE SECOND PASS TAKES
+# **RULE 5** -- **=> BECAUSE `rewrite` SKIPS A RULE THAT RETURNS THE NODE ITSELF**
+# (`ret is not uop`), **=> ⇒ ⇒ AND THAT IS WHY **RULE 4 MUST RETURN **NONE** WHEN
+# IT CHANGES NOTHING.**  **=> ⇒ ⇒ AND THE PORT's FIRST ATTEMPT APPLIED **ONE** RULE
+# AND PRODUCED **THE **UNCHANGED INPUT GRAPH** -- **⇒ AND THAT IS WHY IT DID.**
+#
+# **⇒ AND THE SECOND HALF IS UPSTREAM's STAGE 2** (`ops.py`, `unified_rewrite`):
+# THE REBUILT NODE's SRCS ARE **THE REBUILT CHILDREN** -- `new_src = tuple(
+# self.replace.get(x, x) for x in new_n.src)` -- **⇒ AND THE PORT's ARENA IS
+# **APPEND-ONLY** (`ops.bend:2754`), **⇒ ⇒ ⇒ SO THE PORT NEEDS **AN EXPLICIT
+# MAP**, **⇒ ⇒ ⇒ AND THAT IS **WHY** THE PORT's OWN `Rep{old, new}` MAP EXISTS**
+# (`rangeify.bend:2753`) **AND WHY THE ENGINE's `eng_put` EXISTS.**
+#
+# ===========================================================================
+# **THE ARENA IS **A VALUE**, NOT A MUTABLE STORE** (`ops.bend:1293`: *"`Arena` is
+# `Data`"*), **AND BEND's `+` IS **A REUSABLE LET**, NOT A REBINDING** (`bend
+# guide`: *"`x = v  +x = v  -x = v` -- a let: affine, reusable, erased"*), **⇒ AND
+# SO **A DEF THAT MINTS A NODE MUST HAND THE **GROWN** ARENA BACK** -- **⇒ AND
+# THE PORT's SPELLING FOR THAT IS **`Found{ar, i}`** (`ops.bend:2718`), **⇒ AND
+# `realize.bend:113`'s `O.Found.ar(r)` IS THE PATTERN.**
+#
+# **⇒ ⇒ ⇒ AND THE FIRST ATTEMPT AT THIS BLOCK **DROPPED THE ARENA** (`O.Found.i(f)`
+# WITHOUT `O.Found.ar(f)`), **⇒ ⇒ ⇒ WHICH PUTS **EVERY NEW NODE** IN **A PHANTOM
+# ARENA** **AND MAKES THE READS BELOW IT READ **THE OLD ARENA's** ENTRY** -- **⇒ AND
+# THAT IS A **SECOND** INSTANCE OF **THE CLASS THIS TREE NAMES**: **A RESULT
+# THAT NOTHING READS.**  **⇒ AND THE PORT's OWN `rr_ap_node` HAD IT TOO.**
+# ===========================================================================
+
+# THE TWO RECORDS THAT CARRY **THE ARENA** ALONGSIDE **THE LIST**.
+type ApSrcs is Data:
+  ApSrcs{ar: O.Arena, ss: List<&2, U32>}
+
+def ApSrcs.of(+ar: O.Arena, +ss: List<&2, U32>) -> ApSrcs: ApSrcs{ar, ss}
+
+def ApSrcs.ar(+x: ApSrcs) -> O.Arena:
+  match x:
+    case ApSrcs{ar, ss}: ar
+
+def ApSrcs.ss(+x: ApSrcs) -> List<&2, U32>:
+  match x:
+    case ApSrcs{ar, ss}: ss
+
+type ApFin is Data:
+  ApFin{ar: O.Arena, fin: List<&2, ApRep>}
+
+def ApFin.of(+ar: O.Arena, +fin: List<&2, ApRep>) -> ApFin: ApFin{ar, fin}
+
+def ApFin.ar(+x: ApFin) -> O.Arena:
+  match x:
+    case ApFin{ar, fin}: ar
+
+def ApFin.fin(+x: ApFin) -> List<&2, ApRep>:
+  match x:
+    case ApFin{ar, fin}: fin
+
+# **THE NODE ITSELF**, **GROWN ARENA AND ALL** -- **=> AND IT IS **THE **UNCHANGED**
+# NODE WHEN NOBODY MINTS ONE.**
+def rr_ap_keep(+ar: O.Arena, +s: U32) -> O.Found:
+  O.Found{ar, s}
+
+# THE MATERIALISER: **A TABLE ENTRY BECOMES A NODE** (`indexing.bend:901`
+# `ix_rg_node`), **=> AND THE PORT's ARENA INTERNES IT** (`indexing.bend:899`),
+# **=> SO ONE RANGE IS ONE NODE EVERYWHERE**, **=> WHICH IS WHAT MAKES THE TABLE
+# SOUND.**  **=> ⇒ ⇒ AND THE PORT's RANGE MAP IS **A TABLE**, **=> ⇒ ⇒ SO THIS IS
+# **THE BOUNDARY** WHERE A RANGE ENTERS THE GRAPH.**
+def rr_ap_rng_nodes.go(+rs: List<&2, U32>, +ar: O.Arena, +tbl: List<&2, IX.IxRange>,
+                       +acc: List<&2, U32>) -> ApSrcs:
+  match rs:
+    case Nil{}: ApSrcs.of(ar, acc)
+    case r <> t:
+      +f = IX.ix_rg_node(O.AXIS_WEAK{}, ar, IX.ix_tbl_at(tbl, r))
+      rr_ap_rng_nodes.go(t, O.Found.ar(f), tbl, List.append(&2, U32, acc, [O.Found.i(f)]))
+
+def rr_ap_rng_nodes(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +rs: List<&2, U32>) -> ApSrcs:
+  rr_ap_rng_nodes.go(rs, ar, tbl, Nil{})
+
+# **THE INDEXED** CASE (`indexing.py:80-81`): `new_src = new_src.index(*src_rngs)`,
+# **=> AND ONLY IF THE NODE IS IN THE RANGE MAP AND `i < data_src_count`.**
+def rr_ap_index_node(+ar: O.Arena, +s: U32, +rngs: List<&2, U32>) -> O.Found:
+  O.UOp.index(ar, s, rngs)
+
+def rr_ap_index_src(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                    +x: U32, +s: U32, +i: U32, +dsrc_n: U32) -> O.Found:
+  +has = IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x)
+  # **=> ⇒ ⇒ AND THE BROADCAST RANGES ARE **TABLE INDICES**, **=> ⇒ ⇒ SO THEY MUST BE
+  # **MATERIALISED** BEFORE THEY CAN BE **AN `INDEX`'s SRCS** -- **=> AND NOT
+  # MATERIALISING THEM IS **WHAT PUT **A `CONST` AND A `BUFFER`** IN THE INDEX**
+  # (**MEASURED**: `rr_arena`'s `29->43:...INDEX:none:PARAM,CONST,BUFFER`).
+  +rs = rr_ap_bcast(ar, tb, ctx, x, s)
+  +rn = rr_ap_rng_nodes(ar, tbl, rs)
+  +ix = rr_ap_index_node(ApSrcs.ar(rn), s, ApSrcs.ss(rn))
+  Bool.pick(O.Found, Bool.and(has, U32.is_lt(i, dsrc_n)), ix, rr_ap_keep(ApSrcs.ar(rn), s))
+
+# EVERYTHING ELSE BECOMES A `STAGE` (`indexing.py:90-92`): `new_src =
+# UOp(Ops.STAGE, src=(new_src,)+closed_ranges, arg=opts)`, **=> AND THEN IT IS INDEXED IF
+# THE NODE IS IN THE RANGE MAP.**
+def rr_ap_stage_node(+ar: O.Arena, +s: U32, +closed: List<&2, U32>) -> O.Found:
+  O.UOp.new(ar, O.OpsSTAGE{}, List.append(&2, U32, [s], closed), O.ANone{}, O.TNone{})
+
+def rr_ap_stage_src(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx, +x: U32, +s: U32,
+                    +closed: List<&2, U32>) -> O.Found:
+  +cl = rr_ap_rng_nodes(ar, tbl, closed)
+  +st = rr_ap_stage_node(ApSrcs.ar(cl), s, ApSrcs.ss(cl))
+  +has = IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x)
+  +inp = rr_ap_rng_nodes(O.Found.ar(st), tbl, rr_ap_inp.of(IX.ix_rngm_get(IX.IxCtx.rngm(ctx), x)))
+  Bool.pick(O.Found, has, rr_ap_index_node(O.Found.ar(st), O.Found.i(st), ApSrcs.ss(inp)), st)
+
+# A STORE BECOMES AN `END` (`indexing.py:87`): `new_src = s.end(*[r for r in closed_ranges
+# if r.op is Ops.RANGE])`. **=> AND "IS A RANGE" IS A TABLE LOOKUP: THE TABLE's ENTRIES ARE
+# `IxRange{kind, idx, ext}` AND **KIND 0 IS A RANGE** (`indexing.bend:153` `ix_rg_r`).**
+def rr_ap_end_src(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +s: U32,
+                  +closed: List<&2, U32>) -> O.Found:
+  +rs = rr_ap_rng_nodes(ar, tbl, closed)
+  O.UOp.end(ApSrcs.ar(rs), s, ApSrcs.ss(rs))
+
+# THE **REALIZED** CASE (`indexing.py:85-93`): A **STORE** BECOMES AN `END` WITH ITS CLOSED
+# RANGES, **=> AND EVERYTHING ELSE BECOMES A `STAGE`** -- **=> AND THE STAGE IS **THEN INDEXED**
+# IF THE NODE IS IN THE RANGE MAP.
+def rr_ap_realized_src(+ar: O.Arena, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx, +x: U32,
+                       +s: U32) -> O.Found:
+  +closed = rr_ap_closed.of(IX.ix_rngm_get(IX.IxCtx.rngm(ctx), s))
+  +rs = rr_ap_ranges_only(tbl, closed)
+  Bool.pick(O.Found, rr_ap_store(ar, s), rr_ap_end_src(ar, tbl, s, rs),
+            rr_ap_stage_src(ar, tbl, ctx, x, s, closed))
+
+# ONE SRC, REBUILT (`indexing.py:78-94`). **=> AND THE TWO CASES ARE **DISJOINT**: A SRC IS
+# EITHER **INDEXED** (IT IS A PARAM/BUFFER/ALLOC/MSTACK/MSELECT/AFTER) **OR** **REALIZED**
+# (IT IS IN THE REALIZE MAP), **=> AND UPSTREAM'S `if/elif` IS THAT DISJOINTION.**
+def rr_ap_src.of(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx, +x: U32,
+                 +s: U32, +i: U32, +dsrc_n: U32) -> O.Found:
+  +inx = rr_ap_indexable(ar, s)
+  +real = rr_ap_realized(ctx, s)
+  Bool.pick(O.Found, Bool.and(inx, Bool.not(real)),
+            rr_ap_index_src(ar, tb, tbl, ctx, x, s, i, dsrc_n),
+    Bool.pick(O.Found, real, rr_ap_realized_src(ar, tbl, ctx, x, s), rr_ap_keep(ar, s)))
+
+# ALL OF A NODE's SRCS, REBUILT (`indexing.py:73-95`).
+#
+# **=> ⇒ ⇒ AND THE **SHRINKING** ARGUMENT IS **FIRST**, **=> BECAUSE A SELF-CALL's
+# ARGUMENTS ARE READ **LEFT TO RIGHT** AND **EACH IS PASSED UNCHANGED UNTIL ONE
+# SHRINKS**, **=> AND **THE ARENA** IS **THE FIRST THING THAT CHANGES** (EVERY
+# MINT GROWS IT), **=> ⇒ ⇒ SO IT MUST COME **AFTER** THE LIST.**
+def rr_ap_srcs.go(+ss: List<&2, U32>, +ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>,
+                  +ctx: IX.IxCtx, +x: U32, +dsrc_n: U32, +i: U32,
+                  +acc: List<&2, U32>) -> ApSrcs:
+  match ss:
+    case Nil{}: ApSrcs.of(ar, acc)
+    case s <> t:
+      +f = rr_ap_src.of(ar, tb, tbl, ctx, x, s, i, dsrc_n)
+      rr_ap_srcs.go(t, O.Found.ar(f), tb, tbl, ctx, x, dsrc_n, U32.add(i, 1),
+        List.append(&2, U32, acc, [O.Found.i(f)]))
+
+def rr_ap_srcs(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx, +x: U32,
+               +ss: List<&2, U32>) -> ApSrcs:
+  rr_ap_srcs.go(ss, ar, tb, tbl, ctx, x, rr_ap_dsrc_n(ar, x), 0, Nil{})
+
+# ===========================================================================
+# THE FIVE RULES, IN UPSTREAM's ORDER.
+# ===========================================================================
+
+# RULE 4 -- `GroupOp.All-{Ops.STAGE, Ops.INDEX}` (`indexing.py:138`):
+# `x.replace(src=tuple(create_bufferize_and_index_srcs(ctx, x)))`.
+def rr_ap_r4_skip(+ar: O.Arena, +x: U32) -> Bool:
+  Bool.or(rr_ap_index(ar, x), O.eq_op(O.Arena.op(ar, x), O.OpsSTAGE{}))
+
+def rr_ap_r4_node(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                  +x: U32) -> O.Found:
+  +ss = O.Arena.srcs(ar, x)
+  +ns = rr_ap_srcs(ar, tb, tbl, ctx, x, ss)
+  O.UOp.replace(ApSrcs.ar(ns), x, None{}, Some{ApSrcs.ss(ns)}, None{}, None{})
+
+# **=> ⇒ ⇒ AND RULE 4 RETURNS **NONE** WHEN THE SRCS DID NOT CHANGE** -- **=> BECAUSE
+# `PatternMatcher.rewrite` SKIPS A RULE THAT RETURNS THE NODE ITSELF** (`ret is
+# not uop`), **=> ⇒ ⇒ AND THAT IS WHAT LETS **RULE 5** SEE THE SAME NODE.**
+def rr_ap_r4(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+             +x: U32) -> Maybe<&2, O.Found>:
+  +f = rr_ap_r4_node(ar, tb, tbl, ctx, x)
+  Bool.pick(Maybe<&2, O.Found>, U32.is_eq(O.Found.i(f), x), None{}, Some{f})
+
+# RULE 1 -- `REDUCE` (`indexing.py:106-112`).
+# `if x.arg[1] == 0: return None`; `if x not in ctx.range_map: raise`; then
+# `bx = create_bufferize_and_index_based_on_ranges(ctx, x)`,
+# `new_ranges = list(ctx.range_map[x][0][:x.arg[1]])`, and
+# `UOp(Ops.REDUCE, src=(bx.src[0],)+tuple(new_ranges), arg=(x.arg[0], 0))`.
+def rr_ap_red_num.of(+a: O.Arg) -> U32:
+  match a:
+    case O.AReduce{rop, num_axes}: num_axes
+    case _: 0
+
+def rr_ap_red_num(+ar: O.Arena, +x: U32) -> U32:
+  rr_ap_red_num.of(O.Arena.arg(ar, x))
+
+def rr_ap_red_op.of(+a: O.Arg) -> O.Op:
+  match a:
+    case O.AReduce{rop, num_axes}: rop
+    case _: O.OpsADD{}
+
+def rr_ap_red_op(+ar: O.Arena, +x: U32) -> O.Op:
+  rr_ap_red_op.of(O.Arena.arg(ar, x))
+
+def rr_ap_red_hit(+ar: O.Arena, +ctx: IX.IxCtx, +x: U32) -> Bool:
+  Bool.and(rr_ap_reduce(ar, x),
+    Bool.and(U32.is_ne(rr_ap_red_num(ar, x), 0),
+             IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x)))
+
+def rr_ap_red_new(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                  +x: U32) -> O.Found:
+  +bx = rr_ap_r4_node(ar, tb, tbl, ctx, x)
+  +ar2 = O.Found.ar(bx)
+  +n = rr_ap_red_num(ar2, x)
+  +rs = List.take(&2, U32, rr_ap_inp.of(IX.ix_rngm_get(IX.IxCtx.rngm(ctx), x)), U32.to_nat(n))
+  +rn = rr_ap_rng_nodes(ar2, tbl, rs)
+  +ar3 = ApSrcs.ar(rn)
+  +srcs = List.append(&2, U32, [O.Arena.src(ar2, O.Found.i(bx), 0)], ApSrcs.ss(rn))
+  rop = rr_ap_red_op(ar2, x)
+  # **=> ⇒ ⇒ AND THE ARG IS **THE PORT's OWN `UOp.reduce.arg`** (`ops.bend:7435`),
+  # **=> BECAUSE `AReduce{rop, 0}` **AS A LET** CANNOT BE INFERRED** (**MEASURED**:
+  # **THE COMPILER SAYS *"an annotated term (cannot infer)"***), **=> AND THE PORT's
+  # OWN SPELLING TAKES A `Maybe<&2, Op>` AND MAKES **THE SAME PAIR**.
+  +ropm = {Some{rop} : Maybe<&2, O.Op>}
+  +arg = O.UOp.reduce.arg(ropm)
+  O.UOp.new(ar3, O.OpsREDUCE{}, srcs, arg, O.TNone{})
+
+def rr_ap_red_some(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                   +x: U32) -> Maybe<&2, O.Found>:
+  +f = rr_ap_red_new(ar, tb, tbl, ctx, x)
+  Some{f}
+
+# RULES 2 AND 3 -- `PAD` AND `STACK` (`indexing.py:100-125`) -- ARE **NAMED WALLS**.
+# `convert_pad_to_where_to_keep_behavior_local` NEEDS `UOp.const(True).uprod([...])`
+# AND `.where(...)`; `convert_stack_to_where` NEEDS `_stack_select`, **=> AND
+# **THE PORT HAS NEITHER `where` NOR `usum` NOR `%`** (`ops.bend` HAS NO SUCH
+# CONSTRUCTORS).  **⇒ AND THE PORT DOES **NOT** PRETEND: IT LEAVES THE NODE
+# UNCHANGED AND **COUNTS** IT, **=> AND THE COUNT IS A ROW** (`rr_wall`), **⇒ AND
+# A WALL THAT IS COUNTED IS NOT A SILENT DIVERGENCE.**
+def rr_ap_wall_hit(+ar: O.Arena, +ctx: IX.IxCtx, +x: U32) -> Bool:
+  Bool.and(IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x),
+    Bool.or(rr_ap_pad(ar, x), rr_ap_stack(ar, x)))
+
+# RULE 5 -- `GroupOp.Movement` (`indexing.py:127-128`):
+# `if x in ctx.range_map or x.src[0].op is Ops.INDEX: return x.src[0]`.
+# THE MOVEMENT OPS (`indexing.py:163-180`): RESHAPE, EXPAND, PERMUTE, PAD, SHRINK.
+# **=> AND THE PORT's OWN `O.GroupOp.movement` IS **THE PORT's OWN SPELLING** OF
+# UPSTREAM's `GroupOp.Movement` (`uop/__init__.py`).
+def rr_ap_mv.of(op: O.Op) -> Bool: O.GroupOp.movement(op)
+
+def rr_ap_mv(+ar: O.Arena, x: U32) -> Bool: rr_ap_mv.of(O.Arena.op(ar, x))
+
+# **=> ⇒ ⇒ AND RULE 5 IS **A **MOVEMENT** OP's RULE** (`UPat(GroupOp.Movement,
+# name="x")`, `indexing.py:140`), **=> ⇒ ⇒ AND **LEAVING THAT OUT** MAKES IT
+# FIRE ON **EVERY NODE IN THE RANGE MAP** -- **=> AND THE PORT's OWN RANGE MAP HAS
+# **SIX** CONSTS AND **THREE** PARAMs IN IT (`rr_range`), **=> ⇒ ⇒ AND A `CONST`
+# HAS **NO `src[0]`**, **=> ⇒ ⇒ AND THE ANSWER WAS **THE BOTTOM** (NODE 0), **=> ⇒ ⇒
+# AND THAT IS **THE `OTHER` IN THE DUMP** -- **MEASURED, NOT GUESSED** (THE
+# `rr_arena` ROW: `1->0:CONST:cother:/OTHER:other:`).
+def rr_ap_r5_hit(+ar: O.Arena, +ctx: IX.IxCtx, +x: U32) -> Bool:
+  Bool.and(rr_ap_mv(ar, x),
+    Bool.or(IX.ix_rngm_has(IX.IxCtx.rngm(ctx), x),
+            rr_ap_index(ar, O.Arena.src(ar, x, 0))))
+
+def rr_ap_r5.some(+ar: O.Arena, +s: U32) -> Maybe<&2, O.Found>:
+  +f = rr_ap_keep(ar, s)
+  Some{f}
+
+def rr_ap_r5(+ar: O.Arena, +ctx: IX.IxCtx, +x: U32) -> Maybe<&2, O.Found>:
+  Bool.pick(Maybe<&2, O.Found>, rr_ap_r5_hit(ar, ctx, x),
+            rr_ap_r5.some(ar, O.Arena.src(ar, x, 0)), None{})
+
+# RULES 4 THEN 5, IN UPSTREAM's ORDER.
+def rr_ap_r45.go(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                 +x: U32, +r4: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
+  Bool.pick(Maybe<&2, O.Found>, Maybe.is_some(&2, O.Found, r4), r4, rr_ap_r5(ar, ctx, x))
+
+def rr_ap_r45.of(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                  +x: U32) -> Maybe<&2, O.Found>:
+  Bool.pick(Maybe<&2, O.Found>, rr_ap_r4_skip(ar, x), None{},
+    rr_ap_r45.go(ar, tb, tbl, ctx, x, rr_ap_r4(ar, tb, tbl, ctx, x)))
+
+# ONE PASS OF THE MATCHER OVER ONE NODE: **RULE 1, THEN THE WALLS, THEN 4 THEN 5**.
+def rr_ap_once.of(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                  +x: U32) -> Maybe<&2, O.Found>:
+  Bool.pick(Maybe<&2, O.Found>, rr_ap_red_hit(ar, ctx, x), rr_ap_red_some(ar, tb, tbl, ctx, x),
+    Bool.pick(Maybe<&2, O.Found>, rr_ap_wall_hit(ar, ctx, x), None{},
+      rr_ap_r45.of(ar, tb, tbl, ctx, x)))
+
+def rr_ap_once(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+               +x: U32) -> Maybe<&2, O.Found>:
+  rr_ap_once.of(ar, tb, tbl, ctx, x)
+
+# THE ARENA AND THE INDEX, OUT OF A `Maybe`.
+def rr_ap_ar(+r: Maybe<&2, O.Found>, +ar: O.Arena) -> O.Arena:
+  match r:
+    case Some{f}: O.Found.ar(f)
+    case None{}: ar
+
+def rr_ap_idx(+r: Maybe<&2, O.Found>, +d: U32) -> U32:
+  match r:
+    case Some{f}: O.Found.i(f)
+    case None{}: d
+
+# THE FIXED POINT (`ops.py`'s `while test_n is not None:` LOOP). **=> AND THE FUEL
+# IS **16**, **=> AND THAT IS A FUEL, NOT A BOUND ON THE ANSWER**: THE PORT's
+# GRAPH IS **23 NODES** AND THE MEASURED FIXED POINT IS **TWO** STEPS.
+def rr_ap_fix.go(+fuel: Nat, +ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>,
+                 +ctx: IX.IxCtx, +n: U32, +acc: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:
+  match fuel:
+    case 0n: acc
+    case 1n+f:
+      +r = rr_ap_once(ar, tb, tbl, ctx, n)
+      +ar2 = rr_ap_ar(r, ar)
+      Bool.pick(Maybe<&2, O.Found>, Maybe.is_none(&2, O.Found, r), acc,
+        rr_ap_fix.go(f, ar2, tb, tbl, ctx, rr_ap_idx(r, n), r))
+
+def rr_ap_fix(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+              +x: U32) -> Maybe<&2, O.Found>:
+  rr_ap_fix.go(16n, ar, tb, tbl, ctx, x, None{})
+
+# THE FIXED POINT's ANSWER, **OR THE NODE ITSELF** IF NO RULE FIRED.
+def rr_ap_fix_val.go(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                     +x: U32, +r: Maybe<&2, O.Found>) -> O.Found:
+  match r:
+    case Some{f}: f
+    case None{}: rr_ap_keep(ar, x)
+
+def rr_ap_fix_val(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+                  +x: U32) -> O.Found:
+  rr_ap_fix_val.go(ar, tb, tbl, ctx, x, rr_ap_fix(ar, tb, tbl, ctx, x))
+
+# ===========================================================================
+# THE FINAL PASS -- UPSTREAM's STAGE 2 (`ops.py`'s `unified_rewrite`):
+# `new_src = tuple(self.replace.get(x, x) for x in new_n.src)` AND THEN
+# `self.replace[n] = UOp(new_n.op, new_src, new_n.arg, new_n.tag)`.
+#
+# **=> ⇒ ⇒ SO A NODE's FINAL FORM IS **THE FIXED POINT's FORM** WITH **THE
+# **FINAL** FORMS OF ITS SRCS** -- **=> AND THE PORT's ARENA IS **APPEND-ONLY**,
+# **=> ⇒ ⇒ SO THE PORT's MAP IS **THE (OLD, FINAL) PAIRS** AND THE LOOKUP IS
+# **A SEARCH** (`ap_rep_get`).**
+#
+# **=> ⇒ ⇒ AND A NODE **NOT** IN THE MAP IS **THE **UNCHANGED** ONE** -- **=> AND
+# THAT IS UPSTREAM's `self.replace.get(x, x)` WITH `x` **NOT** IN `self.replace`.
+# **=> ⇒ ⇒ AND A **FRESH** NODE (ONE THE REWRITE CREATED) **IS** IN UPSTREAM's
+# `self.replace` (the stack walks it), **=> ⇒ ⇒ SO THE PORT LEAVES IT UNCHANGED
+# -- **=> AND THAT IS A **NAMED WALL**, NOT A SILENT DIVERGENCE**: IT MATTERS ONLY
+# WHEN A FRESH NODE's SRC HAS A **DIFFERENT** FINAL, **=> AND THE ONE WAY THAT
+# HAPPENS IS **THE `INDEX` OVER A `STAGE`** (`rr_ap_stage_src` BUILDS THE `STAGE`
+# AND THEN THE `INDEX` THAT INDEXES IT).**
+# ===========================================================================
+
+# THE FINAL FORM OF A NODE: **THE MAP's ANSWER IF IT HAS ONE**, **=> AND THE
+# NODE ITSELF IF IT DOES NOT**.
+def rr_ap_final.of(+fin: List<&2, ApRep>, +x: U32) -> U32:
+  Maybe.default(&2, U32, ap_rep_get(fin, x), x)
+
+# THE SRCS, REMAPPED.
+def rr_ap_final_srcs.go(+fin: List<&2, ApRep>, +ss: List<&2, U32>,
+                        +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case s <> t:
+      rr_ap_final_srcs.go(fin, t,
+        List.append(&2, U32, acc, [rr_ap_final.of(fin, s)]))
+
+def rr_ap_final_srcs(+fin: List<&2, ApRep>, +ss: List<&2, U32>) -> List<&2, U32>:
+  rr_ap_final_srcs.go(fin, ss, Nil{})
+
+# THE FRESH NODES -- **THE ONES THE FIX CREATED** -- ARE **THE ARENA's NEW
+# ENTRIES**, **=> AND THE ARENA IS IN **CREATION ORDER**, **=> AND CREATION ORDER
+# IS **DEPENDENCY ORDER** FOR THESE NODES** (A `STAGE` IS CREATED BEFORE THE
+# `INDEX` THAT INDEXES IT), **=> ⇒ ⇒ SO THE WALK OVER THEM IS **WELL-FOUNDED**.
+#
+# **=> ⇒ ⇒ AND UPSTREAM'S STAGE 0 **APPLIES THE MATCHER TO THEM TOO** (THE STACK
+# WALKS THEM), **=> ⇒ ⇒ AND FOR **EVERY** FRESH NODE THE PORT BUILDS (`INDEX`,
+# `END`, `STAGE`) **THE MATCHER CHANGES NOTHING** -- **=> BECAUSE **RULE 4**
+# EXCLUDES `INDEX` AND `STAGE` (`indexing.py:138`), **=> AND THE `END`'s RULE-4
+# RESULT IS **UNCHANGED** **BECAUSE **UPSTREAM DELETED THE STORE FROM THE REALIZE
+# MAP** WHEN IT TURNED IT INTO AN `END` (`indexing.py:88`: `del ctx.realize_map[s]`)
+# **=> AND THE PORT's CONTEXT IS **AN IMMUTABLE VALUE** AND CANNOT DELETE, **=> ⇒ ⇒
+# AND SO **SKIPPING THE FIX** IS **THE **EQUIVALENT** ANSWER** -- **=> ⇒ ⇒ AND
+# THAT IS **WHY** THE PORT'S FRESH-NODE FINALISATION IS **A REMAP AND NOTHING
+# ELSE** (MEASURED: **WITHOUT** IT THE `END`'s SRC IS **THE **OLD** STORE**,
+# **=> AND THE TARGET SAYS `END:none:STORE,RANGE,RANGE` WITH **THE **NEW** STORE**).
+def rr_ap_fresh_one(+ar: O.Arena, +i: U32, +fin: List<&2, ApRep>) -> ApFin:
+  +ss = O.Arena.srcs(ar, i)
+  +ms = rr_ap_final_srcs(fin, ss)
+  +f = O.UOp.replace(ar, i, None{}, Some{ms}, None{}, None{})
+  ApFin.of(O.Found.ar(f), ap_rep_put(fin, i, O.Found.i(f)))
+
+def rr_ap_fresh.go(fuel: Nat, +i: U32, +ar: O.Arena, +fin: List<&2, ApRep>) -> ApFin:
+  match fuel:
+    case 0n: ApFin.of(ar, fin)
+    case 1n+f:
+      +one = rr_ap_fresh_one(ar, i, fin)
+      rr_ap_fresh.go(f, U32.add(i, 1), ApFin.ar(one), ApFin.fin(one))
+
+# THE WHOLE APPLY: **THE WALK LIST IN ORDER** -- **THE TOPOSORT**, **=> AND
+# UPSTREAM's `toposort` IS A **POST-ORDER** (`ops.py:289-301`: THE NODE IS ADDED
+# WHEN IT IS POPPED THE SECOND TIME), **=> SO THE TOPOSORT IS **CHILDREN FIRST**
+# **=> AND THAT IS **THE **BOTTOM-UP** ORDER** THE APPLY NEEDS (`bottom_up=True`,
+# `indexing.py:310`).  **=> ⇒ ⇒ AND THE REVERSE OF IT IS **THE **RANGE MAP's**
+# ORDER (`indexing.py:200`), **=> AND THE TWO ARE **DIFFERENT LISTS**.**
+def rr_ap_walk.go(+fuel: Nat, +ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>,
+                  +ctx: IX.IxCtx, +ns: List<&2, U32>,
+                  +fin: List<&2, ApRep>) -> ApFin:
+  match fuel:
+    case 0n: ApFin.of(ar, fin)
+    case 1n+f:
+      match ns:
+        case Nil{}: ApFin.of(ar, fin)
+        case x <> t:
+          +before = O.Arena.next(ar)
+          +fx = rr_ap_fix_val(ar, tb, tbl, ctx, x)
+          +ar2 = O.Found.ar(fx)
+          +after = O.Arena.next(ar2)
+          +fr = rr_ap_fresh.go(U32.to_nat(U32.sub(after, before)), before, ar2, fin)
+          +ar3 = ApFin.ar(fr)
+          +fin2 = ApFin.fin(fr)
+          +ms = rr_ap_final_srcs(fin2, O.Arena.srcs(ar3, O.Found.i(fx)))
+          +g = O.UOp.replace(ar3, O.Found.i(fx), None{}, Some{ms}, None{}, None{})
+          +ar4 = O.Found.ar(g)
+          +i = O.Found.i(g)
+          rr_ap_walk.go(f, ar4, tb, tbl, ctx, t,
+            List.append(&2, ApRep, fin2, [ApRep.of(x, i)]))
+
+def rr_ap_walk(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: IX.IxCtx,
+               +ns: List<&2, U32>) -> ApFin:
+  rr_ap_walk.go(List.length(&2, U32, ns), ar, tb, tbl, ctx, ns, Nil{})
+
+# THE REBUILT ROOT: **THE MAP's ANSWER FOR THE SINK**.
+def rr_ap_root(+fin: List<&2, ApRep>, +s: U32) -> U32:
+  Maybe.default(&2, U32, ap_rep_get(fin, s), s)
+
+# THE MAP: **OLD INDEX -> NEW INDEX**, AND **IT IS THE PORT's OWN `Rep` SHAPE**
+# (`rangeify.bend:2753`). **=> ⇒ ⇒ AND THE MAP IS **INDEXED BY THE **OLD** INDEX**, WHICH
+# IS WHY THE INSERT IS **AT** THE OLD INDEX'S POSITION.
+# THE RANGEIFIED GRAPH, DUMPED. **=> AND THE PORT's OWN `rr_dump` IS **THE PORT's OWN
+# SPELLING** (`op:argkey:srcops`, JOINED BY `;`), **=> AND THE ORACLE's OUTPUT IS **THE SAME
+# SPELLING** -- **=> SO THE COMPARISON IS **WHOLE-STRING** WITH **NO TRANSLATOR**.**
+# THE REBUILT ROOT: **THE MAP's ANSWER FOR THE SINK**.
+# THE ROOT: **THE **LAST** ENTRY** OF THE MAP. **=> AND THAT IS BECAUSE **THE WALK IS
+# **THE REVERSED TOPOSORT** AND **THE SINK IS **THE FIRST** NODE OF THE TOPOSORT** -- **=> ⇒ ⇒
+# SO THE SINK IS **THE **LAST** NODE THE WALK VISITS, **⇒ AND ITS ENTRY IS **THE **LAST** ONE
+# THE MAP HOLDS.**
+# THE MAP, DUMPED. **=> A DIAGNOSTIC ROW, AND IT IS THE ONE THAT SAYS WHETHER THE
+# **REBUILT** NODES ARE **THE REBUILT** NODES.**
+def rr_map_str(+xs: List<&2, ApRep>, +acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: rr_map_str(t, List.append(&2, String, acc,
+      [String.concat([U32.show(ApRep.old(h)), "->", U32.show(ApRep.new(h))])]))
+# THE LAST ELEMENT OF A LIST -- **THE ROW's SPELLING OF **THE WALK's END**.
+def rr_list_last(+xs: List<&2, U32>, acc: U32) -> U32:
+  match xs:
+    case Nil{}: acc
+    case h <> t: rr_list_last(t, h)
+
+# THE WALL COUNT: **HOW MANY NODES HIT **RULE 2** (`PAD`) OR **RULE 3** (`STACK`),
+# **=> AND A WALL THAT IS COUNTED IS NOT A SILENT DIVERGENCE.**
+def rr_wall_count.go(+ns: List<&2, U32>, +ar: O.Arena, +ctx: IX.IxCtx, acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      rr_wall_count.go(t, ar, ctx, U32.add(acc, Bool.to_u32(rr_ap_wall_hit(ar, ctx, x))))
+
+def rr_row_wall() -> String:
+  +q = RZ.rz_built()
+  +ar = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +m = rr_range_map(ar, tb, sink)
+  +ctx = RrMap.ctx(m)
+  +ns = rr_rev(O.UOp.toposort(O.Arena.budget(ar), ar, sink))
+  U32.show(rr_wall_count.go(ns, ar, ctx, 0))
+
+def rr_row_walk() -> String:
+  +q = RZ.rz_built()
+  +ar = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +m = rr_range_map(ar, tb, sink)
+  +ns = rr_rev(O.UOp.toposort(O.Arena.budget(ar), ar, sink))
+  String.concat(["walk_n=", U32.show(U32.from_nat(List.length(&2, U32, ns))),
+                 " first=", U32.show(Maybe.default(&2, U32, List.head(&2, U32, ns), 0)),
+                 " last=", U32.show(rr_list_last(ns, 0)),
+                 " sink=", U32.show(sink),
+                 " arena_next=", U32.show(O.Arena.next(ar))])
+
+def rr_row_map() -> List<&2, String>:
+  +q = RZ.rz_built()
+  +ar = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +m = rr_range_map(ar, tb, sink)
+  +ctx = RrMap.ctx(m)
+  +tbl = RrMap.tbl(m)
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
+  +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
+  rr_map_str(ApFin.fin(rep), Nil{})
+
+def rr_row_out(plant: Bool) -> String:
+  +q = RZ.rz_built()
+  +ar = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +m = rr_range_map(ar, tb, sink)
+  +ctx = RrMap.ctx(m)
+  +tbl = RrMap.tbl(m)
+  # **=> AND THE APPLY WALKS **THE TOPOSORT** (`bottom_up=True`, `indexing.py:308`),
+  # **=> WHICH IS **CHILDREN FIRST**: UPSTREAM's `toposort` IS A **POST-ORDER**
+  # (`ops.py:289-301`, THE NODE IS ADDED WHEN IT IS POPPED THE SECOND TIME), **=> AND
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
+  +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
+  +root = rr_ap_root(ApFin.fin(rep), sink)
+  rr_dump(ApFin.ar(rep), root)
+
+# ===========================================================================
+# THE REBUILT SRCS OF ONE NODE: **THE **OLD** SRCS**, **=> AND EACH IS **THE **REBUILT**
+# CHILD** IF IT IS **IN** THE MAP.
+def rr_ap_rebuilt.go(+ar: O.Arena, +ss: List<&2, U32>, +es: List<&2, ApRep>,
+                     +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case s <> t:
+      +m = ap_rep_get(es, s)
+      rr_ap_rebuilt.go(ar, t, es,
+        List.append(&2, U32, acc,
+          [Maybe.default(&2, U32, m, s)]))
+
+def rr_ap_rebuilt(+ar: O.Arena, ss: List<&2, U32>, +es: List<&2, ApRep>) -> List<&2, U32>:
+  rr_ap_rebuilt.go(ar, ss, es, Nil{})
+
+# THE MAP, DUMPED **WITH BOTH SPELLINGS**: **THE OLD NODE AND THE NEW ONE**.
+# **=> AND IT IS THE ROW THAT SAYS **WHETHER THE WALK's NODES ARE **WHAT UPSTREAM
+# SAYS THEY ARE** -- **=> ⇒ ⇒ AND A NEW NODE THAT READS **THE **UNCHANGED** ONE
+# IS **A RULE THAT DID NOT FIRE**, **=> ⇒ ⇒ AND THAT IS **THE CLASS OF THE LAST
+# TWO FAILS**.**
+def rr_rep_str.go(+es: List<&2, ApRep>, +ar: O.Arena, +acc: List<&2, String>) -> List<&2, String>:
+  match es:
+    case Nil{}: acc
+    case e <> t:
+      rr_rep_str.go(t, ar, List.append(&2, String, acc,
+        [String.concat([U32.show(ApRep.old(e)), "->", U32.show(ApRep.new(e)), ":",
+                        rr_node_str(ar, ApRep.old(e)), "/", rr_node_str(ar, ApRep.new(e))])]))
+
+def rr_row_arena() -> String:
+  +q = RZ.rz_built()
+  +ar = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +m = rr_range_map(ar, tb, sink)
+  +ctx = RrMap.ctx(m)
+  +tbl = RrMap.tbl(m)
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
+  +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
+  String.join(rr_rep_str.go(ApFin.fin(rep), ApFin.ar(rep), Nil{}), " ")
+
 def main() -> IO(Unit):
   do IO<Unit>:
     rr_row.line("rr_realize", rr_row_realize())
     rr_row.line("rr_realize_plant", rr_row_realize_plant())
     rr_row.line("rr_in", rr_row_in())
     rr_row.line("rr_range", rr_row_range())
+    rr_row.line("rr_out", rr_row_out(False{}))
+    rr_row.line("rr_map", String.join(rr_row_map(), ","))
+    rr_row.line("rr_walk", rr_row_walk())
+    rr_row.line("rr_wall", rr_row_wall())
+    rr_row.line("rr_arena", rr_row_arena())
