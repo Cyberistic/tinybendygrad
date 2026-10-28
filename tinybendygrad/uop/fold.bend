@@ -6091,6 +6091,41 @@ def mv_row(nm: String, +x: Folded, +u: U32) -> IO(Unit):
 def mv_of(nm: String, +f: O.Found) -> IO(Unit):
   mv_row(nm, folded(O.Found.ar(f)), O.Found.i(f))
 
+# ===========================================================================
+# THE FIXTURE THAT NO ROW READ, AND IT IS THE ONE THE DEFECT LIVED IN.
+#
+# **⇒ `rng_width` READ A RANGE's BOUND, AND UNTIL 2026-10-28 IT REFUSED A BOUND THAT
+# WAS NOT A CONST — AND `pm_simplify_ranges` REWRITES A RANGE's BOUND INTO
+# `AFTER(bound, prev_range)`, SO EVERY SPLIT RANGE HAS ONE.** **⇒ MEASURED BY CALLING
+# CPython ON THE `lin` MATMUL's OWN KERNEL: `RANGE bound op=AFTER bound.vmax=5
+# RANGE.vmax=4 int+1=5`, AGAINST `RANGE bound op=CONST bound.vmax=4 RANGE.vmax=3
+# int+1=4`.**
+#
+# **⇒ ⇒ AND THE FIXTURE BELOW IS **THAT SHAPE**: `RANGE(AFTER(CAST(CONST(5))))`, WITH
+# A CONST BOUND ALONGSIDE IT, **⇒ SO THE ROW READS BOTH AND THE DIFFERENCE IS THE
+# CHAIN AND NOT THE NUMBER.**
+#
+# **⇒ AND THE CONST BOUND IS A **CAST**'S CONST, BECAUSE UPSTREAM's `UOp.const(b, dt)`
+# IS `const.cast(dt)` (`ops.py:631`) AND THE PORT's `O.UOp.const` INTERNS THE BARE CONST
+# ONLY — **⇒ SO THE CAST IS BUILT EXPLICITLY, THE SAME WAY `linearizer.bend`'s OWN
+# FIXTURE DOES IT.**
+def g_rng_after() -> O.Found:
+  +c5 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(5)})
+  +c5i = O.UOp.new(O.Found.ar(c5), O.OpsCAST{}, [O.Found.i(c5)], O.ADt{S.int32()}, O.TNone{})
+  +af = O.UOp.new(O.Found.ar(c5i), O.OpsAFTER{}, [O.Found.i(c5i)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(af), O.OpsRANGE{}, [O.Found.i(af)], O.ARange{[0], O.AXIS_WEAK{}}, O.TNone{})
+
+# THE ROW. `rng_width` IS `int(r.vmax)+1` (`fold.bend:1426`), **⇒ SO THE AFTER-BOUND
+# RANGE MUST ANSWER **5** AND THE CONST-BOUND ONE **4**.** **⇒ AND THE PORT's `rng_width`
+# ANSWERED `None{}` FOR THE FIRST BEFORE 2026-10-28, WHICH IS A WIDTH THAT WAS REFUSED
+# AND NOT A WIDTH OF ZERO.**
+def t_rng_after() -> Bool:
+  +ar = O.Found.ar(g_rng_after())
+  +r = O.Found.i(g_rng_after())
+  +w = rng_width(ar, r)
+  +u = Maybe.default(&2, U32, Maybe.map(&2, H.I64, U32, H.lo32, w), 0)
+  U32.is_eq(u, 5)
+
 # the ucache NOTE, read out of the fold: CONST(3) is weakint and CONST(True) is
 # bool, and they are TWO nodes -- `True == 1` as dict keys, so the key has to
 # separate them and the fold has to agree about which is which.
@@ -6555,6 +6590,7 @@ def vb_row(nm: String, +f: O.Found) -> IO(Unit):
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("dtype_key", t_dtype_key())
+    z : Unit <- row("rng_after", t_rng_after())
     b : Unit <- row("shape_ok", t_shape_ok())
     c : Unit <- row("device_ok", t_device_ok())
     d : Unit <- row("cycle_safe", t_cycle_safe())
