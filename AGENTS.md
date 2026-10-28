@@ -160,9 +160,12 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
   `bacd1722`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's**, **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
-  **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION **WORK **LEFT**: **175 **FALSE
-  **UPSTREAM **CITATIONS **RE-POINTED** (**225 **UNDER **`runtime/`**, **331 -> 78 **ELSEWHERE**), **AND
-  **`gates/todo-cite-gate.py` **READS **`1131 **ROWS **AND **0 **FALSE**.**
+  **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION **WORK **LEFT**: **THE
+  **CITATION **CLASSES **ARE **CLOSED** -- **`gates/pin-cite-gate.py` **READS
+  **`cite.unverifiable_no_claim_about_the_file=0`** **AND **`cite.at_no_revision_dangling=0`**,
+  **`gates/todo-cite-gate.py` **READS **`0 **WRONG-LINE`**, **`0 **WRONG-SYMBOL`**, **`0
+  UNRESOLVABLE`**, **AND **`gates/bendcite-gate.py` **IS **rc=0`**, **AND **`gates/specfold-gate.py`
+  **GRADES **48 **CELLS **AND **48 **AGREE`.**
   **⇒ AND **THE **CORPUS **IS **A **SINGLETON **NOW**, **WHICH **IS **WHAT **THE **2026-10-23 **COLLISION
   **PROVED **IT **NEEDED**: **`checks/differ.py`'s **`run`/`repro`/`plant`/`snap` **TAKE **AN
   **`fcntl.flock` **ON **`runs/graphcmp/.corpus.lock`** **BEFORE **ANYTHING **TOUCHES **`D/`**, **AND **A
