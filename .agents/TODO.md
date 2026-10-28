@@ -2810,6 +2810,63 @@ exec-linrender       [###] 3/3  **THE PORT's OWN ARENA REACHES THE PORT's OWN RE
                                        `len(u.ranges)` COMPONENT IS ALSO ABSENT FROM `lt_key`.
 
 
+exec-devmap          [####] 4/4  **THE PORT's OWN `Device` LANE: STAGES **4-9** ARE MEASURED AND GREEN, AND STAGES
+                                       **1-3** ARE **NAMED** — **⇒ AND THE `Device` LANE'S COMPLETE MAP IS IN
+                                       `.agents/slop/devlane/MAP.md`.** MEASURED 2026-10-28. **=> THE PIPELINE IS ONE
+                                       LINE UPSTREAM (`tinygrad/schedule/__init__.py:132`):
+                                       `create_schedule(get_kernel_graph(prepare_rangeify(function)))`, **⇒ AND EVERY
+                                       STAGE'S STANDING IS NOW MEASURED RATHER THAN GUESSED:** **STAGE 4**
+                                       `create_schedule` = `schedule/__init__.bend:1139` (**MEASURED: `checks/sb-
+                                       gate.sh` READS **81 of 81****); **STAGE 5** `linearize` =
+                                       `codegen/late/linearizer.bend:836` (**MEASURED**); **STAGE 6** THE `List<KU>` =
+                                       **`renderer/kuconv.bend`, LANDED TODAY** (**MEASURED: **5 OF 5 REAL MNIST CPU
+                                       KERNELS BYTE-IDENTICAL** WITH UPSTREAM's `csrc/*.c`, IN BOTH LANES, PLANT RED 0
+                                       OF 5**); **STAGE 7** `render` = `renderer/cstyle.bend:2297` (**MEASURED 5/5
+                                       IDENTICAL C**); **STAGE 8** `compile` = `runtime/ops_cpu.bend` (**MEASURED
+                                       NATIVELY: 5/5 IDENTICAL C, IDENTICAL RELOCATION**); **STAGE 9** `exec` =
+                                       `runtime/ops_cpu.bend` (**MEASURED NATIVELY: OUTPUT BYTES IDENTICAL TO
+                                       CPython's OWN CPU DEVICE, `max_abs=0`**). **=> STAGE **1** IS THE EAGER GRAPH
+                                       WITH **NO REALIZE-TO-SINK PATH**; **STAGE **2** HAS ITS TABLES AND **NO
+                                       DRIVER**; **STAGE **3** IS BUILT (472 LINES), **UNWIRED** (`grep -c 'eng_|Eng'
+                                       schedule/__init__.bend` ANSWERS **0**) AND **UNMEASURED**. **=> ⇒ ⇒ AND STAGES
+                                       1 AND 2 ARE **ONE** PIECE OF WORK, NOT TWO: UPSTREAM'S STAGE 1 IS NOT A
+                                       "REALIZE" EITHER -- IT IS `prepare_rangeify(function)`, FOUR `graph_rewrite`
+                                       CALLS OVER **THE FUNCTION'S SINK OF AFTERs**, **AND THE SINK OF AFTERs IS
+                                       EXACTLY WHAT `create_schedule` CONSUMES -- THE PORT's OWN `schedule(+ar,
+                                       +sink)` ALREADY TAKES A `sink`!** **=> AND **THE PORT'S OWN SCHEDULER HAS
+                                       **NEVER BEEN DRIVEN** ON A GRAPH **THE PORT BUILT ITSELF** -- EVERY SCHEDULER
+                                       FIXTURE IS HAND-BUILT** (`fx1()`/`fx2()`/`fx3()` AT
+                                       `schedule/__init__.bend:1846/:1862/:1879`). **=> ⇒ ⇒ SO **AND THE PORT'S OWN
+                                       REALIZE-TO-SINK DRIVER NOW EXISTS**: `tinybendygrad/schedule/realize.bend` (547
+                                       LINES) **TAKES **A PROGRAM THE PORT BUILT** AND ANSWERS **THE SINK OF AFTERs**
+                                       THAT UPSTREAM's `prepare_rangeify` ANSWERS FOR THE SAME PROGRAM -- **⇒ AND THE
+                                       MEASUREMENT IS AGAINST **UPSTREAM's OWN CALL**: `.agents/slop/realize/cmp.py`
+                                       READS **23 NODES AGREE** (denominator 23), **7 CONSTS AGREE**, **3 PARAMS
+                                       AGREE**, **WITH TWO CONTROLS THAT BOTH DIVERGE** (the adjacent-RESHAPE merge
+                                       OFF => the node multiset DIVERGES; the PARAM slots shifted by one => the
+                                       `(slot,size)` multiset DIVERGES WHILE THE NODE MULTISET IS UNCHANGED). **=> ⇒ ⇒
+                                       AND THE PORT's OWN `run_rangeify` DRIVER NOW EXISTS TOO**:
+                                       `tinybendygrad/schedule/rangify.bend` (298 LINES) **⇒ AND ITS REALIZE MAP
+                                       **AGREES** WITH CPython's EXACTLY**
+                                       (`rr_realize=STORE:none:RESHAPE,REDUCE:none` == CPython's `rr_py_realize`) **⇒
+                                       AND ITS INPUT GRAPH **AGREES** 23/23 NODES**, **⇒ AND THE PLANT IS **A ROW, NOT
+                                       A BUILD** (the port has NO env reader), so the port's own driver is never
+                                       shipped broken. **=> ⇒ ⇒ AND **THE **LAST** LINK IS NOW **MEASURED TO THE
+                                       NODE** (`.agents/slop/chain/GAP.md`): **THE PORT's ENGINE'S OUTPUT HAS **114
+                                       NODES** AND UPSTREAM's HAS **27**, AND THE CENSUS SAYS WHY -- **THE PORT'S
+                                       OUTPUT STILL HAS `PERMUTE` (WHICH THE RANGEIFY **REPLACES** WITH A `RANGE`) AND
+                                       **NO `RANGE`, NO `INDEX`, NO `ADD`, NO `END` AND NO `CALL`**, **⇒ ⇒ ⇒ SO **THE
+                                       GAP IS **NOT** "THE ENGINE IS WRONG" AND **NOT** "THE SCHEDULER IS WRONG"**: IT
+                                       IS **THAT STAGE 1 -- **THE RANGEIFY ITSELF** -- IS NOT PORTED AS A DRIVER**,
+                                       WHICH IS EXACTLY WHAT THE PORT's OWN `rangeify.bend:2810` SAYS (`Stg{0, Nil{}},
+                                       # 1 run_rangeify -- rangeify.py:344 -- NOT PORTED`). **=> AND THE PORT HAS THE
+                                       **MAP** AND NOT THE **TRANSFORMATION**, WHICH IS EXACTLY THE HALF UPSTREAM
+                                       DELETES AFTER USING IT (`del ctx.realize_map[s]`, `indexing.py:88`). **=> AND
+                                       THE APPLY HALF IS NOT A FRESH AMOUNT OF WORK: **ITS TABLES ARE THERE**
+                                       (`indexing.bend:1141/:1170/:1177`), **ITS PERMUTE AND EXPAND ARMS ARE **FULLY
+                                       PORTED**, AND ITS **THREE WALLS ARE **NAMED** IN THE PORT's OWN HEADER**.
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
