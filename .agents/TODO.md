@@ -3070,6 +3070,78 @@ cite-slice2     [#########] 5/5  **THE 78 WERE A CLASS, AND THE CLASS IS 1 -- AN
                                         and the port's `least_upper_dtype` IS at that line at the pin.
                                         See `.agents/slop/citefix9/REPORT.md`.
 
+ cite-slice3     [#########] 5/5  **THE STALE POINTERS ARE 26 FILES AND 57 ROWS, AND THE
+                                        `unverifiable` CLASS IS 53, AND BOTH ARE 0.** Measured
+                                        with the gates' OWN rows files on a COPY of the LIVE
+                                        tree (`gates/pin-cite-gate.py --tree DIR --rows OUT`
+                                        and `gates/bendcite-gate.py --tree DIR --rows OUT`),
+                                        because the tree is owned by other units and moves:
+                                        `cite.unverifiable_no_claim_about_the_file` **53 -> 0**
+                                        and `WRONG-LINE` + `DANGLING-LINE` **57 -> 0** for the
+                                        26 files of the `unv2` slice. `gates/todo-cite-gate.py`
+                                        reads **295 rows for these 26 files, 289 RESOLVES, and
+                                        0 WRONG-LINE / 0 WRONG-SYMBOL / 0 UNRESOLVABLE**.
+                                        **26 FILES, +201/-134, ALL COMMENT-ONLY** (every file
+                                        strips to the same code hash as HEAD through
+                                        `checks/port-compile-gate.py`'s `strip_comments()`
+                                        LOADED BY PATH, blank lines dropped -- **0 of 26
+                                        DIFFER**). **26 of 26 COMPILE `WITHIN-LIMITS`** under
+                                        `checks/bounded.py --mb 2048`, one `bend` at a time,
+                                        reading the VERDICT TOKEN.
+                                        **WHICH KIND OF FIX DOMINATED: THE STALE POINTERS
+                                        (57), NOT THE PROSE (53).** 57 OF THE 110 ROWS WERE
+                                        ONE MECHANICAL CLASS -- A `.bend`-TO-`.bend` LINE
+                                        POINTER WHOSE TARGET HAD MOVED -- AND THE DURABLE
+                                        FIX (`symbol=<name>`) IS THE TREE'S OWN CONVENTION;
+                                        THE 53 PROSE ROWS NEEDED 53 SEPARATE READINGS OF
+                                        UPSTREAM, ONE CONSTRUCT AT A TIME.
+                                        **THE `symbol=` FORM IS A DURABLE FORM ONLY WHEN THE
+                                        SYMBOL IS DECLARED IN THE CITED FILE AT THE CITED
+                                        LINE, AND THE FIRST ATTEMPT GOT THAT WRONG IN FOUR
+                                        PLACES** (`tinygrad/device.py:390 symbol=has_copy_queue`
+                                        -- declared at :391; `symbol=__init__` -- declared
+                                        SEVEN times in that file, so it is
+                                        `symbol=Compiled.__init__`; `symbol=bitcast` where
+                                        the line says `Ops.BITCAST`; `symbol=l2i` where `l2i`
+                                        is declared at :21 and not :64). **AND THE `symbol=`
+                                        FIELD BINDS TO THE NEAREST-PRECEDING CITATION, SO A
+                                        LINE CARRYING BOTH A `.py` AND A `.bend` CITE BINDS
+                                        IT TO THE `.py` ONE** -- MEASURED, THREE ROWS READ
+                                        `WRONG-SYMBOL` FOR IT, AND THE FIX IS TO PUT THE
+                                        `.bend` POINTER AND ITS `symbol=` ON A LINE OF ITS
+                                        OWN. **THE AMBIGUOUS-BASENAME TRAP IS CLOSED:**
+                                        `dtype.py` IS THREE UPSTREAM FILES AND `helpers.py`
+                                        IS SEVEN, SO EVERY UPSTREAM CITATION THAT IS NOT THE
+                                        HEADER'S OWN TARGET IS NOW SPELLED WITH ITS FULL
+                                        PATH, AND EVERY POINTER INTO THE COMPILER'S OWN TREE
+                                        IS SPELLED `references/bend/bend2/base.bend` --
+                                        BECAUSE THE PORT'S `base.bend` IS A 56-LINE FILE AND
+                                        THE COMPILER'S IS 3,191.
+                                        **WHERE THE PORT'S SYMBOL HAS NO UPSTREAM
+                                        COUNTERPART THE COMMENT SAYS SO**: `elemsize` and
+                                        `post_args` are the port's names for upstream's
+                                        `struct.calcsize(self.fmt)` and
+                                        `struct.pack(REMOTE_REQ, ...)`; `open_one`/`open_two`
+                                        are the port's own row names.
+                                        **THE PLANT** breaks one re-pointed citation by one
+                                        TEXT EDIT on a COPY (never `git show HEAD:`) and the
+                                        gate goes RED (1 stale row); a byte-identical control
+                                        stays GREEN (0).
+                                        **NOT FIXED, AND IT IS NOT A DEFECT OF THIS SLICE:**
+                                        THE `WRONG-LINE-BY-BLOCK` CLASS (26 rows, REPORTED
+                                        and not failed by the gate), `AMBIGUOUS` (8),
+                                        `OUT-OF-CORPUS` (7) AND `UNCLAIMED` (121) -- all
+                                        COUNTED and not failed -- AND THE 4 `at_no_revision`
+                                        AND 3 `only_older_revision` ROWS, WHICH ARE THE
+                                        HOLDING CLASSES.
+                                        **A SHARED-PATH RACE:** `engine/jit.bend` and
+                                        `mixin/elementwise.bend` were being edited by another
+                                        unit WHILE the pointers into them were measured, and
+                                        they moved TWICE (`ii_vars` :393 -> :401 -> :403;
+                                        `ew_exp`/`ew_silu` :1312/:1219 -> :1314/:1221), so
+                                        there is a SECOND commit for the two that moved.
+                                        See `.agents/slop/slice2/REPORT.md`.
+
 cite-runtime      [#########] 5/5  **THE OTHER HALF OF THE 603 IS `runtime/**`, AND IT IS 0.**
                                         The census's slice under `tinybendygrad/runtime/`
                                         went from **225 FALSE to 0**, measured with the SAME
