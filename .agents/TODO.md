@@ -2867,6 +2867,58 @@ exec-devmap          [####] 4/4  **THE PORT's OWN `Device` LANE: STAGES **4-9** 
                                        PORTED**, AND ITS **THREE WALLS ARE **NAMED** IN THE PORT's OWN HEADER**.
 
 
+exec-rmap            [####] 4/4  **THE RANGE MAP: **5 OF 11** ENTRIES AGREE, AND **ALL SIX DIFFERENCES ARE **ONE**
+                                       NAMED WALL — **⇒ AND THE MISSING `symbolic` REWRITER IS **THE** MISSING PIECE
+                                       OF STAGE 1.** MEASURED 2026-10-29, IN `.agents/slop/rmap/RANGE.md`. **=> THE
+                                       PORT's OWN `run_rangeify` (`tinybendygrad/schedule/rangify.bend`, 119 DEFS) AND
+                                       `schedule/indexing.bend` NOW CARRY **THE RANGE MAP** — UPSTREAM's
+                                       `ctx.range_map`, THE `(INPUT RANGES, OUTPUT RANGES)` PAIR PER NODE — **⇒ WHICH
+                                       IS **THE HALF UPSTREAM DELETES AFTER USING IT** (`del ctx.realize_map[s]`,
+                                       `indexing.py:88`). **⇒ ⇒ AND THE PORT's OWN **CONTEXT TYPE** IS UPSTREAM's
+                                       `IndexingContext` FIELD FOR FIELD (`IxCtx{rmap, nrem, rngm, ridx}` =
+                                       `realize_map`, `non_removable`, `range_map`, `range_idx`), **⇒ ⇒ ⇒ SO **THE
+                                       PORT HAD THE **DATA STRUCTURES** AND NOT THE **ALGORITHM THAT FILLS THEM**.
+                                       **=> ⇒ ⇒ AND THE MEASUREMENT IS AGAINST **UPSTREAM's OWN CALL**: THE ORACLE
+                                       `.agents/slop/rangify/rr-oracle.py` **SPIES ON UPSTREAM's OWN `run_rangeify`**
+                                       **AND ON THE `IndexingContext` IT MUTATES**, ON A REAL PROGRAM, AND PRINTS
+                                       UPSTREAM's OWN `realize_map`, `range_map` AND 27-NODE OUTPUT — **⇒ SO NOTHING
+                                       IS TRANSCRIBED** — **⇒ AND THE COMPARISON IS `.agents/slop/rmap/cmp.py`, WHICH
+                                       COMPARES **ENTRY BY ENTRY** ON THE **NODE ID** AND THE **INPUT**/**OUTPUT**
+                                       AXIS LISTS, **⇒ AND THE PORT's OWN DUMP SPELLING IS THE ORACLE's, SO THERE IS
+                                       **NO TRANSLATOR**. **=> ⇒ ⇒ SO **5 OF 11 AGREE** — AND **THE 5 THAT AGREE ARE
+                                       EXACTLY THE **FIVE** NODES WITH NO `_apply_reshape` IN THEIR INPUT RANGES** —
+                                       **⇒ ⇒ ⇒ AND **ALL SIX DIFFERENCES ARE **ONE** WALL: UPSTREAM'S INPUT RANGE FOR
+                                       THOSE SIX IS AN **AFFINE EXPRESSION** `<ADD:none:MUL,RANGE>`, WHICH UPSTREAM
+                                       BUILDS IN `_apply_reshape` (`indexing.py:155-167`, **THE WALL, IN FULL**), **⇒
+                                       AND THE PORT CANNOT BUILD AN AFFINE EXPRESSION AT ALL** (NO `UOp.sink`, NO
+                                       `usum`, NO `%`/`//`, NO `symbolic` REWRITER) — **⇒ ⇒ ⇒ SO **THE MISSING
+                                       `symbolic` REWRITER IS **NOT** A SIDE NOTE: IT IS **THE** MISSING PIECE OF
+                                       STAGE 1, BECAUSE THE RANGEIFY'S OUTPUT RANGES ARE BUILT FROM AFFINE
+                                       EXPRESSIONS.** **=> ⇒ ⇒ AND A SECOND, SMALLER DISCREPANCY, MEASURED: **THREE
+                                       **EXTRA** ENTRIES IN THE PORT, ALL **CONST** NODES (TOPOSORT POSITIONS 0, 6,
+                                       12), **⇒ AND THE RULE IS **UPSTREAM's `continue`** (`indexing.py:199-306`),
+                                       READ AGAINST **UPSTREAM's OWN CAPTURED CONTEXT**: A **CONST** HAS **NO CONSUMER
+                                       THAT IS IN THE RANGE MAP** (ITS CONSUMERS ARE `STACK`s, AND A `STACK` IS
+                                       **NOT** A RANGE MAP KEY), **⇒ ⇒ ⇒ SO UPSTREAM GIVES EVERY CONST **NO** ENTRY,
+                                       AND THE PORT's ANSWER FOR THOSE IS **THE **TABLE's** RANGE LIST** — **THE NEXT
+                                       BEST THING**, AND **NAMED** RATHER THAN HIDDEN. **=> ⇒ ⇒ ⇒ AND **THREE **DEAD-
+                                       CODE DEFECTS** THE WORK FOUND (`broadcast_rngs` **INVERTED**, `IxRngs` WITH
+                                       **NO KEY** — WHICH MADE THE RANGE MAP **UNLOOKABLE** — AND `ix_new_range`
+                                       PUTTING A **RAW VALUE** WHERE A NODE INDEX BELONGS) WERE **ALREADY FIXED** BY
+                                       ANOTHER UNIT WHILE IT RAN — **⇒ ⇒ ⇒ ⇒ AND ALL THREE WERE **DEAD CODE** (NO
+                                       CALLER OUTSIDE `indexing.bend`), **⇒ ⇒ ⇒ ⇒ ⇒ SO **THEY WERE NEVER EXERCISED,
+                                       WHICH IS WHY ALL THREE WERE INVISIBLE** — **⇒ ⇒ ⇒ ⇒ ⇒ AND THAT IS **THE SAME
+                                       CLASS** AS THE `rng_width` DEFECT AND THE `OTHER` OP-NAME DEFECT: **A DEF (OR A
+                                       BRANCH) THAT NOTHING READS IS NOT A DEF THAT WORKS** — **⇒ AND THE CLASS HAS
+                                       NOW COST **THREE** SEPARATE DISCOVERIES.** **=> ⇒ ⇒ AND A **MEASUREMENT
+                                       HAZARD** WORTH NAMING: MY FIRST ATTEMPT AT THE COUNT FIX CALLED `rr_one_rngs`,
+                                       WHICH **MATERIALISES** A RANGE NODE, **⇒ SO THE TABLE's INDICES MOVED AND EVERY
+                                       RANGE **NAME** SHIFTED (THE PORT's `R18` IS UPSTREAM's `R0`) — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒
+                                       **⇒ SO **A COMPARISON THAT BUILDS WHAT IT COMPARES CANNOT COMPARE ITSELF**, AND
+                                       THE FIX WAS **REVERTED** RATHER THAN KEPT, BECAUSE A CHANGE THAT **MOVES** THE
+                                       MEASUREMENT IS NOT A FIX.**
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
