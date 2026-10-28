@@ -171,10 +171,23 @@ PLANT OK: a moved line makes the pointer stale, a byte-identical copy does not
 
 `checks/differ.py`'s `substrate_digest()`, imported by path:
 **BEFORE `40c3e432754207c6a8d4657aeebfec12d2b4defa7b09be01474eefe80cf98268`**
-**AFTER  `f25f4c1df98d957fe3f3fbb55cdc6c05a6955e90ff16dda373861ff3bd597edb`**
+**AFTER  `e9400a49a2f645df5742f4cc50b8cb5a64e7ce2e9461e67017c11ec3eb340116`**
 
 **⇒ A COMMENT IS SUBSTRATE, SO THE CORPUS'S DIGEST MOVED, AND THE CORPUS HAS TO BE
 RE-RUN AFTERWARDS.**
+
+(The digest is read at the END, so the AFTER reading is of the tree the COMMIT made
+plus whatever landed beside it; the BEFORE reading is of the tree with my 18 files
+untouched. The two are the SAME tree otherwise, because no other unit's file is in
+the commit.)
+
+## THE COMMIT
+
+`a740a152a47c7ba6fa523f16cb58bc2e3774ebc8` -- 27 files: the 18 `.bend` files and the
+9 files of this report's tooling. `git show --stat` AND `git fsck --no-progress` in
+the SAME command: the commit's own tree is clean, and `fsck` names ONLY the three
+PRE-EXISTING malformed trees (`d57bc484`, `d83cf685`, `3a60f33f`), which are not
+mine.
 
 ## `gates/todo-cite-gate.py`
 
