@@ -77,12 +77,12 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
 type W4 is Data:
   W4{b0: U32, b1: U32, i0: U32, i1: U32, k0: U32, k1: U32, s0: U32, s1: U32, d0: U32, d1: U32}
 
-# THE TEN READERS. They are `mixin/rand.bend:256 symbol=PK.i` / `PK.k` EXACTLY --
+# THE TEN READERS. They are `mixin/rand.bend:260 symbol=PK.i` / `PK.k` EXACTLY --
 # a non-consuming `q: W4` and a `match` that returns one field -- and they are
 # readers rather than ten `case` bindings because this file's first spelling put
 # the `case` INSIDE every derived def, and a derived def that calls another
 # derived def (`f0` reads `o0`) then consumed its own binding twice and `bend`
-# answered `W4.f0: d0 consumed more than once`. `mixin/rand.bend:273 symbol=U1.v`
+# answered `W4.f0: d0 consumed more than once`. `mixin/rand.bend:277 symbol=U1.v`
 # already states the rule: "`U1.v` is a def and therefore non-consuming".
 def W4.b0(q: W4) -> U32:
   match q:
@@ -274,7 +274,7 @@ def pool_avgpool_padded() -> D.Refused:
 # `(r, c)` is the mean of the input block `[ih/oh, iw/ow]` under it, so the
 # six axes `[b0, b1, oh, ih/oh, ow, iw/ow]` carry it and `mean(axis=(3, 5))`
 # names the two window axes. `mo_mean(kd, t, axis)` is
-# `mixin/op.bend:891`.
+# `mixin/op.bend:953 symbol=mo_mean`.
 #
 # THE NON-DIVISIBLE CASE IS REFUSED, and the blocker is named rather than
 # approximated: `i % o != 0` gives windows of UNEQUAL size, which `_pool`

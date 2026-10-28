@@ -29,7 +29,7 @@ import ./../datasets/__init__.bend as D
 #
 # EVERYTHING ELSE IN THIS FILE IS ALREADY HERE, which is the other half of the
 # finding and the reason the distance is this short:
-#   `Tensor.scaled_uniform`  mixin/rand.bend:939 `rd_scaled_uniform`   (:12,:13,:14,:16,:18,:19,:44,:46)
+#   `Tensor.scaled_uniform`  mixin/rand.bend:944 symbol=rd_scaled_uniform   (:12,:13,:14,:16,:18,:19,:44,:46)
 #   `Tensor.zeros`           mixin/creation.bend:518 `cr_zeros`         (:12,:13,:14,:16,:18,:19,:21,:22)
 #   `Tensor.ones`            mixin/creation.bend:559 `cr_ones`          (:21,:22)
 #   `x.linear`               nn/layers.bend:530 `nn_linear`            (:26,:28,:32,:33,:36,:37)
@@ -94,7 +94,7 @@ def tf_at(r: D.Refused) -> String:
 # :4  def __init__(self, embed_dim, num_heads, ff_dim, prenorm=False,
 #                  act=lambda x: x.relu(), dropout=0.1)
 def tf_block_init(embed_dim: U32, num_heads: U32, ff_dim: U32, prenorm: Bool, dropout: F32) -> D.Refused:
-  D.refuse("extra/models/transformer.py:4 TransformerBlock.__init__ -- reached :12 Tensor.scaled_uniform (mixin/rand.bend:940 symbol=rd_scaled_uniform EXISTS); BLOCKED AT :27 scaled_dot_product_attention via attn")
+  D.refuse("extra/models/transformer.py:4 TransformerBlock.__init__ -- reached :12 Tensor.scaled_uniform (mixin/rand.bend:944 symbol=rd_scaled_uniform EXISTS); BLOCKED AT :27 scaled_dot_product_attention via attn")
 
 # :5  assert embed_dim % num_heads == 0, "embed_dim must be divisible by num_heads"
 def tf_block_assert_head_size(embed_dim: U32, num_heads: U32) -> Bool:
