@@ -232,12 +232,17 @@ before and after).
 | reading | digest |
 |---|---|
 | **BEFORE** (the base of the rot slice, `dde1f7645^` = `739772319`) | `b29839418d8bd8247f71fbfa12aedbc3ab5c1649da1608a8498e68d1c4dd6bd6` |
-| **AFTER** (now) | `40c3e432754207c6a8d4657aeebfec12d2b4defa7b09be01474eefe80cf98268` |
+| **AFTER** (at the time this report was written) | `40c3e432754207c6a8d4657aeebfec12d2b4defa7b09be01474eefe80cf98268` |
+| **AFTER, minutes later** (the tree kept moving) | `13ed20b8cb6dc4b16932b71b87c5c2542c0f1bcc724043b819f10069efbf0029` |
 
 **⇒ A COMMENT IS SUBSTRATE, SO A CITATION FIX IS A CORPUS-STALING EDIT.**
 **⇒ THE CORPUS MUST BE RE-RUN ONCE THE PORT STOPS MOVING**, and the digest
 moved for a second reason too: another unit is editing `schedule/indexing.bend`
 and `schedule/rangify.bend` right now.
+
+**⇒ AND THE DIGEST IS NOT MY NUMBER TO PUBLISH: IT IS A READING OF A MOVING
+TREE, AND QUOTING IT WITHOUT THE TIME IS HOW A GOVERNING DOCUMENT ENDS UP
+CARRYING A FALSE CLAIM.** The corpus owner must re-derive it.
 
 ## 10. WHAT I DID **NOT** FIX, AND WHY
 
