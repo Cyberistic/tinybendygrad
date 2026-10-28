@@ -25349,3 +25349,36 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **IS **STILL **GROWING** (`:1420` -> `:1428`)** — **⇒ THE **CLAIM **SURVIVES **THE **MOVE, **BUT
       **THE **LINE **BESIDE **IT **DOES **NOT**, **AND **A **CITATION **CARRYING **BOTH **IS **STILL
       **ROT** **WHILE **THE **FILE **GROWS.**
+
+- [x] **THE **`dialect-fixture-gate`'s **472 **"LOST" **ROWS **ARE **NOT **A **PORT **DEFECT** (MEASURED
+      **2026-10-29**).**  **⇒ AND **THE **GATE's **RULE **IS **`TAG = re.compile(r'"([^"\n]*)"')`** —
+      **IT **MATCHES **EVERY **QUOTED **STRING** — **AND **THE **`oracles/pre-oracle-bend.bend`** **AND
+      **`oracles/post-oracle-bend.bend`** **FRAGMENTS **ARE **PTX/LLVM **ORACLES** **CARRYING **THE
+      **ASSEMBLY **ALONGSIDE **THE **ROW **TAGS**, **SO **THE **GATE **READS **ASSEMBLY **AS **CLAIMS.**
+      **⇒ AND **THE **FULL **BREAKDOWN**: **354 **PER **FILE **ARE **STRINGS **INSIDE **A **CALL's
+      **ARGUMENT **LIST** (**THE **VALUES** — **`r_lcs("lconst special +inf", True{}, False{},
+      "0x7FF0000000000000")`**, **WHERE **THE **ROW **TAG **IS **THE **FIRST **ARGUMENT**);
+      **26 **PER **FILE **ARE **OUTSIDE **A **CALL** **AND **ARE **PTX **TEXT**/**DIRECTIVES**/**LABELS**/
+      **REGISTER **NAMES**/**NUMBERS**/**ONE **DTYPE **LIST**; **AND **THE **OTHER **FIVE **FRAGMENTS
+      **HAVE **ZERO **LOST** — **THEY **ARE **THE **CONTROL.**
+      **⇒ AND **THE **ROW **TAGS **ARE **STRUCTURALLY **IDENTIFIABLE**: **A **ROW **TAG **IS **THE
+      **FIRST **ARGUMENT **OF **A **ROW-MAKER**, **AND **A **ROW-MAKER **IS **DISCOVERABLE **FROM **THE
+      **PORT** — **MEASURED: **`def r_lt(+nm: String, +d: S.Dt) -> String:`** **AT
+      **`tinybendygrad/renderer/llvmir.bend:481`**, **`def lf_row(nm: String, b: Bnd2) -> IO(Unit):`**
+      **AT **`tinybendygrad/uop/fold.bend:4661`**, **`def srow(...)`** **AND **`def urow(...)`** **AT
+      **`tinybendygrad/examples/train_resnet.bend:106,108`**, **AND **`def u1(nm: String, v: U32) ->
+      String:`** **AT **`tinybendygrad/runtime/support/usb.bend:98`** — **EVERY **ONE'S **FIRST
+      **PARAMETER **IS **THE **ROW **NAME.**
+      **⇒ ⇒ **THE **RULE **IS: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **IS **THE **FIRST
+      **ARGUMENT **OF **A **CALL **TO **A **FUNCTION **THE **PORT **DEFINES **WHOSE **FIRST **PARAMETER
+      **IS **THE **ROW **NAME**, **AND **THE **CALL **NAME **MUST **BE **MATCHED **ON **ITS **LAST
+      **COMPONENT **TOO** (**THE **PORT's **DEF **NAMES **ARE **DOTTED**: **`Enc.emit.head`**,
+      **`Op.in_.go`**).**
+- [ ] **THE **`dialect-fixture-gate`'s **TAG **RULE **IS **BEING **REPAIRED** (DISPATCHED).**  **⇒ AND
+      **THE **GATE **MUST **STILL **BE **ABLE **TO **GO **RED**, **MUST **PRINT **HOW **MANY **QUOTED
+      **STRINGS **IT **DID **NOT **COUNT **AS **ROW **TAGS**, **AND **MUST **KEEP **THE **FIVE
+      **CONTROL **FRAGMENTS' **COUNTS **UNCHANGED.**
+- [ ] **`gates/gates-pop.py --plant` **TIMES **OUT** (>15 **MINUTES**, **NEVER **FINISHED).**  **⇒ AND
+      **THE **GATE **IS **2543 **LINES **AND **ITS **PLANT **BUILDS **SYNTHETIC **GIT
+      **REPOSITORIES**, **SO **THE **COST **IS **PROBABLY **THE **REPOSITORIES** — **A **MEASUREMENT,
+      **NOT **AN **ASSUMPTION**, **IS **WANTED.**
