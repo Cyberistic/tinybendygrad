@@ -8,7 +8,7 @@
 #
 #   1. THE PROGRAM. `Tensor.empty(4,5)`, `(4,3) @ (3,5)`, `t.assign(...)`.
 #      upstream `tinygrad/mixin/op.py:386-392` (`dot`),
-#      `tinygrad/tensor.py:88` (`empty`), `tinygrad/tensor.py:271` (`assign`).
+#      `tinygrad/tensor.py:420` (`Tensor.empty`), `tinygrad/tensor.py:271` (`assign`).
 #      port: `mixin/movement.bend:1231` (`mxw_buf`), `mixin/movement.bend:1434` (`mxw_reshape`),
 #      `mixin/movement.bend:1452` (`mxw_permute`), `tensor.bend:656` (`tn_mul`).
 #   2. THE ALLOC -> BUFFER REBIND. upstream `tinygrad/tensor.py:184`
@@ -30,8 +30,8 @@
 #      port: `rz_rule.reshape` below.
 #   5. THE MOVEMENT-OP-OVER-AFTER MOVE. upstream
 #      `tinygrad/schedule/prepare.py:85-86` (`pm_mops`'s
-#      `r.after(a)` -> `UOp(r.op, src=(a.replace(src=(r.src[0],)+a.src[1:]),)+
-#      r.src[1:]))`), FOLLOWED BY `tinygrad/schedule/prepare.py:273-274`
+#      `r.after(a)` -> `UOp(r.op, src=(a.replace(src=(r.src[0],)+a.src[1:]),)+r.src[1:]))`
+#      -- AND THEN, AT `tinygrad/schedule/prepare.py:273-274`,
 #      (`earliest_rewrites`' "remove movement ops from SINK/AFTER", `walk_mop`).
 #      The TWO rules' NET: the movement op moves ABOVE the AFTER and the SINK
 #      then drops it, so the AFTER's `src[0]` BECOMES THE BASE and the SINK's
