@@ -275,18 +275,30 @@ class Corpus:
     comp_root = self.base / COMPILER_REL
     if comp_root.is_dir():
       self._walk(comp_root, self.extra)
+    # TWO PASSES, AND THE SECOND ONE IS THE FIX.  `_import_target` answers "does the file this
+    # import names exist?" by asking `cand in self.bodies`, and `self.bodies` was filled in the
+    # SAME loop that computed the aliases -- so an import pointing at a file LATER IN THE WALK
+    # ORDER resolved to `None`.  MEASURED: `os.walk` visits `schedule/` before `uop/`, so
+    # **69 of the 170 files had a `None` alias**, and `O.GroupOp.movement` never resolved
+    # against `uop/ops.bend`.  **⇒ A RESOLVER THAT DEPENDS ON WHAT ELSE IS LOADED **AND **ON THE
+    # ORDER IT WAS LOADED **IN** IS **A **RESOLVER **WITH **A **HIDDEN **RULE.**  **⇒ SO **THE
+    # BODIES **GO **IN **FIRST**, **AND **THE **ALIASES **ARE **COMPUTED **AFTER**, **WHEN **EVERY
+    # **BODY **IS **PRESENT** **AND **THE **ORDER **OF **THE **WALK **CANNOT **CHANGE **THE
+    # ANSWER.**
     for rel in self.port + self.extra:
       body = (self.base / rel).read_text(encoding="utf-8", errors="replace").splitlines()
       self.bodies[rel] = body
       self.by_name[rel.rsplit("/", 1)[-1]].append(rel)
       self.imports[rel] = [m.group(1) for m in
                             (IMPORT.match(l) for l in body) if m]
-      self.aliases[rel] = {m.group(2): self._import_target(rel, m.group(1))
-                            for m in (IMPORT.match(l) for l in body)
-                            if m and m.group(2)}
       self.constructs[rel] = bend_constructs(body)
       self.words[rel] = {w for l in body
                          for w in re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\b", l)}
+    for rel in self.port + self.extra:
+      body = self.bodies[rel]
+      self.aliases[rel] = {m.group(2): self._import_target(rel, m.group(1))
+                            for m in (IMPORT.match(l) for l in body)
+                            if m and m.group(2)}
 
   # ---- the resolver ------------------------------------------------------------
 
