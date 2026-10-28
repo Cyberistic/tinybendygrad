@@ -1449,8 +1449,43 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
 # one of the ~30 `F.folded(ar)` / `F.UOp.fold(ar)` call sites would pay a SECOND Kahn walk
 # per arena and every `ranges`/`min_max` sweep would read a different table than today.
 # THIS READER IS THE NARROW ONE AND SAYS SO: it answers only a range whose `src[0]` is an
-# integer CONST, and it REFUSES every other range -- so a node whose width it cannot read
-# is still `?`, and the node is not answered with a guessed width.
+# integer CONST **REACHED THROUGH THE PASS-THROUGH CHAIN**, and it REFUSES every other
+# range -- so a node whose width it cannot read is still `?`, and the node is not answered
+# with a guessed width.
+#
+# ===========================================================================
+# THE CHAIN, AND IT IS **THE** DEFECT THIS READER HAD, MEASURED 2026-10-28.
+#
+# **⇒ UPSTREAM'S RANGE ARM IS `0, (self.src[0]-1).vmax` (`ops.py:1147`), AND `vmax` OF A
+# PASS-THROUGH NODE IS ITS `src[0]`'s.** **⇒ SO THE BOUND MAY BE AN **AFTER** OR A
+# **CAST**, NOT ONLY A CONST.**
+#
+# **⇒ MEASURED, CALLING CPython ON THE `lin` MATMUL'S OWN KERNEL
+# (`full_rewrite_to_sink` OF `(4,3)@(3,5)`):**
+# ```
+#   RANGE bound op=CONST  bound.vmax=4  RANGE.vmax=3  int+1=4
+#   RANGE bound op=CAST   bound.vmax=4  RANGE.vmax=3  int+1=4
+#   RANGE bound op=AFTER  bound.vmax=5  RANGE.vmax=4  int+1=5
+# ```
+# **⇒ ⇒ SO **TWO** OF THE THREE RANGES HAVE A BOUND THAT IS NOT A CONST, AND THE OLD
+# `rng_width.end` ANSWERED `None{}` FOR BOTH OF THEM — WHICH IS WHY THE PORT's OWN
+# `vms` TABLE (`.agents/slop/linrender/REPORT.md` §2) CAME OUT WITH **EVERY VMAX ZERO**
+# WHILE ITS *LENGTH* WAS EXACTLY UPSTREAM's 97. A WIDTH THAT IS REFUSED IS NOT A WIDTH
+# OF ZERO, AND THE TABLE'S ZERO SAID "NO RANGES" WHERE UPSTREAM SAID "4" AND "5".**
+#
+# **⇒ AND THE AFTER BOUND IS NOT A RARITY: `pm_simplify_ranges` REWRITES A RANGE's BOUND
+# INTO `AFTER(bound, prev_range)`, SO **EVERY SPLIT RANGE IN THE PORT HAS AN AFTER
+# BOUND** (`.agents/slop/graphcmp.bend:1127-1128` IS THE WITNESS).**
+#
+# **⇒ AND THE `CAST` IS THE SAME STORY: `ops.py:142`'s GROUP PUTS `Ops.CAST` IN THE
+# `src[0].dtype` PASS-THROUGH SET, AND A CAST's `_min_max` IS ITS `src[0]`'s.**
+#
+# **⇒ ⇒ SO THE CHAIN IS `RANGE/SPECIAL -> (AFTER | CAST)* -> CONST`, AND THE READER
+# DESCENDS IT.** **⇒ AND IT IS AN EXPLICIT UNROLL, NOT A RECURSION, BECAUSE BEND REFUSES
+# A `match` THAT CALLS THE DEF IT IS IN (THE ERROR IS *"an unfilled law: live code cannot
+# use it"*), AND A SELF-CALL's ARGUMENTS ARE READ LEFT TO RIGHT, EACH PASSED UNCHANGED
+# UNTIL ONE SHRINKS. THE DEPTH BELOW IS **THREE**: THE CHAIN IS ONE PASS-THROUGH DEEP
+# FOR A CAST AND TWO FOR AN AFTER-OF-A-CAST, AND A CONST IS THE END.**
 # ===========================================================================
 
 # THE ORDER OF THESE IS THE ORDER RULE, not an accident: `end` is the MATCH (a match may
@@ -1459,11 +1494,39 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
 # a def written below it, and there is no `@unsafe` in this file.
 #
 # `rng_width.end` CALLS NOBODY, so `begin` calling `end` is NOT mutual recursion: the walk
-# is `of` alone, descending one RANGE/SPECIAL `src[0]` deep, which is the whole descent
-# ops.py:1147 performs. It is not a general interval walk and does not pretend to be.
-def rng_width.end(op: O.Op, +ar: O.Arena, e: U32) -> Maybe<&2, H.I64>:
+# is `of` alone, descending the RANGE/SPECIAL `src[0]` AND THEN THE PASS-THROUGH CHAIN,
+# which is the whole descent ops.py:1147 performs. It is not a general interval walk and
+# does not pretend to be.
+def rng_width.const(op: O.Op, +ar: O.Arena, e: U32) -> Maybe<&2, H.I64>:
   match op:
     case O.OpsCONST{}: const_i64(O.Arena.arg(ar, e))
+    case _: None{}
+
+# THE PASS-THROUGH TEST: THE TWO OPS WHOSE `vmax` IS THEIR `src[0]`'s.
+def rng_width.passes(op: O.Op) -> Bool:
+  match op:
+    case O.OpsAFTER{}: True{}
+    case O.OpsCAST{}: True{}
+    case _: False{}
+
+# THE CHAIN, UNROLLED. `end3` IS THE END OF IT: A CONST, OR A REFUSAL.
+def rng_width.end3(op: O.Op, +ar: O.Arena, +e: U32) -> Maybe<&2, H.I64>:
+  match op:
+    case O.OpsCONST{}: const_i64(O.Arena.arg(ar, e))
+    case _: None{}
+
+def rng_width.end2(op: O.Op, +ar: O.Arena, +e: U32) -> Maybe<&2, H.I64>:
+  match op:
+    case O.OpsCONST{}: const_i64(O.Arena.arg(ar, e))
+    case O.OpsAFTER{}: rng_width.end3(O.Arena.op(ar, O.Arena.src(ar, e, 0)), ar, O.Arena.src(ar, e, 0))
+    case O.OpsCAST{}: rng_width.end3(O.Arena.op(ar, O.Arena.src(ar, e, 0)), ar, O.Arena.src(ar, e, 0))
+    case _: None{}
+
+def rng_width.end(op: O.Op, +ar: O.Arena, +e: U32) -> Maybe<&2, H.I64>:
+  match op:
+    case O.OpsCONST{}: const_i64(O.Arena.arg(ar, e))
+    case O.OpsAFTER{}: rng_width.end2(O.Arena.op(ar, O.Arena.src(ar, e, 0)), ar, O.Arena.src(ar, e, 0))
+    case O.OpsCAST{}: rng_width.end2(O.Arena.op(ar, O.Arena.src(ar, e, 0)), ar, O.Arena.src(ar, e, 0))
     case _: None{}
 
 def rng_width.at(op: O.Op, +ar: O.Arena, +r: U32) -> Maybe<&2, H.I64>:
