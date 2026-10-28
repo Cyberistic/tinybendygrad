@@ -2996,7 +2996,14 @@ def eng_op_name(op: O.Op) -> String:
     case O.OpsCALL{}   : "CALL"
     case O.OpsSTORE{}  : "STORE"
     case O.OpsSINK{}   : "SINK"
-    case _: "OTHER"
+    # **⇒ AND THE `OTHER` ARM IS NOT "AN OP I DO NOT KNOW": IT IS **THE PORT's OWN
+    # GENERAL OP-NAME TABLE**, WHICH COVERS **ALL 75 OPS** (`ops.bend:287`
+    # `Ops.name.of`), **⇒ AND IT IS SPELLED WITH THE PORT's OWN `Ops.` PREFIX SO A
+    # NAME THAT IS NOT IN THE TEN ABOVE **CANNOT** BE READ AS ONE THAT IS.** **⇒ ⇒ SO
+    # `OTHER` MEANT "AN OP OUTSIDE THE FIXTURE'S TEN", AND THE ENGINE'S OUTPUT ON A REAL
+    # PROGRAM IS FULL OF THEM -- **PARAM, RANGE, MUL, INDEX, ADD, REDUCE** -- **⇒ AND THE
+    # DUMP WAS SAYING "OTHER" WHERE UPSTREAM SAYS THE REAL NAME.**
+    case _: String.concat(["OTHER(", O.Ops.name.of(op), ")"])
 
 # THE ARG KEY. Four keys, because the fixture uses four: `none`, a CONST's
 # value, the Invalid CONST, and `other`. The oracle rebuilds the graph from
