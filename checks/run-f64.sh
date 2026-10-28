@@ -73,6 +73,32 @@ PY="$ROOT/.venv/bin/python"
 F64="$ROOT/.agents/slop/f64"
 PLANT="$ROOT/.agents/slop/e2e_port/plant.py"
 W=${1:-${TMPDIR}opencode/f64-lane}
+
+# THE WORK DIRECTORY IS AN ARGUMENT, AND AN ARGUMENT THAT LOOKS LIKE A FLAG IS NOT A
+# DIRECTORY.  MEASURED 2026-10-19: `run-f64.sh --help` put `$W` at `--help`, and
+# `mkdir -p "$W"` created a directory NAMED `--help` AT THE REPO ROOT, holding this
+# script's own `.log` files and two `.txt` dumps -- and `checks/no-txt.py` OWNS those
+# `.txt` files, so a stray directory became HARD debt the `.txt` gate charges.
+# **⇒ A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
+# **IT **IS **REFUSED **WHEN **IT **WOULD **LAND **INSIDE **THE **REPO** -- **BOTH
+# **BECAUSE **THE **WRITE **IS **THE **DAMAGE**, **AND **BECAUSE **A **DIRECTORY **AT
+# **THE **REPO **ROOT **IS **A **PATH **THE **TREE **OWNS.** **EXIT **3** **IS **THE
+# **HOUSE'S **REFUSED.**
+case "$W" in
+  -*) print -r -- "$0: the work directory '$W' looks like a FLAG. This script's argument is a DIRECTORY; exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
+# THE ARGUMENT MAY BE RELATIVE, SO IT IS RESOLVED BEFORE THE COMPARISON.  A PATTERN
+# AGAINST THE ABSOLUTE `$ROOT` DOES NOT MATCH `.agents/slop/x`, AND A GUARD THAT
+# MISSES A RELATIVE PATH IS NOT A GUARD.
+case "$W" in
+  /*) WABS=$W ;;
+  *)  WABS="$PWD/$W" ;;
+esac
+case "$WABS" in
+  "$ROOT"|"$ROOT"/*) print -r -- "$0: the work directory '$W' RESOLVES TO '$WABS', INSIDE the repo. The work directory is scratch; put it under \$TMPDIR, or the repo owns its contents. exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
 NC="$W/copy"
 NC2="$W/copy2"
 ok=1; rc=0; ctlrc=0; CTLLOG=""; substrate=0
