@@ -117,7 +117,7 @@ def mr_nearest_interpolate(+tensor: T.Tensor, scale_factor: U32) -> D.Refused:
 
 # :24 def meshgrid(x, y)
 def mr_meshgrid(+x: T.Tensor, +y: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:24 meshgrid -- FIRST MISSING SYMBOL Tensor.cat (:25,:26); the expand (:25) is nn/layers.bend:520 nn_expand and EXISTS")
+  D.refuse("extra/models/mask_rcnn.py:24 meshgrid -- FIRST MISSING SYMBOL Tensor.cat (:25,:26); the expand (:25) is nn/layers.bend:638 symbol=nn_expand and EXISTS")
 
 # :29 def topk(input_, k, dim=-1, largest=True, sorted=False)
 def mr_topk(+input_: T.Tensor, k: U32, dim: H.I64) -> D.Refused:
@@ -125,11 +125,11 @@ def mr_topk(+input_: T.Tensor, k: U32, dim: H.I64) -> D.Refused:
 
 # :46 def _gather(array, indices)
 def mr_gather(+array: T.Tensor, +indices: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:46 _gather -- Tensor.where EXISTS (mixin/elementwise.bend:571), Tensor.arange EXISTS (mixin/rand.bend:361), x.reshape EXISTS; the INGREDIENTS are all ported and the def is not written")
+  D.refuse("extra/models/mask_rcnn.py:46 _gather -- Tensor.where EXISTS (mixin/elementwise.bend:571 symbol=ew_where), Tensor.arange EXISTS (mixin/rand.bend:425 symbol=op_arange), x.reshape EXISTS; the INGREDIENTS are all ported and the def is not written")
 
 # :56 def npgather(array, indices)
 def mr_npgather(+array: T.Tensor, +indices: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:56 npgather -- FIRST MISSING SYMBOL an NDARRAY; extra/datasets/__init__.bend:17-20 records np.frombuffer/.astype as having no counterpart. Selected by USE_NP_GATHER at :74")
+  D.refuse("extra/models/mask_rcnn.py:56 npgather -- FIRST MISSING SYMBOL an NDARRAY; extra/datasets/__init__.bend:45 symbol=refuse is that file's own spelling of 'no counterpart', and it records np.frombuffer/.astype as having none. Selected by USE_NP_GATHER at :74")
 
 # :62 def get_strides(shape)
 def mr_get_strides() -> D.Refused:
@@ -163,7 +163,7 @@ def mr_boxlist_repr() -> D.Refused:
 
 # :145 def area(self)
 def mr_boxlist_area() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:145 BoxList.area -- Tensor.prod EXISTS, mixin/op.bend:822 mo_prod (:147); the wall is the Python OBJECT: it reads self.size (:146) and the result is a Tensor used in a Python `if` at :151")
+  D.refuse("extra/models/mask_rcnn.py:145 BoxList.area -- Tensor.prod EXISTS, mixin/op.bend:864 symbol=mo_prod (:147); the wall is the Python OBJECT: it reads self.size (:146) and the result is a Tensor used in a Python `if` at :151")
 
 # :154 def add_field(self, field, field_data)
 def mr_boxlist_add_field() -> D.Refused:
@@ -203,7 +203,7 @@ def mr_cat_boxlist() -> D.Refused:
 
 # :306 def __init__(self, in_channels_list, out_channels)
 def mr_fpn_init(in_channels_list: List<&2, U32>, out_channels: U32) -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:306 FPN.__init__ -- nn_conv2d EXISTS at nn/layers.bend:756 (:309,:310); BLOCKED BY the Python list .append at :309,:310")
+  D.refuse("extra/models/mask_rcnn.py:306 FPN.__init__ -- nn_conv2d EXISTS at nn/layers.bend:937 symbol=nn_conv2d (:309,:310); BLOCKED BY the Python list .append at :309,:310")
 
 # :313 def __call__(self, x: Tensor)
 def mr_fpn_call(+x: List<&2, T.Tensor>) -> D.Refused:
@@ -263,7 +263,7 @@ def mr_scale_enum() -> D.Refused:
 
 # :492 def __init__(self, in_channels, num_anchors)
 def mr_rpn_head_init(in_channels: U32, num_anchors: U32) -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:492 RPNHead.__init__ -- FIRST MISSING SYMBOL Conv2d at :496-500; the BODY exists at nn/layers.bend:756 nn_conv2d and the class shell does not")
+  D.refuse("extra/models/mask_rcnn.py:492 RPNHead.__init__ -- FIRST MISSING SYMBOL Conv2d at :496-500; the BODY exists at nn/layers.bend:937 symbol=nn_conv2d and the class shell does not")
 
 # :503 def __call__(self, features)
 def mr_rpn_head_call(+features: List<&2, T.Tensor>) -> D.Refused:
@@ -299,11 +299,11 @@ def mr_rpn_call() -> D.Refused:
 
 # :657 def make_conv3x3(in_channels, out_channels, stride=1)
 def mr_make_conv3x3() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:657 make_conv3x3 -- FIRST MISSING SYMBOL nn.Conv2d; nn/layers.bend:756 nn_conv2d EXISTS and its `padding` is a SHAPE LIST (nn/__init__.bend:196 nn_same), not the int 1 at :659")
+  D.refuse("extra/models/mask_rcnn.py:657 make_conv3x3 -- FIRST MISSING SYMBOL nn.Conv2d; nn/layers.bend:937 symbol=nn_conv2d EXISTS and its `padding` is a SHAPE LIST (nn/__init__.bend:199 symbol=nn_same), not the int 1 at :659")
 
 # :676 class MaskRCNNFPNFeatureExtractor / :677 def __init__(self, in_channels_list, out_channels, norm_frozen=False)
 def mr_fpn_extractor_init() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:677 MaskRCNNFPNFeatureExtractor.__init__ -- FIRST MISSING SYMBOL the LastLevelMaxPool (:681), which is Tensor.max_pool2d and EXISTS at nn/pool.bend:250")
+  D.refuse("extra/models/mask_rcnn.py:677 MaskRCNNFPNFeatureExtractor.__init__ -- FIRST MISSING SYMBOL the LastLevelMaxPool (:681), which is Tensor.max_pool2d and EXISTS at nn/pool.bend:251 symbol=pool_maxpool")
 
 # :697 def forward(self, x)
 def mr_fpn_extractor_forward(+x: List<&2, T.Tensor>) -> D.Refused:
@@ -311,7 +311,7 @@ def mr_fpn_extractor_forward(+x: List<&2, T.Tensor>) -> D.Refused:
 
 # :706 class MaskRCNNC4Predictor / :707 def __init__(self, in_channels, num_classes)
 def mr_c4_predictor_init() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:707 MaskRCNNC4Predictor.__init__ -- FIRST MISSING SYMBOL nn.Linear (:713); nn/layers.bend:427 nn_linear EXISTS")
+  D.refuse("extra/models/mask_rcnn.py:707 MaskRCNNC4Predictor.__init__ -- FIRST MISSING SYMBOL nn.Linear (:713); nn/layers.bend:530 symbol=nn_linear EXISTS")
 
 # :716 def forward(self, x)
 def mr_c4_predictor_forward(+x: T.Tensor) -> D.Refused:
@@ -347,7 +347,7 @@ def mr_pooler_forward() -> D.Refused:
 
 # :951 class FPNPredictor / :952 def __init__(self, in_channels, hidden_size, num_classes)
 def mr_fpn_predictor_init() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:952 FPNPredictor.__init__ -- FIRST MISSING SYMBOL nn.Linear (:958,:963); nn_linear EXISTS at nn/layers.bend:427")
+  D.refuse("extra/models/mask_rcnn.py:952 FPNPredictor.__init__ -- FIRST MISSING SYMBOL nn.Linear (:958,:963); nn_linear EXISTS at nn/layers.bend:530 symbol=nn_linear")
 
 # :965 class PostProcessor / :966 def __init__(self, score_thresh=0.05, nms_thresh=0.5, detections_per_img=100, ...)
 def mr_post_init() -> D.Refused:
@@ -395,7 +395,7 @@ def mr_image_list_init() -> D.Refused:
 
 # :1141 def to_image_list(tensors, size_divisible=32)
 def mr_to_image_list() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:1141 to_image_list -- FIRST MISSING SYMBOL np.array/np.floor/np.ceil (:1152-1158); mxw_pad.go EXISTS at mixin/movement.bend:1517 and the max padding size is a numpy reduction over the batch")
+  D.refuse("extra/models/mask_rcnn.py:1141 to_image_list -- FIRST MISSING SYMBOL np.array/np.floor/np.ceil (:1152-1158); mxw_pad.go EXISTS at mixin/movement.bend:1520 symbol=mxw_pad.go and the max padding size is a numpy reduction over the batch")
 
 # ---------------------------------------------------------------------------
 # :1176-1209 MaskRCNN.

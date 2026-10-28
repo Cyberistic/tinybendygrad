@@ -90,14 +90,14 @@ def un_at(r: D.Refused) -> String:
 
 # :6 Linear, Conv2d, GroupNorm, LayerNorm = nn.Linear, nn.Conv2d, nn.GroupNorm, nn.LayerNorm
 def un_alias_nn() -> D.Refused:
-  D.refuse("extra/models/unet.py:6 module alias -- MISSING nn.GroupNorm and nn.LayerNorm CLASSES; nn/__init__.bend has 17 defs and ZERO classes, while the OPS nn_linear (nn/layers.bend:427) and nn_conv2d (:756) are built")
+  D.refuse("extra/models/unet.py:6 module alias -- MISSING nn.GroupNorm and nn.LayerNorm CLASSES; nn/__init__.bend has 17 defs and ZERO classes, while the OPS nn_linear (nn/layers.bend:530 symbol=nn_linear) and nn_conv2d (nn/layers.bend:937 symbol=nn_conv2d) are built")
 
 # :7 attention, gelu, mixed_precision_dtype = Tensor.scaled_dot_product_attention, ...
 def un_alias_attention() -> D.Refused:
-  D.refuse("extra/models/unet.py:7 module alias -- MISSING Tensor.scaled_dot_product_attention; four arms walled at mixin/rand.bend:87-90, and transformer.bend:19-27 reaches the same one")
+  D.refuse("extra/models/unet.py:7 module alias -- MISSING Tensor.scaled_dot_product_attention; four arms walled in mixin/rand.bend's ATTENTION WALLS block (its GQA, matmul, tril and softmax arms), and extra/models/transformer.bend:96 symbol=tf_block_init refuses on the same one")
 
 def un_alias_gelu() -> D.Refused:
-  D.refuse("extra/models/unet.py:7 module alias -- MISSING Tensor.gelu; only ew_quick_gelu (mixin/elementwise.bend:1217) exists, with the 1.702 constant, and plain gelu needs erf (elementwise.bend:43)")
+  D.refuse("extra/models/unet.py:7 module alias -- MISSING Tensor.gelu; only ew_quick_gelu exists, with the 1.702 constant, and plain gelu needs erf -- and erf is in that file's FLOAT-CONST FAMILY wall, whose only landed arm is mixin/elementwise.bend:1229 symbol=ew_quick_gelu")
 
 # `dtypes.float16` EXISTS and is the third name on that line, which is why the
 # refusal above names two of three and not "the alias line". THE SPELLING IS
@@ -115,15 +115,15 @@ def un_timestep_embedding(+timesteps: T.Tensor, dim: U32, max_period: F32) -> D.
 
 # :12 the arange line, alone, because it is the file's first missing primitive.
 def un_arange(half: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:12 timestep_embedding -- MISSING Tensor.arange; mo_range/mx_range (nn/layers.bend:110) answer a permute order, not a Tensor, and cr_full (mixin/creation.bend:417) is a fill")
+  D.refuse("extra/models/unet.py:12 timestep_embedding -- MISSING Tensor.arange; mo_range/mx_range (nn/layers.bend:110 symbol=nn_ks.go) answer a permute order, not a Tensor, and cr_full (mixin/creation.bend:489 symbol=cr_full) is a fill")
 
 # :13 args = timesteps.unsqueeze(1) * freqs.unsqueeze(0)
 def unsqueeze_axis1(+t: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/unet.py:13 timestep_embedding -- MISSING Tensor.unsqueeze; and UNDERSIZED DIMS are NOT WRITABLE, so even a broadcast is not this (nn/layers.bend:30-40 measures the same boundary for _broadcasted)")
+  D.refuse("extra/models/unet.py:13 timestep_embedding -- MISSING Tensor.unsqueeze; and UNDERSIZED DIMS are NOT WRITABLE, so even a broadcast is not this (nn/layers.bend:404 symbol=nn_dot.dts refuses that same boundary for _broadcasted BY NAME)")
 
 # :14 out = Tensor.cat(args.cos(), args.sin(), dim=-1)
 def un_emb_cat(+a: T.Tensor, +b: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/unet.py:14 timestep_embedding -- MISSING Tensor.cat AND Tensor.cos; tn_sin IS built (tensor.bend:423) and there is no cos entry anywhere, so the asymmetry is real and not a typo")
+  D.refuse("extra/models/unet.py:14 timestep_embedding -- MISSING Tensor.cat AND Tensor.cos; tn_sin IS built (tensor.bend:423 symbol=tn_sin) and there is no cos entry anywhere, so the asymmetry is real and not a typo")
 
 # :15 out.cast(...) if mixed_precision_dtype in Device[...].renderer.supported_dtypes() else out
 def un_supported_dtypes() -> D.Refused:
@@ -136,15 +136,15 @@ def un_supported_dtypes() -> D.Refused:
 # :18 def __init__(self, channels, emb_channels, out_channels, num_groups=32)
 def un_resblock_init(channels: U32, emb_channels: U32, out_channels: U32,
   num_groups: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:18 ResBlock.__init__ -- FIRST MISSING SYMBOL nn.GroupNorm at :20; Tensor.silu at :21 (ew_silu, mixin/elementwise.bend:1209) and nn.Conv2d at :22 (nn_conv2d, nn/layers.bend:756) are built")
+  D.refuse("extra/models/unet.py:18 ResBlock.__init__ -- FIRST MISSING SYMBOL nn.GroupNorm at :20; Tensor.silu at :21 (ew_silu, mixin/elementwise.bend:1221 symbol=ew_silu) and nn.Conv2d at :22 (nn_conv2d, nn/layers.bend:937 symbol=nn_conv2d) are built")
 
 # :19-22 self.in_layers
 def un_resblock_in_layers(channels: U32, out_channels: U32, num_groups: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:19 ResBlock.in_layers -- MISSING nn.GroupNorm; this is a per-GROUP reduction and pool_bn (nn/pool.bend:381) is a per-CHANNEL one, so the built norm is not a parameter away from this")
+  D.refuse("extra/models/unet.py:19 ResBlock.in_layers -- MISSING nn.GroupNorm; this is a per-GROUP reduction and pool_bn (nn/pool.bend:382 symbol=pool_bn) is a per-CHANNEL one, so the built norm is not a parameter away from this")
 
 # :24-27 self.emb_layers = [Tensor.silu, Linear(emb_channels, out_channels)]
 def un_resblock_emb_layers(emb_channels: U32, out_channels: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:24 ResBlock.emb_layers -- Tensor.silu and the nn_linear OP (nn/layers.bend:427) are BOTH built; blocked by x.sequential at :38")
+  D.refuse("extra/models/unet.py:24 ResBlock.emb_layers -- Tensor.silu and the nn_linear OP (nn/layers.bend:530 symbol=nn_linear) are BOTH built; blocked by x.sequential at :38")
 
 # :28-33 self.out_layers
 def un_resblock_out_layers(out_channels: U32, num_groups: U32) -> D.Refused:
@@ -160,7 +160,7 @@ def un_resblock_call(+x: T.Tensor, +emb: T.Tensor) -> D.Refused:
 
 # :39 h = h + emb_out.reshape(*emb_out.shape, 1, 1)
 def un_resblock_add(+h: T.Tensor, +emb_out: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/unet.py:39 ResBlock.__call__ -- tn_add (tensor.bend:680) and mxw_reshape (mixin/movement.bend:1431) are BOTH built and the fold answers the broadcast (uop/fold.bend:999); blocked only by x.sequential at :37")
+  D.refuse("extra/models/unet.py:39 ResBlock.__call__ -- tn_add (tensor.bend:680 symbol=tn_add.go) and mxw_reshape (mixin/movement.bend:1434 symbol=mxw_reshape) are BOTH built and the fold answers the broadcast (uop/fold.bend:684 symbol=bcast_shape); blocked only by x.sequential at :37")
 
 # ---------------------------------------------------------------------------
 # :43-59 CrossAttention.
@@ -172,7 +172,7 @@ def un_xattn_init(query_dim: U32, ctx_dim: U32, n_heads: U32, d_head: U32) -> D.
 
 # :50 self.attn = attention
 def un_xattn_attn() -> D.Refused:
-  D.refuse("extra/models/unet.py:50 CrossAttention.attn -- MISSING Tensor.scaled_dot_product_attention; this is the same blocker as extra/models/unet.py:7 and transformer.bend:108")
+  D.refuse("extra/models/unet.py:50 CrossAttention.attn -- MISSING Tensor.scaled_dot_product_attention; this is the same blocker as extra/models/unet.py:7 and extra/models/transformer.bend:108 symbol=tf_block_attn")
 
 # :53 def __call__(self, x:Tensor, ctx:Optional[Tensor]=None) -> Tensor
 def un_xattn_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
@@ -180,7 +180,7 @@ def un_xattn_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
 
 # :56 ... .reshape(x.shape[0], -1, self.num_heads, self.head_size).transpose(1, 2)
 def un_xattn_head_split() -> D.Refused:
-  D.refuse("extra/models/unet.py:56 CrossAttention.__call__ -- MISSING -1 INFERENCE; mxw_reshape (mixin/movement.bend:1431) takes an explicit List<&2, U32> and does not infer an axis (nn/pool.bend:322 states the same boundary)")
+  D.refuse("extra/models/unet.py:56 CrossAttention.__call__ -- MISSING -1 INFERENCE; mxw_reshape (mixin/movement.bend:1434 symbol=mxw_reshape) takes an explicit List<&2, U32> and does not infer an axis (nn/pool.bend:327 symbol=pool_flatten states the same boundary)")
 
 # ---------------------------------------------------------------------------
 # :61-80 GEGLU and FeedForward.
@@ -215,7 +215,7 @@ def un_btb_init(dim: U32, ctx_dim: U32, n_heads: U32, d_head: U32) -> D.Refused:
 
 # :87-89 self.norm1 = LayerNorm(dim)  self.norm2 = LayerNorm(dim)  self.norm3 = LayerNorm(dim)
 def un_btb_norms(dim: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:87 BasicTransformerBlock.norm1 -- MISSING Tensor.layernorm, named as an open wall at nn/__init__.bend:230 (mixin/op.py:1644)")
+  D.refuse("extra/models/unet.py:87 BasicTransformerBlock.norm1 -- MISSING Tensor.layernorm, named as an open wall at nn/__init__.bend:220 symbol=nn_glorot (that file's LAST def -- there is NO x.layernorm def; the wall is the `# TODO(p3) mixin/op.py:1661 x.layernorm` marker in that file's WALLS block, and mixin/op.py:1644 upstream)")
 
 # :91 def __call__(self, x:Tensor, ctx:Optional[Tensor]=None) -> Tensor
 def un_btb_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
@@ -233,7 +233,7 @@ def un_sp_init(channels: U32, n_heads: U32, d_head: U32, use_linear: Bool, depth
 
 # :112 def __call__(self, x:Tensor, ctx:Optional[Tensor]=None) -> Tensor
 def un_sp_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
-  D.refuse("extra/models/unet.py:112 SpatialTransformer.__call__ -- FIRST MISSING SYMBOL Tensor.permute at :116 (mxw_permute, mixin/movement.bend:1449, EXISTS) reached only after nn.GroupNorm at :115, which is MISSING")
+  D.refuse("extra/models/unet.py:112 SpatialTransformer.__call__ -- FIRST MISSING SYMBOL Tensor.permute at :116 (mxw_permute, mixin/movement.bend:1449 symbol=mxw_permute.go, EXISTS) reached only after nn.GroupNorm at :115, which is MISSING")
 
 # ---------------------------------------------------------------------------
 # :124-138 Downsample and Upsample. THE TWO SHORTEST CLASSES IN THE FILE, AND
@@ -242,7 +242,7 @@ def un_sp_call(+x: T.Tensor, ctx: Maybe<&2, T.Tensor>) -> D.Refused:
 
 # :125 def __init__(self, channels)
 def un_downsample_init(channels: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:125 Downsample.__init__ -- nn_conv2d (nn/layers.bend:756) EXISTS and takes stride; blocked only by the layer STORE")
+  D.refuse("extra/models/unet.py:125 Downsample.__init__ -- nn_conv2d (nn/layers.bend:937 symbol=nn_conv2d) EXISTS and takes stride; blocked only by the layer STORE")
 
 # :128 def __call__(self, x:Tensor) -> Tensor
 def un_downsample_call(+x: T.Tensor) -> D.Refused:
@@ -250,7 +250,7 @@ def un_downsample_call(+x: T.Tensor) -> D.Refused:
 
 # :136-137 bs,c,py,px = x.shape ; z = x.reshape(...).expand(...).reshape(...)
 def un_upsample_expand(bs: U32, c: U32, py: U32, px: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:137 Upsample.__call__ -- cr_expand (mixin/creation.bend:271) and mxw_reshape (mixin/movement.bend:1431) are BOTH built and every dim here is an explicit U32; this is the nearest-miss in the file")
+  D.refuse("extra/models/unet.py:137 Upsample.__call__ -- cr_expand (mixin/creation.bend:343 symbol=cr_expand) and mxw_reshape (mixin/movement.bend:1434 symbol=mxw_reshape) are BOTH built and every dim here is an explicit U32; this is the nearest-miss in the file")
 
 # :138 return self.conv(z)
 def un_upsample_call(+z: T.Tensor) -> D.Refused:
@@ -271,11 +271,11 @@ def un_unet_init(adm_in_ch: Maybe<&2, U32>, in_ch: U32, out_ch: U32, model_ch: U
 
 # :159-164 self.time_embed = [Linear(model_ch, time_embed_dim), Tensor.silu, Linear(...)]
 def un_time_embed(model_ch: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:160 UNetModel.time_embed -- nn_linear and ew_silu (mixin/elementwise.bend:1209) are BOTH built; blocked by x.sequential at :234")
+  D.refuse("extra/models/unet.py:160 UNetModel.time_embed -- nn_linear and ew_silu (mixin/elementwise.bend:1221 symbol=ew_silu) are BOTH built; blocked by x.sequential at :234")
 
 # :175-177 self.input_blocks
 def un_input_blocks(model_ch: U32, in_ch: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:175 UNetModel.input_blocks -- nn_conv2d (nn/layers.bend:756) EXISTS; blocked by the layer STORE")
+  D.refuse("extra/models/unet.py:175 UNetModel.input_blocks -- nn_conv2d (nn/layers.bend:937 symbol=nn_conv2d) EXISTS; blocked by the layer STORE")
 
 # :202-206 self.middle_block
 def un_middle_block(model_ch: U32) -> D.Refused:
@@ -296,7 +296,7 @@ def un_unet_call(+x: T.Tensor, +tms: T.Tensor, +ctx: T.Tensor,
 
 # :240 if mixed_precision_dtype in Device[Device.DEFAULT].renderer.supported_dtypes():
 def un_mixed_precision() -> D.Refused:
-  D.refuse("extra/models/unet.py:240 UNetModel.__call__ -- MISSING Device[...].renderer.supported_dtypes(); ew_cast (mixin/elementwise.bend:180) is built, so the cast itself is fine and only the CAPABILITY QUERY is absent")
+  D.refuse("extra/models/unet.py:240 UNetModel.__call__ -- MISSING Device[...].renderer.supported_dtypes(); ew_cast (mixin/elementwise.bend:180 symbol=ew_cast) is built, so the cast itself is fine and only the CAPABILITY QUERY is absent")
 
 # :259 x = x.cat(saved_inputs.pop(), dim=1)
 def un_unet_cat(+x: T.Tensor, +skip: T.Tensor) -> D.Refused:
@@ -318,7 +318,7 @@ def main() -> IO(Unit):
     row("unet_ported", False{})
     srow("unet_first_blocker_line", "extra/models/unet.py:12")
     srow("unet_first_blocker", "Tensor.arange")
-    srow("unet_headline_blocker", "Tensor.scaled_dot_product_attention -- shared with transformer.bend and mixin/rand.bend:87-90")
+    srow("unet_headline_blocker", "Tensor.scaled_dot_product_attention -- shared with extra/models/transformer.bend:96 symbol=tf_block_init, and walled in mixin/rand.bend's ATTENTION WALLS block (its GQA, matmul, tril and softmax arms)")
     srow("unet_classes", "11")
-    srow("unet_alias_dtype", "S.half() -- dtype.bend:53 renamed dtypes.float16")
+    srow("unet_alias_dtype", "S.half() -- dtype.bend:113 symbol=dtypes.f16 renamed dtypes.float16, and dtypes.f16 IS S.half()")
     urow("unet_default_num_groups", 32)

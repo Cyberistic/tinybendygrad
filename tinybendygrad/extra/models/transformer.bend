@@ -94,7 +94,7 @@ def tf_at(r: D.Refused) -> String:
 # :4  def __init__(self, embed_dim, num_heads, ff_dim, prenorm=False,
 #                  act=lambda x: x.relu(), dropout=0.1)
 def tf_block_init(embed_dim: U32, num_heads: U32, ff_dim: U32, prenorm: Bool, dropout: F32) -> D.Refused:
-  D.refuse("extra/models/transformer.py:4 TransformerBlock.__init__ -- reached :12 Tensor.scaled_uniform (mixin/rand.bend:855 EXISTS); BLOCKED AT :27 scaled_dot_product_attention via attn")
+  D.refuse("extra/models/transformer.py:4 TransformerBlock.__init__ -- reached :12 Tensor.scaled_uniform (mixin/rand.bend:940 symbol=rd_scaled_uniform EXISTS); BLOCKED AT :27 scaled_dot_product_attention via attn")
 
 # :5  assert embed_dim % num_heads == 0, "embed_dim must be divisible by num_heads"
 def tf_block_assert_head_size(embed_dim: U32, num_heads: U32) -> Bool:
