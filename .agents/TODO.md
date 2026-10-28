@@ -24645,3 +24645,26 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **SUBSTRATE **DIGEST **IS **`ed6a074fe1aa0dfe54df4a768e226f3781df814999e9f7ccafcead1437163cb9`**
       **AND **`AGENTS.md`'s **CLAIM **SAYS **`eb6ef860…`**, **SO **THE **CLAIM **IS **STALE** **AND
       **IT **IS **NOW **MARKED **STALE** (`bfd6a6f97`) **RATHER **THAN **LEFT **FALSE.**
+
+- [x] **THE **INTERNAL **POINTERS **ARE **CLOSED**: **`gates/bendcite-gate.py` **IS **rc=0`**, **AND
+      **ALL **FOUR **CITATION **GATES **ARE **GREEN** (`150705270`, `31c1e44cc`, `c15e67b4d`,
+      **`860c86428`**).**  **⇒ AND **THE **FOUR **SLICES **TOGETHER **CLOSED **282 **ROWS**:
+      **SLICE **1** (**27 **FILES**): **63 `unverifiable` + 95 `WRONG-LINE` -> 0**;
+      **SLICE **2** (**26 **FILES**): **53 + 57 -> 0**; **SLICE **3** (**26 **FILES**): **52 + 72 ->
+      0**; **SLICE **4** (**17 **FILES**): **58 `WRONG-LINE` -> 0**, **PLUS **79 **BARE **POINTERS
+      **NAMED.**
+- [x] **THE **TREE **MOVED **TWICE **UNDER **A **SLICE**, **AND **THAT **IS **THE **BEST **ARGUMENT
+      **THE **TREE **HAS **FOR **`symbol=`** (MEASURED **2026-10-27**).**  **⇒ ANOTHER **UNIT
+      **ADDED **10 **LINES **TO **`nn/layers.bend`** (**`nn_linear` **:520 -> :530**) **AND **2 **TO
+      **`mixin/elementwise.bend`** (**`ew_silu` **:1219 -> :1221**), **AND **EVERY **RE-AIMED
+      **POINTER **WENT **STALE **IN **THE **SAME **MINUTE.**  **⇒ THE **LINE **IS **A **ROT **AND
+      **THE **NAME **IS **NOT**, **AND **THE **ROT **IS **NOT **SLOW.**
+      **⇒ AND **IT **ALSO **Drove **A **HARNESS **CORRECTION**: **THE **MEASUREMENT **COPY **MUST
+      **BE **OF **THE **LIVE **TREE, **NOT **`git archive` **OF **HEAD** (**THE **FILES **YOU **DON'T
+      **OWN **MOVE**), **AND **IT **MUST **CARRY **`references/`** (**GITIGNORED**, **SO **AN
+      **ARCHIVE **LACKS **THE **COMPILER's **3,191-LINE **`base.bend`** **AND **EVERY **`base.bend`
+      **POINTER **THEN **RESOLVES **INTO **THE **PORT's **56-LINE **ONE**).**
+- [ ] **THE **LAST **30 `unverifiable` **ROWS** (DISPATCHED, **11 **FILES**).**
+- [ ] **THE **CORPUS **MUST **BE **RE-TAKEN** **ONCE **THE **PORT **STOPS **MOVING**: **THE
+      **SUBSTRATE **DIGEST **MOVED **`986410b5…` -> **`8535a2fa…`** **AND **THE **CLAIM **IN
+      **`AGENTS.md` **IS **ALREADY **MARKED **STALE** (`bfd6a6f97`) **RATHER **THAN **LEFT **FALSE.**
