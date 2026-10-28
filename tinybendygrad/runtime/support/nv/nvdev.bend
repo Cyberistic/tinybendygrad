@@ -42,9 +42,9 @@
 #         ip.bend:116  self.nvdev.mmio[0x300000//4:...]               -> nv.wreg/rreg (:92-95)
 #         ip.bend:117  self.nvdev._alloc_boot_mem(...)                -> nv.alloc_boot_mem (:149-159)
 #         ip.bend:118  self.nvdev.NV_PGSP_FALCON_MAILBOX0.write(...)  -> nv.NVReg.write (:23)
-#     plus `nvdev.vram_size` (ip.bend:1798), `nvdev.chip_name` (ip.bend:2433),
-#     `nvdev.flcn.frts_offset` (ip.bend:2682), `nvdev._alloc_boot_mem`
-#     (ip.bend:2560 addresses) and `NV_PFB_PRI_MMU_WPR2_ADDR_HI` (ip.bend:2665).
+#     plus `nvdev.vram_size` (runtime/support/nv/ip.bend:1800 symbol=rp.hdr_len), `nvdev.chip_name` (runtime/support/nv/ip.bend:2435 symbol=rpc.minted),
+#     `nvdev.flcn.frts_offset` (runtime/support/nv/ip.bend:2683 symbol=ref.mbx), `nvdev._alloc_boot_mem`
+#     (the port's `runtime/support/nv/ip.bend` TODO WALL BLOCK, which has no `def _alloc_boot_mem` and no address table) and `NV_PFB_PRI_MMU_WPR2_ADDR_HI` (runtime/support/nv/ip.bend:2662 symbol=t_gsp).
 #     The ARITHMETIC of the first four is ported and gated here. The device
 #     memory they touch is the seam, and it was the seam before this file too.
 #
@@ -67,9 +67,9 @@
 #      RESOLVE -- real `io_eff(CID(...), run, need)` registrations and real C.
 #      But every one is a NUMERIC CONVERSION. Not one is a syscall, an `mmap`,
 #      an `open`, or an `ioctl`.
-#   2. `system.bend` HAS an `ioctl`: `system.bend:475 def CALL_IOCTL() -> U32: 21`,
+#   2. `system.bend` HAS an `ioctl`: `runtime/support/system.bend:475 symbol=CALL_IOCTL def CALL_IOCTL() -> U32: 21`,
 #      `system.bend:489` symbol=sys.call_names lists "ioctl" among `sys.call_names()`,
-#      and `system.bend:521` symbol=sys.call_of dispatches it. But
+#      and `system.bend:498` symbol=sys.call_of dispatches it. But
 #      `rg 'def sys.ioctl' tinybendygrad/runtime/support/system.bend` returns ZERO
 #      hits and there is no `system.c` under `tinybendygrad/`. It is a NAME IN A
 #      TABLE, i.e. a trace tag, not a binding. `system.bend:123` says so itself:

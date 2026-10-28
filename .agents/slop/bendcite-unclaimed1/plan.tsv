@@ -1,0 +1,205 @@
+tinybendygrad/uop/ops.bend|607|codegen/kernel.bend|401|401|PROSE:#     schedule/indexing.bend:1315 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
+tinybendygrad/uop/ops.bend|607|codegen/kernel.bend|991|991|PROSE:#     schedule/indexing.bend:1315 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
+tinybendygrad/uop/ops.bend|608|codegen/opt/heuristic.bend|157|157|PROSE:#     codegen/kernel.bend:1002 symbol=kn_fixture       codegen/late/linearizer.bend:877 symbol=lt_fix
+tinybendygrad/uop/ops.bend|608|codegen/opt/heuristic.bend|160|160|PROSE:#     codegen/kernel.bend:1002 symbol=kn_fixture       codegen/late/linearizer.bend:877 symbol=lt_fix
+tinybendygrad/uop/ops.bend|609|codegen/opt/postrange.bend|214|214|PROSE:#     codegen/opt/heuristic.bend:159 symbol=reduce_k   codegen/opt/heuristic.bend:162 symbol=matmul_k
+tinybendygrad/uop/ops.bend|610|codegen/opt/search.bend|295|295|PROSE:#     codegen/opt/postrange.bend:160 symbol=split_targets   codegen/opt/search.bend:418 symbol=zero_variant.dead
+tinybendygrad/uop/ops.bend|1004|runtime/ops_python.bend|2620|2620|runtime/ops_python.bend:2785 symbol=fx
+tinybendygrad/uop/ops.bend|1015|runtime/ops_python.bend|262|262|HEADER:`runtime/ops_python.bend`'s IMPORT BLOCK (`import ../uop/ops.bend as O`)
+tinybendygrad/uop/ops.bend|1180|schedule/prepare.bend|277|277|schedule/prepare.bend:274 symbol=pr_perm
+tinybendygrad/uop/ops.bend|1181|mixin/movement.bend|993|993|mixin/movement.bend:991 symbol=G.pad
+tinybendygrad/uop/ops.bend|1487|codegen/kernel.bend|269|269|codegen/kernel.bend:278 symbol=u32_none
+tinybendygrad/uop/ops.bend|2965|renderer/tc_ptx.bend|46|46|renderer/tc_ptx.bend:523 symbol=r_pmx_n
+tinybendygrad/uop/ops.bend|2966|rangeify.bend|259|259|schedule/rangeify.bend:1568 symbol=ab_5_cast
+tinybendygrad/uop/ops.bend|3048|mixin/creation.bend|23|23|mixin/creation.bend:408 symbol=cr_empty
+tinybendygrad/uop/ops.bend|3059|ops.bend|1369|1369|uop/ops.bend:1367 symbol=Arena.at.go
+tinybendygrad/uop/ops.bend|3120|schedule/rangeify.bend|744|744|PROSE:#     schedule/rangeify.bend:2116 symbol=ren_axis0.go   schedule/multi.bend:611 symbol=mu_at_of.go
+tinybendygrad/uop/ops.bend|3120|schedule/multi.bend|684|684|PROSE:#     schedule/rangeify.bend:2116 symbol=ren_axis0.go   schedule/multi.bend:611 symbol=mu_at_of.go
+tinybendygrad/uop/ops.bend|3122|uop/render.bend|588|588|PROSE:#     uop/render.bend:731 symbol=arg_repr              uop/spec.bend:363 symbol=arg_axis.go
+tinybendygrad/uop/ops.bend|3122|uop/spec.bend|348|348|PROSE:#     uop/render.bend:731 symbol=arg_repr              uop/spec.bend:363 symbol=arg_axis.go
+tinybendygrad/uop/ops.bend|3125|uop/upat.bend|406|406|PROSE:#     uop/upat.bend:396 symbol=arg_int                engine/realize.bend:1727 symbol=rz_is_devrng.ax
+tinybendygrad/uop/ops.bend|3125|engine/realize.bend|1345|1345|PROSE:#     uop/upat.bend:396 symbol=arg_int                engine/realize.bend:1727 symbol=rz_is_devrng.ax
+tinybendygrad/uop/ops.bend|3195|ops.bend|4936|4936|uop/ops.bend:4928 symbol=UOp.split_uop.pop
+tinybendygrad/uop/ops.bend|4480|codegen/__init__.bend|318|318|codegen/__init__.bend:317 symbol=pm_post_sched_cache
+tinybendygrad/uop/ops.bend|4481|engine/realize.bend|1150|1150|engine/realize.bend:1144 symbol=get_call_name
+tinybendygrad/uop/ops.bend|5107|symbolic.bend|3054|3054|uop/symbolic.bend:3054 symbol=fx_ne0
+tinybendygrad/uop/ops.bend|5134|fold.bend|4059|4059|uop/fold.bend:4061 symbol=mm.bin.and_int.mask.go
+tinybendygrad/uop/ops.bend|5538|ops.bend|87|87|HEADER:THE PORT's `uop/ops.bend` HEADER
+tinybendygrad/uop/ops.bend|5587|ops.bend|87|87|HEADER:THE PORT's `uop/ops.bend` HEADER
+tinybendygrad/uop/ops.bend|6292|uop/upat.bend|418|418|uop/upat.bend:396 symbol=arg_int
+tinybendygrad/uop/ops.bend|6293|uop/render.bend|717|717|uop/render.bend:731 symbol=arg_repr
+tinybendygrad/uop/ops.bend|8519|render.bend|1020|1020|uop/render.bend:1066 symbol=ctx_has.of
+tinybendygrad/uop/ops.bend|8555|references/bend/bend2/base.bend|2551|2551|references/bend/bend2/base.bend:2733 symbol=Map.put
+tinybendygrad/uop/ops.bend|8557|uop/render.bend|1007|1007|uop/render.bend:1002 symbol=range_ids.of
+tinybendygrad/uop/ops.bend|8568|fold.bend|590|590|uop/fold.bend:587 symbol=bitcast_dims.res
+tinybendygrad/uop/ops.bend|8593|render.bend|1017|1017|uop/render.bend:1015 symbol=multirange_str.go
+tinybendygrad/uop/ops.bend|8600|render.bend|1014|1014|uop/render.bend:1015 symbol=multirange_str.go
+tinybendygrad/uop/ops.bend|8611|fold.bend|590|590|uop/fold.bend:587 symbol=bitcast_dims.res
+tinybendygrad/uop/ops.bend|8732|render.bend|1007|1007|uop/render.bend:1002 symbol=range_ids.of
+tinybendygrad/uop/ops.bend|8885|fold.bend|6540|6540|uop/fold.bend:6492 symbol=main
+tinybendygrad/tensor.bend|108|dtype.bend|36|36|mixin/dtype.bend:350 symbol=cast_at
+tinybendygrad/tensor.bend|382|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|389|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|435|mixin/elementwise.bend|859|859|HEADER:THE PORT's `mixin/elementwise.bend` HEADER
+tinybendygrad/tensor.bend|448|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|452|ops.bend|2767|2767|uop/ops.bend:2829 symbol=UOp.where
+tinybendygrad/tensor.bend|477|fold.bend|2608|2630|uop/fold.bend:2610 symbol=dt_shape
+tinybendygrad/tensor.bend|495|ops.bend|5857|5857|uop/ops.bend:6070 symbol=Rng.sig
+tinybendygrad/tensor.bend|520|spec.bend|221|221|tinybendygrad/LAWS/spec.bend:221 symbol=Dt.max
+tinybendygrad/tensor.bend|588|mixin/elementwise.bend|484|484|mixin/elementwise.bend:484 symbol=ew_dt_max_i64
+tinybendygrad/tensor.bend|625|tensor.bend|385|385|tinybendygrad/tensor.bend:384 symbol=tn_sqrt
+tinybendygrad/tensor.bend|645|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|663|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|670|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|692|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|748|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|757|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|805|nn/__init__.bend|241|241|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/tensor.bend|808|ops.bend|2922|2922|uop/ops.bend:2919 symbol=UOp.replace.go
+tinybendygrad/tensor.bend|1372|ops.bend|1264|1264|uop/ops.bend:1219 symbol=Arg
+tinybendygrad/tensor.bend|2205|ops.bend|2697|2697|uop/ops.bend:2712 symbol=UOp.metadata
+tinybendygrad/nn/layers.bend|11|nn/__init__.bend|227|227|HEADER:THE PORT's `nn/__init__.bend` WALL BLOCK
+tinybendygrad/nn/layers.bend|41|nn/__init__.bend|299|299|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/nn/layers.bend|54|uop/ops.bend|810|810|uop/ops.bend:810 symbol=Sint
+tinybendygrad/nn/layers.bend|83|mixin/movement.bend|246|246|mixin/movement.bend:240 symbol=mx_pool_out.go
+tinybendygrad/nn/layers.bend|85|movement.bend|684|684|mixin/movement.bend:687 symbol=mxm_pick.go
+tinybendygrad/nn/layers.bend|132|tensor.bend|1815|1815|tinybendygrad/tensor.bend:1815 symbol=tn_rop.perm.of
+tinybendygrad/nn/layers.bend|276|mixin/op.bend|811|811|mixin/op.bend:853 symbol=mo_sum
+tinybendygrad/nn/layers.bend|534|nn/__init__.bend|231|231|HEADER:THE PORT's `nn/__init__.bend` WALL BLOCK
+tinybendygrad/nn/layers.bend|538|mixin/op.bend|1523|1523|mixin/op.bend:1529 symbol=t_softmax3.go
+tinybendygrad/nn/layers.bend|540|mixin/op.bend|246|246|HEADER:THE PORT's `mixin/op.bend` HEADER
+tinybendygrad/nn/layers.bend|891|uop/fold.bend|999|999|uop/fold.bend:1002 symbol=where_ds
+tinybendygrad/nn/layers.bend|977|mixin/movement.bend|1231|1231|mixin/movement.bend:1231 symbol=mxw_buf
+tinybendygrad/nn/layers.bend|1202|mixin/op.bend|781|781|mixin/op.bend:784 symbol=mo_axis0
+tinybendygrad/nn/layers.bend|1203|mixin/op.bend|316|316|mixin/op.bend:316 symbol=mo_at
+tinybendygrad/mixin/op.bend|116|elementwise.bend|378|378|mixin/elementwise.bend:363 symbol=ew_promote
+tinybendygrad/mixin/op.bend|331|nn/layers.bend|230|230|tinybendygrad/nn/layers.bend:229 symbol=nn_reduce.pick
+tinybendygrad/mixin/op.bend|610|elementwise.bend|243|243|mixin/elementwise.bend:242 symbol=ew_newer
+tinybendygrad/mixin/op.bend|635|elementwise.bend|409|409|mixin/elementwise.bend:405 symbol=ew_pair
+tinybendygrad/mixin/op.bend|802|fold.bend|1537|1537|uop/fold.bend:1538 symbol=pre_all
+tinybendygrad/mixin/op.bend|1361|fold.bend|1530|1530|uop/fold.bend:1528 symbol=stage_widths
+tinybendygrad/mixin/op.bend|1370|fold.bend|1537|1537|uop/fold.bend:1538 symbol=pre_all
+tinybendygrad/uop/render.bend|107|ops.bend|3868|3868|uop/ops.bend:3866 symbol=UPat.after.put
+tinybendygrad/uop/render.bend|347|ops.bend|680|684|PROSE:# THE DEVICE TABLE. `S.Dev` is a `U32` tag (LAWS/spec.bend:85 symbol=Dev) and
+tinybendygrad/uop/render.bend|348|ops.bend|683|683|PROSE:# schedule/rangeify.bend:1410 symbol=rf_webgpu8 says the tag is "per name interned by the runtime" -- a table that is NOT
+# schedule/rangeify.bend:1410 symbol=rf_webgpu8 says the tag is "per name interned
+# schedule/rangeify.bend:1410 symbol=rf_webgpu8 says the tag is "per name interned
+tinybendygrad/uop/render.bend|399|ops.bend|697|697|uop/ops.bend:697 symbol=AxisType.lt
+tinybendygrad/uop/render.bend|710|ops.bend|801|801|uop/ops.bend:801 symbol=CInt
+tinybendygrad/uop/render.bend|767|ops.bend|766|770|uop/ops.bend:764 symbol=range_start
+tinybendygrad/uop/render.bend|1127|fold.bend|1949|1949|uop/fold.bend:1965 symbol=Step
+tinybendygrad/runtime/ops_bend.bend|105|runtime/ops_bend.bend|1|1|HEADER:THE PORT's `runtime/ops_bend.bend` HEADER
+tinybendygrad/runtime/ops_bend.bend|1511|ops_python.bend|261|261|HEADER:`runtime/ops_python.bend`'s IMPORT BLOCK (`import ../uop/ops.bend as O`)
+tinybendygrad/runtime/ops_bend.bend|1587|ops_python.bend|1165|1165|runtime/ops_python.bend:1164 symbol=Prog.alloc.ss
+tinybendygrad/runtime/ops_bend.bend|1592|ops_python.bend|1177|1177|runtime/ops_python.bend:1175 symbol=Prog.alloc.sp
+tinybendygrad/runtime/ops_bend.bend|1604|ops_python.bend|1165|1165|runtime/ops_python.bend:1164 symbol=Prog.alloc.ss
+tinybendygrad/runtime/ops_bend.bend|2116|ops_python.bend|1165|1165|runtime/ops_python.bend:1164 symbol=Prog.alloc.ss
+tinybendygrad/uop/__init__.bend|10|ops.bend|101|101|uop/ops.bend:169 symbol=Op
+tinybendygrad/uop/__init__.bend|18|ops.bend|307|307|uop/ops.bend:371 symbol=Ops.value
+tinybendygrad/uop/__init__.bend|19|ops.bend|301|301|uop/ops.bend:365 symbol=Ops.name
+tinybendygrad/uop/__init__.bend|20|ops.bend|387|493|uop/ops.bend:448 symbol=GroupOp.unary
+tinybendygrad/uop/__init__.bend|68|ops.bend|101|101|uop/ops.bend:169 symbol=Op
+tinybendygrad/uop/__init__.bend|82|ops.bend|101|101|uop/ops.bend:169 symbol=Op
+tinybendygrad/runtime/support/nv/nvdev.bend|45|ip.bend|1798|1798|runtime/support/nv/ip.bend:1800 symbol=rp.hdr_len
+tinybendygrad/runtime/support/nv/nvdev.bend|45|ip.bend|2433|2433|runtime/support/nv/ip.bend:2435 symbol=rpc.minted
+tinybendygrad/runtime/support/nv/nvdev.bend|46|ip.bend|2682|2682|runtime/support/nv/ip.bend:2683 symbol=ref.mbx
+tinybendygrad/runtime/support/nv/nvdev.bend|47|ip.bend|2665|2665|runtime/support/nv/ip.bend:2662 symbol=t_gsp
+tinybendygrad/runtime/support/nv/nvdev.bend|70|system.bend|475|475|runtime/support/system.bend:475 symbol=CALL_IOCTL
+tinybendygrad/engine/jit.bend|93|realize.bend|1432|1432|engine/realize.bend:1432 symbol=rz_tab_rej
+tinybendygrad/engine/jit.bend|138|helpers.bend|108|108|helpers.bend:108 symbol=nc_in
+tinybendygrad/engine/jit.bend|445|tinybendygrad/LAWS/spec.bend|75|75|tinybendygrad/LAWS/spec.bend:76 symbol=Dt
+tinybendygrad/engine/jit.bend|445|LAWS/spec.bend|77|77|tinybendygrad/LAWS/spec.bend:76 symbol=Dt
+tinybendygrad/runtime/support/hcq2.bend|94|uop/ops.bend|5484|5484|PROSE:#    upstream's `view_as` IS ABSENT FROM THE PORT (upstream's is `tinygrad/uop/ops.py:1236`), so that
+tinybendygrad/runtime/support/hcq2.bend|110|uop/ops.bend|514|514|uop/ops.bend:514 symbol=GroupOp.commutative
+tinybendygrad/runtime/support/hcq2.bend|1955|device.bend|871|871|device.bend:874 symbol=map_ok
+tinybendygrad/runtime/support/hcq2.bend|2299|device.bend|1052|1052|device.bend:1033 symbol=dev_id
+tinybendygrad/schedule/indexing.bend|438|ops.bend|443|443|uop/ops.bend:504 symbol=GroupOp.movement
+tinybendygrad/schedule/indexing.bend|472|ops.bend|101|101|uop/ops.bend:169 symbol=Op
+tinybendygrad/schedule/indexing.bend|955|ops.bend|502|502|uop/ops.bend:562 symbol=GroupOp.broadcastable
+tinybendygrad/schedule/indexing.bend|1163|ops.bend|443|443|uop/ops.bend:504 symbol=GroupOp.movement
+tinybendygrad/uop/divandmod.bend|8|fold.bend|2176|2176|uop/fold.bend:2180 symbol=reshape_ds.of
+tinybendygrad/uop/divandmod.bend|857|fold.bend|2178|2178|uop/fold.bend:2180 symbol=reshape_ds.of
+tinybendygrad/uop/divandmod.bend|872|fold.bend|2174|2174|uop/fold.bend:2170 symbol=reshape_ds.go
+tinybendygrad/uop/divandmod.bend|896|fold.bend|2130|2130|uop/fold.bend:2126 symbol=marg_prod.step
+tinybendygrad/dtype.bend|615|runtime/ops_python.bend|274|278|HEADER:THE PORT's `runtime/ops_python.bend` HEADER
+tinybendygrad/dtype.bend|840|helpers.bend|2325|2325|helpers.bend:2325 symbol=cdiv_i64
+tinybendygrad/dtype.bend|1241|helpers.bend|1647|1647|helpers.bend:1648 symbol=I64
+tinybendygrad/mixin/elementwise.bend|316|mixin/op.bend|468|468|mixin/op.bend:468 symbol=mo_weakconst.cls
+tinybendygrad/mixin/elementwise.bend|906|ops.bend|5857|5857|uop/ops.bend:6070 symbol=Rng.sig
+tinybendygrad/mixin/elementwise.bend|1325|nn/layers.bend|262|262|tinybendygrad/nn/layers.bend:263 symbol=nn_reduce.keep
+tinybendygrad/nn/optim.bend|1096|device.bend|344|344|device.bend:348 symbol=reg_has
+tinybendygrad/nn/optim.bend|1097|schedule/memory.bend|1008|1008|schedule/memory.bend:1008 symbol=mem_buf
+tinybendygrad/nn/optim.bend|1485|device.bend|344|344|device.bend:348 symbol=reg_has
+tinybendygrad/renderer/cstyle.bend|49|fold.bend|1631|1631|uop/fold.bend:1631 symbol=sym_dim.val
+tinybendygrad/renderer/cstyle.bend|955|wgsl.bend|489|489|renderer/wgsl.bend:489 symbol=code_for_op.of
+tinybendygrad/renderer/cstyle.bend|956|wgsl.bend|71|72|HEADER:THE PORT's `renderer/wgsl.bend` HEADER
+tinybendygrad/schedule/multi.bend|16|fold.bend|5081|5081|uop/fold.bend:5077 symbol=ranged
+tinybendygrad/schedule/multi.bend|1082|spec.bend|75|75|tinybendygrad/LAWS/spec.bend:76 symbol=Dt
+tinybendygrad/schedule/multi.bend|1084|ops.bend|3762|3762|uop/ops.bend:3760 symbol=UPat.load
+tinybendygrad/codegen/opt/__init__.bend|15|postrange.bend|42|42|HEADER:THE PORT's `codegen/opt/postrange.bend` HEADER
+tinybendygrad/codegen/opt/__init__.bend|16|postrange.bend|13|13|HEADER:THE PORT's `codegen/opt/postrange.bend` HEADER
+tinybendygrad/extra/datasets/imagenet.bend|70|tinybendygrad/helpers.bend|2546|2546|helpers.bend:2577 symbol=Counters
+tinybendygrad/extra/datasets/imagenet.bend|237|tinybendygrad/sz.bend|967|988|sz.bend:967 symbol=go
+tinybendygrad/extra/models/retinanet.bend|30|resnet.bend|69|81|HEADER:THE PORT's `extra/models/resnet.bend` HEADER
+tinybendygrad/extra/models/retinanet.bend|34|resnet.bend|64|66|HEADER:THE PORT's `extra/models/resnet.bend` HEADER
+tinybendygrad/extra/models/retinanet.bend|40|resnet.bend|87|88|HEADER:THE PORT's `extra/models/resnet.bend` HEADER
+tinybendygrad/extra/models/retinanet.bend|52|resnet.bend|89|93|HEADER:THE PORT's `extra/models/resnet.bend` HEADER
+tinybendygrad/extra/models/retinanet.bend|55|mixin/movement.bend|1517|1517|mixin/movement.bend:1517 symbol=mxw_pad.put
+tinybendygrad/extra/models/retinanet.bend|77|tinybendygrad/extra/models/resnet.bend|166|166|HEADER:THE PORT's `extra/models/resnet.bend` HEADER
+tinybendygrad/extra/models/retinanet.bend|91|nn/layers.bend|756|756|tinybendygrad/nn/layers.bend:752 symbol=nn_pads.grp.go
+tinybendygrad/extra/models/retinanet.bend|110|extra/datasets/__init__.bend|17|20|HEADER:THE PORT's `extra/datasets/__init__.bend` HEADER
+tinybendygrad/examples/train_resnet.bend|40|mixin/op.bend|54|54|HEADER:THE PORT's `mixin/op.bend` HEADER
+tinybendygrad/examples/train_resnet.bend|61|mixin/op.bend|15|15|HEADER:THE PORT's `mixin/op.bend` HEADER
+tinybendygrad/examples/train_resnet.bend|62|mixin/op.bend|1523|1523|mixin/op.bend:1529 symbol=t_softmax3.go
+tinybendygrad/examples/train_resnet.bend|77|nn/optim.bend|873|873|nn/optim.bend:870 symbol=op_postwd
+tinybendygrad/examples/train_resnet.bend|79|helpers.bend|150|150|helpers.bend:150 symbol=getenv_str
+tinybendygrad/examples/train_resnet.bend|88|extra/datasets/__init__.bend|49|49|extra/datasets/__init__.bend:49 symbol=fetch_mnist
+tinybendygrad/extra/models/rnnt.bend|45|nn/optim.bend|898|898|nn/optim.bend:900 symbol=op_mstep
+tinybendygrad/extra/models/rnnt.bend|48|nn/layers.bend|383|383|tinybendygrad/nn/layers.bend:382 symbol=nn_dot.order
+tinybendygrad/extra/models/rnnt.bend|77|mixin/op.bend|87|89|HEADER:THE PORT's `mixin/op.bend` HEADER
+tinybendygrad/extra/models/rnnt.bend|83|nn/layers.bend|520|520|tinybendygrad/nn/layers.bend:518 symbol=nn_transpose
+tinybendygrad/extra/models/rnnt.bend|85|resnet.bend|116|123|HEADER:THE PORT's `extra/models/resnet.bend` HEADER
+tinybendygrad/extra/models/rnnt.bend|139|helpers.bend|3194|3194|HEADER:THE PORT's `helpers.bend` HEADER
+tinybendygrad/extra/models/vit.bend|33|transformer.bend|108|108|extra/models/transformer.bend:108 symbol=tf_block_attn
+tinybendygrad/extra/models/vit.bend|34|mixin/rand.bend|87|90|HEADER:THE PORT's `mixin/rand.bend` HEADER
+tinybendygrad/extra/models/vit.bend|43|nn/__init__.bend|230|230|HEADER:THE PORT's `nn/__init__.bend` WALL BLOCK
+tinybendygrad/extra/models/vit.bend|53|mixin/movement.bend|1431|1431|mixin/movement.bend:1434 symbol=mxw_reshape
+tinybendygrad/extra/models/vit.bend|54|nn/pool.bend|322|324|nn/pool.bend:327 symbol=pool_flatten
+tinybendygrad/extra/models/vit.bend|61|mixin/elementwise.bend|1217|1217|mixin/elementwise.bend:1220 symbol=ew_swish
+tinybendygrad/mixin/movement.bend|780|fold.bend|1620|1626|uop/fold.bend:1622 symbol=sym_dim.end
+tinybendygrad/mixin/movement.bend|786|fold.bend|1626|1626|uop/fold.bend:1622 symbol=sym_dim.end
+tinybendygrad/mixin/movement.bend|1198|fold.bend|1620|1626|uop/fold.bend:1622 symbol=sym_dim.end
+tinybendygrad/mixin/movement.bend|1308|fold.bend|1620|1626|uop/fold.bend:1622 symbol=sym_dim.end
+tinybendygrad/mixin/movement.bend|1331|fold.bend|1620|1626|uop/fold.bend:1622 symbol=sym_dim.end
+tinybendygrad/mixin/movement.bend|1492|fold.bend|1596|1606|uop/fold.bend:1599 symbol=sym_dim.range
+tinybendygrad/extra/models/t5.bend|35|mixin/op.bend|85|85|HEADER:THE PORT's `mixin/op.bend` HEADER
+tinybendygrad/extra/models/t5.bend|36|nn/layers.bend|1|27|HEADER:THE PORT's `nn/layers.bend` HEADER
+tinybendygrad/extra/models/t5.bend|68|mixin/elementwise.bend|772|772|mixin/elementwise.bend:772 symbol=ew_k.gelu
+tinybendygrad/extra/models/t5.bend|79|nn/optim.bend|898|898|nn/optim.bend:900 symbol=op_mstep
+tinybendygrad/extra/models/t5.bend|135|mixin/op.bend|891|891|mixin/op.bend:906 symbol=mo_div
+tinybendygrad/extra/models/llama.bend|57|mixin/elementwise.bend|1196|1196|mixin/elementwise.bend:1195 symbol=g_unary
+tinybendygrad/extra/models/llama.bend|98|mixin/rand.bend|361|361|mixin/rand.bend:365 symbol=op_pool1.iz
+tinybendygrad/extra/models/llama.bend|103|mixin/rand.bend|361|361|mixin/rand.bend:365 symbol=op_pool1.iz
+tinybendygrad/extra/models/llama.bend|173|mixin/rand.bend|880|880|mixin/rand.bend:881 symbol=rd_randn_like.src
+tinybendygrad/extra/models/resnet.bend|38|nn/__init__.bend|230|230|HEADER:THE PORT's `nn/__init__.bend` WALL BLOCK
+tinybendygrad/extra/models/resnet.bend|103|nn/__init__.bend|227|227|HEADER:THE PORT's `nn/__init__.bend` WALL BLOCK
+tinybendygrad/extra/models/resnet.bend|122|helpers.bend|3193|3193|HEADER:THE PORT's `helpers.bend` HEADER
+tinybendygrad/extra/models/resnet.bend|164|nn/__init__.bend|25|25|HEADER:THE PORT's `nn/__init__.bend` HEADER
+tinybendygrad/extra/models/unet3d.bend|28|nn/layers.bend|724|724|tinybendygrad/nn/layers.bend:729 symbol=nn_pads.dup
+tinybendygrad/extra/models/unet3d.bend|33|pool.bend|44|48|HEADER:THE PORT's `nn/pool.bend` HEADER
+tinybendygrad/extra/models/unet3d.bend|36|pool.bend|415|415|nn/pool.bend:416 symbol=pool_bn_running_stats
+tinybendygrad/extra/models/unet3d.bend|96|nn/layers.bend|714|714|tinybendygrad/nn/layers.bend:704 symbol=nn_pool.go
+tinybendygrad/mixin/creation.bend|339|nn/pool.bend|191|191|nn/pool.bend:191 symbol=pool_rep.rp
+tinybendygrad/mixin/creation.bend|643|fold.bend|1629|1629|uop/fold.bend:1632 symbol=sym_dim.val
+tinybendygrad/mixin/creation.bend|674|fold.bend|1629|1629|uop/fold.bend:1632 symbol=sym_dim.val
+tinybendygrad/mixin/creation.bend|713|ops.bend|940|940|uop/ops.bend:941 symbol=SPL
+tinybendygrad/renderer/tc_ptx.bend|528|uop/ops.bend|1244|1244|uop/ops.bend:1219 symbol=Arg
+tinybendygrad/renderer/tc_ptx.bend|535|uop/fold.bend|4391|4391|uop/fold.bend:4376 symbol=mm.lift
+tinybendygrad/renderer/tc_ptx.bend|543|ops.bend|2403|2403|uop/ops.bend:2402 symbol=Pat
+tinybendygrad/renderer/tc_ptx.bend|715|renderer/__init__.bend|85|85|HEADER:THE PORT's `renderer/__init__.bend` HEADER
+tinybendygrad/extra/models/bert.bend|81|helpers.bend|3194|3194|HEADER:THE PORT's `helpers.bend` HEADER
+tinybendygrad/extra/models/bert.bend|176|nn/layers.bend|486|486|tinybendygrad/nn/layers.bend:486 symbol=nn_dot
+tinybendygrad/extra/models/efficientnet.bend|41|tensor.bend|2539|2539|tinybendygrad/tensor.bend:2535 symbol=t_alu3
+tinybendygrad/extra/models/efficientnet.bend|189|helpers.bend|929|929|helpers.bend:929 symbol=f32_frac.next
+tinybendygrad/mixin/gradient.bend|923|ops.bend|2901|2901|uop/ops.bend:2901 symbol=UOp.mstack.go
+tinybendygrad/mixin/gradient.bend|1304|ops.bend|2901|2901|uop/ops.bend:2901 symbol=UOp.mstack.go

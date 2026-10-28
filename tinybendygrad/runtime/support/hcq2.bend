@@ -82,8 +82,7 @@
 # ===========================================================================
 # THE WALLS, named once each with the `hcq2.py` line that owns them.
 #
-# 1. THE UOP ARENA -- THE REASON THAT STOOD HERE WAS FALSE. MEASURED
-#    2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:298`;
+# 1. THE UOP ARENA -- THE REASON THAT STOOD HERE WAS FALSE. MEASURED 2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:298`;
 #    `uop/spec.bend:2725 symbol=kernel_graph_rewrite` `kernel_graph_rewrite`),
 #    `UOp.toposort` IS a def
 #    (`uop/ops.bend:3366 symbol=UOp.toposort`), and the port writes rules as `pm_*` defs over
@@ -91,7 +90,7 @@
 #    `:4033 symbol=Verdict`). So "every UPat/PatternMatcher/toposort reads and writes the UOp
 #    graph" is NOT the blocker. The real blocker per rule is the absent symbol
 #    its body calls: the SHAPED `UOp.param` (only the shape-less arm is ported,
-#    `uop/ops.bend:5484` -- upstream's `view_as` IS ABSENT FROM THE PORT, so that
+#    upstream's `view_as` IS ABSENT FROM THE PORT (upstream's is `tinygrad/uop/ops.py:1236`), so that
 #    arm has NO def to cite), `HCQInfo` (`CallInfo`
 #    dropped `aux`, `uop/ops.bend:1145 symbol=CallInfo`), the realized-buffer/engine family
 #    (`Buffer`/`_resolve`/`lower_and_compile`) and the `HWQueue` device methods.
@@ -107,7 +106,8 @@
 #
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:423   `pm_lift_deps` symbol=pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
 
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (`uop/ops.bend:514` open TODO) -- the row `pm_lift`.
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and
+#    `UOp.substitute` (uop/ops.bend:513 symbol=GroupOp.commutative, open TODO) -- the row `pm_lift`.
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`) -- the row `pm_encode`.
 #    TODO(p3) runtime/support/hcq2.py:552  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
 #
@@ -1952,7 +1952,7 @@ def t_layout() -> IO(Unit):
     row("hq2_layout_agrees_five32", u32s_eq(layout_ks(FIVE32(), 0), device_sig_ks(FIVE32())))
     # THE WALRUS ITSELF: the uint16 at slot 8 ends at 10, so the ulong after it
     # is padded to 16. An implementation that advanced off the UNROUNDED offset
-    # answers 0, 4, 6, 8, 16, 19 for this list -- which is what `device.bend:871`
+    # answers 0, 4, 6, 8, 16, 19 for this list -- which is what `device.bend:874 symbol=map_ok`
     # did until `7f170f644`. `hq2_layout_ulong_slot` is the narrow claim.
     urow("hq2_layout_ulong_slot", layout_at(MIXED(), 0, 3n))
     urow("hq2_layout_uint16_slot", layout_at(MIXED(), 0, 2n))
@@ -2296,7 +2296,7 @@ def t_batch() -> IO(Unit):
 # (device.bend:1226) answers exactly that four-way, with the same levels and
 # the same Buffer-vs-CALLABLE discriminator. WHAT WAS MISSING IS THE CONSUMER:
 # upstream's `bufferize_buf` is the ONLY caller of `link_bufs` and
-# `link_buffer` (device.bend:1052 measures that), so until this existed the
+# `link_buffer` (device.bend:1033 symbol=dev_id measures that), so until this existed the
 # port carried a mechanism with nothing on the other end of it.
 #
 # TWO FACTS THE MECHANISM ALONE DOES NOT CARRY, AND THEY ARE THE POINT:

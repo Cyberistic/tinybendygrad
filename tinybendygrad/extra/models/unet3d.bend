@@ -25,15 +25,15 @@ import ./../datasets/__init__.bend as D
 #       nn.Conv2d(c0, c1, kernel_size=(3,3,3), stride=stride,
 #                 padding=(1,1,1,1,1,1), bias=False), nn.InstanceNorm(c1)
 #   `nn_conv2d` (nn/layers.bend:937 symbol=nn_conv2d) IS nd-GENERIC on purpose -- it reads
-#   `ni = len(weight.shape[2:])` at nn/layers.bend:724 and derives every shape
+#   `ni = len(weight.shape[2:])` at tinybendygrad/nn/layers.bend:729 symbol=nn_pads.dup and derives every shape
 #   from it -- so a 3-D kernel is arithmetically expressible. BUT:
 #     * THE CLASS IS MISSING. `nn/__init__.bend` has 17 defs and ZERO classes
 #       (`grep -cE '^def ' nn/__init__.bend` = 17), so there is no `nn.Conv2d`
 #       to construct, no `(c0, c1, 3, 3, 3)` weight and no `bias=False` spelling.
-#     * `nn.InstanceNorm` IS MISSING ENTIRELY. `pool.bend:44-48` measures
+#     * `nn.InstanceNorm` IS MISSING ENTIRELY. `THE PORT's `nn/pool.bend` HEADER` measures
 #       `Tensor.batchnorm` as BUILT (`pool_bn`, pool.bend:382 symbol=pool_bn) and names the
 #       ONE part of `nn.BatchNorm` that is not a decomposition -- the running
-#       stats update, refused at pool.bend:415 because `TRAINING` is not a
+#       stats update, refused at nn/pool.bend:416 symbol=pool_bn_running_stats because `TRAINING` is not a
 #       binding in this tree and `Tensor.assign` is not a def. InstanceNorm has
 #       NO running stats at all (nn/__init__.py:209), so it is STRICTLY EASIER
 #       than BatchNorm: it is the `pool_bn` decomposition over `shape[1:]` with
@@ -84,16 +84,16 @@ def u3_at(r: D.Refused) -> String:
 
 # :8  def __init__(self, c0, c1, stride=2)
 def u3_down_init(c0: U32, c1: U32, stride: U32) -> D.Refused:
-  D.refuse("extra/models/unet3d.py:8 DownsampleBlock.__init__ -- FIRST MISSING SYMBOL nn.InstanceNorm at :9 (the nn.Conv2d CLASS is missing too; the op nn_conv2d, nn/layers.bend:756, EXISTS and is nd-generic)")
+  D.refuse("extra/models/unet3d.py:8 DownsampleBlock.__init__ -- FIRST MISSING SYMBOL nn.InstanceNorm at :9 (the nn.Conv2d CLASS is missing too; the op nn_conv2d, nn/layers.bend:758 symbol=nn_pads.grp.go, EXISTS and is nd-generic)")
 
 # :9  self.conv1 = [nn.Conv2d(c0, c1, (3,3,3), stride=stride,
 #                              padding=(1,1,1,1,1,1), bias=False), nn.InstanceNorm(c1), Tensor.relu]
 def u3_down_conv1(c0: U32, c1: U32, stride: U32) -> D.Refused:
-  D.refuse("extra/models/unet3d.py:9 DownsampleBlock.conv1 -- MISSING nn.InstanceNorm; Tensor.relu IS nn_relu (nn/layers.bend:262)")
+  D.refuse("extra/models/unet3d.py:9 DownsampleBlock.conv1 -- MISSING nn.InstanceNorm; Tensor.relu IS nn_relu (nn/layers.bend:263 symbol=nn_reduce.keep)")
 
 # :10 self.conv2 = [nn.Conv2d(c1, c1, (3,3,3), padding=(1,)*6, bias=False), ...]
 def u3_down_conv2(c1: U32) -> D.Refused:
-  D.refuse("extra/models/unet3d.py:10 DownsampleBlock.conv2 -- MISSING nn.InstanceNorm; the nn_conv2d OP EXISTS but takes no `bias=False` -- its bias is a Maybe<&2, T.Tensor> argument (nn/layers.bend:714)")
+  D.refuse("extra/models/unet3d.py:10 DownsampleBlock.conv2 -- MISSING nn.InstanceNorm; the nn_conv2d OP EXISTS but takes no `bias=False` -- its bias is a Maybe<&2, T.Tensor> argument (tinybendygrad/nn/layers.bend:704 symbol=nn_pool.go)")
 
 # :12 def __call__(self, x)
 def u3_down_call(+x: T.Tensor) -> D.Refused:
@@ -109,7 +109,7 @@ def u3_up_init(c0: U32, c1: U32) -> D.Refused:
 
 # :17 self.upsample_conv = [nn.ConvTranspose2d(c0, c1, (2,2,2), stride=2)]
 def u3_up_transpose(c0: U32, c1: U32) -> D.Refused:
-  D.refuse("extra/models/unet3d.py:17 UpsampleBlock.upsample_conv -- MISSING nn.ConvTranspose2d; the port has a FORWARD conv only (nn/layers.bend:756), and a transpose is a different graph, not a parameter of it")
+  D.refuse("extra/models/unet3d.py:17 UpsampleBlock.upsample_conv -- MISSING nn.ConvTranspose2d; the port has a FORWARD conv only (nn/layers.bend:758 symbol=nn_pads.grp.go), and a transpose is a different graph, not a parameter of it")
 
 # :23 x = Tensor.cat(x, skip, dim=1) -- THE SKIP. Named on its own because it is
 # the symbol whose absence makes the up path a plain stack of convolutions.
@@ -162,7 +162,7 @@ def u3_unet3d_call(+x: T.Tensor) -> D.Refused:
 
 # :48 def load_from_pretrained(self)
 def u3_load_pretrained() -> D.Refused:
-  D.refuse("extra/models/unet3d.py:48 UNet3D.load_from_pretrained -- FIRST MISSING SYMBOL fetch at :50; helpers.bend:3193 records the whole HTTP seam as unported")
+  D.refuse("extra/models/unet3d.py:48 UNet3D.load_from_pretrained -- FIRST MISSING SYMBOL fetch at :50; THE PORT's `helpers.bend` `NOT PORTED` BLOCK records the whole HTTP seam as unported")
 
 # :51 torch.jit.load(fn, map_location=torch.device("cpu")).state_dict()
 def u3_load_torch() -> D.Refused:
@@ -170,7 +170,7 @@ def u3_load_torch() -> D.Refused:
 
 # :55 obj.assign(v.numpy())
 def u3_load_assign(+obj: T.Tensor, +v: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/unet3d.py:55 UNet3D.load_from_pretrained -- MISSING Tensor.assign; pool.bend:408 and tensor.bend:2539 both name the immutability divergence")
+  D.refuse("extra/models/unet3d.py:55 UNet3D.load_from_pretrained -- MISSING Tensor.assign; pool.bend:416 symbol=pool_bn_running_stats and tensor.bend:2535 symbol=t_alu3 both name the immutability divergence")
 
 # ---------------------------------------------------------------------------
 # :57-59 `if __name__ == "__main__":`. `main` below IS this block and nothing

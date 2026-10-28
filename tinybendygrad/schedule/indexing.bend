@@ -435,7 +435,7 @@ def ix_bax(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> List<&2, U32>:
 #   if op in GroupOp.Movement|{INDEX, STAGE, REDUCE, AFTER, END, BACKEDGE, COPY}: return src[:1]
 #   return src
 #
-# `GroupOp.Movement` is `O.GroupOp.movement` (ops.bend:443) and is reused rather
+# `GroupOp.Movement` is `O.GroupOp.movement` (uop/ops.bend:504 symbol=GroupOp.movement) and is reused rather
 # than re-listed, which is the reuse the brief asks for: a SIX-member set that
 # `mixin/movement.bend` already owns.
 #
@@ -469,7 +469,7 @@ def ix_ds_zero(op: O.Op) -> Bool:
 # (the reuse the brief asks for) and the SEVEN extras are listed.
 
 # `+op` because the scan and the movement test each read it and `Op` is
-# Data-kinded (ops.bend:101).
+# Data-kinded (uop/ops.bend:169 symbol=Op).
 
 def ix_ds_one(+op: O.Op) -> Bool:
   Bool.or(ix_mem1(op, [O.OpsINDEX{}, O.OpsSTAGE{}, O.OpsREDUCE{}, O.OpsAFTER{}, O.OpsEND{}, O.OpsBACKEDGE{}, O.OpsCOPY{}]), O.GroupOp.movement(op))
@@ -952,7 +952,7 @@ def ix_nrem_has.go(+xs: List<&2, U32>, +k: U32, +sofar: Bool) -> Bool:
 #   return tuple(r.const_like(0) if j in baxes else r
 #                for j,r in enumerate(rngs) if j >= nleft)
 #
-# `GroupOp.Broadcastable` is `O.GroupOp.broadcastable` (ops.bend:502), reused.
+# `GroupOp.Broadcastable` is `O.GroupOp.broadcastable` (uop/ops.bend:562 symbol=GroupOp.broadcastable), reused.
 # The `j >= nleft` filter is a walk with an INDEX, so `j` is threaded (the
 # `mixin/tensor.py` rule 1 shape), and `j in baxes` is a scan over the axis
 # list.
@@ -1160,9 +1160,9 @@ def par_3_all(_: O.Op) -> Bool: True{}
 
 def par_all_n() -> U32: 79
 
-# `GroupOp.Movement` (tinygrad/uop/__init__.py:118) is SIX ops and `ops.bend:443` owns
-# the PREDICATE, not the list. `PMEntry.ops` is a list, so this is the one place
-# the six are written out; `mv_ops_n` is the row that would notice an omission.
+# `GroupOp.Movement` (tinygrad/uop/__init__.py:118) is SIX ops and
+# uop/ops.bend:504 symbol=GroupOp.movement owns the PREDICATE, not the list.
+# `PMEntry.ops` is a list, so this is the one place the six are written out; `mv_ops_n` is the row that would notice an omission.
 
 def ix_mv_ops() -> List<&2, O.Op>:
   [O.OpsEXPAND{}, O.OpsPAD{}, O.OpsPERMUTE{}, O.OpsRESHAPE{}, O.OpsSHRINK{}]

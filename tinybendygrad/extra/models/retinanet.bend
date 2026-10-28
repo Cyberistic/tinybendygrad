@@ -27,17 +27,17 @@ import ./../datasets/__init__.bend as D
 # since landed.
 #
 # WHAT LANDED SINCE resnet.bend WAS WRITTEN, WITH ITS INSTRUMENT:
-#   `nn.Conv2d`  nn/layers.bend:937 symbol=nn_conv2d `nn_conv2d`  -- resnet.bend:69-81 records this as
+#   `nn.Conv2d`  nn/layers.bend:937 symbol=nn_conv2d `nn_conv2d`  -- THE PORT's `extra/models/resnet.bend` HEADER records this as
 #                 MISSING and discloses that its own instrument was the file's own
 #                 refusal. `nn/layers.bend:1-30` is the unit that closed it and it
 #                 says so: "THE WALL TEXT NAMED THE WRONG BLOCKER".
-#   `x.max_pool2d` nn/pool.bend:250 `pool_maxpool` -- resnet.bend:64-66 recorded the
+#   `x.max_pool2d` nn/pool.bend:250 `pool_maxpool` -- THE PORT's `extra/models/resnet.bend` HEADER recorded the
 #                 POOL SHAPE ARITHMETIC as existing and the BODY as SIDE B.
-#   `Tensor.sigmoid` mixin/elementwise.bend:1206 symbol=ew_sigmoid `ew_sigmoid` (:148,:153)
+#   `Tensor.sigmoid` mixin/elementwise.bend:1208 symbol=ew_sigmoid `ew_sigmoid` (:148,:153)
 #   `Tensor.where`   mixin/elementwise.bend:571 `ew_where`   (:153)
 #
 # WHAT IS STILL MISSING HERE, AND IT IS ALL resnet.bend's LIST:
-#   `Tensor.sequential` MISSING (:141,:167,:214,:215,:216,:217). resnet.bend:87-88
+#   `Tensor.sequential` MISSING (:141,:167,:214,:215,:216,:217). THE PORT's `extra/models/resnet.bend` HEADER
 #                 already names it MISSING with the same instrument, so this is NOT
 #                 a new ask. It is the FIVETH most-hit missing symbol in this file
 #                 and the FIRST missing symbol of two of its four heads.
@@ -49,12 +49,12 @@ import ./../datasets/__init__.bend as D
 #                 shared with bert.py's `onehot` (extra/models/bert.py:164) and `one_hot` (extra/models/transformer.py:54).
 #   `Tensor.argmax`    MISSING -- NOT HIT HERE. `scores.argsort()` at :15 and :93 is
 #                 the numpy spelling and `np.argsort` is MISSING; `mo_argmax` does
-#                 not exist either, which resnet.bend:89-93 already names.
+#                 not exist either, which THE PORT's `extra/models/resnet.bend` HEADER already names.
 #   `Tensor.cast`      mixin/op.bend:390 symbol=mo_cast_t `mo_cast_t` EXISTS (:146).
 #   `Tensor.permute`   mixin/movement.bend:1449 `mxw_permute` EXISTS (:141,:167).
-#   `x.pad`            mixin/movement.bend:1517 `mxw_pad.go` EXISTS (:213).
+#   `x.pad`            mixin/movement.bend:1517 symbol=mxw_pad.put `mxw_pad.go` EXISTS (:213).
 #   `x.relu`           nn/layers.bend:299 symbol=nn_relu `nn_relu` EXISTS (:137,:159,:212,:213,:230).
-#   `x.sum`            nn/layers.bend:279 symbol=nn_sum `nn_sum` and mixin/op.bend:953 symbol=mo_mean `mo_mean` EXIST.
+#   `x.sum`            nn/layers.bend:279 symbol=nn_sum `nn_sum` and mixin/op.bend:954 symbol=mo_mean `mo_mean` EXIST.
 #   `nn.Embedding`     NOT USED BY THIS FILE. `softmax` NOT USED (no attention).
 #   `adam`             NOT USED BY THIS FILE, though `TRAINING` is read at :144 and
 #                 :170 and :190 and IS available as helpers.bend:67 `type Flags`.
@@ -74,7 +74,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `RetinaNet.__init__` (extra/models/retinanet.py:38).
 # FIRST MISSING SYMBOL: `ResNetFPN(backbone)` at retinanet.py:46, whose `backbone`
 # is `extra/models/resnet.bend` -- WHICH EXISTS AND REFUSES. The refusal at
-# `tinybendygrad/extra/models/resnet.bend:166` names `extra/models/resnet.py:7
+# `THE PORT's `extra/models/resnet.bend` HEADER` names `extra/models/resnet.py:7
 # BatchNorm = nn.BatchNorm2d -- mixin/op.py:1662 is SIDE B`, and that wall text is
 # STALE: `nn/pool.bend:381 pool_bn` is a real batchnorm.
 # ===========================================================================
@@ -88,18 +88,18 @@ def rn_at(r: D.Refused) -> String:
 
 # ---------------------------------------------------------------------------
 # :10 `ConvFPN = ConvHead = ConvClassificationHeadLogits = nn.Conv2d`. THREE
-# aliases on ONE class. All three now have a real body -- nn/layers.bend:756 --
+# aliases on ONE class. All three now have a real body -- tinybendygrad/nn/layers.bend:758 symbol=nn_pads.grp.go --
 # so these refusals are about the CLASS SHELL, not about a missing op, and that
 # distinction is the point.
 # ---------------------------------------------------------------------------
 def rn_convfpn_alias() -> D.Refused:
-  D.refuse("extra/models/retinanet.py:10 ConvFPN = nn.Conv2d -- the BODY EXISTS at nn/layers.bend:756 nn_conv2d; the class shell and its kernel_size/padding/bias arguments do not")
+  D.refuse("extra/models/retinanet.py:10 ConvFPN = nn.Conv2d -- the BODY EXISTS at nn/layers.bend:937 symbol=nn_conv2d; the class shell and its kernel_size/padding/bias arguments do not")
 
 def rn_convhead_alias() -> D.Refused:
-  D.refuse("extra/models/retinanet.py:10 ConvHead = nn.Conv2d -- SAME BODY as rn_convfpn_alias; nn/layers.bend:756 takes groups/stride/dilation and takes NO kernel_size")
+  D.refuse("extra/models/retinanet.py:10 ConvHead = nn.Conv2d -- SAME BODY as rn_convfpn_alias; nn/layers.bend:937 symbol=nn_conv2d takes groups/stride/dilation and takes NO kernel_size")
 
 def rn_clslogits_alias() -> D.Refused:
-  D.refuse("extra/models/retinanet.py:10 ConvClassificationHeadLogits = nn.Conv2d -- THREE NAMES, ONE CLASS; nn/layers.bend:756 is that one body and retinanet.py uses all three spellings")
+  D.refuse("extra/models/retinanet.py:10 ConvClassificationHeadLogits = nn.Conv2d -- THREE NAMES, ONE CLASS; nn/layers.bend:937 symbol=nn_conv2d is that one body and retinanet.py uses all three spellings")
 
 # ---------------------------------------------------------------------------
 # :12-36 the two numpy functions. NOT NUMPY-CONVERTIBLE TODAY.
@@ -107,11 +107,11 @@ def rn_clslogits_alias() -> D.Refused:
 
 # :12 def nms(boxes, scores, thresh=0.5)
 def rn_nms() -> D.Refused:
-  D.refuse("extra/models/retinanet.py:12 nms -- FIRST MISSING SYMBOL an NDARRAY; extra/datasets/__init__.bend:17-20 records that np.frombuffer/.astype have no counterpart. `np.argsort` (:15) is also MISSING")
+  D.refuse("extra/models/retinanet.py:12 nms -- FIRST MISSING SYMBOL an NDARRAY; THE PORT's `extra/datasets/__init__.bend` HEADER records that np.frombuffer/.astype have no counterpart. `np.argsort` (:15) is also MISSING")
 
 # :28 def decode_bbox(offsets, anchors)
 def rn_decode_bbox() -> D.Refused:
-  D.refuse("extra/models/retinanet.py:28 decode_bbox -- FIRST MISSING SYMBOL np.rollaxis (:29); np.exp (:33) is NOT the wall -- mixin/op.bend:987 mo_exp and mixin/elementwise.bend:1286 ew_exp BOTH exist -- so the ndarray is the whole of it")
+  D.refuse("extra/models/retinanet.py:28 decode_bbox -- FIRST MISSING SYMBOL np.rollaxis (:29); np.exp (:33) is NOT the wall -- mixin/op.bend:1050 symbol=mo_exp and mixin/elementwise.bend:1314 symbol=ew_exp ew_exp BOTH exist -- so the ndarray is the whole of it")
 
 # ---------------------------------------------------------------------------
 # :38-68 RetinaNet.
@@ -143,7 +143,7 @@ def rn_postprocess_detections() -> D.Refused:
 
 # :135 def __init__(self, in_channels, num_anchors, num_classes)
 def rn_cls_head_init(in_channels: U32, num_anchors: U32, num_classes: U32) -> D.Refused:
-  D.refuse("extra/models/retinanet.py:135 ClassificationHead.__init__ -- the four ConvHeads (:137,:138) have a body at nn/layers.bend:756; BLOCKED BY the missing class shell")
+  D.refuse("extra/models/retinanet.py:135 ClassificationHead.__init__ -- the four ConvHeads (:137,:138) have a body at nn/layers.bend:937 symbol=nn_conv2d; BLOCKED BY the missing class shell")
 
 # :140 def __call__(self, x, labels=None, matches=None)
 def rn_cls_head_call(+x: T.Tensor) -> D.Refused:
@@ -179,7 +179,7 @@ def rn_head_init(in_channels: U32, num_anchors: U32, num_classes: U32) -> D.Refu
 
 # :189 def __call__(self, x, **kwargs)
 def rn_head_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/retinanet.py:189 RetinaHead.__call__ -- FIRST MISSING SYMBOL Tensor.sequential (:167); the TRAINING branch at :190 reads helpers.bend:67 Flags, which EXISTS")
+  D.refuse("extra/models/retinanet.py:189 RetinaHead.__call__ -- FIRST MISSING SYMBOL Tensor.sequential (:167); the TRAINING branch at :190 reads helpers.bend:67 symbol=Flags, which EXISTS")
 
 # ---------------------------------------------------------------------------
 # :200-218 ResNetFPN.
@@ -195,7 +195,7 @@ def rn_fpn_grid_sizes(input_size: U32) -> D.Refused:
 
 # :211 def __call__(self, x:Tensor)
 def rn_fpn_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/retinanet.py:211 ResNetFPN.__call__ -- FIRST MISSING SYMBOL self.body.bn1 (:212) then self.body.conv1 (:212); max_pool2d EXISTS at nn/pool.bend:250, pad EXISTS, and :214-217 are Tensor.sequential, MISSING")
+  D.refuse("extra/models/retinanet.py:211 ResNetFPN.__call__ -- FIRST MISSING SYMBOL self.body.bn1 (:212) then self.body.conv1 (:212); max_pool2d EXISTS at nn/pool.bend:251 symbol=pool_maxpool, pad EXISTS, and :214-217 are Tensor.sequential, MISSING")
 
 # ---------------------------------------------------------------------------
 # :220-257 the three FPN defs. `ExtraFPNBlock.__call__` is the closest this file
@@ -204,7 +204,7 @@ def rn_fpn_call(+x: T.Tensor) -> D.Refused:
 
 # :221 def __init__(self, in_channels, out_channels)
 def rn_extra_fpn_init(in_channels: U32, out_channels: U32) -> D.Refused:
-  D.refuse("extra/models/retinanet.py:221 ExtraFPNBlock.__init__ -- p6/p7 are ConvFPN (:222,:223) with a body at nn/layers.bend:756; BLOCKED BY the missing class shell")
+  D.refuse("extra/models/retinanet.py:221 ExtraFPNBlock.__init__ -- p6/p7 are ConvFPN (:222,:223) with a body at nn/layers.bend:937 symbol=nn_conv2d; BLOCKED BY the missing class shell")
 
 # :226 def __call__(self, p, c)
 def rn_extra_fpn_call(+p: List<&2, T.Tensor>, +c: List<&2, T.Tensor>) -> D.Refused:
@@ -216,7 +216,7 @@ def rn_fpn_init2(in_channels_list: List<&2, U32>, out_channels: U32) -> D.Refuse
 
 # :242 def __call__(self, x:Tensor)
 def rn_fpn_forward(+x: List<&2, T.Tensor>) -> D.Refused:
-  D.refuse("extra/models/retinanet.py:242 FPN.__call__ -- FIRST MISSING SYMBOL self.inner_blocks[-1] (:243); :251 is a 4-step reshape+expand+reshape+SLICE upsample and nn/layers.bend:520 nn_expand covers the expand half ONLY")
+  D.refuse("extra/models/retinanet.py:242 FPN.__call__ -- FIRST MISSING SYMBOL self.inner_blocks[-1] (:243); :251 is a 4-step reshape+expand+reshape+SLICE upsample and nn/layers.bend:638 symbol=nn_expand covers the expand half ONLY")
 
 # ---------------------------------------------------------------------------
 # :259-263 the `if __name__ == "__main__":` block. It builds ResNeXt50_32X4D and

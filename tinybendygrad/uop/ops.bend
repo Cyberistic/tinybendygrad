@@ -604,10 +604,10 @@ def GroupOp.elementwise(op: Op) -> Bool:
 #
 # `AXIS_REDUCE` and `AXIS_UNROLL` are DELETED upstream but they are still CONSTRUCTED
 # by six committed files, so they cannot be deleted here:
-#     schedule/indexing.bend:1319          codegen/kernel.bend:401,:991
-#     codegen/late.bend:902                codegen/opt/heuristic.bend:157,:160
-#     codegen/opt/postrange.bend:214,:215,:292,:453,:457,:483,:675,:796,:799,:899,:933,:937,:959,:962
-#     codegen/opt/search.bend:295,:393,:399
+#     schedule/indexing.bend:1316 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
+#     codegen/kernel.bend:1002 symbol=kn_fixture       codegen/late/linearizer.bend:877 symbol=lt_fix
+#     codegen/opt/heuristic.bend:159 symbol=reduce_k   codegen/opt/heuristic.bend:162 symbol=matmul_k
+#     codegen/opt/postrange.bend:160 symbol=split_targets   codegen/opt/search.bend:418 symbol=zero_variant.dead
 # and three of those six are under `codegen/opt/*`, which another unit owns and which
 # is mid-edit. So the enum here has TEN members where CPython has EIGHT.
 #
@@ -1001,7 +1001,7 @@ def KernelInfo.of() -> KernelInfo:
 
 # `Target` -- tinygrad/helpers.py:198. `device, renderer, arch, interface, indices`,
 # and the port spells `interface` as `iface` (which is what
-# `runtime/ops_python.bend:2620` already does).
+# `runtime/ops_python.bend:2785 symbol=fx` already does).
 #
 # THE RECORD IS NOT DECLARED HERE. It is declared ONCE, in `helpers.bend` -- the
 # `Target` record, in upstream's field order -- which is upstream's own home,
@@ -1012,7 +1012,7 @@ def KernelInfo.of() -> KernelInfo:
 #
 # THIS FILE USED TO DECLARE ITS OWN `Target`, and the reason it gave was a cycle
 # that does not exist. The local copy was placed here because
-# `runtime/ops_python.bend:262` imports `../uop/ops.bend`, so `ops.bend` cannot
+# ``runtime/ops_python.bend`'s IMPORT BLOCK (`import ../uop/ops.bend as O`)` imports `../uop/ops.bend`, so `ops.bend` cannot
 # import `runtime/ops_python.bend` -- TRUE, AND IRRELEVANT, because the record
 # never had to come from there. Two records with the same five fields and
 # DIFFERENT identities are two types: a `H.Target.parse`d target could not go
@@ -1177,8 +1177,8 @@ type CallInfo is Data:
 #      and `graphcmp.bend`'s `g_flip` holds one (`O.ATuple{[1, 0]}`). The correct
 #      type is a SEPARATE bool-carrying `Arg` variant, not this one narrowed,
 #      because PERMUTE and UNSHARD really are ints. Five files construct or read a
-#      FLIP's arg -- `fold.bend`'s `order_arg`, `schedule/prepare.bend:277`,
-#      `mixin/movement.bend:993` and `:1533`, and `graphcmp.bend`'s `g_flip` and its
+#      FLIP's arg -- `fold.bend`'s `order_arg`, `schedule/prepare.bend:274 symbol=pr_perm`,
+#      `mixin/movement.bend:991 symbol=G.pad` and `:1533`, and `graphcmp.bend`'s `g_flip` and its
 #      one `argstr` arm -- so this cannot be a one-file change.
 #   str                     AStr       SPECIAL name (`gpudims.py:104`), SOURCE text
 #                                     (`codegen/__init__.py:455`)
@@ -1484,7 +1484,7 @@ def ParamArg.slot(x: ParamArg) -> U32:
 # line and a wrong sentinel costs a miscompiled buffer later.
 #
 # WHY NOT 0: `Arena.empty` spends arena index 0 on the bottom (ops.bend:1356 symbol=Arena.empty), so
-# `unique_num` starts at 1 and 0 is a REACHABLE real slot. `codegen/kernel.bend:269`
+# `unique_num` starts at 1 and 0 is a REACHABLE real slot. `codegen/kernel.bend:278 symbol=u32_none`
 # already argues this for its own copy.
 #
 # Four sibling files had each invented the same literal -- `FN_NEG1`
@@ -2962,8 +2962,8 @@ def UOp.replace(+ar: Arena, +self: U32, +mop: Maybe<&2, Op>, +msrc: Maybe<&2, Li
 #
 # The extra node is a GRAPH BLOAT, not a correctness issue: the cast is a no-op on
 # the value, and downstream optimizations fold it. The four call sites that name
-# this def as a wall (renderer/tc_ptx.bend:46, :49, :52, :55, :56, plus
-# rangeify.bend:259 weak-CAST INDEX) get a `UOp.cast` to resolve against, which is
+# this def as a wall (renderer/tc_ptx.bend:523 symbol=r_pmx_n, :49, :52, :55, :56, plus
+# schedule/rangeify.bend:1568 symbol=ab_5_cast weak-CAST INDEX) get a `UOp.cast` to resolve against, which is
 # what unblocks the port. The full identity check would need a FOLD CONTEXT, which
 # is what `cast_at` in `mixin/dtype.bend:350 symbol=cast_at` IS, and a future unit that wires
 # rule bodies into the fold can call THAT instead.
@@ -3045,7 +3045,7 @@ def shape_to_shape_arg(+ar: Arena, n: Maybe<&2, U32>) -> U32:
 
 # `src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)` -- ops.py:829, :1187,
 # :1219, :1002. The `device_range_src` half is P6 (no multi-device ALLOC in the port)
-# and is `()` for a single device (`mixin/creation.bend:23` says so), so the src of a
+# and is `()` for a single device (`mixin/creation.bend:408 symbol=cr_empty` says so), so the src of a
 # PARAM/BUFFER/ALLOC here is exactly this one element.
 def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
   [shape_to_shape_arg(ar, n)]
@@ -3056,7 +3056,7 @@ def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
 # the size node into -- returns an index into an arena the caller does not hold. The
 # caller then interns the node into the arena it DOES hold, where that index names
 # nothing, and `Arena.src0` reads the arena BOTTOM. `Arena.src(ar, i, 0)` answers
-# `Maybe.default(..., 0)` (`ops.bend:1369`), so there is no error: the node comes out
+# `Maybe.default(..., 0)` (`uop/ops.bend:1377 symbol=Arena.at.go`), so there is no error: the node comes out
 # pointing at INDEX 0 or at ITSELF.
 #
 # MEASURED, `gates/../sizetosrc/paramsrc_probe.bend` over both spellings on one BUFFER:
@@ -3117,12 +3117,12 @@ def ParamArg.size(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # `ARange` is this file's SPLIT of that tuple, so faithful would be
 # `ARange{at, ids}`. It is `ARange{ids, at}` and that is a DELIBERATE wall, because
 # `ARange` is read and written POSITIONALLY by eleven committed files:
-#     schedule/rangeify.bend:744,2283,2581,3001,3005,3013   schedule/multi.bend:684
+#     schedule/rangeify.bend:2116 symbol=ren_axis0.go   schedule/multi.bend:611 symbol=mu_at_of.go
 #     schedule/indexing.bend:628,633     codegen/late.bend:910,1000,1573,1796-1798
-#     uop/render.bend:588,792,797,833,841,1848,1934          uop/spec.bend:348,360
+#     uop/render.bend:731 symbol=arg_repr              uop/spec.bend:363 symbol=arg_axis.go
 #     uop/fold.bend:2288,2300            uop/validate.bend:1601
 #     uop/fold2_work.bend:2280,2292      uop/fold_mm_work.bend:2280,2292
-#     uop/upat.bend:406                   engine/realize.bend:1345,1623
+#     uop/upat.bend:396 symbol=arg_int                engine/realize.bend:1727 symbol=rz_is_devrng.ax
 # Flipping the field order here would break all twenty-nine of those sites and leave
 # six files I do not own red. It is a TWO-FILE change that has to be sequenced, not a
 # one-file rebase, and `.agents/UPSTREAM-PIN.md` outcome 2 ("re-verify, no change") is
@@ -3192,7 +3192,7 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
 # honest answer, not a nested list). What is missing is that `t_rng_row`'s four rows
 # are only ever fed DEPTH-0 fixtures -- `rng_twoid` builds with `UOp.range_end`, so
 # `axid_twoid=(0,1)/len=2` gates only the flat case, and no row routes a depth-1
-# arg through here. Adding one means a depth-aware `AxIds` (ops.bend:4936, one def,
+# arg through here. Adding one means a depth-aware `AxIds` (uop/ops.bend:4941 symbol=UOp.split_uop.pop, one def,
 # ONE call site) plus a matching row in `.agents/slop/ops-oracle.py`, and that oracle
 # is a BYTE DIFF whose row order is documented as matching EXACTLY -- so a row added
 # here and not there is a diff, not a silent gap. Hence not done blind.
@@ -4477,8 +4477,8 @@ def pm_sub_m(+ctx: Map<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # with the compiled function's PLACE taken by the tag.
 #
 # THE TAG IS GLOBAL AND THE TABLE IS NOT. Every `PMEntry` in the tree numbers its
-# own rules from 0 -- `codegen/__init__.bend:318`'s tag 0 is `_pm_resolve_params`
-# and `engine/realize.bend:1150`'s tag 0 is `pm_flatten_linear` -- because the
+# own rules from 0 -- `codegen/__init__.bend:317 symbol=pm_post_sched_cache`'s tag 0 is `_pm_resolve_params`
+# and `engine/realize.bend:1144 symbol=get_call_name`'s tag 0 is `pm_flatten_linear` -- because the
 # scan that reads a table and the dispatch that reads a tag live in DIFFERENT
 # files. That is the "a name is not a binding" trap one level down: the same
 # `PMEntry{0, ...}` means a different rule in every one of them. Tags 40-43 are
@@ -5104,7 +5104,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # WALL(p3) ops.py:284  def _bool_slice -- BLOCKED. NEEDS `fold`'s WALK AND A dtype PREDICATE, so it lives DOWNSTREAM of this file like
 #   `_eval`, `param_noshape` and `wk_is_virtual` do -- `dt_is_bool` is in `mixin/dtype.bend`
 #   and this file cannot import it (`ops.bend:87`). Its only consumer is a marker of its own:
-#   `symbolic.bend:3054` records that `fold_where_closure` needs `bool_slice` AND
+#   `uop/symbolic.bend:3054 symbol=fx_ne0` records that `fold_where_closure` needs `bool_slice` AND
 #   `substitute`, so porting this alone closes nothing downstream. **THE INTERNING DOES MAKE
 #   IT CHEAPER THAN CPYTHON'S**: two structurally equal nodes share an arena index, so the
 #   `frozenset[UOp]` is a deduped index list and needs no hash.
@@ -5131,7 +5131,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # `Ranged` / `UOp.ranges` (fold.bend:5055 symbol=UOp.ranges), 12 `rg_*` rows byte-identical to
 # CPython. The reason these two carried for a month -- "Dict set algebra over the
 # fold's memo" -- was wrong: the arena interns, so `dict[UOp, None]` IS a list
-# with a membership test, and `ended_ranges` is ported too (fold.bend:4059).
+# with a membership test, and `ended_ranges` is ported too (uop/fold.bend:2805 symbol=ended_of).
 # TODO(p3) ops.py:479  def ranges
 #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
 #   ones the ended ranges close. The wall is named where it is HIT --
@@ -5535,7 +5535,7 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # DONE(p3) ops.py:1229 def param -- THE SHAPE-LESS ARM ONLY, and it is in `weak.bend`. THE THIRD
 #   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
-#   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `ops.bend:87` says so and it is TRUE, since
+#   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `THE PORT's `uop/ops.bend` HEADER` says so and it is TRUE, since
 #   dtype.bend's fp16/bf16/i64 C effects make the checker exit 1 for ANY importer. So the weaks guard
 #   `md_weak` is unreachable from this file, and `wk_param_noshape` lives in `uop/weak.bend` beside the
 #   other two. **THE RULE IS NOT "THOSE THREE WERE MISFILED" BUT "A DEF NEEDING A dtype PREDICATE OR A
@@ -5584,7 +5584,7 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # DONE(p3) ops.py:1229 def param -- THE SHAPE-LESS ARM ONLY, and it is in `weak.bend`. THE THIRD
 #   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
-#   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `ops.bend:87` says so and it is TRUE, since
+#   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `THE PORT's `uop/ops.bend` HEADER` says so and it is TRUE, since
 #   dtype.bend's fp16/bf16/i64 C effects make the checker exit 1 for ANY importer. So the weaks guard
 #   `md_weak` is unreachable from this file, and `wk_param_noshape` lives in `uop/weak.bend` beside the
 #   other two. **THE RULE IS NOT "THOSE THREE WERE MISFILED" BUT "A DEF NEEDING A dtype PREDICATE OR A
@@ -6289,8 +6289,8 @@ def s_blob_sweep_count() -> String:
 #
 # The measurement and the reason `F32.is_eq` is right here and `F32.bits` would be a
 # regression are the comment on `eq_arg.AFloat` above; this block is the GATE for it.
-# `AFloat` has no constructor anywhere in the tree -- `uop/upat.bend:418` and
-# `uop/render.bend:717` only READ it, and its one would-be builder `_frompy` is
+# `AFloat` has no constructor anywhere in the tree -- `uop/upat.bend:396 symbol=arg_int` and
+# `uop/render.bend:731 symbol=arg_repr` only READ it, and its one would-be builder `_frompy` is
 # `TODO(p3)` at :4318 -- so no interning fixture can reach the arm the normal way and
 # the comparator was untested rather than unreachable. These rows intern two
 # `AFloat`s on ONE arena through `UOp.new`, so the answer is IDENTITY OF THE TWO
@@ -8516,7 +8516,7 @@ def vrn_rows(+ar: Arena) -> IO(Unit):
     vrn_row("vrn_int32", UOp.variable(ar, "k", H.i64_of_i32(1), H.i64_of_i32(2), 1, S.int32()))
 
 # `Map.has` answers a `Sigma` and not a `Maybe`, so the Bool rides out in the second
-# half of the pair. `render.bend:1020`'s `ctx_has.of` destructures the same shape and
+# half of the pair. `uop/render.bend:1066 symbol=ctx_has.of`'s `ctx_has.of` destructures the same shape and
 # this is the third copy of THAT two-line destructure -- see `Maybe.has` below.
 def vv_has.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => Bool>) -> Bool:
   match r:
@@ -8552,9 +8552,9 @@ def vv_has(v: VarVals, k: String) -> Bool:
 #
 # I RECORDED THIS BLOCKER WRONG TWICE, both times in the same direction: I claimed
 # a BEND LANGUAGE CHANGE was needed and never grepped for it. `Map` is a stdlib type
-# from `import Base` -- `references/bend/bend2/base.bend:2551` Map.put, `:2675`
+# from `import Base` -- `references/bend/bend2/base.bend:2733 symbol=Map.put` Map.put, `:2675`
 # Map.set, `:2683` Map.has, `:2736` Map.get, all four present -- and
-# `uop/render.bend:1007` and `:1017` were already CALLING `Map.set` and `Map.get`
+# `uop/render.bend:1002 symbol=range_ids.of` and `:1017` were already CALLING `Map.set` and `Map.get`
 # through `Ctx` while the note here said the rule did not exist.
 #
 # AND THE SECOND CALLER I NAMED WAS WRONG TOO. I wrote that `pyrender`'s `Ctx` walk
@@ -8565,7 +8565,7 @@ def vv_has(v: VarVals, k: String) -> Bool:
 # engine's remaining named wall. Two real callers, and the second one is why the
 # idiom was worth looking for.
 #
-# THE IDIOM IS `bcast.go` (fold.bend:590) verbatim: a `Maybe`-carried LIST
+# THE IDIOM IS `bcast.go` (uop/fold.bend:587 symbol=bitcast_dims.res) verbatim: a `Maybe`-carried LIST
 # accumulator and `Maybe.bind` for the miss arm. `memory.bend:405`'s `mem_some` is
 # the element form of the same thing, and both are in files this one imports. My
 # first draft was TEN defs and did not compile because a def may hold ONE `match`
@@ -8590,14 +8590,14 @@ def vv_of.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => H.I64>, present: Bool) -> May
 # `Map.get(-V: Data, d: V, m, key)` TAKES A DEFAULT and it is the SECOND argument,
 # which is how the `expected : Data / observed : Quant` happened: the `&2` that
 # `Map.has` and `Map.set` want was written here too, and it landed in the `V` slot
-# where a bare `H.I64` belongs. `Map.get` has NO quantifier -- `render.bend:1017`'s
+# where a bare `H.I64` belongs. `Map.get` has NO quantifier -- `uop/render.bend:1015 symbol=multirange_str.go`'s
 # `Map.get(String, "", Ctx.map(c), U32.show(u))` shows the shape with the `""` in
 # the same slot. Three of the four `Map` readers in the tree and not the fourth.
 #
 # THE DEFAULT IS 0 AND THAT IS WHY THE `has` IS NOT REDUNDANT. A miss returns 0,
 # which is a legal bound, so "unbound" and "bound to 0" are the same value here and
 # only `Map.has` separates them. `ctx_get` gets away with `""` because
-# render.bend:1014 states every src was written first; `vals` has no such guarantee.
+# uop/render.bend:1015 symbol=multirange_str.go states every src was written first; `vals` has no such guarantee.
 def vv_of(+v: VarVals, +k: String) -> Maybe<&2, H.I64>:
   vv_of.of(Map.get(H.I64, H.i64_of_i32(0), VarVals.m(v), k), vv_has(v, k))
 
@@ -8608,7 +8608,7 @@ def vv_of(+v: VarVals, +k: String) -> Maybe<&2, H.I64>:
 #
 # `Maybe.bind`'s LAMBDA is the continuation, so the three become one def with ONE
 # `match` (on the list, the only scrutinee) and TWO binds. `bcast.go` at
-# fold.bend:590 is the same shape and is why that fold is two lines: the recursion
+# uop/fold.bend:587 symbol=bitcast_dims.res is the same shape and is why that fold is two lines: the recursion
 # is in the CLOSURE, not in a call chain. `Maybe.bind` is the answer to "a `Maybe`
 # accumulator wants two matches per step", and it was already in the tree.
 def vals.step(+ar: Arena, +v: VarVals, xs: List<&2, U32>, acc: List<&2, H.I64>) -> Maybe<&2, List<&2, H.I64>>:
@@ -8729,7 +8729,7 @@ def vd_put(nm: String, x: H.I64, base: VarVals) -> VarVals:
 #   Map.set(a, -V: Kind(a), m, key, x)  -- quantifier SECOND, after the linearity
 #   Map.has(-a: Quant, -V: Kind(a), m, key)
 #   Map.get(-V: Data, d, m, key)        -- NO linearity parameter at all
-# `render.bend:1007` and `:1017` already spell all three correctly; this cost three
+# `uop/render.bend:1002 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
 # compile rounds to find, and the first of them I had recorded as a LANGUAGE gap.
 # `Map.set` puts its QUANTIFIER SECOND (`Map.set(a, -V: Kind(a), m, key, x)`) and
 # the three `Map` readers in the tree disagree about that -- `Map.has` takes it
@@ -8747,7 +8747,7 @@ def vd_put(nm: String, x: H.I64, base: VarVals) -> VarVals:
 # accumulates. A fold that compiles and returns nothing is worse than one that does
 # not compile, and this is the second time this session that bit (the first was
 # `rra.filter`).
-# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:6514 symbol=ax_names_str): collect the
+# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:6516 symbol=ax_names_str): collect the
 # pieces, `List.reverse`, `String.join`. Three attempts got here and the third is
 # the file's own idiom --
 #   1. a `+acc` String that COMPILED and answered `()` for every input, because a
@@ -8769,7 +8769,7 @@ def vd_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, String>
 # NO `match` HERE, and that is the fourth attempt's only content. A match on
 # `vd_text.go(ys, Nil{})` -- a computed value -- is refused, so the empty case is
 # handled by the JOIN: `String.join` of an empty list is "", and "" wrapped in
-# parentheses is "()". `ax_names_str` at ops.bend:6514 symbol=ax_names_str is the same shape and it has
+# parentheses is "()". `ax_names_str` at ops.bend:6516 symbol=ax_names_str is the same shape and it has
 # no `match` either.
 def vd_text(ys: List<&2, H.I64>) -> String:
   String.concat(["(", String.join(vd_text.go(ys, Nil{}), ","), ")"])
@@ -8882,7 +8882,7 @@ type OI is Data:
 # `sym_infer` (ops.py:95) IS THE IDENTITY ON AN INT, and `UOp.sym_infer`
 # (ops.py:1169) EVALUATES RENDERED SOURCE WITH `exec` -- the port's `sym_infer`
 # WALL, named at this file's `TODO(p3) ops.py:1169 def sym_infer` and at
-# `fold.bend:6540`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
+# `uop/fold.bend:6492 symbol=main`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
 # `ProgramInfo` THE PORT CAN BUILD AND NOT ONE MORE: the port's `global_size`
 # and `local_size` are `List<&2, H.I64>`, so their elements are INTS.
 #

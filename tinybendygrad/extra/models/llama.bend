@@ -27,7 +27,7 @@ import ./../datasets/__init__.bend as D
 #   `nn.Embedding`  MISSING. (:201,:202) `grep -rnwE "def .*Embedding" --include='*.bend' tinybendygrad/` = 0, and so is `def mo_i`/`def mo_fx`.
 #   `nn.RMSNorm`    MISSING. (:53,:54,:137,:138,:200)  FIVE sites, and this is THE FIRST MISSING SYMBOL of the file: extra/models/llama.py:53 `self.q_norm
 #   `Tensor.scaled_dot_product_attention` MISSING. (:101,:104) `grep -rnwE "def .*scaled_dot_product_attention" --include='*.bend'` = 0.
-#   `softmax`       EXISTS, mixin/op.bend:1157 symbol=mo_softmax `mo_softmax` (:165 in `sample`).
+#   `softmax`       EXISTS, mixin/op.bend:1158 symbol=mo_softmax `mo_softmax` (:165 in `sample`).
 #   `adam`          EXISTS and UNUSED BY THIS FILE. nn/optim.bend:900 symbol=op_mstep
 #                   `op_mstep` is
 #                   `(self.b1 * self.m[i] + (1.0 - self.b1) * g).cast(...)` -- verbatim, upstream's
@@ -44,17 +44,17 @@ import ./../datasets/__init__.bend as D
 #   `nn.Linear`           nn/layers.bend:530 symbol=nn_linear `nn_linear`   (:45,:46,:47,:48,:51,:123,:124,:125,:202)
 #   `Tensor.silu`         mixin/elementwise.bend:1221 symbol=ew_silu `ew_silu` (:128) -- and it is `ew_swish` :1220 symbol=ew_swish, no extra def
 #   `Tensor.sin`          mixin/elementwise.bend:550 `ew_sin`  (:10)
-#   `Tensor.arange`       mixin/rand.bend:424 symbol=op_arange `op_arange`     (:8,:9,:167)
+#   `Tensor.arange`       mixin/rand.bend:429 symbol=op_arange `op_arange`     (:8,:9,:167)
 #   `Tensor.stack`        mixin/movement.bend:1272 symbol=mxw_stk `mxw_stk`  (:10,:90)
 #   `Tensor.zeros`        mixin/creation.bend:518 symbol=cr_zeros `cr_zeros`  (:83,:158,:170)
 #   `Tensor.zeros_like`   mixin/creation.bend:553 symbol=cr_zeros_like `cr_zeros_like` (:158)
 #   `x.reshape`           mixin/movement.bend:1431 `mxw_reshape` (:10,:22,:23,:34,:59,:60,:61,:62,:73,:74,:75,:118,:233)
 #   `x.transpose`         mixin/movement.bend:1449 `mxw_permute` (:100,:101,:103,:104)
 #   `x.repeat`            nn/layers.bend:640 symbol=nn_repeat `nn_repeat`      (:34)
-#   `x.softmax`           mixin/op.bend:1157 symbol=mo_softmax `mo_softmax`     (:165)
+#   `x.softmax`           mixin/op.bend:1158 symbol=mo_softmax `mo_softmax`     (:165)
 #   `x.cast`              mixin/op.bend:390 symbol=mo_cast_t `mo_cast_t`       (:10,:204,:216)
 #   `x.contiguous_backward` mixin/elementwise.bend:546 `ew_contiguous_backward` (:64,:71,:129,:142,:216)
-#   `x.sigmoid`/`x.tanh`  mixin/elementwise.bend:1196 / :1232  (through ew_sigmoid, which llama does not name)
+#   `x.sigmoid`/`x.tanh`  mixin/elementwise.bend:1195 symbol=g_unary / :1232  (through ew_sigmoid, which llama does not name)
 #
 # THE THREE THAT ARE LLAMA-ONLY AND NOT ATTENTION-ANYWHERE-ELSE:
 #   (1) `Tensor.cos`   MISSING. (:10) mixin/elementwise.bend:550 has `def ew_sin` and there is
@@ -95,12 +95,12 @@ def lm_at(r: D.Refused) -> String:
 
 # ---------------------------------------------------------------------------
 # :7-10 `precompute_freqs_cis`. The ONE def in this file whose first line is a
-# ported symbol (`Tensor.arange`, mixin/rand.bend:361) and whose second is not.
+# ported symbol (`Tensor.arange`, mixin/rand.bend:365 symbol=op_pool1.iz) and whose second is not.
 # ---------------------------------------------------------------------------
 
 # :7  def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0) -> Tensor
 def lm_precompute_freqs_cis(dim: U32, end: U32, theta: F32) -> D.Refused:
-  D.refuse("extra/models/llama.py:7 precompute_freqs_cis -- reached :8 Tensor.arange (mixin/rand.bend:361 EXISTS); BLOCKED AT :10 Tensor.cos, and there is no `def ew_cos`")
+  D.refuse("extra/models/llama.py:7 precompute_freqs_cis -- reached :8 Tensor.arange (mixin/rand.bend:365 symbol=op_pool1.iz EXISTS); BLOCKED AT :10 Tensor.cos, and there is no `def ew_cos`")
 
 # :14 def complex_mult(A, c, d)
 def lm_complex_mult(+a: T.Tensor, +c: T.Tensor, +d: T.Tensor) -> D.Refused:
@@ -112,7 +112,7 @@ def lm_apply_rotary_emb(+xq: T.Tensor, +xk: T.Tensor, +freqs_cis: T.Tensor) -> D
 
 # :30 def repeat_kv(x:Tensor, n_rep:int) -> Tensor
 def lm_repeat_kv(+x: T.Tensor, n_rep: U32) -> D.Refused:
-  D.refuse("extra/models/llama.py:30 repeat_kv -- nn/layers.bend:523 nn_repeat EXISTS (:34) and mxw_reshape EXISTS; BLOCKED BY the missing signature tuple at :31")
+  D.refuse("extra/models/llama.py:30 repeat_kv -- nn/layers.bend:640 symbol=nn_repeat EXISTS (:34) and mxw_reshape EXISTS; BLOCKED BY the missing signature tuple at :31")
 
 # ---------------------------------------------------------------------------
 # :36-119 Attention. THE CLASS THAT NAMES THE TWO MISSING FAMILIES.
@@ -120,7 +120,7 @@ def lm_repeat_kv(+x: T.Tensor, n_rep: U32) -> D.Refused:
 
 # :37 def __init__(self, dim, n_heads, n_kv_heads=None, max_context=0, linear=nn.Linear, qk_norm=None)
 def lm_attn_init(dim: U32, n_heads: U32, n_kv_heads: Maybe<&2, U32>, max_context: U32, qk_norm: Maybe<&2, F32>) -> D.Refused:
-  D.refuse("extra/models/llama.py:37 Attention.__init__ -- wq/wk/wv/wo are linear (:45-51, nn/layers.bend:427 EXISTS); FIRST MISSING SYMBOL nn.RMSNorm (:53)")
+  D.refuse("extra/models/llama.py:37 Attention.__init__ -- wq/wk/wv/wo are linear (:45-51, nn/layers.bend:530 symbol=nn_linear EXISTS); FIRST MISSING SYMBOL nn.RMSNorm (:53)")
 
 # :40 self.head_dim = dim // n_heads
 def lm_attn_head_dim(dim: U32, n_heads: U32) -> U32:
@@ -170,7 +170,7 @@ def lm_block_call(+x: T.Tensor, start_pos: U32, +freqs_cis: T.Tensor) -> D.Refus
 
 # :145 def sample(logits: Tensor, temp: float, k: int, p: float, af: float, ap: float)
 def lm_sample(+logits: T.Tensor, temp: F32, k: U32, p: F32, af: F32, ap: F32) -> D.Refused:
-  D.refuse("extra/models/llama.py:145 sample -- FIRST MISSING SYMBOL logits.argmax (:151); mo_softmax EXISTS (:165), arange EXISTS (:167), pad EXISTS (mixin/movement.bend:1517), and Tensor.multinomial (:184,:187) is MISSING BEHIND `argsort` (mixin/rand.bend:880 TODO(p3))")
+  D.refuse("extra/models/llama.py:145 sample -- FIRST MISSING SYMBOL logits.argmax (:151); mo_softmax EXISTS (:165), arange EXISTS (:167), pad EXISTS (mixin/movement.bend:1517 symbol=mxw_pad.put), and Tensor.multinomial (:184,:187) is MISSING BEHIND `argsort` (mixin/rand.bend:881 symbol=rd_randn_like.src TODO(p3))")
 
 # ---------------------------------------------------------------------------
 # :195-225 Transformer.
@@ -186,7 +186,7 @@ def lm_transformer_forward(+tokens: T.Tensor, start_pos: U32, temperature: F32) 
 
 # :221 def __call__(self, tokens, start_pos, temperature=0.0, top_k=0, top_p=0.8, alpha_f=0.0, alpha_p=0.0)
 def lm_transformer_call(+tokens: T.Tensor, start_pos: U32) -> D.Refused:
-  D.refuse("extra/models/llama.py:221 Transformer.__call__ -- FIRST MISSING SYMBOL self.forward_jit (:223,:224); TinyJit is PARTIAL per resnet.bend:116-123 -- engine/jit.bend is a port and the NAME and the DECORATOR are not")
+  D.refuse("extra/models/llama.py:221 Transformer.__call__ -- FIRST MISSING SYMBOL self.forward_jit (:223,:224); TinyJit is PARTIAL per THE PORT's `extra/models/resnet.bend` HEADER -- engine/jit.bend is a port and the NAME and the DECORATOR are not")
 
 # ---------------------------------------------------------------------------
 # :227-286 the three helpers. None of them is a graph.

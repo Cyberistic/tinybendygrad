@@ -28,7 +28,7 @@ import ./../extra/datasets/__init__.bend as D
 # for one.
 #
 # THE BACKWARD MACHINERY IS WRITTEN AND UNEXERCISED. Read these five together:
-#   `compute_gradient`  mixin/gradient.bend:1549 symbol=compute_gradient   EXISTS
+#   `compute_gradient`  mixin/gradient.bend:1550 symbol=compute_gradient   EXISTS
 #   `gr_N` rule defs     mixin/gradient.bend        61 entries, `grep -cE
 #                        "^def gr_[0-9]+" = 61
 #   `gr_table`           referenced ONLY inside mixin/gradient.bend;
@@ -37,7 +37,7 @@ import ./../extra/datasets/__init__.bend as D
 #   `tn_backward`        tensor.bend:2015           EXISTS
 #   `compute_gradient`   CALLED FROM EXACTLY ONE PLACE, tensor.bend:2011,
 #                        inside `tn_backward.of`. Its only other mention in the
-#                        whole tree is a COMMENT, mixin/op.bend:54.
+#                        whole tree is a COMMENT, THE PORT's `mixin/op.bend` HEADER.
 #   `tn_backward`        CALL SITES OUTSIDE tensor.bend = 0. THE INSTRUMENT IS
 #                        SELF-REFERENTIAL AND THE DISCLOSURE MATTERS: `grep -rn
 #                        "tn_backward" --include='*.bend' tinybendygrad/ | grep
@@ -58,8 +58,8 @@ import ./../extra/datasets/__init__.bend as D
 #
 # SO THE TRAINING PATH IS BLOCKED TWICE OVER, on the backward pass and on the
 # loss it would differentiate:
-#   `sparse_categorical_crossentropy`  MISSING. `mixin/op.bend:15` puts "the
-#   losses" in SIDE B, `mixin/op.bend:1523` is the last line of the file and
+#   `sparse_categorical_crossentropy`  MISSING. `THE PORT's `mixin/op.bend` HEADER` puts "the
+#   losses" in SIDE B, `mixin/op.bend:1530 symbol=t_softmax3.go` is the last line of the file and
 #   reads "# SIDE B's SECTION GOES BELOW THIS LINE.", and `grep -rnE "^def
 #   mo_sparse" --include='*.bend' tinybendygrad/` = 0. It is the DEFAULT
 #   `lossfn` of `extra/training.py:7`.
@@ -74,9 +74,9 @@ import ./../extra/datasets/__init__.bend as D
 #   `get_parameters` (:5, used :41)        EXISTS -- nn/state.bend:375.
 #   `optim.SGD` (:6, used :41)             MISSING. `grep -c SGD
 #       tinybendygrad/nn/optim.bend` = 0. That file's two bodies are LAMB
-#       (nn/optim.bend:873) and LARS (:717); SGD is not among them, and SGD is
+#       (nn/optim.bend:870 symbol=op_postwd) and LARS (:717); SGD is not among them, and SGD is
 #       the DEFAULT optimizer of tinygrad's own `train_resnet.py`.
-#   `getenv` (:7, used :28)                EXISTS -- helpers.bend:150
+#   `getenv` (:7, used :28)                EXISTS -- helpers.bend:150 symbol=getenv_str
 #       `getenv_str` and :304 `getenv_int`. Typed, which is exactly what
 #       `getenv('TRANSFER')` (a String) and `getenv('NUM', 18)` (a U32) need.
 #   `extra.training.train` (:8, used :42)  MISSING. `extra/training.py:7`.
@@ -85,8 +85,8 @@ import ./../extra/datasets/__init__.bend as D
 #       ./../extra/models/resnet.bend, and it refuses, because `nn.Conv2d` is
 #       mixin/op.bend SIDE B.
 #   `extra.datasets.fetch_mnist` (:10,:23) PARTIAL. It EXISTS as a REFUSAL:
-#       `extra/datasets/__init__.bend:49` `def fetch_mnist(tensors: Bool) ->
-#       D.Refused`, written by another unit at 2026-10-19 06:49 local. The
+#       `extra/datasets/__init__.bend:49 symbol=fetch_mnist` -- the port's `def fetch_mnist(tensors: Bool) -> D.Refused`,
+#       written by another unit at 2026-10-19 06:49 local. The
 #       CALL at :23 is therefore answerable and its answer is a refusal, which
 #       is the correct answer rather than a gap.
 #   `ComposeTransforms` (:13-20)           PORTABLE IN PRINCIPLE, NOT PORTED. It
@@ -124,7 +124,7 @@ def tr_compose_init(trans: List<&2, String>) -> D.Refused:
   D.refuse("examples/train_resnet.py:14 ComposeTransforms.__init__ -- FIRST MISSING SYMBOL PIL.Image (:3)")
 
 def tr_compose_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("examples/train_resnet.py:17 ComposeTransforms.__call__ -- BLOCKED ON unexercised backward pass: tn_backward tensor.bend:2015 has 0 call sites")
+  D.refuse("examples/train_resnet.py:17 ComposeTransforms.__call__ -- BLOCKED ON unexercised backward pass: tn_backward tensor.bend:2015 symbol=tn_backward has 0 call sites")
 
 # ---------------------------------------------------------------------------
 # :22-45 `if __name__ == "__main__":`. The block is five rounds (`for _ in
@@ -136,7 +136,7 @@ def tr_compose_call(+x: T.Tensor) -> D.Refused:
 # :23  X_train, Y_train, X_test, Y_test = fetch_mnist()
 # PARTIAL, and the honest reading is that the answer EXISTS and it is a refusal.
 def tr_fetch_mnist() -> D.Refused:
-  D.refuse("examples/train_resnet.py:23 fetch_mnist -- extra/datasets/__init__.bend:49 refuses it; no byte source (helpers.bend:3193) and no ndarray")
+  D.refuse("examples/train_resnet.py:23 fetch_mnist -- extra/datasets/__init__.bend:49 symbol=fetch_mnist refuses it; no byte source (THE PORT's `helpers.bend` `NOT PORTED` BLOCK) and no ndarray")
 
 # :24  X_train = X_train.reshape(-1, 28, 28).astype(np.uint8)
 def tr_reshape_uint8() -> D.Refused:
@@ -144,7 +144,7 @@ def tr_reshape_uint8() -> D.Refused:
 
 # :29  model = ResNet(getenv('NUM', 18), num_classes=classes)
 def tr_model(num: U32, num_classes: U32) -> D.Refused:
-  D.refuse("examples/train_resnet.py:29 ResNet -- BLOCKED ON nn.Conv2d, which is mixin/op.bend SIDE B (mixin/op.bend:1523)")
+  D.refuse("examples/train_resnet.py:29 ResNet -- BLOCKED ON nn.Conv2d, which is mixin/op.bend SIDE B (mixin/op.bend:1530 symbol=t_softmax3.go)")
 
 # :41  optimizer = optim.SGD(get_parameters(model), lr=lr, momentum=0.9)
 # `get_parameters` EXISTS (nn/state.bend:375). `optim.SGD` does not.
@@ -153,11 +153,11 @@ def tr_optimizer(lr: F32) -> D.Refused:
 
 # :42  train(model, X_train, Y_train, optimizer, 100, BS=32, transform=transform)
 def tr_train_round() -> D.Refused:
-  D.refuse("examples/train_resnet.py:42 BLOCKED ON unexercised backward pass AND on sparse_categorical_crossentropy (mixin/op.bend:15, SIDE B)")
+  D.refuse("examples/train_resnet.py:42 BLOCKED ON unexercised backward pass AND on sparse_categorical_crossentropy (THE PORT's `mixin/op.bend` HEADER, SIDE B)")
 
 # :43  evaluate(model, X_test, Y_test, num_classes=classes, transform=transform)
 def tr_evaluate_round() -> D.Refused:
-  D.refuse("examples/train_resnet.py:43 BLOCKED ON unexercised backward pass AND on sparse_categorical_crossentropy (mixin/op.bend:15, SIDE B)")
+  D.refuse("examples/train_resnet.py:43 BLOCKED ON unexercised backward pass AND on sparse_categorical_crossentropy (THE PORT's `mixin/op.bend` HEADER, SIDE B)")
 
 # :44  lr /= 1.2
 def tr_decay_lr(lr: F32) -> D.Refused:

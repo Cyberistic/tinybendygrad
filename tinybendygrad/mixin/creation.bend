@@ -336,7 +336,7 @@ def cr_mop(+t: T.Tensor, +op: O.Op, ds: List<&2, U32>) -> T.Tensor:
 # target's. FOR A 0-dim SOURCE EVERY DIM IS LEFT-ADDED, so the marg IS the whole
 # target and `mxw_bcast` BUILDS EXACTLY WHAT `cr_mop` BUILT -- the squeeze is a
 # no-op reshape and the permute is the identity, and both wrappers drop their node.
-# FOR A SOURCE WITH A 1 IN IT -- `nn/pool.bend:191`'s `_pool` repeat -- the marg is
+# FOR A SOURCE WITH A 1 IN IT -- `nn/pool.bend:191 symbol=pool_rep.rp`'s `_pool` repeat -- the marg is
 # the REPEAT COUNTS, and the bare EXPAND this def used to build was the shape
 # `tuple(self.marg) + ps` (ops.py:397) reads as: THE WHOLE TARGET CONCATENATED WITH
 # THE SOURCE.
@@ -640,7 +640,7 @@ def cr_g.of(nm: String, +ar: O.Arena, +c: CU, +xs: List<&2, U32>) -> IO(Unit):
 # AN EXPAND. MEASURED, `probe_fold.bend` over `full((2,3),42)`: nodes 1..6 (ALLOC,
 # CONST, CONST, STACK, RESHAPE, CONST) resolve for both dtype and shape, node 7 (EXPAND)
 # resolves for NEITHER, and 8 (STORE) and 9 (AFTER) resolve for NEITHER either --
-# fold.bend:1629's `Ops.EXPAND` arm answers `None{}`, and an unresolved node never
+# uop/fold.bend:1632 symbol=sym_dim.val's `Ops.EXPAND` arm answers `None{}`, and an unresolved node never
 # releases its consumers in the Kahn worklist. That is W3's wall (the EXPAND's `marg`
 # needs `ssimplify`) and it is the SAME one op.bend names.
 # SO THE `_d` ROW READS `AFTER.src[0]`, which is exactly what `thru0` (fold.bend:917)
@@ -671,7 +671,7 @@ def cr_d.of(nm: String, +ar: O.Arena, +c: CU) -> IO(Unit):
 #
 # `GroupOp.Movement` gives `src[0].dtype`, so an EXPAND-rooted tensor's DTYPE is its
 # source's and the fold answers it. Its SHAPE is not `src[0].shape` -- it is the EXPAND's
-# own arg -- and fold.bend:1629 answers `None{}` for it, so the shape half is NOT GATED
+# own arg -- and uop/fold.bend:1632 symbol=sym_dim.val answers `None{}` for it, so the shape half is NOT GATED
 # for `full(..., buffer=False)` or for `const_like` on a non-empty shape. Those rows say
 # so rather than printing a shape fold.bend cannot produce.
 def cr_t_root.of(+ar: O.Arena, +c: CU, after: Bool, exp: Bool) -> CU:
@@ -710,7 +710,7 @@ def cr_rowt(nm: String, +t: T.Tensor) -> IO(Unit):
 
 # ===========================================================================
 # THE INTERNING ROWS. `u is v` in CPython is `U32.is_eq(u, v)` here, because a UOp IS
-# an arena index and ops.bend:940 says the index is the identity. `cr_in` is the walk
+# an arena index and uop/ops.bend:941 symbol=SPL says the index is the identity. `cr_in` is the walk
 # `any(u is v for v in a)`, and `CU` is the record the header's `cr_srcops.go` needed.
 # ===========================================================================
 def cr_in.go(+ar: O.Arena, +c: CU, xs: List<&2, U32>) -> Bool:

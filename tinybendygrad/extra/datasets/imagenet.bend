@@ -48,7 +48,7 @@
 #   * A GLOB: THERE IS NONE. `train/*/*` is expanded HERE, from the two
 #     primitives above, and the expansion is measured against CPython's
 #     `glob.glob` -- see `.agents/slop/imagenet2/REPORT.md`.
-#   * A JSON PARSER: THERE IS NONE EITHER. `tinybendygrad/viz/serve.bend:804`
+#   * A JSON PARSER: THERE IS NONE EITHER. `THE PORT's `tinybendygrad/viz/serve.bend` HEADER`
 #     says "`json.loads` IS NOT PORTED" and `tinybendygrad/nn/state.bend:97`
 #     calls `json.loads` "a PARSER" it lacks. So the class index is read by the
 #     READER BELOW, which is a decoder for the class-index format and NOT a JSON
@@ -67,7 +67,7 @@
 #   `{"0": ["tench", 0], ...}`.
 # TODO(p3) `@functools.cache` (upstream:8/16/32) AND `@diskcache` (upstream:27).
 #   Upstream caches all three answers. Bend has no mutable globals
-#   (`tinybendygrad/helpers.bend:2546`), so a cache is not a decorator here: the
+#   (`helpers.bend:2577 symbol=Counters`), so a cache is not a decorator here: the
 #   port's own spelling of a keyed table is the first-wins `Reg` scan
 #   (`tinybendygrad/device.bend:296-323`), and the caller holding the first
 #   answer IS the cache. `@diskcache` additionally wants a disk cache the port
@@ -221,7 +221,7 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
 # THE CLASS INDEX READER
 #
 # A decoder for the class-index format, NOT a JSON parser: the port has none
-# (`viz/serve.bend:804`, `nn/state.bend:97`), and a general one is a project
+# (THE PORT's `tinybendygrad/viz/serve.bend` HEADER and THE PORT's `nn/state.bend` HEADER), and a general one is a project
 # with its own termination story -- see `.agents/slop/imagenet2/REPORT.md`.
 #
 # THE FORMAT IT READS, and the two shapes in evidence:
@@ -234,7 +234,7 @@ def split.files(root: String, split: String, at: String, what: String) -> IO(Loa
 # ANYTHING ELSE IS REFUSED, with the place it refused.
 #
 # It is a CHARACTER-AT-A-TIME machine, the port's own idiom for a parser
-# (`tinybendygrad/sz.bend:967-988` runs its lexer exactly this way): one char
+# (`sz.bend:967 symbol=go` runs its lexer exactly this way): one char
 # per step, the state carries everything, and the char list shrinks by one per
 # step. That is what makes it TERMINATE -- a recursive-descent parser that
 # returns "the rest of the input" cannot be written here, because Bend's

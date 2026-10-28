@@ -8,14 +8,14 @@
 # IS THE OTHER HALF: the defs that INTERN UOps.
 #
 # THE WALL TEXT NAMED THE WRONG BLOCKER, MEASURED AGAINST WHAT IS ON DISK.
-#   `nn/__init__.bend:227` -- `x.linear` "walled on `linear_with_vars`
+#   `THE PORT's `nn/__init__.bend` WALL BLOCK` -- `x.linear` "walled on `linear_with_vars`
 #     (movement.py) P3 and mixin/op.bend's W8 (the WMMA lowering)". NOT REACHED.
 #     `Tensor.linear` (mixin/op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
 #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
 #     `dot` (mixin/op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
 #     All six are built today: `M.mo_reshape` (mixin/op.bend:704 symbol=mo_reshape),
 #     `M.mo_permute` (mixin/op.bend:720 symbol=mo_permute), `T.tn_mul` (tensor.bend:656
-#     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:853 symbol=mo_sum),
+#     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:854 symbol=mo_sum),
 #     `M.mo_cast_t` (mixin/op.bend:390 symbol=mo_cast_t),
 #     `DT.least_upper_dtypes` (dtype.bend:257 symbol=least_upper_dtypes). The UPSTREAM
 #     half of those six is tinygrad/uop/ops.py:799 symbol=_mop, whose
@@ -38,7 +38,7 @@
 #     and not a second copy of its body.
 #
 # WHY THE MUL IS NOT A WALL HERE, and this is the one non-obvious thing here.
-# `nn/__init__.bend:299` says the broadcasting case of `__mul__` is walled on
+# `THE PORT's `nn/__init__.bend` HEADER` says the broadcasting case of `__mul__` is walled on
 # the SHAPE FOLD. THE FOLD IS NOT THE WALL: `_broadcast_shape` (ops.py:80 symbol=_broadcast_shape) is
 # PORTED -- `F.bcast_shape` (uop/fold.bend:672) over `bcast.first(_align_left
 # (sh))` -- and `F.alu_ds` (fold.bend:999) is where every elementwise `OpsMUL` /
@@ -51,7 +51,7 @@
 #
 # ONE REFUSAL POINT, AND IT IS A `Maybe` RATHER THAN A SILENT ZERO. Every dim
 # `dot` does arithmetic on is a `sint` -- `tinygrad/uop/ops.py:1923`'s
-# `int|UOp`, spelled `SI{i64} | SU{uop}` at `uop/ops.bend:810`. The port has FOUR
+# `int|UOp`, spelled `SI{i64} | SU{uop}` at `uop/ops.bend:810 symbol=Sint`. The port has FOUR
 # defs on that union (`SInt.of`, `SInt.uop`, `SInt.i`, `SInt.u`; ops.bend:814-822
 # and :74-81 symbol=smax) and NOT ONE ARITHMETIC DEF: `ceildiv` and `smax` on a `Sint`
 # are ABSENT, and `smax` upstream is `UOp.maximum` (uop/ops.py:233), i.e. a
@@ -80,9 +80,9 @@ import ./../uop/weak.bend as W
 # NOT AT THE HEAD, and that is the whole reason it needs no reversal: Bend's
 # `List.append(a, A, xs, ys)` IS `xs ++ ys`, so `append(acc, [x])` puts the new
 # element at the END and a walk that descends `ds` while accumulating UP
-# therefore rebuilds `ds` in order. `mixin/movement.bend:246` records the same
+# therefore rebuilds `ds` in order. `mixin/movement.bend:240 symbol=mx_pool_out.go` records the same
 # fact from the other side -- a walk that PREPENDS builds the answer backwards
-# and needs the `List.reverse` that `mxm_pick.go` (movement.bend:684) carries.
+# and needs the `List.reverse` that `mxm_pick.go` (mixin/movement.bend:687 symbol=mxm_pick.go) carries.
 #
 # MEASURED, AND IT WAS WRONG FIRST: this walk appended at the tail AND reversed,
 # so it answered `[3, 2]` for the shape `[2, 3]` -- every dim transposed, with
@@ -129,7 +129,7 @@ def nn_range(n: U32) -> List<&2, U32>: M.mo_range(U32.to_nat(n))
 # `F.reduce_dims.put` (uop/fold.bend:904 symbol=reduce_dims.put) answers `drop_n(shape, num_axes)` and
 # `S.drop_n` (LAWS/spec.bend:270 symbol=drop_n) drops FROM THE HEAD -- SO THE PORT'S REDUCE
 # REDUCES THE FIRST `num_axes` AXES. THE PERMUTE THAT WOULD MAKE THAT TRUE FOR
-# AN ARBITRARY AXIS IS NOT BUILT: `tn_rop.perm.of` (tensor.bend:1815) answers
+# AN ARBITRARY AXIS IS NOT BUILT: `tn_rop.perm.of` (tinybendygrad/tensor.bend:1820 symbol=tn_rop.perm.of) answers
 # `self` IN BOTH ARMS and its own comment says so.
 #
 # MEASURED ON THIS FILE, AND IT IS WHY EVERY LAYER REDUCE IS WRONG WITHOUT THE
@@ -273,7 +273,7 @@ def nn_reduce(+t: T.Tensor, +axis: List<&2, U32>, op: O.Op, kd: Bool) -> T.Tenso
   nn_reduce.keep(kd, t, red, axis)
 
 # `sum` -- mixin/reduce.py:20, on top of `nn_reduce`. The HEAD is `mo_sum`'s own
-# (mixin/op.bend:811): `sum_acc_dtype(commit_dtype())` then a cast back iff the
+# (mixin/op.bend:854 symbol=mo_sum): `sum_acc_dtype(commit_dtype())` then a cast back iff the
 # dtype was defaulted AND it is half/bfloat16/fp8 (`mo_downcast`). A layer sum
 # is `dtype=None` upstream, so the head is not optional.
 def nn_sum(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
@@ -386,7 +386,7 @@ def nn_dot.order(+len: U32, +dw: U32) -> List<&2, U32>:
     U32.to_nat(U32.sub(len, 1)), b)
 
 # `sum(-1)` -- :392. PYTHON'S `-1` HAS NO `U32` IMAGE, and the port's own
-# `mo_ax`/`mo_resolve` (mixin/op.bend:792 symbol=mo_ax / mixin/op.bend:758 symbol=mo_resolve) cannot spell it:
+# `mo_ax`/`mo_resolve` (mixin/op.bend:794 symbol=mo_ax / mixin/op.bend:758 symbol=mo_resolve) cannot spell it:
 # `mo_resolve(neg, dim, total) = dim + total`, so `neg=True, dim=1` answers
 # `ndim+1`, one PAST the last axis. THE RESOLVED INDEX IS TAKEN FROM THE OTHER
 # END -- `nn_last_ax` -- which is the same value and is total.
@@ -531,13 +531,13 @@ def nn_linear(+x: T.Tensor, +w: T.Tensor, bias: Maybe<&2, T.Tensor>) -> Maybe<&2
   Maybe.bind(&2, T.Tensor, T.Tensor, nn_transpose(w),
     wt => Maybe.bind(&2, T.Tensor, T.Tensor, nn_dot(x, wt), d => nn_linear.add(d, bias)))
 # ===========================================================================
-# `conv2d` -- mixin/op.py:1562-1603. THE WALL NAMED AT `nn/__init__.bend:231`
+# `conv2d` -- mixin/op.py:1562-1603. THE WALL NAMED AT `THE PORT's `nn/__init__.bend` WALL BLOCK`
 # IS NOT A WALL, and both halves of that are measurements.
 #
 #   "mixin/op.bend SIDE B, not built" -- `mixin/op.bend`'s SIDE B IS EMPTY.
-#     `mixin/op.bend:1523` is that file's LAST line and reads
+#     `mixin/op.bend:1530 symbol=t_softmax3.go` is that file's LAST line and reads
 #     `# SIDE B's SECTION GOES BELOW THIS LINE.` There is nothing to wait for,
-#     and `mixin/op.bend:246` reserves that half for whoever writes it. So
+#     and `THE PORT's `mixin/op.bend` HEADER` reserves that half for whoever writes it. So
 #     `conv2d` is written HERE, out of the primitives, rather than parked.
 #
 #   `_pool` -- `mixin/op.bend:60-70` (W4) calls it "BUILDABLE but not
@@ -888,7 +888,7 @@ def nn_cnv.bias(cout: U32, ni: U32) -> List<&2, U32>:
 # `ret if bias is None else ret.add(bias.reshape(1, -1, *[1]*len(HW)))` -- :1603.
 # The ADD is a BROADCAST add -- `(bs, cout, oy, ox)` against `(1, cout, 1, 1)` --
 # and the fold answers its shape through the same `F.alu_ds` arm `nn_dot` and
-# `nn_linear` already rely on (uop/fold.bend:999).
+# `nn_linear` already rely on (uop/fold.bend:1002 symbol=where_ds).
 def nn_cnv.add.put(+ret: T.Tensor, +b: T.Tensor, ds: List<&2, U32>) -> T.Tensor:
   T.tn_add(ret, MX.mxw_reshape(b, ds))
 
@@ -974,7 +974,7 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 #
 # THE GRAPH WITNESS IS CPython's OWN GRAPH, AND THE FIXTURE IS WHY. The port's
 # fixture `nn_row.t` is a BUFFER and a RESHAPE, with NO COPY: `mxw_buf`
-# (mixin/movement.bend:1231) builds `Ops.BUFFER` directly. Upstream's numpy
+# (mixin/movement.bend:1231 symbol=mxw_buf) builds `Ops.BUFFER` directly. Upstream's numpy
 # path builds the same node -- `Tensor.__init__` calls `_fromnp`
 # (tinygrad/tensor.py:37-40), which is `UOp.new_buffer("NPY", x.size, ...)` --
 # but ONLY while the requested device IS "NPY": `tinygrad/tensor.py:93` is
@@ -1199,8 +1199,8 @@ def nn_row_fold() -> IO(Unit):
     # `tuple(1 if i in axis else s for i,s in enumerate(self.shape))` puts the
     # ONE AT THE REDUCED INDEX. THE OLD EXPECTATION "2,1,3" WAS WRONG: it is
     # CPython's answer for axis [1], and it is ALSO what the port's
-    # `mixin/op.bend:781 mo_keep_ds` answers for axis [1] -- because
-    # `mixin/op.bend:316 mo_at` counts the index FROM THE END, so the port
+    # `mixin/op.bend:787 symbol=mo_axis0 mo_keep_ds` answers for axis [1] -- because
+    # `mixin/op.bend:336 symbol=mo_at` counts the index FROM THE END, so the port
     # answers the axis [1] target for every axis.
     nn_row.line("fold_smk", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(smk), Nil{})), "2,4,1")
     nn_row.line("fold_cc", MX.mx_show(Maybe.default(&2, List<&2, U32>, nn_shape(cc), Nil{})), "2,4")

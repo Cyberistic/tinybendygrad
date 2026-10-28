@@ -90,7 +90,7 @@
 # TWO MEASURED FACTS ABOUT THE RECORD RULES, because the notes disagree with the compiler and
 # this file is built on the compiler's answer.
 #   * A `Data` record CAN hold a `Maybe` field. `Slot{slot, nm: Maybe<&2, String>}` in
-#     realize.bend:1432 checks. The standing "a `Data` record cannot hold a `Maybe` field"
+#     engine/realize.bend:1431 symbol=rz_tab_rej checks. The standing "a `Data` record cannot hold a `Maybe` field"
 #     note is not true of 2.0.34; what IS true is the narrower `device.bend` rule 6 -- a
 #     `Data` FIELD may not be a `match` SCRUTINEE.
 #   * A `Data` FIELD may not be scrutinised and `+` cannot be spelled on a `Maybe`, so every
@@ -135,7 +135,7 @@ def j_str(m: Maybe<&2, String>) -> String:
     case _: "unprintable"
 
 # `dedup` for a list of arena indices -- Python's `dict.fromkeys`
-# (helpers.bend:108). `_written_uops` (jit.py:64) and `held_bufs` (jit.py:161) are
+# (helpers.bend:107 symbol=nc_in). `_written_uops` (jit.py:64) and `held_bufs` (jit.py:161) are
 # both set comprehensions, and this is the set.
 #
 # THE `.go` SPLIT IS NOT OPTIONAL, and the ORDER IS `.go` FIRST. `Bool.pick`
@@ -442,4 +442,4 @@ def ii_vars_repr(xs: List<&2, String>) -> Maybe<&2, String>:
 # `Device`-less caller that prints a dtype needs it, so the fix belongs in
 # spec.bend; `LAWS/spec.bend` is READ-ONLY to this unit, so the reader is LOCAL
 # here and named `j_dt_nm` so a merge is a rename.
-# TODO(p3) tinybendygrad/LAWS/spec.bend:75  Dt.nm -- BLOCKED. needs a `dt_nm` / `nm_of(Dt)` reader for the `nm: String` field of `Dt{pri, bits, cls, nm}` (`LAWS/spec.bend:77`). MEASURED, no `def dt_nm` / `nm_of` / `nm` exists; the port's `dn_gate` (`LAWS/spec.bend:853`) is an unrelated debug gate. The field is THERE, the reader is NOT.
+# TODO(p3) tinybendygrad/LAWS/spec.bend:76 symbol=Dt -- Dt.nm -- BLOCKED. needs a `dt_nm` / `nm_of(Dt)` reader for the `nm: String` field of `Dt{pri, bits, cls, nm}` (`tinybendygrad/LAWS/spec.bend:76 symbol=Dt`). MEASURED, no `def dt_nm` / `nm_of` / `nm` exists; the port's `dn_gate` (`LAWS/spec.bend:853`) is an unrelated debug gate. The field is THERE, the reader is NOT.

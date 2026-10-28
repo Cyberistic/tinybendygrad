@@ -28,7 +28,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `MBConvBlock.__init__` (extra/models/efficientnet.py:7),
 # at upstream:11
 #       self._expand_conv = Tensor.glorot_uniform(oup, input_filters, 1, 1)
-#   and that line IS BUILT: `rd_glorot_uniform` (mixin/rand.bend:945 symbol=rd_glorot_uniform) over the
+#   and that line IS BUILT: `rd_glorot_uniform` (mixin/rand.bend:950 symbol=rd_glorot_uniform) over the
 #   bound `nn_glorot` (nn/__init__.bend:217). THE FIRST LINE THAT IS NOT is
 #   upstream:12
 #       self._bn0 = BatchNorm2d(oup, track_running_stats=track_running_stats)
@@ -38,7 +38,7 @@ import ./../datasets/__init__.bend as D
 #   is the HALF OF BatchNorm THAT IS NOT A DECOMPOSITION: the running-statistics
 #   update, refused at `pool.bend:415`, whose two causes are NAMED there --
 #   "`TRAINING` is not a binding in tinybendygrad (comments only)" and
-#   "`Tensor.assign` is not a def (tensor.bend:2539 states the immutability
+#   "`Tensor.assign` is not a def (tinybendygrad/tensor.bend:2535 symbol=t_alu3 states the immutability
 #   divergence)".
 #
 #   AND HERE THAT HALF IS NOT OPTIONAL. Upstream:39 is
@@ -93,7 +93,7 @@ def ef_at(r: D.Refused) -> String:
 def ef_mbconv_init(kernel_size: U32, sx: U32, sy: U32, expand_ratio: U32,
   input_filters: U32, output_filters: U32, se_ratio: F32, has_se: Bool,
   track_running_stats: Bool) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:8 MBConvBlock.__init__ -- FIRST MISSING SYMBOL BatchNorm2d at :12, whose running-statistics half is REFUSED at nn/pool.bend:415 (TRAINING is not a binding, Tensor.assign is not a def)")
+  D.refuse("extra/models/efficientnet.py:8 MBConvBlock.__init__ -- FIRST MISSING SYMBOL BatchNorm2d at :12, whose running-statistics half is REFUSED at nn/pool.bend:416 symbol=pool_bn_running_stats (TRAINING is not a binding, Tensor.assign is not a def)")
 
 # :9  oup = expand_ratio * input_filters -- PURE ARITHMETIC, and the ONE number
 # this constructor has already decided before it refuses.
@@ -101,7 +101,7 @@ def ef_oup(expand_ratio: U32, input_filters: U32) -> U32: U32.mul(expand_ratio, 
 
 # :11 self._expand_conv = Tensor.glorot_uniform(oup, input_filters, 1, 1)
 def ef_expand_conv(oup: U32, input_filters: U32) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:11 MBConvBlock._expand_conv -- rd_glorot_uniform (mixin/rand.bend:861) EXISTS; this is the WEIGHT-STORE question, not the initialiser")
+  D.refuse("extra/models/efficientnet.py:11 MBConvBlock._expand_conv -- rd_glorot_uniform (mixin/rand.bend:950 symbol=rd_glorot_uniform) EXISTS; this is the WEIGHT-STORE question, not the initialiser")
 
 # :17-20 the two pad arms. `self.pad = [(k-1)//2-1, (k-1)//2]*2` when
 # `strides == (2,2)`, else `[(k-1)//2]*4`. SPELLED, because it is integer
@@ -116,26 +116,26 @@ def ef_depthwise(oup: U32, kernel_size: U32) -> D.Refused:
 
 # :27-31 the four squeeze/excitation weights
 def ef_se_reduce(oup: U32, input_filters: U32, se_ratio: F32) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:28 MBConvBlock._se_reduce -- max(1, int(input_filters*se_ratio)) is F32 arithmetic and Tensor.int IS BUILT; blocked by Tensor.sigmoid at :47 (ew_sigmoid, mixin/elementwise.bend:1196, EXISTS) being unreachable behind x.sequential at :41")
+  D.refuse("extra/models/efficientnet.py:28 MBConvBlock._se_reduce -- max(1, int(input_filters*se_ratio)) is F32 arithmetic and Tensor.int IS BUILT; blocked by Tensor.sigmoid at :47 (ew_sigmoid, mixin/elementwise.bend:1195 symbol=g_unary, EXISTS) being unreachable behind x.sequential at :41")
 
 # :33 self._project_conv = Tensor.glorot_uniform(output_filters, oup, 1, 1)
 def ef_project_conv(output_filters: U32, oup: U32) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:33 MBConvBlock._project_conv -- rd_glorot_uniform EXISTS; blocked by BatchNorm2d at :34, i.e. by nn/pool.bend:415")
+  D.refuse("extra/models/efficientnet.py:33 MBConvBlock._project_conv -- rd_glorot_uniform EXISTS; blocked by BatchNorm2d at :34, i.e. by nn/pool.bend:416 symbol=pool_bn_running_stats")
 
 # :36 def __call__(self, inputs)
 def ef_mbconv_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:36 MBConvBlock.__call__ -- FIRST MISSING SYMBOL Tensor.silu/swish is BUILT (ew_silu, mixin/elementwise.bend:1209); the first MISSING one is x.avg_pool2d at :44, whose kernel_size is read off x.shape[2:4] -- pool_avgpool (nn/pool.bend:260) takes WINDOW DIMENSIONS AS VALUES and nn_shape (nn/layers.bend:94) answers a Maybe<&2, List<&2, U32>>")
+  D.refuse("extra/models/efficientnet.py:36 MBConvBlock.__call__ -- FIRST MISSING SYMBOL Tensor.silu/swish is BUILT (ew_silu, mixin/elementwise.bend:1208 symbol=ew_sigmoid); the first MISSING one is x.avg_pool2d at :44, whose kernel_size is read off x.shape[2:4] -- pool_avgpool (nn/pool.bend:261 symbol=pool_avgpool) takes WINDOW DIMENSIONS AS VALUES and nn_shape (nn/layers.bend:94 symbol=nn_u32.go) answers a Maybe<&2, List<&2, U32>>")
 
 # :44 x_squeezed = x.avg_pool2d(kernel_size=x.shape[2:4])
 def ef_se_avgpool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:44 MBConvBlock.__call__ -- pool_avgpool (nn/pool.bend:260) EXISTS unpadded, which is the right arm; the missing part is reading kernel_size OUT OF x.shape[2:4] rather than being handed it")
+  D.refuse("extra/models/efficientnet.py:44 MBConvBlock.__call__ -- pool_avgpool (nn/pool.bend:261 symbol=pool_avgpool) EXISTS unpadded, which is the right arm; the missing part is reading kernel_size OUT OF x.shape[2:4] rather than being handed it")
 
 # :50 if x.shape == inputs.shape -- A SHAPE EQUALITY, and `x.shape` is a
 # `Maybe<&2, List<&2, U32>>` on this port (nn/layers.bend:94), so this
 # comparison is the first thing in the file that is a TWO-arm decision on
 # possibly-absent data. NOT a wall; named so it is not mistaken for one.
 def ef_skip_equal(+a: T.Tensor, +b: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:50 MBConvBlock.__call__ -- tn_add (tensor.bend:680) EXISTS and the fold answers the broadcast (uop/fold.bend:999); blocked only by upstream:49's BatchNorm2d, i.e. by nn/pool.bend:415")
+  D.refuse("extra/models/efficientnet.py:50 MBConvBlock.__call__ -- tn_add (tensor.bend:680 symbol=tn_add.go) EXISTS and the fold answers the broadcast (uop/fold.bend:1002 symbol=where_ds); blocked only by upstream:49's BatchNorm2d, i.e. by nn/pool.bend:416 symbol=pool_bn_running_stats")
 
 # ---------------------------------------------------------------------------
 # :54-132 EfficientNet. THE `global_params` TABLE IS PURE DATA AND IS RESTATED,
@@ -174,7 +174,7 @@ def ef_global_depth(n: U32) -> F32:
 #                   track_running_stats=True, input_channels=3, has_fc_output=True)
 def ef_effnet_init(number: U32, classes: U32, has_se: Bool,
   track_running_stats: Bool, input_channels: U32, has_fc_output: Bool) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:55 EfficientNet.__init__ -- FIRST MISSING SYMBOL BatchNorm2d at :85, whose running-statistics half is REFUSED at nn/pool.bend:415")
+  D.refuse("extra/models/efficientnet.py:55 EfficientNet.__init__ -- FIRST MISSING SYMBOL BatchNorm2d at :85, whose running-statistics half is REFUSED at nn/pool.bend:416 symbol=pool_bn_running_stats")
 
 # :71-78 round_filters -- SPELLED. It is F32 arithmetic and `int()` truncates
 # toward zero, which is what makes the +divisor/2 worth having, and a reader
@@ -186,18 +186,18 @@ def ef_round_filters(filters: U32, multiplier: F32) -> U32:
 
 # :80-81 round_repeats -- `int(math.ceil(global_params[1] * repeats))`. `ceil` is
 # a def in Base; the F32 multiply is upstream's. `U32.to_f32`/`F32.to_u32` is
-# the conversion PAIR this tree actually has (helpers.bend:929), and there is no
+# the conversion PAIR this tree actually has (helpers.bend:929 symbol=f32_frac.next), and there is no
 # `F32.from_f64` -- which is why these two are written in `U32` at all.
 def ef_round_repeats(repeats: U32, depth: F32) -> U32:
   F32.to_u32(F32.ceil(F32.mul(depth, U32.to_f32(repeats))))
 
 # :83 out_channels = round_filters(32)   :84 self._conv_stem = Tensor.glorot_uniform(...)
 def ef_conv_stem(out_channels: U32, input_channels: U32) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:84 EfficientNet._conv_stem -- rd_glorot_uniform (mixin/rand.bend:861) EXISTS; blocked by Tensor.conv2d at :127, whose padding=(0,1,0,1) is a 4-ELEMENT List and nn_conv2d (nn/layers.bend:756) takes it as Some{p}, which IS expressible")
+  D.refuse("extra/models/efficientnet.py:84 EfficientNet._conv_stem -- rd_glorot_uniform (mixin/rand.bend:950 symbol=rd_glorot_uniform) EXISTS; blocked by Tensor.conv2d at :127, whose padding=(0,1,0,1) is a 4-ELEMENT List and nn_conv2d (nn/layers.bend:758 symbol=nn_pads.grp.go) takes it as Some{p}, which IS expressible")
 
 # :108-114 the block loop
 def ef_blocks(number: U32, has_se: Bool, track_running_stats: Bool) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:108 EfficientNet._blocks -- FIRST MISSING SYMBOL BatchNorm2d via MBConvBlock.__init__ at :8, i.e. nn/pool.bend:415")
+  D.refuse("extra/models/efficientnet.py:108 EfficientNet._blocks -- FIRST MISSING SYMBOL BatchNorm2d via MBConvBlock.__init__ at :8, i.e. nn/pool.bend:416 symbol=pool_bn_running_stats")
 
 # :121-124 the fc half. `self._fc = None` at :124 IS the Maybe arm and needs no
 # refutation; the `has_fc_output=False` shape is the reason :132 is a
@@ -211,11 +211,11 @@ def ef_forward(+x: T.Tensor) -> D.Refused:
 
 # :130 x = x.avg_pool2d(kernel_size=x.shape[2:4])
 def ef_head_avgpool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:130 EfficientNet.forward -- pool_avgpool (nn/pool.bend:260) EXISTS; blocked by reading kernel_size off x.shape[2:4], which nn_shape (nn/layers.bend:94) answers as a Maybe")
+  D.refuse("extra/models/efficientnet.py:130 EfficientNet.forward -- pool_avgpool (nn/pool.bend:261 symbol=pool_avgpool) EXISTS; blocked by reading kernel_size off x.shape[2:4], which nn_shape (nn/layers.bend:94 symbol=nn_u32.go) answers as a Maybe")
 
 # :132 return x.linear(self._fc, self._fc_bias) if self._fc is not None else x
 def ef_forward_linear(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:132 EfficientNet.forward -- nn_linear (nn/layers.bend:427) EXISTS and takes bias as a Maybe<&2, T.Tensor>, which IS this line's `if ... is not None`; blocked by Tensor.sequential at :128")
+  D.refuse("extra/models/efficientnet.py:132 EfficientNet.forward -- nn_linear (nn/layers.bend:530 symbol=nn_linear) EXISTS and takes bias as a Maybe<&2, T.Tensor>, which IS this line's `if ... is not None`; blocked by Tensor.sequential at :128")
 
 # ---------------------------------------------------------------------------
 # :134-163 load_from_pretrained. EIGHT URLs, restated as a def so the table is
@@ -236,7 +236,7 @@ def ef_url(n: U32) -> String:
 
 # :134 def load_from_pretrained(self)
 def ef_load_pretrained(number: U32) -> D.Refused:
-  D.refuse("extra/models/efficientnet.py:134 EfficientNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load(fetch(...)) at :146; helpers.bend:3193 records the fetch seam as unported and resnet.bend:97-98 records torch_load as 0 hits")
+  D.refuse("extra/models/efficientnet.py:134 EfficientNet.load_from_pretrained -- FIRST MISSING SYMBOL torch_load(fetch(...)) at :146; THE PORT's `helpers.bend` `NOT PORTED` BLOCK records the fetch seam as unported and THE PORT's `extra/models/resnet.bend` HEADER records torch_load as 0 hits")
 
 # :148 if k.endswith("num_batches_tracked"): continue -- SPELLED, AND IT IS
 # THE UN-DOTTED FORM UPSTREAM USES HERE. That is worth saying because
@@ -260,7 +260,7 @@ def main() -> IO(Unit):
     srow("efficientnet_refused_at", ef_at(a))
     row("efficientnet_ported", False{})
     srow("efficientnet_mbconv_init_line", "extra/models/efficientnet.py:8")
-    srow("efficientnet_first_blocker", "BatchNorm2d running stats -- nn/pool.bend:415")
+    srow("efficientnet_first_blocker", "BatchNorm2d running stats -- nn/pool.bend:416 symbol=pool_bn_running_stats")
     urow("efficientnet_pad_half_k3", ef_pad_half(3))
     urow("efficientnet_pad_stride2_k3", ef_pad_stride2(3))
     urow("efficientnet_oup_b0_expand6", ef_oup(6, 32))

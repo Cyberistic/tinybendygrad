@@ -104,7 +104,7 @@
 #                             used to name two defs, `consumers.of` and
 #                             `consumers.who`, that were never written; `who` is a
 #                             FIELD of `Cons`, not a def.)
-#   sint                     ABSENT, and so is `sint_to_uop` (`ops.bend:3868` marks
+#   sint                     ABSENT, and so is `sint_to_uop` (`uop/ops.bend:3876 symbol=UPat.after.put` marks
 #                             that one `TODO(p3)`). `sint` is a TYPE ALIAS for
 #                             `UOp | int`, which has no Bend spelling, so
 #                             `marg_str`'s `isinstance(a, UOp)` test becomes a
@@ -344,8 +344,8 @@ def addr_repr(a: S.Addr) -> String:
   String.concat(["AddrSpace.", addr_name(a)])
 
 # ===========================================================================
-# THE DEVICE TABLE. `S.Dev` is a `U32` tag (ops.bend:680-684) and ops.bend:683
-# says the tag is "per name interned by the runtime" -- a table that is NOT
+# THE DEVICE TABLE. `S.Dev` is a `U32` tag (LAWS/spec.bend:85 symbol=Dev) and
+# schedule/rangeify.bend:1410 symbol=rf_webgpu8 says the tag is "per name interned by the runtime" -- a table that is NOT
 # THERE. `repr` is the one reader that needs the NAME, so the table lands here,
 # at the point of use, and is the P6 device table ops.bend points at.
 #
@@ -396,7 +396,7 @@ def dev_repr(d: S.Dev) -> String:
 # plain `String.join(.., "")` instead of a filter-and-intercalate.
 #
 # TWO FIELDS ARE NOT PORTED and both change the string:
-#   * `addrspace` is `AddrSpace|None` in Python and `S.Addr` here (ops.bend:697).
+#   * `addrspace` is `AddrSpace|None` in Python and `S.Addr` here (uop/ops.bend:697 symbol=AxisType.lt).
 #     Python's `None != AddrSpace.GLOBAL`, so a None addrspace PRINTS as
 #     `addrspace=None`; the port cannot hold it and prints the space's name.
 #   * `buffer` is `Maybe<&2, U32>` here -- a slot into the device allocator -- so
@@ -707,7 +707,7 @@ def i64_tuple_repr(xs: List<&2, H.I64>) -> String:
 
 # `params` and `target` are both fields ops.bend cannot print: `params` is a tuple of
 # UOPs (so its repr is `pretty_print` of each, which is `pretty_print`'s own
-# recursion) and `target` is a `Target` dataclass dropped at ops.bend:801.
+# recursion) and `target` is a `Target` dataclass dropped at uop/ops.bend:801 symbol=CInt.
 def aprogram_vars(xs: List<&2, U32>) -> String:
   match xs:
     case Nil{}: "()"
@@ -764,7 +764,7 @@ def arg_repr(+ar: O.Arena, +self: U32, a: O.Arg) -> String:
 # appends `repr(u.tag)`.
 #
 # `TTuple` is the WALL and it is ops.bend's, not mine: a tag tuple holds UOPS
-# (ops.bend:766-770), so Python's `repr` of one is `pretty_print` of each and
+# (uop/ops.bend:764 symbol=range_start), so Python's `repr` of one is `pretty_print` of each and
 # `pretty_print` is the def that reads `tagstr`. That is a real cycle and the
 # port cannot break it by ordering, so this answers the count instead of a
 # string -- visible, not wrong.
@@ -1124,7 +1124,7 @@ def dt_of.of(m: Maybe<&2, S.Dt>) -> S.Dt:
     case Some{d}: d
     case None{}: S.void()
 
-# `x.dtype`. It is a FOLD (fold.bend:1949), not an arena read, so it is threaded
+# `x.dtype`. It is a FOLD (uop/fold.bend:1965 symbol=Step), not an arena read, so it is threaded
 # as the table `tb` alongside the arena -- and the `void` default is Python's
 # "the fold did not settle this node", which is a wrong answer rather than a
 # crash. `Kahn.settled` is the honest question and the gate rows are all built

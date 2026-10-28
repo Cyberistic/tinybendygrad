@@ -102,7 +102,7 @@
 #    that knows a float CONST is the `f:` arm -- and takes the digits from the
 #    node. The row `bend_arg_const_float_is_f` pins the prefix and
 #    `bend_wall_float_bits` records the seam.
-#    TODO(p3) runtime/ops_bend.bend:1  symbol= -- the FLOAT CONST's `struct.pack('<f', u.arg).hex()` -- UPSTREAM'S `runtime/ops_bend.py` IS GONE AT THIS PIN, so this is a claim about the PORT's own encoder.
+#    TODO(p3) THE PORT's `runtime/ops_bend.bend` HEADER  symbol= -- the FLOAT CONST's `struct.pack('<f', u.arg).hex()` -- UPSTREAM'S `runtime/ops_bend.py` IS GONE AT THIS PIN, so this is a claim about the PORT's own encoder.
 #
 # 3. THE FFI SEAMS, named with their Python lines. None of these is an
 #    `@extern`; they are steps in the trace, so the trace stays greppable.
@@ -1508,7 +1508,7 @@ def raw_free(+m: Mem) -> Mem: m
 # THE HEX CODEC, and WHY IT IS SPELLED HERE RATHER THAN IMPORTED FROM
 # `ops_python.bend`. That is a measured decision, not a preference:
 #
-#   * `ops_python.bend:261` does `import ../uop/ops.bend as O`, so importing
+#   * THE PORT's `runtime/ops_python.bend` IMPORT BLOCK does `import ../uop/ops.bend as O`, so importing
 #     anything from it makes `ops_bend.bend` DEPEND ON `uop/ops.bend` -- which is
 #     under single ownership and was MID-EDIT during this unit: its `vals.step` at
 #     line 7686 refuses `match t:` with "a match on a parameter or field (this
@@ -1524,7 +1524,7 @@ def raw_free(+m: Mem) -> Mem: m
 # `hexdig_val` answers 0-15 for a hex character.
 # `+c` ON EVERY ONE, because `Bool.and`/`Bool.or` read both operands and a
 # parameter read twice is "consumed more than once" (MEASURED). This is why
-# `ops_python.bend:382` spells its three range tests as ONE-ARGUMENT helpers with
+# `runtime/ops_python.bend:380 symbol=keep_word` spells its three range tests as ONE-ARGUMENT helpers with
 # the `+`, rather than inlining the ranges.
 def hexdig_digit(+c: U32) -> Bool: Bool.and(U32.is_ge(c, 48), U32.is_le(c, 57))
 
@@ -1584,13 +1584,13 @@ def hexdec.go(+cs: List<&2, Char>, +pend: U32, +live: Bool,
       hexdec.go(t, Char.to_u32(h), True{}, acc)
 
 # THE NIBBLE ORDER IS THE THIRD BUG THIS MILESTONE FOUND, and it is the one
-# `ops_python.bend:1165` warns about BY NAME: "writing every byte DIGIT-SWAPPED
+# `runtime/ops_python.bend:1201 symbol=Prog.alloc.ss` warns about BY NAME: "writing every byte DIGIT-SWAPPED
 # -- 0x3f as \"f3\" -- and, because the reader was digit-swapped in the same way,
 # the two cancelled on a pure COPY". MEASURED here on the first real launch: the
 # pattern `efbeadde` came back out of the store as `deadbeef`, i.e. every BYTE was
 # reversed, which is what you get from `high*16 + low` when the wire is `low*16 +
-# high` -- the hex on the wire is HIGH NIBBLE FIRST (`ops_python.bend:1177`
-# `Prog.hex.nib` reads characters 2k and 2k+1, high first), so the fold must ADD
+# high` -- the hex on the wire is HIGH NIBBLE FIRST
+# (`runtime/ops_python.bend:1201 symbol=Prog.alloc.sp` -- `Prog.hex.nib` reads characters 2k and 2k+1, high first), so the fold must ADD
 # the high nibble to the low one, not the other way round.
 def hexbytes(hex: String) -> List<&2, U32>:
   hexdec.go(String.to_list(hex), 0, False{}, Nil{})
@@ -1601,7 +1601,7 @@ def hexdig_str2(v: U32) -> String:
   String.from_list([Char.from_u32(hexdig.chr(v))])
 
 # THE EMITTED ORDER is high nibble first, low byte first -- the order
-# `ops_python.bend:1165` measured the hard way ("writing every byte
+# `runtime/ops_python.bend:1201 symbol=Prog.alloc.ss` measured the hard way ("writing every byte
 # DIGIT-SWAPPED -- 0x3f as \"f3\" -- and, because the reader was digit-swapped in
 # the same way, the two cancelled on a pure COPY"). The reader and the writer are
 # therefore INDEPENDENT above, and `bend_hexbyte_*` pins the writer against
@@ -2113,7 +2113,7 @@ def run_exe() -> IO(Unit):
 # THE READBACK. `buffer_to` in the executor's own form: PACKET.out is TEXT, so the
 # copy-back is a PARSE of one line per buffer, through the SAME hex codec the
 # copy-in used -- and DELIBERATELY not a symmetric one, because
-# `ops_python.bend:1165` measured what symmetry buys: a reader and a writer wrong
+# `runtime/ops_python.bend:1201 symbol=Prog.alloc.ss` measured what symmetry buys: a reader and a writer wrong
 # in the SAME way cancel on a pure copy, so every copy fixture passes while every
 # arithmetic one computes on nonsense. So the comparison below is over the emitted
 # TEXT, not over a re-parse.

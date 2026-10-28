@@ -13,7 +13,7 @@
 #
 # THE ONE WALL THAT CUTS ACROSS EVERY LINE: `UOp._min_max` (ops.py:1094), which
 # `int(rng.vmax)+1` needs in `shard_srcs`, `shrink_multi`, `reshape_multi` and
-# `copy_multi`. `fold.bend:5081` names it at 1104 in its own PROSE and carries it as
+# `copy_multi`. `uop/fold.bend:5077 symbol=ranged` names it at 1104 in its own PROSE and carries it as
 # its `_min_max` WALK -- there is no `TODO(p3)` marker for it there -- and it is not a
 # fold at all -- it is arithmetic over the srcs. What `mu_count`
 # ports is the NARROW case that is exact and load-bearing: a RANGE over a CONST end, where
@@ -1079,9 +1079,9 @@ def rd_fires(+r: Rd) -> Bool:
 # is `in (bfloat16, half)` -- TWO dtypes and not one, and `S.Dt` is a `Data`
 # record so the comparison is `S.bfloat16()` / `S.half()` by value. The graph is
 # the wall (`allreduce.bend`'s, plus two `.cast`s).
-# `S.Dt` is a `Data` record {pri, bits, cls, nm} (spec.bend:75) so equality is
+# `S.Dt` is a `Data` record {pri, bits, cls, nm} (tinybendygrad/LAWS/spec.bend:76 symbol=Dt) so equality is
 # NOT structural -- `O.eq_dt` is what `ops.bend` itself uses for a dtype
-# comparison (ops.bend:3762) and it compares the RANK (`pri`), which is
+# comparison (uop/ops.bend:3760 symbol=UPat.load) and it compares the RANK (`pri`), which is
 # `dtype.py`'s declaration order and is unique per dtype.
 def rd_low_dt(+dt: S.Dt) -> Bool:
   Bool.or(O.eq_dt(dt, S.bfloat16()), O.eq_dt(dt, S.half()))

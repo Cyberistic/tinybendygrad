@@ -105,7 +105,7 @@ import ./mixin/dtype.bend as D
 #     `gradient.bend` imports the same five files this one already did -- so the closure's
 #     root (`uop/ops.bend`) has no new leaf under it.
 #   * `mixin/dtype.bend` -- `D.cast_at` (dtype.bend:350), the FOLDING `cast` of
-#     dtype.bend:36, and nothing else. Added for `tn_logical_not`, whose `cast(bool)` must
+#     mixin/dtype.bend:350 symbol=cast_at, and nothing else. Added for `tn_logical_not`, whose `cast(bool)` must
 #     fold away on an already-bool node the way CPython's does (dtype.py:38 returns `self`).
 #     Same reasoning as the `gradient.bend` line above: `dtype.bend` imports only
 #     `uop/ops.bend` and `uop/fold.bend`, both already in this file's closure, so the ONE new
@@ -379,14 +379,14 @@ def tn_alu(+t: Tensor, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
 # `sqrt` -- elementwise.py:480. `return self.alu(Ops.SQRT)`. The body is a single
 # `UOp.alu` over the empty src list (SQRT is a unary op, and `self` is the implicit
 # src[0] from `tn_alu`'s `List.append(&2, U32, [uop], srcs)`). ONE LINE in CPython and
-# ONE LINE here -- the call to `tn_alu` IS the port, and the wall `nn/__init__.bend:241`
+# ONE LINE here -- the call to `tn_alu` IS the port, and the wall `THE PORT's `nn/__init__.bend` HEADER`
 # that named `Tensor.sqrt` as missing is the wall this def closes.
 def tn_sqrt(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsSQRT{}, Nil{})
 
 # `detach` -- elementwise.py:43. `return self.alu(Ops.DETACH)`. Same shape as `sqrt`:
 # a single `tn_alu` call, with `OpsDETACH{}` as the op and an empty src list.
-# Closes the second of the four walls `nn/__init__.bend:241` named (the others --
+# Closes the second of the four walls `THE PORT's `nn/__init__.bend` HEADER` named (the others --
 # `where` and `square` -- have separate deps; see the wall text).
 def tn_detach(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsDETACH{}, Nil{})
@@ -432,7 +432,7 @@ def tn_exp2(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsEXP2{}, Nil{})
 
 # `rsqrt` -- elementwise.py:820. `return self.sqrt().reciprocal()`. The wall text
-# at `mixin/elementwise.bend:859` calls this "free of literals; blocked on sqrt's
+# at `THE PORT's `mixin/elementwise.bend` HEADER` calls this "free of literals; blocked on sqrt's
 # own fold, not on a constant". `tn_sqrt` and `tn_reciprocal` are both ported (gated
 # `tn_sqrt-gate.py` 5/5, `tn_trunc_reciprocal_threefry-gate.py` 9/9), so the COMBINED
 # shape is portable. The result is a LINEAR chain (sqrt, then reciprocal) which
@@ -445,11 +445,11 @@ def tn_rsqrt(+t: Tensor) -> Tensor:
   tn_alu(sqrt, O.OpsRECIPROCAL{}, Nil{})
 
 # `where` -- elementwise.py:426. `x, y = self.ufix(x)._broadcasted(y); return
-# self.alu(Ops.WHERE, x, y)`. The wall at `nn/__init__.bend:241` calls the
+# self.alu(Ops.WHERE, x, y)`. The wall at `THE PORT's `nn/__init__.bend` HEADER` calls the
 # `_broadcasted` step the blocker. The no-broadcasting case (both x and y are
 # already Tensors of the same shape) is portable: the body reduces to
 # `tn_alu(cond, O.OpsWHERE{}, [Tensor.u(x), Tensor.u(y)])`, the same `tn_alu`
-# builder with three src nodes. `O.UOp.where` (ops.bend:2767) is the primitive
+# builder with three src nodes. `O.UOp.where` (uop/ops.bend:2829 symbol=UOp.where) is the primitive
 # this delegates to. `tn_where` is what CPython's `Tensor.where` does in the
 # no-broadcasting case; the broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it)
 # (mixin/movement.py:24, fold reads and a `least_upper_dtype` helper).
@@ -474,7 +474,7 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # `O.UOp.cast` (ops.bend:2738) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
 # That was the one extra `CAST` on `tn_eq`, `tn_dunder_ge`, `tn_dunder_le`,
 # `tn_dunder_invert` and `tn_isfinite`, every one of which is a `logical_not` over a node the
-# fold already knows is `bool` (a CMPNE, a CMPLT or an OR -- fold.bend:2608-2630 answers
+# fold already knows is `bool` (a CMPNE, a CMPLT or an OR -- uop/fold.bend:2610 symbol=dt_shape answers
 # `bool` for the first two and `promo_dtype` for the third). The fold-aware cast is
 # `D.cast_at` (dtype.bend:350), the same `cast_at.of` two-arm match `mixin/elementwise.bend`'s
 # `ew_cast` reaches through `W.wk_cast_at`, and it is `D` rather than `W` because
@@ -492,7 +492,7 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # CAST AND the CONST (3 slots); `cast.ar` has the CAST only (2 slots). Building the
 # CMPNE in `cast.ar` therefore APPENDS it at the slot `O.Found.i(true_c)` already names
 # -- the node becomes its own `src[1]`. MEASURED, `./bin/bend` on a `CInt` input, with
-# `O.Rng.sig` (ops.bend:5857) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
+# `O.Rng.sig` (uop/ops.bend:6070 symbol=Rng.sig) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
 # IS the top node) where CPython answers `CMPNE(CAST(CONST()), CONST())`
 # (`/tmp/cp_shape.py`, `tinygrad`). So the CMPNE is built in `true_c.ar`, the newest.
 def tn_logical_not.cmpne(+cast: O.Found, +true_c: O.Found) -> Tensor:
@@ -517,7 +517,7 @@ def tn_logical_not(+t: Tensor) -> Tensor:
 # CAST of its own. It is a literal swap, not a promotion this port would have to have.
 #
 # `Maybe<&2, Tensor>` AND NOT `Tensor`, AND THE `Maybe` IS ONE DTYPE WIDE. CPython's
-# `dtype.max` is a Python `int` with no width limit; `S.Dt.max` (spec.bend:221) is
+# `dtype.max` is a Python `int` with no width limit; `S.Dt.max` (tinybendygrad/LAWS/spec.bend:221 symbol=Dt.max) is
 # `Maybe<&2, U32>` and answers `None` past 32 bits (`Dt.range.wide`). So an unsigned dtype
 # wider than `u32` is a REFUSAL here and not a wrong graph -- the port's convention, and the
 # same one `tn_dunder_invert`, `D.bitcast_at` and `D.commit_dtype` use. A `Tensor`-returning
@@ -585,7 +585,7 @@ def tn_bitwise_not(+t: Tensor) -> Maybe<&2, Tensor>:
 # `tn_logical_not`; the arith arm is `self * (-1)` = `MUL(self, -1)`, and `OpsMUL{}`
 # is the same auto-generated constructor family `tn_sqrt` uses. The `-1` literal is
 # `H.i64_of_i32(4294967295)` -- the two's complement pair, because `i64_of_i32`
-# SIGN-EXTENDS a U32 (`mixin/elementwise.bend:484`'s `ew_neg.go` builds the same).
+# SIGN-EXTENDS a U32 (`mixin/elementwise.bend:484 symbol=ew_dt_max_i64`'s `ew_neg.go` builds the same).
 # `tn_alu` handles the binary op with `self` at src[0], so the call is
 # `tn_alu(t, O.OpsMUL{}, [c])` for a CONST `c`. The dtype gate is `tn_dtype` -- a
 # fold property (`UOp.dtype`, fold.bend:4783), and the `None{}` arm falls through
@@ -622,7 +622,7 @@ def tn_dunder_neg(+t: Tensor) -> Tensor:
 # BOOL ARM is ported (`tn_logical_not`, which is `self.cast(bool).ne(True)` at
 # elementwise.py:49 -- gated 4/4 at gates/tn_logical_not-gate.py). The arith
 # arms (`self ^ dtype.max` for unsigned, `self ^ -1` for signed, elementwise.py:157)
-# stay walled on the dtype fold + arith ops (tensor.bend:385 -- `self.dtype` is a
+# stay walled on the dtype fold + arith ops (tinybendygrad/tensor.bend:384 symbol=tn_sqrt -- `self.dtype` is a
 # FOLD property and `tn_bitwise_not`'s arith arms are a `None` here). So
 # `__invert__` is ONE-ARM PORTABLE: the BOOL arm returns `tn_logical_not(t)`, the
 # arith arm is `None`. Returns `Maybe<&2, Tensor>` and lets the caller decide; the
@@ -642,7 +642,7 @@ def tn_dunder_invert(+t: Tensor) -> Maybe<&2, Tensor>:
   tn_dunder_invert.go(tn_dunder_invert.is_bool.of(tn_dtype(t)), t)
 
 # `__mul__` -- elementwise.py:125. `return self._binop(Ops.MUL, x, reverse)`. The wall
-# text at `nn/__init__.bend:241` said the `__mul__` method is a separate wall. The body
+# text at `THE PORT's `nn/__init__.bend` HEADER` said the `__mul__` method is a separate wall. The body
 # is the same `tn_alu` builder with `OpsMUL{}` and the rhs's uop as the second src. For
 # a TENSOR rhs (the only case the gate covers), `_binop`'s `_broadcasted` is the
 # identity, so the port is `tn_alu(self, MUL, [Tensor.u(rhs)])`. The `reverse` flag is
@@ -660,14 +660,14 @@ def tn_rmul(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_mul.go(True{}, lhs, rhs)
 
 # `square` -- elementwise.py:575. `return self * self`. The body is `tn_mul(self, self)`.
-# The wall text at `nn/__init__.bend:241` cited `__mul__` as the blocker; with that
+# The wall text at `THE PORT's `nn/__init__.bend` HEADER` cited `__mul__` as the blocker; with that
 # ported, the square body is a single `tn_mul(self, self)` call. CPython's `*`
 # is `__mul__` (not `__rmul__`) because `self` is the LHS.
 def tn_square(+t: Tensor) -> Tensor:
   tn_mul(t, t)
 
 # `__add__` -- elementwise.py:267. `return self.add(x)`. The wall text at
-# `nn/__init__.bend:241` cited the `_broadcasted` step as the blocker. The
+# `THE PORT's `nn/__init__.bend` HEADER` cited the `_broadcasted` step as the blocker. The
 # no-broadcasting case (both `self` and `x` are Tensors of the same shape) is
 # the body reduced to `tn_alu(self, ADD, [x.uop])` if `not reverse`, or
 # `tn_alu(x, ADD, [self.uop])` if `reverse` -- CPython's `add` writes it as
@@ -689,7 +689,7 @@ def tn_radd(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_add.go(True{}, lhs, rhs)
 
 # `__sub__` -- elementwise.py:270. `return self.sub(x)`. The wall text at
-# `nn/__init__.bend:241` cited the `_broadcasted` step as the blocker. The
+# `THE PORT's `nn/__init__.bend` HEADER` cited the `_broadcasted` step as the blocker. The
 # no-broadcasting case is portable: `_binop`'s body with `Ops.SUB` instead of
 # `Ops.MUL`, and `_broadcasted` is the identity for two same-shape Tensors.
 # CPython's `sub` (elementwise.py:103) also writes `a.alu(Ops.ADD, -b)` --
@@ -745,7 +745,7 @@ def tn_cmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmplt.go(False{}, lhs, rhs)
 
 # `relu` -- elementwise.py:674. `(self > 0).where(self, 0)`. The wall text at
-# `nn/__init__.bend:241` cited `_broadcasted` as the blocker for `where`, which
+# `THE PORT's `nn/__init__.bend` HEADER` cited `_broadcasted` as the blocker for `where`, which
 # this composition depends on. The `(self > 0)` is `tn_rcmplt(self, c0)` where
 # `c0` is a CONST 0. The `where(self, 0)` is `tn_where(rcmplt, self, c0)`. Both
 # parts are ported, so `relu` is a chain of two `tn_alu`-ish calls. Placed AFTER
@@ -754,7 +754,7 @@ def tn_rcmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmplt.go(True{}, lhs, rhs)
 
 # `relu` -- elementwise.py:674. `(self > 0).where(self, 0)`. The wall text at
-# `nn/__init__.bend:241` cited `_broadcasted` as the blocker for `where`, which
+# `THE PORT's `nn/__init__.bend` HEADER` cited `_broadcasted` as the blocker for `where`, which
 # this composition depends on. The `(self > 0)` is `tn_rcmplt(self, c0)` where
 # `c0` is a CONST 0. The `where(self, 0)` is `tn_where(rcmplt, self, c0)`. Both
 # parts are ported, so `relu` is a chain of two `tn_alu`-ish calls. Placed AFTER
@@ -802,10 +802,10 @@ def tn_relu6(+t: Tensor) -> Tensor:
 
 # `ceil` -- elementwise.py:656. `(self > (b := self.trunc())).where(b+1, b)`. The
 # `+1` is a CONST added to the trunc'd tensor `b`, and the wall at
-# `nn/__init__.bend:241` cited `b+1` (Tensor `+` Tensor arith) and `tn_trunc` as
+# `THE PORT's `nn/__init__.bend` HEADER` cited `b+1` (Tensor `+` Tensor arith) and `tn_trunc` as
 # the blockers. `tn_trunc` is ported (tensor.bend:406), and the arith is
 # `tn_add(b, c1t)` -- `tn_add` is ported (tensor.bend:685), the CONST 1 is
-# `tn_ceil.c1` (a `O.UOp.const`, ported at ops.bend:2922), and `c1t` is a
+# `tn_ceil.c1` (a `O.UOp.const`, ported at uop/ops.bend:2939 symbol=UOp.replace.go), and `c1t` is a
 # Tensor wrapping the CONST -- `tn_alu.put` over the `Found`, the one spelling
 # that cannot name the wrong arena (see the note above `tn_alu.put`). The cond `(self > b)` is
 # `tn_rcmplt(self, b)` (tensor.bend:744, the `reverse=True` arm of `tn_cmplt`),
@@ -1369,7 +1369,7 @@ def tn_cast.dt_is.of(m: Maybe<&2, S.Dt>, +d: S.Dt) -> Bool:
     case None{}: False{}
 
 # THE ARENA IS A PARAMETER, and that is the whole of this fix. `Arena` is an immutable
-# `Data` VALUE (`ops.bend:1264`), so an index is meaningful only in an arena DESCENDING
+# `Data` VALUE (`uop/ops.bend:1219 symbol=Arg`), so an index is meaningful only in an arena DESCENDING
 # from the one that minted it: reading `i` in `O.Arena.empty()` answers the `NOOP` bottom.
 # MEASURED before: the identity arm of `op_cast` printed `1 NOOP/0` where CPython answers
 # the src unchanged, because the wrap threw the caller's arena away.
@@ -2202,7 +2202,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # no `inspect` and no mutable class state, and the metadata itself is
 # `all_metadata[new_uop] = (metadata,)` at tensor.py:106.
 # TODO(p3) ops.py:208  symbol=all_metadata  -- ops.bend has the READER
-#                                             (`O.UOp.metadata`, ops.bend:2697) and no
+#                                             (`O.UOp.metadata`, uop/ops.bend:2712 symbol=UOp.metadata) and no
 #                                             writer, because the writer needs a scope
 #                                             threaded through `_apply_uop`
 # ===========================================================================

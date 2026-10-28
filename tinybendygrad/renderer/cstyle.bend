@@ -46,7 +46,7 @@
 # THE FOUR WALLS UNDER THIS FILE. Three are the substrate's and one is device
 # FFI; each is a `TODO(p3)` with its line.
 #
-#   (a) `Ops.SHRINK` HAS NO DTYPE IN THE FOLD. `fold.bend:1631` defers it with
+#   (a) `Ops.SHRINK` HAS NO DTYPE IN THE FOLD. `uop/fold.bend:1632 symbol=sym_dim.val` defers it with
 #       the comment "`marg` -> `zip` -> `ssimplify`", and `Ops.LOAD` is `thru0`
 #       off a SHRINK so it inherits the gap. MEASURED on a hand-built arena:
 #       `F.fold.dt` answers `None` for SHRINK, LOAD and every ALU above one, so
@@ -952,8 +952,8 @@ def cfo_tern(+a: String, b: String, c: String) -> String: String.concat(["(", a,
 # the answer in `f"..."` at the operator's own precedence, so an empty one deletes the
 # operand and leaves a kernel that is wrong rather than broken -- the exact shape this file's
 # own header names as the dangerous one. So the refusal NAMES ITS CAUSE, and it is
-# `wgsl.bend`'s spelling and not a new one: `wgsl.bend:489` answers `UNHANDLED(Ops.X)` for
-# the same `KeyError` on the same twenty inherited arms, and `wgsl.bend:71-72` says those arms
+# `wgsl.bend`'s spelling and not a new one: `renderer/wgsl.bend:473 symbol=code_for_op.of` answers `UNHANDLED(Ops.X)` for
+# the same `KeyError` on the same twenty inherited arms, and `THE PORT's `renderer/wgsl.bend` HEADER` says those arms
 # MOVE HERE when cstyle lands. Two spellings of one refusal is FINDING 2 in `wgsl_render_census-gate.py`,
 # which is why this reuses the sibling's token instead of inventing a third.
 def cfo_unhandled(op: O.Op) -> String: String.concat(["UNHANDLED(Ops.", O.Ops.name.of(op), ")"])

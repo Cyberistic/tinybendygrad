@@ -113,7 +113,7 @@
 #     kept because W9b means `mo_promote` is spelled here anyway.
 #
 #   W9b -- the MISSING CONJUNCT, and this one is OPEN. `ew_promote`
-#     (elementwise.bend:378) hands `ew_promote.at` the weak test as `W.dt_weak(dt)`,
+#     (mixin/elementwise.bend:363 symbol=ew_promote) hands `ew_promote.at` the weak test as `W.dt_weak(dt)`,
 #     and `W.dt_weak` is the CLASS test ALONE (`weak_cls(S.Dt.cls(d))`, weak.bend).
 #     elementwise.py:30 is
 #         `if t.dtype in dtypes.weaks and t._uop.base.op is Ops.CONST:`
@@ -328,7 +328,7 @@ def mo_dim_at(+fx: F.Folded, +i: U32, k: U32) -> U32:
 #     in axis else s for i, s in enumerate(self.shape)`) AND THIS DEF ANSWERED `(2)(1)`
 #     -- **THE ORDER IS WRONG EVEN ON A SQUARE.**
 #   * THE REDUCED SIZE FOR A `(2,3)` TENSOR ON AXIS `[0]` IS 3 AND THIS DEF ANSWERED 2.
-#   * `nn/layers.bend:230` MEASURED THE SAME DIVERGENCE ON `(2,4,3)` WITH AXIS `[2]`,
+#   * `tinybendygrad/nn/layers.bend:229 symbol=nn_reduce.pick` MEASURED THE SAME DIVERGENCE ON `(2,4,3)` WITH AXIS `[2]`,
 #     WHERE `mo_keep_ds` ANSWERED `(1,4,3)` AND CPython ANSWERS `(2,4,1)`.
 # **AND NOTHING IN THE TREE COULD SEE IT: THE PORT'S ONLY RANK-2 FIXTURE IS `(2,2)` --
 # WHERE THE SIZE IS ACCIDENTALLY RIGHT BECAUSE THE TWO DIMENSIONS ARE EQUAL -- AND ITS
@@ -607,7 +607,7 @@ def mo_neg(+t: T.Tensor) -> T.Tensor: mo_bin_c(t, O.OpsMUL{}, mo_ki(4294967295))
 
 # THE WHOLE `ew_binop` FAMILY, ON `mo_bin`. `ew_binop` is CORRECT when its left operand's
 # promotion mints a node and WRONG when it does not: `ew_promo2`'s weak arm hands `t`
-# straight back (elementwise.bend:243), so `Br.l` keeps `t`'s arena, and the `tn_alu`
+# straight back (mixin/elementwise.bend:242 symbol=ew_newer), so `Br.l` keeps `t`'s arena, and the `tn_alu`
 # at the end of `ew_binop` then interns the node into an arena one node short of the
 # right-hand side's and OVERWRITES it. MEASURED: `t_lse0` printed `2 BUFFER/0 REDUCE/1`
 # where CPython prints 33 nodes, and the graph had a node whose src was itself. `mo_bin`
@@ -632,7 +632,7 @@ def mo_eqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_notb(mo_neqc(t, v))
 # promoted these, and a second promote would cast -b (only a weak CONST is kept weak)".
 #
 # IT IS SPELLED HERE AND NOT CALLED AS `E.ew_sub` FOR W9'S SECOND HALF, and the reason is
-# the same one-word error as in `mo_alu2`: `ew_sub.of` (elementwise.bend:409) ends
+# the same one-word error as in `mo_alu2`: `ew_sub.of` (mixin/elementwise.bend:405 symbol=ew_pair) ends
 # `T.tn_alu(a, Ops.ADD{}, [Tensor.u(b)])` where `a` is `t` UNCHANGED whenever the
 # promotion is the identity, and `b = ew_neg(...)` has already grown the arena -- so the
 # ADD is interned into an arena one node short and OVERWRITES the negated right-hand
@@ -799,8 +799,8 @@ def mo_ax_all(+t: T.Tensor) -> List<&2, U32>:
   mo_range(mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
 
 # THE KEEPDIM RESHAPE, `1 if i in axis else s for i,s in enumerate(self.shape)`
-# (reduce.py:18). It is `RESHAPE` and the fold answers its shape (fold.bend:1537), so
-# `mo_reshape`'s identity test sees the real shapes and `t_sum0kd` is the row. The
+# (reduce.py:18). It is `RESHAPE` and the fold answers its shape, so
+# `mo_reshape`'s identity test sees the real shapes and `t_sum0kd` is the row (uop/fold.bend:1538 symbol=pre_all). The
 # membership test `i in axis` is a `Bool` because a `match` may not scrutinise a call
 # (rule 1).
 def mo_iaxis.go(axis: List<&2, U32>, +i: U32) -> Bool:
@@ -1358,7 +1358,7 @@ def t_sum0() -> IO(Unit):
 # (tensor.bend:827) returns `None` when the fold cannot answer the source's SHAPE, and
 # `tn_rop.reduce` then hands `self` back UNCHANGED -- no REDUCE node at all. For a
 # BUFFER-rooted and a RESHAPE-rooted source the fold DOES answer it (MEASURED: fold
-# fold.bend:1530/1537), so this row is False and prints False; the mutation that
+# uop/fold.bend:1528 symbol=stage_widths and uop/fold.bend:1538 symbol=pre_all), so this row is False and prints False; the mutation that
 # makes it print True is the one that removes the refusal, and no CPython row can see
 # that because CPython never refuses.
 def t_rop_gap() -> IO(Unit):
@@ -1367,7 +1367,7 @@ def t_rop_gap() -> IO(Unit):
   mo_row("rop_gap", O.eq_op(O.Arena.op(O.Found.ar(f), O.Found.i(f)), O.OpsREDUCE{}))
 
 # THE KEEPDIM ROW. `reduce.py:18`'s reshape is `1 if i in axis else s`, and the fold
-# answers a RESHAPE's shape (fold.bend:1537), so the identity test in `mo_reshape`
+# answers a RESHAPE's shape (uop/fold.bend:1538 symbol=pre_all), so the identity test in `mo_reshape`
 # sees the real shapes. Without keepdim the REDUCE is the last node; with it the
 # signature gains `CONST RESHAPE/2` and nothing else, and the COUNT is what says so.
 def t_sum0kd() -> IO(Unit):

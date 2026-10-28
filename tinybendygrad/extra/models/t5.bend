@@ -31,18 +31,18 @@ import ./../datasets/__init__.bend as D
 # So T5's SECOND wall is `Tensor.matmul`, which is MISSING
 # (`grep -rnE "^def mo_matmul" --include='*.bend' tinybendygrad/` = 0), while
 # `Tensor.softmax` at the PORT's own extra/models/t5.py:215 IS PRESENT as
-# mixin/op.bend:1155 symbol=mo_softmax.
-# `mixin/op.bend:85` names `matmul` as WALL 8 -- "a WMMA lowering over
-# `UOp(Ops.WMMA, ...)` with a device-specific arg" -- but `nn/layers.bend:1-27`
+# mixin/op.bend:1158 symbol=mo_softmax.
+# `THE PORT's `mixin/op.bend` HEADER` names `matmul` as WALL 8 -- "a WMMA lowering over
+# `UOp(Ops.WMMA, ...)` with a device-specific arg" -- but `THE PORT's `nn/layers.bend` HEADER`
 # says the same name is a LIE for the LAYER's arithmetic: `nn_dot` there is
 # RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST, all six of which EXIST.
 # So `Tensor.matmul` is `nn_dot` renamed, and extra/models/t5.py is CLOSER THAN BERT.
 #
 # WHAT EXISTS, WITH ITS INSTRUMENT:
 #   `nn.Linear`        nn/layers.bend:530 symbol=nn_linear   (:77,:78,:79,:112,:113,:114,:115)
-#   `Tensor.softmax`   mixin/op.bend:1155 symbol=mo_softmax  (:216)  <-- the named family, PRESENT
-#   `Tensor.mean`      mixin/op.bend:951 symbol=mo_mean      (:65)
-#   `Tensor.min`       mixin/op.bend:1190 symbol=mo_min      (:158) the REDUCTION; matches the
+#   `Tensor.softmax`   mixin/op.bend:1158 symbol=mo_softmax  (:216)  <-- the named family, PRESENT
+#   `Tensor.mean`      mixin/op.bend:954 symbol=mo_mean      (:65)
+#   `Tensor.min`       mixin/op.bend:1193 symbol=mo_min      (:158) the REDUCTION; matches the
 #                                                      `axis=0` at :162
 #   `Tensor.where`     mixin/elementwise.bend:571 symbol=ew_where (:164)
 #   `Tensor.log`       mixin/elementwise.bend:1280 symbol=ew_log  (:153)
@@ -50,8 +50,8 @@ import ./../datasets/__init__.bend as D
 #                                                      `pow(2)` is here
 #   `Tensor.ones`      mixin/creation.bend:559 symbol=cr_ones  (:56)
 #   `Tensor.zeros_like` mixin/creation.bend:553 symbol=cr_zeros_like (:142)
-#   `Tensor.full_like` mixin/creation.bend:511 symbol=cr_full_like  (:160)
-#   `Tensor.arange`    mixin/rand.bend:424 symbol=op_arange  (:169,:170)
+#   `Tensor.full_like` mixin/creation.bend:514 symbol=cr_full_like  (:160)
+#   `Tensor.arange`    mixin/rand.bend:429 symbol=op_arange  (:169,:170)
 #   `Tensor.stack`     mixin/movement.bend:1272 symbol=mxw_stk (:159)
 #   `x.reshape`/`view` mixin/movement.bend:1434 symbol=mxw_reshape (:178,:190,:194,:258)
 #   `x.transpose`      mixin/movement.bend:1452 symbol=mxw_permute (:178,:190,:194,:210)
@@ -65,7 +65,7 @@ import ./../datasets/__init__.bend as D
 #       `nn/pool.bend:388` has `pool_rsqrt` = `MO.mo_recip(E.ew_sqrt(t))` -- that IS
 #       rsqrt, but it is NAMED FOR A BATCHNORM and is not reachable as `Tensor.rsqrt`.
 #   (4) `Tensor.abs`    MISSING. (:145)
-#   (5) `Tensor.gelu`   MISSING as a BODY. mixin/elementwise.bend:772 has the CONSTANT
+#   (5) `Tensor.gelu`   MISSING as a BODY. mixin/elementwise.bend:772 symbol=ew_k.gelu has the CONSTANT
 #       `ew_k.gelu` and :1217 has `ew_quick_gelu`, but there is no `def ew_gelu`.
 #       (:82)
 #   (6) `Tensor.cat`    MISSING. (:285)
@@ -76,7 +76,7 @@ import ./../datasets/__init__.bend as D
 # ON `adam`: NOT USED BY THIS FILE. t5.py constructs no optimizer and names no
 # optimizer slot. It is named here because it is the second of three files in this
 # directory where a reader would assume it, and the answer is that
-# `nn/optim.bend:898 op_mstep` / `:903 op_vstep` EXIST and go unused by all three.
+# `nn/optim.bend:900 symbol=op_mstep` / `:903 op_vstep` EXIST and go unused by all three.
 #
 # THE TOKENIZER IS NOT A PORTING PROBLEM. t5.py:26 imports `SentencePieceProcessor`
 # from the `sentencepiece` package (the file's own line 1 is the pip install), and
@@ -128,11 +128,11 @@ def t5_tokenizer_encode(spiece_path: String, text: String, max_length: U32) -> D
 
 # :52 def __init__(self, hidden_size:int, eps:float=1e-6)
 def t5_layernorm_init(hidden_size: U32, eps: F32) -> D.Refused:
-  D.refuse("extra/models/t5.py:52 T5LayerNorm.__init__ -- reached Tensor.ones (:56, mixin/creation.bend:559 cr_ones EXISTS); the eps is a plain F32")
+  D.refuse("extra/models/t5.py:52 T5LayerNorm.__init__ -- reached Tensor.ones (:56, mixin/creation.bend:559 symbol=cr_ones EXISTS); the eps is a plain F32")
 
 # :59 def __call__(self, hidden_states)
 def t5_layernorm_call(+hidden_states: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/t5.py:59 T5LayerNorm.__call__ -- reached :65 mean (mixin/op.bend:891 EXISTS); BLOCKED AT :66 Tensor.rsqrt, which has no `def mo_rsqrt`")
+  D.refuse("extra/models/t5.py:59 T5LayerNorm.__call__ -- reached :65 mean (mixin/op.bend:907 symbol=mo_div EXISTS); BLOCKED AT :66 Tensor.rsqrt, which has no `def mo_rsqrt`")
 
 # ---------------------------------------------------------------------------
 # :75-98 the two FFN defs.
@@ -140,7 +140,7 @@ def t5_layernorm_call(+hidden_states: T.Tensor) -> D.Refused:
 
 # :76 def __init__(self, config:T5Config)
 def t5_gated_init(d_model: U32, d_ff: U32) -> D.Refused:
-  D.refuse("extra/models/t5.py:76 T5DenseGatedActDense.__init__ -- all three are Linear (:77,:78,:79, nn/layers.bend:427 EXISTS); BLOCKED BY the missing class shell")
+  D.refuse("extra/models/t5.py:76 T5DenseGatedActDense.__init__ -- all three are Linear (:77,:78,:79, nn/layers.bend:530 symbol=nn_linear EXISTS); BLOCKED BY the missing class shell")
 
 # :81 def __call__(self, hidden_states)
 def t5_gated_call(+hidden_states: T.Tensor) -> D.Refused:
@@ -168,7 +168,7 @@ def t5_attn_rel_pos_bucket(+relative_position: T.Tensor, num_buckets: U32, max_d
 
 # :167 def compute_bias(self, query_length, key_length)
 def t5_attn_compute_bias(query_length: U32, key_length: U32) -> D.Refused:
-  D.refuse("extra/models/t5.py:167 T5Attention.compute_bias -- arange (:169,:170, mixin/rand.bend:361 EXISTS); FIRST MISSING SYMBOL self.relative_attention_bias (:177), the missing nn.Embedding")
+  D.refuse("extra/models/t5.py:167 T5Attention.compute_bias -- arange (:169,:170, mixin/rand.bend:365 symbol=op_pool1.iz EXISTS); FIRST MISSING SYMBOL self.relative_attention_bias (:177), the missing nn.Embedding")
 
 # :181 def __call__(self, hidden_states, position_bias=None)
 def t5_attn_call(+hidden_states: T.Tensor) -> D.Refused:

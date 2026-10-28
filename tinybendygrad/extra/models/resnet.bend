@@ -35,7 +35,7 @@ import ./../datasets/__init__.bend as D
 # `scaled_dot_product_attention` and `identity_element` (the latter is why BOTH padded pool arms
 # refuse), plus `Tensor.cat` and reshape's `-1` inference. **ZERO nn LAYER CLASSES** --
 # `nn/__init__.bend` is 429 lines of shape arithmetic and still holds no class.
-# `nn/__init__.bend:230` still reads "`x.layernorm -- SIDE B, not built`", which is TRUE, so it is
+# `THE PORT's `nn/__init__.bend` WALL BLOCK` still reads "`x.layernorm -- SIDE B, not built`", which is TRUE, so it is
 # deliberately NOT touched.
 # `nn/__init__.bend` holds the SHAPE ARITHMETIC the layers need and nothing else:
 #   nn_mt      :151   `make_tuple`                        nn_groups :175  `in_channels//groups`
@@ -64,7 +64,7 @@ import ./../datasets/__init__.bend as D
 #     `Tensor.shape`      tensor.bend:216 `tn_shape`                    (:148,:152)
 #     `Tensor.dtype`      tensor.bend:219 `tn_dtype`                    (:153)
 #     `Tensor.device`     tensor.bend:213 `tn_device`                   (:153)
-#     `Tensor.mean`       mixin/op.bend:953 symbol=mo_mean `mo_mean`                    (:120)
+#     `Tensor.mean`       mixin/op.bend:954 symbol=mo_mean `mo_mean`                    (:120)
 #     `Tensor.sequential` SIDE B -- see MISSING
 #     `get_state_dict`    nn/state.bend:318                              (indirectly, :141)
 #     `GlobalCounters.reset` helpers.bend:2584                           (:168)
@@ -100,7 +100,7 @@ import ./../datasets/__init__.bend as D
 #                         .*batchnorm" --include='*.bend'` = 1 and it is this
 #                         file's own `rs_batchnorm_alias` at :148.
 #                                                               (:7,:18,:20,:25,:26,:44,:46,:48,:53,:54,:88)
-#     `nn.Linear`         nn/__init__.bend:227, mixin/op.bend SIDE B.     (:9,:93)
+#     `nn.Linear`         THE PORT's `nn/__init__.bend` WALL BLOCK, mixin/op.bend SIDE B.     (:9,:93)
 #     `Tensor.sequential` mixin/op.bend:14 lists it in SIDE B; `grep -rnE
 #                         "^def .*sequential" --include='*.bend'` -> 0.   (:31,:60,:111,:113,:115,:117)
 #     `Tensor.argmax`     `grep -rnE "^def mo_argmax" --include='*.bend'
@@ -119,7 +119,7 @@ import ./../datasets/__init__.bend as D
 #                         `extra/datasets/__init__.bend:49,:53`. A grep that
 #                         reads a PREFIX and calls it a hit is the failure this
 #                         tree already has a name for, so the instrument here
-#                         is anchored to `fetch\(`. ALSO, helpers.bend:3193
+#                         is anchored to `fetch\(`. ALSO, THE PORT's `helpers.bend` HEADER
 #                         says why in the port's own words: "The HTTP machinery
 #                         (fetch, fetch_fw, _ensure_downloads_dir) is urllib
 #                         plus a temp file plus an atomic rename. It is I/O of
@@ -161,7 +161,7 @@ import ./../datasets/__init__.bend as D
 # `(name, tensor)` list that IS `__dict__`". So `BasicBlock.__init__` is
 # `rs_basic_block_init` over its five arguments with the two defaults spelled
 # out, and `__call__` is `rs_basic_block_call`. `self` does not survive: a Bend
-# `Data` record has no reflection (nn/__init__.bend:25), so the state a Python
+# `Data` record has no reflection (THE PORT's `nn/__init__.bend` HEADER), so the state a Python
 # `self` carries is the argument list here.
 # ===========================================================================
 

@@ -12,8 +12,8 @@
 # opt unit imports from. The mapping is:
 #
 #     OptOps        ->  OPTOPS  (type OPTOPS is Data, postrange.bend:6)
-#     Opt           ->  OPT     (type OPT is Data, postrange.bend:42)
-#     KernelOptError ->  Bool   (postrange.bend:13, "KernelOptError" is a verdict)
+#     Opt           ->  OPT     (type OPT is Data, THE PORT's `codegen/opt/postrange.bend` HEADER)
+#     KernelOptError ->  Bool   (THE PORT's `codegen/opt/postrange.bend` HEADER, "KernelOptError" is a verdict)
 #     check         ->  per-site: a Bool precondition, with the message
 #                       as a `match` arm and the raise as a `Bool` row in
 #                       the gate. The Python `check` is one helper, the
