@@ -25025,3 +25025,39 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **⇒ AND **THE **ROW **MOVEMENT **IS **THE **HONEST **SIGN**: **`RESOLVES` **1031 -> 1029**
       **AND **`UNCLAIMED` **60 -> 61** -- **TWO **ROWS **LEFT **THE **LOOSEST **CLASS **FOR **A **MORE
       **PRECISE **ONE**, **BECAUSE **THE **GATE **CAN **NOW **JUDGE **MORE **OF **THEM.**
+
+- [x] **A **DIRECTORY **ARGUMENT **THAT **LOOKS **LIKE **A **FLAG **CREATED **A **DIRECTORY **NAMED
+      **`--help`** **AT **THE **REPO **ROOT** (MEASURED **2026-10-19**, **FOUND **2026-10-28**).**
+      **⇒ AND **IT **WAS **NOT **A **TYPO**: **THREE **SCRIPTS **TAKE **THEIR **WORK **DIRECTORY **AS
+      **`$1`** — **`checks/run-f64.sh`**, **`checks/run-port-mm.sh`** **AND
+      **`.agents/slop/f64/run-f64.sh`** — **AND **NONE **OF **THEM **GUARDED **IT.**  **⇒ AND
+      **`mkdir -p "$W"` **CREATED **THE **DIRECTORY**, **AND **`checks/no-txt.py` **OWNS **THE **`.txt`
+      **FILES **IT **LEFT **THERE** — **MEASURED: **OF **462 **HARD **`.txt`, **2 **WERE **UNDER
+      **`--help/`** — **SO **A **FAILED **RUN's **RESIDUE **BECAME **HARD **DEBT.**
+      **⇒ AND **THE **RESIDUE **IS **GONE** (**462 -> 460**) **AND **IT **WAS **NEVER **IN **HEAD**:
+      **THE **THREE **COMMITS **THAT **CAPTURED **IT **ARE **NOT **ANCESTORS **OF **HEAD`.**
+- [x] **THE **CLASS **IS **BIGGER **THAN **THE **FIRST **FIX** (MEASURED): **45 **TRACKED **SCRIPTS
+      **WRITE **AT **A **PATH **BUILT **FROM **AN **ARGUMENT**, **AND **25 **OF **THEM **CAN **WRITE
+      **AT **THE **REPO **ROOT** (THE **OTHER **20 **`cd` **FIRST**).**  **⇒ AND **THE **FIX **REACHED
+      **THE **TREE's **OWN **FIXTURE**: **`checks/.e2e-fixture/` **HOLDS **TRACKED **COPIES **OF **THE
+      **e2e **SCRIPTS**, **AND **ALL **THREE **HAD **THE **HOLE** — **BECAUSE **THE **FIRST **FIX
+      **LANDED **ON **THE **`checks/` **COPIES **AND **NOT **ON **THE **`checks/.e2e-fixture/` **ONES.**
+      **⇒ AND **`portexec/run-kernel.sh` **IS **THE **SAME **HOLE **ONE **ARGUMENT **ALONG**: **ITS
+      **`$1` **IS **A **MODE **AND **IT **IS **ALREADY **VALIDATED**, **AND **ITS **`$2` **IS **THE
+      **WORK **DIRECTORY **AND **IT **WAS **NOT** — **⇒ THE **TREE **ALREADY **HAS **THE **PATTERN
+      **FOR **ARGUMENTS**, **IT **JUST **DID **NOT **HAVE **IT **FOR **PATHS.**
+      **⇒ AND **`checks/plant.sh`** **AND **`checks/run-all.sh`** **READ **`W` **FROM **THE
+      **ENVIRONMENT**, **AND **A **FLAG-SHAPED **`W`** **IS **JUST **AS **DANGEROUS **AS **A
+      **FLAG-SHAPED **`$1`** — **AND **`checks/lint_demo.sh` **IS **SAFE **BY **ITS **SHAPE**
+      (**`"$WORK/$1.txt"` **WITH **`$WORK` **A **`mktemp -d` **UNDER **`$TMPDIR`**).**
+      **⇒ AND **THE **GUARD **NAMES **THE **SHAPE**: **"THIS **SCRIPT's **ARGUMENT **IS **A
+      **DIRECTORY"** / **"IS **A **FILE"** — **BECAUSE **A **GUARD **THAT **SAYS **THE **SAME **THING
+      **FOR **EVERY **SHAPE **OF **ARGUMENT **CAN **BE **WRONG **ABOUT **THE **SHAPE**, **AND **A
+      **WRONG **GUARD **REFUSES **THE **WRONG **THING**, **WHICH **IS **A **REFUSAL **OF **A
+      **LEGIMATE **CALL.**
+      **⇒ AND **THE **GUARDS **DO **NOT **BREAK **A **LEGITIMATE **CALL** — **MEASURED:
+      **`checks/plant.sh` **AND **`checks/run-all.sh` **RUN **NORMALLY **WITH **A **`$TMPDIR` **WORK
+      **DIR**, **AND **`checks/run-f64.sh`'s **rc=3 **ON **A **LEGITIMATE **DIR** **IS **THE
+      **SCRIPT's **OWN **REFUSAL** ("the **port's **own **rows **could **not **be **reproduced**"),
+      **PROVEN **BY **RUNNING **THE **PRE-GUARD **VERSION **ON **THE **SAME **CALL** **AND **GETTING
+      **THE **IDENTICAL **rc **AND **MESSAGE.**
