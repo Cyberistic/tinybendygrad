@@ -3299,6 +3299,89 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         (`grep -rn "def rz_exec" tinybendygrad/` is EMPTY).
                                         See `.agents/slop/barecite/REPORT.md`.
 
+ cite-unclaim2   [#########] 5/5  **THE 66 UNCLAIMED ROWS IN 33 FILES ARE 0.**
+                                        `gates/bendcite-gate.py`'s `UNCLAIMED`: the pointer
+                                        RESOLVES and lands in the file, but the citing text
+                                        names NOTHING the target holds in code, so there is
+                                        NO CLAIM TO FALSIFY. **66 -> 0** for my 33 files,
+                                        TREE-WIDE `UNCLAIMED` **127 -> 61**, `WRONG-LINE`
+                                        **2 -> 1**, `WRONG-LINE-BY-BLOCK` **120 -> 116**,
+                                        `RESOLVES` **957 -> 1028**, and **NO FILE'S COUNT
+                                        ROSE IN ANY CLASS** (checked file-by-file). The
+                                        before is measured by stashing ONLY this unit's 33
+                                        files, so both readings are of the SAME tree state.
+                                        **`gates/todo-cite-gate.py` PASSES** with
+                                        **0 WRONG-LINE / 0 WRONG-SYMBOL / 0 UNRESOLVABLE**.
+                                        **THE FOUR KINDS:** the pointer MOVED to the
+                                        construct's DECLARATION
+                                        (`ops.bend:2849` -> `ops.bend:2939
+                                        symbol=UOp.replace`); the claim named something the
+                                        target NEVER HELD, and the honest form says so
+                                        (`nn/onnx.bend`'s `x.contiguous` / `x.clip`, which
+                                        `mixin/elementwise.bend` no longer carries); the
+                                        pointer named a HISTORICAL file state
+                                        (`codegen/kernel.bend`'s `ad117c928` line, now
+                                        inside `kn_unroll.ax`'s span); and **26
+                                        `D.refuse("...")` PAYLOADS** whose `.bend:NN` each
+                                        gained the `symbol=`.
+                                        **THREE RULES THAT COST THE MOST, AND THEY ARE
+                                        MEASURED.** (a) **A `symbol=` ON A LINE THAT
+                                        CARRIES A `.py` CITATION LANDS ON THE `.py` ONE**
+                                        -- `gates/todo-cite-gate.py` binds the
+                                        nearest-preceding `symbol=` to a citation and
+                                        admits only a `.py` subject; MEASURED, the first
+                                        attempt said WRONG-LINE twice and WRONG-SYMBOL
+                                        once, so **THE PORT `symbol=` GOES ON A LINE WHOSE
+                                        ONLY CITATIONS ARE `.bend`** (such a line has NO
+                                        slot in that gate at all). (b) **AN INLINE
+                                        `TODO(pN)` IS A MARKER** -- its `MARKER` regex
+                                        matches one anywhere on a line, including inside
+                                        backticks, so writing one in prose CREATES a work
+                                        item that fails UNRESOLVABLE; the upstream
+                                        reference is PROSE instead. (c) **AN EDIT MUST NOT
+                                        CHANGE A FILE'S LINE COUNT** -- a `.bend` file's
+                                        lines are pointed at by OTHER files' citations;
+                                        MEASURED, the first patch grew 7 files and turned
+                                        three correct pointers into WRONG-LINE, so every
+                                        edit replaces N LINES WITH N LINES and
+                                        `.agents/slop/bendcite2/patch.py` CHECKS it.
+                                        **32 of 33 PASS THE COMMENT-ONLY PROOF** through
+                                        `checks/port-compile-gate.py`'s OWN
+                                        `strip_comments()` LOADED BY PATH, code hash and
+                                        line count both identical to HEAD. **THE DECLARED
+                                        EXCEPTION:** `extra/models/inception.bend`, whose
+                                        edit is inside a `D.refuse("...")` STRING LITERAL
+                                        -- a diagnostic payload no computation reads; its
+                                        line count is unchanged. **33 of 33 COMPILE
+                                        `WITHIN-LIMITS`** under `checks/bounded.py --mb
+                                        2048`, one `bend` at a time. **THE PLANT** is a
+                                        TEXT EDIT on a COPY of the live tree (never `git
+                                        show HEAD:`) that makes one re-pointed pointer go
+                                        WRONG-LINE, with a byte-identical twin that stays
+                                        GREEN, and **THE PLANTED LINE IS CODE, NOT A
+                                        COMMENT** -- a construct's SPAN INCLUDES the
+                                        comment run above its `def`, so a planted COMMENT
+                                        is absorbed into the doc run and the row still
+                                        RESOLVES (MEASURED).
+                                        **NOT FIXED, AND SAID SO:** `uop/validate.bend:60`
+                                        quotes `fold.bend:2482` as saying "the wall is
+                                        arithmetic, not the fold", and **that sentence no
+                                        longer exists anywhere in `uop/fold.bend`**
+                                        (`grep -rn "arithmetic, not the fold"
+                                        tinybendygrad/` answers only the citing line) --
+                                        re-deriving what that file says about the
+                                        `_min_max` wall is a claim about the port, not a
+                                        pointer fix. `codegen/decomp/op.bend`'s "`_min_max`
+                                        is P3" is KEPT, because `:7040` now says
+                                        `DONE(p3)` and `:7153` still says `(P3)`.
+                                        **THE THREE DOUBLE-LISTED FILES** (`uop/fold.bend`,
+                                        `uop/validate.bend`, `runtime/device.bend`) are
+                                        named by BOTH the brief's file list and its
+                                        DO-NOT-TOUCH list; they were treated as MINE
+                                        because the slice assigns them rows, and they
+                                        are INDEPENDENT of the other thirty.
+                                        See `.agents/slop/bendcite2/REPORT.md`.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
