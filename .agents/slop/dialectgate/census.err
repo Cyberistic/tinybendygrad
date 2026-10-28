@@ -1,0 +1,1 @@
+== PASS: dialect-fixture-gate.py: all 2085 row tags of the 7 fragments under oracles/ are carried by a .bend under tinybendygrad/; the COLD compile rows are fragments whose claims are compiled where they are used

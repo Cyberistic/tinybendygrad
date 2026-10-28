@@ -1,0 +1,8 @@
+CONTROL     the copy, byte-identical to the live tree  rc=0  ::  GREEN  == PASS: dialect-fixture-gate.py: all 2085 row tags of the 7 fragments under oracles/ are carried by a .bend under tinybendygrad/; the COLD compile rows are fra
+PLANT       one row tag's TEXT changed, in a COPY  rc=1  ::  RED  -- AND IT NAMED THE PLANTED TAG: add_int32_3_4-PLANTED-NOT-IN-THE-PORT  == FAIL: dialect-fixture-gate.py: 1 of 2085 fragment row tags under oracles/ are in no .bend under tinybendygrad/ under either spelling: a row that exists NOWHERE
+DENOM      the row-tag denominator, control=2085 planted=2085  ::  UNCHANGED
+RESTORE     the same copy, the row tag put back  rc=0  ::  GREEN
+PORT-PLANT  the PORT's own row tag's TEXT changed, the FRAGMENT untouched  rc=1  ::  RED  -- AND IT NAMED THE ROW THE PORT LOST: add_int32_3_4  == FAIL: dialect-fixture-gate.py: 1 of 2085 fragment row tags under oracles/ are in no .bend under tinybendygrad/ under either spelling: a row that exists NOWHERE
+PORT-RESTORE the same copy, the port's row tag put back  rc=0  ::  GREEN
+
+=== plant: PASS: 0 problem(s) ===
