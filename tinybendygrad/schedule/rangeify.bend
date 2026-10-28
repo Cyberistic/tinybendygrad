@@ -1997,7 +1997,7 @@ def ab_entry(n: Nat) -> O.PMEntry:
   Maybe.default(&2, O.PMEntry, List.get(&2, O.PMEntry, ab_table(), n), O.PMEntry{0, Nil{}, Nil{}})
 
 # THE ROOT OP OF AN ENTRY, AS ITS `Ops` NUMBER. The number is the declaration
-# order (ops.bend:301 says so, and CPython agrees: INDEX 17, AFTER 13, END 55,
+# order (ops.bend:371 symbol=Ops.value says so, and CPython agrees: INDEX 17, AFTER 13, END 55,
 # STAGE 64, CONST 58, RANGE 53), and it is the key `pdict` is built from, so a
 # row printing it is a claim about which op the ENGINE looks a node up under.
 # `t_root_op.go` returns `max U32` for an EMPTY set, which no real entry has.
@@ -2704,7 +2704,7 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # genuinely new node -- the inverse of ops.py:1610 and of its own docstring.
 #
 # MEASURED, running `movement.bend`'s own rows today: `ret_new=0` (the row that read
-# 1 while the bug was in place) and `ret_self=1`. `movement.bend:69-75` now carries the
+# fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
 # a second copy -- see the note at the top of the `*_try` block.
 # ===========================================================================

@@ -669,7 +669,7 @@ def UNDER() -> Char: Char.from_u32(95)
 # character instead of 26 is what `DBG_tail` printed before the two counters were
 # separated.
 #
-# `String.drop` removes the FIRST n characters (MEASURED in ops_python.bend:2135:
+# `String.drop` removes the FIRST n characters (MEASURED in ops_python.bend:2317 symbol=Prog.write.slash:
 # take, not drop, is the one that keeps a directory), so `at` counts from the
 # front.
 def sync_us.go(n: Nat, +pos: U32, +at: U32, cs: List<&2, Char>) -> U32:

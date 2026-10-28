@@ -15,16 +15,16 @@ import ./../datasets/__init__.bend as D
 # STUB -- 1:1 PATH MIRROR of extra/models/convnext.py (63 LOC). NOT YET PORTED.
 #
 # WHAT CHANGED SINCE `resnet.bend` WAS WRITTEN, AND THIS FILE IS THE EVIDENCE:
-# `resnet.bend:21` still reads "nn.Conv2d, nn.BatchNorm2d AND nn.Linear ARE ALL
-# MISSING", and `resnet.bend:35` cites `mixin/op.bend:1523` as "SIDE B IS THE
-# EMPTY HALF". BOTH ARE NOW STALE. `tinybendygrad/nn/layers.bend` (941 lines)
+# THE PORT's `resnet.bend` HEADLINE BLOCK still reads "nn.Conv2d, nn.BatchNorm2d AND nn.Linear ARE ALL
+# MISSING", and THE PORT's `resnet.bend` HEADLINE BLOCK cites
+# THE PORT's `mixin/op.bend` LAST LINE as "SIDE B IS THE
 # BUILT THE OPS:
 #   `Tensor.conv2d`  nn/layers.bend:937 symbol=nn_conv2d `nn_conv2d`   -- from the primitives,
 #                        `mixin/op.bend`'s SIDE B never having been filled
 #   `Tensor.linear`   nn/layers.bend:530 symbol=nn_linear `nn_linear`
 #   `Tensor.relu`     nn/layers.bend:299 symbol=nn_relu `nn_relu` (a NAME onto `tn_relu`,
 #                        tensor.bend:774, not a second copy)
-# and `tinybendygrad/nn/pool.bend` built `Tensor.batchnorm` (pool.bend:381) and
+# and `tinybendygrad/nn/pool.bend` built `Tensor.batchnorm` (pool.bend:382 symbol=pool_bn) and
 # the pools. So the arithmetic a ConvNeXt block needs IS in the tree. What is
 # still absent is every LAYER CLASS: `nn/__init__.bend` has 17 defs
 # (`grep -cE '^def ' nn/__init__.bend` = 17) and all 17 are shape arithmetic --
@@ -64,10 +64,10 @@ import ./../datasets/__init__.bend as D
 # returns 0, and the refusal below names the address rather than describing it.
 #
 # THE WEIGHT LOADER (:44-52) is the same seam every model in this directory
-# stops at, and `resnet.bend:99-111` already measures it for `fetch`. Its extra
+# stops at, and THE PORT's `resnet.bend` SYMBOL CENSUS already measures it for `fetch`. Its extra
 # member here is `Tensor.assign` at :51 -- `pool.bend:408` names the instrument
 # ("`Tensor.assign` -- tinygrad/nn/__init__.py:56 `self.running_mean.assign(...)`", and
-# `tensor.bend:2539` states the divergence: "Python's `is_param_` mutates in
+# `tensor.bend:2717 symbol=tn_param.of` states the divergence: "Python's `is_param_` mutates in
 # place; this returns a new [tensor]"), so `mv.assign(...)` and `.realize()` are
 # both refused for the same reason BatchNorm's running stats are.
 #

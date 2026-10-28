@@ -55,7 +55,7 @@ import ./../datasets/__init__.bend as D
 #
 # AND THE ONES THIS GREP CANNOT SEE, WHICH IS WHY IT IS NOT THE CENSUS:
 #   `topk` (:29) as a MODULE-LEVEL PYTHON FUNCTION, called at :569 and :623 --
-#     MISSING. It sorts `argsort` (`mixin/rand.bend:880` marks `argsort` `TODO(p3)`
+#     MISSING. It sorts `argsort` (`mixin/rand.bend:969 symbol=rd_randperm` marks `argsort` `TODO(p3)`
 #     as a bitonic sort over four nested Python `for` loops) and then takes n.
 #   `tensor_gather` (:79) and `_gather` (:46) and `npgather` (:56) -- MISSING.
 #     :46 is `Tensor.where(indices.unsqueeze(...) == Tensor.arange(...), array, 0)`,
@@ -63,8 +63,8 @@ import ./../datasets/__init__.bend as D
 #     ALL THREE OF WHICH EXIST. The def does not exist; its ingredients do.
 #   `Tensor.round` -- MISSING, and `nearest_interpolate` (:20) is `Tensor.round`
 #     followed by a `.unsqueeze(-1)` repeat. `Tensor.cos`/`Tensor.sin` are MISSING
-#     and extra/models/llama.py:10 needs `.cos` too -- `mixin/elementwise.bend:550` has
-#     `def ew_sin` and there is no `def ew_cos`.
+#     and extra/models/llama.py:10 needs `.cos` too --
+#     `mixin/elementwise.bend:550 symbol=ew_sin` has `def ew_sin` and there is no `def ew_cos`.
 #   `_bilinear_interpolate` (:743) and `ROIAlign` (:869) -- the ROIAlign FORWARD
 #     is a gather-and-weight bilinear sample. Its ingredients (`ew_where`,
 #   `op_arange`, `mxw_reshape`, `ew_mul`, `ew_add`) all exist and the def does not.
@@ -73,7 +73,7 @@ import ./../datasets/__init__.bend as D
 # NOT USED BY THIS FILE, NAMED BECAUSE A READER OF THIS DIRECTORY WOULD ASK:
 #   `nn.Embedding`     not named.  `softmax` named ONCE (:1 hit, `Tensor.softmax`)
 #                      and EXISTS.  `adam` NOT named -- R-CNN's TRAIN path is a
-#                      `_loss` composition, and `nn/optim.bend:898 op_mstep`
+#                      `_loss` composition, and `nn/optim.bend:900 symbol=op_mstep`
 #                      / `:903 op_vstep` exist and go unused, as in all seven.
 #
 # THE BIGGEST SINGLE DELEGATION IS TO THE SIBLING STUB. mask_rcnn.py:1186
@@ -121,7 +121,7 @@ def mr_meshgrid(+x: T.Tensor, +y: T.Tensor) -> D.Refused:
 
 # :29 def topk(input_, k, dim=-1, largest=True, sorted=False)
 def mr_topk(+input_: T.Tensor, k: U32, dim: H.I64) -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:29 topk -- FIRST MISSING SYMBOL argsort, which mixin/rand.bend:880 marks TODO(p3): a BITONIC SORT over four nested Python `for` loops. `sorted=False` (:30) is a Python-visible optimization flag, so the port's sort cannot silently replace it")
+  D.refuse("extra/models/mask_rcnn.py:29 topk -- FIRST MISSING SYMBOL argsort, which mixin/rand.bend:969 symbol=rd_randperm marks TODO(p3): a BITONIC SORT over four nested Python `for` loops. `sorted=False` (:30) is a Python-visible optimization flag, so the port's sort cannot silently replace it")
 
 # :46 def _gather(array, indices)
 def mr_gather(+array: T.Tensor, +indices: T.Tensor) -> D.Refused:
@@ -239,7 +239,7 @@ def mr_anchor_gen_call() -> D.Refused:
 
 # :438 def generate_anchors(...)
 def mr_generate_anchors() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:438 generate_anchors -- np.meshgrid/np.sqrt/np.arange over a sizes tuple (:440); Tensor.sqrt EXISTS (mixin/elementwise.bend:549) and `def mo_meshgrid` does not")
+  D.refuse("extra/models/mask_rcnn.py:438 generate_anchors -- np.meshgrid/np.sqrt/np.arange over a sizes tuple (:440); Tensor.sqrt EXISTS (mixin/elementwise.bend:549 symbol=ew_sqrt) and `def mo_meshgrid` does not")
 
 # :444 def _generate_anchors(base_size, scales, aspect_ratios)
 def mr_anchors_base() -> D.Refused:
@@ -363,7 +363,7 @@ def mr_roi_box_head_init() -> D.Refused:
 
 # :1071 def forward(self, x)
 def mr_roi_box_head_forward() -> D.Refused:
-  D.refuse("extra/models/mask_rcnn.py:1071 RoIBoxHead.forward -- FIRST MISSING SYMBOL the in-place `x = x.flatten(start_dim=1)` (:1072), which is a rebind AND a flatten; nn/layers.bend:242 nn_sum exists but `def mo_flatten` does not")
+  D.refuse("extra/models/mask_rcnn.py:1071 RoIBoxHead.forward -- FIRST MISSING SYMBOL the in-place `x = x.flatten(start_dim=1)` (:1072), which is a rebind AND a flatten; nn/layers.bend:279 symbol=nn_sum exists but `def mo_flatten` does not")
 
 # :1077 class MaskPostProcessor / :1078 def __init__(self, mask_threshold=0.5, ...)
 def mr_mask_post_init() -> D.Refused:

@@ -85,7 +85,7 @@
 #       rather than a formatter. No `f32_repr` is ported because no def here
 #       calls one.
 #   (b) ParamArg's addrspace. Python's is `AddrSpace|None` and a `None` prints
-#       as `addrspace=None`; ops.bend:697 spells it `S.Addr` with no None arm, so
+#       as `addrspace=None`; ops.bend:1515 symbol=ParamArg.addrspace spells it `S.Addr` with no None arm, so
 #       a port that printed it would print a space where Python prints `None`.
 #       render.bend:341-343 measured and recorded this. HERE it costs nothing:
 #       `is_packed` reads `buf_uop.addrspace != AddrSpace.REG` and

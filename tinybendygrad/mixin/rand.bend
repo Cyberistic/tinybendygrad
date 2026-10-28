@@ -1021,9 +1021,9 @@ def rd_sdpa_dt(+q: S.Dt, +k: S.Dt) -> S.Dt: F.least_upper.of(F.least_upper.of(q,
 # second implementation of a printer whose output a byte-diff already pins.
 # `CU` is creation.bend's one-field `Data` record for "a node index read more than once",
 # which is the same reason `PK` and `U1` exist above.
-# `rd_g` IS `cr_g` WITHOUT the `_d` half, and the reason is rule 18: `fold.bend:1621`
-# defers PERMUTE, so a graph containing `arange` is UNANSWERABLE and asking for its shape
-# or dtype prints `()`/`void` for reasons that have nothing to do with this file. Every
+# `rd_g` IS `cr_g` WITHOUT the `_d` half, and the reason is rule 18: `fold.bend:1654 symbol=sym_dim.signable`
+# carries the `ssimplify` WALL -- `as_shape`'s arms cannot be run, so the EXPAND arm
+# that `arange` builds DEFERS, and a graph containing `arange` is UNANSWERABLE: asking for its shape
 # `_g`-only row below is a graph that contains a PERMUTE, and saying so in the ROW NAME is
 # the fix the notes prescribe for a `U32.show` that needs mental arithmetic.
 # ===========================================================================

@@ -41,7 +41,7 @@ import ./../extra/datasets/__init__.bend as D
 # THE SYMBOL CENSUS. Every symbol :1-19 names, with its instrument:
 #
 #   EXISTS
-#     `GlobalCounters`      (:2,:14)  helpers.bend:2580 `.init`, :2582 `.reset`.
+#     `GlobalCounters`      (:2,:14)  helpers.bend:2581 symbol=GlobalCounters.init, :2585 `.reset`.
 #         Both TYPED -- `reset` takes and returns a `Counters` value rather than
 #         mutating an ambient one, which is the port's convention.
 #     `getenv`              (:3,:13)  helpers.bend:150 `getenv_str`, :304
@@ -56,7 +56,7 @@ import ./../extra/datasets/__init__.bend as D
 #         does not -- see `pickle` below.
 #     `TinyJit`             (:15, indirectly, via the pickle's payload)
 #         PARTIAL-EXISTS, and this one deserves the nuance rather than a MISS:
-#         `engine/jit.bend` IS a real port. jit.bend:38-41 lists
+#         `engine/jit.bend` IS a real port. THE PORT's `engine/jit.bend` WHAT IS PORTED LIST
 #         `_TinyJit.__init__` :104-123 and `_TinyJit.__call__` :125-178 as
 #         PORTED with "all four arms and both refusals", plus `CapturedJit.__call__`
 #         :70-75 and `_prepare_jit_inputs` :84-102 "IN FULL". What is absent is
@@ -106,13 +106,13 @@ import ./../extra/datasets/__init__.bend as D
 #     THE 167 ONNX OP BODIES (:15)   MISSING. STAGE 4, nn/onnx.bend:39 -- "NOT
 #         DONE. The 167 op BODIES (:475-1307), the node-shape arithmetic that
 #         goes with them, and the quantization family." And the PROTOBUF READER
-#         they need is blocked too, nn/onnx.bend:53-58: "`PBBufferedReader`
+#         they need is blocked too, THE PORT's `nn/onnx.bend` NOT PORTED BLOCK: "`PBBufferedReader`
 #         (:73-119) and all of `OnnxPBParser` (:121-349). WALL: a protobuf reader
 #         OVER A TENSOR".
 #     `Tensor.argmax`       (:17)     MISSING. `grep -rnE "^def mo_argmax"
-#         --include='*.bend' tinybendygrad/` = 0. `mixin/op.bend:11` lists
+#         --include='*.bend' tinybendygrad/` = 0. THE PORT's `mixin/op.bend` SIDE A INVENTORY lists
 #         `argmax` inside SIDE A but no def carries it, and `rc_arg`
-#         mixin/reduce.bend:208 is a REDUCTION INTERNAL, not `Tensor.argmax`.
+#         mixin/reduce.bend:208 symbol=rc_arg.of is a REDUCTION INTERNAL, not `Tensor.argmax`.
 #         So the eval loop has no way to produce a PREDICTION, which is the one
 #         thing an eval script exists to produce.
 #     `Tensor.to`           (:15,:17) MISSING. `mixin/movement.bend`'s wall list

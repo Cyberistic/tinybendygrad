@@ -1440,7 +1440,7 @@ def lower_sink_to_linear.p_ok(+ar: O.Arena, +call: U32) -> Bool:
 #        and dst.device.startswith("DISK")): return None
 #
 # THE DEVICE IS A TAG, NOT A NAME. `S.Dev` is `D1{tag}` / `Dn{tags}` and the name
-# is gone, so `startswith("DISK")` cannot be asked here. `schedule/memory.bend:189`
+# is gone, so `startswith("DISK")` cannot be asked here. `schedule/memory.bend:210 symbol=mem_ok_tag`
 # already hit this on `startswith(("DISK","CL","WEBGPU"))` and the treatment is a
 # PARAMETER: `disk` is the DISK TAG SET and the caller is the device table. So
 # `disk=[]` is a PERMITTED answer and the prefix test is PARAMETERISED, not
@@ -1611,7 +1611,7 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 # on the RANGES FOLD, and `ops.py:514 UOp.substitute` waits behind it.
 # `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is NOT in `uop/ops.bend` --
 # an earlier revision of this sentence said it was "already ... as tag 42's table", AND THAT IS
-# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4044`) and no `def ...resolve_linear_call`
+# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4334 symbol=pm_r_rp_m.slot`) and no `def ...resolve_linear_call`
 # exists anywhere. See the corrected note at `__init__.py:274` for the measurement. Arm 1 is
 # therefore ALSO blocked on it, not on `binds` alone (:104-106), which is `dict[int,UOp]` keyed by a
 # Python int -- the same String-keyed-`Map` bill `Aa` pays above.
@@ -1777,7 +1777,7 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #     WALL(p3) __init__.py:271  `pm_schedule` -> `lower_sink_to_linear` (ported
 #       above) but the PASS is a rewriter -- BLOCKED: needs the `pm_schedule` PatternMatcher + its `graph_rewrite` pass; the rule body `lower_sink_to_linear` IS ported (:1362) and `pm_schedule` has no def in the tree.
 #     WALL(p3) __init__.py:274  `pm_resolve_linear_call` -> `resolve_linear_call`
-#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4044), and `pm_flatten_linear` is absent too.
+#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4334 symbol=pm_r_rp_m.slot), and `pm_flatten_linear` is absent too.
 #     WALL(p3) __init__.py:277  `pm_copy_from_store` -> the two bodies above plus
 #       `assert_all_same_devices`, and the PASS is a rewriter -- BLOCKED: needs the `pm_copy_from_store` PatternMatcher + `graph_rewrite` pass. The THREE rule bodies are ALL PORTED (`cks_*` :1407, `simplify_copy_kernel` :1466, `assert_all_same_devices` :1527); only the PASS is absent.
 #     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.

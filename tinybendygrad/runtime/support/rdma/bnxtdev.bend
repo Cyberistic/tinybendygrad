@@ -1609,7 +1609,7 @@ def WQE_KIND_AT() -> U32: 16
 # INVERTED. These rows print the three bytes out of their places so the claim
 # is `kind at 16, flags at 8, type at 0` and not a restatement of `wqe.hdr0`.
 # ---------------------------------------------------------------------------
-# WHAT `ops_rdma.bend:224-225` CLAIMS: `type << 16 | flags << 8 | kind`. Both
+# WHAT `ops_rdma.bend:238 symbol=WQE_KIND` CLAIMS: `type << 16 | flags << 8 | kind`. Both
 # the claim and its refutation are rows, so the disagreement is a NUMBER in a
 # committed artefact rather than an argument in a commit message.
 # `type << 16 | flags << 8 | kind`, with each byte taken from where the REAL

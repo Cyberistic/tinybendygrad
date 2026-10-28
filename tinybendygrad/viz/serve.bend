@@ -244,7 +244,7 @@ def ws_split.go(cs: List<&2, String>) -> List<&2, String>:
 def ws_split(s: String) -> List<&2, String>: ws_split.go(sp(s))
 
 # `int(x)` on a decimal string. STRING.TO_U32 DOES NOT EXIST in bend 2.0.34 --
-# MEASURED, and `runtime/ops_cpu.bend:114` records the same wall for
+# MEASURED, and `runtime/ops_cpu.bend:168 symbol=Cn` records the same wall for
 # `int(parts[2])`. So this is a parse, and Python's `int()` raises on a
 # non-digit while this answers `None`; every caller (`row_tuple`,
 # `device_sort_fn`, `get_int`) reaches it either after a digit test or with a

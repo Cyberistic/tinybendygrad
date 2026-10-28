@@ -25,7 +25,7 @@ import ./../datasets/__init__.bend as D
 # nn/layers.bend:937 `nn_conv2d`. Its text half (`ClipTextTransformer`, :318)
 # asks for `nn.Embedding` (:319) and `nn.LayerNorm` (:322), both of which
 # resnet.bend NEVER ASKED FOR and both of which are MISSING.
-# So the honest reading of resnet.bend:21 -- "`nn.Conv2d`, `nn.BatchNorm2d` AND
+# So the honest reading of THE PORT's `resnet.bend` HEADLINE BLOCK -- "`nn.Conv2d`, `nn.BatchNorm2d` AND
 # `nn.Linear` ARE ALL MISSING" -- is STALE for conv2d and linear, and
 # `nn/layers.bend:14-27` says so in its own words: "THE WALL TEXT NAMED THE WRONG
 # BLOCKER, MEASURED AGAINST WHAT IS ON DISK."
@@ -40,13 +40,13 @@ import ./../datasets/__init__.bend as D
 #   `nn.Linear`     EXISTS, nn/layers.bend:530 `nn_linear` (:153,:154,:167-170,:261,:279,:280)
 #   `Tensor.scaled_dot_product_attention` MISSING (:176,:271) -- BOTH attention sites.
 #   `Tensor.quick_gelu` EXISTS, mixin/elementwise.bend:1227 `ew_quick_gelu` (:157).
-#   `Tensor.gelu`    AS A BODY, MISSING (mixin/elementwise.bend:772 has only the
+#   `Tensor.gelu`    AS A BODY, MISSING (mixin/elementwise.bend:772 symbol=ew_k.gelu has only the
 #                     CONSTANT `ew_k.gelu`). clip.py:12 binds `Tensor.gelu`, NOT
 #                     `Tensor.quick_gelu`, so :156's `h.quick_gelu()` reaches the
 #                     body that EXISTS while the module-level alias points at one
 #                     that does not. Both facts are recorded because both are true.
 #   `Tensor.argmax`  MISSING (:335,:470) -- the EOS-pooling index.
-#   `Tensor.triu`    MISSING (:324) -- and it is NOT a creation op: `mixin/creation.bend:9`
+#   `Tensor.triu`    MISSING (:324) -- and it is NOT a creation op: THE PORT's `mixin/creation.bend` HEADER
 #                     names `tril`/`triu` in the inventory it measures itself against
 #                     and records that they are not in that file either.
 #   `Tensor.empty`   mixin/creation.bend:408 `cr_empty` EXISTS (:320,:323,:345,:346,:351).
@@ -62,7 +62,7 @@ import ./../datasets/__init__.bend as D
 #                     a call that type-checks today.
 #   `x.sin`/`x.cos`  NOT NAMED BY clip.py. (extra/models/llama.py:10 needs `.cos` and there is
 #                     no `def ew_cos`; clip.py does not share that wall.)
-#   `square().sum().sqrt()`  ALL THREE EXIST: ew_square (mixin/elementwise.bend:557),
+#   `square().sum().sqrt()`  ALL THREE EXIST: ew_square (mixin/elementwise.bend:557 symbol=ew_square),
 #                     mo_mean/mo_sum (mixin/op.bend:891 / nn/layers.bend:242),
 #                     ew_sqrt (mixin/elementwise.bend:549). The Frobenius norm at
 #                     :475,:478 is PORTABLE.
@@ -74,7 +74,7 @@ import ./../datasets/__init__.bend as D
 # THE FIRST 140 LINES ARE A BPE TOKENIZER AND ARE NOT A PORTING PROBLEM.
 # clip.py:15 `default_bpe()` `fetch`es a gzip file (:17), clip.py:17
 # `bytes_to_unicode` is a 256-entry dict, and clip.py:60 `gzip.open` +
-# `:75 re.compile` are Python string machinery. `helpers.bend:3193` already
+# `:75 re.compile` are Python string machinery. THE PORT's `helpers.bend` HEADER already
 # records the whole HTTP/download seam as unported. Named here so the LOC count
 # is not read as arithmetic left undone.
 #
@@ -85,7 +85,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `Open.ClipTextTransformer.__init__` (extra/models/clip.py:318).
 # FIRST MISSING SYMBOL: `Embedding(vocab_size, width)` at clip.py:319.
 # REACHED BEFORE IT, AND PORTED: `Tensor.empty(ctx_length, width)` at :320
-# (mixin/creation.bend:336) and `Tensor.empty(width, width)` at :323.
+# (mixin/creation.bend:408 symbol=cr_empty) and `Tensor.empty(width, width)` at :323.
 # ===========================================================================
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))

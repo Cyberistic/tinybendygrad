@@ -11,11 +11,11 @@
 # does not exist would need a scratch arena and a second Kahn worklist per query.
 #
 # `UOp._min_max` (ops.py:1104-1158) IS LANDED, and the reader that joins it to
-# `commit_dtype` is landed with it. `fold.bend:2176-2184` once recorded the sweep as the
-# biggest single piece left in that half of ops.py and named what was missing (`i64_mul`,
-# `i64_div`, `i64_mod`; there is no F32 min/max) -- all of which now exist, and the
-# arithmetic core is at `fold.bend:2648` under a "when helpers.bend grows them these defs
-# go there" notice that has been kept.
+# `commit_dtype` is landed with it. `fold.bend:3165 symbol=mm.u64.of` once recorded the
+# sweep as the biggest single piece left in that half of ops.py and named what was missing
+# (`i64_mul`, `i64_div`, `i64_mod`; there is no F32 min/max) -- all of which now exist, and
+# the arithmetic core is at `fold.bend:3165 symbol=mm.u64.of` under a "when helpers.bend
+# grows them these defs go there" notice that has been kept.
 #
 # SO THE NINE MARKERS BELOW THAT SAY "`commit_dtype` IS MISSING" ARE OUT OF DATE, and the
 # wall was never a LANGUAGE limit. It was an IMPORT TOPOLOGY: the arithmetic is
@@ -98,12 +98,12 @@ def wk_sealed(d: S.Dt) -> Bool:
     case S.Dt{11, 8, S.CFloat{}, _}: True{}     # fp8 e5m2, e5m2fnuz
     case _: False{}
 
-# `wk_eq_dt` / `wk_eq_cls` -- A LOCAL COPY, BECAUSE ops.bend's IS WRONG FOR weakfloat.
-# `ops.bend:1313 eq_cls.sel` has SIX arms and is missing `CWeakFloat`, so
-# `eq_cls(CWeakFloat{}, CWeakFloat{})` is False (measured), which also makes two
+# `wk_eq_dt` / `wk_eq_cls` -- A LOCAL COPY, BECAUSE ops.bend's WAS WRONG FOR weakfloat.
+# `ops.bend:1875 symbol=eq_cls.sel` HAD SIX arms and was missing `CWeakFloat`, so
+# `eq_cls(CWeakFloat{}, CWeakFloat{})` was False (measured), which also made two
 # structurally identical `CAST(..., weakfloat)` nodes fail to hash-cons. ops.bend is
 # READ-ONLY to this port, so this is a workaround: the one-line fix is a
-# `case S.CWeakFloat{}` arm in `eq_cls.sel`, and then `wk_eq_dt` becomes `O.eq_dt`.
+# `case S.CWeakFloat{}` arm in `eq_cls.sel`, and then `wk_eq_dt` becomes `O.eq_dt` -- AND THAT ARM HAS SINCE LANDED, so the copy below is KEPT because `ops.bend` was read-only when it was written, not because the wall is still there.
 
 # The class as a NUMBER, so the comparison is one `U32.is_eq`. The seven values are the
 # declaration order of `S.Cls`, and they are this file's own: `wk_eq_cls` is the only
@@ -274,9 +274,9 @@ def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
 #
 #   * `_eval` and the three dunders -- `ops.bend` cannot NAME `fold.bend`'s bounds.
 #   * `param_noshape` -- `ops.bend` cannot IMPORT `dtype.bend`, because its fp16/bf16/i64 C
-#     effects make the checker exit 1 for ANY importer (`ops.bend:87`), so `md_weak` is
-#     unreachable from there. The file says so in its own header and it is TRUE: a two-line file
-#     that imports `dtype.bend` and does nothing else prints the same fourteen lines.
+#     effects make the checker exit 1 for ANY importer, so `md_weak` (`mixin/dtype.bend:124
+#     symbol=md_weak`) is unreachable from there. The file says so in its own header and it
+#     is TRUE: a two-line file that imports `dtype.bend` and does nothing else prints the same fourteen lines.
 #
 # So the rule is not "these three were misfiled" but "a def needing a dtype PREDICATE or a BOUND
 # lives downstream of `ops.bend`", and this file imports ops, fold and dtype already.
@@ -617,10 +617,10 @@ def wk_cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_cast_at.of(wk_eq_dt(wk_dt(fx, self), dt), fx, self, dt)
 
 # ops.py:632-638 `UOp.const`: `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`
-# -- the bare CONST the fold derives a dtype from, PLUS the CAST. ops.bend:2093 has
-# the bare half; `.cast` folds away at exactly bool/weakint/weakfloat, so for those
-# three Python has ONE node and this has two, which ops.bend:2080-2092 documents.
-# Spelling the CAST unconditionally is what `UOp.const`'s own shape does.
+# -- the bare CONST the fold derives a dtype from, PLUS the CAST. `ops.bend:3012 symbol=UOp.const`
+# has the bare half; `.cast` folds away at exactly bool/weakint/weakfloat, so for those three
+# Python has ONE node and this has two, which `ops.bend:3012 symbol=UOp.const`'s own doc comment
+# documents. Spelling the CAST unconditionally is what `UOp.const`'s own shape does.
 def wk_const_at(+fx: F.Folded, +dt: S.Dt, cv: Maybe<&1, O.Const>) -> O.Found:
   wk_cast_at.of(False{}, fx, O.Found.i(O.UOp.const(F.Folded.ar(fx), wk_const_of(cv))), dt)
 
@@ -665,11 +665,11 @@ def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 # sink.
 #
 # `W.wk_remint` IS CALLED BY `mixin/elementwise.bend` (`ew_promote.b`) AND BY `tensor.bend`
-# (`tn_isfinite.promote`), and `mixin/op.bend:468` reaches it as `E.ew_remint` -- the ONE-LINE
-# FORWARDER left at the old name is deliberate: it is the only external call site of the six
-# defs below, and renaming it would have meant editing a file this move does not otherwise
-# touch. MEASURED with `grep -rn 'ew_remint|ew_ccast|ew_const_bare|ew_const_val|ew_src0|ew_is_c0'`
-# over `tinybendygrad/` and `gates/`: `ew_remint` at `mixin/op.bend:468` and at
+# (`tn_isfinite.promote`), and `mixin/op.bend:485 symbol=mo_remint.at` reaches it as
+# `E.ew_remint` -- the ONE-LINE FORWARDER left at the old name is deliberate: it is the only
+# external call site of the six defs below, and renaming it would have meant editing a file
+# this move does not otherwise touch. MEASURED with `grep -rn
+# 'ew_remint|ew_ccast|ew_const_bare|ew_const_val|ew_src0|ew_is_c0'` over `tinybendygrad/` and `gates/`: `ew_remint` at `mixin/op.bend:485` and at
 # `mixin/elementwise.bend`'s own `ew_promote.b`, and NOTHING for the other five. The
 # `ew_src0_rev`/`ew_src0_fwd` names in `mixin/elementwise.bend` are ROW LABELS of an unrelated
 # `ew_opname_src` probe, `gates/ew_graph_census.bend` names `ew_remint` only in prose, and

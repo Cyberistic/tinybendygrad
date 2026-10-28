@@ -2,7 +2,7 @@
 #
 # THE LAST STEP OF AN EVAL. Forward pass -> logits on device -> argmax -> `item`
 # -> compare with the label. Without it there is NO eval output at all, and
-# `examples/test_pkl_imagenet.bend:17` names it as the wall in front of the
+# `examples/test_pkl_imagenet.bend:179 symbol=pkl_predict` names it as the wall in front of the
 # ImageNet milestone ("`p.to('cpu').argmax().item()`").
 #
 # ===========================================================================
@@ -52,7 +52,7 @@
 #
 # IT DOES NOT HAVE THE BUFFER HALF, and this is the port's WALL, measured not
 # guessed:
-#   * `tinybendygrad/uop/ops.bend:5296` -- "NO LIVE `Buffer` -- there is no
+#   * THE PORT's `uop/ops.bend` STORAGE, DEVICE AND ALLOC WALL -- "NO LIVE `Buffer` -- there is no
 #     `type Buffer is Data` anywhere in the port and ZERO `Buffer{`
 #     constructors". MEASURED: `grep -rn "type Buffer is Data" tinybendygrad/`
 #     answers ONE line and it is that COMMENT; `grep -rn "Buffer{" tinybendygrad/`
@@ -64,7 +64,7 @@
 #     "realize.py:148 exec_copy -- allocators, `_transfer`, `host[:]`". The
 #     device-to-host copy that `data()` needs is EXACTLY that line, and it is
 #     NOT PORTED.
-#   * `tinybendygrad/nn/onnx.bend:49` -- the port's own words: "Nothing in
+#   * THE PORT's `nn/onnx.bend` NOT PORTED BLOCK -- the port's own words: "Nothing in
 #     this port can read a byte out of a tensor".
 #
 # SO THE PORT'S `item` READS A VALUE FROM THE ONE PLACE A VALUE EXISTS, and
@@ -93,7 +93,7 @@
 #     ONLY `def X.at(` whose receiver is `Buf` in the whole port is this one
 #     (`grep -rn "^def [A-Za-z_0-9]*\\.at(" tinybendygrad/`); the other `Buf`
 #     receivers (`runtime/ops_webgpu.bend:930,939`, `runtime/ops_cl.bend:776,780`)
-#     are `size`/`id`, and `renderer/wgsl.bend:707-719` is a renderer's own
+#     are `size`/`id`, and `renderer/wgsl.bend:577 symbol=Buf` is a renderer's own
 #     `Buf` with `dt`/`addr`/`numel`/`name`.
 #   * `Dt.itemsize` -- `tinybendygrad/LAWS/spec.bend:176-181`. IT IS WHAT IT
 #     SAYS: `(bitsize + 7) // 8`.
@@ -378,9 +378,9 @@ def nn_item_const_t(v: O.Const) -> T.Tensor:
 
 # A TWO-ELEMENT TENSOR: a BUFFER OF SIZE 2. MEASURED: a BUFFER's shape is the
 # one dim `(size,)`, and it is CONCRETE (`fold.param_ds`,
-# `uop/fold.bend:1197`), so `numel` is 2. A RESHAPE is not used here
+# `uop/fold.bend:1209 symbol=param_ds`), so `numel` is 2. A RESHAPE is not used here
 # because a ONE-element shape arg is a bare CONST rather than a STACK
-# (`mixin/movement.bend:1267-1270`) and `fold.shape` does not read it -- so
+# (`mixin/movement.bend:1267 symbol=mxw_stk.done`) and `fold.shape` does not read it -- so
 # `mo_dims` answers the EMPTY list for `mxw_reshape(buf, [2])` and the
 # numel would read as 1.
 def nn_item_multi_t() -> T.Tensor: MX.mxw_buf(O.Arena.empty(), 0, 2)

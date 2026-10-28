@@ -82,7 +82,7 @@ import ./../uop/ops.bend as O
 #   CONV, CONVTRANSPOSE, MAXPOOL, AVGPOOL -- `_resolve_pool_pads` is PORTED and
 #     GATED; the bodies (onnx.py:642-675) then call `x.max_pool2d` / `x.avg_pool2d` /
 #     `x.conv2d` / `x.conv_transpose2d`, which reach `mixin/op.bend`'s `_pool`
-#     (its W4/W8) and `fold.bend:1620-1626`'s refusal to answer EXPAND/SHRINK/
+#     (its W4/W8) and `fold.bend:1654 symbol=sym_dim.signable`'s refusal to answer EXPAND/SHRINK/
 #     PAD/FLIP. So the padding is decidable and the OUTPUT SHAPE is not, and the
 #     file does NOT fake a shape row for them.
 #   GATE / BN / LIN / GLOBALPOOL / LEAKYRELU / SCALE -- these are not node types

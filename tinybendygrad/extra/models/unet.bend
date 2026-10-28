@@ -35,7 +35,7 @@ import ./../datasets/__init__.bend as D
 #   THE HEADLINE, WHICH IS FARTHER UP AND WORTH NAMING FIRST: upstream:7 binds
 #       attention = Tensor.scaled_dot_product_attention
 #   and that symbol is MISSING. `extra/models/transformer.bend:19-27` reaches the
-#   same wall and `mixin/rand.bend:87-90` carries FOUR arms of it -- "GQA arm",
+#   same wall and THE PORT's `mixin/rand.bend` WALLS BLOCK carries FOUR arms of it -- "GQA arm",
 #   "the matmul", "the causal mask", "the attn_mask arm", each "BLOCKED: needs".
 #   SO UNET AND TRANSFORMER SHARE ONE BLOCKER, AND IT IS THE SAME ONE.
 #
@@ -49,7 +49,7 @@ import ./../datasets/__init__.bend as D
 #                  worth recording, because `sin` existing makes `cos` look like a
 #                  typo rather than a gap.
 #   `Tensor.chunk` MISSING (:68). `Tensor.unsqueeze` MISSING (:13).
-#   `Tensor.layernorm` MISSING (:87,:88,:89) -- nn/__init__.bend:230.
+#   `Tensor.layernorm` MISSING (:87,:88,:89) -- THE PORT's `nn/__init__.bend` WALL BLOCK.
 #   `GroupNorm` MISSING (:20,:29,:105,:227). `pool_bn` (nn/pool.bend:382 symbol=pool_bn) IS
 #   BUILT, but it is BatchNorm's decomposition: mean/variance over CHANNELS with
 #   a learned affine. GroupNorm's `num_groups` split is a different reduction
@@ -101,7 +101,7 @@ def un_alias_gelu() -> D.Refused:
 
 # `dtypes.float16` EXISTS and is the third name on that line, which is why the
 # refusal above names two of three and not "the alias line". THE SPELLING IS
-# `S.half()`, not `dtypes.float16` -- dtype.bend:53 records the rename:
+# `S.half()`, not `dtypes.float16` -- THE PORT's `dtype.bend` HEADER records the rename:
 # "`spec.bend`'s own heads (`half`, `bfloat16`, `single`, `double`) are tinyspec's".
 def un_alias_dtype() -> S.Dt: S.half()
 
@@ -168,7 +168,7 @@ def un_resblock_add(+h: T.Tensor, +emb_out: T.Tensor) -> D.Refused:
 
 # :44 def __init__(self, query_dim, ctx_dim, n_heads, d_head)
 def un_xattn_init(query_dim: U32, ctx_dim: U32, n_heads: U32, d_head: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:44 CrossAttention.__init__ -- FIRST MISSING SYMBOL bias=False at :45: nn_linear (nn/layers.bend:427) takes bias as a Maybe<&2, T.Tensor> and None{} IS `bias=False`, so the OP is fine; what is missing is the layer STORE that nn.Linear.__init__ would have created")
+  D.refuse("extra/models/unet.py:44 CrossAttention.__init__ -- FIRST MISSING SYMBOL bias=False at :45: nn_linear (nn/layers.bend:530 symbol=nn_linear) takes bias as a Maybe<&2, T.Tensor> and None{} IS `bias=False`, so the OP is fine; what is missing is the layer STORE that nn.Linear.__init__ would have created")
 
 # :50 self.attn = attention
 def un_xattn_attn() -> D.Refused:

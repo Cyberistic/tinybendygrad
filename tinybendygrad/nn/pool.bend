@@ -62,12 +62,12 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
 # input size, kernel, stride and dilation per spatial axis.
 #
 # IT IS A `Data` RECORD AND NOT TEN PARAMETERS for the reason
-# `mixin/rand.bend:204-209` gives: "_pool reads `i` and `k` four times each
+# `mixin/rand.bend:257 symbol=PK` gives: "_pool reads `i` and `k` four times each
 # across the `ceildiv`s, `smax` and the two `U32.mul`s, a `U32` cannot be read
 # twice in one expression and cannot carry `+` as a parameter, and a `Data`
-# record can". Every accessor below is NON-CONSUMING, so a `+q: W4` chain step
-# can read the window as many times as its expression needs
-# (`mixin/rand.bend:225-226`).
+# record can" -- that quote IS `PK`'s own doc comment. Every accessor below is
+# NON-CONSUMING, so a `+q: W4` chain step can read the window as many times as
+# its expression needs (`mixin/rand.bend:260 symbol=PK.i`).
 #
 # FOUR DIMENSIONS IS NOT A LIMITATION DRESSED UP AS A SHAPE: it is the case
 # every pooling call in a ResNet makes, and the `noop` axes pass through
@@ -147,7 +147,7 @@ def W4.lead(+q: W4) -> List<&2, U32>: [W4.b0(q), W4.b1(q)]
 
 # RESHAPE/EXPAND/RESHAPE -- `self.reshape(unsqueezed_shape).expand(
 # expanded_shape).reshape(final_shape)`, the spelling `op_repeat1.rp`
-# (mixin/rand.bend:234) uses for ONE axis.
+# (mixin/rand.bend:281 symbol=op_repeat1.rp) uses for ONE axis.
 def W4.lift(+q: W4) -> List<&2, U32>:
   [W4.b0(q), W4.b1(q), 1, W4.i0(q), 1, W4.i1(q)]
 def W4.tiled(+q: W4) -> List<&2, U32>:
@@ -183,8 +183,8 @@ def W4.perm(+q: W4) -> List<&2, U32>: [0, 1, 3, 5, 2, 4]
 # ===========================================================================
 # `_pool` (movement.py:614-632), TWO SPATIAL AXES, in upstream's own order.
 # ONE DEF PER LINE of the upstream expression, because `O.Arena` is affine --
-# `mixin/rand.bend:128-137` ("a def that BUILDS grows a copy") -- so the chain
-# must THREAD `+t` through each step and not hold two built tensors at once.
+# `mixin/rand.bend:429 symbol=op_arange` carries R1's whole-file `+ar: O.Arena`
+# thread, so a def that BUILDS grows a copy and the chain must THREAD `+t`.
 # ===========================================================================
 
 # movement.py:624  x = self.repeat(noop ++ [ceildiv(k*(i*f+d), i)])
@@ -206,11 +206,11 @@ def pool_resh1(+t: T.Tensor, +q: W4) -> T.Tensor:
   MX.mxw_reshape(t, pool_sh(W4.lead(q), W4.kos(q)))
 
 # movement.py:630  x = x.shrink_to(noop ++ flatten((k, o, 1))).reshape(...)
-# THE THIRD SHRINK IS NOT A FOLD HERE, and `mixin/rand.bend:297-301` says why it
-# is one THERE: "`_pool` for `k_ = (k,)`, `stride = 1`" makes `o*s == o` and the
-# axis already has size 1, so `shrink` returns `self` (movement.py:192). With a
-# real stride `s > 1` the axis has size `s` and the shrink is the node that
-# drops it, so it is built.
+# THE THIRD SHRINK IS NOT A FOLD HERE, and `mixin/rand.bend:375 symbol=op_pool1`
+# says why it is one THERE: "`_pool` for `k_ = (k,)`, `stride = 1`" makes `o*s == o`
+# and the axis already has size 1, so `shrink` returns `self` (movement.py:192).
+# With a real stride `s > 1` the axis has size `s` and the shrink is the node
+# that drops it, so it is built.
 def pool_kd(+t: T.Tensor, +q: W4) -> T.Tensor: MX.mxw_shrink(t, [0, 0, 0, 0, 0, 0], W4.ko1(q))
 def pool_resh2(+t: T.Tensor, +q: W4) -> T.Tensor:
   MX.mxw_reshape(t, pool_sh(W4.lead(q), W4.ko(q)))
@@ -219,9 +219,9 @@ def pool_resh2(+t: T.Tensor, +q: W4) -> T.Tensor:
 def pool_perm(+t: T.Tensor, +q: W4) -> T.Tensor: MX.mxw_permute(t, W4.perm(q))
 
 # movement.py:629-630 folded into two defs so the chain is READABLE, and that is
-# not only taste: `O.Arena` is affine (`mixin/rand.bend:128-137`) and this file
-# shipped a seven-deep application line with ONE `, q)` missing out of eight, and
-# `bend` reported the parse error at the NEXT `def` rather than at this line.
+# not only taste: `O.Arena` is affine (`mixin/rand.bend:429 symbol=op_arange` carries
+# R1's whole-file `+ar: O.Arena` thread) and this file shipped a seven-deep application
+# line with ONE `, q)` missing out of eight, and `bend` reported the parse error.
 def pool_nd.mid(+t: T.Tensor, +q: W4) -> T.Tensor:
   pool_resh1(pool_str(pool_resh0(pool_shr(pool_rep(t, q), q), q), q), q)
 def pool_nd(+t: T.Tensor, +q: W4) -> T.Tensor:
@@ -235,14 +235,14 @@ def pool_nd(+t: T.Tensor, +q: W4) -> T.Tensor:
 # `if not return_indices: return pooled.max(axis)` with
 # `axis = tuple(range(-len(k_), 0))` (op.py:1366). After `_pool` the two window
 # axes ARE the last two, so `axis` is `[4, 5]` on the four-dimensional result --
-# the same reason `mixin/rand.bend:325-327` writes `_cumalu`'s sum axis as the
-# literal `[1]`: "`mo_ax` takes the tensor and would rebuild the whole of `_pool`
-# ... so the literal is the cheap correct spelling".
+# the same reason `mixin/rand.bend:394 symbol=op_cumalu.red` writes `_cumalu`'s
+# sum axis as the literal `[1]`: "`mo_ax` takes the tensor and would rebuild the
+# whole of `_pool` ... so the literal is the cheap correct spelling".
 #
 # PADDING IS NOT INCLUDED AND THAT IS A WALL, NOT AN OMISSION. op.py:1370 pads
 # with `self.commit_dtype().min`, and `_pad_constant`'s `value != 0` arm
-# (op.py:290) is `MovementMixin.pad(X.const_like(True, dtypes.bool), pads)
-# .where(base, value)`, which `mixin/rand.bend:279-281` records as
+# (op.py:290) is `MovementMixin.pad(X.const_like(True, dtypes.bool), pads)`
+# `.where(base, value)`, which `mixin/rand.bend:330 symbol=op_padc` records as
 # `TODO(p3) mixin/op.py:282 _pad_constant's ... value != 0 arm ... and needs
 # identity_element (ops.py:61)`. `identity_element` is not a def in this tree.
 # A `max_pool2d` padded with ZERO would be wrong for any negative input, so the
@@ -427,24 +427,24 @@ def pool_bn_running_stats() -> D.Refused:
 def pool_wall_4d() -> D.Refused:
   D.refuse("movement.py:614  _pool for self.ndim != 4 -- BLOCKED: W4 carries noop as VALUES, so every shape is six wide and movement.py:632's permute is [0,1,3,5,2,4] by construction; reading noop from the tensor is a different def")
 
-# WALL(nn_pool_1d) -- the SAME `_pool` for ONE spatial axis. `mixin/rand.bend:313`'s
-# `op_pool1` ALREADY IS IT (stride 1, dilation 1) and is deliberately not repeated
-# here: a second copy of a def that exists is the thing AGENTS.md calls a ledger
-# that names a path it does not own.
+# WALL(nn_pool_1d) -- the SAME `_pool` for ONE spatial axis.
+# `mixin/rand.bend:375 symbol=op_pool1` ALREADY IS IT (stride 1, dilation 1) and
+# is deliberately not repeated here: a second copy of a def that exists is the
+# thing AGENTS.md calls a ledger that names a path it does not own.
 def pool_wall_1d() -> D.Refused:
-  D.refuse("movement.py:614  _pool for one spatial axis -- NOT DUPLICATED: mixin/rand.bend:371 symbol=op_pool1 already is it for stride 1 and dilation 1")
+  D.refuse("movement.py:614  _pool for one spatial axis -- NOT DUPLICATED: mixin/rand.bend:375 symbol=op_pool1 already is it for stride 1 and dilation 1")
 
 # WALL(nn_pool_r1) -- THE ONE THAT COSTS THIS FILE ITS UOP-LEVEL ROWS. Measured:
 # `pool_nd` reads `(1)(1)(4)(4)(2)(2)` from the arena and is CORRECT, while
 # `mo_max(False{}, <that>, [4, 5])` reads the SAME `(1)(1)(4)(4)(2)(2)` -- the
 # pre-reduce dims -- and `mo_mean` over a six-axis reshape reads an EMPTY string.
-# `mixin/rand.bend:128-137` names the cause (R1: `O.Arena` is affine, a building
-# def grows a copy, two operands built in different copies name indices neither
-# copy has) and its own remedy is the whole-file thread `+ar: O.Arena` with a
-# `T.tn_new(ar, ...)` rebase before each build, which R1 says also HANGS
+# `mixin/rand.bend:429 symbol=op_arange` names the cause (R1: `O.Arena` is affine,
+# a building def grows a copy, two operands built in different copies name indices
+# neither copy has) and its own remedy is the whole-file thread `+ar: O.Arena` with
+# a `T.tn_new(ar, ...)` rebase before each build, which R1 says also HANGS
 # `randn_like` there. So the reduce rows above are `U32` arithmetic.
 def pool_wall_r1() -> D.Refused:
-  D.refuse("R1 THE ARENA -- BLOCKED: O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of; max_pool/avg_pool/adaptive_avg_pool/batchnorm rows are U32 arithmetic, not node reads. R1 IS WRITTEN IN mixin/rand.bend:425 symbol=op_arange, WHICH IS THE DEF THAT CARRIES THE WHOLE-FILE `+ar: O.Arena` THREAD R1 ASKS FOR")
+  D.refuse("R1 THE ARENA -- BLOCKED: O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of; max_pool/avg_pool/adaptive_avg_pool/batchnorm rows are U32 arithmetic, not node reads. R1 IS WRITTEN IN mixin/rand.bend:429 symbol=op_arange, WHICH IS THE DEF THAT CARRIES THE WHOLE-FILE `+ar: O.Arena` THREAD R1 ASKS FOR")
 
 # ===========================================================================
 # THE ROWS. `main` PRINTS AND MEASURES; there are no expectations in this file
