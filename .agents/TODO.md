@@ -3224,6 +3224,89 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         re-point them. See
                                         `.agents/slop/bendcite/SLICE-REPORT.md`.
 
+ cite-unclaim1   [#########] 5/5  **THE 201 `UNCLAIMED` POINTERS ARE 33 FILES AND ALL 201 OF
+                                        THEM NOW NAME A CONSTRUCT.** `gates/bendcite-gate.py`'s
+                                        `UNCLAIMED` is the pointer that RESOLVES and LANDS in
+                                        the file but whose citing text names NOTHING the target
+                                        holds IN CODE -- so there is NO CLAIM TO FALSIFY, and
+                                        a pointer that names no construct is a pointer a reader
+                                        cannot check. MEASURED on the LIVE TREE, the before by
+                                        measuring the tree at `HEAD` with this slice's 33 files
+                                        untouched and the after with them applied, so both
+                                        readings are of the SAME tree state:
+                                        **MY 33 FILES `UNCLAIMED` 284 -> 0, PER FILE**,
+                                        TREE-WIDE **410 -> 60**,
+                                        `WRONG-LINE` **4 -> 1**, `WRONG-LINE-BY-BLOCK`
+                                        **122 -> 116**, `DANGLING-LINE` **0 -> 0**,
+                                        `ABSENT-FILE` **0 -> 0**. **NO FILE'S COUNT ROSE IN
+                                        ANY CLASS**, mine AND not mine.
+                                        **THE FOUR KINDS:** the pointer moved to the construct's
+                                        DECLARATION and gained the `symbol=` (the bulk); the
+                                        claim named something the target NEVER HELD and the
+                                        honest form now SAYS SO (`hcq2.bend`'s `view_as`, which
+                                        the port has no def for, now cites upstream's
+                                        `tinygrad/uop/ops.py:1236`); the pointer named a
+                                        FILE'S HEADER, and a HEADER IS FREE COMMENT SPACE with
+                                        no construct to name, so the honest form NAMES THE
+                                        REGION (`THE PORT's `nn/__init__.bend` WALL BLOCK`) and
+                                        the claim's TEXT is kept; and the `D.refuse("...")`
+                                        PAYLOADS whose `.bend:NN` gained the `symbol=` and,
+                                        where the line was STALE, the re-point.
+                                        **THE TWO SITE LISTS IN `uop/ops.bend` WERE ROTTED** --
+                                        the `AXIS_UNROLL`/`AXIS_REDUCE` list and the `ARange`
+                                        POSITIONAL-read list named `codegen/late.bend` (now
+                                        `codegen/late/linearizer.bend`) and lines that hold
+                                        NEITHER construct, and the bare `,NNN` continuations
+                                        are INVISIBLE to the gate. MEASURED NOW: SIX files at
+                                        23 sites (the block said "six committed files" --
+                                        CORRECT) and FOURTEEN files at 31 sites (the block
+                                        said "eleven" and "twenty-nine" -- BOTH FALSE).
+                                        **THREE RULES THAT COST THE MOST, AND THEY ARE
+                                        MEASURED:** (1) THE CITED LINE MUST BE THE `def` LINE,
+                                        NOT A LINE INSIDE THE SPAN -- the span INCLUDES the
+                                        doc-comment run above the `def`, so a pointer at a doc
+                                        comment is a pointer at the PREVIOUS construct, and the
+                                        first pass derived it from the span and produced 13
+                                        `WRONG-LINE` rows, which is the gate working;
+                                        (2) THE `symbol=` NAME IS UNALIASED, because
+                                        `gates/bendcite-gate.py`'s `Corpus._scan` computes
+                                        `self.aliases` in the SAME loop that fills
+                                        `self.bodies` and `os.walk` visits `schedule/` before
+                                        `uop/`, so **69 of 170 files have a `None` alias**
+                                        and `O.GroupOp.movement` never resolves against
+                                        `uop/ops.bend` -- THE GATE IS NOT EDITED, the
+                                        workaround is `symbol=GroupOp.movement`; (3) A
+                                        `symbol=` MUST NOT SHARE A LINE WITH A `.py`
+                                        CITATION, because `gates/todo-cite-gate.py` binds the
+                                        NEAREST-PRECEDING `symbol=` to a citation and three
+                                        rows went `WRONG-SYMBOL` until the port `symbol=`
+                                        moved onto a line that carries no `.py` citation --
+                                        WITHOUT CHANGING THE FILE'S LINE COUNT, because a
+                                        line added above a construct MOVES it.
+                                        **EVERY FILE'S LINE COUNT IS UNCHANGED FROM `HEAD`**
+                                        (33 of 33), so no pointer INTO these 33 files moved.
+                                        **24 of 33 PASS THE COMMENT-ONLY PROOF** (same code
+                                        hash as `HEAD` through
+                                        `checks/port-compile-gate.py`'s own
+                                        `strip_comments()`); **THE 9 THAT DO NOT ARE THE
+                                        `D.refuse("...")` PAYLOAD FILES**, whose PURE CODE is
+                                        BYTE-IDENTICAL and whose difference is INSIDE the
+                                        string literal -- the EXCEPTION. **33 of 33 COMPILE
+                                        `WITHIN-LIMITS`** under `checks/bounded.py --mb 2048`,
+                                        one `bend` at a time. **THE PLANT** breaks one
+                                        re-pointed citation by one TEXT EDIT on a COPY (never
+                                        `git show HEAD:`) and the gate goes RED; a
+                                        byte-identical control stays GREEN.
+                                        **`gates/todo-cite-gate.py` PASSES** with **0
+                                        WRONG-LINE / 0 WRONG-SYMBOL / 0 UNRESOLVABLE**.
+                                        **NOT FIXED: 1** -- the tree's last `WRONG-LINE` is
+                                        `nn/mnist_cnn.bend`'s, another unit's file and dirty
+                                        in another unit's working copy. **THE THREE
+                                        `mixin/rand.bend` ROWS ARE ALREADY RESOLVES** --
+                                        `mixin/rand.bend` is CLEAN and `9097dafa6` /
+                                        `9b1e3aa53` re-aimed them on the declaration. See
+                                        `.agents/slop/bendcite-unclaimed1/REPORT.md`.
+
  cite-bare79     [#########] 5/5  **THE 79 BARE POINTERS ARE 11 FILES AND ALL 79 OF THEM
                                         NOW NAME A CONSTRUCT.** `gates/bendcite-gate.py`'s
                                         WORST FORM: a `.bend` -> `.bend` pointer that resolves
