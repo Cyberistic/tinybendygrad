@@ -119,12 +119,61 @@ type IxReal is Data:
 type IxMap is Data:
   IxMap{es: List<&2, IxReal>}
 
+# THE RANGE TABLE'S ENTRY. Upstream's range is a `UOp` -- a `RANGE` node, or an
+# affine expression built by `_apply_reshape` -- and the PORT's arena is a VALUE
+# THAT GROWS, so a range held as a node index would force EVERY builder in the
+# range map to thread the arena. SO THE RANGE MAP HOLDS **TABLE INDICES**:
+# INDEX 0 IS THE CONST 0 (`UOp.const(0)`, AND `r.const_like(0)`) AND EVERY
+# OTHER INDEX IS A RANGE WITH AN AXIS ID AND AN EXTENT. THE APPLY REWRITE
+# MATERIALISES, AND THE PORT's ARENA INTERNES (`ops.bend:2522`), SO ONE RANGE IS
+# ONE NODE EVERYWHERE.
+#
+# `kind` 0 IS A RANGE AND `kind` 1 IS THE CONST 0.
+type IxRange is Data:
+  IxRange{kind: U32, idx: U32, ext: U32}
+
+def IxRange.kind(x: IxRange) -> U32:
+  match x:
+    case IxRange{kind, idx, ext}: kind
+
+def IxRange.idx(x: IxRange) -> U32:
+  match x:
+    case IxRange{kind, idx, ext}: idx
+
+def IxRange.ext(x: IxRange) -> U32:
+  match x:
+    case IxRange{kind, idx, ext}: ext
+
+# `UOp.const(0)` -- the answer `new_range(1)` gives and the answer
+# `r.const_like(0)` gives. IT IS TABLE INDEX 0.
+def ix_rg_c0() -> IxRange: IxRange{1, 0, 0}
+
+# A RANGE with an axis id and an extent. The extent is the VALUE, and the
+# materialiser turns it into the CONST the RANGE's `src0` is.
+def ix_rg_r(idx: U32, ext: U32) -> IxRange: IxRange{0, idx, ext}
+
+def ix_rg_is_c0(x: IxRange) -> Bool: U32.is_eq(IxRange.kind(x), 1)
+
+# THE RANGE TABLE's READ: THE ENTRY AT AN INDEX. THE MISSING ENTRY IS THE CONST
+# 0, WHICH IS INDEX 0 AND IS ALWAYS THERE.
+def ix_tbl_at.of(m: Maybe<&2, IxRange>) -> IxRange:
+  match m:
+    case Some{v}: v
+    case _: IxRange{1, 0, 0}
+
+def ix_tbl_at(+tbl: List<&2, IxRange>, i: U32) -> IxRange:
+  ix_tbl_at.of(List.get(&2, IxRange, tbl, U32.to_nat(i)))
+
 # `range_map: dict[UOp, tuple[tuple[UOp,...], tuple[UOp,...]]]` (indexing.py:14)
 # -- the (INPUT ranges, OUTPUT ranges) pair. A PAIR IS A `Type` in Bend, so this
 # is a two-field `Data` record (bend2-constraints.md rule 1 of the general set).
-
+#
+# **⇒ AND THE NODE ID IS A FIELD, NOT A CONVENTION.** The revision this
+# replaces read the key "out of the `inp` list's own head by convention" --
+# **⇒ AND `inp` HOLDS THE **RANGE TABLE INDICES**, NOT THE NODE, so THE RANGE
+# MAP WAS UNLOOKABLE.** The key is `n`.
 type IxRngs is Data:
-  IxRngs{inp: List<&2, U32>, outp: List<&2, U32>}
+  IxRngs{n: U32, inp: List<&2, U32>, outp: List<&2, U32>}
 
 type IxRMap is Data:
   IxRMap{es: List<&2, IxRngs>}
@@ -158,13 +207,23 @@ def IxCtx.empty() -> IxCtx:
 def IxCtx.at(ridx: U32) -> IxCtx:
   IxCtx{IxMap{Nil{}}, IxSet{Nil{}}, IxRMap{Nil{}}, ridx}
 
+# A CONTEXT WITH A REALIZE MAP AND NOTHING ELSE. **⇒ UPSTREAM FILLS THE REALIZE
+# MAP BEFORE THE RANGE-MAP LOOP (`indexing.py:188`), SO THE LOOP's CONTEXT
+# STARTS WITH IT.**
+def ix_ctx_realize(rm: IxMap) -> IxCtx:
+  IxCtx{rm, IxSet{Nil{}}, IxRMap{Nil{}}, 0}
+
 def IxRngs.inp(x: IxRngs) -> List<&2, U32>:
   match x:
-    case IxRngs{inp, outp}: inp
+    case IxRngs{n, inp, outp}: inp
 
 def IxRngs.outp(x: IxRngs) -> List<&2, U32>:
   match x:
-    case IxRngs{inp, outp}: outp
+    case IxRngs{n, inp, outp}: outp
+
+def IxRngs.n(x: IxRngs) -> U32:
+  match x:
+    case IxRngs{n, inp, outp}: n
 
 def IxMap.es(x: IxMap) -> List<&2, IxReal>:
   match x:
@@ -801,7 +860,12 @@ def ix_nr_is_one(s: U32) -> Bool: ix_resolve_is1(s)
 def ix_nr_pick(one: Bool, at: O.AxisType, +ar: O.Arena, s: U32, ridx: U32) -> O.Found:
   match one:
     case True{}: O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})
-    case False{}: O.UOp.range_end(ar, s, [ridx], at)
+    case False{}:
+      # **⇒ THE REVISION THIS REPLACES PUT THE **VALUE** `s` WHERE THE RANGE's
+      # `src0` -- A NODE INDEX -- BELONGS. THE EXTENT IS A CONST NODE, AND
+      # UPSTREAM's `UOp.range` IS `src=(sint_to_uop(end, dtype),)`.**
+      +c = O.UOp.const(ar, O.CInt{H.i64_of_i32(s)})
+      O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [ridx], at)
 
 def ix_new_range.of(one: Bool, at: O.AxisType, +ar: O.Arena, s: U32, ridx: U32) -> O.Found:
   ix_nr_pick(one, at, ar, s, ridx)
@@ -812,6 +876,30 @@ def ix_new_range(+ctx: IxCtx, +ar: O.Arena, +s: U32, at: O.AxisType) -> O.Found:
   ix_new_range.of(ix_nr_is_one(s), at, ar, s, IxCtx.ridx(ctx))
 
 def ix_nr_next(+ridx: U32, one: Bool) -> U32: Bool.pick(U32, one, ridx, U32.add(ridx, 1))
+
+# THE ABSTRACT `new_range` -- `indexing.py:18-21`, THE SAME DECISION WITHOUT
+# THE NODE:
+#
+#   def new_range(self, s:sint) -> UOp:
+#     if isinstance(s, UOp) and s.op is Ops.RANGE: return s
+#     return UOp.range(s, next(self.range_idx)) if resolve(s!=1) else UOp.const(0)
+#
+# **⇒ A CONST 0 WHEN THE EXTENT IS 1 AND A RANGE (AXIS ID, EXTENT) OTHERWISE.
+# THE COUNTER ADVANCES ONLY IN THE SECOND CASE, AND `ix_nr_next` IS THAT
+# ARITHMETIC -- SO THE CALLER THREADS `ridx` AND GETS THE NEXT ONE BACK.**
+def ix_rg_new(one: Bool, ridx: U32, ext: U32) -> IxRange:
+  Bool.pick(IxRange, one, ix_rg_c0(), ix_rg_r(ridx, ext))
+
+# TABLE INDEX 0 IS THE CONST 0. IT IS THE ONLY CONST 0, SO `const_like(0)` AND
+# `new_range(1)` ARE ONE TABLE INDEX AND NOT TWO.
+def ix_rg_c0_idx() -> U32: 0
+
+# THE MATERIALISER: a TABLE ENTRY BECOMES A NODE. IT IS `ix_nr_pick` -- THE SAME
+# `new_range` DECISION WITH THE NODE -- SO THERE IS ONE `new_range` AND NOT TWO.
+# **⇒ THE PORT's ARENA INTERNES (`ops.bend:2522`), SO ONE RANGE IS ONE NODE
+# EVERYWHERE, WHICH IS WHAT MAKES THE TABLE SOUND.**
+def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
+  ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))
 
 # ===========================================================================
 # THE REALIZE-MAP RULE BODIES -- indexing.py:28-43. All four MUTATE the Python
@@ -971,7 +1059,17 @@ def ix_br_in_baxes(+baxes: List<&2, U32>, j: U32) -> Bool:
   ix_br_in_baxes.go(baxes, j, False{})
 
 def ix_br_one(bcast: Bool, +nleft: U32, r: U32, +acc: List<&2, U32>, j: U32) -> List<&2, U32>:
-  Bool.pick(List<&2, U32>, Bool.and(bcast, U32.is_lt(nleft, j)), List.append(&2, U32, acc, [r]), acc)
+  # `r.const_like(0) if j in baxes else r`, FILTERED BY `j >= nleft` -- **=> AND
+  # `j >= nleft` IS NOT `j > nleft`: THE REVISION THIS REPLACES DROPPED THE RANGE
+  # AT `j == nleft`, WHICH UPSTREAM KEEPS.**
+  # **⇒ THE REVISION THIS REPLACES KEPT `r` IFF `j in baxes AND j > nleft` --
+  # WHICH KEEPS THE RANGE WHERE UPSTREAM REPLACES IT WITH A CONST 0, AND DROPS
+  # IT WHERE UPSTREAM KEEPS IT. IT HAD NO ROW: `main()` READS NONE OF IT.**
+  Bool.pick(List<&2, U32>, Bool.not(U32.is_lt(j, nleft)),
+            Bool.pick(List<&2, U32>, bcast,
+                      List.append(&2, U32, acc, [ix_rg_c0_idx()]),
+                      List.append(&2, U32, acc, [r])),
+            acc)
 
 # THE LIST IS FIRST, and that is forced: the checker reads arguments left to
 # right and each must pass unchanged until one shrinks, so a `j` that GROWS in
@@ -1085,25 +1183,29 @@ def ix_rmap_del.of(+es: List<&2, IxReal>, k: U32) -> IxMap:
 def ix_rmap_del(+rm: IxMap, k: U32) -> IxMap:
   ix_rmap_del.of(IxMap.es(rm), k)
 
-def ix_rngm_head.of(m: Maybe<&2, U32>) -> U32:
-  match m:
-    case Some{v}: v
-    case _: 0
+# THE REALIZE MAP's SET: `ctx.realize_map[x] = list(range(len(x.shape)))`
+# (indexing.py:231) AND `ctx.realize_map[x] = _realize_axis` (indexing.py:261
+# AND :268). **⇒ IT IS A DELETE AND AN APPEND, BECAUSE THE MAP IS A LIST.**
+def ix_rmap_set(+rm: IxMap, k: U32, e: IxReal) -> IxMap:
+  IxMap{List.append(&2, IxReal, IxMap.es(ix_rmap_del(rm, k)), [e])}
+
+# THE REALIZE MAP's READ: THE ENTRY, SO THE AXES ARE READABLE.
+def ix_rmap_get.go(+es: List<&2, IxReal>, +k: U32, acc: Maybe<&2, IxReal>) -> Maybe<&2, IxReal>:
+  match es:
+    case Nil{}: acc
+    case e <> t: ix_rmap_get.go(t, k, Bool.pick(Maybe<&2, IxReal>, U32.is_eq(IxReal.n(e), k), Some{e}, acc))
+
+def ix_rmap_get(+rm: IxMap, k: U32) -> Maybe<&2, IxReal>:
+  ix_rmap_get.go(IxMap.es(rm), k, None{})
 
 # ===========================================================================
 # THE THREE TABLES. Each needs its own table/dispatch/try/scan -- see the
 # header. `ix_early_*` is `early_reject`, a NECESSARY CONDITION.
 
-def ix_rngm_head(+xs: List<&2, U32>) -> U32:
-  ix_rngm_head.of(List.head(&2, U32, xs))
-
-def ix_rngm_k.of(e: IxRngs) -> U32: ix_rngm_head(IxRngs.inp(e))
-
-# the key of an `IxRngs` -- the node is stored in the `inp` list's own head by
-# convention, so `ix_rngm_k` is a PARAMETER of the record and there is no reader
-# to write. See the note above `IxRngs`.
-
-def ix_rngm_k(e: IxRngs) -> U32: ix_rngm_k.of(e)
+# the key of an `IxRngs` IS THE NODE -- `IxRngs.n` -- and the revision this
+# replaces read it "out of the `inp` list's own head by convention", which was
+# a convention about a list that holds the RANGES.
+def ix_rngm_k(e: IxRngs) -> U32: IxRngs.n(e)
 
 # THE MAP, `IxRMap`: a list of `IxRngs` scanned linearly. There is no hash map
 # in the IR, so `ix_rngm_get` is a fold that keeps the LAST match and
@@ -1122,6 +1224,17 @@ def ix_rngm_get.go(+es: List<&2, IxRngs>, +k: U32, +acc: Maybe<&2, IxRngs>) -> M
 
 def ix_rngm_get(+rm: IxRMap, k: U32) -> Maybe<&2, IxRngs>:
   ix_rngm_get.go(IxRMap.es(rm), k, None{})
+
+# THE RANGE MAP's MEMBERSHIP. `x in rctx.range_map` (`indexing.py:79`, `:212`,
+# `:223`) IS THE LOOKUP, AND THE LOOKUP IS THE ENTRY -- SO THE MEMBERSHIP IS
+# THE LOOKUP AND NOT A SECOND SCAN.
+def ix_rngm_has.of(m: Maybe<&2, IxRngs>) -> Bool:
+  match m:
+    case Some{e}: True{}
+    case _: False{}
+
+def ix_rngm_has(+rm: IxRMap, k: U32) -> Bool:
+  ix_rngm_has.of(ix_rngm_get(rm, k))
 
 def ix_early_rest.go(+rej: List<&2, O.Op>, +have: List<&2, O.Op>, +sofar: Bool) -> Bool:
   match rej:

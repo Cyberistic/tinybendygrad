@@ -780,9 +780,24 @@ def rr_range_map.go(+xs: List<&2, U32>, +ar: O.Arena, +tb: F.Table, +rev: List<&
 # STARTS WITH IT -- AND IT IS THE PORT's OWN `rr_realize`, WHICH AGREES WITH
 # CPython's `rr_py_realize` EXACTLY.
 def rr_range_map(+ar: O.Arena, +tb: F.Table, sink: U32) -> RrMap:
-  +topo = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
+  # **=> AND THE REALIZE MAP IS FILLED **BEFORE** THE TOPOSORT** -- **⇒ AND THAT IS
+  # UPSTREAM's ORDER TOO** (`indexing.py:188` IS THE REALIZE REWRITE AND `:192` IS THE
+  # TOPOSORT), **⇒ AND `sink` IS READ TWICE, SO THE ORDER MATTERS: THE REALIZE MAP
+  # MUST COME FIRST.**
+  # **=> `sink` IS READ TWICE, SO IT IS BOUND ONCE TO A `+` LOCAL** (WHICH IS BEND's
+  # SPELLING FOR "READABLE MANY TIMES") **⇒ AND THE REALIZE MAP IS FILLED **BEFORE** THE
+  # TOPOSORT, WHICH IS **UPSTREAM's ORDER** (`indexing.py:188` THEN `:192`).**
+  +sk = sink
+  +rm = rr_realize(ar, sk)
+  +topo = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
   +rev = rr_rev(topo)
-  +ctx = IX.IxCtx{rr_realize(ar, sink), IX.IxSet{Nil{}}, IX.IxRMap{Nil{}}, 0}
+  # **=> AND THE CONTEXT IS **BUILT BY THE PORT's OWN CONSTRUCTOR**
+  # (`indexing.bend:213` `ix_ctx_realize(rm)`), **=> BECAUSE A LITERAL WITH A CALL IN IT
+  # CANNOT BE INFERRED** -- THE ERROR IS *"expected : an annotated term (cannot infer)"*.
+  # **=> AND THE CONSTRUCTOR IS NAMED FOR EXACTLY THIS JOB: *"A CONTEXT WITH A REALIZE MAP
+  # AND NOTHING ELSE ... UPSTREAM FILLS THE REALIZE MAP BEFORE THE RANGE-MAP LOOP
+  # (`indexing.py:188`), SO THE LOOP's CONTEXT STARTS WITH IT."***
+  +ctx = IX.ix_ctx_realize(rm)
   rr_range_map.go(rev, ar, tb, rev, RrMap{ctx, Nil{}, [IX.ix_rg_c0()], Nil{}, Nil{}, False{}, False{}, False{}})
 
 # ===========================================================================
