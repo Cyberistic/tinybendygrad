@@ -24743,3 +24743,24 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
 - [ ] **THE **CORPUS **MUST **BE **RE-TAKEN** **ONCE **THE **PORT **STOPS **MOVING**: **THE
       **SUBSTRATE **DIGEST **MOVED **`986410b5…` -> **`8535a2fa…`** **AND **THE **CLAIM **IN
       **`AGENTS.md` **IS **ALREADY **MARKED **STALE** (`bfd6a6f97`) **RATHER **THAN **LEFT **FALSE.**
+
+- [x] **THE **BARE **POINTERS **ARE **NAMED** (79 **ROWS**, **11 **FILES**): **`UNCLAIMED` **132 -> 52**
+      **IN **THOSE **FILES**, **AND **ALL **79 **SLICE **ROWS **NOW **RESOLVE** — **79 **NAMED, **0
+      **COULD **NOT **BE **RECONSTRUCTED** (`7e9afd8b7`, `ecf786c6d`, `9b1e3aa53`).**  **⇒ AND **THE
+      **KIND **OF **FIX **HAS **FOUR **SHAPES**: **A **COMMENT **THAT **NAMES **A **CONSTRUCT**; **A
+      **COMMENT **THAT **NAMES **NOTHING** (**THE **CLAIM **IS **AN **ABSENCE**, **SO **THE **POINTER
+      **NAMES **THE **CONSTRUCT **THAT **CARRIES **THE **ABSENCE** — **`helpers.bend:2758
+      symbol=lines`**, **`nn/__init__.bend:220 symbol=nn_glorot`**); **A **STALE **LINE** (**47 **OF
+      **79**); **AND **A **CONSTRUCT **IN **ANOTHER **FILE**.
+- [x] **THREE **RULES **THE **BARE-POINTER **UNIT **MEASURED**:
+      **⇒ A **DOTTED **NAME **CAN **NEVER **BE **A **CLAIM **TOKEN** — **`pin-cite-gate.py`'s
+      **`IDENT` **DOES **NOT **MATCH **A **DOT**, **SO **`PK.i` **READS **AS **`PK`** (**2 **CHARS**,
+      **DROPPED**) **AND **`i`** (**1 **CHAR**).
+      **⇒ A **`symbol=` **NEXT **TO **A **`.py` **CITATION **IS **JUDGED **AGAINST **UPSTREAM**.
+      **⇒ A **LINE **WITH **A **`symbol=` **CARRIES **EXACTLY **ONE **`.bend` **CITATION** —
+      **`SYMBOL_FIELD.findall(line)` **BINDS **TO **EVERY **CITATION.**
+- [x] **A **PLANT **MUST **INSERT **CODE, **NOT **A **COMMENT** (MEASURED): **A **COMMENT **IS
+      **ABSORBED **INTO **THE **CONSTRUCT's **DOC **RUN** **AND **THE **ROW **STILL **RESOLVES** —
+      **SO **A **COMMENT-ONLY **PLANT **IS **A **PLANT **THAT **CANNOT **FAIL.**  **⇒ AND **THE
+      **PLANT **MUST **BE **ON **A **COPY** — **NEVER **`git show HEAD:`** — **AND **THE **CONTROL
+      **MUST **BE **A **BYTE-IDENTICAL **TWIN.**
