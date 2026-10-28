@@ -65,7 +65,7 @@
 #
 #   W-A. `_apply_reshape` (`indexing.py:155-167`) -- the RESHAPE arm of
 #        `apply_movement_op`. It is `UOp.sink`, `usum`, `%`, `//` and a
-#        `graph_rewrite` under `symbolic`. `indexing.bend:575` already names it
+#        `graph_rewrite` under `symbolic`. `schedule/indexing.bend:663` already names it
 #        ("three builders and W2"). ⇒ THE RESHAPE'S INPUT RANGE IS AN AFFINE
 #        EXPRESSION IN CPython (`ADD:none:MUL,RANGE`) AND THE PORT CANNOT BUILD
 #        ONE. THE PORT'S ANSWER IS THE INPUT RANGE ITSELF. ⇒ THE OUTPUT GRAPH

@@ -3118,7 +3118,7 @@ def ParamArg.size(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # `ARange{at, ids}`. It is `ARange{ids, at}` and that is a DELIBERATE wall, because
 # `ARange` is read and written POSITIONALLY by eleven committed files:
 #     schedule/rangeify.bend:2116 symbol=ren_axis0.go   schedule/multi.bend:611 symbol=mu_at_of.go
-#     schedule/indexing.bend:628,633     codegen/late.bend:910,1000,1573,1796-1798
+#     schedule/indexing.bend:687,692     codegen/late.bend:910,1000,1573,1796-1798
 #     uop/render.bend:731 symbol=arg_repr              uop/spec.bend:363 symbol=arg_axis.go
 #     uop/fold.bend:2288,2300            uop/validate.bend:1601
 #     uop/fold2_work.bend:2280,2292      uop/fold_mm_work.bend:2280,2292

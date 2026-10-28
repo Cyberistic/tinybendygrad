@@ -896,7 +896,7 @@ def ix_rg_c0_idx() -> U32: 0
 
 # THE MATERIALISER: a TABLE ENTRY BECOMES A NODE. IT IS `ix_nr_pick` -- THE SAME
 # `new_range` DECISION WITH THE NODE -- SO THERE IS ONE `new_range` AND NOT TWO.
-# **⇒ THE PORT's ARENA INTERNES (`ops.bend:2522`), SO ONE RANGE IS ONE NODE
+# **⇒ THE PORT's ARENA INTERNES (`uop/ops.bend:2522 symbol=UOp.make.intern`), SO ONE RANGE IS ONE NODE
 # EVERYWHERE, WHICH IS WHAT MAKES THE TABLE SOUND.**
 def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
   ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))
