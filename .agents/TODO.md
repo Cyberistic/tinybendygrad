@@ -3595,6 +3595,50 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         are INDEPENDENT of the other thirty.
                                         See `.agents/slop/bendcite2/REPORT.md`.
 
+ cite-unclaim3   [#########] 5/5  **THE 65 UNCLAIMED ROWS IN 18 FILES ARE 0.**
+                                        `gates/bendcite-gate.py`'s `UNCLAIMED`: the pointer
+                                        RESOLVES and lands in the file, but the citing text
+                                        names NOTHING the target holds in code, so there is
+                                        NO CLAIM TO FALSIFY. **65 -> 0** for my 18 files,
+                                        TREE-WIDE `UNCLAIMED` **71 -> 3**, `RESOLVES`
+                                        **1062 -> 1112**, `WRONG-LINE-BY-BLOCK`
+                                        **120 -> 119**, and **NO FILE'S COUNT ROSE IN ANY
+                                        CLASS** (checked file-by-file). **THE FILES I DID
+                                        NOT TOUCH DID NOT MOVE AT ALL**: NOT-MINE is
+                                        `RESOLVES 837, UNCLAIMED 6, WRONG-LINE-BY-BLOCK 90,
+                                        AMBIGUOUS 17, OUT-OF-CORPUS 10` before and after.
+                                        **`gates/todo-cite-gate.py` PASSES** with
+                                        **0 WRONG-LINE / 0 WRONG-SYMBOL / 0 UNRESOLVABLE**
+                                        and the same 1166-citation population.
+                                        **THE THREE KINDS:** the pointer MOVED to the
+                                        construct's DECLARATION and gained the tree's own
+                                        durable `symbol=` (38 rows); the pointer NAMED A
+                                        FILE'S HEADER, and a header is free comment space
+                                        with no construct to name, so the honest form
+                                        NAMES THE REGION -- `THE PORT's `resnet.bend`
+                                        HEADLINE BLOCK` (27 rows), the form
+                                        `cite-unclaim1` established; and the CLAIM NAMED
+                                        SOMETHING THE TARGET NEVER HELD, so the prose was
+                                        CORRECTED TO THE TRUE CLAIM and never weakened
+                                        (2 rows -- `uop/weak.bend`'s `eq_cls.sel` has SEVEN
+                                        arms now, and `mixin/rand.bend`'s "PERMUTE
+                                        defers" is FALSE because PERMUTE is PORTED and it
+                                        is the EXPAND that inherits `ssimplify`).
+                                        **EVERY FILE'S LINE COUNT IS UNCHANGED FROM `HEAD`
+                                        (18 of 18)** -- a first pass added four lines to
+                                        `nn/pool.bend`, moved `pool_bn` 382 -> 386, and
+                                        turned another unit's pointer `WRONG-LINE`.
+                                        **A PORT `symbol=` MUST NOT SHARE A COMMENT LINE
+                                        WITH A `.py` CITATION** -- MEASURED: the todo gate
+                                        went `UNRESOLVABLE` on `extra/models/llama.py`
+                                        until the port pointer moved to the next line.
+                                        **THE COMPILE:** 18 of 18 `WITHIN-LIMITS`.
+                                        **THE PLANT:** a TEXT EDIT on a COPY of the LIVE
+                                        tree that INSERTS CODE, never a comment (a comment
+                                        is absorbed into the construct's doc run and the
+                                        row still resolves), and a byte-identical twin.
+                                        See `.agents/slop/unclaimed3/REPORT.md`.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
