@@ -828,6 +828,19 @@ def plant() -> int:
     return FAIL
 
 
+
+def _claimed_name(row) -> str:
+    """The construct a row claims, from the verdict's OWN WORDS.
+
+    THE ROW DOES NOT CARRY **THE **NAME** **AS **A **FIELD**, **AND **THIS **PLANT **NEEDS **IT
+    **TO **FIND **THE **CONSTRUCT's **SPAN **START** — **SO **IT **IS **READ **OUT **OF **THE
+    **VERDICT's **`why`**, **WHICH **NAMES **IT**: **":1530 **is **inside **`t_softmax3.go` **(declared
+    **at **:1529)"**.  **⇒ AND **THIS **IS **A **READ **OF **THE **GATE's **OWN **OUTPUT**, **NOT **A
+    **SECOND **LIST** — **THE **VERDICT **TEXT **IS **WHERE **THE **NAME **LIVES.**
+    """
+    m = re.search(r"`([^`]+)`", row.get("why", ""))
+    return m.group(1) if m else ""
+
 def _plant() -> int:
   bad: list[str] = []
 
@@ -898,17 +911,56 @@ def _plant() -> int:
     # THE EDIT MOVES THE CONSTRUCT PAST THE POINTER, which is what a unit inserting a
     # block at the top of a file does: the construct's declaration line grows by `k` and
     # the pointer, which was inside the construct, is now ABOVE it.
-    k = int(target_row["lo"]) - int(target_row["decl"]) + 1
+    #
+    # **⇒ AND `k` **IS **COMPUTED **FROM **THE **SPAN **START**, **NOT **FROM **THE
+    # **DECLARATION** — **AND **THAT **IS **THE **THIRD **REASON **THIS **PLANT **DID **NOT **GO
+    # **RED. **A **CONSTRUCT's **SPAN **INCLUDES **THE **COMMENT **RUN **ABOVE **IT** (**THIS
+    # **FILE'S **OWN **RULE**, **`:178-182`**: **"A **POINTER **AT **THE **DOC **COMMENT **ABOVE **A
+    # **`def` **IS **A **POINTER **AT **THAT **`def`"**), **SO **MOVING **THE **DECLARATION **DOWN
+    # **BY **`k`** **MOVES **THE **SPAN's **START **DOWN **BY **`k`** **TOO**, **AND **THE
+    # **POINTER **CAN **STILL **LAND **ON **THE **DOC **COMMENT **OF **THE **MOVED **CONSTRUCT.**
+    # **⇒ SO **THE **PLANT **INSERTS **ENOUGH **LINES **THAT **THE **POINTER **LANDS **ABOVE **THE
+    # **WHOLE **SPAN**, **DOC **COMMENT **INCLUDED.**
+    # THE PATH IS **RELATIVE **TO **THE **ROOT** — `corpus.declares` **KEYS **ON **IT**, **AND **AN
+    # **ABSOLUTE **PATH **IS **NOT **A **KEY** — **SO **THE **LOOKUP **WAS **SILENTLY **MISSING**.
+    target_path = target_row["target"]
+    span_start = int(target_row["decl"])
+    for decl, start, _end in corpus.declares(target_path, _claimed_name(target_row)):
+      if decl == int(target_row["decl"]):
+        span_start = min(span_start, start)
+        break
+    k = int(target_row["lo"]) - span_start + 1
     print(f"PLANT arm-two the pointer moved is {target_row['rel']}:{target_row['at']} -> "
           f"{target_row['subject']}:{target_row['lo']}, and the construct it names is "
-          f"declared at {target_row['target']}:{target_row['decl']}; {k} lines are inserted "
-          f"above it")
+          f"declared at {target_row['target']}:{target_row['decl']} (its span starts at "
+          f":{span_start}); {k} lines are inserted above it")
     moved = td / "moved"
     shutil.copytree(snap, moved)
     victim = moved / target_row["target"]
     body = victim.read_text(encoding="utf-8").splitlines()
-    victim.write_text("\n".join(["# PLANT: a line inserted above the construct the pointer "
-                                  "names"] * k + body) + "\n")
+    # **⇒ THE **PLANT **INSERTS **CODE, **NOT **A **COMMENT** — **AND **THIS **ARM **USED **TO
+    # **INSERT **A **COMMENT**, **WHICH **IS **EXACTLY **WHAT **THE **GATE's **OWN **ARM-ONE
+    # **DOCSTRING **SAYS **CANNOT **WORK**: **"A **CONSTRUCT's **SPAN **INCLUDES **THE **COMMENT **RUN
+    # **ABOVE **IT**, **SO **A **POINTER **AT **A **DOC **COMMENT **STILL **HOLDS."**  **⇒ MEASURED:
+    # **ARM **TWO **DID **NOT **GO **RED** — **THE **PLANT **MOVED **THE **CONSTRUCT **BY **A **COMMENT
+    # **RUN **THE **READER **ABSORBED.**
+    # **⇒ AND **THE **INSERTED **BLOCK **IS **EXACTLY **`k` **LINES** **AND **IT **IS **NOT **A
+    # **CONSTRUCT** — **THE **FIRST **ATTEMPT **REPEATED **A **`def`/`z` **PAIR **`k` **TIMES**, **WHICH
+    # **IS **A **NESTED **DEF **AND **A **MALFORMED **ONE**, **AND **IT **MOVED **THE **DECLARATION
+    # **BY **`2k`** **LINES **RATHER **THAN **`k`**; **THE **SECOND **ATTEMPT **USED **ONE **VALID
+    # **`def`, **AND **THE **POINTER **THEN **LANDED **INSIDE **THAT **`def`'s **BODY** — **BECAUSE
+    # **A **CONSTRUCT's **SPAN **RUNS **TO **THE **NEXT **DECLARATION**, **SO **THE **INSERTED
+    # **BLOCK **WAS **A **CONSTRUCT **AND **THE **POINTER **FELL **INSIDE **IT.**
+    # **⇒ SO **THE **INSERTED **LINES **ARE **PLAIN **STATEMENTS** (A **BARE **CALL), **WHICH **ARE
+    # **NOT **A **CONSTRUCT** **AT **ALL** — **AND **THE **POINTER **THEN **LANDS **ON **A **LINE
+    # **THAT **HOLDS **NO **CONSTRUCT**, **WHICH **IS **EXACTLY **WHAT **THE **PLANT **NEEDS **TO
+    # **PROVE: **THAT **THE **READER **DISTINGUISHES **"THE **CONSTRUCT **IS **HERE" **FROM **"IT
+    # **WAS **HERE".**  **⇒ AND **IT **IS **STILL **CODE**, **NOT **A **COMMENT** — **WHICH **IS **THE
+    # **THING **THE **ARM-ONE **DOCSTRING **INSISTS **ON** (**"A **COMMENT **RUN **IS **ABSORBED
+    # **INTO **THE **CONSTRUCT's **SPAN"**).**
+    shift = ["IO.print(String.concat([\"PLANT: a line inserted above the construct the pointer \"," +
+              " \"names\"]))"] + ["IO.print(String.concat([\"PLANT: shift\"]))"] * (k - 1)
+    victim.write_text("\n".join(shift + body) + "\n")
     moved_rows, _mcorpus = census(moved)
     after = next((r for r in moved_rows
                   if r["rel"] == target_row["rel"] and r["at"] == target_row["at"]
