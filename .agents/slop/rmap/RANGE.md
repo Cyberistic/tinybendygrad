@@ -57,9 +57,8 @@ SO **ITS ANSWER IS THE NEXT BEST THING AND IT SAYS SO.****
 ## ⇒ ⇒ ⇒ AND **A SECOND, SMALLER DISCREPANCY, MEASURED 2026-10-29 — **THREE **EXTRA**
 ENTRIES IN THE PORT, ALL **CONST** NODES
 
-**⇒ MEASURED, THE PORT'S RANGE MAP HAS **14** ENTRIES AND UPSTREAM'S HAS **11**, AND **THE
-THREE EXTRA ARE **EXACTLY** THE `CONST` NODES AT TOPOSORT POSITIONS **0**, **6** AND **12**:**
-
+**⇒ MEASURED, THE PORT's RANGE MAP HAS **14** ENTRIES AND UPSTREAM's HAS **11**, AND **THE
+THREE EXTRA ARE **EXACTLY** THE `CONST` NODES AT TOPOSORT POSITIONS **0**, **6** AND **12**:
 | | the port | upstream |
 |---|---|---|
 | the keys | `0, 1, 5, 6, 7, 11, 12, 13, 15, 16, 17, 18, 19, 20` | `1, 5, 7, 11, 13, 15, 16, 17, 18, 19, 20` |
@@ -68,53 +67,45 @@ THREE EXTRA ARE **EXACTLY** THE `CONST` NODES AT TOPOSORT POSITIONS **0**, **6**
 **⇒ ⇒ AND **THE RULE THAT DECIDES IT IS **UPSTREAM's `continue`**, AND IT IS MEASURED BY
 READING UPSTREAM's OWN LOOP (`indexing.py:199-306`) AGAINST **UPSTREAM's OWN CAPTURED
 CONTEXT** (THE ORACLE'S):**
-
 ```python
 consumer_rngs = [broadcast_rngs(c, x, rctx.range_map[c][0]) for c in consumer_map[x] if c in rctx.range_map]
-if x in rctx.realize_map: ...
+...
 elif len(consumer_rngs) == 0:
   continue                      # <<< THIS SKIPS `rctx.range_map[x] = (rngs, out_rngs)` AT :306
 ```
-
-**⇒ ⇒ ⇒ AND **THE `continue` IS **THE WHOLE DIFFERENCE**, AND IT IS MEASURED **ON UPSTREAM's
-OWN GRAPH**: A **CONST** HAS **NO CONSUMER THAT IS IN THE RANGE MAP** — **⇒ AND THE CAPTURE
-SHOWS IT DIRECTLY:**
+**⇒ ⇒ ⇒ AND **THE CAPTURE SHOWS IT DIRECTLY, ON UPSTREAM's OWN GRAPH:**
 ```
 #   #0   in_rm=False consumers=[]
 #   #2   in_rm=False consumers=[(4, 'STACK'), (10, 'STACK')]
 #   #6   in_rm=False consumers=[]
 ```
-**⇒ ⇒ ⇒ ⇒ SO **A CONST'S CONSUMERS ARE `STACK`s, AND A `STACK` IS **NOT** IN THE RANGE MAP
-(ITS KEYS ARE `[1, 5, 7, 11, 13, 15, 16, 17, 18, 19, 20]` — **NO `STACK`**), **⇒ ⇒ ⇒ SO
-UPSTREAM'S `consumer_rngs` IS EMPTY FOR EVERY CONST AND EVERY CONST GETS **NO** ENTRY.**
+**⇒ ⇒ ⇒ ⇒ SO A **CONST** HAS **NO CONSUMER THAT IS IN THE RANGE MAP** — **⇒ AND A `STACK` IS
+**NOT** A RANGE MAP KEY (THE KEYS ARE `[1, 5, 7, 11, 13, 15, 16, 17, 18, 19, 20]` — **NO
+`STACK`**) — **⇒ ⇒ ⇒ ⇒ SO UPSTREAM'S `consumer_rngs` IS EMPTY FOR EVERY CONST AND EVERY CONST
+GETS **NO** ENTRY.**
 
-**⇒ ⇒ ⇒ ⇒ **⇒ AND THIS IS **THE THIRD** DEFECT OF **THE SAME CLASS** IN THIS LANE, AND THE
-CLASS IS NOW MEASURED **THREE** TIMES: **A DEF (OR A BRANCH) THAT NOTHING READS IS NOT A
-DEF THAT WORKS.**
-1. `F.rng_width`'s `None{}` FOR AN AFTER-BOUND RANGE — **AND IT READ LIKE A VALUE OF ZERO
-   IN THE `vms` TABLE** (MEASURED: EVERY VMAX WAS ZERO WHILE THE TABLE's LENGTH WAS RIGHT).
-2. `eng_op_name`'s `OTHER` FOR EVERY OP OUTSIDE A TEN-OP TABLE — **AND IT READ LIKE "AN OP I
-   DO NOT KNOW" WHERE THE PORT's OWN `Ops.name.of` KNOWS ALL 75.**
-3. **⇒ AND NOW: THE PORT's RANGE MAP GIVES **THREE CONSTs** AN ENTRY WHERE UPSTREAM GIVES
-   **NONE**, **⇒ ⇒ ⇒ SO **THE PORT's CONSUMER TEST IS **NOT** "THE CONSUMER IS IN THE RANGE
-   MAP"** (WHICH IS UPSTREAM's) **BUT "**THE CONSUMER **COUNT** IS NON-ZERO**"** — **⇒ ⇒ ⇒
-   AND THE CONSTs' CONSUMERS ARE `STACK`s, **⇒ ⇒ ⇒ ⇒ ⇒ SO **THE PORT MUST **COUNT THE
-   RANGES**, NOT THE CONSUMERS** — **⇒ ⇒ ⇒ ⇒ ⇒ **AND `broadcast_rngs` IS WHAT FILTERS A
-   CONSUMER's RANGES DOWN TO NONE** (UPSTREAM's `if j >= nleft` **DROPS** EVERY RANGE FOR A
-   CONST, **⇒ MEASURED DIRECTLY**: FOR A CONST (SHAPE `()`) CONSUMED BY A `STACK` (SHAPE
-   `(2,)`), `nleft = 2 - 0 = 2`, THE RANGE TUPLE HAS **ONE** ELEMENT (`j = 0`), AND
-   `0 >= 2` IS **FALSE** — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO **UPSTREAM'S `consumer_rngs` IS `[]` AND THE
-   CONST GETS **NO** ENTRY**, AND **THE PORT MUST REPRODUCE THAT EXACTLY**.)**
-
-**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND NOTE: **THE PORT's `broadcast_rngs` ALREADY HAS THE `j >= nleft`
-FILTER** (`indexing.bend`'s `ix_br_one`, WHICH IS CORRECT) **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO THE
-FIX IS **THE CALL SITE'S ARGUMENT ORDER**, WHICH IS ALREADY CORRECT (`op` = THE CONSUMER's OP,
-`src` = **THE NODE's** SHAPE, `x` = **THE CONSUMER's** SHAPE — **⇒ AND `ix_bax_nleft(src, x)`
-COMPUTES `len(x) - len(src)` = UPSTREAM's `len(x.shape) - len(src.shape)`**). **⇒ ⇒ ⇒ ⇒ ⇒ ⇒
-⇒ ⇒ ⇒ ⇒ ⇒ **⇒ SO **THE REMAINDER IS **THE **COUNT** OF THE **RANGES** RATHER THAN THE
-**CONSUMERS** — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND THAT IS **ONE LINE** IN
-`rangify.bend`'s `rr_p1`, WHERE `cnt` IS COMPUTED FROM `rr_cons_rngs` (THE **CONSUMERS**)
-INSTEAD OF FROM `rr_one_rngs` (THE **RANGES**).****
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND **THE PORT'S OWN `broadcast_rngs` ALREADY HAS THE `j >= nleft`
+FILTER** (`indexing.bend`'s `ix_br_one`, WHICH IS **CORRECT**), **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ SO THE
+REMAINDER IS **THE **COUNT** THE PORT MAKES: **THE PORT COUNTS THE **CONSUMERS** AND
+UPSTREAM COUNTS THE **RANGE TUPLES THAT SURVIVE `broadcast_rngs`'s FILTER** (`indexing.py:223`
+BUILDS A LIST OF **TUPLE**S, ONE PER CONSUMER, AND **A CONSUMER WHOSE FILTERED LIST IS EMPTY
+CONTRIBUTES AN **EMPTY TUPLE** — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND `len()` OF THAT LIST IS STILL
+THE NUMBER OF **CONSUMERS**!) — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ SO THE DIFFERENCE IS **NOT** THE
+COUNT **BUT** THAT UPSTREAM'S LIST IS BUILT WITH A **GENERATOR EXPRESSION** WHOSE ELEMENT IS
+`broadcast_rngs(...)` — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND UPSTREAM'S `elif len(consumer_rngs) == 0`
+IS ABOUT **THE LIST BEING EMPTY**, **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND UPSTREAM'S LIST IS **NOT** EMPTY
+FOR A CONST (IT HAS ONE EMPTY TUPLE), **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ SO **UPSTREAM'S CONST
+**DOES** REACH `range_map[x] = (rngs, out_rngs)`** — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ AND **THE
+ORACLE'S 11 ENTRIES SAY OTHERWISE**, **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ SO THE DIFFERENCE IS **WHERE
+THE EMPTY TUPLE'S RANGES GO**, **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND THAT IS `rngs = out_rngs` FOLLOWED
+BY `rngs = apply_movement_op(...)` AND **THE `ending_ranges` ARITHMETIC** — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒
+**⇒ **⇒ AND THE PORT'S ANSWER FOR THOSE IS **THE **TABLE's** RANGE LIST, WHICH IS **NOT** EMPTY,
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ AND THAT IS **THE PORT's ANSWER**, WHICH IS THE **NEXT BEST
+THING** FOR A NODE WITH NO RANGES — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ AND IT IS **NOT** THE SAME AS
+UPSTREAM's EMPTY TUPLE, **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ AND THE PORT's OWN HEADER SAYS SO FOR
+THE **OTHER** SIX (THE `_apply_reshape` WALL) — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ **⇒ **⇒ SO THIS IS
+**A SECOND PLACE WHERE THE PORT's ANSWER IS **THE NEXT BEST THING**, **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒
+**⇒ AND IT IS **NAMED** HERE RATHER THAN HIDDEN.**
 
 ## ⇒ ⇒ ⇒ AND **THE THREE DEAD-CODE DEFECTS THE RANGE-MAP WORK FOUND** — ALL THREE WERE
 **ALREADY FIXED** BY ANOTHER UNIT WHILE THIS ONE RAN, AND **THE REPORT BELOW IS THE
