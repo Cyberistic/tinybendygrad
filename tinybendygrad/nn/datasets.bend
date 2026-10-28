@@ -10,10 +10,12 @@
 #
 # ===========================================================================
 # WHAT IS PORTED, DEF BY DEF.
-#   :5  base_url                    PORTED  `mn_base_url`
+#   :4  mnist(device, fashion)      PORTED  `mn_base_url` -- upstream's `base_url`
+#                                             is the LOCAL it reads at :5
 #   :6  _mnist(file)                PORTED  `mn_url`   (the `Tensor.from_url`
 #                                             inside it is WALL 1)
-#   :7  the four _mnist calls       PORTED  `mn_entries` -- the four members in
+#   :7  the four _mnist calls       PORTED  `mn_entries` -- upstream's `mnist`
+#                                             RETURNS that four-tuple at :7, and the four members in
 #                                             the tuple's order, each with the
 #                                             skip it is sliced by, its byte
 #                                             count and its row. `dst_mnist` is
@@ -22,13 +24,17 @@
 #                                             contract: it is `X_train, y_train,
 #                                             X_test, y_test`, and a PERMUTED
 #                                             tuple still trains a network.
-#   :11 the cifar url               PORTED  `CIFAR_URL`
-#   :12 the five batch members      PORTED  `cifar_batch`, `cifar_batches`
+#   :10 cifar(device)               PORTED  `CIFAR_URL` -- upstream's `cifar`
+#                                             is the DEF at :10 and reads the url at :11
+#   :12 the five batch members      PORTED  the port's cifar_batch and cifar_batches
+#                                             -- upstream's `train` binds at :12 and its
+#                                             `Tensor.cat` joins the five
 #   :12 `Tensor.cat(*[...])`        PORTED  as the ARITHMETIC of five
 #                                            `(rows, 3073)` tables -- the byte
 #                                            total and the row count -- and not
 #                                            as the kernel
-#   :13 the test member             PORTED  `cifar_test`
+#   :13 the test member             PORTED  `cifar_test` -- upstream's `test`
+#                                             is the LOCAL it binds at :13
 #   :12-13 `reshape(-1, 3073)`      PORTED  `CIFAR_ROW`, `dst_cifar_rows`
 #   :14 `train[:, 1:]` and `[:, 0]` PORTED  `CIFAR_LABEL_OFF`, `CIFAR_IMAGE_BYTES`
 #   :14 the two `reshape(-1,3,32,32)` PORTED `CF_IMG`
@@ -58,7 +64,8 @@
 # ===========================================================================
 # THE ONE FINDING, and it is about what is NOT here.
 #
-# **tinygrad does not parse the IDX header.** :7 slices at a hardcoded `0x10`
+# **tinygrad does not parse the IDX header.** :7 slices at a hardcoded 0x10 -- upstream's
+# own `0x10`, and it is a SKIP of the 16-byte header.
 # for an idx3 file and a hardcoded `8` for an idx1 file and then RESHAPES to a
 # hardcoded `(1,28,28)`. The magic number, the dimension count and the element
 # type all live in the FILE and none of them is ever read. (The real MNIST
@@ -415,11 +422,205 @@ def t_cifar() -> IO(Unit):
     row("dst_cifar_image_named", U32.is_eq(shape_bytes(CF_IMG()),
                                            CIFAR_IMAGE_BYTES()))
 
+# ===========================================================================
+# THE `.npy` PATH -- MNIST WITHOUT THE SOCKET.
+#
+# WHAT THIS IS. A SECOND ROUTE to the same four tensors, one that does not go
+# through `Tensor.from_url` and therefore does not go through WALL 1. The BYTES
+# are PREPARED ON THE HOST -- that is DATA PREPARATION and not the port -- and
+# the ARITHMETIC of the files they land in is here, in the port.
+#
+# THE `.npy` v1 FORMAT, as the port reads it. The header is
+#
+#     6 bytes  the magic  \x93NUMPY
+#     2 bytes  the version  1.0
+#     2 bytes  the header's OWN LENGTH, little-endian uint16
+#     L bytes  the header dict, space-padded so that 10 + L is a multiple of 64
+#
+# and the PAYLOAD follows it, `numel * itemsize` bytes. So
+#
+#     file_bytes = 10 + header_len + payload_bytes
+#
+# and the header's length field IS the presence check. **=> WALL 4,
+# `os.path.isfile`, IS NOT CALLED BY THIS PATH, AND THAT IS DELIBERATE: a `.npy`
+# file that is not there fails to open, and one that is truncated fails to
+# decode, so the length field answers "is this file whole" and the open answers
+# "is it there". The port does not need a third question.**
+#
+# THE FOUR WALLS, RE-EXAMINED. `tinybendygrad/nn/mnist_cnn.bend`'s header
+# carries the long version. The short one is:
+#
+#   W1 THE HTTP GET -- **STILL A WALL.** The `.npy` route moves the socket to
+#      the HOST and leaves the port the arithmetic. It does not make the port
+#      capable of a socket and it does not pretend to.
+#   W2 THE TENSORS -- **STILL A WALL FOR `tensor.bend`'s `Tensor`, WHICH IS A
+#      UOP SLOT IN AN ARENA AND NOT A BUFFER.** What IS here is the shape and
+#      the byte count the tensor would have, which is the arithmetic half of
+#      `reshape(-1,1,28,28)` and of the `.to(device)`.
+#   W3 `tarfile`/`pickle` -- **NOT REACHED.** MNIST has no tar and no pickle;
+#      the label file is a flat `uint8` vector and the image file is a `uint8`
+#      matrix. The wall is untouched and it is named so that "not reached" is a
+#      measurement and not an omission.
+#   W4 `os.path.isfile` -- **NOT CALLED**, as above.
+#
+# WHAT THE `.npy` PATH AND THE IDX PATH MUST AGREE ON. Both produce the same
+# four tensors, so the row counts, the byte counts and the per-image row width
+# are the SAME NUMBERS, and `dst_npy_matches_idx` is the row that says so. The
+# two routes read different bytes -- the IDX files carry a 16- or 8-byte header
+# and the `.npy` files carry a 118-byte one -- and the SAME payload after it,
+# which is why the two payloads agree and the two file sizes do not.
+# ===========================================================================
+
+# THE `.npy` HEADER'S THREE FIXED PARTS AND THE ONE FIELD THAT IS NOT FIXED.
+def NPY_MAGIC() -> U32: 6
+def NPY_VERSION() -> U32: 2
+def NPY_LENFIELD() -> U32: 2
+def NPY_FIXED() -> U32: 10
+
+# `|u1` -- the dtype all four files carry, and its ITEM size. `|u1` is
+# numpy's spelling for "one unsigned byte, no byte order", and it is the
+# dtype the MNIST payload has in every representation.
+def NPY_U1_ITEM() -> U32: 1
+
+# ONE `.npy` FILE: its name, its file name, its header's own length, and its
+# shape. The shape is EXPLICIT -- a `.npy` header states the dimensions and
+# there is no `-1` to infer -- so `infer` is False and `shape_str` prints the
+# dimensions without a leading `-1`.
+type Npy is Data:
+  Npy{nm: String, file: String, header_len: U32, shape: Shape}
+
+def Npy.nm(x: Npy) -> String:
+  match x:
+    case Npy{nm, file, header_len, shape}: nm
+
+def Npy.file(x: Npy) -> String:
+  match x:
+    case Npy{nm, file, header_len, shape}: file
+
+def Npy.header_len(x: Npy) -> U32:
+  match x:
+    case Npy{nm, file, header_len, shape}: header_len
+
+def Npy.shape(x: Npy) -> Shape:
+  match x:
+    case Npy{nm, file, header_len, shape}: shape
+
+# THE ELEMENT COUNT, and then the PAYLOAD. `Npy.dims` is a projection, so each
+# call makes a FRESH list and the two uses of the shape do not collide.
+def Npy.dims(x: Npy) -> List<&2, U32>: Shape.rest(Npy.shape(x))
+
+def Npy.numel(x: Npy) -> U32: H.prod_u32(Npy.dims(x))
+
+def Npy.payload(x: Npy) -> U32: U32.mul(Npy.numel(x), NPY_U1_ITEM())
+
+# THE BYTES PER ROW, and it is DERIVED and not typed: it is the product of
+# every dimension but the first. For the image files that is 1*28*28 = 784 --
+# the same row width `Ds.per` carries on the IDX side -- and for the label
+# files it is the empty product, which is 1 (`prod_u32` of `Nil{}` is 1, and
+# `helpers.py:14`'s `prod` says so). **=> THE LABEL FILES' ROW COUNT IS THEIR
+# ELEMENT COUNT, and the same `rows` def says so for both halves of the tuple
+# because the per-row width is derived rather than written down twice.**
+def Npy.per(x: Npy) -> U32: H.prod_u32(List.drop(&2, U32, Npy.dims(x), 1n))
+
+# THE FILE SIZE, which is the header plus the payload. `+x` because the record
+# is read twice -- once for the header's length and once for the payload -- and
+# a `Data` record may be read twice.
+def Npy.file_bytes(+x: Npy) -> U32:
+  U32.add(U32.add(NPY_FIXED(), Npy.header_len(x)), Npy.payload(x))
+
+# THE CLAIM, and it is the SAME claim the IDX path makes: the payload is a
+# whole number of rows. A `.npy` payload that is not would be a truncated
+# write, and this is the row that would say so.
+def Npy.divides(+x: Npy) -> Bool: U32.is_zero(U32.mod(Npy.payload(x), Npy.per(x)))
+
+def Npy.rows(+x: Npy) -> U32: U32.div(Npy.payload(x), Npy.per(x))
+
+# THE LABEL FILES ARE NOT RESHAPED: one dimension, and the row count IS the
+# element count. This is the same asymmetry between the two halves of one tuple
+# that `dst_labels_unreshaped` records on the IDX side.
+def Npy.flat(x: Npy) -> Bool: U32.is_eq(U32.from_nat(List.length(&2, U32, Npy.dims(x))), 1)
+
+def NPY_TRAIN_IMAGES() -> Npy:
+  Npy{"train_images", "mnist_train_images.npy", 118, Shape{False{}, [60000, 1, 28, 28]}}
+def NPY_TRAIN_LABELS() -> Npy:
+  Npy{"train_labels", "mnist_train_labels.npy", 118, Shape{False{}, [60000]}}
+def NPY_T10K_IMAGES() -> Npy:
+  Npy{"t10k_images", "mnist_test_images.npy", 118, Shape{False{}, [10000, 1, 28, 28]}}
+def NPY_T10K_LABELS() -> Npy:
+  Npy{"t10k_labels", "mnist_test_labels.npy", 118, Shape{False{}, [10000]}}
+
+def npy_entries() -> List<&2, Npy>:
+  [NPY_TRAIN_IMAGES(), NPY_TRAIN_LABELS(), NPY_T10K_IMAGES(), NPY_T10K_LABELS()]
+
+def dst_npy_n() -> U32: U32.from_nat(List.length(&2, Npy, npy_entries()))
+
+# THE FILE COLUMN of the `.npy` table, in the tuple's order, for the same
+# reason `ds_files` exists on the IDX side: a table whose file column disagreed
+# with the rows above it would be caught by the column and not by the counts.
+def npy_files.go(xs: List<&2, Npy>, acc: List<&2, String>) -> List<&2, String>:
+  match xs:
+    case Nil{}: acc
+    case +x <> t: npy_files.go(t, List.append(&2, String, acc, [Npy.file(x)]))
+
+def npy_files() -> String: String.join(npy_files.go(npy_entries(), Nil{}), ",")
+
+# --- 4: the `.npy` path -----------------------------------------------------
+def t_npy() -> IO(Unit):
+  do IO<Unit>:
+    srow("dst_npy_train_images_file", Npy.file(NPY_TRAIN_IMAGES()))
+    srow("dst_npy_train_images_shape", shape_str(Npy.shape(NPY_TRAIN_IMAGES())))
+    urow("dst_npy_train_images_payload", Npy.payload(NPY_TRAIN_IMAGES()))
+    urow("dst_npy_train_images_file_bytes", Npy.file_bytes(NPY_TRAIN_IMAGES()))
+    urow("dst_npy_train_images_rows", Npy.rows(NPY_TRAIN_IMAGES()))
+    srow("dst_npy_train_labels_file", Npy.file(NPY_TRAIN_LABELS()))
+    srow("dst_npy_train_labels_shape", shape_str(Npy.shape(NPY_TRAIN_LABELS())))
+    urow("dst_npy_train_labels_payload", Npy.payload(NPY_TRAIN_LABELS()))
+    urow("dst_npy_train_labels_file_bytes", Npy.file_bytes(NPY_TRAIN_LABELS()))
+    urow("dst_npy_train_labels_rows", Npy.rows(NPY_TRAIN_LABELS()))
+    srow("dst_npy_t10k_images_file", Npy.file(NPY_T10K_IMAGES()))
+    srow("dst_npy_t10k_images_shape", shape_str(Npy.shape(NPY_T10K_IMAGES())))
+    urow("dst_npy_t10k_images_payload", Npy.payload(NPY_T10K_IMAGES()))
+    urow("dst_npy_t10k_images_file_bytes", Npy.file_bytes(NPY_T10K_IMAGES()))
+    urow("dst_npy_t10k_images_rows", Npy.rows(NPY_T10K_IMAGES()))
+    srow("dst_npy_t10k_labels_file", Npy.file(NPY_T10K_LABELS()))
+    srow("dst_npy_t10k_labels_shape", shape_str(Npy.shape(NPY_T10K_LABELS())))
+    urow("dst_npy_t10k_labels_payload", Npy.payload(NPY_T10K_LABELS()))
+    urow("dst_npy_t10k_labels_file_bytes", Npy.file_bytes(NPY_T10K_LABELS()))
+    urow("dst_npy_t10k_labels_rows", Npy.rows(NPY_T10K_LABELS()))
+    # THE HEADER'S OWN LENGTH, and it is the same for all four because the
+    # header dict's TEXT is the same length for a four-dim and a one-dim shape:
+    # "(10000, 1, 28, 28)" and "(10000,)" are the same number of characters
+    # after the padding, and the padding is what makes the total a multiple of
+    # 64. ONE row for all four, and the per-file rows above carry the file
+    # sizes that depend on it.
+    urow("dst_npy_header_len", Npy.header_len(NPY_TRAIN_IMAGES()))
+    urow("dst_npy_fixed", NPY_FIXED())
+    urow("dst_npy_n", dst_npy_n())
+    srow("dst_npy_files", npy_files())
+    # THE CLAIM, on the `.npy` payload.
+    row("dst_npy_train_images_divides", Npy.divides(NPY_TRAIN_IMAGES()))
+    row("dst_npy_t10k_images_divides", Npy.divides(NPY_T10K_IMAGES()))
+    # THE ASYMMETRY, on the `.npy` side.
+    row("dst_npy_labels_flat", Npy.flat(NPY_TRAIN_LABELS()))
+    row("dst_npy_images_not_flat", Bool.not(Npy.flat(NPY_TRAIN_IMAGES())))
+    # THE TWO ROUTES MUST AGREE on the payload and on the row count, and they
+    # must NOT agree on the file size -- the IDX files carry a 16- or 8-byte
+    # header and the `.npy` files carry a 118-byte one. Three rows, because a
+    # single "they agree" row would be true if the payloads agreed AND if the
+    # file sizes agreed, and the second is wrong.
+    row("dst_npy_matches_idx_payload", U32.is_eq(Npy.payload(NPY_TRAIN_IMAGES()),
+                                                 Ds.payload(E_TRAIN_IMAGES())))
+    row("dst_npy_matches_idx_rows", U32.is_eq(Npy.rows(NPY_TRAIN_IMAGES()),
+                                               Ds.rows(E_TRAIN_IMAGES())))
+    row("dst_npy_differs_idx_file", Bool.not(U32.is_eq(Npy.file_bytes(NPY_TRAIN_IMAGES()),
+                                                        Ds.nbytes(E_TRAIN_IMAGES()))))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- t_url()
     b : Unit <- t_idx()
     c : Unit <- t_cifar()
+    d : Unit <- t_npy()
     IO.print("dst-done=1")
 
 # ===========================================================================
