@@ -604,7 +604,7 @@ def GroupOp.elementwise(op: Op) -> Bool:
 #
 # `AXIS_REDUCE` and `AXIS_UNROLL` are DELETED upstream but they are still CONSTRUCTED
 # by six committed files, so they cannot be deleted here:
-#     schedule/indexing.bend:1420 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
+#     schedule/indexing.bend:1428 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
 #     codegen/kernel.bend:1002 symbol=kn_fixture       codegen/late/linearizer.bend:877 symbol=lt_fix
 #     codegen/opt/heuristic.bend:159 symbol=reduce_k   codegen/opt/heuristic.bend:162 symbol=matmul_k
 #     codegen/opt/postrange.bend:160 symbol=split_targets   codegen/opt/search.bend:418 symbol=zero_variant.dead
