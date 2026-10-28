@@ -2766,6 +2766,50 @@ exec-devlane         [###] 3/3  **THE PORT's `Device` LANE HAS EVERY STAGE AND N
                                        DESIGN** NOW (IT BINDS FOREIGN CODE, LIKE `ops_cpu.bend`), AND IT COMPILES.
 
 
+exec-linrender       [###] 3/3  **THE PORT's OWN ARENA REACHES THE PORT's OWN RENDERER: UPSTREAM's KERNEL, BYTE FOR
+                                       BYTE, MODULO `TUPLE_ORDER`.** MEASURED 2026-10-28, IN
+                                       `.agents/slop/linrender/REPORT.md`. **=> THE PORT's OWN `lin` ARENA -> THE
+                                       PORT's OWN FOLD -> THE PORT's OWN LINEARIZER -> THE PORT's OWN CONVERTER -> THE
+                                       PORT's OWN RENDERER -> C, COMPARED WHOLE-FILE WITH UPSTREAM's OWN C: **PORT 547
+                                       BYTES, UPSTREAM 547 BYTES, THE SAME KERNEL, THE SAME THREE BUFFERS, THE SAME
+                                       TWO LOOPS, THE SAME STORE.** THE ORACLE IS UPSTREAM's OWN FILE, WRITTEN BY
+                                       CALLING CPython, AND IT IS IN THE TREE AT
+                                       `.agents/slop/linrender/lin_upstream_cpu.c`. **=> (1) THE PORT's OWN TOPOSORT
+                                       IS **EXACTLY** UPSTREAM's -- THE SAME 50-ELEMENT SEQUENCE IN THE SAME ORDER. =>
+                                       SO THE PORT's TOPOSORT IS NOT THE DEFECT, AND IT WAS NOT OBVIOUS: THE FIRST
+                                       ATTEMPT USED `schedule/__init__.bend`'s `sc_topo_of`, WHICH ANSWERED **ZERO**
+                                       NODES, BECAUSE ITS `sc_gate` (`:511-517`) GATES THE KERNEL SINK OUT -- AND
+                                       UPSTREAM's `linearize` USES **NO GATE** (`linearizer.py:10`), AND **THE PORT's
+                                       OWN `O.UOp.toposort_nocalls` (`ops.bend:3376`) IS EXACTLY THAT.** **=> (2) THE
+                                       PORT's OWN `vms` TABLE HAD **ZERO** VMAX VALUES, AND THAT WAS A REAL DEFECT IN
+                                       THE PORT's FOLD: THE LENGTH WAS RIGHT (97, EXACTLY UPSTREAM's) AND EVERY VMAX
+                                       WAS ZERO. THE CAUSE IS `F.rng_width` (`uop/fold.bend:1478`), WHICH **REFUSES
+                                       ANY RANGE BOUND THAT IS NOT A CONST** -- AND THE PORT's `g_lin` RANGE's BOUND
+                                       IS AN **AFTER** (`graphcmp.bend:1127-1128`), BECAUSE `pm_simplify_ranges`
+                                       REWRITES A RANGE's BOUND INTO `AFTER(bound, prev_range)`. UPSTREAM READS THE
+                                       VMAX THROUGH IT: A RANGE's `_min_max` IS `(self.src[0]-1).vmax`
+                                       (`ops.py:1147`), AN AFTER's IS ITS `src[0]`'s (`ops.py:457`), AND A CAST PASSES
+                                       ITS `src[0]` THROUGH (`ops.py:142`) -- **=> SO THE CHAIN IS `RANGE -> AFTER ->
+                                       CAST -> CONST`, AND WITH THE VMAX READ CORRECTLY **THE LOADS GROUPED BY
+                                       BUFFER**, WHICH IS THE WHOLE VISIBLE DIFFERENCE.** **=> (3) THE REMAINING
+                                       DIFFERENCE IS **`TUPLE_ORDER`**, AND **THE PORT's OWN FILE ALREADY SAYS SO**
+                                       (`linearizer.bend:115-125`: *"TUPLE_ORDER is a real ContextVar (helpers.py:280,
+                                       default 1) ... So this file ports the TUPLE_ORDER=0 lane exactly and names the
+                                       =1 lane W2"*). MEASURED, UPSTREAM's DEFAULT IS `1` (`tinygrad/helpers.py:282`),
+                                       SO **THE PORT IS ON `=0` WHILE UPSTREAM IS ON `=1`** -- AND THAT IS WHY THE
+                                       ORACLE DISAGREES, AND IT IS NOT A MYSTERY: IT IS A NAMED WALL IN THE PORT's OWN
+                                       FILE. AND THE PORT's OWN `linearizer.bend:1215-1218` QUANTIFIES IT:
+                                       `lin_ties=47` OF 171 PAIRS TIE ON `(run_count, priority)` -- **=> 47 OF 171
+                                       PAIRS ARE DECIDED BY `tuplize` ALONE.** **=> AND THE NAMED GAPS: THE `lin`
+                                       FIXTURE IS HAND-BUILT, NOT DRIVEN BY THE PORT's OWN SCHEDULER (THE ENGINE's
+                                       JOB); `TUPLE_ORDER=1` IS NOT PORTED (AND `x.tuplize` IS A **STRUCTURAL KEY**
+                                       HOLDING A `repr` OF AN ARBITRARY ARG AND A DTYPE VALUE, **=> SO IT IS NOT A
+                                       `U32` AND THE PORT's SINGLE-`U32` KEY CANNOT HOLD IT AS IS**); `F.rng_width`
+                                       STILL REFUSES AN AFTER-BOUND RANGE (THE FIX IN THE PORT IS `fold.bend`'s
+                                       `rng_width.end`, WHICH SHOULD DESCEND THE SAME CHAIN); AND THE PORT's
+                                       `len(u.ranges)` COMPONENT IS ALSO ABSENT FROM `lt_key`.
+
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
