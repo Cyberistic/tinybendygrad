@@ -25407,3 +25407,39 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **THE **GATE **IS **2543 **LINES **AND **ITS **PLANT **BUILDS **SYNTHETIC **GIT
       **REPOSITORIES**, **SO **THE **COST **IS **PROBABLY **THE **REPOSITORIES** — **A **MEASUREMENT,
       **NOT **AN **ASSUMPTION**, **IS **WANTED.**
+
+- [x] **THE **`dialect-fixture-gate`'s **TAG **RULE **IS **REPAIRED**, **AND **THE **GATE **IS **rc=0**
+      (`c64d64bf5`, **`5b19f87ff`**).**  **⇒ AND **THE **DEFECT **WAS **IN **THE **GATE**: **THE **RULE
+      **WAS **`re.compile(r'"([^"\n]*)"')`** — **EVERY **QUOTED **STRING** — **AND **THE
+      **`pre`/`post` **ORACLE **FRAGMENTS **CARRY **THE **ORACLE's **ASSEMBLY **ALONGSIDE **THE **ROW
+      **TAGS**, **SO **THE **GATE **READ **ASSEMBLY **AS **CLAIMS.**  **⇒ AND **NOT **ONE **OF **THE
+      **472 **WAS **A **ROW **TAG.**
+      **⇒ AND **THE **NEW **RULE**: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **IS **THE
+      **FIRST **ARGUMENT **OF **A **CALL **TO **A **ROW-MAKER**, **AND **A **ROW-MAKER **IS **A
+      **FUNCTION **THE **PORT **DEFINES **WHOSE **FIRST **PARAMETER **IS **THE **ROW **NAME** (`nm`)**.**
+      **⇒ AND **THE **ROW-MAKER **SET **IS **DISCOVERED **BY **WALKING **`tinybendygrad/`** — **285
+      **DISTINCT **NAMES** — **AND **THE **GATE **PRINTS **EVERY **ONE **WITH **THE **FILE **AND **LINE
+      **OF **ITS **DEFINITION**, **SO **A **READER **CAN **RE-RUN **THE **GREP **AND **SEE **THAT **IT
+      **IS **NOT **A **TYPED **LIST.**  **⇒ AND **CALLS **ARE **MATCHED **ON **THEIR **LAST
+      **COMPONENT** (**THE **PORT's **DEF **NAMES **ARE **DOTTED**), **AND **THE **FIRST **ARGUMENT **MAY
+      **BE **A **COMPOSITION** (`u1(String.concat(["usb_split_empty", "_full"]), ...)`).**
+      **⇒ AND **THE **DENOMINATOR **IS **SHOWN **BOTH **WAYS, **ON **THE **FACE **OF **THE **OUTPUT**:
+      **`FRAGMENTS files=7 quoted=5280 rowtags=2085 carried=1928 carried_renamed=157 lost=0
+      not_a_rowtag=3195`**, **AND **AN **`OLD-RULE`** **LINE **PRINTING **`old_carried=4651
+      old_carried_renamed=157 old_lost=472`** **BESIDE **IT.**
+      **⇒ AND **THE **FIVE **CONTROL **FRAGMENTS** (WHOSE **`lost` **WAS **0 **UNDER **THE **OLD **RULE)
+      **ARE **STILL **0** **UNDER **THE **NEW **ONE**, **EVERY **ROW **TAG **CARRIED**, **AND **THEIR
+      **`quoted` **COUNTS **ARE **UNCHANGED **AND **PRINTED.**
+      **⇒ AND **THE **PLANT **HAS **BOTH **ARMS** — **CHANGE **THE **FRAGMENT's **ROW **TAG** (**rc=1**,
+      **AND **IT **NAMES **THE **PLANTED **TAG**)** AND **CHANGE **THE **PORT's **ROW **TAG**
+      (**rc=1**, **AND **IT **NAMES **THE **ROW **THE **PORT **LOST**)** — **EACH **WITH **A **RESTORE
+      **TO **GREEN**, **AND **THE **DENOMINATOR **PRINTED **BESIDE **THE **PLANT** (**control=2085
+      planted=2085**), **BECAUSE **A **GREEN **RUN **THAT **IS **GREEN **ONLY **BECAUSE **IT **COUNTS
+      **FEWER **ROWS **PROVES **NOTHING.**
+      **⇒ AND **A **PERFORMANCE **FIX **THAT **KEPT **THE **NUMBERS**: **THE **CARRIED **CHECK **WAS **A
+      **SUBSTRING **TEST **OVER **A **12 **MB **STRING **AT **3.5 **ms **PER **MISS** — **7,365 **OF
+      **THEM **COST **21 **s**; **THE **GATE **NOW **BUILDS **THE **TEXT **BETWEEN **EVERY **PAIR **OF
+      **CONSECUTIVE **QUOTES **IN **THE **PORT** **ONCE**, **AND **A **TAG **HOLDING **NO **`"`** **IS
+      **CARRIED **EXACTLY **WHEN **IT **IS **ONE **OF **THOSE **CHUNKS**.  **⇒ MEASURED **AGAINST **THE
+      **SUBSTRING **TEST **ON **EVERY **STRING **IN **EVERY **FRAGMENT**: **0 **DISAGREEMENTS**.  **⇒ 21 **s
+      **-> 0.81 **s**, **NUMBERS **UNCHANGED.**
