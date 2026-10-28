@@ -25374,10 +25374,35 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **IS **THE **ROW **NAME**, **AND **THE **CALL **NAME **MUST **BE **MATCHED **ON **ITS **LAST
       **COMPONENT **TOO** (**THE **PORT's **DEF **NAMES **ARE **DOTTED**: **`Enc.emit.head`**,
       **`Op.in_.go`**).**
-- [ ] **THE **`dialect-fixture-gate`'s **TAG **RULE **IS **BEING **REPAIRED** (DISPATCHED).**  **⇒ AND
-      **THE **GATE **MUST **STILL **BE **ABLE **TO **GO **RED**, **MUST **PRINT **HOW **MANY **QUOTED
-      **STRINGS **IT **DID **NOT **COUNT **AS **ROW **TAGS**, **AND **MUST **KEEP **THE **FIVE
-      **CONTROL **FRAGMENTS' **COUNTS **UNCHANGED.**
+- [x] **THE **`dialect-fixture-gate`'s **TAG **RULE **IS **REPAIRED** (MEASURED **2026-10-29**,
+      **`c64d64bf5`**).**  **⇒ AND **THE **GATE **MUST **STILL **BE **ABLE **TO **GO **RED**, **MUST **PRINT
+      **HOW **MANY **QUOTED **STRINGS **IT **DID **NOT **COUNT **AS **ROW **TAGS**, **AND **MUST **KEEP
+      **THE **FIVE **CONTROL **FRAGMENTS' **COUNTS **UNCHANGED** — **ALL **THREE **HOLD.**
+      **⇒ AND **THE **RULE **IS: **A **QUOTED **STRING **IS **A **ROW **TAG **IFF **IT **LIES **INSIDE
+      **THE **FIRST **ARGUMENT **OF **A **CALL **TO **A **ROW-MAKER**, **AND **A **ROW-MAKER **IS **A
+      **FUNCTION **THE **PORT **DEFINES **WHOSE **FIRST **PARAMETER **IS **THE **ROW **NAME** — **285
+      **DISTINCT **NAMES, **DISCOVERED **BY **WALKING **THE **PORT**, **AND **THE **GATE **PRINTS
+      **EVERY **ONE **WITH **THE **FILE **AND **LINE **OF **ITS **DEFINITION.**
+      **⇒ AND **THE **VERDICT **IS **OVER **THE **ROW **TAGS**: **`rowtags=2085 carried=1928
+      carried_renamed=157 lost=0 not_a_rowtag=3195`**, **AND **THE **OLD **RULE's **NUMBERS **ARE
+      **PRINTED **BESIDE **THEM** (**`old_carried=4651 old_carried_renamed=157 old_lost=472`**) **SO
+      **THE **DELTA **IS **ON **THE **FACE **OF **THE **OUTPUT** — **AND **THE **GATE **MEASURES **THAT
+      **472 **OF **THOSE **472 **OLD-LOST **STRINGS **ARE **NOT **ROW **TAGS**, **RATHER **THAN
+      **ASSERTING **IT.**
+      **⇒ AND **THE **PLANT **IS **A **TEXT **EDIT **ON **A **COPY **OF **THE **TREE**, **IN **BOTH
+      **DIRECTIONS** — **THE **CONTROL **(AN **UNEDITED **COPY) **IS **GREEN**; **A **COPY **WHOSE
+      **FRAGMENT **CARRIES **A **ROW **TAG **THE **PORT **DOES **NOT **CARRY **IS **RED **AND **NAMES
+      **THE **TAG**; **A **COPY **WHOSE **PORT **NO **LONGER **CARRIES **A **ROW **TAG **IS **RED **AND
+      **NAMES **THE **ROW **THE **PORT **LOST**; **AND **BOTH **RESTORES **ARE **GREEN.  **⇒ AND **THE
+      **DENOMINATOR **IS **PRINTED **BESIDE **THE **PLANT** (**`control=2085 planted=2085 :: UNCHANGED`**),
+      **BECAUSE **A **GREEN **RUN **THAT **IS **GREEN **ONLY **BECAUSE **IT **COUNTS **FEWER **ROWS
+      **PROVES **NOTHING.**
+      **⇒ AND **THE **GATE **IS **21 **s **FASTER** (**21 **s **-> **0.81 **s**): **THE **CARRIED
+      **CHECK **IS **A **SUBSTRING **TEST **OVER **A **12 **MB **STRING **AND **MEASURED **AT **3.5 **ms
+      **PER **MISS**, **SO **THE **GATE **NOW **BUILDS **THE **TEXT **BETWEEN **EVERY **PAIR **OF
+      **CONSECUTIVE **QUOTES **IN **THE **PORT **ONCE** — **MEASURED **AGAINST **THE **SUBSTRING **TEST
+      **ON **EVERY **STRING **IN **EVERY **FRAGMENT: **0 **DISAGREEMENTS.**
+      **⇒ AND **THE **REPORT **IS **`.agents/slop/dialectgate/REPORT.md`.**
 - [ ] **`gates/gates-pop.py --plant` **TIMES **OUT** (>15 **MINUTES**, **NEVER **FINISHED).**  **⇒ AND
       **THE **GATE **IS **2543 **LINES **AND **ITS **PLANT **BUILDS **SYNTHETIC **GIT
       **REPOSITORIES**, **SO **THE **COST **IS **PROBABLY **THE **REPOSITORIES** — **A **MEASUREMENT,
