@@ -293,6 +293,17 @@ instrument requirements, not preferences.
   disagreements that a CODE change would settle. This slice is comment-only, so both
   are left, and the `hwq` one is already named in the header.
 
+## 5.1 THE FINAL READING, ON THE TREE AS IT NOW STANDS
+
+```
+== pin-cite rc=0  bendcite rc=1  (FINAL)
+unverifiable in slice: 0
+WRONG-LINE+DANGLING-LINE in slice: 0
+```
+
+Both counts are 0 on the tree as it stands after this slice's commits and after
+another unit's commit landed on top of them.
+
 ## 6. THE INSTRUMENTS THIS SLICE ADDED
 
 All under `.agents/slop/unv3/`, and all named for what they measure:
