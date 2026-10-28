@@ -225,7 +225,7 @@ def cr_bounds(v: O.Const) -> Maybe<&1, H.I64>:
 # `DTypeMixin.cast` -- dtype.py:36, `self if self.dtype == (dt := to_dtype(dtype)) else
 # self._uop.alu(Ops.CAST, arg=dt)`. `O.UOp.alu` takes no arg (ops.bend:2072), so the
 # CAST is spelled with `UOp.new` and the `ADt` arg -- `mixin/dtype.bend`'s `cast_at`
-# (dtype.bend:309) and `weak.bend`'s `wk_cast_at` (weak.bend:613) use the same SPELLING
+# (dtype.bend:309) and `weak.bend`'s `wk_cast_at` (uop/weak.bend:616 symbol=wk_cast_at) use the same SPELLING
 # for a different REASON: both of those read the source dtype off a FOLD, and
 # `UOp.const`'s `.cast` reads it off the value it just built, which `cr_from_py` has
 # already answered. Same one line, two sources for the `same` test.
