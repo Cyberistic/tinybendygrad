@@ -3174,6 +3174,56 @@ cite-runtime      [#########] 5/5  **THE OTHER HALF OF THE 603 IS `runtime/**`, 
                                         is a claim the census has no class for. See
                                         `.agents/slop/citefix-runtime/REPORT.md`.
 
+cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 FILES AND
+                                        58 ROWS, AND THEY ARE 0.** `gates/bendcite-gate.py`
+                                        judges the port's own `.bend` -> `.bend` line
+                                        citations against the construct the target file
+                                        DECLARES, and 58 of them named a construct that had
+                                        MOVED: **58 -> 0** for the 17 files, and
+                                        **TREE-WIDE 61 -> 1**. The durable form is
+                                        `symbol=<name>`, and EVERY row this slice touched
+                                        now carries it. **THE FOUR KINDS:** a `symbol=`
+                                        ADDED where the citation named the construct only in
+                                        PROSE (12); a LINE RE-POINTED at the current
+                                        declaration (30); a POINTER that named TWO
+                                        constructs SPLIT INTO TWO (4) -- a RANGE spanning
+                                        two declarations can hold NEITHER; and the READER's
+                                        declaration cited where the comment WAS ABOUT the
+                                        reader (`renderer/kuconv.bend`'s table, and
+                                        `uop/validate.bend`'s arena nodes 2 and 4, now
+                                        `uop/ops.bend:7288` and `:7290`). **NO CLAIM WAS
+                                        DELETED OR WEAKENED** -- every construct the
+                                        comments named still exists, so NO row needed
+                                        "the port no longer carries this".
+                                        **THE `D.refuse("...")` EXCEPTION:** 34 STALE
+                                        `.bend:NN` addresses in the 5 MODEL files'
+                                        diagnostic PAYLOADS, corrected -- a payload no
+                                        computation reads, and a stale address in it is a
+                                        FALSE claim. **ALL 17 STILL PASS THE COMMENT-ONLY
+                                        PROOF**, because `strip_comments()` blanks STRING
+                                        LITERALS first, so the HASH is STRONGER than the
+                                        label. **17 of 17 COMPILE `WITHIN-LIMITS`** under
+                                        `checks/bounded.py --mb 2048`, one `bend` at a time.
+                                        **THE PLANT** breaks one re-pointed citation by one
+                                        TEXT EDIT on a COPY (never `git show HEAD:`) and
+                                        the gate goes RED; a byte-identical control stays
+                                        GREEN. **`gates/todo-cite-gate.py` PASSES** with
+                                        **0 WRONG-LINE / 0 WRONG-SYMBOL / 0 UNRESOLVABLE**.
+                                        **NOT FIXED: 1** -- `mixin/creation.bend:228`, NOT
+                                        this slice's file, and it FAILS WITH THIS SLICE'S
+                                        17 FILES STASHED: another unit's `uop/weak.bend`
+                                        edit moved `wk_cast_at` from :613 to :616.
+                                        **AND 12 OTHER FILES STILL CITE THE STALE
+                                        `helpers.bend:3193`** (the HTTP-machinery paragraph
+                                        is at :3194) -- `examples/test_pkl_imagenet.bend`,
+                                        `examples/train_resnet.bend`,
+                                        `extra/datasets/{__init__,imagenet_download,kits19,
+                                        openimages,squad}.bend`,
+                                        `extra/models/{clip,convnext,efficientnet,resnet,
+                                        unet3d}.bend` -- their owning unit should
+                                        re-point them. See
+                                        `.agents/slop/bendcite/SLICE-REPORT.md`.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
