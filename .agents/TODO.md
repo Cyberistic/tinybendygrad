@@ -3224,6 +3224,81 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         re-point them. See
                                         `.agents/slop/bendcite/SLICE-REPORT.md`.
 
+ cite-bare79     [#########] 5/5  **THE 79 BARE POINTERS ARE 11 FILES AND ALL 79 OF THEM
+                                        NOW NAME A CONSTRUCT.** `gates/bendcite-gate.py`'s
+                                        WORST FORM: a `.bend` -> `.bend` pointer that resolves
+                                        and lands in the file but whose citing text names
+                                        NOTHING the target holds -- so there is NO CLAIM TO
+                                        FALSIFY. **79 -> 0**, all 79 RESOLVE; MY 11 FILES'
+                                        `UNCLAIMED` **132 -> 52** (the 52 that remain are
+                                        OTHER units' slices), `RESOLVES` **127 -> 208**,
+                                        **`WRONG-LINE` 0 -> 0** and `WRONG-LINE-BY-BLOCK`
+                                        **21 -> 20** (one PRE-EXISTING row fixed:
+                                        `nn/pool.bend:277`). TREE-WIDE `UNCLAIMED`
+                                        **491 -> 408**, `WRONG-LINE` **61 -> 3**.
+                                        **THE `symbol=` FIELD, AND TWO RULES THAT ARE
+                                        MEASURED AND NOT REASONED.** (a) **A DOTTED NAME CAN
+                                        NEVER BE A CLAIM TOKEN**: `pin-cite-gate.py`'s `IDENT`
+                                        DOES NOT MATCH A DOT, so `PK.i` reads as `PK` (TWO
+                                        characters, and `len(t) < 3` drops it) and `i` (ONE)
+                                        -- WHICH IS WHY THE DURABLE FORM IS A FIELD AND NOT
+                                        A BACKTICK. (b) **A `symbol=` ON A LINE THAT ALSO
+                                        CARRIES A `.py` CITATION IS JUDGED AGAINST
+                                        UPSTREAM**: MEASURED, `symbol=promo_dtype` next to
+                                        `ops.py:120` made `todo-cite-gate.py` FAIL with
+                                        `WRONG-LINE -- `promo_dtype` is declared at :112`
+                                        (UPSTREAM's line). (c) **A LINE WITH A `symbol=`
+                                        CARRIES EXACTLY ONE `.bend` CITATION**, because
+                                        `SYMBOL_FIELD.findall(line)` binds the symbol to
+                                        EVERY citation on the line -- MEASURED, that made the
+                                        `:234` row `WRONG-LINE`.
+                                        **THE FOUR SHAPES AND WHAT EACH NEEDED:** a pointer
+                                        to a COMMENT THAT NAMES A CONSTRUCT (`PK.i` at
+                                        `mixin/rand.bend:260`); a pointer to a COMMENT THAT
+                                        NAMES NOTHING -- **the claim is about an ABSENCE, so
+                                        the pointer names the construct that CARRIES the
+                                        absence**: `helpers.bend:2758 symbol=lines` (that
+                                        file's ONLY I/O construct, so the HTTP machinery is
+                                        NOT ported), `nn/__init__.bend:220 symbol=nn_glorot`
+                                        (that file's LAST def -- it has 17 and ZERO classes),
+                                        `uop/ops.bend:174 symbol=OpsBUFFER` (the port's only
+                                        Buffer-named construct, and it is the OP),
+                                        `engine/realize.bend:966 symbol=rz_est_is_copy`
+                                        ("no `Estimates` value is built anywhere"),
+                                        `extra/datasets/__init__.bend:45 symbol=refuse`;
+                                        a pointer to a STALE LINE (47 of the 79 -- every
+                                        construct had moved); and a pointer to a CONSTRUCT IN
+                                        A FILE THAT IS NOT THE TARGET.
+                                        **THE `D.refuse("...")` EXCEPTION: NINE of the
+                                        eleven carry a corrected diagnostic PAYLOAD**, and
+                                        `strip_comments()` blanks STRING LITERALS FIRST, so
+                                        **THE HASH IS STRONGER THAN THE LABEL**: every file
+                                        strips to the SAME code hash as HEAD through
+                                        `checks/port-compile-gate.py`'s `strip_comments()`
+                                        LOADED BY PATH, blank lines dropped.
+                                        **11 of 11 COMPILE `WITHIN-LIMITS`** under
+                                        `checks/bounded.py --mb 2048`, one `bend` at a time.
+                                        **THE PLANT** is THIS SLICE'S OWN, because the
+                                        built-in one moves a LINE pointer and this fix rests
+                                        on a `symbol=`: `.agents/slop/barecite/plant.py`
+                                        inserts CODE above the construct's SPAN START on a
+                                        COPY and the row goes `WRONG-LINE`; a byte-identical
+                                        twin reproduces the control. **THE PLANT MUST INSERT
+                                        CODE, NOT A COMMENT** -- a construct's SPAN INCLUDES
+                                        THE COMMENT RUN THAT DOCUMENTS IT, so a planted
+                                        COMMENT is ABSORBED INTO THE DOC RUN and the row
+                                        still RESOLVES (MEASURED).
+                                        **NOT FIXED: 52** in these 11 files (OTHER units'
+                                        slices), **20** `WRONG-LINE-BY-BLOCK` (all
+                                        PRE-EXISTING tier-two rows), **6** of the
+                                        tree-wide `helpers.bend:3193` HTTP-seam citations
+                                        (other units' files; the fix is
+                                        `helpers.bend:2758 symbol=lines`), and
+                                        **`engine/realize.bend:1157`'s `rz_exec`**, WHICH
+                                        IS REFERENCED AND DEFINED NOWHERE IN THE PORT
+                                        (`grep -rn "def rz_exec" tinybendygrad/` is EMPTY).
+                                        See `.agents/slop/barecite/REPORT.md`.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
