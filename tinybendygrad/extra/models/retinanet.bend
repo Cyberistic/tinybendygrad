@@ -66,16 +66,17 @@ import ./../datasets/__init__.bend as D
 #       `ls tinybendygrad/examples/mlperf/` -> "No such file or directory". These are
 #       SLICES OUT OF SCOPE, and retinanet.bend names them so nobody reads their
 #       absence as a porting gap in the model.
-#   (2) `postprocess_detections` (:71-132) is SIXTY-TWO LINES OF NUMPY, and `nms`
-#       (:12-26) and `decode_bbox` (:28-36) are pure numpy. There is no ndarray in
+#   (2) `postprocess_detections` (retinanet.py:71-132) is SIXTY-TWO LINES OF NUMPY, and `nms`
+#       (retinanet.py:12-26) and `decode_bbox` (retinanet.py:28-36) are pure numpy. There is no ndarray in
 #       this port -- `extra/datasets/__init__.bend:17-20` records that `-- (2) AN
 #       NDARRAY. .reshape, .astype and np.frombuffer have no counterpart here`.
 #
 # TODO(port): STOPPED AT `RetinaNet.__init__` (extra/models/retinanet.py:38).
 # FIRST MISSING SYMBOL: `ResNetFPN(backbone)` at retinanet.py:46, whose `backbone`
 # is `extra/models/resnet.bend` -- WHICH EXISTS AND REFUSES. The refusal at
-# `THE PORT's `extra/models/resnet.bend` HEADER` names `extra/models/resnet.py:7
-# BatchNorm = nn.BatchNorm2d -- mixin/op.py:1662 is SIDE B`, and that wall text is
+# THE PORT's `extra/models/resnet.bend` HEADER` names the PORT's own
+# `extra/models/resnet.py:7` (upstream has NO `extra/` AT THIS PIN) --
+# `BatchNorm = nn.BatchNorm2d` is upstream's `tinygrad/nn/__init__.py:60` -- and that wall text is
 # STALE: `nn/pool.bend:381 pool_bn` is a real batchnorm.
 # ===========================================================================
 
