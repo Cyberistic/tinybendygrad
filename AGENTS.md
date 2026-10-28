@@ -131,15 +131,15 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
   **⇒ AND **THE **RUN **WAS **RE-TAKEN **2026-10-28**, **AFTER **THE **CITATION **WORK **STOPPED
-  **MOVING **THE **PORT** (`bacd172293d86bc5acc89e6710c8e1fb1ba22bca`): **`substrate-start ==
-  substrate-end == live == repro-substrate == 9a10992e56be259a22ab040a0dc0f70aeb64c4e39b0b79ebe7255037bef33542`**,
-  **`substrate-head=bacd172293d86bc5acc89e6710c8e1fb1ba22bca`**, **AND **`gates/corpuswitness-gate.py`
+  **MOVING **THE **PORT** (`ca0ce71b8436b9aad203f6368a0873839fc4fe1a`): **`substrate-start ==
+  substrate-end == live == repro-substrate == b6d5d8d26c4091fb0291d26c5957342a26da4203d2b046c026122a108ebe303b`**,
+  **`substrate-head=ca0ce71b8436b9aad203f6368a0873839fc4fe1a`**, **AND **`gates/corpuswitness-gate.py`
   **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`** **AND
   **`checks/corpus-figure.py` **READS **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS
   agrees`** (**rc=0** **WITH **`DEV=CPU`**).**  **⇒ AND **`unhealthy() -> []`**, **`artefacts_ok() ->
   []`**, **`repro_bad() -> []`** -- **THE **READINGS **ARE **EMPTY**, **NOT **"0 **COMPLAINTS"** -- **AND
-  **`repro`: **`319 of 319 files identical across two clean runs`**, **PEAK **RSS **947 **MB
-  (**`run`**, **170 **s**) **AND **1014 **MB **(**`repro`**, **475 **s**), **BOTH **`WITHIN-LIMITS`.**
+  **`repro`: **`319 of 319 files identical across two clean runs`**, **PEAK **RSS **934 **MB
+  (**`run`**, **192 **s**) **AND **928 **MB **(**`repro`**, **457 **s**), **BOTH **`WITHIN-LIMITS`.**
   **⇒ AND **THE **CLAIM **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** --
   **AND **A **GOVERNING **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY
   **BRIEF **THAT **CITES **IT.**  **⇒ AND **THE **DOSE **OF **STALENESS **IS **THE **SUBSTRATE
@@ -154,13 +154,14 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `319 of 319 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=319 repro-identical=319 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == repro-substrate == 9a10992e56be259a22ab040a0dc0f70aeb64c4e39b0b79ebe7255037bef33542`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == repro-substrate == b6d5d8d26c4091fb0291d26c5957342a26da4203d2b046c026122a108ebe303b`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=bacd172293d86bc5acc89e6710c8e1fb1ba22bca` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=ca0ce71b8436b9aad203f6368a0873839fc4fe1a` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `bacd1722`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's**, **AND **THE **LIVE
+  `ca0ce71b`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's**, **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
-  **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION **WORK **LEFT**: **THE
+  **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION **AND **THE **RANGEIFY
+  **WORK **LEFT**: **THE
   **CITATION **CLASSES **ARE **CLOSED** -- **`gates/pin-cite-gate.py` **READS
   **`cite.unverifiable_no_claim_about_the_file=0`** **AND **`cite.at_no_revision_dangling=0`**,
   **`gates/todo-cite-gate.py` **READS **`0 **WRONG-LINE`**, **`0 **WRONG-SYMBOL`**, **`0
