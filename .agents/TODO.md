@@ -3281,6 +3281,79 @@ cite-slice4      [#########] 5/5  **THE `.bend`-TO-`.bend` LINE POINTERS ARE 17 
                                         re-point them. See
                                         `.agents/slop/bendcite/SLICE-REPORT.md`.
 
+ cite-rot2        [#########] 5/5  **THE `uop/fold.bend` MOVE ROT 13 POINTERS IN 13 FILES, AND
+                                        ALL 13 NAME A CONSTRUCT NOW.** THE CAUSE IS ONE EVENT:
+                                        another unit landed the RANGEIFY lane in
+                                        `tinybendygrad/uop/fold.bend` (and a genuine port bug
+                                        fix with it -- *"the fold's `rng_width` refused every
+                                        AFTER-bound RANGE, so every `vmax` was zero"*), the
+                                        file's lines moved **+63**, and EVERY POINTER INTO IT
+                                        ROTTED AT ONCE. **THE CLASS IS THE ONE THE TREE
+                                        ALREADY NAMES: "THE LINE IS A ROT AND THE NAME IS NOT,
+                                        AND THE ROT IS NOT SLOW."** `gates/bendcite-gate.py`
+                                        on the LIVE TREE: **MY 13 FILES `WRONG-LINE` 13 -> 0,
+                                        PER FILE, 1 -> 0 EACH**; TREE-WIDE **52 -> 0** on the
+                                        same tree state, `RESOLVES` **1007 -> 1060**,
+                                        `WRONG-LINE-BY-BLOCK` **120 -> 120**,
+                                        `AMBIGUOUS` **19 -> 19**,
+                                        `OUT-OF-CORPUS` **10 -> 10**, `UNCLAIMED` **67 -> 66**
+                                        (and that ONE is `schedule/rangify.bend`'s, not mine).
+                                        **⇒ AND NO FILE I DID NOT TOUCH GOT WORSE**: the 52
+                                        tree-wide rows were all pointers into `uop/fold.bend`
+                                        or `uop/ops.bend`, 13 were mine and **39 were another
+                                        unit's**, in the twelve files the brief forbids me to
+                                        touch -- and those units landed their own re-points
+                                        concurrently and their rows went to 0 in the same
+                                        window. **THE TWO KINDS OF FIX:** a LINE RE-POINT at
+                                        the construct's current declaration (12), and a
+                                        `symbol=` ADDED where the citation named the construct
+                                        only in PROSE (3: `nn/item.bend`'s `const_ds`,
+                                        `uop/fold.bend`'s `derived.put`, and
+                                        `schedule/realize.bend`'s `UOp.reduce.arg`).
+                                        **⇒ AND THE THIRD KIND IS THE ONE THAT WAS NEVER
+                                        WRONG AT ALL**: `schedule/realize.bend:108` cites
+                                        `uop/ops.bend:7435` and says *"cannot spell
+                                        `AReduce{op, 1}`"* -- and **`:7435` IS**
+                                        `def UOp.reduce.arg(rop: Maybe<&2, Op>) -> Arg:`,
+                                        the very def that HARDCODES `AReduce{r, 0}`. **THE
+                                        POINTER WAS RIGHT AND THE CLAIM TOKEN WAS THE
+                                        PROBLEM**: the only claim was `AReduce`, an ADT VARIANT
+                                        declared at `uop/ops.bend:1229`, so the gate looked for
+                                        the variant 6206 lines away. **THE FIX NAMES THE
+                                        CONSTRUCT THE SENTENCE IS ABOUT**, and the gate then
+                                        holds on `decl == lo`. **⇒ AND NO CLAIM WAS DELETED OR
+                                        WEAKENED** -- every construct the comments named still
+                                        exists in the port, so NO row needed "the port no
+                                        longer carries this". **⇒ AND NO PORT `symbol=` SITS
+                                        NEXT TO AN UPSTREAM `.py` CITATION**: all 13 lines
+                                        carry a `.bend` subject only, and
+                                        `gates/todo-cite-gate.py`'s `symbol_field_records`
+                                        admits **only `.py` subjects**, so its population did
+                                        not move -- which is WHY the rule had to be MEASURED and
+                                        not assumed. **ALL 13 ARE COMMENT-ONLY** (every file
+                                        strips to the same code as HEAD through
+                                        `checks/port-compile-gate.py`'s `strip_comments()`,
+                                        blank lines dropped; and `difflib` says every changed
+                                        line starts with `#`). **NO `D.refuse("...")` FILE IS IN
+                                        THIS SLICE.** **13 of 13 COMPILE `WITHIN-LIMITS`** under
+                                        `checks/bounded.py --mb 2048`, one `bend` at a time.
+                                        **THE PLANT** inserts TWO CODE LINES (not a comment --
+                                        a comment-only plant is a plant that cannot fail) into
+                                        `uop/fold.bend` on a COPY of the LIVE tree that
+                                        carries `references/`, and the gate goes RED on
+                                        **exactly 4** pointers into `fold.bend`, **2 of them
+                                        mine**; the byte-identical control is unchanged at the
+                                        14 other units' rows and **removes none**.
+                                        **`gates/todo-cite-gate.py` PASSES** with **0
+                                        WRONG-LINE / 0 WRONG-SYMBOL / 0 UNRESOLVABLE**.
+                                        **⇒ AND THE SUBSTRATE DIGEST MOVED**
+                                        (`bbb9671c...` -> `420a8b4c...`), because A COMMENT IS
+                                        SUBSTRATE, so **THE CORPUS MUST BE RE-RUN.**
+                                        **⇒ AND THE TREE IS NOT SETTLED**: the live reading at
+                                        the end is 14 `WRONG-LINE`, ALL in
+                                        `schedule/rangify.bend` and `uop/ops.bend`, **0 in my
+                                        13 files**. See `.agents/slop/rot2/REPORT.md`.
+
  cite-unclaim1   [#########] 5/5  **THE 201 `UNCLAIMED` POINTERS ARE 33 FILES AND ALL 201 OF
                                         THEM NOW NAME A CONSTRUCT.** `gates/bendcite-gate.py`'s
                                         `UNCLAIMED` is the pointer that RESOLVES and LANDS in

@@ -1157,7 +1157,7 @@ def late() -> Maybe<&2, DtShape>:
 # named `call_ds.go` and `ins_ds.shape`. The 2026-10-05 fix landed in `custom_ds.of`'s
 # copy and LEFT BOTH TWINS WRONG, which is the whole of the lesson: A FIX TO ONE ARM OF
 # A RULE IS NOT A FIX TO THE RULE. What both twins got wrong is that their OUTER `None`
-# is the PORT-ONLY "the fold produced no `Derived`", which `derived.put` (fold.bend:2828)
+# is the PORT-ONLY "the fold produced no `Derived`", which `derived.put` (fold.bend:2891 symbol=derived.put)
 # passes on and `Kahn.ans.of` turns into A MISSING TABLE ENTRY -- so the node reads `?` in
 # BOTH columns, a hole CPython cannot print, rather than reading `R`. MEASURED on
 # `--graph loop`: ONE node of 26 absent, and `?=2/2` is ONE absence read twice.

@@ -532,7 +532,7 @@ def r_pmx_n() -> String: T.rd("ptx_matcher rules", U32.show(pm_n_rules()))
 # need IS a def -- `with_storage` (`renderer/__init__.bend:152 symbol=with_storage`),
 # `doesnt_support_half`
 # (:361), `UOp.of`/`UOp.alu` (`uop/ops.bend:2824 symbol=UOp.alu`) and `F.fold.dt`
-# (`uop/fold.bend:4376 symbol=mm.lift`) -- so no blocker is verified and the eight are
+# (`uop/fold.bend:4439 symbol=mm.lift`) -- so no blocker is verified and the eight are
 # UNWRITTEN. THE COUNT is the row that is derivable here; the eight rewrites are:
 #   DONE(p3) ptx.py:42  bool NE -> x^y -- deps present: `Bool.xor` and `Bool.and` are defs in `Base` (verified with `bend base Bool`); no `UOp.replace` call in the body. Body ported from CPython ptx.py:42 (XOR for NE).
 #   DONE(p3) ptx.py:43  bool EQ -> (x^y)^True -- deps present: `Bool.xor` is a def in `Base`; no `UOp.replace` call in the body. Body ported from CPython ptx.py:43 (XOR + True for EQ).

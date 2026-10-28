@@ -9,8 +9,8 @@
 #   1. THE PROGRAM. `Tensor.empty(4,5)`, `(4,3) @ (3,5)`, `t.assign(...)`.
 #      upstream `tinygrad/mixin/op.py:386-392` (`dot`),
 #      `tinygrad/tensor.py:88` (`empty`), `tinygrad/tensor.py:271` (`assign`).
-#      port: `mixin/movement.bend:1231` (`mxw_buf`), `:1434` (`mxw_reshape`),
-#      `:1452` (`mxw_permute`), `tensor.bend:656` (`tn_mul`).
+#      port: `mixin/movement.bend:1231` (`mxw_buf`), `mixin/movement.bend:1434` (`mxw_reshape`),
+#      `mixin/movement.bend:1452` (`mxw_permute`), `tensor.bend:656` (`tn_mul`).
 #   2. THE ALLOC -> BUFFER REBIND. upstream `tinygrad/tensor.py:184`
 #      (`if x.op is Ops.ALLOC ... u = UOp.new_buffer(...)`).
 #      **A NO-OP IN THE PORT**: MEASURED, `grep -n "def UOp.new_buffer"
@@ -31,7 +31,7 @@
 #   5. THE MOVEMENT-OP-OVER-AFTER MOVE. upstream
 #      `tinygrad/schedule/prepare.py:85-86` (`pm_mops`'s
 #      `r.after(a)` -> `UOp(r.op, src=(a.replace(src=(r.src[0],)+a.src[1:]),)+
-#      r.src[1:]))`) FOLLOWED BY `tinygrad/schedule/prepare.py:273-274`
+#      r.src[1:]))`), FOLLOWED BY `tinygrad/schedule/prepare.py:273-274`
 #      (`earliest_rewrites`' "remove movement ops from SINK/AFTER", `walk_mop`).
 #      The TWO rules' NET: the movement op moves ABOVE the AFTER and the SINK
 #      then drops it, so the AFTER's `src[0]` BECOMES THE BASE and the SINK's
@@ -105,7 +105,7 @@ def rz_dot_w(+rhs: T.Tensor) -> T.Tensor:
 # ⇒ The port's `O.UOp.reduce` (`uop/ops.bend:7440`) builds `AReduce{rop, 0}`
 # -- `num_axes` HARDCODED to zero -- so this def builds the node with
 # `O.UOp.new` and the RIGHT num_axes. **THAT IS A PORT DIVERGENCE AND IT IS
-# NAMED: `uop/ops.bend:7435` cannot spell `AReduce{op, 1}`.**
+# NAMED: `uop/ops.bend:7435 symbol=UOp.reduce.arg` cannot spell `AReduce{op, 1}`.**
 def rz_reduce(+t: T.Tensor) -> T.Tensor:
   +p = MX.mxw_permute.go(t, [2, 0, 1])
   +r = O.UOp.new(T.Tensor.ar(p), O.OpsREDUCE{}, [T.Tensor.u(p)],

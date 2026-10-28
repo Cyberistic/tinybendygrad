@@ -18,7 +18,7 @@
 #               extraction is that generated table.
 #   elf.py:41-46  the sink `toposort`
 #               BLOCKER: `u.addrspace` is `ops.py:896` and IS PORTED -- the port's
-#               `uop/fold.bend:4755 symbol=UOp.addrspace` is it. `u.dtype.itemsize` is
+#               `uop/fold.bend:4818 symbol=UOp.addrspace` is it. `u.dtype.itemsize` is
 #               `Dt.itemsize` in `LAWS/spec.bend:176`, not a UOp method.
 #               `u.max_numel` is `mixin/movement.py:55` (`prod(max_shape)`),
 #               not a def in `movement.bend`. `AddrSpace` itself EXISTS as

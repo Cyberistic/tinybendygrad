@@ -1124,7 +1124,7 @@ def dt_of.of(m: Maybe<&2, S.Dt>) -> S.Dt:
     case Some{d}: d
     case None{}: S.void()
 
-# `x.dtype`. It is a FOLD (uop/fold.bend:1965 symbol=Step), not an arena read, so it is threaded
+# `x.dtype`. It is a FOLD (uop/fold.bend:2028 symbol=Step), not an arena read, so it is threaded
 # as the table `tb` alongside the arena -- and the `void` default is Python's
 # "the fold did not settle this node", which is a wrong answer rather than a
 # crash. `Kahn.settled` is the honest question and the gate rows are all built

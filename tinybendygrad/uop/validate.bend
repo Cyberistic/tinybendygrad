@@ -57,7 +57,7 @@
 # `ctx = (solver, z3map)`. This file's `Sol` is `{cs, es, ms}`: the assertion
 # list, the `z3map`, and a MIN/MAX TABLE. The third component is not in Python
 # because Python reads `UOp.vmin` / `UOp.vmax`, and `_min_max` is P3 work owned
-# by `uop/fold.bend` (uop/fold.bend:5175 symbol=UOp.min_max is the reader, and the walk behind it is that file's P3 work queue).
+# by `uop/fold.bend` (uop/fold.bend:5238 symbol=UOp.min_max is the reader, and the walk behind it is that file's P3 work queue).
 # Passing it in the context is the honest spelling: the renderer needs the
 # bounds, the bounds are not computable here yet, and a node whose bounds are
 # absent gets a VIOLATION rather than a guessed bound. `vz_mm` answers CONST

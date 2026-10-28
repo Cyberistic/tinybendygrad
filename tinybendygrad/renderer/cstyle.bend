@@ -46,7 +46,7 @@
 # THE FOUR WALLS UNDER THIS FILE. Three are the substrate's and one is device
 # FFI; each is a `TODO(p3)` with its line.
 #
-#   (a) `Ops.SHRINK` HAS NO DTYPE IN THE FOLD. `uop/fold.bend:1632 symbol=sym_dim.val` defers it with
+#   (a) `Ops.SHRINK` HAS NO DTYPE IN THE FOLD. `uop/fold.bend:1695 symbol=sym_dim.val` defers it with
 #       the comment "`marg` -> `zip` -> `ssimplify`", and `Ops.LOAD` is `thru0`
 #       off a SHRINK so it inherits the gap. MEASURED on a hand-built arena:
 #       `F.fold.dt` answers `None` for SHRINK, LOAD and every ALU above one, so

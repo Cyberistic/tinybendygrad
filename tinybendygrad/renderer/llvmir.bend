@@ -327,7 +327,7 @@ def r_iv(+nm: String, is_param: Bool, vol: Bool) -> String:
 #     return int(x)
 #
 # THE HEX ARM IS ALL THAT IS PORTABLE, and it is not a table: Bend has no `F64`
-# (`uop/fold.bend:3565 symbol=bnd_f` says so), so `struct.pack("d", x)` is not expressible --
+# (`uop/fold.bend:3628 symbol=bnd_f` says so), so `struct.pack("d", x)` is not expressible --
 # but the FOUR answers are constants of the IEEE-754 layout rather than of `x`.
 #
 # The eight reversed bytes are most-significant FIRST: byte 0 is `0x7F` plus the

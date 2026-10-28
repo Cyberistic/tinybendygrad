@@ -371,7 +371,7 @@ def nn_item_line(nm: String, got: String, want: String) -> IO(Unit):
 # `UOp.const` in a tensor's arena: it interns a CONST node and wraps it. The
 # BASE is `MX.mxw_buf` (`mixin/movement.bend:1231-1232`), a BUFFER node, and
 # it is there only to give the arena something to hold the CONST next to; the
-# CONST's own SHAPE is `()` (`uop/fold.bend:2219`, `const_ds`), so its `numel`
+# CONST's own SHAPE is `()` (`uop/fold.bend:2282 symbol=const_ds`), so its `numel`
 # is 1 -- which is upstream's `Tensor(3.5).shape == ()`.
 def nn_item_const_t(v: O.Const) -> T.Tensor:
   M.mo_const_t(MX.mxw_buf(O.Arena.empty(), 0, 4), v)
