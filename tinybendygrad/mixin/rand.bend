@@ -282,9 +282,10 @@ def op_repeat1(+t: T.Tensor, +q: PK) -> T.Tensor: op_repeat1.put(op_repeat1.rp(t
 # file cannot use them. MEASURED, CPython: `shape_to_shape_arg` (ops.py:106-110) is
 # `return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)`, so
 # `Tensor.empty(5).pad(((2, 0),))` is `ALLOC/0 CONST/0(2) CONST/0(7) PAD/3` -- FOUR nodes,
-# and the two shape args are BARE CONSTs. `mxw_stk` (movement.bend:1442) is `G.mstack`,
-# which is UNCONDITIONALLY a STACK, and `movement.bend`'s own header says so ("THE BARE-CONST
-# CASE IS A DIFFERENT NODE and that is the row `mxm_reshape1`").
+# and the two shape args are BARE CONSTs. `mxw_stk` (movement.bend:1272 symbol=mxw_stk) is
+# `G.mstack` (movement.bend:942 symbol=G.mstack), which is UNCONDITIONALLY a STACK, and
+# `movement.bend`'s own header says so ("THE BARE-CONST CASE IS A DIFFERENT NODE and that
+# is the row `mxm_reshape1`").
 # IT BITES THIS FILE EVERYWHERE ON THE `arange` PATH: `_cumalu`'s pad is `((shape-1, 0),)`
 # (op.py:754) and `_pool`'s first shrink is `(0, k*(i*f+1))` (movement.py:610), so BOTH of
 # `_pool`'s first two shape args are one-element and `mxw_pad`/`mxw_shrink` would add a

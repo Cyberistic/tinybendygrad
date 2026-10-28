@@ -38,7 +38,7 @@ import ./../datasets/__init__.bend as D
 #
 # THE NAMED CENSUS FOR THIS FILE:
 #   `nn.Embedding` MISSING (:178). THE FIRST MISSING SYMBOL.
-#   `nn.Linear`    EXISTS, nn/layers.bend:520 symbol=nn_linear (:191,:192,:107).
+#   `nn.Linear`    EXISTS, nn/layers.bend:530 symbol=nn_linear (:191,:192,:107).
 #   `Tensor.sigmoid` EXISTS, mixin/elementwise.bend:1206 symbol=ew_sigmoid (:110).
 #   `Tensor.tanh`    EXISTS, mixin/elementwise.bend:1255 symbol=ew_tanh    (:110).
 #   `softmax`        NOT USED BY THIS FILE. (`mo_softmax` mixin/op.bend:1155 symbol=mo_softmax exists.)
@@ -51,10 +51,10 @@ import ./../datasets/__init__.bend as D
 #   `LSTM`/`LSTMCell` MISSING, and this is the RECURRENCE wall.
 #
 # WHAT EXISTS, WITH ITS INSTRUMENT:
-#   `Tensor.uniform`  mixin/rand.bend:920 symbol=rd_uniform  (:101,:102,:103,:104)
-#   `Tensor.zeros`    mixin/creation.bend:515 symbol=cr_zeros (:33,:35,:36)
-#   `Tensor.ones`     mixin/creation.bend:556 symbol=cr_ones  (:18)
-#   `x.linear`        nn/layers.bend:520 symbol=nn_linear    (:107,:191,:192)
+#   `Tensor.uniform`  mixin/rand.bend:921 symbol=rd_uniform  (:101,:102,:103,:104)
+#   `Tensor.zeros`    mixin/creation.bend:518 symbol=cr_zeros (:33,:35,:36)
+#   `Tensor.ones`     mixin/creation.bend:559 symbol=cr_ones  (:18)
+#   `x.linear`        nn/layers.bend:530 symbol=nn_linear    (:107,:191,:192)
 #   `x.reshape`       mixin/movement.bend:1434 symbol=mxw_reshape (:157)
 #   `x.transpose`     mixin/movement.bend:1452 symbol=mxw_permute (:171,:183)
 #   `x.expand`        nn/layers.bend:628 symbol=nn_expand     (:196,:197)
@@ -88,7 +88,7 @@ import ./../datasets/__init__.bend as D
 #
 # `load_from_pretrained` (:62-94) is THIRTY-THREE `.assign(...)` LINES against a
 # TORCH checkpoint read through `torch.load` (:68) and a `fetch` (:64) that
-# `helpers.bend:3193` records as unported. It is not arithmetic left undone and it
+# `helpers.bend:3194` records as unported. It is not arithmetic left undone and it
 # is not counted as such.
 #
 # TODO(port): STOPPED AT `Prediction.__init__` (extra/models/rnnt.py:175).
@@ -136,7 +136,7 @@ def rt_pred_joint(+logit: T.Tensor, +label: T.Tensor, +hc: T.Tensor, +mask: T.Te
 
 # :62 def load_from_pretrained(self)
 def rt_rnnt_load_from_pretrained() -> D.Refused:
-  D.refuse("extra/models/rnnt.py:62 RNNT.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:64); helpers.bend:3193 records the HTTP seam as unported. The 33 `.assign` lines at :72-94 are torch-checkpoint loads, not arithmetic")
+  D.refuse("extra/models/rnnt.py:62 RNNT.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:64); helpers.bend:3194 records the HTTP seam as unported. The 33 `.assign` lines at :72-94 are torch-checkpoint loads, not arithmetic")
 
 # ---------------------------------------------------------------------------
 # :97-115 LSTMCell. THE RECURRENCE WALL, SPELLED OUT.
@@ -144,7 +144,7 @@ def rt_rnnt_load_from_pretrained() -> D.Refused:
 
 # :98 def __init__(self, input_size, hidden_size, dropout)
 def rt_cell_init(input_size: U32, hidden_size: U32, dropout: F32) -> D.Refused:
-  D.refuse("extra/models/rnnt.py:98 LSTMCell.__init__ -- REACHED: all four weights are Tensor.uniform, mixin/rand.bend:836 rd_uniform EXISTS (:101-104). BLOCKED BY: the missing class shell only -- this def's ARITHMETIC IS PORTED")
+  D.refuse("extra/models/rnnt.py:98 LSTMCell.__init__ -- REACHED: all four weights are Tensor.uniform, mixin/rand.bend:921 rd_uniform EXISTS (:101-104). BLOCKED BY: the missing class shell only -- this def's ARITHMETIC IS PORTED")
 
 # :106 def __call__(self, x, hc)
 def rt_cell_call(+x: T.Tensor, +hc: T.Tensor) -> D.Refused:
@@ -207,7 +207,7 @@ def rt_prediction_call(+x: T.Tensor, +hc: T.Tensor, +m: T.Tensor) -> D.Refused:
 
 # :188 def __init__(self, vocab_size, pred_hidden_size, enc_hidden_size, joint_hidden_size, dropout)
 def rt_joint_init(vocab_size: U32, pred_hidden_size: U32, enc_hidden_size: U32, joint_hidden_size: U32) -> D.Refused:
-  D.refuse("extra/models/rnnt.py:188 Joint.__init__ -- BOTH are Linear (:191,:192) and nn/layers.bend:427 nn_linear EXISTS; BLOCKED BY the missing class shell")
+  D.refuse("extra/models/rnnt.py:188 Joint.__init__ -- BOTH are Linear (:191,:192) and nn/layers.bend:530 nn_linear EXISTS; BLOCKED BY the missing class shell")
 
 # :194 def __call__(self, f, g)
 def rt_joint_call(+f: T.Tensor, +g: T.Tensor) -> D.Refused:

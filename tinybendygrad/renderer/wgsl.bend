@@ -1145,7 +1145,7 @@ def sr_store(ns: U32, +b: String, +v: String) -> String:
 
 # 16 `UPat(Ops.INDEX, src=(UPat.var("b"), UPat.var("idx")))` --
 # `f"{ctx[b]}[{strip_parens(ctx[idx]) if idx.arg is Ops.ADD else ctx[idx]}]"`, and
-# `strip_parens` (helpers.bend:1463) is ALREADY PORTED, `is_balanced` and all,
+# `strip_parens` (helpers.bend:1464 symbol=strip_parens) is ALREADY PORTED, `is_balanced` and all,
 # which is why this rule is four lines and not a walk. The `Ops.ADD` test is the
 # rule's own `isadd` parameter; a source that is not balanced keeps its parens,
 # and `(I0)+(I1)` is that case. `op` is the pattern's, because `srneg 16` is a

@@ -68,8 +68,8 @@
 #      But every one is a NUMERIC CONVERSION. Not one is a syscall, an `mmap`,
 #      an `open`, or an `ioctl`.
 #   2. `system.bend` HAS an `ioctl`: `system.bend:475 def CALL_IOCTL() -> U32: 21`,
-#      `system.bend:489` lists "ioctl" among `sys.call_names()` (system.bend:485
-#      symbol=sys.call_names), `system.bend:521` dispatches it. But
+#      `system.bend:489` symbol=sys.call_names lists "ioctl" among `sys.call_names()`,
+#      and `system.bend:521` symbol=sys.call_of dispatches it. But
 #      `rg 'def sys.ioctl' tinybendygrad/runtime/support/system.bend` returns ZERO
 #      hits and there is no `system.c` under `tinybendygrad/`. It is a NAME IN A
 #      TABLE, i.e. a trace tag, not a binding. `system.bend:123` says so itself:

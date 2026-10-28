@@ -20,8 +20,8 @@ import ./../datasets/__init__.bend as D
 # THAT IS THE WHOLE OF ITS DISTINCTIVE BLOCKER. Every other file here names
 # `nn.Conv2d` in its first constructor; `ViT.__init__` names `Tensor.uniform`,
 # `Tensor.zeros` and `Tensor.ones` (upstream:8-11,16-17) -- all FOUR are built
-# (`rd_uniform` mixin/rand.bend:920 symbol=rd_uniform, `cr_zeros` mixin/creation.bend:515 symbol=cr_zeros,
-# `cr_ones` mixin/creation.bend:556 symbol=cr_ones) -- and then names `TransformerBlock` at
+# (`rd_uniform` mixin/rand.bend:921 symbol=rd_uniform, `cr_zeros` mixin/creation.bend:518 symbol=cr_zeros,
+# `cr_ones` mixin/creation.bend:559 symbol=cr_ones) -- and then names `TransformerBlock` at
 # upstream:13.
 #
 # TODO(port): STOPPED AT `ViT.__init__` (extra/models/vit.py:6), at upstream:13
@@ -96,11 +96,11 @@ def vt_vit_init(layers: U32, embed_dim: U32, num_heads: U32) -> D.Refused:
 
 # :8  self.embedding = (Tensor.uniform(embed_dim, 3, 16, 16), Tensor.zeros(embed_dim))
 def vt_embedding(embed_dim: U32) -> D.Refused:
-  D.refuse("extra/models/vit.py:8 ViT.embedding -- rd_uniform (mixin/rand.bend:836) and cr_zeros (mixin/creation.bend:446) EXIST but both take an O.Arena, so this is the WEIGHT-STORE question, not the uniform question")
+  D.refuse("extra/models/vit.py:8 ViT.embedding -- rd_uniform (mixin/rand.bend:921) and cr_zeros (mixin/creation.bend:518) EXIST but both take an O.Arena, so this is the WEIGHT-STORE question, not the uniform question")
 
 # :10 self.cls = Tensor.ones(1, 1, embed_dim)  :11 self.pos_embedding = Tensor.ones(1, 197, embed_dim)
 def vt_pos_embedding() -> D.Refused:
-  D.refuse("extra/models/vit.py:11 ViT.pos_embedding -- cr_ones (mixin/creation.bend:487) EXISTS; blocked by the WEIGHT STORE and by Tensor.assign at :53")
+  D.refuse("extra/models/vit.py:11 ViT.pos_embedding -- cr_ones (mixin/creation.bend:559) EXISTS; blocked by the WEIGHT STORE and by Tensor.assign at :53")
 
 # :13 TransformerBlock(embed_dim=embed_dim, num_heads=num_heads, ff_dim=embed_dim*4,
 #                       prenorm=True, act=lambda x: x.gelu())
@@ -109,7 +109,7 @@ def vt_transformer_block(layers: U32, embed_dim: U32, num_heads: U32) -> D.Refus
 
 # :14 act=lambda x: x.gelu()
 def vt_act_gelu(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/vit.py:14 ViT.__init__ act -- MISSING Tensor.gelu; only ew_quick_gelu (mixin/elementwise.bend:1217) exists, with the 1.702 constant, and plain gelu needs erf (elementwise.bend:43)")
+  D.refuse("extra/models/vit.py:14 ViT.__init__ act -- MISSING Tensor.gelu; only ew_quick_gelu (mixin/elementwise.bend:1229) exists, with the 1.702 constant, and plain gelu needs erf (elementwise.bend:43)")
 
 # :16 self.encoder_norm = (Tensor.uniform(embed_dim), Tensor.zeros(embed_dim))
 # :17 self.head = (Tensor.uniform(embed_dim, 1000), Tensor.zeros(1000))
@@ -122,15 +122,15 @@ def vt_encoder_norm(embed_dim: U32) -> D.Refused:
 
 # :19 def patch_embed(self, x)
 def vt_patch_embed(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/vit.py:19 ViT.patch_embed -- Tensor.conv2d EXISTS (nn_conv2d, nn/layers.bend:756); blocked at :21 by reshape's MISSING -1 AXIS INFERENCE")
+  D.refuse("extra/models/vit.py:19 ViT.patch_embed -- Tensor.conv2d EXISTS (nn_conv2d, nn/layers.bend:937); blocked at :21 by reshape's MISSING -1 AXIS INFERENCE")
 
 # :21 x = x.reshape(shape=(x.shape[0], x.shape[1], -1)).permute(order=(0,2,1))
 def vt_patch_reshape(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/vit.py:21 ViT.patch_embed -- MISSING -1 INFERENCE: mxw_reshape (mixin/movement.bend:1431) takes an explicit List<&2, U32> and does not infer an axis (nn/pool.bend:322 states the same boundary)")
+  D.refuse("extra/models/vit.py:21 ViT.patch_embed -- MISSING -1 INFERENCE: mxw_reshape (mixin/movement.bend:1434) takes an explicit List<&2, U32> and does not infer an axis (nn/pool.bend:322 states the same boundary)")
 
 # :21 ... .permute(order=(0,2,1))
 def vt_patch_permute(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/vit.py:21 ViT.patch_embed -- mxw_permute (mixin/movement.bend:1449) EXISTS; blocked by the reshape at the same line")
+  D.refuse("extra/models/vit.py:21 ViT.patch_embed -- mxw_permute (mixin/movement.bend:1452) EXISTS; blocked by the reshape at the same line")
 
 # ---------------------------------------------------------------------------
 # :24-30 forward. FIVE lines, THREE of them blocked by symbols this file's own
@@ -143,7 +143,7 @@ def vt_forward(+x: T.Tensor) -> D.Refused:
 
 # :25 ce = self.cls.add(Tensor.zeros(x.shape[0],1,1))
 def vt_cls_token(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/vit.py:25 ViT.forward -- tn_add (tensor.bend:680) and cr_zeros (mixin/creation.bend:446) EXIST; this line is BLOCKED ONLY BY THE WEIGHT STORE, not by a primitive")
+  D.refuse("extra/models/vit.py:25 ViT.forward -- tn_add (tensor.bend:685) and cr_zeros (mixin/creation.bend:518) EXIST; this line is BLOCKED ONLY BY THE WEIGHT STORE, not by a primitive")
 
 # :27 x = ce.cat(pe, dim=1)
 def vt_cat(+x: T.Tensor, +pe: T.Tensor) -> D.Refused:
@@ -159,7 +159,7 @@ def vt_layernorm(+x: T.Tensor) -> D.Refused:
 
 # :30 return x[:, 0].linear(*self.head)
 def vt_slice(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/vit.py:30 ViT.forward -- MISSING SLICE x[:, 0]; rd_slice (mixin/rand.bend:392) exists but is a 1-D shrink, not an index read")
+  D.refuse("extra/models/vit.py:30 ViT.forward -- MISSING SLICE x[:, 0]; rd_slice (mixin/rand.bend:477) exists but is a 1-D shrink, not an index read")
 
 # ---------------------------------------------------------------------------
 # :32-73 load_from_pretrained. TWENTY-SEVEN `assign` calls and one `np.load`.
@@ -168,7 +168,7 @@ def vt_slice(+x: T.Tensor) -> D.Refused:
 # :32 def load_from_pretrained(m)   -- NOTE it is NOT `self`; upstream takes the
 # model as a parameter and it is the only def in this file that does.
 def vt_load_pretrained(embed_dim: U32) -> D.Refused:
-  D.refuse("extra/models/vit.py:32 ViT.load_from_pretrained -- FIRST MISSING SYMBOL np.load at :40; the port has no ndarray, and helpers.bend:3193 already records the fetch seam as unported")
+  D.refuse("extra/models/vit.py:32 ViT.load_from_pretrained -- FIRST MISSING SYMBOL np.load at :40; the port has no ndarray, and helpers.bend:3194 already records the fetch seam as unported")
 
 # :45-55 m.embedding[0].assign(...) -- one def for the block, because the
 # blocker is ONE symbol repeated twenty-seven times and naming it twenty-seven

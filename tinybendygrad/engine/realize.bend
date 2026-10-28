@@ -313,7 +313,8 @@ def rz_is_var(+ar: O.Arena, +self: U32) -> Bool:
 # HEAD -- over every non-CALL. MEASURED on the census fixture: 52 rows of the 974, on 26
 # of the 41 non-CALL nodes, and `get_call_arg_uops` is the ONLY thing that moved them.
 #
-# `Arena.src_from` IS THE SLICE (`ops.bend:1392`), and it is not a new computation: the
+# `Arena.src_from` IS THE SLICE (`ops.bend:1421` symbol=Arena.src_from), and it is
+# not a new computation: the
 # `rz_res` view rebuild at :980 and the `pm_beam` rebuild at :1232 already call it for the
 # same `src[1:]` off a CALL. Every caller in this file passes a CALL -- `rz_oi_*`,
 # `rz_wbuf`, `resolve_params`, and the file's own `arg_len`/`arg_len_b` rows -- so the two
@@ -1580,7 +1581,8 @@ def bm_hop_self(+f: O.Found, self: U32) -> O.Found:
 # rebuild the node -- and a parameter Bend allows to be read twice is a `+`.
 #
 # AND THE CLAUSE IS INSIDE `bm_new` RATHER THAN AROUND IT, because in realize.bend
-# `beam_rewrite` is a JUDGE (realize.bend:1657) and `bm_new` is the BODY, so `bm_new` is
+# `beam_rewrite` is a JUDGE (`realize.bend:2127` symbol=beam_rewrite) and `bm_new` is
+# the BODY (`realize.bend:1591` symbol=bm_new), so `bm_new` is
 # the `rewrite` this table's driver would otherwise be. THE DEFECT THIS FIXES IS
 # MEASURED: `pm_beam`'s body is `call.replace(src=(sink.replace(arg=replace(sink.arg,
 # beam=ctx)), *call.src[1:]))`, and at `ctx == 0` over a SINK whose `beam` is already 0

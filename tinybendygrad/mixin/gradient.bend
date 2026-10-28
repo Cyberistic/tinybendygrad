@@ -34,7 +34,8 @@
 # is "no opinion, keep scanning". The `ar` field is the arena AFTER the rule grew it, because
 # a gradient rule BUILDS nodes: `RECIPROCAL` is `(-ctx * ret * ret)`, three new nodes. `gs`
 # uses index 0 for a hole: index 0 is the arena's bottom node (`Arena.empty` spends it,
-# ops.bend:935) and `UOp.is_none(u) = U32.is_zero(u)`, so 0 IS tinygrad's own "no uop" and
+# ops.bend:1356 symbol=Arena.empty) and `UOp.is_none(u) = U32.is_zero(u)`
+# (ops.bend:1364 symbol=UOp.is_none), so 0 IS tinygrad's own "no uop" and
 # the encoding is not an invention.
 
 import Base
@@ -1831,7 +1832,8 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 # and `fold.bend`'s Kahn uses (fuel decrements, list separate). Both descents are
 # visible: the fuel shrinks on one branch, the list tail shrinks on the other.
 #
-# The fuel is `Arena.budget(ar)` (ops.bend:2292) = `next(ar) + edges`, the exact number of
+# The fuel is `Arena.budget(ar)` (ops.bend:3355 symbol=Arena.budget) = `next(ar) + edges`,
+# the exact number of
 # pops a walk over the whole arena makes. A gradient tree is a subgraph of the grown
 # arena, so the walk cannot be cut short, and the DAG makes the bound finite.
 # THE ARM SHAPE, and it took five attempts, so the reasons are recorded because the
@@ -1882,7 +1884,7 @@ def t_one_n() -> U32: size1(fx_ar(fix()), Fix.n(fix()))
 def t_seven_n() -> U32: size1(fx_ar(fix()), Fix.t7(fix()))
 
 # The gradient's tree size for slot `k` of the rewrite of `self`. Fuel is
-# `Arena.budget` (ops.bend:2292) because the gradient tree is built from `self` and can
+# `Arena.budget` (ops.bend:3355 symbol=Arena.budget) because the gradient tree is built from `self` and can
 # only be as large as the arena plus what the rule added, so the budget is a bound on
 # the walk's depth and the fuel-first order is what makes the descent legal.
 # The rewrite runs ONCE and both readers come off it -- `gs_ar` and `gs_get` each need the

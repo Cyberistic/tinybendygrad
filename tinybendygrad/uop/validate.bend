@@ -2549,7 +2549,7 @@ def bv_w.ofneg() -> U32:
 # `S.Dn{[6, 0]}`. The port cannot spell `'disk'`, `'DISK:0'`, `'NODISK'` or `'DISKX'`, because
 # `S.D1{tag: U32}` has no name to case-fold or colon-split, so those four rows are ORACLE-ONLY
 # (`c2d_oracle_only_n = 5` counts them with `c2d_892 deviceread`). A second tag space exists
-# and disagrees: `schedule/memory.bend:1011` says `disk() = S.D1{1}`. Until one is chosen the
+# and disagrees: `schedule/memory.bend:1012` symbol=disk says `disk() = S.D1{1}`. Until one is chosen the
 # DISK guard is not decidable in `ops.bend`, and that is REPORTED rather than gated.
 # ===========================================================================
 
@@ -2571,7 +2571,7 @@ def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
 def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
   O.UOp.new.param(ar, O.OpsBUFFER{}, Some{1}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
 
-# node 4 of `s5.ga.arena()` -- uop/ops.bend:7282 symbol=s5.ga.arena -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
+# node 4 of `s5.ga.arena()` -- uop/ops.bend:7290 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
 # here over a `c2d_buf` so the arena is this file's own and no index is inherited.
 def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
   O.UOp.new(ar, O.OpsSHRINK{}, [src], O.ATuple{Nil{}}, O.TNone{})
@@ -2581,7 +2581,7 @@ def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
 # `assert` is a DIFFERENT upstream behaviour from `RuntimeError` from a `raise`, and a row that
 # accepted either would be testing neither.
 #
-# ⚠ AND THIS IS THE `BUILT` ARM ONLY. `UOp.copy_to_device` (uop/ops.bend:7927 symbol=UOp.copy_to_device) answers `Found`,
+# ⚠ AND THIS IS THE `BUILT` ARM ONLY. `UOp.copy_to_device` (uop/ops.bend:7929 symbol=UOp.copy_to_device) answers `Found`,
 # so the port cannot refuse; the `REFUSED` arm arrives with the owner's guard, which changes
 # `copy_to_device`'s return type because a refusal is not a `Found`. When it does, this def is
 # the one line to change and the twenty-four rows are the ones that go green.
@@ -2655,7 +2655,7 @@ def c2d_selrow_src0() -> String:
   c2d_row("c2d_selrow_src0",
           O.Ops.name(O.Arena.op(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0))))
 
-# `isinstance(node.arg, tuple)` -- ops.bend:6490's `ATuple{Nil{}}` against the `AParam` a
+# `isinstance(node.arg, tuple)` -- ops.bend:7290's `ATuple{Nil{}}` against the `AParam` a
 # `ParamArg`-bearing node would carry. This is the row that makes "node 4 is a `ParamArg`" a
 # REFUTABLE claim rather than a comment: it reads False, and so does CPython.
 def c2d_selrow_arg_is_tuple() -> String:
@@ -2678,7 +2678,7 @@ def c2d_selrow_src0_device_is_none() -> String:
           Bool.show(c2d_arg_device_is_none(
             O.Arena.arg(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0)))))
 
-# node 2 -- `Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}}`, ops.bend:6488 -- so a reader sees that
+# node 2 -- `Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}}`, ops.bend:7288 -- so a reader sees that
 # the node a BRIEF named (`ParamArg(2, int32)`, device None) EXISTS in this arena and is NOT
 # the node `s5.selrow` calls. Both arenas have an index 4 and only one is the arena received.
 def c2d_node2_op() -> String: c2d_row("c2d_node2_op", O.Ops.name(O.Arena.op(O.s5.ga.arena(), 2)))
@@ -2759,7 +2759,7 @@ def c2d_761() -> String:
                  c2d_761_tupleargnone()])
 
 # ---------------------------------------------------------------- ops.py:759, THE DISK raise
-# DISK is tag 6 (`device.bend:340`'s `tag_of`), so the fixtures are `S.D1{6}` and
+# DISK is tag 6 (`device.bend:384`'s `tag_of`), so the fixtures are `S.D1{6}` and
 # `S.Dn{[6, 0]}`. The two positives are the SAME node and device with the tag changed.
 def c2d_759_disk() -> String:
   +b = c2d_buf(O.Arena.empty(), 1, S.int32())

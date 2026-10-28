@@ -39,23 +39,23 @@ import ./../datasets/__init__.bend as D
 # So `Tensor.matmul` is `nn_dot` renamed, and extra/models/t5.py is CLOSER THAN BERT.
 #
 # WHAT EXISTS, WITH ITS INSTRUMENT:
-#   `nn.Linear`        nn/layers.bend:520 symbol=nn_linear   (:77,:78,:79,:112,:113,:114,:115)
+#   `nn.Linear`        nn/layers.bend:530 symbol=nn_linear   (:77,:78,:79,:112,:113,:114,:115)
 #   `Tensor.softmax`   mixin/op.bend:1155 symbol=mo_softmax  (:216)  <-- the named family, PRESENT
 #   `Tensor.mean`      mixin/op.bend:951 symbol=mo_mean      (:65)
 #   `Tensor.min`       mixin/op.bend:1190 symbol=mo_min      (:158) the REDUCTION; matches the
 #                                                      `axis=0` at :162
 #   `Tensor.where`     mixin/elementwise.bend:571 symbol=ew_where (:164)
-#   `Tensor.log`       mixin/elementwise.bend:1278 symbol=ew_log  (:153)
+#   `Tensor.log`       mixin/elementwise.bend:1280 symbol=ew_log  (:153)
 #   `Tensor.pow(2)`    mixin/elementwise.bend:518 symbol=ew_pow  (:65) -- a BINOP, which is what
 #                                                      `pow(2)` is here
-#   `Tensor.ones`      mixin/creation.bend:556 symbol=cr_ones  (:56)
-#   `Tensor.zeros_like` mixin/creation.bend:550 symbol=cr_zeros_like (:142)
+#   `Tensor.ones`      mixin/creation.bend:559 symbol=cr_ones  (:56)
+#   `Tensor.zeros_like` mixin/creation.bend:553 symbol=cr_zeros_like (:142)
 #   `Tensor.full_like` mixin/creation.bend:511 symbol=cr_full_like  (:160)
 #   `Tensor.arange`    mixin/rand.bend:424 symbol=op_arange  (:169,:170)
 #   `Tensor.stack`     mixin/movement.bend:1272 symbol=mxw_stk (:159)
 #   `x.reshape`/`view` mixin/movement.bend:1434 symbol=mxw_reshape (:178,:190,:194,:258)
 #   `x.transpose`      mixin/movement.bend:1452 symbol=mxw_permute (:178,:190,:194,:210)
-#   `x.cast`           mixin/op.bend:388 symbol=mo_cast_t     (:10,:65,:156,:216)
+#   `x.cast`           mixin/op.bend:390 symbol=mo_cast_t     (:10,:65,:156,:216)
 #
 # WHAT IS MISSING, NAMED:
 #   (1) `nn.Embedding`  MISSING. (:118,:251,:270) THE FIRST MISSING SYMBOL.
@@ -128,7 +128,7 @@ def t5_tokenizer_encode(spiece_path: String, text: String, max_length: U32) -> D
 
 # :52 def __init__(self, hidden_size:int, eps:float=1e-6)
 def t5_layernorm_init(hidden_size: U32, eps: F32) -> D.Refused:
-  D.refuse("extra/models/t5.py:52 T5LayerNorm.__init__ -- reached Tensor.ones (:56, mixin/creation.bend:487 cr_ones EXISTS); the eps is a plain F32")
+  D.refuse("extra/models/t5.py:52 T5LayerNorm.__init__ -- reached Tensor.ones (:56, mixin/creation.bend:559 cr_ones EXISTS); the eps is a plain F32")
 
 # :59 def __call__(self, hidden_states)
 def t5_layernorm_call(+hidden_states: T.Tensor) -> D.Refused:

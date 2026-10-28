@@ -13,10 +13,10 @@
 #     `Tensor.linear` (mixin/op.py:1254) is `x = self.mul(w) if len(w.shape) == 1 else
 #     self.dot(w)`; for `nn.Linear` the weight is 2-D so it takes `dot`, and
 #     `dot` (mixin/op.py:367) is RESHAPE + RESHAPE + PERMUTE + MUL + REDUCE + CAST.
-#     All six are built today: `M.mo_reshape` (mixin/op.bend:702 symbol=mo_reshape),
-#     `M.mo_permute` (mixin/op.bend:718 symbol=mo_permute), `T.tn_mul` (tensor.bend:656
-#     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:851 symbol=mo_sum),
-#     `M.mo_cast_t` (mixin/op.bend:388 symbol=mo_cast_t),
+#     All six are built today: `M.mo_reshape` (mixin/op.bend:704 symbol=mo_reshape),
+#     `M.mo_permute` (mixin/op.bend:720 symbol=mo_permute), `T.tn_mul` (tensor.bend:656
+#     symbol=tn_mul), `M.mo_sum` (mixin/op.bend:853 symbol=mo_sum),
+#     `M.mo_cast_t` (mixin/op.bend:390 symbol=mo_cast_t),
 #     `DT.least_upper_dtypes` (dtype.bend:257 symbol=least_upper_dtypes). The UPSTREAM
 #     half of those six is tinygrad/uop/ops.py:799 symbol=_mop, whose
 #     `Ops.RESHAPE`/`Ops.PERMUTE` arms build the first two and whose
@@ -105,8 +105,8 @@ def nn_shape(+t: T.Tensor) -> Maybe<&2, List<&2, U32>>:
   nn_u32(M.mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
 
 # `U32` -> `O.Const`, so a projected shape is a legal movement ARG.
-# `mo_reshape` (mixin/op.bend:702 symbol=mo_reshape) takes `List<&2, O.Const>` and `mo_ki`
-# (mixin/op.bend:358 symbol=mo_ki) is the tree's one def for the conversion, so it is CALLED.
+# `mo_reshape` (mixin/op.bend:704 symbol=mo_reshape) takes `List<&2, O.Const>` and `mo_ki`
+# (mixin/op.bend:360 symbol=mo_ki) is the tree's one def for the conversion, so it is CALLED.
 def nn_ks.go(+xs: List<&2, U32>, +acc: List<&2, O.Const>) -> List<&2, O.Const>:
   match xs:
     case Nil{}: acc
@@ -231,7 +231,7 @@ def nn_reduce.pick(+rn: List<&2, U32>, +t: T.Tensor, +kept: List<&2, U32>, +n: U
 
 # `ret.reshape(kept) if axis != reduce_axis else ret` -- ops.py:638. APPLIED
 # UNCONDITIONALLY, which is the same thing: `axis == reduce_axis` makes `kept`
-# the identity, and `M.mo_reshape` (mixin/op.bend:702 symbol=mo_reshape) answers its source
+# the identity, and `M.mo_reshape` (mixin/op.bend:704 symbol=mo_reshape) answers its source
 # unchanged on an identity target rather than minting a RESHAPE. MEASURED: with
 # the reshape applied, `sum(axis=[2])` over `(2, 4, 3)` is a 20-node graph whose
 # root IS the REDUCE and whose folded shape is `(2, 4)`; with the INDICES
@@ -397,7 +397,7 @@ def nn_umax(a: U32, b: U32) -> U32: U32.max(a, b)
 # `_broadcasted`'s dtype half (elementwise.py:24) -- THE REFUSAL. `tn_mul`
 # (tensor.bend:651) is the NODE, and the node's shape comes from the fold
 # (`F.alu_ds`, uop/fold.bend:1011 symbol=alu_ds), but the `cast(out_dtype)` is `mo_promote`'s job
-# (mixin/op.bend:508 symbol=mo_promote) and it is what the no-broadcasting gates do not
+# (mixin/op.bend:510 symbol=mo_promote) and it is what the no-broadcasting gates do not
 # cover. `dot` multiplies two tensors of the SAME dtype, where that cast is the
 # identity, so this answers `None` rather than assuming it -- and `None` for an
 # UNREADABLE dtype too, so a caller can never `least_upper_dtype` from `void`.
@@ -957,7 +957,7 @@ def nn_conv2d(+x: T.Tensor, +w: T.Tensor, groups: U32, stride: U32, dilation: U3
 #          comma, with NO parentheses. CPython's `Tensor.shape` is a TUPLE and
 #          prints `(1, 4, 8, 8)`, so the shape rows' `want` is the DIMS in the
 #          port's punctuation.
-#   DTYPE  `E.ew_dtnm` (mixin/elementwise.bend:1033) is the `nm` field of
+#   DTYPE  `E.ew_dtnm` (mixin/elementwise.bend:1035 symbol=ew_dtnm) is the `nm` field of
 #          `S.Dt`, and `S.single()` (LAWS/spec.bend:741) is
 #          `Dt{14, 32, CFloat{}, "f32"}`. CPython's own `DType.name` for
 #          float32 is "f32" (tinygrad/dtype.py:136, `DType.new(14, 32, "f32",

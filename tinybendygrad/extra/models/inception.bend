@@ -27,14 +27,14 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `BasicConv2d.__init__` (extra/models/inception.py:12),
 # at upstream:14
 #       self.conv = Conv2d(in_ch, out_ch, bias=False, **kwargs)
-#   `Tensor.conv2d` IS BUILT (`nn_conv2d`, nn/layers.bend:927 symbol=nn_conv2d, and its bias IS a
+#   `Tensor.conv2d` IS BUILT (`nn_conv2d`, nn/layers.bend:937 symbol=nn_conv2d, and its bias IS a
 #   `Maybe<&2, T.Tensor>` so `bias=False` is `None{}` -- exactly the arm
-#   `nn_cnv.add` at nn/layers.bend:885 symbol=nn_cnv.add spells). WHAT IS MISSING IS THE CLASS: `nn/__init__.bend`
+#   `nn_cnv.add` at nn/layers.bend:895 symbol=nn_cnv.add spells). WHAT IS MISSING IS THE CLASS: `nn/__init__.bend`
 #   has 17 defs and ZERO classes, so there is no `nn.Conv2d` to construct, no
 #   `**kwargs` to forward and no weight to hold a shape.
 #   AND THE VERY NEXT LINE IS A HARDER ONE: upstream:15
 #       self.bn = BatchNorm2d(out_ch, eps=0.001)
-#   `pool_bn` (nn/pool.bend:381) is BUILT and `pool_bend:44-48` measures
+#   `pool_bn` (nn/pool.bend:382 symbol=pool_bn) is BUILT and `pool_bend:44-48` measures
 #   `Tensor.batchnorm` as a pure DECOMPOSITION. The half that is NOT a
 #   decomposition -- the running-statistics update -- is REFUSED at
 #   `pool_bend:415`, naming both causes: `TRAINING` is not a binding in this
@@ -56,8 +56,9 @@ import ./../datasets/__init__.bend as D
 #     upstream:162 Tensor.avg_pool2d(x, kernel_size=(8,8), padding=1)
 #     upstream:203 :213 :225 avg_pool2d(..., padding=1, count_include_pad=False)
 #     upstream:237 x.max_pool2d(kernel_size=(3,3), stride=1, padding=1)
-#   and BOTH padded arms are REFUSED -- `pool_maxpool_padded` (pool.bend:252) and
-#   `pool_avgpool_padded` (pool.bend:262) -- for ONE named cause:
+#   and BOTH padded arms are REFUSED -- `pool_maxpool_padded` (pool.bend:253
+#   symbol=pool_maxpool_padded) and
+#   `pool_avgpool_padded` (pool.bend:263 symbol=pool_avgpool_padded) -- for ONE named cause:
 #   "BLOCKED: mixin/op.py:290 the value!=0 arm, needs identity_element
 #   (uop/ops.py:61), not a def". `pool.bend:246-248` adds why that matters
 #   rather than being pedantry: "A `max_pool2d` padded with ZERO would be wrong
@@ -113,7 +114,7 @@ def ic_at(r: D.Refused) -> String:
 
 # :13 def __init__(self, in_ch:int, out_ch:int, **kwargs)
 def ic_basic_init(in_ch: U32, out_ch: U32) -> D.Refused:
-  D.refuse("extra/models/inception.py:13 BasicConv2d.__init__ -- FIRST MISSING SYMBOL nn.Conv2d CLASS at :14; the OP nn_conv2d (nn/layers.bend:756) EXISTS and its bias is a Maybe<&2, T.Tensor>, so bias=False IS expressible")
+  D.refuse("extra/models/inception.py:13 BasicConv2d.__init__ -- FIRST MISSING SYMBOL nn.Conv2d CLASS at :14; the OP nn_conv2d (nn/layers.bend:937) EXISTS and its bias is a Maybe<&2, T.Tensor>, so bias=False IS expressible")
 
 # :15 self.bn = BatchNorm2d(out_ch, eps=0.001)
 def ic_basic_bn(out_ch: U32) -> D.Refused:
@@ -133,14 +134,14 @@ def ic_incepa_init(in_ch: U32, pool_feat: U32) -> D.Refused:
 
 # :38 self.branch_pool(x.avg_pool2d(kernel_size=(3,3), stride=1, padding=1))
 def ic_incepa_pool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:38 InceptionA.__call__ -- REFUSED PADDED AVG POOL: pool_avgpool (nn/pool.bend:260) is the UNPADDED arm only, and pool_avgpool_padded (nn/pool.bend:262) names the blocker -- mixin/op.py:290 the value!=0 arm, needs identity_element (uop/ops.py:61), not a def")
+  D.refuse("extra/models/inception.py:38 InceptionA.__call__ -- REFUSED PADDED AVG POOL: pool_avgpool (nn/pool.bend:261) is the UNPADDED arm only, and pool_avgpool_padded (nn/pool.bend:263) names the blocker -- mixin/op.py:290 the value!=0 arm, needs identity_element (uop/ops.py:61), not a def")
 
 # :40 return Tensor.cat(*outputs, dim=1)
 def ic_incepa_cat() -> D.Refused:
   D.refuse("extra/models/inception.py:40 InceptionA.__call__ -- MISSING Tensor.cat; mx_cat (mixin/movement.bend) concatenates LISTS of U32 for shape arithmetic and is not this")
 
 def ic_incepa_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:33 InceptionA.__call__ -- FIRST MISSING SYMBOL the padded avg_pool2d at :38 (nn/pool.bend:262)")
+  D.refuse("extra/models/inception.py:33 InceptionA.__call__ -- FIRST MISSING SYMBOL the padded avg_pool2d at :38 (nn/pool.bend:263)")
 
 # ---------------------------------------------------------------------------
 # :42-56 InceptionB. THE FIRST CLASS WITH A `max_pool2d`, AND SO THE FIRST ONE
@@ -153,7 +154,7 @@ def ic_incepb_init(in_ch: U32) -> D.Refused:
 
 # :54 x.max_pool2d(kernel_size=(3,3), stride=2, dilation=1)
 def ic_incepb_pool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:54 InceptionB.__call__ -- REFUSED PADDED MAX POOL: pool_maxpool (nn/pool.bend:250) is the UNPADDED arm only; pool_maxpool_padded (nn/pool.bend:252) names the blocker, and pool.bend:247-248 says why it is not built wrong instead: a max_pool2d padded with ZERO would be wrong for any negative input")
+  D.refuse("extra/models/inception.py:54 InceptionB.__call__ -- REFUSED PADDED MAX POOL: pool_maxpool (nn/pool.bend:251) is the UNPADDED arm only; pool_maxpool_padded (nn/pool.bend:253) names the blocker, and pool.bend:248-249 says why it is not built wrong instead: a max_pool2d padded with ZERO would be wrong for any negative input")
 
 # ---------------------------------------------------------------------------
 # :58-81 InceptionC, :83-99 InceptionD, :101-125 InceptionE. THREE CLASSES, ONE
@@ -166,7 +167,7 @@ def ic_incepc_init(in_ch: U32, ch_7x7: U32) -> D.Refused:
 
 # :63 BasicConv2d(ch_7x7, ch_7x7, kernel_size=(1, 7), padding=(0, 3))
 def ic_incepc_asym() -> D.Refused:
-  D.refuse("extra/models/inception.py:63 InceptionC.branch7x7_2 -- kernel_size=(1,7) with padding=(0,3) IS expressible: nn_conv2d (nn/layers.bend:756) derives ni from the weight's own shape and takes padding as a Maybe<&2, List<&2, U32>>; blocked by the layer STORE, not by a primitive")
+  D.refuse("extra/models/inception.py:63 InceptionC.branch7x7_2 -- kernel_size=(1,7) with padding=(0,3) IS expressible: nn_conv2d (nn/layers.bend:937) derives ni from the weight's own shape and takes padding as a Maybe<&2, List<&2, U32>>; blocked by the layer STORE, not by a primitive")
 
 # :84 def __init__(self, in_ch:int)
 def ic_incepd_init(in_ch: U32) -> D.Refused:
@@ -174,7 +175,7 @@ def ic_incepd_init(in_ch: U32) -> D.Refused:
 
 # :97 x.max_pool2d(kernel_size=(3,3), stride=2, dilation=1)
 def ic_incepd_pool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:97 InceptionD.__call__ -- REFUSED PADDED MAX POOL (nn/pool.bend:252)")
+  D.refuse("extra/models/inception.py:97 InceptionD.__call__ -- REFUSED PADDED MAX POOL (nn/pool.bend:253)")
 
 # :102 def __init__(self, in_ch:int)
 def ic_incepe_init(in_ch: U32) -> D.Refused:
@@ -195,11 +196,11 @@ def ic_aux_init(in_ch: U32, num_classes: U32) -> D.Refused:
 
 # :134 x.avg_pool2d(kernel_size=5, stride=3, padding=1)
 def ic_aux_pool5(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:134 InceptionAux.__call__ -- REFUSED PADDED AVG POOL (nn/pool.bend:262); the kernel is 5 and the stride is 3, so this is not the same call as :38 with a different number")
+  D.refuse("extra/models/inception.py:134 InceptionAux.__call__ -- REFUSED PADDED AVG POOL (nn/pool.bend:263); the kernel is 5 and the stride is 3, so this is not the same call as :38 with a different number")
 
 # :135 ... .reshape(x.shape[0],-1)
 def ic_aux_flatten(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:135 InceptionAux.__call__ -- pool_flatten (nn/pool.bend:326) EXISTS and takes b0/rest AS VALUES; the missing part is reading `rest` out of x.shape instead of being handed it, which is the -1 INFERENCE nn/pool.bend:322-324 says no def here has")
+  D.refuse("extra/models/inception.py:135 InceptionAux.__call__ -- pool_flatten (nn/pool.bend:327) EXISTS and takes b0/rest AS VALUES; the missing part is reading `rest` out of x.shape instead of being handed it, which is the -1 INFERENCE nn/pool.bend:323-325 says no def here has")
 
 # ---------------------------------------------------------------------------
 # :138-192 Inception3. TWENTY-EIGHT NAMED SUBLAYERS, RESTATED AS A COUNT AND A
@@ -222,19 +223,19 @@ def ic_get_cls_default() -> D.Refused:
 # :147 self.maxpool1 = lambda x: Tensor.max_pool2d(x, kernel_size=(3,3), stride=2, padding=1)
 # :150 self.maxpool2 = ... identical
 def ic_incep3_maxpool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:147 Inception3.maxpool1 -- REFUSED PADDED MAX POOL (nn/pool.bend:252). maxpool1 (:147) and maxpool2 (:150) are the SAME def upstream and stay the same here")
+  D.refuse("extra/models/inception.py:147 Inception3.maxpool1 -- REFUSED PADDED MAX POOL (nn/pool.bend:253). maxpool1 (:147) and maxpool2 (:150) are the SAME def upstream and stay the same here")
 
 # :162 self.avgpool = lambda x: Tensor.avg_pool2d(x, kernel_size=(8,8), padding=1)
 def ic_incep3_avgpool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:162 Inception3.avgpool -- REFUSED PADDED AVG POOL (nn/pool.bend:262)")
+  D.refuse("extra/models/inception.py:162 Inception3.avgpool -- REFUSED PADDED AVG POOL (nn/pool.bend:263)")
 
 # :163 self.fc = Linear(2048, num_classes)
 def ic_incep3_fc(num_classes: U32) -> D.Refused:
-  D.refuse("extra/models/inception.py:163 Inception3.fc -- nn_linear (nn/layers.bend:427) EXISTS; blocked by the layer STORE and by the `lambda y: y.reshape(x.shape[0],-1)` at :190")
+  D.refuse("extra/models/inception.py:163 Inception3.fc -- nn_linear (nn/layers.bend:530) EXISTS; blocked by the layer STORE and by the `lambda y: y.reshape(x.shape[0],-1)` at :190")
 
 # :165 def __call__(self, x:Tensor) -> Tensor
 def ic_incep3_call(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:165 Inception3.__call__ -- FIRST MISSING SYMBOL the padded max_pool2d at :147 via :170 (nn/pool.bend:252)")
+  D.refuse("extra/models/inception.py:165 Inception3.__call__ -- FIRST MISSING SYMBOL the padded max_pool2d at :147 via :170 (nn/pool.bend:253)")
 
 # ---------------------------------------------------------------------------
 # :195-239 THE FID VARIANTS. FOUR CLASSES THAT OVERRIDE ONE METHOD EACH, AND
@@ -243,19 +244,19 @@ def ic_incep3_call(+x: T.Tensor) -> D.Refused:
 
 # :197-205 FidInceptionA  :203 ... avg_pool2d(..., count_include_pad=False)
 def ic_fida_pool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:203 FidInceptionA.__call__ -- MISSING count_include_pad=False; that IS the arm pool_avgpool_padded (nn/pool.bend:262) refuses, so adding the keyword moves this call OUT of the built arm and not into it")
+  D.refuse("extra/models/inception.py:203 FidInceptionA.__call__ -- MISSING count_include_pad=False; that IS the arm pool_avgpool_padded (nn/pool.bend:263) refuses, so adding the keyword moves this call OUT of the built arm and not into it")
 
 # :207-215 FidInceptionC  :213 ... count_include_pad=False)
 def ic_fidc_pool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:213 FidInceptionC.__call__ -- MISSING count_include_pad=False (nn/pool.bend:262)")
+  D.refuse("extra/models/inception.py:213 FidInceptionC.__call__ -- MISSING count_include_pad=False (nn/pool.bend:263)")
 
 # :217-227 FidInceptionE1 :225 ... count_include_pad=False)
 def ic_fide1_pool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:225 FidInceptionE1.__call__ -- MISSING count_include_pad=False (nn/pool.bend:262)")
+  D.refuse("extra/models/inception.py:225 FidInceptionE1.__call__ -- MISSING count_include_pad=False (nn/pool.bend:263)")
 
 # :229-239 FidInceptionE2 :237 ... x.max_pool2d(kernel_size=(3,3), stride=1, padding=1))
 def ic_fide2_pool(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/inception.py:237 FidInceptionE2.__call__ -- REFUSED PADDED MAX POOL (nn/pool.bend:252); note this is the ONE Fid override that swaps avg for max rather than changing count_include_pad")
+  D.refuse("extra/models/inception.py:237 FidInceptionE2.__call__ -- REFUSED PADDED MAX POOL (nn/pool.bend:253); note this is the ONE Fid override that swaps avg for max rather than changing count_include_pad")
 
 # ---------------------------------------------------------------------------
 # :241-321 FidInceptionV3.
@@ -285,7 +286,7 @@ def ic_fidv3_call(+x: T.Tensor) -> D.Refused:
 
 # :312 def compute_score(self, inception_activations:Tensor, val_stats_path:str) -> float
 def ic_fidv3_compute_score(embed: U32, path: String) -> D.Refused:
-  D.refuse("extra/models/inception.py:312 FidInceptionV3.compute_score -- FIRST MISSING SYMBOL np.load at :314; mo_mean (mixin/op.bend:891) IS built and :318's `.mean(axis=0)` is expressible, but .numpy() at :318 and np.cov at :319 are not")
+  D.refuse("extra/models/inception.py:312 FidInceptionV3.compute_score -- FIRST MISSING SYMBOL np.load at :314; mo_mean (mixin/op.bend:953) IS built and :318's `.mean(axis=0)` is expressible, but .numpy() at :318 and np.cov at :319 are not")
 
 # ---------------------------------------------------------------------------
 # :323-344 calculate_frechet_distance. THE FOREIGN MATHEMATICS.
@@ -301,7 +302,7 @@ def ic_frechet_shape(eps: F32) -> D.Refused:
 
 # :342 tr_covmean = np.trace(covmean)
 def ic_frechet_trace(eps: F32) -> D.Refused:
-  D.refuse("extra/models/inception.py:342 calculate_frechet_distance -- MISSING np.trace; mo_sum (mixin/op.bend:811) IS built and a trace is a sum over the diagonal, so this ONE line is a port waiting on a shape rather than on scipy")
+  D.refuse("extra/models/inception.py:342 calculate_frechet_distance -- MISSING np.trace; mo_sum (mixin/op.bend:853) IS built and a trace is a sum over the diagonal, so this ONE line is a port waiting on a shape rather than on scipy")
 
 # ---------------------------------------------------------------------------
 # THERE IS NO `if __name__ == \"__main__\":` IN THIS FILE -- upstream ends at
@@ -314,7 +315,7 @@ def main() -> IO(Unit):
     srow("inception_refused_at", ic_at(a))
     row("inception_ported", False{})
     srow("inception_first_blocker_line", "extra/models/inception.py:14")
-    srow("inception_first_blocker", "nn.Conv2d CLASS -- the op nn_conv2d EXISTS at nn/layers.bend:756")
-    srow("inception_pool_wall", "all 10 pool calls need a padded arm; nn/pool.bend:252 and :262 both refuse on identity_element (uop/ops.py:61)")
+    srow("inception_first_blocker", "nn.Conv2d CLASS -- the op nn_conv2d EXISTS at nn/layers.bend:937")
+    srow("inception_pool_wall", "all 10 pool calls need a padded arm; nn/pool.bend:253 and :263 both refuse on identity_element (uop/ops.py:61)")
     urow("inception3_sublayers", ic_incep3_sublayers())
     urow("inception3_num_classes_default", 1008)

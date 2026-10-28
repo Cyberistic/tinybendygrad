@@ -42,18 +42,19 @@
 #
 #   | `O.Arg`         | `KUArg`                       | who reads it                |
 #   |-----------------|-------------------------------|-----------------------------|
-#   | `APy{v}`        | `KAConst{v}`                  | `cstyle.bend:1363` `ku_is_const_at` |
-#   | `AParam{pa}`    | `KAParam{slot,name,vol,bytes}`| `cstyle.bend:1649` `ku_param_name` |
-#   | `ARange{ids,at}`| `KARange{at, ids}`            | `cstyle.bend:1616` `ku_range_name` |
-#   | `AOpLit{op}`    | `KAIndex{0, op == Ops.ADD}`   | `cstyle.bend:1412` `ku_render_index` |
-#   | `AInt{i}`       | `KAIndex{i, False{}}`          | `cstyle.bend:1412` `ku_render_index` |
-#   | `AKernel{ki}`   | `KASink{ki.name}`             | `cstyle.bend:2223` `_render.one.go` |
+#   | `APy{v}`        | `KAConst{v}`                  | `cstyle.bend:1366` symbol=ku_is_const_at |
+#   | `AParam{pa}`    | `KAParam{slot,name,vol,bytes}`| `cstyle.bend:1648` symbol=ku_param_name |
+#   | `ARange{ids,at}`| `KARange{at, ids}`            | `cstyle.bend:1614` symbol=ku_range_name |
+#   | `AOpLit{op}`    | `KAIndex{0, op == Ops.ADD}`   | `cstyle.bend:2078` symbol=ku_render_index |
+#   | `AInt{i}`       | `KAIndex{i, False{}}`          | `cstyle.bend:2078` symbol=ku_render_index |
+#   | `AKernel{ki}`   | `KASink{ki.name}`             | `cstyle.bend:1294` symbol=KUArg.sink_name |
+#   |                 |                               | `KUArg.sink_name` in `_render.one.go` (`cstyle.bend:2212-2217`) |
 #   | everything else | `KANone{}`                    | --                          |
 #
 # `AOpLit` IS UPSTREAM's `idx.arg == Ops.ADD` TEST (`cstyle.py:174`): the
 # INDEX's OWN arg is a BARE `Ops`, and upstream's `ops.py:432` stores it as
 # `arg=Ops.ADD`.  THE PORT SPELLS A BARE `Op` AS `AOpLit{op}`
-# (`uop/ops.bend:1187`), AND THE CONVERTER COMPARES IT TO `OpsADD` ITSELF.
+# (`uop/ops.bend:1235` symbol=AOpLit), AND THE CONVERTER COMPARES IT TO `OpsADD` ITSELF.
 #
 # `AInt` IS THE OTHER INDEX FORM: UPSTREAM's INDEX CARRIES AN INTEGER OFFSET
 # WHEN IT IS NOT AN `Ops.ADD` (`ops.py:432`'s `arg` is `int` for the offset

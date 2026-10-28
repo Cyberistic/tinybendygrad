@@ -405,8 +405,8 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
 # `dict[axis_id, int]`, a map from an axis id to its ORDINAL AMONG UNROLL/UPCAST
 # RANGEs, and `fold.bend`'s `Derived` has no such field. So it is a table here,
 # and `kn_unroll` is the row for the membership test. `ops.bend`'s `UOp.axis_id`
-# and `UOp.axis_type` are both PORTED (fold.bend:2430-2436), which is why this
-# half is cheap.
+# and `UOp.axis_type` are both PORTED (`fold.bend:3028` symbol=UOp.axis_id and
+# `fold.bend:3036` symbol=UOp.axis_type), which is why this half is cheap.
 # ===========================================================================
 # `kn_unroll.ax` IS THE PIN'S PREDICATE. The UNROLL arm has no upstream
 # counterpart -- `AxisType.UNROLL` was deleted from the enum -- so this arm is

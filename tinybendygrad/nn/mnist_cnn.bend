@@ -150,7 +150,7 @@ def mn_pool_full(shp: List<&2, U32>) -> List<&2, U32>:
 def mn_pool_out(shp: List<&2, U32>) -> List<&2, U32>:
   List.take(&2, U32, mn_pool_full(shp), 4n)
 
-# THE CONV, through the port's OWN `nn_conv2d` (layers.bend:927). The
+# THE CONV, through the port's OWN `nn_conv2d` (layers.bend:937 symbol=nn_conv2d). The
 # argument order is `groups, stride, dilation, pad_v, padding, bias`, and
 # `padding = None{}` with `pad_v = 1` is upstream's `padding=1` --
 # `nn_pads` (layers.bend) turns the int into the flat four-element list

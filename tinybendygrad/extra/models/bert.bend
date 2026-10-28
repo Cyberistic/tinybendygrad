@@ -28,15 +28,15 @@ import ./../datasets/__init__.bend as D
 # without it.
 #
 # WHAT BERT GETS FOR FREE FROM THE VISION WORK, and this is measured, not hoped:
-#   `nn.Linear`             nn/layers.bend:520 symbol=nn_linear  (:16,:130,:225,:264,:265,:266,:292,:310,:239)
+#   `nn.Linear`             nn/layers.bend:530 symbol=nn_linear  (:16,:130,:225,:264,:265,:266,:292,:310,:239)
 #   `Tensor.stack`          mixin/movement.bend:1272 symbol=mxw_stk (:40)
 #   `reshape`               mixin/movement.bend:1434 symbol=mxw_reshape (:37,:38,:282,:287)
 #   `transpose`             mixin/movement.bend:1452 symbol=mxw_permute (:281,:288)
-#   `log_softmax`           mixin/op.bend:1169 symbol=mo_log_softmax (:54)
+#   `log_softmax`           mixin/op.bend:1171 symbol=mo_log_softmax (:54)
 #   `Tensor.arange`         mixin/rand.bend:424 symbol=op_arange     (:55,:192)
-#   `Tensor.zeros`          mixin/creation.bend:515 symbol=cr_zeros  (:141)
-#   `Tensor.ones`           mixin/creation.bend:556 symbol=cr_ones   -- needed by T5, not here
-#   `Tensor.cast`/`.float()`mixin/op.bend:388 symbol=mo_cast_t     (:54,:70)
+#   `Tensor.zeros`          mixin/creation.bend:518 symbol=cr_zeros  (:141)
+#   `Tensor.ones`           mixin/creation.bend:559 symbol=cr_ones   -- needed by T5, not here
+#   `Tensor.cast`/`.float()`mixin/op.bend:390 symbol=mo_cast_t     (:54,:70)
 #   `x.relu`                nn/layers.bend:289 symbol=nn_relu -- BERT has none; recorded so the
 #                           census is a census and not a list of what is convenient
 #   `x +` / `x *`           mixin/elementwise.bend:509/510 `ew_add`/`ew_mul` (:56,:67,:197,:232)
@@ -67,16 +67,18 @@ import ./../datasets/__init__.bend as D
 # `Embedding = nn.Embedding` is the module-level alias at extra/models/bert.py:9 and there is no `def Embedding`
 # anywhere under `tinybendygrad/`, and no `def mo_i` either.
 # **THE `mo_fx` HALF OF THIS EVIDENCE WAS FALSE. CORRECTED 2026-10-20:** `def mo_fx1d` is at
-# `mixin/op.bend:1305` and `def mo_fx2d` at `mixin/op.bend:1313`, so "no `def mo_fx` anywhere" was falsifiable
+# `mixin/op.bend:1307` symbol=mo_fx1d and `def mo_fx2d` at `mixin/op.bend:1315`, so
+# "no `def mo_fx` anywhere" was falsifiable
 # and falsified -- the audit's grep demanded a literal `(` after the name and matched neither.
-# **THE CONCLUSION IS UNCHANGED AND WAS NEVER IN DOUBT:** `mixin/op.bend:1313` symbol=mo_fx2d shows both are FIXTURES
+# **THE CONCLUSION IS UNCHANGED AND WAS NEVER IN DOUBT:** `mixin/op.bend:1315` symbol=mo_fx2d
+# shows both are FIXTURES
 # returning `r` unchanged, not a gather, and `def mo_i` is still absent. **A CITATION WRONG ON ITS
 # EVIDENCE AND RIGHT ON ITS CONCLUSION STILL MISLEADS THE NEXT READER, WHO CHECKS THE EVIDENCE.**
 #
 # THE TWO `load_from_pretrained` ARE NOT A PORTING PROBLEM AND SHOULD NOT BE
 # TREATED AS ONE. extra/models/bert.py:78-124 reads a TENSORFLOW checkpoint through
 # `tf.train.list_variables` (extra/models/bert.py:85), and the TORCH loader is
-# `extra/models/bert.py:24-31`, whose `torch.load` is at extra/models/bert.py:26. `helpers.bend:3193`
+# `extra/models/bert.py:24-31`, whose `torch.load` is at extra/models/bert.py:26. `helpers.bend:3194`
 # already records the whole weight-download seam as unported I/O, and neither framework
 # has a counterpart. Named here so no reader counts them as arithmetic left undone.
 #
@@ -101,7 +103,7 @@ def br_embedding_alias() -> D.Refused:
   D.refuse("extra/models/bert.py:9 Embedding = nn.Embedding -- MISSING; no `def Embedding`, no `def mo_i`, no `def mo_fx` under tinybendygrad/")
 
 def br_linear_alias() -> D.Refused:
-  D.refuse("extra/models/bert.py:10 Linear = nn.Linear -- EXISTS as nn/layers.bend:427 nn_linear; the ALIAS is what is absent")
+  D.refuse("extra/models/bert.py:10 Linear = nn.Linear -- EXISTS as nn/layers.bend:530 nn_linear; the ALIAS is what is absent")
 
 def br_layernorm_alias() -> D.Refused:
   D.refuse("extra/models/bert.py:11 LayerNorm = nn.LayerNorm -- MISSING; `grep -rnwE \"def .*layernorm\" --include='*.bend' tinybendygrad/` = 0")
@@ -118,7 +120,7 @@ def br_qa_init(hidden_size: U32, intermediate_size: U32, max_position_embeddings
 
 # :18 def load_from_pretrained(self)
 def br_qa_load_from_pretrained() -> D.Refused:
-  D.refuse("extra/models/bert.py:18 BertForQuestionAnswering.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:20); helpers.bend:3193 records the HTTP seam as unported")
+  D.refuse("extra/models/bert.py:18 BertForQuestionAnswering.load_from_pretrained -- FIRST MISSING SYMBOL fetch (:20); helpers.bend:3194 records the HTTP seam as unported")
 
 # :33 def __call__(self, input_ids, attention_mask, token_type_ids)
 def br_qa_call(+input_ids: T.Tensor, +attention_mask: T.Tensor, +token_type_ids: T.Tensor) -> D.Refused:
@@ -171,7 +173,7 @@ def br_lm_head_init(hidden_size: U32, vocab_size: U32) -> D.Refused:
 
 # :143 def __call__(self, hidden_states)
 def br_lm_head_call(+hidden_states: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/bert.py:143 BertLMPredictionHead.__call__ -- FIRST MISSING SYMBOL nn_dot of `hidden @ embedding_weight.T` (:144); nn/layers.bend:383 nn_dot EXISTS but returns Maybe, not a Tensor")
+  D.refuse("extra/models/bert.py:143 BertLMPredictionHead.__call__ -- FIRST MISSING SYMBOL nn_dot of `hidden @ embedding_weight.T` (:144); nn/layers.bend:486 nn_dot EXISTS but returns Maybe, not a Tensor")
 
 # :147 def __init__(self, hidden_size)
 def br_pred_transform_init(hidden_size: U32) -> D.Refused:
