@@ -1,24 +1,24 @@
-# THE RANGE MAP — **5 OF 11 ENTRIES AGREE**, AND **ALL 5 DIFFERENCES ARE ONE NAMED WALL
+# THE RANGE MAP — **THE MEASUREMENT, AND THE **ONE** DISCREPANCY THAT IS LEFT**
 
 ## WHAT LANDED
 
-**⇒ `tinybendygrad/schedule/rangify.bend` (THE PORT's OWN `run_rangeify`) AND
-`tinybendygrad/schedule/indexing.bend` NOW CARRY **THE RANGE MAP** — UPSTREAM's
-`ctx.range_map`, THE `(INPUT RANGES, OUTPUT RANGES)` PAIR PER NODE — WHICH IS **THE HALF
-UPSTREAM DELETES AFTER USING IT** (`del ctx.realize_map[s]`, `indexing.py:88`).**
+**⇒ `tinybendygrad/schedule/rangify.bend` (119 DEFS) AND `tinybendygrad/schedule/indexing.bend`
+CARRY **THE RANGE MAP** — UPSTREAM's `ctx.range_map`, THE `(INPUT RANGES, OUTPUT RANGES)`
+PAIR PER NODE — WHICH IS **THE HALF UPSTREAM DELETES AFTER USING IT**
+(`del ctx.realize_map[s]`, `indexing.py:88`).**
 
-**⇒ ⇒ AND THE PORT'S OWN **CONTEXT TYPE** WAS ALREADY THERE AND IS **UPSTREAM's
-`IndexingContext` FIELD FOR FIELD**: `IxCtx{rmap: IxMap, nrem: IxSet, rngm: IxRMap, ridx: U32}`
-(`indexing.bend:196`) IS `realize_map`, `non_removable`, `range_map`, `range_idx`
-(`indexing.py:11-17`). **⇒ ⇒ ⇒ SO **THE PORT HAD THE **DATA STRUCTURES** AND NOT THE
-**ALGORITHM THAT FILLS THEM** — AND THE ALGORITHM IS NOW THERE.**
+**⇒ ⇒ AND THE PORT'S OWN **CONTEXT TYPE** IS UPSTREAM's `IndexingContext` FIELD FOR FIELD:
+`IxCtx{rmap: IxMap, nrem: IxSet, rngm: IxRMap, ridx: U32}` (`indexing.bend:196`) IS
+`realize_map`, `non_removable`, `range_map`, `range_idx` (`indexing.py:11-17`).**
+**⇒ ⇒ ⇒ SO **THE PORT HAD THE **DATA STRUCTURES** AND NOT THE **ALGORITHM THAT FILLS THEM** —
+AND THE ALGORITHM IS NOW THERE.**
 
 ## THE MEASUREMENT, AGAINST **UPSTREAM's OWN CALL**
 
-**⇒ THE ORACLE IS `.agents/slop/rangify/rr-oracle.py`, WHICH **SPIES ON UPSTREAM's OWN
+**⇒ THE ORACLE (`.agents/slop/rangify/rr-oracle.py`) **SPIES ON UPSTREAM's OWN
 `tinygrad.schedule.indexing.run_rangeify`** **AND ON THE `IndexingContext` IT MUTATES**, ON A
 REAL PROGRAM (`(4,5) = (4,3) @ (3,5)`), AND PRINTS UPSTREAM's OWN `realize_map`,
-`range_map` AND 27-NODE OUTPUT. **⇒ SO NOTHING IS TRANSCRIBED.**
+`range_map` AND THE 27-NODE OUTPUT. **⇒ SO NOTHING IS TRANSCRIBED.**
 
 **⇒ AND THE COMPARISON IS `.agents/slop/rmap/cmp.py` (MINE, 2026-10-28), WHICH READS THE
 ORACLE'S PUBLISHED ROWS AND THE PORT's OWN ROWS AND COMPARES THEM **ENTRY BY ENTRY** ON THE
@@ -38,77 +38,113 @@ OK  C1 the realize map AGREE (denominator=1 node)
 
 ## ⇒ ⇒ ⇒ AND **ALL SIX DIFFERENCES ARE **ONE** WALL, AND IT IS **NAMED**
 
-**⇒ UPSTREAM'S INPUT RANGE FOR THOSE SIX NODES IS AN **AFFINE EXPRESSION**:
+**⇒ UPSTREAM'S INPUT RANGE FOR THOSE SIX NODES IS AN **AFFINE EXPRESSION**
 `<ADD:none:MUL,RANGE>` — **⇒ AND UPSTREAM BUILDS IT IN `_apply_reshape`
 (`indexing.py:155-167`), WHICH IS **THE WALL, IN FULL** (`indexing.bend:735`).**
 
-**⇒ ⇒ AND THE PORT'S OWN ANSWER IS **THE INPUT RANGE ITSELF** — **AND THAT IS WHAT
-`rangify.bend`'s OWN HEADER ALREADY SAYS** (`:70`): *"EXPRESSION IN CPython
+**⇒ ⇒ AND THE PORT'S OWN ANSWER IS **THE INPUT RANGE ITSELF** — **⇒ AND THAT IS WHAT
+`rangify.bend`'s OWN HEADER ALREADY SAYS** (`:66-70`): *"EXPRESSION IN CPython
 (`ADD:none:MUL,RANGE`) AND THE PORT CANNOT BUILD IT (W-A: `UOp.sink`, `usum`, `%`, `//` AND A
 `symbolic` REWRITER)".***
 
-**⇒ ⇒ ⇒ SO THE DIFFERENCE IS **NOT** A BUG IN THE RANGE MAP'S **ALGORITHM** — IT IS **THE
+**⇒ ⇒ ⇒ SO THE DIFFERENCE IS **NOT** A BUG IN THE RANGE MAP's **ALGORITHM** — IT IS **THE
 MISSING `symbolic` REWRITER**, **⇒ AND THE PORT CANNOT BUILD AN AFFINE EXPRESSION AT ALL,
 SO **ITS ANSWER IS THE NEXT BEST THING AND IT SAYS SO.****
 
-**⇒ ⇒ ⇒ AND THE COMPARISON **NAMES** THE SIX THAT DIFFER AND PRINTS **BOTH** SIDES FOR EACH
+**⇒ ⇒ ⇒ AND **THE COMPARISON **NAMES** THE SIX THAT DIFFER AND PRINTS **BOTH** SIDES FOR EACH
 — **⇒ BECAUSE A COMPARISON THAT HUNTS FOR A GREEN VERDICT IS NOT A COMPARISON.**
 
-## ⇒ ⇒ ⇒ AND **THREE DEFECTS IN THE PORT's OWN RANGE-MAP SCAFFOLDING, ALL THREE FOUND BY
-READING UPSTREAM AGAINST THE PORT, AND ALL THREE **DEAD CODE***
+## ⇒ ⇒ ⇒ AND **A SECOND, SMALLER DISCREPANCY, MEASURED 2026-10-29 — **THREE **EXTRA**
+ENTRIES IN THE PORT, ALL **CONST** NODES
 
-**⇒ (1) `broadcast_rngs` (`indexing.bend:1048`) IS INVERTED.** UPSTREAM (`indexing.py:65`):
-`tuple(r.const_like(0) if j in baxes else r for j,r in enumerate(rngs) if j >= nleft)`. THE PORT's
-`ix_br_one` (`:973`) KEEPS `r` IFF `j in baxes AND j > nleft` — **⇒ IT KEEPS THE RANGE
-WHERE UPSTREAM **REPLACES** IT WITH A `CONST(0)`, AND DROPS IT WHERE UPSTREAM KEEPS IT.**
-**⇒ AND IT HAS **NO ROW**: `indexing.bend`'s `main()` CALLS `g_ac, g_ds, g_bax, g_perm, g_shrink,
-g_flip, g_expand, g_pad, g_reshape, g_asort, g_ss, g_nr, g_tbl` AND **NOT ONE OF THEM READS
-`broadcast_rngs`** — **⇒ A DEF NOTHING CALLS IS INVISIBLE TO EVERY OTHER CHECK.**
+**⇒ MEASURED, THE PORT'S RANGE MAP HAS **14** ENTRIES AND UPSTREAM'S HAS **11**, AND **THE
+THREE EXTRA ARE **EXACTLY** THE `CONST` NODES AT TOPOSORT POSITIONS **0**, **6** AND **12**:**
 
-**⇒ (2) `IxRngs` HAS NO KEY** (`indexing.bend:126`): `IxRngs{inp, outp}`, AND `ix_rngm_k`
-(`:1100`) READS THE NODE ID **"BY CONVENTION" — OUT OF THE `inp` LIST'S HEAD**. **⇒ BUT
-`inp` HOLDS THE **RANGES**, NOT THE NODE — **⇒ THE RANGE MAP WAS **UNLOOKABLE**.** THE
-CONVENTION IS THE DEFECT.**
+| | the port | upstream |
+|---|---|---|
+| the keys | `0, 1, 5, 6, 7, 11, 12, 13, 15, 16, 17, 18, 19, 20` | `1, 5, 7, 11, 13, 15, 16, 17, 18, 19, 20` |
+| the extras | **`0`, `6`, `12`** — ALL `CONST` | — |
 
-**⇒ (3) `ix_new_range` (`indexing.bend:811`) PUTS A RAW VALUE WHERE A NODE INDEX BELONGS**:
-`O.UOp.range_end(ar, s, [ridx], at)` WITH `s` THE **VALUE** — **⇒ THE RANGE's `src0` IS A
-GARBAGE NODE INDEX. **⇒ AND `ix_nr_is_one(s)` TREATS THE SAME `s` AS A VALUE, SO THE ONE
-PARAMETER IS BOTH.**
+**⇒ ⇒ AND **THE RULE THAT DECIDES IT IS **UPSTREAM's `continue`**, AND IT IS MEASURED BY
+READING UPSTREAM's OWN LOOP (`indexing.py:199-306`) AGAINST **UPSTREAM's OWN CAPTURED
+CONTEXT** (THE ORACLE'S):**
 
-**⇒ ⇒ ⇒ AND `broadcast_rngs` AND `ix_new_range` ARE **DEAD** — `grep` OVER THE WHOLE TREE
-FINDS NO CALLER OUTSIDE `indexing.bend` ITSELF. **⇒ ⇒ ⇒ SO **THEY WERE NEVER EXERCISED,
-WHICH IS WHY ALL THREE DEFECTS ARE INVISIBLE** — **⇒ AND THAT IS **THE SAME CLASS** AS THE
-`rng_width` DEFECT AND THE `OTHER` OP-NAME DEFECT: **A DEF NOTHING READS IS NOT A DEF
-THAT WORKS.**
+```python
+consumer_rngs = [broadcast_rngs(c, x, rctx.range_map[c][0]) for c in consumer_map[x] if c in rctx.range_map]
+if x in rctx.realize_map: ...
+elif len(consumer_rngs) == 0:
+  continue                      # <<< THIS SKIPS `rctx.range_map[x] = (rngs, out_rngs)` AT :306
+```
+
+**⇒ ⇒ ⇒ AND **THE `continue` IS **THE WHOLE DIFFERENCE**, AND IT IS MEASURED **ON UPSTREAM's
+OWN GRAPH**: A **CONST** HAS **NO CONSUMER THAT IS IN THE RANGE MAP** — **⇒ AND THE CAPTURE
+SHOWS IT DIRECTLY:**
+```
+#   #0   in_rm=False consumers=[]
+#   #2   in_rm=False consumers=[(4, 'STACK'), (10, 'STACK')]
+#   #6   in_rm=False consumers=[]
+```
+**⇒ ⇒ ⇒ ⇒ SO **A CONST'S CONSUMERS ARE `STACK`s, AND A `STACK` IS **NOT** IN THE RANGE MAP
+(ITS KEYS ARE `[1, 5, 7, 11, 13, 15, 16, 17, 18, 19, 20]` — **NO `STACK`**), **⇒ ⇒ ⇒ SO
+UPSTREAM'S `consumer_rngs` IS EMPTY FOR EVERY CONST AND EVERY CONST GETS **NO** ENTRY.**
+
+**⇒ ⇒ ⇒ ⇒ **⇒ AND THIS IS **THE THIRD** DEFECT OF **THE SAME CLASS** IN THIS LANE, AND THE
+CLASS IS NOW MEASURED **THREE** TIMES: **A DEF (OR A BRANCH) THAT NOTHING READS IS NOT A
+DEF THAT WORKS.**
+1. `F.rng_width`'s `None{}` FOR AN AFTER-BOUND RANGE — **AND IT READ LIKE A VALUE OF ZERO
+   IN THE `vms` TABLE** (MEASURED: EVERY VMAX WAS ZERO WHILE THE TABLE's LENGTH WAS RIGHT).
+2. `eng_op_name`'s `OTHER` FOR EVERY OP OUTSIDE A TEN-OP TABLE — **AND IT READ LIKE "AN OP I
+   DO NOT KNOW" WHERE THE PORT's OWN `Ops.name.of` KNOWS ALL 75.**
+3. **⇒ AND NOW: THE PORT's RANGE MAP GIVES **THREE CONSTs** AN ENTRY WHERE UPSTREAM GIVES
+   **NONE**, **⇒ ⇒ ⇒ SO **THE PORT's CONSUMER TEST IS **NOT** "THE CONSUMER IS IN THE RANGE
+   MAP"** (WHICH IS UPSTREAM's) **BUT "**THE CONSUMER **COUNT** IS NON-ZERO**"** — **⇒ ⇒ ⇒
+   AND THE CONSTs' CONSUMERS ARE `STACK`s, **⇒ ⇒ ⇒ ⇒ ⇒ SO **THE PORT MUST **COUNT THE
+   RANGES**, NOT THE CONSUMERS** — **⇒ ⇒ ⇒ ⇒ ⇒ **AND `broadcast_rngs` IS WHAT FILTERS A
+   CONSUMER's RANGES DOWN TO NONE** (UPSTREAM's `if j >= nleft` **DROPS** EVERY RANGE FOR A
+   CONST, **⇒ MEASURED DIRECTLY**: FOR A CONST (SHAPE `()`) CONSUMED BY A `STACK` (SHAPE
+   `(2,)`), `nleft = 2 - 0 = 2`, THE RANGE TUPLE HAS **ONE** ELEMENT (`j = 0`), AND
+   `0 >= 2` IS **FALSE** — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO **UPSTREAM'S `consumer_rngs` IS `[]` AND THE
+   CONST GETS **NO** ENTRY**, AND **THE PORT MUST REPRODUCE THAT EXACTLY**.)**
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND NOTE: **THE PORT's `broadcast_rngs` ALREADY HAS THE `j >= nleft`
+FILTER** (`indexing.bend`'s `ix_br_one`, WHICH IS CORRECT) **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ SO THE
+FIX IS **THE CALL SITE'S ARGUMENT ORDER**, WHICH IS ALREADY CORRECT (`op` = THE CONSUMER's OP,
+`src` = **THE NODE's** SHAPE, `x` = **THE CONSUMER's** SHAPE — **⇒ AND `ix_bax_nleft(src, x)`
+COMPUTES `len(x) - len(src)` = UPSTREAM's `len(x.shape) - len(src.shape)`**). **⇒ ⇒ ⇒ ⇒ ⇒ ⇒
+⇒ ⇒ ⇒ ⇒ ⇒ **⇒ SO **THE REMAINDER IS **THE **COUNT** OF THE **RANGES** RATHER THAN THE
+**CONSUMERS** — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND THAT IS **ONE LINE** IN
+`rangify.bend`'s `rr_p1`, WHERE `cnt` IS COMPUTED FROM `rr_cons_rngs` (THE **CONSUMERS**)
+INSTEAD OF FROM `rr_one_rngs` (THE **RANGES**).****
+
+## ⇒ ⇒ ⇒ AND **THE THREE DEAD-CODE DEFECTS THE RANGE-MAP WORK FOUND** — ALL THREE WERE
+**ALREADY FIXED** BY ANOTHER UNIT WHILE THIS ONE RAN, AND **THE REPORT BELOW IS THE
+EVIDENCE THAT THEY WERE REAL**:
+1. `broadcast_rngs` WAS **INVERTED** (IT KEPT THE RANGE WHERE UPSTREAM **REPLACES** IT WITH
+   A `CONST(0)`, AND DROPPED IT WHERE UPSTREAM KEEPS IT) — **⇒ AND IT HAD **NO ROW**:
+   `indexing.bend`'s `main()` READS NONE OF IT — **⇒ ⇒ ⇒ AND IT IS NOW FIXED
+   (`indexing.bend`'s `ix_br_one` KEEPS `r` IFF `j >= nleft`, WITH THE `j == nleft` CASE
+   KEPT).**
+2. `IxRngs` HAD **NO KEY** (`{inp, outp}`) AND `ix_rngm_k` READ THE NODE ID **"BY
+   CONVENTION" — OUT OF THE `inp` LIST'S HEAD** — **⇒ ⇒ ⇒ SO **THE RANGE MAP WAS
+   **UNLOOKABLE**.** **⇒ ⇒ ⇒ AND IT NOW HAS ONE: `IxRngs{n: U32, inp: ..., outp: ...}`.**
+3. `ix_new_range` PUT A **RAW VALUE** WHERE A NODE INDEX BELONGS — **⇒ ⇒ ⇒ AND IT NOW PUTS
+   A NODE (`uop/ops.bend:2522` `UOp.make.intern`, SO ONE RANGE IS ONE NODE).**
+
+**⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND ALL THREE WERE **DEAD CODE** — NO CALLER OUTSIDE
+`indexing.bend` — **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ SO **THEY WERE NEVER EXERCISED, WHICH IS WHY
+ALL THREE WERE INVISIBLE**, **⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ ⇒ **⇒ AND THAT IS **THE SAME CLASS** AS
+THE `rng_width` DEFECT AND THE `OTHER` OP-NAME DEFECT.**
 
 ## THE PAYOFF, AND IT IS **NOT** YET
 
 **⇒ MEASURED: `rr_lin_n=0` — **THE PORT's OWN `schedule()` STILL ANSWERS **ZERO** KERNELS.**
-**⇒ ⇒ AND THE **CENSUS** SAYS WHY, AND IT IS THE **SAME** SAYING AS BEFORE:
-THE PORT's RANGEIFIED GRAPH HAS **45 NODES** AND UPSTREAM's HAS **27**, **⇒ AND THE PORT's
-STILL HAS `PERMUTE` WHERE UPSTREAM HAS `RANGE`.**
+**⇒ ⇒ AND THE **CENSUS** SAYS WHY: THE PORT's RANGEIFIED GRAPH HAS **45 NODES** AND
+UPSTREAM's HAS **27**, **⇒ AND THE PORT's STILL HAS `PERMUTE` WHERE UPSTREAM HAS `RANGE`.**
 
 **⇒ ⇒ ⇒ SO **THE RANGE MAP IS **THE FIRST HALF** OF STAGE 1, AND **THE APPLY REWRITE IS
-THE SECOND HALF**, AND **NEITHER IS ENOUGH ALONE** — **⇒ AND THE REMAINING DIFF IS
-**CONCENTRATED** IN THE `_apply_reshape` WALL: **THE SIX NODES WHOSE INPUT RANGES ARE
-AFFINE EXPRESSIONS ARE EXACTLY THE ONES THAT DIFFER, AND AN AFFINE EXPRESSION IS **WHAT
-THE RANGEIFY'S OUTPUT RANGES ARE BUILT FROM** — **⇒ ⇒ ⇒ SO **THE MISSING `symbolic`
-REWRITER IS **NOT** A SIDE NOTE: IT IS **THE** MISSING PIECE OF STAGE 1.**
-
-## AND THREE FIXES I LANDED ON TOP OF THE UNIT's WORK
-
-**⇒ (a) `IX.IxCtx{rr_realize(ar, sink), ...}` COULD NOT BE INFERRED** — THE ERROR IS
-*"expected : an annotated term (cannot infer)"* — **⇒ SO THE CONTEXT IS NOW BUILT BY **THE
-PORT's OWN CONSTRUCTOR** (`indexing.bend:213` `ix_ctx_realize(rm)`), WHICH IS NAMED FOR
-EXACTLY THIS JOB: *"A CONTEXT WITH A REALIZE MAP AND NOTHING ELSE ... UPSTREAM FILLS THE
-REALIZE MAP BEFORE THE RANGE-MAP LOOP (`indexing.py:188`), SO THE LOOP's CONTEXT STARTS WITH
-IT."***
-**⇒ (b) `sink` IS READ TWICE** (BY THE REALIZE MAP AND BY THE TOPOSORT) **⇒ SO IT IS BOUND
-ONCE TO A `+` LOCAL**, **⇒ AND THE REALIZE MAP IS FILLED **BEFORE** THE TOPOSORT, WHICH IS
-**UPSTREAM's ORDER** (`indexing.py:188` THEN `:192`).**
-**⇒ (c) `rr_range_row` PRINTS **AN ENTRY FOR EVERY NODE** — **⇒ AND UPSTREAM'S ORACLE PRINTS
-**ONLY THE NODES IN `ctx.range_map`**, **⇒ SO THE COMPARISON IS **ON THE **MAP**, NOT ON THE
-NODE LIST.**
+**THE SECOND HALF**, AND **NEITHER IS ENOUGH ALONE** — **⇒ AND THE MEASUREMENT NOW SAYS
+EXACTLY WHAT THE APPLY NEEDS: **THE RANGE MAP's **ENTRIES** (WITH THE CONSTS FIXED) AND **THE
+`symbolic` REWRITER** FOR THE AFFINE EXPRESSIONS.**
 
 ## THE COST
 
