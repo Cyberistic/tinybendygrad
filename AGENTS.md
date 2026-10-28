@@ -131,9 +131,9 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
   **⇒ AND **THE **RUN **WAS **RE-TAKEN **2026-10-28**, **AFTER **THE **CITATION **WORK **STOPPED
-  **MOVING **THE **PORT** (`079ae37e3c52a152c9c4d13718e96a889012352d`): **`substrate-start ==
-  substrate-end == live == repro-substrate == e9400a49a2f645df5742f4cc50b8cb5a64e7ce2e9461e67017c11ec3eb340116`**,
-  **`substrate-head=079ae37e3c52a152c9c4d13718e96a889012352d`**, **AND **`gates/corpuswitness-gate.py`
+  **MOVING **THE **PORT** (`1e16d64a63f49a9ff77c9bd2bbd7d29834f071e4`): **`substrate-start ==
+  substrate-end == live == repro-substrate == 8809f7cadf73ac74aab1b98077718d491aa541a9d555b6472e83c33826415877`**,
+  **`substrate-head=1e16d64a63f49a9ff77c9bd2bbd7d29834f071e4`**, **AND **`gates/corpuswitness-gate.py`
   **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`** **AND
   **`checks/corpus-figure.py` **READS **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS
   agrees`** (**rc=0** **WITH **`DEV=CPU`**).**  **⇒ AND **`unhealthy() -> []`**, **`artefacts_ok() ->
@@ -154,14 +154,14 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `319 of 319 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=319 repro-identical=319 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == repro-substrate == e9400a49a2f645df5742f4cc50b8cb5a64e7ce2e9461e67017c11ec3eb340116`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == repro-substrate == 8809f7cadf73ac74aab1b98077718d491aa541a9d555b6472e83c33826415877`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=079ae37e3c52a152c9c4d13718e96a889012352d` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=1e16d64a63f49a9ff77c9bd2bbd7d29834f071e4` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `079ae37e`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's**, **AND **THE **LIVE
+  `1e16d64a`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's**, **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION**, **THE **RANGEIFY **AND
-  **THE **`UNCLAIMED` **WORK **LEFT**: **THE
+  **THE **`UNCLAIMED` **WORK **LEFT** (AND **THE **`UNCLAIMED` **CLASS **IS **NOW **0**): **THE
   **CITATION **CLASSES **ARE **CLOSED** -- **`gates/pin-cite-gate.py` **READS
   **`cite.unverifiable_no_claim_about_the_file=0`** **AND **`cite.at_no_revision_dangling=0`**,
   **`gates/todo-cite-gate.py` **READS **`0 **WRONG-LINE`**, **`0 **WRONG-SYMBOL`**, **`0
