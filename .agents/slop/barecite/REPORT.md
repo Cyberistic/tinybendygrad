@@ -65,12 +65,25 @@ is the same class of defect, so it was fixed.
 **⇒ THE FILES I DID NOT TOUCH DID NOT GET WORSE.** Per-file counts for every file
 outside the eleven: `UNCLAIMED` 359 -> 356, `WRONG-LINE` 61 -> 3,
 `WRONG-LINE-BY-BLOCK` 101 -> 100, `AMBIGUOUS` 19 -> 19, `OUT-OF-CORPUS` 10 -> 10.
-The `RESOLVES` rise in the untouched files (463 -> 529) is **other units' work on
+The `RESOLVES` rise in the untouched files (463 -> 528) is **other units' work on
 the same class**, not this slice's: `base.bend`, `codegen/kernel.bend`,
 `engine/realize.bend`, `extra/models/{bert,efficientnet,inception,llama,rnnt,t5,vit}.bend`,
 `mixin/gradient.bend`, `mixin/rand.bend`, `nn/layers.bend`, `nn/mnist_cnn.bend`,
 `renderer/{kuconv,wgsl}.bend`, `runtime/support/nv/nvdev.bend`,
 `schedule/prepare.bend`, `uop/validate.bend`.
+
+**⇒ THE 3 REMAINING `WRONG-LINE` ARE NOT MINE, AND ALL THREE ARE THE SAME SHIFT:**
+
+```
+extra/models/efficientnet.bend:31 -> mixin/rand.bend:945  `rd_glorot_uniform` is declared at :950
+extra/models/rnnt.bend:54        -> mixin/rand.bend:921  `rd_uniform` is declared at :925
+extra/models/vit.bend:23         -> mixin/rand.bend:921  `rd_uniform` is declared at :925
+```
+
+All three are the SAME `mixin/rand.bend` move that this slice's commit `9b1e3aa53`
+re-derived for ITS OWN four pointers -- and all three are in files this slice does
+not own (`⇒ DO NOT TOUCH`). **⇒ THE OWNING UNITS SHOULD RE-DERIVE THEM; THE FIX IS
+THE SAME SHAPE.**
 
 **⇒ ONE RISE IN AN UNTOUCHED FILE, AND IT IS NOT A REGRESSION:**
 `extra/models/efficientnet.bend` `WRONG-LINE` 0 -> 1. That file is another
@@ -382,7 +395,7 @@ All under `.agents/slop/barecite/`:
 | `sum.py` | the verdict counts, and the 79 slice rows' progress |
 | `proof.py` | THE COMMENT-ONLY PROOF (two levels: code hash, then the `D.refuse` payloads) |
 | `plant.py` | the plant for the `symbol=` form, on a COPY of the port |
-| `before.rows` / `after.rows` | the two censuses |
+| `before.rows` / `after.rows` / `final.rows` | the three censuses |
 
 **⇒ NONE OF THEM IS A GATE AND NONE OF THEM IS A LIST.** `where.py` and `at.py`
 walk the port with `os.walk`; `sum.py` reads the rows the gate itself wrote.
