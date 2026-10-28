@@ -24930,3 +24930,41 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **SO **A **COMMENT-ONLY **PLANT **IS **A **PLANT **THAT **CANNOT **FAIL.**  **⇒ AND **THE
       **PLANT **MUST **BE **ON **A **COPY** — **NEVER **`git show HEAD:`** — **AND **THE **CONTROL
       **MUST **BE **A **BYTE-IDENTICAL **TWIN.**
+
+- [x] **THE **CORPUS **IS **GREEN, **CURRENT **AND **REPRODUCIBLE **AGAIN**, **ON **THE **TREE **THE
+      **CITATION **WORK **LEFT** (MEASURED **2026-10-28**, **`bacd172293d86bc5…`**).**
+      **`substrate-start == substrate-end == live == repro-substrate ==
+      9a10992e56be259a22ab040a0dc0f70aeb64c4e39b0b79ebe7255037bef33542`**, **AND
+      **`substrate-head=bacd172293d86bc5acc89e6710c8e1fb1ba22bca`** **IS **THE **COMMIT **IT **WAS
+      **TAKEN **ON** (**`git rev-parse --short HEAD` **WAS **`bacd1722`** **AT **THE **TIME**).**
+      **⇒ AND **THE **READING**: **`graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0
+      byte-identical=35 graphs-refused=0`**, **`plants-disagree=8 of 8`**, **`controls=5 of 5`**,
+      **`conflations=4 of 4`**, **`stable-pairs=5 of 5 stable-failed=0 of 5 stable-differ=0 of 5`**,
+      **`cross=1 of 1`**, **`expect-moved=0`**, **`selfcheck=# SELFCHECK: OK`**,
+      **`oracle-selfcheck=# ORACLE SELFCHECK: OK`**, **`census-rc=rc=0`**.
+      **⇒ AND **THE **WITNESSES**: **`gates/corpuswitness-gate.py` **READS **`PASS -- the claim is
+      ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`**; **`checks/corpus-figure.py` **READS
+      **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS agrees`** (**rc=0** **WITH
+      **`DEV=CPU`**); **AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**
+      -- **THE **READINGS **ARE **EMPTY**, **NOT **"0 **COMPLAINTS"**; **AND **`repro`: **`319 of 319
+      files identical across two clean runs`**.**
+      **⇒ AND **THE **COSTS**: **`run` **170 **s **AT **947 **MB **PEAK**, **`repro` **475 **s **AT
+      **1014 **MB **PEAK**, **BOTH **`WITHIN-LIMITS`** **UNDER **A **3072 **MB **CEILING.**
+      **⇒ AND **`AGENTS.md` **IS **UPDATED** (`74787a0ba`, `1149ef787`) **WITH **THE **NEW **DIGEST,
+      **THE **NEW **`substrate-head`**, **AND **THE **CLOSED **CITATION **CLASSES.**
+- [x] **ALL **FOUR **CITATION **GATES **ARE **rc=0**:** **`gates/pin-cite-gate.py`**
+      (**`cite.unverifiable_no_claim_about_the_file=0`**, **`cite.at_no_revision_dangling=0`**),
+      **`gates/todo-cite-gate.py`** (**`0 **WRONG-LINE`**, **`0 **WRONG-SYMBOL`**, **`0
+      UNRESOLVABLE`**), **`gates/bendcite-gate.py`**, **AND **`gates/specfold-gate.py`** (**48 **CELLS
+      **GRADED, **48 **AGREE**).**
+- [x] **A **RESOLVER **THAT **DEPENDS **ON **THE **ORDER **THE **WALK **VISITED **IN** (**9da8789b4**).**
+      **`gates/bendcite-gate.py`'s **`Corpus._scan()`** **COMPUTED **`self.aliases`** **IN **THE
+      **SAME **LOOP **THAT **FILLED **`self.bodies`**, **AND **`_import_target()` **ANSWERS **"DOES
+      **THE **FILE **THIS **IMPORT **NAMES **EXIST?"** **BY **ASKING **`cand in self.bodies`.**
+      **⇒ MEASURED: **69 **OF **THE **170 **FILES **HAD **A **`None` **ALIAS** **AND **THERE **WERE
+      **178 **`None` **ALIASES**, **AND **`mixin/op.bend`'s **`O` **ALIAS **WAS **`None`**.**
+      **⇒ THE **FIX **IS **TWO **PASSES** (THE **BODIES **FIRST, **THE **ALIASES **AFTER**): **AFTER,
+      **`0`**, **AND **`O.GroupOp.movement` **RESOLVES **AGAINST **`uop/ops.bend`.**
+      **⇒ AND **THE **ROW **MOVEMENT **IS **THE **HONEST **SIGN**: **`RESOLVES` **1031 -> 1029**
+      **AND **`UNCLAIMED` **60 -> 61** -- **TWO **ROWS **LEFT **THE **LOOSEST **CLASS **FOR **A **MORE
+      **PRECISE **ONE**, **BECAUSE **THE **GATE **CAN **NOW **JUDGE **MORE **OF **THEM.**
