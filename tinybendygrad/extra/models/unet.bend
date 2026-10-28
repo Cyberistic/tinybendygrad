@@ -29,7 +29,7 @@ import ./../datasets/__init__.bend as D
 #   --include='*.bend' tinybendygrad/` returns 0; the nearest defs are
 #   `cr_full` (mixin/creation.bend:489 symbol=cr_full) and `mo_range`/`mx_range` (nn/layers.bend
 #   :110), and those answer a RANGE OF INDICES for a permute order, not a TENSOR.
-#   `Tensor.exp` IS built (`ew_exp`, mixin/elementwise.bend:1312 symbol=ew_exp), so :12 is
+#   `Tensor.exp` IS built (`ew_exp`, mixin/elementwise.bend:1314 symbol=ew_exp), so :12 is
 #   blocked by its SECOND half only -- and the sentence above says which.
 #
 #   THE HEADLINE, WHICH IS FARTHER UP AND WORTH NAMING FIRST: upstream:7 binds
@@ -60,7 +60,7 @@ import ./../datasets/__init__.bend as D
 #   def.
 #
 # WHAT IS ALREADY HERE IS WORTH SAYING TOO, BECAUSE IT REMOVES THE OBVIOUS
-# GUESS: `Tensor.silu` IS built (`ew_silu`, mixin/elementwise.bend:1219 symbol=ew_silu, which is
+# GUESS: `Tensor.silu` IS built (`ew_silu`, mixin/elementwise.bend:1221 symbol=ew_silu, which is
 # `ew_swish` at :1208) and this file names it FIVE times (:21,:25,:27,:229,:240).
 # `Tensor.expand` IS built (`cr_expand`, mixin/creation.bend:343 symbol=cr_expand) and :137 needs
 # it. `Tensor.conv2d` (`nn_conv2d`, nn/layers.bend:937 symbol=nn_conv2d) and `Tensor.linear`
