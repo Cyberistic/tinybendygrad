@@ -230,9 +230,18 @@ measurements, not preferences:
   which is how a CORRECT pointer reads as `DANGLING-LINE`.
 
 The corpus digest (`differ.substrate_digest()`, imported — `checks/differ.py` was NOT
-run): `ec73703256fc2c5a…` at the frozen base, `7c8e9f9150a1f90e…` on the live tree
-with this slice's edits. The digest MOVES because this slice's edits are `.bend` edits,
-and it is the digest that says so.
+run):
+
+| when | digest |
+|---|---|
+| the frozen `git archive` of HEAD (the "before") | `ec73703256fc2c5afb1e5425d2d9a506a840a7c70b616369cb5163de4a4fb632` |
+| the live tree with this slice's edits | `7c8e9f9150a1f90e5c5eaec9b9408db22283bcb80d33e47b8893b8d16338c470` |
+| the tree at this slice's commit `31c1e44cc` | `6d2a68f71e7af58702920887c5887c2bfd4a7ed90002d7b31c99c0da94ddce45` |
+
+The digest MOVES because this slice's edits are `.bend` edits, and it is the digest
+that says so. **⇒ A `.bend` EDIT MOVES THE CORPUS'S FRESHNESS PIN, AND THE PIN IS
+WHAT SAYS SO — so the corpus must be re-run once the port stops moving, and the
+digests above are the receipts, not a standing fact.**
 
 ### 4.1 THE TREE MOVED TWICE UNDER THIS SLICE, AND IT IS THE CASE FOR `symbol=`
 

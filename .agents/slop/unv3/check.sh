@@ -23,7 +23,9 @@ ROOT="$PWD"
 WORK=".agents/slop/unv3/work-$NAME"
 rm -rf "$WORK"
 mkdir -p "$WORK"
-cp -R "$ROOT/.agents/slop/unv3/base/." "$WORK/"
+# THE BASE IS A COPY OF HEAD WITH THE PORT OVER IT; IT IS A CONVENIENCE, NOT A
+# REQUIREMENT, AND IT IS NOT COMMITTED (479 MB).
+if [ -d "$ROOT/.agents/slop/unv3/base" ]; then cp -R "$ROOT/.agents/slop/unv3/base/." "$WORK/"; fi
 # THE LIVE PORT, OVER THE BASE: every file's CURRENT bytes, in one frozen copy.
 rsync -a --delete "$ROOT/tinybendygrad/" "$WORK/tinybendygrad/"
 # THE COMPILER's OWN TREE. `references/` IS GITIGNORED (`.gitignore:2`), so the
