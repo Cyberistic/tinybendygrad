@@ -48,4 +48,4 @@ def imagenet_prepare_train() -> D.Refused:
 
 # upstream: the `if __name__ == "__main__":` block at extra/datasets/imagenet_download.py:39
 def main() -> D.Refused:
-  D.refuse("extra/datasets/imagenet_download.py:43 fetch (helpers.bend:3193 HTTP seam)")
+  D.refuse("extra/datasets/imagenet_download.py:43 fetch (helpers.bend:2758 symbol=lines is that file's ONLY I/O construct, so the HTTP seam is NOT ported)")

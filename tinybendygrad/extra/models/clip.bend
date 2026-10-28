@@ -106,7 +106,7 @@ def cl_gelu_alias() -> D.Refused:
 
 # :14-17 @lru_cache() / def default_bpe()
 def cl_default_bpe() -> D.Refused:
-  D.refuse("extra/models/clip.py:14 default_bpe -- FIRST MISSING SYMBOL fetch (:16); helpers.bend:3193 records the HTTP seam as unported")
+  D.refuse("extra/models/clip.py:14 default_bpe -- FIRST MISSING SYMBOL fetch (:16); helpers.bend:2758 symbol=lines is that file's ONLY I/O construct, so the HTTP seam is NOT ported")
 
 # ---------------------------------------------------------------------------
 # :19-138 Tokenizer / Tokenizer.ClipTokenizer. NOT PORTED: gzip, re, and a
@@ -124,7 +124,7 @@ def cl_tokenizer_init(version: Maybe<&2, String>) -> D.Refused:
 
 # :152 class Closed.ClipMlp / :153 def __init__(self)
 def cl_mlp_init() -> D.Refused:
-  D.refuse("extra/models/clip.py:152 ClipMlp.__init__ -- fc1/fc2 are Linear (:153,:154) and nn/layers.bend:427 nn_linear EXISTS; BLOCKED BY the missing class shell")
+  D.refuse("extra/models/clip.py:152 ClipMlp.__init__ -- fc1/fc2 are Linear (:153,:154) and nn/layers.bend:530 symbol=nn_linear EXISTS; BLOCKED BY the missing class shell")
 
 # :155 def __call__(self, h)
 def cl_mlp_call(+h: T.Tensor) -> D.Refused:
@@ -185,7 +185,7 @@ def cl_open_transformer_call(+x: T.Tensor) -> D.Refused:
 
 # :318 class Open.ClipTextTransformer / :319 def __init__(self, width, n_heads, layers, vocab_size=49408, ctx_length=77)
 def cl_text_transformer_init(width: U32, n_heads: U32, layers: U32, vocab_size: U32, ctx_length: U32) -> D.Refused:
-  D.refuse("extra/models/clip.py:319 ClipTextTransformer.__init__ -- FIRST MISSING SYMBOL Embedding (:319) -- THE FIRST MISSING SYMBOL OF THE WHOLE FILE; cr_empty (:320,:323) EXISTS at mixin/creation.bend:336")
+  D.refuse("extra/models/clip.py:319 ClipTextTransformer.__init__ -- FIRST MISSING SYMBOL Embedding (:319) -- THE FIRST MISSING SYMBOL OF THE WHOLE FILE; cr_empty (:320,:323) EXISTS at mixin/creation.bend:408 symbol=cr_empty")
 
 # :327 def __call__(self, text)
 def cl_text_transformer_call(+text: T.Tensor) -> D.Refused:
@@ -193,7 +193,7 @@ def cl_text_transformer_call(+text: T.Tensor) -> D.Refused:
 
 # :338 class Open.ClipVisionTransformer / :339 def __init__(self, width, layers, d_head, image_size, patch_size)
 def cl_vision_transformer_init(width: U32, layers: U32, d_head: U32, image_size: U32, patch_size: U32) -> D.Refused:
-  D.refuse("extra/models/clip.py:339 ClipVisionTransformer.__init__ -- FIRST MISSING SYMBOL LayerNorm (:348); the ONLY conv, nn_conv2d at nn/layers.bend:756, EXISTS (:343)")
+  D.refuse("extra/models/clip.py:339 ClipVisionTransformer.__init__ -- FIRST MISSING SYMBOL LayerNorm (:348); the ONLY conv, nn_conv2d at nn/layers.bend:937 symbol=nn_conv2d, EXISTS (:343)")
 
 # :352 def __call__(self, x)
 def cl_vision_transformer_call(+x: T.Tensor) -> D.Refused:

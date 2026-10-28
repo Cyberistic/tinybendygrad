@@ -77,13 +77,13 @@ def pool_prod.go(ds: List<&2, U32>, acc: U32) -> U32:
 type W4 is Data:
   W4{b0: U32, b1: U32, i0: U32, i1: U32, k0: U32, k1: U32, s0: U32, s1: U32, d0: U32, d1: U32}
 
-# THE TEN READERS. They are `mixin/rand.bend:213-219`'s `PK.i` / `PK.k` EXACTLY --
+# THE TEN READERS. They are `mixin/rand.bend:256 symbol=PK.i` / `PK.k` EXACTLY --
 # a non-consuming `q: W4` and a `match` that returns one field -- and they are
 # readers rather than ten `case` bindings because this file's first spelling put
 # the `case` INSIDE every derived def, and a derived def that calls another
 # derived def (`f0` reads `o0`) then consumed its own binding twice and `bend`
-# answered `W4.f0: d0 consumed more than once`. `mixin/rand.bend:225-226` already
-# states the rule: "`U1.v` is a def and therefore non-consuming".
+# answered `W4.f0: d0 consumed more than once`. `mixin/rand.bend:273 symbol=U1.v`
+# already states the rule: "`U1.v` is a def and therefore non-consuming".
 def W4.b0(q: W4) -> U32:
   match q:
     case W4{b0, b1, i0, i1, k0, k1, s0, s1, d0, d1}: b0
@@ -414,7 +414,7 @@ def pool_bn_stats.cen(+x: T.Tensor, +m: T.Tensor, +axis: List<&2, U32>) -> T.Ten
 # which is the ONLY path ResNet INFERENCE takes -- is buildable and the
 # training-time update is not.
 def pool_bn_running_stats() -> D.Refused:
-  D.refuse("nn/__init__.py:55-58  BatchNorm's running_mean/var update -- BLOCKED: TRAINING is not a binding in tinybendygrad (comments only), and Tensor.assign is not a def (tensor.bend:2539 states the immutability divergence)")
+  D.refuse("nn/__init__.py:55-58  BatchNorm's running_mean/var update -- BLOCKED: TRAINING is not a binding in tinybendygrad (comments only), and Tensor.assign is not a def (tensor.bend:2717 symbol=tn_param.of states the immutability divergence)")
 
 # TWO MORE WALLS, AND BOTH ARE ROWED IN `t_ref` SO THEY CANNOT DRIFT QUIETLY.
 #
@@ -432,7 +432,7 @@ def pool_wall_4d() -> D.Refused:
 # here: a second copy of a def that exists is the thing AGENTS.md calls a ledger
 # that names a path it does not own.
 def pool_wall_1d() -> D.Refused:
-  D.refuse("movement.py:614  _pool for one spatial axis -- NOT DUPLICATED: mixin/rand.bend:313 op_pool1 already is it for stride 1 and dilation 1")
+  D.refuse("movement.py:614  _pool for one spatial axis -- NOT DUPLICATED: mixin/rand.bend:371 symbol=op_pool1 already is it for stride 1 and dilation 1")
 
 # WALL(nn_pool_r1) -- THE ONE THAT COSTS THIS FILE ITS UOP-LEVEL ROWS. Measured:
 # `pool_nd` reads `(1)(1)(4)(4)(2)(2)` from the arena and is CORRECT, while
@@ -444,7 +444,7 @@ def pool_wall_1d() -> D.Refused:
 # `T.tn_new(ar, ...)` rebase before each build, which R1 says also HANGS
 # `randn_like` there. So the reduce rows above are `U32` arithmetic.
 def pool_wall_r1() -> D.Refused:
-  D.refuse("R1 THE ARENA (mixin/rand.bend:128-137) -- BLOCKED: O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of; max_pool/avg_pool/adaptive_avg_pool/batchnorm rows are U32 arithmetic, not node reads")
+  D.refuse("R1 THE ARENA -- BLOCKED: O.Arena is affine so a REDUCE-rooted result cannot be read back with mxw_dims_of; max_pool/avg_pool/adaptive_avg_pool/batchnorm rows are U32 arithmetic, not node reads. R1 IS WRITTEN IN mixin/rand.bend:425 symbol=op_arange, WHICH IS THE DEF THAT CARRIES THE WHOLE-FILE `+ar: O.Arena` THREAD R1 ASKS FOR")
 
 # ===========================================================================
 # THE ROWS. `main` PRINTS AND MEASURES; there are no expectations in this file

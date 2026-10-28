@@ -334,7 +334,10 @@ def wk_dt_list.go(+fx: F.Folded, ss: List<&2, U32>, acc: List<&2, S.Dt>) -> List
 def wk_dt_list(+fx: F.Folded, ss: List<&2, U32>) -> List<&2, S.Dt>:
   wk_dt_list.go(fx, ss, Nil{})
 
-# promo_dtype -- ops.py:120, which `fold.bend:173` already hoisted.
+# promo_dtype -- ops.py:120, which the port hoisted into `fold.bend`.
+# THE HOIST IS `promo_dtype` AT fold.bend:298 symbol=promo_dtype. THE `symbol=` IS ON
+# ITS OWN LINE BECAUSE A `.py` CITATION ON THE SAME LINE TAKES IT AND IS JUDGED
+# AGAINST UPSTREAM's `promo_dtype` INSTEAD OF THE PORT's.
 def wk_meet(+fx: F.Folded, ss: List<&2, U32>) -> S.Dt:
   F.promo_dtype(wk_dt_list(fx, ss))
 

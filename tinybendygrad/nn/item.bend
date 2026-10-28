@@ -142,8 +142,8 @@ type Itm is Data:
 # not a literal at each use site so that the string is ONE string.
 def nn_item_wall() -> String:
   String.concat([
-    "NO-READ: no live Buffer in the port (uop/ops.bend:5296); realize.py:145",
-    " exec_copy -- the device-to-host _copyout -- is a foreign effect (engine/realize.bend:60 [b])"])
+    "NO-READ: no live Buffer in the port (uop/ops.bend:174 symbol=OpsBUFFER is the ONLY Buffer-named construct and it is the OP, not an allocated object); realize.py:145",
+    " exec_copy -- the device-to-host _copyout -- is a foreign effect (engine/realize.bend:966 symbol=rz_est_is_copy RECOGNISES the copy and BUILDS NO Estimates, so there is no copyout)"])
 
 # ===========================================================================
 # 1. THE PRECONDITION. `prod(self.shape)` -- upstream's `numel()`

@@ -2832,7 +2832,7 @@ def Eng.rep(+e: Eng) -> List<&2, Rep>:
 def eng_fresh(+e: Eng) -> Eng: Eng{Eng.ar(e), Nil{}}
 
 # THE FUEL. The bound on the fixed-point loop. The arena's node count is the
-# bound, because a node's srcs are all BELOW it (ops.bend:2754) so no chain
+# bound, because a node's srcs are all BELOW it (ops.bend:1315 symbol=Arena.nodes) so no chain
 # of rewrites can be longer than the arena.
 def eng_fuel(+ar: O.Arena) -> Nat: U32.to_nat(U32.add(O.Arena.next(ar), 4))
 
@@ -2942,7 +2942,7 @@ def eng_node(st: Stg, +e: Eng, +n: U32) -> Eng:
   eng_put(e1, n, h)
 
 # THE SWEEP. The arena in INDEX ORDER, which is a TOPOLOGICAL order
-# (ops.bend:2754), so every node's children are already final when it is
+# (ops.bend:1315 symbol=Arena.nodes), so every node's children are already final when it is
 # reached. The recursion is on the LIST TAIL, and the SHRINKING ARGUMENT COMES
 # FIRST (Bend reads a self-call's arguments left to right, each passed
 # unchanged until one shrinks), so there is no mutual recursion -- which Bend
@@ -3030,7 +3030,7 @@ def eng_node_str(+ar: O.Arena, +n: U32) -> String:
                  String.join(eng_src_names.go(ar, O.Arena.srcs(ar, n), Nil{}), ",")])
 
 # THE DUMP IS A DFS FROM THE RESULT ROOT, and it must be: the arena KEEPS the
-# nodes a rule replaced (the arena is append-only, ops.bend:2754), so a dump
+# nodes a rule replaced (the arena is append-only, ops.bend:1315 symbol=Arena.nodes), so a dump
 # of the WHOLE ARENA would show the OLD graph and the NEW graph side by side
 # and neither of them is the answer. The DFS walks the CURRENT graph -- the
 # nodes the map points at -- and each node is emitted ONCE.

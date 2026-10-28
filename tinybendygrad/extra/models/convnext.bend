@@ -95,7 +95,7 @@ def cn_at(r: D.Refused) -> String:
 
 # :6  def __init__(self, dim)
 def cn_block_init(dim: U32) -> D.Refused:
-  D.refuse("extra/models/convnext.py:6 Block.__init__ -- FIRST MISSING SYMBOL nn.Conv2d CLASS at :7 (the op nn_conv2d, nn/layers.bend:756, EXISTS); then Tensor.layernorm at :8 (nn/__init__.bend:230)")
+  D.refuse("extra/models/convnext.py:6 Block.__init__ -- FIRST MISSING SYMBOL nn.Conv2d CLASS at :7 (the op nn_conv2d, nn/layers.bend:937 symbol=nn_conv2d, EXISTS); then Tensor.layernorm at :8 (nn/__init__.bend:220 symbol=nn_glorot is that file's LAST def, and it has NO x.layernorm def at all -- the wall is the `# TODO(p3) mixin/op.py:1661 x.layernorm` marker in that file's WALLS block)")
 
 # :7  self.dwconv = Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim)
 def cn_block_dwconv(dim: U32) -> D.Refused:
@@ -103,18 +103,18 @@ def cn_block_dwconv(dim: U32) -> D.Refused:
 
 # :8  self.norm = LayerNorm(dim, eps=1e-6)
 def cn_block_norm(dim: U32, eps: F32) -> D.Refused:
-  D.refuse("extra/models/convnext.py:8 Block.norm -- MISSING Tensor.layernorm, named as an open wall at nn/__init__.bend:230 (mixin/op.py:1644)")
+  D.refuse("extra/models/convnext.py:8 Block.norm -- MISSING Tensor.layernorm, named as an open wall at nn/__init__.bend:220 symbol=nn_glorot (that file's LAST def -- there is NO x.layernorm def; the wall is the `# TODO(p3) mixin/op.py:1661 x.layernorm` marker in that file's WALLS block, and mixin/op.py:1644 upstream)")
 
 # :9  self.pwconv1 = Linear(dim, 4 * dim)   :10  self.pwconv2 = Linear(4 * dim, dim)
 def cn_block_pwconv1(dim: U32) -> D.Refused:
-  D.refuse("extra/models/convnext.py:9 Block.pwconv1 -- needs the nn.Linear CLASS; the op nn_linear (nn/layers.bend:427) EXISTS")
+  D.refuse("extra/models/convnext.py:9 Block.pwconv1 -- needs the nn.Linear CLASS; the op nn_linear (nn/layers.bend:530 symbol=nn_linear) EXISTS")
 
 def cn_block_pwconv2(dim: U32) -> D.Refused:
-  D.refuse("extra/models/convnext.py:10 Block.pwconv2 -- needs the nn.Linear CLASS; the op nn_linear (nn/layers.bend:427) EXISTS")
+  D.refuse("extra/models/convnext.py:10 Block.pwconv2 -- needs the nn.Linear CLASS; the op nn_linear (nn/layers.bend:530 symbol=nn_linear) EXISTS")
 
 # :11  self.gamma = Tensor.ones(dim)
 def cn_block_gamma(dim: U32) -> D.Refused:
-  D.refuse("extra/models/convnext.py:11 Block.gamma -- Tensor.ones IS cr_ones (mixin/creation.bend:487) but it takes an O.Arena and an S.Dt, so this is the WEIGHT-STORE question and not the ones question")
+  D.refuse("extra/models/convnext.py:11 Block.gamma -- Tensor.ones IS cr_ones (mixin/creation.bend:559 symbol=cr_ones) but it takes an O.Arena and an S.Dt, so this is the WEIGHT-STORE question and not the ones question")
 
 # :13 def __call__(self, x:Tensor)
 def cn_block_call(+x: T.Tensor) -> D.Refused:
@@ -124,11 +124,11 @@ def cn_block_call(+x: T.Tensor) -> D.Refused:
 # :16's is where the missing `Tensor.gelu` lives.
 # :15 lambda x: x.permute(0, 2, 3, 1)
 def cn_permute_0221(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/convnext.py:15 Block.__call__ permute(0,2,3,1) -- mxw_permute (mixin/movement.bend:1449) EXISTS; blocked by Tensor.sequential at :14")
+  D.refuse("extra/models/convnext.py:15 Block.__call__ permute(0,2,3,1) -- mxw_permute (mixin/movement.bend:1452 symbol=mxw_permute) EXISTS; blocked by Tensor.sequential at :14")
 
 # :16 lambda x: (self.gamma * x).permute(0, 3, 1, 2)
 def cn_permute_0312(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/convnext.py:16 Block.__call__ -- Tensor.gelu is MISSING; only ew_quick_gelu (mixin/elementwise.bend:1217) exists, using the 1.702 constant, and plain gelu needs erf (elementwise.bend:43)")
+  D.refuse("extra/models/convnext.py:16 Block.__call__ -- Tensor.gelu is MISSING; only ew_quick_gelu exists, using the 1.702 constant, and plain gelu needs erf -- and the FLOAT-CONST FAMILY wall that erf is in is that file's third wall block. THE LANDED ARM IS mixin/elementwise.bend:1229 symbol=ew_quick_gelu")
 
 # ---------------------------------------------------------------------------
 # :19-32 ConvNeXt.
@@ -151,7 +151,7 @@ def cn_stages(depth0: U32, depth1: U32, depth2: U32, depth3: U32, dim0: U32,
 
 # :26 self.norm = LayerNorm(dims[-1])  :27 self.head = Linear(dims[-1], num_classes)
 def cn_convnext_head(num_classes: U32, dim3: U32) -> D.Refused:
-  D.refuse("extra/models/convnext.py:26 ConvNeXt.norm -- MISSING Tensor.layernorm (nn/__init__.bend:230)")
+  D.refuse("extra/models/convnext.py:26 ConvNeXt.norm -- MISSING Tensor.layernorm (nn/__init__.bend:220 symbol=nn_glorot is that file's LAST def -- there is NO x.layernorm def; the wall is the `# TODO(p3) mixin/op.py:1661 x.layernorm` marker in that file's WALLS block)")
 
 # :29 def __call__(self, x:Tensor)
 def cn_convnext_call(+x: T.Tensor) -> D.Refused:
@@ -161,7 +161,7 @@ def cn_convnext_call(+x: T.Tensor) -> D.Refused:
 # `mixin/op.bend:891`; it is named so the row is not mistaken for "all of
 # ConvNeXt is absent".
 def cn_mean_axes() -> D.Refused:
-  D.refuse("extra/models/convnext.py:32 ConvNeXt.__call__ mean([-2,-1]) -- mo_mean (mixin/op.bend:891) EXISTS with U32 axes; Python's -2/-1 have no U32 image (nn/layers.bend:318 measures this)")
+  D.refuse("extra/models/convnext.py:32 ConvNeXt.__call__ mean([-2,-1]) -- mo_mean (mixin/op.bend:953 symbol=mo_mean) EXISTS with U32 axes; Python's -2/-1 have no U32 image (nn/layers.bend:382 symbol=nn_dot.order is the construct that measures it -- IT NEEDS NO NEGATIVE INDEX ANYWHERE)")
 
 # ---------------------------------------------------------------------------
 # :36-42 `versions` -- FIVE dicts of two lists each, and this is the one part of
@@ -218,11 +218,11 @@ def cn_get_model(version: U32, load_weights: Bool) -> D.Refused:
 
 # :48 weights = torch_load(fetch(...))['model']
 def cn_get_model_fetch() -> D.Refused:
-  D.refuse("extra/models/convnext.py:48 get_model -- MISSING fetch: helpers.bend:3193 records the whole HTTP seam as unported, and no def named fetch( exists")
+  D.refuse("extra/models/convnext.py:48 get_model -- MISSING fetch: helpers.bend:2758 symbol=lines is that file's ONLY I/O construct, so the whole HTTP seam is NOT ported, and no def named fetch( exists")
 
 # :50 mv = get_child(model, k)  :51 mv.assign(...).realize()
 def cn_get_model_assign() -> D.Refused:
-  D.refuse("extra/models/convnext.py:51 get_model -- MISSING Tensor.assign and Tensor.realize; pool.bend:408 and tensor.bend:2539 both name the immutability divergence")
+  D.refuse("extra/models/convnext.py:51 get_model -- MISSING Tensor.assign and Tensor.realize; nn/pool.bend:416 symbol=pool_bn_running_stats and tensor.bend:2717 symbol=tn_param.of both name the immutability divergence")
 
 # ---------------------------------------------------------------------------
 # :54-63 `if __name__ == "__main__":`. `main` below IS this block and nothing
