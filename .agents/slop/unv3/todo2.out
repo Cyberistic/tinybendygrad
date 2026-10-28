@@ -1,0 +1,24 @@
+# exit vocabulary: {0: 'PASS', 1: 'FAIL', 3: 'REFUSED', 4: 'SKIP', 5: 'DEAD'}
+PIN        : 5c2bf39d6c4b -- tinygrad/ tree 6c91e8977790, 230 blobs match the vendored copy, 360 local-only
+POPULATION : 1154 citations in 99 `.bend` files
+             754 carried by a `TODO(pN)` marker, 400 by an explicit `symbol=` field
+
+   1121  RESOLVES
+      0  WRONG-LINE
+      0  WRONG-SYMBOL
+      0  UNRESOLVABLE
+      4  PORT-CITATION
+     29  NO-CITATION
+
+--- RESOLVES, BY WHAT HELD IT ---
+    613  symbol-decl
+    346  symbol-body
+     83  snippet
+     43  loose
+     17  symbol-named
+     10  range-of-symbols
+      7  short-form
+      2  symbol-range
+
+ROWS       : 1154 -> .agents/slop/unv3/todo2.rows
+# todo-cite-gate: PASS

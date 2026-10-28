@@ -1,0 +1,32 @@
+# exit vocabulary: {0: 'PASS', 1: 'FAIL', 3: 'REFUSED', 4: 'SKIP', 5: 'DEAD'}
+PIN        : 5c2bf39d6c4b -- tinygrad/ tree 6c91e8977790, 230 blobs match the vendored copy, 360 local-only
+POPULATION : 1155 citations in 99 `.bend` files
+             754 carried by a `TODO(pN)` marker, 401 by an explicit `symbol=` field
+
+   1120  RESOLVES
+      1  WRONG-LINE
+      0  WRONG-SYMBOL
+      1  UNRESOLVABLE
+      4  PORT-CITATION
+     29  NO-CITATION
+
+--- WRONG-LINE (1) ---
+  tinybendygrad/runtime/ops_cpu.bend:71  tinygrad/device.py:390  symbol=has_copy_queue  how=symbol-moved  the cited line does not hold the claim; `has_copy_queue` is declared at :391
+      # (tinygrad/device.py:390 symbol=has_copy_queue) and
+
+--- UNRESOLVABLE (1) ---
+  tinybendygrad/extra/models/llama.bend:66  extra/models/llama.py:93  symbol=-  how=no-file  `extra/models/llama.py` names no upstream file at the pin (absent)
+      #   * `cache_kv` (extra/models/llama.py:82,:83,:86,:90,:92,:93 symbol=cache_kv) --
+
+--- RESOLVES, BY WHAT HELD IT ---
+    612  symbol-decl
+    346  symbol-body
+     83  snippet
+     43  loose
+     17  symbol-named
+     10  range-of-symbols
+      7  short-form
+      2  symbol-range
+
+ROWS       : 1155 -> .agents/slop/unv3/todo.rows
+# todo-cite-gate: FAIL -- 2 of 1155 marker citations are false

@@ -1,0 +1,9 @@
+== pin-cite rc=0  bendcite rc=1  (t13)
+unverifiable in slice: 0
+WRONG-LINE+DANGLING-LINE in slice: 8
+    1  tinybendygrad/engine/jit.bend
+    2  tinybendygrad/extra/models/efficientnet.bend
+    2  tinybendygrad/extra/models/llama.bend
+    1  tinybendygrad/extra/models/unet3d.bend
+    1  tinybendygrad/nn/argmax.bend
+    1  tinybendygrad/schedule/multi.bend

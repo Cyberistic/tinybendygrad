@@ -1,0 +1,26 @@
+== pin-cite rc=0  bendcite rc=1  (t7)
+unverifiable in slice: 11
+    1  tinybendygrad/runtime/ops_rdma.bend
+    1  tinybendygrad/runtime/support/am/ip.bend
+    4  tinybendygrad/runtime/support/compiler_qcom.bend
+    3  tinybendygrad/runtime/support/hcq2.bend
+    1  tinybendygrad/runtime/support/usb.bend
+    1  tinybendygrad/viz/cli.bend
+WRONG-LINE+DANGLING-LINE in slice: 68
+    1  tinybendygrad/codegen/decomp/transcendental.bend
+    2  tinybendygrad/dtype.bend
+    1  tinybendygrad/engine/jit.bend
+    1  tinybendygrad/examples/train_resnet.bend
+    1  tinybendygrad/extra/models/efficientnet.bend
+   11  tinybendygrad/extra/models/llama.bend
+    6  tinybendygrad/extra/models/retinanet.bend
+    1  tinybendygrad/extra/models/unet3d.bend
+    4  tinybendygrad/mixin/elementwise.bend
+    1  tinybendygrad/nn/argmax.bend
+    4  tinybendygrad/renderer/tc_ptx.bend
+    1  tinybendygrad/runtime/autogen/libclang.bend
+    1  tinybendygrad/runtime/support/compiler_cpu.bend
+    1  tinybendygrad/runtime/support/compiler_qcom.bend
+   28  tinybendygrad/runtime/support/hcq2.bend
+    3  tinybendygrad/schedule/multi.bend
+    1  tinybendygrad/uop/spec.bend

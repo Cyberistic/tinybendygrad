@@ -1,0 +1,4 @@
+== pin-cite rc=0  bendcite rc=1  (t15)
+unverifiable in slice: 0
+WRONG-LINE+DANGLING-LINE in slice: 2
+    2  tinybendygrad/extra/models/llama.bend
