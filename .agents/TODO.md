@@ -25252,3 +25252,48 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **RANGEIFY **LANE **IS **STILL **ADDING **A **`IxRange` **TYPE **TO
       **`tinybendygrad/schedule/indexing.bend`** — **A **REAL **PORT **CHANGE**, **NOT **A **CITATION
       **FIX.**
+
+- [x] **THE **CORPUS **IS **GREEN, **CURRENT **AND **REPRODUCIBLE **ON **THE **TREE **ALL **THREE
+      **WORK **STREAMS **LEFT** (MEASURED **2026-10-28**, **`079ae37e3c52a152…`**).**
+      **`substrate-start == substrate-end == live == repro-substrate ==
+      e9400a49a2f645df5742f4cc50b8cb5a64e7ce2e9461e67017c11ec3eb340116`**, **AND
+      **`substrate-head=079ae37e3c52a152c9c4d13718e96a889012352d`** **IS **THE **COMMIT **IT **WAS
+      **TAKEN **ON** (**`git rev-parse --short HEAD` **WAS **`079ae37e`** **AT **THE **TIME**).**
+      **⇒ AND **THE **READING**: **35/35 **AGREE**, **35/35 **BYTE-IDENTICAL**, **8/8 **PLANTS**,
+      **5/5 **CONTROLS**, **4/4 **CONFLATIONS**, **5/5 **STABLE **PAIRS**, **1/1 **CROSS**,
+      **`SELFCHECK: OK`**, **`ORACLE **SELFCHECK: OK`**, **`census-rc=rc=0`**.
+      **⇒ AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**; **AND
+      **`repro`: **`319 of 319 files identical across two clean runs`**; **PEAK **RSS **902 **MB
+      (**`run`**, **178 **s**) **AND **914 **MB **(**`repro`**, **365 **s**), **BOTH **`WITHIN-LIMITS`.**
+      **⇒ AND **THE **WITNESS**: **`PASS -- the claim is ESTABLISHED`**, **ALL **SEVEN **READINGS **OK**.**
+- [x] **ALL **FOUR **CITATION **GATES **ARE **rc=0`**:** **`pin-cite-gate.py`**
+      (**`unverifiable=0`**, **`dangling=0`**), **`todo-cite-gate.py`** (**`0/0/0`**),
+      **`bendcite-gate.py`** (**`WRONG-LINE` **0**, **`DANGLING-LINE` **0**, **`UNCLAIMED` **3** — **THE
+      **LAST **THREE **ARE **IN **THE **RANGEIFY **LANE's **FILES**), **AND **`specfold-gate.py`**
+      (**48 **CELLS **GRADED, **48 **AGREE**).**
+- [x] **THE **`UNCLAIMED` **CLASS **IS **NEARLY **CLOSED** (MEASURED): **71 -> 3**, **65 **NAMED, **0
+      **NOT **RECONSTRUCTIBLE** (`a740a152a`).**  **⇒ AND **THE **KINDS**: **38 **POINTERS **MOVED **TO
+      **THE **DECLARATION **+ **`symbol=`**; **27 **NAMED **A **FILE **HEADER** (WHICH **IS **FREE
+      **COMMENT **SPACE **WITH **NO **CONSTRUCT **TO **NAME**, **SO **THE **HONEST **FORM **NAMES **THE
+      **REGION**); **AND **2 **CLAIMS **THAT **NAMED **SOMETHING **THE **TARGET **NEVER **HELD** —
+      **`uop/weak.bend`'s **"SIX **arms" **IS **NOW **SEVEN**, **AND **`mixin/rand.bend`'s **"PERMUTE
+      **defers" **IS **FALSE** — **PERMUTE **IS **PORTED**.  **⇒ AND **NEITHER **WAS **DELETED **NOR
+      **WEAKENED** — **THEY **WERE **CORRECTED.**
+- [x] **THE **GATE's **OWN **PLANT **WAS **BLIND**, **AND **IT **TOOK **THREE **SEPARATE **CAUSES**
+      (`3a3dd33a0`).**  **⇒ AND **THE **THREE**: **(1) **THE **PLANT **INSERTED **A **COMMENT**, **AND
+      **THE **GATE's **OWN **ARM-ONE **DOCSTRING **SAYS **A **COMMENT **RUN **IS **ABSORBED **INTO **THE
+      **CONSTRUCT's **SPAN** — **SO **IT **INSERTS **CODE**, **AND **NOT **A **`def`** (A **CONSTRUCT's
+      **SPAN **RUNS **TO **THE **NEXT **DECLARATION**); **(2) **`k` **IS **COMPUTED **FROM **THE
+      **SPAN's **START**, **NOT **FROM **THE **DECLARATION** (**MEASURED: **SPAN **START **`:1523`**,
+      **DECLARATION **`:1529`**, **SO **`k` **IS **8**, **NOT **2`**); **(3) **THE **LOOKUP **KEY **IS
+      **THE **RELATIVE **PATH** — **`corpus.declares` **KEYS **ON **THE **PATH **RELATIVE **TO **THE
+      **ROOT`**, **AND **AN **ABSOLUTE **PATH **IS **NOT **A **KEY**, **SO **THE **SPAN **LOOKUP **WAS
+      **SILENTLY **MISSING**.**  **⇒ AND **THE **PLANT **IS **NOW **GREEN**: **ARM **ONE
+      **`RESOLVES` -> `WRONG-LINE` -> **`RESOLVES`**; **ARM **TWO **`RESOLVES` -> `WRONG-LINE` ->
+      **the **twin **reproduces **the **control`.**
+- [x] **A **`symbol=` **NAMES **THE **CONSTRUCT **AND **NOT **THE **LINE** — **AND **THE **LAST
+      **POINTER **PROVED **THE **DIFFERENCE** (`079ae37e3`).**  **⇒ AND **`ops.bend`'s **`g_nr`**
+      **CITATION **CARRIED **`symbol=g_nr`** **AND **STILL **ROTTED**, **BECAUSE **`schedule/indexing.bend`
+      **IS **STILL **GROWING** (`:1420` -> `:1428`)** — **⇒ THE **CLAIM **SURVIVES **THE **MOVE, **BUT
+      **THE **LINE **BESIDE **IT **DOES **NOT**, **AND **A **CITATION **CARRYING **BOTH **IS **STILL
+      **ROT** **WHILE **THE **FILE **GROWS.**
