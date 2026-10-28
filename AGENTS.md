@@ -130,15 +130,21 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **AND AS OF **2026-10-22T17:2xZ** (`b5c16d646`, **AFTER **TONIGHT's **247 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
-  **⚠ AND **THIS **RUN **IS **NOW **STALE, **MEASURED **2026-10-27**: **THE **SUBSTRATE **MOVED**
-  (**THE **CITATION **WORK **TOUCHED **`tinybendygrad/uop/fold.bend`**, **`mixin/op.bend`**,
-  **`runtime/webgpu_call.bend`** **AND **FORTY **MORE **`.bend` **FILES**), **SO **THE **LIVE
-  **DIGEST **IS **`ed6a074fe1aa0dfe54df4a768e226f3781df814999e9f7ccafcead1437163cb9`** **AND **NOT
-  **THE **`eb6ef860…`** **BELOW**.  **⇒ THE **RUN **MUST **BE **RE-TAKEN **ONCE **THE **PORT
-  **STOPS **MOVING**, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**  **⇒ AND **THE **CLAIM
-  **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** -- **AND **A **GOVERNING
-  **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY **BRIEF **THAT
-  **CITES **IT.**
+  **⇒ AND **THE **RUN **WAS **RE-TAKEN **2026-10-28**, **AFTER **THE **CITATION **WORK **STOPPED
+  **MOVING **THE **PORT** (`bacd172293d86bc5acc89e6710c8e1fb1ba22bca`): **`substrate-start ==
+  substrate-end == live == repro-substrate == 9a10992e56be259a22ab040a0dc0f70aeb64c4e39b0b79ebe7255037bef33542`**,
+  **`substrate-head=bacd172293d86bc5acc89e6710c8e1fb1ba22bca`**, **AND **`gates/corpuswitness-gate.py`
+  **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`** **AND
+  **`checks/corpus-figure.py` **READS **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS
+  agrees`** (**rc=0** **WITH **`DEV=CPU`**).**  **⇒ AND **`unhealthy() -> []`**, **`artefacts_ok() ->
+  []`**, **`repro_bad() -> []`** -- **THE **READINGS **ARE **EMPTY**, **NOT **"0 **COMPLAINTS"** -- **AND
+  **`repro`: **`319 of 319 files identical across two clean runs`**, **PEAK **RSS **947 **MB
+  (**`run`**, **170 **s**) **AND **1014 **MB **(**`repro`**, **475 **s**), **BOTH **`WITHIN-LIMITS`.**
+  **⇒ AND **THE **CLAIM **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** --
+  **AND **A **GOVERNING **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY
+  **BRIEF **THAT **CITES **IT.**  **⇒ AND **THE **DOSE **OF **STALENESS **IS **THE **SUBSTRATE
+  **DIGEST**: **A **COMMIT **THAT **TOUCHES **NOTHING **IN **`tinybendygrad/`** **OR **`tinygrad/`**
+  **DOES **NOT **MAKE **THE **RUN **STALE**, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**
   `graphs=35 graphs-answered=35 graphs-agree=35 graphs-disagree=0 byte-identical=35 graphs-refused=0`,
   `population=4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2`,
   `?=0`, `SHARED cores 52`, `controls 5 of 5`, `conflations 4 of 4`,
@@ -148,12 +154,12 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `319 of 319 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=319 repro-identical=319 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == repro-substrate == eb6ef8608ec64647a195d5521a4712dd1a288cf9f1cefef9e08e83c003dc56bc`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == repro-substrate == 9a10992e56be259a22ab040a0dc0f70aeb64c4e39b0b79ebe7255037bef33542`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=db20caf0618f1f79d4e0733fdd042cc6cf61eb7c` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=bacd172293d86bc5acc89e6710c8e1fb1ba22bca` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `db20caf06`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's** (399 **TRACKED **PATHS, **0
-  **DIFFERING, **0 **MISSING**), **AND **THE **LIVE **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
+  `bacd1722`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's**, **AND **THE **LIVE
+  **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION **WORK **LEFT**: **175 **FALSE
   **UPSTREAM **CITATIONS **RE-POINTED** (**225 **UNDER **`runtime/`**, **331 -> 78 **ELSEWHERE**), **AND
   **`gates/todo-cite-gate.py` **READS **`1131 **ROWS **AND **0 **FALSE**.**
