@@ -25134,3 +25134,38 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **SCRIPT's **OWN **REFUSAL** ("the **port's **own **rows **could **not **be **reproduced**"),
       **PROVEN **BY **RUNNING **THE **PRE-GUARD **VERSION **ON **THE **SAME **CALL** **AND **GETTING
       **THE **IDENTICAL **rc **AND **MESSAGE.**
+
+- [x] **THE **RANGEIFY **LANE's **NEW **FILES **CARRIED **THREE **PROSE **CLASSES** (MEASURED **2026-10-28**).**
+      **⇒ AND **THE **FIRST**: **A **BARE **`:1141`**/**`:917`**/**`:878`**/**`:1177`** **RESOLVED **AGAINST
+      **THE **HEADER's **UPSTREAM **TARGET** — **AND **MEASURED, **UPSTREAM's
+      **`tinygrad/schedule/indexing.py` **IS **321 **LINES**, **SO **`:1141` **NAMED **A **LINE **THAT
+      **DOES **NOT **EXIST.**  **⇒ ⇒ **THE **PORT's **OWN **`schedule/indexing.bend` **HAS
+      **`grm_table` **AT **`:1141`** **AND **`pfd_table` **AT **`:1177`** — **THE **PORT's **CITATIONS
+      **WERE **RIGHT **AND **THE **SUBJECT **WAS **UNSPELLED.**
+      **⇒ AND **THE **SECOND**: **A **BACKTICK **SPAN **THAT **CROSSES **A **LINE **BREAK** **SWALLOWS
+      **THE **PROSE **BETWEEN **THE **LINES** — **THE **GATE **READS **THE **CLAIM **TOKENS **FROM **THE
+      **SPAN**, **SO **A **READER **WHO **PUTS **A **PROSE **WORD **IN **BACKTICKS **(`FOLLOWED`) **AND
+      **A **CODE **SPAN **THAT **CROSSES **A **LINE** **PRODUCES **A **CLAIM **THE **GATE **CANNOT
+      **READ.**
+      **⇒ AND **THE **THIRD**: **A **CITATION **OF **A **BLANK **LINE** — **`tinygrad/tensor.py:88`**
+      **IS **EMPTY**, **AND **MEASURED, **UPSTREAM's **`Tensor.empty` **IS **AT
+      **`tinygrad/tensor.py:420`.**
+- [x] **`fold.bend`'s **MOVE **ROTTED **58 **POINTERS **AT **ONCE** (MEASURED **2026-10-28**).**  **⇒ AND
+      **THE **RANGEIFY **LANE's **PORT **WORK **INCLUDES **A **GENUINE **BUG **FIX** — **"THE
+      **FOLD's **`rng_width` **REFUSED **EVERY **AFTER-BOUND **RANGE, **SO **EVERY **`vmax` **WAS
+      **ZERO"** — **AND **THE **MOVE **ROTTED **EVERY **POINTER **INTO **IT.**  **⇒ ⇒ **THIS **IS **THE
+      **ARGUMENT **FOR **`symbol=`** **AND **THE **TREE's **OWN **SENTENCE**: **"THE **LINE **IS **A
+      **ROT **AND **THE **NAME **IS **NOT, **AND **THE **ROT **IS **NOT **SLOW."**  **⇒ AND **THE
+      **CORPUS **WENT **STALE **TWICE**, **AND **THE **WITNESS **CAUGHT **BOTH **TIMES **ON **ITS
+      **OWN** — **AND **THE **DIAGNOSIS **WAS **PRECISE**: **9 **FILES **THAT **ARE **IN **NO **COMMIT**
+      (**THE **MUTATION **PROBES**, **A **`.bak`**, **A **`_probe/`**) **PLUS **3 **CHANGED**.  **⇒ AND
+      **`__pycache__` **IS **EXCLUDED** (**MEASURED: **`substrate_entries()` **FILTERS
+      **`"__pycache__" not in p.parts`**), **SO **THE **`.pyc` **FILES **ARE **NOT **THE **CAUSE** — **WHICH
+      **WAS **WORTH **MEASURING **RATHER **THAN **ASSUMING.**
+- [ ] **THE **LAST **65 `UNCLAIMED` **ROWS** (DISPATCHED, **18 **FILES**).**  **⇒ AND **ONLY **3 **OF **THE
+      **71 **WERE **BARE **POINTERS** (NO **CLAIM **AT **ALL**); **THE **OTHER **68 **NAMED **A **TOKEN
+      **THE **TARGET **DOES **NOT **HOLD.**
+- [ ] **THE **CORPUS **MUST **BE **RE-TAKEN** **ONCE **THE **PORT **STOPS **MOVING**:** **THE
+      **RANGEIFY **LANE **IS **STILL **ADDING **A **`IxRange` **TYPE **TO
+      **`tinybendygrad/schedule/indexing.bend`** — **A **REAL **PORT **CHANGE**, **NOT **A **CITATION
+      **FIX.**
