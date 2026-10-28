@@ -912,7 +912,7 @@ def gk_dev(m: Maybe<&2, S.Dev>) -> List<&2, U32>:
 
 # `[(d, call, None) for d in to_tuple(call.src[1].device)]` -- realize.py:41, the
 # non-HCQ half. `uop.device` is a FOLD, but `src[1]` of a CALL is a PARAM or a
-# BUFFER, and for those the fold's PARAM arm IS `arg.device` (fold.bend:1045), so
+# BUFFER, and for those the fold's PARAM arm IS `arg.device` (uop/fold.bend:2222 symbol=device_of.param), so
 # reading the arg is the same answer with one less store threaded.
 def gk_dev.of(src1: U32, +ar: O.Arena) -> List<&2, U32>:
   gk_dev(PArg.dev(PArg.of(O.Arena.arg(ar, src1))))

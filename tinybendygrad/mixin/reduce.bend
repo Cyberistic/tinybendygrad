@@ -183,7 +183,7 @@ def rc_rop(+ar: O.Arena, self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
 # answer travels as `Bool` + two `U32`s. `found=False` means "this graph holds
 # no REDUCE", which is the CORRECT answer on the four collapse rows and not a
 # default.
-# `Op` is `Data` (ops.bend:101), so the op RIDES in the record rather than a
+# `Op` is `Data` (uop/ops.bend:169 symbol=Op), so the op RIDES in the record rather than a
 # `U32` tag -- one fewer reader and no round-trip through `Ops.value`, which
 # would have been a second place to get the numbering wrong.
 type RcRed is Data:
@@ -227,8 +227,8 @@ def rc_find.go(xs: List<&2, U32>, +ar: O.Arena, +acc: RcRed) -> RcRed:
 def rc_find(+ar: O.Arena, i: U32) -> RcRed:
   rc_find.go(O.UOp.toposort(O.Arena.budget(ar), ar, i), ar, RcRed{False{}, O.OpsNOOP{}, 0})
 
-# THE ROW. `mo_shape`'s shape string (op.bend:1555 symbol=mo_shape) and `mo_sig`'s signature
-# (op.bend:1143) are REUSED -- they are defs in another file and Bend has no
+# THE ROW. `mo_shape`'s shape string (mixin/op.bend:1556 symbol=mo_shape) and `mo_sig`'s signature
+# (mixin/op.bend:1276 symbol=mo_sig) are REUSED -- they are defs in another file and Bend has no
 # privacy -- so this is the three new columns and the assembly.
 def rc_red_str(ok: Bool, +r: RcRed) -> String:
   match ok:

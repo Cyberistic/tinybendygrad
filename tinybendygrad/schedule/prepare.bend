@@ -167,7 +167,7 @@ def topo_ops(+ar: O.Arena, +tb: F.Table, +ns: List<&2, U32>) -> List<&2, O.Op>:
   topo_ops.go(ar, tb, ns, Nil{})
 
 
-# `S.Dt`'s fourth field is the NAME (`LAWS/spec.bend:78`, `Dt{pri, bits, cls, nm}`)
+# `S.Dt`'s fourth field is the NAME (`LAWS/spec.bend:76 symbol=Dt`, `Dt{pri, bits, cls, nm}`)
 # and CPython's `uop.dtype.name` is exactly it, so the dtype column is one binder and
 # not a table -- which is the reason `sig4` can carry a dtype at all.
 def dt_name(d: S.Dt) -> String:
@@ -208,7 +208,7 @@ def topo_str(+fx: F.Folded, +self: U32) -> String:
 def pr_c(v: U32) -> O.Found: O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(v)})
 
 # `ParamArg(slot, dtype, size, name, addrspace, device)` -- ops.py:696 read
-# through `ops.bend:697`. A BUFFER's `src` is EMPTY in Python
+# through `uop/ops.bend:697 symbol=AxisType.lt`. A BUFFER's `src` is EMPTY in Python
 # (`UOp(Ops.BUFFER, arg=...)`), so this is a 0-src node.
 
 def pr_pa(slot: U32, name: String, dev: U32) -> O.ParamArg:

@@ -12,7 +12,7 @@
 #     `assert idx == X.shape[0] and X.shape[0] == Y.shape[0]` (upstream:31) is the
 #     batch-boundary claim the whole loader rests on.
 # TODO(port): STOPPED AT `fetch_mnist` (extra/datasets/__init__.py:6). MISSING:
-#   (1) `fetch` ITSELF. `tinybendygrad/helpers.bend:3193` records the whole HTTP
+#   (1) `fetch` ITSELF. `tinybendygrad/helpers.bend:3194` records the whole HTTP
 #       seam as unported -- "The HTTP machinery (fetch, fetch_fw,
 #       _ensure_downloads_dir) is urllib plus a temp file plus an atomic rename ...
 #       I/O of exactly the kind the master plan puts in runtime/" -- and

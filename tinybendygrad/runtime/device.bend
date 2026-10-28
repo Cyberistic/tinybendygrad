@@ -136,7 +136,7 @@ def schedule(ar: O.Arena, sink: U32) -> O.Found:
 # (`runtime/support/compiler_cpu.py:21-22`), and the ELF OBJECT comes back.
 #
 # `cc_argv` IS THE PORT's OWN SPELLING OF THAT ARGV
-# (`runtime/support/compiler_cpu.bend:268 ClangCompiler.compile_argv`), and it is
+# (`runtime/support/compiler_cpu.bend:268 symbol=ClangCompiler.compile_argv`), and it is
 # JOINED WITH NEWLINES because the C side has no argv of its own -- a second copy
 # of upstream's argv is a second thing to rot.
 #

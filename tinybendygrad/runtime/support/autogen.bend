@@ -746,7 +746,7 @@ def anon_name(g: G, tag: String) -> String:
 # `Bool.pick` EVALUATES BOTH ARMS (this file says so at :99-102), so a char
 # named in an arm is CONSUMED whether or not that arm is chosen. The char is
 # therefore declared `+` -- reusable -- and the walk binds it `+` too, which is
-# the shape `helpers.bend:1368` uses for the same reason.
+# the shape `helpers.bend:1366 symbol=pool_pads_dup.go` uses for the same reason.
 def colon() -> Char: ':'
 
 def underscore() -> Char: '_'
@@ -1212,7 +1212,7 @@ def types_fixture() -> List<&2, Gt>:
 #   :740  `c2 consumed more than once` -- `Bool.pick` EVALUATES BOTH ARMS (this
 #          file says so at :99-102), so a char named in an arm is consumed
 #          whether or not that arm is chosen. The fix is the `+` binder (the
-#          shape `helpers.bend:1368` uses for the same reason) and a `Bool`
+#          shape `helpers.bend:1366 symbol=pool_pads_dup.go` uses for the same reason) and a `Bool`
 #          PENDING STATE instead of a fixed stride; the redesign is recorded
 #          above, at the rewrite itself.
 #   :755  `space()` was DEFINED AFTER `rep_emit1` USED IT, and bend refuses a

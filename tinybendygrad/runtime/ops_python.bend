@@ -562,7 +562,7 @@ def op_of(nm: String) -> Maybe<&1, O.Op>:
 # THE LANE FOLLOWS THE PYTHON TYPE OF THE OPERANDS, which is why `is_f` reads the
 # ELEMENT and not the uop dtype: a CONST's weakint is a Python int and a LOAD's
 # float is a Python float, and `1 + 2.5` is a float in Python (ops.py:1425's
-# comment on the lane, restated at symbolic.bend:822).
+# comment on the lane, restated at uop/symbolic.bend:825 symbol=f32_pow).
 #
 # `Elem <-> O.Const` is three constructors and nothing else, so the reuse is
 # lossless: `Sc` IS `O.Const`'s payload with a dtype attached.

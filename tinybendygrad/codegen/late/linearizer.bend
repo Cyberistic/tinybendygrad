@@ -82,7 +82,7 @@
 # ---------------------------------------------------------------------------
 # THE INTERFACE, CONSUMED NOT INVENTED. `codegen/kernel.bend` already owns
 # `pm_to_program`, whose table carries a PROGRAM gaining a LINEAR, a SOURCE and a
-# BINARY one `graph_rewrite` at a time (kernel.bend:466-472), and whose stage
+# BINARY one `graph_rewrite` at a time (codegen/kernel.bend:816 symbol=pm_to_program), and whose stage
 # dispatch is keyed on ARITY with the INS read only to discriminate the two
 # two-src rules (kernel.bend:802-865). This file owns what those rules CALL:
 #     :429 do_linearize         -> linearize(sink)        -> lt_linearize

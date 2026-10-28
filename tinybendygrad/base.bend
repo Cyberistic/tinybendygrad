@@ -18,8 +18,8 @@
 # so a float's payload and an integer's payload are the SAME TYPE, `Word(32n)`,
 # and a float's payload IS its IEEE-754 bit pattern. The constructor `F32{..}`
 # is therefore already a bitcast -- it takes the pattern and yields the float.
-# `runtime/ops_python.bend:274-278` had already measured this (`w32`/`f32_of`)
-# and had no way to hand it to `dtype.bend`. So `from_bits` is not a new
+# `runtime/ops_python.bend:299` had already measured this (`w32`/`f32_of`); that pair
+# is now a duplicate retired in favour of `F.F32.from_bits`, and it had no way to hand it to `dtype.bend`. So `from_bits` is not a new
 # primitive, an intrinsic, or a law: it is one destructuring and one
 # constructor, and it is safe, so `bend --check-only` accepts it.
 #

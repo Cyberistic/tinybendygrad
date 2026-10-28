@@ -675,7 +675,7 @@ def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool:
 
 # `spec.bend` holds `Dt` and has no `nm` reader; dtype.bend has `dt_name` but is a
 # conversion seam and importing it would drag that seam in for nothing.
-# TODO(p3) LAWS/spec.bend:76  Dt.nm -- the name reader this file matches on.
+# TODO(p3) LAWS/spec.bend:76 symbol=Dt  Dt.nm -- the name reader this file matches on.
 def dt_nm(d: S.Dt) -> String:
   match d:
     case S.Dt{pri, bits, cls, nm}: nm

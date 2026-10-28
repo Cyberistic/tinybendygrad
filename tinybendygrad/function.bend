@@ -1045,7 +1045,7 @@ def fn_implicit_msg.of(+bs: List<&2, U32>, name: String, +ar: O.Arena) -> String
 # `uop/fold.bend` rule 5 -- "expected : a decreasing self-call", and
 # `U32.sub(d, 1)` is not a subterm of `d`), so the depth is converted to a `Nat`
 # once and the countdown is destructured as `Succ{p}`, which IS the strict
-# subterm the decrease check looks for. The spelling is `helpers.bend:401`'s.
+# subterm the decrease check looks for. The spelling is `helpers.bend:401 symbol=CV`'s.
 def fn_trace.indent.go(d: Nat, +acc: List<&2, String>) -> List<&2, String>:
   match d:
     case 0n: acc

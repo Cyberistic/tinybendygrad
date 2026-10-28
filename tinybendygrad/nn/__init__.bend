@@ -288,7 +288,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #   WALL B, THE DTYPE-PROMOTION FOLD. Everything `_broadcasted`'s body calls is PRESENT:
 #     `ufix` -> 1, `least_upper_dtypes` (`dtype.bend:218`, the list form of CPython's variadic
 #     `least_upper_dtype`) -> 3, `weak_dtype` (`dtype.bend:251`) -> 2, `ew_remint`
-#     (`mixin/elementwise.bend:358`) -> 1, `is_invalid` -> 81, `dtypes.weaks` -> 63, and
+#     (`mixin/elementwise.bend:325 symbol=ew_remint`) -> 1, `is_invalid` -> 81, `dtypes.weaks` -> 63, and
 #     `UOp.cast` is ported and gated. What is left is the FOLD READS (`t._uop.base.is_invalid`,
 #     `t.dtype`, `t._uop.base.op is Ops.CONST`), which `mixin/elementwise.bend`'s `ew_fx` fold
 #     context already supplies.

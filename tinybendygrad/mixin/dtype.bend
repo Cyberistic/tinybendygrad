@@ -97,7 +97,7 @@ def md_dt(+fx: F.Folded, i: U32) -> S.Dt:
 def md_ar(fx: F.Folded) -> O.Arena: F.Folded.ar(fx)
 
 # `O.eq_dt`. `uop/weak.bend` carries a local `wk_eq_dt` because ops.bend's ladder was
-# missing `CWeakFloat`; ops.bend:1318-1337 now has all seven arms, so the workaround is
+# missing `CWeakFloat`; the port's `uop/ops.bend` now has all seven arms, so the workaround is
 # stale and this file uses the shared one. REPORTED, not fixed.
 def md_dt_eq(x: S.Dt, y: S.Dt) -> Bool: O.eq_dt(x, y)
 

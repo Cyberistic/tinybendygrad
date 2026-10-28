@@ -2739,9 +2739,9 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     #     `tinygrad/renderer/cstyle.py:76` reads `x.arg[0].format(...)`, which is only
     #     meaningful on index 0 OF A 2-TUPLE.
     #   * NO change to `Arg` is needed. `AInk{ins: String, dt: S.Dt}` (ops.bend:1219,
-    #     mapped to the INS arg at :910) IS that pair, and `uop/spec.bend:1043-1047`
-    #     already gates CUSTOM and CUSTOMI on it: "`AInk` IS that pair, and it is the
-    #     only constructor that is".
+    #     mapped to the INS arg at :910) IS that pair, and `uop/spec.bend:1082
+    #     symbol=sh_21` already gates CUSTOM and CUSTOMI on it: "`AInk` IS that pair,
+    #     and it is the only constructor that is".
     # The second correction: the note below claimed the arm needed "its own
     # `_broadcast_shape` oracle and its own rows" and left BOTH HALVES parked for it. The
     # void half needs neither -- it is ops.py:371, `if self.dtype is dtypes.void: return

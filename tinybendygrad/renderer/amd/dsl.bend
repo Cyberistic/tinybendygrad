@@ -850,8 +850,8 @@ def base_size(hi_max: U32) -> U32: U32.div(U32.add(hi_max, BASE_SIZE_ROUND()), B
 # :164 is `isinstance(val, float)` and :164's other half looks a float up in
 # `_FLOAT_ENC`. Bend here cannot construct an `F32` at all: `F32` is
 # `F32{data: Word(32n)}` and `Word` is not exported -- the identical wall
-# `tinybendygrad/tensor.bend:308` and `tinybendygrad/renderer/wgsl.bend:59`
-# record, for the identical reason. `_f32` (:147, `struct.pack('f')`) is behind
+# `tinybendygrad/tensor.bend:1214 symbol=tn_const` and
+# `tinybendygrad/renderer/wgsl.bend:340 symbol=nan_thr` record, for the identical reason. `_f32` (:147, `struct.pack('f')`) is behind
 # the same door, and so is `_needs_literal`'s float arm (:251).
 #
 # SO WHAT IS PORTED. The TABLE (`_FLOAT_ENC`, both directions) is ported, and so

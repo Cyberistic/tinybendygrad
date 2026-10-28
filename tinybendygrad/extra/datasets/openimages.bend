@@ -31,7 +31,7 @@
 #   MISSING: `MLPERF_CLASSES` as a value first -- it must be the real 601-name list,
 #     not a placeholder, because it is the left side of the join above; `boto3` +
 #     `botocore` (upstream:7) for the UNSIGNED S3 bucket and its `ClientError` branch
-#     (upstream:108); `fetch` for the three CSVs (the `helpers.bend:3193` HTTP seam);
+#     (upstream:108); `fetch` for the three CSVs (the `helpers.bend:3194` HTTP seam);
 #     `pandas` -- `read_csv` (upstream:125/129), `merge`, `isin`, `groupby`,
 #     `factorize`, `apply(..., axis=1, result_type="expand")` (upstream:78), i.e. a
 #     dataframe engine, not a CSV reader; `PIL.Image` (upstream:5) for `extract_dims`

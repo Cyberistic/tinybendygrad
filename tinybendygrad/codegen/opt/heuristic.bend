@@ -15,8 +15,8 @@
 # THE INVENTORY, def by def, against heuristic.py's 193 lines. `WALL #1` is
 # `UOp.ranges` + `backward_slice`; `WALL #2` is `apply_opt`'s AST substitution
 # (postrange.bend); `WALL #3` is `image_valid_dims` from `codegen/late/coalesce.py`,
-# which `codegen/rewriter.bend:52` already reports as ported with the env opt as a
-# PARAMETER -- so that half is available once that file is in the tree.
+# which `codegen/late/coalesce.bend:72 symbol=image_valid_dims` already reports as
+# ported with the env opt as a PARAMETER -- so that half is available once it lands.
 #
 #   #  PY            WHAT IT DECIDES                     STATE
 #   1  28-44   hand_coded_optimizations, the TENSOR CORE block

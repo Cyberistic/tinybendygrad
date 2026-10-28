@@ -392,9 +392,9 @@ def pm_number_params(+n: U32, +ar: O.Arena, +self: U32) -> NP:
 #
 # REPORTED, NOT FIXED HERE, and the reason is scope rather than difficulty: this
 # is port LOGIC (a membership predicate, a fixture, and three row values), it is
-# B1's own RE-PORT -- `ad117c928` lists `kernel.bend:353` by name -- and folding
+# B1's own RE-PORT -- `ad117c928` lists `kernel.bend`'s line 353 by name -- and folding
 # it in beside an orphan citation would move three rows without the row audit
-# that a three-row move owes. `uop/ops.bend` already keeps `AXIS_UNROLL` for
+# that a three-row move owes. `ad117c928` names that line -- the `build_range_map` doc-comment -- and the port carries it at codegen/kernel.bend:367 symbol=kn_unroll.ax. `uop/ops.bend` already keeps `AXIS_UNROLL` for
 # exactly this reason: it names `codegen/kernel.bend:366,:956` as a live consumer,
 # so the enum's ten members are load-bearing until this lands.
 #   TODO(p3) codegen/__init__.py:43  `build_range_map`'s set is `{UPCAST}` and its
