@@ -397,7 +397,7 @@ def mu_and3(a: Bool, b: Bool, c: Bool) -> Bool:
 def mu_or3(a: Bool, b: Bool, c: Bool) -> Bool:
   mu_or2(a, mu_or2(b, c))
 
-# `a if cond else b` for a `U32` answer -- `Bool.pick` (base.bend:504) with the
+# `a if cond else b` for a `U32` answer -- `Bool.pick` (base.bend:595 symbol=Bool.pick) with the
 # arguments in Python's order rather than base's. This is the ONE def that
 # conjoined conditions are allowed to feed, because inside it the scrutinee is a
 # PARAMETER: MEASURED, `match mu_and2(a, b):` is still refused
@@ -1883,7 +1883,8 @@ def ix_strid(idx: U32, i: U32) -> U32:
   U32.sub(idx, i)
 
 # NO ZERO GUARD, and that is a MEASURED fact rather than an omission:
-# `U32.div(x, 0)` is 0 and `U32.mod(x, 0)` is `x` (base.bend:1501 and :1506, both
+# `U32.div(x, 0)` is 0 and `U32.mod(x, 0)` is `x` (base.bend:1607 symbol=U32.div and
+# :1623 symbol=U32.mod, both
 # `U32.div.if`/`U32.mod.if` take `U32.is_zero(b)` and short-circuit), so neither
 # traps. A `shard_sz` of 0 is `mu_sym_dim`'s wall marker, and `U32.div(_, 0)` is
 # already 0 -- the same value -- so the guard `rs_div`/`sv_divides` need above is
@@ -3453,4 +3454,5 @@ def main() -> IO(Unit):
 # THE GRAPH BUILDERS, one line per call site.
 #
 #   `_mop` (ops.py:799) -- every `.arg`-carrying rewrite is a `_mop`.
-#   TODO(p3) schedule/multi.py:12  symbol=_apply_shrink  -- `_apply_shrink`, SHRINK  -- BLOCKED. needs `UOp._mop` (ops.py:799) -- which is PORTED as `tn_mop` in `tensor.bend:1476`, but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.
+#   TODO(p3) schedule/multi.py:9  symbol=_apply_shrink  -- `_apply_shrink`, SHRINK  -- BLOCKED. needs `UOp._mop` (ops.py:799)
+#   -- which is PORTED as `tn_mop` in `tensor.bend:1704 symbol=tn_mop` -- but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.

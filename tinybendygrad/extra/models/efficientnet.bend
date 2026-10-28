@@ -28,11 +28,11 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `MBConvBlock.__init__` (extra/models/efficientnet.py:7),
 # at upstream:11
 #       self._expand_conv = Tensor.glorot_uniform(oup, input_filters, 1, 1)
-#   and that line IS BUILT: `rd_glorot_uniform` (mixin/rand.bend:861) over the
+#   and that line IS BUILT: `rd_glorot_uniform` (mixin/rand.bend:945 symbol=rd_glorot_uniform) over the
 #   bound `nn_glorot` (nn/__init__.bend:217). THE FIRST LINE THAT IS NOT is
 #   upstream:12
 #       self._bn0 = BatchNorm2d(oup, track_running_stats=track_running_stats)
-#   and the blocker is NOT the normalisation -- `pool_bn` (nn/pool.bend:381) IS
+#   and the blocker is NOT the normalisation -- `pool_bn` (nn/pool.bend:382 symbol=pool_bn) IS
 #   BUILT and `pool.bend:44-48` measures `Tensor.batchnorm` as a pure
 #   DECOMPOSITION (`x - mean`, `* weight`, `.mul(invstd)`, `+ bias`). The blocker
 #   is the HALF OF BatchNorm THAT IS NOT A DECOMPOSITION: the running-statistics
@@ -61,7 +61,8 @@ import ./../datasets/__init__.bend as D
 #                UNAFFECTED -- and `inception.py` is not.
 # Both of the calls are `kernel_size = the whole spatial extent`, i.e. an
 # ADAPTIVE-to-1x1 pool with a DYNAMIC kernel read out of the tensor's own shape.
-# `pool_adaptive_avg` (nn/pool.bend:312) takes an `AP` RECORD with the input
+# `pool_adaptive_avg` (nn/pool.bend:313 symbol=pool_adaptive_avg) takes an `AP` RECORD
+# with the input
 # dims as `U32` values, so a caller must already have projected the shape --
 # `nn_shape` (nn/layers.bend:94) answers a `Maybe<&2, List<&2, U32>>`, and on
 # the `SU` arm it answers `None`. THAT IS THE SEAM, and it is a `Maybe` rather

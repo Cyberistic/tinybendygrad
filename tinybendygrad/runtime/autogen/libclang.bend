@@ -31,7 +31,7 @@
 # whose bodies are all `None{}`.  It is an ABI annotation on a column that never
 # executes, it is not a value, and it has no constructor that carries one.  See
 # `.agents/slop/SPELLING.md`; the three of them cannot all be canonicalised
-# (`helpers.bend:1638` -- an `I64` is a SIGNED pair, so `U64` has no image).
+# (`helpers.bend:1648 symbol=I64` -- an `I64` is a SIGNED pair, so `U64` has no image).
 #
 # COVERAGE OF THE TRAMPOLINES: unchanged and still what it always was.  A name, an
 # arity, ordered parameter names, an ABI type, a return type.  No def among the 324

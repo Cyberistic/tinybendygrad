@@ -12,7 +12,10 @@
 # or NAMED, and nothing is a stub that answers a placeholder.
 #
 # THE WALL THAT STOPPED THE GATE, and it is a Bend one. `to_str`
-# (cli.py:63-68) decides its answer with `v < 1e13` and `v >= s` on FLOATS, and
+# (tinygrad/viz/cli.py:51-55 -- upstream's `to_str` IS the function and it is at
+# :51; the `FLOPS` arm that tests `v < 1e13` is at
+# tinygrad/viz/cli.py:53 (`FLOPS` IS that arm)) decides its answer with
+# `v < 1e13` and `v >= s` on FLOATS, and
 # bend 2.0.34's base has NO `F32` COMPARISON: `grep '^def F32\\.' base.bend`
 # returns TEN defs (`min`, `max`, `clamp`, `lerp`, `square`, `hypot`, `round`,
 # `pi`, `from_nat`, `to_nat`) and not one of them is an ordering. `F32.min(a, b)

@@ -28,21 +28,29 @@
 # WHAT IS PORTED, AND THAT IS THE WHOLE LIST.
 #   jit.py:14-22   prune_linear            the fold, `needed |= si_bufs`, both replaces
 #   jit.py:24-27   _copy_input             the DISK refusal and `on_disk()`
-#   jit.py:29-38   jit_lower               the five steps in order; 3 are seams
-#   jit.py:40      JitError                the exception CLASS -> `Maybe<&2,String>`
-#   jit.py:42-47   _check_no_non_tensor_return   the walk and its message
-#   jit.py:34-43 symbol=linear   CapturedJit fields, `linear`
+#   jit.py:29-42   jit_lower               the five steps in order; 3 are seams
+#   jit.py:44      `JitError`              the exception CLASS -> `Maybe<&2,String>`
+#   jit.py:46-51   `_check_no_non_tensor_return`   the walk and its message
+#   jit.py:55-63 symbol=CapturedJit   CapturedJit fields, `linear`
 #   jit.py:67 symbol=_jit_bufs   `_jit_bufs` IS UPSTREAM AT THE PIN: `_written_uops` IS GONE
-#   jit.py:70-73   `_symbolic_ret`         DELETED it AND realize.py's `get_call_written_bufs`
-#   jit.py:73-78   CapturedJit.__call__    in `a26c50b01`), so the PORT's copy of the
-#                                           latter has NO upstream counterpart at the pin
-#   jit.py:77-82   free_intermediates      the predicate chain; Buffer is a seam
-#   jit.py:84-102  _prepare_jit_inputs     names, the shallow container sweep, the UNSHARD
+#   jit.py:70-72   `_symbolic_ret`         upstream's `CapturedJit` HAS IT at the pin:
+#                                           the upstream revision `a26c50b01` (2026-10-05)
+#                                           REMOVED `_written_uops` AND ADDED
+#                                           `_symbolic_ret`, and realize.py's
+#                                           `get_call_written_bufs` IS GONE with it
+#   jit.py:73-78   `CapturedJit.__call__`  upstream's `CapturedJit` GAVE IT the
+#                                           `_symbolic_ret` arm at :77 in the same
+#                                           revision `a26c50b01` that removed
+#                                           `_written_uops`, so the PORT's copy of
+#                                           the latter has NO upstream counterpart
+#                                           at the pin
+#   jit.py:80      free_intermediates      the predicate chain; Buffer is a seam
+#   jit.py:82-101  _prepare_jit_inputs     names, the shallow container sweep, the UNSHARD
 #                                           unwrap, two refusals, and `expected_input_info`
 #                                           IN FULL
-#   jit.py:104-123 _TinyJit `__init__`/`add_linear`/`reset`/`__reduce__`/`__get__`
-#   jit.py:125-178 _TinyJit.__call__       all four arms and both refusals
-#   jit.py:180-185 TinyJit + 2 overloads   both decorator spellings
+#   jit.py:102-121 _TinyJit `__init__`/`add_linear`/`reset`/`__reduce__`/`__get__`
+#   jit.py:124-177 _TinyJit.__call__       all four arms and both refusals
+#   jit.py:179-183 TinyJit + 2 overloads   both decorator spellings
 #
 # THE THREE WALLS, WITH THE OWNER AND THE PYTHON LINE, at Section 10.
 #   * NO EXCEPTIONS. A Python `raise JitError(...)` is a `Maybe<&2, String>` here and the
@@ -101,7 +109,8 @@ import ./realize.bend as RZ
 # `U32` is affine and `+` is refused on it, so every `(arena, index)` pair read
 # twice in one expression is an `O.Found`: `Found` is `Data`, its readers are
 # non-consuming, and `+f: O.Found` is a refcount. And `Bool.to_u32` EXISTS in
-# base 2.0.34 (base.bend:511), which `mixin/rand.bend` rule 3 records as missing;
+# base 2.0.34 (base.bend:602 symbol=Bool.to_u32), which `mixin/rand.bend` rule 3
+# records as missing;
 # it is not missing and every `Bool` -> `U32` in this tree should be this call
 # rather than a `Bool.pick` per site.
 def j_n(xs: List<&2, U32>) -> U32:
@@ -183,7 +192,8 @@ def j_at_l(xs: List<&2, List<&2, U32>>, n: U32) -> List<&2, U32>:
 
 # A STABLE string sort. jit.py:101 is `tuple(sorted(x[1].keys(), key=lambda v:
 # v.expr))` and `sorted` is stable, so this is insertion sort and not a commutative
-# one -- `H.argsort_u32` (helpers.bend:602) is the u32 sibling and there is no string
+# one -- `H.argsort_u32` (helpers.bend:603 symbol=argsort_u32) is the u32 sibling and
+# there is no string
 # one in the tree yet.
 #
 # `Bool.pick` IS THE SHAPE AND IT IS THE RECORDED ONE (`mixin/rand.bend` rule 4): it

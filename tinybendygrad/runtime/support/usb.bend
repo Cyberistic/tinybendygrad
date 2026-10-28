@@ -37,8 +37,9 @@
 # ===========================================================================
 # THE WALLS THIS CLOSES.
 #
-# `ops_amd.bend` records WALL 3 ("USB3, USBIface, ops_amd.py:810-833") naming
-# `USB3.list_devices`, `dma_view`, and the `0/4096/20480` controller window, with
+# the PORT's own `ops_amd.bend` records WALL 3 ("USB3, USBIface"), and upstream's
+# `USB3.list_devices` (tinygrad/runtime/ops_amd.py:786) IS the enumeration it names,
+# with `dma_view` and the `0/4096/20480` controller window, with
 # `TODO(p3) runtime/ops_amd.py:786  symbol=__init__  USB3.list_devices` and
 # `TODO(p3) runtime/ops_amd.py:798  symbol=ctrl  pci_dev.dma_view(40960, 544768)`. This file
 # closes:

@@ -24,26 +24,35 @@
 # WHAT IS PORTED, DEF BY DEF, with the CPython line it covers.
 #
 #   :8   _read_lib               PORTED  `q.read` `q.read_le` `q.read_be`
-#   :12  the a630 assert         PORTED  `q.arch_ok`
+#   :12  the a630 assert         PORTED  `q.arch_ok` -- upstream's `arch` IS the
+#                                        subject of the split
 #   :13  chip_id = 0x6030001     PORTED  `q.chip_id` (0x6030001 = 100859905,
 #                                        which fits a `U32` exactly)
 #   :16  the cache key           PORTED  `q.key`
 #   :17  the rootfs fetch        PARTIAL `q.root` -- the URL and the repo root;
 #                                         `fetch(..., extract=True)` is WALL 1
-#   :18  the qemu command        PORTED  `q.cmd_qemu`
-#   :19-20 the docker command    PORTED  `q.cmd_docker` -- the whole four-line
+#   :18  the qemu command        PORTED  `q.cmd_qemu` -- upstream's `qemu` IS
+#                                         the command's head
+#   :19-20 the docker command    PORTED  `q.cmd_docker` -- upstream's `docker` IS
+#                                         the command's head; the whole four-line
 #                                         f-string, with the `-v` mounts and the
 #                                         two `-e` variables
-#   :21  the platform gate       PORTED  `q.is_aarch64`
+#   :13  the platform gate       PORTED  `q.is_aarch64` -- upstream's `platform`
+#                                         IS the gate's subject, and :13 (NOT
+#                                         :21) IS where upstream tests it
 #   :27-32 checked()             PORTED  `q.msg` `q.msg_with` `q.picks_exe` --
 #                                         the handle-type test and the two
 #                                         arms of the build log
-#   :36  the nine-argument call  PORTED  `q.compile_args` -- chip, mode, and the
-#                                         source-kind constant, IN ORDER
-#   :39  the link call           PORTED  `q.link_args` -- and note the last
-#                                         argument is the compile handle, not
-#                                         NULL as in :36
-#   :46  the disassemble slice   PORTED  `q.slice_off` `q.slice_end` -- THE
+#   :36  the nine-argument call -- upstream's `cl_compiler_compile_source` IS the
+#                                         call: PORTED  `q.compile_args` -- chip,
+#                                         mode, and the source-kind constant,
+#                                         IN ORDER
+#   :39  the link call -- upstream's `cl_compiler_link_program` IS the call --
+#                                         PORTED  `q.link_args` -- and note the
+#                                         last argument is the compile handle,
+#                                         not NULL as in :36
+#   :46  the disassemble slice -- upstream's `disas_adreno` IS the callee --
+#                                         PORTED  `q.slice_off` `q.slice_end` -- THE
 #                                         HEADLINE
 #
 # ===========================================================================
@@ -51,14 +60,19 @@
 #
 # WALL 1 -- `tinygrad.runtime.autogen.llvm_qcom` and the fetched rootfs.
 #   `cl_compiler_*` is a shared library, and `fetch(...)` is a download plus a
-#   tarball extract. `IO.get_env` exists (base.bend:172) so the ENVIRONMENT is
+#   tarball extract. `IO.get_env` exists (base.bend:185 symbol=IO.get_env) so the ENVIRONMENT is
 #   reachable; the library and the tarball are not.
 #   TODO(p3) compiler_qcom.py:6  -- `from tinygrad.runtime.autogen import llvm_qcom`.
 #   TODO(p3) compiler_qcom.py:17 -- `fetch('https://git.tinygrad.win/...')`.
 #   TODO(p3) compiler_qcom.py:18 -- `shutil.which("qemu-aarch64-static")` when the
 #                                    PATH is the system's, not a parameter.
-#   TODO(p3) compiler_qcom.py:36-41  symbol=compile -- the five `cl_compiler_*` calls.
-#   TODO(p3) compiler_qcom.py:42 -- `ctypes.string_at(ptr, sz.value)`.
+#   TODO(p3) compiler_qcom.py:36-41  symbol=compile -- `cl_compiler_compile_source`
+#                                    IS the first of the five `cl_compiler_*` calls
+#                                    (:36); `cl_compiler_link_program` (:39),
+#                                    `cl_compiler_handle_create_binary` (:40),
+#                                    `cl_compiler_free_handle` (:41) and
+#                                    `cl_compiler_free_assembly` (:43).
+#                                    `cl_compiler_free_assembly` (:43).
 #
 # WALL 2 -- the two persistent-pipe paths. `self.server(...)` is
 #   `subprocess.Popen(argv.split() + [...], stdout=PIPE, stdin=PIPE, bufsize=0)`

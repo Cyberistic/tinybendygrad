@@ -128,7 +128,7 @@ def AN.v(q: AN) -> U32:
 def nn_argmax_g.mx(+t: T.Tensor) -> T.Tensor: L.nn_reduce(t, [0], O.OpsMAX{}, True{})
 
 # NODE 1b -- `self.eq(...)`. UPSTREAM'S `eq` IS A `CMPEQ` (`mixin/elementwise.py`), AND
-# THE PORT SPELLS IT `NOT(CMPNE)` IN `mixin/op.bend:625`'s `mo_eqc` -- SO THE `CMPEQ`
+# THE PORT SPELLS IT `NOT(CMPNE)` IN `mixin/op.bend:628 symbol=mo_eqc`'s `mo_eqc` -- SO THE `CMPEQ`
 # IS BUILT DIRECTLY HERE AND THE `NOT` IS NOT BUILT, WHICH IS UPSTREAM'S GRAPH AND NOT
 # THE PORT'S OWN SPELLING.
 def nn_argmax_g.m(+t: T.Tensor, +mx: T.Tensor) -> T.Tensor: M.mo_bin(t, O.OpsCMPEQ{}, mx)
@@ -172,7 +172,8 @@ def nn_argmax_g(+t: T.Tensor, +q: AN, +dev: S.Dev) -> T.Tensor:
 # `nn_shape` (nn/layers.bend:94) IS `nn_u32(M.mo_dims(F.folded(...)))`, AND `mo_dims`
 # (mixin/op.bend:281) ANSWERS `Nil{}` FOR THREE DIFFERENT THINGS: A NODE THE FOLD
 # CANNOT RESOLVE, A NODE WITH NO SHAPE, AND A NODE WHOSE SHAPE IS THE EMPTY LIST --
-# A 0-dim SHAPE. `nn_u32` (nn/layers.bend:84) MAPS `Nil{}` BACK TO `Some{[]}`, SO
+# A 0-dim SHAPE. `nn_u32` (nn/layers.bend:100 symbol=nn_u32) MAPS `Nil{}` BACK TO
+# `Some{[]}`, SO
 # `nn_shape` CANNOT TELL A REFUSAL FROM A 0-dim SHAPE. **UPSTREAM'S `imx` IS 0-dim,
 # SO A READER THAT CONFLATES THE TWO WOULD PRINT `()` FOR A REFUSAL AND THE ROW WOULD
 # PASS ON NOTHING.** THE READER BELOW ASKS `F.fold.shape` (uop/fold.bend:4764), WHICH

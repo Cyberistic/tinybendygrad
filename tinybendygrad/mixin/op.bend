@@ -26,7 +26,9 @@
 # (:657), `_softmax` (:657), `softmax` (:663), `log_softmax` (:686), `softmin`
 # (:713) -- and `max`/`sum`/`prod` (reduce.py:73/:20/:47), which they call. Plus
 # the three dtype helpers their bodies read: `weak_dtype` (tinygrad/dtype.py:175),
-# `sum_acc_dtype` (tinygrad/dtype.py:220) and the `commit_dtype` refusal (tinygrad/dtype.py:213 symbol=sum_acc_dtype).
+# `sum_acc_dtype` (tinygrad/dtype.py:213) and the `commit_dtype` refusal
+# (tinygrad/mixin/dtype.py:16 symbol=commit_dtype -- upstream's `commit_dtype` is in
+# `tinygrad/mixin/dtype.py`, NOT in the top-level `tinygrad/dtype.py`).
 #
 # The `min`/`max`/`sum`/`prod` hoists are reduce.py's lines and they move back with
 # `mixin/reduce.bend`. They are hoisted because `mixin/reduce.bend` does not exist
@@ -106,7 +108,7 @@
 #     and the int path's toposort answered `1 BUFFER/0`, because the self-edge is
 #     already-visited: `ne(0)` on a FLOAT tensor was a graph with a CYCLE, and it
 #     typechecked and ran. FIXED in the substrate while this file was being
-#     written -- `ew_rebase` (elementwise.bend:209), on every arm that mints
+#     written -- `ew_rebase` (elementwise.bend:234 symbol=ew_rebase), on every arm that mints
 #     nothing, which is the whole of the fix. `mo_arena` below is that one line,
 #     kept because W9b means `mo_promote` is spelled here anyway.
 #
@@ -149,11 +151,11 @@
 #      dtype and `Nil{}` for a shape. Both are UNREACHABLE for the recipes below,
 #      and the reason is worth stating because it is why the port is checkable at
 #      all: none of them builds a PERMUTE/PAD/SHRINK/EXPAND/FLIP, which are the
-#      five ops `dt_shape` defers (fold.bend:1622-1625). The movement op they do
-#      build is RESHAPE, which `reshape_ds` (fold.bend:1537) answers, and REDUCE,
-#      which `reduce_ds` (:1530) answers. MEASURED, both, over a BUFFER-rooted AND
+#      five ops `dt_shape` defers (fold.bend:2610 symbol=dt_shape). The movement op they do
+#      build is RESHAPE, which `reshape_ds` (fold.bend:2188 symbol=reshape_ds) answers, and REDUCE,
+#      which `reduce_ds` (fold.bend:2199 symbol=reduce_ds) answers. MEASURED, both, over a BUFFER-rooted AND
 #      over a RESHAPE-rooted source.
-#   4. `commit_dtype` (tinygrad/dtype.py:16) answers a `Maybe` because `UOp._min_max`
+#   4. `commit_dtype` (tinygrad/mixin/dtype.py:16) answers a `Maybe` because `UOp._min_max`
 #      (ops.py:239 symbol=dtype) is not ported, and `mixin/dtype.bend` measures that refusal
 #      rather than guessing. `_reduce` (reduce.py:13 symbol=_reduce) reads it, so this file needs
 #      it, and the honest totalisation is the node's OWN dtype -- which makes the
@@ -425,10 +427,10 @@ def mo_commit_dt(+fx: F.Folded, +t: T.Tensor) -> S.Dt:
   Maybe.default(&1, S.Dt, D.commit_dtype(mo_dt(fx, T.Tensor.u(t)), None{}, None{}, S.int32()),
     mo_dt(fx, T.Tensor.u(t)))
 
-# `sum_acc_dtype` -- tinygrad/dtype.py:220. The float arm reads `getenv("SUM_DTYPE",
+# `sum_acc_dtype` -- tinygrad/dtype.py:213. The float arm reads `getenv("SUM_DTYPE",
 # "float32")`, which is a `Config` read and `Config` is P6; the DEFAULT is float32
 # and no caller in this file's range overrides it, which is the same argument
-# fold.bend makes for `least_upper_float` (fold.bend:176).
+# fold.bend makes for `least_upper_float` (fold.bend:322 symbol=least_upper_float).
 # TODO(p3) tinygrad/dtype.py:213  sum_acc_dtype's `getenv("SUM_DTYPE")` -- a
 #   `Config` read (P6). The default float32 is what `mo_sum_acc` uses and what every
 #   gate fixture needs.

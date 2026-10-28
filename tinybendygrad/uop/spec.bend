@@ -1580,7 +1580,7 @@ def all_dev(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
 # a `list[str]`, `device.py:29`'s device table is `__getitem__(self, ix: str)` -- STRING-
 # KEYED -- and `device.py:25`'s only memo over a device name is `@functools.cache` on
 # `_canonicalize(self, device: str) -> str`, a `str -> str` and not a `str -> int`. What the
-# port has instead is `device.bend:344`'s `tag_of`, a THREE-VALUED sentinel (DISK 6, NPY
+# port has instead is `device.bend:384 symbol=tag_of`'s `tag_of`, a THREE-VALUED sentinel (DISK 6, NPY
 # 10, PYTHON 13, everything else 0) built for `ALLOW_DEVICE_USAGE` at `device.py:31`, so
 # CPU, METAL, AMD and every typo all land on 0. A `U32 -> String` table is P6's to mint,
 # not CPython's to mirror, so the string-ness is an invariant this port INHERITS rather

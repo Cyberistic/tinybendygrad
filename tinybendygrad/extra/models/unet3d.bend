@@ -24,14 +24,14 @@ import ./../datasets/__init__.bend as D
 #   The FIRST line of that constructor is upstream:9
 #       nn.Conv2d(c0, c1, kernel_size=(3,3,3), stride=stride,
 #                 padding=(1,1,1,1,1,1), bias=False), nn.InstanceNorm(c1)
-#   `nn_conv2d` (nn/layers.bend:756) IS nd-GENERIC on purpose -- it reads
+#   `nn_conv2d` (nn/layers.bend:937 symbol=nn_conv2d) IS nd-GENERIC on purpose -- it reads
 #   `ni = len(weight.shape[2:])` at nn/layers.bend:724 and derives every shape
 #   from it -- so a 3-D kernel is arithmetically expressible. BUT:
 #     * THE CLASS IS MISSING. `nn/__init__.bend` has 17 defs and ZERO classes
 #       (`grep -cE '^def ' nn/__init__.bend` = 17), so there is no `nn.Conv2d`
 #       to construct, no `(c0, c1, 3, 3, 3)` weight and no `bias=False` spelling.
 #     * `nn.InstanceNorm` IS MISSING ENTIRELY. `pool.bend:44-48` measures
-#       `Tensor.batchnorm` as BUILT (`pool_bn`, pool.bend:381) and names the
+#       `Tensor.batchnorm` as BUILT (`pool_bn`, pool.bend:382 symbol=pool_bn) and names the
 #       ONE part of `nn.BatchNorm` that is not a decomposition -- the running
 #       stats update, refused at pool.bend:415 because `TRAINING` is not a
 #       binding in this tree and `Tensor.assign` is not a def. InstanceNorm has

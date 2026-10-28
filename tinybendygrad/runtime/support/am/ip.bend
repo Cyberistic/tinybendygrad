@@ -18,7 +18,9 @@
 #     and a version-selected MTYPE field.
 #   * the DOORBELL ARITHMETIC: `KIQ + xcc*0x20` (tinygrad/runtime/support/am/ip.py:354 symbol=setup_ring) -- upstream's `doorbell` --, `sDMA_ENGINE0 +
 #     (pipe+queue*4)*0xA` (:592), `(ring_size//4).bit_length()-2` (:367), the
-#     `(regf pair)-1) * 0xA) * 2` s2a entry ladder (:570-571).
+#     `(regf pair)-1) * 0xA) * 2` s2a entry ladder
+#     (tinygrad/runtime/support/am/ip.py:570-571 -- upstream's `entry` IS the ladder's
+#     index and it is built at :569).
 #   * the VERSION LADDERS -- `ip_ver[am.GC_HWIP] >= (12,0,0)` and its forty-odd
 #     siblings, each a three-part compare or a `[:2]` pair compare.
 #   * every REFUSAL, as a TRUNCATION of the trace (:588 is the only `raise`).

@@ -113,7 +113,10 @@ import ./state.bend as ST
 # `get_state_dict(nn.BatchNorm(32))` has FIVE keys in the order
 # `weight, bias, num_batches_tracked, running_mean, running_var`, and the three
 # scalars are ABSENT because `get_state_dict` drops every non-tensor leaf
-# (state.py:107). The optimizer therefore receives `num_batches_tracked` and both
+# (tinygrad/nn/state.py:103 -- upstream's `tensor_type` test is the filter, and
+# upstream ASSIGNS `num_batches_tracked` at tinygrad/nn/__init__.py:38, which is
+# an attribute assignment and NOT a declaration).
+# The optimizer therefore receives `num_batches_tracked` and both
 # running stats as "parameters", which is real tinygrad behaviour and the reason
 # `state.bend`'s walk -- not an `is_param` filter -- is what the example needs.
 #

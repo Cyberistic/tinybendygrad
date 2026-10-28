@@ -43,9 +43,11 @@
 #  21  427-438 fold  gated_given_valid + pm_simplify_valid DEFERRED `IMAGE` + #17
 #  22  442-448 table pm_clean_up_group_sink  2 of 2
 #  23  450-475 table sym                   3 of 5 reciprocal rules PORTED
-#                                            (`sym_463` at :463, `sym_464` at :464,
-#                                            `sym_465` at :465); the three `1-d`
-#                                            ones and the store/load four are not
+#                                            (`sym_463` at :463 `reciprocal`,
+#                                            `sym_464` at :464 `reciprocal`,
+#                                            `sym_465` at :465 `reciprocal`) --
+#                                            the three `1-d` ones and the
+#                                            store/load four are not
 #
 # WHAT THE LAST PASS FOUND, and two of the three are NOT walls.
 #   * `UPat.alu` (ops.py:608 symbol=alu) hands a COMMUTATIVE op a LIST src, and a list is
@@ -75,7 +77,8 @@
 #    `U32.div(a,0) = 0` is the number Python's `floordiv` is given by tinygrad/helpers.py:77.
 #    WHAT IT CANNOT DO, and this is a wall rather than a choice:
 #      a. weakint is MATHEMATICAL in tinygrad ("ints stay mathematical past the
-#         fold", symbolic.py:28) and the honest 64-bit carrier is `H.I64`.
+#         fold", symbolic.py:29 -- upstream's comment names `mathematical`) and the
+#         honest 64-bit carrier is `H.I64`.
 #         `helpers.bend` has `i64_add`, `i64_sub`, `i64_cmp` and NOT `i64_mul`,
 #         `i64_div` or `i64_mod`, so a weakint result outside the int32 range
 #         cannot be computed here. `exec_alu` answers `None{}` for it, which is
@@ -114,7 +117,8 @@
 # `if not early_reject.issubset(ler): continue`, so the rule FIRES when the op
 # set IS a subset of the node's src ops. It is built from the op of the
 # pattern's FIRST src and only when that src is a SINGLE-op UPat
-# (ops.py:1475-1478), and `O.pm_early` is ops.bend's own subset test over a
+# (ops.py:1467-1470 -- upstream builds `early_reject` there), and `O.pm_early` is
+# ops.bend's own subset test over a
 # `ler` that folds EVERY src. `rej` in the gate counts the entries whose reject
 # set is non-empty, and that count is the only place a MISSPELLED reject set shows
 # up at all.
@@ -124,9 +128,9 @@
 # the rule only matches when they are the SAME node. Without the identity check
 # the rule matches strictly more nodes than intended, and it typechecks. FOUR are
 # here and all FOUR are LOAD-BEARING:
-#     symbolic.py:123  (x ^ y) ^ y      -- `y` twice, the rule is (x^y)^y -> x
-#     symbolic.py:124  (x % y) % y      -- `y` twice, the rule is (x%y)%y -> x%y
-#     symbolic.py:462  (x * x).recip()  -- `x` twice, `sym_463`
+#     symbolic.py:126  (x ^ y) ^ y      -- `y` twice, the rule is (x^y)^y -> x
+#     symbolic.py:127  (x % y) % y      -- `y` twice, the rule is (x%y)%y -> x%y
+#     symbolic.py:462  (x * x).recip()  -- `x` twice, `sym_463`, upstream's `reciprocal` rule
 #     symbolic.py:463  (x*x*x).recip()  -- `x` THREE times, so TWO compares
 # The first TWO share one shape, so they share one def: `p_rebind2` is "`op` over
 # `op` over two srcs whose src[1] is the SAME node both times", and `sym_126`/
@@ -135,8 +139,9 @@
 # POSITIVE rebind row is worth nothing on its own -- only the pair sees the check
 # go.
 #
-# THE `is_any` CASE IS SAFE AND STAYS A DISJUNCTION. symbolic.py:180 binds `c`
-# in two `is_any` ALTERNATIVES; `is_any` copies the store per alternative so they
+# THE `UPat.any` CASE IS SAFE AND STAYS A DISJUNCTION. symbolic.py:183 -- upstream's
+# `UPat.any` IS the disjunction, and it binds `c` in two ALTERNATIVES, and
+# the port's `is_any` copies the store per alternative so they
 # never meet, and adding an identity check there would turn a disjunction into a
 # conjunction and drop the bare `CONST(Invalid)` lane.
 

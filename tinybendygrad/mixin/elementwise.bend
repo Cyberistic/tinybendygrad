@@ -836,7 +836,9 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:511  exp  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:838  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:850  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
-# TODO(p3) elementwise.py:613  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000. `mo_eqmul` is one arm (mixin/op.bend:998); the second arm + add is the remainder, and a `tn_isinf` would still need the same `isinf` body. UNDIAGNOSED
+# TODO(p3) elementwise.py:611  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000.
+#   `mo_eqmul` is one arm (mixin/op.bend:1073 symbol=mo_eqmul); the second arm + add is the
+#   remainder, and a `tn_isinf` would still need the same `isinf` body. UNDIAGNOSED
 # TODO(p3) elementwise.py:633  isclose  -- rtol=1e-05 and atol=1e-08 are literals, bit-exact. the rule body is the remainder; UNDIAGNOSED
 # TODO(p3) elementwise.py:654  ceil  -- b+1 is fine and was always fine -- the marker said so. `round` is the remainder; see 890
 # TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
@@ -868,7 +870,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `CMPNE` whose two srcs are the same tensor. NaN is the only float where
 # `x == x` is false, so `cmpne(t, t)` IS the NaN test. The port at
 # `tensor.bend:tn_isnan` is one line: `tn_cmpne(t, t)`. The mo-layer peer is
-# `mo_isnan` (`mixin/op.bend:986`), the same shape. Gated at
+# `mo_isnan` (`mixin/op.bend:1061 symbol=mo_isnan`), the same shape. Gated at
 # `gates/tn_isnan-gate.py` 5/5 rows.
 #
 # PORTED with two carve-outs. `isfinite` is elementwise.py:623,
@@ -877,7 +879,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `self.eq(+inf) + self.eq(-inf)` (the `True` arms are the identity and the
 # default-args case collapses). The chain is then `OR(ADD, isnan) -> cmpne(True)`,
 # built by `tn_isfinite` (`tensor.bend:tn_isfinite`). The mo-layer peer is
-# `mo_isfinite` (`mixin/op.bend:1008`). Gated at `gates/tn_isfinite-gate.py`
+# `mo_isfinite` (`mixin/op.bend:1083 symbol=mo_isfinite`). Gated at `gates/tn_isfinite-gate.py`
 # 6/6 rows.
 #
 # WHAT THE GATE DOES NOT ASSERT, AND WHY:
@@ -899,7 +901,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `tn_alu(tn_alu.put(cast), CMPNE, [Found.i(true_c)])`: the const index is minted
 # in `true_c.ar`, which is one node LONGER than the `cast.ar` the CMPNE was built
 # in, so the CMPNE landed on the slot the const index names and became its own
-# `src[1]`. `Arena` is an immutable `Data` value (`ops.bend:1255`), so `Found.ar`
+# `src[1]`. `Arena` is an immutable `Data` value (`ops.bend:1293 symbol=Arena`), so `Found.ar`
 # SNAPSHOTS, and an index is legal only in an arena DESCENDING FROM the one that
 # minted it. MEASURED with `O.Rng.sig` (`ops.bend:5857`) as the instrument on a
 # `CInt` input: `CMPNE/2 Ops.CAST Ops.CMPNE` against CPython's

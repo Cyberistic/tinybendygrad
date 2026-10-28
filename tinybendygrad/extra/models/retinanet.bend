@@ -27,13 +27,13 @@ import ./../datasets/__init__.bend as D
 # since landed.
 #
 # WHAT LANDED SINCE resnet.bend WAS WRITTEN, WITH ITS INSTRUMENT:
-#   `nn.Conv2d`  nn/layers.bend:756 `nn_conv2d`  -- resnet.bend:69-81 records this as
+#   `nn.Conv2d`  nn/layers.bend:937 symbol=nn_conv2d `nn_conv2d`  -- resnet.bend:69-81 records this as
 #                 MISSING and discloses that its own instrument was the file's own
 #                 refusal. `nn/layers.bend:1-30` is the unit that closed it and it
 #                 says so: "THE WALL TEXT NAMED THE WRONG BLOCKER".
 #   `x.max_pool2d` nn/pool.bend:250 `pool_maxpool` -- resnet.bend:64-66 recorded the
 #                 POOL SHAPE ARITHMETIC as existing and the BODY as SIDE B.
-#   `Tensor.sigmoid` mixin/elementwise.bend:1196 `ew_sigmoid` (:148,:153)
+#   `Tensor.sigmoid` mixin/elementwise.bend:1206 symbol=ew_sigmoid `ew_sigmoid` (:148,:153)
 #   `Tensor.where`   mixin/elementwise.bend:571 `ew_where`   (:153)
 #
 # WHAT IS STILL MISSING HERE, AND IT IS ALL resnet.bend's LIST:
@@ -50,11 +50,11 @@ import ./../datasets/__init__.bend as D
 #   `Tensor.argmax`    MISSING -- NOT HIT HERE. `scores.argsort()` at :15 and :93 is
 #                 the numpy spelling and `np.argsort` is MISSING; `mo_argmax` does
 #                 not exist either, which resnet.bend:89-93 already names.
-#   `Tensor.cast`      mixin/op.bend:370 `mo_cast_t` EXISTS (:146).
+#   `Tensor.cast`      mixin/op.bend:390 symbol=mo_cast_t `mo_cast_t` EXISTS (:146).
 #   `Tensor.permute`   mixin/movement.bend:1449 `mxw_permute` EXISTS (:141,:167).
 #   `x.pad`            mixin/movement.bend:1517 `mxw_pad.go` EXISTS (:213).
-#   `x.relu`           nn/layers.bend:262 `nn_relu` EXISTS (:137,:159,:212,:213,:230).
-#   `x.sum`            nn/layers.bend:242 `nn_sum` and mixin/op.bend:891 `mo_mean` EXIST.
+#   `x.relu`           nn/layers.bend:299 symbol=nn_relu `nn_relu` EXISTS (:137,:159,:212,:213,:230).
+#   `x.sum`            nn/layers.bend:279 symbol=nn_sum `nn_sum` and mixin/op.bend:953 symbol=mo_mean `mo_mean` EXIST.
 #   `nn.Embedding`     NOT USED BY THIS FILE. `softmax` NOT USED (no attention).
 #   `adam`             NOT USED BY THIS FILE, though `TRAINING` is read at :144 and
 #                 :170 and :190 and IS available as helpers.bend:67 `type Flags`.

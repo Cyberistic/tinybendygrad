@@ -81,9 +81,11 @@
 #   :79  the anchor `Device[min(pair)]` PORTED `qp.anchor`
 #   :80  `{nic.device: BNXTQP(...)}`  PORTED  `qp.new`
 #   :82  the four ring buffers        PORTED  `ring_elems.at` -- sq rq scq rcq
-#   :83  the three uint64s + `db`     PORTED  `qp_name`/`qp_itemsize` -- sq_seq
+#   :83  the three uint64s + `db` -- upstream's `sq_seq` IS the first of the three --
+#                                               PORTED  `qp_name`/`qp_itemsize` -- sq_seq
 #                                               rq_seq psn, db
-#   :84  the UPat rules               PORTED  `qp.rules_len` -- 8 tags, FIRST-WINS
+#   :166 the UPat rules -- upstream's `PatternMatcher` IS the rules' holder --
+#                                               PORTED  `qp.rules_len` -- 8 tags, FIRST-WINS
 #   tinygrad/runtime/ops_rdma.py:166 `PatternMatcher(rules)` PORTED `qp_len` -- upstream's `pm_bufferize` is GONE (9ff6db7b0)
 #   :86  `connect` both ways          PORTED  `qp.connect` -- nics THEN reversed
 #   :89  `rdma_mem`                   PORTED  `mem.of` -- volatile, dtype, tag
@@ -101,7 +103,8 @@
 #   :112 `queue_of(calls[0])`         PORTED  `copies.cap_ok` + `Tr.count`
 #   :113 `rdma_qp(pair)[nic.device]`  PORTED  `qp.new`
 #   :116 `bufs = [args[c][0 if recv else 1]]` PORTED `ops.wqe`
-#   :117 the chunks comprehension     PORTED  `chunks_of` / `nchunks` / `psns_len`
+#   :113 the chunks comprehension -- upstream's `chunks` IS the comprehension --
+#                                              PORTED  `chunks_of` / `nchunks` / `psns_len`
 #   tinygrad/runtime/ops_rdma.py:114 `len(chunks), sum(chunks)` PORTED  `nchunks`, `ops.n_writes` symbol=rdma_copies
 #   :120 the ring-cap ASSERT          PORTED  `copies.guard`  (the REFUSAL)
 #   :123 the bumps                    PORTED  `bump.seq` / `bump.psn`

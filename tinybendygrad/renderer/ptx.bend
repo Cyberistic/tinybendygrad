@@ -25,9 +25,10 @@
 #     is an f-string over `ctx.r[x]`. It is CONSUMABLE exactly once the walk
 #     below supplies `ctx.r`, so it is the natural NEXT file and not a wall.
 #   * `ptx_matcher` (ptx.py:40-57) -- eight graph REWRITES, and tc_ptx.bend's
-#     `DONE(p3)`/`WALL(p3)` block over ptx.py:42-56 is where each of the eight
-#     is recorded.
-#     `TODO(p3) ptx.py:42 symbol=ptx_matcher`.
+#     `DONE(p3)`/`WALL(p3)` block over ptx.py:40-57 `ptx_matcher` is where each
+#     of the eight is recorded -- upstream's `ptx_matcher` IS that PatternMatcher
+#     and it opens at :40.
+#     `TODO(p3) ptx.py:40 symbol=ptx_matcher`.
 #   * `to_function_name`'s `ansistrip` (tinygrad/helpers.py:157) -- a regex ANSI strip.
 #     The KEEP/HEX branch is ported and gated; the strip is the wall.
 #   * `Ops.WMMA`'s `wmma_r` (ptx.py:211-216) -- it needs the three fragment
@@ -64,8 +65,9 @@
 #   * `reg[i]`  -- counter key -> count, IN `c`'s INSERTION ORDER, which is what
 #     `c.items()` hands `render_kernel` and which no sort reproduces.
 #   * `entry`   -- the SINK's arg through `to_function_name`.
-#   * `REFUSAL` -- a TRUNCATED trace. ptx.py:204 raises BEFORE it has a register,
-#     so the row is the message plus the offending op and nothing else; the
+#   * `REFUSAL` -- a TRUNCATED trace. ptx.py:204 `RuntimeError` raises BEFORE it
+#     has a register, and upstream's `RuntimeError` IS that raise, so the row is
+#     the message plus the offending op and nothing else; the
 #     message's own tail is `{u}`, a UOp repr, i.e. the GRAPH and not a value.
 # ===========================================================================
 
