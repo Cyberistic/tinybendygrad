@@ -12,6 +12,15 @@ cd "$(dirname "$0")"
 BEND=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend
 OUT="${1:-got.txt}"
 
+# THE OUTPUT FILE IS AN ARGUMENT, AND AN ARGUMENT THAT LOOKS LIKE A FLAG IS NOT A FILE.
+# MEASURED 2026-10-19, IN THE SISTER SCRIPT: `run-f64.sh --help` put a work DIRECTORY at
+# `--help` and `mkdir -p` created it AT THE REPO ROOT. **⇒ THE SAME **HOLE **IS **HERE**,
+# ONE LEVEL **DOWN**: `: > "$OUT"` **WOULD **CREATE **A **FILE **NAMED `--help`.**
+case "$OUT" in
+  -*) echo "$0: the output file '$OUT' looks like a FLAG. This script's argument is a FILE; exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
+
 python3 gen_gate.py > gen.out 2>&1 || { echo "GENERATOR FAILED"; cat gen.out; exit 1; }
 cat gen.out
 : > "$OUT"
