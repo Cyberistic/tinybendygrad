@@ -1,0 +1,20 @@
+=== PLANT A -- pin-cite-gate: break the CLAIM TOKEN of a re-pointed UPSTREAM citation.
+PLANTED A: `synchronize` -> `synchronise`
+  control: rc=0  ops_disk.bend unverifiable=0  tree unverifiable=36
+# pin-cite-gate: PASS
+  plant: rc=0  ops_disk.bend unverifiable=1  tree unverifiable=37
+# pin-cite-gate: PASS
+  THE PLANTED ROW:
+67	tinygrad/runtime/ops_disk.py	14	14	synchronise,dev_sync	unverifiable
+  THE CONTROL'S SAME ROW:
+67	tinygrad/runtime/ops_disk.py	14	14	synchronize,dev_sync	at_pin
+
+=== PLANT B -- bendcite-gate: break the CLAIM TOKEN of a re-pointed PORT-to-PORT citation.
+PLANTED B: the POINTER moves :530 -> :527, so the cited line no longer HOLDS `nn_linear`
+  control: rc=1  llama.bend WRONG-LINE+DANGLING-LINE=0  tree=57
+# bendcite-gate: FAIL -- 57 of 1293 internal pointers do not hold
+  plant2: rc=1  llama.bend WRONG-LINE+DANGLING-LINE=1  tree=58
+# bendcite-gate: FAIL -- 58 of 1293 internal pointers do not hold
+  THE PLANTED ROW:
+44	nn/layers.bend	527	527	WRONG-LINE	nn.Linear,nn_linear	nn_linear.add	530	-3
+  THE CONTROL'S SAME FILE (it must be EMPTY -- the row RESOLVES):
