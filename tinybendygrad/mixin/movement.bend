@@ -777,13 +777,13 @@ def mxm_len_u32(xs: List<&2, U32>) -> U32: U32.from_nat(List.length(&2, U32, xs)
 
 # THE WHOLE OF `_shape` FOR A MOVEMENT OP (ops.py:409-431), as a DISPATCH on the
 # marg's tag. Every arm is arithmetic over values already read, which is the whole
-# point: `fold.bend`'s `None{}` for these five ops (uop/fold.bend:1622 symbol=sym_dim.end) is replaced
+# point: `fold.bend`'s `None{}` for these five ops (uop/fold.bend:1685 symbol=sym_dim.end) is replaced
 # by calls that need no rewrite engine, and `fold.bend` is READ-ONLY here so the arms
 # are supplied for a consumer to call rather than installed in the fold.
 #
 # `UNSHARD` and `REDUCE` are NOT here: UNSHARD needs `vmax` (ops.py:432) and REDUCE
 # needs `self.arg[1]`, and `fold.bend` defers UNSHARD for the same reason
-# (uop/fold.bend:1622 symbol=sym_dim.end). `SPLIT_REDUCE` is the same arm as REDUCE.
+# (uop/fold.bend:1685 symbol=sym_dim.end). `SPLIT_REDUCE` is the same arm as REDUCE.
 #
 # THE SELS ARE DECLARED IN CALL-CHAIN ORDER, bottom first, because Bend has no
 # forward references and the `match`-on-a-parameter shape needs the leaf to exist.
@@ -1195,7 +1195,7 @@ def pool_wide_row() -> IO(Unit):
 # four wrappers that call `_mop`, and the reason it is a separate section is the
 # IDENTITY TEST: every one of them ends `return self if ret.shape == self.shape else
 # ret` (movement.py:185, :190, :194, :231, :254), so the wrapper needs the shape of the
-# node it JUST BUILT -- and `uop/fold.bend:1622 symbol=sym_dim.end` does not answer that for PAD, SHRINK,
+# node it JUST BUILT -- and `uop/fold.bend:1685 symbol=sym_dim.end` does not answer that for PAD, SHRINK,
 # EXPAND, FLIP or PERMUTE.
 #
 # **THE MERGE POINT, and it is the reason this section is buildable at all.** The
@@ -1305,7 +1305,7 @@ def mxw_fold_shape(ar: O.Arena, u: U32) -> List<&2, U32>:
   mxw_fold_shape.go(mxw_dims(ar, u), Nil{})
 
 # **THE MERGE POINT.** The shape of ANY node: `mxm_shape` for the six movement ops that
-# `uop/fold.bend:1622 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's identity
+# `uop/fold.bend:1685 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's identity
 # test goes through here, and it is ONE def rather than six call sites because the six would
 # each have to re-derive the op test and each of them is a chance to disagree about which ops
 # are movement ops.
@@ -1328,7 +1328,7 @@ def mxw_shape_of(fuel: Nat, mv: Bool, +ar: O.Arena, +u: U32) -> List<&2, U32>:
     case 1n+p True{}: mxm_shape(mxm_marg(ar, u), mxw_shape_of(p, mxw_mv(O.Arena.op(ar, O.Arena.src0(ar, u))), ar, O.Arena.src0(ar, u)))
 
 # **THE MERGE POINT.** The shape of ANY node: `mxm_shape` for the six movement ops that
-# `uop/fold.bend:1622 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's
+# `uop/fold.bend:1685 symbol=sym_dim.end` defers, and the fold for everything else. Every wrapper's
 # identity test goes through here, and it is ONE def rather than six call sites because
 # the six would each have to re-derive the op test and each of them is a chance to
 # disagree about which ops are movement ops.
@@ -1489,7 +1489,7 @@ def mxw_pairs_node(+t: T.Tensor, +op: O.Op, +a: O.Found, +b: O.Found) -> T.Tenso
 
 # --- a NON-MOVEMENT node, for W7's row --------------------------------------
 # `x + 3` is `ADD(RESHAPE, CONST)` and `fold.bend` answers an ADD's shape by inheriting
-# it from its src (uop/fold.bend:1599 symbol=sym_dim.range, the Broadcastable arm). It exists ONLY to give
+# it from its src (uop/fold.bend:1662 symbol=sym_dim.range, the Broadcastable arm). It exists ONLY to give
 # `mxw_shape_of`'s non-movement arm a fixture; no wrapper below calls it.
 def mxw_add_new2(+c: O.Found, +t: T.Tensor) -> O.Found:
   O.UOp.new(O.Found.ar(c), O.OpsADD{}, [T.Tensor.u(t), O.Found.i(c)], O.ANone{}, O.TNone{})

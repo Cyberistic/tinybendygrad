@@ -151,9 +151,9 @@
 #      dtype and `Nil{}` for a shape. Both are UNREACHABLE for the recipes below,
 #      and the reason is worth stating because it is why the port is checkable at
 #      all: none of them builds a PERMUTE/PAD/SHRINK/EXPAND/FLIP, which are the
-#      five ops `dt_shape` defers (fold.bend:2610 symbol=dt_shape). The movement op they do
-#      build is RESHAPE, which `reshape_ds` (fold.bend:2188 symbol=reshape_ds) answers, and REDUCE,
-#      which `reduce_ds` (fold.bend:2199 symbol=reduce_ds) answers. MEASURED, both, over a BUFFER-rooted AND
+#      five ops `dt_shape` defers (fold.bend:2673 symbol=dt_shape). The movement op they do
+#      build is RESHAPE, which `reshape_ds` (fold.bend:2251 symbol=reshape_ds) answers, and REDUCE,
+#      which `reduce_ds` (fold.bend:2262 symbol=reduce_ds) answers. MEASURED, both, over a BUFFER-rooted AND
 #      over a RESHAPE-rooted source.
 #   4. `commit_dtype` (tinygrad/mixin/dtype.py:16) answers a `Maybe` because `UOp._min_max`
 #      (ops.py:239 symbol=dtype) is not ported, and `mixin/dtype.bend` measures that refusal
@@ -800,7 +800,7 @@ def mo_ax_all(+t: T.Tensor) -> List<&2, U32>:
 
 # THE KEEPDIM RESHAPE, `1 if i in axis else s for i,s in enumerate(self.shape)`
 # (reduce.py:18). It is `RESHAPE` and the fold answers its shape, so
-# `mo_reshape`'s identity test sees the real shapes and `t_sum0kd` is the row (uop/fold.bend:1538 symbol=pre_all). The
+# `mo_reshape`'s identity test sees the real shapes and `t_sum0kd` is the row (uop/fold.bend:1601 symbol=pre_all). The
 # membership test `i in axis` is a `Bool` because a `match` may not scrutinise a call
 # (rule 1).
 def mo_iaxis.go(axis: List<&2, U32>, +i: U32) -> Bool:
@@ -1358,7 +1358,7 @@ def t_sum0() -> IO(Unit):
 # (tensor.bend:827) returns `None` when the fold cannot answer the source's SHAPE, and
 # `tn_rop.reduce` then hands `self` back UNCHANGED -- no REDUCE node at all. For a
 # BUFFER-rooted and a RESHAPE-rooted source the fold DOES answer it (MEASURED: fold
-# uop/fold.bend:1528 symbol=stage_widths and uop/fold.bend:1538 symbol=pre_all), so this row is False and prints False; the mutation that
+# uop/fold.bend:1591 symbol=stage_widths and uop/fold.bend:1601 symbol=pre_all), so this row is False and prints False; the mutation that
 # makes it print True is the one that removes the refusal, and no CPython row can see
 # that because CPython never refuses.
 def t_rop_gap() -> IO(Unit):
@@ -1367,7 +1367,7 @@ def t_rop_gap() -> IO(Unit):
   mo_row("rop_gap", O.eq_op(O.Arena.op(O.Found.ar(f), O.Found.i(f)), O.OpsREDUCE{}))
 
 # THE KEEPDIM ROW. `reduce.py:18`'s reshape is `1 if i in axis else s`, and the fold
-# answers a RESHAPE's shape (uop/fold.bend:1538 symbol=pre_all), so the identity test in `mo_reshape`
+# answers a RESHAPE's shape (uop/fold.bend:1601 symbol=pre_all), so the identity test in `mo_reshape`
 # sees the real shapes. Without keepdim the REDUCE is the last node; with it the
 # signature gains `CONST RESHAPE/2` and nothing else, and the COUNT is what says so.
 def t_sum0kd() -> IO(Unit):

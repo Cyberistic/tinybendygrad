@@ -604,7 +604,7 @@ def GroupOp.elementwise(op: Op) -> Bool:
 #
 # `AXIS_REDUCE` and `AXIS_UNROLL` are DELETED upstream but they are still CONSTRUCTED
 # by six committed files, so they cannot be deleted here:
-#     schedule/indexing.bend:1316 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
+#     schedule/indexing.bend:1409 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
 #     codegen/kernel.bend:1002 symbol=kn_fixture       codegen/late/linearizer.bend:877 symbol=lt_fix
 #     codegen/opt/heuristic.bend:159 symbol=reduce_k   codegen/opt/heuristic.bend:162 symbol=matmul_k
 #     codegen/opt/postrange.bend:160 symbol=split_targets   codegen/opt/search.bend:418 symbol=zero_variant.dead
@@ -5128,10 +5128,10 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 #   `Sint` list. Every input is the worklist's, so these are fold.bend's rows;
 #   `schedule/multi.bend` is the caller and it inlines what it can today.
 # PORTED -- `ops.py:481 _ranges` and `ops.py:495 ranges` are `fold.bend`'s
-# `Ranged` / `UOp.ranges` (fold.bend:5055 symbol=UOp.ranges), 12 `rg_*` rows byte-identical to
+# `Ranged` / `UOp.ranges` (fold.bend:5118 symbol=UOp.ranges), 12 `rg_*` rows byte-identical to
 # CPython. The reason these two carried for a month -- "Dict set algebra over the
 # fold's memo" -- was wrong: the arena interns, so `dict[UOp, None]` IS a list
-# with a membership test, and `ended_ranges` is ported too (uop/fold.bend:2805 symbol=ended_of).
+# with a membership test, and `ended_ranges` is ported too (uop/fold.bend:2868 symbol=ended_of).
 # TODO(p3) ops.py:479  def ranges
 #   Dict set algebra over the fold's memo: union every src's ranges, then `pop` the
 #   ones the ended ranges close. The wall is named where it is HIT --
@@ -8882,7 +8882,7 @@ type OI is Data:
 # `sym_infer` (ops.py:95) IS THE IDENTITY ON AN INT, and `UOp.sym_infer`
 # (ops.py:1169) EVALUATES RENDERED SOURCE WITH `exec` -- the port's `sym_infer`
 # WALL, named at this file's `TODO(p3) ops.py:1169 def sym_infer` and at
-# `uop/fold.bend:6492 symbol=main`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
+# `uop/fold.bend:6590 symbol=main`. SO THE PORT'S `launch_dims` IS EXACT FOR EVERY
 # `ProgramInfo` THE PORT CAN BUILD AND NOT ONE MORE: the port's `global_size`
 # and `local_size` are `List<&2, H.I64>`, so their elements are INTS.
 #

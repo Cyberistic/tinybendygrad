@@ -886,7 +886,7 @@ def dc_dt(+fx: F.Folded,+u: U32,+want: U32) -> Bool:
 #     `out_s7` (a uint numerator, `vmin >= 0` on both, so the SHORT CDIV) is the
 #     row that says the guard was read rather than assumed.
 #   * Any other op needs the recursive `_min_max`, which is P3 and the port's
-#     `uop/fold.bend:5175 symbol=UOp.min_max` is the reader that would answer it.
+#     `uop/fold.bend:5238 symbol=UOp.min_max` is the reader that would answer it.
 #     `dc_end` answers `False` for those ops, which makes the guard fail and sends
 #     the rule down the GENERAL path. That is Python's answer whenever the guard is
 #     false, so the divergence is SOUND. It is DIVERGENCE D and the alternative --

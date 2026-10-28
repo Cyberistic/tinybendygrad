@@ -640,7 +640,7 @@ def cr_g.of(nm: String, +ar: O.Arena, +c: CU, +xs: List<&2, U32>) -> IO(Unit):
 # AN EXPAND. MEASURED, `probe_fold.bend` over `full((2,3),42)`: nodes 1..6 (ALLOC,
 # CONST, CONST, STACK, RESHAPE, CONST) resolve for both dtype and shape, node 7 (EXPAND)
 # resolves for NEITHER, and 8 (STORE) and 9 (AFTER) resolve for NEITHER either --
-# uop/fold.bend:1632 symbol=sym_dim.val's `Ops.EXPAND` arm answers `None{}`, and an unresolved node never
+# uop/fold.bend:1695 symbol=sym_dim.val's `Ops.EXPAND` arm answers `None{}`, and an unresolved node never
 # releases its consumers in the Kahn worklist. That is W3's wall (the EXPAND's `marg`
 # needs `ssimplify`) and it is the SAME one op.bend names.
 # SO THE `_d` ROW READS `AFTER.src[0]`, which is exactly what `thru0` (fold.bend:917)
@@ -671,7 +671,7 @@ def cr_d.of(nm: String, +ar: O.Arena, +c: CU) -> IO(Unit):
 #
 # `GroupOp.Movement` gives `src[0].dtype`, so an EXPAND-rooted tensor's DTYPE is its
 # source's and the fold answers it. Its SHAPE is not `src[0].shape` -- it is the EXPAND's
-# own arg -- and uop/fold.bend:1632 symbol=sym_dim.val answers `None{}` for it, so the shape half is NOT GATED
+# own arg -- and uop/fold.bend:1695 symbol=sym_dim.val answers `None{}` for it, so the shape half is NOT GATED
 # for `full(..., buffer=False)` or for `const_like` on a non-empty shape. Those rows say
 # so rather than printing a shape fold.bend cannot produce.
 def cr_t_root.of(+ar: O.Arena, +c: CU, after: Bool, exp: Bool) -> CU:

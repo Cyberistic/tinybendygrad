@@ -535,8 +535,8 @@ def g_t6() -> IO(Unit):
 # The SHAPE is `fold.bend`'s: ONE self-recursive def with the decreasing fuel
 # first, and a `Data` RECORD for the rest of the state, because a `match` on a
 # record's field binder is legal where a `match` on a computed value is not.  That
-# is `Kahn.run` / `Kahn.step` / `Kahn.pop` exactly (uop/fold.bend:4833 symbol=Kahn.run,
-# uop/fold.bend:4824 symbol=Kahn.step, uop/fold.bend:4818 symbol=Kahn.pop), and it is
+# is `Kahn.run` / `Kahn.step` / `Kahn.pop` exactly (uop/fold.bend:4896 symbol=Kahn.run,
+# uop/fold.bend:4887 symbol=Kahn.step, uop/fold.bend:4881 symbol=Kahn.pop), and it is
 # the only reason this walk is writable at all: Python's two `if`s become one
 # `match` on `WmSt{kind}`, and the AFTER arm's "build or keep" becomes a
 # `Bool.pick` inside `pr_wm_fork`, which is a FUNCTION and not a scrutinee -- which
@@ -636,7 +636,7 @@ def pr_wm_last(+st: WmSp) -> List<&2, U32>: pr_wm_last.of(WmSp.done(st), st)
 
 # THE SPINE.  `ns` is the fuel and it is the FIRST parameter, because a
 # self-recursive def's decreasing argument must be first and read left to right
-# (`Kahn.seed.work`, uop/fold.bend:2927 symbol=Kahn.seed.work, is the precedent for a list fuel).  The tail is
+# (`Kahn.seed.work`, uop/fold.bend:2990 symbol=Kahn.seed.work, is the precedent for a list fuel).  The tail is
 # what shrinks, so `pr_wm_turn` cannot shorten it -- which is what `done` is for.
 def pr_wm_spine(+ns: List<&2, Nat>, st: WmSp) -> List<&2, U32>:
   match ns:
@@ -706,7 +706,7 @@ def pr_wm_arm(+n: U32, +a: WmA) -> WmA:
   pr_wm_keep.of(pr_wm_hop(O.Arena.op(WmA.ar(a), n)), O.op_is(WmA.ar(a), n, O.OpsAFTER{}), n, a)
 
 # The SPINE is the fuel and it is the FIRST parameter with the accumulator LAST,
-# which is `Kahn.run(fuel, ar, k)` exactly (uop/fold.bend:4833 symbol=Kahn.run): the tail is the
+# which is `Kahn.run(fuel, ar, k)` exactly (uop/fold.bend:4896 symbol=Kahn.run): the tail is the
 # decreasing argument, so it is read first, and the changed accumulator rides in
 # the last position where nothing else has to be read twice.
 def pr_wm_fold(+ns: List<&2, U32>, a: WmA) -> WmA:

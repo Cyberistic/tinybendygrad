@@ -31,13 +31,15 @@
 #   | `KU` field | upstream                        | the port                          |
 #   |-------------|---------------------------------|-----------------------------------|
 #   | `op`        | `u.op`  (ops.py:253)            | `O.Arena.op(ar, i)` (ops.bend:1385) |
-#   | `dtype`     | `u.dtype` (ops.py:239 symbol=dtype) | `F.fold.dt(ar, tb, i)` (uop/fold.bend:4770 symbol=fold.dt) |
-#   | `addr`      | `u.addrspace` (ops.py:896)      | `F.fold.addr(ar, tb, i)` (fold.bend:4752) |
+#   | `dtype`     | `u.dtype` (ops.py:239 symbol=dtype) | `F.fold.dt(ar, tb, i)` (uop/fold.bend:4833 symbol=fold.dt) |
+#   | `addr`      | `u.addrspace` (ops.py:896)      | `F.fold.addr(ar, tb, i)` (fold.bend:4815) |
+#     the port's reader for `addr` is fold.bend:4815 symbol=fold.addr
 #   | `numel`     | `u.max_numel()` (movement.py:55)| `prod(shape)` of the fold's shape  |
-#   | `shape`     | `u.shape` (movement.py:35)      | `F.fold.shape(ar, tb, i)` (fold.bend:4764) |
+#   | `shape`     | `u.shape` (movement.py:35)      | `F.fold.shape(ar, tb, i)` (fold.bend:4827) |
+#     the port's reader for `shape` is fold.bend:4827 symbol=fold.shape
 #   | `arg`       | `u.arg`  (ops.py:253)           | `O.Arena.arg(ar, i)` (ops.bend:1388) |
 #   | `srcs`      | `u.src`  (ops.py:253)           | `O.Arena.srcs(ar, i)` (ops.bend:1394), RE-INDEXED |
-#   the durable pointer for the `dtype` row is uop/fold.bend:4770 symbol=fold.dt
+#   the durable pointer for the `dtype` row is uop/fold.bend:4833 symbol=fold.dt
 # THE `arg` MAPPING, ONE ROW PER `O.Arg` VARIANT THE RENDERER READS:
 #
 #   | `O.Arg`         | `KUArg`                       | who reads it                |
@@ -207,7 +209,7 @@ def kuconv.arg(+ar: O.Arena, +fx: F.Folded, a: U32, nm: U32, dt: S.Dt) -> C.KUAr
 # THE COMPLETION PASS -- AND WHY IT IS HERE.
 #
 # THE PORT's OWN FOLD DOES NOT SETTLE ON A PROGRAM WITH A SYMBOLIC SHRINK
-# OFFSET: `fold.bend:1641-1646`'s `sym_dim` REFUSES EVERY `Arg` THAT IS NOT A
+# OFFSET: `fold.bend:1704 symbol=sym_dim.of`'s `sym_dim` REFUSES EVERY `Arg` THAT IS NOT A
 # CONST, A PARAM OR A SPECIAL, WHERE UPSTREAM's `as_shape` ANSWERS
 # `(ssimplify(self),)` FOR AN EXPRESSION (`ops.py:783-786`).  A FOLD THAT DOES
 # NOT SETTLE ANSWERS `void` FOR EVERY NODE DOWNSTREAM OF THE REFUSAL, AND

@@ -6,7 +6,7 @@
 # NOTHING IS PORTED HERE. `heuristic.py` is 193 lines and every one of its
 # decisions reads something out of the AST -- `k.bufs`, `k.reduceop`,
 # `idx.get_idx()`, `idx.get_valid()`, `u.ranges`, `backward_slice` -- and all of
-# those are WALL #1 (`UOp.ranges`, which `uop/fold.bend:5055 symbol=UOp.ranges` marks P3 and defers
+# those are WALL #1 (`UOp.ranges`, which `uop/fold.bend:5118 symbol=UOp.ranges` marks P3 and defers
 # to "the set algebra `_bool_slice` also wants"). So the whole function is one
 # wall wearing thirteen coats, and the honest thing is to say which coat is which
 # rather than to write a stub ladder that computes nothing.

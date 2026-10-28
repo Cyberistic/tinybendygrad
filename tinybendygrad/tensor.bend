@@ -474,7 +474,7 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # `O.UOp.cast` (ops.bend:2738) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
 # That was the one extra `CAST` on `tn_eq`, `tn_dunder_ge`, `tn_dunder_le`,
 # `tn_dunder_invert` and `tn_isfinite`, every one of which is a `logical_not` over a node the
-# fold already knows is `bool` (a CMPNE, a CMPLT or an OR -- uop/fold.bend:2610 symbol=dt_shape answers
+# fold already knows is `bool` (a CMPNE, a CMPLT or an OR -- uop/fold.bend:2673 symbol=dt_shape answers
 # `bool` for the first two and `promo_dtype` for the third). The fold-aware cast is
 # `D.cast_at` (dtype.bend:350), the same `cast_at.of` two-arm match `mixin/elementwise.bend`'s
 # `ew_cast` reaches through `W.wk_cast_at`, and it is `D` rather than `W` because
@@ -588,7 +588,7 @@ def tn_bitwise_not(+t: Tensor) -> Maybe<&2, Tensor>:
 # SIGN-EXTENDS a U32 (`mixin/elementwise.bend:484 symbol=ew_dt_max_i64`'s `ew_neg.go` builds the same).
 # `tn_alu` handles the binary op with `self` at src[0], so the call is
 # `tn_alu(t, O.OpsMUL{}, [c])` for a CONST `c`. The dtype gate is `tn_dtype` -- a
-# fold property (`UOp.dtype`, fold.bend:4783), and the `None{}` arm falls through
+# fold property (`UOp.dtype`, fold.bend:4846 symbol=UOp.dtype), and the `None{}` arm falls through
 # to the arith branch as the conservative answer (the fold cannot answer, the dtype
 # is NOT bool by elimination, and the value is whatever `self * (-1)` is). The two
 # arms are split into helper defs because a `match` arm body is a single expression.

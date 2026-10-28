@@ -5,7 +5,7 @@
 # eighty-nine are the big rule, so this file ports the matcher in full and THREE
 # arms of `fold_divmod_general` -- :8, :61 and :108 -- and the TODO block names
 # every line of the rest with the wall behind it. The one wall is `UOp._min_max`
-# (uop/fold.bend:2180 symbol=reshape_ds.of), which upstream's (ops.py:1104) is P3 and not written: the remaining 60 lines are
+# (uop/fold.bend:2243 symbol=reshape_ds.of), which upstream's (ops.py:1104) is P3 and not written: the remaining 60 lines are
 # all interval arithmetic over symbolic UOps, which :11 needs too except that a
 # CONST's `_min_max` IS `(val, val)` and a PARAM's IS `arg.vmin_vmax`, both plain
 # field reads, and :15 needs no range at all.
@@ -854,7 +854,7 @@ def trees() -> Gate:
 # TODO(p3) divandmod.py:13  symbol=fold_divmod_general  the RANGE HALF of `x//y` being a point -- PORTED for
 #   CONST/CONST only, where `_min_max` (ops.py:1127) is four identical `a//b` and
 #   the test is always true. Outside CONST/CONST it needs `_min_max`. WALL:
-#   `UOp._min_max`, P3. See uop/fold.bend:2180 symbol=reshape_ds.of.
+#   `UOp._min_max`, P3. See uop/fold.bend:2243 symbol=reshape_ds.of.
 # TODO(p3) divandmod.py:17-19 `# split uops for the rest of the processing` --
 #   `x.pop_const()` and `split_uop(Ops.ADD)`, both op-shape walks over a fuel-bound
 #   src list. Neither has a caller once line 23 is gone, so neither is written.
@@ -869,7 +869,7 @@ def trees() -> Gate:
 # TODO(p3) divandmod.py:23-25 `nested_div: (x%(k*c))//c -> (x//c)%k (requires k>0);
 #   the mod case is handled by remove_nested_mod below` -- needs
 #   `x.src[1].divides(c)`. WALL: `divides` (ops.py:1067) needs `gcd` (ops.py:1083)
-#   needs a `Counter` fold. uop/fold.bend:2170 symbol=reshape_ds.go.
+#   needs a `Counter` fold. uop/fold.bend:2233 symbol=reshape_ds.go.
 # TODO(p3) divandmod.py:27-35 `remove_nested_mod in sum: (a%4 + b)%2 -> (a+b)%2` --
 #   `divides`, same wall.
 # TODO(p3) divandmod.py:37  symbol=fold_divmod_general  `Shared decomposition for folding rules` and :41-48
@@ -893,7 +893,7 @@ def trees() -> Gate:
 #   step), then a RECURSIVE call to `fold_divmod_general(x//div)` (mutual
 #   recursion, refused), then `backward_slice` twice for the `min(results, key=
 #   len(slice))`. WALL: mutual recursion, `backward_slice` (a set walk,
-#   uop/fold.bend:2126 symbol=marg_prod.step), and `_min_max`. P3, and the largest single omission here.
+#   uop/fold.bend:2189 symbol=marg_prod.step), and `_min_max`. P3, and the largest single omission here.
 #
 # ** Variable Denominator / Fallback Rules ** -- divandmod.py:72-96. These rules
 # apply to variables OR constants that failed the checks above, and reconstruct all
