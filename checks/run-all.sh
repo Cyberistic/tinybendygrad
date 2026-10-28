@@ -19,6 +19,25 @@ REPO=${REPO:-$_d/..}
 REPO=$(cd "$REPO" && pwd)
 export REPO
 W=${W:-${TMPDIR:-/tmp}/cstyle2}
+
+# THE WORK DIRECTORY IS **NOT **A **FLAG**, AND IT IS **NOT **INSIDE **THE **REPO**.
+# MEASURED 2026-10-19, IN THE SISTER SCRIPT: `run-f64.sh --help` put a work DIRECTORY at
+# `--help` and `mkdir -p` created it AT THE REPO ROOT, and `checks/no-txt.py` then OWNED the
+# `.txt` files it left there -- so a failed run became HARD debt the `.txt` gate charges.
+# **⇒ `W` **IS **READ **FROM **THE **ENVIRONMENT **HERE**, **AND **A **FLAG-SHAPED **`W`** **IS **JUST
+# **AS **DANGEROUS **AS **A **FLAG-SHAPED **`$1`** — **SO **THE **GUARD **IS **THE **SAME.**
+case "$W" in
+  -*) echo "$0: the work directory '$W' looks like a FLAG. W is a DIRECTORY; exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
+case "$W" in
+  /*) WABS=$W ;;
+  *)  WABS="$PWD/$W" ;;
+esac
+case "$WABS" in
+  "$REPO"|"$REPO"/*) echo "$0: the work directory '$W' RESOLVES TO '$WABS', INSIDE the repo. The work directory is scratch; put it under \$TMPDIR, or the repo owns its contents. exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
 export W
 HERE=$(cd "$(dirname "$0")" && pwd)
 SNAP_CSTYLE=tinybendygrad/renderer/cstyle.bend

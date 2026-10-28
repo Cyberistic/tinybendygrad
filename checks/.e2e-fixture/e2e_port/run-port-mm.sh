@@ -39,6 +39,41 @@ PY="$ROOT/.venv/bin/python"
 PORTEXEC="$ROOT/checks/.e2e-fixture/portexec"
 PLANT="$ROOT/checks/.e2e-fixture/e2e_port/plant.py"
 W=${1:-${TMPDIR}/e2e-port-mm}
+
+# THE WORK DIRECTORY IS AN ARGUMENT, AND AN ARGUMENT THAT LOOKS LIKE A FLAG IS NOT A
+# DIRECTORY.  MEASURED 2026-10-19: `run-f64.sh --help` put `$W` at `--help`, and
+# `mkdir -p "$W"` created a directory NAMED `--help` AT THE REPO ROOT, holding this
+# script's own `.log` files and two `.txt` dumps -- and `checks/no-txt.py` OWNS those
+# `.txt` files, so a stray directory became HARD debt the `.txt` gate charges.
+# **⇒ A DIRECTORY ARGUMENT IS **REFUSED **WHEN **IT **LOOKS **LIKE **A **FLAG**, **AND
+# **IT **IS **REFUSED **WHEN **IT **WOULD **LAND **INSIDE **THE **REPO** -- **BOTH
+# **BECAUSE **THE **WRITE **IS **THE **DAMAGE**, **AND **BECAUSE **A **DIRECTORY **AT
+# **THE **REPO **ROOT **IS **A **PATH **THE **TREE **OWNS.** **EXIT **3** **IS **THE
+# **HOUSE'S **REFUSED.**
+case "$W" in
+  -*) print -r -- "$0: the work directory '$W' looks like a FLAG. This script's argument is a DIRECTORY; exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
+# THE ARGUMENT MAY BE RELATIVE, SO IT IS RESOLVED BEFORE THE COMPARISON.  A PATTERN
+# AGAINST THE ABSOLUTE `$ROOT` DOES NOT MATCH `.agents/slop/x`, AND A GUARD THAT
+# MISSES A RELATIVE PATH IS NOT A GUARD.
+case "$W" in
+  /*) WABS=$W ;;
+  *)  WABS="$PWD/$W" ;;
+esac
+case "$WABS" in
+  "$ROOT"|"$ROOT"/*) print -r -- "$0: the work directory '$W' RESOLVES TO '$WABS', INSIDE the repo. The work directory is scratch; put it under \$TMPDIR, or the repo owns its contents. exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
+# BESIDE THE GATE, IN GIT.  This was `$ROOT/runs/e2e/e2e-mm-oracle.json`, under the
+# ROOT `runs/` ignore rule (`cf2d14fa4` untracked it with 168 siblings).  A gate's
+# required input under an ignore rule cannot be seen in a clone: `checks/e2e.py:20`
+# and `.gitignore:137` both recorded the conflict and neither fixed it.  The bytes are
+# RECOVERED BYTE-IDENTICAL from `cf2d14fa4^` (`sha256 39686a96...`), exactly as
+# `e2efix` recovered stage 7's fixture to the tracked `gates/cstyle-live.rows`.  A
+# `.gitignore` negation inside `runs/` was REJECTED: it would leave `runs/e2e/`
+# ignored, so tracking the file would make clause V's IGNORED-BUT-INDEXED rule fire.
+ORACLE="$ROOT/checks/e2e-mm-oracle.json"
 ORACLE="$ROOT/checks/e2e-mm-oracle.json"
 NC="$W/copy"
 rc=0

@@ -25,6 +25,25 @@ set -euo pipefail
 # same assertion the 14 computed-root scripts now carry. See `.agents/slop/shells/README.md`.
 REPO=${REPO:?set REPO to the repo root}
 W=${W:?set W to a $TMPDIR workdir}
+
+# THE WORK DIRECTORY IS **NOT **A **FLAG**, AND IT IS **NOT **INSIDE **THE **REPO**.
+# MEASURED 2026-10-19, IN THE SISTER SCRIPT: `run-f64.sh --help` put a work DIRECTORY at
+# `--help` and `mkdir -p` created it AT THE REPO ROOT, and `checks/no-txt.py` then OWNED the
+# `.txt` files it left there -- so a failed run became HARD debt the `.txt` gate charges.
+# **⇒ `W` **IS **READ **FROM **THE **ENVIRONMENT **HERE**, **AND **A **FLAG-SHAPED **`W`** **IS **JUST
+# **AS **DANGEROUS **AS **A **FLAG-SHAPED **`$1`** — **SO **THE **GUARD **IS **THE **SAME.**
+case "$W" in
+  -*) echo "$0: the work directory '$W' looks like a FLAG. W is a DIRECTORY; exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
+case "$W" in
+  /*) WABS=$W ;;
+  *)  WABS="$PWD/$W" ;;
+esac
+case "$WABS" in
+  "$REPO"|"$REPO"/*) echo "$0: the work directory '$W' RESOLVES TO '$WABS', INSIDE the repo. The work directory is scratch; put it under \$TMPDIR, or the repo owns its contents. exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
 [ -d "$REPO/tinybendygrad" ] || { echo "$0: REPO=$REPO is not a repo root" >&2; exit 3; }
 HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$W"

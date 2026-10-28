@@ -29,6 +29,24 @@ PY="$ROOT/.venv/bin/python"
 MODE=${1:-stage2}
 case "$MODE" in stage2|mm) ;; *) print -r -- "unknown mode '$MODE' (want stage2 | mm)"; exit 2 ;; esac
 WORK=${2:-${WORK:-$TMPDIR/portexec}}
+
+# THE WORK DIRECTORY IS **NOT **A **FLAG**, AND IT IS **NOT **INSIDE **THE **REPO**.  MEASURED
+# 2026-10-19, IN THE SISTER SCRIPT: `run-f64.sh --help` put a work DIRECTORY at `--help` and
+# `mkdir -p` created it AT THE REPO ROOT, and `checks/no-txt.py` then OWNED the `.txt` files
+# it left there -- so a failed run became HARD debt the `.txt` gate charges.  **⇒ `$MODE`
+# **IS **ALREADY **VALIDATED **BY **THE **`case` **ABOVE**, **AND **A **PATH **IS **NOT.**
+case "$WORK" in
+  -*) print -r -- "$0: the work directory '$WORK' looks like a FLAG. This script's second argument is a DIRECTORY; exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
+case "$WORK" in
+  /*) WORKABS=$WORK ;;
+  *)  WORKABS="$PWD/$WORK" ;;
+esac
+case "$WORKABS" in
+  "$ROOT"|"$ROOT"/*) print -r -- "$0: the work directory '$WORK' RESOLVES TO '$WORKABS', INSIDE the repo. The work directory is scratch; put it under \$TMPDIR, or the repo owns its contents. exit 3 (REFUSED)." >&2
+      exit 3 ;;
+esac
 mkdir -p "$WORK"; cd "$ROOT" || exit 1
 fail() { print -r -- "FAIL[$MODE] $1"; exit 1; }
 
