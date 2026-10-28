@@ -24440,3 +24440,42 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       remains `UNPLANTED` and `checks/env-precond.py`'s exit 1 remains `UNPLANTED` — NOTHING WAS
       WEAKENED TO HIDE EITHER.** Fixing the vocabulary means CHANGING THE EXIT CODES, which is a
       different change from a declaration, and `gates/gatekit.py` is not this unit's to edit.
+
+- [x] **THE **CITATION **CLASSES **ARE **BEING **CLOSED**, **AND **THE **NUMBERS **ARE
+      **PER **SLICE** (MEASURED **2026-10-27**).**  **`gates/pin-cite-gate.py`'s
+      **`unverifiable_no_claim_about_the_file`: **224 -> 36**, **AND **THE **TREE's **`WRONG-LINE`
+      **AND **`DANGLING-LINE`**: **279 -> 61** **AND **22 -> 0.**
+      **⇒ AND **SLICE **1**: **`unverifiable` **63 -> 0** **AND **`WRONG-LINE` **95 -> 0** **OVER
+      **27 **FILES** (`860c86428`), **WITH **BOTH **PLANTS **FIRING** (**THE **UPSTREAM **NAME
+      **MOVES **THE **ROW **`at_pin` -> `unverifiable`**, **AND **THE **POINTER **MOVES **THE **ROW
+      **`RESOLVES` -> `WRONG-LINE`**) **AND **A **BYTE-IDENTICAL **CONTROL **GREEN.**
+      **⇒ AND **SLICE **2**: **53 `unverifiable` **AND **57 **STALE **POINTERS **TO **ZERO**
+      **OVER **26 **FILES** (`c15e67b4d`).**
+      **⇒ AND **THE **KINDS **OF **FIX**: **THE **PROSE **DOMINATED** (**63 **ROWS **REWRITTEN**
+      **VERSUS **95 **MECHANICAL **RE-POINTS**) **BECAUSE **NO **RE-POINT **COULD **RESCUE **THE
+      **PROSE **CLASS**; **PLUS **7 **BASENAMES **DISAMBIGUATED**, **8 **ABSENCES **STATED**
+      (**`CUDAQueue`**, **`pm_bufferize`**, **`HIPProgram`**, **AND **THE **HIP **`check`**, **EACH
+      **NAMING **THE **SURVIVING **CONSTRUCT**), **AND **4 **`D.refuse("…")`** **DIAGNOSTIC
+      **STRINGS **WHOSE **STALE **`.bend:NN` **WAS **CORRECTED** — **THE **ONLY **NON-COMMENT **EDITS
+      **IN **THE **SLICE**, **AND **THEY **ARE **PAYLOAD **NO **COMPUTATION **READS.**
+- [x] **THE `RED_IS` **CLASS **IS **RESOLVED **BY **JUDGEMENT, **NOT **BY **A **BLANKET**
+      (`f8826fbc5`, `b23d73b31`).**  **⇒ THE **CENSUS **`FINDING` **2 -> 7** **AND **`FAILURE` **9 ->
+      4**, **AND **THE **REMAINING **4 **ARE **THE **ONES **BOTH **UNITS **JUDGED **TO **BE **REAL
+      **FAILURES**: **`checks/rn-gate.py`** (THE **PORT **DISAGREES **WITH **THE **ORACLE**),
+      **`gates/oracle-census-gate.py`** (ITS **OWN **SOURCE **SAYS **"A **CENSUS **THAT **CANNOT
+      **CLASSIFY **ITS **OWN **POPULATION **IS **A **FAILURE **OF **THIS **FILE, **NOT **A **FINDING
+      **ABOUT **THE **TREE"**), **`gates/valscall-gate.py`** (**LIVE **CODE **CALLING **A **REMOVED
+      **API**), **AND **`checks/residue.py`** (WHOSE **ONLY **EXIT-1 **IS **THE **INSTRUMENT
+      **DISAGREEING **WITH **ITS **OWN **ORACLE**).**
+      **⇒ AND **THE **DECLARATION **IS **EARNED**: **THE **PLANT **DELETES **THE **`RED_IS` **LINE
+      **FROM **A **COPY** **AND **THE **CLASS **MOVES **BACK **TO **`FAILURE`** — **SO **THE
+      **DECLARATION **IS **NOT **DECORATION.**
+      **⇒ AND **A **GATE **THAT **CAN **NEVER **REACH **0** (**`checks/nl-gate.py`**, **WHICH
+      **REFUSES **AT **MODULE **SCOPE**) **CANNOT **DECLARE **`RED_IS`** **HONESTLY** **AND **STAYS
+      **`UNTAKEN`** — **AND **THE **CENSUS **NAMES **IT.**
+- [ ] **THE **REMAINING **`unverifiable` **36** **AND **`WRONG-LINE` **61** **ROWS** (SLICE **3**,
+      **19 **FILES**, **IN **FLIGHT**).**
+- [ ] **THE **CORPUS **MUST **BE **RE-TAKEN** **ONCE **THE **PORT **STOPS **MOVING**: **THE
+      **SUBSTRATE **DIGEST **IS **`ed6a074fe1aa0dfe54df4a768e226f3781df814999e9f7ccafcead1437163cb9`**
+      **AND **`AGENTS.md`'s **CLAIM **SAYS **`eb6ef860…`**, **SO **THE **CLAIM **IS **STALE** **AND
+      **IT **IS **NOW **MARKED **STALE** (`bfd6a6f97`) **RATHER **THAN **LEFT **FALSE.**
