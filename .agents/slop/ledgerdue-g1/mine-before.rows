@@ -1,0 +1,37 @@
+NEW checks/compile-census.py OWES 46c3a254e 2026-10-17 08:36:03 +0300 **`checks/compile.py` IS NOT A COMPILE CHECK. IT IS THE ION/
+NEW gates/artifactverdict-gate.py OWES 55c8bdb4a 2026-10-18 22:05:54 +0300 gatesweep: a member that PRINTED rows and that NOTHING compa
+NEW gates/banner-gate.py OWES d3fbede23 2026-10-19 19:32:21 +0300 e2e: the prose about this gate's own mechanism was wrong; th
+NEW gates/bend-absent.py OWES 7d601aeac 2026-10-22 18:52:43 +0300 edge: a gate that CANNOT START is REFUSED, and the tree is P
+NEW gates/bendcite-gate.py OWES 0832ac87a 2026-10-25 19:29:47 +0300 bendcite-gate: MEASURE the port's internal `.bend` -> `.bend
+NEW gates/bendfloat-gate.py OWES 852216853 2026-10-20 20:20:39 +0300 bendfloat: the BEND lane's f16 rule, the `k` token, and a ga
+NEW gates/bind-plant.py OWES 1e0a0a19a 2026-10-20 19:21:33 +0300 pincensus: the flagship content pin had no SUBJECT, and a pi
+NEW gates/cites-pop-gate.py OWES dafeee673 2026-10-19 07:51:00 +0300 cites-pop-gate: the census population is a 2-element suffix 
+NEW gates/comment-only-gate.py OWES fb22cdce0 2026-10-23 01:47:49 +0300 todo-cite: the SYMBOL is the citation, and the UOP/renderer 
+NEW gates/compile-census-gate.py OWES 032deed27 2026-10-22 20:45:03 +0300 the compile census's verdict is a VERDICT, and the edge runs
+NEW gates/corpuslane-gate.py OWES a9a0f107b 2026-10-17 13:42:19 +0300 Revive the corpus CPython lane: 7 re-vendor breaks, and a ga
+NEW gates/corpuslane-mutate.py OWES a9a0f107b 2026-10-17 13:42:19 +0300 Revive the corpus CPython lane: 7 re-vendor breaks, and a ga
+NEW gates/corpusverdict-gate.py OWES 860631d18 2026-10-18 03:28:05 +0300 corpusverdict: 34/34 IS STALE AND CANNOT BE REFRESHED, AND T
+NEW gates/dialect-fixture-gate.py OWES 50f9722de 2026-10-18 02:13:19 +0300 dialect7: SEVEN COLD FIXTURES -- THE DIALECT STILL HAS Strin
+NEW gates/emitverdict-gate.py OWES 1fe349f0d 2026-10-18 21:02:27 +0300 emitverdict-gate: the two sides of graphcmp disagree about 1
+NEW gates/fold-vbase-gate.py OWES 4f0305fd8 2026-10-22 08:05:43 +0300 gates: the `vb_` ORACLE AND PLANT LEAVE `.agents/slop/`, AND
+NEW gates/fold-vbase-mutate.py OWES 4f0305fd8 2026-10-22 08:05:43 +0300 gates: the `vb_` ORACLE AND PLANT LEAVE `.agents/slop/`, AND
+NEW gates/fold-vbase-plant.py OWES 4f0305fd8 2026-10-22 08:05:43 +0300 gates: the `vb_` ORACLE AND PLANT LEAVE `.agents/slop/`, AND
+NEW gates/gapcensus-gate.py OWES 6cf2a91ab 2026-10-18 03:27:01 +0300 gapcensus: THE CENSUS. 67 rows, 8 units, every one with its 
+NEW gates/gapcensus.py OWES 6cf2a91ab 2026-10-18 03:27:01 +0300 gapcensus: THE CENSUS. 67 rows, 8 units, every one with its 
+NEW gates/opsref-census.py OWES 72f81a3ae 2026-10-17 08:32:06 +0300 census: 70 Ops.GROUP/Ops.FLIP sites classified EMIT 17 / CON
+NEW gates/paramarg-shape-gate.py OWES 94f18ee7a 2026-10-18 03:24:27 +0300 PARAMARGSHAPE: the port's ParamArg is UPSTREAM'S LENGTH AND 
+NEW gates/paramarg-shape-oracle.py OWES 94f18ee7a 2026-10-18 03:24:27 +0300 PARAMARGSHAPE: the port's ParamArg is UPSTREAM'S LENGTH AND 
+NEW gates/pincensus-gate.py OWES e318bc9c9 2026-10-20 07:08:53 +0300 pincensus: a census of every pin in the tree, and the plant 
+NEW gates/pincensus-plant.py OWES e318bc9c9 2026-10-20 07:08:53 +0300 pincensus: a census of every pin in the tree, and the plant 
+NEW gates/pinned-tree-gate.py OWES cef1ee674 2026-10-20 04:00:09 +0300 a tree sha in prose rots; the identity it stands in for does
+NEW gates/prose-census.py OWES 0e3ca09b6 2026-10-18 20:49:57 +0300 prose-census: bind every claimed number to its population, a
+NEW gates/shellverdict-reach-gate.py OWES 59f27a1e0 2026-10-19 18:49:02 +0300 shellverdict-reach: which of the FIVE each shell gate can RE
+NEW gates/symrules-census.py OWES ba2ccb0e8 2026-10-22 07:52:25 +0300 symrules: THE CENSUS OF UPSTREAM'S REWRITE RULES, DERIVED, a
+NEW gates/symrules-gate.py OWES ba2ccb0e8 2026-10-22 07:52:25 +0300 symrules: THE CENSUS OF UPSTREAM'S REWRITE RULES, DERIVED, a
+NEW gates/symrules-oracle.py OWES 2ba5c731c 2026-10-22 08:42:46 +0300 symrules: TWENTY-SEVEN OF UPSTREAM'S MISSING RULES, PORTED, 
+NEW gates/symrules-plant.py OWES 9b75e04f7 2026-10-22 08:58:01 +0300 symrules: THE PLANT, AND THE ORDER ARM IS THE ONE NOBODY PLA
+NEW gates/todo-cite-gate.py OWES c6ee4b5cc 2026-10-22 10:51:48 +0300 cites: 54 of the port's `TODO(pN)` markers cited a line that
+NEW gates/untested-census.py OWES 2f9a598bf 2026-10-19 07:31:02 +0300 gates: the middle bucket is derived, and 21 of its 23 are ca
+NEW gates/untested-gate.py OWES 2f9a598bf 2026-10-19 07:31:02 +0300 gates: the middle bucket is derived, and 21 of its 23 are ca
+NEW gates/vendordep-census-gate.py OWES ffaec6949 2026-10-20 04:05:16 +0300 vendordep: CENSUS which of the 29 re-vendored upstream files
+NEW gates/worker-mutate.py OWES ef97d16b6 2026-10-16 18:04:03 +0300 restore 10 of the deleted instruments into gates/, and say w

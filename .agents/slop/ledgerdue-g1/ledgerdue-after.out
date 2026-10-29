@@ -1,0 +1,16 @@
+ledgerdue WHEN 2026-10-29T00:01:53Z
+ledgerdue CMD ledgerdue-gate.py
+ledgerdue HEAD 20f64370a
+ledgerdue HEAD-MOVED since cd450ea61
+ledgerdue LEDGER git-blob=dd91400b4ac2aabe8f9841aba1155e6ec31104a0 write=not-a-mode
+ledgerdue DENOMINATOR live-diff re-derived (recorded cd450ea61 is a comparison, not the count)
+ledgerdue DIFF new=4 gone=0 changed=0 returned=0 ledger=385 live=384
+ledgerdue RECORDED cd450ea61 new=70 gone=5 changed=0 returned=0 ledger=224 live=289
+ledgerdue MOVED since cd450ea61: new 70->4 gone 5->0 ledger 224->385 live 289->384
+ledgerdue EVENTS 815 path(s) attributed
+ledgerdue DUE NEW gates/verdict-lane-gate.py OWES 57a3ed3b3 2026-10-23 03:52:06 +0300 the first instrument that checks this port's proofs against 
+ledgerdue DUE NEW gates/x86_isa-gate.py OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE
+ledgerdue DUE NEW gates/x86_isa-oracle.py OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE
+ledgerdue DUE NEW gates/x86_isa-plant.py OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE
+ledgerdue OWNED 4 UNOWNED 0 DUE 4
+ledgerdue VERDICT FAIL
