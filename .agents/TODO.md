@@ -25578,3 +25578,29 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **1** — **AND **IT **PRINTS **AFTER **THE **VERDICT **AND **AFTER **`red` **IS **SET**, **BECAUSE
       **A **LINE **THAT **PRINTS **BEFORE **THE **FACT **IT **REPORTS **IS **A **LINE **THAT **CAN **BE
       **WRONG.**
+
+- [x] **THE **CORPUS **IS **GREEN, **CURRENT **AND **REPRODUCIBLE** (MEASURED **2026-10-29**,
+      **`31dbdd5e04facec3…`**): **`substrate-start == substrate-end == live == repro-substrate ==
+      b4c1fadb372b3655aac64206aba6e44dbb132ee76083c45e560ebe1e4e0f08c2`**, **AND **`substrate-head=
+      31dbdd5e04facec3a8bfba0b873a6ae27a683ff8`** **IS **THE **COMMIT **IT **WAS **TAKEN **ON.**
+      **35/35 **AGREE**, **35/35 **BYTE-IDENTICAL**, **8/8 **PLANTS**, **5/5 **CONTROLS**, **4/4
+      **CONFLATIONS**, **5/5 **STABLE **PAIRS**, **1/1 **CROSS**, **`SELFCHECK: OK`**,
+      **`ORACLE **SELFCHECK: OK`**, **`census-rc=rc=0`**; **`unhealthy() -> []`**,
+      **`artefacts_ok() -> []`**, **`repro_bad() -> []`**; **`repro`: **`319 of 319 files identical across
+      two clean runs`**; **PEAK **RSS **906 **MB **(`run`**, **204 **s**) **AND **938 **MB **(`repro`**,
+      **401 **s**), **BOTH **`WITHIN-LIMITS`**; **AND **THE **WITNESS **READS **`PASS -- the claim is
+      ESTABLISHED`**.
+- [x] **ALL **NINE **GATES **ARE **rc=0**: **`pin-cite-gate.py`**, **`todo-cite-gate.py`**,
+      **`bendcite-gate.py`**, **`specfold-gate.py`**, **`corpuswitness-gate.py`**,
+      **`corpusverdict-gate.py`**, **`dialect-fixture-gate.py`**, **`ledgerdue-gate.py`**, **AND
+      **`checks/corpus-figure.py`** (**WITH **`DEV=CPU`**).
+- [x] **THE **RANGEIFY **LANE's **LAST **WORK **WAS **LEFT **UNCOMMITTED **AND **WAS **LANDED**
+      (`31dbdd5e0`)** — **AND **IT **WAS **COMPLETE **AND **RIGHT**: **IT **COMPILES, **IT **IS **USED**
+      (**`rr_dims_str` **IS **CALLED **AT **`:1708`** **AND **`:1717`**), **AND **THE **TREE's **OWN
+      **COMPARISON **HARNESS **AGREES **WITH **CPYTHON** — **`env -u PYTHONPATH .venv/bin/python
+      .agents/slop/rangify/cmp.py`** **READS **`OK  C1 the realize map AGREE (denominator=1 node)`**,
+      **`OK  C2 the input graph AGREE (denominator=23 nodes)`**, **AND **`OK  CONTROL (the realize scan
+      skipped for one node): the realize map DIVERGES=True and the input graph is UNCHANGED=True`**, **AND
+      **`VERDICT PASS`**.  **⇒ AND **THE **CONTROL **IS **THE **HALF **THAT **MATTERS**: **A **COMPARISON
+      **THAT **CANNOT **FAIL **IS **NOT **A **COMPARISON**, **AND **THIS **ONE **DIVERGES **WHEN **THE
+      **SCAN **IS **SKIPPED** — **SO **THE **GREEN **IS **A **MEASUREMENT **AND **NOT **A **CONSTANT.**
