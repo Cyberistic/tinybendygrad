@@ -12,6 +12,16 @@ word of it**:
     tinybendygrad/uop/ops.bend                   8,334 -> 6,306 lines   2,386 LOST
     tinybendygrad/renderer/amd/generate.bend      2,736 ->    640 lines   2,096 LOST
 
+**⇒ AND **THIS **TABLE **IS **A **RECORD **OF **2026-10-05**, **NOT **A **CLAIM **ABOUT **THE **FILES'
+**SIZE **TODAY** — **AND **THE **DISTINCTION **IS **NOT **COSMETIC.**  MEASURED 2026-10-29:
+**`checks/cites-census.py`'s **LANE **D** **READ **THE **DIGITS **IN **THE **TABLE **AS **A **CLAIM
+**ABOUT **THE **SUBJECT's **CURRENT **LINE **COUNT**, **AND **`tinybendygrad/renderer/amd/generate.bend`
+**IS **2,753 **LINES **NOW** — **SO **THE **ROW **WAS **A **FALSE **FAIL.**  **⇒ AND **THE **FILES **GREW
+**BACK**, **WHICH **IS **THE **WHOLE **POINT **OF **THE **TABLE**: **IT **RECORDS **WHAT **THE **RESIDUE
+**COST**, **AND **THE **CURE **IS **TO **MARK **IT **AS **WHAT **IT **IS **— **A **READING **OF **A
+**PAST **STATE — **NOT **TO **DELETE **IT, **AND **NOT **TO **RESTATE **IT **AS **A **NUMBER **THAT
+**HAD **BETTER **BE **TRUE.**  **⇒ AND **THE **TREE's **OWN **CLASS **IS **ALREADY **NAMED**: **A
+**HISTORY **IS **NOT **A **CLAIM **ABOUT **THE **PRESENT.**
 `ops.bend` had lost `AOpLit{op: Op}` -- a committed fix -- and every `ParamArg` def, including
 `ParamArg.no_slot`. `generate.bend` had lost **404 `def`s, 77% of the file**, and still compiled.
 Six more files had lost CODE rather than comments (`nvdev.bend`: **333 code lines**), which is a

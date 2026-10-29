@@ -149,7 +149,20 @@ EXTENSION = re.compile(r"^\.[A-Za-z0-9]+$")
 LOCATORISH = re.compile(r"[:=]\s*\d|\.(?:md|py|rows|out|err|tsv|txt|bend|c|h|js|mjs|json)\b")
 # DELTA VERBS.  A MAGNITUDE ("the file HAS N lines") is checkable against the file.  A
 # DELTA ("20 lines deleted") is a claim about a DIFF, and this census cannot see diffs.
-DELTA = re.compile(r"\b(add|added|adding|delet|remov|replac|chang|insert|net|grew|shrink)\w*\b", re.I)
+DELTA = re.compile(r"\b(add|added|adding|delet|remov|replac|chang|insert|net|grew|shrink|lost|dropped|"
+                    r"removed|replaced|before|after|formerly|was)\w*\b", re.I)
+# **⇒ AND **THE **ARROW **SHAPE **IS **A **DELTA **TOO**, **AND **THE **VERB **LIST **ALONE **MISSED
+# **IT** — **BECAUSE **THE **LIST **HAS **NO **WORD **FOR **IT.**  MEASURED 2026-10-29: **THE **TABLE
+# **IN **`checks/no-shrink.py:13`** **READS **`2,736 ->    640 lines   2,096 LOST`**, **AND **`LOST`**
+# **WAS **NOT **IN **THE **VERB **LIST**, **SO **THE **CENSUS **READ **THE **`640`** — **THE **AFTER
+# **NUMBER — **AS **A **MAGNITUDE **ABOUT **THE **FILE's **CURRENT **SIZE**, **AND **`generate.bend`**
+# **IS **2,753 **LINES **NOW**, **SO **THE **ROW **WAS **A **FALSE **FAIL** **ABOUT **A **RECORD **OF
+# **2026-10-05.**
+# **⇒ AND **THE **SHAPE **IS **THE **DEFINITION**: **A **NUMBER **WITH **AN **ARROW **BEFORE **IT** **IS
+# **THE **AFTER **OF **A **PAIR**, **AND **A **PAIR **IS **A **DIFF.**  **⇒ AND **THE **VERB **LIST
+# **GROW **TOO** (**`LOST`**, **`DROPPED`**, **`BEFORE`**, **`AFTER`**, **`FORMERLY`**, **`WAS`**), **BECAUSE
+# **A **LIST **OF **VERBS **ONE **AUTHOR **USED **IS **A **LIST **OF **THAT **AUTHOR's **VERBS.**
+ARROW = re.compile(r"\d[^\n]{0,12}->\s*\**\s*\d")
 # THE PROSE ANCHOR.  A CLAIM WITH A DATE GOES STALE HONESTLY; ONE WITHOUT LIES INDEFINITELY.
 MEASURED = re.compile(r"MEASURED[ :]+(20\d\d-\d\d-\d\d)")
 ISO = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
@@ -482,7 +495,8 @@ def lane_bcd(rel: str, lines: list[tuple[int, str]]) -> tuple[list[dict], Counte
         claims.append({"lane": "D", "kind": "numeric-prose", "file": rel,
                        "subject": subject, "num": int(u.group(1).replace(",", "")),
                        "unit": u.group(2).rstrip("s"), "at": lineno,
-                       "delta": bool(DELTA.search(window) or re.match(r"[*`_(\s]*[+-]", window)),
+                       "delta": bool(DELTA.search(window) or re.match(r"[*`_(\s]*[+-]", window)
+                                      or ARROW.search(line[:m.start()])),
                        "anchor": mch[1] if mch else None})
       else:
         claims.append({"lane": "E", "kind": "mention", "file": rel, "subject": subject,
