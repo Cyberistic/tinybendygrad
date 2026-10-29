@@ -100,6 +100,14 @@ cpython: ['ADD',  'AFTER', 'CONST', 'END', 'INDEX', 'MUL', 'PARAM', 'RANGE', 'RE
 * **W-B -- `PAD` AND `STACK`.** Upstream's rules 2 and 3 need `where` and
   `%`. The port **counts** them instead of pretending (`rr_wall`, and the
   measured value is **0** for this program).
+* **W-D -- THE `R2` AXIS.** Upstream's `R2` is **a `RANGE`**; the port's is **a
+  `CONST 0`**. Upstream's `new_range` (`indexing.py:18-21`) decides by
+  `resolve(s != 1)`, and the port's own `rr_new.one` decides by the **extent**
+  (`ix_nr_is_one(e)`). **⇒ AND THIS IS **NOT** THE `_apply_reshape` WALL**, and
+  it is the second wall the range map has: `.agents/slop/rmap/cmp.py` reads
+  **1 of 14** entries agree, **10 differ**, and the ten are **six W-A** and
+  **four W-D**. **⇒ AND THE PREVIOUS "5 of 11, all six are one wall" CLAIM WAS
+  **NEVER** WHAT THE INSTRUMENT SAID** -- see `.agents/slop/rmap/RANGE.md`.
 * **W-C -- THE REALIZE MAP's DELETION.** Upstream does `del
   ctx.realize_map[s]` when a `STORE` becomes an `END` (`indexing.py:88`), and
   the port's context is an immutable value and cannot delete. **⇒ AND THE

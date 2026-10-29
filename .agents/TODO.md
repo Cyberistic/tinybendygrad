@@ -2885,8 +2885,13 @@ exec-apply           [###.] 3/4  **THE APPLY REWRITE: **THE **GRAPH'S SHAPE** NO
                                        EVERY ONE OF THOSE IS **A `symbolic` REWRITER** TOO.**
 
 
-exec-rmap            [####] 4/4  **THE RANGE MAP: **5 OF 11** ENTRIES AGREE, AND **ALL SIX DIFFERENCES ARE **ONE**
-                                       NAMED WALL — **⇒ AND THE MISSING `symbolic` REWRITER IS **THE** MISSING PIECE
+exec-rmap            [####] 4/4  **THE RANGE MAP: **1 OF 14** ENTRIES AGREE, AND **THE TEN DIFFERENCES ARE **TWO**
+                                       NAMED WALLS — **⇒ AND THE PREVIOUS "5 OF 11, ALL SIX ARE ONE" CLAIM WAS
+                                       **NEVER** WHAT THE INSTRUMENT SAID** (MEASURED 2026-10-29, IN
+                                       `.agents/slop/rmap/RANGE.md`: **THE INSTRUMENT READS "1 of 14, 10 DIFFER, 3
+                                       MISSING" AT `33399e872` — **THE COMMIT THAT QUOTED "5 of 11"** — **AND AT
+                                       `33399e872^` THE MAP HAD NOT LANDED YET**, **⇒ ⇒ ⇒ SO THE QUOTED READING
+                                       WAS NEVER THE INSTRUMENT'S OUTPUT ON ANY TREE**) — **⇒ AND THE MISSING `symbolic` REWRITER IS **THE** MISSING PIECE
                                        OF STAGE 1.** MEASURED 2026-10-29, IN `.agents/slop/rmap/RANGE.md`. **=> THE
                                        PORT's OWN `run_rangeify` (`tinybendygrad/schedule/rangify.bend`, 119 DEFS) AND
                                        `schedule/indexing.bend` NOW CARRY **THE RANGE MAP** — UPSTREAM's
@@ -2903,16 +2908,18 @@ exec-rmap            [####] 4/4  **THE RANGE MAP: **5 OF 11** ENTRIES AGREE, AND
                                        IS TRANSCRIBED** — **⇒ AND THE COMPARISON IS `.agents/slop/rmap/cmp.py`, WHICH
                                        COMPARES **ENTRY BY ENTRY** ON THE **NODE ID** AND THE **INPUT**/**OUTPUT**
                                        AXIS LISTS, **⇒ AND THE PORT's OWN DUMP SPELLING IS THE ORACLE's, SO THERE IS
-                                       **NO TRANSLATOR**. **=> ⇒ ⇒ SO **5 OF 11 AGREE** — AND **THE 5 THAT AGREE ARE
-                                       EXACTLY THE **FIVE** NODES WITH NO `_apply_reshape` IN THEIR INPUT RANGES** —
-                                       **⇒ ⇒ ⇒ AND **ALL SIX DIFFERENCES ARE **ONE** WALL: UPSTREAM'S INPUT RANGE FOR
-                                       THOSE SIX IS AN **AFFINE EXPRESSION** `<ADD:none:MUL,RANGE>`, WHICH UPSTREAM
-                                       BUILDS IN `_apply_reshape` (`indexing.py:155-167`, **THE WALL, IN FULL**), **⇒
-                                       AND THE PORT CANNOT BUILD AN AFFINE EXPRESSION AT ALL** (NO `UOp.sink`, NO
-                                       `usum`, NO `%`/`//`, NO `symbolic` REWRITER) — **⇒ ⇒ ⇒ SO **THE MISSING
-                                       `symbolic` REWRITER IS **NOT** A SIDE NOTE: IT IS **THE** MISSING PIECE OF
-                                       STAGE 1, BECAUSE THE RANGEIFY'S OUTPUT RANGES ARE BUILT FROM AFFINE
-                                       EXPRESSIONS.** **=> ⇒ ⇒ AND A SECOND, SMALLER DISCREPANCY, MEASURED: **THREE
+                                       **NO TRANSLATOR**. **=> ⇒ ⇒ SO **1 OF 14 AGREE** — AND **THE TEN
+                                       DIFFERENCES ARE **TWO** WALLS: **SIX** ARE THE **AFFINE EXPRESSION**
+                                       (`<ADD:none:MUL,RANGE>`, BUILT BY UPSTREAM IN `_apply_reshape`,
+                                       `indexing.py:155-167`, WHICH THE PORT CANNOT BUILD AT ALL — NO `UOp.sink`,
+                                       NO `usum`, NO `%`/`//`, NO `symbolic` REWRITER), **⇒ AND **FOUR** ARE
+                                       **W-D, THE `R2` AXIS**: UPSTREAM'S `R2` IS **A `RANGE`** AND THE PORT'S IS
+                                       **A `CONST 0`** — **⇒ AND THAT IS **THE PORT's `new_range` DECIDING "ONE" BY
+                                       THE **EXTENT** (`ix_nr_is_one(e)`) WHERE UPSTREAM DECIDES BY `resolve(s != 1)`
+                                       (`indexing.py:21`) — **⇒ ⇒ ⇒ SO **THE MISSING `symbolic` REWRITER IS **NOT** A
+                                       SIDE NOTE: IT IS **THE** MISSING PIECE OF STAGE 1, BECAUSE THE RANGEIFY'S
+                                       OUTPUT RANGES ARE BUILT FROM AFFINE EXPRESSIONS.** **=> ⇒ ⇒ AND A SECOND,
+                                       SMALLER DISCREPANCY, MEASURED: **THREE
                                        **EXTRA** ENTRIES IN THE PORT, ALL **CONST** NODES (TOPOSORT POSITIONS 0, 6,
                                        12), **⇒ AND THE RULE IS **UPSTREAM's `continue`** (`indexing.py:199-306`),
                                        READ AGAINST **UPSTREAM's OWN CAPTURED CONTEXT**: A **CONST** HAS **NO CONSUMER

@@ -27,16 +27,36 @@ SPELLING IS THE ORACLE's, SO THERE IS **NO TRANSLATOR**.**
 
 ```
 OK  C1 the realize map AGREE (denominator=1 node)
-    C2 the range map: 5 of 11 entries AGREE (denominator=11), 6 DIFFER
-        agree : [16, 17, 18, 19, 20]
-        differ: [1, 5, 7, 11, 13, 15]
+BAD C2 the range map: 1 of 14 entries AGREE (denominator=14), 10 DIFFER, 3 MISSING
+      agree : [20]
+      differ: [1, 5, 7, 11, 13, 15, 16, 17, 18, 19]
+      missing: [0, 6, 12]
 ```
 
-**⇒ ⇒ ⇒ SO **5 OF 11 AGREE** — AND **THE 5 THAT AGREE ARE EXACTLY THE **FIVE** NODES THAT
-**HAVE NO `_apply_reshape` IN THEIR INPUT RANGES** (`#16 PERMUTE`, `#17 MUL`, `#18 PERMUTE`,
-`#19 REDUCE`, `#20 STORE`).**
+**⇒ ⇒ ⇒ SO **1 OF 14 AGREE** — AND **THAT IS **THE **CORRECTED** MEASUREMENT.**
 
-## ⇒ ⇒ ⇒ AND **ALL SIX DIFFERENCES ARE **ONE** WALL, AND IT IS **NAMED**
+**⇒ ⇒ ⇒ AND THE CORRECTION IS A **FINDING**, NOT A TYPO: **THE READING THIS FILE
+USED TO QUOTE ("5 of 11 entries AGREE (denominator=11), 6 DIFFER", `agree : [16, 17,
+18, 19, 20]`) **IS **NOT** WHAT `.agents/slop/rmap/cmp.py` PRINTS — **NOT ON THIS
+TREE**, **NOT AT `33399e872`** (THE COMMIT THAT QUOTED IT), **AND NOT AT
+`33399e872^`** (WHERE THE RANGE MAP HAD NOT LANDED YET: `0 of 11, 11 MISSING`).
+**⇒ ⇒ ⇒ SO **THE QUOTED READING WAS **NEVER** THE INSTRUMENT'S OUTPUT ON **ANY**
+TREE IN **THE WHOLE HISTORY**, **⇒ ⇒ ⇒ AND THAT IS **EXACTLY** THE CLASS
+`AGENTS.md` NAMES: **A GOVERNING DOCUMENT THAT CARRIES A FALSE CLAIM PROPAGATES
+INTO EVERY BRIEF THAT CITES IT.****
+
+**⇒ ⇒ ⇒ AND THE **TEN** DIFFERENCES ARE **TWO** WALLS, NOT ONE:**
+
+| the entries | the wall |
+|---|---|
+| **1, 5, 7, 11, 13, 15** | **W-A — THE AFFINE EXPRESSION.** Upstream's input range for those six is `<ADD:none:MUL,RANGE>`, built by `_apply_reshape` (`indexing.py:155-167`). |
+| **16, 17, 18, 19** | **W-D — THE `R2` AXIS.** Upstream's `R2` is **A `RANGE`**; the port's is **A `CONST 0`** (`<CONST:cother:>`). **⇒ AND THIS IS **NOT** THE `_apply_reshape` WALL** — **⇒ AND IT IS **THE PORT's `new_range` MAKING **A `CONST 0`** WHERE UPSTREAM MAKES **A `RANGE`**, **⇒ AND THE PORT's OWN `rr_new.one` DECIDES "ONE" BY THE **EXTENT** (`ix_nr_is_one(e)`) **⇒ AND UPSTREAM DECIDES BY `resolve(s != 1)`** (`indexing.py:21`). |
+
+**⇒ ⇒ ⇒ AND THE PORT'S OWN MAP HAS **THREE ENTRIES CPYTHON DOES NOT HAVE**
+(`missing : [0, 6, 12]` — THE THREE CONSTs), **⇒ AND UPSTREAM GIVES **A CONST**
+**NO RANGE-MAP ENTRY AT ALL** (`indexing.py:306`'s `continue`), **⇒ ⇒ ⇒ AND THE
+DENOMINATOR IS **THE UNION**, **⇒ AND THAT IS WHY IT IS **14** AND NOT **11**.**
+
 
 **⇒ UPSTREAM'S INPUT RANGE FOR THOSE SIX NODES IS AN **AFFINE EXPRESSION**
 `<ADD:none:MUL,RANGE>` — **⇒ AND UPSTREAM BUILDS IT IN `_apply_reshape`
