@@ -5,7 +5,10 @@
 
 WHY THIS IS NOT A GATE, MEASURED. `checks/substrate.py` IS ALREADY the per-file compile check:
 `POP_ROOT = "tinybendygrad"`, an `os.walk` population, `bin/bend <file> --check-only` per file under
-`checks/bounded.py`, a `WARM`/`COLD` verdict each, and a `ROUTE` denominator. MEASURED 2026-10-17,
+`checks/bounded.py` -- WHICH IS THE WATCHDOG, NOT THE ROUTER: the `WARM`/`COLD` verdict is
+`checks/substrate.py`'s OWN, and the token `checks/bounded.py` reports is `WITHIN-LIMITS` or
+`KILLED-ON-MEMORY` (`checks/bounded.py:125`). `checks/substrate.py` ALSO carries the `ROUTE`
+denominator. MEASURED 2026-10-17,
 `--root` over two files prints `ROUTE bend=2 cc=0 node=0 no-instrument=0  (of 2 file(s))`.
 **SO A NEW PER-FILE COMPILE GATE WOULD BE A FORK OF THAT, AND THIS IS NOT ONE.** This file asks
 `substrate.py` for the population instead of naming one: it imports `substrate` BY PATH and reads

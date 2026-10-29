@@ -19,7 +19,9 @@ finds, so a live instrument EXECUTES this file and `gates/help-census.rows` carr
 Deleting it empties a row of a live population; renaming it strands that row plus a monotonic
 ledger's, and neither file is this file's to edit. The port's per-file compile check is
 `checks/substrate.py` -- `POP_ROOT = "tinybendygrad"`, `os.walk`, `bin/bend <file> --check-only`
-under `checks/bounded.py`, `WARM`/`COLD` each -- with `checks/compile-census.py` over the remainder.
+under `checks/bounded.py` -- AND THE TWO ARE NOT ONE: `checks/bounded.py` IS THE WATCHDOG AND ITS
+TOKEN IS `WITHIN-LIMITS` (`checks/bounded.py:125`), WHILE THE `WARM`/`COLD` VERDICT IS
+`checks/substrate.py`'s OWN -- with `checks/compile-census.py` over the remainder.
 """
 import ctypes, fcntl, importlib.util, mmap, os, time
 from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; `checks/` is sys.path[0] when run by path

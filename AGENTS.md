@@ -202,7 +202,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
 
   ***AND ***THE **CORPUS's **D10 **PIN **WAS **A **PIN **ON **A **NETWORK **ANSWER, **AND **IT **IS **NOT
   **ANY **MORE** -- **WHICH **IS **A **CLASS **THE **TREE **HAD **NOT **NAMED**:***
-  `checks/differ.py`'s `REPRO_PINS["d10-transcript"]` pins the sha256 of
+  `checks/differ.py`'s `REPRO_PINS` DICT, UNDER ITS `"d10-transcript"` KEY, pins the sha256 of
   `runs/graphcmp/D/D10-zerorow-guard.txt.err`, and **THOSE 240 CHARACTERS ARE THE COMPILER'S "A NEWER
   BEND IS AVAILABLE" NOTICE** -- **WHICH `references/bend/bend2/main.ts:185-211` FETCHES FROM
   `https://bend-lang.com/check` ONCE A DAY INTO **`~/.bend/check.json`, A FILE IN THE **DEVELOPER's
@@ -255,11 +255,23 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **PIN, **NOT **IN **`ops.py`** -- **SO **A **GREP **OF **`ops.py` **FINDS **NO `class Ops` **AND **A
   **REGEX **THAT **TAKES **ONLY **THE **FIRST `auto()` **PER **LINE **UNDERCOUNTS **BY **HALF** (upstream
   **writes **`BUFFER = auto(); ALLOC = auto()`**).**
-  **⇒ AND **THE **FALLOUT **OF **THE **ENUM **BEING **EXACT **IS **THREE **DRIVERS **STILL **CONSTRUCTING
-  **OPS **UPSTREAM **DELETED**: `OpsGROUP` (`gates/ptx_render_census_axis.bend`), `OpsFLIP`
-  (`oracles/lift-rows.bend`), `OpsX` (`gates/tn_binop_sweep.bend`).  **⇒ AND **THE **PTX **GATE **IS
-  **REFUSED, **NOT **RED: **IT **CANNOT **RUN **AT **ALL** -- **AND **A **GATE **THAT **IS **REFUSED **IS
-  **A **DEAD **GATE, **AND **THE **DIFFERENCE **MATTERS.**
+  **⇒ AND **THE **FALLOUT **OF **THE **ENUM **BEING **EXACT **WAS **THREE **DRIVERS **CONSTRUCTING
+  **OPS **UPSTREAM **DELETED**, **AND **ALL **THREE **HAVE **SINCE **BEEN **REPAIRED**.  **⇒ AND
+  **THE **THREE **WERE **THESE**, **AND **THE **OP **NAME **COMES **FIRST**:
+  `OpsGROUP` **WAS **IN **`gates/ptx_render_census_axis.bend`**;
+  `OpsFLIP` **WAS **IN **`oracles/lift-rows.bend`**;
+  `OpsX` **WAS **IN **`gates/tn_binop_sweep.bend`**.  **⇒ AND **THE
+  **REPAIRS **ARE **THE **TREE's **OWN, **AND **THE
+  **DATES **ARE **THE **RECORD**: `a7b3cede3` (2026-10-22) **REGENERATED **`gates/ptx_render_census_axis.bend`,
+  **WHICH **IS **NOW **GENERATED **BY **`gates/ptx_render_census-gen.py`**, **SO **THE **STALE **OP **IS
+  **NOT **IN **THE **AXIS **AT **ALL**; **AND **`4c4766fe4` **REMOVED **THE **`OpsFLIP` **ROW **FROM
+  **`oracles/lift-rows.bend`** **AND **FOUND **THAT **`OpsX` **WAS **A **PLACEHOLDER **IN **A **COMMENT
+  **IN **`gates/tn_binop_sweep.bend`**, **NOT **A **CONSTRUCTION.  **⇒ AND **MEASURED **NOW: **THE **THREE
+  **DRIVERS **CONSTRUCT **NONE **OF **THE **THREE**, **AND **THE **ONLY **`OpsFLIP`/`OpsX`/`OpsGROUP`
+  **OCCURRENCES **LEFT **ARE **THE **PROSE **THAT **RECORDS **THE **REPAIR** -- **SO **THE **CLAIM **IS
+  **A **HISTORY, **NOT **A **STANDING **FACT.**  **⇒ AND **THE **PTX **GATE **WAS **REFUSED, **NOT
+  **RED: **IT **CANNOT **RUN **AT **ALL** -- **AND **A **GATE **THAT **IS **REFUSED **IS **A **DEAD
+  **GATE, **AND **THE **DIFFERENCE **MATTERS.**
   **⇒ AND **UPSTREAM's `group()` **WAS **NOT **DELETED **WITH **THE **OP**: `4e0192eaf remove Ops.GROUP
   (#18637)` **REMOVED **THE **ENUM **MEMBER **AND **CHANGED **WHAT **THE **METHOD **BUILDS** (now
   `Ops.STACK.after(...)`), **AND **THE **PORT's `UOp.group` **MATCHES **UPSTREAM **EXACTLY** -- so **THE

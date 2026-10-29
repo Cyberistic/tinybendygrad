@@ -372,9 +372,11 @@ def competing_resolutions(name):
   `tinygrad`, and the winner is compared against them.
 
   MEASURED, on this tree: the editable finder resolves `tinygrad` to the vendored
-  `<repo>/tinygrad/__init__.py` at `sys.meta_path` index 3, and `PathFinder` resolves it
-  to the materialised tree at index 2 -- so the earlier finder wins, and the materialised
-  tree is the subject."""
+  `<repo>/tinygrad/__init__.py` at index 3 of the INTERPRETER'S OWN IMPORT HOOK LIST, and
+  `PathFinder` resolves it to the materialised tree at index 2 -- so the earlier finder wins,
+  and the materialised tree is the subject.  (That list is the interpreter's, NOT this file's
+  content: the vendored `tinygrad/__init__.py` names Tensor exports and says nothing about
+  finders.)"""
   out = []
   for i, finder in enumerate(sys.meta_path):
     try:

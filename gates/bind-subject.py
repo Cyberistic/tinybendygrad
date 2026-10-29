@@ -2,9 +2,11 @@
 """gates/bind-subject.py -- WHAT A PIN IS ABOUT, IN A FORM A MACHINE CAN READ.
 
 THE DEFECT THIS REPAIRS. `gates/pincensus-gate.py` measures a pin's currency by HASHING THE
-PIN'S SUBJECT, and it can only do that when the subject is named IN THE SAME BINDING --
-`"diffpy/oracle-run.sh": "<sha256>"` -- so a dict-shaped KEY was read as a PATH. Three pins in
-this tree were therefore unmeasurable, and each was unmeasurable for a different reason:
+PIN'S SUBJECT, and it can only do that when the subject is named IN THE SAME BINDING -- a
+DICT-KEY BINDING, WHICH LOOKS LIKE `subject: digest` AND IS NOT ONE, so a dict-shaped KEY was
+read as a PATH.  THE SHAPE IS A PAIR: the key `diffpy/oracle-run.sh`, whose value is `<sha256>`
+-- AND THE VALUE IS A PLACEHOLDER, NOT A DIGEST OF ANY FILE.  Three pins in this tree were
+therefore unmeasurable, and each was unmeasurable for a different reason:
 
   * `checks/e2e.py:268 ORACLE_SHA` and `:269 BODY_SHA` -- THE TREE'S OWN FLAGSHIP CONTENT PIN.
     Its subject is `checks/e2e.sh` and `.agents/slop/e2epy/oracle-e2e.sh`, and the file said

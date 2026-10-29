@@ -9,8 +9,12 @@ TWO WITNESSES, TWO QUESTIONS, AND THE SECOND ONE HAD NO INSTRUMENT.
                                              the pins are "ONE run's seventeen rows and the
                                              denominator of 'this run is healthy' is **1
                                              artifact**, not 17" (`differ.py:1400`).
-    W2  runs/graphcmp/D/D0-repro.txt         `cmd_repro` -- "the tree's only INDEPENDENT
-                                             measurement" (`differ.py:1403`).
+    W2  runs/graphcmp/D/D0-repro.txt         WRITTEN BY `checks/differ.py`'s `cmd_repro` --
+                                             "the tree's only INDEPENDENT measurement"
+                                             (`differ.py:1403`).  (The function is the
+                                             PRODUCER, not the file's content: the artifact
+                                             carries `repro-files`/`repro-identical`/
+                                             `repro-rc`/`repro-substrate` rows.)
 
 `checks/differ.py` already answers "is W1's verdict current?" (`substrate_bad()`, from
 `substrate_digest()`) and "does W2 name the live substrate?" (`repro_bad()`'s `REPRO_SUBSTRATE`

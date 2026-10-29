@@ -33,7 +33,7 @@ CONSEQUENCE. This file declares `EDGE_CANDIDATE = True` -- the edge's own hook, 
 way it reads a gate's `RED_IS` -- because this gate holds no pin of its own: it judges ANOTHER
 instrument's verdict.
 
-**AND THE CENSUS's POPULATION IS THE RIGHT ONE.** `checks/substrate.py`'s `POP_ROOT=tinybendygrad`
+**AND THE CENSUS's POPULATION IS THE RIGHT ONE.** `checks/substrate.py`'s `POP_ROOT = "tinybendygrad"`
 does NOT cover it, and this census COMPILES EVERY `.bend` BEYOND THE PORT -- the drivers the
 harness RUNS, which are exactly the files a driver that does not compile cannot report about
 itself.
@@ -43,7 +43,8 @@ THE CLASSIFICATION, AND IT IS THE POINT.
 `COLD` is a NOISY CLASS. In the tree's own artefact, EVERY cold row said `SOME PROOFS FAIL` --
 the same sentence for a FRAGMENT that cannot compile by design and for a driver whose constructor
 was deleted upstream. So this gate puts every row of the census into the tree's OWN FIVE
-VERDICTS (`gates/gatekit.py`: `PASS 0 · FAIL 1 · REFUSED 3 · SKIP 4 · DEAD 5`):
+VERDICTS (`gates/gatekit.py`'s `VERDICT` MAP, AND ITS EXITS ARE 0 FOR PASS, 1 FOR FAIL,
+3 FOR REFUSED, 4 FOR SKIP, 5 FOR DEAD):
 
     PASS      the census says the file COMPILES.
     SKIP      STANDING-COLD: the file is cold BY DESIGN -- a FRAGMENT, a proof file that

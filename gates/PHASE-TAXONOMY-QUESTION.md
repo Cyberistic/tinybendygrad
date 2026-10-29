@@ -165,8 +165,9 @@ and the sixth, which is a numbered-list item rather than a claim:
    the compound is the grammatical **subject** of "owns", and `runtime/` IS P6. The six VIZ
    compounds are trailing LABELS after a WALL description; they are not subjects of "owns".
 5. **What `VIZ` names is a FEATURE, and it collides with a directory NAME.** The six
-   markers are about upstream `uop/spec.py`'s `pyrender_globals` / `eval_pyrender` /
-   `test_pyrender` — the Python-render round-trip. Measured: `git grep -n test_pyrender
+   markers are about the Python-render round-trip -- at THE PIN `86c4f1343^`, the upstream
+   file `uop/spec.py` carried `pyrender_globals` / `eval_pyrender` / `test_pyrender`.
+   Measured: `git grep -n test_pyrender
    86c4f1343^ -- tinygrad/` returns five hits, **all** in `tinygrad/uop/` (`ops.py:205`,
    `ops.py:210`, `spec.py:38`, `spec.py:296`, `spec.py:302`) and **nothing under
    `tinygrad/viz/`**. (Upstream's `viz/serve.py:44` imports `pyrender` — the emitter in
@@ -174,6 +175,19 @@ and the sixth, which is a numbered-list item rather than a claim:
    gate's `annotation_conflicts` matches that word against the table's cell STEM `viz` **by
    name alone** (`stem_of("viz/") == "viz"`), and cannot tell a feature name from a directory
    name.
+
+   **⇒ AND **THAT **IS **A **MEASUREMENT **OF **THE **PIN **`86c4f1343^`, **AND **THE **NAMES
+   **ARE **GONE **AT **THE **PIN **THIS **DOCUMENT **IS **READ **AT.**  **MEASURED: `grep -rn
+   pyrender tinygrad/ --include='*.py'` **IS **EMPTY **AT **HEAD**, **AND **`86c4f1343`
+   ("RE-VENDOR **tinygrad/ **to **upstream **002630241", 2026-10-17) **IS **THE **COMMIT **THAT
+   **TOOK **THEM **OUT** -- **AND **IT **RE-POINTED **THE **PORT's **OWN **MARKERS **TOO**: **AND
+   **`tinybendygrad/uop/spec.bend` **NOW **NAMES **`upat.py:173`/`upat.py:181`/`render.py:65`
+   **INSTEAD, **WITH **`P3/VIZ` **ON **ALL **THREE** (`spec.bend:3214`, `:3219`, `:3222`).  **⇒ AND
+   **THE **`SPEC > 1` **ARM **IS **GONE **FROM **UPSTREAM **TOO** (`spec.bend:3225` **SAYS **SO**),
+   **AND **THE **QUOTED **MARKERS **AT **§2 **ARE **THE **PRE-RE-VENDOR **TEXT** -- **SO **THE **SIX
+   **MARKERS **THIS **DOCUMENT **COUNTS **ARE **THE **PORT's **OWN **AT **`86c4f1343^` **AND **NOT
+   **AT **HEAD** -- **A **HUMAN **READING **THIS **MUST **KNOW **WHICH **PIN **THE **QUESTION **IS
+   **ASKED **AT.**
 
 ### THE MATRIX OF THE COMPOUND (`P<n>/<X>`), from the same run
 
@@ -321,10 +335,22 @@ and **what would falsify it** — a measurement, not an opinion.
 
 ### D — "`P<n>/<X>` names the PHASES AND PARTS a wall involves; the right slot is a party, not a subordinate."
 
-> **What it changes:** `gates/phase-taxonomy-gate.py`'s `annotation_conflicts` must stop
+> **What it changes:** the GATE's `annotation_conflicts` must stop
 > matching the right slot against the table's cell stems BY NAME, and must classify the slot
 > as PHASE / CELL / FEATURE first. The six VIZ rows then disappear — **not because anything
 > was retagged, but because there was never a conflict.** No `.bend` file changes.
+> **⇒ AND **THIS **IS **THE **ONE **PROPOSAL **THAT **WAS **ADOPTED, **AND **IT **HAS **MOVED
+> **ON**: `annotation_conflicts` **WAS **A **FUNCTION **OF **THE **GATE** (`f978bca3b`:310) **AND
+> **`7601a02ac` **("the **clauses **now **measure **what **the **tree **says**") **REPLACED **IT
+> **WITH **`compound_census`**, **WHICH **IS **THE **NAME **THE **GATE **CARRIES **NOW**
+> (`gates/phase-taxonomy-gate.py:398`), **AND **THE **GATE's **OWN **HEADER **RECORDS **THE **FIX**
+> ("THE **OLD **C5**, **AND **WHY **IT **WAS **WRONG ... C5 **now **reads **a **compound **as **two
+> **PARTIES**", `:66-74`).  **⇒ AND **THE **GATE **IS **LATER **THAN **THIS **DOCUMENT's **RUN**:
+> **`f978bca3b` **IS **THE **GATE **THAT **OPENED **THE **QUESTION** (`:11`) **AND **`7601a02ac`
+> **IS **THE **COMMIT **THAT **ANSWERED **IT** -- **SO **THE **NAME **THIS **PROPOSAL **NAMES **IS
+> **A **HISTORY, **AND **THE **PROPOSAL **IS **NO **LONGER **A **PROPOSAL.**  **⇒ AND **THE **FALSIFIER
+> **IS **ALSO **THE **GATE's **OWN**: **THE **`P6/runtime` **COMPOUND **STILL **AGREES **AND **THE
+> **`P3/VIZ` **ONES **ARE **TRAILING **LABELS, **WHICH **IS **WHAT **`compound_census` **READS.**
 > **Falsifier:** a third compound whose right slot is a table cell and DISAGREES with the
 > table, or one in which the tree's own prose puts the compound in subject position and
 > means ownership. Measured: the only cell compounds are `P6/runtime` (agrees) and `P3/VIZ`

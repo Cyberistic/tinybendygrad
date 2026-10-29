@@ -883,8 +883,9 @@ def verdict(r, reads, mentions, new_mods, name2):
 
 def census():
     # `git diff A:tinygrad B:tinygrad` reports paths RELATIVE TO `tinygrad/` -- `uop/ops.py`, not
-    # `tinygrad/uop/ops.py` -- so `cat-file` silently answers with the OLD blob for every path and
-    # the census reports FINGERPRINT-EQUAL for the whole population. The prefix is restored here.
+    # `tinygrad/uop/ops.py` -- so GIT'S OWN `cat-file` SUBCOMMAND silently answers with the OLD
+    # blob for every path and the census reports FINGERPRINT-EQUAL for the whole population. The
+    # prefix is restored here.
     changed = ["tinygrad/" + p for p in
                git("diff", "--name-only", f"{OLD}:tinygrad", f"{NEW}:tinygrad").split()]
     py = [p for p in changed if p.endswith(".py")]

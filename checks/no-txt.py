@@ -137,9 +137,11 @@ def empty_remnants() -> set[str]:
 def skipexit_artifacts() -> set[str]:
     """`skipexit/repro.py`'s PRE-FIX LANE outputs, DERIVED from the frozen lane's own write sites.
 
-    The lane it runs IS the pre-fix code (`.agents/slop/skipexit/prefix/checks/e2e.py` at `3ed5ab069^`),
-    so a run re-emits `.txt` under each fixture's `runs/e2e/`. Its `declared()` is that frozen gate's write
-    names crossed with the fixture roots, so it MOVES WITH THE LANE: rename a write and the excuse goes with it.
+    The lane it runs IS the pre-fix code (`.agents/slop/skipexit/prefix/checks/e2e.py`, WHICH IS
+    BYTE-IDENTICAL TO THE REVISION `3ed5ab069^` NAMES -- A GIT REVISION REFERENCE, NOT A STRING
+    THE FILE CONTAINS), so a run re-emits `.txt` under each fixture's `runs/e2e/`. Its
+    `declared()` is that frozen gate's write names crossed with the fixture roots, so it MOVES
+    WITH THE LANE: rename a write and the excuse goes with it.
     """
     return set(load(".agents/slop/skipexit/repro.py", "skipexit_repro").declared())
 
