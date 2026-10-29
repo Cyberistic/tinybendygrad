@@ -1683,6 +1683,68 @@ def rr_row_arena() -> String:
   +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
   String.join(rr_rep_str.go(ApFin.fin(rep), ApFin.ar(rep), Nil{}), " ")
 
+# EVERY NODE's SHAPE, IN THE TOPOSORT ORDER. **=> AND UPSTREAM's `toposort` IS **THE
+# SAME ORDER** (A POST-ORDER DFS OVER **THE SAME GRAPH**), **=> AND THE ORACLE
+# PRINTS **UPSTREAM's OWN SHAPES** (`rr_py_shapes`), **=> ⇒ ⇒ SO THE TWO ARE
+# COMPARABLE **POSITION FOR POSITION** -- **=> AND THE POSITION IS THE KEY, NOT
+# THE SPELLING** (MANY NODES SPELL THE SAME).
+def rr_dims_str.go(+ds: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+  match ds:
+    case Nil{}: acc
+    case d <> t: rr_dims_str.go(t, List.append(&2, String, acc, [U32.show(d)]))
+
+def rr_dims_str(+ds: List<&2, U32>) -> String:
+  String.join(rr_dims_str.go(ds, Nil{}), ",")
+
+# **THE REDUCE's **TWO** READINGS**: **THE NUMBER OF REDUCED AXES** (`x.arg[1]`,
+# **=> AND THE PORT's `AReduce{rop, num_axes}` CARRIES IT**) **AND THE DIMS OF
+# `x.src[0]`** -- **=> BECAUSE `rr_p4.reduce` TAKES **THE FIRST `num_axes` DIMS**
+# OF `x.src[0]`** (`indexing.py:294`), **=> AND A `CONST 0` IN THE PORT's ANSWER
+# MEANS **ONE OF THOSE DIMS WAS **1**.**
+def rr_reduce_reading(+ar: O.Arena, +tb: F.Table, +x: U32) -> String:
+  +red = rr_is_reduce(ar, x)
+  Bool.pick(String, red,
+    String.concat(["n=", U32.show(rr_reduce_n.of(O.Arena.arg(ar, x))),
+                   " src0=", rr_dims_str(rr_dims(ar, tb, O.Arena.src0(ar, x)))]),
+    "")
+
+def rr_dims_row.go(+ns: List<&2, U32>, +ar: O.Arena, +tb: F.Table,
+                   +acc: List<&2, String>) -> List<&2, String>:
+  match ns:
+    case Nil{}: acc
+    case x <> t:
+      rr_dims_row.go(t, ar, tb, List.append(&2, String, acc,
+        [String.concat([rr_node_str(ar, x), "=", rr_dims_str(rr_dims(ar, tb, x)),
+                        rr_reduce_reading(ar, tb, x)])]))
+
+def rr_row_dims() -> String:
+  +q = RZ.rz_built()
+  +ar = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sink)
+  String.join(rr_dims_row.go(ns, ar, tb, Nil{}), " ")
+
+# THE RANGE TABLE, DUMPED: **EVERY ENTRY AS `idx:kind:ext`**, **=> AND KIND 0 IS
+# **A `RANGE`** AND KIND 1 IS **THE `CONST 0`** (`indexing.bend:153` `ix_rg_r` /
+# `:149` `ix_rg_c0`). **=> AND THIS IS **THE ROW THAT SAYS **WHETHER THE PORT's
+# `new_range` MADE **A `RANGE`** WHERE UPSTREAM MADE **ONE** -- **=> AND IT IS
+# **THE INSTRUMENT** FOR **W-D** (THE `R2` AXIS).**
+def rr_tbl_str.go(+tbl: List<&2, IX.IxRange>, +acc: List<&2, String>) -> List<&2, String>:
+  match tbl:
+    case Nil{}: acc
+    case e <> t: rr_tbl_str.go(t, List.append(&2, String, acc,
+      [String.concat([U32.show(IX.IxRange.idx(e)), ":", U32.show(IX.IxRange.kind(e)),
+                      ":", U32.show(IX.IxRange.ext(e))])]))
+
+def rr_row_tbl() -> String:
+  +q = RZ.rz_built()
+  +ar = RZ.RZProg.ar(q)
+  +sink = RZ.RZProg.sink(q)
+  +tb = F.Folded.t(F.folded(ar))
+  +m = rr_range_map(ar, tb, sink)
+  String.join(rr_tbl_str.go(RrMap.tbl(m), Nil{}), " ")
+
 def main() -> IO(Unit):
   do IO<Unit>:
     rr_row.line("rr_realize", rr_row_realize())
@@ -1693,4 +1755,6 @@ def main() -> IO(Unit):
     rr_row.line("rr_map", String.join(rr_row_map(), ","))
     rr_row.line("rr_walk", rr_row_walk())
     rr_row.line("rr_wall", rr_row_wall())
+    rr_row.line("rr_dims", rr_row_dims())
+    rr_row.line("rr_tbl", rr_row_tbl())
     rr_row.line("rr_arena", rr_row_arena())
