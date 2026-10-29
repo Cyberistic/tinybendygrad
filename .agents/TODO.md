@@ -25604,3 +25604,51 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **`VERDICT PASS`**.  **⇒ AND **THE **CONTROL **IS **THE **HALF **THAT **MATTERS**: **A **COMPARISON
       **THAT **CANNOT **FAIL **IS **NOT **A **COMPARISON**, **AND **THIS **ONE **DIVERGES **WHEN **THE
       **SCAN **IS **SKIPPED** — **SO **THE **GREEN **IS **A **MEASUREMENT **AND **NOT **A **CONSTANT.**
+
+- [x] **THE **DIGEST **HASHED **MUTATION **PROBES**, **SO **A **PLANT **RUN **MADE **THE **CORPUS
+      **STALE** (MEASURED **2026-10-29**).**  **⇒ AND **THE **DEFECT **WAS **FOUND **BY **THE
+      **SYMPTOM**, **NOT **BY **GUESSING**: **THE **CORPUS **WENT **STALE **WITH **A **CLEAN **PORT** —
+      **THE **DIGEST **MOVED **`b4c1fadb…` -> `3ddd9993…`** **AND **NO **COMMIT **AND **NO
+      **WORKING-TREE **CHANGE **EXPLAINED **IT.**  **⇒ AND **THE **CAUSE**: **`checks/differ.py`'s
+      **`substrate_entries()`** **HASHES **EVERY **FILE **UNDER **`tinybendygrad/`** **AND
+      **`tinygrad/`**, **AND **THOSE **TREES **CONTAIN **FIVE **GITIGNORED **SCRATCH **COPIES**
+      (**`*-mut.bend`** **AND **A **`.bak`**), **AND **A **PROBE **REWRITES **THEM **AS **IT **RUNS.**
+      **⇒ AND **THIS **IS **THE **TREE's **OWN **RECORDED **HAZARD**, **WORD **FOR **WORD**: **"A **UNIT
+      **THAT **DROPPED **A **MUTATION **PROBE **IN **THE **TREE **MOVED **THE **CORPUS's **FRESHNESS
+      **PIN."**
+      **⇒ AND **THE **FIX: **A **DIGEST **THAT **HASHES **A **PROBE's **RESIDUE **IS **NOT **A **PIN **ON
+      **THE **PORT** — **IT **IS **A **PIN **ON **WHETHER **SOMEONE **RAN **A **PLANT.**  **⇒ AND
+      **`__pycache__` **WAS **ALREADY **EXCLUDED **FOR **THE **SAME **REASON**, **SO **THE **RULE **WAS
+      **HALF **APPLIED** — **AND **THE **HALF **THAT **MOVED **THE **DIGEST **WAS **THE **ONE **THAT **WAS
+      **MISSING.**
+      **⇒ AND **THE **RULE **IS **ONE **RULE, **NOT **TWO**: **`checks/differ.py` **NOW **LOADS
+      **`gates/header-census-gate.py`'s **`is_scratch`** **BY **PATH** — **BECAUSE **"A **SECOND **COPY
+      **OF **A **RULE **IS **A **CONTRACT **WITH **NO **GENERATOR"**, **AND **`gates/bendcite-gate.py`
+      **ALREADY **LOADS **THE **SAME **RULE **THE **SAME **WAY.**
+      **⇒ AND **BOTH **DIRECTIONS **ARE **PROVEN**: **A **SCRATCH **PROBE **DOES **NOT **MOVE **THE
+      **DIGEST** (`025ec12b5c03fd33…` **UNCHANGED**), **AND **A **REAL **PORT **FILE **DOES**
+      (**`025ec12b5…` -> `6df1c8ef…`**).**
+- [x] **THE **LAST **GATE **THAT **COMPUTED **A **ROOT **OUTSIDE **THE **REPO** (MEASURED **2026-10-29**).**
+      **⇒ AND **IT **WAS **TWO **DEFECTS**: **`gates/gates-pop.py` **COUNTED
+      **`checks/cites-census.py`** AS **OFF-REPO **BECAUSE **IT **MATCHED **A **STRING **LITERAL **INSIDE
+      **A **TEST **TUPLE** — **THE **NEEDLE **`"pathlib.Path(__file__).resolve().parents[3]"`**, **WHICH
+      **IS **A **RECORD **OF **A **DEFECT** **AND **MUST **NOT **BE **DELETED**, **ONLY **NOT **READ **AS
+      **CODE** — **AND **THE **INSTRUMENT **ALREADY **HAD **THE **MECHANISM** (**`FIXTURES` **IS
+      **COLLECTED **FROM **NAMED **CONSTANTS**, **SO **A **BARE **LITERAL **IS **NOT **COLLECTED**);
+      **⇒ AND **WITH **THE **NEEDLE **BLANKED, **THE **COUNT **OF **GATES **THAT **"NAME **A **ROOT"**
+      **FELL **230 -> 229**, **AND **THAT **IS **WHAT **FOUND **THE **SECOND **DEFECT**: **THE **FILE's
+      **OWN **ROOT **WAS **SPELLED **`.parent.parent`**, **AND **NEITHER **`ROOT_CONST`** **NOR
+      **`ROOT_INLINE`** **MATCHES **A **SPELLING **WITHOUT **`.parents[N]`** — **SO **THE **FILE's **REAL
+      **ROOT **WAS **INVISIBLE **AND **IT **WAS **BEING **COUNTED **ONLY **BECAUSE **OF **THE **FIXTURE.**
+      **⇒ MEASURED: **NO **OTHER **GATE **USES **THAT **SPELLING** (**0 **OF **384**), **AND **THE **TWO
+      **SPELLINGS **ARE **THE **SAME **DIRECTORY.**  **⇒ AND **THE **FIX **IS **THE **SPELLING**
+      (**`parents[1]`**), **AND **THE **COUNT **GOES **BACK **TO **230** **AND **THE **FALSE **POSITIVES
+      **GO **TO **0`: **`GATES-POP: RED -- 384 entry points, 230 name a root, 34 assert it, **0 resolve
+      **outside **the **repo`.**
+      **⇒ AND **`checks/cites-census.py`'s **OWN **VERDICT **AND **EVERY **ONE **OF **ITS **NUMBERS **ARE
+      **UNCHANGED** (**rc=1**).**
+- [x] **THE **LEDGER **ROWS **FOR **THE **TWO **GATES **WHOSE **ROOT **FACTS **CHANGED** **WERE **UPDATED
+      (**`7ee5a7859`**)** — **ONE **`--write-ledger --only <path>`** **PER **PATH**, **AND **THE **LEDGER
+      **IS **MONOTONIC** (**389 -> 389 **ROWS**, **0 **NEW**, **0 **RETIRED**, **0 **DROPPED**, **THE **FIVE
+      **TOMBSTONES **INTACT**), **AND **`gates/ledgerdue-gate.py` **IS **BACK **TO **`OWNED 0 UNOWNED 0
+      DUE 0`** **AND **`VERDICT PASS`.**
