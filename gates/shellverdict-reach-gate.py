@@ -62,12 +62,22 @@ EVERYTHING IS LOADED BY PATH AND NOTHING IS RE-TYPED: `gates/gates-pop.py:gate_h
 `checks/gatesweep.py:classify` and `checks/bounded.py:STATUS` are the readers. NO `bend`.
 
 **THIS FILE READS SHELL WITH ITS OWN LINE-PRESERVING STRIP, AND THE REASON IS MEASURED.**
-`gates/gates-pop.py:shell_code()` is `re.sub(r"^\\s*#.*$", "", src, re.M)` and **`\\s*` EATS
-THE NEWLINE**: `checks/run-f64.sh` is 448 lines and `shell_code` returns 435, 8 of 21 members
-lose lines, `sb-gate.sh` loses 12. A line number read off that output is a WRONG LINE NUMBER,
-which is `gates/gates-pop.py`'s own "`A COMPARISON THAT CAN NEVER SUCCEED LOOKS EXACTLY LIKE A
-COMPARISON THAT FOUND NOTHING`" one level down. `shell_code` is still the comment grammar and
-is not re-spelled here; only the geometry is repaired, by iterating lines.
+**⇒ AND **THE **REASON **HAS **CHANGED**, **AND **A **DOCSTRING **THAT **RECORDS **A **FAULT **THAT
+**NO **LONGER **EXISTS **IS **A **DOCSTRING **THAT **LIES** (MEASURED 2026-10-29: **`gates/gates-pop.py`'s
+**`shell_code()` **WAS **`re.sub(r"^\\s*#.*$", "", src, re.M)`**, **AND **`\\s*` **ATE **THE
+**NEWLINE**, **AND **THIS **FILE's **DOCSTRING **SAID **SO** — **BUT **`shell_code()` **HAS **SINCE
+**BEEN **REPAIRED** (**"Shell **source **with **`#` **COMMENTS **removed, **AND **NOT **ONE **LINE
+**MORE **THAN **IT **WAS**"**), **AND **IT **NOW **RETURNS **474 **LINES **FOR **A **474-LINE
+**`checks/run-f64.sh`**, **WHERE **THE **OLD **SHAPE **RETURNED **435**.)**  **⇒ AND **THE **REASON
+**THIS **FILE **STILL **NEEDS **ITS **OWN **STRIP **IS **THE **ONE **THAT **IS **STILL **TRUE**: **A
+**LINE **NUMBER **READ **OFF **A **STRIPPED **COPY **IS **A **WRONG **LINE **NUMBER **IF **THE **STRIP
+**DROPS **A **LINE**, **AND **THE **STRIP **MUST **BLANK **THE **COMMENT **AND **KEEP **THE **LINE** —
+**WHICH **IS **WHAT **THIS **FILE **DOES**, **BY **ITERATING **LINES.**
+
+**⇒ AND **THE **STALE **NUMBERS **ARE **THE **TELL**: **A **PROSE **THAT **SAYS **"448 **LINES"**
+**ABOUT **A **473-LINE **FILE** **IS **A **READING **THAT **ROTTED**, **AND **THE **CENSUS
+**(`checks/cites-census.py`) **IS **WHAT **SAYS **SO** — **IT **REPORTED **THIS **VERY **ROW **AS **A
+**FAIL**."**
 """
 from __future__ import annotations
 

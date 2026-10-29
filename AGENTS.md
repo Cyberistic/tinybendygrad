@@ -407,8 +407,10 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose. See Development, above.
 - `checks/substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree. **THE BARE NAME
   `substrate-check.sh` RESOLVES TO NOTHING: `command -v` is absent and there is no root-level file. The real gate
-  is a 46-line shim onto `.venv/bin/python checks/substrate.py` (**766 lines at 13:00, 841 at 13:03 —
-  it was 765 when written; the file is being edited live**).**
+  is a 46-line shim onto `.venv/bin/python checks/substrate.py` (**965 lines as of 2026-10-29 —
+  COUNTED **AS `splitlines()`**, **BECAUSE **THE **FILE **DOES **NOT **END **WITH **A **NEWLINE**, **SO
+  `wc -l` **SAYS **964**; it was 766 at 13:00 and 841 at 13:03 — the file is edited live, so a
+  line count here is a READING, and the census is what says whether it is still true**).**
 - `gates/*.py` — per-def gates, and they are **Python, never shell** (measured 2026-10-07: 56 `.py`, 0 `.sh`; `ls gates/*.py | wc -l`).
   A gate names its `.bend` driver and its CPython oracle; its OUTPUT goes to `gates/artifacts/`.
   **BUT DO NOT PUT A GATE'S INPUTS UNDER `.agents/slop/`. THAT PRESCRIPTION IS WHAT DELETED THEM.**

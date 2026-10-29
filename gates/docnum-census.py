@@ -8,7 +8,7 @@ The four instances that dispatched this census, all one day, all one shape:
      gate quoted the citation forward.
   3. `nn/optim.bend`'s claim that a fixture "NEEDS `Device.tag`" was PROVED FALSE.
   4. `gates/README.md` justified a whole section on "THE NUMERATOR OF 'A GATE THAT ANYTHING
-     RUNS' WAS 0 OF 77" -- and `checks/gatesweep.py`, 358 lines, ALREADY EXISTED.
+     RUNS' WAS 0 OF 77" -- and `checks/gatesweep.py`, 938 lines, ALREADY EXISTED.
 
 So the class is not "wrong number". It is: **a number written where a measurement could be
 taken, in prose that outlives the measurement.** The only question worth automating:

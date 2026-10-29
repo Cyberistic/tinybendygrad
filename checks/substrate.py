@@ -115,7 +115,7 @@ ORACLE_PIN = {
         "3b2ad83f57d995c9e555a1e2843b4176adf75a18e395633f141f944f531773f3",
 }
 
-# THE `.c` PROBE. `checks/c-context.bend` (26 lines, TRACKED, and NOT named `probe-*.bend` because
+# THE `.c` PROBE. `checks/c-context.bend` (34 lines, TRACKED, and NOT named `probe-*.bend` because
 # `.gitignore:37` ignores that pattern BY DESIGN -- and a GITIGNORED PROBE IS A GATE THAT PASSES HERE
 # AND IS ABSENT IN A CLONE). The predecessor `.agents/slop/guardfix/probe-c.bend` was NEVER COMMITTED
 # (no blob in any ref) AND its `dtype.c` seam was RETIRED (`9e9aaac47` dropped `dtype.bend`'s `.c`

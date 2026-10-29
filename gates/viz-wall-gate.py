@@ -7,7 +7,7 @@
     .venv/bin/python gates/viz-wall-gate.py --refresh
 
 THE QUESTION THIS ANSWERS. A user asked whether `VIZ=1` is implemented. The port's
-`tinybendygrad/viz/serve.bend` is 1967 lines and answers, in its own words, "viz's LOGIC,
+`tinybendygrad/viz/serve.bend` is 1991 lines and answers, in its own words, "viz's LOGIC,
 without viz's SERVER". This gate measures the gap between that file and upstream's
 `tinygrad/viz/serve.py` WITHOUT EDITING EITHER, and it goes RED THE MOMENT A CAPABILITY
 APPEARS -- which is the whole point of a wall table: it is only useful if it can notice the

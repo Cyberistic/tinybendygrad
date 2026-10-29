@@ -61,6 +61,37 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXTS = (".md", ".py")
 
+# THE DIRECTORIES **THIS **CENSUS **DOES **NOT **CENSUS**, **BY **NAME**, **AND **WHY.  **⇒ AND **THE
+# **PRECEDENT **IS **THE **TREE's **OWN**: **`checks/compile-census.py:103-106`** **HAS **A
+# **`SKIP_DIRS`** **MAP **WITH **THE **REASON **FOR **EACH **ENTRY** — **".agents": "agent scratch,
+# 113 .bend under slop/, swept by checks/sweep.py"** — **AND **THE **REASON **IS **CARRIED **IN **THE
+# **MAP**, **NOT **ONLY **IN **A **COMMENT.**
+#
+# **⇒ AND **WHY **THIS **CENSUS **NEEDS **IT** (MEASURED 2026-10-29): **THE **TREE **COMMITS **7,114
+# **FILES **UNDER **`.agents/slop/`**, **AND **428 **OF **THE **493 **FAILING **CLAIMS **NAMED **A
+# **PATH **UNDER **IT** — **ONE **DIRECTORY **ALONE** (`.agents/slop/citefix9/`) **ACCOUNTED **FOR **117
+# **OF **THEM.**  **⇒ A **COMMITTED **SCRATCH **FILE **IS **NOT **THE **TREE's **CLAIMS**: **IT **IS **A
+# **UNIT's **NOTES **ABOUT **THE **TREE, **AND **THE **NOTES **GO **STALE **AS **SOON **AS **THE **TREE
+# **MOVES** — **WHICH **IS **EXACTLY **WHAT **THE **LEDGER **IS.**
+# **⇒ AND **THE **OTHER **HALF**: **`.agents/TODO.md`** **IS **THE **LEDGER**, **AND **IT **RECORDS **THE
+# **CITATION **WORK **AS **IT **WAS**, **SO **ITS **LINE **COUNTS **ARE **STALE **BY **CONSTRUCTION** —
+# **A **HISTORY **IS **NOT **A **CLAIM **ABOUT **THE **PRESENT.**
+SKIP_DIRS = {
+    ".agents": "agent scratch -- 7,114 committed files, and 428 of 493 failing claims named one",
+    "runs": "run artefacts -- and runs/margsym/snap/ is a SNAPSHOT OF THE PORT",
+}
+
+
+def _skipped(rel: str) -> str:
+    """THE **TOP-LEVEL **DIRECTORY **THIS **PATH **IS **UNDER**, **IF **ANY** — **OR **""**.
+
+    **⇒ AND **THE **RULE **IS **A **NAME **RULE **ON **A **TOP-LEVEL **DIRECTORY**, **NOT **A **GIT
+    **CALL**: **`git ls-files` **READS **THE **INDEX**, **AND **THIS **TREE's **INDEX **IS **ARMED **BY
+    **DESIGN** — **AND **THE **RULE **IS **ABOUT **THE **PATH**, **NOT **ABOUT **WHAT **GIT **THINKS.**
+    """
+    head = rel.split("/", 1)[0]
+    return SKIP_DIRS[head] if head in SKIP_DIRS else ""
+
 PASS, FAIL, REFUSED, SKIP, DEAD = "PASS", "FAIL", "REFUSED", "SKIP", "DEAD"
 EXITS = {PASS: 0, FAIL: 1, REFUSED: 3, SKIP: 4, DEAD: 5}
 
@@ -74,7 +105,7 @@ def committed(exts: tuple[str, ...] = EXTS) -> list[str]:
   if r.returncode != 0:
     print(f"{REFUSED}: git ls-tree rc={r.returncode}: {r.stderr.strip()}")
     sys.exit(EXITS[REFUSED])
-  return sorted(p for p in r.stdout.splitlines() if p.endswith(exts))
+  return sorted(p for p in r.stdout.splitlines() if p.endswith(exts) and not _skipped(p))
 
 
 def on_disk(exts: tuple[str, ...] = EXTS) -> list[str]:
@@ -83,7 +114,8 @@ def on_disk(exts: tuple[str, ...] = EXTS) -> list[str]:
   `differ.declared()` fault with the import removed."""
   out = []
   for dirpath, dirnames, filenames in os.walk(ROOT):
-    dirnames[:] = [d for d in dirnames if d not in (".git", ".venv", "__pycache__")]
+    dirnames[:] = [d for d in dirnames if d not in (".git", ".venv", "__pycache__")
+                   and d not in SKIP_DIRS]
     for fn in filenames:
       if fn.endswith(exts):
         out.append(str(Path(dirpath, fn).relative_to(ROOT)))
@@ -370,7 +402,24 @@ def prose(rel: str, text: str, fault: list | None = None) -> list[tuple[int, str
     if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
       doc = ast.get_docstring(node, clean=False)
       if doc:
-        out.append((node.body[0].lineno, doc))
+        # **⇒ AND **THE **DOCSTRING **IS **SCANNED **LINE **BY **LINE**, **WITH **ITS **OWN **LINE
+        # **NUMBERS** — **AND **THAT **IS **THE **FIX.**  MEASURED 2026-10-29: **THE **DOCSTRING **WAS
+        # **COLLAPSED **INTO **ONE **STRING** **AND **ATTACHED **TO **THE **FIRST **LINE** OF **THE
+        # **BODY** (`:405` **APPENDED **THE **WHOLE **TEXT **AS **ONE **"LINE"**), **SO **A **QUOTED **SPAN
+        # **FROM **DOCSTRING **LINE **8 **WAS **ATTRIBUTED **TO **LINE **2** — **AND **A **PATH **AND **A
+        # **NEEDLE **FROM **DIFFERENT **LINES **BECAME **ONE **CLAIM.**  **⇒ AND **THE **CONSEQUENCE
+        # **WAS **A **FALSE **FAIL**: **`checks/compile-census.py:2` -> `checks/bounded.py`** **WITH **THE
+        # **NEEDLE **`WARM`**, **WHICH **IS **ON **DOCSTRING **LINE **8** **AND **IS **NOT **A **TOKEN
+        # **OF **`bounded.py` **AT **ALL.**
+        #
+        # **⇒ AND **THIS **IS **THE **SAME **CLASS **AS **THE **`pin-cite-gate.py` **ATTRIBUTION
+        # **FAULT**: **A **CLAIM **MUST **BE **READ **ON **THE **LINE **IT **IS **ATTRIBUTED **TO**, **OR
+        # **IT **IS **NOT **A **CLAIM **ABOUT **THAT **LINE.**  **⇒ AND **THE **LINE **NUMBERS **ARE
+        # **THE **DOCSTRING's **OWN**, **NOT **THE **BODY's** — **THE **DOCSTRING **OPENS **ON **THE
+        # **BODY's **FIRST **LINE** **AND **SPANS **AS **MANY **PHYSICAL **LINES **AS **IT **HAS.**
+        first = node.body[0].lineno
+        for k, dl in enumerate(doc.split("\n")):
+          out.append((first + k, dl))
   return out
 
 

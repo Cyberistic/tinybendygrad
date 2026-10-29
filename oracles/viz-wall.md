@@ -3,7 +3,7 @@
 **Question.** A user asked whether `VIZ=1` is implemented. This is the answer, measured.
 
 **Upstream** `refs/remotes/upstream/master` = `5c2bf39d6c4b6b201abdf2865dd4a14228de4e60`, file
-`tinygrad/viz/serve.py`, **757 lines**. **Port** `tinybendygrad/viz/serve.bend`, **1967 lines**.
+`tinygrad/viz/serve.py`, **757 lines**. **Port** `tinybendygrad/viz/serve.bend`, **1991 lines**.
 Nothing was fetched; the upstream side is the LOCAL ref.
 
 **Instrument** `gates/viz-wall-gate.py` (new, beside this file's pins at
