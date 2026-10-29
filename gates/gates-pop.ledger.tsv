@@ -21,6 +21,7 @@ checks/cites-census.py	py-main	Path(__file__).resolve().parents[3]	0	0
 checks/cl-port-gate.py	py-main	HERE = Path(__file__).resolve().parent REPO = Path(__file__).resolve().parents[1]	1	1
 checks/classify.sh	sh-selfref	-	1	1
 checks/cli.py	py-main	-	0	1
+checks/compile-census.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 checks/compile.py	py-main	-	0	1
 checks/corpus-figure.py	py-main	ROOT = pathlib.Path(__file__).resolve().parents[1]	0	1
 checks/coverage.py	py-main	__file__.parent	0	1
@@ -65,12 +66,14 @@ checks/oracle-txt-census.py	py-main	-	0	1
 checks/oracle_f64.py	py-main	ROOT = pathlib.Path(__file__).resolve().parents[1]	1	1
 checks/pathresolve.py	py-main	Path(__file__).resolve().parents[1]	0	1
 checks/plant.sh	sh-selfref	__file__.parent	0	1
+checks/port-compile-gate.py	py-main	__file__.parent	0	1
 checks/process_replay.py	py-main	-	0	1
 checks/render-gate-oracle-gate.py	py-main	-	0	1
 checks/render-gate-oracle.py	py-main	-	0	1
 checks/repair-dupes.py	py-main	Path(__file__).resolve().parents[1]	0	1
 checks/repro-paths.py	py-main	-	0	1
 checks/residue.py	py-main	__file__.parent	0	1
+checks/revendor-struct.py	py-main	-	0	1
 checks/rn-gate.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/romless.py	py-main	-	0	1
 checks/run-all.sh	sh-selfref	__file__.parent	1	1
@@ -99,20 +102,45 @@ checks/walk-mutate.sh	sh-selfref	-	1	1
 checks/wallcheck.py	py-main	-	0	1
 checks/wt-sync.sh	sh-selfref	-	1	1
 gates/.wgsl-mut-oracle.py	gone	-	0	1
+gates/allcopies-census.py	py-main	__file__.parent	0	1
 gates/amd-mut-gate.py	gone	__file__.parent	0	1
 gates/amd-mut-oracle.py	gone	-	0	1
 gates/amd_dsl_census-gate.py	py-main	__file__.parent	0	1
 gates/amd_dsl_census-mutate.py	py-main	__file__.parent	0	1
 gates/amd_dsl_census-oracle.py	py-main	-	0	1
+gates/arenasrc_census.py	py-main	__file__.parent	0	1
+gates/arenasrc_probe-check.py	py-main	__file__.parent	0	1
+gates/artifactverdict-gate.py	py-main	__file__.parent	0	1
 gates/assertlit-census.py	py-main	__file__.parent	0	1
+gates/axisflip-gate.py	py-main	-	0	1
+gates/banner-emit-gate.py	py-main	__file__.parent	1	1
+gates/banner-emit-plant.py	py-main	-	0	1
+gates/banner-gate.py	py-main	__file__.parent	1	1
 gates/bc-u32-gate.py	py-main	-	0	1
 gates/bc-u32-gen.py	py-main	__file__.parent	0	1
 gates/bc-u32-oracle.py	py-main	-	0	1
 gates/bc_u32_table.py	py-main	-	0	1
 gates/beautiful-mnist-gate.py	py-main	-	0	1
+gates/bend-absent.py	py-main	-	0	1
+gates/bendcite-gate.py	py-main	__file__.parent	0	1
+gates/bendfloat-gate.py	js-main	__file__.parent	1	1
+gates/bind-plant.py	py-main	__file__.parent	0	1
+gates/blobpin-census-gate.py	py-main	__file__.parent	0	1
 gates/citations-census-gate.py	py-main	__file__.parent	0	1
 gates/citeambiguous-gate.py	py-main	__file__.parent	0	1
+gates/cites-pop-gate.py	py-main	-	0	1
 gates/code-reader-census.py	py-main	__file__.parent	0	1
+gates/comment-only-gate.py	py-main	__file__.parent	0	1
+gates/compile-census-gate.py	py-main	__file__.parent	0	1
+gates/constid-gate.py	py-main	-	0	1
+gates/constid-oracle.py	py-main	-	0	1
+gates/constid-plant.py	py-main	__file__.parent	0	1
+gates/corpusfresh-gate.py	py-main	__file__.parent	0	1
+gates/corpuslane-gate.py	py-main	__file__.parent	0	1
+gates/corpuslane-mutate.py	py-main	ROOT = pathlib.Path(__file__).resolve().parents[1]	0	1
+gates/corpusverdict-gate.py	py-main	__file__.parent	0	1
+gates/corpuswitness-gate.py	py-main	__file__.parent	0	1
+gates/corpuswitness-plant.py	py-main	__file__.parent	0	1
 gates/cr_graph_census-gate.py	py-main	-	0	1
 gates/crp_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/crp_graph_census-mutate.py	py-main	__file__.parent	0	1
@@ -124,10 +152,23 @@ gates/cstyle_render_census-oracle.py	py-main	-	0	1
 gates/decomp_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/decomp_graph_census-mutate.py	py-main	__file__.parent	0	1
 gates/decomp_value-gate.py	py-main	__file__.parent	0	1
+gates/devset-census-gate.py	py-main	__file__.parent	0	1
+gates/devset-census-plant.py	py-main	-	0	1
 gates/devtag-gate.py	py-main	__file__.parent	1	1
+gates/dialect-fixture-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/docnum-census.py	py-main	-	0	1
 gates/docnum-claim-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	1	1
+gates/dtypeeven-gate.py	py-main	__file__.parent	0	1
+gates/dtypeeven-plant.py	py-main	__file__.parent	0	1
 gates/e2emm-plant.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/e2estage8-stage-legacy.py	py-main	ROOT = Path(__file__).resolve().parents[3]	0	0
+gates/e2estage8-stage-selftest.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/edge-fixture-census.py	py-main	-	0	1
+gates/edge-oracle-pin-gate.py	py-main	-	0	1
+gates/edge-plant.py	py-main	__file__.parent	0	1
+gates/edge-reach-census.py	py-main	__file__.parent	1	1
+gates/edge-runner.py	py-main	__file__.parent	0	1
+gates/emitverdict-gate.py	py-main	-	0	1
 gates/ew-consts-gate.py	py-main	-	0	1
 gates/ew-consts-oracle.py	py-main	-	0	1
 gates/ew-explog-gate.py	py-main	-	0	1
@@ -140,61 +181,110 @@ gates/ew_graph_census-gate.py	py-main	-	0	1
 gates/exitcode-census-gate.py	py-main	__file__.parent	0	1
 gates/expectcopy-gate.py	py-main	__file__.parent	0	1
 gates/falseclaim-census-gate.py	py-main	__file__.parent	0	1
+gates/fixture-embed-census.py	py-main	__file__.parent	0	1
+gates/fixture-region-gate.py	py-main	__file__.parent	0	1
+gates/float-halfclass-gate.py	py-main	__file__.parent	1	1
+gates/fold-vbase-gate.py	py-main	__file__.parent	0	1
+gates/fold-vbase-mutate.py	py-main	__file__.parent	0	1
+gates/fold-vbase-plant.py	py-main	__file__.parent	0	1
 gates/fold_graph_census-gate.py	py-main	-	0	1
 gates/fold_graph_census-oracle.py	py-main	-	0	1
+gates/ga_fix.py	py-main	-	0	1
+gates/gapcensus-gate.py	py-main	__file__.parent	0	1
+gates/gapcensus.py	py-main	-	0	1
 gates/gate-surface-plant.py	py-main	__file__.parent	0	1
 gates/gate-surface.py	py-main	__file__.parent	1	1
+gates/gates-pop-rows-gate.py	py-main	__file__.parent	0	1
 gates/gates-pop.py	py-main	__file__.parent	0	1
 gates/gendirs.py	py-main	ROOT = Path(__file__).resolve().parents[1]	1	1
 gates/git-massdelete-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/gr_graph_census-gate.py	py-main	-	0	1
+gates/groupflip-baseline.sh	sh-selfref	-	0	1
+gates/groupflip-gate.py	py-main	__file__.parent	0	1
 gates/header-census-gate.py	py-main	__file__.parent	0	1
 gates/help-census.py	py-main	__file__.parent	0	1
 gates/i64-shl-gate.py	py-main	-	0	1
 gates/i64-shl-oracle.py	py-main	-	0	1
 gates/i64-shr-gate.py	py-main	-	0	1
 gates/i64-shr-oracle.py	py-main	-	0	1
+gates/import-path-census-gate.py	py-main	-	0	1
 gates/indexread-gate.py	py-main	-	0	1
 gates/indexshort-gate.py	py-main	__file__.parent	0	1
 gates/indexstale-gate.py	py-main	__file__.parent	0	1
 gates/js-lane-census.py	py-main	__file__.parent	1	1
+gates/lane-census.py	py-main	__file__.parent	0	1
+gates/lanewitness-gate.py	py-main	__file__.parent	0	1
+gates/ledger-denominator-gate.py	py-main	-	0	1
 gates/ledgerdue-gate.py	py-main	__file__.parent	0	1
 gates/ledgergone-gate.py	py-main	__file__.parent	0	1
 gates/linearizer_census-gate.py	py-main	__file__.parent	0	1
 gates/linearizer_census-mutate.py	py-main	Path(__file__).resolve().parents[1]	0	1
+gates/llvmir_render-gate.py	py-main	__file__.parent	0	1
+gates/llvmir_render-oracle.py	py-main	ROOT = Path(os.environ.get("PORT_ROOT", Path(__file__).resolve().parents[1]	0	1
 gates/loadgap-gate.py	py-main	__file__.parent	0	1
 gates/md_graph_census-gate.py	py-main	-	0	1
 gates/mixin-op-gate.py	py-main	-	0	1
+gates/mixin-op-plant.py	py-main	__file__.parent	0	1
 gates/mo_graph_census-gate.py	py-main	-	0	1
 gates/msgdiff-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/mx_graph_census-gate.py	py-main	-	0	1
+gates/nilsrc-census.py	py-main	__file__.parent	0	1
+gates/nir-oracle.py	py-main	-	0	1
+gates/nir_llvmir-oracle.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/nir_llvmir-plant.py	py-main	__file__.parent	0	1
+gates/nir_render-gate.py	py-main	__file__.parent	0	1
+gates/nir_render-plant.py	py-main	__file__.parent	0	1
+gates/nn-rows-gate.py	py-main	__file__.parent	0	1
 gates/noblob-census.py	py-main	__file__.parent	0	1
+gates/nul-census-gate.py	py-main	-	0	1
+gates/nul-refusal-gate.py	py-main	-	0	1
 gates/onnx_census-gate.py	py-main	-	0	1
 gates/op_graph_census-gate.py	py-main	-	0	1
+gates/opname-census-gate.py	py-main	__file__.parent	0	1
 gates/ops-core-gate.py	py-main	-	0	1
 gates/ops-core-oracle.py	py-main	-	0	1
 gates/ops_bend_exec-e2e.py	py-main	-	0	1
+gates/ops_dsp_render-gate.py	py-main	__file__.parent	0	1
+gates/ops_dsp_render-oracle.py	py-main	ROOT = Path(os.environ.get("PORT_ROOT", Path(__file__).resolve().parents[1]	0	1
 gates/ops_python_census-gate.py	py-main	__file__.parent	0	1
 gates/ops_python_census-oracle.py	py-main	-	0	1
+gates/ops_python_census-plant.py	py-main	__file__.parent	0	1
 gates/ops_python_exec-gate.py	py-main	__file__.parent	0	1
 gates/ops_python_exec-gen.py	py-main	__file__.parent	0	1
+gates/opseven-gate.py	py-main	__file__.parent	0	1
+gates/opseven-mutate.py	py-main	__file__.parent	0	1
+gates/opsref-census.py	py-main	__file__.parent	0	1
 gates/optim-nop-mutate.py	py-main	Path(__file__).resolve().parents[1]	0	1
 gates/oracle-census-gate.py	py-main	__file__.parent	0	1
 gates/oracle-dangling-gate.py	py-main	__file__.parent	0	1
 gates/oracle-spec-gate.py	py-main	__file__.parent	0	1
 gates/oracleblind-census.py	py-main	__file__.parent	0	1
+gates/paramarg-shape-gate.py	py-main	__file__.parent	0	1
+gates/paramarg-shape-oracle.py	py-main	-	0	1
+gates/paramarg-site-gate.py	py-main	__file__.parent	0	1
 gates/path-resolve-gate.py	py-main	-	0	1
+gates/pathwitness-gate.py	py-main	REPO = Path(__file__).resolve().parents[1]	0	1
 gates/phase-taxonomy-gate.py	py-main	__file__.parent	1	1
+gates/pin-cite-gate.py	py-main	__file__.parent	0	1
+gates/pincensus-gate.py	py-main	__file__.parent	0	1
+gates/pincensus-plant.py	py-main	__file__.parent	0	1
+gates/pinned-tree-gate.py	py-main	__file__.parent	0	1
 gates/pins-shape-gate.py	py-main	__file__.parent	0	1
 gates/pintable-gate.py	py-main	__file__.parent	0	1
+gates/prose-census.py	py-main	__file__.parent	0	1
 gates/ptx_render_census-gate.py	py-main	__file__.parent	0	1
 gates/ptx_render_census-gen.py	py-main	__file__.parent	0	1
 gates/ptx_render_census-mutate.py	py-main	__file__.parent	0	1
 gates/ptx_render_census-oracle.py	py-main	-	0	1
+gates/ptx_render_census-s3-oracle.py	py-main	-	0	1
+gates/pycell-census-gate.py	py-main	__file__.parent	0	1
+gates/pycell-census.py	py-main	__file__.parent	0	1
+gates/pycell-plant.py	py-main	__file__.parent	0	1
 gates/pyvals-gate.py	py-main	__file__.parent	0	1
 gates/qcom-oracle.py	py-main	-	0	1
 gates/qcom_cache-oracle.py	py-main	-	0	1
 gates/qcom_stage3-oracle.py	py-main	-	0	1
+gates/questionmark-plant-gate.py	py-main	__file__.parent	0	1
 gates/rand_census-gate.py	py-main	-	0	1
 gates/randrows-gate.py	py-main	__file__.parent	0	1
 gates/rd_graph_census-gate.py	py-main	-	0	1
@@ -204,18 +294,40 @@ gates/realize-mut-oracle.py	gone	-	0	1
 gates/realize_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/realize_graph_census-mutate.py	py-main	__file__.parent	0	1
 gates/realize_graph_census-oracle.py	py-main	-	0	1
+gates/realize_graph_census-plant.py	py-main	__file__.parent	0	1
+gates/realize_kernel_args-gate.py	py-main	__file__.parent	0	1
+gates/realize_kernel_args-oracle.py	py-main	-	0	1
 gates/regalloc_census-gate.py	py-main	__file__.parent	0	1
 gates/regalloc_census-mutate.py	py-main	__file__.parent	0	1
+gates/render_derive-plant.py	py-main	__file__.parent	0	1
 gates/render_val_s-gate.py	py-main	-	0	1
+gates/renderer_init-oracle.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/replace-gate.py	py-main	-	0	1
 gates/retention-check.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/revendor-struct-gate.py	py-main	__file__.parent	0	1
 gates/rng_graph_census-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/rng_graph_census-oracle.py	py-main	-	0	1
 gates/rotclaim-gate.py	py-main	__file__.parent	0	1
 gates/runner.py	py-main	__file__.parent	0	1
+gates/shellverdict-gate.py	py-main	__file__.parent	0	1
+gates/shellverdict-reach-gate.py	py-main	__file__.parent	0	1
+gates/slop-prune-census.py	py-main	__file__.parent	0	1
+gates/specfold-gate.py	py-main	__file__.parent	0	1
+gates/specreach-gate.py	py-main	__file__.parent	0	1
 gates/state_census-gate.py	py-main	-	0	1
+gates/subnormal-flush-gate.py	py-main	__file__.parent	1	1
 gates/substratestale-gate.py	py-main	__file__.parent	0	1
+gates/symrules-census.py	py-main	-	0	1
+gates/symrules-gate.py	py-main	-	0	1
+gates/symrules-oracle.py	py-main	-	0	1
+gates/symrules-plant.py	py-main	-	0	1
+gates/tagmachinery-gate.py	py-main	__file__.parent	0	1
+gates/target-census-gate.py	py-main	__file__.parent	0	1
+gates/target-oracle.py	py-main	-	0	1
+gates/target-roundtrip-gate.py	py-main	-	0	1
 gates/tc_ptx_render-oracle.py	py-main	-	0	1
+gates/tc_ptx_render_census-gate.py	py-main	__file__.parent	0	1
+gates/tc_ptx_render_census-plant.py	py-main	__file__.parent	0	1
 gates/tc_ptx_types-gate.py	py-main	-	0	1
 gates/tc_ptx_types-mutate.py	py-main	__file__.parent	0	1
 gates/tn_add_sub-gate.py	py-main	-	0	1
@@ -248,15 +360,26 @@ gates/tn_sqrt-gate.py	py-main	-	0	1
 gates/tn_trunc_reciprocal_threefry-gate.py	py-main	-	0	1
 gates/tn_where-gate.py	py-main	-	0	1
 gates/tnvalue-census.py	py-main	__file__.parent	0	1
+gates/todo-census.py	py-main	__file__.parent	0	1
+gates/todo-cite-gate.py	py-main	__file__.parent	0	1
+gates/todopop-falsify.py	py-main	__file__.parent	0	1
+gates/todopop-gate.py	py-main	__file__.parent	0	1
+gates/txt-carveout-gate.py	py-main	-	0	1
 gates/unsorted-gap.py	py-main	__file__.parent	0	1
+gates/untested-census.py	py-main	__file__.parent	0	1
+gates/untested-gate.py	py-main	__file__.parent	0	1
 gates/uop_cast-gate.py	py-main	-	0	1
 gates/upstream-pow-dtype-gate.py	py-main	__file__.parent	0	1
 gates/upstream-promo-lattice-gate.py	py-main	__file__.parent	0	1
+gates/validate-oracle-absent-gate.py	py-main	__file__.parent	0	1
 gates/valscall-gate.py	py-main	__file__.parent	0	1
 gates/valsdiv-gate.py	py-main	__file__.parent	0	1
 gates/varsparams-gate.py	py-main	__file__.parent	0	1
 gates/varsparams-uses.py	py-main	__file__.parent	0	1
+gates/vendordep-census-gate.py	py-main	__file__.parent	0	1
 gates/vendordep-census-plant.py	py-main	__file__.parent	0	1
+gates/verdict-lane-gate.py	py-main	__file__.parent	0	1
+gates/verdictcopy-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/viz-wall-gate.py	py-main	__file__.parent	0	1
 gates/wgsl_render_census-gate.py	py-main	__file__.parent	0	1
 gates/wgsl_render_census-mutate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
@@ -268,4 +391,8 @@ gates/wk-eval-oracle.py	py-main	-	0	1
 gates/wk-f32-gate.py	py-main	-	0	1
 gates/wk-f32-rows.py	py-main	-	0	1
 gates/worker-gate.py	py-main	__file__.parent	0	1
+gates/worker-mutate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	1	1
 gates/worker-oracle.py	py-main	-	0	1
+gates/x86_isa-gate.py	py-main	__file__.parent	0	1
+gates/x86_isa-oracle.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/x86_isa-plant.py	py-main	__file__.parent	0	1
