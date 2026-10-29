@@ -25098,6 +25098,52 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       remains `UNPLANTED` and `checks/env-precond.py`'s exit 1 remains `UNPLANTED` — NOTHING WAS
       WEAKENED TO HIDE EITHER.** Fixing the vocabulary means CHANGING THE EXIT CODES, which is a
       different change from a declaration, and `gates/gatekit.py` is not this unit's to edit.
+- [x] **THE **16 **UNPLANTED **VERDICTS **ARE **PLANTED **— **SIX **GATES, **0 **LEFT**
+      (`f7c7fb358`, **2026-10-30**).**  `gates/gate-surface.py` classifies a declared verdict by
+      **EXECUTING** the declared plant and requiring the observed rc to equal the declared one, so
+      **A DECLARED EXIT CODE WITH NO DECLARED PLANT IS RED, NAMED.**  MEASURED:
+      **BEFORE 70 declared / 45 reached / 16 unplanted / 9 misplant → AFTER 70 declared / 64
+      reached / 0 unplanted / 6 misplant**, and **19 `RED … UNPLANTED|MISPLANT` lines removed, 0
+      ADDED** (set difference).  **⇒ AND EVERY ONE OF MY SIX MOVED OUT OF `UNTAKEN`** — all six
+      now have a **DEMONSTRATED GREEN**, so their reds are chargeable.
+      | gate | the plant argv | why it reaches it |
+      |---|---|---|
+      | `checks/dup-census.py` | `--one oracles/tinybendygrad_renderer_nir_llvmir.bend.rows` | the gate's OWN documented "name a lane" mechanism; the module-scope refusal is CONDITIONAL on the absent `CACHE` (`checks/lanes/`, not in git), so `--one` reaches the census. MEASURED rc 0 and NOT vacuous: 205 read, 201 keys, loss 4 attributed as `4` `=`-in-a-name, RECONCILES — and the file is the PRE-RENAME lane, so the plant is a WITNESS |
+      | `checks/env-precond.py` | `--plant moved-only` | the `--plant` mode ALREADY EXISTED and already ran a plant whose subject is a MOVED precondition (MEASURED exit 1) — but `plant("moved")` ITSELF EXITS 0. `moved-only` runs the SAME five plants with the SAME fixed expectations and exits with the MOVED PLANT'S OWN MEASURED EXIT. **IT WEAKENS NOTHING**: `--plant moved` still exits 0 |
+      | `checks/gate.py` | `--plant clean` / `--plant broken` / `--quick --tree checks/absent-dtype.js` | **NO argv over a TRACKED file reaches rc 1** (MEASURED: every historical `dtype.js` this tree carries is a FIXED revision, rc 0 MISMATCH 0) — so `--plant` was added and it USES THE GATE'S OWN `--tree`. `broken` changes ONE ANCHORED value (`fp8_decode`'s `0x80000000` → `0x80000001`): MEASURED rc 1, MISMATCH 2. THE ANCHOR is what keeps it honest — if the line is gone the plant REFUSES (3) rather than exiting 0 on an uncorrupted copy |
+      | `checks/hermetic-census.py` | `--check --only allred` / `--check --only allred --out checks/rows/absent` | `--check` byte-compares a fresh emission with the PUBLISHED set (rc 0, 1.9 s, ONE GRAPH ON PURPOSE — the corpus is 35 graphs × 2 processes) and answers 3 when the published directory does not hold it. THE PATH IS INSIDE THIS GATE'S OWN PUBLISHED DIRECTORY and never will exist: no temp dir, no other unit's fixture, no gitignored file |
+      | `checks/nl-gate.py` | `--port-stdout`/`--oracle-stdout` over TRACKED lanes / `--selftest` | **HERMETIC ON PURPOSE**: this file's own header records that `uop/ops.bend` is in this port's import closure and is owned by another live unit (MEASURED: two captures printed 206 rows and then ZERO), so **A PLANT THAT READS THE LIVE PORT IS A PLANT THAT CAN ANSWER "NO ROWS" INSTEAD OF A VERDICT.** `gates/cstyle-live.rows` on both sides (rc 0, 227 rows compared) and against `oracles/tinybendygrad_renderer_cstyle.bend.rows` (rc 1, 9 DISAGREE rows NAMED — a REAL disagreement between two TRACKED lanes) |
+      | `checks/nl-gate-noguard.py` | the same two argv / `--port-stdout checks/absent-lane.rows` | the same reader by construction; and the refusal each gate already owns is the plant now |
+      **⇒ AND THREE **BEHAVIOUR **FIXES **THAT **WERE **NOT **PLANTS **BUT **WERE **NEEDED **TO **MAKE
+      **ONE **HONEST**: **(1)** `checks/dup-census.py --one` **NO LONGER PUBLISHES** the population
+      artifact — MEASURED, the plant overwrote the tracked 797,251-byte `checks/dup-census.json`
+      with a one-lane census (10 insertions / 62,250 deletions against HEAD), the same destruction
+      `.agents/slop/denominator/REPORT.md` measured through the other route. **A GATE THAT RUNS A
+      PLANT MUST NOT REWRITE THE TREE IT IS PLANTED IN.** **(2)** `checks/nl-gate-noguard.py` and
+      `checks/gate.py` now **REFUSE (3) AN ABSENT NAMED INPUT** instead of crashing: MEASURED, the
+      noguard's `--port-stdout /nonexistent` answered a `FileNotFoundError` and exit **1** — **THE
+      SAME EXIT AS A DISAGREEMENT** — and `checks/gate.py`'s `--tree /nonexistent` answered DEAD
+      (**5**), which is the wrong word for an absent input. **(3)** `checks/drive.mjs` is
+      **RESTORED** (the gate's own input, byte-identical to `371cc64c9^:.agents/slop/jsfp8/
+      drive.mjs`, blob `4b99887189ec87de85d8096c7f4cbabdcc1e288f`; NOT in `checks/differ.py`'s
+      `SUBSTRATE_INPUTS`, so `substrate_digest()` does not move) — and that is a fix in its own
+      right: **`checks/gate.py --quick` now answers rc 0 with `FIXED present 5121/5121 MISMATCH 0`
+      over the LIVE dtype.js**, i.e. **the fp8 DECODE gate this tree has been REFUSING since
+      `371cc64c9` NOW RUNS**, and `gates/js-lane-census.py:23` already recorded that this coverage
+      exists nowhere else in the tree.
+      **⇒ AND NO DECLARATION WAS NARROWED**: every `VERDICTS` mapping is byte-identical to HEAD,
+      and **nothing was withdrawn to make a count go down**.  **⇒ AND
+      `checks/env-precond.py`'s `2: "REFUSED"` IS LEFT EXACTLY AS IT IS, WITH THE DISAGREEMENT
+      NAMED IN ITS OWN DECLARATION COMMENT** (the row ABOVE), because `PLANTS[2] = ["--plant",
+      "nonsense"]` is the argv that REACHES the 2 the declaration names — so the declared code is
+      reachable and planted, and the vocabulary disagreement is REPORTED, not silenced.
+      **⇒ AND `gates/gate-surface.py --plant green` READS `PLANTS: RED (12/14)` — UNCHANGED BY THIS
+      WORK, AND PROVEN: it reads the SAME 12/14 with my six gates at their PRISTINE HEAD
+      versions**, so **5c** (a STALE EXPECTATION inside the instrument — it expects exit 2 where
+      `vocabulary()` exits 3, which the file's own comment records as the deliberate change) and
+      **6a** (a synthetic tree has no commit tree, so `gates-pop.discover()` admits nothing) are
+      the INSTRUMENT's own pre-existing defects. `gates/gate-surface.py` WAS NOT EDITED.
+      See `.agents/slop/plantsurface/REPORT.md`.
 
 - [x] **THE **CITATION **CLASSES **ARE **BEING **CLOSED**, **AND **THE **NUMBERS **ARE
       **PER **SLICE** (MEASURED **2026-10-27**).**  **`gates/pin-cite-gate.py`'s
