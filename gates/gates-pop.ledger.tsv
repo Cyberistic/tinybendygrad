@@ -17,7 +17,7 @@ checks/bounded-selftest.sh	sh-dispatch	-	1	1
 checks/bounded.py	py-main	__file__.parent	0	1
 checks/census.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/citation-gate.py	py-main	-	0	1
-checks/cites-census.py	py-main	Path(__file__).resolve().parents[3]	0	0
+checks/cites-census.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 checks/cl-port-gate.py	py-main	HERE = Path(__file__).resolve().parent REPO = Path(__file__).resolve().parents[1]	1	1
 checks/classify.sh	sh-selfref	-	1	1
 checks/cli.py	py-main	-	0	1
@@ -161,7 +161,7 @@ gates/docnum-claim-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	1	
 gates/dtypeeven-gate.py	py-main	__file__.parent	0	1
 gates/dtypeeven-plant.py	py-main	__file__.parent	0	1
 gates/e2emm-plant.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
-gates/e2estage8-stage-legacy.py	py-main	ROOT = Path(__file__).resolve().parents[3]	0	0
+gates/e2estage8-stage-legacy.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/e2estage8-stage-selftest.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/edge-fixture-census.py	py-main	-	0	1
 gates/edge-oracle-pin-gate.py	py-main	-	0	1
