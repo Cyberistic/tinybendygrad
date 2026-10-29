@@ -24,7 +24,10 @@ and it splits the question into the two halves that were being conflated:
 **THE JOIN IS COMPONENT-WISE, AND THE COMPONENTS ARE THE POINT.** MEASURED on this tree, a
 basename substring join answers `gates/edge-runner.py` as naming `gates/runner.py` and
 `sh tools/get-bend.sh` as naming `checks/bend` -- both false, and both the shape `AGENTS.md`
-records as `checks/repro-paths.py`'s "a PREFIX OF A PATH IS READ AS THE PATH". A path token is
+records as **"A **TRUNCATED **TOKEN **IS **NOT **A **HARMLESS **ONE**, **IT **WROTE **FALSE **ROWS
+**IN **BOTH **DIRECTIONS."** -- **WHICH **IS **THE **WORDING `checks/repro-paths.py` **USES **FOR
+**THE **SAME **DEFECT, **AND **WHOSE **"A **PREFIX **OF **A **PATH **IS **READ **AS **THE **PATH"
+**IS **THE **PHRASE `AGENTS.md` **CARRIES.** A path token is
 therefore split into COMPONENTS and compared component-wise, so `edge-runner.py` and `runner.py`
 are different components and never meet.
 

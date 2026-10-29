@@ -144,8 +144,9 @@ def _blank_quotes(line):
     """`(code, closed)` -- quoted spans blanked, and whether the quoting CLOSES on this line.
 
     `AGENTS.md`'s rule at its sharpest: a construct this file cannot resolve must print
-    UNRESOLVED, because `gates/lane-census.py`'s "0 disagreements over 0 comparisons" is
-    indistinguishable from agreement. **THE WORD `exit` INSIDE A STRING IS NOT AN EXIT SITE** --
+    UNRESOLVED, because `gates/lane-census.py`'s "0 disagreements over 0" shape -- the file
+    spells the rest of it, "comparisons", across a source line-wrap -- is indistinguishable from
+    agreement. **THE WORD `exit` INSIDE A STRING IS NOT AN EXIT SITE** --
     MEASURED on `checks/gen.sh:96` (`echo "... exit=$? (want 0)"`), `checks/lint_demo.sh:46`
     (`print -r -- "  exit $base"`) and 12 more: the prior census's `dynamic` detector reports
     **16 sites over 7 members and 2 of them are real** (`checks/run-f64.sh:448` and

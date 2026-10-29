@@ -63,7 +63,8 @@ means a second comparison implementation, which is how two parsers come to disag
 way to honour that is to EXECUTE the other instrument, not to restate it. `differ.py` is loaded
 through `corpusverdict-gate.py`'s OWN `load()`, its artifacts are read with its OWN `rows_file()`,
 its comparator is checked by its OWN `control()`, and its rows are emitted by its OWN `emit()`.
-`checks/differ.py` is a `SUBSTRATE_INPUTS[0]` of the digest, so this gate is inside the
+`checks/differ.py` is the FIRST ENTRY of the digest's `SUBSTRATE_INPUTS` tuple (index 0 of it),
+so this gate is inside the
 population it measures; that is why it is `--run`-parameterised and why the plant works on copies.
 
 **THE RC IT RETURNS IS DELIBERATELY NOT READ.** On this tree `corpusverdict-gate.py` exits

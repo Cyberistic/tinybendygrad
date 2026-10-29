@@ -66,7 +66,8 @@ A lane's consumer is declared, and the declaration is the ROW NAME:
 
   `gatekit.Gate` carries `rows=` (how many `name=value` rows each lane emits BEFORE exclusions)
   and `pins=[(lane, row)]` -- extra `(lane, row_name)` assertions that a named row is PRESENT in a
-  named lane (`gates/gatekit.py`, `Gate.__init__`'s docstring). Those are DECLARATIONS OF ROW
+  named lane (`gates/gatekit.py`, the `__init__` method of its `Gate` class -- a MENTION of that
+  method's qualified name, not a quote of that file's text). Those are DECLARATIONS OF ROW
   NAMES, owned by the consumer and read off the AST.
 
 A lane's output is what it printed. So the join that makes a lane discoverable is:

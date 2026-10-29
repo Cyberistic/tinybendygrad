@@ -75,7 +75,11 @@ PIN_NAME = re.compile(r"\A[A-Za-z0-9_]*(?:" + PIN_SEGMENT + r")[A-Za-z0-9_]*\Z")
 # disagree with it.
 BIND_RHS_LINES = 7
 OPENERS, CLOSERS = "{[", "}]"
-# A dict-shaped pin names its own SUBJECT: `"diffpy/oracle-run.sh": "<sha256>"`. Capturing the
+# A dict-shaped pin names its own SUBJECT: `checks/differ.py`'s `ORACLE_PIN` holds the pair
+# "diffpy/oracle-run.sh" -> the sha256 of that file, so the KEY is the subject and the VALUE is
+# the digest. (`<sha256>` is a PLACEHOLDER for the digest and appears nowhere in
+# `diffpy/oracle-run.sh`, which is the PINNED file and not the file that HOLDS the pin.)
+# Capturing the
 # pair is what makes such a pin RE-DERIVABLE -- the subject is in the tree, so the digest can
 # be recomputed and compared, and "is this pin current" becomes a question with an answer.
 # It was missed in the first draft, which looked for the subject ABOVE the binding while every

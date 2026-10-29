@@ -116,8 +116,12 @@ def at_risk(hosts=None) -> list[dict]:
         decl = decls.get(site["file"], {"subjects": {}, "artifacts": {}, "run-dirs": [], "at": {}})
         resolved = B.resolve(site["name"], decl)
         # (subject path, the key `subject_of` wants, the digest the pin holds). A dict-shaped
-        # pin names its own subject in its KEY, and the key IS the row: `ORACLE_PIN`'s
-        # `"diffpy/oracle-run.sh": "<sha256>"` is the pin and the subject together.
+        # pin names its own subject in its KEY, and the key IS the row: `checks/differ.py`'s
+        # `ORACLE_PIN` holds the pair "diffpy/oracle-run.sh" -> the sha256 of that file, and the
+        # KEY is the pin's subject while the VALUE is the digest -- the pin and the subject
+        # together. (The `<sha256>` spelling is a PLACEHOLDER for the digest and appears
+        # nowhere in `diffpy/oracle-run.sh`, which is the PINNED file and not the file that
+        # HOLDS the pin.)
         subjects = []
         if resolved is not None and resolved.get("kind") == "SUBJECT":
             subjects.append((resolved["value"], None, site["values"][0] if site["values"] else ""))

@@ -33,7 +33,11 @@ type error. The file is `tinybendygrad/uop/render.bend`.
   Python each dispatches on the runtime type of an `Any`. There is no `Any` and
   no runtime type to dispatch on here, because `Arg` and `Tag` are CLOSED
   DATATYPES — eighteen `Any` values became eighteen compiler-checked arms, which
-  is `spec/ops.md`'s "parse, don't validate" applied to a string.
+  is the "parse, don't validate" doctrine applied to a string — and
+  `spec/ops.md` is where the port's side of it is written down: the two `Any`
+  fields became datatypes, `Arg` names all eighteen things `arg` holds and
+  `Tag` the five it holds, and every read of `self.arg` is now a match the
+  compiler checks against the full set.
 - **The 15 `pm_pyrender` rules are a `match` on the op, not a table, and the
   reason is in the Python's own note.** `render.py` says "you can remove
   pm_pyrender_extra and it'll still be correct" — which is TRUE, and is exactly

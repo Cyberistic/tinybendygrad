@@ -119,7 +119,9 @@ in the tree regenerates or checks either one. THAT IS A REPORT ITEM.
 
 DRIFT, PINNED IN CODE. Four blobs: `tinygrad/mixin/rand.py` (the oracle's subject),
 `tinygrad/tensor.py` (`_next_counter` AND `Tensor.__len__`-adjacent shapes),
-`tinygrad/dtype.py` (`ref_uint_dt_f32` is a `DType.name`, and that is the one that MOVED), and
+`tinygrad/dtype.py` (the 32-bit unsigned dtype is `u32` THERE NOW -- upstream `793abbb16` renamed
+it from `unsigned int`, so the `DType.name` that the oracle's `ref_uint_dt_f32` row CARRIES is
+what MOVED, and the ROW NAME is the oracle's own and not the dtype file's), and
 this gate's own oracle.
 
 EXIT STATUS: 0 lanes agree on all 32 compared rows and every pin is intact · 1 a lane

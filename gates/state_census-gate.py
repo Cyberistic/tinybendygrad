@@ -83,7 +83,9 @@ DRIFT, PINNED IN CODE. `DRIFT_PIN` holds the sha256 of the three CPython-side bl
 rows are claims about -- `tinygrad/nn/state.py` (the oracle's subject), `tinygrad/dtype.py`
 (fifteen `val_get_*` and eight `val_name_*` rows are `DType.name` values, and upstream
 793abbb16 "modernize tinygrad's dtype to match rust" moved twelve of the thirteen), and
-`tinygrad/tensor.py` (`Tensor.__len__`, which `TensorIO.seek` clamps against). A pin in a
+`tinygrad/tensor.py` (it HOLDS the `__len__` method that `TensorIO.seek` clamps against --
+and `TensorIO` itself lives in `tinygrad/nn/state.py`, the oracle's subject, so this is a
+MENTION of two methods in two files and not a claim about this one's text). A pin in a
 comment is a pin that cannot fail; these are read by `gatekit.oracle_drift` on every run and
 a non-intact pin is a REFUSAL, not a FAIL, because the tree is fine either way and only the
 QUESTION is unanswerable.
