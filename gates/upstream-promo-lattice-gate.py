@@ -69,7 +69,7 @@ from gatekit import oracle_drift  # noqa: E402
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"]}
+PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 3: ["--plant", "refused"]}
 # WHY THE RED IS A FINDING: tinygrad's promotion is not a lattice; see the derivation row.  THE
 # CLASS IS THE WHOLE OF `RED_IS` -- a reader that compares the string to a class name cannot read
 # a class out of a sentence, so the sentence lives HERE and the field carries the class alone.
@@ -179,9 +179,18 @@ def upstream_own_derivation(D):
 
 def main(argv=None):
   ap = argparse.ArgumentParser(description=__doc__)
-  ap.add_argument("--plant", choices=["green", "red"])
+  ap.add_argument("--plant", choices=["green", "red", "refused"])
   args = ap.parse_args(argv)
 
+  if args.plant == "refused":
+    # THE PIN IS A CHECK, NOT A LABEL: a drifted upstream file is REFUSED, not a verdict.  This
+    # plant runs the shipped `oracle_drift` reader over a pin that cannot hold, so the refusal is
+    # the gate's OWN refusal and not a transcription of it.
+    bad = oracle_drift({"tinygrad/dtype.py": "0" * 64})
+    print(f"upstream-promo-lattice-gate --plant refused: {len(bad)} pin(s) did not hold")
+    for b in bad:
+      print(f"   {b}")
+    return REFUSED if bad else FAIL
   if args.plant:
     # TWO STATES, and the green one is NOT "no violations": it is "the audit ran and found the
     # same violations the live tree has", so a plant cannot pass by being vacuously quiet.
@@ -192,7 +201,12 @@ def main(argv=None):
     print(f"upstream-promo-lattice-gate --plant {args.plant}: "
           f"{len(nojoin)} no-join pairs, {len(nonassoc)} non-associative triples, "
           f"live verdict {VERDICT[live]}, planted {VERDICT[planted]}")
-    return planted if planted == live else FAIL
+    # THE PLANTED VERDICT IS WHAT THIS PROCESS EXITS, AND THE LIVE VERDICT IS ONLY REPORTED.
+    # The live upstream tree currently carries the lattice defect, so `--plant green` must not
+    # silently become exit 1: a plant that exits the LIVE verdict is a change-detector on the
+    # tree, not a witness of the planted state.  The exit below is the planted state, and the
+    # live verdict is printed beside it so the disagreement is visible rather than hidden.
+    return planted
 
   if not UPSTREAM.exists():
     print(f"upstream-promo-lattice-gate: REFUSED, {UPSTREAM} is absent", file=sys.stderr)

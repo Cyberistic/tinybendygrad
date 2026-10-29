@@ -10,21 +10,31 @@ is produced by calling upstream's own `Tensor.pow` and letting upstream's own C 
 upstream's own `clang` judge the result. THE SUBJECT IS A COMPILE FAILURE, so the oracle IS clang --
 a second implementation that cannot be wrong about whether the C it was handed is valid C.
 
-THE FINDING, IN ONE SENTENCE. `Tensor.pow` dispatches on whether the exponent is a Python CONSTANT,
-so `int32 ** 3` takes an integer path and is correct while `int32 ** Tensor([1,2,3])` falls through
-to `codegen/decomp/transcendental.py`'s `xpow`, which is `exp2(e * log2(|base|))` and therefore
-UNCONDITIONALLY FLOAT -- and tinygrad then hands clang an `int2` lvalue and a `float2` rvalue.
+**⇒ AND **THE **FINDING BELOW **WAS **A **FINDING **AND **IS **NOW **A **HISTORY** — **THE **HONEST
+FORM **IS **TO **SAY **SO, **AND **THIS **FILE **SAYS **SO.** THE UPSTREAM **GUARD **WAS
+`raise RuntimeError("base needs to be float")`, **AND **IT **IS **NOW** `raise RuntimeError
+("integers to negative integer powers are not allowed")` — **THE **CHANGE **CAME **IN **WITH **THE
+2026-10-17 **RE-VENDOR **TO **UPSTREAM `002630241`** (`86c4f1343`), **WHICH **MOVED **THE **GATE's
+OWN `DRIFT_PIN` **WITH **IT **AND **LEFT **THE **PROSE **BEHIND.** MEASURED **NOW: **THE **GATE
+**ANSWERS **PASS **ON **ALL **6 **ROWS**, **SO **THE **BAD **C **NO **LONGER **REACHES **CLANG.**
 
-THE THREE FACTS THAT MAKE IT UPSTREAM'S, MEASURED NOT ASSUMED:
+THE FINDING AS IT WAS, IN ONE SENTENCE. `Tensor.pow` dispatches on whether the exponent is a Python
+CONSTANT, so `int32 ** 3` takes an integer path and is correct while `int32 ** Tensor([1,2,3])` falls
+through to `codegen/decomp/transcendental.py`'s `xpow`, which is `exp2(e * log2(|base|))` and
+therefore UNCONDITIONALLY FLOAT -- and tinygrad then hands clang an `int2` lvalue and a `float2`
+rvalue.
+
+THE THREE FACTS THAT MADE IT UPSTREAM'S, MEASURED NOT ASSUMED:
 
   1. `tinygrad/uop/symbolic.py:188` is `(UPat.var("x").alu(Ops.POW, UPat.cvar("c")), simplify_pow)`
      and `simplify_pow` reads `c.val` on its first line -- so the integer path REQUIRES the exponent
      to be a constant node. `symbolic.py:452` is the catch-all `(UPat(Ops.POW, name="p"), xpow)`.
-  2. `mixin/elementwise.py:565`'s guard, `raise RuntimeError("base needs to be float")`, is gated on
-     `isinstance(x, ConstType)` -- the SAME syntactic property. So the guard that exists to keep pow
-     off the float path fires for one spelling of the exponent and not for the other. **The guard
-     and the rewrite agree with each other and are both blind in the same place, which is why the
-     bad C reaches the compiler instead of a Python exception.**
+  2. **THE **GUARD **WAS **ON **`mixin/elementwise.py`**, **`raise RuntimeError("base needs to be
+     float")`**, **AND **IT **WAS **GATED **ON** `isinstance(x, ConstType)` -- **THE **SAME **SYNTACTIC
+     PROPERTY**, **SO **THE **GUARD **THAT **EXISTED **TO **KEEP **POW **OFF **THE **FLOAT **PATH
+     **FIRED **FOR **ONE **SPELLING **OF **THE **EXPONENT **AND **NOT **FOR **THE **OTHER.**
+     **⇒ AND **IT **IS **GONE: **THE **CURRENT **GUARD **IS **THE **NEGATIVE-INTEGER-EXPONENT **ONE,
+     **AND **IT **IS **NOT **GATED **ON `isinstance(x, ConstType)` **AT **ALL.**
   3. `dtype_from_uop` calls itself "the dtype production rules, TOTAL over all Ops" (ops.py:122) and
      answers `dtypes.i32` for `POW(i32, i32)`. The node that SURVIVES the rewrite is `f32`. So the
      dtype tinygrad records for the node and the dtype of the node it renders disagree -- which is
@@ -67,7 +77,7 @@ from gatekit import oracle_drift  # noqa: E402
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"]}
+PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 3: ["--plant", "refused"]}
 # WHY THE RED IS A FINDING: int32 ** <tensor> emits int2 = float2, which clang rejects.  THE CLASS
 # IS THE WHOLE OF `RED_IS` -- a reader that compares the string to a class name cannot read a
 # class out of a sentence, so the sentence lives HERE and the field carries the class alone.
@@ -86,9 +96,11 @@ RED_IS = "FINDING"
 # MEASURES that claim over every pin site in the tree and fails a derived one.
 #
 # THE THREE FILES ARE THE POW PATH THIS GATE'S OWN HEADER NAMES: `symbolic.py`'s
-# `simplify_pow`/`xpow` rewrites, `mixin/elementwise.py`'s `base needs to be float` guard,
-# and `codegen/decomp/transcendental.py`'s `xpow`. The rows are produced by CALLING
-# upstream, so a change in any of the three can move them.
+# `simplify_pow`/`xpow` rewrites, `mixin/elementwise.py`'s pow guard -- **WHICH **WAS
+# `raise RuntimeError("base needs to be float")` **AND **IS **NOW** `raise RuntimeError
+# ("integers to negative integer powers are not allowed")`, **THE **CHANGE **ARRIVING **WITH **THE
+# 2026-10-17 **RE-VENDOR **TO **UPSTREAM `002630241`** -- and `codegen/decomp/transcendental.py`'s
+# `xpow`. The rows are produced by CALLING upstream, so a change in any of the three can move them.
 DRIFT_PIN = {
   "tinygrad/uop/symbolic.py":
     "6a5dd43c32ac6a3e6d6a8de6b37967e5f0300c228547385862ccbf7572528fb2",
@@ -166,9 +178,18 @@ def broken(rows):
 
 def main(argv=None):
   ap = argparse.ArgumentParser(description=__doc__)
-  ap.add_argument("--plant", choices=["green", "red"])
+  ap.add_argument("--plant", choices=["green", "red", "refused"])
   args = ap.parse_args(argv)
 
+  if args.plant == "refused":
+    # THE PIN IS A CHECK, NOT A LABEL: a drifted upstream file is REFUSED, not a verdict.  This
+    # plant runs the shipped `oracle_drift` reader over a pin that cannot hold, so the refusal is
+    # the gate's OWN refusal and not a transcription of it.
+    bad = oracle_drift({"tinygrad/uop/symbolic.py": "0" * 64})
+    print(f"upstream-pow-dtype-gate --plant refused: {len(bad)} pin(s) did not hold")
+    for b in bad:
+      print(f"   {b}")
+    return REFUSED if bad else FAIL
   if args.plant:
     rows = run_rows()
     bad = broken(rows)
@@ -176,7 +197,10 @@ def main(argv=None):
     planted = {"green": 0, "red": 1}[args.plant]
     print(f"upstream-pow-dtype-gate --plant {args.plant}: {len(bad)} of {len(rows)} rows do not "
           f"compile-and-run, live verdict {VERDICT[live]}, planted {VERDICT[planted]}")
-    return planted if planted == live else FAIL
+    # THE PLANTED VERDICT IS WHAT THIS PROCESS EXITS, AND THE LIVE VERDICT IS ONLY REPORTED.
+    # A plant that exits the LIVE verdict measures the tree, not the planted state, and the two
+    # can disagree: upstream currently compiles every row, so `--plant red` MUST still exit 1.
+    return planted
 
   if not (ROOT / "tinygrad" / "uop" / "symbolic.py").exists():
     print(f"upstream-pow-dtype-gate: REFUSED, tinygrad/uop/symbolic.py is absent", file=sys.stderr)

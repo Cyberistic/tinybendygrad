@@ -49,6 +49,25 @@ REPO = HERE.parents[0]
 if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
   refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
          f"(is `parents[N]` stale after a move?)")
+# `--plant-refused` RUNS THIS GATE ON A TREE WITHOUT ITS SUBJECT.  The refusal is otherwise
+# reachable only by deleting the tracked input, which argv cannot do.  The mode copies the
+# repository markers and this gate into a temporary tree, so the subject is absent there and
+# the module-scope refusal fires for the same reason it fires on a broken tree.
+if "--plant-refused" in sys.argv:
+  import shutil
+  import tempfile
+  with tempfile.TemporaryDirectory(prefix="norm-check-refused-") as td:
+    root = pathlib.Path(td)
+    (root / "checks").mkdir()
+    for name in ("pyproject.toml", "tinybendygrad"):
+      (root / name).symlink_to(REPO / name)
+    shutil.copy2(HERE / "norm_check.py", root / "checks" / "norm_check.py")
+    p = __import__("subprocess").run(
+      [sys.executable, str(root / "checks" / "norm_check.py")], cwd=root,
+      capture_output=True, text=True, check=False)
+    print(p.stdout, end="")
+    print(p.stderr, end="", file=sys.stderr)
+    sys.exit(p.returncode)
 JSL2 = REPO / ".agents" / "slop" / "jslane2" / "gen_f32_seam.py"
 if not JSL2.is_file():
   refuse(f"input absent: {JSL2}  (the normaliser under test; recoverable from git at "
@@ -138,11 +157,9 @@ def main() -> None:
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. `3` HAS NO PLANT AND THAT IS CORRECT: the refusal above fires only
-# when `.agents/slop/jslane2/gen_f32_seam.py` is ABSENT, and no argv moves a file. It is reachable
-# only by an input path this gate does not take, so it is declared and left UNPLANTED -- red and
-# named, which is the honest state -- rather than planted with a `.txt`-style mutation of a
-# tracked oracle in `.agents/slop/`.
+# because import RUNS a gate. `3` IS PLANTED BY `--plant-refused`: that mode runs a COPY of this
+# gate in a synthetic tree which has the repository markers but NOT `.agents/slop/jslane2/
+# gen_f32_seam.py`, so the module-scope refusal fires for exactly the absent subject it names.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 # WHY THE RED IS A FINDING.  The file's own title is "prove `norm` round-trips, **or does not**",
 # and exit 1 is the "or does not": the SUBJECT's `norm` does not round-trip the f32 pair, or the
@@ -153,7 +170,7 @@ EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: lega
 # THE DECLARATION IS EARNED, NOT ASSERTED: `PLANTS[0]` is the gate's OWN run over the tree's own
 # subject, and it reaches 0 -- so the green this red falls from is demonstrated in this run.
 RED_IS = "FINDING"
-PLANTS = {0: [], 1: ["--plant"]}
+PLANTS = {0: [], 1: ["--plant"], 3: ["--plant-refused"]}
 
 
 if __name__ == "__main__":

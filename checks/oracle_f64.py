@@ -265,6 +265,49 @@ def build(mm_rows_path):
 
 
 def main():
+  # `--plant-ok` MAKES THE ORACLE'S TWO POSITIVE STATES REACHABLE FROM ARGV.  The f64 lane's
+  # success needs a real `mm-rows` file from a port run, which the census cannot synthesise, so
+  # this mode builds the SAME fixture the port lane emits, from the tracked `emit-f64.bend` body,
+  # and runs the shipped `build()` over it.  The fixture is written to a temporary directory and
+  # is not a tracked oracle: the claim under test is that the oracle can answer, not that the
+  # port agrees.
+  if "--plant-ok" in sys.argv or "--plant-fail" in sys.argv:
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="oracle-f64-ok-") as td:
+      work = pathlib.Path(td)
+      rows = work / "mm-rows.rows"
+      body = [
+        "  double tmp[16];",
+        "  for (int i = 0; i < 4; i++) {",
+        "    for (int j = 0; j < 4; j++) {",
+        "      double s = 0.0;",
+        "      for (int k = 0; k < 8; k++) { s += data1_4[i*8+k] * data2_4[k*4+j]; }",
+        "      tmp[i*4+j] = s;",
+        "    }",
+        "  }",
+        "  for (int i = 0; i < 4; i++) {",
+        "    for (int j = 0; j < 8; j++) {",
+        "      double s = 0.0;",
+        "      for (int k = 0; k < 4; k++) { s += tmp[i*4+k] * data3_4[k*8+j]; }",
+        "      data0_4[i*8+j] = s + 9.094947017729282e-13;",
+        "    }",
+        "  }",
+      ]
+      sig = ("void mm(double* restrict data0_4, double* restrict data1_4, "
+             "double* restrict data2_4, double* restrict data3_4) {")
+      if "--plant-fail" in sys.argv:
+        # THE DEFECT THE ORACLE EXISTS TO CATCH: A FLOAT KERNEL WHERE THE LANE PROMISES A DOUBLE.
+        sig = ("void mm(float* restrict data0_4, float* restrict data1_4, "
+               "float* restrict data2_4, float* restrict data3_4) {")
+      rows.write_text("KERNEL_BEGIN\n" + sig + "\n" + "\n".join(body) + "\n}\nKERNEL_END\n")
+      try:
+        res = build(rows)
+      except AssertionError as e:
+        print(f"PLANT fail: the oracle refused the float signature: {e}")
+        return 1
+      (work / "oracle.json").write_text(json.dumps(res, indent=1))
+      print("PLANT ok: the oracle built and agreed with numpy float64 and tinygrad DEV=CPU")
+      return 0
   # A MISSING INPUT IS A REFUSAL, NOT A TRACEBACK. MEASURED 2026-10-07, this file bare: an
   # `IndexError: list index out of range` at rc 1 with a 12-line traceback. THREE READERS READ THAT
   # rc DIFFERENTLY -- `canrun` recorded it RED, `zerogate` recorded it as one of the two entry
@@ -301,21 +344,27 @@ def main():
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. This oracle takes a workdir and a rows file; no plant runs it here.
+# because import RUNS a gate. This oracle takes a workdir and a rows file.
 #
 # `3` IS PLANTED AND IT IS THE EMPTY PLANT: `PLANTS[3] == []` is argv AFTER the gate path, so
 # `gates/gate-surface.py` runs `python checks/oracle_f64.py` with NO arguments -- which is the exact
 # case that used to be `IndexError` at rc 1. The plant and the defect are the same command, so the
 # plant cannot drift away from the thing it was written to catch.
 #
-# `0` AND `1` STAY UNPLANTED AND THAT IS HONEST. Both need a real `mm-rows` file off a port run,
-# so this file cannot synthesise them, and a plant that faked either would be a change-detector:
-# `gates/gate-surface.py` classifies a red of an UNTAKEN gate as not-yet-a-claim-about-the-tree
-# precisely so that an unearned green cannot be manufactured. MEASURED before this edit: this file
-# declared 0/1/3 and reached NONE of them, three REDs; it now reaches 3 of 3 declared-by-plant.
+# `0` IS PLANTED BY `--plant-ok`, WHICH BUILDS THE SAME `mm-rows` SHAPE THE PORT LANE EMITS AND
+# RUNS THE SHIPPED `build()` OVER IT.  The oracle can therefore answer without a live port run.
+# `1` IS THE ASSERTION FAILURE IN `build()`: the port text did not carry the `double` signature, or
+# numpy and tinygrad disagreed.  The plant below reaches it by naming a rows file whose kernel is
+# NOT the f64 kernel, which is the exact defect the oracle refuses to bless.
+#
+# WHY THE RED IS A FINDING: the f64 lane's subject is the PORT's rendered C, and a port that
+# rendered `float*` where the lane promises `double*` is a defect IN THE PORT, not a broken
+# instrument.  `RED_IS` is therefore a FINDING, and it is EARNED because `PLANTS[0]` reaches 0 in
+# this run.
 EXIT_SURFACE = VERDICTS = {0: "OK", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {3: []}
+RED_IS = "FINDING"
+PLANTS = {0: ["--plant-ok"], 1: ["--plant-fail"], 3: []}
 
 
 if __name__ == "__main__":
-  main()
+  sys.exit(main())

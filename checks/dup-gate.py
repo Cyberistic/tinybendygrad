@@ -71,6 +71,27 @@ if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_di
 SLOP = REPO / ".agents" / "slop"
 sys.path.insert(0, str(HERE))
 from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
+# `--plant-refused` RUNS A COPY OF THIS GATE IN A TREE WITHOUT ITS READERS.  The refusal is
+# otherwise reachable only by deleting the tracked inputs, which argv cannot do.  The copy keeps
+# the repository markers and this gate, so `REPO` resolves and ONLY the reader inputs are absent.
+if "--plant-refused" in sys.argv:
+  import shutil
+  import subprocess
+  import tempfile
+  with tempfile.TemporaryDirectory(prefix="dup-gate-refused-") as td:
+    root = pathlib.Path(td)
+    (root / "checks").mkdir()
+    for name in ("pyproject.toml", "tinybendygrad"):
+      (root / name).symlink_to(REPO / name)
+    shutil.copy2(HERE / "dup-gate.py", root / "checks" / "dup-gate.py")
+    shutil.copy2(HERE / "verdict.py", root / "checks" / "verdict.py")
+    (root / "gates").mkdir()
+    shutil.copy2(REPO / "gates" / "gatekit.py", root / "gates" / "gatekit.py")
+    p = subprocess.run([sys.executable, str(root / "checks" / "dup-gate.py")], cwd=root,
+                       capture_output=True, text=True, check=False)
+    print(p.stdout, end="")
+    print(p.stderr, end="", file=sys.stderr)
+    sys.exit(p.returncode)
 _EQ = SLOP / "eq" / "eq-census2.py"
 for _p in (SLOP / "rebase-gate.py", _EQ):
   if not _p.is_file():
@@ -385,11 +406,11 @@ RED_IS = "FINDING"
 PLANTS = {
   0: ["--compare", "gates/cstyle-live.rows", "gates/cstyle-live.rows"],
   1: ["--compare", "gates/cstyle-live.rows", "oracles/usb-oracle-BEFORE.rows"],
-  # 3 IS NOT PLANTED, AND DELIBERATELY SO: with the inputs present, NO argv reaches 3 without
-  # running a comparison, and 3 is reachable only while an input is ABSENT -- a broken tree.  The
-  # old `PLANTS[3] = []` claimed a plant that measured 2, which is `MISPLANT`, a lie.  An
-  # UNPLANTED verdict is a true gap; a MISPLANTED one is a false witness.
+  # 3 IS PLANTED BY `--plant-refused`, WHICH RUNS A COPY OF THIS GATE IN A TREE WITHOUT ITS
+  # READERS, so the module-scope refusal fires for exactly the absent input it names.  The old
+  # `PLANTS[3] = []` claimed a plant that measured 2, which is `MISPLANT`, a lie.
   2: [],
+  3: ["--plant-refused"],
 }
 
 if __name__ == "__main__":
