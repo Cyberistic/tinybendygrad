@@ -25540,3 +25540,41 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       (**285 **ROW-MAKER **NAMES**, **EACH **PRINTED **WITH **THE **FILE **AND **LINE **OF **ITS
       **DEFINITION**), **AND **THE **OLD **RULE's **NUMBERS **ARE **PRINTED **BESIDE **THE **NEW
       **ONES** — **SO **A **READER **CAN **SEE **WHAT **THE **NEW **RULE **STOPPED **COUNTING.**
+
+- [x] **THE **`gates-pop.py` **LEDGER **HAD **NO **LOCK**, **AND **A **PATHSPEC **WRITE **EXITED **1
+      **EVEN **WHEN **IT **SUCCEEDED** (MEASURED **2026-10-29**, **BOTH **REPORTED **BY **THE **UNITS
+      **THAT **PAID **THE **DEBT**).**  **⇒ AND **THE **LOCK **IS **THE **KERNEL's**, **NOT **A **PID
+      **FILE**: **`fcntl.flock`** **ON **AN **OPEN **FILE **DESCRIPTION** **RELEASES **WHEN **THE
+      **HOLDER **DIES** (**NO **STALE **LOCK **TO **RECLAIM**) **AND **CANNOT **BE **STOLEN** (**THE
+      **KERNEL **REFUSES**) — **AND **IT **IS **RE-ENTRANT **INSIDE **ONE **PROCESS**, **BECAUSE **A
+      **PLANT **CALLS **`write_ledger`** **AND **THE **CLI **DOES **TOO** (**`checks/differ.py`'s
+      **OWN **`:135-139`** **RECORDS **THAT **EXACT **BUG **FOR **THE **CORPUS**).**
+      **⇒ AND **THE **LOCK **MUST **BE **PER **LEDGER **FILE**, **NOT **ONE **FIXED **PATH** — **A
+      **PLANT **WRITES **A **SYNTHETIC **LEDGER **IN **A **TEMP **TREE**, **AND **A **LOCK **ON **A
+      **DIFFERENT **FILE **PROTECTS **NOTHING.**
+      **⇒ AND **THE **READ **AND **THE **WRITE **ARE **BOTH **INSIDE **THE **LOCK**, **BECAUSE **THE
+      **BUG **THE **LOCK **EXISTS **TO **PREVENT **IS **A **LOST **UPDATE** — **TWO **WRITERS **THAT
+      **BOTH **READ **THE **SAME **OLD **LEDGER **WILL **BOTH **KEEP **THE **OTHER's **ROW**, **AND
+      **ONE **OF **THE **TWO **WRITES **LOSES **THE **OTHER's **ROW.**  **⇒ LOCKING **ONLY **THE
+      **WRITE **WOULD **BE **A **LOCK **THAT **LOCKS **NOTHING.**
+      **⇒ AND **A **LOCKED **LEDGER **IS **A **REFUSAL** (**rc=3**, **NAMING **THE **HOLDER's
+      **PID**), **NOT **A **CRASH** — **AND **THE **REFUSED **WRITE **CHANGES **NOTHING.**
+      **⇒ AND **PLANT **15** **NOW **PROVES **IT**: **A **CHILD **PROCESS **HOLDS **THE **LOCK**, **AND
+      **THE **PARENT's **`flock` **IS **REFUSED**, **AND **`write_ledger` **RAISES**, **AND **THE
+      **LEDGER **IS **BYTE-IDENTICAL **AFTERWARDS**, **AND **THE **REFUSAL **NAMES **THE **HOLDER.**
+      **⇒ AND **THE **HOLDER's **SCRIPT **IS **A **FILE**, **NOT **AN **INLINE **`-c`** — **BECAUSE **A
+      **STRING **WITH **AN **F-STRING **INSIDE **A **LIST **OF **STRINGS **IS **A **QUOTING **PROBLEM
+      **WAITING **TO **HAPPEN**, **AND **A **PLANT **THAT **CANNOT **BE **READ **IS **A **PLANT
+      **NOBODY **WILL **FIX.**
+- [x] **A **PATHSPEC **WRITE **THAT **SUCCEEDED **STILL **EXITED **1**, **AND **A **CALLER **READING
+      **ONLY **THE **EXIT **STATUS **WOULD **REPORT **37 **FAILURES **FOR **37 **SUCCESSES** (MEASURED:
+      **ALL **127 **INVOCATIONS **EXITED **1**).**  **⇒ AND **THE **EXIT **CODE **IS **RIGHT** — **A
+      **PATHSPEC **WRITE **THAT **LEAVES **A **MOVEMENT **UNNAMED **IS **NOT **GREEN** — **BUT **"RED"
+      **ALONE **CANNOT **TELL **A **CALLER **WHICH **OF **THE **TWO **IT **IS **LOOKING **AT.**
+      **⇒ AND **THE **NEW **EXIT **CODE **IS **NOT **A **NEW **EXIT **CODE**: **`gates/gatekit.py`'s
+      **VOCABULARY **IS **`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`** **AND **THERE **IS **NO
+      **ROOM **FOR **A **SIXTH** — **SO **THE **FIX **IS **A **LINE **ON **STDOUT** **THAT **SAYS **THE
+      **WRITE **SUCCEEDED **AND **THE **RUN **IS **STILL **RED**, **AND **WHY **THE **EXIT **CODE **IS
+      **1** — **AND **IT **PRINTS **AFTER **THE **VERDICT **AND **AFTER **`red` **IS **SET**, **BECAUSE
+      **A **LINE **THAT **PRINTS **BEFORE **THE **FACT **IT **REPORTS **IS **A **LINE **THAT **CAN **BE
+      **WRONG.**
