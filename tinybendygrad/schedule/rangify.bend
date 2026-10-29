@@ -922,7 +922,7 @@ def rr_row_range() -> String:
 #
 # **=> AND THE REWRITE IS **`bottom_up=True`** (`indexing.py:308`), **=> SO THE PORT WALKS
 # THE ARENA **IN REVERSE INDEX ORDER** (WHICH IS **CHILDREN FIRST**, BECAUSE THE ARENA's
-# INDEX ORDER IS TOPOLOGICAL -- `ops.bend:2754`).
+# INDEX ORDER IS TOPOLOGICAL -- `uop/ops.bend:1293 symbol=Arena`).
 #
 # **=> AND THE **RANGE MAP's ENTRIES** ARE **THE INPUT RANGES** OF A NODE (`IxRngs.inp`)
 # AND **THE OUTPUT RANGES** (`IxRngs.outp`), AND **THE APPLY USES BOTH**: THE **INPUT**
@@ -1137,9 +1137,9 @@ def ap_rep_get(+es: List<&2, ApRep>, k: U32) -> Maybe<&2, U32>:
 # **⇒ AND THE SECOND HALF IS UPSTREAM's STAGE 2** (`ops.py`, `unified_rewrite`):
 # THE REBUILT NODE's SRCS ARE **THE REBUILT CHILDREN** -- `new_src = tuple(
 # self.replace.get(x, x) for x in new_n.src)` -- **⇒ AND THE PORT's ARENA IS
-# **APPEND-ONLY** (`ops.bend:2754`), **⇒ ⇒ ⇒ SO THE PORT NEEDS **AN EXPLICIT
+# **APPEND-ONLY** (`uop/ops.bend:1293 symbol=Arena`), **⇒ ⇒ ⇒ SO THE PORT NEEDS **AN EXPLICIT
 # MAP**, **⇒ ⇒ ⇒ AND THAT IS **WHY** THE PORT's OWN `Rep{old, new}` MAP EXISTS**
-# (`rangeify.bend:2753`) **AND WHY THE ENGINE's `eng_put` EXISTS.**
+# (`schedule/rangeify.bend:2753 symbol=Rep`) **AND WHY THE ENGINE's `eng_put` EXISTS.**
 #
 # ===========================================================================
 # **THE ARENA IS **A VALUE**, NOT A MUTABLE STORE** (`ops.bend:1293`: *"`Arena` is
