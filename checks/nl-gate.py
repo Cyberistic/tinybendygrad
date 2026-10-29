@@ -536,15 +536,53 @@ def main():
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate.
 #
-# `PLANTS[3]` IS THE REFUSAL PLANT, and it is the only state argv can reach: this gate refuses at
-# MODULE SCOPE, above every `argparse` -- the geometry is measured by
-# `.agents/slop/plantthe46/unreach.py`, which imports this tree's own declaration reader by path --
-# so no argument of any shape gets past it. `[]` therefore reaches `3`, and nothing else ever will.
-# It proves the refusal is REACHABLE. It does NOT prove this gate can tell `3` from `0`, because no
-# argv reaches `0`; every other code below stays UNPLANTED and the instrument keeps it red rather
-# than this file claiming a plant it does not have.
+# ⚠ THE PREVIOUS REVISION SAID "this gate refuses at MODULE SCOPE, above every `argparse` ... so no
+# argument of any shape gets past it", AND THAT WAS TRUE WHEN IT WAS WRITTEN AND IS FALSE NOW.
+# `.agents/slop/rebase-gate.py` AND `.agents/slop/nl/nl-oracle.py` ARE BOTH PRESENT, so the
+# module-scope refusal does NOT fire and argv reaches `main()`.  MEASURED 2026-10-29: bare argv
+# exits **0** (AGREE) and `--port-stdout <a tracked lane>` exits **1** (BROKEN).
+#
+# ⇒ AND **BOTH PLANTS ARE HERMETIC**, AND THAT IS THE POINT.  This file's own header records that
+# `tinybendygrad/uop/ops.bend` is in this port's 6-file import closure and is owned by another
+# live unit: MEASURED, two consecutive captures printed 206 rows and then ZERO, naming `vd_text`
+# and then `vd_dbg.of`.  **A PLANT THAT READS THE LIVE PORT IS A PLANT THAT CAN ANSWER "NO ROWS"
+# INSTEAD OF A VERDICT**, and this gate's `--selftest` already refuses on an absent capture for
+# exactly that reason.
+#
+# `PLANTS[0]` IS THE PASS PLANT: the gate family's OWN tracked fixture on BOTH sides.
+# `--port-stdout gates/cstyle-live.rows --oracle-stdout gates/cstyle-live.rows`.  MEASURED
+# 2026-10-29: **rc 0**, `port 227 / oracle 227` names, `gated 227   agree 227   disagree []`,
+# `AGREE`, in **0.2 s**, with NO `bend` and NO live port.  ⚠ AND IT IS NOT VACUOUS: the gate
+# reads 227 names with `row_strict` AND compares 227 values, and GUARD 0 (the name-set reshape
+# check) runs on both lanes and finds nothing -- so the green is a green that CAN fall.
+#
+# `PLANTS[1]` IS THE FAIL PLANT: the SAME tracked fixture against the lane it was captured
+# against, `oracles/tinybendygrad_renderer_cstyle.bend.rows`.  MEASURED 2026-10-29: **rc 1**,
+# `9 gated row(s) DISAGREE and every one is NAMED: ['tmap BASE', 'tmap CLANG', 'tmap CUDA',
+# 'tmap METAL', 'tmap OPENCL', 'wmma 16_16_128 fp8', 'wmma 16_16_16 half', 'wmma 16_16_16 i8']`.
+# The disagreements are the cstyle lane's `fp8e4m3` -> `float8_e4m3` dtype-NAME rename and its
+# `wmma` rows -- **A REAL DISAGREEMENT BETWEEN TWO TRACKED LANES OF THIS TREE**, so the plant
+# exercises the value comparison rather than a fabricated disagreement.  ⚠ AND IT ALSO EXERCISES
+# GUARD 0's other half: the two lanes disagree about the NAME SET (`kern BASE  lb=1` vs
+# `kern BASE  lb 1`), which is the `=`-in-a-name class this gate exists to make red.
+#
+# `PLANTS[3]` IS THE REFUSAL PLANT, AND IT IS AN ARGV- REACHABLE ONE.  The refusal this gate
+# used to carry was the MODULE-SCOPE one -- "input absent: .agents/slop/nl/nl-oracle.py" -- and it
+# fired because the oracle was swept.  **THE ORACLE IS PRESENT** (24 956 B, tracked), so that
+# refusal no longer fires and `PLANTS[3] = []` became a MISPLANT: bare argv answers 0, not 3.
+# **A PLANT THAT NO LONGER REACHES ITS VERDICT IS A FALSE CLAIM.**  The refusal that IS reachable
+# is this gate's OWN: `--selftest` needs the captured port lane `checks/nl-port-post.txt`, which
+# no commit carries, and it REFUSES (3) rather than running a control over a fixture that is not
+# the fixture.  MEASURED 2026-10-29: `--selftest` answers
+# `== REFUSED, NOT A VERDICT: selftest input absent: .../checks/nl-port-post.txt` and exit **3**,
+# while the FOUR LANES it prints before that refusal are unaffected -- which is the point of a
+# refusal that names its subject.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {3: []}
+PLANTS = {0: ["--port-stdout", "gates/cstyle-live.rows",
+              "--oracle-stdout", "gates/cstyle-live.rows"],
+          1: ["--port-stdout", "gates/cstyle-live.rows",
+              "--oracle-stdout", "oracles/tinybendygrad_renderer_cstyle.bend.rows"],
+          3: ["--selftest"]}
 
 if __name__ == "__main__":
   sys.exit(main())

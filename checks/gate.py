@@ -248,11 +248,94 @@ def report(tag: str, rows: list[list], got: dict, want: dict) -> tuple[list, lis
   return lines, bad, missing
 
 
-def main() -> None:
-  ap = argparse.ArgumentParser()
+def plant(kind: str) -> int:
+  """THE PLANT, AND IT BUILDS ITS OWN TREE.  `--plant broken` MUST exit 1 (FAIL) and
+  `--plant clean` MUST exit 0 (PASS).
+
+  WHY IT EXISTS, AND WHY IT IS A PLANT AND NOT A FLAG.  This gate's own subject is a
+  DECODE gate: `tinybendygrad/runtime/dtype.js`'s `fp8_decode` against CPython's
+  `dtype.py`.  A gate that can only be shown to FAIL on a CORRUPTED tree -- and a corrupted
+  tree is not in git, because a corrupted tree in git would be a corrupted PORT -- has no way
+  to demonstrate its red.  MEASURED 2026-10-29: every historical copy of `dtype.js` this tree
+  carries (`.agents/slop/dotfix/scratch/runtime/dtype.js`, `.agents/slop/ropfix/tinybendygrad/
+  runtime/dtype.js`, `.agents/slop/expandfix/scratch{,-before}/runtime/dtype.js`) is a FIXED
+  revision -- `--quick --tree` over each of them answers **rc 0**, MISMATCH 0 -- so no argv
+  over a tracked file reaches this gate's rc 1.  **A GATE WHOSE RED IS UNREACHABLE CANNOT
+  SHOW THAT IT CAN GO RED, AND A GATE THAT HAS NEVER GONE RED HAS NO GREEN TO HAVE FALLEN
+  FROM.**
+
+  ⚠ THE CORRUPTION IS AN ANCHORED REPLACEMENT, NOT A MUTATION.  `fp8_decode`'s own line
+  `if ((x & 0x7f) === 0) return (x & 0x80) ? 0x80000000 : 0;` is REPLACED by the same line
+  with `0x80000000` -> `0x80000001`, which is the SIGN-BIT-ONLY change that makes the port
+  disagree with CPython on the negative zero of every format.  MEASURED 2026-10-29: the
+  corrupted tree answers **MISMATCH 2** (`D[e4m3][c80]` and `D[e5m2][c80]`) and rc 1, and the
+  LIVE tree answers MISMATCH 0 and rc 0.  **THE CORRUPTION IS ANCHORED SO THAT A PORT
+  THAT FIXED ITS `dtype.js` CANNOT MAKE THE PLANT SILENTLY STOP PLANTING**: if the anchor
+  line is gone, the plant says so and REFUSES (3) rather than exiting 0 on an uncorrupted
+  copy and calling it a PASS.
+
+  **THE PLANT WRITES NOTHING ON THE TREE.**  The corrupted copy is built in a TEMPORARY
+  DIRECTORY and the live `tinybendygrad/runtime/dtype.js` is READ, never written, so a plant
+  run cannot damage the port it is measuring -- the same rule `gates/gatekit.py` states for a
+  gate's output directory ("A GATE CLEARS ITS OWN OUTPUT"), applied to the SUBJECT.
+  """
+  if kind not in ("clean", "broken"):
+    print(f"unknown plant {kind!r}", file=sys.stderr)
+    return 2
+  src = JS_LANE.read_text()
+  # THE ANCHOR, and the ONE replacement.  `0x80000000` -> `0x80000001` is the smallest change
+  # that moves a VALUE the gate compares: the negative zero of `fp8_decode`, which CPython
+  # answers as `0x80000000` (dtype.py's own `of32(-0.0)`).
+  ANCHOR = "if ((x & 0x7f) === 0) return (x & 0x80) ? 0x80000000 : 0;"
+  CORRUPT = "if ((x & 0x7f) === 0) return (x & 0x80) ? 0x80000001 : 0;"
+  if ANCHOR not in src:
+    print("== REFUSED, NOT A VERDICT: the plant's ANCHOR is not in the live dtype.js -- "
+          f"{JS_LANE} no longer carries `{ANCHOR}`, so a corrupted copy would be the LIVE "
+          "file and the plant would exit 0 on an uncorrupted tree and call it a PASS", file=sys.stderr)
+    sys.exit(3)
+  with tempfile.TemporaryDirectory() as td:
+    tree = pathlib.Path(td) / "dtype.js"
+    # ⚠ THE FILE IS `src` WITH THE ONE LINE REPLACED -- NOT `CORRUPT`.  Writing `CORRUPT` as
+    # the whole file makes a ONE-LINE module, and node answers `SyntaxError: Illegal return
+    # statement` -- which the gate reports as DEAD (5), NOT as the FAIL the plant wants.
+    # MEASURED 2026-10-29: that mistake made `--plant broken` exit **5**; the corrected
+    # replacement exits **1** with MISMATCH 2.
+    tree.write_text(src.replace(ANCHOR, CORRUPT, 1) if kind == "broken" else src)
+    print(f"[planted] the {'BROKEN' if kind == 'broken' else 'CLEAN'} tree is at {tree} -- "
+          + ("the anchor line's value was changed by one bit, and NO FILE ON THE TREE WAS "
+             "TOUCHED" if kind == "broken" else "it is the live file's bytes, copied"))
+    argv = ["--quick", "--tree", str(tree)]
+    rc = _run_gate(argv)
+    print(f"[planted] the gate's own exit over the planted tree: {rc}")
+    return rc
+
+
+def _run_gate(argv: list[str]) -> int:
+  """`main()`'s body, as a FUNCTION, so `--plant` can run it over a planted tree and READ
+  its exit instead of exiting itself.
+
+  **ONE BODY, TWO CALLERS.**  A plant that re-implemented the comparison would prove the
+  plant; a plant that duplicated `main()` would let the two drift, and the drift is invisible
+  because both live in the same file.  So `main()`'s body IS this function, and `main()`
+  calls it.
+
+  ⚠ **AN ABSENT `--tree` IS A REFUSAL, NOT A TRACEBACK.**  `--tree PATH` names the lane this
+  gate drives, and `run()` hands it to the node driver, whose `readFileSync` on an absent file
+  answers an `ENOENT` and exits 1 -- so the gate's own `settle(DEAD, ...)` fires and the caller
+  sees exit **5** (DEAD: "it ran and emitted nothing") for what is really "the input was not
+  there".  MEASURED 2026-10-29: `--quick --tree /nonexistent/dtype.js` answered
+  `== DEAD: gate.py: the node driver failed, rc=1` and exit **5**.  **A GATE THAT CRASHES
+  WHERE IT SHOULD REFUSE CANNOT DISTINGUISH "THE INPUT IS ABSENT" FROM "I AM BROKEN"** --
+  this file's own `refuse()` docstring, and `checks/abi_gate.py`'s rule.  So the named tree
+  is CHECKED BEFORE IT IS DRIVEN, and the check names WHICH input is absent.
+  """
+  ap = argparse.ArgumentParser(add_help=False)
   ap.add_argument("--tree", type=pathlib.Path, default=JS_LANE)
   ap.add_argument("--quick", action="store_true", help="drop the wide sweep")
-  a = ap.parse_args()
+  a = ap.parse_args(argv)
+  if not a.tree.is_file():
+    refuse(f"input absent: {a.tree} (named by --tree)"
+           + "  This gate cannot produce a denominator without it.")
 
   rows = worklist(0 if a.quick else WIDE)
   want = oracle(rows)
@@ -272,21 +355,57 @@ def main() -> None:
     print(f"  {n:<34} lane {got[n]}  CPython {want[n]}")
   if len(bad) > 40:
     print(f"  ... and {len(bad) - 40} more")
-  sys.exit(1 if bad or missing else 0)
+  return 1 if bad or missing else 0
+
+
+def main() -> None:
+  ap = argparse.ArgumentParser()
+  ap.add_argument("--tree", type=pathlib.Path, default=JS_LANE)
+  ap.add_argument("--quick", action="store_true", help="drop the wide sweep")
+  ap.add_argument("--plant", choices=["clean", "broken"], default=None,
+                  help="run the gate over a tree this file BUILDS: `clean` is the live bytes "
+                       "and must exit 0, `broken` has one value changed and must exit 1. "
+                       "Nothing on the tree is written.")
+  a = ap.parse_args()
+  if a.plant:
+    sys.exit(plant(a.plant))
+  sys.exit(_run_gate(["--tree", str(a.tree)] + (["--quick"] if a.quick else [])))
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate.
 #
-# `PLANTS[3]` IS THE REFUSAL PLANT, and it is the only state argv can reach: this gate refuses at
-# MODULE SCOPE, above every `argparse` -- the geometry is measured by
-# `.agents/slop/plantthe46/unreach.py`, which imports this tree's own declaration reader by path --
-# so no argument of any shape gets past it. `[]` therefore reaches `3`, and nothing else ever will.
-# It proves the refusal is REACHABLE. It does NOT prove this gate can tell `3` from `0`, because no
-# argv reaches `0`; every other code below stays UNPLANTED and the instrument keeps it red rather
-# than this file claiming a plant it does not have.
+# `PLANTS[0]` AND `PLANTS[1]` ARE THE `--plant` PLANTS, and they are a PLANT AND NOT A FLAG
+# because the gate already ships the mechanism they use: `--tree PATH` ("runs a copy instead of
+# the live file, which is how the plants run", the docstring's own sentence).  `--plant clean`
+# BUILDS that copy from the live bytes and MUST exit 0; `--plant broken` builds it with ONE
+# anchored value changed and MUST exit 1.
+#
+# ⚠ WHY A PLANT WAS NEEDED AT ALL, MEASURED 2026-10-29: every historical copy of `dtype.js`
+# this tree carries (`.agents/slop/dotfix/scratch/runtime/dtype.js`,
+# `.agents/slop/ropfix/tinybendygrad/runtime/dtype.js`,
+# `.agents/slop/expandfix/scratch{,-before}/runtime/dtype.js`) is a FIXED revision -- `--quick
+# --tree` over each answers **rc 0, MISMATCH 0** -- so **NO argv over a TRACKED file reaches
+# this gate's rc 1**.  A gate whose red is unreachable cannot show that it CAN go red, and a
+# gate that has never gone red has no green to have fallen from.  The plant builds the
+# corrupted tree ITSELF, in a TEMPORARY DIRECTORY, and never writes the port.
+#
+# `PLANTS[3]` IS THE REFUSAL PLANT, AND IT IS NOW AN ARGV- REACHABLE ONE.  The refusal this
+# gate used to carry was the MODULE-SCOPE one -- "input absent: checks/drive.mjs" -- and it fired
+# because the driver was swept by `371cc64c9` and is not in git.  **THE DRIVER IS RESTORED** (the
+# gate's own `checks/drive.mjs`, byte-identical to `371cc64c9^:.agents/slop/jsfp8/drive.mjs`,
+# blob `4b99887189ec87de85d8096c7f4cbabdcc1e288f`), so that refusal no longer fires and the
+# declaration `PLANTS[3] = []` became a MISPLANT: bare argv answers 0, not 3.  **A PLANT THAT
+# NO LONGER REACHES ITS VERDICT IS A FALSE CLAIM, AND THE CURE IS A PLANT OR A WITHDRAWAL.**
+# The refusal that IS reachable is the gate's own rule applied at the read site: `--tree` names
+# an input, and an absent input is REFUSED (3), not a traceback.  MEASURED 2026-10-29:
+# `--quick --tree /nonexistent/dtype.js` answers
+# `== REFUSED, NOT A VERDICT: input absent: ... (named by --tree)` and exit **3**; BEFORE the
+# check it answered `== DEAD: the node driver failed` and exit **5**, which is the wrong word
+# for an absent input.
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {3: []}
+PLANTS = {0: ["--plant", "clean"], 1: ["--plant", "broken"],
+          3: ["--quick", "--tree", "checks/absent-dtype.js"]}
 
 if __name__ == "__main__":
   main()

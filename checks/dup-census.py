@@ -288,23 +288,42 @@ def main():
       if m["name_defs_differ"]:
         print(f"   NAME-DEFINITION DISAGREEMENT on {m['name_defs_differ']}: duplicated under one "
               f"definition only")
-  (HERE / "dup-census.json").write_text(json.dumps(
-    [{k: v for k, v in m.items() if k != "src"} for m in ms], indent=1, default=str))
+  # ⚠ `--one` DOES NOT PUBLISH.  The artifact below is the census OF THE POPULATION, and
+  # `CACHE` is the population; `--one` names ONE file the caller picked, so writing the
+  # population's artifact from a one-file run OVERWRITES a TRACKED 797,251-BYTE CENSUS with a
+  # one-lane one.  MEASURED 2026-10-29: `checks/dup-census.py --one
+  # oracles/tinybendygrad_renderer_nir_llvmir.bend.rows` returned 0 and left
+  # `checks/dup-census.json` at **10 insertions / 62,250 deletions** against HEAD -- the same
+  # destruction `.agents/slop/denominator/REPORT.md` §1 measured through the OTHER route
+  # (an absent `CACHE`), and the same one `enumerate_population` was added to prevent.
+  # **A GATE THAT RUNS A PLANT MUST NOT REWRITE THE TREE IT IS PLANTED IN**, and the fix is
+  # to publish ONLY what the invocation actually censused: the population census publishes,
+  # a named-file inspection does not.
+  if not a.one:
+    (HERE / "dup-census.json").write_text(json.dumps(
+      [{k: v for k, v in m.items() if k != "src"} for m in ms], indent=1, default=str))
   return 0
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate.
 #
-# `PLANTS[3]` IS THE REFUSAL PLANT, and it is the only state argv can reach: this gate refuses at
-# MODULE SCOPE, above every `argparse` -- the geometry is measured by
-# `.agents/slop/plantthe46/unreach.py`, which imports this tree's own declaration reader by path --
-# so no argument of any shape gets past it. `[]` therefore reaches `3`, and nothing else ever will.
-# It proves the refusal is REACHABLE. It does NOT prove this gate can tell `3` from `0`, because no
-# argv reaches `0`; every other code below stays UNPLANTED and the instrument keeps it red rather
-# than this file claiming a plant it does not have.
+# `PLANTS[3]` IS THE REFUSAL PLANT, and it is the ONLY state argv can reach on the POPULATION:
+# this gate refuses at MODULE SCOPE when `CACHE` (`checks/lanes/`) is absent, and `checks/lanes/`
+# is not in git at all (`git ls-tree -r HEAD --name-only | grep -c 'checks/lanes/'` = 0), so the
+# population census is REFUSED on this tree.  `[]` therefore reaches `3`.
+#
+# `PLANTS[0]` IS THE `--one` PLANT, and it is what makes rc 0 REACHABLE.  `--one FILE` is this
+# gate's OWN documented mechanism for naming a lane (its docstring's second usage line), and it
+# reaches `main()`'s census over the named file.  MEASURED 2026-10-29:
+# `--one oracles/tinybendygrad_renderer_nir_llvmir.bend.rows` exits **0** and prints a census
+# with a NON-TRIVIAL denominator -- 205 rows read, 205 accepted, 201 keys, the reader's own loss
+# 4, attributed as `4` `=`-in-a-name, and `RECONCILES`.  **A PLANT OVER A TRACKED FILE IS
+# ALSO A WITNESS: it is the PRE-RENAME lane, so the loss it reports is the `=`-class the
+# rename closed, and the census RECONCILES.**  The one thing it must NOT do is publish -- see
+# `main()`'s `if not a.one:` guard, without which the plant overwrites the tracked census.
 EXIT_SURFACE = VERDICTS = {0: "OK", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {3: []}
+PLANTS = {0: ["--one", "oracles/tinybendygrad_renderer_nir_llvmir.bend.rows"], 3: []}
 
 if __name__ == "__main__":
   sys.exit(main())

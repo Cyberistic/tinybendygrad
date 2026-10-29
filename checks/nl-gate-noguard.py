@@ -79,6 +79,21 @@ def main():
   ap.add_argument("--port-stdout")
   ap.add_argument("--oracle-stdout")
   a = ap.parse_args()
+  # ⚠ AN ABSENT CAPTURE IS A REFUSAL, NOT A TRACEBACK.  `--port-stdout`/`--oracle-stdout` name
+  # a FILE, and `pathlib.Path(...).read_text()` on an absent file raises `FileNotFoundError`,
+  # which reaches a caller as exit **1** -- THE SAME EXIT AS A DISAGREEMENT.  MEASURED
+  # 2026-10-29: `--port-stdout /nonexistent/file.rows` answered a `FileNotFoundError` traceback
+  # and exit **1**, so "the capture I was told to read is not there" and "the port and the oracle
+  # DISAGREE" were the same number to a reader of `$?`.  **THIS FILE'S OWN `refuse()` SAYS WHY
+  # THAT IS WRONG**: "a gate that crashes where it should refuse cannot distinguish 'the input is
+  # absent' from 'I am broken'", and `checks/abi_gate.py`'s rule is that a missing input is
+  # REFUSED (3) and not a verdict at all.  So the read is CHECKED BEFORE it is taken, and the
+  # check is AT THE READ SITE rather than at the top of `main()` -- because the module-scope
+  # refusal above it is about the tree, and this one is about the two NAMED INPUTS.
+  for _flag, _path in (("--port-stdout", a.port_stdout), ("--oracle-stdout", a.oracle_stdout)):
+    if _path is not None and not pathlib.Path(_path).is_file():
+      refuse(f"input absent: {_path} (named by {_flag})"
+             + "  This gate cannot produce a denominator without it.")
   p = (pathlib.Path(a.port_stdout).read_text() if a.port_stdout
        else subprocess.run(["./bin/bend", PORT], cwd=REPO, capture_output=True,
                            text=True).stdout)
@@ -101,9 +116,53 @@ def main():
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest this refuses on the swept oracle: `3` is the one reachable code.
+# because import RUNS a gate.
+#
+# ⚠ THE PREVIOUS REVISION SAID "At rest this refuses on the swept oracle: `3` is the one reachable
+# code", AND THAT WAS TRUE WHEN IT WAS WRITTEN AND IS FALSE NOW.  `.agents/slop/nl/nl-oracle.py`
+# IS PRESENT (24 956 B, tracked), `.agents/slop/rebase-gate.py` IS PRESENT, so the module-scope
+# refusal does NOT fire and argv reaches `main()`.  MEASURED 2026-10-29: bare argv exits **0**
+# (AGREE over 205 gated rows) and `--port-stdout <a tracked lane>` exits **1** (BROKEN).
+#
+# ⇒ AND **BOTH PLANTS ARE HERMETIC**, AND THAT IS THE POINT.  `nl-gate.py`'s own header records
+# that `tinybendygrad/uop/ops.bend` is in this port's 6-file import closure and is owned by
+# another live unit: MEASURED, two consecutive captures printed 206 rows and then ZERO.  **A
+# PLANT THAT READS THE LIVE PORT IS A PLANT THAT CAN ANSWER "NO ROWS" INSTEAD OF A VERDICT**,
+# and this file's own subject is the CONTROL -- the detector that must keep running.
+#
+# `PLANTS[0]` IS THE AGREE PLANT: the gate's OWN tracked fixture on BOTH sides.
+# `--port-stdout gates/cstyle-live.rows --oracle-stdout gates/cstyle-live.rows`.  MEASURED
+# 2026-10-29: **rc 0**, `gated 227   agree 227   disagree []`, `AGREE`, in **0.2 s**, with NO
+# `bend` and NO live port.  ⚠ AND THE GREEN IS NOT VACUOUS: the gate reads 227 names out of the
+# file with `rebase-gate.py:rows()` and COMPARES 227 values -- it is a comparison that can fail,
+# and the rc-1 plant below is the SAME comparison over two lanes that differ.
+#
+# `PLANTS[1]` IS THE BROKEN PLANT: the SAME tracked fixture against the lane it was captured
+# against, `oracles/tinybendygrad_renderer_cstyle.bend.rows`.  MEASURED 2026-10-29: **rc 1**,
+# `gated 181   agree 172   disagree ['tmap BASE', 'tmap CLANG', 'tmap CUDA', 'tmap METAL',
+# 'tmap OPENCL', 'wmma 16_16_128 fp8', 'wmma 16_16_16 half', 'wmma 16_16_16 i8']`, `BROKEN`.  The
+# 9 disagreements are the cstyle lane's `fp8e4m3` -> `float8_e4m3` dtype-NAME rename and its
+# `wmma` rows -- **A REAL DISAGREEMENT BETWEEN TWO TRACKED LANES OF THIS TREE**, so the plant
+# exercises the value comparison rather than a fabricated disagreement.
+#
+# `PLANTS[3]` IS THE REFUSAL PLANT, AND IT IS AN ARGV- REACHABLE ONE.  The refusal this gate
+# used to carry was the MODULE-SCOPE one -- "input absent: .agents/slop/nl/nl-oracle.py" -- and it
+# fired because the oracle was swept.  **THE ORACLE IS PRESENT** (24 956 B, tracked), so that
+# refusal no longer fires and `PLANTS[3] = []` became a MISPLANT: bare argv answers 0, not 3.
+# **A PLANT THAT NO LONGER REACHES ITS VERDICT IS A FALSE CLAIM.**  The refusal that IS reachable
+# is this gate's OWN rule applied at the read site: `--port-stdout`/`--oracle-stdout` NAME an
+# input, and an absent input is REFUSED (3) rather than a traceback.  MEASURED 2026-10-29:
+# `--port-stdout /nonexistent/file.rows` answered a `FileNotFoundError` traceback and exit **1**
+# -- the SAME EXIT AS A DISAGREEMENT, so "the capture is not there" and "the lanes DISAGREE" were
+# one number to a reader of `$?` -- and, after the check, it answers
+# `== REFUSED, NOT A VERDICT: input absent: /nonexistent/file.rows (named by --port-stdout)` and
+# exit **3**.
 EXIT_SURFACE = VERDICTS = {0: "AGREE", 1: "BROKEN", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {3: []}
+PLANTS = {0: ["--port-stdout", "gates/cstyle-live.rows",
+              "--oracle-stdout", "gates/cstyle-live.rows"],
+          1: ["--port-stdout", "gates/cstyle-live.rows",
+              "--oracle-stdout", "oracles/tinybendygrad_renderer_cstyle.bend.rows"],
+          3: ["--port-stdout", "checks/absent-lane.rows"]}
 
 
 if __name__ == "__main__":

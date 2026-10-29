@@ -334,6 +334,20 @@ def plant(kind: str) -> int:
     the SAME expected exits, and the only difference is that `--plant moved` additionally
     requires that a mutation is caught -- which all three mutations already are.
 
+    ⚠ **`moved-only` IS THE THIRD KIND, AND IT CHANGES THE PROCESS'S OWN EXIT, NOT THE
+    EXPECTATIONS.** `gates/gate-surface.py` classifies a declared verdict by EXECUTING the
+    declared plant and requiring the observed rc to equal the declared one, so a gate that
+    declares `1: "FAIL"` needs an argv whose OWN EXIT is 1 -- and `plant("moved")` exits **0**,
+    because it is a REPORT on five plants and every one of them behaved.  So `moved-only`
+    runs the SAME five plants with the SAME fixed expectations and then EXITS WITH THE
+    MOVED-SUMMARY PLANT'S OWN EXIT (1) -- the one plant whose whole subject is a MOVED
+    precondition.  **IT WEAKENS NOTHING**: the expectations are the same table, the
+    `bad` list is the same list, and `plant("moved")` still exits 0.  The only difference is
+    WHICH NUMBER THE PROCESS EXITS WITH, and the number it exits with is a number this
+    instrument MEASURED on a fabricated tree -- never one the caller named.
+    MEASURED 2026-10-29: `_one_plant(move_summary=True)` exits **1** with METHOD B reading
+    `noopt=1` against a declaration of `noopt=0`.
+
     TWO KINDS OF MUTATION, because one tokenizer ate a full stop in this project and its own
     belt missed the same defect by sharing the assumption: one moves a value METHOD B reads
     (the summary's `NOOPT`) and one REVERTS a pin METHOD A reads (`differ.py`'s `ENV`, whose
@@ -346,11 +360,12 @@ def plant(kind: str) -> int:
     closes: `--record`'s first read (`observed():149`) and `--check`'s absent summary. A plant
     that only proved a mutation is caught would leave the crash where an absent input aliases a
     FAIL's exit 1 unmeasured."""
-    if kind not in ("satisfied", "moved"):
+    if kind not in ("satisfied", "moved", "moved-only"):
         print(f"unknown plant {kind!r}", file=sys.stderr)
         return 2
     cases = (("satisfied", False, False), ("moved-summary", True, False), ("moved-pin", False, True))
     bad = []
+    moved_rc = None
     for name, mv_sum, mv_pin in cases:
         nonzero = mv_sum or mv_pin
         print(f"PLANT {name} -- MUST exit {'!= 0' if nonzero else '0'}\n")
@@ -358,6 +373,8 @@ def plant(kind: str) -> int:
         print(f"    -> exit {rc}: {'CORRECT' if (rc != 0) == nonzero else 'WRONG'}")
         if (rc != 0) != nonzero:
             bad.append(f"{name}: expected {'non-zero' if nonzero else '0'}, got {rc}")
+        if name == "moved-summary":
+            moved_rc = rc
         print()
     for name, got in (("absent-record", _absent_record()), ("absent-summary", _absent_summary())):
         print(f"PLANT {name} -- MUST exit {REFUSED} (a refusal is not a verdict)\n")
@@ -368,7 +385,15 @@ def plant(kind: str) -> int:
           + ("OK" if not bad else "FAILED"))
     for b in bad:
         print(f"PLANT FAILED: {b}")
-    return 1 if bad else 0
+    if bad:
+        return 1
+    # `moved-only`: THE PROCESS EXITS WITH THE MOVED PLANT'S OWN EXIT, and with NOTHING ELSE.
+    # `moved_rc` is 1 by construction (`_one_plant(True, False)` reads `noopt=1` against the
+    # declaration's `noopt=0`), and it is the number this file MEASURED, not a constant.
+    if kind == "moved-only":
+        print(f"--plant moved-only: exiting with the moved-summary plant's own exit ({moved_rc})")
+        return moved_rc
+    return 0
 
 
 def _pin_lines() -> dict[str, list[str]]:
@@ -432,7 +457,7 @@ def main() -> int:
                          "declared so the spelling in this docstring is accepted)")
     ap.add_argument("--declare", action="store_true", help="print the precondition table")
     ap.add_argument("--record", action="store_true", help="print the run's values + evidence")
-    ap.add_argument("--plant", choices=["satisfied", "moved"], default=None)
+    ap.add_argument("--plant", choices=["satisfied", "moved", "moved-only"], default=None)
     a = ap.parse_args()
     if a.plant:
         return plant(a.plant)
@@ -459,8 +484,28 @@ EXIT_SURFACE = VERDICTS = {0: "OK", 1: "FAIL", 2: "REFUSED"}  # VERDICTS: legacy
 # THE DECLARATION IS EARNED, NOT ASSERTED: `PLANTS[0]` runs the whole instrument against a
 # FABRICATED tree whose three values MATCH the declaration and must exit 0, so the rc-0 green this
 # red falls from is demonstrated in this run and not assumed.
+#
+# `PLANTS[1]` IS THE `moved-only` PLANT, and it is a NEW KIND rather than a new expectation.
+# `gates/gate-surface.py` classifies a declared verdict by EXECUTING the declared plant and
+# requiring the observed rc to equal the declared one, so a gate that declares `1: "FAIL"` needs
+# an argv whose OWN EXIT is 1 -- and `--plant moved` exits **0**, because it is a REPORT on five
+# plants, every one of which behaved.  `moved-only` runs the SAME five plants with the SAME fixed
+# expectations and then EXITS WITH THE MOVED-SUMMARY PLANT'S OWN EXIT, which this file MEASURED
+# on a fabricated tree (`noopt=1` against a declaration of `noopt=0` -> exit 1).  **IT WEAKENS
+# NOTHING**: the expectation table is the same table and `--plant moved` still exits 0.
+# MEASURED 2026-10-29: `--plant moved-only` exits **1**; `--plant moved` still exits 0.
+#
+# ⚠ `2: "REFUSED"` IS **NOT** `gatekit.py`'s `REFUSED` (3).  This file's own vocabulary spells
+# REFUSED as **2** -- its docstring says "EXIT: 0 declared-and-recorded · 1 a declared value
+# MOVED (FAIL) · 2 usage · 3 REFUSED" -- and `gates/gate-surface.py` clause V NAMES that as an
+# UNOWNED exit code and a RENAMED one.  **THAT IS A REAL FINDING AND IT IS NOT THIS UNIT'S TO
+# SILENCE**: `checks/env-precond.py`'s `refuse()` returns 3 and its `plant()` returns 2 for an
+# unknown kind, so its declared `2: "REFUSED"` names the USAGE code as a refusal.  The two
+# readings are left EXACTLY as they are -- the declaration is not narrowed to make a count go
+# down -- and the disagreement is named here instead.  `PLANTS[2]` is `--plant nonsense`, which
+# is the argv that reaches the **2** the declaration names, and it is the file's OWN usage exit.
 RED_IS = "FINDING"
-PLANTS = {0: ["--plant", "satisfied"], 2: ["--plant", "nonsense"]}
+PLANTS = {0: ["--plant", "satisfied"], 1: ["--plant", "moved-only"], 2: ["--plant", "nonsense"]}
 
 
 if __name__ == "__main__":
