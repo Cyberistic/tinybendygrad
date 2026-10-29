@@ -54,6 +54,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1714,13 +1715,57 @@ def substrate_digest() -> str:
 SUBSTRATE_WALKS = ("tinybendygrad", "tinygrad")
 
 
+def _is_scratch(name: str) -> bool:
+    """IS **THIS **FILE **A **SCRATCH **COPY**?  **LOADED **BY **PATH** **FROM **THE **INSTRUMENT
+    **THAT **OWNS **THE **RULE**, **NOT **RE-SPELLED **HERE.**
+
+    **⇒ AND **WHY **THE **DIGEST **MUST **NOT **HASH **A **SCRATCH **COPY** (MEASURED 2026-10-29):
+    **THE **WALK **`tinybendygrad/`** **CONTAINS **FIVE **GITIGNORED **SCRATCH **FILES**
+    (`tinybendygrad/LAWS/spec-mut.bend`, `tinybendygrad/mixin/creation-mut.bend`,
+    `tinybendygrad/renderer/amd/dsl-mut.bend`, `tinybendygrad/codegen/late/.linearizer-mut.bend`,
+    `tinybendygrad/renderer/amd/dsl.bend.bak`), **AND **A **MUTATION **PROBE **REWRITES **THEM **AS **IT
+    **RUNS** — **SO **THE **DIGEST **MOVED **WHILE **THE **PORT **DID **NOT** (`b4c1fadb…` ->
+    `3ddd9993…` **WITH **A **CLEAN **PORT**), **AND **THE **CORPUS **WENT **STALE **FOR **A **REASON
+    **THAT **IS **NOT **THE **PORT.**  **⇒ AND **THIS **IS **THE **TREE's **OWN **RECORDED **HAZARD**:
+    **"A **UNIT **THAT **DROPPED **A **MUTATION **PROBE **IN **THE **TREE **MOVED **THE **CORPUS's
+    **FRESHNESS **PIN."**
+
+    **⇒ AND **A **DIGEST **THAT **HASHES **A **PROBE's **RESIDUE **IS **NOT **A **PIN **ON **THE **PORT**:
+    **IT **IS **A **PIN **ON **WHETHER **SOMEONE **RAN **A **PLANT.**  **⇒ AND **THE **RULE **IS **ONE
+    **RULE, **NOT **TWO** — **`gates/header-census-gate.py`'s **`is_scratch`** **IS **THE **INSTRUMENT
+    **THAT **OWNS **IT**, **AND **`gates/bendcite-gate.py` **ALREADY **LOADS **IT **BY **PATH** **FOR **THE
+    **SAME **REASON** ("A **SECOND **COPY **OF **A **RULE **IS **A **CONTRACT **WITH **NO **GENERATOR").**
+    """
+    global _SCRATCH_RULE
+    if _SCRATCH_RULE is None:
+        spec = importlib.util.spec_from_file_location(
+            "header_census_gate", ROOT / "gates" / "header-census-gate.py")
+        mod = importlib.util.module_from_spec(spec)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            spec.loader.exec_module(mod)
+        _SCRATCH_RULE = mod.is_scratch
+    return _SCRATCH_RULE(name)
+
+
+_SCRATCH_RULE = None
+
+
 def substrate_entries() -> list[tuple[str, str]]:
-    """`(relpath, sha256)` per input: the walks plus the named files, ABSENT where not on disk."""
+    """`(relpath, sha256)` per input: the walks plus the named files, ABSENT where not on disk.
+
+    **⇒ AND **THE **SCRATCH **COPIES **ARE **EXCLUDED**, **AND **THAT **IS **THE **POINT**: **THE
+    **DIGEST **IS **A **PIN **ON **THE **PORT**, **AND **A **PIN **ON **THE **PORT **THAT **MOVES **WHEN
+    **A **PLANT **RUNS **IS **NOT **A **PIN **ON **THE **PORT.**  **⇒ AND **`__pycache__` **IS **EXCLUDED
+    **FOR **THE **SAME **REASON**, **AND **IT **WAS **EXCLUDED **BEFORE **THE **SCRATCH **COPIES
+    **WERE** — **⇒ SO **THE **RULE **WAS **HALF **APPLIED**, **AND **THE **HALF **THAT **MOVED **THE
+    **DIGEST **WAS **THE **ONE **THAT **WAS **MISSING.**
+    """
     out = []
     for root in SUBSTRATE_WALKS:
         out += [(p.relative_to(ROOT).as_posix(), hashlib.sha256(p.read_bytes()).hexdigest())
                 for p in (ROOT / root).rglob("*")
-                if p.is_file() and "__pycache__" not in p.parts]
+                if p.is_file() and "__pycache__" not in p.parts and not _is_scratch(p.name)]
     for rel in SUBSTRATE_INPUTS:
         p = ROOT / rel
         out.append((rel, hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else "ABSENT"))
