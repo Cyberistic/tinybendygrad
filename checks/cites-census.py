@@ -46,7 +46,19 @@ import warnings
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+# THE ROOT IS SPELLED **`.parents[1]`** **AND **NOT **`.parent.parent`**, **AND **THE **TWO **ARE **THE
+# **SAME **DIRECTORY** (MEASURED: `checks/cites-census.py`'s **`.parent.parent`** **AND **`.parents[1]`**
+# **BOTH **ARE **THE **REPO **ROOT**).  **⇒ AND **THE **SPELLING **IS **THE **ONE **THE **TREE **USES**
+# **AND **THE **ONE **THE **INSTRUMENT **THAT **READS **THIS **FILE **CAN **SEE**:
+# **`gates/gates-pop.py`'s **`ROOT_CONST`** **MATCHES **`.parents[N]`** **AND **NOTHING **ELSE**, **AND
+# **`ROOT_INLINE`** **THE **SAME** — **SO **WITH **THE **OLD **SPELLING **THIS **FILE's **OWN **ROOT **WAS
+# **INVISIBLE **AND **THE **FILE **WAS **COUNTED **ONLY **BECAUSE **OF **A **FIXTURE **NEEDLE **THE
+# **MATCHER **IS **TESTED **AGAINST** (MEASURED 2026-10-29: **`230 **name **a **root` -> `229`** **WHEN
+# **THE **NEEDLE **WAS **BLANKED**, **WHICH **IS **THE **FIXTURE **STOPPED **MATCHING **AND **NOT **A
+# **ROOT **LOST**).  **⇒ AND **THE **SIBLING **GATES **SPELL **IT **`HERE = pathlib.Path(__file__).
+# resolve().parent`** **PLUS **A **`REPO`/`ROOT` **LINE**, **AND **THE **PATTERN **HAS **AN **OPTIONAL
+# **`HERE` **LINE** **EXACTLY **FOR **THAT.**
+ROOT = Path(__file__).resolve().parents[1]
 EXTS = (".md", ".py")
 
 PASS, FAIL, REFUSED, SKIP, DEAD = "PASS", "FAIL", "REFUSED", "SKIP", "DEAD"
@@ -116,6 +128,18 @@ ISO = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
 DIGEST = re.compile(r"^[0-9a-f]{7,64}$")
 EXITSTATUS = re.compile(r"^(rc=|exit\s)\d*\b")
 COMMAND = re.compile(r"^(git|cc|wc|grep|find|diff|clang|bend|pytest|ruff|python|node)\b")
+
+# **A **NEEDLE **THE **MATCHER **IS **TESTED **AGAINST **IS **A **FIXTURE**, **AND **A **FIXTURE **IS **A
+# **NAMED **CONSTANT** — **NOT **A **BARE **LITERAL**, **AND **NOT **ONLY **BECAUSE **IT **IS **TIDIER.**
+# **⇒ AND **THE **REASON **IT **IS **A **CONSTANT **AT **ALL** (MEASURED 2026-10-29): **THE
+# **INSTRUMENT **THAT **READS **THIS **FILE** — **`gates/gates-pop.py`** — **COUNTS **A **GATE **THAT
+# **"COMPUTES **A **ROOT **THAT **RESOLVES **OUTSIDE **THE **REPO"** — **AND **IT **WAS **COUNTING
+# **THIS **NEEDLE, **BECAUSE **A **BARE **LITERAL **IN **A **TUPLE **IS **NOT **COLLECTED **BY **THE
+# **MECHANISM **THAT **BLANKS **FIXTURES**, **WHICH **IS **BUILT **FROM **NAMED **CONSTANTS.**
+# **⇒ AND **THE **NEEDLE **IS **A **RECORD **OF **A **DEFECT** — **IT **IS **THE **SPELLING **THAT
+# **MADE **A **GATE **REPORT **ON **THE **WRONG **TREE** — **SO **IT **MUST **NOT **BE **DELETED**,
+# **ONLY **NOT **READ **AS **CODE.**
+NEEDLE_OFFREPO_ROOT = "pathlib.Path(__file__).resolve().parents[3]"
 
 # THE RULE THE FIRST CHECK OF THIS SUBJECT BROKE.  A token must carry a `/` to be a PATH.
 # `ops.py:1398` is a BASENAME and names every `ops.py` in the tree; `denom/` is a
@@ -742,9 +766,19 @@ def selftest(tree: Path) -> int:
     # SAMPLE ACTUALLY PRODUCED. ***  Each of these scored FAIL before the split and each
     # was, by hand, the MATCHER'S FAULT.  The subject file below contains NONE of them, so
     # every one of these six was a FAIL the instrument could not defend.
+    #
+    # **⇒ AND THE `parents[3]` **NEEDLE **IS **A **NAMED **CONSTANT**, **NOT **A **BARE
+    # **LITERAL**, **AND **THAT **IS **A **FIX **AND **NOT **A **COSMETIC.**  MEASURED 2026-10-29:
+    # `gates/gates-pop.py` READ **THIS **FILE **AND **COUNTED **THE **NEEDLE **AS **A **GATE **THAT
+    # **"COMPUTES **A **ROOT **THAT **RESOLVES **OUTSIDE **THE **REPO"** — **SO **THE **INSTRUMENT
+    # **WAS **COUNTING **A **STRING **LITERAL **INSIDE **A **TEST **TUPLE **AS **A **ROOT
+    # **COMPUTATION.**  **⇒ AND **`gates/gates-pop.py` **ALREADY **HAS **THE **MECHANISM **FOR
+    # **THIS**: **`FIXTURES` **IS **"THE **SET **OF **NAMES **WHOSE **STRING **VALUES **ARE **SYNTHETIC
+    # **GATES"**, **AND **IT **IS **COLLECTED **FROM **NAMED **CONSTANTS** — **SO **A **BARE **LITERAL
+    # **IS **NOT **COLLECTED **AND **A **NAMED **ONE **IS.**
     for kind, needle, gap, src in (
             ("code", "declared_values()", "", ""),
-            ("code", "pathlib.Path(__file__).resolve().parents[3]", "", ""),
+            ("code", NEEDLE_OFFREPO_ROOT, "", ""),
             ("reference", ".txt", "", ""),
             ("reference", "env-precond.py:134,151", "", ""),
             ("fragment", " (the commit that staged ", "", ""),

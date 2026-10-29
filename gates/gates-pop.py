@@ -756,6 +756,55 @@ def _fixture_strings():
 
 FIXTURES = ()          # rebound at the bottom of the module; see `_init_fixtures`
 
+# **THE **FIXTURES **OF **OTHER **FILES**, **BY **THE **FILE **THAT **OWNS **THEM.**  A **FIXTURE **IS
+# **DATA **ONLY **TO **THE **FILE **THAT **OWNS **IT**, **AND **THE **OWNING **FILE **IS **NOWNED **BY
+# **THE **PATH**, **NOT **BY **A **REGEX **OVER **THE **SOURCE** — **A **SHAPE **THAT **670 **OF **675
+# **FILES **SATISFIED **AND **NO **GATE **NAMED** (MEASURED, `sweep.py`'s `ORACLE`).
+#
+# **⇒ AND **WHY **THIS **IS **HERE **AT **ALL** (MEASURED 2026-10-29): **`checks/cites-census.py`'s
+# **OWN **TEST **NEEDLE** — **THE **STRING **`"pathlib.Path(__file__).resolve().parents[3]"`**, **WHICH
+# **IS **A **NEEDLE **THE **MATCHER **IS **TESTED **AGAINST** — **WAS **COUNTED **BY **THIS **FILE **AS
+# **A **GATE **THAT **"COMPUTES **A **ROOT **THAT **RESOLVES **OUTSIDE **THE **REPO"**, **BECAUSE **THE
+# **NEEDLE **WAS **A **BARE **LITERAL **IN **A **TUPLE **AND **NOT **A **NAMED **CONSTANT** — **AND
+# **THIS **FILE's **`FIXTURES` **IS **COLLECTED **FROM **NAMED **CONSTANTS**, **SO **A **BARE **LITERAL
+# **IS **NOT **COLLECTED **AND **A **NAMED **ONE **IS.**
+#
+# **⇒ AND **THE **NEEDLE **IS **A **RECORD **OF **A **DEFECT** — **IT **IS **THE **SPELLING **THAT
+# **MADE **A **GATE **REPORT **ON **THE **WRONG **TREE** — **SO **IT **MUST **NOT **BE **DELETED**,
+# **ONLY **NOT **READ **AS **CODE.**
+FIXTURE_NAMES_BY_FILE = {
+    "checks/cites-census.py": ("NEEDLE_OFFREPO_ROOT",),
+}
+
+
+def _fixtures_for(p):
+    """THE **FIXTURE **STRINGS **OF **THE **FILE **THAT **OWNS **THEM**, **OR **NONE**.
+
+    **⇒ AND **A **FIXTURE **IS **DATA **ONLY **TO **THE **FILE **THAT **OWNS **IT** — **SO **THE
+    **BLANK **SET **IS **APPLIED **ONLY **WHEN **THE **FILE **BEING **READ **IS **THE **OWNING
+    **FILE**, **AND **TO **NOTHING **ELSE** (MEASURED: **APPLYING **IT **UNCONDITIONALLY **BROKE
+    **PLANTS **1 **AND **5**).**
+    """
+    try:
+        rel = p.resolve().relative_to(ROOT).as_posix()
+    except (ValueError, OSError):
+        return ()
+    names = FIXTURE_NAMES_BY_FILE.get(rel)
+    if not names:
+        return ()
+    out = set()
+    try:
+        tree = ast.parse(p.read_text(errors="replace"))
+    except (OSError, SyntaxError):
+        return ()
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name) and t.id in names:
+                    if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                        out.add(node.value.value)
+    return frozenset(out)
+
 
 def _init_fixtures():
     """`FIXTURES` is a MODULE GLOBAL assigned ONCE, at the bottom of this file, because
@@ -853,7 +902,10 @@ def root_facts(p, root):
     # wrong about itself. **PROSE IS NOT CODE, AND A FIXTURE IS NOT EITHER: A STRING THAT HOLDS
     # SOURCE IS DATA TO THIS INSTRUMENT WHOSE SOURCE IT IS NOT.** `FIXTURES` is the set of names
     # whose string values are synthetic gates, named by the module that OWNS them.
-    code = code_of(src, FIXTURES if p.resolve() == Path(__file__).resolve() else ())    # noqa: E501
+    # **⇒ AND **THE **BLANK **SET **IS **THE **OWNING **FILE's**, **WHETHER **THAT **IS **THIS **FILE
+    # **OR **ANOTHER **ONE** — **AND **IT **IS **STILL **APPLIED **ONLY **TO **THE **OWNING **FILE.**
+    blank = FIXTURES if p.resolve() == Path(__file__).resolve() else _fixtures_for(p)
+    code = code_of(src, blank)    # noqa: E501
     # **A FIXTURE IS DATA ONLY TO THE FILE THAT OWNS IT.** The blank set is applied when the file
     # being read IS this file, and to nothing else. MEASURED: applying it unconditionally broke
     # plants 1 and 5 -- a plant writes `GOOD_ROOT` into a synthetic `checks/good.py` and then asks
