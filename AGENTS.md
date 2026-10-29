@@ -138,8 +138,8 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`checks/corpus-figure.py` **READS **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS
   agrees`** (**rc=0** **WITH **`DEV=CPU`**).**  **⇒ AND **`unhealthy() -> []`**, **`artefacts_ok() ->
   []`**, **`repro_bad() -> []`** -- **THE **READINGS **ARE **EMPTY**, **NOT **"0 **COMPLAINTS"** -- **AND
-  **`repro`: **`319 of 319 files identical across two clean runs`**, **PEAK **RSS **896 **MB
-  (**`run`**, **171 **s**) **AND **1002 **MB **(**`repro`**, **350 **s**), **BOTH **`WITHIN-LIMITS`.**
+  **`repro`: **`319 of 319 files identical across two clean runs`**, **PEAK **RSS **906 **MB
+  (**`run`**, **204 **s**) **AND **938 **MB **(**`repro`**, **401 **s**), **BOTH **`WITHIN-LIMITS`.**
   **⇒ AND **THE **CLAIM **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** --
   **AND **A **GOVERNING **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY
   **BRIEF **THAT **CITES **IT.**  **⇒ AND **THE **DOSE **OF **STALENESS **IS **THE **SUBSTRATE
