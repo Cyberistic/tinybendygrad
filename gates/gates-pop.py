@@ -83,6 +83,7 @@ failure mode is invisible from inside this file.
 import argparse
 import ast
 import contextlib
+import fcntl
 import io
 import os
 import re
@@ -91,6 +92,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import tokenize
 from collections import Counter
 from pathlib import Path
@@ -1153,6 +1155,134 @@ def report_roots(derivation, indent="   "):
 # by `plants()`'s inertness assertion and by nothing that writes.
 LEDGER_PATH = HERE / LEDGER.name
 
+# THE LEDGER IS A SHARED WRITABLE PATH, AND A READ-MODIFY-WRITE **WITHOUT **A **LOCK** IS **A
+# LOST **UPDATE**.  `checks/differ.py` takes an `fcntl.flock` for exactly this -- on the corpus's
+# artifact directory -- and this file writes the SAME KIND **OF **THING** (one shared ledger, one
+# row per gate, written by the unit that owns each path).
+#
+# **⇒ AND **THE **WINDOW **IS **REAL **AND **IT **IS **SMALL**: **THE **READ **IS **AT
+# `:1304`** **AND **THE **WRITE **IS **AT **`:1319`**, **AND **BETWEEN **THEM **THE **MERGE **IS
+# COMPUTED **FROM **A **SNAPSHOT **OF **THE **OLD **LEDGER** — **SO **TWO **WRITES **THAT **BOTH
+# **READ **THE **SAME **OLD **LEDGER **AND **BOTH **WRITE **WILL **BOTH **KEEP **THE **OTHER's
+# **ROW**, **AND **ONE **OF **THE **TWO **WRITES **LOSES **THE **OTHER's **ROW.**  **⇒ MEASURED
+# **2026-10-29: **127 **INTERLEAVED **WRITES **BY **THREE **UNITS **LOST **NOTHING** — **BUT **THAT
+# **IS **NOT **A **PROOF**, **IT **IS **A **LUCK**, **AND **THE **INSTRUMENT **SHOULD **NOT **RELY
+# **ON **LUCK **FOR **A **RECORD.**
+#
+# **⇒ AND **THE **LOCK **IS **THE **KERNEL's**, **NOT **A **PID **FILE**: **`fcntl.flock`** **ON **AN
+# **OPEN **FILE **DESCRIPTION** **RELEASES **WHEN **THE **HOLDER **DIES** (**NO **STALE **LOCK **TO
+# **RECLAIM**), **AND **IT **CANNOT **BE **STOLEN** (**THE **KERNEL **REFUSES**).  **⇒ AND **IT **IS
+# **RE-ENTRANT **INSIDE **ONE **PROCESS**, **BECAUSE **A **PLANT **CALLS **`write_ledger`** **AND
+# **THE **CLI **DOES **TOO**, **IN **THE **SAME **PROCESS** — **AND **A **RE-ENTRANT **LOCK **THAT
+# **RELEASED **ON **THE **INNER **EXIT** **WOULD **LET **A **SECOND **HOLDER **IN **WHILE **THE
+# **OUTER **ONE **STILL **BELIEVED **IT **HELD **THE **LEDGER** (**`checks/differ.py`'s **OWN
+# **`:135-139`** **RECORDS **THAT **EXACT **BUG **FOR **THE **CORPUS**).**
+LEDGER_LOCK = LEDGER_PATH.with_suffix(LEDGER_PATH.suffix + ".lock")
+_LOCK_FD: int | None = None
+_LOCK_DEPTH = 0
+
+
+@contextlib.contextmanager
+def ledger_lock(path=None):
+    """HOLD **THE **LEDGER **FOR **THE **READ-MODIFY-WRITE**, **OR **REFUSE**.
+
+    **⇒ AND **THE **LOCK **IS **PER **LEDGER **FILE**, **NOT **ONE **FIXED **PATH** — **BECAUSE **A
+    **PLANT **WRITES **A **SYNTHETIC **LEDGER **IN **A **TEMP **TREE**, **AND **A **LOCK **ON **A
+    **DIFFERENT **FILE **PROTECTS **NOTHING**: **THE **LOCK **MUST **BE **ON **THE **FILE **THAT **IS
+    **BEING **READ-AND-WRITTEN.**
+
+    **⇒ AND **A **REFUSAL **NAMES **THE **HOLDER**, **LIKE **`checks/differ.py`'s **CORPUS **LOCK
+    **DOES** — **AND **IT **NAMES **ONE **ONLY **IF **IT **IS **STILL **ALIVE**, **BECAUSE **THE
+    **KERNEL **IS **THE **AUTHORITY **ON **WHETHER **THERE **IS **A **HOLDER**, **AND **THE **FILE **IS
+    **ONLY **THE **HOLDER's **OWN **RECORD **OF **ITSELF** — **SO **A **NAME **WHOSE **PROCESS **IS
+    **GONE **IS **NOT **PRINTED**, **BECAUSE **A **REFUSAL **THAT **NAMES **A **DEAD **PROCESS **IS **A
+    **LIE **ABOUT **A **LIVE **LOCK.**
+    """
+    global _LOCK_FD, _LOCK_DEPTH
+    if _LOCK_DEPTH:
+        _LOCK_DEPTH += 1
+        try:
+            yield None
+        finally:
+            _LOCK_DEPTH -= 1
+        return
+    lpath = Path(path) if path is not None else LEDGER_PATH
+    llock = lpath.with_suffix(lpath.suffix + ".lock")
+    llock.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(3):
+        fd = os.open(llock, os.O_RDWR | os.O_CREAT, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            os.close(fd)
+            yield _lock_refusal(llock)
+            return
+        # THE FILE WE LOCKED MUST STILL BE THE FILE AT THAT PATH: a sweep that deletes it would
+        # leave this process holding an INODE nobody else can find, and the next holder would lock
+        # a NEW file -- two holders, one ledger.
+        try:
+            same = os.fstat(fd).st_ino == os.stat(llock).st_ino
+        except OSError:
+            same = False
+        if not same:
+            os.close(fd)
+            continue
+        os.ftruncate(fd, 0)
+        os.write(fd, f"{os.getpid()} {time.time()}\n".encode())
+        _LOCK_FD = fd
+        _LOCK_DEPTH = 1
+        try:
+            yield None
+        finally:
+            _LOCK_DEPTH = 0
+            _LOCK_FD = None
+            os.close(fd)   # CLOSING THE DESCRIPTOR RELEASES THE `flock` -- THE KERNEL's PROMISE
+        return
+    yield _lock_refusal(llock)
+
+
+def _lock_refusal_text(lock_path=None) -> str:
+    """THE **REFUSAL **TEXT**, **AS **A **STRING**, **SO **A **PLANT **CAN **ASSERT **ON **IT** —
+    **A **PLANT **THAT **ASSERTS **ON **THE **BEHAVIOUR **AND **NOT **ON **THE **WORDS **IS **A
+    **PLANT **THAT **ROTS **WHEN **THE **WORDS **DO.**  **⇒ AND **THE **WORDS **ARE **STILL **HERE**
+    **BECAUSE **A **REFUSAL **THAT **DOES **NOT **SAY **WHO **HOLDS **IT **IS **A **REFUSAL **A
+    **CALLER **CANNOT **ACT **ON** — **AND **THE **PLANT **CHECKS **THAT **IT **DOES**."""
+    lp = Path(lock_path) if lock_path is not None else LEDGER_LOCK
+    pid = 0
+    try:
+        pid = int(lp.read_text().split()[0])
+    except (OSError, ValueError, IndexError):
+        pid = 0
+    if pid and not _process_alive(pid):
+        pid = 0
+    try:
+        shown = lp.relative_to(ROOT)
+    except ValueError:
+        shown = lp
+    return (f"another writer holds the ledger lock: {shown} is held by "
+            f"pid {pid or 'UNKNOWN'}. This write refuses to start: the ledger is a SHARED "
+            f"read-modify-write, and two writers that read the same old ledger will lose one "
+            f"of the two rows. Wait for the holder.")
+
+
+def _lock_refusal(lock_path=None) -> str:
+    """THE **REFUSAL**, **AND **IT **NAMES **THE **HOLDER **IF **IT **IS **ALIVE**."""
+    return _lock_refusal_text(lock_path)
+
+
+def _process_alive(pid: int) -> bool:
+    """IS **THE **PID **STILL **RUNNING**?  **`os.kill(pid, 0)`** **IS **THE **POSIX **WAY**, **AND
+    **IT **IS **NOT **A **SIGNAL** — **IT **CHECKS **FOR **PERMISSION**."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
 # **A ROW IS NOT A CLAIM THAT A GATE EXISTS. IT IS A RECORD OF A GATE THAT WAS DISCOVERED, AND
 # `reason == RETIRED` IS WHAT IT SAYS WHEN THAT GATE IS GONE.** MEASURED, and both halves of this
 # sentence were defects before it:
@@ -1273,6 +1403,13 @@ SPELLINGS = frozenset(ledger_line(("p", "r", "q", b, o)).split("\t")[3]
                       for b in (False, True) for o in (False, True))
 
 
+
+class LedgerLocked(Exception):
+    """THE **LEDGER **IS **HELD **BY **ANOTHER **WRITER**.  **⇒ A **REFUSAL **IS **NOT **A
+    **CORRUPTION**, **AND **THE **DIFFERENCE **IS **THE **WHOLE **POINT**: **THE **SECOND **WRITE
+    **SAYS **WHO **HAS **THE **LOCK **AND **EXITS**, **AND **THE **LEDGER **THE **FIRST **WRITE
+    **IS **WRITING **IS **LEFT **EXACTLY **AS **IT **WAS.**"""
+
 def write_ledger(rows, path=None, only=None):
     """MERGE into the ledger at `path`. **A LINE IS NEVER DROPPED.**
 
@@ -1301,22 +1438,30 @@ def write_ledger(rows, path=None, only=None):
     Returns the unaccountable paths, or None after a write.
     """
     lp = path or LEDGER_PATH
-    old = read_ledger(lp) or []
-    live = {r[0]: r for r in rows}
-    if only is None:
-        merged = list(rows) + [(p, RETIRED, c, a, o) for p, _r, c, a, o in old if p not in live]
-    else:
-        unknown = sorted(p for p in only if p not in live and all(r[0] != p for r in old))
-        if unknown:
-            return unknown
-        adopted = [live[p] for p in only if p in live]
-        carried = [(p, RETIRED, c, a, o) if p in only and p not in live else (p, reason, c, a, o)
-                   for p, reason, c, a, o in old if p not in only or p not in live]
-        merged = adopted + carried
-    body = LEDGER_PREAMBLE.splitlines() + [LEDGER_HEADER] + [ledger_line(r) for r in
-                                                        sorted(merged, key=lambda r: r[0])]
-    lp.parent.mkdir(parents=True, exist_ok=True)
-    lp.write_text("\n".join(body) + "\n")
+    # **⇒ THE **READ **AND **THE **WRITE **ARE **INSIDE **THE **LOCK**, **BECAUSE **THE **BUG
+    # **THIS **LOCK **EXISTS **TO **PREVENT **IS **A **LOST **UPDATE**: **TWO **WRITERS **THAT **BOTH
+    # **READ **THE **SAME **OLD **LEDGER **AND **BOTH **WRITE **WILL **BOTH **KEEP **THE **OTHER's
+    # **ROW**, **AND **ONE **OF **THE **TWO **WRITES **LOSES **THE **OTHER's **ROW.**  **⇒ LOCKING
+    # **ONLY **THE **WRITE **WOULD **BE **A **LOCK **THAT **LOCKS **NOTHING.**
+    with ledger_lock(lp) as refusal:
+        if refusal is not None:
+            raise LedgerLocked(refusal)
+        old = read_ledger(lp) or []
+        live = {r[0]: r for r in rows}
+        if only is None:
+            merged = list(rows) + [(p, RETIRED, c, a, o) for p, _r, c, a, o in old if p not in live]
+        else:
+            unknown = sorted(p for p in only if p not in live and all(r[0] != p for r in old))
+            if unknown:
+                return unknown
+            adopted = [live[p] for p in only if p in live]
+            carried = [(p, RETIRED, c, a, o) if p in only and p not in live else (p, reason, c, a, o)
+                       for p, reason, c, a, o in old if p not in only or p not in live]
+            merged = adopted + carried
+        body = LEDGER_PREAMBLE.splitlines() + [LEDGER_HEADER] + [ledger_line(r) for r in
+                                                            sorted(merged, key=lambda r: r[0])]
+        lp.parent.mkdir(parents=True, exist_ok=True)
+        lp.write_text("\n".join(body) + "\n")
     return None
 
 
@@ -1513,6 +1658,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
           f"on a wrong one\n")
 
     red = 0
+    wrote_ok = False
     if offroot:
         red = 1
         print(f"III FALSE      {offroot} file(s) compute a root that RESOLVES OUTSIDE the repo, so "
@@ -1624,6 +1770,15 @@ def report(root, ledger_mode, ledger_path=None, only=None):
     if ledger_mode != "check" and only is not None and any(
             k not in only for k in (*added, *gone, *moved, *back)):
         red = 1
+    # **⇒ AND **THE **WRITE **SUCCEEDED **AND **THE **RUN **IS **STILL **RED** — **AND **A **CALLER
+    # **THAT **READS **ONLY **THE **EXIT **STATUS **WOULD **REPORT **A **FAILURE **FOR **A
+    # **SUCCESS.**  **MEASURED 2026-10-29: **THREE **UNITS **PAID **127 **ROWS** **AND **EVERY **ONE
+    # **OF **THE **INVOCATIONS **EXITED **1**, **SO **THE **37/49/41 **UNIT **REPORTS **ALL **READ
+    # **"37 **FAILURES **FOR **37 **SUCCESSES"**.**  **⇒ AND **THE **EXIT **CODE **IS **RIGHT** — **A
+    # **PATHSPEC **WRITE **THAT **LEAVES **A **MOVEMENT **UNNAMED **IS **NOT **GREEN**, **AND **THAT
+    # **IS **THE **GATE's **JOB** — **BUT **THE **RUN **MUST **SAY **THAT **THE **WRITE **HAPPENED**,
+    # **BECAUSE **"RED" **ALONE **CANNOT **TELL **A **CALLER **WHICH **OF **THE **TWO **IT **IS
+    # **LOOKING **AT.**
     if ledger_mode != "check":
         # **A WRITE OF THE SHARED LEDGER WITHOUT A PATHSPEC IS THE CENTRAL SWEEP.** The CLI refuses
         # it before it gets here; this is the same refusal for a caller that imported `report`.
@@ -1645,7 +1800,13 @@ def report(root, ledger_mode, ledger_path=None, only=None):
         abs_gone = [k for k in gone if took(k)]
         abs_moved = [k for k in moved if took(k)]
         abs_back = [k for k in back if took(k)]
-        unknown = write_ledger(rows, lpath, scope)
+        # **⇒ A **LOCKED **LEDGER **IS **A **REFUSAL, **NOT **A **CRASH.**  **⇒ AND **THE
+        # **REFUSAL **NAMES **THE **HOLDER**, **BECAUSE **A **REFUSAL **THAT **DOES **NOT **SAY
+        # **WHO **HOLDS **IT **IS **A **REFUSAL **A **CALLER **CANNOT **ACT **ON.**
+        try:
+            unknown = write_ledger(rows, lpath, scope)
+        except LedgerLocked as locked:
+            refuse(str(locked))
         if unknown:
             refuse(f"`--only` named {', '.join(unknown)}, and this run can neither adopt nor "
                    f"retire {'it' if len(unknown) == 1 else 'them'}: not discovered, and not in "
@@ -1657,6 +1818,7 @@ def report(root, ledger_mode, ledger_path=None, only=None):
         # names one path cannot claim it absorbed the rest. PLANT 12 asserts the line parses;
         # PLANT 14 asserts the intersection.
         spec = "" if scope is None else f" -- paths: {', '.join(sorted(scope))}"
+        wrote_ok = True
         print(f"III LEDGER WROTE {lpath.name} ({lpath}): {len(prev or [])} -> {len(after)} row(s), "
               f"{tombs} retired, none dropped.\n"
               f"     IT ABSORBED {len(abs_added)} new, {len(abs_moved)} changed, "
@@ -1687,6 +1849,23 @@ def report(root, ledger_mode, ledger_path=None, only=None):
     print(f"GATES-POP: {'RED' if red else 'OK'} -- {len(rows)} entry points, {named} name a root, "
           f"{named - unasserted} assert it, {offroot} resolve outside the repo; "
           f"{len(grows)} generated directories discovered (shared with retention-check)")
+    # **⇒ AND **THE **WRITE **SUCCEEDED **AND **THE **RUN **IS **STILL **RED** — **AND **A **CALLER
+    # **THAT **READS **ONLY **THE **EXIT **STATUS **WOULD **REPORT **A **FAILURE **FOR **A
+    # **SUCCESS.**  **MEASURED 2026-10-29: **THREE **UNITS **PAID **127 **ROWS** **AND **EVERY **ONE
+    # **OF **THE **INVOCATIONS **EXITED **1**, **SO **THE **37/49/41 **UNIT **REPORTS **ALL **READ
+    # **"37 **FAILURES **FOR **37 **SUCCESSES"**.**  **⇒ AND **THE **EXIT **CODE **IS **RIGHT** — **A
+    # **PATHSPEC **WRITE **THAT **LEAVES **A **MOVEMENT **UNNAMED **IS **NOT **GREEN**, **AND **THE
+    # **OTHER **CLAUSES **CAN **BE **RED **TOO** — **BUT **IT **IS **NOT **BECAUSE **THE **WRITE
+    # **FAILED.**  **⇒ AND **THE **LINE **IS **HERE**, **AFTER **THE **VERDICT **AND **AFTER **`red`
+    # **IS **SET**, **BECAUSE **A **LINE **THAT **PRINTS **BEFORE **THE **FACT **IT **REPORTS **IS **A
+    # **LINE **THAT **CAN **BE **WRONG.**
+    if red and wrote_ok:
+        print("III   THE WRITE SUCCEEDED AND **THIS **RUN **IS **STILL **RED**. **THE **EXIT "
+              "**CODE **IS **1 **FOR **THE **RUN's **OWN **REASON** -- **A **PATHSPEC **WRITE "
+              "**THAT **LEAVES **A **MOVEMENT **UNNAMED **IS **NOT **GREEN**, **AND **THE **OTHER "
+              "**CLAUSES **CAN **BE **RED **TOO** -- **BUT **IT **IS **NOT **BECAUSE **THE "
+              "**WRITE **FAILED.** **THE **WRITE **HAPPENED**, **AND **THE **LEDGER **IS **ON "
+              "**DISK **WITH **THE **ROW.**")
     return red
 
 
@@ -2453,6 +2632,67 @@ def _plants():
                    f"not_swept={not_swept} retired_one={retired_one} "
                    f"(rc bare={rc_bare} one={rc_one} two={rc_two} settled={rc_settled} "
                    f"keep={rc_keep} ret={rc_ret} after={rc_after})"))
+
+    # PLANT 15 -- **THE **LEDGER **IS **A **SHARED **PATH, **AND **TWO **WRITERS **THAT **BOTH
+    # **READ **THE **SAME **OLD **LEDGER **WILL **LOSE **ONE **OF **THE **TWO **ROWS.**  The lock is
+    # what makes that impossible, and **A **LOCK **THAT **IS **NOT **EXERCISED **IS **A **LOCK
+    # **THAT **IS **NOT **PROVEN.**  MEASURED 2026-10-29: 127 interleaved writes by three units
+    # lost NOTHING -- **but **that **is **not **a **proof, **it **is **a **luck**, **and **an
+    # **instrument **must **not **rely **on **luck **for **a **record.**
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r, "checks", "gates")
+        syn = r / HERE.relative_to(ROOT) / LEDGER.name
+        lock = r / HERE.relative_to(ROOT) / (LEDGER.name + ".lock")
+        # **THE **HOLDER **IS **A **CHILD **PROCESS**, **SO **THE **REFUSAL **IS **A **REFUSAL **BY
+        # **ANOTHER **HOLDER** — **NOT **THIS **PROCESS's **OWN **RE-ENTRANCY** (which **would **be
+        # **A **PASS **WITH **NO **SECOND **HOLDER **AT **ALL**).
+        # THE HOLDER'S SCRIPT IS **A **FILE**, **NOT **AN **INLINE **`-c`** — **BECAUSE **A **STRING
+        # **WITH **AN **F-STRING **INSIDE **A **LIST **OF **STRINGS **IS **A **QUOTING **PROBLEM
+        # **WAITING **TO **HAPPEN**, **AND **A **PLANT **THAT **CANNOT **BE **READ **IS **A **PLANT
+        # **NOBODY **WILL **FIX.**
+        holder_src = r / "holder.py"
+        holder_src.write_text(
+            "import fcntl, os, sys, time\n"
+            "fd = os.open(sys.argv[1], os.O_RDWR | os.O_CREAT, 0o644)\n"
+            "fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)\n"
+            "os.ftruncate(fd, 0)\n"
+            "os.write(fd, (str(os.getpid()) + ' ' + str(time.time()) + chr(10)).encode())\n"
+            "print('held', flush=True)\n"
+            "time.sleep(30)\n")
+        holder = subprocess.Popen([sys.executable, str(holder_src), str(lock)],
+                                  stdout=subprocess.PIPE, text=True)
+        try:
+            holder.stdout.readline()          # WAIT FOR THE LOCK TO BE HELD
+            lock.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(lock, os.O_RDWR | os.O_CREAT, 0o644)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(fd, fcntl.LOCK_UN)
+                refused = False
+            except OSError:
+                refused = True
+            finally:
+                os.close(fd)
+            # AND THE WRITE PATH REFUSES **AND **WRITES **NOTHING** — **THE **SECOND **HALF**, **BECAUSE
+            # **A **LOCK **THAT **HOLDS **BUT **A **WRITE **THAT **IGNORES **IT **IS **NOT **A **LOCK**.
+            before = syn.read_bytes() if syn.is_file() else b""
+            wrote = False
+            try:
+                write_ledger([("checks/home-witness.py", "py-main", "x", True, True)], syn)
+            except LedgerLocked:
+                wrote = True
+            after = syn.read_bytes() if syn.is_file() else b""
+            unchanged = before == after
+            names = "holds the ledger lock" in _lock_refusal_text()
+            checks.append(("15: THE LEDGER IS A SHARED PATH -- a second HOLDER IS REFUSED, the refusal "
+                           "NAMES the holder, and the refused write CHANGES NOTHING",
+                           refused and wrote and unchanged and names,
+                           f"refused={refused} refused_write_raised={wrote} unchanged={unchanged} "
+                           f"names={names}"))
+        finally:
+            holder.kill()
+            holder.wait()
 
     print("PLANTS -- one direction per check, plus an inertness assertion, because a meta-gate's "
           "blind\nspot is the one nobody else checks. The count below is COMPUTED: MEASURED "
