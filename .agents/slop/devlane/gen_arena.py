@@ -99,12 +99,25 @@ def param_arg(payload: str, dt: str) -> str:
     """the PARAM's `ParamArg`: slot, dtype, name, volatile."""
     f = payload.split("~")
     slot, name, vol = f[0], f[1], f[2]
-    nm = "None{}" if name == "-" else f"Some{{"{name}"}}"
     d = DTS[dt]
-    # `ParamArg{slot, dtype, vmin, vmax, val, name, addrspace, device, ...}`
-    return (f"O.AParam{{O.ParamArg{{{slot}, {d}, None{{}}, None{{}}, None{{}}, {nm}, "
-            f"S.AGlobal{{}}, None{{}}, False{{}}, None{{}}, None{{}}, "
-            f"{'True{}' if vol == '1' else 'False{'}}}, None{{}}}}}")
+    # The Rust braces are LITERAL in the emitted source. They are NOT written in
+    # an f-string, because a literal brace in an f-string is a doubling bug
+    # waiting to happen -- so the template is a plain string and every brace is
+    # a single one, and the SUBSTITUTIONS are marked with `@NAME@`.
+    #
+    # The name is a STRING VALUE, so it is quoted -- exactly as the port's own
+    # `Some{"mine"}` literals read.
+    nm = "None{}" if name == "-" else 'Some{"%s"}' % name
+    # A `Bool` literal, hoisted out for the same reason.
+    volatile = "True{}" if vol == "1" else "False{}"
+    # The port's `ParamArg` is TWELVE fields, in upstream's order
+    # (`tinybendygrad/uop/ops.bend:869`, whose `ParamArg.slot` destructures all
+    # twelve): slot, dtype, vmin_vmax, multiple_of, NAME, addrspace, device,
+    # VOLATILE, image, buffer, bind_on_realize, val.
+    return ("O.AParam{O.ParamArg{@SLOT@, @DT@, None{}, None{}, @NM@, "
+            "S.AGlobal{}, None{}, @VOLATILE@, None{}, None{}, False{}, None{}}}"
+            ).replace("@SLOT@", slot).replace("@DT@", d).replace("@NM@", nm).replace("@VOLATILE@", volatile)
+
 
 
 def range_arg(payload: str) -> str:
