@@ -25512,3 +25512,31 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       Evidence: `.agents/slop/ledgerdue-g2/` (`REPORT.md`, `per-path-before.rows`,
       `per-path-after.rows`, `ledgerdue-before.out`, `ledgerdue-after.out`,
       `gates-pop-before.out`, `gates-pop-after.out`).
+
+- [x] **THE **LEDGER **DEBT **IS **ZERO** (MEASURED **2026-10-29**, **THREE **UNITS**, **127 **ROWS**).**
+      **`gates/ledgerdue-gate.py` **READS **`OWNED 0 UNOWNED 0 DUE 0`** **AND **`VERDICT PASS`**, **AND
+      **`gates/gates-pop.ledger.tsv` **IS **MONOTONIC** (262 **->** 389 **ROWS**, **0 **DROPPED**, **THE
+      **5 **TOMBSTONES **INTACT **ACROSS **127 **INTERLEAVED **WRITES **BY **THREE **UNITS**).**
+      **⇒ AND **THE **CURE **IS **THE **TREE's **OWN**: **ONE **`--write-ledger --only <path>` **PER
+      **PATH** (41 + 49 + 37), **AND **A **BARE **`--write-ledger` **IS **REFUSED** — **THE **CENTRAL
+      **SWEEP **IS **NOT **A **MODE.**
+      **⇒ AND **THE **ROW **DOES **NOT **CARRY **THE **OWNING **COMMIT**, **AND **THAT **IS **BY
+      **DESIGN, **NOT **A **DEFECT**: **THE **SCHEMA **IS **A **QUINTUPLE**, **`read_ledger` **ENFORCES
+      **THE **ARITY** (**MEASURED: **A **SIX-FIELD **ROW **READS **AS **`UNREADABLE`**), **AND **THE
+      **OWNER **IS **RE-DERIVED **FROM **`git log --diff-filter=AD` **ON **EVERY **READ** — **A **STORED
+      **COMMIT **IS **A **CLAIM **THAT **CAN **ROT**; **A **RE-DERIVED **ONE **CANNOT.**
+      **⇒ AND **THREE **DEFECTS **REPORTED, **NOT **CHANGED** (THE **BRIEF **FORBIDS **EDITING **THE
+      **TOOLS**): **(1) **`gates/gates-pop.py` **HAS **NO **LOCK** **ON **THE **SHARED **LEDGER **IT
+      **WRITES** — **WHILE **`checks/differ.py` **TAKES **AN **`fcntl.flock`** **FOR **EXACTLY **THIS;
+      **(2) **WRITE **MODE **EXITS **1** **BY **DESIGN** (**A **PATHSPEC **WRITE **STAYS **RED **WHILE
+      **ANY **MOVEMENT **IS **UNNAMED**) — **SO **A **CALLER **READING **ONLY **THE **EXIT **STATUS
+      **WOULD **REPORT **37 **FAILURES **FOR **37 **SUCCESSES**; **(3) **`DUE` **IS **A **SET
+      **DIFFERENCE**, **SO **A **PAID **PATH **IS **NOT **PRINTED **AT **ALL.**
+- [x] **THE **`dialect-fixture-gate` **IS **rc=0** (`c64d64bf5`)** **AND **THE **`gates-pop.ledger.tsv`
+      **DEBT **IS **PAID** — **AND **BOTH **ARE **THE **SAME **LESSON**: **A **GATE **THAT **COUNTS
+      **EVERY **QUOTED **STRING **AS **A **CLAIM**, **OR **A **LEDGER **THAT **OWNS **A **ROW **PER
+      **GATE**, **IS **A **POPULATION **QUESTION **BEFORE **IT **IS **A **VERDICT **QUESTION.**
+      **⇒ AND **THE **DIALECT **GATE's **NEW **POPULATION **IS **DISCOVERED **FROM **THE **PORT**
+      (**285 **ROW-MAKER **NAMES**, **EACH **PRINTED **WITH **THE **FILE **AND **LINE **OF **ITS
+      **DEFINITION**), **AND **THE **OLD **RULE's **NUMBERS **ARE **PRINTED **BESIDE **THE **NEW
+      **ONES** — **SO **A **READER **CAN **SEE **WHAT **THE **NEW **RULE **STOPPED **COUNTING.**
