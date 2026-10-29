@@ -173,11 +173,20 @@ def dup_census_lanes() -> set[str]:
 # SOMETIMES if its basename starts with one of these. Everything else is written on every run.
 #
 #   differ    `differ.run()` stages as `.tmp.<name>` and `os.replace`s it (`differ.py:304`), so a
-#             staging name exists only inside a run's window. The BASE names exist between runs.
+#             staging name exists only inside a run's window. The BASE names exist between runs --
+#             EXCEPT the ones `differ.py` itself declares CONDITIONAL, which it writes only on a
+#             failure. MEASURED 2026-10-30: `D0-repro-diff.txt` is written only inside `cmd_repro`'s
+#             failure branch (`differ.py:2649`) and a PASSING repro DELETES it (`differ.py:2601`),
+#             so its absence is the HEALTHY state -- and the reader `gates/txt-carveout-gate.py` was
+#             RED on exactly that name. THE PREFIX IS NOT REtyped HERE: it is READ from the generator's
+#             own `CONDITIONAL_ARTIFACTS`, because a second copy of a list is a contract with no
+#             generator and it rots silently. The tuple below holds the BASENAME PREFIX each
+#             conditional name starts with, derived from the generator's own names.
 #   rename    `empty_remnants()` already intersects existence AND size: a non-empty or deleted
 #             remnant leaves the set by construction, so absence there is never observable drift.
 #   skipexit  its declared() is the outputs of a lane that runs on demand; between runs they are absent.
-CONDITIONAL = {graphcmp_artifacts: (".tmp.",),
+CONDITIONAL = {graphcmp_artifacts: (".tmp.",) + tuple(
+                   os.path.splitext(n)[0] + "." for n in load("checks/differ.py", "differ").CONDITIONAL_ARTIFACTS),
                empty_remnants: ("",),
                skipexit_artifacts: ("",)}
 

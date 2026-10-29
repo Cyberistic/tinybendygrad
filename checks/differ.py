@@ -681,14 +681,24 @@ REPRO_ARTIFACT = "D0-repro.txt"
 # THE DIFFERING ROWS, when a repro FAILS. `repro` prints the differing bytes and then throws the
 # snapshots away; without this file the failure is a NOTIFICATION, not a finding.
 REPRO_DIFF_ARTIFACT = "D0-repro-diff.txt"
+# THE NAMES THIS FILE WRITES ONLY SOMETIMES. `D0-repro-diff.txt` is written ONLY inside the failure
+# branch of `cmd_repro` (`differ.py:2649`, which is followed by `return 1`), and a PASSING repro
+# DELETES it (`differ.py:2601-2604`). So its presence on disk means exactly "the last repro FAILED",
+# and its ABSENCE is not drift -- it is the normal state of a healthy corpus.
+#
+# MEASURED 2026-10-30: `gates/txt-carveout-gate.py` was RED on exactly this one name -- the ONLY
+# BASE name of `declared()` that was absent, every other absent name being a `.tmp.` staging name.
+# The reader was RIGHT and the DECLARATION was incomplete: `declared()` cannot tell a reader which of
+# its names are unconditional, so a name written only on failure is indistinguishable from a name
+# written on every run. This tuple is that distinction, held by the GENERATOR, so
+# `checks/no-txt.py` reads it instead of retyping the name -- a second copy of a list is a contract
+# with no generator, and it rots silently.
+CONDITIONAL_ARTIFACTS = (REPRO_DIFF_ARTIFACT,)
 # THE SUMMARY ROWS THAT RECORD THE OBSERVER, NOT THE SUBJECT. `substrate-head` says WHICH COMMIT
 # measured the run; the rest of the summary says WHAT was measured. A comparison over the whole
 # file is therefore a comparison of the run AND the moment it was read, which is not the same claim
 # twice. See `snap()`.
 OBSERVER_ROWS = ("substrate-head",)
-# THE DIFFERING ROWS, when a repro FAILS. `repro` prints the differing bytes and then throws the
-# snapshots away; without this file the failure is a NOTIFICATION, not a finding.
-REPRO_DIFF_ARTIFIFACT = "D0-repro-diff.txt"
 # `d10-transcript` PINS D10's VERBATIM, WHICH IS THE ONE ARTIFACT THE CORPUS NEVER JUDGED.
 # MEASURED 2026-10-15: `snap()` byte-compares `D10-zerorow-guard.txt.err` across the two runs, so
 # `repro-rc=rc=0` proves it REPRODUCIBLE and says NOTHING about whether it is RIGHT -- and a `classify`

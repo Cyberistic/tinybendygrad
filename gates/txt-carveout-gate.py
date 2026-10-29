@@ -36,11 +36,11 @@ import tempfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def load():
+def load(root: str = ROOT):
     """`checks/no-txt.py` IMPORTED BY PATH, so the declarations, the walk and this gate cannot
     hold two opinions. A loader that fails is REFUSED, never PASS: a gate that exits 0 having
     measured nothing is worse than no gate, because it is trusted."""
-    spec = importlib.util.spec_from_file_location("no_txt", os.path.join(ROOT, "checks/no-txt.py"))
+    spec = importlib.util.spec_from_file_location("no_txt", os.path.join(root, "checks/no-txt.py"))
     mod = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(mod)
@@ -50,8 +50,8 @@ def load():
     return mod
 
 
-def main(plant: bool = False) -> int:
-    nt = load()
+def main(plant: bool = False, root: str = ROOT) -> int:
+    nt = load(root)
     if nt is None:
         return 3
     try:
@@ -88,8 +88,19 @@ def report(nt) -> int:
 
 
 EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {0: ["--plant"], 1: [], 3: []}
+# THE PLANT IS THE RED, NOT THE GREEN. MEASURED 2026-10-30: this table read
+# `{0: ["--plant"], 1: [], 3: []}`, and `--plant` points `GRAPH_D` at a directory holding none of
+# the declared artifacts -- which is what "the corpus went stale" looks like, and which is the
+# RED this gate exists to catch. So `--plant` produced `1` and the `0` row said it produced `0`:
+# the declaration was INVERTED, and `gates/gate-surface.py` charged it MISPLANT on both rows.
+#
+# MEASURED, EACH ROW, BY RUNNING IT: no argv on a healthy tree is `0`; `--plant` is `1`; and
+# `--root /dev/null` makes the LOADER fail, which is this gate's own REFUSED (3).
+PLANTS = {0: [], 1: ["--plant"], 3: ["--root", "/dev/null"]}
 
 
 if __name__ == "__main__":
-    sys.exit(main("--plant" in sys.argv))
+    root = ROOT
+    if "--root" in sys.argv:
+        root = sys.argv[sys.argv.index("--root") + 1]
+    sys.exit(main("--plant" in sys.argv, root))
