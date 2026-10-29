@@ -313,7 +313,7 @@ equivalent set.
 | `mine-before.rows` | the 37 `DUE NEW <path> OWES <sha>` lines, before |
 | `mine-after.rows` | the same query, after — **EMPTY** |
 | `pay.rows` | per-path: rc, before/after presence in the ledger, the `IT ABSORBED` line |
-| `owes-shas.txt` | the 29 distinct owning commits |
+| `owes-shas.rows` | the 29 distinct owning commits |
 | `ledgerdue-before.out` / `-mid.out` / `-after.out` / `-final.out` | the gate, four times |
 | `popcheck-before.out` / `-after.out` / `-final.out` | `gates-pop.py --ledger check`, three times |
 | `head-ledger.tsv`, `base-ledger.tsv` | HEAD's and `cd450ea61`'s ledger blobs, for the monotonicity diff |
