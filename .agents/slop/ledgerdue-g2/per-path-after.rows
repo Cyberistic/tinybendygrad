@@ -1,0 +1,49 @@
+checks/revendor-struct.py	NEW	OWES 4f823733c 2026-10-17 14:33:56 +0300 revendor: a DECLARED population, a resolved reader census, a	GONE
+gates/allcopies-census.py	NEW	OWES 17feb7b3b 2026-10-17 14:16:21 +0300 gates/allcopies-census.py: the six copies of one predicate, 	GONE
+gates/arenasrc_census.py	NEW	OWES 4b42c0ccf 2026-10-18 05:52:39 +0300 arenaparam: the 62 self-parenting nodes are threaded, and th	GONE
+gates/arenasrc_probe-check.py	NEW	OWES 4b42c0ccf 2026-10-18 05:52:39 +0300 arenaparam: the 62 self-parenting nodes are threaded, and th	GONE
+gates/banner-emit-gate.py	NEW	OWES 8241dd6cd 2026-10-20 03:21:54 +0300 the three lanes stop writing the census's banner shape	GONE
+gates/banner-emit-plant.py	NEW	OWES 8241dd6cd 2026-10-20 03:21:54 +0300 the three lanes stop writing the census's banner shape	GONE
+gates/corpuswitness-gate.py	NEW	OWES 6dab8e95d 2026-10-19 06:47:59 +0300 gates/corpuswitness-{gate,plant}.py: the second witness had 	GONE
+gates/corpuswitness-plant.py	NEW	OWES 6dab8e95d 2026-10-19 06:47:59 +0300 gates/corpuswitness-{gate,plant}.py: the second witness had 	GONE
+gates/dtypeeven-gate.py	NEW	OWES 853af9701 2026-10-22 20:52:54 +0300 dtype: `dtypes.index` goes, and the `dtypes.*` names get a g	GONE
+gates/dtypeeven-plant.py	NEW	OWES 853af9701 2026-10-22 20:52:54 +0300 dtype: `dtypes.index` goes, and the `dtypes.*` names get a g	GONE
+gates/edge-fixture-census.py	NEW	OWES 0841bcfb0 2026-10-20 20:03:26 +0300 THE FLAGSHIP GATE's FIXTURE MOVES OUT OF THE PRUNED TREE, IN	GONE
+gates/edge-oracle-pin-gate.py	NEW	OWES 9814ce773 2026-10-20 20:23:54 +0300 THE FLAGSHIP PIN GETS A GATE OF ITS OWN, AND A STATUS NO VOC	GONE
+gates/edge-plant.py	NEW	OWES ac186c3d9 2026-10-20 19:32:18 +0300 edge: the committed surface that runs the gates, and the tra	GONE
+gates/edge-runner.py	NEW	OWES ac186c3d9 2026-10-20 19:32:18 +0300 edge: the committed surface that runs the gates, and the tra	GONE
+gates/fixture-embed-census.py	NEW	OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH	GONE
+gates/float-halfclass-gate.py	NEW	OWES d4c99aed7 2026-10-20 19:57:23 +0300 js-lane: the half NaN payload, and the BEND is not a correct	GONE
+gates/gates-pop-rows-gate.py	NEW	OWES f7703dcc0 2026-10-19 19:43:56 +0300 gates-pop-rows-gate: what a ledger row IS, and a check that 	GONE
+gates/llvmir_render-gate.py	NEW	OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O	GONE
+gates/llvmir_render-oracle.py	NEW	OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O	GONE
+gates/mixin-op-plant.py	NEW	OWES ca185c501 2026-10-23 00:18:44 +0300 mixin: the mean's denominator is promoted TWICE, and a value	GONE
+gates/nir-oracle.py	NEW	OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH	GONE
+gates/nir_render-gate.py	NEW	OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH	GONE
+gates/nir_render-plant.py	NEW	OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH	GONE
+gates/nn-rows-gate.py	NEW	OWES a6d9093a0 2026-10-22 07:44:59 +0300 the committed tree did not compile, and the fix is 2 lines	GONE
+gates/ops_dsp_render-gate.py	NEW	OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O	GONE
+gates/ops_dsp_render-oracle.py	NEW	OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O	GONE
+gates/pathwitness-gate.py	NEW	OWES 2ce4176c2 2026-10-19 18:47:22 +0300 pathwitness-gate: name every witness of a fixture stem, and 	GONE
+gates/pin-cite-gate.py	NEW	OWES 1f30a38a8 2026-10-23 03:14:08 +0300 pin-cite-gate: the file the todo-cite gate loads BY PATH, an	GONE
+gates/pycell-census-gate.py	NEW	OWES 33785bd3e 2026-10-22 13:53:08 +0300 pycell-census: THE `py=` CELLS CLASSIFIED BY PROVENANCE, AND	GONE
+gates/pycell-census.py	NEW	OWES 33785bd3e 2026-10-22 13:53:08 +0300 pycell-census: THE `py=` CELLS CLASSIFIED BY PROVENANCE, AND	GONE
+gates/pycell-plant.py	NEW	OWES 33785bd3e 2026-10-22 13:53:08 +0300 pycell-census: THE `py=` CELLS CLASSIFIED BY PROVENANCE, AND	GONE
+gates/questionmark-plant-gate.py	NEW	OWES 65d64bb74 2026-10-19 00:13:39 +0300 graphcmp: the `?=32` pin becomes `?=0`, and a plant proves t	GONE
+gates/render_derive-plant.py	NEW	OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O	GONE
+gates/revendor-struct-gate.py	NEW	OWES 4f823733c 2026-10-17 14:33:56 +0300 revendor: a DECLARED population, a resolved reader census, a	GONE
+gates/specfold-gate.py	NEW	OWES db98a9bfd 2026-10-23 03:29:32 +0300 gates/specfold: the lane that EXHIBITS d4160980e's divergenc	GONE
+gates/specreach-gate.py	NEW	OWES 77e917f5e 2026-10-22 21:09:31 +0300 the SPEC TABLES dispatched two rules into the wrong ladder, 	GONE
+gates/subnormal-flush-gate.py	NEW	OWES cf650ff66 2026-10-20 19:29:31 +0300 js-lane: the 1194 f16/bf16 rows are FOUR defects in the JS l	GONE
+gates/target-census-gate.py	NEW	OWES ffbc2deec 2026-10-22 07:52:40 +0300 Target: ONE record, in upstream's home, and the port's two b	GONE
+gates/target-oracle.py	NEW	OWES ffbc2deec 2026-10-22 07:52:40 +0300 Target: ONE record, in upstream's home, and the port's two b	GONE
+gates/target-roundtrip-gate.py	NEW	OWES ffbc2deec 2026-10-22 07:52:40 +0300 Target: ONE record, in upstream's home, and the port's two b	GONE
+gates/tc_ptx_render_census-gate.py	NEW	OWES 5160af046 2026-10-22 10:21:12 +0300 tc_ptx: the ptx.py lane is GREEN, and it is a LANE now	GONE
+gates/tc_ptx_render_census-plant.py	NEW	OWES 5160af046 2026-10-22 10:21:12 +0300 tc_ptx: the ptx.py lane is GREEN, and it is a LANE now	GONE
+gates/todo-census.py	NEW	OWES e6341b1b0 2026-10-19 07:28:20 +0300 todo-census: the TODO population is 932 sites, not 929 tasks	GONE
+gates/txt-carveout-gate.py	NEW	OWES 05e926744 2026-10-18 22:12:56 +0300 txt: the carve-out now proves it is exactly as wide as what 	GONE
+gates/validate-oracle-absent-gate.py	NEW	OWES baaf4d975 2026-10-18 03:23:46 +0300 validate-oracle-absent: 360 GROUP-era rows HAD A GENERATOR, 	GONE
+gates/verdict-lane-gate.py	NEW	OWES 57a3ed3b3 2026-10-23 03:52:06 +0300 the first instrument that checks this port's proofs against 	GONE
+gates/x86_isa-gate.py	NEW	OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE	GONE
+gates/x86_isa-oracle.py	NEW	OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE	GONE
+gates/x86_isa-plant.py	NEW	OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE	GONE

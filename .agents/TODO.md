@@ -25468,3 +25468,47 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **CARRIED **EXACTLY **WHEN **IT **IS **ONE **OF **THOSE **CHUNKS**.  **⇒ MEASURED **AGAINST **THE
       **SUBSTRING **TEST **ON **EVERY **STRING **IN **EVERY **FRAGMENT**: **0 **DISAGREEMENTS**.  **⇒ 21 **s
       **-> 0.81 **s**, **NUMBERS **UNCHANGED.**
+
+## Session 2026-10-29 — the `ledgerdue` DEBT is ZERO: 127 rows, 49 of them MINE
+
+- [x] **ALL 49 OF THIS SLICE'S PATHS ARE PAID, AND THE TREE-WIDE DEBT IS ZERO.**
+      `gates/ledgerdue-gate.py` read `OWNED 127 UNOWNED 0 DUE 127` at the start of this
+      slice; the slice was **49 paths owed by 29 distinct commits**. **AFTER: `OWNED 0
+      UNOWNED 0 DUE 0`, `VERDICT PASS`**, and `gates/gates-pop.py --ledger check` reads
+      **`III LEDGER DIFF: 0 new, 0 UNRECORDED departure(s), 0 changed, 0 returned`**.
+      **=> AND `gates-pop --ledger check` STILL EXITS 1, AND THAT IS PRE-EXISTING AND
+      UNRELATED**: clause III prints `III FALSE 2 file(s) compute a root that RESOLVES
+      OUTSIDE the repo` -- **IDENTICALLY BEFORE AND AFTER**.
+- [x] **THE LEDGER IS MONOTONIC, MEASURED: 262 -> 389 DATA ROWS, 0 DROPPED**, and the
+      **5 `reason=gone` TOMBSTONES ARE 5 BEFORE AND 5 AFTER**. **=> AND THIS SLICE'S OWN
+      WRITE LOG SAYS: rows written = 48, rows retired = 0, changed = 0, returned = 0** --
+      **48 AND NOT 49 BECAUSE `gates/edge-fixture-census.py` WAS ABSORBED BY A CONCURRENT
+      MERGE BEFORE MY INVOCATION REACHED IT, AND ITS OWN RE-RUN REPORTED `IT ABSORBED 0
+      new` -- THE CORRECT IDEMPOTENT ANSWER, NOT A REFUSAL.**
+- [x] **THE CURE WAS INVOKED AS THE TREE SANCTIONS IT: `gates/gates-pop.py --write-ledger
+      --only <path>`, ONE INVOCATION PER PATH, 49 OF THEM. A BARE `--write-ledger` WAS
+      ATTEMPTED ONCE AS A MEASUREMENT AND WAS REFUSED** (*"the central sweep"*), **AND
+      THE LEDGER WAS BYTE-IDENTICAL AFTERWARDS.** **NOTHING WAS REFUSED IN THE 49.**
+- [x] **THE OWNING COMMIT WAS CROSS-CHECKED AGAINST THE TOOL'S OWN `events()`: 0
+      MISMATCHES ON 49 PATHS**, so no row was paid on behalf of a commit that does not own
+      it.
+- [x] **THE LEDGER ROW CANNOT CARRY THE OWNING COMMIT, AND THAT IS BY DESIGN.** The
+      format is a FIXED QUINTUPLE (`path`,`reason`,`root_const`,`asserts_root`,
+      `on_root`), and **a SIX-FIELD ROW IS READ AS ENTIRELY `UNREADABLE` -- MEASURED, by
+      writing one and reading it back**: `[('gates/x.py','UNREADABLE','UNREADABLE',
+      'UNREADABLE','UNREADABLE')]`, because `read_ledger` refuses any row whose arity is
+      not `len(LEDGER_FIELDS)`. **=> ATTRIBUTION LIVES IN THE READER**: `gates-pop.py`'s
+      `events()` re-derives `{path: (introduced_by, removed_by)}` from
+      `git log --diff-filter=AD` on every read, so **the owner of any ledger path is
+      ALWAYS re-derivable and the record does not depend on a commit cell.**
+- [ ] **`gates/gates-pop.py` HAS NO LOCK, AND THE LEDGER IS A SHARED WRITABLE PATH.**
+      `write_ledger` is a READ-MODIFY-WRITE (`read_ledger` then `write_text`) with no
+      exclusion, **CONTRASTED WITH `checks/differ.py`'s `fcntl.flock`**. **MEASURED NO LOST
+      UPDATE UNDER 5 CONCURRENT WRITES** (389 rows, all unique, 0 dupes, 0 `UNREADABLE`),
+      **BECAUSE EACH WRITE RE-READS AND EVERY UN-NAMED ROW IS CARRIED FORWARD UNCHANGED
+      -- BUT THE WINDOW IS REAL.** The fix is a `flock` on the ledger path, in a file the
+      brief forbids editing, so it is REPORTED and NOT MADE.
+
+      Evidence: `.agents/slop/ledgerdue-g2/` (`REPORT.md`, `per-path-before.rows`,
+      `per-path-after.rows`, `ledgerdue-before.out`, `ledgerdue-after.out`,
+      `gates-pop-before.out`, `gates-pop-after.out`).

@@ -1,0 +1,35 @@
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\('
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\Q'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\Q'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\]'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+ledgerdue WHEN 2026-10-29T00:12:59Z
+ledgerdue CMD ledgerdue-gate.py
+ledgerdue HEAD 6fbe011e7
+ledgerdue HEAD-MOVED since cd450ea61
+ledgerdue LEDGER git-blob=50003651cfc130e42e83bf9f3d102b098e661e01 write=not-a-mode
+ledgerdue DENOMINATOR live-diff re-derived (recorded cd450ea61 is a comparison, not the count)
+ledgerdue DIFF new=0 gone=0 changed=0 returned=0 ledger=389 live=384
+ledgerdue RECORDED cd450ea61 new=70 gone=5 changed=0 returned=0 ledger=224 live=289
+ledgerdue MOVED since cd450ea61: new 70->0 gone 5->0 ledger 224->389 live 289->384
+ledgerdue EVENTS 815 path(s) attributed
+ledgerdue OWNED 0 UNOWNED 0 DUE 0
+ledgerdue VERDICT PASS

@@ -1,0 +1,162 @@
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\('
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\Q'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\Q'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\]'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:304: SyntaxWarning: invalid escape sequence '\`'
+ledgerdue WHEN 2026-10-28T22:22:55Z
+ledgerdue CMD ledgerdue-gate.py
+ledgerdue HEAD aea5deff1
+ledgerdue HEAD-MOVED since cd450ea61
+ledgerdue LEDGER git-blob=63d120abed9c499c907f1da0e5e91986a6762a90 write=not-a-mode
+ledgerdue DENOMINATOR live-diff re-derived (recorded cd450ea61 is a comparison, not the count)
+ledgerdue DIFF new=127 gone=0 changed=0 returned=0 ledger=262 live=384
+ledgerdue RECORDED cd450ea61 new=70 gone=5 changed=0 returned=0 ledger=224 live=289
+ledgerdue MOVED since cd450ea61: new 70->127 gone 5->0 ledger 224->262 live 289->384
+ledgerdue EVENTS 815 path(s) attributed
+ledgerdue DUE NEW checks/compile-census.py OWES 46c3a254e 2026-10-17 08:36:03 +0300 **`checks/compile.py` IS NOT A COMPILE CHECK. IT IS THE ION/
+ledgerdue DUE NEW checks/port-compile-gate.py OWES 5330f43ac 2026-10-22 16:12:00 +0300 autogen.bend: THE PORT NOW COMPILES -- 165 of 169, AND THE R
+ledgerdue DUE NEW checks/revendor-struct.py OWES 4f823733c 2026-10-17 14:33:56 +0300 revendor: a DECLARED population, a resolved reader census, a
+ledgerdue DUE NEW gates/allcopies-census.py OWES 17feb7b3b 2026-10-17 14:16:21 +0300 gates/allcopies-census.py: the six copies of one predicate, 
+ledgerdue DUE NEW gates/arenasrc_census.py OWES 4b42c0ccf 2026-10-18 05:52:39 +0300 arenaparam: the 62 self-parenting nodes are threaded, and th
+ledgerdue DUE NEW gates/arenasrc_probe-check.py OWES 4b42c0ccf 2026-10-18 05:52:39 +0300 arenaparam: the 62 self-parenting nodes are threaded, and th
+ledgerdue DUE NEW gates/artifactverdict-gate.py OWES 55c8bdb4a 2026-10-18 22:05:54 +0300 gatesweep: a member that PRINTED rows and that NOTHING compa
+ledgerdue DUE NEW gates/axisflip-gate.py OWES f98601eff 2026-10-17 14:18:50 +0300 fix(flip): mxf_compose reads crop/tail from the TRANSPOSED s
+ledgerdue DUE NEW gates/banner-emit-gate.py OWES 8241dd6cd 2026-10-20 03:21:54 +0300 the three lanes stop writing the census's banner shape
+ledgerdue DUE NEW gates/banner-emit-plant.py OWES 8241dd6cd 2026-10-20 03:21:54 +0300 the three lanes stop writing the census's banner shape
+ledgerdue DUE NEW gates/banner-gate.py OWES d3fbede23 2026-10-19 19:32:21 +0300 e2e: the prose about this gate's own mechanism was wrong; th
+ledgerdue DUE NEW gates/bend-absent.py OWES 7d601aeac 2026-10-22 18:52:43 +0300 edge: a gate that CANNOT START is REFUSED, and the tree is P
+ledgerdue DUE NEW gates/bendcite-gate.py OWES 0832ac87a 2026-10-25 19:29:47 +0300 bendcite-gate: MEASURE the port's internal `.bend` -> `.bend
+ledgerdue DUE NEW gates/bendfloat-gate.py OWES 852216853 2026-10-20 20:20:39 +0300 bendfloat: the BEND lane's f16 rule, the `k` token, and a ga
+ledgerdue DUE NEW gates/bind-plant.py OWES 1e0a0a19a 2026-10-20 19:21:33 +0300 pincensus: the flagship content pin had no SUBJECT, and a pi
+ledgerdue DUE NEW gates/blobpin-census-gate.py OWES c26ad48bb 2026-10-20 04:04:40 +0300 blobpin-census-gate.py: the 12 tinygrad blob pins are ALL LI
+ledgerdue DUE NEW gates/cites-pop-gate.py OWES dafeee673 2026-10-19 07:51:00 +0300 cites-pop-gate: the census population is a 2-element suffix 
+ledgerdue DUE NEW gates/comment-only-gate.py OWES fb22cdce0 2026-10-23 01:47:49 +0300 todo-cite: the SYMBOL is the citation, and the UOP/renderer 
+ledgerdue DUE NEW gates/compile-census-gate.py OWES 032deed27 2026-10-22 20:45:03 +0300 the compile census's verdict is a VERDICT, and the edge runs
+ledgerdue DUE NEW gates/constid-gate.py OWES 853bed545 2026-10-22 10:17:53 +0300 constid: the port's CONSTANT IDENTITY diverges from upstream
+ledgerdue DUE NEW gates/constid-oracle.py OWES 853bed545 2026-10-22 10:17:53 +0300 constid: the port's CONSTANT IDENTITY diverges from upstream
+ledgerdue DUE NEW gates/constid-plant.py OWES 853bed545 2026-10-22 10:17:53 +0300 constid: the port's CONSTANT IDENTITY diverges from upstream
+ledgerdue DUE NEW gates/corpusfresh-gate.py OWES 4e76b4cb5 2026-10-20 03:59:38 +0300 corpusfresh: the corpus verdict is CURRENT, and NOTHING WOUL
+ledgerdue DUE NEW gates/corpuslane-gate.py OWES a9a0f107b 2026-10-17 13:42:19 +0300 Revive the corpus CPython lane: 7 re-vendor breaks, and a ga
+ledgerdue DUE NEW gates/corpuslane-mutate.py OWES a9a0f107b 2026-10-17 13:42:19 +0300 Revive the corpus CPython lane: 7 re-vendor breaks, and a ga
+ledgerdue DUE NEW gates/corpusverdict-gate.py OWES 860631d18 2026-10-18 03:28:05 +0300 corpusverdict: 34/34 IS STALE AND CANNOT BE REFRESHED, AND T
+ledgerdue DUE NEW gates/corpuswitness-gate.py OWES 6dab8e95d 2026-10-19 06:47:59 +0300 gates/corpuswitness-{gate,plant}.py: the second witness had 
+ledgerdue DUE NEW gates/corpuswitness-plant.py OWES 6dab8e95d 2026-10-19 06:47:59 +0300 gates/corpuswitness-{gate,plant}.py: the second witness had 
+ledgerdue DUE NEW gates/devset-census-gate.py OWES 82cc509e7 2026-10-20 19:18:57 +0300 devset: the port's HCQ device set is the PIN's set, and the 
+ledgerdue DUE NEW gates/devset-census-plant.py OWES 82cc509e7 2026-10-20 19:18:57 +0300 devset: the port's HCQ device set is the PIN's set, and the 
+ledgerdue DUE NEW gates/dialect-fixture-gate.py OWES 50f9722de 2026-10-18 02:13:19 +0300 dialect7: SEVEN COLD FIXTURES -- THE DIALECT STILL HAS Strin
+ledgerdue DUE NEW gates/dtypeeven-gate.py OWES 853af9701 2026-10-22 20:52:54 +0300 dtype: `dtypes.index` goes, and the `dtypes.*` names get a g
+ledgerdue DUE NEW gates/dtypeeven-plant.py OWES 853af9701 2026-10-22 20:52:54 +0300 dtype: `dtypes.index` goes, and the `dtypes.*` names get a g
+ledgerdue DUE NEW gates/e2estage8-stage-legacy.py OWES 925702556 2026-10-19 07:29:30 +0300 stage census: the declared denominator is a ROW and the re-o
+ledgerdue DUE NEW gates/e2estage8-stage-selftest.py OWES 925702556 2026-10-19 07:29:30 +0300 stage census: the declared denominator is a ROW and the re-o
+ledgerdue DUE NEW gates/edge-fixture-census.py OWES 0841bcfb0 2026-10-20 20:03:26 +0300 THE FLAGSHIP GATE's FIXTURE MOVES OUT OF THE PRUNED TREE, IN
+ledgerdue DUE NEW gates/edge-oracle-pin-gate.py OWES 9814ce773 2026-10-20 20:23:54 +0300 THE FLAGSHIP PIN GETS A GATE OF ITS OWN, AND A STATUS NO VOC
+ledgerdue DUE NEW gates/edge-plant.py OWES ac186c3d9 2026-10-20 19:32:18 +0300 edge: the committed surface that runs the gates, and the tra
+ledgerdue DUE NEW gates/edge-reach-census.py OWES 599526ac1 2026-10-22 23:27:44 +0300 the edge's reachability census, and a gate that CLAIMS to be
+ledgerdue DUE NEW gates/edge-runner.py OWES ac186c3d9 2026-10-20 19:32:18 +0300 edge: the committed surface that runs the gates, and the tra
+ledgerdue DUE NEW gates/emitverdict-gate.py OWES 1fe349f0d 2026-10-18 21:02:27 +0300 emitverdict-gate: the two sides of graphcmp disagree about 1
+ledgerdue DUE NEW gates/fixture-embed-census.py OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH
+ledgerdue DUE NEW gates/fixture-region-gate.py OWES 6f4c10589 2026-10-23 00:26:10 +0300 the port's 25 PTX fixtures HAVE A GENERATOR, and the census'
+ledgerdue DUE NEW gates/float-halfclass-gate.py OWES d4c99aed7 2026-10-20 19:57:23 +0300 js-lane: the half NaN payload, and the BEND is not a correct
+ledgerdue DUE NEW gates/fold-vbase-gate.py OWES 4f0305fd8 2026-10-22 08:05:43 +0300 gates: the `vb_` ORACLE AND PLANT LEAVE `.agents/slop/`, AND
+ledgerdue DUE NEW gates/fold-vbase-mutate.py OWES 4f0305fd8 2026-10-22 08:05:43 +0300 gates: the `vb_` ORACLE AND PLANT LEAVE `.agents/slop/`, AND
+ledgerdue DUE NEW gates/fold-vbase-plant.py OWES 4f0305fd8 2026-10-22 08:05:43 +0300 gates: the `vb_` ORACLE AND PLANT LEAVE `.agents/slop/`, AND
+ledgerdue DUE NEW gates/ga_fix.py OWES 7d3c04704 2026-10-22 15:22:17 +0300 the `py=` LANES GET THEIR WITNESSES, AND THE COUNT OF LANES 
+ledgerdue DUE NEW gates/gapcensus-gate.py OWES 6cf2a91ab 2026-10-18 03:27:01 +0300 gapcensus: THE CENSUS. 67 rows, 8 units, every one with its 
+ledgerdue DUE NEW gates/gapcensus.py OWES 6cf2a91ab 2026-10-18 03:27:01 +0300 gapcensus: THE CENSUS. 67 rows, 8 units, every one with its 
+ledgerdue DUE NEW gates/gates-pop-rows-gate.py OWES f7703dcc0 2026-10-19 19:43:56 +0300 gates-pop-rows-gate: what a ledger row IS, and a check that 
+ledgerdue DUE NEW gates/groupflip-baseline.sh OWES 2e193c582 2026-10-17 09:29:50 +0300 GROUPFLIP: upstream REIMPLEMENTED `UOp.group` AND `Tensor.fl
+ledgerdue DUE NEW gates/groupflip-gate.py OWES 2e193c582 2026-10-17 09:29:50 +0300 GROUPFLIP: upstream REIMPLEMENTED `UOp.group` AND `Tensor.fl
+ledgerdue DUE NEW gates/import-path-census-gate.py OWES ff8564232 2026-10-18 01:36:13 +0300 fix 10 `.bend` import paths a level off, and gate the class
+ledgerdue DUE NEW gates/lane-census.py OWES e92adbb5c 2026-10-18 21:45:45 +0300 lanes: a member that PRINTED rows and had them compared by n
+ledgerdue DUE NEW gates/lanewitness-gate.py OWES 7d3c04704 2026-10-22 15:22:17 +0300 the `py=` LANES GET THEIR WITNESSES, AND THE COUNT OF LANES 
+ledgerdue DUE NEW gates/ledger-denominator-gate.py OWES 4ff41173c 2026-10-18 22:10:36 +0300 toolsledger: THE LEDGER'S GENERATOR ASKED THE INDEX FOR ITS 
+ledgerdue DUE NEW gates/llvmir_render-gate.py OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O
+ledgerdue DUE NEW gates/llvmir_render-oracle.py OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O
+ledgerdue DUE NEW gates/mixin-op-plant.py OWES ca185c501 2026-10-23 00:18:44 +0300 mixin: the mean's denominator is promoted TWICE, and a value
+ledgerdue DUE NEW gates/nilsrc-census.py OWES 1f891dc33 2026-10-18 20:48:05 +0300 nilsrc: every Nil{}-src site classified A or B, 208 rows, an
+ledgerdue DUE NEW gates/nir-oracle.py OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH
+ledgerdue DUE NEW gates/nir_llvmir-oracle.py OWES 7d3c04704 2026-10-22 15:22:17 +0300 the `py=` LANES GET THEIR WITNESSES, AND THE COUNT OF LANES 
+ledgerdue DUE NEW gates/nir_llvmir-plant.py OWES 06cf7f7da 2026-10-22 16:40:11 +0300 renderer/nir_llvmir.bend: STAGE 1 WAS STALE FOR NINETEEN DAY
+ledgerdue DUE NEW gates/nir_render-gate.py OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH
+ledgerdue DUE NEW gates/nir_render-plant.py OWES fe65a2310 2026-10-22 15:10:41 +0300 renderer/nir.bend: THE PORT HAD NO `SQRT`, AND THE ORACLE TH
+ledgerdue DUE NEW gates/nn-rows-gate.py OWES a6d9093a0 2026-10-22 07:44:59 +0300 the committed tree did not compile, and the fix is 2 lines
+ledgerdue DUE NEW gates/nul-census-gate.py OWES d3b4be7a2 2026-10-19 18:53:49 +0300 nul-census-gate: the 243 is a read bug, and the escape is an
+ledgerdue DUE NEW gates/nul-refusal-gate.py OWES 9b1f5ac00 2026-10-19 19:39:16 +0300 cites-census: the SystemError arm that says WHERE, and a ref
+ledgerdue DUE NEW gates/opname-census-gate.py OWES a962ed2fe 2026-10-22 18:06:56 +0300 gates/opname-census-gate.py: A CENSUS OVER THE DRIVERS FOR A
+ledgerdue DUE NEW gates/ops_dsp_render-gate.py OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O
+ledgerdue DUE NEW gates/ops_dsp_render-oracle.py OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O
+ledgerdue DUE NEW gates/ops_python_census-plant.py OWES d68640895 2026-10-22 08:37:11 +0300 the count axis: the port said 4 where CPython says 7, and th
+ledgerdue DUE NEW gates/opseven-gate.py OWES 0a2dba0cc 2026-10-17 07:25:41 +0300 opseven: the 7 Ops the corpus never reaches, COMPARED, and t
+ledgerdue DUE NEW gates/opseven-mutate.py OWES 0a2dba0cc 2026-10-17 07:25:41 +0300 opseven: the 7 Ops the corpus never reaches, COMPARED, and t
+ledgerdue DUE NEW gates/opsref-census.py OWES 72f81a3ae 2026-10-17 08:32:06 +0300 census: 70 Ops.GROUP/Ops.FLIP sites classified EMIT 17 / CON
+ledgerdue DUE NEW gates/paramarg-shape-gate.py OWES 94f18ee7a 2026-10-18 03:24:27 +0300 PARAMARGSHAPE: the port's ParamArg is UPSTREAM'S LENGTH AND 
+ledgerdue DUE NEW gates/paramarg-shape-oracle.py OWES 94f18ee7a 2026-10-18 03:24:27 +0300 PARAMARGSHAPE: the port's ParamArg is UPSTREAM'S LENGTH AND 
+ledgerdue DUE NEW gates/paramarg-site-gate.py OWES 23dcd7210 2026-10-18 02:14:45 +0300 ParamArg(size=): 5 oracles carry a VACATED POSITIONAL SLOT, 
+ledgerdue DUE NEW gates/pathwitness-gate.py OWES 2ce4176c2 2026-10-19 18:47:22 +0300 pathwitness-gate: name every witness of a fixture stem, and 
+ledgerdue DUE NEW gates/pin-cite-gate.py OWES 1f30a38a8 2026-10-23 03:14:08 +0300 pin-cite-gate: the file the todo-cite gate loads BY PATH, an
+ledgerdue DUE NEW gates/pincensus-gate.py OWES e318bc9c9 2026-10-20 07:08:53 +0300 pincensus: a census of every pin in the tree, and the plant 
+ledgerdue DUE NEW gates/pincensus-plant.py OWES e318bc9c9 2026-10-20 07:08:53 +0300 pincensus: a census of every pin in the tree, and the plant 
+ledgerdue DUE NEW gates/pinned-tree-gate.py OWES cef1ee674 2026-10-20 04:00:09 +0300 a tree sha in prose rots; the identity it stands in for does
+ledgerdue DUE NEW gates/prose-census.py OWES 0e3ca09b6 2026-10-18 20:49:57 +0300 prose-census: bind every claimed number to its population, a
+ledgerdue DUE NEW gates/ptx_render_census-s3-oracle.py OWES 6f4c10589 2026-10-23 00:26:10 +0300 the port's 25 PTX fixtures HAVE A GENERATOR, and the census'
+ledgerdue DUE NEW gates/pycell-census-gate.py OWES 33785bd3e 2026-10-22 13:53:08 +0300 pycell-census: THE `py=` CELLS CLASSIFIED BY PROVENANCE, AND
+ledgerdue DUE NEW gates/pycell-census.py OWES 33785bd3e 2026-10-22 13:53:08 +0300 pycell-census: THE `py=` CELLS CLASSIFIED BY PROVENANCE, AND
+ledgerdue DUE NEW gates/pycell-plant.py OWES 33785bd3e 2026-10-22 13:53:08 +0300 pycell-census: THE `py=` CELLS CLASSIFIED BY PROVENANCE, AND
+ledgerdue DUE NEW gates/questionmark-plant-gate.py OWES 65d64bb74 2026-10-19 00:13:39 +0300 graphcmp: the `?=32` pin becomes `?=0`, and a plant proves t
+ledgerdue DUE NEW gates/realize_graph_census-plant.py OWES ca7be1822 2026-10-22 09:51:12 +0300 realize census: the ORACLE called TWO DELETED FUNCTIONS, and
+ledgerdue DUE NEW gates/realize_kernel_args-gate.py OWES ca7be1822 2026-10-22 09:51:12 +0300 realize census: the ORACLE called TWO DELETED FUNCTIONS, and
+ledgerdue DUE NEW gates/realize_kernel_args-oracle.py OWES ca7be1822 2026-10-22 09:51:12 +0300 realize census: the ORACLE called TWO DELETED FUNCTIONS, and
+ledgerdue DUE NEW gates/render_derive-plant.py OWES 88fbd1797 2026-10-22 13:11:40 +0300 llvmir + ops_dsp: 744 `py=` CELLS DERIVED, and TWO CPYTHON O
+ledgerdue DUE NEW gates/renderer_init-oracle.py OWES 7d3c04704 2026-10-22 15:22:17 +0300 the `py=` LANES GET THEIR WITNESSES, AND THE COUNT OF LANES 
+ledgerdue DUE NEW gates/revendor-struct-gate.py OWES 4f823733c 2026-10-17 14:33:56 +0300 revendor: a DECLARED population, a resolved reader census, a
+ledgerdue DUE NEW gates/shellverdict-gate.py OWES e00a3a74c 2026-10-19 07:37:12 +0300 sb-gate.sh: all five verdicts, and the gate that proves a sh
+ledgerdue DUE NEW gates/shellverdict-reach-gate.py OWES 59f27a1e0 2026-10-19 18:49:02 +0300 shellverdict-reach: which of the FIVE each shell gate can RE
+ledgerdue DUE NEW gates/slop-prune-census.py OWES 1d0c22731 2026-10-19 08:13:18 +0300 slop-prune-census: what in .agents/slop/ is safe to lose, by
+ledgerdue DUE NEW gates/specfold-gate.py OWES db98a9bfd 2026-10-23 03:29:32 +0300 gates/specfold: the lane that EXHIBITS d4160980e's divergenc
+ledgerdue DUE NEW gates/specreach-gate.py OWES 77e917f5e 2026-10-22 21:09:31 +0300 the SPEC TABLES dispatched two rules into the wrong ladder, 
+ledgerdue DUE NEW gates/subnormal-flush-gate.py OWES cf650ff66 2026-10-20 19:29:31 +0300 js-lane: the 1194 f16/bf16 rows are FOUR defects in the JS l
+ledgerdue DUE NEW gates/symrules-census.py OWES ba2ccb0e8 2026-10-22 07:52:25 +0300 symrules: THE CENSUS OF UPSTREAM'S REWRITE RULES, DERIVED, a
+ledgerdue DUE NEW gates/symrules-gate.py OWES ba2ccb0e8 2026-10-22 07:52:25 +0300 symrules: THE CENSUS OF UPSTREAM'S REWRITE RULES, DERIVED, a
+ledgerdue DUE NEW gates/symrules-oracle.py OWES 2ba5c731c 2026-10-22 08:42:46 +0300 symrules: TWENTY-SEVEN OF UPSTREAM'S MISSING RULES, PORTED, 
+ledgerdue DUE NEW gates/symrules-plant.py OWES 9b75e04f7 2026-10-22 08:58:01 +0300 symrules: THE PLANT, AND THE ORDER ARM IS THE ONE NOBODY PLA
+ledgerdue DUE NEW gates/tagmachinery-gate.py OWES 3dd131588 2026-10-20 19:59:50 +0300 upat: mirror upstream's "no upat tag", and the red that was 
+ledgerdue DUE NEW gates/target-census-gate.py OWES ffbc2deec 2026-10-22 07:52:40 +0300 Target: ONE record, in upstream's home, and the port's two b
+ledgerdue DUE NEW gates/target-oracle.py OWES ffbc2deec 2026-10-22 07:52:40 +0300 Target: ONE record, in upstream's home, and the port's two b
+ledgerdue DUE NEW gates/target-roundtrip-gate.py OWES ffbc2deec 2026-10-22 07:52:40 +0300 Target: ONE record, in upstream's home, and the port's two b
+ledgerdue DUE NEW gates/tc_ptx_render_census-gate.py OWES 5160af046 2026-10-22 10:21:12 +0300 tc_ptx: the ptx.py lane is GREEN, and it is a LANE now
+ledgerdue DUE NEW gates/tc_ptx_render_census-plant.py OWES 5160af046 2026-10-22 10:21:12 +0300 tc_ptx: the ptx.py lane is GREEN, and it is a LANE now
+ledgerdue DUE NEW gates/todo-census.py OWES e6341b1b0 2026-10-19 07:28:20 +0300 todo-census: the TODO population is 932 sites, not 929 tasks
+ledgerdue DUE NEW gates/todo-cite-gate.py OWES c6ee4b5cc 2026-10-22 10:51:48 +0300 cites: 54 of the port's `TODO(pN)` markers cited a line that
+ledgerdue DUE NEW gates/todopop-falsify.py OWES 6a326d040 2026-10-19 19:37:50 +0300 todopop: 916 and 933 are ONE unit on TWO subjects, not two u
+ledgerdue DUE NEW gates/todopop-gate.py OWES 6a326d040 2026-10-19 19:37:50 +0300 todopop: 916 and 933 are ONE unit on TWO subjects, not two u
+ledgerdue DUE NEW gates/txt-carveout-gate.py OWES 05e926744 2026-10-18 22:12:56 +0300 txt: the carve-out now proves it is exactly as wide as what 
+ledgerdue DUE NEW gates/untested-census.py OWES 2f9a598bf 2026-10-19 07:31:02 +0300 gates: the middle bucket is derived, and 21 of its 23 are ca
+ledgerdue DUE NEW gates/untested-gate.py OWES 2f9a598bf 2026-10-19 07:31:02 +0300 gates: the middle bucket is derived, and 21 of its 23 are ca
+ledgerdue DUE NEW gates/validate-oracle-absent-gate.py OWES baaf4d975 2026-10-18 03:23:46 +0300 validate-oracle-absent: 360 GROUP-era rows HAD A GENERATOR, 
+ledgerdue DUE NEW gates/vendordep-census-gate.py OWES ffaec6949 2026-10-20 04:05:16 +0300 vendordep: CENSUS which of the 29 re-vendored upstream files
+ledgerdue DUE NEW gates/verdict-lane-gate.py OWES 57a3ed3b3 2026-10-23 03:52:06 +0300 the first instrument that checks this port's proofs against 
+ledgerdue DUE NEW gates/verdictcopy-gate.py OWES b7830f4ed 2026-10-18 01:32:12 +0300 verdictcopy: an EMPTY LANE IS DEAD AND WAS LEAVING AS FAIL, 
+ledgerdue DUE NEW gates/worker-mutate.py OWES ef97d16b6 2026-10-16 18:04:03 +0300 restore 10 of the deleted instruments into gates/, and say w
+ledgerdue DUE NEW gates/x86_isa-gate.py OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE
+ledgerdue DUE NEW gates/x86_isa-oracle.py OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE
+ledgerdue DUE NEW gates/x86_isa-plant.py OWES 21be2dfa5 2026-10-22 12:58:41 +0300 x86: 774 LITERAL `py=` cells DERIVED, and the oracle REPAIRE
+ledgerdue OWNED 127 UNOWNED 0 DUE 127
+ledgerdue VERDICT FAIL
