@@ -25145,6 +25145,37 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       the INSTRUMENT's own pre-existing defects. `gates/gate-surface.py` WAS NOT EDITED.
       See `.agents/slop/plantsurface/REPORT.md`.
 
+- [x] **THE **OTHER **FIVE **GATES **OF **THE **16 **UNPLANTED **VERDICTS **ARE **PLANTED **TOO
+      (`f9f868741`, **2026-10-30**).**  `gates/gate-surface.py` classifies a declared verdict by
+      **EXECUTING** the declared plant and requiring the observed rc to equal the declared one, so
+      **A DECLARED EXIT CODE WITH NO DECLARED PLANT IS RED, NAMED.**  **⇒ AND THE SIX GATES ABOVE
+      AND THESE FIVE ARE THE SAME DEFECT SPLIT IN TWO:** the six above are the six the earlier unit
+      owned, and `.agents/slop/plantsurface/REPORT.md:27-32` NAMED these five as *"another unit was
+      editing those five gates CONCURRENTLY"* — **that unit is THIS ONE.**  MEASURED:
+      **BEFORE 70 declared / 45 reached / 16 unplanted / 9 misplant -> AFTER 70 declared / 64
+      reached / 0 unplanted / 6 misplant**, and **NONE of the tree-wide reds left is in one of
+      these five.**
+      | gate | the plant argv | why it reaches it |
+      |---|---|---|
+      | `checks/norm_check.py` | `--plant-refused` | runs a COPY of the gate in a temporary tree which has the repository markers but NOT `.agents/slop/jslane2/gen_f32_seam.py`, so the module-scope refusal fires for exactly the absent subject it names.  The refusal was otherwise reachable only by DELETING a tracked file, which argv cannot do |
+      | `checks/oracle_f64.py` | `--plant-ok` / `--plant-fail` | build the SAME `mm-rows` shape the port lane emits and run the SHIPPED `build()` over it: the `double` signature answers (rc 0), and the `float` signature is the assertion failure the oracle exists to catch (rc 1).  `build()` also re-derives the fixture constant and executes the kernel under real tinygrad `DEV=CPU`, so the green is a MEASUREMENT and not a transcription |
+      | `gates/upstream-pow-dtype-gate.py` | `--plant refused` | runs the shipped `gatekit.oracle_drift` reader over a pin that cannot hold, so the REFUSED exit is the gate's OWN refusal and not a copy of one |
+      | `gates/upstream-promo-lattice-gate.py` | `--plant refused` | the same house reader, over the same gate's OWN `DRIFT_PIN` |
+      | `checks/dup-gate.py` | `--plant-refused` | runs a COPY of the gate in a temporary tree which has the repository markers but NOT `.agents/slop/rebase-gate.py` / `.agents/slop/eq/eq-census2.py`, so the module-scope refusal fires for exactly the absent reader it names |
+      **⇒ AND TWO **BEHAVIOUR **FIXES **THAT **WERE **NOT **PLANTS**: **(1)** BOTH
+      `upstream-*` GATES **STOPPED EXITING THE LIVE VERDICT.**  A plant that exits the live tree's
+      verdict measures the TREE, not the planted state: upstream currently compiles every pow row
+      and currently carries the lattice defect, so `--plant red` must still exit 1 and `--plant
+      green` must still exit 0.  **⇒ AND THE LIVE VERDICT IS NOW PRINTED BESIDE THE PLANTED ONE**,
+      so the two are VISIBLE rather than conflated.  MEASURED: pow green/red = 0/1, promo green/red
+      = 0/1, BEFORE both were 0/1 AND 1/1.  **(2)** `checks/oracle_f64.py` GAINS `RED_IS =
+      "FINDING"`: its red is the PORT rendering `float*` where the lane promises `double*`, which is
+      a defect IN THE PORT and not a broken instrument, and the class is EARNED because `PLANTS[0]`
+      reaches 0 in the census run.
+      **⇒ AND `gates/gate-surface.py --plant green` READS `PLANTS: RED (12/14)` — UNCHANGED BY THIS
+      WORK** (MEASURED at 12/14 BEFORE the edits and 12/14 AFTER), so **5c** and **6a** are the
+      INSTRUMENT's own pre-existing defects. `gates/gate-surface.py` WAS NOT EDITED.
+
 - [x] **THE **CITATION **CLASSES **ARE **BEING **CLOSED**, **AND **THE **NUMBERS **ARE
       **PER **SLICE** (MEASURED **2026-10-27**).**  **`gates/pin-cite-gate.py`'s
       **`unverifiable_no_claim_about_the_file`: **224 -> 36**, **AND **THE **TREE's **`WRONG-LINE`
