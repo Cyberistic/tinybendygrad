@@ -105,6 +105,7 @@ checks/wt-sync.sh	sh-selfref	-	1	1
 gates/.wgsl-mut-oracle.py	gone	-	0	1
 gates/allcopies-census.py	py-main	__file__.parent	0	1
 gates/alloc_slot-gate.py	py-main	-	0	1
+gates/alloc_slot-oracle.py	py-main	-	0	1
 gates/alu-law-census-gate.py	py-main	__file__.parent	0	1
 gates/amd-mut-gate.py	gone	__file__.parent	0	1
 gates/amd-mut-oracle.py	gone	-	0	1
