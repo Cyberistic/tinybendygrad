@@ -32,6 +32,7 @@ checks/diary-census.py	py-main	ROOT = Path(__file__).resolve().parents[1]	1	1
 checks/differ.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 checks/disagree-gate.py	py-main	HERE = Path(__file__).resolve() ROOT = HERE.parents[1]	0	1
 checks/disarm.sh	sh-selfref	-	1	1
+checks/drive.mjs	js-main	-	0	1
 checks/dup-census.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/dup-gate.py	py-main	REPO = HERE.parents[0]	1	1
 checks/e2e.py	py-main	ROOT = Path(os.environ["E2E_ROOT"] if os.environ.get("E2E_ROOT") else Path(__file__).resolve().parents[1]	1	1
