@@ -4101,9 +4101,34 @@ second would be a forward pass, and there is no kernel executor to run one.
 - [x] `LAWS/alu.bend` — tinyspec's decomposed-elementwise-ops table
 - [x] `LAWS.bend` — 32 laws
 - [ ] **Audit against tinyspec**: coverage gaps, vacuous laws, stubs
+      **THE ALU/DTYPE HALF IS AUDITED** (2026-10-30,
+      `.agents/slop/alulaw/REPORT.md`, gate `gates/alu-law-census-gate.py`):
+      **18 of 18 laws go RED, each naming itself** — the decomposition laws
+      bite on their `A.<fn>` and the dtype laws on their fold ARM. **TWO
+      DEFECTS FOUND, both DECLARED in `gates/alu-law-census.rows` so the gate
+      is green at rest and red on a regression.** (1) **`A.one()` and
+      `A.zero()` are the SAME TERM** (MEASURED by the proven kernel: a scratch
+      law `A.one() == A.zero()` is `ALL PROOFS CHECK`), and the mask's VALUE
+      is not in the language at all (`SpConst`'s `v` is `SpInvalid{}`), so
+      **FIVE laws are VACUOUS ON THEIR MASK**: `neg_is_mul_by_minus_one`,
+      `cmp_ge_is_ne_of_cmp_lt`, `cmp_le_is_ne_of_cmp_lt_swapped`,
+      `cmp_eq_is_double_neg`, `not_is_ne_one`. They pin the STRUCTURE and
+      nothing about the mask, so `neg_is_mul_by_minus_one` cannot see the
+      minus one. (2) **THIRTEEN ALU dtype arms are read by NO LAW** —
+      `SpRecip` `SpTrunc` `SpAdd` `SpMul` `SpMax` `SpMod` `SpIdiv` `SpXor`
+      `SpOr` `SpAnd` `SpShr` `SpShl` `SpContiguousBackward` — MEASURED one at
+      a time: breaking the arm leaves `PROOF-ALL.bend` GREEN. The positive
+      control is measured too (`SpDetach` and `SpWhere` DO redden). **THE
+      REMAINING AUDIT IS THE SHAPE HALF'S.**
 - [x] `PROOF.bend` — shape half: reshape/permute/flip/pad/shrink/stack/detach
       (10/10 proven; 8 shape-column mutations each killed by their own law.
       Re-verify once `LAWS/spec.bend`'s fuel rewrite compiles)
+      **AND ITS 18 "TODOs" ARE NOT A BACKLOG** (measured 2026-10-30): they
+      are the 18 laws `PROOF2.bend` proves, and `PROOF.bend --check-only` can
+      NEVER be green while `PROOF2.bend` holds them — a duplicate `def L.<name>`
+      is REFUSED ("a fresh name (L is an import's alias)"), which is how
+      `579f979b1` broke the aggregate gate and had to be reverted. See
+      `.agents/slop/laws17/REPORT.md` and `.agents/slop/alulaw/REPORT.md` §0.
 - [x] `PROOF2.bend` — ALU/dtype half (16/16 proven)
 - [x] `PROOF-ALL.bend` green — 0 TODOs. Reduce proved as
       `reduced * prod(take(dims, n)) == numel`. Broadcast restated to the

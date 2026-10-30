@@ -305,3 +305,51 @@ builder may live in one file and be CALLED from another (`renderer/tc_ptx.bend` 
 is three lines long, so a line-oriented parser reads 27 of its 42 rows and calls the other
 15 "not rows". The halves are BRACKET-MATCHED, and a ` = [` inside a half is not the row's
 own: a `got` half can be `ast = UOp.const(3)`.
+
+## THE ALU/DTYPE LAW CENSUS: CAN THE LAWS GO RED?
+
+`gates/alu-law-census-gate.py` asks the question `LAWS/PROOF-ALL.bend` cannot:
+**are the ALU/dtype laws TRUE, or can they be FALSE?** The aggregate gate
+answers "true"; this one answers "can be false", because a law that cannot go
+red is a label, not a law (`checks/differ.py`'s own plant 3: "if it does not go
+red, the row is a label").
+
+| file | what it is |
+|---|---|
+| `gates/alu-law-census-gate.py` | the gate: the population's discovery, the per-law mutation, the arm census, the baseline comparison |
+| `gates/alu-law-census.rows` | the DECLARED census of the defects that exist; `--refresh` is its ONLY writer |
+
+**THE POPULATION IS DISCOVERED BY CONTENT, NOT NAMED.** The proof set is split
+in two -- `PROOF.bend` holds the shape half and `PROOF2.bend` the ALU/dtype
+half -- and the two are told apart by what their law bodies NAME: the ALU/dtype
+half's name the DECOMPOSITION TABLE (`A.<fn>`) or the DTYPE COLUMN
+(`dtype_of`/`numel_of`). A law that moves from one half to the other moves this
+gate's population with it.
+
+**THE MUTATION IS PER LAW, AND IT IS FOUND.** The 9 section-IV laws are broken
+by changing the `A.<fn>` they are about; the 9 section-V laws by changing the
+FOLD ARM they read the fold at. **MEASURED: 18 of 18 go RED, each naming
+itself.**
+
+**THE MASK IS A SECOND, SEPARATE QUESTION.** A decomposition law's subject and
+its right-hand side name the SAME mask term (`A.neg(a) == SpMul{a, A.one()}`),
+so breaking `A.neg` reddens the law but NO change to the mask can: the mask is
+asked on its own, per law. **MEASURED: `A.one()` and `A.zero()` are the same
+term** (the proven kernel agrees), so 5 laws are VACUOUS ON THEIR MASK.
+
+**AN ARM IS PINNED BY A LAW THAT APPLIES THE FOLD AT IT, NOT BY A LAW THAT
+NAMES IT.** `div_is_mul_by_recip` names `SpRecip`, and breaking `SpRecip`'s
+dtype arm does NOT redden the gate -- that law is about the structure. The
+gate's own plant caught this: case 3 ("a PINNED arm must redden") failed
+against the first version of the census, and the census was corrected.
+
+**THE BASELINE IS WHY THE GATE IS GREEN AT REST.** Both defects exist today,
+so the gate compares the census with the declared file and FAILS when the
+census gets WORSE -- a law becomes vacuous, an arm loses its law. MEASURED: a
+regression exits 1, an improvement exits 0 with `FIXED:`, and a broken tree
+exits 3 (REFUSED: the control copy is not green, so every case below would be
+measuring the copy and not the law).
+
+**THE WORKING TREE IS NEVER EDITED.** Every case is a fresh copy of
+`tinybendygrad/` in a private temp dir.
+
