@@ -1,0 +1,122 @@
+==============================================================================
+(1) OP LEVEL -- the corpus's own census, verbatim
+==============================================================================
+   NOT REACHED (6 of 75 ENUM MEMBERS): REWRITE_ERROR SOURCE CUSTOM CUSTOMI INS PYLITERAL
+   DENOMINATOR: 75 enum members -> 69 PROGRAM OPS (6 excluded by the enum's own markers: aren't rendered, renderer, pattern compiler IR, output strings into codegen, machine instruction)
+   COVERAGE: 69 of 69 program ops === 69 of 75 enum members (the denominators answer different questions)
+
+==============================================================================
+(2) BEND SIDE -- the port's .bend modules and defs
+==============================================================================
+   port .bend files total                    : 175
+   in the corpus's import closure            : 15
+   NEVER in the closure                      : 160
+   port defs in the closure                  : 4724
+   of those, REACHED (def-body call graph)   : 954
+   of those, UNREACHED                       : 3770
+
+   per-module def reach, closure modules only:
+     tinybendygrad/base.bend                       0/   1  (  0.0%)   <== FULLY UNREACHED
+     tinybendygrad/dtype.bend                      0/ 149  (  0.0%)   <== FULLY UNREACHED
+     tinybendygrad/mixin/dtype.bend                0/ 177  (  0.0%)   <== FULLY UNREACHED
+     tinybendygrad/mixin/gradient.bend             0/ 494  (  0.0%)   <== FULLY UNREACHED
+     tinybendygrad/uop/render.bend                 2/ 315  (  0.6%)
+     tinybendygrad/mixin/op.bend                   7/ 176  (  4.0%)
+     tinybendygrad/mixin/creation.bend             9/ 105  (  8.6%)
+     tinybendygrad/tensor.bend                    32/ 347  (  9.2%)
+     tinybendygrad/mixin/elementwise.bend         31/ 254  ( 12.2%)
+     tinybendygrad/helpers.bend                   58/ 380  ( 15.3%)
+     tinybendygrad/uop/weak.bend                  41/ 258  ( 15.9%)
+     tinybendygrad/uop/ops.bend                  264/ 942  ( 28.0%)
+     tinybendygrad/LAWS/spec.bend                 29/  82  ( 35.4%)
+     tinybendygrad/uop/fold.bend                 382/ 857  ( 44.6%)
+     tinybendygrad/mixin/movement.bend            99/ 187  ( 52.9%)
+
+   modules NOT in the corpus's import closure, by size (top 15):
+       6510  tinybendygrad/runtime/ops_dsp.bend
+       4450  tinybendygrad/uop/symbolic.bend
+       4072  tinybendygrad/runtime/support/nv/ip.bend
+       3817  tinybendygrad/runtime/ops_metal.bend
+       3684  tinybendygrad/runtime/ops_qcom.bend
+       3473  tinybendygrad/uop/spec.bend
+       3458  tinybendygrad/schedule/multi.bend
+       3455  tinybendygrad/runtime/support/elf.bend
+       3348  tinybendygrad/renderer/amd/dsl.bend
+       3348  tinybendygrad/renderer/amd/dsl-mut.bend
+       3318  tinybendygrad/schedule/rangeify.bend
+       3143  tinybendygrad/runtime/support/system.bend
+       3081  tinybendygrad/codegen/decomp/dtype.bend
+       2971  tinybendygrad/runtime/ops_python.bend
+       2877  tinybendygrad/uop/validate.bend
+     (160 modules, 189308 LOC)
+
+==============================================================================
+(3) PY SIDE -- upstream tinygrad functions EXECUTED by the builders
+==============================================================================
+   upstream .py files total                  : 214
+   files with >=1 function executed          : 55
+   files NEVER executed                      : 159
+   distinct upstream functions run           : 1196
+
+   upstream files NEVER executed, non-autogen and non-runtime/ops_*:
+      UNTOUCHED tinygrad/__init__.py
+      UNTOUCHED tinygrad/codegen/decomp/__init__.py
+      UNTOUCHED tinygrad/codegen/late/__init__.py
+      UNTOUCHED tinygrad/codegen/late/gater.py
+      UNTOUCHED tinygrad/codegen/late/regalloc.py
+      UNTOUCHED tinygrad/codegen/opt/search.py
+      UNTOUCHED tinygrad/engine/__init__.py
+      UNTOUCHED tinygrad/engine/jit.py
+      UNTOUCHED tinygrad/engine/worker.py
+      UNTOUCHED tinygrad/function.py
+      UNTOUCHED tinygrad/llm/__init__.py
+      UNTOUCHED tinygrad/llm/__main__.py
+      UNTOUCHED tinygrad/llm/cli.py
+      UNTOUCHED tinygrad/llm/gguf.py
+      UNTOUCHED tinygrad/llm/kernels/__init__.py
+      UNTOUCHED tinygrad/llm/kernels/amd.py
+      UNTOUCHED tinygrad/llm/model.py
+      UNTOUCHED tinygrad/llm/serve.py
+      UNTOUCHED tinygrad/mixin/__init__.py
+      UNTOUCHED tinygrad/mixin/rand.py
+      UNTOUCHED tinygrad/nn/__init__.py
+      UNTOUCHED tinygrad/nn/datasets.py
+      UNTOUCHED tinygrad/nn/onnx.py
+      UNTOUCHED tinygrad/nn/optim.py
+      UNTOUCHED tinygrad/nn/state.py
+      UNTOUCHED tinygrad/nn/torch.py
+      UNTOUCHED tinygrad/renderer/amd/__init__.py
+      UNTOUCHED tinygrad/renderer/amd/dsl.py
+      UNTOUCHED tinygrad/renderer/amd/elf.py
+      UNTOUCHED tinygrad/renderer/amd/generate.py
+      UNTOUCHED tinygrad/renderer/amd/sqtt.py
+      UNTOUCHED tinygrad/renderer/isa/__init__.py
+      UNTOUCHED tinygrad/renderer/ptx.py
+      UNTOUCHED tinygrad/renderer/tc.py
+      UNTOUCHED tinygrad/renderer/wgsl.py
+      UNTOUCHED tinygrad/runtime/__init__.py
+      UNTOUCHED tinygrad/runtime/support/__init__.py
+      UNTOUCHED tinygrad/runtime/support/am/__init__.py
+      UNTOUCHED tinygrad/runtime/support/am/amdev.py
+      UNTOUCHED tinygrad/runtime/support/am/ip.py
+      UNTOUCHED tinygrad/runtime/support/amd.py
+      UNTOUCHED tinygrad/runtime/support/compiler_amd.py
+      UNTOUCHED tinygrad/runtime/support/compiler_cuda.py
+      UNTOUCHED tinygrad/runtime/support/compiler_llvm.py
+      UNTOUCHED tinygrad/runtime/support/compiler_mesa.py
+      UNTOUCHED tinygrad/runtime/support/compiler_qcom.py
+      UNTOUCHED tinygrad/runtime/support/compileserver.py
+      UNTOUCHED tinygrad/runtime/support/memory.py
+      UNTOUCHED tinygrad/runtime/support/nv/__init__.py
+      UNTOUCHED tinygrad/runtime/support/nv/ip.py
+      UNTOUCHED tinygrad/runtime/support/nv/nvdev.py
+      UNTOUCHED tinygrad/runtime/support/objc.py
+      UNTOUCHED tinygrad/runtime/support/rdma/__init__.py
+      UNTOUCHED tinygrad/runtime/support/rdma/bnxtdev.py
+      UNTOUCHED tinygrad/schedule/allreduce.py
+      UNTOUCHED tinygrad/schedule/multi.py
+      UNTOUCHED tinygrad/uop/validate.py
+      UNTOUCHED tinygrad/viz/__init__.py
+      UNTOUCHED tinygrad/viz/cli.py
+      UNTOUCHED tinygrad/viz/serve.py
+      (60 files)

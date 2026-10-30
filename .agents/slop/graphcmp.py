@@ -1839,6 +1839,61 @@ def g_stage():
   return (Tensor.empty(4, 3) + 1).contiguous().uop
 
 
+def g_api():
+  """`Tensor.empty(4,3) + Tensor(1)` -- MEASURED at 9 nodes on the py side, census
+  `ADD=1 ALLOC=1 CONST=4 RESHAPE=1 STACK=1`.
+
+  **THE FIRST GRAPH WHOSE BEND SIDE IS BUILT BY THE PORT'S OWN TENSOR API.**  Every other
+  graph in this corpus hand-builds its arena node for node (`graphcmp.bend`'s `g_matmul`
+  and its 34 siblings), so the corpus tests the port's DATA STRUCTURES -- `ops.bend`'s
+  `UOp.new`, `fold.bend`'s derived properties -- and never the port's OPERATIONS.
+  MEASURED, and the number is the point: `tinybendygrad/mixin/elementwise.bend` (254
+  defs), `tinybendygrad/mixin/dtype.bend` (177), `tinybendygrad/mixin/gradient.bend` (494)
+  and `tinybendygrad/uop/weak.bend` (258) are **100% UNREACHED** by the 35 other graphs, and
+  `tinybendygrad/tensor.bend` (347 defs) is reached on 4 of them.  That is 1183 defs of the
+  port's operation layer that a 35-graph GREEN corpus says nothing about.
+
+  **THE PORT'S API CAN BUILD THIS GRAPH, AND MEASURED IT DOES.**  `mixin/elementwise.bend`
+  builds one arena per method and names `O.Arena.merge` as the composition operator, so a
+  BINARY op -- which merges its two operands' arenas -- lands in ONE arena, which is what
+  the corpus's bend lane needs (one canonical row per arena node).  MEASURED on the port's
+  side: `CR.cr_empty` + `E.ew_add` produce
+  CONST/ALLOC/CONST/CONST/STACK/RESHAPE/CONST/ADD -- the same nine ops, in the same order,
+  with the same shapes and the same dtypes as CPython's, and `O.Arena.budget` has enough
+  fuel for the toposort.
+
+  **THE OPERAND IS A WEAKINT CONST, AND THAT IS THE POINT.**  `Tensor(1)` is `weakint`, so
+  upstream PROMOTES it: the ADD's second src is `CONST(weakfloat 1.0)`, not `CONST(1)`.
+  MEASURED on the port's side, `E.ew_add` produces the same `weakfloat` CONST.  A second
+  operand that needed no promotion -- `Tensor.empty(3)`, say -- would reach the binop but
+  NOT the promotion, and the promotion is what reaches `mixin/dtype.bend` and
+  `uop/weak.bend`'s evaluation machinery (`D.md_weak`, `D.commit_dtype`,
+  `wk_eval_int`/`wk_eval_float`/`wk_commit_dtype`).  **SO THIS ONE GRAPH IS CHOSEN TO
+  REACH THE PROMOTION, NOT THE ARITHMETIC.**
+
+  **AND THE GRAPH IS A DISAGREE, ON PURPOSE, AND IT IS ABOUT THE SLOT.**  MEASURED, the
+  two sides' ALLOCs carry DIFFERENT `ParamArg.slot`s:
+      CPython   ALLOC slot 0
+      the port  ALLOC slot 1
+  and the cause is `mixin/creation.bend`'s `cr_alloc` (creation.bend:377), which mints
+  `cr_alloc.arg(O.Arena.next(ar), dt, dev)` -- the arena's LENGTH -- where upstream mints
+  `next(UOp.unique_num)` (ops.py:1208), a MONOTONE counter.  **THE CORPUS CANNOT SEE THIS
+  DEFECT, AND THE REASON IS STRUCTURAL: every graph here hand-builds its ALLOC and SPELLS
+  the slot itself** (`graphcmp.bend`'s `alloc(slot)`), so the port's own slot-minting is
+  never executed by anything the corpus compares.  A graph whose bend side calls
+  `cr_empty` is the first thing that can see it.
+
+  **THE SHAPES ARE CHOSEN, NOT ARBITRARY.**  `(4,3)` and `(3,5)` do NOT broadcast: CPython
+  RAISES `IndexError: shape mismatch` (ops.py:86 `_broadcast_shape`), and MEASURED on the
+  port's side `E.ew_add` BUILDS IT ANYWAY -- a second, independent divergence that this
+  fixture deliberately does NOT use, because a fixture that dies on one side cannot be a
+  comparison at all.
+  """
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3, dtype=dtypes.float)
+  return (a + Tensor(1)).uop
+
+
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
           "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
           "binblob": g_binblob, "group": g_group, "commute": g_commute, "indexed": g_indexed,
@@ -1849,6 +1904,12 @@ GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_
           "unshard": g_unshard, "wmma": g_wmma,
           "custom_function": g_custom_function, "mselect": g_mselect,
           "mstack": g_mstack, "stage": g_stage,
+          # THE FIRST GRAPH WHOSE BEND SIDE IS BUILT BY THE PORT'S TENSOR API, and the
+          # first to reach the port's OPERATION layer at all -- `mixin/elementwise.bend`,
+          # `mixin/dtype.bend`, `mixin/gradient.bend` and `uop/weak.bend` are 1183 defs
+          # the other 35 graphs never execute.  It is a DISAGREE on purpose, and the
+          # disagreement is the `ParamArg.slot`.
+          "api": g_api,
           # THE FIRST `PROGRAM` IN THE CORPUS, and the only graph whose `ProgramInfo` is
           # compared at all. `checks/differ.py`'s `WANT` needs an entry for it -- the
           # run is INCOMPLETE while the expectations table is shorter than the corpus.

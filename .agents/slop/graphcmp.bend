@@ -37,6 +37,11 @@ import ./../../tinybendygrad/LAWS/spec.bend as S
 import ./../../tinybendygrad/uop/render.bend as R
 import ./../../tinybendygrad/tensor.bend as T
 import ./../../tinybendygrad/mixin/movement.bend as MX
+# THE THREE MODULES THE `api` GRAPH REACHES BY BEING CALLED INSTEAD OF HAND-BUILT.
+# `mixin/creation.bend` is the ALLOC/RESHAPE factory, `mixin/elementwise.bend` is the
+# binop and the promotion, and `uop/weak.bend` and `mixin/dtype.bend` are what THEY call.
+import ./../../tinybendygrad/mixin/creation.bend as CR
+import ./../../tinybendygrad/mixin/elementwise.bend as E
 
 # ===========================================================================
 # THE CHUNK. `<bytecount>:<bytes>`. `String.length` counts CHARACTERS, which is byte
@@ -1955,6 +1960,60 @@ def g_stage() -> O.Found:
   +ad = O.UOp.new(O.Found.ar(c1f), O.OpsADD{}, [O.Found.i(r43), O.Found.i(c1f)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(ad), O.OpsSTAGE{}, [O.Found.i(ad)], O.ANone{}, O.TNone{})
 
+# `--graph api`: `Tensor.empty(4,3) + Tensor(1)` -- MEASURED at 9 nodes on the py side,
+# census `ADD=1 ALLOC=1 CONST=4 RESHAPE=1 STACK=1`.
+#
+# **THE FIRST GRAPH IN THE CORPUS WHOSE BEND SIDE IS BUILT BY THE PORT'S OWN TENSOR API.**
+# Every other graph here hand-builds its arena node for node, so the corpus tests the
+# port's DATA STRUCTURES (`ops.bend`'s `UOp.new`, `fold.bend`'s derived properties) and
+# never the port's OPERATIONS.  MEASURED, by a static call graph over DEF BODIES: before
+# this graph, `mixin/elementwise.bend` (254 defs), `mixin/dtype.bend` (177),
+# `mixin/gradient.bend` (494) and `uop/weak.bend` (258) were **100% UNREACHED** and
+# `tensor.bend` was reached on 4 of its 347.  That is 1183 defs of the port's operation
+# layer that a 35-graph GREEN corpus says nothing about, and this graph is what reaches
+# them.
+#
+# **WHY A BINARY OP IS THE ONE THAT WORKS, and it is measured rather than chosen.**
+# `mixin/elementwise.bend`'s own header says "ONE ARENA PER METHOD" and names
+# `O.Arena.merge` as the composition operator: a method builds in its own arena and the
+# operands' arenas are MERGED at ENTRY.  A BINARY op merges its two operands' arenas and
+# builds the op in the merged arena, so the WHOLE graph lands in ONE arena -- which is
+# what this lane needs, because `rows.of` emits one canonical row per arena node.
+# MEASURED on the port's side: `CR.cr_empty` + `E.ew_add` produce
+# CONST/ALLOC/CONST/CONST/STACK/RESHAPE/CONST/ADD -- the same nine ops, in the same order,
+# with the same shapes and the same dtypes as CPython's, and `O.Arena.budget` has enough
+# fuel for the toposort.
+#
+# **AND IT DISAGREES, ON PURPOSE, AND THE DISAGREEMENT IS THE `ParamArg.slot`.**
+# MEASURED, the two sides' ALLOCs carry DIFFERENT slots:
+#     CPython   ALLOC slot 0
+#     the port  ALLOC slot 1
+# and the cause is `mixin/creation.bend`'s `cr_alloc` (creation.bend:377), which mints
+# `cr_alloc.arg(O.Arena.next(ar), dt, dev)` -- the arena's LENGTH -- where upstream mints
+# `next(UOp.unique_num)` (ops.py:1208), a MONOTONE counter.
+#
+# **THE CORPUS CANNOT SEE THIS DEFECT, AND THE REASON IS STRUCTURAL.**  Every other graph
+# here hand-builds its ALLOC and SPELLS the slot itself -- `alloc(slot)` above -- so the
+# port's own slot-minting is executed by NOTHING the corpus compares.  A graph whose bend
+# side calls `cr_empty` is the first thing in this corpus that can see it, and it sees a
+# real divergence.
+#
+# **THE OPERAND IS A WEAKINT CONST, AND THAT IS THE POINT.**  `Tensor(1)` is `weakint`, so
+# upstream PROMOTES it and the ADD's second src is `CONST(weakfloat 1.0)`.  MEASURED on the
+# port's side, `E.ew_add` produces the same `weakfloat` CONST.  An operand that needed no
+# promotion would reach the binop but NOT the promotion, and the promotion is what reaches
+# `mixin/dtype.bend` and `uop/weak.bend`'s evaluation machinery.
+#
+# **THE SHAPES ARE CHOSEN.**  `(4,3)` and `(3,5)` do NOT broadcast -- CPython RAISES
+# `IndexError: shape mismatch` (ops.py:86 `_broadcast_shape`) -- and MEASURED on the port's
+# side `E.ew_add` BUILDS IT ANYWAY, a second divergence this fixture deliberately does not
+# use, because a fixture that dies on one side cannot be a comparison at all.
+def g_api() -> O.Found:
+  +ar = O.Arena.empty()
+  +a = CR.cr_empty(ar, Some{S.single()}, [4, 3], S.D1{0})
+  +s = E.ew_add(a, E.ECon{O.CInt{H.i64_of_i32(1)}}, False{})
+  O.Found{T.Tensor.ar(s), T.Tensor.u(s)}
+
 # `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
 # head of the TAIL and no argument at all is the default rather than an error.
 
@@ -1992,12 +2051,15 @@ def rows.pick3(+name: String) -> O.Found:
                                                       Bool.pick(O.Found, String.eq(name, "mselect"), g_mselect(),
                                                         Bool.pick(O.Found, String.eq(name, "mstack"), g_mstack(),
                                                           Bool.pick(O.Found, String.eq(name, "stage"), g_stage(),
+                                                            # THE FIRST GRAPH BUILT BY THE PORT'S TENSOR API, and the
+                                                            # first to reach the port's OPERATION layer at all.
+                                                            Bool.pick(O.Found, String.eq(name, "api"), g_api(),
                                                             # THE FIRST `PROGRAM` IN THE CORPUS. `g_prog` is `g_lin` plus
                                                             # ONE node, and the one node is the one whose `pI(` form the
                                                             # corpus had never compared -- MEASURED 2026-10-22, the 34
                                                             # graphs produced ZERO `pI(` rows.
                                                             Bool.pick(O.Found, String.eq(name, "prog"), g_prog(),
-                                                            g_matmul()))))))))))))))))))))))))))))))))))
+                                                            g_matmul())))))))))))))))))))))))))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a

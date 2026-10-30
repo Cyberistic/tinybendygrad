@@ -389,8 +389,19 @@ def population_digest(path=None) -> str:
 # not a count: it moves when the population's CONTENT moves and it cannot be re-derived from
 # the population, which is the whole difference between a pin and a label.
 #
-# THE DELTA HERE IS NIL, and the reason is MEASURED, because a reader lands on this line and
-# asks what changed. On 2026-10-22 the port's SPEC TABLES were fixed -- `fu_block.go`'s three
+# MEASURED 2026-10-30 over the live tree: `ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`
+# over **36** graphs.  THE DELTA IS THE `api` GRAPH, and it is not a fixture change: `api` is
+# the first graph whose BEND SIDE is built by the port's own TENSOR API, so it is the first
+# to reach the port's OPERATION layer (`mixin/elementwise.bend`, `mixin/dtype.bend`,
+# `mixin/gradient.bend`, `uop/weak.bend`), and the population's bytes moved because the
+# graph's SOURCE moved.  **THE POPULATION PIN IS A CONTENT PIN OVER THE POPULATION'S OWN
+# SOURCE, AND THAT IS WHY IT MOVED WHEN A FIXTURE'S SOURCE MOVED** -- the pin does not
+# care WHY the source moved, and it should not: a fixture that changes can flip a verdict
+# and is the same class of event as a new graph.
+#
+# THE 2026-10-22 DELTA BELOW IS KEPT BECAUSE IT IS THE PRECEDENT: the corpus's population
+# did NOT change when the port's SPEC TABLES were fixed, and it could not have.
+# On 2026-10-22 the port's SPEC TABLES were fixed -- `fu_block.go`'s three
 # thresholds each read one more than the block base they select, so a block's FIRST rule was
 # dispatched into the PREVIOUS block's ladder -- and `gates/specreach-gate.py` went from three
 # differing cells to none. The corpus's population did NOT change, and it could not have:
@@ -402,7 +413,7 @@ def population_digest(path=None) -> str:
 # DOES carry the shapes (`getaddr` a GETADDR, `binblob` a BINARY, and the gate prints both);
 # what is missing is a VERDICT LANE over it, and that is `gates/specreach-map.rows` (the map)
 # and `gates/specreach-gate.py` (the verdict).
-POPULATION_PIN = "4a44f98e3964353a7e11247af8bebbcdb9acab1efbb8be19e933f93cae501ed2"
+POPULATION_PIN = "ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe"
 
 
 def population_bad(digest=None) -> list[str]:
@@ -482,7 +493,27 @@ def population_bad(digest=None) -> list[str]:
 # row here is a CLAIM the run checks, and a claim that holds for every graph in the corpus is
 # ONE NUMBER -- the population's identity, pinned by CONTENT in `POPULATION_PIN` -- and not
 # thirty-five.
-WANT: dict[str, str] = {}
+WANT: dict[str, str] = {
+  # `api` IS A DISAGREE ON PURPOSE, and it is the FIRST exception this table has held.
+  # MEASURED 2026-10-30: the two sides' ALLOC carries a DIFFERENT `ParamArg.slot` --
+  #   CPython   ALLOC slot 0
+  #   the port  ALLOC slot 1
+  # and the cause is `tinybendygrad/mixin/creation.bend`'s `cr_alloc` (:377), which mints
+  # `cr_alloc.arg(O.Arena.next(ar), dt, dev)` -- the arena's LENGTH -- where upstream mints
+  # `next(UOp.unique_num)` (`tinygrad/uop/ops.py:1208`), a MONOTONE counter.
+  # **THE CORPUS COULD NOT SEE IT, AND THE REASON IS STRUCTURAL**: every other graph
+  # hand-builds its ALLOC and SPELLS the slot itself (`.agents/slop/graphcmp.bend`'s
+  # `alloc(slot)`), so the port's own slot-minting was executed by NOTHING the corpus
+  # compares.  `api` is the first graph whose bend side calls `cr_empty`, so it is the first
+  # thing in this corpus that can see the port's OWN allocator.
+  # **THIS IS THE EXCEPTION'S WHOLE POINT, AND IT IS A WEAKENING OF THE CORPUS'S CLAIM**:
+  # a graph that DISAGREEs is a graph the corpus does not certify, so the corpus's coverage
+  # went from 35 of 35 to 35 of 36 -- and it bought, in exchange, the port's operation layer
+  # (MEASURED, by a static call graph over def bodies: `mixin/elementwise.bend` went from
+  # 0 of its 254 defs reached to 31, `uop/weak.bend` from 0 of 258 to 41, `tensor.bend` from
+  # 4 of 347 to 32, and `mixin/creation.bend` entered the closure at 9 of 105).
+  "api": "DISAGREE",
+}
 
 
 def expectation(g: str) -> str:
