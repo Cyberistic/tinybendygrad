@@ -81,7 +81,7 @@
 #      `weakint.const(42)` is the int `42`, the CONST is weakint, and `.cast(weakint)`
 #      folds. So `full(shape, 42)` is 9 nodes and `full(shape, 42, dtype=half)` is 10,
 #      and the ONLY difference is one CAST -- same root op, same nsrc, same srcs.
-#      `weak.bend`'s `wk_const_at` (weak.bend:632) spells the CAST UNCONDITIONALLY and
+#      `weak.bend`'s `wk_const_at` (weak.bend:621) spells the CAST UNCONDITIONALLY and
 #      is the wrong shape here, and `wk_ccast` is the other wrong shape: it rebuilds
 #      the CONST and loses the CAST entirely. `cr_cast` is `DTypeMixin.cast`
 #      (dtype.py:36) with the fold, which is the only one of the three that is right.
@@ -225,7 +225,7 @@ def cr_bounds(v: O.Const) -> Maybe<&1, H.I64>:
 # `DTypeMixin.cast` -- dtype.py:36, `self if self.dtype == (dt := to_dtype(dtype)) else
 # self._uop.alu(Ops.CAST, arg=dt)`. `O.UOp.alu` takes no arg (ops.bend:2072), so the
 # CAST is spelled with `UOp.new` and the `ADt` arg -- `mixin/dtype.bend`'s `cast_at`
-# (dtype.bend:309) and `weak.bend`'s `wk_cast_at` (uop/weak.bend:624 symbol=wk_cast_at) use the same SPELLING
+# (dtype.bend:309) and `weak.bend`'s `wk_cast_at` (uop/weak.bend:616 symbol=wk_cast_at) use the same SPELLING
 # for a different REASON: both of those read the source dtype off a FOLD, and
 # `UOp.const`'s `.cast` reads it off the value it just built, which `cr_from_py` has
 # already answered. Same one line, two sources for the `same` test.
@@ -366,16 +366,37 @@ def cr_alloc.arg(slot: U32, +dt: S.Dt, dev: S.Dev) -> O.ParamArg:
   O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{dev},
     False{}, None{}, None{}, True{}, None{}}
 
-# `next(UOp.unique_num)` -- ops.py:1208 -- is a MONOTONE slot counter that "must never be
-# reset", and `ops.bend:1361` says the arena's length IS that counter. `Arena.next` on
-# the arena the ALLOC is about to be interned into is therefore this port's
-# `next(UOp.unique_num)`, and it is WHAT MAKES TWO `full`s NOT SHARE AN ALLOC. CPython
-# says so (`int_full_new=4`) and no `row_*` row can see it, because both graphs are
-# nine nodes. It is also why `Arena.next` is not a containment test
-# (movement.bend, "arena.next is NOT a containment test"): it is a NAME, and here the
-# name is only ever compared for EQUALITY.
+# `next(UOp.unique_num)` -- ops.py:1191 -- is a MONOTONE counter of ALLOCATIONS, and
+# `ops.bend:1361`'s claim that "the arena's length IS that counter" is FALSE: the arena
+# grows on every intern, and upstream's counter is spent only at ops.py:839 (BUFFER),
+# :1191 (ALLOC) and :1199 (PLACEHOLDER). MEASURED: `Tensor.empty(4,3)` gives CPython
+# slot 0 and the port slot 1, because `Arena.next` counted the arena's BOTTOM.
+#
+# So the port's counter is the number of allocation NODES already interned, which is
+# upstream's counter SCOPED TO THE ARENA. Upstream's is process-global and this port
+# has one arena per method, so the two agree whenever the allocations share an arena
+# and the port CANNOT mint a global one.
+# ALLOC and BUFFER are the two ops upstream mints a slot for. PARAM is NOT one: upstream's
+# `UOp.param` takes an EXPLICIT slot (ops.py:1218) and spends no counter.
+def cr_slot.is_alloc(op: O.Op) -> Bool:
+  match op:
+    case O.OpsALLOC{}: True{}
+    case O.OpsBUFFER{}: True{}
+    case _: False{}
+
+def cr_slot.count(+ns: List<&2, O.Node>, acc: U32) -> U32:
+  match ns:
+    case Nil{}: acc
+    case n <> t:
+      cr_slot.count(t, U32.add(acc, Bool.pick(U32, cr_slot.is_alloc(O.Node.op(n)), 1, 0)))
+
+def cr_slot(+ar: O.Arena) -> U32: cr_slot.count(O.Arena.nodes(ar), 0)
+
+# `next(UOp.unique_num)` -- ops.py:1191 -- is a MONOTONE slot counter that "must never be
+# reset", and it is WHAT MAKES TWO `full`s NOT SHARE AN ALLOC. CPython says so
+# (`int_full_new=4`) and no `row_*` row can see it, because both graphs are nine nodes.
 def cr_alloc(+ar: O.Arena, +dt: S.Dt, size: U32, dev: S.Dev) -> T.Tensor:
-  T.tn_alu.put(O.UOp.new.param(ar, O.OpsALLOC{}, Some{size}, O.AParam{cr_alloc.arg(O.Arena.next(ar), dt, dev)}, O.TNone{}))
+  T.tn_alu.put(O.UOp.new.param(ar, O.OpsALLOC{}, Some{size}, O.AParam{cr_alloc.arg(cr_slot(ar), dt, dev)}, O.TNone{}))
 
 # `ret.shape == self.shape` for the `reshape(max_shape)` of creation.py:42, where
 # `ret.shape` is `max_shape` and an ALLOC's shape is `(size,)` -- `param_ds`,
