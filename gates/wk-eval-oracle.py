@@ -34,7 +34,7 @@ prettier one, and a prettier one would have meant a third formatter in the tree.
 
 from tinygrad import dtypes
 from tinygrad.dtype import ConstFloat
-from tinygrad.uop.ops import Ops, ParamArg, UOp, UOpMetaClass
+from tinygrad.uop.ops import UOp, UOpMetaClass
 
 INTS = dtypes.ints + (dtypes.weakint,)
 FLOATS = dtypes.floats + (dtypes.weakfloat,)
@@ -46,8 +46,17 @@ def param(dtype, lo, hi):
     The bounds are what makes the two refusals distinguishable: `lo == hi` is a single number in a
     stated dtype, so the ONLY thing that can refuse it is the dtype check, and `lo != hi` is the
     same shape refused by the range check instead.
+
+    UPSTREAM'S OWN BUILDER, and the hand-built `UOp(Ops.PARAM, src=(), ...)` this replaces was a
+    MALFORMED PARAM: upstream's `UOp.param` (ops.py:1218) ALWAYS gives a PARAM at least one src
+    (`src=(shape_to_shape_arg(...),)`), and `_shape` (ops.py:359) reads `self.src[0].as_shape`
+    unguarded. MEASURED, a src-less PARAM makes `_eval` (ops.py:507) die inside `simplify()` ->
+    `graph_rewrite(self, symbolic)` -> `symbolic.py:275`'s `x.const_like(x.vmin)` -> `_shape` ->
+    `IndexError: tuple index out of range`, and the gate REFUSED rather than measuring anything.
+    The port's lane is unaffected because the port has no `simplify`; only the CPython lane read
+    the shape.
     """
-    return UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtype, vmin_vmax=(lo, hi)))
+    return UOp.param(0, dtype, vmin_vmax=(lo, hi))
 
 
 def call(fn, u):

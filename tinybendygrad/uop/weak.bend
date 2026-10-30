@@ -21,10 +21,18 @@
 # wall was never a LANGUAGE limit. It was an IMPORT TOPOLOGY: the arithmetic is
 # `D.commit_dtype` in `mixin/dtype.bend`, which does not import this file, and `wk_dt` is
 # here -- so one call could not be written. `wk_commit_dtype` is that call, and
-# `.agents/slop/wk-cd-gate.sh` is its gate: 7 rows, three lanes, 6 identical and ONE
-# DOCUMENTED DIVERGENCE (`cd_none`, a PARAM with no `vmin_vmax`, where the sweep has no
-# interval to report and CPython answers `i64`). The nine markers are now blocked on their
-# own RULE BODIES and not on a reader.
+# `gates/wk-cd-gate.py` is its gate: 7 rows, three lanes, 7 identical and NO divergence
+# (the `cd_none` divergence -- a PARAM with no `vmin_vmax`, where the sweep had no interval
+# to report -- is CLOSED: `commit_dtype.weak` now supplies the widest int64 range when
+# bounds are unavailable, and `commit_int` answers `i64` the way CPython's does). The nine
+# markers are now blocked on their own RULE BODIES and not on a reader.
+#
+# AND THE FIVE READERS BELOW -- `wk_eval_int` / `wk_eval_float` / `wk_eval_bool` /
+# `wk_is_virtual` / `wk_commit_dtype` -- HAVE CALLERS, and the CALLERS ARE GATES.
+# `gates/wk-eval-gate.py` (22 rows, three lanes) reads the three `_eval` readers and
+# `gates/wk-isvirt-gate.py` (5 rows, three lanes) reads `wk_is_virtual`. A DEF WITH NO
+# CALLER IN `tinybendygrad/` IS NOT A DEAD DEF: a GATE is a caller, and a corpus that
+# measures reachability over the PORT ALONE will call a gated reader unreachable.
 #
 # WHAT THE GATE HAS TO CONTAIN, because the obvious fixture proves nothing: a PARAM whose
 # dtype is int32 answers `i32` on EVERY row, because the weakint branch is not taken. And
