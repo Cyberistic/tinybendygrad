@@ -25978,3 +25978,28 @@ the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE
         **PORT.**
         **⇒ AND **160 **MODULES / 189308 **LOC** **ARE **OUTSIDE **THE **CLOSURE** **BECAUSE **THE **PORT
         **CANNOT **BUILD **A **SCHEDULE **AT **ALL.**
+three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME from a MISSING FIELD
+
+  - [x] **THE **PORT's **RECORD **SHAPES **WERE **CENSUSED **AGAINST **UPSTREAM's **DATACLASSES **FOR **THE
+        **FIRST **TIME (2026-10-30, `d2b58999f`, `.agents/slop/portshape/shapecensus.py`).**
+        **⇒ AND **596 **PORT **`type X is Data` **RECORDS**, **21 **MATCHED **UPSTREAM **BY **NAME**, **16 **OF
+        **THOSE **DIFFER** — **AND **THE **ARITY **SEPARATES **THE **CLASSES**, **BECAUSE **A **FIELD-NAME
+        **COMPARISON **CANNOT **TELL **A **RENAME **FROM **A **MISSING **FIELD.**
+        **⇒ AND **THREE **RECORDS **ARE **MISSING **UPSTREAM **FIELDS** — **`CallInfo`** (**missing **`aux`**,
+        **`grad_fxn`**), **`KernelInfo`** (**missing **`estimates`**, **`optimized`**), **`ParamArg`** (**missing
+        **`spec`**) — **AND **`KernelInfo` **IS **VISIBLE**: **`checks/rn-gate.py` **IS **ALREADY **RED** **ON
+        **5 **NAMED **ROWS** (`arg_repr AKern`/`AParam1`/`AParam2`/`AParam3`), **AND **THE **PORT **PRINTS
+        **`KernelInfo(…, beam=0)` **WHERE **UPSTREAM **PRINTS **`KernelInfo(…, beam=0, optimized=False)`.**
+        **⇒ AND **THE **PIN **IS **EXACT: **UPSTREAM's **`optimized`** **CAME **WITH **THE **2026-10-17
+        **RE-VENDOR** (**`86c4f1343`**) **AND **`estimates`** **CAME **EARLIER** (**`434dbafab`**).**
+        **⇒ AND **⇒ AND **THE **COVERAGE **CENSUS's **THIRD **WALL **WAS **WRONG **ABOUT **WHAT **IT **SAW**:
+        **IT **REPORTED **THAT **`uop/render.bend`** **"PORTS **UPSTREAM's **`pyrender`**, **WHICH **UPSTREAM
+        **DELETED"** — **AND **THE **PORT's **`pm_pyrender`** **PORTS **UPSTREAM's **LIVE **`renderer`
+        **MATCHER** (**`render.py:88-123`**, **FIFTEEN **`UPat`s**), **WITH **THE **RULE **ORDER **AND **ITS
+        **FALL-THROUGH **REASONING **DOCUMENTED.**  **⇒ AND **SO **THE **PORT's **RENDERER **IS **CURRENT**, **AND
+        **THE **DEFECT **IS **NOT **THE **RENDERER's **SHAPE **BUT **THE **RECORD **IT **RENDERS.**
+        **⇒ AND **⇒ AND **THE **CLASS **IS **"A **RE-VENDOR **MOVES **UPSTREAM's **RECORD **SHAPES **AND **THE
+        **PORT's **SHAPES **DO **NOT **FOLLOW **WITHOUT **A **REVIEW"** — **AND **THE **CENSUS **HAD **TO **BE
+        **FIXED **TWICE **FIRST** (**A **LEXICAL **REGEX **STOPPED **AT **THE **FIRST **`}`**, **AND **A
+        **COMMENT **BETWEEN **TWO **FIELDS **WAS **READ **AS **A **FIELD **NAME**), **AND **BOTH **WRONGS **WERE
+        **FOUND **BY **THE **CENSUS **DISAGREEING **WITH **THE **TREE**, **NOT **BY **ARGUMENT.**
