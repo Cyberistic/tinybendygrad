@@ -26276,7 +26276,7 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
         **COSTS **THE **VALUE **ITS **CLOSING **BRACKET.**  **⇒ AND **THE **FIVE **RED **ROWS **ARE **NOW
         **ONE**, **AND **THE **PORT **IS **BYTE-IDENTICAL **TO **THE **MATERIALISED **UPSTREAM **HEAD's
         **`repr(KernelInfo())`.**
-the CORPUS pays the SAME 2.3-SECOND TYPECHECK 59 TIMES, and the bend side is 15x the python side
+[x] the CORPUS pays the SAME 2.3-SECOND TYPECHECK 59 TIMES, and the bend side is 15x the python side
 
 **⇒ AND **MEASURED 2026-10-30, **THE **COST **IS **NOT **THE **GRAPH **AND **NOT **THE **STARTUP** — **IT **IS
 **THE **TYPECHECK **OF **THE **CLOSURE, **REPEATED **ONCE **PER **GRAPH.**
@@ -26316,3 +26316,37 @@ the CORPUS pays the SAME 2.3-SECOND TYPECHECK 59 TIMES, and the bend side is 15x
 **REPEATED **TYPECHECKING **BEFORE **IT **MEASURES **ANYTHING **IS **WORTH **THE **FIX**, **AND **THE **FIX
 **IS **TO **MAKE **THE **BEND **LANE **EMIT **ALL **GRAPHS **FROM **ONE **PROCESS** — **WHICH **COSTS **ONE
 **NEW **ARGUMENT **IN **A **`.bend` **FILE **AND **ONE **CHANGE **IN **THE **DRIVER.**
+
+**⇒ AND **⇒ AND **⇒ AND **DONE, **2026-10-31, **COMMIT **`09945ab98`**: **THE **BEND **LANE **EMITS **EVERY
+**GRAPH **FROM **ONE **PROCESS, **AND **THE **CORPUS **IS **UNCHANGED.**
+
+| measurement | before | after |
+|---|---|---|
+| **THE **BEND **SIDE, **36 **GRAPHS** | **63.4 s** | **2.0 s** (**31.8x**) |
+| **THE **COVERAGE **CENSUS** (`graphcmp-oracle.py`) | **6:06** | **18.8 s** (**19x**) |
+| **THE **36 **`diff --graph G`** **OUTPUTS** | **71.2 s** | **6.8 s** (**11x**) |
+| **THE **WHOLE **CORPUS **RUN** (`checks/differ.py run`) | **4:50** | **1:42** (**2.8x**) |
+
+**⇒ AND **THE **LANE's **`main()`** **NOW **READS **THE **WHOLE **`IO.args()`** **LIST**: **THE **TOKEN
+**`ALLGRAPHS`** (**NOT **`--all`** — **THE **COMPILER **READS **A **DASHED **TOKEN **AS **AN **OPTION **AND
+**REFUSES **IT**) **IS **FOLLOWED **BY **THE **GRAPH **NAMES, **AND **THE **LANE **PRINTS **`# graph=NAME`**
+**BEFORE **EACH **GRAPH's **OWN **`# root=`** **HEADER **AND **ROWS.**  **⇒ AND **ONE **NAME **IS **THE **OLD
+**LANE, **BYTE **FOR **BYTE**: **THE **MARKER **IS **PRINTED **ONLY **IN **THE **MANY-NAMES **MODE.**
+
+**⇒ AND **THE **ROW **FORMAT **DID **NOT **CHANGE**: **THE **MARKER **IS **A **COMMENT**, **`classify()`**
+**READS **`#`** **LINES **AS **HEADERS **AND **NEVER **AS **ROWS**, **AND **THE **DRIVER **SPLITS **THE
+**STREAM **ON **THE **MARKER.**  **⇒ AND **MEASURED: **ALL **36 **`D2-canon-bend-*.txt`** **AND **ALL **36
+**`D2-canonform-bend-*.txt`** **AND **ALL **36 **`D1-graph-*.txt`** **ARE **BYTE-IDENTICAL **BEFORE **AND
+**AFTER**, **AND **`repro`** **REPORTS **`326 of 326 files identical across two clean runs`.**
+
+**⇒ AND **THE **PYTHON **SIDE **KEEPS **ONE **PROCESS **PER **GRAPH**, **AND **THAT **IS **A **MEASUREMENT
+**AND **NOT **A **LEFTOVER:** `Tensor.empty` **MINTS **A **FRESH **`ParamArg.slot`** **FROM **A
+**PROCESS-GLOBAL **COUNTER**, **SO **A **PROCESS **THAT **BUILDS **`reduce`** **AND **THEN **`matmul`** **GIVES
+**`matmul`** **THE **SLOTS **1 **AND **2** **WHILE **THE **PER-GRAPH **PATH **GIVES **IT **0 **AND **1** —
+**AND **THE **COMPARISON **WOULD **REPORT **THE **HARNESS **AND **NOT **THE **PORT.**  **⇒ AND **THE **BEND
+**SIDE **COSTS **63.4 s** **AND **THE **PYTHON **SIDE **COSTS **4.5 s**, **SO **THE **CHEAP **SIDE **KEEPS
+**ITS **PROCESSES **AND **THE **EXPENSIVE **SIDE **LOSES **35 **OF **ITS **36.**
+
+**⇒ AND **THE **BATCH **CACHE **IS **OPT-IN** (`GRAPHCMP_BEND_BATCH`) **BECAUSE **THE **PER-GRAPH **PATH
+**IS **ONE **GRAPH **PER **PROCESS**, **AND **A **CACHE **THAT **FETCHED **THE **WHOLE **POPULATION **ON **THE
+**FIRST **REQUEST **WOULD **MAKE **EVERY **SINGLE-GRAPH **REQUEST **PAY **FOR **36 **GRAPHS.**
