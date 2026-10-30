@@ -147,33 +147,47 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **AND AS OF **2026-10-22T17:2xZ** (`b5c16d646`, **AFTER **TONIGHT's **247 **COMMITS**)
   **THE **CORPUS **IS **GREEN, **REPRODUCIBLE, **AND ***CURRENT*** -- **ALL **THREE, **WHICH **IS **THE **FIRST **TIME **ALL
   **THREE **HELD **AT **ONCE**:
-  **⇒ AND **THE **RUN **WAS **RE-TAKEN **2026-10-30**, **AFTER **THE **`api` **GRAPH **JOINED **THE
-  **CORPUS** **AND **THE **NEGATIVE-INDEX **PARITY **FIX **LANDED** (`6c3d059e12268117308663a74602d6951ade8c5f`):
-  **`substrate-start ==
-  substrate-end == live == repro-substrate == 0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`**,
-  **`substrate-head=6c3d059e12268117308663a74602d6951ade8c5f`**, **AND **`gates/corpuswitness-gate.py`
-  **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`** **AND
-  **`checks/corpus-figure.py` **READS **`RUN HEALTH : OK -- 17 of 17 pins green AND the SECOND WITNESS
-  agrees`** (**rc=0** **WITH **`DEV=CPU`**).**  **⇒ AND **`unhealthy() -> []`**, **`artefacts_ok() ->
-  []`**, **`repro_bad() -> []`** -- **THE **READINGS **ARE **EMPTY**, **NOT **"0 **COMPLAINTS"** -- **AND
-  **`repro`: **`326 of 326 files identical across two clean runs`**, **PEAK **RSS **1111 **MB
-  (**`run`**, **268 **s**) **AND **1112 **MB **(**`repro`**, **538 **s**), **BOTH **`WITHIN-LIMITS`.**
+  **⇒ AND **THE **RUN **WAS **RE-TAKEN **2026-10-31**, **AFTER **THE **`api` **GRAPH **JOINED **THE
+  **CORPUS** **AND **THE **NEGATIVE-INDEX **PARITY **FIX **LANDED** (`6c3d059e12268117308663a74602d6951ade8c5f`),
+  **AND **AFTER **THE **`api` **GRAPH's **ALLOC-SLOT **DEFECT **WAS **FIXED**
+  (**`gates/alloc_slot-gate.py`**) **AND **`KernelInfo` **WAS **MADE **UPSTREAM's **SIX **FIELDS**
+  (**`c2fbda4ca`**) **AND **THE **BEND **LANE **WAS **BATCHED** (**`09945ab98`**): **`substrate-start ==
+  substrate-end == live == repro-substrate == 7c580bff4c40c3f64784b9d14c90f2b3a16212a5a400a80f2607b7ce75b03fda`**,
+  **AND **`graphs=36 graphs-answered=36 graphs-agree=36 graphs-disagree=0 byte-identical=36 graphs-refused=0`** —
+  **⇒ AND **THE **CORPUS's **FIRST **EVER **EXCEPTION **IS **GONE**: **`checks/differ.py`'s **`WANT` **TABLE
+  **IS **NOW **`{}`**, **AND **THE **`api` **GRAPH **— **THE **FIRST **GRAPH **WHOSE **BEND **SIDE **IS
+  **BUILT **BY **THE **PORT's **OWN **TENSOR **API**, **AND **SO **THE **FIRST **THAT **CAN **SEE **THE
+  **PORT's **OWN **ALLOCATOR** — **AGREES**, **BECAUSE **`cr_alloc` **NOW **MINTS **THE **SLOT **FROM **A
+  **MONOTONE **COUNTER **LIKE **UPSTREAM's **`next(UOp.unique_num)`**, **NOT **FROM **`O.Arena.next(ar)`**,
+  **THE **ARENA's **LENGTH.**
+  **⇒ AND **⇒ AND **⇒ AND **THE **REPRODUCIBILITY **WITNESS **IS **GREEN **ON **ALL **SEVEN **OF **ITS
+  **READINGS** — **`PASS -- the claim is ESTABLISHED`**, **WITH **`witness.fresh`** **`FRESH`**
+  (**`delta_ms=+92.203`**), **`witness.substrate`** **`CURRENT`** (**`rows=3 of 3`**), **`verdict.current`**
+  **`CURRENT`**, **`verdict.reported`** **`AGREE`** (**`graphs=36 agree=36`**), **AND **`claim`**
+  **`REPRODUCIBLE`** — **AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**, **AND
+  **`repro`: **`326 of 326 files identical across two clean runs`**.**
+  **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **BEND **LANE **NOW **PAYS **THE **21,440-LINE **TYPECHECK **ONCE**:
+  **THE **LANE'S **`main()`** **TOOK **ONE **GRAPH **FROM **`IO.args()`** **AND **EXITED**, **SO **EVERY **GRAPH
+  **NEEDED **ITS **OWN **PROCESS **AND **EVERY **PROCESS **RE-TYPECHECKED **THE **SAME **CLOSURE** — **AND
+  **THERE **IS **NO **TYPECHECK **CACHE** (**MEASURED: **TWO **CONSECUTIVE **BENDS **TAKE **2.64 **s **AND
+  **2.45 **s**).  **⇒ AND **THE **`ALLGRAPHS`** **MODE **ASKS **ONE **PROCESS **FOR **EVERY **GRAPH**, **AND
+  **ONE **NAME **IS **THE **OLD **LANE **BYTE **FOR **BYTE.**  **⇒ AND **THE **BEND **SIDE **FOR **36
+  **GRAPHS **WENT **68.6 **s -> 2.0 **s** (**MEASURED **BY **ME: **TWO **GRAPHS **ARE **3.38 **s **IN **TWO
+  **PROCESSES **AND **1.69 **s **IN **ONE**), **AND **THE **WHOLE **CORPUS **RUN **4:50 -> 1:42**, **AND **THE
+  **COVERAGE **CENSUS **6:06 -> 18.8 **s** — **AND **ALL **36 **GRAPH **ROWS **ARE **BYTE-IDENTICAL.**
+  **⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **PYTHON **SIDE **MUST **STAY **ONE **PROCESS **PER
+  **GRAPH**, **AND **THE **REASON **IS **A **PORT **FACT **NOT **A **HARNESS **ONE**: **`Tensor.empty` **MINTS **A
+  **`ParamArg.slot` **FROM **A **PROCESS-GLOBAL **COUNTER** (`UOp.unique_num`), **SO **A **PROCESS **THAT
+  **BUILDS **`reduce` **AND **THEN **`matmul`** **GIVES **`matmul` **SLOTS **1 **AND **2** **WHILE **THE
+  **PER-GRAPH **PATH **GIVES **IT **0 **AND **1** — **AND **THE **FIRST **BATCH **IMPLEMENTATION **REPORTED **A
+  **DISAGREE **THAT **WAS **THE **HARNESS, **NOT **THE **PORT.**  **⇒ AND **THE **CHEAP **SIDE **KEEPS **ITS
+  **PROCESSES **AND **THE **EXPENSIVE **SIDE **LOSES **35 **OF **ITS **36.**
   **⇒ AND **THE **CLAIM **BELOW **IS **A **RECORD **OF **A **RUN, **NOT **A **STANDING **FACT** --
   **AND **A **GOVERNING **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY
   **BRIEF **THAT **CITES **IT.**  **⇒ AND **THE **DOSE **OF **STALENESS **IS **THE **SUBSTRATE
   **DIGEST**: **A **COMMIT **THAT **TOUCHES **NOTHING **IN **`tinybendygrad/`** **OR **`tinygrad/`**
   **DOES **NOT **MAKE **THE **RUN **STALE**, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**
-  `graphs=36 graphs-answered=36 graphs-agree=35 graphs-disagree=1 byte-identical=35 graphs-refused=0`,
-  **⇒ AND **THE **ONE **DISAGREE **IS **THE **`api` **GRAPH, **BY **DESIGN** — **IT **IS **THE **FIRST
-  **GRAPH **WHOSE **BEND **SIDE **IS **BUILT **BY **THE **PORT's **OWN **TENSOR **API**, **SO **IT **IS **THE
-  **FIRST **THING **IN **THE **CORPUS **THAT **CAN **SEE **THE **PORT's **OWN **ALLOCATOR**, **AND **IT
-  **FINDS **A **REAL **DEFECT** (**CPython's **ALLOC **slot **0**, **THE **PORT's **slot **1** —
-  **`tinybendygrad/mixin/creation.bend:377`** **MINTS **`O.Arena.next(ar)`**, **THE **ARENA's **LENGTH**,
-  **WHERE **UPSTREAM **MINTS **`next(UOp.unique_num)`**, **A **MONOTONE **COUNTER**).  **⇒ AND **A **GRAPH
-  **THAT **DISAGREEs **IS **A **GRAPH **THE **CORPUS **DOES **NOT **CERTIFY**, **SO **THE **CORPUS's
-  **COVERAGE **WENT **FROM **35 **OF **35 **TO **35 **OF **36** — **AND **IT **BOUGHT, **IN **EXCHANGE,
-  **THE **PORT's **OPERATION **LAYER** (**MEASURED: **`mixin/elementwise.bend`**, **`mixin/dtype.bend`**,
-  **`mixin/gradient.bend`** **AND **`uop/weak.bend`** **WERE **100% **UNREACHED **BY **THE **35**).**
+  `graphs=36 graphs-answered=36 graphs-agree=36 graphs-disagree=0 byte-identical=36 graphs-refused=0`,
   `population=ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`,
   `?=0`, `SHARED cores 52`, `controls 5 of 5`, `conflations 4 of 4`,
   `stable-pairs 5 of 5`, `stable-failed 0 of 5`, `stable-differ 0 of 5`, `expect-moved 0`, `plants-disagree 8 of 8`,
@@ -182,11 +196,10 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `326 of 326 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=326 repro-identical=326 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == repro-substrate == 0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == repro-substrate == 7c580bff4c40c3f64784b9d14c90f2b3a16212a5a400a80f2607b7ce75b03fda`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=6c3d059e12268117308663a74602d6951ade8c5f` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
-  **AND **IT **WAS **HEAD **ITSELF **WHEN **THE **RUN **WAS **TAKEN** (`git rev-parse --short HEAD` **WAS**
-  `6c3d059e1`), **AND **THE **WORKING **COPY's **SUBSTRATE **EQUALS **HEAD's**, **AND **THE **LIVE
+  **STANDS**, **AND `substrate-head=2d927e5e4837576472b4eebcb4710ab8b7176514` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION**, **THE **RANGEIFY **AND
   **THE **`UNCLAIMED` **WORK **LEFT** (AND **THE **`UNCLAIMED` **CLASS **IS **NOW **0**): **THE
