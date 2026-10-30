@@ -25875,3 +25875,66 @@ the SHAPE HALF'S LAWS ARE AUDITED, AND THE AUDIT FOUND ONE LAW THAT CANNOT FAIL
         **-> **`29a81c44736566a4d8fce1760ae462199f38ecdf6a075c8cdb85e35f12712a77`**), **SO **THE **CORPUS
         **MUST **BE **RE-RUN** — **AND **THE **RE-RUN **IS **EXPECTED **TO **STAY **35/35**, **BECAUSE **NO
         **CORPUS **GRAPH **REACHES **THIS **RULE** (**MEASURED**, **ABOVE**).
+the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE CODE
+
+  - [x] **THE **CORPUS's **COVERAGE **WAS **MEASURED **FOR **THE **FIRST **TIME (2026-10-30,
+        `113363263`, `.agents/slop/corpuscoverage/`).**
+        **⇒ AND **THE **HEADLINE: **THE **CORPUS's **OWN **CENSUS **REACHES **69 **OF **69 **PROGRAM **OPS**,
+        **WHILE **THE **PORT's **DEFS **ARE **954 **OF **4724 **REACHED** (**3770 **UNREACHED**), **AND **160
+        **OF **THE **PORT's **175 **MODULES **ARE **NEVER **EVEN **IMPORTED.**  **⇒ AND **THE **MECHANISM **IS
+        **STRUCTURAL**, **NOT **AN **OMISSION:** **EVERY **CORPUS **GRAPH **HAND-BUILDS **ITS **ARENA
+        **NODE-FOR-NODE**, **SO **THE **CORPUS **TESTS **THE **PORT's **DATA **STRUCTURES** (`ops.bend`,
+        `fold.bend`) **AND **NEVER **ITS **OPERATIONS** — **`mixin/gradient.bend` **0/494**,
+        **`mixin/elementwise.bend` **0/254**, **`uop/weak.bend` **0/258**, **`mixin/dtype.bend` **0/177**,
+        **`tensor.bend` **4/347**: **1183 **DEFS, **100% **UNREACHED.**
+  - [x] **THE **`api` **GRAPH **REACHES **THE **PORT's **OPERATION **LAYER, **AND **IT **FINDS **A **REAL
+        **DEFECT (2026-10-30, `113363263`).**
+        **⇒ AND **`Tensor.empty(4,3) + Tensor(1)`** — **8 **nodes, **THE **FIRST **WHOSE **BEND **SIDE **IS
+        **BUILT **BY **THE **PORT's **OWN **TENSOR **API** (`CR.cr_empty` + `E.ew_add`), **AND **A **BINARY **OP
+        **IS **REQUIRED** (**MEASURED**: **`mixin/elementwise.bend` **BUILDS **ONE **ARENA **PER **METHOD**, **SO
+        **ONLY **A **BINARY **OP **MERGES **INTO **ONE **ARENA**).  **⇒ AND **COVERAGE **BOUGHT: **`elementwise.bend`
+        **0→31**, **`weak.bend` **0→41**, **`tensor.bend` **4→32**, **`creation.bend` **9/105**; **TOTAL **REACHED
+        **828 → 954.**
+        **⇒ AND **THE **DEFECT: **CPython's **ALLOC **slot **0**, **THE **PORT's **slot **1**, **BECAUSE
+        **`tinybendygrad/mixin/creation.bend:377`** **MINTS **`O.Arena.next(ar)`** (**THE **ARENA's **LENGTH**)
+        **WHERE **UPSTREAM **MINTS **`next(UOp.unique_num)`** (**A **MONOTONE **COUNTER**).  **⇒ AND **THE
+        **CORPUS **COULD **NOT **SEE **IT, **AND **THE **REASON **IS **STRUCTURAL**: **EVERY **OTHER **GRAPH
+        **SPELLS **THE **SLOT **ITSELF**, **SO **THE **PORT's **OWN **SLOT-MINTING **WAS **EXECUTED **BY
+        **NOTHING **THE **CORPUS **COMPARES.**
+        **⇒ AND **⇒ AND **REPORTED, **NOT **FIXED, **AND **THE **CORPUS **IS **HONEST **ABOUT **IT**: **THE
+        **GRAPH **IS **DECLARED **`"api": "DISAGREE"`** — **THE **TABLE's **FIRST **EXCEPTION** — **SO **THE
+        **CORPUS **IS **35/36** **AND **THE **DEFECT **IS **NAMED.**  **⇒ AND **A **GRAPH **THAT **DISAGREEs **IS
+        **A **GRAPH **THE **CORPUS **DOES **NOT **CERTIFY**, **AND **THE **TRADE **IS **RECORDED**: **THE
+        **OPERATION **LAYER, **WHICH **WAS **100% **UNREACHED**, **IS **NOW **REACHED.**
+  - [x] **THE **NEGATIVE-INDEX **PARITY **GAP **IS **FOUND **AND **FIXED (2026-10-30, `6c3d059e1`).**
+        **⇒ AND **`UOp(Ops.INDEX, src=(STACK(3,5,7), CONST(-1)))`: **UPSTREAM's **`mop_cleanup`** **REWRITES
+        **IT **TO **`CONST 7`** (**PYTHON's **LIST **INDEX **READS **FROM **THE **END**), **AND **THE **PORT
+        **ANSWERED **`CONST 3`** — **THE **FIRST **ELEMENT.**  **⇒ AND **THE **CAUSE: **THE **PORT **READ **THE
+        **INDEX **THROUGH **`i64_u32`**, **WHICH **MAPS **A **NEGATIVE **`I64` **TO **0**.  **⇒ AND **BOTH
+        **CALL **SITES **NEEDED **IT** (**`mp_stack_val`** = **`UOp.index`**, **AND **`mp_stack_src`** =
+        **`mop_cleanup`** **RULE **6**), **AND **ONE **FIX **COVERS **BOTH.**
+        **⇒ AND **THE **CORPUS **COULD **NOT **SEE **IT: **MEASURED **OVER **EVERY **`D2-canon-py-*.txt`**,
+        **NONE **OF **THE **GRAPHS **HAS **AN **`INDEX` **WITH **A **`STACK` **SRC`** — **SO **THE **GREEN
+        **VERDICT **IS **NOT **EVIDENCE **ABOUT **THIS **RULE.**
+        **⇒ AND **THE **GATE **IS **REAL**: **`gates/mop_idxneg-gate.py`** (**16 **ROWS, **2 **LANES**) **IS
+        **rc=0** **WITH **THE **FIX **AND **`DISAGREE (bd): n=6 of 16 rows`** **WITHOUT **IT** (**MEASURED **BY
+        **RESTORING **`movement.bend` **TO **ITS **PRE-FIX **BYTES**).
+  - [x] **THE **CORPUS **WAS **RE-RUN **2026-10-30** **OVER **36 **GRAPHS** (**`4b11d3687`**).**
+        **⇒ AND **`substrate-start == substrate-end == live == repro-substrate ==
+        0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`**, **`substrate-head=6c3d059e1`**,
+        **`graphs=36 graphs-answered=36 graphs-agree=35 graphs-disagree=1 byte-identical=35`**,
+        **`326 of 326 files identical across two clean runs`**, **PEAK **1111 **MB / **268 **s** **AND **1112
+        **MB / **538 **s**, **BOTH **`WITHIN-LIMITS`** — **AND **`unhealthy() -> []`**,
+        **`artefacts_ok() -> []`**, **`repro_bad() -> []`**, **AND **THE **WITNESS **READS **`PASS -- the claim
+        is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS **OK`.**
+  - [x] **THE **THREE **MEASURED **WALLS **THE **COVERAGE **CENSUS **FOUND, **AND **NONE **IS **FIXABLE **BY
+        **ADDING **A **GRAPH.**
+        **⇒ AND **`uop/render.bend`** (315 **defs, **2 **reached**) **PORTS **UPSTREAM's **`pyrender`**, **WHICH
+        **UPSTREAM **DELETED**; **THE **TWO **STILL-LIVE **FUNCTIONS **THERE **ARE **`TODO(p3)` **IN **THE
+        **PORT**, **AND **ITS **OWN **`py=` **COLUMN **IS **A **TRANSCRIPTION **OF **THE **PORT's **OWN
+        **ANSWER.**
+        **⇒ AND **`mixin/dtype.bend`** (177 **defs**) — **ITS **ROUTE **IN **`uop/weak.bend`**
+        (**`wk_eval_*`**/**`wk_is_virtual`**/**`wk_commit_dtype`**) **HAS **NO **CALLERS **ANYWHERE **IN **THE
+        **PORT.**
+        **⇒ AND **160 **MODULES / 189308 **LOC** **ARE **OUTSIDE **THE **CLOSURE** **BECAUSE **THE **PORT
+        **CANNOT **BUILD **A **SCHEDULE **AT **ALL.**
