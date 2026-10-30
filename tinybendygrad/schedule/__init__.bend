@@ -4,13 +4,15 @@
 # linearizer: the three pure helpers and `create_schedule`, the engine's first
 # real consumer. `create_schedule` takes a sink UOp and answers the kernel list.
 #
-# DEFERRED is __init__.py:82-301, and the reason is one line: every rule in it is
-# a `graph_rewrite` over the arena with a PYTHON `ctx` DICT, and `graph_rewrite`'s
-# engine pass needs the rule table to be LINEAR (see brief-port.md, THE
-# REWRITER) while these rules need the ctx to be a MUTABLE accumulator threaded
-# through the pass. `pm_callify_ctx_collect` is the clearest case: its ctx is a
-# `CallifyCtx` holding a `list`, a `dict`, a `set` and another `list`. See each
-# TODO(p3).
+# DEFERRED is __init__.py:82-301. The header used to give ONE reason: "every
+# rule in it is a `graph_rewrite` over the arena with a PYTHON `ctx` DICT".
+# MEASURED 2026-10-30, AND THE ctx-DICT CLAUSE IS FALSE: the ctx DICT is a
+# `Data` RECORD OF FOUR APPEND-ONLY LISTS (`CallifyCtx` below), and
+# `collect_stores` and `canonicalize_alloc` are BOTH PORTED on top of it.
+# `gates/schedstore-gate.py` is 25 rows over the two, and every row is
+# CPython's printed answer. The `graph_rewrite` PASS is the wall that is
+# LEFT, and it is a DIFFERENT wall: the rule bodies are ported and the
+# ENGINE is not.
 #
 # ---------------------------------------------------------------------------
 # WHAT THE ENGINE PASS LOOKS LIKE HERE, since this file is its first consumer.
@@ -1186,6 +1188,15 @@ def cycles(c: Ctx) -> Nat:
 #
 # `sb-oracle.py` computes every expectation below from CPython. None is typed,
 # and `SCHEDULE-BODIES.md` carries the lane comparison.
+#
+# THE GATE FOR THE ctx BODIES IS `gates/schedstore-gate.py`, AND IT IS NEW
+# (2026-10-30). BEFORE IT, THIS BLOCK'S EIGHT PORTED BODIES HAD **NO ROW
+# ANYWHERE**: the port emitted 111 rows and 0 of them were `isa_*`, `cs_*` or
+# `ca_*`, so a body that no row reads is a body that no gate can go red on --
+# and the `ca_slot3` DEFECT below was in the tree the whole time, under a
+# header that CLAIMED the opposite. The gate is 25 rows over `is_store_after`,
+# `collect_stores` and `canonicalize_alloc`, and it is FALSIFIABLE: both
+# reverts were measured and both moved rows.
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -1646,7 +1657,12 @@ def apply_binds(+ar: O.Arena, +si: U32) -> U32:
 #     (`ca_slot1`/`ca_slot2`, ONE ROW APART, from fixtures whose incoming slots
 #     are 7 and 9 -- so a port that dropped the `-1-` would answer 0 and 1).
 #   * the `b not in ctx.allocs` GUARD, so a second call on the same `b` writes
-#     nothing and returns the SAME node (`ca_n3`, `ca_repeat`).
+#     nothing and returns the SAME node (`ca_n3`, `ca_slot3`). **THIS WAS THE
+#     PORT'S ONE REAL DEFECT IN THE REGION, AND IT WAS FOUND BY THE GATE THIS
+#     HEADER DID NOT HAVE**: the guard's arm answered `None{}` instead of
+#     `ctx.allocs.get(b)`, so upstream's `ca_slot3=-2` was the port's
+#     `ca_slot3=none`. The fix is `ca_hit` below, and `ca_slot3` is the row
+#     that sees it -- MEASURED, both directions, on 2026-10-30.
 #   * `slot >= 0`, so a slot that is ALREADY canonical is left alone and the
 #     answer is `None{}` (`ca_neg_none`, `ca_neg_n`). Python's `None` and the
 #     rewriter's "no rewrite" are the same value here and NOT by accident.
@@ -1706,12 +1722,33 @@ def CaPut.a(x: CaPut) -> Maybe<&2, O.Found>:
   match x:
     case CaPut{c, a}: a
 
+# `return ctx.allocs.get(b)` -- THE LOOKUP UPSTREAM DOES AND THE PORT DID NOT.
+# MEASURED 2026-10-30 against CPython at the pin: upstream's `canonicalize_alloc`
+# on an ALLOC that is ALREADY in `ctx.allocs` answers THE STORED NODE -- the
+# canonicalized one, with its negative slot -- and the port answered `None{}`.
+# The port's own header CLAIMED this row (`ca_repeat`: "a second call on the
+# same `b` writes nothing and returns the SAME node") and the CODE did not do
+# it: `ca_new`'s not-fresh arm answered `CaPut{c, None{}}` and never read
+# `ctx.allocs` at all. THE CLAIM WAS TRUE OF PYTHON AND FALSE OF THE PORT, AND
+# NO ROW READ IT, BECAUSE NO ROW EXISTED.
+#
+# THE STORED VALUE IS THE CANONICALIZED NODE'S INDEX, AND IT LIVES IN THE
+# ARENA THAT INTERNED IT -- WHICH IS THE ARENA THE CALLER PASSES, BECAUSE
+# `canonicalize_alloc` GROWS IT. SO THE ANSWER IS `O.Found{ar, stored}`.
+def ca_hit.of(m: Maybe<&2, U32>, +ar: O.Arena, +c: CallifyCtx) -> CaPut:
+  match m:
+    case Some{v}: CaPut{c, Some{O.Found{ar, v}}}
+    case None{}  : CaPut{c, None{}}
+
+def ca_hit(+ar: O.Arena, +c: CallifyCtx, +b: U32) -> CaPut:
+  ca_hit.of(aa_get(c, b), ar, c)
+
 def ca_new(fresh: Bool, +pa: O.ParamArg, +ar: O.Arena, +c: CallifyCtx, +b: U32) -> CaPut:
   match fresh:
     case True{}:
       +f = O.UOp.new(ar, sc_op(ar, b), sc_srcs(ar, b), O.AParam{pa}, sc_tag(ar, b))
       CaPut{aa_put(c, b, O.Found.i(f)), Some{f}}
-    case False{}: CaPut{c, None{}}
+    case False{}: ca_hit(ar, c, b)
 
 def canonicalize_alloc.pa(m: Maybe<&2, O.ParamArg>, n: U32, s: Maybe<&2, U32>, +as: List<&2, Aa>, +ar: O.Arena, +c: CallifyCtx, +b: U32) -> CaPut:
   match m:

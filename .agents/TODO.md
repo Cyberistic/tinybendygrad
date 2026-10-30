@@ -13111,7 +13111,29 @@ code; you have to count ABSENCE.**
    multiplicity census's mistake.
 
 - [x] schedule rule bodies (12 of 15 unported): EIGHT ported, FOUR walled with file:line -- `.agents/slop/SCHEDULE-BODIES.md`
-  - [ ] gate ROWS for the eight: 89 oracle rows built (`sb-oracle.py`), Bend side does not compile in main exhausted do-block
+  - [x] **gate ROWS for the eight: `gates/schedstore-gate.py`, 25 ROWS, 2 LANES, rc 0 (2026-10-30).**
+    **=> AND THE EIGHT WERE NOT EIGHT UNGATED BODIES: THEY WERE EIGHT BODIES WITH **ZERO** ROWS
+    ANYWHERE.** MEASURED ON THE PORT's OWN OUTPUT: **THE PORT EMITS 111 ROWS AND 0 OF THEM ARE
+    `isa_*`/`cs_*`/`ca_*`**, SO **A RULE BODY THAT NO ROW READS IS A BODY THAT NO GATE CAN GO RED ON**,
+    AND THE HEADER's DEFERRAL CLAIM ("THE ctx DICT IS THE WALL") WAS **UNTESTED**.
+    **=> AND THE ctx DICT IS **NOT** THE WALL, AND THE GATE IS THE MEASUREMENT: THE PORT's `CallifyCtx`
+    IS A `Data` RECORD OF FOUR APPEND-ONLY LISTS AND BOTH ctx BODIES ARE PORTED ON TOP OF IT.** THE
+    REMAINING WALL IS A **DIFFERENT** ONE: THE `graph_rewrite` ENGINE, NOT THE ctx.
+    **=> AND THE GATE FOUND **ONE REAL DEFECT**: `canonicalize_alloc`'s GUARD ARM ANSWERED `None{}`
+    INSTEAD OF `ctx.allocs.get(b)`, SO `ca_slot3` WAS THE PORT's `none` WHERE CPYTHON's IS `-2`.
+    **THE PORT's OWN HEADER CLAIMED THAT ROW ("`ca_repeat`: a second call on the same `b` ... returns
+    the SAME node") AND THE CODE DID NOT DO IT** -- THE CLAIM WAS TRUE OF PYTHON AND FALSE OF THE PORT.
+    FIXED (`ca_hit`), AND THE REVERT WAS MEASURED: `ca_slot3` MOVES `-2` -> `none` AND rc=1.
+    **=> AND THE GATE IS FALSIFIABLE IN **BOTH** DIRECTIONS, MEASURED: (a) `src[0].op` IN PLACE OF
+    `src[0].unsharded_base.op` MOVES `isa_SA_reshape_alloc` 0 -> 1 AND `cs_stores` 7 -> 8 AND rc=1.
+    **THE `RESHAPE`-OVER-`ALLOC` FIXTURE IS THE ROW THAT SEES THE WALK**, BECAUSE A WALK OVER AN ALLOC
+    IS THE IDENTITY AND SO THE DIRECT-CHILD FIXTURES CANNOT SEE IT AT ALL. (b) `cs_put` WRITING
+    `ctx.replacements` INSTEAD OF `ctx.stores` MOVES `cs_reps` 0 -> 7 AND `cs_stores` 7 -> 0 AND rc=1.
+  - [ ] **THE OTHER SIX OF THE EIGHT ARE STILL UNGATED**: `lower_sink_to_linear` (the GUARD is ported,
+    the `function.key` and the `schedule_cache` are not), `copy_kernel_to_store` (`dst.device` for a
+    non-PARAM needs `fold.bend`'s table), `simplify_copy_kernel` (the guard only), `assert_all_same_devices`
+    (the devices are carried, not a boolean), `apply_binds` (arm 3 needs `UOp.variables`), and
+    `canonicalize_call_body` (the wall is the ENGINE, not the body).
   - [ ] delete `sc_body`/`sc_store` local copies when ops.bend regains ops.py:562/622
   - [ ] contiguous_mops_to_view :199 is the binding wall: `src.contiguous_view()` absent from the tree
   - [ ] replace_input_buffer :248 blocked by `UOp.param_like` TODO(p3) ops.py:1239 (recorded deferral, not a gap)
