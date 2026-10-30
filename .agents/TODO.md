@@ -26276,3 +26276,43 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
         **COSTS **THE **VALUE **ITS **CLOSING **BRACKET.**  **⇒ AND **THE **FIVE **RED **ROWS **ARE **NOW
         **ONE**, **AND **THE **PORT **IS **BYTE-IDENTICAL **TO **THE **MATERIALISED **UPSTREAM **HEAD's
         **`repr(KernelInfo())`.**
+the CORPUS pays the SAME 2.3-SECOND TYPECHECK 59 TIMES, and the bend side is 15x the python side
+
+**⇒ AND **MEASURED 2026-10-30, **THE **COST **IS **NOT **THE **GRAPH **AND **NOT **THE **STARTUP** — **IT **IS
+**THE **TYPECHECK **OF **THE **CLOSURE, **REPEATED **ONCE **PER **GRAPH.**
+
+| measurement | time |
+|---|---|
+| **`bend` **STARTUP** (a **trivial **`.bend`) | **0.046 **s** |
+| **ONE **BEND, **TYPECHECK **ONLY** (`--check-only`, **the **21,440-line **closure**) | **2.3 **s** |
+| **ONE **BEND, **TYPECHECK **+ **RUN **A **GRAPH** (what **the **corpus **does**) | **2.0-2.6 **s** |
+| **THE **GRAPH **RUN **ALONE** (typecheck **2.3 **s** vs **typecheck+run **2.0 **s**) | **FREE** |
+| **THE **BEND **SIDE, **36 **GRAPHS** (`emit_bend` × 36) | **68.6 **s** |
+| **THE **PYTHON **SIDE, **36 **GRAPHS** (`gc("emit", …, "--side", "py")` × 36) | **4.5 **s** |
+
+**⇒ AND **⇒ AND **THE **BEND **SIDE **IS **15x **THE **PYTHON **SIDE**, **AND **THE **REASON **IS **THAT
+**THE **BEND **SIDE **IS **A **SUBPROCESS **PER **GRAPH **AND **THE **PYTHON **SIDE **IS **NOT** — **THE
+**BEND **LANE's **`main()`** **TAKES **ONE **GRAPH **FROM **`IO.args()`** **AND **EXITS**, **SO **EACH **GRAPH
+**NEEDS **ITS **OWN **PROCESS, **AND **EACH **PROCESS **PAYS **THE **FULL **TYPECHECK.**
+
+**⇒ AND **⇒ AND **⇒ AND **THERE **IS **NO **TYPECHECK **CACHE:** **MEASURED **TWO **CONSECUTIVE **BENDS** —
+**2.64 **s **AND **2.45 **s** — **AND **`references/bend/bend2/main.ts`'s **ONLY **CACHE **IS **THE **DAILY
+**VERSION **CHECK** (`~/.bend/check.json`, **NOTHING **TO **DO **WITH **TYPECHECKING**).  **⇒ AND **SO
+**THE **REPEATED **TYPECHECK **IS **~136 **s **OF **THE **~268 **s **RUN** — **THE **SAME **21,440 **LINES
+**(`ops.bend` **9,850 + `fold.bend` **7,492 + `helpers.bend` **3,229 + `LAWS/spec.bend` **869**) **TYPECHECKED
+**~59 **TIMES.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **FIX **IS **ONE **PROCESS, **AND **IT **IS **ALREADY **POSSIBLE:**
+**`IO.args()` **RETURNS **THE **WHOLE **ARGUMENT **LIST**, **AND **THE **LANE **ALREADY **READS **IT**
+**(`as : List<String> <- IO.args()`**, **`.agents/slop/graphcmp.bend:2103`**) — **IT **JUST **TAKES **THE
+**FIRST **GRAPH **(`List.get(&1, String, as, 0n)`**, **`:2099`**).  **⇒ AND **SO **ONE **PROCESS **COULD **EMIT
+**EVERY **GRAPH**, **AND **THE **TYPECHECK **WOULD **BE **PAID **ONCE.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **WHY **NOBODY **DID **IT: **THE **ORACLE **IS **SPAWNED **BY **THE
+**CORPUS **DRIVER**, **ONE **PROCESS **PER **GRAPH`, **AND **`graphcmp.py` **IS **RE-LOADED **BY **EVERY
+**`gc()`** (**`checks/differ.py:1255`**), **SO **THE **DRIVER's **SHAPE **IS **WHAT **FORCES **THE
+**REPETITION** — **AND **THE **DRIVER **IS **THE **PORT's **HARNESS, **NOT **THE **PORT**, **SO **THIS **IS **A
+**HARNESS **COST, **NOT **A **PORT **DEFECT.**  **⇒ AND **A **HARNESS **THAT **COSTS **4.5 **MINUTES **OF
+**REPEATED **TYPECHECKING **BEFORE **IT **MEASURES **ANYTHING **IS **WORTH **THE **FIX**, **AND **THE **FIX
+**IS **TO **MAKE **THE **BEND **LANE **EMIT **ALL **GRAPHS **FROM **ONE **PROCESS** — **WHICH **COSTS **ONE
+**NEW **ARGUMENT **IN **A **`.bend` **FILE **AND **ONE **CHANGE **IN **THE **DRIVER.**
