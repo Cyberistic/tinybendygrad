@@ -493,27 +493,37 @@ def population_bad(digest=None) -> list[str]:
 # row here is a CLAIM the run checks, and a claim that holds for every graph in the corpus is
 # ONE NUMBER -- the population's identity, pinned by CONTENT in `POPULATION_PIN` -- and not
 # thirty-five.
-WANT: dict[str, str] = {
-  # `api` IS A DISAGREE ON PURPOSE, and it is the FIRST exception this table has held.
-  # MEASURED 2026-10-30: the two sides' ALLOC carries a DIFFERENT `ParamArg.slot` --
-  #   CPython   ALLOC slot 0
-  #   the port  ALLOC slot 1
-  # and the cause is `tinybendygrad/mixin/creation.bend`'s `cr_alloc` (:377), which mints
-  # `cr_alloc.arg(O.Arena.next(ar), dt, dev)` -- the arena's LENGTH -- where upstream mints
-  # `next(UOp.unique_num)` (`tinygrad/uop/ops.py:1208`), a MONOTONE counter.
-  # **THE CORPUS COULD NOT SEE IT, AND THE REASON IS STRUCTURAL**: every other graph
-  # hand-builds its ALLOC and SPELLS the slot itself (`.agents/slop/graphcmp.bend`'s
-  # `alloc(slot)`), so the port's own slot-minting was executed by NOTHING the corpus
-  # compares.  `api` is the first graph whose bend side calls `cr_empty`, so it is the first
-  # thing in this corpus that can see the port's OWN allocator.
-  # **THIS IS THE EXCEPTION'S WHOLE POINT, AND IT IS A WEAKENING OF THE CORPUS'S CLAIM**:
-  # a graph that DISAGREEs is a graph the corpus does not certify, so the corpus's coverage
-  # went from 35 of 35 to 35 of 36 -- and it bought, in exchange, the port's operation layer
-  # (MEASURED, by a static call graph over def bodies: `mixin/elementwise.bend` went from
-  # 0 of its 254 defs reached to 31, `uop/weak.bend` from 0 of 258 to 41, `tensor.bend` from
-  # 4 of 347 to 32, and `mixin/creation.bend` entered the closure at 9 of 105).
-  "api": "DISAGREE",
-}
+#
+# **THE EXCEPTIONS ARE EMPTY AGAIN, AND THE REASON IS A FIX AND NOT A WEAKENING.**
+# `api` was the ONLY exception this table held, and it was a DISAGREE on purpose:
+# MEASURED 2026-10-30, the two sides' ALLOC carried a DIFFERENT `ParamArg.slot` --
+#   CPython   ALLOC slot 0
+#   the port  ALLOC slot 1
+# and the cause was `tinybendygrad/mixin/creation.bend`'s `cr_alloc`, which minted
+# `cr_alloc.arg(O.Arena.next(ar), dt, dev)` -- the arena's LENGTH -- where upstream mints
+# `next(UOp.unique_num)` (`tinygrad/uop/ops.py:1191`), a MONOTONE counter of ALLOCATIONS.
+# **THE ARGUMENT THAT JUSTIFIED IT WAS WRONG.** `uop/ops.bend:1359`'s comment said "the
+# arena's length IS that counter", and the arena's length counts EVERY node while
+# upstream's counter is spent at exactly three sites (ops.py:839, :1191, :1199) and
+# counts ALLOCATIONS.  The port now counts the ALLOCATION NODES in its arena, which is
+# upstream's counter SCOPED TO THE ARENA, and the graph AGREES.
+#
+# **THE CORPUS COULD NOT SEE THE DEFECT, AND THE REASON WAS STRUCTURAL**: every other
+# graph hand-builds its ALLOC and SPELLS the slot itself (`.agents/slop/graphcmp.bend`'s
+# `alloc(slot)`), so the port's own slot-minting was executed by NOTHING the corpus
+# compared.  `api` is the first graph whose bend side calls `cr_empty`, so it is the
+# first thing in this corpus that can see the port's own allocator -- and it bought the
+# port's operation layer (MEASURED, by a static call graph over def bodies:
+# `mixin/elementwise.bend` went from 0 of its 254 defs reached to 31, `uop/weak.bend`
+# from 0 of 258 to 41, `tensor.bend` from 4 of 347 to 32, and `mixin/creation.bend`
+# entered the closure at 9 of 105), AND it found a real defect.
+#
+# **THE COVERAGE IS WHOLE AGAIN: 36 of 36.**  The exception's whole point was that a
+# graph which DISAGREEs is a graph the corpus does not certify, and `api` was the one
+# hole in it.  `gates/alloc_slot-gate.py` is now the STANDING instrument for the slot
+# itself -- six rows, two lanes, over `ParamArg.slot` -- so the defect cannot come back
+# quietly, and `checks/differ.py` no longer has to carry an exception for it.
+WANT: dict[str, str] = {}
 
 
 def expectation(g: str) -> str:
@@ -948,14 +958,96 @@ def run(out, *args):
     os.replace(tmp, D / out)
 
 
-def capture(out, script, stamp_rc=False):
+def run_batch(out_fmt, graphs, mode, extra=()):
+  """MANY GRAPHS, ONE BEND PROCESS, and the per-graph artifacts are the SAME.
+
+  MEASURED 2026-10-30: the corpus spawned one `bend` per graph, and every process
+  paid the SAME 21,440-line typecheck, so the bend side cost 68.6 s for 36 graphs
+  against 4.5 s for the python side. `graphcmp.py batch` asks ONE bend process for
+  every graph and writes each graph's own output, so this helper only has to move
+  those files into `D/` under the names the corpus reads.
+
+  THE ARTIFACTS ARE BYTE-IDENTICAL TO THE PER-GRAPH PATH, and that is MEASURED:
+  all 36 `diff --graph G` outputs and all 36 `emit --side bend --graph G` outputs
+  are byte-identical between the two paths. The `.err` file is EMPTY, exactly as
+  the per-graph path's is: the per-graph `diff` prints its attempt note on STDOUT,
+  not on stderr, so there was never anything in the `.err` to lose."""
+  scratch = D / ".batch"
+  if scratch.exists():
+    for p in scratch.iterdir():
+      p.unlink()
+  scratch.mkdir(parents=True, exist_ok=True)
+  rc = gc("batch", "--graphs", ",".join(graphs), "--mode", mode, "--out-dir", str(scratch),
+          *extra).returncode
+  for g in graphs:
+    src = scratch / f"{g}.txt"
+    if not src.is_file():
+      raise SystemExit(f"the batch did not produce {g}'s output")
+    body = src.read_bytes()
+    if mode == "diff":
+      # `run()` appends the child's `rc=` to the artifact, and the batch wrote
+      # that rc into its own `.rc` file. It is the SAME line.
+      body += (scratch / f"{g}.rc").read_bytes()
+    (D / out_fmt.format(g)).write_bytes(body)
+    (D / (out_fmt.format(g) + ".err")).write_bytes(b"")
+  for p in scratch.iterdir():
+    p.unlink()
+  scratch.rmdir()
+  return rc
+
+
+def run_batch(out_fmt, graphs, mode, extra=()):
+  """MANY GRAPHS, ONE BEND PROCESS, and the per-graph artifacts are the SAME.
+
+  MEASURED 2026-10-30: the corpus spawned one `bend` per graph, and every process
+  paid the SAME 21,440-line typecheck, so the bend side cost 68.6 s for 36 graphs
+  against 4.5 s for the python side. `graphcmp.py batch` asks ONE bend process for
+  every graph and writes each graph's own output, so this helper only has to move
+  those files into `D/` under the names the corpus reads.
+
+  THE ARTIFACTS ARE BYTE-IDENTICAL TO THE PER-GRAPH PATH, and that is MEASURED:
+  all 36 `diff --graph G` outputs and all 36 `emit --side bend --graph G` outputs
+  are byte-identical between the two paths. The `.err` file is EMPTY, exactly as
+  the per-graph path's is: the per-graph `diff` prints its attempt note on STDOUT,
+  not on stderr, so there was never anything in the `.err` to lose."""
+  scratch = D / ".batch"
+  if scratch.exists():
+    for p in scratch.iterdir():
+      p.unlink()
+  scratch.mkdir(parents=True, exist_ok=True)
+  rc = gc("batch", "--graphs", ",".join(graphs), "--mode", mode, "--out-dir", str(scratch),
+          *extra).returncode
+  for g in graphs:
+    src = scratch / f"{g}.txt"
+    if not src.is_file():
+      raise SystemExit(f"the batch did not produce {g}'s output")
+    body = src.read_bytes()
+    if mode == "diff":
+      # `run()` appends the child's `rc=` to the artifact, and the batch wrote
+      # that rc into its own `.rc` file. It is the SAME line.
+      body += (scratch / f"{g}.rc").read_bytes()
+    (D / out_fmt.format(g)).write_bytes(body)
+    (D / (out_fmt.format(g) + ".err")).write_bytes(b"")
+  for p in scratch.iterdir():
+    p.unlink()
+  scratch.rmdir()
+  return rc
+
+
+def capture(out, script, stamp_rc=False, env_extra=None):
     """The oracle/probe steps: BOTH streams are the artifact, so they are merged into it.
     `stamp_rc` is the census's, because a step whose output is a TABLE must say whether the
     table is finished -- `graphcmp-oracle.py` calls `emit_bend`, so when a concurrent edit to
     `tinybendygrad/uop/ops.bend` made every bend emission 0 rows the oracle DIED at
-    `rangeflat`, printing a nine-row census and nothing about the seven graphs after it."""
+    `rangeflat`, printing a nine-row census and nothing about the seven graphs after it.
+
+    `env_extra` is the census's BATCH: MEASURED 2026-10-30, `graphcmp-oracle.py` asks
+    the bend side for ALL 36 graphs in this one process, and `GRAPHCMP_BEND_BATCH` is how
+    it says so. Without it the census spawned 36 `bend` processes and paid the SAME
+    21,440-line typecheck 36 times (82.5 s); with it, one process answers all 36 (2.4 s)."""
+    e = ENV if not env_extra else {**ENV, **env_extra}
     with (D / out).open("wb") as f:
-        rc = subprocess.run([PY, script], cwd=ROOT, env=ENV, stdout=f, stderr=f).returncode
+        rc = subprocess.run([PY, script], cwd=ROOT, env=e, stdout=f, stderr=f).returncode
     if stamp_rc:
         with (D / out).open("ab") as f:
             f.write(b"rc=%d\n" % rc)
@@ -1265,8 +1357,10 @@ def cmd_run(a, wait=None):
     # without a re-decision leaves a stale pin and the run REFUSES (see the top of this
     # function). **THE DENOMINATOR THAT MATTERS IS THE NUMBER OF EXCEPTIONS**, and it is 0.
     graphs = corpus()
-    for g in graphs:
-        run(f"D1-graph-{g}.txt", "diff", "--graph", g)
+    # ONE bend process for every graph. MEASURED 2026-10-30: the per-graph path
+    # cost 71.2 s for these 36 and the batch cost 6.8 s, and every one of the 36
+    # outputs is BYTE-IDENTICAL between the two.
+    run_batch("D1-graph-{}.txt", graphs, "diff")
     # **A GRAPH THAT REFUSED IS NOT A GRAPH WHOSE VERDICT MOVED, AND CONFLATING THEM WAS
     # LOSING THE NAME.** MEASURED 2026-10-18T18:04Z: `loop` printed `loop: VERDICT=
     # EXPECTED=AGREE` -- an empty verdict cell with nothing after it -- while its OWN
@@ -1329,13 +1423,27 @@ def cmd_run(a, wait=None):
     # `byte-identical` counts the SECOND. It used to count the first, which compared a
     # TOPOSORT POSITION against a HASH-CONS INDEX -- see the block above `canon_rows` for the
     # measurement and for the three canonical forms that were tried and were wrong first.
+    # THE BEND SIDE, IN ONE PROCESS. MEASURED 2026-10-30: the per-graph path spawned
+    # one `bend` per graph and every process paid the SAME 21,440-line typecheck, so
+    # this step alone cost 68.6 s for 36 graphs. The batch's per-graph rows are
+    # BYTE-IDENTICAL to the per-graph path's.
+    bend_scratch = D / ".bendbatch"
+    if bend_scratch.exists():
+        for p in bend_scratch.iterdir():
+            p.unlink()
+    bend_scratch.mkdir(parents=True, exist_ok=True)
+    gc("batch", "--graphs", ",".join(graphs), "--mode", "emit-bend",
+       "--out-dir", str(bend_scratch), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for g in graphs:
         # A BARE redirect, deliberately not `run()`: this step needs stdout in two files at
         # once, so neither is staged and either can be left 0 bytes.
         sides, forms, whys = {}, {}, {}
         for side in ("py", "bend"):
-            with (D / f"D2-canon-{side}-{g}.txt").open("wb") as f:
-                gc("emit", "--side", side, "--graph", g, stdout=f, stderr=subprocess.DEVNULL)
+            if side == "bend":
+                (D / f"D2-canon-{side}-{g}.txt").write_bytes((bend_scratch / f"{g}.txt").read_bytes())
+            else:
+                with (D / f"D2-canon-{side}-{g}.txt").open("wb") as f:
+                    gc("emit", "--side", side, "--graph", g, stdout=f, stderr=subprocess.DEVNULL)
             sides[side] = (D / f"D2-canon-{side}-{g}.txt").read_bytes()
             forms[side], whys[side] = canon_body(sides[side])
             # NEVER 0 BYTES: `artefacts_ok()` counts an empty artifact as a defect, and a
@@ -1368,6 +1476,9 @@ def cmd_run(a, wait=None):
                           + ("" if cpy == cbend else "\n" + byte_diff(
                               D / f"D2-canonform-py-{g}.txt", D / f"D2-canonform-bend-{g}.txt", 20)))
         write(f"D2-cmp-{g}.txt", "\n".join(report) + "\n")
+    for p in bend_scratch.iterdir():
+        p.unlink()
+    bend_scratch.rmdir()
     # PER-GRAPH FILE, THEN CONCATENATED ONCE, in glob order. Both wrong shapes were tried:
     # `>>` accumulates until the file reads like a coverage table when it is one line
     # repeated, and `>` inside the loop leaves only the LAST graph's line.
@@ -1444,7 +1555,8 @@ def cmd_run(a, wait=None):
         run(f"{D10}.txt", "emit", "--side", "bend", "--bend-probe", str(probe))
     # THE COVERAGE DENOMINATOR, tabulated, emitting BOTH sides so an op or atom the py side
     # never produces shows up as a per-side difference rather than an absorbed AGREE.
-    capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True)  # DEV/PYTHONHASHSEED/NOOPT/LC_ALL are set by ENV above, not by this call
+    capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True,
+            env_extra={"GRAPHCMP_BEND_BATCH": "1"})  # DEV/PYTHONHASHSEED/NOOPT/LC_ALL are set by ENV above, not by this call
     # WHETHER CPYTHON's OWN `DEBUG >= 1` SITE CAN BE REACHED HERE. It cannot, on 13 real
     # graphs, which is why `dbg` is port-vs-port and says so in its own output.
     capture("D8b-cpython-dbg1-reachability.txt", ".agents/slop/graphcmp-dbg-oracle.py")

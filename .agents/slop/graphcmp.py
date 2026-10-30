@@ -258,8 +258,10 @@ from __future__ import annotations
 
 import argparse
 import collections
+import contextlib
 import enum
 import hashlib
+import io
 import os
 import pathlib
 import struct
@@ -2450,21 +2452,115 @@ def attempt_note(attempt: int, rc: int, rows: list[str], hdr: list[str],
           + f", stderr: {' '.join(err.split())[-240:] or '(empty)'}")
 
 
-def emit_bend(dev: str, graph: str, tries: int = TRIES,
-              probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
-  """`graph` is REQUIRED, with no default, and that is the fix rather than the style.
-  MEASURED: `graph` defaulted to `"matmul"` and all three call sites passed only `dev`, so
-  `--graph reduce` compared the py side's `sum(axis=1)` against the bend side's MATMUL --
-  7 py rows against 18 bend rows, every one of them reported as a real difference, and the
-  verdict said DISAGREE while naming no cause. A default that is also the DEFAULT `--graph`
-  is a silent wrong answer: it is correct for the default invocation, so no test of the
-  default invocation can see it, and the disagreement it produces looks like a port bug.
-  Making the argument required turns a future omission into a TypeError.
+def emit_bend_many(dev: str, graphs: list[str], tries: int = TRIES,
+                   probe: pathlib.Path | None = None) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+  """ONE bend process for MANY graphs, and the per-graph rows are the SAME ROWS.
 
-  `probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
-  nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
-  20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
-  is exactly the guard that does not work."""
+  MEASURED 2026-10-30: the corpus spawned one `bend` per graph, and each process
+  paid the SAME 21,440-line typecheck, so the bend side cost 68.6 s for 36 graphs
+  against 4.5 s for the python side. The lane takes `ALLGRAPHS` followed by the
+  graph names and prints `# graph=NAME` before each graph's own `# root=` header
+  and rows. This function splits the stream on that marker and hands back each
+  graph's ROWS -- the marker is a COMMENT, so it is not a row, and the rows are
+  byte-for-byte the rows the one-graph lane printed.
+
+  The ONE-graph path is `emit_bend`, and it is UNCHANGED: it prints no marker at
+  all, so its stdout is byte-for-byte what it was.
+
+  The NOTES are the attempt transcript, and they are returned beside the rows
+  because the per-graph commands print them and the batch prints the SAME line
+  for each graph: a batch artifact that lost the note would not be the artifact
+  the per-graph path writes."""
+  if not graphs:
+    return {}, {}
+  notes = []
+  for attempt in range(1, tries + 1):
+    try:
+      c = subprocess.run([str(BEND), str(probe or BEND_PROBE), "ALLGRAPHS", *graphs], cwd=REPO,
+                         capture_output=True, text=True, env=clean_env(dev),
+                         timeout=BEND_TIMEOUT * max(1, len(graphs)))
+    except subprocess.TimeoutExpired:
+      raise SystemExit(f"emit bend {len(graphs)} graphs: TIMED-OUT after "
+                       f"{BEND_TIMEOUT * max(1, len(graphs))}s on attempt {attempt} -- a FAILURE, "
+                       f"not a verdict, and deliberately NOT retried")
+    rows, hdr, verdict = classify(c.returncode, c.stdout, c.stderr)
+    if verdict == "ANSWER":
+      blocks, heads = split_graphs(c.stdout, graphs)
+      # THE PER-GRAPH NOTE, and it is the SAME LINE the per-graph path wrote:
+      # `attempt_note` over that graph's OWN rows and OWN headers. A batch note
+      # that named the whole stream's rows would not be the artifact the
+      # per-graph path writes, and the corpus compares these bytes.
+      per_graph = {g: [attempt_note(attempt, c.returncode, blocks[g], heads[g], verdict, c.stderr)]
+                   for g in graphs}
+      return blocks, per_graph
+    notes.append(attempt_note(attempt, c.returncode, rows, hdr, verdict, c.stderr))
+    if verdict != "RETRY":
+      break
+  raise SystemExit("emit bend %d graphs: %s after %d of %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
+                   % (len(graphs), verdict, len(notes), tries, "\n  ".join(notes)))
+
+
+def split_graphs(out: str, graphs: list[str]) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+  """A multi-graph stream -> each graph's ROWS and each graph's HEADERS.
+
+  The stream is `# graph=NAME` then that graph's `# root=` header then its rows,
+  and the split takes the bytes BETWEEN two markers. A graph whose marker is
+  missing, or whose block names a graph nobody asked for, is an ERROR and not an
+  empty answer: an empty answer is a measurement, and a missing marker means the
+  lane and the driver disagree about the format.
+
+  The HEADERS are returned because the per-graph attempt note names them, and a
+  batch note that named every graph's header would not be the note the
+  per-graph path wrote."""
+  blocks: dict[str, list[str]] = {}
+  heads: dict[str, list[str]] = {}
+  current: str | None = None
+  for ln in out.splitlines():
+    if ln.startswith("# graph="):
+      current = ln[len("# graph="):]
+      if current in blocks:
+        raise SystemExit(f"emit bend: the graph {current!r} was emitted twice")
+      blocks[current] = []
+      heads[current] = []
+    elif current is not None and ln.startswith("#"):
+      heads[current].append(ln)
+    elif current is not None:
+      blocks[current].append(ln)
+  missing = [g for g in graphs if g not in blocks]
+  extra = [g for g in blocks if g not in graphs]
+  if missing or extra:
+    raise SystemExit(f"emit bend: the stream did not carry the graphs that were asked for "
+                     f"(missing={missing}, unexpected={extra})")
+  return blocks, heads
+
+
+_BEND_BATCH: dict[tuple[str, str], dict[str, tuple[list[str], list[str]]]] = {}
+
+
+def _bend_batch(dev: str, graph: str, tries: int,
+                probe: pathlib.Path | None) -> tuple[list[str], list[str]]:
+  """THE BATCH CACHE'S READ. One bend process answers EVERY graph, and every
+  graph's rows and attempt note are kept for the rest of this process's life.
+
+  The key is `(dev, str(probe))`, because the rows are a function of the DEVICE
+  and of the PROBE and of nothing else: a second request on another device, or
+  against another probe, must not be answered from the first one's rows. A graph
+  outside `sorted(GRAPHS)` is not in the population, so it falls back to the
+  per-graph path -- the old way -- and it is not an error."""
+  key = (dev, str(probe))
+  if key not in _BEND_BATCH:
+    graphs = sorted(GRAPHS)
+    rows, notes = emit_bend_many(dev, graphs, tries=tries, probe=probe)
+    _BEND_BATCH[key] = {g: (rows[g], notes[g]) for g in graphs}
+  hit = _BEND_BATCH[key].get(graph)
+  if hit is not None:
+    return hit
+  return emit_bend_one(dev, graph, tries, probe)
+
+
+def emit_bend_one(dev: str, graph: str, tries: int,
+                  probe: pathlib.Path | None) -> tuple[list[str], list[str]]:
+  """THE PER-GRAPH PATH, as a DEF, so the batch cache can fall back to it."""
   notes = []
   for attempt in range(1, tries + 1):
     try:
@@ -2487,6 +2583,39 @@ def emit_bend(dev: str, graph: str, tries: int = TRIES,
       break
   raise SystemExit("emit bend %s: %s after %d of %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
                    % (graph, verdict, len(notes), tries, "\n  ".join(notes)))
+
+
+def emit_bend(dev: str, graph: str, tries: int = TRIES,
+              probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
+  """`graph` is REQUIRED, with no default, and that is the fix rather than the style.
+  MEASURED: `graph` defaulted to `"matmul"` and all three call sites passed only `dev`, so
+  `--graph reduce` compared the py side's `sum(axis=1)` against the bend side's MATMUL --
+  7 py rows against 18 bend rows, every one of them reported as a real difference, and the
+  verdict said DISAGREE while naming no cause. A default that is also the DEFAULT `--graph`
+  is a silent wrong answer: it is correct for the default invocation, so no test of the
+  default invocation can see it, and the disagreement it produces looks like a port bug.
+  Making the argument required turns a future omission into a TypeError.
+
+  `probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
+  nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
+  20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
+  is exactly the guard that does not work.
+
+  THE BATCH CACHE, and it is OPT-IN through `GRAPHCMP_BEND_BATCH`: a caller that asks
+  for MANY graphs in ONE process -- the coverage census does, for all 36 -- pays the
+  21,440-line typecheck ONCE instead of 36 times. MEASURED 2026-10-30: 82.5 s for 36
+  per-graph processes against 2.4 s for one batched process. The cache holds the ROWS,
+  and the rows are the rows the per-graph path produced: the batch lane prints the same
+  `# root=` header and the same rows under a `# graph=NAME` marker, and the marker is a
+  COMMENT, so it is never a row.
+
+  IT IS OFF BY DEFAULT, and the reason is that the per-graph path is one graph per
+  PROCESS: a cache that fetched the whole population on the first request would make
+  every single-graph request pay for 36 graphs. The census asks for all of them, so it
+  turns the cache on; the per-graph commands do not, so they do not."""
+  if os.environ.get("GRAPHCMP_BEND_BATCH"):
+    return _bend_batch(dev, graph, tries, probe)
+  return emit_bend_one(dev, graph, tries, probe)
 
 
 # ---------------------------------------------------------------------------
@@ -3655,10 +3784,79 @@ def gc_shape(n) -> str:
   return cshape(n)
 
 
+def emit_py_fresh(graph: str) -> list[str]:
+  """The CPython side's rows, built in a FRESH PROCESS.
+
+  MEASURED 2026-10-30: `Tensor.empty` mints a FRESH `ParamArg.slot` from a
+  PROCESS-GLOBAL counter every call (`UOp.unique_num`), so a process that builds
+  `reduce` and then `matmul` gives `matmul` the slots 1 and 2 -- while the
+  per-graph path, one graph per process, gives it 0 and 1. A batch that built
+  both py graphs in ONE process therefore compared `matmul` against a bend side
+  that says 0 and 1, and reported a DISAGREE that is the HARNESS and not the
+  port. So the py side keeps its own process per graph -- it is CHEAP (4.5 s for
+  36 graphs, MEASURED) -- and the BEND side, which is the expensive one, gets
+  ONE process for all of them."""
+  c = subprocess.run([sys.executable, str(pathlib.Path(__file__).resolve()), "emit",
+                      "--side", "py", "--graph", graph], cwd=REPO, capture_output=True,
+                     text=True, env=clean_env(os.environ.get("DEV", "CPU")), timeout=BEND_TIMEOUT)
+  if c.returncode != 0:
+    raise SystemExit(f"emit py {graph}: rc={c.returncode}: {c.stderr[-500:]}")
+  return [ln for ln in c.stdout.splitlines() if ln.strip()]
+
+
+def cmd_batch(a) -> int:
+  """MANY GRAPHS, ONE BEND PROCESS, ONE FILE PER GRAPH.
+
+  MEASURED 2026-10-30: the corpus spawned one `bend` per graph and each process
+  paid the SAME 21,440-line typecheck, so the bend side cost 68.6 s for 36 graphs
+  against 4.5 s for the python side. `emit_bend_many` asks ONE bend process for
+  every graph, and this command runs the SAME comparison the per-graph `diff`
+  command runs -- `diff_one` -- over each graph's rows.
+
+  THE PYTHON SIDE IS STILL ONE PROCESS PER GRAPH, and `emit_py_fresh` says why:
+  `Tensor.empty` mints a FRESH `ParamArg.slot` from a process-global counter, so
+  a process that builds two graphs gives the second one different slots than the
+  per-graph path gives it, and the comparison would report the harness.
+
+  THE OUTPUT IS THE PER-GRAPH OUTPUT. `--mode diff` writes `<out-dir>/<graph>.txt`
+  with what `diff --graph <graph>` printed and `<out-dir>/<graph>.rc` with its
+  exit code; `--mode emit-bend` writes `<out-dir>/<graph>.txt` with the rows
+  `emit --side bend --graph <graph>` printed. The batch's OWN stdout carries one
+  summary line per graph, and the per-graph files are the artifacts."""
+  graphs = [g for g in a.graphs.split(",") if g]
+  if not graphs:
+    print("# batch: no graphs were named", file=sys.stderr)
+    return 2
+  out = pathlib.Path(a.out_dir)
+  out.mkdir(parents=True, exist_ok=True)
+  rows, notes = emit_bend_many(a.dev, graphs, probe=pathlib.Path(a.bend_probe) if a.bend_probe else None)
+  if a.mode == "emit-bend":
+    for g in graphs:
+      body = "\n".join(rows[g])
+      (out / f"{g}.txt").write_text(body + ("\n" if body else ""))
+      print(f"# batch emit-bend {g}: {len(rows[g])} rows")
+    return 0
+  worst = 0
+  for g in graphs:
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+      # THE NOTE LINE IS THE PER-GRAPH PATH'S FIRST STDOUT LINE, and it is HERE
+      # for the same reason: the per-graph `diff` prints it before the report,
+      # and a batch artifact that did not carry it would not be that artifact.
+      print("\n".join("# " + n for n in notes[g]))
+      rc = diff_one(a, emit_py_fresh(g), rows[g])
+    body = buf.getvalue()
+    (out / f"{g}.txt").write_text(body)
+    (out / f"{g}.rc").write_text(f"rc={rc}\n")
+    print(f"# batch diff {g}: rc={rc} {len(body)} bytes")
+    worst = max(worst, rc)
+  return worst
+
+
 def main() -> int:
   ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
   ap.add_argument("cmd", choices=["emit", "diff", "control", "cross", "selfcheck", "dbg",
-                                  "conf"])
+                                  "conf", "batch"])
   ap.add_argument("--graph", choices=sorted(GRAPHS), default="matmul")
   ap.add_argument("--side", choices=["py", "bend"], default="py")
   ap.add_argument("--plant", choices=sorted(PLANTS), default=None)
@@ -3674,6 +3872,12 @@ def main() -> int:
                   help="DEBUG levels for `dbg`; the only difference between the runs")
   ap.add_argument("--bend-probe", default=None,
                   help="override the port-side probe; used to SEE the 0-row re-run guard fire")
+  ap.add_argument("--graphs", default="",
+                  help="comma-separated graph names for `batch`; ONE bend process answers all")
+  ap.add_argument("--mode", choices=["diff", "emit-bend"], default="diff",
+                  help="what `batch` writes per graph")
+  ap.add_argument("--out-dir", default="",
+                  help="the directory `batch` writes its per-graph files into")
   a = ap.parse_args()
   global COMM
   os.environ["DEV"] = a.dev
@@ -3709,6 +3913,8 @@ def _dispatch(a) -> int:
 
   if a.cmd == "selfcheck":
     return selfcheck(a.dev)
+  if a.cmd == "batch":
+    return cmd_batch(a)
   if a.cmd == "conf":
     return cmd_conf(a.dev)
   if a.cmd == "dbg":
@@ -3784,6 +3990,17 @@ def _dispatch(a) -> int:
   # emission were the same artifact. **A REFUSAL THAT NAMES ITSELF ONLY IN A `.err` IS A
   # REFUSAL NOBODY READS**, and `D1-verdicts.txt` then prints an empty verdict cell for it.
   print("\n".join("# " + n for n in notes))
+  return diff_one(a, py, bd)
+
+
+def diff_one(a, py: list[str], bd: list[str]) -> int:
+  """THE COMPARISON, with both sides' ROWS already in hand.
+
+  It is a DEF and not a block of `_dispatch` because `batch` calls it once per graph
+  with the bend rows that ONE bend process emitted, and the per-graph `diff` command
+  calls it with the rows that one bend process emitted. The rules -- the two
+  preconditions and the report -- are therefore ONE implementation, and a batch run
+  cannot compare something different from a single-graph run."""
   # THE PRECONDITION. The port's fixture names one device and the py graph carries
   # whatever `--dev` opened, so the two device sets must be EQUAL before the cores mean
   # anything: an ALLOC whose device differs has a different `core`, which propagates to

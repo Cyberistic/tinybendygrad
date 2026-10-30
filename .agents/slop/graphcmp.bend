@@ -2098,12 +2098,43 @@ def rows.pick(name: String) -> O.Found:
 def fz_name(as: List<String>) -> String:
   Maybe.default(&1, String, List.get(&1, String, as, 0n), "")
 
-def main() -> IO(Unit):
+# ONE GRAPH, THE SAME BYTES AS BEFORE: the `# root=` header and then the rows.
+# `marked` adds ONE COMMENT LINE, `# graph=NAME`, ABOVE the header. It is a
+# COMMENT, so `classify` reads it as a header and never as a row, and the driver
+# splits a multi-graph stream on it. The header and the rows are UNCHANGED.
+def graph.emit(+name: String, marked: Bool) -> IO(Unit):
   do IO<Unit>:
-    as : List<String> <- IO.args()
-    +f : O.Found <- IO.pure(O.Found, rows.pick(fz_name(List.tail(&1, String, as))))
+    +f : O.Found <- IO.pure(O.Found, rows.pick(name))
     +x : F.Folded <- IO.pure(F.Folded, F.folded(O.Found.ar(f)))
+    m : Unit <- Bool.pick(IO(Unit), marked,
+      IO.print(String.concat(["# graph=", name])), IO.pure(Unit, Unit{}))
     h : Unit <- IO.print(String.concat(["# root=", U32.show(O.Found.i(f)), " nodes=",
       U32.show(O.Arena.next(O.Found.ar(f))), " settled=",
       Bool.show(F.Kahn.settled(F.Folded.ar(x), F.Folded.t(x)))]))
     rows.of(F.Folded.ar(x), F.Folded.t(x), f)
+
+def graph.emit.many(names: List<&1, String>) -> IO(Unit):
+  match names:
+    case Nil{}: IO.pure(Unit, Unit{})
+    case n <> rest:
+      do IO<Unit>:
+        e : Unit <- graph.emit(n, True{})
+        graph.emit.many(rest)
+
+# ONE NAME IS THE OLD LANE, BYTE FOR BYTE. `ALLGRAPHS` IS THE MANY-NAMES MODE: it
+# is followed by the names, and the driver splits the stream on `# graph=NAME`
+# and rebuilds each graph's own bytes, so the ROWS and the header are unchanged.
+# A `List` is AFFINE, so it is consumed once and the count is not asked of it.
+def main.many(names: List<&1, String>) -> IO(Unit):
+  graph.emit.many(names)
+
+def main.pick(names: List<&1, String>) -> IO(Unit):
+  match names:
+    case Nil{}: graph.emit("", False{})
+    case +n <> rest:
+      Bool.pick(IO(Unit), String.eq(n, "ALLGRAPHS"), main.many(rest), graph.emit(n, False{}))
+
+def main() -> IO(Unit):
+  do IO<Unit>:
+    as : List<String> <- IO.args()
+    main.pick(List.tail(&1, String, as))
