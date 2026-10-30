@@ -71,13 +71,30 @@ When using bend:
 - run `bin/bend guide` to learn it — **MEASURED rc=0, 677 lines. This is the one that works.**
 - use `LAWS.bend` to keep important rules — **the path is `tinybendygrad/LAWS.bend`; there is no
   `LAWS.bend` at the repo root, so the bare name resolves to nothing.** `--check-only` reports
-  `Error: 34 TODOs found. The code is incomplete, and not a valid proof yet.`
-- **run `bend PROOF.bend` before committing** — **the path is `tinybendygrad/PROOF.bend`; there is no
-  `PROOF.bend` at the repo root, so the bare name resolves to nothing. AND THE GATE IS RED AT REST:
-  `--check-only` reports `Error: 18 TODOs found. The code is incomplete, and not a valid proof yet.`
-  (both measured today under `checks/bounded.py --mb 2048`, verdict token `WITHIN-LIMITS`, peak 6 MB).
-  **A PRE-COMMIT GATE THAT CANNOT PASS TEACHES NOTHING AND WILL BE SKIPPED — so until those TODOs land,
-  run it to see the COUNT GO DOWN and do not report the red as a verdict about your change.**
+  `Error: 34 TODOs found. The code is incomplete, and not a valid proof yet.` — **⇒ AND **THAT **COUNT
+  **IS **AN **ARTIFACT **OF **CHECKING **THE **WRONG **FILE**, **AND **THE **FILE **THIS **SECTION
+  **NAMED **NEXT **IS **THE **ONE **THAT **IS **WRONG:**
+- **run `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` before committing** — **⇒ AND **THE
+  **AGGREGATE **IS **THE **ONLY **CORRECT **ENTRY **POINT**, **AND **THE **PER-FILE **COUNTS **ARE **A
+  **TRAP.**  **MEASURED 2026-10-30: **THE **AGGREGATE **REPORTS **`ALL PROOFS CHECK`** (**rc=0**, **31
+  **MB**, **`WITHIN-LIMITS`**), **AND **`tinybendygrad/PROOF.bend` **REPORTS **`Error: 18 TODOs found.`**
+  **AND **`tinybendygrad/PROOF2.bend` **REPORTS **`Error: 16 TODOs found.`** — **⇒ AND **ALL **34
+  **LAWS **ARE **PROVED, **AND **THE **REASON **THE **HALVES **ARE **RED **IS **THAT **THEY **ARE
+  **HALF-BOOKS**: **`PROOF-ALL.bend`'s **OWN **HEADER **SAYS **IT — **"bend **discharges **a **law **by **a
+  **def **of **the **same **name **ANYWHERE **IN **THE **BOOK**, **so **the **two **halves **simply **have
+  **to **meet **in **one **book"**, **AND **`LAWS/PROOF-ALL.bend` **IS **THAT **ONE **BOOK.**
+  **⇒ AND **THE **DISCOVERY **CENSUS **CONFIRMS **IT**: **`.agents/slop/laws17/laws.py` **READS
+  **`LAWS/PROOF-ALL.bend` **AS **`0/34/34`** **(ALL **PROVED**), **AND **`PROOF.bend` **AS **`18/16/34`**
+  **AND **`PROOF2.bend` **AS **`16/18/34`** — **EACH **HALF **SEES **THE **OTHER's **LAWS **AS **OPEN.**
+  **⇒ AND **⇒ AND **THIS **LINE **IS **A **CORRECTION, **NOT **A **SOFTENING**: **THE **PREVIOUS
+  **REVISION **OF **THIS **SECTION **SAID **"THE **GATE **IS **RED **AT **REST"** **AND **QUOTED **18
+  **TODOs**, **AND **THAT **WAS **A **MEASUREMENT **OF **A **HALF-BOOK**, **NOT **OF **THE **PROOF** —
+  **AND **A **GOVERNING **DOCUMENT **THAT **CARRIES **A **FALSE **CLAIM **PROPAGATES **INTO **EVERY
+  **BRIEF **THAT **CITES **IT**: **TWO **AGENTS **WERE **BRIEFED **TO **PROVE **LAWS **THAT **WERE
+  **ALREADY **PROVED, **AND **ONE **OF **THEM **MEASURED **THE **MISTAKE **RATHER **THAN **REPEATING
+  **IT.**
+  **⇒ AND **THE **PER-FILE **PEAK **RSS **NUMBERS **STILL **COME **FROM **THE **PER-FILE **RUNS** —
+  **THE **AGGREGATE **IS **A **DIFFERENT **FILE, **SO **IT **HAS **ITS **OWN.**
 - **PARALLELISE EVERYTHING THAT IS NOT A `bend` PROCESS. FOR `bend`, THE PRECONDITION IS THE SUM, NOT
   THE COUNT: parallelise only when the sum of the concurrently-running files' MEASURED peak RSS is under
   60% of `hw.memsize`. THE PER-FILE NUMBERS ARE IN `.agents/slop/peakrss/census.rows` — USE THAT TABLE, NOT
