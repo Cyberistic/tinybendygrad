@@ -25811,3 +25811,28 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
         **MB / **242 **s** (**`run`**) **AND **896 **MB / **428 **s** (**`repro`**), **BOTH **`WITHIN-LIMITS`**.
         **⇒ AND **THE **WITNESS **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS
         **OK**, **AND **`AGENTS.md` **CARRIES **THE **NEW **DIGEST **AND **THE **NEW **HEAD.**
+the SHAPE HALF'S LAWS ARE AUDITED, AND THE AUDIT FOUND ONE LAW THAT CANNOT FAIL
+
+  - [x] **THE **SHAPE **HALF'S **SIXTEEN **LAWS **ARE **MUTATION-TESTED, **AND **ONE **OF **THEM **IS
+        **VACUOUS **BY **CONSTRUCTION** (MEASURED **2026-10-30**, **`2a23626ad`**, **GATE
+        **`gates/shape-law-census-gate.py`**).**
+        **⇒ AND **12 **CAUGHT** (THE **GATE **NAMES **THE **LAW), **3 **MASKED** (AN **EARLIER **LAW **IS
+        **NAMED **FIRST** — **AND **CHANGING **EACH **MASKED **LAW's **CONCLUSION **TO **A **DIFFERENT
+        **PROPOSITION **MAKES **THE **AGGREGATE **GO **RED **NAMING **IT**, **SO **A **MASKED **LAW **IS
+        **NOT **A **LABEL**), **AND **1 **VACUOUS**: **`store_matches_its_buffer`**, **WHOSE **PREMISE
+        **AND **CONCLUSION **ARE **THE **IDENTICAL **TERM**, **SO **IT **IS **`P ⇒ P`** **AND **ITS **PROOF
+        **IS **LITERALLY **`premise`**.**
+        **⇒ AND **THE **PORT **ALREADY **SAID **SO **IN **PROSE** — **`LAWS.bend:328`** **AND
+        **`PROOF.bend:473`** **BOTH **CALL **IT **"VACUOUS **BY **CONSTRUCTION **… **it **pins **no
+        **behaviour"** — **AND **THE **GATE's **VALUE **IS **THAT **THE **PROSE **CLAIM **IS **NOW
+        **CHECKABLE**: **A **PROSE **FACT **BECOMES **A **ROW**, **AND **THE **GATE **FAILS **IF **THE
+        **CENSUS **GETS **WORSE.**
+        **⇒ AND **⇒ AND **THE **BIGGER **FINDING **IS **THE **COVERAGE: **39 **OF **THE **50 **SHAPE-FOLD
+        **ARMS **ARE **UNPINNED** — **AN **ARM **NO **LAW **READS **MAY **BE **WRONG **AND **THE **BOOK
+        **SAYS **NOTHING.**  **⇒ AND **THE **ALU **HALF's **SAME **FINDING **IS **13 **ARMS**, **AND **THE
+        **TWO **GATES **TOGETHER **COVER **THE **WHOLE **LAW **SET: **34 **LAWS, **18 **AUDITED **BY **ONE,
+        **16 **BY **THE **OTHER.**
+        **⇒ AND **THE **GATE **IS **GREEN **AT **REST **AND **CAN **GO **RED** (**AN **EMPTIED **BASELINE
+        **ANSWERS **rc=1**, **AND **ITS **OWN **`--plant`** **RUNS **FOUR **CASES**), **AND **THE **FOUR
+        **SUBJECT **FILES **ARE **BYTE-IDENTICAL **TO **HEAD** — **SO **THIS **IS **A **READER, **NOT **AN
+        **EDIT.**
