@@ -25729,3 +25729,60 @@ ledger-pop       [#######.] 7/8  **THE **FIVE **UNOWNED **ROWS **THE **GATE **RE
       **IS **MONOTONIC** (**389 -> 389 **ROWS**, **0 **NEW**, **0 **RETIRED**, **0 **DROPPED**, **THE **FIVE
       **TOMBSTONES **INTACT**), **AND **`gates/ledgerdue-gate.py` **IS **BACK **TO **`OWNED 0 UNOWNED 0
       DUE 0`** **AND **`VERDICT PASS`.**
+  - [x] **THE **ARENA **GENERATOR **NEVER **RAN, **AND **ITS **`SyntaxError` **HAD **BEEN **REFUSING **THE
+        **PYVALS **GATE **FOR **THREE **DAYS** (MEASURED **2026-10-30**, **`9ade6cab6`**).**
+        **⇒ AND **`.agents/slop/devlane/gen_arena.py` **WAS **THE **ONLY **`.py` **IN **THE **TREE **THAT
+        **DID **NOT **PARSE**, **AND **IT **LANDED **AT **`d340ed691`** (**2026-10-27**) **AND **NEVER
+        **ONCE **RAN.**  **⇒ AND **THE **DAMAGE **WAS **THREE **LAYERS**, **AND **ONLY **THE **FIRST **WAS **A
+        **`SyntaxError`: **A **LITERAL **BRACE **INSIDE **AN **F-STRING** (TWICE), **AND **THE **`ParamArg`
+        **EMIT **WAS **FIELD-SHIFTED** (**13 **FIELDS, **`name` **AT **6**, **`volatile` **AT **12**, **AND
+        **THE **PORT's **`ParamArg` **HAS **TWELVE** — **`ops.bend:869`**, **WHOSE **`ParamArg.slot`
+        **DESTRUCTURES **ALL **TWELVE**).**  **⇒ AND **THE **FIX **IS **A **TEMPLATE, **NOT **A **DOUBLING**:
+        **THE **BRACES **ARE **LITERAL **IN **THE **EMITTED **SOURCE**, **AND **A **LITERAL **BRACE **IN **AN
+        **F-STRING **IS **A **DOUBLING **BUG **WAITING **TO **HAPPEN.**  **⇒ AND **MEASURED: **THE **TREE **NOW
+        **HAS **ZERO **`.py` **FILES **THAT **DO **NOT **PARSE**, **AND **`gates/pyvals-gate.py` **GOES **FROM
+        **`REFUSED` **TO **`PASS`**.**
+  - [x] **THE **CORPUS's **REPRO-DIFF **ARTIFACT **IS **WRITTEN **ONLY **ON **FAILURE, **AND **THE
+        **DECLARATION **DID **NOT **SAY **SO** (MEASURED **2026-10-30**, **`93f33ea76`**).**
+        **⇒ AND **`gates/txt-carveout-gate.py` **WAS **RED **ON **EXACTLY **ONE **ABSENT **DECLARED **NAME**
+        (**`runs/graphcmp/D/D0-repro-diff.txt`**, **WRITTEN **ONLY **INSIDE **`cmd_repro`'s **FAILURE
+        **BRANCH**, **AND **DELETED **BY **A **PASSING **REPRO**), **AND **THE **READER **WAS **RIGHT **AND
+        **THE **DECLARATION **WAS **INCOMPLETE.**  **⇒ AND **THE **MECHANISM **COULD **NOT **EXPRESS **IT**
+        (**`CONDITIONAL` **IS **A **PREFIX **SET**, **AND **A **PREFIX **IS **A **FAMILY, **NOT **A **NAME**),
+        **SO **`checks/differ.py` **NOW **EXPORTS **`CONDITIONAL_ARTIFACTS`** **AND **`checks/no-txt.py`
+        **READS **IT** — **A **SECOND **LIST **OF **NAMES **IN **`no-txt.py`** **IS **THE **CLASS
+        **DOCTRINE **1 **FORBIDS.**  **⇒ AND **THE **READER **WAS **NOT **WEAKENED**: **MOVING
+        **`runs/graphcmp/D/D0-run-summary.txt` **ASIDE **MAKES **THE **GATE **RED **AGAIN **AND **NAMES
+        **IT**, **AND **RESTORING **THE **BYTE-IDENTICAL **FILE **MAKES **IT **GREEN **AGAIN.**
+  - [x] **THE **`.txt` **GATE's **GREEN **VERDICT **HAD **NO **ARGV **THAT **REACHED **IT** (MEASURED
+        **2026-10-30**, **`50e292c48`**).**
+        **⇒ AND **`PLANTS[0]` **WAS **`[]`**, **AND **THE **LIVE **TREE **OWNS **204 **HARD **`.txt`**, **SO
+        **NO **ARGV **OVER **IT **CAN **REACH **`0`** — **AND **`gates/gate-surface.py` **CHARGED **IT
+        **MISPLANT **AND **THEN **UNTAKEN.**  **⇒ AND **`--plant-clean` **REBINDS **`ROOT`** **TO **A
+        **SANDBOX **TREE** (**THE **GENERATORS **SYMLINKED **IN**, **AND **`os.walk` **DOES **NOT **FOLLOW
+        **SYMLINKED **DIRECTORIES**, **SO **THE **WALK **SEES **NO **`.txt`**), **AND **IT **IS **NOT
+        **VACUOUS**: **A **`.txt` **IN **THE **SANDBOX **MAKES **IT **rc=1** **AND **NAMES **`planted.txt`.**
+  - [x] **THE **SURFACE **CENSUS **WAS **RED **ON **ITSELF, **AND **IT **CHARGED **FOUR **FILES **FOR **NAMING
+        **A **VARIABLE **AND **ONE **PYTHON **GATE **FOR **BEING **PYTHON** (MEASURED **2026-10-30**,
+        **`73b709d2a`**).**
+        **⇒ AND **THE **MARKER **WAS **A **NAME, **NOT **A **SHAPE** (**FOUR **FILES **SHIP **A
+        **`VERDICTS` **THAT **IS **NOT **A **MAPPING**, **AND **NONE **SHIPS **A **`PLANTS`**); **AND **A **FILE
+        **THIS **CENSUS **CANNOT **UNDERSTAND **IS **NOT **MALFORMED** (**THE **TREE's **OWN
+        **`gates/gate-surface-plant.py` **HAD **ALREADY **PROPOSED **BOTH **RULES**); **AND **A **CODE **THE
+        **TREE **HAS **NAMED** (**CODE **`2` **AS **ARGPARSE's **`USAGE`**) **IS **NOT **UNOWNED** (**IT **IS
+        **`CONVENTION`**, **MEASURED **BY **`checks/exitcode-census.py`**); **AND **A **GATE **MAY **HAVE **ITS
+        **OWN **WORDS** (**`gates/runner.py`'s **`spoken_disagrees()`** **READS **ONLY **THE **HOUSE **FIVE**).
+        **⇒ AND **`gates/gates-pop.py` **MISCLASSIFIED **`gates/bendfloat-gate.py`** **AS **`js-main`** — **IT
+        **IS **A **PYTHON **GATE**, **AND **`JS_MODULE`'s **ANCHOR **MATCHED **INSIDE **A **MULTI-LINE
+        **PYTHON **STRING** — **AND **THE **LEDGER **CARRIED **THE **WRONG **REASON.**  **⇒ AND **THE **PLANT
+        **SUITE **GREW **14 -> 17** **AND **IS **GREEN**, **AND **ONE **PLANT **WAS **REPAIRED **BECAUSE **IT
+        **REQUIRED **THE **TREE **TO **BE **BROKEN** (**IT **NOW **PLANTS **ITS **OWN **DRIFT**).**
+  - [x] **THE **CORPUS **WAS **RE-RUN **2026-10-30** **AND **IS **GREEN, **CURRENT, **AND **REPRODUCIBLE**
+        (**`c6356fff0`**).**
+        **⇒ AND **`substrate-start == substrate-end == live == repro-substrate ==
+        160d496f44658206b3bb26444748ea5dc95dbe06dda8f7f7b165242e883f39c4`**, **`substrate-head=d438e6464`**, **35/35
+        **AGREE**, **35/35 **BYTE-IDENTICAL**, **`unhealthy() -> []`**, **`artefacts_ok() -> []`**,
+        **`repro_bad() -> []`**, **AND **`319 of 319 files identical across two clean runs`** — **PEAK **960
+        **MB / **242 **s** (**`run`**) **AND **896 **MB / **428 **s** (**`repro`**), **BOTH **`WITHIN-LIMITS`**.
+        **⇒ AND **THE **WITNESS **READS **`PASS -- the claim is ESTABLISHED`** **WITH **ALL **SEVEN **READINGS
+        **OK**, **AND **`AGENTS.md` **CARRIES **THE **NEW **DIGEST **AND **THE **NEW **HEAD.**
