@@ -17,7 +17,7 @@
 # `Register`, and `tinygrad/renderer/isa/__init__.py:9-16` is a frozen
 # `@dataclass(name, index, _cons, size)` -- a VALUE compared by all four fields, not
 # an identity. `tinybendygrad/renderer/isa/` is EMPTY, and `O.Tag`'s tuple arm is
-# `TTuple{xs: List<&2, U32>}` carrying UOP INDICES (ops.bend:899-899), which cannot
+# `TTuple{xs: List<&2, U32>}` carrying UOP INDICES (ops.bend:900-900), which cannot
 # hold a `Register` and cannot be changed from here. So a port INTERNS registers and
 # a virtual register is a `U32` index -- which is not a shape invention to dodge a
 # limitation, it is what `frozen=True` already means, and it makes the oracle and the
@@ -224,7 +224,7 @@ def ra_tbl_ops() -> String:
 # changed size CANNOT move a printed row. A field nothing reads is a field that
 # silently always carries its fixture value.
 #
-# `u.tag` IS NOT THE ARENA'S TAG TUPLE. `ops.bend:899-899` types `TTuple` as a
+# `u.tag` IS NOT THE ARENA'S TAG TUPLE. `ops.bend:900-900` types `TTuple` as a
 # list of UOP INDICES, because `ops.py:547` says a tag tuple holds UOps, and a
 # register is not a UOp -- putting register ids in `TTuple` would make `eq_tag`
 # compare registers as uop indices. So the pass reads a `RaUop` (`op`, `srcs`,

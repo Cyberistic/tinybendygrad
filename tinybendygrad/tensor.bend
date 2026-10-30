@@ -288,7 +288,7 @@ def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
   tn_alu.put(O.UOp.alu(ar, op, List.append(&2, U32, [uop], srcs)))
 
 # THE ARENA RULE IN ONE SPELLING, AND NOW IT IS TOTAL. `Arena` is an IMMUTABLE `Data` VALUE
-# (`ops.bend:2718`, `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the
+# (`ops.bend:2765`, `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the
 # arena it was built in and an index is legal only in an arena DESCENDING FROM the one that
 # minted it -- append-only, so a prefix's indices still name the same nodes. `O.Arena.merge`
 # (`ops.bend`, beside `UOp.new`) is what makes the rule total: it re-interns `other`'s nodes
@@ -327,7 +327,7 @@ def tn_where_srcs_are(+r: Tensor, +cond: Tensor, +x: Tensor, +y: Tensor) -> Bool
 # `tn_xor.go`, `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`,
 # `tn_pow.go`, `tn_fdiv.go`, `tn_mod.go`) and `tn_max` used to build with
 # `tn_alu(lhs, OP, [Tensor.u(rhs)])`, which builds in `lhs.ar` and reads `rhs.u` THERE.
-# MEASURED, `O.Rng.sig` (`ops.bend:801`) on `tn_add` with `lhs` a bare `CInt{3}` and `rhs`
+# MEASURED, `O.Rng.sig` (`ops.bend:802`) on `tn_add` with `lhs` a bare `CInt{3}` and `rhs`
 # derived to depth N in its OWN arena:
 #
 #   rhs depth 0 (a bare const)   ok=True   sig `2 Ops.ADD/2 Ops.CONST Ops.CONST`
@@ -449,7 +449,7 @@ def tn_rsqrt(+t: Tensor) -> Tensor:
 # `_broadcasted` step the blocker. The no-broadcasting case (both x and y are
 # already Tensors of the same shape) is portable: the body reduces to
 # `tn_alu(cond, O.OpsWHERE{}, [Tensor.u(x), Tensor.u(y)])`, the same `tn_alu`
-# builder with three src nodes. `O.UOp.where` (uop/ops.bend:2829 symbol=UOp.where) is the primitive
+# builder with three src nodes. `O.UOp.where` (uop/ops.bend:2867 symbol=UOp.where) is the primitive
 # this delegates to. `tn_where` is what CPython's `Tensor.where` does in the
 # no-broadcasting case; the broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it)
 # (mixin/movement.py:24, fold reads and a `least_upper_dtype` helper).
@@ -471,7 +471,7 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # CAST(self, bool) -> CMPNE(cast, CONST(True)) when self is NOT bool and NO CAST AT ALL when
 # it is, and that is not a carve-out: it is the whole of `cast`.
 #
-# `O.UOp.cast` (ops.bend:2738) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
+# `O.UOp.cast` (ops.bend:2776) MINTS THE NODE UNCONDITIONALLY -- `UOp.new(ar, OpsCAST{}, ...)`.
 # That was the one extra `CAST` on `tn_eq`, `tn_dunder_ge`, `tn_dunder_le`,
 # `tn_dunder_invert` and `tn_isfinite`, every one of which is a `logical_not` over a node the
 # fold already knows is `bool` (a CMPNE, a CMPLT or an OR -- uop/fold.bend:2673 symbol=dt_shape answers
@@ -492,7 +492,7 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # CAST AND the CONST (3 slots); `cast.ar` has the CAST only (2 slots). Building the
 # CMPNE in `cast.ar` therefore APPENDS it at the slot `O.Found.i(true_c)` already names
 # -- the node becomes its own `src[1]`. MEASURED, `./bin/bend` on a `CInt` input, with
-# `O.Rng.sig` (uop/ops.bend:6070 symbol=Rng.sig) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
+# `O.Rng.sig` (uop/ops.bend:6109 symbol=Rng.sig) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
 # IS the top node) where CPython answers `CMPNE(CAST(CONST()), CONST())`
 # (`/tmp/cp_shape.py`, `tinygrad`). So the CMPNE is built in `true_c.ar`, the newest.
 def tn_logical_not.cmpne(+cast: O.Found, +true_c: O.Found) -> Tensor:
@@ -805,7 +805,7 @@ def tn_relu6(+t: Tensor) -> Tensor:
 # `THE PORT's `nn/__init__.bend` HEADER` cited `b+1` (Tensor `+` Tensor arith) and `tn_trunc` as
 # the blockers. `tn_trunc` is ported (tensor.bend:406), and the arith is
 # `tn_add(b, c1t)` -- `tn_add` is ported (tensor.bend:685), the CONST 1 is
-# `tn_ceil.c1` (a `O.UOp.const`, ported at uop/ops.bend:2939 symbol=UOp.replace.go), and `c1t` is a
+# `tn_ceil.c1` (a `O.UOp.const`, ported at uop/ops.bend:2986 symbol=UOp.replace.go), and `c1t` is a
 # Tensor wrapping the CONST -- `tn_alu.put` over the `Found`, the one spelling
 # that cannot name the wrong arena (see the note above `tn_alu.put`). The cond `(self > b)` is
 # `tn_rcmplt(self, b)` (tensor.bend:744, the `reverse=True` arm of `tn_cmplt`),
@@ -1369,7 +1369,7 @@ def tn_cast.dt_is.of(m: Maybe<&2, S.Dt>, +d: S.Dt) -> Bool:
     case None{}: False{}
 
 # THE ARENA IS A PARAMETER, and that is the whole of this fix. `Arena` is an immutable
-# `Data` VALUE (`uop/ops.bend:1219 symbol=Arg`), so an index is meaningful only in an arena DESCENDING
+# `Data` VALUE (`uop/ops.bend:1240 symbol=Arg`), so an index is meaningful only in an arena DESCENDING
 # from the one that minted it: reading `i` in `O.Arena.empty()` answers the `NOOP` bottom.
 # MEASURED before: the identity arm of `op_cast` printed `1 NOOP/0` where CPython answers
 # the src unchanged, because the wrap threw the caller's arena away.
@@ -2202,7 +2202,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # no `inspect` and no mutable class state, and the metadata itself is
 # `all_metadata[new_uop] = (metadata,)` at tensor.py:106.
 # TODO(p3) ops.py:208  symbol=all_metadata  -- ops.bend has the READER
-#                                             (`O.UOp.metadata`, uop/ops.bend:2712 symbol=UOp.metadata) and no
+#                                             (`O.UOp.metadata`, uop/ops.bend:2750 symbol=UOp.metadata) and no
 #                                             writer, because the writer needs a scope
 #                                             threaded through `_apply_uop`
 # ===========================================================================

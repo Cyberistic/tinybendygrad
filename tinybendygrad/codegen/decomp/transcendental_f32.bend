@@ -807,7 +807,7 @@ def tc.cody_waite(+x: F32) -> Red:
 # is MEASURED and loud: with the OUTER arm inverted, `tc.mask0` sends every
 # finite input to the `inf` replacement and all three expansions answer NaN.
 # `x.ne(inf)` is a BITWISE test, not an IEEE one.  MEASURED: tinygrad's
-# `eq_const.CFloat` compares the packed bits (ops.bend:1954 symbol=eq_const.CFloat, and commit
+# `eq_const.CFloat` compares the packed bits (ops.bend:1974 symbol=eq_const.CFloat, and commit
 # 65b585e1 for the same reason), so `-0.0 != 0.0` is TRUE there while IEEE says
 # FALSE -- and `xf_lazy0_-0.0` is `-0.0`, not `+0.0`.  Reading it with `F32.is_eq`
 # loses the sign of zero, and `xf_lazy0_-0.0` is the row that says so.

@@ -728,7 +728,7 @@ def l2i_shift.words(+isu: Bool, +ar: O.Arena, +ws: List<&2, U32>) -> W2:
 
 # THE ARENA IS THREADED AND EVERY INDEX IS TAKEN FROM THE `Found` THAT OWNS IT.
 # This body did neither: it handed the SAME `ar` to all six node builders, and
-# `O.Arena` is an immutable `Arena{nodes: List<Node>}` (uop/ops.bend:1293 symbol=Arena),
+# `O.Arena` is an immutable `Arena{nodes: List<Node>}` (uop/ops.bend:1314 symbol=Arena),
 # so `O.UOp.new(ar, ...)` returns a Found over `ar ++ [node]` and the NEXT builder
 # appends to `ar` again -- at the SAME index. `a1u << n` was therefore overwritten
 # by `C(1)` before the final `|` read it, and the `hi` word came out as a `WHERE`
@@ -1092,7 +1092,7 @@ def l2i_cdiv.abs.b(+ar: O.Arena, +ani: U32, +zi: U32, +ua0: U32, +ua1: U32, +n0:
 # THE ARENA IS HANDED ON, NOT RE-USED, and every index below belongs to the arena
 # named beside it. This body handed `abs.b` the arena `l2i` started with, while
 # `ani`/`ua0`/`ua1`/`ub0`/`ub1` are indices into the arena six builders LATER.
-# `O.Arena` is immutable (`uop/ops.bend:1293 symbol=Arena`), so `abs.b`'s first
+# `O.Arena` is immutable (`uop/ops.bend:1314 symbol=Arena`), so `abs.b`'s first
 # `dd_where` re-used the very slot `a_neg` occupies and `a_neg` then read back as
 # whatever node that WHERE became. It is invisible while the node COUNT happens to
 # line up: `lgq`/`lgqp` agreed at one bitcast configuration and printed

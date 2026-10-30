@@ -104,7 +104,7 @@
 #                             used to name two defs, `consumers.of` and
 #                             `consumers.who`, that were never written; `who` is a
 #                             FIELD of `Cons`, not a def.)
-#   sint                     ABSENT, and so is `sint_to_uop` (`uop/ops.bend:3876 symbol=UPat.after.put` marks
+#   sint                     ABSENT, and so is `sint_to_uop` (`uop/ops.bend:3914 symbol=UPat.after.put` marks
 #                             that one `TODO(p3)`). `sint` is a TYPE ALIAS for
 #                             `UOp | int`, which has no Bend spelling, so
 #                             `marg_str`'s `isinstance(a, UOp)` test becomes a
@@ -183,6 +183,7 @@ import ./ops.bend as O
 import ./fold.bend as F
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
+import ./../renderer/estimates.bend as E
 
 # ===========================================================================
 # sint_show -- `str(i)` for a SIGNED int held as a `U32` two's-complement bit
@@ -625,7 +626,7 @@ def axis_repr(a: O.AxisType) -> String:
 # the ids as the flat tail, because that is the one `UOp.axis_id` /
 # `UOp.axis_type` in ops.bend already implement and the one the `Ops.RANGE`
 # rule's `len(axis_id) == 1` guard is stated in. The collision is ops.bend's
-# `ARange{ids, at}` wall (ops.bend:1228 symbol=ARange) SEEN FROM THE OTHER SIDE, and it
+# `ARange{ids, at}` wall (ops.bend:1240 symbol=ARange) SEEN FROM THE OTHER SIDE, and it
 # is recorded here rather than papered over.
 def arange_repr(ids: List<&2, U32>, at: O.AxisType) -> String:
   String.concat(["(", axis_repr(at), ", ", String.join(u32_list_repr.go(ids), ", "), ")"])
@@ -678,12 +679,15 @@ def ci_weak() -> O.CallInfo:
 def acall_repr(+ci: O.CallInfo) -> String:
   String.concat(["CallInfo(None, ", acall_name(O.CallInfo.name(ci)), ", ", Bool.show(O.CallInfo.precompile(ci)), ", ", Bool.show(O.CallInfo.precompile_backward(ci)), ")"])
 
-# `estimates` is a field ops.bend DROPPED (P5, tinygrad.renderer) and Python's
-# dataclass repr prints it, so the literal below is printed in its place. It is
-# None for every kernel this port can build, so the text agrees -- but it IS a
-# literal, and saying so is cheaper than pretending the field is carried.
-def akernel_estimates(m: Maybe<&2, List<&2, O.OPT>>) -> String: "estimates=None"
-
+# `estimates` IS CARRIED NOW -- `ops.bend`'s `KernelInfo` has the field, and it
+# is `Maybe<&2, Estimates>` exactly as upstream's is `Estimates|None`. Upstream's
+# dataclass repr prints `None` for the absent case and
+# `Estimates(ops=1, lds=2, mem=3)` for the present one, and this prints BOTH
+# from the VALUE rather than from a literal.
+def akernel_estimates(m: Maybe<&2, E.Estimates>) -> String:
+  match m:
+    case None{}: "None"
+    case Some{e}: E.Estimates.str(e)
 # `applied_opts` is a tuple of `Opt`, which ops.bend now carries as `O.OPT`. This
 # `pretty_print` path still prints `<Opt>` for a non-empty list because a real
 # `Opt`'s repr is a dataclass repr -- the CANONICAL normal form spells it in
@@ -693,8 +697,14 @@ def akernel_applied(xs: List<&2, O.OPT>) -> String:
     case Nil{}: "()"
     case _ <> _: "<Opt>"
 
+# `KernelInfo.__repr__` -- upstream's dataclass repr, in UPSTREAM'S FIELD ORDER:
+# `KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None,
+# beam=0, optimized=False)`. MEASURED against the vendored upstream: `repr(
+# KernelInfo())` answers exactly that line, and `repr(KernelInfo(optimized=True))`
+# answers the same with `optimized=True`. THE ORDER IS THE POINT -- a repr that
+# printed the fields in a different order would be a different STRING.
 def akernel_repr(+ki: O.KernelInfo) -> String:
-  String.concat(["KernelInfo(name='", O.KernelInfo.name(ki), "', applied_opts=", akernel_applied(O.KernelInfo.applied_opts(ki)), ", opts_to_apply=None, ", akernel_estimates(O.KernelInfo.opts_to_apply(ki)), ", beam=", U32.show(O.KernelInfo.beam(ki)), ")"])
+  String.concat(["KernelInfo(name='", O.KernelInfo.name(ki), "', applied_opts=", akernel_applied(O.KernelInfo.applied_opts(ki)), ", opts_to_apply=None, estimates=", akernel_estimates(O.KernelInfo.estimates(ki)), ", beam=", U32.show(O.KernelInfo.beam(ki)), ", optimized=", Bool.show(O.KernelInfo.optimized(ki)), ")"])
 
 # `repr(tuple(int|float, ...))`; ops.bend types both halves `H.I64`.
 def i64_tuple_repr.go(xs: List<&2, H.I64>) -> List<&2, String>:
@@ -707,7 +717,7 @@ def i64_tuple_repr(xs: List<&2, H.I64>) -> String:
 
 # `params` and `target` are both fields ops.bend cannot print: `params` is a tuple of
 # UOPs (so its repr is `pretty_print` of each, which is `pretty_print`'s own
-# recursion) and `target` is a `Target` dataclass dropped at uop/ops.bend:801 symbol=CInt.
+# recursion) and `target` is a `Target` dataclass dropped at uop/ops.bend:802 symbol=CInt.
 def aprogram_vars(xs: List<&2, U32>) -> String:
   match xs:
     case Nil{}: "()"
@@ -2070,6 +2080,15 @@ def f_buf(ar: O.Arena, dev: S.Dev, +size: U32) -> O.Found:
 def py_cell(nm: String, +ans: String) -> IO(Unit):
   IO.print(String.concat([nm, " = [", ans, "]   py=[", ans, "]"]))
 
+# A ROW WITH NO `py=` COLUMN. The reader cuts a row at `]   py=[` and keeps the
+# HEAD, so a bracketed column costs the value its closing bracket; a row with NO
+# column is read whole. THE ORACLE PRINTS FIVE ROWS WITH NO COLUMN
+# (`checks/render-gate-oracle.py`'s `_SPLIT`), so a row that wants to be COMPARED
+# with one of them has to be shaped the same way. MEASURED: the two differ by
+# exactly the `]` otherwise, and only on those five.
+def py_nocol(nm: String, +ans: String) -> IO(Unit):
+  IO.print(String.concat([nm, " = [", ans, "]"]))
+
 # THE GATE ROW. A `do IO<Unit>` body cannot bind with `+`, so the fixture is a
 # `def` per rule and this one folds, renders and prints. `py=` is the CPython
 # string for the same tree, so a dropped literal or a moved `cN` is a DIFF.
@@ -3081,21 +3100,25 @@ def main() -> IO(Unit):
     # not. Flipping `acall_repr` back to the dtype tail moves these two and not ACALL.
     IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.Arena.empty(), 0, O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False)")
     IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.Arena.empty(), 0, O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False)")
-    # THE FIVE `arg_repr` ROWS THAT USED TO WRAP.  They were TWO `IO.print`s
-    # each, with the `py=` column indented under the answer on a line of its
-    # own, and a column on a line of its own is not cut by the reader -- so the
-    # port's ANSWER carried the column and CPython's did not, and five rows
-    # disagreed with the oracle about an answer they SHARE.  MEASURED: the port
-    # lane had 49 continuation lines and the oracle's 44, and these five were
-    # exactly the difference; the port's value for them was the oracle's value
-    # plus one line.  `py_cell` is the one row shape now, and its comment says
-    # why the column cannot have a line of its own.
-    py_cell("arg_repr AKern  ", arg_repr(O.Arena.empty(), 0, O.AKernel{O.KernelInfo.of()}))
-    py_cell("arg_repr AProgr ", arg_repr(O.Arena.empty(), 0, O.AProgram{O.ProgramInfo.of()}))
+    # THE FIVE `arg_repr` ROWS THAT USED TO WRAP -- the `py=` column on a line of
+    # its own, which the reader folds into the row above. THEY CARRY NO `py=`
+    # COLUMN NOW, WHICH IS A DIFFERENT FIX FOR A DIFFERENT REASON: `py_cell`
+    # prints `nm = [ans]   py=[ans]`, and the reader cuts the row at `]   py=[`
+    # and KEEPS THE HEAD, so the value it reads is `[ans` with the closing
+    # bracket GONE. The ORACLE prints these five with NO COLUMN
+    # (`checks/render-gate-oracle.py`'s `_SPLIT`), so its value is `[ans]` WITH
+    # the bracket. MEASURED, the two disagree by exactly that one character, and
+    # it is invisible on all seventy-five other rows because those carry the
+    # column on BOTH sides. NOTHING IS LOST: `py_cell` printed the port's own
+    # answer as the column, so the column was a COPY of the answer and not a
+    # second reading of it. The `py=` LITERAL's denominator falls from 80 to 75
+    # and the stale count stays 0 -- over 75 READ rows.
+    py_nocol("arg_repr AKern  ", arg_repr(O.Arena.empty(), 0, O.AKernel{O.KernelInfo.of()}))
+    py_nocol("arg_repr AProgr ", arg_repr(O.Arena.empty(), 0, O.AProgram{O.ProgramInfo.of()}))
     IO.print("ops_repr ADD     = [" ++ O.Ops.name(O.OpsADD{}) ++ "]   py=Ops.ADD")
-    py_cell("arg_repr AParam1", arg_repr(O.Arena.empty(), 0, O.AParam{pa1()}))
-    py_cell("arg_repr AParam2", arg_repr(O.Arena.empty(), 0, O.AParam{pa2()}))
-    py_cell("arg_repr AParam3", arg_repr(O.Arena.empty(), 0, O.AParam{pa3()}))
+    py_nocol("arg_repr AParam1", arg_repr(O.Arena.empty(), 0, O.AParam{pa1()}))
+    py_nocol("arg_repr AParam2", arg_repr(O.Arena.empty(), 0, O.AParam{pa2()}))
+    py_nocol("arg_repr AParam3", arg_repr(O.Arena.empty(), 0, O.AParam{pa3()}))
     IO.print("tag_str  TStr    = [" ++ tag_str(O.TStr{"x"}) ++ "]   py=x")
     IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
     IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")

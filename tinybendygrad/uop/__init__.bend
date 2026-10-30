@@ -7,7 +7,7 @@
 # lines, 15 frozensets). `ops.bend` ALREADY HOLDS THE FIRST TWO AND FOURTEEN OF
 # THE FIFTEEN:
 #
-#   * `Ops` is `ops.bend`'s `type Op is Data` (uop/ops.bend:169 symbol=Op), with the members
+#   * `Ops` is `ops.bend`'s `type Op is Data` (uop/ops.bend:170 symbol=Op), with the members
 #     in `__init__.py`'s declaration order, which is load-bearing --
 #     `__init__.py:12` says "the order of these Ops controls the order of the
 #     toposort", and `ops.bend:62` repeats it.
@@ -16,8 +16,8 @@
 #     FastEnum.__subclasses__()]])`, and `Ops` is the only subclass, so its
 #     whole observable effect is "the values are 1, 2, 3, ... in declaration
 #     order" -- which is what `uop/ops.bend:371 symbol=Ops.value` is. `__str__` and
-#     `__repr__` are both `str(self)`, which is `uop/ops.bend:365 symbol=Ops.name`.
-#   * `GroupOp.Unary .. GroupOp.Comparison` are `uop/ops.bend:448 symbol=GroupOp.unary`.
+#     `__repr__` are both `str(self)`, which is `uop/ops.bend:366 symbol=Ops.name`.
+#   * `GroupOp.Unary .. GroupOp.Comparison` are `uop/ops.bend:449 symbol=GroupOp.unary`.
 #
 # SO WHAT IS LEFT IS `GroupOp.All` (`__init__.py:134`, `All = set(Ops)`), the one
 # member of the file's vocabulary `ops.bend` does not have. It is here because
@@ -65,7 +65,7 @@
 #   * `FastEnum` (the class, not its effect) -- a Python `IntEnum` subclass
 #     mechanism. Its three observable effects are `Ops.value`, `Ops.name` and
 #     the declaration order, and all three are in `ops.bend`.
-#   * `Ops` -- `uop/ops.bend:169 symbol=Op`. Declared here too would be a duplicate
+#   * `Ops` -- `uop/ops.bend:170 symbol=Op`. Declared here too would be a duplicate
 #     constructor declaration, which Bend refuses.
 
 import Base
@@ -79,7 +79,7 @@ def GroupOp.all(op: O.Op) -> Bool:
   True{}
 
 # `len(Ops)` / `len(GroupOp.All)`. CPython: 77 and 77. The BEND-ONLY count is
-# the `Op` type's constructor arity, read off `uop/ops.bend:169 symbol=Op`; the row that
+# the `Op` type's constructor arity, read off `uop/ops.bend:170 symbol=Op`; the row that
 # compares it to CPython is `n_ops` below.
 def n_ops() -> U32:
   77

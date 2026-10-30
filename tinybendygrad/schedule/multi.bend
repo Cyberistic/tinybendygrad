@@ -1081,7 +1081,7 @@ def rd_fires(+r: Rd) -> Bool:
 # the wall (`allreduce.bend`'s, plus two `.cast`s).
 # `S.Dt` is a `Data` record {pri, bits, cls, nm} (tinybendygrad/LAWS/spec.bend:76 symbol=Dt) so equality is
 # NOT structural -- `O.eq_dt` is what `ops.bend` itself uses for a dtype
-# comparison (uop/ops.bend:3760 symbol=UPat.load) and it compares the RANK (`pri`), which is
+# comparison (uop/ops.bend:3798 symbol=UPat.load) and it compares the RANK (`pri`), which is
 # `dtype.py`'s declaration order and is unique per dtype.
 def rd_low_dt(+dt: S.Dt) -> Bool:
   Bool.or(O.eq_dt(dt, S.bfloat16()), O.eq_dt(dt, S.half()))

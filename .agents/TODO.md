@@ -6776,8 +6776,9 @@ rows are three named walls and one blind spot, all stated in the file's footer.
       on `schedule/prepare.bend`, which names `pm_mops` in its header and defines
       nothing** — their op sets are ported here because those are a Python fact and the
       engine's lookup is a Python fact, and no local copy of `_mop_index` was invented;
-      `KernelInfo.estimates` is `ops.bend`'s own NOT-PORTED field and is why
-      `ab7_clik_arg` compares `O.KernelInfo.of()` on BOTH sides; `UOp.device` and
+      `KernelInfo.estimates` is `ops.bend`'s own field -- PORTED 2026-10-30, and it is
+      `None` in every value the port builds because `do_estimates` is a WALL -- and it is
+      why `ab7_clik_arg` compares `O.KernelInfo.of()` on BOTH sides; `UOp.device` and
       `UOp.ranges` are unchanged walls and `ct_8` no longer depends on the first.
 - [x] **41 mutations, 37 sharp, whole-`name=value`-line diff**
       (`.agents/slop/rf2-mutate.py`, raw table `.agents/slop/rf2-mutations.txt`). FIVE
@@ -10324,8 +10325,10 @@ lanes byte-identical, exit 0, twice, on the upstream tree AND on `TG_TREE=.`.
       `case _: False{}` — and that is also why a dtype rename is the silent failure it is.
       **FOUR COMPARATORS ARE WEAKER THAN UPSTREAM'S KEY — reported, NOT fixed, all
       documented boundaries in the port:**
-      1. `eq_kernelinfo` compares 4 of `ops.py:1342`'s **5** `KernelInfo` fields; it
-         drops `estimates` (P5, the renderer's cost model).
+      1. `eq_kernelinfo` compared 4 of `ops.py:1342`'s **5** `KernelInfo` fields; it
+         dropped `estimates` (P5, the renderer's cost model). **CLOSED 2026-10-30:**
+         `KernelInfo` is upstream's SIX fields (`name, applied_opts, opts_to_apply,
+         estimates, beam, optimized`) and `eq_kernelinfo` compares every one.
       2. `eq_programinfo` compares 6 of `ops.py:1351`'s **7** `ProgramInfo` fields; it
          drops `target: Target` (P6). Documented at `ops.bend:988-994`.
       3. `eq_callinfo` compares 4 of `ops.py:1399`'s **5** `CallInfo` fields; it drops
@@ -10610,7 +10613,9 @@ than the thing under test.** Only two were "code was wrong". The rest:
       `eq_arg.ABlob(y: Arg, +n: U32)` — length only.
 - [ ] **Four comparators weaker than upstream's key**: `eq_callinfo` substitutes
       `dtype` for `aux` and **`ops.py:549` reads `arg.aux`**, so it is not
-      inert; `eq_kernelinfo` drops `estimates`; `eq_programinfo` drops `target`;
+      inert; `eq_kernelinfo` drops `estimates` (CLOSED 2026-10-30: the record is
+      upstream's six fields and the comparator reads every one); `eq_programinfo` drops
+      `target`;
       `eq_pyrange` compares `H.I64` against a key holding `float|int|bool`.
 - [ ] **Five `dd_band` call sites pass `O.Found.i(...)` as the mask** — the A1
       species. Their rows AGREE, which is coincidence or latent, not evidence.
@@ -11064,7 +11069,9 @@ list (M8, 34); `z3_lt`, z3's `a < n` -> `n > a` canonicalisation (M9, 5).
       The four records the sweep called "weak comparators" are **not** weak comparators:
       `eq_callinfo`/`eq_kernelinfo`/`eq_programinfo` compare **every field their record has**,
       and the RECORDS are one field short of upstream's frozen dataclasses
-      (`CallInfo` 4/5 at `ops.bend:1000` vs `ops.py:1400`; `KernelInfo` 4/5 vs `ops.py:1342`;
+      (`CallInfo` 4/5 at `ops.bend:1000` vs `ops.py:1400`; `KernelInfo` was 4/5 vs
+      `ops.py:1342` and is now 6/6 vs `ops.py:1332` -- the `optimized` field landed
+      upstream on 2026-10-15 and `estimates` on 2026-10-06, and the port has both;
       `ProgramInfo` 6/7 vs `ops.py:1352`). `aux` is dropped from the RECORD, and
       `ops.py:549` reads it. **Reported, not fixed**: widening a record reaches past this file
       (9+18, 7+19, 9+9 sites) and I own one file. All four are `#bend_only_` in
@@ -12094,6 +12101,8 @@ costs **zero hand-written nodes**, where `g_lin` cost 46.
   `conv` needs DIV and works around it by never emitting one. One line, single-ownership file.
 - **`KernelInfo` has 4 fields against CPython's 5** (`estimates`, ops.bend:915) and **`CallInfo` 4
   against 3** (`dtype`, ops.bend:1010). Both make those args unable to agree, by construction.
+  **THE `KernelInfo` HALF IS CLOSED (2026-10-30): the record is upstream's SIX fields and
+  `eq_kernelinfo` compares every one. The `CallInfo` half stands.**
 - **`gate.mark` (schedule/__init__.bend:1268) is 0 on every real graph** -- all six specs store a
   rewritten EXPRESSION, never a CONST, and `gate.digit` codes only 1/2/3. Its `fx*_marks` rows only
   ever see hand-built fixtures.
@@ -25968,6 +25977,34 @@ the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE
         **CORPUS **IS **35/36** **AND **THE **DEFECT **IS **NAMED.**  **⇒ AND **A **GRAPH **THAT **DISAGREEs **IS
         **A **GRAPH **THE **CORPUS **DOES **NOT **CERTIFY**, **AND **THE **TRADE **IS **RECORDED**: **THE
         **OPERATION **LAYER, **WHICH **WAS **100% **UNREACHED**, **IS **NOW **REACHED.**
+  - [x] **THE **`api` **GRAPH's **`ParamArg.slot` **DEFECT **IS **FIXED, **AND **THE **CORPUS **IS **36/36
+        **(2026-10-30).**
+        **⇒ AND **THE **ROOT **CAUSE: **THE **COMMENT's **ARGUMENT **WAS **WRONG, **NOT **THE **IMPLEMENTATION.**
+        **`uop/ops.bend:1380`** **SAID **"THE **ARENA's **LENGTH **IS **THAT **COUNTER"**, **AND **AN **ARENA's
+        **LENGTH **COUNTS **EVERY **NODE **WHILE **UPSTREAM's **`UOp.unique_num`** (**`ops.py:820`**,
+        **`itertools.count(0)`**) **IS **SPENT **AT **EXACTLY **THREE **SITES** (**`ops.py:839`** **`new_buffer`**,
+        **`:1191`** **`alloc`**, **`:1199`** **`placeholder`**) **AND **COUNTS **ALLOCATIONS.**  **⇒ AND **THE
+        **PORT's **`cr_alloc`** **NOW **COUNTS **THE **ALLOCATION **NODES **IN **ITS **ARENA** — **UPSTREAM's
+        **COUNTER **SCOPED **TO **THE **ARENA.**
+        **⇒ AND **THE **`api` **GRAPH **NOW **AGREEs**: **MEASURED **ON **ALL **36 **GRAPHS, **`api` **IS **THE
+        **ONLY **ONE **THAT **MOVED** — **`DISAGREE` **→ **`AGREE`**, **AND **THE **OTHER **35 **ARE **UNCHANGED.**
+        **⇒ AND **`checks/differ.py`'s **`WANT`** **IS **EMPTY **AGAIN** — **THE **TABLE's **FIRST **EXCEPTION
+        **IS **GONE** — **AND **`POPULATION_PIN` **DID **NOT **MOVE** (**MEASURED**: **THE **PIN **IS **A
+        **CONTENT **HASH **OVER **THE **POPULATION's **FIXTURES**, **AND **NO **FIXTURE **CHANGED**).
+        **⇒ AND **THE **GATE **IS **NEW: **`gates/alloc_slot-gate.py`** (**6 **ROWS, **2 **LANES**) **IS **rc=0
+        **WITH **THE **FIX **AND **`DISAGREE (bd): n=5 of 5 rows`** **WITHOUT **IT** — **MEASURED **BY
+        **RESTORING **`creation.bend` **TO **ITS **PRE-FIX **BYTES**.  **THE **TWO **ROWS **IT **SHOWS **ARE
+        **`alloc_one_empty`** (**CPython **`0`**, **PORT **`1`**) **AND **`alloc_two_same_scope`** (**CPython
+        **`0,1`**, **PORT **`1,8`** — **THE **`8` **IS **THE **NODE **COUNT**, **WHICH **IS **THE **DEFECT**).
+        **⇒ AND **THE **WALL **IS **MEASURED **AND **DECLARED: **TWO **ALLOCATIONS **IN **TWO **SEPARATE
+        **SCOPES **ARE **SLOTS **`0` **AND **`1`** **UPSTREAM **AND **`0` **AND **`0`** **IN **THE **PORT** — THE
+        **ROW **`alloc_two_scopes`** **IS **PORT-ONLY**, **BECAUSE **THE **PORT **CANNOT **MINT **A
+        **PROCESS-GLOBAL **COUNTER** (**ONE **ARENA **PER **METHOD**).**
+        **⇒ AND **THE **TWO **CREATION **GATES' **PORT **LANES **ARE **BYTE-IDENTICAL **BEFORE **AND **AFTER
+        **THE **FIX** (**MEASURED**: **`gates/cr_graph_census.bend` **AND **`gates/crp_graph_census.bend`**).
+        **⇒ AND **`gates/cr_graph_census-gate.py` **IS **RED **AT **HEAD** **AND **WAS **NOT **REDDENED **BY
+        **THIS**: **ITS **`empty_v4`** **PIN **HAS **DRIFTED** **ON **THE **CPYTHON **SIDE** **AND **IT **IS **A
+        **PRE-EXISTING **FAILURE** (**MEASURED **AT **`HEAD`**, **WITHOUT **THE **FIX**).
   - [x] **THE **NEGATIVE-INDEX **PARITY **GAP **IS **FOUND **AND **FIXED (2026-10-30, `6c3d059e1`).**
         **⇒ AND **`UOp(Ops.INDEX, src=(STACK(3,5,7), CONST(-1)))`: **UPSTREAM's **`mop_cleanup`** **REWRITES
         **IT **TO **`CONST 7`** (**PYTHON's **LIST **INDEX **READS **FROM **THE **END**), **AND **THE **PORT
@@ -26025,3 +26062,100 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
         **FIXED **TWICE **FIRST** (**A **LEXICAL **REGEX **STOPPED **AT **THE **FIRST **`}`**, **AND **A
         **COMMENT **BETWEEN **TWO **FIELDS **WAS **READ **AS **A **FIELD **NAME**), **AND **BOTH **WRONGS **WERE
         **FOUND **BY **THE **CENSUS **DISAGREEING **WITH **THE **TREE**, **NOT **BY **ARGUMENT.**
+
+## Session 2026-10-30 — `KernelInfo` is upstream's SIX fields, and the `AKern` row CANNOT agree with the oracle that answers it
+
+- [x] **`tinybendygrad/uop/ops.bend`: `KernelInfo` IS UPSTREAM'S SIX FIELDS, IN UPSTREAM'S ORDER.**
+      `name, applied_opts, opts_to_apply, estimates, beam, optimized` -- upstream's
+      `tinygrad/uop/ops.py:1332-1338` (the vendored `5c2bf39d6`). `estimates` is
+      `Maybe<&2, Estimates>` and `optimized` is `Bool`.
+      **⇒ AND `estimates` NEEDED A NEW FILE, BECAUSE BEND REFUSES AN IMPORT CYCLE.**
+      MEASURED, `a.bend` importing `b.bend` while `b.bend` imports `a.bend` answers
+      "an import cycle through .../a.bend". Upstream breaks the same cycle under
+      `TYPE_CHECKING` (`tinygrad/uop/ops.py:26`), and Bend has no such thing, so the
+      record lives in a LEAF -- **`tinybendygrad/renderer/estimates.bend`**, which
+      imports `Base` and nothing else. `renderer/__init__.bend` and `uop/ops.bend`
+      both import it, and `uop/render.bend` imports it too because it PRINTS the
+      field. **`Estimates.str` is in the leaf so the ONE spelling is shared by the
+      renderer's row and `KernelInfo`'s repr.**
+      **⇒ AND `eq_kernelinfo` NOW COMPARES ALL SIX.** MEASURED upstream,
+      `KernelInfo() == KernelInfo(optimized=True)` is False and
+      `KernelInfo() == KernelInfo(estimates=Estimates(1,2,3))` is False, and
+      `eq_arg` IS THE UCACHE KEY.
+
+- [x] **`tinybendygrad/uop/render.bend`: `akernel_repr` PRINTS `optimized`, IN UPSTREAM'S ORDER.**
+      MEASURED against the materialised upstream HEAD: the port's answer is
+      byte-identical to `repr(KernelInfo())` --
+      `KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None,
+      beam=0, optimized=False)`.
+
+- [x] **`checks/rn-gate.py`: 75/80 -> 79/80, AND THE `AKern` ROW IS A HARD WALL, NOT A PORT DEFECT.**
+      **BEFORE:** `gated 80 agree 75 disagree ['arg_repr AKern', 'arg_repr AParam1',
+      'arg_repr AParam2', 'arg_repr AParam3', 'arg_repr AProgr']`.
+      **AFTER:** `gated 80 agree 79 disagree ['arg_repr AKern']`.
+      **⇒ AND THE FIVE ROWS HAD *TWO* CAUSES, NOT ONE.** The brief said `optimized`
+      was the ONLY reason, and that is **MEASURED FALSE on 4 of the 5**: `AParam1`,
+      `AParam2`, `AParam3` and `AProgr` do not mention `KernelInfo` at all. Their
+      difference was ONE CHARACTER -- the `]` that `rn-gate.py`'s separator `]   py=[`
+      opens with. **MEASURED**: `row_strict` does `text.rpartition(SEP)` and KEEPS
+      THE HEAD, so a bracketed `py=[...]` column costs the value its closing bracket;
+      the ORACLE prints those five with NO column
+      (`checks/render-gate-oracle.py`'s `_SPLIT`), so ITS value is `[ans]` WITH the
+      bracket. **⇒ THE PORT's FIVE ROWS NOW CARRY NO `py=` COLUMN** (`py_nocol`), and
+      NOTHING IS LOST because `py_cell` printed the port's OWN answer as the column,
+      so the column was a COPY of the answer. The `py=` LITERAL's denominator falls
+      from 80 to 75 and the stale count stays 0 -- over 75 READ rows.
+      **⇒ AND THE PROJECT's CANONICAL READER SEES THE SAME THING.** MEASURED with
+      `.agents/slop/rebase-gate.py`'s `row()` (which KEEPS the `]`, `value[:i+1]`),
+      the four rows AGREE and only `AKern` disagrees.
+      **⇒ AND `AKern` CANNOT AGREE, AND THE REASON IS THE ORACLE's SUBJECT.** The
+      oracle's subject is DISCOVERED as the newest upstream revision whose
+      `ParamArg` has NO `size` AND whose `UOp.toposort` still enters CALL bodies --
+      `d5059900d7` (2026-10-07). MEASURED with the oracle's OWN detectors over all
+      888 revisions that touch `tinygrad/uop/ops.py`: **8 have `optimized` in
+      `KernelInfo` and ALL 8 FAIL the `toposort` property** (`enter_calls=False`,
+      flipped 2026-10-09 by `efb4cc8cb`, six days BEFORE `optimized` landed on
+      2026-10-15). **⇒ NO UPSTREAM REVISION IS BOTH, so the oracle can never answer
+      `optimized`.** MOVING THE SUBJECT WOULD COST FOUR ROWS: the four
+      `pyr_call_*` rows NEED the CALL bodies walked.
+      **⇒ AND THE ORACLE's OWN HEADER SAYS SO**: "the pin's `KernelInfo` has an
+      `optimized` field ... so the pin's `ops.py` answers `arg_repr AKern` and
+      `arg_repr AProgr` DIFFERENTLY FROM THE PORT". **⇒ THE FIX FOR THE OWNER OF
+      `checks/render-gate-oracle.py` IS ITS OWN SPLICE MECHANISM**: it already
+      splices `consumer_map_from_toposort` into the materialised `ops.py`, and
+      `optimized` can be spliced the same way.**
+
+- [x] **`gates/bendcite-gate.py`: 210 -> 80 FAILING POINTERS, AND NONE OF THE 80 IS MINE.**
+      **THE CAUSE:** `ops.bend` gained 42 lines, `render.bend` 23 and `realize.bend`
+      2, and EVERY `.bend` -> `.bend` LINE citation into those files ROTED. MEASURED:
+      987 of `ops.bend`'s declarations moved, by 1, 11, 12, 16, 20, 37, 38, 39 or 42
+      lines. **⇒ 130 pointers were RE-POINTED, in 40 files, and 39 of them are
+      COMMENT-ONLY** (the fortieth is a citation inside a `def`'s STRING literal, and
+      it moves with the code). The re-point is the tree's own established practice
+      (`9b1e3aa53 bendcite: FOUR POINTERS RE-DERIVED, because ANOTHER UNIT MOVED
+      mixin/rand.bend`), and 91 of the 130 already carried a `symbol=` field.
+      **⇒ AND A LINE-NEUTRAL EDIT WAS IMPOSSIBLE AND MEASURED SO**: the record must
+      GAIN two fields, the accessors must GAIN two, and `eq_estimates` must be
+      ADDED, so `ops.bend` cannot be net-zero -- and EVERY line saved is a pointer
+      that does not rot, so the comments were COMPRESSED anyway (`ops.bend` +70/-18
+      became +60/-18).
+      **⇒ AND THE REMAINING 80 ARE ALL OTHER UNITS' FILES**: `references/bend/bend2/
+      base.bend` (32, an UNTRACKED clone), `mixin/creation.bend` (27),
+      `schedule/indexing.bend` (15), `uop/weak.bend` (3), `schedule/__init__.bend`
+      (3). NONE is in `uop/ops.bend`, `uop/render.bend`, `engine/realize.bend`,
+      `schedule/rangeify.bend`, `renderer/__init__.bend` or `renderer/estimates.bend`.
+
+- [x] **`checks/port-compile-gate.py`: `findings=0`, `unmeasured=0`, 176 files.**
+      167 COMPILES + 5 COLD-BY-DESIGN (`LAWS.bend`, `PROOF.bend`, `PROOF2.bend` by
+      their own TODO declaration, and two more). `tinybendygrad/LAWS/PROOF-ALL.bend`
+      answers `ALL PROOFS CHECK` -- the AGGREGATE, which is the only correct entry
+      point; `PROOF.bend` and `PROOF2.bend` are HALF-BOOKS and each shows the
+      other's laws as open.
+      **⇒ AND THE CORPUS MUST BE RE-RUN: `substrate_digest()` MOVED.**
+      MEASURED, the live digest is `5ad5e430158195fbf0368ecc206101460f82588a28317374c0f17150590d0d5f`
+      and the recorded run's `substrate-end` is `0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`.
+      **`checks/differ.py`'s `POPULATION_PIN` DOES NOT MOVE** -- it is a content pin
+      over `graphcmp.GRAPHS`' SOURCE, and no graph's source changed: MEASURED,
+      `population_digest()` is still `ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`
+      and `population_bad()` is `[]`. **⇒ AND `WANT` IS `{}`**, so the `api` graph
+      is already expected to AGREE and no exception moves.

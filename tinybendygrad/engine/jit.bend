@@ -90,7 +90,7 @@
 # TWO MEASURED FACTS ABOUT THE RECORD RULES, because the notes disagree with the compiler and
 # this file is built on the compiler's answer.
 #   * A `Data` record CAN hold a `Maybe` field. `Slot{slot, nm: Maybe<&2, String>}` in
-#     engine/realize.bend:1431 symbol=rz_tab_rej checks. The standing "a `Data` record cannot hold a `Maybe` field"
+#     engine/realize.bend:1433 symbol=rz_tab_rej checks. The standing "a `Data` record cannot hold a `Maybe` field"
 #     note is not true of 2.0.34; what IS true is the narrower `device.bend` rule 6 -- a
 #     `Data` FIELD may not be a `match` SCRUTINEE.
 #   * A `Data` FIELD may not be scrutinised and `+` cannot be spelled on a `Maybe`, so every

@@ -69,7 +69,7 @@
 #
 # SO THE PORT'S `item` READS A VALUE FROM THE ONE PLACE A VALUE EXISTS, and
 # REFUSES, BY NAME, EVERYWHERE ELSE. The one place is a CONST node: its arg is
-# `APy{v}` (`uop/ops.bend:1222`) and `v` is an `O.Const`
+# `APy{v}` (`uop/ops.bend:1234`) and `v` is an `O.Const`
 # (`uop/ops.bend:799-803`) -- `CBool`/`CInt`/`CFloat`. That is the port's
 # `PyConst`, which is exactly what upstream's `item` returns.
 #
@@ -142,7 +142,7 @@ type Itm is Data:
 # not a literal at each use site so that the string is ONE string.
 def nn_item_wall() -> String:
   String.concat([
-    "NO-READ: no live Buffer in the port (uop/ops.bend:174 symbol=OpsBUFFER is the ONLY Buffer-named construct and it is the OP, not an allocated object); realize.py:145",
+    "NO-READ: no live Buffer in the port (uop/ops.bend:175 symbol=OpsBUFFER is the ONLY Buffer-named construct and it is the OP, not an allocated object); realize.py:145",
     " exec_copy -- the device-to-host _copyout -- is a foreign effect (engine/realize.bend:966 symbol=rz_est_is_copy RECOGNISES the copy and BUILDS NO Estimates, so there is no copyout)"])
 
 # ===========================================================================
@@ -177,7 +177,7 @@ def nn_item_numel(+t: T.Tensor) -> U32:
   H.prod_u32(nn_item_dims(M.mo_dims(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))))
 
 # ===========================================================================
-# 2. THE VALUE. A CONST node's arg is `APy{v}` (`uop/ops.bend:1222`) and `v`
+# 2. THE VALUE. A CONST node's arg is `APy{v}` (`uop/ops.bend:1234`) and `v`
 # is an `O.Const` (`uop/ops.bend:799-803`).
 #
 # `match` MAY NOT SCRUTINISE A COMPUTED VALUE, AND NOT A LET-BOUND ONE
@@ -306,7 +306,7 @@ def nn_item_show.v(v: O.Const) -> String:
     case O.CFloat{f}: H.f32_show(f)
     case O.CInt{i}: H.i64_dec(i)
     case O.CBool{b}: Bool.show(b)
-    # `CInvalid` IS THE PORT'S POISON (`uop/ops.bend:803`) and Python CANNOT
+    # `CInvalid` IS THE PORT'S POISON (`uop/ops.bend:804`) and Python CANNOT
     # BUILD ONE -- `dtypes.invalid` only exists inside the compiler -- so
     # upstream has NO answer for `item()` on it. The port says so by name
     # rather than printing a number it does not have.

@@ -85,8 +85,8 @@
 # 1. THE UOP ARENA -- THE REASON THAT STOOD HERE WAS FALSE. MEASURED 2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:298`;
 #    `uop/spec.bend:2725 symbol=kernel_graph_rewrite` `kernel_graph_rewrite`),
 #    `UOp.toposort` IS a def
-#    (`uop/ops.bend:3366 symbol=UOp.toposort`), and the port writes rules as `pm_*` defs over
-#    `PMEntrys` returning `Maybe<&2, U32>` / `Verdict` (`uop/ops.bend:4009 symbol=PMEntrys`,
+#    (`uop/ops.bend:3404 symbol=UOp.toposort`), and the port writes rules as `pm_*` defs over
+#    `PMEntrys` returning `Maybe<&2, U32>` / `Verdict` (`uop/ops.bend:4047 symbol=PMEntrys`,
 #    `:4033 symbol=Verdict`). So "every UPat/PatternMatcher/toposort reads and writes the UOp
 #    graph" is NOT the blocker. The real blocker per rule is the absent symbol
 #    its body calls: the SHAPED `UOp.param` (only the shape-less arm is ported,
@@ -107,8 +107,8 @@
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:423   `pm_lift_deps` symbol=pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
 
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:452   -- BLOCKED: needs the shaped `UOp.param` and
-#    `UOp.substitute` (uop/ops.bend:513 symbol=GroupOp.commutative, open TODO) -- the row `pm_lift`.
-#    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`) -- the row `pm_encode`.
+#    `UOp.substitute` (uop/ops.bend:514 symbol=GroupOp.commutative, open TODO) -- the row `pm_lift`.
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:458   -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1157`) -- the row `pm_encode`.
 #    TODO(p3) runtime/support/hcq2.py:552  symbol=hcq_link -- `Compiled.pm_link` -- the link matcher upstream declares at module level (upstream line 478) and rewrites with in `hcq_link`.
 #
 #    THREE NAMES THAT WERE ON THIS LIST AND ARE NOT ANY MORE, each because

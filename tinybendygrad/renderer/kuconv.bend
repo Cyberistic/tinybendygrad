@@ -37,8 +37,8 @@
 #   | `numel`     | `u.max_numel()` (movement.py:55)| `prod(shape)` of the fold's shape  |
 #   | `shape`     | `u.shape` (movement.py:35)      | `F.fold.shape(ar, tb, i)` (fold.bend:4827) |
 #     the port's reader for `shape` is fold.bend:4827 symbol=fold.shape
-#   | `arg`       | `u.arg`  (ops.py:253)           | `O.Arena.arg(ar, i)` (ops.bend:1388) |
-#   | `srcs`      | `u.src`  (ops.py:253)           | `O.Arena.srcs(ar, i)` (ops.bend:1394), RE-INDEXED |
+#   | `arg`       | `u.arg`  (ops.py:253)           | `O.Arena.arg(ar, i)` (ops.bend:1400) |
+#   | `srcs`      | `u.src`  (ops.py:253)           | `O.Arena.srcs(ar, i)` (ops.bend:1406), RE-INDEXED |
 #   the durable pointer for the `dtype` row is uop/fold.bend:4833 symbol=fold.dt
 # THE `arg` MAPPING, ONE ROW PER `O.Arg` VARIANT THE RENDERER READS:
 #
@@ -56,7 +56,7 @@
 # `AOpLit` IS UPSTREAM's `idx.arg == Ops.ADD` TEST (`cstyle.py:174`): the
 # INDEX's OWN arg is a BARE `Ops`, and upstream's `ops.py:432` stores it as
 # `arg=Ops.ADD`.  THE PORT SPELLS A BARE `Op` AS `AOpLit{op}`
-# (`uop/ops.bend:1235` symbol=AOpLit), AND THE CONVERTER COMPARES IT TO `OpsADD` ITSELF.
+# (`uop/ops.bend:1247` symbol=AOpLit), AND THE CONVERTER COMPARES IT TO `OpsADD` ITSELF.
 #
 # `AInt` IS THE OTHER INDEX FORM: UPSTREAM's INDEX CARRIES AN INTEGER OFFSET
 # WHEN IT IS NOT AN `Ops.ADD` (`ops.py:432`'s `arg` is `int` for the offset

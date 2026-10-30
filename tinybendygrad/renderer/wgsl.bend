@@ -20,7 +20,7 @@
 #
 # `ops.bend` named the sugar in its own NOT PORTED block (`UOp.cast`,
 # `UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`, `UOp.where` were all
-# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:2970` symbol=UOp.cast, the
+# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:3008` symbol=UOp.cast, the
 # always-builds-new shape (no identity check), gated at `gates/uop_cast-gate.py`
 # 8/8 rows. The FOLD the identity check needs (`dtype_from_uop`) is the same FOLD
 # the remaining four (`UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`) need:
@@ -85,7 +85,7 @@
 #       rather than a formatter. No `f32_repr` is ported because no def here
 #       calls one.
 #   (b) ParamArg's addrspace. Python's is `AddrSpace|None` and a `None` prints
-#       as `addrspace=None`; ops.bend:1515 symbol=ParamArg.addrspace spells it `S.Addr` with no None arm, so
+#       as `addrspace=None`; ops.bend:1527 symbol=ParamArg.addrspace spells it `S.Addr` with no None arm, so
 #       a port that printed it would print a space where Python prints `None`.
 #       render.bend:341-343 measured and recorded this. HERE it costs nothing:
 #       `is_packed` reads `buf_uop.addrspace != AddrSpace.REG` and

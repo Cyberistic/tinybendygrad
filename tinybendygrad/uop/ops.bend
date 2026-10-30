@@ -166,6 +166,7 @@
 import Base
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
+import ./../renderer/estimates.bend as E
 type Op is Data:
   # ** 1 -- defines/special **
   # this is a RANGE for GPU dimensions, similar to symbolic shapes but not exactly
@@ -980,9 +981,19 @@ def OPT.arg(x: OPT) -> OPTARG:
 # they read UOps.
 # ===========================================================================
 
-# KernelInfo -- ops.py:1339. `estimates: Estimates|None` is NOT PORTED:
-# `Estimates` is `tinygrad.renderer`'s cost model, P5. A field the port cannot
-# read is a field that would silently always be None.
+# KernelInfo -- ops.py:1339. SIX FIELDS, UPSTREAM'S SIX, IN UPSTREAM'S ORDER:
+# `name, applied_opts, opts_to_apply, estimates, beam, optimized`.
+#
+# `estimates` IS PORTED AS A FIELD. `Estimates` is `tinygrad.renderer`'s cost
+# model, so the record lives in `renderer/estimates.bend` -- A LEAF -- because
+# upstream's own `ops.py:26` imports it under `TYPE_CHECKING` and Bend REFUSES
+# AN IMPORT CYCLE. The value is `None` in every `KernelInfo` this port builds,
+# because `do_estimates` -- upstream's only writer, `codegen/__init__.py:446` --
+# is a WALL in `codegen/kernel.bend`. `optimized` is `False` in every one too:
+# upstream's only writer is `runtime/support/hcq2.py:295` and the port's
+# `hcq2.bend` builds no `KernelInfo`. A FIELD THAT IS ALWAYS ABSENT IS NOT A
+# LIE; A MISSING FIELD IS -- the record was FOUR against upstream's SIX, so
+# `repr` could not answer CPython's.
 #
 # `applied_opts`/`opts_to_apply` ARE `List<&2, OPT>` and not `List<&2, U32>`:
 # upstream's elements are `Opt` dataclasses (pin ops.py:1342,1343 `tuple`), and
@@ -993,11 +1004,12 @@ def OPT.arg(x: OPT) -> OPTARG:
 # and the CONTENT was unobservable -- MEASURED, changing a fixture's payload `0` to
 # `7` moved no byte. `OPT` now lives above.
 type KernelInfo is Data:
-  KernelInfo{name: String, applied_opts: List<&2, OPT>, opts_to_apply: Maybe<&2, List<&2, OPT>>, beam: U32}
+  KernelInfo{name: String, applied_opts: List<&2, OPT>, opts_to_apply: Maybe<&2, List<&2, OPT>>,
+    estimates: Maybe<&2, E.Estimates>, beam: U32, optimized: Bool}
 
 def KernelInfo.of() -> KernelInfo:
   # name: str = "test"            # name of the kernel
-  KernelInfo{"test", Nil{}, None{}, 0}
+  KernelInfo{"test", Nil{}, None{}, None{}, 0, False{}}
 
 # `Target` -- tinygrad/helpers.py:198. `device, renderer, arch, interface, indices`,
 # and the port spells `interface` as `iface` (which is what
@@ -1483,7 +1495,7 @@ def ParamArg.slot(x: ParamArg) -> U32:
 # the two. `from_buffer` is P6, so nothing collides today; saying it now costs one
 # line and a wrong sentinel costs a miscompiled buffer later.
 #
-# WHY NOT 0: `Arena.empty` spends arena index 0 on the bottom (ops.bend:1356 symbol=Arena.empty), so
+# WHY NOT 0: `Arena.empty` spends arena index 0 on the bottom (ops.bend:1368 symbol=Arena.empty), so
 # `unique_num` starts at 1 and 0 is a REACHABLE real slot. `codegen/kernel.bend:278 symbol=u32_none`
 # already argues this for its own copy.
 #
@@ -1557,19 +1569,27 @@ def ParamArg.of(slot: U32, dtype: S.Dt) -> ParamArg:
 
 def KernelInfo.name(x: KernelInfo) -> String:
   match x:
-    case KernelInfo{name, applied_opts, opts_to_apply, beam}: name
+    case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized}: name
 
 def KernelInfo.applied_opts(x: KernelInfo) -> List<&2, OPT>:
   match x:
-    case KernelInfo{name, applied_opts, opts_to_apply, beam}: applied_opts
+    case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized}: applied_opts
 
 def KernelInfo.opts_to_apply(x: KernelInfo) -> Maybe<&2, List<&2, OPT>>:
   match x:
-    case KernelInfo{name, applied_opts, opts_to_apply, beam}: opts_to_apply
+    case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized}: opts_to_apply
+
+def KernelInfo.estimates(x: KernelInfo) -> Maybe<&2, E.Estimates>:
+  match x:
+    case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized}: estimates
 
 def KernelInfo.beam(x: KernelInfo) -> U32:
   match x:
-    case KernelInfo{name, applied_opts, opts_to_apply, beam}: beam
+    case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized}: beam
+
+def KernelInfo.optimized(x: KernelInfo) -> Bool:
+  match x:
+    case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized}: optimized
 
 # `to_function_name` is NOT PORTED, so `function_name` is the name unchanged.
 # helpers.py:156 is `''.join([c if c in (letters+digits+'_') else
@@ -2052,11 +2072,29 @@ def eq_paramarg(x: ParamArg, y: ParamArg) -> Bool:
         Bool.and(eq_opt_u32(buffer, b2), Bool.and(eq_bool(bind_on_realize, br2),
           eq_opt_pynest(val, w2))))))))))))
 
+# `KernelInfo` IS A FROZEN DATACLASS UPSTREAM, so its equality is ALL SIX
+# FIELDS -- MEASURED, `KernelInfo() == KernelInfo(optimized=True)` is False and
+# `KernelInfo() == KernelInfo(estimates=Estimates(1,2,3))` is False. `eq_arg` IS
+# THE UCACHE KEY, so a comparator that skipped the two would answer True where
+# CPython answers False.
+def eq_estimates(x: E.Estimates, y: E.Estimates) -> Bool:
+  match x y:
+    case E.Estimates{o, l, m} E.Estimates{o2, l2, m2}:
+      Bool.and(U32.is_eq(o, o2), Bool.and(U32.is_eq(l, l2), U32.is_eq(m, m2)))
+
+def KernelInfo.eq_estimates(x: Maybe<&2, E.Estimates>, y: Maybe<&2, E.Estimates>) -> Bool:
+  match x y:
+    case None{} None{}: True{}
+    case Some{a} Some{b}: eq_estimates(a, b)
+    case None{} Some{b}: False{}
+    case Some{a} None{}: False{}
+
 def eq_kernelinfo(x: KernelInfo, y: KernelInfo) -> Bool:
   match x y:
-    case KernelInfo{name, applied_opts, opts_to_apply, beam} KernelInfo{n2, o2, p2, b2}:
+    case KernelInfo{name, applied_opts, opts_to_apply, estimates, beam, optimized} KernelInfo{n2, o2, p2, e2, b2, op2}:
       Bool.and(String.eq(name, n2), Bool.and(eq_opts(applied_opts, o2),
-        Bool.and(KernelInfo.eq_opts(opts_to_apply, p2), U32.is_eq(beam, b2))))
+        Bool.and(KernelInfo.eq_opts(opts_to_apply, p2), Bool.and(KernelInfo.eq_estimates(estimates, e2),
+        Bool.and(U32.is_eq(beam, b2), eq_bool(optimized, op2))))))
 
 # `eq_target` -- the SEVENTH field's comparator. `Target` is a frozen dataclass
 # upstream, so its equality is the five strings, and the port's `Target` is a
@@ -2739,7 +2777,7 @@ def UOp.new(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> F
   UOp.new.of(ar, UOp.make(ar, op, src, arg, tag), op, src, arg, tag)
 
 # ===========================================================================
-# MERGING TWO ARENAS. `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1293 symbol=Arena`), so a
+# MERGING TWO ARENAS. `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1305 symbol=Arena`), so a
 # `Found` SNAPSHOTS the arena it was built in and an index is legal only in an arena
 # DESCENDING FROM the one that minted it. Two tensors built from two `Arena.empty()`
 # values are SIBLINGS with no common ancestor, and there was no way to name both in
@@ -3051,12 +3089,12 @@ def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
   [shape_to_shape_arg(ar, n)]
 
 # `UOp.new.param` IS THE ONLY SAFE WAY TO BUILD ONE OF THESE THREE NODES, and
-# `param_src` is NOT. An `Arena` is an immutable `Data` VALUE (`ops.bend:1293 symbol=Arena`), so
+# `param_src` is NOT. An `Arena` is an immutable `Data` VALUE (`ops.bend:1305 symbol=Arena`), so
 # `shape_to_shape_arg` -- which hands back `Found.i(...)` and DROPS the arena it interned
 # the size node into -- returns an index into an arena the caller does not hold. The
 # caller then interns the node into the arena it DOES hold, where that index names
 # nothing, and `Arena.src0` reads the arena BOTTOM. `Arena.src(ar, i, 0)` answers
-# `Maybe.default(..., 0)` (`uop/ops.bend:1377 symbol=Arena.at.go`), so there is no error: the node comes out
+# `Maybe.default(..., 0)` (`uop/ops.bend:1389 symbol=Arena.at.go`), so there is no error: the node comes out
 # pointing at INDEX 0 or at ITSELF.
 #
 # MEASURED, `gates/../sizetosrc/paramsrc_probe.bend` over both spellings on one BUFFER:
@@ -3119,10 +3157,10 @@ def ParamArg.size(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # `ARange` is read and written POSITIONALLY by eleven committed files:
 #     schedule/rangeify.bend:2116 symbol=ren_axis0.go   schedule/multi.bend:611 symbol=mu_at_of.go
 #     schedule/indexing.bend:687,692     codegen/late.bend:910,1000,1573,1796-1798
-#     uop/render.bend:731 symbol=arg_repr              uop/spec.bend:363 symbol=arg_axis.go
+#     uop/render.bend:741 symbol=arg_repr              uop/spec.bend:363 symbol=arg_axis.go
 #     uop/fold.bend:2288,2300            uop/validate.bend:1601
 #     uop/fold2_work.bend:2280,2292      uop/fold_mm_work.bend:2280,2292
-#     uop/upat.bend:396 symbol=arg_int                engine/realize.bend:1727 symbol=rz_is_devrng.ax
+#     uop/upat.bend:396 symbol=arg_int                engine/realize.bend:1729 symbol=rz_is_devrng.ax
 # Flipping the field order here would break all twenty-nine of those sites and leave
 # six files I do not own red. It is a TWO-FILE change that has to be sequenced, not a
 # one-file rebase, and `.agents/UPSTREAM-PIN.md` outcome 2 ("re-verify, no change") is
@@ -3192,7 +3230,7 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
 # honest answer, not a nested list). What is missing is that `t_rng_row`'s four rows
 # are only ever fed DEPTH-0 fixtures -- `rng_twoid` builds with `UOp.range_end`, so
 # `axid_twoid=(0,1)/len=2` gates only the flat case, and no row routes a depth-1
-# arg through here. Adding one means a depth-aware `AxIds` (uop/ops.bend:4941 symbol=UOp.split_uop.pop, one def,
+# arg through here. Adding one means a depth-aware `AxIds` (uop/ops.bend:4979 symbol=UOp.split_uop.pop, one def,
 # ONE call site) plus a matching row in `.agents/slop/ops-oracle.py`, and that oracle
 # is a BYTE DIFF whose row order is documented as matching EXACTLY -- so a row added
 # here and not there is a diff, not a silent gap. Hence not done blind.
@@ -4423,7 +4461,7 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> 
 #     new_args = (kwargs.pop("op", self.op), kwargs.pop("src", self.src), kwargs.pop("arg", self.arg), kwargs.pop("tag", self.tag))
 #     if (self.op, self.src, self.arg, self.tag) == new_args: return self
 #     return UOp(*new_args)
-# so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in the tag slot -- which is `ops.bend:895 symbol=TNone`'s inline `replace`, already written.
+# so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in the tag slot -- which is `ops.bend:896 symbol=TNone`'s inline `replace`, already written.
 #
 # THE MINT IS EAGER, and that is safe rather than lazy. `Bool.pick` CHOOSES an arm
 # and does not SEQUENCE one, so the `UOp.new` runs on both paths. For an
@@ -4478,7 +4516,7 @@ def pm_sub_m(+ctx: Map<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 #
 # THE TAG IS GLOBAL AND THE TABLE IS NOT. Every `PMEntry` in the tree numbers its
 # own rules from 0 -- `codegen/__init__.bend:317 symbol=pm_post_sched_cache`'s tag 0 is `_pm_resolve_params`
-# and `engine/realize.bend:1144 symbol=get_call_name`'s tag 0 is `pm_flatten_linear` -- because the
+# and `engine/realize.bend:1145 symbol=get_call_name`'s tag 0 is `pm_flatten_linear` -- because the
 # scan that reads a table and the dispatch that reads a tag live in DIFFERENT
 # files. That is the "a name is not a binding" trap one level down: the same
 # `PMEntry{0, ...}` means a different rule in every one of them. Tags 40-43 are
@@ -5342,13 +5380,14 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 
 # DONE(p3) ops.py:902 def is_virtual -- `wk_is_virtual` in `weak.bend`, `no_dev` beside it.
-#   PORTED BUT UNGATED, AND THE REASON IS A FIXTURE, NOT A DEF. `is_virtual` answers
+#   GATED, AND WHY IT WAS NOT GATED BEFORE WAS A FIXTURE -- NOT A DEF. `is_virtual` answers
 #   `device is None or dtype in weaks`, and the device half needs a node that CARRIES a `Dev`:
-#   `fold.bend`'s `mw_pa` hard-codes `ParamArg`'s device field to `None{}` and no def in the port
-#   sets it, so EVERY node is virtual and the reader has no negative witness. MEASURED: both
-#   candidate rows came out `True`, and two rows that are always `True` cannot fail -- adding them
-#   would have been a denominator counting nothing, which is the defect this project keeps removing.
-#   The rows appear when something populates `Dev`; the reader is already there to be gated.
+#   `fold.bend`'s `mw_pa` hard-codes `ParamArg`'s device field to `None{}`.
+#   THE CLAIM THAT NO DEF IN THE PORT SETS IT WAS FALSE. MEASURED 2026-10-30:
+#   `renderer/__init__.bend:450` builds a `ParamArg` with `device = Some{S.D1{0}}`, and
+#   `fold.bend`'s `device_of.param` reads `O.ParamArg.device(pa)`, so a node that CARRIES a
+#   device was reachable all along. The rows are `gates/wk-isvirt-gate.py` -- 5 rows, 3 lanes,
+#   0 divergences, and three mutations that each move the row they name.
 
 
 # TODO(p3) ops.py:931  def contiguous_view
@@ -6290,7 +6329,7 @@ def s_blob_sweep_count() -> String:
 # The measurement and the reason `F32.is_eq` is right here and `F32.bits` would be a
 # regression are the comment on `eq_arg.AFloat` above; this block is the GATE for it.
 # `AFloat` has no constructor anywhere in the tree -- `uop/upat.bend:396 symbol=arg_int` and
-# `uop/render.bend:731 symbol=arg_repr` only READ it, and its one would-be builder `_frompy` is
+# `uop/render.bend:741 symbol=arg_repr` only READ it, and its one would-be builder `_frompy` is
 # `TODO(p3)` at :4318 -- so no interning fixture can reach the arm the normal way and
 # the comparator was untested rather than unreachable. These rows intern two
 # `AFloat`s on ONE arena through `UOp.new`, so the answer is IDENTITY OF THE TWO
@@ -8516,7 +8555,7 @@ def vrn_rows(+ar: Arena) -> IO(Unit):
     vrn_row("vrn_int32", UOp.variable(ar, "k", H.i64_of_i32(1), H.i64_of_i32(2), 1, S.int32()))
 
 # `Map.has` answers a `Sigma` and not a `Maybe`, so the Bool rides out in the second
-# half of the pair. `uop/render.bend:1066 symbol=ctx_has.of`'s `ctx_has.of` destructures the same shape and
+# half of the pair. `uop/render.bend:1076 symbol=ctx_has.of`'s `ctx_has.of` destructures the same shape and
 # this is the third copy of THAT two-line destructure -- see `Maybe.has` below.
 def vv_has.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => Bool>) -> Bool:
   match r:
@@ -8554,11 +8593,11 @@ def vv_has(v: VarVals, k: String) -> Bool:
 # a BEND LANGUAGE CHANGE was needed and never grepped for it. `Map` is a stdlib type
 # from `import Base` -- `references/bend/bend2/base.bend:2733 symbol=Map.put` Map.put, `:2675`
 # Map.set, `:2683` Map.has, `:2736` Map.get, all four present -- and
-# `uop/render.bend:1002 symbol=range_ids.of` and `:1017` were already CALLING `Map.set` and `Map.get`
+# `uop/render.bend:1012 symbol=range_ids.of` and `:1017` were already CALLING `Map.set` and `Map.get`
 # through `Ctx` while the note here said the rule did not exist.
 #
 # AND THE SECOND CALLER I NAMED WAS WRONG TOO. I wrote that `pyrender`'s `Ctx` walk
-# wanted the same fold; `render.bend:1718 symbol=render_with_splits`'s `render_with_splits` answers
+# wanted the same fold; `render.bend:1728 symbol=render_with_splits`'s `render_with_splits` answers
 # `List<&2, Bind>` and not a `Maybe`, so it does not. The REAL second caller is
 # `unified_rewrite`'s fixpoint (ops.py:1826-1837 symbol=RewriteContext.unified_rewrite), where `test_n: UOp|None` is
 # carried through a loop and a `BottomUpGate` breaks out of it -- and THAT is the
@@ -8590,14 +8629,14 @@ def vv_of.of(r: Sigma<&1, &1, Map<&2, H.I64>, _ => H.I64>, present: Bool) -> May
 # `Map.get(-V: Data, d: V, m, key)` TAKES A DEFAULT and it is the SECOND argument,
 # which is how the `expected : Data / observed : Quant` happened: the `&2` that
 # `Map.has` and `Map.set` want was written here too, and it landed in the `V` slot
-# where a bare `H.I64` belongs. `Map.get` has NO quantifier -- `uop/render.bend:1015 symbol=multirange_str.go`'s
+# where a bare `H.I64` belongs. `Map.get` has NO quantifier -- `uop/render.bend:1025 symbol=multirange_str.go`'s
 # `Map.get(String, "", Ctx.map(c), U32.show(u))` shows the shape with the `""` in
 # the same slot. Three of the four `Map` readers in the tree and not the fourth.
 #
 # THE DEFAULT IS 0 AND THAT IS WHY THE `has` IS NOT REDUNDANT. A miss returns 0,
 # which is a legal bound, so "unbound" and "bound to 0" are the same value here and
 # only `Map.has` separates them. `ctx_get` gets away with `""` because
-# uop/render.bend:1015 symbol=multirange_str.go states every src was written first; `vals` has no such guarantee.
+# uop/render.bend:1025 symbol=multirange_str.go states every src was written first; `vals` has no such guarantee.
 def vv_of(+v: VarVals, +k: String) -> Maybe<&2, H.I64>:
   vv_of.of(Map.get(H.I64, H.i64_of_i32(0), VarVals.m(v), k), vv_has(v, k))
 
@@ -8729,7 +8768,7 @@ def vd_put(nm: String, x: H.I64, base: VarVals) -> VarVals:
 #   Map.set(a, -V: Kind(a), m, key, x)  -- quantifier SECOND, after the linearity
 #   Map.has(-a: Quant, -V: Kind(a), m, key)
 #   Map.get(-V: Data, d, m, key)        -- NO linearity parameter at all
-# `uop/render.bend:1002 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
+# `uop/render.bend:1012 symbol=range_ids.of` and `:1017` already spell all three correctly; this cost three
 # compile rounds to find, and the first of them I had recorded as a LANGUAGE gap.
 # `Map.set` puts its QUANTIFIER SECOND (`Map.set(a, -V: Kind(a), m, key, x)`) and
 # the three `Map` readers in the tree disagree about that -- `Map.has` takes it
@@ -8747,7 +8786,7 @@ def vd_put(nm: String, x: H.I64, base: VarVals) -> VarVals:
 # accumulates. A fold that compiles and returns nothing is worse than one that does
 # not compile, and this is the second time this session that bit (the first was
 # `rra.filter`).
-# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:6516 symbol=ax_names_str): collect the
+# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:6555 symbol=ax_names_str): collect the
 # pieces, `List.reverse`, `String.join`. Three attempts got here and the third is
 # the file's own idiom --
 #   1. a `+acc` String that COMPILED and answered `()` for every input, because a
@@ -8769,7 +8808,7 @@ def vd_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, String>
 # NO `match` HERE, and that is the fourth attempt's only content. A match on
 # `vd_text.go(ys, Nil{})` -- a computed value -- is refused, so the empty case is
 # handled by the JOIN: `String.join` of an empty list is "", and "" wrapped in
-# parentheses is "()". `ax_names_str` at ops.bend:6516 symbol=ax_names_str is the same shape and it has
+# parentheses is "()". `ax_names_str` at ops.bend:6555 symbol=ax_names_str is the same shape and it has
 # no `match` either.
 def vd_text(ys: List<&2, H.I64>) -> String:
   String.concat(["(", String.join(vd_text.go(ys, Nil{}), ","), ")"])
@@ -9525,7 +9564,7 @@ def set_ar() -> Arena:
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(9)}}, TNone{}},
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}}], [0]}
 
-# THE PRINTER IS `Rng.srcops.seeded` (ops.bend:6060) AND NOT A NEW ONE. It folds
+# THE PRINTER IS `Rng.srcops.seeded` (ops.bend:6101) AND NOT A NEW ONE. It folds
 # op names in SOURCE ORDER with no trailing separator, which is the whole of what
 # these rows need: `set` is a composition whose only failure modes are the SHAPE and
 # the ORDER, and a row that printed a top-level op name could not tell `END` from a
@@ -9736,7 +9775,11 @@ def main() -> IO(Unit):
 #     `new_buffer`, `from_buffer`, `_frompy`, `to_elf`, `TinyELF` and
 #     `canonicalize_device` -- the device memory layer. P6, and `ParamArg.buffer`
 #     is the slot they all read.
-#   `Estimates` in `KernelInfo` -- the renderer's cost model, P5.
+#   `Estimates` in `KernelInfo` -- PORTED 2026-10-30 as a FIELD, in
+#     `renderer/estimates.bend`. What is NOT PORTED is the VALUE: upstream's
+#     only writer is `codegen/__init__.py:446` and `do_estimates` is a WALL in
+#     `codegen/kernel.bend`, so every `KernelInfo` the port builds carries
+#     `estimates=None`.
 #   `CustomFunction` -- PORTED 2026-10-03, at ops.py's own position (between
 #     `OPAQUE_CALL_BODIES` and `CallInfo`), together with `Arg`'s `ACustom` arm,
 #     `eq_customfunction` and `UOp.custom_function`. The old text here said it was

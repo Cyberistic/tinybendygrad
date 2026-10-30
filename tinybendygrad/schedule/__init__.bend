@@ -1544,7 +1544,7 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 #                      if x.op is Ops.PARAM and x.device is not None])
 #     if len(devices) >= 2: raise RuntimeError(...)
 #
-# `UOp.toposort` (uop/ops.bend:3366 symbol=UOp.toposort) is the ungated one, so no `sc_topo` copy is
+# `UOp.toposort` (uop/ops.bend:3404 symbol=UOp.toposort) is the ungated one, so no `sc_topo` copy is
 # needed. `dedup` preserves FIRST-OCCURRENCE order and the arena interns, so two
 # structurally equal UOps are ONE index: the dedup is over INDICES and a
 # `List.contains` over the kept ones is the same set -- the argument `sc_newks`
@@ -1622,7 +1622,7 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 # on the RANGES FOLD, and `ops.py:514 UOp.substitute` waits behind it.
 # `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is NOT in `uop/ops.bend` --
 # an earlier revision of this sentence said it was "already ... as tag 42's table", AND THAT IS
-# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4334 symbol=pm_r_rp_m.slot`) and no `def ...resolve_linear_call`
+# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4372 symbol=pm_r_rp_m.slot`) and no `def ...resolve_linear_call`
 # exists anywhere. See the corrected note at `__init__.py:274` for the measurement. Arm 1 is
 # therefore ALSO blocked on it, not on `binds` alone (:104-106), which is `dict[int,UOp]` keyed by a
 # Python int -- the same String-keyed-`Map` bill `Aa` pays above.
@@ -1814,7 +1814,7 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #     WALL(p3) __init__.py:271  `pm_schedule` -> `lower_sink_to_linear` (ported
 #       above) but the PASS is a rewriter -- BLOCKED: needs the `pm_schedule` PatternMatcher + its `graph_rewrite` pass; the rule body `lower_sink_to_linear` IS ported (:1362) and `pm_schedule` has no def in the tree.
 #     WALL(p3) __init__.py:274  `pm_resolve_linear_call` -> `resolve_linear_call`
-#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4334 symbol=pm_r_rp_m.slot), and `pm_flatten_linear` is absent too.
+#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4372 symbol=pm_r_rp_m.slot), and `pm_flatten_linear` is absent too.
 #     WALL(p3) __init__.py:277  `pm_copy_from_store` -> the two bodies above plus
 #       `assert_all_same_devices`, and the PASS is a rewriter -- BLOCKED: needs the `pm_copy_from_store` PatternMatcher + `graph_rewrite` pass. The THREE rule bodies are ALL PORTED (`cks_*` :1407, `simplify_copy_kernel` :1466, `assert_all_same_devices` :1527); only the PASS is absent.
 #     TODO(p3) __init__.py:280  symbol=create_linear_with_vars  -- `used_vars` -- `UOp.variables`.
@@ -1835,8 +1835,8 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #          19 TOP1 20 BAD            (so `fx1_nodes`=21 and `fx1_topo`=19)
 #   THE TABLE IS A READING, NOT A CONTRACT.  It was written against the
 #   substrate of 2026-10-07, whose `param_src` DROPPED the size CONST and the
-#   PARAM's STACK (uop/ops.bend:3050 symbol=param_src); `UOp.new.param` interns BOTH
-#   (uop/ops.bend:3077 symbol=UOp.new.param), so every index after the first PARAM moved and 18
+#   PARAM's STACK (uop/ops.bend:3097 symbol=param_src); `UOp.new.param` interns BOTH
+#   (uop/ops.bend:2776 symbol=UOp.new.param), so every index after the first PARAM moved and 18
 #   rows were reading the WRONG NODE.  The rows no longer READ this table: they
 #   read GRAPH POSITIONS (`fx1.a()`, `fx2.kb()`, ...), which cannot move.  The
 #   three `fx*_nodes` rows are the only rows that still count arena slots, and
@@ -1954,8 +1954,8 @@ def fx4() -> O.Found:
 # by its arena index.
 #
 # WHY, MEASURED.  The arena is a MOVING TARGET: `UOp.new.param` interns the
-# shape node that the old `param_src` DROPPED (uop/ops.bend:3050 symbol=param_src
-# and uop/ops.bend:3077 symbol=UOp.new.param), so one substrate change moved every index after the first
+# shape node that the old `param_src` DROPPED (uop/ops.bend:3088 symbol=param_src
+# and uop/ops.bend:2776 symbol=UOp.new.param), so one substrate change moved every index after the first
 # PARAM.  The port's rows were ADDRESSED by index and 18 of them went on
 # reading the WRONG NODE -- `unwrap_A1` answered 9 (a CONST) where CPython
 # answers 1 (a BUFFER) -- and the gate did not see it because its CPython

@@ -168,7 +168,7 @@ def tx_cf(+ar: O.Arena, +v: F32) -> O.Found:
 
 # `-0.0` IS ITS OWN CONST IN TINYGRAD -- MEASURED, `UOp.const(-0.0) is
 # UOp.const(0.0)` is False, and `a_xlog2 70` is `cf2147483648` -- and
-# `ops.bend`'s `eq_const.CFloat` (ops.bend:1954 symbol=eq_const.CFloat) tests
+# `ops.bend`'s `eq_const.CFloat` (ops.bend:1974 symbol=eq_const.CFloat) tests
 # `F32.is_eq(f, g)`, which
 # IEEE says is TRUE of `+0.0` and `-0.0`. So the port's arena would fold the two
 # into one node and `a_xlog2 70`..`a_xlog2 78` would all shift. REPORTED, not

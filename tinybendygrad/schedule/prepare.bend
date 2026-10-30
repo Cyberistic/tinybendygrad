@@ -61,7 +61,7 @@
 #     body that lives in another file is named at the call site. Their RULES are
 #     in the table and their DATA (`slen`/`rlen`/`nalts`/`rej`) is gated.
 #
-# `O.PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (uop/ops.bend:4005 symbol=PMEntry), so the
+# `O.PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (uop/ops.bend:4043 symbol=PMEntry), so the
 # oracle's `<t>_<k>_dt` and `_src` columns have no field to read: those are
 # `UPat` facts (`match_dtype`, and the src permutation tuple at upat.py:39) and
 # `UPat` does not survive into the compiled IR. `schedule/indexing.bend` records
@@ -275,8 +275,8 @@ def pr_perm(ar: O.Arena, +x: O.Found, +a: U32, b: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPERMUTE{}, [O.Found.i(x)], O.ATuple{[a, b]}, O.TNone{})
 
 # ---------------------------------------------------------------------------
-# REPORTED, NOT USED: `ops.bend`'s `UOp.after` (uop/ops.bend:2859 symbol=UOp.after) and `UOp.end`
-# (uop/ops.bend:2897 symbol=UOp.end) build `List.append(srcs, [self])`, which is `srcs ++ [self]`.
+# REPORTED, NOT USED: `ops.bend`'s `UOp.after` (uop/ops.bend:2897 symbol=UOp.after) and `UOp.end`
+# (uop/ops.bend:2944 symbol=UOp.end) build `List.append(srcs, [self])`, which is `srcs ++ [self]`.
 # `ops.py:621` is `src=(self,)+src` and `ops.py:619` is `src=(self,)+src`, so the
 # two helpers put the node LAST where Python puts it FIRST.  That is an INVERTED
 # FIELD ORDER and it is exactly the class of defect `agent-core.md` names
@@ -529,7 +529,7 @@ def g_t6() -> IO(Unit):
 # at all, so the rows are `wm_<nm>_same` (the answer IS the input) and
 # `wm_<nm>_wmx` (the answer IS `u.src[0]`) -- neither is a count, and a movement
 # node and its un-moved alias have the same op, the same nsrc, the same src op
-# sequence and the same shape.  `GroupOp.movement` is `uop/ops.bend:504` symbol=GroupOp.movement and owns the
+# sequence and the same shape.  `GroupOp.movement` is `uop/ops.bend:505` symbol=GroupOp.movement and owns the
 # predicate; the three extra ops are written out because they are three.
 # ---------------------------------------------------------------------------
 # The SHAPE is `fold.bend`'s: ONE self-recursive def with the decreasing fuel
@@ -972,7 +972,7 @@ def g_wm() -> IO(Unit):
 #     separates them.
 #   * `<t>_<k>_{dt,src}` (2 per rule) -- `UPat.match_dtype` and the src permutation
 #     tuple (upat.py:47).  `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE
-#     (uop/ops.bend:4005 symbol=PMEntry), so `UPat` does not survive into the compiled IR.
+#     (uop/ops.bend:4043 symbol=PMEntry), so `UPat` does not survive into the compiled IR.
 # ===========================================================================
 def main() -> IO(Unit):
   do IO<Unit>:

@@ -34,8 +34,8 @@
 # is "no opinion, keep scanning". The `ar` field is the arena AFTER the rule grew it, because
 # a gradient rule BUILDS nodes: `RECIPROCAL` is `(-ctx * ret * ret)`, three new nodes. `gs`
 # uses index 0 for a hole: index 0 is the arena's bottom node (`Arena.empty` spends it,
-# ops.bend:1356 symbol=Arena.empty) and `UOp.is_none(u) = U32.is_zero(u)`
-# (ops.bend:1364 symbol=UOp.is_none), so 0 IS tinygrad's own "no uop" and
+# ops.bend:1377 symbol=Arena.empty) and `UOp.is_none(u) = U32.is_zero(u)`
+# (ops.bend:1376 symbol=UOp.is_none), so 0 IS tinygrad's own "no uop" and
 # the encoding is not an invention.
 
 import Base
@@ -920,7 +920,7 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 # `fold.bend`'s own Kahn argument, and the pass is `dw_flags` above. The `Bool` lattice
 # ("a node is on the target path iff ANY src is, with DETACH excluded", gradient.py:114)
 # is `dw_any` and `dw_keep_test`. `topovisit`'s Callable is still not ported -- nothing in
-# `ops.py` calls it -- and `O.UOp.topovisit` (uop/ops.bend:2907 symbol=UOp.mstack.go) still answers the plain
+# `ops.py` calls it -- and `O.UOp.topovisit` (uop/ops.bend:2945 symbol=UOp.mstack.go) still answers the plain
 # toposort, which is the order this file drives.
 #
 # `compute_gradient` -- gradient.py:116-145 -- LANDED, with THREE named omissions.
@@ -1301,7 +1301,7 @@ def _deepwalk.vis(+ar: O.Arena, targets: List<&2, U32>, root: U32) -> Itp:
   dw_flags(ar, targets, O.UOp.toposort(O.Arena.budget(ar), ar, root), Itp{Nil{}, Nil{}})
 
 # `_deepwalk(root, targets)` -- gradient.py:109-114. `O.UOp.toposort` is `topovisit`
-# without the visitor (uop/ops.bend:2907 symbol=UOp.mstack.go records that `topovisit`'s body IS the toposort),
+# without the visitor (uop/ops.bend:2945 symbol=UOp.mstack.go records that `topovisit`'s body IS the toposort),
 # and `Arena.budget` is the exact pop bound, so the pass cannot be cut short.
 def _deepwalk(root: U32, targets: List<&2, U32>, +ar: O.Arena) -> Deep:
   Deep.fill(O.Arena.empty(), _deepwalk.vis(ar, targets, root))
@@ -1832,7 +1832,7 @@ def t_claims() -> U32: U32.from_nat(List.length(&2, O.PMEntry, O.PMEntrys.es(gr_
 # and `fold.bend`'s Kahn uses (fuel decrements, list separate). Both descents are
 # visible: the fuel shrinks on one branch, the list tail shrinks on the other.
 #
-# The fuel is `Arena.budget(ar)` (ops.bend:3355 symbol=Arena.budget) = `next(ar) + edges`,
+# The fuel is `Arena.budget(ar)` (ops.bend:3402 symbol=Arena.budget) = `next(ar) + edges`,
 # the exact number of
 # pops a walk over the whole arena makes. A gradient tree is a subgraph of the grown
 # arena, so the walk cannot be cut short, and the DAG makes the bound finite.
@@ -1884,7 +1884,7 @@ def t_one_n() -> U32: size1(fx_ar(fix()), Fix.n(fix()))
 def t_seven_n() -> U32: size1(fx_ar(fix()), Fix.t7(fix()))
 
 # The gradient's tree size for slot `k` of the rewrite of `self`. Fuel is
-# `Arena.budget` (ops.bend:3355 symbol=Arena.budget) because the gradient tree is built from `self` and can
+# `Arena.budget` (ops.bend:3402 symbol=Arena.budget) because the gradient tree is built from `self` and can
 # only be as large as the arena plus what the rule added, so the budget is a bound on
 # the walk's depth and the fuel-first order is what makes the descent legal.
 # The rewrite runs ONCE and both readers come off it -- `gs_ar` and `gs_get` each need the

@@ -102,10 +102,10 @@ def rz_dot_w(+rhs: T.Tensor) -> T.Tensor:
 # FRONT (`perm = reduce_axis + tuple(i for i in range(len(self.shape)) if i not
 # in reduce_axis)`) and the REDUCE's arg is `(op, len(reduce_axis))` -- the
 # NUMBER OF AXES, and the axes reduced are the FIRST ones.
-# ⇒ The port's `O.UOp.reduce` (`uop/ops.bend:7440`) builds `AReduce{rop, 0}`
+# ⇒ The port's `O.UOp.reduce` (`uop/ops.bend:7479`) builds `AReduce{rop, 0}`
 # -- `num_axes` HARDCODED to zero -- so this def builds the node with
 # `O.UOp.new` and the RIGHT num_axes. **THAT IS A PORT DIVERGENCE AND IT IS
-# NAMED: `uop/ops.bend:7435 symbol=UOp.reduce.arg` cannot spell `AReduce{op, 1}`.**
+# NAMED: `uop/ops.bend:7479 symbol=UOp.reduce.arg` cannot spell `AReduce{op, 1}`.**
 def rz_reduce(+t: T.Tensor) -> T.Tensor:
   +p = MX.mxw_permute.go(t, [2, 0, 1])
   +r = O.UOp.new(T.Tensor.ar(p), O.OpsREDUCE{}, [T.Tensor.u(p)],
@@ -170,8 +170,8 @@ def rz_program() -> RZProg:
 # `schedule/__init__.bend:5-13`), so the rebuild is ONE PASS over the arena's
 # own toposort with an association list for the old-index -> new-index map.
 #
-# THE ORDER. The port's `UOp.toposort` (`uop/ops.bend:3366`) is a PRE-ORDER
-# DFS (`Topo.push`, `uop/ops.bend:3309`) and upstream's is a POST-ORDER one
+# THE ORDER. The port's `UOp.toposort` (`uop/ops.bend:3404`) is a PRE-ORDER
+# DFS (`Topo.push`, `uop/ops.bend:3347`) and upstream's is a POST-ORDER one
 # (MEASURED, `.agents/slop/realize/probe.py` prints upstream's `toposort()`
 # with the CONSTs FIRST and the SINK LAST). **⇒ THE PORT's toposort AND
 # UPSTREAM's ARE NOT THE SAME ORDER, AND THE PORT's REBUILD NEEDS CHILDREN

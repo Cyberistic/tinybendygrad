@@ -183,7 +183,7 @@ def rc_rop(+ar: O.Arena, self: U32, op: O.Op, +axis: List<&2, U32>) -> O.Found:
 # answer travels as `Bool` + two `U32`s. `found=False` means "this graph holds
 # no REDUCE", which is the CORRECT answer on the four collapse rows and not a
 # default.
-# `Op` is `Data` (uop/ops.bend:169 symbol=Op), so the op RIDES in the record rather than a
+# `Op` is `Data` (uop/ops.bend:170 symbol=Op), so the op RIDES in the record rather than a
 # `U32` tag -- one fewer reader and no round-trip through `Ops.value`, which
 # would have been a second place to get the numbering wrong.
 type RcRed is Data:

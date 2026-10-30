@@ -901,9 +901,9 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # `tn_alu(tn_alu.put(cast), CMPNE, [Found.i(true_c)])`: the const index is minted
 # in `true_c.ar`, which is one node LONGER than the `cast.ar` the CMPNE was built
 # in, so the CMPNE landed on the slot the const index names and became its own
-# `src[1]`. `Arena` is an immutable `Data` value (`ops.bend:1293 symbol=Arena`), so `Found.ar`
+# `src[1]`. `Arena` is an immutable `Data` value (`ops.bend:1305 symbol=Arena`), so `Found.ar`
 # SNAPSHOTS, and an index is legal only in an arena DESCENDING FROM the one that
-# minted it. MEASURED with `O.Rng.sig` (`uop/ops.bend:6070 symbol=Rng.sig`) as the instrument on a
+# minted it. MEASURED with `O.Rng.sig` (`uop/ops.bend:6109 symbol=Rng.sig`) as the instrument on a
 # `CInt` input: `CMPNE/2 Ops.CAST Ops.CMPNE` against CPython's
 # `CMPNE(CAST(CONST()), CONST())`. The rule and the helper that states it are
 # `tensor.bend:tn_binop`; the two ports are `tn_logical_not.cmpne` and

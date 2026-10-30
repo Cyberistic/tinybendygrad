@@ -31,7 +31,7 @@
 #
 # `am_pick` IS THE MASK-TIMES-COUNTER (`idx[j]`), `am_max` IS `self.max`, AND `am_best`
 # IS `idx.max`. `Bool.pick` AND NOT `match` ON A COMPUTED VALUE: `match` MAY NOT
-# SCRUTINISE A CALL (BEND'S RULE 1), AND `tinybendygrad/uop/ops.bend:8947 symbol=fs.pinfo.of` IS THE
+# SCRUTINISE A CALL (BEND'S RULE 1), AND `tinybendygrad/uop/ops.bend:8991 symbol=fs.pinfo.of` IS THE
 # TREE'S OWN COUNTER-EXAMPLE OF WHAT THAT COSTS -- A `match` ON A CALL THERE POISONED
 # EVERY FILE THAT IMPORTS `uop/ops.bend`.
 #

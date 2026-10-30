@@ -79,6 +79,7 @@
 # ===========================================================================
 
 import Base
+import ./estimates.bend as E
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
 import ./../LAWS/spec.bend as S
@@ -162,64 +163,13 @@ def with_storage.at(+f: O.Found, dt: S.Dt) -> O.Found:
   with_storage(with_storage.fuel(f), O.Found.ar(f), dt, O.Found.i(f), with_storage.is_store(O.Arena.op(O.Found.ar(f), O.Found.i(f))))
 
 # ===========================================================================
-# `Estimates` -- __init__.py:15-61.
-#
-#     ops:sint = 0   # number of FLOPS used in the Kernel
-#     lds:sint = 0   # bytes accessed in loads and stores
-#     mem:dict[tuple[UOp, Ops], sint] = {}   # total bytes, counted ONCE
-#
-# `sint` is `UOp|int` and has NO Bend spelling, so the port carries the COUNT as
-# a `U32`. That is not a shortcut: the ONLY caller is `do_estimates`
-# (codegen/__init__.py:437) and it passes `lin.src` -- the LINEARIZED list -- on
-# which there is no RANGE, no END, no BACKEDGE and no SPECIAL, so `mults` is 1
-# at every step and the `mult_stack` never pushes. The symbolic branch of
-# `mults` (`UOp.simplify` is `# TODO(p3) ops.py:495 symbol=UOp.simplify`; the `vmax` under
-# `to_max_shape` is `# TODO(p3) ops.py:1092 symbol=UOp.vmax`) is unreachable from that call site,
-# so counting the linear list needs none of it.
-#
-# THE `mem` DICT IS THE ONE PLACE THE PORT'S SHAPE DEPARTS FROM 1:1, and the
-# departure is load-bearing rather than cosmetic. Python keys it by
-# `(buffer, op)`, so a buffer that is both READ and WRITTEN carries TWO counts
-# that `sum(mem.values())` adds. A `Data` record cannot key a `Map` by a pair --
-# there is no hasher for a pair and no tuple key -- so the key is the buffer
-# index alone, which is the SAME `U32.show` identity `Ctx` uses, and the op is
-# DROPPED. `estimates` below therefore returns the sum over buffers, and a
-# buffer read-then-written contributes ONE count where CPython contributes two.
-# That is a real disagreement on a real kernel and it is stated rather than
-# hidden. Splitting it needs a two-word key, which is a P3 change to the
-# substrate's `Map`, not to this file.
+# `Estimates` -- __init__.py:15-61. THE RECORD IS IN `./estimates.bend`, WHICH
+# IS A LEAF, because `tinygrad/uop/ops.py` CARRIES IT AS A FIELD and Bend
+# REFUSES AN IMPORT CYCLE. Upstream breaks that cycle under `TYPE_CHECKING`
+# (`tinygrad/uop/ops.py:26`); this port breaks it with a third file. What is
+# HERE is `Estimates.from_uops`, which reads `Ops` and so belongs beside its
+# consumers. THE RECORD, ITS ACCESSORS, `__add__` and `simplify` are THERE.
 # ===========================================================================
-
-type Estimates is Data:
-  Estimates{ops: U32, lds: U32, mem: U32}
-
-def Estimates.of(o: U32, l: U32, m: U32) -> Estimates: Estimates{o, l, m}
-
-def Estimates.ops(a: Estimates) -> U32:
-  match a:
-    case Estimates{ops, lds, mem}: ops
-
-def Estimates.lds(a: Estimates) -> U32:
-  match a:
-    case Estimates{ops, lds, mem}: lds
-
-def Estimates.mem(a: Estimates) -> U32:
-  match a:
-    case Estimates{ops, lds, mem}: mem
-
-
-# `def __add__(self, o)` -- __init__.py:23. Three `U32.add`s; the method is
-# exactly them.
-def Estimates.add(+a: Estimates, +b: Estimates) -> Estimates:
-  Estimates{U32.add(Estimates.ops(a), Estimates.ops(b)), U32.add(Estimates.lds(a), Estimates.lds(b)),
-    U32.add(Estimates.mem(a), Estimates.mem(b))}
-
-# `def simplify(self)` -- __init__.py:24: `Estimates(ssimplify(ops),
-# ssimplify(lds), ssimplify(mem))`. `ssimplify` on a plain int is the IDENTITY,
-# and the port's counter IS a plain int, so this returns its argument and says
-# so. Reproducing a `simplify` that cannot simplify anything would be a lie about
-# the substrate; returning the record is the honest answer and the gate pins it.
-def Estimates.simplify(a: Estimates) -> Estimates: a
 
 # `Estimates.from_uops` -- __init__.py:26-61, over the LINEARIZED list.
 #
@@ -519,14 +469,12 @@ def sd_row(nm: String, emu: List<&2, S.Dt>) -> IO(Unit):
   +a = String.join(sd_names(emu), ",")
   IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
-# `Estimates.__repr__` is a dataclass repr, so the oracle is CPython's own
-# `Estimates(1,2,3)+Estimates(4,5,6)` printed -- the SAME three-field spelling
-# the port emits, and a dropped field shows as a shorter string.
-def est_str(+e: Estimates) -> String:
-  String.concat(["Estimates(ops=", U32.show(Estimates.ops(e)), ", lds=", U32.show(Estimates.lds(e)),
-    ", mem=", U32.show(Estimates.mem(e)), ")"])
+# `Estimates.__repr__` IS `estimates.bend`'s `Estimates.str`, because
+# `uop/render.bend` PRINTS THE SAME THING in `KernelInfo`'s repr. ONE SPELLING,
+# TWO CALLERS.
+def est_str(+e: E.Estimates) -> String: E.Estimates.str(e)
 
-def est_row(nm: String, e: Estimates) -> IO(Unit):
+def est_row(nm: String, e: E.Estimates) -> IO(Unit):
   +a = est_str(e)
   IO.print(String.concat([nm, " = [", a, "]   py=[", a, "]"]))
 
@@ -560,8 +508,8 @@ def main() -> IO(Unit):
     _ : Unit <- IO.print("is_mem LOAD      = [" ++ Bool.show(is_mem(O.OpsLOAD{})) ++ "]   py=True")
     _ : Unit <- IO.print("is_mem STORE     = [" ++ Bool.show(is_mem(O.OpsSTORE{})) ++ "]   py=True")
     _ : Unit <- IO.print("is_mem ADD       = [" ++ Bool.show(is_mem(O.OpsADD{})) ++ "]   py=False")
-    _ : Unit <- est_row("est add    ", Estimates.add(Estimates.of(1, 2, 3), Estimates.of(4, 5, 6)))
-    _ : Unit <- est_row("est simplfy ", Estimates.simplify(Estimates.of(3, 4, 5)))
+    _ : Unit <- est_row("est add    ", E.Estimates.add(E.Estimates.of(1, 2, 3), E.Estimates.of(4, 5, 6)))
+    _ : Unit <- est_row("est simplfy ", E.Estimates.simplify(E.Estimates.of(3, 4, 5)))
     _ : Unit <- ws_row("ws buffer  ", with_storage.at(g_buf(), S.single()))
     _ : Unit <- ws_row("ws index   ", with_storage.at(g_idx(g_buf()), S.single()))
     _ : Unit <- ws_src_row("ws idx.src0", with_storage.at(g_idx(g_buf()), S.single()))

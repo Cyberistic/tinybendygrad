@@ -494,7 +494,7 @@ def ix_bax(+srcs: List<&2, U32>, +outs: List<&2, U32>) -> List<&2, U32>:
 #   if op in GroupOp.Movement|{INDEX, STAGE, REDUCE, AFTER, END, BACKEDGE, COPY}: return src[:1]
 #   return src
 #
-# `GroupOp.Movement` is `O.GroupOp.movement` (uop/ops.bend:504 symbol=GroupOp.movement) and is reused rather
+# `GroupOp.Movement` is `O.GroupOp.movement` (uop/ops.bend:505 symbol=GroupOp.movement) and is reused rather
 # than re-listed, which is the reuse the brief asks for: a SIX-member set that
 # `mixin/movement.bend` already owns.
 #
@@ -528,7 +528,7 @@ def ix_ds_zero(op: O.Op) -> Bool:
 # (the reuse the brief asks for) and the SEVEN extras are listed.
 
 # `+op` because the scan and the movement test each read it and `Op` is
-# Data-kinded (uop/ops.bend:169 symbol=Op).
+# Data-kinded (uop/ops.bend:170 symbol=Op).
 
 def ix_ds_one(+op: O.Op) -> Bool:
   Bool.or(ix_mem1(op, [O.OpsINDEX{}, O.OpsSTAGE{}, O.OpsREDUCE{}, O.OpsAFTER{}, O.OpsEND{}, O.OpsBACKEDGE{}, O.OpsCOPY{}]), O.GroupOp.movement(op))
@@ -687,7 +687,7 @@ def ix_asort(+ys: List<&2, U32>) -> List<&2, U32>:
 #  * The `case _` raise is `ix_mv_is_movement` and `ix_mv_raise`, and
 #    `mv_add_raises=raise` is the row.
 #
-# A RANGE is `O.Arg` `ARange{ids, at}` (ops.bend:1228), and `UOp.axis_id`
+# A RANGE is `O.Arg` `ARange{ids, at}` (ops.bend:1240), and `UOp.axis_id`
 # (ops.py:502) and `UOp.axis_type` (:507) are BOTH readers over that one arg, so
 # they are TWO readers over the SAME pair. `ids` is a LIST -- a broadcast range
 # carries several -- which is why every `*_ids` row prints the whole sequence.
@@ -916,7 +916,7 @@ def ix_rg_c0_idx() -> U32: 0
 
 # THE MATERIALISER: a TABLE ENTRY BECOMES A NODE. IT IS `ix_nr_pick` -- THE SAME
 # `new_range` DECISION WITH THE NODE -- SO THERE IS ONE `new_range` AND NOT TWO.
-# **⇒ THE PORT's ARENA INTERNES (`uop/ops.bend:2522 symbol=UOp.make.intern`), SO ONE RANGE IS ONE NODE
+# **⇒ THE PORT's ARENA INTERNES (`uop/ops.bend:2571 symbol=UOp.make.intern`), SO ONE RANGE IS ONE NODE
 # EVERYWHERE, WHICH IS WHAT MAKES THE TABLE SOUND.**
 def ix_rg_node(at: O.AxisType, +ar: O.Arena, +r: IxRange) -> O.Found:
   ix_nr_pick(ix_rg_is_c0(r), at, ar, IxRange.ext(r), IxRange.idx(r))
@@ -1060,7 +1060,7 @@ def ix_nrem_has.go(+xs: List<&2, U32>, +k: U32, +sofar: Bool) -> Bool:
 #   return tuple(r.const_like(0) if j in baxes else r
 #                for j,r in enumerate(rngs) if j >= nleft)
 #
-# `GroupOp.Broadcastable` is `O.GroupOp.broadcastable` (uop/ops.bend:562 symbol=GroupOp.broadcastable), reused.
+# `GroupOp.Broadcastable` is `O.GroupOp.broadcastable` (uop/ops.bend:563 symbol=GroupOp.broadcastable), reused.
 # The `j >= nleft` filter is a walk with an INDEX, so `j` is threaded (the
 # `mixin/tensor.py` rule 1 shape), and `j in baxes` is a scan over the axis
 # list.
@@ -1294,7 +1294,7 @@ def par_3_all(_: O.Op) -> Bool: True{}
 def par_all_n() -> U32: 79
 
 # `GroupOp.Movement` (tinygrad/uop/__init__.py:118) is SIX ops and
-# uop/ops.bend:504 symbol=GroupOp.movement owns the PREDICATE, not the list.
+# uop/ops.bend:505 symbol=GroupOp.movement owns the PREDICATE, not the list.
 # `PMEntry.ops` is a list, so this is the one place the six are written out; `mv_ops_n` is the row that would notice an omission.
 
 def ix_mv_ops() -> List<&2, O.Op>:
@@ -2030,7 +2030,7 @@ def ix_tbl_of(+tag: String, +ts: O.PMEntrys) -> IO(Unit):
   ix_tbl_go(tag, O.PMEntrys.es(ts), 0n)
 
 
-# `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:4005), so the
+# `PMEntry` is `tag`/`ops`/`rej` and NOTHING ELSE (ops.bend:4043), so the
 # oracle's `<tag>_<k>_slen`, `_rlen`, `_anylen`, `_name`, `_nalts` and `_src`
 # columns have no field to read: those are `UPat` facts (`strict_length`,
 # `required_len`, `name`, the src permutation tuple -- upat.py:47) and `UPat`
@@ -2108,7 +2108,7 @@ def main() -> IO(Unit):
 #
 #   * `<tag>_<k>_{slen,rlen,anylen,name,nalts,src}` -- 55 rows. These are `UPat`
 #     fields (`strict_length`, `required_len`, `name`, the src permutation tuple
-#     at upat.py:47) and `PMEntry` (ops.bend:4005) is `tag`/`ops`/`rej` and
+#     at upat.py:47) and `PMEntry` (ops.bend:4043) is `tag`/`ops`/`rej` and
 #     nothing else. `UPat` does not survive into the compiled IR.
 #   * `par_3_ops` -- the tag -> `Op` INVERSE, which `ops.bend` does not have
 #     (`Ops.name` and `Ops.value` go the other way).

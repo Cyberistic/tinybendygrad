@@ -1,5 +1,5 @@
 # port-compile: one `bin/bend --check-only` per .bend under tinybendygrad/, ONE AT A TIME, under checks/bounded.py.
-# taken=2026-10-22T15:00:02Z  population=169  ceiling 2048 MB, 300 s each.
+# taken=2026-10-30T18:44:36Z  population=176  ceiling 2048 MB, 300 s each.
 # state= COMPILES | COMPILES-AS-C | COLD-BY-DESIGN | FINDING | NO-MEASUREMENT
 # COMPILES       `--check-only` says `ALL PROOFS CHECK`.
 # COMPILES-AS-C  the checker refuses for a PROMISE (the file binds foreign or
@@ -22,6 +22,7 @@ COLD-BY-DESIGN	tinybendygrad/sz.bend	Error: 7 defs rely on unsafe or foreign cod
 COMPILES	tinybendygrad/tensor.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/PROOF-ALL.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/alu.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/LAWS/spec-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/LAWS/spec.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/gpudims.bend	ALL PROOFS CHECK
@@ -29,9 +30,7 @@ COMPILES	tinybendygrad/codegen/kernel.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/rewriter.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/simplify.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/decomp/__init__.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/codegen/decomp/dtype-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/decomp/dtype.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/codegen/decomp/op-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/decomp/op.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/decomp/transcendental.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/codegen/decomp/transcendental_f32.bend	ALL PROOFS CHECK
@@ -53,7 +52,7 @@ COMPILES	tinybendygrad/examples/test_pkl_imagenet.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/examples/train_resnet.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/extra/datasets/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/extra/datasets/fake_imagenet_from_mnist.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/extra/datasets/imagenet.bend	ALL PROOFS CHECK
+COLD-BY-DESIGN	tinybendygrad/extra/datasets/imagenet.bend	Error: 15 defs rely on unsafe or foreign code: -- and the compiler does NOT emit C
 COMPILES	tinybendygrad/extra/datasets/imagenet_download.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/extra/datasets/kits19.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/extra/datasets/librispeech.bend	ALL PROOFS CHECK
@@ -78,6 +77,7 @@ COMPILES	tinybendygrad/extra/models/unet.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/extra/models/unet3d.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/extra/models/vit.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/mixin/__init__.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/mixin/creation-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/mixin/creation.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/mixin/dtype.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/mixin/elementwise.bend	ALL PROOFS CHECK
@@ -91,6 +91,7 @@ COMPILES	tinybendygrad/nn/argmax.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/nn/datasets.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/nn/item.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/nn/layers.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/nn/mnist_cnn.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/nn/onnx.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/nn/optim.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/nn/pool.bend	ALL PROOFS CHECK
@@ -98,6 +99,8 @@ COMPILES	tinybendygrad/nn/state.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/nn/torch.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/cstyle.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/renderer/estimates.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/renderer/kuconv.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/llvmir.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/nir.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/nir_llvmir.bend	ALL PROOFS CHECK
@@ -105,6 +108,7 @@ COMPILES	tinybendygrad/renderer/ptx.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/tc.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/tc_ptx.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/wgsl.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/renderer/amd/dsl-mut.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/dsl.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/elf.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/amd/generate.bend	ALL PROOFS CHECK
@@ -112,17 +116,18 @@ COMPILES	tinybendygrad/renderer/amd/sqtt.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/renderer/isa/x86.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/__init__.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/_p6.bend	ALL PROOFS CHECK
+COLD-BY-DESIGN	tinybendygrad/runtime/device.bend	Error: 4 defs rely on unsafe or foreign code: -- and the compiler does NOT emit C
 COMPILES	tinybendygrad/runtime/ops_amd.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_bend.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_cl.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/runtime/ops_cpu.bend	ALL PROOFS CHECK
+COMPILES-AS-C	tinybendygrad/runtime/ops_cpu.bend	Error: 2 defs rely on unsafe or foreign code: -- AND THE COMPILER EMITS C FOR IT
 COMPILES	tinybendygrad/runtime/ops_cuda.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_disk.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_dsp.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_hip.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_metal.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_npy.bend	ALL PROOFS CHECK
-COMPILES	tinybendygrad/runtime/ops_null.bend	ALL PROOFS CHECK
+COMPILES-AS-C	tinybendygrad/runtime/ops_null.bend	Error: 2 defs rely on unsafe or foreign code: -- AND THE COMPILER EMITS C FOR IT
 COMPILES	tinybendygrad/runtime/ops_nv.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_python.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/runtime/ops_qcom.bend	ALL PROOFS CHECK
@@ -161,6 +166,8 @@ COMPILES	tinybendygrad/schedule/memory.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/schedule/multi.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/schedule/prepare.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/schedule/rangeify.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/schedule/rangify.bend	ALL PROOFS CHECK
+COMPILES	tinybendygrad/schedule/realize.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/test/dtype_oracle.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/test/_probe/v5.bend	ALL PROOFS CHECK
 COMPILES	tinybendygrad/uop/__init__.bend	ALL PROOFS CHECK

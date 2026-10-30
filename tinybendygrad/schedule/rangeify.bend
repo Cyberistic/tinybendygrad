@@ -2255,7 +2255,7 @@ def t_ab7_cli_nsrc() -> U32:
 # `Kernel`, so `clik` is the node that separates the two and `clik0` is the negative one
 # row from it at the same shape.
 #
-# `eq_arg(x, y)` DISPATCHES ON `x` and matches `y` (ops.bend:2270), so the expected arg
+# `eq_arg(x, y)` DISPATCHES ON `x` and matches `y` (ops.bend:2308), so the expected arg
 # goes first. `py=` from `.agents/slop/rf-arg-oracle.py`, which reports
 # `arg_is_own_kernel=1` and `arg_is_none=0` for the rebuild.
 def t_ab7_clik_nsrc() -> U32:
@@ -2690,12 +2690,17 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #  declares no def for it. `rf_foreign` answers "no node" and says so; inventing a local
 #  copy of `_mop_index` would be a lie about where the code lives. MEASURED roots:
 #  17 (INDEX), 13 (AFTER), 55 (END).
-# WALL(p3) ops.py:1339  KernelInfo.estimates  a 4-field record against Python's 5 -- BLOCKED: needs `KernelInfo.estimates`: `ops.bend`'s record is 4 fields and Python's is 5, so no Bend value can be EQUAL to a Python one.
-#  `ops.bend`'s `KernelInfo` is `KernelInfo{name, applied_opts, opts_to_apply, beam}`
-#  and Python's also carries `estimates: Estimates|None`, so no Bend value can be EQUAL
-#  to a Python one. `ab7_clik_arg` compares against `O.KernelInfo.of()` on both sides,
-#  which is why that row passes while the two representations are not interchangeable --
-#  REPORTED, and the row's comment says so rather than the row pretending they agree.
+# WALL(p3) ops.py:1339  KernelInfo.estimates  CLOSED 2026-10-30: `ops.bend`'s `KernelInfo`
+#  IS UPSTREAM'S SIX FIELDS NOW -- `name, applied_opts, opts_to_apply, estimates, beam,
+#  optimized` -- so a Bend value CAN be EQUAL to a Python one. `estimates` is
+#  `Maybe<&2, Estimates>` and `Estimates` is `renderer/estimates.bend`'s record, a LEAF,
+#  because Bend refuses an import cycle and upstream breaks it under `TYPE_CHECKING`.
+#  `ab7_clik_arg` compares against `O.KernelInfo.of()` on both sides and that still holds.
+#  WHAT IS STILL NOT TRUE: the port can build NO `KernelInfo` with a non-`None`
+#  `estimates`, because upstream's only writer -- `codegen/__init__.py:446` -- is
+#  a WALL in `codegen/kernel.bend`. SO EVERY VALUE THE PORT BUILDS CARRIES
+#  `estimates=None` AND `optimized=False`, WHICH IS UPSTREAM'S DEFAULT AND NOT
+#  A LIE.
 # ===========================================================================
 # `movement.bend`'s `hop_self` WAS INVERTED, AND IS NOT ANY MORE. It is kept here
 # because the note above `M.hop_self`'s use is only worth reading if the thing it
@@ -2722,7 +2727,7 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #     (ops.py:1826-1832).
 #
 # WHY A SWEEP AND NOT A DFS. `Arena.nodes` IS TOPOLOGICALLY SORTED
-# (ops.bend:2754): `UOp.new` is only ever called with srcs already in the
+# (ops.bend:2776): `UOp.new` is only ever called with srcs already in the
 # arena, so every node's src indices are BELOW its own position. INDEX ORDER is
 # therefore an order every node's children precede it, which is the order the
 # DFS's post-order produces -- and a sweep is the SAME computation with none of
@@ -2832,7 +2837,7 @@ def Eng.rep(+e: Eng) -> List<&2, Rep>:
 def eng_fresh(+e: Eng) -> Eng: Eng{Eng.ar(e), Nil{}}
 
 # THE FUEL. The bound on the fixed-point loop. The arena's node count is the
-# bound, because a node's srcs are all BELOW it (ops.bend:1315 symbol=Arena.nodes) so no chain
+# bound, because a node's srcs are all BELOW it (ops.bend:1327 symbol=Arena.nodes) so no chain
 # of rewrites can be longer than the arena.
 def eng_fuel(+ar: O.Arena) -> Nat: U32.to_nat(U32.add(O.Arena.next(ar), 4))
 
@@ -2942,7 +2947,7 @@ def eng_node(st: Stg, +e: Eng, +n: U32) -> Eng:
   eng_put(e1, n, h)
 
 # THE SWEEP. The arena in INDEX ORDER, which is a TOPOLOGICAL order
-# (ops.bend:1315 symbol=Arena.nodes), so every node's children are already final when it is
+# (ops.bend:1327 symbol=Arena.nodes), so every node's children are already final when it is
 # reached. The recursion is on the LIST TAIL, and the SHRINKING ARGUMENT COMES
 # FIRST (Bend reads a self-call's arguments left to right, each passed
 # unchanged until one shrinks), so there is no mutual recursion -- which Bend
@@ -3037,7 +3042,7 @@ def eng_node_str(+ar: O.Arena, +n: U32) -> String:
                  String.join(eng_src_names.go(ar, O.Arena.srcs(ar, n), Nil{}), ",")])
 
 # THE DUMP IS A DFS FROM THE RESULT ROOT, and it must be: the arena KEEPS the
-# nodes a rule replaced (the arena is append-only, ops.bend:1315 symbol=Arena.nodes), so a dump
+# nodes a rule replaced (the arena is append-only, ops.bend:1327 symbol=Arena.nodes), so a dump
 # of the WHOLE ARENA would show the OLD graph and the NEW graph side by side
 # and neither of them is the answer. The DFS walks the CURRENT graph -- the
 # nodes the map points at -- and each node is emitted ONCE.

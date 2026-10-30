@@ -1202,7 +1202,7 @@ def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
 # f64 IS A WALL AND NOT A NEAR MISS. Upstream's `truncate[float64]` is
 # `ctypes.c_double(x).value` -- the identity on a DOUBLE -- and the port's value is an
 # F32, so an f64 CONST HERE IS THE F32 OF UPSTREAM'S DOUBLE. The port's `Const` type
-# (`uop/ops.bend:802`, `CFloat{f: F32}`) is where that would have to be fixed, and
+# (`uop/ops.bend:803`, `CFloat{f: F32}`) is where that would have to be fixed, and
 # that file is another unit's.
 #
 # ---------------------------------------------------------------------------

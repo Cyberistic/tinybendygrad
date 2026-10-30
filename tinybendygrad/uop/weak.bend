@@ -107,7 +107,7 @@ def wk_sealed(d: S.Dt) -> Bool:
     case _: False{}
 
 # `wk_eq_dt` / `wk_eq_cls` -- A LOCAL COPY, BECAUSE ops.bend's WAS WRONG FOR weakfloat.
-# `ops.bend:1875 symbol=eq_cls.sel` HAD SIX arms and was missing `CWeakFloat`, so
+# `ops.bend:1895 symbol=eq_cls.sel` HAD SIX arms and was missing `CWeakFloat`, so
 # `eq_cls(CWeakFloat{}, CWeakFloat{})` was False (measured), which also made two
 # structurally identical `CAST(..., weakfloat)` nodes fail to hash-cons. ops.bend is
 # READ-ONLY to this port, so this is a workaround: the one-line fix is a
@@ -625,9 +625,9 @@ def wk_cast_at(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_cast_at.of(wk_eq_dt(wk_dt(fx, self), dt), fx, self, dt)
 
 # ops.py:632-638 `UOp.const`: `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`
-# -- the bare CONST the fold derives a dtype from, PLUS the CAST. `ops.bend:3012 symbol=UOp.const`
+# -- the bare CONST the fold derives a dtype from, PLUS the CAST. `ops.bend:3050 symbol=UOp.const`
 # has the bare half; `.cast` folds away at exactly bool/weakint/weakfloat, so for those three
-# Python has ONE node and this has two, which `ops.bend:3012 symbol=UOp.const`'s own doc comment
+# Python has ONE node and this has two, which `ops.bend:3050 symbol=UOp.const`'s own doc comment
 # documents. Spelling the CAST unconditionally is what `UOp.const`'s own shape does.
 def wk_const_at(+fx: F.Folded, +dt: S.Dt, cv: Maybe<&1, O.Const>) -> O.Found:
   wk_cast_at.of(False{}, fx, O.Found.i(O.UOp.const(F.Folded.ar(fx), wk_const_of(cv))), dt)
@@ -793,7 +793,7 @@ def derived_dtypes.put(ok: Bool, meet: S.Dt, result: Maybe<&2, S.Dt>) -> Dts:
 #
 # the concrete dtypes u commits its srcs at: the operands' meet and u's own derived dtype,
 # None if either is weak.
-# `GroupOp.Broadcastable` is `Binary | Ternary`, ops.bend:562 `GroupOp.broadcastable`.
+# `GroupOp.Broadcastable` is `Binary | Ternary`, ops.bend:563 `GroupOp.broadcastable`.
 # Both guards are `dtypes.weaks`; Python's `tuple[DType,DType]|None` is `Dts` with
 # `dts_some`.
 def derived_dtypes(+fx: F.Folded, +self: U32, +ss: List<&2, U32>) -> Dts:
@@ -1124,7 +1124,7 @@ def wk_cast_table() -> O.PMEntrys:
 # only per-table difference is WHICH of the two already-written dispatches a tag goes to,
 # and a `Bool` selects between them. The two dispatches and the tables stay separate.
 #
-# `wk_keep` is first-wins, the same shape as ops.bend:4050 `pm_keep`: a `Some` accumulator
+# `wk_keep` is first-wins, the same shape as ops.bend:4088 `pm_keep`: a `Some` accumulator
 # keeps what it holds and discards a later hit.
 
 def wk_keep.take(acc: Maybe<&2, O.Found>, v: Maybe<&2, O.Found>) -> Maybe<&2, O.Found>:

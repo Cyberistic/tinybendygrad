@@ -941,7 +941,7 @@ def rr_row_range() -> String:
 #
 # **=> AND THE REWRITE IS **`bottom_up=True`** (`indexing.py:308`), **=> SO THE PORT WALKS
 # THE ARENA **IN REVERSE INDEX ORDER** (WHICH IS **CHILDREN FIRST**, BECAUSE THE ARENA's
-# INDEX ORDER IS TOPOLOGICAL -- `uop/ops.bend:1293 symbol=Arena`).
+# INDEX ORDER IS TOPOLOGICAL -- `uop/ops.bend:1314 symbol=Arena`).
 #
 # **=> AND THE **RANGE MAP's ENTRIES** ARE **THE INPUT RANGES** OF A NODE (`IxRngs.inp`)
 # AND **THE OUTPUT RANGES** (`IxRngs.outp`), AND **THE APPLY USES BOTH**: THE **INPUT**
@@ -1070,11 +1070,11 @@ def rr_ap_ranges_only(+tbl: List<&2, IX.IxRange>, +closed: List<&2, U32>) -> Lis
 # POSITION"*).**
 #
 # **=> ⇒ ⇒ AND EACH NODE's REBUILT SRCS ARE **THE **REBUILT** SRCS OF ITS CHILDREN** --
-# **=> AND THE PORT's OWN `UOp.replace` (`ops.bend:2939`) IS **EXACTLY** UPSTREAM's
+# **=> AND THE PORT's OWN `UOp.replace` (`ops.bend:2986`) IS **EXACTLY** UPSTREAM's
 # `x.replace(src=tuple(...))`.**
 #
 # **=> ⇒ ⇒ AND THE **MAP** IS **THE **OLD INDEX -> NEW INDEX** MAP, **=> AND THE PORT's OWN
-# `Rep{old, new}` (`rangeify.bend:2753`) IS **THE SAME SHAPE** -- **=> ⇒ ⇒ AND SO THE
+# `Rep{old, new}` (`rangeify.bend:2758`) IS **THE SAME SHAPE** -- **=> ⇒ ⇒ AND SO THE
 # APPLY's OUTPUT IS **THE SAME KIND OF THING** THE ENGINE's `eng_*` PRODUCES, **=> WHICH
 # IS WHAT MAKES THE TWO COMPOSE.**
 # ===========================================================================
@@ -1087,7 +1087,7 @@ def rr_ap_ranges_only(+tbl: List<&2, IX.IxRange>, +closed: List<&2, U32>) -> Lis
 # AN OLD ONE IN PLACE -- **=> ⇒ ⇒ AND UPSTREAM's `graph_rewrite` **DOES** REPLACE IN
 # PLACE** (`x.replace(src=...)` RETURNS A NEW UOP AND THE REWRITE'S WORKLIST CARRIES IT),
 # **=> ⇒ ⇒ ⇒ SO **THE PORT NEEDS AN EXPLICIT MAP** -- **=> ⇒ ⇒ ⇒ AND THAT IS **WHY** THE
-# PORT's OWN `Rep{old, new}` MAP EXISTS (`rangeify.bend:2753`) **AND WHY THE ENGINE's
+# PORT's OWN `Rep{old, new}` MAP EXISTS (`rangeify.bend:2758`) **AND WHY THE ENGINE's
 # `eng_put` EXISTS.**
 #
 # **=> ⇒ ⇒ AND THE MAP IS **THE (OLD, NEW) PAIRS** SO THAT A **CHILD's** REBUILT NODE CAN
@@ -1156,16 +1156,16 @@ def ap_rep_get(+es: List<&2, ApRep>, k: U32) -> Maybe<&2, U32>:
 # **⇒ AND THE SECOND HALF IS UPSTREAM's STAGE 2** (`ops.py`, `unified_rewrite`):
 # THE REBUILT NODE's SRCS ARE **THE REBUILT CHILDREN** -- `new_src = tuple(
 # self.replace.get(x, x) for x in new_n.src)` -- **⇒ AND THE PORT's ARENA IS
-# **APPEND-ONLY** (`uop/ops.bend:1293 symbol=Arena`), **⇒ ⇒ ⇒ SO THE PORT NEEDS **AN EXPLICIT
+# **APPEND-ONLY** (`uop/ops.bend:1314 symbol=Arena`), **⇒ ⇒ ⇒ SO THE PORT NEEDS **AN EXPLICIT
 # MAP**, **⇒ ⇒ ⇒ AND THAT IS **WHY** THE PORT's OWN `Rep{old, new}` MAP EXISTS**
-# (`schedule/rangeify.bend:2753 symbol=Rep`) **AND WHY THE ENGINE's `eng_put` EXISTS.**
+# (`schedule/rangeify.bend:2758 symbol=Rep`) **AND WHY THE ENGINE's `eng_put` EXISTS.**
 #
 # ===========================================================================
-# **THE ARENA IS **A VALUE**, NOT A MUTABLE STORE** (`ops.bend:1293`: *"`Arena` is
+# **THE ARENA IS **A VALUE**, NOT A MUTABLE STORE** (`ops.bend:1314`: *"`Arena` is
 # `Data`"*), **AND BEND's `+` IS **A REUSABLE LET**, NOT A REBINDING** (`bend
 # guide`: *"`x = v  +x = v  -x = v` -- a let: affine, reusable, erased"*), **⇒ AND
 # SO **A DEF THAT MINTS A NODE MUST HAND THE **GROWN** ARENA BACK** -- **⇒ AND
-# THE PORT's SPELLING FOR THAT IS **`Found{ar, i}`** (`ops.bend:2718`), **⇒ AND
+# THE PORT's SPELLING FOR THAT IS **`Found{ar, i}`** (`ops.bend:2765`), **⇒ AND
 # `realize.bend:113`'s `O.Found.ar(r)` IS THE PATTERN.**
 #
 # **⇒ ⇒ ⇒ AND THE FIRST ATTEMPT AT THIS BLOCK **DROPPED THE ARENA** (`O.Found.i(f)`
@@ -1362,7 +1362,7 @@ def rr_ap_red_new(+ar: O.Arena, +tb: F.Table, +tbl: List<&2, IX.IxRange>, +ctx: 
   +ar3 = ApSrcs.ar(rn)
   +srcs = List.append(&2, U32, [O.Arena.src(ar2, O.Found.i(bx), 0)], ApSrcs.ss(rn))
   rop = rr_ap_red_op(ar2, x)
-  # **=> ⇒ ⇒ AND THE ARG IS **THE PORT's OWN `UOp.reduce.arg`** (`ops.bend:7435`),
+  # **=> ⇒ ⇒ AND THE ARG IS **THE PORT's OWN `UOp.reduce.arg`** (`ops.bend:7474`),
   # **=> BECAUSE `AReduce{rop, 0}` **AS A LET** CANNOT BE INFERRED** (**MEASURED**:
   # **THE COMPILER SAYS *"an annotated term (cannot infer)"***), **=> AND THE PORT's
   # OWN SPELLING TAKES A `Maybe<&2, Op>` AND MAKES **THE SAME PAIR**.

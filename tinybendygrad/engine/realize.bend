@@ -48,8 +48,9 @@
 #
 # [b] realize.py:57   the HCQInfo arms      -- `call.arg.aux` is DROPPED from
 #                                             `CallInfo` in ops.bend
-# [b] realize.py:58   Estimates             -- renderer/__init__.py:16, P5
-# [b] realize.py:60   first_run_cache       -- a process-global `set[bytes]`
+# [b] realize.py:58   Estimates             -- the FIELD is PORTED (2026-10-30)
+#                                             and always `None`: `do_estimates`
+#                                             is a WALL in codegen/kernel.bend# [b] realize.py:60   first_run_cache       -- a process-global `set[bytes]`
 # [b] realize.py:64   track_stats           -- GlobalCounters, DEBUG, PROFILE,
 #                                             cpu_events, print, synchronize
 # [b] realize.py:107  runtime_cache         -- a process-global dict
@@ -313,7 +314,7 @@ def rz_is_var(+ar: O.Arena, +self: U32) -> Bool:
 # HEAD -- over every non-CALL. MEASURED on the census fixture: 52 rows of the 974, on 26
 # of the 41 non-CALL nodes, and `get_call_arg_uops` is the ONLY thing that moved them.
 #
-# `Arena.src_from` IS THE SLICE (`ops.bend:1421` symbol=Arena.src_from), and it is
+# `Arena.src_from` IS THE SLICE (`ops.bend:1433` symbol=Arena.src_from), and it is
 # not a new computation: the
 # `rz_res` view rebuild at :980 and the `pm_beam` rebuild at :1232 already call it for the
 # same `src[1:]` off a CALL. Every caller in this file passes a CALL -- `rz_oi_*`,
@@ -945,15 +946,15 @@ def gn_kernel(+ar: O.Arena, +prog: U32) -> Maybe<&2, String>:
 # **************** Stat ****************
 #
 # `estimate_uop` (realize.py:55) RETURNS `tinygrad.renderer.Estimates`, and
-# `ops.bend`'s `KernelInfo` block already records that field as NOT PORTED for
-# the right reason: "Estimates is `tinygrad.renderer`'s cost model, P5. A field
-# the port cannot read is a field that would silently always be None." This file
-# does not reopen that. What IS ported is the DISPATCH, because the arm chosen is
-# a function of the arena and it is what `track_stats` multiplies by the kernel
-# count:
+# `ops.bend`'s `KernelInfo` CARRIES THAT FIELD as of 2026-10-30 -- a
+# `Maybe<&2, Estimates>`, the record being `renderer/estimates.bend`'s because
+# Bend refuses an import cycle. This file does not reopen that. What IS ported
+# is the DISPATCH, because the arm chosen is a function of the arena and it is
+# what `track_stats` multiplies by the kernel count:
 #
 #   realize.py:57  isinstance(call.arg.aux, HCQInfo)   -> `aux` is DROPPED
-#   realize.py:58  PROGRAM -> ast.src[0].arg.estimates -> the field is DROPPED
+#   realize.py:58  PROGRAM -> ast.src[0].arg.estimates -> the field is READ NOW
+#                  and it is ALWAYS `None`: `do_estimates` is a WALL
 #   realize.py:59  STORE / encdec -> Estimates(lds=n, mem=n), n = prod(shape) *
 #                  call.src[1].dtype.itemsize              -> `rz_nbytes`
 #   realize.py:61  otherwise Estimates()                 -> `rz_est_is_copy` False
@@ -1522,10 +1523,11 @@ def rz_kernel_beam(a: O.Arg) -> U32:
     case O.AKernel{+ki}: O.KernelInfo.beam(ki)
     case _: 0
 
-# `replace(sink.arg, beam=ctx)` -- a `KernelInfo` is four fields and only one moves.
+# `replace(sink.arg, beam=ctx)` -- a `KernelInfo` is six fields and only one moves.
 def rz_beam_arg.of(+ki: O.KernelInfo, ctx: U32) -> O.Arg:
   O.AKernel{O.KernelInfo{O.KernelInfo.name(ki), O.KernelInfo.applied_opts(ki),
-                          O.KernelInfo.opts_to_apply(ki), ctx}}
+                          O.KernelInfo.opts_to_apply(ki), O.KernelInfo.estimates(ki), ctx,
+                          O.KernelInfo.optimized(ki)}}
 
 # `sink.replace(arg=replace(sink.arg, beam=ctx))`, then
 # `call.replace(src=(that, *call.src[1:]))` -- realize.py:219.
@@ -1581,8 +1583,8 @@ def bm_hop_self(+f: O.Found, self: U32) -> O.Found:
 # rebuild the node -- and a parameter Bend allows to be read twice is a `+`.
 #
 # AND THE CLAUSE IS INSIDE `bm_new` RATHER THAN AROUND IT, because in realize.bend
-# `beam_rewrite` is a JUDGE (`realize.bend:2127` symbol=beam_rewrite) and `bm_new` is
-# the BODY (`realize.bend:1591` symbol=bm_new), so `bm_new` is
+# `beam_rewrite` is a JUDGE (`realize.bend:2131` symbol=beam_rewrite) and `bm_new` is
+# the BODY (`realize.bend:1595` symbol=bm_new), so `bm_new` is
 # the `rewrite` this table's driver would otherwise be. THE DEFECT THIS FIXES IS
 # MEASURED: `pm_beam`'s body is `call.replace(src=(sink.replace(arg=replace(sink.arg,
 # beam=ctx)), *call.src[1:]))`, and at `ctx == 0` over a SINK whose `beam` is already 0
@@ -1805,7 +1807,7 @@ def call_info(nm: String) -> O.CallInfo:
   O.CallInfo{Some{nm}, False{}, False{}, S.void()}
 
 def kernel_info(nm: String, beam: U32) -> O.KernelInfo:
-  O.KernelInfo{nm, Nil{}, None{}, beam}
+  O.KernelInfo{nm, Nil{}, None{}, None{}, beam, False{}}
 
 # THE LIFETIME IS `&2` AND THAT IS NOT COSMETIC. A `ParamArg` FIELD is
 # `Maybe<&2, String>`, so a `Maybe<String>` parameter that is STORED into one must
