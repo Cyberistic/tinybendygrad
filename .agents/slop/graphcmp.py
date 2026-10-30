@@ -144,9 +144,13 @@ THE LEDGER, and why it is printed on EVERY report.
   for the refusals, which is the question a residual list otherwise never answers.
 
   One field is NOT countable and is NAMED rather than counted, because a count would be 0
-  by construction and therefore a claim: `KernelInfo.estimates`, which `ops.bend` dropped
-  (P5, `tinygrad.renderer`) and whose upstream value is None for every kernel the port can
-  build.
+  by construction and therefore a claim: `KernelInfo.estimates`, whose upstream value is
+  None for every kernel the port can build. MEASURED 2026-10-30: the port CARRIES it
+  now -- `ops.bend`'s `KernelInfo` is upstream's SIX fields and `estimates` is
+  `Maybe<&2, Estimates>` (`renderer/estimates.bend`'s record) -- and it is `None` in every
+  value the port builds because `do_estimates` is a WALL. So it is a field BOTH sides
+  carry that this FORM leaves out, which is the `ProgramInfo.target` case below and NOT
+  the "neither side carries it" case.
   R8  src     the ORDERED child indices. Order, not a multiset: the differ must be able to
               see a commutative-child swap (`--plant srcswap`), and `UOp.key` (ops.py:269)
               concatenates `s.key` for `s in self.src` IN ORDER, so upstream's own node
@@ -567,11 +571,12 @@ def carg(op: Ops, x, owner: UOp | None = None) -> str:
     #     TUPLE, which is not `None` -- and the port's field is `None` (measured, Q1b).
     #     So the two sides genuinely differ here, on every SINK those files build, and
     #     until now this gate could not see that in either direction.
-    #   `estimates: Estimates|None` is not ported (P5, `tinygrad.renderer`) and upstream's
-    #   value is None for every kernel the port can build; `render.bend:653` pins it to the
-    #   literal `estimates=None` for the same reason. It is not a fourth-vs-fifth slot: a
-    #   field neither side carries cannot be compared by either, and the ledger below is
-    #   where "not carried" is stated.
+    #   `estimates: Estimates|None` -- BOTH SIDES CARRY IT (MEASURED 2026-10-30: the
+    #   port's `KernelInfo` is upstream's SIX fields and `estimates` is
+    #   `Maybe<&2, Estimates>`), and upstream's value is None for every kernel the port
+    #   can build, and the port's is None for the same reason: `do_estimates` is a WALL.
+    #   It is not a fifth slot because this FORM renders four, and a field the FORM
+    #   leaves out is the `ProgramInfo.target` case below, not a hole.
     return f"kI({bstr(x.name)},{tup([_carg(o) for o in x.applied_opts])},{_carg(x.opts_to_apply)},{u(x.beam)})"
   if op is Ops.PROGRAM:
     # `ProgramInfo` HAS SEVEN FIELDS (ops.py:1343-1350) and this form carries SIX of them.
@@ -2787,14 +2792,17 @@ def ledger_lines(py: dict[str, int], bd: dict[str, int]) -> list[str]:
     out.append(f"#   {m:<3} {where:<11} py={py[m]:<4} bend={bd[m]:<4} {what}")
     out.append(f"#       {why}")
   # THE ONE FIELD WITH NO MARKER, because neither side can write one.
-  # `KernelInfo.estimates: Estimates|None` (ops.py:1346) exists upstream, ops.bend DROPPED
-  # it (P5, `tinygrad.renderer`), and `uop/render.bend:653` pins the literal
-  # `estimates=None` in its place with the reason "it is None for every kernel this port
-  # can build". So it is not a countable construct -- a count would be 0 by construction,
-  # which is a claim -- it is a field neither side carries, and it is named here so that
-  # "not compared" is a printed sentence rather than a silence.
-  out.append("#   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT "
-             "(port dropped it, P5); upstream's value is None for every kernel the port can "
+  # `KernelInfo.estimates: Estimates|None` (ops.py:1346) exists upstream AND the port
+  # CARRIES IT (MEASURED 2026-10-30: `ops.bend`'s `KernelInfo` is upstream's six
+  # fields), and both sides' value is None for every kernel the port can build --
+  # upstream's because upstream does not write it either, and the port's because
+  # `do_estimates` is a WALL. So it is not a countable construct -- a count would be 0 by
+  # construction, which is a claim -- it is a field BOTH sides carry that the FORM
+  # leaves out, and it is named here so that "not compared" is a printed sentence
+  # rather than a silence.
+  out.append("#   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: BOTH SIDES CARRY IT AND "
+             "THE FORM LEAVES IT OUT (the port's record is upstream's six fields since "
+             "2026-10-30); the value is None on both sides for every kernel the port can "
              "build, so the count would be 0 BY CONSTRUCTION and is not printed as one")
   # `ProgramInfo.target` -- the SEVENTH field of the record the `pI(` form renders, and
   # THE ONE THE `pI(` FORM DOES NOT CARRY. **BOTH SIDES HOLD IT** (the port's record has

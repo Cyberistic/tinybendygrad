@@ -386,9 +386,11 @@ def callinfo(ci: O.CallInfo) -> String:
       String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ")"])
 
 # FOUR SLOTS: name, applied_opts, opts_to_apply, beam -- `KernelInfo`'s own fields in
-# DECLARATION order (ops.py:1342-1347) minus `estimates`, which ops.bend DROPPED (P5,
-# `tinygrad.renderer`) and which is None upstream for every kernel the port can build
-# (`uop/render.bend:653` pins the literal for the same reason).
+# DECLARATION order (ops.py:1342-1347) minus `estimates`, which the FORM leaves out
+# because the value is None on both sides for every kernel the port can build (the
+# port's `do_estimates` is a WALL). MEASURED 2026-10-30: `ops.bend`'s record is
+# upstream's SIX fields and `estimates` IS carried -- `Maybe<&2, Estimates>` -- so this
+# is a field both sides carry that the form omits, NOT a field the port dropped.
 #
 # It was TWO here against CPython's THREE, so a SINK could only ever report a
 # disagreement that was really "the port renders fewer fields". And `opts_to_apply` was
@@ -441,7 +443,7 @@ def optsm(m: Maybe<&2, List<&2, O.OPT>>) -> String:
 
 def kernelinfo(ki: O.KernelInfo) -> String:
   match ki:
-    case O.KernelInfo{kname, applied_opts, opts_to_apply, beam}:
+    case O.KernelInfo{kname, applied_opts, opts_to_apply, estimates, beam, optimized}:
       String.concat(["kI(", bstr(kname), ",", opts(applied_opts), ",", optsm(opts_to_apply), ",", i(beam), ")"])
 
 def i64s.go(+ys: List<&2, H.I64>, acc: List<&2, String>) -> List<&2, String>:
@@ -1182,7 +1184,7 @@ def g_lin() -> O.Found:
   # match the row it is supposed to model.
   O.UOp.new(O.Found.ar(e0), O.OpsSINK{}, [O.Found.i(e0)],
     O.AKernel{O.KernelInfo{"r_4_5_3",
-      [O.OPT{O.OPS_SPLIT{}, 2, O.OA_SPLIT{O.SPL{0, O.AXIS_UPCAST{}, None{}}}}], None{}, 0}}, O.TNone{})
+      [O.OPT{O.OPS_SPLIT{}, 2, O.OA_SPLIT{O.SPL{0, O.AXIS_UPCAST{}, None{}}}}], None{}, None{}, 0, False{}}}, O.TNone{})
 
 # ===========================================================================
 # `--graph prog`: THE FIRST `PROGRAM` IN THE CORPUS, and the first graph whose
@@ -1437,7 +1439,7 @@ def g_gate() -> O.Found:
   +st = O.UOp.new(O.Found.ar(fi), O.OpsSTORE{}, [O.Found.i(ix0), O.Found.i(ix1)], O.ANone{}, O.TNone{})
   +ed = O.UOp.new(O.Found.ar(st), O.OpsENDIF{}, [O.Found.i(fi)], O.ANone{}, O.TNone{})
   +en = O.UOp.new(O.Found.ar(ed), O.OpsEND{}, [O.Found.i(st), O.Found.i(rg)], O.ANone{}, O.TNone{})
-  +sk = O.UOp.new(O.Found.ar(en), O.OpsSINK{}, [O.Found.i(en)], O.AKernel{O.KernelInfo{"gated", Nil{}, None{}, 0}}, O.TNone{})
+  +sk = O.UOp.new(O.Found.ar(en), O.OpsSINK{}, [O.Found.i(en)], O.AKernel{O.KernelInfo{"gated", Nil{}, None{}, None{}, 0, False{}}}, O.TNone{})
   O.UOp.new(O.Found.ar(sk), O.OpsLINEAR{},
     [O.Found.i(c16), O.Found.i(p0), O.Found.i(bf), O.Found.i(c3), O.Found.i(c4), O.Found.i(rg),
       O.Found.i(ix0), O.Found.i(ix1), O.Found.i(lt), O.Found.i(fi), O.Found.i(st), O.Found.i(ed),
