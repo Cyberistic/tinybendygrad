@@ -391,7 +391,17 @@ def rr_dims(+ar: O.Arena, +tb: F.Table, n: U32) -> List<&2, U32>:
 # `ix_ds_take` TWICE -- SO THE PORT's OWN DECISION IS REUSED, NOT COPIED.
 # ===========================================================================
 def rr_dsrcs(+ar: O.Arena, +op: O.Op, +ss: List<&2, U32>) -> List<&2, U32>:
-  IX.ix_ds_take(IX.ix_ds_one(op), IX.ix_ds_take(IX.ix_ds_zero(op), ss))
+  # upstream's `data_srcs` (`indexing.py:68-71`) IS THREE CASES -- ZERO srcs
+  # for {PARAM, BUFFER, ALLOC, RANGE, SPECIAL}, `src[:1]` for the movements, ALL
+  # of them otherwise -- **⇒ AND THE DECISION IS `indexing.bend`'s OWN
+  # `ix_ds_list`, BESIDE THE LENGTH FORM `ix_ds_n`, SO IT IS MADE ONCE.**
+  #
+  # **⇒ AND THIS COMPOSITION USED TO READ `ix_ds_zero` AS "TAKE ONE", WHICH IS
+  # THE OPPOSITE OF WHAT `ix_ds_n.of` READS IT AS -- SO A `PARAM` CONTRIBUTED ITS
+  # FIRST SRC AS A DATA SRC, AND THE RANGE MAP GREW AN ENTRY FOR EVERY `CONST`
+  # THAT FEEDS A `PARAM` (THREE OF THEM, AT TOPOSORT POSITIONS 0, 6 AND 12),
+  # WHERE UPSTREAM HAS NO ENTRY AT ALL.**
+  IX.ix_ds_list(op, ss)
 
 def rr_cons.go(+topo: List<&2, U32>, +ar: O.Arena, +x: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   match topo:
@@ -737,11 +747,20 @@ def rr_p4.move(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -
   rr_p4.stack(rr_is_stack(ar, x), m, out, rngs)
 
 def rr_p4.reduce(+ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
-  +out = RrMap.out(m)
+  # **⇒ THE GROWN TABLE IS **THE **POINT**: `rr_new.all` APPENDS THE REDUCE-AXIS
+  # RANGE TO THE TABLE (`rr_new.one` TAKES ITS INDEX FROM THE TABLE's LENGTH),
+  # **⇒ AND `RrMap.put` KEEPS `RrMap.tbl(m)` -- THE TABLE **AS IT WAS** -- **⇒
+  # SO THE RANGE's INDEX POINTED AT A TABLE THAT NEVER RECEIVED IT. **⇒ THIS IS
+  # THE CLASS "A KEY THAT IS NOT THE KEY": **THE RANGE WAS CREATED AND NOTHING
+  # COULD READ IT.**
+  # **⇒ AND THE ROWS ARE BUILT LIKE `rr_p1.real`'s, WHICH USES THE GROWN TABLE
+  # THE SAME WAY -- **⇒ AND `RrMap.out(m)` IS READ TWICE RATHER THAN BOUND, SO
+  # THE `+` LOCAL IS NOT USED TWICE.**
   +n = rr_new.all(List.take(&2, U32, rr_dims(ar, tb, O.Arena.src0(ar, x)),
                             U32.to_nat(rr_reduce_n.of(O.Arena.arg(ar, x)))),
                   RrMap.tbl(m), Nil{})
-  RrMap.put(m, out, List.append(&2, U32, RrRs.rs(n), out), RrMap.e(m), RrMap.b(m), RrMap.ne(m))
+  RrMap{RrMap.ctx(m), RrMap.ends(m), RrRs.tbl(n), RrMap.out(m),
+        List.append(&2, U32, RrRs.rs(n), RrMap.out(m)), RrMap.e(m), RrMap.b(m), RrMap.ne(m)}
 
 def rr_p4.pick(isred: Bool, +ar: O.Arena, +tb: F.Table, +ctx: IX.IxCtx, +m: RrMap, +x: U32) -> RrMap:
   match isred:

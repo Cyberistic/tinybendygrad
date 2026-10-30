@@ -545,6 +545,26 @@ def ix_ds_one(+op: O.Op) -> Bool:
 def ix_ds_n.of(zero: Bool, one: Bool, +ss: List<&2, U32>) -> U32:
   Bool.pick(U32, zero, 0, ix_len(ix_ds_take(one, ss)))
 
+# THE ANSWER, as a LIST -- upstream's `data_srcs` (`indexing.py:68-71`) IS
+# THREE CASES: **ZERO** srcs for `{PARAM, BUFFER, ALLOC, RANGE, SPECIAL}`,
+# **`src[:1]`** for the movements, and **ALL** of them otherwise.
+#
+# **⇒ AND THE SAME DECISION IS ALREADY WRITTEN TWICE, AND THE TWO SPELLINGS
+# DISAGREEED: `ix_ds_n.of` READS `ix_ds_zero` AS "THIS OP HAS ZERO DATA SRCS"
+# (SO THE ANSWER IS 0), AND `rangify.bend`'s `rr_dsrcs` READ THE SAME PREDICATE
+# AS "TAKE ONE" -- `ix_ds_take(ix_ds_zero(op), ss)` -- SO A `PARAM` GOT ITS FIRST
+# SRC BACK AS A DATA SRC, AND THE RANGE MAP GREW AN ENTRY FOR EVERY `CONST` THAT
+# FEEDS A `PARAM`.** A DOCUMENT RESTATING A DOCUMENT IS ONE WITNESS, NOT TWO,
+# AND THE TWO DISAGREEED.
+#
+# **⇒ AND THIS IS THE LIST FORM OF THE SAME THREE CASES, BESIDE THE LENGTH
+# FORM, SO THE DECISION IS MADE ONCE.**
+def ix_ds_list.of(zero: Bool, one: Bool, +ss: List<&2, U32>) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, zero, Nil{}, ix_ds_take(one, ss))
+
+def ix_ds_list(+op: O.Op, +ss: List<&2, U32>) -> List<&2, U32>:
+  ix_ds_list.of(ix_ds_zero(op), ix_ds_one(op), ss)
+
 # ===========================================================================
 # `argsort` -- helpers.py, read at indexing.py:174 (`Ops.PERMUTE`). FULLY
 # PORTED: a selection sort over a tuple of permutation indices.
