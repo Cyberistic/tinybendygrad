@@ -1,29 +1,29 @@
-pin.declared=v2.0.38
+pin.declared=v2.0.39
 pin.enforced_by=tools/get-bend.sh (runs ONLY when a human runs it)
 pin.read_by=checks/bend-health.py -- loaded by path, not copied
-pin.checkout_tag=v2.0.38
-pin.checkout_sha=0a57ca0d21de94a3724d8be21afb0eb89f88b4d8
+pin.checkout_tag=v2.0.39
+pin.checkout_sha=a3efe8a3801f423827424227172eed9802c5e6cb
 pin.checkout_dirty_files=0
 pin.sha_recorded_elsewhere=NO
 spelling.bare=MISSING (command -v rc=1)
 spelling.relative=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend exists=True X_OK=True
 spelling.resolved=gatekit.BEND = ROOT/'bin'/'bend' -- the same file by construction
 spelling.fallback_in_substrate=which('bend') -> None
-spelling.call_sites=64
+spelling.call_sites=65
 flag.--version_rc=1
 flag.--version_says=['bend: unknown option --version (see bend --help)']
 flag.version_rc=0
-flag.version_says=bend 2.0.38
+flag.version_says=bend 2.0.39
 missing.probe_gate=tn_contiguous_backward-gate.py
 missing.shim_rc=1
 missing.shim_says=error: Module not found "<sandbox>/bin/../references/bend/bend2/main.ts"
 missing.gatekit_gate_rc=3
 missing.gatekit_gate_verdict=REFUSED
 missing.get_bend_rc_on_mismatch=3
-recorded.sites_that_build_a_path=64
-recorded.sites_that_reach_it_via_gatekit=79
-recorded.sites_that_RUN_the_compiler=143
-recorded.sites_that_mention_it_only=25
+recorded.sites_that_build_a_path=65
+recorded.sites_that_reach_it_via_gatekit=81
+recorded.sites_that_RUN_the_compiler=146
+recorded.sites_that_mention_it_only=28
 recorded.funnel=gates/gatekit.py:43 -- 1 line, 66 of 99 call sites
 recorded.instruments_that_ASK_its_version=0
 recorded.who_asks_including_this_gate=['checks/bend-health.py']

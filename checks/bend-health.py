@@ -143,7 +143,7 @@ def clause_pin() -> int:
     row("pin.checkout_tag", at or "UNPINNED-BRANCH")
     row("pin.checkout_sha", sha or "UNREADABLE")
     row("pin.checkout_dirty_files", len(dirty.splitlines()) if dirty else 0)
-    # A TAG IS NOT A SHA, and the difference is the finding: `v2.0.38` resolves to whatever
+    # A TAG IS NOT A SHA, and the difference is the finding: `v2.0.39` resolves to whatever
     # the remote points at. The SHA below is the thing that would make a verdict reproducible,
     # and nothing in the tree records it -- which is clause V.
     row("pin.sha_recorded_elsewhere", "NO")

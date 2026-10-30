@@ -753,14 +753,16 @@ D10 = "D10-zerorow-guard"
 # `bend <published> is available: run bend update` when the published version beats the local
 # `VERSION`. **SO BOTH VALUES OF THIS PIN WERE REBUILT BY HAND AND HASHED, AND THE OLD ONE IS
 # EXACTLY THE EMPTY-STDERR TRANSCRIPT:**
-#     stderr empty                      -> 9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84  (WAS)
-#     stderr "bend 2.0.38 is available" -> f35b2d90bdbe49b0361af9fe392e162fc51b44b63caf22d6c2e75062eee343f9  (NOW)
+#     stderr empty                      -> 9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84  (THIS PIN)
+#     stderr "bend 2.0.38 is available" -> f35b2d90bdbe49b0361af9fe392e162fc51b44b63caf22d6c2e75062eee343f9  (THE NOTICE's VALUE)
 # The cache was refreshed at 2026-10-21T20:52:55Z and recorded `{"ver":"2.0.38"}`. **THE LOCAL
 # COMPILER WAS 2.0.37 (`references/bend` at `4ff8545`, 2026-10-13) UNTIL 2026-10-23, WHEN IT
-# WAS UPGRADED TO `v2.0.38` (`references/bend` at `0a57ca0d21de`, 2026-10-20) -- SO THE
-# LOCAL COMPILER NOW *IS* THE VERSION THE NOTICE NAMES, AND THE NOTICE WILL GO QUIET ON ITS
-# OWN.** UPSTREAM'S 2.0.38 RELEASE IS WHAT TURNED THE NOTICE ON, AND NOTHING IN THIS
-# REPOSITORY TURNED IT ON.
+# WAS UPGRADED TO `v2.0.38` (`references/bend` at `0a57ca0d21de`, 2026-10-20), AND THEN TO
+# `v2.0.39` (`references/bend` at `a3efe8a3801f`, 2026-10-30) -- SO THE LOCAL COMPILER *IS* THE
+# VERSION THE NOTICE NAMES, AND THE NOTICE IS QUIET ON ITS OWN.** MEASURED 2026-10-30, AFTER
+# THE 2.0.39 UPGRADE: `~/.bend/check.json` READS `"ver":"2.0.39","notice":""` -- **THE NOTICE
+# IS EMPTY, BECAUSE THE LOCAL VERSION *IS* THE PUBLISHED ONE.** UPSTREAM'S 2.0.38 RELEASE IS
+# WHAT TURNED THE NOTICE ON, AND NOTHING IN THIS REPOSITORY TURNED IT ON.
 # **⇒ AND THIS PIN WAS A PIN ON A NETWORK ANSWER, AND IT IS NO LONGER ONE.** The next upstream
 # release moved it again with NO REPO CHANGE AT ALL. `BEND_NO_TELEMETRY=1` (`main.ts:186-188`)
 # suppresses the check and puts the transcript BACK on the empty-stderr value, and it is NOW
