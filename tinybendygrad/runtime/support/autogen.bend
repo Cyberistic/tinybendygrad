@@ -251,7 +251,14 @@ type KD is Data: KD{kind: U32, nm: String}
 def te_at(+k: U32, xs: List<&2, TE>) -> Maybe<&2, TE>:
   match xs:
     case Nil{}: None{}
-    case TE{+kind, cty} <> rest: List.find.put(TE, TE{kind, cty}, te_at(k, rest), U32.is_eq(kind, k))
+    # `List.find.put` WAS RENAMED: BEND 2.0.38 REPLACED IT WITH `List.find.if`,
+    # AND THE ACCUMULATOR BECAME A **THUNK** (`Unit -> Maybe<&2, A>`) INSTEAD OF A
+    # VALUE -- SO THE TAIL IS NOW EVALUATED ONLY WHEN THE HEAD MISSES, WHERE THE
+    # OLD SHAPE EVALUATED IT EITHER WAY. **⇒ AND THIS FILE DID NOT COMPILE
+    # BETWEEN THE 2.0.38 UPGRADE (2026-10-20) AND THIS FIX (2026-10-30): THE
+    # COMPILE CENSUS RECORDED IT AS ITS ONE `FINDING`
+    # (`checks/port-compile.rows`).**
+    case TE{+kind, cty} <> rest: List.find.if(TE, TE{kind, cty}, u => te_at(k, rest), U32.is_eq(kind, k))
 
 # LAST MATCH WINS, and that is the whole point of this def being different
 # from `te_at`. autogen.py:108-109 builds a dict LITERAL, and a later key
@@ -725,7 +732,10 @@ def anon_name(g: G, tag: String) -> String:
 # `::`-to-`_` and space-to-`_` rewrites that make a C++ name a Python
 # identifier. BOTH are `str.replace`, and `String.replace` DOES NOT EXIST in
 # bend -- `references/bend/bend2/base.bend` has no such def and no intrinsic
-# backs it (re-measured against the tree's pin, v2.0.38), so this is WALL 2's
+# backs it (RE-MEASURED 2026-10-30 AGAINST THE TREE's PIN, v2.0.39: `grep -n
+# replace references/bend/bend2/base.bend` ANSWERS 0 LINES, AND THE ONLY
+# `replace` IN THE COMPILER IS IN ITS OWN JAVASCRIPT -- `comp.ts`, `bend.ts` --
+# WHICH IS NOT A Bend DEF), so this is WALL 2's
 # second mouth.
 #
 # THE WALK IS ONE CHAR PER STEP AND CARRIES A PENDING STATE, and the reason is
@@ -856,7 +866,7 @@ def gtn_ln(m: Maybe<&2, Gt>) -> Nat:
 def gtn_find(+n: String, xs: List<&2, Gt>) -> Maybe<&2, Gt>:
   match xs:
     case Nil{}: None{}
-    case Gt{+nm, tnm, defd, ln} <> rest: List.find.put(Gt, Gt{nm, tnm, defd, ln}, gtn_find(n, rest), String.eq(nm, n))
+    case Gt{+nm, tnm, defd, ln} <> rest: List.find.if(Gt, Gt{nm, tnm, defd, ln}, u => gtn_find(n, rest), String.eq(nm, n))
 
 def gtn_names(xs: List<&2, Gt>) -> List<&2, String>:
   match xs:
