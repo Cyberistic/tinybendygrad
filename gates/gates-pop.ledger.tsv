@@ -394,6 +394,8 @@ gates/wk-eval-gate.py	py-main	-	0	1
 gates/wk-eval-oracle.py	py-main	-	0	1
 gates/wk-f32-gate.py	py-main	-	0	1
 gates/wk-f32-rows.py	py-main	-	0	1
+gates/wk-isvirt-gate.py	py-main	-	0	1
+gates/wk-isvirt-oracle.py	py-main	-	0	1
 gates/worker-gate.py	py-main	__file__.parent	0	1
 gates/worker-mutate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	1	1
 gates/worker-oracle.py	py-main	-	0	1
