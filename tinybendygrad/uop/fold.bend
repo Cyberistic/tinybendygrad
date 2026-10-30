@@ -367,7 +367,7 @@ def Sized.s(x: Sized) -> List<&2, O.Sint>:
   match x:
     case Sized{n, s}: s
 
-# `List.append` is `xs ++ ys` (base.bend:913), so this accumulator is ALREADY in
+# `List.append` is `xs ++ ys` (base.bend:932), so this accumulator is ALREADY in
 # input order and the walk ends with no `List.reverse`: the reverse that used to be
 # here turned a list already in ops.py's order into its own mirror, which every
 # COUNT survived -- `Sized.n` is unaffected -- and every positional read did not.

@@ -2567,7 +2567,7 @@ def get_single(xs: List<&2, U32>) -> Maybe<&1, U32>:
 #
 # `time_sum_s` is a CPython `float`, i.e. an F64, and it is the one field that cannot
 # be incremented here: `base.bend` has no F32 addition. `F32.add` is a `law`
-# (references/bend/bend2/base.bend:1662 symbol=F32.add) -- an axiom with no body -- and live code may not call a law, so a
+# (references/bend/bend2/base.bend:1681 symbol=F32.add) -- an axiom with no body -- and live code may not call a law, so a
 # float accumulator has no expression. The field is carried, typed `F32`, and is
 # never written here; `.agents/slop/helpers-oracle.py` measures what CPython does with
 # it and prints those rows to STDERR so they are recorded without being diffed.
@@ -3218,7 +3218,7 @@ def Target.replacedefault(+t: Target, dev: String, ren: String, arch: String, if
 # `GlobalCounters` is ported above as `Counters`: six fields, `init`, `reset`, five
 # bumps and the per-device dict, threaded like the arena rather than global. Its
 # remaining gap is `time_sum_s`, which needs an F32 add that `base.bend` does not
-# have (`F32.add` is a law at references/bend/bend2/base.bend:1662
+# have (`F32.add` is a law at references/bend/bend2/base.bend:1681
 # symbol=F32.add), so in P4 the engine's clock writes
 # that one field. Nothing else in the class is outstanding.
 # `disable_gc` and the DEBUG_GC `gc.callbacks` hook control CPython's collector.

@@ -972,7 +972,7 @@ def Enc.imm_int(+k: Nat, +n: Nat, +imm: U32) -> List<&2, U32>:
 
 def Enc.or2(+a: U32, +b: U32) -> U32: U32.or(a, b)
 
-# `List.concat` takes a LIST OF LISTS (references/bend/bend2/base.bend:920
+# `List.concat` takes a LIST OF LISTS (references/bend/bend2/base.bend:939
 # symbol=List.concat), so every join of two byte
 # lists is one of these. Writing `List.concat(.., a, b)` is a TYPE error naming
 # `List<&2, List<&2, List<&2, U32>>>`, which is how Bend says so.

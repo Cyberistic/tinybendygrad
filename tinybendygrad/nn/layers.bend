@@ -335,14 +335,14 @@ def nn_dotk(+dx: U32, +dw: U32) -> U32:
 
 # `xs[0:-n]` -- CPython's TAIL SLICE, WHICH `List.drop` CANNOT SPELL.
 #
-# `List.drop` (references/bend/bend2/base.bend:1000 symbol=List.drop) IS A HEAD DROP: IT ANSWERS
-# `xs[n:]`, AND `List.take` (references/bend/bend2/base.bend:991 symbol=List.take) IS ITS COMPLEMENT, SO
+# `List.drop` (references/bend/bend2/base.bend:1019 symbol=List.drop) IS A HEAD DROP: IT ANSWERS
+# `xs[n:]`, AND `List.take` (references/bend/bend2/base.bend:1010 symbol=List.take) IS ITS COMPLEMENT, SO
 # `take(xs, k)` ANSWERS `xs[:k]`. MEASURED, `.agents/slop/dotfix/sem.bend`:
 # `drop([2,4,3], 1)` = `[4,3]` AND `drop([2,4,3], 2)` = `[3]`.
 #
 # CPython's `x.shape[0:-1]` (op.py:390) IS THE OTHER END: IT KEEPS EVERY DIM
 # BUT THE LAST, AND ITS ANSWER IS `xs[:len-1]`. `Nat.sub` SATURATES AT 0
-# (references/bend/bend2/base.bend:664 symbol=Nat.sub), SO A SHAPE SHORTER THAN `n` ANSWERS `Nil{}` -- WHICH IS
+# (references/bend/bend2/base.bend:683 symbol=Nat.sub), SO A SHAPE SHORTER THAN `n` ANSWERS `Nil{}` -- WHICH IS
 # WHAT `xs[0:-2]` ANSWERS FOR A 1-D OR A 2-D `w`.
 #
 # `uop/fold.bend`'s `take_n`/`drop_last` ARE THE SAME IDIOM ON `O.Sint`, AND
@@ -362,7 +362,7 @@ def nn_dot.xshape(+xs: List<&2, U32>, k: U32) -> List<&2, U32>:
 # dw<=2 AND `(w0,)` FOR dw==3.
 #
 # SO THE TARGET IS `DROP_LAST 2` ++ `ONES k` ++ `DROP_FIRST (dw-min(dw,2))`, AND
-# `Nat.sub` SATURATES AT 0 (references/bend/bend2/base.bend:664 symbol=Nat.sub) SO `dw-min(dw,2)` IS 0 FOR dw==1
+# `Nat.sub` SATURATES AT 0 (references/bend/bend2/base.bend:683 symbol=Nat.sub) SO `dw-min(dw,2)` IS 0 FOR dw==1
 # AND dw==2 -- WHICH IS EXACTLY CPython's `w.shape[axis_w:]` THERE. THE HEAD
 # DROP `List.drop(ws, 2n)` THIS USED TO SPELL ANSWERED `ws[2:]`, WHICH IS
 # `(w2,)` FOR dw==3 WHERE CPython'S FIRST SLICE ANSWERS `(w0,)`.

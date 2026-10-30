@@ -69,7 +69,7 @@ type Lane is Data:
 # is MEASURED here rather than assumed, because it is the one property of
 # `List.sort` this file's correctness hangs on, and an unstable sort would
 # silently permute the allocs and change every arena size:
-#   * `List.merge.step` (references/bend/bend2/base.bend:1121 symbol=List.merge.step)
+#   * `List.merge.step` (references/bend/bend2/base.bend:1140 symbol=List.merge.step)
 #     takes the FIRST run's head whenever
 #     `le(x, y)` holds, and `le` here is a `<=`, so a tie keeps `x`. That is a
 #     stable merge.

@@ -397,7 +397,7 @@ def mu_and3(a: Bool, b: Bool, c: Bool) -> Bool:
 def mu_or3(a: Bool, b: Bool, c: Bool) -> Bool:
   mu_or2(a, mu_or2(b, c))
 
-# `a if cond else b` for a `U32` answer -- `Bool.pick` (base.bend:595 symbol=Bool.pick) with the
+# `a if cond else b` for a `U32` answer -- `Bool.pick` (base.bend:614 symbol=Bool.pick) with the
 # arguments in Python's order rather than base's. This is the ONE def that
 # conjoined conditions are allowed to feed, because inside it the scrutinee is a
 # PARAMETER: MEASURED, `match mu_and2(a, b):` is still refused
@@ -1883,7 +1883,7 @@ def ix_strid(idx: U32, i: U32) -> U32:
   U32.sub(idx, i)
 
 # NO ZERO GUARD, and that is a MEASURED fact rather than an omission:
-# `U32.div(x, 0)` is 0 and `U32.mod(x, 0)` is `x` (base.bend:1607 symbol=U32.div and
+# `U32.div(x, 0)` is 0 and `U32.mod(x, 0)` is `x` (base.bend:1626 symbol=U32.div and
 # :1623 symbol=U32.mod, both
 # `U32.div.if`/`U32.mod.if` take `U32.is_zero(b)` and short-circuit), so neither
 # traps. A `shard_sz` of 0 is `mu_sym_dim`'s wall marker, and `U32.div(_, 0)` is

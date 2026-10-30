@@ -1142,7 +1142,7 @@ def dc_tfg.keys(+st: TFP, +ks: List<&2, U32>,+i: U32) -> TFP:
 # is THREADED rather than derived from the fuel: the fuel is the self-call's
 # first argument and `dc_tfg.step` wants the group index in the same arm, and a
 # value may not be consumed twice in one expression. `i + 1` is what the five
-# groups increment and `U32.is_even` (references/bend/bend2/base.bend:1648
+# groups increment and `U32.is_even` (references/bend/bend2/base.bend:1667
 # symbol=U32.is_even) is `i % 2`, so there is no
 # `Nat` parity walk and no second countdown.
 def dc_tfg.step(+st: TFP, +i: U32, +ks: List<&2, U32>, +a: List<&2, U32>,

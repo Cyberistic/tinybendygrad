@@ -82,7 +82,7 @@
 #    it.  `PI_A` is transcendental.py:125's `3.1415926218032836914`; CPython says
 #    the f32 is 1078530010 (0x40490fda) for BOTH spellings, and Bend says
 #    1078530011.  This is NOT a deliberate over-approximation and NOT this port's
-#    bug: `F32.read` is a `law` in `base.bend:1811 symbol=F32.read` and a primitive of the Bend
+#    bug: `F32.read` is a `law` in `base.bend:1830 symbol=F32.read` and a primitive of the Bend
 #    compiler, not a def, so nothing here can fix it.  REPRO, one line, with a
 #    23-of-24 control sweep in which every other string agrees:
 #         F32.read("3.1415926218032837")     -> 0x40490fdb   WRONG
@@ -105,7 +105,7 @@
 #      (-3.7, 0.5, 0.0) -- all twelve answers equal
 #      `struct.unpack('<I', struct.pack('<f', np.float32(...)))`, and
 #      `F32.div(0.0, 0.0)` is the canonical NaN 0x7fc00000.
-#   2. `F32.read` (base.bend:1811 symbol=F32.read) parses a DECIMAL STRING into an F32 and
+#   2. `F32.read` (base.bend:1830 symbol=F32.read) parses a DECIMAL STRING into an F32 and
 #      agrees with CPython on 145 of the 146 constants audited -- see defect 2
 #      for the one.  It accepts "inf", "-inf" and "nan", which is how the
 #      specials get CONSTRUCTED (there is no inf literal), and answers `None`

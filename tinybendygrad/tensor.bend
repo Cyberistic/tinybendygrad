@@ -110,7 +110,7 @@ import ./mixin/dtype.bend as D
 #     Same reasoning as the `gradient.bend` line above: `dtype.bend` imports only
 #     `uop/ops.bend` and `uop/fold.bend`, both already in this file's closure, so the ONE new
 #     import adds ONE file and NO new leaf. It is `cast_at` and NOT `uop/weak.bend`'s
-#     `wk_cast_at` because `wk_eq_dt` is stale (weak.bend:132 compares only `pri` and `bits`;
+#     `wk_cast_at` because `wk_eq_dt` is stale (weak.bend:140 compares only `pri` and `bits`;
 #     dtype.bend:350-350 records that it is missing `CWeakFloat`) while `cast_at` compares
 #     with the shared `O.eq_dt`.
 #

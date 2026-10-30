@@ -57,7 +57,7 @@
 # `set_options` (:32) is `options.split(b' ')` and `IR3Compiler`/`QCOMCompiler`
 # are `arch.split(',')`, so the WHOLE port depends on what a literal-separator
 # split does with empty fields. `String.split`
-# (references/bend/bend2/base.bend:2191 symbol=String.split) was MEASURED
+# (references/bend/bend2/base.bend:2210 symbol=String.split) was MEASURED
 # against CPython's `str.split(sep)` on all nine fixtures the oracle uses, and
 # they agree on every one, INCLUDING the empty-field case that a hand-rolled
 # splitter gets wrong:
@@ -130,7 +130,7 @@
 #
 # WALL 3 -- the temp file NAMES. `tempfile.NamedTemporaryFile(suffix=...)`
 #   names three files and the two argv lists carry those names. bend has a
-#   working `File` (base.bend:264-301) -- `.agents/slop/cs-probe3.bend` writes
+#   working `File` (base.bend:304-347) -- `.agents/slop/cs-probe3.bend` writes
 #   and reads one on BOTH lanes -- but there is no mkstemp, and the name is
 #   random in Python anyway. So the SUFFIX is ported and gated, and the name is
 #   a PARAMETER of each argv builder, which is the honest shape:

@@ -655,8 +655,8 @@ def Dt.bf16(+bits: U32) -> F32:
 #
 # THE ONE ARITHMETIC SUBSTITUTION, and it is forced by the type: the C writes
 # `int exp = (int)e - 127 + 15` and tests `exp >= 0x1f`, `exp <= 0`, `exp < -10`.
-# `U32.sub` SATURATES AT 0 (base.bend:1357 symbol=Word.sub `Word.sub`; `U32.sub`
-# itself is at base.bend:1465 symbol=U32.sub), so `exp` cannot be
+# `U32.sub` SATURATES AT 0 (base.bend:1376 symbol=Word.sub `Word.sub`; `U32.sub`
+# itself is at base.bend:1484 symbol=U32.sub), so `exp` cannot be
 # formed as a U32 at all -- every `e` under 112 would read 0 and "too small to
 # represent" would be indistinguishable from "subnormal". Every test is
 # therefore restated against `e` itself, which is exact:

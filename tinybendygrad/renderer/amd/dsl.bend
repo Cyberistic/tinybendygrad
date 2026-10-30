@@ -1258,7 +1258,7 @@ def mod_hi(+v: Ov, has: Bool) -> U32: Bool.pick(U32, Bool.and(has, Bool.and(U32.
 # THIS DEF WAS AN OUTER `Bool.pick` OVER THAT ANSWER, WITH THE LITERAL `0` AS ITS ELSE
 # ARM AND `Bool.and(has, U32.is_zero(bits))` AS ITS CONDITION -- so it returned 0 for
 # every case where `has` is false OR `bits` is nonzero, i.e. for every case that was
-# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:595` is
+# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:614` is
 # `match c: case False{}: b / case True{}: a`, and `Bool.pick(U32, Bool.and(has,
 # U32.is_zero(bits)), ..., 0)` reads exactly as written. The cause was here and not
 # there, and `mod_merge(2, True{}, 1)` was CPython `3` against port `0`.

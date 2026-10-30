@@ -302,7 +302,7 @@ def de.b64_chars(+encoded: String) -> U32: U32.from_nat(String.length(encoded))
 # 3191 -- and two reads of the fuel then forced a `.of` split, which is mutual
 # recursion. The two tests are four lines and none of that.)
 # MEASURED, and it cost a row: `String.take` in
-# references/bend/bend2/base.bend:2114 symbol=String.take takes a PREFIX,
+# references/bend/bend2/base.bend:2133 symbol=String.take takes a PREFIX,
 # not a suffix. The last character is `String.take(String.drop(s, len-1), 1)`.
 def de.at(+encoded: String, +from_end: U32) -> String:
   String.take(String.drop(encoded, U32.to_nat(U32.sub(de.b64_chars(encoded), from_end))), 1n)

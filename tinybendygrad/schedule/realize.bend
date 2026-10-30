@@ -507,9 +507,9 @@ def rz_row_nodes() -> String:
   U32.show(rz_nodes(q))
 
 # THE PORT's OWN SCHEDULER, ON THE PORT's OWN SINK. `SCH.schedule` is
-# `create_schedule` (`schedule/__init__.bend:1141 symbol=schedule`), and it wants a SINK OF
+# `create_schedule` (`schedule/__init__.bend:1143 symbol=schedule`), and it wants a SINK OF
 # AFTERs WHOSE SECOND SRC IS A KERNEL -- a CALL or an END -- because
-# `_split_after` (`schedule/__init__.bend:465 symbol=sc_split`) partitions the AFTER's srcs
+# `_split_after` (`schedule/__init__.bend:467 symbol=sc_split`) partitions the AFTER's srcs
 # into kernels and dependencies.
 def rz_row_lin() -> String:
   +q = rz_built()

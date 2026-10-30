@@ -293,7 +293,7 @@ import ../uop/symbolic.bend as SY
 # carry one: `F.F32.from_bits` (`../base.bend:54`). It is one destructuring and
 # one constructor -- both payloads are the same type `Word(32n)`, so the
 # constructor `F32{..}` WAS already the bitcast -- and its inverse is
-# `F32.bits` (the `law` at `base.bend:1807`), which is where `bits_of` and
+# `F32.bits` (the `law` at `base.bend:1826`), which is where `bits_of` and
 # `Prog.cast.dt` below read. ONE name per direction: importing both is what
 # stops this file disagreeing with `base.bend` about either. This used to be a
 # local `w32`/`f32_of` pair and is now a duplicate retired; the measurement

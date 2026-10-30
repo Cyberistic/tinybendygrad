@@ -23,11 +23,11 @@
 # primitive, an intrinsic, or a law: it is one destructuring and one
 # constructor, and it is safe, so `bend --check-only` accepts it.
 #
-# `U32.to_f32` IS NOT THIS. `base.bend:1654` symbol=U32.to_f32 declares it a `law`
+# `U32.to_f32` IS NOT THIS. `base.bend:1673` symbol=U32.to_f32 declares it a `law`
 # and it is the NUMERIC conversion: `U32.to_f32(3) == 3.0`, so `U32.to_f32(0x3F800000)`
 # is 1.0e9-ish and not 1.0. Reaching for it produces plausible floats.
 #
-# INVERSE: `F32.bits` (`base.bend:1807` symbol=F32.bits, also a `law`). `F32.bits` IS
+# INVERSE: `F32.bits` (`base.bend:1826` symbol=F32.bits, also a `law`). `F32.bits` IS
 # the inverse -- there is deliberately no second name for it here.
 #
 # ---------------------------------------------------------------------------

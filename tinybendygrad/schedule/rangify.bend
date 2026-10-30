@@ -23,9 +23,9 @@
 # SO THE DRIVER IS FOUR THINGS AND THE PORT HAD NONE OF THEM:
 #
 #   1. THE DISPATCH for `pm_generate_realize_map` -- `indexing.bend`'s
-#      `grm_table()` (schedule/indexing.bend:1254 symbol=grm_table) is the TABLE and the four rule BODIES are in
-#      the same file (`realize` schedule/indexing.bend:915 symbol=realize, `realize_srcs` schedule/indexing.bend:949 symbol=realize_srcs,
-#      `ix_realize_custom` schedule/indexing.bend:1005 symbol=ix_realize_custom, `ix_war_hit` schedule/indexing.bend:966 symbol=ix_war_hit), but there is NO
+#      `grm_table()` (schedule/indexing.bend:1274 symbol=grm_table) is the TABLE and the four rule BODIES are in
+#      the same file (`realize` schedule/indexing.bend:935 symbol=realize, `realize_srcs` schedule/indexing.bend:969 symbol=realize_srcs,
+#      `ix_realize_custom` schedule/indexing.bend:1025 symbol=ix_realize_custom, `ix_war_hit` schedule/indexing.bend:986 symbol=ix_war_hit), but there is NO
 #      `_dispatch`/`_try`/`_scan` for it -- MEASURED, `grep -n "grm_dispatch"
 #      tinybendygrad/schedule/indexing.bend` answers NOTHING.
 #   2. THE CONSUMER MAP -- `data_srcs` is ported (`indexing.bend`'s `ix_ds_*`)
@@ -34,7 +34,7 @@
 #      `new_range` counter (`:811`), `broadcast_rngs` (`:1048`) and
 #      `broadcast_axes` (`:427`), and nothing drives them.
 #   4. THE APPLY -- `pm_apply_rangeify`'s five rules (`par_table`,
-#      schedule/indexing.bend:1283 symbol=par_table) and `pm_fix_deviceless` (`pfd_table`, schedule/indexing.bend:1290 symbol=pfd_table).
+#      schedule/indexing.bend:1303 symbol=par_table) and `pm_fix_deviceless` (`pfd_table`, schedule/indexing.bend:1310 symbol=pfd_table).
 #
 # THE ORACLE. `.agents/slop/rangify/rr-oracle.py` spies on upstream's OWN
 # `tinygrad.schedule.indexing.run_rangeify` on the SAME program the port's own
@@ -176,14 +176,14 @@ def rr_dump(+ar: O.Arena, +root: U32) -> String:
 # EVERY rule that MATCHES. That is why rule 1 AND rule 3 both fire on a STORE:
 # the STORE is realized AND its src is tested for the WAR hazard.
 #
-# THE PORT's `grm_table()` (`indexing.bend:1254` symbol=grm_table) carries the op sets and the
+# THE PORT's `grm_table()` (`indexing.bend:1274` symbol=grm_table) carries the op sets and the
 # TAG, and the tag IS the rule index -- the same convention `rangeify.bend`'s
 # `aprt_table`/`aprt_dispatch` uses. **⇒ SO THE DISPATCH IS: THE TAG PICKS THE
 # BODY, AND THE OP SET PICKS THE MATCH.**
 # ===========================================================================
 
 # RULE 3's TEST: `if dest.base in src.toposort()` (`indexing.py:34-36`). The
-# port's `ix_war_hit` (`indexing.bend:966` symbol=ix_war_hit) is that test.
+# port's `ix_war_hit` (`indexing.bend:986` symbol=ix_war_hit) is that test.
 def rr_war(+ar: O.Arena, +u: U32) -> Bool:
   IX.ix_war_hit(ar, O.Arena.src0(ar, u), O.Arena.src(ar, u, 1))
 
@@ -196,15 +196,15 @@ def rr_war(+ar: O.Arena, +u: U32) -> Bool:
 def rr_war_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   [IX.realize(O.Arena.src(ar, u, 1))]
 
-# RULE 0's BODY: `ix_realize_custom` (`indexing.bend:1005` symbol=ix_realize_custom).
+# RULE 0's BODY: `ix_realize_custom` (`indexing.bend:1025` symbol=ix_realize_custom).
 def rr_call_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   IX.ix_realize_custom(ar, u)
 
-# RULE 2's BODY: `realize_srcs` (`indexing.bend:949` symbol=realize_srcs).
+# RULE 2's BODY: `realize_srcs` (`indexing.bend:969` symbol=realize_srcs).
 def rr_mstack_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   IX.realize_srcs(ar, u)
 
-# RULE 1's BODY: `realize` (`indexing.bend:915` symbol=realize).
+# RULE 1's BODY: `realize` (`indexing.bend:935` symbol=realize).
 def rr_store_real(+ar: O.Arena, u: U32) -> List<&2, IX.IxReal>:
   [IX.realize(u)]
 
@@ -991,7 +991,7 @@ def rr_ap_closed.of(m: Maybe<&2, IX.IxRngs>) -> List<&2, U32>:
 #
 # **=> ⇒ ⇒ AND THEY ARE **TABLE INDICES**, NOT NODES** -- **=> BECAUSE THE PORT's
 # RANGE MAP IS **A TABLE** (`rangify.bend`'s `RrRs{i, rs, tbl}`) **AND A TABLE
-# ENTRY BECOMES A NODE ONLY AT **THE BOUNDARY** (`indexing.bend:901` `ix_rg_node`).
+# ENTRY BECOMES A NODE ONLY AT **THE BOUNDARY** (`indexing.bend:921` `ix_rg_node`).
 # **=> ⇒ ⇒ SO THE APPLY MATERIALISES THEM, **=> AND THE PORT's ARENA INTERNES
 # THEM** (`indexing.bend:899`), **=> SO ONE RANGE IS ONE NODE EVERYWHERE.**
 def rr_ap_inp.of(m: Maybe<&2, IX.IxRngs>) -> List<&2, U32>:
@@ -1208,7 +1208,7 @@ def rr_ap_keep(+ar: O.Arena, +s: U32) -> O.Found:
   O.Found{ar, s}
 
 # THE MATERIALISER: **A TABLE ENTRY BECOMES A NODE** (`indexing.bend:901`
-# `ix_rg_node`), **=> AND THE PORT's ARENA INTERNES IT** (`indexing.bend:899`),
+# `ix_rg_node`), **=> AND THE PORT's ARENA INTERNES IT** (`indexing.bend:921`),
 # **=> SO ONE RANGE IS ONE NODE EVERYWHERE**, **=> WHICH IS WHAT MAKES THE TABLE
 # SOUND.**  **=> ⇒ ⇒ AND THE PORT's RANGE MAP IS **A TABLE**, **=> ⇒ ⇒ SO THIS IS
 # **THE BOUNDARY** WHERE A RANGE ENTERS THE GRAPH.**

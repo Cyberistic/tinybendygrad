@@ -7,7 +7,7 @@
 #
 #   * `schedule/__init__.bend:1139` `schedule(+ar, +sink) -> Lin` IS upstream's
 #     `create_schedule` (`tinygrad/schedule/__init__.py:32-80`), and
-#     `schedule/__init__.bend:1135` `linear(+x: Lin) -> O.Found` IS upstream's
+#     `schedule/__init__.bend:1140` `linear(+x: Lin) -> O.Found` IS upstream's
 #     `return UOp(Ops.LINEAR, src=tuple(linearized))`
 #     (`tinygrad/schedule/__init__.py:80`).
 #   * `renderer/cstyle.bend:2297` `render(+dev, cpu, +kus) -> String` IS upstream's

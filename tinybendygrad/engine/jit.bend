@@ -109,7 +109,7 @@ import ./realize.bend as RZ
 # `U32` is affine and `+` is refused on it, so every `(arena, index)` pair read
 # twice in one expression is an `O.Found`: `Found` is `Data`, its readers are
 # non-consuming, and `+f: O.Found` is a refcount. And `Bool.to_u32` EXISTS in
-# base 2.0.34 (base.bend:602 symbol=Bool.to_u32), which `mixin/rand.bend` rule 3
+# base 2.0.34 (base.bend:621 symbol=Bool.to_u32), which `mixin/rand.bend` rule 3
 # records as missing;
 # it is not missing and every `Bool` -> `U32` in this tree should be this call
 # rather than a `Bool.pick` per site.
