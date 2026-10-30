@@ -26159,3 +26159,77 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       `population_digest()` is still `ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`
       and `population_bad()` is `[]`. **⇒ AND `WANT` IS `{}`**, so the `api` graph
       is already expected to AGREE and no exception moves.
+the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
+
+  - [x] **THE **`weak.bend` **ROUTE **WAS **NOT **DEAD: **A **GATE **IS **A **CALLER** (2026-10-30,
+        `2bc1f5793`, `4f5cecf75`).**
+        **⇒ AND **THE **COVERAGE **CENSUS's **WALL **WAS **WRONG **IN **THREE **SEPARATE **WAYS**: **THE **FIVE
+        **DEFS **ARE **IN **`uop/weak.bend`**, **NOT **`mixin/dtype.bend`** (**THE **REPORT **MISATTRIBUTED **THE
+        **FILE**); **FOUR **OF **THE **FIVE **HAVE **CALLERS, **AND **THE **CALLERS **ARE **GATES**
+        (**`wk_commit_dtype` **AT **`gates/wk-cd.bend:48`**; **`wk_eval_int`/`_float`/`_bool` **AT
+        **`gates/wk-eval.bend:80,86,92,104,111,118`**) — **A **CENSUS **THAT **WALKS **`tinybendygrad/`**
+        **ALONE **WILL **CALL **A **GATED **READER **UNREACHABLE**, **AND **THE **POPULATION **WAS **THE
+        **BUG**; **AND **THE **ONE **GENUINELY **UNGATED **DEF** (`wk_is_virtual`) **WAS **BLOCKED **ON **A
+        **CLAIM **THAT **WAS **FALSE** — **`ops.bend:5345` **SAID **"NO **DEF **IN **THE **PORT **SETS
+        **`ParamArg`'s **DEVICE **FIELD"**, **AND **`renderer/__init__.bend:450` **DOES**.)
+        **⇒ AND **⇒ AND **A **SECOND, **UNRELATED **FINDING: **`gates/wk-eval-gate.py` **WAS **REFUSING
+        **(rc=3**, **MEASURING **NOTHING**) **AND **`gates/oracleblind.rows:108` **HAD **THE **CRASH **RECORDED
+        **ALREADY** — **THE **ORACLE **HAND-BUILT **A **MALFORMED **`UOp(Ops.PARAM, src=(), …)`**, **AND
+        **UPSTREAM's **OWN **`UOp.param`** **IS **THE **FIX.**  **⇒ AND **IT **IS **rc=0** **NOW** (**22 **ROWS,
+        **3 **LANES, **0 **DIVERGENCES**), **AND **THE **NEW **`gates/wk-isvirt-gate.py` **IS **rc=0** (**5
+        **ROWS**) **AND **IS **FALSIFIABLE **BOTH **WAYS** — **MEASURED **BY **ME: **MUTATING **THE **PORT's
+        **`Bool.or` **→ **`Bool.and`** **IN **`wk_is_virtual`** **MAKES **IT **`DISAGREE (bd): n=2 of 5
+        rows`** **AND **rc=1**, **AND **RESTORING **IT **IS **rc=0**.)
+  - [x] **THE **SCHEDULER's **CTX **DICT **IS **NOT **THE **WALL, **AND **THE **GATE **THAT **SAID **SO
+        **FOUND **A **REAL **DEFECT (2026-10-30, `c259b176e`, `d99051451`).**
+        **⇒ AND **THE **PORT's **HEADER **DEFERRED **`tinygrad/schedule/__init__.py:82-301`** **FOR **ONE
+        **REASON** — **"EVERY **RULE **IN **IT **IS **A **`graph_rewrite` **OVER **THE **ARENA **WITH **A **PYTHON
+        **`ctx` **DICT"** — **AND **MEASURED: **8 **OF **THE **12 **RULE **BODIES **WERE **ALREADY **PORTED**
+        **(`is_store_after`, `collect_stores`, `canonicalize_alloc`, `lower_sink_to_linear`,
+        `copy_kernel_to_store`, `simplify_copy_kernel`, `assert_all_same_devices`, `apply_binds`) **AND **ZERO
+        **OF **THEM **HAD **A **ROW **ANYWHERE.**  **⇒ AND **⇒ AND **A **RULE **BODY **THAT **NO **ROW **READS
+        **IS **A **BODY **THAT **NO **GATE **CAN **GO **RED **ON** — **THE **PORT **EMITS **111 **ROWS **AND **0
+        **ARE **`isa_*`/`cs_*`/`ca_*`.**  **⇒ AND **THE **CTX **DICT **IS **NOT **THE **WALL **EITHER:** **THE
+        **PORT's **`CallifyCtx`** **IS **ALREADY **A **`Data` **RECORD**, **AND **BOTH **CTX **BODIES **ARE
+        **PORTED **ON **TOP **OF **IT.**  **⇒ AND **THE **DEFECT **THE **NEW **GATE **FOUND:** **UPSTREAM's
+        **`canonicalize_alloc`** **ENDS **`return ctx.allocs.get(b)`** — **THE **STORED **NODE** — **AND **THE
+        **PORT's **GUARD **ARM **ANSWERED **`None{}`** **AND **NEVER **READ **`ctx.allocs` **AT **ALL**
+        (**upstream **`ca_slot3=-2`**, **the **port **`ca_slot3=none`**), **AND **THE **PORT's **OWN **HEADER
+        **CLAIMED **THAT **ROW** — **THE **CLAIM **WAS **TRUE **OF **PYTHON **AND **FALSE **OF **THE **PORT**,
+        **AND **NO **ROW **READ **IT **BECAUSE **NO **ROW **EXISTED.**  **⇒ AND **THE **GATE **IS
+        **FALSIFIABLE **BOTH **WAYS** — **MEASURED **BY **ME: **REINTRODUCING **THE **DEFECT **(`ca_hit`
+        **RETURNING **`None{}`** **INSTEAD **OF **THE **STORED **NODE**) **MAKES **IT **`DISAGREE (bd): n=1
+        of 25 rows, ('ca_slot3=-2', 'ca_slot3=none')`** **AND **rc=1**, **AND **RESTORING **IT **IS **rc=0.**
+  - [x] **THE **`api` **GRAPH's **ALLOC **SLOT **DEFECT **IS **FIXED, **AND **THE **CORPUS's **FIRST
+        **EXCEPTION **IS **GONE (2026-10-30, `gates/alloc_slot-gate.py`).**
+        **⇒ AND **UPSTREAM **MINTS **THE **SLOT **FROM **`next(UOp.unique_num)`** — **A **MONOTONE **COUNTER
+        **OF **ALLOCATIONS** — **AND **THE **PORT **MINTS **`O.Arena.next(ar)`**, **THE **ARENA's **LENGTH**,
+        **AND **THE **PORT's **OWN **COMMENT **ARGUED **THE **TWO **ARE **THE **SAME.**  **⇒ AND **MEASURED
+        **ON **BOTH **SIDES**: **UPSTREAM **`0` / `0,1` / `0,1,2`**, **THE **PORT **NOW **`0` / `0,1` /
+        `0,1,2`** — **AND **THE **GATE **IS **FALSIFIABLE: **REVERTING **THE **FIX **(`cr_slot(ar)` **→
+        **`O.Arena.next(ar)`**) **MAKES **IT **`DISAGREE (bd): n=5 of 5 rows`** **AND **rc=1** — **MEASURED
+        **BY **ME.**
+        **⇒ AND **⇒ AND **`checks/differ.py`'s **`WANT` **TABLE **IS **NOW **`{}`** — **THE **FIRST **EXCEPTION
+        **THE **CORPUS **EVER **HELD **IS **GONE, **AND **THE **`api` **GRAPH **IS **EXPECTED **TO **AGREE.**
+  - [x] **`KernelInfo` **IS **UPSTREAM's **SIX **FIELDS, **AND **THE **PORT **NOW **PRINTS **THE **PIN's
+        **SHAPE (2026-10-30, `c2fbda4ca`, `7a10f4aa4`).**
+        **⇒ AND **`estimates` **NEEDED **A **NEW **FILE, **BECAUSE **BEND **REFUSES **AN **IMPORT **CYCLE**
+        (**MEASURED: **"AN **IMPORT **CYCLE **THROUGH **…/a.bend"**) — **UPSTREAM **BREAKS **THE **SAME
+        **CYCLE **UNDER **`TYPE_CHECKING`**, **AND **BEND **HAS **NO **SUCH **THING**, **SO **THE **RECORD
+        **LIVES **IN **A **LEAF**: **`tinybendygrad/renderer/estimates.bend`**, **WHICH **IMPORTS **`Base`
+        **AND **NOTHING **ELSE.**  **⇒ AND **THE **VALUE **IS **`None`** **IN **EVERY **`KernelInfo` **THE
+        **PORT **BUILDS** (**UPSTREAM's **ONLY **WRITER**, **`do_estimates`**, **IS **A **WALL **IN
+        **`codegen/kernel.bend`**), **AND **`optimized` **IS **`False`** **IN **EVERY **ONE** — **SO **A **FIELD
+        **THAT **IS **ALWAYS **ABSENT **IS **NOT **A **LIE, **AND **A **MISSING **FIELD **IS.**
+        **⇒ AND **⇒ AND **THE **REMAINING **`arg_repr AKern` **DISAGREEMENT **IS **THE **ORACLE's **OWN
+        **SUBJECT **CONSTRAINT**, **NOT **THE **PORT's:** **THE **ORACLE **MATERIALISES **A **HYBRID** (**THE
+        **PYRENDER-ERA **`ops.py`** **OVERLAID **WITH **THE **PYRENDER-ERA **`render.py`**), **AND **THE
+        **ORACLE's **OWN **HEADER **SAID **SO**: **"ITS **`KernelInfo` **HAS **AN **`optimized` **FIELD** …
+        **SO **THE **PIN's **`ops.py` **ANSWERS **`arg_repr AKern` **… **DIFFERENTLY **FROM **THE **PORT**"** —
+        **AND **THE **PORT **WAS **PRINTING **THE **2026-10-05 **SHAPES.**  **⇒ AND **⇒ AND **⇒ AND **THE
+        **FOUR **OTHER **RED **ROWS **WERE **NOT **`KernelInfo` **AT **ALL**: **THEIR **DIFFERENCE **WAS **ONE
+        **CHARACTER**, **THE **`]`** **THAT **`rn-gate.py`'s **SEPARATOR **`]   py=[`** **OPENS **WITH — **THE
+        **PORT's **`py=` **COLUMN **PRINTED **THE **PORT's **OWN **ANSWER**, **AND **A **BRACKETED **COLUMN
+        **COSTS **THE **VALUE **ITS **CLOSING **BRACKET.**  **⇒ AND **THE **FIVE **RED **ROWS **ARE **NOW
+        **ONE**, **AND **THE **PORT **IS **BYTE-IDENTICAL **TO **THE **MATERIALISED **UPSTREAM **HEAD's
+        **`repr(KernelInfo())`.**
