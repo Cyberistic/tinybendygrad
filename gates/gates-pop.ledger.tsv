@@ -312,6 +312,7 @@ gates/rng_graph_census-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1
 gates/rng_graph_census-oracle.py	py-main	-	0	1
 gates/rotclaim-gate.py	py-main	__file__.parent	0	1
 gates/runner.py	py-main	__file__.parent	0	1
+gates/schedstore-gate.py	py-main	-	0	1
 gates/shape-law-census-gate.py	py-main	__file__.parent	0	1
 gates/shellverdict-gate.py	py-main	__file__.parent	0	1
 gates/shellverdict-reach-gate.py	py-main	__file__.parent	0	1
