@@ -37,11 +37,20 @@ with no generator.
 THE CITED CORPUS IS BIGGER THAN THE CITING POPULATION, AND THE DIFFERENCE IS A
 MEASUREMENT. The port cites the Bend COMPILER's own `references/bend/bend2/base.bend` --
 `base.bend:1542` claims `U32.is_even`, and `tinybendygrad/base.bend` is a 56-LINE file
-while `references/bend/bend2/base.bend` is 3,191 lines and declares `U32.is_even` at
-:1648. **A POINTER CANNOT BE ABOUT A FILE THAT DOES NOT HAVE THE LINE**, so the two
-`base.bend`s are told apart by WHICH ONE HAS THE CITED LINE, and the tie-break is
-recorded in the row's `how`. The compiler's tree is a RESOLUTION corpus and not a
+while the compiler's `references/bend/bend2/base.bend` is **THREE THOUSAND**-ODD lines and
+declares `U32.is_even` at :1648. **A POINTER CANNOT BE ABOUT A FILE THAT DOES NOT HAVE THE
+LINE**, so the two `base.bend`s are told apart by WHICH ONE HAS THE CITED LINE, and the
+tie-break is recorded in the row's `how`. The compiler's tree is a RESOLUTION corpus and not a
 population: it is reported as its own stratum so a reader can subtract it.
+
+**⇒ AND **THE **COMPILER's **LINE **COUNT **IS **SPELLED **IN **ORDERS, **NOT **EXACTLY**, **AND **THAT
+**IS **THE **POINT:** **`references/` **IS **`.gitignore`d** (**`.gitignore:2`**), **SO **THE **CLONE **IS **NOT
+**THE **REPOSITORY's **TO **OWN, **AND **ITS **LINE **COUNT **MOVES **WHENEVER **THE **CLONE **IS
+**UPDATED.**  **⇒ AND **AN **EXACT **COUNT **IN **A **COMMITTED **PROSE **ABOUT **A **GITIGNORED **FILE **IS
+**A **CLAIM **THE **REPO **CANNOT **KEEP**, **AND **`checks/cites-census.py`'s **LANE **D **CHARGED **THE
+**DRIFT** — **THE **PORT's **OWN **56-LINE **`base.bend`** **IS **THE **TRACKED, **OWNED, **STABLE **FACT, **AND
+**"THREE **THOUSAND**-ODD" **IS **THE **ORDER **THE **ARGUMENT **NEEDS** (**A **POINTER **AT **:1251` **OR
+**`:1542` **CANNOT **BE **ABOUT **A **56-LINE **FILE**).**
 
 HOW A CITED FILE IS RESOLVED. A `.bend` citation spells its subject four ways --
 `ops.bend`, `uop/ops.bend`, `tinybendygrad/uop/ops.bend` and `LAWS/spec.bend` -- and the
@@ -311,8 +320,8 @@ class Corpus:
     pointer at line N CANNOT BE ABOUT A FILE WITH FEWER THAN N LINES** -- that is a fact
     about the file and not a guess about the prose. MEASURED:
     `tinybendygrad/dtype.bend:658` cites `base.bend:1251` and the port's `base.bend` is
-    56 lines while the compiler's `references/bend/bend2/base.bend` is 3,191; the
-    import rule picked the port's file and reported a DANGLING line for a pointer that
+    56 lines while the compiler's `references/bend/bend2/base.bend` is **three thousand**-odd;
+    the import rule picked the port's file and reported a DANGLING line for a pointer that
     is about the COMPILER's `base.bend`. And `tinybendygrad/schedule/__init__.bend:1390`
     cites `spec.bend:3121` where `LAWS/spec.bend` is 869 lines and `uop/spec.bend` is
     3,473. The citing file's OWN IMPORTS settle a bare basename the range does not:
