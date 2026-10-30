@@ -273,6 +273,43 @@ def plant() -> int:
         return main()
 
 
+def clean_plant() -> int:
+    """`--plant-clean`: the CLEAN verdict, reached on a SANDBOX TREE that holds no hard `.txt`.
+
+    MEASURED 2026-10-30: `PLANTS[0]` was `[]`, and `gates/gate-surface.py` charged it MISPLANT
+    ("plant [] produced 1") -- because the LIVE tree owns 204 hard `.txt`, so NO argv over the live
+    tree can reach `0`, and a declared verdict with no reachable argv is a verdict that cannot be
+    checked. The 0 row needs a subject the gate can actually be clean about.
+
+    The sandbox is a mirror of the repo's SHAPE with no `.txt` in it: the generators are SYMLINKED
+    (so `load()` finds them, and `differ.declared()` still names the real artifacts), and the walk
+    sees an empty tree. So this measures the REAL reader over a REAL clean subject -- it is not a
+    stub, and it is not "the check skipped". `ROOT` is rebound for the duration, because every path
+    in this file is `ROOT`-relative, and it is restored on EVERY exit.
+
+    WHY IT IS CLEAN, EXACTLY: `os.walk` does NOT follow symlinked directories (`followlinks` is
+    False by default), so the sandbox's `checks/` and `.agents/slop/` LINKS are not descended into
+    and the walk sees NO `.txt` at all. `load()` still reads through the links, so the generators
+    are the real ones. The `.agents/slop/figure2/plant.py` carve-out is UNCOMPUTED in the sandbox
+    (its `relative_to` is against the REAL root), which is SAFE in the direction that matters: an
+    uncomputed carve-out REPORTS its files rather than exempting them, so it can never make the
+    gate quieter than the truth.
+    """
+    global ROOT
+    real_root = ROOT
+    with tempfile.TemporaryDirectory(dir=os.path.join(real_root, ".agents", "slop")) as td:
+        for rel in ("checks", ".agents/slop"):
+            src = os.path.join(real_root, rel)
+            if os.path.isdir(src):
+                os.makedirs(os.path.dirname(os.path.join(td, rel)), exist_ok=True)
+                os.symlink(src, os.path.join(td, rel))
+        ROOT = td
+        try:
+            return main()
+        finally:
+            ROOT = real_root
+
+
 def main() -> int:
     # THIS READER IS **NOT** GUARDED, AND THE REASON IS ITS SUBJECT. `declared_artifacts()` below
     # names `runs/graphcmp/D` to build the EXEMPT name set from `differ.declared()`, and
@@ -322,9 +359,16 @@ def main() -> int:
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate. The RED is a FILE, so `--plant` makes the file and `main()` measures
 # it; the argv alone cannot reach it, which is why this is a mode and not a bare argv.
+#
+# MEASURED 2026-10-30: the `0` row read `[]`, and NO argv over the LIVE tree can reach `0` -- the
+# tree owns 204 hard `.txt`, so `gate-surface.py` charged the row MISPLANT ("plant [] produced 1")
+# and then UNTAKEN. `--plant-clean` is the argv that reaches it, on a SANDBOX tree with the
+# generators symlinked in and no `.txt` in it, so the real reader measures a real clean subject.
 EXIT_SURFACE = VERDICTS = {0: "CLEAN", 1: "RED"}  # VERDICTS: legacy alias of EXIT_SURFACE
-PLANTS = {0: [], 1: ["--plant"]}
+PLANTS = {0: ["--plant-clean"], 1: ["--plant"]}
 
 
 if __name__ == "__main__":
+    if "--plant-clean" in sys.argv:
+        sys.exit(clean_plant())
     sys.exit(plant() if "--plant" in sys.argv else main())
