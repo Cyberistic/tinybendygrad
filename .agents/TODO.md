@@ -25836,3 +25836,42 @@ the SHAPE HALF'S LAWS ARE AUDITED, AND THE AUDIT FOUND ONE LAW THAT CANNOT FAIL
         **ANSWERS **rc=1**, **AND **ITS **OWN **`--plant`** **RUNS **FOUR **CASES**), **AND **THE **FOUR
         **SUBJECT **FILES **ARE **BYTE-IDENTICAL **TO **HEAD** — **SO **THIS **IS **A **READER, **NOT **AN
         **EDIT.**
+
+## Session 2026-10-30 — the NEGATIVE-STACK-INDEX parity gap, and the corpus CANNOT see it
+
+  - [x] **THE **PORT **AND **CPYTHON **DISAGREED **ON **PYTHON's **LIST **INDEX **INTO **A **STACK**, **AND
+        **THE **PORT **NOW **AGREES** (2026-10-30).**
+        **⇒ AND **THE **INPUT: **`UOp(Ops.INDEX, src=(UOp(Ops.STACK, src=(UOp.const(3), UOp.const(5),
+        UOp.const(7))), UOp.const(-1)))`** — **A **STACK **OF **THREE **CONSTS **AND **A **CONST **INDEX **OF
+        **`-1`**.  **MEASURED **ON **BOTH **SIDES: **UPSTREAM's **`mop_cleanup.rewrite`** **ANSWERS
+        **`UOp(Ops.CONST, arg=7)`** (**`a.src[-1]` **IS **THE **LAST **ELEMENT**) **AND **THE **PORT
+        **ANSWERED **`UOp(Ops.CONST, arg=3)`** (**THE **FIRST**).  **THE **`-2`**, **`-3`**, **`-4`**,
+        **`0`**, **`1`**, **`2`** AND **`3`** **ROWS **ARE **IN **THE **GATE**, **SO **THE **DEFECT **IS **NOT
+        **A **SINGLE **CASE** **AND **THE **POSITIVE **CASES **ARE **IN **THE **SAME **TABLE** **AS **THE
+        **NEGATIVE **ONES.**
+        **⇒ AND **THE **UPSTREAM **CODE **PATH: **`tinygrad/uop/movement.py:22`** (**`mop_cleanup` **RULE
+        **6**) **AND **`tinygrad/uop/ops.py:561`** (**`UOp.index`**) **BOTH **SPELL **THE **INDEX **AS
+        **`a.src[new_srcs[0].val]`**, **WHICH **IS **PYTHON's **LIST **INDEX** — **SO **A **NEGATIVE **`v`
+        **READS **FROM **THE **END**.  **⇒ AND **THE **PORT **CODE **PATH: **`tinybendygrad/uop/movement.bend`**
+        **READ **EVERY **INDEX **AS **A **`U32`** (**`i64_u32`**), **SO **A **NEGATIVE **`v` **BECAME **A **HUGE
+        **`U32`** **AND **THE **ANSWER **WAS **THE **FIRST **ELEMENT**.  **⇒ AND **THE **FIX: **`mp_py_index`**
+        **IS **PYTHON's **RULE** (**`v >= 0` **IS **THE **POSITION**, **`v < 0` **IS **`n+v`**, **AND **BOTH
+        **ARE **OUT **OF **RANGE **WHEN **THEY **DO **NOT **LAND **IN **`[0, n)`**), **AND **IT **IS **CALLED
+        **FROM **BOTH **SITES** — **`mp_stack_val`** (**`UOp.index`**) **AND **`mp_stack_src`** (**`mop_cleanup`
+        **RULE **6**).  **⇒ AND **THE **OUT-OF-RANGE **ANSWER **IS **"NO **REWRITE"**, **BECAUSE **UPSTREAM
+        **RAISES **`IndexError`** **AND **THE **PORT **HAS **NO **EXCEPTION **FORM**.
+        **⇒ AND **THE **CORPUS **CANNOT **SEE **THIS**: **MEASURED **OVER **EVERY **`D2-canon-py-*.txt`**,
+        **NONE **OF **THE **35 **GRAPHS **HAS **AN **`INDEX` **WITH **A **`STACK` **SRC**, **SO **THE **35/35
+        **GREEN **IS **NOT **EVIDENCE **ABOUT **THIS **RULE** — **WHICH **IS **WHY **THE **GAP **IS **OUTSIDE
+        **THE **CORPUS.**
+        **⇒ AND **THE **WITNESS: **`gates/mop_idxneg-gate.py`** (**16 ROWS**, **2 LANES**, **rc=0**), **AND **IT
+        **IS **A **REAL **GATE **AND **NOT **A **CHANGE-DETECTOR: **WITH **`tinybendygrad/uop/movement.bend`**
+        **PUT **BACK **AT **`HEAD`** **IT **REPORTS **`DISAGREE (bd): n=6 of 16 rows`** **AND **THE **SIX **ARE
+        **`mcl_neg1`**, **`mcl_neg2`**, **`mcl_neg4`**, **`uidx_neg1`**, **`uidx_neg2`** **AND **`uidx_neg4`**.
+        **⇒ AND **THE **ROW **IS **THE **VALUE **AND **NOT **THE **OP**, **BECAUSE **AN **OP **ROW **READS
+        **`CONST` **ON **BOTH **SIDES **FOR **THE **WRONG **INDEX **AND **DOES **NOT **MOVE** — **SO **IT
+        **COULD **NOT **HAVE **SEEN **THIS **DEFECT **AT **ALL**.
+        **⇒ AND **THE **SUBSTRATE **DIGEST **MOVED** (**`160d496f44658206b3bb26444748ea5dc95dbe06dda8f7f7b165242e883f39c4`
+        **-> **`29a81c44736566a4d8fce1760ae462199f38ecdf6a075c8cdb85e35f12712a77`**), **SO **THE **CORPUS
+        **MUST **BE **RE-RUN** — **AND **THE **RE-RUN **IS **EXPECTED **TO **STAY **35/35**, **BECAUSE **NO
+        **CORPUS **GRAPH **REACHES **THIS **RULE** (**MEASURED**, **ABOVE**).

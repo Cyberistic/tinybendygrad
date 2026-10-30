@@ -20,9 +20,18 @@
 #
 # DEFERRED: `mp_0` at rank >= 2 (`UOp.sink(...).simplify()` would reach
 # `graph_rewrite(self, symbolic)` -- the engine calling itself), `mp_2`'s `x.shape`
-# (fold.bend does not answer a movement op's shape), a float CONST where an int is
-# wanted, and `Arena.src`'s 0 for Python's `IndexError`. `ret is not uop` is in
-# `hop_self` and is unreachable from these nine rules.
+# (fold.bend does not answer a movement op's shape), and a float CONST where an int is
+# wanted. `ret is not uop` is in `hop_self` and is unreachable from these nine rules.
+#
+# PYTHON'S LIST INDEX IS NO LONGER DEFERRED, AND IT WAS A PARITY GAP. `a.src[v]` reads
+# from the END when `v` is negative, and the port read every index as a `U32`, so a
+# negative `v` became a huge `U32` and the answer was the FIRST element. MEASURED
+# 2026-10-30 against CPython at the pin, on `UOp(Ops.INDEX, src=(STACK(CONST 3, CONST 5,
+# CONST 7), CONST(-1)))`: upstream's `mop_cleanup` rule 6 answers `CONST 7` and the port
+# answered `CONST 3`. `mp_py_index` below is Python's rule, and `gates/mop_idxneg-gate.py`
+# is the two-lane witness over BOTH call sites (`mop_cleanup` rule 6 and `UOp.index`).
+# THE `IndexError` IS STILL A DEFERRED EXCEPTION, and it is spelled as "no answer":
+# `mp_py_index` answers `None` for an out-of-range index and the callers decline to fire.
 
 import Base
 import ./../helpers.bend as H
@@ -219,6 +228,45 @@ def i64_u32.of(b: Bool, lo: U32) -> U32:
 def i64_u32(+x: H.I64) -> U32:
   i64_u32.of(U32.is_zero(H.hi32(x)), H.lo32(x))
 
+# PYTHON'S LIST INDEX, and it is the fix for a MEASURED parity gap. `lst[v]` for a
+# tuple of length `n` is `lst[v]` when `0 <= v < n` and `lst[n+v]` when `-n <= v < 0`,
+# and an `IndexError` otherwise. THE PORT READ EVERY INDEX AS A `U32`, so a NEGATIVE
+# `v` became a huge `U32` and the answer was the FIRST element.
+#
+# MEASURED 2026-10-30 against CPython at the pin, on `UOp(Ops.INDEX, src=(STACK(3,5,7),
+# CONST(-1)))`: upstream's `mop_cleanup` rule 6 answers `CONST 7` -- Python's `a.src[-1]`
+# reads from the END -- and the port answered `CONST 3`. The same `v` reaches
+# `UOp.index` -- `return self.src[new_srcs[0].val]` -- tinygrad/uop/ops.py:561 -- whose
+# `self.src[new_srcs[0].val]` is the SAME indexing, so
+# BOTH call sites needed this and ONE fix covers them.
+#
+# `None` IS PYTHON'S `IndexError`: the port has no exception form, and the honest
+# reading of "the index is out of range" is "there is no element", which the callers
+# already spell as "no answer".
+def mp_py_index.tail(sumneg: Bool, +v: H.I64, +n: H.I64) -> Maybe<&1, U32>:
+  match sumneg:
+    case True{}: None{}
+    case False{}: Some{H.lo32(H.i64_add(n, v))}
+
+def mp_py_index.head(cmp: Cmp, +v: H.I64, +n: H.I64) -> Maybe<&1, U32>:
+  match cmp:
+    case LT{}: Some{H.lo32(v)}
+    case _: None{}
+
+def mp_py_index.of(neg: Bool, +v: H.I64, +n: H.I64) -> Maybe<&1, U32>:
+  match neg:
+    case True{}:
+      # `n + v` -- the tail. `n >= 0` and `v < 0`, so the sum is `< n`, and it is in
+      # range exactly when it is not negative.
+      mp_py_index.tail(H.i64_is_neg(H.i64_add(n, v)), v, n)
+    case False{}:
+      # `v` is the position itself, and it is in range exactly when `v < n`.
+      mp_py_index.head(H.i64_cmp(v, n), v, n)
+
+def mp_py_index(v: H.I64, n: Nat) -> Maybe<&1, U32>:
+  +i = v
+  mp_py_index.of(H.i64_is_neg(i), i, H.i64_of_i32(U32.from_nat(n)))
+
 # `x.arg[n]` -- the permutation composition of `movement.py:14`.
 def list_at(xs: List<&2, U32>, n: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, xs, U32.to_nat(n)), 0)
@@ -246,9 +294,10 @@ def const_is(m: Maybe<&2, H.I64>, n: Nat) -> Bool:
 # `(self,)+tuple(new_srcs)` is a HEAD, not a tail, so `mp_index.new` prepends.
 #
 # `new_srcs[0].val` is the VALUE, and Python's answer is that value used as an INDEX into
-# the STACK's srcs -- so the resolution is `Arena.src` here, the IndexError included
-# (`Arena.src` answers 0). Returning the value itself answers 1 where Python answers
-# `STACK.src[1]`, which is a CONST and a different node.
+# the STACK's srcs -- so the resolution is `Arena.src` here, and `mp_stack_val` resolves
+# the index with `mp_py_index` (Python's list index, so a negative value reads from the
+# END). Returning the value itself answers 1 where Python answers `STACK.src[1]`, which is
+# a CONST and a different node.
 def mp_index.pick(sel: Maybe<&1, U32>, ar: O.Arena, self: U32) -> U32:
   match sel:
     case Some{v}: mp_src(ar, self, v)
@@ -272,10 +321,28 @@ def mp_const_val(ar: O.Arena, i: U32) -> H.I64:
 
 # `new_srcs[0].val` -- the CONST's VALUE, not a node. `mp_index.pick` is what uses it as
 # an index; a float CONST where an int is wanted answers nothing (the header's DEFERRED).
-def mp_stack_val(ar: O.Arena, self: U32, extra: List<&2, U32>) -> Maybe<&1, U32>:
+#
+# THE INDEX IS PYTHON'S, so `mp_py_index` resolves it against the STACK's OWN src count:
+# a negative `v` reads from the END and an out-of-range `v` is Python's `IndexError`,
+# which is the `None` here. `self` is the STACK, because `tinygrad/uop/ops.py:561` indexes
+# `self.src[...]` -- the STACK's srcs -- and not the INDEX's.
+def mp_stack_val.pos(k: Maybe<&1, U32>) -> Maybe<&1, U32>:
+  match k:
+    case Some{v}: Some{v}
+    case None{}  : None{}
+
+def mp_stack_val.of(e: Maybe<&1, H.I64>, +ar: O.Arena, self: U32) -> Maybe<&1, U32>:
+  match e:
+    case Some{v}: mp_stack_val.pos(mp_py_index(v, mp_nat(mp_srcs(ar, self))))
+    case None{}  : None{}
+
+def mp_stack_val.head(extra: List<&2, U32>, +ar: O.Arena, self: U32) -> Maybe<&1, U32>:
   match extra:
-    case e <> Nil{}: Some{i64_u32(mp_const_val(ar, e))}
+    case e <> Nil{}: mp_stack_val.of(Some{mp_const_val(ar, e)}, ar, self)
     case _: None{}
+
+def mp_stack_val(+ar: O.Arena, self: U32, extra: List<&2, U32>) -> Maybe<&1, U32>:
+  mp_stack_val.head(extra, ar, self)
 
 
 def mp_index(+ar: O.Arena, +self: U32, +extra: List<&2, U32>) -> Hop:
@@ -586,20 +653,36 @@ def mp_5(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
 # `UPat.cvar` carries `Ops.CONST`, which is why this is the file's only two-element reject
 # set. `allow_any_len` makes the arity `>= 2`, and `a.src[i.val]` is read ONCE and given
 # to `mp_index`, which is what makes Python's two-branch conditional one call here.
-def mp_stack_src(+ar: O.Arena, +self: U32) -> U32:
-  mp_src(ar, mp_src0(ar, self), i64_u32(mp_const_val(ar, mp_src(ar, self, 1))))
+#
+# `a.src[i.val]` IS PYTHON'S LIST INDEX, so `mp_py_index` resolves it and a negative
+# `i.val` reads from the END. MEASURED 2026-10-30: upstream's rule 6 answers `CONST 7`
+# for `INDEX(STACK(3,5,7), CONST(-1))` and the port answered `CONST 3`.
+#
+# THE OUT-OF-RANGE ANSWER IS "NO REWRITE", and Python's is an `IndexError` -- the port
+# has no exception form, so the rule declines to fire. `mp_src` would answer the arena's
+# bottom (0), which is a node that is not the answer.
+def mp_stack_src.of(k: Maybe<&1, U32>, ar: O.Arena, stk: U32) -> Maybe<&1, U32>:
+  match k:
+    case Some{v}: Some{mp_src(ar, stk, v)}
+    case None{}  : None{}
 
-def mp_6.of(pat: Bool, two: Bool, +ar: O.Arena, +self: U32) -> Hop:
-  match pat two:
-    case True{} True{} : Hop{ar, mp_stack_src(ar, self)}
-    case True{} False{}: mp_index(ar, mp_stack_src(ar, self), mp_src_from(ar, self, 2))
-    case _ _            : Hop{ar, 0}
+def mp_stack_src(+ar: O.Arena, self: U32) -> Maybe<&1, U32>:
+  +s = self
+  +stk = mp_src0(ar, s)
+  mp_stack_src.of(mp_py_index(mp_const_val(ar, mp_src(ar, s, 1)), mp_nat(mp_srcs(ar, stk))),
+                  ar, stk)
+
+def mp_6.of(pat: Bool, two: Bool, src: Maybe<&1, U32>, +ar: O.Arena, +self: U32) -> Hop:
+  match pat two src:
+    case True{} True{} Some{k} : Hop{ar, k}
+    case True{} False{} Some{k}: mp_index(ar, k, mp_src_from(ar, self, 2))
+    case _ _ _                 : Hop{ar, 0}
 
 def mp_6(+tb: F.Table, +ar: O.Arena, +self: U32) -> Hop:
   mp_6.of(Bool.and(mp_nsrc_ge(ar, self, 2),
                    Bool.and(mp_is(ar, mp_src0(ar, self), O.OpsSTACK{}),
                             mp_is(ar, mp_src(ar, self, 1), O.OpsCONST{}))),
-          mp_nsrc_is(ar, self, 2), ar, self)
+          mp_nsrc_is(ar, self, 2), mp_stack_src(ar, self), ar, self)
 
 # INDEX on INDEX is INDEX (movement.py:24-25)
 #   UPat(Ops.INDEX, src=(UPat(Ops.INDEX, name="idx1", allow_any_len=True),), allow_any_len=True, name="idx2")
