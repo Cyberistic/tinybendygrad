@@ -104,6 +104,7 @@ checks/wallcheck.py	py-main	-	0	1
 checks/wt-sync.sh	sh-selfref	-	1	1
 gates/.wgsl-mut-oracle.py	gone	-	0	1
 gates/allcopies-census.py	py-main	__file__.parent	0	1
+gates/alu-law-census-gate.py	py-main	__file__.parent	0	1
 gates/amd-mut-gate.py	gone	__file__.parent	0	1
 gates/amd-mut-oracle.py	gone	-	0	1
 gates/amd_dsl_census-gate.py	py-main	__file__.parent	0	1
@@ -227,6 +228,7 @@ gates/md_graph_census-gate.py	py-main	-	0	1
 gates/mixin-op-gate.py	py-main	-	0	1
 gates/mixin-op-plant.py	py-main	__file__.parent	0	1
 gates/mo_graph_census-gate.py	py-main	-	0	1
+gates/mop_idxneg-gate.py	py-main	-	0	1
 gates/msgdiff-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/mx_graph_census-gate.py	py-main	-	0	1
 gates/nilsrc-census.py	py-main	__file__.parent	0	1
@@ -310,6 +312,7 @@ gates/rng_graph_census-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1
 gates/rng_graph_census-oracle.py	py-main	-	0	1
 gates/rotclaim-gate.py	py-main	__file__.parent	0	1
 gates/runner.py	py-main	__file__.parent	0	1
+gates/shape-law-census-gate.py	py-main	__file__.parent	0	1
 gates/shellverdict-gate.py	py-main	__file__.parent	0	1
 gates/shellverdict-reach-gate.py	py-main	__file__.parent	0	1
 gates/slop-prune-census.py	py-main	__file__.parent	0	1
