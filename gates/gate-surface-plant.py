@@ -62,11 +62,19 @@ PATCH = (
     ('    if "VERDICTS" not in found:\n'
      '        return None, None, None, ""\n'
      '    if not isinstance(found["VERDICTS"], dict):\n'
-     '        return None, None, None, "VERDICTS is not a mapping"\n',
+     '        if isinstance(found.get("PLANTS"), dict):\n'
+     '            return None, None, None, "PLANTS is declared but VERDICTS is not a literal mapping"\n'
+     '        # NOT A DECLARED SURFACE: the file names `VERDICTS` for its own reasons and ships no\n'
+     '        # `PLANTS` mapping, so it never declared one. A name is not a declaration.\n'
+     '        return None, None, None, ""\n',
      '    if "EXIT_SURFACE" not in found:\n'
      '        return None, None, None, ""\n'
      '    if not isinstance(found["EXIT_SURFACE"], dict):\n'
-     '        return None, None, None, "EXIT_SURFACE is not a mapping"\n'),
+     '        if isinstance(found.get("PLANTS"), dict):\n'
+     '            return None, None, None, "PLANTS is declared but EXIT_SURFACE is not a literal mapping"\n'
+     '        # NOT A DECLARED SURFACE: the file names `EXIT_SURFACE` for its own reasons and ships no\n'
+     '        # `PLANTS` mapping, so it never declared one. A name is not a declaration.\n'
+     '        return None, None, None, ""\n'),
     # 3. THE CLASS: the first token is the class, the rest is documentation.
     ('    if "RED_IS" in found and found["RED_IS"] not in (FINDING, FAILURE, UNTAKEN):\n'
      '        return None, None, None, f"RED_IS is {found[\'RED_IS\']!r}, not one of the three classes"\n'
@@ -164,6 +172,28 @@ def load_candidate(src):
     return mod
 
 
+def _code_only(src):
+    """`src` with every COMMENT LINE removed.
+
+    MEASURED 2026-10-30: hunk 4's `new` text was ALREADY IN THE CENSUS -- the routing the hunk
+    proposes had been applied -- but the census carries a **COMMENT BLOCK** between the lines the
+    hunk matches, so `new in out` was False and the plant REFUSED with "the anchor has rotted". **⇒ AND
+    THE REFUSAL **WAS **WRONG**: **THE **HUNK **WAS **APPLIED, **AND **A **HUNK **THAT **IS **APPLIED
+    **MUST **BE **SKIPPED, **NOT **REFUSED.**
+
+    ⇒ AND **A **COMMENT **IS **NOT **CODE**, **AND **THE **CENSUS's **OWN **`strip_comments()`** **IS **THE
+    **PRECEDENT** — **SO **THE **MATCH **IS **MADE **ON **THE **CODE**, **WHICH **IS **WHAT **THE **HUNK
+    **IS **ABOUT.**  **⇒ AND **THE **REFUSAL **STANDS **FOR **THE **OTHER **HALF:** **IF **NEITHER **THE
+    **OLD **NOR **THE **NEW **IS **PRESENT **AS **CODE**, **THE **ANCHOR **REALLY **HAS **ROTTED.**
+    """
+    out = []
+    for line in src.splitlines(keepends=True):
+        if line.lstrip().startswith("#"):
+            continue
+        out.append(line)
+    return "".join(out)
+
+
 def apply_patch(src):
     """`(patched, applied)` -- a hunk whose ANCHOR HAS ROTTED refuses the plant rather than
     passing it, and a hunk already applied is skipped, so the plant is GREEN in both worlds."""
@@ -175,7 +205,7 @@ def apply_patch(src):
                 raise SystemExit(f"REFUSED: the anchor is not unique:\n{old}")
             out = out.replace(old, new, 1)
             applied += 1
-        elif new not in out:
+        elif new not in _code_only(out):
             raise SystemExit(f"REFUSED: the anchor has rotted, so the candidate is not the census:\n{old}")
     return out, applied
 

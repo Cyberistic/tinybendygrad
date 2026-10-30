@@ -361,7 +361,7 @@ def main():
 # rendered `float*` where the lane promises `double*` is a defect IN THE PORT, not a broken
 # instrument.  `RED_IS` is therefore a FINDING, and it is EARNED because `PLANTS[0]` reaches 0 in
 # this run.
-EXIT_SURFACE = VERDICTS = {0: "OK", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 RED_IS = "FINDING"
 PLANTS = {0: ["--plant-ok"], 1: ["--plant-fail"], 3: []}
 

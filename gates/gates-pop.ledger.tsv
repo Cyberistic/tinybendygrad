@@ -124,7 +124,7 @@ gates/bc_u32_table.py	py-main	-	0	1
 gates/beautiful-mnist-gate.py	py-main	-	0	1
 gates/bend-absent.py	py-main	-	0	1
 gates/bendcite-gate.py	py-main	__file__.parent	0	1
-gates/bendfloat-gate.py	js-main	__file__.parent	1	1
+gates/bendfloat-gate.py	py-main	__file__.parent	1	1
 gates/bind-plant.py	py-main	__file__.parent	0	1
 gates/blobpin-census-gate.py	py-main	__file__.parent	0	1
 gates/citations-census-gate.py	py-main	__file__.parent	0	1

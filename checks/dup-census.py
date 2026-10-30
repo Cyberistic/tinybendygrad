@@ -322,7 +322,7 @@ def main():
 # ALSO A WITNESS: it is the PRE-RENAME lane, so the loss it reports is the `=`-class the
 # rename closed, and the census RECONCILES.**  The one thing it must NOT do is publish -- see
 # `main()`'s `if not a.one:` guard, without which the plant overwrites the tracked census.
-EXIT_SURFACE = VERDICTS = {0: "OK", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
+EXIT_SURFACE = VERDICTS = {0: "PASS", 3: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 PLANTS = {0: ["--one", "oracles/tinybendygrad_renderer_nir_llvmir.bend.rows"], 3: []}
 
 if __name__ == "__main__":

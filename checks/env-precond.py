@@ -474,7 +474,7 @@ def main() -> int:
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
 # because import RUNS a gate -- and EXECUTES each plant, requiring the observed rc to be the
 # declared one. A declared verdict with no plant is RED, named.
-EXIT_SURFACE = VERDICTS = {0: "OK", 1: "FAIL", 2: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
+EXIT_SURFACE = VERDICTS = {0: "PASS", 1: "FAIL", 2: "REFUSED"}  # VERDICTS: legacy alias of EXIT_SURFACE
 # WHY THE RED IS A FINDING.  Exit 1 is `check()`'s `bad` list: a pin the tree's OWN source no
 # longer carries (METHOD A, anchored on the line's JOB so an edit above it cannot move the pin), or
 # a value the run RECORDED that differs from the declaration (METHOD B).  BOTH are facts ABOUT THE

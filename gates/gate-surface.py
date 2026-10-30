@@ -253,6 +253,46 @@ def gates_pop():
     return mod
 
 
+def exitcode_conventions():
+    """`(instrument, code)` -> the CONVENTION verdict `checks/exitcode-census.py` already measured.
+
+    MEASURED 2026-10-30: this census charged **3** UNOWNED exit codes -- `checks/dup-gate.py`,
+    `checks/env-precond.py` and `checks/wallcheck.py`, all of which declare code `2`. **AND ALL THREE
+    IMPORT `argparse`**, so the `2` is argparse's OWN USAGE code, INHERITED rather than CHOSEN.
+
+    **AND `checks/exitcode-census.py` ALREADY MEASURED THAT**, with the rule stated: *"code 2 --
+    argparse's own USAGE code, and it counts ONLY in an instrument that imports argparse. In an
+    instrument that does NOT import argparse, a `2` is a CHOSEN number and the census charges it --
+    because the argument for '2 is argparse's' is STRUCTURAL (the file imports argparse) and a file
+    that does not import argparse has no such argument."* Its rows carry the verdict `CONVENTION` for
+    all three.
+
+    **SO THIS FILE WAS CHARGING A CODE THE TREE HAS **ALREADY NAMED**,** and it did so because it read
+    only `gates/gatekit.py`'s unpack. **THE ROWS ARE READ, NOT RE-DERIVED**: a second opinion about an
+    exemption is how an exemption becomes a blanket, and re-deriving the argparse test here would be a
+    second copy of a rule that has an owner.
+
+    A MISSING ROWS FILE IS NOT A BLANKET: `refuse()` is the refusal, because a carve-out that cannot be
+    computed must never become a blanket exemption.
+    """
+    p = ROOT / "checks" / "exitcode-census.rows"
+    if not p.is_file():
+        refuse("checks/exitcode-census.rows is gone -- it holds the CONVENTION verdicts this census "
+               "needs, and this file has no second copy of them by design")
+    out = {}
+    for line in p.read_text().splitlines()[1:]:
+        parts = line.split("\t")
+        if len(parts) < 3:
+            continue
+        instrument, code, verdict = parts[0], parts[1], parts[2]
+        if verdict == "CONVENTION":
+            try:
+                out[(instrument, int(code))] = verdict
+            except ValueError:
+                continue
+    return out
+
+
 # ---- clause V: the exit vocabulary, OWNED BY gatekit.py, LOADED BY PATH --------------
 def vocabulary(owner=None):
     """`{code: NAME}` from `gates/gatekit.py`'s module body, or from `owner` when a plant names one.
@@ -350,6 +390,22 @@ def declaration(p):
     try:
         tree = ast.parse(p.read_text(errors="replace"))
     except SyntaxError as e:
+        # A **PYTHON** **FILE **THAT **DOES **NOT **PARSE **IS **MALFORMED**: **A **CALLER **CANNOT **READ
+        # **ITS **DECLARATION, **AND **THE **GATE **IS **UNREADABLE.**
+        #
+        # ⇒ AND **A **FILE **IN **ANOTHER **LANGUAGE **NEVER **REACHES **THIS **LINE:** **THE **CALLER
+        # **ROUTES **IT **INTO **THE **`unread` **BUCKET **BEFORE **CALLING **THIS**, **AND **IT **IS
+        # **COUNTED **AND **NAMED **THERE** — **THE **SAME **RULE **THE **SHELL **HALF **AND **THE
+        # **NO-SHEBANG **HALF **FOLLOW.**  **MEASURED 2026-10-30: `checks/drive.mjs` and
+        # `checks/nan_census.mjs` were charged MALFORMED for "UNPARSEABLE", and they are JAVASCRIPT
+        # (`gates/gates-pop.py`'s `entry_reason()` reads both as `js-main`), so `ast.parse` failing on
+        # them was a finding about **THIS READER**.
+        #
+        # ⇒ AND **THE **CHARGE **IS **KEPT **WHERE **IT **IS **TRUE** — **A **PYTHON **FILE **THAT **DOES
+        # **NOT **PARSE **IS **AN **OPAQUE **FILE, **NOT **AN **ENTRY** (`gates-pop.py` **CANNOT **READ
+        # **A **`__main__` **GUARD **IN **A **FILE **THAT **DOES **NOT **PARSE**), **SO **THIS **ARM **IS
+        # **REACHABLE **ONLY **FOR **A **GATE **THE **POPULATION **CARRIES **AND **THIS **READER **CANNOT
+        # **PARSE.**
         return None, None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
     found = {}
     for node in tree.body:
@@ -365,14 +421,34 @@ def declaration(p):
                     found[t.id] = ast.literal_eval(node.value)
                 except (ValueError, SyntaxError, TypeError):
                     found[t.id] = f"NOT A LITERAL"
-    # `VERDICTS` IS THE MARKER. A file that names a `PLANTS` variable for its own reasons
-    # (`checks/differ.py`, `checks/abi4_gate.py` both do, MEASURED -- my first run reported them
-    # MALFORMED, which was a finding about this scanner and not about those files) is NOT a gate
-    # that declared a surface. Only a file that ships `VERDICTS` is asked for the rest.
+    # `VERDICTS` IS THE MARKER -- AND **THE **MARKER **IS **THE **SHAPE, **NOT **THE **NAME.**
+    # A file that names a `VERDICTS` variable for its own reasons is NOT a gate that declared a
+    # surface. MEASURED 2026-10-30: **FOUR** files ship a `VERDICTS` that is not a mapping and
+    # were charged MALFORMED for it -- `gates/citations-census-gate.py` (a TUPLE of row labels),
+    # `gates/e2estage8-stage-selftest.py` (a PATH to a module), `gates/vendordep-census-gate.py`
+    # (a TUPLE) and `gates/verdictcopy-gate.py` (a SET of words) -- and **NOT **ONE **OF **THE **FOUR
+    # **SHIPS **A **`PLANTS` **DICT**, **SO **NOT **ONE **OF **THEM **DECLARED **A **SURFACE.**
+    #
+    # ⇒ AND **A **NAME **TEST **IS **THE **CLASS **DOCTRINE **1 **FORBIDS**: **A **BASENAME **SHAPE, **A
+    # **SUFFIX **SET, **AND **A **HAND **LIST **ARE **NOT **POPULATIONS**, **AND **NEITHER **IS **"A
+    # **VARIABLE **CALLED **`VERDICTS`**".**  **THE **SHAPE **IS **WHAT **DECLARES:** **A **MAPPING **FROM
+    # **EXIT **CODES **TO **WORDS **IS **A **DECLARED **SURFACE**, **AND **A **TUPLE, **A **PATH, **OR **A
+    # **SET **IS **NOT.**
+    #
+    # ⇒ AND **THE **COST **OF **THE **NAME **TEST **WAS **FOUR **FALSE **CHARGES**, **AND **THE **COST **OF
+    # **THE **SHAPE **TEST **IS **THAT **A **GATE **DECLARING **A **SURFACE **WITH **A **BROKEN **SHAPE
+    # **IS **NO **LONGER **CHARGED.**  **⇒ AND **THAT **IS **WHY **THE **SHAPE **TEST **KEEPS **THE
+    # **`PLANTS` **HALF:** **A **FILE **THAT **SHIPS **A **`PLANTS` **MAPPING **HAS **DECLARED **A
+    # **SURFACE, **AND **IF **ITS **`VERDICTS` **IS **NOT **A **MAPPING **THEN **THE **DECLARATION **IS
+    # **MALFORMED **AND **THAT **IS **A **FINDING **ABOUT **THE **GATE.**
     if "VERDICTS" not in found:
         return None, None, None, ""
     if not isinstance(found["VERDICTS"], dict):
-        return None, None, None, "VERDICTS is not a mapping"
+        if isinstance(found.get("PLANTS"), dict):
+            return None, None, None, "PLANTS is declared but VERDICTS is not a literal mapping"
+        # NOT A DECLARED SURFACE: the file names `VERDICTS` for its own reasons and ships no
+        # `PLANTS` mapping, so it never declared one. A name is not a declaration.
+        return None, None, None, ""
     if "PLANTS" in found and not isinstance(found["PLANTS"], dict):
         return None, None, None, "VERDICTS is declared but PLANTS is not a literal mapping"
     if "RED_IS" in found and found["RED_IS"] not in (FINDING, FAILURE, UNTAKEN):
@@ -439,6 +515,7 @@ def report(root, charge=True):
     UNPLANTED, MISPLANT and NO-GREEN verdict NAMED. Returns rc."""
     gpop = gates_pop()
     vocab = vocabulary()
+    conventions = exitcode_conventions()
     entries, libs = population(root)
     if not entries:
         print(f"I  EMPTY POPULATION: no entry point under {'/'.join(gpop.HOMES)}/ -- and an empty "
@@ -481,7 +558,7 @@ def report(root, charge=True):
     # measured nor counted: a suffix set does not exclude a population, it loses one. `shell` and
     # `noshebang` are DISCOVERED by reading each file's `#!`, and both are PRINTED, because a
     # population a reader cannot see the size of is the defect this file exists to end.
-    shell, noshebang, arms = [], [], {}
+    shell, noshebang, unread, arms = [], [], [], {}
     for p in entries:
         kind = interpreter(p)[1]
         # ONLY `SHELL` LEAVES THE PYTHON CENSUS, and the reason is that `declaration()` reads a
@@ -494,6 +571,25 @@ def report(root, charge=True):
         # The split is SHELL-AGAINST-EVERYTHING-ELSE, and no-shebang is COUNTED, not routed.
         if kind == "SHELL":
             shell.append(p)
+            continue
+        # THE FILE **THIS **CENSUS **CANNOT **READ** IS NOT **A **FILE **WITH **A **MALFORMED
+        # **DECLARATION** — **IT **IS **A **FILE **THIS **CENSUS **DOES **NOT **UNDERSTAND.**
+        #
+        # MEASURED 2026-10-30: `checks/drive.mjs` and `checks/nan_census.mjs` were charged MALFORMED
+        # for "UNPARSEABLE", and they are JAVASCRIPT (`gates/gates-pop.py`'s `entry_reason()` reads
+        # both as `js-main`), so `ast.parse` failing on them is a finding about **THIS READER**.
+        #
+        # ⇒ AND **THE **ROUTING **IS **NOT **SILENT**, **AND **THAT **IS **THE **POINT:** **A **FILE
+        # **THIS **CENSUS **CANNOT **READ **IS **COUNTED **AND **NAMED**, **NOT **EXCLUDED** — **THE
+        # **SAME **RULE **THE **SHELL **HALF **AND **THE **NO-SHEBANG **HALF **FOLLOW.**  **AN
+        # **INSTRUMENT **THAT **CANNOT **SEE **A **POPULATION **CANNOT **BE **ANYTHING.**
+        #
+        # ⇒ AND **THE **LANGUAGE **IS **THE **OWNER's **TO **SAY, **NOT **THIS **READER's:** **
+        # `gates/gates-pop.py`'s **`entry_reason()`** **IS **THE **INSTRUMENT **THAT **CLASSIFIES **WHAT
+        # **A **FILE **IS **WRITTEN **IN**, **AND **IT **READS **JAVASCRIPT **BEFORE **PYTHON** (**"the
+        # **order **is **measured **rather **than **preferred**"**).
+        if gpop.entry_reason(p) in ("js-main", "js-lib"):
+            unread.append(p)
             continue
         if kind != "PYTHON":
             noshebang.append(p)
@@ -530,6 +626,25 @@ def report(root, charge=True):
             issues.append("NO-GREEN  -- declares no rc 0, so it can never report agreement")
         for rc in verdicts:
             if rc not in vocab:
+                # A CODE THE TREE HAS **ALREADY NAMED** IS NOT UNOWNED. MEASURED 2026-10-30: this
+                # charged `checks/dup-gate.py`, `checks/env-precond.py` and `checks/wallcheck.py` for
+                # declaring code `2`, and `checks/exitcode-census.py` had ALREADY classified all three
+                # as `CONVENTION` -- because all three IMPORT `argparse`, so the `2` is argparse's own
+                # USAGE code, INHERITED rather than CHOSEN, and the argument is STRUCTURAL.
+                #
+                # So the charge is not "this code has no name" but "this gate declares a code whose
+                # MEANING IS FIXED BY SOMETHING OUTSIDE THE TREE", which is a different complaint and
+                # is already measured by the instrument that owns it. A convention is not a verdict,
+                # so it is not UNOWNED -- but it is still NAMED, because a caller aggregating the code
+                # needs to know it is not guessing about a VERDICT.
+                rel = str(p.relative_to(root))
+                if (rel, rc) in conventions:
+                    issues.append(f"CONVENTION {rc} {verdicts[rc]!r} -- the code has no name in "
+                                  f"gates/gatekit.py's vocabulary, but its meaning is fixed OUTSIDE "
+                                  f"this tree\n   (measured as CONVENTION by "
+                                  f"checks/exitcode-census.py), so it is not a verdict and not a "
+                                  f"guess")
+                    continue
                 unowned += 1
                 issues.append(f"UNOWNED    {rc} {verdicts[rc]!r} -- gates/gatekit.py has no name "
                               f"for this exit code, so a caller aggregating it is guessing")
@@ -543,6 +658,26 @@ def report(root, charge=True):
                 # UNOWNED codes here was 4, which is why the census was worth writing separately:
                 # UNOWNED counted the codes nobody claimed and was blind to the one code two owners
                 # claimed in two words. The NAME is compared here, by the owner's own word.
+                #
+                # ⇒ AND **A **GATE **MAY **HAVE **ITS **OWN **WORDS, **AND **THE **TREE's **OWN **RUNNER
+                # **SAYS **SO.**  MEASURED 2026-10-30: `gates/runner.py`'s `spoken_disagrees()` reads
+                # ONLY `gatekit`'s five NAMES out of a gate's output -- "a word this tree has not bound
+                # to a code is not a claim about a code; it is prose" -- and it NAMES `gates/gate-surface.py`
+                # itself (`{0: "GREEN", 1: "RED", 3: "REFUSED"}`) as a case it accepts. So a gate that
+                # declares `0: "CLEAN"` and PRINTS `CLEAN` is not lying to the runner: the runner
+                # reports `PASS` for it and there is no TOKEN-MISMATCH.
+                #
+                # ⇒ AND **SO **THIS **CHARGE **WAS **STRICTER **THAN **THE **TREE's **OWN **RUNNER**, **AND
+                # **IT **CHARGED **A **GATE **FOR **BEING **CONSISTENT **WITH **ITSELF.**  **THE **FIX **IS
+                # **THE **RUNNER's **RULE, **READ **FROM **THE **RUNNER** -- **NOT **RE-DERIVED:** **A **WORD
+                # **THAT **IS **NOT **ONE **OF **THE **HOUSE **FIVE **IS **PROSE**, **SO **A **GATE **THAT
+                # **USES **ONE **IS **NOT **RENAMED.**
+                if verdicts[rc] not in set(vocab.values()):
+                    issues.append(f"OWN WORD  {rc} {verdicts[rc]!r} -- this gate uses its OWN word for "
+                                  f"this code, and the tree's runner reads only the house five "
+                                  f"(`gates/gatekit.py`),\n   so a word that is not one of them is "
+                                  f"PROSE and not a claim about a code")
+                    continue
                 renamed += 1
                 issues.append(f"RENAMED    {rc} {verdicts[rc]!r} -- gates/gatekit.py calls this code "
                               f"{vocab[rc]!r}, so a caller charging by integer prints a word this "
@@ -572,6 +707,12 @@ def report(root, charge=True):
               f"NOT a\n   declaration and this file falls back to `.venv/bin/python` for them -- "
               f"stated, not assumed:\n     "
               + ", ".join(sorted(str(p.relative_to(root)) for p in noshebang)))
+    if unread:
+        print(f"II NOT READ BY THIS CENSUS: {len(unread)} entry point(s) are in a language this "
+              f"file cannot read a\n   declaration from. A file this census does not UNDERSTAND is "
+              f"not a file with a MALFORMED\n   declaration, and charging it as one is a false "
+              f"charge:\n     "
+              + ", ".join(sorted(str(p.relative_to(root)) for p in unread)))
     if malformed:
         print(f"II MALFORMED DECLARATION: {malformed}\n")
 
@@ -586,6 +727,14 @@ def report(root, charge=True):
         r = "/".join(str(k) for k in sorted(reached)) or "(none)"
         print(f"   {rel:44} declared {d:16} reached {r:10} red={klass}")
         for issue in issues:
+            # A CONVENTION IS NOT A RED. It is a code whose MEANING is fixed outside this tree, so a
+            # caller aggregating it is NOT guessing -- and a census that charges a convention is a
+            # census that reds on the tree for being CONSISTENT with argparse. It is still PRINTED and
+            # still NAMED, because "a carve-out nobody can see in the output is a carve-out nobody
+            # audits" -- but it does not set the exit.
+            if issue.startswith("CONVENTION ") or issue.startswith("OWN WORD "):
+                print(f"     NOTE {rel}: {issue}")
+                continue
             print(f"     RED {rel}: {issue}")
             red = 1
 
@@ -861,6 +1010,63 @@ def plants(red=False):
     checks.append(("5c: ZERO or TWO module-level unpacks in the vocabulary's owner is exit 3 "
                    "REFUSED, never a default -- an ambiguous owner is the one thing clause V exists "
                    "for", one == 3 and two == 3, f"rc={one}/{two}"))
+
+    # PLANT 7 -- THE MARKER IS THE **SHAPE**, NOT THE NAME. MEASURED 2026-10-30: four files ship a
+    # `VERDICTS` that is NOT a mapping (`gates/citations-census-gate.py` a TUPLE of row labels,
+    # `gates/e2estage8-stage-selftest.py` a PATH, `gates/vendordep-census-gate.py` a TUPLE,
+    # `gates/verdictcopy-gate.py` a SET) and were charged MALFORMED for it -- and NOT ONE OF THE FOUR
+    # SHIPS A `PLANTS` MAPPING, so NOT ONE OF THEM DECLARED A SURFACE. The rule is now the SHAPE.
+    #
+    # ⇒ AND **THE **PLANT **IS **BOTH **DIRECTIONS:** **A **FILE **NAMING **`VERDICTS` **WITH **NO
+    # **`PLANTS`** **IS **NOT **CHARGED**, **AND **A **FILE **SHIPPING **A **`PLANTS` **MAPPING **WITH
+    # **A **BROKEN **`VERDICTS`** **IS** — **BECAUSE **THE **SECOND **IS **A **GATE **THAT **DECLARED **A
+    # **SURFACE **AND **DECLARED **IT **BADLY**, **AND **THE **FIRST **IS **NOT **A **GATE **AT **ALL.**
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r)
+        (r / "checks" / "labels.py").write_text("VERDICTS = ('A', 'B', 'C')\n")
+        (r / "checks" / "declared.py").write_text(CLAIM)
+        got, said = _run_report(r)
+        charged = "MALFORMED" in said and "labels.py" in said
+        checks.append(("7a: a file that names `VERDICTS` for its OWN reasons and ships NO `PLANTS` "
+                       "mapping never declared a surface, so it is NOT charged MALFORMED -- a NAME is "
+                       "not a DECLARATION", got == 0 and not charged, f"rc={got} charged={charged}"))
+
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r)
+        (r / "checks" / "broken.py").write_text(
+            "VERDICTS = ('A', 'B')\nPLANTS = {0: []}\n"
+            "if __name__ == '__main__':\n    pass\n")
+        (r / "checks" / "declared.py").write_text(CLAIM)
+        got, said = _run_report(r)
+        charged = "MALFORMED" in said and "broken.py" in said
+        checks.append(("7b: a file that DOES ship a `PLANTS` mapping has declared a surface, so a "
+                       "`VERDICTS` that is not a mapping IS MALFORMED -- the shape rule does not "
+                       "excuse a gate that declared one", got == 1 and charged,
+                       f"rc={got} charged={charged}"))
+
+    # PLANT 8 -- A FILE THIS CENSUS CANNOT **UNDERSTAND** IS NOT A FILE WITH A MALFORMED
+    # DECLARATION. MEASURED 2026-10-30: `checks/drive.mjs` and `checks/nan_census.mjs` were charged
+    # MALFORMED for "UNPARSEABLE", and they are JAVASCRIPT (`gates/gates-pop.py`'s `entry_reason()`
+    # reads both as `js-main`), so `ast.parse` failing on them is a finding about THIS READER.
+    #
+    # ⇒ AND **THE **OTHER **HALF **IS **NOT **A **PLANT, **AND **THAT **IS **A **MEASUREMENT:** **A
+    # **PYTHON **FILE **THAT **DOES **NOT **PARSE **IS **NEVER **AN **ENTRY** — **`gates-pop.py`'s
+    # **`entry_reason()`** **CANNOT **READ **A **`__main__` **GUARD **IN **A **FILE **THAT **DOES **NOT
+    # **PARSE**, **SO **IT **RETURNS **`None`** **AND **THE **FILE **IS **OPAQUE.**  **⇒ AND **SO **THE
+    # **CENSUS's **`UNPARSEABLE` **ARM **IS **REACHABLE **ONLY **FOR **A **NON-PYTHON **ENTRY**, **AND
+    # **THAT **IS **EXACTLY **THE **CASE **THIS **PLANT **IS.**
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r)
+        (r / "checks" / "thing.mjs").write_text("const x = 1;\n")
+        (r / "checks" / "declared.py").write_text(CLAIM)
+        got, said = _run_report(r)
+        charged = "MALFORMED" in said and "thing.mjs" in said
+        checks.append(("8a: a file this census does not UNDERSTAND is not a file with a MALFORMED "
+                       "declaration -- `ast.parse` failing on JavaScript is a finding about the "
+                       "READER", got == 0 and not charged, f"rc={got} charged={charged}"))
 
     # PLANT 6 -- THE ARM, IN BOTH DIRECTIONS. Three assertions, because the fix has three parts
     # and any one of them can rot silently: read a SHELL shebang; resolve `env` instead of taking

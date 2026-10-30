@@ -514,6 +514,32 @@ def entry_reason(p):
     # of the 19 `.mjs` in this tree, all three of them 40-byte stubs under `.agents/slop/`, and a
     # file it mislabels as `py-lib` is COUNTED as a module, never dropped.
     if NODE_SHEBANG.match(src) or JS_MODULE.search(src):
+        # ⇒ AND **A **FILE **THAT **PARSES **AS **PYTHON **IS **PYTHON**, **EVEN **WHEN **JAVASCRIPT
+        # **APPEARS **INSIDE **A **STRING **LITERAL.**  MEASURED 2026-10-30: `gates/bendfloat-gate.py`
+        # was classified `js-main` -- and it is a **PYTHON** **GATE** **WITH **A **`__main__` **GUARD**,
+        # **BECAUSE **`JS_MODULE`'s **`^[ \t]*` **ANCHOR **ALSO **MATCHES **THE **CONTINUATION **LINE
+        # **OF **A **MULTI-LINE **PYTHON **STRING**, **AND **THIS **FILE **SHIPS **A **JS **DRIVER **AS
+        # **A **STRING **LITERAL** (**`DRIVER = """import fs from "node:fs"; …"""`**).
+        #
+        # ⇒ AND **THE **COST **IS **NOT **COSMETIC:** **THE **LEDGER **ROW **SAID **`js-main`** **FOR
+        # **A **PYTHON **GATE** (**`gates/gates-pop.ledger.tsv:127`**), **AND **THE **SURFACE **CENSUS
+        # **ROUTED **IT **INTO **THE **`unread` **BUCKET**, **SO **ITS **DECLARATION **WAS **NEVER
+        # **READ.**  **⇒ AND **THE **RULE **IS **THE **GRAMMAR's:** **IF **THE **FILE **PARSES **AS
+        # **PYTHON**, **THE **PYTHON **GRAMMAR **DECIDES **WHAT **IT **IS** — **A **REGEX **CANNOT
+        # **TELL **A **STRING **LITERAL **FROM **CODE.**
+        #
+        # ⇒ AND **THE **ORDER **IS **UNCHANGED **FOR **EVERY **OTHER **FILE:** **A **`.mjs` **STUB **WITH
+        # **NO **ESM **SYNTAX **IS **NOT **VALID **PYTHON**, **SO **IT **STILL **FALLS **TO **THE
+        # **JAVASCRIPT **ARM.**
+        if not NODE_SHEBANG.match(src):
+            py_early = is_python_entry(src)
+            # `is_python_entry` returns `True`, `False`, OR THE STRING `"UNPARSEABLE (...)"`, and
+            # all three are tested EXPLICITLY -- `if py_early is not False` would be true of that
+            # string too, which is the exact defect this file's own header records.
+            if py_early is True:
+                return "py-main"
+            if py_early is False:
+                return "py-lib"
         return "js-lib" if JS_EXPORT.search(src) else "js-main"
     # `is_python_entry` returns `True`, `False`, OR THE STRING `"UNPARSEABLE (...)"`, and all
     # three are tested EXPLICITLY. **MEASURED, and the first version of this fix wrote
@@ -2499,7 +2525,39 @@ def _plants():
         sys.argv = argv0
     read_out = buf.getvalue()
     (a) = (LEDGER_PATH.read_bytes() if LEDGER_PATH.is_file() else None) == live_read
-    (b) = rc_plain == 1 and "III LEDGER DIFF:" in read_out and "UNRECORDED departure" in read_out
+    # ⇒ AND **(b) **MUST **NOT **DEPEND **ON **THE **LIVE **TREE's **STATE.**  MEASURED 2026-10-30:
+    # this assertion was `rc_plain == 1 and … "UNRECORDED departure" in read_out` -- i.e. **THE **LIVE
+    # **TREE **HAD **TO **HAVE **A **LEDGER **DRIFT** — **AND **A **DRIFT **IS **A **DEFECT, **SO **THE
+    # **ASSERTION **WAS **RED **WHENEVER **THE **TREE **WAS **CORRECT.**  **⇒ AND **THAT **IS **A **PLANT
+    # **THAT **CANNOT **PASS**, **AND **THE **FAILURE **IS **THE **TREE's **FAVOUR**: **REPAIRING **THE
+    # **LEDGER **TURNED **THE **PLANT **RED.**
+    #
+    # ⇒ AND **THE **FIX **IS **THE **PLANT's **OWN **SUBJECT:** **A **PLANT **MUST **PLANT **WHAT **IT
+    # **MEASURES**, **ON **A **SYNTHETIC **TREE, **SO **THE **ASSERTION **IS **ABOUT **THE **READER
+    # **AND **NOT **ABOUT **THE **TREE.**  **⇒ AND **THE **DRIFT **IS **PLANTED**: **A **SYNTHETIC **TREE
+    # **WITH **A **LEDGER **THAT **CARRIES **A **ROW **FOR **A **PATH **THE **TREE **DOES **NOT **HAVE**
+    # **IS **AN **UNRECORDED **DEPARTURE**, **BY **CONSTRUCTION.**
+    with tempfile.TemporaryDirectory() as td:
+        dr = Path(td)
+        _tree(dr, "checks", "gates")
+        # A LEDGER WITH A ROW FOR A PATH THE TREE DOES NOT HAVE: an UNRECORDED DEPARTURE.
+        drift_ledger = dr / HERE.relative_to(ROOT) / LEDGER.name
+        drift_ledger.parent.mkdir(parents=True, exist_ok=True)
+        drift_ledger.write_text(
+            LEDGER_PREAMBLE + "checks/vanished-gate.py\tpy-main\t-\t0\t1\n")
+        dbuf = io.StringIO()
+        try:
+            sys.argv = ["gates/gates-pop.py", "--root", str(dr)]
+            with contextlib.redirect_stdout(dbuf):
+                rc_drift = main()
+        finally:
+            sys.argv = argv0
+        drift_out = dbuf.getvalue()
+    (b) = (rc_drift == 1 and "III LEDGER DIFF:" in drift_out
+           and "UNRECORDED departure" in drift_out
+           # THE LIVE READ'S rc FOLLOWS **ITS OWN **COUNT**, **NOT **THE **PHRASE:** the line reads
+           # "0 UNRECORDED departure(s)" when there are NONE, so the phrase is present either way.
+           and rc_plain == (1 if re.search(r"[1-9]\d* UNRECORDED departure", read_out) else 0))
     with tempfile.TemporaryDirectory() as td:
         r = Path(td)
         r.mkdir(parents=True, exist_ok=True)
@@ -2541,7 +2599,8 @@ def _plants():
                    "leaves the shared ledger byte-identical and still measures, `--write-ledger` "
                    "writes and says so, `--ledger write` is an argument error, and the ledger's own "
                    "header names its one writer", a and b and c and d and e and f,
-                   f"plain_rc={rc_plain} read_unchanged={a} read_measured={b} wrote={c} "
+                   f"plain_rc={rc_plain} drift_rc={rc_drift} read_unchanged={a} "
+                   f"read_measured={b} wrote={c} "
                    f"counts={nums[0] if nums else None} old_spelling_refused={e} header_names_writer={f} "
                    f"(--plant's own inertness window is measured separately by `plants()`)"))
 
