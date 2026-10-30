@@ -2925,6 +2925,34 @@ exec-apply           [###.] 3/4  **THE APPLY REWRITE: **THE **GRAPH'S SHAPE** NO
                                        EVERY ONE OF THOSE IS **A `symbolic` REWRITER** TOO.**
 
 
+exec-wa             [##] 2/5  **W-A -- THE AFFINE EXPRESSION: **ONE MISSING RULE**, NOT A MISSING MODULE.**
+                                       MEASURED 2026-10-30, IN `.agents/slop/rangify/WA.md`. **⇒ AND THE TREE's PROSE
+                                       SAID THE PORT HAS *"NO `symbolic` REWRITER"*, AND **THE PORT HAS **FOUR OF THE
+                                       FIVE RULES** W-A NEEDS, ALREADY PORTED** -- **⇒ AND THE PROSE WAS WRONG IN THE
+                                       DIRECTION THAT MAKES THE WORK LOOK BIGGER THAN IT IS.**
+                                       **⇒ AND THE WORK LIST WAS MEASURED BY ASKING UPSTREAM's OWN CODE, NOT BY
+                                       REASONING ABOUT IT**: `.agents/slop/rangify/rr-reshape.py` BUILDS THE
+                                       **UNSIMPLIFIED** EXPRESSION WITH UPSTREAM's OWN `UOp` API AND PRINTS BOTH
+                                       SIDES, AND `.agents/slop/rangify/rr-reshape-rules.py` WRAPS THE MATCHER AND
+                                       READS `UPat.location`, **WHICH IS `get_location()`**. **⇒ 27 REWRITE STEPS,
+                                       FIVE DISTINCT RULES, EACH WITH UPSTREAM's OWN FILE AND LINE:** `symbolic.py:120`
+                                       (`x+0 -> x`, **HAVE**), `symbolic.py:122` (`x*1 -> x`, **HAVE**), `symbolic.py:161`
+                                       (`fold_const_alu`, **HAVE**), `symbolic.py:230` (**THE COMMUTATIVE FLIP**,
+                                       **MISSING** -- `symbolic.bend`'s OWN INVENTORY NAMES ITS WALL: **`UOp.tuplize`**),
+                                       AND `divandmod.py:108` (**THE `div_and_mod_symbolic` MATCHER**, **HAVE** --
+                                       `uop/divandmod.bend` PORTS IT IN FULL).
+                                       **⇒ ⇒ ⇒ AND THE MISSING RULE's WALL IS SMALLER THAN IT LOOKS:
+                                       `ops.bend:5163` SAYS `tuplize` IS *"THE MECHANISM IS REPLACED, NOT MISSING"* --
+                                       IT EXISTS **TO KEY CPython's `ucache`** -- **⇒ AND THE FLIP NEEDS THE
+                                       **ORDER**, NOT THE CACHE KEY.**
+                                       **⇒ ⇒ ⇒ ⇒ ⇒ AND THE REST OF W-A IS: **THE ARITHMETIC** (`O.UOp.alu` EXISTS),
+                                       **THE PLACEHOLDER AXIS TRICK** (`indexing.py:174-176`), AND **THE REWRITER
+                                       RUN** (DRIVE THE PORT's OWN `sym_rewrite`, `symbolic.bend:2779`).**
+                                       **⇒ AND EVERY ONE OF THE SIX `get_kernel_graph` PASSES AFTER `run_rangeify`
+                                       IS **A `symbolic` REWRITER** TOO, **⇒ SO THE SAME REWRITER RUN UNBLOCKS
+                                       BOTH.**
+
+
 exec-rmap            [####] 4/4  **THE RANGE MAP: **5 OF 11** ENTRIES AGREE, **0 MISSING**, AND **ALL SIX
                                        DIFFERENCES ARE ONE WALL — **⇒ AND THE PREVIOUS "1 OF 14, TEN DIFFER, THREE
                                        MISSING" READING WAS THE INSTRUMENT's TRUTH**, AND THE PREVIOUS "5 OF 11, ALL SIX
