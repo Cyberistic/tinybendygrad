@@ -26161,6 +26161,49 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       is already expected to AGREE and no exception moves.
 the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
 
+  - [x] **`gates/bendcite-gate.py`: THE 53 REMAINING STALE POINTERS ARE RE-POINTED, AND THE
+        GATE IS `rc=0` (`0dd437b5e`, `1bd627351`).**
+        **THE 80 THE PREVIOUS SESSION LEFT ARE NOW 53, AND ALL 53 WERE RE-POINTED:**
+        MEASURED BEFORE, `gates/bendcite-gate.py` read **"53 of 1284 internal pointers do
+        not hold"** with the failing class `WRONG-LINE`; MEASURED AFTER, the gate prints
+        **`# bendcite-gate: PASS`** and **`rc=0`**, and **`RESOLVES` WENT 1065 -> 1118**
+        **with `WRONG-LINE` AT 0 AND THE CLAIM COUNT UNCHANGED AT 1284** — so NO CITATION
+        WAS DELETED AND NO GATE WAS WEAKENED (`git diff fb3702951 HEAD --
+        gates/bendcite-gate.py` is EMPTY).
+        **⇒ AND EVERY ONE OF THE 53 WAS A STALE LINE AND NOT A STALE SUBJECT:** the
+        cited construct STILL EXISTS and only its LINE moved — `realize_srcs` is at
+        `schedule/indexing.bend:969` and not `:949`, `grm_table` at `:1274` and not
+        `:1254`. **⇒ AND THE `symbol=` FIELD IS THE KEY**, and it was there: **49 of the
+        53 CARRIED ONE** and the other 4 were resolved off the gate's own
+        "the construct AT the cited line is X" reading.
+        **⇒ AND THE TWO `base.bend` FILES ARE NOT THE SAME FILE, AND THE POINTERS SPLIT
+        32/2:** **32 were into the COMPILER's `references/bend/bend2/base.bend`** (79 KB,
+        holds the `U32`/`F32` primitives and laws) **and 2 into the PORT's own
+        `tinybendygrad/base.bend`** (56 lines, holds `F32.from_bits`) — **each was
+        resolved against the file its `symbol=` NAMES**, and the port's `base.bend:11`
+        cites `base.bend:60` for the COMPILER's `type U32` and says so in prose.
+        **⇒ AND ONE CITATION WAS A RANGE AND NOT A LINE** — `runtime/support/
+        compiler_amd.bend:133` cited `base.bend:264-301` for "a working `File`", and
+        the compiler's `File` OPS are `:304-347` (`File.open` .. `File.close`).
+        **⇒ AND EVERY ONE OF THE 50 EDITS IS A COMMENT LINE** (`git diff fb3702951 HEAD
+        -- tinybendygrad/` adds NOTHING that does not start with `#`), so NO CONSTRUCT
+        MOVED AND NO COMPILE CHANGED.
+        **⇒ AND THE 4 EDITS IN THE TWO FILES ANOTHER UNIT WAS EDITING**
+        (`mixin/creation.bend:84,:228` and `uop/ops.bend:608,:8594`) **WERE COMMITTED FROM
+        A PRIVATE INDEX** (`GIT_INDEX_FILE=…/agent-index-bendcite`, RE-SEEDED FROM THE
+        CURRENT `HEAD` IMMEDIATELY BEFORE THE WRITE), so that unit's hunks in the same
+        files STAY UNCOMMITTED. **MEASURED: the shared index holds `fb3702951`'s bytes
+        for both files, i.e. IT WAS ARMED BEFORE THIS SESSION** — `checks/index-arm-gate.py`
+        reads `INDEX-ARM STALE (3): gates/edge-trace.rows, tinybendygrad/mixin/creation.bend,
+        tinybendygrad/uop/ops.bend`, so a BARE `git commit` BY ANOTHER UNIT WOULD REVERT
+        THESE 4 EDITS. **THE ORCHESTRATOR MUST KNOW.**
+        **⇒ AND THE CORPUS MUST BE RE-RUN: `substrate_digest()` MOVED.** MEASURED, the
+        live digest is now **`b5a83b4c4562879c8ac65a0db8d74913611c494c363a84349044d66b132b64fb`**
+        and the recorded run's `substrate-end` was
+        `0c1d41666df281eb2d350364e4ed54ce5bfb8ac4a7b1e3c089ba113ae94200f3`.
+        **⇒ AND THE OTHER TWO CITATION GATES STILL HOLD:** `gates/pin-cite-gate.py` rc=0
+        and `gates/todo-cite-gate.py` rc=0.
+
   - [x] **THE **`weak.bend` **ROUTE **WAS **NOT **DEAD: **A **GATE **IS **A **CALLER** (2026-10-30,
         `2bc1f5793`, `4f5cecf75`).**
         **⇒ AND **THE **COVERAGE **CENSUS's **WALL **WAS **WRONG **IN **THREE **SEPARATE **WAYS**: **THE **FIVE
