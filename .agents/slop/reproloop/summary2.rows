@@ -1,0 +1,24 @@
+graphs=34
+graphs-answered=34
+graphs-unset=0
+expect-moved=3
+graphs-agree=31
+graphs-disagree=2
+byte-identical=20
+not-comparable=0
+stable-pairs=4 of 5
+stable-failed=1 of 5
+stable-differ=0 of 5
+plants-disagree=7 of 7
+cross=1 of 1
+selfcheck=# SELFCHECK: OK
+conflations=4 of 4
+controls=5 of 5
+oracle-selfcheck=# ORACLE SELFCHECK: FAIL
+census-rc=rc=1
+dev=CPU
+lc_all=C
+noopt=0
+pythonhashseed=0
+substrate-start=a842e8323cbebc391833efa9c76d15bb3822ec4355f6050fbaeb9f53a691df64
+substrate-end=7f84fd3da93791c9752ebce076970e62c353f66516844d4a68413bc5b2d4dd3a
