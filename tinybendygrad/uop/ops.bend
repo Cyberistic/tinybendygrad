@@ -605,7 +605,7 @@ def GroupOp.elementwise(op: Op) -> Bool:
 #
 # `AXIS_REDUCE` and `AXIS_UNROLL` are DELETED upstream but they are still CONSTRUCTED
 # by six committed files, so they cannot be deleted here:
-#     schedule/indexing.bend:1428 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
+#     schedule/indexing.bend:1448 symbol=g_nr            codegen/kernel.bend:418 symbol=kn_unroll.ax
 #     codegen/kernel.bend:1002 symbol=kn_fixture       codegen/late/linearizer.bend:877 symbol=lt_fix
 #     codegen/opt/heuristic.bend:159 symbol=reduce_k   codegen/opt/heuristic.bend:162 symbol=matmul_k
 #     codegen/opt/postrange.bend:160 symbol=split_targets   codegen/opt/search.bend:418 symbol=zero_variant.dead
@@ -8591,7 +8591,7 @@ def vv_has(v: VarVals, k: String) -> Bool:
 #
 # I RECORDED THIS BLOCKER WRONG TWICE, both times in the same direction: I claimed
 # a BEND LANGUAGE CHANGE was needed and never grepped for it. `Map` is a stdlib type
-# from `import Base` -- `references/bend/bend2/base.bend:2733 symbol=Map.put` Map.put, `:2675`
+# from `import Base` -- `references/bend/bend2/base.bend:2752 symbol=Map.put` Map.put, `:2876`
 # Map.set, `:2683` Map.has, `:2736` Map.get, all four present -- and
 # `uop/render.bend:1012 symbol=range_ids.of` and `:1017` were already CALLING `Map.set` and `Map.get`
 # through `Ctx` while the note here said the rule did not exist.
