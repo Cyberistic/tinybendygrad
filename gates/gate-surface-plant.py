@@ -109,8 +109,18 @@ PATCH = (
      '              + ", ".join(sorted(str(p.relative_to(root)) for p in unread)))\n'
      '    if noshebang:\n'),
     # 5. THE CENSUS'S OWN DECLARATION: the reader has to declare itself under the same name.
-    ('VERDICTS = {0: "OK", 1: "RED", 2: "REFUSED"}\n',
-     'EXIT_SURFACE = VERDICTS = {0: "OK", 1: "RED", 2: "REFUSED"}\n'),
+    #
+    # MEASURED 2026-10-30: this anchor read `2: "REFUSED"`, and the census's own constant has
+    # always been `3: "REFUSED"` (its module docstring says `VERDICTS = {0: "GREEN", 1: "RED",
+    # 3: "REFUSED"}` at `:22`, and `refuse()` exits 3 because the house vocabulary -- `gatekit`'s
+    # own unpack, `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` -- has NO name for 2).  **SO
+    # THE ANCHOR **ROTTED **AND **THIS **PLANT **REFUSED** — **"the anchor has rotted, so the
+    # candidate is not the census"** — **WHICH **IS **THE **MECHANISM **WORKING.**  The census's
+    # constant was CORRECTED to 3, and this anchor moves with it: a fixture that pins a stale
+    # spelling is a plant that must be edited when the fix lands, which is the property its own
+    # header names.
+    ('VERDICTS = {0: "OK", 1: "RED", 3: "REFUSED"}\n',
+     'EXIT_SURFACE = VERDICTS = {0: "OK", 1: "RED", 3: "REFUSED"}\n'),
 )
 
 # ---- THE SYNTHETIC GATES.  They are COPIES of a shape, written to a temporary tree. ---------
