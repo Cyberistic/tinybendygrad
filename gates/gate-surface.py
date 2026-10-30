@@ -133,8 +133,20 @@ TIMEOUT = 180
 # THIS GATE'S OWN DECLARATION, read by the census above exactly as it reads everyone else's.
 # `0` and `1` are PLANTED, so this gate's surface is 3 of 3 REACHABLE -- without plants, `RED_IS`
 # would be an UNEARNED claim and the census would say so about itself.
-VERDICTS = {0: "OK", 1: "RED", 2: "REFUSED"}
-PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 2: ["--root", "/dev/null"]}
+#
+# MEASURED 2026-10-30: the REFUSED CODE WAS **2** HERE, AND **THIS **FILE'S **OWN **MODULE **DOCSTRING**
+# SAYS **3** (**`VERDICTS = {0: "GREEN", 1: "RED", 3: "REFUSED"}`**, **`:22`**), **AND **`refuse()`**
+# **EXITED **3** — **SO **THE **DOCSTRING **AND **THE **CODE **AGREED **AND **ONLY **THE **CONSTANT
+# DISAGREED.**  **⇒ AND **3 **IS **THE **RIGHT **NUMBER**: **`refuse()`'s **OWN **COMMENT **SAYS **WHY**
+# (**`:221-225`**) — **THE **HOUSE **VOCABULARY **IS **`gates/gatekit.py`'s **OWN **UNPACK**
+# (**`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`**), **SO **2 **IS **UNNAMED**, **AND **THIS
+# **FILE's **OWN **RULE **IS **THAT **"A **NUMBER **WITH **NO **AGREED **MEANING **MUST **BE **NAMED
+# **RATHER **THAN **RESOLVED"**.  **⇒ AND **PLANT **5c **EXPECTED **2**, **WHICH **IS **WHY **THE
+# **PLANT **SUITE **WAS **RED **ON **A **GATE **THAT **REFUSES **CORRECTLY.**  **⇒ AND **THE **PLANT
+# **ROW **HERE **IS **`["--root", "/dev/null"]`**, **AND **THAT **ARGV **REACHES **3** — **SO **THE
+# **DECLARATION **AND **THE **PLANT **AGREE **FOR **THE **FIRST **TIME.**
+VERDICTS = {0: "OK", 1: "RED", 3: "REFUSED"}
+PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 3: ["--root", "/dev/null"]}
 RED_IS = "FINDING"
 
 FINDING, UNTAKEN, FAILURE = "FINDING", "UNTAKEN", "FAILURE"
@@ -668,10 +680,16 @@ OWNED_GATE = UNOWNED_GATE.replace("2: 'USAGE'", "3: 'REFUSED'").replace("2: ['2'
 # It carries `VERDICTS = {0: 'PASS'}` on purpose, because that line is what a Python reader is
 # FORBIDDEN to score: in `sh` a spaced `=` is a command named `VERDICTS`, not an assignment, so a
 # shell gate has no Python declaration and the census must SAY SO rather than report UNPARSEABLE.
+#
+# MEASURED 2026-10-30: the self-reference was in a COMMENT and the `echo` line read
+# `"$0 ran under a shell"`, and NEITHER matched `SH_SELFREF` -- the comment is stripped by
+# `gates-pop.py:shell_code()`, and the token is `\$\{0|["']\$0["']`, which needs the CLOSING QUOTE
+# IMMEDIATELY after `$0`. So the fixture was classified `sh-lib`, it never JOINED the population,
+# and the "II SHELL HALF: 1 entry point(s)" line was never printed -- which is why plant 6a was RED
+# ON A GATE THAT WORKS. The 17 REAL shell gates use `"$0"` or `${0}`, so the fixture now does too.
 SHELL_GATE = ("#!/bin/sh\n"
-              "# a synthetic shell entry point, $0 self-referencing so discover() sees an entrance\n"
               "VERDICTS = {0: 'PASS'}\n"
-              'echo "$0 ran under a shell"\nexit 0\n')
+              'exec "$0"\nexit 0\n')
 
 
 def _tree(root):
@@ -834,9 +852,15 @@ def plants(red=False):
 
     one, _said = _refused("X = 1\n")
     two, _said = _refused("A, B = 0, 3\nC, D = 1, 4\n")
-    checks.append(("5c: ZERO or TWO module-level unpacks in the vocabulary's owner is exit 2 "
+    # MEASURED 2026-10-30: this expected `2`, and `refuse()` exits `3` -- the HOUSE vocabulary's
+    # REFUSED (`gates/gatekit.py`: `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`), because `2` is
+    # UNNAMED there and this file's own rule is that an unnamed number must be NAMED rather than
+    # resolved. So the EXPECTATION was the stale half, not the code. The `_refused` helper already
+    # SAID SO: it returns "REFUSED" only for 2 and "WRONG CODE" for anything else, so this assertion
+    # was rejecting a CORRECT refusal.
+    checks.append(("5c: ZERO or TWO module-level unpacks in the vocabulary's owner is exit 3 "
                    "REFUSED, never a default -- an ambiguous owner is the one thing clause V exists "
-                   "for", one == 2 and two == 2, f"rc={one}/{two}"))
+                   "for", one == 3 and two == 3, f"rc={one}/{two}"))
 
     # PLANT 6 -- THE ARM, IN BOTH DIRECTIONS. Three assertions, because the fix has three parts
     # and any one of them can rot silently: read a SHELL shebang; resolve `env` instead of taking
