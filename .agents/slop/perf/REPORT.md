@@ -214,3 +214,38 @@ did and what produced the impossible 3x86%. Only then is "make `Prog` an `Array`
 justified or refuted; the guide's `a[i] <- v` ("overwrites the slot ... with no
 copy") is the candidate, but **an unproven candidate is why 3.7% is all that
 landed.**
+
+### 4.4 THE PER-SYMBOL LEAF CENSUS §4.3 ASKED FOR, FROM THE SAME SAMPLE
+
+`sample` writes a SELF-TIME table at the end of the file, and §4.2 did not read it.
+**⇒ SO THE ATTRIBUTION WAS IN THE ARTIFACT ALL ALONG AND I READ THE CALL TREE
+INSTEAD OF IT:**
+
+    Sort by top of stack, same collapsed (when >= 5):
+        __psynch_cvwait  (libsystem_kernel)            2333   <- the SAMPLER's own wait
+        span_fade        (bend-executor)               1019   <- 44%
+        term_drop        (bend-executor)                883   <- 38%
+        spin_85          (bend-executor)                285   <- 12%
+        OUTLINED_FUNCTION_12                            93
+        spin_191                                         18
+        WL_FID_run                                       12
+        spin_82                                           7
+        WL_FID_Prog_step                                  5
+
+**⇒ `span_fade` (release a span of arena cells) + `term_drop` (release a term) =
+1 902 OF 2 333 SAMPLES = 82%, AND WITH THE `spin_*` REFERENCE-COUNT SPINS IT IS
+94%.** **⇒ THE INTERPRETER IS 94% MEMORY RELEASE.** It is not slow at arithmetic,
+it is not slow at list scans, and it is not slow at decoding: it is slow at
+**FREEING WHAT IT JUST ALLOCATED**, which is the functional-update churn
+`Prog.step` creates and the one `Array<T>`'s `a[i] <- v` ("overwrites the slot ...
+with no copy") exists to remove.
+
+**⇒ SO THE `Array` REWRITE IS NOW JUSTIFIED BY A NUMBER AND NOT BY A HUNCH** — and
+that is the difference between the 3.7% I landed and the fix that has not been
+written. It has NOT been written: **§3's 55.7x stands, and this report does not
+claim otherwise.**
+
+**⇒ AND THE METHOD LESSON IS THE ONE WORTH KEEPING**: `sample` writes both a call
+tree AND a self-time census, and reading only the tree produced three mutually
+impossible "86%" readings from a table that said 82% in one line. **A PROFILE HAS
+MORE THAN ONE VIEW AND THE CHEAPER ONE WAS THE RIGHT ONE.**
