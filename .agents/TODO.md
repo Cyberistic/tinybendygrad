@@ -26722,3 +26722,9 @@ the corpus is GREEN and STALE AGAIN, and the DOSE is 14 substrate files THREE OT
 - [ ] THE ARENA IS THE NEXT ONE: at 32x32 the gap is **14.45x** (38 754.96 vs 2 682 ms), because
       `Mem.put`/`Mem.byte` are `List.set`/`List.get`, O(byte address), and the address scales
       with the buffer. See `.agents/slop/perf/REPORT.md` §9.
+- [x] THE ARENA IS CHUNKED (64 bytes): `Mem.put` was `List.set(ms, at, v)`, O(byte address).
+      MEASURED 16x16 2 426.89 -> 1 298.83 ms (**1.87x**), 32x32 38 754.96 -> 13 008.49 (**2.98x**),
+      bit-exact (153 fixtures / 0 divergences, `8.941e-08` and `3.576e-07` unchanged).
+- [ ] WHAT IS LEFT IS SPREAD: 31 shared-record copies per step of 4.3 fields (`S.Dt`, `Buf`, `Elem`
+      projections) plus 60 `term_drop`s; `List.set` is now 2% of self-time. Needs mutable state
+      (Array threaded through the step) or dozens of projection removals. Gap now 2.45x / 4.97x.

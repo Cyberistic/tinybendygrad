@@ -909,11 +909,31 @@ def Val.at(vs: List<&2, Elem>, +i: U32) -> Elem:
 def Val.put(vs: List<&2, Elem>, +i: U32, +e: Elem) -> List<&2, Elem>:
   List.set(&2, Elem, vs, U32.to_nat(i), e)
 
-def Mem.byte(ms: List<&2, U32>, +at: U32) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, ms, U32.to_nat(at)), 0)
+# **=> AND THE ARENA IS List<&2, List<&2, U32>>UNKED, BECAUSE A BYTE LIST MAKES A STORE O(ADDRESS).**
+# `Mem.put` was `List.set(ms, at, v)`, which rebuilds every cons before `at`, and
+# `Mem.byte` was `List.get`, which walks them all. MEASURED (`.agents/slop/perf/REPORT.md`
+# §10): heap allocations went 6 011 615 at 16x16 to 117 081 988 at 32x32 -- 19.5x for
+# 4x the steps -- and the run 1.6 s -> 18.2 s, because the copy scales with the
+# ADDRESS, which scales with the buffer.
+# ⇒ SO 64 BYTES PER List<&2, List<&2, U32>>UNK. A store copies one chunk (<= 64 cells) and the chunk spine
+# (<= n/64), which is O(address/64 + 64) instead of O(address).
+#
+# AND NOT AN `Array`: `Array<T>` is a `Type`, so it cannot live in `Prog`, which is a
+# `Data` record matched in 23 places, and every READER would have to thread it back
+# out (`Array.get` returns `Array<T> & T`). A chunked `List` stays `Data`.
+def Mem.ci(+at: U32) -> U32: U32.shrn(at, 6n)
+def Mem.co(+at: U32) -> U32: U32.and(at, 63)
 
-def Mem.put(ms: List<&2, U32>, +at: U32, +v: U32) -> List<&2, U32>:
-  List.set(&2, U32, ms, U32.to_nat(at), v)
+def Mem.ch.at(+ms: List<&2, List<&2, U32>>, +ci: U32) -> List<&2, U32>:
+  Maybe.default(&2, List<&2, U32>, List.get(&2, List<&2, U32>, ms, U32.to_nat(ci)), Nil{})
+
+def Mem.byte(+ms: List<&2, List<&2, U32>>, +at: U32) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, Mem.ch.at(ms, Mem.ci(at)), U32.to_nat(Mem.co(at))), 0)
+
+def Mem.put(+ms: List<&2, List<&2, U32>>, +at: U32, +v: U32) -> List<&2, List<&2, U32>>:
+  +ci = Mem.ci(at)
+  List.set(&2, List<&2, U32>, ms, U32.to_nat(ci),
+    List.set(&2, U32, Mem.ch.at(ms, ci), U32.to_nat(Mem.co(at)), v))
 
 # ===========================================================================
 # THE STORE IS LITTLE-ENDIAN. `memoryview(bytearray).cast('I')` is NATIVE order
@@ -921,29 +941,29 @@ def Mem.put(ms: List<&2, U32>, +at: U32, +v: U32) -> List<&2, U32>:
 # assembled low byte first; a 1-byte word (bool) is the byte itself.
 # ===========================================================================
 
-def Mem.ld4.go(+ms: List<&2, U32>, +n: Nat, +at: U32, +sh: Nat, +acc: U32) -> U32:
+def Mem.ld4.go(+ms: List<&2, List<&2, U32>>, +n: Nat, +at: U32, +sh: Nat, +acc: U32) -> U32:
   match n:
     case 0n: acc
     case 1n+p: Mem.ld4.go(ms, p, U32.add(at, 1), Nat.add(sh, 8n),
       U32.or(acc, U32.shln(Mem.byte(ms, at), sh)))
 
 
-def Mem.ld4(ms: List<&2, U32>, +at: U32) -> U32: Mem.ld4.go(ms, 4n, at, 0n, 0)
+def Mem.ld4(ms: List<&2, List<&2, U32>>, +at: U32) -> U32: Mem.ld4.go(ms, 4n, at, 0n, 0)
 
-def Mem.ld(+ms: List<&2, U32>, +at: U32, +w: U32) -> U32:
+def Mem.ld(+ms: List<&2, List<&2, U32>>, +at: U32, +w: U32) -> U32:
   Bool.pick(U32, U32.is_eq(w, 1), Mem.byte(ms, at), Mem.ld4(ms, at))
 
-def Mem.st4.go(+n: Nat, +ms: List<&2, U32>, +at: U32, +sh: Nat, +v: U32) -> List<&2, U32>:
+def Mem.st4.go(+n: Nat, +ms: List<&2, List<&2, U32>>, +at: U32, +sh: Nat, +v: U32) -> List<&2, List<&2, U32>>:
   match n:
     case 0n: ms
     case 1n+p: Mem.st4.go(p, Mem.put(ms, at, U32.and(U32.shrn(v, sh), 255)),
       U32.add(at, 1), Nat.add(sh, 8n), v)
 
 
-def Mem.st4(ms: List<&2, U32>, +at: U32, +v: U32) -> List<&2, U32>: Mem.st4.go(4n, ms, at, 0n, v)
+def Mem.st4(ms: List<&2, List<&2, U32>>, +at: U32, +v: U32) -> List<&2, List<&2, U32>>: Mem.st4.go(4n, ms, at, 0n, v)
 
-def Mem.st(+ms: List<&2, U32>, +at: U32, +w: U32, +v: U32) -> List<&2, U32>:
-  Bool.pick(List<&2, U32>, U32.is_eq(w, 1), Mem.put(ms, at, Bool.to_u32(U32.is_ne(v, 0))),
+def Mem.st(+ms: List<&2, List<&2, U32>>, +at: U32, +w: U32, +v: U32) -> List<&2, List<&2, U32>>:
+  Bool.pick(List<&2, List<&2, U32>>, U32.is_eq(w, 1), Mem.put(ms, at, Bool.to_u32(U32.is_ne(v, 0))),
     Mem.st4(ms, at, v))
 
 # ===========================================================================
@@ -984,7 +1004,7 @@ def Build.blank() -> Build: Build{Nil{}, Nil{}, Nil{}, Nil{}, 0, 0, 0, 0, 0, 0, 
 # what a parsed packet is: the program, its buffers, the store, and the zeroed
 # arena. No grid and no `vals` -- those are per launch, so they arrive later.
 type Load is Data:
-  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, U32>, v0: List<&2, Elem>,
+  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, List<&2, U32>>, v0: List<&2, Elem>,
        n: U32, nb: U32}
 
 
@@ -998,7 +1018,7 @@ def Load.fs(+l: Load) -> List<&2, Buf>:
   match l:
     case Load{us, fs, ms, v0, n, nb}: fs
 
-def Load.ms(+l: Load) -> List<&2, U32>:
+def Load.ms(+l: Load) -> List<&2, List<&2, U32>>:
   match l:
     case Load{us, fs, ms, v0, n, nb}: ms
 
@@ -1122,8 +1142,38 @@ def Prog.zeros(+fs: List<&2, Buf>, acc: List<&2, U32>) -> List<&2, U32>:
 # `len(zeros)` however the zeros are counted. The zeros belong AT THE END, and
 # the one reversal that puts them there is the SAME reversal the byte order
 # needs.
-def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, U32>:
-  List.reverse(&2, U32, Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))), Build.bp(b)))
+# 64 bytes per chunk, ONCE, at load: O(n) here and O(n/64 + 64) per store
+# afterwards. `n` counts a chunk DOWN, so every self-call consumes the head -- Bend
+# refuses a call whose first argument did not visibly shrink, and `List.drop` is not
+# visible to that check.
+def Prog.chunks.fin(cur: List<&2, U32>, acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
+  match cur:
+    case Nil{}: List.reverse(&2, List<&2, U32>, acc)
+    case _: List.reverse(&2, List<&2, U32>, List.reverse(&2, U32, cur) <> acc)
+
+def Prog.chunks(+flat: List<&2, U32>, +n: Nat, cur: List<&2, U32>,
+  acc: List<&2, List<&2, U32>>) -> List<&2, List<&2, U32>>:
+  match flat n:
+    case Nil{} _: Prog.chunks.fin(cur, acc)
+    case (h <> t) 0n: Prog.chunks(t, 63n, h <> Nil{}, List.reverse(&2, U32, cur) <> acc)
+    case (h <> t) 1n+p: Prog.chunks(t, p, h <> cur, acc)
+
+def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, List<&2, U32>>:
+  Prog.chunks(List.reverse(&2, U32,
+    Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))), Build.bp(b))), 64n, Nil{}, Nil{})
+
+# The dump is once per buffer per launch, so it flattens first and then takes the
+# same cons walk: `Prog.line.go` indexes from `base` and must see consecutive bytes
+# wherever a chunk boundary falls.
+def Prog.flat.chunk(+c: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match c:
+    case Nil{}: acc
+    case h <> t: Prog.flat.chunk(t, h <> acc)
+
+def Prog.flat(+ms: List<&2, List<&2, U32>>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ms:
+    case Nil{}: List.reverse(&2, U32, acc)
+    case c <> t: Prog.flat(t, Prog.flat.chunk(c, acc))
 
 def Prog.load.put(+b: Build, us: List<&2, Uop>, +fs: List<&2, Buf>) -> Load:
   Load{us, fs, Prog.bytes(b, fs), List.replicate(Elem, U32.to_nat(Build.slot(b)), Elem.zero()),
@@ -1340,7 +1390,8 @@ def Arg.dec(s: String) -> Maybe<&2, U32>: Arg.dec2(String.split(s, Char.from_u32
 # 4. Going through the line path is what makes the two agree by construction.
 def Arg.hex(h1: String) -> Maybe<&2, U32>:
   +b = Prog.hex(String.concat(["4 ", h1]), Build.blank())
-  Bool.pick(Maybe<&2, U32>, Build.ok(b), Some{Mem.ld4(List.reverse(&2, U32, Build.bp(b)), 0)}, None{})
+  Bool.pick(Maybe<&2, U32>, Build.ok(b),
+    Some{Mem.ld4(Prog.chunks(List.reverse(&2, U32, Build.bp(b)), 64n, Nil{}, Nil{}), 0)}, None{})
 
 def Arg.letter.of(+c: U32, +v: U32) -> Maybe<&2, Arg>:
   Bool.pick(Maybe<&2, Arg>, U32.is_lt(c, 3), Some{Arg{U32.add(2, c), v, 0}},
@@ -1554,7 +1605,7 @@ def Prog.parse(s: String) -> Maybe<&2, Load>:
 # ===========================================================================
 
 type Prog is Data:
-  Prog{us: List<&2, Uop>, vs: List<&2, Elem>, v0: List<&2, Elem>, ms: List<&2, U32>,
+  Prog{us: List<&2, Uop>, vs: List<&2, Elem>, v0: List<&2, Elem>, ms: List<&2, List<&2, U32>>,
        fs: List<&2, Buf>, mk: List<&2, Bool>, vals: List<&2, U32>, pc: U32, n: U32,
        pv: U32, gx: U32, gy: U32, gz: U32, cx: U32, cy: U32, cz: U32, bad: Bool,
        dead: Bool, un: List<&2, Uop>}
@@ -1621,7 +1672,7 @@ def Prog.v0(+p: Prog) -> List<&2, Elem>:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}: v0
 
-def Prog.ms(+p: Prog) -> List<&2, U32>:
+def Prog.ms(+p: Prog) -> List<&2, List<&2, U32>>:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}: ms
 
@@ -1719,7 +1770,7 @@ def Prog.vs1(p: Prog, vs: List<&2, Elem>) -> Prog:
     case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}
 
-def Prog.ms1(p: Prog, ms: List<&2, U32>) -> Prog:
+def Prog.ms1(p: Prog, ms: List<&2, List<&2, U32>>) -> Prog:
   match p:
     case Prog{us, vs, v0, _ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}
@@ -2154,8 +2205,9 @@ def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
 # is computed and discarded rather than branched over (Bool.pick is not a branch)
-def Prog.store.go(ms: List<&2, U32>, done: List<&2, U32>, +open: Bool) -> List<&2, U32>:
-  Bool.pick(List<&2, U32>, open, done, ms)
+def Prog.store.go(ms: List<&2, List<&2, U32>>, done: List<&2, List<&2, U32>>,
+  +open: Bool) -> List<&2, List<&2, U32>>:
+  Bool.pick(List<&2, List<&2, U32>>, open, done, ms)
 
 def Prog.store.addr(+p: Prog, +u: Uop, +j: U32) -> U32:
   U32.add(Buf.base(Prog.buf(p, u)), U32.mul(Prog.store.i(p, u, j), Buf.w(Prog.buf(p, u))))
@@ -2191,7 +2243,7 @@ def Prog.store.bits(+p: Prog, +u: Uop, +j: U32) -> U32:
 # ORIGINAL and only the LAST lane survives, so a vec-4 store laid down one element
 # per pass with the last lane's value (MEASURED: `elementwise_add` wrote 6, 10,
 # 14, 18 at indices 3, 7, 11, 15 where it wanted 3..18).
-def Prog.store.lane.at(+ms: List<&2, U32>, +p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
+def Prog.store.lane.at(+ms: List<&2, List<&2, U32>>, +p: Prog, +u: Uop, +j: U32) -> List<&2, List<&2, U32>>:
   Mem.st(ms, Prog.store.addr(p, u, j), Buf.w(Prog.buf(p, u)), Prog.store.bits(p, u, j))
 
 def Prog.store.open(+p: Prog, +u: Uop, +j: U32) -> Bool:
@@ -2201,11 +2253,11 @@ def Prog.store.open(+p: Prog, +u: Uop, +j: U32) -> Bool:
 # identity for the three 4-byte lanes and `bool(x)` for bool, AND THE WRITE
 # ITSELF IS `m[i] = v` INTO THE BUFFER'S MEMORYVIEW, WHICH IS THE CONVERSION
 # `Prog.store.bits` MAKES.
-def Prog.store.lane(+ms: List<&2, U32>, +p: Prog, +u: Uop, +j: U32) -> List<&2, U32>:
+def Prog.store.lane(+ms: List<&2, List<&2, U32>>, +p: Prog, +u: Uop, +j: U32) -> List<&2, List<&2, U32>>:
   Prog.store.go(ms, Prog.store.lane.at(ms, p, u, j), Prog.store.open(p, u, j))
 
 # `n` FIRST for the same reason as `Prog.ld.at`: the byte list is rebuilt each step.
-def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, U32>, +j: U32, +p: Prog) -> List<&2, U32>:
+def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, List<&2, U32>>, +j: U32, +p: Prog) -> List<&2, List<&2, U32>>:
   match n:
     case 0n: ms
     case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, p, u, j), U32.add(j, 1), p)
@@ -2411,10 +2463,10 @@ def Prog.line.go(+ms: List<&2, U32>, +n: Nat, acc: List<&2, Char>) -> List<&2, C
     case _ 0n: acc
     case Nil{} 1n+p: Prog.line.go(Nil{}, p, Prog.line.put(acc, 0))
     case h <> t 1n+p: Prog.line.go(t, p, Prog.line.put(acc, h))
-def Prog.line(+f: Buf, +ms: List<&2, U32>) -> String:
+def Prog.line(+f: Buf, +ms: List<&2, List<&2, U32>>) -> String:
   String.concat([U32.show(U32.mul(Buf.w(f), Buf.e(f))), " ",
     Prog.line.hex(List.reverse(&2, Char,
-      Prog.line.go(List.drop(&2, U32, ms, U32.to_nat(Buf.base(f))),
+      Prog.line.go(List.drop(&2, U32, Prog.flat(ms, Nil{}), U32.to_nat(Buf.base(f))),
         U32.to_nat(U32.mul(Buf.w(f), Buf.e(f))), Nil{}))), "\n"])
 
 # THE BUFFER BLOCK, in buffer-id order, which is the order ops_bend hands the
@@ -2422,7 +2474,7 @@ def Prog.line(+f: Buf, +ms: List<&2, U32>) -> String:
 # NOT the countdown itself: reading the countdown as the index writes the LAST
 # buffer first, and a reversed PACKET.out silently mislabels every readback
 # (MEASURED: the two packet lines came back the wrong way round).
-def Prog.out.at(+fs: List<&2, Buf>, +ms: List<&2, U32>, +nb: Nat, +n: Nat,
+def Prog.out.at(+fs: List<&2, Buf>, +ms: List<&2, List<&2, U32>>, +nb: Nat, +n: Nat,
   acc: List<&2, String>) -> List<&2, String>:
   match n:
     case 0n: acc

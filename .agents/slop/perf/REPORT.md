@@ -561,3 +561,72 @@ allocation stream.
 the per-step cost is now the arena's O(address) list access plus the per-step record
 rebuild, not the interpreter's dispatch; and the `Array` conversion of `ms` — the one
 this report twice argued about — is the fix that §9.5's scaling points at.
+
+---
+
+# 10. THE ARENA, CHUNKED: 1.87x AT 16x16, 2.9x AT 32x32
+
+## 10.1 THE MEASUREMENT THAT JUSTIFIED IT
+
+Before the change, on the same binary with counters compiled into a COPY of the
+compiler's own C:
+
+    packet    steps    heap_alloc     term_drop     span_fade terms
+    16x16     4.0M      6 011 615    144 100 967      227 599 233
+    32x32    16.0M    117 081 988   2 623 935 890   5 497 119 626
+
+**⇒ 19.5x the allocations for 4x the steps**, and the run went 1.6 s -> 18.2 s. The
+cause is `Mem.put = List.set(ms, at, v)`: a store rebuilds every cons before its byte
+address, and the address scales with the buffer. `Mem.byte = List.get` walks them.
+
+## 10.2 WHY CHUNKS AND NOT `Array`
+
+`Array<T>` is a `Type`, so it cannot live in `Prog` — a `Data` record matched in 23
+places — and every READER would have to thread it back out, because
+`Array.get` returns `Array<T> & T`. A chunked `List` stays `Data`, so `Prog` keeps
+its shape and the change stays inside `Mem.*`.
+
+    64 bytes per chunk:  Mem.put  = one chunk set (<= 64 cells) + one spine set (<= n/64)
+    Mem.ci(at) = at >> 6     Mem.co(at) = at & 63
+
+## 10.3 MEASURED, BIT-EXACT
+
+    --iters 2 --size 16:   CPU 1.299   PYTHON 530.17   BEND 1 298.83 ms/iter
+                           (was BEND 2 426.89)  -> 1.87x ; PYTHON/BEND 4.4x -> 2.45x
+    --iters 1 --size 32:   CPU 1.387   PYTHON 2 619.6   BEND 13 008.49 ms/iter
+                           (was BEND 38 754.96) -> 2.98x ; PYTHON/BEND 14.45x -> 4.97x
+
+    ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes, 365 unpinned identical
+    max|diff vs CPU| 8.941e-08 (16x16), 3.576e-07 (32x32) -- unchanged by the change
+
+## 10.4 WHAT IS LEFT, MEASURED, AND IT IS NOT ONE HOTSPOT
+
+Re-counted with the counters after the change:
+
+    packet    heap_alloc   term_drop    span_fade calls / terms
+    16x16       4 838 454   91 922 533     27 621 516 / 121 499 517
+    32x32      96 906 491  970 089 328    496 747 816 / 2 135 511 942
+
+**⇒ 32x32 IS 31 SHARED-RECORD COPIES PER STEP AVERAGING 4.3 FIELDS** (496.7M calls /
+16M steps; 2.135e9 terms / 496.7M calls), plus 60 `term_drop`s per step. And
+`WL_FID_List_set` is **2% of self-time** now, so the arena copy is no longer the
+biggest term; the 4-field copies are (`S.Dt`, `Buf`, `Elem` projections on shared
+values, each of which the runtime copies so both holders can drop them).
+
+**⇒ SO THE REMAINING 2.45x / 4.97x IS SPREAD OVER SMALL-RECORD CHURN, NOT A LOOP TO
+UNROLL.** Cutting it needs either mutable state (an `Array` of counters threaded
+through the step, which `Prog.step`'s `(Array & Prog)` return would force through
+every handler) or eliminating dozens of small projections — neither is a one-line
+change, and neither is started.
+
+## 10.5 STATUS
+
+| stage | state |
+|---|---|
+| 1. python->webgpu vs bend->webgpu | **never timed**: no CPython WEBGPU binding, no kernel-executing Bend WebGPU device |
+| 2. python->metal vs bend->metal | **never timed**: no Bend Metal device at all |
+| 3. PYTHON vs BEND (16x16) | **530.17 vs 1 298.83 ms — 2.45x slower** |
+| 3. PYTHON vs BEND (32x32) | **2 619.6 vs 13 008.49 ms — 4.97x slower** |
+
+**⇒ NOT MET.** Two changes have landed this session (the cursor: 12.3x; the chunks:
+1.87x/2.98x), both bit-exact, and the gap has gone 56x -> 2.45x at 16x16.
