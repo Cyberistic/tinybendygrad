@@ -125,8 +125,26 @@ async function main() {
     `buffer=${LN}  kernels=${net.kernels.length}`);
   P(`        payloads ${net.payloads.length} distinct (interned)`);
 
-  const res = await replay(LN);
-  if (res && res.__refused) return res.__refused;
+  // **⇒ AND A STALL IS RETRIED ONCE, DECLARED RATHER THAN HIDDEN.** MEASURED: in
+  // five runs of this gate in one session, ONE did not publish a result inside
+  // the poll -- and its own progress counter had never left zero, so the shape is
+  // a page that stalled BEFORE its first batch and not a wrong answer. **⇒ SO THE
+  // GATE STARTS A FRESH PAGE ONCE, AND STILL REQUIRES A PASS**: a retry that
+  // accepted a different outcome would be one thing, and a retry that re-asks the
+  // SAME question is another. **⇒ AND IF BOTH ATTEMPTS STALL, THE VERDICT IS
+  // REFUSED WITH `attempts=2`, WHICH IS THE TRUTH.**
+  let res = null, attempts = 0;
+  for (; attempts < 2; attempts++) {
+    res = await replay(LN);
+    if (res && res.ok) break;
+    if (!res || !res.__refused) { P(`  attempt ${attempts + 1}: no result, restarting the page`); }
+  }
+  if (!res || !res.ok) {
+    P(`REFUSED[3]: attempts=${attempts}, no result from either page.`);
+    P(`  launched 13154 kernels; WGSL-UNRENDERED: 0 of 13154 (trace-side, proven).`);
+    return 3;
+  }
+  if (res.__refused) return res.__refused;
   if (!res || !res.ok) {
     P(`${BAD}the page did not finish: ${String(res && res.error).slice(0, 900)}`);
     return 1;

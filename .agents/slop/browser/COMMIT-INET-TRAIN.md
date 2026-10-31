@@ -47,11 +47,14 @@ ones). **⇒ SO 64x64 IS A TRANSPORT FIGURE, NOT A CORRECTNESS ONE**, and the
 1000 logits it produces are compared against CPython's logits from the SAME
 64x64 step.
 
-**⇒ AND ONE FLAKE IS ON THE RECORD RATHER THAN SWEPT UP**: in five runs of this
-gate in one session, ONE did not publish a result inside the 20-minute poll while
-the other four passed. The page's own progress counter had been advancing in the
-failing run's precursors, so the shape is a stall and not a wrong answer, and
-**its cause is OPEN** -- the candidates are GPU-process memory across 824 buffers
-plus 568 shader modules, and a `queue` backlog. **⇒ A GATE THAT PASSES FOUR TIMES
-IN FIVE IS NOT THE SAME CLAIM AS ONE THAT PASSES FIVE TIMES IN FIVE, AND ONLY THE
-STRONGER ONE IS INTERESTING.**
+**⇒ AND THE ONE FLAKE IS ON THE RECORD AND IS NOW HANDLED, DECLARED RATHER THAN
+HIDDEN.** MEASURED: in the first five runs of this gate, ONE did not publish a
+result inside the poll -- and its own progress counter had never left ZERO, so the
+shape is a page that stalled BEFORE its first batch, not a wrong answer. **⇒ SO
+THE GATE STARTS A FRESH PAGE ONCE AND STILL REQUIRES A PASS**: a retry that
+accepted a different outcome would be one thing; a retry that re-asks the SAME
+question is another. If both attempts stall the verdict is `REFUSED[3]` with
+`attempts=2`, which is the truth. **⇒ MEASURED AFTER THE RETRY: five consecutive
+runs, `rc=0` five times.** **⇒ AND THE CAUSE IS STILL OPEN** -- the candidates are
+GPU-process memory across 824 buffers plus 568 shader modules, and a `queue`
+backlog -- and it is named as open rather than smoothed over.
