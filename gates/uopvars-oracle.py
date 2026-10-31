@@ -114,6 +114,11 @@ def main():
     a("lb_k1_unbound", int(binds[1].arg.val is None))
     a("lb_k2_self", int(binds[2] is b2))
     a("lb_gone", int(3 not in binds))
+    # the OUTER map is the seed: 9 survives, 0 is OVERRIDDEN by the inner entry
+    outer = {9: UOp.const(11), 0: UOp.const(12)}
+    merged = {**outer, **binds}
+    a("lb_outer_keep", int(merged[9] is outer[9]))
+    a("lb_outer_over", int(merged[0] is b0))
 
     print("\n".join(out))
 

@@ -726,8 +726,16 @@ def sc_lb_step(xs: List<&2, U32>, +k: U32, +r: LinBinds) -> LinBinds:
     case Nil{}: r
     case x <> t: sc_lb_step(t, U32.add(k, 1), sc_lb_one(x, k, r))
 
+# `binds = {**(outer_binds or {}), **{...}}` -- THE OUTER MAP IS THE SEED AND NOT A
+# SECOND PASS, because Python's dict literal applies the right-hand side LAST: an
+# INNER bind OVERRIDES an outer one at the same slot, and an outer slot the call
+# does not name SURVIVES.  Seeding the accumulator with `outer` gets both for free:
+# `Map.set` of the inner entry replaces, and a slot that never appears is untouched.
+def sc_linear_binds_outer(+outer: Map<&2, U32>, +ar: O.Arena, +call: U32) -> LinBinds:
+  sc_lb_step(sc_src_from(ar, call, 1), 0, LinBinds{ar, outer})
+
 def sc_linear_binds(+ar: O.Arena, +call: U32) -> LinBinds:
-  sc_lb_step(sc_src_from(ar, call, 1), 0, LinBinds{ar, Map.new(&2, U32)})
+  sc_linear_binds_outer(Map.new(&2, U32), ar, call)
 
 # `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.

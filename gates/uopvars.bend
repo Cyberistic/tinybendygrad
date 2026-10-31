@@ -248,9 +248,15 @@ def lbval(arg: O.Arg) -> String:
     case O.AParam{p}: ubval_of(O.ParamArg.val(p))
     case _: "NA"
 
+# 9 is a slot the call never names (must SURVIVE); 0 is a slot the call DOES bind
+# (must be OVERRIDDEN). Both are 42/41, which no node index is, so a leaked outer
+# value cannot be mistaken for the inner one.
+def lbouter() -> Map<&2, U32>:
+  Map.set(&2, U32, Map.set(&2, U32, Map.new(&2, U32), "9", 42), "0", 41)
+
 def lbrows(+fx: LBFx) -> IO(Unit):
   +f = LBFx.f(fx)
-  +lb = SC.sc_linear_binds(O.Found.ar(f), O.Found.i(f))
+  +lb = SC.sc_linear_binds_outer(lbouter(), O.Found.ar(f), O.Found.i(f))
   +ar = SC.LinBinds.ar(lb)
   +m = SC.LinBinds.m(lb)
   do IO<Unit>:
@@ -258,7 +264,9 @@ def lbrows(+fx: LBFx) -> IO(Unit):
     p2 : Unit <- IO.print(String.concat(["lb_k1_moved=", bf(Bool.not(U32.is_eq(lbget(m, "1"), LBFx.a1(fx))))]))
     p3 : Unit <- IO.print(String.concat(["lb_k1_unbound=", lbval(O.Arena.arg(ar, lbget(m, "1")))]))
     p4 : Unit <- IO.print(String.concat(["lb_k2_self=", bf(U32.is_eq(lbget(m, "2"), LBFx.a2(fx)))]))
-    IO.print(String.concat(["lb_gone=", bf(U32.is_eq(lbget(m, "3"), O.ParamArg.no_slot()))]))
+    p5 : Unit <- IO.print(String.concat(["lb_gone=", bf(U32.is_eq(lbget(m, "3"), O.ParamArg.no_slot()))]))
+    p6 : Unit <- IO.print(String.concat(["lb_outer_keep=", bf(U32.is_eq(lbget(m, "9"), 42))]))
+    IO.print(String.concat(["lb_outer_over=", bf(U32.is_eq(lbget(m, "0"), LBFx.a0(fx)))]))
 
 def main() -> IO(Unit):
   do IO<Unit>:
