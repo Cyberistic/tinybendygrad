@@ -990,3 +990,73 @@ whole port uses, and the cstyle gate's rows contain no SPECIAL, so a mistake the
 would be caught only by this harness -- which, being one kernel, is a thin net for a
 naming change. The rules above are the specification; a rushed patch at the end of a
 long session is how the `Bool.pick` fuel burn (§11.1) happened in the first place.
+
+---
+
+# 16. SPECIAL IS PORTED, AND TWO INVENTED SPELLINGS THAT HAD THE CENSUS GATE RED
+
+## 16.1 WHAT LANDED
+
+1. **`KASpecial` in `KUArg`** — `{axis: String, n: U32, nm: String}`, because upstream's
+   `Ops.SPECIAL` arg is ONE STRING (`"lidx0"`) and three different rules read three
+   different parts of it: the NAME (`cstyle.py:239`, `r[u] = u.arg`), the axis letter
+   (`arg[0]`) and the index (`arg[-1]`).
+2. **The statement form** (`cstyle.py:47`): `ku_text_special` answers
+   `<code_for_workitem.g(dev, axis, n)>; /* <src's rendered text> */`.
+3. **The suppressed `;`** (`cstyle.py:258`): `_render.decl`/`_render.stmt`/`_render.emit`
+   take a `semi` and SPECIAL passes `False{}`.
+4. **The namer** (`cstyle.py:239`): `_render.special` binds the name from the arg and
+   DOES NOT touch a prefix counter — which is what `cstyle.py:261`'s `if prefix` does.
+5. **The converter**: `gen_kus.one()` emits `KASpecial` for kind `special`.
+
+MEASURED, on the real 32x32 matmul kernel:
+
+    before   int alu0 = UNHANDLED(Ops.SPECIAL);
+    after      int lidx0 = lid.x; /* 32 */          <- byte-identical to upstream's line
+
+## 16.2 AND TWO SPELLINGS THE PORT HAD INVENTED, WHICH THE CENSUS GATE HAD BEEN RED ON
+
+The cstyle census gate was **FAIL at rest** (3 of 346 rows) and I checked that against a
+stashed tree before believing it was mine: `git checkout` on `cstyle.bend` reproduced the
+same three rows. Both causes were the port *inventing* a Metal/HIP spelling:
+
+| row | upstream | port | why the port was wrong |
+|---|---|---|---|
+| `opt_varpre_3` | `const ` | `constant ` | `MetalRenderer` (cstyle.py:366-372) sets `buffer_prefix`, `extra_args`, the workitem table and the type map -- and **not** `var_prefix`; the base's `const ` stands |
+| `opt_varsuf_3` | `` | `&` | same: `var_suffix` is the base's `""` for every device |
+| `rd_5_11` | `__bf16` | `hip_bfloat16` | HIP's map overrides the **fp8** dtypes only (cstyle.py:520-522); bfloat16 keeps `__bf16` |
+
+So `constant float& alu0 = ...` was text no kernel in this tree ever had, and a HIP
+bfloat16 was spelled `hip_bfloat16` on the strength of a comment that cited a line of
+`cstyle.py` that does not contain it.
+
+**⇒ AND THE GATE IS NOW GREEN:**
+
+    cstyle_render_census-gate: 361 rows, 3 lanes byte-identical over the wide surface,
+    15 DECLARED divergences ... 0 disagreeing
+
+**AND TWO INDEPENDENT DEFECTS CAME OUT OF THE SAME PLACE** -- a comment asserting what a
+line of upstream says, with nothing checking the line. That is the shape this tree keeps
+finding: a claim whose witness is another claim.
+
+## 16.3 STAGE 2 IS STILL NOT MET, AND THE REMAINDER IS NOW A SHORT LIST
+
+`identical|no` still, and the diff is 80 of 128 lines. What is left is a LIST, not a
+mystery, and none of it is SPECIAL:
+
+1. **The preamble** -- `cstyle.py:391`: `["#include <metal_stdlib>", "using namespace metal;"]`,
+   prepended by `MetalRenderer.render`. The port emits neither.
+2. **`extra_args`** -- `cstyle.py:372`:
+   `['constant args_t& args [[buffer(0)]]', 'uint3 gid [[threadgroup_position_in_grid]]', 'uint3 lid [[thread_position_in_threadgroup]]']`,
+   plus the `struct args_t { ... };` that `render_kernel` builds and the
+   `device float* data0_1024 = args.data0_1024;` unpacking line. The port passes each
+   buffer as a bare parameter and has no `args_t` (one comment mentions it; nothing emits it).
+3. **The WMMA helper** -- upstream's `__WMMA_8_8_8_f32_f32(...)` body precedes the kernel;
+   the port has `ku_text_wmma` (the CALL) and `_wmma_name` (the NAME) but not the helper.
+4. **The vector typedef** -- upstream's Metal text uses native `float2`; the port emits
+   `typedef float float2 __attribute__((aligned(4),ext_vector_type(2)));`.
+
+**⇒ SO STAGE 2 IS NOT "ONE MISSING CONSTRUCTOR" ANY MORE -- IT IS A METAL CODEGEN MODE
+THE PORT DOES NOT HAVE.** 1-4 are features, and the honest next step is to pick them in
+that order: the preamble and `extra_args` are the two that change the SIGNATURE, and
+nothing downstream can match until they do.

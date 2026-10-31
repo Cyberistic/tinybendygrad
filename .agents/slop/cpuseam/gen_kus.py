@@ -117,6 +117,17 @@ def index_arg(payload: str) -> str:
     return f"C.KAIndex{{{num(off)}, False{{}}}}"
 
 
+def special_arg(payload: str) -> str:
+    """`Ops.SPECIAL`'s arg IS its name -- "lidx0".
+
+    cstyle.py:239 binds the variable NAME from it (`r[u] = u.arg`), and :47 reads the
+    axis off `arg[0]` and the index off `arg[-1]`, so all three travel. The index is one
+    DIGIT for the same reason: upstream indexes by `arg[-1]`.
+    """
+    nm = payload.strip()
+    return f'C.KASpecial{{"{nm[0]}", {int(nm[-1])}, "{nm}"}}'
+
+
 def sink_arg(payload: str) -> str:
     return f'C.KASink{{"{payload.strip()}"}}'
 
@@ -145,6 +156,8 @@ def one(name: str, line: str) -> str:
         arg = index_arg(payload)
     elif kind == "sink":
         arg = sink_arg(payload)
+    elif kind == "special":
+        arg = special_arg(payload)
     else:
         arg = "C.KANone{}"
     return (f"  C.KU{{{o}, {d}, {a}, {num(numel)}, {shp}, {arg}, {ss}}}, # {idx} {op} {dt} {addr}")

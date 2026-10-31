@@ -1,7 +1,7 @@
 # stage2-metal.rows -- .agents/slop/perf/stage2_metal.py
 # program: (a@b)@c, 32x32 f32, DEV=METAL, JIT=0
-# run_ms_median_of_8=1.300
+# run_ms_median_of_8=1.187
 # max|diff vs float64 CPU|=1.840e-05
 # special_args=lidx0   (KUArg has NO constructor for Ops.SPECIAL)
 # kernel|sha_upstream|sha_port|identical|bytes|bend_rc
-r_32_2_4_4_4|388b424179b5623e|a554f3031c807a95|no|6012|0
+r_32_2_4_4_4|388b424179b5623e|cd2ec56db8b157cb|no|6012|0

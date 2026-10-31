@@ -15,7 +15,7 @@ def kus() -> List<&2, C.KU>:
   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(32)}}, Nil{}}, # 5 CONST weakint ALU
   C.KU{O.OpsBUFFER{}, S.single(), S.AReg{}, 32, [32], C.KANone{}, [4]}, # 6 BUFFER f32 REG
   C.KU{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, Nil{}, C.KANone{}, [4]}, # 7 CAST i32 ALU
-  C.KU{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, Nil{}, C.KANone{}, [6]}, # 8 SPECIAL i32 ALU
+  C.KU{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, Nil{}, C.KASpecial{"l", 0, "lidx0"}, [6]}, # 8 SPECIAL i32 ALU
   C.KU{O.OpsAFTER{}, S.single(), S.AReg{}, 32, [32], C.KANone{}, [5, 7]}, # 9 AFTER f32 REG
   C.KU{O.OpsSTACK{}, S.void(), S.Aalu{}, 1, Nil{}, C.KANone{}, Nil{}}, # 10 STACK void NONE
   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(0)}}, Nil{}}, # 11 CONST weakint ALU

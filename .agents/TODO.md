@@ -26985,3 +26985,17 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
         `codegen/__init__.bend`'s `walk_rewrite`/`wr.rebuild`/`wr.go` rebuild a graph
         from a `repl` map, and `substitute` is "rebuild with a pre-seeded `repl`".
         **SO **THE **NEXT **UNIT **STARTS **WHEN **THAT **ONE **LINE **LANDS.**
+- [x] `Ops.SPECIAL` IS PORTED: `KUArg` += `KASpecial{axis,n,nm}`; the name comes from the arg
+      (cstyle.py:239), the text is `<workitem>; /* <src text> */` (cstyle.py:47), the `;` is
+      suppressed (cstyle.py:258), and no prefix counter is burned. MEASURED on the real 32x32
+      matmul: `int alu0 = UNHANDLED(Ops.SPECIAL);` -> `int lidx0 = lid.x; /* 32 */`, byte-identical
+      to upstream's line.
+- [x] TWO INVENTED SPELLINGS REMOVED, AND THE CENSUS GATE IS GREEN: `var_prefix`/`var_suffix`
+      answered `constant `/`&` for Metal (MetalRenderer overrides NEITHER), and HIP's bf16 answered
+      `hip_bfloat16` (upstream overrides only the fp8 dtypes). The gate was FAIL on 3 of 346 rows at
+      rest and I verified that against a stashed tree before claiming it. Now: 361 rows, 3 lanes
+      byte-identical, 15 declared divergences, 0 disagreeing.
+- [ ] STAGE 2'S REMAINDER IS A METAL CODEGEN MODE THE PORT LACKS, in this order: (1) the preamble
+      `#include <metal_stdlib>`/`using namespace metal;` (cstyle.py:391); (2) `extra_args` +
+      `struct args_t` + the unpacking line (cstyle.py:372) -- these two change the SIGNATURE, so
+      nothing downstream can match until they do; (3) `__WMMA_...` helper; (4) native `float2`.

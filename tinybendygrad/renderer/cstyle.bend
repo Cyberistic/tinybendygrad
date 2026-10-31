@@ -134,6 +134,10 @@ type KUArg is Data:
   KARange{axis: O.AxisType, ids: List<&2, U32>}
   KAIndex{off: U32, is_add: Bool}
   KASink{name: String}
+  # `Ops.SPECIAL`'s arg upstream is ONE STRING -- `"lidx0"` -- and cstyle.py:239 binds
+  # the NAME from it (`r[u] = u.arg`), :47 reads the axis off `arg[0]` and the index off
+  # `arg[-1]`. So all three travel: the axis letter, the index, and the name itself.
+  KASpecial{axis: String, n: U32, nm: String}
 
 type St is Data:
   St{r: List<&2, String>, kernel: List<&2, String>, bufs: List<&2, BArg>,
@@ -392,18 +396,18 @@ def buffer_suffix.of(+dev: U32) -> String:
     case 1: " restrict"
     case _: ""
 
-# `var_prefix` / `var_suffix` -- tinygrad/renderer/cstyle.py:128-132, :366-367. METAL'S PAIR IS THE
-# INTERESTING ONE: `constant ` and `&`, so a Metal ALU value is
-# `constant float& alu0 = ...` where every other device says `const float alu0`.
-def var_prefix.of(+dev: U32) -> String:
-  match dev:
-    case 3: "constant "
-    case _: "const "
+# `var_prefix` / `var_suffix` -- tinygrad/renderer/cstyle.py:128-129. THE BASE'S PAIR IS
+# EVERY DEVICE'S PAIR: `const ` and `""`. **METAL DOES NOT OVERRIDE EITHER** --
+# `MetalRenderer` (cstyle.py:366-372) sets `buffer_prefix`, `extra_args`, the workitem
+# table and the type map, and NOTHING ELSE.
+# ⇒ AND THIS USED TO ANSWER `constant ` AND `&` FOR METAL, WHICH WAS A PLAUSIBLE
+# INVENTION AND A WRONG ONE. MEASURED: the census gate's `opt_varpre_3`/`opt_varsuf_3`
+# rows were RED on exactly this (3 of 346 rows, `const `/`""` upstream vs
+# `constant `/`&` here), so `constant float& alu0 = ...` was text no kernel in this
+# tree ever had.
+def var_prefix.of(+dev: U32) -> String: "const "
 
-def var_suffix.of(+dev: U32) -> String:
-  match dev:
-    case 3: "&"
-    case _: ""
+def var_suffix.of(+dev: U32) -> String: ""
 
 # `infinity` / `nan` -- cstyle.py:140-141, :281-282. Clang's are the two
 # `__builtin_` forms and every other device's are the `INFINITY` / `NAN` macros,
@@ -580,15 +584,19 @@ def type_map.metal() -> Map<&2, String>:
 def type_map.cuda() -> Map<&2, String>:
   type_map_over(Kv{"fp8e5m2", "__nv_fp8_e5m2", Kv{"fp8e4m3", "__nv_fp8_e4m3", Kv{"bf16", "nv_bfloat16", Kv{"u32", "uint", KvEnd{}}}}})
 
-# cstyle.py:542. `{bfloat16: "hip_bfloat16", **{d: ("hip_fp8","hip_bf8")[fp8_index(d)] for d in fp8s}}`
+# cstyle.py:520-522. `{**CStyleLanguage.type_map, **{d: ("hip_fp8","hip_bf8")[fp8_index(d)] for d in fp8s}}`
 # -- and `fp8_index(d) = fp8s.index(d) % 2` with `fp8s` in dtype.py's order
 # (e4m3, e5m2, e4m3fnuz, e5m2fnuz), so the OCP pair and the FNUZ pair are THE
 # SAME pair. That is measured: HIP maps both e4m3 variants to `hip_fp8` and both
 # e5m2 variants to `hip_bf8`, and the duplication is upstream's rather than a
-# port artefact. FIVE entries, then.
+# port artefact. FOUR entries, then -- **AND NOT `bf16`**: an earlier revision of
+# this table answered `hip_bfloat16` for bfloat16 on the strength of a comment that
+# said `cstyle.py:542` did, and it does not. MEASURED: the census gate's `rd_5_11`
+# row read `__bf16` upstream against `hip_bfloat16` here, and this was the LAST red
+# row of 346.
 def type_map.hip() -> Map<&2, String>:
-  type_map_over(Kv{"bf16", "hip_bfloat16", Kv{"fp8e4m3", "hip_fp8", Kv{"fp8e5m2", "hip_bf8",
-    Kv{"fp8e4m3fnuz", "hip_fp8", Kv{"fp8e5m2fnuz", "hip_bf8", KvEnd{}}}}}})
+  type_map_over(Kv{"fp8e4m3", "hip_fp8", Kv{"fp8e5m2", "hip_bf8",
+    Kv{"fp8e4m3fnuz", "hip_fp8", Kv{"fp8e5m2fnuz", "hip_bf8", KvEnd{}}}}})
 
 # THE MAP A DEVICE ANSWERS. Six arms and a `_`, and the `_` is the base rather
 # than a hole: every tag below 6 is a real device and the base is the right
@@ -1295,6 +1303,21 @@ def KUArg.sink_name(a: KUArg) -> String:
   match a:
     case KASink{name}: name
     case _: "test"
+
+def KUArg.special_axis(a: KUArg) -> String:
+  match a:
+    case KASpecial{axis, n, nm}: axis
+    case _: "l"
+
+def KUArg.special_n(a: KUArg) -> U32:
+  match a:
+    case KASpecial{axis, n, nm}: n
+    case _: 0
+
+def KUArg.special_nm(a: KUArg) -> String:
+  match a:
+    case KASpecial{axis, n, nm}: nm
+    case _: "lidx0"
 
 # ===========================================================================
 # THE PREFIX TABLE. Upstream's `cstyle.py:242-244`:
@@ -2148,6 +2171,14 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, KU>, +r: List<&
 # `UPat(Ops.STACK, name="x")` -- cstyle.py:52-54:
 #   `f"{ctx.float4.replace('float4', ctx.render_type(x))}" + f"{ctx.float4_style[0]}{','.join([ctx[y] for y in x.src])}{ctx.float4_style[1]}"`
 
+# cstyle.py:47 -- `f"{ctx.code_for_workitem[x.arg[0]](x.arg[-1])}; /* {(x.src[0]).render()} */"`.
+# IT IS A STATEMENT, not an expression: the workitem id, a `;`, and a comment holding the
+# SPECIAL's SOURCE's rendered text (`/* 32 */`). `code_for_workitem.g` already answers the
+# id and already refuses base/Clang, which is what CPython's empty dict does.
+def ku_text_special(+dev: U32, +k: KU, +r: List<&2, String>) -> String:
+  String.concat([code_for_workitem.g(dev, KUArg.special_axis(KU.arg(k)), KUArg.special_n(KU.arg(k))),
+    "; /* ", rt(r, KU.src0(k)), " */"])
+
 def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
   ku_text.go(KU.op(k), dev, i, k, kus, r)
 
@@ -2177,38 +2208,46 @@ def _render.param(dev: U32, +k: KU, +kus: List<&2, KU>, st: St) -> St:
 # NO CPU KERNEL IS AN IMAGE, SO THE FLAG IS NOT READ BY THE C THE PORT EMITS --
 # AND THE PORT SAYS SO INSTEAD OF GUESSING A BACKWARD WALK.
 def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
-                 +st: St, +l: String, nm: String, ix: U32) -> St:
+                 +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
   +st0 = _render.pop(st, k)
   +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), render_type(dev, KU.dtype(k),
-    KU.numel(k), KU.addr(k), KU.op(k), False{}), " ", nm, " = ", l, ";"]))
+    KU.numel(k), KU.addr(k), KU.op(k), False{}), " ", nm, " = ", l, Bool.pick(String, semi, ";", "")]))
   +st2 = st_c(st1, ix)
   _render.push(st2, k)
-def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32) -> St:
+def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
   Bool.pick(St, ku_is_decl(k),
-    _render.decl(dev, i, k, kus, cc, st, l, nm, ix),
+    _render.decl(dev, i, k, kus, cc, st, l, nm, ix, semi),
     _render.plain(dev, i, k, kus, cc, st, l, nm, ix))
 
 # `if u.op not in {Ops.RANGE, Ops.BUFFER, Ops.BINARY} and u.dtype != dtypes.void:`
 # -- cstyle.py:257. IT IS THE TEST FOR "IS THIS A DECLARATION", AND THE
 # DECLARATION IS `"{type} {name} = {text};"`.
-def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, nm: String, ix: U32) -> St:
+def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
   Bool.pick(St, ku_inline(KU.op(k), k, kus, cc, i),
     st_set(st, i, l),
-    _render.stmt(dev, i, k, kus, cc, st, l, nm, ix))
+    _render.stmt(dev, i, k, kus, cc, st, l, nm, ix, semi))
 
 # THE STATEMENT -- cstyle.py:256-261.
 def _render.range(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, st: St) -> St:
   +nm = ku_range_name(KU.arg(k))
   +st1 = st_put(st, nm)
   +l = ku_text(dev, i, k, kus, St.r(st1))
-  _render.emit(dev, i, k, kus, cc, st1, l, nm, 255)
+  _render.emit(dev, i, k, kus, cc, st1, l, nm, 255, True{})
+
+# cstyle.py:239 -- `if u.op is Ops.SPECIAL: r[u] = u.arg`. THE NAME IS THE ARG, and
+# it burns no prefix counter (cstyle.py:261 increments only on the prefix path), so
+# `_render.decl` is called with `semi = False` and `st_c` is not reached.
+def _render.special(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, +st: St) -> St:
+  +nm = KUArg.special_nm(KU.arg(k))
+  +st1 = st_put(st, nm)
+  _render.decl(dev, i, k, kus, cc, st1, ku_text_special(dev, k, St.r(st1)), nm, 255, False{})
 
 def _render.named(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, +st: St) -> St:
   +ix = ku_pfx_ix(KU.op(k))
   +nm = String.concat([ku_pfx(ix), U32.show(cc_at(St.c(st), ix))])
   +st1 = st_put(st, nm)
   +l = ku_text(dev, i, k, kus, St.r(st1))
-  _render.emit(dev, i, k, kus, cc, st1, l, nm, ix)
+  _render.emit(dev, i, k, kus, cc, st1, l, nm, ix, True{})
 def _render.one.go(op: O.Op, dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +st: St) -> St:
   match op:
     case O.OpsNOOP{}: st_put(st, "")
@@ -2220,6 +2259,7 @@ def _render.one.go(op: O.Op, dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +cc: 
     case O.OpsAFTER{}: st_put(st, rt(St.r(st), KU.src0(k)))
     case O.OpsPARAM{}: _render.param(dev, k, kus, st)
     case O.OpsRANGE{}: _render.range(dev, i, k, kus, cc, st)
+    case O.OpsSPECIAL{}: _render.special(dev, i, k, kus, cc, st)
     case op2: _render.named(dev, i, k, kus, cc, st)
 
 # THE PARAM -- cstyle.py:231-235. THE NAME IS
