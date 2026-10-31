@@ -26828,3 +26828,43 @@ other half is wall B. THE TWO CAUSES ARE `A` AND `B` AND NOTHING ELSE.**
       538.08**); 32x32: 13 008.49 -> 6 137.17 ms (2.25x slower). Bit-exact, 153 fixtures.
 - [ ] 32x32's remaining term is the arena's FOUR spine walks per 4-byte access (2 609 arity-2 copies
       per step): make each 4-byte access touch the spine once. See `.agents/slop/perf/REPORT.md` 11.4.
+
+the SCHEDULER's next two pieces are BLOCKED ON A STATE, not on a missing idea -- and the state is 14 dirty substrate files
+
+**⇒ AND **MEASURED **2026-10-31, **SO **THE **RECORD **SAYS **WHAT **MUST **LAND **BEFORE
+**THE **NEXT **STEP **RATHER **THAN **LEAVING **THE **NEXT **UNIT **TO **REDISCOVER **IT:**
+
+**THE **SUBSTRATE **IS **DIRTY: **14 **PATHS.**  `git status --porcelain -- tinybendygrad/`:
+**10 **`extra/models/*.bend`**, **`schedule/rangeify.bend`**, **`schedule/realize.bend`**,
+**`uop/ops.bend`**, **and **one **UNTRACKED **`llm/ggml.bend`** (the llm lane's
+decode split, in flight).  **A **CORPUS **RUN **NOW **WOULD **CERTIFY **WORK **IN **NO
+**COMMIT** -- it would hash the working tree and report `CURRENT` against bytes
+nobody can check out.
+
+**⇒ AND **`uop/ops.bend`'s **DIFF **IS **ONE **COMMENT **LINE:** `mixin/creation.bend:408`
+**-> **`:429`, **A **STALE **CITATION **FIX **FROM **2026-10-30 **22:34Z **THAT **NOBODY
+**COMMITTED.**  **THAT **MATTERS **BECAUSE **`UOp.param` **BELONGS **THERE **AND **IT **IS
+**THE **ONE **WALL-A **PIECE **THAT **IS **NOT **STORAGE:** `param_like`'s **arms **2
+**and **3 **build **a **PARAM**, **not **a **`Buffer`**, **so **`replace_input_buffer`
+**does **NOT **need **the **storage **layer **-- **it **needs **a **CONSTRUCTOR **that
+**`ops.bend` **does **not **have **(`rg -c 'def UOp\.param\('` = **0**)**.  **I **DID **NOT
+**EDIT **IT: **A **PATH **ANOTHER **UNIT **HOLDS **IS **A **PATH **I **DO **NOT **TAKE,
+**EVEN **WHEN **ITS **DIFF **IS **A **COMMENT.**
+
+**⇒ AND **THE **OTHER **PIECE **IS **WALL **B, **AND **ITS **BLOCKER **IS **THE
+**SAME **STATE **IN **A **DIFFERENT **WAY: **`bottom_up` **IS **THE **DRIVER **EVERY
+**PASS **RUNS **ON, **SO **IT **CANNOT **BE **LANDED **ON **A **TREE **THAT **CANNOT **BE
+**RE-RUN.**  **THE **MECHANISM **IS **NOW **MEASURED **AND **NOT **A **GUESS**
+(`ops.py:1818`): **`RewriteContext(pm if not bottom_up else None, pm if bottom_up
+else bpm, ctx, enter_calls)`** -- **`bottom_up=True` **IS **TABLE **SELECTION**, **and
+**the **BODY **is **a **`deque` **of **`(n, stage, new_n)` **with **`on_stack`, **a
+**`waitlist`, **stage **0 **applying **`bpm` **to **a **FIXED **POINT **with **a
+**`BottomUpGate` **that **STOPS **THE **DESCENT**, **and **stage **1 **applying **`pm`
+**once **the **srcs **are **in **`replace`.**
+
+**⇒ AND **SO **"WALL **C **IS **DOWN" **DOES **NOT **MEAN **"THE **SCHEDULER **IS **NEXT
+**IN **ONE **STEP":** **IT **MEANS **THE **ONE **PIECE **THAT **NEEDED **NEITHER
+**WALL **IS **DONE, **AND **THE **REMAINING **EIGHT **NEED **`Buffer`** (1),
+**`UOp.param`** (1, **blocked **by **a **comment**), **or **the **`bottom_up`
+**driver** (5, **blocked **by **the **dirty **substrate**), **plus **the **entry
+**points **built **on **them.**
