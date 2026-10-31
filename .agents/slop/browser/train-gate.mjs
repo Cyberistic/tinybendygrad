@@ -50,8 +50,8 @@ async function replay() {
   const srv = await serve(WEB);
   let h;
   try {
-    h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], srv.url + "/train.html?batch=64");
-    const s = await Session.openPage(h.port, { url: srv.url + "/train.html?batch=64" });
+    h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], srv.url + `/train.html?batch=${process.env.BATCH ?? 1}`);
+    const s = await Session.openPage(h.port, { url: srv.url + `/train.html?batch=${process.env.BATCH ?? 1}` });
     await s.eval("window.__GO = true;");
     // 90 launches plus 52 readbacks; the page sets __TRAIN_RESULT and title=done.
     // **⇒ AND A TIMED-OUT PROBE IS NOT A VERDICT, SO THE POLL RETRIES.**
@@ -135,6 +135,9 @@ async function main() {
 
   const res = await replay();
   if (!res.ok) { P(`${BAD}the page did not finish: ${res.error ?? JSON.stringify(res).slice(0, 600)}`); return 1; }
+  P(`PERF launches=${res.launches} parse=${(res.ms_parse ?? 0).toFixed(0)}ms ` +
+    `gpu=${(res.ms_gpu ?? 0).toFixed(1)}ms read=${(res.ms_read ?? 0).toFixed(1)}ms ` +
+    `per_launch=${((res.ms_gpu ?? 0) / Math.max(1, res.launches) * 1000).toFixed(1)}us`);
   P(`adapter ${res.adapter}  launches ${res.launches}  uploads ${res.uploads}  f32 buffers ${res.f32_buffers}`);
 
   let fails = 0;

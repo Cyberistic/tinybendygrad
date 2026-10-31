@@ -64,6 +64,7 @@ try {
   // (the MNIST gate compares all 47 tensor buffers), and an empty string means
   // none.
   const ONLY = q.get("only");
+  const TPARSE = performance.now();
   const ORACLE = q.get("oracle") ?? "train-oracle.json";
   const [net, oracle] = await Promise.all([
     fetch("./" + NET).then((r) => r.json()),
@@ -299,6 +300,8 @@ try {
   // `GPUBuffer`s, because a name resolves to exactly one buffer for the life of
   // the run** (`bufs[n].gb` is created once).
   const bgCache = new Map();
+  const T0 = performance.now();
+  out.ms_parse = T0 - TPARSE;
 
   // **⇒ AND THE LAYOUT MIRRORS THE SHADER, BINDING BY BINDING.** A `read`
   // declaration is `read-only-storage` in the layout and `storage` is
@@ -325,6 +328,11 @@ try {
   // **⇒ AND THIS PAGE'S FIRST VERSION HAD NO SCOPE**, which is why a wrong answer
   // read as a number rather than as an error.
   device.pushErrorScope("validation");
+  // **⇒ AND THE CLOCK START IS PLACED WHERE THE MEASUREMENT BEGINS, NOT WHERE THE
+  // PROGRAM DOES.** The window between `__GO` and this line is `fetch` + `JSON.parse`
+  // of the trace plus every `createBuffer`, and a number that included it would be a
+  // number about the TRANSPORT. **⇒ SO THREE NUMBERS ARE REPORTED: `ms_parse`, `ms_gpu`
+  // and `ms_read`, and only `ms_gpu` is the replay.**
   let launches = 0, uploads = 0, enc = null, pass = null;
   const batchWritten = new Set();
   // **⇒ AND THE BATCH SIZE IS A MEASURED TRADEOFF, NOT A TUNING KNOB.** Batching
@@ -430,11 +438,13 @@ try {
   }
   if (enc) { pass.end(); device.queue.submit([enc.finish()]); enc = null; pass = null; }
   await device.queue.onSubmittedWorkDone();
+  out.ms_gpu = performance.now() - T0;
   const verr = await device.popErrorScope();
   if (verr) throw new Error(`WebGPU validation error: ${verr.message}`);
   out.launches = launches;
   out.uploads = uploads;
 
+  const T1 = performance.now();
   // THE READBACK: EVERY f32 BUFFER. The claim is about WEIGHTS, so one output
   // buffer would be the wrong denominator -- a forward pass returns one tensor
   // and a training step changes 34.
@@ -457,6 +467,7 @@ try {
     out.sizes[n] = bufs[n].size;
     rb.unmap(); rb.destroy();
   }
+  out.ms_read = performance.now() - T1;
   out.f32_buffers = allF32.length;
   out.read_back = names.length;
   // **⇒ AND THE REPAIR IS REPORTED, NEVER SILENT**: a page that quietly fixes a

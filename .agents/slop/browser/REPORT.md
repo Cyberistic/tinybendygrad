@@ -543,3 +543,68 @@ step** -- because snapshotting 6.6 M parameters twice would take the trace from
 72 MB to gigabytes -- **so the ImageNet row proves the training step's FORWARD is
 bit-exact on the adapter, and the MNIST row is what proves the update.** Two
 models, two different denominators, and neither row is asked to be the other.
+
+---
+
+# 11. PERFORMANCE, MEASURED 2026-10-31 — AND IT IS SLOW FOR ONE NAMED REASON
+
+**Every number below is `ms_gpu` from `web/train.html`'s own clock**, which starts
+after the trace is parsed and every buffer created and stops after
+`queue.onSubmittedWorkDone()`. **⇒ THE TRANSPORT IS EXCLUDED ON PURPOSE**
+(`ms_parse` and `ms_read` are reported separately) because a number that included
+`JSON.parse` of the trace would be a number about the file.
+
+    node .agents/slop/browser/train-gate.mjs         PERF launches=431  gpu=5165.7ms  per_launch=11985us
+    node .agents/slop/browser/inet-gate.mjs          PERF launches=328  gpu=14365.0ms per_launch=43796us
+    node .agents/slop/browser/inet-train-gate.mjs    PERF launches=2667 gpu=8088.8ms  per_launch=3033us
+
+## 11.1 THE TABLE, WITH A BASELINE BESIDE IT
+
+`DEV=CPU`, same weights, same shapes, `apple/metal-3` for the browser column:
+
+| what | browser replay | CPython `DEV=CPU` | ratio |
+|---|---:|---:|---:|
+| MNIST forward (28×28) | ~140 ms | **33.1 ms** | **4.2× slower** |
+| MNIST training step | **5 166 ms** | **779.8 ms** | **6.6× slower** |
+| EfficientNet-0 forward (224×224) | **14 365 ms** | **541 ms** | **26× slower** |
+
+**⇒ AND THE BROWSER IS SLOWER THAN ONE CPU CORE ON EVERY ROW**, which for a GPU
+replay of the same arithmetic is the only number that matters.
+
+## 11.2 THE CAUSE, AND IT IS ONE MEASUREMENT
+
+    $ .venv/bin/python -c '...count global==(1,1,1) over each trace...'
+    MNIST fwd            kernels=    17  global==(1,1,1): 17 (100.0%)
+    EfficientNet fwd     kernels=   328  global==(1,1,1): 328 (100.0%)
+    EfficientNet train   kernels=  2667  global==(1,1,1): 2667 (100.0%)
+
+**⇒ EVERY KERNEL DISPATCHES `(1,1,1)` INTO A `workgroup_size(1)` SHADER, WHICH IS
+ONE GPU THREAD PER LAUNCH.** The whole loop nest runs inside a single invocation.
+The GPU is being used as a single-threaded interpreter.
+
+**⇒ AND THAT IS NOT A DEFECT IN THE PAGE, IT IS A PROPERTY OF THE TRACE.** The
+trace comes from CPython's `CPU` device, whose `ProgramInfo.launch_dims` are
+`(1,1,1)` because the CPU renderer does not split work across threads. **⇒ THE
+REPLAY IS FAST AT WHAT IT IS FOR -- proving the kernels and the dataflow are right,
+bit for bit -- AND SLOW AT WHAT IT IS NOT: being a runtime.**
+
+**⇒ AND THE SAME FACT EXPLAINS THE BIT-EXACTNESS.** A single workgroup runs the loop
+nest in exactly the order CPython's C did, so accumulation order cannot differ.
+**⇒ THE EXACTNESS AND THE SLOWNESS ARE ONE PROPERTY**, and a backend that
+parallelised would have to give up bit-identity with the CPU until it also matched
+the CPU's arithmetic ordering — which is why `inet-gate`'s 2.384e-7 tolerance
+exists and `inet-train-gate`'s 0.000e+0 does not.
+
+## 11.3 WHAT WOULD MAKE IT FAST, NAMED AND NOT DONE
+
+1. **A REAL `launch_dims`.** `ops_webgpu.py`'s own dispatch uses
+   `ProgramInfo.launch_dims`, and a WebGPU-shaped schedule would choose a
+   workgroup size from the kernel's `local_size` instead of inheriting the CPU's
+   `(1,1,1)`. **⇒ THAT IS THE PORT'S `runtime/ops_webgpu.bend`, NOT THIS PAGE**, and
+   the page exists to make the browser lane real while that lands.
+2. **`DMC=1` IS IN THE TRACE AND COSTS PARALLELISM TOO** — it was required to render
+   the backward's gated loads at all, and it also disables the coalescing pass that
+   would vectorise LOAD/STORE.
+3. **AND NEITHER CHANGES THE CLAIM.** The four gates answer "is the browser
+   computing CPython's program correctly", and they do. **⇒ THEY DO NOT ANSWER "IS
+   IT FAST", AND UNTIL THIS SECTION NOBODY HAD ASKED THEM TO.**

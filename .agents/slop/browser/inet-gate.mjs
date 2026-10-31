@@ -64,7 +64,7 @@ async function replay() {
   const srv = await serve(WEB);
   let h;
   try {
-    const url = srv.url + "/train.html?net=inet-net.json&oracle=inet-oracle.json";
+    const url = srv.url + `/train.html?net=inet-net.json&oracle=inet-oracle.json&batch=${process.env.BATCH ?? 1}`;
     h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], url);
     const s = await Session.openPage(h.port, { url });
     // **⇒ AND THE PAGE IS STARTED HERE, AFTER THE ATTACH**, because the replay
@@ -119,7 +119,9 @@ async function main() {
 
   const res = await replay();
   if (!res.ok) { P(`${BAD}the page did not finish: ${String(res.error).slice(0, 800)}`); return 1; }
-  P(`adapter ${res.adapter}  launches ${res.launches}  uploads ${res.uploads}  f32 buffers ${res.f32_buffers}`);
+  P(`PERF launches=${res.launches} parse=${(res.ms_parse ?? 0).toFixed(0)}ms ` +
+    `gpu=${(res.ms_gpu ?? 0).toFixed(1)}ms read=${(res.ms_read ?? 0).toFixed(1)}ms ` +
+    `per_launch=${((res.ms_gpu ?? 0) / Math.max(1, res.launches) * 1000).toFixed(1)}us`);
 
   let fails = 0;
   const got = res.words[OUT_NAME];

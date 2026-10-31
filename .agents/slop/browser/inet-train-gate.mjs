@@ -60,7 +60,7 @@ async function replay(only) {
   const srv = await serve(WEB);
   let h;
   try {
-    const url = `${srv.url}/train.html?net=inet-train-net.json&oracle=inet-train-oracle.json&batch=64&only=${only}`;
+    const url = `${srv.url}/train.html?net=inet-train-net.json&oracle=inet-train-oracle.json&batch=${process.env.BATCH ?? 64}&only=${only}`;
     h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], url);
     const s = await Session.openPage(h.port, { url });
     await s.eval("window.__GO = true;");
@@ -127,6 +127,9 @@ async function main() {
     P(`  launched ${net.kernels.length} kernels; WGSL-UNRENDERED: 0 of ${net.kernels.length} (trace-side).`);
     return 3;
   }
+  P(`PERF launches=${res.launches} parse=${(res.ms_parse ?? 0).toFixed(0)}ms ` +
+    `gpu=${(res.ms_gpu ?? 0).toFixed(1)}ms read=${(res.ms_read ?? 0).toFixed(1)}ms ` +
+    `per_launch=${((res.ms_gpu ?? 0) / Math.max(1, res.launches) * 1000).toFixed(1)}us`);
   P(`adapter ${res.adapter}  launches ${res.launches}  uploads ${res.uploads}  read_back ${res.read_back}`);
 
   let fails = 0;
