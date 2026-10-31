@@ -33,21 +33,29 @@
 #      MEASURED: all five are comment-only. That blocks
 #      `create_new_buffer`, `contiguous_mops_to_view` and `replace_input_buffer`.
 #
-#   B. `bottom_up`. `codegen/__init__.bend:226-232` MEASURES it: upstream puts
-#      `pm` in `bpm` and `None` in `pm` when `bottom_up=True`, and both drivers
-#      then run only the bottom-up table. `uop/ops.bend` has no `bpm` and no
-#      per-entry bottom-up marker, so the REAL engine's signature --
-#      `graph_rewrite(ar, sink, pm, ctx, walk)` at `codegen/__init__.bend:298` --
-#      does not carry `bottom_up`.
+#   B. `bottom_up`. **AND THE WALL IS NOT A BOOL, IT IS THE SHAPE OF THE DRIVER.**
+#      Upstream's `unified_rewrite` (`ops.py:1814-1818`) is ONE MEMOISED STACK
+#      TRAVERSAL -- `while stack:` over `(node, stage, new_n)` triples, memoised by
+#      `self.replace`. Its TWO STAGES are what make `bottom_up` expressible:
+#        stage 0  if `self.bpm is not None`, apply bpm to a FIXED POINT *before*
+#                 descending (`ops.py:1824-1838`), and a `BottomUpGate` stops the
+#                 descent;
+#        stage 1  apply `self.pm` after the srcs are replaced.
+#      `bottom_up=True` is just TABLE SELECTION -- `pm=None`, `bpm=pm`.
 #
-#      **AND THERE IS A SECOND `graph_rewrite` THAT DOES CARRY IT, AND IT IS A
-#      STUB.** `codegen/decomp/dtype.bend:2078` is
+#      THE PORT'S DRIVER IS A DIFFERENT ALGORITHM. `unified_rewrite`
+#      (`codegen/__init__.bend:285-286`) runs `walk_rewrite` to a FIXED POINT
+#      OUTSIDE the walk (`FIXPOINT_PASSES`, `:162`) -- whole-graph passes, not a
+#      per-node stage. So there is no stage 0 for a `bpm` to fire in, and
+#      `bottom_up` cannot be added by threading a `Bool`: **IT IS A PROPERTY OF
+#      THE STACK, AND THE PORT HAS A LOOP.**
+#
+#      **AND THERE IS A SECOND `graph_rewrite` THAT *DOES* TAKE `bottom_up`, AND
+#      IT IS A STUB.** `codegen/decomp/dtype.bend:2078` is
 #      `graph_rewrite(x, pm, ctx, bottom_up) -> Maybe<&2, U32>` whose body is
-#      `graph_rewrite.wall(x)`, and the wall answers `None{}`. So the port has
-#      ONE signature that NAMES the capability and IGNORES it, and ONE engine
-#      that does not have it. **A PARAMETER A DEF ACCEPTS AND DISCARDS IS WORSE
-#      THAN ONE IT OMITS: IT READS AS THOUGH THE CAPABILITY IS THERE.** MEASURED:
-#      no non-stub def in the port takes `bottom_up`.
+#      `graph_rewrite.wall(x)`, and the wall answers `None{}`. **A PARAMETER A DEF
+#      ACCEPTS AND DISCARDS IS WORSE THAN ONE IT OMITS: IT READS AS THOUGH THE
+#      CAPABILITY IS THERE.** MEASURED: no non-stub def in the port takes it.
 #      That blocks `canonicalize_call_body` and the `pm_canonicalize_alloc` chain.
 #
 #   C. `variables()`. NO DEF: `UOp.variables`, `is_variable` are comment-only
