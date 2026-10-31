@@ -193,6 +193,69 @@ gap: a `CALL` is what carries the `KernelInfo` that `to_program` asserts on.**
 the rendered text rather than inferred: a RANGE with no trip count and a
 `weakint` that the renderer should have lowered.
 
+### 3.1 D3 IS MEASURED EXACTLY, AND IT IS SEVEN OF TEN NODES
+
+`.agents/slop/browser/kudump.bend` dumps every `KU` field the renderer reads,
+because a wrong C text names neither the dtype nor the srcs.
+
+```
+$ ./bin/bend .agents/slop/browser/kudump.bend
+ku=k_op=STORE nsrc=2
+ku=k_srcs=INDEX,PARAM
+ku=topo_n=10
+ku=linear_n=10
+ku=topo_ops=CONST,PARAM,CONST,RANGE,CONST,RANGE,INDEX,CONST,PARAM,STORE
+ku=CONST:800:WI:A:1:0:c20/0
+ku=PARAM:32:F:G:20:1:p0
+ku=CONST:800:WI:A:1:0:c12/0
+ku=PARAM:32:F:G:12:1:p1
+ku=CONST:800:WI:A:1:0:c4/0
+ku=CONST:800:WI:A:1:0:c5/0
+ku=RANGE:800:WI:A:1:1:r1
+ku=RANGE:800:WI:A:1:1:r1
+ku=INDEX:32:F:G:1:3:-
+ku=STORE:0:V:G:1:2:-
+```
+
+The field order is `op:bits:class:addrspace:numel:nsrc:arg`.
+
+**⇒ D3, CONFIRMED AND EXACT: SEVEN OF THE TEN NODES CARRY `WI`
+(`S.CWeakInt`) — every `CONST` and both `RANGE`s.** CPython renders those as
+`int`. A `weakint` and an `i32` are BOTH 32 BITS and differ ONLY in this
+field, which is why a row that dumped the bits alone could never see it —
+and `kudump.bend` dumps the class for exactly that reason.
+
+**⇒ AND `linearize` IS NOT DROPPING ANYTHING: `topo_n=10`, `linear_n=10`.**
+So the missing arithmetic is NOT a `linearize` defect.
+
+### 3.2 THE TWO READINGS THAT DISAGREE, AND IT IS NAMED RATHER THAN GUESSED
+
+**`k_srcs=INDEX,PARAM`** — the kernel the scheduler SELECTED is
+`STORE(INDEX, PARAM)`, which is a **COPY** and carries no arithmetic.
+
+**But `rr_dump` on the rangeified graph says `STORE:none:INDEX,REDUCE`** —
+the same op with a `REDUCE` as its second src.
+
+**⇒ THE TWO OF THE TREE's OWN READINGS DISAGREE ABOUT ONE NODE, AND I DID NOT
+PICK A WINNER.** The candidates, each checkable:
+
+1. **the scheduler's rewrite is the difference**: `SCH.schedule` CONSUMES the
+   arena and returns `Lin{ar, …}` with a GROWN one, and `create_schedule`
+   legitimately rewrites (`pm_replace_buf` swaps BUFFER for PARAM). So `k` is
+   in the NEW arena and `rr_dump` read the OLD one. **⇒ IF SO THIS IS NOT A
+   DEFECT AND THE COMPARISON IS BETWEEN TWO DIFFERENT GRAPHS** — which would
+   make my `fullchain` measurement compare the wrong pair.
+2. **the scheduler rewrote the REDUCE away**, which would be a real defect.
+
+**⇒ AND THE INSTRUMENT THAT SETTLES IT IS ONE ROW: dump `rr_dump` of the graph
+IN THE SCHEDULER's ARENA, which is what `k` lives in.** That row does not exist
+yet, and it is the next thing to write. **A FINGERPRINT COMPARISON ACROSS TWO
+ARENAS IS NOT A COMPARISON, AND I AM NOT REPORTING IT AS ONE.**
+
+**⇒ AND ONE FACT IS INDEPENDENT OF THAT QUESTION: THE KU LIST HOLDS TWO
+`PARAM`s WHERE CPYTHON HOLDS THREE.** `data2_15` — the rhs matrix — is absent
+from the port's kernel under either reading.
+
 ---
 
 ## 4. MNIST TRAINING: THE WALL IS `backward`, AND IT IS ONE GREP
