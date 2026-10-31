@@ -26780,3 +26780,44 @@ the SCHEDULER's deferral is THREE WALLS, and the header had named a wall that wa
         anything else -- and **NOT** through `UOp.vmax`, which wants a min-max
         `BTable` and would make minting one device index cost a full sweep.  The
         answer is a `Maybe` for that one arm only.
+
+THE SCHEDULER's "11 MISSING" IS 8, AND ITS 3 FALSE NEGATIVES WERE A BY-NAME CENSUS
+
+**⇒ AND **MEASURED **2026-10-31: **THREE **NAMES **THE **DEFERRAL **LISTED **AS **MISSING
+ARE **IN **THE **PORT **UNDER **ITS **OWN **`sc_` **PREFIX, **AND **ALL **THREE **ARE **GATED:**
+
+| upstream (`__init__.py`) | the port (`schedule/__init__.bend`) | rows |
+|---|---|---|
+| `_unwrap_src` (:14) | `sc_unwrap` **:403** | `unwrap.*` |
+| `_states` (:19) | `sc_states` **:479** | `st_*` |
+| `_split_after` (:25) | `sc_split` **:524** | `t_split_A1/AF1/AF2` **:2365-2367** |
+
+**SO THE COUNT IS `18 - 7 = 11` BY NAME AND `18 - 10 = 8` BY CONTENT**, and the
+difference is a CENSUS DEFECT OF THE SAME CLASS THIS FILE ALREADY NAMES TWICE:
+**a name is not a body.** The by-name sweep said `_unwrap_src` was absent while
+`sc_unwrap` was sitting at `:403` doing exactly its loop, with the predicate set
+it needs (`sc_is_state5`, `sc_is_multi`, `sc_is_kernel`) written *for* it and
+called 2, 3 and 2 times respectively.
+
+**⇒ AND THE EIGHT THAT REALLY REMAIN NOW HAVE A MEASURED CAUSE EACH, AND THERE
+ARE ONLY TWO CAUSES:**
+
+**WALL A -- STORAGE (`3`, all `UOp.new_buffer`/`max_numel`/`param_like`):**
+`create_new_buffer` (`new_buffer(device, b.max_numel(), b.dtype)`),
+`contiguous_mops_to_view` (`contiguous_view`), `replace_input_buffer`
+(`b.param_like(len(ctx.replacements)-1)`).
+
+**WALL B -- THE `bottom_up` DRIVER (`2`):**
+`canonicalize_call_body` (`graph_rewrite(..., bottom_up=True)`),
+`resolve_linear_call` (`graph_rewrite(pm_post_sched_cache)` plus `apply_binds`,
+whose arm 3 calls `s.substitute`, and **upstream's `substitute` IS
+`graph_rewrite(..., bottom_up=True)`** -- so **WALL C DID *NOT* UNBLOCK ARM 3**;
+it unblocked only the `subs = {v: binds[v.arg.slot] for s in si.src for v in
+s.variables()}` HALF, which is now writable and was not before).
+
+**THE ENTRY POINTS (`3`), which are built ON the above and are not walls:**
+`transform_to_call`, `create_linear_with_vars`, `create_schedule`.
+
+**⇒ AND THE HEADER'S OLD CLAIM -- "wall C blocks the entry points" -- WAS TRUE
+AND INCOMPLETE: it blocks *one half of one arm of* the entry points, and the
+other half is wall B. THE TWO CAUSES ARE `A` AND `B` AND NOTHING ELSE.**
