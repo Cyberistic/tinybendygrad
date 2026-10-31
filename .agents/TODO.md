@@ -27108,3 +27108,80 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       timed interleaved in one driver (0.1/0.1 and 0.1/0.2 ms), both correct to 4.8e-7 / 2.4e-7.
 - [ ] WHAT REMAINS FOR STAGE 1 IS COVERAGE, NOT DIVERGENCE: a wider corpus (reductions, WHERE/relu, more
       sizes) -- a race between divergent programs is not available, because none exists.
+- [x] STAGE 1's CORPUS BROADENED TO SIX PROGRAMS: `ew16/ew32/ew64` (one chain, three sizes),
+      **`odd` (a 1000-element 1-D tensor, NOT a power of two -- identical too)**, `relu32`, `red32`.
+      RESULT: **4 byte-identical + 1 DIVERGENT-BUT-AGREEING + 1 RECORDED REFUSAL.** `relu32` is the
+      first divergent pair that runs: 656 B vs 639 B, both compute the same answer to 0.00e+0, because
+      the port's `f32()` (a CONST whose value the walk never materialises) is a valid WGSL zero.
+      `red32` refuses with `7:unresolved value 'Ops'` -- the walk has no BUFFER and no RANGE arm.
+      A harness bug was found by the broadening: `Tensor(a).realize()` twice made FOUR bindings where
+      three were bound ("Binding doesn't exist in BindGroupLayout").
+- [ ] THE WALKER'S TWO NAMED GAPS: a CONST's VALUE is never materialised (invisible only because the
+      fixture's constant is 0.0; a non-zero one would compile and be WRONG), and BUFFER/RANGE are
+      unhandled, so every reduction refuses.
+- [ ] STAGE 3's WORDING IS THE USER's CALL: literal ("PYTHON must be at least as fast as BEND") is
+      **NOT MET** (PYTHON is 2.6x/5.1x SLOWER); the other reading (BEND >= PYTHON) is met.
+- [x] THE CONSTANT GAP IS CLOSED, WITH A NON-ZERO TEST: `cst32` = `maximum(a*b, 2.5)` is now
+      byte-identical (656 B, `2.5f` on both sides), where before the walk emitted `select(f32(),...)`.
+      THREE fidelity rules came out of it: a CONST's value is materialised at its use; a WHERE is
+      NEVER inlined (`GroupOp.ALU - {Ops.WHERE}`); and a prefix number is burned only by a
+      DECLARATION. **6 OF 7 PROGRAMS ARE NOW BYTE-IDENTICAL AND TIMED.**
+- [ ] THE REDUCTION (`red32`) NEEDS THREE ARMS: `BUFFER` (reuse `sr_buffer`, it exists), `RANGE`
+      (the `for (var Lidx0 = 0; ...)` header + `{axis_letters}idx{range_str}` + DEPTH, the one place
+      the walk needs an indent), and `AFTER` (an alias to src0, so the accumulator reads `buf0[0]`).
+- [x] BOTH NAMED WALKER GAPS CLOSED -- **7 OF 7 WGSL PROGRAMS BYTE-IDENTICAL AND TIMED**:
+      `BUFFER` reuses `wgsl.bend`'s own `sr_buffer`; `AFTER` is an alias to src0; `RANGE` needs the
+      `for (var Lidx0 = 0; ...)` header plus `axis_letters` (uop/ops.py:50) and `range_str` (imported
+      from cstyle.bend rather than copied); and `Wk.depth: Nat` with `ind`/`wk.open`/`wk.close`, where
+      `wk.close` drops a level BEFORE the `}` (cstyle.py:249). The RANGE's AXIS NAME and ids travel in
+      the record so the WALKER owns both tables and the generator only transcribes.
+      Corpus now: 16/32/64 squares, a 1000-element 1-D tensor (not a power of two), a reduction, a
+      non-zero constant (2.5f), and the WHERE rule.
+- [x] BOTH CORPORA SCALED OUT OF THE MEASUREMENT FLOOR: WebGPU now has a **512x512 naive matmul at
+      11.1 ms per launch** (NOOPT turns it into a loop nest, so it exercises RANGE/BUFFER/AFTER too)
+      and 9 of 9 programs are byte-identical and timed; Metal has a **4096x4096 matmul at 38.5 ms**
+      (mm2048 5.5 ms) and 6 of 6 kernels byte-identical.
+      AND IT FOUND A FOURTH HARNESS DEFECT: stage 2 called `out.realize()` on an ALREADY REALIZED
+      tensor -- a NO-OP -- so a 4096 matmul "ran" in 0.03 ms. Each iteration now re-executes.
+- [ ] STAGE 3's READING IS THE USER's CALL, and the literal one is measurably FALSE (PYTHON is
+      2.6x/5.1x SLOWER than BEND).
+
+CORRECTION: `substitute` was NOT "one held line away" -- its ctx is a DICT and the port's ctx is a LIST
+
+**⇒ AND **`b5ec289bc` **SAID "THE **NEXT **UNIT **STARTS **WHEN **THAT **ONE **LINE
+**LANDS"** **AND **THAT **IS **FALSE.  **MEASURED **2026-11-01:**
+
+    tinybendygrad/uop/ops.bend:4426
+      def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> Maybe<&2, U32>
+
+    tinygrad/uop/ops.py
+      _substitute = PatternMatcher([(UPat(tuple(Ops), name="x"), lambda ctx,x: ctx.get(x,None))])
+
+**THE CTX IS `dvars: dict[UOp, UOp]` -- KEYED BY NODE -- AND THE PORT'S IS A
+`List<&2, U32>`.**  A `List` cannot answer `"is THIS node in the map"`, so
+`substitute` needs the **typed `CTX` record** that `codegen/__init__.bend:24`'s own
+header already names as a wall: *"This untyped `List<&2, U32>` is the wall-passing
+shape until the typed `CTX` record lands."*  **SO `substitute` HAS TWO BLOCKERS
+AND I HAD NAMED ONE.**
+
+**⇒ AND **THE **SECOND **BLOCKER **IS **IN **A **FILE **I **CAN **EDIT, **WHICH **MAKES
+**THIS **WORSE, **NOT **BETTER: `pm_rewrite_m` **LIVES **IN **`uop/ops.bend` -- THE
+**HELD **FILE -- SO **THE **CTX **CHANGE **IS **ALSO **BEHIND **THE **SAME **ONE-LINE
+**COMMENT.  **A **HELD **PATH **BLOCKS **MORE **THAN **THE **EDITS **THAT **NAME **IT.**
+
+**⇒ AND **A **BESPOKE **WALK **WAS **CONSIDERED **AND **REFUSED, **FOR **A **MEASURED
+**REASON: `unified_rewrite`'s **STAGE 0 **DESCENDS **INTO **THE **REPLACEMENT's
+**srcs** (`new_n.src` **AFTER **the **`bpm` **FIXPOINT, **not **`n.src`), **and
+**`cached_bpm_rewrite` **RUNS **IN **A **LOOP **UNTIL **IT **RETURNS **`None`, **SO **A
+**REPLACEMENT **THAT **IS **ITSELF **IN **`dvars` **CHAINS.  **A **direct
+**"lookup-and-rebuild" **walk **gets **the **common **case **right **and **the
+**CHAIN **case **SILENTLY **WRONG -- **which **is **the **exact **failure **mode **this
+**file **keeps **finding: **an **approximation **that **agrees **on **every **fixture
+**nobody **wrote.**
+
+**⇒ AND **SO **THE **CORRECT **NEXT **STEP **IS **THE **`CTX` **RECORD, **AND **IT **IS
+**NOT **A **SCHEDULER **CHANGE:** `pm_rewrite_m`'s **ctx **is **the **codegen
+**pipeline's **argument, **and **changing **it **touches **every **rule **body **that
+**reads **`ctx[0]`** **OR **`ctx[1]`.**  **THE **ORDER **IS **CTX **FIRST, **THEN
+**`substitute`, **THEN **`apply_binds` **arm **3, **THEN **`resolve_linear_call` --
+**AND **THE **FIRST **TWO **ARE **BOTH **BEHIND **`uop/ops.bend`.**
