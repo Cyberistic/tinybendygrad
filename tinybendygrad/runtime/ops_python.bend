@@ -740,43 +740,84 @@ def alu3(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem) -> Elem:
 # at parse time and are never read again. 14 and 15 are the two refusals: a
 # dtype or an op name this file does not port.
 type Uop is Data:
-  Uop{op: O.Op, dt: S.Dt, kind: U32, a: U32, b: U32, slot: U32, run: U32, srcs: List<&2, U32>}
+  Uop{op: O.Op, dt: S.Dt, kind: U32, a: U32, b: U32, slot: U32, run: U32,
+      srcs: List<&2, U32>, sslot: List<&2, U32>}
 
 def Uop.op(+u: Uop) -> O.Op:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: op
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: op
 
 def Uop.dt(+u: Uop) -> S.Dt:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: dt
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: dt
 
 def Uop.kind(+u: Uop) -> U32:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: kind
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: kind
 
 def Uop.a(+u: Uop) -> U32:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: a
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: a
 
 def Uop.b(+u: Uop) -> U32:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: b
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: b
 
 def Uop.slot(+u: Uop) -> U32:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: slot
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: slot
 
 def Uop.run(+u: Uop) -> U32:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: run
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: run
 
 def Uop.srcs(+u: Uop) -> List<&2, U32>:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs}: srcs
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: srcs
 
 # the k-th src, 0-based. A src past the four a packet may carry (measured max 4,
 # and only a STACK gets near it) is refused at PARSE time, so the default of 0
 # is only ever uop 0's index.
+def Uop.sslot(+u: Uop) -> List<&2, U32>:
+  match u:
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}: sslot
+
+# **=> AND A SRC'S SLOT IS RESOLVED ONCE, AT LOAD.** MEASURED on the compiled
+# executor (`.agents/slop/perf/REPORT.md` §11): the interpreter runs **93 917 steps**
+# but `Uop.at` walks `idx` cons cells taking an 11-field `Uop` out of each, and
+# `Prog.src` does that FIVE times per step -- **126 605 244 arity-11 copies, 1 348 per
+# step, 1.39e9 field visits**. A src names an INDEX, and `slot` is the one field of
+# the uop it names that `Prog.src` then walks the table to find, so resolve it here.
+#
+# AND THE RESOLUTION WALKS A SLOT TABLE, NOT THE UOPS: a `List<&2, U32>` costs TWO
+# fields per cell to walk and the uop list costs eleven.
+def Uop.slot.list(+us: List<&2, Uop>, acc: List<&2, U32>) -> List<&2, U32>:
+  match us:
+    case Nil{}: List.reverse(&2, U32, acc)
+    case h <> t: Uop.slot.list(t, Uop.slot(h) <> acc)
+
+def Uop.sslot.of(ss: List<&2, U32>, +slots: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case h <> t: Uop.sslot.of(t, slots, List.append(&2, U32, acc,
+      [Maybe.default(&2, U32, List.get(&2, U32, slots, U32.to_nat(h)), 0)]))
+
+def Uop.with.sslot(+u: Uop, ss: List<&2, U32>) -> Uop:
+  match u:
+    case Uop{op, dt, kind, a, b, slot, run, srcs, _sslot}:
+      Uop{op, dt, kind, a, b, slot, run, srcs, ss}
+
+def Uop.slots.go(+slots: List<&2, U32>, todo: List<&2, Uop>, acc: List<&2, Uop>) -> List<&2, Uop>:
+  match todo:
+    case Nil{}: List.reverse(&2, Uop, acc)
+    case h <> t:
+      +lh = h
+      Uop.slots.go(slots, t, Uop.with.sslot(lh, Uop.sslot.of(Uop.srcs(lh), slots, Nil{})) <> acc)
+
+def Uop.slots(+us: List<&2, Uop>) -> List<&2, Uop>:
+  +ls = us
+  Uop.slots.go(Uop.slot.list(ls, Nil{}), ls, Nil{})
+
 def Uop.nth(ss: List<&2, U32>, +k: Nat) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, ss, k), 0)
 
@@ -797,29 +838,29 @@ def Uop.at.go(us: List<&2, Uop>, +i: Nat) -> Maybe<&2, Uop>:
 # THE BOTTOM is reached only by a packet whose own index count disagrees with
 # its lines. It is a SINK, so a walk that reached it would advance the pc and
 # run out of fuel -- a loud refusal, never a silent answer.
-def Uop.bottom() -> Uop: Uop{O.OpsSINK{}, S.void(), 0, 0, 0, 0, 1, Nil{}}
+def Uop.bottom() -> Uop: Uop{O.OpsSINK{}, S.void(), 0, 0, 0, 0, 1, Nil{}, Nil{}}
 
 def Uop.at(us: List<&2, Uop>, +i: U32) -> Uop:
   Maybe.default(&2, Uop, Uop.at.go(us, U32.to_nat(i)), Uop.bottom())
 
 def Uop.of(+u: Uop, op: O.Op) -> Uop:
-  Uop{op, Uop.dt(u), Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), Uop.run(u), Uop.srcs(u)}
+  Uop{op, Uop.dt(u), Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), Uop.run(u), Uop.srcs(u), Uop.sslot(u)}
 
 def Uop.dt1(+u: Uop, dt: S.Dt) -> Uop:
-  Uop{Uop.op(u), dt, Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), Uop.run(u), Uop.srcs(u)}
+  Uop{Uop.op(u), dt, Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), Uop.run(u), Uop.srcs(u), Uop.sslot(u)}
 
 def Uop.ak(+u: Uop, +k: U32, +a: U32, +b: U32) -> Uop:
-  Uop{Uop.op(u), Uop.dt(u), k, a, b, Uop.slot(u), Uop.run(u), Uop.srcs(u)}
+  Uop{Uop.op(u), Uop.dt(u), k, a, b, Uop.slot(u), Uop.run(u), Uop.srcs(u), Uop.sslot(u)}
 
 def Uop.slot1(+u: Uop, +slot: U32, +b: U32) -> Uop:
-  Uop{Uop.op(u), Uop.dt(u), Uop.kind(u), Uop.a(u), b, slot, Uop.run(u), Uop.srcs(u)}
+  Uop{Uop.op(u), Uop.dt(u), Uop.kind(u), Uop.a(u), b, slot, Uop.run(u), Uop.srcs(u), Uop.sslot(u)}
 
 def Uop.add(+u: Uop, +s: U32) -> Uop:
   Uop{Uop.op(u), Uop.dt(u), Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), Uop.run(u),
-      List.append(&2, U32, Uop.srcs(u), [s])}
+      List.append(&2, U32, Uop.srcs(u), [s]), Uop.sslot(u)}
 
 def Uop.run2(+u: Uop, +run: U32) -> Uop:
-  Uop{Uop.op(u), Uop.dt(u), Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), run, Uop.srcs(u)}
+  Uop{Uop.op(u), Uop.dt(u), Uop.kind(u), Uop.a(u), Uop.b(u), Uop.slot(u), run, Uop.srcs(u), Uop.sslot(u)}
 
 # MEASURED: a STACK's run is its src count, a LOAD's and a STORE's are their lane
 # count (`k:vec:`), and every other op's is 1 -- which is the scalar case
@@ -1188,7 +1229,7 @@ def Prog.load.at(+b: Build, us: List<&2, Uop>, fs: List<&2, Buf>, +ok: Bool) -> 
   Prog.load.go(ok, b, us, fs)
 
 def Prog.load(+b: Build) -> Maybe<&2, Load>:
-  Prog.load.at(b, List.reverse(&2, Uop, Build.us(b)), Prog.bases(b), Build.ok(b))
+  Prog.load.at(b, Uop.slots(List.reverse(&2, Uop, Build.us(b))), Prog.bases(b), Build.ok(b))
 
 # `nu` is the header's OWN uop count, not a running total: `Prog.parse.at` uses
 # `k <= nu` to tell a uop line from a buffer line, so it has to be the count the
@@ -1787,12 +1828,11 @@ def Prog.pv1(+p: Prog) -> Prog:
 # `values[v]` for the k-th src: one arena read and one program read, which is
 # what a step costs.
 def Prog.src(+p: Prog, +u: Uop, +k: Nat) -> Elem:
-  Val.at(Prog.vs(p), Uop.slot(Uop.at(Prog.us(p), Uop.nth(Uop.srcs(u), k))))
+  Val.at(Prog.vs(p), Uop.nth(Uop.sslot(u), k))
 
 # the run of the k-th src, for the two places ops_python reads a src's RUN
 # rather than its value: a STACK's elements and a STORE's lanes.
-def Prog.slot(+p: Prog, +u: Uop, +k: Nat) -> U32:
-  Uop.slot(Uop.at(Prog.us(p), Uop.nth(Uop.srcs(u), k)))
+def Prog.slot(+p: Prog, +u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
 
 # `src_dtypes[k]`, which ops_python reads for a LOAD and a STORE
 def Prog.dt(+p: Prog, +u: Uop, +k: Nat) -> S.Dt:
@@ -2323,13 +2363,6 @@ def Prog.run(+p: Prog, +u: Uop) -> Prog: Prog.dispatch(p, u, Uop.op(u))
 # ⇒ SO THE REMAINING LIST IS THE CURSOR: `Prog.next` takes its tail (O(1)) and only
 # a JUMP (`Prog.at`) re-seeks with `List.drop`, once per loop iteration rather
 # than once per uop.
-def Prog.step.at(+un: List<&2, Uop>, +p: Prog) -> Prog:
-  match un:
-    case Nil{}: Prog.next(p)
-    case h <> _: Prog.run(p, h)
-
-def Prog.step(+p: Prog) -> Prog: Prog.step.at(Prog.un(p), p)
-
 def FUEL() -> Nat: 4000000n
 
 # `Prog.over` -- ops_python's `while i < len(self.uops)` -- is `pc >= n`, and it
@@ -2354,10 +2387,21 @@ def Prog.die(+pr: Prog) -> Prog:
 #     right and nothing rebuilt may precede the one that shrinks, and
 #     `Prog.step(pr)` is rebuilt.
 #   * `+pr` because `Bool.pick` evaluates both arms and each consumes `pr`.
-def run(+f: Nat, +pr: Prog) -> Prog:
-  match f:
-    case 0n: Prog.die(pr)
-    case 1n+k: Bool.pick(Prog, Prog.over(pr), pr, run(k, Prog.step(pr)))
+# **=> AND THE TERMINATION TEST IS A MATCH ON THE CURSOR, NOT A `Bool.pick` GUARD.**
+# MEASURED: `Bool.pick` EVALUATES BOTH ARMS, so the old body --
+# `Bool.pick(Prog, Prog.over(pr), pr, run(k, Prog.step(pr)))` -- ran the recursive
+# arm even after the program had finished, and EVERY LAUNCH BURNED THE WHOLE OF
+# `FUEL`: the step counter read 4 000 000 for a 16x16 packet AND 4 000 000 for a
+# 32x32 one, two different programs, both exactly the fuel, while the answers stayed
+# right because the guard threw the work away. `un` IS `pc < n`, so `match f un`
+# both stops and is a legal scrutinee (a computed Bool is not).
+def run(+f: Nat, +un: List<&2, Uop>, +pr: Prog) -> Prog:
+  match f un:
+    case 0n _: Prog.die(pr)
+    case 1n+k h <> _:
+      +pr2 = Prog.run(pr, h)
+      run(k, Prog.un(pr2), pr2)
+    case 1n+k Nil{}: pr
 
 # ===========================================================================
 # THE GRID, :56 -- `for idxs in itertools.product(*[range(x) for x in
@@ -2388,7 +2432,7 @@ def Prog.tick(+pr: Prog) -> Prog: Prog.reset(Prog.carry(pr, U32.is_ge(U32.add(Pr
 def grid(+n: Nat, +pr: Prog) -> Prog:
   match n:
     case 0n: pr
-    case 1n+k: grid(k, Prog.tick(run(FUEL(), pr)))
+    case 1n+k: grid(k, Prog.tick(run(FUEL(), Prog.un(pr), pr)))
 
 # ===========================================================================
 # THE COMMAND LINE. `IO.args()` is affine, so it is read ONCE, in order, and the
