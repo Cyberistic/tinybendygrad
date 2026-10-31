@@ -1486,13 +1486,15 @@ unsigned long long CT_bank_push = 0;
 unsigned long long CT_heap_alloc = 0;
 unsigned long long CT_heap_free = 0;
 unsigned long long CT_term_drop = 0;
+unsigned long long CT_drop_triv = 0;
+unsigned long long CT_drop_real = 0;
 unsigned long long CT_span_fade = 0;
 unsigned long long CT_sf_terms = 0;
 
 __attribute__((destructor)) static void ctr_report(void) {
   fprintf(stderr, "CTR bank_pop=%llu bank_push=%llu heap_alloc=%llu heap_free=%llu "
-                  "term_drop=%llu span_fade=%llu span_fade_terms=%llu step=%llu run=%llu\n",
-    CT_bank_pop, CT_bank_push, CT_heap_alloc, CT_heap_free, CT_term_drop, CT_span_fade, CT_sf_terms, CT_step, CT_run);
+                  "term_drop=%llu drop_triv=%llu drop_real=%llu span_fade=%llu span_fade_terms=%llu step=%llu run=%llu\n",
+    CT_bank_pop, CT_bank_push, CT_heap_alloc, CT_heap_free, CT_term_drop, CT_drop_triv, CT_drop_real, CT_span_fade, CT_sf_terms, CT_step, CT_run);
 }
 
 INLINE u64 bank_pop(DEV u64* H, u32 c) { CT_bank_pop += 1;
@@ -1728,12 +1730,13 @@ INLINE u32 blk_span(Term t) {
 // A node's first word holds its frame, freed before its last live child; a
 // spine field swaps to the end, so a list drops cell by cell. A live end
 // under 256 fits the frame, a wider one the (trivial) last cell.
-FAR void term_drop(Env e, Term t) { CT_term_drop += 1;
+FAR void term_drop(Env e, Term t) {
   DEV u64* H = e.mem;
   u64  cur = 0;
   Term c0  = 0;
   u32  step = 0;
   for (;;) {
+    if (term_triv(t)) { CT_drop_triv += 1; } else { CT_drop_real += 1; }
     if (!term_triv(t) && term_rfc(t)) {
       u64      r = term_loc(t);
       DEV u32* p = a32_at(H, r);
