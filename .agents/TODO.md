@@ -26868,3 +26868,42 @@ else bpm, ctx, enter_calls)`** -- **`bottom_up=True` **IS **TABLE **SELECTION**,
 **`UOp.param`** (1, **blocked **by **a **comment**), **or **the **`bottom_up`
 **driver** (5, **blocked **by **the **dirty **substrate**), **plus **the **entry
 **points **built **on **them.**
+
+CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 blocked by `bottom_up`"; it is TWO, and the other six have four different causes
+
+**⇒ AND **`98382578a` **SAID **"`bottom_up` **driver **5, **blocked **by **the **dirty
+**substrate"** **AND **THE **MEASUREMENT **SAYS **TWO.**  **MEASURED **2026-10-31 **by
+**counting **`bottom_up=True` **AT **EVERY **`graph_rewrite` **CALL **SITE **IN **EACH **OF
+**THE **EIGHT** (`grep`-by-eye **is **what **produced **the **wrong **number):**
+
+| name | `graph_rewrite` calls | `bottom_up=True` | the REAL cause |
+|---|---|---|---|
+| `canonicalize_call_body` | 1 | **1** | **wall B** |
+| `resolve_linear_call` | 1 | 0 | its own call is `walk=True`; **arm 3's `substitute` IS `bottom_up=True`** -> **wall B** |
+| `create_new_buffer` | 0 | 0 | `Buffer` -- **storage** |
+| `contiguous_mops_to_view` | 1 | 0 | **`numel`, `flatten`, `index`, `pm_mops`, `symbolic` -- FIVE NAMES, ZERO EXIST** |
+| `replace_input_buffer` | 0 | 0 | `param_like` -> **`UOp.param`, which does not exist** |
+| `transform_to_call` | **4** | 0 | `pm_schedule` + `type_verify` + the VIZ/SPEC guards |
+| `create_linear_with_vars` | **3** | 0 | `pm_schedule` |
+| `create_schedule` | 0 | 0 | the finale, built on all of the above |
+
+**⇒ AND **`transform_to_call`'s **FOUR **and **`create_linear_with_vars`'s **THREE**
+**`graph_rewrite` **CALLS **ARE **ALL **THE **DEFAULT**, **so **neither **is **a
+**`bottom_up` **problem **AT **ALL** -- **and **the **entry **points **were **the **three
+**I **was **most **confident **about.**  **A **COUNT **OF **"WHICH **NAMES **ARE **MISSING"**
+**IS **NOT **A **CENSUS **OF **WHY, **AND **I **WROTE **ONE **AND **CALLED **IT **THE
+**OTHER.**
+
+**⇒ AND **THE **REAL **SHAPE **OF **WHAT **REMAINS **IS **WORSE **AND **BETTER **THAN **THE
+**CLAIM:** **BETTER**, **because **wall **B **is **ONE **piece **plus **one **arm**
+**instead **of **five**, **and **`UOp.param` **IS **A **CONSTRUCTOR **AND **NOT **THE
+**STORAGE **LAYER**; **WORSE**, **because **`contiguous_view` **needs **FIVE **NAMES
+**THAT **DO **NOT **EXIST** (`numel`, **`flatten`, **`index`, **`pm_mops`,
+**`symbolic`), **which **is **a **bigger **job **than **the **one **it **was
+**mistaken **for.**
+
+**⇒ AND **`UOp.param`'s **HOME **IS **NOT **BLOCKED: **`mixin/creation.bend` **IS **FREE**
+(1034 **lines, **`git status` **empty), **and **it **already **holds **the **`cr_*`
+**constructors.**  **`ops.bend` **still **holds **a **one-line **COMMENT** **fix, **so
+**`UOp.param` **goes **where **a **constructor **belongs **and **not **into **a **file
+**another **unit **has **open.**
