@@ -249,3 +249,67 @@ claim otherwise.**
 tree AND a self-time census, and reading only the tree produced three mutually
 impossible "86%" readings from a table that said 82% in one line. **A PROFILE HAS
 MORE THAN ONE VIEW AND THE CHEAPER ONE WAS THE RIGHT ONE.**
+
+---
+
+# 5. THE ABLATION THAT INVALIDATES ALL THE OTHER ABLATIONS
+
+**`§4.2`'s ablations were already called misleading. They are worse than that: THE
+CONTROL ITSELF WAS INVALID, AND IT IS THE ONE EVERY OTHER READING WAS DIVIDED BY.**
+
+## 5.1 THE CONTROL
+
+    $ # Prog.step -> Prog.next, i.e. "the loop with no op handling"
+    ABLATED B: 148 ms
+
+Read as "the loop is 148 ms of 15 385, so the op handlers are 99%".
+
+**⇒ AND THAT IS NOT WHAT IT MEASURED.** With `Prog.step` replaced by `Prog.next`,
+the pc ADVANCES EVERY STEP AND NEVER JUMPS -- `END` never returns to its RANGE and
+`BACKEDGE` never loops. **⇒ SO THE WALK TERMINATES AFTER ~70 STEPS INSTEAD OF THE
+18 000 A 16x16 MATMUL TAKES.** The 148 ms is a SEVENTY-STEP program; the 15 385 ms
+is an eighteen-thousand-step one. **They are not the same denominator, and every
+"X is Y% of the total" reading in §4.2 inherits the error.**
+
+**⇒ AND THE SAME FAULT IS IN THE HANDLER ABLATIONS**: replacing `Prog.rng` or
+`Prog.alu` with `Prog.next` also stops the walk from looping, which is why
+`alu`, `ld1` and `store` EACH came out as "86%" -- **EACH OF THEM WAS MEASURED
+AGAINST A PROGRAM THAT HAD STOPPED LOOPING.**
+
+## 5.2 WHAT ACTUALLY HOLDS, AFTER THE SECOND ROUND
+
+| what | ms | note |
+|---|---:|---|
+| baseline (projection fix) | 29 660 | `bench.py`, 2 iters |
+| `Mem.byte` -> 0 | 14 410 | reads are fast; `List.get` does not allocate |
+| `Mem.put` -> identity | 14 788 | **4%** -- the `ms` list copy on store is NOT the cost |
+| `Val.put` -> identity | 14 068 | **9%** |
+| `Prog.src` -> zero | 14 090 | **8%** |
+
+**⇒ SO NONE OF THE FOUR BIG LIST OPERATIONS IS THE COST, AND THE `Array` REWRITE
+OF `us`/`vs`/`ms` IS **NOT** JUSTIFIED BY THESE NUMBERS.** The remaining ~13 s is
+inside the handlers' own bodies, and **the ONLY attribution that survives is the
+one from `sample`'s self-time table: `span_fade` 1019 + `term_drop` 883 + `spin_*`
+310 of 2333 samples = 94% in REFERENCE-COUNT RELEASE.** That table is a
+measurement of the REAL program, not of an ablated one, and it is the only one in
+this report that is.
+
+**⇒ AND `span_fade`/`term_drop` RELEASE WHAT IS ALLOCATED — SO THE QUESTION IS
+"WHAT ALLOCATES", AND THE ABLATIONS SAY IT IS NOT THE FOUR LIST OPERATIONS.** The
+candidates left are the record rebuilds themselves (18 000 of them, each 18 fields
+with 6 list pointers that are RC-incremented then RC-decremented) and `Elem`/`Uop`
+construction inside the handlers.
+
+## 5.3 WHAT I DID NOT DO, STATED PLAINLY
+
+**The `Array` rewrite is NOT written, and this report no longer claims it is
+justified.** Converting `us`/`vs`/`ms` to in-place `Array` state was the reviewer's
+next step and §4.4's conclusion; §5.2 REFUTES that conclusion with four
+measurements on the real program showing those four operations are 4-9% each.
+**⇒ A REWRITE THAT REMOVES 4-9% OF THE COST CANNOT CLOSE A 55.6x GAP, AND STARTING
+IT ON THE STRENGTH OF A NOTE I WROTE MYSELF WOULD HAVE BEEN THE SAME MISTAKE AS
+§4.2, ONE LEVEL UP.**
+
+**⇒ AND THE HONEST STATE OF THE GOAL IS UNCHANGED**: BEND is 55.6x slower than
+PYTHON, one bit-exact 3.7% change has landed, and **every one of the three stages
+is still unmet.**
