@@ -104,17 +104,27 @@ def main() -> int:
         with Context(TRAINING=1):
             # 1. FORWARD, realized, so its kernels are in the trace before the
             #    backward pass adds its own.
-            logits = model(x).realize()
+            # **⇒ AND NOTHING IS REALIZED BEFORE THE GRADIENTS, WHICH IS A
+            # MEASURED PRECONDITION AND NOT STYLE.** MEASURED, with the sequence
+            # this file used to run (`logits.realize()`, then `loss.realize()`,
+            # then `gradient`): **`MNIST grad absmax: 0.0`** -- REALIZING THE
+            # FORWARD OUTPUT DETACHES THE PARAMETERS FROM THE BACKWARD SLICE, so
+            # every gradient was exactly zero and the SGD update wrote each
+            # parameter back UNCHANGED. **⇒ SO "MNIST TRAINS" WAS ONLY EVER PROVEN
+            # BY THE BATCHNORM RUNNING STATS MOVING**, and the 47-of-47 row was
+            # consistent because CPython's side was the same no-op.
+            # **⇒ THE SAME DEFECT WAS FOUND IN THE IMAGENET LANE FIRST**, and it is
+            # the reason that lane's logits row was replaced by a parameter row.
+            logits = model(x)
             # 2. THE LOSS. `beautiful_mnist.py:26`'s own call.
-            loss = logits.sparse_categorical_crossentropy(y).realize()
-            loss_v = float(loss.item())
+            loss = logits.sparse_categorical_crossentropy(y)
             # 3. THE GRADIENTS, as TENSORS rather than through `Tensor.grad`.
             #    `backward()` fills `.grad` from a process-global weakref list
             #    (`tensor.py:487`), and MEASURED: after it runs, the parameter's
             #    `.grad` is still None on this tree. `gradient()` answers the
             #    same numbers as a list, which is what a trace wants anyway.
-            grads = loss.gradient(*params)
-            gs = [g.realize() for g in grads]
+            gs = [g.realize() for g in loss.gradient(*params)]
+            loss_v = float(loss.realize().item())
             # 4. THE UPDATE: `t.detach() - lr*g`, which is `_apply_update`'s own
             #    shape (`nn/optim.py:60`) with `up = lr*grad`.
             ups = [(p.detach() - (g * LR).cast(p.dtype)).realize()
