@@ -26685,3 +26685,29 @@ the RENDER GATE compares 80 of its rows PERFECTLY and cannot PAIR 55 of them, an
 **ROWS **THAT **CARRY **ONE **ARE **KNOWN.**  **⇒ AND **IT **IS **A **SEPARATE **CHANGE **WITH **ITS **OWN
 **MEASUREMENT**, **BECAUSE **A **ROW **FORMAT **EDIT **THAT **MOVES **THE **CAPTURES **IS **A **CHANGE **TO **WHAT
 **THE **GATE **COMPARES **AND **NOT **A **CHANGE **TO **HOW **IT **READS.**
+
+the corpus is GREEN and STALE AGAIN, and the DOSE is 14 substrate files THREE OTHER UNITS have not committed
+
+**⇒ AND **MEASURED 2026-10-31, **AFTER **THE **RUN **AND **REPRO **WERE **BOTH **RE-TAKEN **AND **BOTH
+**GREEN **(`38/38 **agree, **38 **byte-identical, **340 **of **340 **identical **across **two **clean **runs,
+**`PASS -- the claim is ESTABLISHED`, **`RUN HEALTH : OK`**): **THE **SUBSTRATE **MOVED **AGAIN** — **`f4188f94…`
+**-> **`818ca7b9…`** — **BECAUSE **FOURTEEN **FILES **ARE **DIRTY:**
+**`extra/models/{bert,clip,convnext,llama,mask_rcnn,rnnt,t5,transformer,unet,vit}.bend`**,
+**`runtime/ops_python.bend`**, **`schedule/rangeify.bend`**, **`schedule/realize.bend`** **AND **`uop/ops.bend`.**
+
+**⇒ AND **⇒ AND **THE **MEASUREMENT **IS **STILL **SOUND** — **`17 **of **17 **pins **green`** — **AND **THE
+**FRESHNESS **IS **LOST**, **AND **THOSE **ARE **TWO **DIFFERENT **CLAIMS**.  **⇒ AND **THE **DIGEST **IS
+**STABLE **(`818ca7b9…` **READ **TWICE, **4 **s **APART**) **AND **`ops.bend`** **COMPILES **WITH **THEIR **EDITS
+**(`ALL **PROOFS **CHECK`, **212 **MB**), **SO **A **RE-RUN **WOULD **SUCCEED** — **AND **IT **WOULD **CERTIFY
+**WORK **THAT **IS **NOT **IN **ANY **COMMIT.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **DOCTRINE **IS **THE **TREE's **OWN:** **A **GREEN **CORPUS **IS **NOT **A
+**CERTIFICATE **UNTIL **THE **TREE **STOPS **MOVING**, **AND **RUNNING **ON **A **MOVING **TREE **IS **A
+**TREADMILL** — **THE **RUN **TAKES **~1:42 **AND **THE **REPRO **~248 **s **NOW**, **SO **EACH **PASS **IS
+**CHEAP**, **AND **A **PASS **TAKEN **WHILE **THREE **UNITS **ARE **WRITING **CERTIFIES **A **TREE **THAT **WILL
+**NOT **EXIST **IN **AN **HOUR.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **SO **THE **HONEST **STATE **IS **THIS:** **THE **CORPUS's
+**MEASUREMENT **IS **GREEN**, **ITS **LAST **CERTIFICATE **DESCRIBED **`f4188f94…`**, **THE **LIVE **TREE **IS
+**`818ca7b9…`**, **AND **THE **RE-RUN **BELONGS **AFTER **THE **FOURTEEN **FILES **LAND** — **NOT **BEFORE,
+**AND **NOT **INSTEAD **OF** **SAYING **SO.**
