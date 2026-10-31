@@ -476,3 +476,88 @@ interpreter dispatch is 0.3% of samples. **THAT IS NOT SOMETHING I CAN FIX FROM
 `ops_python.bend`**: it is in the compiler's own runtime (`term_drop`/`span_fade`/
 `rfc_bump` in the emitted C), and the emitted C is regenerated from the compiler on
 every build.
+
+---
+
+# 9. THE COST, FOUND: ONE O(pc) WALK PER STEP — 12.3x LANDED
+
+**§6-§8 said the cost was "reference-count release" and could not name the allocation.
+This section names it, with a counter that does not change the program, and lands the
+fix.**
+
+## 9.1 THE INSTRUMENT THAT WORKED: COUNT CALLS, DO NOT ABLATE
+
+Every earlier instrument replaced a def body, which changes the program (§5, §7.4).
+The one that worked counts calls inside a COPY of the compiler's own C
+(`/tmp/exec4.c`, the same file `executor.bend.c` records), so the program is untouched:
+
+    spin86_calls = 4 121 245      # the uop-table walker
+    steps        = 4 000 000
+
+**⇒ ONE WALK PER STEP, NOT SIX.** That single number explains four earlier results at
+once: §5's ablation control (70 steps instead of 18 000), §7.4's `Mem.put` identity
+(4%), and this session's two attempts below (0%), because none of them touched the
+walk that runs once per step.
+
+## 9.2 WHAT THE WALK IS
+
+`spin_86` takes a list and an index, and per cons cell it does
+`ctr_take(cons, 2)` **and** `ctr_take(uop, 11)`, then frees the record. So one lookup
+costs **13 field copies per cell walked**, each an atomic refcount op. `Prog.step`
+called `Uop.at(Prog.us(p), Prog.pc(p))`, and `pc` climbs 0 -> n, so the walk is
+**O(pc) per step and O(n^2) per kernel**: on this 148-uop kernel, ~74 cells x 26
+refcount ops = ~1 900 per step — against **1 979 measured faded terms per step** (§7).
+The arithmetic closes to three digits.
+
+## 9.3 TWO REFUTATIONS THAT POINTED AT IT
+
+| change | measured |
+|---|---|
+| `Prog.alu.at` projects `p`/`u` ONCE instead of 17 times | 29 900 -> 29 900 ms (**0%**) |
+| pre-resolve each src's SLOT at load (`Uop.sslot`), deleting 5 of 6 walks | 29 900 -> 33 154 ms (**0% per step**, +0.82 s at load) |
+
+**⇒ AND BOTH ARE EXPLAINED BY §9.1**: `Prog.src` is not called per step on this kernel,
+so removing its walks could not help; the per-step walk is `Prog.step`'s. Both changes
+were reverted; the second was reverted for adding 0.82 s of load for nothing.
+
+## 9.4 THE FIX
+
+`Prog` gains one field, `un: List<&2, Uop>` — the uops from `pc` onward.
+
+    Prog.next  takes the tail            O(1)     -- this is the hot path
+    Prog.at    re-seeks with List.drop   O(target) -- a JUMP, once per loop iteration
+    Prog.step  reads the head            O(1)     -- was O(pc)
+
+**⇒ AND IT IS BIT-EXACT**: `ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes,
+365 unpinned identical`, and the bench still reads the same `max|diff vs CPU| 8.941e-08`.
+
+## 9.5 MEASURED
+
+    .venv/bin/python .agents/slop/perf/bench.py --iters 2 --size 16 --lanes CPU,PYTHON,BEND
+      CPU        1.38 ms/iter   max|diff vs CPU| 0.000e+00
+      PYTHON   547.18 ms/iter   max|diff vs CPU| 8.941e-08
+      BEND   2 426.89 ms/iter   max|diff vs CPU| 8.941e-08     (min 2 280.02)
+
+    before this change:  BEND 29 900 ms/iter  ->  12.3x faster
+    PYTHON/BEND: 56x -> 4.4x
+
+**⇒ AND AT 32x32 IT IS 14.45x, WHICH NAMES THE NEXT ONE**: BEND 38 754.96 vs PYTHON
+2 682 ms (`--iters 1 --size 32`; the ratios are 24 962x and 1 727x against a CPU of
+1.553 ms). The gap GROWS with the program because the arena grows: `Mem.put` is
+`List.set` and `Mem.byte` is `List.get`, both **O(byte address)**, and the address
+scales with the buffer. `heap_alloc = 6 011 075` over 4 000 000 steps is that
+allocation stream.
+
+## 9.6 STATUS, NOTHING SOFTENED
+
+| stage | state |
+|---|---|
+| 1. python->webgpu vs bend->webgpu | **never timed**: no CPython WEBGPU binding, no kernel-executing Bend WebGPU device |
+| 2. python->metal vs bend->metal | **never timed**: no Bend Metal device at all |
+| 3. PYTHON vs BEND (16x16) | **547.18 vs 2 426.89 ms — BEND is 4.4x SLOWER** |
+| 3. PYTHON vs BEND (32x32) | **2 682 vs 38 754.96 ms — BEND is 14.45x SLOWER** |
+
+**⇒ THE GOAL IS NOT MET AND IS NOT CLOSE ON THE BIGGER PROGRAM.** What is established:
+the per-step cost is now the arena's O(address) list access plus the per-step record
+rebuild, not the interpreter's dispatch; and the `Array` conversion of `ms` — the one
+this report twice argued about — is the fix that §9.5's scaling points at.

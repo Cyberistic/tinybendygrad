@@ -26711,3 +26711,14 @@ the corpus is GREEN and STALE AGAIN, and the DOSE is 14 substrate files THREE OT
 **MEASUREMENT **IS **GREEN**, **ITS **LAST **CERTIFICATE **DESCRIBED **`f4188f94…`**, **THE **LIVE **TREE **IS
 **`818ca7b9…`**, **AND **THE **RE-RUN **BELONGS **AFTER **THE **FOURTEEN **FILES **LAND** — **NOT **BEFORE,
 **AND **NOT **INSTEAD **OF** **SAYING **SO.**
+
+
+## PERF
+
+- [x] PYTHON vs BEND on `(A @ B) @ C`: the interpreter had no cursor, so every step walked
+      `pc` cons cells (O(pc) per step, O(n^2) per kernel). `Prog` now carries the remaining uop
+      list. MEASURED 29 900 -> 2 426.89 ms/iter at 16x16 (**12.3x**), same
+      `max|diff vs CPU| 8.941e-08`, `ops_python_exec` 153 fixtures / 0 divergences.
+- [ ] THE ARENA IS THE NEXT ONE: at 32x32 the gap is **14.45x** (38 754.96 vs 2 682 ms), because
+      `Mem.put`/`Mem.byte` are `List.set`/`List.get`, O(byte address), and the address scales
+      with the buffer. See `.agents/slop/perf/REPORT.md` §9.
