@@ -78,3 +78,69 @@ IT** (`8.941e-08` on both, against CPU).
 round trip `ops_bend.py`'s own header names) **and 5 540 ms IS THE 4 096 MACs AT
 1.35 ms/MAC**. The fixed cost is 28% of one small launch and would vanish into a
 bigger one; **⇒ THE INTERPRETER IS THE GAP, AND THE TARGET IS 41x, NOT 58x.**
+
+### 3.2 THE COST IS ALLOCATION, NOT ARITHMETIC — PROFILED, NOT GUESSED
+
+The Bend executor was captured on one 16x16 matmul packet (9 544 bytes, 3 buffers,
+70 uop lines) and sampled with macOS `sample`:
+
+    $ ~/Library/Caches/tinygrad/bend-executor-* /tmp/pkt/PACKET.in 1 1 1 &
+    $ sample $PID 3 -file sample.txt
+    Call graph:
+      2333 Thread ... com.apple.main-thread
+      + 2333 start
+      +   2333 main
+      +     2333 io_loop
+      +       2333 io_step
+      +         2333 corpus_eval
+      +           2333 work_loop
+      +             2216 WL_FID_Prog_step
+      +             ! 1127 spin_85
+      +             ! : 815 span_fade
+      +             ! : | 217 term_drop
+      +             ! 448 spin_85
+      +             ! : 204 span_fade
+
+**⇒ 2216 OF 2333 SAMPLES ARE INSIDE `Prog_step`, AND ALMOST ALL OF THOSE ARE IN
+`spin_85` → `span_fade` → `term_drop`** — which are the runtime's REFERENCE-COUNT
+machinery: spinning on a refcount, dropping a span of a block, dropping a term.
+**⇒ THE INTERPRETER IS NOT SLOW AT ARITHMETIC; IT IS SLOW AT **ALLOCATING AND
+FREEING ITS OWN STATE**.**
+
+**⇒ AND THAT IS A STRUCTURAL FACT ABOUT THE LOOP, NOT A MICRO-OPTIMISATION.**
+`Prog.step` CONSTRUCTS A NEW 17-FIELD RECORD PER UOP
+(`ops_python.bend:2362`-ish, `Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy,
+gz, cx, cy, cz, bad, dead}`), and the previous record is dropped — so every one of
+the ~18 000 uop dispatches in a 16x16 matmul allocates a record, copies 17 fields,
+and then runs the full recursive teardown of the old one.
+
+**⇒ SO THE FIX IS THE ONE THE GUIDE ALREADY NAMES**: `Array<T>` is a `Type`, and
+`a[i] <- v` "overwrites the slot and hands back the same array, **with no copy**".
+**⇒ THE STATE MUST BECOME AN `Array` SO THE STEP MUTATES INSTEAD OF REBUILDING** —
+not for O(1) indexing, which the micro-benchmark below shows is not the problem,
+but to stop the allocation/teardown that the profile says is 98% of the time.
+
+### 3.3 WHAT WAS RULED OUT, WITH THE MEASUREMENT THAT RULED IT OUT
+
+* **O(n) `List.get`/`List.set` in `Mem`.** A micro-benchmark of 2 000 get+set over
+  a `List<U32>` of 8 192 slots costs **~0.12 s of compute** (0.19 s minus the
+  0.07 s compiler start), i.e. **~7 ns per list cell**. Scaling the arena 8x costs
+  **1.7x**, not 8x, so the list scan is NOT the pathology.
+  (`.agents/slop/perf/listvsarray.bend` is the fixture; `List.replicate` takes
+  `(A, n, x)`, not a lifetime, and `Array<T>` is a `Type` so it is threaded
+  linearly — both cost a compile to learn.)
+* **The packet decoder.** `Prog.parse.go` folds over the lines once, and
+  `Prog.hex.go` + `Prog.hex.app` walk the hex once with an explicit note that
+  "`List.set` per byte would be quadratic" — it was already fixed.
+* **The CPython side.** `encode` 0.8 ms, `decode` 0.2 ms, `unmarshal` 0.3 ms.
+  **The subprocess's own runtime is 15 374.8 ms of 15 376 ms** — measured by
+  wrapping `BendProgram.__call__`.
+
+### 3.4 WHAT IS LEFT FOR STAGE 3, IN ORDER
+
+1. **`Prog`'s mutable state becomes `Array`** so `Prog.step` mutates in place. The
+   profile says this is where 98% is. The 153-fixture census
+   (`gates/ops_python_exec-fixtures.rows`, 0 divergences today) is the gate that
+   says bit-exactness survived.
+2. **Then** the per-launch subprocess + hex (2 185 ms on a trivial kernel) — the
+   remaining 28% of a small launch, and a persistent executor removes it.
