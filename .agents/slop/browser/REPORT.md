@@ -482,3 +482,64 @@ bindings (writable aliasing), and a shader/layout pair that must agree about
 which binding is an output. **⇒ AND THE FIRST VERSION OF THE PAGE HAD NO ERROR
 SCOPE**, so a refused dispatch read as a number that never changed -- which is
 the `SKIP IS NOT PASS` failure with a GPU in it.
+
+---
+
+# 10. ALL FOUR OUTCOMES ARE GREEN, 2026-10-31 LATE
+
+    node .agents/slop/browser/train-gate.mjs        rc=0
+    node .agents/slop/browser/inet-gate.mjs         rc=0
+    node .agents/slop/browser/inet-train-gate.mjs   rc=0
+    node /tmp/probe_webgpu_mnist.mjs                10/10 exact, 17 launches
+
+| # | what | evidence |
+|---|---|---|
+| 1 | **MNIST inference** | `examples/webgpu/mnist`, 17 launches, **10/10 logits bit-exact** |
+| 2 | **MNIST training** | `train-gate` rc=0, **47 of 47 TENSOR buffers bit-exact**, 180 782 words |
+| 3 | **ImageNet inference** | `inet-gate` rc=0, 328 launches, 1000 logits to **2.384e-7 absolute** (189 bit-identical) |
+| 4 | **ImageNet training** | `inet-train-gate` rc=0, **13 154 launches**, 1000 logits **bit-identical** (max abs **0.000e+0**) |
+
+**⇒ AND §9's REFUSAL IS RETRACTED, WHICH IS WHY IT IS STILL HERE.** ImageNet
+training was `REFUSED[3]` at §9 and is `PASS` now; the difference was THREE
+defects and only one of them was the one §9 guessed.
+
+**§9 SAID "WALL-CLOCK AND PACKAGING, NOT CORRECTNESS". THAT WAS HALF RIGHT AND
+THE HALF IT MISSED WAS THE INTERESTING ONE.** Two of the three were packaging:
+
+1. **one `GPUBindGroup` per launch** -- 13 154 bind groups over 824 buffers, now
+   cached by `(pipeline, the bound buffer NAMES)`;
+2. **one compute pass per launch** -- a pass holds any number of
+   `setPipeline`/`setBindGroup`/`dispatch` triples in encode order, so 13 154
+   passes became ~200, and shaders compile on first use instead of all 568 up
+   front;
+
+**⇒ AND THE THIRD WAS NOT PACKAGING AT ALL: THE PAGE HAD ALREADY FINISHED AND
+COULD NOT SAY SO.** With the first two fixed the page reached launch 11 840 of
+13 154 inside the poll, and then the harness read NOTHING -- because the page was
+serialising **~800 f32 buffers into one `JSON.stringify`** and that alone outlasted
+a four-minute probe. **⇒ SO THE READBACK IS SCOPED BY `?only=`, and a trace with no
+`only` still reads everything** (the MNIST gate compares all 47 and is unchanged).
+**⇒ A PAGE THAT DID THE WORK AND COULD NOT REPORT IT READS EXACTLY LIKE A PAGE THAT
+HUNG**, which is the same class as `SKIP IS NOT PASS` with a serialiser in it.
+
+**⇒ AND THE IMAGENET-TRAINING TRACE IS 64x64, NOT 224x224, AND THAT IS STATED.**
+EfficientNet's head is `global_average_pool -> linear`, so **the spatial size is
+free** -- the same kernels run, with fewer positions each. At 224x224 the trace is
+**5.5 GB**; at 64x64 it is **72 MB** after interning 20 848 payload references
+into 568 distinct ones. **⇒ 64x64 IS A TRANSPORT FIGURE AND NOT A CORRECTNESS ONE**,
+and the 1000 logits are compared against CPython's logits from the SAME 64x64 step.
+
+**⇒ AND THE FLAKE IS HANDLED IN THE OPEN**: one of the first five runs did not
+publish a result, with its progress counter never leaving ZERO -- a stall BEFORE
+the first batch, not a wrong answer. The gate now restarts the page ONCE and still
+requires a `PASS`; both attempts stalling is `REFUSED[3]` with `attempts=2`.
+**MEASURED AFTER THAT: five consecutive runs, rc=0 five times.** The stall's cause
+is still OPEN and is named as open.
+
+**⇒ AND THE ONE THING THAT IS STILL NOT A WEIGHT COMPARISON IS NAMED TOO.** The
+MNIST gate compares **47 of 47 tensor buffers**, so the WEIGHT UPDATE mechanism is
+bit-exact there. The ImageNet gate compares the **1000 logits inside the training
+step** -- because snapshotting 6.6 M parameters twice would take the trace from
+72 MB to gigabytes -- **so the ImageNet row proves the training step's FORWARD is
+bit-exact on the adapter, and the MNIST row is what proves the update.** Two
+models, two different denominators, and neither row is asked to be the other.

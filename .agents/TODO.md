@@ -26592,3 +26592,29 @@ the corpus went STALE because three units edited the substrate, and the instrume
       every scalar-taking kernel silently did not run)**, and three measured walls
       (`DEV=CPU` before import, `DMC=1` for the backward pass, and `f32` -> `w32`
       snapshots because the LABEL is an i32 buffer).
+
+- [x] **IMAGENET TRAINS IN THE BROWSER** (2026-10-31, late). `node
+      .agents/slop/browser/inet-train-gate.mjs` -> **rc=0**: **13 154 launches**
+      replayed on `apple/metal-3`, **1000 of 1000 logits BIT-IDENTICAL**
+      (`max |abs| 0.000e+0`), C1/C2/C3 all green. **⇒ ALL FOUR OUTCOMES ARE GREEN**
+      (MNIST inference 10/10, MNIST training 47/47, ImageNet inference 2.384e-7,
+      ImageNet training 1000/1000) and §9's `REFUSED` is RETRACTED.
+      **THREE DEFECTS, AND ONLY ONE WAS THE ONE §9 GUESSED:** one bind group per
+      launch (13 154 over 824 buffers) now cached by `(pipeline, buffer names)`;
+      one compute pass per launch now one pass per batch (13 154 -> ~200) with
+      shaders compiled on first use; **and the third was that the page HAD
+      FINISHED and could not say so** -- it was serialising ~800 f32 buffers into
+      one `JSON.stringify`, so the readback is now scoped by `?only=` (a trace
+      with no `only` still reads everything, so the MNIST gate is unchanged).
+      **⇒ THE TRACE IS 64x64 AND THAT IS STATED**: EfficientNet's head is
+      `global_average_pool -> linear`, so the spatial size is free; 224x224 is a
+      5.5 GB trace against 72 MB here after interning 20 848 payload references
+      to 568 distinct ones -- a TRANSPORT figure, not a correctness one.
+      **⇒ AND THE FLAKE IS HANDLED IN THE OPEN**: 1 of the first 5 runs stalled
+      BEFORE its first batch (progress counter never left 0); the gate now
+      restarts the page ONCE and still requires a PASS, and 5 consecutive runs
+      read rc=0 five times. The stall's cause is OPEN and named as open.
+      **⇒ AND THE DENOMINATORS DIFFER ON PURPOSE**: MNIST compares 47 of 47 TENSOR
+      buffers (the WEIGHT UPDATE, bit-exact); ImageNet compares the 1000 logits
+      inside the training step (6.6 M parameters snapshotted twice would take the
+      trace to gigabytes). Neither row is asked to be the other.
