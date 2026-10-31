@@ -7,7 +7,7 @@
 5|CONST|weakint|ALU||1||const|32
 6|BUFFER|f32|REG|32|32|5|buffer|0~128
 7|CAST|i32|ALU||1|5|plain|-
-8|SPECIAL|i32|ALU||1|7|special|l~i~d~x~0
+8|SPECIAL|i32|ALU||1|7|special|lidx0
 9|AFTER|f32|REG|32|32|6 8|plain|-
 10|STACK|void|NONE||1||plain|-
 11|CONST|weakint|ALU||1||const|0

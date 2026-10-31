@@ -26936,3 +26936,13 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
 - [ ] ADD `KASpecial` TO `KUArg`, render it (`lid.x`/`gid.x` for dev_metal, the C spelling otherwise),
       teach `gen_kus.one()` to emit it, and re-run `stage2_metal.py` until the `identical` column is
       `yes`. Then account for the extra store. Stage 1 stays blocked: no WGSL driver exists here.
+- [x] HARNESS BUG FOUND AND FIXED: `dump_uops` writes a payload as `"~".join(arg)`, which is right for
+      PARAM/RANGE (tuples) and WRONG for SPECIAL, whose arg upstream is a plain STRING -- it exploded
+      "lidx0" into "l~i~d~x~0". Rejoined in `.agents/slop/perf/stage2_metal.py`; the artifact now
+      records `special_args=lidx0`. Verdict unchanged: identical|no.
+- [ ] THE SPECIAL PORT IS FOUR COUPLED EDITS, SPECIFIED: (a) KUArg += KASpecial{axis,n,nm};
+      (b) the statement NAMER takes a SPECIAL's name from its arg (cstyle.py:239 `r[u] = u.arg`);
+      (c) the TEXT is `<workitem>; /* <src text> */` (cstyle.py:47); (d) the `;` is suppressed for
+      SPECIAL (cstyle.py:258); (e) the converter emits KASpecial. `code_for_workitem.g` already
+      exists and is right. NOT STARTED: it changes how the port NAMES a uop in its only renderer,
+      and the cstyle gate's rows contain no SPECIAL, so the net is this one-kernel harness.

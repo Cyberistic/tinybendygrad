@@ -936,3 +936,57 @@ rows where the texts differ, and they need a driver to compare.
    1.26 ms is the port's own Metal timing.
 3. The extra `*(buf0+29) = 0.0f;` store needs its own account -- it is upstream text that
    the port adds, so it is a second divergence and it is NOT explained by SPECIAL.
+
+---
+
+# 15. STAGE 2: THE EXACT RULES THAT ARE MISSING, READ OUT OF UPSTREAM
+
+The verdict did not move this turn (`identical|no`), but the WHY is now three named
+rules with line numbers rather than one symptom. And a BUG IN MY OWN HARNESS was found
+and fixed first, because it would have poisoned every converter downstream.
+
+## 15.1 THE HARNESS BUG: A SPECIAL's ARG IS A STRING, NOT A TUPLE
+
+`dump_uops` writes a payload as `"~".join(str(x) for x in arg)`. For `PARAM` and `RANGE`
+`arg` IS a tuple, so that is right. **For `SPECIAL` upstream's `arg` is a plain STRING**
+(`cstyle.py:239` is `r[u] = u.arg`, and `:47` reads `arg[0]` and `arg[-1]` off it), so
+`"~".join` exploded it into its own characters:
+
+    8|SPECIAL|i32|ALU||1|7|special|l~i~d~x~0      <- before: the string "lidx0", per character
+    8|SPECIAL|i32|ALU||1|7|special|lidx0          <- after: the arg itself
+
+The rejoin is in my harness, not in the shared dumper, and the artifact now names it:
+`# special_args=lidx0   (KUArg has NO constructor for Ops.SPECIAL)`.
+
+## 15.2 THE THREE RULES, AND EVERY ONE OF THEM IS IN THE PORT'S WAY
+
+1. **THE NAME.** `cstyle.py:239` -- `if u.op is Ops.SPECIAL: r[u] = u.arg`. A SPECIAL's
+   variable name is its OWN ARG, so upstream emits `int lidx0 = ...` while the port
+   emits `int alu0 = ...` from its `ku_pfx`/counter table (`cstyle.bend:1300-1330`).
+   A `KASpecial` that carried only the axis and index would render the right EXPRESSION
+   under the wrong NAME, and the text would still differ.
+2. **THE FORM.** `cstyle.py:47` -- the value is
+   `f"{code_for_workitem[arg[0]](arg[-1])}; /* {u.src[0].render()} */"`. It is a
+   STATEMENT: the workitem id, a `;`, and a comment holding the SPECIAL's SOURCE's
+   rendered text (`/* 32 */` -- the CONST behind the CAST).
+3. **THE SEMICOLON.** `cstyle.py:258` -- `... + (";" if u.op is not Ops.SPECIAL else "")`.
+   The statement terminator is NOT appended for SPECIAL, because the value already ends
+   with one. A port that appended `;` unconditionally would emit `;;`.
+
+## 15.3 SO THE CHANGE IS FOUR COUPLED EDITS, NOT ONE
+
+    a. `KUArg` += `KASpecial{axis: String, n: U32, nm: String}`
+    b. the statement NAMER branches on SPECIAL and takes the name from the arg
+    c. the statement TEXT branches on SPECIAL: `<code_for_workitem.g(dev, axis, n)>; /* <src text> */`
+    d. the `;` appended after a statement is suppressed for SPECIAL
+    e. `gen_kus.one()` (and my own converter) emits `KASpecial` for kind `special`
+
+`code_for_workitem.g(dev, k, n)` **already exists and is already right**
+(`cstyle.bend:1135`, Metal -> `lid.x`/`gid.x`, and the base/Clang `{}` refusal is
+already ported and named). What is missing is everything that feeds it.
+
+**=> I DID NOT START IT.** It changes how the port NAMES a uop, in the one renderer the
+whole port uses, and the cstyle gate's rows contain no SPECIAL, so a mistake there
+would be caught only by this harness -- which, being one kernel, is a thin net for a
+naming change. The rules above are the specification; a rushed patch at the end of a
+long session is how the `Bool.pick` fuel burn (§11.1) happened in the first place.
