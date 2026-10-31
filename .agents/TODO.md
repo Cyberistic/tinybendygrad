@@ -26562,3 +26562,33 @@ the corpus went STALE because three units edited the substrate, and the instrume
       `expected : sink / observed : sink (consumed more than once)`. Fixed with the
       `+sk = sink` binder `rr_range_map` already used. `cmp.py` reads
       `VERDICT PASS`.
+
+- [x] **MNIST TRAINS IN THE BROWSER** (2026-10-31, later the same day). One
+      training step -- forward, `sparse_categorical_crossentropy`, gradients, SGD
+      update -- is **90 kernel launches**, and `node .agents/slop/browser/train-gate.mjs`
+      reads **`PASS ... 47 of 47 TENSOR buffers BIT-EXACT against CPython, 180782
+      words compared`** on `apple/metal-3`. **⇒ AND ONE SCALAR IS NAMED AND NOT
+      FIXED**: the 1-word loss, whose first explanation the gate RETRACTS in its
+      own output because measurement disproved it. It is not a weight.
+- [x] **MNIST INFERENCE STILL BIT-EXACT**: `examples/webgpu/mnist`, 17 launches,
+      **10/10 logits exactly**, re-verified today.
+- [x] **IMAGENET TRACES COMPLETELY**: EfficientNet-0, **328 launches, 0
+      unrendered**. WebGPU then refuses **12 of 328** shaders -- every one a
+      depthwise/grouped conv, and **the unbalance is tinygrad's own**
+      (`imagenet/wgsl-braces.rows`, 328 rows). Reported, not patched: appending a
+      `}` would be a guess about which block was left open.
+- [x] **D2 IS RETRACTED AND RE-ATTRIBUTED.** `.agents/slop/browser/arenas.bend`
+      dumps the same graph in the arena it lives in -- 22 nodes with
+      `STORE(INDEX,REDUCE)`, 10 with `STORE(INDEX,PARAM)` -- so the arithmetic is
+      **genuinely lost** and the two readings agree. `.agents/slop/browser/d1arity.bend`
+      shows `replace` is CORRECT: `STORE(INDEX,REDUCE) -> STORE(INDEX,PARAM)` but
+      `CALL(STORE,PARAM) -> CALL(STORE,PARAM)`. Upstream asserts `k.op is Ops.CALL`
+      first; Bend has no `raise`, so the assert became nothing. **⇒ SO D2 IS D1's
+      CASCADE AND `split_kernels` FIXES BOTH.**
+- [x] **THE BROWSER TRACER WAS STALE AND NOTHING READ IT.** `xd2/trace_forward.py`
+      raises `AttributeError: 'Buffer' object has no attribute 'size'`. Re-pointed
+      at a NEW path (`.agents/slop/browser/trace_common.py`) per the tree's rule,
+      carrying four measured migrations, **one measured BUG (dropping `vals` meant
+      every scalar-taking kernel silently did not run)**, and three measured walls
+      (`DEV=CPU` before import, `DMC=1` for the backward pass, and `f32` -> `w32`
+      snapshots because the LABEL is an i32 buffer).

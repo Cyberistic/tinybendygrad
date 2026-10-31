@@ -396,3 +396,89 @@ it, and compare its output word against the replayed trace's.**
 | `checks/e2e.py` | **7/7 GREEN**, and the fixture repairs that got it there. |
 | `examples/webgpu/mnist/` | **THE BROWSER PAGE THAT RUNS TODAY**, 10/10 bit-exact. |
 | `.agents/slop/cpuseam/` | the 5-MNIST-kernel byte-exact measurement. |
+
+---
+
+# 9. UPDATE 2026-10-31, LATER THE SAME DAY: TRAINING RUNS, AND D2 IS RETRACTED
+
+**Everything in §1-§8 stands EXCEPT the attribution of D2, which §3.2 already
+hedged and §9.2 now settles. Three things moved.**
+
+## 9.1 MNIST TRAINS IN THE BROWSER
+
+    node .agents/slop/browser/train-gate.mjs
+    PASS -- one MNIST training step, replayed on the adapter, leaves 47 of 47
+    TENSOR buffers (weights, gradients, moments) BIT-EXACT against CPython,
+    180782 words compared
+
+One training step -- forward, `sparse_categorical_crossentropy`, the gradients,
+the SGD update -- is **90 kernel launches**, and the browser replays all of them
+on a real adapter (`apple/metal-3`). **⇒ AND THE STRENGTH OF THE ROW IS ITS
+DENOMINATOR: 47 TENSOR buffers and 180 782 words, not one loss scalar.** A GPU
+that computed nothing and kept its uploads would fail C1, which is a control in
+the gate.
+
+**⇒ AND ONE THING IS NAMED AND NOT FIXED**: a single 1-word scalar, the loss,
+differs (`3.9493408203125` where CPython has `2.7735066413879395`). **⇒ AND THE
+GATE'S FIRST EXPLANATION FOR IT IS RETRACTED IN THE GATE'S OWN OUTPUT**, because
+measurement disproved it: the read-side copy was removed, the alias collapsed to
+one binding, and the value did not move. It is not a weight; the next instrument
+is a per-launch ladder on `b23`.
+
+## 9.2 D2 IS D1's CASCADE, AND MY §3 ATTRIBUTION WAS WRONG
+
+`.agents/slop/browser/arenas.bend` dumps the SAME graph in the arena it lives
+in, which is what §3.2 said was needed:
+
+    A_ranged_n=22   STORE:none:INDEX,REDUCE     <- the arithmetic IS there
+    B_sched_n=10    STORE:none:INDEX,PARAM      <- it is GONE
+    C_sched_dump    STORE:none:INDEX,PARAM      <- the SAME reading, same arena
+
+**⇒ SO THE TWO READINGS ARE CONSISTENT AND THE ARITHMETIC IS GENUINELY LOST**,
+and `.agents/slop/browser/d1arity.bend` says why in two rows:
+
+    D1_a_store_before=STORE(INDEX,REDUCE)  store_after_replace=STORE(INDEX,PARAM)
+    D1_b_call_before=CALL(STORE,PARAM)     call_after_replace=CALL(STORE,PARAM)
+
+`replace` (`schedule/__init__.bend:1063`) is **CORRECT** and only its **SUBJECT**
+was wrong. Upstream asserts `k.op is Ops.CALL` before it
+(`schedule/__init__.py:69`); Bend has no `raise`, so the assert became nothing
+and a CALL-shadows rewrite ran on a STORE, replacing its value with a buffer-uop.
+
+**⇒ ⇒ ⇒ SO D2 IS NOT A `kuconv` FIELD BUG AND FIXING `split_kernels` FIXES BOTH.**
+**⇒ AND THE WEAK DTYPES (D3, seven of ten KU nodes `CWeakInt`) ARE STILL A REAL
+SEPARATE DEFECT**, measured in `.agents/slop/browser/kudump.bend`.
+
+## 9.3 IMAGENET TRACES COMPLETELY, AND WEBGPU REFUSES 12 SHADERS
+
+EfficientNet-0: **328 launches, 0 unrendered**. WebGPU then rejects **12 of the
+328**, and every one is a depthwise or grouped conv, and **the unbalance is in
+tinygrad's own WGSL** (counted on the trace, before any page transform). The
+account is `.agents/slop/browser/IMAGENET.md` and the census is
+`imagenet/wgsl-braces.rows`, 328 rows.
+
+## 9.4 THE TRACER WAS STALE AND DEAD, WHICH IS WHY NONE OF THIS RAN
+
+`xd2/trace_forward.py` now raises `AttributeError: 'Buffer' object has no
+attribute 'size'`. **⇒ NOTHING READ IT, SO NOTHING NOTICED** -- the tree's own
+class. The re-point is `.agents/slop/browser/trace_common.py` (322 lines, a NEW
+path, because a script others execute is shared state), and it carries FOUR
+measured migrations, ONE measured bug and ONE measured wall:
+
+| what | why |
+|---|---|
+| `Buffer.size` -> `nbytes` | `device.py:116` sets only `device, nbytes, offset, base` |
+| `Buffer.dtype` -> the CALL's uop | `Buffer` has no `dtype` at all any more |
+| `ProgramInfo.vals` -> `kernel_params` | the re-vendor dropped `vals` (`a6addc2d4`) |
+| `ProgramInfo.function_name` -> `ast.arg.name` | `ProgramInfo` has no such field |
+| **the `vals` drop was a BUG** | it built bind groups with too few entries, so **every kernel taking a scalar did not run** -- 26 of 50 buffers agreed and the rest held `0` or `1.0f` |
+| **`DEV=CPU` before import** | with no `DEV`, darwin defaults to `METAL`, so the traced ast was a METAL kernel and WGSL died with `long decomposition of variable None` -- **and the evidence was two u64 PARAMs named `mtl_cb` and `mtl_enc`** (`ops_metal.py:104`) |
+| **`DMC=1`** | one of 90 training launches cannot coalesce (`gated loads/stores`); `DMC=0` renders 89, `DMC=1` renders 90 |
+| **`f32` -> `w32` snapshots** | the LABEL is an i32 buffer; an `f32` filter meant it was never uploaded and the loss came back `0` |
+
+**⇒ AND WEBGPU REFUSES TWO SHAPES TINYGRAD EMITS, BOTH MEASURED REFUSALS, NEITHER
+A NAMED WALL IN ANY DOC BEFORE TODAY**: a buffer declared `read_write` at several
+bindings (writable aliasing), and a shader/layout pair that must agree about
+which binding is an output. **⇒ AND THE FIRST VERSION OF THE PAGE HAD NO ERROR
+SCOPE**, so a refused dispatch read as a number that never changed -- which is
+the `SKIP IS NOT PASS` failure with a GPU in it.
