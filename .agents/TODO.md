@@ -26618,3 +26618,38 @@ the corpus went STALE because three units edited the substrate, and the instrume
       buffers (the WEIGHT UPDATE, bit-exact); ImageNet compares the 1000 logits
       inside the training step (6.6 M parameters snapshotted twice would take the
       trace to gigabytes). Neither row is asked to be the other.
+
+- [x] **BOTH TRAINING ROWS NOW VERIFY THE **UPDATE**, ON A REAL BACKWARD**
+      (2026-10-31, final). The review was right twice, and the second time it found
+      a defect in the row it had already accepted.
+      - **ImageNet training**: `inet-train-gate` rc=0 -- **8 of 8 SAMPLED
+        PARAMETERS BIT-IDENTICAL** to CPython's `after` (3 164 160 words), **8 of 8
+        MOVED**, and C1 (vs the PRE-STEP weights: 2 370 101 of 3 164 160 words
+        differ), C2 (one bit of `b214[0]`, only that word) and C3 (`b214` vs
+        `b213`'s update must not agree: 409 600 of 409 600) all green.
+      - **⇒ AND FINDING IT EXPOSED THE SAME DEFECT IN MNIST, WHERE IT WAS
+        INVISIBLE**: MEASURED `MNIST grad absmax: 0.0` with the old sequence --
+        **BOTH "training steps" had ZERO gradients**, so the SGD update wrote every
+        parameter back UNCHANGED and the old `47 of 47` was green only because
+        CPython's side was the same no-op (plus BatchNorm's running stats moving).
+      - **THE CAUSE, ONCE, FOR BOTH**: `realize()` DETACHES the parameters from the
+        backward slice (`any(u is params[0].uop for u in lg.uop.toposort())` is
+        `False` after `realize()`), so `loss.gradient(...)` answers `0.0`. **⇒
+        NOTHING IS REALIZED BEFORE `gradient`**, and the realize happens on the
+        gradients.
+      - **⇒ AND THE FIX IS NOT COSMETIC**: MNIST's trace went **90 -> 431 launches**
+        and **32 -> 67 buffers moving**, so this is the first REAL full-model MNIST
+        backward in a browser trace. `train-gate` now reads **67 of 67 TENSOR
+        buffers bit-exact, 324 520 words, 67 of 67 MOVED**.
+      - **⇒ AND ONE HARNESS ARTIFACT IS NAMED WITH ITS NUMBERS**: `b11` differed in
+        1 of 784 words and the value was the LABEL's `7` -- CPython's OWN trace has
+        `in[b11] = 7` at launches 26/27 and `-0.5` at its first bind and at launch
+        41, because the allocator RECYCLES that allocation
+        (`tinygrad/device.py:270`). **⇒ SO ONE NAME SPANS TWO TENSORS**; the
+        comparison is now over buffers some launch WRITES and the 19 excluded
+        input-only names are PRINTED every run.
+      - **THE TWO DENOMINATORS DIFFER ON PURPOSE**: MNIST compares EVERY written
+        tensor buffer (small enough to read back whole); ImageNet compares a NAMED
+        sample (the eight heaviest of 311) because 6.6 M parameters snapshotted
+        twice is gigabytes and differentiating all 311 did not finish inside forty
+        minutes.
