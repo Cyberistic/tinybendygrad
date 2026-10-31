@@ -26502,3 +26502,63 @@ the corpus went STALE because three units edited the substrate, and the instrume
 **no **longer **exists**" **IS **THE **FRESHNESS** — **AND **A **READER **WHO **CONFLATES **THEM **WILL
 **REPORT **A **BROKEN **CORPUS **WHEN **THE **CORPUS **IS **MERELY **OLD**, **OR **REPORT **A **SOUND
 **CORPUS **WHEN **IT **HAS **MOVED.**
+
+- [x] **HOW FAR FROM MNIST AND IMAGENET IN THE BROWSER, MEASURED 2026-10-31.**
+      The full report is `.agents/slop/browser/REPORT.md`; every row in it carries
+      the command that produced it.
+      - **MNIST INFERENCE IN THE BROWSER WORKS TODAY.** `examples/webgpu/mnist` on
+        a real adapter (`apple/metal-3`, Chrome stable `--headless=new`): **17
+        launches, 955.4 ms, logits 10/10 BIT-EXACT** against CPython. Both
+        max-pools and the final Linear are bit-identical elementwise; the four
+        convolutions differ by at most 3.6e-7 ABSOLUTE (f32 accumulation order;
+        the CPU is `-O2` with no `-ffp-contract=off`).
+      - **AND THE PAGE IS A REPLAY OF A CAPTURED CPYTHON TRACE**, so CPython did
+        the scheduling. That distinction IS the gap to a portable pipeline.
+      - **THE GAP IS NOW A 0 -> 1.** `realize.bend` reads `rz_lin_n=0` because the
+        sink's AFTER carries a STORE and a STORE is not a kernel. Rangeifying the
+        sink turns it into an `END`, and `sc_is_kernel` counts `END`:
+        `bridge_lin_raw=0` / `bridge_lin_ranged=1`, and CPython agrees
+        `py_lin_raw=0` / `py_lin_ranged=1`. **THIS IS THE FIRST TIME THE PORT's
+        SCHEDULER HAS PRODUCED A KERNEL ON THE PORT's OWN PROGRAM.**
+      - **AND THE WHOLE CHAIN COMPOSES**: schedule -> linearize -> kuconv ->
+        render, `chain_linear_n=10 chain_ku_n=10 chain_c_nbytes=198`, and it
+        renders REAL C with real RANGE loops.
+      - **FOUR NAMED DEFECTS REMAIN** (D1 `split_kernels` is a stub at
+        `rangeify.bend:811`; D2 the RANGE's CONST src; D3 weak dtypes not lowered;
+        D4 follows). **D3 IS MEASURED EXACTLY**: `kudump.bend` reads **seven of ten
+        KU nodes as `CWeakInt`** -- every CONST and both RANGEs -- where CPython
+        renders `int`.
+      - **AND `linearize` DROPS NOTHING** (`topo_n=10`, `linear_n=10`), so that
+        candidate is closed by a count.
+      - **ONE INCONSISTENCY IS NAMED AND NOT RESOLVED**: `k_srcs=INDEX,PARAM`
+        (a COPY-store) against `rr_dump`'s `STORE(INDEX,REDUCE)`. `SCH.schedule`
+        consumes the arena and returns a grown one, so the two readings may be of
+        two different graphs -- and if so my own comparison paired the wrong two.
+        **A FINGERPRINT COMPARISON ACROSS TWO ARENAS IS NOT A COMPARISON.** The
+        instrument that settles it is one row: `rr_dump` IN THE SCHEDULER's ARENA.
+      - **AND ONE FACT HOLDS UNDER EITHER READING: TWO PARAMs, WHERE CPYTHON HAS
+        THREE.** `data2_15` is absent from the port's kernel.
+      - **TRAINING**: the wall is one grep -- `compute_gradient` and `tn_backward`
+        exist and nothing outside `tensor.bend` calls them. But `mixin/gradient.bend`
+        went **0/494 -> 174/495** this session with all 32 rules reached, and
+        `gral` found a REAL defect on its first run.
+      - **IMAGENET**: the model is a STUB (all 15 files), the loader is DONE, and
+        the browser page is UPSTREAM's and imports `../../net.js`, WHICH DOES NOT
+        EXIST.
+- [x] **THE E2E GATE IS GREEN ON ALL SEVEN STAGES** (`24474567c`, `3d904cb6f`):
+      `--- verdicts: 0 failed, 0 skipped ---`. Four stages were red and THREE of
+      the four causes were STALE FIXTURE PATHS rather than broken code: `xd2/`
+      never moved with the fixture (and `gates/edge-fixture-census.py` CANNOT SEE
+      IT, because `"./xd2/cdp.mjs"` is a RELATIVE IMPORT SPECIFIER and the census
+      walks PATH-SHAPED TOKENS); `e2e_mm_run.mjs` created `OUT` and never
+      `BUNDLE`; `opsbend-milestone.sh` lost its exec bit AND `ops_bend.bend` kept
+      writing `PACKET.out` into the PRUNED tree. The two negative controls that
+      were GREEN were green because they planted text in `cstyle.bend` while the
+      row they were meant to break is read from the TRACKED
+      `gates/cstyle-live.rows` -- **A PLANT THAT CANNOT REACH ITS SUBJECT IS NOT A
+      CATCH.**
+- [x] **THE RANGEIFY DRIVER COMPILES** (`24474567c`): `rr_run_rangeify` read `sink`
+      three times as a plain parameter and the compiler said
+      `expected : sink / observed : sink (consumed more than once)`. Fixed with the
+      `+sk = sink` binder `rr_range_map` already used. `cmp.py` reads
+      `VERDICT PASS`.
