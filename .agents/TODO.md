@@ -26728,3 +26728,33 @@ the corpus is GREEN and STALE AGAIN, and the DOSE is 14 substrate files THREE OT
 - [ ] WHAT IS LEFT IS SPREAD: 31 shared-record copies per step of 4.3 fields (`S.Dt`, `Buf`, `Elem`
       projections) plus 60 `term_drop`s; `List.set` is now 2% of self-time. Needs mutable state
       (Array threaded through the step) or dozens of projection removals. Gap now 2.45x / 4.97x.
+
+the SCHEDULER's deferral is THREE WALLS, and the header had named a wall that was not one
+
+  - [x] **THE **SCHEDULER's **DEFERRAL **IS **NOW **MEASURED **AS **THREE **WALLS **IN **THREE **FILES**
+        (2026-10-31, `b38501184`, `c53f4dd76`), **AND **THE **HEADER **HAD **BEEN **WRONG **TWICE.**
+        **⇒ AND **OF **THE **23 **NAMES **IN **`schedule/__init__.py:82-301`, **10 **ARE **PORTED **AND **13
+        **ARE **NOT.**  **⇒ AND **THE **THREE **WALLS:**
+        **A. **STORAGE** — **NO **`type Buffer is Data` **ANYWHERE**, **SO **`new_buffer`**, **`max_numel`**,
+        **`on_disk`**, **`contiguous_view`** **AND **`param_like`** **ARE **COMMENT-ONLY** (**MEASURED, **ALL
+        **FIVE**), **WHICH **BLOCKS **`create_new_buffer`**, **`contiguous_mops_to_view`** **AND
+        **`replace_input_buffer`.**
+        **B. **`bottom_up`** — **AND **THE **WALL **IS **NOT **A **BOOL, **IT **IS **THE **SHAPE **OF **THE
+        **DRIVER:** **UPSTREAM's **`unified_rewrite` **IS **ONE **MEMOISED **STACK **TRAVERSAL **WITH **TWO
+        **PER-NODE **STAGES** (**stage **0 **fires **`bpm` **to **a **fixpoint **BEFORE **DESCENDING**, **stage
+        **1 **fires **`pm` **AFTER**), **AND **THE **PORT's **IS **AN **OUTER **FIXPOINT **OVER **WHOLE
+        **PASSES** (`FIXPOINT_PASSES`) — **SO **THERE **IS **NO **STAGE **0 **FOR **A **`bpm` **TO **FIRE
+        **IN**, **AND **THE **FIX **IS **A **DRIVER **REWRITE **THAT **CHANGES **THE **MODULE **EVERY **PASS
+        **RUNS **ON.**
+        **C. **`variables()`** — **NO **DEF** (**`is_variable` **TOO**; **`substitute` **DOES **EXIST**), **WHICH
+        **BLOCKS **`resolve_linear_call`, **`transform_to_call` **AND **`create_linear_with_vars` — **THE
+        **ENTRY **POINTS.**
+        **⇒ AND **⇒ AND **THE **ORDER **IS **THEREFORE **NOT **"SCHEDULER **NEXT":** **A **IS **UPSTREAM **OF
+        **C **IS **UPSTREAM **OF **THE **ENTRY **POINTS**, **AND **B **IS **ORTHOGONAL** — **THE **STORAGE
+        **LAYER **IS **THE **NEXT **THING, **NOT **THIS **FILE.**
+        **⇒ AND **⇒ AND **AND **THE **CLASS **FROM **`B`: **THERE **IS **A **SECOND **`graph_rewrite` **THAT
+        ***DOES* **TAKE **`bottom_up`** (`codegen/decomp/dtype.bend:2078`) **AND **ITS **BODY **IS
+        **`graph_rewrite.wall(x)`**, **WHICH **ANSWERS **`None{}`.**  **⇒ AND **A **PARAMETER **A **DEF
+        **ACCEPTS **AND **DISCARDS **IS **WORSE **THAN **ONE **IT **OMITS: **IT **READS **AS **THOUGH **THE
+        **CAPABILITY **IS **THERE**, **AND **A **SEARCH **FOR **"WHO **TAKES **`bottom_up`"** **FINDS **IT
+        **AND **STOPS.**  **MEASURED: **NO **NON-STUB **DEF **IN **THE **PORT **TAKES **IT.**
