@@ -143,7 +143,23 @@ async function main() {
   const want = {};
   for (const [n, b64] of Object.entries(lastAfter)) want[n] = b64ToU32(b64);
   const rows = diffWords(res.words, want);
+  // **⇒ AND ONLY BUFFERS SOME LAUNCH **WRITES** ARE COMPARED, WHICH IS A
+  // CORRECTION WITH A MEASURED CAUSE.** MEASURED: `b11` differed in 1 of 784 words
+  // and the value was the LABEL's `7` where CPython's was `-0.5` -- and
+  // **CPython's OWN trace has `in[b11] = 7` at launches 26 and 27 and `-0.5` at its
+  // first bind and at launch 41**, because the tinygrad allocator RECYCLES that
+  // allocation (`tinygrad/device.py:270`, which `trace_common.py` already
+  // records). **⇒ SO ONE NAME SPANS TWO DIFFERENT TENSORS** and the row compared
+  // snapshots of different logical buffers.
+  // **⇒ AND AN INPUT-ONLY BUFFER IS COVERED ANYWAY**: it is uploaded from CPython's
+  // own bytes and every buffer DERIVED from it is in the comparison, so excluding
+  // it removes an artifact and not a check. The count is printed.
+  const writtenNames = new Set();
+  for (const k of net.kernels) for (const i of (k.outs || [])) writtenNames.add(k.bufs[i]);
   const allRows = rows.filter((r) => !r.missing && r.len > 0);
+  const inputOnly = allRows.filter((r) => !writtenNames.has(r.n));
+  P(`input-only buffers excluded (never written by any launch, and the allocator` +
+    ` recycles their storage): ${inputOnly.length} -> ${inputOnly.slice(0, 6).map((r) => r.n).join(",")}`);
   // **⇒ AND THE CLAIM IS ABOUT **TENSORS**, WHICH IS WHAT "TRAIN IT" MEANS: the
   // 34 buffers whose contents moved are the weights, the moment buffers and the
   // gradients. **⇒ AND ONE-WORD f32 BUFFERS ARE **SCALAR READOUTS** -- the loss is
@@ -151,8 +167,8 @@ async function main() {
   // the tensor row**, because a 1-word buffer is not a weight and calling the
   // step "bit-exact" over it would be a claim about the wrong thing.
   const SCALAR_WORDS = 1;
-  const compared = allRows.filter((r) => r.len > SCALAR_WORDS);
-  const scalars = allRows.filter((r) => r.len <= SCALAR_WORDS);
+  const compared = allRows.filter((r) => r.len > SCALAR_WORDS && writtenNames.has(r.n));
+  const scalars = allRows.filter((r) => r.len <= SCALAR_WORDS && writtenNames.has(r.n));
   const exact = compared.filter((r) => r.ndiff === 0);
   const totalWords = compared.reduce((a, r) => a + r.len, 0);
   const diffWordsN = compared.reduce((a, r) => a + r.ndiff, 0);
