@@ -447,3 +447,32 @@ walking 3 072 cells, and `a[i] <- v` rewrites the slot in place.
 defs and 8 record constructions, and the only safety net is
 `gates/ops_python_exec-gate.py` (153 fixtures, 0 divergences). **⇒ THE DIAGNOSIS IS
 NOW SETTLED AND THE WORK IS NOT**, and stage 3's 55.6x stands until it is.
+
+## 7.6 WHAT THE COUNTER CANNOT EXPLAIN — AND WHERE I STOP
+
+**`heap_alloc` IS 6 011 075 AND `term_drop` IS 2 412 939 949.** That is **401
+`term_drop` CALLS PER ALLOCATION**, and a correct refcount frees each allocation
+exactly once. So the runtime is calling `term_drop` ~400x more often than the heap
+says it should, which is the shape of a QUADRATIC in the RC accounting and not of
+a hot loop.
+
+**⇒ AND §7.3's `steps x arena` ARITHMETIC, WHILE IT LANDS ON 2.41e9 EXACTLY, IS
+THEREFORE NOT PROOF** -- two independent quantities agreeing to three digits is
+what coincidence looks like when both are built from 3 072. **THE FALSIFIABLE
+STATEMENT THE COUNT SUPPORTS IS ONLY THIS: `term_drop` IS CALLED 401 TIMES PER
+ALLOCATION, WHICH NO CORRECT REFCOUNT SHOULD DO.**
+
+**⇒ AND ONE MORE CHANGE WAS TRIED AND DID NOT MOVE IT**: `Prog.at`/`vs1`/`ms1`/
+`mk1`/`live.at` took `p` as a REUSABLE (`+`) parameter, and a hypothesis that this
+forced a clone on every field bind was worth one word -- **MEASURED 29 683 ->
+29 973 ms, i.e. NOTHING**, and the tight version is kept only because it is
+semantically correct (each reads its 18 fields exactly once) and the census still
+reads 153 fixtures / 0 divergences.
+
+**⇒ SO NINE ATTEMPTS HAVE PRODUCED 3.7%, AND THE LAST FOUR MEASUREMENTS SAY THE
+COST IS A REFCOUNT ACCOUNTING QUADRATIC INSIDE BEND'S RUNTIME** -- `term_drop`
+called 401x per allocation, on a program whose parse is 0.01 s and whose
+interpreter dispatch is 0.3% of samples. **THAT IS NOT SOMETHING I CAN FIX FROM
+`ops_python.bend`**: it is in the compiler's own runtime (`term_drop`/`span_fade`/
+`rfc_bump` in the emitted C), and the emitted C is regenerated from the compiler on
+every build.

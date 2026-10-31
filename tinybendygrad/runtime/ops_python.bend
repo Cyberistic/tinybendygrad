@@ -1694,24 +1694,24 @@ def Prog.of(+args: Args, +ld: Load) -> Prog:
 # 17 record traversals and 17 teardowns instead of 1. **=> ONE `match` BINDS ALL
 # SEVENTEEN ONCE**, and every field below is used exactly once, which is what a
 # plain binding requires.
-def Prog.at(+p: Prog, +pc: U32) -> Prog:
+def Prog.at(p: Prog, +pc: U32) -> Prog:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, _pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
 
 def Prog.next(+p: Prog) -> Prog: Prog.at(p, U32.add(Prog.pc(p), 1))
 
-def Prog.vs1(+p: Prog, vs: List<&2, Elem>) -> Prog:
+def Prog.vs1(p: Prog, vs: List<&2, Elem>) -> Prog:
   match p:
     case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
 
-def Prog.ms1(+p: Prog, ms: List<&2, U32>) -> Prog:
+def Prog.ms1(p: Prog, ms: List<&2, U32>) -> Prog:
   match p:
     case Prog{us, vs, v0, _ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
 
-def Prog.mk1(+p: Prog, mk: List<&2, Bool>) -> Prog:
+def Prog.mk1(p: Prog, mk: List<&2, Bool>) -> Prog:
   match p:
     case Prog{us, vs, v0, ms, fs, _mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
@@ -2007,7 +2007,7 @@ def Prog.cast(+p: Prog, +u: Uop) -> Prog: Prog.cast.at(p, u, Uop.dt(u), Prog.dt(
 
 def Prog.bitcast(+p: Prog, +u: Uop) -> Prog: Prog.cast(p, u)
 
-def Prog.live.at(+p: Prog, +oob: Bool) -> Prog:
+def Prog.live.at(p: Prog, +oob: Bool) -> Prog:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead}
