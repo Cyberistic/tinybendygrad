@@ -1738,3 +1738,51 @@ finished `Lidx0` in the generator would have moved a renderer rule into the fixt
 **The timings (0.1-0.2 ms) are at the driver's floor, so "matches speed" rests on IDENTICAL TEXT
 and not on the numbers.** That is the honest reading, and it is now a claim about seven kernels
 of five shapes rather than one.
+
+---
+
+# 28. BOTH CORPORA SCALED OUT OF THE FLOOR, AND A FOURTH HARNESS DEFECT FOUND ON THE WAY
+
+## 28.1 WEBGPU: A 512x512 NAIVE MATMUL, 11.1 ms PER LAUNCH
+
+`NOOPT=1` turns a matmul into a loop nest -- RANGE, BUFFER, AFTER, LOAD, STORE and ALU at once --
+so the same corpus exercises the arms §27 added, and 512^3 MACs is ~100x the elementwise floor.
+
+    # program|kernel|identical|bytes|python_ms|bend_ms|rel_diff|ok
+    mm512 |r_512_512_512 |yes|833|11.1|11.1|0.00e+0|yes
+    mm256 |r_256_256_256 |yes|?  | 1.7| 1.7|0.00e+0|yes
+    ew16/ew32/ew64/odd/relu32/cst32/red32 |yes|592-656|0.1-0.4|0.1-0.5|<=1.6e-7|yes
+    # kernels=9 all_ok=true
+
+**MM512 IS 11.1 ms ON BOTH SIDES** -- two orders of magnitude above the floor, so the number can
+discriminate, and it agrees to the reported precision because the bytes are the same.
+
+## 28.2 METAL: A 4096x4096 MATMUL, 38.5 ms -- AND THE OLD NUMBERS WERE MEASURING NOTHING
+
+    program_ms        mm16=1.192  mm32=1.649  ew64=1.235  reduce=0.936  mm2048=5.516  mm4096=38.469
+    rel|diff|vsf64    mm16=1.16e-07  mm32=2.10e-07  ew64=8.44e-08  reduce=7.69e-08
+                      mm2048=2.32e-06  mm4096=2.78e-06
+    kernels=6, identical=6
+
+**⇒ AND THE FOUR EARLIER NUMBERS WERE WRONG IN A WAY I HAD NOT NOTICED**: the harness called
+`out.realize()` on a tensor that was ALREADY REALIZED, which is a NO-OP. A 4096x4096 matmul
+"ran" in 0.03 ms. MEASURED, before the fix: `mm2048=0.02mm4096=0.03`. After it: 5.52 and 38.47.
+Each iteration now RE-EXECUTES the op and then synchronises.
+
+**⇒ THAT IS THE FOURTH TIME THIS SESSION HAS CAUGHT A NUMBER THAT WAS ABOUT THE HARNESS AND NOT
+THE SUBJECT** (after the fuel burn's 4 000 000 steps, stage 2's unsynchronised 0.01 ms, and
+stage 1's sequential per-side loop). Every one of them was found by pushing the measurement out
+of a range where the defect was invisible.
+
+## 28.3 WHAT "PER-SIDE" MEANS FOR STAGE 2
+
+Metal has ONE text -- the port's MSL is byte-identical on all six kernels -- so there is no
+second program to time. The per-PROGRAM ms above IS the per-side ms, and the identity is what
+makes that true. On WebGPU there ARE two sides and they are timed separately (§28.1).
+
+## 28.4 THE CORPORA NOW
+
+| stage | programs | above the floor | identical |
+|---|---|---|---|
+| 1 (WebGPU) | 9 | mm512 = 11.1 ms; mm256 = 1.7 ms | 9 of 9 |
+| 2 (Metal) | 6 | mm4096 = 38.5 ms; mm2048 = 5.5 ms | 6 of 6 |

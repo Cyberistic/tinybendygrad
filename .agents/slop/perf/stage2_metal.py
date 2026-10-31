@@ -63,28 +63,43 @@ def main() -> int:
     a, b, c = (rng.standard_normal((32, 32)) for _ in range(3))
     with Context(DEV="METAL"):
       ta, tb, tc = T(a).realize(), T(b).realize(), T(c).realize()
-      return ((ta @ tb) @ tc).realize(), (a @ b) @ c
+      return (lambda: ((ta @ tb) @ tc).realize()), (a @ b) @ c
 
   def p_mm16(rng):
     a, b = (rng.standard_normal((16, 16)) for _ in range(2))
     with Context(DEV="METAL"):
       ta, tb = T(a).realize(), T(b).realize()
-      return (ta @ tb).realize(), a @ b
+      return (lambda: (ta @ tb).realize()), a @ b
 
   def p_ew(rng):
     a, b = (rng.standard_normal((64, 64)) for _ in range(2))
     with Context(DEV="METAL"):
       ta, tb = T(a).realize(), T(b).realize()
       # elementwise chain: ALU only, no WMMA, and still vectorises
-      return ((ta * tb + ta).relu() * 2.0 - tb).realize(), np.maximum(a * b + a, 0) * 2.0 - b
+      return (lambda: ((ta * tb + ta).relu() * 2.0 - tb).realize()), np.maximum(a * b + a, 0) * 2.0 - b
 
   def p_reduce(rng):
     a = rng.standard_normal((64, 64))
     with Context(DEV="METAL"):
       ta = T(a).realize()
-      return ta.sum(axis=1).realize(), a.sum(axis=1)
+      return (lambda: ta.sum(axis=1).realize()), a.sum(axis=1)
 
-  PROGRAMS = [("mm32", p_mm32), ("mm16", p_mm16), ("ew64", p_ew), ("reduce", p_reduce)]
+  def p_mm2048(rng):
+    # **OUT OF THE MEASUREMENT FLOOR.** The four small programs run in 0.015-0.136 ms, where a
+    # number cannot discriminate; 2048^3 MACs with real tensor cores is ~8.6 GFLOP.
+    a, b = (rng.standard_normal((2048, 2048)) for _ in range(2))
+    with Context(DEV="METAL"):
+      ta, tb = T(a).realize(), T(b).realize()
+      return (lambda: (ta @ tb).realize()), a @ b
+
+  def p_mm4096(rng):
+    a, b = (rng.standard_normal((4096, 4096)) for _ in range(2))
+    with Context(DEV="METAL"):
+      ta, tb = T(a).realize(), T(b).realize()
+      return (lambda: (ta @ tb).realize()), a @ b
+
+  PROGRAMS = [("mm16", p_mm16), ("mm32", p_mm32), ("ew64", p_ew), ("reduce", p_reduce),
+              ("mm2048", p_mm2048), ("mm4096", p_mm4096)]
 
   captured: list[tuple[str, str, list[str]]] = []
   orig = MetalRenderer.render
@@ -101,20 +116,22 @@ def main() -> int:
   MetalRenderer.render = hooked
   rng = np.random.default_rng(0)
   for pname, build in PROGRAMS:
-    out, want = build(rng)
+    run, want = build(rng)
     # **A LAUNCH MUST BE SYNCHRONISED OR THE NUMBER IS SUBMIT LATENCY.** MEASURED: without the
     # sync the four programs read 0.01 / 0.01 / 0.00 / 0.00 ms, which is the cost of handing
     # work to a queue and not the cost of doing it -- Metal is asynchronous and `realize()`
     # returns before the GPU is done. A "timed" comparison over those numbers would have been
     # the same class of defect this report keeps finding.
+    out = run()                       # one full execution for warmup + the reference check
     samples = []
     for _ in range(N):
       st = time.perf_counter()
-      out.realize()
+      out = run()                     # RE-EXECUTES: a realized tensor would be a no-op
       Device["METAL"].synchronize()
       samples.append((time.perf_counter() - st) * 1e3)
     per_prog[pname] = min(samples)
-    ref_err[pname] = float(np.max(np.abs(np.asarray(out.numpy(), dtype=np.float64) - want)))
+    ref_err[pname] = float(np.max(np.abs(np.asarray(out.numpy(), dtype=np.float64) - want))
+                           / max(1.0, float(np.max(np.abs(want)))))
   MetalRenderer.render = orig
 
   # 2. the port renders the same uop lists

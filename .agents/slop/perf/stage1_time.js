@@ -76,7 +76,13 @@ const script = `
   const read = dev.createBuffer({ size: K.nbytes[0], usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
 
   const wantA = new Float32Array(b64(K.want_a).buffer), wantB = new Float32Array(b64(K.want_b).buffer);
-  const diff = (got, want) => { let w = 0; for (let i = 0; i < got.length; i++) w = Math.max(w, Math.abs(got[i] - want[i])); return w; };
+  // RELATIVE: a 512x512 fp32 matmul's absolute error is ~1e-3 and that is the arithmetic, not a
+  // defect -- judging it at 1e-5 absolute would fail every large kernel.
+  const diff = (got, want) => {
+    let w = 0, m = 0;
+    for (let i = 0; i < got.length; i++) { w = Math.max(w, Math.abs(got[i] - want[i])); m = Math.max(m, Math.abs(want[i])); }
+    return m > 0 ? w / m : w;
+  };
 
   // BOTH PIPELINES FIRST, THEN INTERLEAVED TIMING. The same 600 bytes measured 0.2 ms when it
   // ran first and 1.1 ms when it ran second, so a sequential per-side loop measures the ORDER

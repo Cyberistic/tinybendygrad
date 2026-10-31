@@ -1,10 +1,12 @@
 # stage2-metal.rows -- .agents/slop/perf/stage2_metal.py
-# DEV=METAL, JIT=0, min of 2 SYNCHRONISED launches after 3 warmups per program
-# program_ms mm32=0.136 mm16=0.032 ew64=0.018 reduce=0.015
-# program_max|diff_vs_float64_cpu| mm32=2.06e-05 mm16=2.11e-06 ew64=1.29e-06 reduce=1.71e-06
-# kernels=4
+# DEV=METAL, JIT=0, min of 3 SYNCHRONISED launches after 3 warmups per program
+# program_ms mm16=1.192 mm32=1.649 ew64=1.235 reduce=0.936 mm2048=5.516 mm4096=38.469
+# program_max|diff_vs_float64_cpu| mm16=1.16e-07 mm32=2.10e-07 ew64=8.44e-08 reduce=7.69e-08 mm2048=2.32e-06 mm4096=2.78e-06
+# kernels=6
 # kernel|sha_upstream|sha_port|identical|bytes|bend_rc
-r_32_2_4_4_4|388b424179b5623e|388b424179b5623e|yes|6012|0
 r_32_2_2_2_2|c9e78c67c6bf3dae|c9e78c67c6bf3dae|yes|2516|0
+r_32_2_4_4_4|388b424179b5623e|388b424179b5623e|yes|6012|0
 E_32_32_4|6fce4d2e8ee5f8b6|6fce4d2e8ee5f8b6|yes|1104|0
 r_64_16_4|0de20798557f292d|0de20798557f292d|yes|965|0
+r_64_16_4_32_2_4_4_256|0d41c7d7f0861312|0d41c7d7f0861312|yes|6322|0
+r_128_32_4_32_2_4_4_512|e389443ba2845955|e389443ba2845955|yes|6357|0

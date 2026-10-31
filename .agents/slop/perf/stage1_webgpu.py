@@ -56,6 +56,16 @@ def build(prog: str, np, Tensor, Context):
             out = (ta * tb).maximum(2.5).realize()
         w = np.maximum(a * b, np.float32(2.5))
         return out, [a, b], w, w, "max(a*b,2.5)", "max(b*a,2.5)"
+    if prog in ("mm256", "mm512"):
+        # A NAIVE MATMUL: `NOOPT=1` means no tensor cores, so the emitted kernel is a loop nest --
+        # RANGE, BUFFER, AFTER, LOAD, STORE and ALU all at once -- and 512^3 MACs is enough work
+        # for a single launch to clear the 0.1 ms measurement floor by two orders of magnitude.
+        n = {"mm256": 256, "mm512": 512}[prog]
+        a, b = rng.standard_normal((n, n)).astype(np.float32), rng.standard_normal((n, n)).astype(np.float32)
+        with Context(DEV="METAL", NOOPT=1):
+            ta, tb = Tensor(a).realize(), Tensor(b).realize()
+            out = (ta @ tb).realize()
+        return out, [a, b], a @ b, None, "a@b", "-"
     if prog == "red32":
         a = rng.standard_normal((64, 64)).astype(np.float32)
         with Context(DEV="METAL", NOOPT=1):
@@ -145,7 +155,9 @@ def main() -> int:
         "sha_bend": hashlib.sha256(port.encode()).hexdigest()[:16], "bytes": len(wgsl),
         "identical": same, "cause": cause, "bend_rc": r.returncode,
         "bufs": bufs, "nbytes": [x.nbytes for x in [o, *ins]],
-        "dispatch": [int(np.prod(o.shape)) if o.shape else 1, 1, 1], "workgroup_size": [1, 1, 1],
+        # THE GRID IS THE OUTPUT's SHAPE, not its element count: a 512x512 matmul dispatches
+        # (512,512,1), and the flat 262144 would exceed the 65535-per-dimension cap.
+        "dispatch": [*(int(x) for x in o.shape[:3]), 1, 1, 1][:3], "workgroup_size": [1, 1, 1],
         "want_a": base64.b64encode(np.ascontiguousarray(want_a, dtype=np.float32).tobytes()).decode(),
         "want_b": base64.b64encode(np.ascontiguousarray(
             want_a if want_b is None else want_b, dtype=np.float32).tobytes()).decode(),
