@@ -26946,3 +26946,42 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       SPECIAL (cstyle.py:258); (e) the converter emits KASpecial. `code_for_workitem.g` already
       exists and is right. NOT STARTED: it changes how the port NAMES a uop in its only renderer,
       and the cstyle gate's rows contain no SPECIAL, so the net is this one-kernel harness.
+
+  - [x] **WALL **C **HAS **A **CONSUMER** (2026-10-31, `13170627b`, `957d38c44`):
+        `resolve_linear_call`'s **`binds`** (`__init__.py:104-106`) is ported as
+        `sc_linear_binds` / `sc_linear_binds_outer`, and **`is_variable`/`unbound`
+        now have a caller** instead of being two gated defs nothing used.
+        **⇒ AND **FOUR **TEXT **PLANTS **EACH **MOVE **A **DIFFERENT **TERM**
+        (`uopvars-gate` = **27 rows, 2 lanes, rc=0** at rest):
+        **`unbound() if is_variable else x` -> `x`** moves **2** (`lb_k1_moved`,
+        `lb_k1_unbound`); **dropping the ADDRSPACE test** moves **1** (`lb_gone`);
+        **requiring a VARIABLE in the filter** moves **1** (`lb_k2_self`);
+        **dropping the OUTER seed** moves **1** (`lb_outer_keep`).
+        **⇒ AND **A **FIFTH **PLANT **WAS **`REFUSED` (rc=3), **NOT **RED, **AND **THAT
+        **IS **RECORDED **AS **A **DIFFERENT **CLASS:** testing `vmin_vmax(pa)` in
+        the addrspace arm consumes `pa` twice, the DRIVER DOES NOT COMPILE, and a
+        mutation that does not compile measures nothing.
+        **⇒ AND **THE **FILTER **AND **THE **VALUE **ARE **TWO **QUESTIONS:** the
+        filter is `op is PARAM and addrspace is ALU` (`vmin_vmax` is NOT in it, so a
+        RANGE-LESS ALU PARAM is a bind whose value is itself); the value strips only
+        a VARIABLE.  And `{**outer, **inner}` is a SEED and not a union: inner
+        overrides, an outer-only slot survives.
+        **⇒ AND **THE **FIXTURE **CARRIES **ITS **OWN **INDICES** (`LBFx{f,a0,a1,a2,a3}`)
+        because the first draft asserted `binds[0] == 1` and the arena gave **2** --
+        a row about the ALLOCATOR, not about `binds`.
+
+  - [ ] **THE **SCHEDULER's **REMAINING **PIECE **IS **`substitute`, **AND **ITS
+        **HOME **IS **OCCUPIED.**  `apply_binds` arm 3 (`__init__.py:107-111`) ends
+        `s.substitute(subs, ...)`, and upstream's `substitute` IS
+        `graph_rewrite(self, _substitute, dvars, bottom_up=True)` -- so it is
+        **wall B plus a `UOp` method**, and `UOp.substitute` belongs in
+        `tinybendygrad/uop/ops.bend`.  **MEASURED 2026-10-31: `uop/ops.bend` CARRIES
+        A ONE-LINE, COMMENT-ONLY, UNCOMMITTED DIFF** (`mixin/creation.bend:408` ->
+        `:429`, a stale citation fix from 2026-10-30 22:34Z).  **I DID NOT TAKE IT:
+        a path another unit holds is a path I do not take, even when its diff is a
+        comment**, and the alternative -- a scheduler-local `sc_substitute` -- would
+        duplicate a `UOp` method in the wrong layer for a wall it does not remove.
+        **⇒ AND **THE **PORT **ALREADY **HAS **THE **MACHINERY **TO **BUILD **IT:
+        `codegen/__init__.bend`'s `walk_rewrite`/`wr.rebuild`/`wr.go` rebuild a graph
+        from a `repl` map, and `substitute` is "rebuild with a pre-seeded `repl`".
+        **SO **THE **NEXT **UNIT **STARTS **WHEN **THAT **ONE **LINE **LANDS.**
