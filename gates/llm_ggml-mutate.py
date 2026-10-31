@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 PORT = "tinybendygrad/llm/ggml.bend"
 DRIVER = "gates/llm_ggml.bend"
+GEN = "tinybendygrad/runtime/autogen/ggml_common_p1.bend"
 BEND = ROOT / "bin" / "bend"
 LANE = HERE / "llm_ggml.bend"
 GATE = HERE / "llm_ggml-gate.py"
@@ -52,12 +53,18 @@ MUTATIONS = (
   ("iqs_parity", "the sign byte's top bit is set on EVEN parity", PORT,
    "Bool.pick(U32, pc.odd(i), U32.or(i, 128), i)", "Bool.pick(U32, pc.odd(i), i, U32.or(i, 128))"),
   ("grid_word", "the grid byte table reads word 0 twice", PORT,
-   "iq.gbyte(byte(g, r), byte(g, U32.add(r, 1)), U32.mod(i, 8))",
-   "iq.gbyte(byte(g, r), byte(g, r), U32.mod(i, 8))"),
+   "iq.gbyte(byte(g, b), byte(g, U32.add(b, U32.sub(wpe, 1))), c)",
+   "iq.gbyte(byte(g, b), byte(g, b), c)"),
   ("typ_ladder", "`ggml_type` 8 answers the Q4_0 tag (a transcription slip)", PORT,
    "    case 8: Some{TQ8_0{}}", "    case 8: Some{TQ4_0{}}"),
-  ("lut_typo", "one `kvalues_iq4nl` entry is wrong in the driver", DRIVER,
-   "[4294967169, 4294967192, 4294967213,", "[4294967192, 4294967169, 4294967213,"),
+  ("iq2xs_scale16", "IQ2_XS's scale is read per THIRTY-TWO elements, not sixteen", PORT,
+   "      +s = U32.div(i, 16)\n      +gi = U32.div(i, 8)", "      +s = U32.div(i, 32)\n      +gi = U32.add(U32.mul(s, 2), U32.div(U32.mod(i, 32), 8))"),
+  ("q1s_shift", "IQ1_S's three high bits are taken at stride ONE instead of THREE", PORT,
+   "+j = U32.mul(U32.mod(i, 4), 3)", "+j = U32.mod(i, 4)"),
+  # A WRONG GENERATED WORD. The pin in `gates/llm_ggml-gate.py` is what turns this into a
+  # REFUSAL before either lane runs; this entry measures what the LANES would have seen.
+  ("gen_word", "one word of the generated `iq3xxs_grid` is off by one", GEN,
+   "[67372036,", "[67372037,"),
 )
 
 
@@ -71,7 +78,7 @@ def main():
     if len(base) != ROWS:
         print(f"the unmutated lane emitted {len(base)} rows, not {ROWS}: {r.stderr[-400:]}")
         return 1
-    source = {p: (ROOT / p).read_text() for p in (PORT, DRIVER)}
+    source = {p: (ROOT / p).read_text() for p in (PORT, DRIVER, GEN)}
     out, holes = [], 0
     for name, why, path, old, new in MUTATIONS:
         if old not in source[path]:
@@ -93,15 +100,19 @@ def main():
         TABLE.write_text("mutation\tverdict\trows_moved\twhy\n" + "\n".join(out) + "\n")
     print(f"-- {len(MUTATIONS)} mutations, {len(MUTATIONS) - holes} moved at least one row")
 
-    name, _, path, old, new = MUTATIONS[1]
-    (ROOT / path).write_text(source[path].replace(old, new, 1))
-    try:
-        g = subprocess.run([str(PY), str(GATE)], capture_output=True, text=True)
-    finally:
-        (ROOT / path).write_text(source[path])
-    said = [l.strip()[:220] for l in g.stderr.splitlines() if "DISAGREE" in l]
-    print(f"-- gate on the {name} mutation: rc={g.returncode} {said[:1]}")
-    return 1 if holes or g.returncode == 0 else 0
+    for i, why in ((1, "a PORT mutation"), (len(MUTATIONS) - 1, "a GENERATED-WORD mutation")):
+        name, _, path, old, new = MUTATIONS[i]
+        (ROOT / path).write_text(source[path].replace(old, new, 1))
+        try:
+            g = subprocess.run([str(PY), str(GATE)], capture_output=True, text=True)
+        finally:
+            (ROOT / path).write_text(source[path])
+        said = [l.strip()[:200] for l in g.stderr.splitlines()
+                if "DISAGREE" in l or "REFUSED" in l]
+        print(f"-- gate on the {name} mutation ({why}): rc={g.returncode} {said[:1]}")
+        bad_gate = g.returncode in (0,)
+        holes += 1 if bad_gate else 0
+    return 1 if holes else 0
 
 
 if __name__ == "__main__":

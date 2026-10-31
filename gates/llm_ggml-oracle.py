@@ -41,6 +41,20 @@ from tinygrad.llm import gguf as U
 from tinygrad.runtime.autogen import ggml_common as GC
 
 
+def fnv(ws):
+    """FNV-1a 32, the same fold `gates/llm_ggml.bend`'s `hfnv` runs over the same words."""
+    h = 2166136261
+    for w in ws:
+        h = ((h ^ (w & 0xFFFFFFFF)) * 16777619) & 0xFFFFFFFF
+    return h
+
+
+def grow(name, ws):
+    return (f"g_{name}={len(ws)}w:{fnv(ws)}:"
+            + ",".join(str(w) for w in ws[:4]) + ":"
+            + ",".join(str(w) for w in ws[-4:]))
+
+
 def bits(v):
     return str(struct.unpack("<I", struct.pack("<f", float(v)))[0])
 
@@ -87,8 +101,12 @@ def main():
     rows.append("iqs=" + ",".join(str(int(v)) for v in flatten(U._ggml_iq_signs(None).tolist())))
     rows.append("grid=" + ",".join(str(int(v)) for v in
                                    flatten(U._ggml_iq_grid(None, entries, (4, 8)).tolist())))
-    rows.append("lut=" + ",".join(str(v & 0xFFFFFFFF) for v in FX.KVALUES))
+    rows.append("lut=" + ",".join(str(v & 0xFFFFFFFF) for v in GC.kvalues_iq4nl))
     rows.append(f"err={err()}")
+    # ONE ROW PER GRID, from `ggml_common` ITSELF: the generator's output is compared
+    # against the module it was derived from, so a wrong generated word is one red row.
+    for name, attr, nb in FX.GRIDS:
+        rows.append(grow(name, FX.words(getattr(GC, attr), nb)))
     rows += [f"ty_{c:02d}={FX.SUPPORTED.get(c, '-')}" for c in range(FX.NCODES)]
 
     assert len(rows) == FX.ROWS, (len(rows), FX.ROWS)

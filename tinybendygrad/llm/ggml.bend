@@ -48,12 +48,53 @@ type Typ is Data:
   TQ8_0{}
   TQ4K{}
   TIQ4NL{}
+  TQ4XS{}
+  TQ1S{}
+  TQ2X{}
+  TQ3X{}
+  TQ2XS{}
+
+# THE GRID FAMILY'S DATA, AS ARGUMENTS. `tinybendygrad/runtime/autogen/ggml_common.bend`
+# is where a caller gets them -- generated from `tinygrad.runtime.autogen.ggml_common` by
+# `ggml_common-gen.py` -- and nothing here imports it, so this file still ships no data.
+# `sgn` is `iq.signs()`, computed rather than tabulated, so it costs the caller one call.
+type Gs is Data:
+  Gs{lut: List<&2, U32>, iq1s: List<&2, U32>, iq2xxs: List<&2, U32>, iq2xs: List<&2, U32>,
+     iq3xxs: List<&2, U32>, iq3s: List<&2, U32>, iq2s: List<&2, U32>, sgn: List<&2, U32>}
+
+def Gs.lut(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{lut, _, _, _, _, _, _, _}: lut
+
+def Gs.iq1s(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{_, iq1s, _, _, _, _, _, _}: iq1s
+
+def Gs.iq2xxs(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{_, _, iq2xxs, _, _, _, _, _}: iq2xxs
+
+def Gs.iq3xxs(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{_, _, _, _, iq3xxs, _, _, _}: iq3xxs
+
+def Gs.iq2xs(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{_, _, _, iq2xs, _, _, _, _}: iq2xs
+
+def Gs.sgn(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{_, _, _, _, _, _, _, sgn}: sgn
 
 def byte(+xs: List<&2, U32>, +i: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, xs, U32.to_nat(i)), 0)
 
 def le2(+bs: List<&2, U32>, +i: U32) -> U32:
   U32.or(byte(bs, i), U32.shln(byte(bs, U32.add(i, 1)), 8n))
+
+def le4.at(+bs: List<&2, U32>, +i: U32) -> U32:
+  G.le4(byte(bs, i), byte(bs, U32.add(i, 1)), byte(bs, U32.add(i, 2)),
+    byte(bs, U32.add(i, 3)))
 
 # `blocks[:,i:i+2].bitcast(float16).cast(float32)` -- the f16 pair, widened by the
 # port's own `DT.fp16_f32` (a dtype.bend primitive, not a second decoder).
@@ -91,9 +132,136 @@ def mn.at(+bs: List<&2, U32>, +sub: U32) -> U32:
     U32.or(U32.shrn(byte(bs, U32.add(12, U32.sub(sub, 4))), 4n),
       U32.shln(U32.shrn(byte(bs, U32.add(8, U32.sub(sub, 4))), 6n), 4n)))
 
+# `_ggml_iq_grid` (:11-14) WITHOUT the device -- the grid's `rows` entries arrive as two
+# 32-bit WORDS each (that is why :13 splits on 32, and why a `U32` cannot hold one entry),
+# and byte `c` of an entry is `w0` when `c < 4` and `w1` otherwise.
+def iq.gbyte(+w0: U32, +w1: U32, +c: U32) -> U32:
+  Bool.pick(U32, U32.is_lt(c, 4),
+    U32.and(U32.shrn(w0, Nat.mul(U32.to_nat(c), 8n)), 255),
+    U32.and(U32.shrn(w1, Nat.mul(U32.to_nat(U32.sub(c, 4)), 8n)), 255))
+
+# `wpe` is words per entry: `gguf.py:13`'s split gives TWO for an eight-byte grid and ONE
+# for a four-byte one, because `range(0, 8*grid_shape[1], 32)` runs once when the width is
+# four. The SECOND word's index is `b + (wpe - 1)`, which is `b` when there is one word and
+# is never read then: byte `c` past 3 only exists when `wpe` is 2.
+def gw(+e: U32, +wpe: U32, +g: List<&2, U32>, +c: U32) -> U32:
+  +b = U32.mul(e, wpe)
+  iq.gbyte(byte(g, b), byte(g, U32.add(b, U32.sub(wpe, 1))), c)
+
+# ---------------------------------------------------------------------------
+# IQ4_XS (:148-156), 256 elements per 136-byte block. Its LUT is `kvalues_iq4nl`, so it is
+# the grid-family member with no grid.
+# ---------------------------------------------------------------------------
+# `(scales_l | (scales_h << 4)).bitcast(int8) - 32`: the byte is REINTERPRETED as int8
+# before the 32 is subtracted, so 0x80 is -160 and not 96.
+# `stack([sl & 0xF, sl >> 4], dim=2)` over `sl = blocks[:,4:8]`: the LOW nibbles and the
+# HIGH ones INTERLEAVE per byte -- (s0&F), (s0>>4), (s1&F), (s1>>4), ... -- so sub `i`
+# reads byte `4 + i/2` and takes the low half when `i` is even. MEASURED: the oracle
+# caught the low-half-for-0..3 reading on its first run, 192 of 256 values wrong.
+def q4xs.sc(+bs: List<&2, U32>, +sub: U32) -> U32:
+  +lo = Bool.pick(U32, U32.is_eq(U32.mod(sub, 2), 0),
+    U32.and(byte(bs, U32.add(4, U32.div(sub, 2))), 15),
+    U32.shrn(byte(bs, U32.add(4, U32.div(sub, 2))), 4n))
+  +hi = U32.and(U32.shrn(le2(bs, 2), Nat.mul(U32.to_nat(sub), 2n)), 3)
+  U32.sub(G.sc.sx8(U32.or(lo, U32.shln(hi, 4n))), 32)
+
+# `stack([qs & 0xF, qs >> 4], dim=2)` over eight 16-byte sub-blocks: LOW nibbles first.
+def q4xs.q(+bs: List<&2, U32>, +i: U32) -> U32:
+  +k = U32.mod(i, 32)
+  +b = U32.add(8, U32.add(U32.mul(U32.div(i, 32), 16), U32.mod(k, 16)))
+  Bool.pick(U32, U32.is_lt(k, 16), U32.and(byte(bs, b), 15), U32.shrn(byte(bs, b), 4n))
+
+# ---------------------------------------------------------------------------
+# IQ1_S (:121-130), 256 elements per 50-byte block. One grid, no signs; the grid bytes are
+# INT8 and `(grid > 127).where(grid - 256, grid)` is the reinterpretation.
+# ---------------------------------------------------------------------------
+def q1s.qh(+bs: List<&2, U32>, +s: U32) -> U32:
+  le2(bs, U32.add(34, U32.mul(s, 2)))
+
+# `d * ((qh >> 12 & 7) * 2 + 1)`, and the +1 is f32 addition in CPython, not an int one
+def q1s.dl(+bs: List<&2, U32>, +s: U32) -> F32:
+  F32.mul(f16at(bs, 0),
+    F32.add(F32.mul(i32f(U32.and(U32.shrn(q1s.qh(bs, s), 12n), 7)), 2.0), 1.0))
+
+# `(qh & 0x8000) == 0` chooses the sign of the 0.125 delta
+def q1s.delta(+bs: List<&2, U32>, +s: U32) -> F32:
+  Bool.pick(F32, U32.is_eq(U32.and(q1s.qh(bs, s), 32768), 0), 0.125, F32.neg(0.125))
+
+# `q[i]` = the payload byte plus three bits of `qh`, which is what makes it a 0..2047 row
+def q1s.qi(+bs: List<&2, U32>, +i: U32) -> U32:
+  +s = U32.div(i, 4)
+  +j = U32.mul(U32.mod(i, 4), 3)
+  U32.add(byte(bs, U32.add(2, i)),
+    U32.shln(U32.and(U32.shrn(q1s.qh(bs, s), U32.to_nat(j)), 7), 8n))
+
+def q1s.gv(+bs: List<&2, U32>, +g: List<&2, U32>, +i: U32) -> U32:
+  +sub = U32.div(i, 32)
+  +c = U32.div(U32.mod(i, 32), 8)
+  +b = gw(q1s.qi(bs, U32.add(U32.mul(sub, 4), c)), 2, g, U32.mod(i, 8))
+  Bool.pick(U32, U32.is_ge(b, 128), U32.sub(b, 256), b)
+
+# ---------------------------------------------------------------------------
+# IQ2_XXS (:101-110), 256 elements per 66-byte block: eight groups of 32, and each group
+# is FOUR grid rows (one byte each) times EIGHT sign bits.
+# ---------------------------------------------------------------------------
+def q2x.w(+bs: List<&2, U32>, +sub: U32) -> U32:
+  le4.at(bs, U32.add(6, U32.mul(sub, 8)))
+
+# `d * ((q >> 28) + 0.5) * 0.25`, left to right
+def q2x.db(+bs: List<&2, U32>, +sub: U32) -> F32:
+  F32.mul(F32.mul(f16at(bs, 0),
+    F32.add(i32f(U32.shrn(q2x.w(bs, sub), 28n)), 0.5)), 0.25)
+
+# one sign, from bit `k` of `_ggml_iq_signs[(q >> 7*j) & 0x7F]`: a ZERO bit is +1
+def sign.bit(+sgn: List<&2, U32>, +sb: U32, +k: U32) -> F32:
+  Bool.pick(F32, U32.is_eq(U32.and(U32.shrn(byte(sgn, sb), U32.to_nat(k)), 1), 0), 1.0,
+    F32.neg(1.0))
+
+def q2x.sg(+gs: Gs, +bs: List<&2, U32>, +i: U32) -> F32:
+  +sub = U32.div(i, 32)
+  +c = U32.div(U32.mod(i, 32), 8)
+  sign.bit(Gs.sgn(gs), U32.and(U32.shrn(q2x.w(bs, sub), U32.to_nat(U32.mul(c, 7))), 127),
+    U32.mod(i, 8))
+
+# the grid row is the payload BYTE at (group, c), five of the eight being skipped
+def q2x.row(+bs: List<&2, U32>, +i: U32) -> U32:
+  byte(bs, U32.add(2, U32.add(U32.mul(U32.div(i, 32), 8), U32.div(U32.mod(i, 32), 8))))
+
+# ---------------------------------------------------------------------------
+# IQ3_XXS (:93-100), 256 elements per 98-byte block: 64 payload bytes are 64 grid rows of
+# FOUR, so the grid index is `e // 4` and the byte within a row is `e % 4`.
+# ---------------------------------------------------------------------------
+def q3x.w(+bs: List<&2, U32>, +sub: U32) -> U32:
+  le4.at(bs, U32.add(66, U32.mul(sub, 4)))
+
+def q3x.db(+bs: List<&2, U32>, +sub: U32) -> F32:
+  F32.mul(F32.mul(f16at(bs, 0),
+    F32.add(i32f(U32.shrn(q3x.w(bs, sub), 28n)), 0.5)), 0.5)
+
+def q3x.sg(+gs: Gs, +bs: List<&2, U32>, +i: U32) -> F32:
+  +sub = U32.div(i, 32)
+  +j = U32.mod(U32.div(i, 8), 4)
+  sign.bit(Gs.sgn(gs), U32.and(U32.shrn(q3x.w(bs, sub), U32.to_nat(U32.mul(j, 7))), 127),
+    U32.mod(i, 8))
+
+# ---------------------------------------------------------------------------
+# IQ2_XS (:111-119), 256 elements per 74-byte block: 32 uint16s, and each uint16 is BOTH
+# a grid index (its low NINE bits into 512 rows) and a sign-byte selector (its top seven).
+# ---------------------------------------------------------------------------
+def q2xs.q(+bs: List<&2, U32>, +gi: U32) -> U32:
+  le2(bs, U32.add(2, U32.mul(gi, 2)))
+
+# `q_to_uint8(blocks[:,66:74].reshape((-1,8,1)), 4)`: eight scale bytes, LOW nibble first
+def q2xs.sc(+bs: List<&2, U32>, +s: U32) -> U32:
+  +b = byte(bs, U32.add(66, U32.div(s, 2)))
+  Bool.pick(U32, U32.is_eq(U32.mod(s, 2), 0), U32.and(b, 15), U32.shrn(b, 4n))
+
+def q2xs.db(+bs: List<&2, U32>, +s: U32) -> F32:
+  F32.mul(F32.mul(f16at(bs, 0), F32.add(i32f(q2xs.sc(bs, s)), 0.5)), 0.25)
+
 # one element. The association of each product is CPython's, left to right, because f32
 # multiplication is not associative and the gate compares BITS.
-def dec.el(+t: Typ, +bs: List<&2, U32>, lut: List<&2, U32>, +i: U32) -> F32:
+def dec.el(+t: Typ, +bs: List<&2, U32>, +gs: Gs, +i: U32) -> F32:
   match t:
     case TF32{}:
       F.F32.from_bits(G.le4(byte(bs, U32.mul(i, 4)), byte(bs, U32.add(U32.mul(i, 4), 1)),
@@ -104,7 +272,7 @@ def dec.el(+t: Typ, +bs: List<&2, U32>, lut: List<&2, U32>, +i: U32) -> F32:
     case TQ8_0{}: F32.mul(f16at(bs, 0), i32f(G.sc.sx8(byte(bs, U32.add(2, i)))))
     case TIQ4NL{}:
       F32.mul(f16at(bs, 0),
-        i32f(Maybe.default(&2, U32, List.get(&2, U32, lut, U32.to_nat(nib(bs, 2, i))), 0)))
+        i32f(Maybe.default(&2, U32, List.get(&2, U32, Gs.lut(gs), U32.to_nat(nib(bs, 2, i))), 0)))
     case TQ4K{}:
       +sub = U32.div(i, 32)
       +d = f16at(bs, 0)
@@ -113,23 +281,51 @@ def dec.el(+t: Typ, +bs: List<&2, U32>, lut: List<&2, U32>, +i: U32) -> F32:
                    byte(bs, U32.add(16, U32.add(U32.mul(U32.div(sub, 2), 32), U32.mod(i, 32)))),
                    Nat.mul(U32.to_nat(U32.mod(sub, 2)), 4n)), 15))),
         F32.mul(f16at(bs, 2), i32f(mn.at(bs, sub))))
+    case TQ4XS{}:
+      F32.mul(F32.mul(f16at(bs, 0), i32f(q4xs.sc(bs, U32.div(i, 32)))),
+        i32f(Maybe.default(&2, U32,
+          List.get(&2, U32, Gs.lut(gs), U32.to_nat(q4xs.q(bs, i))), 0)))
+    case TQ1S{}:
+      F32.mul(q1s.dl(bs, U32.div(i, 32)),
+        F32.add(i32f(q1s.gv(bs, Gs.iq1s(gs), i)), q1s.delta(bs, U32.div(i, 32))))
+    case TQ2X{}:
+      F32.mul(F32.mul(q2x.db(bs, U32.div(i, 32)),
+        i32f(gw(q2x.row(bs, i), 2, Gs.iq2xxs(gs), U32.mod(i, 8)))),
+        q2x.sg(gs, bs, i))
+    case TQ2XS{}:
+      # `db` is reshaped to `(-1, 16, 1, 1)` and the answer to `(-1, 16, 2, 8)`, so the
+      # SCALE is per SIXTEEN elements -- not per thirty-two, which is what IQ2_XXS is.
+      +s = U32.div(i, 16)
+      +gi = U32.div(i, 8)
+      F32.mul(F32.mul(q2xs.db(bs, s),
+        i32f(gw(U32.and(q2xs.q(bs, gi), 511), 2, Gs.iq2xs(gs), U32.mod(i, 8)))),
+        sign.bit(Gs.sgn(gs), U32.shrn(q2xs.q(bs, gi), 9n), U32.mod(i, 8)))
+    case TQ3X{}:
+      F32.mul(F32.mul(q3x.db(bs, U32.div(i, 32)),
+        i32f(gw(byte(bs, U32.add(2, U32.div(i, 4))), 1, Gs.iq3xxs(gs), U32.mod(i, 4)))),
+        q3x.sg(gs, bs, i))
 
-def dec.go(k: Nat, +i: U32, +t: Typ, +bs: List<&2, U32>, +lut: List<&2, U32>,
+def dec.go(k: Nat, +i: U32, +t: Typ, +bs: List<&2, U32>, +gs: Gs,
            acc: List<&2, F32>) -> List<&2, F32>:
   match k:
     case 0n: List.reverse(&2, F32, acc)
-    case 1n+p: dec.go(p, U32.add(i, 1), t, bs, lut, dec.el(t, bs, lut, i) <> acc)
+    case 1n+p: dec.go(p, U32.add(i, 1), t, bs, gs, dec.el(t, bs, gs, i) <> acc)
 
-def dec.run(t: Typ, +bs: List<&2, U32>, +lut: List<&2, U32>, n: U32) -> List<&2, F32>:
-  dec.go(U32.to_nat(n), 0, t, bs, lut, Nil{})
+def dec.run(t: Typ, +bs: List<&2, U32>, +gs: Gs, n: U32) -> List<&2, F32>:
+  dec.go(U32.to_nat(n), 0, t, bs, gs, Nil{})
 
-# the SEVEN `ggml_type`s this file decodes. Descending, because a `U32` literal arm is a
+# the ELEVEN `ggml_type`s this file decodes. Descending, because a `U32` literal arm is a
 # prefix match over the successor relation (bend2-constraints' `mixin/rand` rule 2), and
 # the gate reads every code 0..45 so a mis-ordered arm answers a neighbour and goes red.
 def typ.of(typ: U32) -> Maybe<&1, Typ>:
   match typ:
     case 30: Some{TBF16{}}
+    case 23: Some{TQ4XS{}}
     case 20: Some{TIQ4NL{}}
+    case 19: Some{TQ1S{}}
+    case 18: Some{TQ3X{}}
+    case 17: Some{TQ2XS{}}
+    case 16: Some{TQ2X{}}
     case 12: Some{TQ4K{}}
     case 8: Some{TQ8_0{}}
     case 2: Some{TQ4_0{}}
@@ -138,21 +334,21 @@ def typ.of(typ: U32) -> Maybe<&1, Typ>:
     case _: None{}
 
 def ggml.vgo(m: Maybe<&1, Typ>, n: U32, +bs: List<&2, U32>,
-             lut: List<&2, U32>) -> Maybe<&1, List<&2, F32>>:
+             +gs: Gs) -> Maybe<&1, List<&2, F32>>:
   match m:
     case None{}: None{}
-    case Some{+t}: Some{dec.run(t, bs, lut, n)}
+    case Some{+t}: Some{dec.run(t, bs, gs, n)}
 
 # `ggml_data_to_tensor(t, n, ggml_type)`'s VALUES, or `None` where CPython raises.
 # `bs` is ONE block's bytes -- the caller slices them, which is the `Tensor` view this
-# file deliberately does not do.
+# file deliberately does not do -- and `gs` is the grid family's data.
 def ggml.dec(typ: U32, n: U32, +bs: List<&2, U32>,
-             lut: List<&2, U32>) -> Maybe<&1, List<&2, F32>>:
-  ggml.vgo(typ.of(typ), n, bs, lut)
+             +gs: Gs) -> Maybe<&1, List<&2, F32>>:
+  ggml.vgo(typ.of(typ), n, bs, gs)
 
 # ---------------------------------------------------------------------------
-# the two pieces of the GRID family that are pure, and the only two that ever needed
-# `tinygrad.runtime.autogen.ggml_common`. Neither takes a constant from it.
+# `_ggml_iq_signs` (:16-17): 128 bytes, and byte `i` has its top bit set when `i` has an
+# ODD number of set bits. This is a COMPUTATION in CPython and it is one here.
 # ---------------------------------------------------------------------------
 def pc.go(k: Nat, +v: U32, acc: U32) -> U32:
   match k:
@@ -163,8 +359,6 @@ def pc(v: U32) -> U32: pc.go(8n, v, 0)
 
 def pc.odd(+v: U32) -> Bool: U32.is_eq(U32.mod(pc(v), 2), 1)
 
-# `_ggml_iq_signs` (:16-17): 128 bytes, and byte `i` has its top bit set when `i` has an
-# ODD number of set bits. This is a COMPUTATION in CPython and it is one here.
 def iq.signs.go(k: Nat, +i: U32, acc: List<&2, U32>) -> List<&2, U32>:
   match k:
     case 0n: List.reverse(&2, U32, acc)
@@ -173,21 +367,14 @@ def iq.signs.go(k: Nat, +i: U32, acc: List<&2, U32>) -> List<&2, U32>:
 
 def iq.signs() -> List<&2, U32>: iq.signs.go(128n, 0, Nil{})
 
-# `_ggml_iq_grid` (:11-14) WITHOUT the device: the grid's `rows` entries arrive as two
-# 32-bit WORDS each (that is why :13 splits on 32, and why a `U32` cannot hold one entry),
-# and the answer is the `rows * 8` byte table that `.bitcast(uint8).float()` produces.
-def iq.gbyte(+w0: U32, +w1: U32, +c: U32) -> U32:
-  Bool.pick(U32, U32.is_lt(c, 4),
-    U32.and(U32.shrn(w0, Nat.mul(U32.to_nat(c), 8n)), 255),
-    U32.and(U32.shrn(w1, Nat.mul(U32.to_nat(U32.sub(c, 4)), 8n)), 255))
-
-def iq.grid.go(k: Nat, +i: U32, +g: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+# the byte TABLE `_ggml_iq_grid` answers: `rows * wpe * 4` bytes, entry-major
+def iq.grid.go(k: Nat, +i: U32, +wpe: U32, +g: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match k:
     case 0n: List.reverse(&2, U32, acc)
     case 1n+p:
-      +r = U32.mul(U32.div(i, 8), 2)
-      iq.grid.go(p, U32.add(i, 1), g,
-        iq.gbyte(byte(g, r), byte(g, U32.add(r, 1)), U32.mod(i, 8)) <> acc)
+      +per = U32.mul(wpe, 4)
+      iq.grid.go(p, U32.add(i, 1), wpe, g,
+        gw(U32.div(i, per), wpe, g, U32.mod(i, per)) <> acc)
 
-def iq.grid(rows: U32, +g: List<&2, U32>) -> List<&2, U32>:
-  iq.grid.go(U32.to_nat(U32.mul(rows, 8)), 0, g, Nil{})
+def iq.grid(rows: U32, +wpe: U32, +g: List<&2, U32>) -> List<&2, U32>:
+  iq.grid.go(U32.to_nat(U32.mul(U32.mul(rows, wpe), 4)), 0, wpe, g, Nil{})

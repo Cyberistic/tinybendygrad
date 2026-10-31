@@ -54,6 +54,11 @@ TENSORS = (
   ("q8_0.w", (32,), 8),
   ("iq4nl.w", (32,), 20),
   ("q4k.w", (256,), 12),
+  ("iq4xs.w", (256,), 23),
+  ("iq1s.w", (256,), 19),
+  ("iq2xxs.w", (256,), 16),
+  ("iq3xxs.w", (256,), 18),
+  ("iq2xs.w", (256,), 17),
 )
 
 NATIVE = {0: 4, 1: 2, 24: 1, 25: 2, 26: 4, 27: 8, 28: 8, 30: 2}
@@ -66,15 +71,31 @@ QUANT = {2: (32, 18), 3: (32, 20), 6: (32, 22), 7: (32, 24), 8: (32, 34),
 # WHICH CODES THIS GATE COVERS, by name, in both lanes. It is a PORT decision and not an
 # upstream fact, so each side states it and the two must agree -- bend2-constraints'
 # "two independent transcriptions of the same table that AGREE".
-SUPPORTED = {0: "f32", 1: "f16", 2: "Q4_0", 8: "Q8_0", 12: "Q4_K", 20: "IQ4_NL",
-             30: "bf16"}
+SUPPORTED = {0: "f32", 1: "f16", 2: "Q4_0", 8: "Q8_0", 12: "Q4_K", 16: "IQ2_XXS",
+             17: "IQ2_XS", 18: "IQ3_XXS", 19: "IQ1_S", 20: "IQ4_NL", 23: "IQ4_XS", 30: "bf16"}
+
+# (def name, ggml_common attribute, bytes per entry) -- A SECOND TRANSCRIPTION of
+# `ggml_common-gen.py`'s GRIDS, on purpose: the generator's copy produces the .bend, this
+# copy is what the ORACLE reads, and a disagreement between them is a red row.
+GRIDS = (("iq3xxs_grid", "iq3xxs_grid", 4), ("iq2xxs_grid", "iq2xxs_grid", 8),
+         ("iq2xs_grid", "iq2xs_grid", 8), ("iq3s_grid", "iq3s_grid", 4),
+         ("iq2s_grid", "iq2s_grid", 8), ("iq1s_grid", "iq1s_grid", 8))
 
 NCODES = 46
+
+
+def words(grid, nbytes):
+    """`gguf.py:13`'s split, little-endian word first."""
+    out = []
+    for v in grid:
+        for k in range(nbytes // 4):
+            out.append((v >> (32 * k)) & 0xFFFFFFFF)
+    return out
 
 # THE ROW SET, as arithmetic over the lists above: ONE `v_*` row per tensor (all of its
 # decoded values), then `iqs`, `grid`, `lut` and `err`, then one `ty_*` row per ggml type
 # code. A fourteenth tensor is one row on all three of `rows`, the FILE, and the lanes.
-ROWS = len(TENSORS) + 4 + NCODES
+ROWS = len(TENSORS) + 10 + NCODES       # 10 = iqs, grid, 6 x `g_*`, lut, err
 
 
 def body(typ, dims):
@@ -94,6 +115,10 @@ def payload(typ, dims):
     if typ == 12:
         return (struct.pack("<HH", D_K, DMIN_K)
                 + bytes((i * 37 + 11) & 0xFF for i in range(body(typ, dims) - 4)))
+    if typ in (16, 17, 18, 19, 23):
+        # ONLY bytes 0..1 are an f16 (the block scale); every other field is an integer or
+        # a grid byte, and a pseudo-random payload is what makes an index error visible.
+        return struct.pack("<H", D_K) + bytes((i * 37 + 11) & 0xFF for i in range(body(typ, dims) - 2))
     raise ValueError(typ)
 
 

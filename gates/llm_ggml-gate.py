@@ -70,13 +70,39 @@ FX = load("llm_ggml_fixture", "llm_ggml-fixture.py")
 # Regenerate with `gates/llm_ggml-fixture.py` and move this line in the SAME commit, or
 # this gate refuses.
 FIXTURES = {
-  "gates/llm_ggml-fixture.gguf": "e7cd2fdf83dcb80152cb489be9139fd74ee80596c52eb8c76088789bc91b271e",
+  "gates/llm_ggml-fixture.gguf": "80fe88f331f3372c94d205514b6e3ccaa1a2b856586c064173c89f7ff059ee9b",
+  # THE GENERATOR'S OUTPUT, PINNED. `ggml_common-gen.py` prints these ten; regenerate and
+  # move them in the SAME commit, or a regenerated-but-different constant REFUSES here
+  # instead of quietly changing what 4,096 words mean.
+  "tinybendygrad/runtime/autogen/ggml_common.bend":
+    "83c028492f00bcdeb8c0894d0c043b658e45cc42531b7739b4943d119b6214be",
+  "tinybendygrad/runtime/autogen/ggml_common_p1.bend":
+    "4846376de3ada1060669a1f6af0de688a21c09bf07b6e8d4b7cb9280da676083",
+  "tinybendygrad/runtime/autogen/ggml_common_p2.bend":
+    "18b2d6dc74d126bde12649cff6f1673c7c717ea1e042b4ef3c026fa509210302",
+  "tinybendygrad/runtime/autogen/ggml_common_p3.bend":
+    "c984398146495606d4ce726f7dbc64d691bfdedbbbafeb34dbca6b7a74d4a0de",
+  "tinybendygrad/runtime/autogen/ggml_common_p4.bend":
+    "ff24a65bb805b424c6456a4a021ac047265ecf9f815ed136f9a5e566572baa0c",
+  "tinybendygrad/runtime/autogen/ggml_common_p5.bend":
+    "abba15c12dbb2d942321223b7a6812b87850a51dd877b57b53e84abab42976e6",
+  "tinybendygrad/runtime/autogen/ggml_common_p6.bend":
+    "3406cb3f06f61534ab6adeed952a7f26ac52911c4f8b15c59c2d9b33dd0d187d",
+  "tinybendygrad/runtime/autogen/ggml_common_p7.bend":
+    "59546ff994f82436fde2c7c0675d393b1b0e991f815b424d9a443003dcbd4612",
+  "tinybendygrad/runtime/autogen/ggml_common_p8.bend":
+    "70cadc13ed9f911500bfc8fb7374f43b97a50e6c5a4c712153b6777b7be9b48c",
+  "tinybendygrad/runtime/autogen/ggml_common_p9.bend":
+    "ef6559f783b86464726b18a9cecb9a9683ec76e8c6dbbc208c6a42f59efb087a",
 }
 
 # The rows that would move if one of the decode's decisions were wrong: one per PORTED
 # type, the two grid helpers, the transcribed LUT, and the refusal.
 PINNED = ("v_f32.w", "v_f16.w", "v_bf16.w", "v_q4_0.w", "v_q8_0.w", "v_iq4nl.w",
-          "v_q4k.w", "iqs", "grid", "lut", "err", "ty_12")
+          "v_q4k.w", "v_iq4xs.w", "v_iq1s.w", "v_iq2xxs.w", "v_iq3xxs.w", "v_iq2xs.w",
+          "iqs", "grid", "lut", "err", "ty_12",
+          "g_iq3xxs_grid", "g_iq2xxs_grid", "g_iq2xs_grid", "g_iq3s_grid",
+          "g_iq2s_grid", "g_iq1s_grid")
 
 GATE = Gate(
   "llm_ggml-gate",
@@ -94,5 +120,5 @@ if __name__ == "__main__":
     sys.exit(REFUSED)
   sys.exit(main(GATE, f"llm_ggml-gate: {FX.ROWS} rows, 2 lanes -- `ggml_data_to_tensor`'s "
                       f"DECODE over {len(FX.TENSORS)} blocks, the 128 sign bytes, a 4-entry "
-                      f"grid, the transcribed iq4nl LUT, the refusal, and the supported "
+                      f"grid, the GENERATED iq4nl LUT and the six grids, the refusal, and the supported "
                       f"set over all {FX.NCODES} ggml type codes"))

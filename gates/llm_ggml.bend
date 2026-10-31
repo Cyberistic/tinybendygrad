@@ -19,14 +19,18 @@
 import Base
 import ./../tinybendygrad/llm/gguf.bend as G
 import ./../tinybendygrad/llm/ggml.bend as M
+import ./../tinybendygrad/runtime/autogen/ggml_common.bend as A
 import ./../tinybendygrad/helpers.bend as H
 
 def fx() -> String: "gates/llm_ggml-fixture.gguf"
 
-# `kvalues_iq4nl` (ggml-common.h) as 32-bit two's complement, because the port has no i8.
-def lut() -> List<&2, U32>:
-  [4294967169, 4294967192, 4294967213, 4294967231, 4294967247, 4294967261, 4294967274,
-   4294967286, 1, 13, 25, 38, 53, 69, 89, 113]
+# THE GRID FAMILY comes from `tinybendygrad/runtime/autogen/ggml_common.bend`, which
+# `ggml_common-gen.py` derives from `tinygrad.runtime.autogen.ggml_common`. This file
+# transcribes NOTHING: the six grids and `kvalues_iq4nl` are the generator's output, and
+# the `g_*` rows below are what says so -- a wrong generated word moves one.
+def gs() -> M.Gs:
+  M.Gs{A.kvalues_iq4nl(), A.iq1s_grid(), A.iq2xxs_grid(), A.iq2xs_grid(),
+       A.iq3xxs_grid(), A.iq3s_grid(), A.iq2s_grid(), M.iq.signs()}
 
 # FOUR entries of eight bytes, two 32-bit words each -- `gguf.py:13`'s split, and the
 # reason a `U32` cannot hold one grid entry.
@@ -68,20 +72,46 @@ def row.of(nm: String, m: Maybe<&1, List<&2, F32>>) -> String:
 def pad2(+c: U32) -> String:
   Bool.pick(String, U32.is_lt(c, 10), String.append("0", U32.show(c)), U32.show(c))
 
-def tir(ts: List<&2, G.TI>, +bs: List<&2, U32>, +lut: List<&2, U32>,
+def tir(ts: List<&2, G.TI>, +bs: List<&2, U32>, +g: M.Gs,
          acc: List<&2, String>) -> List<&2, String>:
   match ts:
     case Nil{}: List.reverse(&2, String, acc)
     case +h <> t:
-      tir(t, bs, lut,
+      tir(t, bs, g,
         row.of(G.TI.nm(h),
           M.ggml.dec(G.TI.typ(h), tprod(G.TI.shape(h)),
-            bsl(bs, H.lo32(G.TI.start(h)), G.TI.nbytes(h)), lut)) <> acc)
+            bsl(bs, H.lo32(G.TI.start(h)), G.TI.nbytes(h)), g)) <> acc)
 
 def bytes.show(xs: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match xs:
     case Nil{}: List.reverse(&2, String, acc)
     case h <> t: bytes.show(t, U32.show(h) <> acc)
+
+# FNV-1a, 32 bits: the cheapest thing both lanes can say about 4,096 words, so a wrong
+# generated constant is ONE named row rather than 256 quietly different values.
+def hfnv.go(xs: List<&2, U32>, +h: U32) -> U32:
+  match xs:
+    case Nil{}: h
+    case +x <> t: hfnv.go(t, U32.mul(U32.xor(h, x), 16777619))
+
+def hfnv(xs: List<&2, U32>) -> U32: hfnv.go(xs, 2166136261)
+
+# `<words>w:<fnv>:<first four>:<last four>`, and the last four are re-reversed so they read
+# in file order on both lanes.
+def grow(nm: String, +xs: List<&2, U32>) -> String:
+  +n = U32.from_nat(List.length(&2, U32, xs))
+  +f = String.join(bytes.show(List.take(&2, U32, xs, 4n), Nil{}), ",")
+  +l = String.join(bytes.show(List.reverse(&2, U32,
+        List.take(&2, U32, List.reverse(&2, U32, xs), 4n)), Nil{}), ",")
+  String.concat([nm, "=", U32.show(n), "w:", U32.show(hfnv(xs)), ":", f, ":", l])
+
+def grows(acc: List<&2, String>) -> List<&2, String>:
+  [grow("g_iq3xxs_grid", A.iq3xxs_grid()),
+   grow("g_iq2xxs_grid", A.iq2xxs_grid()),
+   grow("g_iq2xs_grid", A.iq2xs_grid()),
+   grow("g_iq3s_grid", A.iq3s_grid()),
+   grow("g_iq2s_grid", A.iq2s_grid()),
+   grow("g_iq1s_grid", A.iq1s_grid())]
 
 def bshow(nm: String, xs: List<&2, U32>) -> String:
   String.concat([nm, "=", String.join(bytes.show(xs, Nil{}), ",")])
@@ -97,6 +127,11 @@ def ty.one(t: M.Typ) -> String:
     case M.TQ8_0{}: "Q8_0"
     case M.TQ4K{}: "Q4_K"
     case M.TIQ4NL{}: "IQ4_NL"
+    case M.TQ4XS{}: "IQ4_XS"
+    case M.TQ1S{}: "IQ1_S"
+    case M.TQ2X{}: "IQ2_XXS"
+    case M.TQ3X{}: "IQ3_XXS"
+    case M.TQ2XS{}: "IQ2_XS"
 
 def ty.name(m: Maybe<&1, M.Typ>) -> String:
   match m:
@@ -125,11 +160,12 @@ def err.of(typ: U32, m: Maybe<&1, List<&2, F32>>) -> String:
 def rows.all(+a: List<&2, U32>) -> List<&2, String>:
   +p = G.gguf.bytes(a)
   List.concat(&2, String, [
-    tir(G.Parsed.ts(p), a, lut(), Nil{}),
+    tir(G.Parsed.ts(p), a, gs(), Nil{}),
     [bshow("iqs", M.iq.signs()),
-     bshow("grid", M.iq.grid(4, gridw())),
-     bshow("lut", lut()),
-     String.concat(["err=", err.of(99, M.ggml.dec(99, 1, bsl(a, 0, 2), lut()))])],
+     bshow("grid", M.iq.grid(4, 2, gridw())),
+     bshow("lut", A.kvalues_iq4nl()),
+     String.concat(["err=", err.of(99, M.ggml.dec(99, 1, bsl(a, 0, 2), gs()))])],
+    grows(Nil{}),
     ty.rows(up(46n, 0, Nil{}), Nil{})])
 
 def main() -> IO(Unit):
