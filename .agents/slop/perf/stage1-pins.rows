@@ -1,0 +1,16 @@
+# stage1-pins.rows -- .agents/slop/perf/stage1_pins.py, classified from
+# gates/wgsl_render_census-pins.rows (its only writer's output).
+# 'compilable' is NO for every row: a refusal is not a shader and a value is not text.
+# row|kind|oracle|port|compilable|values|why
+code_for_op LOAD|REFUSAL/REFUSAL|REFUSE:KeyError|UNHANDLED(Ops.LOAD)|no|-|no shader on either side
+code_for_op MAX|REFUSAL/REFUSAL|REFUSE:KeyError|UNHANDLED(Ops.MAX)|no|-|no shader on either side
+code_for_op POW|REFUSAL/REFUSAL|REFUSE:KeyError|UNHANDLED(Ops.POW)|no|-|no shader on either side
+code_for_op FDIV|REFUSAL/ANSWER|REFUSE:KeyError|(A/B)|no|-|the port answers where CPython raises: no python-side text exists
+wmask 255_0|VALUE|GRAPH:255<<0^4294967295|4294967040|no|equal|an integer expression's value, not text, and the numbers agree
+wmask 255_16|VALUE|GRAPH:255<<16^4294967295|4278255615|no|equal|an integer expression's value, not text, and the numbers agree
+wmask 255_24|VALUE|GRAPH:255<<24^4294967295|16777215|no|equal|an integer expression's value, not text, and the numbers agree
+wmask 255_8|VALUE|GRAPH:255<<8^4294967295|4294902015|no|equal|an integer expression's value, not text, and the numbers agree
+wmask 65535_0|VALUE|GRAPH:65535<<0^4294967295|4294901760|no|equal|an integer expression's value, not text, and the numbers agree
+wmask 65535_16|VALUE|GRAPH:65535<<16^4294967295|65535|no|equal|an integer expression's value, not text, and the numbers agree
+workitem l3|REFUSAL/REFUSAL|REFUSE:IndexError||no|-|no shader on either side
+type_map double|REFUSAL/REFUSAL|REFUSE:KeyError|UNHANDLED(dtypes.f64)|no|-|no shader on either side

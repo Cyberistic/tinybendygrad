@@ -27097,3 +27097,14 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       SAME bytes (order drift); the driver now interleaves and each side keeps its min.
 - [ ] COVERAGE, NOT IDENTITY, IS THE REMAINING WEAKNESS: one kernel for WebGPU, four for Metal. The
       census gates cover the renderer surface but compare fragments, not runtime.
+- [x] THE 12 PINNED WGSL DIVERGENCES ARE NOT SHADERS: classified from the gate's own pins file by
+      `.agents/slop/perf/stage1_pins.py` -> `stage1-pins.rows`: **5 REFUSAL/REFUSAL** (CPython raises, the
+      port spells an uncompilable refusal), **1 REFUSAL/ANSWER** (`FDIV`: the port answers `(A/B)` where
+      CPython raises, so there is no python-side text and parity is undefined), **6 VALUE** (the `wmask`
+      rows, and **all six agree numerically** -- the pin is on the spelling). A refusal is not a shader
+      and a value is not text, so "time the divergent code" has nothing to act on; and 215 exact + 12
+      pins means every place CPython emits WGSL, the port emits the SAME text.
+- [x] WEBGPU COVERAGE 1 -> 2 KERNELS: `E_1024` (600 B) and `E_256` (592 B), both byte-identical, both
+      timed interleaved in one driver (0.1/0.1 and 0.1/0.2 ms), both correct to 4.8e-7 / 2.4e-7.
+- [ ] WHAT REMAINS FOR STAGE 1 IS COVERAGE, NOT DIVERGENCE: a wider corpus (reductions, WHERE/relu, more
+      sizes) -- a race between divergent programs is not available, because none exists.

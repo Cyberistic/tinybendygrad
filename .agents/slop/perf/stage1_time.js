@@ -23,7 +23,10 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 
 const ROOT = process.cwd();
-const K = JSON.parse(readFileSync(join(ROOT, ".agents/slop/perf/stage1/kernel.json"), "utf8"));
+import { readdirSync } from "node:fs";
+const KS = readdirSync(join(ROOT, ".agents/slop/perf/stage1"))
+  .filter((f) => f.endsWith(".json") && f !== "port_module.json")
+  .sort().map((f) => JSON.parse(readFileSync(join(ROOT, ".agents/slop/perf/stage1", f), "utf8")));
 const N = Number(process.env.STAGE1_ITERS || 3);
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = 9334;
@@ -37,9 +40,9 @@ const ORIGIN = `http://127.0.0.1:${server.port}/`;
 
 const script = `
 (async () => {
-  const K = ${JSON.stringify(K)};
+  const KS = ${JSON.stringify(KS)};
   const N = ${N};
-  const out = { adapter: false, device: false, err: null, sides: {} };
+  const out = { adapter: false, device: false, err: null, kernels: [] };
   if (!navigator.gpu) { out.err = "navigator.gpu absent"; return out; }
   const a = await navigator.gpu.requestAdapter();
   if (!a) { out.err = "requestAdapter answered null"; return out; }
@@ -49,6 +52,9 @@ const script = `
   out.device = true;
   const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
+  for (const K of KS) {
+  const R = { name: K.name, sha: K.sha256, sha_bend: K.sha_bend, bytes: K.bytes, sides: {} };
+  out.kernels.push(R);
   // binding 0 is the f32 uniform the prologue declares; 1.. are the storage buffers
   const entries = [{ binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }];
   const bufs = [];
@@ -78,14 +84,14 @@ const script = `
   const sides = [];
   for (const [label, code] of [["python", K.wgsl], ["bend", K.wgsl_bend ?? ""]]) {
     const side = { label, present: !!code, ms: null, diff: null, matched: null, ok: false, pipe: null };
-    out.sides[label] = { present: side.present, ms: null, diff: null, matched: null, ok: false };
+    R.sides[label] = { present: side.present, ms: null, diff: null, matched: null, ok: false };
     if (!code) continue;
     const mod = dev.createShaderModule({ code });
     const info = await mod.getCompilationInfo();
-    if (info.messages.length) { out.sides[label].err = info.messages.map((m) => m.lineNum + ":" + m.message).join("; "); continue; }
+    if (info.messages.length) { R.sides[label].err = info.messages.map((m) => m.lineNum + ":" + m.message).join("; "); continue; }
     try {
       side.pipe = await dev.createComputePipelineAsync({ layout, compute: { module: mod, entryPoint: K.name } });
-    } catch (e) { out.sides[label].err = String(e); continue; }
+    } catch (e) { R.sides[label].err = String(e); continue; }
     sides.push(side);
   }
   const dispatch = (pipe) => {
@@ -122,11 +128,12 @@ const script = `
     const got = new Float32Array(read.getMappedRange().slice(0));
     read.unmap();
     const da = diff(got, wantA), db = diff(got, wantB);
-    Object.assign(out.sides[s.label], {
+    Object.assign(R.sides[s.label], {
       ms: s.ms, diff: Math.min(da, db),
       matched: da < 1e-5 ? "(a*b)+a" : db < 1e-5 ? "(a*b)+b" : "NEITHER",
       ok: Math.min(da, db) < 1e-5,
     });
+  }
   }
   return out;
 })()`;
@@ -172,22 +179,26 @@ if (out === null) out = { err: "no reply from the page within the wait" };
 chrome.kill("SIGKILL");
 server.stop(true);
 
-const P = out.sides?.python ?? {}, B = out.sides?.bend ?? {};
-const both = P.present && B.present && P.matched && B.matched && P.matched === B.matched;
-const sha = createHash("sha256").update(JSON.stringify(out)).digest("hex").slice(0, 16);
 const fmt = (x) => (typeof x === "number" ? x.toFixed(4) : "-");
 const dxp = (x) => (typeof x === "number" ? x.toExponential(2) : "-");
 const rows = [
   "# stage1-webgpu.rows -- .agents/slop/perf/stage1_webgpu.py + stage1_time.js",
   `# driver: headless Chrome, adapter ${out.arch ?? "?"}, DEV=METAL NOOPT=1 uops`,
-  `# python side: WGSLRenderer(Target('webgpu')).render(uops)`,
-  `# bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel`,
-  `# iters=${N} (min), warmups=3 per side, timed around submit+onSubmittedWorkDone`,
+  "# python side: WGSLRenderer(Target('webgpu')).render(uops)",
+  "# bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel",
+  `# iters=${N} (min), warmups=3 per side, INTERLEAVED timed rounds, around submit+onSubmittedWorkDone`,
   "# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok",
-  `${K.name}|${K.sha256}|${K.sha256}|${K.wgsl === K.wgsl_bend ? "yes" : "no"}|${K.bytes}|` +
-    `${fmt(P.ms)}|${fmt(B.ms)}|${dxp(P.diff)}|${dxp(B.diff)}|${P.matched ?? "-"}|${B.matched ?? "-"}|` +
-    `${both ? "yes" : "no"}`,
-  `# probe_sha=${sha} err=${out.err ?? "-"} py_err=${P.err ?? "-"} bend_err=${B.err ?? "-"}`,
 ];
+const sha = createHash("sha256").update(JSON.stringify(out)).digest("hex").slice(0, 16);
+let allOk = true;
+for (const R of out.kernels ?? []) {
+  const P = R.sides?.python ?? {}, B = R.sides?.bend ?? {};
+  const both = P.present && B.present && P.matched && B.matched && P.matched === B.matched;
+  if (!both) allOk = false;
+  rows.push(`${R.name}|${R.sha}|${R.sha_bend}|${R.sha === R.sha_bend ? "yes" : "no"}|${R.bytes ?? "-"}|` +
+    `${fmt(P.ms)}|${fmt(B.ms)}|${dxp(P.diff)}|${dxp(B.diff)}|${P.matched ?? "-"}|${B.matched ?? "-"}|` +
+    `${both ? "yes" : "no"}`);
+}
+rows.push(`# probe_sha=${sha} err=${out.err ?? "-"} kernels=${(out.kernels ?? []).length} all_ok=${allOk}`);
 writeFileSync(join(ROOT, ".agents/slop/perf/stage1-webgpu.rows"), rows.join("\n") + "\n");
 console.log(rows.join("\n"));

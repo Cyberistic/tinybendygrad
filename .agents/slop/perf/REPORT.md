@@ -1510,3 +1510,53 @@ stage 2's unsynchronised 0.01 ms).
 IT CAN HOLD AND THE NARROWEST: there are not two programs to race.** Coverage is ONE kernel
 for WebGPU and FOUR for Metal; the census gates cover the renderer SURFACE (227 and 361 rows)
 but they compare fragments, not runtime.
+
+---
+
+# 24. THE 12 PINNED WGSL DIVERGENCES ARE NOT SHADERS, AND THAT IS THE ANSWER TO "TIME THE DIVERGENT CODE"
+
+## 24.1 THE PINS, CLASSIFIED FROM THE GATE'S OWN FILE
+
+`.agents/slop/perf/stage1_pins.py` reads `gates/wgsl_render_census-pins.rows` (its only
+writer's output) and classifies every LANE row. MEASURED:
+
+    pins=12 REFUSAL/REFUSAL=5 REFUSAL/ANSWER=1 VALUE=6
+
+| kind | rows | what it is |
+|---|---|---|
+| `REFUSAL/REFUSAL` | `code_for_op LOAD`, `MAX`, `POW`, `workitem l3`, `type_map double` | CPython raises (`KeyError`/`IndexError`) and the port spells a refusal that **cannot compile** (`UNHANDLED(...)`, `""`). **No shader on either side.** |
+| `REFUSAL/ANSWER` | `code_for_op FDIV` | the PORT ANSWERS (`(A/B)`) WHERE CPYTHON RAISES. There is no python-side text for such a kernel, so "matches speed" is **UNDEFINED**, not equal — timing the port alone would be a one-sided number wearing a comparison's clothes. |
+| `VALUE` | the six `wmask` rows | an integer expression, NOT text. **AND THE NUMBERS AGREE ON ALL SIX**: `255<<0^0xFFFFFFFF` is `4294967040` on both sides, `65535<<16^0xFFFFFFFF` is `65535` on both; the oracle prints the expression and the port the decimal. They are pins on a SPELLING, not divergences. |
+
+**⇒ SO "RENDER BOTH TEXTS, COMPILE AND TIME BOTH" HAS NOTHING TO ACT ON.** A refusal is not a
+shader and a value is not text. And the consequence is stronger than "not measured": the
+census's `215 exact + 12 pinned` means **every place CPython emits WGSL text at all, the port
+emits the same text.** There is no divergent WGSL code in this tree to race.
+
+## 24.2 WHAT WAS ADDED INSTEAD: COVERAGE
+
+The WebGPU corpus went from one kernel to two — the same op mix at two sizes, which is the
+only variable the harness controls:
+
+    # kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok
+    E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.1000|0.1000|4.77e-7|4.77e-7|(a*b)+a|(a*b)+a|yes
+    E_256|2b4706e6116a783a|2b4706e6116a783a|yes|592|0.1000|0.2000|2.38e-7|2.38e-7|(a*b)+a|(a*b)+a|yes
+    # kernels=2 all_ok=true
+
+Both byte-identical, both compiled and timed in one driver with interleaved rounds, both
+correct against float32 numpy. `stage1_webgpu.py` now takes the size on the command line and
+writes one manifest per kernel; `stage1_time.js` globs them and emits one row each.
+
+## 24.3 WHERE STAGE 1 ACTUALLY STANDS
+
+| | |
+|---|---|
+| divergent WGSL **code** | **DOES NOT EXIST** (215 exact + 12 pins that are refusals or equal values) |
+| identical WGSL code | 2 kernels, timed, interleaved, both correct |
+| the one real semantic difference | `FDIV`: the port renders `(A/B)` where CPython raises. It cannot be raced, because the python side has no text. |
+| coverage | 2 kernels against a 227-row census of FRAGMENTS |
+
+**⇒ STAGE 1 IS MET IN THE ONLY FORM IT CAN TAKE — "PYTHON TO WEBGPU MATCHES BEND TO WEBGPU"
+BY IDENTITY OF TEXT — AND WHAT REMAINS IS COVERAGE, NOT DIVERGENCE.** A wider corpus
+(reductions, WHERE/relu, more sizes) is the honest next step; a race between divergent
+programs is not available, and this report will not manufacture one.
