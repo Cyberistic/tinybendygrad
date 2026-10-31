@@ -308,3 +308,13 @@ checks/.e2e-fixture/opsbend-milestone/check.out
 checks/.e2e-fixture/opsbend-milestone/gate.err
 checks/.e2e-fixture/opsbend-milestone/milestone.sh
 checks/.e2e-fixture/opsbend-milestone/PACKET.out
+
+# THE BROWSER TRAINING TRACE IS A GENERATED ARTIFACT, NOT A REQUIREMENT.
+# `trace_train.py` writes it (4.2 MB) and it is over this tree's `jj` new-file
+# limit, so it stays out of git while its GENERATOR and its ORACLE are in it.
+# **⇒ AND THE GATE SAYS SO**: `train-gate.mjs` exits 3 REFUSED, naming the
+# command that regenerates it, rather than passing over a trace it never read.
+.agents/slop/browser/train/train-net.json
+.agents/slop/browser/web/train-net.json
+.agents/slop/browser/web/train-oracle.json
+.agents/slop/browser/web/mnist-webgpu.js

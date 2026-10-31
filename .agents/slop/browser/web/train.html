@@ -1,0 +1,317 @@
+<!doctype html>
+<!-- .agents/slop/browser/web/train.html -- ONE MNIST TRAINING STEP, ON A REAL ADAPTER.
+
+     The page replays every kernel launch of a CPython training step and reports
+     the CONTENTS OF EVERY f32 BUFFER afterwards. It decides nothing: the WGSL is
+     `tinygrad/renderer/wgsl.py`'s, the binding order and the grid come from
+     `train-net.json`, which `trace_train.py` captured out of
+     `tinygrad/engine/realize.py`'s `exec_kernel`.
+
+     ⇒ AND THE VERDICT IS NOT PRINTED HERE. The page reports numbers; the NODE
+     harness (`train-gate.mjs`) diffs them against `train-oracle.json`. A page
+     that grades its own homework is a page whose grader can be wrong in the same
+     direction as its answer. -->
+<html lang="en">
+<head><meta charset="utf-8"><title>MNIST train step on WebGPU</title></head>
+<body>
+<pre id="o">running</pre>
+<script type="module">
+import { getDevice } from "./mnist-webgpu.js";
+
+const USAGE = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST;
+const b64ToU32 = (b64) => {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Uint32Array(bytes.buffer);
+};
+const b64ToBytes = (b64) => {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+};
+
+const out = { ok: false };
+try {
+  const [net, oracle] = await Promise.all([
+    fetch("./train-net.json").then((r) => r.json()),
+    fetch("./train-oracle.json").then((r) => r.json()),
+  ]);
+  out.kernels = net.kernels.length;
+  out.buffers = Object.keys(net.buffers).length;
+  out.loss_cpython = oracle.loss;
+
+  const gpu = await getDevice();
+  if (!gpu.ok) { out.why = gpu.why; throw new Error("no adapter: " + gpu.why); }
+  const device = gpu.device;
+  out.adapter = `${gpu.info.vendor}/${gpu.info.architecture}`;
+
+  // THE BUFFERS, at their FIRST-BIND contents. `net.buffers[n].b64` is what
+  // CPython had before any launch in the trace wrote them, so this is the same
+  // pre-state the comparison's "before" side is.
+  const bufs = {};
+  const written = new Set();
+  for (const [n, b] of Object.entries(net.buffers)) {
+    const gb = device.createBuffer({ size: Math.max(4, b.size), usage: USAGE });
+    device.queue.writeBuffer(gb, 0, b64ToBytes(b.b64));
+    bufs[n] = { gb, size: Math.max(4, b.size), f32: !!b.f32, dtype: b.dtype };
+  }
+
+  // THE INFINITY UNIFORM -- `ops_webgpu.py:97`'s `bg_entry(0, float('inf'))`.
+  const infinity = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  device.queue.writeBuffer(infinity, 0, new Float32Array([Infinity]));
+
+  // ONE PIPELINE PER DISTINCT WGSL TEXT, never per entry name: tinygrad's entry
+  // names are NOT unique (`E_8_4` names both the running_mean and running_var
+  // fills), so a cache keyed by name dispatches the first kernel for the second.
+  // **⇒ AND A NON-OUTPUT BINDING IS DECLARED `read`, WHICH IS A CORRECTION AND
+  // NOT A STYLE.** tinygrad's WGSL declares EVERY buffer
+  // `var<storage,read_write>`, and **MEASURED, WebGPU REJECTS THAT**:
+  //
+  //   WebGPU validation error: Writable storage buffer binding aliasing found
+  //   between ... binding index 1, and ... binding index 2, with overlapping
+  //   ranges (offset: 0, size: 73728) ...
+  //
+  // **⇒ AND THE SMALLEST TRAINING-STEPhas SEVERAL KERNELS THAT BIND ONE BUFFER
+  // TWICE**, so this is not an edge case: `var<storage,read>` may alias and
+  // `read_write` may not. **⇒ AND THE TRACE KNOWS WHICH BINDINGS ARE OUTPUTS**
+  // (`k.outs`, positions in `k.bufs`), so the rewrite is DERIVED and not guessed.
+  // **⇒ AND WRITABILITY IS DERIVED PER BUFFER NAME, NOT PER POSITION, AND THE
+  // DIFFERENCE IS A MEASURED REFUSAL.** A buffer bound at two positions is ONE
+  // buffer, so it has ONE type: MEASURED, marking its two occurrences `storage`
+  // and `read-only-storage` refuses the dispatch with
+  // `usage (Storage(read-write)|Storage(read-only)) includes writable usage and
+  // another usage in the same synchronization scope`. **⇒ SO A BUFFER IS
+  // WRITABLE IF IT IS AN OUTPUT AT **ANY** POSITION.**
+  const writableSet = (k) => new Set((k.outs || []).map((p) => k.bufs[p]));
+  const readonly = (k) => {
+    const wset = writableSet(k);
+    let w = k.wgsl;
+    const seen = new Set();
+    k.bufs.forEach((name) => {
+      const b = k.bufs.indexOf(name) + 1;
+      // one rewrite per distinct BINDING, and one type per distinct NAME
+      k.bufs.forEach((nm, pos) => {
+        if (nm !== name) return;
+        const bd = pos + 1;
+        if (wset.has(nm)) return;
+        const re = new RegExp(`@binding\\(${bd}\\)var<storage,read_write>`);
+        if (re.test(w)) { w = w.replace(re, `@binding(${bd})var<storage,read>`); }
+      });
+      seen.add(name);
+    });
+    return w;
+  };
+
+  // **⇒ AND AN ALIASED WRITABLE BUFFER IS COLLAPSED TO **ONE BINDING**, WHICH IS
+  // THE ONLY SPELLING WEBGPU ACCEPTS AND THE ONLY ONE THAT IS CORRECT.**
+  //
+  // The trace BINDS ONE BUFFER AT SEVERAL POSITIONS whenever the kernel is
+  // in-place (`b23` at [0,2], `b10` at [0,1,2], ...). **⇒ AND WEBGPU REFUSES TWO
+  // BINDINGS TO ONE BUFFER IF EITHER IS WRITABLE** ("Writable storage buffer
+  // binding aliasing found"), so the first version of this page bound a COPY of
+  // the read side -- **AND AN IN-PLACE ACCUMULATION CANNOT SEE ITS OWN WRITES
+  // THROUGH A COPY**, which is why the loss came back `3.9493408203125` where
+  // CPython had `2.7735066413879395`.
+  //
+  // **⇒ SO THE DUPLICATE BINDINGS ARE REMOVED FROM THE SHADER AND THE BODY IS
+  // REWRITTEN TO NAME THE SURVIVING ONE.** One binding, one buffer, reads see
+  // writes, and there is no aliasing left to be refused. **⇒ AND THE SURVIVOR IS
+  // THE **OUTPUT** POSITION when there is one, so the write still lands in the
+  // buffer the trace says it does.**
+  const aliasPlan = (k) => {
+    const occ = new Map();
+    k.bufs.forEach((n, i) => occ.set(n, [...(occ.get(n) || []), i]));
+    const outs = new Set(k.outs || []);
+    const decl = new Map();               // position -> the shader's identifier
+    for (const m of k.wgsl.matchAll(/@binding\((\d+)\)var<storage,read_write>(\w+)/g))
+      decl.set(Number(m[1]) - 1, m[2]);
+    const rename = new Map();              // dropped identifier -> survivor
+    const drop = new Set();               // positions with no binding
+    for (const [n, pos] of occ) {
+      if (pos.length < 2) continue;
+      const keep = pos.find((i) => outs.has(i)) ?? pos[0];
+      const keepName = decl.get(keep);
+      if (!keepName) continue;
+      for (const i of pos) {
+        if (i === keep) continue;
+        const gone = decl.get(i);
+        if (!gone) continue;
+        rename.set(gone, keepName);
+        drop.add(i);
+      }
+    }
+    return { rename, drop, keepSet: new Set(occ.keys()) };
+  };
+
+  const shaderOf = (k, plan) => {
+    const wset = writableSet(k);
+    let w = k.wgsl;
+    // 1. drop the duplicate declarations
+    for (const i of plan.drop) {
+      const b = i + 1;
+      // **⇒ AND THE WHOLE DECLARATION GOES, `@group(0)` INCLUDED.** Dropping
+      // only from `@binding(N)` leaves `@group(0) ` stranded, and the next
+      // declaration inherits it: MEASURED, `WGSL rejected ... line 6:2 duplicate
+      // group attribute`.
+      w = w.replace(new RegExp(`@group\\(\\d+\\) @binding\\(${b}\\)var<storage,read_write>\\w+:array<[^>]+>;\\n?`), "");
+    }
+    // 2. point the body at the survivor
+    for (const [gone, stay] of plan.rename) {
+      w = w.replace(new RegExp(`\\b${gone}\\b`, "g"), stay);
+    }
+    // 3. every remaining non-output binding is READ-ONLY
+    k.bufs.forEach((nm, i) => {
+      if (plan.drop.has(i) || wset.has(nm)) return;
+      const b = i + 1;
+      const re = new RegExp(`@binding\\(${b}\\)var<storage,read_write>`);
+      if (re.test(w)) w = w.replace(re, `@binding(${b})var<storage,read>`);
+    });
+    return w;
+  };
+
+  const plans = new Map();
+  const planOf = (k) => {
+    if (!plans.has(k.wgsl)) plans.set(k.wgsl, aliasPlan(k));
+    return plans.get(k.wgsl);
+  };
+
+  // **⇒ AND THE MODULE CACHE IS KEYED BY **THE TRANSFORMED TEXT**, NOT THE RAW
+  // `wgsl`.** The transform depends on `outs`, and two launches can share one
+  // WGSL string while disagreeing about which binding is an output -- so a cache
+  // keyed on the raw text would hand one of them the other's shader.
+  const modules = new Map(), pipelines = new Map();
+  const codeOf = (k) => shaderOf(k, planOf(k));
+  const modulesByCode = new Map();
+  for (const k of net.kernels) {
+    if (!k.wgsl) throw new Error(`kernel ${k.entry} has no WGSL: ${k.wgslError}`);
+    const code = codeOf(k);
+    if (modulesByCode.has(code)) continue;
+    const mod = device.createShaderModule({ code, label: `${k.entry}#${modulesByCode.size}` });
+    const info = await mod.getCompilationInfo();
+    const errs = info.messages.filter((m) => m.type === "error");
+    if (errs.length) {
+      throw new Error(`WGSL rejected for ${k.entry}: ` +
+        errs.map((m) => `line ${m.lineNum}:${m.linePos} ${m.message.split("\n")[0]}`).join(" | "));
+    }
+    modulesByCode.set(code, mod);
+  }
+
+  // **⇒ AND THE LAYOUT MIRRORS THE SHADER, BINDING BY BINDING.** A `read`
+  // declaration is `read-only-storage` in the layout and `storage` is
+  // `read_write`; MEASURED, a mismatch refuses the whole dispatch with
+  // `The buffer type in the shader (BufferBindingType::ReadOnlyStorage) is not
+  // compatible with the type in the layout (BufferBindingType::Storage)`.
+  const layoutFor = (k, plan) => {
+    const wset = writableSet(k);
+    const entries = [
+      { binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
+    ];
+    k.bufs.forEach((nm, i) => {
+      if (plan.drop.has(i)) return;
+      entries.push({ binding: i + 1, visibility: GPUShaderStage.COMPUTE,
+                     buffer: { type: wset.has(nm) ? "storage" : "read-only-storage" } });
+    });
+    return device.createBindGroupLayout({ entries });
+  };
+
+  // **⇒ AND THE ERROR SCOPE IS NOT OPTIONAL.** `examples/webgpu/mnist/mnist-webgpu.js`
+  // pushes one and POPS it, because WebGPU reports a bad bind group as a
+  // validation error and then SILENTLY SKIPS THE DISPATCH -- the buffer keeps its
+  // previous contents and the page reports a number that never changed.
+  // **⇒ AND THIS PAGE'S FIRST VERSION HAD NO SCOPE**, which is why a wrong answer
+  // read as a number rather than as an error.
+  device.pushErrorScope("validation");
+  let launches = 0, uploads = 0;
+  for (const k of net.kernels) {
+    // THE UPLOADS: a buffer that no EARLIER launch wrote is a weight or the
+    // input, so its pre-state comes from CPython. A buffer an earlier launch
+    // wrote is already correct on the GPU, and re-uploading it would turn the
+    // replay into a memory dump instead of a computation.
+    // **⇒ AND THIS WRITE IS UNCONDITIONAL**, which is what
+    // `examples/webgpu/mnist/mnist-webgpu.js` does and what the trace MEANS:
+    // `k.in` is the pre-state of every buffer this launch reads that no earlier
+    // launch wrote, sampled at this launch -- so writing it is always correct.
+    // **⇒ AND AN EARLIER VERSION OF THIS PAGE SKIPPED IT WHEN `written` HELD THE
+    // NAME, WHICH IS NOT THE SAME TEST**: `in` is per-launch, and skipping a
+    // legitimate pre-state write is a silent wrong answer, not an optimisation.
+    for (const [n, b64] of Object.entries(k.in || {})) {
+      device.queue.writeBuffer(bufs[n].gb, 0, b64ToBytes(b64));
+      uploads++;
+    }
+    const mod = modulesByCode.get(codeOf(k));
+    const plan = planOf(k);
+    const key = `${k.wgsl}#${k.entry}#${[...writableSet(k)].sort().join(",")}#${[...plan.drop].sort().join(",")}`;
+    if (!pipelines.has(key)) {
+      const pl = device.createPipelineLayout({ bindGroupLayouts: [layoutFor(k, plan)] });
+      pipelines.set(key, device.createComputePipeline({ layout: pl, compute: { module: mod, entryPoint: k.entry } }));
+    }
+    const bindings = [{ binding: 0, resource: { buffer: infinity } }];
+    // **⇒ AND A WRITABLE BUFFER BOUND TWICE GETS A **COPY** AT ITS NON-OUTPUT
+    // POSITIONS.** WebGPU refuses writable aliasing (MEASURED:
+    // `Writable storage buffer binding aliasing found between binding index 1
+    // and binding index 2 ... size: 73728`), and this kernel genuinely reads and
+    // writes ONE buffer. **⇒ AND A COPY IS EXACT FOR IT BECAUSE THE TRACE SAYS
+    // THE SAME BUFFER IS BOTH SOURCE AND DESTINATION, WHICH IS AN IN-PLACE
+    // ELEMENTWISE OP** -- every element is independent, so a snapshot of the
+    // pre-state is what the read side must see. **⇒ AND IT IS NOT A GUESS ABOUT
+    // WHICH IS WHICH: the OUTPUT positions are `k.outs`, and those keep the real
+    // buffer.**
+    // **⇒ AND THERE IS NO COPY ANY MORE.** The duplicate bindings were removed
+    // from the shader (`plan.drop`), so a buffer appears at most ONCE here and
+    // the in-place kernel reads what it just wrote.
+    const enc = device.createCommandEncoder();
+    k.bufs.forEach((n, i) => {
+      if (plan.drop.has(i)) return;
+      bindings.push({ binding: i + 1, resource: { buffer: bufs[n].gb } });
+    });
+    const bg = device.createBindGroup({ layout: pipelines.get(key).getBindGroupLayout(0), entries: bindings });
+    const pass = enc.beginComputePass();
+    pass.setPipeline(pipelines.get(key));
+    pass.setBindGroup(0, bg);
+    pass.dispatchWorkgroups(k.global[0], k.global[1], k.global[2]);
+    pass.end();
+    device.queue.submit([enc.finish()]);
+    for (const i of (k.outs || [])) written.add(k.bufs[i]);
+    launches++;
+  }
+  await device.queue.onSubmittedWorkDone();
+  const verr = await device.popErrorScope();
+  if (verr) throw new Error(`WebGPU validation error: ${verr.message}`);
+  out.launches = launches;
+  out.uploads = uploads;
+
+  // THE READBACK: EVERY f32 BUFFER. The claim is about WEIGHTS, so one output
+  // buffer would be the wrong denominator -- a forward pass returns one tensor
+  // and a training step changes 34.
+  const names = Object.keys(bufs).filter((n) => bufs[n].f32);
+  const enc = device.createCommandEncoder();
+  const staged = new Map();
+  for (const n of names) {
+    const rb = device.createBuffer({ size: bufs[n].size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+    enc.copyBufferToBuffer(bufs[n].gb, 0, rb, 0, bufs[n].size);
+    staged.set(n, rb);
+  }
+  device.queue.submit([enc.finish()]);
+  out.words = {};
+  out.sizes = {};
+  for (const n of names) {
+    const rb = staged.get(n);
+    await rb.mapAsync(GPUMapMode.READ);
+    out.words[n] = [...new Uint32Array(rb.getMappedRange().slice(0))];
+    out.sizes[n] = bufs[n].size;
+    rb.unmap(); rb.destroy();
+  }
+  out.f32_buffers = names.length;
+  out.ok = true;
+} catch (e) {
+  out.ok = false;
+  out.error = String(e && e.stack ? e.stack : e).slice(0, 3000);
+}
+document.getElementById("o").textContent = JSON.stringify(out);
+window.__TRAIN_RESULT = out;
+document.title = "done";
+</script>
+</body>
+</html>
