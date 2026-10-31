@@ -42,15 +42,20 @@ from FIVE HAND-WRITTEN WRAPS at render.bend:2809-2819).  The port also prints `p
 where the oracle does not, so the two lanes disagree about one extra key: a `ghost`.
 
 ⚠ AND ON THIS LANE THE VALUE COMPARISON IS **NOT** A TAUTOLOGICAL ZERO -- the opposite of llvmir and
-nir_llvmir.  MEASURED 2026-10-21: port stdout md5 `72eb3e28575c8f843ac5ae58d9afcc98` (161 physical
-lines, STABLE across three consecutive runs), oracle stdout md5
-`642f9770c558df0f1be03a8f67ac997e` (124 lines) -- and the ORACLE's md5 is a PIN, because the oracle
+nir_llvmir.  MEASURED 2026-10-31: port stdout md5 `5e46be792ff2c8c661f1236cdccd4cc2` (156 physical
+lines), oracle stdout md5
+`400e2008d9755766b3b5902c52461133` (124 lines) -- and the ORACLE's md5 is a PIN, because the oracle
 answers from an upstream REVISION, while the PORT's md5 is a MOVING reading: `tinybendygrad/uop/ops.bend`
 is another live unit's and its edit REMOVED the `4` from the port's hand-written `py=` literal
 between two runs of this gate on the same day, so the port's md5 moved `18b5e53f...` -> `72eb3e28...`
 with no edit to THIS file.  The two sides print DIFFERENT bytes, so `disagree` is a real measurement
 here and the value comparison is not decoration.  The port has 14 rows the oracle does not answer --
 11 `rnd_*` and 3 `pu_*` -- which is `ghost`, not disagreement.
+⚠ AND THE ORACLE's md5 MOVED TWICE, AND BOTH MOVES ARE MEASURED.  `642f9770...` (2026-10-21) ->
+`01aafcdb...` (the oracle's `ParamArg` fixture was rebuilt by `72f98ffe0`'s move of the size) ->
+`400e2008...` (2026-10-31, the oracle's `KernelInfo.optimized` SPLICE, `checks/render-gate-oracle.py`'s
+`resolve_field_splices()`).  THE THIRD MOVE CHANGED EXACTLY ONE LINE of the 124: the `arg_repr AKern`
+row, which is the row the splice is FOR.
 
 ⚠ AND THE PORT LANE'S ANSI ESCAPES ARE A READER DEFECT, NOT A PORT DEFECT.  `print_uops` colours
 its indices (`\x1b[31m0\x1b[0m`) and upstream colours them too, so a lane's bytes MAY carry escapes
@@ -67,6 +72,16 @@ gate's own selftest.
 
 ⚠ AND THE ELEVEN DISAGREEMENTS ARE TWO CAUSES, NOT ELEVEN BUGS.  MEASURED 2026-10-21 on the live
 lane: 80 gated rows, 69 agree, 11 disagree, and every one is NAMED.
+
+  ⚠ AND THAT READING IS TWO MOVES OLD.  MEASURED 2026-10-31 on the live lane: 80 gated rows,
+  80 agree, 0 disagree.  THE FIVE `py=` WRAPS ARE GONE (`c2fbda4ca` moved them to `py_nocol`,
+  which costs nothing: the column was a COPY of the answer and not a second reading of it), the
+  SIX `ParamArg` SHAPES ARE GONE (the oracle's subject moved to an `ops.py` whose `ParamArg`
+  has no `size`), and the `AKern` ROW IS GONE TOO (the oracle's `KernelInfo.optimized` SPLICE,
+  `checks/render-gate-oracle.py`'s `resolve_field_splices()`).  ⚠ THE PARAGRAPH BELOW IS KEPT
+  AS A DATED RECORD BECAUSE IT IS WHAT THE FIXES WERE MEASURED AGAINST, AND A GOVERNING
+  DOCUMENT THAT DELETES ITS OWN HISTORY IS A DOCUMENT THAT CANNOT BE CHECKED.  THE READING
+  ABOVE IS THE ONE THAT IS TRUE TODAY.
 
   FIVE are the HAND-WRITTEN `py=` WRAPS (render.bend:2809-2819) -- the port puts the `py=` column
   on its OWN physical line and the oracle does not reprint it, so the port's VALUE for those five
@@ -132,7 +147,7 @@ ORACLE = ["checks/render-gate-oracle.py", "--gate"]
   committed at `checks/render-gate-oracle.py` and it RUNS -- it resolves its subject by DISCOVERY
   (the last upstream revision whose `tinygrad/uop/render.py` still defines `pyrender`, materialised
   with `git archive` into a temp dir on `sys.path`) and prints 124 rows whose stdout md5 is
-  `642f9770c558df0f1be03a8f67ac997e`, byte-identical to the committed capture `checks/rn-orc.rows`."""
+  `400e2008d9755766b3b5902c52461133`, byte-identical to the committed capture `checks/rn-orc.rows`."""
 
 
 def refuse(*why):
@@ -709,18 +724,20 @@ def md5(text):
 
 def selftest():
   """SEVEN LANES OVER THE REAL CAPTURED PAIR.  The BASE DISAGREEMENT COUNT IS MEASURED, NOT
-  TYPED -- this lane's real pair already disagrees on 5 rows (the hand-written `py=` wraps), so a
-  hardcoded 0 would be a claim about a lane that does not exist.  The property asserted is the one
-  that separates the three plants:
+  TYPED -- so a hardcoded 0 would be a claim about a lane that does not exist.  The property
+  asserted is the one that separates the three plants:
 
       a VALUE plant RAISES `disagree` by exactly 1;
       a NAME  plant leaves `disagree` at the base count and moves `eq`/the name sets;
       a LITERAL plant RAISES the STALE-LITERAL count by exactly 1, and its CONTROL -- the same
       copy with a plant that matches nothing -- leaves it at the base count.
 
-  On llvmir and nir_llvmir the base count is 0 and the two are equally distinguishable; here the
-  base is 5, and a control that hardcoded 0 would have read `value` as a FAILURE of the
-  instrument.
+  ⚠ THE BASE WAS 5, AND IT IS NOW 0.  MEASURED: the five rows were the hand-written `py=`
+  wraps, and `c2fbda4ca` moved them to `py_nocol` -- and the oracle's `KernelInfo.optimized`
+  SPLICE (2026-10-31) closed the sixth, `arg_repr AKern`.  SO THIS LANE'S OWN PROSE SAID
+  "THE REAL PAIR REALLY DOES DISAGREE" AND STOPPED BEING TRUE, AND A LANE THAT ASSERTS A
+  COUNT IT MEASURES IS STILL A LANE THAT NARRATES A COUNT IT MEASURED ONCE.  THE BASE IS 0
+  NOW, AND THE PLANTS ARE TOLD APART BY THE COUNTS THEY MOVE, NOT BY A HARD-CODED ZERO.
 
   ⚠ THE `shape` PLANT PUTS THE `=` INSIDE THE NAME (`pyrender const` -> `pyrender co=nst`), NOT
   AFTER IT.  A trailing `=` does not work on this lane and the first two attempts showed why: with
@@ -751,11 +768,11 @@ def selftest():
   s0 = len(base["stale"])
   print(f"[selftest base] the REAL captured pair: {len(base['gated'])} gated rows, "
         f"{len(base['agree'])} agree, {n0} disagree "
-        f"{[d[0] for d in base['disagree']]} -- MEASURED, and it is NOT 0: the port puts the "
-        f"`py=` column on its own physical line on five rows (render.bend:2809-2819) and the "
-        f"oracle does not, so the port's VALUE for those five carries an extra line. A `clean` "
-        f"lane that quietly is not the real lane is the failure this work is about, so the base is "
-        f"the real pair and the number is printed.")
+        f"{[d[0] for d in base['disagree']]} -- MEASURED.  IT WAS 5 AND IT IS NOW 0: the five "
+        f"were the hand-written `py=` wraps (render.bend:2809-2819), which `c2fbda4ca` moved to "
+        f"`py_nocol`, and the oracle's `KernelInfo.optimized` SPLICE closed the sixth, "
+        f"`arg_repr AKern`.  A `clean` lane that quietly is not the real lane is the failure this "
+        f"work is about, so the base is the real pair and the number is printed.")
   print(f"[selftest base] the port's OWN `py=` LITERAL against the port's own EMULATION: "
         f"{s0}/{base['literals']} row(s) disagree -- MEASURED, and the DENOMINATOR is the point: "
         f"a count of 0 with no denominator is a count that read NOTHING, and this one is 0 over "
@@ -805,9 +822,10 @@ def selftest():
           f"disagree={len(r['disagree'])} {[d[0] for d in r['disagree']][:4]}  "
           f"stale={len(r['stale'])}/{r['literals']} {[s[0] for s in r['stale']][:4]}  "
           f"{'ok' if good else 'SELFTEST FAIL'}")
-  print(f"  NOTE every lane is BROKEN, and that is CORRECT: `cont` > 0 on the real lane and the "
-        f"real pair really does disagree, so this lane's honest verdict is BROKEN and `base` "
-        f"asserts BROKEN rather than AGREE. The two plants are still told apart by `disagree`.")
+  print(f"  NOTE every lane is BROKEN, and that is CORRECT: `cont` > 0 on the real lane, and a "
+        f"lane with unreadable rows has no verdict to give, so this lane's honest verdict is "
+        f"BROKEN and `base` asserts BROKEN rather than AGREE. The two plants are still told apart "
+        f"by `disagree`.")
   print(f"  NOTE the `colour` lane is the READER'S OWN PLANT: the captured port output with the "
         f"port's escape form around every value must read as the same rows.  It FAILS on a reader "
         f"that counts brackets without stripping -- MEASURED, that reader reads 2 rows where the "
@@ -885,7 +903,7 @@ def main():
            f"SHIPS IS `checks/render-gate-oracle.py`, AND IT RUNS: it resolves its subject by "
            f"DISCOVERY (the last upstream revision whose `tinygrad/uop/render.py` still defines "
            f"`pyrender`, materialised with `git archive` into a temp dir on `sys.path`) and prints "
-           f"124 rows whose stdout md5 is `642f9770c558df0f1be03a8f67ac997e` -- byte-identical to "
+           f"124 rows whose stdout md5 is `400e2008d9755766b3b5902c52461133` -- byte-identical to "
            f"the committed capture `checks/rn-orc.rows`. The path this gate names is {_touched}. "
            f"The CAPTURED pair this gate judges is NOT lost -- see the selftest lane, whose "
            f"captures are byte-verified against the md5s this file's header records.")
@@ -958,9 +976,13 @@ def main():
 # plant its own surface, and a declared surface that no argv reaches is a label.
 #
 #   0  `--selftest` -- the gate's own seven lanes over the captured pair, and they hold.
-#   1  the captured pair itself -- it really does disagree on five rows (the hand-written `py=`
-#      wraps), so the honest verdict over the capture is BROKEN, and no `bend` and no oracle
-#      subprocess is spent to learn it.
+#   1  the captured pair itself -- the honest verdict over the capture is BROKEN, and no `bend`
+#      and no oracle subprocess is spent to learn it.  ⚠ IT IS BROKEN FOR THE READER'S SAKE, NOT
+#      FOR A DISAGREEMENT: the captured pair's 80 gated rows AGREE (MEASURED, 2026-10-31, after
+#      the oracle's `KernelInfo.optimized` splice), and the BROKENNESS is `cont` > 0 -- the
+#      `pyrender` answers contain newlines and the shipped reader reads each continuation as a
+#      row of its own.  IT WAS A DISAGREEMENT ONCE (five rows, the hand-written `py=` wraps), and
+#      a verdict surface that names a reason which has stopped being true is a label.
 #   3  `--oracle <a path that does not resolve>` -- an absent subject is REFUSED, not judged.
 #
 # ⚠ `--plant-literal` IS NOT IN `PLANTS`, AND NEITHER ARE `--plant`, `--plant-shape` NOR

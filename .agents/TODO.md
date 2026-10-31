@@ -26159,6 +26159,61 @@ three PORT RECORDS ARE MISSING UPSTREAM FIELDS, and the ARITY tells a RENAME fro
       `population_digest()` is still `ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`
       and `population_bad()` is `[]`. **⇒ AND `WANT` IS `{}`**, so the `api` graph
       is already expected to AGREE and no exception moves.
+
+## Session 2026-10-31 — the ORACLE SPLICES `KernelInfo.optimized`, and the `AKern` row CAN agree
+
+- [x] **NO UPSTREAM REVISION IS BOTH `optimized`-BEARING AND `enter_calls`-CAPABLE, SO THE
+      ORACLE's SUBJECT CANNOT MOVE.  MEASURED, over ALL 888 upstream revisions that touch
+      `tinygrad/uop/ops.py`:** **8** have `optimized` in `KernelInfo` (all 2026-10-15 or
+      later) and **ALL 8 FAIL the `toposort` property** (`enter_calls=False`, flipped
+      2026-10-09 by `efb4cc8cb`, SIX DAYS BEFORE `optimized` landed at `753a62ae0`).
+      **⇒ ZERO revisions are both.**  **⇒ AND MOVING THE SUBJECT WOULD COST FOUR ROWS**:
+      the four `pyr_call_*` rows NEED the CALL bodies walked.
+      **⇒ AND THE HEADER's CLAIM WAS TRUE**, and it was VERIFIED rather than trusted.
+
+- [x] **`checks/render-gate-oracle.py`: `resolve_field_splices()` — A FIELD SPLICE, DERIVED.**
+      **A FIELD IS NOT A NAME, SO THE `consumer_map_from_toposort` SPLICE CANNOT SEE IT:**
+      that one is a module-level name the RENDERER IMPORTS; `optimized` is a FIELD of a class
+      nobody imports, and the class's `repr` changes without any import changing.  **⇒ AND
+      THE DERIVATION IS OVER THE CLASSES, WITH THREE FILTERS, EACH EXCLUDING SOMETHING
+      MEASURED:**
+      **(1) DESCENDANTS OF THE OPS REVISION ONLY** — the whole population reaches back
+      before it, where upstream's `ops.py` had fields the ops revision LATER DROPPED
+      (`ProgramInfo.name`, `KernelInfo.axis_types`, `ParamArg.size`), and splicing those
+      back would ADD a field the port's records cannot hold; MEASURED, **22 of the 888** are
+      descendants.  **(2) A PURE ADDITION** — a RENAME is one field added and one removed,
+      and the ONE rename in range is `ProgramInfo.vars` -> `params` (`a6addc2d4`,
+      2026-10-14), which the filter EXCLUDES, because the PORT prints `vars=`.  **(3) THE
+      FIELD MUST SURVIVE AT UPSTREAM MASTER.**  **⇒ AND THE SURVIVING SET IS EXACTLY ONE
+      FIELD: `KernelInfo.optimized`, added by `753a62ae0` (2026-10-15).**  **⇒ AND THE
+      DONOR IS THE REVISION THAT ADDED IT** — its PARENT lacks the field — and the field
+      goes where the DONOR put it, which `verify_subject()` CHECKS against the donor's field
+      ORDER, because a field in the wrong place prints a dataclass repr whose fields are in
+      the wrong order, and the wrong order is a DIFFERENT ANSWER.
+
+- [x] **`checks/rn-gate.py`: 79/80 -> 80/80, AND THE OTHER 79 ROWS STILL AGREE (MEASURED).**
+      **BEFORE:** `gated 80 agree 79 disagree ['arg_repr AKern']`.  **AFTER:** `gated 80
+      agree 80 disagree []`.  **⇒ AND THE SPLICE MOVED EXACTLY ONE LINE OF THE ORACLE's 124**
+      — the `arg_repr AKern` row — and the other 123 are BYTE-IDENTICAL, so the splice
+      perturbed nothing else.  **⇒ AND THE PORT WAS NOT TOUCHED**: `optimized` was already
+      upstream's sixth field there (`c2fbda4ca`), and the port's answer is byte-identical
+      to `repr(KernelInfo())` at upstream master.
+
+- [x] **THE GATE STILL GOES RED, AND EVERY PLANT STILL FIRES (MEASURED).**
+      `checks/rn-gate.py --plant "arg_repr AKern"` -> `gated 80 agree 79 disagree
+      ['arg_repr AKern']`; `--oracle checks/__no_such_oracle__.py` -> `rc=3` REFUSED;
+      `--selftest` -> `SELFTEST OK`, all seven lanes, and the base is now **0** disagree
+      (it was 5) so the plants are told apart by the counts they MOVE.  **⇒ AND
+      `checks/render-gate-oracle-gate.py`'s THREE REFUSAL ARMS STILL REFUSE**, including
+      the SHADOWED-subject arm — so the oracle's `verify_origin()` is NOT LOOSENED.
+
+- [x] **`checks/rn-orc.rows` RE-CAPTURED, AND THE PIN WENT RED FIRST.**  MEASURED, the
+      oracle gate read `the oracle's rows DIFFER from the tree's capture on 1 line(s):
+      [99]` and exited 1 **BEFORE** the capture was regenerated — **A PIN THAT CANNOT GO
+      RED IS A LABEL** — and the regenerated capture's md5 is `400e2008d9755766b3b5902c52461133`
+      (was `01aafcdbb5d41023a7f54a58c93733a2`).  **⇒ AND `checks/rn-gate.py`'s THREE md5
+      REFERENCES WERE STALE BEFORE THIS WORK** (`642f9770...`, the 2026-10-21 reading) and
+      now name the live value.
 the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
 
   - [x] **`gates/bendcite-gate.py`: THE 53 REMAINING STALE POINTERS ARE RE-POINTED, AND THE

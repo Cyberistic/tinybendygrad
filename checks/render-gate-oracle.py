@@ -57,6 +57,30 @@ the 2026-10-05 shapes.  A HYBRID BUILT ON THE PIN IS A HYBRID THAT DISAGREES
 WITH THE PORT ON FIVE ROWS.  THE OPS REVISION IS DERIVED, AND THE DERIVATION
 IS ABOVE.
 
+⚠ AND NO UPSTREAM REVISION IS BOTH `optimized`-BEARING AND `enter_calls`-CAPABLE,
+SO THE SUBJECT CANNOT MOVE.  MEASURED, over all 888 upstream revisions that touch
+`tinygrad/uop/ops.py`: EIGHT have `optimized` in `KernelInfo` (all 2026-10-15 or
+later) and ALL EIGHT have `enter_calls=False` -- `efb4cc8cb` flipped that default
+on 2026-10-09, six days BEFORE `optimized` landed.  ZERO revisions are both.  SO
+THE `optimized` FIELD IS SPLICED IN, AND THE SPLICE IS THE SAME MECHANISM AS THE
+ONE BELOW, APPLIED TO A CLASS INSTEAD OF A MODULE.
+
+⚠ A FIELD IS NOT A NAME, SO THE NAME SPLICE CANNOT SEE IT.  `consumer_map_from_toposort`
+is a module-level name the RENDERER IMPORTS; `optimized` is a FIELD of a class
+nobody imports, and the class's `repr` changes without any import changing.  SO
+THE DERIVATION IS OVER THE CLASSES (`resolve_field_splices()`), AND IT HAS THREE
+FILTERS, EACH OF WHICH EXCLUDES SOMETHING MEASURED:  (1) only the OPS REVISION'S
+DESCENDANTS -- the whole population reaches back before it, where upstream's
+`ops.py` had fields the ops revision LATER DROPPED (`ProgramInfo.name`,
+`KernelInfo.axis_types`, `ParamArg.size`);  (2) a PURE ADDITION -- a RENAME is
+one field added and one removed, and the ONE rename in range is
+`ProgramInfo.vars` -> `params` (`a6addc2d4`, 2026-10-14), which the filter
+excludes, because the PORT prints `vars=`;  (3) the field must SURVIVE at upstream
+master.  MEASURED over the 22 descendants: the surviving set is EXACTLY ONE field,
+`KernelInfo.optimized`, added by `753a62ae0` (2026-10-15).  THE DONOR IS THE
+REVISION THAT ADDED IT -- its PARENT lacks the field -- and the field goes where
+the DONOR put it, which `verify_subject()` CHECKS against the donor's field order.
+
 THE TWO REVISIONS ARE MATERIALISED AS ONE TREE: `git archive <ops revision>
 tinygrad` into a temp dir, `tinygrad/uop/render.py` OVERLAID from the render
 revision, and the temp dir put FIRST on `sys.path` so the vendored `tinygrad/`
@@ -77,6 +101,17 @@ DROPPED, TAKEN VERBATIM FROM THE RENDER REVISION'S `ops.py`.  THE SET OF
 MISSING NAMES IS DERIVED (the renderer's import statement minus the ops
 revision's own definitions), NOT LISTED, AND THE DERIVATION IS RE-COMPUTED AND
 COMPARED BYTE FOR BYTE BEFORE THE TREE IS USED.
+
+⚠ AND ONE FIELD HAS TO COME FROM A LATER REVISION.  `KernelInfo.optimized` landed
+upstream on 2026-10-15 (`753a62ae0`) and NO revision that has it can run the
+pyrender-era renderer, so the materialised `ops.py` ALSO carries the FIELDS a
+later upstream revision ADDED to a class the ops revision has.  THE DERIVATION
+IS OVER THE CLASSES AND IS NOT LISTED EITHER -- see the three filters above.  IT
+IS A DIFFERENT MECHANISM FROM THE NAME SPLICE ONLY IN WHAT IT EDITS: a NAME is
+appended at module level, a FIELD is INSERTED INTO A CLASS BODY at the position
+the DONOR put it, and `verify_subject()` checks the resulting field ORDER
+against the donor's, because a field in the wrong place prints a dataclass repr
+whose fields are in the wrong order, and the wrong order is a different answer.
 
 THE IMPORT WAS RE-DERIVED, NOT TRANSCRIBED.  `range_str` and `multirange_str`
 are NOT imported here at all: this oracle prints no `pu_*` row, and those two
@@ -228,6 +263,34 @@ def source_of(src, name):
   return None
 
 
+def class_fields(src):
+  """{class name: [field names in upstream's order]} for the module-level classes of `src`.
+
+  BY AST, for the same reason `paramarg_fields` is: a field is a NAME, and the words
+  `optimized` and `size` occur all over a module that has nothing to do with them."""
+  out = {}
+  for node in ast.parse(src).body:
+    if isinstance(node, ast.ClassDef):
+      out[node.name] = [s.target.id for s in node.body
+                        if isinstance(s, ast.AnnAssign) and isinstance(s.target, ast.Name)]
+  return out
+
+
+def field_source(src, cls, field):
+  """The exact source text of `cls`'s `field` line in `src`, with its newline.  None if absent.
+
+  ONE LINE, because a dataclass field IS one line, and the splice puts these bytes into
+  another file where a wrong span would be a silent fabrication."""
+  lines = src.splitlines(keepends=True)
+  for node in ast.parse(src).body:
+    if not (isinstance(node, ast.ClassDef) and node.name == cls):
+      continue
+    for s in node.body:
+      if isinstance(s, ast.AnnAssign) and isinstance(s.target, ast.Name) and s.target.id == field:
+        return lines[s.lineno - 1]
+  return None
+
+
 # --- THE TWO REVISIONS, DISCOVERED ------------------------------------------------
 def resolve_render():
   """The LAST upstream revision whose `tinygrad/uop/render.py` still defines `pyrender`.
@@ -295,11 +358,166 @@ def resolve_ops():
          "upstream history")
 
 
+def resolve_field_splices(ops_revision):
+  """[(class, field, donor revision)] -- the dataclass FIELDS the OPS revision's classes
+  are missing and a LATER upstream revision ADDED, and the revision that added each.
+
+  ⚠ A FIELD IS NOT A NAME, SO THE `derived_ops` SPLICE CANNOT SEE IT.  `consumer_map_from_toposort`
+  is a module-level name the RENDERER IMPORTS; `optimized` is a FIELD of a class nobody
+  imports, and the class's repr changes without any import changing.  So the derivation is
+  over the CLASSES instead.
+
+  THE SET IS DERIVED, NOT LISTED, and the derivation has THREE filters, each of which
+  excludes something MEASURED:
+
+    1 DESCENDANTS OF THE OPS REVISION ONLY.  `rev-list <upstream> -- <path>` is the whole
+      population (MEASURED, 888 revisions), and it reaches back before the ops revision,
+      where upstream's `ops.py` had fields the ops revision LATER DROPPED -- `ProgramInfo.name`,
+      `KernelInfo.axis_types`, `ParamArg.size`.  Splicing those back would ADD a field the
+      port's records cannot hold, so the walk is restricted to the ops revision's DESCENDANTS
+      (MEASURED, 22 of the 888).
+
+    2 A PURE ADDITION.  A revision contributes a field only when it ADDS fields to the base
+      class and REMOVES NONE.  A rename is one field added and one removed, and a rename is
+      not a splice: it changes a field's NAME, and the base's `ProgramInfo` names its third
+      field `vars` where the newer upstream names it `params`.  MEASURED, the ONE rename in
+      the descendants' range is `ProgramInfo.vars` -> `params` (`a6addc2d4`, 2026-10-14), and
+      the filter excludes it -- which is RIGHT, because the PORT prints `vars=` and the
+      materialised subject must answer the same question.
+
+    3 THE FIELD MUST SURVIVE AT UPSTREAM MASTER.  A field that a later revision added and a
+      later revision removed again is not part of the current question.
+
+  MEASURED over the 22 descendants: the surviving set is EXACTLY ONE field,
+  `KernelInfo.optimized`, added by `753a62ae0` (2026-10-15, "don't use tag for the
+  optimizer" #18835).
+
+  THE DONOR IS THE REVISION THAT ADDED THE FIELD, not the newest revision that has it: the
+  donor's line is the one upstream wrote, and the revision that added it is the one whose
+  PARENT lacks it.  MEASURED, that is `753a62ae0`; its parent `753a62ae0^` has a
+  `KernelInfo` with five fields."""
+  try:
+    revs = git("rev-list", UPSTREAM, "--", OPS).split()
+  except (RuntimeError, FileNotFoundError) as e:
+    refuse(f"upstream history unavailable: {e}")
+  base_src = blob(ops_revision, OPS)
+  if base_src is None:
+    refuse(f"the ops revision {ops_revision} has no {OPS}")
+  base = class_fields(base_src.decode())
+  head_src = blob(UPSTREAM, OPS)
+  if head_src is None:
+    refuse(f"{UPSTREAM} has no {OPS}")
+  head = class_fields(head_src.decode())
+  # (1) DESCENDANTS OF THE OPS REVISION, NEWEST-FIRST.
+  desc = []
+  for r in revs:
+    p = subprocess.run(["git", "merge-base", "--is-ancestor", ops_revision, r],
+                       cwd=REPO, capture_output=True)
+    if p.returncode == 0:
+      desc.append(r)
+  # (2)+(3) A PURE ADDITION THAT SURVIVES AT HEAD, with the revision that ADDED it.
+  added = {}   # (cls, field) -> donor revision
+  for rev in desc:
+    src = blob(rev, OPS)
+    if src is None:
+      continue
+    cur = class_fields(src.decode())
+    for cls, bf in base.items():
+      if cls not in cur:
+        continue
+      cf = cur[cls]
+      gained = [f for f in cf if f not in bf]
+      lost = [f for f in bf if f not in cf]
+      if not gained or lost:
+        continue
+      for f in gained:
+        if f not in head.get(cls, []):
+          continue      # (3) the field does not survive at master
+        # the DONOR is the revision that ADDED it: its PARENT lacks the field.
+        parent = blob(f"{rev}^", OPS)
+        if parent is None:
+          continue
+        pcur = class_fields(parent.decode())
+        if cls in pcur and f in pcur[cls]:
+          continue      # the parent already had it: this revision did not add it
+        added.setdefault((cls, f), rev)
+  return [(cls, f, rev) for (cls, f), rev in sorted(added.items())]
+
+
 # --- THE HYBRID TREE ---------------------------------------------------------------
-def derived_ops(ops_src, render_src, render_revision):
+def splice_fields(src, splices):
+  """`src` with each `(class, field, donor revision)`'s field line inserted, and the
+  list of the spliced field's POSITIONS, so the caller can verify them.
+
+  THE POSITION IS THE DONOR'S, NOT A RULE OF THIS FILE'S.  The donor's class body orders
+  the fields, and the added field sits where upstream put it: MEASURED, in `753a62ae0`'s
+  `KernelInfo` the field order is `name, applied_opts, opts_to_apply, estimates, beam,
+  optimized`, and the added field's PREDECESSORS among the fields the base shares are
+  EXACTLY the base's own field list, in order -- so the splice goes after the base's LAST
+  field.  A splice that put the field anywhere else would print a dataclass repr whose
+  fields are in the wrong order, and the wrong order is a different answer.
+
+  THE INSERTION IS BY LINE NUMBER, and the line number is the DONOR's line for that field
+  carried over: the base's class body is edited at the position the donor's field occupies
+  RELATIVE to the base's fields."""
+  out = src
+  for cls, field, donor in splices:
+    dsrc = blob(donor, OPS)
+    if dsrc is None:
+      refuse(f"the donor revision {donor} has no {OPS} to donate {cls}.{field} from")
+    dtext = dsrc.decode()
+    line = field_source(dtext, cls, field)
+    if line is None:
+      refuse(f"the donor revision {donor} does not define {cls}.{field}, which it is the "
+             f"donor for")
+    dorder = class_fields(dtext).get(cls, [])
+    bfields = class_fields(out)
+    if cls not in bfields:
+      refuse(f"the materialised {OPS} has no class {cls} to splice {field} into")
+    border = bfields[cls]
+    if field in border:
+      refuse(f"the materialised {OPS} already has {cls}.{field} -- the splice would "
+             f"duplicate it")
+    # WHERE the field goes: after the base's field that is the added field's IMMEDIATE
+    # PREDECESSOR among the fields the two share.  A field with no shared predecessor
+    # goes FIRST.
+    idx = dorder.index(field)
+    prev = None
+    for f in reversed(dorder[:idx]):
+      if f in border:
+        prev = f
+        break
+    # the base's line number of the class's last field, or of the class header if the
+    # class has no fields yet.
+    lines = out.splitlines(keepends=True)
+    insert_at = None
+    for node in ast.parse(out).body:
+      if not (isinstance(node, ast.ClassDef) and node.name == cls):
+        continue
+      body = [s for s in node.body
+              if isinstance(s, ast.AnnAssign) and isinstance(s.target, ast.Name)]
+      if not body:
+        insert_at = node.lineno      # after the `class X:` header
+        break
+      if prev is None:
+        insert_at = body[0].lineno - 1   # before the first field
+        break
+      for s in body:
+        if s.target.id == prev:
+          insert_at = s.end_lineno       # after that field's line
+          break
+      break
+    if insert_at is None:
+      refuse(f"the materialised {OPS} has no class {cls} to splice {field} into")
+    lines.insert(insert_at, line)
+    out = "".join(lines)
+  return out
+
+
+def derived_ops(ops_src, render_src, render_revision, field_splices):
   """The materialised `ops.py`: the OPS revision's bytes PLUS the names the RENDERER
   imports from `ops.py` and the OPS revision dropped, verbatim from the RENDER
-  revision's `ops.py`.
+  revision's `ops.py`, PLUS the dataclass FIELDS a later upstream revision added.
 
   THE MISSING SET IS DERIVED, NOT LISTED: it is the renderer's own
   `from tinygrad.uop.ops import ...` minus the names the ops revision defines.  At the
@@ -309,8 +527,8 @@ def derived_ops(ops_src, render_src, render_revision):
   against comes from the other.
 
   ⚠ THE SPLICE IS VERIFIED, NOT ASSUMED: the caller re-derives this and compares the
-  bytes, so a file that is not exactly "the ops revision plus the dropped names" is a
-  REFUSAL and not a different subject."""
+  bytes, so a file that is not exactly "the ops revision plus the dropped names and the
+  added fields" is a REFUSAL and not a different subject."""
   missing = [n for n in imported_names(render_src, "tinygrad.uop.ops")
              if n not in module_names(ops_src)]
   donor = blob(render_revision, OPS)
@@ -324,10 +542,11 @@ def derived_ops(ops_src, render_src, render_revision):
       refuse(f"the render revision {render_revision} does not define {name!r}, which its "
              f"own render.py imports from {OPS}")
     parts.append(text)
-  return ops_src + b"".join(b"\n" + p.encode() for p in parts), missing
+  src = ops_src + b"".join(b"\n" + p.encode() for p in parts)
+  return splice_fields(src.decode(), field_splices).encode(), missing
 
 
-def materialize(ops_revision, render_revision):
+def materialize(ops_revision, render_revision, field_splices):
   """The HYBRID tree, and the names the splice had to supply.
 
   `git archive <ops revision> tinygrad` is the BASE, so every file in the tree is an
@@ -352,7 +571,8 @@ def materialize(ops_revision, render_revision):
   ops_bytes = blob(ops_revision, OPS)
   if ops_bytes is None:
     refuse(f"the ops revision {ops_revision} has no {OPS}")
-  derived, missing = derived_ops(ops_bytes, render_bytes.decode(), render_revision)
+  derived, missing = derived_ops(ops_bytes, render_bytes.decode(), render_revision,
+                                 field_splices)
   with open(f"{dest}/{OPS}", "wb") as f:
     f.write(derived)
   return dest, derived, missing
@@ -420,10 +640,10 @@ def verify_origin(tinygrad, dest):
              f"(index {winner}) -- the vendored tree would shadow the subject")
 
 
-def verify_subject(dest, ops_revision, render_revision, derived, missing):
+def verify_subject(dest, ops_revision, render_revision, derived, missing, field_splices):
   """The subject is what it claims to be, or the lane is REFUSED.
 
-  FOUR CHECKS, EACH OF WHICH CAN FAIL:
+  FIVE CHECKS, EACH OF WHICH CAN FAIL:
 
     1 the imported `tinygrad.uop.ops` is the materialised DERIVATION, byte for byte;
     2 the imported `tinygrad.uop.render` is the render revision's blob, byte for byte;
@@ -431,7 +651,10 @@ def verify_subject(dest, ops_revision, render_revision, derived, missing):
       can hold one answers a different question than the port's;
     4 the materialised `UOp.toposort` enters CALL bodies by default (P2) -- otherwise
       the renderer answers `!error` on the CALL rows, which is a DIFFERENT ANSWER, not
-      a failure of the port.
+      a failure of the port;
+    5 each spliced FIELD is in the materialised class, and the class's field ORDER is the
+      donor's -- a splice that put the field in the wrong place would print a dataclass
+      repr whose fields are in the wrong order, and the wrong order is a different answer.
 
   (THE SHADOWING IS CHECKED BY `verify_origin()`, WHICH RUNS FIRST.)"""
   import tinygrad.uop.ops as ops_module
@@ -457,11 +680,24 @@ def verify_subject(dest, ops_revision, render_revision, derived, missing):
     refuse("the materialised `UOp.toposort` does not enter CALL bodies by default, so the "
            "pyrender-era renderer answers `!error` on the CALL rows -- a different answer, "
            "not a failure of the port")
+  materialised = class_fields(derived.decode())
+  for cls, field, donor in field_splices:
+    if field not in materialised.get(cls, []):
+      refuse(f"the materialised {cls} has no field {field!r}, which the splice claims to "
+             f"have added -- the derivation and the file disagree")
+    dorder = class_fields(blob(donor, OPS).decode()).get(cls, [])
+    dshared = [f for f in dorder if f in materialised[cls]]
+    mshared = [f for f in materialised[cls] if f in dorder]
+    if dshared != mshared:
+      refuse(f"the materialised {cls}'s field order over the shared fields is {mshared}, "
+             f"and the donor {donor}'s is {dshared} -- the splice put a field in the wrong "
+             f"place, and the wrong order is a different answer")
 
 
 RENDER_REV = resolve_render()
 OPS_REV = resolve_ops()
-DEST, DERIVED_OPS, SPLICED = materialize(OPS_REV, RENDER_REV)
+FIELD_SPLICES = resolve_field_splices(OPS_REV)
+DEST, DERIVED_OPS, SPLICED = materialize(OPS_REV, RENDER_REV, FIELD_SPLICES)
 sys.path.insert(0, DEST)
 print(f"# subject: ops={OPS_REV} render={RENDER_REV} "
       f"(the last revision whose {RENDER} defines `pyrender`; the last whose {OPS} has a "
@@ -470,6 +706,11 @@ print(f"# subject: ops={OPS_REV} render={RENDER_REV} "
 if SPLICED:
   print(f"# spliced into {OPS}: {', '.join(SPLICED)} (the renderer imports it from `ops.py` "
         f"and the ops revision dropped it)", file=sys.stderr)
+if FIELD_SPLICES:
+  print(f"# spliced into {OPS}: "
+        + ", ".join(f"{c}.{f} (from {r[:12]})" for c, f, r in FIELD_SPLICES)
+        + " (a dataclass field a later upstream revision ADDED, so the class's repr answers "
+          "upstream's shape)", file=sys.stderr)
 
 try:
   import tinygrad
@@ -485,7 +726,7 @@ try:
 except Exception as e:
   refuse(f"the materialised subject does not import: {type(e).__name__}: {e}")
 
-verify_subject(DEST, OPS_REV, RENDER_REV, DERIVED_OPS, SPLICED)
+verify_subject(DEST, OPS_REV, RENDER_REV, DERIVED_OPS, SPLICED, FIELD_SPLICES)
 
 OUT = []
 INT = dtypes.default_int

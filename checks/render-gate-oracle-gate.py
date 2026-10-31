@@ -57,6 +57,17 @@ an `optimized` field and its `ProgramInfo` calls its third field `params`, so th
 prints the 2026-10-05 shapes.  A HYBRID BUILT ON THE PIN IS A HYBRID THAT DISAGREES WITH
 THE PORT ON FIVE ROWS.  THE PIN HERE IS A PIN OF THE *SUBJECT*, NOT OF THE VENDORED TREE.
 
+⚠ AND THE `optimized` FIELD IS SPLICED, NOT MOVED TO.  MEASURED, over all 888 upstream
+revisions that touch `tinygrad/uop/ops.py`: EIGHT have `optimized` in `KernelInfo` and ALL
+EIGHT have `enter_calls=False`, so NO REVISION IS BOTH and the subject CANNOT move to one.
+`checks/render-gate-oracle.py`'s `resolve_field_splices()` therefore splices the field into
+the materialised `ops.py`, and the set is DERIVED over the ops revision's DESCENDANTS --
+NOT LISTED.  ⚠ THE SUBJECT LINE THIS GATE PARSES IS UNCHANGED BY THAT SPLICE, and it must
+stay that way: the splice changes a CLASS BODY, not which revision the tree is built from, so
+`ops subject` and `render subject` still answer the revisions this gate pins.  THE SPLICE
+SHOWS UP IN THE ROWS -- and the ROWS are pinned by `checks/rn-orc.rows`, which is what went
+RED when the splice landed and had to be re-captured.  A PIN THAT CANNOT GO RED IS A LABEL.
+
 THE PLANT, WITH ITS CONTROL, ON COPIES.  `--plant green` runs the SAME CHECK against an
 UNMODIFIED COPY of the oracle and requires it to PASS; `--plant red` corrupts ONE ROW in a
 COPY and requires the same check to FAIL; `--plant refused` runs THREE REFUSAL ARMS, each

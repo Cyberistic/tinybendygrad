@@ -96,7 +96,7 @@ arg_repr ACALL3=[CallInfo(None, None, False, False)]   py=CallInfo(None, None, F
 arg_repr AParam1=[ParamArg(1, dtypes.f32, device='METAL')]
 arg_repr AParam2=[ParamArg(2, dtypes.i32, name='g')]
 arg_repr AParam3=[ParamArg(3, dtypes.f32, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))]
-arg_repr AKern=[KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)]
+arg_repr AKern=[KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0, optimized=False)]
 arg_repr AProgr=[ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)]
 dt_repr float=[dtypes.f32]   py=dtypes.f32
 dt_repr int32=[dtypes.i32]   py=dtypes.i32
