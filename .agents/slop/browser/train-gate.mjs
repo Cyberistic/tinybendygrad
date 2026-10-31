@@ -50,12 +50,16 @@ async function replay() {
   const srv = await serve(WEB);
   let h;
   try {
-    h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], srv.url + "/train.html");
-    const s = await Session.openPage(h.port, { url: srv.url + "/train.html" });
+    h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], srv.url + "/train.html?batch=64");
+    const s = await Session.openPage(h.port, { url: srv.url + "/train.html?batch=64" });
+    await s.eval("window.__GO = true;");
     // 90 launches plus 52 readbacks; the page sets __TRAIN_RESULT and title=done.
+    // **⇒ AND A TIMED-OUT PROBE IS NOT A VERDICT, SO THE POLL RETRIES.**
     for (let i = 0; i < 1200; i++) {
-      const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:document.title};");
-      if (r && r.t === "done") break;
+      try {
+        const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:'running'};");
+        if (r && r.t === "done") break;
+      } catch (e) { /* the main thread is busy; ask again */ }
       await new Promise((r) => setTimeout(r, 250));
     }
     const res = await s.eval("return JSON.stringify(window.__TRAIN_RESULT ?? {ok:false, error:'no result: page never finished'});");

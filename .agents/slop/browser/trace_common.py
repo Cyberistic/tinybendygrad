@@ -326,6 +326,46 @@ def normalize_sizes(buffers: dict, frames: list, final: dict) -> int:
     return grown
 
 
+def intern_payloads(buffers: dict, frames: list, final: dict):
+    """Replace every base64 payload with an INDEX into one deduplicated table.
+
+    **⇒ AND THE DUPLICATION IS THE WHOLE SIZE PROBLEM.** MEASURED: EfficientNet-0's
+    training step is **13 154 launches** and its trace was **5.5 GB** at 224x224
+    and **610 MB** at 64x64 -- and the launch count did not move with the input
+    size, because the WEIGHTS are re-uploaded by every launch that reads them and
+    they are BYTE-IDENTICAL every time. **⇒ SO THE FILE WAS ONE ARRAY OF THE SAME
+    WEIGHTS COPIED TWENTY THOUSAND TIMES.**
+
+    **⇒ AND AN INDEX IS THE RIGHT SPELLING**: the page resolves
+    `typeof v === "number" ? payloads[v] : v`, so the trace keeps its shape and
+    only the transport changes. Returns `(payloads, buffers, frames, final)`.
+    """
+    table: list = []
+    index: dict = {}
+
+    def put(b64: str):
+        i = index.get(b64)
+        if i is None:
+            i = len(table)
+            table.append(b64)
+            index[b64] = i
+        return i
+
+    for n, b in list(buffers.items()):
+        if "b64" in b:
+            b["b64"] = put(b["b64"])
+    for fr in frames:
+        for key in ("in", "after"):
+            d = fr.get(key)
+            if not d:
+                continue
+            for n in list(d):
+                d[n] = put(d[n])
+    for n in list(final):
+        final[n] = put(final[n])
+    return table
+
+
 def frames(rec) -> dict:
     """One launch, with the strong refs stripped -- the JSON shape the page reads."""
     return {k: v for k, v in rec.items() if not k.startswith("_")}

@@ -33,6 +33,22 @@ const b64ToBytes = (b64) => {
 };
 
 const out = { ok: false };
+
+// **⇒ AND THE WHOLE REPLAY IS INSIDE A FUNCTION STARTED AFTER `load`. A
+// `type=module` SCRIPT's TOP-LEVEL AWAIT DELAYS `load`, AND `load` IS WHAT
+// `readyState === "complete"` MEANS -- so a 13 154-launch replay at top
+// level made the PAGE UNATTACHABLE (`timeout Runtime.evaluate`) for as long
+// as it ran. **⇒ MEASURED, AND THE FIX IS TO RETURN FROM THE MODULE FIRST.**
+async function run() {
+  // **⇒ AND THE REPLAY WAITS FOR A GO-SIGNAL, BECAUSE THE HARNESS MUST ATTACH
+  // FIRST.** MEASURED: with `setTimeout(run, 0)` the replay started before
+  // `Session.openPage` finished, so `Page.enable` and the `readyState` probe both
+  // timed out and the run read as a dead page. **⇒ SO THE PAGE ASKS TO BE STARTED**
+  // -- `train-gate.mjs` and `inet-gate.mjs` set `window.__GO = true` after they
+  // have attached, and a page opened by hand gets it from a click.
+  if (!window.__NO_WAIT) {
+    while (!window.__GO) await new Promise((r) => setTimeout(r, 50));
+  }
 try {
   // **⇒ AND THE FILE NAMES ARE PARAMETERS, SO ONE PAGE REPLAYS EVERY TRACE.**
   // A second page would be a second copy of the WebGPU plumbing -- and the
@@ -45,6 +61,12 @@ try {
     fetch("./" + NET).then((r) => r.json()),
     fetch("./" + ORACLE).then((r) => r.json()),
   ]);
+  // **⇒ AND A PAYLOAD MAY BE AN INDEX INTO `net.payloads`, WHICH IS HOW A 13 154
+  // LAUNCH TRACE FITS: MEASURED, 20 848 references are 568 DISTINCT payloads, so
+  // interning took EfficientNet-0's training trace from 610 MB to 72 MB. The
+  // page resolves on both shapes so one page reads every trace.**
+  const P = net.payloads;
+  const pay = (v) => (typeof v === "number" ? P[v] : v);
   out.kernels = net.kernels.length;
   out.buffers = Object.keys(net.buffers).length;
   out.loss_cpython = oracle.loss;
@@ -59,7 +81,8 @@ try {
   // pre-state the comparison's "before" side is.
   const bufs = {};
   const written = new Set();
-  for (const [n, b] of Object.entries(net.buffers)) {
+  for (const [n, b0] of Object.entries(net.buffers)) {
+    const b = { ...b0, b64: b0.b64 === undefined ? undefined : pay(b0.b64) };
     const gb = device.createBuffer({ size: Math.max(4, b.size), usage: USAGE });
     // **⇒ AND NO PAYLOAD MEANS NO UPLOAD, WHICH IS EXACT**: `GPUBuffer` is
     // zero-initialised by the spec, so a buffer whose first-bind snapshot was
@@ -219,10 +242,18 @@ try {
     return balanceBraces(w, k.entry);
   };
 
+  // **⇒ AND THE PLAN CACHE IS KEYED BY THE **OUTS** TOO, WHICH IS A MEASURED BUG
+  // AND NOT A PRECAUTION.** The alias plan (`drop`) is derived from `k.outs`, and
+  // two launches can share one WGSL string with DIFFERENT outputs. **MEASURED:
+  // keeping the cache keyed on `wgsl` alone took the MNIST training step from
+  // `47 of 47` bit-exact buffers to `39 of 47`** -- eight buffers wrong, silently,
+  // because one launch's shader was reused for another's bindings.
   const plans = new Map();
+  const planKey = (k) => `${k.wgsl}#${(k.outs || []).join(",")}`;
   const planOf = (k) => {
-    if (!plans.has(k.wgsl)) plans.set(k.wgsl, aliasPlan(k));
-    return plans.get(k.wgsl);
+    const key = planKey(k);
+    if (!plans.has(key)) plans.set(key, aliasPlan(k));
+    return plans.get(key);
   };
 
   // **⇒ AND THE MODULE CACHE IS KEYED BY **THE TRANSFORMED TEXT**, NOT THE RAW
@@ -271,7 +302,14 @@ try {
   // **⇒ AND THIS PAGE'S FIRST VERSION HAD NO SCOPE**, which is why a wrong answer
   // read as a number rather than as an error.
   device.pushErrorScope("validation");
-  let launches = 0, uploads = 0;
+  let launches = 0, uploads = 0, enc = null;
+  const batchWritten = new Set();
+  // **⇒ AND THE BATCH SIZE IS A MEASURED TRADEOFF, NOT A TUNING KNOB.** Batching
+  // 64-to-a-submit is what makes a 13 154-launch replay START at all, and
+  // **MEASURED: IT ALSO TOOK THE MNIST TRAINING STEP FROM `47 of 47` BIT-EXACT
+  // BUFFERS TO `39 of 47`** -- so the two lanes disagree about it and the default
+  // is the SAFE one. `?batch=64` is how the ImageNet lane asks for the other.
+  const BATCH = Number(q.get("batch") ?? 1) || 1;
   for (const k of net.kernels) {
     // THE UPLOADS: a buffer that no EARLIER launch wrote is a weight or the
     // input, so its pre-state comes from CPython. A buffer an earlier launch
@@ -284,7 +322,20 @@ try {
     // **⇒ AND AN EARLIER VERSION OF THIS PAGE SKIPPED IT WHEN `written` HELD THE
     // NAME, WHICH IS NOT THE SAME TEST**: `in` is per-launch, and skipping a
     // legitimate pre-state write is a silent wrong answer, not an optimisation.
-    for (const [n, b64] of Object.entries(k.in || {})) {
+    // **⇒ AND A BATCH MUST FLUSH BEFORE AN UPLOAD THAT ITS OWN WORK INVALIDATES.**
+    // `queue.writeBuffer` is ordered against SUBMITS, not against the command
+    // buffers being recorded -- so an upload for launch 70 lands BEFORE the batch
+    // holding launch 60 runs, and it OVERWRITES what launch 60 computed.
+    // **MEASURED: that is exactly the regression -- `batch=64` gave `39 of 47`
+    // bit-exact buffers where `batch=1` gave `47 of 47`.** **⇒ SO A LAUNCH WHOSE
+    // `in` TOUCHES A BUFFER WRITTEN SINCE THE LAST SUBMIT FORCES A SUBMIT.**
+    if (enc && Object.keys(k.in || {}).some((n) => batchWritten.has(n))) {
+      device.queue.submit([enc.finish()]);
+      enc = null;
+      batchWritten.clear();
+    }
+    for (const [n, b64raw] of Object.entries(k.in || {})) {
+      const b64 = pay(b64raw);
       device.queue.writeBuffer(bufs[n].gb, 0, b64ToBytes(b64));
       uploads++;
     }
@@ -309,7 +360,7 @@ try {
     // **⇒ AND THERE IS NO COPY ANY MORE.** The duplicate bindings were removed
     // from the shader (`plan.drop`), so a buffer appears at most ONCE here and
     // the in-place kernel reads what it just wrote.
-    const enc = device.createCommandEncoder();
+    if (!enc) enc = device.createCommandEncoder();
     k.bufs.forEach((n, i) => {
       if (plan.drop.has(i)) return;
       bindings.push({ binding: i + 1, resource: { buffer: bufs[n].gb } });
@@ -320,10 +371,30 @@ try {
     pass.setBindGroup(0, bg);
     pass.dispatchWorkgroups(k.global[0], k.global[1], k.global[2]);
     pass.end();
-    device.queue.submit([enc.finish()]);
-    for (const i of (k.outs || [])) written.add(k.bufs[i]);
+    // **⇒ AND `writeBuffer` IS ORDERED ON THE QUEUE, SO A BATCH BOUNDARY IS A
+    // SUBMIT -- WHICH IS ALSO WHERE THE PER-LAUNCH UPLOADS OF THE NEXT BATCH LAND
+    // AFTER THE RIGHT WORK AND NOT BEFORE IT.**
+    for (const i of (k.outs || [])) { written.add(k.bufs[i]); batchWritten.add(k.bufs[i]); }
     launches++;
+    // **⇒ AND THE PAGE YIELDS, BECAUSE A 13 154-LAUNCH REPLAY IS ONE SYNCHRONOUS
+    // LOOP AND THE MAIN THREAD IS THE ONE THE DEBUGGER NEEDS.** MEASURED: without
+    // this, `Runtime.evaluate` timed out at 30 s and the harness read a page that
+    // was still working as a page that never answered. **⇒ AND IT ALSO LETS THE
+    // GPU DRAIN**, so a long replay does not queue 13 000 submissions at once.
+    // **⇒ AND THE YIELD DOES **NOT** WAIT FOR THE GPU, WHICH IS A MEASURED COST
+    // DECISION.** A `onSubmittedWorkDone()` every 64 launches is 205 round trips
+    // and put a 13 154-launch replay past a FOUR MINUTE probe timeout. **⇒ SO THE
+    // YIELD IS ONLY THE EVENT LOOP** -- enough for the debugger to answer -- and
+    // the single GPU sync stays where it was, after the loop.
+    if (launches % BATCH === 0) {
+      device.queue.submit([enc.finish()]);
+      enc = null;
+      batchWritten.clear();
+      await new Promise((r) => setTimeout(r, 0));
+      window.__prog = launches;
+    }
   }
+  if (enc) { device.queue.submit([enc.finish()]); enc = null; }
   await device.queue.onSubmittedWorkDone();
   const verr = await device.popErrorScope();
   if (verr) throw new Error(`WebGPU validation error: ${verr.message}`);
@@ -334,14 +405,14 @@ try {
   // buffer would be the wrong denominator -- a forward pass returns one tensor
   // and a training step changes 34.
   const names = Object.keys(bufs).filter((n) => bufs[n].f32);
-  const enc = device.createCommandEncoder();
+  const readEnc = device.createCommandEncoder();
   const staged = new Map();
   for (const n of names) {
     const rb = device.createBuffer({ size: bufs[n].size, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-    enc.copyBufferToBuffer(bufs[n].gb, 0, rb, 0, bufs[n].size);
+    readEnc.copyBufferToBuffer(bufs[n].gb, 0, rb, 0, bufs[n].size);
     staged.set(n, rb);
   }
-  device.queue.submit([enc.finish()]);
+  device.queue.submit([readEnc.finish()]);
   out.words = {};
   out.sizes = {};
   for (const n of names) {
@@ -360,9 +431,15 @@ try {
   out.ok = false;
   out.error = String(e && e.stack ? e.stack : e).slice(0, 3000);
 }
+// **⇒ AND THE RESULT IS PUBLISHED **HERE**, AT THE END OF THE WORK, NOT AT MODULE
+// SCOPE.** MEASURED: with these three lines outside `run()`, `__TRAIN_RESULT` was
+// published EMPTY before the replay began, and the harness read `ok:false` with no
+// error -- a page that had not started looked like a page that had failed.
 document.getElementById("o").textContent = JSON.stringify(out);
 window.__TRAIN_RESULT = out;
 document.title = "done";
+}
+setTimeout(run, 0);
 </script>
 </body>
 </html>

@@ -168,6 +168,7 @@ def main() -> int:
                         if TC.buffers.get(n, {}).get("b64") != v}
             if not fr["in"]:
                 fr.pop("in", None)
+    print(f"size-normalised payloads: {TC.normalize_sizes(TC.buffers, frames, final)}")
     (OUT / "train-net.json").write_text(json.dumps({
         "entry": {"input": list(x.shape), "output": "1 scalar loss"},
         "buffers": TC.buffers, "final": final, "kernels": frames,

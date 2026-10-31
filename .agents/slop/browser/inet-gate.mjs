@@ -67,11 +67,21 @@ async function replay() {
     const url = srv.url + "/train.html?net=inet-net.json&oracle=inet-oracle.json";
     h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], url);
     const s = await Session.openPage(h.port, { url });
+    // **⇒ AND THE PAGE IS STARTED HERE, AFTER THE ATTACH**, because the replay
+    // blocks the main thread the debugger needs. The page waits on this flag.
+    await s.eval("window.__GO = true;");
     // 328 launches and a ~100 MB trace: the deadline is generous ON PURPOSE,
     // because a page that is still parsing is not a page that failed.
     for (let i = 0; i < 2400; i++) {
+      try {
+      // **⇒ AND A TIMED-OUT PROBE IS NOT A VERDICT.** MEASURED: a 13 154-launch
+      // replay holds the main thread in stretches longer than the evaluate
+      // timeout, so the probe threw and the harness reported a page that
+      // "never finished" -- while the page was WORKING. **⇒ SO THE POLL RETRIES.**
+      // RETRY
       const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:document.title};");
       if (r && r.t === "done") break;
+      } catch (e) { /* the main thread is busy; ask again */ }
       await new Promise((r) => setTimeout(r, 250));
     }
     const res = await s.eval("return JSON.stringify(window.__TRAIN_RESULT ?? {ok:false, error:'no result: page never finished'});");
