@@ -62,8 +62,10 @@ answered `None{}`, because its guard's arm never read `ctx.allocs` at all.
 """
 
 from tinygrad.dtype import AddrSpace, dtypes
-from tinygrad.uop.ops import Ops, ParamArg, UOp
-from tinygrad.schedule import CallifyCtx, canonicalize_alloc, collect_stores, is_store_after
+from tinygrad.uop.ops import Ops, ParamArg, UOp, CallInfo, KernelInfo
+from tinygrad.schedule import (CallifyCtx, canonicalize_alloc, collect_stores, is_store_after,
+                                copy_kernel_to_store, simplify_copy_kernel, assert_all_same_devices,
+                                lower_sink_to_linear, resolve_linear_call)
 
 
 def code(u):
@@ -183,3 +185,171 @@ print(f"ca_n3={n3}")
 print(f"ca_n4={n4}")
 print(f"ca_reps={len(cctx.replacements)}")
 print(f"ca_views={len(cctx.views)}")
+
+# ===========================================================================
+# THE FIVE BODIES THAT HAD NO ROW. MEASURED 2026-10-31.
+#
+# `lower_sink_to_linear`, `copy_kernel_to_store`, `simplify_copy_kernel`,
+# `assert_all_same_devices` and `apply_binds` were all PORTED and all had NO
+# ROW anywhere, so no gate could go red on any of them.
+#
+# THE PORT'S SIDE IS NOT UPSTREAM'S SIDE -- upstream's `graph_rewrite` is a
+# PATTERN-MATCHER REWRITER the port does not have -- so a row is never "the
+# port's output == upstream's output". Every row below asks a QUESTION THAT
+# BOTH SIDES CAN ANSWER, and the port's answer is its own def's answer:
+#
+#   lsl_*  DID THE GUARD HOLD? upstream answers "did `lower_sink_to_linear`
+#          return None", and the port's `lower_sink_to_linear` answers `None{}`
+#          exactly where upstream's guard sends it home. The wall -- `function
+#          .key` and `schedule_cache` -- is BEYOND the guard, and the guard is
+#          the whole of the ported body.
+#   cks_*  DID THE REWRITE HAPPEN? upstream's `copy_kernel_to_store` returns
+#          `None` for "no rewrite" and a CALL for "rewritten".
+#   sck_*  THE GUARD, over upstream's `simplify_copy_kernel`.
+#   ads_*  HOW MANY DEVICES, AND DOES IT RAISE? upstream's
+#          `assert_all_same_devices` returns None and RAISES, so the row is
+#          the DEVICE COUNT and the RAISE.
+#   ab_*  WHICH ARM? upstream's `apply_binds` is a CLOSURE inside
+#          `resolve_linear_call` and is not importable, so the lane calls
+#          `resolve_linear_call` and reads the arm off its OUTPUT.
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# `lower_sink_to_linear` -- __init__.py:121-147. THE GUARD:
+#
+#     function = call.body
+#     if function.op is not Ops.SINK or isinstance(function.arg, KernelInfo)
+#        or not call.arg.precompile: return None
+#
+# THE PORT'S BODY IS THE GUARD AND NOTHING ELSE, so the row is "did upstream
+# return None", and upstream returns None EXACTLY when the guard fires -- the
+# rest of the function always returns a rewritten CALL.
+# ---------------------------------------------------------------------------
+CI_T = CallInfo(None, None, True, False, None)
+CI_F = CallInfo(None, None, False, False, None)
+sink_plain = UOp(Ops.SINK, src=())
+sink_kernel = UOp(Ops.SINK, src=(), arg=KernelInfo(name="test"))
+linear_body = UOp(Ops.LINEAR, src=())
+
+
+def lsl_rewrites(body, ci):
+  """DID UPSTREAM REWRITE? `lower_sink_to_linear` returns None iff the guard
+  fires, and a rewritten CALL otherwise."""
+  call = UOp(Ops.CALL, src=(body,), arg=ci)
+  return 0 if lower_sink_to_linear(call) is None else 1
+
+
+print("lsl_sink=" + str(lsl_rewrites(sink_plain, CI_T)))
+print("lsl_pre=" + str(lsl_rewrites(sink_plain, CI_F)))
+print("lsl_ki=" + str(lsl_rewrites(sink_kernel, CI_T)))
+print("lsl_body=" + str(lsl_rewrites(linear_body, CI_T)))
+
+# ---------------------------------------------------------------------------
+# `copy_kernel_to_store` -- __init__.py:157-159, and `simplify_copy_kernel`
+# -- __init__.py:161-168. BOTH OPEN WITH THE SAME LINE:
+#
+#     if dst.device == src.device and not dst.on_disk(): return None
+#
+# SO THE REWRITE HAPPENS WHEN THE GUARD DOES NOT HOLD, and the two rules differ
+# only in what they do with the answer.
+#
+# THE DEVICES. `CPU` IS TAG 0 AND `DISK:1` IS TAG 1 ON THE PORT'S SIDE, and
+# the port's `disk` parameter is the SET OF DISK TAGS -- so the port's lane
+# passes `[1]` for every row and the only variable is the device PAIR.
+# ---------------------------------------------------------------------------
+DEV_CPU = "CPU"
+DEV_DISK = "DISK:1"
+
+
+def buf_dev(slot, nm, dev):
+  return UOp(Ops.BUFFER, src=(UOp.const(4, dtypes.int32),), arg=ParamArg(slot, dtypes.int32, name=nm, device=dev))
+
+
+def cks_call():
+  return UOp(Ops.CALL, src=(UOp(Ops.SINK, src=()), buf_dev(0, "a", DEV_CPU), buf_dev(1, "b", DEV_CPU)))
+
+
+def cks_ast():
+  return UOp(Ops.SINK, src=())
+
+
+DEVS = (("same", DEV_CPU, DEV_CPU), ("diff", DEV_CPU, DEV_DISK), ("disk", DEV_DISK, DEV_CPU),
+        ("diskdisk", DEV_DISK, DEV_DISK), ("none", None, None), ("nonecpu", None, DEV_CPU))
+
+for nm, d, s in DEVS:
+  dst, src = buf_dev(0, "a", d), buf_dev(1, "b", s)
+  rewrote = copy_kernel_to_store(cks_call(), dst, src) is not None
+  print(f"cks_{nm}=" + ("1" if rewrote else "0"))
+
+for nm, d, s in DEVS:
+  dst, src = buf_dev(0, "a", d), buf_dev(1, "b", s)
+  # `simplify_copy_kernel` RETURNS None FOR "no rewrite", so this row is the
+  # GUARD: 1 means upstream returned None.
+  print(f"sck_{nm}=" + ("1" if simplify_copy_kernel(cks_call(), cks_ast(), dst, src) is None else "0"))
+
+# ---------------------------------------------------------------------------
+# `assert_all_same_devices` -- __init__.py:153-155:
+#
+#     devices = dedup([x.device for x in ast.toposort()
+#                      if x.op is Ops.PARAM and x.device is not None])
+#     if len(devices) >= 2: raise RuntimeError(...)
+#
+# THE DEDUP IS OVER THE DEVICES AND NOT OVER THE NODES, and `dedup` is
+# `list(dict.fromkeys(x))` -- so TWO PARAMS ON ONE DEVICE ARE ONE DEVICE. The
+# row is the DEVICE COUNT and the RAISE.
+# ---------------------------------------------------------------------------
+def ads_probe(devs):
+  """THE DEVICES UPSTREAM SEES, and whether it raises."""
+  ps = [UOp(Ops.PARAM, src=(), arg=ParamArg(i, dtypes.int32, name=f"p{i}", device=d)) for i, d in enumerate(devs)]
+  ast = UOp(Ops.SINK, src=tuple(ps))
+  devices = list(dict.fromkeys(x.device for x in ast.toposort() if x.op is Ops.PARAM and x.device is not None))
+  raised = 0
+  try:
+    assert_all_same_devices(ast)
+  except RuntimeError:
+    raised = 1
+  return devices, raised
+
+
+for nm, devs in (("same", (DEV_CPU, DEV_CPU)), ("diff", (DEV_CPU, DEV_DISK)), ("none", (None,))):
+  devices, raised = ads_probe(devs)
+  print(f"ads_{nm}_n={len(devices)}")
+  print(f"ads_{nm}_raises={raised}")
+
+# ---------------------------------------------------------------------------
+# `apply_binds` -- __init__.py:107-111. A CLOSURE inside `resolve_linear_call`
+# and NOT IMPORTABLE, so the lane calls `resolve_linear_call` and reads the ARM
+# off its OUTPUT:
+#
+#     if si.op is Ops.CALL and si.body.op is Ops.LINEAR:  return resolve_linear_call(si, binds)   # 1
+#     if si.op is Ops.CALL and si.body.op is Ops.PROGRAM: return si                              # 2
+#     ...                                                                                         # 3
+#
+# ARM 1 RETURNS A LINEAR, ARM 2 RETURNS `si` ITSELF, AND ARM 3 RETURNS A NEW
+# NODE -- the three outputs are DISTINGUISHABLE WITHOUT RESTATING UPSTREAM'S
+# CONDITION.
+# ---------------------------------------------------------------------------
+def ab_arm(si, bind):
+  """THE ARM UPSTREAM TOOK, read off `resolve_linear_call`'s output."""
+  linbody = UOp(Ops.LINEAR, src=(si,))
+  lc = UOp(Ops.CALL, src=(linbody, bind), arg=CI_T)
+  out = resolve_linear_call(lc)
+  s0 = out.src[0]
+  if s0.op is Ops.LINEAR:
+    return 1
+  if s0 is si:
+    return 2
+  return 3
+
+
+# THE BIND IS A NAMED ALU PARAM AND THE ARM-3 USE IS A NAMELESS ONE, because a
+# nameless PARAM is a VARIABLE and arm 3's substitution REPLACES it -- so the
+# arm-3 output is a NEW node and the three arms are DISTINGUISHABLE.
+BIND = UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.float32, name="x", addrspace=AddrSpace.ALU))
+ARM1 = UOp(Ops.CALL, src=(UOp(Ops.LINEAR, src=()),), arg=CI_T)
+ARM2 = UOp(Ops.CALL, src=(UOp(Ops.PROGRAM, src=()),), arg=CI_T)
+ARM3 = UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.float32, name=None, addrspace=AddrSpace.ALU))
+
+print(f"ab_arm1={ab_arm(ARM1, BIND)}")
+print(f"ab_arm2={ab_arm(ARM2, BIND)}")
+print(f"ab_arm3={ab_arm(ARM3, BIND)}")

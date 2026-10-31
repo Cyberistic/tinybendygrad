@@ -1,11 +1,12 @@
 # schedstore.bend -- the PORT lane of the `is_store_after` / `collect_stores` /
-# `canonicalize_alloc` parity gate.
+# `canonicalize_alloc` / `lower_sink_to_linear` / `copy_kernel_to_store` /
+# `simplify_copy_kernel` / `assert_all_same_devices` / `apply_binds` parity
+# gate.
 #
 #   .venv/bin/python gates/schedstore-gate.py
 #
-# WHAT IT MEASURES. `tinygrad/schedule/__init__.py:213-237` is the region the
-# port's header DEFERS, and these are its TWO ctx BODIES AND THE PREDICATE
-# THEY SHARE:
+# WHAT IT MEASURES. `tinygrad/schedule/__init__.py:82-301` is the region the
+# port's header DEFERS, and these are EIGHT of its TWELVE rule bodies:
 #
 #     def is_store_after(u:UOp) -> bool:
 #       return u.op is Ops.AFTER and (u.src[0].unsharded_base.op is not Ops.ALLOC
@@ -22,14 +23,18 @@
 # IT IS THE RULE THE PORT'S OWN HEADER CALLED "the clearest case" of the ctx
 # DICT: `CallifyCtx` is a dataclass of a list, a dict, a set and another list.
 #
-# AND THE PORT ALREADY HAS ALL THREE BODIES -- `tinybendygrad/schedule/__init__.bend`
-# has `is_store_after` at :1206, `collect_stores` at :1351 and
-# `canonicalize_alloc` at :1721, and `CallifyCtx` at :1239 -- AND ZERO ROWS
-# GATED THEM. MEASURED 2026-10-30, on the port's own output: the port emits
-# 111 rows and 0 of them are `isa_*`/`cs_*`/`ca_*`. A rule body that no row
-# reads is a body that no gate can go red on, so this lane is what makes the
-# ported bodies TESTABLE AT ALL -- AND IT FOUND A REAL DEFECT: `ca_slot3` was
-# the port's `none` where CPython's is `-2`.
+# AND THE PORT ALREADY HAS ALL EIGHT BODIES -- `tinybendygrad/schedule/__init__.bend`
+# has `is_store_after` at :1231, `collect_stores` at :1376, `canonicalize_alloc`
+# at :1833, `lower_sink_to_linear` at :1443, `copy_kernel_to_store` at :1549,
+# `simplify_copy_kernel.ok` at :1575, `assert_all_same_devices` at :1669 and
+# `apply_binds` at :1717 -- AND ZERO ROWS GATED THEM. MEASURED 2026-10-30, on
+# the port's own output: the port emits 111 rows and 0 of them are
+# `isa_*`/`cs_*`/`ca_*`. A rule body that no row reads is a body that no gate
+# can go red on, so this lane is what makes the ported bodies TESTABLE AT ALL
+# -- AND IT FOUND A REAL DEFECT: `ca_slot3` was the port's `none` where
+# CPython's is `-2`. IT FOUND TWO MORE ON 2026-10-31, IN BODIES THAT STILL HAD
+# NO ROW: `copy_kernel_to_store` REWROTE WITH THE WRONG POLARITY, and
+# `assert_all_same_devices` DEDUPED THE NODES AND NOT THE DEVICES.
 #
 # THE CTX DICT IS NOT THE WALL. THE PORT'S `CallifyCtx` IS A `Data` RECORD OF
 # FOUR APPEND-ONLY LISTS, and `collect_stores` returns the ctx AND the answer
@@ -38,9 +43,11 @@
 # ctx at all ... and the TWO that do take one take the SAME `CallifyCtx` whose
 # `dict` field is one of four and is not the load-bearing one".
 #
-# THE ROWS. Twenty-five: ten `isa_*` over the predicate, five `cs_*` over the
-# `collect_stores` ctx, and ten `ca_*` over the `canonicalize_alloc` ctx. The
-# predicate is the interesting one because its FOUR CLAUSES are four different
+# THE ROWS. Fifty: ten `isa_*` over the predicate, five `cs_*` over the
+# `collect_stores` ctx, ten `ca_*` over the `canonicalize_alloc` ctx, and
+# TWENTY-FIVE OVER THE OTHER FIVE BODIES -- four `lsl_*`, six `cks_*`, six
+# `sck_*`, six `ads_*` and three `ab_*`.
+# The predicate is the interesting one because its FOUR CLAUSES are four different
 # arms of the same `or`:
 #
 #   isa_SA_buffer_call   AFTER(BUFFER, CALL)   -> 1  (src[0] is not an ALLOC)
@@ -79,6 +86,26 @@
 # (`ca_neg_none`). THE SLOT IS PRINTED AS A SIGNED DECIMAL BECAUSE THE PORT'S
 # SLOT IS A `U32` AND PYTHON'S IS AN `int`, AND `slot_text` IS THE ONE PLACE
 # THE TWO NUMBER SYSTEMS MEET.
+#
+# THE OTHER TWENTY-FIVE. THE PORT'S SIDE IS NOT UPSTREAM'S SIDE -- upstream's
+# `graph_rewrite` is a PATTERN-MATCHER REWRITER the port does not have -- so
+# NO ROW HERE IS "the port's output == upstream's output". EVERY ROW ASKS A
+# QUESTION BOTH LANES CAN ANSWER, AND THE TWO LANES ARE THE SAME FIXTURE.
+# MEASURED 2026-10-31: EVERY ONE OF THE ELEVEN BREAKS BELOW MOVES A ROW.
+#
+#   break                                              rows moved
+#   ------------------------------------------------  -----------
+#   `copy_kernel_to_store`'s polarity                    6 of 50
+#   `assert_all_same_devices`'s device dedup             2 of 50
+#   `assert_all_same_devices`'s `>= 2` threshold          1 of 50
+#   `lower_sink_to_linear`'s `precompile` conjunct       1 of 50
+#   `lower_sink_to_linear`'s `KernelInfo` conjunct       1 of 50
+#   `lower_sink_to_linear`'s `body is SINK` conjunct      1 of 50
+#   `apply_binds`'s arm 1 / arm 2                        2 of 50
+#   `apply_binds`'s arm 3                                1 of 50
+#   `apply_binds.of`'s body-op read                      2 of 50
+#   `cks_dev.eq`'s `None == None`                        2 of 50
+#   the `disk` set's membership test                     2 of 50
 
 import Base
 import ./../tinybendygrad/helpers.bend as H
@@ -517,6 +544,286 @@ def ca_n4() -> String: U32.show(counta(S.CallifyCtx.allocs(CaS.c(ca_s4()))))
 def ca_reps() -> String: U32.show(count(S.CallifyCtx.replacements(CaS.c(ca_s4()))))
 def ca_views() -> String: U32.show(count(S.CallifyCtx.views(CaS.c(ca_s4()))))
 
+# ===========================================================================
+# THE FIVE BODIES THAT HAD NO ROW. MEASURED 2026-10-31.
+#
+# `lower_sink_to_linear`, `copy_kernel_to_store`, `simplify_copy_kernel`,
+# `assert_all_same_devices` and `apply_binds` were all PORTED and all had NO
+# ROW anywhere, so NO GATE COULD GO RED ON ANY OF THEM.
+#
+# THE PORT'S SIDE IS NOT UPSTREAM'S SIDE -- upstream's `graph_rewrite` is a
+# PATTERN-MATCHER REWRITER the port does not have -- so no row here is "the
+# port's output == upstream's output". Every row asks a QUESTION BOTH SIDES
+# CAN ANSWER, and the two lanes are the same fixture.
+#
+#   lsl_*  DID THE GUARD HOLD? upstream's `lower_sink_to_linear` returns None
+#          EXACTLY when the guard fires, so the row is "did it return None".
+#          The port's `lower_sink_to_linear` answers `None{}` on the same
+#          condition -- and the wall (`function.key`, `schedule_cache`) is
+#          BEYOND the guard, which is the whole of the ported body.
+#   cks_*  DID `copy_kernel_to_store` REWRITE?
+#   sck_*  DID `simplify_copy_kernel` RETURN NONE? -- THE GUARD, which is
+#          the same line as `cks_*`'s but over the OTHER rule.
+#   ads_*  THE DEVICE COUNT AND THE RAISE.
+#   ab_*  WHICH ARM of `apply_binds`.
+#
+# THE DEVICES ARE TAGS ON THE PORT'S SIDE: TAG 0 IS CPU AND TAG 1 IS DISK, and
+# the port's `disk` parameter is the SET OF DISK TAGS. Every row below passes
+# `[1]`, so the only variable in the `cks_*`/`sck_*` rows is the device PAIR.
+# ===========================================================================
+
+def pbn(slot: U32, nm: String, dev: Maybe<&2, SP.Dev>) -> O.ParamArg:
+  O.ParamArg{slot, SP.int32(), None{}, None{}, Some{nm}, SP.AGlobal{},
+    dev, False{}, None{}, None{}, False{}, None{}}
+
+# THE TWO DEVICES: CPU IS TAG 0 AND DISK IS TAG 1.
+def pbc(slot: U32, nm: String) -> O.ParamArg:
+  pbn(slot, nm, Some{SP.D1{0}})
+
+def pbd(slot: U32, nm: String) -> O.ParamArg:
+  pbn(slot, nm, Some{SP.D1{1}})
+
+def pbx(slot: U32, nm: String) -> O.ParamArg:
+  pbn(slot, nm, None{})
+
+# ---------------------------------------------------------------------------
+# THE `cks_*`/`sck_*` FIXTURE. SIX BUFFERS: cpu/cpu, disk/disk and none/none,
+# and the CALL that carries them.
+# ---------------------------------------------------------------------------
+type Ck is Data:
+  Ck{ar: O.Arena, c0: U32, c1: U32, d0: U32, d1: U32, x0: U32, x1: U32, cl: U32}
+
+def Ck.ar(x: Ck) -> O.Arena:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: ar
+
+def Ck.c0(x: Ck) -> U32:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: c0
+
+def Ck.c1(x: Ck) -> U32:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: c1
+
+def Ck.d0(x: Ck) -> U32:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: d0
+
+def Ck.d1(x: Ck) -> U32:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: d1
+
+def Ck.x0(x: Ck) -> U32:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: x0
+
+def Ck.x1(x: Ck) -> U32:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: x1
+
+def Ck.cl(x: Ck) -> U32:
+  match x:
+    case Ck{ar, c0, c1, d0, d1, x0, x1, cl}: cl
+
+def ckbuf(slot: U32, nm: String, pa: O.ParamArg, ar: O.Arena) -> O.Found:
+  +z = O.UOp.const(ar, O.CInt{H.i64_of_i32(4)})
+  O.UOp.new(O.Found.ar(z), O.OpsBUFFER{}, [O.Found.i(z)], O.AParam{pa}, O.TNone{})
+
+def ck() -> Ck:
+  +b0 = ckbuf(0, "a", pbc(0, "a"), O.Arena.empty())
+  +b1 = ckbuf(1, "b", pbc(1, "b"), O.Found.ar(b0))
+  +d0 = ckbuf(2, "a", pbd(2, "a"), O.Found.ar(b1))
+  +d1 = ckbuf(3, "b", pbd(3, "b"), O.Found.ar(d0))
+  +x0 = ckbuf(4, "a", pbx(4, "a"), O.Found.ar(d1))
+  +x1 = ckbuf(5, "b", pbx(5, "b"), O.Found.ar(x0))
+  +bd = O.UOp.sink(O.Found.ar(x1), [])
+  +cl = O.UOp.new(O.Found.ar(bd), O.OpsCALL{}, [O.Found.i(bd), O.Found.i(b0), O.Found.i(b1)],
+                  O.ANone{}, O.TNone{})
+  Ck{O.Found.ar(cl), O.Found.i(b0), O.Found.i(b1), O.Found.i(d0), O.Found.i(d1),
+     O.Found.i(x0), O.Found.i(x1), O.Found.i(cl)}
+
+# THE DISK SET: TAG 1. CONSTANT FOR EVERY ROW, so the only variable is the
+# DEVICE PAIR.
+def ckdisk() -> List<&2, U32>: [1]
+
+def cks_rewrote(dst: U32, src: U32) -> Bool:
+  Maybe.is_some(&2, O.Found, S.copy_kernel_to_store(ckdisk(), Ck.ar(ck()), Ck.cl(ck()), dst, src))
+
+def cks_same() -> String: b2s(cks_rewrote(Ck.c0(ck()), Ck.c1(ck())))
+def cks_diff() -> String: b2s(cks_rewrote(Ck.c0(ck()), Ck.d1(ck())))
+def cks_disk() -> String: b2s(cks_rewrote(Ck.d0(ck()), Ck.c1(ck())))
+def cks_diskdisk() -> String: b2s(cks_rewrote(Ck.d0(ck()), Ck.d1(ck())))
+def cks_none() -> String: b2s(cks_rewrote(Ck.x0(ck()), Ck.x1(ck())))
+def cks_nonecpu() -> String: b2s(cks_rewrote(Ck.x0(ck()), Ck.c1(ck())))
+
+# `simplify_copy_kernel`'s GUARD: 1 means upstream returned None.
+def sck_same() -> String: b2s(S.simplify_copy_kernel.ok(ckdisk(), Ck.ar(ck()), Ck.c0(ck()), Ck.c1(ck())))
+def sck_diff() -> String: b2s(S.simplify_copy_kernel.ok(ckdisk(), Ck.ar(ck()), Ck.c0(ck()), Ck.d1(ck())))
+def sck_disk() -> String: b2s(S.simplify_copy_kernel.ok(ckdisk(), Ck.ar(ck()), Ck.d0(ck()), Ck.c1(ck())))
+def sck_diskdisk() -> String: b2s(S.simplify_copy_kernel.ok(ckdisk(), Ck.ar(ck()), Ck.d0(ck()), Ck.d1(ck())))
+def sck_none() -> String: b2s(S.simplify_copy_kernel.ok(ckdisk(), Ck.ar(ck()), Ck.x0(ck()), Ck.x1(ck())))
+def sck_nonecpu() -> String: b2s(S.simplify_copy_kernel.ok(ckdisk(), Ck.ar(ck()), Ck.x0(ck()), Ck.c1(ck())))
+
+# ---------------------------------------------------------------------------
+# THE `lsl_*` FIXTURE. FOUR CALLS, ONE PER CONJUNCT OF THE GUARD:
+#   sinkT  CALL(SINK,  precompile=True)   -- the guard HOLDS
+#   sinkF  CALL(SINK,  precompile=False)  -- the guard FAILS on `precompile`
+#   sinkK  CALL(SINK(KernelInfo), True)   -- the guard FAILS on the KernelInfo
+#   linT   CALL(LINEAR, precompile=True)  -- the guard FAILS on `body is SINK`
+#
+# THE PORT'S `lower_sink_to_linear` ANSWERS `None{}` WHERE UPSTREAM'S GUARD
+# SENDS IT HOME, so THE ROW IS "IS IT None".
+# ---------------------------------------------------------------------------
+def lsl_ci(pre: Bool) -> O.CallInfo:
+  O.CallInfo{None{}, pre, False{}, SP.void()}
+
+def lsl_sinkcall(pre: Bool, ar: O.Arena) -> O.Found:
+  +sk = O.UOp.sink(ar, [])
+  O.UOp.new(O.Found.ar(sk), O.OpsCALL{}, [O.Found.i(sk)], O.ACall{lsl_ci(pre)}, O.TNone{})
+
+def lsl_kerncall(ar: O.Arena) -> O.Found:
+  +sk = O.UOp.new(ar, O.OpsSINK{}, [], O.AKernel{O.KernelInfo.of()}, O.TNone{})
+  O.UOp.new(O.Found.ar(sk), O.OpsCALL{}, [O.Found.i(sk)], O.ACall{lsl_ci(True{})}, O.TNone{})
+
+def lsl_lincall(ar: O.Arena) -> O.Found:
+  +ln = O.UOp.new(ar, O.OpsLINEAR{}, [], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(ln), O.OpsCALL{}, [O.Found.i(ln)], O.ACall{lsl_ci(True{})}, O.TNone{})
+
+type Ll is Data:
+  Ll{ar: O.Arena, sinkT: U32, sinkF: U32, kerT: U32, linT: U32}
+
+def Ll.ar(x: Ll) -> O.Arena:
+  match x:
+    case Ll{ar, sinkT, sinkF, kerT, linT}: ar
+
+def Ll.sinkT(x: Ll) -> U32:
+  match x:
+    case Ll{ar, sinkT, sinkF, kerT, linT}: sinkT
+
+def Ll.sinkF(x: Ll) -> U32:
+  match x:
+    case Ll{ar, sinkT, sinkF, kerT, linT}: sinkF
+
+def Ll.kerT(x: Ll) -> U32:
+  match x:
+    case Ll{ar, sinkT, sinkF, kerT, linT}: kerT
+
+def Ll.linT(x: Ll) -> U32:
+  match x:
+    case Ll{ar, sinkT, sinkF, kerT, linT}: linT
+
+def ll() -> Ll:
+  +a = lsl_sinkcall(True{}, O.Arena.empty())
+  +b = lsl_sinkcall(False{}, O.Found.ar(a))
+  +c = lsl_kerncall(O.Found.ar(b))
+  +d = lsl_lincall(O.Found.ar(c))
+  Ll{O.Found.ar(d), O.Found.i(a), O.Found.i(b), O.Found.i(c), O.Found.i(d)}
+
+# THE ROW IS "DID THE GUARD HOLD", and the two lanes spell it the same way:
+# UPSTREAM REWRITES IFF THE GUARD HOLDS, so the lane prints 1 for "it
+# rewrote"; the port's `lower_sink_to_linear` answers `Some{fn}` IFF THE GUARD
+# HOLDS, so the port prints 1 for "it is not None".
+def lsl_held(i: U32) -> Bool:
+  Maybe.is_some(&2, U32, S.lower_sink_to_linear(Ll.ar(ll()), i))
+
+def lsl_sink() -> String: b2s(lsl_held(Ll.sinkT(ll())))
+def lsl_pre() -> String: b2s(lsl_held(Ll.sinkF(ll())))
+def lsl_ki() -> String: b2s(lsl_held(Ll.kerT(ll())))
+def lsl_body() -> String: b2s(lsl_held(Ll.linT(ll())))
+
+# ---------------------------------------------------------------------------
+# THE `ads_*` FIXTURE. THREE SINKS: TWO PARAMS ON ONE DEVICE, TWO PARAMS ON TWO
+# DEVICES, AND ONE PARAM WITH NO DEVICE.
+# ---------------------------------------------------------------------------
+def ads_param(slot: U32, nm: String, dev: Maybe<&2, SP.Dev>, ar: O.Arena) -> O.Found:
+  O.UOp.new(ar, O.OpsPARAM{}, [], O.AParam{pbn(slot, nm, dev)}, O.TNone{})
+
+type Ad is Data:
+  Ad{ar: O.Arena, same: U32, diff: U32, none: U32}
+
+def Ad.ar(x: Ad) -> O.Arena:
+  match x:
+    case Ad{ar, same, diff, none}: ar
+
+def Ad.same(x: Ad) -> U32:
+  match x:
+    case Ad{ar, same, diff, none}: same
+
+def Ad.diff(x: Ad) -> U32:
+  match x:
+    case Ad{ar, same, diff, none}: diff
+
+def Ad.none(x: Ad) -> U32:
+  match x:
+    case Ad{ar, same, diff, none}: none
+
+def ad() -> Ad:
+  +p0 = ads_param(0, "p", Some{SP.D1{0}}, O.Arena.empty())
+  +p1 = ads_param(1, "q", Some{SP.D1{0}}, O.Found.ar(p0))
+  +s1 = O.UOp.sink(O.Found.ar(p1), [O.Found.i(p0), O.Found.i(p1)])
+  +q0 = ads_param(0, "p", Some{SP.D1{0}}, O.Found.ar(s1))
+  +q1 = ads_param(1, "q", Some{SP.D1{1}}, O.Found.ar(q0))
+  +s2 = O.UOp.sink(O.Found.ar(q1), [O.Found.i(q0), O.Found.i(q1)])
+  +r0 = ads_param(0, "p", None{}, O.Found.ar(s2))
+  +s3 = O.UOp.sink(O.Found.ar(r0), [O.Found.i(r0)])
+  Ad{O.Found.ar(s3), O.Found.i(s1), O.Found.i(s2), O.Found.i(s3)}
+
+def ads_n(a: S.Ads) -> U32:
+  U32.from_nat(List.length(&2, SP.Dev, S.Ads.ds(a)))
+
+def ads_same_n() -> String: U32.show(ads_n(S.assert_all_same_devices(Ad.ar(ad()), Ad.same(ad()))))
+def ads_same_raises() -> String: b2s(S.assert_all_same_devices.raises(S.assert_all_same_devices(Ad.ar(ad()), Ad.same(ad()))))
+def ads_diff_n() -> String: U32.show(ads_n(S.assert_all_same_devices(Ad.ar(ad()), Ad.diff(ad()))))
+def ads_diff_raises() -> String: b2s(S.assert_all_same_devices.raises(S.assert_all_same_devices(Ad.ar(ad()), Ad.diff(ad()))))
+def ads_none_n() -> String: U32.show(ads_n(S.assert_all_same_devices(Ad.ar(ad()), Ad.none(ad()))))
+def ads_none_raises() -> String: b2s(S.assert_all_same_devices.raises(S.assert_all_same_devices(Ad.ar(ad()), Ad.none(ad()))))
+
+# ---------------------------------------------------------------------------
+# THE `ab_*` FIXTURE. THREE `si`s: A CALL WHOSE BODY IS A LINEAR (ARM 1), A
+# CALL WHOSE BODY IS A PROGRAM (ARM 2), AND A PARAM (ARM 3).
+# ---------------------------------------------------------------------------
+def ab_arm1call(ar: O.Arena) -> O.Found:
+  +ln = O.UOp.new(ar, O.OpsLINEAR{}, [], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(ln), O.OpsCALL{}, [O.Found.i(ln)], O.ANone{}, O.TNone{})
+
+def ab_arm2call(ar: O.Arena) -> O.Found:
+  +pg = O.UOp.new(ar, O.OpsPROGRAM{}, [], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(pg), O.OpsCALL{}, [O.Found.i(pg)], O.ANone{}, O.TNone{})
+
+def ab_arm3param(ar: O.Arena) -> O.Found:
+  O.UOp.new(ar, O.OpsPARAM{}, [],
+    O.AParam{O.ParamArg{0, SP.single(), None{}, None{}, None{}, SP.AGlobal{},
+      None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+
+type Ab is Data:
+  Ab{ar: O.Arena, a1: U32, a2: U32, a3: U32}
+
+def Ab.ar(x: Ab) -> O.Arena:
+  match x:
+    case Ab{ar, a1, a2, a3}: ar
+
+def Ab.a1(x: Ab) -> U32:
+  match x:
+    case Ab{ar, a1, a2, a3}: a1
+
+def Ab.a2(x: Ab) -> U32:
+  match x:
+    case Ab{ar, a1, a2, a3}: a2
+
+def Ab.a3(x: Ab) -> U32:
+  match x:
+    case Ab{ar, a1, a2, a3}: a3
+
+def ab() -> Ab:
+  +x = ab_arm1call(O.Arena.empty())
+  +y = ab_arm2call(O.Found.ar(x))
+  +z = ab_arm3param(O.Found.ar(y))
+  Ab{O.Found.ar(z), O.Found.i(x), O.Found.i(y), O.Found.i(z)}
+
+def ab_arm1() -> String: U32.show(S.apply_binds(Ab.ar(ab()), Ab.a1(ab())))
+def ab_arm2() -> String: U32.show(S.apply_binds(Ab.ar(ab()), Ab.a2(ab())))
+def ab_arm3() -> String: U32.show(S.apply_binds(Ab.ar(ab()), Ab.a3(ab())))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     row("isa_SA_buffer_call", isa_b())
@@ -544,3 +851,28 @@ def main() -> IO(Unit):
     row("ca_n4", ca_n4())
     row("ca_reps", ca_reps())
     row("ca_views", ca_views())
+    row("lsl_sink", lsl_sink())
+    row("lsl_pre", lsl_pre())
+    row("lsl_ki", lsl_ki())
+    row("lsl_body", lsl_body())
+    row("cks_same", cks_same())
+    row("cks_diff", cks_diff())
+    row("cks_disk", cks_disk())
+    row("cks_diskdisk", cks_diskdisk())
+    row("cks_none", cks_none())
+    row("cks_nonecpu", cks_nonecpu())
+    row("sck_same", sck_same())
+    row("sck_diff", sck_diff())
+    row("sck_disk", sck_disk())
+    row("sck_diskdisk", sck_diskdisk())
+    row("sck_none", sck_none())
+    row("sck_nonecpu", sck_nonecpu())
+    row("ads_same_n", ads_same_n())
+    row("ads_same_raises", ads_same_raises())
+    row("ads_diff_n", ads_diff_n())
+    row("ads_diff_raises", ads_diff_raises())
+    row("ads_none_n", ads_none_n())
+    row("ads_none_raises", ads_none_raises())
+    row("ab_arm1", ab_arm1())
+    row("ab_arm2", ab_arm2())
+    row("ab_arm3", ab_arm3())

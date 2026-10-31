@@ -1197,6 +1197,20 @@ def cycles(c: Ctx) -> Nat:
 # header that CLAIMED the opposite. The gate is 25 rows over `is_store_after`,
 # `collect_stores` and `canonicalize_alloc`, and it is FALSIFIABLE: both
 # reverts were measured and both moved rows.
+#
+# AND THE OTHER FIVE GOT ROWS TOO (2026-10-31). `lower_sink_to_linear`,
+# `copy_kernel_to_store`, `simplify_copy_kernel`, `assert_all_same_devices`
+# and `apply_binds` were PORTED and had NO ROW, and the gate now carries 25
+# MORE (`lsl_*`, `cks_*`, `sck_*`, `ads_*`, `ab_*`) over them -- 50 ROWS AND 2
+# LANES IN ALL. **THE GATE FOUND TWO MORE REAL DEFECTS IN THIS BLOCK, AND
+# BOTH WERE IN BODIES THAT NO ROW READ:**
+#   * `copy_kernel_to_store` REWROTE WITH THE WRONG POLARITY -- `cks_fire` IS
+#     upstream's "return None" PREDICATE and it was used as the rewrite
+#     trigger, so a SAME-device copy was rewritten and a CROSS-device one was
+#     not. The `cks_*` rows see it (6 of 50 move).
+#   * `assert_all_same_devices` DEDUPED THE NODES AND NOT THE DEVICES, so two
+#     PARAMS on ONE device counted as TWO and the `>= 2` threshold RAISED on a
+#     single-device kernel. The `ads_same_*` rows see it (2 of 50 move).
 # ===========================================================================
 
 # ---------------------------------------------------------------------------
@@ -1398,8 +1412,11 @@ def cs_run(c: CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> CallifyCtx:
 #     Bend `Map` cache would inherit that memo, and a gate row that called
 #     `lower_sink_to_linear` twice in one process would be measuring the cache
 #     and not the guard. The guard below is therefore cache-free BY CONSTRUCTION
-#     -- it takes no cache at all -- and `lsl_none_*` are real CPython calls of
-#     the real function, so they exercise the same early return.
+#     -- it takes no cache at all -- and the `lsl_*` rows of
+#     `gates/schedstore-gate.py` are real CPython calls of the real function,
+#     so they exercise the same early return. MEASURED 2026-10-31: each of the
+#     guard's three conjuncts has its own row, and breaking any ONE of them
+#     moves that row and no other.
 #   WALL(p3) tinygrad/schedule/__init__.py:133      `if SPEC: type_verify(function, spec_tensor)` -- BLOCKED: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor` over `tensor_table()`; upstream's `type_verify` is DECLARED at tinygrad/uop/spec.py:34 and its `spec_tensor` at tinygrad/uop/spec.py:145, and BOTH are PORTED in the port -- the port's own `verify_tensor` is at uop/spec.bend:2833 and its `tensor_table` at uop/spec.bend:2074 -- so these are NOT missing defs, and only the `SPEC > 1` and `DEBUG >= 3` arms are absent.
 #   TODO(p3) __init__.py:132      `get_kernel_graph(prepare_rangeify(function))`
 #     -- `schedule/rangeify.py` and `schedule/prepare.py`, out of scope.
@@ -1450,6 +1467,12 @@ def lower_sink_to_linear.p_ok(+ar: O.Arena, +call: U32) -> Bool:
 #     if dst.device == src.device and not (isinstance(dst.device, str)
 #        and dst.device.startswith("DISK")): return None
 #
+# **THAT LINE IS THE "RETURN None" SIDE, SO THE REWRITE HAPPENS WHEN IT DOES
+# NOT HOLD.** MEASURED 2026-10-31: `copy_kernel_to_store` used it with the
+# OPPOSITE polarity -- `cks_fire` IS the guard and it drove the rewrite -- and
+# so it rewrote SAME-device copies and refused CROSS-device ones. The `cks_*`
+# rows of `gates/schedstore-gate.py` are what saw it.
+#
 # THE DEVICE IS A TAG, NOT A NAME. `S.Dev` is `D1{tag}` / `Dn{tags}` and the name
 # is gone, so `startswith("DISK")` cannot be asked here. `schedule/memory.bend:210 symbol=mem_ok_tag`
 # already hit this on `startswith(("DISK","CL","WEBGPU"))` and the treatment is a
@@ -1463,6 +1486,26 @@ def lower_sink_to_linear.p_ok(+ar: O.Arena, +call: U32) -> Bool:
 # STAGE/AFTER/MSELECT/MSTACK arms and the "first src with a device" tail -- IS
 # `fold.bend`'s and needs a `Table`:
 #   TODO(p3) ops.py:889-895  `.device`'s non-PARAM arms -- `fold.device`.
+#
+# **AND THAT WALL IS A REAL DIVERGENCE, MEASURED 2026-10-31.** `cks_dev` reads
+# a non-PARAM's device as `None{}`, and upstream's `.device` reads the first
+# src with a device. SO FOR `dst = RESHAPE(BUFFER-on-CPU)` AND
+# `src = BUFFER-on-CPU`: UPSTREAM ANSWERS "NO REWRITE" (the devices are equal
+# and neither is on disk) AND THE PORT ANSWERS "REWRITE" (the RESHAPE's device
+# reads as `None`, so the devices are not equal). MEASURED BOTH SIDES:
+# upstream's `copy_kernel_to_store` returned None, the port's
+# `copy_kernel_to_store` answered 1.
+# **THE WALL IS SMALLER FOR `copy_kernel_to_store` THAN FOR
+# `simplify_copy_kernel`, AND THE DIFFERENCE IS UPSTREAM'S OWN PATTERNS**: the
+# two patterns that reach `copy_kernel_to_store` (:175 and :178) BIND `dst` and
+# `src` TO `UPat(Ops.PARAM)`, so for THAT RULE a PARAM-only device read is
+# EXACT. `simplify_copy_kernel`'s pattern (:172) BINDS THEM TO `UPat.var`, so
+# it can see a non-PARAM -- and that is the one caller the wall reaches.
+# NOBODY IN THIS TREE CALLS EITHER RULE (MEASURED: `cks_*` and `sck_*` in
+# `gates/schedstore.bend` are the ONLY callers), so the divergence is LATENT.
+# THE FIX IS `F.UOp.device(ar, F.UOp.fold(ar), i)` -- `fold.bend` IS ALREADY
+# IMPORTED HERE AS `F` -- but the fold CONSUMES the arena and answers a
+# `Table`, so every caller would have to carry one.
 #
 # `dst.store(src)` is `UOp.store` and IS in ops.bend, and `call.replace(src=
 # (stored,)+call.src[1:])` is `cks_rep` -- the local `replace` at :971 is
@@ -1478,10 +1521,13 @@ def cks_dev.of(+ar: O.Arena, +u: U32) -> Maybe<&2, S.Dev>:
 
 # the scrutinees are CALLS and a `match` may not scrutinise a call, so they go in
 # as parameters -- the same bill `sc_gate.of` pays.
+#
+# `None == None` is TRUE in Python, and upstream's `dst.device == src.device`
+# compares the two devices and NOTHING else. MEASURED 2026-10-31: this read
+# `None` as "not the same" and the `cks_none` row of `gates/schedstore-gate.py`
+# is what saw it.
 def cks_dev.eq(x: Maybe<&2, S.Dev>, y: Maybe<&2, S.Dev>) -> Bool:
-  match x y:
-    case Some{p} Some{q}: O.eq_dev(p, q)
-    case _            _   : False{}
+  O.eq_opt_dev(x, y)
 
 def cks_dev.same(+ar: O.Arena, +d: U32, +s: U32) -> Bool:
   cks_dev.eq(cks_dev.of(ar, d), cks_dev.of(ar, s))
@@ -1494,6 +1540,13 @@ def cks_disk(disk: List<&2, U32>, m: Maybe<&2, S.Dev>) -> Bool:
         case S.Dn{ts}: False{}
     case None{}    : False{}
 
+# THE GUARD, and it is the "return None" SIDE of upstream's line:
+# `if dst.device == src.device and not dst.on_disk(): return None`. So `cks_fire`
+# is TRUE exactly where upstream RETURNS NONE, and the rewrite happens when it
+# is FALSE. MEASURED 2026-10-31: `copy_kernel_to_store` used this predicate
+# with the OPPOSITE polarity and rewrote SAME-device copies while refusing
+# CROSS-device ones -- the `cks_*` rows of `gates/schedstore-gate.py` are
+# what saw it, and `cks_put` now takes `NOT cks_fire`.
 def cks_fire(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: U32) -> Bool:
   Bool.and(cks_dev.same(ar, dst, src), Bool.not(cks_disk(disk, cks_dev.of(ar, dst))))
 
@@ -1501,6 +1554,8 @@ def cks_rep(+ar: O.Arena, +call: U32, +head: U32) -> O.Found:
   O.UOp.new(ar, sc_op(ar, call),
     List.append(&2, U32, [head], sc_src_from(ar, call, 1)), sc_arg(ar, call), sc_tag(ar, call))
 
+# `fire` is THE REWRITE CONDITION AND NOT THE GUARD: upstream rewrites when the
+# guard does NOT hold.
 def cks_put(fire: Bool, +ar: O.Arena, +call: U32, +dst: U32, +src: U32) -> Maybe<&2, O.Found>:
   match fire:
     case True{}:
@@ -1512,7 +1567,7 @@ def cks_put(fire: Bool, +ar: O.Arena, +call: U32, +dst: U32, +src: U32) -> Maybe
 # patterns at :181 and :184 bind only `call`, `dst`, `src`, `r` -- so it is not a
 # parameter here.
 def copy_kernel_to_store(disk: List<&2, U32>, +ar: O.Arena, +call: U32, +dst: U32, +src: U32) -> Maybe<&2, O.Found>:
-  cks_put(cks_fire(disk, ar, dst, src), ar, call, dst, src)
+  cks_put(Bool.not(cks_fire(disk, ar, dst, src)), ar, call, dst, src)
 
 # THE GUARD OF `simplify_copy_kernel` IS PORTED AND THE RULE IS NOT, so the def
 # is `simplify_copy_kernel.ok` and NOT `simplify_copy_kernel`. The answer is a
@@ -1524,6 +1579,9 @@ def copy_kernel_to_store(disk: List<&2, U32>, +ar: O.Arena, +call: U32, +dst: U3
 # a bottom-up rewrite over FOUR matchers, two of them imported at :164-166.
 # Naming a def `simplify_copy_kernel` that answers the guard's BOOLEAN would put
 # a WRONG ANSWER under an UPSTREAM NAME and a caller would take it for the rule.
+# **THE GUARD IS GATED (2026-10-31) BY THE `sck_*` ROWS, WHICH ASK UPSTREAM
+# THE SAME QUESTION: `simplify_copy_kernel` RETURNS None FOR "no rewrite", so
+# THE ROW IS 1 WHERE UPSTREAM RETURNED None.**
 #   TODO(p3) __init__.py:167  symbol=simplify_copy_kernel  -- the four-matcher rewrite -- THE WALL.
 #   TODO(p3) __init__.py:164-166  `sym` / `pm_flatten_range` /
 #     `pm_simplify_ranges` -- no port. `pm_mops` is `schedule/prepare.bend`'s.
@@ -1545,16 +1603,20 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 #     if len(devices) >= 2: raise RuntimeError(...)
 #
 # `UOp.toposort` (uop/ops.bend:3404 symbol=UOp.toposort) is the ungated one, so no `sc_topo` copy is
-# needed. `dedup` preserves FIRST-OCCURRENCE order and the arena interns, so two
-# structurally equal UOps are ONE index: the dedup is over INDICES and a
-# `List.contains` over the kept ones is the same set -- the argument `sc_newks`
-# makes for `prev_kernels`.
+# needed. `dedup` preserves FIRST-OCCURRENCE order and it DEDUPS THE DEVICE
+# VALUES AND NOT THE NODES: upstream's `dedup` is `list(dict.fromkeys(x))` over
+# `x.device`, so TWO PARAMS ON ONE DEVICE ARE ONE DEVICE. MEASURED
+# 2026-10-31: this kept the NODES, so two PARAMs on ONE device counted as TWO
+# and the `>= 2` threshold raised on a single-device kernel -- the `ads_same_*`
+# rows of `gates/schedstore-gate.py` are what saw it.
 #
 # THE ANSWER IS NOT A BOOLEAN. Python RETURNS None and the RAISE is the whole
 # effect, and a rule body must return a node, so `Ads` carries the DEVICES --
 # the same treatment `cycles` gets above. `asd_raises` is the `>= 2` THRESHOLD
 # and `asd_two` (ONE device) is the row that pins it: a `>= 1` mutation leaves
-# every other row green.
+# every other row green. **THE `ads_*` ROWS OF `gates/schedstore-gate.py` PIN
+# BOTH: MEASURED 2026-10-31, BREAKING THE DEVICE DEDUP MOVES 2 ROWS AND
+# BREAKING THE THRESHOLD MOVES 1.**
 #
 # THE THREE-WAY SELECTOR IS ONE `match` AND NOT A NESTED ONE, because a `match`
 # nested inside a `case h <> t:` LIST arm is REFUSED in bend 2.0.34 (this file's
@@ -1565,11 +1627,30 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 #   is at __init__.py:155, inside `assert_all_same_devices` at :153-155.)
 # ---------------------------------------------------------------------------
 type Ads is Data:
-  Ads{ds: List<&2, U32>}
+  Ads{ds: List<&2, S.Dev>}
 
-def Ads.ds(x: Ads) -> List<&2, U32>:
+def Ads.ds(x: Ads) -> List<&2, S.Dev>:
   match x:
     case Ads{ds}: ds
+
+# IS THIS DEVICE ALREADY KEPT? THE DEDUP IS OVER THE DEVICES, so the walk
+# compares DEVICE VALUES and not node indexes. `O.eq_dev` is the port's own
+# device equality.
+def asd_seen_of(hit: Bool, acc: Bool) -> Bool:
+  match hit:
+    case True{} : True{}
+    case False{}: acc
+
+def asd_seen_go(+ds: List<&2, S.Dev>, +d: Maybe<&2, S.Dev>, acc: Bool) -> Bool:
+  match ds:
+    case Nil{}     : acc
+    case v <> rest :
+      match d:
+        case Some{w}: asd_seen_go(rest, d, asd_seen_of(O.eq_dev(v, w), acc))
+        case None{}  : asd_seen_go(rest, d, acc)
+
+def asd_seen(+ds: List<&2, S.Dev>, +d: Maybe<&2, S.Dev>) -> Bool:
+  asd_seen_go(ds, d, False{})
 
 def asd_cls(ispar: Bool, hasdev: Bool, seen: Bool) -> U32:
   match ispar hasdev seen:
@@ -1580,22 +1661,29 @@ def asd_cls(ispar: Bool, hasdev: Bool, seen: Bool) -> U32:
 # TWO defs AND NOT ONE, for the file's rule 1: a `match` NESTED inside a
 # `case x <> rest:` LIST arm is refused, so the SELECTOR cannot live in the arm.
 # `asd_go`'s arm is calls only and `asd_step` matches on a `U32` PARAMETER.
-def asd_step(cls: U32, +kept: List<&2, U32>, +x: U32) -> List<&2, U32>:
+#
+# THE DEVICE IS A `Maybe` AND NOT A `Dev`, because a PARAM with no device is
+# KEPT OUT of the list -- upstream's comprehension says `x.device is not None`.
+def asd_step(cls: U32, +kept: List<&2, S.Dev>, +d: Maybe<&2, S.Dev>) -> List<&2, S.Dev>:
   match cls:
-    case 1: List.append(&2, U32, kept, [x])
+    case 1:
+      match d:
+        case Some{v}: List.append(&2, S.Dev, kept, [v])
+        case None{}  : kept
     case _: kept
 
 # THE LIST IS THE FIRST PARAMETER, NOT THE SECOND, and that is this file's rule 3:
 # the check is left to right and each argument is passed unchanged until one
 # shrinks, so the shrinking LIST must come FIRST and the computed accumulator
 # second -- `ka_go(t, Bool.or(...), key, val)` above is the same shape.
-def asd_go(+xs: List<&2, U32>, +kept: List<&2, U32>, +ar: O.Arena) -> List<&2, U32>:
+def asd_go(+xs: List<&2, U32>, +kept: List<&2, S.Dev>, +ar: O.Arena) -> List<&2, S.Dev>:
   match xs:
     case Nil{}     : kept
     case x <> rest :
       k = asd_step(asd_cls(sc_is(ar, x, O.OpsPARAM{}),
                   Maybe.is_some(&2, S.Dev, cks_dev.of(ar, x)),
-                  List.contains(U32, U32.is_eq, kept, x)), kept, x)
+                  asd_seen(kept, cks_dev.of(ar, x))),
+                  kept, cks_dev.of(ar, x))
       asd_go(rest, k, ar)
 
 def assert_all_same_devices(+ar: O.Arena, +ast: U32) -> Ads:
@@ -1604,12 +1692,12 @@ def assert_all_same_devices(+ar: O.Arena, +ast: U32) -> Ads:
 # `if len(devices) >= 2: raise`. 2147483648 is `>= 2`'s other side: the THRESHOLD
 # is two, not one, and `asd_two` is the row that says so.
 def assert_all_same_devices.raises(x: Ads) -> Bool:
-  Bool.not(U32.is_lt(U32.from_nat(List.length(&2, U32, Ads.ds(x))), 2))
+  Bool.not(U32.is_lt(U32.from_nat(List.length(&2, S.Dev, Ads.ds(x))), 2))
 
 # ---------------------------------------------------------------------------
-# 8. `apply_binds` -- __init__.py:110-114. NO ctx. THE THREE-ARM DISPATCH is
-# ported and ARM 3 IS NOT, so the def is `apply_binds` and the answer is an ARM
-# NUMBER (1, 2, 3) and not a node:
+# 8. `apply_binds` -- __init__.py:107-111. NO ctx. THE THREE-ARM DISPATCH is
+# ported and ARM 3's BODY IS NOT, so the def is `apply_binds` and the answer is
+# an ARM NUMBER (1, 2, 3) and not a node:
 #
 #     def apply_binds(si:UOp) -> UOp:
 #       if si.op is Ops.CALL and si.body.op is Ops.LINEAR:  return resolve_linear_call(si, binds)
@@ -1617,8 +1705,15 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 #       subs = {v:binds[v.arg.slot] for s in si.src for v in s.variables() if v.arg.slot in binds}
 #       return si.replace(src=tuple(s.substitute(subs, ...) for s in si.src))
 #
-# ARM 3 needs `UOp.variables` and `UOp.substitute` and NEITHER IS IN THE TREE:
-# `fold.bend`'s own header names `variables` as one of the three readers waiting
+# **THE DISPATCH IS THE WHOLE OF WHAT IS PORTED AND IT IS GATED (2026-10-31).**
+# UPSTREAM'S `apply_binds` IS A CLOSURE INSIDE `resolve_linear_call` AND IS NOT
+# IMPORTABLE, so the `ab_*` rows call `resolve_linear_call` and read the ARM off
+# its OUTPUT: ARM 1 RETURNS A LINEAR, ARM 2 RETURNS `si` ITSELF, AND ARM 3
+# RETURNS A NEW NODE -- three outputs, three arms, and no restatement of
+# upstream's condition. MEASURED: breaking the dispatch moves 1 or 2 rows.
+#
+# ARM 3's BODY needs `UOp.variables` and `UOp.substitute` and NEITHER IS IN THE
+# TREE: `fold.bend`'s own header names `variables` as one of the three readers waiting
 # on the RANGES FOLD, and `ops.py:514 UOp.substitute` waits behind it.
 # `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is NOT in `uop/ops.bend` --
 # an earlier revision of this sentence said it was "already ... as tag 42's table", AND THAT IS
