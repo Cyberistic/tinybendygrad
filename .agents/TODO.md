@@ -27077,3 +27077,12 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       BODY STRINGS (`kern_alu()`, `kern_mixed()` build them by hand) and nothing walks an arena of uops
       to emit that body. The renderers and the assembler exist and are gate-covered; the composition
       does not. That is the next step on the bend side.
+- [x] THE PORT'S WGSL MODULE IS BYTE-IDENTICAL ON A REAL KERNEL: `.agents/slop/perf/render_wgsl.bend`
+      drives `wgsl.bend` with real `Buf`s (`data{slot}_{numel}`) and `Scan{[1],False{}}` from
+      `stage1/E_1024.rows`, and the prologue, all four bindings and the `@compute` signature are
+      **7/7 lines byte-identical** to CPython's. Python side re-measured 0.2-0.5 ms (min of 3),
+      correct to 4.77e-7.
+- [ ] STAGE 1'S LAST PIECE IS ONE FUNCTION: the uop->body walk in `wgsl.bend`. `render_kernel` takes
+      the body as STRINGS and `kern_alu()`/`kern_mixed()` are hand-written literals, so the census
+      rows are about the ASSEMBLER, not a walk. It is the `_render`-equivalent of cstyle.bend: a
+      name map, the inline-vs-declare rule, and the per-op renderers already in the file (~200 lines).

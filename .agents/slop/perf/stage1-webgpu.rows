@@ -1,7 +1,8 @@
 # stage1-webgpu.rows -- .agents/slop/perf/stage1_time.js + stage1_webgpu.py
 # driver: headless Chrome, adapter metal-3, DEV=METAL NOOPT=1 uops rendered by WGSLRenderer
 # iters=3 (min), warmups=3, timed around submit+onSubmittedWorkDone
-# bend_side=absent  (wgsl.bend has NO uop->text walk: its render_kernel takes BODY STRINGS)
-# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok
+# bend_side=BODY ABSENT (wgsl.bend has no uop->body walk: render_kernel takes BODY STRINGS)
+# bend_module=prologue+bindings+signature 7/7 lines byte-identical, rc=0
+# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok|bend_module
 E_1024|40cd0ca967a098d5|-|python-only|600|0.2000|4.77e-7|(a*b)+a|yes
-# probe_sha=991d7f8f66ddc051 err=-
+# probe_sha=a75f7856b82ab008 err=-

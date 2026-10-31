@@ -1376,3 +1376,68 @@ are gate-covered, but the thing that connects them to a uop list does not.
 **⇒ SO STAGE 1 STILL HAS NO COMPARISON, AND NOW THE REMAINING WORK IS ONE MISSING WALKER ON
 ONE SIDE**, not a missing driver (proven), not a missing corpus format (this file produces a
 real kernel both sides could take), and not a missing lowering (NOOPT=1 sidesteps it).
+
+---
+
+# 22. STAGE 1: THE PORT'S MODULE IS BYTE-IDENTICAL ON A REAL KERNEL. THE BODY IS THE WALKER.
+
+    # bend_module=prologue+bindings+signature 7/7 lines byte-identical, rc=0
+    # bend_side=BODY ABSENT (wgsl.bend has no uop->body walk)
+    E_1024|40cd0ca967a098d5|-|python-only|600|0.2-0.5|4.77e-7|(a*b)+a|yes|7/7
+
+## 22.1 WHAT THIS TURN ADDED
+
+`.agents/slop/perf/render_wgsl.bend` drives the PORT's `wgsl.bend` on the REAL kernel's uop
+list: the three GLOBAL f32 PARAMs of `E_1024` become `Buf{"data0_1024", f32, GLOBAL, 1024}`
+and friends (upstream's own `data{slot}_{numel}` naming), and `render_kernel` is called with
+`Scan{[1], False{}}` -- the local-size axes and the f16 flag that `rk_scan` derives from the
+same list. With an EMPTY body it still emits the prologue, the bindings and the signature:
+
+    fn nan() -> f32 { let bits = 0xffffffffu; return bitcast<f32>(bits); }
+    @group(0) @binding(0)
+    var<uniform> INFINITY : f32;
+    @group(0) @binding(1)var<storage,read_write>data0_1024:array<f32>;
+    @group(0) @binding(2)var<storage,read_write>data1_1024:array<f32>;
+    @group(0) @binding(3)var<storage,read_write>data2_1024:array<f32>;
+    @compute @workgroup_size(1) fn E_1024(@builtin(workgroup_id) gindex: vec3<u32>,@builtin(local_invocation_id) lindex: vec3<u32>) {
+
+**⇒ ALL SEVEN LEADING LINES ARE BYTE-IDENTICAL TO CPython's, on a kernel the scheduler made
+and not on a fixture** -- the prologue, all four bindings and the `@compute` signature,
+including the `data{slot}_{numel}` names and the workgroup size.
+
+## 22.2 AND THE BODY IS ABSENT, FOR A REASON THAT IS A SOURCE FACT
+
+`wgsl.bend`'s `render_kernel(+fn, +kernel: List<&2,String>, +bufs, +sc)` takes the BODY as
+STRINGS, and the two bodies it has ever been given are LITERALS in the file:
+
+    def kern_alu() -> List<&2, String>:
+      ["  var val0 = data1_4[0];", ... "  data0_4[3] = (val3+val7);"]
+    def kern_mixed() -> List<&2, String>:
+      ["  var val0 = atomicLoad(&data0_16[0]);", ...]
+
+so the census's whole-kernel rows are rows about the ASSEMBLER, not about a walk. There is
+no function in `wgsl.bend` that takes an arena of uops and produces those lines -- the
+individual renderers exist and are gate-covered, the composition does not. **That is the
+same gap `cstyle.bend`'s `_render` fills on the C side, and it is ~200 lines of walk plus a
+name map plus the inline-vs-declare rule**; it is not started, and this report does not
+claim the body is close.
+
+## 22.3 THE PYTHON SIDE, RE-MEASURED
+
+    3 runs: 0.5 / 0.3 / 0.2 ms (each the min of 3 synchronised launches)
+    sha256 40cd0ca967a098d5, 600 B, max|diff| 4.77e-7 against float32 numpy, always `(a*b)+a`
+
+The number moves with machine load -- the same 600-byte shader on the same adapter -- so it
+is quoted as a range and the LOAD is the reason, not the shader.
+
+## 22.4 SO WHERE STAGE 1 STANDS
+
+| | |
+|---|---|
+| driver | **proven** (metal-3, compiles/runs/times/correct) |
+| corpus | **proven** (`NOOPT=1` sidesteps the STACK wall; a real 15-uop kernel renders) |
+| python side | **timed**, 0.2-0.5 ms, correct to 4.8e-07 |
+| bend module | **byte-identical**, 7/7 leading lines on the real kernel |
+| bend body | **ABSENT** -- the uop->body walk, ~200 lines, not started |
+
+**⇒ STAGE 1 IS STILL NOT MET, AND THE REMAINING WORK IS ONE FUNCTION.**

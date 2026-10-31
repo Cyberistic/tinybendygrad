@@ -24,6 +24,7 @@ import { createHash } from "node:crypto";
 
 const ROOT = process.cwd();
 const K = JSON.parse(readFileSync(join(ROOT, ".agents/slop/perf/stage1/kernel.json"), "utf8"));
+const PM = JSON.parse(readFileSync(join(ROOT, ".agents/slop/perf/stage1/port_module.json"), "utf8"));
 const N = Number(process.env.STAGE1_ITERS || 3);
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = 9334;
@@ -165,8 +166,9 @@ const rows = [
   "# stage1-webgpu.rows -- .agents/slop/perf/stage1_time.js + stage1_webgpu.py",
   `# driver: headless Chrome, adapter ${out?.arch ?? "?"}, DEV=METAL NOOPT=1 uops rendered by WGSLRenderer`,
   `# iters=${N} (min), warmups=3, timed around submit+onSubmittedWorkDone`,
-  `# bend_side=absent  (wgsl.bend has NO uop->text walk: its render_kernel takes BODY STRINGS)`,
-  "# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok",
+  `# bend_side=BODY ABSENT (wgsl.bend has no uop->body walk: render_kernel takes BODY STRINGS)`,
+  `# bend_module=prologue+bindings+signature ${PM.identical_leading}/${PM.leading_lines} lines byte-identical, rc=${PM.rc}`,
+  "# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok|bend_module",
   `${K.name}|${out?.sha256 ?? "-"}|-|python-only|${K.bytes}|${(out?.ms?.[0] ?? NaN).toFixed(4)}|` +
     `${(out?.max_abs_diff ?? NaN).toExponential(2)}|${out?.matched ?? "-"}|${out?.ok ? "yes" : "no"}`,
   `# probe_sha=${sha} err=${out?.err ?? "-"}`,
