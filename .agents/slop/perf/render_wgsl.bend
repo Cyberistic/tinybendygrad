@@ -3,7 +3,7 @@
 import Base
 import ./../../../tinybendygrad/renderer/wgsl.bend as V
 import ./../../../tinybendygrad/renderer/wgsl_walk.bend as W
-import ./gen_wgsl/E_1024.bend as G
+import ./gen_wgsl/odd__E_1000.bend as G
 
 def render(rs: List<&2, W.R>) -> String:
   +w = W.walk(rs)

@@ -53,7 +53,7 @@ const script = `
   const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
   for (const K of KS) {
-  const R = { name: K.name, sha: K.sha256, sha_bend: K.sha_bend, bytes: K.bytes, sides: {} };
+  const R = { name: K.name, prog: K.program, la: K.label_a, lb: K.label_b, sha: K.sha256, sha_bend: K.sha_bend, bytes: K.bytes, identical: K.identical, cause: K.cause, sides: {} };
   out.kernels.push(R);
   // binding 0 is the f32 uniform the prologue declares; 1.. are the storage buffers
   const entries = [{ binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }];
@@ -187,7 +187,7 @@ const rows = [
   "# python side: WGSLRenderer(Target('webgpu')).render(uops)",
   "# bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel",
   `# iters=${N} (min), warmups=3 per side, INTERLEAVED timed rounds, around submit+onSubmittedWorkDone`,
-  "# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok",
+  "# program|kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok|cause_or_err",
 ];
 const sha = createHash("sha256").update(JSON.stringify(out)).digest("hex").slice(0, 16);
 let allOk = true;
@@ -195,9 +195,10 @@ for (const R of out.kernels ?? []) {
   const P = R.sides?.python ?? {}, B = R.sides?.bend ?? {};
   const both = P.present && B.present && P.matched && B.matched && P.matched === B.matched;
   if (!both) allOk = false;
-  rows.push(`${R.name}|${R.sha}|${R.sha_bend}|${R.sha === R.sha_bend ? "yes" : "no"}|${R.bytes ?? "-"}|` +
+  const why = P.err ? "python: " + P.err : B.err ? "bend: " + B.err : (R.cause || "-");
+  rows.push(`${R.prog ?? "-"}|${R.name}|${R.sha}|${R.sha_bend}|${R.identical ? "yes" : "no"}|${R.bytes ?? "-"}|` +
     `${fmt(P.ms)}|${fmt(B.ms)}|${dxp(P.diff)}|${dxp(B.diff)}|${P.matched ?? "-"}|${B.matched ?? "-"}|` +
-    `${both ? "yes" : "no"}`);
+    `${both ? "yes" : "no"}|${why}`);
 }
 rows.push(`# probe_sha=${sha} err=${out.err ?? "-"} kernels=${(out.kernels ?? []).length} all_ok=${allOk}`);
 writeFileSync(join(ROOT, ".agents/slop/perf/stage1-webgpu.rows"), rows.join("\n") + "\n");

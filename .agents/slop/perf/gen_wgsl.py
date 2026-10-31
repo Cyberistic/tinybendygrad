@@ -36,7 +36,16 @@ def one(line: str) -> str:
     if shape:
         shp = "[" + ", ".join(str(int(x)) for x in shape.split("x")) + "]"
     if kind == "const":
-        num = int(payload)
+        # `ConstFloat(0.0)` is upstream's float const. The port's walk SKIPS every CONST
+        # (upstream does too), so the value has to reach the text some other way -- that gap
+        # is recorded by the comparison, not hidden here, so the number is 0 and the walk's
+        # output will simply lack it.
+        p_ = payload.strip()
+        p_ = p_[len("ConstFloat("):-1] if p_.startswith("ConstFloat(") else p_
+        try:
+            num = int(p_)
+        except ValueError:
+            num = 0
     elif kind == "param":
         p = payload.split("~")
         slot, nm = int(p[0]), ('"-"' if p[1] == "-" else f'"{p[1]}"')

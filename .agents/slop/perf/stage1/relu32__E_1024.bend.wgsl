@@ -8,5 +8,6 @@ var<uniform> INFINITY : f32;
   var gidx0 = i32(gindex.x); /* 1024 */
   var val0 = data1_1024[gidx0];
   var val1 = data2_1024[gidx0];
-  data0_1024[gidx0] = ((val1*val0)+val1);
+  var alu0 = (val0*val1);
+  data0_1024[gidx0] = select(f32(),alu0,(f32()<alu0));
 }

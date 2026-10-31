@@ -1560,3 +1560,71 @@ writes one manifest per kernel; `stage1_time.js` globs them and emits one row ea
 BY IDENTITY OF TEXT — AND WHAT REMAINS IS COVERAGE, NOT DIVERGENCE.** A wider corpus
 (reductions, WHERE/relu, more sizes) is the honest next step; a race between divergent
 programs is not available, and this report will not manufacture one.
+
+---
+
+# 25. STAGE 1's CORPUS BROADENED TO SIX PROGRAMS: 4 IDENTICAL, 1 DIVERGENT-BUT-AGREEING, 1 REFUSAL
+
+    # program|kernel|sha256_python|sha256_bend|identical|bytes|python_ms|bend_ms|diff_p|diff_b|matched_p|matched_b|ok|cause_or_err
+    ew16 |E_256  |2b4706e6116a783a|2b4706e6116a783a|yes|592|0.2|0.1|2.38e-7|2.38e-7|(a*b)+b|(a*b)+b|yes|-
+    ew32 |E_1024 |40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.2|0.3|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
+    ew64 |E_4096 |e2d04138454c4e7d|e2d04138454c4e7d|yes|600|0.2|0.2|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
+    odd  |E_1000 |0bcd9cfc4e5d646a|0bcd9cfc4e5d646a|yes|600|0.2|0.2|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
+    red32|r_64_64|100abe11c436df95|3d2578d631306cbd|no |623|0.1|-  |3.81e-6|-        |(a*b)+a|-     |no |bend: 7:unresolved value 'Ops'
+    relu32|E_1024|ee0bcdbb670f571a|4cde8ff9e584b1e0|no |656|0.2|0.1|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|a CONST's value is not materialised
+
+## 25.1 THE FOUR IDENTICAL ONES, AND ONE OF THEM IS THE ONE THAT MATTERS
+
+`ew16/ew32/ew64` are one op chain at three sizes; **`odd` is a 1000-element 1-D tensor -- NOT a
+power of two** -- and it is byte-identical too (600 B). So the identity does not depend on the
+shape being a power of two.
+
+## 25.2 THE FIRST DIVERGENT PAIR THAT ACTUALLY RUNS: `relu32`
+
+    python  656 B  ee0bcdbb670f571a   0.2 ms   diff 0.00e+0
+    bend    639 B  4cde8ff9e584b1e0   0.1 ms   diff 0.00e+0
+
+The texts DIFFER -- CPython emits `select(0.0f,alu0,(0.0f<alu0))` and the port emits
+`select(f32(),alu0,(f32()<alu0))`, because the walk never materialises a CONST's value and the
+type call `f32()` is what is left. **AND `f32()` IS A VALID ZERO IN WGSL**, so the port's
+shader compiles, runs, and computes the SAME answer to 0.00e+0. That is a divergent pair with
+equal output and unequal text: the strongest evidence this stage can produce for "matches
+speed" on non-identical code, and the weakest possible margin (0.1 vs 0.2 ms at the floor).
+
+**⇒ AND IT NAMES A REAL DEFECT ANYWAY**: the value of a `CONST` is missing. It is invisible
+here only because the constant happens to be `0.0`; a non-zero constant would produce a wrong
+answer that compiles.
+
+## 25.3 THE RECORDED REFUSAL: a reduction
+
+`red32` (`a.sum(axis=1)`) has a RANGE loop and a LOCAL BUFFER. The port's text is 699 B and
+Chrome refuses it:
+
+    bend: 7:unresolved value 'Ops'
+
+because the walk has no `BUFFER` arm and no `RANGE` arm -- it emits
+`var buf0 = UNHANDLED(Ops.BUFFER);` and no `for (var Lidx0 = ...)` at all. **The cause is
+named, the python side still ran (0.1 ms, diff 3.81e-6), and no parity is claimed for it.**
+
+## 25.4 A HARNESS BUG THE BROADENING FOUND
+
+`ew64` and `odd` first failed with `Binding doesn't exist in [BindGroupLayout]`, because the
+builder did `Tensor(a).realize()` TWICE for the same logical input -- two buffers, four
+bindings, three bound. **The harness, not the port.** One `realize()` per input fixed it, and
+the corpus then measured cleanly.
+
+## 25.5 STAGE 3's WORDING, SETTLED AS FAR AS THE EVIDENCE CAN SETTLE IT
+
+The clause is "until PYTHON DEVICE matches BEND device, or is faster". Measured:
+
+| reading | verdict |
+|---|---|
+| LITERAL: PYTHON must be at least as fast as BEND | **NOT MET** -- PYTHON is 2707/580 ms against BEND 1039/113, i.e. **2.6x and 5.1x SLOWER** |
+| BEND must be at least as fast as PYTHON (the reading every change this session served) | **MET** -- 1039 vs 2707 at 32x32, 113 vs 580 at 16x16 |
+
+**⇒ THE LITERAL SENTENCE IS NOT SATISFIED, AND THIS REPORT WILL NOT SAY IT IS.** The other
+reading is the one the WORK implies: BEND began 56x SLOWER than PYTHON, so a session that made
+it faster cannot have been serving "PYTHON must be at least as fast". But "the work implies it"
+is not "the user said it", and I cannot decide an ambiguous instruction on the user's behalf:
+**the literal reading is unmet, the other reading is met, and which is binding is the user's
+call.** What is unambiguous is the numbers themselves.

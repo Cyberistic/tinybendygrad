@@ -18,8 +18,11 @@ def rs() -> List<&2, W.R>:
   W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 6]}, # 9 INDEX
   W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9]}, # 10 LOAD
   W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 6]}, # 11 INDEX
-  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [10, 8]}, # 12 MUL
-  W.R{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12, 10]}, # 13 ADD
-  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [11, 13]}, # 14 STORE
-  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_1024", 0, 0, Nil{}, [14]}, # 15 SINK
+  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", 0, 0, Nil{}, Nil{}}, # 12 CONST
+  W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12]}, # 13 CAST
+  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [8, 10]}, # 14 MUL
+  W.R{O.OpsCMPLT{}, S.boolean(), S.Aalu{}, 1, "", 0, 0, Nil{}, [13, 14]}, # 15 CMPLT
+  W.R{O.OpsWHERE{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [15, 14, 13]}, # 16 WHERE
+  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [11, 16]}, # 17 STORE
+  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_1024", 0, 0, Nil{}, [17]}, # 18 SINK
   ]

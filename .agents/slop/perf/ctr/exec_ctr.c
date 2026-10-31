@@ -1479,22 +1479,18 @@ A32_LOOP(fadd, f32_rewrap(f32_unbox(o) + f32_unbox(v)))
 
 #define bank_at(H, c) ((DEV Bank*)((H) + H_BANK) + (c))
 
-unsigned long long CT_step = 0;
-unsigned long long CT_run = 0;
 unsigned long long CT_bank_pop = 0;
-unsigned long long CT_bank_push = 0;
 unsigned long long CT_heap_alloc = 0;
-unsigned long long CT_heap_free = 0;
-unsigned long long CT_term_drop = 0;
-unsigned long long CT_drop_triv = 0;
-unsigned long long CT_drop_real = 0;
 unsigned long long CT_span_fade = 0;
+unsigned long long CT_heap_free = 0;
 unsigned long long CT_sf_terms = 0;
+unsigned long long CT_step = 0;
+unsigned long long CT_alu = 0;
 
 __attribute__((destructor)) static void ctr_report(void) {
-  fprintf(stderr, "CTR bank_pop=%llu bank_push=%llu heap_alloc=%llu heap_free=%llu "
-                  "term_drop=%llu drop_triv=%llu drop_real=%llu span_fade=%llu span_fade_terms=%llu step=%llu run=%llu\n",
-    CT_bank_pop, CT_bank_push, CT_heap_alloc, CT_heap_free, CT_term_drop, CT_drop_triv, CT_drop_real, CT_span_fade, CT_sf_terms, CT_step, CT_run);
+  fprintf(stderr, "CTR bank_pop=%llu heap_alloc=%llu heap_free=%llu span_fade=%llu "
+                  "span_fade_terms=%llu step=%llu alu=%llu\n",
+    CT_bank_pop, CT_heap_alloc, CT_heap_free, CT_span_fade, CT_sf_terms, CT_step, CT_alu);
 }
 
 INLINE u64 bank_pop(DEV u64* H, u32 c) { CT_bank_pop += 1;
@@ -1514,7 +1510,7 @@ INLINE u64 bank_pop(DEV u64* H, u32 c) { CT_bank_pop += 1;
   return got;
 }
 
-INLINE void bank_push(DEV u64* H, u32 c, u64 head) { CT_bank_push += 1;
+INLINE void bank_push(DEV u64* H, u32 c, u64 head) {
   DEV Bank* b = bank_at(H, c);
   LOCK(bank_lock);
   H[b->off + a32_add(&b->wr, 1)] = head;
@@ -1595,7 +1591,7 @@ INLINE u64 heap_alloc(Env e, u32 cls) { CT_heap_alloc += 1;
   return heap_alloc_miss(e, cls);
 }
 
-INLINE void heap_free(Env e, u32 cls, u64 loc) { CT_heap_free += 1;
+INLINE void heap_free(Env e, u32 cls, u64 loc) {
   if (err_peek(e.mem)) {
     return;
   }
@@ -1736,7 +1732,6 @@ FAR void term_drop(Env e, Term t) {
   Term c0  = 0;
   u32  step = 0;
   for (;;) {
-    if (term_triv(t)) { CT_drop_triv += 1; } else { CT_drop_real += 1; }
     if (!term_triv(t) && term_rfc(t)) {
       u64      r = term_loc(t);
       DEV u32* p = a32_at(H, r);
@@ -44532,7 +44527,7 @@ static Term work_loop(Env e, DEV Term* sp, Term t, u32 seq) {
 #endif
 
 #if !DEVICE
-  WL_CASE(FID_Prog_step)
+  WL_CASE(FID_Prog_step) CT_step += 1;
     Term _p_0 = r0;
     Term _p_1 = r1;
     Term _p_2 = r2;

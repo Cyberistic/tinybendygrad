@@ -11,15 +11,18 @@ def rs() -> List<&2, W.R>:
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 256, "-", 0, 0, [256], [1]}, # 2 PARAM
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 256, "-", 0, 1, [256], [1]}, # 3 PARAM
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 256, "-", 0, 2, [256], [1]}, # 4 PARAM
-  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [1]}, # 5 CAST
-  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [5]}, # 6 SPECIAL
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 6]}, # 7 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7]}, # 8 LOAD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 6]}, # 9 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9]}, # 10 LOAD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 6]}, # 11 INDEX
-  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [10, 8]}, # 12 MUL
-  W.R{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12, 10]}, # 13 ADD
-  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [11, 13]}, # 14 STORE
-  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_256", 0, 0, Nil{}, [14]}, # 15 SINK
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 256, "-", 0, 3, [256], [1]}, # 5 PARAM
+  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [1]}, # 6 CAST
+  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [6]}, # 7 SPECIAL
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 7]}, # 8 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [8]}, # 9 LOAD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 7]}, # 10 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [10]}, # 11 LOAD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [5, 7]}, # 12 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12]}, # 13 LOAD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 7]}, # 14 INDEX
+  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9, 11]}, # 15 MUL
+  W.R{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [15, 13]}, # 16 ADD
+  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [14, 16]}, # 17 STORE
+  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_256", 0, 0, Nil{}, [17]}, # 18 SINK
   ]
