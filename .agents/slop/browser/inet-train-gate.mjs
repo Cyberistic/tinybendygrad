@@ -48,11 +48,11 @@ const b64ToU32 = (b64) => {
   return out;
 };
 
-async function replay() {  // NOTE: no `net` here; the numbers below are MEASURED literals.
+async function replay(only) {
   const srv = await serve(WEB);
   let h;
   try {
-    const url = srv.url + "/train.html?net=inet-train-net.json&oracle=inet-train-oracle.json&batch=64";
+    const url = `${srv.url}/train.html?net=inet-train-net.json&oracle=inet-train-oracle.json&batch=64&only=${only}`;
     P("stage: launching chrome");
     h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], url);
     P("stage: attaching");
@@ -73,9 +73,11 @@ async function replay() {  // NOTE: no `net` here; the numbers below are MEASURE
       // timeout, so the probe threw and the harness reported a page that
       // "never finished" -- while the page was WORKING. **⇒ SO THE POLL RETRIES.**
       // RETRY
-      const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:'running', p:window.__prog};", { timeoutMs: 240000 });
+      const t0 = Date.now();
+      const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:'running', p:window.__prog};", { timeoutMs: 60000 });
+      if (i % 20 === 0) P(`  poll ${i}: ${JSON.stringify(r)} (${Date.now() - t0} ms)`);
       if (r && r.t === "done") break;
-      } catch (e) { /* the main thread is busy; ask again */ }
+      } catch (e) { if (i % 20 === 0) P(`  poll ${i}: TIMEOUT`); }
       await new Promise((r) => setTimeout(r, 250));
     }
     P("stage: reading the result");
@@ -123,7 +125,7 @@ async function main() {
     `buffer=${LN}  kernels=${net.kernels.length}`);
   P(`        payloads ${net.payloads.length} distinct (interned)`);
 
-  const res = await replay();
+  const res = await replay(LN);
   if (res && res.__refused) return res.__refused;
   if (!res || !res.ok) {
     P(`${BAD}the page did not finish: ${String(res && res.error).slice(0, 900)}`);

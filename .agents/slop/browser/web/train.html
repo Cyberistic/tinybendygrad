@@ -56,6 +56,14 @@ try {
   // fixed twice, which is how the two would drift.
   const q = new URLSearchParams(location.search);
   const NET = q.get("net") ?? "train-net.json";
+  // **⇒ AND THE READBACK IS SCOPED BY `?only=`, WHICH IS THE DIFFERENCE BETWEEN A
+  // RESULT AND A HANG.** MEASURED: without it, the EfficientNet training page
+  // FINISHED its 13 154 dispatches and then spent longer than a four-minute probe
+  // budget in `JSON.stringify` of ~800 f32 buffers -- so the work was DONE and the
+  // harness could not read it. **⇒ A TRACE WITH NO `only` STILL READS EVERYTHING**
+  // (the MNIST gate compares all 47 tensor buffers), and an empty string means
+  // none.
+  const ONLY = q.get("only");
   const ORACLE = q.get("oracle") ?? "train-oracle.json";
   const [net, oracle] = await Promise.all([
     fetch("./" + NET).then((r) => r.json()),
@@ -260,13 +268,18 @@ try {
   // `wgsl`.** The transform depends on `outs`, and two launches can share one
   // WGSL string while disagreeing about which binding is an output -- so a cache
   // keyed on the raw text would hand one of them the other's shader.
-  const modules = new Map(), pipelines = new Map();
+  const pipelines = new Map();
   const codeOf = (k) => shaderOf(k, planOf(k));
+  // **⇒ AND SHADERS ARE COMPILED **ON FIRST USE**, NOT ALL UP FRONT.** MEASURED:
+  // doing all 568 `createShaderModule` + `getCompilationInfo` calls before the
+  // first dispatch is a long synchronous stretch, and on the 13 154-launch
+  // EfficientNet trace that stretch ALONE outlasted the harness's probe budget --
+  // a page that was still compiling read as a page that had hung.
+  // **⇒ AND IT CHANGES NOTHING ABOUT WHAT IS CHECKED**: every shader still goes
+  // through `getCompilationInfo` before its first dispatch, so a rejected shader
+  // still throws and still NAMES its kernel and line.
   const modulesByCode = new Map();
-  for (const k of net.kernels) {
-    if (!k.wgsl) throw new Error(`kernel ${k.entry} has no WGSL: ${k.wgslError}`);
-    const code = codeOf(k);
-    if (modulesByCode.has(code)) continue;
+  const compileOf = async (k, code) => {
     const mod = device.createShaderModule({ code, label: `${k.entry}#${modulesByCode.size}` });
     const info = await mod.getCompilationInfo();
     const errs = info.messages.filter((m) => m.type === "error");
@@ -275,7 +288,17 @@ try {
         errs.map((m) => `line ${m.lineNum}:${m.linePos} ${m.message.split("\n")[0]}`).join(" | "));
     }
     modulesByCode.set(code, mod);
-  }
+    return mod;
+  };
+
+  // **⇒ AND BIND GROUPS ARE CACHED BY (PIPELINE, THE BOUND BUFFER NAMES), WHICH
+  // IS THE WHOLE COST OF A 13 154-LAUNCH REPLAY.** MEASURED: one
+  // `createBindGroup` PER LAUNCH is 13 154 bind groups over 824 buffers, and it
+  // is pure garbage -- the same kernel bound to the same buffers at 300 different
+  // launches wants ONE bind group. **⇒ AND THE KEY IS THE NAMES AND NOT THE
+  // `GPUBuffer`s, because a name resolves to exactly one buffer for the life of
+  // the run** (`bufs[n].gb` is created once).
+  const bgCache = new Map();
 
   // **⇒ AND THE LAYOUT MIRRORS THE SHADER, BINDING BY BINDING.** A `read`
   // declaration is `read-only-storage` in the layout and `storage` is
@@ -302,7 +325,7 @@ try {
   // **⇒ AND THIS PAGE'S FIRST VERSION HAD NO SCOPE**, which is why a wrong answer
   // read as a number rather than as an error.
   device.pushErrorScope("validation");
-  let launches = 0, uploads = 0, enc = null;
+  let launches = 0, uploads = 0, enc = null, pass = null;
   const batchWritten = new Set();
   // **⇒ AND THE BATCH SIZE IS A MEASURED TRADEOFF, NOT A TUNING KNOB.** Batching
   // 64-to-a-submit is what makes a 13 154-launch replay START at all, and
@@ -330,8 +353,9 @@ try {
     // bit-exact buffers where `batch=1` gave `47 of 47`.** **⇒ SO A LAUNCH WHOSE
     // `in` TOUCHES A BUFFER WRITTEN SINCE THE LAST SUBMIT FORCES A SUBMIT.**
     if (enc && Object.keys(k.in || {}).some((n) => batchWritten.has(n))) {
+      pass.end();
       device.queue.submit([enc.finish()]);
-      enc = null;
+      enc = null; pass = null;
       batchWritten.clear();
     }
     for (const [n, b64raw] of Object.entries(k.in || {})) {
@@ -339,13 +363,15 @@ try {
       device.queue.writeBuffer(bufs[n].gb, 0, b64ToBytes(b64));
       uploads++;
     }
-    const mod = modulesByCode.get(codeOf(k));
+    const code = codeOf(k);
+    const mod = modulesByCode.get(code) ?? (await compileOf(k, code));
     const plan = planOf(k);
     const key = `${k.wgsl}#${k.entry}#${[...writableSet(k)].sort().join(",")}#${[...plan.drop].sort().join(",")}`;
     if (!pipelines.has(key)) {
       const pl = device.createPipelineLayout({ bindGroupLayouts: [layoutFor(k, plan)] });
       pipelines.set(key, device.createComputePipeline({ layout: pl, compute: { module: mod, entryPoint: k.entry } }));
     }
+    const pipe = pipelines.get(key);
     const bindings = [{ binding: 0, resource: { buffer: infinity } }];
     // **⇒ AND A WRITABLE BUFFER BOUND TWICE GETS A **COPY** AT ITS NON-OUTPUT
     // POSITIONS.** WebGPU refuses writable aliasing (MEASURED:
@@ -360,17 +386,24 @@ try {
     // **⇒ AND THERE IS NO COPY ANY MORE.** The duplicate bindings were removed
     // from the shader (`plan.drop`), so a buffer appears at most ONCE here and
     // the in-place kernel reads what it just wrote.
-    if (!enc) enc = device.createCommandEncoder();
-    k.bufs.forEach((n, i) => {
-      if (plan.drop.has(i)) return;
-      bindings.push({ binding: i + 1, resource: { buffer: bufs[n].gb } });
-    });
-    const bg = device.createBindGroup({ layout: pipelines.get(key).getBindGroupLayout(0), entries: bindings });
-    const pass = enc.beginComputePass();
-    pass.setPipeline(pipelines.get(key));
+    if (!enc) { enc = device.createCommandEncoder(); pass = enc.beginComputePass(); }
+    // **⇒ AND ONE COMPUTE PASS HOLDS MANY DISPATCHES, WHICH IS VALID WEBGPU AND
+    // 13 154 PASSES FEWER.** A pass may contain any number of
+    // `setPipeline`/`setBindGroup`/`dispatch` triples and they run IN ENCODE ORDER,
+    // which is exactly the order the trace needs.
+    const bgKey = key + "|" + k.bufs.filter((_, i) => !plan.drop.has(i)).join(",");
+    let bg = bgCache.get(bgKey);
+    if (!bg) {
+      k.bufs.forEach((n, i) => {
+        if (plan.drop.has(i)) return;
+        bindings.push({ binding: i + 1, resource: { buffer: bufs[n].gb } });
+      });
+      bg = device.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: bindings });
+      bgCache.set(bgKey, bg);
+    }
+    pass.setPipeline(pipe);
     pass.setBindGroup(0, bg);
     pass.dispatchWorkgroups(k.global[0], k.global[1], k.global[2]);
-    pass.end();
     // **⇒ AND `writeBuffer` IS ORDERED ON THE QUEUE, SO A BATCH BOUNDARY IS A
     // SUBMIT -- WHICH IS ALSO WHERE THE PER-LAUNCH UPLOADS OF THE NEXT BATCH LAND
     // AFTER THE RIGHT WORK AND NOT BEFORE IT.**
@@ -387,14 +420,15 @@ try {
     // YIELD IS ONLY THE EVENT LOOP** -- enough for the debugger to answer -- and
     // the single GPU sync stays where it was, after the loop.
     if (launches % BATCH === 0) {
+      pass.end();
       device.queue.submit([enc.finish()]);
-      enc = null;
+      enc = null; pass = null;
       batchWritten.clear();
       await new Promise((r) => setTimeout(r, 0));
       window.__prog = launches;
     }
   }
-  if (enc) { device.queue.submit([enc.finish()]); enc = null; }
+  if (enc) { pass.end(); device.queue.submit([enc.finish()]); enc = null; pass = null; }
   await device.queue.onSubmittedWorkDone();
   const verr = await device.popErrorScope();
   if (verr) throw new Error(`WebGPU validation error: ${verr.message}`);
@@ -404,7 +438,8 @@ try {
   // THE READBACK: EVERY f32 BUFFER. The claim is about WEIGHTS, so one output
   // buffer would be the wrong denominator -- a forward pass returns one tensor
   // and a training step changes 34.
-  const names = Object.keys(bufs).filter((n) => bufs[n].f32);
+  const allF32 = Object.keys(bufs).filter((n) => bufs[n].f32);
+  const names = ONLY === null ? allF32 : ONLY.split(",").filter((n) => bufs[n]);
   const readEnc = device.createCommandEncoder();
   const staged = new Map();
   for (const n of names) {
@@ -422,7 +457,8 @@ try {
     out.sizes[n] = bufs[n].size;
     rb.unmap(); rb.destroy();
   }
-  out.f32_buffers = names.length;
+  out.f32_buffers = allF32.length;
+  out.read_back = names.length;
   // **⇒ AND THE REPAIR IS REPORTED, NEVER SILENT**: a page that quietly fixes a
   // compiler's output and then says PASS is hiding the compiler's defect.
   out.brace_repaired = [...closed.entries()].map(([e, n]) => `${e}:+${n}}`);
