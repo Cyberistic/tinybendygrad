@@ -89,15 +89,19 @@ def main() -> int:
     def all_zero(b64: str) -> bool:
         return not _nz(b64)
 
+    # **⇒ AND AN ALL-ZERO BUFFER KEEPS ITS **ENTRY** AND LOSES ONLY ITS PAYLOAD.**
+    # Dropping the entry too left the page unable to ALLOCATE the buffer, and it
+    # died with `Cannot read properties of undefined (reading 'gb')` -- the size
+    # lives in the entry. **⇒ SO THE PAGE STILL KNOWS HOW BIG IT IS, AND STILL
+    # UPLOADS NOTHING.**
     zbytes = 0
-    kept = {}
-    for n, b in TC.buffers.items():
+    for n, b in list(TC.buffers.items()):
         if all_zero(b["b64"]):
             zbytes += len(b["b64"])
-            continue
-        kept[n] = b
-    TC.buffers.clear()
-    TC.buffers.update(kept)
+            b = dict(b)
+            b.pop("b64", None)
+            b["zero"] = True
+            TC.buffers[n] = b
     for fr in frames:
         ins = fr.get("in") or {}
         fr["in"] = {n: v for n, v in ins.items()
@@ -106,6 +110,7 @@ def main() -> int:
             fr.pop("in", None)
     final = {n: v for n, v in final.items() if not all_zero(v)}
     print(f"zero-elided: {zbytes} base64 chars of all-zero snapshots dropped")
+    print(f"size-normalised payloads: {TC.normalize_sizes(TC.buffers, frames, final)}")
     (OUT / "inet-net.json").write_text(json.dumps({
         "entry": {"input": list(x.shape), "output": list(logits.shape)},
         "buffers": TC.buffers, "final": final, "kernels": frames,

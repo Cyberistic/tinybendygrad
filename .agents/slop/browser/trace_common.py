@@ -82,6 +82,20 @@ _order = [0]
 ENTRY_RE = re.compile(r"@compute[^\n]*\bfn\s+(\w+)\s*\(", re.M)
 
 
+def raw_of(buf) -> bytes:
+    """The buffer's bytes as the page will upload them.
+
+    **⇒ AND `as_memoryview` READS THE **BASE ALLOCATION**, NOT THE VIEW.** A
+    `Buffer` can be a view with `nbytes` smaller than its `base`'s, so a `size`
+    taken from `buf.nbytes` and a payload taken from `as_memoryview(buf)` are TWO
+    DIFFERENT LENGTHS. **⇒ MEASURED: EfficientNet's replay died with `Write range
+    (size: 4816896) does not fit in [Buffer] size (1605632)`**, which is exactly
+    that mismatch. **⇒ SO THE SIZE IS DERIVED FROM THE BYTES AND NOT READ FROM A
+    FIELD**, and the two cannot disagree by construction.
+    """
+    return bytes(buf.as_memoryview(allow_zero_copy=True))
+
+
 def bits_of(buf) -> str:
     """The buffer's bytes, base64'd -- exactly the u32 words the gate is about.
 
@@ -197,7 +211,8 @@ def traced_exec_kernel(ctx, call, ast, devices=None):
                 slot = ast.arg.globals[pos] if pos < len(ast.arg.globals) else None
                 u = call.src[1 + slot] if slot is not None and 1 + slot < len(call.src) else None
                 dt = dt_of(u) if u is not None else None
-                buffers[n] = {"size": b.nbytes,
+                payload = bits_of(b)
+                buffers[n] = {"size": len(raw_of(b)),
                               "dtype": str(dt) if dt is not None else "-",
                               "f32": dt is not None and getattr(dt, "itemsize", 0) == 4,
                               # **⇒ AND `w32` IS WHAT THE SNAPSHOTS FILTER ON, NOT
@@ -211,7 +226,7 @@ def traced_exec_kernel(ctx, call, ast, devices=None):
                               # different element, and the loss came back `0` where
                               # CPython had `2.7735066413879395`.
                               "w32": dt is not None and getattr(dt, "itemsize", 0) == 4,
-                              "b64": bits_of(b)}
+                              "b64": payload}
             rec["bufs"].append(n)
         # **⇒ AND THE `vals` UNIFORMS **ARE** RECORDED, AND DROPPING THEM WAS A
         # MEASURED BUG.** `ProgramInfo` has no `vals` any more (the 2026-10-20
@@ -270,6 +285,45 @@ def restore() -> None:
 def reset() -> None:
     launches.clear()
     buffers.clear()
+
+
+def normalize_sizes(buffers: dict, frames: list, final: dict) -> int:
+    """Make ONE allocation SIZE per buffer name: the longest payload seen.
+
+    **⇒ AND A BASE ALLOCATION CAN BE **REALLOCATED BIGGER** DURING A TRACE**, so
+    one name can carry two payload lengths -- MEASURED: `Write range (size:
+    4816896) does not fit in [Buffer] size (1605632)` on EfficientNet's replay,
+    because the first-bind view was 1605632 bytes and a later snapshot of the SAME
+    allocation was 4816896.
+
+    **⇒ AND ONLY THE **SIZE** MOVES. THE PAYLOADS ARE LEFT ALONE**, because a
+    `Queue.writeBuffer` of FEWER bytes than the buffer is legal and leaves the
+    rest at whatever they were -- which for a freshly created `GPUBuffer` is
+    zero. **⇒ PADDING THE PAYLOADS INSTEAD WAS MEASURED TO BE WRONG: it rewrote
+    215 payloads and took the JSON past `RangeError: Invalid string length`, so a
+    transport detail became a file nobody can read.**
+    """
+    import base64 as _b
+    def nbytes(b64: str) -> int:
+        return len(_b.b64decode(b64))
+    want = {}
+    for n, b in buffers.items():
+        if "b64" in b:
+            want[n] = max(want.get(n, 0), nbytes(b["b64"]))
+        elif "size" in b:
+            want[n] = max(want.get(n, 0), b["size"])
+    for fr in frames:
+        for key in ("in", "after"):
+            for n, v in (fr.get(key) or {}).items():
+                want[n] = max(want.get(n, 0), nbytes(v))
+    for n, v in final.items():
+        want[n] = max(want.get(n, 0), nbytes(v))
+    grown = 0
+    for n, b in buffers.items():
+        if b.get("size") != want.get(n, b.get("size")):
+            grown += 1
+        b["size"] = want.get(n, b["size"])
+    return grown
 
 
 def frames(rec) -> dict:
