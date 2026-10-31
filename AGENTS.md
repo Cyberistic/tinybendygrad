@@ -152,8 +152,8 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **AND **AFTER **THE **`api` **GRAPH's **ALLOC-SLOT **DEFECT **WAS **FIXED**
   (**`gates/alloc_slot-gate.py`**) **AND **`KernelInfo` **WAS **MADE **UPSTREAM's **SIX **FIELDS**
   (**`c2fbda4ca`**) **AND **THE **BEND **LANE **WAS **BATCHED** (**`09945ab98`**): **`substrate-start ==
-  substrate-end == live == repro-substrate == 7c580bff4c40c3f64784b9d14c90f2b3a16212a5a400a80f2607b7ce75b03fda`**,
-  **AND **`graphs=36 graphs-answered=36 graphs-agree=36 graphs-disagree=0 byte-identical=36 graphs-refused=0`** —
+  substrate-end == live == repro-substrate == f4188f9436df6624b425d31c67304bd8906456c8e15533ae9e9504a4432d633a`**,
+  **AND **`graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`** —
   **⇒ AND **THE **CORPUS's **FIRST **EVER **EXCEPTION **IS **GONE**: **`checks/differ.py`'s **`WANT` **TABLE
   **IS **NOW **`{}`**, **AND **THE **`api` **GRAPH **— **THE **FIRST **GRAPH **WHOSE **BEND **SIDE **IS
   **BUILT **BY **THE **PORT's **OWN **TENSOR **API**, **AND **SO **THE **FIRST **THAT **CAN **SEE **THE
@@ -163,9 +163,9 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **⇒ AND **⇒ AND **⇒ AND **THE **REPRODUCIBILITY **WITNESS **IS **GREEN **ON **ALL **SEVEN **OF **ITS
   **READINGS** — **`PASS -- the claim is ESTABLISHED`**, **WITH **`witness.fresh`** **`FRESH`**
   (**`delta_ms=+92.203`**), **`witness.substrate`** **`CURRENT`** (**`rows=3 of 3`**), **`verdict.current`**
-  **`CURRENT`**, **`verdict.reported`** **`AGREE`** (**`graphs=36 agree=36`**), **AND **`claim`**
+  **`CURRENT`**, **`verdict.reported`** **`AGREE`** (**`graphs=38 agree=38`**), **AND **`claim`**
   **`REPRODUCIBLE`** — **AND **`unhealthy() -> []`**, **`artefacts_ok() -> []`**, **`repro_bad() -> []`**, **AND
-  **`repro`: **`326 of 326 files identical across two clean runs`**.**
+  **`repro`: **`340 of 340 files identical across two clean runs`**.**
   **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **BEND **LANE **NOW **PAYS **THE **21,440-LINE **TYPECHECK **ONCE**:
   **THE **LANE'S **`main()`** **TOOK **ONE **GRAPH **FROM **`IO.args()`** **AND **EXITED**, **SO **EVERY **GRAPH
   **NEEDED **ITS **OWN **PROCESS **AND **EVERY **PROCESS **RE-TYPECHECKED **THE **SAME **CLOSURE** — **AND
@@ -187,18 +187,27 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **BRIEF **THAT **CITES **IT.**  **⇒ AND **THE **DOSE **OF **STALENESS **IS **THE **SUBSTRATE
   **DIGEST**: **A **COMMIT **THAT **TOUCHES **NOTHING **IN **`tinybendygrad/`** **OR **`tinygrad/`**
   **DOES **NOT **MAKE **THE **RUN **STALE**, **AND **THE **DIGEST **IS **WHAT **SAYS **SO.**
-  `graphs=36 graphs-answered=36 graphs-agree=36 graphs-disagree=0 byte-identical=36 graphs-refused=0`,
-  `population=ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe`,
+  `graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`,
+  `population=d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31`,
+  **⇒ AND **THE **CORPUS **IS **38 **GRAPHS**, **AND **THE **LAST **TWO **ARE **`grad`** **AND **`gral`** —
+  **THE **FIRST **GRAPH **WHOSE **BEND **SIDE **CALLS **THE **PORT's **OWN **`compute_gradient`**, **SO
+  **`mixin/gradient.bend` **WENT **0 / 494 **-> **174 / 495** **AND **ALL **32 **RULES **`gr_0`..`gr_31`**
+  **ARE **REACHED.**  **⇒ AND **`gral` **DISAGREED **ON **ITS **FIRST **RUN** **AND **FOUND **A **REAL
+  **PORT **DEFECT**: **THE **PORT's **MAX **GRADIENT **RULE **BUILT **FOUR **`WHERE` **NODES **WHERE **CPYTHON
+  **BUILDS **THREE**, **BECAUSE **THE **PORT **COMPUTED **SLOT **1's **INNER **FROM **THE **SWAPPED
+  **OPERANDS** (**`CMPNE` **IS **NOT **COMMUTATIVE**) **AND **`UOp` **IS **HASH-CONSED** — **AND **THE
+  **PORT's **OWN **COUNT **ROWS **WERE **BLIND **TO **IT**, **BECAUSE **A **COUNT **THAT **IS **RIGHT **AND
+  **A **STRUCTURE **THAT **IS **WRONG **IS **THE **FAILURE **A **COUNT **CANNOT **SEE.**
   `?=0`, `SHARED cores 52`, `controls 5 of 5`, `conflations 4 of 4`,
   `stable-pairs 5 of 5`, `stable-failed 0 of 5`, `stable-differ 0 of 5`, `expect-moved 0`, `plants-disagree 8 of 8`,
   `oracle-selfcheck=OK`, `census-rc=rc=0`, **`selfcheck=# SELFCHECK: OK`**,
   **`unhealthy() -> 0 line(s)`** (THE READING IS **EMPTY**, NOT "0 COMPLAINTS"), **`artefacts_ok() -> 0`**,
-  **`repro_bad() -> 0`**, **AND `repro`: `326 of 326 files identical across two clean runs`**
-  (`D0-repro.txt`: `repro-files=326 repro-identical=326 repro-rc=rc=0`).
+  **`repro_bad() -> 0`**, **AND `repro`: `340 of 340 files identical across two clean runs`**
+  (`D0-repro.txt`: `repro-files=340 repro-identical=340 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == repro-substrate == 7c580bff4c40c3f64784b9d14c90f2b3a16212a5a400a80f2607b7ce75b03fda`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == repro-substrate == f4188f9436df6624b425d31c67304bd8906456c8e15533ae9e9504a4432d633a`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=2d927e5e4837576472b4eebcb4710ab8b7176514` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=24474567c323964fdd76843603d185cd10ee35a3` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION**, **THE **RANGEIFY **AND
