@@ -1060,3 +1060,23 @@ mystery, and none of it is SPECIAL:
 THE PORT DOES NOT HAVE.** 1-4 are features, and the honest next step is to pick them in
 that order: the preamble and `extra_args` are the two that change the SIGNATURE, and
 nothing downstream can match until they do.
+
+## 16.4 AND THE GATE'S OWN PLANTS ARE OBSERVABLE AGAIN
+
+The census gate ships a mutation harness, and before this turn it refused to mean
+anything:
+
+    -- unmutated: rc=1, 722 lane rows
+    -- the unmutated tree does not reproduce; nothing below would mean anything
+
+Now:
+
+    ok M10 the reciprocal template is the unary one: rc=1, 2 row(s)
+    ok M11 the oracle drops the REFUSE marker: rc=1, 15 row(s)
+    == 11 of 11 mutations moved rows
+
+**⇒ SO THE GATE IS NOT MERELY GREEN: ITS ELEVEN PLANTS EACH STILL MOVE ROWS.** A green
+gate with dead plants would be the "row that cannot go red" this tree keeps warning
+about, and the two invented spellings had been doing exactly that -- the comparator was
+red, so the harness reported that its baseline did not reproduce, and the eleven plants
+were never evaluated at all.
