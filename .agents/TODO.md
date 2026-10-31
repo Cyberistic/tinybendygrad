@@ -27036,3 +27036,14 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
         **COMMITS** (`Q4_K` scale offset, `IQ4_XS` nibble interleave, `IQ2_XS`
         per-16 scale, `Q3_K` bit-major hmask AND its inverted sign, `Q5_K`'s
         byte-major fifth bit), **none of them visible in a count or an op name.**
+- [x] STAGE 2 IS BYTE-IDENTICAL ON THE MEASURED KERNEL: `r_32_2_4_4_4 | 388b424179b5623e |
+      388b424179b5623e | yes | 6012`. Closed by KAWmma{dims,dt_in} (the name needs arg[0]/arg[1]),
+      ku_wmma_name reusing the port's own wmma_name_of, the __{name}(s0,s1,s2) call, the deduped
+      __WMMA_ helper block, and the STACK's own type (cstyle.py:52-54's `.replace('float4',
+      render_type(x))`, which was the last token). Timed 1.209 ms median, max|diff 1.84e-05.
+      Gates: cstyle 361 rows / 3 lanes byte-identical, mutagen 11 of 11, ops_python 153 fixtures.
+      TWO TRAPS MET: `Bool.pick` with two recursive arms hung the render (2^n, >90 s); splitting it
+      made mutual recursion, which Bend refuses -- the branch must be a MATCH ON A PARAMETER with
+      the recursion outside it.
+- [ ] STAGE 2 COVERAGE IS ONE KERNEL. Broaden stage2_metal.py (reductions, relu, more sizes) so the
+      timed identity covers more than `(a@b)@c` 32x32. Stage 1 stays blocked: no WGSL driver.

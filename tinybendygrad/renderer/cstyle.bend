@@ -138,6 +138,9 @@ type KUArg is Data:
   # the NAME from it (`r[u] = u.arg`), :47 reads the axis off `arg[0]` and the index off
   # `arg[-1]`. So all three travel: the axis letter, the index, and the name itself.
   KASpecial{axis: String, n: U32, nm: String}
+  # `Ops.WMMA`'s arg upstream is `(dims, dtype_in, ...)` and cstyle.py:114 builds the
+  # helper's NAME from both: `WMMA_{'_'.join(dims)}_{dt_in.name}_{dt_out.name}`.
+  KAWmma{dims: List<&2, U32>, dt_in: S.Dt}
 
 type St is Data:
   St{r: List<&2, String>, kernel: List<&2, String>, bufs: List<&2, BArg>,
@@ -1304,6 +1307,16 @@ def KUArg.sink_name(a: KUArg) -> String:
     case KASink{name}: name
     case _: "test"
 
+def KUArg.wmma_dims(a: KUArg) -> List<&2, U32>:
+  match a:
+    case KAWmma{dims, dt_in}: dims
+    case _: Nil{}
+
+def KUArg.wmma_dt_in(a: KUArg) -> S.Dt:
+  match a:
+    case KAWmma{dims, dt_in}: dt_in
+    case _: S.single()
+
 def KUArg.special_axis(a: KUArg) -> String:
   match a:
     case KASpecial{axis, n, nm}: axis
@@ -1451,8 +1464,15 @@ def ku_text_buffer(dev: U32, i: U32, +k: KU, +r: List<&2, String>) -> String:
   render_buffer(dev, KU.dtype(k), KU.numel(k), KU.addr(k), rt(r, i))
 
 # `f"__{_wmma_name(x)}({ctx[x.src[0]]}, {ctx[x.src[1]]}, {ctx[x.src[2]]})"` -- cstyle.py:63.
+# cstyle.py:63 -- the CALL is `__{_wmma_name(x)}({s0}, {s1}, {s2})`, and the name is the
+# ALREADY-PORTED `wmma_name_of(dims, din, dout)` (:1194) fed from the KU's own arg.
+def ku_wmma_name(+k: KU) -> String:
+  wmma_name_of(wmma_dims(KUArg.wmma_dims(KU.arg(k))), dt_name(KUArg.wmma_dt_in(KU.arg(k))),
+    dt_name(KU.dtype(k)))
+
 def ku_text_wmma(dev: U32, +k: KU, +r: List<&2, String>) -> String:
-  String.concat(["__wmma(", rt(r, KU.src0(k)), ", ", rt(r, KU.src1(k)), ", ", rt(r, KU.src2(k)), ")"])
+  String.concat(["__", ku_wmma_name(k), "(", rt(r, KU.src0(k)), ", ", rt(r, KU.src1(k)), ", ",
+    rt(r, KU.src2(k)), ")"])
 
 # THE ALU ARM -- cstyle.py:64-65:
 #   `ctx.code_for_op[x.op](*([strip_parens(ctx[v]) if v.op == x.op and x.op in {ADD, MUL, XOR, OR, AND} else ctx[v] for v in x.src]), x.dtype)`
@@ -2144,9 +2164,31 @@ def ku_stack_srcs.go(+ss: List<&2, U32>, +kus: List<&2, KU>, +r: List<&2, String
 def ku_stack_srcs(+k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> List<&2, String>:
   ku_stack_srcs.go(KU.srcs(k), kus, r, Nil{})
 
+# cstyle.py:52-54 -- `f"{ctx.float4.replace('float4', ctx.render_type(x))}"`. THE REPLACE IS
+# THE WHOLE POINT AND IT WAS MISSING: the device's maker is spelled with the literal
+# `float4`, and the STACK's OWN type replaces it, so a two-lane STACK is `float2(...)` and
+# NOT `float4(...)`. MEASURED: without it the port's WMMA call read
+# `__WMMA_8_8_8_f32_f32(val0, val4, float4(...))` against upstream's `float2(...)` -- one
+# token, sixteen lines, the last difference in the kernel.
+# `String.replace` is a wall here (`String.split` splits on ONE CHAR), so the five device
+# spellings in `float4.of` are answered directly; each contains exactly one `float4`
+# token, in the position below, which is why this is the same answer and not a rewriting
+# of it. The `_` arm is `float4.of`'s `"None"`, which holds no token to replace.
+def float4_with(+dev: U32, +t: String) -> String:
+  match dev:
+    case 1: String.concat(["(", t, ")"])
+    case 2: String.concat(["(", t, ")"])
+    case 4: String.concat(["make_", t])
+    case 5: String.concat(["make_", t])
+    case 3: t
+    # `float4.of`'s own `_` answer, NOT a second copy of the literal: the census gate's
+    # M4 plant anchors on `case _: "None"` and a second copy makes that anchor ambiguous,
+    # which is how this line was found. The anchor is a WITNESS and duplicating it blinds it.
+    case _: float4.of(dev)
+
 def ku_text_stack(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
-  String.concat([float4.of(dev), float4_open(dev),
-    String.join(ku_stack_srcs(k, kus, r), ","), float4_close(dev)])
+  String.concat([float4_with(dev, render_type(dev, KU.dtype(k), KU.numel(k), KU.addr(k), KU.op(k), False{})),
+    float4_open(dev), String.join(ku_stack_srcs(k, kus, r), ","), float4_close(dev)])
 
 def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
   match op:
@@ -2362,9 +2404,57 @@ def metal_args(+bs: List<&2, BArg>) -> List<&2, String>:
 def metal_unpack(+bs: List<&2, BArg>) -> String:
   String.concat(["  ", String.join(metal_args(bs), " ")])
 
-def metal_prefix(+bs: List<&2, BArg>) -> List<&2, String>:
+# cstyle.py:392-401, ONE PER WMMA OP: the {dt_out}2/{dt_in}2 signature, the two
+# `simdgroup_...8x8` sets, the two `thread_elements()` loads, the multiply-accumulate and
+# the two-lane return. `render_dtype(...)` with no size is the LEGACY width-1 spelling
+# (`float`), and the pair with count 2 is `float2`.
+def wmma_helper(+dt_in: S.Dt, +dt_out: S.Dt, +nm: String) -> String:
+  +din2 = render_dtype_legacy(3, dt_in)
+  +dout2 = render_dtype_legacy(3, dt_out)
+  +vin2 = render_dtype(3, dt_in, 2, S.AReg{}, True{}, False{}, False{})
+  +vout2 = render_dtype(3, dt_out, 2, S.AReg{}, True{}, False{}, False{})
+  String.concat([vout2, " __", nm, "(", vin2, " a, ", vin2, " b, ", vout2, " c){\n",
+    "  simdgroup_", din2, "8x8 mat_a, mat_b; simdgroup_", dout2, "8x8 mat_c;\n",
+    "  mat_a.thread_elements()[0] = a[0]; mat_b.thread_elements()[0] = b[0]; mat_c.thread_elements()[0] = c[0];\n",
+    "  mat_a.thread_elements()[1] = a[1]; mat_b.thread_elements()[1] = b[1]; mat_c.thread_elements()[1] = c[1];\n",
+    "  simdgroup_multiply_accumulate(mat_c, mat_a, mat_b, mat_c);\n",
+    "  return ", vout2, "(mat_c.thread_elements()[0], mat_c.thread_elements()[1]);\n}"])
+
+# **=> AND THE OP TEST IS A MATCH ON A PARAMETER, NOT A `Bool.pick`, AND THE RECURSION
+# IS OUTSIDE IT.** Two mistakes were measured here and both are the same class:
+#   * `Bool.pick(..., recurse(t, acc+[helper]), recurse(t, acc))` made TWO recursive
+#     calls per uop -- the kept one AND the discarded one -- which is 2^n. MEASURED: it
+#     hung the Metal render for over 90 s on a 510-uop kernel with no output.
+#   * splitting it into `one`/`go` made them MUTUALLY recursive, which Bend refuses.
+# ⇒ SO THE FOLD RECURSES ONCE AND THE BRANCH LIVES IN `add`, whose scrutinee is the op
+# PARAMETER. One call per uop, and no forward reference.
+# AND THE HELPERS ARE DEDUPED, which `wmma_args` does upstream (`dedup(...)`,
+# cstyle.py:118): sixteen WMMA uops with the same dims and dtypes are ONE helper, and
+# without this the block was emitted sixteen times (MEASURED: 13 063 bytes against
+# upstream's 6 012). Deduping on the TEXT is the same test as on the name, because the
+# name is inside the text.
+def wmma_has(+t: String, +xs: List<&2, String>) -> Bool:
+  match xs:
+    case Nil{}: False{}
+    case h <> u: Bool.pick(Bool, String.eq(t, h), True{}, wmma_has(t, u))
+
+def wmma_add(+t: String, +acc: List<&2, String>) -> List<&2, String>:
+  Bool.pick(List<&2, String>, wmma_has(t, acc), acc, List.append(&2, String, acc, [t]))
+
+def wmma_helpers.add(+op: O.Op, +h: KU, +acc: List<&2, String>) -> List<&2, String>:
+  match op:
+    case O.OpsWMMA{}: wmma_add(wmma_helper(KUArg.wmma_dt_in(KU.arg(h)), KU.dtype(h), ku_wmma_name(h)), acc)
+    case _: acc
+
+def wmma_helpers.go(+kus: List<&2, KU>, +acc: List<&2, String>) -> List<&2, String>:
+  match kus:
+    case Nil{}: acc
+    case h <> t: wmma_helpers.go(t, wmma_helpers.add(KU.op(h), h, acc))
+
+def metal_prefix(+bs: List<&2, BArg>, +kus: List<&2, KU>) -> List<&2, String>:
   List.append(&2, String,
-    ["#include <metal_stdlib>", "using namespace metal;"],
+    List.append(&2, String,
+      ["#include <metal_stdlib>", "using namespace metal;"], wmma_helpers.go(kus, Nil{})),
     [String.concat(["struct args_t { ", String.join(metal_fields(bs, Nil{}), " "), " };"])])
 
 # cstyle.py:312-314 IS THE CLANG OVERRIDE: it emits the vector typedefs. METAL DOES
@@ -2373,7 +2463,7 @@ def metal_prefix(+bs: List<&2, BArg>) -> List<&2, String>:
 def render_kernel(+dev: U32, cpu: Bool, +fn: String, +kernel: List<&2, String>,
                   +bufs: List<&2, BArg>, +kus: List<&2, KU>, +lb: U32) -> String:
   Bool.pick(String, U32.is_eq(dev, 3),
-    String.concat([String.join(metal_prefix(bufs), "\n"), "\n",
+    String.concat([String.join(metal_prefix(bufs, kus), "\n"), "\n",
       render_kernel_body(3, fn, metal_unpack(bufs) <> kernel, metal_extra_args(), lb)]),
     String.concat([String.join(_render_defines(dev, cpu, kus), "\n"), "\n",
       render_kernel_body(dev, fn, kernel, ku_args(dev, bufs), lb)]))

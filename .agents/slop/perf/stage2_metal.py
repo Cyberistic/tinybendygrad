@@ -126,7 +126,10 @@ def main() -> int:
   for name in names:
     up = (MSL / f"{name}.metal").read_bytes()
     r = subprocess.run(["./bin/bend", str(DRIVER), name], cwd=ROOT, capture_output=True, text=True)
-    port = r.stdout.encode()
+    # `IO.print` appends ONE "\n"; upstream's `render()` returns the text without it, so the
+    # driver's newline is stripped to recover the renderer's own bytes -- and exactly one,
+    # so a second trailing newline in the text would still show up as a difference.
+    port = (r.stdout[:-1] if r.stdout.endswith("\n") else r.stdout).encode()
     ok = r.returncode == 0 and port == up
     rows_out.append(dict(kernel=name, sha_upstream=hashlib.sha256(up).hexdigest()[:16],
                          sha_port=hashlib.sha256(port).hexdigest()[:16],
@@ -137,7 +140,7 @@ def main() -> int:
     "# program: (a@b)@c, 32x32 f32, DEV=METAL, JIT=0\n"
     f"# run_ms_median_of_{n}={ms:.3f}\n"
     f"# max|diff vs float64 CPU|={float(np.max(np.abs(got - want))):.3e}\n"
-    f"# special_args={','.join(specials)}   (KUArg has NO constructor for Ops.SPECIAL)\n"
+    f"# special_args={','.join(specials)}   (KASpecial carries axis+n+name)\n"
     "# kernel|sha_upstream|sha_port|identical|bytes|bend_rc\n"
     + "\n".join(f"{r['kernel']}|{r['sha_upstream']}|{r['sha_port']}|{r['identical']}|{r['bytes']}|{r['rc']}"
                 for r in rows_out) + "\n")

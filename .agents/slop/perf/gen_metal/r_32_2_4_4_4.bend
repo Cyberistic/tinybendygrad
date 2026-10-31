@@ -277,52 +277,52 @@ def kus() -> List<&2, C.KU>:
   C.KU{O.OpsSTACK{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [207, 219]}, # 267 STACK f32 ALU
   C.KU{O.OpsSTACK{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [221, 169]}, # 268 STACK f32 ALU
   C.KU{O.OpsSTACK{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [223, 171]}, # 269 STACK f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [230, 244, 258]}, # 270 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [230, 244, 258]}, # 270 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [269, 11]}, # 271 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [269, 14]}, # 272 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [230, 247, 263]}, # 273 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [230, 247, 263]}, # 273 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [272, 11]}, # 274 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [272, 14]}, # 275 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [230, 250, 268]}, # 276 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [230, 250, 268]}, # 276 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [275, 11]}, # 277 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [275, 14]}, # 278 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [230, 252, 254]}, # 279 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [230, 252, 254]}, # 279 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [278, 11]}, # 280 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [278, 14]}, # 281 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [233, 244, 259]}, # 282 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [233, 244, 259]}, # 282 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [281, 11]}, # 283 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [281, 14]}, # 284 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [233, 247, 264]}, # 285 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [233, 247, 264]}, # 285 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [284, 11]}, # 286 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [284, 14]}, # 287 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [233, 250, 255]}, # 288 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [233, 250, 255]}, # 288 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [287, 11]}, # 289 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [287, 14]}, # 290 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [233, 252, 261]}, # 291 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [233, 252, 261]}, # 291 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [290, 11]}, # 292 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [290, 14]}, # 293 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [236, 244, 260]}, # 294 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [236, 244, 260]}, # 294 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [293, 11]}, # 295 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [293, 14]}, # 296 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [236, 247, 265]}, # 297 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [236, 247, 265]}, # 297 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [296, 11]}, # 298 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [296, 14]}, # 299 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [236, 250, 256]}, # 300 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [236, 250, 256]}, # 300 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [299, 11]}, # 301 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [299, 14]}, # 302 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [236, 252, 266]}, # 303 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [236, 252, 266]}, # 303 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [302, 11]}, # 304 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [302, 14]}, # 305 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [238, 244, 257]}, # 306 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [238, 244, 257]}, # 306 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [305, 11]}, # 307 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [305, 14]}, # 308 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [238, 247, 262]}, # 309 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [238, 247, 262]}, # 309 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [308, 11]}, # 310 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [308, 14]}, # 311 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [238, 250, 267]}, # 312 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [238, 250, 267]}, # 312 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [311, 11]}, # 313 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [311, 14]}, # 314 INDEX f32 ALU
-  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KANone{}, [238, 252, 253]}, # 315 WMMA f32 ALU
+  C.KU{O.OpsWMMA{}, S.single(), S.Aalu{}, 2, [2], C.KAWmma{[8, 8, 8], S.single()}, [238, 252, 253]}, # 315 WMMA f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [314, 11]}, # 316 INDEX f32 ALU
   C.KU{O.OpsINDEX{}, S.single(), S.Aalu{}, 1, Nil{}, C.KAIndex{0, False{}}, [314, 14]}, # 317 INDEX f32 ALU
   C.KU{O.OpsSTORE{}, S.void(), S.AReg{}, 1, Nil{}, C.KANone{}, [160, 315]}, # 318 STORE void REG

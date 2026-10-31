@@ -75,6 +75,11 @@ def dump_uops(uops) -> list[str]:
             kind = "range"
             payload = "~".join([str(getattr(arg[0], "name", arg[0]))] +
                                [str(x) for x in arg[1:]])
+        elif u.op.name == "WMMA":
+            # cstyle.py:118 -- `wmma_args` reads `uop.arg[0]` (the dims) and `uop.arg[1]`
+            # (the input dtype) to build the helper's NAME.
+            kind = "wmma"
+            payload = "x".join(str(int(x)) for x in arg[0]) + "~" + str(arg[1].name)
         elif u.op.name == "SPECIAL":
             kind = "special"
             payload = "~".join(str(x) for x in arg)

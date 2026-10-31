@@ -117,6 +117,17 @@ def index_arg(payload: str) -> str:
     return f"C.KAIndex{{{num(off)}, False{{}}}}"
 
 
+def wmma_arg(payload: str) -> str:
+    """`Ops.WMMA`'s arg is `(dims, dtype_in, ...)`; the dims join with `_` into the
+    helper's NAME (cstyle.py:114), so both travel."""
+    dims, dt_in = payload.split("~")
+    ids = ", ".join(str(int(x)) for x in dims.split("x"))
+    d = DTS.get(dt_in)
+    if d is None:
+        raise SystemExit(f"unknown WMMA input dtype {dt_in}")
+    return f"C.KAWmma{{[{ids}], {d}}}"
+
+
 def special_arg(payload: str) -> str:
     """`Ops.SPECIAL`'s arg IS its name -- "lidx0".
 
@@ -158,6 +169,8 @@ def one(name: str, line: str) -> str:
         arg = sink_arg(payload)
     elif kind == "special":
         arg = special_arg(payload)
+    elif kind == "wmma":
+        arg = wmma_arg(payload)
     else:
         arg = "C.KANone{}"
     return (f"  C.KU{{{o}, {d}, {a}, {num(numel)}, {shp}, {arg}, {ss}}}, # {idx} {op} {dt} {addr}")

@@ -1136,3 +1136,67 @@ The diff is now exactly two things, and the second is bigger than the first:
 over the KU list, and `ku_text_wmma` answering `__{name}({s0}, {s1}, {s2})`. The helper
 block is the easy half; the ARG is the load-bearing half, because without it the name
 cannot be built at all.
+
+---
+
+# 18. STAGE 2: THE PORT'S METAL TEXT IS NOW BYTE-IDENTICAL TO UPSTREAM'S
+
+    r_32_2_4_4_4|388b424179b5623e|388b424179b5623e|yes|6012|0
+    run_ms_median_of_8=1.209      max|diff vs float64 CPU|=1.840e-05
+
+## 18.1 WHAT CLOSED IT
+
+1. **`KAWmma{dims, dt_in}`** in `KUArg`, because `cstyle.py:114` builds the helper's NAME
+   from `arg[0]` (the dims) and `arg[1]` (the input dtype) and the KU carried neither.
+   `dump_uops` writes `8x8x8~f32`; `gen_kus.one()` emits it.
+2. **`ku_wmma_name`** reuses the already-ported `wmma_name_of(wmma_dims(...), dt_name(in),
+   dt_name(out))` -- the port had the naming function and no caller.
+3. **`ku_text_wmma`** answers `__{name}({s0}, {s1}, {s2})` (`cstyle.py:63`) instead of the
+   placeholder `__wmma(...)`.
+4. **The helper block** (`cstyle.py:392-401`), one per DISTINCT name: the `float2/float2`
+   signature, the two `simdgroup_float8x8` sets, the two `thread_elements()` loads, the
+   multiply-accumulate and the two-lane return.
+5. **The STACK's own type** -- the last token. `cstyle.py:52-54` is
+   `ctx.float4.replace('float4', ctx.render_type(x))`, and the port emitted the device's
+   maker unchanged, so a two-lane STACK rendered `float4(...)` where upstream has
+   `float2(...)`: ONE token, sixteen lines.
+
+## 18.2 TWO TRAPS THAT ARE THE SAME CLASS AS §11.1's FUEL BURN
+
+* `Bool.pick(..., recurse(t, ...), recurse(t, ...))` **evaluates both arms**, so the WMMA
+  helper fold made two recursive calls per uop -- 2^n. MEASURED: the Metal render hung for
+  **over 90 s with no output** on a 510-uop kernel. The branch had to move into a def whose
+  SCRUTINEE IS THE OP PARAMETER, with the recursion outside it.
+* Splitting that into `one`/`go` made them **mutually recursive**, which Bend refuses.
+* And dedup is not optional: without it the helper was emitted sixteen times (13 063 bytes
+  against upstream's 6 012). `wmma_args` dedups upstream (`cstyle.py:118`).
+
+## 18.3 THE ONE BYTE THAT WAS LEFT, AND WHY STRIPPING IT IS NOT CHEATING
+
+After 18.1 the text was 6 013 bytes against 6 012, differing only at the last byte:
+`IO.print` appends one `\n` and upstream's `render()` returns none. The harness strips
+**exactly one** trailing newline -- so a second one in the text would still show as a
+difference -- and the sha256s are then equal:
+`388b424179b5623e` on both sides.
+
+## 18.4 WHAT THIS DOES AND DOES NOT CLAIM
+
+**IT CLAIMS**: the MSL byte string the port renders for `r_32_2_4_4_4` is the SAME BYTES
+that the `METAL` lane compiled and ran, and that run takes **1.179-1.209 ms** (median of 8,
+3 warmups) with `max|diff vs float64 CPU| = 1.840e-05`. So "python to metal matches bend to
+metal" holds **by identity of text**, which is the strongest form it can hold: there are not
+two programs to race.
+
+**IT DOES NOT CLAIM**: coverage. This is ONE kernel from ONE program (`(a@b)@c`, 32x32
+f32). The census gate covers 361 rows / 3 lanes over the wide renderer surface, and
+`cstyle_render_census-mutate` still reports **11 of 11** mutations moving rows, but the
+TIMED comparison runs on a single kernel. Broadening it (reductions, relu, more sizes) is
+the next step and is not done.
+
+## 18.5 STATUS
+
+| stage | state |
+|---|---|
+| 1. python->webgpu vs bend->webgpu | **blocked**: no CPython WEBGPU binding, so no driver to time either side's WGSL; the 12 pinned divergences are exactly the rows that need one |
+| 2. python->metal vs bend->metal | **met by byte identity on the measured kernel**: sha equal, 6 012 B, timed 1.209 ms |
+| 3. PYTHON vs BEND | **met**: BEND 2.60x faster at 32x32, 5.12x at 16x16, bit-exact |
