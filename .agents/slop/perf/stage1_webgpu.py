@@ -47,6 +47,15 @@ def build(prog: str, np, Tensor, Context):
             out = (ta * tb).relu().realize()
         w = np.maximum(a * b, 0)                       # symmetric in a, b: the order does not matter
         return out, [a, b], w, w, "relu(a*b)", "relu(b*a)"
+    if prog == "cst32":
+        # A NON-ZERO CONSTANT: this is the program that would have COMPILED AND BEEN WRONG
+        # before the walk materialised a CONST's value (`f32()` is a valid zero, `2.5` is not).
+        a, b = rng.standard_normal((32, 32)).astype(np.float32), rng.standard_normal((32, 32)).astype(np.float32)
+        with Context(DEV="METAL", NOOPT=1):
+            ta, tb = Tensor(a).realize(), Tensor(b).realize()
+            out = (ta * tb).maximum(2.5).realize()
+        w = np.maximum(a * b, np.float32(2.5))
+        return out, [a, b], w, w, "max(a*b,2.5)", "max(b*a,2.5)"
     if prog == "red32":
         a = rng.standard_normal((64, 64)).astype(np.float32)
         with Context(DEV="METAL", NOOPT=1):

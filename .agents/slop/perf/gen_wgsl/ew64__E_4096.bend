@@ -7,7 +7,7 @@ import ./../../../../tinybendygrad/LAWS/spec.bend as S
 
 def rs() -> List<&2, W.R>:
   [
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", 4096, 0, Nil{}, Nil{}}, # 1 CONST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "4096", 4096, 0, Nil{}, Nil{}}, # 1 CONST
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4096, "-", 0, 0, [4096], [1]}, # 2 PARAM
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4096, "-", 0, 1, [4096], [1]}, # 3 PARAM
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4096, "-", 0, 2, [4096], [1]}, # 4 PARAM

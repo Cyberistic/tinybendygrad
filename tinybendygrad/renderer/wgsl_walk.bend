@@ -131,6 +131,35 @@ def R.at(+rs: List<&2, R>, +k: U32) -> R:
 
 def R.src0(r: R) -> U32: Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 0n), 0)
 
+# **=> AND A CONSTANT'S VALUE IS MATERIALISED AT ITS USE, WHICH IS WHERE UPSTREAM PUTS IT.**
+# `_render` SKIPS every CONST (`cstyle.py:222`), so `r[const]` is never bound, and the value
+# reaches the text because `base_rewrite`'s `cvar.cast(...)` rules (`cstyle.py:24-30`) rewrite a
+# CAST OF A CONST into the literal: `f"{c.val}f"` for `dtypes.float`, `f"{val}u"` for u32, the
+# plain digits otherwise. MEASURED BEFORE THIS EXISTED: `relu` rendered `select(f32(),alu0,...)`
+# -- a CONST with no value -- and it was INVISIBLE because `f32()` is a valid WGSL zero and the
+# fixture's constant was 0.0. A non-zero constant would have compiled and been WRONG.
+def is_float_dt(+d: S.Dt) -> Bool: Bool.pick(Bool, S.Dt.is_float(d), True{}, False{})
+def is_u32_dt(+d: S.Dt) -> Bool: Bool.pick(Bool, U32.is_eq(S.Dt.pri(d), 6), True{}, False{})
+def is_con_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsCONST{}), True{}, False{})
+def is_where_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsWHERE{}), True{}, False{})
+
+# the literal for a const read at `k`, with the suffix its OUTPUT dtype asks for
+def con_text(+dt: S.Dt, +r: R) -> String:
+  String.concat([R.str(r),
+    Bool.pick(String, is_float_dt(dt), "f", Bool.pick(String, is_u32_dt(dt), "u", ""))])
+
+# THE OPERAND LOOKUP: a name/text from the map, or -- for a CONST, which the map never holds --
+# the materialised literal. `dt` is the dtype the value is CONSUMED as, which is upstream's
+# `x.dtype` in the `cvar.cast` patterns.
+def tx0(+op: O.Op, +r: R, +dt: S.Dt, +nm: String) -> String:
+  match op:
+    case O.OpsCONST{}: con_text(dt, r)
+    case _: nm
+
+def tx(+all: List<&2, R>, +names: List<&2, String>, +k: U32, +dt: S.Dt) -> String:
+  +r = R.at(all, k)
+  tx0(R.op(r), r, dt, wt(names, k))
+
 # the CONST value behind a CAST chain: upstream's `x.src[0].render()` in the SPECIAL
 # arm answers the VALUE (`/* 1024 */`), not the cast's own text (`i32(1024)`).
 # TWO LEVELS, ONE PER DEF, because a recursion and its helper are MUTUAL recursion and
@@ -180,6 +209,13 @@ def c_at(+c: List<&2, U32>, +ix: U32) -> U32:
 def c_bump(+c: List<&2, U32>, +ix: U32) -> List<&2, U32>:
   List.set(&2, U32, c, U32.to_nat(ix), U32.add(c_at(c, ix), 1))
 
+# **AND A NUMBER IS BURNED ONLY BY A DECLARATION.** cstyle.py:261 increments `c[prefix]` INSIDE
+# the else branch, so an INLINED uop leaves the counter alone. MEASURED: bumping
+# unconditionally numbered the WHERE `alu2` where CPython has `alu1`, because the inlined CMPLT
+# had already taken `alu1` -- same text, same size, different names.
+def c_maybe(+c: List<&2, U32>, +ix: U32, +inl: Bool) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, inl, c, c_bump(c, ix))
+
 def is_reg(a: S.Addr) -> Bool:
   match a:
     case S.AReg{}: True{}
@@ -218,13 +254,13 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       wk.add(nm, List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt])]),
         Wk.bufs(acc), Wk.c(acc), acc)
     case O.OpsINDEX{}:
-      wk.add(String.concat([wt(Wk.names(acc), R.src0(r)), "[",
-        wt(Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0)), "]"]),
+      wk.add(String.concat([tx(all, Wk.names(acc), R.src0(r), R.dt(r)), "[",
+        tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0), R.dt(r)), "]"]),
         Nil{}, Wk.bufs(acc), Wk.c(acc), acc)
     case O.OpsCAST{}:
       +ix = pfx_ix(op)
       +nm = String.concat([pfx(ix), U32.show(c_at(Wk.c(acc), ix))])
-      +txt = W.render_cast(R.dt(r), wt(Wk.names(acc), R.src0(r)))
+      +txt = tx(all, Wk.names(acc), R.src0(r), R.dt(r))
       +inl = Bool.and(Bool.pick(Bool, is_con(R.op(R.at(all, R.src0(r)))), True{}, False{}),
         Bool.pick(Bool, U32.is_eq(R.numel(r), 1), True{}, False{}))
       # upstream: `(u.op is not Ops.CAST or max_numel == 1) and (... CAST of CONST ... or child_count == 1 ...)`
@@ -233,32 +269,38 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       wk.add(Bool.pick(String, take, txt, nm),
         Bool.pick(List<&2, String>, take, Nil{},
           List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt, ";"])])),
-        Wk.bufs(acc), c_bump(Wk.c(acc), ix), acc)
+        Wk.bufs(acc), c_maybe(Wk.c(acc), ix, inl), acc)
     case O.OpsLOAD{}:
       +ix = pfx_ix(op)
       +nm = String.concat([pfx(ix), U32.show(c_at(Wk.c(acc), ix))])
-      +txt = W.render_load(wt(Wk.names(acc), R.src0(r)), R.numel(r), R.dt(r), R.addr(r))
+      +txt = W.render_load(tx(all, Wk.names(acc), R.src0(r), R.dt(r)), R.numel(r), R.dt(r), R.addr(r))
       +reg = Bool.pick(Bool, is_reg(R.addr(R.at(all, R.src0(r)))), True{}, False{})
       +inl = Bool.and(reg, Bool.pick(Bool, U32.is_eq(uses(all, i), 1), True{}, False{}))
       wk.add(Bool.pick(String, inl, txt, nm),
         Bool.pick(List<&2, String>, inl, Nil{},
           List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt, ";"])])),
-        Wk.bufs(acc), c_bump(Wk.c(acc), ix), acc)
+        Wk.bufs(acc), c_maybe(Wk.c(acc), ix, inl), acc)
     case O.OpsSTORE{}:
-      wk.add("", List.append(&2, String, Nil{}, [String.concat(["  ", wt(Wk.names(acc), R.src0(r)), " = ",
-        wt(Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0)), ";"])]),
+      wk.add("", List.append(&2, String, Nil{}, [String.concat(["  ", tx(all, Wk.names(acc), R.src0(r), R.dt(r)), " = ",
+        tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0), R.dt(r)), ";"])]),
         Wk.bufs(acc), Wk.c(acc), acc)
     case op2:
       +ix = pfx_ix(op2)
       +nm = String.concat([pfx(ix), U32.show(c_at(Wk.c(acc), ix))])
-      +txt = W.code_for_op.of(op2, wt(Wk.names(acc), R.src0(r)),
-        wt(Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0)),
-        wt(Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 2n), 0)))
-      +inl = Bool.pick(Bool, U32.is_eq(uses(all, i), 1), True{}, False{})
+      +txt = W.code_for_op.of(op2, tx(all, Wk.names(acc), R.src0(r), R.dt(r)),
+        tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0), R.dt(r)),
+        tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 2n), 0), R.dt(r)))
+      # **AND A `WHERE` IS NEVER INLINED.** Upstream's set is
+      # `{Ops.STACK, *(GroupOp.ALU - {Ops.WHERE}), Ops.CAST, Ops.BITCAST}` (cstyle.py:253), and
+      # the SUBTRACTION is load-bearing: MEASURED, `relu`/`maximum` rendered the same
+      # `select(...)` expression on both sides but CPython DECLARED it (`var alu1 = select(...)`)
+      # while the port inlined it into the STORE -- one line versus two, 656 B against 637.
+      +inl = Bool.and(Bool.pick(Bool, U32.is_eq(uses(all, i), 1), True{}, False{}),
+        Bool.not(is_where_op(op2)))
       wk.add(Bool.pick(String, inl, txt, nm),
         Bool.pick(List<&2, String>, inl, Nil{},
           List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt, ";"])])),
-        Wk.bufs(acc), c_bump(Wk.c(acc), ix), acc)
+        Wk.bufs(acc), c_maybe(Wk.c(acc), ix, inl), acc)
 
 def walk.go(+rs: List<&2, R>, +all: List<&2, R>, +i: U32, acc: Wk) -> Wk:
   match rs:

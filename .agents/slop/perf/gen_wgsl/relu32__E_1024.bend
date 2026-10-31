@@ -7,7 +7,7 @@ import ./../../../../tinybendygrad/LAWS/spec.bend as S
 
 def rs() -> List<&2, W.R>:
   [
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", 1024, 0, Nil{}, Nil{}}, # 1 CONST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1024", 1024, 0, Nil{}, Nil{}}, # 1 CONST
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 0, [1024], [1]}, # 2 PARAM
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 1, [1024], [1]}, # 3 PARAM
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 2, [1024], [1]}, # 4 PARAM
@@ -18,7 +18,7 @@ def rs() -> List<&2, W.R>:
   W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 6]}, # 9 INDEX
   W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9]}, # 10 LOAD
   W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 6]}, # 11 INDEX
-  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", 0, 0, Nil{}, Nil{}}, # 12 CONST
+  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "0.0", 0, 0, Nil{}, Nil{}}, # 12 CONST
   W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12]}, # 13 CAST
   W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [8, 10]}, # 14 MUL
   W.R{O.OpsCMPLT{}, S.boolean(), S.Aalu{}, 1, "", 0, 0, Nil{}, [13, 14]}, # 15 CMPLT

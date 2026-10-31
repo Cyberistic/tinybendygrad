@@ -1628,3 +1628,57 @@ it faster cannot have been serving "PYTHON must be at least as fast". But "the w
 is not "the user said it", and I cannot decide an ambiguous instruction on the user's behalf:
 **the literal reading is unmet, the other reading is met, and which is binding is the user's
 call.** What is unambiguous is the numbers themselves.
+
+---
+
+# 26. THE CONSTANT GAP CLOSED, AND THE TEST IS A NON-ZERO ONE
+
+    # program|kernel|identical|bytes|python_ms|bend_ms|diff
+    ew16 |E_256  |yes|592|0.6|0.6|-          ew32 |E_1024|yes|600|0.1|0.1|-
+    ew64 |E_4096 |yes|600|0.1|0.1|-          odd  |E_1000|yes|600|0.1|0.2|-
+    relu32|E_1024|yes|656|0.1|0.1|-          cst32|E_1024|yes|656|0.1|0.2|-
+    red32|r_64_64|NO |623|0.1| -|bend: 7:unresolved value 'Ops'
+
+**SIX OF SEVEN PROGRAMS ARE BYTE-IDENTICAL**, all timed in one driver with interleaved rounds,
+all correct against float32 numpy. The reduction is the only refusal.
+
+## 26.1 THREE FIDELITY RULES THE NON-ZERO CONSTANT FORCED, IN ORDER
+
+1. **A CONST's value is materialised at its USE.** `_render` skips every CONST, so the value
+   reaches the text through `base_rewrite`'s `cvar.cast(...)` rules: `f"{c.val}f"` for
+   `dtypes.float`, `{val}u` for u32, plain digits otherwise. The walk now answers a CONST from a
+   `tx` lookup instead of an empty name. **MEASURED BEFORE: `select(f32(),alu0,...)`** -- and
+   `f32()` is a valid WGSL ZERO, so the pre-existing `relu` case agreed by accident. `cst32`
+   (`maximum(a*b, 2.5)`) is the program that would have COMPILED AND BEEN WRONG; it now renders
+   `2.5f` on both sides.
+2. **A `WHERE` is never inlined.** Upstream's set is
+   `{Ops.STACK, *(GroupOp.ALU - {Ops.WHERE}), Ops.CAST, Ops.BITCAST}` and the SUBTRACTION is
+   load-bearing: both sides had the same `select(...)` expression but CPython DECLARED it and
+   the port inlined it (656 B against 637).
+3. **A prefix number is burned only by a DECLARATION** (`cstyle.py:261` increments inside the
+   else branch). The port bumped unconditionally, so an inlined CMPLT took `alu1` and the WHERE
+   became `alu2` where CPython has `alu1` -- same text, same SIZE, different names, and the
+   sha256 caught it.
+
+## 26.2 THE REDUCTION'S REMAINDER IS THREE ARMS, NAMED FROM THE DIFF
+
+    python                                   port
+    var buf0: array<f32,1>;                   var buf0 = UNHANDLED(Ops.BUFFER);
+    buf0[0] = 0.0f;                          UNHANDLED(Ops.AFTER)[0] = 0.0f;
+    for (var Lidx0 = 0; Lidx0 < 64; Lidx0++){ var alu0 = UNHANDLED(Ops.RANGE);
+      ...                                      ...
+    }                                        (no brace)
+
+1. **`BUFFER`** -- `wgsl.bend` ALREADY has the declaration renderer
+   (`sr_buffer(op, nm, n, dt, addr)`, `var<workgroup>`/`var` + `: array<...>`); the walk needs an
+   arm that calls it and records the name.
+2. **`RANGE`** -- the `for (var {nm} = 0; {nm} < {src0}; {nm}++) {` header, the name
+   `{axis_letters[axis_type]}idx{range_str(u)}`, and DEPTH: this is the one place the walk needs
+   an indent, because a loop body is nested. Upstream also decrements depth on
+   `END`/`ENDIF`/`BACKEDGE` before emitting `}`.
+3. **`AFTER`** -- an alias: `r[u] = r[u.src[0]]`, which is what makes the accumulator read
+   `buf0[0]` instead of `UNHANDLED(Ops.AFTER)`.
+
+**⇒ SO THE REMAINING WORK IS THREE ARMS, ONE OF THEM THE INDENT.** `BUFFER` and `AFTER` are
+small; `RANGE` is the piece that needs a depth field in the walk's state, and every body line
+must then be emitted at that depth. It is not started.

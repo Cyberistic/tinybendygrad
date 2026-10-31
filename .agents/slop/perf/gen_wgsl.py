@@ -46,6 +46,9 @@ def one(line: str) -> str:
             num = int(p_)
         except ValueError:
             num = 0
+        # the VALUE TEXT travels in `str`: a float const is a BITS problem otherwise, and
+        # upstream renders it as `{val}f` (cstyle.py:26), not as an integer.
+        nm = f'"{p_}"' 
     elif kind == "param":
         p = payload.split("~")
         slot, nm = int(p[0]), ('"-"' if p[1] == "-" else f'"{p[1]}"')

@@ -7,21 +7,21 @@ import ./../../../../tinybendygrad/LAWS/spec.bend as S
 
 def rs() -> List<&2, W.R>:
   [
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", 64, 0, Nil{}, Nil{}}, # 1 CONST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "64", 64, 0, Nil{}, Nil{}}, # 1 CONST
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 64, "-", 0, 0, [64], [1]}, # 2 PARAM
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", 4096, 0, Nil{}, Nil{}}, # 3 CONST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "4096", 4096, 0, Nil{}, Nil{}}, # 3 CONST
   W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 4096, "-", 0, 1, [4096], [3]}, # 4 PARAM
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", 1, 0, Nil{}, Nil{}}, # 5 CONST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1", 1, 0, Nil{}, Nil{}}, # 5 CONST
   W.R{O.OpsBUFFER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [5]}, # 6 BUFFER
   W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [1]}, # 7 CAST
   W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [7]}, # 8 SPECIAL
   W.R{O.OpsAFTER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [6, 8]}, # 9 AFTER
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", 0, 0, Nil{}, Nil{}}, # 10 CONST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "0", 0, 0, Nil{}, Nil{}}, # 10 CONST
   W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [10]}, # 11 CAST
   W.R{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", 0, 0, Nil{}, [9, 11]}, # 12 INDEX
-  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", 0, 0, Nil{}, Nil{}}, # 13 CONST
+  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "0.0", 0, 0, Nil{}, Nil{}}, # 13 CONST
   W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [13]}, # 14 CAST
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", 6, 0, Nil{}, Nil{}}, # 15 CONST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "6", 6, 0, Nil{}, Nil{}}, # 15 CONST
   W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [15]}, # 16 CAST
   W.R{O.OpsSHL{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [8, 16]}, # 17 SHL
   W.R{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [12, 14]}, # 18 STORE
