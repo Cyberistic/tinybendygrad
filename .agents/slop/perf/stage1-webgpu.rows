@@ -3,14 +3,14 @@
 # python side: WGSLRenderer(Target('webgpu')).render(uops)
 # bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel
 # iters=3 (min), warmups=3 per side, INTERLEAVED timed rounds, around submit+onSubmittedWorkDone
-# program|kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok|cause_or_err
-cst32|E_1024|9617b1402e50597e|9617b1402e50597e|yes|656|0.4000|0.5000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-
-ew16|E_256|2b4706e6116a783a|2b4706e6116a783a|yes|592|0.2000|0.2000|2.14e-8|2.14e-8|(a*b)+b|(a*b)+b|yes|-
-ew32|E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.2000|0.1000|5.45e-8|5.45e-8|(a*b)+b|(a*b)+b|yes|-
-ew64|E_4096|e2d04138454c4e7d|e2d04138454c4e7d|yes|600|0.2000|0.2000|5.52e-8|5.52e-8|(a*b)+b|(a*b)+b|yes|-
-mm256|r_256_256_256|ea2eeab81d178a99|ea2eeab81d178a99|yes|827|1.7000|1.7000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-
-mm512|r_512_512_512|9503235525f1101d|9503235525f1101d|yes|833|11.1000|11.1000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-
-odd|E_1000|0bcd9cfc4e5d646a|0bcd9cfc4e5d646a|yes|600|0.2000|0.1000|4.90e-8|4.90e-8|(a*b)+b|(a*b)+b|yes|-
-red32|r_64_64|100abe11c436df95|100abe11c436df95|yes|623|0.1000|0.1000|1.61e-7|1.61e-7|(a*b)+a|(a*b)+a|yes|-
-relu32|E_1024|ee0bcdbb670f571a|ee0bcdbb670f571a|yes|656|0.2000|0.2000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-
-# probe_sha=d887193035809b3d err=- kernels=9 all_ok=true
+# program|kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok|cause_or_err|plant_py_2x|plant_bend_2x
+cst32|E_1024|9617b1402e50597e|9617b1402e50597e|yes|656|0.2000|0.2000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-|1.00|1.00
+ew16|E_256|2b4706e6116a783a|2b4706e6116a783a|yes|592|0.2000|0.2000|2.14e-8|2.14e-8|(a*b)+b|(a*b)+b|yes|-|0.50|1.00
+ew32|E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.2000|0.2000|5.45e-8|5.45e-8|(a*b)+b|(a*b)+b|yes|-|1.00|1.00
+ew64|E_4096|e2d04138454c4e7d|e2d04138454c4e7d|yes|600|0.1000|0.2000|5.52e-8|5.52e-8|(a*b)+b|(a*b)+b|yes|-|2.00|1.00
+mm256|r_256_256_256|ea2eeab81d178a99|ea2eeab81d178a99|yes|827|1.6000|1.7000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-|1.88|1.76
+mm512|r_512_512_512|9503235525f1101d|9503235525f1101d|yes|833|11.1000|11.0000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-|1.96|2.00
+odd|E_1000|0bcd9cfc4e5d646a|0bcd9cfc4e5d646a|yes|600|0.3000|0.1000|4.90e-8|4.90e-8|(a*b)+b|(a*b)+b|yes|-|0.67|2.00
+red32|r_64_64|100abe11c436df95|100abe11c436df95|yes|623|0.2000|0.2000|1.61e-7|1.61e-7|(a*b)+a|(a*b)+a|yes|-|1.00|1.00
+relu32|E_1024|ee0bcdbb670f571a|ee0bcdbb670f571a|yes|656|0.2000|0.1000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-|0.50|2.00
+# probe_sha=6eb511c4812827ef err=- kernels=9 all_ok=true

@@ -1786,3 +1786,50 @@ makes that true. On WebGPU there ARE two sides and they are timed separately (§
 |---|---|---|---|
 | 1 (WebGPU) | 9 | mm512 = 11.1 ms; mm256 = 1.7 ms | 9 of 9 |
 | 2 (Metal) | 6 | mm4096 = 38.5 ms; mm2048 = 5.5 ms | 6 of 6 |
+
+---
+
+# 29. THE USER SETTLED STAGE 3, AND A PLANT PROVES THE TIMER CAN GO RED
+
+## 29.1 THE DECISION, RECORDED AS THE GOVERNING READING
+
+Put to the user, with the numbers, because the literal sentence is measurably false:
+
+    "BEND >= PYTHON (intended; MET)"
+
+**⇒ SO STAGE 3 IS MET UNDER THE GOVERNING READING** -- BEND 1039/113 ms against PYTHON 2707/580
+(32x32/16x16), bit-exact, `ops_python_exec` 153/365 -- **and the LITERAL reading stays false and
+stays recorded as false.** The tree must not later quote the clause as satisfied without the
+reading that satisfied it.
+
+## 29.2 THE PLANT: SAME BYTES, TWICE THE WORKGROUPS
+
+A comparison that cannot go red is not a comparison. So the driver now times each side a second
+time with the dispatch MULTIPLIED BY TWO, on the same pipeline and the same bytes:
+
+    program  py_ms    bend_ms   plant_py  plant_bend
+    mm512    11.1     11.0      1.96      2.00        <- the timer RESOLVES a factor of two
+    mm256     1.6      1.7      1.88      1.76        <- resolves at 1.7 ms
+    ew16/ew32/cst32/red32/odd/relu32  0.1-0.3   1.00/0.50/0.67/2.00   NOISE
+
+**⇒ AND THAT IS THE HONEST READING OF BOTH SIZES AT ONCE:** at 11 ms the instrument measures, and
+"11.1 vs 11.0" is a measurement of two identical programs. At 0.1-0.3 ms the plant scatters from
+0.5 to 2.0, so those rows are at the floor and their equality is a consequence of identical BYTES,
+not of a measurement. The artifact now carries the plant in its own columns, so a reader can tell
+which rows are which without reading this paragraph.
+
+## 29.3 METAL, SAME TREATMENT
+
+    program_ms  mm16=1.192  mm32=1.649  ew64=1.235  reduce=0.936  mm2048=5.516  mm4096=38.469
+    kernels=6, identical=6, relative |diff| vs float64 1.16e-07 .. 2.78e-06
+
+The 38.5 ms launch is far above the floor; the 0.936-1.649 ms rows are above it too, and the
+0.02-0.03 ms numbers that stood here an hour ago were a NO-OP `realize()` (§28.2).
+
+## 29.4 STATE, AGAINST THE SETTLED GOAL
+
+| stage | evidence | verdict |
+|---|---|---|
+| 1 python->webgpu vs bend->webgpu | 9/9 byte-identical; mm512 11.1/11.0 ms with a 1.96/2.00 plant | **met by identity**, measured above the floor |
+| 2 python->metal vs bend->metal | 6/6 byte-identical; mm4096 38.5 ms, mm2048 5.5 ms | **met by identity**, measured above the floor |
+| 3 PYTHON vs BEND (BEND >= PYTHON) | 1039/113 vs 2707/580 ms, bit-exact | **met, per the user's reading** |

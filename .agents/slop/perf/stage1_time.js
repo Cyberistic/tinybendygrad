@@ -100,11 +100,11 @@ const script = `
     } catch (e) { R.sides[label].err = String(e); continue; }
     sides.push(side);
   }
-  const dispatch = (pipe) => {
+  const dispatch = (pipe, mult = 1) => {
     const enc = dev.createCommandEncoder();
     const p = enc.beginComputePass();
     p.setPipeline(pipe); p.setBindGroup(0, bg);
-    p.dispatchWorkgroups(K.dispatch[0], K.dispatch[1], K.dispatch[2]);
+    p.dispatchWorkgroups(K.dispatch[0] * mult, K.dispatch[1], K.dispatch[2]);
     p.end();
     return enc.finish();
   };
@@ -123,6 +123,20 @@ const script = `
       s.ms = s.ms === null ? ms : Math.min(s.ms, ms);
     }
   }
+  // **THE PLANT**: the SAME pipeline at twice the dispatch. A comparison that cannot go red is
+  // not a comparison, so this measures whether the timer resolves a factor of two at this size.
+  for (const s of sides) {
+    let best = null;
+    for (let r2 = 0; r2 < 2; r2++) {
+      dev.queue.writeBuffer(bufs[0], 0, zero);
+      const t0 = performance.now();
+      dev.queue.submit([dispatch(s.pipe, 2)]);
+      await dev.queue.onSubmittedWorkDone();
+      const ms = performance.now() - t0;
+      best = best === null ? ms : Math.min(best, ms);
+    }
+    s.ms2 = best;
+  }
   for (const s of sides) {
     dev.queue.writeBuffer(bufs[0], 0, zero);
     dev.queue.submit([dispatch(s.pipe)]);
@@ -135,7 +149,7 @@ const script = `
     read.unmap();
     const da = diff(got, wantA), db = diff(got, wantB);
     Object.assign(R.sides[s.label], {
-      ms: s.ms, diff: Math.min(da, db),
+      ms: s.ms, ms2: s.ms2, diff: Math.min(da, db),
       matched: da < 1e-5 ? "(a*b)+a" : db < 1e-5 ? "(a*b)+b" : "NEITHER",
       ok: Math.min(da, db) < 1e-5,
     });
@@ -193,7 +207,7 @@ const rows = [
   "# python side: WGSLRenderer(Target('webgpu')).render(uops)",
   "# bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel",
   `# iters=${N} (min), warmups=3 per side, INTERLEAVED timed rounds, around submit+onSubmittedWorkDone`,
-  "# program|kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok|cause_or_err",
+  "# program|kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok|cause_or_err|plant_py_2x|plant_bend_2x",
 ];
 const sha = createHash("sha256").update(JSON.stringify(out)).digest("hex").slice(0, 16);
 let allOk = true;
@@ -204,7 +218,9 @@ for (const R of out.kernels ?? []) {
   const why = P.err ? "python: " + P.err : B.err ? "bend: " + B.err : (R.cause || "-");
   rows.push(`${R.prog ?? "-"}|${R.name}|${R.sha}|${R.sha_bend}|${R.identical ? "yes" : "no"}|${R.bytes ?? "-"}|` +
     `${fmt(P.ms)}|${fmt(B.ms)}|${dxp(P.diff)}|${dxp(B.diff)}|${P.matched ?? "-"}|${B.matched ?? "-"}|` +
-    `${both ? "yes" : "no"}|${why}`);
+    `${both ? "yes" : "no"}|${why}|` +
+    `${typeof P.ms2 === "number" && P.ms ? (P.ms2 / P.ms).toFixed(2) : "-"}|` +
+    `${typeof B.ms2 === "number" && B.ms ? (B.ms2 / B.ms).toFixed(2) : "-"}`);
 }
 rows.push(`# probe_sha=${sha} err=${out.err ?? "-"} kernels=${(out.kernels ?? []).length} all_ok=${allOk}`);
 writeFileSync(join(ROOT, ".agents/slop/perf/stage1-webgpu.rows"), rows.join("\n") + "\n");
