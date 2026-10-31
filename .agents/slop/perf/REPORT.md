@@ -1200,3 +1200,71 @@ the next step and is not done.
 | 1. python->webgpu vs bend->webgpu | **blocked**: no CPython WEBGPU binding, so no driver to time either side's WGSL; the 12 pinned divergences are exactly the rows that need one |
 | 2. python->metal vs bend->metal | **met by byte identity on the measured kernel**: sha equal, 6 012 B, timed 1.209 ms |
 | 3. PYTHON vs BEND | **met**: BEND 2.60x faster at 32x32, 5.12x at 16x16, bit-exact |
+
+---
+
+# 19. STAGE 1: A WEBGPU DRIVER EXISTS. WHAT IS MISSING IS THE CORPUS, NOT THE DRIVER.
+
+## 19.1 THE DRIVER, MEASURED
+
+`.agents/slop/perf/webgpu_probe.js` -- `bun` (its WebSocket is built in) launches its OWN
+headless Chrome on a private debug port and profile, polls the origin, and then evaluates
+ONE script in the page: `navigator.gpu` -> `requestAdapter()` -> `requestDevice()` ->
+compile the same WGSL twice -> run both on the same buffer -> time -> read back.
+
+    run 1: adapter True  arch metal-3  all_ones True  ms [1.20, 1.10]
+    run 2: adapter True  arch metal-3  all_ones True  ms [0.20, 0.20]
+    run 3: adapter True  arch metal-3  all_ones True  ms [0.30, 0.20]
+
+`adapter_info = {"vendor": "apple", "architecture": "metal-3"}`. **So there IS a WebGPU
+adapter in this tree, and it compiles, executes and times a compute shader, and the result
+is CORRECT (`out[i] = fma(out[i], 2.0, 1.0)` over a zeroed buffer -> every lane 1.0).**
+
+## 19.2 TWO BUGS IN MY OWN INSTRUMENT, AND THE FIRST ONE WAS THE WHOLE "NO ADAPTER" STORY
+
+1. **A `data:` URL IS NOT A SECURE CONTEXT**, so `navigator.gpu` is UNDEFINED there. The
+   first version loaded `data:text/html,...` and answered `"navigator.gpu absent"` -- which
+   reads exactly like "WebGPU is not available on this machine" and was **my page's fault**.
+   The probe now serves the page from `http://127.0.0.1` (`Bun.serve` on port 0), which IS a
+   secure context.
+2. **A PAGE-LOAD RACE MADE THE SAME FILE DISAGREE WITH ITSELF**: one run answered
+   `navigator.gpu absent`, the next answered `metal-3`. It now polls `location.href` AND
+   `typeof navigator.gpu` before asking the question. Three consecutive runs agree.
+   **⇒ AND A REFUSAL THAT A RACE CAN FABRICATE IS NOT EVIDENCE.** That is why the poll is
+   in the file rather than in a comment.
+
+## 19.3 AND THE REAL BLOCKER, WHICH IS NOW MEASURED RATHER THAN ASSUMED
+
+A WebGPU driver needs WGSL for a REAL kernel, and WGSL is produced from **WebGPU-lowered**
+uops. Both of these were tried, on kernels captured from a live `METAL` run:
+
+    WGSLRenderer(Target('webgpu')).render(uops)   # a 500-uop WMMA matmul
+      -> AttributeError: 'NoneType' object has no attribute 'replace'
+    WGSLRenderer(Target('webgpu')).render(uops)   # a plain 64x64 elementwise (a*b+a)
+      -> AttributeError: 'NoneType' object has no attribute 'replace'
+
+**⇒ THAT IS THE `float4 = None` WALL, AND IT IS UPSTREAM'S OWN WALL**: `WGSLRenderer` sets
+`supports_float4 = False` and `float4 = None`, and the `Ops.STACK` arm is
+`self.float4.replace('float4', render_type(x))`. A CPU/METAL uop list still CONTAINS the
+STACK (the vectorised store); the WebGPU `extra_matcher` rewrites it away, but only while
+the scheduler is LOWERING for WebGPU -- and this tree cannot open a `WEBGPU` device
+(`failed to load library webgpu`), so that lowering never runs.
+
+**AND THE PORT'S HALF IS IN THE SAME PLACE FOR THE SAME REASON**: `wgsl.bend` has
+`render_kernel` (:825) and whole-kernel builders, but its `main()` (:1709) prints the CENSUS
+ROWS over SYNTHETIC fixtures (`fx_mixed()`), and there is no gen/driver path from a real
+uop list to a WGSL kernel -- which is what `cpuseam/` built for the C renderer and nothing
+has built for WGSL.
+
+## 19.4 SO STAGE 1 IS WHERE IT WAS, WITH ONE FACT CHANGED
+
+| | before | now |
+|---|---|---|
+| is there a driver? | "no WGSL driver anywhere" | **YES, measured**: apple/metal-3, compiles, runs, times, correct |
+| why can't a real kernel be timed? | unknown | **WGSL needs WebGPU-lowered uops; `render()` on a CPU/METAL list hits `float4 = None`, measured on TWO kernels; and the port has no real-uop to WGSL-kernel path** |
+
+**⇒ THE 12 PINNED WGSL DIVERGENCES ARE STILL NOT RUN, AND NOW THE REASON IS SPECIFIC: they
+are differences between two TEXT FRAGMENTS over synthetic fixtures, and turning either side
+into a compilable kernel needs a lowering step this tree cannot perform on this machine.**
+Building that (a manual `wgsl_matcher` pass over a captured uop list, on both sides) is the
+next step, and it is a corpus problem -- the driver it feeds is proven.

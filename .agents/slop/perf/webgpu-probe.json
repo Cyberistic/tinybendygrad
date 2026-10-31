@@ -1,0 +1,19 @@
+{
+  "href": "http://127.0.0.1:50329/",
+  "secure": true,
+  "adapter_api": true,
+  "adapter": true,
+  "device": true,
+  "err": null,
+  "ms": [
+    0.19999998807907104,
+    0.10000002384185791
+  ],
+  "adapter_info": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "description": ""
+  },
+  "sample": 1,
+  "all_ones": true
+}

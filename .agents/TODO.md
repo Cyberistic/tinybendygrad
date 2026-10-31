@@ -27047,3 +27047,15 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       the recursion outside it.
 - [ ] STAGE 2 COVERAGE IS ONE KERNEL. Broaden stage2_metal.py (reductions, relu, more sizes) so the
       timed identity covers more than `(a@b)@c` 32x32. Stage 1 stays blocked: no WGSL driver.
+- [x] A WEBGPU DRIVER EXISTS AND IS MEASURED: `.agents/slop/perf/webgpu_probe.js` (bun + its own
+      headless Chrome over CDP) gets an adapter (`vendor: apple, architecture: metal-3`), compiles
+      the same WGSL twice, runs both, times them (0.2-1.2 ms) and reads back a correct result
+      (`all_ones: true`), three runs agreeing. TWO OF MY OWN BUGS WERE THE "NO ADAPTER" STORY: a
+      `data:` URL is not a secure context (`navigator.gpu` undefined), and a page-load race made the
+      same file disagree with itself -- it now polls the origin first.
+- [ ] STAGE 1'S REAL BLOCKER IS THE CORPUS, MEASURED: `WGSLRenderer(Target('webgpu')).render(uops)`
+      REFUSES a captured CPU/METAL uop list with `'NoneType' has no attribute 'replace'` -- the
+      `float4 = None` / `Ops.STACK` wall -- on BOTH a 500-uop WMMA matmul and a plain 64x64
+      elementwise kernel, because the WebGPU `extra_matcher` only runs while lowering for a device
+      this tree cannot open. The port is in the same place: `wgsl.bend` has `render_kernel` but no
+      gen/driver from a real uop list. Next: build that lowering + driver on both sides.
