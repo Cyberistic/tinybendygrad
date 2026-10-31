@@ -1,0 +1,9 @@
+mutation	verdict	rows_moved	why
+nib_order	RED	2	the nibble halves are swapped (HIGH nibbles first)
+q4k_sc_off	RED	1	the 6-bit scale's high half reads bytes 8..11 instead of 12..15
+q8_0_sx	RED	1	Q8_0's quants are read unsigned
+bf16_shift	RED	1	bfloat16 is widened by 8 bits instead of 16
+iqs_parity	RED	1	the sign byte's top bit is set on EVEN parity
+grid_word	RED	1	the grid byte table reads word 0 twice
+typ_ladder	RED	2	`ggml_type` 8 answers the Q4_0 tag (a transcription slip)
+lut_typo	RED	2	one `kvalues_iq4nl` entry is wrong in the driver
