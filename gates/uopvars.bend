@@ -268,6 +268,76 @@ def lbrows(+fx: LBFx) -> IO(Unit):
     p6 : Unit <- IO.print(String.concat(["lb_outer_keep=", bf(U32.is_eq(lbget(m, "9"), 42))]))
     IO.print(String.concat(["lb_outer_over=", bf(U32.is_eq(lbget(m, "0"), LBFx.a0(fx)))]))
 
+
+# ---- `subs` -- the SECOND consumer, schedule/__init__.py:109 -----------------
+# `si.src` is ALL of src (the CALL BODY included); `binds` walks `src[1:]`.
+# So `subs_body` is the row a port that copied `binds`'s slice cannot pass: the
+# body's variable is on `src[0]` and a `src[1:]` walk never sees it.
+type SubFx is Data:
+  SubFx{f: O.Found, v0: U32, v2: U32}
+
+def SubFx.f(x: SubFx) -> O.Found:
+  match x:
+    case SubFx{f, v0, v2}: f
+
+def SubFx.v0(x: SubFx) -> U32:
+  match x:
+    case SubFx{f, v0, v2}: v0
+
+def SubFx.v2(x: SubFx) -> U32:
+  match x:
+    case SubFx{f, v0, v2}: v2
+
+# the body holds slot 2's ALU variable; the call's one positional src is slot 0's
+def subscall() -> SubFx:
+  +v2 = param(O.Arena.empty(), pa(2, rng(3), SP.Aalu{}, None{}, Some{"p2"}))
+  +body = O.UOp.alu(O.Found.ar(v2), O.OpsADD{}, [O.Found.i(v2), O.Found.i(v2)])
+  +v0 = param(O.Found.ar(body), pa(0, rng(7), SP.Aalu{}, None{}, Some{"p0"}))
+  +c = O.UOp.new(O.Found.ar(v0), O.OpsCALL{}, [O.Found.i(body), O.Found.i(v0)], O.ANone{}, O.TNone{})
+  SubFx{c, O.Found.i(v0), O.Found.i(v2)}
+
+def subsonly(k: String, v: U32) -> Map<&2, U32>:
+  Map.set(&2, U32, Map.new(&2, U32), k, v)
+
+def subsget.of(m: Maybe<&2, SC.LinBinds>, k: String) -> U32:
+  match m:
+    case None{}: O.ParamArg.no_slot()
+    case Some{lb}: SC.sc_mapget(SC.LinBinds.m(lb), k)
+
+def subsget(m: Maybe<&2, SC.LinBinds>, k: String) -> U32:
+  subsget.of(m, k)
+
+# PRESENCE, NOT VALUE, AND THE PLANT IS WHY. `sc_mapget` answers the NO-SLOT
+# sentinel for an absent key, so "absent" and "present and mapped to the sentinel"
+# are the SAME U32 -- which made `subs_miss` a row that a port DROPPING the
+# membership test could not turn red. MEASURED: that plant moved 0 of 31 rows
+# before this changed. `Map.has` answers a Sigma whose second component is the Bool.
+def subshas.of2(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
+  match r:
+    case Tuple{m, v}: v
+
+def subshas.of(m: Maybe<&2, SC.LinBinds>, k: String) -> Bool:
+  match m:
+    case None{}: False{}
+    case Some{lb}: subshas.of2(Map.has(&2, U32, SC.LinBinds.m(lb), k))
+
+def subshas(m: Maybe<&2, SC.LinBinds>, k: String) -> Bool:
+  subshas.of(m, k)
+
+def subsrows(+fx: SubFx) -> IO(Unit):
+  +f = SubFx.f(fx)
+  +ar = O.Found.ar(f)
+  +si = O.Found.i(f)
+  do IO<Unit>:
+    p1 : Unit <- IO.print(String.concat(["subs_body=",
+      bf(U32.is_eq(subsget(SC.sc_apply_subs(ar, si, subsonly("2", 99)), U32.show(SubFx.v2(fx))), 99))]))
+    p2 : Unit <- IO.print(String.concat(["subs_hit=",
+      bf(U32.is_eq(subsget(SC.sc_apply_subs(ar, si, subsonly("0", 88)), U32.show(SubFx.v0(fx))), 88))]))
+    p3 : Unit <- IO.print(String.concat(["subs_miss=",
+      bf(Bool.not(subshas(SC.sc_apply_subs(ar, si, subsonly("1", 77)), U32.show(SubFx.v0(fx)))))]))
+    IO.print(String.concat(["subs_none=",
+      bf(Bool.not(subshas(SC.sc_apply_subs(ar, si, Map.new(&2, U32)), U32.show(SubFx.v0(fx)))))]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -287,3 +357,4 @@ def main() -> IO(Unit):
     o : Unit <- vsrow("vs_weak", vrngvar(O.AXIS_WEAK{}))
     devrows(vrng(O.AXIS_DEVICE{}))
     lbrows(lbcall())
+    subsrows(subscall())

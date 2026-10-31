@@ -737,6 +737,79 @@ def sc_linear_binds_outer(+outer: Map<&2, U32>, +ar: O.Arena, +call: U32) -> Lin
 def sc_linear_binds(+ar: O.Arena, +call: U32) -> LinBinds:
   sc_linear_binds_outer(Map.new(&2, U32), ar, call)
 
+# ===========================================================================
+# `subs` -- __init__.py:109, and it is `variables()`'s ONLY CALLER, so it is what
+# stops `variables` being a gated def that nothing uses:
+#
+#   subs = {v: binds[v.arg.slot] for s in si.src for v in s.variables()
+#           if v.arg.slot in binds}
+#
+# TWO THINGS PROJECT OUT OF IT AND BOTH ARE ROWS: a variable whose SLOT IS in
+# `binds` becomes an entry, and one whose slot is NOT stays OUT. A port that
+# keyed by NAME instead of slot, or that dropped the `in binds` test, ADDS entries
+# the comprehension never had -- and an over-full subs map substitutes nodes the
+# caller never asked about.
+#
+# `si.src` IS ALL OF `src`, not `src[1:]` -- `binds` walks `src[1:]` and `subs`
+# walks `src`, and the difference is the CALL BODY, which is itself a src. That is
+# one character in Python and a whole node here.
+#
+# THE ANSWER IS A `Maybe` BECAUSE `variables()` CAN REFUSE: it mints a
+# `_device_num` for a DEVICE range, and a DEVICE range whose end is not readable
+# cannot be minted. Returning a SHORTER subs map there would silently substitute
+# less than upstream, so the refusal is propagated instead.  THE ARENA IS
+# THREADED in `LinBinds`, the same record `binds` uses, because `variables` MINTS.
+def sc_subs_var.hit(miss: Bool, +b: U32, +v: U32, +r: LinBinds) -> LinBinds:
+  match miss:
+    case True{}: r
+    case False{}: LinBinds{LinBinds.ar(r), Map.set(&2, U32, LinBinds.m(r), U32.show(v), b)}
+
+# `Map.get` answers a `Sigma`, not the value, so it needs a projection here -- the
+# same two-line match `render.bend:1467 cu32.of` and `ctx_get.of` use. The default
+# is the NO-SLOT sentinel rather than `0`, because `0` is a legal arena index and a
+# missing bind and a bind to node 0 would be the same answer.
+def sc_mapget.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>) -> U32:
+  match r:
+    case Tuple{m, v}: v
+
+def sc_mapget(+m: Map<&2, U32>, k: String) -> U32:
+  sc_mapget.of(Map.get(U32, O.ParamArg.no_slot(), m, k))
+
+def sc_subs_var.slot(+slot: U32, +v: U32, +binds: Map<&2, U32>, +r: LinBinds) -> LinBinds:
+  +b = sc_mapget(binds, U32.show(slot))
+  sc_subs_var.hit(U32.is_eq(b, O.ParamArg.no_slot()), b, v, r)
+
+def sc_subs_var.of(arg: O.Arg, +v: U32, +binds: Map<&2, U32>, +r: LinBinds) -> LinBinds:
+  match arg:
+    case O.AParam{pa}: sc_subs_var.slot(O.ParamArg.slot(pa), v, binds, r)
+    case _: r
+
+def sc_subs_var(+v: U32, +binds: Map<&2, U32>, +r: LinBinds) -> LinBinds:
+  sc_subs_var.of(sc_arg(LinBinds.ar(r), v), v, binds, r)
+
+def sc_subs_vars(xs: List<&2, U32>, +binds: Map<&2, U32>, +r: LinBinds) -> LinBinds:
+  match xs:
+    case Nil{}: r
+    case v <> t: sc_subs_vars(t, binds, sc_subs_var(v, binds, r))
+
+def sc_subs_one.of(m: Maybe<&2, F.VarR>, +binds: Map<&2, U32>, +r: LinBinds) -> Maybe<&2, LinBinds>:
+  match m:
+    case None{}: None{}
+    case Some{+vr}: Some{sc_subs_vars(F.VarR.xs(vr), binds, LinBinds{F.VarR.ar(vr), LinBinds.m(r)})}
+
+def sc_subs_one(+x: U32, +tb: F.Table, +binds: Map<&2, U32>, +r: LinBinds) -> Maybe<&2, LinBinds>:
+  sc_subs_one.of(F.UOp.variables(LinBinds.ar(r), tb, x, O.Arena.budget(LinBinds.ar(r))), binds, r)
+
+def sc_subs_srcs(xs: List<&2, U32>, +tb: F.Table, +binds: Map<&2, U32>, +acc: Maybe<&2, LinBinds>) -> Maybe<&2, LinBinds>:
+  match xs acc:
+    case Nil{} _: acc
+    case _ None{}: None{}
+    case x <> t Some{r}: sc_subs_srcs(t, tb, binds, sc_subs_one(x, tb, binds, r))
+
+def sc_apply_subs(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, LinBinds>:
+  +fx = F.folded(ar)
+  sc_subs_srcs(sc_srcs(ar, si), F.Folded.t(fx), binds, Some{LinBinds{ar, Map.new(&2, U32)}})
+
 # `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.
 def sc_in_bs(+ar: O.Arena, +k: U32, +t: U32) -> Bool:

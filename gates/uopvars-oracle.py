@@ -120,6 +120,23 @@ def main():
     a("lb_outer_keep", int(merged[9] is outer[9]))
     a("lb_outer_over", int(merged[0] is b0))
 
+    # ---- `subs` -- the SECOND consumer, schedule/__init__.py:109 ----
+    # `si.src` is ALL of src, so the CALL BODY's variable is collected; `binds`
+    # walks `src[1:]` and never sees it. `subs_body` is that difference.
+    sv2 = param(2, vmin=(0, 7), nm="p2")
+    sbody = sv2 + sv2
+    sv0 = param(0, vmin=(0, 7), nm="p0")
+    scall = UOp(Ops.CALL, src=(sbody, sv0))
+
+    def subs_for(binds):
+        return {v: binds[v.arg.slot] for s in scall.src for v in s.variables() if v.arg.slot in binds}
+
+    X99, X88, X77 = UOp.const(99), UOp.const(88), UOp.const(77)
+    a("subs_body", int(subs_for({2: X99}).get(sv2) is X99))
+    a("subs_hit", int(subs_for({0: X88}).get(sv0) is X88))
+    a("subs_miss", int(sv0 not in subs_for({1: X77})))
+    a("subs_none", int(len(subs_for({})) == 0))
+
     print("\n".join(out))
 
 
