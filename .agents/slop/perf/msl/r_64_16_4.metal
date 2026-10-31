@@ -1,0 +1,26 @@
+#include <metal_stdlib>
+using namespace metal;
+struct args_t { device float* data0_64; device float* data1_4096; };
+kernel void r_64_16_4(constant args_t& args [[buffer(0)]], uint3 gid [[threadgroup_position_in_grid]], uint3 lid [[thread_position_in_threadgroup]]) {
+  device float* data0_64 = args.data0_64; device float* data1_4096 = args.data1_4096;
+  float buf0[1];
+  float buf1[1];
+  threadgroup __attribute__((aligned(16))) float buf2[16];
+  int gidx0 = gid.x; /* 64 */
+  int lidx0 = lid.x; /* 16 */
+  *(buf0+0) = 0.0f;
+  for (int Lidx0 = 0; Lidx0 < 4; Lidx0++) {
+    float val0 = (*(data1_4096+((lidx0<<2)+Lidx0+(gidx0<<6))));
+    *(buf0+0) = ((*(buf0+0))+val0);
+  }
+  *(buf2+lidx0) = (*(buf0+0));
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+  *(buf1+0) = 0.0f;
+  for (int Lidx102 = 0; Lidx102 < 16; Lidx102++) {
+    float val1 = (*(buf2+Lidx102));
+    *(buf1+0) = ((*(buf1+0))+val1);
+  }
+  if ((lidx0==0)) {
+    *(data0_64+gidx0) = (*(buf1+0));
+  }
+}

@@ -3,6 +3,9 @@
 import Base
 import ./../../../tinybendygrad/renderer/cstyle.bend as C
 import ./gen_metal/r_32_2_4_4_4.bend as G0
+import ./gen_metal/r_32_2_2_2_2.bend as G1
+import ./gen_metal/E_32_32_4.bend as G2
+import ./gen_metal/r_64_16_4.bend as G3
 
 def nth(xs: List<&1, String>, k: Nat) -> String:
   Maybe.default(&1, String, List.get(&1, String, xs, k), "")
@@ -10,6 +13,9 @@ def nth(xs: List<&1, String>, k: Nat) -> String:
 def kus_of(nm: String) -> List<&2, C.KU>:
   match nm:
     case "r_32_2_4_4_4": G0.kus()
+    case "r_32_2_2_2_2": G1.kus()
+    case "E_32_32_4": G2.kus()
+    case "r_64_16_4": G3.kus()
     case _: Nil{}
 
 def main() -> IO(Unit):

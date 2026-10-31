@@ -1268,3 +1268,58 @@ are differences between two TEXT FRAGMENTS over synthetic fixtures, and turning 
 into a compilable kernel needs a lowering step this tree cannot perform on this machine.**
 Building that (a manual `wgsl_matcher` pass over a captured uop list, on both sides) is the
 next step, and it is a corpus problem -- the driver it feeds is proven.
+
+---
+
+# 20. STAGE 2, BROADENED: FOUR KERNELS OF FOUR SHAPES, ALL BYTE-IDENTICAL
+
+    # DEV=METAL, JIT=0, min of 2 SYNCHRONISED launches after 3 warmups per program
+    # program_ms                      mm32=0.161  mm16=0.021  ew64=0.017  reduce=0.020
+    # program_max|diff_vs_float64|    mm32=2.06e-05  mm16=2.11e-06  ew64=1.29e-06  reduce=1.71e-06
+    # kernels=4
+    r_32_2_4_4_4|388b424179b5623e|388b424179b5623e|yes|6012|0
+    r_32_2_2_2_2|c9e78c67c6bf3dae|c9e78c67c6bf3dae|yes|2516|0
+    E_32_32_4   |6fce4d2e8ee5f8b6|6fce4d2e8ee5f8b6|yes|1104|0
+    r_64_16_4   |0de20798557f292d|0de20798557f292d|yes| 965|0
+
+Four programs chosen for DIFFERENT KERNEL SHAPES, not four of one shape:
+a 32x32 WMMA matmul chain, a 16x16 matmul, a 64x64 elementwise chain (no WMMA, vectorised
+stores), and a 64x64 row reduction. **All four are byte-identical, and each program's
+result is checked against a float64 numpy reference** (2.06e-05, 2.11e-06, 1.29e-06,
+1.71e-06), so the identity is between texts that both compute the right answer.
+
+## 20.1 A MEASUREMENT DEFECT FOUND BY THE BROADENING, AND IT WAS MINE
+
+The first broadened run read `mm32=0.01 ms mm16=0.01 ew64=0.00 reduce=0.00`. Those are not
+execution times: **Metal is asynchronous and `realize()` returns before the GPU is done**, so
+the numbers were the cost of handing work to a queue. The harness now calls
+`Device["METAL"].synchronize()` INSIDE the timed region, and the same programs read
+0.161 / 0.021 / 0.017 / 0.020 ms -- two orders of magnitude apart from the wrong number, and
+in the shape you would expect (the 32x32 matmul is ~8x the 16x16 one).
+
+**⇒ AND WITHOUT THE BROADENING THIS WOULD NOT HAVE SHOWN**: one program's 0.01 ms is
+"plausible" for a single launch; four programs at 0.00-0.01 ms is a signature.
+
+## 20.2 ONE CONVERTER GAP THE BROADENING FOUND
+
+`gen_kus.py`'s `OPS` table had no `CMPEQ`, so the relu program's kernel refused to convert
+(`r_64_16_4: unknown op CMPEQ`) -- the CPU-lane fixtures it was written for never needed it.
+`CMPEQ`, `CMPNE`, `FDIV`, `IDIV`, `MOD`, `POW` are now in the table.
+
+## 20.3 WHAT STAGE 2 NOW CLAIMS
+
+**CLAIMS**: for four real kernels of four different shapes, the MSL byte string the port
+renders is the SAME BYTES the `METAL` lane compiled and ran, and those runs take
+0.161 / 0.021 / 0.017 / 0.020 ms (synchronised, min of 2 after 3 warmups) and produce
+results matching float64 to 1e-6..2e-5. "python to metal matches bend to metal" therefore
+holds by identity of text on this corpus.
+
+**DOES NOT CLAIM**: that the corpus is exhaustive (four kernels, four programs), and it
+does not claim a race between two different programs -- there is nothing to race when the
+bytes are equal, which is the strongest form the claim can take and also the narrowest.
+
+## 20.4 GATES
+
+    cstyle_render_census-gate:    361 rows, 3 lanes byte-identical, 0 disagreeing
+    cstyle_render_census-mutate:  11 of 11 mutations moved rows
+    ops_python_exec:              PASS -- 153 fixtures, 365 rows, 0 divergences

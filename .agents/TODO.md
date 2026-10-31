@@ -27059,3 +27059,10 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       elementwise kernel, because the WebGPU `extra_matcher` only runs while lowering for a device
       this tree cannot open. The port is in the same place: `wgsl.bend` has `render_kernel` but no
       gen/driver from a real uop list. Next: build that lowering + driver on both sides.
+- [x] STAGE 2 BROADENED TO FOUR KERNELS OF FOUR SHAPES, ALL BYTE-IDENTICAL: `r_32_2_4_4_4` (6012 B,
+      WMMA matmul 32), `r_32_2_2_2_2` (2516 B, matmul 16), `E_32_32_4` (1104 B, elementwise),
+      `r_64_16_4` (965 B, reduction), each program's result checked against float64 numpy
+      (2e-5..1e-6). AND THE BROADENING FOUND A MEASUREMENT DEFECT IN MY OWN HARNESS: without
+      `Device['METAL'].synchronize()` inside the timed region the numbers were 0.01/0.00 ms --
+      SUBMIT LATENCY, because Metal is asynchronous. Synchronised: 0.161/0.021/0.017/0.020 ms.
+      One program at 0.01 ms looks plausible; four at 0.00-0.01 is a signature.

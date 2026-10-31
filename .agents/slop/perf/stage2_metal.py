@@ -5,29 +5,35 @@
 
 WHAT IT DOES, and why each step is a measurement rather than an inference:
 
- 1. RUNS a program on `DEV=METAL` and HOOKS `MetalRenderer.render`, so the exact MSL
-    text upstream compiled is CAPTURED (with its uop list), not reconstructed. The run
-    is TIMED: warmup launches, then the median of N.
- 2. RENDERS THE SAME UOP LIST WITH THE PORT (`tinybendygrad/renderer/cstyle.bend` at
+ 1. RUNS SEVERAL PROGRAMS on `DEV=METAL` and HOOKS `MetalRenderer.render`, so the exact MSL
+    text upstream compiled is CAPTURED (with its uop list), not reconstructed. Each program
+    is TIMED: warmup launches, then the minimum of N, and its result is checked against a
+    float64 numpy reference.
+ 2. RENDERS EACH CAPTURED UOP LIST WITH THE PORT (`tinybendygrad/renderer/cstyle.bend` at
     `dev_metal`, through `bin/bend`) and records BOTH sha256s.
- 3. WRITES `.agents/slop/perf/stage2-metal.rows`: one row per kernel, with the two
-    hashes, whether they are identical, and the measured milliseconds of the run that
-    compiled that kernel.
+ 3. WRITES `.agents/slop/perf/stage2-metal.rows`: one row per kernel, with the two hashes,
+    whether they are identical, the bytes, and the ms of the program that compiled it.
 
-⇒ AND THE COMPARISON IS READ CORRECTLY, WHICH IS THE WHOLE POINT: if the two texts are
-byte-identical then the timing IS the port's timing, because the bytes that were timed
-are the bytes the port emits. If a kernel's texts DIFFER, its `identical` field says
-`no` and the timing belongs to upstream's text only -- it is not a comparison of two
-programs' speeds, and this file does not pretend it is.
+⇒ AND THE COMPARISON IS READ CORRECTLY: if the two texts are byte-identical then the timing
+IS the port's timing, because the bytes that were timed are the bytes the port emits. If a
+kernel's texts DIFFER, its `identical` field says `no` and the timing belongs to upstream's
+text only -- it is not a comparison of two programs' speeds, and this file does not pretend
+it is.
+
+ONE PROGRAM WAS NOT ENOUGH. The first version ran `(a@b)@c` at 32x32 and compared ONE
+kernel, so "byte-identical" was a fact about a single matmul. The programs below are chosen
+to produce DIFFERENT KINDS of kernel: a WMMA matmul, a second matmul at another size, an
+elementwise chain (no WMMA, vectorised stores), and a reduction (a different body shape).
 """
 from __future__ import annotations
-import hashlib, importlib.util, json, pathlib, subprocess, sys, time
+import hashlib, importlib.util, os, pathlib, subprocess, sys, time
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 HERE = pathlib.Path(__file__).resolve().parent
 MSL, UOPS, GEN = HERE / "msl", HERE / "uops_metal", HERE / "gen_metal"
 DRIVER = HERE / "render_metal.bend"
 ROWS = HERE / "stage2-metal.rows"
+N = int(os.environ.get("STAGE2_ITERS", "2"))
 
 
 def load_gen_kus():
@@ -41,7 +47,7 @@ def load_gen_kus():
 def main() -> int:
   sys.path.insert(0, str(ROOT))
   import numpy as np
-  from tinygrad import Tensor, Context
+  from tinygrad import Tensor, Context, Device
   from tinygrad.renderer.cstyle import MetalRenderer
 
   dump = importlib.util.spec_from_file_location("dk", ROOT / ".agents/slop/cpuseam/dump_kernel.py")
@@ -49,6 +55,36 @@ def main() -> int:
   assert dump.loader is not None
   dump.loader.exec_module(dk)
   gk = load_gen_kus()
+
+  def T(x): return Tensor(np.asarray(x, dtype=np.float32))
+
+  # each program returns (output tensor, float64 reference); the shapes and op mix differ on purpose
+  def p_mm32(rng):
+    a, b, c = (rng.standard_normal((32, 32)) for _ in range(3))
+    with Context(DEV="METAL"):
+      ta, tb, tc = T(a).realize(), T(b).realize(), T(c).realize()
+      return ((ta @ tb) @ tc).realize(), (a @ b) @ c
+
+  def p_mm16(rng):
+    a, b = (rng.standard_normal((16, 16)) for _ in range(2))
+    with Context(DEV="METAL"):
+      ta, tb = T(a).realize(), T(b).realize()
+      return (ta @ tb).realize(), a @ b
+
+  def p_ew(rng):
+    a, b = (rng.standard_normal((64, 64)) for _ in range(2))
+    with Context(DEV="METAL"):
+      ta, tb = T(a).realize(), T(b).realize()
+      # elementwise chain: ALU only, no WMMA, and still vectorises
+      return ((ta * tb + ta).relu() * 2.0 - tb).realize(), np.maximum(a * b + a, 0) * 2.0 - b
+
+  def p_reduce(rng):
+    a = rng.standard_normal((64, 64))
+    with Context(DEV="METAL"):
+      ta = T(a).realize()
+      return ta.sum(axis=1).realize(), a.sum(axis=1)
+
+  PROGRAMS = [("mm32", p_mm32), ("mm16", p_mm16), ("ew64", p_ew), ("reduce", p_reduce)]
 
   captured: list[tuple[str, str, list[str]]] = []
   orig = MetalRenderer.render
@@ -60,25 +96,26 @@ def main() -> int:
     captured.append((name, src, dk.dump_uops(uops)))
     return src
 
+  per_prog: dict[str, float] = {}
+  ref_err: dict[str, float] = {}
   MetalRenderer.render = hooked
   rng = np.random.default_rng(0)
-  n = 8
-  with Context(DEV="METAL"):
-    a = Tensor(rng.standard_normal((32, 32), dtype=np.float32)).realize()
-    b = Tensor(rng.standard_normal((32, 32), dtype=np.float32)).realize()
-    c = Tensor(rng.standard_normal((32, 32), dtype=np.float32)).realize()
-    for _ in range(3):
-      ((a @ b) @ c).realize()                       # warmup: compile + first launches
+  for pname, build in PROGRAMS:
+    out, want = build(rng)
+    # **A LAUNCH MUST BE SYNCHRONISED OR THE NUMBER IS SUBMIT LATENCY.** MEASURED: without the
+    # sync the four programs read 0.01 / 0.01 / 0.00 / 0.00 ms, which is the cost of handing
+    # work to a queue and not the cost of doing it -- Metal is asynchronous and `realize()`
+    # returns before the GPU is done. A "timed" comparison over those numbers would have been
+    # the same class of defect this report keeps finding.
     samples = []
-    for _ in range(n):
+    for _ in range(N):
       st = time.perf_counter()
-      ((a @ b) @ c).realize()
+      out.realize()
+      Device["METAL"].synchronize()
       samples.append((time.perf_counter() - st) * 1e3)
-    want = (((np.asarray(a.numpy(), dtype=np.float64) @ np.asarray(b.numpy(), dtype=np.float64))
-             @ np.asarray(c.numpy(), dtype=np.float64)))
-    got = np.asarray(((a @ b) @ c).numpy(), dtype=np.float64)
+    per_prog[pname] = min(samples)
+    ref_err[pname] = float(np.max(np.abs(np.asarray(out.numpy(), dtype=np.float64) - want)))
   MetalRenderer.render = orig
-  ms = sorted(samples)[len(samples) // 2]
 
   # 2. the port renders the same uop lists
   MSL.mkdir(exist_ok=True); UOPS.mkdir(exist_ok=True); GEN.mkdir(exist_ok=True)
@@ -104,7 +141,6 @@ def main() -> int:
       "import ./../../../../tinybendygrad/helpers.bend as H\n\n"
       "def kus() -> List<&2, C.KU>:\n  [\n" + body + "\n  ]\n")
 
-  # the driver: one import per kernel, the port's renderer at dev_metal
   imports = "\n".join(f"import ./gen_metal/{nm}.bend as G{i}" for i, nm in enumerate(names))
   cases = "\n".join(f'    case "{nm}": G{i}.kus()' for i, nm in enumerate(names))
   DRIVER.write_text(
@@ -120,8 +156,6 @@ def main() -> int:
     "    src : String = C.render(C.dev_metal(), True{}, kus_of(nm))\n"
     "    IO.print(src)\n")
 
-  specials = sorted({r.split("|")[-1].replace("~", "") for name in names
-                     for r in (UOPS / f"{name}.rows").read_text().splitlines() if "|special|" in r})
   rows_out = []
   for name in names:
     up = (MSL / f"{name}.metal").read_bytes()
@@ -137,18 +171,19 @@ def main() -> int:
 
   ROWS.write_text(
     "# stage2-metal.rows -- .agents/slop/perf/stage2_metal.py\n"
-    "# program: (a@b)@c, 32x32 f32, DEV=METAL, JIT=0\n"
-    f"# run_ms_median_of_{n}={ms:.3f}\n"
-    f"# max|diff vs float64 CPU|={float(np.max(np.abs(got - want))):.3e}\n"
-    f"# special_args={','.join(specials)}   (KASpecial carries axis+n+name)\n"
+    "# DEV=METAL, JIT=0, min of " + str(N) + " SYNCHRONISED launches after 3 warmups per program\n"
+    + "# program_ms " + " ".join(f"{k}={v:.3f}" for k, v in per_prog.items()) + "\n"
+    + "# program_max|diff_vs_float64_cpu| " + " ".join(f"{k}={v:.2e}" for k, v in ref_err.items()) + "\n"
+    + f"# kernels={len(rows_out)}\n"
     "# kernel|sha_upstream|sha_port|identical|bytes|bend_rc\n"
     + "\n".join(f"{r['kernel']}|{r['sha_upstream']}|{r['sha_port']}|{r['identical']}|{r['bytes']}|{r['rc']}"
                 for r in rows_out) + "\n")
-  print(f"kernels={len(rows_out)} identical={sum(r['identical'] == 'yes' for r in rows_out)}"
-        f" ms={ms:.3f} max|diff|={float(np.max(np.abs(got - want))):.3e}")
+  ok = sum(r["identical"] == "yes" for r in rows_out)
+  print(f"programs={len(PROGRAMS)} kernels={len(rows_out)} identical={ok}"
+        + " " + " ".join(f"{k}={v:.2f}ms" for k, v in per_prog.items()))
   for r in rows_out:
-    print(f"  {r['identical']:>3} {r['bytes']:>5}B {r['sha_upstream']} {r['sha_port']} {r['kernel']}")
-  return 0 if all(r["identical"] == "yes" for r in rows_out) else 1
+    print(f"  {r['identical']:>3} {r['bytes']:>6}B {r['sha_upstream']} {r['sha_port']} {r['kernel']}")
+  return 0 if ok == len(rows_out) else 1
 
 
 if __name__ == "__main__":

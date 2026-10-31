@@ -44,6 +44,10 @@ OPS = {
     "SQRT": "O.OpsSQRT{}", "EXP2": "O.OpsEXP2{}", "LOG2": "O.OpsLOG2{}",
     "SIN": "O.OpsSIN{}", "RECIPROCAL": "O.OpsRECIPROCAL{}", "TRUNC": "O.OpsTRUNC{}",
     "SHR": "O.OpsSHR{}", "STACK": "O.OpsSTACK{}", "WMMA": "O.OpsWMMA{}",
+    # `relu` lowers to a CMPEQ/WHERE chain (and `maximum` to MAX/CMPLT), so a program
+    # with a relu needs these; the CPU-lane fixtures never did.
+    "CMPEQ": "O.OpsCMPEQ{}", "CMPNE": "O.OpsCMPNE{}", "FDIV": "O.OpsFDIV{}",
+    "IDIV": "O.OpsIDIV{}", "MOD": "O.OpsCMOD{}", "POW": "O.OpsPOW{}",
 }
 
 DTS = {
