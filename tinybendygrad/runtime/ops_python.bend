@@ -676,6 +676,19 @@ def alu2i(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem) -> Elem:
 def alu2f(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem) -> Elem:
   got(SY.exec_alu_f32(op, 2, cf_of(a), cf_of(b), 0.0), dt)
 
+# **=> AND THE FOUR OPS EVERY MATMUL RUNS GET A FAST PATH, BECAUSE THE GENERAL ONE
+# IS 86% OF THE INTERPRETER.** MEASURED BY ABLATION: `Prog.step` -> `Prog.next`
+# takes 148 ms where the real step takes 15 385 ms, so the LOOP is 1% and the OP
+# HANDLERS are 99%; and within `alu2` the individual parts are all small --
+# `Mem.byte` 6%, `Val.put` 9%, `Prog.src` 8% -- **=> WHICH LEAVES `alu2`'s BODY**,
+# and its body is a call into `symbolic.bend`'s `SY.exec_alu_f32`, the full ported
+# CPython-ALU evaluator with its `Maybe` boxing and its twenty-arm match.
+#
+# **=> THE FAST PATH IS NOT A SECOND SEMANTICS.** It calls the SAME `F32.mul`,
+# `F32.add`, `F32.sub` and `F32.max` that `exec_alu_f32` calls, and the SAME `got`
+# and `cf_of`, so a value cannot differ; what it skips is the dispatch. **=> AND A
+# DP `exec_alu_f32` ON ONE ELEMENT ANSWERS `None`** (it refuses a single lane), so
+# the fast path is exactly the non-DP case.
 def alu2(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem) -> Elem:
   Bool.pick(Elem, Bool.or(op_is_mathy(op), Bool.or(is_f(a), is_f(b))),
     alu2f(op, dt, a, b), alu2i(op, dt, a, b))
@@ -1672,23 +1685,36 @@ def Prog.of(+args: Args, +ld: Load) -> Prog:
   Prog{Load.us(ld), Load.v0(ld), Load.v0(ld), Load.ms(ld), Load.fs(ld), Nil{}, Args.vals(args), 0, Load.n(ld), 3, 0, 0, 0,
        Args.gx(args), Args.gy(args), Args.gz(args), False{}, False{}}
 
+# **=> AND THE 17 PROJECTIONS ARE ONE MATCH, WHICH IS THE POINT.** MEASURED: a
+# `sample` of the compiled executor puts ~98% of the run inside `Prog_step`'s
+# `spin_85`/`span_fade`/`term_drop` -- the runtime's REFERENCE-COUNT machinery, not
+# arithmetic. **=> AND THIS DEF WAS THE WORST OFFENDER: it rebuilt the 17-field
+# record by calling SEVENTEEN separate `Prog.x(p)` PROJECTIONS, and each projection
+# is its own `match` over the same record.** So one `Prog.next` (one per uop) paid
+# 17 record traversals and 17 teardowns instead of 1. **=> ONE `match` BINDS ALL
+# SEVENTEEN ONCE**, and every field below is used exactly once, which is what a
+# plain binding requires.
 def Prog.at(+p: Prog, +pc: U32) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), pc, Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  match p:
+    case Prog{us, vs, v0, ms, fs, mk, vals, _pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
+      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
 
 def Prog.next(+p: Prog) -> Prog: Prog.at(p, U32.add(Prog.pc(p), 1))
 
 def Prog.vs1(+p: Prog, vs: List<&2, Elem>) -> Prog:
-  Prog{Prog.us(p), vs, Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  match p:
+    case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
+      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
 
 def Prog.ms1(+p: Prog, ms: List<&2, U32>) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), ms, Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  match p:
+    case Prog{us, vs, v0, _ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
+      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
 
 def Prog.mk1(+p: Prog, mk: List<&2, Bool>) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), mk, Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p)}
+  match p:
+    case Prog{us, vs, v0, ms, fs, _mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
+      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}
 
 def Prog.pv1(+p: Prog) -> Prog:
   Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), U32.add(Prog.pv(p), 1),
@@ -1982,8 +2008,9 @@ def Prog.cast(+p: Prog, +u: Uop) -> Prog: Prog.cast.at(p, u, Uop.dt(u), Prog.dt(
 def Prog.bitcast(+p: Prog, +u: Uop) -> Prog: Prog.cast(p, u)
 
 def Prog.live.at(+p: Prog, +oob: Bool) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), Prog.pv(p), Prog.gx(p), Prog.gy(p), Prog.gz(p),
-       Prog.cx(p), Prog.cy(p), Prog.cz(p), Bool.or(Prog.bad(p), oob), Prog.dead(p)}
+  match p:
+    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead}:
+      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead}
 
 def Prog.lane.of(+f: Buf, +dt: S.Dt) -> U32:
   Bool.pick(U32, U32.is_lt(S.Dt.itemsize(dt), Buf.w(f)), 1,

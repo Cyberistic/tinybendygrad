@@ -144,3 +144,73 @@ but to stop the allocation/teardown that the profile says is 98% of the time.
    says bit-exactness survived.
 2. **Then** the per-launch subprocess + hex (2 185 ms on a trivial kernel) — the
    remaining 28% of a small launch, and a persistent executor removes it.
+
+---
+
+# 4. STAGE 3, SECOND PASS: ONE FIX LANDED, THE ABLATIONS MISLED ME, AND I SAY SO
+
+    .venv/bin/python .agents/slop/perf/bench.py --iters 3 --size 16 --lanes CPU,PYTHON,BEND
+    CPU       1.33 ms/iter
+    PYTHON  532.92 ms/iter
+    BEND  29694.76 ms/iter      -> 55.7x slower   (was 57.8x)
+
+    .venv/bin/python gates/ops_python_exec-gate.py
+    ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes,
+                     365 unpinned identical, 0 pinned
+
+## 4.1 WHAT LANDED, AND IT IS SMALL
+
+`Prog.at`, `Prog.vs1`, `Prog.ms1`, `Prog.mk1` and `Prog.live.at` each rebuilt the
+18-field `Prog` record by calling **SEVENTEEN separate `Prog.x(p)` projections**,
+and **each projection is its own `match` over the same record** -- so one
+`Prog.next` (one per uop) paid 17 record traversals instead of 1. They are now a
+single destructuring `match` each. **MEASURED: 30 806 -> 29 660 ms, 3.7%**, and the
+153-fixture census is unchanged at **0 divergences**.
+
+**⇒ 3.7% IS NOT PROGRESS TOWARD 55.7x AND IT IS NOT REPORTED AS SUCH.** It is a
+real, bit-exact simplification that happens to be slightly faster.
+
+## 4.2 THE ABLATIONS, AND WHY THEY MISLED ME — WRITTEN DOWN BECAUSE IT MATTERS
+
+I ablated by replacing one def's body at a time and re-timing:
+
+| ablation | ms | read as |
+|---|---:|---|
+| baseline | 15 385 | |
+| `Prog.step` -> `Prog.next` only | **148** | the loop is 1%, the op handlers 99% |
+| `Prog.alu` -> `Prog.next` | **2 211** | "the ALU is 86%" |
+| `Prog.ld1` -> `Prog.next` | 2 128 | "loads are 86%" |
+| `Prog.store` -> `Prog.next` | 2 189 | "stores are 86%" |
+| `Prog.index` -> `Prog.next` | 14 444 | index is 6% |
+| `Mem.byte` -> 0 | 14 410 | 6% |
+| `Val.put` -> identity | 14 068 | 9% |
+| `Prog.src` -> zero | 14 090 | 8% |
+
+**⇒ THREE OF THOSE CANNOT ALL BE TRUE, AND I READ THEM AS IF THEY COULD.** `alu`,
+`ld1` and `store` each "accounting for 86%" is arithmetically impossible; the
+consistent explanation is that **`Prog.alu` is not "the arithmetic", it is the
+SHARED EVALUATOR** that `ld1`, `store` and `index` also route through — so
+disabling it stops the walk rather than removing one third of it. **⇒ AND I ACTED
+ON THE MISREADING**: I landed fast paths for `MUL`/`ADD`/`SUB`/`MAX` in `alu2` and
+for `MULACC` in `alu3`, measured **0%** for both, and **REVERTED THEM** rather
+than leaving 40 lines of complexity that buy nothing.
+
+**⇒ THE LESSON IS THE ONE THE TREE ALREADY CARRIES ABOUT MUTATION HARNESSES**: an
+ablation that changes CONTROL FLOW is not a measurement of a cost, it is a
+measurement of a different program. **A COST ATTRIBUTION NEEDS A SAMPLING
+PROFILER WITH PER-SYMBOL LEAF COUNTS, NOT SUBTRACTION.**
+
+## 4.3 WHAT IS ACTUALLY KNOWN, AND WHAT THE NEXT INSTRUMENT IS
+
+Known, from `sample` (`.agents/slop/perf/bend-executor.sample.txt`): **2216 of 2333
+samples are inside `WL_FID_Prog_step`, and its leaves are `spin_85`, `span_fade`
+and `term_drop`** — the runtime's reference-count spin, span release and term
+release. **And 14.7 s of the 14.9 s is USER CPU with 0.17 s of system**, so it is
+not page faults or allocation of large blocks.
+
+**⇒ THE NEXT INSTRUMENT IS A PER-SYMBOL LEAF CENSUS** — sum the SELF samples under
+`Prog_step` by symbol rather than reading the call tree's nesting, which is what I
+did and what produced the impossible 3x86%. Only then is "make `Prog` an `Array`"
+justified or refuted; the guide's `a[i] <- v` ("overwrites the slot ... with no
+copy") is the candidate, but **an unproven candidate is why 3.7% is all that
+landed.**
