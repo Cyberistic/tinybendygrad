@@ -34,9 +34,16 @@ const b64ToBytes = (b64) => {
 
 const out = { ok: false };
 try {
+  // **⇒ AND THE FILE NAMES ARE PARAMETERS, SO ONE PAGE REPLAYS EVERY TRACE.**
+  // A second page would be a second copy of the WebGPU plumbing -- and the
+  // aliasing, the layout derivation and the error scope would then have to be
+  // fixed twice, which is how the two would drift.
+  const q = new URLSearchParams(location.search);
+  const NET = q.get("net") ?? "train-net.json";
+  const ORACLE = q.get("oracle") ?? "train-oracle.json";
   const [net, oracle] = await Promise.all([
-    fetch("./train-net.json").then((r) => r.json()),
-    fetch("./train-oracle.json").then((r) => r.json()),
+    fetch("./" + NET).then((r) => r.json()),
+    fetch("./" + ORACLE).then((r) => r.json()),
   ]);
   out.kernels = net.kernels.length;
   out.buffers = Object.keys(net.buffers).length;
