@@ -27066,3 +27066,14 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       `Device['METAL'].synchronize()` inside the timed region the numbers were 0.01/0.00 ms --
       SUBMIT LATENCY, because Metal is asynchronous. Synchronised: 0.161/0.021/0.017/0.020 ms.
       One program at 0.01 ms looks plausible; four at 0.00-0.01 is a signature.
+- [x] THE FIRST TIMED `python to webgpu`, AND IT IS A REAL KERNEL: `E_1024 | 40cd0ca967a098d5 |
+      python-only | 600 B | 0.2000 ms | 4.77e-7 | (a*b)+a | yes`, three runs identical. The WGSL is
+      `WGSLRenderer(Target('webgpu')).render(uops)` over uops the scheduler produced -- the corpus
+      came from `NOOPT=1` (no upcast -> no `Ops.STACK` -> no `float4 = None`). Three of my own bugs
+      were fixed on the way: a manifest without the `wgsl` field, an entry point of `main` instead of
+      `E_1024`, and A SWAPPED BUFFER ORDER that the two-expectation check caught (`(a*b)+b` under
+      `(out,a,b)` means the order is `(out,b,a)`) -- the kernel was right and my harness was wrong.
+- [ ] STAGE 1 STILL HAS NO COMPARISON, AND THE GAP IS ONE WALKER: `wgsl.bend`'s `render_kernel` takes
+      BODY STRINGS (`kern_alu()`, `kern_mixed()` build them by hand) and nothing walks an arena of uops
+      to emit that body. The renderers and the assembler exist and are gate-covered; the composition
+      does not. That is the next step on the bend side.

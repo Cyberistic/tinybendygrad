@@ -1323,3 +1323,56 @@ bytes are equal, which is the strongest form the claim can take and also the nar
     cstyle_render_census-gate:    361 rows, 3 lanes byte-identical, 0 disagreeing
     cstyle_render_census-mutate:  11 of 11 mutations moved rows
     ops_python_exec:              PASS -- 153 fixtures, 365 rows, 0 divergences
+
+---
+
+# 21. STAGE 1: THE FIRST TIMED `python to webgpu` -- 0.2000 ms, CORRECT TO 4.8e-07
+
+    E_1024|40cd0ca967a098d5|-|python-only|600|0.2000|4.77e-7|(a*b)+a|yes
+
+Three consecutive runs, identical: the WGSL `WGSLRenderer` emitted for a REAL kernel
+(`E_1024`, 600 bytes, sha256 `40cd0ca967a098d5`) compiles in Chrome's WebGPU on
+`metal-3`, dispatches 1024 workgroups of 1, takes **0.2000 ms** (min of 3, timed around
+`submit` + `onSubmittedWorkDone`), and its output matches the float32 numpy result to
+**4.77e-07**.
+
+## 21.1 HOW THE CORPUS WAS OBTAINED, AND IT WAS THE WHOLE PROBLEM
+
+WGSL is rendered from WebGPU-LOWERED uops, and a normally-optimised kernel vectorises its
+stores into an `Ops.STACK`, which `WGSLRenderer` cannot spell (`float4 = None`;
+`'NoneType' object has no attribute 'replace'`, §19.3, on two of two kernels tried).
+**`NOOPT=1` DISABLES THE UPCAST PASS, so no STACK is emitted and the same renderer answers a
+real kernel** -- measured: the 15-uop list `[ADD, CAST, CONST, INDEX, LOAD, MUL, PARAM,
+SINK, SPECIAL, STORE]` renders to 600 bytes with `@compute @workgroup_size(1)`.
+
+So the corpus is: capture under `NOOPT=1`, render with `WGSLRenderer(Target('webgpu'))`,
+bind the live buffers, dispatch. Nothing in the artifact is hand-written WGSL.
+
+## 21.2 THREE OF MY OWN BUGS, AND ONE OF THEM WAS FOUND BY THE CHECK RATHER THAN BY ME
+
+1. `createShaderModule` got `code: undefined` -- the manifest carried the TEXT in a separate
+   file and the JSON had no `wgsl` field. Fixed by making the manifest self-contained.
+2. `GPUPipelineError: Entry point "main" doesn't exist` -- the entry point is the kernel's
+   OWN name (`E_1024`), which the manifest now supplies.
+3. **The buffer order.** The first correct run answered `matched=(a*b)+b` where the program
+   is `a*b + a`. The emitted body is `data0 = data2*data1 + data2`, so under my binding
+   `(out, a, b)` it computes `a*b + b`; the PARAM order is `(out, b, a)` and the kernel is
+   RIGHT. **⇒ THE TWO-EXPECTATION CHECK IS WHAT CAUGHT IT**: a harness that had checked one
+   expectation would have reported "4.62e+0, wrong answer" and sent me hunting a renderer
+   defect that did not exist.
+
+## 21.3 WHAT IS STILL MISSING FOR STAGE 1, AND IT IS NOT THE DRIVER
+
+`bend_side=absent` in the artifact, and the reason is structural, measured in the source:
+
+    def render_kernel(+fn: String, +kernel: List<&2, String>, +bufs: List<&2, Buf>, +sc: Scan) -> String
+
+its `kernel` is a list of BODY STRINGS, and the census rows build those by hand
+(`kern_alu()`, `kern_mixed()`; `r_rk_mixed` computes the `Scan` from a fixture). There is
+no function in `wgsl.bend` that WALKS an arena of uops and emits the body -- the individual
+renderers (`render_load`, `render_cast`, `render_kernel`'s partitioner, ...) all exist and
+are gate-covered, but the thing that connects them to a uop list does not.
+
+**⇒ SO STAGE 1 STILL HAS NO COMPARISON, AND NOW THE REMAINING WORK IS ONE MISSING WALKER ON
+ONE SIDE**, not a missing driver (proven), not a missing corpus format (this file produces a
+real kernel both sides could take), and not a missing lowering (NOOPT=1 sidesteps it).

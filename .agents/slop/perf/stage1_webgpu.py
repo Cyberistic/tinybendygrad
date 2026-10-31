@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""stage1_webgpu.py -- STAGE 1, THE PYTHON SIDE, TIMED: WGSL that tinygrad itself emitted.
+
+    .venv/bin/python .agents/slop/perf/stage1_webgpu.py
+    bun .agents/slop/perf/stage1_time.js        # compiles, runs and times it in Chrome
+
+WHY `NOOPT=1`: WGSL is produced from WebGPU-LOWERED uops, and a normally-optimised kernel
+vectorises its stores into an `Ops.STACK` -- which `WGSLRenderer` cannot spell because it
+sets `float4 = None` (`'NoneType' object has no attribute 'replace'`, MEASURED on both a
+WMMA matmul and a plain elementwise kernel). With `NOOPT=1` the upcast pass does not run,
+so no STACK is emitted and the same renderer answers a REAL kernel.
+
+WHAT IT WRITES: `.agents/slop/perf/stage1/kernel.json` -- the WGSL text, the exact input
+buffers as base64, the dispatch, and the expected output -- which `stage1_time.js` compiles,
+binds, runs and TIMES in Chrome. Nothing here is hand-written WGSL: the text is
+`WGSLRenderer(Target('webgpu')).render(uops)` over uops the scheduler produced.
+"""
+from __future__ import annotations
+import base64, hashlib, json, pathlib, sys
+
+ROOT = pathlib.Path(__file__).resolve().parents[3]
+OUT = pathlib.Path(__file__).resolve().parent / "stage1"
+
+
+def main() -> int:
+  sys.path.insert(0, str(ROOT))
+  import numpy as np
+  from tinygrad import Tensor, Context
+  from tinygrad.renderer.wgsl import WGSLRenderer
+  from tinygrad.renderer.cstyle import MetalRenderer
+  from tinygrad.device import Target
+
+  cap: list[tuple[str, list, list[bytes]]] = []
+  orig = MetalRenderer.render
+
+  def hooked(self, uops):
+    src = orig(self, uops)
+    for u in uops:
+      if u.op.name == "SINK" and u.arg is not None:
+        # the buffers the kernel reads/writes, in PARAM order -- the same thing
+        # ops_bend.py hands the executor, taken from the live tensors
+        cap.append((u.arg.function_name, list(uops), []))
+        break
+    return src
+
+  MetalRenderer.render = hooked
+  a = np.random.default_rng(0).standard_normal((32, 32)).astype(np.float32)
+  b = np.random.default_rng(1).standard_normal((32, 32)).astype(np.float32)
+  with Context(DEV="METAL", NOOPT=1):
+    ta, tb = Tensor(a).realize(), Tensor(b).realize()
+    out = (ta * tb + ta).realize()
+  MetalRenderer.render = orig
+  name, uops, _ = cap[0]
+
+  wgsl = WGSLRenderer(Target("webgpu")).render(uops)
+  params = [u for u in uops if u.op.name == "PARAM"]
+  assert len(params) == 3, f"expected 3 PARAMs, got {len(params)}"
+  o = np.asarray(out.numpy(), dtype=np.float32)
+  # **THE BUFFER ORDER IS (out, b, a), AND IT WAS DETERMINED BY THE RUN, NOT GUESSED.** The
+  # first attempt bound (out, a, b) and the driver's two-expectation check answered
+  # `(a*b)+b`: the emitted body is `data0 = data2*data1 + data2`, so with `data1 = b` and
+  # `data2 = a` it computes `a*b + a` -- the program -- while (out, a, b) computes `a*b + b`.
+  # The kernel was right and the harness was wrong, which is exactly what the check is for.
+  bufs = [base64.b64encode(x.tobytes()).decode() for x in (o, b, a)]
+  # **THE PARAM->TENSOR ORDER IS NOT SOMETHING TO GUESS.** A PARAM's slot names a buffer
+  # the RUNNER supplies, and the two inputs of `a*b + a` are `(a*b)+a` under one order and
+  # `(a*b)+b` under the other -- different answers. So both are carried and the driver
+  # reports WHICH one the emitted code implements; a failure of both is a real defect.
+  want_a = (a * b + a).astype(np.float32)
+  want_b = (a * b + b).astype(np.float32)
+
+  OUT.mkdir(exist_ok=True)
+  (OUT / "kernel.wgsl").write_text(wgsl)
+  (OUT / "kernel.json").write_text(json.dumps({
+    "name": name, "wgsl": wgsl,
+    "sha256": hashlib.sha256(wgsl.encode()).hexdigest()[:16], "bytes": len(wgsl),
+    "bufs": bufs, "nbytes": [x.nbytes for x in (o, a, b)], "buffer_order": "out,b,a",
+    "dispatch": [int(a.size), 1, 1], "workgroup_size": [1, 1, 1],
+    "want_a": base64.b64encode(want_a.tobytes()).decode(),
+    "want_b": base64.b64encode(want_b.tobytes()).decode(),
+    "note": "DEV=METAL NOOPT=1, WGSLRenderer(Target('webgpu')).render(uops) over uops the scheduler produced",
+  }, indent=1) + "\n")
+  print(f"kernel={name} uops={len(uops)} wgsl={len(wgsl)}B sha={hashlib.sha256(wgsl.encode()).hexdigest()[:16]}")
+  print(f"buffers={[x.nbytes for x in (o, a, b)]} dispatch={a.size}x1x1 workgroup=1x1x1")
+  return 0
+
+
+if __name__ == "__main__":
+  raise SystemExit(main())
