@@ -57,6 +57,13 @@ def one(line: str) -> str:
         num = int(payload.replace("~", "")[-1])
     elif kind == "sink":
         nm = f'"{payload.strip()}"'
+    elif kind == "range":
+        # `RANGE`'s payload is `<axis>~<ids...>`: the AXIS NAME becomes `str` (the walk turns it
+        # into the letter, `axis_letters`) and the ids become `shape` (the walk joins them,
+        # `range_str`), so the walker owns both rules and the generator only transcribes.
+        f_ = payload.split("~")
+        nm = f'"{f_[0]}"'
+        shp = "[" + ", ".join(str(int(x)) for x in f_[1:]) + "]"
     ss = "Nil{}" if srcs.strip() == "" else "[" + ", ".join(str(int(x)) for x in srcs.split()) + "]"
     return (f"  W.R{{O.Ops{op}{{}}, {d}, {a}, {numel}, {nm}, {num}, {slot}, {shp}, {ss}}},"
             f" # {idx} {op}")

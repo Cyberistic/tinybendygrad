@@ -14,6 +14,7 @@
 # (`Buf`, `Scan`) are used as they stand.
 import Base
 import ./wgsl.bend as W
+import ./cstyle.bend as CS
 import ../uop/ops.bend as O
 import ../LAWS/spec.bend as S
 
@@ -82,29 +83,41 @@ def R.srcs(r: R) -> List<&2, U32>:
 # the buffers in first-seen order, the six counters, and the kernel's name.
 type Wk is Data:
   Wk{names: List<&2, String>, body: List<&2, String>, bufs: List<&2, W.Buf>,
-     c: List<&2, U32>, nm: String}
+     c: List<&2, U32>, nm: String, depth: Nat}
 
-def Wk.zero() -> Wk: Wk{Nil{}, Nil{}, Nil{}, List.replicate(U32, 6n, 0), "test"}
+def Wk.zero() -> Wk: Wk{Nil{}, Nil{}, Nil{}, List.replicate(U32, 6n, 0), "test", 1n}
 
 def Wk.names(w: Wk) -> List<&2, String>:
   match w:
-    case Wk{names, body, bufs, c, nm}: names
+    case Wk{names, body, bufs, c, nm, depth}: names
 
 def Wk.body(w: Wk) -> List<&2, String>:
   match w:
-    case Wk{names, body, bufs, c, nm}: body
+    case Wk{names, body, bufs, c, nm, depth}: body
 
 def Wk.bufs(w: Wk) -> List<&2, W.Buf>:
   match w:
-    case Wk{names, body, bufs, c, nm}: bufs
+    case Wk{names, body, bufs, c, nm, depth}: bufs
 
 def Wk.c(w: Wk) -> List<&2, U32>:
   match w:
-    case Wk{names, body, bufs, c, nm}: c
+    case Wk{names, body, bufs, c, nm, depth}: c
+
+def Wk.depth(w: Wk) -> Nat:
+  match w:
+    case Wk{names, body, bufs, c, nm, depth}: depth
+
+# `"  "*depth` -- cstyle.py:262. A Nat countdown, because a U32 has no `n` patterns.
+def ind(+d: Nat) -> String:
+  match d:
+    case 0n: ""
+    case 1n+k: String.concat([ind(k), "  "])
+
+def emit(+d: Nat, +t: String) -> String: String.concat([ind(d), t])
 
 def Wk.nm(w: Wk) -> String:
   match w:
-    case Wk{names, body, bufs, c, nm}: nm
+    case Wk{names, body, bufs, c, nm, depth}: nm
 
 # `r[u]` -- the text or name bound to the 1-based uop `k`; "" is upstream's KeyError
 def wt(+names: List<&2, String>, +k: U32) -> String:
@@ -141,6 +154,22 @@ def R.src0(r: R) -> U32: Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 0n)
 def is_float_dt(+d: S.Dt) -> Bool: Bool.pick(Bool, S.Dt.is_float(d), True{}, False{})
 def is_u32_dt(+d: S.Dt) -> Bool: Bool.pick(Bool, U32.is_eq(S.Dt.pri(d), 6), True{}, False{})
 def is_con_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsCONST{}), True{}, False{})
+# `axis_letters` -- tinygrad/uop/ops.py:50, quoted in cstyle.bend: `{DEVICE:"d", GLOBAL:"g",
+# LOCAL:"l", WARP:"w", WEAK:"L", UPCAST:"u", ...}`. The axis arrives as its NAME because
+# `dump_uops` writes a RANGE's payload as `<axis>~<ids...>`.
+def axis_letter(+nm: String) -> String:
+  match nm:
+    case "DEVICE": "d"
+    case "GLOBAL": "g"
+    case "LOCAL": "l"
+    case "WARP": "w"
+    case "WEAK": "L"
+    case "UPCAST": "u"
+    case "UNROLL": "u"
+    case "LOOP": "L"
+    case "PLACEHOLDER": "p"
+    case _: "?"
+
 def is_where_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsWHERE{}), True{}, False{})
 
 # the literal for a const read at `k`, with the suffix its OUTPUT dtype asks for
@@ -228,9 +257,21 @@ def shape_strs(+ds: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
     case Nil{}: acc
     case h <> t: shape_strs(t, List.append(&2, String, acc, [U32.show(h)]))
 
+# a closing brace is emitted one level OUT: the depth drops BEFORE the line (cstyle.py:249)
+# a header line AND one level deeper, in one step (cstyle.py:264 increments after the line)
+def wk.open(+nm: String, +line: String, +acc: Wk) -> Wk:
+  Wk{List.append(&2, String, Wk.names(acc), [nm]),
+    List.append(&2, String, Wk.body(acc), [line]), Wk.bufs(acc), Wk.c(acc), Wk.nm(acc),
+    Nat.add(Wk.depth(acc), 1n)}
+
+def wk.close(+acc: Wk) -> Wk:
+  +d = Nat.sub(Wk.depth(acc), 1n)
+  Wk{List.append(&2, String, Wk.names(acc), [""]),
+    List.append(&2, String, Wk.body(acc), [emit(d, "}")]), Wk.bufs(acc), Wk.c(acc), Wk.nm(acc), d}
+
 def wk.add(+nm: String, +lines: List<&2, String>, +bufs: List<&2, W.Buf>, +c: List<&2, U32>, +acc: Wk) -> Wk:
   Wk{List.append(&2, String, Wk.names(acc), [nm]),
-    List.append(&2, String, Wk.body(acc), lines), bufs, c, Wk.nm(acc)}
+    List.append(&2, String, Wk.body(acc), lines), bufs, c, Wk.nm(acc), Wk.depth(acc)}
 
 # ONE UOP. `op` is a PARAMETER so the dispatch is a match and not a `Bool.pick`:
 # a pick here would run both arms and, for a fold, that is 2^n (the class that hung
@@ -241,7 +282,7 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
     case O.OpsNOOP{}: wk.add("", Nil{}, Wk.bufs(acc), Wk.c(acc), acc)
     case O.OpsCUSTOM_FUNCTION{}: wk.add("", Nil{}, Wk.bufs(acc), Wk.c(acc), acc)
     case O.OpsSINK{}: Wk{List.append(&2, String, Wk.names(acc), [""]), Wk.body(acc),
-      Wk.bufs(acc), Wk.c(acc), R.str(r)}
+      Wk.bufs(acc), Wk.c(acc), R.str(r), Wk.depth(acc)}
     case O.OpsPARAM{}:
       +nm = String.concat([Bool.pick(String, String.eq(R.str(r), "-"), String.concat(["data", U32.show(R.slot(r))]), R.str(r)),
         "_", String.join(shape_strs(R.shape(r), Nil{}), "_")])
@@ -251,8 +292,8 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       +nm = R.str(r)
       +txt = String.concat([W.code_for_workitem(String.eq(String.take(nm, 1n), "g"), R.idx(r)),
         "; /* ", const_of(all, R.src0(r)), " */"])
-      wk.add(nm, List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt])]),
-        Wk.bufs(acc), Wk.c(acc), acc)
+      wk.add(nm, List.append(&2, String, Nil{},
+        [emit(Wk.depth(acc), String.concat(["var ", nm, " = ", txt]))]), Wk.bufs(acc), Wk.c(acc), acc)
     case O.OpsINDEX{}:
       wk.add(String.concat([tx(all, Wk.names(acc), R.src0(r), R.dt(r)), "[",
         tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0), R.dt(r)), "]"]),
@@ -268,7 +309,8 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       +take = Bool.or(inl, Bool.and(Bool.pick(Bool, inl, True{}, keep), Bool.not(inl)))
       wk.add(Bool.pick(String, take, txt, nm),
         Bool.pick(List<&2, String>, take, Nil{},
-          List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt, ";"])])),
+          List.append(&2, String, Nil{},
+            [emit(Wk.depth(acc), String.concat(["var ", nm, " = ", txt, ";"]))])),
         Wk.bufs(acc), c_maybe(Wk.c(acc), ix, inl), acc)
     case O.OpsLOAD{}:
       +ix = pfx_ix(op)
@@ -278,12 +320,29 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       +inl = Bool.and(reg, Bool.pick(Bool, U32.is_eq(uses(all, i), 1), True{}, False{}))
       wk.add(Bool.pick(String, inl, txt, nm),
         Bool.pick(List<&2, String>, inl, Nil{},
-          List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt, ";"])])),
+          List.append(&2, String, Nil{},
+            [emit(Wk.depth(acc), String.concat(["var ", nm, " = ", txt, ";"]))])),
         Wk.bufs(acc), c_maybe(Wk.c(acc), ix, inl), acc)
     case O.OpsSTORE{}:
-      wk.add("", List.append(&2, String, Nil{}, [String.concat(["  ", tx(all, Wk.names(acc), R.src0(r), R.dt(r)), " = ",
-        tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0), R.dt(r)), ";"])]),
+      wk.add("", List.append(&2, String, Nil{}, [emit(Wk.depth(acc),
+        String.concat([tx(all, Wk.names(acc), R.src0(r), R.dt(r)), " = ",
+          tx(all, Wk.names(acc), Maybe.default(&2, U32, List.get(&2, U32, R.srcs(r), 1n), 0), R.dt(r)), ";"]))]),
         Wk.bufs(acc), Wk.c(acc), acc)
+    case O.OpsAFTER{}: wk.add(tx(all, Wk.names(acc), R.src0(r), R.dt(r)), Nil{},
+      Wk.bufs(acc), Wk.c(acc), acc)
+    case O.OpsBUFFER{}:
+      +bix = pfx_ix(op)
+      +bnm = String.concat([pfx(bix), U32.show(c_at(Wk.c(acc), bix))])
+      wk.add(bnm, List.append(&2, String, Nil{}, [emit(Wk.depth(acc),
+        W.sr_buffer(op, bnm, R.numel(r), R.dt(r), R.addr(r)))]),
+        Wk.bufs(acc), c_bump(Wk.c(acc), bix), acc)
+    case O.OpsEND{}: wk.close(acc)
+    case O.OpsENDIF{}: wk.close(acc)
+    case O.OpsBACKEDGE{}: wk.close(acc)
+    case O.OpsRANGE{}:
+      +rnm = String.concat([axis_letter(R.str(r)), "idx", CS.range_str(R.shape(r))])
+      wk.open(rnm, emit(Wk.depth(acc), String.concat(["for (var ", rnm, " = 0; ", rnm, " < ",
+        tx(all, Wk.names(acc), R.src0(r), R.dt(r)), "; ", rnm, "++) {"])), acc)
     case op2:
       +ix = pfx_ix(op2)
       +nm = String.concat([pfx(ix), U32.show(c_at(Wk.c(acc), ix))])
@@ -299,7 +358,8 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
         Bool.not(is_where_op(op2)))
       wk.add(Bool.pick(String, inl, txt, nm),
         Bool.pick(List<&2, String>, inl, Nil{},
-          List.append(&2, String, Nil{}, [String.concat(["  var ", nm, " = ", txt, ";"])])),
+          List.append(&2, String, Nil{},
+            [emit(Wk.depth(acc), String.concat(["var ", nm, " = ", txt, ";"]))])),
         Wk.bufs(acc), c_maybe(Wk.c(acc), ix, inl), acc)
 
 def walk.go(+rs: List<&2, R>, +all: List<&2, R>, +i: U32, acc: Wk) -> Wk:

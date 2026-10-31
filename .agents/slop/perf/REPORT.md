@@ -1682,3 +1682,59 @@ all correct against float32 numpy. The reduction is the only refusal.
 **⇒ SO THE REMAINING WORK IS THREE ARMS, ONE OF THEM THE INDENT.** `BUFFER` and `AFTER` are
 small; `RANGE` is the piece that needs a depth field in the walk's state, and every body line
 must then be emitted at that depth. It is not started.
+
+---
+
+# 27. BOTH NAMED WALKER GAPS CLOSED: SEVEN OF SEVEN PROGRAMS ARE BYTE-IDENTICAL AND TIMED
+
+    # program|kernel|identical|bytes|python_ms|bend_ms|ok
+    ew16 |E_256  |yes|592|0.2|0.1|yes
+    ew32 |E_1024 |yes|600|0.2|0.1|yes
+    ew64 |E_4096 |yes|600|0.2|0.2|yes
+    odd  |E_1000 |yes|600|0.1|0.1|yes     <- NOT a power of two
+    relu32|E_1024|yes|656|0.1|0.1|yes     <- the WHERE rule
+    cst32|E_1024|yes|656|0.1|0.1|yes      <- a NON-ZERO constant, 2.5f
+    red32|r_64_64|yes|623|0.1|0.1|yes     <- a REDUCTION: RANGE, BUFFER, AFTER, DEPTH
+
+**SEVEN OF SEVEN.** Every program in the corpus now renders the SAME BYTES on both sides, and
+every one is timed in the same WebGPU driver, interleaved, and correct against float32 numpy.
+
+## 27.1 THE FOUR ARMS THE REDUCTION NEEDED, AND WHAT EACH COST
+
+    python                                   port, before
+    var buf0: array<f32,1>;                  var buf0 = UNHANDLED(Ops.BUFFER);
+    buf0[0] = 0.0f;                          UNHANDLED(Ops.AFTER)[0] = 0.0f;
+    for (var Lidx0 = 0; Lidx0 < 64; Lidx0++){ var alu0 = UNHANDLED(Ops.RANGE);
+      ...                                      ...
+    }                                        (no brace)
+
+1. **`BUFFER`** -- it reuses `wgsl.bend`'s OWN `sr_buffer(op, nm, numel, dt, addr)`, which was
+   already there and gate-covered; the walk just had no arm that called it.
+2. **`AFTER`** -- an ALIAS to src0 (`cstyle.py:225-228`), which is what makes the accumulator
+   read `buf0[0]` instead of `UNHANDLED(Ops.AFTER)`.
+3. **`RANGE`** -- the `for (var {nm} = 0; {nm} < {src0}; {nm}++) {` header, and the name
+   `{axis_letters[axis]}idx{range_str(ids)}`. The port had NEITHER table, so `axis_letter`
+   (from `uop/ops.py:50`) and `cstyle.bend`'s own `range_str` are used -- the second by IMPORT,
+   because it already existed and a second copy would be a second thing to keep in step.
+4. **DEPTH.** `Wk` gained a `depth: Nat`, `_render` starts at 1, `ind` is a Nat countdown
+   (`"  "*depth`), `wk.open` emits a header AND goes one deeper, `wk.close` drops a level
+   BEFORE emitting `}` -- `cstyle.py:249` decrements before the line, which is what puts the
+   closing brace outside the loop rather than inside it.
+
+**⇒ AND THE AXIS NAME AND IDS NOW TRAVEL IN THE RECORD**: `dump_uops` writes a RANGE's payload
+as `<axis>~<ids>`, the generator puts the axis NAME in `str` and the ids in `shape`, so the
+WALKER owns `axis_letters` and `range_str` and the generator only transcribes. Putting the
+finished `Lidx0` in the generator would have moved a renderer rule into the fixture builder.
+
+## 27.2 STAGE 1, AFTER THIS
+
+| | |
+|---|---|
+| programs | **7 of 7 byte-identical, 7 of 7 timed, 7 of 7 correct** |
+| shapes | 16, 32, 64 squares, a 1000-element 1-D tensor (not a power of two), a reduction |
+| ops exercised | CONST (incl. non-zero), PARAM, CAST, SPECIAL, INDEX, LOAD, STORE, MUL, ADD, WHERE/CMPLT, RANGE, BUFFER, AFTER, SINK |
+| gates | wgsl_render_census 227/215/12; cstyle 361 rows / 3 lanes; mutagen 11 of 11; ops_python 153/365 |
+
+**The timings (0.1-0.2 ms) are at the driver's floor, so "matches speed" rests on IDENTICAL TEXT
+and not on the numbers.** That is the honest reading, and it is now a claim about seven kernels
+of five shapes rather than one.

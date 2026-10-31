@@ -25,7 +25,7 @@ def rs() -> List<&2, W.R>:
   W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [15]}, # 16 CAST
   W.R{O.OpsSHL{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [8, 16]}, # 17 SHL
   W.R{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [12, 14]}, # 18 STORE
-  W.R{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7]}, # 19 RANGE
+  W.R{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "WEAK", 0, 0, [0], [7]}, # 19 RANGE
   W.R{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [17, 19]}, # 20 ADD
   W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 20]}, # 21 INDEX
   W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [21]}, # 22 LOAD

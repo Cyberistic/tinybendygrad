@@ -4,11 +4,11 @@
 # bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel
 # iters=3 (min), warmups=3 per side, INTERLEAVED timed rounds, around submit+onSubmittedWorkDone
 # program|kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok|cause_or_err
-cst32|E_1024|9617b1402e50597e|9617b1402e50597e|yes|656|0.1000|0.2000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-
-ew16|E_256|2b4706e6116a783a|2b4706e6116a783a|yes|592|0.6000|0.6000|2.38e-7|2.38e-7|(a*b)+b|(a*b)+b|yes|-
-ew32|E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.1000|0.1000|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
-ew64|E_4096|e2d04138454c4e7d|e2d04138454c4e7d|yes|600|0.1000|0.1000|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
-odd|E_1000|0bcd9cfc4e5d646a|0bcd9cfc4e5d646a|yes|600|0.1000|0.2000|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
-red32|r_64_64|100abe11c436df95|6148b0389686c85c|no|623|0.1000|-|3.81e-6|-|(a*b)+a|-|no|bend: 7:unresolved value 'Ops'
+cst32|E_1024|9617b1402e50597e|9617b1402e50597e|yes|656|0.1000|0.1000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-
+ew16|E_256|2b4706e6116a783a|2b4706e6116a783a|yes|592|0.2000|0.1000|2.38e-7|2.38e-7|(a*b)+b|(a*b)+b|yes|-
+ew32|E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.2000|0.1000|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
+ew64|E_4096|e2d04138454c4e7d|e2d04138454c4e7d|yes|600|0.2000|0.2000|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
+odd|E_1000|0bcd9cfc4e5d646a|0bcd9cfc4e5d646a|yes|600|0.1000|0.1000|4.77e-7|4.77e-7|(a*b)+b|(a*b)+b|yes|-
+red32|r_64_64|100abe11c436df95|100abe11c436df95|yes|623|0.1000|0.1000|3.81e-6|3.81e-6|(a*b)+a|(a*b)+a|yes|-
 relu32|E_1024|ee0bcdbb670f571a|ee0bcdbb670f571a|yes|656|0.1000|0.1000|0.00e+0|0.00e+0|(a*b)+a|(a*b)+a|yes|-
-# probe_sha=9e398eb1c698fb18 err=- kernels=7 all_ok=false
+# probe_sha=89b02ee141c4fbbf err=- kernels=7 all_ok=true
