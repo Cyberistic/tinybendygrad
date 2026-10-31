@@ -1,0 +1,13 @@
+mutation	verdict	rows_moved	why
+nbytes_block	RED	1	`prod//block*size` becomes `prod*size`
+align_roundup	RED	4	`round_up(tell(), align)` becomes `tell()`
+align_default	RED	1	the `general.alignment` default 32 becomes 16
+counts_order	RED	243	`n_kv` is read before `n_tensors` (`gguf.py:208` is the other way)
+shape_order	RED	1	the dims are NOT reversed (`gguf.py:230` reverses them)
+i64_high	RED	3	the HIGH word of a u64 is dropped
+sx8	RED	1	`struct`'s "b" is read unsigned
+utf8_width	RED	2	a 4-byte UTF-8 lead is read as 3 bytes
+fmt_ladder	RED	257	`readers[2]` answers the ARRAY reader (a transcription slip)
+nat_ladder	RED	1	`_GGML_NATIVE[24]` answers int16's itemsize
+qnt_table	RED	2	`_GGML_QUANT[12]` answers 160 bytes per block
+err_text	RED	1	`GGML type 'N' is not supported!` loses its quotes
