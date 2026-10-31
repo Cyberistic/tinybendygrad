@@ -1,11 +1,24 @@
 mutation	verdict	rows_moved	why
-nib_order	RED	2	the nibble halves are swapped (HIGH nibbles first)
-q4k_sc_off	RED	1	the 6-bit scale's high half reads bytes 8..11 instead of 12..15
+nib_order	RED	8	the nibble halves are swapped (HIGH nibbles first)
+q4k_sc_off	RED	2	the 6-bit scale's high half reads bytes 8..11 instead of 12..15
 q8_0_sx	RED	1	Q8_0's quants are read unsigned
 bf16_shift	RED	1	bfloat16 is widened by 8 bits instead of 16
 iqs_parity	RED	4	the sign byte's top bit is set on EVEN parity
-grid_word	RED	4	the grid byte table reads word 0 twice
+grid_word	RED	6	the grid byte table reads word 0 twice
 typ_ladder	RED	2	`ggml_type` 8 answers the Q4_0 tag (a transcription slip)
 iq2xs_scale16	RED	1	IQ2_XS's scale is read per THIRTY-TWO elements, not sixteen
 q1s_shift	RED	1	IQ1_S's three high bits are taken at stride ONE instead of THREE
 gen_word	RED	1	one word of the generated `iq3xxs_grid` is off by one
+q4_1_bias	RED	1	Q4_1's offset reads the block scale
+q5_0_bias	RED	1	Q5_0's -16*d bias becomes -15*d
+q5_1_qh	RED	1	Q5_1 reads Q5_0's high-bit bytes
+q2k_pair	RED	1	Q2_K's two-bit pair is read from the wrong slot
+q3k_hm	RED	1	Q3_K's hmask byte is masked to four bits instead of five
+q5k_qh	RED	1	Q5_K's fifth bit is read from the wrong bit position
+q6k_xl	RED	1	Q6_K's low nibble takes the wrong half
+mxfp4_sign	RED	1	MXFP4's sign splits at code 7 instead of 8
+q1_0_sign	RED	1	Q1_0's -1/+1 is inverted
+iq3s_sc_base	RED	1	IQ3_S's scales start one byte early
+iq2s_scale	RED	1	IQ2_S's scale is read at the wrong stride
+iq1m_qi	RED	1	IQ1_M's grid row keeps three low bits instead of ALL three
+gen_word_hit	RED	2	the generated `iq3s_grid` row the IQ3_S payload reads is off by one

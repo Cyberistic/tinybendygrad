@@ -132,6 +132,18 @@ def ty.one(t: M.Typ) -> String:
     case M.TQ2X{}: "IQ2_XXS"
     case M.TQ3X{}: "IQ3_XXS"
     case M.TQ2XS{}: "IQ2_XS"
+    case M.TQ4_1{}: "Q4_1"
+    case M.TQ5_0{}: "Q5_0"
+    case M.TQ5_1{}: "Q5_1"
+    case M.TQ2K{}: "Q2_K"
+    case M.TQ3K{}: "Q3_K"
+    case M.TQ5K{}: "Q5_K"
+    case M.TQ6K{}: "Q6_K"
+    case M.TMXFP4{}: "MXFP4"
+    case M.TQ1_0{}: "Q1_0"
+    case M.TQ3S{}: "IQ3_S"
+    case M.TQ2S{}: "IQ2_S"
+    case M.TQ1M{}: "IQ1_M"
 
 def ty.name(m: Maybe<&1, M.Typ>) -> String:
   match m:

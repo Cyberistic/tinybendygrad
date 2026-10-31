@@ -53,6 +53,18 @@ type Typ is Data:
   TQ2X{}
   TQ3X{}
   TQ2XS{}
+  TQ4_1{}
+  TQ5_0{}
+  TQ5_1{}
+  TQ2K{}
+  TQ3K{}
+  TQ5K{}
+  TQ6K{}
+  TMXFP4{}
+  TQ1_0{}
+  TQ3S{}
+  TQ2S{}
+  TQ1M{}
 
 # THE GRID FAMILY'S DATA, AS ARGUMENTS. `tinybendygrad/runtime/autogen/ggml_common.bend`
 # is where a caller gets them -- generated from `tinygrad.runtime.autogen.ggml_common` by
@@ -81,6 +93,14 @@ def Gs.iq3xxs(x: Gs) -> List<&2, U32>:
 def Gs.iq2xs(x: Gs) -> List<&2, U32>:
   match x:
     case Gs{_, _, _, iq2xs, _, _, _, _}: iq2xs
+
+def Gs.iq3s(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{_, _, _, _, _, iq3s, _, _}: iq3s
+
+def Gs.iq2s(x: Gs) -> List<&2, U32>:
+  match x:
+    case Gs{_, _, _, _, _, _, iq2s, _}: iq2s
 
 def Gs.sgn(x: Gs) -> List<&2, U32>:
   match x:
@@ -147,6 +167,118 @@ def iq.gbyte(+w0: U32, +w1: U32, +c: U32) -> U32:
 def gw(+e: U32, +wpe: U32, +g: List<&2, U32>, +c: U32) -> U32:
   +b = U32.mul(e, wpe)
   iq.gbyte(byte(g, b), byte(g, U32.add(b, U32.sub(wpe, 1))), c)
+
+# ---------------------------------------------------------------------------
+# the remaining families' shared reads
+#
+# `bit.at` is `q_to_uint8(x, 1)`: `transpose(-1,-2)` makes the output order
+# BYTE-MAJOR THEN BIT, so element `e` is bit `e % 8` of byte `base + e // 8`. That is the
+# order Q5_0/Q5_1, Q3_K, Q1_0 and every sign bitmap use, and it is why none of them needs
+# the reshape the Python writes.
+# ---------------------------------------------------------------------------
+def bit.at(+bs: List<&2, U32>, +base: U32, +e: U32) -> U32:
+  U32.and(U32.shrn(byte(bs, U32.add(base, U32.div(e, 8))), U32.to_nat(U32.mod(e, 8))), 1)
+
+# `[(v >> (2*pair)) & 3]` -- the two-bit read Q2_K and Q3_K index their 64 payload bytes with
+def pair.at(+bs: List<&2, U32>, +base: U32, +byte_i: U32, +pair: U32) -> U32:
+  U32.and(U32.shrn(byte(bs, U32.add(base, byte_i)), Nat.mul(U32.to_nat(pair), 2n)), 3)
+
+# Q2_K and Q3_K share their payload geometry: `reshape((-1,2,32))`, four two-bit pairs per
+# byte, so element `e` sits in sub-block `e/16` at column `e%16`, and the byte it reads is
+# `(i/8)*32 + (i%2)*16 + j` -- MEASURED by agreement, twice, on two different bases.
+def pk2.byte(+i: U32, +j: U32) -> U32:
+  U32.add(U32.add(U32.mul(U32.div(i, 8), 32), U32.mul(U32.mod(i, 2), 16)), j)
+
+def pk2.pair(+i: U32) -> U32:
+  U32.div(U32.mod(i, 8), 2)
+
+# `stack([sl & 0xF, sl >> 4], dim=2)` over `sl = blocks[:,4:8]` -- the SAME interleave
+# `q4xs.sc` learned the hard way: sub `i` reads byte `4 + i/2`, low half when `i` is even.
+def sc2.at(+bs: List<&2, U32>, +base: U32, +sub: U32) -> U32:
+  Bool.pick(U32, U32.is_eq(U32.mod(sub, 2), 0),
+    U32.and(byte(bs, U32.add(base, U32.div(sub, 2))), 15),
+    U32.shrn(byte(bs, U32.add(base, U32.div(sub, 2))), 4n))
+
+# Q3_K's twelve bytes of 6-bit scales: `lo` from the LOW nibbles of bytes 96..103 and `hi`
+# from the two-bit pairs of bytes 104..107, and the pair for entry `n` is `n/4`.
+def q3k.sc(+bs: List<&2, U32>, +n: U32) -> U32:
+  +lo = nib(bs, 96, U32.add(U32.mul(U32.div(n, 8), 16), U32.mod(n, 8)))
+  +hi = pair.at(bs, 104, U32.mod(n, 4), U32.div(n, 4))
+  U32.sub(G.sc.sx8(U32.or(lo, U32.shln(hi, 4n))), 32)
+
+# MXFP4's 16-entry code table (:176-178), as the MAGNITUDES; the sign is `code >= 8` and
+# `F32.neg(0.0)` is -0.0, which is exactly the entry at index 8.
+def mx.lut(+c: U32) -> F32:
+  match c:
+    case 7: 12.0
+    case 6: 8.0
+    case 5: 6.0
+    case 4: 4.0
+    case 3: 3.0
+    case 2: 2.0
+    case 1: 1.0
+    case _: 0.0
+
+# MXFP4's shared exponent (:171-174): byte 0 IS the f32 exponent, 0 and 1 are the two
+# subnormals, and every other value is `(e - 1) << 23` with `U32` wrap.
+def mx.d(+bs: List<&2, U32>) -> F32:
+  +e = byte(bs, 0)
+  F.F32.from_bits(Bool.pick(U32, U32.is_lt(e, 2),
+    Bool.pick(U32, U32.is_eq(e, 0), 2097152, 4194304),
+    U32.mul(U32.sub(e, 1), 8388608)))
+
+# Q5_K's fifth bit: `q_to_uint8(blocks[:,16:48], 1).reshape((-1,8,32))` puts the BIT in the
+# sub-block slot and the BYTE in the `k` slot, so element `e` reads bit `e/32` of byte
+# `16 + e%32`.
+def q5k.qh(+bs: List<&2, U32>, +e: U32) -> U32:
+  U32.and(U32.shrn(byte(bs, U32.add(16, U32.mod(e, 32))), U32.to_nat(U32.div(e, 32))), 1)
+
+# Q6_K's low nibble: 128 bytes, TWO nibbles each, and the halves are `(e%128)/64` -- the
+# low halves of all 64 bytes of a group, then the high ones.
+def q6k.xl(+bs: List<&2, U32>, +e: U32) -> U32:
+  +b = U32.add(U32.mul(U32.div(e, 128), 64), U32.mod(e, 64))
+  Bool.pick(U32, U32.is_eq(U32.div(U32.mod(e, 128), 64), 0),
+    U32.and(byte(bs, b), 15), U32.shrn(byte(bs, b), 4n))
+
+# Q6_K's high TWO bits: 64 bytes, four pairs each, and `reshape((-1,8,32))` keeps the pair
+# in the sub-block slot, so `e` reads pair `(e%128)/32` of byte `128 + (e/128)*32 + e%32`.
+def q6k.xh(+bs: List<&2, U32>, +e: U32) -> U32:
+  pair.at(bs, 128, U32.add(U32.mul(U32.div(e, 128), 32), U32.mod(e, 32)),
+    U32.div(U32.mod(e, 128), 32))
+
+# IQ1_M's sixteen 3-bit scales: `(sc16[j] >> 3*m) & 7` with `j = (2*s + a) / 4`,
+# `m = (2*s + a) % 4`, which is what `reshape((-1,8,2,1,1))` does to the (4,4) broadcast.
+def q1m.sc(+bs: List<&2, U32>, +s: U32, +a: U32) -> U32:
+  +fl = U32.add(U32.mul(s, 2), a)
+  U32.and(U32.shrn(le2(bs, U32.add(48, U32.mul(U32.div(fl, 4), 2))),
+    Nat.mul(U32.to_nat(U32.mod(fl, 4)), 3n)), 7)
+
+# IQ1_M's f16 scale, reassembled from the four top nibbles of the four uint16s (:159-162)
+def q1m.d(+bs: List<&2, U32>) -> F32:
+  F.F32.from_bits(DT.fp16_f32(
+    U32.or(U32.or(U32.shrn(U32.and(le2(bs, 48), 61440), 12n),
+                  U32.shrn(U32.and(le2(bs, 50), 61440), 8n)),
+           U32.or(U32.shrn(U32.and(le2(bs, 52), 61440), 4n),
+                  U32.and(le2(bs, 54), 61440)))))
+
+# IQ1_M's `qh_n[t]`: `stack([low nibbles, high nibbles], dim=-1)` per byte, so `t` is
+# byte `t/2` and the low half when `t` is even.
+def q1m.qh(+bs: List<&2, U32>, +t: U32) -> U32:
+  +b = byte(bs, U32.add(32, U32.div(t, 2)))
+  Bool.pick(U32, U32.is_eq(U32.mod(t, 2), 0), U32.and(b, 15), U32.shrn(b, 4n))
+
+# IQ1_M's grid row: the payload byte plus the THREE low bits of `qh_n`, and `iq1s_grid` has
+# 2048 rows, so the index is bounded by 255 + 7*256 = 2047 = the last row. MEASURED, not
+# inferred: `q < 2048` for every payload byte and every `qh_n`.
+def q1m.qi(+bs: List<&2, U32>, +t: U32) -> U32:
+  U32.add(byte(bs, t), U32.shln(U32.and(q1m.qh(bs, t), 7), 8n))
+
+def q3k.hm(+bs: List<&2, U32>, +e: U32) -> U32:
+  U32.and(U32.shrn(byte(bs, U32.mod(e, 32)), U32.to_nat(U32.div(e, 32))), 1)
+
+# the `(grid > 127).where(grid - 256, grid)` reinterpretation, shared by IQ1_S and IQ1_M
+def sx.grid(+v: U32) -> U32:
+  Bool.pick(U32, U32.is_ge(v, 128), U32.sub(v, 256), v)
 
 # ---------------------------------------------------------------------------
 # IQ4_XS (:148-156), 256 elements per 136-byte block. Its LUT is `kvalues_iq4nl`, so it is
@@ -304,6 +436,72 @@ def dec.el(+t: Typ, +bs: List<&2, U32>, +gs: Gs, +i: U32) -> F32:
       F32.mul(F32.mul(q3x.db(bs, U32.div(i, 32)),
         i32f(gw(byte(bs, U32.add(2, U32.div(i, 4))), 1, Gs.iq3xxs(gs), U32.mod(i, 4)))),
         q3x.sg(gs, bs, i))
+    case TQ4_1{}:
+      F32.add(F32.mul(i32f(nib(bs, 4, i)), f16at(bs, 0)), f16at(bs, 2))
+    case TQ4XS{}:
+      F32.mul(F32.mul(f16at(bs, 0), i32f(q4xs.sc(bs, U32.div(i, 32)))),
+        i32f(Maybe.default(&2, U32,
+          List.get(&2, U32, Gs.lut(gs), U32.to_nat(q4xs.q(bs, i))), 0)))
+    case TQ5_0{}:
+      +q5 = U32.add(nib(bs, 6, i), U32.shln(bit.at(bs, 2, i), 4n))
+      F32.add(F32.mul(i32f(q5), f16at(bs, 0)), F32.mul(F32.neg(16.0), f16at(bs, 0)))
+    case TQ5_1{}:
+      +q6 = U32.add(nib(bs, 8, i), U32.shln(bit.at(bs, 4, i), 4n))
+      F32.add(F32.mul(i32f(q6), f16at(bs, 0)), f16at(bs, 2))
+    case TQ2K{}:
+      +ii = U32.div(i, 16)
+      +qc = pair.at(bs, 16, pk2.byte(ii, U32.mod(i, 16)), pk2.pair(ii))
+      F32.sub(F32.mul(F32.mul(f16at(bs, 80), i32f(U32.and(byte(bs, ii), 15))), i32f(qc)),
+        F32.mul(f16at(bs, 82), i32f(U32.shrn(byte(bs, ii), 4n))))
+    case TQ3K{}:
+      +ii = U32.div(i, 16)
+      +qc = pair.at(bs, 32, pk2.byte(ii, U32.mod(i, 16)), pk2.pair(ii))
+      F32.mul(F32.mul(f16at(bs, 108), i32f(q3k.sc(bs, ii))),
+        i32f(U32.sub(U32.add(qc, U32.shln(q3k.hm(bs, i), 2n)), 4)))
+    case TQ5K{}:
+      +sub = U32.div(i, 32)
+      +qc = U32.add(
+        U32.and(U32.shrn(byte(bs, U32.add(48, U32.add(U32.mul(U32.div(sub, 2), 32), U32.mod(i, 32)))),
+          Nat.mul(U32.to_nat(U32.mod(sub, 2)), 4n)), 15),
+        U32.shln(q5k.qh(bs, i), 4n))
+      F32.sub(F32.mul(F32.mul(f16at(bs, 0), i32f(sc.at(bs, sub))), i32f(qc)),
+        F32.mul(f16at(bs, 2), i32f(mn.at(bs, sub))))
+    case TQ6K{}:
+      F32.mul(F32.mul(f16at(bs, 208),
+          i32f(U32.sub(G.sc.sx8(U32.or(q6k.xl(bs, i), U32.shln(q6k.xh(bs, i), 4n))), 32))),
+        i32f(G.sc.sx8(byte(bs, U32.add(192, U32.div(i, 16))))))
+    case TMXFP4{}:
+      +code = nib(bs, 1, i)
+      +mag = Bool.pick(F32, U32.is_lt(code, 8), mx.lut(U32.mod(code, 8)),
+        F32.neg(mx.lut(U32.mod(code, 8))))
+      F32.mul(mag, mx.d(bs))
+    case TQ1_0{}:
+      F32.mul(f16at(bs, 0),
+        Bool.pick(F32, U32.is_eq(bit.at(bs, 2, i), 1), 1.0, F32.neg(1.0)))
+    case TQ3S{}:
+      +s = U32.div(i, 32)
+      +qi = U32.div(i, 4)
+      +row = U32.add(byte(bs, U32.add(2, qi)),
+        U32.shln(bit.at(bs, 66, U32.add(U32.mul(U32.div(qi, 8), 8), U32.mod(qi, 8))), 8n))
+      F32.mul(F32.mul(F32.mul(f16at(bs, 0),
+          F32.add(F32.mul(i32f(sc2.at(bs, 106, s)), 2.0), 1.0)),
+          i32f(gw(row, 1, Gs.iq3s(gs), U32.mod(i, 4)))),
+        Bool.pick(F32, U32.is_eq(bit.at(bs, 74, i), 0), 1.0, F32.neg(1.0)))
+    case TQ2S{}:
+      +s = U32.div(i, 16)
+      +qi = U32.div(i, 8)
+      +row = U32.add(byte(bs, U32.add(2, qi)),
+        U32.shln(pair.at(bs, 66, U32.div(qi, 4), U32.mod(qi, 4)), 8n))
+      +db = F32.mul(F32.mul(f16at(bs, 0),
+        F32.add(i32f(nib(bs, 74, U32.add(U32.mul(U32.mod(s, 2), 16), U32.div(s, 2)))), 0.5)), 0.25)
+      +sg = Bool.pick(F32, U32.is_eq(bit.at(bs, 34, i), 0), 1.0, F32.neg(1.0))
+      F32.mul(F32.mul(db, i32f(gw(row, 2, Gs.iq2s(gs), U32.mod(i, 8)))), sg)
+    case TQ1M{}:
+      +t = U32.div(i, 8)
+      +dl = F32.mul(q1m.d(bs),
+        F32.add(F32.mul(i32f(q1m.sc(bs, U32.div(i, 32), U32.div(U32.mod(i, 32), 16))), 2.0), 1.0))
+      F32.mul(dl, F32.add(i32f(sx.grid(gw(q1m.qi(bs, t), 2, Gs.iq1s(gs), U32.mod(i, 8)))),
+        Bool.pick(F32, U32.is_eq(U32.and(q1m.qh(bs, t), 8), 0), 0.125, F32.neg(0.125))))
 
 def dec.go(k: Nat, +i: U32, +t: Typ, +bs: List<&2, U32>, +gs: Gs,
            acc: List<&2, F32>) -> List<&2, F32>:
@@ -319,15 +517,27 @@ def dec.run(t: Typ, +bs: List<&2, U32>, +gs: Gs, n: U32) -> List<&2, F32>:
 # the gate reads every code 0..45 so a mis-ordered arm answers a neighbour and goes red.
 def typ.of(typ: U32) -> Maybe<&1, Typ>:
   match typ:
+    case 41: Some{TQ1_0{}}
+    case 39: Some{TMXFP4{}}
     case 30: Some{TBF16{}}
+    case 29: Some{TQ1M{}}
     case 23: Some{TQ4XS{}}
+    case 22: Some{TQ2S{}}
+    case 21: Some{TQ3S{}}
     case 20: Some{TIQ4NL{}}
     case 19: Some{TQ1S{}}
     case 18: Some{TQ3X{}}
     case 17: Some{TQ2XS{}}
     case 16: Some{TQ2X{}}
+    case 14: Some{TQ6K{}}
+    case 13: Some{TQ5K{}}
     case 12: Some{TQ4K{}}
+    case 11: Some{TQ3K{}}
+    case 10: Some{TQ2K{}}
     case 8: Some{TQ8_0{}}
+    case 7: Some{TQ5_1{}}
+    case 6: Some{TQ5_0{}}
+    case 3: Some{TQ4_1{}}
     case 2: Some{TQ4_0{}}
     case 1: Some{TF16{}}
     case 0: Some{TF32{}}

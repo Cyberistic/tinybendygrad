@@ -70,7 +70,7 @@ FX = load("llm_ggml_fixture", "llm_ggml-fixture.py")
 # Regenerate with `gates/llm_ggml-fixture.py` and move this line in the SAME commit, or
 # this gate refuses.
 FIXTURES = {
-  "gates/llm_ggml-fixture.gguf": "80fe88f331f3372c94d205514b6e3ccaa1a2b856586c064173c89f7ff059ee9b",
+  "gates/llm_ggml-fixture.gguf": "7799b68fd67ab7e68a664a67457c4cd3f91477fff3e6a30325cd97509cb290d6",
   # THE GENERATOR'S OUTPUT, PINNED. `ggml_common-gen.py` prints these ten; regenerate and
   # move them in the SAME commit, or a regenerated-but-different constant REFUSES here
   # instead of quietly changing what 4,096 words mean.
@@ -98,9 +98,11 @@ FIXTURES = {
 
 # The rows that would move if one of the decode's decisions were wrong: one per PORTED
 # type, the two grid helpers, the transcribed LUT, and the refusal.
-PINNED = ("v_f32.w", "v_f16.w", "v_bf16.w", "v_q4_0.w", "v_q8_0.w", "v_iq4nl.w",
-          "v_q4k.w", "v_iq4xs.w", "v_iq1s.w", "v_iq2xxs.w", "v_iq3xxs.w", "v_iq2xs.w",
-          "iqs", "grid", "lut", "err", "ty_12",
+PINNED = ("v_f32.w", "v_f16.w", "v_bf16.w", "v_q4_0.w", "v_q4_1.w", "v_q5_0.w",
+          "v_q5_1.w", "v_q8_0.w", "v_q2k.w", "v_q3k.w", "v_q4k.w", "v_q5k.w", "v_q6k.w",
+          "v_mxfp4.w", "v_q1_0.w", "v_iq4nl.w", "v_iq4xs.w", "v_iq1s.w", "v_iq2xxs.w",
+          "v_iq2xs.w", "v_iq3xxs.w", "v_iq3s.w", "v_iq2s.w", "v_iq1m.w",
+          "iqs", "grid", "lut", "err", "ty_41",
           "g_iq3xxs_grid", "g_iq2xxs_grid", "g_iq2xs_grid", "g_iq3s_grid",
           "g_iq2s_grid", "g_iq1s_grid")
 

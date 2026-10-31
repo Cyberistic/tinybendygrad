@@ -59,7 +59,29 @@ TENSORS = (
   ("iq2xxs.w", (256,), 16),
   ("iq3xxs.w", (256,), 18),
   ("iq2xs.w", (256,), 17),
+  ("q4_1.w", (32,), 3),
+  ("q5_0.w", (32,), 6),
+  ("q5_1.w", (32,), 7),
+  ("q2k.w", (256,), 10),
+  ("q3k.w", (256,), 11),
+  ("q5k.w", (256,), 13),
+  ("q6k.w", (256,), 14),
+  ("mxfp4.w", (32,), 39),
+  ("q1_0.w", (128,), 41),
+  ("iq3s.w", (256,), 21),
+  ("iq2s.w", (256,), 22),
+  ("iq1m.w", (256,), 29),
 )
+
+# EVERY f16 SCALE FIELD IS CURATED, because a NaN scale makes every element NaN and the
+# row would then be comparing NaN payloads -- a fact about NaN and not about the port.
+# MXFP4's byte 0 is curated too: it IS an f32 exponent, and 127 makes the block scale 0.5.
+CUR = {3: ((0, 0x3800), (2, 0x3400)), 6: ((0, 0x3800),), 7: ((0, 0x3800), (2, 0x3400)),
+       10: ((80, 0x3800), (82, 0x3400)), 11: ((108, 0x3800),),
+       13: ((0, 0x3800), (2, 0x3400)), 14: ((208, 0x3800),),
+       16: ((0, 0x3800),), 17: ((0, 0x3800),), 18: ((0, 0x3800),),
+       19: ((0, 0x3800),), 21: ((0, 0x3800),), 22: ((0, 0x3800),),
+       23: ((0, 0x3800),), 41: ((0, 0x3800),)}
 
 NATIVE = {0: 4, 1: 2, 24: 1, 25: 2, 26: 4, 27: 8, 28: 8, 30: 2}
 QUANT = {2: (32, 18), 3: (32, 20), 6: (32, 22), 7: (32, 24), 8: (32, 34),
@@ -71,8 +93,10 @@ QUANT = {2: (32, 18), 3: (32, 20), 6: (32, 22), 7: (32, 24), 8: (32, 34),
 # WHICH CODES THIS GATE COVERS, by name, in both lanes. It is a PORT decision and not an
 # upstream fact, so each side states it and the two must agree -- bend2-constraints'
 # "two independent transcriptions of the same table that AGREE".
-SUPPORTED = {0: "f32", 1: "f16", 2: "Q4_0", 8: "Q8_0", 12: "Q4_K", 16: "IQ2_XXS",
-             17: "IQ2_XS", 18: "IQ3_XXS", 19: "IQ1_S", 20: "IQ4_NL", 23: "IQ4_XS", 30: "bf16"}
+SUPPORTED = {0: "f32", 1: "f16", 2: "Q4_0", 3: "Q4_1", 6: "Q5_0", 7: "Q5_1", 8: "Q8_0",
+             10: "Q2_K", 11: "Q3_K", 12: "Q4_K", 13: "Q5_K", 14: "Q6_K", 16: "IQ2_XXS",
+             17: "IQ2_XS", 18: "IQ3_XXS", 19: "IQ1_S", 20: "IQ4_NL", 21: "IQ3_S",
+             22: "IQ2_S", 23: "IQ4_XS", 29: "IQ1_M", 30: "bf16", 39: "MXFP4", 41: "Q1_0"}
 
 # (def name, ggml_common attribute, bytes per entry) -- A SECOND TRANSCRIPTION of
 # `ggml_common-gen.py`'s GRIDS, on purpose: the generator's copy produces the .bend, this
@@ -115,10 +139,19 @@ def payload(typ, dims):
     if typ == 12:
         return (struct.pack("<HH", D_K, DMIN_K)
                 + bytes((i * 37 + 11) & 0xFF for i in range(body(typ, dims) - 4)))
-    if typ in (16, 17, 18, 19, 23):
-        # ONLY bytes 0..1 are an f16 (the block scale); every other field is an integer or
-        # a grid byte, and a pseudo-random payload is what makes an index error visible.
-        return struct.pack("<H", D_K) + bytes((i * 37 + 11) & 0xFF for i in range(body(typ, dims) - 2))
+    if typ == 29:
+        # IQ1_M's f16 scale is ASSEMBLED from the top nibbles of bytes 48..55, so those are
+        # curated to spell 0x3800 (0.5) and the rest is pseudo-random.
+        b = bytearray((i * 37 + 11) & 0xFF for i in range(body(typ, dims)))
+        b[48:56] = bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x30])
+        return bytes(b)
+    if typ == 39:
+        return bytes([127]) + bytes((i * 37 + 11) & 0xFF for i in range(body(typ, dims) - 1))
+    if typ in CUR:
+        b = bytearray((i * 37 + 11) & 0xFF for i in range(body(typ, dims)))
+        for off, val in CUR[typ]:
+            b[off:off + 2] = struct.pack("<H", val)
+        return bytes(b)
     raise ValueError(typ)
 
 
