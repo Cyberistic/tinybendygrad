@@ -4,6 +4,6 @@
 # bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel
 # iters=3 (min), warmups=3 per side, INTERLEAVED timed rounds, around submit+onSubmittedWorkDone
 # kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok
-E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.1000|0.1000|4.77e-7|4.77e-7|(a*b)+a|(a*b)+a|yes
-E_256|2b4706e6116a783a|2b4706e6116a783a|yes|592|0.1000|0.2000|2.38e-7|2.38e-7|(a*b)+a|(a*b)+a|yes
-# probe_sha=b10cac9df76a3de3 err=- kernels=2 all_ok=true
+E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.3000|0.2000|4.77e-7|4.77e-7|(a*b)+a|(a*b)+a|yes
+E_256|2b4706e6116a783a|2b4706e6116a783a|yes|592|0.2000|0.2000|2.38e-7|2.38e-7|(a*b)+a|(a*b)+a|yes
+# probe_sha=d563d84091ac0345 err=- kernels=2 all_ok=true

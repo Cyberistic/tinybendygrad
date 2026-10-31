@@ -105,23 +105,6 @@ def main() -> int:
   same = (r.returncode == 0 and port == wgsl)
   if not same:
     (OUT / "bend.wgsl").write_text(port)
-  (OUT / "port_module.json").write_text(json.dumps({
-    "rc": r.returncode, "identical": same, "bend_sha": hashlib.sha256(port.encode()).hexdigest()[:16],
-    "bend_bytes": len(port),
-  }, indent=1) + "\n")
-  (OUT / f"{name}.json").write_text(json.dumps({
-    "name": name, "wgsl": wgsl, "wgsl_bend": port, "sha_bend": hashlib.sha256(port.encode()).hexdigest()[:16],
-    "sha256": hashlib.sha256(wgsl.encode()).hexdigest()[:16], "bytes": len(wgsl),
-    "bufs": bufs, "nbytes": [x.nbytes for x in (o, a, b)], "buffer_order": "out,b,a",
-    "dispatch": [int(a.size), 1, 1], "workgroup_size": [1, 1, 1],
-    "want_a": base64.b64encode(want_a.tobytes()).decode(),
-    "want_b": base64.b64encode(want_b.tobytes()).decode(),
-    "note": "DEV=METAL NOOPT=1, WGSLRenderer(Target('webgpu')).render(uops) over uops the scheduler produced",
-  }, indent=1) + "\n")
-  # ---- THE PORT'S MODULE ASSEMBLY, ON THE SAME KERNEL -------------------------------------
-  # `wgsl.bend`'s `render_kernel` takes the BODY as strings, so with `Nil{}` for the body it
-  # still answers the prologue, the bindings and the signature -- and those can be compared
-  # against CPython's own text. The BODY is the missing uop walk and is recorded as absent.
   print(f"kernel={name} uops={len(uops)} wgsl={len(wgsl)}B sha={hashlib.sha256(wgsl.encode()).hexdigest()[:16]}")
   print(f"bend walk: {len(port)}B sha={hashlib.sha256(port.encode()).hexdigest()[:16]} rc={r.returncode} "
         + ("IDENTICAL" if same else "DIFFER -- see stage1/bend.wgsl"))

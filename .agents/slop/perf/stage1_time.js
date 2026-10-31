@@ -25,7 +25,7 @@ import { createHash } from "node:crypto";
 const ROOT = process.cwd();
 import { readdirSync } from "node:fs";
 const KS = readdirSync(join(ROOT, ".agents/slop/perf/stage1"))
-  .filter((f) => f.endsWith(".json") && f !== "port_module.json")
+  .filter((f) => f.endsWith(".json"))
   .sort().map((f) => JSON.parse(readFileSync(join(ROOT, ".agents/slop/perf/stage1", f), "utf8")));
 const N = Number(process.env.STAGE1_ITERS || 3);
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
