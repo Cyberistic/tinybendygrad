@@ -26999,3 +26999,14 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       `#include <metal_stdlib>`/`using namespace metal;` (cstyle.py:391); (2) `extra_args` +
       `struct args_t` + the unpacking line (cstyle.py:372) -- these two change the SIGNATURE, so
       nothing downstream can match until they do; (3) `__WMMA_...` helper; (4) native `float2`.
+- [x] METAL'S KERNEL SIGNATURE IS PORTED (cstyle.py:390-403, :372): the stdlib preamble, `struct
+      args_t` over the buffers, `extra_args` (`constant args_t& args [[buffer(0)]]`, `uint3 gid`,
+      `uint3 lid`) and the unpacking line, AND the vector typedefs are NOT emitted for Metal (that is
+      the Clang override). MEASURED: the port's first five kernel lines are byte-identical to
+      upstream's; differing lines 80 -> 73. Gates: cstyle 361 rows / 3 lanes byte-identical / 0
+      disagreeing, mutagen 11 of 11 moved rows, ops_python 153 fixtures / 0 divergences.
+- [ ] STAGE 2'S REMAINDER IS THE WMMA PATH AND ITS ARG: the port emits `__wmma(..., float4(...))`
+      where upstream has `__WMMA_8_8_8_f32_f32(..., float2(...))`, and the name needs `arg[0]` (dims)
+      and `arg[1]` (input dtype) which the KU does not carry (capture reads `|plain|-`). Three coupled
+      edits: `KAWmma{dims, dt_in}` in KUArg, a WMMA case in `dump_uops`, `wmma_args` over the KU list,
+      plus `ku_text_wmma` and the helper block.

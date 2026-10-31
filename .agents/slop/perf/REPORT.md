@@ -1080,3 +1080,59 @@ gate with dead plants would be the "row that cannot go red" this tree keeps warn
 about, and the two invented spellings had been doing exactly that -- the comparator was
 red, so the harness reported that its baseline did not reproduce, and the eleven plants
 were never evaluated at all.
+
+---
+
+# 17. METAL'S KERNEL SIGNATURE IS PORTED: THE FIRST FIVE LINES ARE BYTE-IDENTICAL
+
+## 17.1 WHAT LANDED
+
+`MetalRenderer.render_kernel` (cstyle.py:390-403) does four things the port did not:
+it prepends the stdlib preamble, appends one `__WMMA_<name>` helper per WMMA op, builds
+`struct args_t { <type> <name>; ... };` from the buffer list, and calls the BASE
+`render_kernel` with `bufs = []` and the UNPACKING LINE in front of the body -- so the
+signature is `extra_args` alone. Ported as `metal_prefix` / `metal_fields` /
+`metal_extra_args` / `metal_unpack`, with `render_kernel` branching on `dev == 3`.
+
+The fourth thing is a DELETION: Metal must NOT emit the vector typedefs. `_render_defines`
+is the CLANG override (cstyle.py:312-314); Metal calls the base, which has none -- which is
+why upstream's Metal text has native `float2`.
+
+## 17.2 MEASURED
+
+    before (this turn)                          after
+    typedef float float2 __attribute__((...));  #include <metal_stdlib>
+    kernel void r_32_2_4_4_4(device float* d0,  using namespace metal;
+      device float* d1, device float* d2) {     struct args_t { device float* data0_1024; ... };
+                                                kernel void r_32_2_4_4_4(constant args_t& args [[buffer(0)]],
+                                                  uint3 gid [[threadgroup_position_in_grid]],
+                                                  uint3 lid [[thread_position_in_threadgroup]]) {
+                                                  device float* data0_1024 = args.data0_1024; ...
+
+**⇒ THE FIRST FIVE LINES OF THE PORT'S KERNEL ARE NOW BYTE-IDENTICAL TO UPSTREAM'S**,
+and the differing-line count went 80 -> 73.
+
+    stage2-metal.rows: identical|no   sha_port a554f... -> cd2ec56 -> cb35c7a1e921809
+    cstyle_render_census-gate: 361 rows, 3 lanes byte-identical, 0 disagreeing
+    cstyle_render_census-mutate: 11 of 11 mutations moved rows
+    ops_python_exec: PASS -- 153 fixtures, 365 rows, 0 divergences
+
+## 17.3 THE REMAINDER IS THE WMMA PATH, AND IT IS NOT JUST THE HELPER
+
+The diff is now exactly two things, and the second is bigger than the first:
+
+1. **The helper block** (7 lines) -- `float2 __WMMA_8_8_8_f32_f32(float2 a, float2 b,
+   float2 c){ ... simdgroup_multiply_accumulate ... }`, one per WMMA op, from
+   `wmma_args(uops)` (cstyle.py:117-118) -> `(name, dims, dtype_in, dtype_out, upcast)`.
+2. **The CALL** -- the port emits `__wmma(val0, val4, float4(...))`: a PLACEHOLDER name and
+   `float4` where upstream has `__WMMA_8_8_8_f32_f32(val0, val4, float2(...))`. So the
+   WMMA path was never finished, and the reason is upstream's name:
+   `WMMA_{'_'.join(dims)}_{dt_in.name}_{dt_out.name}` needs `u.arg[0]` (the dims) and
+   `u.arg[1]` (the input dtype) -- **and the port's `KU` does not carry them**: the capture
+   writes `270|WMMA|f32|ALU|2|2|231 245 259|plain|-`, kind `plain`, payload `-`.
+
+**⇒ SO FINISHING STAGE 2 IS THREE MORE COUPLED EDITS:** a `KAWmma{dims, dt_in}` in
+`KUArg`, a WMMA case in `dump_uops` (payload `8x8x8~f32`), a `wmma_args`-equivalent scan
+over the KU list, and `ku_text_wmma` answering `__{name}({s0}, {s1}, {s2})`. The helper
+block is the easy half; the ARG is the load-bearing half, because without it the name
+cannot be built at all.

@@ -2322,15 +2322,61 @@ def ku_args(dev: U32, +bufs: List<&2, BArg>) -> List<&2, String>:
   ku_args.go(bufs, dev, Nil{})
 
 def render_kernel_body(+dev: U32, +fn: String, +kernel: List<&2, String>,
-                       +bufs: List<&2, BArg>, +lb: U32) -> String:
-  String.concat([kernel_typedef(dev, lb), " ", fn, "(",
-    String.join(ku_args(dev, bufs), ", "), ") {\n", String.join(kernel, "\n"), "\n}"])
+                       +args: List<&2, String>, +lb: U32) -> String:
+  String.concat([kernel_typedef(dev, lb), " ", fn, "(", String.join(args, ", "), ") {\n",
+    String.join(kernel, "\n"), "\n}"])
 
-# THE CLANG OVERRIDE -- cstyle.py:312-314.
+# ===========================================================================
+# METAL'S KERNEL SIGNATURE -- cstyle.py:366-372 AND :390-403. Metal is the one
+# device whose buffers do NOT become parameters: `MetalRenderer.render_kernel`
+# prepends the stdlib preamble, appends one `__WMMA_<name>` helper per WMMA op,
+# builds `struct args_t { <type> <name>; ... }` from the buffer list, and calls
+# upstream's base `render_kernel` with `bufs = []` and the UNPACKING LINE in
+# front of the body, so the signature is `extra_args` alone:
+#
+#     kernel void r(constant args_t& args [[buffer(0)]],
+#                   uint3 gid [[threadgroup_position_in_grid]],
+#                   uint3 lid [[thread_position_in_threadgroup]]) {
+#       device float* data0_1024 = args.data0_1024; ...
+#
+# ⇒ AND NOTHING DOWNSTREAM OF THE SIGNATURE CAN MATCH UNTIL THIS DOES, which is
+# why it is ported before the WMMA helper: every line after it is indented text
+# that differs only by what the signature put there.
+# ===========================================================================
+def metal_extra_args() -> List<&2, String>:
+  ["constant args_t& args [[buffer(0)]]", "uint3 gid [[threadgroup_position_in_grid]]",
+   "uint3 lid [[thread_position_in_threadgroup]]"]
+
+def metal_fields(+bs: List<&2, BArg>, acc: List<&2, String>) -> List<&2, String>:
+  match bs:
+    case Nil{}: acc
+    case h <> t: metal_fields(t, List.append(&2, String, acc,
+      [String.concat([ku_buftype(3, h), " ", BArg.name(h), ";"])]))
+
+def metal_args(+bs: List<&2, BArg>) -> List<&2, String>:
+  match bs:
+    case Nil{}: Nil{}
+    case h <> t: String.concat([ku_buftype(3, h), " ", BArg.name(h), " = args.", BArg.name(h), ";"]) <> metal_args(t)
+
+# `"  " + " ".join(f"{t} {n} = args.{n};" for n, t in args)`, prepended to the body
+def metal_unpack(+bs: List<&2, BArg>) -> String:
+  String.concat(["  ", String.join(metal_args(bs), " ")])
+
+def metal_prefix(+bs: List<&2, BArg>) -> List<&2, String>:
+  List.append(&2, String,
+    ["#include <metal_stdlib>", "using namespace metal;"],
+    [String.concat(["struct args_t { ", String.join(metal_fields(bs, Nil{}), " "), " };"])])
+
+# cstyle.py:312-314 IS THE CLANG OVERRIDE: it emits the vector typedefs. METAL DOES
+# NOT -- `MetalRenderer.render_kernel` calls the BASE, which has no `_render_defines`
+# at all, which is why upstream's Metal text has native `float2` and no `typedef`.
 def render_kernel(+dev: U32, cpu: Bool, +fn: String, +kernel: List<&2, String>,
                   +bufs: List<&2, BArg>, +kus: List<&2, KU>, +lb: U32) -> String:
-  String.concat([String.join(_render_defines(dev, cpu, kus), "\n"), "\n",
-    render_kernel_body(dev, fn, kernel, bufs, lb)])
+  Bool.pick(String, U32.is_eq(dev, 3),
+    String.concat([String.join(metal_prefix(bufs), "\n"), "\n",
+      render_kernel_body(3, fn, metal_unpack(bufs) <> kernel, metal_extra_args(), lb)]),
+    String.concat([String.join(_render_defines(dev, cpu, kus), "\n"), "\n",
+      render_kernel_body(dev, fn, kernel, ku_args(dev, bufs), lb)]))
 
 # THE WHOLE KERNEL, FROM THE UOP LIST -- cstyle.py:268-278's `render`, FOR THE
 # ONE-LINE CASE (NO LINEAR BODIES, NO EXTERN DECLARATIONS).
