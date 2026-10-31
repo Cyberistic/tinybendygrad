@@ -313,3 +313,74 @@ IT ON THE STRENGTH OF A NOTE I WROTE MYSELF WOULD HAVE BEEN THE SAME MISTAKE AS
 **⇒ AND THE HONEST STATE OF THE GOAL IS UNCHANGED**: BEND is 55.6x slower than
 PYTHON, one bit-exact 3.7% change has landed, and **every one of the three stages
 is still unmet.**
+
+---
+
+# 6. SOURCE-ATTRIBUTED PROFILE, AND THE FIVE HYPOTHESES IT KILLED
+
+**The reviewer asked for a symbolized profile. It is here, and it does not say what
+I hoped.**
+
+## 6.1 THE INSTRUMENT
+
+    $ ./bin/bend tinybendygrad/runtime/ops_python.bend -o /tmp/exec.c   # 65 408 lines
+    $ clang -O2 -g -o /tmp/exec_dbg /tmp/exec.c -lm
+    $ /tmp/exec_dbg /tmp/pkt/PACKET.in 1 1 1 &                          # 15.61 s, 14.49 user
+    $ sample $PID 4 -fullPaths -file /tmp/dbg.sample
+
+**⇒ AND THE C IS THE COMPILER'S OWN OUTPUT**, so every symbol below is a Bend def
+and not a guess: `executor.bend.c` and `executor-dbg.sample.txt` are committed
+beside this report.
+
+## 6.2 THE SELF-TIME CENSUS, WITH SYMBOLS
+
+    Sort by top of stack, same collapsed:
+        __psynch_cvwait        3096   <- the SAMPLER's own sleeping thread
+        span_fade              1408   <- 48%
+        term_drop              1145   <- 39%
+        spin_85                 390   <- 13%
+        OUTLINED_FUNCTION_12    109
+        WL_FID_run               30
+        WL_FID_Prog_step          8
+
+**⇒ `span_fade` + `term_drop` + `spin_85` = 2 943 OF THE EXECUTOR's ~3 090 SAMPLES
+= 95%, AND `Prog_step` ITSELF IS 8 SAMPLES.** The interpreter spends 95% of its
+time in the runtime's REFERENCE-COUNT RELEASE, and 0.3% in its own dispatch.
+
+## 6.3 FIVE HYPOTHESES THE GENERATED C KILLED
+
+1. **"Every `Prog.step` allocates a task frame of 18 words."** The C does say
+   `task_node(e, FID_Prog_step, ...)` + 18 `e.mem[...] = _pr_N` stores -- **BUT THE
+   BRANCH IS `if (!DEVICE && !seq && fid_nofk(...))`, and `seq = stride == 0`
+   (`:63498`).** Single-threaded, `stride == 0`, so `seq` is TRUE and **the frame
+   is never allocated**. **⇒ DEAD.**
+2. **"It is the worker pool contending on the allocator's bank lock."**
+   `bank_push` does `LOCK(bank_lock)`, and `__psynch_cvwait` tops the table -- **but
+   `--threads 1` changes nothing (14.76 s vs 14.71 s), and cvwait is the SAMPLER's
+   own thread, which sleeps for the whole run and therefore tops every such
+   table.** **⇒ DEAD, and the reading was noise.**
+3. **"`heap_alloc` grows the arena."** `heap_alloc_miss` only falls back to
+   `corpus_grow` when a bump fails; a 16x16 packet never exhausts it.
+4. **"The four list operations."** Already refuted in §5.2: `Mem.put` 4%,
+   `Mem.byte` 6%, `Val.put` 9%, `Prog.src` 8%.
+5. **"`span_fade` walks a big list."** `span_fade` is O(n) over the span it fades,
+   and the only big `List` in play is the memory arena (3 072 cells) -- **which is
+   hypothesis 4 again, and hypothesis 4 is already refuted.**
+
+## 6.4 WHAT IS LEFT, AND WHY I AM STOPPING HERE
+
+**⇒ WHAT IS ESTABLISHED**: 95% of the executor's time is `term_drop`/`span_fade`/
+`spin_85`, and it is NOT the record rebuild, NOT the four list operations, NOT a
+task frame, NOT threading, and NOT the arena growing.
+
+**⇒ WHAT I CANNOT DO WITH THE INSTRUMENTS I HAVE**: say WHICH allocation is being
+released. `term_drop`/`span_fade` are the runtime's generic free path, and `sample`
+attributes time to the FREE rather than to the allocation that made it necessary.
+Finding it needs either an allocation-site profile (which Bend's runtime does not
+expose) or an instrumented rebuild of the runtime -- **not another ablation, and
+not another guess.**
+
+**⇒ AND EIGHT ATTEMPTS HAVE PRODUCED 3.7%.** The honest summary of stage 3 is:
+BEND is 55.6x slower than PYTHON, the cost is 95% reference-count release, and I
+have not identified the allocation that requires it. **I am stopping rather than
+landing a ninth speculative change.**
