@@ -26926,3 +26926,13 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
 - [ ] STAGES 1 AND 2 HAVE NEVER BEEN TIMED: no CPython WEBGPU binding and no kernel-executing Bend
       WebGPU/Metal device. Byte-identical text (215/227 WGSL, 30/30 kernel text, 12 pinned) is code
       identity, not speed. Building those harnesses is the remaining work.
+- [x] STAGE 2 IS NOW TIMED, AND IT FAILS: `.agents/slop/perf/stage2_metal.py` runs `(a@b)@c` 32x32 on
+      DEV=METAL (median of 8 = 1.260 ms, max|diff vs float64 CPU 1.84e-05), CAPTURES the MSL upstream
+      compiled via a `MetalRenderer.render` hook, and renders the SAME uop list with the port. Verdict
+      in `stage2-metal.rows`: **identical|no** (upstream 6012 B / 128 lines vs port 5064 B / 118).
+      Cause: `KUArg` in `cstyle.bend` has NO constructor for `Ops.SPECIAL`, so a matmul's thread-id
+      arithmetic renders as `UNHANDLED(Ops.SPECIAL)` where upstream emits `lid.x`; plus a `float2`
+      typedef spelling difference and an EXTRA `*(buf0+29) = 0.0f;` store.
+- [ ] ADD `KASpecial` TO `KUArg`, render it (`lid.x`/`gid.x` for dev_metal, the C spelling otherwise),
+      teach `gen_kus.one()` to emit it, and re-run `stage2_metal.py` until the `identical` column is
+      `yes`. Then account for the extra store. Stage 1 stays blocked: no WGSL driver exists here.

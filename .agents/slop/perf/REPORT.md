@@ -858,3 +858,81 @@ WEBGPU binding here (`failed to load library webgpu: try setting WEBGPU_PATH?`),
 there is no driver to time EITHER side's WGSL on. The 12 pinned WGSL divergences are
 the rows where the two texts differ, and they are exactly the rows that would need a
 driver to compare -- which is why text identity is all that exists for them.
+
+---
+
+# 14. STAGE 2, TIMED FOR THE FIRST TIME -- AND IT DOES NOT HOLD
+
+## 14.1 THE HARNESS
+
+`.agents/slop/perf/stage2_metal.py`, one command, three measurements:
+
+1. It runs `(a@b)@c` (32x32 f32) on `DEV=METAL` with `JIT=0`, and **hooks
+   `MetalRenderer.render`**, so the exact MSL upstream compiled is CAPTURED with its uop
+   list -- not reconstructed. The run is TIMED: 3 warmups, then the median of 8.
+2. It renders **the same uop list** with the port (`C.render(C.dev_metal(), True{}, kus)`
+   through `bin/bend`) and records BOTH sha256s.
+3. It writes `.agents/slop/perf/stage2-metal.rows`.
+
+The comparison is read the only way it can be: **if the two texts are byte-identical,
+the timing IS the port's timing, because the bytes that were timed are the bytes the
+port emits.** If they differ, the row says `identical|no` and the timing belongs to
+upstream's text only.
+
+## 14.2 WHAT IT MEASURED
+
+    # program: (a@b)@c, 32x32 f32, DEV=METAL, JIT=0
+    run_ms_median_of_8=1.260                     (median of 8 launches)
+    max|diff vs float64 CPU|=1.840e-05           (the lane is computing the right thing)
+    kernel|sha_upstream|sha_port|identical|bytes|bend_rc
+    r_32_2_4_4_4|388b424179b5623e|a554f3031c807a95|no|6012|0
+
+**⇒ IDENTICAL: NO.** Upstream's MSL is 6 012 bytes over 128 lines; the port's is 5 064
+over 118, and the first differences are structural:
+
+    upstream                                          port
+    #include <metal_stdlib>                           (absent)
+    using namespace metal;                            (absent)
+    float2 __WMMA_8_8_8_f32_f32(...) { ... }          (absent -- the WMMA helper)
+    int lidx0 = lid.x; /* 32 */                       int alu0 = UNHANDLED(Ops.SPECIAL);
+                                                      typedef float float2 __attribute__
+                                                        ((aligned(4),ext_vector_type(2)));
+                                                      *(buf0+29) = 0.0f;   (an EXTRA store)
+
+## 14.3 WHY, AND IT IS A STRUCTURAL GAP RATHER THAN A MISSPELLING
+
+`tinybendygrad/renderer/cstyle.bend`'s `KUArg` is:
+
+    KANone{} | KAConst{} | KAParam{} | KARange{} | KAIndex{} | KASink{}
+
+**⇒ THERE IS NO CONSTRUCTOR FOR `Ops.SPECIAL`.** A kernel whose uop list contains a
+SPECIAL -- and a matmul's thread-id arithmetic is built out of SPECIALs -- cannot be
+expressed in the port's KU input at all, so the renderer emits `UNHANDLED(Ops.SPECIAL)`
+where upstream emits `lid.x`. (`gen_kus.one()` also has no SPECIAL branch, so the
+converter drops the payload too; both halves are missing, and the port's is the one
+that matters.)
+
+## 14.4 SO THE "30 OF 30 KERNEL-TEXT ROWS BYTE-IDENTICAL" CLAIM IS NARROWER THAN IT READS
+
+That census compares the rows in `gates/cstyle-live.rows` -- the type maps (`tmap`), the
+argument spellings (`rd`) and the kernel PREFIXES (`kern`), plus the `kern2` whole texts
+of the gate's own kernels. **It is true of those rows and it is NOT true of a real
+32x32 matmul's whole MSL**, which is what this harness renders. Stage 2 is therefore
+not "unmeasured but presumably fine": it is MEASURED, and it fails.
+
+## 14.5 STAGE 1
+
+Still BLOCKED, and now with the same standard of evidence: CPython has no WEBGPU
+binding (`failed to load library webgpu: try setting WEBGPU_PATH?`), so there is no
+driver to time EITHER side's WGSL on. The 12 pinned WGSL divergences are exactly the
+rows where the texts differ, and they need a driver to compare.
+
+## 14.6 WHAT THE NEXT CHANGE IS, PRECISELY
+
+1. Add `KASpecial{axis: O.AxisType, n: U32}` (or the shape upstream's `arg` carries) to
+   `KUArg`, teach `cstyle.bend` to render it as `lid.x`/`gid.x` for `dev_metal` and as
+   the C spelling otherwise, and teach `gen_kus.one()` to emit it.
+2. Re-run this harness: the `identical` column must become `yes`, and then the measured
+   1.26 ms is the port's own Metal timing.
+3. The extra `*(buf0+29) = 0.0f;` store needs its own account -- it is upstream text that
+   the port adds, so it is a second divergence and it is NOT explained by SPECIAL.
