@@ -4846,13 +4846,20 @@ def is_unit_shape(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>, unit: Bool) -> Bool
     case Some{Some{Nil{}}}: unit
     case _: Bool.not(unit)
 
-def isvar_test(+vv: Maybe<&2, O.PyRange>, +ad: S.Addr, +sh: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Bool:
+# THE TWO CONJUNCTS OF `is_variable` THAT ARE READ OFF THE ARG, and they are
+# SHARED: `schedule/__init__.bend`'s `sc_var.pa` asks the same question about
+# the same two fields, and two copies of a conjunction is how one of them
+# silently loses a term. THE THIRD CONJUNCT IS NOT HERE and cannot be: the two
+# callers reach the shape by DIFFERENT ROADS -- this file through the FOLD TABLE,
+# where an unknown shape is a separate value from `()`, and the scheduler through
+# `param_shape`, where it is a plain list -- so only the arg half is one def.
+def isvar_arg(+vv: Maybe<&2, O.PyRange>, +ad: S.Addr) -> Bool:
   match vv ad:
-    case Some{_} S.Aalu{}: is_unit_shape(sh, True{})
+    case Some{_} S.Aalu{}: True{}
     case _ _: False{}
 
 def isvar_pa(+pa: O.ParamArg, +sh: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Bool:
-  isvar_test(O.ParamArg.vmin_vmax(pa), O.ParamArg.addrspace(pa), sh)
+  Bool.and(isvar_arg(O.ParamArg.vmin_vmax(pa), O.ParamArg.addrspace(pa)), is_unit_shape(sh, True{}))
 
 def UOp.is_variable.of(+arg: O.Arg, +op: O.Op, +sh: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Bool:
   match arg op:

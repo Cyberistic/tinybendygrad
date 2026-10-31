@@ -654,8 +654,7 @@ def sc_val.some(arg: O.Arg) -> Bool:
 def sc_var.pa(arg: O.Arg, shape: List<&2, O.Sint>) -> Bool:
   match arg:
     case O.AParam{+pa}:
-      Bool.and(Maybe.is_some(&2, O.PyRange, O.ParamArg.vmin_vmax(pa)),
-        Bool.and(O.eq_addr(O.ParamArg.addrspace(pa), S.Aalu{}), F.is_empty(shape)))
+      Bool.and(F.isvar_arg(O.ParamArg.vmin_vmax(pa), O.ParamArg.addrspace(pa)), F.is_empty(shape))
     case _: False{}
 
 def sc_var.of(op: O.Op, arg: O.Arg, shape: List<&2, O.Sint>) -> Bool:
