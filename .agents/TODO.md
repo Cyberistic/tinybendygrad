@@ -26653,3 +26653,35 @@ the corpus went STALE because three units edited the substrate, and the instrume
         sample (the eight heaviest of 311) because 6.6 M parameters snapshotted
         twice is gigabytes and differentiating all 311 did not finish inside forty
         minutes.
+
+the RENDER GATE compares 80 of its rows PERFECTLY and cannot PAIR 55 of them, and the number is now NAMED
+
+**⇒ AND **MEASURED 2026-10-31: **`checks/rn-gate.py` **REPORTS **`gated 80 agree 80 disagree []`** — **THE
+**COMPARISON **IS **PERFECT **WHERE **IT **HAPPENS** — **AND **IT **ALSO **REPORTS FOUR **READER-SIDE **DEFECTS
+**THAT **BETWEEN **THEM **ACCOUNT **FOR **55 **ROWS **THE **READER **CANNOT **PAIR:**
+
+| defect | rows |
+|---|---|
+| **`port: **44/149 **PHYSICAL **LINE(S) **ARE **THE **TAIL **OF **THE **ROW **ABOVE **THEM`** | **44 **lost** |
+| **`port: **the **loss **does **not **decompose: **44 **lost **against **39+0+0`** | **THE **BOOKKEEPING **DOES **NOT **ADD **UP** |
+| **`port: **11 **LOGICAL **row(s) **REFUSED **as **ambiguous`** | **11 **refused** |
+| **`oracle: **44/124 **PHYSICAL **LINE(S) **ARE **THE **TAIL …`** | **THE **SAME **ON **THE **ORACLE **SIDE** |
+
+**⇒ AND **⇒ AND **THE **CAUSE **IS **A **ROW **FORMAT **FACT **AND **NOT **A **COMPARISON **FACT:** **`pyrender`'s
+**ANSWERS **CONTAIN **NEWLINES** (**`render.bend:2148`**, **FIVE **ROWS**), **AND **THE **READER **SPLITS **ON
+**PHYSICAL **LINES**, **SO **A **MULTI-LINE **VALUE **IS **READ **AS **A **ROW **PLUS **A **TAIL.**  **⇒ AND **THE
+**READER **IS **HONEST **ABOUT **IT** — **IT **REFUSES **THE **AMBIGUOUS **ONES **RATHER **THAN **PAIRING **THEM
+**WRONG**, **WHICH **IS **THE **RIGHT **FAILURE** — **BUT **44 **ROWS **ARE **NOT **COMPARED**, **AND **A **ROW
+**THAT **IS **NOT **COMPARED **IS **A **ROW **THAT **CANNOT **GO **RED.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **GATE **IS **STILL **A **BIG **IMPROVEMENT **ON **WHAT **IT **REPLACED:**
+**BEFORE **THE **RENDER **AGENT's **WORK **(`e373380f9^`**) **IT **WAS **rc=3**, **REFUSED**, **MEASURING
+**NOTHING **AT **ALL** — **AND **IT **IS **NOW **rc=1** **ON **READER **DEFECTS **THAT **ARE **NAMED **AND
+**COUNTED**, **WITH **80/80 **AGREEING.**  **⇒ AND **A **REFUSAL **THAT **NAMES **ITS **DENOMINATOR **BEATS **A
+**GREEN **THAT **MEASURED **NOTHING.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **REMAINING **FIX **IS **THE **ROW **FORMAT**, **NOT **THE
+**COMPARISON:** **A **MULTI-LINE **VALUE **NEEDS **AN **ESCAPE **OR **A **LENGTH **PREFIX**, **AND **THE **FIVE
+**ROWS **THAT **CARRY **ONE **ARE **KNOWN.**  **⇒ AND **IT **IS **A **SEPARATE **CHANGE **WITH **ITS **OWN
+**MEASUREMENT**, **BECAUSE **A **ROW **FORMAT **EDIT **THAT **MOVES **THE **CAPTURES **IS **A **CHANGE **TO **WHAT
+**THE **GATE **COMPARES **AND **NOT **A **CHANGE **TO **HOW **IT **READS.**
