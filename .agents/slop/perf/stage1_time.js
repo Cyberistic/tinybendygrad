@@ -1,21 +1,21 @@
-// stage1_time.js -- RUN THE WGSL tinygrad EMITTED, IN A REAL WEBGPU DRIVER, AND TIME IT.
+// stage1_time.js -- COMPILE AND TIME **BOTH** SHADERS IN A REAL WEBGPU DRIVER.
 //
 //   bun .agents/slop/perf/stage1_time.js
 //
 // IT READS `.agents/slop/perf/stage1/kernel.json` (written by stage1_webgpu.py: the WGSL
-// text, the exact input buffers, the dispatch, the expected output), serves a page from
-// 127.0.0.1 -- a `data:` URL IS NOT A SECURE CONTEXT, so `navigator.gpu` is undefined there
-// -- launches its own headless Chrome, and evaluates one script that compiles the shader,
-// binds the buffers, dispatches it, WAITS FOR THE GPU, and reads the result back.
+// CPython's `WGSLRenderer` emitted, the WGSL the PORT's own walk emitted, the exact input
+// buffers, the dispatch, the expected output), serves a page from 127.0.0.1 -- a `data:` URL
+// IS NOT A SECURE CONTEXT, so `navigator.gpu` is undefined there -- launches its own headless
+// Chrome, and evaluates one script that compiles BOTH modules, binds the SAME buffers, runs
+// each, WAITS FOR THE GPU, and reads each result back.
 //
 // **AND THE WAIT IS THE MEASUREMENT.** `queue.submit` returns before the work is done, so a
 // timer around it measures submit latency -- that is exactly the defect stage2_metal.py had
 // (0.01 ms readings). Here `await queue.onSubmittedWorkDone()` sits INSIDE the timed region,
-// and the reported number is the minimum of N runs after warmups.
+// and each number is the minimum of N runs after 3 warmups.
 //
-// ⇒ AND THE CORRECTNESS CHECK IS THE POINT OF USING THE REAL BUFFERS: the shader's output is
-// compared, element by element, against the float32 result numpy computed. A timing of the
-// wrong answer is not a timing.
+// **AND BOTH SIDES ARE CHECKED AGAINST THE SAME EXPECTATION**, element by element, against
+// the float32 result numpy computed. A timing of the wrong answer is not a timing.
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -24,7 +24,6 @@ import { createHash } from "node:crypto";
 
 const ROOT = process.cwd();
 const K = JSON.parse(readFileSync(join(ROOT, ".agents/slop/perf/stage1/kernel.json"), "utf8"));
-const PM = JSON.parse(readFileSync(join(ROOT, ".agents/slop/perf/stage1/port_module.json"), "utf8"));
 const N = Number(process.env.STAGE1_ITERS || 3);
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = 9334;
@@ -40,42 +39,56 @@ const script = `
 (async () => {
   const K = ${JSON.stringify(K)};
   const N = ${N};
-  const r = { adapter: false, device: false, sha256: null, err: null, ms: [], max_abs_diff: null, ok: false };
-  if (!navigator.gpu) { r.err = "navigator.gpu absent"; return r; }
+  const out = { adapter: false, device: false, err: null, sides: {} };
+  if (!navigator.gpu) { out.err = "navigator.gpu absent"; return out; }
   const a = await navigator.gpu.requestAdapter();
-  if (!a) { r.err = "requestAdapter answered null"; return r; }
-  r.adapter = true;
-  r.arch = a.info?.architecture ?? null;
+  if (!a) { out.err = "requestAdapter answered null"; return out; }
+  out.adapter = true;
+  out.arch = a.info?.architecture ?? null;
   const dev = await a.requestDevice();
-  r.device = true;
+  out.device = true;
   const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-
-  const mod = dev.createShaderModule({ code: K.wgsl });
-  const info = await mod.getCompilationInfo();
-  if (info.messages.length) { r.err = "compile: " + info.messages.map((m) => m.lineNum + ":" + m.message).join("; "); return r; }
-  r.sha256 = null;
 
   // binding 0 is the f32 uniform the prologue declares; 1.. are the storage buffers
   const entries = [{ binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } }];
   const bufs = [];
   for (let i = 0; i < K.bufs.length; i++) {
-    const b = dev.createBuffer({ size: K.nbytes[i], usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
+    const b = dev.createBuffer({ size: K.nbytes[i],
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
     dev.queue.writeBuffer(b, 0, b64(K.bufs[i]));
     bufs.push(b);
     entries.push({ binding: i + 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } });
   }
   const uni = dev.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
   dev.queue.writeBuffer(uni, 0, new Float32Array([Infinity]));
-
   const bgl = dev.createBindGroupLayout({ entries });
   const layout = dev.createPipelineLayout({ bindGroupLayouts: [bgl] });
   const bg = dev.createBindGroup({ layout: bgl,
     entries: [{ binding: 0, resource: { buffer: uni } },
               ...bufs.map((b, i) => ({ binding: i + 1, resource: { buffer: b } }))] });
-  const pipe = await dev.createComputePipelineAsync({ layout, compute: { module: mod, entryPoint: K.name } });
-
+  const zero = new Uint8Array(K.nbytes[0]);
   const read = dev.createBuffer({ size: K.nbytes[0], usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
-  const dispatch = () => {
+
+  const wantA = new Float32Array(b64(K.want_a).buffer), wantB = new Float32Array(b64(K.want_b).buffer);
+  const diff = (got, want) => { let w = 0; for (let i = 0; i < got.length; i++) w = Math.max(w, Math.abs(got[i] - want[i])); return w; };
+
+  // BOTH PIPELINES FIRST, THEN INTERLEAVED TIMING. The same 600 bytes measured 0.2 ms when it
+  // ran first and 1.1 ms when it ran second, so a sequential per-side loop measures the ORDER
+  // as much as the shader. Each round runs both sides back to back and each side keeps its min.
+  const sides = [];
+  for (const [label, code] of [["python", K.wgsl], ["bend", K.wgsl_bend ?? ""]]) {
+    const side = { label, present: !!code, ms: null, diff: null, matched: null, ok: false, pipe: null };
+    out.sides[label] = { present: side.present, ms: null, diff: null, matched: null, ok: false };
+    if (!code) continue;
+    const mod = dev.createShaderModule({ code });
+    const info = await mod.getCompilationInfo();
+    if (info.messages.length) { out.sides[label].err = info.messages.map((m) => m.lineNum + ":" + m.message).join("; "); continue; }
+    try {
+      side.pipe = await dev.createComputePipelineAsync({ layout, compute: { module: mod, entryPoint: K.name } });
+    } catch (e) { out.sides[label].err = String(e); continue; }
+    sides.push(side);
+  }
+  const dispatch = (pipe) => {
     const enc = dev.createCommandEncoder();
     const p = enc.beginComputePass();
     p.setPipeline(pipe); p.setBindGroup(0, bg);
@@ -83,41 +96,39 @@ const script = `
     p.end();
     return enc.finish();
   };
-  const zero = new Uint8Array(K.nbytes[0]);
-  for (let i = 0; i < 3; i++) {           // warmup: compile + first runs
+  for (const s of sides) for (let i = 0; i < 3; i++) {         // warmup, per side
     dev.queue.writeBuffer(bufs[0], 0, zero);
-    dev.queue.submit([dispatch()]);
+    dev.queue.submit([dispatch(s.pipe)]);
     await dev.queue.onSubmittedWorkDone();
   }
-  const ms = [];
-  for (let i = 0; i < N; i++) {
-    dev.queue.writeBuffer(bufs[0], 0, zero);
-    const t0 = performance.now();
-    dev.queue.submit([dispatch()]);
-    await dev.queue.onSubmittedWorkDone();   // INSIDE the timed region
-    ms.push(performance.now() - t0);
+  for (let round = 0; round < N; round++) {
+    for (const s of sides) {
+      dev.queue.writeBuffer(bufs[0], 0, zero);
+      const t0 = performance.now();
+      dev.queue.submit([dispatch(s.pipe)]);
+      await dev.queue.onSubmittedWorkDone();                    // INSIDE the timed region
+      const ms = performance.now() - t0;
+      s.ms = s.ms === null ? ms : Math.min(s.ms, ms);
+    }
   }
-  // read the output of the LAST run and compare against numpy
-  const enc = dev.createCommandEncoder();
-  enc.copyBufferToBuffer(bufs[0], 0, read, 0, K.nbytes[0]);
-  dev.queue.submit([enc.finish()]);
-  await read.mapAsync(GPUMapMode.READ);
-  const got = new Float32Array(read.getMappedRange().slice(0));
-  const diff = (b) => {
-    const want = new Float32Array(b64(b).buffer);
-    let w = 0;
-    for (let i = 0; i < got.length; i++) w = Math.max(w, Math.abs(got[i] - want[i]));
-    return w;
-  };
-  r.diff_ab_plus_a = diff(K.want_a);
-  r.diff_ab_plus_b = diff(K.want_b);
-  r.ms = ms.sort((x, y) => x - y);
-  r.max_abs_diff = Math.min(r.diff_ab_plus_a, r.diff_ab_plus_b);
-  r.matched = r.diff_ab_plus_a < 1e-5 ? "(a*b)+a" : r.diff_ab_plus_b < 1e-5 ? "(a*b)+b" : "NEITHER";
-  r.ok = r.matched !== "NEITHER";
-  r.sha256 = K.sha256;
-  read.unmap();
-  return r;
+  for (const s of sides) {
+    dev.queue.writeBuffer(bufs[0], 0, zero);
+    dev.queue.submit([dispatch(s.pipe)]);
+    await dev.queue.onSubmittedWorkDone();
+    const enc = dev.createCommandEncoder();
+    enc.copyBufferToBuffer(bufs[0], 0, read, 0, K.nbytes[0]);
+    dev.queue.submit([enc.finish()]);
+    await read.mapAsync(GPUMapMode.READ);
+    const got = new Float32Array(read.getMappedRange().slice(0));
+    read.unmap();
+    const da = diff(got, wantA), db = diff(got, wantB);
+    Object.assign(out.sides[s.label], {
+      ms: s.ms, diff: Math.min(da, db),
+      matched: da < 1e-5 ? "(a*b)+a" : db < 1e-5 ? "(a*b)+b" : "NEITHER",
+      ok: Math.min(da, db) < 1e-5,
+    });
+  }
+  return out;
 })()`;
 
 const chrome = spawn(CHROME, [
@@ -161,18 +172,22 @@ if (out === null) out = { err: "no reply from the page within the wait" };
 chrome.kill("SIGKILL");
 server.stop(true);
 
+const P = out.sides?.python ?? {}, B = out.sides?.bend ?? {};
+const both = P.present && B.present && P.matched && B.matched && P.matched === B.matched;
 const sha = createHash("sha256").update(JSON.stringify(out)).digest("hex").slice(0, 16);
+const fmt = (x) => (typeof x === "number" ? x.toFixed(4) : "-");
+const dxp = (x) => (typeof x === "number" ? x.toExponential(2) : "-");
 const rows = [
-  "# stage1-webgpu.rows -- .agents/slop/perf/stage1_time.js + stage1_webgpu.py",
-  `# driver: headless Chrome, adapter ${out?.arch ?? "?"}, DEV=METAL NOOPT=1 uops rendered by WGSLRenderer`,
-  `# iters=${N} (min), warmups=3, timed around submit+onSubmittedWorkDone`,
-  `# bend_side=BODY ABSENT (wgsl.bend has no uop->body walk: render_kernel takes BODY STRINGS)`,
-  `# bend_module=prologue+bindings+signature ${PM.identical_leading}/${PM.leading_lines} lines byte-identical, rc=${PM.rc}`,
-  "# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok|bend_module",
-  `${K.name}|${out?.sha256 ?? "-"}|-|python-only|${K.bytes}|${(out?.ms?.[0] ?? NaN).toFixed(4)}|` +
-    `${(out?.max_abs_diff ?? NaN).toExponential(2)}|${out?.matched ?? "-"}|${out?.ok ? "yes" : "no"}|` +
-    `${PM.identical_leading}/${PM.leading_lines}`,
-  `# probe_sha=${sha} err=${out?.err ?? "-"}`,
+  "# stage1-webgpu.rows -- .agents/slop/perf/stage1_webgpu.py + stage1_time.js",
+  `# driver: headless Chrome, adapter ${out.arch ?? "?"}, DEV=METAL NOOPT=1 uops`,
+  `# python side: WGSLRenderer(Target('webgpu')).render(uops)`,
+  `# bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel`,
+  `# iters=${N} (min), warmups=3 per side, timed around submit+onSubmittedWorkDone`,
+  "# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok",
+  `${K.name}|${K.sha256}|${K.sha256}|${K.wgsl === K.wgsl_bend ? "yes" : "no"}|${K.bytes}|` +
+    `${fmt(P.ms)}|${fmt(B.ms)}|${dxp(P.diff)}|${dxp(B.diff)}|${P.matched ?? "-"}|${B.matched ?? "-"}|` +
+    `${both ? "yes" : "no"}`,
+  `# probe_sha=${sha} err=${out.err ?? "-"} py_err=${P.err ?? "-"} bend_err=${B.err ?? "-"}`,
 ];
 writeFileSync(join(ROOT, ".agents/slop/perf/stage1-webgpu.rows"), rows.join("\n") + "\n");
 console.log(rows.join("\n"));

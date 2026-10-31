@@ -1,6 +1,6 @@
 {
  "rc": 0,
- "leading_lines": 7,
- "identical_leading": 7,
- "body": "absent (wgsl.bend has no uop->body walk; render_kernel takes body STRINGS)"
+ "identical": true,
+ "bend_sha": "40cd0ca967a098d5",
+ "bend_bytes": 600
 }

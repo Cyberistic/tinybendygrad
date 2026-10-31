@@ -81,8 +81,20 @@ def main() -> int:
     "# columns: idx|op|dtype|addrspace|shape|numel|srcs(1-based)|kind|payload(~-separated)\n"
     + "\n".join(dk.dump_uops(uops)) + "\n")
   (OUT / "kernel.wgsl").write_text(wgsl)
+  subprocess.run([".venv/bin/python", ".agents/slop/perf/gen_wgsl.py", name], cwd=ROOT, check=True,
+                 capture_output=True, text=True)
+  r = subprocess.run(["./bin/bend", ".agents/slop/perf/render_wgsl.bend"], cwd=ROOT,
+                     capture_output=True, text=True)
+  port = (r.stdout[:-1] if r.stdout.endswith("\n") else r.stdout)
+  same = (r.returncode == 0 and port == wgsl)
+  if not same:
+    (OUT / "bend.wgsl").write_text(port)
+  (OUT / "port_module.json").write_text(json.dumps({
+    "rc": r.returncode, "identical": same, "bend_sha": hashlib.sha256(port.encode()).hexdigest()[:16],
+    "bend_bytes": len(port),
+  }, indent=1) + "\n")
   (OUT / "kernel.json").write_text(json.dumps({
-    "name": name, "wgsl": wgsl,
+    "name": name, "wgsl": wgsl, "wgsl_bend": port,
     "sha256": hashlib.sha256(wgsl.encode()).hexdigest()[:16], "bytes": len(wgsl),
     "bufs": bufs, "nbytes": [x.nbytes for x in (o, a, b)], "buffer_order": "out,b,a",
     "dispatch": [int(a.size), 1, 1], "workgroup_size": [1, 1, 1],
@@ -94,19 +106,9 @@ def main() -> int:
   # `wgsl.bend`'s `render_kernel` takes the BODY as strings, so with `Nil{}` for the body it
   # still answers the prologue, the bindings and the signature -- and those can be compared
   # against CPython's own text. The BODY is the missing uop walk and is recorded as absent.
-  r = subprocess.run(["./bin/bend", ".agents/slop/perf/render_wgsl.bend", name],
-                     cwd=ROOT, capture_output=True, text=True)
-  port = (r.stdout[:-1] if r.stdout.endswith("\n") else r.stdout)
-  cpu_lines, port_lines = wgsl.splitlines(), port.splitlines()
-  # the leading block ends at the `@compute` line, which both sides emit
-  n = next(i for i, ln in enumerate(cpu_lines) if ln.startswith("@compute")) + 1
-  same = sum(1 for i in range(min(n, len(port_lines))) if port_lines[i] == cpu_lines[i])
-  (OUT / "port_module.json").write_text(json.dumps({
-    "rc": r.returncode, "leading_lines": n, "identical_leading": same,
-    "body": "absent (wgsl.bend has no uop->body walk; render_kernel takes body STRINGS)",
-  }, indent=1) + "\n")
   print(f"kernel={name} uops={len(uops)} wgsl={len(wgsl)}B sha={hashlib.sha256(wgsl.encode()).hexdigest()[:16]}")
-  print(f"port_module: {same}/{n} leading lines identical (rc={r.returncode}), body absent")
+  print(f"bend walk: {len(port)}B sha={hashlib.sha256(port.encode()).hexdigest()[:16]} rc={r.returncode} "
+        + ("IDENTICAL" if same else "DIFFER -- see stage1/bend.wgsl"))
   print(f"buffers={[x.nbytes for x in (o, a, b)]} dispatch={a.size}x1x1 workgroup=1x1x1")
   return 0
 

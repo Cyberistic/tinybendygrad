@@ -27086,3 +27086,14 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       the body as STRINGS and `kern_alu()`/`kern_mixed()` are hand-written literals, so the census
       rows are about the ASSEMBLER, not a walk. It is the `_render`-equivalent of cstyle.bend: a
       name map, the inline-vs-declare rule, and the per-op renderers already in the file (~200 lines).
+- [x] STAGE 1 IS MET BY IDENTITY: `tinybendygrad/renderer/wgsl_walk.bend` (the `_render` equivalent) walks
+      `E_1024`'s 15 uops and emits **the same 600 bytes** as CPython (`sha256 40cd0ca967a098d5`, body
+      included), and both are compiled and timed in ONE WebGPU driver, interleaved: `0.2/0.2` and
+      `0.5/0.5` ms, both correct to 4.77e-7.
+      THE WALK IS ITS OWN FILE BECAUSE THE CENSUS GATE DEMANDED IT: `never_folding_cast_hold` pins the
+      bytes of every `OpsCAST` site, and putting the walk's MATCH arm in `wgsl.bend` moved the pin and
+      went red -- the gate working. `wgsl.bend` is byte-identical to its previous revision.
+      AND A THIRD HARNESS DEFECT WAS CAUGHT: timed sequentially the two sides read 0.2 vs 1.1 ms for the
+      SAME bytes (order drift); the driver now interleaves and each side keeps its min.
+- [ ] COVERAGE, NOT IDENTITY, IS THE REMAINING WEAKNESS: one kernel for WebGPU, four for Metal. The
+      census gates cover the renderer surface but compare fragments, not runtime.

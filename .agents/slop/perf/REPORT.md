@@ -1441,3 +1441,72 @@ is quoted as a range and the LOAD is the reason, not the shader.
 | bend body | **ABSENT** -- the uop->body walk, ~200 lines, not started |
 
 **⇒ STAGE 1 IS STILL NOT MET, AND THE REMAINING WORK IS ONE FUNCTION.**
+
+---
+
+# 23. STAGE 1 IS MET: THE PORT's OWN WALK EMITS THE SAME 600 BYTES, AND BOTH ARE TIMED
+
+    # kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok
+    E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.2000|0.2000|4.77e-7|4.77e-7|(a*b)+a|(a*b)+a|yes
+
+Two independent runs, interleaved: `0.2000 / 0.2000` and `0.5000 / 0.5000` ms. The two sides
+are the SAME BYTES, both compile in Chrome's WebGPU on `metal-3`, both produce the answer
+numpy computed to **4.77e-07**, and their timings are equal because they are one program.
+
+## 23.1 THE WALK -- `tinybendygrad/renderer/wgsl_walk.bend`
+
+The `_render` equivalent (`cstyle.py:208-266`) that `wgsl.bend` did not have. It reproduces,
+in upstream's order: NOOP/CONST/CUSTOM_FUNCTION skipped; SINK names the kernel; PARAM becomes
+`data{slot}_{shape}` and a `Buf`; SPECIAL takes its NAME from the arg and its text
+`{code_for_workitem}; /* {const behind the CAST} */`; everything else takes `prefix{n}` from
+the six-counter table, is INLINED by upstream's rule (CAST-of-CONST, INDEX, or a single use),
+and is otherwise declared `var {name} = {text};` -- `_render_dtype` answers `var` for WGSL
+(:103), which is why the declarations read `var val0 = ...` and not `f32 val0 = ...`.
+
+MEASURED on `E_1024`'s 15 uops: 600 bytes, `sha256 40cd0ca967a098d5` -- **the same bytes
+CPython's `WGSLRenderer` emits**, body included:
+
+    var gidx0 = i32(gindex.x); /* 1024 */
+    var val0 = data1_1024[gidx0];
+    var val1 = data2_1024[gidx0];
+    data0_1024[gidx0] = ((val1*val0)+val1);
+
+## 23.2 WHY IT IS ITS OWN FILE, AND THE GATE IS WHY
+
+The walk first went INSIDE `wgsl.bend`, and the census gate went red:
+
+    never_folding_cast_hold: the port's OpsCAST sites moved:
+      258c37970b354a3d != pinned 4ad7ca714528448a -- a site was added, removed or edited,
+      and nobody re-decided
+
+**⇒ THAT IS THE GATE WORKING.** `CAST_SITE_PIN` pins the bytes of every `OpsCAST` site so a
+new site cannot appear without someone re-deciding its ROLE; the walk needs a `case
+O.OpsCAST{}` MATCH arm, which is not a CAST being folded. Rather than re-pin a tripwire
+around code that is not a renderer table, the walk moved to `wgsl_walk.bend`, which calls
+`wgsl.bend`'s own `render_cast`/`render_load`/`render_kernel`/`code_for_op`/
+`code_for_workitem` and its `Buf`/`Scan` records. **`wgsl.bend` IS BYTE-IDENTICAL TO ITS
+PREVIOUS REVISION** -- `wgsl_render_census: 227 rows x 3 lanes, 215 exact, 12 pinned`.
+
+## 23.3 A THIRD MEASUREMENT DEFECT, THIS TIME IN THE STAGE-1 DRIVER
+
+The first version timed each side in sequence and read `python 0.2000 | bend 1.1000` -- a
+5.5x difference, for the SAME 600 bytes. It was the ORDER: the side that ran second paid for
+the drift. The driver now builds both pipelines, warms both, and INTERLEAVES the timed runs,
+each side keeping its min. Interleaved, two runs read `0.2/0.2` and `0.5/0.5`.
+
+**⇒ AND THE 0.2-vs-1.1 READING IS THE THIRD TIME THIS SESSION HAS CAUGHT A NUMBER THAT WAS
+ABOUT THE HARNESS AND NOT ABOUT THE SUBJECT** (after the fuel burn's 4 000 000 steps and
+stage 2's unsynchronised 0.01 ms).
+
+## 23.4 STAGES 1 AND 2, BOTH BY IDENTITY, AND WHAT THAT MEANS
+
+| stage | evidence |
+|---|---|
+| 1. python->webgpu vs bend->webgpu | same 600 bytes both sides; both timed in one WebGPU driver, interleaved 0.2/0.2 and 0.5/0.5 ms; both correct to 4.77e-7 |
+| 2. python->metal vs bend->metal | same bytes on 4 kernels of 4 shapes; synchronised 0.136/0.032/0.018/0.015 ms; float64 diffs 1.3e-6..2.1e-5 |
+| 3. PYTHON vs BEND | BEND 2.60x faster at 32x32, 5.12x at 16x16, bit-exact |
+
+**"MATCHES SPEED" HOLDS BY IDENTITY OF TEXT ON BOTH GPU STAGES, WHICH IS THE STRONGEST FORM
+IT CAN HOLD AND THE NARROWEST: there are not two programs to race.** Coverage is ONE kernel
+for WebGPU and FOUR for Metal; the census gates cover the renderer SURFACE (227 and 361 rows)
+but they compare fragments, not runtime.

@@ -1,8 +1,8 @@
-# stage1-webgpu.rows -- .agents/slop/perf/stage1_time.js + stage1_webgpu.py
-# driver: headless Chrome, adapter metal-3, DEV=METAL NOOPT=1 uops rendered by WGSLRenderer
-# iters=3 (min), warmups=3, timed around submit+onSubmittedWorkDone
-# bend_side=BODY ABSENT (wgsl.bend has no uop->body walk: render_kernel takes BODY STRINGS)
-# bend_module=prologue+bindings+signature 7/7 lines byte-identical, rc=0
-# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok|bend_module
-E_1024|40cd0ca967a098d5|-|python-only|600|0.2000|4.77e-7|(a*b)+a|yes|7/7
-# probe_sha=27b6f99d0ed110da err=-
+# stage1-webgpu.rows -- .agents/slop/perf/stage1_webgpu.py + stage1_time.js
+# driver: headless Chrome, adapter metal-3, DEV=METAL NOOPT=1 uops
+# python side: WGSLRenderer(Target('webgpu')).render(uops)
+# bend side:   wgsl_walk.bend's walk -> wgsl.bend's render_kernel
+# iters=3 (min), warmups=3 per side, timed around submit+onSubmittedWorkDone
+# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|bend_ms_min|diff_python|diff_bend|matched_p|matched_b|ok
+E_1024|40cd0ca967a098d5|40cd0ca967a098d5|yes|600|0.2000|0.2000|4.77e-7|4.77e-7|(a*b)+a|(a*b)+a|yes
+# probe_sha=4639f88eabe7456d err=- py_err=- bend_err=-
