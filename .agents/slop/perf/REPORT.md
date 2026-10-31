@@ -833,3 +833,28 @@ WebGPU or Metal device, so "bend to webgpu" and "bend to metal" SPEED has never 
 observed in this tree. What exists is byte-identical TEXT (215 of 227 WGSL rows,
 30 of 30 kernel-text rows, the 12 WGSL divergences pinned) -- code identity, not a
 timed measurement, and this report will not call it one.
+
+## 13.6 A CORRECTION TO MY OWN FRAMING OF STAGES 1 AND 2
+
+I have been writing "no kernel-executing Bend Metal device at all". That conflates two
+things and the distinction matters for what can be built:
+
+* **tinygrad's `METAL` lane DOES execute here.** MEASURED just now:
+  `Context(DEV='METAL')` on a 16x16 matmul returns `sum -41.69` and the first launch
+  takes 163.3 ms (compile included).
+* **The port has no Metal DEVICE** -- but it does not need one. It renders MSL TEXT,
+  and `gates/cstyle-live.rows` holds **30 of 30 kernel-text rows byte-identical** to
+  CPython's.
+
+So a stage-2 TIMED harness is possible in principle: render the MSL with CPython's
+renderer and with the port, hand BOTH to the one Metal driver, and time each. **The
+expected result is equality BY CONSTRUCTION** -- identical text compiled by one driver
+is the same program -- so what such a harness proves is that the port's text compiles
+and runs at the same speed, not that two different programs rival each other. It is
+not built.
+
+**Stage 1 (WebGPU) is a different situation and is genuinely BLOCKED**: CPython has no
+WEBGPU binding here (`failed to load library webgpu: try setting WEBGPU_PATH?`), so
+there is no driver to time EITHER side's WGSL on. The 12 pinned WGSL divergences are
+the rows where the two texts differ, and they are exactly the rows that would need a
+driver to compare -- which is why text identity is all that exists for them.
