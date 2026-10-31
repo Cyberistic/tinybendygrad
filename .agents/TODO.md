@@ -26350,3 +26350,34 @@ the FOUR WALLS the coverage census named, and THREE of them WERE NOT WALLS
 **⇒ AND **THE **BATCH **CACHE **IS **OPT-IN** (`GRAPHCMP_BEND_BATCH`) **BECAUSE **THE **PER-GRAPH **PATH
 **IS **ONE **GRAPH **PER **PROCESS**, **AND **A **CACHE **THAT **FETCHED **THE **WHOLE **POPULATION **ON **THE
 **FIRST **REQUEST **WOULD **MAKE **EVERY **SINGLE-GRAPH **REQUEST **PAY **FOR **36 **GRAPHS.**
+
+the corpus went STALE because three units edited the substrate, and the instruments say so HONESTLY
+
+**⇒ AND **MEASURED 2026-10-31: **THE **CORPUS **IS **GREEN **AND **REPRODUCIBLE **AND **WAS **CURRENT **AN **HOUR
+**AGO** — **AND **IT **IS **NO **LONGER **CURRENT**, **AND **THE **REASON **IS **THREE **UNITS **EDITING **THE
+**SUBSTRATE** (`tinybendygrad/extra/models/*.bend`**, **`schedule/rangeify.bend`**,
+**`schedule/realize.bend`** **AND **`uop/ops.bend`**).**
+
+**⇒ AND **⇒ AND **⇒ AND **THE **INSTRUMENTS **SAY **THE **SAME **THING **AND **NOT **A **THING **MORE**:
+- **`gates/corpuswitness-gate.py`** — **`verdict.current` **`FAIL`**/**`STALE`** (**`recorded=7c580bff…`,
+  `live=b79c8d35…`**), **`witness.substrate` **`FAIL`**/**`NOT-CURRENT`**, **AND **`claim`**
+  **`FAIL`**/**`NOT-ESTABLISHED`**.
+- **`checks/corpus-figure.py`** — **`RUN HEALTH : FAILED -- 17 of 17 pins green over ONE artifact, plus 1 of 2
+  over `D0-repro.txt` (RED). RED: repro-substrate=7c580bff…`** — **AND **THE **FIGURE **STILL **REPORTS
+  **`17 of 17`** **PINS **GREEN**, **BECAUSE **THE **MEASUREMENT **IS **SOUND **AND **ONLY **THE **FRESHNESS
+  **IS **LOST.**
+- **`checks/differ.py`'s **`repro_bad()`** — **`repro-substrate=7c580bff… but the live substrate is
+  b79c8d35… -- this witness describes a tree that NO LONGER EXISTS, so the `repro-rc=rc=0` beside it is a true
+  statement about bytes nobody is shipping`.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **THIS **IS **THE **TREE's **OWN **DOCTRINE **WORKING, **AND **THE **DIFFERENCE
+**BETWEEN **THE **TWO **KINDS **OF **RED **IS **THE **WHOLE **POINT:** **A **RED **FROM **A **MOVED **TREE **IS
+**NOT **A **RED **FROM **A **WRONG **ANSWER.**  **⇒ AND **THE **CORPUS **IS **RE-RUNNABLE **NOW **AND **CHEAP:**
+**THE **BEND **LANE **IS **BATCHED**, **SO **THE **RUN **TAKES **~1:42 **INSTEAD **OF **~4:50** — **AND **THE
+**RE-RUN **MUST **HAPPEN **AFTER **THE **THREE **UNITS **LAND**, **NOT **BEFORE.**
+
+**⇒ AND **⇒ AND **⇒ AND **⇒ AND **⇒ AND **THE **FIGURE's **OWN **FRAMING **IS **THE **ONE **TO **KEEP:**
+**"17 **of **17 **pins **green**" **IS **THE **MEASUREMENT**, **AND **"the **repro **describes **a **tree **that
+**no **longer **exists**" **IS **THE **FRESHNESS** — **AND **A **READER **WHO **CONFLATES **THEM **WILL
+**REPORT **A **BROKEN **CORPUS **WHEN **THE **CORPUS **IS **MERELY **OLD**, **OR **REPORT **A **SOUND
+**CORPUS **WHEN **IT **HAS **MOVED.**
