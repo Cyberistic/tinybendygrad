@@ -27010,3 +27010,29 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       and `arg[1]` (input dtype) which the KU does not carry (capture reads `|plain|-`). Three coupled
       edits: `KAWmma{dims, dt_in}` in KUArg, a WMMA case in `dump_uops`, `wmma_args` over the KU list,
       plus `ku_text_wmma` and the helper block.
+
+  - [x] **`variables()` **HAS **ITS **ONLY **CALLER** (2026-10-31, `4ef7a856b`):
+        `subs` (`__init__.py:109`) is ported as `sc_apply_subs`, so **all three
+        Wall-C names are now LIVE** -- `is_variable`/`unbound` through `binds`,
+        `variables` through `subs`.  `uopvars-gate` = **31 rows, 2 lanes, rc=0**.
+        **⇒ AND **THE **DISCRIMINATOR **IS **ONE **CHARACTER: `si.src` **IS **ALL **OF
+        **`src` **AND **`binds` **WALKS **`src[1:]`** -- the CALL BODY is a src, so
+        PLANT E (that slice) moves **exactly `subs_body`**.
+        **⇒ AND **A **PLANT **THAT **MOVED **ZERO **ROWS **FOUND **A **LABEL **OF
+        **MINE: dropping the `in binds` test moved **0 of 31**, because `sc_mapget`
+        answers the NO-SLOT sentinel for a missing key, so ABSENT and
+        PRESENT-BUT-SENTINEL were the SAME `U32`.  **The oracle row was already
+        presence-based, so the two lanes AGREED AT REST AND COULD NEVER DISAGREE.**
+        Fixed with `Map.has`; the same plant now moves **2** (`subs_miss`,
+        `subs_none`), rc=1.  **⇒ A GREEN GATE IS NOT EVIDENCE A ROW CAN GO RED.**
+
+  - [x] **`llm/` **IS **AT **ITS **WALL** (2026-10-31, `8f43e466b`, `8a49f6baa`,
+        `e4494d3f0`, `410290700`): `gguf.bend` (759) + `ggml.bend` (590) + a
+        GENERATED `runtime/autogen/ggml_common.bend`, **80 rows / 2 lanes / rc=0**,
+        **23 plants all RED**.  **24 of 29 `ggml_type` codes decode.**  The five
+        unported are a VALUE-TYPE wall and not arithmetic: `int8/int16/int32/int64/
+        f64` have no `f32` image, so the module would need a second answer type.
+        **⇒ AND **THE **ORACLE **FOUND **FIVE **REAL **DEFECTS **ACROSS **THE **FOUR
+        **COMMITS** (`Q4_K` scale offset, `IQ4_XS` nibble interleave, `IQ2_XS`
+        per-16 scale, `Q3_K` bit-major hmask AND its inverted sign, `Q5_K`'s
+        byte-major fifth bit), **none of them visible in a count or an op name.**
