@@ -1901,6 +1901,91 @@ def g_api():
   return (a + Tensor(1)).uop
 
 
+def g_grad():
+  """THE PORT'S OWN AUTODIFF -- `(a*b).sum()`'s backward pass, as a GRAPH.  MEASURED at 9
+  nodes on the py side, census `ADD=1 AFTER=1 BUFFER=2 CAST=1 CONST=1 MUL=2 STACK=1`.
+
+  **THE FIRST GRAPH IN THE CORPUS WHOSE BEND SIDE IS A WALK'S OUTPUT.**  Every other graph
+  here hand-builds its arena node for node, so the corpus tests the port's DATA STRUCTURES
+  and never its OPERATIONS.  `mixin/gradient.bend` is 494 defs and the corpus reached NONE
+  of them -- it is the biggest module the corpus did not execute -- and the reason is
+  STRUCTURAL: a gradient is not a graph you can hand-build, because a gradient is the
+  OUTPUT of a walk over a graph.  So the bend side has to CALL the walk
+  (`mixin/gradient.bend`'s `compute_gradient`), and this graph is what makes that call.
+
+  **THE FIXTURE IS THE PORT'S OWN `dag()` FIXTURE, node for node**, and that is deliberate
+  rather than convenient: `tinybendygrad/mixin/gradient.bend`'s `dag()` builds
+      a = BUFFER(0)   b = BUFFER(1)   c = BUFFER(2)
+      p = MUL(a,b)    q = ADD(a,c)     r = ADD(p,q)      <- the root
+  with the SEED `CONST 1.0` (f32), and `gates/gr_graph_census-oracle.py` builds the SAME
+  graph on the CPython side.  `a` has TWO parents, so `grads[a]` is written TWICE -- the
+  ACCUMULATE -- which is what makes this a gradient fixture and not a second `mul` fixture.
+
+  **THE LEAF IS `BUFFER(STACK())` AND NOT `BUFFER()`, AND THAT IS A MEASURED CONSTRAINT
+  RATHER THAN A CHOICE.**  upstream's `_shape` reads `self.src[0].as_shape` (ops.py:359),
+  so a src-less BUFFER has no `_shape`, and `compute_gradient` reads `k._shape` at
+  gradient.py:130 -- so CPython RAISES `IndexError: tuple index out of range` on a
+  src-less leaf.  MEASURED here, on this line, before the fixture was written.  An EMPTY
+  STACK's `as_shape` is `()` (ops.py:789), so the leaf is SCALAR and the shaped-edge
+  reduce at gradient.py:131 never fires on either side.
+
+  **THE GRAPH IS THE GROUP OF THE TWO GRADIENT VALUES**, not the gradients' own roots:
+  the corpus's differ toposorts ONE root, and the gradients live in the arena
+  `compute_gradient` GREW, so the GROUP is what puts both of them in one node set.
+  """
+  from tinygrad.dtype import dtypes as _d
+  from tinygrad.uop.ops import Ops as _Ops, ParamArg as _ParamArg
+  from tinygrad.mixin.gradient import compute_gradient
+
+  def leaf(slot):
+    return UOp(_Ops.BUFFER, src=(UOp(_Ops.STACK, src=()),), arg=_ParamArg(slot, _d.float32))
+
+  wa, wb, wc = leaf(0), leaf(1), leaf(2)
+  wp = UOp(_Ops.MUL, src=(wa, wb))
+  wq = UOp(_Ops.ADD, src=(wa, wc))
+  wr = UOp(_Ops.ADD, src=(wp, wq))
+  grads = compute_gradient(wr, UOp.const(1.0, _d.float32), {wa, wb, wc})
+  return UOp.group(grads[wa], grads[wb])
+
+
+def g_gral():
+  """THE PORT'S AUTODIFF OVER THE UNARY AND BINARY ALU RULES -- 52 nodes on the py side.
+
+  **WHY A SECOND GRADIENT GRAPH.**  `grad` reaches the gradient WALK and the 33-entry
+  rule TABLE, but its fixture's forward graph is MUL and ADD only, so only TWO rule
+  BODIES fire and the other sixteen answer their entry condition and nothing else.  A
+  rule BODY that is never entered is a body no graph can disagree with, and the bodies
+  are where the port's arithmetic lives (`gexp2`, `gsqrt`, `gtrunc`, `gpow`, `gwhere`,
+  `gdiv`, `gnot`).
+
+  **THE FIXTURE CARRIES ONE OF EACH**: EXP2 (rule 4), SQRT (rule 5), TRUNC (rule 6),
+  POW (rule 10) and MAX (rule 11), chained by ADDs so the root's path visits all five.
+
+  **THE SHAPE IS A CHAIN, NOT A TREE.**  Every ADD takes the previous ADD as one of
+  its two srcs, so the walk descends into all five unary/binary nodes.  A tree would
+  leave the later rules off the root's path and the walk would never reach them.
+  """
+  from tinygrad.dtype import dtypes as _d
+  from tinygrad.uop.ops import Ops as _Ops, ParamArg as _ParamArg
+  from tinygrad.mixin.gradient import compute_gradient
+
+  def leaf(slot):
+    return UOp(_Ops.BUFFER, src=(UOp(_Ops.STACK, src=()),), arg=_ParamArg(slot, _d.float32))
+
+  n0, n1, n2 = leaf(0), leaf(1), leaf(2)
+  e2 = UOp(_Ops.EXP2, src=(n0,))
+  sq = UOp(_Ops.SQRT, src=(n1,))
+  tr = UOp(_Ops.TRUNC, src=(n2,))
+  pw = UOp(_Ops.POW, src=(n0, n1))
+  mx = UOp(_Ops.MAX, src=(n0, n1))
+  a1 = UOp(_Ops.ADD, src=(e2, sq))
+  a2 = UOp(_Ops.ADD, src=(tr, pw))
+  a3 = UOp(_Ops.ADD, src=(mx, a1))
+  rt = UOp(_Ops.ADD, src=(a2, a3))
+  grads = compute_gradient(rt, UOp.const(1.0, _d.float32), {n0, n1, n2})
+  return UOp.group(grads[n0], grads[n1], grads[n2])
+
+
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
           "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
           "binblob": g_binblob, "group": g_group, "commute": g_commute, "indexed": g_indexed,
@@ -1917,6 +2002,14 @@ GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_
           # the other 35 graphs never execute.  It is a DISAGREE on purpose, and the
           # disagreement is the `ParamArg.slot`.
           "api": g_api,
+          # THE PORT'S OWN AUTODIFF.  The first graph in the corpus whose bend side is a
+          # WALK's output rather than a hand-built arena -- `mixin/gradient.bend`'s
+          # `compute_gradient`.  `mixin/gradient.bend` is 494 defs and the other 36 graphs
+          # reached NONE of them.
+          "grad": g_grad,
+          # THE PORT'S AUTODIFF OVER THE ALU RULES -- the graph that makes five gradient
+          # rule BODIES fire rather than only the table's entry conditions.
+          "gral": g_gral,
           # THE FIRST `PROGRAM` IN THE CORPUS, and the only graph whose `ProgramInfo` is
           # compared at all. `checks/differ.py`'s `WANT` needs an entry for it -- the
           # run is INCOMPLETE while the expectations table is shorter than the corpus.

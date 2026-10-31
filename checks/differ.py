@@ -399,6 +399,26 @@ def population_digest(path=None) -> str:
 # care WHY the source moved, and it should not: a fixture that changes can flip a verdict
 # and is the same class of event as a new graph.
 #
+# MEASURED 2026-10-31 over the live tree: `f8dd8dc77a7ad90c8c0bd5e8898c4481d204c1914f1f31f7606762b6966b77f1`
+# over **37** graphs.  THE DELTA IS THE `grad` GRAPH, and it is the SECOND graph whose bend
+# side is not a hand-built arena: `grad`'s bend side is `mixin/gradient.bend`'s
+# `compute_gradient` -- the port's AUTODIFF -- so the corpus now executes the port's
+# 33-entry gradient rule table and the walk that drives it.  That is 494 defs the corpus
+# had reached NONE of, and the reason a graph could not reach them was STRUCTURAL: a
+# gradient is not a graph you can hand-build, because a gradient is the OUTPUT of a walk.
+#
+# MEASURED 2026-10-31 over the live tree: `d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31`
+# over **38** graphs.  THE DELTA IS THE `gral` GRAPH, and it is the THIRD graph whose bend
+# side is not a hand-built arena: `gral`'s fixture carries one of EXP2, SQRT, TRUNC, POW
+# and MAX, so FIVE gradient rule BODIES fire rather than only the table's entry
+# conditions.  **⇒ AND `gral` IS THE GRAPH THAT FOUND THE PORT DEFECT**: the port's MAX
+# rule built a SECOND inner WHERE (four WHEREs where CPython builds three), because it
+# computed slot 1's `(x.eq(y))` from the SWAPPED operands.  The port's own `max_n0`/
+# `max_n1` rows read 21 on both sides and COULD NOT SEE IT -- `size1` counts a shared
+# subtree once per PATH, so a duplicated inner WHERE costs what a shared one costs.
+# FIXED in `tinybendygrad/mixin/gradient.bend`'s `gr_11`, and NO exception was added
+# here: `WANT` is still empty.
+#
 # THE 2026-10-22 DELTA BELOW IS KEPT BECAUSE IT IS THE PRECEDENT: the corpus's population
 # did NOT change when the port's SPEC TABLES were fixed, and it could not have.
 # On 2026-10-22 the port's SPEC TABLES were fixed -- `fu_block.go`'s three
@@ -413,7 +433,7 @@ def population_digest(path=None) -> str:
 # DOES carry the shapes (`getaddr` a GETADDR, `binblob` a BINARY, and the gate prints both);
 # what is missing is a VERDICT LANE over it, and that is `gates/specreach-map.rows` (the map)
 # and `gates/specreach-gate.py` (the verdict).
-POPULATION_PIN = "ff3e4de7d1fdb5f4918ec33086ad94f43be2660e57f0ad28444223e5f2f89abe"
+POPULATION_PIN = "d8db03ddc3bf5fd4621a08f3b0eb356027ea38f602fc71fabc45999b98561b31"
 
 
 def population_bad(digest=None) -> list[str]:

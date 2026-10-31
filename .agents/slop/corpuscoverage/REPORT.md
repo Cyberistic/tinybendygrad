@@ -1,5 +1,14 @@
 # WHAT THE CORPUS DOES NOT COVER, and the graph that reached the largest gap.
 
+**⇒ AND ON 2026-10-31 THE LARGEST GAP IN THE TABLE BELOW WAS **CLOSED**, AND THE GRAPH
+THAT CLOSED IT **FOUND A REAL PORT DEFECT**: `GRADIENT.md`, IN THIS DIRECTORY, HAS THE
+MEASUREMENTS.  **`mixin/gradient.bend` WENT **0/494 → 174/495** (**ALL **32 **RULES
+`gr_0`..`gr_31` **REACHED**), **TOTAL **REACHED **959 → 1144**, **AND **THE **PORT's **MAX
+GRADIENT **RULE **BUILT **FOUR **WHERE **NODES **WHERE **CPYTHON **BUILDS **THREE** — **A
+DEFECT **THE **PORT's **OWN **`max_n0`/`max_n1` **ROWS **COULD **NOT **SEE, **BECAUSE
+`size1` **COUNTS **A **SHARED **SUBTREE **ONCE **PER **PATH**.  **FIXED**, **AND
+`checks/differ.py`'s **`WANT` **IS **EMPTY** — **NO **EXCEPTION **WAS **ADDED.**
+
 MEASURED 2026-10-30 on the tree at `HEAD` + this unit's commit.  Every number here was
 produced by running the instrument named beside it, and the instruments are IN THIS
 DIRECTORY (`COVER.py`, `reach4.py`) so a reader can re-run them.

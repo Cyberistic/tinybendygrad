@@ -42,6 +42,10 @@ import ./../../tinybendygrad/mixin/movement.bend as MX
 # binop and the promotion, and `uop/weak.bend` and `mixin/dtype.bend` are what THEY call.
 import ./../../tinybendygrad/mixin/creation.bend as CR
 import ./../../tinybendygrad/mixin/elementwise.bend as E
+# THE AUTODIFF LAYER, reached by the `grad` GRAPH. `mixin/gradient.bend` is the port's
+# `compute_gradient` -- the 33-entry rule table and the walk that drives it -- and it is
+# the biggest module the corpus did not reach at all before this graph.
+import ./../../tinybendygrad/mixin/gradient.bend as G
 
 # ===========================================================================
 # THE CHUNK. `<bytecount>:<bytes>`. `String.length` counts CHARACTERS, which is byte
@@ -251,7 +255,13 @@ def rng(r: O.PyRange) -> String:
 
 def konst(c: O.Const) -> String:
   match c:
-    case O.CBool{b}: String.concat(["b", Bool.show(b)])
+    # `bo`, NOT `Bool.show` -- and this arm used `Bool.show`, which is the COMPILER's own
+    # renderer and spells a bool `True`/`False`.  The corpus's `bo` is the file's `b1`/`b0`
+    # renderer and the PY side's `bo` (graphcmp.py:410) spells it the same way, so the two
+    # sides were rendering ONE bool CONST in TWO SPELLINGS.  MEASURED 2026-10-31, by the
+    # `maxonly` probe: the py side printed `b1` and this arm printed `bTrue`, and it was
+    # the ONLY difference between the two canonical forms of a 17-node graph.
+    case O.CBool{b}: bo(b)
     # `is64`, NOT `H.i64_text` -- and this arm used to spell the I64 ITSELF, so the two
     # halves of the same column (`dim1`'s shape dims and this) were two renderings and the
     # signed one had to be fixed twice. MEASURED on the one negative CONST the corpus has
@@ -2016,6 +2026,161 @@ def g_api() -> O.Found:
   +s = E.ew_add(a, E.ECon{O.CInt{H.i64_of_i32(1)}}, False{})
   O.Found{T.Tensor.ar(s), T.Tensor.u(s)}
 
+# ===========================================================================
+# `--graph grad`: THE PORT'S OWN AUTODIFF, and the first graph in the corpus whose bend
+# side is built by `mixin/gradient.bend`'s `compute_gradient`.
+#
+# WHY A GRADIENT AND NOT ANOTHER FORWARD GRAPH. `mixin/gradient.bend` is 494 defs and
+# the corpus reached NONE of them: it is the biggest module the corpus did not execute.
+# The reason is STRUCTURAL and it is the same reason the `api` graph was needed for
+# `mixin/elementwise.bend`: EVERY graph here hand-builds its arena node for node, and a
+# gradient is not a graph you can hand-build, because a gradient is the OUTPUT of a walk
+# over a graph.  So the bend side has to CALL the walk.
+#
+# THE FIXTURE IS THE PORT'S OWN `dag()` FIXTURE, and that is deliberate rather than
+# convenient: `tinybendygrad/mixin/gradient.bend`'s `dag()` builds
+#     a = BUFFER(0)  b = BUFFER(1)  c = BUFFER(2)
+#     p = MUL(a,b)   q = ADD(a,c)    r = ADD(p,q)      <- the root
+# with the SEED `CONST 1.0` (f32), and `gates/gr_graph_census-oracle.py` builds the SAME
+# graph on the CPython side, node for node.  `a` has TWO parents, so `grads[a]` is
+# written TWICE -- the ACCUMULATE -- and that is what makes this fixture a gradient
+# fixture rather than a second `mul` fixture.
+#
+# THE LEAF IS `BUFFER(STACK())` AND NOT `BUFFER()`, and this is a MEASURED constraint
+# rather than a choice: upstream's `_shape` reads `self.src[0].as_shape` (ops.py:359),
+# so a src-less BUFFER has no `_shape`, and `compute_gradient` reads `k._shape` at
+# gradient.py:130 -- so CPython RAISES `IndexError: tuple index out of range` on a
+# src-less leaf, MEASURED.  An EMPTY STACK's `as_shape` is `()` (ops.py:789), so the
+# leaf is SCALAR and the shaped-edge reduce at gradient.py:131 never fires on either
+# side.  The port's own header names the same constraint.
+#
+# THE GRAPH IS THE GROUP OF THE TWO GRADIENT VALUES, not the gradients' own roots: the
+# corpus's differ toposorts ONE root, and the gradients live in the arena `compute_gradient`
+# GREW, so the GROUP is what puts both of them in one node set.  CPython's side builds
+# the same GROUP over the same two `compute_gradient` answers.
+# ===========================================================================
+def gr_leaf(+ar: O.Arena, slot: U32) -> O.Found:
+  +sh = G.gnew(ar, O.OpsSTACK{}, Nil{}, O.ANone{})
+  G.gnew(O.Found.ar(sh), O.OpsBUFFER{}, [O.Found.i(sh)], O.AParam{O.ParamArg.of(slot, S.single())})
+
+# THE FIXTURE AND THE WALK. `compute_gradient(root, seed, targets, ar)` answers a
+# `CState` whose `g` is the `grads` table and whose `ar` is the GROWN arena.
+#
+# THE TARGETS COME BACK OUT, because the graph needs `a`'s and `b`'s INDICES to read
+# their gradients, and the arena's indices are creation-order -- so a hard-coded index
+# would be a second transcription of the fixture's build order.
+type Gr is Data:
+  Gr{cs: G.CState, a: U32, b: U32}
+
+def Gr.cs(g: Gr) -> G.CState:
+  match g:
+    case Gr{cs, a, b}: cs
+
+def Gr.a(g: Gr) -> U32:
+  match g:
+    case Gr{cs, a, b}: a
+
+def Gr.b(g: Gr) -> U32:
+  match g:
+    case Gr{cs, a, b}: b
+
+def gr_state() -> Gr:
+  +n0 = gr_leaf(O.Arena.empty(), 0)
+  +n1 = gr_leaf(O.Found.ar(n0), 1)
+  +n2 = gr_leaf(O.Found.ar(n1), 2)
+  +m = G.gnew(O.Found.ar(n2), O.OpsMUL{}, [O.Found.i(n0), O.Found.i(n1)], O.ANone{})
+  +s = G.gnew(O.Found.ar(m), O.OpsADD{}, [O.Found.i(n0), O.Found.i(n2)], O.ANone{})
+  +t = G.gnew(O.Found.ar(s), O.OpsADD{}, [O.Found.i(m), O.Found.i(s)], O.ANone{})
+  +sd = G.gconst(O.Found.ar(t), G.k_fone())
+  Gr{G.compute_gradient(O.Found.i(t), O.Found.i(sd), [O.Found.i(n0), O.Found.i(n1), O.Found.i(n2)], O.Found.ar(sd)),
+     O.Found.i(n0), O.Found.i(n1)}
+
+# THE GRADIENT OF A TARGET -- read out of the `grads` table BY KEY, not by position: the
+# table's insertion order is CPython's dict order and a position would be a second
+# transcription of it.
+def gr_grad_of.of(hit: Maybe<&2, G.GSlot>) -> U32:
+  match hit:
+    case Some{sl}: G.GSlot.v_of(sl)
+    case None{}: 0
+
+def gr_grad_of(+cs: G.CState, k: U32) -> U32:
+  gr_grad_of.of(G.gslot(G.CState.g_of(cs), k))
+
+def g_grad() -> O.Found:
+  +gr = gr_state()
+  +cs = Gr.cs(gr)
+  +ar = G.CState.ar_of(cs)
+  # THE TWO TARGETS WHOSE GRADIENTS ARE NOT THE SEED: `a` ACCUMULATES (two parents),
+  # `b` is FRESH (one parent), and `c` is the seed verbatim.
+  +ga = gr_grad_of(cs, Gr.a(gr))
+  +gb = gr_grad_of(cs, Gr.b(gr))
+  O.UOp.group(ar, [ga, gb])
+
+# ===========================================================================
+# `--graph gral`: THE PORT'S AUTODIFF OVER THE UNARY AND BINARY ALU RULES.
+#
+# WHY A SECOND GRADIENT GRAPH, and it is a coverage argument rather than a taste one.
+# `grad` reaches the WALK and the TABLE, but its fixture's forward graph is MUL and ADD
+# only, so only TWO rule BODIES fire (MUL's and ADD's) and the other sixteen answer
+# their entry condition and nothing else.  The rule BODIES are where the port's
+# arithmetic lives -- `gexp2`, `gsqrt`, `gtrunc`, `gpow`, `gwhere`, `gdiv`, `gnot` -- and
+# a body that is never entered is a body no graph can disagree with.
+#
+# SO THE FIXTURE CARRIES ONE OF EACH: EXP2 (rule 4), SQRT (rule 5), TRUNC (rule 6),
+# POW (rule 10) and MAX (rule 11).  Those five rules build CONSTs, a LOG2, a RECIPROCAL,
+# two CMPNEs, a CMPLT and two WHEREs between them, so the graph is 52 nodes on the py
+# side and reaches ops no forward graph in the corpus reaches.
+#
+# THE SHAPE IS A CHAIN, NOT A TREE: every ADD takes the previous ADD as one of its two
+# srcs, so the root's path visits all five unary/binary nodes and the walk descends into
+# every one of them.  A tree would leave the later rules off the root's path and the
+# walk would never reach them -- the same shape lesson `bw`'s root is a GROUP for.
+# ===========================================================================
+type Gral is Data:
+  Gral{cs: G.CState, a: U32, b: U32, c: U32}
+
+def Gral.cs(g: Gral) -> G.CState:
+  match g:
+    case Gral{cs, a, b, c}: cs
+
+def Gral.a(g: Gral) -> U32:
+  match g:
+    case Gral{cs, a, b, c}: a
+
+def Gral.b(g: Gral) -> U32:
+  match g:
+    case Gral{cs, a, b, c}: b
+
+def Gral.c(g: Gral) -> U32:
+  match g:
+    case Gral{cs, a, b, c}: c
+
+def gral_state() -> Gral:
+  +n0 = gr_leaf(O.Arena.empty(), 0)
+  +n1 = gr_leaf(O.Found.ar(n0), 1)
+  +n2 = gr_leaf(O.Found.ar(n1), 2)
+  +e2 = G.gnew(O.Found.ar(n2), O.OpsEXP2{}, [O.Found.i(n0)], O.ANone{})
+  +sq = G.gnew(O.Found.ar(e2), O.OpsSQRT{}, [O.Found.i(n1)], O.ANone{})
+  +tr = G.gnew(O.Found.ar(sq), O.OpsTRUNC{}, [O.Found.i(n2)], O.ANone{})
+  +pw = G.gnew(O.Found.ar(tr), O.OpsPOW{}, [O.Found.i(n0), O.Found.i(n1)], O.ANone{})
+  +mx = G.gnew(O.Found.ar(pw), O.OpsMAX{}, [O.Found.i(n0), O.Found.i(n1)], O.ANone{})
+  +a1 = G.gnew(O.Found.ar(mx), O.OpsADD{}, [O.Found.i(e2), O.Found.i(sq)], O.ANone{})
+  +a2 = G.gnew(O.Found.ar(a1), O.OpsADD{}, [O.Found.i(tr), O.Found.i(pw)], O.ANone{})
+  +a3 = G.gnew(O.Found.ar(a2), O.OpsADD{}, [O.Found.i(mx), O.Found.i(a1)], O.ANone{})
+  +rt = G.gnew(O.Found.ar(a3), O.OpsADD{}, [O.Found.i(a2), O.Found.i(a3)], O.ANone{})
+  +sd = G.gconst(O.Found.ar(rt), G.k_fone())
+  Gral{G.compute_gradient(O.Found.i(rt), O.Found.i(sd), [O.Found.i(n0), O.Found.i(n1), O.Found.i(n2)], O.Found.ar(sd)),
+       O.Found.i(n0), O.Found.i(n1), O.Found.i(n2)}
+
+def g_gral() -> O.Found:
+  +gr = gral_state()
+  +cs = Gral.cs(gr)
+  +ar = G.CState.ar_of(cs)
+  +ga = gr_grad_of(cs, Gral.a(gr))
+  +gb = gr_grad_of(cs, Gral.b(gr))
+  +gc = gr_grad_of(cs, Gral.c(gr))
+  O.UOp.group(ar, [ga, gb, gc])
+
 # `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
 # head of the TAIL and no argument at all is the default rather than an error.
 
@@ -2056,12 +2221,19 @@ def rows.pick3(+name: String) -> O.Found:
                                                             # THE FIRST GRAPH BUILT BY THE PORT'S TENSOR API, and the
                                                             # first to reach the port's OPERATION layer at all.
                                                             Bool.pick(O.Found, String.eq(name, "api"), g_api(),
+                                                            # THE PORT'S OWN AUTODIFF.  The first graph in the
+                                                            # corpus whose bend side is a WALK's output rather than
+                                                            # a hand-built arena.
+                                                            Bool.pick(O.Found, String.eq(name, "grad"), g_grad(),
+                                                            # THE PORT'S AUTODIFF OVER THE ALU RULES -- the
+                                                            # graph that makes five rule BODIES fire.
+                                                            Bool.pick(O.Found, String.eq(name, "gral"), g_gral(),
                                                             # THE FIRST `PROGRAM` IN THE CORPUS. `g_prog` is `g_lin` plus
                                                             # ONE node, and the one node is the one whose `pI(` form the
                                                             # corpus had never compared -- MEASURED 2026-10-22, the 34
                                                             # graphs produced ZERO `pI(` rows.
                                                             Bool.pick(O.Found, String.eq(name, "prog"), g_prog(),
-                                                            g_matmul())))))))))))))))))))))))))))))))))))
+                                                            g_matmul())))))))))))))))))))))))))))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a

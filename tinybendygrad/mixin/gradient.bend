@@ -534,10 +534,32 @@ def gr_10(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes:
 #    (x<y).where(ctx, (x.eq(y)).where(ctx * 0.5, 0)))
 #
 # The gradient of a max goes to the larger argument; a TIE splits it evenly, which is
-# the `ctx * 0.5` and is why `max_tie` is a separate gate row from `max_gt`. Note
-# `(x<y)` is the SAME op as `(x>y)` with the operands SWAPPED (CMPLT is not
-# commutative), so both slots build a CMPLT and they are different nodes.
-def gr_11.one(+ar: O.Arena, +ctx: U32, +x: U32, +y: U32) -> O.Found:
+# the `ctx * 0.5` and is why `max_tie` is a separate gate row from `max_gt`.
+#
+# *** `(x>y)` AND `(x<y)` ARE THE SAME OP WITH THE OPERANDS SWAPPED, AND ONLY THE OUTER
+# ONE IS SWAPPED. ***  `_binop(Ops.CMPLT, y, reverse=True)` (elementwise.py:323) puts
+# `y` on the LEFT, so `(x>y)` is `CMPLT(y, x)` and `(x<y)` is `CMPLT(x, y)` --
+# MEASURED on CPython's own tree, both slots, 2026-10-31.
+#
+# *** AND THE INNER `(x.eq(y))` IS THE SAME NODE IN BOTH SLOTS. ***  upstream's rule body
+# binds `x` and `y` ONCE and writes `(x.eq(y)).where(ctx * 0.5, 0)` in both arms, and
+# `UOp` is hash-consed, so the second arm's `(x.eq(y))` IS the first arm's node.
+# MEASURED on CPython's own tree, 2026-10-31: the two slots' inner WHEREs are the SAME
+# `id()`, so the MAX gradient is 15 nodes and 3 WHEREs.
+#
+# **⇒ THE PORT BUILT FOUR WHEREs AND THREE CMPNEs, AND `max_n0`/`max_n1` DID NOT SEE
+# IT.**  The port computed slot 1 from `(y.eq(x))` -- the operands SWAPPED -- which is a
+# DIFFERENT node (CMPNE is not commutative), so the port built a SECOND inner WHERE.
+# **AND THE PORT'S OWN COUNT ROWS ARE BLIND TO IT**: `size1` counts a SHARED subtree ONCE
+# PER PATH, so a duplicated inner WHERE costs exactly what a shared one costs, and
+# `max_n0`/`max_n1` read 21 on both sides -- MEASURED, on the defect and on the fix.
+# A COUNT that is right and a STRUCTURE that is wrong is the failure the header of this
+# file names ("the counts coincide -- which is exactly the 'two rules agree and the gate
+# cannot see it' failure"), and `gates/gr_graph_census-gate.py` reads `max_eq_op`, which
+# asks whether the mask's op is `CMPNE` -- TRUE for both spellings.
+#
+# **⇒ THE FIX IS TO BUILD THE INNER ONCE AND SWAP ONLY THE OUTER.**
+def gr_11.inner(+ar: O.Arena, +ctx: U32, +x: U32, +y: U32) -> O.Found:
   +c = gcmplt(ar, x, y)
   +n = gcmpne(O.Found.ar(c), x, y)
   +e = gnot(O.Found.ar(n), O.Found.i(n))
@@ -548,12 +570,21 @@ def gr_11.one(+ar: O.Arena, +ctx: U32, +x: U32, +y: U32) -> O.Found:
   +hf = gconst_raw(O.Found.ar(e), k_fhalf())
   +hm = gmul(O.Found.ar(hf), ctx, O.Found.i(hf))
   +zt = gconst_raw(O.Found.ar(hm), k_fzero())
-  +iw = gwhere(O.Found.ar(zt), O.Found.i(e), O.Found.i(hm), O.Found.i(zt))
-  gwhere(O.Found.ar(iw), O.Found.i(c), ctx, O.Found.i(iw))
+  gwhere(O.Found.ar(zt), O.Found.i(e), O.Found.i(hm), O.Found.i(zt))
+
+# THE OUTER WHERE, and the ONE thing that differs between the slots: `(x>y)` is
+# `CMPLT(y, x)` and `(x<y)` is `CMPLT(x, y)`.
+def gr_11.outer(+ar: O.Arena, +ctx: U32, +inner: U32, +lt: U32) -> O.Found:
+  gwhere(ar, lt, ctx, inner)
 
 def gr_11.go(+ar: O.Arena, +ctx: U32, +x: U32, +y: U32) -> GRes:
-  +f0 = gr_11.one(ar, ctx, x, y)
-  +f1 = gr_11.one(O.Found.ar(f0), ctx, y, x)
+  +iw = gr_11.inner(ar, ctx, x, y)
+  # `(x>y)` -- `CMPLT(y, x)`.  The `lt` is the OUTER mask's src 0.
+  +gt = gcmplt(O.Found.ar(iw), y, x)
+  # `(x<y)` -- `CMPLT(x, y)`.
+  +lt = gcmplt(O.Found.ar(gt), x, y)
+  +f0 = gr_11.outer(O.Found.ar(lt), ctx, O.Found.i(iw), O.Found.i(gt))
+  +f1 = gr_11.outer(O.Found.ar(f0), ctx, O.Found.i(iw), O.Found.i(lt))
   fired([O.Found.i(f0), O.Found.i(f1)], O.Found.ar(f1))
 
 def gr_11(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_11.go(ar, ctx, O.Arena.src(ar, self, 0), O.Arena.src(ar, self, 1))

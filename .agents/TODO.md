@@ -13138,11 +13138,41 @@ code; you have to count ABSENCE.**
     **THE `RESHAPE`-OVER-`ALLOC` FIXTURE IS THE ROW THAT SEES THE WALK**, BECAUSE A WALK OVER AN ALLOC
     IS THE IDENTITY AND SO THE DIRECT-CHILD FIXTURES CANNOT SEE IT AT ALL. (b) `cs_put` WRITING
     `ctx.replacements` INSTEAD OF `ctx.stores` MOVES `cs_reps` 0 -> 7 AND `cs_stores` 7 -> 0 AND rc=1.
-  - [ ] **THE OTHER SIX OF THE EIGHT ARE STILL UNGATED**: `lower_sink_to_linear` (the GUARD is ported,
-    the `function.key` and the `schedule_cache` are not), `copy_kernel_to_store` (`dst.device` for a
-    non-PARAM needs `fold.bend`'s table), `simplify_copy_kernel` (the guard only), `assert_all_same_devices`
-    (the devices are carried, not a boolean), `apply_binds` (arm 3 needs `UOp.variables`), and
-    `canonicalize_call_body` (the wall is the ENGINE, not the body).
+  - [x] **THE OTHER FIVE OF THE EIGHT ARE NOW GATED: `gates/schedstore-gate.py` IS 50 ROWS,
+    2 LANES, rc 0 (2026-10-31).** THE FIVE ARE `lower_sink_to_linear` (`lsl_*`), `copy_kernel_to_store`
+    (`cks_*`), `simplify_copy_kernel` (`sck_*`), `assert_all_same_devices` (`ads_*`) AND
+    `apply_binds` (`ab_*`) -- AND **THE PORT'S SIDE IS NOT UPSTREAM'S SIDE**, SO NO ROW IS "THE
+    PORT's OUTPUT == UPSTREAM's OUTPUT": EVERY ROW ASKS A QUESTION BOTH LANES CAN ANSWER.
+    `lsl_*` ASKS "DID THE GUARD HOLD?" (UPSTREAM'S `lower_sink_to_linear` RETURNS None EXACTLY
+    WHEN THE GUARD FIRES; THE WALL -- `function.key`, `schedule_cache` -- IS **BEYOND** THE GUARD,
+    AND THE GUARD IS THE WHOLE OF THE PORTED BODY). `cks_*`/`sck_*` ASK "DID IT REWRITE?" /
+    "DID IT RETURN None?". `ads_*` ASK THE DEVICE COUNT AND THE RAISE. `ab_*` ASK "WHICH ARM?" --
+    AND UPSTREAM's `apply_binds` IS A **CLOSURE INSIDE `resolve_linear_call` AND IS NOT
+    IMPORTABLE**, SO THE LANE CALLS `resolve_linear_call` AND READS THE ARM OFF ITS OUTPUT (ARM 1
+    RETURNS A LINEAR, ARM 2 RETURNS `si` ITSELF, ARM 3 RETURNS A NEW NODE).
+    **=> AND THE GATE FOUND **TWO MORE REAL DEFECTS**, BOTH IN BODIES THAT NO ROW READ:**
+    (a) **`copy_kernel_to_store` REWROTE WITH THE WRONG POLARITY** -- `cks_fire` IS UPSTREAM's
+    "return None" PREDICATE AND IT DROVE THE REWRITE, SO A SAME-DEVICE COPY WAS REWRITTEN AND A
+    CROSS-DEVICE ONE WAS NOT. FIXED, AND THE REVERT IS MEASURED: **6 of 50 ROWS MOVE AND rc=1**.
+    (b) **`assert_all_same_devices` DEDUPED THE NODES AND NOT THE DEVICES** -- UPSTREAM's `dedup` IS
+    `list(dict.fromkeys(x))` OVER THE **DEVICE VALUES**, SO TWO PARAMS ON ONE DEVICE ARE ONE DEVICE;
+    THE PORT KEPT BOTH NODES AND THE `>= 2` THRESHOLD **RAISED ON A SINGLE-DEVICE KERNEL**. FIXED
+    (`Ads` CARRIES THE DEVICES, `asd_seen` COMPARES THEM), AND THE REVERTS ARE MEASURED: THE DEDUP
+    REVERT MOVES **2 of 50** AND THE THRESHOLD REVERT MOVES **1 of 50**, BOTH rc=1.
+    **=> AND **EVERY ONE** OF THE ELEVEN BREAKS IS MEASURED AND GOES rc=1:** the polarity (6 of 50),
+    the device dedup (2 of 50), the `>= 2` threshold (1 of 50), EACH of `lower_sink_to_linear`'s
+    THREE CONJUNCTS (1 of 50 each), `apply_binds`' ARM 1/ARM 2 (2 of 50), ARM 3 (1 of 50),
+    `apply_binds.of`'s BODY-OP READ (2 of 50), `cks_dev.eq`'s `None == None` (2 of 50), AND THE
+    `disk` SET's MEMBERSHIP TEST (2 of 50). **THE ORACLE LANE IS FALSIFIABLE TOO**: INVERTING ITS
+    `copy_kernel_to_store` COMPARISON MOVES 6 of 50 AND rc=1.
+    **=> AND THE ONE WALL THAT IS **NOT** GONE IS NAMED AND MEASURED**: `cks_dev` READS A NON-PARAM's
+    DEVICE AS `None{}` AND UPSTREAM's `.device` READS THE FIRST SRC WITH A DEVICE, SO FOR
+    `dst = RESHAPE(BUFFER-on-CPU)` AND `src = BUFFER-on-CPU` UPSTREAM ANSWERS "NO REWRITE" AND THE
+    PORT ANSWERS "REWRITE" (**BOTH SIDES MEASURED**). THE WALL IS **SMALLER FOR
+    `copy_kernel_to_store` THAN FOR `simplify_copy_kernel`** BECAUSE UPSTREAM's TWO PATTERNS THAT
+    REACH THE FORMER BIND `dst`/`src` TO `UPat(Ops.PARAM)` AND THE LATTER's PATTERN BINDS THEM TO
+    `UPat.var`; AND **NOBODY IN THIS TREE CALLS EITHER RULE**, SO THE DIVERGENCE IS LATENT.
+  - [ ] `canonicalize_call_body` is still ungated: the wall is the ENGINE (`graph_rewrite`), not the body.
   - [ ] delete `sc_body`/`sc_store` local copies when ops.bend regains ops.py:562/622
   - [ ] contiguous_mops_to_view :199 is the binding wall: `src.contiguous_view()` absent from the tree
   - [ ] replace_input_buffer :248 blocked by `UOp.param_like` TODO(p3) ops.py:1239 (recorded deferral, not a gap)
@@ -26005,6 +26035,42 @@ the CORPUS's GREENNESS IS ABOUT THE OP SURFACE AND SAYS ALMOST NOTHING ABOUT THE
         **⇒ AND **`gates/cr_graph_census-gate.py` **IS **RED **AT **HEAD** **AND **WAS **NOT **REDDENED **BY
         **THIS**: **ITS **`empty_v4`** **PIN **HAS **DRIFTED** **ON **THE **CPYTHON **SIDE** **AND **IT **IS **A
         **PRE-EXISTING **FAILURE** (**MEASURED **AT **`HEAD`**, **WITHOUT **THE **FIX**).
+  - [x] **THE **`grad` **AND **`gral` **GRAPHS **REACH **THE **PORT's **AUTODIFF, **AND **`gral` **FINDS **A
+        **REAL **PORT **DEFECT (2026-10-31).**
+        **⇒ AND **THE **RE-MEASURED **START: **`mixin/gradient.bend` **0/494**, **`elementwise.bend` **31/254**,
+        **`weak.bend` **41/258**, **`tensor.bend` **32/347**, **TOTAL **REACHED **959 **OF **4739.**
+        **⇒ AND **THE **MECHANISM **IS **STRUCTURAL **AND **IT **IS **THE **BRIEF's **OWN **WORD: **A
+        **BACKWARD **PASS **IS **NOT **A **BINARY **OP, **IT **IS **A **CHAIN — **AND **A **CHAIN **IS
+        **EXACTLY **WHAT **A **WALK **PRODUCES, **SO **THE **BEND **SIDE **HAS **TO **CALL **THE **WALK.**
+        **⇒ AND **THE **TWO **NEW **GRAPHS: **`grad`** (**9 **nodes, **THE **PORT's **OWN
+        **`mixin/gradient.bend`'s **`compute_gradient` **OVER **THE **PORT's **OWN **`dag()` **FIXTURE**),
+        **AND **`gral`** (**52 **nodes, **THE **SAME **WALK **OVER **A **FIXTURE **CARRYING **EXP2, **SQRT,
+        **TRUNC, **POW **AND **MAX, **SO **FIVE **RULE **BODIES **FIRE**).  **⇒ AND **THE **COVERAGE
+        **BOUGHT: **`mixin/gradient.bend` **0 → 174/495**, **ALL **32 **RULES **`gr_0`..`gr_31` **REACHED**;
+        **TOTAL **REACHED **959 → 1144**; **UPSTREAM's **`tinygrad/mixin/gradient.py` **AND
+        **`tinygrad/uop/upat.py` **ARE **NOW **EXECUTED** (**1196 → 1203 **FUNCTIONS**).
+        **⇒ AND **THE **DEFECT `gral` **FOUND, **AND **IT **IS **A **REAL **PORT **DEFECT: **THE **PORT's
+        **MAX **RULE **(`gr_11`) **BUILT **FOUR **WHERE **NODES **WHERE **CPYTHON **BUILDS **THREE.**
+        **THE **CAUSE: **upstream's **rule **body **BINDS **`x` **AND **`y` **ONCE **AND **WRITES
+        **`(x.eq(y)).where(ctx * 0.5, 0)` **IN **BOTH **ARMS, **AND **`UOp` **IS **HASH-CONSED, **SO **THE
+        **INNER **IS **THE **SAME **NODE**; **THE **PORT **COMPUTED **SLOT **1's **INNER **FROM **THE
+        **SWAPPED **OPERANDS**, **WHICH **IS **A **DIFFERENT **NODE** (**CMPNE** **IS **NOT
+        **COMMUTATIVE**).  **MEASURED **ON **CPYTHON's **OWN **TREE: **THE **TWO **SLOTS' **INNER
+        **WHEREs **ARE **THE **SAME **`id()`.**
+        **⇒ AND **THE **PORT's **OWN **GATE **COULD **NOT **SEE **IT: **`max_n0`/`max_n1` **READ **21
+        **ON **BOTH **SIDES** — **`size1` **COUNTS **A **SHARED **SUBTREE **ONCE **PER **PATH**, **SO **A
+        **DUPLICATED **INNER **WHERE **COSTS **WHAT **A **SHARED **ONE **COSTS.**  **⇒ AND **THE **FIX **IS
+        **IN **`tinybendygrad/mixin/gradient.bend`'s **`gr_11`**: **BUILD **THE **INNER **ONCE **AND **SWAP
+        **ONLY **THE **OUTER.**  **⇒ AND **THE **PORT's **OWN **138 **GATE **ROWS **ARE **BYTE-IDENTICAL
+        **BEFORE **AND **AFTER **THE **FIX** (**MEASURED**), **WHICH **IS **WHY **THE **CORPUS **WAS **THE
+        **ONLY **INSTRUMENT **THAT **COULD **SEE **IT.**
+        **⇒ AND **THE **SECOND **DEFECT **THE **SAME **GRAPH **FOUND **IS **IN **THE **HARNESS**:
+        **`graphcmp.bend`'s **`konst`** **SPELLED **A **BOOL **CONST **`bTrue`** (**`Bool.show`**) **WHERE
+        **THE **PY **SIDE **SPELLS **IT **`b1`** (**`bo`**) — **THE **FILE **ALREADY **HAD **THE **RIGHT
+        **RENDERER** **AND **DID **NOT **USE **IT.**  **FIXED.**
+        **⇒ AND **`checks/differ.py`'s **`WANT`** **IS **EMPTY **AND **THE **CORPUS **IS **38/38**
+        (**`graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`**, **`rc=0`**) —
+        **NO **EXCEPTION **WAS **ADDED **TO **MAKE **THE **NEW **GRAPHS **GREEN.**
   - [x] **THE **NEGATIVE-INDEX **PARITY **GAP **IS **FOUND **AND **FIXED (2026-10-30, `6c3d059e1`).**
         **⇒ AND **`UOp(Ops.INDEX, src=(STACK(3,5,7), CONST(-1)))`: **UPSTREAM's **`mop_cleanup`** **REWRITES
         **IT **TO **`CONST 7`** (**PYTHON's **LIST **INDEX **READS **FROM **THE **END**), **AND **THE **PORT
