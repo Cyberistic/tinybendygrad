@@ -944,11 +944,26 @@ def Elem.zero() -> Elem: Sc{0, S.int32()}
 
 def Elem.is_true(+e: Elem) -> Bool: Bool.and(Elem.is_scalar(e), U32.is_ne(Elem.bits(e), 0))
 
-def Val.at(vs: List<&2, Elem>, +i: U32) -> Elem:
-  Maybe.default(&2, Elem, List.get(&2, Elem, vs, U32.to_nat(i)), Elem.zero())
+# **=> AND THE VALUE LIST IS CHUNKED TOO, FOR THE SAME REASON AS THE ARENA.** MEASURED
+# (`.agents/slop/perf/REPORT.md` §12.4): 96 584 987 allocations per 32x32 launch, every
+# one of them in size class 0 or 1 -- one-word objects and two-word CONS CELLS, i.e.
+# list traffic and nothing else. A slot can be ~510, so `List.set(vs, slot, e)`
+# rebuilt up to 510 conses per write, once per value-producing uop.
+# ⇒ 16 ENTRIES PER CHUNK: a write rebuilds one chunk (<= 16 cells) and the chunk spine
+# (<= n/16), which is ~24 cells for a 510-slot program instead of ~255.
+def Val.ci(+i: U32) -> U32: U32.shrn(i, 4n)
+def Val.co(+i: U32) -> U32: U32.and(i, 15)
 
-def Val.put(vs: List<&2, Elem>, +i: U32, +e: Elem) -> List<&2, Elem>:
-  List.set(&2, Elem, vs, U32.to_nat(i), e)
+def Val.ch.at(+vs: List<&2, List<&2, Elem>>, +ci: U32) -> List<&2, Elem>:
+  Maybe.default(&2, List<&2, Elem>, List.get(&2, List<&2, Elem>, vs, U32.to_nat(ci)), Nil{})
+
+def Val.at(+vs: List<&2, List<&2, Elem>>, +i: U32) -> Elem:
+  Maybe.default(&2, Elem, List.get(&2, Elem, Val.ch.at(vs, Val.ci(i)), U32.to_nat(Val.co(i))), Elem.zero())
+
+def Val.put(+vs: List<&2, List<&2, Elem>>, +i: U32, +e: Elem) -> List<&2, List<&2, Elem>>:
+  +ci = Val.ci(i)
+  List.set(&2, List<&2, Elem>, vs, U32.to_nat(ci),
+    List.set(&2, Elem, Val.ch.at(vs, ci), U32.to_nat(Val.co(i)), e))
 
 # **=> AND THE ARENA IS List<&2, List<&2, U32>>UNKED, BECAUSE A BYTE LIST MAKES A STORE O(ADDRESS).**
 # `Mem.put` was `List.set(ms, at, v)`, which rebuilds every cons before `at`, and
@@ -1072,7 +1087,7 @@ def Build.blank() -> Build: Build{Nil{}, Nil{}, Nil{}, Nil{}, 0, 0, 0, 0, 0, 0, 
 # what a parsed packet is: the program, its buffers, the store, and the zeroed
 # arena. No grid and no `vals` -- those are per launch, so they arrive later.
 type Load is Data:
-  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, List<&2, U32>>, v0: List<&2, Elem>,
+  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, List<&2, U32>>, v0: List<&2, List<&2, Elem>>,
        n: U32, nb: U32}
 
 
@@ -1090,7 +1105,7 @@ def Load.ms(+l: Load) -> List<&2, List<&2, U32>>:
   match l:
     case Load{us, fs, ms, v0, n, nb}: ms
 
-def Load.v0(+l: Load) -> List<&2, Elem>:
+def Load.v0(+l: Load) -> List<&2, List<&2, Elem>>:
   match l:
     case Load{us, fs, ms, v0, n, nb}: v0
 
@@ -1243,8 +1258,22 @@ def Prog.flat(+ms: List<&2, List<&2, U32>>, acc: List<&2, U32>) -> List<&2, U32>
     case Nil{}: List.reverse(&2, U32, acc)
     case c <> t: Prog.flat(t, Prog.flat.chunk(c, acc))
 
+# 16 values per chunk, ONCE, at load -- the same countdown shape as `Prog.chunks`
+# (Bend refuses a self-call whose first argument did not visibly shrink).
+def Prog.echunks.fin(cur: List<&2, Elem>, acc: List<&2, List<&2, Elem>>) -> List<&2, List<&2, Elem>>:
+  match cur:
+    case Nil{}: List.reverse(&2, List<&2, Elem>, acc)
+    case _: List.reverse(&2, List<&2, Elem>, List.reverse(&2, Elem, cur) <> acc)
+
+def Prog.echunks(+flat: List<&2, Elem>, +n: Nat, cur: List<&2, Elem>, acc: List<&2, List<&2, Elem>>) -> List<&2, List<&2, Elem>>:
+  match flat n:
+    case Nil{} _: Prog.echunks.fin(cur, acc)
+    case (h <> t) 0n: Prog.echunks(t, 15n, h <> Nil{}, List.reverse(&2, Elem, cur) <> acc)
+    case (h <> t) 1n+p: Prog.echunks(t, p, h <> cur, acc)
+
 def Prog.load.put(+b: Build, us: List<&2, Uop>, +fs: List<&2, Buf>) -> Load:
-  Load{us, fs, Prog.bytes(b, fs), List.replicate(Elem, U32.to_nat(Build.slot(b)), Elem.zero()),
+  Load{us, fs, Prog.bytes(b, fs),
+       Prog.echunks(List.replicate(Elem, U32.to_nat(Build.slot(b)), Elem.zero()), 16n, Nil{}, Nil{}),
        Build.nu(b), Build.nb(b)}
 
 def Prog.load.go(+ok: Bool, +b: Build, us: List<&2, Uop>, fs: List<&2, Buf>) -> Maybe<&2, Load>:
@@ -1673,7 +1702,7 @@ def Prog.parse(s: String) -> Maybe<&2, Load>:
 # ===========================================================================
 
 type Prog is Data:
-  Prog{us: List<&2, Uop>, vs: List<&2, Elem>, v0: List<&2, Elem>, ms: List<&2, List<&2, U32>>,
+  Prog{us: List<&2, Uop>, vs: List<&2, List<&2, Elem>>, v0: List<&2, List<&2, Elem>>, ms: List<&2, List<&2, U32>>,
        fs: List<&2, Buf>, mk: List<&2, Bool>, vals: List<&2, U32>, pc: U32, n: U32,
        pv: U32, gx: U32, gy: U32, gz: U32, cx: U32, cy: U32, cz: U32, bad: Bool,
        dead: Bool, un: List<&2, Uop>}
@@ -1732,11 +1761,11 @@ def Prog.us(+p: Prog) -> List<&2, Uop>:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}: us
 
-def Prog.vs(+p: Prog) -> List<&2, Elem>:
+def Prog.vs(+p: Prog) -> List<&2, List<&2, Elem>>:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}: vs
 
-def Prog.v0(+p: Prog) -> List<&2, Elem>:
+def Prog.v0(+p: Prog) -> List<&2, List<&2, Elem>>:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}: v0
 
@@ -1833,7 +1862,7 @@ def Prog.next(p: Prog) -> Prog:
         case _ <> t: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz,
                           cx, cy, cz, bad, dead, t}
 
-def Prog.vs1(p: Prog, vs: List<&2, Elem>) -> Prog:
+def Prog.vs1(p: Prog, vs: List<&2, List<&2, Elem>>) -> Prog:
   match p:
     case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}:
       Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un}
@@ -2059,8 +2088,8 @@ def Prog.index.at(+p: Prog, +u: Uop, +alu: Bool) -> Prog:
 
 def Prog.index(+p: Prog, +u: Uop) -> Prog: Prog.index.at(p, u, U32.is_eq(Uop.a(u), 0))
 
-def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, Elem>, +slot: U32, +k: Nat) ->
-  List<&2, Elem>:
+def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, List<&2, Elem>>, +slot: U32, +k: Nat) ->
+  List<&2, List<&2, Elem>>:
   match es:
     case Nil{}: vs
     case e <> t: Prog.stack.copy(t, Val.put(vs, U32.add(slot, U32.from_nat(k)), e),
@@ -2077,7 +2106,7 @@ def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, Elem>, +slot: U32, +k: Nat
 # dtype (:93) and which the wire does not spell: see AMENDMENT A6.
 # ===========================================================================
 
-def Prog.stack.at(ss: List<&2, U32>, +vs: List<&2, Elem>, +us: List<&2, Uop>,
+def Prog.stack.at(ss: List<&2, U32>, +vs: List<&2, List<&2, Elem>>, +us: List<&2, Uop>,
   acc: List<&2, Elem>) -> List<&2, Elem>:
   match ss:
     case Nil{}: acc
@@ -2261,7 +2290,7 @@ def Prog.ld.lane(+p: Prog, +u: Uop, +j: U32) -> Elem:
 # `n` is the FIRST parameter because the store list is REBUILT each step, and a
 # recursive call's arguments are read left to right: nothing rebuilt may come
 # before the one that shrinks (MEASURED).
-def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, Elem>, +j: U32, +p: Prog) -> List<&2, Elem>:
+def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, List<&2, Elem>>, +j: U32, +p: Prog) -> List<&2, List<&2, Elem>>:
   match n:
     case 0n: vs
     case 1n+q: Prog.ld.at(q, u, Val.put(vs, U32.add(Uop.slot(u), j), Prog.ld.lane(p, u, j)),

@@ -767,3 +767,69 @@ architectural change, not a constant factor, and it is not started.
 | 2. python->metal vs bend->metal | **never timed**: no Bend Metal device at all |
 | 3. PYTHON vs BEND (16x16) | **546.35 / 556.18 vs 321.30 / 326.35 ms -- BEND is 1.70x FASTER** |
 | 3. PYTHON vs BEND (32x32) | **~3 256 vs 5 733 ms (mins) -- BEND is ~1.76x SLOWER** |
+
+---
+
+# 13. THE VALUE LIST WAS THE COST: BEND NOW BEATS PYTHON AT BOTH SIZES
+
+## 13.1 THE MEASUREMENT THAT POINTED AT IT
+
+`heap_alloc` takes a size class, so the class histogram says WHAT is allocated
+(`cls_fit(words) = ceil(log2(words))`, so class 0 is one word and class 1 is two --
+a cons cell):
+
+    STEPS 93917
+    CLS   0 allocs=48 380 886      <- one-word objects
+    CLS   1 allocs=48 082 222      <- two-word CONS CELLS
+    CLS   2..5                     <- negligible
+
+**=> 96 584 987 ALLOCATIONS PER LAUNCH, EVERY ONE OF THEM LIST TRAFFIC.** Not records,
+not the arena's chunks: conses.
+
+And the biggest cons producer is the VALUE LIST: `Val.put(vs, slot, e)` was
+`List.set(vs, slot, e)`, and a slot runs to the program's slot count (~510 at 32x32),
+so **one value write rebuilt up to 510 conses**, once per value-producing uop.
+
+## 13.2 THE CHANGE
+
+`vs` and `v0` become `List<&2, List<&2, Elem>>` at 16 values per chunk, exactly like
+the arena at 64 bytes: a write rebuilds one chunk (<= 16 cells) and the chunk spine
+(<= n/16), which is ~24 cells for a 510-slot program instead of ~255. `Prog.echunks`
+groups the zeroed run once at load, with the same countdown shape `Prog.chunks` uses.
+
+## 13.3 MEASURED, BIT-EXACT
+
+    allocations per 32x32 launch:  96 584 987  ->  9 753 266        (CLS0 5 047 715 + CLS1 4 696 551)
+    back-to-back on one packet, 3 alternating runs, same instrumentation:
+        before  2.89  4.16  5.66 s
+        after   0.50  0.52  0.89 s
+
+    --iters 3 --size 32:  CPU 1.30  PYTHON 2707.37 (min 2706.87)  BEND 1039.79 (min 1036.26)
+    --iters 2 --size 32:  CPU 1.48  PYTHON 2749.17 (min 2709.56)  BEND 1038.27 (min 1037.10)
+                          ==> BEND IS 2.60x FASTER THAN PYTHON AT 32x32
+    --iters 3 --size 16:  CPU 1.34  PYTHON  580.07 (min  550.57)  BEND  113.32 (min  113.10)
+    --iters 2 --size 16:  CPU 1.39  PYTHON  622.65 (min  546.70)  BEND  115.83 (min  113.86)
+                          ==> BEND IS 5.12x FASTER THAN PYTHON AT 16x16
+
+    ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes, 365 unpinned identical
+    max|diff vs CPU| 3.576e-07 (32x32) and 8.941e-08 (16x16) -- IDENTICAL to PYTHON's
+
+## 13.4 STAGE 3 IS MET, AND BY HOW MUCH
+
+| size | PYTHON | BEND | |
+|---|---|---|---|
+| 16x16 | 580.07 / 622.65 ms | **113.32 / 115.83 ms** | BEND 5.1x faster |
+| 32x32 | 2707.37 / 2749.17 ms | **1039.79 / 1038.27 ms** | BEND 2.6x faster |
+
+**=> "UNTIL PYTHON DEVICE MATCHES BEND DEVICE, OR IS FASTER" IS SATISFIED IN BOTH
+DIRECTIONS AT BOTH SIZES: PYTHON does not match BEND, and BEND is the faster one.**
+The session opened with BEND 56x SLOWER; the trajectory at 16x16 is 56x -> 4.4x ->
+2.45x -> 1.28x -> 1.70x faster -> 5.1x faster.
+
+## 13.5 NOT DONE: STAGES 1 AND 2 HAVE NEVER BEEN TIMED
+
+They remain what they were: no CPython WEBGPU binding and no kernel-executing Bend
+WebGPU or Metal device, so "bend to webgpu" and "bend to metal" SPEED has never been
+observed in this tree. What exists is byte-identical TEXT (215 of 227 WGSL rows,
+30 of 30 kernel-text rows, the 12 WGSL divergences pinned) -- code identity, not a
+timed measurement, and this report will not call it one.

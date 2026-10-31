@@ -26918,3 +26918,11 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
       its chunk and `Val.put` rebuilds `vs`. That is where list surgery stops helping -- closing it
       needs the arena and the value list MUTABLE (`Array`), which `Prog` cannot hold because `Array`
       is a `Type` and `Array.get` returns the array. Architectural, not a constant factor.
+- [x] THE VALUE LIST CHUNKED AT 16: `heap_alloc`'s size-class histogram showed 96 584 987 allocations
+      per 32x32 launch, ALL in class 0/1 (one-word and cons cells), and `Val.put` was `List.set(vs,
+      slot, e)` with slots running to ~510. Allocations 96.6M -> 9.75M. MEASURED 32x32 BEND 1039.79 vs
+      PYTHON 2707.37 (**2.60x FASTER**), 16x16 BEND 113.32 vs PYTHON 580.07 (**5.12x FASTER**),
+      bit-exact (153 fixtures; max|diff identical to PYTHON's). **STAGE 3 IS MET AT BOTH SIZES.**
+- [ ] STAGES 1 AND 2 HAVE NEVER BEEN TIMED: no CPython WEBGPU binding and no kernel-executing Bend
+      WebGPU/Metal device. Byte-identical text (215/227 WGSL, 30/30 kernel text, 12 pinned) is code
+      identity, not speed. Building those harnesses is the remaining work.
