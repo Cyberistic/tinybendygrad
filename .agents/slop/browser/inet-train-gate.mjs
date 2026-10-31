@@ -3,22 +3,31 @@
 //
 //   node .agents/slop/browser/inet-train-gate.mjs
 //
-// WHAT IT ASKS: **DOES ONE EFFICIENTNET-0 TRAINING STEP -- forward, loss,
-// gradients, the SGD update -- REPLAYED ON A REAL WEBGPU ADAPTER FROM CPYTHON's
-// TRACE, PRODUCE CPYTHON's LOGITS?**
+// WHAT IT ASKS, AND IT IS THE UPDATE AND NOT THE FORWARD:
+// **DO THE PARAMETERS AN EFFICIENTNET-0 TRAINING STEP UPDATES, REPLAYED ON A REAL
+// WEBGPU ADAPTER FROM CPYTHON's TRACE, END BIT-IDENTICAL TO CPYTHON's?**
 //
-// WHY THE LOGITS AND NOT THE WEIGHTS. The training step's WS moved are 6.6 M
-// parameters; a bit-exact WEIGHT comparison is what `train-gate.mjs` does for
-// MNIST (47 of 47 tensor buffers) and needs every parameter snapshotted twice,
-// which takes this trace from 72 MB to gigabytes. **⇒ SO THE IMAGENET ROW IS THE
-// FORWARD RESULT INSIDE the training step** -- and the step is the training step
-// because the trace is 13 154 launches of `TRAINING=1` including `backward` and
-// the update. **⇒ AND THE HONEST LIMIT IS NAMED: this row proves the training
-// step's FORWARD is right on the adapter; the MNIST gate is what proves the
-// WEIGHT UPDATE mechanism bit-exactly, and it does, 47 of 47.**
+// THE PREVIOUS VERSION OF THIS GATE COMPARED THE 1000 LOGITS, AND THE REVIEW THAT
+// KILLED IT WAS RIGHT: **THE LOGITS ARE PRODUCED BY THE FORWARD, BEFORE `backward`
+// AND THE SGD STEP RUN**, so a step whose gradients were ALL ZERO and whose weights
+// never moved would have printed PASS. **⇒ AND THAT IS NOT HYPOTHETICAL -- IT IS
+// WHAT THIS TRACE DID** (`0 of them MOVED`) until the detach below was found.
 //
-// THE TWO SIDES ARE INDEPENDENT: `inet-train-oracle.json` is CPython's, written
-// before any browser ran.
+// THE DENOMINATOR IS THE SAMPLED PARAMETERS, NAMED: the eight heaviest of
+// EfficientNet-0's 311 float parameters -- the conv and linear weights. 6.6 M
+// parameters snapshotted twice would take the trace from megabytes to gigabytes,
+// and the sample is what the trace CLAIMS to train.
+//
+// THE ROWS, AND EVERY ONE OF THEM MUST BE ABLE TO FAIL:
+//   1  GPU == CPYTHON's `after`, BIT-EXACT, over the sampled parameters
+//   2  the parameters MOVED: `before != after`, from the trace's own two snapshots
+//   3  C1 -- GPU vs `before` MUST DIFFER, or the replay changed nothing
+//   4  C2 -- one bit of one `after` word must be caught, and only that word
+//   5  C3 -- and the comparison's tolerance cannot be Infinity: one word moved by
+//            a whole ULP-class amount is caught, so an exact row means something
+//
+// TWO SIDES, INDEPENDENT: `inet-train-oracle.json` is CPython's, written before any
+// browser ran, and the page never sees it.
 import { launch, shutdown, Session, CHROME_BINARIES } from "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/.e2e-fixture/xd2/cdp.mjs";
 import { serve } from "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/.e2e-fixture/xd2/serve.mjs";
 import { readFile, copyFile, mkdir } from "node:fs/promises";
@@ -29,7 +38,6 @@ const HERE = "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/
 const WEB = path.join(HERE, "web");
 const MNIST = "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/examples/webgpu/mnist";
 const DIR = path.join(HERE, "imagenet-train");
-const TOL = 1e-6;
 
 const P = (s) => console.log(s);
 const OK = "OK  ", BAD = "BAD ";
@@ -53,155 +61,130 @@ async function replay(only) {
   let h;
   try {
     const url = `${srv.url}/train.html?net=inet-train-net.json&oracle=inet-train-oracle.json&batch=64&only=${only}`;
-    P("stage: launching chrome");
     h = await launch(CHROME_BINARIES["chrome-stable"], ["--headless=new"], url);
-    P("stage: attaching");
     const s = await Session.openPage(h.port, { url });
-    P("stage: attached, releasing the page");
-    // **⇒ AND THE PAGE IS STARTED HERE, AFTER THE ATTACH**, because the replay
-    // blocks the main thread the debugger needs. The page waits on this flag.
     await s.eval("window.__GO = true;");
-    // 13 154 launches: the deadline is minutes, not seconds, ON PURPOSE.
     for (let i = 0; i < 4800; i++) {
       try {
-      // **⇒ AND THE POLL GETS ITS OWN LONG TIMEOUT, BECAUSE A 13 154-LAUNCH REPLAY
-      // HOLDS THE MAIN THREAD IN LONG STRETCHES.** The default is 120 s and the
-      // measured failure was exactly that: the page was WORKING and the probe gave
-      // up, which is the "a page that measured nothing" failure with a clock in it.
-      // **⇒ AND A TIMED-OUT PROBE IS NOT A VERDICT.** MEASURED: a 13 154-launch
-      // replay holds the main thread in stretches longer than the evaluate
-      // timeout, so the probe threw and the harness reported a page that
-      // "never finished" -- while the page was WORKING. **⇒ SO THE POLL RETRIES.**
-      // RETRY
-      const t0 = Date.now();
-      const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:'running', p:window.__prog};", { timeoutMs: 60000 });
-      if (i % 20 === 0) P(`  poll ${i}: ${JSON.stringify(r)} (${Date.now() - t0} ms)`);
-      if (r && r.t === "done") break;
-      } catch (e) { if (i % 20 === 0) P(`  poll ${i}: TIMEOUT`); }
+        const r = await s.eval("return window.__TRAIN_RESULT ? {t:'done'} : {t:'running'};", { timeoutMs: 60000 });
+        if (r && r.t === "done") break;
+      } catch (e) { /* the main thread is busy; ask again */ }
       await new Promise((r) => setTimeout(r, 250));
     }
-    P("stage: reading the result");
-    // **⇒ AND A REPLAY THAT OUTLASTS THE BUDGET IS `REFUSED`, NOT A PASS AND NOT A
-    // FAIL.** MEASURED: this trace is **13 154 launches** and the page does NOT
-    // reach its result inside a TWENTY-MINUTE poll at 64x64, even with the
-    // launches batched 64-to-a-submit -- so the run measured NOTHING about the
-    // logits and must not be read as a verdict either way.
-    let out;
     try {
-      out = await s.eval("return JSON.stringify(window.__TRAIN_RESULT ?? {ok:false, error:'no result: the replay had not finished'});", { timeoutMs: 240000 });
+      return JSON.parse(await s.eval("return JSON.stringify(window.__TRAIN_RESULT ?? {ok:false, error:'no result'});", { timeoutMs: 240000 }));
     } catch (e) {
-      P(`REFUSED[3]: the page did not publish a result inside the budget (${e.message}).`);
-      P(`  13 154 launches on one page, batched 64-to-a-submit.`);
-      P(`  What IS measured about this trace, without a browser:`);
-      P(`    .venv/bin/python .agents/slop/browser/trace_imagenet_train.py 64`);
-      P(`      launches 13154  WGSL-UNRENDERED: 0 of 13154`);
-      P(`  => EVERY kernel of an EfficientNet-0 TRAINING step renders to WGSL.`);
-      P(`  => The REPLAY's wall-clock is the open problem, and it is a packaging one.`);
-      return { __refused: 3 };
+      return { ok: false, error: `no result inside the budget (${e.message})` };
     }
-    return JSON.parse(out);
   } finally {
     if (h) await shutdown(h);
     srv.close();
   }
 }
 
-const f32v = (w) => { const b = Buffer.alloc(4); b.writeUInt32LE(w >>> 0); return b.readFloatLE(0); };
+const diff = (got, want) => {
+  let n = 0, first = null;
+  const len = Math.min(got.length, want.length);
+  for (let i = 0; i < len; i++) {
+    if (got[i] === want[i]) continue;
+    n++;
+    if (first === null) first = [i, got[i], want[i]];
+  }
+  return { n, len, first };
+};
 
 async function main() {
   if (!existsSync(path.join(DIR, "inet-train-net.json"))) {
     P(`REFUSED[3]: ${path.join(DIR, "inet-train-net.json")} is absent.`);
-    P(`  It is a GENERATED artifact (72 MB). Regenerate it with:`);
+    P(`  A GENERATED artifact. Regenerate with:`);
     P(`      .venv/bin/python .agents/slop/browser/trace_imagenet_train.py 64`);
     return 3;
   }
   await buildBundle();
   const oracle = JSON.parse(await readFile(path.join(DIR, "inet-train-oracle.json"), "utf8"));
   const net = JSON.parse(await readFile(path.join(DIR, "inet-train-net.json"), "utf8"));
-  const want = b64ToU32(oracle.logits_b64);
-  const LN = oracle.logits_buffer;
-
-  P(`oracle: EfficientNet(0) TRAINING step, loss=${oracle.loss} logits=${oracle.shape} ` +
-    `buffer=${LN}  kernels=${net.kernels.length}`);
-  P(`        payloads ${net.payloads.length} distinct (interned)`);
-
-  // **⇒ AND A STALL IS RETRIED ONCE, DECLARED RATHER THAN HIDDEN.** MEASURED: in
-  // five runs of this gate in one session, ONE did not publish a result inside
-  // the poll -- and its own progress counter had never left zero, so the shape is
-  // a page that stalled BEFORE its first batch and not a wrong answer. **⇒ SO THE
-  // GATE STARTS A FRESH PAGE ONCE, AND STILL REQUIRES A PASS**: a retry that
-  // accepted a different outcome would be one thing, and a retry that re-asks the
-  // SAME question is another. **⇒ AND IF BOTH ATTEMPTS STALL, THE VERDICT IS
-  // REFUSED WITH `attempts=2`, WHICH IS THE TRUTH.**
-  let res = null, attempts = 0;
-  for (; attempts < 2; attempts++) {
-    res = await replay(LN);
-    if (res && res.ok) break;
-    if (!res || !res.__refused) { P(`  attempt ${attempts + 1}: no result, restarting the page`); }
-  }
-  if (!res || !res.ok) {
-    P(`REFUSED[3]: attempts=${attempts}, no result from either page.`);
-    P(`  launched 13154 kernels; WGSL-UNRENDERED: 0 of 13154 (trace-side, proven).`);
+  const P8 = oracle.params ?? {};
+  const names = Object.keys(P8);
+  if (!names.length) {
+    P(`REFUSED[3]: the oracle records NO parameter buffers, so the update cannot be`);
+    P(`  compared. That is the exact defect this gate exists to catch: a logits-only`);
+    P(`  row is green on a step whose gradients are zero.`);
     return 3;
   }
-  if (res.__refused) return res.__refused;
-  if (!res || !res.ok) {
-    P(`${BAD}the page did not finish: ${String(res && res.error).slice(0, 900)}`);
-    return 1;
+
+  P(`oracle: EfficientNet(0) TRAINING step at ${oracle.input.slice(2).join("x")}, loss=${oracle.loss}`);
+  P(`        ${names.length} SAMPLED PARAMETER buffers, ${Object.values(P8).reduce((a, v) => a + v.numel, 0)} parameters total`);
+  for (const n of names) P(`          ${n.padEnd(6)} ${P8[n].name.padEnd(34)} numel=${P8[n].numel}`);
+
+  let res = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    res = await replay(names.join(","));
+    if (res && res.ok) break;
+    if (attempt === 0) P(`  attempt 1: no result, restarting the page`);
   }
-  P(`adapter ${res.adapter}  launches ${res.launches}  uploads ${res.uploads}  f32 buffers ${res.f32_buffers}`);
-  if (res.brace_repaired?.length) P(`        brace repairs: ${res.brace_repaired.join(" ")}`);
+  if (!res || !res.ok) {
+    P(`REFUSED[3]: no result from either page (${res && res.error}).`);
+    P(`  launched ${net.kernels.length} kernels; WGSL-UNRENDERED: 0 of ${net.kernels.length} (trace-side).`);
+    return 3;
+  }
+  P(`adapter ${res.adapter}  launches ${res.launches}  uploads ${res.uploads}  read_back ${res.read_back}`);
 
   let fails = 0;
-  const got = res.words[LN];
-  if (!got) { P(`${BAD}the readback has no ${LN}`); return 1; }
 
-  let nDiff = 0, maxAbs = 0, exact = 0;
-  for (let i = 0; i < Math.min(got.length, want.length); i++) {
-    if (got[i] === want[i]) { exact++; continue; }
-    nDiff++;
-    maxAbs = Math.max(maxAbs, Math.abs(f32v(got[i]) - f32v(want[i])));
+  // ---- 1. THE UPDATE, BIT-EXACT -------------------------------------------
+  let totWords = 0, totDiff = 0, badParams = 0;
+  for (const n of names) {
+    const got = res.words[n];
+    const want = b64ToU32(P8[n].after_b64);
+    if (!got) { P(`${BAD}${n} was not read back`); fails++; badParams++; continue; }
+    const d = diff(got, want);
+    totWords += d.len; totDiff += d.n;
+    if (d.n) { badParams++; P(`      ${n} (${P8[n].name}): ${d.n}/${d.len} words differ, first ${JSON.stringify(d.first)}`); }
   }
-  const within = maxAbs <= TOL;
-  P(`${within ? OK : BAD}the training step's ${want.length} logits AGREE within ${TOL} ABSOLUTE: ` +
-    `${exact} exact, ${nDiff} differ, max |abs| ${maxAbs.toExponential(3)}`);
-  if (!within) fails++;
+  const exact = totDiff === 0;
+  P(`${exact ? OK : BAD}the UPDATED PARAMETERS are BIT-IDENTICAL to CPython's ` +
+    `(denominator=${names.length} buffers, ${totWords} words)${exact ? "" : `, ${badParams} buffer(s) differ`}`);
+  if (!exact) fails++;
 
-  // C1: nothing ran -- the logits buffer's upload is whatever the trace says.
-  const site = net.buffers[LN];
-  const firstBind = site?.b64 !== undefined
-    ? b64ToU32(typeof site.b64 === "number" ? net.payloads[site.b64] : site.b64)
-    : new Uint32Array(got.length);
-  let c1 = 0;
-  for (let i = 0; i < Math.min(got.length, firstBind.length); i++) if (got[i] !== firstBind[i]) c1++;
-  P(`${c1 > 0 ? OK : BAD}C1 (the logits vs the UPLOAD, which must DIFFER): ${c1} of ${got.length} differ`);
-  if (!(c1 > 0)) fails++;
+  // ---- 2. AND THEY MOVED ---------------------------------------------------
+  const moved = names.filter((n) => P8[n].before_b64 !== P8[n].after_b64);
+  P(`${moved.length === names.length ? OK : BAD}the parameters MOVED during the step: ` +
+    `${moved.length} of ${names.length} differ between the trace's own two snapshots`);
+  if (moved.length !== names.length) fails++;
 
-  // C2: one bit of a word that AGREES must add exactly one differing word.
-  let k = 0;
-  while (k < got.length && got[k] !== want[k]) k++;
-  const mut = Uint32Array.from(want);
-  mut[k] ^= 1;
-  let n2 = 0;
-  for (let i = 0; i < Math.min(got.length, mut.length); i++) if (got[i] !== mut[i]) n2++;
-  P(`${n2 === nDiff + 1 ? OK : BAD}C2 (one bit of logit ${k}, which agrees, must add EXACTLY one): ` +
-    `${nDiff} -> ${n2}`);
-  if (!(n2 === nDiff + 1)) fails++;
+  // ---- 3. C1: NOTHING RAN -------------------------------------------------
+  let c1Diff = 0;
+  for (const n of names) {
+    const got = res.words[n];
+    if (!got) continue;
+    c1Diff += diff(got, b64ToU32(P8[n].before_b64)).n;
+  }
+  P(`${c1Diff > 0 ? OK : BAD}C1 (the GPU vs the **PRE-STEP** weights, which must DIFFER): ` +
+    `${c1Diff} of ${totWords} words differ`);
+  if (!(c1Diff > 0)) fails++;
 
-  // C3: the tolerance must be able to fail.
-  const far = Uint32Array.from(want);
-  far[0] = new Uint32Array(new Float32Array([f32v(want[0]) + 1.0]).buffer)[0];
-  let farMax = 0;
-  for (let i = 0; i < Math.min(got.length, far.length); i++)
-    if (got[i] !== far[i]) farMax = Math.max(farMax, Math.abs(f32v(got[i]) - f32v(far[i])));
-  P(`${farMax > TOL ? OK : BAD}C3 (one logit moved by 1.0 must EXCEED the tolerance): ` +
-    `${farMax.toExponential(3)} vs ${TOL}`);
-  if (!(farMax > TOL)) fails++;
+  // ---- 4. C2: ONE BIT OF ONE UPDATED WEIGHT --------------------------------
+  const v = names[0];
+  const mutAfter = Uint32Array.from(b64ToU32(P8[v].after_b64));
+  mutAfter[0] ^= 1;
+  const c2 = diff(res.words[v], mutAfter);
+  P(`${c2.n === 1 && c2.first && c2.first[0] === 0 ? OK : BAD}C2 (one bit of ${v}[0] must be caught, ` +
+    `and only that word): ${c2.n === 1 ? "named word 0" : JSON.stringify({ n: c2.n, first: c2.first })}`);
+  if (!(c2.n === 1)) fails++;
+
+  // ---- 5. C3: THE ROW CAN FAIL AT ALL --------------------------------------
+  // One whole parameter buffer is compared against the WRONG parameter's update.
+  // If that also "agrees", the row is comparing nothing.
+  const other = names[1] ?? names[0];
+  const swapped = diff(res.words[v], b64ToU32(P8[other].after_b64));
+  P(`${swapped.n > 0 ? OK : BAD}C3 (${v} against ${other}'s update must NOT agree): ` +
+    `${swapped.n} of ${swapped.len} words differ`);
+  if (!(swapped.n > 0)) fails++;
 
   P(fails === 0
     ? `PASS -- one EfficientNet(0) TRAINING step, ${res.launches} launches replayed on ` +
-      `${res.adapter}, reproduces CPython's ${want.length} logits to ${maxAbs.toExponential(3)} ` +
-      `ABSOLUTE (${exact} bit-identical), every control red`
+      `${res.adapter}, leaves ${names.length} of ${names.length} SAMPLED PARAMETERS ` +
+      `BIT-IDENTICAL to CPython's (${totWords} words), and every one of them MOVED`
     : `FAIL (${fails}) -- see the BAD rows`);
   return fails === 0 ? 0 : 1;
 }

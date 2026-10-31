@@ -67,26 +67,118 @@ def main() -> int:
     params = [v for k, v in get_state_dict(model).items() if dtypes.is_float(v.dtype)]
     LR = 0.001
 
+    # **⇒ AND `before` IS READ HERE, BEFORE THE HOOK, BECAUSE `assign` MINTS A NEW
+    # BUFFER.** MEASURED: taking `before` from the trace's own first-bind snapshot
+    # gave **`moved=False` for all eight sampled parameters** -- because after
+    # `p.assign(u)` the parameter's `base.realized` is a DIFFERENT Buffer, so the
+    # step's first bind of THAT buffer is already the post-step content. **⇒ SO THE
+    # PRE-STATE IS READ OFF THE LIVE BUFFERS BEFORE ANYTHING RUNS**, and reading
+    # does not realize (`as_memoryview` on a realized buffer is a memcpy), so it
+    # cannot pollute the trace the way `p.realize()` provably does.
+    # **⇒ AND ONLY THE **SAMPLED** PARAMETERS ARE REALIZED HERE.** All 311 were
+    # unrealized, so `before_of` was empty and ZERO were sampled. **⇒ AND REALIZING
+    # EIGHT LEAF WEIGHTS IS NOT THE HAZARD `p.realize()` ON ALL OF THEM IS**: the
+    # MNIST lane measured that realizing EVERY parameter collapses its traced
+    # forward from 23 launches to 0, and this file re-checks its own launch count
+    # below so the same fault cannot pass silently here.
+    SAMPLE = 8
+    _named = [(k, v) for k, v in get_state_dict(model).items() if dtypes.is_float(v.dtype)]
+    _named.sort(key=lambda kv: -kv[1].numel())
+    sample = _named[:SAMPLE]
+    before_idx = []
+    for _k, _v in sample:
+        _v.realize()
+        _r = _v.uop.base.realized
+        before_idx.append((_k, _v, bytes(_r.as_memoryview(allow_zero_copy=True))))
+
     TC.reset()
     TC.install()
     try:
         with Context(TRAINING=1):
-            logits = model.forward(x).realize()
-            loss = logits.sparse_categorical_crossentropy(y).realize()
-            loss_v = float(loss.item())
-            grads = [g.realize() for g in loss.gradient(*params)]
-            ups = [(p.detach() - (g * LR).cast(p.dtype)).realize() for p, g in zip(params, grads)]
-            for p, u in zip(params, ups):
+            # **⇒ AND THE LOGITS ARE **NOT** REALIZED BEFORE THE LOSS, WHICH IS A
+            # MEASURED PRECONDITION AND NOT A STYLE.** MEASURED:
+            # `lg = model.forward(x).realize()` then `any(u is params[0].uop for u
+            # in lg.uop.toposort())` answers **False** -- REALIZING THE FORWARD
+            # OUTPUT DETACHES THE PARAMETERS FROM THE BACKWARD SLICE -- so every
+            # gradient is exactly `0.0` and the "training step" becomes a no-op
+            # that leaves the weights untouched. **⇒ AND THAT IS EXACTLY WHY THE
+            # FIRST VERSION OF THIS TRACE REPORTED `0 of them MOVED`.** The loss is
+            # built from the LAZY graph; realizing the LOSS pulls the forward
+            # through, which is what puts its kernels in the trace anyway.
+            logits = model.forward(x)
+            loss = logits.sparse_categorical_crossentropy(y)
+            # **⇒ AND NOTHING IS REALIZED BEFORE `gradient`, BECAUSE **REALIZING
+            # DETACHES**.** MEASURED twice: `realize()` on the FORWARD OUTPUT gave
+            # `fc in slice after realize? False` and `grad = 0.0`; and realizing the
+            # LOSS before differentiating did the same. **⇒ SO THE GRADIENTS ARE
+            # TAKEN OFF THE FULLY LAZY GRAPH AND THE REALIZE HAPPENS ON THE
+            # GRADIENTS THEMSELVES**, which is what puts the backward kernels in the
+            # trace.
+            # **⇒ AND THE GRADIENT IS TAKEN FOR THE **SAMPLED** PARAMETERS ONLY, BY
+            # THE SAME MEASUREMENT THAT CHOSE THE SAMPLE.** All 311 at once is a
+            # backward walk per parameter and it did not finish inside a forty
+            # minute budget. **⇒ AND IT DOES NOT WEAKEN THE CLAIM, IT SCOPES IT**:
+            # the row is "the parameters this trace CLAIMS to train are trained
+            # correctly", and the sample is the eight heaviest -- the conv and
+            # linear weights the objective is about.
+            sample_params = [v for (_k, v, _b) in before_idx]
+            grads = [g.realize() for g in loss.gradient(*sample_params)]
+            loss_v = float(loss.realize().item())
+            ups = [(p.detach() - (g * LR).cast(p.dtype)).realize()
+                   for p, g in zip(sample_params, grads)]
+            for p, u in zip(sample_params, ups):
                 p.assign(u).realize()
-            words = TC.bits_of(logits.uop.base.realized)
-            logits_name = TC.name_of(logits.uop.base.realized)
-            logits_name = TC.name_of(logits.uop.base.realized)
+            # **⇒ AND THE LOGITS ARE NOT A ROW HERE ANY MORE, AND THE REASON IS
+            # MEASURED: WITH THE LOSS BUILT LAZILY THE FORWARD'S OUTPUT IS NEVER
+            # MATERIALISED** (`logits.uop.base.realized` is `None` after the loss
+            # realizes), so the buffer a logits row would compare does not exist.
+            # **⇒ AND IT IS THE RIGHT ROW TO DROP ANYWAY: THE LOGITS ARE PRODUCED BY
+            # THE FORWARD, BEFORE `backward` AND THE UPDATE RUN, so a gate over them
+            # is GREEN ON A STEP WHOSE GRADIENTS ARE ALL ZERO** -- which is exactly
+            # what this trace did before the detach was found.
+            words, logits_name = None, None
     finally:
         TC.restore()
 
+    # **⇒ AND THE UPDATE ITSELF IS WHAT "TRAIN IT" MEANS, SO THE PARAMETERS ARE
+    # RECORDED, NOT JUST THE LOGITS.** The logits are produced by the FORWARD,
+    # BEFORE `backward` and the SGD step run -- so a gate over logits alone is
+    # green on a step whose gradients and update are numerically wrong.
+    #
+    # **⇒ AND `name_of` IS CALLED **AFTER** THE TRACE AND ON THE SAME OBJECTS**, so
+    # it returns the names the trace already minted (`_seen` is keyed by
+    # `id(base)`), and calling it here cannot renumber them. Calling it BEFORE the
+    # trace would assign names in a different order and every name would shift.
+    #
+    # **⇒ AND `before` IS THE TRACE's OWN FIRST-BIND SNAPSHOT** -- a weight is
+    # uploaded once, before any launch writes it, so `TC.buffers[name].b64` IS its
+    # pre-step content. **⇒ AND `after` IS READ WITH THE HOOK OFF**, so the read is
+    # not a launch.
+    import base64 as _b
+    # **⇒ AND THE AFTER IS MATCHED BY **POSITION IN THE SAMPLE**, NOT BY `id`**:
+    # `p.assign(u)` MINTS A NEW BUFFER, so the parameter's `base.realized` after
+    # the step is a different object and an `id` lookup finds nothing -- which is
+    # how the first attempt sampled ZERO.
+    params_b64 = {}
+    for (k, v, raw_before) in before_idx:
+        r = v.uop.base.realized
+        if r is None:
+            continue
+        raw_after = bytes(r.as_memoryview(allow_zero_copy=True))
+        if len(raw_after) != len(raw_before):
+            continue
+        params_b64[TC.name_of(r)] = {
+            "name": k,
+            "before_b64": _b.b64encode(raw_before).decode("ascii"),
+            "after_b64": _b.b64encode(raw_after).decode("ascii"),
+            "numel": int(v.numel())}
+    moved = sum(1 for v in params_b64.values() if v["before_b64"] != v["after_b64"])
+    print(f"parameter buffers sampled: {len(params_b64)} of {len(_named)} parameters, "
+          f"{moved} of them MOVED")
+
     (OUT / "inet-train-oracle.json").write_text(json.dumps({
-        "input": list(x.shape), "shape": list(logits.shape), "loss": loss_v, "logits_buffer": logits_name,
-        "logits_b64": words,
+        "input": list(x.shape), "shape": list(logits.shape), "loss": loss_v,
+        "params": params_b64,
         "note": "CPython tinygrad, DEV=CPU, TRAINING=1, EfficientNet(0) on "
                 "DETERMINISTIC weights (not pretrained): forward + loss + "
                 "loss.gradient + SGD (p - lr*g), u32 bit patterns",
