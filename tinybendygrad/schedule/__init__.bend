@@ -4,15 +4,64 @@
 # linearizer: the three pure helpers and `create_schedule`, the engine's first
 # real consumer. `create_schedule` takes a sink UOp and answers the kernel list.
 #
-# DEFERRED is __init__.py:82-301. The header used to give ONE reason: "every
-# rule in it is a `graph_rewrite` over the arena with a PYTHON `ctx` DICT".
-# MEASURED 2026-10-30, AND THE ctx-DICT CLAUSE IS FALSE: the ctx DICT is a
-# `Data` RECORD OF FOUR APPEND-ONLY LISTS (`CallifyCtx` below), and
-# `collect_stores` and `canonicalize_alloc` are BOTH PORTED on top of it.
-# `gates/schedstore-gate.py` is 25 rows over the two, and every row is
-# CPython's printed answer. The `graph_rewrite` PASS is the wall that is
-# LEFT, and it is a DIFFERENT wall: the rule bodies are ported and the
-# ENGINE is not.
+# DEFERRED is __init__.py:82-301. The header has now been wrong TWICE, and both
+# corrections were measurements:
+#
+#   1. It gave ONE reason -- "every rule in it is a `graph_rewrite` over the arena
+#      with a PYTHON `ctx` DICT" -- and that clause is FALSE: the ctx is a `Data`
+#      record of four append-only lists (`CallifyCtx` below), and the two rules
+#      named here were ported ON TOP of it.
+#   2. It then said the wall left was "the `graph_rewrite` ENGINE is not [ported]".
+#      THAT IS ALSO FALSE. `codegen/__init__.bend:298` HAS `graph_rewrite` (the
+#      dispatcher, `ops.py:1888-1890`), and it has `pm_post_sched_cache` -- THE
+#      EXACT TWO-RULE TABLE FROM `__init__.py:96-101` -- with its own fixture and
+#      oracle. The engine exists; what does not exist is one of its two TABLES.
+#
+# MEASURED 2026-10-31, the deferral is THREE WALLS, each in a DIFFERENT file, and
+# each blocks a NAMED set of the 13 pieces of :82-301 the port does not have.
+# OF THE 23 NAMES IN THAT REGION, 10 ARE PORTED (below) AND 13 ARE NOT:
+#
+#   missing: create_new_buffer resolve_linear_call pm_resolve_linear_call
+#            pm_schedule pm_copy_from_store contiguous_mops_to_view
+#            pm_callify_ctx_collect canonicalize_call_body pm_canonicalize_alloc
+#            replace_input_buffer pm_replace_buf transform_to_call
+#            create_linear_with_vars
+#
+#   A. STORAGE. There is no `type Buffer is Data` anywhere in the port
+#      (`uop/ops.bend:5399` states the wall), so `new_buffer`, `max_numel`,
+#      `on_disk`, `contiguous_view` and `param_like` DO NOT EXIST AS DEFS --
+#      MEASURED: all five are comment-only. That blocks
+#      `create_new_buffer`, `contiguous_mops_to_view` and `replace_input_buffer`.
+#
+#   B. `bottom_up`. `codegen/__init__.bend:226-232` MEASURES it: upstream puts
+#      `pm` in `bpm` and `None` in `pm` when `bottom_up=True`, and both drivers
+#      then run only the bottom-up table. `uop/ops.bend` has no `bpm` and no
+#      per-entry bottom-up marker, so the REAL engine's signature --
+#      `graph_rewrite(ar, sink, pm, ctx, walk)` at `codegen/__init__.bend:298` --
+#      does not carry `bottom_up`.
+#
+#      **AND THERE IS A SECOND `graph_rewrite` THAT DOES CARRY IT, AND IT IS A
+#      STUB.** `codegen/decomp/dtype.bend:2078` is
+#      `graph_rewrite(x, pm, ctx, bottom_up) -> Maybe<&2, U32>` whose body is
+#      `graph_rewrite.wall(x)`, and the wall answers `None{}`. So the port has
+#      ONE signature that NAMES the capability and IGNORES it, and ONE engine
+#      that does not have it. **A PARAMETER A DEF ACCEPTS AND DISCARDS IS WORSE
+#      THAN ONE IT OMITS: IT READS AS THOUGH THE CAPABILITY IS THERE.** MEASURED:
+#      no non-stub def in the port takes `bottom_up`.
+#      That blocks `canonicalize_call_body` and the `pm_canonicalize_alloc` chain.
+#
+#   C. `variables()`. NO DEF: `UOp.variables`, `is_variable` are comment-only
+#      (`substitute` DOES exist, `uop/upat.bend`). That blocks
+#      `resolve_linear_call`'s substitution and everything above it --
+#      `transform_to_call` and `create_linear_with_vars`, which are the ENTRY
+#      POINTS. **A WALL A NAMED ENTRY POINT STANDS ON IS NOT A BACKLOG ITEM.**
+#
+# SO THE ORDER IS NOT "SCHEDULER NEXT": A IS UPSTREAM OF C IS UPSTREAM OF THE
+# ENTRY POINTS, and B is orthogonal. THE STORAGE LAYER IS THE NEXT THING, NOT
+# THIS FILE. What IS done here is the 10 ported pieces, and
+# `gates/schedstore-gate.py` is 50 rows over EIGHT of them (was 25 over two), and
+# every row is CPython's printed answer -- and two of the eight were BROKEN when
+# their first row read them.
 #
 # ---------------------------------------------------------------------------
 # WHAT THE ENGINE PASS LOOKS LIKE HERE, since this file is its first consumer.
