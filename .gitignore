@@ -318,3 +318,6 @@ checks/.e2e-fixture/opsbend-milestone/PACKET.out
 .agents/slop/browser/web/train-net.json
 .agents/slop/browser/web/train-oracle.json
 .agents/slop/browser/web/mnist-webgpu.js
+.agents/slop/browser/imagenet-train/inet-train-net.json
+.agents/slop/browser/web/inet-train-net.json
+.agents/slop/browser/web/inet-train-oracle.json
