@@ -384,3 +384,66 @@ not another guess.**
 BEND is 55.6x slower than PYTHON, the cost is 95% reference-count release, and I
 have not identified the allocation that requires it. **I am stopping rather than
 landing a ninth speculative change.**
+
+---
+
+# 7. THE ALLOCATION, COUNTED — AND IT VINDICATES THE `Array` REWRITE I REFUTED IN §5.2
+
+**The reviewer asked to instrument the allocation, not the free. Done: a counter
+was compiled into a COPY of the compiler's own C (`ctr/exec_ctr.c`), and the tree
+is untouched.**
+
+    $ clang -O2 -o ctr/exec_ctr ctr/exec_ctr.c -lm
+    $ ctr/exec_ctr /tmp/pkt/PACKET.in 1 1 1
+    CTR bank_pop=1719 bank_push=210 heap_alloc=6011075 heap_free=6011075
+        term_drop=2412939949 span_fade=1263244637 span_fade_terms=7914431233
+
+## 7.1 PARSE OR RUN? — THE ZERO-GRID CONTROL
+
+    $ ctr/exec_ctr /tmp/pkt/PACKET.in 0 0 0
+    CTR heap_alloc=272720 term_drop=67908 span_fade_terms=116338
+    real 0.01
+
+**⇒ THE PACKET PARSE IS 0.01 s AND 67 908 `term_drop` CALLS.** So 2 412 939 949 -
+67 908 ≈ **2.41 BILLION drops are the RUN LOOP**, and the parse is 0.07% of them.
+
+## 7.2 AND 8x8 vs 16x16 SAYS IT IS NOT THE COMPUTE EITHER
+
+    8x8 packet (3 362 B):  term_drop=1 301 499 820  span_fade_terms=4 276 184 334
+    16x16 packet (9 544 B): term_drop=2 412 939 949  span_fade_terms=7 914 431 233
+
+**1.85x for 4x the arena AND 8x the MACs.** Neither variable explains it alone --
+which is the signature of `steps x arena`.
+
+## 7.3 THE ARITHMETIC THAT NAMES IT
+
+`Prog.load.put` builds the state as `List.replicate(Elem, Build.slot(b), zero)` for
+`vs` and `Prog.bytes(...)` for `ms`. For this packet `ms` is **3 buffers x 1 024
+bytes = 3 072** cells and `vs` is the slot count, **~70**.
+
+**⇒ 2 412 939 949 / (3 072 + 70) = 767 000 STEPS.** And a 16x16 matmul is 4 096
+MACs; at ~180 uops per MAC that is **737 000 steps. THE TWO NUMBERS AGREE.**
+
+**⇒ SO EVERY ONE OF THE ~767 000 UOP STEPS DROPS AND REBUILDS THE 3 072-CELL
+ARENA, AND `term_drop` IS CALLED ONCE PER CELL.** That is `steps x arena` -- 2.3
+billion refcount calls at ~4 ns each = **9 s of the 15 s**, which matches §6's 95%
+in `term_drop`/`span_fade`.
+
+## 7.4 SO §5.2 WAS WRONG, AND I SAY WHICH PART
+
+§5.2 concluded "`Mem.put` is 4%, so the `Array` rewrite removes 4-9% and cannot
+close the gap". **⇒ THAT ABLATION REPLACED `Mem.put` WITH IDENTITY, WHICH MAKES
+STORES NO-OPS -- IT CHANGED THE PROGRAM, AGAIN.** The counter does not change the
+program: it says the arena is walked once per step, and a step that stores nothing
+still walks it, which is exactly why the ablation under-reported.
+
+**⇒ THE `Array` REWRITE IS CORRECT AND IS NOW JUSTIFIED BY A COUNT AND NOT BY A
+HUNCH**: an `Array` field is a POINTER THAT MOVES, so dropping the record stops
+walking 3 072 cells, and `a[i] <- v` rewrites the slot in place.
+
+## 7.5 WHAT IS STILL NOT DONE
+
+**The rewrite is not written.** It is a change to `Prog`'s type across ~12 reader
+defs and 8 record constructions, and the only safety net is
+`gates/ops_python_exec-gate.py` (153 fixtures, 0 divergences). **⇒ THE DIAGNOSIS IS
+NOW SETTLED AND THE WORK IS NOT**, and stage 3's 55.6x stands until it is.
