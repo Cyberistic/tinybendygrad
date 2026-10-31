@@ -190,7 +190,7 @@ say "== COVERAGE  how much of the port is EXECUTION and how much is TEXT, with t
 mkcopy() {
   ok=1
   rm -rf "$NC"
-  mkdir -p "$NC/.agents/slop" "$NC/checks" || return 1
+  mkdir -p "$NC/.agents/slop" "$NC/checks/.e2e-fixture" || return 1
   cp -R "$ROOT/tinybendygrad" "$NC/tinybendygrad" || return 1
   cp -R "$PORTEXEC" "$NC/checks/.e2e-fixture/portexec" || return 1
   cp "$ORACLE" "$NC/checks/e2e-mm-oracle.json" || return 1
@@ -266,13 +266,17 @@ else rc=1; fi
 
 # ---- C1: THE PORT.  Nobody had run this one for ANY execution lane. ----------
 say ""
-say "-- C1  THE PORT -- cstyle.bend's buftypes.go accumulates at the HEAD instead of the"
+say "-- C1  THE PORT -- cstyle.bend's ku_args.go accumulates at the HEAD instead of the"
 say "        tail, so render_kernel emits the four buffers in REVERSE order. List.append(a,"
 say "        A, xs, ys) IS xs ++ ys -- bend2-constraints.md position 1590, and this is that"
 say "        rule with a compiler attached."
+say "        (THE DEF WAS RENAMED: IT WAS `buftypes.go` AND IT IS NOW `ku_args.go`,"
+say "        AND THE PLANT TEXT MOVED WITH IT. A PLANT THAT NAMES A DEF THAT NO"
+say "        LONGER EXISTS IS VACUOUS, AND THE HARNESS SAYS SO -- WHICH IS HOW THIS"
+say "        WAS FOUND.)"
 mkcopy && planted "$NC/tinybendygrad/renderer/cstyle.bend" \
-  'case h <> t: buftypes.go(dev, t, List.append(&2, String, acc, [buftype(dev, h)]))' \
-  'case h <> t: buftypes.go(dev, t, List.append(&2, String, [buftype(dev, h)], acc))'
+  'case h <> t: ku_args.go(t, dev, List.append(&2, String, acc,' \
+  'case h <> t: ku_args.go(t, dev, List.append(&2, String, [ku_buftype(dev, h), " ", BArg.name(h)], acc))'
 ctl "C1 THE PORT reverses its own emitted buffer order" 'MISMATCH at 64/64 words' mm C1
 
 # ---- C2: VACUITY.  A wrong-but-plausible computation must not satisfy the lane.
@@ -310,8 +314,8 @@ say "        parameters was expected to be a THEOREM, as portexec's stage-2 theo
 say "        It is not. The harness readback address is fixed by POSITION, so the buffer"
 say "        that must be read lands on the one that must be written, and word 0 goes to 0."
 mkcopy && planted "$NC/tinybendygrad/renderer/cstyle.bend" \
-  'case h <> t: buftypes.go(dev, t, List.append(&2, String, acc, [buftype(dev, h)]))' \
-  'case h <> t: buftypes.go(dev, t, List.append(&2, String, [buftype(dev, h)], acc))'
+  'case h <> t: ku_args.go(t, dev, List.append(&2, String, acc,' \
+  'case h <> t: ku_args.go(t, dev, List.append(&2, String, [ku_buftype(dev, h), " ", BArg.name(h)], acc))'
 ctl "C4 THE PORT, on the one-input row" 'MISMATCH at 1/4 words' stage2 C4
 
 hr

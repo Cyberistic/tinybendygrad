@@ -42,6 +42,18 @@ const OUT = join(ROOT, "runs/e2e");
 const FLAGS = ["--headless=new"];
 
 async function build() {
+  // THE BUNDLE DIRECTORY IS CREATED HERE, NOT ASSUMED. **⇒ AND IT WAS NOT
+  // CREATED AT ALL, WHICH IS WHY STAGE 3 DIED WITH `ENOENT ... copyfile
+  // .../tinybendygrad/runtime/webgpu_call.js -> .../checks/.e2e-fixture/e2e/
+  // webgpu_call.js`: `mkdir` WAS CALLED FOR `OUT` (THE OUTPUT DIRECTORY) AND
+  // NEVER FOR `BUNDLE` (THE SERVED DIRECTORY).** ⇒ AND THE FIX IS ONE LINE,
+  // AND THE COMMENT IS THE MEASUREMENT, BECAUSE A LANE THAT DIES WITH ENOENT
+  // IS A LANE THAT MEASURED NOTHING.
+  await mkdir(BUNDLE, { recursive: true });
+  // (0) THE PAGE. It is served from the bundle, so it must be IN the bundle,
+  // and it is a fixture, so it lives beside the gate in git
+  // (`e2e-index.html`) and is copied here rather than written here.
+  await copyFile(join(HERE, "e2e-index.html"), join(BUNDLE, "index.html"));
   // (1) the port's driver, byte for byte, so `./webgpu_call.mjs` resolves beside it
   await copyFile(join(ROOT, "tinybendygrad/runtime/webgpu_call.js"), join(BUNDLE, "webgpu_call.js"));
   // (2) the port's PURE half, freshly emitted. The committed

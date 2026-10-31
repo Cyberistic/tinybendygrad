@@ -91,6 +91,14 @@ import ./indexing.bend as IX
 
 import ./realize.bend as RZ
 
+# THE ENGINE -- `schedule/rangeify.bend`, UPSTREAM's `tinygrad/schedule/rangeify.py`.
+# **⇒ AND THIS EDGE IS **ONE-WAY**: `rangeify.bend` IMPORTS NOTHING FROM HERE, AND
+# IT MUST NOT.** `realize.bend` USED TO IMPORT IT (THE ENGINE) AND THIS FILE
+# IMPORTS `realize.bend` (THE FIXTURE), **⇒ SO THE OTHER WAY ROUND WAS A CYCLE
+# AND THE ENGINE's STAGE 1 -- `run_rangeify` -- WAS AN EMPTY TABLE.**
+# **⇒ AND NOW THE COMPOSITION LIVES HERE, WHERE `run_rangeify` LIVES.**
+import ./rangeify.bend as RG
+
 # ===========================================================================
 # 1. THE DUMP -- the ORACLE's spelling, `op:argkey:srcops`.
 #
@@ -1661,6 +1669,45 @@ def rr_row_out(plant: Bool) -> String:
   +root = rr_ap_root(ApFin.fin(rep), sink)
   rr_dump(ApFin.ar(rep), root)
 
+# THE PORT's `run_rangeify` -- `indexing.py:183`. **THE RANGE MAP AND THE APPLY
+# REWRITE, IN THAT ORDER, AND THE REBUILT ROOT.** **⇒ AND IT IS **THE STAGE 1 OF
+# `get_kernel_graph`**, WHICH THE ENGINE's `eng_stages()` SPELLS AS AN EMPTY TABLE
+# **BECAUSE `run_rangeify` IS **AN ALGORITHM**, NOT A RULE TABLE.**
+# **⇒ AND THE ANSWER IS **THE PORT's OWN `O.Found{ar, i}`** -- THE ARENA AND A
+# NODE -- **⇒ SO NO NEW TYPE IS INVENTED.**
+# **⇒ AND `sink` IS READ THREE TIMES** (THE RANGE MAP, THE TOPOSORT, THE ROOT
+# LOOKUP), **⇒ SO IT IS BOUND ONCE TO A `+` LOCAL** -- WHICH IS BEND's SPELLING FOR
+# "READABLE MANY TIMES" -- **⇒ AND THAT IS THE SAME RULE `rr_range_map` ALREADY
+# FOLLOWS AT ITS OWN HEAD** (`+sk = sink`, WITH THE COMMENT *"AND `sink` IS READ
+# TWICE, SO IT IS BOUND ONCE TO A `+` LOCAL"*). **⇒ AND THE COMPILER SAYS SO BY
+# NAME**: `expected : sink` / `observed : sink (consumed more than once)`.
+def rr_run_rangeify(+ar: O.Arena, sink: U32) -> O.Found:
+  +sk = sink
+  +tb = F.Folded.t(F.folded(ar))
+  +m = rr_range_map(ar, tb, sk)
+  +ctx = RrMap.ctx(m)
+  +tbl = RrMap.tbl(m)
+  +ns = O.UOp.toposort(O.Arena.budget(ar), ar, sk)
+  +rep = rr_ap_walk(ar, tb, tbl, ctx, ns)
+  +root = rr_ap_root(ApFin.fin(rep), sk)
+  O.Found{ApFin.ar(rep), root}
+
+# THE PORT's `get_kernel_graph` -- `rangeify.py:341-376`: **THE PORT's OWN
+# `run_rangeify` AND THEN THE ENGINE's SIX TABLE STAGES.** **⇒ AND THE COMPOSITION
+# LIVES HERE BECAUSE `rangeify.bend` MUST NOT IMPORT THIS FILE.**
+def rr_kernel_graph(+ar: O.Arena, sink: U32) -> O.Found:
+  +r = rr_run_rangeify(ar, sink)
+  RG.eng_after_rangeify(O.Found.ar(r), O.Found.i(r))
+
+# THE ROW: THE KERNEL GRAPH, IN **THE ENGINE's OWN SPELLING** (`eng_dump`, THE
+# BFS), **⇒ SO THE ORACLE's `eng_py_out` AND THIS ROW ARE COMPARABLE WITH NO
+# TRANSLATOR.** **⇒ AND THE COUNT IS A ROW TOO, BECAUSE "HOW MANY NODES" IS THE
+# FIRST QUESTION AND A DUMP ALONE DOES NOT ANSWER IT.**
+def rr_row_kg() -> String:
+  +q = RZ.rz_built()
+  +k = rr_kernel_graph(RZ.RZProg.ar(q), RZ.RZProg.sink(q))
+  RG.eng_dump(O.Found.ar(k), O.Found.i(k))
+
 # ===========================================================================
 # THE REBUILT SRCS OF ONE NODE: **THE **OLD** SRCS**, **=> AND EACH IS **THE **REBUILT**
 # CHILD** IF IT IS **IN** THE MAP.
@@ -1777,3 +1824,4 @@ def main() -> IO(Unit):
     rr_row.line("rr_dims", rr_row_dims())
     rr_row.line("rr_tbl", rr_row_tbl())
     rr_row.line("rr_arena", rr_row_arena())
+    rr_row.line("rr_kg", rr_row_kg())

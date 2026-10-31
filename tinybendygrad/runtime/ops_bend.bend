@@ -1882,7 +1882,20 @@ def lrow(nm: String, v: List<&2, U32>) -> IO(Unit): srow(nm, ujoin(v))
 # LAUNCH is here.
 # ===========================================================================
 
-def PKT_DIR() -> String: ".agents/slop/opsbend-milestone"
+# THE PACKET DIRECTORY. **⇒ AND IT MOVED ON 2026-10-20**, WHEN THE GATE's FIXTURE
+# MOVED OUT OF THE PRUNED TREE AND INTO GIT BESIDE THE GATE (`0841bcfb0`,
+# "THE FLAGSHIP GATE's FIXTURE MOVES OUT OF THE PRUNED TREE, IN GIT, BESIDE THE
+# GATE") -- **⇒ AND **THIS** FILE WAS NOT MOVED WITH IT, SO THE PORT KEPT
+# WRITING `PACKET.out` INTO `.agents/slop/opsbend-milestone/` WHILE THE GATE READ
+# IT FROM `checks/.e2e-fixture/opsbend-milestone/`.**
+#
+# **⇒ AND THE SYMPTOM WAS A `FileNotFoundError` IN THE GATE, WITH THE PORT's OWN
+# OUTPUT VISIBLE IN THE OLD DIRECTORY** -- which is the shape of a stale path and
+# not of a broken port.
+#
+# **⇒ AND THE DIRECTORY IS THE **TRACKED** ONE**, because a gate's input belongs
+# beside the gate IN GIT: `.agents/slop/` is being pruned and holds no protection.
+def PKT_DIR() -> String: "checks/.e2e-fixture/opsbend-milestone"
 def PKT_IN() -> String: String.concat([PKT_DIR(), "/PACKET.in"])
 def PKT_OUT() -> String: String.concat([PKT_DIR(), "/PACKET.out"])
 def PKT_EXE() -> String: String.concat([PKT_DIR(), "/bend-executor"])
@@ -1898,7 +1911,10 @@ def PKT_GRID() -> List<String>: ["1", "1", "1"]
 # argv is `PACKET gx gy gz`, and there is no `String.append`, so the four fields
 # are ONE literal. `List.append` is `xs ++ ys` -- which is why this is a literal
 # and not a concat: the packet must come FIRST and a concat gets that backwards.
-def PKT_ARGV() -> List<String>: [".agents/slop/opsbend-milestone/PACKET.in", "1", "1", "1"]
+# **⇒ AND THE PACKET PATH IS **SPELLED**, NOT BUILT FROM `PKT_IN()`, BECAUSE A
+# LIST LITERAL'S ELEMENTS MUST BE CONSTANTS AND A CALL IS NOT; **⇒ SO THIS IS A
+# SECOND COPY OF THE PATH, AND IT IS WHY THE MOVE HAD TO TOUCH **BOTH** PLACES.**
+def PKT_ARGV() -> List<String>: ["checks/.e2e-fixture/opsbend-milestone/PACKET.in", "1", "1", "1"]
 
 # WRITE THE PACKET: the uop block (`encode`, byte-identical to
 # `packet-tiny.txt`) followed by ONE buffer line per PARAM, in uop order -- the

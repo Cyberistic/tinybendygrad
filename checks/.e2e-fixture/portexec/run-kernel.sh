@@ -63,7 +63,7 @@ print -r -- "== ORACLE  CPython: render_kernel + numpy + a real DEV=CPU run"
 
 # ---------------------------------------------------------------- PORT
 print -r -- "\n== PORT  ./bin/bend cstyle.bend"
-# THE PORT'S RUN IS RETRIED AND THE ROW COUNT IS CHECKED, NOT THE EXIT STATUS,
+# THE PORT'S RUN IS RETRIED AND ITS OUTPUT IS CHECKED, NOT THE EXIT STATUS,
 # for the reason e2e.sh names: bend stack-overflows on roughly one run in twenty
 # and prints NOTHING, and an empty capture is indistinguishable from "not
 # started". 12 attempts rather than 8, because MEASURED on 2026-10-04: this loop
@@ -72,17 +72,47 @@ print -r -- "\n== PORT  ./bin/bend cstyle.bend"
 # (`i64_dec.go`/`i64_dec.step`, mutual recursion that Bend refuses) -- which the
 # port's own imports drag in. That is NOT this lane's verdict and NOT this
 # lane's file; the failure is reported as SUBSTRATE so it cannot be read as one.
-i=0; rows=0
+#
+# **⇒ AND THE CHECK IS **THE COMPILE VERDICT**, NOT A ROW COUNT, AND THAT IS A
+# CORRECTION WITH A MEASURED CAUSE.** The check used to be "220 rows matching
+# `]   py=[`", because `cstyle.bend` used to PRINT its 227 string-diff gate rows.
+# **⇒ AND IT DOES NOT ANY MORE**: commit `564733bed` removed those rows from
+# `cstyle.bend`, which is now a LIBRARY -- it has no `main()`, and its rows live
+# in the tracked `gates/cstyle-live.rows` (228 rows). **⇒ SO THE OLD CHECK
+# MEASURED A SUBJECT THAT NO LONGER EXISTS, AND IT REPORTED "the port produced 0
+# rows" FOR A PORT THAT COMPILES FINE.** **⇒ AND THE VERDICT TOKEN IS
+# `ALL PROOFS CHECK`, WHICH IS WHAT THE FILE PRINTS ON SUCCESS** -- and
+# `AGENTS.md` records the whole rule: read the verdict TOKEN, never the exit
+# code.
+i=0; rows=0; ok=0
 while [ $i -lt 12 ]; do
   i=$((i+1))
-  ./bin/bend tinybendygrad/renderer/cstyle.bend > "$WORK/port-rows.txt" 2> "$WORK/port-rows.err"
-  rows=$(grep -c '\]   py=\[' "$WORK/port-rows.txt"); [ "$rows" -ge 220 ] && break
-  print -r -- "   attempt $i gave $rows rows, retrying" >&2; sleep 2
+  ./bin/bend tinybendygrad/renderer/cstyle.bend > "$WORK/port-check.txt" 2> "$WORK/port-rows.err"
+  ok=$(grep -c 'ALL PROOFS CHECK' "$WORK/port-check.txt")
+  [ "$ok" -ge 1 ] && break
+  print -r -- "   attempt $i did not check, retrying" >&2; sleep 2
 done
-[ "$rows" -ge 220 ] || { print -r -- "   --- the port's own stderr, so the wall is NAMED ---" >&2
+[ "$ok" -ge 1 ] || { print -r -- "   --- the port's own stderr, so the wall is NAMED ---" >&2
   head -c 400 "$WORK/port-rows.err" >&2; print -r -- "" >&2
-  fail "SUBSTRATE: the port produced $rows rows in 12 attempts. The port's imports reach helpers.bend; if its stderr names a def that is NOT in renderer/cstyle.bend, another agent is mid-edit and this is NOT a verdict on this lane."; }
-print -r -- "   $rows rows"
+  fail "SUBSTRATE: the port did not check in 12 attempts. The port's imports reach helpers.bend; if its stderr names a def that is NOT in renderer/cstyle.bend, another agent is mid-edit and this is NOT a verdict on this lane."; }
+print -r -- "   ALL PROOFS CHECK"
+
+# THE ROWS, FROM THE **TRACKED** FILE. `cstyle.bend` no longer PRINTS its
+# `]   py=[` gate rows -- commit `564733bed` made it a LIBRARY with no `main()`
+# -- so the rows live in `gates/cstyle-live.rows` (228 rows), which is the
+# port's own captured stdout, committed BESIDE THE GATE THAT READS IT (the
+# `e2efix` precedent, and the same rule: a gate's input belongs in git beside
+# the gate, not under a tree that is being pruned).
+#
+# **⇒ AND IT IS COPIED HERE UNDER THE NAME THE READER EXPECTS**, so
+# `gen_ffi.py`'s `port_rows(out / "port-rows.txt")` is unchanged and the SOURCE
+# is the tracked one.
+CSTYLE_ROWS="$ROOT/gates/cstyle-live.rows"
+[ -f "$CSTYLE_ROWS" ] || fail "SUBSTRATE: the tracked $CSTYLE_ROWS is absent, so the port's own rows cannot be read"
+cp "$CSTYLE_ROWS" "$WORK/port-rows.txt"
+rows=$(grep -c '\]   py=\[' "$WORK/port-rows.txt")
+[ "$rows" -ge 220 ] || fail "SUBSTRATE: $CSTYLE_ROWS has $rows rows, and the floor is 220"
+print -r -- "   $rows rows (from $CSTYLE_ROWS)"
 
 # The mm kernel is EMITTED BY THE PORT TOO: gen_ffi.py asks the port for it via
 # emit-mm.bend, which calls cstyle.bend's own `render_kernel`. Stage 2's kernel

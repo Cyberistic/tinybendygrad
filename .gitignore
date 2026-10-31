@@ -287,3 +287,24 @@ checks/.tmp-*
 # **THE **FILE **IS **THE **RUN.**
 checks/*.out
 checks/*.err
+
+# THE E2E GATE's FIXTURE DIRECTORY WRITES ITS BUILD ARTIFACTS BESIDE ITSELF, AND
+# THEY ARE **OUTPUTS**, NOT REQUIREMENTS. `checks/.e2e-fixture/opsbend-milestone.sh`
+# builds `bend-executor` there and writes `PACKET.out`, `build.out`, `check.out`,
+# `gate.err` and `milestone.sh`; `e2e_mm_run.mjs` writes the SERVED BUNDLE
+# (`checks/.e2e-fixture/e2e/`) and a fresh `webgpu_call.fresh.mjs`. **⇒ A COMMITTED
+# OUTPUT IS A RUN NOBODY RE-TOOK**, and `AGENTS.md` records the same rule for
+# `checks/*.out`.
+# **⇒ AND THE INPUTS STAY TRACKED**: `PACKET.in` IS THE FIXTURE (it is already in
+# git), `xd2/` and `e2e-index.html` ARE THE GATE's REQUIREMENTS, and
+# `portexec/exec_harness.py` IS THE READER OF THE ROWS -- all three were MISSING
+# from the fixture when the gate's inputs moved out of the pruned tree, and their
+# absence is what made stage 3 and stage 6 die.
+checks/.e2e-fixture/e2e/
+checks/.e2e-fixture/webgpu_call.fresh.mjs
+checks/.e2e-fixture/opsbend-milestone/bend-executor
+checks/.e2e-fixture/opsbend-milestone/build.out
+checks/.e2e-fixture/opsbend-milestone/check.out
+checks/.e2e-fixture/opsbend-milestone/gate.err
+checks/.e2e-fixture/opsbend-milestone/milestone.sh
+checks/.e2e-fixture/opsbend-milestone/PACKET.out
