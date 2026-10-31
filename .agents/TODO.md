@@ -26907,3 +26907,14 @@ CORRECTION, WRITTEN BY ME ONE COMMIT AGO: the scheduler's eight are NOT "5 block
 **constructors.**  **`ops.bend` **still **holds **a **one-line **COMMENT** **fix, **so
 **`UOp.param` **goes **where **a **constructor **belongs **and **not **into **a **file
 **another **unit **has **open.**
+- [x] ONE SPINE TOUCH PER WORD ACCESS: `Mem.ld4`/`Mem.st4` called `Mem.byte`/`Mem.put` four times
+      and `Mem.ld`/`Mem.st` used `Bool.pick` (both arms run), so a 4-byte access paid 4 spine walks
+      and every 1-byte access ran the 4-byte one. One walker with a byte count + chunk room.
+      MEASURED 16x16 336.46 -> 321.30 ms (**BEND 1.70x FASTER than PYTHON**), 32x32 6 137 -> 5 790
+      on matched runs; A/B on the two binaries: 3.91 s -> 3.31 s. Bit-exact, 153 fixtures.
+      ALSO: a first bench read 8 422 and the change was REVERTED AS A REGRESSION, WRONGLY -- PYTHON
+      itself read 2 625/2 728/3 255/4 134/6 837 ms on the same command. Compare binaries in ONE run.
+- [ ] 32x32 IS ~1.7x SLOWER ON ~96.6M ALLOCATIONS PER LAUNCH (1 029 per step): every write rebuilds
+      its chunk and `Val.put` rebuilds `vs`. That is where list surgery stops helping -- closing it
+      needs the arena and the value list MUTABLE (`Array`), which `Prog` cannot hold because `Array`
+      is a `Type` and `Array.get` returns the array. Architectural, not a constant factor.

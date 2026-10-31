@@ -968,44 +968,71 @@ def Mem.co(+at: U32) -> U32: U32.and(at, 63)
 def Mem.ch.at(+ms: List<&2, List<&2, U32>>, +ci: U32) -> List<&2, U32>:
   Maybe.default(&2, List<&2, U32>, List.get(&2, List<&2, U32>, ms, U32.to_nat(ci)), Nil{})
 
-def Mem.byte(+ms: List<&2, List<&2, U32>>, +at: U32) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, Mem.ch.at(ms, Mem.ci(at)), U32.to_nat(Mem.co(at))), 0)
+def Mem.ch.byte(ch: List<&2, U32>, +co: U32) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, ch, U32.to_nat(co)), 0)
 
-def Mem.put(+ms: List<&2, List<&2, U32>>, +at: U32, +v: U32) -> List<&2, List<&2, U32>>:
+def Mem.ch.put(ch: List<&2, U32>, +co: U32, +b: U32) -> List<&2, U32>:
+  List.set(&2, U32, ch, U32.to_nat(co), b)
+
+# **=> AND A WORD ACCESS TOUList<&2, List<&2, U32>>ES THE List<&2, List<&2, U32>>UNK SPINE ONCE.** MEASURED
+# (`.agents/slop/perf/REPORT.md` §11.4): 2 609 arity-2 copies per step, ALL of them
+# these -- `Mem.ld4`/`Mem.st4` called `Mem.byte`/`Mem.put` FOUR times, so a 4-byte
+# access paid four spine walks (~96 cells at a 12 288-byte arena) and four in-chunk
+# walks. AND `Mem.ld`/`Mem.st` chose between 1 and 4 bytes with `Bool.pick`, which
+# EVALUATES BOTH ARMS, so every single-byte access ran the 4-byte one and threw it
+# away.
+# ⇒ SO ONE WALKER, WITH A BYTE COUNT AND THE ROOM LEFT IN THE CURRENT List<&2, List<&2, U32>>UNK: one
+# chunk fetch per chunk a read touches, one spine update per chunk a write touches,
+# and a run may cross a boundary (`at` is not 4-aligned when a 1-byte buffer precedes
+# a 4-byte one, and the fixtures have that). A 1-byte lane stores its LOW BYTE, which
+# for a bool IS the bool -- `Prog.cast.dt` has already made that value 0 or 1.
+def Mem.room(+at: U32) -> Nat: Nat.sub(64n, U32.to_nat(Mem.co(at)))
+
+def Mem.rd(+n: Nat, +room: Nat, +ms: List<&2, List<&2, U32>>, +ci: U32, +co: U32, +ch: List<&2, U32>,
+  +sh: Nat, acc: U32) -> U32:
+  match n room:
+    case 0n _: acc
+    case 1n+k 0n:
+      +nx = U32.add(ci, 1)
+      +nch = Mem.ch.at(ms, nx)
+      Mem.rd(k, 63n, ms, nx, 1, nch, Nat.add(sh, 8n),
+        U32.or(acc, U32.shln(Mem.ch.byte(nch, 0), sh)))
+    case 1n+k 1n+r:
+      Mem.rd(k, r, ms, ci, U32.add(co, 1), ch, Nat.add(sh, 8n),
+        U32.or(acc, U32.shln(Mem.ch.byte(ch, co), sh)))
+
+def Mem.ld(+ms: List<&2, List<&2, U32>>, +at: U32, +w: U32) -> U32:
   +ci = Mem.ci(at)
-  List.set(&2, List<&2, U32>, ms, U32.to_nat(ci),
-    List.set(&2, U32, Mem.ch.at(ms, ci), U32.to_nat(Mem.co(at)), v))
+  Mem.rd(U32.to_nat(w), Mem.room(at), ms, ci, Mem.co(at), Mem.ch.at(ms, ci), 0n, 0)
+
+def Mem.ld4(ms: List<&2, List<&2, U32>>, +at: U32) -> U32: Mem.ld(ms, at, 4)
+
+def Mem.wr(+n: Nat, +room: Nat, +ms: List<&2, List<&2, U32>>, +ci: U32, +co: U32, ch: List<&2, U32>,
+  +sh: Nat, +v: U32) -> List<&2, List<&2, U32>>:
+  match n room:
+    case 0n _: List.set(&2, List<&2, U32>, ms, U32.to_nat(ci), ch)
+    case 1n+k 0n:
+      +ms2 = List.set(&2, List<&2, U32>, ms, U32.to_nat(ci), ch)
+      +nx = U32.add(ci, 1)
+      +nch = Mem.ch.put(Mem.ch.at(ms2, nx), 0, U32.and(U32.shrn(v, sh), 255))
+      Mem.wr(k, 63n, ms2, nx, 1, nch, Nat.add(sh, 8n), v)
+    case 1n+k 1n+r:
+      Mem.wr(k, r, ms, ci, U32.add(co, 1), Mem.ch.put(ch, co, U32.and(U32.shrn(v, sh), 255)),
+        Nat.add(sh, 8n), v)
+
+def Mem.byte(+ms: List<&2, List<&2, U32>>, +at: U32) -> U32: Mem.ld(ms, at, 1)
+
+def Mem.st(+ms: List<&2, List<&2, U32>>, +at: U32, +w: U32, +v: U32) -> List<&2, List<&2, U32>>:
+  +ci = Mem.ci(at)
+  Mem.wr(U32.to_nat(w), Mem.room(at), ms, ci, Mem.co(at), Mem.ch.at(ms, ci), 0n, v)
+
+def Mem.put(ms: List<&2, List<&2, U32>>, +at: U32, +v: U32) -> List<&2, List<&2, U32>>: Mem.st(ms, at, 1, v)
 
 # ===========================================================================
 # THE STORE IS LITTLE-ENDIAN. `memoryview(bytearray).cast('I')` is NATIVE order
 # and every platform this runs on is little-endian, so a word's four bytes are
 # assembled low byte first; a 1-byte word (bool) is the byte itself.
 # ===========================================================================
-
-def Mem.ld4.go(+ms: List<&2, List<&2, U32>>, +n: Nat, +at: U32, +sh: Nat, +acc: U32) -> U32:
-  match n:
-    case 0n: acc
-    case 1n+p: Mem.ld4.go(ms, p, U32.add(at, 1), Nat.add(sh, 8n),
-      U32.or(acc, U32.shln(Mem.byte(ms, at), sh)))
-
-
-def Mem.ld4(ms: List<&2, List<&2, U32>>, +at: U32) -> U32: Mem.ld4.go(ms, 4n, at, 0n, 0)
-
-def Mem.ld(+ms: List<&2, List<&2, U32>>, +at: U32, +w: U32) -> U32:
-  Bool.pick(U32, U32.is_eq(w, 1), Mem.byte(ms, at), Mem.ld4(ms, at))
-
-def Mem.st4.go(+n: Nat, +ms: List<&2, List<&2, U32>>, +at: U32, +sh: Nat, +v: U32) -> List<&2, List<&2, U32>>:
-  match n:
-    case 0n: ms
-    case 1n+p: Mem.st4.go(p, Mem.put(ms, at, U32.and(U32.shrn(v, sh), 255)),
-      U32.add(at, 1), Nat.add(sh, 8n), v)
-
-
-def Mem.st4(ms: List<&2, List<&2, U32>>, +at: U32, +v: U32) -> List<&2, List<&2, U32>>: Mem.st4.go(4n, ms, at, 0n, v)
-
-def Mem.st(+ms: List<&2, List<&2, U32>>, +at: U32, +w: U32, +v: U32) -> List<&2, List<&2, U32>>:
-  Bool.pick(List<&2, List<&2, U32>>, U32.is_eq(w, 1), Mem.put(ms, at, Bool.to_u32(U32.is_ne(v, 0))),
-    Mem.st4(ms, at, v))
 
 # ===========================================================================
 # the accessors Arg's remaining fields need; see the note above the

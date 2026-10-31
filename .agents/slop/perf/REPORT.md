@@ -696,3 +696,74 @@ fetch, one chunk rebuild, with a crossing fallback over at most two chunks), whi
 
 **=> 16x16 MEETS "PYTHON matches BEND device, or is faster" IN THE DIRECTION THAT WAS
 IMPOSSIBLE THIS MORNING (56x the other way). 32x32 DOES NOT, and 11.4 names the term.**
+
+---
+
+# 12. ONE SPINE TOUCH PER WORD ACCESS, AND A MEASUREMENT THAT HAD TO BE REDONE
+
+## 12.1 THE CHANGE
+
+`Mem.ld4`/`Mem.st4` called `Mem.byte`/`Mem.put` four times, so one 4-byte access paid
+four spine walks (~96 cells at a 12 288-byte arena) and four in-chunk walks; and
+`Mem.ld`/`Mem.st` chose between 1 and 4 bytes with `Bool.pick`, which evaluates BOTH
+arms, so every single-byte access ran the 4-byte one and threw it away.
+
+Now there is one walker with a byte count and the room left in the current chunk:
+`Mem.rd`/`Mem.wr` take `(n, room, ...)`, fetch the chunk once per chunk a read
+touches, write the spine once per chunk a write touches, and cross a boundary when a
+run does not fit (`at` is not 4-aligned when a 1-byte buffer precedes a 4-byte one).
+`Mem.ld4.go`, `Mem.st4.go`, `Mem.st4` and the `Bool.pick` in `Mem.ld`/`Mem.st` are
+gone: `Mem.byte`, `Mem.put` and `Mem.ld4` are now one-line specialisations.
+
+## 12.2 THE MEASUREMENT THAT FIRST SAID "REGRESSION", AND WHY IT WAS WRONG
+
+The first post-change bench read BEND 8 422 ms/iter at 32x32 against 6 137 before, so
+the change was reverted as a regression. **The revert was wrong**: `PYTHON` on the
+SAME command read **2 625, 2 728, 4 134, 3 255 and 6 837 ms** across runs — this
+machine is loaded, and a cross-run BEND comparison is not a comparison at all.
+
+Back-to-back on the same packet with the two compiled executors, three alternating
+runs each:
+
+    pre-walker  4.11  4.42  3.19   (avg 3.91 s)
+    post-walker 3.97  2.93  3.03   (avg 3.31 s)      -> 15% FASTER
+
+**=> SO THE CHANGE WAS KEPT, AND THE RULE IS: COMPARE TWO BINARIES IN ONE RUN, OR
+COMPARE RATIOS AGAINST CPU, NEVER ONE BINARY ACROSS TWO RUNS.**
+
+## 12.3 MEASURED, BIT-EXACT, TWO RUNS EACH
+
+    --size 16, iters 3:  run 1  CPU 1.38  PYTHON 546.35  BEND 321.30
+                         run 2  CPU 1.39  PYTHON 556.18  BEND 326.35
+                         ==> BEND is 1.70x FASTER than PYTHON (stable across runs)
+    --size 32, iters 2:  run 1  CPU 1.47  PYTHON 6837.21 (min 3706.47)  BEND 6718.70 (min 5886.97)
+                         run 2  CPU 1.43  PYTHON 3493.08 (min 3255.83)  BEND 5790.08 (min 5732.69)
+                         ==> BEND is ~1.7x SLOWER on the mins (5732.69 vs 3255.83),
+                             and 6 137 -> 5 790 on matched runs
+
+    ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes, 365 unpinned identical
+    max|diff vs CPU| 8.941e-08 (16x16) and 3.576e-07 (32x32), unchanged
+
+## 12.4 WHAT IS LEFT AT 32x32
+
+**96 584 987 allocations per launch = 1 029 per step** (93 917 steps), and the arity
+census is now only 222 356 280 arity-2 copies. So the remaining cost is ALLOCATION,
+not copying: every `Mem.wr` rebuilds its chunk (`List.set(ch, co, ...)` allocates
+`co` conses) plus the spine, and every `Val.put` rebuilds `vs` up to its slot.
+
+**⇒ AND THAT IS WHERE LIST SURGERY STOPS BEING ABLE TO HELP.** A persistent list costs
+a rebuild per write however it is chunked; `ops_python` mutates a `memoryview` in
+place. Closing the last ~1.7x needs the arena and the value list to be MUTABLE, i.e.
+`Array`, and the blocker is structural: `Array<T>` is a `Type`, so it cannot live in
+`Prog` (a `Data` record matched in 23 places), and `Array.get` returns
+`Array<T> & T`, so every reader would have to thread it back out. That is an
+architectural change, not a constant factor, and it is not started.
+
+## 12.5 STATUS
+
+| stage | state |
+|---|---|
+| 1. python->webgpu vs bend->webgpu | **never timed**: no CPython WEBGPU binding, no kernel-executing Bend WebGPU device |
+| 2. python->metal vs bend->metal | **never timed**: no Bend Metal device at all |
+| 3. PYTHON vs BEND (16x16) | **546.35 / 556.18 vs 321.30 / 326.35 ms -- BEND is 1.70x FASTER** |
+| 3. PYTHON vs BEND (32x32) | **~3 256 vs 5 733 ms (mins) -- BEND is ~1.76x SLOWER** |
