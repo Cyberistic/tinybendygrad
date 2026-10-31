@@ -170,7 +170,8 @@ const rows = [
   `# bend_module=prologue+bindings+signature ${PM.identical_leading}/${PM.leading_lines} lines byte-identical, rc=${PM.rc}`,
   "# kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok|bend_module",
   `${K.name}|${out?.sha256 ?? "-"}|-|python-only|${K.bytes}|${(out?.ms?.[0] ?? NaN).toFixed(4)}|` +
-    `${(out?.max_abs_diff ?? NaN).toExponential(2)}|${out?.matched ?? "-"}|${out?.ok ? "yes" : "no"}`,
+    `${(out?.max_abs_diff ?? NaN).toExponential(2)}|${out?.matched ?? "-"}|${out?.ok ? "yes" : "no"}|` +
+    `${PM.identical_leading}/${PM.leading_lines}`,
   `# probe_sha=${sha} err=${out?.err ?? "-"}`,
 ];
 writeFileSync(join(ROOT, ".agents/slop/perf/stage1-webgpu.rows"), rows.join("\n") + "\n");

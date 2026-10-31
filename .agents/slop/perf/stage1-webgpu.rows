@@ -4,5 +4,5 @@
 # bend_side=BODY ABSENT (wgsl.bend has no uop->body walk: render_kernel takes BODY STRINGS)
 # bend_module=prologue+bindings+signature 7/7 lines byte-identical, rc=0
 # kernel|sha256_python|sha256_bend|identical|bytes|python_ms_min|max_abs_diff|matched|ok|bend_module
-E_1024|40cd0ca967a098d5|-|python-only|600|0.2000|4.77e-7|(a*b)+a|yes
-# probe_sha=a75f7856b82ab008 err=-
+E_1024|40cd0ca967a098d5|-|python-only|600|0.2000|4.77e-7|(a*b)+a|yes|7/7
+# probe_sha=27b6f99d0ed110da err=-
