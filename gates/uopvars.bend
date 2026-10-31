@@ -31,6 +31,7 @@ import ./../tinybendygrad/helpers.bend as H
 import ./../tinybendygrad/LAWS/spec.bend as SP
 import ./../tinybendygrad/uop/ops.bend as O
 import ./../tinybendygrad/uop/fold.bend as F
+import ./../tinybendygrad/schedule/__init__.bend as SC
 
 def bf(v: Bool) -> String: Bool.pick(String, v, "1", "0")
 
@@ -191,6 +192,74 @@ def vrngvar(at: O.AxisType) -> O.Found:
   +v = O.UOp.variable(O.Found.ar(r), "v", H.i64_zero(), H.i64_of_i32(7), 1, SP.weakint())
   O.UOp.alu(O.Found.ar(v), O.OpsADD{}, [O.Found.i(r), O.Found.i(v)])
 
+
+# ---- `binds` -- the CONSUMER, schedule/__init__.py:104-106 -------------------
+# Four params on ONE call, chosen so the FILTER and the VALUE disagree:
+#   slot 0  ALU variable, UNBOUND  -> a bind, value is ITSELF
+#   slot 1  ALU variable, BOUND    -> a bind, value is the UNBOUND TWIN
+#   slot 2  ALU PARAM, NO RANGE    -> a bind, value is ITSELF (the filter does not read vmin_vmax)
+#   slot 3  GLOBAL PARAM           -> NOT a bind
+# `lb_k1_unbound` is the one row a "return x" implemention cannot pass, and
+# `lb_k2_self` is the one a "always unbound" implementation cannot pass.
+type LBFx is Data:
+  LBFx{f: O.Found, a0: U32, a1: U32, a2: U32, a3: U32}
+
+def LBFx.f(x: LBFx) -> O.Found:
+  match x:
+    case LBFx{f, a0, a1, a2, a3}: f
+
+def LBFx.a0(x: LBFx) -> U32:
+  match x:
+    case LBFx{f, a0, a1, a2, a3}: a0
+
+def LBFx.a1(x: LBFx) -> U32:
+  match x:
+    case LBFx{f, a0, a1, a2, a3}: a1
+
+def LBFx.a2(x: LBFx) -> U32:
+  match x:
+    case LBFx{f, a0, a1, a2, a3}: a2
+
+# THE FIXTURE CARRIES ITS OWN INDICES. A row that hardcodes the arena position of
+# `a0` is a row about the arena's allocation order, not about `binds` -- MEASURED:
+# the first draft asserted `binds[0] == 1` and the arena gave `2`, so the row went
+# red while the DEF was right.
+def lbcall() -> LBFx:
+  +body = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_zero()})
+  +a0 = param(O.Found.ar(body), pa(0, rng(7), SP.Aalu{}, None{}, Some{"a"}))
+  +a1 = param(O.Found.ar(a0), pa(1, rng(7), SP.Aalu{}, Some{O.CInt{H.i64_of_i32(3)}}, Some{"b"}))
+  +a2 = param(O.Found.ar(a1), pa(2, None{}, SP.Aalu{}, None{}, Some{"c"}))
+  +a3 = param(O.Found.ar(a2), pa(3, None{}, SP.AGlobal{}, None{}, Some{"d"}))
+  +c = O.UOp.new(O.Found.ar(a3), O.OpsCALL{},
+    [O.Found.i(body), O.Found.i(a0), O.Found.i(a1), O.Found.i(a2), O.Found.i(a3)], O.ANone{}, O.TNone{})
+  LBFx{c, O.Found.i(a0), O.Found.i(a1), O.Found.i(a2), O.Found.i(a3)}
+
+# `Map.get` answers a `Sigma`, not the value -- `render.bend:1064`'s `ctx_get.of`
+# is the tree's own projection, and this is the same match.
+def lbget.of(r: Sigma<&1, &1, Map<&2, U32>, _ => U32>) -> U32:
+  match r:
+    case Tuple{m, v}: v
+
+def lbget(+m: Map<&2, U32>, k: String) -> U32:
+  lbget.of(Map.get(U32, O.ParamArg.no_slot(), m, k))
+
+def lbval(arg: O.Arg) -> String:
+  match arg:
+    case O.AParam{p}: ubval_of(O.ParamArg.val(p))
+    case _: "NA"
+
+def lbrows(+fx: LBFx) -> IO(Unit):
+  +f = LBFx.f(fx)
+  +lb = SC.sc_linear_binds(O.Found.ar(f), O.Found.i(f))
+  +ar = SC.LinBinds.ar(lb)
+  +m = SC.LinBinds.m(lb)
+  do IO<Unit>:
+    p1 : Unit <- IO.print(String.concat(["lb_k0_self=", bf(U32.is_eq(lbget(m, "0"), LBFx.a0(fx)))]))
+    p2 : Unit <- IO.print(String.concat(["lb_k1_moved=", bf(Bool.not(U32.is_eq(lbget(m, "1"), LBFx.a1(fx))))]))
+    p3 : Unit <- IO.print(String.concat(["lb_k1_unbound=", lbval(O.Arena.arg(ar, lbget(m, "1")))]))
+    p4 : Unit <- IO.print(String.concat(["lb_k2_self=", bf(U32.is_eq(lbget(m, "2"), LBFx.a2(fx)))]))
+    IO.print(String.concat(["lb_gone=", bf(U32.is_eq(lbget(m, "3"), O.ParamArg.no_slot()))]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -209,3 +278,4 @@ def main() -> IO(Unit):
     n : Unit <- vsrow("vs_device", vrngvar(O.AXIS_DEVICE{}))
     o : Unit <- vsrow("vs_weak", vrngvar(O.AXIS_WEAK{}))
     devrows(vrng(O.AXIS_DEVICE{}))
+    lbrows(lbcall())

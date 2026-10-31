@@ -93,6 +93,28 @@ def main():
     a("vs_dev_vmax", f"{i64t(d.arg.vmin_vmax[0])}..{i64t(d.arg.vmin_vmax[1])}")
     a("vs_dev_name", d.arg.name)
 
+    # ---- `binds` -- the CONSUMER, schedule/__init__.py:104-106 ----
+    # Four params on ONE call, chosen so the FILTER and the VALUE disagree:
+    #   slot 0  ALU variable, UNBOUND  -> a bind, value is ITSELF
+    #   slot 1  ALU variable, BOUND    -> a bind, value is the UNBOUND TWIN
+    #   slot 2  ALU PARAM, NO RANGE    -> a bind, value is ITSELF
+    #   slot 3  GLOBAL PARAM           -> NOT a bind
+    b0 = param(0, vmin=(0, 7), nm="a")
+    b1 = param(1, vmin=(0, 7), val=3, nm="b")
+    b2 = param(2, nm="c")
+    b3 = param(3, addr=AddrSpace.GLOBAL, nm="d")
+    call = UOp(Ops.CALL, src=(UOp.const(0), b0, b1, b2, b3))
+    binds = {
+        i: x.unbound() if x.is_variable else x
+        for i, x in enumerate(call.src[1:])
+        if x.op is Ops.PARAM and x.addrspace is AddrSpace.ALU
+    }
+    a("lb_k0_self", int(binds[0] is b0))
+    a("lb_k1_moved", int(binds[1] is not b1))
+    a("lb_k1_unbound", int(binds[1].arg.val is None))
+    a("lb_k2_self", int(binds[2] is b2))
+    a("lb_gone", int(3 not in binds))
+
     print("\n".join(out))
 
 

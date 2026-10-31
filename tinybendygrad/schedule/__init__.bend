@@ -665,6 +665,70 @@ def sc_var.of(op: O.Op, arg: O.Arg, shape: List<&2, O.Sint>) -> Bool:
 def sc_is_bound_var(+ar: O.Arena, +i: U32) -> Bool:
   Bool.and(sc_var.of(sc_op(ar, i), sc_arg(ar, i), F.param_shape(ar, i, sc_arg(ar, i))), sc_val.some(sc_arg(ar, i)))
 
+# ===========================================================================
+# `binds` -- __init__.py:104-106, THE HALF OF `resolve_linear_call` THAT WALL C
+# UNBLOCKED:
+#
+#   binds = {**(outer_binds or {}),
+#            **{i:x.unbound() if x.is_variable else x
+#               for i,x in enumerate(linear_call.src[1:])
+#               if x.op is Ops.PARAM and x.addrspace is AddrSpace.ALU}}
+#
+# THE FILTER AND THE VALUE ARE TWO DIFFERENT QUESTIONS, and a port that conflates
+# them either DROPS a plain ALU PARAM or LEAKS a bound one:
+#   FILTER  `op is PARAM` and `addrspace is ALU` -- `vmin_vmax` is NOT in it, so
+#           a range-less ALU PARAM IS a bind, and its value is ITSELF;
+#   VALUE   `unbound() if is_variable else x` -- only a VARIABLE is stripped.
+# `sc_var.of` is the no-table road to `is_variable`, and since 2026-10-31 it and
+# `F.UOp.is_variable` share `F.isvar_arg`, so the two arg conjuncts have ONE home.
+#
+# THE ARENA IS THREADED, `LinBinds{ar, m}`, because `unbound` MINTS through
+# `UOp.new`, which APPENDS. A map of indices into an arena the caller never
+# receives is the defect `gates/uopvars-gate.py` found on 2026-10-31: every count
+# row was right and the node was unreachable.
+type LinBinds is Data:
+  LinBinds{ar: O.Arena, m: Map<&2, U32>}
+
+def LinBinds.ar(x: LinBinds) -> O.Arena:
+  match x:
+    case LinBinds{ar, m}: ar
+
+def LinBinds.m(x: LinBinds) -> Map<&2, U32>:
+  match x:
+    case LinBinds{ar, m}: m
+
+def sc_lb_var(+ar: O.Arena, +x: U32) -> Bool:
+  sc_var.of(sc_op(ar, x), sc_arg(ar, x), F.param_shape(ar, x, sc_arg(ar, x)))
+
+def sc_lb_alu(op: O.Op, arg: O.Arg) -> Bool:
+  match op arg:
+    case O.OpsPARAM{} O.AParam{pa}: O.eq_addr(O.ParamArg.addrspace(pa), S.Aalu{})
+    case _ _: False{}
+
+def sc_lb_set(+x: U32, +k: U32, +r: LinBinds) -> LinBinds:
+  +ar = LinBinds.ar(r)
+  +f = F.UOp.unbound(ar, x)
+  +u = Bool.pick(U32, sc_lb_var(ar, x), O.Found.i(f), x)
+  LinBinds{O.Found.ar(f), Map.set(&2, U32, LinBinds.m(r), U32.show(k), u)}
+
+def sc_lb_one.of(is_alu: Bool, +x: U32, +k: U32, +r: LinBinds) -> LinBinds:
+  match is_alu:
+    case True{}: sc_lb_set(x, k, r)
+    case False{}: r
+
+def sc_lb_one(+x: U32, +k: U32, +r: LinBinds) -> LinBinds:
+  sc_lb_one.of(sc_lb_alu(sc_op(LinBinds.ar(r), x), sc_arg(LinBinds.ar(r), x)), x, k, r)
+
+# `xs` LEADS: the termination checker needs to see one argument shrink before any
+# other changes, and the accumulator holds the arena `unbound` grew.
+def sc_lb_step(xs: List<&2, U32>, +k: U32, +r: LinBinds) -> LinBinds:
+  match xs:
+    case Nil{}: r
+    case x <> t: sc_lb_step(t, U32.add(k, 1), sc_lb_one(x, k, r))
+
+def sc_linear_binds(+ar: O.Arena, +call: U32) -> LinBinds:
+  sc_lb_step(sc_src_from(ar, call, 1), 0, LinBinds{ar, Map.new(&2, U32)})
+
 # `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.
 def sc_in_bs(+ar: O.Arena, +k: U32, +t: U32) -> Bool:

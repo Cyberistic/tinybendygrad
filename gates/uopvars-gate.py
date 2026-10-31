@@ -64,6 +64,11 @@ ROWS = (
     "vs_dev_count",
     "vs_dev_vmax",
     "vs_dev_name",
+    "lb_k0_self",
+    "lb_k1_moved",
+    "lb_k1_unbound",
+    "lb_k2_self",
+    "lb_gone",
 )
 
 GATE = Gate(
@@ -78,11 +83,13 @@ if __name__ == "__main__":
     sys.exit(
         main(
             GATE,
-            "uopvars-gate: 20 rows, 2 lanes -- `is_variable` (ops.py:1009), "
+            "uopvars-gate: 25 rows, 2 lanes -- `is_variable` (ops.py:1009), "
             "`unbound` (:1027) and `variables` (:1037), WALL C of "
-            "`schedule/__init__.bend`'s deferral. The four conjuncts of "
-            "`is_variable` are one row each, `ub_same_as_unbound` is an IDENTITY "
-            "and not a field comparison, and `vs_device` vs `vs_weak` is the "
-            "RANGE arm's axis test",
+            "`schedule/__init__.bend`'s deferral, AND `sc_linear_binds` "
+            "(`__init__.py:104-106`), the CONSUMER that makes the first two "
+            "live. The four conjuncts of `is_variable` are one row each, "
+            "`ub_same_as_unbound` is an IDENTITY and not a field comparison, "
+            "`vs_device` vs `vs_weak` is the RANGE arm's axis test, and "
+            "`lb_k1_unbound` is the one row an `always return x` binds cannot pass",
         )
     )
