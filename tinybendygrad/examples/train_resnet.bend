@@ -28,7 +28,7 @@ import ./../extra/datasets/__init__.bend as D
 # for one.
 #
 # THE BACKWARD MACHINERY IS WRITTEN AND UNEXERCISED. Read these five together:
-#   `compute_gradient`  mixin/gradient.bend:1550 symbol=compute_gradient   EXISTS
+#   `compute_gradient`  mixin/gradient.bend:1581 symbol=compute_gradient   EXISTS
 #   `gr_N` rule defs     mixin/gradient.bend        61 entries, `grep -cE
 #                        "^def gr_[0-9]+" = 61
 #   `gr_table`           referenced ONLY inside mixin/gradient.bend;
