@@ -26821,3 +26821,10 @@ s.variables()}` HALF, which is now writable and was not before).
 **⇒ AND THE HEADER'S OLD CLAIM -- "wall C blocks the entry points" -- WAS TRUE
 AND INCOMPLETE: it blocks *one half of one arm of* the entry points, and the
 other half is wall B. THE TWO CAUSES ARE `A` AND `B` AND NOTHING ELSE.**
+- [x] THE LOOP'S TERMINATION WAS A Bool.pick, WHICH EVALUATES BOTH ARMS: every launch burned the
+      whole FUEL (4 000 000 steps counted for two different programs). Matching on the cursor cut it
+      to 17 970 / 93 917 steps, and resolving each src's SLOT at load removed the five Uop.at walks
+      per step. MEASURED 16x16: 1 298.83 -> 336.46 ms (**BEND is now 1.60x FASTER than PYTHON's
+      538.08**); 32x32: 13 008.49 -> 6 137.17 ms (2.25x slower). Bit-exact, 153 fixtures.
+- [ ] 32x32's remaining term is the arena's FOUR spine walks per 4-byte access (2 609 arity-2 copies
+      per step): make each 4-byte access touch the spine once. See `.agents/slop/perf/REPORT.md` 11.4.

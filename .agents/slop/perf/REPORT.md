@@ -630,3 +630,69 @@ change, and neither is started.
 
 **⇒ NOT MET.** Two changes have landed this session (the cursor: 12.3x; the chunks:
 1.87x/2.98x), both bit-exact, and the gap has gone 56x -> 2.45x at 16x16.
+
+---
+
+# 11. THE FUEL BURN AND THE UOP WALKS: 16x16 NOW BEATS PYTHON
+
+## 11.1 A 4,000,000-STEP COINCIDENCE
+
+Counting our step entry in the compiler's own C gave the SAME number for two
+different programs -- 4 000 000 for a 16x16 packet and 4 000 000 for a 32x32 one --
+and 4 000 000 is `FUEL`. The loop body was:
+
+    case 1n+k: Bool.pick(Prog, Prog.over(pr), pr, run(k, Prog.step(pr)))
+
+**=> `Bool.pick` EVALUATES BOTH ARMS**, so the recursive arm ran *after* the program
+had finished; the guard threw the work away and the answer stayed right. Every launch
+burned the whole fuel. With the termination moved onto the cursor `un` (which IS
+`pc < n`, and a List is a legal multi-scrutinee pattern where a computed Bool is not),
+the step count fell to **17 970** and **93 917**.
+
+## 11.2 WHY THE FIRST ATTEMPT AT sslot MEASURED 0% (section 9.3), AND WHY IT IS RIGHT NOW
+
+Because every per-step figure in sections 9 and 10 divided by **4 000 000**, not by the
+93 917 steps that actually run. `Prog.src` calls `Uop.at`, which walks `idx` cons cells
+taking an 11-field `Uop` out of each; five of them per step is **126 605 244
+arity-11 copies = 1 348 per step, 1.39e9 field visits** -- half the run. Resolving each
+src's SLOT once at load, through a 2-field slot table rather than the 11-field uop
+list, deletes it (126.6M -> 2.3M copies).
+
+## 11.3 MEASURED, BIT-EXACT
+
+    --iters 3 --size 16:  CPU 1.279  PYTHON 538.08  BEND 336.46 ms/iter
+                          ratios vs CPU: PYTHON 420.70x, BEND 263.03x
+                          ==> BEND IS 1.60x FASTER THAN PYTHON AT 16x16
+    --iters 2 --size 32:  CPU 1.418  PYTHON 2728.1  BEND 6137.17 ms/iter
+                          ==> BEND IS 2.25x SLOWER (was 4.94x)
+
+    ops_python_exec: PASS -- 153 fixtures, 365 rows x 2 lanes, 365 unpinned identical
+    max|diff vs CPU| 8.941e-08 (16x16) and 3.576e-07 (32x32), both unchanged
+
+## 11.4 WHAT IS LEFT AT 32x32, AND IT IS THE ARENA
+
+Re-counted on the 32x32 bench packet after both changes:
+
+    STEPS 93917
+    ARITY  2  fade_calls=245 132 600  fade_terms=490 265 200   <-  2 609 per step
+    ARITY 12  fade_calls=  2 299 235  fade_terms= 27 590 820   <-  the Uop copies, gone
+
+**=> 2 609 CONSECUTIVE-CELL COPIES PER STEP, ALL ARITY 2 = THE CHUNK WALKS.** A 12 288
+byte arena is 192 chunks, and `Mem.ld4`/`Mem.st4` call `Mem.byte`/`Mem.put` four times
+each, so one 4-byte access pays four spine walks (~96 cells) and four in-chunk walks
+(~32). **The next step is to make each 4-byte access touch the spine ONCE** (one chunk
+fetch, one chunk rebuild, with a crossing fallback over at most two chunks), which is
+~3.9x on that term and is the last measured lever before the arena needs a mutable
+`Array`.
+
+## 11.5 STATUS
+
+| stage | state |
+|---|---|
+| 1. python->webgpu vs bend->webgpu | **never timed**: no CPython WEBGPU binding, no kernel-executing Bend WebGPU device |
+| 2. python->metal vs bend->metal | **never timed**: no Bend Metal device at all |
+| 3. PYTHON vs BEND (16x16) | **538.08 vs 336.46 ms -- BEND is 1.60x FASTER** |
+| 3. PYTHON vs BEND (32x32) | **2 728.1 vs 6 137.17 ms -- BEND is 2.25x SLOWER** |
+
+**=> 16x16 MEETS "PYTHON matches BEND device, or is faster" IN THE DIRECTION THAT WAS
+IMPOSSIBLE THIS MORNING (56x the other way). 32x32 DOES NOT, and 11.4 names the term.**
