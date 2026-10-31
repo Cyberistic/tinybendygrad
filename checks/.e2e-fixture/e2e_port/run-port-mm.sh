@@ -110,7 +110,21 @@ fi
 substrate=0
 substrate_note() {  # substrate_note <workdir>
   local rows
-  rows=$(grep -c '\]   py=\[' "$1/port-rows.txt" 2>/dev/null || print -r -- 0)
+  # **⇒ AND THE ROW COUNT COMES FROM THE **COPY** THE LANE MADE, WHICH IS THE
+  # TRACKED `gates/cstyle-live.rows`** -- `portexec/run-kernel.sh` copies it into
+  # the work directory as `port-rows.txt`. **⇒ AND THE OLD SHAPE OF THIS CHECK
+  # READ `port-rows.txt` AS A CAPTURE OF `cstyle.bend`'s STDOUT**, which is what
+  # it USED to be; the copy is now the TRACKED ROWS FILE, and the count is the
+  # same number for the same reason.
+  #
+  # **⇒ AND THE `|| print -r -- 0` WAS A BUG OF ITS OWN**: `grep -c` on a
+  # MISSING file prints `0` AND EXITS 1, so the `||` branch ALSO ran and
+  # `$(...)` collected `0\n0` -- two lines -- and `[ "$rows" -lt 220 ]` then
+  # read `0\n0` as an ARITHMETIC EXPRESSION and answered
+  # `[:3: integer expression expected`. **⇒ AND THE FIX IS TO READ THE
+  # COUNT ONCE AND NOT FALL BACK ON TOP OF IT.**
+  rows=$(grep -c '\]   py=\[' "$1/port-rows.txt" 2>/dev/null)
+  rows=${rows:-0}
   if [ "$rows" -lt 220 ]; then
     substrate=1
     say "      *** SUBSTRATE, NOT A VERDICT: the port produced $rows rows (220 is the floor) ***"
@@ -190,15 +204,24 @@ say "== COVERAGE  how much of the port is EXECUTION and how much is TEXT, with t
 mkcopy() {
   ok=1
   rm -rf "$NC"
-  mkdir -p "$NC/.agents/slop" "$NC/checks/.e2e-fixture" || return 1
+  mkdir -p "$NC/.agents/slop" "$NC/checks/.e2e-fixture" "$NC/gates" || return 1
   cp -R "$ROOT/tinybendygrad" "$NC/tinybendygrad" || return 1
   cp -R "$PORTEXEC" "$NC/checks/.e2e-fixture/portexec" || return 1
   cp "$ORACLE" "$NC/checks/e2e-mm-oracle.json" || return 1
+  # **⇒ AND THE TRACKED ROWS FILE GOES IN TOO, AND THE REASON IS MEASURED.**
+  # `portexec/run-kernel.sh` READS THE PORT's OWN ROWS FROM
+  # `$ROOT/gates/cstyle-live.rows` -- commit `564733bed` moved them out of
+  # `cstyle.bend` and into that tracked file. **⇒ AND `plant.py` RE-POINTS THE
+  # COPY's `ROOT` AT THE COPY**, so `$ROOT/gates/...` IS THE COPY's `gates/`,
+  # and the copy HAD NONE: the lane died with
+  # `SUBSTRATE: the tracked .../copy/gates/cstyle-live.rows is absent`.
+  # **⇒ AND THE COPY IS A COPY OF THE PORT, SO THE ROWS BELONG IN IT.**
+  cp "$ROOT/gates/cstyle-live.rows" "$NC/gates/cstyle-live.rows" || return 1
   ln -s "$ROOT/bin" "$NC/bin"; ln -s "$ROOT/references" "$NC/references"
   ln -s "$ROOT/tinygrad" "$NC/tinygrad"; ln -s "$ROOT/.venv" "$NC/.venv"
   "$PY" "$PLANT" "$NC/checks/.e2e-fixture/portexec/run-kernel.sh" \
     "ROOT=$ROOT" 'ROOT=$(cd "$(dirname "$0")/../../.." && pwd)' > /dev/null || return 1
-  say "   copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked"
+  say "   copy: tinybendygrad + portexec + gates/cstyle-live.rows copied; bin/ references/ tinygrad/ .venv/ symlinked"
 }
 
 planted() {  # planted <file> <old> <new>
@@ -270,13 +293,18 @@ say "-- C1  THE PORT -- cstyle.bend's ku_args.go accumulates at the HEAD instead
 say "        tail, so render_kernel emits the four buffers in REVERSE order. List.append(a,"
 say "        A, xs, ys) IS xs ++ ys -- bend2-constraints.md position 1590, and this is that"
 say "        rule with a compiler attached."
-say "        (THE DEF WAS RENAMED: IT WAS `buftypes.go` AND IT IS NOW `ku_args.go`,"
+say "        (THE DEF WAS RENAMED: IT WAS 'buftypes.go' AND IT IS NOW 'ku_args.go',"
 say "        AND THE PLANT TEXT MOVED WITH IT. A PLANT THAT NAMES A DEF THAT NO"
 say "        LONGER EXISTS IS VACUOUS, AND THE HARNESS SAYS SO -- WHICH IS HOW THIS"
 say "        WAS FOUND.)"
+say "        (AND THE PLANT SPANS **TWO** LINES, because the call does. The first"
+say "        attempt replaced one line with a line that DID NOT PARSE -- 'expected :"
+say "        [' -- and the substrate check caught it, which is what it is for.)"
 mkcopy && planted "$NC/tinybendygrad/renderer/cstyle.bend" \
-  'case h <> t: ku_args.go(t, dev, List.append(&2, String, acc,' \
-  'case h <> t: ku_args.go(t, dev, List.append(&2, String, [ku_buftype(dev, h), " ", BArg.name(h)], acc))'
+  'case h <> t: ku_args.go(t, dev, List.append(&2, String, acc,
+      [String.concat([ku_buftype(dev, h), " ", BArg.name(h)])]))' \
+  'case h <> t: ku_args.go(t, dev, List.append(&2, String,
+      [String.concat([ku_buftype(dev, h), " ", BArg.name(h)])], acc))'
 ctl "C1 THE PORT reverses its own emitted buffer order" 'MISMATCH at 64/64 words' mm C1
 
 # ---- C2: VACUITY.  A wrong-but-plausible computation must not satisfy the lane.
@@ -308,14 +336,23 @@ ctl "C3 one bit of one expected word, and only that word" 'MISMATCH at 1/64 word
 
 # ---- C4: the same PORT plant on the ONE-INPUT row. ----------------------------
 say ""
-say "-- C4  THE PORT, on lane A's one-input row kern2 CLANG. Reported because the answer"
-say "        was NOT the predicted one: that kernel reads ONE buffer, so reversing its two"
-say "        parameters was expected to be a THEOREM, as portexec's stage-2 theorems are."
-say "        It is not. The harness readback address is fixed by POSITION, so the buffer"
-say "        that must be read lands on the one that must be written, and word 0 goes to 0."
-mkcopy && planted "$NC/tinybendygrad/renderer/cstyle.bend" \
-  'case h <> t: ku_args.go(t, dev, List.append(&2, String, acc,' \
-  'case h <> t: ku_args.go(t, dev, List.append(&2, String, [ku_buftype(dev, h), " ", BArg.name(h)], acc))'
+say "-- C4  THE PORT, on lane A's one-input row kern2 CLANG."
+say "        (THE PLANT MOVED, AND THE MOVE IS THE POINT.) **⇒ THE `kern2 CLANG`"
+say "        ROW IS READ FROM THE **TRACKED** `gates/cstyle-live.rows`, NOT FROM"
+say "        `cstyle.bend`'s STDOUT** -- commit 564733bed removed the rows from"
+say "        `cstyle.bend` (it is a LIBRARY now) and they were committed to that"
+say "        file beside the gate that reads them. **⇒ AND SO PLANTING"
+say "        `cstyle.bend` CANNOT CHANGE THE KERNEL TEXT THE LANE COMPILES**, and"
+say "        the control was GREEN for exactly that reason: the lane DID NOT"
+say "        NOTICE, and it could not."
+say "        (THE OLD HEADER PREDICTED 'word 0 goes to 0' AND THAT WAS NOT WHAT"
+say "        HAPPENED, WHICH IS THE SAME SHAPE: A PLANT THAT CANNOT REACH THE"
+say "        SUBJECT IS NOT A CATCH.)"
+say "        **⇒ AND THE PLANT NOW HITS THE **TRACKED ROWS FILE** IN THE COPY,"
+say "        WHICH IS THE FILE THE LANE READS.**"
+mkcopy && planted "$NC/gates/cstyle-live.rows" \
+  'kern2 CLANG       = [\nvoid E_4(float* restrict data0_4, float* restrict data1_4) {' \
+  'kern2 CLANG       = [\nvoid E_4(float* restrict data1_4, float* restrict data0_4) {'
 ctl "C4 THE PORT, on the one-input row" 'MISMATCH at 1/4 words' stage2 C4
 
 hr

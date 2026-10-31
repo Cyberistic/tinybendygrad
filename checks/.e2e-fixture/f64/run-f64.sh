@@ -127,12 +127,26 @@ hr
 say "== 0  THE SUBSTRATE, AND A REPAIR THAT IS CHECKED RATHER THAN ASSERTED"
 LIVE_SHA=$(shasum -a 256 "$ROOT/tinybendygrad/renderer/cstyle.bend" | cut -d' ' -f1)
 say "   live   renderer/cstyle.bend sha256 $LIVE_SHA"
-say "   quoted cstyle-live/run-all.log:5  sha256 $(grep -m1 'live    cstyle.bend' "$ROOT/checks/.e2e-fixture/cstyle-live/run-all.log" | awk '{print $NF}')"
+# **⇒ AND THE QUOTED LOG IS **OPTIONAL**, AND THAT IS A CORRECTION.** The line
+# quoted `checks/.e2e-fixture/cstyle-live/run-all.log`, which was **NEVER
+# TRACKED**: it is the captured stdout of `.agents/slop/cstyle-live/run-all.sh`,
+# and a CAPTURED STREAM IS AN OUTPUT, NOT A REQUIREMENT (`AGENTS.md` says so, and
+# `checks/*.out` is ignored for exactly this reason). **⇒ AND THE FIXTURE MOVE
+# OUT OF THE PRUNED TREE (0841bcfb0) MOVED THE SCRIPT AND NOT THE LOG**, so the
+# lane printed an EMPTY sha256 and carried on. **⇒ AND THE QUOTE IS NOW SAID TO
+# BE ABSENT RATHER THAN QUOTED AS AN EMPTY HASH.**
+RUNALL_LOG="$ROOT/checks/.e2e-fixture/cstyle-live/run-all.log"
+if [ -f "$RUNALL_LOG" ]; then
+  say "   quoted cstyle-live/run-all.log:5  sha256 $(grep -m1 'live    cstyle.bend' "$RUNALL_LOG" | awk '{print $NF}')"
+else
+  say "   quoted cstyle-live/run-all.log: ABSENT -- it is a CAPTURED STREAM (an output),"
+  say "     never tracked, and its absence is named here rather than quoted as an empty hash."
+fi
 "$ROOT/checks/.e2e-fixture/substrate-check.sh" "$ROOT/tinybendygrad/renderer/cstyle.bend" > "$W/substrate.txt" 2>&1
 say "   substrate-check.sh on the live file: $(head -1 "$W/substrate.txt" | awk '{print $1, $2}')"
 if [ "$(head -1 "$W/substrate.txt" | awk '{print $1}')" != WARM ]; then
   say "   >>> NOT MY FILE AND NOT MY VERDICT. It carries nine verbatim copies of every"
-  say "   >>> derived-fact reader block (`BArg.name`, `Uses.half`, `Emit_.uses`, `RkIn.pref`"
+  say "   >>> derived-fact reader block (BArg.name, Uses.half, Emit_.uses, RkIn.pref"
   say "   >>> all nine times) and `bend` refuses it with `duplicate declaration`. The"
   say "   >>> hash MOVED during this session: the same path was bed462b6.. (cold, 3205"
   say "   >>> lines) and is now the value above. The repair below touches ONLY THE COPY"
@@ -141,10 +155,16 @@ if [ "$(head -1 "$W/substrate.txt" | awk '{print $1}')" != WARM ]; then
   say ""
 fi
 
-rm -rf "$NC"; mkdir -p "$NC/.agents/slop" || exit 1
+rm -rf "$NC"; mkdir -p "$NC/.agents/slop" "$NC/checks/.e2e-fixture" "$NC/gates" || exit 1
 cp -R "$ROOT/tinybendygrad" "$NC/tinybendygrad" || exit 1
 cp -R "$ROOT/checks/.e2e-fixture/portexec" "$NC/checks/.e2e-fixture/portexec" || exit 1
 cp -R "$F64" "$NC/checks/.e2e-fixture/f64" || exit 1
+# **⇒ AND THE TRACKED ROWS FILE GOES IN, FOR THE SAME REASON THE e2e_port LANE's
+# COPY NEEDS IT.** `portexec/run-kernel.sh` reads the port's own rows from
+# `$ROOT/gates/cstyle-live.rows`, and `plant.py` re-points the copy's `ROOT` at
+# the COPY -- so the copy's `gates/` must hold it, or the lane dies with
+# "the tracked .../copy/gates/cstyle-live.rows is absent".
+cp "$ROOT/gates/cstyle-live.rows" "$NC/gates/cstyle-live.rows" || exit 1
 ln -s "$ROOT/bin" "$NC/bin"; ln -s "$ROOT/references" "$NC/references"
 ln -s "$ROOT/tinygrad" "$NC/tinygrad"; ln -s "$ROOT/.venv" "$NC/.venv"
 say "   copy: tinybendygrad + portexec + f64 copied; bin/ references/ tinygrad/ .venv/ symlinked"

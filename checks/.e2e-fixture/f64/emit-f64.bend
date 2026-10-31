@@ -53,6 +53,8 @@
 # truncated constant gives `0x3FF0000000000000` and the lane goes red.
 import ../../../tinybendygrad/renderer/cstyle.bend as C
 import ../../../tinybendygrad/LAWS/spec.bend as S
+import ../../../tinybendygrad/uop/ops.bend as O
+import ../../../tinybendygrad/helpers.bend as H
 
 def NN() -> U32: 8
 
@@ -63,6 +65,18 @@ def bs() -> List<&2, C.BArg>:
    C.BArg{"data1_4", S.double(), S.AGlobal{}, True{}, False{}, False{}},
    C.BArg{"data2_4", S.double(), S.AGlobal{}, True{}, False{}, False{}},
    C.BArg{"data3_4", S.double(), S.AGlobal{}, True{}, False{}, False{}}]
+
+# THE `kus`, FOR THE SAME REASON `emit-mm.bend`'s ARE: `render_kernel`'s CLANG
+# OVERRIDE EMITS THE VECTOR TYPEDEFS FROM THE UOP LIST
+# (`_render_defines` -> `uops_to_dtypes`, `cstyle.bend:2265`), and the f64
+# lane's OWN `double4` TYPEDEF IS ONE OF THEM.
+def kus() -> List<&2, C.KU>:
+  [C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(10)}}, Nil{}},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 10, [10], C.KAParam{0, None{}, False{}, 80}, [0]},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 392, [392], C.KAParam{1, None{}, False{}, 3136}, [2]},
+   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(392)}}, Nil{}},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 3920, [3920], C.KAParam{2, None{}, False{}, 31360}, [4]},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 10, [10], C.KAParam{3, None{}, False{}, 80}, [0]}]
 
 def body() -> List<&2, String>:
   ["  double tmp[16];",
@@ -84,5 +98,5 @@ def body() -> List<&2, String>:
 def main() -> IO(Unit):
   do IO<Unit>:
   IO.print("KERNEL_BEGIN")
-  IO.print(C.render_kernel(C.dev_clang(), "mm", NN(), bs(), body(), C.emit_min(), False{}))
+  IO.print(C.render_kernel(C.dev_clang(), True{}, "mm", body(), bs(), kus(), NN()))
   IO.print("KERNEL_END")

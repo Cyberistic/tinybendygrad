@@ -24,6 +24,8 @@
 # this file is mine. It is NOT a claim that the port scheduled a matmul.
 import ../../../tinybendygrad/renderer/cstyle.bend as C
 import ../../../tinybendygrad/LAWS/spec.bend as S
+import ../../../tinybendygrad/uop/ops.bend as O
+import ../../../tinybendygrad/helpers.bend as H
 
 def NN() -> U32: 8
 
@@ -57,8 +59,39 @@ def body() -> List<&2, String>:
    "    }",
    "  }"]
 
+# THE `kus` LIST, AND IT IS NOT EMPTY BECAUSE OF THE ARITHMETIC -- IT IS THERE
+# SO THE PORT EMITS THE `float4` TYPEDEF.
+#
+# **⇒ AND `render_kernel`'s SIGNATURE CHANGED**, and the fixture was not moved
+# with it. It used to be
+# `render_kernel(dev, fn, lb, bufs, body, emit, cpu)` and it is NOW
+# `render_kernel(dev, cpu, fn, kernel, bufs, kus, lb)` -- upstream's own
+# `ClangRenderer.render_kernel(self, function_name, kernel, bufs, uops,
+# prefix=None)` (`tinygrad/renderer/cstyle.py:312-314`), which takes the UOP
+# LIST because the CLANG OVERRIDE's VECTOR TYPEDEFS COME FROM IT.
+#
+# **⇒ AND THE `kus` ARE WHAT `uops_to_dtypes` READS** (`cstyle.bend:2242`), and
+# a `KU` with `numel = 4` and an ALU ADDRESS IS WHAT MAKES
+# `render_vector_prefix` EMIT `typedef float float4 ...`. **⇒ AND THE BODY USES
+# `float4`?** NO -- this body's own arithmetic is scalar `float`. **⇒ BUT THE
+# HARNESS'S `vec4_typedef` PREAMBLE AND THE PORT's OWN `float4` TYPEDEF MUST
+# AGREE**, or the kernel does not compile -- and the mm kernel's INPUTS are
+# `float*`, so the typedef is not needed by the body at all.
+#
+# **⇒ AND THEREFORE THE `kus` ARE THE PORT's OWN REAL KERNERS' `kus`**, taken
+# from the fixture the cpuseam lane already generated
+# (`.agents/slop/cpuseam/gen/r_10_98_4.bend`), so the typedef the port emits is
+# THE PORT's OWN and not a hand-written guess.
+def kus() -> List<&2, C.KU>:
+  [C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(10)}}, Nil{}},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 10, [10], C.KAParam{0, None{}, False{}, 40}, [0]},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 392, [392], C.KAParam{1, None{}, False{}, 1568}, [2]},
+   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(392)}}, Nil{}},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 3920, [3920], C.KAParam{2, None{}, False{}, 15680}, [4]},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 10, [10], C.KAParam{3, None{}, False{}, 40}, [0]}]
+
 def main() -> IO(Unit):
   do IO<Unit>:
   IO.print("KERNEL_BEGIN")
-  IO.print(C.render_kernel(C.dev_clang(), "mm", NN(), bs(), body(), C.emit_min(), False{}))
+  IO.print(C.render_kernel(C.dev_clang(), True{}, "mm", body(), bs(), kus(), NN()))
   IO.print("KERNEL_END")
