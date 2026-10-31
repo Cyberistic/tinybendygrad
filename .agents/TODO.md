@@ -26758,3 +26758,25 @@ the SCHEDULER's deferral is THREE WALLS, and the header had named a wall that wa
         **ACCEPTS **AND **DISCARDS **IS **WORSE **THAN **ONE **IT **OMITS: **IT **READS **AS **THOUGH **THE
         **CAPABILITY **IS **THERE**, **AND **A **SEARCH **FOR **"WHO **TAKES **`bottom_up`"** **FINDS **IT
         **AND **STOPS.**  **MEASURED: **NO **NON-STUB **DEF **IN **THE **PORT **TAKES **IT.**
+
+  - [x] **WALL **C **IS **DOWN** (2026-10-31, `4b90a4101`): `UOp.is_variable`
+        (`ops.py:1009`), `UOp.unbound` (`:1027`) and `UOp.variables` (`:1037`) are
+        ported into `tinybendygrad/uop/fold.bend`, **20 ROWS OVER 2 LANES** green at
+        rest (`gates/uopvars-gate.py`, rc=0), and **FALSIFIABLE BY TEXT EDITS**:
+        forcing the shape conjunct moves `iv_alu_img 0 -> 1` (1 row, FAIL); firing
+        the RANGE arm on `AXIS_WEAK` moves **5 of 20** (`vs_device 2 -> 1`,
+        `vs_weak 1 -> 2`, FAIL).
+        **⇒ AND **THE **GATE **FOUND **A **REAL **DEFECT **IN **MY **OWN **FIRST
+        **DRAFT, **WHICH **IS **THE **POINT **OF **HAVING **ONE: `variables` MINTS,
+        `UOp.new` APPENDS, and the draft returned **BARE INDICES INTO AN ARENA THE
+        CALLER NEVER RECEIVED**.  **MEASURED, VERBATIM: EVERY COUNT ROW WAS RIGHT
+        AND `vs_dev_vmax=NA vs_dev_name=NA`** -- `Arena.arg` was reading the
+        pre-growth arena.  **⇒ A COUNT THAT IS RIGHT AND A NODE THAT IS
+        UNREACHABLE IS THE FAILURE A COUNT CANNOT SEE.**  The fix is a threaded
+        accumulator (`VarR{ar, xs}`), and `unbound` now returns `O.Found`, because
+        both mint.
+        **⇒ AND **THE **RANGE **ARM'S **`x.vmax` **IS **`end - 1` **READ **THROUGH
+        `rng_width.of`** -- which already unrolls CONST/AFTER/CAST and refuses
+        anything else -- and **NOT** through `UOp.vmax`, which wants a min-max
+        `BTable` and would make minting one device index cost a full sweep.  The
+        answer is a `Maybe` for that one arm only.
