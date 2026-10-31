@@ -3100,6 +3100,20 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
   UOp.axis_type.of(O.Arena.arg(ar, i), O.Arena.op(ar, i))
 
 # ===========================================================================
+# `UOp.is_variable` / `UOp.variables` -- ops.py:1009 and :1037, AND THE TWO NAMES
+# `schedule/__init__.bend`'s `resolve_linear_call` STANDS ON (its wall C).
+#
+# `is_variable` is FOUR conjuncts and the FOURTH is the one that needs care:
+#   op is PARAM · `vmin_vmax` is Some · `addrspace` is ALU · `_shape == ()`
+#
+# THE SHAPE CONJUNCT IS A CONSTRUCTOR TEST AND NOT A COUNT, for the reason
+# `cfun_shape_is` records three hundred lines up: `fold.shape` answers a Maybe OF
+# a Maybe, the outer is "is the shape known" and the inner is Python's `None`
+# versus `()`. So `Some{Some{Nil{}}}` is `()`, `Some{None{}}` is a shape that is
+# not concrete, and anything else is not scalar. THE COUNT WOULD BE WRONG THREE
+# WAYS AT ONCE, and `cfun_shape_is` already measured that.
+
+# ===========================================================================
 # THE `_min_max` ARITHMETIC CORE -- the part of ops.py:1104 that is unsigned-64
 # magnitude arithmetic plus a sign bit, and the HALF OF THE WALL that
 # `mixin/dtype.bend` measured. See the full width argument at the foot of this file,
@@ -4827,6 +4841,50 @@ def UOp.device(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, Maybe<&2, S.Dev>>:
 def fold.shape(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, Maybe<&2, List<&2, O.Sint>>>:
   fold.shape.of(Kahn.get(i, tb))
 
+def is_unit_shape(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>, unit: Bool) -> Bool:
+  match m:
+    case Some{Some{Nil{}}}: unit
+    case _: Bool.not(unit)
+
+def isvar_test(+vv: Maybe<&2, O.PyRange>, +ad: S.Addr, +sh: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Bool:
+  match vv ad:
+    case Some{_} S.Aalu{}: is_unit_shape(sh, True{})
+    case _ _: False{}
+
+def isvar_pa(+pa: O.ParamArg, +sh: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Bool:
+  isvar_test(O.ParamArg.vmin_vmax(pa), O.ParamArg.addrspace(pa), sh)
+
+def UOp.is_variable.of(+arg: O.Arg, +op: O.Op, +sh: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> Bool:
+  match arg op:
+    case O.AParam{pa} O.OpsPARAM{}: isvar_pa(pa, sh)
+    case _ _: False{}
+
+# TWO DEFS, AND NOT FOR TIDINESS: a `match` may not scrutinise a COMPUTED value
+# ("give it its own def", bend2-constraints), so `vmin_vmax(pa)` and
+# `addrspace(pa)` cannot be matched where they are read. They are PARAMETERS of
+# this def instead, which is the one shape the compiler accepts.
+def UOp.is_variable(+ar: O.Arena, +tb: Table, +i: U32) -> Bool:
+  UOp.is_variable.of(O.Arena.arg(ar, i), O.Arena.op(ar, i), fold.shape(ar, tb, i))
+
+# `UOp.unbound` -- ops.py:1027. `self.replace(arg=replace(self.arg, val=None),
+# tag=None)`: the ParamArg is rebuilt with `val = None{}` and THE TAG IS CLEARED,
+# because tags are kernel-graph processing state and the unbound Variable is the
+# canonical node. `ParamArg` is twelve fields in upstream's order (`ops.bend:870`)
+# and `val` is the TWELFTH, so only the twelfth and the tag move.
+def UOp.unbound.arg(+x: O.ParamArg) -> O.ParamArg:
+  match x:
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, _val}:
+      O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer,
+                 bind_on_realize, None{}}
+
+def UOp.unbound.of(+arg: O.Arg, +ar: O.Arena, +i: U32) -> O.Found:
+  match arg:
+    case O.AParam{pa}: O.UOp.new(ar, O.Arena.op(ar, i), O.Arena.srcs(ar, i), O.AParam{UOp.unbound.arg(pa)}, O.TNone{})
+    case _: O.Found{ar, i}
+
+def UOp.unbound(+ar: O.Arena, +i: U32) -> O.Found:
+  UOp.unbound.of(O.Arena.arg(ar, i), ar, i)
+
 def UOp.shape(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, Maybe<&2, List<&2, O.Sint>>>:
   fold.shape(ar, tb, i)
 
@@ -4845,6 +4903,94 @@ def dt_is(+x: Folded, i: U32, want: S.Dt) -> Bool:
 
 def UOp.dtype(ar: O.Arena, tb: Table, i: U32) -> Maybe<&2, S.Dt>:
   fold.dt(ar, tb, i)
+
+# ===========================================================================
+# `UOp.variables` -- ops.py:1037, THE NAME `schedule/__init__.bend`'s
+# `resolve_linear_call` STANDS ON.
+#
+# TWO ARMS AND THEY ARE DIFFERENT SHAPES, which is why this cannot be a filter:
+#   PARAM with ALU addrspace -> `x.unbound() if x.is_variable else x`
+#   DEVICE-axis RANGE        -> MINT `variable("_device_num", 0, x.vmax, dtype=x.dtype)`
+#
+# The first arm is upstream's own distinction between a Variable and any other ALU
+# PARAM, and `unbound()` is what makes the SET dedup a bound Variable against its
+# unbound form: they are the same canonical node. The dedup here is therefore
+# AFTER the mapping and not before, and it is `List.contains` over arena indices,
+# because a hash-consed `U32` index IS the identity upstream's `set` keys on.
+#
+# THE SECOND ARM IS WHY THE ANSWER IS A `Maybe`. `x.vmax` for a RANGE is `end - 1`,
+# and the port reads `end` through `rng_width.of`, which unrolls CONST/AFTER/CAST
+# and REFUSES anything else -- and `rng_width` exists for exactly this read. It is
+# used instead of `UOp.vmax` because `UOp.vmax` wants a min-max `BTable`, and
+# minting ONE device index must not cost a sweep of the whole arena.
+#
+# A `variables` that DROPPED a DEVICE range whose end it could not read would hand
+# `resolve_linear_call` a parameter set missing a device index -- a schedule that
+# looks plausible and is wrong. So that case is `None{}` and not a shorter list.
+# THE PARAM ARM CANNOT FAIL; ONLY THE RANGE ARM CAN.
+# THE ARENA IS THREADED THROUGH THE ACCUMULATOR AND THAT IS NOT TIDINESS.
+# `UOp.variable` and `UOp.unbound` MINT, and `UOp.new` APPENDS: it answers a
+# `Found` whose arena is GROWN. A `variables` returning bare indices would answer
+# indices into an arena the caller never receives, and `Arena.arg` on the
+# caller's copy would not find them. MEASURED: the first draft answered
+# `vs_dev_vmax=NA vs_dev_name=NA` while EVERY COUNT ROW WAS RIGHT -- a count that
+# is right and a node that is unreachable is the failure a count cannot see.
+# `gates/paramarg_shape.bend` records the same rule for its own fixtures.
+type VarR is Data:
+  VarR{ar: O.Arena, xs: List<&2, U32>}
+
+def VarR.ar(x: VarR) -> O.Arena:
+  match x:
+    case VarR{ar, xs}: ar
+
+def VarR.xs(x: VarR) -> List<&2, U32>:
+  match x:
+    case VarR{ar, xs}: xs
+
+def UOp.vpush.add(+u: U32, +r: VarR) -> VarR:
+  VarR{VarR.ar(r), Bool.pick(List<&2, U32>, List.contains(U32, U32.is_eq, VarR.xs(r), u), VarR.xs(r), List.append(&2, U32, VarR.xs(r), [u]))}
+
+def UOp.vpush.one(+tb: Table, +x: U32, +r: VarR) -> VarR:
+  +f = UOp.unbound(VarR.ar(r), x)
+  UOp.vpush.add(Bool.pick(U32, UOp.is_variable(VarR.ar(r), tb, x), O.Found.i(f), x), VarR{O.Found.ar(f), VarR.xs(r)})
+
+def UOp.vpush.mint(+hi: H.I64, +d: S.Dt, +r: VarR) -> VarR:
+  +f = O.UOp.variable(VarR.ar(r), "_device_num", H.i64_zero(), hi, 1, d)
+  UOp.vpush.add(O.Found.i(f), VarR{O.Found.ar(f), VarR.xs(r)})
+
+def UOp.variables.pa(+tb: Table, +x: U32, +ad: S.Addr, +r: VarR) -> Maybe<&2, VarR>:
+  match ad:
+    case S.Aalu{}: Some{UOp.vpush.one(tb, x, r)}
+    case _: Some{r}
+
+def UOp.variables.mint.of(+e: Maybe<&2, H.I64>, +d: Maybe<&2, S.Dt>, +r: VarR) -> Maybe<&2, VarR>:
+  match e d:
+    case Some{end} Some{dt}: Some{UOp.vpush.mint(H.i64_sub(end, H.i64_one()), dt, r)}
+    case _ _: None{}
+
+def UOp.variables.at(+tb: Table, +x: U32, +at: O.AxisType, +r: VarR) -> Maybe<&2, VarR>:
+  match at:
+    case O.AXIS_DEVICE{}: UOp.variables.mint.of(rng_width.of(VarR.ar(r), x), UOp.dtype(VarR.ar(r), tb, x), r)
+    case _: Some{r}
+
+def UOp.variables.step.of(+acc: Maybe<&2, VarR>, +op: O.Op, +arg: O.Arg, +tb: Table, +x: U32) -> Maybe<&2, VarR>:
+  match acc op arg:
+    case None{} _ _: None{}
+    case Some{r} O.OpsPARAM{} O.AParam{pa}: UOp.variables.pa(tb, x, O.ParamArg.addrspace(pa), r)
+    case Some{r} O.OpsRANGE{} O.ARange{ids, at}: UOp.variables.at(tb, x, at, r)
+    case Some{_} _ _: acc
+
+# `xs` LEADS the parameters because the termination checker reads arguments left
+# to right and needs to see one shrink before any other changes: `acc` is computed
+# from `x`, so an `acc`-first signature is a self-call the checker cannot justify.
+def UOp.variables.go(+xs: List<&2, U32>, fuel: Nat, +tb: Table, +acc: Maybe<&2, VarR>) -> Maybe<&2, VarR>:
+  match xs acc:
+    case Nil{} _: acc
+    case _ None{}: None{}
+    case x <> t Some{r}: UOp.variables.go(t, fuel, tb, UOp.variables.step.of(acc, O.Arena.op(VarR.ar(r), x), O.Arena.arg(VarR.ar(r), x), tb, x))
+
+def UOp.variables(+ar: O.Arena, +tb: Table, +i: U32, +fuel: Nat) -> Maybe<&2, VarR>:
+  UOp.variables.go(O.UOp.backward_slice_with_self(fuel, ar, i), fuel, tb, Some{VarR{ar, Nil{}}})
 
 # `self.src`, read back out of the RESOLVED TABLE by index. A src the fold has not
 # answered makes the consumer unanswerable, which is the same one-directional rule
