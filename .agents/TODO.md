@@ -27420,3 +27420,12 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       takes the memory list instead of the record. 32x32 585.80 -> 555.33 ms.
       **SESSION POSITION: 16x16 118.45 -> 91.89 ms (1.29x), 32x32 1037.25 -> 555.33 ms (1.87x)**;
       against the CPython lane's 68.26 / 371.36 that is 0.74x / 0.67x (from 0.77x / 0.53x).
+- [x] **THE STATIC/DYNAMIC SPLIT: 21 FIELDS PER STEP -> 11.** `St` (us, v0, fs, vals, n, cx, cy, cz)
+      and `Gd` (pv, gx, gy, gz) are carried by reference, so a per-step rebuild constructs 11 fields
+      instead of 21 (a Bend record is a chain of two-child nodes). 16x16 91.89 -> **85.6 ms**;
+      32x32 neutral (~565 ms, inside the noise).
+      **THE TRANSFORM ATE TWO THINGS THE GATE CAUGHT**: `Prog.pv1`'s `pv+1` and `Prog.carry`'s grid
+      odometer both became `Prog.gd(p)` -- the arithmetic was dropped and ONE fixture diverged
+      (`f32.cumsum.0.b0`, all-zero buffer). Both are rebuilt explicitly now.
+      **SESSION: 16x16 118.45 -> 85.6 (1.38x), 32x32 1037.25 -> ~565 (1.84x)**; against CPython's
+      68.22 / 371.95 that is 0.80x / 0.66x, from 0.77x / 0.53x.

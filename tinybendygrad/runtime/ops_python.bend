@@ -1721,11 +1721,71 @@ def Prog.parse(s: String) -> Maybe<&2, Load>:
 # byte would be quadratic on a 2 KiB buffer.
 # ===========================================================================
 
+# ===========================================================================
+# THE SPLIT THAT MAKES A STEP CHEAP. `Prog` is rebuilt once per instruction and carried 21 fields,
+# TWELVE of which never change during a work item: the program, the pristine arena, the buffers,
+# `vals`, the uop count and the grid dimensions. Those move into `St`; the work-item counters into
+# `Gd`. A per-step rebuild then constructs 11 fields instead of 21, and a Bend record is a chain of
+# two-child nodes, so that is ~10 malloc-and-refcount pairs per step off the hot path.
+# ===========================================================================
+type St is Data:
+  St{us: List<&2, Uop>, v0: List<&2, List<&2, Elem>>, fs: List<&2, Buf>, vals: List<&2, U32>,
+     n: U32, cx: U32, cy: U32, cz: U32}
+
+type Gd is Data:
+  Gd{pv: U32, gx: U32, gy: U32, gz: U32}
+
+def St.us(+t: St) -> List<&2, Uop>:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: us
+
+def St.v0(+t: St) -> List<&2, List<&2, Elem>>:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: v0
+
+def St.fs(+t: St) -> List<&2, Buf>:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: fs
+
+def St.vals(+t: St) -> List<&2, U32>:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: vals
+
+def St.n(+t: St) -> U32:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: n
+
+def St.cx(+t: St) -> U32:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: cx
+
+def St.cy(+t: St) -> U32:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: cy
+
+def St.cz(+t: St) -> U32:
+  match t:
+    case St{us, v0, fs, vals, n, cx, cy, cz}: cz
+
+def Gd.pv(+g: Gd) -> U32:
+  match g:
+    case Gd{pv, gx, gy, gz}: pv
+
+def Gd.gx(+g: Gd) -> U32:
+  match g:
+    case Gd{pv, gx, gy, gz}: gx
+
+def Gd.gy(+g: Gd) -> U32:
+  match g:
+    case Gd{pv, gx, gy, gz}: gy
+
+def Gd.gz(+g: Gd) -> U32:
+  match g:
+    case Gd{pv, gx, gy, gz}: gz
+
 type Prog is Data:
-  Prog{us: List<&2, Uop>, vs: List<&2, List<&2, Elem>>, v0: List<&2, List<&2, Elem>>, ms: List<&2, List<&2, U32>>,
-       fs: List<&2, Buf>, mk: List<&2, Bool>, vals: List<&2, U32>, pc: U32, n: U32,
-       pv: U32, gx: U32, gy: U32, gz: U32, cx: U32, cy: U32, cz: U32, bad: Bool,
-       dead: Bool, un: List<&2, Uop>, vc: List<&2, Elem>, vi: U32}
+  Prog{st: St, vs: List<&2, List<&2, Elem>>, gd: Gd, ms: List<&2, List<&2, U32>>, mk: List<&2, Bool>,
+       pc: U32, bad: Bool, dead: Bool, un: List<&2, Uop>, vc: List<&2, Elem>, vi: U32}
 
 type Args is Data:
   Args{path: String, gx: U32, gy: U32, gz: U32, vals: List<&2, U32>, ok: Bool}
@@ -1777,89 +1837,55 @@ def Args.of(as: List<String>) -> Maybe<&2, Args>:
   Args.go(as, 0, Args.blank())
 
 
-def Prog.us(+p: Prog) -> List<&2, Uop>:
+def Prog.st(+p: Prog) -> St:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: us
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: st
 
+def Prog.gd(+p: Prog) -> Gd:
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: gd
+
+def Prog.us(+p: Prog) -> List<&2, Uop>: St.us(Prog.st(p))
 def Prog.vs(+p: Prog) -> List<&2, List<&2, Elem>>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: vs
-
-def Prog.v0(+p: Prog) -> List<&2, List<&2, Elem>>:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: v0
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: vs
+def Prog.v0(+p: Prog) -> List<&2, List<&2, Elem>>: St.v0(Prog.st(p))
 
 def Prog.ms(+p: Prog) -> List<&2, List<&2, U32>>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: ms
-
-def Prog.fs(+p: Prog) -> List<&2, Buf>:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: fs
-
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: ms
+def Prog.fs(+p: Prog) -> List<&2, Buf>: St.fs(Prog.st(p))
 def Prog.mk(+p: Prog) -> List<&2, Bool>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: mk
-
-def Prog.vals(+p: Prog) -> List<&2, U32>:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: vals
-
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: mk
+def Prog.vals(+p: Prog) -> List<&2, U32>: St.vals(Prog.st(p))
 def Prog.pc(+p: Prog) -> U32:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: pc
-
-def Prog.n(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: n
-
-def Prog.pv(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: pv
-
-def Prog.gx(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: gx
-
-def Prog.gy(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: gy
-
-def Prog.gz(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: gz
-
-def Prog.cx(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: cx
-
-def Prog.cy(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: cy
-
-def Prog.cz(+p: Prog) -> U32:
-  match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: cz
-
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: pc
+def Prog.n(+p: Prog) -> U32: St.n(Prog.st(p))
+def Prog.pv(+p: Prog) -> U32: Gd.pv(Prog.gd(p))
+def Prog.gx(+p: Prog) -> U32: Gd.gx(Prog.gd(p))
+def Prog.gy(+p: Prog) -> U32: Gd.gy(Prog.gd(p))
+def Prog.gz(+p: Prog) -> U32: Gd.gz(Prog.gd(p))
+def Prog.cx(+p: Prog) -> U32: St.cx(Prog.st(p))
+def Prog.cy(+p: Prog) -> U32: St.cy(Prog.st(p))
+def Prog.cz(+p: Prog) -> U32: St.cz(Prog.st(p))
 def Prog.bad(+p: Prog) -> Bool:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: bad
-
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: bad
 def Prog.dead(+p: Prog) -> Bool:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: dead
-
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: dead
 def Prog.un(+p: Prog) -> List<&2, Uop>:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}: un
-
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: un
 def prog_vc_go(r: Prog) -> List<&2, Elem>:
   match r:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}: vc
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: vc
 
 def prog_vi_go(r: Prog) -> U32:
   match r:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}: vi
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: vi
 
 def Prog.vc(r: Prog) -> List<&2, Elem>: prog_vc_go(r)
 def Prog.vi(r: Prog) -> U32: prog_vi_go(r)
@@ -1867,8 +1893,9 @@ def Prog.vi(r: Prog) -> U32: prog_vi_go(r)
 def Prog.sent() -> U32: 4294967295
 
 def Prog.of(+args: Args, +ld: Load) -> Prog:
-  Prog{Load.us(ld), Load.v0(ld), Load.v0(ld), Load.ms(ld), Load.fs(ld), Nil{}, Args.vals(args), 0, Load.n(ld), 3, 0, 0, 0,
-       Args.gx(args), Args.gy(args), Args.gz(args), False{}, False{}, Load.us(ld), Nil{}, Prog.sent()}
+  Prog{St{Load.us(ld), Load.v0(ld), Load.fs(ld), Args.vals(args), Load.n(ld),
+          Args.gx(args), Args.gy(args), Args.gz(args)},
+       Load.v0(ld), Gd{3, 0, 0, 0}, Load.ms(ld), Nil{}, 0, False{}, False{}, Load.us(ld), Nil{}, Prog.sent()}
 
 # **=> AND THE 17 PROJECTIONS ARE ONE MATCH, WHICH IS THE POINT.** MEASURED: a
 # `sample` of the compiled executor puts ~98% of the run inside `Prog_step`'s
@@ -1881,10 +1908,9 @@ def Prog.of(+args: Args, +ld: Load) -> Prog:
 # plain binding requires.
 def Prog.at(+p: Prog, +pc: U32) -> Prog:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, _pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, _un, _vc, _vi}:
-      +lus = us
-      Prog{lus, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead,
-           List.drop(&2, Uop, lus, U32.to_nat(pc)), _vc, _vi}
+    case Prog{st, vs, gd, ms, mk, _pc, bad, dead, _un, _vc, _vi}:
+      +lus = St.us(st)
+      Prog{st, vs, gd, ms, mk, pc, bad, dead, List.drop(&2, Uop, lus, U32.to_nat(pc)), _vc, _vi}
 
 # ===========================================================================
 # THE HOT CHUNK. `Val.put` rebuilds the 16-cell chunk AND the chunk spine -- ~24 heap cells per
@@ -1930,10 +1956,10 @@ def Prog.vat(+p: Prog, +i: U32) -> Elem:
 # `Prog.next(Prog.vs1(p, Val.put(...)))`, which built the record twice per value written.
 def Prog.vput.rec(+p: Prog, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32) -> Prog:
   match p:
-    case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}:
+    case Prog{st, _vs, gd, ms, mk, pc, bad, dead, un, _vc, _vi}:
       match un:
-        case Nil{}: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, bad, dead, Nil{}, vc, vi}
-        case _ <> t: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, bad, dead, t, vc, vi}
+        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
+        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
 
 def Prog.vput.hit(+p: Prog, +slot: U32, +e: Elem) -> Prog:
   Prog.vput.rec(p, Prog.vs(p), List.set(&2, Elem, Prog.vc(p), U32.to_nat(U32.and(slot, 15)), e), Prog.vi(p))
@@ -1957,46 +1983,47 @@ def Prog.vput(+p: Prog, +slot: U32, +e: Elem) -> Prog:
 # was replaced (`step.vs`) or only the memory was (`step.ms`), because `vs1` cold-starts the cache.
 def Prog.step.ms(+p: Prog, +ms: List<&2, List<&2, U32>>, +oob: Bool) -> Prog:
   match p:
-    case Prog{us, vs, v0, _ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}:
+    case Prog{st, vs, gd, _ms, mk, pc, bad, dead, un, vc, vi}:
       match un:
-        case Nil{}: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, Nil{}, vc, vi}
-        case _ <> t: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, t, vc, vi}
+        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, vc, vi}
+        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, vc, vi}
 
 def Prog.step.vs(+p: Prog, +vs: List<&2, List<&2, Elem>>, +oob: Bool) -> Prog:
   match p:
-    case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}:
+    case Prog{st, _vs, gd, ms, mk, pc, bad, dead, un, _vc, _vi}:
       match un:
-        case Nil{}: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
-        case _ <> t: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
+        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
+        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
 
 def Prog.next(p: Prog) -> Prog:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
       match un:
-        case Nil{}: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz,
-                         cx, cy, cz, bad, dead, Nil{}, vc, vi}
-        case _ <> t: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz,
-                          cx, cy, cz, bad, dead, t, vc, vi}
+        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
+        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
 
 def Prog.vs1(p: Prog, vs: List<&2, List<&2, Elem>>) -> Prog:
   match p:
-    case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}:
-      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, Nil{}, Prog.sent()}
+    case Prog{st, _vs, gd, ms, mk, pc, bad, dead, un, _vc, _vi}:
+      Prog{st, vs, gd, ms, mk, pc, bad, dead, un, Nil{}, Prog.sent()}
 
 def Prog.ms1(p: Prog, ms: List<&2, List<&2, U32>>) -> Prog:
   match p:
-    case Prog{us, vs, v0, _ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}:
-      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}
+    case Prog{st, vs, gd, _ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}
 
 def Prog.mk1(p: Prog, mk: List<&2, Bool>) -> Prog:
   match p:
-    case Prog{us, vs, v0, ms, fs, _mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}:
-      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}
+    case Prog{st, vs, gd, ms, _mk, pc, bad, dead, un, vc, vi}:
+      Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}
+
+def Prog.pv1.gd(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>, +p: Prog) -> Prog:
+  Prog{st, vs, Gd{U32.add(Gd.pv(gd), 1), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd)}, ms,
+    Prog.mk(p), Prog.pc(p), Prog.bad(p), Prog.dead(p), Prog.un(p), Prog.vc(p), Prog.vi(p)}
 
 def Prog.pv1(+p: Prog) -> Prog:
-  Prog{Prog.us(p), Prog.vs(p), Prog.v0(p), Prog.ms(p), Prog.fs(p), Prog.mk(p), Prog.vals(p), Prog.pc(p), Prog.n(p), U32.add(Prog.pv(p), 1),
-       Prog.gx(p), Prog.gy(p), Prog.gz(p), Prog.cx(p), Prog.cy(p), Prog.cz(p), Prog.bad(p), Prog.dead(p), Prog.un(p),
-       Prog.vc(p), Prog.vi(p)}
+  Prog.pv1.gd(Prog.st(p), Prog.vs(p), Prog.gd(p), Prog.ms(p), p)
+
 
 # `values[v]` for the k-th src: one arena read and one program read, which is
 # what a step costs.
@@ -2301,8 +2328,8 @@ def Prog.bitcast(+p: Prog, +u: Uop) -> Prog: Prog.cast(p, u)
 
 def Prog.live.at(p: Prog, +oob: Bool) -> Prog:
   match p:
-    case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}:
-      Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, un, vc, vi}
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog{st, vs, gd, ms, mk, pc, Bool.or(bad, oob), dead, un, vc, vi}
 
 def Prog.lane.of(+f: Buf, +dt: S.Dt) -> U32:
   Bool.pick(U32, U32.is_lt(S.Dt.itemsize(dt), Buf.w(f)), 1,
@@ -2688,10 +2715,7 @@ def Prog.over(+pr: Prog) -> Bool: U32.is_ge(Prog.pc(pr), Prog.n(pr))
 # static step count -- so this is the "stay turing-incomplete" guard, and it
 # refuses the launch instead of answering a plausible wrong number.
 def Prog.die(+pr: Prog) -> Prog:
-  Prog{Prog.us(pr), Prog.vs(pr), Prog.v0(pr), Prog.ms(pr), Prog.fs(pr), Prog.mk(pr),
-       Prog.vals(pr), Prog.pc(pr), Prog.n(pr), Prog.pv(pr), Prog.gx(pr), Prog.gy(pr),
-       Prog.gz(pr), Prog.cx(pr), Prog.cy(pr), Prog.cz(pr), Prog.bad(pr), True{}, Prog.un(pr),
-       Prog.vc(pr), Prog.vi(pr)}
+  Prog{Prog.st(pr), Prog.vs(pr), Prog.gd(pr), Prog.ms(pr), Prog.mk(pr), Prog.pc(pr), Prog.bad(pr), True{}, Prog.un(pr), Prog.vc(pr), Prog.vi(pr)}
 
 # ONE def for the whole loop, and it has to be ONE: Bend refuses mutual
 # recursion, so `run` and a separate `run.at` cannot both exist. The shape that
@@ -2729,13 +2753,17 @@ def Prog.count(+args: Args) -> Nat: Nat.mul(U32.to_nat(Args.gx(args)), Nat.mul(U
 
 def Prog.reset(+pr: Prog) -> Prog: Prog.at(Prog.vs1(Prog.mk1(pr, Nil{}), Prog.v0(pr)), 0)
 
+# THE ODOMETER LIVES IN `Gd` NOW, SO THE THREE COMPUTED COUNTERS HAVE TO BE PUT BACK INTO IT.
+def Prog.carry.gd(+pv: U32, +gx: U32, +gy: U32, +gz: U32, +oz: Bool) -> Gd:
+  Gd{pv, Bool.pick(U32, oz, U32.add(gx, 1), gx), Bool.pick(U32, oz, 0, U32.add(gy, 1)),
+    Bool.pick(U32, oz, U32.add(gz, 1), 0)}
+
+def Prog.carry.at(+pr: Prog, +oz: Bool, +gd: Gd) -> Prog:
+  Prog{Prog.st(pr), Prog.vs(pr), gd, Prog.ms(pr), Prog.mk(pr), Prog.pc(pr),
+    Prog.bad(pr), Prog.dead(pr), Prog.un(pr), Prog.vc(pr), Prog.vi(pr)}
+
 def Prog.carry(+pr: Prog, +oz: Bool) -> Prog:
-  Prog{Prog.us(pr), Prog.vs(pr), Prog.v0(pr), Prog.ms(pr), Prog.fs(pr), Prog.mk(pr), Prog.vals(pr), Prog.pc(pr), Prog.n(pr), Prog.pv(pr),
-       Bool.pick(U32, oz, U32.add(Prog.gx(pr), 1), Prog.gx(pr)),
-       Bool.pick(U32, oz, 0, U32.add(Prog.gy(pr), 1)),
-       Bool.pick(U32, oz, U32.add(Prog.gz(pr), 1), 0),
-       Prog.cx(pr), Prog.cy(pr), Prog.cz(pr), Prog.bad(pr), Prog.dead(pr), Prog.un(pr),
-       Prog.vc(pr), Prog.vi(pr)}
+  Prog.carry.at(pr, oz, Prog.carry.gd(Prog.pv(pr), Prog.gx(pr), Prog.gy(pr), Prog.gz(pr), oz))
 
 def Prog.tick(+pr: Prog) -> Prog: Prog.reset(Prog.carry(pr, U32.is_ge(U32.add(Prog.gz(pr), 1), Prog.cz(pr))))
 

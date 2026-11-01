@@ -2473,3 +2473,31 @@ i.e. **1.29x and 1.87x faster than the session start**, and the ratio against th
 moved from 0.77x/0.53x to 0.74x/0.67x. Every remaining lever is now an allocation count, and the
 biggest single one -- the 16-cell chunk rebuild plus a `Maybe` per read -- is the arena, which needs
 `Prog` linear (REPORT.md 37.4).
+
+## 37.7 THE STATIC/DYNAMIC SPLIT: 21 FIELDS PER STEP -> 11
+
+`Prog` carried 21 fields, twelve of which never change during a work item. They moved into `St`
+(`us`, `v0`, `fs`, `vals`, `n`, `cx`, `cy`, `cz`) and `Gd` (`pv`, `gx`, `gy`, `gz`), and a per-step
+rebuild now constructs 11 fields -- and a Bend record is a chain of two-child nodes, so that is
+~10 malloc-and-refcount pairs per step gone.
+
+    16x16   91.89 -> 85.6 ms  (three runs: 85.61 / 85.64 / 91.57)
+    32x32   555.33 -> ~565 ms (three runs: 571.82 / 556.78 / 565.05 -- NEUTRAL, inside the noise)
+
+**TWO THINGS THE MECHANICAL TRANSFORM SILENTLY ATE, and the gate caught both:**
+
+1 `Prog.pv1` increments `pv` and `Prog.carry` computes the next grid position. A positional rewrite
+  of "the four counters become `gd`" replaced BOTH with `Prog.gd(p)` -- dropping the arithmetic, so
+  the odometer never moved. Symptom: ONE fixture diverged, `f32.cumsum.0.b0`, with an all-zero
+  buffer. Both are rebuilt explicitly now (`Prog.pv1.gd`, `Prog.carry.gd`).
+2 `Prog.at` builds its record from `lus` (the uop list), not from `st`, so the first position is not
+  always the static record.
+
+**SESSION TOTALS, same program both sides, EVERY LAUNCH IDENTICAL:**
+
+    size    start        now       PYTHON (same program)   BEND/PYTHON
+    16x16   118.45 ms    85.6 ms   68.22 ms                0.80x   (was 0.77x at 118/96)
+    32x32   1037.25 ms   ~565 ms   371.95 ms               0.66x   (was 0.53x)
+
+**1.38x and 1.84x faster than the session start.** The remaining gap is the arena's 16-cell chunk
+rebuild plus a `Maybe` per read (REPORT.md 35.6/37.1) -- the `Array`, which needs `Prog` linear.
