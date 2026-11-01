@@ -2682,24 +2682,37 @@ def Prog.ld.msat(+ms: List<&2, List<&2, U32>>, +f: Buf, +i: U32, dt: S.Dt, inb: 
 def Prog.ld.ms(+ms: List<&2, List<&2, U32>>, +f: Buf, +i: U32, dt: S.Dt) -> U32:
   Prog.ld.msat(ms, f, i, dt, U32.is_lt(i, Buf.e(f)))
 
-def Prog.ld.lane.at(+l: Lb, +j: U32) -> U32: U32.add(Lb.off(l), U32.mul(j, Lb.step(l)))
+# **THE LANE LOOP PROJECTED THE `Lb` RECORD ~11 TIMES PER LANE, AND 8 OF THOSE ARE LOOP-INVARIANT.**
+# MEASURED by sampler on the shipped build: `Prog_ld_at` is the second most-sampled symbol of the whole
+# executor (8 hits, behind only the interpreter loop's own frame) although the 32x32 packet has only
+# 40 LOAD uops of 510 -- so one LOAD costs many times one ALU step. Per lane the old path took
+# `Lb.step` twice, `Lb.f` twice, `Lb.dt` twice, `Lb.off` twice and `Lb.three`/`Lb.alt`/`Lb.open` once
+# each, and `Prog.ld.lane.at` was evaluated TWICE with the same arguments. The record is destructured
+# ONCE per LOAD now and the lane takes plain fields.
+def Prog.ld.wf(+f: Buf, +off: U32, +dt: S.Dt, +step: U32, +ms: List<&2, List<&2, U32>>, +j: U32) -> Elem:
+  +at = U32.add(off, U32.mul(j, step))
+  elem_of(Prog.ld.msat(ms, f, at, dt, U32.is_lt(at, Buf.e(f))), dt)
 
-def Prog.ld.lane.word(+l: Lb, +ms: List<&2, List<&2, U32>>, +j: U32) -> Elem:
-  elem_of(Prog.ld.msat(ms, Lb.f(l), Prog.ld.lane.at(l, j), Lb.dt(l),
-    U32.is_lt(Prog.ld.lane.at(l, j), Buf.e(Lb.f(l)))), Lb.dt(l))
-
-def Prog.ld.lane(+l: Lb, +ms: List<&2, List<&2, U32>>, +j: U32) -> Elem:
-  Prog.ld.gate(Prog.ld.lane.word(l, ms, j), Lb.three(l), Lb.alt(l), Lb.open(l))
+def Prog.ld.lanef(+f: Buf, +off: U32, +dt: S.Dt, +step: U32, +three: Bool, +alt: Elem, +open: Bool,
+  +ms: List<&2, List<&2, U32>>, +j: U32) -> Elem:
+  Prog.ld.gate(Prog.ld.wf(f, off, dt, step, ms, j), three, alt, open)
 
 # `n` is the FIRST parameter because the store list is REBUILT each step, and a
 # recursive call's arguments are read left to right: nothing rebuilt may come
 # before the one that shrinks (MEASURED).
-def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, List<&2, List<&2, Elem>>>, +ms: List<&2, List<&2, U32>>, +j: U32,
-  +l: Lb) -> List<&2, List<&2, List<&2, Elem>>>:
+def Prog.ld.at(+n: Nat, +f: Buf, +off: U32, +dt: S.Dt, +step: U32, +three: Bool, +alt: Elem,
+  +open: Bool, +slot: U32, +ms: List<&2, List<&2, U32>>, +j: U32,
+  vs: List<&2, List<&2, List<&2, Elem>>>) -> List<&2, List<&2, List<&2, Elem>>>:
   match n:
     case 0n: vs
-    case 1n+q: Prog.ld.at(q, u, Val.put(vs, U32.add(Lb.slot(l), j), Prog.ld.lane(l, ms, j)),
-      ms, U32.add(j, 1), l)
+    case 1n+q: Prog.ld.at(q, f, off, dt, step, three, alt, open, slot, ms, U32.add(j, 1),
+      Val.put(vs, U32.add(slot, j), Prog.ld.lanef(f, off, dt, step, three, alt, open, ms, j)))
+
+# ONE destructure per LOAD, which is what the lane loop used to do per lane.
+def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +u: Uop,
+  vs: List<&2, List<&2, List<&2, Elem>>>) -> List<&2, List<&2, List<&2, Elem>>>:
+  Prog.ld.at(U32.to_nat(Uop.run(u)), Lb.f(l), Lb.off(l), Lb.dt(l), Lb.step(l),
+    Lb.three(l), Lb.alt(l), Lb.open(l), Lb.slot(l), ms, 0, vs)
 
 
 # ===========================================================================
@@ -2753,8 +2766,8 @@ def Prog.ld.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +v
 def Prog.ld1.go(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
   +vi: U32, +u: Uop) -> Prog:
-  Prog.step.vs.f(st, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi),
-      ms, 0, Prog.ld.sb.f(St.fs(st), vs, vc, vi, u)), gd, ms, mk, pc, bad, dead, un,
+  Prog.step.vs.f(st, Prog.ldator(Prog.ld.sb.f(St.fs(st), vs, vc, vi, u), ms, u,
+      Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)), gd, ms, mk, pc, bad, dead, un,
     Bool.and(Prog.ld.happens.f(vs, vc, vi, u), Prog.oob.f(St.fs(st), vs, vc, vi, u)))
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
