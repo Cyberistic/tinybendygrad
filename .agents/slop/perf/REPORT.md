@@ -3332,5 +3332,8 @@ construction is POSITIONAL (`Sc{n, 0}`, never `Sc{b: n}`).
 every one of them returns `Prog & Array<Elem>`. The two `List.set`s in `Prog.vput` become one
 `Array.set`, which is the ~85-100 ns of a ~184 ns step that 39.24 measured away.
 
-The work is in an isolated worktree (`arena-array`) so the main tree stays green; the main tree is at
-`11282e359` with `ALL PROOFS CHECK`, `ops_python_exec` 153/365/0 and `ops_bend_exec-e2e` 7 match.
+The refactor itself is NOT started: it is 75 defs and ~25 call sites that must be rewritten in one
+piece, because a half-converted arena does not compile. An isolated worktree is prepared for it
+(`arena-array`, with `bin/bend` and `references/` linked so it builds) so the main tree can stay green
+throughout; the main tree is at `11282e359` with `ALL PROOFS CHECK`, `ops_python_exec` 153/365/0 and
+`ops_bend_exec-e2e` 7 match.
