@@ -3180,3 +3180,16 @@ the correction is to the EXPLANATION, not to the numbers.
 
 The three censuses also survive, because they are offline and touch nothing: crossings 7/509 (1.4%)
 at W=64; 1 dead write in 510; read distance p50 121, max 502.
+
+### 39.21h A WALK IS NOT CHEAPER THAN `List.get`, MEASURED
+
+`List.get` answers a `Maybe`, so every arena read built a `Some` -- twice, once per chunk level, over
+~2M reads per launch. Replacing it with a direct recursive walk (`Val.nth`/`Val.gin`/`Val.snth`,
+which return the element or `Nil{}` with no allocation) is the obvious fix and it LOST:
+
+    16x16  56.73 -> 60.25 ms      32x32  392.20 -> 416.84 ms
+    `ops_python_exec` PASS, 365 rows, 0 divergences, `max|PYTHON-BEND| 3.576e-07`
+
+So the `Maybe` a `List.get` allocates is cheaper than a Bend-level recursive walk of the same cells.
+That is a fact about this runtime -- the builtin is not just native, it is cheaper than the call
+overhead the replacement adds -- and it retires the whole "remove the `Maybe`" family. Reverted.
