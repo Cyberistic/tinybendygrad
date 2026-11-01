@@ -3337,3 +3337,29 @@ piece, because a half-converted arena does not compile. An isolated worktree is 
 (`arena-array`, with `bin/bend` and `references/` linked so it builds) so the main tree can stay green
 throughout; the main tree is at `11282e359` with `ALL PROOFS CHECK`, `ops_python_exec` 153/365/0 and
 `ops_bend_exec-e2e` 7 match.
+
+### 39.26 THE REFACTOR'S TWO COSTS, MEASURED BY STARTING IT (AND WHY IT WAS STOPPED)
+
+The arena block was replaced with `Array` ops in the `arena-array` worktree and compiled, to find out
+what the change actually costs rather than guess. Two facts, both actionable:
+
+**1. THE ARENA MUST BE PASSED WITHOUT `+`.** `def Val.at(+a: Array<Elem>, ...)` is REFUSED --
+"`+a` can be used many times, so its type must be Data", and `Array` is a `Type`. Every one of the 75
+signatures therefore has to lose the `+` on the arena parameter, which also means every one of them
+must use it EXACTLY ONCE: a function that reads twice must rebind the pair. That is the same property
+that makes the change worth doing and the same property that makes it invasive.
+
+**2. BEND REPORTS ONE ERROR AT A TIME.** Ten diagnostic lines per run, one `Location:`. Definitions
+are checked in file order and the compiler stops at the first failing one, so the 75 signatures plus
+29 read sites plus 9 write sites cannot be fixed in a batch and surveyed: they take on the order of a
+hundred sequential compile cycles (~40 s each on this machine). That is the real reason this was
+stopped -- not uncertainty about the design, which is settled, and not doubt about the payoff, which
+is measured (39.24: ~2x).
+
+So the honest state is: **the objective is NOT met.** The 32x32 lane is ~2% behind CPython, the
+interpreter is at its persistent-list optimum (nine launched configurations, 39.21d/39.21f), and the
+one change that would break past it is specified, proven feasible, and pays ~2x -- but it is a
+hundred-cycle mechanical rewrite of 113 sites that does not compile until all of them are done. It
+needs a session with the budget to run that loop, not a better idea.
+
+The `arena-array` worktree is reverted CLEAN, and the main tree is unchanged and green.
