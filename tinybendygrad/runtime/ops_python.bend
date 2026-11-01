@@ -2157,6 +2157,19 @@ def Prog.loop(+p: Prog, +r: U32) -> U32: Prog.loop.go(Prog.us(p), r, 0, 0)
 def Prog.put(+p: Prog, +u: Uop, +e: Elem) -> Prog:
   Prog.vput(p, Uop.slot(u), e)
 
+# **THE ALU PATH REBUILT THE RECORD ONLY TO HAVE IT RE-MATCHED.** `Prog.alu.at.k` already holds all
+# eleven fields, and its three arms did `Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi},
+# u, e)` -- one record build, one allocation and seven refcount pairs -- so that `Prog.put` could call
+# `Prog.vput`, which MATCHED the record again to reach `Prog.vput.go`. The INDEX path was collapsed off
+# exactly this shape in REPORT 39.20 (416.70 -> 412.35 ms); ALU is the hottest family in the packet
+# (163 MULACC + 4 MUL of 510 uops) and was still paying it. The field-taking form goes straight to
+# `Prog.vput.go`.
+def Prog.putf(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
+  +vi: U32, +u: Uop, +e: Elem) -> Prog:
+  +sl = Uop.slot(u)
+  Prog.vput.go(U32.is_eq(Val.ci(sl), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, sl, e)
+
 # ===========================================================================
 # :67-68 BACKEDGE -- `i = uop_to_index[u.src[1]] if values[u.src[2]][0] else
 # i+1`. The condition is src 2 and the loop head is src 1.
@@ -2956,12 +2969,12 @@ def Prog.alu.at.k(+k: U32, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd
   +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
   +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Prog:
   match k:
-    case 1: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u,
+    case 1: Prog.putf(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
               alu1(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n)))
-    case 2: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u,
+    case 2: Prog.putf(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
               alu2(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n),
                 Prog.src.f(vs, vc, vi, u, 1n)))
-    case _: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u,
+    case _: Prog.putf(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
               alu3(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n),
                 Prog.src.f(vs, vc, vi, u, 1n), Prog.src.f(vs, vc, vi, u, 2n)))
 
