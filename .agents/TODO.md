@@ -27185,3 +27185,68 @@ AND I HAD NAMED ONE.**
 **reads **`ctx[0]`** **OR **`ctx[1]`.**  **THE **ORDER **IS **CTX **FIRST, **THEN
 **`substitute`, **THEN **`apply_binds` **arm **3, **THEN **`resolve_linear_call` --
 **AND **THE **FIRST **TWO **ARE **BOTH **BEHIND **`uop/ops.bend`.**
+- [x] **STAGE 3 SETTLED BY THE USER: "BEND >= PYTHON (intended; MET)".** Recorded as the governing
+      reading, with the literal one still recorded as FALSE (PYTHON is 2.6x/5.1x slower). The tree must
+      not later quote the clause as satisfied without naming the reading.
+- [x] A PLANT IN THE WEBGPU TIMER: each side is also timed with the dispatch DOUBLED, same bytes.
+      `mm512` gives plant 1.96 (py) / 2.00 (bend) -- the timer RESOLVES a factor of two at 11 ms --
+      while the 0.1-0.3 ms rows scatter 0.50-2.00, which says those rows are at the floor and their
+      equality is identity, not measurement. The artifact carries the plant in its own columns.
+- [x] EXP2 COVERED: `exp32` renders `exp2((val0*1.4426950216293335f))` byte-identically (515 B), so a
+      transcendental PLUS a float constant is now in the corpus. WebGPU is 11 programs / 11 kernels,
+      all identical, all timed; Metal is 8 programs / 7 kernels, all identical.
+- [ ] THE IF ARM IS WRITTEN AND **UNEXERCISED**: `codegen/__init__.py:401` says a GATED STORE is "the
+      only use of IF-ENDIF", and nine programs (odd reduce/matmul, pad, shrink, max, odd add, strided
+      setitem, pad-with-fill, multi-axis max, cumsum) produced none; a boolean-mask assignment is
+      refused upstream (`index dtype dtypes.bool is not supported`). A `where` lowers to `select`,
+      which IS covered. So a predicate-guarded KERNEL cannot be built here, and the arm's text is not
+      compared to CPython's anywhere -- do not claim it renders correctly until something emits IF.
+- [x] SQRT/SIN/LOG2/BITCAST COVERED ON WEBGPU: **15 of 15 programs byte-identical and timed**
+      (sqrt32 590 B, sin32 492 B, log32 543 B, bc32 520 B; mm512 11.8/12.4 ms, plant 2.02/1.81).
+      BITCAST needed a new arm reusing `wgsl.bend`'s six `sr_b*` rules + `sr_pick_bitcast`.
+- [x] CLASSES THAT CANNOT BE BUILT ARE NOW IN `.agents/slop/perf/stage1-scope.rows`: `Ops.IF` (only
+      producer is a gated STORE; ten programs tried, none gated), packed/atomic (needs the WGSL
+      matcher while LOWERING, and DEV=WEBGPU cannot open), STACK (NOOPT exists for it), and the four
+      covered ones with their bytes and shas.
+- [ ] TWO REAL METAL-LANE DEFECTS FOUND, NOT FIXED: (a) a float constant prints to 7 significant
+      digits (`1.442695f` vs CPython's `1.4426950216293335f`); (b) the cstyle lane renders
+      `UNHANDLED(Ops.BITCAST)` for a KU-built bitcast. Both live in `cstyle.bend`/the converter, not
+      in the WGSL walk, and both were recorded rather than rushed.
+- [x] AND TWO HARNESS DEFECTS THE BROADENING EXPOSED: `O.CFloat{-1.4...}` is a Bend PARSE ERROR and,
+      because the Metal driver imports every module, ONE transcendental constant made all twelve
+      kernels render as the EMPTY STRING (sha e3b0c442…); and the kernel dedup keyed by NAME dropped
+      programs whose bodies differed (`where32` 898 B vs `exp32` 706 B under one name).
+
+THE SUBSTRATE IS COMMITTED AND THE CORPUS IS GREEN AT A NEW DIGEST -- and the REPRO is REFUSED because a NEW unit started writing
+
+**⇒ AND **THE **FIRST **HALF **OF **WHAT **THE **OWNER **ASKED **FOR **IS **DONE:** the
+13 dirty substrate paths are committed (`41a772e0f`, `c25df28b5`), `tinybendygrad/`
+is **CLEAN**, and the corpus RUN that validates them is green:
+
+    graphs=38  graphs-refused=0  byte-identical=38  expect-moved=0
+    plants-disagree=8 of 8  controls=5 of 5  conflations=4 of 4
+    selfcheck=# SELFCHECK: OK   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
+    substrate-start = substrate-end = 0f2654abc8712a38...
+
+**⇒ AND **THAT **RUN **IS **A **CERTIFICATE **FOR **ITS **DIGEST **AND **NOT **FOR **HEAD:**
+`substrate-start == substrate-end` says the tree did not move DURING it, and the digest
+covers the bytes it saw.
+
+**⇒ AND **THE **REPRO **WAS **REFUSED, **AND **THE **REFUSAL **IS **THE **WITNESS
+**WORKING:**
+
+    run A: 0f2654abc8712a38      run B: 879d296c5a7842df
+    REPRO: REFUSED -- the two runs measured DIFFERENT SUBJECTS ... so the snapshots
+    differ because THE TREE MOVED BETWEEN THEM
+
+**⇒ AND **THE **CAUSE **IS **A **NEW **UNIT, **NOT **A **STALE **FILE:**
+`M tinybendygrad/uop/render.bend` **AND **`?? tinybendygrad/uop/f32_repr.bend` --
+an UNTRACKED file that did not exist when the 13 were committed, which is the
+signature of work being WRITTEN NOW.  **SO I DID NOT TAKE IT:** the 13 I committed
+were A DAY OLD with `git diff` sizes that made a complete change; these two are
+minutes old and one of them has no committed shape at all.  **A PATH A UNIT IS
+WRITING IS THE ONE CASE "COMMIT ALL" MUST NOT COVER.**
+
+**⇒ AND **THE **CORRECT **NEXT **ACTION **IS **A **REPRO **ONCE `render.bend` +
+`f32_repr.bend` **SETTLE** -- and the instrument already says so by name rather than
+producing a green that would have been about nothing.
