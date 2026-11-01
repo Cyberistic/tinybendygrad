@@ -3246,3 +3246,51 @@ from the other direction: the builtin is cheap and the walk is not.
 `term_drop` 89, `span_fade` 74 and the `spin_*` allocator loops ~102, with this file's own defs
 appearing only as thin frames (`Prog_run`, `Prog_ld_sb_f` 6, `List_set` 8, `Prog_index` 4). The
 interpreter's shape is not what the remaining time is spent on.
+
+### 39.24 THE ARENA'S FLOOR IS THE PERSISTENT LIST, AND THE "LINEAR STATE CANNOT CROSS THE LOOP" NOTE IS WRONG
+
+**`ops_python.py` MUTATES AND THIS PORT COPIES, AND THAT IS THE WHOLE 3%.** The CPython lane's inner
+loop assigns `values[u] = [...]` into a dict -- an O(1) store, no allocation, no copy. This port's
+`Prog.vput` calls `List.set`, which copies the first `k` cells AND frees them, twice per value
+written. Every "the write is the cost" measurement in 39.21-39.23 is a measurement of that asymmetry,
+and no chunk shape removes it: nine launched configurations put the best at 13 copied cells
+(39.21d/39.21f), and every restructuring traded those cells for a `Maybe` (39.21h, 39.23).
+
+**A CORRECTION TO THIS TREE'S OWN RECORD, AND IT IS THE IMPORTANT PART OF THIS SECTION.** The note
+in `Prog.vput`'s header and in the slop reports says a linear `Array` state "cannot cross the loop"
+(one `match` per body level + no mutual recursion), citing `t_loop.bend`. **THAT IS FALSE, MEASURED
+2026-11-01.** A linear `Type` record holding an `Array` threads through a fuel recursion without
+difficulty; the only thing `t_loop.bend` had wrong was leaving the scalar fields affine:
+
+    type S is Type:
+      S{a: Array<U32>, n: U32}
+
+    def step(s: S) -> S:
+      match s:
+        case S{a, +n}:                       # `+n` -- the ONE thing that was blocked
+          S{Array.set(U32, a, 0, U32.add(n, 1)), U32.add(n, 1)}
+
+    def loop(f: Nat, s: S) -> S:
+      match f:
+        case 0n: s
+        case 1n+k: loop(k, step(s))
+
+    def main() -> U32: fin(loop(100000n, S{Array.new(U32, 4n, 0), 0}))      # prints 100000
+
+(`Array.set` is TYPE-FIRST -- `Array.set(-T: Type, a, i, v)` -- and `Array.new`'s second argument is
+the DEPTH, not the count: `Array.new(U32, 6n, 0)` is 64 slots. Both cost a wrong first attempt.)
+
+**AND THE PAYOFF IS MEASURED, ON NATIVE BINARIES, NOT INTERPRETED.** `bend <src> -o <bin>` is the
+same command `ops_bend.executor()` uses; running `bend <src>` without `-o` interprets and is ~1000x
+slower, which is why an earlier micro-benchmark in this file was worth nothing. 2,000,000 writes to
+64 slots, three runs each, both printing the right answer:
+
+    List.set   (this port's arena)     0.17  0.17  0.17 s
+    Array.set  (what it could be)      0.00  0.00  0.00 s
+
+At ~184 ns per interpreted step, the two `List.set`s are ~85-100 ns of it. **An `Array` arena would
+therefore take a 32x32 launch from ~188 ms to roughly ~90 ms -- about 2x FASTER than the CPython
+lane -- which is the objective.** The work is not a data-structure tweak: `Array` is a `Type`, so it
+cannot sit in the `Data` record `Prog`, and the arena has to be threaded through every step that
+reads or writes a value (`vat`, `vput`, `flush` and the ~20 dispatch arms) as a linear companion.
+That is the refactor, and it is the next unit's work, not a floor.
