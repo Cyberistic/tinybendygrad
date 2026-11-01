@@ -27459,3 +27459,14 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       record does not compile -- so it cannot be landed in green pieces.
 - [x] **`Prog.vat` now does ONE traversal instead of three** (`Prog.vi`, then `Prog.vc`/`Prog.vs` were
       three 11-field matches per arena read, three reads per ALU step). 16x16 90.51 -> 87.76 ms.
+- [ ] **THE LINEARISATION, ATTEMPTED AND REVERTED (REPORT.md 39.6) -- THE OBSTACLE IS A LANGUAGE RULE.**
+      Three scripted passes: `type Prog is Type` refuses the first `+p: Prog` (89 defs); 67 signatures
+      lose `+`; 32 sequential-use bodies wrap in one `match`; then **"a match cannot be matched in this
+      position"** -- neither a nested `match p:` at body level NOR inside an arm is legal, so every
+      branch-shaped body that reads the record inside an arm must become a MULTI-SCRUTINEE match
+      (`match x p:`) with the record pattern appended to EVERY arm (and `_` where an arm ignores it).
+      That is hand work per def; the scripts compounded (`match p p:`) and were reverted.
+      NEXT ATTEMPT STARTS WITH THE COUNT: 67 mechanical signature edits, 32 mechanical wraps, and 34
+      branch-shaped bodies of which ~6-10 need the merge (`Prog.flush.go`, `Prog.vput.go`,
+      `Prog.backedge.at`, `Prog.rng.*`, `Prog.param.at`, `Prog.index.by`, `Prog.store.at`).
+      `Prog.dispatch` is NOT one of them: its arms each consume the record once, which is legal.

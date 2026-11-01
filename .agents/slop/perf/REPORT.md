@@ -2627,3 +2627,36 @@ the read path had the same defect. One `match` binds the three:
 
 Gates unchanged: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences, `--check-only` clean,
 `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+## 39.6 THE LINEARISATION, ATTEMPTED: THE OBSTACLE IS A LANGUAGE RULE, NOT 89 SIGNATURES
+
+I ran the conversion the reviewer asked for, scripted, three times, and each pass found one more
+language rule that a script cannot satisfy. All three attempts were reverted -- the tree is at the
+state it was, green:
+
+    type Prog is Type            -> the FIRST `+p: Prog` is refused (89 defs take a Prog)
+    67 signatures lose `+`       -> bodies that use the record twice in sequence need one `match`
+    32 bodies wrapped            -> A BODY WHOSE FIRST STATEMENT IS A `match` CANNOT BE NESTED:
+                                    "a match cannot be matched in this position (it is matched after
+                                    a local statement or after a match on a later binder)"
+    9 arms wrapped               -> SAME RULE INSIDE AN ARM: `case True{}: match p: ...` is refused
+    44 arms merged into `match x p:` (multi-scrutinee) -> the pass compounds and mangles
+                                    `match p p:` on the defs that already matched `p`
+
+**⇒ THE RULE IS: ONE `match` PER BODY LEVEL, ON A PARAMETER, AND A LINEAR RECORD CAN ONLY BE
+DESTRUCTURED WHERE NO OTHER MATCH IS IN SCOPE.** So every one of the 34 branch-shaped bodies must be
+converted to a MULTI-SCRUTINEE match (`match x p:`) with the record pattern appended to EVERY arm --
+including the arms that do not touch the record, which then need a `_`. That is a hand-written
+restructure per def, because a script has to guess which arm needs the pattern and the alternatives
+(`_`) interact with the record's own binders.
+
+**AND 34 BRANCH-SHAPED BODIES IS THE WHOLE COST**: `Prog.dispatch` alone is 20 arms, and its arms
+each consume `p` once, which is LEGAL for a linear value -- so `dispatch` needs no wrap, only `+`
+removed. The scripts could not tell "uses it twice in sequence" from "uses it once per arm" without
+reading each body.
+
+**MEASURED, SO THE NEXT ATTEMPT STARTS HERE AND NOT AT THE TOP**: the conversion is 67 signature
+edits (mechanical), 32 sequential-use bodies (one `match` each, mechanical), and 34 branch-shaped
+bodies of which the ones that use the record inside an arm need the scrutinee merge (hand work,
+probably 6-10 of them: `Prog.flush.go`'s False arm uses `vs`/`vi`/`vc`; `Prog.vput.go`,
+`Prog.backedge.at`, `Prog.rng.*`, `Prog.param.at`, `Prog.index.by`, `Prog.store.at`).
