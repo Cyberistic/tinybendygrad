@@ -2965,23 +2965,30 @@ def Prog.alu.kind.l(one: Bool, +two: Bool) -> U32:
 def Prog.alu.kind(one: Bool, two: Bool) -> U32:
   Prog.alu.kind.l(one, two)
 
-def Prog.alu.at.k(+k: U32, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
-  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Prog:
+# **A `Uop` IS A NINE-FIELD RECORD AND EVERY `Uop.x(u)` REBINDS ALL NINE.** This file already learned
+# that for `Prog` -- "it rebuilt the 17-field record by calling SEVENTEEN separate `Prog.x(p)`
+# PROJECTIONS, and each projection is its own `match` over the same record... one per uop" -- and never
+# applied it to `Uop`. An ALU step used to project it SEVEN times: `nsrc` (through `srcs`), `op`, `dt`,
+# one `sslot` per src, and `slot` inside `putf`. The 32x32 packet is 163 MULACC + 4 MUL of 510 uops.
+# ONE destructure now feeds the whole arm, and the src slots come off the bound `sslot`.
+def Prog.alu.at.k(+k: U32, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U32, +st: St,
+  +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>,
+  +pc: U32, +bad: Bool, +dead: Bool, +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32) -> Prog:
   match k:
-    case 1: Prog.putf(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
-              alu1(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n)))
-    case 2: Prog.putf(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
-              alu2(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n),
-                Prog.src.f(vs, vc, vi, u, 1n)))
-    case _: Prog.putf(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
-              alu3(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n),
-                Prog.src.f(vs, vc, vi, u, 1n), Prog.src.f(vs, vc, vi, u, 2n)))
+    case 1: Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
+              alu1(op, dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n))))
+    case 2: Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
+              alu2(op, dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)),
+                Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n))))
+    case _: Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
+              alu3(op, dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)),
+                Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n)), Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 2n))))
 
-def Prog.alu.at(+p: Prog, +u: Uop, +one: Bool, +two: Bool) -> Prog:
+def Prog.alu.at(+p: Prog, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U32, +n: U32) -> Prog:
   match p:
     case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.alu.at.k(Prog.alu.kind(one, two), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+      Prog.alu.at.k(Prog.alu.kind(U32.is_eq(n, 1), U32.is_eq(n, 2)),
+        op, dt, sslot, slot, st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi)
 
 # ===========================================================================
 # THE INTERPRETER LOOP. One recursion per instruction: Bend has no loop and no
@@ -2999,8 +3006,9 @@ def Prog.alu.at(+p: Prog, +u: Uop, +one: Bool, +two: Bool) -> Prog:
 # `Uop_nsrc` and `List_length` both appear in the top twenty of the shipped build, and the 32x32 packet
 # is 163 MULACC + 4 MUL of 510 uops, so that is ~340 walks per pass for ~170 needed. One bind.
 def Prog.alu(+p: Prog, +u: Uop) -> Prog:
-  +n = Uop.nsrc(u)
-  Prog.alu.at(p, u, U32.is_eq(n, 1), U32.is_eq(n, 2))
+  match u:
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}:
+      Prog.alu.at(p, op, dt, sslot, slot, U32.from_nat(List.length(&2, U32, srcs)))
 
 def Prog.dispatch(+p: Prog, +u: Uop, op: O.Op) -> Prog:
   match op:
