@@ -1944,13 +1944,19 @@ def Prog.vat.maybe(m: Maybe<&2, Elem>) -> Elem:
     case Some{e}: e
     case None{}: Elem.zero()
 
-def Prog.vat.hit(hit: Bool, +p: Prog, +i: U32) -> Elem:
+# ONE TRAVERSAL, NOT THREE. `Prog.vat` did `Prog.vi(p)`, then `Prog.vc(p)` or `Prog.vs(p)` -- three
+# 11-field traversals of the same record per arena read, and it is called three times per ALU step.
+# This file's own note on `Prog.next` calls that shape its worst offender ("SEVENTEEN separate
+# PROJECTIONS... one per uop"); the read path had it too.
+def Prog.vat.hit(hit: Bool, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +i: U32) -> Elem:
   match hit:
-    case True{}: Prog.vat.maybe(List.get(&2, Elem, Prog.vc(p), U32.to_nat(U32.and(i, 15))))
-    case False{}: Val.at(Prog.vs(p), i)
+    case True{}: Prog.vat.maybe(List.get(&2, Elem, vc, U32.to_nat(U32.and(i, 15))))
+    case False{}: Val.at(vs, i)
 
 def Prog.vat(+p: Prog, +i: U32) -> Elem:
-  Prog.vat.hit(U32.is_eq(U32.shrn(i, 4n), Prog.vi(p)), p, i)
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.vat.hit(U32.is_eq(U32.shrn(i, 4n), vi), vs, vc, i)
 
 # THE STORE **AND** THE STEP IN ONE REBUILD: `Prog.put` used to be
 # `Prog.next(Prog.vs1(p, Val.put(...)))`, which built the record twice per value written.

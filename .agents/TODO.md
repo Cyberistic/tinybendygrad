@@ -27451,3 +27451,11 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
 - [ ] **SO THE `Array` REFACTOR IS NEXT AND IT IS JUSTIFIED BY MEASUREMENT, NOT ESTIMATE.** Writes need
       no chain (`Array.set` answers the array) -- only the ~17 `Prog.src` read sites do, and the
       benchmark's `array` mode IS that chain, compiled and timed.
+- [x] **THE LINEARISATION CASCADE, MEASURED**: `type Prog is Type` makes the compiler reject the FIRST
+      `+p: Prog` -- `Prog.st`, "Note: +p can be used many times, so its type must be Data" -- and there
+      are **89 defs taking a Prog** (28 never read it, 39 use it once, 46 use it 2+ times:
+      `Prog.dispatch` 22, `Prog.die` 16, `Prog.carry.at` 10, `Prog.alu.at` 7). The Array refactor is
+      ONE atomic change of 89 signatures + 46 bodies + 17 read chains, and a half-converted linear
+      record does not compile -- so it cannot be landed in green pieces.
+- [x] **`Prog.vat` now does ONE traversal instead of three** (`Prog.vi`, then `Prog.vc`/`Prog.vs` were
+      three 11-field matches per arena read, three reads per ALU step). 16x16 90.51 -> 87.76 ms.

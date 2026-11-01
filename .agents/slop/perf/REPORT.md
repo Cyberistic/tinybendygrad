@@ -2592,3 +2592,38 @@ or three small defs.
 `R.get.k(r: Array<E> & E) -> ...`, `R.step` -> `R.step.b` -> `R.step.c` -> `R.step.d`), and it
 compiles, runs, and is 100x cheaper. So the pattern §37.4 called "undestructurable, needs a chain" is
 proven workable in the same commit that measures its payoff.
+
+## 39.4 THE CASCADE, MEASURED RATHER THAN ESTIMATED
+
+§39.2 said the refactor's cost is the linearisation. This is what the compiler says to the first step
+of it -- `type Prog is Data:` -> `type Prog is Type:` -- with nothing else changed:
+
+    Error:
+    - expected : Data
+    - observed : Type
+    Location: Prog.st
+    1840 | def Prog.st(+p: Prog) -> St:
+         |                 ^^^^
+    Note: +p can be used many times, so its type must be Data.
+
+and the count behind that one error is **89 defs take a `Prog`**, 28 of which never read it, 39 use
+it once and 46 use it twice or more (`Prog.dispatch` 22 times, `Prog.die` 16, `Prog.carry.at` 10,
+`Prog.alu.at` 7 ...). Each of those 89 loses its `+`, and each of the 46 needs its body restructured
+into one `match` plus the `.go` chains for the ~17 arena reads.
+
+**⇒ SO THE `Array` REFACTOR IS ONE ATOMIC CHANGE OF ~89 SIGNATURES + 46 BODIES + 17 CHAINS, AND A
+HALF-CONVERTED LINEAR RECORD DOES NOT COMPILE.** That is why it has not been landed in a turn: it
+cannot be committed green in pieces, and the tree's rule is that every commit compiles and passes the
+gates. It is sized here so the next attempt starts from a measurement instead of a surprise.
+
+## 39.5 ONE MORE TRAVERSAL REMOVED WHILE I WAS IN THERE
+
+`Prog.vat` did `Prog.vi(p)`, then `Prog.vc(p)` OR `Prog.vs(p)`: three 11-field traversals of the same
+record per arena read, called three times per ALU step. This file's own note on `Prog.next` calls
+that shape its worst offender -- "SEVENTEEN separate `Prog.x(p)` PROJECTIONS ... one per uop" -- and
+the read path had the same defect. One `match` binds the three:
+
+    16x16  90.51 -> 87.76 ms     32x32  556.31 -> 561.46 ms (inside the noise)
+
+Gates unchanged: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences, `--check-only` clean,
+`stage3_parity` EVERY LAUNCH IDENTICAL.
