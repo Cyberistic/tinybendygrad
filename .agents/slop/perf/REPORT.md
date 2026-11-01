@@ -2426,3 +2426,29 @@ bind those fields once in a `match`, and the 37 `Prog{...}` constructors carry t
 is the whole job, it cannot be landed in pieces (a half-converted record does not compile), and its
 acceptance test is already written: `--check-only`, `ops_python_exec` 153/365/0,
 `ops_bend_exec-e2e` 7 match, `stage3_parity` EVERY LAUNCH IDENTICAL, then 70.14 / 375.46 ms.
+
+## 37.5 TWO LOOKUPS PER LANE THAT WERE THE SAME LOOKUP
+
+`Prog.oob` was the first. Its recursion passed `j` through UNCHANGED and only counted `n` down, so
+the "per-lane" bounds check answered `j = 0`'s comparison `run` times, re-reading the buffer pointer
+out of the arena each time. It is one read and one comparison, and the answer is the old answer.
+
+**AND THE OBVIOUS IMPROVEMENT IS A SEMANTIC CHANGE, MEASURED**: checking the LAST lane instead
+(`off + (run-1)*step`) refuses this tree's own 16x16 packet -- "a load or store past the end of its
+buffer" -- because ops_python stores `len(src_values[1])` lanes, not `run(u)`, so the last `run`
+lane is not always a lane anybody writes. Reverted, and the refusal is written down here so the next
+attempt at that "optimisation" starts from it.
+
+The store was the second: `Prog.buf(p, u)` was read EIGHT times per lane (twice in `store.bits`,
+twice in `store.addr`, again in `store.open`, and `store.i` re-reads it), and each is `Prog.src` --
+an arena read with its `Maybe`. A four-lane store made ~32 arena reads to write 4 elements.
+Everything except the value is per-STORE, so it is bound once in an `Sb` record and the lane loop
+reads the arena exactly once per lane, for the value.
+
+    16x16  96.18 -> 90.43 ms      32x32  699.46 -> 585.80 ms
+
+**SESSION TOTALS, same program both sides, EVERY LAUNCH IDENTICAL:**
+
+    size    start        now            PYTHON (same program)
+    16x16   118.45 ms    90.43 ms       71.53 ms     (1.31x faster than start, 0.79x of PYTHON)
+    32x32   1037.25 ms   585.80 ms      381.37 ms    (1.77x faster than start, 0.65x of PYTHON)

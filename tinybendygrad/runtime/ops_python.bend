@@ -2355,10 +2355,25 @@ def Prog.store.i(+p: Prog, +u: Uop, +j: U32) -> U32:
 # before its arms, so by the time the self-call is reached the countdown has
 # already been read and the call is not decreasing. A `match` binds `n` and hands
 # the tail to the arm. `q` is the shrinking argument and comes first.
-def Prog.oob(+p: Prog, +u: Uop, +j: U32, +n: Nat) -> Bool:
+def Prog.oob.at(+p: Prog, +u: Uop, +j: U32) -> Bool:
+  U32.is_ge(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u)))
+
+# **THE LOOP CHECKED THE SAME LANE `run` TIMES.** The old recursion passed `j` through unchanged and
+# only counted down `n`, so it answered `j = 0`'s comparison `n` times over -- four lanes meant four
+# identical arena reads of the buffer pointer, each with its `Maybe`. It is ONE read and ONE
+# comparison, and the answer is the old answer.
+#
+# **AND THE OBVIOUS "IMPROVEMENT" IS A SEMANTIC CHANGE, MEASURED**: checking the LAST lane instead
+# (`off + (run-1)*step`) refuses this tree's own 16x16 packet -- "a load or store past the end of
+# its buffer" -- because ops_python stores `len(src_values[1])` lanes, not `run(u)`, so the last
+# `run` lane is not always a lane anybody writes. `Prog_oob` was 9% of the executor's samples.
+def Prog.oob.go(+n: Nat, +p: Prog, +u: Uop) -> Bool:
   match n:
     case 0n: False{}
-    case 1n+q: Bool.or(U32.is_ge(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u))), Prog.oob(p, u, j, q))
+    case 1n+q: Prog.oob.at(p, u, 0)
+
+def Prog.oob(+p: Prog, +u: Uop) -> Bool:
+  Prog.oob.go(U32.to_nat(Uop.run(u)), p, u)
 
 # THE POISON. ops_python raises IndexError on a load or a store past the end of a
 # buffer (:17, :28); Bend answers a default instead, so the check runs here and
@@ -2381,7 +2396,7 @@ def Prog.oob(+p: Prog, +u: Uop, +j: U32, +n: Nat) -> Bool:
 #
 # ⇒ THE GATE IS PART OF THE ACCESS, AND THE CHECK IS PART OF THE GATE.
 def Prog.live(+p: Prog, +u: Uop, +happens: Bool) -> Prog:
-  Prog.live.at(p, Bool.and(happens, Prog.oob(p, u, 0, U32.to_nat(Uop.run(u)))))
+  Prog.live.at(p, Bool.and(happens, Prog.oob(p, u)))
 
 def Prog.ld.gate(+got: Elem, +three: Bool, +alt: Elem, +open: Bool) -> Elem:
   Bool.pick(Elem, Bool.and(three, Bool.not(open)), alt, got)
@@ -2430,7 +2445,7 @@ def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, List<&2, Elem>>, +j: U32, +p: Prog
 
 def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
   Prog.step.vs(p, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.flush(p), 0, p),
-    Bool.and(Prog.ld.happens(p, u), Prog.oob(p, u, 0, U32.to_nat(Uop.run(u)))))
+    Bool.and(Prog.ld.happens(p, u), Prog.oob(p, u)))
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
 # is computed and discarded rather than branched over (Bool.pick is not a branch)
@@ -2463,37 +2478,93 @@ def Prog.store.elem(+p: Prog, +u: Uop, +j: U32) -> Elem:
 # (dtype.py:84) AND THE MEMORYVIEW ARE THE SAME CONVERSION FOR THE FOUR v1
 # LANES. SO `Prog.cast.dt` IS REUSED HERE, AND IT IS THE IDENTITY WHEN THE TWO
 # DTYPES ARE THE SAME.
-def Prog.store.bits(+p: Prog, +u: Uop, +j: U32) -> U32:
-  Elem.bits(Prog.cast.dt(Buf.dt(Prog.buf(p, u)), Elem.dt(Prog.store.elem(p, u, j)),
-    Prog.store.elem(p, u, j)))
+# ===========================================================================
+# THE STORE'S PER-LANE INVARIANTS, LOOKED UP ONCE.
+#
+# The old lane loop called `Prog.buf(p, u)` eight times per lane -- twice inside `store.bits`,
+# twice in `store.addr`, again in `store.open`, and `store.i` re-reads it -- and every one of those
+# is `Prog.src`: an arena read with its `Maybe`. A four-lane store made ~32 arena reads to write 4
+# elements, and `Prog_store_lane_at` is in the executor's own profile. Everything except the VALUE
+# is the same for every lane, so it is bound once in `Sb`.
+# ===========================================================================
+type Sb is Data:
+  Sb{w: U32, dt: S.Dt, e: U32, base: U32, off: U32, step: U32, slot: U32, open: Bool}
+
+def Sb.w(+s: Sb) -> U32:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: w
+
+def Sb.dt(+s: Sb) -> S.Dt:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: dt
+
+def Sb.e(+s: Sb) -> U32:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: e
+
+def Sb.base(+s: Sb) -> U32:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: base
+
+def Sb.off(+s: Sb) -> U32:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: off
+
+def Sb.step(+s: Sb) -> U32:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: step
+
+def Sb.slot(+s: Sb) -> U32:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: slot
+
+def Sb.open(+s: Sb) -> Bool:
+  match s:
+    case Sb{w, dt, e, base, off, step, slot, open}: open
+
+def Sb.at(+s: Sb, +j: U32) -> U32:
+  U32.add(Sb.base(s), U32.mul(U32.add(Sb.off(s), U32.mul(j, Sb.step(s))), Sb.w(s)))
+
+def Sb.i(+s: Sb, +j: U32) -> U32: U32.add(Sb.off(s), U32.mul(j, Sb.step(s)))
+
+def Prog.store.sb.buf(+f: Buf, +p: Prog, +u: Uop) -> Sb:
+  Sb{Buf.w(f), Buf.dt(f), Buf.e(f), Buf.base(f), Elem.off(Prog.src(p, u, 0n)),
+    Prog.lane.of(f, Prog.dt(p, u, 1n)), Prog.slot(p, u, 1n), Prog.open(p)}
+
+def Prog.store.sb(+p: Prog, +u: Uop) -> Sb: Prog.store.sb.buf(Prog.buf(p, u), p, u)
+
+def Prog.store.bits(+s: Sb, +e: Elem) -> U32:
+  Elem.bits(Prog.cast.dt(Sb.dt(s), Elem.dt(e), e))
 
 # THE ACCUMULATED BYTE LIST, not `Prog.ms(p)`. Every lane must see the previous
 # lanes' writes: reading the arena afresh per lane makes each write a copy of the
 # ORIGINAL and only the LAST lane survives, so a vec-4 store laid down one element
 # per pass with the last lane's value (MEASURED: `elementwise_add` wrote 6, 10,
 # 14, 18 at indices 3, 7, 11, 15 where it wanted 3..18).
-def Prog.store.lane.at(+ms: List<&2, List<&2, U32>>, +p: Prog, +u: Uop, +j: U32) -> List<&2, List<&2, U32>>:
-  Mem.st(ms, Prog.store.addr(p, u, j), Buf.w(Prog.buf(p, u)), Prog.store.bits(p, u, j))
+def Prog.store.lane.at(+ms: List<&2, List<&2, U32>>, +s: Sb, +j: U32, +e: Elem) -> List<&2, List<&2, U32>>:
+  Mem.st(ms, Sb.at(s, j), Sb.w(s), Prog.store.bits(s, e))
 
-def Prog.store.open(+p: Prog, +u: Uop, +j: U32) -> Bool:
-  Bool.and(Prog.open(p), U32.is_lt(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u))))
+def Prog.store.open(+s: Sb, +j: U32) -> Bool:
+  Bool.and(Sb.open(s), U32.is_lt(Sb.i(s, j), Sb.e(s)))
 
 # `_store(m, o + j*_step, v, src_dtypes[1])` -- `to_storage_scalar` is the
 # identity for the three 4-byte lanes and `bool(x)` for bool, AND THE WRITE
 # ITSELF IS `m[i] = v` INTO THE BUFFER'S MEMORYVIEW, WHICH IS THE CONVERSION
 # `Prog.store.bits` MAKES.
-def Prog.store.lane(+ms: List<&2, List<&2, U32>>, +p: Prog, +u: Uop, +j: U32) -> List<&2, List<&2, U32>>:
-  Prog.store.go(ms, Prog.store.lane.at(ms, p, u, j), Prog.store.open(p, u, j))
+# ONE arena read per lane, for the value and nothing else
+def Prog.store.lane(+ms: List<&2, List<&2, U32>>, +s: Sb, +p: Prog, +j: U32) -> List<&2, List<&2, U32>>:
+  Prog.store.go(ms, Prog.store.lane.at(ms, s, j, Prog.vat(p, U32.add(Sb.slot(s), j))),
+    Prog.store.open(s, j))
 
 # `n` FIRST for the same reason as `Prog.ld.at`: the byte list is rebuilt each step.
-def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, List<&2, U32>>, +j: U32, +p: Prog) -> List<&2, List<&2, U32>>:
+def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, List<&2, U32>>, +j: U32, +s: Sb, +p: Prog) -> List<&2, List<&2, U32>>:
   match n:
     case 0n: ms
-    case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, p, u, j), U32.add(j, 1), p)
+    case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, s, p, j), U32.add(j, 1), s, p)
 
 def Prog.store(+p: Prog, +u: Uop) -> Prog:
-  Prog.step.ms(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, p),
-    Bool.and(Prog.open(p), Prog.oob(p, u, 0, U32.to_nat(Uop.run(u)))))
+  Prog.step.ms(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, Prog.store.sb(p, u), p),
+    Bool.and(Prog.open(p), Prog.oob(p, u)))
 
 def Prog.after(+p: Prog, +u: Uop) -> Prog: Prog.put(p, u, Prog.src(p, u, 0n))
 

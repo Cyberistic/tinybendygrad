@@ -27406,3 +27406,11 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       split out of the record). THREE MORE EXPERIMENTS MEASURED AND REVERTED: memory chunks 16 (727 ->
       953), every field `+` (noise), `List.get` -> direct Nat walks (704 -> 765, a Nat peel costs more
       than the Maybe it saves).
+- [x] **TWO PER-LANE LOOKUPS THAT WERE ONE LOOKUP.** `Prog.oob` recursed on `n` with `j` UNCHANGED,
+      so the "per-lane" bounds check answered lane 0 `run` times, re-reading the buffer pointer each
+      time; the store read `Prog.buf(p, u)` EIGHT times per lane (~32 arena reads for a 4-lane store).
+      oob is now one read, and the store binds its per-store invariants once in an `Sb` record.
+      MEASURED: 16x16 96.18 -> 90.43 ms, 32x32 699.46 -> 585.80 ms -- **1.31x / 1.77x** against the
+      session start. AND THE "OBVIOUS" oob IMPROVEMENT (check the LAST lane, `off+(run-1)*step`)
+      REFUSES this tree's own 16x16 packet, because ops_python stores `len(src_values[1])` lanes and
+      not `run(u)` -- recorded so nobody re-derives it.
