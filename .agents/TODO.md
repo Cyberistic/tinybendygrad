@@ -27550,3 +27550,11 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       32x32 421.94 -> 421.35. **Session: 16x16 1.25x FASTER than CPython, 32x32 0.89x.**
 - [ ] LAST NAMED SITE: `Prog.rng.over`/`rng.at` (they reach `Prog.trip`, `Prog.pc`, `Prog.rng.del` and
       `Prog.loop` through repeated traversals).
+- [x] **THE RANGE VISIT COLLAPSED: 10-12 record traversals -> ONE bind.** `Prog.trip`, `Prog.seen`
+      (called TWICE: once for the flag, once inside `Prog.rng.nxt`), `Prog.cur`, and on exit
+      `Prog.rng.del` (which re-flushed the arena), `Prog.pc`, `Prog.loop`, `Prog.at` -- all off the
+      binders now, via `Prog.rng.void -> cnt -> over.f -> stop`. 32x32 421.35 -> **416.70**; 16x16
+      inside the noise band, still 1.13x faster than CPython.
+- [x] **TEN AUDITS OF THIS CLASS, ALL MEASURED**: vat, vput, alu, ld1, store, index.mem, flush, stack,
+      param.at, rng. Session: 16x16 118.45 -> ~58-61 ms (1.13-1.25x FASTER than CPython),
+      32x32 1037.25 -> ~417 ms (0.90x of ~375.5, from 0.53x).

@@ -2913,3 +2913,22 @@ clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
 
 **SESSION**: 16x16 118.45 -> 56.13 ms (**1.25x faster than CPython's 70.02**); 32x32 1037.25 ->
 421.35 ms (**0.89x of 375.51**, from 0.53x at the start).
+
+## 39.19 THE RANGE VISIT: TEN TO TWELVE TRAVERSALS -> ONE BIND
+
+The old path read the record through `Prog.rng.at` -> `Prog.trip` **and `Prog.seen` TWICE** (once for
+the flag, once inside `Prog.rng.nxt`) -> `Prog.cur`, and on exit through `Prog.rng.del` (which
+re-flushed the arena), `Prog.pc`, `Prog.loop` and `Prog.at`: ten to twelve full `match`es for ONE RANGE
+step -- and a RANGE step runs once per loop iteration. The counter, the flag, the trip count and the
+loop head all come off the binders now (`Prog.rng.void` -> `Prog.rng.cnt` -> `Prog.rng.over.f` ->
+`Prog.rng.stop`), with `Prog.loop.f` for the loop head.
+
+    16x16  56.13 -> 58.8-60.9 ms (inside this machine's noise band; still 1.13x faster than PYTHON)
+    32x32 421.35 -> 416.70 / 418.67 ms
+
+`ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only`
+clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**SESSION TOTALS**: 16x16 118.45 -> ~58-61 ms (**1.13-1.25x faster than CPython's ~69-70**), 32x32
+1037.25 -> ~417 ms (**0.90x of ~375.5**, from 0.53x at the session start). Ten audits of the same
+class -- vat, vput, alu, ld1, store, index.mem, flush, stack, param.at, rng -- every one measured.

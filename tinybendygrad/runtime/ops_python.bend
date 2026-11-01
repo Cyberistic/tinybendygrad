@@ -2202,9 +2202,50 @@ def Prog.rng.at(+p: Prog, +u: Uop, +void: Bool, +seen: Bool, +nxt: U32) -> Prog:
     case True{}: Prog.next(p)
     case False{}: Prog.rng.over(p, u, U32.is_eq(nxt, Prog.trip(p, u)), seen, nxt)
 
+# ===========================================================================
+# ONE BIND FOR THE WHOLE RANGE VISIT. The old path read the record through
+# `Prog.rng.at` -> `Prog.trip` + `Prog.seen` (twice!) + `Prog.rng.nxt` -> `Prog.cur`, and on exit
+# through `Prog.rng.del` (which re-flushed the arena) + `Prog.pc` + `Prog.loop` + `Prog.at`: ten to
+# twelve full `match`es over the 11-field record for one RANGE step, which runs once per loop
+# iteration. The counter, the flag, the trip count and the loop head all come off the binders now.
+# ===========================================================================
+def Prog.loop.f(+us: List<&2, Uop>, +r: U32) -> U32: Prog.loop.go(us, r, 0, 0)
+
+def Prog.rng.stop(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +u: Uop) -> Prog:
+  +fl = Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
+  +z = elem_of(0, Uop.dt(u))
+  +vs2 = Val.put(Val.put(fl, Uop.slot(u), z), U32.add(Uop.slot(u), 1), z)
+  Prog.at(Prog{st, vs2, gd, ms, mk, pc, bad, dead, un, Nil{}, Prog.sent()},
+    U32.add(Prog.loop.f(St.us(st), pc), 1))
+
+def Prog.rng.over.f(over: Bool, +seen: Bool, +nxt: U32, +st: St, +vs: List<&2, List<&2, Elem>>,
+  +gd: Gd, +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+  +un: List<&2, Uop>, +vc: List<&2, Elem>, +vi: U32, +u: Uop) -> Prog:
+  match over:
+    case True{}: Prog.rng.stop(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+    case False{}: Prog.rng.put.by(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u, seen, nxt)
+
+def Prog.rng.cnt(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +u: Uop) -> Prog:
+  +seen = Elem.is_true(Prog.vat.f(vs, vc, vi, U32.add(Uop.slot(u), 1)))
+  +nxt = Prog.rng.nxt.by(Elem.bits(Prog.vat.f(vs, vc, vi, Uop.slot(u))), seen)
+  Prog.rng.over.f(U32.is_eq(nxt, Elem.bits(Prog.src.f(vs, vc, vi, u, 0n))), seen, nxt,
+    st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+
+def Prog.rng.void(void: Bool, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+  +un: List<&2, Uop>, +vc: List<&2, Elem>, +vi: U32, +u: Uop) -> Prog:
+  match void:
+    case True{}: Prog.next(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi})
+    case False{}: Prog.rng.cnt(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+
 def Prog.rng(+p: Prog, +u: Uop) -> Prog:
-  Prog.rng.at(p, u, U32.is_eq(S.Dt.itemsize(Uop.dt(u)), 0), Prog.seen(p, u),
-    Prog.rng.nxt(p, u, Prog.seen(p, u)))
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.rng.void(U32.is_eq(S.Dt.itemsize(Uop.dt(u)), 0), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
 
 # the store gate of :87 and the load gate of :24: `exec_masks[-1]`, which is True
 # when nothing is masked
