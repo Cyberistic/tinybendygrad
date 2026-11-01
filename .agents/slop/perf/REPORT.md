@@ -2932,3 +2932,18 @@ clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
 **SESSION TOTALS**: 16x16 118.45 -> ~58-61 ms (**1.13-1.25x faster than CPython's ~69-70**), 32x32
 1037.25 -> ~417 ms (**0.90x of ~375.5**, from 0.53x at the session start). Ten audits of the same
 class -- vat, vput, alu, ld1, store, index.mem, flush, stack, param.at, rng -- every one measured.
+
+## 39.20 THE INDEX DISPATCH: FOUR OR FIVE TRAVERSALS -> ONE BIND
+
+`index.at` -> `index.by` -> `index.alu`/`index.mem` -> `Prog.put` bound the 11-field record four or
+five times per INDEX step: `by` bound it, `alu`/`mem` re-bound it (and `Prog.src` + `Prog.vat` inside
+those bound it again), and `put` -> `vput` bound it once more. One bind now feeds `vat.f`/`src.f` (no
+record match) and the field-taking `Prog.vput.go`, which is exactly the write `Prog.put` ended in:
+
+    16x16  58.8-60.9 -> 56.56 ms     32x32  416.70 -> 412.35 ms   (PYTHON 378.28 -- 0.92x)
+
+`ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only`
+clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**SESSION**: 16x16 118.45 -> 56.56 ms (**1.23x faster than CPython's 69.41**); 32x32 1037.25 ->
+412.35 ms (**0.92x of 378.28**, from 0.53x at the start; **2.52x faster than where it began**).

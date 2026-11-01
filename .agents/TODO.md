@@ -27558,3 +27558,10 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
 - [x] **TEN AUDITS OF THIS CLASS, ALL MEASURED**: vat, vput, alu, ld1, store, index.mem, flush, stack,
       param.at, rng. Session: 16x16 118.45 -> ~58-61 ms (1.13-1.25x FASTER than CPython),
       32x32 1037.25 -> ~417 ms (0.90x of ~375.5, from 0.53x).
+- [x] **INDEX DISPATCH COLLAPSED: 4-5 record traversals -> ONE bind** (`index.at` -> `by` -> `alu`/`mem`
+      -> `put` each bound the record; now one bind feeds `vat.f`/`src.f` and the field-taking
+      `vput.go`). 16x16 58.8-60.9 -> **56.56 ms**, 32x32 416.70 -> **412.35 ms** (0.92x of PYTHON's
+      378.28). Session: **16x16 1.23x FASTER**, 32x32 2.52x faster than its own start.
+- [ ] NEXT, BY THE PROFILE: `Prog_run`/`Prog.dispatch` pass-through traversals, `Prog.buf`'s repeated
+      `fs` + `src`, and the `Maybe` that `List.get` allocates in `Prog.vat`'s HIT path (it is the one
+      allocation left on every arena read).

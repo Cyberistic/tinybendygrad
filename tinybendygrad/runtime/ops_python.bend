@@ -1965,6 +1965,8 @@ def Prog.vat.hit(hit: Bool, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, 
 
 # THE FIELD-TAKING FORM. A caller that already holds the binders reads with NO further `match` over
 # the record; `Prog.vat` is the one-match wrapper for callers that hold the record instead.
+def Prog.slot.f(+u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
+
 def Prog.vat.f(+vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32, +i: U32) -> Elem:
   Prog.vat.hit(U32.is_eq(U32.shrn(i, 4n), vi), vs, vc, i)
 
@@ -2344,13 +2346,31 @@ def Prog.index.mem.s0(+s0: Elem, +s1: Elem, +scale: U32) -> Elem:
 def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
   Prog.index.mem.s0(Prog.src(p, u, 0n), Prog.src(p, u, 1n), Uop.a(u))
 
-def Prog.index.by(+p: Prog, +u: Uop, alu: Bool) -> Prog:
+# ONE BIND FOR THE WHOLE INDEX DISPATCH. `index.at` -> `index.by` -> `index.alu`/`index.mem` ->
+# `Prog.put` was four or five full `match`es over the 11-field record per INDEX step: `by` bound it,
+# `alu`/`mem` re-bound it (and `src` + `vat` inside those bound it again), and `put` -> `vput` bound it
+# once more. The bind here feeds `vat.f`/`src.f` (no record match) and the existing field-taking
+# `Prog.vput.go`, which is the write the old `Prog.put` ended in anyway.
+def Prog.index.at.put(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +u: Uop, +e: Elem) -> Prog:
+  Prog.vput.go(U32.is_eq(U32.shrn(Uop.slot(u), 4n), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi,
+    Uop.slot(u), e)
+
+def Prog.index.at.by(alu: Bool, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+  +un: List<&2, Uop>, +vc: List<&2, Elem>, +vi: U32, +u: Uop) -> Prog:
   match alu:
-    case True{}: Prog.put(p, u, Prog.index.alu(p, u))
-    case False{}: Prog.put(p, u, Prog.index.mem(p, u))
+    case True{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
+                   Prog.vat.f(vs, vc, vi, U32.add(Prog.slot.f(u, 0n),
+                     Elem.bits(Prog.src.f(vs, vc, vi, u, 1n)))))
+    case False{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
+                   Prog.index.mem.s0(Prog.src.f(vs, vc, vi, u, 0n), Prog.src.f(vs, vc, vi, u, 1n), Uop.a(u)))
 
 def Prog.index.at(+p: Prog, +u: Uop, +alu: Bool) -> Prog:
-  Prog.index.by(p, u, alu)
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.index.at.by(alu, st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
 
 def Prog.index(+p: Prog, +u: Uop) -> Prog: Prog.index.at(p, u, U32.is_eq(Uop.a(u), 0))
 
@@ -2795,8 +2815,6 @@ def Prog.store.sb.buf(+f: Buf, +p: Prog, +u: Uop) -> Sb:
     Prog.lane.of(f, Prog.dt(p, u, 1n)), Prog.slot(p, u, 1n), Prog.open(p)}
 
 def Prog.store.sb(+p: Prog, +u: Uop) -> Sb: Prog.store.sb.buf(Prog.buf(p, u), p, u)
-
-def Prog.slot.f(+u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
 
 def Prog.store.sb.f.mk(+f: Buf, +s0: Elem, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>,
   +vi: U32, +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
