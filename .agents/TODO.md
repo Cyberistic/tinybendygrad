@@ -27397,3 +27397,12 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       those sites needs the `.go`-chain restructure. Measured chunk optimum, for the record: memory
       chunks at 16 instead of 64 REGRESS 727 -> 953 ms, because the spine walk grows 4x -- 64 is
       the sqrt optimum for a 4 KiB buffer and is not a knob either.
+- [ ] **THE PROFILE THAT DECIDES THE REST (REPORT.md 37)**: `sample` on a 64x64 launch puts
+      **~70-80% of the executor in Bend's runtime (`term_drop`/`span_fade`/`spin_*`)** and ~10% in the
+      port's own code; 170 ns/step at ~5 ns/allocation is **~34 allocations per step**. The `Array`
+      arena deletes the chunk rebuild and one `Maybe` per read -- about a THIRD -> ~540 ms at 32x32
+      against CPython's 373 ms. **SO THE ARRAY ALONE DOES NOT REACH PARITY**: it needs the array AND a
+      per-step state rebuild that costs nothing, which is the same change done properly (static half
+      split out of the record). THREE MORE EXPERIMENTS MEASURED AND REVERTED: memory chunks 16 (727 ->
+      953), every field `+` (noise), `List.get` -> direct Nat walks (704 -> 765, a Nat peel costs more
+      than the Maybe it saves).

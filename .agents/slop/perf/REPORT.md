@@ -2358,3 +2358,71 @@ CPython lane. What remains is exactly what §35 measured: the arena and the reco
 `Prog` linear -- 39 defs use the record twice or more, and in this language a helper returning
 `(Array, V)` cannot be destructured ("a match cannot scrutinize a computed value"), so every one of
 those 39 sites needs the `.go`-chain restructure. That is the next unit.
+
+---
+
+# 37. WHAT THE EXECUTOR ACTUALLY SPENDS ITS TIME ON, AND WHY THE ARRAY ALONE IS NOT ENOUGH
+
+## 37.1 THE PROFILE, AT A SIZE BIG ENOUGH TO SAMPLE
+
+`sample` on the compiled executor for a 64x64 launch (the 32x32 kernel is too short to sample), by
+symbol:
+
+    164  term_drop          \
+     93  span_fade           >  BEND's own term allocate/refcount/free
+     75  spin_119            |
+     59  spin_125            |
+     ~250 more spin_*       /
+      9  WL_FID_Prog_store_lane_at
+      9  WL_FID_Prog_ld_lane_k299
+      9  WL_FID_Prog_index
+      7  WL_FID_Prog_run_k638
+
+**⇒ ~70-80% OF THE EXECUTOR IS THE RUNTIME'S TERM MANAGEMENT AND ~10% IS THE PORT'S OWN CODE.** The
+interpreter is not slow because its algorithm is slow; it is slow because it allocates.
+
+THE ARITHMETIC THAT PINS IT: 32x32 runs ~2M steps in 340 ms of executor time = **170 ns per step**,
+and this tree's own measurement of the compiled runtime is **~5 ns per allocation** (96.6M
+allocations over 0.48 s, §12.4). So a step allocates **~34 terms**, and the sources are countable:
+the 21-field `Prog` rebuild (1-2 per step), the 16-cell chunk rebuild (one cons per cell before the
+written index, ~8), an `Elem` per value produced (1-2), and a `Maybe` per arena read (`List.get`
+answers one; 3-4 reads per step).
+
+## 37.2 SO THE ARRAY'S CEILING IS ~1.3x, NOT 3x
+
+The `Array` arena deletes the chunk rebuild (~8 conses) and one `Maybe` per read (3-4), i.e. about
+a third of the allocations. At 699.46 ms (the current 32x32), a third fewer allocations is ~**540 ms
+against the CPython lane's 373 ms** -- better, and still slower.
+
+**⇒ THE PARITY TARGET NEEDS BOTH: the array arena AND a state whose rebuild costs nothing per
+step.** The record rebuild is the other third, and it is eliminated by the same change, because a
+`Type` `Prog` carrying `Array<Elem>`/`Array<U32>` writes in place and rebuilds no arena at all --
+but only if the fields that do not change stop being copied too, which means splitting the static
+half (`us`, `v0`, `fs`, `vals`, `n`, the grid) out of the per-step record.
+
+## 37.3 THREE MORE EXPERIMENTS, MEASURED AND REVERTED
+
+    1 memory chunks 64 -> 16     32x32 727 -> 953 ms   the spine walk grows 4x; 64 IS the sqrt
+                                                        optimum for a 4 KiB buffer
+    2 every Prog field `+`       16x16 96.59 -> 94.08, 32x32 727 -> 731   inside the noise; not kept
+    3 `List.get` -> direct walks 16x16 90.99 -> 101.63, 32x32 704 -> 765  matching a `Nat` peels
+      (no `Maybe` on reads)                             one constructor per cell, which costs more
+                                                        than the `Maybe` it saves
+
+**A NEGATIVE RESULT IS A RESULT**: the interpreter is at a local optimum where the remaining costs
+are structural, not local. Three separate attempts to shave them moved the wrong way, and each was
+reverted rather than kept for its story.
+
+## 37.4 THE UNIT OF WORK THAT IS LEFT, AND ITS ONE HARD PART
+
+`Prog` becomes `Type` with `Array<Elem>`/`Array<U32>` fields. THE PAIR PROBLEM DOES NOT ARISE THIS
+WAY -- the array lives INSIDE the record, so `Prog.put(p, u, e) -> Prog` stays a single value in and
+a single value out, and an in-place write needs no destructuring.
+
+What does arise is that a linear record cannot be read twice, and this file's helpers take `Prog`:
+`Prog.store` calls `Prog.open`, `Prog.oob`, `Prog.ms` and `Prog.store.at` on the same `p`. So all 42
+arena-touching defs change from "take the record" to "take the fields they read", their call sites
+bind those fields once in a `match`, and the 37 `Prog{...}` constructors carry the two arrays. That
+is the whole job, it cannot be landed in pieces (a half-converted record does not compile), and its
+acceptance test is already written: `--check-only`, `ops_python_exec` 153/365/0,
+`ops_bend_exec-e2e` 7 match, `stage3_parity` EVERY LAUNCH IDENTICAL, then 70.14 / 375.46 ms.
