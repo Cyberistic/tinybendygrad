@@ -2318,9 +2318,30 @@ def Prog.stack.at(ss: List<&2, U32>, +vs: List<&2, List<&2, Elem>>, +us: List<&2
     case s <> t: Prog.stack.at(t, vs, us, List.append(&2, Elem, acc,
       [Val.at(vs, Uop.slot(Uop.at(us, s)))]))
 
+def Prog.step.vs.f.go(un: List<&2, Uop>, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, +oob: Bool) -> Prog:
+  match un:
+    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
+    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
+
+def Prog.step.vs.f(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +oob: Bool) -> Prog:
+  Prog.step.vs.f.go(un, st, vs, gd, ms, mk, pc, bad, dead, oob)
+
+# ONE BIND, AND ONE FLUSH INSTEAD OF TWO (each flush was four or five traversals before 39.16). The
+# destination is `Uop.slot(u)` -- the uop's OWN result slot -- and NOT `Prog.slot(u, 0n)`, which is
+# its FIRST SRC's slot; using the latter is what made the first attempt diverge on 68 rows.
+def Prog.stack.by(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +u: Uop) -> Prog:
+  +fl = Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
+  Prog.step.vs.f(st, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), fl, St.us(st), Nil{}),
+    fl, Uop.slot(u), 0n), gd, ms, mk, pc, bad, dead, un, False{})
+
 def Prog.stack(+p: Prog, +u: Uop) -> Prog:
-  Prog.step.vs(p, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), Prog.flush(p), Prog.us(p), Nil{}),
-    Prog.flush(p), Uop.slot(u), 0n), False{})
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.stack.by(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
 
 # ===========================================================================
 # :134 CAST -- `values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x))
@@ -2615,16 +2636,6 @@ def Prog.ld.sb.f.s0(+s0: Elem, +fs: List<&2, Buf>, +vs: List<&2, List<&2, Elem>>
 def Prog.ld.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32,
   +u: Uop) -> Lb:
   Prog.ld.sb.f.s0(Prog.src.f(vs, vc, vi, u, 0n), fs, vs, vc, vi, u)
-
-def Prog.step.vs.f.go(un: List<&2, Uop>, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
-  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, +oob: Bool) -> Prog:
-  match un:
-    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
-    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
-
-def Prog.step.vs.f(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +oob: Bool) -> Prog:
-  Prog.step.vs.f.go(un, st, vs, gd, ms, mk, pc, bad, dead, oob)
 
 def Prog.ld1.go(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,

@@ -27538,3 +27538,10 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
 - [x] Tree is at `cdebabe77` and green: 16x16 **57.33-58.64 ms (1.22x faster than CPython's 70.02)**,
       32x32 **429.73-436.86 ms (0.87x of 375.51)**, `ops_python_exec` 153/365/0, e2e 7 match,
       stage3_parity EVERY LAUNCH IDENTICAL.
+- [x] **`Prog.stack`: one bind + one flush -- and the first attempt's bug was a WRONG SLOT.**
+      It diverged on 68 rows (32x32 only) because the rewrite used `Prog.slot(u, 0n)` (the FIRST SRC's
+      slot) where the original passes **`Uop.slot(u)`** (the uop's OWN result slot): `sslot` and `slot`
+      are different fields. Corrected, and the two `Prog.flush(p)` calls collapsed to one:
+      32x32 423.28 -> 421.94 ms. Session: **16x16 ~1.20x faster than CPython**, 32x32 0.89x.
+- [ ] STILL UNLANDED: `Prog.param.at` (must read `Gd.pv` BEFORE the increment -- 39.15's trap is now
+      known to have been `stack`, not this) and `Prog.rng.over`/`rng.at`.

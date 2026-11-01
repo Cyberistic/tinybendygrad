@@ -2880,3 +2880,20 @@ already produced:
 
 `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only`
 clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+## 39.17 `Prog.stack`: ONE BIND AND ONE FLUSH, AND A `slot` THAT WAS THE WRONG SLOT
+
+The first attempt at this collapse diverged on **68 rows, 32x32 only** (§39.15 suspected `param.at`;
+it was not). The cause is a one-word difference: the original passes **`Uop.slot(u)`** -- the uop's
+OWN result slot -- as the destination, and the rewrite used `Prog.slot(u, 0n)`, which is its FIRST
+SRC's slot. A STACK writes its elements to its own slot, and `sslot` and `slot` are different fields
+of `Uop`. With that corrected, and with the two `Prog.flush(p)` calls (four or five traversals each)
+replaced by one, the collapse is green:
+
+    16x16  57.83 -> 59.75 ms (noise)     32x32  423.28 -> 421.94 ms
+
+`ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only`
+clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**SESSION POSITION**: 16x16 118.45 -> ~58 ms (**1.20x faster than CPython's 70.02**); 32x32
+1037.25 -> ~422 ms (**0.89x of 375.51**, from 0.53x at the start of the session).
