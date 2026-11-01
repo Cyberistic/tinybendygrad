@@ -3127,3 +3127,24 @@ hypothesis generator; only a launched configuration is evidence.** The 92%-of-co
 
 The per-write cost is `Val.gput` -- two `List.set`s, 9 copied cells at g = 8 -- and that is what the
 remaining ~356 ms is spent on.
+
+### 39.21f THE SPINE-LENGTH CURVE IS COMPLETE, AND ITS MINIMUM IS 8
+
+The remaining free variable after 39.21d was SPINE LENGTH, which the matrix varied only incidentally.
+Filled in end to end, one 32x32 launch each, all `ops_python_exec` PASS and exact:
+
+    spine 64  (W=8,   flat chunk)      476.40 ms
+    spine 32  (W=16,  4x4  chunk)      403.13 ms
+    spine 16  (W=32,  4x8  chunk)      391.01 ms
+    spine  8  (W=64,  8x8  chunk)      385.87 ms   <- KEPT
+    spine  4  (W=128, 8x16 chunk)      419.33 ms
+    spine  2  (W=256, 16x16 chunk)     436.58 ms
+
+So the curve is a U with its minimum at **spine 8**, and it is a real trade, not noise: below 8 the
+chunk has to get wider than two levels of eight can hold, and above 8 the fold gets longer. W=64 is
+the width this file ships because it is where that U bottoms out.
+
+One more census, because it rules out the last appealing explanation: the packet is
+`MULACC 163 / INDEX 160 / CONST 44 / CAST 43 / SHRINK 41 / LOAD 40 / MUL 4 / PARAM 3 / STACK 2 /
+RANGE 2`. Only **41 of 510 uops (8.0%)** are LOAD or STORE, so `Prog.step.vs` cold-starting the
+chunk cache cannot be what the ~1M writes per launch cost either.
