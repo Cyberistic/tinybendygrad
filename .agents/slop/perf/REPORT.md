@@ -3103,3 +3103,27 @@ not a tuning gap: 356 of those 386 ms are the value write, 0.2% of writes are de
 reads reach back further than any window, `Array` cannot enter a `Data` record, and a linear state
 cannot cross the loop (`t_loop.bend`). The three ways out are named in 39.21c and none of them is a
 change to this file.
+
+### 39.21e CORRECTION: CROSSINGS ARE 1.4%, SO THE SPINE FOLD IS NOT PER-WRITE
+
+**THE PARAGRAPH ABOVE THAT SAYS "THE HOT CHUNK CACHE ALMOST NEVER HITS" IS WRONG, AND THIS
+CORRECTS IT.** A census over the 32x32 packet, counting a write whose chunk differs from the
+previous write's chunk (`/tmp/cross.py`; a uop writes its own slot):
+
+    W=16  chunks=32  crossings=31/509  (6.1%)
+    W=64  chunks= 8  crossings= 7/509  (1.4%)
+
+Slots ARE written in ascending order, so at the width this file now ships a crossing happens **seven
+times per pass, not per write**. The spine fold is therefore nearly free, and the three ablations in
+39.21b that each collapsed the launch to ~30 ms did NOT each remove "the cost" -- at least one of
+them must have removed something other than what it was labelled, because removing a routine that
+runs seven times per pass cannot save 356 ms.
+
+**WHAT SURVIVES IS THE END-TO-END MATRIX IN 39.21d**, because every row there is a real launch with
+`ops_python_exec` PASS and an exact answer, not an ablation: eight configurations, best **g = 8 at
+385.87 ms**, and the two rows with a LOWER copied-cell count are both slower. **An ablation is a
+hypothesis generator; only a launched configuration is evidence.** The 92%-of-cost attribution in
+39.21b should be read as "the write path", not as "one specific `List.set`".
+
+The per-write cost is `Val.gput` -- two `List.set`s, 9 copied cells at g = 8 -- and that is what the
+remaining ~356 ms is spent on.
