@@ -1888,3 +1888,64 @@ the shapes that can be built here; what a predicate lowers to is `select`, and t
                       mm2048=5.90 mm4096=39.22
     ops exercised (webgpu)  CONST (incl non-zero), PARAM, CAST, SPECIAL, INDEX, LOAD, STORE,
                             MUL, ADD, WHERE/CMPLT, EXP2, RANGE, BUFFER, AFTER, SINK
+
+---
+
+# 31. SQRT/SIN/LOG2/BITCAST ADDED: 15 OF 15 ON WEBGPU, AND METAL FOUND TWO REAL DEFECTS
+
+## 31.1 THE FOUR NEW WEBGPU PROGRAMS, ALL BYTE-IDENTICAL
+
+    sqrt32 590B 4cd892913fb89103 0.2/0.1   sin32 492B d6ea195b973a1dda 0.1/0.1
+    log32  543B fde970758b2f5580 0.2/0.2   bc32  520B 3c71171d1e51d37e 0.4/0.3
+    # kernels=15 all_ok=true   mm512 11.8/12.4 ms, plant 2.02/1.81
+
+So SQRT, SIN, LOG2 and BITCAST are now covered on the WGSL lane. The BITCAST one needed a new
+arm: the six `bitcast<>` rules were already in `wgsl.bend` (`sr_bhalf`/`sr_buchar`/`sr_bchar`/
+`sr_bushort`/`sr_bshort`/`sr_bany` plus `sr_pick_bitcast`), and the walk routed BITCAST to
+`code_for_op`, which has no arm -- MEASURED: `UNHANDLED(Ops.BITCAST)` against CPython's
+`bitcast<f32>((bitcast<u32>(val0)+1u))`.
+
+## 31.2 AND THE METAL LANE CAUGHT TWO DEFECTS THE WGSL LANE DOES NOT HAVE
+
+    mm16 yes | mm32 yes | ew64 yes | reduce yes | where32 yes | sqrt32 yes | sin32 yes
+    exp32  NO | log32 NO | bc32 NO          -> 9 of 12
+
+1. **A FLOAT CONSTANT LOSES PRECISION.** CPython prints `1.4426950216293335f`; the port prints
+   `1.442695f` -- seven significant digits. Same kernel, same value, different bytes.
+2. **THE CSTYLE LANE HAS NO BITCAST ARM FOR A KU BUILT BY THE CONVERTER**: it renders
+   `UNHANDLED(Ops.BITCAST)` where CPython renders `as_type<float>((uint)((as_type<uint>(
+   (float)(val0.x))+1u)))`.
+
+**⇒ BOTH ARE IN `cstyle.bend`/the converter, NOT IN THE WGSL WALK**, and both are recorded here
+rather than fixed, because the session's remaining work is in the WGSL lane and a rushed edit to
+the shared C renderer is how the earlier `constant `/`hip_bfloat16` inventions landed.
+
+## 31.3 A CONVERTER BUG THAT MADE TWELVE KERNELS LOOK EMPTY
+
+`gen_kus.const_arg` emitted `O.CFloat{-1.4426950216293335}` for a negative float, and Bend
+refuses a bare `-` in that position (`expected a term, observed: '-'`). Because the Metal driver
+IMPORTS EVERY GENERATED MODULE, one transcendental kernel's constant broke the whole driver, and
+the artifact read `sha_port=e3b0c44298fc1c14` (the sha256 of the EMPTY STRING) for all twelve
+rows. The spelling that compiles is `O.CFloat{(0.0-1.4426950216293335 : F32)}` -- the subtraction
+needs its type annotation. **A shared import is a shared failure**, and the empty-string hash is
+what said so.
+
+## 31.4 A COVERAGE CHECK THAT COULD HIDE, FOUND BY COUNTING
+
+The Metal harness deduped captured kernels BY NAME. tinygrad's name encodes shape and dtype
+(`E_32_32_4`) and NOT the op mix, so `where32` and `exp32` -- different bodies -- shared a name
+and one was silently dropped. MEASURED: 12 programs collapsed to 7 rows; keying by PROGRAM
+instead showed `where32__E_8_32_4` at 898 B and `exp32__E_8_32_4` at 706 B. **A dedup key that
+is not the identity of the thing deduped is a check that cannot go red.**
+
+## 31.5 THE CLASSES THAT CANNOT BE BUILT HERE, RECORDED IN THE ARTIFACT
+
+`.agents/slop/perf/stage1-scope.rows` now carries them, so "0 rows" and "not measurable" do not
+look the same:
+
+| class | status | why |
+|---|---|---|
+| `Ops.IF` | **out of scope** | tinygrad emits it ONLY for a gated STORE (`codegen/__init__.py:401`); ten programs tried, none gated; a bool mask is refused upstream |
+| packed/atomic | **out of scope** | the `packed_*` rewrites belong to the WGSL matcher and run only while LOWERING for a `WEBGPU` device this tree cannot open; rendering u8 uops directly yields `array<atomic<u32>>` with a NON-atomic store |
+| STACK | covered by construction | `NOOPT=1` exists precisely so no STACK is emitted |
+| SQRT / SIN / LOG2 / BITCAST | **covered** | identical, timed |

@@ -1,0 +1,15 @@
+# stage1-scope.rows -- WHAT THE WEBGPU CORPUS CANNOT COVER, AND THE EVIDENCE FOR EACH
+#
+# Written by hand because it records the OUTCOME OF PROBES (each naming its command), not a
+# generator's declaration. A class that cannot be built is recorded here rather than being
+# silently absent from stage1-webgpu.rows: "0 rows" and "not measurable here" must not look
+# the same.
+#
+# class|status|why|candidate programs tried|evidence
+IF|OUT-OF-SCOPE|tinygrad emits Ops.IF ONLY for a gated STORE, and nothing here produces one|odd-trailing-dim reduce (32,33); 33x33 matmul; pad; shrink; max(axis); 33-element add; strided a[:, ::2]=0; pad(value=); max(axis=(1,2)); cumsum|tinygrad/codegen/__init__.py:399-401 "# gated STORE becomes IF-STORE-ENDIF. this is the only use of IF-ENDIF"; a boolean-mask assignment is refused upstream: "IndexError: index dtype dtypes.bool is not supported"; all nine probes captured store_srcs=[2] (ungated)
+PACKED-ATOMIC|OUT-OF-SCOPE|the packed_load/packed_store rewrites are the WGSL MATCHER's and run only while LOWERING for a webgpu device, which this tree cannot open|uint8 add; uint16 add; bool tensor|WGSLRenderer(Target('webgpu')).render(u8 uops) answers `var<storage,read_write>data0_1024:array<atomic<u32>>;` with a NON-atomic store `data0_1024[gidx0] = (val0+1u);` -- text that would not compile; DEV=WEBGPU fails: "failed to load library webgpu"
+STACK|COVERED BY CONSTRUCTION|NOOPT=1 exists so no STACK is emitted; a STACK needs the upcast pass, which is exactly what WGSLRenderer cannot spell (float4 = None)|every program in the corpus runs with NOOPT=1|WGSLRenderer refuses a vectorised uop list: "'NoneType' object has no attribute 'replace'"
+SQRT|COVERED|sqrt32|sqrt(|a|)|identical, 590 B, sha 4cd892913fb89103
+SIN|COVERED|sin32|sin(a)|identical, 492 B, sha d6ea195b973a1dda
+LOG2|COVERED|log32|log(exp(a))|identical, 543 B, sha fde970758b2f5580
+BITCAST|COVERED|bc32|bitcast(a)+1|identical, 520 B, sha 3c71171d1e51d37e

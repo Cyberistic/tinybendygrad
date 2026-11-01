@@ -56,6 +56,27 @@ def build(prog: str, np, Tensor, Context):
             out = (ta * tb).maximum(2.5).realize()
         w = np.maximum(a * b, np.float32(2.5))
         return out, [a, b], w, w, "max(a*b,2.5)", "max(b*a,2.5)"
+    # ONE PROGRAM PER UNCOVERED OP CLASS, each a DIFFERENT tinygrad primitive on f32 data.
+    if prog in ("sqrt32", "sin32", "log32", "bc32"):
+        a = rng.standard_normal((32, 32)).astype(np.float32)
+        if prog == "sqrt32":
+            with Context(DEV="METAL", NOOPT=1):
+                out = Tensor(a).realize().abs().sqrt().realize()      # abs first: sqrt of a negative is nan
+            w = np.sqrt(np.abs(a)).astype(np.float32); return out, [a], w, None, "sqrt(|a|)", "-"
+        if prog == "sin32":
+            with Context(DEV="METAL", NOOPT=1):
+                out = Tensor(a).realize().sin().realize()
+            w = np.sin(a.astype(np.float64)).astype(np.float32); return out, [a], w, None, "sin(a)", "-"
+        if prog == "log32":
+            with Context(DEV="METAL", NOOPT=1):
+                out = Tensor(a).realize().exp().log().realize()       # keeps the domain positive
+            w = np.log(np.exp(a.astype(np.float64))).astype(np.float32); return out, [a], w, None, "log(exp(a))", "-"
+        # BITCAST: the bits of a float re-read as u32, incremented, and re-read as a float
+        from tinygrad import dtypes
+        with Context(DEV="METAL", NOOPT=1):
+            out = Tensor(a).realize().bitcast(dtypes.uint32).add(1).bitcast(dtypes.float32).realize()
+        w = (a.view(np.uint32) + 1).view(np.float32)
+        return out, [a], w, None, "bitcast(a)+1", "-"
     if prog == "where32":
         # FORCES `Ops.IF`: `where` lowers to a predicate-guarded body, not to an ALU `select`.
         a, b = rng.standard_normal((32, 32)).astype(np.float32), rng.standard_normal((32, 32)).astype(np.float32)

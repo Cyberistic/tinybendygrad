@@ -95,7 +95,14 @@ def const_arg(payload: str) -> str:
     if p.startswith("ConstFloat(") and p.endswith(")"):
         p = p[len("ConstFloat("):-1]
     if "." in p or "e" in p or "E" in p or p in ("inf", "-inf", "nan"):
-        return f"C.KAConst{{O.CFloat{{{p}}}}}"
+        # **A NEGATIVE LITERAL NEEDS ITS PARENS.** MEASURED: `O.CFloat{-1.4426950216293335}`
+        # is a PARSE ERROR ("expected a term, observed: '-'"), and it broke the whole driver
+        # because the driver imports EVERY generated module -- so one transcendental kernel's
+        # constant made all twelve kernels render nothing, which read as "port wrote no text".
+        # and the paren form alone is still a PARSE ERROR -- the subtraction needs its type:
+        # `O.CFloat{(0.0-1.5 : F32)}` is the spelling that compiles (MEASURED on all three).
+        v = f"(0.0{p} : F32)" if p.startswith("-") else p
+        return f"C.KAConst{{O.CFloat{{{v}}}}}"
     v = int(p)
     return f"C.KAConst{{O.CInt{{H.i64_of_i32({v & 0xFFFFFFFF})}}}}"
 

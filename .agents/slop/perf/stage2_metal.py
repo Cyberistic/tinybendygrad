@@ -47,7 +47,7 @@ def load_gen_kus():
 def main() -> int:
   sys.path.insert(0, str(ROOT))
   import numpy as np
-  from tinygrad import Tensor, Context, Device
+  from tinygrad import Tensor, Context, Device, dtypes
   from tinygrad.renderer.cstyle import MetalRenderer
 
   dump = importlib.util.spec_from_file_location("dk", ROOT / ".agents/slop/cpuseam/dump_kernel.py")
@@ -110,18 +110,45 @@ def main() -> int:
       ta = T(a).realize()
       return (lambda: ta.exp().realize()), np.exp(a.astype(np.float64))
 
+  def p_sqrt32(rng):
+    a = rng.standard_normal((32, 32))
+    with Context(DEV="METAL"):
+      ta = T(a).realize()
+      return (lambda: ta.abs().sqrt().realize()), np.sqrt(np.abs(a))
+
+  def p_sin32(rng):
+    a = rng.standard_normal((32, 32))
+    with Context(DEV="METAL"):
+      ta = T(a).realize()
+      return (lambda: ta.sin().realize()), np.sin(a.astype(np.float64))
+
+  def p_log32(rng):
+    a = rng.standard_normal((32, 32))
+    with Context(DEV="METAL"):
+      ta = T(a).realize()
+      return (lambda: ta.exp().log().realize()), np.log(np.exp(a.astype(np.float64)))
+
+  def p_bc32(rng):
+    a = rng.standard_normal((32, 32)).astype(np.float32)
+    with Context(DEV="METAL"):
+      ta = T(a).realize()
+      return (lambda: ta.bitcast(dtypes.uint32).add(1).bitcast(dtypes.float32).realize()), \
+             (a.view(np.uint32) + 1).view(np.float32)
+
   PROGRAMS = [("mm16", p_mm16), ("mm32", p_mm32), ("ew64", p_ew), ("reduce", p_reduce),
               ("where32", p_where32), ("exp32", p_exp32),
+              ("sqrt32", p_sqrt32), ("sin32", p_sin32), ("log32", p_log32), ("bc32", p_bc32),
               ("mm2048", p_mm2048), ("mm4096", p_mm4096)]
 
   captured: list[tuple[str, str, list[str]]] = []
+  CUR = ["p"]
   orig = MetalRenderer.render
 
   def hooked(self, uops):
     src = orig(self, uops)
     name = next((u.arg.function_name for u in uops if u.op.name == "SINK" and u.arg is not None), "")
     name = (name or f"k{len(captured)}").replace(":", "_")
-    captured.append((name, src, dk.dump_uops(uops)))
+    captured.append((f"{CUR[0]}__{name}", src, dk.dump_uops(uops)))
     return src
 
   per_prog: dict[str, float] = {}
@@ -129,6 +156,7 @@ def main() -> int:
   MetalRenderer.render = hooked
   rng = np.random.default_rng(0)
   for pname, build in PROGRAMS:
+    CUR[0] = pname
     run, want = build(rng)
     # **A LAUNCH MUST BE SYNCHRONISED OR THE NUMBER IS SUBMIT LATENCY.** MEASURED: without the
     # sync the four programs read 0.01 / 0.01 / 0.00 / 0.00 ms, which is the cost of handing
