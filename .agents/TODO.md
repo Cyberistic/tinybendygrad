@@ -27488,3 +27488,12 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       written index (~8) and touches no spine -- so "one record allocation beats a list rebuild" is
       wrong here, by measurement. **THE PORT IS AT THE FASTEST REPRESENTATION THIS LANGUAGE ALLOWS**;
       the remaining gap is the ~27 allocations per step that only the array removes.
+- [x] **THE WRITE HAD THE READ'S DEFECT, WORSE: NINE record traversals per arena write.** `Prog.vput`
+      took `Prog.vi` for the hit test, `vs`/`vc`/`vi` in `vput.hit`, four more inside `Prog.flush` on
+      the miss path, and one in `vput.rec` -- every one a full match over the 11-field record. One
+      match binds all eleven now: 16x16 87.76 -> **82.17 ms**, 32x32 558.74 -> **530.21 ms**
+      (**1.44x / 1.96x** from the session start).
+- [x] **WHY THE ABLATION THE REVIEW ASKED FOR IS NOT AVAILABLE**: the arena holds the RANGE counters,
+      so removing an allocation changes the values, the trip counts and therefore the program being
+      timed. The sound ablation is "swap a structure for a faster one and gate it" -- which is the
+      four-mode arena table (39.9) and this fix.

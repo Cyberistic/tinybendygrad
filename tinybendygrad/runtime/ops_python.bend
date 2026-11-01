@@ -1967,21 +1967,44 @@ def Prog.vput.rec(+p: Prog, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, 
         case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
         case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
 
-def Prog.vput.hit(+p: Prog, +slot: U32, +e: Elem) -> Prog:
-  Prog.vput.rec(p, Prog.vs(p), List.set(&2, Elem, Prog.vc(p), U32.to_nat(U32.and(slot, 15)), e), Prog.vi(p))
+# **ONE TRAVERSAL FOR THE WHOLE WRITE.** The old path walked the 11-field record NINE times per value
+# written: `Prog.vi` for the hit test, then `Prog.vs`/`Prog.vc`/`Prog.vi` inside `vput.hit`, and on a
+# miss `Prog.flush` took four more (`vi`, `vs`, `vi`, `vc`) plus one in `vput.rec` and one in
+# `Prog.sent`'s caller. Every one is a full `match` over the record, and this is the single hottest
+# operation in the interpreter -- `Prog.vat` had the same defect and was fixed the same way.
+def Prog.vput.rec.go(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32) -> Prog:
+  match un:
+    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
+    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
 
-def Prog.vput.miss(+p: Prog, +slot: U32, +e: Elem) -> Prog:
+def Prog.vput.flush.go(none: Bool, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32) ->
+  List<&2, List<&2, Elem>>:
+  match none:
+    case True{}: vs
+    case False{}: List.set(&2, List<&2, Elem>, vs, U32.to_nat(vi), vc)
+
+def Prog.vput.go.miss(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +slot: U32, +e: Elem) -> Prog:
   +ci = U32.shrn(slot, 4n)
-  +vs2 = Prog.flush(p)
-  Prog.vput.rec(p, vs2, List.set(&2, Elem, Val.ch.at(vs2, ci), U32.to_nat(U32.and(slot, 15)), e), ci)
+  +vs2 = Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
+  Prog.vput.rec.go(st, vs2, gd, ms, mk, pc, bad, dead, un,
+    List.set(&2, Elem, Val.ch.at(vs2, ci), U32.to_nat(U32.and(slot, 15)), e), ci)
 
-def Prog.vput.go(hit: Bool, +p: Prog, +slot: U32, +e: Elem) -> Prog:
+def Prog.vput.go(hit: Bool, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +slot: U32, +e: Elem) -> Prog:
   match hit:
-    case True{}: Prog.vput.hit(p, slot, e)
-    case False{}: Prog.vput.miss(p, slot, e)
+    case True{}: Prog.vput.rec.go(st, vs, gd, ms, mk, pc, bad, dead, un,
+                   List.set(&2, Elem, vc, U32.to_nat(U32.and(slot, 15)), e), vi)
+    case False{}: Prog.vput.go.miss(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, e)
 
 def Prog.vput(+p: Prog, +slot: U32, +e: Elem) -> Prog:
-  Prog.vput.go(U32.is_eq(U32.shrn(slot, 4n), Prog.vi(p)), p, slot, e)
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.vput.go(U32.is_eq(U32.shrn(slot, 4n), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, e)
 
 # A LOAD, A STORE AND A STACK EACH REBUILT THE 21-FIELD RECORD THREE TIMES:
 # `Prog.next(Prog.live(Prog.ld1(...)))` is `next` + `live` + the arena setter, and each is its own

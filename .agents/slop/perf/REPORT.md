@@ -2730,3 +2730,29 @@ against a whole step of ~135-170 ns means the arena is a MINORITY of the step on
 place, and the rest is the ~27 allocations per step that §37 measured. Those are `Elem` constructions,
 `Maybe`s and the per-step record rebuild -- each individually small, and the array was the only lever
 that removed them all at once.
+
+## 39.10 THE SAME DEFECT AS `Prog.vat`, ONE OPERATION OVER: NINE TRAVERSALS PER ARENA WRITE
+
+§39.5 fixed `Prog.vat` (three traversals per arena READ). The WRITE was worse and had not been
+touched: `Prog.vput` walked the 11-field record **nine times per value written** --
+
+    Prog.vi(p)                 the hit test
+    Prog.vs / vc / vi          inside `vput.hit`
+    Prog.flush(p)              `vi`, `vs`, `vi`, `vc` again        (the miss path)
+    Prog.vput.rec(p, ...)      one more, to rebuild
+
+-- and every one is a full `match` over the record. One match binds all eleven now, and the flush
+and the rebuild take the binders:
+
+    16x16  87.76 -> 82.17 ms      32x32  558.74 -> 530.21 ms
+    session  118.45 -> 82.17 (1.44x)      1037.25 -> 530.21 (1.96x)
+
+`ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match;
+`--check-only` clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**NOTE ON THE ABLATION THE REVIEW ASKED FOR**: a semantic-preserving ablation of "Elem construction"
+or "the per-step record rebuild" is not available in this interpreter, because the arena holds the
+RANGE counters -- remove an allocation and the values change, the trip counts change, and the timing
+measures a different program. The one ablation that IS sound is "replace a structure with a faster
+one and gate it", which is what the four-mode arena table (39.9) and this fix both do. That is why the
+remaining allocation sources are attacked one operation at a time, with the gate as the proof.
