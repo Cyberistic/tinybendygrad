@@ -990,26 +990,29 @@ def Elem.is_true(+e: Elem) -> Bool: Bool.and(Elem.is_scalar(e), U32.is_ne(Elem.b
 # 2026-11-01: building the initial arena from EMPTY groups diverged on 139 of 365 rows at 33.00 ms;
 # the pre-filled arena is the same arena `Prog.echunks` used to build, just 4x4 instead of flat.
 def Val.gzero() -> List<&2, List<&2, Elem>>:
-  +r = List.replicate(Elem, 4n, Elem.zero())
-  List.replicate(List<&2, Elem>, 4n, r)
+  +r = List.replicate(Elem, 8n, Elem.zero())
+  List.replicate(List<&2, Elem>, 8n, r)
 
 def Val.gin(+g: List<&2, List<&2, Elem>>, +h: U32) -> List<&2, Elem>:
   Maybe.default(&2, List<&2, Elem>, List.get(&2, List<&2, Elem>, g, U32.to_nat(h)), Nil{})
 
 def Val.gat(+g: List<&2, List<&2, Elem>>, +co: U32) -> Elem:
-  Maybe.default(&2, Elem, List.get(&2, Elem, Val.gin(g, U32.shrn(co, 2n)), U32.to_nat(U32.and(co, 3))),
+  Maybe.default(&2, Elem, List.get(&2, Elem, Val.gin(g, U32.shrn(co, 3n)), U32.to_nat(U32.and(co, 7))),
     Elem.zero())
 
 def Val.gput(+g: List<&2, List<&2, Elem>>, +co: U32, +e: Elem) -> List<&2, List<&2, Elem>>:
-  List.set(&2, List<&2, Elem>, g, U32.to_nat(U32.shrn(co, 2n)),
-    List.set(&2, Elem, Val.gin(g, U32.shrn(co, 2n)), U32.to_nat(U32.and(co, 3)), e))
+  List.set(&2, List<&2, Elem>, g, U32.to_nat(U32.shrn(co, 3n)),
+    List.set(&2, Elem, Val.gin(g, U32.shrn(co, 3n)), U32.to_nat(U32.and(co, 7)), e))
 
-def Val.W() -> Nat: 16n
+# **THE WIDTH IS 64, AND IT IS DERIVED, NOT PICKED.** A value write pays `List.set`'s prefix copy on
+# the SPINE (length `512/g^2`, mean copy half that) and twice on the chunk (mean `g/2` each), so the
+# cost is `256/g^2 + g` and its minimum is at `g = 8`: WIDTH 64, a spine of 8, ~12 copied cells
+# against the 4x4 chunk's 21. MEASURED 2026-11-01, and it is the largest single win of the session.
+def Val.W() -> Nat: 64n
 def Val.Wm() -> Nat: Nat.sub(Val.W(), 1n)
-# the number of chunks an arena of `slots` needs -- `ceil(slots / 16)`, derived from the width
 def Val.nch(+slots: U32) -> Nat: Nat.div(Nat.add(U32.to_nat(slots), Val.Wm()), Val.W())
-def Val.ci(+i: U32) -> U32: U32.shrn(i, 4n)
-def Val.co(+i: U32) -> U32: U32.and(i, 15)
+def Val.ci(+i: U32) -> U32: U32.shrn(i, 6n)
+def Val.co(+i: U32) -> U32: U32.and(i, 63)
 
 def Val.ch.at(+vs: List<&2, List<&2, List<&2, Elem>>>, +ci: U32) -> List<&2, List<&2, Elem>>:
   Maybe.default(&2, List<&2, List<&2, Elem>>,
