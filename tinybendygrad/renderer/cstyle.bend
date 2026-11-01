@@ -2131,6 +2131,50 @@ def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) ->
   Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
     ku_const_cast(dev, k, kus, r), ku_cast_generic(dev, k, r))
 
+# ===========================================================================
+# `BITCAST` -- cstyle.py:41-43 (the BASE's two rules), :338 (OpenCL `as_<dt>`), :386
+# (Metal `as_type<dt>`) and :445 (HIP `tg_bitcast<dt>`). FOUR SPELLINGS OF ONE OP, and the
+# three device ones are `string_rewrite` arms, which is why they win over `base_rewrite`; each
+# returns None for a GLOBAL/LOCAL addrspace, and THAT is what falls through to the base's first
+# rule, `(({_render_dtype(dtype, addrspace)})({val}))`.
+#
+# THE KU RENDERER HAD NO ARM AT ALL and therefore fell to the ALU catch-all, which never saw an
+# ALU spelling for the op and answered `UNHANDLED(Ops.BITCAST)`. MEASURED on `bitcast(a)+1`:
+# CPython renders `as_type<float>((uint)((as_type<uint>((float)(val0.x))+1u)))` and the port
+# rendered nothing that compiles. The op is already on the INLINE lists (:1573, :1686), so this
+# arm only has to say what the text is.
+def ku_dt_at.go(m: Maybe<&2, KU>) -> S.Dt:
+  match m:
+    case Some{k}: KU.dtype(k)
+    case None{}: S.void()
+
+def ku_dt_at(+kus: List<&2, KU>, i: U32) -> S.Dt: ku_dt_at.go(ku_at(kus, i))
+
+def bitcast_head(+dev: U32, +d: S.Dt) -> String:
+  match dev:
+    case 2: String.concat(["as_", render_dtype_legacy(dev, d)])
+    case 3: String.concat(["as_type<", render_dtype_legacy(dev, d), ">"])
+    case 5: String.concat(["tg_bitcast<", render_dtype_legacy(dev, d), ">"])
+    case _: String.concat(["__builtin_bit_cast(", render_dtype_legacy(dev, d)])
+
+# the base's second rule is the only one whose TWO arguments are comma-separated and whose type
+# comes from `render_type` rather than `_render_dtype`; the three device rules are `head + "((S)(v))"`.
+def bitcast_named(+dev: U32, +d: S.Dt, +sd: S.Dt, +s: String) -> String:
+  match dev:
+    case 0: String.concat([bitcast_head(dev, d), ", (", render_dtype_legacy(dev, sd), ")(", s, "))"])
+    case 1: String.concat([bitcast_head(dev, d), ", (", render_dtype_legacy(dev, sd), ")(", s, "))"])
+    case 4: String.concat([bitcast_head(dev, d), ", (", render_dtype_legacy(dev, sd), ")(", s, "))"])
+    case _: String.concat([bitcast_head(dev, d), "((", render_dtype_legacy(dev, sd), ")(", s, "))"])
+
+def bitcast_text(+dev: U32, +a: S.Addr, +d: S.Dt, +sd: S.Dt, +s: String) -> String:
+  match a:
+    case S.AGlobal{}: String.concat(["(((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
+    case S.ALocal{}: String.concat(["(((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
+    case _: bitcast_named(dev, d, sd, s)
+
+def ku_text_bitcast(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
+  bitcast_text(dev, KU.addr(k), KU.dtype(k), ku_dt_at(kus, KU.src0(k)), rt(r, KU.src0(k)))
+
 # `f"({ctx.render_access(bidx)})"` (cstyle.py:57) AND
 # `f"({ctx[gate]}?{ctx.render_access(bidx)}:{ctx[var]})"` (cstyle.py:58-59).
 def ku_ptr.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, +b: KU, kus: List<&2, KU>, +r: List<&2, String>) -> String:
@@ -2198,6 +2242,7 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, KU>, +r: List<&
     case O.OpsIF{}: ku_text_if(dev, k, kus, r)
     case O.OpsBACKEDGE{}: ku_text_backedge(dev, k, kus, r)
     case O.OpsCAST{}: ku_text_cast(dev, k, kus, r)
+    case O.OpsBITCAST{}: ku_text_bitcast(dev, k, kus, r)
     case O.OpsBARRIER{}: barrier.of(dev)
     case O.OpsINDEX{}: ku_render_index(dev, k, kus, r)
     case O.OpsSHRINK{}: ku_render_index(dev, k, kus, r)
