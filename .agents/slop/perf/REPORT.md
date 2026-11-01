@@ -3223,3 +3223,26 @@ appearing only as frames. What is left is not a tuning gap in the interpreter's 
 value liveness (two thirds of reads reach back more than any window), a loop that is not a Bend
 recursion (a linear `Array` state was proved unable to cross it in `t_loop.bend`), or writing fewer
 values (only 1 of 510 is dead).
+
+### 39.23 THE SOURCE-SLOT LIST IS NOT THE COST EITHER, MEASURED AND REVERTED
+
+The last structural idea with headroom above this machine's noise was to stop resolving a source
+slot through a list. `Uop.sslot` is a `List<U32>` of at most three, and every read did
+`Maybe.default(List.get(Uop.sslot(u), k), 0)` -- a nine-field projection, a walk, and a `Maybe`
+allocation -- about 2M times per launch. `Uop` is decoded ONCE per launch, so three scalar fields
+(`s0`, `s1`, `s2`, all `U32` and therefore unboxed) would cost nothing per step.
+
+It was built, it was CORRECT (`ops_python_exec` PASS, 153 fixtures, 365 rows, 0 divergences, exact
+answer), and it measured NOTHING:
+
+    three runs each, 32x32   {383.35, 378.96, 383.71}   against HEAD {381.86, 380.67, 377.45}
+
+Slightly worse on the mean, and reverted -- three extra fields and ~25 edited sites for no
+measurable gain is exactly the trade this file must not make. **So the `Maybe` a `List.get` allocates
+on a three-element list is not what this runtime charges for**, which is the same lesson as 39.21h
+from the other direction: the builtin is cheap and the walk is not.
+
+**AND THE SAMPLER ON THE SHIPPED BUILD AGREES THAT NOTHING LEFT IS OURS**: of ~200 samples,
+`term_drop` 89, `span_fade` 74 and the `spin_*` allocator loops ~102, with this file's own defs
+appearing only as thin frames (`Prog_run`, `Prog_ld_sb_f` 6, `List_set` 8, `Prog_index` 4). The
+interpreter's shape is not what the remaining time is spent on.
