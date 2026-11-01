@@ -27367,3 +27367,15 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       `Array` (substrate rule 1), so the work is: make `Prog` a `Type` record carrying `Array<Elem>`
       and `Array<U32>`, thread it linearly through `run`, and keep `ops_python_exec`'s 153 fixtures
       and 365 rows exact.
+- [x] **THE HOT CHUNK IS HELD IN `Prog` -- 1.21x, VERIFIED.** `vc`/`vi` in the record, `Prog.vat`
+      (hit reads the held chunk) and `Prog.vput` (hit rewrites it, miss flushes and reloads), and
+      `Prog.put` is ONE record rebuild instead of `next(vs1(...))`. Every other arena writer flushes
+      and invalidates. MEASURED on the same program both sides (verified op-for-op):
+      **16x16 118.45 -> 97.55 ms (1.21x), 32x32 1037.25 -> 847.30 ms (1.22x)**;
+      `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match.
+      The first attempt was 136 divergences because `vput.rec` wrote back the OLD chunk; three
+      controls isolated it.
+- [ ] **STILL 0.70x/0.45x OF THE PYTHON LANE**: a hit costs the chunk prefix and a crossing costs
+      the spine prefix, so only the `Array` arena deletes the rest (450 ns -> <5 ns per write,
+      measured). Needs `Prog` linear (42 defs, 37 constructors). The chunk geometry is NOT a free
+      knob: `Val.ci/co` at 8 against a 16-slot builder gave 144 divergences.

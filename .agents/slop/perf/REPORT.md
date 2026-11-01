@@ -2253,3 +2253,60 @@ This also fixes the rank in §35.4: the reversed-chunk idea would take a write f
 READS walking a spine three times per ALU step. The array takes both to zero, so it is the one
 worth doing, and the target it must reach is measured: **195 ms per launch at 32x32 and 97 ms at
 16x16.**
+
+---
+
+# 36. THE HOT CHUNK IS HELD IN THE RECORD: 1.21x, VERIFIED
+
+## 36.1 WHAT CHANGED
+
+`Prog` carries two new fields -- `vc` (the chunk being written) and `vi` (its index, with
+`4294967295` as the cold sentinel) -- and the arena goes through two new defs:
+
+    Prog.vat(p, i)      a HIT reads the held chunk (index 0..15), a MISS reads the spine
+    Prog.vput(p, slot, e)
+                        a HIT rewrites the 16-cell chunk and touches NO spine cell
+                        a MISS flushes the held chunk into the spine and loads the next one
+
+and `Prog.put` is now ONE record rebuild: it was `Prog.next(Prog.vs1(p, Val.put(...)))`, which
+built the 19-field record twice per value written.
+
+**EVERY OTHER ARENA WRITER FLUSHES FIRST AND INVALIDATES**: `Prog.vs1` (and so `reset`, `stack`,
+the vector LOAD), `Prog.flag.put`, `Prog.rng.del`, `Prog.stack`, `Prog.ld1` -- all four of the last
+now start from `Prog.flush(p)` instead of `Prog.vs(p)`, because the spine LAGS the held chunk and
+a snapshot taken from it would drop the newest values.
+
+## 36.2 THE BUG THAT COST THE FIRST ATTEMPT, AND WHY THE GATE FOUND IT
+
+First run: **136 unpinned divergences of 365 rows**, and every one was a ZERO where a value should
+have been. `Prog.vput.rec`'s constructor wrote `Prog.vc(p), Prog.vi(p)` -- the OLD chunk -- instead
+of the `vc`/`vi` it had been handed, so every store went into a chunk that was never written back.
+Bisected by control: `put` back to `vs1(next(...))` was green, `vput` never; `vat` disabled was
+still red, so the read path was never the suspect.
+
+**THE FIXTURES DID NOT GO GREEN ON A HUNCH**: the bisect used three controls (cache-off,
+read-off, write-off) and the third isolated the def in two runs.
+
+## 36.3 MEASURED, SAME PROGRAM BOTH SIDES
+
+`stage3_parity.py` (grid, local size and EVERY launch's op+srcs sequence verified identical):
+
+    size   before            after             PYTHON (same program)
+    16x16  118.45 ms         97.55 ms  1.21x    68.72 ms
+    32x32  1037.25 ms       847.30 ms  1.22x   384.77 ms
+
+So the cache is worth **1.21x/1.22x** and BEND is still 0.70x/0.45x of the CPython lane.
+
+## 36.4 WHY IT IS ONLY 1.21x, AND WHAT IS LEFT
+
+A hit still costs `co` cells (the chunk prefix before the written index, 0..15) and a chunk
+crossing still rebuilds the spine prefix (`ci` cells, 0..31 at 32x32). The spine walk is what the
+array would delete outright, and §35.6 measured that as **450 ns per write against < 5 ns**.
+
+    MEASURED (a failed experiment, kept because it is informative): shrinking `Val.ci/co` to 8
+    while the arena BUILDER still builds 16-slot chunks gives 144 divergences and a 1.64 error --
+    the chunk geometry is COUPLED between `Val` and the builder, so it is not a free knob.
+
+The array remains the answer: it needs `Prog` to stop being reusable, which is 42 defs and 37
+constructors (§35.4/35.5). This commit is the half of that win that does not need the
+linearisation.
