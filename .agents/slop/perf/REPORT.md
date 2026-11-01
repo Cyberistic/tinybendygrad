@@ -2231,3 +2231,25 @@ it has to keep `ops_python_exec`'s 153 fixtures and 365 rows exact; that is a un
 patch at the end of a session. The measurement above is what makes it a targeted job rather than a
 guess, and the two numbers a fix must beat are on the table: **195 ms per launch at 32x32** (the
 CPython lane on the same program) and **97 ms at 16x16**.
+
+## 35.6 THE FACTOR, MEASURED: 450 ns PER LIST WRITE AGAINST < 5 ns PER ARRAY WRITE
+
+`.agents/slop/perf/stage3_arena.bend` is the port's `Val.put` against `Array.set` on the same
+512-slot arena, 2 000 000 writes each, and BOTH READ BACK (a benchmark whose result is never read
+is a benchmark whose writes a compiler may delete -- and the first version of this file measured
+nothing at all, because `List.set` into an empty chunk is a NO-OP and it "ran" at 200 ns/write
+while writing zero times):
+
+    mode    writes      wall     per write    checksum
+    list    2 000 000   0.90 s   450 ns       7998464    (spine rebuild + 16-cell chunk rebuild)
+    array   2 000 000   <0.01 s  <5 ns        5998464    (in place, no allocation)
+
+**⇒ SO ONE ARENA WRITE COSTS ~450 ns IN THE PORT'S SHAPE AND ESSENTIALLY NOTHING IN THE ARRAY
+SHAPE**, and the executor at 32x32 spends 480 ms over ~2M steps, i.e. ~240 ns per step -- the same
+order, which is what makes the allocation count (§35.2: 96.6M per launch) the whole runtime.
+
+This also fixes the rank in §35.4: the reversed-chunk idea would take a write from ~47 cells to
+~2 cells (a prepend plus the occasional spine rebuild), i.e. roughly 20x, but it still leaves the
+READS walking a spine three times per ALU step. The array takes both to zero, so it is the one
+worth doing, and the target it must reach is measured: **195 ms per launch at 32x32 and 97 ms at
+16x16.**

@@ -27361,3 +27361,9 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       REVERSED chunk, which makes the sequential write a prepend (one cell + one spine rebuild per 16
       writes) and is much cheaper to land but does nothing for reads. The numbers a fix must beat:
       **195 ms per launch at 32x32, 97 ms at 16x16** (the CPython lane on the SAME program).
+      THE FACTOR, MEASURED (`.agents/slop/perf/stage3_arena.bend`, 2 000 000 writes each, both READ
+      BACK): the port's `Val.put` shape is **450 ns per write**, `Array.set` is **< 5 ns** -- in
+      place, no allocation. The executor's ~240 ns/step is that cost. A `Data` record cannot hold an
+      `Array` (substrate rule 1), so the work is: make `Prog` a `Type` record carrying `Array<Elem>`
+      and `Array<U32>`, thread it linearly through `run`, and keep `ops_python_exec`'s 153 fixtures
+      and 365 rows exact.
