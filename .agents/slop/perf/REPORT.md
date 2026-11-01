@@ -1833,3 +1833,58 @@ The 38.5 ms launch is far above the floor; the 0.936-1.649 ms rows are above it 
 | 1 python->webgpu vs bend->webgpu | 9/9 byte-identical; mm512 11.1/11.0 ms with a 1.96/2.00 plant | **met by identity**, measured above the floor |
 | 2 python->metal vs bend->metal | 6/6 byte-identical; mm4096 38.5 ms, mm2048 5.5 ms | **met by identity**, measured above the floor |
 | 3 PYTHON vs BEND (BEND >= PYTHON) | 1039/113 vs 2707/580 ms, bit-exact | **met, per the user's reading** |
+
+---
+
+# 30. EXP2 IS COVERED, THE IF ARM IS WRITTEN -- AND NOTHING IN THIS TREE CAN EXERCISE IT
+
+## 30.1 THE TWO PROGRAMS ASKED FOR
+
+    where32|E_1024|5ed5e1ddac92929b|5ed5e1ddac92929b|yes|630|0.2|0.1|yes
+    exp32  |E_1024|5ddc0c6b3760c63c|5ddc0c6b3760c63c|yes|515|0.1|0.1|yes
+
+`exp32` does what was asked of it: the kernel is
+`data0_1024[gidx0] = exp2((val0*1.4426950216293335f));` -- **EXP2 with a float CONSTANT that the
+walk materialises**, byte-identical.
+
+`where32` is byte-identical too, but it does NOT contain an IF: it lowered to the ALU form
+`var alu0 = select(val1,val0,(0.0f<val0));`. A `where` is a VALUE, not control flow.
+
+## 30.2 THE IF ARM, AND WHY IT CANNOT BE EXERCISED HERE
+
+The arm is written (`if ({cond}) {` at the current depth, one level deeper after it, its prefix
+number burned because a void op is never declared). And then the search for a program that
+produces one, which is where this stops:
+
+`tinygrad/codegen/__init__.py:399-401`:
+
+    # inject IF/ENDIF. only needed if device doesn't support gated stores
+    # gated STORE becomes IF-STORE-ENDIF. this is the only use of IF-ENDIF
+
+**⇒ A GATED `Ops.STORE` IS THE ONLY PRODUCER OF IF/ENDIF IN TINYGRAD**, and nine programs were
+tried and NONE produced one:
+
+    reduce with an odd trailing dim (32,33) | matmul at 33x33 | pad | shrink | max(axis)
+    add at 33 elements | STRIDED setitem a[:, ::2] = 0 | pad with a fill value
+    multi-axis max(axis=(1,2)) | cumsum
+
+and the one construct that *should* gate a store -- a boolean-mask assignment -- is refused
+upstream: `IndexError: index dtype dtypes.bool is not supported`.
+
+**⇒ SO THE IF ARM IS IMPLEMENTED, FAITHFUL TO `cstyle.py:20` AND THE DEPTH RULES, AND
+UNEXERCISED: no program in this tree emits the op it handles, so its text is not compared to
+CPython's anywhere and this report does not claim it renders correctly.** The honest statement is
+that the *class* the reviewer named -- "a kernel containing a predicate" -- does not exist among
+the shapes that can be built here; what a predicate lowers to is `select`, and that IS covered.
+
+## 30.3 THE CORPORA NOW
+
+| stage | programs | kernels | identical | above the floor |
+|---|---|---|---|---|
+| 1 (WebGPU) | **11** | 11 | **11 of 11** | mm512 11.1/11.1 ms, plant 1.98/1.98 |
+| 2 (Metal) | **8** | 7 (two share a name) | **7 of 7** | mm4096 39.2 ms, mm2048 5.9 ms |
+
+    metal program_ms  mm16=1.65 mm32=2.25 ew64=1.23 reduce=0.95 where32=1.02 exp32=0.78
+                      mm2048=5.90 mm4096=39.22
+    ops exercised (webgpu)  CONST (incl non-zero), PARAM, CAST, SPECIAL, INDEX, LOAD, STORE,
+                            MUL, ADD, WHERE/CMPLT, EXP2, RANGE, BUFFER, AFTER, SINK

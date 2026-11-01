@@ -6,8 +6,9 @@ import ./gen_metal/r_32_2_2_2_2.bend as G0
 import ./gen_metal/r_32_2_4_4_4.bend as G1
 import ./gen_metal/E_32_32_4.bend as G2
 import ./gen_metal/r_64_16_4.bend as G3
-import ./gen_metal/r_64_16_4_32_2_4_4_256.bend as G4
-import ./gen_metal/r_128_32_4_32_2_4_4_512.bend as G5
+import ./gen_metal/E_8_32_4.bend as G4
+import ./gen_metal/r_64_16_4_32_2_4_4_256.bend as G5
+import ./gen_metal/r_128_32_4_32_2_4_4_512.bend as G6
 
 def nth(xs: List<&1, String>, k: Nat) -> String:
   Maybe.default(&1, String, List.get(&1, String, xs, k), "")
@@ -18,8 +19,9 @@ def kus_of(nm: String) -> List<&2, C.KU>:
     case "r_32_2_4_4_4": G1.kus()
     case "E_32_32_4": G2.kus()
     case "r_64_16_4": G3.kus()
-    case "r_64_16_4_32_2_4_4_256": G4.kus()
-    case "r_128_32_4_32_2_4_4_512": G5.kus()
+    case "E_8_32_4": G4.kus()
+    case "r_64_16_4_32_2_4_4_256": G5.kus()
+    case "r_128_32_4_32_2_4_4_512": G6.kus()
     case _: Nil{}
 
 def main() -> IO(Unit):

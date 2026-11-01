@@ -259,9 +259,9 @@ def shape_strs(+ds: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
 
 # a closing brace is emitted one level OUT: the depth drops BEFORE the line (cstyle.py:249)
 # a header line AND one level deeper, in one step (cstyle.py:264 increments after the line)
-def wk.open(+nm: String, +line: String, +acc: Wk) -> Wk:
+def wk.open(+nm: String, +line: String, +c: List<&2, U32>, +acc: Wk) -> Wk:
   Wk{List.append(&2, String, Wk.names(acc), [nm]),
-    List.append(&2, String, Wk.body(acc), [line]), Wk.bufs(acc), Wk.c(acc), Wk.nm(acc),
+    List.append(&2, String, Wk.body(acc), [line]), Wk.bufs(acc), c, Wk.nm(acc),
     Nat.add(Wk.depth(acc), 1n)}
 
 def wk.close(+acc: Wk) -> Wk:
@@ -336,13 +336,22 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       wk.add(bnm, List.append(&2, String, Nil{}, [emit(Wk.depth(acc),
         W.sr_buffer(op, bnm, R.numel(r), R.dt(r), R.addr(r)))]),
         Wk.bufs(acc), c_bump(Wk.c(acc), bix), acc)
+    case O.OpsIF{}:
+      # cstyle.py:20 -- `f"if ({ctx[x.src[0]]}) {{"`, at the CURRENT depth, then one deeper
+      # (`cstyle.py:264` increments for IF as well as RANGE). A void op gets no declaration, but
+      # it still BURNS its prefix number, which is why the name comes from the counter and is
+      # thrown away.
+      +fix = pfx_ix(op)
+      +fnm = String.concat([pfx(fix), U32.show(c_at(Wk.c(acc), fix))])
+      wk.open(fnm, emit(Wk.depth(acc), String.concat(["if (",
+        tx(all, Wk.names(acc), R.src0(r), R.dt(r)), ") {"])), c_bump(Wk.c(acc), fix), acc)
     case O.OpsEND{}: wk.close(acc)
     case O.OpsENDIF{}: wk.close(acc)
     case O.OpsBACKEDGE{}: wk.close(acc)
     case O.OpsRANGE{}:
       +rnm = String.concat([axis_letter(R.str(r)), "idx", CS.range_str(R.shape(r))])
       wk.open(rnm, emit(Wk.depth(acc), String.concat(["for (var ", rnm, " = 0; ", rnm, " < ",
-        tx(all, Wk.names(acc), R.src0(r), R.dt(r)), "; ", rnm, "++) {"])), acc)
+        tx(all, Wk.names(acc), R.src0(r), R.dt(r)), "; ", rnm, "++) {"])), Wk.c(acc), acc)
     case op2:
       +ix = pfx_ix(op2)
       +nm = String.concat([pfx(ix), U32.show(c_at(Wk.c(acc), ix))])

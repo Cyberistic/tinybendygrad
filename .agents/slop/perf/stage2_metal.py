@@ -98,7 +98,20 @@ def main() -> int:
       ta, tb = T(a).realize(), T(b).realize()
       return (lambda: (ta @ tb).realize()), a @ b
 
+  def p_where32(rng):
+    a, b = (rng.standard_normal((32, 32)) for _ in range(2))
+    with Context(DEV="METAL"):
+      ta, tb = T(a).realize(), T(b).realize()
+      return (lambda: (ta > 0).where(ta, tb).realize()), np.where(a > 0, a, b)
+
+  def p_exp32(rng):
+    a = rng.standard_normal((32, 32))
+    with Context(DEV="METAL"):
+      ta = T(a).realize()
+      return (lambda: ta.exp().realize()), np.exp(a.astype(np.float64))
+
   PROGRAMS = [("mm16", p_mm16), ("mm32", p_mm32), ("ew64", p_ew), ("reduce", p_reduce),
+              ("where32", p_where32), ("exp32", p_exp32),
               ("mm2048", p_mm2048), ("mm4096", p_mm4096)]
 
   captured: list[tuple[str, str, list[str]]] = []

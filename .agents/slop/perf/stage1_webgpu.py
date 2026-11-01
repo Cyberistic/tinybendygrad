@@ -56,6 +56,22 @@ def build(prog: str, np, Tensor, Context):
             out = (ta * tb).maximum(2.5).realize()
         w = np.maximum(a * b, np.float32(2.5))
         return out, [a, b], w, w, "max(a*b,2.5)", "max(b*a,2.5)"
+    if prog == "where32":
+        # FORCES `Ops.IF`: `where` lowers to a predicate-guarded body, not to an ALU `select`.
+        a, b = rng.standard_normal((32, 32)).astype(np.float32), rng.standard_normal((32, 32)).astype(np.float32)
+        with Context(DEV="METAL", NOOPT=1):
+            ta, tb = Tensor(a).realize(), Tensor(b).realize()
+            out = (ta > 0).where(ta, tb).realize()
+        w = np.where(a > 0, a, b)
+        return out, [a, b], w, w, "where(a>0,a,b)", "where(a>0,a,b)"
+    if prog == "exp32":
+        # FORCES `Ops.EXP2` (tinygrad lowers `exp` to `exp2(x*log2e)`), and a FLOAT CONSTANT with it.
+        a = rng.standard_normal((32, 32)).astype(np.float32)
+        with Context(DEV="METAL", NOOPT=1):
+            ta = Tensor(a).realize()
+            out = ta.exp().realize()
+        w = np.exp(a.astype(np.float64)).astype(np.float32)
+        return out, [a], w, None, "exp(a)", "-"
     if prog in ("mm256", "mm512"):
         # A NAIVE MATMUL: `NOOPT=1` means no tensor cores, so the emitted kernel is a loop nest --
         # RANGE, BUFFER, AFTER, LOAD, STORE and ALU all at once -- and 512^3 MACs is enough work
