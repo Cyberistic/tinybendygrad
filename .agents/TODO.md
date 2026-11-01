@@ -27439,3 +27439,15 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       565); executor build flags (the harness's Bend-built binary is 0.28 s on the 32x32 packet, the
       same C by hand at `-O3` is 0.67 s and with Bend's own objc flags 0.73 s -- SO A HAND-BUILT
       EXECUTOR IS NOT THE ARTIFACT THE LANE MEASURES, and there is no flag lever).
+- [x] **THE ARENA PRIMITIVE, MEASURED IN THE INTERPRETER'S SHAPE -- AND IT REFUTES MY OWN 1.35x.**
+      `.agents/slop/perf/stage3_arena2.bend`: 2 000 000 steps of three reads + one write on a 512-slot
+      arena, all three modes printing the same checksum:
+        list (chunked spine)      2.41 s   1.20 us/step
+        cache (the port today)    1.07 s   0.53 us/step
+        Array + `.go` chain      <0.01 s  <0.005 us/step      <- ~100x
+      §38 counted ALLOCATIONS and got 1.35x; the array also deletes the WALKS (spine + chunk, three
+      times per step), which is what the 0.53 us is made of. **PROJECTION (labelled): the executor
+      could go 554 -> ~300 ms at 32x32, PAST CPython's 379 ms.**
+- [ ] **SO THE `Array` REFACTOR IS NEXT AND IT IS JUSTIFIED BY MEASUREMENT, NOT ESTIMATE.** Writes need
+      no chain (`Array.set` answers the array) -- only the ~17 `Prog.src` read sites do, and the
+      benchmark's `array` mode IS that chain, compiled and timed.

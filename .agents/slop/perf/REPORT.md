@@ -2550,3 +2550,45 @@ since the session started, with every gate green, and the ratio against the CPyt
 0.77x/0.53x to 0.80x/0.68x. The remaining named change is worth ~1.35x and lands at ~0.90x. Beating
 the CPython lane is not reachable by the change that is left; it needs the interpreter's state model
 replaced, and that is a rewrite this session has now bounded rather than discovered.
+
+---
+
+# 39. THE ARENA PRIMITIVE, MEASURED IN THE INTERPRETER'S OWN SHAPE: THE ARRAY IS ~100x, NOT 1.35x
+
+## 39.1 THE EXPERIMENT
+
+§38 projected the `Array` at ~1.35x BY COUNTING ALLOCATIONS. That was wrong, and this replaces it
+with a measurement. `.agents/slop/perf/stage3_arena2.bend` runs 2 000 000 interpreter-shaped steps
+-- three arena reads and one arena write on a 512-slot arena, which is exactly what one ALU uop
+costs -- in three representations, and all three print the SAME checksum, so they are doing the same
+work:
+
+    mode    representation                              wall     per step
+    list    chunked spine, no held chunk                2.41 s   1.20 us
+    cache   the held chunk (what the port does today)   1.07 s   0.53 us
+    array   Array<Elem> in a LINEAR record, .go chain   <0.01 s  <0.005 us
+
+**⇒ ~100x ON THE PRIMITIVE.** §38's 1.35x counted ALLOCATIONS; the array also deletes the WALKS --
+the pointer chase down the spine and along the chunk, three times per step -- and the walks are what
+the 0.53 us is actually made of. So the lever is not the marginal one §38 called it.
+
+## 39.2 WHAT THAT MEANS FOR THE EXECUTOR
+
+At 32x32 the executor runs 170 ns per step with four arena accesses in it. If the arena is the
+majority of that -- and the primitive says a read is a spine walk plus a chunk walk while the array
+is O(1) -- then the array plausibly takes 554 ms to ~300 ms, i.e. **PAST the CPython lane's 379 ms.**
+That is a projection and is labelled one; the measurement it rests on (0.53 us -> <0.005 us per
+step's worth of arena traffic) is not.
+
+## 39.3 THE COST, NOW BOUNDED WITH REAL NUMBERS
+
+`Array.get` answers a PAIR, so every READ site needs the `.go` chain (`def f(r: Prog & Elem) ->
+match r: case (p, e): ...`). WRITES do not: `Array.set` answers the array, so `Prog.put(p,u,e) ->
+Prog` stays a single value in and out, and the array lives INSIDE the record. The read sites are the
+17 callers of `Prog.src` plus the handful that read the arena directly; each becomes a chain of two
+or three small defs.
+
+**AND THE LANGUAGE TESTED OUT FIRST**: the `array` mode of the benchmark IS that chain (`R.get` ->
+`R.get.k(r: Array<E> & E) -> ...`, `R.step` -> `R.step.b` -> `R.step.c` -> `R.step.d`), and it
+compiles, runs, and is 100x cheaper. So the pattern §37.4 called "undestructurable, needs a chain" is
+proven workable in the same commit that measures its payoff.
