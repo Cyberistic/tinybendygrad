@@ -27259,7 +27259,18 @@ producing a green that would have been about nothing.
       `m * 2^e` with a 24-bit `m`, so its decimal is finite and exact. `tinybendygrad/uop/f32_repr.bend`
       computes the exact expansion, the two f64 rounding bounds, and the shortest in-interval p-digit
       candidate; **1044 of 1044 values identical to CPython's repr** (`.agents/slop/perf/f32_repr_oracle.py`).
-- [ ] THE WEBGPU LANE STILL HANDS ITS FLOAT CONSTANTS OVER AS TEXT: `wgsl_walk.bend`'s `con_text` reads
-      `R.str(r)`, which is CPython's own repr carried in the `.rows` dump, so the WGSL corpus's float
-      identity is a comparison of two copies of CPython's string and not of the port's computation.
-      Now that `FR.repr` exists, the walk should compute it from the F32 instead.
+- [x] THE WEBGPU LANE NOW COMPUTES ITS FLOAT CONSTANTS. `W.R` carries the const's **F32 value** in a
+      new `f` field (written by `gen_wgsl.py` as a typed literal) and `con_text` answers
+      `FR.repr(R.f(r))` for a float const, so the digits come from the port's arithmetic and not from
+      CPython's string in the `.rows` dump. PLANTED: with that string replaced by "PLANTED-STRING"
+      the kernel still renders `exp2((val0*1.4426950216293335f))`. 15 of 15 identical, timed,
+      mm512 11.1/11.2 ms with plant 1.96/1.96.
+- [ ] **STAGE 3's LITERAL READING NEEDS A CODEGEN, AND THAT MEANS REWRITING THE ORACLE.** Measured
+      (`.agents/slop/perf/stage3_gap.py`): both lanes dispatch 2x per realize, BEND runs a WORSE
+      kernel (148 vs 49 uops at 16x16) and still wins 4.8x/2.6x, so the gap is ~1.3us per walk step
+      against ~0.09us. The CPython profile is 36% memory accessors / 25% ALU / 18% the walk itself --
+      no hotspot, nothing a micro-optimization reaches. `.agents/slop/perf/stage3_ceiling.py` puts
+      the codegen ceiling at **6.54x** against a REQUIRED 4.8x (16x16) and 2.6x (32x32): comfortable
+      at 32x32, MARGINAL at 16x16. The work means rewriting `tinygrad/runtime/ops_python.py` -- THE
+      ORACLE -- which stales `substrate_digest()` and the recorded 38/38 corpus verdict until `run`
+      and `repro` are re-taken. AWAITING THE USER'S GO/NO-GO.

@@ -7,21 +7,21 @@ import ./../../../../tinybendygrad/LAWS/spec.bend as S
 
 def rs() -> List<&2, W.R>:
   [
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1024", 1024, 0, Nil{}, Nil{}}, # 1 CONST
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 0, [1024], [1]}, # 2 PARAM
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 1, [1024], [1]}, # 3 PARAM
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 2, [1024], [1]}, # 4 PARAM
-  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [1]}, # 5 CAST
-  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [5]}, # 6 SPECIAL
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 6]}, # 7 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7]}, # 8 LOAD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 6]}, # 9 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9]}, # 10 LOAD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 6]}, # 11 INDEX
-  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "0.0", 0, 0, Nil{}, Nil{}}, # 12 CONST
-  W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12]}, # 13 CAST
-  W.R{O.OpsCMPLT{}, S.boolean(), S.Aalu{}, 1, "", 0, 0, Nil{}, [13, 8]}, # 14 CMPLT
-  W.R{O.OpsWHERE{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [14, 8, 10]}, # 15 WHERE
-  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [11, 15]}, # 16 STORE
-  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_1024", 0, 0, Nil{}, [16]}, # 17 SINK
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1024", 1024, 0, Nil{}, Nil{}, 1024.0}, # 1 CONST
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 0, [1024], [1], 0.0}, # 2 PARAM
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 1, [1024], [1], 0.0}, # 3 PARAM
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 2, [1024], [1], 0.0}, # 4 PARAM
+  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [1], 0.0}, # 5 CAST
+  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [5], 0.0}, # 6 SPECIAL
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 6], 0.0}, # 7 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7], 0.0}, # 8 LOAD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 6], 0.0}, # 9 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9], 0.0}, # 10 LOAD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 6], 0.0}, # 11 INDEX
+  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "0.0", 0, 0, Nil{}, Nil{}, 0.0}, # 12 CONST
+  W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12], 0.0}, # 13 CAST
+  W.R{O.OpsCMPLT{}, S.boolean(), S.Aalu{}, 1, "", 0, 0, Nil{}, [13, 8], 0.0}, # 14 CMPLT
+  W.R{O.OpsWHERE{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [14, 8, 10], 0.0}, # 15 WHERE
+  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [11, 15], 0.0}, # 16 STORE
+  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_1024", 0, 0, Nil{}, [16], 0.0}, # 17 SINK
   ]

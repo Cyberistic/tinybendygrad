@@ -7,46 +7,46 @@ import ./../../../../tinybendygrad/LAWS/spec.bend as S
 
 def rs() -> List<&2, W.R>:
   [
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "65536", 65536, 0, Nil{}, Nil{}}, # 1 CONST
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 65536, "-", 0, 0, [65536], [1]}, # 2 PARAM
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 65536, "-", 0, 1, [65536], [1]}, # 3 PARAM
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 65536, "-", 0, 2, [65536], [1]}, # 4 PARAM
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1", 1, 0, Nil{}, Nil{}}, # 5 CONST
-  W.R{O.OpsBUFFER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [5]}, # 6 BUFFER
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "256", 256, 0, Nil{}, Nil{}}, # 7 CONST
-  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7]}, # 8 CAST
-  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [8]}, # 9 SPECIAL
-  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx1", 1, 0, Nil{}, [8]}, # 10 SPECIAL
-  W.R{O.OpsAFTER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [6, 10, 9]}, # 11 AFTER
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "0", 0, 0, Nil{}, Nil{}}, # 12 CONST
-  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12]}, # 13 CAST
-  W.R{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", 0, 0, Nil{}, [11, 13]}, # 14 INDEX
-  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "0.0", 0, 0, Nil{}, Nil{}}, # 15 CONST
-  W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [15]}, # 16 CAST
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "8", 8, 0, Nil{}, Nil{}}, # 17 CONST
-  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [17]}, # 18 CAST
-  W.R{O.OpsSHL{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [10, 18]}, # 19 SHL
-  W.R{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [14, 16]}, # 20 STORE
-  W.R{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "WEAK", 0, 0, [0], [8]}, # 21 RANGE
-  W.R{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [19, 21]}, # 22 ADD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 22]}, # 23 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [23]}, # 24 LOAD
-  W.R{O.OpsSHL{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [21, 18]}, # 25 SHL
-  W.R{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [25, 9]}, # 26 ADD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 26]}, # 27 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [27]}, # 28 LOAD
-  W.R{O.OpsAFTER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [6, 20, 21]}, # 29 AFTER
-  W.R{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", 0, 0, Nil{}, [29, 13]}, # 30 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [30]}, # 31 LOAD
-  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [24, 28]}, # 32 MUL
-  W.R{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [31, 32]}, # 33 ADD
-  W.R{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [30, 33]}, # 34 STORE
-  W.R{O.OpsEND{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [34, 21]}, # 35 END
-  W.R{O.OpsAFTER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [6, 35]}, # 36 AFTER
-  W.R{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", 0, 0, Nil{}, [36, 13]}, # 37 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [37]}, # 38 LOAD
-  W.R{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [19, 9]}, # 39 ADD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 39]}, # 40 INDEX
-  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [40, 38]}, # 41 STORE
-  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "r_256_256_256", 0, 0, Nil{}, [41]}, # 42 SINK
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "65536", 65536, 0, Nil{}, Nil{}, 65536.0}, # 1 CONST
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 65536, "-", 0, 0, [65536], [1], 0.0}, # 2 PARAM
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 65536, "-", 0, 1, [65536], [1], 0.0}, # 3 PARAM
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 65536, "-", 0, 2, [65536], [1], 0.0}, # 4 PARAM
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1", 1, 0, Nil{}, Nil{}, 1.0}, # 5 CONST
+  W.R{O.OpsBUFFER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [5], 0.0}, # 6 BUFFER
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "256", 256, 0, Nil{}, Nil{}, 256.0}, # 7 CONST
+  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7], 0.0}, # 8 CAST
+  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [8], 0.0}, # 9 SPECIAL
+  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx1", 1, 0, Nil{}, [8], 0.0}, # 10 SPECIAL
+  W.R{O.OpsAFTER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [6, 10, 9], 0.0}, # 11 AFTER
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "0", 0, 0, Nil{}, Nil{}, 0.0}, # 12 CONST
+  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [12], 0.0}, # 13 CAST
+  W.R{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", 0, 0, Nil{}, [11, 13], 0.0}, # 14 INDEX
+  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "0.0", 0, 0, Nil{}, Nil{}, 0.0}, # 15 CONST
+  W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [15], 0.0}, # 16 CAST
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "8", 8, 0, Nil{}, Nil{}, 8.0}, # 17 CONST
+  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [17], 0.0}, # 18 CAST
+  W.R{O.OpsSHL{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [10, 18], 0.0}, # 19 SHL
+  W.R{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [14, 16], 0.0}, # 20 STORE
+  W.R{O.OpsRANGE{}, S.int32(), S.Aalu{}, 1, "WEAK", 0, 0, [0], [8], 0.0}, # 21 RANGE
+  W.R{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [19, 21], 0.0}, # 22 ADD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 22], 0.0}, # 23 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [23], 0.0}, # 24 LOAD
+  W.R{O.OpsSHL{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [21, 18], 0.0}, # 25 SHL
+  W.R{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [25, 9], 0.0}, # 26 ADD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [4, 26], 0.0}, # 27 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [27], 0.0}, # 28 LOAD
+  W.R{O.OpsAFTER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [6, 20, 21], 0.0}, # 29 AFTER
+  W.R{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", 0, 0, Nil{}, [29, 13], 0.0}, # 30 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [30], 0.0}, # 31 LOAD
+  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [24, 28], 0.0}, # 32 MUL
+  W.R{O.OpsADD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [31, 32], 0.0}, # 33 ADD
+  W.R{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [30, 33], 0.0}, # 34 STORE
+  W.R{O.OpsEND{}, S.void(), S.AReg{}, 1, "", 0, 0, Nil{}, [34, 21], 0.0}, # 35 END
+  W.R{O.OpsAFTER{}, S.single(), S.AReg{}, 1, "", 0, 0, [1], [6, 35], 0.0}, # 36 AFTER
+  W.R{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", 0, 0, Nil{}, [36, 13], 0.0}, # 37 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [37], 0.0}, # 38 LOAD
+  W.R{O.OpsADD{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [19, 9], 0.0}, # 39 ADD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 39], 0.0}, # 40 INDEX
+  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [40, 38], 0.0}, # 41 STORE
+  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "r_256_256_256", 0, 0, Nil{}, [41], 0.0}, # 42 SINK
   ]

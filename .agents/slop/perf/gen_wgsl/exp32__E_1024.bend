@@ -7,18 +7,18 @@ import ./../../../../tinybendygrad/LAWS/spec.bend as S
 
 def rs() -> List<&2, W.R>:
   [
-  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1024", 1024, 0, Nil{}, Nil{}}, # 1 CONST
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 0, [1024], [1]}, # 2 PARAM
-  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 1, [1024], [1]}, # 3 PARAM
-  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [1]}, # 4 CAST
-  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [4]}, # 5 SPECIAL
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 5]}, # 6 INDEX
-  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [6]}, # 7 LOAD
-  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 5]}, # 8 INDEX
-  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "1.4426950216293335", 0, 0, Nil{}, Nil{}}, # 9 CONST
-  W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9]}, # 10 CAST
-  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7, 10]}, # 11 MUL
-  W.R{O.OpsEXP2{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [11]}, # 12 EXP2
-  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [8, 12]}, # 13 STORE
-  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_1024", 0, 0, Nil{}, [13]}, # 14 SINK
+  W.R{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "1024", 1024, 0, Nil{}, Nil{}, 1024.0}, # 1 CONST
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 0, [1024], [1], 0.0}, # 2 PARAM
+  W.R{O.OpsPARAM{}, S.single(), S.AGlobal{}, 1024, "-", 0, 1, [1024], [1], 0.0}, # 3 PARAM
+  W.R{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", 0, 0, Nil{}, [1], 0.0}, # 4 CAST
+  W.R{O.OpsSPECIAL{}, S.int32(), S.Aalu{}, 1, "gidx0", 0, 0, Nil{}, [4], 0.0}, # 5 SPECIAL
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [3, 5], 0.0}, # 6 INDEX
+  W.R{O.OpsLOAD{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [6], 0.0}, # 7 LOAD
+  W.R{O.OpsINDEX{}, S.single(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [2, 5], 0.0}, # 8 INDEX
+  W.R{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "1.4426950216293335", 0, 0, Nil{}, Nil{}, 1.4426950216293335}, # 9 CONST
+  W.R{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [9], 0.0}, # 10 CAST
+  W.R{O.OpsMUL{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [7, 10], 0.0}, # 11 MUL
+  W.R{O.OpsEXP2{}, S.single(), S.Aalu{}, 1, "", 0, 0, Nil{}, [11], 0.0}, # 12 EXP2
+  W.R{O.OpsSTORE{}, S.void(), S.AGlobal{}, 1, "", 0, 0, Nil{}, [8, 12], 0.0}, # 13 STORE
+  W.R{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "E_1024", 0, 0, Nil{}, [13], 0.0}, # 14 SINK
   ]

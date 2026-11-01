@@ -14,6 +14,7 @@
 # (`Buf`, `Scan`) are used as they stand.
 import Base
 import ./wgsl.bend as W
+import ./../uop/f32_repr.bend as FR
 import ./cstyle.bend as CS
 import ../uop/ops.bend as O
 import ../LAWS/spec.bend as S
@@ -40,43 +41,47 @@ import ../LAWS/spec.bend as S
 # ===========================================================================
 type R is Data:
   R{op: O.Op, dt: S.Dt, addr: S.Addr, numel: U32, str: String, idx: U32, slot: U32,
-    shape: List<&2, U32>, srcs: List<&2, U32>}
+    shape: List<&2, U32>, srcs: List<&2, U32>, f: F32}
 
 def R.op(r: R) -> O.Op:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: op
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: op
 
 def R.dt(r: R) -> S.Dt:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: dt
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: dt
 
 def R.addr(r: R) -> S.Addr:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: addr
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: addr
 
 def R.numel(r: R) -> U32:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: numel
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: numel
 
 def R.str(r: R) -> String:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: str
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: str
+
+def R.f(r: R) -> F32:
+  match r:
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: f
 
 def R.idx(r: R) -> U32:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: idx
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: idx
 
 def R.slot(r: R) -> U32:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: slot
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: slot
 
 def R.shape(r: R) -> List<&2, U32>:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: shape
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: shape
 
 def R.srcs(r: R) -> List<&2, U32>:
   match r:
-    case R{op, dt, addr, numel, str, idx, slot, shape, srcs}: srcs
+    case R{op, dt, addr, numel, str, idx, slot, shape, srcs, f}: srcs
 
 # the walk's state: one NAME-OR-TEXT per uop index (upstream's `r`, and it holds the
 # RENDERED TEXT for an inlined uop and the NAME for a declared one), the body lines,
@@ -137,7 +142,7 @@ def uses.go(+rs: List<&2, R>, +k: U32, acc: U32) -> U32:
     case h <> t: uses.go(t, k, U32.add(acc, has_src(R.srcs(h), k)))
 def uses(+rs: List<&2, R>, +k: U32) -> U32: uses.go(rs, k, 0)
 
-def R.zero() -> R: R{O.OpsNOOP{}, S.void(), S.Aalu{}, 0, "", 0, 0, Nil{}, Nil{}}
+def R.zero() -> R: R{O.OpsNOOP{}, S.void(), S.Aalu{}, 0, "", 0, 0, Nil{}, Nil{}, 0.0}
 
 def R.at(+rs: List<&2, R>, +k: U32) -> R:
   Maybe.default(&2, R, List.get(&2, R, rs, U32.to_nat(U32.sub(k, 1))), R.zero())
@@ -183,9 +188,14 @@ def axis_letter(+nm: String) -> String:
 
 def is_where_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsWHERE{}), True{}, False{})
 
-# the literal for a const read at `k`, with the suffix its OUTPUT dtype asks for
+# **THE LITERAL IS COMPUTED, NOT CARRIED.** `R.f` is the const's f32 VALUE and `FR.repr` is
+# CPython's own `repr(float)` algorithm (uop/f32_repr.bend, 1044 of 1044 values identical), so the
+# digits now come from the port's arithmetic. They used to come from `R.str`, which is CPython's
+# repr TRANSCRIBED into the `.rows` dump -- a comparison of two copies of CPython's string rather
+# than of the port's computation. For a non-float const the value IS its text (an integer), so that
+# arm still reads `R.str` and there is nothing to compute.
 def con_text(+dt: S.Dt, +r: R) -> String:
-  String.concat([R.str(r),
+  String.concat([Bool.pick(String, is_float_dt(dt), FR.repr(R.f(r)), R.str(r)),
     Bool.pick(String, is_float_dt(dt), "f", Bool.pick(String, is_u32_dt(dt), "u", ""))])
 
 # THE OPERAND LOOKUP: a name/text from the map, or -- for a CONST, which the map never holds --

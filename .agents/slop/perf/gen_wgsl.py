@@ -32,6 +32,7 @@ def one(line: str) -> str:
     if d is None or a is None:
         raise SystemExit(f"{op}: unknown dtype {dt} or addrspace {addr}")
     nm, num, slot = '""', 0, 0
+    fexpr = "0.0"
     shp = "Nil{}"
     if shape:
         shp = "[" + ", ".join(str(int(x)) for x in shape.split("x")) + "]"
@@ -46,9 +47,13 @@ def one(line: str) -> str:
             num = int(p_)
         except ValueError:
             num = 0
-        # the VALUE TEXT travels in `str`: a float const is a BITS problem otherwise, and
-        # upstream renders it as `{val}f` (cstyle.py:26), not as an integer.
-        nm = f'"{p_}"' 
+        # THE VALUE ITSELF travels in `f`, and `str` keeps the transcribed text as the arm a
+        # NON-float const still needs. A float const is F32-typed upstream, so its literal here is
+        # parsed back to the same f32 by Bend's reader; the walk then COMPUTES the digits with
+        # `FR.repr` instead of reading CPython's string (which is what `str` used to be used for).
+        nm = f'"{p_}"'
+        flt = float(p_) if p_ not in ("nan", "inf", "-inf") else 0.0
+        fexpr = f"(0.0-{-flt} : F32)" if flt < 0 else repr(flt)
     elif kind == "param":
         p = payload.split("~")
         slot, nm = int(p[0]), ('"-"' if p[1] == "-" else f'"{p[1]}"')
@@ -65,7 +70,7 @@ def one(line: str) -> str:
         nm = f'"{f_[0]}"'
         shp = "[" + ", ".join(str(int(x)) for x in f_[1:]) + "]"
     ss = "Nil{}" if srcs.strip() == "" else "[" + ", ".join(str(int(x)) for x in srcs.split()) + "]"
-    return (f"  W.R{{O.Ops{op}{{}}, {d}, {a}, {numel}, {nm}, {num}, {slot}, {shp}, {ss}}},"
+    return (f"  W.R{{O.Ops{op}{{}}, {d}, {a}, {numel}, {nm}, {num}, {slot}, {shp}, {ss}, {fexpr}}},"
             f" # {idx} {op}")
 
 

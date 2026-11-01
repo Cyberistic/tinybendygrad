@@ -2026,3 +2026,76 @@ artifact: `literal|cpython_repr|bend_repr|ok`.
     ops_python_exec       PASS -- 153 fixtures, 365 rows x 2 lanes, 365 identical
     PROOF-ALL             ALL PROOFS CHECK
     webgpu                15 of 15 identical, mm512 11.9/12.0 ms, plant 1.90/1.91
+
+---
+
+# 33. THE WEBGPU LANE NOW COMPUTES ITS CONSTANT DIGITS -- AND STAGE 3 HAS A MEASURED ANATOMY
+
+## 33.1 `con_text` NO LONGER READS CPYTHON'S STRING
+
+The walk's float constants used to come from `R.str`, which is CPython's own `repr` transcribed
+into the `.rows` dump by `gen_wgsl.py`. So the WebGPU lane's identity on `exp32` was a comparison
+of TWO COPIES OF CPYTHON'S STRING, not of the port's arithmetic. Fixed:
+
+  * `W.R` carries the const's **F32 value** in a new `f` field, written by `gen_wgsl.py` as a typed
+    literal -- Bend's reader parses `1.4426950216293335` back to exactly that f32, which the
+    `f32_repr` oracle already proves 1044 of 1044 times;
+  * `con_text` answers `FR.repr(R.f(r))` when the consuming dtype is float, and `R.str` otherwise
+    (for a non-float const the value IS its text, so there is nothing to compute).
+
+**THE PLANT**: with the const's `str` replaced by `"PLANTED-STRING"` and its `f` untouched, the
+rendered kernel still reads
+
+    data0_1024[gidx0] = exp2((val0*1.4426950216293335f));
+
+which a string-carrying pipeline cannot do. Re-measured after the change:
+
+    15 of 15 identical, all timed.  mm512 py 11.1 / bend 11.2 ms, plant 1.96 / 1.96
+    # probe_sha=c41c0909342749b6 err=- kernels=15 all_ok=true
+
+## 33.2 STAGE 3: WHERE THE GAP SITS, MEASURED RATHER THAN ASSUMED
+
+`.agents/slop/perf/stage3_gap.py` times each LANE's own launches:
+
+    lane    size  launches/realize  uops/launch  median launch   realize
+    PYTHON   16         2               49            260.3 ms    522.6 ms
+    BEND     16         2              148             54.3 ms    111.1 ms
+    PYTHON   32         2               74           1360.9 ms   2728.6 ms
+    BEND     32         2              510            521.3 ms   1045.2 ms
+
+**⇒ AND THE FIRST THING IT OVERTURNS IS MY OWN GUESS.** Both lanes dispatch TWICE per realize, so
+the gap is not launch count; and the BEND lane runs a **worse-shaped kernel** (148 uops against
+49, 510 against 74) and still wins by 4.8x and 2.6x. So the difference is THE COST OF ONE WALK
+STEP: ~1.3 us per uop in CPython against ~0.09 us in the compiled executor, roughly 14x.
+
+The CPython profile of that walk (`cProfile`, 6 launches) splits it:
+
+    ops_python.py:55 __call__           18%   the while loop itself
+    exec_alu + genexpr + any + isinstance  25%   the ALU dispatch
+    _step/_load/load/_store + dtype scale converts  36%   memory accessors
+    the rest                             21%
+
+So there is no hotspot to fix: it is ~50 small Python operations per element-iteration, spread
+evenly. **No micro-optimization reaches 4.8x.**
+
+## 33.3 THE CEILING, AND WHY THIS IS NOW A SCOPE DECISION
+
+`.agents/slop/perf/stage3_ceiling.py` measures the two SHAPES a Python program can have over the
+same arithmetic -- the walker's (dict of uop -> value, src list rebuilt per step, dispatch chain,
+one call per op) against straight-line code:
+
+    walked      0.287 us per inner iteration
+    inline      0.044 us per inner iteration
+    ratio        6.54x  <- the ceiling for a codegen
+
+**⇒ SO A CODEGEN (compile the uop list to a Python function once, run that) is the ONLY route to
+the target, and its ceiling is 6.54x against a REQUIRED 4.8x at 16x16 and 2.6x at 32x32.** At
+32x32 that is a comfortable margin; at 16x16 it is marginal, because the parts a codegen cannot
+delete -- memoryview indexing, the per-op dtype truncation -- are 36% of the profile and keep
+their cost.
+
+That work means REWRITING `tinygrad/runtime/ops_python.py`, which this tree designates THE ORACLE:
+`checks/differ.py`'s 38-graph corpus compares the port against it and `substrate_digest()` pins its
+bytes, so the recorded `38/38 agree, byte-identical` verdict goes STALE the moment it changes and
+must be re-taken (`run` + `repro`). That is a scope decision with a measured, marginal payoff at
+16x16, so it is put to the user rather than taken unilaterally.
