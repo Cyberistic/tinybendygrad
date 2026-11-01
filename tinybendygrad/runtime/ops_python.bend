@@ -2730,9 +2730,9 @@ def Prog.ld.at(+n: Nat, +f: Buf, +off: U32, +dt: S.Dt, +step: U32, +three: Bool,
       Val.put(vs, U32.add(slot, j), Prog.ld.lanef(f, off, dt, step, three, alt, open, ms, j)))
 
 # ONE destructure per LOAD, which is what the lane loop used to do per lane.
-def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +u: Uop,
+def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +nrun: U32,
   vs: List<&2, List<&2, List<&2, Elem>>>) -> List<&2, List<&2, List<&2, Elem>>>:
-  Prog.ld.at(U32.to_nat(Uop.run(u)), Lb.f(l), Lb.off(l), Lb.dt(l), Lb.step(l),
+  Prog.ld.at(U32.to_nat(nrun), Lb.f(l), Lb.off(l), Lb.dt(l), Lb.step(l),
     Lb.three(l), Lb.alt(l), Lb.open(l), Lb.slot(l), ms, 0, vs)
 
 
@@ -2759,37 +2759,38 @@ def Prog.oob.f.n(zero: Bool, +off: U32, +f: Buf) -> Bool:
 def Prog.oob.f.e(+s0: Elem, +fs: List<&2, Buf>, +z: Bool) -> Bool:
   Prog.oob.f.n(z, Elem.off(s0), Buf.at(fs, Elem.buf(s0)))
 
-def Prog.oob.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32,
-  +u: Uop) -> Bool:
-  Prog.oob.f.e(Prog.src.f(vs, vc, vi, u, 0n), fs, U32.is_zero(Uop.run(u)))
+def Prog.oob.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +nrun: U32,
+  +sslot: List<&2, U32>) -> Bool:
+  Prog.oob.f.e(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)), fs, U32.is_zero(nrun))
 
 def Prog.ld.happens.f.g(three: Bool, +alt: Elem) -> Bool:
   match three:
     case True{}: Elem.is_true(alt)
     case False{}: True{}
 
-def Prog.ld.happens.f(+vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Bool:
-  Prog.ld.happens.f.g(Prog.ld.three(u), Prog.src.f(vs, vc, vi, u, 2n))
+def Prog.ld.happens.f(+vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +three: Bool, +sslot: List<&2, U32>) -> Bool:
+  Prog.ld.happens.f.g(three, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 2n)))
 
-def Prog.ld.sb.f.mk(+f: Buf, +off: U32, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32,
-  +u: Uop) -> Lb:
-  Lb{f, off, Prog.lane.of(f, Uop.dt(u)), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 1n),
-    Prog.ld.three(u), Elem.is_true(Prog.src.f(vs, vc, vi, u, 2n)), Uop.slot(u)}
+def Prog.ld.sb.f.mk(+f: Buf, +off: U32, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +dt: S.Dt, +slot: U32,
+  +three: Bool, +sslot: List<&2, U32>) -> Lb:
+  Lb{f, off, Prog.lane.of(f, dt), dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n)),
+    three, Elem.is_true(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 2n))), slot}
 
 def Prog.ld.sb.f.s0(+s0: Elem, +fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop) -> Lb:
-  Prog.ld.sb.f.mk(Buf.at(fs, Elem.buf(s0)), Elem.off(s0), vs, vc, vi, u)
+  +vi: U32, +dt: S.Dt, +slot: U32, +three: Bool, +sslot: List<&2, U32>) -> Lb:
+  Prog.ld.sb.f.mk(Buf.at(fs, Elem.buf(s0)), Elem.off(s0), vs, vc, vi, dt, slot, three, sslot)
 
-def Prog.ld.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32,
-  +u: Uop) -> Lb:
-  Prog.ld.sb.f.s0(Prog.src.f(vs, vc, vi, u, 0n), fs, vs, vc, vi, u)
+def Prog.ld.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +dt: S.Dt, +slot: U32,
+  +three: Bool, +sslot: List<&2, U32>) -> Lb:
+  Prog.ld.sb.f.s0(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)), fs, vs, vc, vi, dt, slot, three, sslot)
 
 def Prog.ld1.go(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop) -> Prog:
-  Prog.step.vs.f(st, Prog.ldator(Prog.ld.sb.f(St.fs(st), vs, vc, vi, u), ms, u,
-      Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)), gd, ms, mk, pc, bad, dead, un,
-    Bool.and(Prog.ld.happens.f(vs, vc, vi, u), Prog.oob.f(St.fs(st), vs, vc, vi, u)))
+  +vi: U32, +dt: S.Dt, +slot: U32, +nrun: U32, +three: Bool, +sslot: List<&2, U32>) -> Prog:
+  Prog.step.vs.f(st, Prog.ldator(Prog.ld.sb.f(St.fs(st), vs, vc, vi, dt, slot, three, sslot),
+      ms, nrun, Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)), gd, ms, mk, pc, bad, dead, un,
+    Bool.and(Prog.ld.happens.f(vs, vc, vi, three, sslot),
+      Prog.oob.f(St.fs(st), vs, vc, vi, nrun, sslot)))
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
 # is computed and discarded rather than branched over (Bool.pick is not a branch)
@@ -2797,10 +2798,18 @@ def Prog.store.go(ms: List<&2, List<&2, U32>>, done: List<&2, List<&2, U32>>,
   +open: Bool) -> List<&2, List<&2, U32>>:
   Bool.pick(List<&2, List<&2, U32>>, open, done, ms)
 
+# **A LOAD PROJECTED `Uop` ABOUT TWENTY TIMES.** `Prog.ld.sb.f` took `dt` twice, `slot`, `nsrc` and
+# four `Prog.src.f`; `Prog.ld.happens.f` another `nsrc` and a source; `Prog.oob.f` a source and `run`;
+# and `Prog.ldator` `run` again -- every one a full `match` over the nine-field record, on a packet
+# with 40 LOADs of 510 uops. The sampler had `Prog_ld_sb_f` third among this file's own symbols.
+# ONE destructure now feeds the whole LOAD, and the sources come off the bound `sslot`.
 def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
   match p:
     case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.ld1.go(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+      match u:
+        case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}:
+          Prog.ld1.go(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, dt, slot, run,
+            U32.is_eq(U32.from_nat(List.length(&2, U32, srcs)), 3), sslot)
 
 def Prog.store.addr(+p: Prog, +u: Uop, +j: U32) -> U32:
   U32.add(Buf.base(Prog.buf(p, u)), U32.mul(Prog.store.i(p, u, j), Buf.w(Prog.buf(p, u))))
@@ -2947,7 +2956,7 @@ def Prog.store.bind(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +
     Prog.store.at(U32.to_nat(Uop.run(u)), u, ms, 0,
       Prog.store.sb.f(St.fs(st), vs, vc, vi, St.us(st), mk, u), vs, vc, vi),
     mk, pc, bad, dead, un, vc, vi,
-    Bool.and(Prog.open.f(mk), Prog.oob.f(St.fs(st), vs, vc, vi, u)))
+    Bool.and(Prog.open.f(mk), Prog.oob.f(St.fs(st), vs, vc, vi, Uop.run(u), Uop.sslot(u))))
 
 def Prog.store(+p: Prog, +u: Uop) -> Prog:
   match p:
@@ -3042,8 +3051,6 @@ def Prog.dispatch(+p: Prog, +u: Uop, op: O.Op) -> Prog:
     case O.OpsAFTER{}: Prog.after(p, u)
     case _: Prog.alu(p, u)
 
-def Prog.run(+p: Prog, +u: Uop) -> Prog: Prog.dispatch(p, u, Uop.op(u))
-
 # THE STEP. One arm per line of ops_python's `__call__`, in its order.
 # **=> AND THIS IS THE INTERPRETER'S WHOLE COST.** MEASURED on the compiled executor
 # (`.agents/slop/perf/REPORT.md` §9): the uop lookup runs ONCE PER STEP (4 121 245
@@ -3088,8 +3095,15 @@ def run(+f: Nat, +un: List<&2, Uop>, +pr: Prog) -> Prog:
   match f un:
     case 0n _: Prog.die(pr)
     case 1n+k h <> _:
-      +pr2 = Prog.run(pr, h)
-      run(k, Prog.un(pr2), pr2)
+      # `Uop.op(h)` WAS A NINTH-FIELD PROJECTION ON **EVERY STEP OF THE PROGRAM**, not just on the
+      # hot op families: `Prog.run` did it to answer the dispatch, and the arm then projected the
+      # same record again for its own fields. `h` is bound by the list pattern, so one nested match
+      # here hands `op` over as a PARAMETER -- which is all `Prog.dispatch` needs, since a `match`
+      # scrutinee must be a parameter -- and the projection is gone from all 510 uops.
+      match h:
+        case Uop{op, dt, kind, a, b, slot, _run, srcs, sslot}:
+          +pr2 = Prog.dispatch(pr, h, op)
+          run(k, Prog.un(pr2), pr2)
     case 1n+k Nil{}: pr
 
 # ===========================================================================
