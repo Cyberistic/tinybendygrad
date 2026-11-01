@@ -3002,3 +3002,42 @@ ms**, so 16 is settled and the width is not a lever either.
 0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only` ALL PROOFS CHECK; `stage3_parity` EVERY
 LAUNCH IDENTICAL and `max|PYTHON-BEND| 8.941e-08` (16x16) / `3.576e-07` (32x32).
 16x16 **56.01 ms vs PYTHON 69.00 (1.23x faster)**; 32x32 **403.13 ms vs PYTHON 373.00 (0.93x)**.
+
+### 39.21b THE SPINE, NOT THE CHUNK: TWO MORE ABLATIONS AND THE LAW THEY LEAVE
+
+The chunk work above explained 3.4%. Two further ablations found the other 93%, and they are the
+most valuable measurements in this section because they name ONE line:
+
+    delete `List.set(vs, vi, vc)` in `Prog.vput.flush.go`   403.13 -> 29.62 ms
+    delete the whole miss path (`flush` + `Val.ch.at`)      403.13 -> 29.72 ms
+
+So the cost is the SPINE REBUILD -- folding a chunk back into `vs` -- and the spine READ and the
+chunk write are both inside the 29 ms floor. `vs` is 32 long and the index is mean 16, so the fold
+copies (and frees) ~16 cells per value written. **The hot chunk cache almost never hits**: crossings
+are frequent, which is also why every chunk-shaped design above moved so little.
+
+**AND THE OBVIOUS FIX LOST, WHICH IS THE LAW.** A two-level spine (four chunks per group, so the
+fold is a `List.set` of mean 4 plus one of mean 1.5) measured **451.30 ms at 32x32 and 67.57 ms at
+16x16 -- WORSE than the 403.83 / 56.84 it replaced**, with `ops_python_exec` still PASS and the
+answer still exact. Each extra list level costs one `Maybe` allocation plus a call, and that price
+is ~10 copies' worth of `List.set` -- more than the shorter copy saves.
+
+    **A LIST TREE'S CHEAPEST WRITE IS NOT ITS SHALLOWEST COPY; IT IS THE POINT WHERE ONE MORE
+    LEVEL COSTS MORE THAN THE COPIES IT REMOVES. HERE THAT POINT IS `16 SLOTS PER CHUNK, ONE
+    LEVEL OF CHUNK, A FLAT SPINE`.**
+
+The arithmetic agrees: for 512 slots a k-ary list tree minimises copies at depth 4-6 (~8-9 copies)
+but pays 3-5 levels of `Maybe`+call, and one level was measured at ~10 copies. The current design
+sits at 21 copies and 1 level. It is at the optimum of that trade, not an accident.
+
+**WHAT IS LEFT** is not a data-structure change: the write is ~1M writes at ~16 copied cells each and
+the only remaining lever is WRITING FEWER VALUES (a value consumed by the next uop needs no arena
+slot). That is a semantic change to the interpreter, not a layout change, and it is where this
+section stops.
+
+**FINAL STATE, ALL MEASURED**: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences;
+`ops_bend_exec-e2e` 7 match; `--check-only` ALL PROOFS CHECK; `stage3_parity` SAME PROGRAM and EVERY
+LAUNCH IDENTICAL, `max|PYTHON-BEND|` 8.941e-08 (16x16) and 3.576e-07 (32x32).
+16x16 **56.84 ms vs PYTHON 68.37 (1.20-1.24x faster)**; 32x32 **403.83 ms vs PYTHON 365.93-373.00
+(0.92x)** -- against **118.45 ms and 1037.25 ms** at the start of this session, i.e. **2.08x and
+2.57x faster than where it began**.
