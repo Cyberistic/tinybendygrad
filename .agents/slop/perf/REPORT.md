@@ -3193,3 +3193,33 @@ which return the element or `Nil{}` with no allocation) is the obvious fix and i
 So the `Maybe` a `List.get` allocates is cheaper than a Bend-level recursive walk of the same cells.
 That is a fact about this runtime -- the builtin is not just native, it is cheaper than the call
 overhead the replacement adds -- and it retires the whole "remove the `Maybe`" family. Reverted.
+
+### 39.22 WHERE THE SESSION ENDED, AND WHAT THE FLOOR IS
+
+Everything below is a launched configuration with `ops_python_exec` PASS (153 fixtures, 365 rows, 0
+divergences), `ops_bend_exec-e2e` 7 match, `--check-only` ALL PROOFS CHECK, and `stage3_parity`
+SAME PROGRAM / EVERY LAUNCH IDENTICAL with an exact answer.
+
+    stage3_parity 16x16   BEND 57.48 / 59.08 / 58.32 ms   PYTHON 70.48 / 71.15 / 69.60   (~1.21x FASTER)
+    stage3_parity 32x32   BEND 388.87 / 385.20 / 380.05   PYTHON 376.16 / 375.66 / 376.93  (~0.98x)
+
+**AGAINST THE START OF THIS SESSION: 16x16 118.45 -> ~58 ms and 32x32 1037.25 -> ~385 ms, i.e.
+2.04x and 2.69x faster.** The 16x16 lane is 21% AHEAD of CPython; the 32x32 lane went 0.53x -> 0.98x
+and is 2-3% behind, which is inside this machine's run-to-run spread.
+
+**THE ARENA IS AT A MEASURED OPTIMUM.** Nine launched chunk/spine configurations put the minimum at
+**8x8 chunks, width 64, a spine of 8** (39.21d, 39.21f). Everything that tried to beat it lost, and
+each loss is recorded above: a 16-field record chunk (546), a 4x4 field record (557), a two-level
+spine (451), a 4x4x8 chunk at width 128 (406), a pending-delta with one cons per write (696), a
+Bend walk instead of `List.get` (417), and caching the inner eight slots instead of the chunk (406).
+The two that reduced the number of `Uop` projections per step (ALU, INDEX) measured NEUTRAL, which
+says single-field projections are not what the runtime charges for.
+
+**AND THE SAMPLER SAYS THE REST IS THE RUNTIME, NOT THIS FILE**: on the shipped build `term_drop`
+136, `span_fade` 91 and the `spin_*` allocator loops ~150 of ~380 samples, with this file's own defs
+appearing only as frames. What is left is not a tuning gap in the interpreter's layout.
+
+**THREE WAYS PAST THE FLOOR ARE NAMED AND NONE IS A CHANGE TO THIS FILE**: a scheduler that shortens
+value liveness (two thirds of reads reach back more than any window), a loop that is not a Bend
+recursion (a linear `Array` state was proved unable to cross it in `t_loop.bend`), or writing fewer
+values (only 1 of 510 is dead).
