@@ -2818,3 +2818,28 @@ Gates: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec
 cost is the ALU path (already collapsed in 39.11) plus `Mem.st`/`Mem.ld` -- and `Mem` is the 64-cell
 chunked byte list, untouched by any of these three collapses. That is the next thing to look at, and
 it is not the record.
+
+## 39.14 A CORRECTION: `Mem` IS NOT WHAT DOMINATES 32x32, AND THE PROFILE SAYS SO
+
+§39.13 attributed the flat 32x32 number to `Mem.st`/`Mem.ld`. That was an inference, and `sample` on
+the CURRENT executor (64x64 launch, after every collapse) says otherwise:
+
+    98 term_drop   69 span_fade   ~110 across spin_*     <- BEND's runtime: allocate/refcount/free
+    10 WL_FID_Prog_run_k691    10 WL_FID_Prog_index     7 WL_FID_Prog_run
+     6 WL_FID_Prog_ld_at        5 WL_FID_Prog_ld_sb_f   4 WL_FID_List_set
+
+**~85% IS STILL THE RUNTIME'S TERM MANAGEMENT AND ~14% IS THE PORT'S CODE.** `WL_FID_Prog_ld_at` is
+the load loop -- the `Mem` read -- and it is 6 samples of ~330, i.e. **~2%**. A word-granular `Mem`
+would therefore buy ~2%, not the amount §39.13 implied, and the rewrite (80+ lines with byte-order,
+partial-write and bool semantics) was correctly not attempted on that estimate.
+
+**WHAT THE PROFILE ACTUALLY NAMES** is `Prog_index` (3%) and `Prog_run` (5%) -- the INDEX path and the
+step dispatch -- plus the runtime term churn that every `List.get`, `List.set`, `Elem` and record
+rebuild feeds. Of those, one redundancy was found and fixed here:
+
+    Prog.index.mem called `Prog.src(p, u, 0n)` THREE TIMES -- for the buffer id, the offset and the
+    offset-is-none flag -- and each read is a record traversal plus an arena traversal. One read now,
+    three projections off it:  32x32 436.86 -> 433.24 ms, 16x16 unchanged inside the noise.
+
+Gates: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match;
+`--check-only` clean; `stage3_parity` EVERY LAUNCH IDENTICAL.

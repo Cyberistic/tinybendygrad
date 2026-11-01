@@ -2270,9 +2270,14 @@ def Prog.index.rf(+b: U32, +o: U32, +n: Bool, +i: U32, +scale: U32) -> Elem:
 # `zip(src_values[0], src_values[1])` (ops_python.py:121) pairs the BUFFER
 # REFERENCE with the OFFSET, so the offset is src 1 -- not src 0, which is the
 # buffer reference itself.
+def Prog.index.mem.s0(+s0: Elem, +s1: Elem, +scale: U32) -> Elem:
+  Prog.index.rf(Elem.buf(s0), Elem.off(s0), Elem.off_none(s0), Elem.bits(s1), scale)
+
+# **`Prog.src(p, u, 0n)` WAS READ THREE TIMES** -- once for the buffer id, once for the offset and
+# once for the offset-is-none flag -- and each read is a record traversal plus an arena traversal.
+# One read, three projections off it.
 def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
-  Prog.index.rf(Elem.buf(Prog.src(p, u, 0n)), Elem.off(Prog.src(p, u, 0n)),
-    Elem.off_none(Prog.src(p, u, 0n)), Elem.bits(Prog.src(p, u, 1n)), Uop.a(u))
+  Prog.index.mem.s0(Prog.src(p, u, 0n), Prog.src(p, u, 1n), Uop.a(u))
 
 def Prog.index.by(+p: Prog, +u: Uop, alu: Bool) -> Prog:
   match alu:

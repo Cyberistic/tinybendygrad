@@ -27520,3 +27520,12 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       4% and 32x32 by nothing, which points at `Mem.st`/`Mem.ld` -- the 64-cell chunked BYTE list, where
       one f32 store rewrites up to 64 cons cells four times. Untouched by any of the three record
       collapses. That is the next site.
+- [x] **CORRECTED: `Mem` IS NOT WHAT DOMINATES 32x32.** `sample` on the current executor: ~85% Bend's
+      runtime term management, ~14% port code, and `WL_FID_Prog_ld_at` (the `Mem` load loop) is ~2%.
+      A word-granular `Mem` would buy ~2%, not what 39.13 implied -- so that rewrite is correctly not
+      prioritised. The profile names `Prog_index` (3%) and `Prog_run` (5%) instead.
+- [x] **`Prog.index.mem` read `Prog.src(p,u,0n)` THREE TIMES** (buffer id, offset, offset-is-none);
+      one read now with three projections. 32x32 436.86 -> 433.24 ms.
+- [ ] WHAT IS LEFT IS THE RUNTIME, NOT THE PORT: ~85% of samples are `term_drop`/`span_fade`/`spin_*`,
+      which is the allocation traffic that the `Array` arena would delete and that the language will
+      not let the interpreter use (39.7). Port-side redundancy is now marginal (single-digit %).
