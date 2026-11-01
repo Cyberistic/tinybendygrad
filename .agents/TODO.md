@@ -27294,3 +27294,40 @@ producing a green that would have been about nothing.
       at 32x32, MARGINAL at 16x16. The work means rewriting `tinygrad/runtime/ops_python.py` -- THE
       ORACLE -- which stales `substrate_digest()` and the recorded 38/38 corpus verdict until `run`
       and `repro` are re-taken. AWAITING THE USER'S GO/NO-GO.
+
+THE CORPUS IS GREEN, REPRODUCIBLE AND CURRENT AT `8b06ab6b`, AND THE GOVERNING DOCUMENT NOW CARRIES THAT DIGEST
+
+**⇒ AND **ALL **THREE **CLAIMS **HOLD **AT **ONCE, **MEASURED **2026-11-01:**
+
+    graphs=38  graphs-answered=38  graphs-agree=38  graphs-disagree=0
+    byte-identical=38  graphs-refused=0  expect-moved=0
+    plants-disagree=8 of 8  controls=5 of 5  conflations=4 of 4
+    selfcheck=# SELFCHECK: OK   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
+    substrate-start == substrate-end == 8b06ab6b8cc62e592475767362933465f4d59020fa3fad5496fb1a544a5c0709
+    D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
+
+**⇒ AND **`gates/corpuswitness-gate.py` -> **`PASS -- the claim is ESTABLISHED`**, **ALL
+SEVEN **READINGS **OK**: `control`, `verdict.current` (`recorded == live == 8b06ab6b`,
+`rows=2`), `witness.fresh` (`FRESH`, `delta_ms=+90.280`), `freshness.source`
+(`os.stat().st_mtime_ns`, `git_asked=NO`), `witness.substrate` (`CURRENT`, `rows=3 of 3`),
+`verdict.reported` (`reported=rc=0 derived=rc=0 verdict=AGREE`), and `claim`
+(`REPRODUCIBLE`).
+
+**⇒ AND **THIS **RUN **IS **ON **A **CLEAN **TREE, **AND **THAT **IS **THE **FIRST **TIME
+**IN **THIS **SESSION:** the 13 stale paths are committed (`41a772e0f`), the cstyle
+`BITCAST` arm is committed (`c25df28b5`), and the unit that was writing
+`uop/render.bend` + `uop/f32_repr.bend` **COMMITTED ITS OWN WORK** -- measured: both are
+tracked and `git status --porcelain -- tinybendygrad/` is EMPTY.
+
+**⇒ AND **`AGENTS.md` **CARRIED **THE **OLD **DIGEST **IN **TWO **PLACES **AND **THE
+**OLD **`substrate-head` **IN **ONE, **AND **THAT **IS **THE **FAILURE **THIS **FILE **NAMES
+**ON **ITSELF: "A GOVERNING DOCUMENT THAT CARRIES A FALSE CLAIM PROPAGATES INTO EVERY
+BRIEF THAT CITES IT."**  Both digests and the head now read
+`8b06ab6b...` / `a0cd707b...`, and `graphs=38` is UNCHANGED, so that line needed no edit.
+
+**⇒ AND **THE **REFUSED **REPRO **FROM **THE **LAST **COMMIT **IS **NOW **RESOLVED **AND
+**NOT **WORKED **AROUND:** it said `run A: 0f2654ab, run B: 879d296c ... THE TREE MOVED
+BETWEEN THEM`, and I did not touch the path that moved. **THE **INSTRUMENT **WAS **RIGHT
+**BOTH **TIMES -- **once **to **refuse, **and **once **to **pass **after **the **tree
+**settled: `delta_ms=+90.280` is the repro being NEWER than the verdict it certifies,
+which is the ORDER the witness exists to check.
