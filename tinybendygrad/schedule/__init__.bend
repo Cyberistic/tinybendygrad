@@ -280,6 +280,7 @@ import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
+import ./../codegen/__init__.bend as CG
 
 # ===========================================================================
 # THE READERS. `ops.bend`'s own, wrapped, because every def here reads the arena
@@ -809,6 +810,75 @@ def sc_subs_srcs(xs: List<&2, U32>, +tb: F.Table, +binds: Map<&2, U32>, +acc: Ma
 def sc_apply_subs(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, LinBinds>:
   +fx = F.folded(ar)
   sc_subs_srcs(sc_srcs(ar, si), F.Folded.t(fx), binds, Some{LinBinds{ar, Map.new(&2, U32)}})
+
+# ===========================================================================
+# `apply_binds` ARM 3'S BODY -- __init__.py:110-111, the last piece:
+#
+#   subs = {v: binds[v.arg.slot] for s in si.src for v in s.variables() if v.arg.slot in binds}
+#   return si.replace(src=tuple(s.substitute(subs, ...) for s in si.src))
+#
+# TWO HALVES AND BOTH NOW EXIST: `subs` is `sc_apply_subs` (the `variables()`
+# consumer) and `s.substitute(subs)` is `codegen/__init__.bend`'s `UOp.substitute`.
+# BEFORE THEM THIS ARM WAS AN ARM NUMBER AND NOTHING ELSE.
+#
+# `si.src` IS ALL OF `src` in BOTH places, and that is the same one character
+# `subs` turns on -- a port that threaded `src[1:]` here would substitute the call's
+# params and leave its BODY alone.
+#
+# THE ARENA IS THREADED ALL THE WAY THROUGH: `subs` mints (a DEVICE range's
+# `_device_num`), each `substitute` mints (it rebuilds), and `UOp.new` mints the
+# result. `SBind{ar, i}` is the answer because a node index without the arena that
+# holds it is the defect `gates/uopvars-gate.py` found twice.
+type SBind is Data:
+  SBind{ar: O.Arena, i: U32}
+
+def SBind.ar(x: SBind) -> O.Arena:
+  match x:
+    case SBind{ar, i}: ar
+
+def SBind.i(x: SBind) -> U32:
+  match x:
+    case SBind{ar, i}: i
+
+def sc_maybe_u32(m: Maybe<&2, U32>) -> U32:
+  match m:
+    case None{}: O.ParamArg.no_slot()
+    case Some{i}: i
+
+type SSub is Data:
+  SSub{ar: O.Arena, xs: List<&2, U32>}
+
+def SSub.ar(x: SSub) -> O.Arena:
+  match x:
+    case SSub{ar, xs}: ar
+
+def SSub.xs(x: SSub) -> List<&2, U32>:
+  match x:
+    case SSub{ar, xs}: xs
+
+def sc_src_one.of(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>), +r: SSub) -> SSub:
+  (ar, ms, m) = p
+  SSub{ar, List.append(&2, U32, SSub.xs(r), [sc_maybe_u32(ms)])}
+
+def sc_src_one(+x: U32, +subs: Map<&2, U32>, +r: SSub) -> SSub:
+  sc_src_one.of(CG.UOp.substitute(SSub.ar(r), x, subs), r)
+
+def sc_src_lst(xs: List<&2, U32>, +subs: Map<&2, U32>, +r: SSub) -> SSub:
+  match xs:
+    case Nil{}: r
+    case x <> t: sc_src_lst(t, subs, sc_src_one(x, subs, r))
+
+def sc_ab3.of(m: Maybe<&2, LinBinds>, +si: U32) -> Maybe<&2, SBind>:
+  match m:
+    case None{}: None{}
+    case Some{+lb}:
+      +r = sc_src_lst(sc_srcs(LinBinds.ar(lb), si), LinBinds.m(lb), SSub{LinBinds.ar(lb), Nil{}})
+      +f = O.UOp.new(SSub.ar(r), O.Arena.op(SSub.ar(r), si), SSub.xs(r),
+                     O.Arena.arg(SSub.ar(r), si), O.Arena.tag(SSub.ar(r), si))
+      Some{SBind{O.Found.ar(f), O.Found.i(f)}}
+
+def sc_apply_binds3(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
+  sc_ab3.of(sc_apply_subs(ar, si, binds), si)
 
 # `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.

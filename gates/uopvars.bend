@@ -416,6 +416,46 @@ def subrows(+fx: SubF) -> IO(Unit):
     p2 : Unit <- IO.print(String.concat(["sub_src=", bf(U32.is_eq(O.Arena.src0(SubR.ar(r1), SubR.i(r1)), SubF.c(fx)))]))
     IO.print(String.concat(["sub_chain=", bf(U32.is_eq(O.Arena.src0(SubR.ar(r2), SubR.i(r2)), SubF.c(fx)))]))
 
+
+# ---- `apply_binds` ARM 3 -- __init__.py:110-111, the last piece ---------------
+# `subs` + `s.substitute(subs)` + `si.replace(src=...)`. The CALL is `subscall()`'s
+# (body slot 2, one positional src slot 0), so binding SLOT 0 must rewrite `src[1]`
+# and leave `src[0]` alone -- `si.src` is ALL of src in both halves.
+def ab3run(+fx: SubFx, binds: Map<&2, U32>) -> Maybe<&2, SC.SBind>:
+  SC.sc_apply_binds3(O.Found.ar(SubFx.f(fx)), O.Found.i(SubFx.f(fx)), binds)
+
+def ab3_src.of(m: Maybe<&2, SC.SBind>, +fx: SubFx) -> String:
+  match m:
+    case None{}: "NONE"
+    case Some{+b}: bf(U32.is_eq(O.Arena.src(SC.SBind.ar(b), SC.SBind.i(b), 1), SubFx.v2(fx)))
+
+def ab3_src(+fx: SubFx) -> String:
+  ab3_src.of(ab3run(fx, subsonly("0", SubFx.v2(fx))), fx)
+
+def ab3_body.of(m: Maybe<&2, SC.SBind>, +fx: SubFx) -> String:
+  match m:
+    case None{}: "NONE"
+    case Some{+b}:
+      bf(U32.is_eq(O.Arena.src(SC.SBind.ar(b), SC.SBind.i(b), 0),
+                   O.Arena.src(O.Found.ar(SubFx.f(fx)), O.Found.i(SubFx.f(fx)), 0)))
+
+def ab3_body(+fx: SubFx) -> String:
+  ab3_body.of(ab3run(fx, subsonly("0", SubFx.v2(fx))), fx)
+
+def ab3_none.of(m: Maybe<&2, SC.SBind>, +fx: SubFx) -> String:
+  match m:
+    case None{}: "NONE"
+    case Some{+b}: bf(U32.is_eq(SC.SBind.i(b), O.Found.i(SubFx.f(fx))))
+
+def ab3_none(+fx: SubFx) -> String:
+  ab3_none.of(ab3run(fx, Map.new(&2, U32)), fx)
+
+def ab3rows(+fx: SubFx) -> IO(Unit):
+  do IO<Unit>:
+    p1 : Unit <- IO.print(String.concat(["ab3_src=", ab3_src(fx)]))
+    p2 : Unit <- IO.print(String.concat(["ab3_body=", ab3_body(fx)]))
+    IO.print(String.concat(["ab3_none=", ab3_none(fx)]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -437,3 +477,4 @@ def main() -> IO(Unit):
     lbrows(lbcall())
     subsrows(subscall())
     subrows(subfx())
+    ab3rows(subscall())

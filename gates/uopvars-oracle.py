@@ -149,6 +149,17 @@ def main():
     a("sub_src", int(r1.src[0] is sc))
     a("sub_chain", int(r2.src[0] is sc))
 
+    # ---- `apply_binds` ARM 3 -- __init__.py:110-111 ----
+    av2 = param(2, vmin=(0, 3), nm="p2")
+    abody = av2 + av2
+    av0 = param(0, vmin=(0, 7), nm="p0")
+    acall = UOp(Ops.CALL, src=(abody, av0))
+    asubs = {v: {0: av2}[v.arg.slot] for s in acall.src for v in s.variables() if v.arg.slot in {0: av2}}
+    ar3 = acall.replace(src=tuple(s.substitute(asubs) for s in acall.src))
+    a("ab3_src", int(ar3.src[1] is av2))
+    a("ab3_body", int(ar3.src[0] is acall.src[0]))
+    a("ab3_none", int(acall.replace(src=tuple(s.substitute({}) for s in acall.src)) is acall))
+
     print("\n".join(out))
 
 
