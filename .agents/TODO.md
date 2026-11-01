@@ -27481,3 +27481,10 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       not a walk) and a write rebuilds ONE 16-word record instead of up to 16 cells plus the spine.
       Between the two measured extremes (list 1.20 us/step, array <0.005 us/step) and the only one of
       the three the language allows here.
+- [x] **THE `C16` CHUNK, MEASURED AND REJECTED BEFORE TOUCHING THE INTERPRETER** (REPORT.md 39.9).
+      Four modes, 2 000 000 steps each, same checksum:
+        list  1.20 us/step · cache 0.52 (IN USE) · **c16 0.75 (44% SLOWER)** · array <0.005 (unreachable)
+      A write rebuilds sixteen fields flat, while the held chunk rebuilds only the cells before the
+      written index (~8) and touches no spine -- so "one record allocation beats a list rebuild" is
+      wrong here, by measurement. **THE PORT IS AT THE FASTEST REPRESENTATION THIS LANGUAGE ALLOWS**;
+      the remaining gap is the ~27 allocations per step that only the array removes.

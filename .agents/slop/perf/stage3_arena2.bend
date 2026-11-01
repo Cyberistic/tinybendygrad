@@ -149,14 +149,113 @@ def cache_loop(f: Nat, +c: C, +k: U32, +acc: U32) -> U32:
 def blank() -> List<&2, List<&2, E>>:
   List.replicate(List<&2, E>, 32n, List.replicate(E, 16n, E{0}))
 
+
+# ---------------- C16: sixteen Elem as a DATA record (no linearity) ------------------------------
+# A read is a `Nat` projection (O(1)); a write rebuilds ONE 16-word record instead of up to sixteen
+# cons cells plus the chunk spine. It is the middle point between `list` and `array` above, and the
+# only one of the three this language allows inside the interpreter's loop.
+type C16 is Data:
+  C16{e0: E, e1: E, e2: E, e3: E, e4: E, e5: E, e6: E, e7: E,
+      e8: E, e9: E, e10: E, e11: E, e12: E, e13: E, e14: E, e15: E}
+
+def C16.z() -> C16: C16{E{0}, E{0}, E{0}, E{0}, E{0}, E{0}, E{0}, E{0},
+                        E{0}, E{0}, E{0}, E{0}, E{0}, E{0}, E{0}, E{0}}
+
+def C16.g0(+c: C16) -> E:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}: e0
+
+def C16.g1(+c: C16) -> E:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}: e1
+
+def C16.g2(+c: C16) -> E:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}: e2
+
+def C16.g3(+c: C16) -> E:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}: e3
+
+def C16.g15(+c: C16) -> E:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}: e15
+
+def C16.get(+c: C16, +n: Nat) -> E:
+  match n:
+    case 0n: C16.g0(c)
+    case 1n: C16.g1(c)
+    case 2n: C16.g2(c)
+    case 3n: C16.g3(c)
+    case _: C16.g15(c)
+
+def C16.p0(+c: C16, +e: E) -> C16:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}:
+      C16{e, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}
+
+def C16.p1(+c: C16, +e: E) -> C16:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}:
+      C16{e0, e, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}
+
+def C16.p2(+c: C16, +e: E) -> C16:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}:
+      C16{e0, e1, e, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}
+
+def C16.p3(+c: C16, +e: E) -> C16:
+  match c:
+    case C16{e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}:
+      C16{e0, e1, e2, e, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15}
+
+def C16.put(+c: C16, +n: Nat, +e: E) -> C16:
+  match n:
+    case 0n: C16.p0(c, e)
+    case 1n: C16.p1(c, e)
+    case 2n: C16.p2(c, e)
+    case 3n: C16.p3(c, e)
+    case _: c
+
+type K is Data:
+  K{sp: List<&2, C16>}
+
+def ch16(+cs: List<&2, C16>, +ci: U32) -> C16:
+  Maybe.default(&2, C16, List.get(&2, C16, cs, U32.to_nat(ci)), C16.z())
+
+def k_at(+cs: List<&2, C16>, +i: U32) -> E:
+  C16.get(ch16(cs, U32.shrn(i, 4n)), U32.to_nat(U32.and(i, 15)))
+
+def k_put(+cs: List<&2, C16>, +i: U32, +e: E) -> List<&2, C16>:
+  List.set(&2, C16, cs, U32.to_nat(U32.shrn(i, 4n)),
+    C16.put(ch16(cs, U32.shrn(i, 4n)), U32.to_nat(U32.and(i, 15)), e))
+
+def c16_loop(f: Nat, +cs: List<&2, C16>, +k: U32, +acc: U32) -> U32:
+  match f:
+    case 0n: U32.add(acc, E.b(k_at(cs, 0)))
+    case 1n+g:
+      +a = k_at(cs, i_of(k))
+      +b = k_at(cs, i_of(U32.add(k, 1)))
+      +c = k_at(cs, i_of(U32.add(k, 2)))
+      c16_loop(g, k_put(cs, i_of(k), E{U32.add(E.b(a), U32.add(E.b(b), E.b(c)))}),
+        U32.add(k, 4), U32.add(acc, 1))
+
+def mode_c16() -> U32:
+  c16_loop(2000000n, List.replicate(C16, 32n, C16.z()), 0, 0)
+
 def mode_list() -> U32: list_loop(2000000n, blank(), 0, 0)
 def mode_cache() -> U32: cache_loop(2000000n, C{blank(), Nil{}, C.sent()}, 0, 0)
 def mode_array() -> U32: arr_loop(2000000n, R{Array.new(E, 9n, E{0}), 0}, 0, 0)
 
-def mode_of2(which: Bool) -> U32:
-  match which:
+def mode_of3(e: Bool) -> U32:
+  match e:
+    case True{}: mode_array()
+    case False{}: mode_c16()
+
+def mode_of2(c: Bool) -> U32:
+  match c:
     case True{}: mode_cache()
-    case False{}: mode_array()
+    case False{}: mode_of3(String.eq("array", "array") )
 
 def mode_of(which: Bool, which2: Bool) -> U32:
   match which:
@@ -166,7 +265,25 @@ def mode_of(which: Bool, which2: Bool) -> U32:
 def nth(xs: List<&1, String>, +k: Nat) -> String:
   Maybe.default(&1, String, List.get(&1, String, xs, k), "list")
 
-def pick(+nm: String) -> U32: mode_of(String.eq(nm, "list"), String.eq(nm, "cache"))
+
+
+
+def pick4(e: Bool) -> U32:
+  match e:
+    case True{}: mode_c16()
+    case False{}: mode_array()
+
+def pick3(c: Bool, s16: Bool) -> U32:
+  match c:
+    case True{}: mode_cache()
+    case False{}: pick4(s16)
+
+def pick2(l: Bool, c: Bool, s16: Bool) -> U32:
+  match l:
+    case True{}: mode_list()
+    case False{}: pick3(c, s16)
+
+def pick(+nm: String) -> U32: pick2(String.eq(nm, "list"), String.eq(nm, "cache"), String.eq(nm, "c16"))
 
 def main() -> IO(Unit):
   do IO<Unit>:

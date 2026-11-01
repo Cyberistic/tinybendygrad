@@ -2699,3 +2699,34 @@ the language allows here. Not measured yet, and named rather than guessed.
 32x32 1037.25 -> 558.74 ms (1.86x), against the CPython lane's ~69.6 / ~379 ms. Gates green:
 `ops_python_exec` 153 fixtures / 365 rows / 0 divergences, `ops_bend_exec-e2e` 7 match,
 `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+## 39.9 THE `C16` CHUNK, MEASURED -- AND IT IS SLOWER THAN WHAT THE PORT ALREADY DOES
+
+§39.8 named `C16` as the Data-compatible middle point and said it was measured only by inference.
+Now it is measured, four modes, 2 000 000 interpreter-shaped steps each, same checksum in all four:
+
+    mode    representation                                        wall     per step
+    list    chunked spine, no held chunk                          2.39 s   1.20 us
+    cache   the held chunk -- WHAT THE PORT DOES TODAY            1.04 s   0.52 us
+    c16     sixteen Elem as a DATA record per chunk               1.50 s   0.75 us
+    array   Array<Elem> in a LINEAR record (UNREACHABLE, 39.7)   <0.01 s  <0.005 us
+
+**⇒ `C16` IS 44% SLOWER THAN THE HELD CHUNK.** The record rebuild costs more than the chunk walk it
+replaces: a write rebuilds sixteen fields flat, while the held chunk rebuilds only the cells BEFORE
+the written index (average eight) and touches no spine at all. The intuition that "one record
+allocation beats a list rebuild" is wrong here, and it is wrong by a measurement, not an argument.
+
+**⇒ SO THE PORT IS AT THE FASTEST REPRESENTATION THE LANGUAGE ALLOWS FOR THIS STATE MODEL.** Of the
+four, the one it uses is second only to the linear array, and the array cannot be threaded through
+this loop (39.7). Every cheaper-per-access structure has now been tried and measured:
+
+    Array      <0.005 us/step   unreachable (linear state cannot cross the loop)
+    held chunk  0.52 us/step    <- in use
+    C16         0.75 us/step    rejected, 44% slower
+    plain list  1.20 us/step    rejected, 2.3x slower (this is why the cache was added)
+
+**THE GAP THAT REMAINS IS NOT THE ARENA**: 3 reads + 1 write of `0.52 us/step` worth of arena traffic
+against a whole step of ~135-170 ns means the arena is a MINORITY of the step once the cache is in
+place, and the rest is the ~27 allocations per step that §37 measured. Those are `Elem` constructions,
+`Maybe`s and the per-step record rebuild -- each individually small, and the array was the only lever
+that removed them all at once.
