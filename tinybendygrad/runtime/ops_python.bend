@@ -2229,10 +2229,30 @@ def Prog.val(+p: Prog) -> U32:
 # which is `[(0,0,0)]` here, so a lidx is the constant 0 (see LOCAL SIZE).
 # ===========================================================================
 
-def Prog.param.at(+p: Prog, +u: Uop, +is_vals: Bool) -> Prog:
+# ONE BIND, AND THE COUNTER ORDER WRITTEN OUT. `pv1(p)` incremented `Gd.pv` in one record rebuild
+# while `Prog.val(p)` read `St.vals` with the PRE-increment counter off the ORIGINAL record -- three
+# traversals and two rebuilds. The value is indexed with the pre-increment `pv` and the rebuild that
+# carries `pv+1` is the SAME one that stores it, which is what makes the order non-obvious.
+def Prog.param.val(+vals: List<&2, U32>, +pv: U32) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, vals, U32.to_nat(pv)), 0)
+
+def Prog.param.put(+vals: List<&2, U32>, +pv: U32, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+  +un: List<&2, Uop>, +vc: List<&2, Elem>, +vi: U32, +u: Uop) -> Prog:
+  Prog.put(Prog{st, vs, Gd{U32.add(pv, 1), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd)}, ms, mk, pc, bad, dead, un, vc, vi},
+    u, elem_of(Prog.param.val(vals, pv), Uop.dt(u)))
+
+def Prog.param.at.by(is_vals: Bool, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+  +un: List<&2, Uop>, +vc: List<&2, Elem>, +vi: U32, +u: Uop) -> Prog:
   match is_vals:
-    case True{}: Prog.put(Prog.pv1(p), u, elem_of(Prog.val(p), Uop.dt(u)))
-    case False{}: Prog.put(p, u, Bf{Uop.b(u)})
+    case True{}: Prog.param.put(St.vals(st), Gd.pv(gd), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+    case False{}: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u, Bf{Uop.b(u)})
+
+def Prog.param.at(+p: Prog, +u: Uop, +is_vals: Bool) -> Prog:
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.param.at.by(is_vals, st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
 
 def Prog.param(+p: Prog, +u: Uop) -> Prog: Prog.param.at(p, u, U32.is_eq(Uop.kind(u), 6))
 

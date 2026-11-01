@@ -27545,3 +27545,8 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       32x32 423.28 -> 421.94 ms. Session: **16x16 ~1.20x faster than CPython**, 32x32 0.89x.
 - [ ] STILL UNLANDED: `Prog.param.at` (must read `Gd.pv` BEFORE the increment -- 39.15's trap is now
       known to have been `stack`, not this) and `Prog.rng.over`/`rng.at`.
+- [x] **`Prog.param.at`: one bind, counter order explicit** (value indexed with the PRE-increment `pv`,
+      rebuild carrying `pv+1` is the same construction that stores it). 16x16 59.75 -> **56.13 ms**,
+      32x32 421.94 -> 421.35. **Session: 16x16 1.25x FASTER than CPython, 32x32 0.89x.**
+- [ ] LAST NAMED SITE: `Prog.rng.over`/`rng.at` (they reach `Prog.trip`, `Prog.pc`, `Prog.rng.del` and
+      `Prog.loop` through repeated traversals).

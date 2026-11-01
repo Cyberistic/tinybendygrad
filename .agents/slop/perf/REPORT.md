@@ -2897,3 +2897,19 @@ clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
 
 **SESSION POSITION**: 16x16 118.45 -> ~58 ms (**1.20x faster than CPython's 70.02**); 32x32
 1037.25 -> ~422 ms (**0.89x of 375.51**, from 0.53x at the start of the session).
+
+## 39.18 `Prog.param.at`: ONE BIND WITH THE COUNTER ORDER WRITTEN OUT
+
+`pv1(p)` incremented `Gd.pv` in one record rebuild while `Prog.val(p)` read `St.vals` with the
+PRE-increment counter off the ORIGINAL record: three traversals and two rebuilds per `PARAM` of a
+`vals` buffer. Now the value is indexed with the pre-increment `pv` and the rebuild carrying `pv+1`
+is the SAME construction that stores it -- which is the order §39.15 could not confirm, because the
+68-row divergence that batch hit turned out to belong to `Prog.stack` (§39.17) and not to this.
+
+    16x16  59.75 -> 56.13 ms     32x32  421.94 -> 421.35 ms
+
+`ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only`
+clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**SESSION**: 16x16 118.45 -> 56.13 ms (**1.25x faster than CPython's 70.02**); 32x32 1037.25 ->
+421.35 ms (**0.89x of 375.51**, from 0.53x at the start).
