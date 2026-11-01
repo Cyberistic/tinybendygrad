@@ -3074,3 +3074,32 @@ So the arena is a persistent list or it does not exist, and for 512 slots the k-
 **WHAT IS ACTUALLY LEFT** is therefore not in this file. Either the read pattern changes (a
 scheduler that keeps values live for a short window), or the loop stops being a Bend recursion.
 Both are outside "make the arena faster", and both are recorded here rather than attempted.
+
+### 39.21d THE FULL MATRIX: EIGHT ARENA CONFIGURATIONS, AND g = 8 STANDING ALONE
+
+Every row is a 32x32 `stage3_parity` launch on the same program, `ops_python_exec` PASS and the
+answer exact. The chunk is a 2-level list unless the row says otherwise.
+
+| chunk | width | spine | copied cells/write | 32x32 |
+|---|---|---|---|---|
+| flat 16-list | 16 | 32 | 7.5 + 16 = 23.5 | 426.35 ms |
+| 16-field record | 16 | 32 | (match + rebuild) | 545.95 ms |
+| 4x4 field record | 16 | 32 | (match + rebuild) | 557.27 ms |
+| 4x4 list | 16 | 32 | 5 + 16 = 21 | 403.13 ms |
+| **8x8 list** | **64** | **8** | **9 + 4 = 13** | **385.87 ms** |
+| 16x16 list | 256 | 2 | 17 + 1 = 18 | 436.58 ms |
+| 4x4 list, two-level spine | 16 | 8x4 | 5 + 5.5 = 10.5 | 451.30 ms |
+| 4x4x8 list | 128 | 4 | 8 + 2 = 10 | 406.21 ms |
+
+**AND THE LAST TWO ROWS ARE WHY THE CELL COUNT IS NOT THE WHOLE MODEL.** Both reach a LOWER copied
+count than the winner and both are slower: the two-level spine by 65 ms, the three-level chunk by
+20 ms. Each added list level costs a `Maybe` allocation plus a call, and that price is worth about
+ten copied cells -- so the graph is not `cells` but `cells + 10 x levels`, and its minimum is
+**three levels total (spine + two chunk levels) at g = 8**, exactly where the derivation puts it:
+`256/g^2 + g` minimised at g = 8, plus the level count.
+
+**THE INTERPRETER IS THEREFORE AT A MEASURED FLOOR OF ~386 ms FOR THIS PROGRAM**, and the floor is
+not a tuning gap: 356 of those 386 ms are the value write, 0.2% of writes are dead, two thirds of
+reads reach back further than any window, `Array` cannot enter a `Data` record, and a linear state
+cannot cross the loop (`t_loop.bend`). The three ways out are named in 39.21c and none of them is a
+change to this file.
