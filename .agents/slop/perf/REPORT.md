@@ -3041,3 +3041,36 @@ LAUNCH IDENTICAL, `max|PYTHON-BEND|` 8.941e-08 (16x16) and 3.576e-07 (32x32).
 16x16 **56.84 ms vs PYTHON 68.37 (1.20-1.24x faster)**; 32x32 **403.83 ms vs PYTHON 365.93-373.00
 (0.92x)** -- against **118.45 ms and 1037.25 ms** at the start of this session, i.e. **2.08x and
 2.57x faster than where it began**.
+
+### 39.21c TWO NEGATIVE MEASUREMENTS THAT CLOSE THE ARENA, AND WHY 386 ms IS ITS FLOOR
+
+With the width at its derived optimum the write is still **92% of the launch** (385.87 -> 29.91 ms
+with the hot chunk copy removed, 403.13 -> 29.62 with the spine fold removed). Two more facts were
+measured before building anything else, and both say NO to the obvious next ideas:
+
+**1. ALMOST NO WRITE IS DEAD.** Over the 32x32 packet: **510 writes, 1 never read (0.2%)**. So
+"skip the values nobody reads" is worth one uop in five hundred. (`/tmp/deadcount.py`; the uop's
+result slot is its own index and `srcs` are the reads.)
+
+**2. THE READS ARE NOT RECENT, SO A CONS WINDOW CANNOT WORK.** Distance in WRITES between a read and
+the write it reads, over 1047 reads:
+
+    min 0   p50 121   p90 317   p99 359   max 502
+    within   8 writes back:  24.9%      within  64:  33.0%      within 128:  54.1%
+
+Two thirds of reads reach back further than the whole chunk, so a newest-first window -- the only
+shape that makes a write a single cons -- would miss two reads in three and fall back to the spine
+anyway. That is why the pending-delta design (#5 above) lost: the crossings are not an artifact of
+the width, THE ACCESS PATTERN IS RANDOM.
+
+**AND THE FLOOR IS THE LANGUAGE, NOT THE LAYOUT.** A random-access arena wants `Array`, whose writes
+were measured at **<5 ns and no allocation** against `Val.put`'s **450 ns and ~24 cells**
+(`stage3_arena.bend`, `stage3_arena2.bend`). `Array` is a `Type`, so it cannot live in a `Data`
+record, and the linear form was already proved impossible for this interpreter in `t_loop.bend`:
+**a linear state cannot cross the loop** (one `match` per body level, and no mutual recursion).
+So the arena is a persistent list or it does not exist, and for 512 slots the k-ary list tree costs
+`256/g^2 + g` with a measured minimum at **g = 8: 13 copied cells per write**.
+
+**WHAT IS ACTUALLY LEFT** is therefore not in this file. Either the read pattern changes (a
+scheduler that keeps values live for a short window), or the loop stops being a Bend recursion.
+Both are outside "make the arena faster", and both are recorded here rather than attempted.
