@@ -2386,8 +2386,8 @@ def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
 def Prog.index.at.put(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
   +vi: U32, +u: Uop, +e: Elem) -> Prog:
-  Prog.vput.go(U32.is_eq(Val.ci(Uop.slot(u)), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi,
-    Uop.slot(u), e)
+  +sl = Uop.slot(u)
+  Prog.vput.go(U32.is_eq(Val.ci(sl), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, sl, e)
 
 def Prog.index.at.by(alu: Bool, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
   +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
@@ -2982,8 +2982,12 @@ def Prog.alu.at(+p: Prog, +u: Uop, +one: Bool, +two: Bool) -> Prog:
 # above the measured need and three below the depth that was timed.
 # ===========================================================================
 
+# **`Uop.nsrc` IS A `List.length` WALK, AND THIS CALLED IT TWICE PER ALU STEP.** MEASURED by sampler:
+# `Uop_nsrc` and `List_length` both appear in the top twenty of the shipped build, and the 32x32 packet
+# is 163 MULACC + 4 MUL of 510 uops, so that is ~340 walks per pass for ~170 needed. One bind.
 def Prog.alu(+p: Prog, +u: Uop) -> Prog:
-  Prog.alu.at(p, u, U32.is_eq(Uop.nsrc(u), 1), U32.is_eq(Uop.nsrc(u), 2))
+  +n = Uop.nsrc(u)
+  Prog.alu.at(p, u, U32.is_eq(n, 1), U32.is_eq(n, 2))
 
 def Prog.dispatch(+p: Prog, +u: Uop, op: O.Op) -> Prog:
   match op:
