@@ -27529,3 +27529,12 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
 - [ ] WHAT IS LEFT IS THE RUNTIME, NOT THE PORT: ~85% of samples are `term_drop`/`span_fade`/`spin_*`,
       which is the allocation traffic that the `Array` arena would delete and that the language will
       not let the interpreter use (39.7). Port-side redundancy is now marginal (single-digit %).
+- [ ] **THE SECOND BATCH (flush + stack + param.at) WAS ATTEMPTED AND REVERTED: 68 divergences.**
+      It compiled, and the gate caught it in one run. `Prog.param.at` is where the COUNTER lives:
+      `pv1` increments `Gd.pv` while `Prog.val` reads `St.vals` with the PRE-increment counter, so
+      folding them into one construction has to get that order exactly right -- the same class of trap
+      as `vput.rec` (39.12). NEXT: land `flush` and `stack` SEPARATELY, and `param.at` alone with the
+      counter order written out.
+- [x] Tree is at `cdebabe77` and green: 16x16 **57.33-58.64 ms (1.22x faster than CPython's 70.02)**,
+      32x32 **429.73-436.86 ms (0.87x of 375.51)**, `ops_python_exec` 153/365/0, e2e 7 match,
+      stage3_parity EVERY LAUNCH IDENTICAL.

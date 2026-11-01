@@ -2843,3 +2843,28 @@ rebuild feeds. Of those, one redundancy was found and fixed here:
 
 Gates: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match;
 `--check-only` clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+## 39.15 THE SECOND BATCH OF COLLAPSES WAS ATTEMPTED AND REVERTED: 68 DIVERGENCES
+
+I collapsed the three sites the review named -- `Prog.flush` (four to five traversals -> one bind),
+`Prog.stack` (two `Prog.flush` calls plus `us`, `slot` and `step.vs`) and `Prog.param.at`
+(`pv1` + `val` + `put`, three traversals and two rebuilds) -- and the result COMPILED and answered
+**68 unpinned divergences of 365**, with a 1.64 max error against the CPU lane. Reverted; the tree is
+at `cdebabe77` and green.
+
+**THE LESSON IS THE ONE THIS SESSION ALREADY RECORDED ONCE** (§39.12's `vput.rec`): `Prog.param.at`
+is where the *counter* lives. `pv1` increments `Gd.pv` and `Prog.val` indexes `St.vals` with the
+PRE-increment counter, and folding them into one construction means getting that order exactly right
+in a single expression -- which the batch did not, and the gate said so in one run. `Prog.flush` and
+`Prog.stack` were not implicated by the shape of the failure (the max error is in stored VALUES, and
+`param` is what produces them for a `vals` buffer), but the batch was reverted WHOLE because a
+partially-correct interpreter is not a result.
+
+**MEASURED ON THE REVERTED-FREE TREE** (same commit, three runs): 16x16 57.33-58.64 ms,
+32x32 429.73-436.86 ms -- against CPython's 70.02 / 375.51, i.e. **1.22x faster at 16x16 and 0.87x at
+32x32**, with `ops_python_exec` 153/365/0, `ops_bend_exec-e2e` 7 match and `stage3_parity` EVERY
+LAUNCH IDENTICAL.
+
+**THE NEXT ATTEMPT ON THESE THREE SITES SHOULD LAND `flush` AND `stack` SEPARATELY FROM `param.at`,
+and `param.at` ALONE WITH THE COUNTER ORDER WRITTEN OUT** (`val` reads `Gd.pv` BEFORE the increment,
+and the increment happens in the same record construction) -- which is what the fixtures will check.
