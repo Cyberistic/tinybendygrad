@@ -137,6 +137,18 @@ def main():
     a("subs_miss", int(sv0 not in subs_for({1: X77})))
     a("subs_none", int(len(subs_for({})) == 0))
 
+    # ---- `UOp.substitute` -- ops.py:514, `apply_binds` arm 3's def ----
+    sv = param(0, vmin=(0, 7), nm="v")
+    sw = param(1, vmin=(0, 7), nm="w")
+    sg = sv + UOp.const(2)
+    sc = UOp.const(9)
+    r0 = sg.substitute({})
+    r1 = sg.substitute({sv: sc})
+    r2 = sg.substitute({sv: sw, sw: sc})
+    a("sub_none", int(r0 is sg))
+    a("sub_src", int(r1.src[0] is sc))
+    a("sub_chain", int(r2.src[0] is sc))
+
     print("\n".join(out))
 
 

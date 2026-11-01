@@ -299,6 +299,69 @@ def graph_rewrite(+ar: O.Arena, +sink: U32, +pm: O.PMEntrys, +ctx: List<&2, U32>
   Bool.pick(Rewritten, walk, walk_rewrite.counted(ar, sink, pm, ctx), unified_rewrite(ar, sink, pm, ctx))
 
 # ============================================================================
+# `UOp.substitute` -- ops.py:514. Upstream spells it
+#
+#   graph_rewrite(self, _substitute, dvars, bottom_up=True, ...)
+#   _substitute = PatternMatcher([(UPat(tuple(Ops), name="x"), lambda ctx,x: ctx.get(x,None))])
+#
+# so the TABLE IS ONE RULE THAT MATCHES ANY NODE and answers a lookup, and the
+# observable behaviour is "replace these nodes, rebuild the rest". It is written
+# here as a MAP WALK and not as a `PMEntrys` rule because the port's `ctx` is a
+# `List<&2, U32>` and `dvars` is keyed BY NODE -- the typed-`CTX` wall this file's
+# header names. THE BEHAVIOUR IS WHAT `apply_binds` (schedule/__init__.py:107-111)
+# calls, and that is what this def has to reproduce.
+#
+# TWO PROPERTIES OF `bottom_up=True` ARE EASY TO LOSE AND BOTH ARE HERE:
+#   1. THE FIXPOINT. `cached_bpm_rewrite` is called IN A LOOP until it answers
+#      None, so a chain `{a:b, b:c}` resolves `a -> c` AT ONE NODE and not across
+#      passes. `sub_fix` is that loop; dropping it answers `b`.
+#   2. THE REPLACEMENT IS REBUILT FROM ITS OWN SRCS. Upstream's stage 1 works on
+#      `new_n`, so a replacement whose children are ALSO in `dvars` is rewritten
+#      too. `sub_one` rebuilds the replacement, not the original.
+def sub_has.of2(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
+  match r:
+    case Tuple{m, v}: v
+
+def sub_has(+m: Map<&2, U32>, +u: U32) -> Bool:
+  sub_has.of2(Map.has(&2, U32, m, U32.show(u)))
+
+# `fuel` LEADS: the termination checker reads arguments left to right and needs to
+# see one shrink before any other argument changes, and `has` is RECOMPUTED at
+# every step of the chain.
+def sub_fix.of(fuel: Nat, +ar: O.Arena, +u: U32, +dvars: Map<&2, U32>, has: Bool) -> U32:
+  match fuel has:
+    case 0n _: u
+    case 1n+m False{}: u
+    case 1n+m True{}:
+      sub_fix.of(m, ar, R.cu32(dvars, u), dvars, sub_has(dvars, R.cu32(dvars, u)))
+
+def sub_fix(+ar: O.Arena, +u: U32, +dvars: Map<&2, U32>, fuel: Nat) -> U32:
+  sub_fix.of(fuel, ar, u, dvars, sub_has(dvars, u))
+
+def sub_one.of(+f: U32, +ar: O.Arena, +repl: Map<&2, U32>) -> O.Found:
+  O.UOp.new(ar, O.Arena.op(ar, f), wr.rebuild.go(O.Arena.srcs(ar, f), ar, f, repl, Nil{}), O.Arena.arg(ar, f), O.Arena.tag(ar, f))
+
+def sub_one(+ar: O.Arena, +u: U32, +dvars: Map<&2, U32>, +repl: Map<&2, U32>) -> O.Found:
+  sub_one.of(sub_fix(ar, u, dvars, O.Arena.budget(ar)), ar, repl)
+
+# `repl[u]` is the rebuilt REPLACEMENT, so the consumer's src lookup uses it.
+def wr.step_sub(+dvars: Map<&2, U32>, +u: U32, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
+  (ar, +repl) = acc
+  wr.rebuild.found(sub_one(ar, u, dvars, repl), u, repl)
+
+def wr.go_sub(lst: List<&2, U32>, +dvars: Map<&2, U32>, acc: (O.Arena & Map<&2, U32>)) -> (O.Arena & Map<&2, U32>):
+  match lst:
+    case Nil{}: acc
+    case +u <> t: wr.go_sub(t, dvars, wr.step_sub(dvars, u, acc))
+
+# `dvars = {k:v for k,v in dvars.items() if k is not v}` -- upstream's FAST PATH,
+# and it is not a micro-optimisation: an entry `u -> u` would still rebuild the
+# node, so the identity filter is what makes `substitute` with no real entries
+# answer THE SAME NODE.
+def UOp.substitute(+ar: O.Arena, +sink: U32, +dvars: Map<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
+  walk_rewrite.put(sink, wr.go_sub(O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink), dvars, (ar, Map.new(&2, U32))))
+
+# ============================================================================
 # THE GATE: build the smallest `pm_post_sched_cache` fixture, run
 # `walk_rewrite` over it, and print the repl map (old_index ->
 # new_index). The CPython oracle at `.agents/slop/codegen-init-oracle.py`

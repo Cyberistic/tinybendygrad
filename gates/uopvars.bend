@@ -32,6 +32,7 @@ import ./../tinybendygrad/LAWS/spec.bend as SP
 import ./../tinybendygrad/uop/ops.bend as O
 import ./../tinybendygrad/uop/fold.bend as F
 import ./../tinybendygrad/schedule/__init__.bend as SC
+import ./../tinybendygrad/codegen/__init__.bend as CG
 
 def bf(v: Bool) -> String: Bool.pick(String, v, "1", "0")
 
@@ -338,6 +339,83 @@ def subsrows(+fx: SubFx) -> IO(Unit):
     IO.print(String.concat(["subs_none=",
       bf(Bool.not(subshas(SC.sc_apply_subs(ar, si, Map.new(&2, U32)), U32.show(SubFx.v0(fx)))))]))
 
+
+# ---- `UOp.substitute` -- ops.py:514, the def `apply_binds` arm 3 calls --------
+# THREE ROWS FOR THE THREE THINGS `bottom_up=True` DOES, each a property a
+# plausible implementation gets wrong:
+#   sub_none   an EMPTY dvars answers THE SAME NODE (upstream's identity filter)
+#   sub_src    the consumer's src IS the replacement (stage 1 rebuilds `new_n`)
+#   sub_chain  `{v:w, w:c}` answers `c` and NOT `w` (the per-node FIXPOINT)
+# `dvars` IS KEYED BY NODE, not by slot: `_substitute` is `ctx.get(x)` over UOps.
+type SubF is Data:
+  SubF{ar: O.Arena, g: U32, v: U32, c: U32, w: U32}
+
+def SubF.g(x: SubF) -> U32:
+  match x:
+    case SubF{ar, g, v, c, w}: g
+
+def SubF.v(x: SubF) -> U32:
+  match x:
+    case SubF{ar, g, v, c, w}: v
+
+def SubF.c(x: SubF) -> U32:
+  match x:
+    case SubF{ar, g, v, c, w}: c
+
+def SubF.w(x: SubF) -> U32:
+  match x:
+    case SubF{ar, g, v, c, w}: w
+
+def SubF.ar(x: SubF) -> O.Arena:
+  match x:
+    case SubF{ar, g, v, c, w}: ar
+
+def subfx() -> SubF:
+  +v = param(O.Arena.empty(), pa(0, rng(7), SP.Aalu{}, None{}, Some{"v"}))
+  +w = param(O.Found.ar(v), pa(1, rng(7), SP.Aalu{}, None{}, Some{"w"}))
+  +c2 = O.UOp.const(O.Found.ar(w), O.CInt{H.i64_of_i32(2)})
+  +g = O.UOp.alu(O.Found.ar(c2), O.OpsADD{}, [O.Found.i(v), O.Found.i(c2)])
+  +c = O.UOp.const(O.Found.ar(g), O.CInt{H.i64_of_i32(9)})
+  SubF{O.Found.ar(c), O.Found.i(g), O.Found.i(v), O.Found.i(c), O.Found.i(w)}
+
+def subsink.of(m: Maybe<&2, U32>) -> U32:
+  match m:
+    case None{}: O.ParamArg.no_slot()
+    case Some{i}: i
+
+# A `Data` RECORD AND NOT A TUPLE: the row reads the arena AND the index, so the
+# value must be copyable, and a `Type` (a tuple) cannot be marked `+`. Same reason
+# `Found` and `VarR` are records.
+type SubR is Data:
+  SubR{ar: O.Arena, i: U32}
+
+def SubR.ar(x: SubR) -> O.Arena:
+  match x:
+    case SubR{ar, i}: ar
+
+def SubR.i(x: SubR) -> U32:
+  match x:
+    case SubR{ar, i}: i
+
+def subres(p: (O.Arena & Maybe<&2, U32> & Map<&2, U32>)) -> SubR:
+  (ar, ms, m) = p
+  SubR{ar, subsink.of(ms)}
+
+def subrun(+fx: SubF, dv: Map<&2, U32>) -> SubR:
+  subres(CG.UOp.substitute(SubF.ar(fx), SubF.g(fx), dv))
+
+def subrows(+fx: SubF) -> IO(Unit):
+  +kv = U32.show(SubF.v(fx))
+  +kw = U32.show(SubF.w(fx))
+  +dc = Map.set(&2, U32, Map.new(&2, U32), kv, SubF.c(fx))
+  +dch = Map.set(&2, U32, Map.set(&2, U32, Map.new(&2, U32), kv, SubF.w(fx)), kw, SubF.c(fx))
+  +r1 = subrun(fx, dc)
+  +r2 = subrun(fx, dch)
+  do IO<Unit>:
+    p1 : Unit <- IO.print(String.concat(["sub_none=", bf(U32.is_eq(SubR.i(subrun(fx, Map.new(&2, U32))), SubF.g(fx)))]))
+    p2 : Unit <- IO.print(String.concat(["sub_src=", bf(U32.is_eq(O.Arena.src0(SubR.ar(r1), SubR.i(r1)), SubF.c(fx)))]))
+    IO.print(String.concat(["sub_chain=", bf(U32.is_eq(O.Arena.src0(SubR.ar(r2), SubR.i(r2)), SubF.c(fx)))]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -358,3 +436,4 @@ def main() -> IO(Unit):
     devrows(vrng(O.AXIS_DEVICE{}))
     lbrows(lbcall())
     subsrows(subscall())
+    subrows(subfx())
