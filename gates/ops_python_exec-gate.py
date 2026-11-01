@@ -254,7 +254,13 @@ def population_hold(fx, py):
 def arms():
     src = PORT.read_text()
     names = re.findall(r'case "(\w+)": Some\{O\.Ops', src)
-    body = src[src.index("def Prog.dispatch("):src.index("def Prog.run(+p")]
+    # THE BOUNDARY IS THE NEXT TOP-LEVEL `def`, NOT A NAMED ONE. It was
+    # `src.index("def Prog.run(+p")` and it raised `ValueError: substring not found`
+    # the moment `Prog.run` was deleted -- a population whose END was a hand-picked
+    # name stops existing when that name moves. `dispatch` is one `match` and its
+    # body ends at the next `\ndef `.
+    head = src.index("def Prog.dispatch(")
+    body = src[head:src.index("\ndef ", head + 1)]
     arms_ = re.findall(r"case O\.Ops(\w+)\{\}", body)
     catch = re.findall(r"case _:\s*Prog\.(\w+)\(", body)
     return names, arms_, catch

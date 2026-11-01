@@ -482,7 +482,10 @@ def port_arms():
     clause (c) -- a regex over the tree's own write sites)."""
     src = PORT.read_text()
     names = re.findall(r'case "(\w+)": Some\{O\.Ops', src)
-    body = src[src.index("def Prog.dispatch("):src.index("def Prog.run(+p")]
+    # BOUND BY THE NEXT TOP-LEVEL `def`, NOT BY A NAMED ONE: the named bound was
+    # `def Prog.run(+p`, and deleting `Prog.run` made this raise `ValueError`.
+    head = src.index("def Prog.dispatch(")
+    body = src[head:src.index("\ndef ", head + 1)]
     arms = re.findall(r"case O\.Ops(\w+)\{\}", body)
     catch = re.findall(r"case _:\s*Prog\.(\w+)\(", body)
     return names, arms, catch
