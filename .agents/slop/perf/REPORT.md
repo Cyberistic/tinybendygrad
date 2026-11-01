@@ -2947,3 +2947,58 @@ clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
 
 **SESSION**: 16x16 118.45 -> 56.56 ms (**1.23x faster than CPython's 69.41**); 32x32 1037.25 ->
 412.35 ms (**0.92x of 378.28**, from 0.53x at the start; **2.52x faster than where it began**).
+
+## 39.21 THE VALUE WRITE IS THE INTERPRETER: ONE ABLATION, FIVE STRUCTURES, ONE WINNER
+
+**THE ABLATION, AND IT IS THE WHOLE FINDING.** `Prog.vput`'s hot arm writes one value per
+value-producing uop. Replacing that ONE `List.set` with the chunk it was handed -- nothing else
+touched, the answer left wrong on purpose -- took a 32x32 launch from **426.35 ms to 29.38 ms**.
+The dispatch, the cursor, the record rebuild, the reads and the odometer together are the 29 ms
+that is left. Every later measurement in this section is a variation on that one line.
+
+**`List.set(l, k, e)` COPIES THE FIRST `k` CELLS**, and the index was `slot & 15`, so a write cost
+`k` allocations AND `k` frees with a mean of 7.5. Forcing the index to the CONSTANT 0 while keeping
+the same call, the same count and everything else -- **29.38 ms on the flat chunk, 30.05 ms on the
+4x4 chunk**. So the price is the DYNAMIC index, not the arithmetic around it.
+
+**FIVE STRUCTURES MEASURED, ONE KEPT** (32x32, `stage3_parity`, same program both lanes):
+
+| # | value chunk | 32x32 | verdict |
+|---|---|---|---|
+| 1 | flat 16-cell `List` | 426.35 ms | baseline |
+| 2 | flat 16-FIELD record (`Ch`) | 545.95 ms | **rejected** -- a match AND a rebuild of every field per write |
+| 3 | 4x4 FIELD record (`G4`/`Q4`) | 557.27 ms | **rejected** -- same, twice over |
+| 4 | **4x4 LIST tree** | **403.13 ms** | **KEPT** |
+| 5 | pending delta, one CONS per write | 696.18 ms | **rejected** -- see below |
+
+**#4 IS THE ONE KEPT** and it is committed (`b3b46e572`). Two levels of four means `Val.gput` does
+two `List.set`s of mean 1.5 cells each instead of one of 7.5. Min-of-three A/B against the previous
+HEAD: **{402.4, 407.5, 418.9} vs {416.9, 420.1, 420.9}**, and 16x16 56.01 vs 56.56 ms. A 3.4% win,
+honestly reported as 3.4%: halving the mean index bought almost nothing, which is itself the
+finding -- the dynamic `List.set` is near-CONSTANT in `k` over 0..15, not linear.
+
+**#5 WAS THE OBVIOUS ANSWER AND IT LOST.** If a constant index compiles to a cons and a dynamic one
+does not, the write should BE a cons: keep the hot chunk as a pending delta of the slots written
+since the last chunk crossing, newest first, so slot `s` sits at offset `vh - s`. It is correct --
+`ops_python_exec` PASS, 365 rows, 0 divergences -- and it is **696.18 ms**. Two costs ate it:
+every chunk crossing folds the delta back into its chunk (16 positions rebuilt), and every crossing
+SEEDS the next delta from the spine so the delta spans its chunk's base. Replacing the seeding with
+an explicit base slot (one more `U32` in `Prog`) is the ONE untried variant, and it is untried
+because it needs the record's arity changed at ~45 sites -- **that is where the next unit starts.**
+
+**AND THE CHEAPEST VERSION OF #5 IS FAST AND WRONG**, which is the trap worth recording. Building
+the initial arena from EMPTY groups measured **33.00 ms** and diverged on **139 of 365 rows**:
+`List.set(l, k, v)` with `k` past the end puts the element at the END, not at `k`, so a sparse
+group silently shifts every later slot. `Val.gzero` pre-fills each chunk -- the same arena
+`Prog.echunks` already built -- and the speed went with the bug.
+
+**AND THE WIDTH IS ONE NUMBER.** `Val.ci`'s shift, `Val.co`'s mask and the initial arena all spell
+it. Moving the shift and mask alone left every read one chunk off the arena it was handed and
+produced `max|PYTHON-BEND| 1.640e+00` on an answer of `3.576e-07` -- a WRONG answer, not a slow
+one. Widths measured with the arena in agreement: **8 -> 476.40 ms, 16 -> 426.35 ms, 32 -> 430.80
+ms**, so 16 is settled and the width is not a lever either.
+
+**STATE AFTER THIS SECTION** (all measured, all green): `ops_python_exec` 153 fixtures / 365 rows /
+0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only` ALL PROOFS CHECK; `stage3_parity` EVERY
+LAUNCH IDENTICAL and `max|PYTHON-BEND| 8.941e-08` (16x16) / `3.576e-07` (32x32).
+16x16 **56.01 ms vs PYTHON 69.00 (1.23x faster)**; 32x32 **403.13 ms vs PYTHON 373.00 (0.93x)**.
