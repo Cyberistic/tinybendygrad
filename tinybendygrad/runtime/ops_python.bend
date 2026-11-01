@@ -658,14 +658,26 @@ def cf_of(+e: Elem) -> F32: f_of(e)
 # is the six defs below. symbolic.bend is read-only for this file, so the
 # inversion is REPORTED, not fixed here.
 
+# WHICH LANE. `Bool.pick` evaluates BOTH arms, so the ALU used to run the FLOAT lane and the INT
+# lane -- `symbolic.bend`'s full ported evaluator with its `Maybe` boxing and twenty-arm match,
+# twice -- for EVERY arithmetic op. The lane is decided once here and the arm is a match, so only
+# the lane that answers runs.
+def alu_lane(+op: O.Op, f1: Bool, f2: Bool, f3: Bool) -> Bool:
+  Bool.or(op_is_mathy(op), Bool.or(f1, Bool.or(f2, f3)))
+
 def alu1i(+op: O.Op, +dt: S.Dt, +a: Elem) -> Elem:
   got(SY.exec_alu_i32(S.Dt.is_unsigned(dt), op, SY.I3{1, ci_of(a), 0, 0}), dt)
 
 def alu1f(+op: O.Op, +dt: S.Dt, +a: Elem) -> Elem:
   got(SY.exec_alu_f32(op, 1, cf_of(a), 0.0, 0.0), dt)
 
+def alu1.by(+op: O.Op, +dt: S.Dt, +a: Elem, f: Bool) -> Elem:
+  match f:
+    case True{}: alu1f(op, dt, a)
+    case False{}: alu1i(op, dt, a)
+
 def alu1(+op: O.Op, +dt: S.Dt, +a: Elem) -> Elem:
-  Bool.pick(Elem, Bool.or(op_is_mathy(op), is_f(a)), alu1f(op, dt, a), alu1i(op, dt, a))
+  alu1.by(op, dt, a, alu_lane(op, is_f(a), False{}, False{}))
 
 
 
@@ -689,9 +701,13 @@ def alu2f(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem) -> Elem:
 # and `cf_of`, so a value cannot differ; what it skips is the dispatch. **=> AND A
 # DP `exec_alu_f32` ON ONE ELEMENT ANSWERS `None`** (it refuses a single lane), so
 # the fast path is exactly the non-DP case.
+def alu2.by(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, f: Bool) -> Elem:
+  match f:
+    case True{}: alu2f(op, dt, a, b)
+    case False{}: alu2i(op, dt, a, b)
+
 def alu2(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem) -> Elem:
-  Bool.pick(Elem, Bool.or(op_is_mathy(op), Bool.or(is_f(a), is_f(b))),
-    alu2f(op, dt, a, b), alu2i(op, dt, a, b))
+  alu2.by(op, dt, a, b, alu_lane(op, is_f(a), is_f(b), False{}))
 
 
 
@@ -702,9 +718,13 @@ def alu3i(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem) -> Elem:
 def alu3f(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem) -> Elem:
   got(SY.exec_alu_f32(op, 3, cf_of(a), cf_of(b), cf_of(c)), dt)
 
+def alu3.by(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem, f: Bool) -> Elem:
+  match f:
+    case True{}: alu3f(op, dt, a, b, c)
+    case False{}: alu3i(op, dt, a, b, c)
+
 def alu3(+op: O.Op, +dt: S.Dt, +a: Elem, +b: Elem, +c: Elem) -> Elem:
-  Bool.pick(Elem, Bool.or(op_is_mathy(op), Bool.or(is_f(a), Bool.or(is_f(b), is_f(c)))),
-    alu3f(op, dt, a, b, c), alu3i(op, dt, a, b, c))
+  alu3.by(op, dt, a, b, c, alu_lane(op, is_f(a), is_f(b), is_f(c)))
 
 
 
@@ -2035,13 +2055,23 @@ def Prog.flag.put(+p: Prog, +u: Uop) -> Prog:
 # on the fifth, which exits: the body reads 0..trip-1, and a body that read trip
 # would index one element past the end of its buffer. Testing the OLD counter
 # instead is the off-by-one that puts `trip` in the last pass.
+def Prog.rng.nxt.by(+c: U32, seen: Bool) -> U32:
+  match seen:
+    case True{}: U32.add(c, 1)
+    case False{}: c
+
 def Prog.rng.nxt(+p: Prog, +u: Uop, +seen: Bool) -> U32:
-  Bool.pick(U32, seen, U32.add(Prog.cur(p, u), 1), Prog.cur(p, u))
+  Prog.rng.nxt.by(Prog.cur(p, u), seen)
 
 # THE FIRST VISIT SETS THE FLAG AND LEAVES THE COUNTER; every visit after it
 # stores the incremented counter.
+def Prog.rng.put.by(+p: Prog, +u: Uop, seen: Bool, +nxt: U32) -> Prog:
+  match seen:
+    case True{}: Prog.put(p, u, elem_of(nxt, Uop.dt(u)))
+    case False{}: Prog.next(Prog.flag.put(p, u))
+
 def Prog.rng.put(+p: Prog, +u: Uop, +seen: Bool, +nxt: U32) -> Prog:
-  Bool.pick(Prog, seen, Prog.put(p, u, elem_of(nxt, Uop.dt(u))), Prog.next(Prog.flag.put(p, u)))
+  Prog.rng.put.by(p, u, seen, nxt)
 
 def Prog.seen(+p: Prog, +u: Uop) -> Bool:
   Elem.is_true(Prog.vat(p, U32.add(Uop.slot(u), 1)))
@@ -2162,8 +2192,13 @@ def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
   Prog.index.rf(Elem.buf(Prog.src(p, u, 0n)), Elem.off(Prog.src(p, u, 0n)),
     Elem.off_none(Prog.src(p, u, 0n)), Elem.bits(Prog.src(p, u, 1n)), Uop.a(u))
 
+def Prog.index.by(+p: Prog, +u: Uop, alu: Bool) -> Prog:
+  match alu:
+    case True{}: Prog.put(p, u, Prog.index.alu(p, u))
+    case False{}: Prog.put(p, u, Prog.index.mem(p, u))
+
 def Prog.index.at(+p: Prog, +u: Uop, +alu: Bool) -> Prog:
-  Prog.put(p, u, Bool.pick(Elem, alu, Prog.index.alu(p, u), Prog.index.mem(p, u)))
+  Prog.index.by(p, u, alu)
 
 def Prog.index(+p: Prog, +u: Uop) -> Prog: Prog.index.at(p, u, U32.is_eq(Uop.a(u), 0))
 

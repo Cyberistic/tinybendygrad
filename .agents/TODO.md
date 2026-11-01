@@ -27379,3 +27379,10 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       the spine prefix, so only the `Array` arena deletes the rest (450 ns -> <5 ns per write,
       measured). Needs `Prog` linear (42 defs, 37 constructors). The chunk geometry is NOT a free
       knob: `Val.ci/co` at 8 against a 16-slot builder gave 144 divergences.
+- [x] **FOUR `Bool.pick`s THAT RAN BOTH ARMS ON THE INTERPRETER'S HOT PATH**, each now a match on
+      a parameter: `Prog.rng.put` (every RANGE visit also ran `Prog.flag.put`, which rebuilds the
+      chunk spine and cold-starts the arena cache), `Prog.rng.nxt` (two counter reads), `Prog.index.at`
+      (both the ALU and the memory index), and `alu1/alu2/alu3` (the FLOAT lane AND the INT lane of
+      `symbolic.bend`'s evaluator for every arithmetic op). MEASURED: 16x16 96.59 -> 90.59 ms,
+      32x32 847.30 -> 727.44 ms; against the session start **118.45 -> 90.59 (1.31x)** and
+      **1037.25 -> 727.44 (1.43x)**, gates green.

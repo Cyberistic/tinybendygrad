@@ -2310,3 +2310,24 @@ array would delete outright, and §35.6 measured that as **450 ns per write agai
 The array remains the answer: it needs `Prog` to stop being reusable, which is 42 defs and 37
 constructors (§35.4/35.5). This commit is the half of that win that does not need the
 linearisation.
+
+## 36.5 AND FOUR `Bool.pick`s THAT RAN BOTH ARMS ON THE HOT PATH
+
+`Bool.pick` evaluates both arguments. The port's own notes record that lesson for `run` -- "EVERY
+LAUNCH BURNED THE WHOLE OF `FUEL`" -- but four sites on the interpreter's hot path still did it:
+
+    Prog.rng.put    `Bool.pick(Prog, seen, Prog.put(...), Prog.next(Prog.flag.put(p, u)))`
+                    so EVERY RANGE visit ALSO ran `Prog.flag.put`, which rebuilds the chunk spine
+                    and COLD-STARTS the arena cache, and wrote the counter twice
+    Prog.rng.nxt    read `Prog.cur` twice per RANGE visit for one counter
+    Prog.index.at   computed BOTH the ALU and the memory index for every INDEX
+    alu1/alu2/alu3  ran the FLOAT lane AND the INT lane -- `symbolic.bend`'s full evaluator with
+                    its `Maybe` boxing and twenty-arm match -- for every arithmetic op
+
+Each is now a `match` on a parameter, so only the answering arm runs. MEASURED:
+
+    16x16   96.59 -> 90.59 ms      32x32   847.30 -> 727.44 ms (both from the 847.30 of §36.3)
+
+and against the session's starting point: **16x16 118.45 -> 90.59 (1.31x), 32x32 1037.25 ->
+727.44 (1.43x)**, with `ops_python_exec` still 153 fixtures / 365 rows / 0 divergences and
+`stage3_parity.py` still reporting EVERY LAUNCH IDENTICAL.
