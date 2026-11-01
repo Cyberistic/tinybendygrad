@@ -1,6 +1,6 @@
 # stage2-metal.rows -- .agents/slop/perf/stage2_metal.py
-# DEV=METAL, JIT=0, min of 2 SYNCHRONISED launches after 3 warmups per program
-# program_ms mm16=1.591 mm32=2.017 ew64=1.465 reduce=1.124 where32=1.147 exp32=1.085 sqrt32=1.273 sin32=1.115 log32=1.182 bc32=1.101 mm2048=5.663 mm4096=43.213
+# DEV=METAL, JIT=0, min of 3 SYNCHRONISED launches after 3 warmups per program
+# program_ms mm16=1.421 mm32=1.938 ew64=1.748 reduce=1.453 where32=1.198 exp32=1.173 sqrt32=1.315 sin32=1.521 log32=1.279 bc32=1.167 mm2048=6.155 mm4096=48.270
 # program_max|diff_vs_float64_cpu| mm16=1.16e-07 mm32=2.10e-07 ew64=8.44e-08 reduce=7.69e-08 where32=3.02e-08 exp32=1.33e-07 sqrt32=4.76e-08 sin32=1.28e-07 log32=7.61e-08 bc32=0.00e+00 mm2048=2.15e-06 mm4096=3.02e-06
 # kernels=12
 # kernel|sha_upstream|sha_port|identical|bytes|bend_rc
@@ -9,10 +9,10 @@ mm32__r_32_2_4_4_4|388b424179b5623e|388b424179b5623e|yes|6012|0
 ew64__E_32_32_4|6fce4d2e8ee5f8b6|6fce4d2e8ee5f8b6|yes|1104|0
 reduce__r_64_16_4|0de20798557f292d|0de20798557f292d|yes|965|0
 where32__E_8_32_4|50784596cf27579c|50784596cf27579c|yes|898|0
-exp32__E_8_32_4|d07a679f440d4529|d448ed433bc280d5|no|706|0
+exp32__E_8_32_4|d07a679f440d4529|d07a679f440d4529|yes|706|0
 sqrt32__E_8_32_4|b39654dc0fd69820|b39654dc0fd69820|yes|990|0
 sin32__E_8_32_4|ce116a025019804e|ce116a025019804e|yes|650|0
-log32__E_8_32_4|171ad03b312d9cf2|2b095f714074c47b|no|818|0
-bc32__E_8_32_4|1fa56e3d480423a0|6ed4b1180c8ffe48|no|806|0
+log32__E_8_32_4|171ad03b312d9cf2|171ad03b312d9cf2|yes|818|0
+bc32__E_8_32_4|1fa56e3d480423a0|1fa56e3d480423a0|yes|806|0
 mm2048__r_64_16_4_32_2_4_4_256|0d41c7d7f0861312|0d41c7d7f0861312|yes|6322|0
 mm4096__r_128_32_4_32_2_4_4_512|e389443ba2845955|e389443ba2845955|yes|6357|0

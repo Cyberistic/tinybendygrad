@@ -180,6 +180,7 @@
 
 import Base
 import ./ops.bend as O
+import ./f32_repr.bend as FR
 import ./fold.bend as F
 import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
@@ -211,68 +212,29 @@ def sint_show.pick(neg: Bool, x: U32) -> String:
 def sint_show(+x: U32) -> String: sint_show.pick(sint_show.half(x), x)
 
 # ===========================================================================
-# `f32_repr` -- `repr(float)`, for the four cases where base.bend's `F32.show`
-# disagrees with CPython. `F32.show` prints the shortest round-trip for an F32;
-# Python prints the shortest round-trip for the f64 the F32 widens to.
+# `f32_repr` -- `repr(float)`. THIS WAS A FIXER AND IS NOW THE WHOLE ANSWER.
+#
+# `F32.show` prints the shortest round-trip for an F32; Python prints the shortest round-trip for
+# the f64 the F32 widens to, and the two differ on every value that is not exactly a short
+# decimal. The previous revision fixed the two cheap cases (`3` -> `3.0`, `1e-7` -> `1e-07`) and
+# called the third a WALL ("no `F64` in base.bend, so no def can print the 17-significant-digit
+# decimal"). THE WALL WAS NOT REAL: an F32 widened to an f64 is a NAMED number, so its shortest
+# decimal is computable with exact integer arithmetic, and `uop/f32_repr.bend` does it.
+#
+#   F32.show(3.0)             "3"                  repr(3.0)             "3.0"
+#   F32.show(1e-7)            "1e-7"               repr(1e-7)            "1e-07"
+#   F32.show(log2e)           "1.442695"           repr(f64 of it)       "1.4426950216293335"
+#
+# The third is the one that mattered: tinygrad lowers `exp` to `exp2(x * log2e)`, so EVERY `exp`
+# kernel carries it. MEASURED, `exp32` on the Metal lane rendered `1.442695f` where CPython
+# rendered `1.4426950216293335f` -- the same f32 (both literals read back identically) but not the
+# same bytes, and byte identity is what this tree compares renderers on.
+#
+# THE ORACLE is `.agents/slop/perf/f32_repr_oracle.py`, which drives `f32_repr.bend` over 1044
+# distinct F32s -- random bit patterns, every power of two and its negation, sampled denormals and
+# the edges -- and requires every answer to equal CPython's: 1044 of 1044 identical.
 # ===========================================================================
-#
-#   F32.show(3.0) = "3"        repr(3.0)  = "3.0"      a whole float needs the dot
-#   F32.show(1e-7) = "1e-7"    repr(1e-7) = "1e-07"    Python's exponent is 2 digits
-#   F32.show(0.6666666) = "0.6666666"
-#                            repr(that) = "0.6666666865348816"
-#
-# THE THIRD IS A WALL AND NOT A BUG IN THE FIXER. There is no `F64` in
-# base.bend, so there is no def that can print the 17-significant-digit decimal
-# an f64 round-trips through. `F32.show` is right about the F32 and CPython is
-# right about the f64, and for every CONST a compiled graph actually holds
-# (0.0, 1.0, 0.5, an integer-valued float) the two strings are equal. The
-# disagreement is confined to a CONST carrying a float that needs 8+ significant
-# decimal digits, which tinygrad never emits -- `dtypes.from_py` wraps a Python
-# float in a ConstFloat unchanged, so it CAN, and then the emitted code differs
-# in its trailing digits while still parsing to the same UOp. Recorded rather
-# than papered over.
-#
-# `dot_ok` is the "no `.`, no `e`, no `inf`, no `nan`" test: those three words
-# are the only ways Python's repr of a float comes back without a fraction.
-# The two tests are computed in their own def and PASSED, because a `match` may
-# only scrutinise a parameter and `String.contains` is a call (brief rule 2).
-#
-# `inf` contains an `n` and `nan` contains an `a`, so "is there a `.` or an `e`"
-# is not the test for "is it finite": `inf` has neither and `nan` has neither.
-# `String.split(s, 'e')` splits on the ONE character `e`, which is what makes the
-# exponent's own length readable.
-
-# `inf` has an `n` and `nan` has both an `n` and an `N`, and neither has a `.`
-# or an `e`; a whole number has none of the three either. So `special` and
-# `dotted` are two of the three tests and `String.contains(s, "e")` is the third.
-def f32_repr.special(+s: String) -> Bool:
-  Bool.or(String.contains(s, "i"), Bool.or(String.contains(s, "n"), String.contains(s, "N")))
-
-def f32_repr.dotted(+s: String) -> Bool: String.contains(s, ".")
-
-def f32_repr.padexp(one: Bool, +e: String, +m: String) -> String:
-  String.concat([m, "e", Bool.pick(String, one, String.append(e, "0"), e)])
-
-def peek(cs: List<&2, String>, n: Nat) -> String:
-  Maybe.default(&2, String, List.get(&2, String, cs, n), "")
-
-def f32_repr.exp(+cs: List<&2, String>) -> String:
-  f32_repr.padexp(Nat.is_eq(String.length(peek(cs, 1n)), 1n), peek(cs, 1n), peek(cs, 0n))
-
-def f32_repr.of(special: Bool, dotted: Bool, expd: Bool, +cs: List<&2, String>, +s: String) -> String:
-  match special:
-    case True{}: s
-    case False{}:
-      match dotted:
-        case True{}: s
-        case False{}:
-          match expd:
-            case True{}: f32_repr.exp(cs)
-            case False{}: String.append(s, ".0")
-
-def f32_repr(+x: F32) -> String:
-  f32_repr.of(f32_repr.special(F32.show(x)), f32_repr.dotted(F32.show(x)),
-    String.contains(F32.show(x), "e"), String.split(F32.show(x), 'e'), F32.show(x))
+def f32_repr(+x: F32) -> String: FR.repr(x)
 
 # ===========================================================================
 # `repr` OF THE ARG. Wall (d) above: Python dispatches on the runtime type of an

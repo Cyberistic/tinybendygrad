@@ -1949,3 +1949,80 @@ look the same:
 | packed/atomic | **out of scope** | the `packed_*` rewrites belong to the WGSL matcher and run only while LOWERING for a `WEBGPU` device this tree cannot open; rendering u8 uops directly yields `array<atomic<u32>>` with a NON-atomic store |
 | STACK | covered by construction | `NOOPT=1` exists precisely so no STACK is emitted |
 | SQRT / SIN / LOG2 / BITCAST | **covered** | identical, timed |
+
+---
+
+# 32. STAGE 2 IS MET: THE TWO CSTYLE DEFECTS ARE FIXED, AND THE "WALL" WAS NOT REAL
+
+## 32.1 THE TWO DEFECTS, AND WHAT EACH ONE COST
+
+    BEFORE   metal 12 programs / 12 kernels -> 9 identical          (exp32, log32, bc32 differ)
+    AFTER    metal 12 programs / 12 kernels -> 12 identical
+             mm16=1.42 mm32=1.94 ew64=1.75 reduce=1.45 where32=1.20 exp32=1.17
+             sqrt32=1.31 sin32=1.52 log32=1.28 bc32=1.17 mm2048=6.16 mm4096=48.27 ms
+             diff vs float64 cpu: 3.02e-08 .. 3.02e-06  (the threshold was 1e-4)
+
+`bc32` needed a MISSING ARM. `cstyle.py:41-43` (base), `:338` (OpenCL), `:386` (Metal) and
+`:445` (HIP) are four spellings of one op, and the port's `ku_text` had no `BITCAST` arm at all,
+so the op fell to the ALU catch-all and rendered `UNHANDLED(Ops.BITCAST)` -- text that does not
+compile. The op was ALREADY on both inline lists (cstyle.bend:1573, :1686), so the arm only had
+to say what the text is:
+
+    CPython   as_type<float>((uint)((as_type<uint>((float)(val0.x))+1u)))
+    port      as_type<float>((uint)((as_type<uint>((float)(val0.x))+1u)))       -- identical
+
+`exp32`/`log32` needed a FORMATTER, and that is the interesting one.
+
+## 32.2 THE WALL AT render.bend:214 WAS FALSE
+
+The previous revision said the case was a wall: "There is no `F64` in base.bend, so there is no
+def that can print the 17-significant-digit decimal an f64 round-trips through." That reasoning
+confuses the TYPE with the VALUE. The f64 an F32 widens to is a named number -- `m * 2^e` with
+`m` a 24-bit integer -- so its decimal expansion is FINITE and computable with exact integer
+arithmetic. No F64 is required to print it; only bignums are.
+
+`tinybendygrad/uop/f32_repr.bend` computes `repr(float(f32))` exactly:
+ 1. the exact decimal of `m * 2^e` (multiply by 2, or by 5 and move the point);
+ 2. the two bounds of the f64 rounding interval, `(m * 2^(step-b) +- 1) * 2^(e+b-step)`, which are
+    exact decimals too -- with `step = 55` on the low side of a power of two, because the f64 grid
+    is twice as fine just below a binade;
+ 3. for p = 1..17 the two p-digit NEIGHBOURS of x, closest first, and the first one inside wins.
+
+THREE MISTAKES THE PROTOTYPE MADE, all recorded in the file because each one is a plausible
+re-introduction: a trailing zero dropped instead of absorbed into the exponent; a strict interval
+where a candidate landing ON a bound is a half-to-even tie that resolves to x; and only testing
+the correctly-rounded candidate, which fails for `2^-97` -- its nearest 16-digit candidate is BELOW
+the lower bound while the NEXT one is the string CPython prints.
+
+## 32.3 THE ORACLE: 1044 OF 1044
+
+    $ .venv/bin/python .agents/slop/perf/f32_repr_oracle.py
+    f32_repr: 1044 values, 1044 identical, 0 differ
+
+The population is every distinct F32 among 400 random bit patterns, EVERY power of two from
+2^-126 to 2^127 and its negation, 128 sampled denormals, and the edges (`0.0`, `1e-7`, `1e16`,
+`3.4028235e38`, `1.4e-45`, `log2e`). The port cannot build an F32 from its bits (Base exposes
+`F32.bits` and nothing that goes the other way), so each value travels as CPython's own `repr`,
+which reads back to exactly that F32 in both lanes. `.agents/slop/perf/f32_repr.rows` is the
+artifact: `literal|cpython_repr|bend_repr|ok`.
+
+## 32.4 TWO LANGUAGE FACTS THAT SHAPED THE PORT
+
+* **A def may not be USED before it is DEFINED**, and that makes MUTUAL RECURSION impossible.
+  `def a.go` calling `def a.step` calling back into `a.go` is refused ("a filled definition ... an
+  unfilled law is a dead claim" for the forward half). Every recursive cycle in this file is
+  therefore ONE self-recursive def: `add1`'s carry is `(h + carry) mod 10` with `div 10` as the
+  next carry, `str_cmp` carries its answer as an accumulator, and `search` matches the `Maybe` it
+  just computed as a parameter of its next call.
+* **An affine record field is consumed by its first use.** `type ME is Data: ME{+m: U32, +e: I64}`
+  is how a field becomes reusable; without the `+` the second read of `m` is "consumed more than
+  once". MEASURED, and it is why the three record types here declare `+` fields.
+
+## 32.5 GATES
+
+    wgsl_render_census    PASS -- 227 rows x 3 lanes, 215 exact, 12 pinned
+    cstyle_render_census  361 rows, 3 lanes byte-identical
+    cstyle mutagen        11 of 11 mutations moved rows
+    ops_python_exec       PASS -- 153 fixtures, 365 rows x 2 lanes, 365 identical
+    PROOF-ALL             ALL PROOFS CHECK
+    webgpu                15 of 15 identical, mm512 11.9/12.0 ms, plant 1.90/1.91

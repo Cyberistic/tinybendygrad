@@ -27250,3 +27250,16 @@ WRITING IS THE ONE CASE "COMMIT ALL" MUST NOT COVER.**
 **⇒ AND **THE **CORRECT **NEXT **ACTION **IS **A **REPRO **ONCE `render.bend` +
 `f32_repr.bend` **SETTLE** -- and the instrument already says so by name rather than
 producing a green that would have been about nothing.
+- [x] **STAGE 2 IS MET: 12 of 12 Metal kernels byte-identical.** The two cstyle defects are fixed,
+      not recorded: `bc32` got the missing `Ops.BITCAST` arm (four spellings, `as_type<T>` on Metal,
+      matching CPython's `as_type<float>((uint)((as_type<uint>((float)(val0.x))+1u)))`), and
+      `exp32`/`log32` got a REAL formatter.
+- [x] AND THE `render.bend:214` "WALL" WAS FALSE: "there is no F64 in base.bend, so no def can print
+      the 17-significant-digit decimal" confuses the TYPE with the VALUE. An F32 widened to an f64 is
+      `m * 2^e` with a 24-bit `m`, so its decimal is finite and exact. `tinybendygrad/uop/f32_repr.bend`
+      computes the exact expansion, the two f64 rounding bounds, and the shortest in-interval p-digit
+      candidate; **1044 of 1044 values identical to CPython's repr** (`.agents/slop/perf/f32_repr_oracle.py`).
+- [ ] THE WEBGPU LANE STILL HANDS ITS FLOAT CONSTANTS OVER AS TEXT: `wgsl_walk.bend`'s `con_text` reads
+      `R.str(r)`, which is CPython's own repr carried in the `.rows` dump, so the WGSL corpus's float
+      identity is a comparison of two copies of CPython's string and not of the port's computation.
+      Now that `FR.repr` exists, the walk should compute it from the F32 instead.
