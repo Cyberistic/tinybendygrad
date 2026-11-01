@@ -27470,3 +27470,14 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       branch-shaped bodies of which ~6-10 need the merge (`Prog.flush.go`, `Prog.vput.go`,
       `Prog.backedge.at`, `Prog.rng.*`, `Prog.param.at`, `Prog.index.by`, `Prog.store.at`).
       `Prog.dispatch` is NOT one of them: its arms each consume the record once, which is legal.
+- [ ] **PROVED: A LINEAR (Array-backed) STATE CANNOT BE THREADED THROUGH `run`.** Minimal case in
+      `.agents/slop/perf/t_loop.bend` (10 lines): a loop that must DESTRUCTURE a linear state and MATCH
+      a cursor cannot be written, because Bend allows ONE match per body level and REFUSES mutual
+      recursion -- so `go`/`go.step` fail in BOTH orders with "an unfilled definition". `run` is exactly
+      that loop (`match f un` + destructure per iteration). **So the Array arena is out of reach for
+      this state model, and that is a language limit, not a scripting one.**
+- [ ] **THE DATA-COMPATIBLE MIDDLE POINT, NOT YET MEASURED: a `C16` CHUNK.** Sixteen `Elem` as a
+      RECORD (`C16{e0..e15}`) is `Data`, so nothing linearises; a read is a `Nat` projection (O(1),
+      not a walk) and a write rebuilds ONE 16-word record instead of up to 16 cells plus the spine.
+      Between the two measured extremes (list 1.20 us/step, array <0.005 us/step) and the only one of
+      the three the language allows here.

@@ -2660,3 +2660,42 @@ edits (mechanical), 32 sequential-use bodies (one `match` each, mechanical), and
 bodies of which the ones that use the record inside an arm need the scrutinee merge (hand work,
 probably 6-10 of them: `Prog.flush.go`'s False arm uses `vs`/`vi`/`vc`; `Prog.vput.go`,
 `Prog.backedge.at`, `Prog.rng.*`, `Prog.param.at`, `Prog.index.by`, `Prog.store.at`).
+
+## 39.7 THE BLOCKER, PROVED WITH TEN LINES: A LINEAR STATE CANNOT BE THREADED THROUGH THIS LOOP
+
+`.agents/slop/perf/t_loop.bend` is the whole argument:
+
+    type S is Type: S{a: U32, n: U32}
+
+    def go(xs, s) -> S:                       # matches the STATE
+      match s: case S{a, n}: go.step(xs, a, n)
+
+    def go.step(xs, +a, +n) -> S:             # matches the CURSOR, then recurses
+      match xs: case Nil{}: S{a, n}
+                case h <> t: go(t, S{U32.add(a, h), U32.add(n, 1)})
+
+    "Error: expected: a filled definition (an unfilled law is a dead claim: live code cannot use it)
+     observed: go"    -- and defining `go.step` FIRST fails the same way, naming `go`.
+
+**⇒ BEND ALLOWS ONE MATCH PER BODY LEVEL AND REFUSES MUTUAL RECURSION, SO A LOOP THAT MUST BOTH
+DESTRUCTURE A STATE AND MATCH A CURSOR IS INEXPRESSIBLE.** The interpreter's `run` is exactly that
+loop: `match f un` is the cursor and every iteration has to destructure the record to rebuild it.
+That is why the linearisation could not be finished, and it is why no amount of scripting would have:
+the last error is not a mechanical one.
+
+## 39.8 SO WHAT *IS* AVAILABLE, AND WHY THE ARRAY IS NOT IT
+
+The 100x measurement (§39) is real and it is out of reach for this state model: an `Array` is `Type`,
+`Type` forces `Prog` to be linear, and a linear `Prog` cannot pass through the loop above.
+
+**THE DATA-COMPATIBLE VERSION OF THE SAME IDEA IS A `C16` CHUNK** -- a sixteen-`Elem` *record* instead
+of a sixteen-`Elem` *list*: `C16{e0, .., e15}` is `Data`, so nothing linearises; a read is a `Nat`
+projection and therefore O(1) instead of a walk of up to sixteen cons cells; and a write rebuilds ONE
+16-word record instead of up to sixteen cells plus the spine. It is the middle point between the two
+measured extremes (list 1.20 us/step, array <0.005 us/step) and it is the only one of the three that
+the language allows here. Not measured yet, and named rather than guessed.
+
+**THE SESSION'S MEASURED POSITION, unchanged by this turn**: 16x16 118.45 -> 87.76 ms (1.35x),
+32x32 1037.25 -> 558.74 ms (1.86x), against the CPython lane's ~69.6 / ~379 ms. Gates green:
+`ops_python_exec` 153 fixtures / 365 rows / 0 divergences, `ops_bend_exec-e2e` 7 match,
+`stage3_parity` EVERY LAUNCH IDENTICAL.
