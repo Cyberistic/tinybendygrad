@@ -27347,3 +27347,17 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
 **IT.**  Both **numbers **moved **and **both **were **re-measured **rather **than
 **assumed **-- **and **`AGENTS.md` **carried **the **old **one **in **two **places,
 **which **is **the **failure **that **file **names **on **itself.**
+- [ ] **THE ONE THING THAT WOULD MAKE BEND FASTER, MEASURED AND RANKED.** The BEND lane's slowness is
+      NOT the subprocess: the executor alone takes 0.48 s of a 519 ms launch (`/usr/bin/time` on the
+      built binary, no Python). `sample` puts it in `term_drop`/`span_fade`/`spin_*` -- Bend's runtime
+      allocating and refcounting -- with `Prog.ld_lane` 24%, `Prog.put` 18%, `Prog.oob` 9%. The port's
+      arena is a persistent list, so `Val.put` rebuilds a 16-cell chunk AND the spine: the file's own
+      §12.4 counted **96 584 987 allocations per 32x32 launch**, and 96.6M over 0.48 s is 5 ns each --
+      the executor's whole runtime IS its allocation count. CPython does the same step with one dict
+      store. The gap tracks the spine (1.58x at 148 uops, 2.66x at 510), which is the signature of a
+      linked arena and not of a slow compiler.
+      FIX, RANKED: (1) an in-place `Array` arena -- O(1) reads, allocating writes, which needs `Prog`
+      to stop being a `Data` record (this file's substrate rule 1 is why it is a list today); (2) a
+      REVERSED chunk, which makes the sequential write a prepend (one cell + one spine rebuild per 16
+      writes) and is much cheaper to land but does nothing for reads. The numbers a fix must beat:
+      **195 ms per launch at 32x32, 97 ms at 16x16** (the CPython lane on the SAME program).

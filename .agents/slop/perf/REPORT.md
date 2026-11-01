@@ -2160,3 +2160,74 @@ only thing between "the same program on both sides" and "each device's default p
 side": both need a real warp (`lidxK` over `local_size`, per-lane registers, `exec_masks` per lane,
 LOCAL buffers shared across the warp) in `tinybendygrad/runtime/ops_python.bend`. Until then the
 harness must declare `has_local = False` for both, which it now does and which it now VERIFIES.
+
+---
+
+# 35. WHY BEND IS NOT FASTER: ITS ARENA IS A PERSISTENT LIST, SO EVERY VALUE WRITE IS ~48 ALLOCATIONS
+
+## 35.1 THE OVERHEAD IS NOT WHERE THE EXCUSES ARE
+
+`BendProgram.__call__` writes a packet file, spawns the executor and hex round-trips every buffer,
+so "subprocess overhead" is the obvious suspect. It is not the answer, and the split is measured:
+
+    packet        38 525 bytes (510 uops + 3 buffers)
+    executor only 0.48 / 0.48 / 0.49 s          <- /usr/bin/time on the binary, no Python
+    the BEND lane's launch                     ~519 ms
+
+**⇒ THE SPAWN, THE FILE AND THE HEX COST ~0. Everything is inside the compiled executor**, which
+runs the same 510-uop program the CPython lane runs in 195 ms. So the port's EXECUTION is 2.66x
+slower than CPython's INTERPRETER on identical work, and that is the whole gap.
+
+## 35.2 `sample` PUTS IT IN THE RUNTIME, AND THE PORT'S OWN CODE SAYS WHY
+
+    142 samples, main thread:
+      142  io_loop -> io_step -> corpus_eval -> work_loop
+       24%  WL_FID_Prog_ld_lane      (the LOAD path)
+       18%  WL_FID_Prog_put          (the value store)
+        9%  WL_FID_Prog_oob          (the out-of-bounds guard)
+       the rest spread over term_drop / span_fade / spin_*   <- BEND'S OWN TERM MANAGEMENT
+
+`term_drop`, `span_fade` and the `spin_*` leaf frames are the runtime allocating, reference
+counting and freeing heap terms. The port allocates because of how its state is shaped:
+
+    Val.at(vs, i)   = List.get(spine, i/16) then List.get(chunk, i%16)      a walk
+    Val.put(vs,i,e) = List.set(spine, i/16, List.set(chunk, i%16, e))       REBUILDS BOTH
+
+**⇒ AND THIS FILE ALREADY MEASURED THE COUNT: 96 584 987 ALLOCATIONS PER 32x32 LAUNCH, EVERY ONE
+IN SIZE CLASS 0 OR 1 -- one-word objects and two-word CONS CELLS, i.e. LIST TRAFFIC AND NOTHING
+ELSE** (`.agents/slop/perf/REPORT.md` §12.4). 96.6M allocations over 0.48 s is 5 ns each, which is
+exactly what the executor-only timing says. **THE EXECUTOR'S WHOLE RUNTIME IS ITS ALLOCATION
+COUNT.** CPython's interpreter does the same step with `values[u] = x` -- one dict store, no
+allocation -- which is why an interpreted interpreter beats a compiled one here.
+
+## 35.3 AND THE GAP GROWS WITH THE PROGRAM, WHICH IS THE SIGNATURE OF THE SPINE WALK
+
+    16x16   148 uops   PYTHON 75 ms   BEND 118 ms   BEND 1.58x slower   spine <= 10 cells
+    32x32   510 uops   PYTHON 391 ms  BEND 1037 ms  BEND 2.66x slower   spine <= 32 cells
+
+A write costs `chunk(16) + spine(<= n/16)` and a read costs `spine`; both grow with the uop count,
+while CPython's dict does not. The ratio tracks the spine, which is what a linked arena predicts
+and what a "Bend's compiler is slow" story does not.
+
+## 35.4 WHAT WOULD ACTUALLY FIX IT, RANKED
+
+1. **AN IN-PLACE ARENA.** `Array` is Bend's mutable slot vector: `a[i] <- v` writes in place, so a
+   read is O(1) and a write allocates NOTHING. It cannot live in the `Prog` record today -- this
+   file's own substrate rule 1 says a `Data` record cannot hold a `List` or an `Array`, which is
+   why the arena is threaded as lists at all -- so `Prog` has to stop being `Data` and carry
+   `Array<Elem*N>` / `Array<U32*N>` fields, threaded linearly. Estimated effect: 96.6M allocations
+   per launch -> near zero, i.e. the constant that makes BEND slower than CPython disappears.
+2. **A REVERSED CHUNK so that a sequential write is a PREPEND.** Post-order means the walk writes
+   increasing slots, so a descending chunk turns the common write into one cons cell and one spine
+   rebuild per 16 writes, instead of 16 cells per write. Cheaper to land than (1) and second best
+   because it does nothing for the reads (three per ALU step).
+3. Nothing else on the table. The hex round trip, the packet write and the spawn are all measured
+   at ~0 and are not the problem.
+
+## 35.5 WHAT THIS REPORT DOES NOT CLAIM
+
+No change is made here. (1) is a refactor of the threaded state of a 3 177-line interpreter, and
+it has to keep `ops_python_exec`'s 153 fixtures and 365 rows exact; that is a unit of work, not a
+patch at the end of a session. The measurement above is what makes it a targeted job rather than a
+guess, and the two numbers a fix must beat are on the table: **195 ms per launch at 32x32** (the
+CPython lane on the same program) and **97 ms at 16x16**.
