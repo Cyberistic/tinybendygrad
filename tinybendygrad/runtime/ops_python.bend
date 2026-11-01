@@ -1951,6 +1951,24 @@ def Prog.vput.go(hit: Bool, +p: Prog, +slot: U32, +e: Elem) -> Prog:
 def Prog.vput(+p: Prog, +slot: U32, +e: Elem) -> Prog:
   Prog.vput.go(U32.is_eq(U32.shrn(slot, 4n), Prog.vi(p)), p, slot, e)
 
+# A LOAD, A STORE AND A STACK EACH REBUILT THE 21-FIELD RECORD THREE TIMES:
+# `Prog.next(Prog.live(Prog.ld1(...)))` is `next` + `live` + the arena setter, and each is its own
+# construction. These two fuse the three into ONE, and they differ only in whether the VALUE arena
+# was replaced (`step.vs`) or only the memory was (`step.ms`), because `vs1` cold-starts the cache.
+def Prog.step.ms(+p: Prog, +ms: List<&2, List<&2, U32>>, +oob: Bool) -> Prog:
+  match p:
+    case Prog{us, vs, v0, _ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}:
+      match un:
+        case Nil{}: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, Nil{}, vc, vi}
+        case _ <> t: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, t, vc, vi}
+
+def Prog.step.vs(+p: Prog, +vs: List<&2, List<&2, Elem>>, +oob: Bool) -> Prog:
+  match p:
+    case Prog{us, _vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, _vc, _vi}:
+      match un:
+        case Nil{}: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
+        case _ <> t: Prog{us, vs, v0, ms, fs, mk, vals, U32.add(pc, 1), n, pv, gx, gy, gz, cx, cy, cz, Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
+
 def Prog.next(p: Prog) -> Prog:
   match p:
     case Prog{us, vs, v0, ms, fs, mk, vals, pc, n, pv, gx, gy, gz, cx, cy, cz, bad, dead, un, vc, vi}:
@@ -2228,8 +2246,8 @@ def Prog.stack.at(ss: List<&2, U32>, +vs: List<&2, List<&2, Elem>>, +us: List<&2
       [Val.at(vs, Uop.slot(Uop.at(us, s)))]))
 
 def Prog.stack(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.vs1(p, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), Prog.flush(p), Prog.us(p), Nil{}),
-    Prog.flush(p), Uop.slot(u), 0n)))
+  Prog.step.vs(p, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), Prog.flush(p), Prog.us(p), Nil{}),
+    Prog.flush(p), Uop.slot(u), 0n), False{})
 
 # ===========================================================================
 # :134 CAST -- `values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x))
@@ -2411,7 +2429,8 @@ def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, List<&2, Elem>>, +j: U32, +p: Prog
       U32.add(j, 1), p)
 
 def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.live(Prog.vs1(p, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.flush(p), 0, p)), u, Prog.ld.happens(p, u)))
+  Prog.step.vs(p, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.flush(p), 0, p),
+    Bool.and(Prog.ld.happens(p, u), Prog.oob(p, u, 0, U32.to_nat(Uop.run(u)))))
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
 # is computed and discarded rather than branched over (Bool.pick is not a branch)
@@ -2473,7 +2492,8 @@ def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, List<&2, U32>>, +j: U32, +p: Pr
     case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, p, u, j), U32.add(j, 1), p)
 
 def Prog.store(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.live(Prog.ms1(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, p)), u, Prog.open(p)))
+  Prog.step.ms(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, p),
+    Bool.and(Prog.open(p), Prog.oob(p, u, 0, U32.to_nat(Uop.run(u)))))
 
 def Prog.after(+p: Prog, +u: Uop) -> Prog: Prog.put(p, u, Prog.src(p, u, 0n))
 

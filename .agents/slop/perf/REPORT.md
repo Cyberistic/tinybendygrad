@@ -2331,3 +2331,30 @@ Each is now a `match` on a parameter, so only the answering arm runs. MEASURED:
 and against the session's starting point: **16x16 118.45 -> 90.59 (1.31x), 32x32 1037.25 ->
 727.44 (1.43x)**, with `ops_python_exec` still 153 fixtures / 365 rows / 0 divergences and
 `stage3_parity.py` still reporting EVERY LAUNCH IDENTICAL.
+
+## 36.6 THREE PATHS THAT REBUILT THE 21-FIELD RECORD THREE TIMES
+
+`Prog.next(Prog.live(Prog.X1(p, ...)))` is three constructions of the same record, and LOAD, STORE
+and STACK all did it:
+
+    Prog.stack   next(vs1(stack.copy(...)))                      3 rebuilds per STACK
+    Prog.ld1     next(live(vs1(ld.at(...))))                     3 rebuilds per LOAD
+    Prog.store   next(live(ms1(store.at(...))))                  3 rebuilds per STORE
+
+`Prog.step.vs` and `Prog.step.ms` fuse each into ONE construction, and they differ only in whether
+the VALUE arena was replaced (`vs1` cold-starts the cache) or only the memory was.
+
+    16x16   90.59 -> 90.99 ms (within noise)     32x32  727.44 -> 703.70 ms
+
+**SESSION TOTALS, same program both sides, `stage3_parity.py` verifying EVERY LAUNCH IDENTICAL:**
+
+    size    start        now            PYTHON (same program)   BEND / PYTHON
+    16x16   118.45 ms    90.99 ms       70.14 ms                0.77x
+    32x32   1037.25 ms   703.70 ms      375.78 ms               0.53x
+
+i.e. **1.30x and 1.47x faster than where the session started**, and still not faster than the
+CPython lane. What remains is exactly what §35 measured: the arena and the record rebuild. The
+`Array` arena (450 ns -> <5 ns per write) is still the only lever of the size needed, and it needs
+`Prog` linear -- 39 defs use the record twice or more, and in this language a helper returning
+`(Array, V)` cannot be destructured ("a match cannot scrutinize a computed value"), so every one of
+those 39 sites needs the `.go`-chain restructure. That is the next unit.

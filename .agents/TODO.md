@@ -27386,3 +27386,14 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       `symbolic.bend`'s evaluator for every arithmetic op). MEASURED: 16x16 96.59 -> 90.59 ms,
       32x32 847.30 -> 727.44 ms; against the session start **118.45 -> 90.59 (1.31x)** and
       **1037.25 -> 727.44 (1.43x)**, gates green.
+- [x] **THREE 3x-REBUILD PATHS FUSED**: `Prog.stack`, `Prog.ld1` and `Prog.store` each built the
+      21-field record three times (`next(live(X1(...)))`); `Prog.step.vs`/`Prog.step.ms` fuse each
+      into one. 32x32 727.44 -> 703.70 ms.
+- [ ] **SESSION POSITION (same program both sides, EVERY LAUNCH IDENTICAL)**: 16x16 118.45 -> 90.99 ms
+      and 32x32 1037.25 -> 703.70 ms, i.e. **1.30x / 1.47x**, against the CPython lane's 70.14 /
+      375.78 ms -- still 0.77x / 0.53x. What is left needs the `Array` arena and therefore a LINEAR
+      `Prog`: 39 defs use the record twice or more, and in this language a helper returning
+      `(Array, V)` cannot be destructured ("a match cannot scrutinize a computed value"), so each of
+      those sites needs the `.go`-chain restructure. Measured chunk optimum, for the record: memory
+      chunks at 16 instead of 64 REGRESS 727 -> 953 ms, because the spine walk grows 4x -- 64 is
+      the sqrt optimum for a 4 KiB buffer and is not a knob either.
