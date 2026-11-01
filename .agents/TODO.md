@@ -27331,3 +27331,19 @@ BETWEEN THEM`, and I did not touch the path that moved. **THE **INSTRUMENT **WAS
 **BOTH **TIMES -- **once **to **refuse, **and **once **to **pass **after **the **tree
 **settled: `delta_ms=+90.280` is the repro being NEWER than the verdict it certifies,
 which is the ORDER the witness exists to check.
+
+the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the document moves with it
+
+  graphs=38  graphs-answered=38  graphs-agree=38  graphs-disagree=0
+  byte-identical=38  graphs-refused=0
+  substrate-start == substrate-end == 1bce0f8f23bb7b4761a148dec846efd57a88769f65165cf6eb7dcd568e7b6189
+  D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
+  corpuswitness-gate -> PASS -- the claim is ESTABLISHED
+  substrate-head=2af8ad4679646ccd4234c4c50c1605098618d067
+
+**⇒ AND **THIS **IS **THE **DOSE **OF **DISCIPLINE **THE **DIGEST **BUYS: `arm **3`
+**CHANGED **A **SUBSTRATE **FILE, **SO **THE **PREVIOUS **CERTIFICATE **STOPPED
+**DESCRIBING **THE **TREE, **AND **THE **ONLY **HONEST **OPTION **WAS **TO **RE-TAKE
+**IT.**  Both **numbers **moved **and **both **were **re-measured **rather **than
+**assumed **-- **and **`AGENTS.md` **carried **the **old **one **in **two **places,
+**which **is **the **failure **that **file **names **on **itself.**
