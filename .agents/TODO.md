@@ -27505,3 +27505,10 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       16x16 (68.61 vs 70.02)**; 32x32 530.21 -> 442.63. Session: 1.73x / 2.34x.
 - [ ] THE SAME DEFECT REMAINS, BY FREQUENCY, IN: `Prog.ld1` (flush + ms + ld.sb + ld.happens + oob in
       one expression, ~15 traversals), `Prog.store` (~12), `Prog.rng.over`/`rng.at`, `Prog.param.at`.
+- [x] **`Prog.ld1` COLLAPSED: ~15 record traversals per LOAD -> ONE bind** via field-taking forms
+      (`ld.sb.f`, `ld.happens.f`, `oob.f`, `step.vs.f`, `dt.f`, `open.f`), with `oob.f` reading the
+      pointer once instead of three times. **16x16 68.61 -> 61.26 ms (1.14x FASTER than CPython's
+      70.02)**; 32x32 442.63 -> ~437 (inside the noise). Session: **1.93x / 2.37x**.
+- [ ] NEXT SITES OF THE SAME CLASS: `Prog.store` (~12 traversals; the `step.ms.f` form is written but
+      not wired because the value cache must survive a STORE), `Prog.flush` (still four, reached from
+      `Prog.stack`), `Prog.rng.over`/`rng.at`, `Prog.param.at`.

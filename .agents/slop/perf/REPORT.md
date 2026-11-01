@@ -2778,3 +2778,23 @@ picks between three helpers pays for all three. The three biggest wins of this s
 (`vat`), 39.10 (`vput`), 39.11 (this one) -- are all that same defect, and the audit is not finished:
 `Prog.ld1`, `Prog.store`, `Prog.rng.*` and `Prog.param.at` still reach the record several times per
 step (they are the next sites, in that order by frequency).
+
+## 39.12 `Prog.ld1`: FIFTEEN RECORD TRAVERSALS A LOAD, COLLAPSED TO ONE BIND
+
+The load reached the 11-field record about fifteen times per LOAD: `Prog.step.vs`, `Prog.flush`
+(four), `Prog.ms`, `Prog.ld.sb` -- which re-took `Prog.buf` (`fs` + `src`) and `Prog.lane` -- plus
+`Prog.ld.happens` and `Prog.oob`, each of which re-took `Prog.buf` again. One bind now feeds all of
+it through field-taking forms (`Prog.ld.sb.f`, `Prog.ld.happens.f`, `Prog.oob.f`, `Prog.step.vs.f`,
+`Prog.dt.f`, `Prog.open.f`), and `Prog.oob.f` reads the pointer ONCE instead of three times:
+
+    16x16  68.61 -> 61.26 ms    (PYTHON 70.02 -- **1.14x FASTER**)
+    32x32 442.63 -> 433/427/453 ms  (mean ~437, trending down inside the noise)
+    session 118.45 -> 61.26 (1.93x)     1037.25 -> ~437 (2.37x)
+
+Gates: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match;
+`--check-only` clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**THE REMAINING SITES OF THE SAME CLASS**, unchanged in character: `Prog.store` (~12 traversals;
+its `step.ms.f` form is written but not yet wired, because the value cache must survive a STORE),
+`Prog.flush` itself (still four traversals, reached from `Prog.stack`), `Prog.rng.over`/`rng.at`,
+`Prog.param.at`.

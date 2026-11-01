@@ -2558,16 +2558,82 @@ def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, List<&2, Elem>>, +ms: List<&2, Lis
     case 1n+q: Prog.ld.at(q, u, Val.put(vs, U32.add(Lb.slot(l), j), Prog.ld.lane(l, ms, j)),
       ms, U32.add(j, 1), l)
 
-def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
-  Prog.step.vs(p,
-    Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.flush(p), Prog.ms(p), 0, Prog.ld.sb(p, u)),
-    Bool.and(Prog.ld.happens(p, u), Prog.oob(p, u)))
+
+# ===========================================================================
+# THE LOAD AND STORE PATHS IN FIELD-TAKING FORM.
+#
+# `Prog.ld1` reached the 11-field record about FIFTEEN times per LOAD -- `Prog.step.vs`, then
+# `Prog.flush` (four), `Prog.ms`, `Prog.ld.sb` (which re-took `Prog.buf` and `Prog.lane`), and
+# `Prog.ld.happens` + `Prog.oob` (each of which re-took `Prog.buf`, i.e. `Prog.fs` + `Prog.src`).
+# Every one is a full `match` over the record. ONE bind now feeds all of it, and each piece has a
+# field-taking form that does no record match at all.
+# ===========================================================================
+def Prog.dt.f(+us: List<&2, Uop>, +u: Uop, +k: Nat) -> S.Dt:
+  Uop.dt(Uop.at(us, Uop.nth(Uop.srcs(u), k)))
+
+def Prog.open.f(+mk: List<&2, Bool>) -> Bool:
+  Maybe.default(&2, Bool, List.get(&2, Bool, mk, 0n), True{})
+
+def Prog.oob.f.n(zero: Bool, +off: U32, +f: Buf) -> Bool:
+  match zero:
+    case True{}: False{}
+    case False{}: U32.is_ge(off, Buf.e(f))
+
+def Prog.oob.f.e(+s0: Elem, +fs: List<&2, Buf>, +z: Bool) -> Bool:
+  Prog.oob.f.n(z, Elem.off(s0), Buf.at(fs, Elem.buf(s0)))
+
+def Prog.oob.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32,
+  +u: Uop) -> Bool:
+  Prog.oob.f.e(Prog.src.f(vs, vc, vi, u, 0n), fs, U32.is_zero(Uop.run(u)))
+
+def Prog.ld.happens.f.g(three: Bool, +alt: Elem) -> Bool:
+  match three:
+    case True{}: Elem.is_true(alt)
+    case False{}: True{}
+
+def Prog.ld.happens.f(+vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32, +u: Uop) -> Bool:
+  Prog.ld.happens.f.g(Prog.ld.three(u), Prog.src.f(vs, vc, vi, u, 2n))
+
+def Prog.ld.sb.f.mk(+f: Buf, +off: U32, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32,
+  +u: Uop) -> Lb:
+  Lb{f, off, Prog.lane.of(f, Uop.dt(u)), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 1n),
+    Prog.ld.three(u), Elem.is_true(Prog.src.f(vs, vc, vi, u, 2n)), Uop.slot(u)}
+
+def Prog.ld.sb.f.s0(+s0: Elem, +fs: List<&2, Buf>, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>,
+  +vi: U32, +u: Uop) -> Lb:
+  Prog.ld.sb.f.mk(Buf.at(fs, Elem.buf(s0)), Elem.off(s0), vs, vc, vi, u)
+
+def Prog.ld.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32,
+  +u: Uop) -> Lb:
+  Prog.ld.sb.f.s0(Prog.src.f(vs, vc, vi, u, 0n), fs, vs, vc, vi, u)
+
+def Prog.step.vs.f.go(un: List<&2, Uop>, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, +oob: Bool) -> Prog:
+  match un:
+    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
+    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
+
+def Prog.step.vs.f(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +oob: Bool) -> Prog:
+  Prog.step.vs.f.go(un, st, vs, gd, ms, mk, pc, bad, dead, oob)
+
+def Prog.ld1.go(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +u: Uop) -> Prog:
+  Prog.step.vs.f(st, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi),
+      ms, 0, Prog.ld.sb.f(St.fs(st), vs, vc, vi, u)), gd, ms, mk, pc, bad, dead, un,
+    Bool.and(Prog.ld.happens.f(vs, vc, vi, u), Prog.oob.f(St.fs(st), vs, vc, vi, u)))
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself
 # is computed and discarded rather than branched over (Bool.pick is not a branch)
 def Prog.store.go(ms: List<&2, List<&2, U32>>, done: List<&2, List<&2, U32>>,
   +open: Bool) -> List<&2, List<&2, U32>>:
   Bool.pick(List<&2, List<&2, U32>>, open, done, ms)
+
+def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.ld1.go(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
 
 def Prog.store.addr(+p: Prog, +u: Uop, +j: U32) -> U32:
   U32.add(Buf.base(Prog.buf(p, u)), U32.mul(Prog.store.i(p, u, j), Buf.w(Prog.buf(p, u))))
