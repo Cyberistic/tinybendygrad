@@ -27,7 +27,7 @@ import ./../datasets/__init__.bend as D
 #       freqs = (-math.log(max_period) * Tensor.arange(half) / half).exp()
 #   `Tensor.arange` is MISSING. `grep -rnE '^def (rd|cr)_[a-z_]*arange\('
 #   --include='*.bend' tinybendygrad/` returns 0; the nearest defs are
-#   `cr_full` (mixin/creation.bend:489 symbol=cr_full) and `mo_range`/`mx_range` (nn/layers.bend
+#   `cr_full` (mixin/creation.bend:510 symbol=cr_full) and `mo_range`/`mx_range` (nn/layers.bend
 #   :110), and those answer a RANGE OF INDICES for a permute order, not a TENSOR.
 #   `Tensor.exp` IS built (`ew_exp`, mixin/elementwise.bend:1314 symbol=ew_exp), so :12 is
 #   blocked by its SECOND half only -- and the sentence above says which.
@@ -115,7 +115,7 @@ def un_timestep_embedding(+timesteps: T.Tensor, dim: U32, max_period: F32) -> D.
 
 # :12 the arange line, alone, because it is the file's first missing primitive.
 def un_arange(half: U32) -> D.Refused:
-  D.refuse("extra/models/unet.py:12 timestep_embedding -- MISSING Tensor.arange; mo_range/mx_range (nn/layers.bend:110 symbol=nn_ks.go) answer a permute order, not a Tensor, and cr_full (mixin/creation.bend:489 symbol=cr_full) is a fill")
+  D.refuse("extra/models/unet.py:12 timestep_embedding -- MISSING Tensor.arange; mo_range/mx_range (nn/layers.bend:110 symbol=nn_ks.go) answer a permute order, not a Tensor, and cr_full (mixin/creation.bend:510 symbol=cr_full) is a fill")
 
 # :13 args = timesteps.unsqueeze(1) * freqs.unsqueeze(0)
 def unsqueeze_axis1(+t: T.Tensor) -> D.Refused:

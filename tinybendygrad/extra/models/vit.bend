@@ -20,8 +20,8 @@ import ./../datasets/__init__.bend as D
 # THAT IS THE WHOLE OF ITS DISTINCTIVE BLOCKER. Every other file here names
 # `nn.Conv2d` in its first constructor; `ViT.__init__` names `Tensor.uniform`,
 # `Tensor.zeros` and `Tensor.ones` (upstream:8-11,16-17) -- all FOUR are built
-# (`rd_uniform` mixin/rand.bend:925 symbol=rd_uniform, `cr_zeros` mixin/creation.bend:518 symbol=cr_zeros,
-# `cr_ones` mixin/creation.bend:559 symbol=cr_ones) -- and then names `TransformerBlock` at
+# (`rd_uniform` mixin/rand.bend:925 symbol=rd_uniform, `cr_zeros` mixin/creation.bend:539 symbol=cr_zeros,
+# `cr_ones` mixin/creation.bend:580 symbol=cr_ones) -- and then names `TransformerBlock` at
 # upstream:13.
 #
 # TODO(port): STOPPED AT `ViT.__init__` (extra/models/vit.py:6), at upstream:13
@@ -96,11 +96,11 @@ def vt_vit_init(layers: U32, embed_dim: U32, num_heads: U32) -> D.Refused:
 
 # :8  self.embedding = (Tensor.uniform(embed_dim, 3, 16, 16), Tensor.zeros(embed_dim))
 def vt_embedding(embed_dim: U32) -> D.Refused:
-  D.refuse("extra/models/vit.py:8 ViT.embedding -- rd_uniform (mixin/rand.bend:925 symbol=rd_uniform) and cr_zeros (mixin/creation.bend:518 symbol=cr_zeros) EXIST but both take an O.Arena, so this is the WEIGHT-STORE question, not the uniform question")
+  D.refuse("extra/models/vit.py:8 ViT.embedding -- rd_uniform (mixin/rand.bend:925 symbol=rd_uniform) and cr_zeros (mixin/creation.bend:539 symbol=cr_zeros) EXIST but both take an O.Arena, so this is the WEIGHT-STORE question, not the uniform question")
 
 # :10 self.cls = Tensor.ones(1, 1, embed_dim)  :11 self.pos_embedding = Tensor.ones(1, 197, embed_dim)
 def vt_pos_embedding() -> D.Refused:
-  D.refuse("extra/models/vit.py:11 ViT.pos_embedding -- cr_ones (mixin/creation.bend:559 symbol=cr_ones) EXISTS; blocked by the WEIGHT STORE and by Tensor.assign at :53")
+  D.refuse("extra/models/vit.py:11 ViT.pos_embedding -- cr_ones (mixin/creation.bend:580 symbol=cr_ones) EXISTS; blocked by the WEIGHT STORE and by Tensor.assign at :53")
 
 # :13 TransformerBlock(embed_dim=embed_dim, num_heads=num_heads, ff_dim=embed_dim*4,
 #                       prenorm=True, act=lambda x: x.gelu())
@@ -143,7 +143,7 @@ def vt_forward(+x: T.Tensor) -> D.Refused:
 
 # :25 ce = self.cls.add(Tensor.zeros(x.shape[0],1,1))
 def vt_cls_token(+x: T.Tensor) -> D.Refused:
-  D.refuse("extra/models/vit.py:25 ViT.forward -- tn_add (tensor.bend:685 symbol=tn_add) and cr_zeros (mixin/creation.bend:518 symbol=cr_zeros) EXIST; this line is BLOCKED ONLY BY THE WEIGHT STORE, not by a primitive")
+  D.refuse("extra/models/vit.py:25 ViT.forward -- tn_add (tensor.bend:685 symbol=tn_add) and cr_zeros (mixin/creation.bend:539 symbol=cr_zeros) EXIST; this line is BLOCKED ONLY BY THE WEIGHT STORE, not by a primitive")
 
 # :27 x = ce.cat(pe, dim=1)
 def vt_cat(+x: T.Tensor, +pe: T.Tensor) -> D.Refused:

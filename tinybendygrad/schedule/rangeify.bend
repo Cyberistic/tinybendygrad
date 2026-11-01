@@ -3164,6 +3164,30 @@ def eng_drive(+stages: List<&2, Stg>, +e: Eng, +root: U32, +n: U32, +tag: String
                 List.append(&2, String, acc,
                             [eng_stage_row(n, tag, e2, root)]))
 
+# THE SAME DRIVE, AND THE **ARENA AND THE ROOT** INSTEAD OF THE ROWS. **⇒ AND
+# THE ANSWER IS **THE PORT's OWN `O.Found{ar, i}`** -- THE ARENA AND A NODE --
+# **⇒ SO NO NEW TYPE IS INVENTED.**
+def eng_run_stages(+stages: List<&2, Stg>, +e: Eng, +root: U32) -> O.Found:
+  match stages:
+    case Nil{}: O.Found{Eng.ar(e), root}
+    case st <> t:
+      +e2 = eng_run(st, Eng.ar(e), root)
+      +r2 = rep_get(Eng.rep(e2), root)
+      eng_run_stages(t, eng_fresh(e2), r2)
+
+# THE STAGES AFTER `run_rangeify` -- `rangeify.py:347-360` -- ON A GRAPH THAT IS
+# **ALREADY RANGEIFIED**.
+#
+# **⇒ AND `rangeify.bend` MUST NOT IMPORT `rangify.bend`, AND THE REASON IS THE
+# IMPORT CYCLE: `rangify.bend` IMPORTS `realize.bend` (THE FIXTURE) AND
+# `realize.bend` IMPORTS `rangeify.bend` (THE ENGINE), **⇒ SO A
+# `rangeify.bend` -> `rangify.bend` EDGE WOULD CLOSE IT.** **⇒ AND SO THE
+# STAGE-1 RESULT COMES IN **AS AN ARGUMENT**, AND THE COMPOSITION LIVES IN
+# `rangify.bend`, WHICH OWNS `run_rangeify`.** **⇒ AND THAT IS UPSTREAM's SHAPE
+# FUNCTIONALLY: `get_kernel_graph` IS `run_rangeify` AND THEN THE SIX STAGES.**
+def eng_after_rangeify(+ar: O.Arena, +root: U32) -> O.Found:
+  eng_run_stages(eng_stages(), eng_fresh(Eng{ar, Nil{}}), root)
+
 # THE ROWS FOR ONE FIXTURE.
 def eng_fixture_rows(+g: G, +tag: String, +root: Nat) -> List<&2, String>:
   eng_drive(eng_stages(), eng_fresh(Eng{F.Folded.ar(G.fx(g)), Nil{}}), G.n(g, root), 0, tag,

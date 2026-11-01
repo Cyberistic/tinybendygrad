@@ -114,7 +114,7 @@ def cn_block_pwconv2(dim: U32) -> D.Refused:
 
 # :11  self.gamma = Tensor.ones(dim)
 def cn_block_gamma(dim: U32) -> D.Refused:
-  D.refuse("extra/models/convnext.py:11 Block.gamma -- Tensor.ones IS cr_ones (mixin/creation.bend:559 symbol=cr_ones) but it takes an O.Arena and an S.Dt, so this is the WEIGHT-STORE question and not the ones question")
+  D.refuse("extra/models/convnext.py:11 Block.gamma -- Tensor.ones IS cr_ones (mixin/creation.bend:580 symbol=cr_ones) but it takes an O.Arena and an S.Dt, so this is the WEIGHT-STORE question and not the ones question")
 
 # :13 def __call__(self, x:Tensor)
 def cn_block_call(+x: T.Tensor) -> D.Refused:

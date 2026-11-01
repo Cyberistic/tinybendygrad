@@ -52,8 +52,8 @@ import ./../datasets/__init__.bend as D
 #
 # WHAT EXISTS, WITH ITS INSTRUMENT:
 #   `Tensor.uniform`  mixin/rand.bend:925 symbol=rd_uniform  (:101,:102,:103,:104)
-#   `Tensor.zeros`    mixin/creation.bend:518 symbol=cr_zeros (:33,:35,:36)
-#   `Tensor.ones`     mixin/creation.bend:559 symbol=cr_ones  (:18)
+#   `Tensor.zeros`    mixin/creation.bend:539 symbol=cr_zeros (:33,:35,:36)
+#   `Tensor.ones`     mixin/creation.bend:580 symbol=cr_ones  (:18)
 #   `x.linear`        nn/layers.bend:530 symbol=nn_linear    (:107,:191,:192)
 #   `x.reshape`       mixin/movement.bend:1434 symbol=mxw_reshape (:157)
 #   `x.transpose`     mixin/movement.bend:1452 symbol=mxw_permute (:171,:183)

@@ -49,8 +49,8 @@ import ./../datasets/__init__.bend as D
 #   `Tensor.triu`    MISSING (:324) -- and it is NOT a creation op: THE PORT's `mixin/creation.bend` HEADER
 #                     names `tril`/`triu` in the inventory it measures itself against
 #                     and records that they are not in that file either.
-#   `Tensor.empty`   mixin/creation.bend:408 `cr_empty` EXISTS (:320,:323,:345,:346,:351).
-#   `Tensor.full`    mixin/creation.bend:489 `cr_full`  EXISTS (:324).
+#   `Tensor.empty`   mixin/creation.bend:429 `cr_empty` EXISTS (:320,:323,:345,:346,:351).
+#   `Tensor.full`    mixin/creation.bend:510 `cr_full`  EXISTS (:324).
 #   `Tensor.arange`  mixin/rand.bend:424 `op_arange`   EXISTS (:470).
 #   `x.reshape`/`view` mixin/movement.bend:1431 `mxw_reshape` EXISTS.
 #   `x.permute`      mixin/movement.bend:1449 `mxw_permute` EXISTS (:272,:290,:463).
@@ -85,7 +85,7 @@ import ./../datasets/__init__.bend as D
 # TODO(port): STOPPED AT `Open.ClipTextTransformer.__init__` (extra/models/clip.py:318).
 # FIRST MISSING SYMBOL: `Embedding(vocab_size, width)` at clip.py:319.
 # REACHED BEFORE IT, AND PORTED: `Tensor.empty(ctx_length, width)` at :320
-# (mixin/creation.bend:408 symbol=cr_empty) and `Tensor.empty(width, width)` at :323.
+# (mixin/creation.bend:429 symbol=cr_empty) and `Tensor.empty(width, width)` at :323.
 # ===========================================================================
 
 def srow(nm: String, v: String) -> IO(Unit): IO.print(String.concat([nm, "=", v]))
@@ -185,7 +185,7 @@ def cl_open_transformer_call(+x: T.Tensor) -> D.Refused:
 
 # :318 class Open.ClipTextTransformer / :319 def __init__(self, width, n_heads, layers, vocab_size=49408, ctx_length=77)
 def cl_text_transformer_init(width: U32, n_heads: U32, layers: U32, vocab_size: U32, ctx_length: U32) -> D.Refused:
-  D.refuse("extra/models/clip.py:319 ClipTextTransformer.__init__ -- FIRST MISSING SYMBOL Embedding (:319) -- THE FIRST MISSING SYMBOL OF THE WHOLE FILE; cr_empty (:320,:323) EXISTS at mixin/creation.bend:408 symbol=cr_empty")
+  D.refuse("extra/models/clip.py:319 ClipTextTransformer.__init__ -- FIRST MISSING SYMBOL Embedding (:319) -- THE FIRST MISSING SYMBOL OF THE WHOLE FILE; cr_empty (:320,:323) EXISTS at mixin/creation.bend:429 symbol=cr_empty")
 
 # :327 def __call__(self, text)
 def cl_text_transformer_call(+text: T.Tensor) -> D.Refused:

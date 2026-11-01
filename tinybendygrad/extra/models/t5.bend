@@ -48,9 +48,9 @@ import ./../datasets/__init__.bend as D
 #   `Tensor.log`       mixin/elementwise.bend:1280 symbol=ew_log  (:153)
 #   `Tensor.pow(2)`    mixin/elementwise.bend:518 symbol=ew_pow  (:65) -- a BINOP, which is what
 #                                                      `pow(2)` is here
-#   `Tensor.ones`      mixin/creation.bend:559 symbol=cr_ones  (:56)
-#   `Tensor.zeros_like` mixin/creation.bend:553 symbol=cr_zeros_like (:142)
-#   `Tensor.full_like` mixin/creation.bend:514 symbol=cr_full_like  (:160)
+#   `Tensor.ones`      mixin/creation.bend:580 symbol=cr_ones  (:56)
+#   `Tensor.zeros_like` mixin/creation.bend:574 symbol=cr_zeros_like (:142)
+#   `Tensor.full_like` mixin/creation.bend:535 symbol=cr_full_like  (:160)
 #   `Tensor.arange`    mixin/rand.bend:429 symbol=op_arange  (:169,:170)
 #   `Tensor.stack`     mixin/movement.bend:1272 symbol=mxw_stk (:159)
 #   `x.reshape`/`view` mixin/movement.bend:1434 symbol=mxw_reshape (:178,:190,:194,:258)
@@ -128,7 +128,7 @@ def t5_tokenizer_encode(spiece_path: String, text: String, max_length: U32) -> D
 
 # :52 def __init__(self, hidden_size:int, eps:float=1e-6)
 def t5_layernorm_init(hidden_size: U32, eps: F32) -> D.Refused:
-  D.refuse("extra/models/t5.py:52 T5LayerNorm.__init__ -- reached Tensor.ones (:56, mixin/creation.bend:559 symbol=cr_ones EXISTS); the eps is a plain F32")
+  D.refuse("extra/models/t5.py:52 T5LayerNorm.__init__ -- reached Tensor.ones (:56, mixin/creation.bend:580 symbol=cr_ones EXISTS); the eps is a plain F32")
 
 # :59 def __call__(self, hidden_states)
 def t5_layernorm_call(+hidden_states: T.Tensor) -> D.Refused:

@@ -3083,7 +3083,7 @@ def shape_to_shape_arg(+ar: Arena, n: Maybe<&2, U32>) -> U32:
 
 # `src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)` -- ops.py:829, :1187,
 # :1219, :1002. The `device_range_src` half is P6 (no multi-device ALLOC in the port)
-# and is `()` for a single device (`mixin/creation.bend:408 symbol=cr_empty` says so), so the src of a
+# and is `()` for a single device (`mixin/creation.bend:429 symbol=cr_empty` says so), so the src of a
 # PARAM/BUFFER/ALLOC here is exactly this one element.
 def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
   [shape_to_shape_arg(ar, n)]

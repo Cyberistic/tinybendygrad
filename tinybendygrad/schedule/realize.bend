@@ -70,7 +70,6 @@ import ./../uop/ops.bend as O
 import ./../tensor.bend as T
 import ./../mixin/movement.bend as MX
 import ./__init__.bend as SCH
-import ./rangeify.bend as RG
 
 # ===========================================================================
 # 1. THE PROGRAM -- the port's own `Tensor` graph.
@@ -516,13 +515,13 @@ def rz_row_lin() -> String:
   +l = SCH.schedule(RZProg.ar(q), RZProg.sink(q))
   U32.show(U32.from_nat(List.length(&2, U32, SCH.Lin.out(l))))
 
-# THE PORT's OWN ENGINE, ON THE PORT's OWN SINK. `RG.eng_stages` is
-# `get_kernel_graph`'s SEVEN rewrites (`schedule/rangeify.bend:2809 symbol=eng_stages`) and
-# `RG.eng_drive` runs them in order.
-def rz_row_eng() -> String:
-  +q = rz_built()
-  String.join(RG.eng_drive(RG.eng_stages(), RG.eng_fresh(RG.Eng{RZProg.ar(q), Nil{}}),
-                            RZProg.sink(q), 0, "rz", Nil{}), "\n")
+# THE PORT's OWN ENGINE, ON THE PORT's OWN SINK. **⇒ AND THIS ROW MOVED TO
+# `rangify.bend` ON 2026-10-30, AND THE MOVE IS THE POINT:**
+# `realize.bend` IMPORTS `rangeify.bend` (THE ENGINE) AND `rangify.bend` IMPORTS
+# `realize.bend` (THE FIXTURE), **⇒ SO `rangeify.bend` COULD NOT IMPORT
+# `rangify.bend` -- WHICH IS WHERE `run_rangeify` LIVES -- AND THE ENGINE's
+# STAGE 1 WAS AN EMPTY TABLE.** **⇒ AND THE MOVE MAKES THE EDGE ONE-WAY:
+# `rangify.bend` -> `rangeify.bend`, AND `rangeify.bend` -> NOTHING BACK.**
 
 def rz_row_dump0() -> String:
   +p0 = rz_program()
@@ -542,6 +541,5 @@ def main() -> IO(Unit):
     rz_row.line("rz_nodes", rz_row_nodes())
     rz_row.line("rz_dump0", rz_row_dump0())
     rz_row.line("rz_lin_n", rz_row_lin())
-    rz_row.line("rz_eng", rz_row_eng())
     rz_row.line("rz_plant_dump", rz_row_plant())
     rz_row.line("rz_plant_params", rz_row_plant_params())

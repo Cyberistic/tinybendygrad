@@ -157,6 +157,17 @@ def is_con_op(+op: O.Op) -> Bool: Bool.pick(Bool, O.eq_op(op, O.OpsCONST{}), Tru
 # `axis_letters` -- tinygrad/uop/ops.py:50, quoted in cstyle.bend: `{DEVICE:"d", GLOBAL:"g",
 # LOCAL:"l", WARP:"w", WEAK:"L", UPCAST:"u", ...}`. The axis arrives as its NAME because
 # `dump_uops` writes a RANGE's payload as `<axis>~<ids...>`.
+# rules 6..11, in `sr_pick_bitcast`'s own numbering. A `match` on the RULE PARAMETER, so a
+# bitcast costs one call and not six, and so nothing here recurses.
+def bit_text(+rule: U32, +op: O.Op, +dt: S.Dt, +s0: S.Dt, +s: String) -> String:
+  match rule:
+    case 6: W.sr_bhalf(dt, s0, s)
+    case 7: W.sr_buchar(dt, s)
+    case 8: W.sr_bchar(dt, s)
+    case 9: W.sr_bushort(dt, s0, s)
+    case 10: W.sr_bshort(dt, s0, s)
+    case _: W.sr_bany(op, dt, s)
+
 def axis_letter(+nm: String) -> String:
   match nm:
     case "DEVICE": "d"
@@ -352,6 +363,23 @@ def walk.one(+op: O.Op, +r: R, +all: List<&2, R>, +i: U32, +acc: Wk) -> Wk:
       +rnm = String.concat([axis_letter(R.str(r)), "idx", CS.range_str(R.shape(r))])
       wk.open(rnm, emit(Wk.depth(acc), String.concat(["for (var ", rnm, " = 0; ", rnm, " < ",
         tx(all, Wk.names(acc), R.src0(r), R.dt(r)), "; ", rnm, "++) {"])), Wk.c(acc), acc)
+    case O.OpsBITCAST{}:
+      # cstyle.py:269's `string_rewrite` CONSULTS SIX RULES FOR A BITCAST, and
+      # `wgsl.bend` already has all six (`sr_bhalf`, `sr_buchar`, `sr_bchar`, `sr_bushort`,
+      # `sr_bshort`, `sr_bany`) plus the picker (`sr_pick_bitcast`). The walk had no arm, so
+      # a real kernel rendered `UNHANDLED(Ops.BITCAST)`; MEASURED on `bitcast(a)+1`:
+      # CPython `bitcast<f32>((bitcast<u32>(val0)+1u))`, port `UNHANDLED(Ops.BITCAST)`.
+      +bix = pfx_ix(op)
+      +bnm = String.concat([pfx(bix), U32.show(c_at(Wk.c(acc), bix))])
+      +s0 = R.at(all, R.src0(r))
+      +btxt = bit_text(W.sr_pick_bitcast(R.dt(r), R.dt(s0)), op, R.dt(r), R.dt(s0),
+        tx(all, Wk.names(acc), R.src0(r), R.dt(r)))
+      +binl = Bool.pick(Bool, U32.is_eq(uses(all, i), 1), True{}, False{})
+      wk.add(Bool.pick(String, binl, btxt, bnm),
+        Bool.pick(List<&2, String>, binl, Nil{},
+          List.append(&2, String, Nil{},
+            [emit(Wk.depth(acc), String.concat(["var ", bnm, " = ", btxt, ";"]))])),
+        Wk.bufs(acc), c_maybe(Wk.c(acc), bix, binl), acc)
     case op2:
       +ix = pfx_ix(op2)
       +nm = String.concat([pfx(ix), U32.show(c_at(Wk.c(acc), ix))])

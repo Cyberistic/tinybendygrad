@@ -34,8 +34,8 @@ import ./../datasets/__init__.bend as D
 #   `transpose`             mixin/movement.bend:1452 symbol=mxw_permute (:281,:288)
 #   `log_softmax`           mixin/op.bend:1172 symbol=mo_log_softmax (:54)
 #   `Tensor.arange`         mixin/rand.bend:429 symbol=op_arange     (:55,:192)
-#   `Tensor.zeros`          mixin/creation.bend:518 symbol=cr_zeros  (:141)
-#   `Tensor.ones`           mixin/creation.bend:559 symbol=cr_ones   -- needed by T5, not here
+#   `Tensor.zeros`          mixin/creation.bend:539 symbol=cr_zeros  (:141)
+#   `Tensor.ones`           mixin/creation.bend:580 symbol=cr_ones   -- needed by T5, not here
 #   `Tensor.cast`/`.float()`mixin/op.bend:390 symbol=mo_cast_t     (:54,:70)
 #   `x.relu`                nn/layers.bend:299 symbol=nn_relu -- BERT has none; recorded so the
 #                           census is a census and not a list of what is convenient

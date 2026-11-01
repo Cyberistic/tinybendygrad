@@ -43,11 +43,11 @@ import ./../datasets/__init__.bend as D
 #    4   nn.Linear                   EXISTS, nn/layers.bend:530 `nn_linear`.
 #    2   torch_load                  MISSING, resnet.bend:97-98 already names it.
 #    2   Tensor.sqrt                 EXISTS, mixin/elementwise.bend:549 `ew_sqrt`.
-#    2   Tensor.full                 EXISTS, mixin/creation.bend:489 `cr_full`.
+#    2   Tensor.full                 EXISTS, mixin/creation.bend:510 `cr_full`.
 #    2   get_child                   MISSING, resnet.bend:112-113 already names it.
 #    1   x.cast                      EXISTS, mixin/op.bend:390 `mo_cast_t`.
 #    1   Tensor.softmax              EXISTS, mixin/op.bend:1157 `mo_softmax`.
-#    1   Tensor.ones                 EXISTS, mixin/creation.bend:559 `cr_ones`.
+#    1   Tensor.ones                 EXISTS, mixin/creation.bend:580 `cr_ones`.
 #    1   Tensor.max_pool2d           EXISTS, nn/pool.bend:250 `pool_maxpool`.
 #    1   Tensor.log2                 EXISTS, mixin/elementwise.bend:551 `ew_log2`.
 #    1   Tensor.chunk                MISSING.

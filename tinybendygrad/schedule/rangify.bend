@@ -1811,6 +1811,21 @@ def rr_row_tbl() -> String:
   +m = rr_range_map(ar, tb, sink)
   String.join(rr_tbl_str.go(RrMap.tbl(m), Nil{}), " ")
 
+# THE COMPLETE ENGINE, INCLUDING `run_rangeify` -- the row `realize.bend` could not
+# hold, and it was REMOVED there without being added here, which is why this def
+# exists. `realize.bend` imports `rangeify.bend` (the engine) and THIS file imports
+# `realize.bend` (the fixture), so `rangeify.bend` could not import `rangify.bend`
+# and its stage 1 was an EMPTY TABLE. THE ROW LIVES HERE AND THE EDGE STAYS ONE-WAY:
+# `rangify.bend` -> `rangeify.bend`, and nothing back.
+#
+# THE NAME IS `rz_eng` AND NOT `rr_eng` ON PURPOSE: `.agents/slop/rangify/rz_before.rows:7`
+# records that row's value from BEFORE the move, so the comparison is against a
+# MEASUREMENT rather than against a name invented to match.
+def rr_row_eng() -> String:
+  +q = RZ.rz_built()
+  String.join(RG.eng_drive(RG.eng_stages(), RG.eng_fresh(RG.Eng{RZ.RZProg.ar(q), Nil{}}),
+                            RZ.RZProg.sink(q), 0, "rz", Nil{}), "\n")
+
 def main() -> IO(Unit):
   do IO<Unit>:
     rr_row.line("rr_realize", rr_row_realize())
@@ -1825,3 +1840,4 @@ def main() -> IO(Unit):
     rr_row.line("rr_tbl", rr_row_tbl())
     rr_row.line("rr_arena", rr_row_arena())
     rr_row.line("rr_kg", rr_row_kg())
+    rr_row.line("rz_eng", rr_row_eng())

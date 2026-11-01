@@ -30,8 +30,8 @@ import ./../datasets/__init__.bend as D
 # EVERYTHING ELSE IN THIS FILE IS ALREADY HERE, which is the other half of the
 # finding and the reason the distance is this short:
 #   `Tensor.scaled_uniform`  mixin/rand.bend:944 symbol=rd_scaled_uniform   (:12,:13,:14,:16,:18,:19,:44,:46)
-#   `Tensor.zeros`           mixin/creation.bend:518 `cr_zeros`         (:12,:13,:14,:16,:18,:19,:21,:22)
-#   `Tensor.ones`            mixin/creation.bend:559 `cr_ones`          (:21,:22)
+#   `Tensor.zeros`           mixin/creation.bend:539 `cr_zeros`         (:12,:13,:14,:16,:18,:19,:21,:22)
+#   `Tensor.ones`            mixin/creation.bend:580 `cr_ones`          (:21,:22)
 #   `x.linear`               nn/layers.bend:530 `nn_linear`            (:26,:28,:32,:33,:36,:37)
 #   `reshape`                mixin/movement.bend:1431 `mxw_reshape`     (:26,:28)
 #   `transpose`              mixin/movement.bend:1449 `mxw_permute`     (:26,:27)
