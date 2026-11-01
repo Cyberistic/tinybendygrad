@@ -2396,28 +2396,36 @@ def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
 # `alu`/`mem` re-bound it (and `src` + `vat` inside those bound it again), and `put` -> `vput` bound it
 # once more. The bind here feeds `vat.f`/`src.f` (no record match) and the existing field-taking
 # `Prog.vput.go`, which is the write the old `Prog.put` ended in anyway.
+# **THE SAME NINE-FIELD PROJECTION, ON THE OTHER HALF OF THE PACKET.** INDEX is 160 of 510 uops, as
+# hot as ALU, and it projected `Uop` about five times per step: `a` twice (once for the arm choice, once
+# in the memory arm), `slot`, and one `sslot` per source -- each a full `match` over all nine fields.
+# ONE destructure feeds the whole step, and the sources come off the bound `sslot`.
 def Prog.index.at.put(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop, +e: Elem) -> Prog:
-  +sl = Uop.slot(u)
-  Prog.vput.go(U32.is_eq(Val.ci(sl), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, sl, e)
+  +vi: U32, +slot: U32, +e: Elem) -> Prog:
+  Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, e)
 
 def Prog.index.at.by(alu: Bool, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
   +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Prog:
+  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +slot: U32, +sslot: List<&2, U32>,
+  +a: U32) -> Prog:
   match alu:
-    case True{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
-                   Prog.vat.f(vs, vc, vi, U32.add(Prog.slot.f(u, 0n),
-                     Elem.bits(Prog.src.f(vs, vc, vi, u, 1n)))))
-    case False{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u,
-                   Prog.index.mem.s0(Prog.src.f(vs, vc, vi, u, 0n), Prog.src.f(vs, vc, vi, u, 1n), Uop.a(u)))
+    case True{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
+                   Prog.vat.f(vs, vc, vi, U32.add(Uop.nth(sslot, 0n),
+                     Elem.bits(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n))))))
+    case False{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
+                   Prog.index.mem.s0(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)),
+                     Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n)), a))
 
-def Prog.index.at(+p: Prog, +u: Uop, +alu: Bool) -> Prog:
+def Prog.index.at(+p: Prog, +a: U32, +slot: U32, +sslot: List<&2, U32>) -> Prog:
   match p:
     case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.index.at.by(alu, st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+      Prog.index.at.by(U32.is_eq(a, 0), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, sslot, a)
 
-def Prog.index(+p: Prog, +u: Uop) -> Prog: Prog.index.at(p, u, U32.is_eq(Uop.a(u), 0))
+def Prog.index(+p: Prog, +u: Uop) -> Prog:
+  match u:
+    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}:
+      Prog.index.at(p, a, slot, sslot)
 
 def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, List<&2, List<&2, Elem>>>, +slot: U32, +k: Nat) ->
   List<&2, List<&2, List<&2, Elem>>>:
