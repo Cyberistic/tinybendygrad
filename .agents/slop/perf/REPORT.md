@@ -2501,3 +2501,52 @@ rebuild now constructs 11 fields -- and a Bend record is a chain of two-child no
 
 **1.38x and 1.84x faster than the session start.** The remaining gap is the arena's 16-cell chunk
 rebuild plus a `Maybe` per read (REPORT.md 35.6/37.1) -- the `Array`, which needs `Prog` linear.
+
+---
+
+# 38. THE CEILING, RE-MEASURED AFTER THE SPLIT — AND WHY `Array` ALONE DOES NOT GET THERE
+
+## 38.1 THE PROFILE AFTER THE SPLIT AND THE LANE FIXES
+
+`sample` on the Bend-built executor at 64x64, by symbol:
+
+    146 term_drop    96 span_fade    62 spin_160    61 spin_166    18/17/12 other spin_*
+     11 WL_FID_Prog_run    10 WL_FID_Prog_index
+
+**⇒ ~75-80% IS STILL BEND'S OWN TERM MANAGEMENT AND ~10-15% IS THE PORT'S CODE.** The split, the
+`Sb`/`Lb` hoists and the four `Bool.pick` fixes moved the port's share down; they did not change what
+dominates, because what dominates is the ALLOCATION COUNT and not any particular helper.
+
+At 32x32 that is ~2M steps in ~270 ms of executor time (the lane's 554 ms launch includes the
+subprocess and the hex round trip) = ~135 ns/step, or ~27 allocations at this tree's measured
+~5 ns each.
+
+## 38.2 SO `Array` IS WORTH ~1.35x AND LANDS SHORT
+
+The two things an `Array` arena deletes are the 16-cell chunk rebuild (~8 cons cells per value
+written) and the `Maybe` that `List.get` allocates per read (3-4 per step). That is ~11-13 of the
+~27-34 allocations per step:
+
+    32x32  554 ms -> ~410-420 ms   against the CPython lane's 379 ms
+    16x16   87 ms -> ~72 ms        against the CPython lane's 70 ms
+
+**⇒ THE `Array` ARENA IS WORTH DOING (it is the last named, measured lever) AND IT LANDS AT ~0.90x
+OF THE CPYTHON LANE, NOT ABOVE IT.** Beating CPython needs the per-value `Elem` allocation and the
+per-step record rebuild gone as well, i.e. a mutable-register interpreter rather than a
+persistent-state one -- a rewrite of `run`, not a change to a field type.
+
+## 38.3 THREE MORE EXPERIMENTS THIS TURN, NONE KEPT
+
+    1 `Uop.nth` without `Maybe` (a direct walk)     16x16 85.46 vs 85.6, 32x32 573 vs 565 -- NEUTRAL
+    2 executor build flags: the harness's Bend-built binary runs the 32x32 packet in 0.28 s; the same
+      C compiled by hand with `-std=c11 -O3`, and again with Bend's own `-x objective-c -fobjc-arc
+      -fmodules`, runs it in 0.67 s and 0.73 s. SO `-o out.c` PLUS A MANUAL `clang` IS NOT THE
+      ARTIFACT THE LANE MEASURES -- every number in this report comes from the Bend-built binary.
+      There is no flag lever here, and quoting the hand-built time would have been wrong by 2.4x.
+    3 the `Array` itself: NOT attempted, and 38.2 is why it is now a measurement rather than a guess.
+
+**THE HONEST POSITION**: 16x16 118.45 -> 86.95 ms (1.36x) and 32x32 1037.25 -> 554.07 ms (1.87x)
+since the session started, with every gate green, and the ratio against the CPython lane moved from
+0.77x/0.53x to 0.80x/0.68x. The remaining named change is worth ~1.35x and lands at ~0.90x. Beating
+the CPython lane is not reachable by the change that is left; it needs the interpreter's state model
+replaced, and that is a rewrite this session has now bounded rather than discovered.

@@ -27429,3 +27429,13 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       (`f32.cumsum.0.b0`, all-zero buffer). Both are rebuilt explicitly now.
       **SESSION: 16x16 118.45 -> 85.6 (1.38x), 32x32 1037.25 -> ~565 (1.84x)**; against CPython's
       68.22 / 371.95 that is 0.80x / 0.66x, from 0.77x / 0.53x.
+- [ ] **THE CEILING, MEASURED (REPORT.md 38)**: after the split the executor is still ~75-80% Bend's
+      term management and ~10-15% the port's code -- ~27-34 allocations per step. The `Array` arena
+      deletes the 16-cell chunk rebuild (~8) and a `Maybe` per read (3-4), i.e. ~1.35x, which lands at
+      **~410-420 ms against CPython's 379 ms at 32x32 and ~72 against 70 at 16x16** -- ~0.90x, SHORT.
+      Beating the CPython lane needs the per-value `Elem` allocation and the per-step record rebuild
+      gone too, i.e. a mutable-register interpreter. That is the bounded shape of the remaining work.
+- [x] THREE MORE EXPERIMENTS, NONE KEPT: `Uop.nth` without `Maybe` (neutral: 85.46 vs 85.6, 573 vs
+      565); executor build flags (the harness's Bend-built binary is 0.28 s on the 32x32 packet, the
+      same C by hand at `-O3` is 0.67 s and with Bend's own objc flags 0.73 s -- SO A HAND-BUILT
+      EXECUTOR IS NOT THE ARTIFACT THE LANE MEASURES, and there is no flag lever).
