@@ -123,13 +123,13 @@ def main():
     # ---- `subs` -- the SECOND consumer, schedule/__init__.py:109 ----
     # `si.src` is ALL of src, so the CALL BODY's variable is collected; `binds`
     # walks `src[1:]` and never sees it. `subs_body` is that difference.
-    sv2 = param(2, vmin=(0, 7), nm="p2")
+    sv2 = param(2, vmin=(0, 7), nm=None)
     sbody = sv2 + sv2
-    sv0 = param(0, vmin=(0, 7), nm="p0")
+    sv0 = param(0, vmin=(0, 7), nm=None)
     scall = UOp(Ops.CALL, src=(sbody, sv0))
 
     def subs_for(binds):
-        return {v: binds[v.arg.slot] for s in scall.src for v in s.variables() if v.arg.slot in binds}
+        return {v: binds[v.arg.slot] for s in scall.src for v in s.variables() if v.arg.name is None and v.arg.slot in binds}
 
     X99, X88, X77 = UOp.const(99), UOp.const(88), UOp.const(77)
     a("subs_body", int(subs_for({2: X99}).get(sv2) is X99))
@@ -150,15 +150,23 @@ def main():
     a("sub_chain", int(r2.src[0] is sc))
 
     # ---- `apply_binds` ARM 3 -- __init__.py:110-111 ----
-    av2 = param(2, vmin=(0, 3), nm="p2")
+    av2 = param(2, vmin=(0, 3), nm=None)
     abody = av2 + av2
-    av0 = param(0, vmin=(0, 7), nm="p0")
+    av0 = param(0, vmin=(0, 7), nm=None)
     acall = UOp(Ops.CALL, src=(abody, av0))
-    asubs = {v: {0: av2}[v.arg.slot] for s in acall.src for v in s.variables() if v.arg.slot in {0: av2}}
+    asubs = {v: {0: av2}[v.arg.slot] for s in acall.src for v in s.variables() if v.arg.name is None and v.arg.slot in {0: av2}}
     ar3 = acall.replace(src=tuple(s.substitute(asubs) for s in acall.src))
     a("ab3_src", int(ar3.src[1] is av2))
     a("ab3_body", int(ar3.src[0] is acall.src[0]))
     a("ab3_none", int(acall.replace(src=tuple(s.substitute({}) for s in acall.src)) is acall))
+
+
+    # a NAMED variable is excluded: `v.arg.name is None`
+    nv0 = param(0, vmin=(0, 7), nm="nm0")
+    ncall = UOp(Ops.CALL, src=(nv0,))
+    nb = {v: {0: X88}[v.arg.slot] for s in ncall.src for v in s.variables()
+          if v.arg.name is None and v.arg.slot in {0: X88}}
+    a("subs_named", int(nv0 not in nb))
 
     print("\n".join(out))
 

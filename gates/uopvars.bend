@@ -291,9 +291,9 @@ def SubFx.v2(x: SubFx) -> U32:
 
 # the body holds slot 2's ALU variable; the call's one positional src is slot 0's
 def subscall() -> SubFx:
-  +v2 = param(O.Arena.empty(), pa(2, rng(3), SP.Aalu{}, None{}, Some{"p2"}))
+  +v2 = param(O.Arena.empty(), pa(2, rng(3), SP.Aalu{}, None{}, None{}))
   +body = O.UOp.alu(O.Found.ar(v2), O.OpsADD{}, [O.Found.i(v2), O.Found.i(v2)])
-  +v0 = param(O.Found.ar(body), pa(0, rng(7), SP.Aalu{}, None{}, Some{"p0"}))
+  +v0 = param(O.Found.ar(body), pa(0, rng(7), SP.Aalu{}, None{}, None{}))
   +c = O.UOp.new(O.Found.ar(v0), O.OpsCALL{}, [O.Found.i(body), O.Found.i(v0)], O.ANone{}, O.TNone{})
   SubFx{c, O.Found.i(v0), O.Found.i(v2)}
 
@@ -456,6 +456,15 @@ def ab3rows(+fx: SubFx) -> IO(Unit):
     p2 : Unit <- IO.print(String.concat(["ab3_body=", ab3_body(fx)]))
     IO.print(String.concat(["ab3_none=", ab3_none(fx)]))
 
+
+# A NAMED variable is NOT substituted (`v.arg.name is None`), and `_device_num` --
+# the one `variables()` MINTS -- is exactly the named one. `lbcall()`'s params are
+# all named, so a binds map naming their slots produces an EMPTY subs.
+def subs_named() -> String:
+  +fx = lbcall()
+  +bm = Map.set(&2, U32, Map.set(&2, U32, Map.new(&2, U32), "0", 88), "2", 99)
+  bf(Bool.not(subshas(SC.sc_apply_subs(O.Found.ar(LBFx.f(fx)), O.Found.i(LBFx.f(fx)), bm), U32.show(LBFx.a0(fx)))))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -478,3 +487,4 @@ def main() -> IO(Unit):
     subsrows(subscall())
     subrows(subfx())
     ab3rows(subscall())
+    IO.print(String.concat(["subs_named=", subs_named()]))

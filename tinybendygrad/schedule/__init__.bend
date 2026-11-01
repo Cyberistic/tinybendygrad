@@ -780,9 +780,17 @@ def sc_subs_var.slot(+slot: U32, +v: U32, +binds: Map<&2, U32>, +r: LinBinds) ->
   +b = sc_mapget(binds, U32.show(slot))
   sc_subs_var.hit(U32.is_eq(b, O.ParamArg.no_slot()), b, v, r)
 
+# `v.arg.name is None` IS A THIRD CONJUNCT AND IT IS NOT DECORATION: a NAMED
+# variable is NOT substituted. `_device_num` is exactly the named one `variables()`
+# mints, so a port without this term substitutes a node the caller never bound.
+def sc_subs_var.nm(nm: Maybe<&2, String>, +slot: U32, +v: U32, +binds: Map<&2, U32>, +r: LinBinds) -> LinBinds:
+  match nm:
+    case Some{_}: r
+    case None{}: sc_subs_var.slot(slot, v, binds, r)
+
 def sc_subs_var.of(arg: O.Arg, +v: U32, +binds: Map<&2, U32>, +r: LinBinds) -> LinBinds:
   match arg:
-    case O.AParam{pa}: sc_subs_var.slot(O.ParamArg.slot(pa), v, binds, r)
+    case O.AParam{+pa}: sc_subs_var.nm(O.ParamArg.name(pa), O.ParamArg.slot(pa), v, binds, r)
     case _: r
 
 def sc_subs_var(+v: U32, +binds: Map<&2, U32>, +r: LinBinds) -> LinBinds:
@@ -879,6 +887,8 @@ def sc_ab3.of(m: Maybe<&2, LinBinds>, +si: U32) -> Maybe<&2, SBind>:
 
 def sc_apply_binds3(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
   sc_ab3.of(sc_apply_subs(ar, si, binds), si)
+
+
 
 # `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.
@@ -2008,6 +2018,73 @@ def apply_binds.of(iscall: Bool, +bop: O.Op) -> U32:
 def apply_binds(+ar: O.Arena, +si: U32) -> U32:
   apply_binds.of(sc_is(ar, si, O.OpsCALL{}),
     sc_op(ar, Maybe.default(&2, U32, sc_body(ar, si), 0)))
+
+# ===========================================================================
+# `apply_binds`'s THREE ARMS, AND `resolve_linear_call` ITSELF -- __init__.py:95-111.
+#
+#   linear = graph_rewrite(linear_call.body, pm_post_sched_cache,
+#                          ctx=linear_call.src[1:], walk=True)
+#   return linear.replace(src=tuple(apply_binds(si) for si in linear.src))
+#
+# THE LAST LINE IS `replace` OVER `linear.src` AND NOT A SECOND GRAPH REWRITE --
+# `pm_resolve_linear_call` (the table that DOES apply this to a whole graph) belongs
+# to `create_linear_with_vars`, one level up.  Reading the header instead of the body
+# would have built a driver nobody asked for.
+#
+# ARM 1 IS REFUSED AND THE REASON IS MEASURED, NOT ASSUMED: it recurses into
+# `resolve_linear_call(si, binds)`, and this def already calls `sc_apply_binds`, so a
+# faithful port is MUTUAL RECURSION between two defs -- which Bend does not have
+# (its rule is defined-before-use, and the tree records the same limit where
+# `Kahn.gather` threads an `ok` flag "because an early return from the middle of a
+# self-call would need mutual recursion").  A `Some{}` here would be a WRONG ANSWER
+# shaped like a success; `None{}` is a refusal the caller can see.
+def sc_ab2.of(arm: U32, +ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
+  match arm:
+    case 1: None{}
+    case 2: Some{SBind{ar, si}}
+    case _: sc_apply_binds3(ar, si, binds)
+
+def sc_apply_binds(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
+  sc_ab2.of(apply_binds(ar, si), ar, si, binds)
+
+def sc_ab_one.of(m: Maybe<&2, SBind>, +g: SSub) -> Maybe<&2, SSub>:
+  match m:
+    case None{}: None{}
+    case Some{+b}: Some{SSub{SBind.ar(b), List.append(&2, U32, SSub.xs(g), [SBind.i(b)])}}
+
+def sc_ab_one(+x: U32, +binds: Map<&2, U32>, +g: SSub) -> Maybe<&2, SSub>:
+  sc_ab_one.of(sc_apply_binds(SSub.ar(g), x, binds), g)
+
+def sc_ab_srcs(xs: List<&2, U32>, +binds: Map<&2, U32>, +g: Maybe<&2, SSub>) -> Maybe<&2, SSub>:
+  match xs g:
+    case Nil{} _: g
+    case _ None{}: None{}
+    case x <> t Some{+s}: sc_ab_srcs(t, binds, sc_ab_one(x, binds, s))
+
+def sc_res_lb.of(m: Maybe<&2, SSub>, +lin: U32) -> Maybe<&2, SBind>:
+  match m:
+    case None{}: None{}
+    case Some{+g}:
+      +f = O.UOp.new(SSub.ar(g), O.Arena.op(SSub.ar(g), lin), SSub.xs(g),
+                     O.Arena.arg(SSub.ar(g), lin), O.Arena.tag(SSub.ar(g), lin))
+      Some{SBind{O.Found.ar(f), O.Found.i(f)}}
+
+def sc_res_sink.of(m: Maybe<&2, U32>, +lin_ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
+  match m:
+    case None{}: None{}
+    case Some{+lin}:
+      +lb = sc_linear_binds_outer(outer, lin_ar, call)
+      sc_res_lb.of(sc_ab_srcs(sc_srcs(LinBinds.ar(lb), lin), LinBinds.m(lb), Some{SSub{LinBinds.ar(lb), Nil{}}}), lin)
+
+def sc_res_body.of(m: Maybe<&2, U32>, +ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
+  match m:
+    case None{}: None{}
+    case Some{body}:
+      +rw = CG.graph_rewrite(ar, body, CG.pm_post_sched_cache(), sc_src_from(ar, call, 1), True{})
+      sc_res_sink.of(CG.Rewritten.sink(rw), CG.Rewritten.ar(rw), call, outer)
+
+def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
+  sc_res_body.of(sc_body(ar, call), ar, call, outer)
 
 # ---------------------------------------------------------------------------
 # 9. `canonicalize_alloc` -- __init__.py:235-237. NEEDS ctx, and it is the
