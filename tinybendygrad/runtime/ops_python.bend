@@ -2412,13 +2412,46 @@ def Prog.word.ok(+word: U32, +inb: Bool, dt: S.Dt) -> U32:
 
 # `_load(m, i, dtype)` -- ops_python.py:15-19, first arm. The index is in
 # STORAGE elements, so the byte address is `base + i*w`.
-def Prog.ld(+p: Prog, +f: Buf, +i: U32, dt: S.Dt) -> U32:
-  Prog.word.ok(Mem.ld(Prog.ms(p), U32.add(Buf.base(f), U32.mul(i, Buf.w(f))), Buf.w(f)),
-    U32.is_lt(i, Buf.e(f)), dt)
+# ===========================================================================
+# THE LOAD'S PER-LANE INVARIANTS, LOOKED UP ONCE -- the same defect the store had.
+# Per lane the old path did `Prog.src` for the pointer, `Prog.src` for the closed-gate alternative,
+# `Prog.src` inside `Prog.ld.open`, `Prog.lane` (two more arena reads) and `Buf.at(Prog.fs(p), ...)`
+# -- about a dozen arena reads and list walks for four lanes, all of them the same answer.
+# ===========================================================================
+type Lb is Data:
+  Lb{f: Buf, off: U32, step: U32, dt: S.Dt, alt: Elem, three: Bool, open: Bool, slot: U32}
 
-def Prog.ld.read(+p: Prog, +u: Uop, +ptr: Elem, +j: U32) -> Elem:
-  elem_of(Prog.ld(p, Buf.at(Prog.fs(p), Elem.buf(ptr)),
-    U32.add(Elem.off(ptr), U32.mul(j, Prog.lane(p, u))), Uop.dt(u)), Uop.dt(u))
+def Lb.f(+l: Lb) -> Buf:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: f
+
+def Lb.off(+l: Lb) -> U32:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: off
+
+def Lb.step(+l: Lb) -> U32:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: step
+
+def Lb.dt(+l: Lb) -> S.Dt:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: dt
+
+def Lb.alt(+l: Lb) -> Elem:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: alt
+
+def Lb.three(+l: Lb) -> Bool:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: three
+
+def Lb.open(+l: Lb) -> Bool:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: open
+
+def Lb.slot(+l: Lb) -> U32:
+  match l:
+    case Lb{f, off, step, dt, alt, three, open, slot}: slot
 
 def Prog.ld.three(+u: Uop) -> Bool: U32.is_eq(Uop.nsrc(u), 3)
 
@@ -2430,21 +2463,40 @@ def Prog.ld.open(+p: Prog, +u: Uop) -> Bool: Elem.is_true(Prog.src(p, u, 2n))
 def Prog.ld.happens(+p: Prog, +u: Uop) -> Bool:
   Bool.not(Bool.and(Prog.ld.three(u), Bool.not(Prog.ld.open(p, u))))
 
-def Prog.ld.lane(+p: Prog, +u: Uop, +j: U32) -> Elem:
-  Prog.ld.gate(Prog.ld.read(p, u, Prog.src(p, u, 0n), j), Prog.ld.three(u),
-    Prog.src(p, u, 1n), Prog.ld.open(p, u))
+def Prog.ld.sb.buf(f: Buf, +p: Prog, +u: Uop) -> Lb:
+  Lb{f, Elem.off(Prog.src(p, u, 0n)), Prog.lane(p, u), Uop.dt(u), Prog.src(p, u, 1n),
+    Prog.ld.three(u), Prog.open(p), Uop.slot(u)}
+
+def Prog.ld.sb(+p: Prog, +u: Uop) -> Lb: Prog.ld.sb.buf(Prog.buf(p, u), p, u)
+
+def Prog.ld.msat(+ms: List<&2, List<&2, U32>>, +f: Buf, +i: U32, dt: S.Dt, inb: Bool) -> U32:
+  Prog.word.ok(Mem.ld(ms, U32.add(Buf.base(f), U32.mul(i, Buf.w(f))), Buf.w(f)), inb, dt)
+
+def Prog.ld.ms(+ms: List<&2, List<&2, U32>>, +f: Buf, +i: U32, dt: S.Dt) -> U32:
+  Prog.ld.msat(ms, f, i, dt, U32.is_lt(i, Buf.e(f)))
+
+def Prog.ld.lane.at(+l: Lb, +j: U32) -> U32: U32.add(Lb.off(l), U32.mul(j, Lb.step(l)))
+
+def Prog.ld.lane.word(+l: Lb, +ms: List<&2, List<&2, U32>>, +j: U32) -> Elem:
+  elem_of(Prog.ld.msat(ms, Lb.f(l), Prog.ld.lane.at(l, j), Lb.dt(l),
+    U32.is_lt(Prog.ld.lane.at(l, j), Buf.e(Lb.f(l)))), Lb.dt(l))
+
+def Prog.ld.lane(+l: Lb, +ms: List<&2, List<&2, U32>>, +j: U32) -> Elem:
+  Prog.ld.gate(Prog.ld.lane.word(l, ms, j), Lb.three(l), Lb.alt(l), Lb.open(l))
 
 # `n` is the FIRST parameter because the store list is REBUILT each step, and a
 # recursive call's arguments are read left to right: nothing rebuilt may come
 # before the one that shrinks (MEASURED).
-def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, List<&2, Elem>>, +j: U32, +p: Prog) -> List<&2, List<&2, Elem>>:
+def Prog.ld.at(+n: Nat, +u: Uop, vs: List<&2, List<&2, Elem>>, +ms: List<&2, List<&2, U32>>, +j: U32,
+  +l: Lb) -> List<&2, List<&2, Elem>>:
   match n:
     case 0n: vs
-    case 1n+q: Prog.ld.at(q, u, Val.put(vs, U32.add(Uop.slot(u), j), Prog.ld.lane(p, u, j)),
-      U32.add(j, 1), p)
+    case 1n+q: Prog.ld.at(q, u, Val.put(vs, U32.add(Lb.slot(l), j), Prog.ld.lane(l, ms, j)),
+      ms, U32.add(j, 1), l)
 
 def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
-  Prog.step.vs(p, Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.flush(p), 0, p),
+  Prog.step.vs(p,
+    Prog.ld.at(U32.to_nat(Uop.run(u)), u, Prog.flush(p), Prog.ms(p), 0, Prog.ld.sb(p, u)),
     Bool.and(Prog.ld.happens(p, u), Prog.oob(p, u)))
 
 # ops_python's `if g:` -- a masked-off store does not write, and the write itself

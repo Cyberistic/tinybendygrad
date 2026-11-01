@@ -27414,3 +27414,9 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       session start. AND THE "OBVIOUS" oob IMPROVEMENT (check the LAST lane, `off+(run-1)*step`)
       REFUSES this tree's own 16x16 packet, because ops_python stores `len(src_values[1])` lanes and
       not `run(u)` -- recorded so nobody re-derives it.
+- [x] **THE LOAD HAD THE STORE'S DEFECT TOO**: per lane it did three `Prog.src` calls (pointer,
+      closed-gate alternative, gate), `Prog.lane` (two more arena reads) and `Buf.at(fs, ...)` -- about
+      a dozen for four lanes, all the same answer. Bound once in an `Lb` record, and `Prog.ld` now
+      takes the memory list instead of the record. 32x32 585.80 -> 555.33 ms.
+      **SESSION POSITION: 16x16 118.45 -> 91.89 ms (1.29x), 32x32 1037.25 -> 555.33 ms (1.87x)**;
+      against the CPython lane's 68.26 / 371.36 that is 0.74x / 0.67x (from 0.77x / 0.53x).

@@ -2452,3 +2452,24 @@ reads the arena exactly once per lane, for the value.
     size    start        now            PYTHON (same program)
     16x16   118.45 ms    90.43 ms       71.53 ms     (1.31x faster than start, 0.79x of PYTHON)
     32x32   1037.25 ms   585.80 ms      381.37 ms    (1.77x faster than start, 0.65x of PYTHON)
+
+## 37.6 AND THE LOAD HAD THE SAME DEFECT
+
+Per lane the load did `Prog.src` for the pointer, `Prog.src` for the closed-gate alternative,
+`Prog.src` inside `Prog.ld.open`, `Prog.lane` (two more arena reads) and `Buf.at(Prog.fs(p), ...)`
+-- about a dozen arena reads and list walks for four lanes, all with the same answer. They are
+bound once in an `Lb` record, exactly as the store's are in `Sb`, and `Prog.ld` takes the memory
+list instead of the record so the lane loop touches the arena only for the value.
+
+    16x16  90.43 -> 91.89 ms (noise)     32x32  585.80 -> 555.33 ms
+
+**SESSION TOTALS, same program both sides, EVERY LAUNCH IDENTICAL:**
+
+    size    start        now            PYTHON (same program)   BEND/PYTHON
+    16x16   118.45 ms    91.89 ms       68.26 ms                 0.74x
+    32x32   1037.25 ms   555.33 ms      371.36 ms                0.67x
+
+i.e. **1.29x and 1.87x faster than the session start**, and the ratio against the CPython lane has
+moved from 0.77x/0.53x to 0.74x/0.67x. Every remaining lever is now an allocation count, and the
+biggest single one -- the 16-cell chunk rebuild plus a `Maybe` per read -- is the arena, which needs
+`Prog` linear (REPORT.md 37.4).
