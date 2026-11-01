@@ -27265,7 +27265,27 @@ producing a green that would have been about nothing.
       CPython's string in the `.rows` dump. PLANTED: with that string replaced by "PLANTED-STRING"
       the kernel still renders `exp2((val0*1.4426950216293335f))`. 15 of 15 identical, timed,
       mm512 11.1/11.2 ms with plant 1.96/1.96.
-- [ ] **STAGE 3's LITERAL READING NEEDS A CODEGEN, AND THAT MEANS REWRITING THE ORACLE.** Measured
+- [x] **THE 148-vs-49 QUESTION: THE LANES WERE RUNNING DIFFERENT PROGRAMS.** `has_local` is a
+      SCHEDULER input: PYTHON defaults to True and got `global (16,16,1) local (16,1,1)` with 49
+      uops, while `BendRenderer` declares False (the v1 wire cannot launch a local size) and got
+      `global (1,1,1) local (1,1,1)` with 148. So "BEND 5.1x faster" was a ratio between two
+      different kernels. `.agents/slop/perf/stage3_parity.py` puts ONE program on both sides --
+      verifying grid, local size and the whole op+srcs sequence are identical for EVERY launch --
+      and then **PYTHON IS FASTER: 74.99 vs 118.45 ms at 16x16 and 390.70 vs 1037.25 ms at 32x32**
+      (1.58x / 2.66x). The literal stage-3 clause is MET under an exact comparison; the old
+      reading (BEND 5.1x/2.6x) is what you get when each device keeps its own default schedule.
+      Both rows are recorded in REPORT.md §34.
+- [ ] **THE PORT IS ONE ULP OFF ON THE SAME PROGRAM.** With identical programs, PYTHON reproduces
+      the CPU lane bit-for-bit (`0.000e+00`) and the port does not (`8.941e-08` at 16x16,
+      `3.576e-07` at 32x32). Start at `MULACC` -- `exec_alu`'s `(x*y)+z` is the only op in these
+      kernels whose rounding order can differ without moving a fixture.
+- [ ] **THE PORT CANNOT RUN PYTHON'S DEFAULT SCHEDULE**: v1 is warp 1, so `lidxK` reads 0 and the
+      wire has no local size. A real warp (per-lane registers, `exec_masks` per lane, LOCAL buffers
+      shared across the warp) would let both devices run both schedules and make the fidelity gap
+      disappear. This is the one thing standing between "same program both sides" and "each
+      device's own default program". It supersedes the codegen idea below:
+- [ ] STAGE 3's LITERAL READING VIA A CODEGEN WOULD NEED REWRITING THE ORACLE (NOT DONE, AND NO
+      LONGER NEEDED FOR THE VERDICT). Measured
       (`.agents/slop/perf/stage3_gap.py`): both lanes dispatch 2x per realize, BEND runs a WORSE
       kernel (148 vs 49 uops at 16x16) and still wins 4.8x/2.6x, so the gap is ~1.3us per walk step
       against ~0.09us. The CPython profile is 36% memory accessors / 25% ALU / 18% the walk itself --

@@ -2099,3 +2099,64 @@ That work means REWRITING `tinygrad/runtime/ops_python.py`, which this tree desi
 bytes, so the recorded `38/38 agree, byte-identical` verdict goes STALE the moment it changes and
 must be re-taken (`run` + `repro`). That is a scope decision with a measured, marginal payoff at
 16x16, so it is put to the user rather than taken unilaterally.
+
+---
+
+# 34. THE TWO LANES WERE NEVER TIMING THE SAME PROGRAM — AND FIXING THAT FLIPS THE VERDICT
+
+## 34.1 THE ANSWER TO "WHY 148 UOPS AGAINST 49"
+
+Dumped from each lane's first launch (`.agents/slop/perf/stage3_parity.py`):
+
+    PYTHON  global (16,16,1)  local (16,1,1)  uops  49     the scheduler SPLIT TO LOCAL
+    BEND    global ( 1, 1, 1)  local ( 1,1,1)  uops 148     it could not, so it did not
+
+**`has_local` IS A SCHEDULER INPUT, NOT A RUNTIME FLAG.** `ops_bend.py`'s `BendRenderer` declares
+`has_local = False` because the v1 wire cannot launch a local size: `BendProgram.__call__` refuses
+`local_size != (1,1,1)`, and the port's executor is warp 1, so every `lidxK` would read as 0. That
+is an honest workaround for a real limitation -- but its consequence was never stated where the
+numbers live: THE TWO LANES RAN DIFFERENT KERNELS, on different grids, with different work per
+step. "BEND is 5.1x faster than PYTHON" was a ratio between two programs, not between two engines.
+
+## 34.2 PUT ONE PROGRAM ON BOTH SIDES AND THE RATIO REVERSES
+
+`stage3_parity.py` sets `has_local = False` on BOTH renderers, checks that every launch agrees --
+grid, local size, uop count AND the whole op-and-srcs sequence, normalised because the wire is
+1-based and `ops_python` is 0-based -- and only then times:
+
+    size 16   PYTHON g(1,1,1) l(1,1,1) 148u   74.99 ms      BEND 118.45 ms    PYTHON 0.63x
+    size 32   PYTHON g(1,1,1) l(1,1,1) 510u  390.70 ms      BEND 1037.25 ms   PYTHON 0.38x
+    SAME PROGRAM: 2 launches, EVERY LAUNCH IDENTICAL  (both sizes)
+
+**⇒ SO THE PYTHON DEVICE IS FASTER THAN THE BEND DEVICE ON THE SAME PROGRAM**, by 1.58x at 16x16
+and 2.66x at 32x32 -- which is the literal stage-3 clause, MET. The earlier "2.6x/5.1x in BEND's
+favour" was the LOCAL-split kernel against the scalar one, and the split costs the CPython
+interpreter far more than it buys: the SAME device is 580 ms with the split and 75 ms without it
+at 16x16.
+
+Both readings now exist and they are not in conflict, so both are recorded:
+
+| arrangement | 16x16 | 32x32 | who is faster |
+|---|---|---|---|
+| each device's DEFAULT schedule (different programs: warp 16 against warp 1) | 580 / 113 | 2707 / 1039 | BEND 5.1x / 2.6x |
+| ONE program on both sides (`has_local=False` on both) | 74.99 / 118.45 | 390.70 / 1037.25 | **PYTHON 1.58x / 2.66x** |
+
+## 34.3 AND A SECOND DEFECT THE EXACT COMPARISON FOUND: THE PORT IS ONE ULP OFF
+
+    vs CPU:  PYTHON 0.000e+00     BEND 8.941e-08   (16x16)
+             PYTHON 0.000e+00     BEND 3.576e-07   (32x32)
+
+With identical programs and identical inputs, the CPython interpreter reproduces the CPU lane
+**bit for bit** and the port does not. That is a real fidelity gap in the executor, not a timing
+artefact, and it was invisible while the two lanes ran different kernels -- the old comparison had
+a ~1e-7 difference built in and no way to attribute it. `MULACC` (`exec_alu`'s `lambda x,y,z:
+(x*y)+z`) is the first place to look: it is the only op in these kernels whose rounding order can
+differ without changing any fixture. Recorded in TODO.md.
+
+## 34.4 THE FIDELITY GAP BEHIND IT, NAMED
+
+The port cannot run PYTHON's DEFAULT schedule at all. That is v1's warp-1 limit, and it is now the
+only thing between "the same program on both sides" and "each device's default program on its own
+side": both need a real warp (`lidxK` over `local_size`, per-lane registers, `exec_masks` per lane,
+LOCAL buffers shared across the warp) in `tinybendygrad/runtime/ops_python.bend`. Until then the
+harness must declare `has_local = False` for both, which it now does and which it now VERIFIES.
