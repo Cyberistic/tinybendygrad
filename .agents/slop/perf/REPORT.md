@@ -3148,3 +3148,35 @@ One more census, because it rules out the last appealing explanation: the packet
 `MULACC 163 / INDEX 160 / CONST 44 / CAST 43 / SHRINK 41 / LOAD 40 / MUL 4 / PARAM 3 / STACK 2 /
 RANGE 2`. Only **41 of 510 uops (8.0%)** are LOAD or STORE, so `Prog.step.vs` cold-starting the
 chunk cache cannot be what the ~1M writes per launch cost either.
+
+### 39.21g RETRACTION: EVERY ABLATION IN 39.21b AND 39.21c IS INVALID, AND WHY
+
+**THE RANGE TRIP COUNT IS READ FROM THE ARENA.** `Prog.rng.cnt` takes its counter from
+`Prog.vat.f(vs, vc, vi, Uop.slot(u))` and compares it against the limit. So an ablation that removes
+arena reads does not make the interpreter cheaper -- **it makes the kernel run ONE loop iteration
+instead of ~1930**. The measurement that exposed this: the read ablation reports
+**`12.96x (BEND faster)` and `max|PYTHON-BEND| 1.640e+00`**, i.e. a WRONG ANSWER. The launch that
+"collapsed to 30.09 ms" was answering a different, much smaller question.
+
+That retroactively invalidates:
+
+    "delete the spine set -> 29.62 ms"           INVALID (same mechanism)
+    "delete the miss path  -> 29.72 ms"          INVALID
+    "delete the chunk copy -> 29.91 ms"          INVALID
+    "forcing the index to 0 -> 30.05 ms"         INVALID
+
+and therefore every attribution built on them -- **"the value write is 92% of the interpreter" is
+RETRACTED**, and so is "the spine rebuild is the other 93%". The `30 ms` that four different
+ablations produced was not four independent confirmations; it was ONE artifact, seen four times.
+**AN ABLATION THAT TOUCHES THE ARENA CHANGES THE CONTROL FLOW, BECAUSE THE RANGE LOOP LIVES IN THE
+ARENA. THE ONLY INSTRUMENTS THAT CAN SEE INSIDE THIS INTERPRETER ARE A SAMPLER AND A LAUNCHED
+CONFIGURATION.**
+
+**WHAT SURVIVES IS EVERYTHING THAT WAS LAUNCHED.** The width matrix (39.21d) and the spine-length
+curve (39.21f) are real: every row is a full launch that passed `ops_python_exec` (153 fixtures, 365
+rows, 0 divergences), produced an exact answer, and reported `SAME PROGRAM`. Those rows still say
+what they say -- **8x8 chunks at W=64, spine 8, 385.87 ms, against the 4x4 chunk's 403.13** -- and
+the correction is to the EXPLANATION, not to the numbers.
+
+The three censuses also survive, because they are offline and touch nothing: crossings 7/509 (1.4%)
+at W=64; 1 dead write in 510; read distance p50 121, max 502.
