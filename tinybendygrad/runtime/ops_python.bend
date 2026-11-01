@@ -1935,8 +1935,18 @@ def Prog.flush.go(none: Bool, +p: Prog) -> List<&2, List<&2, Elem>>:
     case True{}: Prog.vs(p)
     case False{}: List.set(&2, List<&2, Elem>, Prog.vs(p), U32.to_nat(Prog.vi(p)), Prog.vc(p))
 
+# ONE BIND. The old body took `Prog.vi` for the cold test, then `Prog.vs` and, on the warm path,
+# `Prog.vs` + `Prog.vi` + `Prog.vc` again -- four to five full `match`es over the record.
+def Prog.vput.flush.go(none: Bool, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32) ->
+  List<&2, List<&2, Elem>>:
+  match none:
+    case True{}: vs
+    case False{}: List.set(&2, List<&2, Elem>, vs, U32.to_nat(vi), vc)
+
 def Prog.flush(+p: Prog) -> List<&2, List<&2, Elem>>:
-  Prog.flush.go(U32.is_eq(Prog.vi(p), Prog.sent()), p)
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
 
 # `Val.at` through the cache: a hit is index 0..15 of the held chunk, a miss is the old walk
 def Prog.vat.maybe(m: Maybe<&2, Elem>) -> Elem:
@@ -1983,12 +1993,6 @@ def Prog.vput.rec.go(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<
   match un:
     case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
     case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
-
-def Prog.vput.flush.go(none: Bool, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32) ->
-  List<&2, List<&2, Elem>>:
-  match none:
-    case True{}: vs
-    case False{}: List.set(&2, List<&2, Elem>, vs, U32.to_nat(vi), vc)
 
 def Prog.vput.go.miss(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,

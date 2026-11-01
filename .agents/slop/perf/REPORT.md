@@ -2868,3 +2868,15 @@ LAUNCH IDENTICAL.
 **THE NEXT ATTEMPT ON THESE THREE SITES SHOULD LAND `flush` AND `stack` SEPARATELY FROM `param.at`,
 and `param.at` ALONE WITH THE COUNTER ORDER WRITTEN OUT** (`val` reads `Gd.pv` BEFORE the increment,
 and the increment happens in the same record construction) -- which is what the fixtures will check.
+
+## 39.16 `Prog.flush`: FOUR OR FIVE TRAVERSALS -> ONE BIND
+
+Landed alone, because the batch that carried it also carried `param.at` and was reverted (§39.15).
+`Prog.flush` took `Prog.vi` for the cold test, then `Prog.vs`, and on the warm path `Prog.vs` +
+`Prog.vi` + `Prog.vc` again. It reuses the field-taking `Prog.vput.flush.go` that the `vput` rewrite
+already produced:
+
+    16x16  57.33 -> 57.83 ms (noise)     32x32  429.73 -> 423.28 ms
+
+`ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match; `--check-only`
+clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
