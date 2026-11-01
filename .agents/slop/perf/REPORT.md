@@ -2798,3 +2798,23 @@ Gates: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec
 its `step.ms.f` form is written but not yet wired, because the value cache must survive a STORE),
 `Prog.flush` itself (still four traversals, reached from `Prog.stack`), `Prog.rng.over`/`rng.at`,
 `Prog.param.at`.
+
+## 39.13 THE STORE COLLAPSED TOO: ~12 RECORD TRAVERSALS -> ONE BIND
+
+`Prog.store` took `Prog.step.ms`, `Prog.ms`, `Prog.store.sb` (twice: `Prog.buf` is `fs` + `src`),
+`Prog.open`, `Prog.oob` (which re-took `Prog.buf`), and one `Prog.vat` per lane. One bind now feeds
+`Prog.store.sb.f`, `Prog.open.f`, `Prog.oob.f`, `Prog.step.ms.f` and a lane loop that reads through
+`Prog.vat.f`. **`Prog.step.ms.f` CARRIES `vc`/`vi`**, because a STORE does not invalidate the value
+cache -- that is the one thing the LOAD's form must NOT do, and it is why the two forms differ.
+
+    16x16  61.26 -> 58.64 ms   (PYTHON 70.02 -- **1.18x FASTER**)
+    32x32 442 -> 436.86 ms     (inside the noise; still 0.86x of PYTHON's 375.51)
+    session 118.45 -> 58.64 (2.02x)    1037.25 -> 436.86 (2.37x)
+
+Gates: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match;
+`--check-only` clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**WHY 32x32 DID NOT MOVE WITH IT**: at that size the step mix is dominated by the REDUCE body, whose
+cost is the ALU path (already collapsed in 39.11) plus `Mem.st`/`Mem.ld` -- and `Mem` is the 64-cell
+chunked byte list, untouched by any of these three collapses. That is the next thing to look at, and
+it is not the record.

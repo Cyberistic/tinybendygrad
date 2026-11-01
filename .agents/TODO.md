@@ -27512,3 +27512,11 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
 - [ ] NEXT SITES OF THE SAME CLASS: `Prog.store` (~12 traversals; the `step.ms.f` form is written but
       not wired because the value cache must survive a STORE), `Prog.flush` (still four, reached from
       `Prog.stack`), `Prog.rng.over`/`rng.at`, `Prog.param.at`.
+- [x] **THE STORE COLLAPSED: ~12 record traversals -> ONE bind** (`store.sb.f`, `open.f`, `oob.f`,
+      `step.ms.f`, and a lane loop reading through `vat.f`). `step.ms.f` CARRIES `vc`/`vi` where the
+      LOAD's form invalidates them -- a STORE does not touch the value cache. **16x16 61.26 -> 58.64 ms
+      (1.18x FASTER than CPython's 70.02)**; 32x32 442 -> 436.86 (noise). Session: **2.02x / 2.37x**.
+- [ ] **32x32 IS NOW DOMINATED BY `Mem`, NOT THE RECORD**: the collapse of `ld1`/`store` moved 16x16 by
+      4% and 32x32 by nothing, which points at `Mem.st`/`Mem.ld` -- the 64-cell chunked BYTE list, where
+      one f32 store rewrites up to 64 cons cells four times. Untouched by any of the three record
+      collapses. That is the next site.

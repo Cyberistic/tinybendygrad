@@ -2715,6 +2715,33 @@ def Prog.store.sb.buf(+f: Buf, +p: Prog, +u: Uop) -> Sb:
 
 def Prog.store.sb(+p: Prog, +u: Uop) -> Sb: Prog.store.sb.buf(Prog.buf(p, u), p, u)
 
+def Prog.slot.f(+u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
+
+def Prog.store.sb.f.mk(+f: Buf, +s0: Elem, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>,
+  +vi: U32, +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
+  Sb{Buf.w(f), Buf.dt(f), Buf.e(f), Buf.base(f), Elem.off(s0),
+    Prog.lane.of(f, Prog.dt.f(us, u, 1n)), Prog.slot.f(u, 1n), Prog.open.f(mk)}
+
+def Prog.store.sb.f.s0(+s0: Elem, +fs: List<&2, Buf>, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>,
+  +vi: U32, +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
+  Prog.store.sb.f.mk(Buf.at(fs, Elem.buf(s0)), s0, vs, vc, vi, us, mk, u)
+
+def Prog.store.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32,
+  +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
+  Prog.store.sb.f.s0(Prog.src.f(vs, vc, vi, u, 0n), fs, vs, vc, vi, us, mk, u)
+
+def Prog.step.ms.f.go(un: List<&2, Uop>, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+  +vc: List<&2, Elem>, +vi: U32, +oob: Bool) -> Prog:
+  match un:
+    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, vc, vi}
+    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, vc, vi}
+
+def Prog.step.ms.f(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +oob: Bool) -> Prog:
+  Prog.step.ms.f.go(un, st, vs, gd, ms, mk, pc, bad, dead, vc, vi, oob)
+
 def Prog.store.bits(+s: Sb, +e: Elem) -> U32:
   Elem.bits(Prog.cast.dt(Sb.dt(s), Elem.dt(e), e))
 
@@ -2734,19 +2761,33 @@ def Prog.store.open(+s: Sb, +j: U32) -> Bool:
 # ITSELF IS `m[i] = v` INTO THE BUFFER'S MEMORYVIEW, WHICH IS THE CONVERSION
 # `Prog.store.bits` MAKES.
 # ONE arena read per lane, for the value and nothing else
-def Prog.store.lane(+ms: List<&2, List<&2, U32>>, +s: Sb, +p: Prog, +j: U32) -> List<&2, List<&2, U32>>:
-  Prog.store.go(ms, Prog.store.lane.at(ms, s, j, Prog.vat(p, U32.add(Sb.slot(s), j))),
+def Prog.store.lane(+ms: List<&2, List<&2, U32>>, +s: Sb, +vs: List<&2, List<&2, Elem>>,
+  +vc: List<&2, Elem>, +vi: U32, +j: U32) -> List<&2, List<&2, U32>>:
+  Prog.store.go(ms, Prog.store.lane.at(ms, s, j, Prog.vat.f(vs, vc, vi, U32.add(Sb.slot(s), j))),
     Prog.store.open(s, j))
 
 # `n` FIRST for the same reason as `Prog.ld.at`: the byte list is rebuilt each step.
-def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, List<&2, U32>>, +j: U32, +s: Sb, +p: Prog) -> List<&2, List<&2, U32>>:
+def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, List<&2, U32>>, +j: U32, +s: Sb,
+  +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32) -> List<&2, List<&2, U32>>:
   match n:
     case 0n: ms
-    case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, s, p, j), U32.add(j, 1), s, p)
+    case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, s, vs, vc, vi, j), U32.add(j, 1), s, vs, vc, vi)
+
+# ONE BIND. `Prog.store` reached the record ~12 times: `step.ms`, `ms`, `store.sb` (twice: `buf` =
+# `fs` + `src`), `open`, `oob` (which re-took `buf`), and one `Prog.vat` per lane.
+def Prog.store.bind(+st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, Elem>,
+  +vi: U32, +u: Uop) -> Prog:
+  Prog.step.ms.f(st, vs, gd,
+    Prog.store.at(U32.to_nat(Uop.run(u)), u, ms, 0,
+      Prog.store.sb.f(St.fs(st), vs, vc, vi, St.us(st), mk, u), vs, vc, vi),
+    mk, pc, bad, dead, un, vc, vi,
+    Bool.and(Prog.open.f(mk), Prog.oob.f(St.fs(st), vs, vc, vi, u)))
 
 def Prog.store(+p: Prog, +u: Uop) -> Prog:
-  Prog.step.ms(p, Prog.store.at(U32.to_nat(Uop.run(u)), u, Prog.ms(p), 0, Prog.store.sb(p, u), p),
-    Bool.and(Prog.open(p), Prog.oob(p, u)))
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.store.bind(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
 
 def Prog.after(+p: Prog, +u: Uop) -> Prog: Prog.put(p, u, Prog.src(p, u, 0n))
 
