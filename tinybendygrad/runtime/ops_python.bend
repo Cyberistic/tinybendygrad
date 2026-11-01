@@ -1953,10 +1953,15 @@ def Prog.vat.hit(hit: Bool, +vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, 
     case True{}: Prog.vat.maybe(List.get(&2, Elem, vc, U32.to_nat(U32.and(i, 15))))
     case False{}: Val.at(vs, i)
 
+# THE FIELD-TAKING FORM. A caller that already holds the binders reads with NO further `match` over
+# the record; `Prog.vat` is the one-match wrapper for callers that hold the record instead.
+def Prog.vat.f(+vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32, +i: U32) -> Elem:
+  Prog.vat.hit(U32.is_eq(U32.shrn(i, 4n), vi), vs, vc, i)
+
 def Prog.vat(+p: Prog, +i: U32) -> Elem:
   match p:
     case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.vat.hit(U32.is_eq(U32.shrn(i, 4n), vi), vs, vc, i)
+      Prog.vat.f(vs, vc, vi, i)
 
 # THE STORE **AND** THE STEP IN ONE REBUILD: `Prog.put` used to be
 # `Prog.next(Prog.vs1(p, Val.put(...)))`, which built the record twice per value written.
@@ -2062,6 +2067,9 @@ def Prog.src(+p: Prog, +u: Uop, +k: Nat) -> Elem:
 # the run of the k-th src, for the two places ops_python reads a src's RUN
 # rather than its value: a STACK's elements and a STORE's lanes.
 def Prog.slot(+p: Prog, +u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
+
+def Prog.src.f(+vs: List<&2, List<&2, Elem>>, +vc: List<&2, Elem>, +vi: U32, +u: Uop, +k: Nat) -> Elem:
+  Prog.vat.f(vs, vc, vi, Uop.nth(Uop.sslot(u), k))
 
 # `src_dtypes[k]`, which ops_python reads for a LOAD and a STORE
 def Prog.dt(+p: Prog, +u: Uop, +k: Nat) -> S.Dt:
@@ -2676,10 +2684,40 @@ def Prog.store(+p: Prog, +u: Uop) -> Prog:
 
 def Prog.after(+p: Prog, +u: Uop) -> Prog: Prog.put(p, u, Prog.src(p, u, 0n))
 
+# **`Bool.pick` EVALUATED ALL THREE ARMS**: the old body built `alu1`, `alu2` AND `alu3` for every
+# arithmetic op -- six arena reads (each three record traversals) and three ALU evaluations to answer
+# one. The arity is a MATCH on the parameter now, and the callers bind the record once, so one ALU
+# step costs one bind + one to three field-taking reads + one bind for the store.
+def Prog.alu.kind2(two: Bool) -> U32:
+  match two:
+    case True{}: 2
+    case False{}: 3
+
+def Prog.alu.kind.l(one: Bool, +two: Bool) -> U32:
+  match one:
+    case True{}: 1
+    case False{}: Prog.alu.kind2(two)
+
+def Prog.alu.kind(one: Bool, two: Bool) -> U32:
+  Prog.alu.kind.l(one, two)
+
+def Prog.alu.at.k(+k: U32, +st: St, +vs: List<&2, List<&2, Elem>>, +gd: Gd,
+  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+  +un: List<&2, Uop>, +vc: List<&2, Elem>, +vi: U32, +u: Uop) -> Prog:
+  match k:
+    case 1: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u,
+              alu1(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n)))
+    case 2: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u,
+              alu2(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n),
+                Prog.src.f(vs, vc, vi, u, 1n)))
+    case _: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u,
+              alu3(Uop.op(u), Uop.dt(u), Prog.src.f(vs, vc, vi, u, 0n),
+                Prog.src.f(vs, vc, vi, u, 1n), Prog.src.f(vs, vc, vi, u, 2n)))
+
 def Prog.alu.at(+p: Prog, +u: Uop, +one: Bool, +two: Bool) -> Prog:
-  Prog.put(p, u, Bool.pick(Elem, one, alu1(Uop.op(u), Uop.dt(u), Prog.src(p, u, 0n)),
-    Bool.pick(Elem, two, alu2(Uop.op(u), Uop.dt(u), Prog.src(p, u, 0n), Prog.src(p, u, 1n)),
-      alu3(Uop.op(u), Uop.dt(u), Prog.src(p, u, 0n), Prog.src(p, u, 1n), Prog.src(p, u, 2n)))))
+  match p:
+    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+      Prog.alu.at.k(Prog.alu.kind(one, two), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
 
 # ===========================================================================
 # THE INTERPRETER LOOP. One recursion per instruction: Bend has no loop and no

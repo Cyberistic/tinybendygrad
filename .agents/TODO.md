@@ -27497,3 +27497,11 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
       so removing an allocation changes the values, the trip counts and therefore the program being
       timed. The sound ablation is "swap a structure for a faster one and gate it" -- which is the
       four-mode arena table (39.9) and this fix.
+- [x] **`Bool.pick` WAS STILL EVALUATING ALL THREE ALU ARMS.** `Prog.alu.at` picked between arity 1/2/3
+      with nested `Bool.pick`s, so EVERY arithmetic op built `alu1`, `alu2` AND `alu3` -- six arena
+      reads and three ALU evaluations to answer one. It is a match on the arity now, the caller binds
+      the record once, and the reads use the new field-taking `Prog.vat.f`/`Prog.src.f` (no record
+      match inside them). **16x16 82.17 -> 68.61 ms, and BEND IS NOW FASTER THAN THE CPYTHON LANE AT
+      16x16 (68.61 vs 70.02)**; 32x32 530.21 -> 442.63. Session: 1.73x / 2.34x.
+- [ ] THE SAME DEFECT REMAINS, BY FREQUENCY, IN: `Prog.ld1` (flush + ms + ld.sb + ld.happens + oob in
+      one expression, ~15 traversals), `Prog.store` (~12), `Prog.rng.over`/`rng.at`, `Prog.param.at`.

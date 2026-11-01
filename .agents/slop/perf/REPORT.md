@@ -2756,3 +2756,25 @@ RANGE counters -- remove an allocation and the values change, the trip counts ch
 measures a different program. The one ablation that IS sound is "replace a structure with a faster
 one and gate it", which is what the four-mode arena table (39.9) and this fix both do. That is why the
 remaining allocation sources are attacked one operation at a time, with the gate as the proof.
+
+## 39.11 `Bool.pick` WAS STILL EVALUATING ALL THREE ALU ARMS -- AND 16x16 FLIPPED
+
+`Prog.alu.at` chose between arity 1, 2 and 3 with NESTED `Bool.pick`s, so EVERY arithmetic op built
+`alu1`, `alu2` AND `alu3`: six arena reads (each three record traversals, before §39.5/39.10) and
+three ALU evaluations to answer one. It is a MATCH on the arity now (`Prog.alu.kind`), the callers
+bind the record ONCE, and the reads go through the new field-taking forms `Prog.vat.f` /
+`Prog.src.f`, which do no record match at all.
+
+    16x16  82.17 -> 68.61 ms      (PYTHON 70.02 -- BEND IS FASTER, 1.02x)
+    32x32 530.21 -> 442.63 ms     (PYTHON 375.51 -- 0.85x)
+    session 118.45 -> 68.61 (1.73x)   1037.25 -> 442.63 (2.34x)
+
+Gates: `ops_python_exec` 153 fixtures / 365 rows / 0 divergences; `ops_bend_exec-e2e` 7 match;
+`--check-only` clean; `stage3_parity` EVERY LAUNCH IDENTICAL.
+
+**THE CLASS THE REVIEW NAMED IS THE CLASS THAT PAYS**: an accessor call is a full `match` over the
+11-field record, so a def that calls five accessors pays five traversals, and a `Bool.pick` that
+picks between three helpers pays for all three. The three biggest wins of this session -- 39.5
+(`vat`), 39.10 (`vput`), 39.11 (this one) -- are all that same defect, and the audit is not finished:
+`Prog.ld1`, `Prog.store`, `Prog.rng.*` and `Prog.param.at` still reach the record several times per
+step (they are the next sites, in that order by frequency).
