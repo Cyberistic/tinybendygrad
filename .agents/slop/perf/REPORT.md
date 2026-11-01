@@ -3294,3 +3294,43 @@ lane -- which is the objective.** The work is not a data-structure tweak: `Array
 cannot sit in the `Data` record `Prog`, and the arena has to be threaded through every step that
 reads or writes a value (`vat`, `vput`, `flush` and the ~20 dispatch arms) as a linear companion.
 That is the refactor, and it is the next unit's work, not a floor.
+
+### 39.25 THE ARRAY ARENA'S IDIOMS, VALIDATED — FOUR THINGS THAT BLOCK ON THE FIRST TRY
+
+Before touching 75 defs, the four mechanics a linear `Array` arena needs were each proved on a
+compiled binary (`bend <src> -o <bin>`; a program run without `-o` is interpreted and says nothing
+about speed or even about what compiles). `Array` really does hold a `Data` record, and a linear
+`Type` record really does cross the fuel recursion:
+
+    type E is Data:                      # <-- 1. Array<Elem> where Elem is a DATA RECORD is fine
+      Sc{b: U32, d: U32}
+      Bf{u: U32}
+
+    type S is Type:
+      S{a: Array<E>, n: U32}
+
+    def step(s: S) -> S:                 # <-- 2. linear state crosses the loop
+      match s:
+        case S{a, +n}:                   # <-- 3. `+n`: the ONLY thing t_loop.bend was missing
+          S{Array.set(E, a, U32.and(n, 3), Sc{n, 0}), U32.add(n, 1)}
+
+    def take(ab: Array<E> & E) -> U32:   # <-- 4. a READ is a pair, and it must be DESTRUCTURED IN A
+      match ab:                          #        DEF. `match Array.get(...)` is refused ("cannot
+        case (a2, v): bits(v)            #        scrutinize a computed value") and so is binding it
+                                         #        to a local and matching THAT first.
+    def fin(s: S) -> U32:
+      match s:
+        case S{a, n}: take(Array.get(E, a, 2))     # prints 6 on 7 writes to a 4-slot array
+
+Also: `Array.set` is TYPE-FIRST (`Array.set(-T, a, i, v)`), `Array.new`'s second argument is the
+DEPTH not the count (`Array.new(U32, 6n, 0)` = 64 slots; `64n` means 2^64 and dies), and record
+construction is POSITIONAL (`Sc{n, 0}`, never `Sc{b: n}`).
+
+**So the refactor's shape is fixed**: `Prog` drops `vs`/`vc`/`vi` and becomes
+`Prog{st, gd, ms, mk, pc, bad, dead, un}` (still `Data`, so the 105 `+p: Prog` sites are untouched);
+`Array<Elem>` is threaded as a linear companion through the 75 defs that name `vs`, `vc` or `vi`, and
+every one of them returns `Prog & Array<Elem>`. The two `List.set`s in `Prog.vput` become one
+`Array.set`, which is the ~85-100 ns of a ~184 ns step that 39.24 measured away.
+
+The work is in an isolated worktree (`arena-array`) so the main tree stays green; the main tree is at
+`11282e359` with `ALL PROOFS CHECK`, `ops_python_exec` 153/365/0 and `ops_bend_exec-e2e` 7 match.
