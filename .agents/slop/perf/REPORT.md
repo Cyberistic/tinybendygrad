@@ -3723,3 +3723,50 @@ chain were worth -2.9% and 20 on the INDEX chain were worth +2.7%.**
 STACK slot list 264 -> 235 ms (`71c520f59`), ALU-chain linearity 235 -> 228 ms (`60aaaaccc`), against
 CPython's PYTHON device at 382-398 ms -- **1.65-1.75x on the last five runs.** Reverted this turn: the
 `Prog.dispatch` reorder (no move) and the INDEX-chain linearity (slower).
+
+## 39.35 THE LOAD/STORE TERRITORY IS 1.27% OF THE EXECUTOR, AND ITS WHOLE LEVER IS FOUR `+` MARKERS
+
+39.34 closed with "the next place I would look is whether `Prog.ld1`/`Prog.store`'s `+` sets and `St`
+projections are like the ALU's (profitable) or the INDEX's (not)". 39.35 re-profiled at HEAD
+`462fb2dee` and looked. **THE TERRITORY IS TOO SMALL FOR THE INSTRUMENT, AND THAT IS MEASURED RATHER
+THAN ARGUED.**
+
+**RE-PROFILE AT `462fb2dee`** (`sample`, the 32x32 packet replayed at gx=200, 4583 port-attributed
+samples):
+
+    WL_FID_Prog_dispatch_k648   3479  75.91%   <- the ALU arm
+    WL_FID_Prog_dispatch         173   3.77%
+    WL_FID_Prog_run               63   1.37%
+    WL_FID_Prog_store_at_k354     41   0.89%
+    WL_FID_Prog_al_three_k347     40   0.87%
+    WL_FID_Prog_dispatch_k650     40   0.87%
+    WL_FID_List_set               32   0.70%
+
+**`Prog_ld1`, `Prog_ld_at` and `Prog_ldator` DO NOT APPEAR AS FRAMES AT ALL**, and the whole STORE
+family is `store_at` 0.89% + `store_lane_at` 0.31% + `Mem_wr` 0.07% = **1.27%**. So LOAD+STORE together
+bound every possible change in that territory below the +-2-4% floor -- including removing all of it.
+
+**AND THE LEVER ITSELF IS FOUR MARKERS.** Applying the 39.33 method to every `def Prog.ld*`/`def
+Prog.store*` -- drop `+` only where the body never uses the parameter, token-substituted so no
+signature is reflowed -- yields **4 params out of the whole two chains**; every other one is genuinely
+threaded twice. So the territory is 1.27% wide and the available lever is a fraction of it.
+
+**MEASURED, eight runs at 32x32 (the machine was at load 5.93 on 12 cores, so the MINIMUM is the
+statistic, not the median):**
+
+    228.78  231.32  236.93  238.52  239.04  240.82  256.25  311.60 ms
+    minimum 228.78     vs     baseline (39.33) 227.20  230.40, median 228.46
+
+**NOT ONE OF EIGHT RUNS BEATS THE BASELINE MINIMUM.** Reverted, byte-identical to `462fb2dee`; gates
+re-read `ALL PROOFS CHECK` and `7 match, 0 mismatch-or-refused`.
+
+**⇒ SO BOTH ANSWERS TO 39.34's QUESTION ARE "NEITHER": the LOAD/STORE chains are not like the ALU
+chain (nothing to win) and not like the INDEX chain (nothing to lose) -- they are too small to answer
+the question at this instrument's resolution.** `Prog.dt.f` stays as it is for the same reason
+(39.33: one caller, STORE family 1.27%).
+
+**⇒ AND THE GENERAL RESULT OF 39.32-39.35 IS A MAP, NOT A CEILING CLAIM:** of the ten port frames the
+profiler names, the ALU arm is 75.91% and EVERYTHING ELSE COMBINED is 24.09%, of which the two largest
+are `Prog_dispatch` 3.77% and `Prog_run` 1.37%. A term cannot be improved by more than its own share,
+so the next real lever has to be inside the ALU arm's 75.91% or in the runtime underneath it -- and
+39.33 already took the one thing the ALU arm had (its `+` set).
