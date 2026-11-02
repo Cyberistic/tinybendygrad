@@ -3495,3 +3495,51 @@ mandatory in Bend, the codegen is `-O3`, and `Mem`/`List_set` are gone from the 
 remaining lever above the +-2-4% noise floor, so this is the `fastest possible` this port can express
 -- 1.46-1.50x ahead of CPython's PYTHON device at 32x32 over six runs, 1.90x at 16x16, all gates
 green.** A negative result, recorded with its instrument, is the answer here rather than a rewrite.
+
+## 39.30 THE STATE TERM WAS SHRUNK 10 CELLS -> 6, AND NOTHING MOVED: A NEGATIVE RESULT
+
+39.29 argued that the per-step `Prog` rebuild could only be shrunk, not removed, and left the shrink
+untested. 39.30 tests it. **IT WAS BUILT, IT WAS CORRECT, AND IT BOUGHT NOTHING.**
+
+**THE CHANGE** (`prog-split.diff`, 207 lines, kept beside this report):
+
+    type Prog is Data:
+      Prog{s: ProgS, k: ProgK}
+    type ProgS is Data:
+      ProgS{st: St, gd: Gd, ms: ..., mk: ..., bad: Bool, dead: Bool}
+    type ProgK is Data:
+      ProgK{pc: U32, un: List<&2, Uop>}
+
+`Prog.at`, `Prog.vput` and `Prog.next` -- the three builders on every step -- keep the `s` pointer and
+rebuild ONLY the cursor, `Prog{s, ProgK{pc+1, t}}`: **3 cells for the outer node + 3 for the cursor = 6,
+against 10 for the flat 9-field record, with `ProgS` shared instead of rebuilt.** The remaining 28 sites
+are mechanical (`ProgS{...}, ProgK{...}`); `ProgS` has no mutable per-step field, so a step that does
+not touch `ms`/`mk`/`bad`/`dead` never rebuilds it.
+
+**IT WAS CORRECT**: `--check-only` reads `ALL PROOFS CHECK`, `ops_python_exec` reads 153 fixtures /
+365 rows x 2 lanes / 0 unpinned / 0 pinned, and `ops_bend_exec-e2e` reads `7 match, 0
+mismatch-or-refused` including the 4x4 matmul.
+
+**AND IT WAS NEUTRAL.** `stage3_parity 32x32`, on the variant:
+
+    BEND 264.21 ms   vs PYTHON 388.80 ms    1.47x
+    BEND 262.12 ms   vs PYTHON 393.38 ms    1.50x
+
+against the seven baseline runs of the SAME instrument: BEND 261.97 / 264.11 / 264.19 / 264.71 /
+265.98 / 271.77 / 272.94. **BOTH READINGS SIT INSIDE THE BASELINE'S OWN SPREAD, AND THE BASELINE'S
+MINIMUM (261.97) IS LOWER THAN EITHER.** The ratio did not move past the +-2-4% noise floor, so by the
+rule the change was REVERTED -- `git checkout` restores the file byte-identical to `d26d93d25`
+(`cmp` against the pre-attempt copy).
+
+**⇒ SO THE PER-STEP STATE RECORD'S WIDTH IS NOT WHAT DRIVES THE 94.3%.** Removing 4 of 10 cells from
+every step is below the instrument's resolution, which means the term-management cost named in 39.28 is
+NOT the `Prog` record. My own reasoning in 39.28/39.29 -- "2x fewer cells, therefore a big win" -- was
+wrong in the specific and is retracted here; the arithmetic of cells was right and the attribution was
+not.
+
+**WHAT IS LEFT, NAMED AND UNMEASURED**: the per-value `Elem` allocations, and the `+`-dups of `pr` and
+`h` in `run`'s loop body -- not the state term. That is the only remaining candidate above the noise
+floor, and it is where a further attempt has to look. It is NOT pursued here.
+
+Gates on the reverted tree, re-read after the revert: `ops_bend_exec-e2e` `7 match, 0
+mismatch-or-refused`; `stage3_parity 32x32` BEND 266.58 vs PYTHON 406.79 = 1.53x.

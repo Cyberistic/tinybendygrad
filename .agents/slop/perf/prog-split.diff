@@ -1,0 +1,207 @@
+diff --git a/tinybendygrad/runtime/ops_python.bend b/tinybendygrad/runtime/ops_python.bend
+index fdd2d8fb4..7936ec851 100644
+--- a/tinybendygrad/runtime/ops_python.bend
++++ b/tinybendygrad/runtime/ops_python.bend
+@@ -1791,8 +1791,15 @@ def Gd.gz(+g: Gd) -> U32:
+     case Gd{pv, gx, gy, gz}: gz
+ 
+ type Prog is Data:
+-  Prog{st: St, gd: Gd, ms: List<&2, List<&2, U32>>, mk: List<&2, Bool>,
+-       pc: U32, bad: Bool, dead: Bool, un: List<&2, Uop>}
++  Prog{s: ProgS, k: ProgK}
++type ProgS is Data:
++  ProgS{st: St, gd: Gd, ms: List<&2, List<&2, U32>>, mk: List<&2, Bool>, bad: Bool, dead: Bool}
++type ProgK is Data:
++  ProgK{pc: U32, un: List<&2, Uop>}
++
++def Prog.s(+p: Prog) -> ProgS:
++  match p:
++    case Prog{s, _k}: s
+ 
+ type Args is Data:
+   Args{path: String, gx: U32, gy: U32, gz: U32, vals: List<&2, U32>, ok: Bool}
+@@ -1846,24 +1853,24 @@ def Args.of(as: List<String>) -> Maybe<&2, Args>:
+ 
+ def Prog.st(+p: Prog) -> St:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: st
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: st
+ 
+ def Prog.gd(+p: Prog) -> Gd:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: gd
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: gd
+ 
+ def Prog.us(+p: Prog) -> List<&2, Uop>: St.us(Prog.st(p))
+ def Prog.ms(+p: Prog) -> List<&2, List<&2, U32>>:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: ms
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: ms
+ def Prog.fs(+p: Prog) -> List<&2, Buf>: St.fs(Prog.st(p))
+ def Prog.mk(+p: Prog) -> List<&2, Bool>:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: mk
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: mk
+ def Prog.vals(+p: Prog) -> List<&2, U32>: St.vals(Prog.st(p))
+ def Prog.pc(+p: Prog) -> U32:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: pc
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: pc
+ def Prog.n(+p: Prog) -> U32: St.n(Prog.st(p))
+ def Prog.pv(+p: Prog) -> U32: Gd.pv(Prog.gd(p))
+ def Prog.gx(+p: Prog) -> U32: Gd.gx(Prog.gd(p))
+@@ -1874,19 +1881,18 @@ def Prog.cy(+p: Prog) -> U32: St.cy(Prog.st(p))
+ def Prog.cz(+p: Prog) -> U32: St.cz(Prog.st(p))
+ def Prog.bad(+p: Prog) -> Bool:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: bad
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: bad
+ def Prog.dead(+p: Prog) -> Bool:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: dead
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: dead
+ def Prog.un(+p: Prog) -> List<&2, Uop>:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}: un
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}: un
+ def Prog.sent() -> U32: 4294967295
+ 
+ def Prog.of(+args: Args, +ld: Load) -> Prog & Array<Elem>:
+-  (Prog{St{Load.us(ld), Load.fs(ld), Args.vals(args), Load.n(ld),
+-          Args.gx(args), Args.gy(args), Args.gz(args)}, Gd{3, 0, 0, 0}, Load.ms(ld), Nil{}, 0,
+-     False{}, False{}, Load.us(ld)}, Arena.new())
++  (Prog{ProgS{St{Load.us(ld), Load.fs(ld), Args.vals(args), Load.n(ld),
++          Args.gx(args), Args.gy(args), Args.gz(args)}, Gd{3, 0, 0, 0}, Load.ms(ld), Nil{}, False{}, False{}}, ProgK{0, Load.us(ld)}}, Arena.new())
+ 
+ # **=> AND THE 17 PROJECTIONS ARE ONE MATCH, WHICH IS THE POINT.** MEASURED: a
+ # `sample` of the compiled executor puts ~98% of the run inside `Prog_step`'s
+@@ -1898,10 +1904,7 @@ def Prog.of(+args: Args, +ld: Load) -> Prog & Array<Elem>:
+ # SEVENTEEN ONCE**, and every field below is used exactly once, which is what a
+ # plain binding requires.
+ def Prog.at(+p: Prog, +pc: U32) -> Prog:
+-  match p:
+-    case Prog{st, gd, ms, mk, _pc, bad, dead, _un}:
+-      +lus = St.us(st)
+-      Prog{st, gd, ms, mk, pc, bad, dead, List.drop(&2, Uop, lus, U32.to_nat(pc))}
++  Prog{Prog.s(p), ProgK{pc, List.drop(&2, Uop, St.us(Prog.st(p)), U32.to_nat(pc))}}
+ 
+ # ===========================================================================
+ # THE HOT CHUNK. `Val.put` rebuilds the 16-cell chunk AND the chunk spine -- ~24 heap cells per
+@@ -1933,10 +1936,10 @@ def Prog.vat(a: Array<Elem>, +i: U32) -> Array<Elem> & Elem: Val.at(a, i)
+ # `Array.set`, on the same `bend <src> -o <bin>` build the executor uses.
+ def Prog.vput(+p: Prog, a: Array<Elem>, +slot: U32, +e: Elem) -> Prog & Array<Elem>:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
++    case Prog{s, ProgK{pc, un}}:
+       match un:
+-        case Nil{}: (Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}}, Val.put(a, slot, e))
+-        case _ <> t: (Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, t}, Val.put(a, slot, e))
++        case Nil{}: (Prog{s, ProgK{U32.add(pc, 1), Nil{}}}, Val.put(a, slot, e))
++        case _ <> t: (Prog{s, ProgK{U32.add(pc, 1), t}}, Val.put(a, slot, e))
+ 
+ # A LOAD, A STORE AND A STACK EACH REBUILT THE 21-FIELD RECORD THREE TIMES:
+ # `Prog.next(Prog.live(Prog.ld1(...)))` is `next` + `live` + the arena setter, and each is its own
+@@ -1944,38 +1947,37 @@ def Prog.vput(+p: Prog, a: Array<Elem>, +slot: U32, +e: Elem) -> Prog & Array<El
+ # was replaced (`step.vs`) or only the memory was (`step.ms`), because `vs1` cold-starts the cache.
+ def Prog.step.ms(+p: Prog, +ms: List<&2, List<&2, U32>>, +oob: Bool) -> Prog:
+   match p:
+-    case Prog{st, gd, _ms, mk, pc, bad, dead, un}:
++    case Prog{ProgS{st, gd, _ms, mk, bad, dead}, ProgK{pc, un}}:
+       match un:
+-        case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+-        case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
++        case Nil{}: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), Nil{}}}
++        case _ <> t: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), t}}
+ 
+ def Prog.step.vs(+p: Prog, +oob: Bool) -> Prog:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}:
+       match un:
+-        case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+-        case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
++        case Nil{}: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), Nil{}}}
++        case _ <> t: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), t}}
+ 
+ def Prog.next(p: Prog) -> Prog:
+   match p:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
++    case Prog{s, ProgK{pc, un}}:
+       match un:
+-        case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}}
+-        case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, t}
++        case Nil{}: Prog{s, ProgK{U32.add(pc, 1), Nil{}}}
++        case _ <> t: Prog{s, ProgK{U32.add(pc, 1), t}}
+ 
+ def Prog.ms1(p: Prog, ms: List<&2, List<&2, U32>>) -> Prog:
+   match p:
+-    case Prog{st, gd, _ms, mk, pc, bad, dead, un}:
+-      Prog{st, gd, ms, mk, pc, bad, dead, un}
++    case Prog{ProgS{st, gd, _ms, mk, bad, dead}, ProgK{pc, un}}:
++      Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}
+ 
+ def Prog.mk1(p: Prog, mk: List<&2, Bool>) -> Prog:
+   match p:
+-    case Prog{st, gd, ms, _mk, pc, bad, dead, un}:
+-      Prog{st, gd, ms, mk, pc, bad, dead, un}
++    case Prog{ProgS{st, gd, ms, _mk, bad, dead}, ProgK{pc, un}}:
++      Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}
+ 
+ def Prog.pv1.gd(+st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>, +p: Prog) -> Prog:
+-  Prog{st, Gd{U32.add(Gd.pv(gd), 1), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd)}, ms,
+-    Prog.mk(p), Prog.pc(p), Prog.bad(p), Prog.dead(p), Prog.un(p)}
++  Prog{ProgS{st, Gd{U32.add(Gd.pv(gd), 1), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd)}, ms, Prog.mk(p), Prog.bad(p), Prog.dead(p)}, ProgK{Prog.pc(p), Prog.un(p)}}
+ 
+ def Prog.pv1(+p: Prog) -> Prog:
+   Prog.pv1.gd(Prog.st(p), Prog.gd(p), Prog.ms(p), p)
+@@ -2360,8 +2362,8 @@ def Prog.stack.all(+ss: List<&2, U32>, a: Array<Elem>, +us: List<&2, Uop>) -> Ar
+ def Prog.step.vs.f.go(un: List<&2, Uop>, +st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, +oob: Bool) -> Prog:
+   match un:
+-    case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+-    case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
++    case Nil{}: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), Nil{}}}
++    case _ <> t: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), t}}
+ 
+ def Prog.step.vs.f(+st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +oob: Bool) -> Prog:
+@@ -2748,8 +2750,8 @@ def Prog.step.ms.f.go(un: List<&2, Uop>, +st: St, +gd: Gd,
+   +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
+   +oob: Bool) -> Prog:
+   match un:
+-    case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+-    case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
++    case Nil{}: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), Nil{}}}
++    case _ <> t: Prog{ProgS{st, gd, ms, mk, Bool.or(bad, oob), dead}, ProgK{U32.add(pc, 1), t}}
+ 
+ def Prog.step.ms.f(+st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>,
+@@ -3000,7 +3002,7 @@ def Prog.over(+pr: Prog) -> Bool: U32.is_ge(Prog.pc(pr), Prog.n(pr))
+ # static step count -- so this is the "stay turing-incomplete" guard, and it
+ # refuses the launch instead of answering a plausible wrong number.
+ def Prog.die(+pr: Prog) -> Prog:
+-  Prog{Prog.st(pr), Prog.gd(pr), Prog.ms(pr), Prog.mk(pr), Prog.pc(pr), Prog.bad(pr), True{}, Prog.un(pr)}
++  Prog{ProgS{Prog.st(pr), Prog.gd(pr), Prog.ms(pr), Prog.mk(pr), Prog.bad(pr), True{}}, ProgK{Prog.pc(pr), Prog.un(pr)}}
+ 
+ # ONE def for the whole loop, and it has to be ONE: Bend refuses mutual
+ # recursion, so `run` and a separate `run.at` cannot both exist. The shape that
+@@ -3038,7 +3040,7 @@ def run(+f: Nat, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
+       match av:
+         case (pr, a):
+           match pr:
+-            case Prog{st, gd, ms, mk, pc, bad, dead, un}:
++            case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}:
+               match un:
+                 case Nil{}: (pr, a)
+                 case +h <> _:
+@@ -3051,8 +3053,8 @@ def Prog.carry.gd(+pv: U32, +gx: U32, +gy: U32, +gz: U32, +oz: Bool) -> Gd:
+ 
+ def Prog.carry(+pr: Prog, +oz: Bool) -> Prog:
+   match pr:
+-    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
+-      Prog{st, Prog.carry.gd(Gd.pv(gd), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd), oz), ms, mk, pc, bad, dead, un}
++    case Prog{ProgS{st, gd, ms, mk, bad, dead}, ProgK{pc, un}}:
++      Prog{ProgS{st, Prog.carry.gd(Gd.pv(gd), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd), oz), ms, mk, bad, dead}, ProgK{pc, un}}
+ 
+ def Prog.reset(+pr: Prog) -> Prog: Prog.at(Prog.mk1(pr, Nil{}), 0)
+ 
