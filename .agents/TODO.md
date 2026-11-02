@@ -313,6 +313,25 @@ ops-python-exec  [#########] 9/9     the EXECUTOR census, 153 fixtures x 2 lanes
                                        `f32.sqrt.0`. 45 of 47 `op_of` names and 19 of 21
                                        `Prog.dispatch` arms now have rows; `case _: Prog.alu`
                                        is entered by 128 of 153 fixtures. See below.
+stack-sslot     [##########] 1/1     `Prog.stack.at` read each STACK src's arena
+                                       slot with `Uop.slot(Uop.at(us, s))` -- a walk
+                                       of up to 510 cons cells, once per element --
+                                       and threaded `us` through both stack defs for
+                                       nothing else, while `Uop.sslot(u)` IS that
+                                       slot list, precomputed once per packet and
+                                       already used by ALU and INDEX. `71c520f59`,
+                                       10 lines changed. THE ONE REAL WIN SINCE THE
+                                       ARENA: five 32x32 runs read BEND 235.27 /
+                                       232.82 / 229.69 / 241.83 / 235.32 ms against
+                                       a 261.97-272.94 baseline -- MEDIAN -10.9%,
+                                       and the slowest post-fix run beats the
+                                       fastest pre-fix run; ratio 1.46-1.53x ->
+                                       1.58-1.70x. STACK disappears from the
+                                       profile (11.6% -> absent). Gates: PROOF-ALL
+                                       CHECK, 365 rows x 2 lanes 0 unpinned,
+                                       7 match e2e, 16x16 1.87x. `Prog.dt.f` is the
+                                       last user of the old idiom, unchanged.
+                                       REPORT 39.32 (which also corrects 39.31).
 arena-array     [##########] 10/10   THE VALUE ARENA IS ONE `Array<Elem>` (`cfb5b90e5`,
                                        +545 / -608 -> 63 LINES FEWER). The held-chunk
                                        cache (`vc`/`vi`) is gone with it. THE DEFECT
