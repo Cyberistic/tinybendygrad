@@ -3412,3 +3412,46 @@ to ~262-264 ms, which is the ~1.4x the `List.set` -> `Array.set` micro-benchmark
 threads linearly, a read hands back `Array<Elem> & Elem`, and the only idiom that works is a
 continuation def whose PARAMETER is the pair -- all 113 sites are mechanical once that is known. The
 thing that made this cost a session was that a WRONG LINE COMPILES, PROVES, AND ANSWERS PLAUSIBLY.
+
+## 39.28 THE CEILING: 94.3% OF THE EXECUTOR IS BEND's RUNTIME, SO NO PORT CHANGE CAN BUY MORE THAN ~5%
+
+§39.14 measured this before the arena landed. It is re-measured here on the LANDED executor
+(`cfb5b90e5`), because the arena change removed the biggest allocator and the shares must have moved.
+**They moved the wrong way for the port: the port's own share FELL.**
+
+The instrument is `sample` at 1 ms on the compiled executor replaying the 32x32 packet's own captured
+`PACKET.in` with a 32-cell grid so the process lives ~2 s. **THE FILE HAS TWO THREADS AND ONLY ONE OF
+THEM WORKS**, which is the trap in this instrument: `Thread_52070953` is `io_help` parked in
+`__psynch_cvwait` for all 1968 of its samples, so a top-of-stack census over the whole file reports
+`__psynch_cvwait` as the single hottest symbol and reads as "the executor is idle". The work is
+`Thread_52070952` (the main thread), also 1968 samples:
+
+    term_drop          796   40.4%     <- Bend runtime
+    span_fade          587   29.8%     <- Bend runtime
+    <deduplicated_symbol> 278 14.1%    <- Bend runtime
+    OUTLINED_FUNCTION_12  127  6.5%    <- Bend runtime
+    spin_179/141/374/129   68  3.5%    <- Bend runtime
+    ------------------------------     RUNTIME 1856 of 1968 = 94.3%
+    WL_FID_run             14
+    WL_FID____uop_ops_op_in 9
+    WL_FID_Prog_dispatch    8 + 7 + 5
+    WL_FID_alu3             6
+    WL_FID_List_length/-set 18         <- Bend stdlib, called by the port
+    ------------------------------     PORT 49 named in the top 20, ~5% with the tail
+
+**⇒ SO "FASTEST POSSIBLE" HAS A MEASURED CEILING HERE: 94.3% of the work is the vendored runtime
+allocating, refcounting and freeing, and the port's own code is ~5%.** No port-side rewrite can pay
+more than that, and that is the number that answers the objective honestly.
+
+**⇒ AND IT RETIRES THE `Mem` REWRITE, WHICH WAS THE NAMED NEXT STEP.** `Mem.st`/`Mem.ld` do not appear
+in this census AT ALL (nor does `Prog_ld_at`, the load loop, which was 6 samples = 2% in §39.14). A
+word-granular `Mem` was estimated at ~2% there and is now below the top-20 cut, against a machine noise
+floor of ±2-4% on this metric: **an improvement below the instrument's resolution is not an
+improvement, it is a claim.** The same estimate was refused in §39.14; the fresh census agrees with it
+and strengthens it. The change stays refused, on a measurement rather than on an opinion.
+
+**⇒ AND `List_set` FELL FROM 4% TO 8 SAMPLES (0.4%)**, which is the arena's own receipt: the value
+write was the port's biggest allocation site and it is gone.
+
+Fields: 32x32 grid replay, `sample 6 -file`. Artifacts under `/tmp/prof32/` (regenerable by
+`/tmp/capture.py`, which intercepts the executor argv from `ops_bend.__call__`).
