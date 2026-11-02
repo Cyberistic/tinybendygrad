@@ -71,15 +71,27 @@
 # the timing table in the agent report. tinygrad's runtime_cache means a program is only re-launched when
 # its AST changes, so a steady-state loop pays this once per unique kernel, not once per iteration.
 
-import os, time, struct, hashlib, functools, subprocess, tempfile, pathlib
+import os, time, struct, hashlib, functools, subprocess, tempfile, pathlib, platform
 from dataclasses import dataclass
 from tinygrad.dtype import DType, AddrSpace, dtypes
-from tinygrad.helpers import cache_dir, is_image_shape, to_mv
+from tinygrad.helpers import cache_dir, is_image_shape, to_mv, getenv
 from tinygrad.device import HostAllocator, Compiled, Compiler, Program, TinyELF
 from tinygrad.uop.ops import Ops, UOp
 from tinygrad.runtime.ops_python import PythonRenderer
 
-BEND = pathlib.Path(__file__).resolve().parents[2]                  # the repo root: ./bin and tinybendygrad resolve from here
+def _repo_root() -> pathlib.Path:
+  """the ancestor that holds the port this module drives. DERIVED, NOT COUNTED.
+
+  `parents[2]` was right while this file lived at `tinygrad/runtime/ops_bend.py` and wrong the
+  moment it moved to the repo root (c2a66ea41, R100 -- byte-identical, so the bug came in with
+  the MOVE, not with an edit). MEASURED: with `parents[2]` the BEND device raised "BEND needs
+  /Users/cyberistic/src/bin/bend, which is not there" and `gates/ops_python_exec-gate.py` died
+  on a traceback instead of REFUSING. A COUNT of parents is a hand list of a layout."""
+  for p in pathlib.Path(__file__).resolve().parents:
+    if (p/"tinybendygrad"/"runtime"/"ops_python.bend").exists(): return p
+  raise RuntimeError(f"no ancestor of {__file__} holds tinybendygrad/runtime/ops_python.bend")
+
+BEND = _repo_root()                                              # the repo root: ./bin and tinybendygrad resolve from here
 BEND_SRC = BEND/"tinybendygrad"/"runtime"/"ops_python.bend"   # ONE .bend per upstream .py: the port of ops_python.py IS the executor
 BEND_BIN = BEND/"bin"/"bend"
 
@@ -240,6 +252,38 @@ class BendRenderer(PythonRenderer):
   has_local = False
   def render(self, uops:list[UOp]) -> str: return encode(uops)
 
+# **=> AND `BEND_C=1` MAKES THE LANE COMPILE C INSTEAD OF INTERPRETING.** MEASURED:
+# the interpreter is 56x slower than the PYTHON device on `(A @ B) @ C` (29 973 ms
+# vs 533 ms for a 16x16, `.agents/slop/perf/REPORT.md`), and `sample` puts 95% of
+# its time in Bend's own `term_drop`/`span_fade` -- so the cost is in the runtime,
+# not in this file.
+#
+# **=> AND THE C IS THE SAME C THE PORT RENDERS**: `tinybendygrad/renderer/cstyle.bend`
+# and CPython's `ClangRenderer` are BYTE-IDENTICAL on all 30 kernel-text rows in
+# `gates/cstyle-live.rows` (measured; `.agents/slop/perf/REPORT.md` §2), so this lane
+# executes the port's own emitted code through the CC compiler, the loader and the
+# call that `.agents/slop/cpuseam/verify.sh` proves byte-identical to CPython's CPU
+# device on five real MNIST kernels.
+#
+# **=> AND IT IS A FLAG AND NOT A REPLACEMENT**, because the interpreter IS this
+# lane's definition (`BendRenderer`/`BendProgram` above, and the header's "the
+# difference is where they RUN"). Both stay; `BEND_C` picks which one runs.
+BEND_C = getenv("BEND_C", 0)
+
 class BendDevice(Compiled):
   def __init__(self, device:str):
+    # `CPUProgram.__init__` reads `dev.remote` DIRECTLY (tinygrad/runtime/ops_cpu.py:26) and
+    # `CPUDevice.__init__` is what sets it (ops_cpu.py:71), so a `Compiled` device that hands
+    # `CPUProgram` to `super().__init__` MUST set it first. Without this the compiled lane raised
+    # AttributeError and the device fell back to the interpreter: 228.46 ms vs 1.36 ms at 32x32.
+    self.remote = None
+    if BEND_C:
+      from tinygrad.runtime.ops_cpu import CPUProgram
+      from tinygrad.renderer.cstyle import ClangRenderer
+      super().__init__(device, HostAllocator(self), [ClangRenderer], CPUProgram,
+        arch={'amd64': 'x86_64', 'aarch64': 'arm64'}.get(m := platform.machine().lower(), m) + ",native")
+      return
     super().__init__(device, HostAllocator(self), [BendRenderer], BendProgram)
+
+  @property
+  def has_copy_queue(self) -> bool: return False

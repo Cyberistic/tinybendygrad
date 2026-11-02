@@ -141,3 +141,38 @@ not strays to sweep:** `gates/amd-mut-run.py:5` and `gates/amd_dsl_census-mutate
 `checks/substrate.py:558` already records `*-mut.bend` and `dsl.bend.bak` as "owned by neither".
 **Checked before touching; kept.** This is the file class `AGENTS.md` warns moves the digest, and the
 answer here is that the tree already accounts for it.
+
+## 9. THE EXECUTION LANE: A ONE-LINE DEFECT WAS HIDING A 168x GAP
+
+**tinygrad's own CPU device runs this workload in 1.209 ms. Our BEND lane ran it in 228.46 ms --
+189x slower.** That is not a floor, it was a bug: the compiled lane (`BEND_C=1`, which renders C with
+the PORT's own `cstyle.bend` and calls `cc`) was DEAD.
+
+```
+AttributeError: 'BendDevice' object has no attribute 'remote'
+  File "tinygrad/runtime/ops_cpu.py", line 26, in __init__
+    if dev.remote is not None: ...
+```
+
+`CPUProgram.__init__` reads `dev.remote` **directly**, and `CPUDevice.__init__` (`ops_cpu.py:71`) is
+what sets it. `BendDevice` handed `CPUProgram` to `Compiled.__init__` without setting it, so the
+compiled branch raised on every launch and the device silently used the interpreter. **One line:
+`self.remote = None` at the top of `BendDevice.__init__`, exactly as `CPUDevice` does.**
+
+MEASURED AFTER THE FIX:
+
+```
+BEND (compiled, BEND_C=1)   1.36 ms       max|PYTHON-BEND| = 0.000e+00
+BEND (interpreter)        228.46 ms
+tinygrad CPU device         1.209 ms
+```
+
+**1:1 WITH TINYGRAD'S OWN CPU DEVICE TO WITHIN 12%, AND THE ANSWER IS BIT-EXACT (0.000e+00).** The
+port's compiled lane is also certified independently by `.agents/slop/cpuseam/compare.py`: the C the
+port renders with `cstyle.bend`, compiled with `cc`, reproduces CPython's numbers on all 5 kernels,
+`max_abs=0 max_rel=0`, `fail=0`.
+
+The interpreter lane is unchanged and still green (`ops_python_exec` 365 rows / 0 unpinned,
+`ops_bend_exec-e2e` 7 match), so `BEND_C` remains the flag that selects a lane; **whether the compiled
+lane should be the DEFAULT is a scope decision, not a bug fix** (`ops_bend.py`'s header: the interpreter
+"IS this lane's definition").
