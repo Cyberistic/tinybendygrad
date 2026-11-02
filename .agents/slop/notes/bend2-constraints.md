@@ -26897,3 +26897,18 @@ Full rule + instrument: `.agents/slop/wallrule/RULE.md`,
   the finding: **THE COMMON FAILURE IS NOT THAT THE WALL WAS WRONG, IT IS THAT NOBODY RE-ASKED
   THE QUESTION AFTER THE ANSWER ARRIVED.** Full per-row table with both trees' hit counts:
   `.agents/slop/wallrule/wallcheck.out`; per-row reasoning: `walls.truth.tsv`.
+
+## Recovered substrate rules (from `runtime/zzprobe2.bend`, deleted 2026-11-02)
+
+That file was a scratch probe whose own first line read `# scratch probe -- DELETE.`. It was
+`checks/port-compile-gate.py`'s ONLY finding (a tracked port file that does not compile), it was an
+input to no gate, and it carried four measured Bend rules nowhere else recorded. The rules are kept
+here and the file is gone, so the port tree is all-compiling.
+
+* a `List` PARAMETER is AFFINE -- "consumed more than once".
+* `r = expr` inside a `do` block is not a pattern; the bind is `r : T <- eff`.
+* recursive args are read LEFT TO RIGHT and the call must be DECREASING, so the fuel `n` must LEAD,
+  and a two-column `match ms n:` is REFUSED outright.
+* a LIST carries its depth: `List<&1, U32>` is not `List<&2, U32>`, and
+  `List.append(&2, U32, Nil{}, bs)` does not convert one -- the error names `bs` as still `&1`. The
+  conversion is a FOLD, which is why `ops_python.bend` has `Prog.chars1`/`Prog.bytes1` for that hop.
