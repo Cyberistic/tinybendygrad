@@ -3770,3 +3770,47 @@ profiler names, the ALU arm is 75.91% and EVERYTHING ELSE COMBINED is 24.09%, of
 are `Prog_dispatch` 3.77% and `Prog_run` 1.37%. A term cannot be improved by more than its own share,
 so the next real lever has to be inside the ALU arm's 75.91% or in the runtime underneath it -- and
 39.33 already took the one thing the ALU arm had (its `+` set).
+
+## 39.36 THE ALLOCATION/dup SLOPE IS 0.276% PER PER-STEP ALLOCATION, WHICH CLOSES THE WHOLE AVENUE
+
+39.30 named the `pr`/`h` dups in `run` and never probed them; 39.31 probed ONE extra allocation and
+read flat, which bounds one step size but not the slope. 39.36 does both halves.
+
+**A -- DROPPING `+h` IS NOT EXPRESSIBLE.** The intent was `case +h <> _` -> `case h <> _`, with
+`Prog.dispatch` projecting the op itself so the uop is consumed once. Bend refuses the projection:
+
+    def Prog.dispatch(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+      match Uop.op(u):
+    Error: a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+
+and giving it its own def does not help, because the matching def then uses `u` TWICE -- once for
+`Uop.op(u)` and once for the arms (`Uop.src1(u)`, `Uop.a(u)`, `Uop.slot(u)` ...). **THE UOP MUST BE
+USABLE FOR BOTH, SO IT MUST BE DUPLICABLE: the `+h` dup is STRUCTURAL, not an oversight.** Reverted;
+`cmp` confirms the file is byte-identical.
+
+**B -- THE SLOPE, AT +8.** `Prog.al.three.t` gains eight nullary `Elem.zero()` allocations per ALU
+step, written to scratch slots 1016-1023 which no packet reads, so semantics and every gate are
+unchanged. (`Elem.zero()` is the only constructor reachable here without touching a linear parameter:
+39.33 made `v0`, `v1`, `slot` and `dt` all single-use, and three earlier attempts at this probe were
+refused as `consumed more than once` -- which is 39.33's win showing up as a constraint on its own
+instrument.)
+
+    +8 per ALU step:  BEND 231.39  233.50  245.23 ms   median 233.50
+    baseline (39.33): BEND 227.20  228.28  228.46  228.71  230.40 ms   median 228.46
+
+**+2.21% FOR EIGHT ALLOCATIONS = 0.276% PER ALLOCATION PER STEP.** Reverted, byte-identical; gates
+`ALL PROOFS CHECK` and `7 match, 0 mismatch-or-refused`.
+
+**⇒ AND THAT NUMBER BOUNDS EVERYTHING THE LAST FOUR TURNS WERE LOOKING FOR:**
+- the ALU step has ~6 allocations (three `Array.get` pairs, `alu3`, `Prog` from `vput`, the result
+  pair), so **the ENTIRE allocation-count lever inside the 75.91% arm is ~1.65%** -- below the
+  +-2-4% floor;
+- one extra per-step dup -- the `+h`/`pr` question -- is **~0.28%**, below the floor;
+- and it explains why 39.31's +1 probe read flat: 0.28% in a metric whose floor is 2% is invisible, so
+  a single-allocation probe could never have detected the slope. **THE SLOPE NEEDED +8 TO SEE, AND
+  WHAT IT SHOWS IS THAT THE LEVER EXISTS AND IS TOO SMALL.**
+
+**⇒ SO "REDUCE ALLOCATIONS PER STEP" IS CLOSED AS AN AVENUE, NOT JUST AS AN INSTANCE.** The wins this
+session came from removing a *traversal* (39.32, -10.9%), a *permission that forced a copy* (39.33,
+-2.9%) and a *data structure the write path paid for twice* (arena, -30%); none of them came from
+counting allocations, and this is the measurement that says why.
