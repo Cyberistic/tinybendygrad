@@ -27631,3 +27631,37 @@ committed tree that holds it, plus `sc_apply_binds`'s three arms and the
 -> `1e3744f5`) **AND **EVERY **MOVE **WAS **RE-TAKEN **IN **FULL, **NOT **INFERRED.  A
 certificate whose digest did not move while the substrate did is the one thing this file
 cannot survive.
+
+A `run` WITHOUT A `repro` BREAKS THE WITNESS -- and `witness.fresh` caught it on a tree where every other reading was green
+
+**⇒ AND **MEASURED **2026-11-02, **AND **THE **CAUSE **WAS **NOT **MINE:** another unit re-ran
+`differ.py run` at **16:12:39** (digest `8e7ab117`, `substrate-head=78b204521`) while
+`D0-repro.txt` was still mine from **06:10:54** at `1e3744f5`.  **SO **THE **REPRO **WAS
+**OLDER **THAN **THE **VERDICT **IT **IS **SUPPOSED **TO **CERTIFY, **AND **THE
+**WITNESS **SAID **SO **BY **NAME:**
+
+    witness.fresh       FAIL
+    witness.substrate   FAIL
+    claim               NOT-ESTABLISHED   (3 of 7 readings red)
+    verdict.current     OK                <- AND THE VERDICT ITSELF WAS FINE
+
+**⇒ AND **THAT **IS **THE **SHAPE **WORTH **KEEPING: **`verdict.current` **WAS **GREEN
+**AND **`claim` **WAS **RED.**  A green verdict and a certified claim are DIFFERENT
+STATEMENTS, and the only thing separating them here is **ORDER** -- `witness.fresh` is
+`mtime(W2) >= mtime(W1)`.  A run is a claim; a repro taken AFTER it is the check.
+
+**⇒ AND **THE **CURE **IS **ONE **COMMAND, **AND **IT **IS **NOT **A **RE-RUN **OF
+**EVERYTHING:** `differ.py repro` at the CURRENT verdict.  `340 of 340 files identical`,
+rc=0, and all seven readings went green -- `witness.substrate` `CURRENT` because the
+repro now carries `8e7ab117` too, and `witness.fresh` `FRESH` because it is newer.
+
+**⇒ AND **SO **THE **OPERATIONAL **RULE **THIS **ADDS **TO **THE **FILE: **AFTER **ANY
+`run`, **THE **REPRO **IS **STALE **UNTIL **IT **IS **RE-TAKEN** -- even if the substrate
+never moved, and even if the run agreed with itself.  **`substrate-start == substrate-end`
+SAYS **THE **TREE **DID **NOT **MOVE **DURING **THE **RUN; **IT **SAYS **NOTHING **ABOUT
+**WHETHER **THE **RUN **WAS **CERTIFIED.**
+
+    graphs=38  graphs-agree=38  byte-identical=38  graphs-refused=0
+    substrate-start == substrate-end == 8e7ab117989c661ff9f6c390e631ec0d0b8d575d16985aeb07552385c5c71669
+    D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
+    corpuswitness-gate -> PASS -- the claim is ESTABLISHED
