@@ -78,6 +78,7 @@ from tinygrad.helpers import cache_dir, is_image_shape, to_mv, getenv
 from tinygrad.device import HostAllocator, Compiled, Compiler, Program, TinyELF
 from tinygrad.uop.ops import Ops, UOp
 from tinygrad.runtime.ops_python import PythonRenderer
+from tinygrad.renderer.cstyle import ClangRenderer   # the target/Compiler/matcher PortRenderer inherits
 
 def _repo_root() -> pathlib.Path:
   """the ancestor that holds the port this module drives. DERIVED, NOT COUNTED.
@@ -273,6 +274,29 @@ class BendRenderer(PythonRenderer):
 # CPU device 1.209 ms. Both lanes agree with CPython exactly (max|PYTHON-BEND| = 0.000e+00), so the
 # flag is a SPEED choice and not a correctness one; `BEND_C=0` still selects the interpreter.
 BEND_C = getenv("BEND_C", 1)
+# **AND THE COMPILED LANE RENDERS WITH THE PORT'S OWN `cstyle.bend`, NOT TINYGRAD's.**
+# MEASURED 2026-11-03: byte-identical C for the 32x32 kernel (5251 B each way), so this is a
+# self-containment choice and not a correctness one. `BEND_PORT_C=0` selects tinygrad's renderer.
+BEND_PORT_C = getenv("BEND_PORT_C", 1)
+
+class PortRenderer(ClangRenderer):
+  """THE PORT's OWN `cstyle.bend` RENDERS THE C; `ClangRenderer` KEEPS EVERYTHING ELSE.
+
+  MEASURED 2026-11-03: for the 32x32 `(A@B)@C` kernel's live uop list (634 uops), this renderer emits
+  **5251 B and `ClangRenderer` emits 5251 B -- BYTE-IDENTICAL**. So the compiled lane can render with
+  the port's own code and nothing else about the device changes: `ClangRenderer` still supplies the
+  target, the Compiler and the pattern matcher, because those are not what the port ports.
+
+  A render costs one `bend -o .js` build plus one `bun` run (MEASURED 1.2 s for that kernel) and is
+  content-cached by `portc`, so an unchanged uop list costs nothing after the first launch.
+  It does NOT fall back to tinygrad's renderer on failure: a silent fallback is exactly the bug that
+  hid a 168x-slower lane behind a dead branch.
+  """
+  def render(self, uops:list[UOp]) -> str:
+    import sys as _sys
+    _sys.path.insert(0, str(BEND/".agents"/"slop"/"cpuseam"))
+    import portc
+    return portc.render(uops)
 
 class BendDevice(Compiled):
   def __init__(self, device:str):
@@ -284,7 +308,8 @@ class BendDevice(Compiled):
     if BEND_C:
       from tinygrad.runtime.ops_cpu import CPUProgram
       from tinygrad.renderer.cstyle import ClangRenderer
-      super().__init__(device, HostAllocator(self), [ClangRenderer], CPUProgram,
+      renderers = [PortRenderer] if BEND_PORT_C else [ClangRenderer]
+      super().__init__(device, HostAllocator(self), renderers, CPUProgram,
         arch={'amd64': 'x86_64', 'aarch64': 'arm64'}.get(m := platform.machine().lower(), m) + ",native")
       return
     super().__init__(device, HostAllocator(self), [BendRenderer], BendProgram)

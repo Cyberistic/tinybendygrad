@@ -215,3 +215,40 @@ Bend module**, one per kernel, produced by `dump_kernel.py` (uops -> `.rows`) th
 driver, build it, and return the C — with `tinygrad`'s program cache making that once per unique kernel.
 A build is ~10-15 s on this machine. **That is the next build, and it is the only thing standing between
 `DEV=BEND` and a fully self-contained 1:1 implementation.**
+
+## 11. THE COMPILED LANE NOW RENDERS WITH THE PORT's OWN `cstyle.bend`
+
+`BEND_C=1` (default) previously handed `[ClangRenderer]` to `Compiled`, i.e. it rendered C with
+**tinygrad's** code. It now uses `PortRenderer(ClangRenderer)`, which overrides ONLY `render` -- the
+target, the `Compiler` and the pattern matcher still come from `ClangRenderer`, because those are not
+what the port ports. `BEND_PORT_C=0` selects tinygrad's renderer again.
+
+**THE RENDERERS ARE BYTE-IDENTICAL ON A LIVE UOP LIST.** Measured on the 32x32 `(A@B)@C` kernel's own
+634-uop list, captured from `ClangRenderer.render` and re-rendered by the port:
+
+```
+kernel 0: uops=634  ours=5251 B  theirs=5251 B  identical=True  render=1.2 s
+```
+
+`.agents/slop/cpuseam/portc.py` is the bridge. It does NOT re-type the format: it imports
+`dump_kernel.dump_uops` and `gen_kus.one` -- the SAME two functions the fixtures use -- so a live render
+and a fixture render cannot drift. `cstyle.bend`'s `C.render` takes a `KU` **Bend value, not text**, so
+the uop list is transcribed to literals in a generated module, the module plus a driver are built with
+`bend -o <js>`, and run with `bun`; the C is content-cached by sha256 of the rows. One build is
+MEASURED 1.2 s and happens once per unique kernel.
+
+A failure RAISES rather than falling back to tinygrad's renderer. **A silent fallback is exactly the bug
+that hid a 168x-slower lane behind a dead branch for the whole of this session.**
+
+MEASURED, `DEV=BEND` on the default path:
+
+| | 32x32 | 16x16 |
+|---|---|---|
+| port renderer (default) | **1.22 ms** | 1.37 ms |
+| `BEND_PORT_C=0` (tinygrad's) | — | 1.31 ms |
+| agreement with CPython | `0.000e+00` | `0.000e+00` |
+| tinygrad's own CPU device | 1.209 ms | — |
+
+Gates unchanged: `ops_bend_exec-e2e` `7 match` (pinned to the interpreter lane), `ops_python_exec` 365
+rows x 2 lanes / 0 unpinned, `ALL PROOFS CHECK`, substrate digest still `8e7ab117...` so the 38/38
+corpus run remains CURRENT.
