@@ -2853,41 +2853,41 @@ def Prog.alu.kind(one: Bool, two: Bool) -> U32:
 # ONE destructure now feeds the whole arm, and the src slots come off the bound `sslot`.
 # **THE ALU WRITE PATH, IN CONTINUATION FORM** -- one def per read depth, each consuming the pair a
 # read returns. The arity is a `match` on the parameter, so only the arm that runs reads anything.
-def Prog.al.one.r(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+def Prog.al.one.r(p: Prog, op: O.Op, dt: S.Dt, slot: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
   match av:
     case (a1, v0): Prog.vput(p, a1, slot, alu1(op, dt, v0))
 
-def Prog.al.one(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +slot: U32, +s0: U32) -> Prog & Array<Elem>:
+def Prog.al.one(p: Prog, a: Array<Elem>, op: O.Op, dt: S.Dt, slot: U32, s0: U32) -> Prog & Array<Elem>:
   Prog.al.one.r(p, op, dt, slot, Val.at(a, s0))
 
-def Prog.al.two.t(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +v0: Elem, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+def Prog.al.two.t(p: Prog, op: O.Op, dt: S.Dt, slot: U32, v0: Elem, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
   match av:
     case (a2, v1): Prog.vput(p, a2, slot, alu2(op, dt, v0, v1))
 
-def Prog.al.two.r(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +s1: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+def Prog.al.two.r(p: Prog, op: O.Op, dt: S.Dt, slot: U32, s1: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
   match av:
     case (a1, v0): Prog.al.two.t(p, op, dt, slot, v0, Val.at(a1, s1))
 
-def Prog.al.two(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +slot: U32, +s0: U32, +s1: U32) -> Prog & Array<Elem>:
+def Prog.al.two(p: Prog, a: Array<Elem>, op: O.Op, dt: S.Dt, slot: U32, s0: U32, s1: U32) -> Prog & Array<Elem>:
   Prog.al.two.r(p, op, dt, slot, s1, Val.at(a, s0))
 
-def Prog.al.three.t(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +v0: Elem, +v1: Elem,
+def Prog.al.three.t(p: Prog, op: O.Op, dt: S.Dt, slot: U32, v0: Elem, v1: Elem,
   av: Array<Elem> & Elem) -> Prog & Array<Elem>:
   match av:
     case (a3, v2): Prog.vput(p, a3, slot, alu3(op, dt, v0, v1, v2))
 
-def Prog.al.three.s(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +v0: Elem, +s2: U32,
+def Prog.al.three.s(p: Prog, op: O.Op, dt: S.Dt, slot: U32, v0: Elem, s2: U32,
   av: Array<Elem> & Elem) -> Prog & Array<Elem>:
   match av:
     case (a2, v1): Prog.al.three.t(p, op, dt, slot, v0, v1, Val.at(a2, s2))
 
-def Prog.al.three.r(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +s1: U32, +s2: U32,
+def Prog.al.three.r(p: Prog, op: O.Op, dt: S.Dt, slot: U32, s1: U32, s2: U32,
   av: Array<Elem> & Elem) -> Prog & Array<Elem>:
   match av:
     case (a1, v0): Prog.al.three.s(p, op, dt, slot, v0, s2, Val.at(a1, s1))
 
-def Prog.al.three(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +slot: U32, +s0: U32, +s1: U32,
-  +s2: U32) -> Prog & Array<Elem>:
+def Prog.al.three(p: Prog, a: Array<Elem>, op: O.Op, dt: S.Dt, slot: U32, s0: U32, s1: U32,
+  s2: U32) -> Prog & Array<Elem>:
   Prog.al.three.r(p, op, dt, slot, s1, s2, Val.at(a, s0))
 
 def Prog.alu.at.k(+k: U32, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U32,

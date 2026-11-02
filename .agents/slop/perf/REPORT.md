@@ -3644,3 +3644,43 @@ probe that says "this dimension is flat" bounds THE SITE PROBED, not the class o
 39.31's probes were all on the ALU arm and the arena, and the 11.6% STACK site was outside every one of
 them. **`Prog.dt.f` is the last user of the old idiom** (one `Uop.at` walk per LOAD/STORE dtype lookup)
 and is NOT changed here.
+
+## 39.33 FIFTY OF THE ALU CHAIN'S `+` MARKERS WERE SPURIOUS, AND DROPPING THEM IS -2.9%
+
+39.32 left the ALU arm at 78.7% with no dominant sub-site. 39.33 found the cost is not in a SITE but in
+the PARAMETER MODE: every parameter of `Prog.al.one/two/three` and their continuation defs is marked
+`+` (duplicable), and **EVERY ONE OF THEM IS USED EXACTLY ONCE PER PATH.** `+` is a permission, and the
+caller pays for it: the value must be duplicable, so it is dup'd rather than moved.
+
+**THE CHANGE: 50 `+` markers removed from that chain and nothing else** (`cp` before, `cmp` after).
+`bin/bend --check-only` reads `ALL PROOFS CHECK`, which is the proof that none of the 50 was doing
+real work: Bend refuses to compile a linear parameter that is used twice, so a clean build IS the
+measurement that each is single-use.
+
+**MEASURED, five runs at 32x32, same instrument:**
+
+    BEND  227.20  228.28  228.46  228.71  230.40 ms   median 228.46
+    pre-fix baseline (39.32): 229.69  232.82  235.27  235.32  241.83 ms   median 235.27
+
+**MEDIAN 235.27 -> 228.46 = -2.89%**, and every post-fix run is below the pre-fix MEDIAN; only the
+pre-fix minimum (229.69) overlaps the post-fix range. That is at the low edge of the +-2-4% band, so
+the claim is stated with its numbers: it is the smallest win of the three landed this session and the
+only one whose margin is not large.
+
+Gates: `--check-only` and `PROOF-ALL` `ALL PROOFS CHECK`; `ops_python_exec` 153 fixtures / 365 rows x
+2 lanes / **0 unpinned / 0 pinned**; `ops_bend_exec-e2e` **7 match, 0 mismatch-or-refused**.
+
+**⇒ AND IT ALSO RETIRES TWO CANDIDATES WITH NUMBERS, both asked for:**
+- **`Prog.dt.f`'s `Uop.at(us, ...)` walk is refused.** It has ONE caller (`Prog.store.sb.f.mk`, the
+  STORE lane setup), so it runs once per STORE, and the whole STORE family measures **1.06%** of the
+  executor (`Prog_store_at_k354` 0.55%, `Prog_store_lane_at` 0.44%, `Mem_wr_k164` 0.07%). A payload
+  `sdt` list on `Uop` would save a fraction of that while ADDING a list per uop to build and destroy.
+- **Re-ordering `Prog.dispatch` buys nothing.** MULACC and MUL moved to the first two arms:
+  231.70 / 234.16 / 255.37 against a 229.69 baseline minimum -- no move, so the ~20 arms before the
+  ALU catch-all cost nothing measurable, and the 7.7% `Prog_dispatch` figure is not a compare chain.
+  Reverted, byte-identical.
+
+**⇒ AND THE LESSON IS THE INVERSE OF 39.32's.** 39.32 found a redundant TRAVERSAL. 39.33 found a
+redundant PERMISSION: a `+` that made the caller copy a value the callee only ever moves. `+` is not
+free and it is not a comment -- the compiler enforces the linear case, so excess `+` is checkable by
+deletion. **A SWEEP OF THE REST OF THE FILE FOR SINGLE-USE `+` IS THE OBVIOUS NEXT STEP.**
