@@ -985,45 +985,32 @@ def Elem.is_true(+e: Elem) -> Bool: Bool.and(Elem.is_scalar(e), U32.is_ne(Elem.b
 # A flat 16-FIELD RECORD was tried instead and measured 545.95 ms, and a 4x4 FIELD record 557.27 ms --
 # BOTH SLOWER than the 426.35 they replaced, because a record write pays a match AND a rebuild of every
 # field. A list write pays only for the cells it copies.
-# A GROUP IS PRE-FILLED, AND THAT IS NOT DECORATION: `List.set(l, k, v)` with `k` past the end puts
-# the element at the END, not at `k`, so a sparse group silently shifts every later slot. MEASURED
-# 2026-11-01: building the initial arena from EMPTY groups diverged on 139 of 365 rows at 33.00 ms;
-# the pre-filled arena is the same arena `Prog.echunks` used to build, just 4x4 instead of flat.
-def Val.gzero() -> List<&2, List<&2, Elem>>:
-  +r = List.replicate(Elem, 8n, Elem.zero())
-  List.replicate(List<&2, Elem>, 8n, r)
+# **THE ARENA IS AN `Array`.** MEASURED on `bend <src> -o <bin>`, the build `ops_bend.executor()`
+# makes: 2,000,000 writes to 64 slots take 0.17/0.17/0.17 s through `List.set` and 0.00 in every run
+# through `Array.set`. `ops_python.py` mutates; a persistent list copies and frees `k` cells per write.
+def Arena.new() -> Array<Elem>: Array.new(Elem, 10n, Elem.zero())
 
-def Val.gin(+g: List<&2, List<&2, Elem>>, +h: U32) -> List<&2, Elem>:
-  Maybe.default(&2, List<&2, Elem>, List.get(&2, List<&2, Elem>, g, U32.to_nat(h)), Nil{})
+# a READ is a PAIR: `match Array.get(..)` is refused, so it is destructured by a helper def
+def Val.at(a: Array<Elem>, +i: U32) -> Array<Elem> & Elem: Array.get(Elem, a, i)
 
-def Val.gat(+g: List<&2, List<&2, Elem>>, +co: U32) -> Elem:
-  Maybe.default(&2, Elem, List.get(&2, Elem, Val.gin(g, U32.shrn(co, 3n)), U32.to_nat(U32.and(co, 7))),
-    Elem.zero())
+def Val.put(a: Array<Elem>, +i: U32, +e: Elem) -> Array<Elem>: Array.set(Elem, a, i, e)
 
-def Val.gput(+g: List<&2, List<&2, Elem>>, +co: U32, +e: Elem) -> List<&2, List<&2, Elem>>:
-  List.set(&2, List<&2, Elem>, g, U32.to_nat(U32.shrn(co, 3n)),
-    List.set(&2, Elem, Val.gin(g, U32.shrn(co, 3n)), U32.to_nat(U32.and(co, 7)), e))
+# the two ways a read's value is consumed, as pair-preserving helpers so call sites stay one line
+def Val.bits(av: Array<Elem> & Elem) -> Array<Elem> & U32:
+  match av:
+    case (a, v): (a, Elem.bits(v))
 
-# **THE WIDTH IS 64, AND IT IS DERIVED, NOT PICKED.** A value write pays `List.set`'s prefix copy on
-# the SPINE (length `512/g^2`, mean copy half that) and twice on the chunk (mean `g/2` each), so the
-# cost is `256/g^2 + g` and its minimum is at `g = 8`: WIDTH 64, a spine of 8, ~12 copied cells
-# against the 4x4 chunk's 21. MEASURED 2026-11-01, and it is the largest single win of the session.
-def Val.W() -> Nat: 64n
-def Val.Wm() -> Nat: Nat.sub(Val.W(), 1n)
-def Val.nch(+slots: U32) -> Nat: Nat.div(Nat.add(U32.to_nat(slots), Val.Wm()), Val.W())
-def Val.ci(+i: U32) -> U32: U32.shrn(i, 6n)
-def Val.co(+i: U32) -> U32: U32.and(i, 63)
+def Val.istrue(av: Array<Elem> & Elem) -> Array<Elem> & Bool:
+  match av:
+    case (a, v): (a, Elem.is_true(v))
 
-def Val.ch.at(+vs: List<&2, List<&2, List<&2, Elem>>>, +ci: U32) -> List<&2, List<&2, Elem>>:
-  Maybe.default(&2, List<&2, List<&2, Elem>>,
-    List.get(&2, List<&2, List<&2, Elem>>, vs, U32.to_nat(ci)), Nil{})
+def Val.bufof(+fs: List<&2, Buf>, av: Array<Elem> & Elem) -> Array<Elem> & Buf:
+  match av:
+    case (a, v): (a, Buf.at(fs, Elem.buf(v)))
 
-def Val.at(+vs: List<&2, List<&2, List<&2, Elem>>>, +i: U32) -> Elem:
-  Val.gat(Val.ch.at(vs, Val.ci(i)), Val.co(i))
-
-def Val.put(+vs: List<&2, List<&2, List<&2, Elem>>>, +i: U32, +e: Elem) -> List<&2, List<&2, List<&2, Elem>>>:
-  +ci = Val.ci(i)
-  List.set(&2, List<&2, List<&2, Elem>>, vs, U32.to_nat(ci), Val.gput(Val.ch.at(vs, ci), Val.co(i), e))
+def Val.offof(av: Array<Elem> & Elem) -> Array<Elem> & U32:
+  match av:
+    case (a, v): (a, Elem.off(v))
 
 # **=> AND THE ARENA IS List<&2, List<&2, U32>>UNKED, BECAUSE A BYTE LIST MAKES A STORE O(ADDRESS).**
 # `Mem.put` was `List.set(ms, at, v)`, which rebuilds every cons before `at`, and
@@ -1147,7 +1134,7 @@ def Build.blank() -> Build: Build{Nil{}, Nil{}, Nil{}, Nil{}, 0, 0, 0, 0, 0, 0, 
 # what a parsed packet is: the program, its buffers, the store, and the zeroed
 # arena. No grid and no `vals` -- those are per launch, so they arrive later.
 type Load is Data:
-  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, List<&2, U32>>, v0: List<&2, List<&2, List<&2, Elem>>>,
+  Load{us: List<&2, Uop>, fs: List<&2, Buf>, ms: List<&2, List<&2, U32>>,
        n: U32, nb: U32}
 
 
@@ -1155,27 +1142,23 @@ type Load is Data:
 # Load block.
 def Load.us(+l: Load) -> List<&2, Uop>:
   match l:
-    case Load{us, fs, ms, v0, n, nb}: us
+    case Load{us, fs, ms, n, nb}: us
 
 def Load.fs(+l: Load) -> List<&2, Buf>:
   match l:
-    case Load{us, fs, ms, v0, n, nb}: fs
+    case Load{us, fs, ms, n, nb}: fs
 
 def Load.ms(+l: Load) -> List<&2, List<&2, U32>>:
   match l:
-    case Load{us, fs, ms, v0, n, nb}: ms
-
-def Load.v0(+l: Load) -> List<&2, List<&2, List<&2, Elem>>>:
-  match l:
-    case Load{us, fs, ms, v0, n, nb}: v0
+    case Load{us, fs, ms, n, nb}: ms
 
 def Load.n(+l: Load) -> U32:
   match l:
-    case Load{us, fs, ms, v0, n, nb}: n
+    case Load{us, fs, ms, n, nb}: n
 
 def Load.nb(+l: Load) -> U32:
   match l:
-    case Load{us, fs, ms, v0, n, nb}: nb
+    case Load{us, fs, ms, n, nb}: nb
 
 def Prog.bases.next(+f: Buf, +at: U32) -> U32: U32.add(at, U32.mul(Buf.w(f), Buf.e(f)))
 
@@ -1321,15 +1304,8 @@ def Prog.flat(+ms: List<&2, List<&2, U32>>, acc: List<&2, U32>) -> List<&2, U32>
 # THE INITIAL ARENA IS ALL ZEROS AND AN ABSENT GROUP READS AS ZERO, so it is `n` EMPTY CHUNKS --
 # and `Prog.echunks`/`Prog.echunks.fin`, which cut a flat list of `slot` zeros into sixteens, are
 # gone: the same arena, in `n` allocations instead of `slot`, and one def instead of two.
-def Prog.zchunks(+n: Nat, acc: List<&2, List<&2, List<&2, Elem>>>) -> List<&2, List<&2, List<&2, Elem>>>:
-  match n:
-    case 0n: acc
-    case 1n+q: Prog.zchunks(q, Val.gzero() <> acc)
-
 def Prog.load.put(+b: Build, us: List<&2, Uop>, +fs: List<&2, Buf>) -> Load:
-  Load{us, fs, Prog.bytes(b, fs),
-       Prog.zchunks(Val.nch(Build.slot(b)), Nil{}),
-       Build.nu(b), Build.nb(b)}
+  Load{us, fs, Prog.bytes(b, fs), Build.nu(b), Build.nb(b)}
 
 def Prog.load.go(+ok: Bool, +b: Build, us: List<&2, Uop>, fs: List<&2, Buf>) -> Maybe<&2, Load>:
   match ok:
@@ -1764,7 +1740,7 @@ def Prog.parse(s: String) -> Maybe<&2, Load>:
 # two-child nodes, so that is ~10 malloc-and-refcount pairs per step off the hot path.
 # ===========================================================================
 type St is Data:
-  St{us: List<&2, Uop>, v0: List<&2, List<&2, List<&2, Elem>>>, fs: List<&2, Buf>, vals: List<&2, U32>,
+  St{us: List<&2, Uop>, fs: List<&2, Buf>, vals: List<&2, U32>,
      n: U32, cx: U32, cy: U32, cz: U32}
 
 type Gd is Data:
@@ -1772,35 +1748,31 @@ type Gd is Data:
 
 def St.us(+t: St) -> List<&2, Uop>:
   match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: us
-
-def St.v0(+t: St) -> List<&2, List<&2, List<&2, Elem>>>:
-  match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: v0
+    case St{us, fs, vals, n, cx, cy, cz}: us
 
 def St.fs(+t: St) -> List<&2, Buf>:
   match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: fs
+    case St{us, fs, vals, n, cx, cy, cz}: fs
 
 def St.vals(+t: St) -> List<&2, U32>:
   match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: vals
+    case St{us, fs, vals, n, cx, cy, cz}: vals
 
 def St.n(+t: St) -> U32:
   match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: n
+    case St{us, fs, vals, n, cx, cy, cz}: n
 
 def St.cx(+t: St) -> U32:
   match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: cx
+    case St{us, fs, vals, n, cx, cy, cz}: cx
 
 def St.cy(+t: St) -> U32:
   match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: cy
+    case St{us, fs, vals, n, cx, cy, cz}: cy
 
 def St.cz(+t: St) -> U32:
   match t:
-    case St{us, v0, fs, vals, n, cx, cy, cz}: cz
+    case St{us, fs, vals, n, cx, cy, cz}: cz
 
 def Gd.pv(+g: Gd) -> U32:
   match g:
@@ -1819,8 +1791,8 @@ def Gd.gz(+g: Gd) -> U32:
     case Gd{pv, gx, gy, gz}: gz
 
 type Prog is Data:
-  Prog{st: St, vs: List<&2, List<&2, List<&2, Elem>>>, gd: Gd, ms: List<&2, List<&2, U32>>, mk: List<&2, Bool>,
-       pc: U32, bad: Bool, dead: Bool, un: List<&2, Uop>, vc: List<&2, List<&2, Elem>>, vi: U32}
+  Prog{st: St, gd: Gd, ms: List<&2, List<&2, U32>>, mk: List<&2, Bool>,
+       pc: U32, bad: Bool, dead: Bool, un: List<&2, Uop>}
 
 type Args is Data:
   Args{path: String, gx: U32, gy: U32, gz: U32, vals: List<&2, U32>, ok: Bool}
@@ -1874,29 +1846,24 @@ def Args.of(as: List<String>) -> Maybe<&2, Args>:
 
 def Prog.st(+p: Prog) -> St:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: st
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: st
 
 def Prog.gd(+p: Prog) -> Gd:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: gd
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: gd
 
 def Prog.us(+p: Prog) -> List<&2, Uop>: St.us(Prog.st(p))
-def Prog.vs(+p: Prog) -> List<&2, List<&2, List<&2, Elem>>>:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: vs
-def Prog.v0(+p: Prog) -> List<&2, List<&2, List<&2, Elem>>>: St.v0(Prog.st(p))
-
 def Prog.ms(+p: Prog) -> List<&2, List<&2, U32>>:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: ms
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: ms
 def Prog.fs(+p: Prog) -> List<&2, Buf>: St.fs(Prog.st(p))
 def Prog.mk(+p: Prog) -> List<&2, Bool>:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: mk
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: mk
 def Prog.vals(+p: Prog) -> List<&2, U32>: St.vals(Prog.st(p))
 def Prog.pc(+p: Prog) -> U32:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: pc
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: pc
 def Prog.n(+p: Prog) -> U32: St.n(Prog.st(p))
 def Prog.pv(+p: Prog) -> U32: Gd.pv(Prog.gd(p))
 def Prog.gx(+p: Prog) -> U32: Gd.gx(Prog.gd(p))
@@ -1907,30 +1874,19 @@ def Prog.cy(+p: Prog) -> U32: St.cy(Prog.st(p))
 def Prog.cz(+p: Prog) -> U32: St.cz(Prog.st(p))
 def Prog.bad(+p: Prog) -> Bool:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: bad
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: bad
 def Prog.dead(+p: Prog) -> Bool:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: dead
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: dead
 def Prog.un(+p: Prog) -> List<&2, Uop>:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: un
-def prog_vc_go(r: Prog) -> List<&2, List<&2, Elem>>:
-  match r:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: vc
-
-def prog_vi_go(r: Prog) -> U32:
-  match r:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}: vi
-
-def Prog.vc(r: Prog) -> List<&2, List<&2, Elem>>: prog_vc_go(r)
-def Prog.vi(r: Prog) -> U32: prog_vi_go(r)
-
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}: un
 def Prog.sent() -> U32: 4294967295
 
-def Prog.of(+args: Args, +ld: Load) -> Prog:
-  Prog{St{Load.us(ld), Load.v0(ld), Load.fs(ld), Args.vals(args), Load.n(ld),
-          Args.gx(args), Args.gy(args), Args.gz(args)},
-       Load.v0(ld), Gd{3, 0, 0, 0}, Load.ms(ld), Nil{}, 0, False{}, False{}, Load.us(ld), Nil{}, Prog.sent()}
+def Prog.of(+args: Args, +ld: Load) -> Prog & Array<Elem>:
+  (Prog{St{Load.us(ld), Load.fs(ld), Args.vals(args), Load.n(ld),
+          Args.gx(args), Args.gy(args), Args.gz(args)}, Gd{3, 0, 0, 0}, Load.ms(ld), Nil{}, 0,
+     False{}, False{}, Load.us(ld)}, Arena.new())
 
 # **=> AND THE 17 PROJECTIONS ARE ONE MATCH, WHICH IS THE POINT.** MEASURED: a
 # `sample` of the compiled executor puts ~98% of the run inside `Prog_step`'s
@@ -1943,9 +1899,9 @@ def Prog.of(+args: Args, +ld: Load) -> Prog:
 # plain binding requires.
 def Prog.at(+p: Prog, +pc: U32) -> Prog:
   match p:
-    case Prog{st, vs, gd, ms, mk, _pc, bad, dead, _un, _vc, _vi}:
+    case Prog{st, gd, ms, mk, _pc, bad, dead, _un}:
       +lus = St.us(st)
-      Prog{st, vs, gd, ms, mk, pc, bad, dead, List.drop(&2, Uop, lus, U32.to_nat(pc)), _vc, _vi}
+      Prog{st, gd, ms, mk, pc, bad, dead, List.drop(&2, Uop, lus, U32.to_nat(pc))}
 
 # ===========================================================================
 # THE HOT CHUNK. `Val.put` rebuilds the 16-cell chunk AND the chunk spine -- ~24 heap cells per
@@ -1965,89 +1921,22 @@ def Prog.at(+p: Prog, +pc: U32) -> Prog:
 # stale chunk can never be read back through a hit.
 # ===========================================================================
 # fold the held chunk back into the spine; nothing to do when the cache is cold
-def Prog.flush.go(none: Bool, +p: Prog) -> List<&2, List<&2, List<&2, Elem>>>:
-  match none:
-    case True{}: Prog.vs(p)
-    case False{}: List.set(&2, List<&2, List<&2, Elem>>, Prog.vs(p), U32.to_nat(Prog.vi(p)), Prog.vc(p))
-
-# ONE BIND. The old body took `Prog.vi` for the cold test, then `Prog.vs` and, on the warm path,
-# `Prog.vs` + `Prog.vi` + `Prog.vc` again -- four to five full `match`es over the record.
-def Prog.vput.flush.go(none: Bool, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32) ->
-  List<&2, List<&2, List<&2, Elem>>>:
-  match none:
-    case True{}: vs
-    case False{}: List.set(&2, List<&2, List<&2, Elem>>, vs, U32.to_nat(vi), vc)
-
-def Prog.flush(+p: Prog) -> List<&2, List<&2, List<&2, Elem>>>:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
-
-# `Val.at` through the cache: a hit is one slot of the held chunk, a miss is the old walk.
-# `Prog.vat.maybe` lived here -- a `Maybe` unwrapper for `List.get` on the chunk. `Val.gat` is total
-# and defaults to zero, so the unwrapper and the `Some` node behind it are both gone.
-# ONE TRAVERSAL, NOT THREE. `Prog.vat` did `Prog.vi(p)`, then `Prog.vc(p)` or `Prog.vs(p)` -- three
-# 11-field traversals of the same record per arena read, and it is called three times per ALU step.
-# This file's own note on `Prog.next` calls that shape its worst offender ("SEVENTEEN separate
-# PROJECTIONS... one per uop"); the read path had it too.
-def Prog.vat.hit(hit: Bool, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +i: U32) -> Elem:
-  match hit:
-    case True{}: Val.gat(vc, Val.co(i))
-    case False{}: Val.at(vs, i)
-
-# THE FIELD-TAKING FORM. A caller that already holds the binders reads with NO further `match` over
-# the record; `Prog.vat` is the one-match wrapper for callers that hold the record instead.
 def Prog.slot.f(+u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
 
-def Prog.vat.f(+vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +i: U32) -> Elem:
-  Prog.vat.hit(U32.is_eq(Val.ci(i), vi), vs, vc, i)
-
-def Prog.vat(+p: Prog, +i: U32) -> Elem:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.vat.f(vs, vc, vi, i)
+def Prog.vat(a: Array<Elem>, +i: U32) -> Array<Elem> & Elem: Val.at(a, i)
 
 # THE STORE **AND** THE STEP IN ONE REBUILD: `Prog.put` used to be
 # `Prog.next(Prog.vs1(p, Val.put(...)))`, which built the record twice per value written.
-def Prog.vput.rec(+p: Prog, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32) -> Prog:
+# **ONE `Array.set` PER VALUE WRITTEN.** The chunk cache, the spine fold, the flush and the hit test
+# all existed to make a persistent-list write affordable; `Array.set` overwrites in place, so all of it
+# goes. MEASURED: 2,000,000 writes to 64 slots cost 0.17 s through `List.set` and 0.00 s through
+# `Array.set`, on the same `bend <src> -o <bin>` build the executor uses.
+def Prog.vput(+p: Prog, a: Array<Elem>, +slot: U32, +e: Elem) -> Prog & Array<Elem>:
   match p:
-    case Prog{st, _vs, gd, ms, mk, pc, bad, dead, un, _vc, _vi}:
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
       match un:
-        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
-        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
-
-# **ONE TRAVERSAL FOR THE WHOLE WRITE.** The old path walked the 11-field record NINE times per value
-# written: `Prog.vi` for the hit test, then `Prog.vs`/`Prog.vc`/`Prog.vi` inside `vput.hit`, and on a
-# miss `Prog.flush` took four more (`vi`, `vs`, `vi`, `vc`) plus one in `vput.rec` and one in
-# `Prog.sent`'s caller. Every one is a full `match` over the record, and this is the single hottest
-# operation in the interpreter -- `Prog.vat` had the same defect and was fixed the same way.
-def Prog.vput.rec.go(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32) -> Prog:
-  match un:
-    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
-    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
-
-def Prog.vput.go.miss(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +slot: U32, +e: Elem) -> Prog:
-  +ci = Val.ci(slot)
-  +vs2 = Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
-  Prog.vput.rec.go(st, vs2, gd, ms, mk, pc, bad, dead, un,
-    Val.gput(Val.ch.at(vs2, ci), Val.co(slot), e), ci)
-
-def Prog.vput.go(hit: Bool, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +slot: U32, +e: Elem) -> Prog:
-  match hit:
-    case True{}: Prog.vput.rec.go(st, vs, gd, ms, mk, pc, bad, dead, un,
-                   Val.gput(vc, Val.co(slot), e), vi)
-    case False{}: Prog.vput.go.miss(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, e)
-
-def Prog.vput(+p: Prog, +slot: U32, +e: Elem) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, e)
+        case Nil{}: (Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}}, Val.put(a, slot, e))
+        case _ <> t: (Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, t}, Val.put(a, slot, e))
 
 # A LOAD, A STORE AND A STACK EACH REBUILT THE 21-FIELD RECORD THREE TIMES:
 # `Prog.next(Prog.live(Prog.ld1(...)))` is `next` + `live` + the arena setter, and each is its own
@@ -2055,59 +1944,54 @@ def Prog.vput(+p: Prog, +slot: U32, +e: Elem) -> Prog:
 # was replaced (`step.vs`) or only the memory was (`step.ms`), because `vs1` cold-starts the cache.
 def Prog.step.ms(+p: Prog, +ms: List<&2, List<&2, U32>>, +oob: Bool) -> Prog:
   match p:
-    case Prog{st, vs, gd, _ms, mk, pc, bad, dead, un, vc, vi}:
+    case Prog{st, gd, _ms, mk, pc, bad, dead, un}:
       match un:
-        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, vc, vi}
-        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, vc, vi}
+        case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+        case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
 
-def Prog.step.vs(+p: Prog, +vs: List<&2, List<&2, List<&2, Elem>>>, +oob: Bool) -> Prog:
+def Prog.step.vs(+p: Prog, +oob: Bool) -> Prog:
   match p:
-    case Prog{st, _vs, gd, ms, mk, pc, bad, dead, un, _vc, _vi}:
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
       match un:
-        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
-        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
+        case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+        case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
 
 def Prog.next(p: Prog) -> Prog:
   match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
       match un:
-        case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}, vc, vi}
-        case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), bad, dead, t, vc, vi}
-
-def Prog.vs1(p: Prog, vs: List<&2, List<&2, List<&2, Elem>>>) -> Prog:
-  match p:
-    case Prog{st, _vs, gd, ms, mk, pc, bad, dead, un, _vc, _vi}:
-      Prog{st, vs, gd, ms, mk, pc, bad, dead, un, Nil{}, Prog.sent()}
+        case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, Nil{}}
+        case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), bad, dead, t}
 
 def Prog.ms1(p: Prog, ms: List<&2, List<&2, U32>>) -> Prog:
   match p:
-    case Prog{st, vs, gd, _ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}
+    case Prog{st, gd, _ms, mk, pc, bad, dead, un}:
+      Prog{st, gd, ms, mk, pc, bad, dead, un}
 
 def Prog.mk1(p: Prog, mk: List<&2, Bool>) -> Prog:
   match p:
-    case Prog{st, vs, gd, ms, _mk, pc, bad, dead, un, vc, vi}:
-      Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}
+    case Prog{st, gd, ms, _mk, pc, bad, dead, un}:
+      Prog{st, gd, ms, mk, pc, bad, dead, un}
 
-def Prog.pv1.gd(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>, +p: Prog) -> Prog:
-  Prog{st, vs, Gd{U32.add(Gd.pv(gd), 1), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd)}, ms,
-    Prog.mk(p), Prog.pc(p), Prog.bad(p), Prog.dead(p), Prog.un(p), Prog.vc(p), Prog.vi(p)}
+def Prog.pv1.gd(+st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>, +p: Prog) -> Prog:
+  Prog{st, Gd{U32.add(Gd.pv(gd), 1), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd)}, ms,
+    Prog.mk(p), Prog.pc(p), Prog.bad(p), Prog.dead(p), Prog.un(p)}
 
 def Prog.pv1(+p: Prog) -> Prog:
-  Prog.pv1.gd(Prog.st(p), Prog.vs(p), Prog.gd(p), Prog.ms(p), p)
+  Prog.pv1.gd(Prog.st(p), Prog.gd(p), Prog.ms(p), p)
 
 
 # `values[v]` for the k-th src: one arena read and one program read, which is
 # what a step costs.
-def Prog.src(+p: Prog, +u: Uop, +k: Nat) -> Elem:
-  Prog.vat(p, Uop.nth(Uop.sslot(u), k))
+def Prog.src(a: Array<Elem>, +u: Uop, +k: Nat) -> Array<Elem> & Elem:
+  Val.at(a, Uop.nth(Uop.sslot(u), k))
 
 # the run of the k-th src, for the two places ops_python reads a src's RUN
 # rather than its value: a STACK's elements and a STORE's lanes.
 def Prog.slot(+p: Prog, +u: Uop, +k: Nat) -> U32: Uop.nth(Uop.sslot(u), k)
 
-def Prog.src.f(+vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop, +k: Nat) -> Elem:
-  Prog.vat.f(vs, vc, vi, Uop.nth(Uop.sslot(u), k))
+def Prog.src.f(a: Array<Elem>, +u: Uop, +k: Nat) -> Array<Elem> & Elem:
+  Val.at(a, Uop.nth(Uop.sslot(u), k))
 
 # `src_dtypes[k]`, which ops_python reads for a LOAD and a STORE
 def Prog.dt(+p: Prog, +u: Uop, +k: Nat) -> S.Dt:
@@ -2124,8 +2008,12 @@ def Prog.backedge.at(+p: Prog, +u: Uop, +c: Bool) -> Prog:
 # RANGE in all 25 packets, which is why first == last and why a scan is enough.
 # ===========================================================================
 
-def Prog.backedge(+p: Prog, +u: Uop) -> Prog:
-  Prog.backedge.at(p, u, Elem.is_true(Prog.src(p, u, 2n)))
+def Prog.backedge.r(+p: Prog, +u: Uop, av: Array<Elem> & Bool) -> Prog & Array<Elem>:
+  match av:
+    case (a1, c): (Prog.backedge.at(p, u, c), a1)
+
+def Prog.backedge(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.backedge.r(p, u, Val.istrue(Val.at(a, Uop.nth(Uop.sslot(u), 2n))))
 
 def Prog.loop.hit(+at: U32, +hit: U32, +yes: Bool) -> U32:
   match yes:
@@ -2154,32 +2042,26 @@ def Prog.loop.go(us: List<&2, Uop>, +r: U32, +hit: U32, +i: U32) -> U32:
 
 def Prog.loop(+p: Prog, +r: U32) -> U32: Prog.loop.go(Prog.us(p), r, 0, 0)
 
-def Prog.put(+p: Prog, +u: Uop, +e: Elem) -> Prog:
-  Prog.vput(p, Uop.slot(u), e)
+def Prog.put(+p: Prog, a: Array<Elem>, +u: Uop, +e: Elem) -> Prog & Array<Elem>:
+  Prog.vput(p, a, Uop.slot(u), e)
 
 # **THE ALU PATH REBUILT THE RECORD ONLY TO HAVE IT RE-MATCHED.** `Prog.alu.at.k` already holds all
-# eleven fields, and its three arms did `Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi},
+# eleven fields, and its three arms did `Prog.put(Prog{st, gd, ms, mk, pc, bad, dead, un},
 # u, e)` -- one record build, one allocation and seven refcount pairs -- so that `Prog.put` could call
 # `Prog.vput`, which MATCHED the record again to reach `Prog.vput.go`. The INDEX path was collapsed off
 # exactly this shape in REPORT 39.20 (416.70 -> 412.35 ms); ALU is the hottest family in the packet
 # (163 MULACC + 4 MUL of 510 uops) and was still paying it. The field-taking form goes straight to
 # `Prog.vput.go`.
-def Prog.putf(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop, +e: Elem) -> Prog:
-  +sl = Uop.slot(u)
-  Prog.vput.go(U32.is_eq(Val.ci(sl), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, sl, e)
-
 # ===========================================================================
 # :67-68 BACKEDGE -- `i = uop_to_index[u.src[1]] if values[u.src[2]][0] else
 # i+1`. The condition is src 2 and the loop head is src 1.
 # ===========================================================================
 
-def Prog.cur(+p: Prog, +u: Uop) -> U32: Elem.bits(Prog.vat(p, Uop.slot(u)))
+def Prog.cur(a: Array<Elem>, +u: Uop) -> Array<Elem> & U32: Val.bits(Val.at(a, Uop.slot(u)))
 
 # THE VISITED FLAG of a RANGE, in the slot after its counter (see Uop.run_of.op)
-def Prog.flag.put(+p: Prog, +u: Uop) -> Prog:
-  Prog.vs1(p, Val.put(Prog.flush(p), U32.add(Uop.slot(u), 1), elem_of(1, Uop.dt(u))))
+def Prog.flag.put(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  (p, Val.put(a, U32.add(Uop.slot(u), 1), elem_of(1, Uop.dt(u))))
 
 # THE VALUE THIS VISIT LEAVES BEHIND, and it is the value ops_python's exit test
 # sees. On the first visit `values[u] = [0]` and does NOT increment; after it
@@ -2193,21 +2075,8 @@ def Prog.rng.nxt.by(+c: U32, seen: Bool) -> U32:
     case True{}: U32.add(c, 1)
     case False{}: c
 
-def Prog.rng.nxt(+p: Prog, +u: Uop, +seen: Bool) -> U32:
-  Prog.rng.nxt.by(Prog.cur(p, u), seen)
-
-# THE FIRST VISIT SETS THE FLAG AND LEAVES THE COUNTER; every visit after it
-# stores the incremented counter.
-def Prog.rng.put.by(+p: Prog, +u: Uop, seen: Bool, +nxt: U32) -> Prog:
-  match seen:
-    case True{}: Prog.put(p, u, elem_of(nxt, Uop.dt(u)))
-    case False{}: Prog.next(Prog.flag.put(p, u))
-
-def Prog.rng.put(+p: Prog, +u: Uop, +seen: Bool, +nxt: U32) -> Prog:
-  Prog.rng.put.by(p, u, seen, nxt)
-
-def Prog.seen(+p: Prog, +u: Uop) -> Bool:
-  Elem.is_true(Prog.vat(p, U32.add(Uop.slot(u), 1)))
+def Prog.seen(a: Array<Elem>, +u: Uop) -> Array<Elem> & Bool:
+  Val.istrue(Val.at(a, U32.add(Uop.slot(u), 1)))
 
 # THE COUNTER IS DELETED WHEN THE LOOP EXITS. ops_python.py:132 does
 # `del values[u]` on the exit test, and that deletion is the WHOLE OF "this RANGE
@@ -2225,14 +2094,9 @@ def Prog.seen(+p: Prog, +u: Uop) -> Bool:
 #
 # SO THE DELETE IS SPELLED AS "ZERO THE COUNTER AND CLEAR THE FLAG", which is
 # EXACTLY THE STATE THE ARENA IS IN BEFORE THE FIRST VISIT (see Uop.run_of.op).
-def Prog.rng.del(+p: Prog, +u: Uop) -> Prog:
-  Prog.vs1(p, Val.put(Val.put(Prog.flush(p), Uop.slot(u), elem_of(0, Uop.dt(u))),
+def Prog.rng.del(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  (p, Val.put(Val.put(a, Uop.slot(u), elem_of(0, Uop.dt(u))),
     U32.add(Uop.slot(u), 1), elem_of(0, Uop.dt(u))))
-
-def Prog.rng.over(+p: Prog, +u: Uop, +over: Bool, +seen: Bool, +nxt: U32) -> Prog:
-  match over:
-    case True{}: Prog.at(Prog.rng.del(p, u), U32.add(Prog.loop(p, Prog.pc(p)), 1))
-    case False{}: Prog.rng.put(p, u, seen, nxt)
 
 # ===========================================================================
 # :73-78 IF/ENDIF. `exec_masks` is a stack of "one Bool per work item" (the warp
@@ -2242,57 +2106,52 @@ def Prog.rng.over(+p: Prog, +u: Uop, +over: Bool, +seen: Bool, +nxt: U32) -> Pro
 # -- so the filter has no other place to show up and is not spelled.
 # ===========================================================================
 
-def Prog.trip(+p: Prog, +u: Uop) -> U32: Elem.bits(Prog.src(p, u, 0n))
-
-def Prog.rng.at(+p: Prog, +u: Uop, +void: Bool, +seen: Bool, +nxt: U32) -> Prog:
-  match void:
-    case True{}: Prog.next(p)
-    case False{}: Prog.rng.over(p, u, U32.is_eq(nxt, Prog.trip(p, u)), seen, nxt)
+def Prog.trip(a: Array<Elem>, +u: Uop) -> Array<Elem> & U32: Val.bits(Val.at(a, Uop.nth(Uop.sslot(u), 0n)))
 
 # ===========================================================================
-# ONE BIND FOR THE WHOLE RANGE VISIT. The old path read the record through
-# `Prog.rng.at` -> `Prog.trip` + `Prog.seen` (twice!) + `Prog.rng.nxt` -> `Prog.cur`, and on exit
-# through `Prog.rng.del` (which re-flushed the arena) + `Prog.pc` + `Prog.loop` + `Prog.at`: ten to
-# twelve full `match`es over the 11-field record for one RANGE step, which runs once per loop
-# iteration. The counter, the flag, the trip count and the loop head all come off the binders now.
+# THE RANGE VISIT, IN CONTINUATION FORM. `ops_python` keeps the counter in the arena at the uop's own
+# slot and the visited flag one past it; the trip count is the first src's value. Three reads, each of
+# which hands the array back, so each is consumed by a def whose PARAMETER is the pair.
 # ===========================================================================
-def Prog.loop.f(+us: List<&2, Uop>, +r: U32) -> U32: Prog.loop.go(us, r, 0, 0)
+def Prog.rng.over.x(+at: U32, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
+  match av:
+    case (p2, a2): (Prog.at(p2, at), a2)
 
-def Prog.rng.stop(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop) -> Prog:
-  +fl = Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
-  +z = elem_of(0, Uop.dt(u))
-  +vs2 = Val.put(Val.put(fl, Uop.slot(u), z), U32.add(Uop.slot(u), 1), z)
-  Prog.at(Prog{st, vs2, gd, ms, mk, pc, bad, dead, un, Nil{}, Prog.sent()},
-    U32.add(Prog.loop.f(St.us(st), pc), 1))
+def Prog.rng.put.n(+p: Prog, +u: Uop, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
+  match av:
+    case (p2, a2): (Prog.next(p2), a2)
 
-def Prog.rng.over.f(over: Bool, +seen: Bool, +nxt: U32, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>,
-  +gd: Gd, +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Prog:
+def Prog.rng.put.by(+p: Prog, a: Array<Elem>, +u: Uop, seen: Bool, +nxt: U32) -> Prog & Array<Elem>:
+  match seen:
+    case True{}: Prog.put(p, a, u, elem_of(nxt, Uop.dt(u)))
+    case False{}: Prog.rng.put.n(p, u, Prog.flag.put(p, a, u))
+
+def Prog.rng.over(+p: Prog, a: Array<Elem>, +u: Uop, +over: Bool, +seen: Bool, +nxt: U32) -> Prog & Array<Elem>:
   match over:
-    case True{}: Prog.rng.stop(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
-    case False{}: Prog.rng.put.by(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u, seen, nxt)
+    case True{}: Prog.rng.over.x(U32.add(Prog.loop(p, Prog.pc(p)), 1), Prog.rng.del(p, a, u))
+    case False{}: Prog.rng.put.by(p, a, u, seen, nxt)
 
-def Prog.rng.cnt(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop) -> Prog:
-  +seen = Elem.is_true(Prog.vat.f(vs, vc, vi, U32.add(Uop.slot(u), 1)))
-  +nxt = Prog.rng.nxt.by(Elem.bits(Prog.vat.f(vs, vc, vi, Uop.slot(u))), seen)
-  Prog.rng.over.f(U32.is_eq(nxt, Elem.bits(Prog.src.f(vs, vc, vi, u, 0n))), seen, nxt,
-    st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+def Prog.rng.t3(+p: Prog, +u: Uop, +seen: Bool, +nxt: U32, av: Array<Elem> & U32) -> Prog & Array<Elem>:
+  match av:
+    case (a3, trip): Prog.rng.over(p, a3, u, U32.is_eq(nxt, trip), seen, nxt)
 
-def Prog.rng.void(void: Bool, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
-  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Prog:
+def Prog.rng.t2(+p: Prog, +u: Uop, +seen: Bool, av: Array<Elem> & U32) -> Prog & Array<Elem>:
+  match av:
+    case (a2, c):
+      Prog.rng.t3(p, u, seen, Prog.rng.nxt.by(c, seen),
+        Val.bits(Val.at(a2, Uop.nth(Uop.sslot(u), 0n))))
+
+def Prog.rng.t1(+p: Prog, +u: Uop, av: Array<Elem> & Bool) -> Prog & Array<Elem>:
+  match av:
+    case (a1, fl): Prog.rng.t2(p, u, fl, Val.bits(Val.at(a1, Uop.slot(u))))
+
+def Prog.rng.go(void: Bool, +p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   match void:
-    case True{}: Prog.next(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi})
-    case False{}: Prog.rng.cnt(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+    case True{}: (Prog.next(p), a)
+    case False{}: Prog.rng.t1(p, u, Val.istrue(Val.at(a, U32.add(Uop.slot(u), 1))))
 
-def Prog.rng(+p: Prog, +u: Uop) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.rng.void(U32.is_eq(S.Dt.itemsize(Uop.dt(u)), 0), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+def Prog.rng(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.rng.go(U32.is_eq(S.Dt.itemsize(Uop.dt(u)), 0), p, a, u)
 
 # the store gate of :87 and the load gate of :24: `exec_masks[-1]`, which is True
 # when nothing is masked
@@ -2306,8 +2165,12 @@ def Prog.open(+p: Prog) -> Bool:
 # must do.
 # ===========================================================================
 
-def Prog.ifs(+p: Prog, +u: Uop) -> Prog:
-  Prog.next(Prog.mk1(p, Bool.and(Prog.open(p), Elem.is_true(Prog.src(p, u, 0n))) <> Prog.mk(p)))
+def Prog.ifs.r(+p: Prog, +u: Uop, av: Array<Elem> & Bool) -> Prog & Array<Elem>:
+  match av:
+    case (a1, t): (Prog.next(Prog.mk1(p, Bool.and(Prog.open(p), t) <> Prog.mk(p))), a1)
+
+def Prog.ifs(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.ifs.r(p, u, Val.istrue(Val.at(a, Uop.nth(Uop.sslot(u), 0n))))
 
 def Prog.val(+p: Prog) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, Prog.vals(p), U32.to_nat(Prog.pv(p))), 0)
@@ -2324,25 +2187,19 @@ def Prog.val(+p: Prog) -> U32:
 def Prog.param.val(+vals: List<&2, U32>, +pv: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, vals, U32.to_nat(pv)), 0)
 
-def Prog.param.put(+vals: List<&2, U32>, +pv: U32, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
-  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Prog:
-  Prog.put(Prog{st, vs, Gd{U32.add(pv, 1), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd)}, ms, mk, pc, bad, dead, un, vc, vi},
-    u, elem_of(Prog.param.val(vals, pv), Uop.dt(u)))
+def Prog.param.put(+vals: List<&2, U32>, +pv: U32, +p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.put(Prog.pv1(p), arr, u, elem_of(Prog.param.val(vals, pv), Uop.dt(u)))
 
-def Prog.param.at.by(is_vals: Bool, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
-  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +u: Uop) -> Prog:
+def Prog.param.at.by(is_vals: Bool, +p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   match is_vals:
-    case True{}: Prog.param.put(St.vals(st), Gd.pv(gd), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
-    case False{}: Prog.put(Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}, u, Bf{Uop.b(u)})
+    case True{}: Prog.param.put(Prog.vals(p), Prog.pv(p), p, arr, u)
+    case False{}: Prog.put(p, arr, u, Bf{Uop.b(u)})
 
-def Prog.param.at(+p: Prog, +u: Uop, +is_vals: Bool) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.param.at.by(is_vals, st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+def Prog.param.at(+p: Prog, arr: Array<Elem>, +u: Uop, +is_vals: Bool) -> Prog & Array<Elem>:
+  Prog.param.at.by(is_vals, p, arr, u)
 
-def Prog.param(+p: Prog, +u: Uop) -> Prog: Prog.param.at(p, u, U32.is_eq(Uop.kind(u), 6))
+def Prog.param(+p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.param.at(p, arr, u, U32.is_eq(Uop.kind(u), 6))
 
 def Prog.idx(+gx: U32, +gy: U32, +gz: U32, +a: U32) -> U32:
   Bool.pick(U32, U32.is_eq(a, 0), gx, Bool.pick(U32, U32.is_eq(a, 1), gy,
@@ -2356,16 +2213,24 @@ def Prog.idx(+gx: U32, +gy: U32, +gz: U32, +a: U32) -> U32:
 # the shrink's limit, which ops_python never reads, so neither does this.
 # ===========================================================================
 
-def Prog.special(+p: Prog, +u: Uop) -> Prog:
-  Prog.put(p, u, elem_of(Prog.idx(Prog.gx(p), Prog.gy(p), Prog.gz(p), Uop.a(u)), Uop.dt(u)))
+def Prog.special(+p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.put(p, arr, u, elem_of(Prog.idx(Prog.gx(p), Prog.gy(p), Prog.gz(p), Uop.a(u)), Uop.dt(u)))
 
 # `src_values[0][i][0]` (ops_python.py:114) -- the lane-0 element of a vector
 # LOAD at ELEMENT index `i`, and `i` comes from `enumerate(src_values[1])`, so
 # it is src 1's value; src 0's value is the element COUNT and reads one run past
 # the end. Both indices are 0 at LOCAL SIZE 1 (see below), so `i` is the whole
 # offset.
-def Prog.index.alu(+p: Prog, +u: Uop) -> Elem:
-  Prog.vat(p, U32.add(Prog.slot(p, u, 0n), Elem.bits(Prog.src(p, u, 1n))))
+# **A READ CANNOT BE BOUND TO A LOCAL.** `(a1, v1) = Val.at(a, i)` is REFUSED -- "a match cannot
+# scrutinize a computed value" -- because a tuple destructure IS a match and the pair is computed. The
+# only shape that works is a CONTINUATION def whose PARAMETER is the pair, which is exactly what
+# `Array.set.fin` does in Bend's own Base. So every read site becomes one small def.
+def Prog.index.alu.r(+off: U32, av: Array<Elem> & Elem) -> Array<Elem> & Elem:
+  match av:
+    case (a1, v1): Val.at(a1, U32.add(off, Elem.bits(v1)))
+
+def Prog.index.alu(a: Array<Elem>, +u: Uop) -> Array<Elem> & Elem:
+  Prog.index.alu.r(Uop.nth(Uop.sslot(u), 0n), Val.at(a, Uop.nth(Uop.sslot(u), 1n)))
 
 def Prog.index.rf(+b: U32, +o: U32, +n: Bool, +i: U32, +scale: U32) -> Elem:
   Rf{b, U32.add(o, U32.mul(i, scale)), n}
@@ -2388,8 +2253,9 @@ def Prog.index.mem.s0(+s0: Elem, +s1: Elem, +scale: U32) -> Elem:
 # **`Prog.src(p, u, 0n)` WAS READ THREE TIMES** -- once for the buffer id, once for the offset and
 # once for the offset-is-none flag -- and each read is a record traversal plus an arena traversal.
 # One read, three projections off it.
-def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
-  Prog.index.mem.s0(Prog.src(p, u, 0n), Prog.src(p, u, 1n), Uop.a(u))
+def Prog.index.mem.t(+ad: U32, +v0: Elem, av: Array<Elem> & Elem) -> Array<Elem> & Elem:
+  match av:
+    case (a2, v1): (a2, Prog.index.mem.s0(v0, v1, ad))
 
 # ONE BIND FOR THE WHOLE INDEX DISPATCH. `index.at` -> `index.by` -> `index.alu`/`index.mem` ->
 # `Prog.put` was four or five full `match`es over the 11-field record per INDEX step: `by` bound it,
@@ -2400,38 +2266,59 @@ def Prog.index.mem(+p: Prog, +u: Uop) -> Elem:
 # hot as ALU, and it projected `Uop` about five times per step: `a` twice (once for the arm choice, once
 # in the memory arm), `slot`, and one `sslot` per source -- each a full `match` over all nine fields.
 # ONE destructure feeds the whole step, and the sources come off the bound `sslot`.
-def Prog.index.at.put(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +slot: U32, +e: Elem) -> Prog:
-  Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, e)
+def Prog.index.mem.r(+ad: U32, +s1: U32, av: Array<Elem> & Elem) -> Array<Elem> & Elem:
+  match av:
+    case (a1, v0): Prog.index.mem.t(ad, v0, Val.at(a1, s1))
 
-def Prog.index.at.by(alu: Bool, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
-  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +slot: U32, +sslot: List<&2, U32>,
-  +a: U32) -> Prog:
+def Prog.index.mem(a: Array<Elem>, +u: Uop) -> Array<Elem> & Elem:
+  Prog.index.mem.r(Uop.a(u), Uop.nth(Uop.sslot(u), 1n), Val.at(a, Uop.nth(Uop.sslot(u), 0n)))
+
+# **THE INDEX WRITE PATH, IN CONTINUATION FORM.** A read hands back the array AND the value as a
+# pair, and `(a1, v) = Val.at(a, i)` is REFUSED, so each read is consumed by a def whose PARAMETER is
+# the pair -- the shape `Array.set.fin` uses in Bend's own Base.
+def Prog.ix.put(+p: Prog, a: Array<Elem>, +slot: U32, +e: Elem) -> Prog & Array<Elem>:
+  Prog.vput(p, a, slot, e)
+
+def Prog.ix.alu.t(+p: Prog, +slot: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a2, v): Prog.ix.put(p, a2, slot, v)
+
+def Prog.ix.alu.r(+p: Prog, +slot: U32, +s0: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a1, v1): Prog.ix.alu.t(p, slot, Val.at(a1, U32.add(s0, Elem.bits(v1))))
+
+def Prog.ix.alu(+p: Prog, a: Array<Elem>, +slot: U32, +sslot: List<&2, U32>) -> Prog & Array<Elem>:
+  Prog.ix.alu.r(p, slot, Uop.nth(sslot, 0n), Val.at(a, Uop.nth(sslot, 1n)))
+
+def Prog.ix.mem.t(+p: Prog, +slot: U32, +ad: U32, +v0: Elem, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a2, v1): Prog.ix.put(p, a2, slot, Prog.index.mem.s0(v0, v1, ad))
+
+def Prog.ix.mem.r(+p: Prog, +slot: U32, +ad: U32, +s1: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a1, v0): Prog.ix.mem.t(p, slot, ad, v0, Val.at(a1, s1))
+
+def Prog.ix.mem(+p: Prog, a: Array<Elem>, +slot: U32, +sslot: List<&2, U32>, +ad: U32) -> Prog & Array<Elem>:
+  Prog.ix.mem.r(p, slot, ad, Uop.nth(sslot, 1n), Val.at(a, Uop.nth(sslot, 0n)))
+
+def Prog.index.at.by(alu: Bool, +p: Prog, a: Array<Elem>, +slot: U32, +sslot: List<&2, U32>,
+  +ad: U32) -> Prog & Array<Elem>:
   match alu:
-    case True{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
-                   Prog.vat.f(vs, vc, vi, U32.add(Uop.nth(sslot, 0n),
-                     Elem.bits(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n))))))
-    case False{}: Prog.index.at.put(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
-                   Prog.index.mem.s0(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)),
-                     Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n)), a))
+    case True{}: Prog.ix.alu(p, a, slot, sslot)
+    case False{}: Prog.ix.mem(p, a, slot, sslot, ad)
 
-def Prog.index.at(+p: Prog, +a: U32, +slot: U32, +sslot: List<&2, U32>) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.index.at.by(U32.is_eq(a, 0), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot, sslot, a)
+def Prog.index.at(+p: Prog, a: Array<Elem>, +ad: U32, +slot: U32, +sslot: List<&2, U32>) -> Prog & Array<Elem>:
+  Prog.index.at.by(U32.is_eq(ad, 0), p, a, slot, sslot, ad)
 
-def Prog.index(+p: Prog, +u: Uop) -> Prog:
+def Prog.index(+p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   match u:
     case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}:
-      Prog.index.at(p, a, slot, sslot)
+      Prog.index.at(p, arr, a, slot, sslot)
 
-def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, List<&2, List<&2, Elem>>>, +slot: U32, +k: Nat) ->
-  List<&2, List<&2, List<&2, Elem>>>:
+def Prog.stack.copy(es: List<&2, Elem>, a: Array<Elem>, +slot: U32, +k: Nat) -> Array<Elem>:
   match es:
-    case Nil{}: vs
-    case e <> t: Prog.stack.copy(t, Val.put(vs, U32.add(slot, U32.from_nat(k)), e),
+    case Nil{}: a
+    case e <> t: Prog.stack.copy(t, Val.put(a, U32.add(slot, U32.from_nat(k)), e),
       slot, Nat.add(k, 1n))
 
 # ===========================================================================
@@ -2445,37 +2332,55 @@ def Prog.stack.copy(es: List<&2, Elem>, +vs: List<&2, List<&2, List<&2, Elem>>>,
 # dtype (:93) and which the wire does not spell: see AMENDMENT A6.
 # ===========================================================================
 
-def Prog.stack.at(ss: List<&2, U32>, +vs: List<&2, List<&2, List<&2, Elem>>>, +us: List<&2, Uop>,
-  acc: List<&2, Elem>) -> List<&2, Elem>:
+# **ONE SELF-RECURSIVE DEF.** The read inside the loop cannot be a continuation helper, because a
+# helper would call back into this def and Bend refuses mutual recursion. So the pair is a PARAMETER
+# here alongside the list: each call consumes one element and recurses on the tail.
+def Prog.stack.at(+ss: List<&2, U32>, av: Array<Elem> & Elem, +us: List<&2, Uop>,
+  acc: List<&2, Elem>) -> Array<Elem> & List<&2, Elem>:
   match ss:
-    case Nil{}: acc
-    case s <> t: Prog.stack.at(t, vs, us, List.append(&2, Elem, acc,
-      [Val.at(vs, Uop.slot(Uop.at(us, s)))]))
+    case Nil{}:
+      match av:
+        case (a1, _v): (a1, acc)
+    case _ <> t:
+      match t:
+        case Nil{}:
+          match av:
+            case (a1, v): (a1, List.append(&2, Elem, acc, [v]))
+        case s2 <> _:
+          match av:
+            case (a1, v): Prog.stack.at(t, Val.at(a1, Uop.slot(Uop.at(us, s2))), us,
+              List.append(&2, Elem, acc, [v]))
 
-def Prog.step.vs.f.go(un: List<&2, Uop>, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
-  +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, +oob: Bool) -> Prog:
+# the starter: ss is non-empty here, so it reads the head and hands over
+def Prog.stack.all(+ss: List<&2, U32>, a: Array<Elem>, +us: List<&2, Uop>) -> Array<Elem> & List<&2, Elem>:
+  match ss:
+    case Nil{}: (a, Nil{})
+    case s <> t: Prog.stack.at(ss, Val.at(a, Uop.slot(Uop.at(us, s))), us, Nil{})
+
+def Prog.step.vs.f.go(un: List<&2, Uop>, +st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, +oob: Bool) -> Prog:
   match un:
-    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, Nil{}, Prog.sent()}
-    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, Nil{}, Prog.sent()}
+    case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+    case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
 
-def Prog.step.vs.f(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+def Prog.step.vs.f(+st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +oob: Bool) -> Prog:
-  Prog.step.vs.f.go(un, st, vs, gd, ms, mk, pc, bad, dead, oob)
+  Prog.step.vs.f.go(un, st, gd, ms, mk, pc, bad, dead, oob)
 
 # ONE BIND, AND ONE FLUSH INSTEAD OF TWO (each flush was four or five traversals before 39.16). The
 # destination is `Uop.slot(u)` -- the uop's OWN result slot -- and NOT `Prog.slot(u, 0n)`, which is
 # its FIRST SRC's slot; using the latter is what made the first attempt diverge on 68 rows.
-def Prog.stack.by(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop) -> Prog:
-  +fl = Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)
-  Prog.step.vs.f(st, Prog.stack.copy(Prog.stack.at(Uop.srcs(u), fl, St.us(st), Nil{}),
-    fl, Uop.slot(u), 0n), gd, ms, mk, pc, bad, dead, un, False{})
+def Prog.stack.by.r(+p: Prog, +u: Uop, av: Array<Elem> & List<&2, Elem>) -> Prog & Array<Elem>:
+  match av:
+    case (a1, es):
+      (Prog.step.vs.f(Prog.st(p), Prog.gd(p), Prog.ms(p), Prog.mk(p), Prog.pc(p), Prog.bad(p),
+        Prog.dead(p), Prog.un(p), False{}), Prog.stack.copy(es, a1, Uop.slot(u), 0n))
 
-def Prog.stack(+p: Prog, +u: Uop) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.stack.by(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+def Prog.stack.by(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.stack.by.r(p, u, Prog.stack.all(Uop.srcs(u), a, St.us(Prog.st(p))))
+
+def Prog.stack(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.stack.by(p, a, u)
 
 # ===========================================================================
 # :134 CAST -- `values[u] = [truncate.get(u.dtype, lambda dt: dt)(u.dtype.const(x))
@@ -2516,21 +2421,21 @@ def Prog.cast.dt(+dst: S.Dt, src: S.Dt, +e: Elem) -> Elem:
 # LOAD walks the same lane path as a one-src one.
 # ===========================================================================
 
-def Prog.cast.at(+p: Prog, +u: Uop, dst: S.Dt, src: S.Dt) -> Prog:
-  Prog.put(p, u, Prog.cast.dt(dst, src, Prog.src(p, u, 0n)))
+def Prog.cast.at.r(+p: Prog, +u: Uop, dst: S.Dt, src: S.Dt, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a1, v): Prog.put(p, a1, u, Prog.cast.dt(dst, src, v))
 
 # `truncate.get(u.dtype)(u.dtype.const(x))` -- `bool(x)`, `c_float(x)` or
 # `c_int(x)`. For the four lanes that is a value conversion, and an int wrap is
 # already the U32 bit pattern; an int SOURCE is the identity, because routing it
 # through F32 would round a value above 2^24.
-def Prog.cast(+p: Prog, +u: Uop) -> Prog: Prog.cast.at(p, u, Uop.dt(u), Prog.dt(p, u, 0n))
+def Prog.cast.at(+p: Prog, a: Array<Elem>, +u: Uop, dst: S.Dt, src: S.Dt) -> Prog & Array<Elem>:
+  Prog.cast.at.r(p, u, dst, src, Val.at(a, Uop.nth(Uop.sslot(u), 0n)))
 
-def Prog.bitcast(+p: Prog, +u: Uop) -> Prog: Prog.cast(p, u)
+def Prog.cast(+p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.cast.at(p, arr, u, Uop.dt(u), Prog.dt(p, u, 0n))
 
-def Prog.live.at(p: Prog, +oob: Bool) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog{st, vs, gd, ms, mk, pc, Bool.or(bad, oob), dead, un, vc, vi}
+def Prog.bitcast(+p: Prog, arr: Array<Elem>, +u: Uop) -> Prog & Array<Elem>: Prog.cast(p, arr, u)
 
 def Prog.lane.of(+f: Buf, +dt: S.Dt) -> U32:
   Bool.pick(U32, U32.is_lt(S.Dt.itemsize(dt), Buf.w(f)), 1,
@@ -2547,7 +2452,8 @@ def Prog.lane.of(+f: Buf, +dt: S.Dt) -> U32:
 
 # THE BUFFER A MEMORY OP TOUCHES: src[0] is a buffer reference in every measured
 # LOAD and STORE (an INDEX/SHRINK of a PARAM, or a pass-through of one).
-def Prog.buf(+p: Prog, +u: Uop) -> Buf: Buf.at(Prog.fs(p), Elem.buf(Prog.src(p, u, 0n)))
+def Prog.buf(a: Array<Elem>, +fs: List<&2, Buf>, +u: Uop) -> Array<Elem> & Buf:
+  Val.bufof(fs, Val.at(a, Uop.nth(Uop.sslot(u), 0n)))
 
 # EVERY ARM ADVANCES THE PC. ops_python.py:156 ends each iteration with `i += 1`,
 # so an arm that only writes `values[u]` still has to step -- and five of them
@@ -2566,66 +2472,16 @@ def Prog.buf(+p: Prog, +u: Uop) -> Buf: Buf.at(Prog.fs(p), Elem.buf(Prog.src(p, 
 # `_step(m, dtype)` -- ops_python.py:25, storage elements per lane. It is 1 for
 # every v1 lane, and it is spelled out rather than assumed so that a buffer whose
 # storage word is narrower than the dtype still indexes the way ops_python does.
-def Prog.lane(+p: Prog, +u: Uop) -> U32:
-  Prog.lane.of(Prog.buf(p, u), Uop.dt(u))
+def Prog.lane.q(+dt: S.Dt, av: Array<Elem> & Buf) -> Array<Elem> & U32:
+  match av:
+    case (a1, f): (a1, Prog.lane.of(f, dt))
+
+def Prog.lane(a: Array<Elem>, +p: Prog, +u: Uop) -> Array<Elem> & U32:
+  Prog.lane.q(Uop.dt(u), Prog.buf(a, Prog.fs(p), u))
 
 # the storage element index of lane j, `o + j*_step`. A STORE's `_step` is
 # `src_dtypes[1]` (ops_python.py:90) -- the VALUE's dtype -- and not the STORE's
 # own, which is void and would floor every lane step at 1.
-def Prog.store.i(+p: Prog, +u: Uop, +j: U32) -> U32:
-  U32.add(Elem.off(Prog.src(p, u, 0n)),
-    U32.mul(j, Prog.lane.of(Prog.buf(p, u), Prog.dt(p, u, 1n))))
-
-# ONE def, not two: the step reads lane j of `n` and recurses on `n - 1`, so a
-# separate `oob.go` would be a forward reference with nothing to gain.
-#
-# `match` AND NOT `Bool.pick`, MEASURED: `Bool.pick` evaluates its condition
-# before its arms, so by the time the self-call is reached the countdown has
-# already been read and the call is not decreasing. A `match` binds `n` and hands
-# the tail to the arm. `q` is the shrinking argument and comes first.
-def Prog.oob.at(+p: Prog, +u: Uop, +j: U32) -> Bool:
-  U32.is_ge(Prog.store.i(p, u, j), Buf.e(Prog.buf(p, u)))
-
-# **THE LOOP CHECKED THE SAME LANE `run` TIMES.** The old recursion passed `j` through unchanged and
-# only counted down `n`, so it answered `j = 0`'s comparison `n` times over -- four lanes meant four
-# identical arena reads of the buffer pointer, each with its `Maybe`. It is ONE read and ONE
-# comparison, and the answer is the old answer.
-#
-# **AND THE OBVIOUS "IMPROVEMENT" IS A SEMANTIC CHANGE, MEASURED**: checking the LAST lane instead
-# (`off + (run-1)*step`) refuses this tree's own 16x16 packet -- "a load or store past the end of
-# its buffer" -- because ops_python stores `len(src_values[1])` lanes, not `run(u)`, so the last
-# `run` lane is not always a lane anybody writes. `Prog_oob` was 9% of the executor's samples.
-def Prog.oob.go(+n: Nat, +p: Prog, +u: Uop) -> Bool:
-  match n:
-    case 0n: False{}
-    case 1n+q: Prog.oob.at(p, u, 0)
-
-def Prog.oob(+p: Prog, +u: Uop) -> Bool:
-  Prog.oob.go(U32.to_nat(Uop.run(u)), p, u)
-
-# THE POISON. ops_python raises IndexError on a load or a store past the end of a
-# buffer (:17, :28); Bend answers a default instead, so the check runs here and
-# the launch is refused at the end rather than answering a plausible wrong number.
-#
-# **BUT UPSTREAM ONLY TOUCHES THE MEMORY WHERE THE GATE IS OPEN**, and this check
-# stands in for upstream's IndexError, so IT has to be behind the same gate.
-# MEASURED 2026-10-26 on the port's OWN conv packet (1,3,32,32)x(8,3,3,3)
-# padding=1: the port refused the packet at `pc=333 off=3100 buf=1` -- offset
-# 3100 into the 3072-element input buffer -- while UPSTREAM'S OWN
-# `PythonProgram.__call__` RAN THE SAME PACKET, THE SAME BUFFERS AND THE SAME
-# GRID, and upstream's own `_load`/`_store` (monkeypatched at runtime) made
-# 154,968 accesses, NONE of them out of range, and accessed offset 3100 ZERO
-# times. The refused access is the tap `base + 32` of the conv's 3x3 window, and
-# its gate is `(counter121 < 31)`, which is FALSE at the iteration that produced
-# the offset: upstream reads `alt` and never touches the buffer.
-#
-#   ops_python.py:26  `[_load(m, ...) if gate else alt for ...]`
-#   ops_python.py:93  `if g: _store(m, ...)`
-#
-# ⇒ THE GATE IS PART OF THE ACCESS, AND THE CHECK IS PART OF THE GATE.
-def Prog.live(+p: Prog, +u: Uop, +happens: Bool) -> Prog:
-  Prog.live.at(p, Bool.and(happens, Prog.oob(p, u)))
-
 def Prog.ld.gate(+got: Elem, +three: Bool, +alt: Elem, +open: Bool) -> Elem:
   Bool.pick(Elem, Bool.and(three, Bool.not(open)), alt, got)
 
@@ -2686,16 +2542,8 @@ def Prog.ld.three(+u: Uop) -> Bool: U32.is_eq(Uop.nsrc(u), 3)
 # THE GATE OF A LOAD (src 2) AND WHETHER THE ACCESS HAPPENS. ops_python reads
 # the buffer only when the gate is open (ops_python.py:26) and takes `alt` when
 # it is closed, so a one- or two-src LOAD -- which has no gate -- always reads.
-def Prog.ld.open(+p: Prog, +u: Uop) -> Bool: Elem.is_true(Prog.src(p, u, 2n))
-
-def Prog.ld.happens(+p: Prog, +u: Uop) -> Bool:
-  Bool.not(Bool.and(Prog.ld.three(u), Bool.not(Prog.ld.open(p, u))))
-
-def Prog.ld.sb.buf(f: Buf, +p: Prog, +u: Uop) -> Lb:
-  Lb{f, Elem.off(Prog.src(p, u, 0n)), Prog.lane(p, u), Uop.dt(u), Prog.src(p, u, 1n),
-    Prog.ld.three(u), Prog.open(p), Uop.slot(u)}
-
-def Prog.ld.sb(+p: Prog, +u: Uop) -> Lb: Prog.ld.sb.buf(Prog.buf(p, u), p, u)
+def Prog.ld.open(a: Array<Elem>, +u: Uop) -> Array<Elem> & Bool:
+  Val.istrue(Val.at(a, Uop.nth(Uop.sslot(u), 2n)))
 
 def Prog.ld.msat(+ms: List<&2, List<&2, U32>>, +f: Buf, +i: U32, dt: S.Dt, inb: Bool) -> U32:
   Prog.word.ok(Mem.ld(ms, U32.add(Buf.base(f), U32.mul(i, Buf.w(f))), Buf.w(f)), inb, dt)
@@ -2723,17 +2571,16 @@ def Prog.ld.lanef(+f: Buf, +off: U32, +dt: S.Dt, +step: U32, +three: Bool, +alt:
 # before the one that shrinks (MEASURED).
 def Prog.ld.at(+n: Nat, +f: Buf, +off: U32, +dt: S.Dt, +step: U32, +three: Bool, +alt: Elem,
   +open: Bool, +slot: U32, +ms: List<&2, List<&2, U32>>, +j: U32,
-  vs: List<&2, List<&2, List<&2, Elem>>>) -> List<&2, List<&2, List<&2, Elem>>>:
+  a: Array<Elem>) -> Array<Elem>:
   match n:
-    case 0n: vs
+    case 0n: a
     case 1n+q: Prog.ld.at(q, f, off, dt, step, three, alt, open, slot, ms, U32.add(j, 1),
-      Val.put(vs, U32.add(slot, j), Prog.ld.lanef(f, off, dt, step, three, alt, open, ms, j)))
+      Val.put(a, U32.add(slot, j), Prog.ld.lanef(f, off, dt, step, three, alt, open, ms, j)))
 
 # ONE destructure per LOAD, which is what the lane loop used to do per lane.
-def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +nrun: U32,
-  vs: List<&2, List<&2, List<&2, Elem>>>) -> List<&2, List<&2, List<&2, Elem>>>:
+def Prog.ldator(+l: Lb, +ms: List<&2, List<&2, U32>>, +nrun: U32, a: Array<Elem>) -> Array<Elem>:
   Prog.ld.at(U32.to_nat(nrun), Lb.f(l), Lb.off(l), Lb.dt(l), Lb.step(l),
-    Lb.three(l), Lb.alt(l), Lb.open(l), Lb.slot(l), ms, 0, vs)
+    Lb.three(l), Lb.alt(l), Lb.open(l), Lb.slot(l), ms, 0, a)
 
 
 # ===========================================================================
@@ -2759,41 +2606,48 @@ def Prog.oob.f.n(zero: Bool, +off: U32, +f: Buf) -> Bool:
 def Prog.oob.f.e(+s0: Elem, +fs: List<&2, Buf>, +z: Bool) -> Bool:
   Prog.oob.f.n(z, Elem.off(s0), Buf.at(fs, Elem.buf(s0)))
 
-def Prog.oob.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +nrun: U32,
-  +sslot: List<&2, U32>) -> Bool:
-  Prog.oob.f.e(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)), fs, U32.is_zero(nrun))
+def Prog.oob.f.q(+fs: List<&2, Buf>, +z: Bool, av: Array<Elem> & Elem) -> Array<Elem> & Bool:
+  match av:
+    case (a1, +s0): (a1, Prog.oob.f.e(s0, fs, z))
+
+def Prog.oob.f(a: Array<Elem>, +fs: List<&2, Buf>, +nrun: U32, +sslot: List<&2, U32>) -> Array<Elem> & Bool:
+  Prog.oob.f.q(fs, U32.is_zero(nrun), Val.at(a, Uop.nth(sslot, 0n)))
 
 def Prog.ld.happens.f.g(three: Bool, +alt: Elem) -> Bool:
   match three:
     case True{}: Elem.is_true(alt)
     case False{}: True{}
 
-def Prog.ld.happens.f(+vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +three: Bool, +sslot: List<&2, U32>) -> Bool:
-  Prog.ld.happens.f.g(three, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 2n)))
+def Prog.ld.happens.f.q(+three: Bool, av: Array<Elem> & Elem) -> Array<Elem> & Bool:
+  match av:
+    case (a1, v): (a1, Prog.ld.happens.f.g(three, v))
 
-def Prog.ld.sb.f.mk(+f: Buf, +off: U32, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +dt: S.Dt, +slot: U32,
-  +three: Bool, +sslot: List<&2, U32>) -> Lb:
-  Lb{f, off, Prog.lane.of(f, dt), dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n)),
-    three, Elem.is_true(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 2n))), slot}
+def Prog.ld.happens.f(a: Array<Elem>, +three: Bool, +sslot: List<&2, U32>) -> Array<Elem> & Bool:
+  Prog.ld.happens.f.q(three, Val.at(a, Uop.nth(sslot, 2n)))
 
-def Prog.ld.sb.f.s0(+s0: Elem, +fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +dt: S.Dt, +slot: U32, +three: Bool, +sslot: List<&2, U32>) -> Lb:
-  Prog.ld.sb.f.mk(Buf.at(fs, Elem.buf(s0)), Elem.off(s0), vs, vc, vi, dt, slot, three, sslot)
+def Prog.ld.sb.f.mk.t(+f: Buf, +off: U32, +dt: S.Dt, +slot: U32, +three: Bool, +v1: Elem,
+  av: Array<Elem> & Elem) -> Array<Elem> & Lb:
+  match av:
+    case (a2, v2): (a2, Lb{f, off, Prog.lane.of(f, dt), dt, v1, three, Elem.is_true(v2), slot})
 
-def Prog.ld.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32, +dt: S.Dt, +slot: U32,
-  +three: Bool, +sslot: List<&2, U32>) -> Lb:
-  Prog.ld.sb.f.s0(Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)), fs, vs, vc, vi, dt, slot, three, sslot)
+def Prog.ld.sb.f.mk.r(+f: Buf, +off: U32, +dt: S.Dt, +slot: U32, +three: Bool, +s2: U32,
+  av: Array<Elem> & Elem) -> Array<Elem> & Lb:
+  match av:
+    case (a1, v1): Prog.ld.sb.f.mk.t(f, off, dt, slot, three, v1, Val.at(a1, s2))
 
-def Prog.ld1.go(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +dt: S.Dt, +slot: U32, +nrun: U32, +three: Bool, +sslot: List<&2, U32>) -> Prog:
-  Prog.step.vs.f(st, Prog.ldator(Prog.ld.sb.f(St.fs(st), vs, vc, vi, dt, slot, three, sslot),
-      ms, nrun, Prog.vput.flush.go(U32.is_eq(vi, Prog.sent()), vs, vc, vi)), gd, ms, mk, pc, bad, dead, un,
-    Bool.and(Prog.ld.happens.f(vs, vc, vi, three, sslot),
-      Prog.oob.f(St.fs(st), vs, vc, vi, nrun, sslot)))
+def Prog.ld.sb.f.mk(a: Array<Elem>, +f: Buf, +off: U32, +dt: S.Dt, +slot: U32, +three: Bool,
+  +sslot: List<&2, U32>) -> Array<Elem> & Lb:
+  Prog.ld.sb.f.mk.r(f, off, dt, slot, three, Uop.nth(sslot, 2n), Val.at(a, Uop.nth(sslot, 1n)))
 
-# ops_python's `if g:` -- a masked-off store does not write, and the write itself
-# is computed and discarded rather than branched over (Bool.pick is not a branch)
+def Prog.ld.sb.f.s0(+fs: List<&2, Buf>, +dt: S.Dt, +slot: U32, +three: Bool,
+  +sslot: List<&2, U32>, av: Array<Elem> & Elem) -> Array<Elem> & Lb:
+  match av:
+    case (a1, +s0): Prog.ld.sb.f.mk(a1, Buf.at(fs, Elem.buf(s0)), Elem.off(s0), dt, slot, three, sslot)
+
+def Prog.ld.sb.f(a: Array<Elem>, +fs: List<&2, Buf>, +dt: S.Dt, +slot: U32, +three: Bool,
+  +sslot: List<&2, U32>) -> Array<Elem> & Lb:
+  Prog.ld.sb.f.s0(fs, dt, slot, three, sslot, Val.at(a, Uop.nth(sslot, 0n)))
+
 def Prog.store.go(ms: List<&2, List<&2, U32>>, done: List<&2, List<&2, U32>>,
   +open: Bool) -> List<&2, List<&2, U32>>:
   Bool.pick(List<&2, List<&2, U32>>, open, done, ms)
@@ -2803,20 +2657,8 @@ def Prog.store.go(ms: List<&2, List<&2, U32>>, done: List<&2, List<&2, U32>>,
 # and `Prog.ldator` `run` again -- every one a full `match` over the nine-field record, on a packet
 # with 40 LOADs of 510 uops. The sampler had `Prog_ld_sb_f` third among this file's own symbols.
 # ONE destructure now feeds the whole LOAD, and the sources come off the bound `sslot`.
-def Prog.ld1(+p: Prog, +u: Uop) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      match u:
-        case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}:
-          Prog.ld1.go(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, dt, slot, run,
-            U32.is_eq(U32.from_nat(List.length(&2, U32, srcs)), 3), sslot)
-
-def Prog.store.addr(+p: Prog, +u: Uop, +j: U32) -> U32:
-  U32.add(Buf.base(Prog.buf(p, u)), U32.mul(Prog.store.i(p, u, j), Buf.w(Prog.buf(p, u))))
-
-# lane j of the value run: the 1st src's own run, indexed
-def Prog.store.elem(+p: Prog, +u: Uop, +j: U32) -> Elem:
-  Prog.vat(p, U32.add(Prog.slot(p, u, 1n), j))
+def Prog.store.elem(a: Array<Elem>, +p: Prog, +u: Uop, +j: U32) -> Array<Elem> & Elem:
+  Prog.vat(a, U32.add(Prog.slot(p, u, 1n), j))
 
 # THE VALUE IN THE **BUFFER'S** OWN TYPE, AND WHY THE STORE CONVERTS AT ALL.
 # ops_python.py:29-33's `_store` writes
@@ -2885,36 +2727,34 @@ def Sb.at(+s: Sb, +j: U32) -> U32:
 
 def Sb.i(+s: Sb, +j: U32) -> U32: U32.add(Sb.off(s), U32.mul(j, Sb.step(s)))
 
-def Prog.store.sb.buf(+f: Buf, +p: Prog, +u: Uop) -> Sb:
-  Sb{Buf.w(f), Buf.dt(f), Buf.e(f), Buf.base(f), Elem.off(Prog.src(p, u, 0n)),
-    Prog.lane.of(f, Prog.dt(p, u, 1n)), Prog.slot(p, u, 1n), Prog.open(p)}
-
-def Prog.store.sb(+p: Prog, +u: Uop) -> Sb: Prog.store.sb.buf(Prog.buf(p, u), p, u)
-
-def Prog.store.sb.f.mk(+f: Buf, +s0: Elem, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
+def Prog.store.sb.f.mk(+f: Buf, +s0: Elem, +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
   Sb{Buf.w(f), Buf.dt(f), Buf.e(f), Buf.base(f), Elem.off(s0),
     Prog.lane.of(f, Prog.dt.f(us, u, 1n)), Prog.slot.f(u, 1n), Prog.open.f(mk)}
 
-def Prog.store.sb.f.s0(+s0: Elem, +fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
-  Prog.store.sb.f.mk(Buf.at(fs, Elem.buf(s0)), s0, vs, vc, vi, us, mk, u)
+def Prog.store.sb.f.s0(+s0: Elem, +fs: List<&2, Buf>, +us: List<&2, Uop>, +mk: List<&2, Bool>,
+  +u: Uop) -> Sb:
+  Prog.store.sb.f.mk(Buf.at(fs, Elem.buf(s0)), s0, us, mk, u)
 
-def Prog.store.sb.f(+fs: List<&2, Buf>, +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32,
-  +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop) -> Sb:
-  Prog.store.sb.f.s0(Prog.src.f(vs, vc, vi, u, 0n), fs, vs, vc, vi, us, mk, u)
+def Prog.store.sb.f.q(+fs: List<&2, Buf>, +us: List<&2, Uop>, +mk: List<&2, Bool>, +u: Uop,
+  av: Array<Elem> & Elem) -> Array<Elem> & Sb:
+  match av:
+    case (a1, +s0): (a1, Prog.store.sb.f.mk(Buf.at(fs, Elem.buf(s0)), s0, us, mk, u))
 
-def Prog.step.ms.f.go(un: List<&2, Uop>, +st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd,
+def Prog.store.sb.f(fs: List<&2, Buf>, a: Array<Elem>, +us: List<&2, Uop>, +mk: List<&2, Bool>,
+  +u: Uop) -> Array<Elem> & Sb:
+  Prog.store.sb.f.q(fs, us, mk, u, Prog.src.f(a, u, 0n))
+
+def Prog.step.ms.f.go(un: List<&2, Uop>, +st: St, +gd: Gd,
   +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool,
-  +vc: List<&2, List<&2, Elem>>, +vi: U32, +oob: Bool) -> Prog:
+  +oob: Bool) -> Prog:
   match un:
-    case Nil{}: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}, vc, vi}
-    case _ <> t: Prog{st, vs, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t, vc, vi}
+    case Nil{}: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, Nil{}}
+    case _ <> t: Prog{st, gd, ms, mk, U32.add(pc, 1), Bool.or(bad, oob), dead, t}
 
-def Prog.step.ms.f(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +oob: Bool) -> Prog:
-  Prog.step.ms.f.go(un, st, vs, gd, ms, mk, pc, bad, dead, vc, vi, oob)
+def Prog.step.ms.f(+st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>,
+  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>,
+  +oob: Bool) -> Prog:
+  Prog.step.ms.f.go(un, st, gd, ms, mk, pc, bad, dead, oob)
 
 def Prog.store.bits(+s: Sb, +e: Elem) -> U32:
   Elem.bits(Prog.cast.dt(Sb.dt(s), Elem.dt(e), e))
@@ -2935,40 +2775,63 @@ def Prog.store.open(+s: Sb, +j: U32) -> Bool:
 # ITSELF IS `m[i] = v` INTO THE BUFFER'S MEMORYVIEW, WHICH IS THE CONVERSION
 # `Prog.store.bits` MAKES.
 # ONE arena read per lane, for the value and nothing else
-def Prog.store.lane(+ms: List<&2, List<&2, U32>>, +s: Sb, +vs: List<&2, List<&2, List<&2, Elem>>>,
-  +vc: List<&2, List<&2, Elem>>, +vi: U32, +j: U32) -> List<&2, List<&2, U32>>:
-  Prog.store.go(ms, Prog.store.lane.at(ms, s, j, Prog.vat.f(vs, vc, vi, U32.add(Sb.slot(s), j))),
-    Prog.store.open(s, j))
+def Prog.store.lane.s(+ms: List<&2, List<&2, U32>>, +s: Sb, +j: U32,
+  av: Array<Elem> & Elem) -> Array<Elem> & List<&2, List<&2, U32>>:
+  match av:
+    case (a1, e): (a1, Prog.store.go(ms, Prog.store.lane.at(ms, s, j, e), Prog.store.open(s, j)))
 
-# `n` FIRST for the same reason as `Prog.ld.at`: the byte list is rebuilt each step.
-def Prog.store.at(+n: Nat, +u: Uop, ms: List<&2, List<&2, U32>>, +j: U32, +s: Sb,
-  +vs: List<&2, List<&2, List<&2, Elem>>>, +vc: List<&2, List<&2, Elem>>, +vi: U32) -> List<&2, List<&2, U32>>:
+# `n` FIRST, and the pair is a PARAMETER: the loop both consumes `n` and reads the arena, and a
+# continuation helper would be mutual recursion, which Bend refuses.
+def Prog.store.at(+n: Nat, +s: Sb, +j: U32, +ms: List<&2, List<&2, U32>>,
+  av: Array<Elem> & Elem) -> Array<Elem> & List<&2, List<&2, U32>>:
   match n:
-    case 0n: ms
-    case 1n+q: Prog.store.at(q, u, Prog.store.lane(ms, s, vs, vc, vi, j), U32.add(j, 1), s, vs, vc, vi)
+    case 0n:
+      match av:
+        case (a1, _e): (a1, ms)
+    case 1n+q:
+      match av:
+        case (a1, e):
+          Prog.store.at(q, s, U32.add(j, 1),
+            Prog.store.go(ms, Prog.store.lane.at(ms, s, j, e), Prog.store.open(s, j)),
+            Val.at(a1, U32.add(Sb.slot(s), U32.add(j, 1))))
 
 # ONE BIND. `Prog.store` reached the record ~12 times: `step.ms`, `ms`, `store.sb` (twice: `buf` =
 # `fs` + `src`), `open`, `oob` (which re-took `buf`), and one `Prog.vat` per lane.
-def Prog.store.bind(+st: St, +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>,
-  +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>,
-  +vi: U32, +u: Uop) -> Prog:
-  Prog.step.ms.f(st, vs, gd,
-    Prog.store.at(U32.to_nat(Uop.run(u)), u, ms, 0,
-      Prog.store.sb.f(St.fs(st), vs, vc, vi, St.us(st), mk, u), vs, vc, vi),
-    mk, pc, bad, dead, un, vc, vi,
-    Bool.and(Prog.open.f(mk), Prog.oob.f(St.fs(st), vs, vc, vi, Uop.run(u), Uop.sslot(u))))
+def Prog.store.bind.o(+p: Prog, +ms2: List<&2, List<&2, U32>>, av: Array<Elem> & Bool) -> Prog & Array<Elem>:
+  match av:
+    case (a1, ob):
+      (Prog.step.ms.f(Prog.st(p), Prog.gd(p), ms2, Prog.mk(p), Prog.pc(p), Prog.bad(p),
+        Prog.dead(p), Prog.un(p), Bool.and(Prog.open.f(Prog.mk(p)), ob)), a1)
 
-def Prog.store(+p: Prog, +u: Uop) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.store.bind(st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, u)
+def Prog.store.bind.m(+p: Prog, +s: Sb, +u: Uop,
+  av: Array<Elem> & List<&2, List<&2, U32>>) -> Prog & Array<Elem>:
+  match av:
+    case (a1, ms2):
+      Prog.store.bind.o(p, ms2, Prog.oob.f(a1, St.fs(Prog.st(p)), Uop.run(u), Uop.sslot(u)))
 
-def Prog.after(+p: Prog, +u: Uop) -> Prog: Prog.put(p, u, Prog.src(p, u, 0n))
+def Prog.store.bind.s(+p: Prog, +u: Uop, av: Array<Elem> & Sb) -> Prog & Array<Elem>:
+  match av:
+    case (a1, +sb):
+      Prog.store.bind.m(p, sb, u,
+        Prog.store.at(U32.to_nat(Uop.run(u)), sb, 0, Prog.ms(p), Val.at(a1, Sb.slot(sb))))
+
+def Prog.store.bind(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.store.bind.s(p, u, Prog.store.sb.f(St.fs(Prog.st(p)), a, St.us(Prog.st(p)), Prog.mk(p), u))
+
+def Prog.store(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.store.bind(p, a, u)
+
+def Prog.after.r(+p: Prog, +u: Uop, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a1, v): Prog.put(p, a1, u, v)
 
 # **`Bool.pick` EVALUATED ALL THREE ARMS**: the old body built `alu1`, `alu2` AND `alu3` for every
 # arithmetic op -- six arena reads (each three record traversals) and three ALU evaluations to answer
 # one. The arity is a MATCH on the parameter now, and the callers bind the record once, so one ALU
 # step costs one bind + one to three field-taking reads + one bind for the store.
+def Prog.after(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  Prog.after.r(p, u, Val.at(a, Uop.nth(Uop.sslot(u), 0n)))
+
 def Prog.alu.kind2(two: Bool) -> U32:
   match two:
     case True{}: 2
@@ -2988,24 +2851,55 @@ def Prog.alu.kind(one: Bool, two: Bool) -> U32:
 # applied it to `Uop`. An ALU step used to project it SEVEN times: `nsrc` (through `srcs`), `op`, `dt`,
 # one `sslot` per src, and `slot` inside `putf`. The 32x32 packet is 163 MULACC + 4 MUL of 510 uops.
 # ONE destructure now feeds the whole arm, and the src slots come off the bound `sslot`.
-def Prog.alu.at.k(+k: U32, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U32, +st: St,
-  +vs: List<&2, List<&2, List<&2, Elem>>>, +gd: Gd, +ms: List<&2, List<&2, U32>>, +mk: List<&2, Bool>,
-  +pc: U32, +bad: Bool, +dead: Bool, +un: List<&2, Uop>, +vc: List<&2, List<&2, Elem>>, +vi: U32) -> Prog:
-  match k:
-    case 1: Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
-              alu1(op, dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n))))
-    case 2: Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
-              alu2(op, dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)),
-                Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n))))
-    case _: Prog.vput.go(U32.is_eq(Val.ci(slot), vi), st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi, slot,
-              alu3(op, dt, Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 0n)),
-                Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 1n)), Prog.vat.f(vs, vc, vi, Uop.nth(sslot, 2n))))
+# **THE ALU WRITE PATH, IN CONTINUATION FORM** -- one def per read depth, each consuming the pair a
+# read returns. The arity is a `match` on the parameter, so only the arm that runs reads anything.
+def Prog.al.one.r(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a1, v0): Prog.vput(p, a1, slot, alu1(op, dt, v0))
 
-def Prog.alu.at(+p: Prog, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U32, +n: U32) -> Prog:
-  match p:
-    case Prog{st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi}:
-      Prog.alu.at.k(Prog.alu.kind(U32.is_eq(n, 1), U32.is_eq(n, 2)),
-        op, dt, sslot, slot, st, vs, gd, ms, mk, pc, bad, dead, un, vc, vi)
+def Prog.al.one(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +slot: U32, +s0: U32) -> Prog & Array<Elem>:
+  Prog.al.one.r(p, op, dt, slot, Val.at(a, s0))
+
+def Prog.al.two.t(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +v0: Elem, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a2, v1): Prog.vput(p, a2, slot, alu2(op, dt, v0, v1))
+
+def Prog.al.two.r(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +s1: U32, av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a1, v0): Prog.al.two.t(p, op, dt, slot, v0, Val.at(a1, s1))
+
+def Prog.al.two(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +slot: U32, +s0: U32, +s1: U32) -> Prog & Array<Elem>:
+  Prog.al.two.r(p, op, dt, slot, s1, Val.at(a, s0))
+
+def Prog.al.three.t(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +v0: Elem, +v1: Elem,
+  av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a3, v2): Prog.vput(p, a3, slot, alu3(op, dt, v0, v1, v2))
+
+def Prog.al.three.s(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +v0: Elem, +s2: U32,
+  av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a2, v1): Prog.al.three.t(p, op, dt, slot, v0, v1, Val.at(a2, s2))
+
+def Prog.al.three.r(+p: Prog, +op: O.Op, +dt: S.Dt, +slot: U32, +s1: U32, +s2: U32,
+  av: Array<Elem> & Elem) -> Prog & Array<Elem>:
+  match av:
+    case (a1, v0): Prog.al.three.s(p, op, dt, slot, v0, s2, Val.at(a1, s1))
+
+def Prog.al.three(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +slot: U32, +s0: U32, +s1: U32,
+  +s2: U32) -> Prog & Array<Elem>:
+  Prog.al.three.r(p, op, dt, slot, s1, s2, Val.at(a, s0))
+
+def Prog.alu.at.k(+k: U32, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U32,
+  +p: Prog, a: Array<Elem>) -> Prog & Array<Elem>:
+  match k:
+    case 1: Prog.al.one(p, a, op, dt, slot, Uop.nth(sslot, 0n))
+    case 2: Prog.al.two(p, a, op, dt, slot, Uop.nth(sslot, 0n), Uop.nth(sslot, 1n))
+    case _: Prog.al.three(p, a, op, dt, slot, Uop.nth(sslot, 0n), Uop.nth(sslot, 1n), Uop.nth(sslot, 2n))
+
+def Prog.alu.at(+p: Prog, a: Array<Elem>, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U32,
+  +n: U32) -> Prog & Array<Elem>:
+  Prog.alu.at.k(Prog.alu.kind(U32.is_eq(n, 1), U32.is_eq(n, 2)), op, dt, sslot, slot, p, a)
 
 # ===========================================================================
 # THE INTERPRETER LOOP. One recursion per instruction: Bend has no loop and no
@@ -3022,34 +2916,67 @@ def Prog.alu.at(+p: Prog, +op: O.Op, +dt: S.Dt, +sslot: List<&2, U32>, +slot: U3
 # **`Uop.nsrc` IS A `List.length` WALK, AND THIS CALLED IT TWICE PER ALU STEP.** MEASURED by sampler:
 # `Uop_nsrc` and `List_length` both appear in the top twenty of the shipped build, and the 32x32 packet
 # is 163 MULACC + 4 MUL of 510 uops, so that is ~340 walks per pass for ~170 needed. One bind.
-def Prog.alu(+p: Prog, +u: Uop) -> Prog:
+def Prog.alu(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   match u:
-    case Uop{op, dt, kind, a, b, slot, run, srcs, sslot}:
-      Prog.alu.at(p, op, dt, sslot, slot, U32.from_nat(List.length(&2, U32, srcs)))
+    case Uop{op, dt, kind, a0, b, slot, rn, srcs, sslot}:
+      Prog.alu.at(p, a, op, dt, sslot, slot, U32.from_nat(List.length(&2, U32, srcs)))
 
-def Prog.dispatch(+p: Prog, +u: Uop, op: O.Op) -> Prog:
+# **THE DISPATCH THREADS THE ARENA.** The arena is a `Type`, so it cannot be a field of the `Data`
+# record `Prog`; every arm takes it and hands back the pair.
+def Prog.ld1.e(+p: Prog, +hap: Bool, av: Array<Elem> & Bool) -> Prog & Array<Elem>:
+  match av:
+    case (a1, ob):
+      (Prog.step.vs.f(Prog.st(p), Prog.gd(p), Prog.ms(p), Prog.mk(p), Prog.pc(p), Prog.bad(p),
+        Prog.dead(p), Prog.un(p), Bool.and(hap, ob)), a1)
+
+def Prog.ld1.d(+p: Prog, +u: Uop, +hap: Bool, a: Array<Elem>) -> Prog & Array<Elem>:
+  Prog.ld1.e(p, hap, Prog.oob.f(a, St.fs(Prog.st(p)), Uop.run(u), Uop.sslot(u)))
+
+def Prog.ld1.c(+p: Prog, +u: Uop, +three: Bool, +sslot: List<&2, U32>,
+  av: Array<Elem> & Bool) -> Prog & Array<Elem>:
+  match av:
+    case (a1, hap): Prog.ld1.d(p, u, hap, a1)
+
+def Prog.ld1.b(+p: Prog, +u: Uop, +three: Bool, +sslot: List<&2, U32>,
+  av: Array<Elem> & Lb) -> Prog & Array<Elem>:
+  match av:
+    case (a1, l):
+      Prog.ld1.c(p, u, three, sslot,
+        Prog.ld.happens.f(Prog.ldator(l, Prog.ms(p), Uop.run(u), a1), three, sslot))
+
+def Prog.ld1.go(+p: Prog, a: Array<Elem>, +u: Uop, +three: Bool, +sslot: List<&2, U32>) -> Prog & Array<Elem>:
+  Prog.ld1.b(p, u, three, sslot,
+    Prog.ld.sb.f(a, St.fs(Prog.st(p)), Uop.dt(u), Uop.slot(u), three, sslot))
+
+def Prog.ld1(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
+  match u:
+    case Uop{op, dt, kind, _a, b, slot, rn, srcs, sslot}:
+      Prog.ld1.go(p, a, u, U32.is_eq(U32.from_nat(List.length(&2, U32, srcs)), 3), sslot)
+
+
+def Prog.dispatch(+p: Prog, a: Array<Elem>, +u: Uop, op: O.Op) -> Prog & Array<Elem>:
   match op:
-    case O.OpsBARRIER{}: Prog.next(p)
-    case O.OpsSINK{}: Prog.next(p)
-    case O.OpsNOOP{}: Prog.next(p)
-    case O.OpsEND{}: Prog.at(p, Uop.src1(u))
-    case O.OpsBACKEDGE{}: Prog.backedge(p, u)
-    case O.OpsRANGE{}: Prog.rng(p, u)
-    case O.OpsIF{}: Prog.ifs(p, u)
-    case O.OpsENDIF{}: Prog.next(Prog.mk1(p, List.tail(&2, Bool, Prog.mk(p))))
-    case O.OpsPARAM{}: Prog.param(p, u)
-    case O.OpsBUFFER{}: Prog.put(p, u, Bf{Uop.b(u)})
-    case O.OpsCONST{}: Prog.put(p, u, elem_of(Uop.a(u), Uop.dt(u)))
-    case O.OpsSPECIAL{}: Prog.special(p, u)
-    case O.OpsINDEX{}: Prog.index(p, u)
-    case O.OpsSHRINK{}: Prog.index(p, u)
-    case O.OpsSTACK{}: Prog.stack(p, u)
-    case O.OpsBITCAST{}: Prog.bitcast(p, u)
-    case O.OpsCAST{}: Prog.cast(p, u)
-    case O.OpsLOAD{}: Prog.ld1(p, u)
-    case O.OpsSTORE{}: Prog.store(p, u)
-    case O.OpsAFTER{}: Prog.after(p, u)
-    case _: Prog.alu(p, u)
+    case O.OpsBARRIER{}: (Prog.next(p), a)
+    case O.OpsSINK{}: (Prog.next(p), a)
+    case O.OpsNOOP{}: (Prog.next(p), a)
+    case O.OpsEND{}: (Prog.at(p, Uop.src1(u)), a)
+    case O.OpsBACKEDGE{}: Prog.backedge(p, a, u)
+    case O.OpsRANGE{}: Prog.rng(p, a, u)
+    case O.OpsIF{}: Prog.ifs(p, a, u)
+    case O.OpsENDIF{}: (Prog.next(Prog.mk1(p, List.tail(&2, Bool, Prog.mk(p)))), a)
+    case O.OpsPARAM{}: Prog.param(p, a, u)
+    case O.OpsBUFFER{}: Prog.put(p, a, u, Bf{Uop.b(u)})
+    case O.OpsCONST{}: Prog.put(p, a, u, elem_of(Uop.a(u), Uop.dt(u)))
+    case O.OpsSPECIAL{}: Prog.special(p, a, u)
+    case O.OpsINDEX{}: Prog.index(p, a, u)
+    case O.OpsSHRINK{}: Prog.index(p, a, u)
+    case O.OpsSTACK{}: Prog.stack(p, a, u)
+    case O.OpsBITCAST{}: Prog.cast(p, a, u)
+    case O.OpsCAST{}: Prog.cast(p, a, u)
+    case O.OpsLOAD{}: Prog.ld1(p, a, u)
+    case O.OpsSTORE{}: Prog.store(p, a, u)
+    case O.OpsAFTER{}: Prog.after(p, a, u)
+    case _: Prog.alu(p, a, u)
 
 # THE STEP. One arm per line of ops_python's `__call__`, in its order.
 # **=> AND THIS IS THE INTERPRETER'S WHOLE COST.** MEASURED on the compiled executor
@@ -3073,7 +3000,7 @@ def Prog.over(+pr: Prog) -> Bool: U32.is_ge(Prog.pc(pr), Prog.n(pr))
 # static step count -- so this is the "stay turing-incomplete" guard, and it
 # refuses the launch instead of answering a plausible wrong number.
 def Prog.die(+pr: Prog) -> Prog:
-  Prog{Prog.st(pr), Prog.vs(pr), Prog.gd(pr), Prog.ms(pr), Prog.mk(pr), Prog.pc(pr), Prog.bad(pr), True{}, Prog.un(pr), Prog.vc(pr), Prog.vi(pr)}
+  Prog{Prog.st(pr), Prog.gd(pr), Prog.ms(pr), Prog.mk(pr), Prog.pc(pr), Prog.bad(pr), True{}, Prog.un(pr)}
 
 # ONE def for the whole loop, and it has to be ONE: Bend refuses mutual
 # recursion, so `run` and a separate `run.at` cannot both exist. The shape that
@@ -3091,56 +3018,60 @@ def Prog.die(+pr: Prog) -> Prog:
 # 32x32 one, two different programs, both exactly the fuel, while the answers stayed
 # right because the guard threw the work away. `un` IS `pc < n`, so `match f un`
 # both stops and is a legal scrutinee (a computed Bool is not).
-def run(+f: Nat, +un: List<&2, Uop>, +pr: Prog) -> Prog:
-  match f un:
-    case 0n _: Prog.die(pr)
-    case 1n+k h <> _:
-      # `Uop.op(h)` WAS A NINTH-FIELD PROJECTION ON **EVERY STEP OF THE PROGRAM**, not just on the
-      # hot op families: `Prog.run` did it to answer the dispatch, and the arm then projected the
-      # same record again for its own fields. `h` is bound by the list pattern, so one nested match
-      # here hands `op` over as a PARAMETER -- which is all `Prog.dispatch` needs, since a `match`
-      # scrutinee must be a parameter -- and the projection is gone from all 510 uops.
-      match h:
-        case Uop{op, dt, kind, a, b, slot, _run, srcs, sslot}:
-          +pr2 = Prog.dispatch(pr, h, op)
-          run(k, Prog.un(pr2), pr2)
-    case 1n+k Nil{}: pr
+# the step's pair has to be split to reach the cursor, and a computed pair cannot be matched, so it
+# is handed to a def whose PARAMETER is that pair
+# the pair has to be split to reach the cursor, and a computed pair cannot be matched, so the pair is
+# a PARAMETER here and the split happens at the top of the step
+# **THE LOOP MATCHES THE FUEL AND THE PAIR TOGETHER.** `run` has to take its NEXT cursor from the step's
+# RESULT, and the result is a computed `Prog & Array<Elem>` -- which cannot be matched. Matching the
+# fuel and the pair in one `match f av:` gives the record as a BINDER, so its `un` is matched at a
+# deeper level and the post-step cursor is reachable without splitting anything.
+# **THE LOOP TAKES ITS NEXT CURSOR FROM THE RECORD IT JUST BUILT.** The step returns a computed
+# `Prog & Array<Elem>`, which cannot be matched, so the pair is a PARAMETER and the record it holds is
+# matched at a deeper level -- that is how `un` is reachable without splitting anything.
+def run(+f: Nat, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
+  match f:
+    case 0n:
+      match av:
+        case (pr, a): (Prog.die(pr), a)
+    case 1n+k:
+      match av:
+        case (pr, a):
+          match pr:
+            case Prog{st, gd, ms, mk, pc, bad, dead, un}:
+              match un:
+                case Nil{}: (pr, a)
+                case +h <> _:
+                  run(k, Prog.dispatch(pr, a, h, Uop.op(h)))
 
-# ===========================================================================
-# THE GRID, :56 -- `for idxs in itertools.product(*[range(x) for x in
-# global_size[::-1]])`. gz varies fastest and `idxs` is (z, y, x), so the first
-# work item is (0,0,0) and the odometer carries gz. `values`, `exec_masks`,
-# `pvals` and the pc are RESET per work item and the buffers are not, which is
-# what makes a second work item accumulate into the first one's stores.
-# ===========================================================================
-
-def Prog.count(+args: Args) -> Nat: Nat.mul(U32.to_nat(Args.gx(args)), Nat.mul(U32.to_nat(Args.gy(args)), U32.to_nat(Args.gz(args))))
-
-def Prog.reset(+pr: Prog) -> Prog: Prog.at(Prog.vs1(Prog.mk1(pr, Nil{}), Prog.v0(pr)), 0)
-
-# THE ODOMETER LIVES IN `Gd` NOW, SO THE THREE COMPUTED COUNTERS HAVE TO BE PUT BACK INTO IT.
+# `Prog.tick` re-seeds the arena per work item, so it takes and returns the pair
 def Prog.carry.gd(+pv: U32, +gx: U32, +gy: U32, +gz: U32, +oz: Bool) -> Gd:
   Gd{pv, Bool.pick(U32, oz, U32.add(gx, 1), gx), Bool.pick(U32, oz, 0, U32.add(gy, 1)),
     Bool.pick(U32, oz, U32.add(gz, 1), 0)}
 
-def Prog.carry.at(+pr: Prog, +oz: Bool, +gd: Gd) -> Prog:
-  Prog{Prog.st(pr), Prog.vs(pr), gd, Prog.ms(pr), Prog.mk(pr), Prog.pc(pr),
-    Prog.bad(pr), Prog.dead(pr), Prog.un(pr), Prog.vc(pr), Prog.vi(pr)}
-
 def Prog.carry(+pr: Prog, +oz: Bool) -> Prog:
-  Prog.carry.at(pr, oz, Prog.carry.gd(Prog.pv(pr), Prog.gx(pr), Prog.gy(pr), Prog.gz(pr), oz))
+  match pr:
+    case Prog{st, gd, ms, mk, pc, bad, dead, un}:
+      Prog{st, Prog.carry.gd(Gd.pv(gd), Gd.gx(gd), Gd.gy(gd), Gd.gz(gd), oz), ms, mk, pc, bad, dead, un}
 
-def Prog.tick(+pr: Prog) -> Prog: Prog.reset(Prog.carry(pr, U32.is_ge(U32.add(Prog.gz(pr), 1), Prog.cz(pr))))
+def Prog.reset(+pr: Prog) -> Prog: Prog.at(Prog.mk1(pr, Nil{}), 0)
 
+def Prog.tick(+pr: Prog) -> Prog:
+  Prog.reset(Prog.carry(pr, U32.is_ge(U32.add(Prog.gz(pr), 1), Prog.cz(pr))))
 
-# ONE def, like `run`: a separate def to resolve `run`'s answer would be mutual
-# recursion. The work-item count shrinks and `Prog.tick(run(FUEL(), pr))` is
-# rebuilt, so the count comes first. A work item that ran out of fuel sets
-# `dead`, and `Prog.launch.grid` refuses the launch on it.
-def grid(+n: Nat, +pr: Prog) -> Prog:
+def Prog.tick.av(av: Prog & Array<Elem>) -> Prog & Array<Elem>:
+  match av:
+    case (pr, _a): (Prog.tick(pr), Arena.new())
+
+def Prog.count(+args: Args) -> Nat:
+  Nat.mul(U32.to_nat(Args.gx(args)), Nat.mul(U32.to_nat(Args.gy(args)), U32.to_nat(Args.gz(args))))
+
+def grid(+n: Nat, av: Prog & Array<Elem>) -> Prog & Array<Elem>:
   match n:
-    case 0n: pr
-    case 1n+k: grid(k, Prog.tick(run(FUEL(), Prog.un(pr), pr)))
+    case 0n: av
+    case 1n+k:
+      match av:
+        case (+pr, a): grid(k, Prog.tick.av(run(FUEL(), (pr, a))))
 
 # ===========================================================================
 # THE COMMAND LINE. `IO.args()` is affine, so it is read ONCE, in order, and the
@@ -3282,8 +3213,13 @@ def Prog.done.go(nb: U32, +pr: Prog, +args: Args, +ok: Bool) -> IO(Unit):
 def Prog.done(nb: U32, +pr: Prog, +args: Args) -> IO(Unit):
   Prog.done.go(nb, pr, args, True{})
 
+def Prog.done.av(nb: U32, av: Prog & Array<Elem>, +args: Args) -> IO(Unit):
+  match av:
+    case (pr, _a): Prog.done(nb, pr, args)
+
 def Prog.launch.grid(+ld: Load, +args: Args) -> IO(Unit):
-  Prog.done(Load.nb(ld), grid(Prog.count(args), Prog.of(args, ld)), args)
+  Prog.done.av(Load.nb(ld), grid(Prog.count(args), Prog.of(args, ld)), args)
+
 
 def Prog.launch.run.at(ld: Maybe<&2, Load>, +args: Args) -> IO(Unit):
   match ld:
@@ -3827,3 +3763,4 @@ def main() -> IO(Unit):
     as : List<String> <- IO.args()
     a : Args <- IO.pure(Args, Maybe.default(&2, Args, Args.of(as), Args.blank()))
     main.at(a)
+
