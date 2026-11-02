@@ -2335,7 +2335,7 @@ def Prog.stack.copy(es: List<&2, Elem>, a: Array<Elem>, +slot: U32, +k: Nat) -> 
 # **ONE SELF-RECURSIVE DEF.** The read inside the loop cannot be a continuation helper, because a
 # helper would call back into this def and Bend refuses mutual recursion. So the pair is a PARAMETER
 # here alongside the list: each call consumes one element and recurses on the tail.
-def Prog.stack.at(+ss: List<&2, U32>, av: Array<Elem> & Elem, +us: List<&2, Uop>,
+def Prog.stack.at(+ss: List<&2, U32>, av: Array<Elem> & Elem,
   acc: List<&2, Elem>) -> Array<Elem> & List<&2, Elem>:
   match ss:
     case Nil{}:
@@ -2348,14 +2348,14 @@ def Prog.stack.at(+ss: List<&2, U32>, av: Array<Elem> & Elem, +us: List<&2, Uop>
             case (a1, v): (a1, List.append(&2, Elem, acc, [v]))
         case s2 <> _:
           match av:
-            case (a1, v): Prog.stack.at(t, Val.at(a1, Uop.slot(Uop.at(us, s2))), us,
+            case (a1, v): Prog.stack.at(t, Val.at(a1, s2),
               List.append(&2, Elem, acc, [v]))
 
 # the starter: ss is non-empty here, so it reads the head and hands over
-def Prog.stack.all(+ss: List<&2, U32>, a: Array<Elem>, +us: List<&2, Uop>) -> Array<Elem> & List<&2, Elem>:
+def Prog.stack.all(+ss: List<&2, U32>, a: Array<Elem>) -> Array<Elem> & List<&2, Elem>:
   match ss:
     case Nil{}: (a, Nil{})
-    case s <> t: Prog.stack.at(ss, Val.at(a, Uop.slot(Uop.at(us, s))), us, Nil{})
+    case s <> t: Prog.stack.at(ss, Val.at(a, s), Nil{})
 
 def Prog.step.vs.f.go(un: List<&2, Uop>, +st: St, +gd: Gd, +ms: List<&2, List<&2, U32>>,
   +mk: List<&2, Bool>, +pc: U32, +bad: Bool, +dead: Bool, +oob: Bool) -> Prog:
@@ -2377,7 +2377,7 @@ def Prog.stack.by.r(+p: Prog, +u: Uop, av: Array<Elem> & List<&2, Elem>) -> Prog
         Prog.dead(p), Prog.un(p), False{}), Prog.stack.copy(es, a1, Uop.slot(u), 0n))
 
 def Prog.stack.by(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
-  Prog.stack.by.r(p, u, Prog.stack.all(Uop.srcs(u), a, St.us(Prog.st(p))))
+  Prog.stack.by.r(p, u, Prog.stack.all(Uop.sslot(u), a))
 
 def Prog.stack(+p: Prog, a: Array<Elem>, +u: Uop) -> Prog & Array<Elem>:
   Prog.stack.by(p, a, u)

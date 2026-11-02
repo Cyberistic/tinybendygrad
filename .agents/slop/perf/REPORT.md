@@ -3600,3 +3600,47 @@ Both probes were reverted; `git checkout` restores the file byte-identical and t
 green on the restored tree. **Six levers are now closed with numbers** (arena: landed 378 -> 264 ms;
 `Mem`: absent from the census; `-O3`: already passed; state term 10 -> 6 cells: neutral; arena depth
 4x: flat; +1 alloc/step: neutral), and every one of them is a measurement rather than an estimate.
+
+## 39.32 STACK WAS WALKING THE UOP LIST TO FIND A SLOT THAT WAS ALREADY HANDED TO IT: -11%
+
+39.31 concluded that no lever remained above the noise floor. **THAT GENERALISATION WAS WRONG, AND
+IT WAS WRONG IN THE WAY 39.31's OWN TABLE SHOULD HAVE PREVENTED: it generalized from probes aimed at
+the ALU step and the arena while `Prog.stack_at` sat at 8.8% plus `Prog.stack_all` at 2.8% -- 11.6%
+inclusive, the SECOND-LARGEST port site -- never inspected.** 39.31 is corrected here, not defended.
+
+**THE DEFECT.** `Prog.stack.at` reads the arena slot of each of a STACK's srcs like this:
+
+    Val.at(a1, Uop.slot(Uop.at(us, s2)))
+
+`Uop.at(us, s2)` walks the PROGRAM's uop list to index `s2`, which on a 510-uop packet is up to 510
+cons cells, once per stack element -- and `us` was threaded through `Prog.stack.at`/`Prog.stack.all`
+for nothing else. **AND THE LIST WAS ALREADY THERE**: `Uop.sslot(u)` is, by construction, exactly
+`[slot_of_uop(src) for src in uop.srcs]` (`Uop.slot(Uop.at(us, s))` computed ONCE per packet at build
+time), and the ALU and INDEX paths were already reading it via `Uop.nth`. STACK was the last site on
+the old idiom, so the fix is to hand `stack.at`/`stack.all` the `sslot` list and read it directly:
+
+    case s <> t: Prog.stack.at(ss, Val.at(a, s), Nil{})
+
+One traversal of a <=4-element slot list, replacing a <=510-cell program walk per src. `St.us` is no
+longer read either, so `Prog.stack.by` loses a `St` projection as well.
+
+**MEASURED, five runs at 32x32, same instrument:**
+
+    BEND  235.27  232.82  229.69  241.83  235.32 ms
+    PYTHON 395.50  394.73  382.93  382.69  396.32 ms
+    ratio  1.68x   1.70x   1.67x   1.58x   1.68x
+
+against the pre-fix baseline of BEND 261.97 / 264.11 / 264.19 / 264.71 / 265.98 / 271.77 / 272.94.
+**MEDIAN 264.19 -> 235.27 = -10.9%**, and the SLOWEST post-fix run (241.83) is faster than the
+FASTEST pre-fix run (261.97). 16x16 reads BEND 37.36 vs PYTHON 69.86 = **1.87x**.
+
+Gates on the landed tree: `--check-only` `ALL PROOFS CHECK`; `ops_python_exec` 153 fixtures / 365 rows
+x 2 lanes / **0 unpinned / 0 pinned**; `ops_bend_exec-e2e` **7 match, 0 mismatch-or-refused**;
+`PROOF-ALL` `ALL PROOFS CHECK`.
+
+**⇒ THE GENERAL LESSON, AND IT IS THE ONE THIS FILE KEEPS RELEARNING.** `Uop.slot(Uop.at(us, s))` and
+`Uop.nth(Uop.sslot(u), s)` are the SAME NUMBER, and the tree had already paid to precompute it. A
+probe that says "this dimension is flat" bounds THE SITE PROBED, not the class of redundant traversals;
+39.31's probes were all on the ALU arm and the arena, and the 11.6% STACK site was outside every one of
+them. **`Prog.dt.f` is the last user of the old idiom** (one `Uop.at` walk per LOAD/STORE dtype lookup)
+and is NOT changed here.
