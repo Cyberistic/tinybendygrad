@@ -3993,3 +3993,54 @@ neutral, arity `Bool.pick` +2.9%, Sigma pairs zero). **Every lever this session 
 either landed or bounded, and the last four turns have moved the evidence without moving the number.**
 The remaining territory is the runtime's per-term constant and the linearizer's step count -- both
 outside the port -- and **no measurement in this file bounds either.**
+
+## 39.41 THE STEP COUNT IS 93,853 AND ONE STEP COSTS 1.24 us: THE LEVER IS STEP COUNT, AND IT IS NOT IN THE PORT
+
+39.40 left the port with no named lever. 39.41 measures the OTHER factor of the run time -- how many
+steps there are -- because time = steps x cost-per-step and only the second factor has been worked.
+
+**THE PACKET'S CONTROL FLOW, read off `PACKET.in` (510 uops, 3 buffers, 1 grid cell):**
+
+    92:  RANGE i32 - 37         <- outer, 37 = CAST(36), 36 = CONST 32   => extent 32
+    150: RANGE i32 - 117        <- inner, 117 = AFTER(75), 75 = CAST(74), 74 = CONST 8  => extent 8
+    507: STORE void k:vec:4 505 503
+    508: END void - 507 150     <- back edge to the INNER range
+    509: END void - 508 92      <- back edge to the OUTER range
+    510: SINK void - 509
+
+    steps = 92 + 32*(57 + 359*8 + 1) + 1 = 93,853 per launch
+
+(92 uops of preamble, 57 uops between the two RANGEs, `150..508` = 359 uops executed 8 times, the outer
+END, the SINK.)
+
+**MEASURED LAUNCH TIME, two instruments agreeing:** `stage3_gap BEND --size 32 --iters 4` reports
+`realize 235.17 ms, launches/realize 2.0, median launch 116.16 ms` with `uops=510`; and
+`stage3_parity`'s 228.46 ms median is 2 launches of ~114.2 ms. So:
+
+    **1,237.7 ns PER INTERPRETED STEP -- 1.24 us, ~3,960 cycles at 3.2 GHz.**
+
+**⇒ AND THAT REFRAMES EVERYTHING THIS SESSION HAS MEASURED.** For a native compiled tree-walker, ~4,000
+cycles per interpreted uop is the headline: the port's own code is 5% of samples (39.28) and one added
+allocation per step costs 0.276% (39.36), i.e. ~3.5 ns -- so the step's cost is NOT its allocations
+and NOT its port instructions. It is the fixed machinery of moving one uop through the runtime, and no
+port-side rewrite of the step has moved it except where it removed real work.
+
+**THE OTHER FACTOR IS THE LEVER, AND IT IS OUTSIDE THE PORT.** Halving steps halves the run; the port
+cannot change step count, because the steps ARE the linearizer's output. `RANGE 32 x RANGE 8` with a
+**359-uop inner body** is the scheduler's and linearizer's choice, not the interpreter's.
+
+**⇒ AND A STEP REDUCTION WOULD TOUCH `tinygrad/`, WHICH IS THE ORACLE FOR EVERY GRAPH GATE.** That is
+strictly worse than touching `references/bend`: `tinygrad/` is the CPython side of the 38-graph corpus,
+so a linearizer change there **moves BOTH lanes of `stage3_parity`** (they share the linearizer; only
+the codegen differs), leaving the ratio where it is while changing the absolute time -- and it
+invalidates the corpus oracle that certifies the port, which is the tree's strongest witness.
+
+**SO THIS IS A DECISION, NOT A NEXT STEP.** The measurement is complete and recorded; the change it
+points at is outside the port and touches the oracle. I am not making it without the user saying so.
+Options, with what each costs:
+  1. **Scheduler/linearizer option applied ONLY to the BEND lane** (e.g. a BEND-specific tile or
+     vectorization choice at `ops_bend.py`'s boundary), if one exists that lowers steps without
+     changing `tinygrad/`. Unknown until looked for; the honest next experiment.
+  2. **A deliberate `tinygrad/` linearizer change**, accepting that both lanes move and the graph
+     corpus must be re-certified (§ the tree's own re-vendor discipline).
+  3. **Stop**: 378 -> 228 ms, 1.6-1.7x ahead of CPython, every named lever landed or bounded.
