@@ -4044,3 +4044,49 @@ Options, with what each costs:
   2. **A deliberate `tinygrad/` linearizer change**, accepting that both lanes move and the graph
      corpus must be re-certified (§ the tree's own re-vendor discipline).
   3. **Stop**: 378 -> 228 ms, 1.6-1.7x ahead of CPython, every named lever landed or bounded.
+
+## 39.42 NO BEND-LANE-ONLY KNOB REDUCES STEPS: OPTION 1 OF 39.41 IS CLOSED
+
+39.41 measured `time = steps x per-step cost` and left three options. Option 1 -- a scheduling or
+vectorization choice applied at the `ops_bend.py` boundary, with no edit to `tinygrad/` -- needs no
+decision, so 39.42 ran it. **IT DOES NOT EXIST.**
+
+**THE INSTRUMENT** (kept: `.agents/slop/perf/stepcensus.py`) sets a `BendRenderer` attribute, builds the
+32x32 kernel, captures the emitted `PACKET.in`, resolves each `RANGE`'s extent through its `CONST`/
+`CAST`/`AFTER` chain, and SIMULATES the control flow (`RANGE` / `END` back edges) to count executed
+steps. It is exact, needs no timing, and its input is the packet's own text.
+
+**AND IT CORRECTED THE STEP COUNT ITSELF.** 39.41's arithmetic gave 93,853 by counting each `RANGE`
+once; the port says otherwise -- "THE COUNTER IS DELETED WHEN THE LOOP EXITS" (`Prog.rng`, following
+`ops_python.py:132`) -- so **`RANGE` re-initialises its counter on EVERY entry**, and the inner loop runs
+8 times per outer iteration. The simulator counts `RANGE` re-entries and reads **93,629 steps/launch**
+for the baseline packet, so:
+
+    116.16 ms/launch / 93,629 steps = 1,240.6 ns per interpreted step  (~3,970 cycles at 3.2 GHz)
+
+**THE KNOB CENSUS** (`Renderer` is the object the scheduler consults; all of these are settable on
+`BendRenderer`, none requires touching `tinygrad/`):
+
+    knob                     uops   ranges        steps/launch
+    baseline                  510   32 x 8         93,629
+    supports_float4 = 0       942   32 x 8        138,141     (+48%, WORSE)
+    has_shared = 0            510   32 x 8         93,629     (identical)
+    global_max = 64           510   32 x 8         93,629     (identical)
+    local_max  = 16           510   32 x 8         93,629     (identical)
+
+`supports_float4 = 0` is the only one that MOVES, and it moves the wrong way: scalarising the loads
+takes the packet from 510 to 942 uops. The other three do not change the packet at all -- the matmul
+uses no shared memory and its extents (32 x 8) are not set by `global_max`/`local_max`.
+
+**AND THE ONE KNOB THAT COULD HAVE REDUCED STEPS IS UNREACHABLE.** `Renderer.tensor_cores` is consulted
+by the scheduler and is the classic way to collapse a matmul, but in this tree it is defined only in
+`renderer/ptx.py:146` as `[x for x in tc.get_cuda(target.arch) if ...]` -- CUDA-specific -- and the
+Bend interpreter has no `WMMA`/tensor-core arm to execute, so a schedule that emitted one would be
+refused by `Prog.parse`.
+
+**⇒ SO `steps` IS NOT REACHABLE FROM THE PORT'S SIDE OF THE BOUNDARY, AND THAT IS NOW MEASURED RATHER
+THAN ASSUMED.** The only remaining way to lower steps is the shared linearizer in `tinygrad/`, which is
+the CPython side of the 38-graph corpus: it would move BOTH lanes of the comparison (they share the
+linearizer; only the codegen differs) and invalidate the oracle that certifies the port. **That stays
+the user's decision, and 39.42 does not touch it.** The interpreter is unmodified; no change to keep or
+revert.
