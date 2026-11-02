@@ -4,8 +4,10 @@
 "1:1" checkable, the exact command for each, and today's reading. Every number here was produced by
 running the command beside it; re-run it rather than trusting this file.
 
-Measured 2026-11-02 at HEAD `16a1fb5d5` (the deletion below moves the substrate digest, so the corpus
-row must be re-taken after it — see §4).
+Measured 2026-11-02. The corpus row was taken twice: once at `16a1fb5d5`, then RE-TAKEN at `78b204521`
+after the file deletion below (which moves the substrate digest — `substrate-start`/`substrate-end` and
+the live digest are what say so). Both runs agreed 38/38; the second is the one that stands, with
+`substrate-start == substrate-end == live == 8e7ab117989c661ff9f6c390e631ec0d0b8d575d16985aeb07552385c5c71669`.
 
 ## 1. SOURCE AXIS — is the vendored `tinygrad/` pristine?
 
@@ -112,3 +114,30 @@ Run §1–§4's commands; they are independent and each prints its own verdict t
 numbers forward** — three of the four instruments read the working tree, and one of them (the corpus)
 goes STALE the moment a `.bend` file changes, which `substrate-start`/`substrate-end` and the live
 digest are what report.
+
+## 7. THE WORK LIST TO CLOSE THE NON-`autogen` GAP (sized, not estimated)
+
+Twelve files stand between the tree and 1:1 outside `runtime/autogen/`, and **nine of them carry no
+semantics at all** — they are the `__init__` markers and stubs the tree's own convention already
+prescribes (`tinybendygrad/engine/__init__.bend` is the precedent: six lines for a zero-line upstream).
+
+| file(s) | upstream lines | treatment |
+|---|---|---|
+| `renderer/amd/__init__`, `renderer/isa/__init__`, `runtime/support/{am,nv,rdma}/__init__` | 0 each (5 files) | **marker-only** `.bend`, engine precedent |
+| `llm/__init__`, `llm/kernels/__init__` | 0 each (2 files) | **marker-only** `.bend` |
+| `llm/kernels/amd.py` | 811 | **documented not-ported stub** — the disposition `TODO.md:5187` already declares for it |
+| `llm/__main__.py` | 1 | trivial: the `main()` guard |
+| `llm/cli.py` · `llm/model.py` · `llm/serve.py` | 223 · 650 · 176 | **the only real port work left** |
+
+Note the count: my §4 census reported `__init__` as 5 because it excluded `llm/` from that bucket; the
+`__init__` total missing outside `autogen` is 7, plus `renderer/amd` which has 4 ports and no marker.
+
+## 8. TWO GITIGNORED FILES INSIDE THE WALK THAT MUST **NOT** BE DELETED
+
+`tinybendygrad/renderer/amd/dsl-mut.bend` and `dsl.bend.bak` are untracked (`.gitignore:36` `*mut.bend`,
+`.gitignore:28` `*.bak`) and they sit inside the substrate walk, so the digest hashes them. **They are
+not strays to sweep:** `gates/amd-mut-run.py:5` and `gates/amd_dsl_census-mutate.py:81` name
+`dsl-mut.bend` as their mutation target — the copy that makes those gates able to FAIL — and
+`checks/substrate.py:558` already records `*-mut.bend` and `dsl.bend.bak` as "owned by neither".
+**Checked before touching; kept.** This is the file class `AGENTS.md` warns moves the digest, and the
+answer here is that the tree already accounts for it.
