@@ -3455,3 +3455,43 @@ write was the port's biggest allocation site and it is gone.
 
 Fields: 32x32 grid replay, `sample 6 -file`. Artifacts under `/tmp/prof32/` (regenerable by
 `/tmp/capture.py`, which intercepts the executor argv from `ops_bend.__call__`).
+
+## 39.29 THE PER-STEP TERM CANNOT BE ELIMINATED IN BEND, AND THAT IS THE FLOOR
+
+39.28 left one named lever: thread `st, gd, ms, mk, pc, bad, dead, un` through `run` so the 9-field
+`Prog` is not rebuilt every uop. **IT CANNOT BE DONE, AND THE REASON IS THE LANGUAGE RATHER THAN THE
+EFFORT.**
+
+**1. The loop cannot carry the fields through a linear read.** `Prog.al.*` and `Prog.ix.*` must
+`Val.at` the arena, and a linear read hands back `Array<Elem> & Elem`, which only a *continuation def
+whose parameter is the pair* can consume. For the loop to keep its fields, that continuation would
+have to call back into `run`. MEASURED, `bin/bend /tmp/mut.bend` -- a three-line file whose `step`
+calls `read1` and whose `read1` calls `step`:
+
+    Error: expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
+           observed : read1
+
+**⇒ A DEF THAT CALLS A LATER DEF IS REFUSED, SO TWO MUTUALLY RECURSIVE DEFS CANNOT BOTH BE IN ORDER.**
+The continuation must RETURN its state instead of looping back, and returning the state is a term --
+so one allocation per step is FORCED by the evaluation strategy, not chosen by the port.
+
+**2. And threading would not have removed it anyway.** A step changes `pc` and `un`, so *something*
+must be rebuilt. The best expressible shape is a 3-cell `{pc, un}` pair with the rest passed as
+arguments, i.e. ~2.7x fewer cells -- and reaching it is the same full-signature rewrite of every arm
+that touches the state, which is the rewrite the previous session could not finish. The instruction's
+premise ("eliminate the per-step rebuild") is therefore FALSE in Bend: it can be shrunk, not removed.
+
+**3. The codegen is already at `-O3`.** `references/bend/bend2/main.ts:486` builds the CPU binary with
+`["-std=c11", "-O3", file, "-lpthread", "-lm", ...]`, so there is no flag left either.
+
+**⇒ AND A MICRO-BENCHMARK OF THE RECORD IS NOT AVAILABLE AT `-O3`**, which is worth recording because
+it nearly produced a wrong number: `def mk(+x) = R{x,...,x}` read back through `ld` folding to `x` is
+DEAD CODE, and clang deletes it -- MEASURED, 20,000,000 "rebuilds" in under 10 ms for both the 10-cell
+and the 18-cell record (`/tmp/r9`, `/tmp/r17`, both printing 20000000). **AN ALLOCATION BENCHMARK MUST
+DEFEAT THE OPTIMIZER, OR IT MEASURES NOTHING, and it would have reported cells as free.**
+
+**STATUS, HONESTLY: the port's own code is ~5% of the executor (39.28), the per-step term is
+mandatory in Bend, the codegen is `-O3`, and `Mem`/`List_set` are gone from the profile. There is no
+remaining lever above the +-2-4% noise floor, so this is the `fastest possible` this port can express
+-- 1.46-1.50x ahead of CPython's PYTHON device at 32x32 over six runs, 1.90x at 16x16, all gates
+green.** A negative result, recorded with its instrument, is the answer here rather than a rewrite.
