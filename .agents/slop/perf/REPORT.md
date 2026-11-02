@@ -3543,3 +3543,60 @@ floor, and it is where a further attempt has to look. It is NOT pursued here.
 
 Gates on the reverted tree, re-read after the revert: `ops_bend_exec-e2e` `7 match, 0
 mismatch-or-refused`; `stage3_parity 32x32` BEND 266.58 vs PYTHON 406.79 = 1.53x.
+
+## 39.31 THE ALLOCATION PATH IS SIZED, AND IT IS NOT A LEVER EITHER
+
+39.30 closed the state term and left two candidates: the per-value `Elem` and the `pr`/`h` dups in
+`run`. 39.31 measures both dimensions -- allocation COUNT, and the arena write itself -- with two
+probes that preserve semantics exactly.
+
+**FIRST, WHERE THE TIME IS, BY PORT FRAME.** The `sample` call graph carries inclusive counts, so the
+topmost `WL_FID_*` on each path attributes every main-thread sample to a port function (1956 of 1968
+attributed; 12 under libc frames):
+
+    WL_FID_Prog_dispatch_k648   1374   70.2%     <- the ALU arm
+    WL_FID_Prog_stack_at_k364    173    8.8%
+    WL_FID_Prog_dispatch         136    7.0%
+    WL_FID_Prog_stack_all         54    2.8%
+    WL_FID_run                    51    2.6%
+    WL_FID_Prog_dispatch_k650     40    2.0%
+    WL_FID_List_length            21    1.1%
+    WL_FID_List_set               15    0.8%
+    WL_FID_Prog_al_three_k347     14    0.7%
+
+So the ALU step is 70.2% and STACK is 11.6%. Inside the ALU step there are ~6 allocations (three
+`Array.get` Sigma pairs, the `alu3` Elem, the `Prog` from `vput`, the returned pair), which is where a
+"per-value `Elem`" win would have to come from.
+
+**PROBE 1 -- IS THE ARENA WRITE O(1)?** If `Array.set` copied the linear array instead of writing in
+place, its cost would scale with depth and a 4x arena would be ~4x slower. MEASURED, `Arena.new`'s
+depth `10n` -> `12n` (1024 -> 4096 cells), semantics identical:
+
+    BEND 264.10 ms   (depth 4096)      vs      baseline 261.97 - 272.94   (depth 1024)
+    BEND 267.56 ms
+
+**FLAT. `Array.set` WRITES IN PLACE and the arena is not copied.** That hypothesis is dead.
+
+**PROBE 2 -- WHAT DOES ONE MORE ALLOCATION PER STEP COST?** In `Prog.al.three.t`, one throwaway
+`Elem` (`alu3(op, dt, v0, v1, v0)`) is built and written to scratch slot 1023, which no packet reads, so
+semantics and every gate are unchanged, while the ALU step pays ONE extra record allocation and ONE
+extra `Array.set`:
+
+    BEND 267.02 ms   and   262.90 ms      vs      baseline 261.97 - 272.94
+
+**BOTH INSIDE THE BASELINE'S SPREAD. ONE ALLOCATION PER ALU STEP IS BELOW THE NOISE FLOOR**, so removing
+one is too: no single allocation site inside the 70.2% is worth more than ~2%, and the ALU step's
+allocations are forced anyway (three `Array.get` pairs, one `Elem`, one `Prog`, the result pair).
+
+**⇒ AND THIS RETRACTS 39.30's CLOSING SENTENCE**, which named the `Elem` and the dups as "the only
+remaining candidate above the noise floor". They are now MEASURED and they are not above it. The 94%
+is not concentrated in any removable site; it is the runtime's per-term constant multiplied by a large
+step count, and the port cannot reduce either factor without changing what it computes.
+
+**MEASURED BEFORE, THIS SAME CONCLUSION AT SMALLER SCALE:** §39.14 removed a redundant triple read from
+`Prog.index.mem`, a real redundancy in a hot path, and it bought **0.8%** (436.86 -> 433.24 ms).
+
+Both probes were reverted; `git checkout` restores the file byte-identical and the gates are re-read
+green on the restored tree. **Six levers are now closed with numbers** (arena: landed 378 -> 264 ms;
+`Mem`: absent from the census; `-O3`: already passed; state term 10 -> 6 cells: neutral; arena depth
+4x: flat; +1 alloc/step: neutral), and every one of them is a measurement rather than an estimate.
