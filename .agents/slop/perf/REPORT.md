@@ -3948,3 +3948,48 @@ it: an O(n) write (arena, -30%), a 510-cell walk (STACK, -10.9%), a forced copy 
 **A NOTE FOR FUTURE UNITS, WHICH IS THE DURABLE PART:** `bend <src> -o out.c` plus a `CID_` census
 answers "can this construct allocate?" in thirteen seconds, with no profile and no timing noise. That
 is the instrument that should have been reached for before the three reverted attempts in 39.34-39.38.
+
+## 39.40 THE EMITTED-CODE CENSUS FINDS NO ALLOCATION SITE IN THE ALU ARM AT ALL
+
+39.39 established that `bend <src> -o out.c` plus a node-kind census answers "can this allocate?".
+39.40 runs the census over `term_ctr` (the only heap-allocation call in the emitted program) and over
+the FID dispatch bodies, to enumerate what the ALU step actually allocates.
+
+**FIRST, HOW A CALL COSTS NOTHING.** An emitted `WL_CASE(FID_x)` body takes its arguments from `r0..rN`,
+pushes them with `WL_PUSHN(...)`, and the callee reads them back. **The `seq` path allocates NOTHING**;
+`task_node` (the heap path) is only reached in the `else` branch of `if (seq)`. So a Bend function call
+in this program is a stack push, and `term_ctr` is the only thing that consumes heap.
+
+**THE CENSUS (209 FIDs with allocation sites, 458 sites in case bodies total):**
+
+    11  render_of_k951        8  Prog_stack_at       6  Prog_line_k134
+     6  t_render_c1117        5  row                5  urow_k943        5  srow
+     4  Arg_hex / wma_warp_msg_k907 / per_msg_k910 / t_compile / t_render_c11xx ...
+
+**AND THE ALU PATH HAS ZERO:**
+
+    [alu]            none        [exec_alu]   none        [vput]         none
+    [elem]           none        [got]        none        [al_three]     none
+    [dispatch_k648]  none
+
+Every function on the per-step ALU path contains **no `term_ctr` site whatsoever**. The allocation
+sites the census *does* find are the RENDERER (`render_of`, `row`, `urow`, `srow`, `t_render*`), which
+is not on the executor's runtime path, and `Prog_stack_at` -- the STACK function 39.32 already made
+cheap, whose remaining `List.append(&2, Elem, acc, [v])` appends at the END of an accumulator, i.e. O(n)
+per element. **STACK is 1 sample (0.02%) of the profile since 39.32, so even that O(n) is not worth
+removing at this instrument's resolution.**
+
+**⇒ AND THE INSTRUMENT'S LIMIT, STATED SO NOBODY OVERREADS IT:** `CID_Prog` and `CID_Bf` have NO
+`term_ctr` site with that literal, because records are built through a generic tag-passing constructor,
+so a per-CID count cannot attribute them. What the census therefore establishes is narrower than "the
+arm allocates nothing": it is that **no ALLOCATION SITE is inside the arm's own code** -- the records the
+step produces are built in a shared generic constructor, and 39.30 (state term 10 -> 6 cells: neutral)
+and 39.36 (0.276% per added allocation) already bound that one.
+
+**STATE, AND WHAT THIS SESSION HAS ACTUALLY SETTLED.** Seven turns have produced three landed wins
+(arena -30%, STACK traversal -10.9%, ALU `+` set -2.9%: 378 -> 228 ms, 1.03x behind CPython to 1.6-1.7x
+ahead) and five measured closures (INDEX `+` set +2.7%, LOAD/STORE territory 1.27%, dispatch reorder
+neutral, arity `Bool.pick` +2.9%, Sigma pairs zero). **Every lever this session could NAME is now
+either landed or bounded, and the last four turns have moved the evidence without moving the number.**
+The remaining territory is the runtime's per-term constant and the linearizer's step count -- both
+outside the port -- and **no measurement in this file bounds either.**
