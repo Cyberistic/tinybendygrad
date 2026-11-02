@@ -3363,3 +3363,52 @@ hundred-cycle mechanical rewrite of 113 sites that does not compile until all of
 needs a session with the budget to run that loop, not a better idea.
 
 The `arena-array` worktree is reverted CLEAN, and the main tree is unchanged and green.
+
+## 39.27 THE LINEAR `Array` ARENA LANDS, AND THE DEFECT WAS ONE DISCARDED ARGUMENT
+
+The refactor 39.24 specified is landed (`cfb5b90e5`, **+545 / -608**, so 63 lines FEWER) and it
+**beats CPython at both sizes**. What cost the session was not the rewrite, which is mechanical, but a
+single line in the INDEX write path.
+
+**THE DEFECT.** `Prog.ix.alu.r` computed the ALU branch's index and passed it on:
+
+```python
+case (a1, v1): Prog.ix.alu.t(p, slot, U32.add(s0, Elem.bits(v1)), Val.at(a1, s0))
+```
+
+`Prog.ix.alu.t` took that index as `+at` and **never used it**, reading `av` -- which the caller had
+built from `Val.at(a1, s0)`, the BASE slot. So `INDEX` returned element 0 of every loaded vector and
+every lane computed lane 0's answer. The fix reads the computed index and drops the dead parameter:
+
+```python
+case (a1, v1): Prog.ix.alu.t(p, slot, Val.at(a1, U32.add(s0, Elem.bits(v1))))
+```
+
+**⇒ AND SIX BISECTS AGREED WITH EACH OTHER AND NONE OF THEM COULD SEE IT**, because every one of them
+perturbed a value that this line never read: forcing `CAST` to a constant, making `Uop.nth` and
+`Uop.sslot.of` default to 999 and 777 instead of 0, and diverting writes each left `alu.ADD.f.b0`
+byte-identical. **A BISECT FINDS A DEFECT ONLY IF THE THING IT MUTATES IS ON THE PATH**, and the
+instrument that would have settled it in one run is a per-uop dump, not a seventh mutation. The
+`Prog.ix.alu` spot check that "matched the original" matched the ARGUMENT COMPUTATION; the argument's
+consumer is where it died.
+
+**MEASURED, `cfb5b90e5`:**
+
+| instrument | reading |
+|---|---|
+| `ops_python_exec` | 153 fixtures, 365 rows x 2 lanes, **0** unpinned, 0 pinned |
+| `ops_bend_exec-e2e` | **7 match**, 0 mismatch-or-refused (the 4x4 matmul included) |
+| `stage3_parity 32x32` | BEND **264.19 / 264.11 / 261.97** vs PYTHON **387.51 / 391.69 / 382.93** ms -> **1.46-1.48x** |
+| `stage3_parity 16x16` | BEND **36.62** vs PYTHON **69.64** ms -> **1.90x** |
+| `PROOF-ALL` | `ALL PROOFS CHECK` |
+
+Each `stage3_parity` run prints `SAME PROGRAM: 2 launches, EVERY LAUNCH IDENTICAL` and
+`max|PYTHON-BEND| 3.576e-07`, so the two lanes ran the same 510-uop program and agree numerically.
+**THE RATIO IS BELOW 1.0 ON THREE OVERLAPPING RUNS**, against 1.03 before: 32x32 went from ~378-397 ms
+to ~262-264 ms, which is the ~1.4x the `List.set` -> `Array.set` micro-benchmark (2,000,000 writes:
+0.17 s vs 0.00 s) predicted.
+
+**AND THE LESSON IS THE ONE 39.24 ALREADY PAID FOR:** the arena was never the hard part. `Array`
+threads linearly, a read hands back `Array<Elem> & Elem`, and the only idiom that works is a
+continuation def whose PARAMETER is the pair -- all 113 sites are mechanical once that is known. The
+thing that made this cost a session was that a WRONG LINE COMPILES, PROVES, AND ANSWERS PLAUSIBLY.

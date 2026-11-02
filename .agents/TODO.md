@@ -313,6 +313,29 @@ ops-python-exec  [#########] 9/9     the EXECUTOR census, 153 fixtures x 2 lanes
                                        `f32.sqrt.0`. 45 of 47 `op_of` names and 19 of 21
                                        `Prog.dispatch` arms now have rows; `case _: Prog.alu`
                                        is entered by 128 of 153 fixtures. See below.
+arena-array     [##########] 10/10   THE VALUE ARENA IS ONE `Array<Elem>` (`cfb5b90e5`,
+                                       +545 / -608 -> 63 LINES FEWER). The held-chunk
+                                       cache (`vc`/`vi`) is gone with it. THE DEFECT
+                                       WAS ONE DISCARDED ARGUMENT: `Prog.ix.alu.r`
+                                       computed `s0 + bits(src)` and `Prog.ix.alu.t`
+                                       ignored it, reading `Val.at(a1, s0)` -- the BASE
+                                       slot -- so every INDEX returned element 0 and
+                                       every lane computed lane 0's answer (add4
+                                       `[11,11,11,11]` for `[11,22,33,44]`). Six
+                                       bisects agreed and none could see it, because a
+                                       constant CAST, a 999 `Uop.nth` default and a
+                                       diverted write all perturb values that line
+                                       never read. MEASURED at `cfb5b90e5`:
+                                       `ops_python_exec` 365 rows x 2 lanes, 0
+                                       unpinned; `ops_bend_exec-e2e` 7 match
+                                       (4x4 matmul included); `stage3_parity 32x32`
+                                       BEND 264.19 / 264.11 / 261.97 vs PYTHON
+                                       387.51 / 391.69 / 382.93 ms = **1.46-1.48x
+                                       FASTER** on three overlapping runs (was 1.03
+                                       SLOWER); 16x16 1.90x faster; PROOF-ALL
+                                       `ALL PROOFS CHECK`. Every run prints
+                                       `SAME PROGRAM: 2 launches, EVERY LAUNCH
+                                       IDENTICAL`. `.agents/slop/perf/REPORT.md` 39.27.
 gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIANT (shell,
                                        `/tmp`, `$?` not the verdict token, so a DEAD gate
                                        reads as PASS). `checks/gatesweep.py` replaces it:
