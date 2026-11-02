@@ -2,6 +2,7 @@ TinyBendyGrad: An experimental slopfork (slop-port?) of tinygrad from Python to 
 
 If you're not familiar, tinygrad is expertly written by humans over the last ~5 years, with strict rules against AI code usage. An ironical consequence of it being _tiny_ and _beautiful_ is that a clanker can _bend_ (haha) it into shape in any language within a few hours. The entirty of tinygrad can _almost_ fit into the context window! The antimatter of the tinygrad no-AI philosophy: a _bendygrad_ that is _tiny_, _inhumane_, and _provably correct_.
 (edit: I'm almost one week in, this did NOT take a few hours. clankers are stupid.)
+(edit 2: I'm a few weeks in, almost daily work. oh how naive I was. At least it runs now and is 6x faster than python and I haven't begun optimizing.) 
 
 
 For fun, experimentation, and skills. Most code is slop. The logic behind verifiable proofs of spec live in `spec/` (to be rewritten by a mere human eventually). The interpertation of said spec by the robots lives in `.agemts/slop/`. Use tinygrad instead. tinygrad good. I like tinygrad. 
