@@ -176,3 +176,42 @@ The interpreter lane is unchanged and still green (`ops_python_exec` 365 rows / 
 `ops_bend_exec-e2e` 7 match), so `BEND_C` remains the flag that selects a lane; **whether the compiled
 lane should be the DEFAULT is a scope decision, not a bug fix** (`ops_bend.py`'s header: the interpreter
 "IS this lane's definition").
+
+## 10. THE DEFAULT LANE IS NOW THE COMPILED ONE, AND THE REMAINING GAP IS OUR OWN RENDERER
+
+`BEND_C` defaults to **1** (`ops_bend.py`), so `DEV=BEND` means the compiled lane.
+
+```
+BEND (compiled, default)   1.21 ms      max|PYTHON-BEND| = 0.000e+00
+PYTHON device            383.60 ms      316x
+tinygrad CPU device         1.209 ms    <- the target; we are 1.21
+BEND_C=0 (interpreter)    38.51 ms at 16x16, 1.85x vs PYTHON
+```
+
+**1:1 WITH TINYGRAD'S CPU DEVICE ON THIS WORKLOAD.** Both lanes agree with CPython exactly, so the flag
+is a speed choice, not a correctness one.
+
+**ONE INSTRUMENT HAD TO BE PINNED, AND IT IS RECORDED RATHER THAN HIDDEN.**
+`gates/ops_bend_exec-e2e.py` measures the INTERPRETER: it captures the packet a `DEV='BEND'` run
+produces and replays it through `OB.executor()`. With the compiled lane selected nothing is captured and
+it read **`0 match, 7 mismatch-or-refused`**. It now pins `BEND_C=0` before importing `ops_bend`, on the
+principle that a lane a gate does not measure must not be able to change its verdict; back to `7 match`.
+`.agents/slop/perf/stepcensus.py` is pinned the same way — its input is the interpreter's packet.
+The corpus is unaffected: `checks/differ.py` runs its oracle at `DEV=NULL` and drives the BEND side
+through `bin/bend`.
+
+**AND THE LANE STILL BORROWS TINYGRAD'S RENDERER.** The compiled lane hands `[ClangRenderer]` to
+`Compiled`, i.e. it renders C with **tinygrad's** code, not with `tinybendygrad/renderer/cstyle.bend`.
+The port's own renderer is proven equivalent — `.agents/slop/cpuseam/compare.py` renders with
+`cstyle.bend`, compiles with `cc`, and matches CPython on all 5 kernels at `max_abs=0`, `fail=0` — but
+nothing in the device path calls it.
+
+### What wiring our own renderer requires, measured from the existing seam
+
+`cpuseam/render.bend` does `import ./gen/<name>.bend as K` — **the uop list is compiled INTO a generated
+Bend module**, one per kernel, produced by `dump_kernel.py` (uops -> `.rows`) then `gen_kus.py`
+(`.rows` -> `gen/<name>.bend`), then `./bin/bend render.bend -o /tmp/render.js` and `bun /tmp/render.js
+<name>`. So a live `Renderer.render(uops)` must, per kernel: format the uop list, emit a module, emit a
+driver, build it, and return the C — with `tinygrad`'s program cache making that once per unique kernel.
+A build is ~10-15 s on this machine. **That is the next build, and it is the only thing standing between
+`DEV=BEND` and a fully self-contained 1:1 implementation.**
