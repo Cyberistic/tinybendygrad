@@ -27565,3 +27565,27 @@ the corpus is re-certified at `1bce0f8f` after `apply_binds` arm 3, and the docu
 - [ ] NEXT, BY THE PROFILE: `Prog_run`/`Prog.dispatch` pass-through traversals, `Prog.buf`'s repeated
       `fs` + `src`, and the `Maybe` that `List.get` allocates in `Prog.vat`'s HIT path (it is the one
       allocation left on every arena read).
+
+the corpus is re-certified at `1e3744f5` -- and the refusal from last round resolved itself the way it should
+
+  graphs=38  graphs-agree=38  byte-identical=38  graphs-refused=0  plants-disagree=8 of 8
+  substrate-start == substrate-end == 1e3744f5f3fbb2f003328ab140942195a4c686955e5dedf7a836adf049e4c6a1
+  D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
+  corpuswitness-gate -> PASS -- the claim is ESTABLISHED
+
+**⇒ AND **THE **LAST **ROUND's **RUN **STRADDLED **(start `67dcba32`, end `51403d33`) **AND **I
+**DID **NOT **BUILD **ON **IT:** `runtime/ops_python.bend` was 26 SECONDS OLD when I checked,
+which is a unit WRITING, and a run over a moving tree is the thing the two digests exist to
+catch. **THE **UNIT **COMMITTED **ITS **OWN **WORK** (`HEAD` is now `3e3571dc6`), the tree went
+CLEAN, and **the very next run agreed with itself** -- start == end at `1e3744f5`, on a tree
+that is **fully committed**.  **NOBODY **HAD **TO **TOUCH **ANYTHING **TO **RESOLVE **IT, **AND
+**THAT **IS **THE **DESIGN **WORKING: **A **REFUSAL **IS **A **DELAY, **NOT **A **FAILURE.
+
+**⇒ AND **`resolve_linear_call` **IS **IN **THIS **CERTIFICATE** -- the digest covers the
+committed tree that holds it, plus `sc_apply_binds`'s three arms and the
+`v.arg.name is None` conjunct that both lanes had been missing.
+
+**⇒ AND **THE **DIGEST **MOVED **THREE **TIMES **TODAY (`f4188f94` -> `8b06ab6b` -> `1bce0f8f`
+-> `1e3744f5`) **AND **EVERY **MOVE **WAS **RE-TAKEN **IN **FULL, **NOT **INFERRED.  A
+certificate whose digest did not move while the substrate did is the one thing this file
+cannot survive.
