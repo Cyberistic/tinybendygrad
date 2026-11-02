@@ -3859,3 +3859,55 @@ Candidates left inside the arm, named and unmeasured: the three `Array.get` Sigm
 and the `Elem` record built by `alu3`. Neither has a removal that preserves semantics through Bend's
 linear-array API -- `Val.at` must hand back `Array<Elem> & Elem`, and `alu3` must build the value it
 writes.
+
+## 39.38 THE ARITY `Bool.pick` IN `exec_alu_f32` LOOKS REDUNDANT AND IS 3% SLOWER AS A MATCH
+
+39.37 left two candidates, both unmeasured. 39.38 went looking for a *real traversal* in the ALU arm
+instead, and found a genuine source-level redundancy -- then measured it and it is a LOSS.
+
+**THE FINDING.** `symbolic.bend:903` dispatched the ARITY with nested `Bool.pick`:
+
+    Bool.pick(Maybe, U32.is_eq(n, 1),
+      Bool.pick(Maybe, O.eq_op(op, O.OpsNEG{}), Some{O.CFloat{F32.neg(a)}}, exec_alu_f32.unary(op, a)),
+      Bool.pick(Maybe, U32.is_eq(n, 3),
+        exec_alu_f32.tern(op, a, b, c),
+        exec_alu_f32.arith(op, a, b)))
+
+`Bool.pick` evaluates BOTH arms, so on paper every 3-src MULACC runs `O.eq_op`, `unary` (a 6-arm
+match), a `Some{CFloat{}}` box, `tern`, `arith` (a 9-arm match falling through to `cmp`) and two more
+boxes -- to keep ONE of them. **THE PORT ALREADY FIXED EXACTLY THIS SHAPE ON THE LANE AXIS** (39's
+`alu_lane`: "`Bool.pick` evaluates BOTH arms, so the ALU used to run the FLOAT lane and the INT lane ...
+for EVERY arithmetic op"), and this is the same bug one level down, on the arity axis.
+
+**THE CHANGE, AND IT IS CORRECT.** The arity becomes a `match`, so only the answering arm runs:
+
+    def exec_alu_f32.by(+op, +a, +b, c, +n: U32) -> Maybe<&1, O.Const>:
+      match n:
+        case 1: Bool.pick(Maybe<&1, O.Const>, O.eq_op(op, O.OpsNEG{}), Some{O.CFloat{F32.neg(a)}},
+                 exec_alu_f32.unary(op, a))
+        case 3: exec_alu_f32.tern(op, a, b, c)
+        case _: exec_alu_f32.arith(op, a, b)
+
+Gates: `--check-only` `ALL PROOFS CHECK`; `ops_python_exec` 153 fixtures / **365 rows x 2 lanes / 0
+unpinned / 0 pinned**; `ops_bend_exec-e2e` **7 match, 0 mismatch-or-refused**. (The executor had to be
+re-`touch`ed: `ops_bend.executor()` keys its cache on `ops_python.bend`'s mtime+size, so a change in
+`symbolic.bend` alone would have measured a STALE binary -- worth remembering for every future change
+outside `ops_python.bend`.)
+
+**MEASURED -- AND IT IS SLOWER.** Eight runs at 32x32 (machine at load 6.2-7.9, `PYTHON` itself ranged
+388-532 ms, so `taken under load`):
+
+    BEND  230.36  234.00  234.57  235.05  235.82  236.54  237.45  299.15 ms
+    baseline (39.33, the landed ALU `+` set):  227.20  228.28  228.46  228.71  230.40   median 228.46
+
+**MEDIAN ~235 vs 228.46 = +2.9%, AND THE BEST OF EIGHT (230.36) DOES NOT BEAT THE BASELINE MINIMUM
+(227.20).** Reverted; `cmp` confirms both files byte-identical.
+
+**⇒ AND THE MEASUREMENT CORRECTS THE PREMISE THE PORT'S OWN COMMENTS REST ON.** "`Bool.pick` evaluates
+both arms" is a fact about the SOURCE and about Bend's evaluation order, NOT about the emitted code:
+at `-O3` the unused arm's result is dead, and clang removes it. So a `Bool.pick` arm that is pure and
+unused costs nothing at run time -- which is why rewriting this one as a `match` only added a branch
+(the `U32` compare) and its own call, and why the LANE fix that DID pay was different in kind: there
+both arms call genuinely different evaluators whose results feed through `Maybe` boxing that the
+compiler could not see past. **SOURCE REDUNDANCY IS NOT MACHINE COST, AND THE ONLY WAY TO TELL THE TWO
+APART IS TO COMPILE AND TIME IT.**
