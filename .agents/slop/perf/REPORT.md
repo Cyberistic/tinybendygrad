@@ -3684,3 +3684,42 @@ Gates: `--check-only` and `PROOF-ALL` `ALL PROOFS CHECK`; `ops_python_exec` 153 
 redundant PERMISSION: a `+` that made the caller copy a value the callee only ever moves. `+` is not
 free and it is not a comment -- the compiler enforces the linear case, so excess `+` is checkable by
 deletion. **A SWEEP OF THE REST OF THE FILE FOR SINGLE-USE `+` IS THE OBVIOUS NEXT STEP.**
+
+## 39.34 THE SAME `+` REMOVAL ON THE INDEX CHAIN IS 2.7% SLOWER, AND NO SWEEP CAN FIND THE DIFFERENCE
+
+39.33 removed 50 spurious `+` markers from the ALU chain for -2.9% and closed with "a sweep of the rest
+of the file for single-use `+` is the obvious next step". 39.34 ran that sweep. **IT CANNOT BE
+AUTOMATED, AND THE INDEX CHAIN PROVES THE SIGN OF THE RESULT IS NOT PREDICTABLE FROM THE SIGNATURE.**
+
+**THE SAME CHANGE, ON THE INDEX CHAIN.** Every parameter of `Prog.index`/`Prog.index.at.by`/
+`Prog.ix.*` is single-use on its path, so `+` came off nine definitions -- 20 markers. Bend REJECTED
+three of them and named each (`sslot` is read twice in `Prog.ix.alu`/`Prog.ix.mem` via
+`Uop.nth(sslot, 0n)`/`(…, 1n)`, and `ad` is read twice in `Prog.index.at` as `Uop.is_eq(ad, 0)` plus the
+pass-through), so the compiler is the verifier and the final set is provably single-use. It compiles:
+`ALL PROOFS CHECK`, `ops_bend_exec-e2e` `7 match, 0 mismatch-or-refused`.
+
+**MEASURED, five runs at 32x32:**
+
+    INDEX chain linear   BEND  230.46  232.33  234.69  235.47  237.80 ms   median 234.69
+    ALU chain linear     BEND  227.20  228.28  228.46  228.71  230.40 ms   median 228.46
+
+**+2.7% SLOWER. THE BEST INDEX-CHAIN RUN (230.46) IS WORSE THAN THE ALU BASELINE'S MEDIAN.** Reverted,
+byte-identical to `60aaaaccc`.
+
+**⇒ SO `+` IS NOT A COST YOU CAN COUNT.** On the ALU chain a dup was pure overhead; on the INDEX chain
+the same annotation was buying something -- the linear form must MOVE the value where the duplicable
+form let the caller keep its share, and the INDEX defs are reached from a dispatch point that still
+holds the record. **THE ONLY WAY TO KNOW IS TO MEASURE EACH CHAIN, AND A FILE-WIDE SWEEP WOULD HAVE
+LANDED HALF OF IT IN THE WRONG DIRECTION.**
+
+**⇒ AND THE SWEEP ITSELF WAS ATTEMPTED AND THROWN AWAY, WHICH IS WORTH RECORDING:** a scripted
+single-use detector over the whole file mangled multi-line signatures (a rebuilt `def` line lost its
+tail) and mis-scoped a body to EOF, producing one wrong edit that the compiler caught as
+`sh (consumed more than once)`. Nothing from it was kept. **A `+` REMOVAL IS SAFE TO ATTEMPT AND SAFE TO
+VERIFY -- THE COMPILER REFUSES THE WRONG ONES -- BUT "SAFE" IS NOT "PROFITABLE": 50 markers on the ALU
+chain were worth -2.9% and 20 on the INDEX chain were worth +2.7%.**
+
+**STATE OF THE OBJECTIVE AFTER THIS TURN**, five landing turns: arena 378 -> 264 ms (`cfb5b90e5`),
+STACK slot list 264 -> 235 ms (`71c520f59`), ALU-chain linearity 235 -> 228 ms (`60aaaaccc`), against
+CPython's PYTHON device at 382-398 ms -- **1.65-1.75x on the last five runs.** Reverted this turn: the
+`Prog.dispatch` reorder (no move) and the INDEX-chain linearity (slower).
