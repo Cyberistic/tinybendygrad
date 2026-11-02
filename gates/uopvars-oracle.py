@@ -21,6 +21,8 @@ import sys
 from tinygrad.uop.ops import UOp, Ops, ParamArg, AddrSpace, AxisType
 from tinygrad.dtype import dtypes
 
+from tinygrad.schedule import resolve_linear_call
+
 STACK = UOp(Ops.STACK)
 
 
@@ -167,6 +169,19 @@ def main():
     nb = {v: {0: X88}[v.arg.slot] for s in ncall.src for v in s.variables()
           if v.arg.name is None and v.arg.slot in {0: X88}}
     a("subs_named", int(nv0 not in nb))
+
+    # ---- `apply_binds` arm 2, through the REAL `resolve_linear_call` ----
+    # `apply_binds` is a CLOSURE inside `resolve_linear_call` upstream and is NOT
+    # importable, so arm 2 is asked by running the real function on a LINEAR whose
+    # src is a CALL-with-PROGRAM -- which is the exact input that arm answers.
+    # `pm_post_sched_cache` does NOT descend into a CALL body unless `enter_calls`,
+    # so that CALL survives to `apply_binds`.
+    oprog = UOp(Ops.PROGRAM)
+    ocallp = UOp(Ops.CALL, src=(oprog,))
+    olinp = UOp(Ops.LINEAR, src=(ocallp,))
+    otop = UOp(Ops.CALL, src=(olinp,))
+    orr = resolve_linear_call(otop, {})
+    a("ab_arm2", int(orr.src[0] is ocallp))
 
     print("\n".join(out))
 

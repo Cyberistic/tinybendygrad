@@ -465,6 +465,80 @@ def subs_named() -> String:
   +bm = Map.set(&2, U32, Map.set(&2, U32, Map.new(&2, U32), "0", 88), "2", 99)
   bf(Bool.not(subshas(SC.sc_apply_subs(O.Found.ar(LBFx.f(fx)), O.Found.i(LBFx.f(fx)), bm), U32.show(LBFx.a0(fx)))))
 
+
+# ---- `apply_binds`'s THREE ARMS, TESTED AT THE DISPATCH ---------------------
+# NOT through `resolve_linear_call`: MEASURED, a row that goes through it measures
+# `pm_post_sched_cache` -- the FIRST rewrite -- where tag 3 resolves a PARAM by
+# slot, so `apply_binds` never sees the variable and TWO of my rows could not go
+# red. Also MEASURED: my first fixture's "program" was a BARE `Ops.PROGRAM` and not
+# a `CALL` whose body is one, so the arm-2 test was really testing arm 3.
+#   ab_arm1  a CALL whose body is LINEAR is REFUSED (nested scope)
+#   ab_arm2  a CALL whose body is PROGRAM answers ITSELF
+#   ab_arm3  a node with a bound, UNNAMED variable in its src is substituted
+type ABF is Data:
+  ABF{ar: O.Arena, pc: U32, lc: U32, g: U32, pp: U32, px: U32}
+
+def ABF.ar(x: ABF) -> O.Arena:
+  match x:
+    case ABF{ar, pc, lc, g, pp, px}: ar
+
+def ABF.pc(x: ABF) -> U32:
+  match x:
+    case ABF{ar, pc, lc, g, pp, px}: pc
+
+def ABF.lc(x: ABF) -> U32:
+  match x:
+    case ABF{ar, pc, lc, g, pp, px}: lc
+
+def ABF.g(x: ABF) -> U32:
+  match x:
+    case ABF{ar, pc, lc, g, pp, px}: g
+
+def ABF.px(x: ABF) -> U32:
+  match x:
+    case ABF{ar, pc, lc, g, pp, px}: px
+
+def abfx() -> ABF:
+  +pp = param(O.Arena.empty(), pa(0, rng(7), SP.Aalu{}, None{}, None{}))
+  +progb = O.UOp.new(O.Found.ar(pp), O.OpsPROGRAM{}, Nil{}, O.ANone{}, O.TNone{})
+  +pc = O.UOp.new(O.Found.ar(progb), O.OpsCALL{}, [O.Found.i(progb)], O.ANone{}, O.TNone{})
+  +linb = O.UOp.new(O.Found.ar(pc), O.OpsLINEAR{}, Nil{}, O.ANone{}, O.TNone{})
+  +lc = O.UOp.new(O.Found.ar(linb), O.OpsCALL{}, [O.Found.i(linb)], O.ANone{}, O.TNone{})
+  +g = O.UOp.alu(O.Found.ar(lc), O.OpsADD{}, [O.Found.i(pp), O.Found.i(pp)])
+  +px = param(O.Found.ar(g), pa(0, rng(9), SP.Aalu{}, None{}, None{}))
+  ABF{O.Found.ar(px), O.Found.i(pc), O.Found.i(lc), O.Found.i(g), O.Found.i(pp), O.Found.i(px)}
+
+def ab_arm2.of(m: Maybe<&2, SC.SBind>, +pc: U32) -> String:
+  match m:
+    case None{}: "0"
+    case Some{+b}: bf(U32.is_eq(SC.SBind.i(b), pc))
+
+def ab_arm2(+fx: ABF) -> String:
+  ab_arm2.of(SC.sc_apply_binds(ABF.ar(fx), ABF.pc(fx), Map.new(&2, U32)), ABF.pc(fx))
+
+def ab_arm1.of(m: Maybe<&2, SC.SBind>) -> String:
+  match m:
+    case None{}: "1"
+    case Some{_}: "0"
+
+def ab_arm1(+fx: ABF) -> String:
+  m = SC.sc_apply_binds(ABF.ar(fx), ABF.lc(fx), Map.new(&2, U32))
+  ab_arm1.of(m)
+
+def ab_arm3.of(m: Maybe<&2, SC.SBind>, +px: U32) -> String:
+  match m:
+    case None{}: "0"
+    case Some{+b}: bf(U32.is_eq(O.Arena.src0(SC.SBind.ar(b), SC.SBind.i(b)), px))
+
+def ab_arm3(+fx: ABF) -> String:
+  ab_arm3.of(SC.sc_apply_binds(ABF.ar(fx), ABF.g(fx), subsonly("0", ABF.px(fx))), ABF.px(fx))
+
+def abrows(+fx: ABF) -> IO(Unit):
+  do IO<Unit>:
+    p1 : Unit <- IO.print(String.concat(["ab_arm1=", ab_arm1(fx)]))
+    p2 : Unit <- IO.print(String.concat(["ab_arm2=", ab_arm2(fx)]))
+    IO.print(String.concat(["ab_arm3=", ab_arm3(fx)]))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -487,4 +561,5 @@ def main() -> IO(Unit):
     subsrows(subscall())
     subrows(subfx())
     ab3rows(subscall())
-    IO.print(String.concat(["subs_named=", subs_named()]))
+    p9 : Unit <- IO.print(String.concat(["subs_named=", subs_named()]))
+    abrows(abfx())
