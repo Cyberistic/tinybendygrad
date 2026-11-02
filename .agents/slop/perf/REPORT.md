@@ -3814,3 +3814,48 @@ instrument.)
 session came from removing a *traversal* (39.32, -10.9%), a *permission that forced a copy* (39.33,
 -2.9%) and a *data structure the write path paid for twice* (arena, -30%); none of them came from
 counting allocations, and this is the measurement that says why.
+
+## 39.37 THE ALU ARM DECOMPOSES TO ONE GENERATED FUNCTION, AND IT IS 99% ALLOC/FREE
+
+39.36 closed the allocation-count avenue on a marginal slope. 39.37 decomposes the arm itself --
+cheaply, because **the `sample` call graph already has the decomposition and 39.31/39.35's
+topmost-port-frame attribution was throwing it away.** Under `WL_FID_Prog_dispatch_k648`:
+
+    ! 3479 WL_FID_Prog_dispatch_k648                    <- the arm, 75.91% of the executor
+    ! : 2054 spin_129
+    ! : | 1224 <deduplicated_symbol>  ->  528 + 485 span_fade, 485 term_drop, 130 OUTLINED, 81 term_drop
+    ! : |  408 <deduplicated_symbol>  ->  408 term_drop
+    ! : |  305 <deduplicated_symbol>  ->  111 term_drop
+    ! : 1389 spin_129
+    ! : |  917 <deduplicated_symbol>  ->  441 + 315 span_fade, 315 term_drop
+
+**`spin_129` + `spin_129` = 3443 of 3479 = 98.96%.** There is no port sub-step in the arm above 5%:
+`Prog_al_three_k347` is 0.87% and `alu3_k114` 0.55% of the whole executor, i.e. ~1.4% together, and
+everything else inside the arm is one generated function whose own children are `span_fade` and
+`term_drop`. **THE INSTRUCTION'S "ATTACK WHICHEVER SUB-STEP EXCEEDS ~5%" HAS NO CANDIDATE: the arm has
+no sub-steps, it has one term-churn body.**
+
+**AND `spin_*` IS NOT A LOCK.** The name invited the guess that the arm was spinning on a thread pool
+-- a guess worth checking because it would have been a large lever. Read from the generated C
+(`.agents/slop/perf/executor.bend.c:6893`), `spin_129` is an ordinary generated function: it calls
+`spin_130` then `spin_131` and writes an 8-field output, and `WL_SPIN` (line 126) is
+`for(;;){ if (err_spun(e.mem, &wpoll)) return 0; ... }` -- the **allocator's retry loop**, not a lock.
+**MEASURED, to be sure: the executor's `--threads N` defaults to the CPU count (usage line 297), and
+forcing `--threads 1` on the captured packet is NEUTRAL** -- 19.90 / 19.93 / 20.19 s against the
+default's 19.92 / 20.66 / 22.66 s over 200 cells. So the thread pool is not the cost either.
+
+**⇒ AND THIS IS WHERE THE SESSION'S HONEST ARITHMETIC HAS TO BE STATED PLAINLY.** 39.36 measured a
+MARGINAL slope of 0.276% per added allocation and inferred "the whole lever is ~1.65%". **A marginal
+slope is not a reduction slope.** The arm is ~99% alloc/free at 75.91% of the executor, so the
+*existing* allocations are the bulk of the run, while *adding* one more costs only 0.276% because the
+allocator has slack. The two facts are consistent and they mean the reduction question is OPEN, not
+closed: what the session has actually shown is that **three specific real removals paid** -- the arena
+(-30%, an O(n) write made O(1)), the STACK slot walk (-10.9%, a 510-cell walk removed per element), the
+ALU `+` set (-2.9%, dups removed) -- and that two structural probes (width, added allocations) do not
+predict the size of a removal. **THE LEVER IS "REMOVE A REAL TERM", AND THE INSTRUMENT FOR IT IS THE
+CODE, NOT THE SLOPE.**
+
+Candidates left inside the arm, named and unmeasured: the three `Array.get` Sigma pairs per ALU step,
+and the `Elem` record built by `alu3`. Neither has a removal that preserves semantics through Bend's
+linear-array API -- `Val.at` must hand back `Array<Elem> & Elem`, and `alu3` must build the value it
+writes.
