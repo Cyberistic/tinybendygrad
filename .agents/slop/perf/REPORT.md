@@ -3911,3 +3911,40 @@ unused costs nothing at run time -- which is why rewriting this one as a `match`
 both arms call genuinely different evaluators whose results feed through `Maybe` boxing that the
 compiler could not see past. **SOURCE REDUNDANCY IS NOT MACHINE COST, AND THE ONLY WAY TO TELL THE TWO
 APART IS TO COMPILE AND TIME IT.**
+
+## 39.39 CANDIDATE A IS ZERO BY CONSTRUCTION: THE ARENA READ PAIR IS NOT A HEAP TERM
+
+39.37 named two candidates inside the ALU arm: the three `Val.at`/`Array.get` Sigma pairs per step, and
+the `Elem` that `alu3` builds. 39.39 bounds both -- the first at ZERO, from the EMITTED CODE.
+
+**THE INSTRUMENT.** `bend <src> -o out.c` emits C by extension (13 s, 2.24 MB for this file). The
+emitted program's node-kind census is then a direct answer to "what can allocate at all":
+
+    2404 CID_SCon        706 CID_SNil       152 CID_Nil       149 CID_Con
+       7 CID_Core          6 CID_T           6 CID_Fail       5 CID_Halt
+       4 CID_Uop  CID_Unit  CID_Sc  CID_Bf  CID_Rf  CID_Args  CID_Buf ...
+       1 CID_Prog  CID_St   CID_Sb  CID_Load  CID_Lb  CID_Gd  CID_Build  CID_Arg ...
+
+    CID_Sigma occurrences: 0
+
+**⇒ `Array<Elem> & Elem` IS NOT ALLOCATED.** There is no Sigma node kind in the emitted program: the
+linear pair is returned through the out-parameter (`THR Term* o`, written as `o[0]`, `o[1]`), not
+built on the heap. **THE THREE "SIGMA PAIRS PER ALU STEP" ARE NOT THREE ALLOCATION SITES -- THEY ARE
+ZERO, AND NO REMOVAL EXISTS TO MEASURE.** Candidate A is closed by construction rather than by timing,
+and the whole category it stood for is closed with it: a Bend linear pair costs nothing to produce.
+
+**CANDIDATE B IS ONE `CID_SCon` PER VALUE WRITTEN, AND 39.36 ALREADY MEASURED ITS CEILING.** `Elem` is
+a union of `Bf`/`Rf` (both in the census), so `alu3` -> `got(...)` allocates exactly one record node
+per ALU step. 39.36 measured the marginal cost of one added allocation per ALU step at **0.276%**, and
+0.276% is below the +-2-4% floor. **AND IT HAS NO SEMANTICS-PRESERVING REMOVAL ANYWAY**: `alu3` must
+build the value it writes, and the arena must hold something the readers can project.
+
+**⇒ SO BOTH NAMED CANDIDATES INSIDE THE ALU ARM ARE NOW BOUNDED -- A AT 0, B AT ~0.28% -- AND NEITHER
+JUSTIFIES A REFACTOR.** Combined with 39.38 (arity `Bool.pick`: a source redundancy the `-O3` build
+already removes) and 39.37 (the arm's 99% is one alloc/free body), the arm has no lever left that this
+session can name, and the three changes that DID pay were all removals of real work outside or beneath
+it: an O(n) write (arena, -30%), a 510-cell walk (STACK, -10.9%), a forced copy (ALU `+` set, -2.9%).
+
+**A NOTE FOR FUTURE UNITS, WHICH IS THE DURABLE PART:** `bend <src> -o out.c` plus a `CID_` census
+answers "can this construct allocate?" in thirteen seconds, with no profile and no timing noise. That
+is the instrument that should have been reached for before the three reverted attempts in 39.34-39.38.
