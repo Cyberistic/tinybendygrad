@@ -37,6 +37,14 @@ CAP = []
 # path here because this file had none, and `sys.path[0]` when a gate is run is `gates/`.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+# **THIS GATE MEASURES THE INTERPRETER LANE, SO IT PINS IT.** `BEND_C` is read by `ops_bend` at import
+# time, and since 2026-11-02 its default is `1` (the compiled lane, 168x faster). This instrument is the
+# INTERPRETER's: it captures the packet a `DEV='BEND'` run produces and replays it through
+# `OB.executor()`, so with the compiled lane selected nothing is captured and every case reports a
+# mismatch. MEASURED, before this line: `0 match, 7 mismatch-or-refused`. Pinned, not defaulted --
+# a lane this gate does not measure must not be able to change its verdict.
+import os as _os
+_os.environ["BEND_C"] = "0"
 import ops_bend as OB
 OB.executor  # the cached builder; reading it is what makes the import real
 

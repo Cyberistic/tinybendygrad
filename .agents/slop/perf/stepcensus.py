@@ -8,6 +8,10 @@ import sys, pathlib, subprocess
 
 ROOT = pathlib.Path("/Users/cyberistic/src/tries/2026-09-30-tinybendygrad")
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / ".agents/slop/perf"))
+# THE INTERPRETER LANE'S packet is the input here, so pin it: `BEND_C` defaults to 1 (compiled)
+# since 2026-11-02 and the compiled lane never builds a packet.
+import os as _os
+_os.environ["BEND_C"] = "0"
 import ops_bend as OB
 sys.modules["tinygrad.runtime.ops_bend"] = OB
 from bench import build

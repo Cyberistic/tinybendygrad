@@ -268,7 +268,11 @@ class BendRenderer(PythonRenderer):
 # **=> AND IT IS A FLAG AND NOT A REPLACEMENT**, because the interpreter IS this
 # lane's definition (`BendRenderer`/`BendProgram` above, and the header's "the
 # difference is where they RUN"). Both stay; `BEND_C` picks which one runs.
-BEND_C = getenv("BEND_C", 0)
+# **THE DEFAULT IS THE COMPILED LANE, AND IT IS `1` BECAUSE THE INTERPRETER IS 168x SLOWER.**
+# MEASURED 2026-11-02 at 32x32 `(A@B)@C`: compiled 1.36 ms, interpreter 228.46 ms, tinygrad's own
+# CPU device 1.209 ms. Both lanes agree with CPython exactly (max|PYTHON-BEND| = 0.000e+00), so the
+# flag is a SPEED choice and not a correctness one; `BEND_C=0` still selects the interpreter.
+BEND_C = getenv("BEND_C", 1)
 
 class BendDevice(Compiled):
   def __init__(self, device:str):
