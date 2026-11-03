@@ -31,6 +31,7 @@ ONE driver: 6 cold kernels cost 1.07 s instead of 6.05 s, and the marginal cost 
 ~1.0 s to ~20 ms. `render` is `render_many` with one element, so the two paths cannot emit different C.
 """
 import hashlib
+import re
 import os
 import pathlib
 import subprocess
@@ -226,6 +227,19 @@ DT_CODE = {"f32": "1", "i32": "2", "u32": "3", "i64": "4", "u64": "5", "u8": "6"
 ADDR_CODE = {"GLOBAL": "g", "LOCAL": "l", "REG": "r", "ALU": "a", "NONE": "n"}
 
 
+def enum_members() -> list[str]:
+  """`uop/ops.bend`'s enum, in declaration order -- the index space the wire uses."""
+  import re as _re
+  body = _OPS_SRC.read_text()
+  body = body[body.index("type Op is Data:"):]
+  body = body[:body.index("\ndef ")]
+  return [m[3:] for m in _re.findall(r"^\s+(Ops[A-Z0-9_]+)\{\}", body, _re.M)]
+
+
+def enum_pin() -> str:
+  return hashlib.sha256("\n".join("Ops" + m for m in enum_members()).encode()).hexdigest()[:16]
+
+
 def _arg(kind: str, payload: str) -> tuple[str, str]:
   """the (tag, payload) pair `live.bend`'s `arg_of` reads. THE TAG CARRIES THE SLICING."""
   if kind == "const":
@@ -261,25 +275,34 @@ _LIVE_SRC = ROOT / "tinybendygrad/renderer/live.bend"
 
 
 def op_table_cover(enum_src: str, exec_src: str, live_src: str) -> tuple[list[str], list[str]]:
-  """(the enum's members, the members no table names). Text in, so a doctored copy can be measured."""
-  import re
+  """(the enum's members, the INDEX ARMS `live.bend` is missing) -- text in, so a doctored copy can be
+  measured. `exec_src` is unused since the op table stopped being the executor's, and is kept so the
+  signature (and every caller) does not have to churn."""
+  import re as _re
   body = enum_src[enum_src.index("type Op is Data:"):]
-  members = sorted(set(re.findall(r"^\s+(Ops[A-Z0-9_]+)\{\}", body, re.M)))
-  exec_of = exec_src[exec_src.index("def op_of(nm: String)"):]
-  exec_of = exec_of[:exec_of.index("\ndef ", 10)]
-  named = set(re.findall(r'case "([A-Z0-9_]+)":', exec_of))
-  extra = live_src[live_src.index("def extra_op("):]
-  extra = extra[:extra.index("def op_of(")]
-  named |= set(re.findall(r'case "([A-Z0-9_]+)": O\.Ops([A-Z0-9_]+)\{\}', extra) and
-               [a for a, _b in re.findall(r'case "([A-Z0-9_]+)": O\.Ops([A-Z0-9_]+)\{\}', extra)])
-  return [m[3:] for m in members], sorted(m[3:] for m in members if m[3:] not in named)
+  body = body[:body.index("\ndef ")]
+  members = [m[3:] for m in _re.findall(r"^\s+(Ops[A-Z0-9_]+)\{\}", body, _re.M)]
+  tbl = live_src[live_src.index("def op_by_idx("):]
+  tbl = tbl[:tbl.index("def op_of(")]
+  have = set(int(m) for m in _re.findall(r'case "(\d+)": O\.Ops', tbl))
+  return members, [m for i, m in enumerate(members) if i not in have]
 
 
 def _check_op_tables() -> None:
-  members, missing = op_table_cover(_OPS_SRC.read_text(), _EXEC_SRC.read_text(), _LIVE_SRC.read_text())
+  live = _LIVE_SRC.read_text()
+  pin = re.search(r"# ENUM-PIN ([0-9a-f]{16})", live)
+  if pin is None:
+    raise RuntimeError("portc: live.bend has no ENUM-PIN; the op index table is unguarded")
+  if pin.group(1) != enum_pin():
+    raise RuntimeError(f"portc: the enum moved (pin {pin.group(1)} != {enum_pin()}); regenerate "
+                       f"op_by_idx in liven.bend. REFUSING to render with an order-coupled table.")
+  members, missing = op_table_cover(_OPS_SRC.read_text(), _EXEC_SRC.read_text(), live)
   if missing:
     raise RuntimeError(f"portc: live.bend names {len(members) - len(missing)} of {len(members)} ops; "
                        f"it would render these as a default: {missing}")
+
+
+_OPS_INDEX = {m: i for i, m in enumerate(enum_members())} if "_OPS_SRC" in globals() else {}
 
 
 def wire_rows(rs) -> str:
@@ -290,7 +313,10 @@ def wire_rows(rs) -> str:
     _idx, op, dt, addr, shape, numel, srcs, kind, payload = r.split("|")
     tag, val = _arg(kind, payload)
     zero = "-" if not srcs.strip() else "~".join(str(int(x) - 1) for x in srcs.split())
-    lines.append(" ".join([op, DT_CODE[dt], ADDR_CODE[addr], shape or "-", numel,
+    idx = _OPS_INDEX.get(op)
+    if idx is None:
+      raise RuntimeError(f"portc: {op} is not in uop/ops.bend's enum")
+    lines.append(" ".join([str(idx), DT_CODE[dt], ADDR_CODE[addr], shape or "-", numel,
                            KIND_CODE[tag], val, zero]))
   if not lines:
     raise RuntimeError("portc: the port rendered no uops")

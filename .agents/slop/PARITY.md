@@ -2246,3 +2246,48 @@ graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical
 ```
 
 `a7ecd4ac0` -- the coded wire -- moves no byte in any of the 38 graphs.
+
+## 50. THE OP NAMES GO TOO: AN INDEX TABLE, PINNED TO THE ENUM
+
+§49 coded the three small name fields and left the op name, because an index table is ORDER-COUPLED and a
+mis-mapped op renders plausible, wrong C. This section takes it and closes that risk with a pin.
+
+### 50.1 What changed
+
+`live.bend` now carries a generated `op_by_idx` -- 75 arms, one per `uop/ops.bend` enum member, in declaration
+order -- and its first line is `# ENUM-PIN <sha256[:16]>` over that member list. `portc` recomputes the digest
+on every render and **REFUSES** when it does not match:
+
+```
+portc: the enum moved (pin af08eecb67ba77d6 != ...); regenerate op_by_idx in live.bend.
+REFUSING to render with an order-coupled table.
+```
+
+so a unit that adds or reorders an op gets a loud failure instead of a silent mis-mapping. The table also
+removed the last reason to import `runtime/ops_python.bend` -- the heaviest import in the file -- because the
+executor's `op_of` was the previous table.
+
+```
+wire 9 541 B (§49) -> 8 704 B   9% shorter;  13 152 -> 8 704 = 34% shorter than before §49
+same emitted C: True
+```
+
+### 50.2 Measured, isolating §50 from §49
+
+The two artifacts were given the wire each was built for (op name for §49, op index for §50), and the C they
+emit compared byte for byte first:
+
+```
+§49 (op as name)   min 43.5  p25 43.8  median 43.9 ms
+§50 (op as index)  min 39.8  p25 40.5  median 40.6 ms
+ratio min 0.9060  p25 0.9174  median 0.9244  max 0.9436   14 of 14 faster
+```
+
+**7.6% ON TOP OF §49, EVERY ROUND, AND THE WORST ROUND IS STILL 5.6% FASTER.** Against the pre-§49 artifact
+the pair reads `median 0.8969, 11 of 12` with one outlier round at 1.1914; the isolated reading is the one to
+trust because it holds the C identical and interleaves 14 times.
+
+### 50.3 Byte-identical
+
+`ksweep 37 of 37 on BOTH decoders`, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`,
+and the §49/§50 artifacts emit the SAME C on the 405-uop wire.
