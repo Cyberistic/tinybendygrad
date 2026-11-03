@@ -1746,9 +1746,16 @@ def g() -> G:
   +af = O.UOp.new(O.Found.ar(af1), O.OpsAFTER{},
                   [O.Found.i(b4), O.Found.i(e0), O.Found.i(e1), O.Found.i(ek)], O.ANone{}, O.TNone{})
   +afk = O.UOp.new(O.Found.ar(af), O.OpsAFTER{}, [O.Found.i(b4), O.Found.i(ek)], O.ANone{}, O.TNone{})
-  +st2 = O.UOp.new(O.Found.ar(afk), O.OpsSTAGE{}, [O.Found.i(b4), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  # A STAGE'S `src[0]` MUST HAVE SHAPE `()`, AND THAT IS A CONSTRAINT OF THE READER AND NOT A
+  # STYLE. `cleanup_dead_axes` (`rangeify.py:30-41`) walks `for s,rng in zip(b.shape, b.src[1:])`
+  # -- a STAGE's shape is `src[0].shape + (range lengths...)`, so that `zip` is length-correct
+  # ONLY when `src[0]` is a SCALAR. `STAGE(BUFFER(4,), r0)` has shape `(4,4)`, the zip pairs one
+  # element, the reshape target comes out `(1,)` and CPython raises `size mismatch`.
+  # MEASURED 2026-11-03: that is `ct_17`/`ct_18`/`ct_55`, and `ct4a`/`ct4d` -- which are
+  # `STAGE(INDEX(BUFFER, r0), r0)` and therefore LEGAL -- are the proof the rule itself works.
+  +st2 = O.UOp.new(O.Found.ar(afk), O.OpsSTAGE{}, [O.Found.i(c0), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +st3 = O.UOp.new(O.Found.ar(st2), O.OpsSTAGE{},
-                   [O.Found.i(b4), O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
+                   [O.Found.i(c0), O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
   +ixs = O.UOp.new(O.Found.ar(st3), O.OpsINDEX{}, [O.Found.i(st2), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +ixc = O.UOp.new(O.Found.ar(ixs), O.OpsINDEX{}, [O.Found.i(c4), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +rs = O.UOp.new(O.Found.ar(ixc), O.OpsRESHAPE{}, [O.Found.i(b4), O.Found.i(c4)], O.ANone{}, O.TNone{})
@@ -1845,8 +1852,11 @@ def g() -> G:
   +ct5k0 = O.UOp.new(O.Found.ar(ct4b), O.OpsCAST{}, [O.Found.i(c4)], O.ADt{S.half()}, O.TNone{})
   +ct5c = O.UOp.new(O.Found.ar(ct5k0), O.OpsSTAGE{}, [O.Found.i(c4), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +ct5k = O.UOp.new(O.Found.ar(ct5c), O.OpsSTAGE{}, [O.Found.i(ct5k0), O.Found.i(r0)], O.ANone{}, O.TNone{})
-  +ct5b = O.UOp.new(O.Found.ar(ct5k), O.OpsSTAGE{}, [O.Found.i(b4), O.Found.i(r0)], O.ANone{}, O.TNone{})
-  +mstc = O.UOp.new(O.Found.ar(ct5b), O.OpsMSTACK{}, [O.Found.i(c4), O.Found.i(c1)], O.ANone{}, O.TNone{})
+  +ct5b = O.UOp.new(O.Found.ar(ct5k), O.OpsSTAGE{}, [O.Found.i(c0), O.Found.i(r0)], O.ANone{}, O.TNone{})
+  # `MSTACK(c4, c1)` IS TWO WEAK CONSTS, AND `debuf` MINTS A PARAM FROM THE STACK'S DTYPE, so
+  # upstream's own `cannot create param for weak dtype` (`ops.py:1223`) fires. Two int32 BUFFERs
+  # are the same shape and a dtype a param can be minted from. MEASURED: that was `dg_56`.
+  +mstc = O.UOp.new(O.Found.ar(ct5b), O.OpsMSTACK{}, [O.Found.i(bd), O.Found.i(bx)], O.ANone{}, O.TNone{})
   +mstb = O.UOp.new(O.Found.ar(mstc), O.OpsMSTACK{}, [O.Found.i(bd), O.Found.i(c1)], O.ANone{}, O.TNone{})
   +ct8d = O.UOp.new(O.Found.ar(mstb), O.OpsINDEX{}, [O.Found.i(mstc)], O.ANone{}, O.TNone{})
   +ct8b = O.UOp.new(O.Found.ar(ct8d), O.OpsINDEX{}, [O.Found.i(mstb)], O.ANone{}, O.TNone{})

@@ -151,23 +151,34 @@ RANGEIFY = ROOT / "tinybendygrad/schedule/rangeify.bend"
 # THREE of the 44 pairs needed re-taking -- so the change's footprint is measured and small.
 # PLANT: setting `pg` back to `src=()` moves `aprt_34` and the gate goes rc=1.
 #
-# FOUR REMAIN, AND THEY ARE TWO STRUCTURAL DEFECTS AND NOT A MISSING FIELD:
-#   ct_17 ct_18 ct_55   ValueError from `cleanup_dead_axes` (`rangeify.py:30-41`), which is
-#       `for s,rng in zip(b.shape, b.src[1:])`. That `zip` is only length-correct when
-#       `b.src[0].shape == ()`, because a STAGE's shape is `src[0].shape + (range lengths...)`.
-#       **`st2`/`st3`/`ct5b` ARE `STAGE(BUFFER(4,), r0)` -- A STAGE WHOSE `src[0]` IS NOT A
-#       SCALAR -- SO THE ZIP DROPS A SHAPE ELEMENT AND THE RESHAPE TARGET COMES OUT `(1,)`
-#       AGAINST A `(4,4)` SHAPE.** Upstream cannot fold this node because upstream never
-#       builds one; `ct4a`/`ct4d`, which are `STAGE(INDEX(BUFFER, r0), r0)`, are LEGAL and
-#       they stopped raising when the BUFFER got its size.
-#   dg_56               `RuntimeError: cannot create param for weak dtype` -- and it is
-#       UPSTREAM'S OWN raised guard (`ops.py:1223`), not a crash: `mstc` is `MSTACK(c4, c1)`,
-#       two WEAK consts, and `debuf` mints a PARAM from the stack's dtype. **THE ROW IS
-#       RECORDING A DESIGNED REFUSAL AND THE FIXTURE NEEDS NON-WEAK STACK SOURCES.**
+# THE LAST FOUR WERE TWO STRUCTURAL DEFECTS, AND BOTH ARE FIXED. ZERO rows now record a
+# refusal: every one of the 726 is either a table answer or a declared divergence.
 #
-# TODO(p3) REBUILD `st2`/`st3`/`ct5b` SO `src[0]` HAS SHAPE `()` (a STAGE over a scalar), and
-# give `mstc` NON-WEAK sources. Until then those four rows measure an exception, and a green
-# gate says nothing about the rule they are named after.
+#   ct_17 ct_18 ct_55   `cleanup_dead_axes` (`rangeify.py:30-41`) walks
+#       `for s,rng in zip(b.shape, b.src[1:])`, and a STAGE's shape is
+#       `src[0].shape + (range lengths...)` -- so THAT ZIP IS LENGTH-CORRECT ONLY WHEN
+#       `src[0].shape == ()`. `st2`/`st3`/`ct5b` were `STAGE(BUFFER(4,), r0)`, shape `(4,4)`,
+#       the zip paired one element, the reshape target came out `(1,)` and CPython raised
+#       `size mismatch`. THEY ARE NOW `STAGE(CONST(0), r0)` -- a scalar `src[0]` -- and
+#       `ct4a`/`ct4d` (`STAGE(INDEX(BUFFER, r0), r0)`) had been LEGAL ALL ALONG, which is the
+#       fixture proving the rule works while the node beside it was illegal.
+#
+#   dg_56               `RuntimeError: cannot create param for weak dtype` is UPSTREAM'S OWN
+#       GUARD (`ops.py:1223`), not a crash: `mstc` was `MSTACK(c4, c1)`, two WEAK consts, and
+#       `debuf` mints a PARAM from the stack's dtype. It is now `MSTACK(bd, bx)` -- two int32
+#       BUFFERs, the dtype a param can be minted from.
+#
+# AND THE PARAM FIX BEFORE THESE BOUGHT MORE THAN `dg_39`: `pg`/`pa` gaining a shape src turned
+# TWO DECLARED DIVERGENCES GREEN (`aprt_34`, `dg_37`) because a PARAM with no `src` had been
+# answering `none` where CPython tags it. THEY WERE DROPPED, NOT RE-PINNED -- a divergence that
+# no longer diverges is filtered out of BOTH lanes by `Gate.diverges`, so keeping it would have
+# removed the row from the comparison entirely, which is the row-that-cannot-go-red trap.
+# MEASURED: the count went 44 -> 42 and the matching count 682 -> 684.
+#
+# THE SUMMARY NUMBERS ARE COMPUTED FROM `DIVERGES` FOR EXACTLY THAT REASON. They were typed as
+# `44` and `682`, and after the two rows went green the sentence still claimed 44 while the gate
+# filtered 42 -- a line describing a population it no longer had.
+#
 TABLES = tuple(re.findall(r"^def ([a-z]+)_table\(\) -> List<&2, O\.PMEntry>", RANGEIFY.read_text(), re.M))
 if not TABLES:
     print(f"rng_graph_census-gate: REFUSED -- no `def <name>_table` in {RANGEIFY}, so there are no "
@@ -189,10 +200,9 @@ ROWS = tuple(f"{t}_{n}" for t in TABLES for n in range(NODES))
 # file's docstring above. THE THREE FINDINGS THAT USED TO BE HERE ARE GONE -- see the foot.
 DIVERGES = {
     "rb_11": ("rb_11=1 Ops.NOOP/0  arg=none t=none", "rb_11=1 Ops.NOOP/0 - arg=none t=none"),
-    "rb_19": ("rb_19=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "rb_19=none"),
+    "rb_19": ("rb_19=1 Ops.CONST/0  arg=cint t=none", "rb_19=none"),
     "rb_32": ("rb_32=1 Ops.NOOP/0  arg=none t=none", "rb_32=1 Ops.NOOP/0 - arg=none t=none"),
-    "rb_51": ("rb_51=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "rb_51=none"),
-    "aprt_34": ("aprt_34=2 Ops.PARAM/1 Ops.CONST arg=other t=tuple", "aprt_34=2 Ops.PARAM/1 Ops.CONST arg=other t=tuple"),
+    "rb_51": ("rb_51=1 Ops.CONST/0  arg=cint t=none", "rb_51=none"),
     "sk_11": ("sk_11=4 Ops.CALL/1 Ops.SINK arg=other t=none", "sk_11=none"),
     "sk_12": ("sk_12=5 Ops.CALL/1 Ops.SINK arg=other t=none", "sk_12=none"),
     "sk_13": ("sk_13=6 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_13=none"),
@@ -200,13 +210,13 @@ DIVERGES = {
     "sk_32": ("sk_32=6 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_32=none"),
     "sk_33": ("sk_33=8 Ops.CALL/3 Ops.SINK Ops.BUFFER Ops.BUFFER arg=other t=none", "sk_33=none"),
     "sk_43": ("sk_43=7 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_43=none"),
-    "ct_17": ("ct_17=raise=ValueError", "ct_17=none"),
-    "ct_18": ("ct_18=raise=ValueError", "ct_18=none"),
+    "ct_17": ("ct_17=8 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_17=none"),
+    "ct_18": ("ct_18=10 Ops.EXPAND/2 Ops.RESHAPE Ops.STACK arg=none t=none", "ct_18=none"),
     "ct_49": ("ct_49=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "ct_49=none"),
     "ct_50": ("ct_50=10 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_50=none"),
     "ct_53": ("ct_53=7 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_53=none"),
     "ct_54": ("ct_54=8 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_54=none"),
-    "ct_55": ("ct_55=raise=ValueError", "ct_55=none"),
+    "ct_55": ("ct_55=8 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_55=none"),
     "fb_18": ("fb_18=9 Ops.RESHAPE/2 Ops.STAGE Ops.STACK arg=none t=none", "fb_18=none"),
     "dg_5": ("dg_5=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_5=none"),
     "dg_6": ("dg_6=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_6=none"),
@@ -215,14 +225,13 @@ DIVERGES = {
     "dg_16": ("dg_16=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_16=none"),
     "dg_26": ("dg_26=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_26=none"),
     "dg_30": ("dg_30=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_30=none"),
-    "dg_37": ("dg_37=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_37=2 Ops.PARAM/1 Ops.CONST arg=other t=none"),
     "dg_39": ("dg_39=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_39=none"),
     "dg_41": ("dg_41=1 Ops.NOOP/0  arg=none t=none", "dg_41=none"),
     "dg_42": ("dg_42=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_42=none"),
     "dg_47": ("dg_47=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_47=none"),
-    "dg_56": ("dg_56=raise=RuntimeError", "dg_56=none"),
+    "dg_56": ("dg_56=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_56=none"),
     "dg_57": ("dg_57=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_57=none"),
-    "ab_17": ("ab_17=9 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_17=none"),
+    "ab_17": ("ab_17=10 Ops.CAST/1 Ops.AFTER arg=dt:weakint t=none", "ab_17=none"),
     "ab_18": ("ab_18=9 Ops.RESHAPE/2 Ops.STAGE Ops.STACK arg=none t=none", "ab_18=none"),
     "ab_30": ("ab_30=3 Ops.MSTACK/2 Ops.BUFFER Ops.BUFFER arg=none t=none", "ab_30=none"),
     "ab_31": ("ab_31=1 Ops.NOOP/0  arg=none t=none", "ab_31=1 Ops.NOOP/0 - arg=none t=none"),
@@ -231,7 +240,7 @@ DIVERGES = {
     "ab_50": ("ab_50=10 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_50=none"),
     "ab_53": ("ab_53=9 Ops.CAST/1 Ops.AFTER arg=dt:weakint t=none", "ab_53=none"),
     "ab_54": ("ab_54=8 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_54=none"),
-    "ab_55": ("ab_55=9 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_55=none"),
+    "ab_55": ("ab_55=10 Ops.CAST/1 Ops.AFTER arg=dt:weakint t=none", "ab_55=none"),
 }
 
 GATE = Gate(
@@ -263,13 +272,21 @@ def gs_and_lb_are_silent() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "rng_graph_census-gate: 726 rows (11 tables x 66 nodes), 3 lanes, "
-                        "44 DECLARED divergences -- 682 op sequences match CPython's byte for "
-                        "byte; 38 are the # WALL(p3) rule bodies this file records as unported "
-                        "(each pinned with the rangeify.py line MEASURED to fire) and 6 are the "
-                        "zero-src `-` rendering. 0 FINDINGS: the three this gate found (ct_20, "
-                        "ab_28, ab_29) are FIXED, each was RED on its pin first, and all three "
-                        "rows now match; gs and lb answer nothing on 132 nodes, asserted",
+    # THE TWO NUMBERS ARE COMPUTED AND NOT TYPED. They were `44` and `682` in a literal, and
+    # when two divergences went GREEN the summary kept saying 44 while the gate compared 42 --
+    # a line describing a population it no longer has. `len(DIVERGES)` is the value the gate
+    # FILTERS on, so the sentence and the check cannot disagree.
+    n_div = len(DIVERGES)
+    n_dash = sum(1 for v in DIVERGES.values() if " - " in v[1])
+    sys.exit(gate(GATE, f"rng_graph_census-gate: {len(ROWS)} rows ({len(TABLES)} tables x "
+                        f"{NODES} nodes), 3 lanes, {n_div} DECLARED divergences -- "
+                        f"{len(ROWS) - n_div} op sequences match CPython's byte for byte; "
+                        f"{n_div - n_dash} are the # WALL(p3) rule bodies this file records as "
+                        f"unported (each pinned with the rangeify.py line MEASURED to fire) and "
+                        f"{n_dash} are the zero-src `-` rendering. 0 FINDINGS: the three this "
+                        f"gate found (ct_20, ab_28, ab_29) are FIXED, each was RED on its pin "
+                        f"first, and all three rows now match; gs and lb answer nothing on 132 "
+                        f"nodes, asserted",
                   checks=gs_and_lb_are_silent))
 
 # ===========================================================================
