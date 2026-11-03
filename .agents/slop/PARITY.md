@@ -4936,3 +4936,21 @@ steps, 18,225 steps a render.
 45 steps a row is an UPPER bound, and §81 -- which removed all of it -- measured 0-2.5% on a build where the
 decode was 40% of a *5.7 ms* turn. The turn is now 3.5 ms, so `fld`'s share is a third larger; that is the
 only reason to re-test §81's shape, and it is a re-proposal rather than a new mechanism.
+
+### 110.2 §81's named fields, re-measured on the 3.5 ms build: 0.9796, still at the line
+
+§110.1 left one reason to re-test: §81 measured the `fld` elimination at 0.9751/1.0075 when the turn was
+5.7 ms, and the turn is 3.5 ms now, so 18,225 list steps are a third larger a share. Re-implemented
+(`ku_ws(a..i)` with the nested cons match, `ku_ws.r` binding the accumulator newest-first) and byte-identical
+at 37 of 37 on both decoders:
+
+```
+same C: True | bytes: 4426
+before median 3.31 ms   named-fields median 3.29 ms
+ratio min 0.7089  p25 0.8871  median 0.9796  max 2.3742   16 of 26 faster
+```
+
+**0.9796 -- ABOVE THE KEEPER LINE, REVERTED**, and it is now the THIRD measurement of this exact shape
+(§81's 0.9751, §81's 1.0075, this 0.9796). **A COST MODEL THAT SAYS 18,225 LIST STEPS SHOULD BE 5% AND THREE
+MEASUREMENTS THAT SAY 2% MEANS THE MODEL IS WRONG, NOT THE MEASUREMENTS**: `List.get` on a nine-element list
+is a handful of nanoseconds, and the cons match that replaces it allocates its own frame per level.
