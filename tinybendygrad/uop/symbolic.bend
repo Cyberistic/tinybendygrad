@@ -181,6 +181,7 @@ import ./render.bend as R
 import ./../dtype.bend as D
 import ./weak.bend as W
 import ./movement.bend as M
+import ./../codegen/decomp/transcendental.bend as T
 
 # THE PRELUDE. Everything symbolic.py GETS FROM ELSEWHERE, in dependency order,
 # because Bend has no forward references and mutual recursion is refused. Every
@@ -4922,6 +4923,216 @@ def sym_193.pat(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_193(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_193.pat(x, u), sym_193.go1(sym_193.is1(sy_maybe_c2(sy_val(x, sy_src0(x, u)))), x, u))
+
+# ---- `transcendental.py:267`, `xpow_int` -------------------------------------------
+#
+#   udt = dt if is_unsigned(dt) else uints[sints.index(dt)]
+#   ret, sq = (b := base.cast(dt).bitcast(udt)).const_like(1), b
+#   lo, hi = (edt.min, edt.max) if edt in ints and exponent.overflows(edt) else (vmin, vmax)
+#   for i in range(nbits := int(max(hi,0)).bit_length()):
+#     ret = ((exponent >> i) & 1).ne(0).where((ret*sq) & udt.max, ret)
+#     if i < nbits-1: sq = (sq*sq) & udt.max
+#   ret = ret.bitcast(dt)
+#   if lo >= 0: return ret
+#   one = ret.const_like(1)
+#   neg = sb.eq(-1).where((exponent & 1).ne(0).where(-one, one), sb.eq(1).where(one, 0))
+#   return (exponent < 0).where(neg, ret)
+#
+# EVERY SHAPE BELOW WAS READ OFF THE ANSWER AND NOT GUESSED, because three of them are not the
+# obvious node: `const_like(1)` on a u32 node is `CAST(CONST 1)`; `.eq(v)` is
+# `CMPNE(CMPNE(x, v), True)` -- TWO nodes, not a CMPEQ; and `-one` is `MUL(one, CONST -1)`.
+# The mask is a BARE weakint `CONST(2**bits - 1)`, because `_broadcasted` keeps a weak CONST weak.
+def xi.mask(bits: U32) -> H.I64:
+  H.i64_sub(H.i64_shl(H.i64_of_i32(1), U32.to_nat(bits)), H.i64_of_i32(1))
+
+def xi.udt.by(bits: U32) -> Maybe<&2, S.Dt>:
+  match bits:
+    case 8: Some{S.uint8()}
+    case 16: Some{S.uint16()}
+    case 32: Some{S.uint32()}
+    case 64: Some{S.uint64()}
+    case _: None{}
+
+def xi.udt.sleep(uns: Bool, +dt: S.Dt, bits: U32) -> Maybe<&2, S.Dt>:
+  match uns:
+    case True{} : Some{dt}
+    case False{}: xi.udt.by(bits)
+
+def xi.masked(+f: O.Found, v: U32, bits: U32) -> O.Found:
+  +k = O.UOp.const(O.Found.ar(f), O.CInt{xi.mask(bits)})
+  mint_bin(k, O.OpsAND{}, v, O.Found.i(k))
+
+# `((exponent >> i) & 1).ne(0)` -- three nodes and two bare consts.
+def xi.cond(+f: O.Found, ex: U32, i: U32) -> O.Found:
+  +ci = O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(i)})
+  +sh = mint_bin(ci, O.OpsSHR{}, ex, O.Found.i(ci))
+  +o1 = O.UOp.const(O.Found.ar(sh), O.CInt{H.i64_of_i32(1)})
+  +an = mint_bin(o1, O.OpsAND{}, O.Found.i(sh), O.Found.i(o1))
+  +z = O.UOp.const(O.Found.ar(an), O.CInt{H.i64_of_i32(0)})
+  mint_bin(z, O.OpsCMPNE{}, O.Found.i(an), O.Found.i(z))
+
+# ONE DEF, because the stop test and the step would otherwise call each other and Bend refuses
+# mutual recursion. `Bool.pick` is eager, so the tail is built and thrown away once `v` is 0 --
+# at most 64 wasted steps, and `n` bounds the recursion either way.
+def xi.bitlen.n(n: Nat, +v: H.I64, +acc: U32) -> U32:
+  match n:
+    case 0n: acc
+    case 1n+p: Bool.pick(U32, H.i64_is_zero(v), acc, xi.bitlen.n(p, H.i64_shr(v, 1n), U32.add(acc, 1)))
+
+def xi.bitlen(+v: H.I64) -> U32: xi.bitlen.n(64n, v, 0)
+
+type Xs is Data:
+  Xs{f: O.Found, ret: U32, sq: U32}
+
+def Xs.f(s: Xs) -> O.Found:
+  match s:
+    case Xs{f, ret, sq}: f
+
+def Xs.ret(s: Xs) -> U32:
+  match s:
+    case Xs{f, ret, sq}: ret
+
+def Xs.sq(s: Xs) -> U32:
+  match s:
+    case Xs{f, ret, sq}: sq
+
+def xi.step(i: U32, +s: Xs, +ex: U32, +bits: U32) -> Xs:
+  +c = xi.cond(Xs.f(s), ex, i)
+  +mu = mint_bin(c, O.OpsMUL{}, Xs.ret(s), Xs.sq(s))
+  +an = xi.masked(mu, O.Found.i(mu), bits)
+  +wh = mint_where(an, O.Found.i(c), O.Found.i(an), Xs.ret(s))
+  Xs{wh, O.Found.i(wh), Xs.sq(s)}
+
+def xi.sq1(+s: Xs, +bits: U32) -> Xs:
+  +mu = mint_bin(Xs.f(s), O.OpsMUL{}, Xs.sq(s), Xs.sq(s))
+  +an = xi.masked(mu, O.Found.i(mu), bits)
+  Xs{an, Xs.ret(s), O.Found.i(an)}
+
+def xi.squp(more: Bool, +s: Xs, +bits: U32) -> Xs:
+  match more:
+    case True{} : xi.sq1(s, bits)
+    case False{}: s
+
+def xi.loop(n: Nat, +i: U32, +s: Xs, +ex: U32, +bits: U32, +nb: U32) -> Xs:
+  match n:
+    case 0n: s
+    case 1n+p:
+      +s1 = xi.step(i, s, ex, bits)
+      +s2 = xi.squp(U32.is_le(U32.add(i, U32.from_nat(1n)), U32.sub(nb, U32.from_nat(1n))), s1, bits)
+      xi.loop(p, U32.add(i, U32.from_nat(1n)), s2, ex, bits, nb)
+
+def xi.lo(ofl: Bool, +x: F.Folded, +u: U32) -> H.I64:
+  match ofl:
+    case True{} : bnd_i64(F.ovf.min_b(Maybe.default(&1, Bool, S.Cls.sgn(S.Dt.cls(sy_dt1(x, sy_src1(x, u)))), False{}),
+                                 S.Dt.bits(sy_dt1(x, sy_src1(x, u)))))
+    case False{}: vmin_i64(F.Folded.ar(x), sym_280.bt(x), sy_src1(x, u))
+
+def xi.hi(ofl: Bool, +x: F.Folded, +u: U32) -> H.I64:
+  match ofl:
+    case True{} : bnd_i64(F.ovf.max_b(Maybe.default(&1, Bool, S.Cls.sgn(S.Dt.cls(sy_dt1(x, sy_src1(x, u)))), False{}),
+                                 S.Dt.bits(sy_dt1(x, sy_src1(x, u)))))
+    case False{}: vmax_i64(F.Folded.ar(x), sym_280.bt(x), sy_src1(x, u))
+
+# `sb.eq(v)` IS TWO NODES: `CMPNE(CMPNE(x, v), True)`.
+def xi.eq2(+f: O.Found, x: U32, v: H.I64) -> O.Found:
+  +c = O.UOp.const(O.Found.ar(f), O.CInt{v})
+  +n = mint_bin(c, O.OpsCMPNE{}, x, O.Found.i(c))
+  +t = O.UOp.const(O.Found.ar(n), O.CBool{True{}})
+  mint_bin(t, O.OpsCMPNE{}, O.Found.i(n), O.Found.i(t))
+
+# `ret.const_like(1)` -- the node's OWN dtype, which for an i32 ret is `CAST(CONST 1)`.
+def xi.one_like(+f: O.Found, dt: S.Dt) -> O.Found:
+  +c = O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(1)})
+  O.UOp.cast(O.Found.ar(c), O.Found.i(c), dt)
+
+def xi.bitcast(+f: O.Found, v: U32, dt: S.Dt) -> O.Found:
+  O.UOp.new(O.Found.ar(f), O.OpsBITCAST{}, [v], O.ADt{dt}, O.TNone{})
+
+# `(exponent < 0).where(neg, ret)`, and `neg` is the `eq(-1)/eq(1)` pair over the SIGNED bitcast
+# of the base. Sequential locals and NO match, so the shapes stay in construction order.
+def xi.tail(+r: O.Found, +x: F.Folded, +u: U32, +dt: S.Dt, +b: O.Found) -> Maybe<&1, O.Found>:
+  +ex = sy_src1(x, u)
+  +sb = xi.bitcast(r, O.Found.i(b), dt)
+  +one = xi.one_like(sb, dt)
+  +k1 = O.UOp.const(O.Found.ar(one), O.CInt{H.i64_of_i32(1)})
+  +an = mint_bin(k1, O.OpsAND{}, ex, O.Found.i(k1))
+  +z0 = O.UOp.const(O.Found.ar(an), O.CInt{H.i64_of_i32(0)})
+  +nz = mint_bin(z0, O.OpsCMPNE{}, O.Found.i(an), O.Found.i(z0))
+  +n1 = O.UOp.const(O.Found.ar(nz), O.CInt{H.i64_neg(True{}, H.i64_of_i32(1))})
+  +mo = mint_bin(n1, O.OpsMUL{}, O.Found.i(one), O.Found.i(n1))
+  +in1 = mint_where(mo, O.Found.i(nz), O.Found.i(mo), O.Found.i(one))
+  +e1 = xi.eq2(in1, O.Found.i(sb), H.i64_neg(True{}, H.i64_of_i32(1)))
+  +e2 = xi.eq2(e1, O.Found.i(sb), H.i64_of_i32(1))
+  +z1 = O.UOp.const(O.Found.ar(e2), O.CInt{H.i64_of_i32(0)})
+  +el2 = mint_where(z1, O.Found.i(e2), O.Found.i(one), O.Found.i(z1))
+  +ng = mint_where(el2, O.Found.i(e1), O.Found.i(in1), O.Found.i(el2))
+  +z2 = O.UOp.const(O.Found.ar(ng), O.CInt{H.i64_of_i32(0)})
+  +lt = mint_bin(z2, O.OpsCMPLT{}, ex, O.Found.i(z2))
+  Some{mint_where(lt, O.Found.i(lt), O.Found.i(ng), O.Found.i(r))}
+
+def xi.hi0(+v: H.I64) -> H.I64: Bool.pick(H.I64, H.i64_is_neg(v), H.i64_of_i32(0), v)
+
+def xi.cast_or(d: S.Dt, +ar: O.Arena, +s: U32, +dt: S.Dt) -> O.Found:
+  Bool.pick(O.Found, O.eq_dt(d, dt), O.Found{ar, s}, O.UOp.cast(ar, s, dt))
+
+def xi.end(ge0: Bool, +r: O.Found, +x: F.Folded, +u: U32, +dt: S.Dt, +b: O.Found) -> Maybe<&1, O.Found>:
+  match ge0:
+    case True{} : Some{r}
+    case False{}: xi.tail(r, x, u, dt, b)
+
+def xi.build(+x: F.Folded, +u: U32, +dt: S.Dt, +ud: S.Dt) -> Maybe<&1, O.Found>:
+  +b0 = xi.cast_or(sy_dt1(x, sy_src0(x, u)), sy_ar(x), sy_src0(x, u), dt)
+  +bc = xi.bitcast(b0, O.Found.i(b0), ud)
+  +one = xi.one_like(bc, ud)
+  +bits = S.Dt.bits(dt)
+  +edt = sy_dt1(x, sy_src1(x, u))
+  +ofl = Bool.and(dt_in(DTS_INTS(), edt),
+                  F.UOp.overflows(F.Folded.ar(x), sym_280.bt(x), sy_src1(x, u), edt))
+  +lo = xi.lo(ofl, x, u)
+  +hi = xi.hi(ofl, x, u)
+  +nb = xi.bitlen(xi.hi0(hi))
+  +s = xi.loop(U32.to_nat(nb), U32.from_nat(0n), Xs{one, O.Found.i(one), O.Found.i(bc)},
+               sy_src1(x, u), bits, nb)
+  +r = xi.bitcast(Xs.f(s), Xs.ret(s), dt)
+  xi.end(Bool.not(H.i64_is_neg(lo)), r, x, u, dt, bc)
+
+def xi.udt3(m: Maybe<&2, S.Dt>, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+du}: xi.build(x, u, dt, du)
+    case None{}   : None{}
+
+def xi.go(ok: Bool, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{} : xi.udt3(xi.udt.sleep(S.Dt.is_unsigned(dt), dt, S.Dt.bits(dt)), x, u, dt)
+    case False{}: None{}
+
+# `xpow_int(base, exponent, dt)` -- `dt not in dtypes.ints` is the whole guard.
+def xpow_int(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +dt = sy_dt1(x, u)
+  xi.go(dt_in(DTS_INTS(), dt), x, u, dt)
+
+# ---- `symbolic.py:451`, the pow rule ----------------------------------------------
+#   ((UPat(Ops.POW, name="p"), lambda p: xpow_int(p.src[0], p.src[1], p.dtype)
+#                                           if dtypes.is_int(p.dtype) else xpow(*p.src)))
+# The branch is the NODE's dtype: an int pow is square-and-multiply, a float pow is `xpow`,
+# which IS ported in `transcendental.bend` and expands to `exp2(x*log2(base))`.
+# TODO(p2) symbolic.py:451 THE ROW IS NOT WIRED AND THIS IS THE MEASURED REASON: the INT arm is
+#   byte-identical to CPython (25,260 chars on `i32**i32`), and the FLOAT arm is not -- the port's
+#   `xpow.flags` casts `exponent.cast(int32)` to `S.single()` (f32) where transcendental.py:260
+#   casts to `exponent.dtype` (weakfloat for a weakfloat exponent). MEASURED, `probe-xi.bend`
+#   differs from CPython at char 87 on exactly that node. Fixing it means threading the exponent's
+#   dtype into `xpow`/`xpow.flags`/`xpow.tail` and its THREE other call sites (the SQRT rule and
+#   the two `w_xpow` fixture rows), each of which would then need its own re-verification.
+def sym_451.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(sy_is_op(x, u, O.OpsPOW{}), sy_nsrc_is(x, u, 2))
+
+def sym_451.go(i: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match i:
+    case True{} : xpow_int(x, u)
+    case False{}: Some{T.xpow(sy_ar(x), sy_src0(x, u), sy_src1(x, u))}
+
+def sym_451(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_451.pat(x, u), sym_451.go(dt_in(DTS_INTS(), sy_dt1(x, u)), x, u))
 
 # symbolic.py:308  (UPat.var('x').cast(name="a").cast(name="b"),
 #                     lambda x,a,b: x.cast(b.dtype) if can_lossless_cast(x.dtype, a.dtype) else None)
