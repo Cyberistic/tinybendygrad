@@ -5551,20 +5551,26 @@ def sym_305(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 #                     lambda x,c1,y: (x+y)+c1 if y.op is not Ops.CONST else None)
 # symbolic.py:296  the same for `*`.
 # THE CONSTANT MOVES TO THE END so the two-variable part can fold: `(x + c1) + y` becomes
-# `(x + y) + c1`. Both ops are commutative, so the constant is at either side of the INNER alu
-# and the guard is that `y` is NOT one -- otherwise the rule would fire forever.
-def sym_295.inner(+x: F.Folded, +u: U32) -> U32:
-  Bool.pick(U32, sym_284.alu2c(x, sy_src0(x, u), sy_op(x, u)), sy_src0(x, u), sy_src1(x, u))
+# `(x + y) + c1`.
+#
+# **THE SHAPE IS POSITIONAL AND THAT POSITION IS THE WHOLE GUARD.** The root's src0 is the
+# ALU-with-a-constant and its src1 is `y`. Accepting the ALU on EITHER side -- which this body did,
+# reading `inner`/`outer` through `sym_284`, whose own pattern is two-sided -- makes the rule fire on
+# the answer of `:171`'s two-stage fold: `x + (c1 + c2)` has an alu-with-a-constant at src1, so it
+# rewrote it back to `(x + c1) + c2` and the fixpoint OSCILLATED with period 2. MEASURED:
+# `sy_simp.n(1n)` answered `(add x (add c1 c2))`, `sy_simp.n(2n)` answered the original, and
+# `sy_simplify` -- which spends `8n`, an EVEN number -- therefore always returned the ORIGINAL.
+# `.agents/slop/sym92/sweep-171.bend` names this rule (tag 101) out of the 27 entries that can fire
+# on ADD, one single-entry table at a time.
+def sym_295.inner(+x: F.Folded, +u: U32) -> U32: sy_src0(x, u)
 
 def sym_295.pat(+x: F.Folded, +u: U32) -> Bool:
-  +i = sym_295.inner(x, u)
-  +y = sym_284.outer(x, u)
-  Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sym_284.alu2c(x, i, sy_op(x, u))),
-    Bool.not(sy_is_const(x, y)))
+  Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sym_284.alu2c(x, sy_src0(x, u), sy_op(x, u))),
+    Bool.not(sy_is_const(x, sy_src1(x, u))))
 
 def sym_295.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  +i = sym_295.inner(x, u)
-  +s = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.v(x, i), sym_284.outer(x, u))
+  +i = sy_src0(x, u)
+  +s = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.v(x, i), sy_src1(x, u))
   Some{mint_bin(s, sy_op(x, u), O.Found.i(s), sym_284.c(x, i))}
 
 def sym_295(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
