@@ -1770,3 +1770,19 @@ still 2.7% faster**, which is the strongest reading in this record (the §33 cha
 
 `ksweep 37 of 37 on BOTH decoders`, `cstyle.bend ALL PROOFS CHECK`. The discarded arms were pure: they built
 `St` values and strings that nothing read, so removing them cannot change the C, and it does not.
+
+### 39.3 The certificate, covering §38 and §39 together
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **08:56**, `substrate-head=7e993c6b0`:
+
+```
+substrate-start = substrate-end = live = ed700df7222c6c025ca6377c4b90d8d1372583b043835db9fb57f0c97864603d
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4
+```
+
+**ONE RUN, TWO COMMITS**: `542286312` (§38, the doubled cast conditional) never got a run of its own and
+`7e993c6b0` (§39) came before one could be taken, and a worktree digest deliberately describes the tree
+rather than a commit -- so this reading covers both, and the previous attempt at a certificate for `542286312`
+straddled (`start 229cae27` against `end 1277bfa2`) because §39 was edited into the tree mid-run. **THE ORDER
+IS THE RULE THAT KEEPS BEING VIOLATED: freeze `.bend`, THEN take the reading.**
