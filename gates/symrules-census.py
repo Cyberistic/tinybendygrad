@@ -280,18 +280,36 @@ def port_tables():
     if re.match(r"\s*def \w", ln):
       cur = None
       continue
-    e = ENTRY_RE.search(ln)
+    e = re.match(r"\s*O\.PMEntry\{(\d+),\s*", ln)
     if e:
-      # The port spells an op `O.OpsSTACK{}` and upstream's `op.name` is `STACK`, so
-      # the `Ops` prefix is stripped: the two sides must be in the SAME SPELLING or
-      # the subset test compares "OpsSTACK" against {"STACK"} and fails every rule.
-      body = e.group(2)
+      # THE OPS FIELD IS READ WHOLE. `ENTRY_RE`'s two `.*?` groups stopped at the FIRST `}`
+      # inside a bracketed list, so a rule that declares twenty-seven ops was read as ONE --
+      # and the SUBSET test then compared one op against twenty-seven and passed, which is a
+      # row that cannot go red. MEASURED 2026-11-03 on `:162` (`NARROW:1-of-27`) and `:230`
+      # (`1-of-8`): both declared their full sets and both read as one.
+      rest = ln[e.end():]
+      cite = re.search(r"#\s*(\d+)\s*$", rest)
+      cited = int(cite.group(1)) if cite else None
+      if cite: rest = rest[:cite.start()]
+      if rest.startswith("["):
+        depth = 0
+        for i, ch in enumerate(rest):
+          depth += (ch == "[") - (ch == "]")
+          if depth == 0:
+            body = rest[:i + 1]
+            break
+        else:
+          body = rest
+      else:
+        body = rest.split(",")[0]
+      # The port spells an op `O.OpsSTACK{}` and upstream's `op.name` is `STACK`, so the `Ops`
+      # prefix is stripped: the two sides must be in the SAME SPELLING or the subset test
+      # compares "OpsSTACK" against {"STACK"} and fails every rule.
       ops = sorted(set(o[3:] for o in OPS_RE.findall(body)))
       for h in helpers:
         if re.search(r"\b" + h + r"\(\)", body):
           ops = sorted(set(ops) | set(helpers[h]))
-      tables[cur].append({"tag": int(e.group(1)), "ops": ops,
-                           "cited": int(e.group(4)) if e.group(4) else None})
+      tables[cur].append({"tag": int(e.group(1)), "ops": ops, "cited": cited})
   return tables
 
 
