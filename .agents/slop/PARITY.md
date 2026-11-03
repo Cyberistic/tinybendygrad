@@ -2767,3 +2767,16 @@ and one is attributed (§56-§61) to five terms each at its floor. **THE WARM-UP
 RECORD THAT HAS NEVER BEEN ATTACKED AND IS NOT BLOCKED BY THE LANGUAGE** -- it is a property of shipping 433 KB
 of generated JS to a JIT, and the only lever on it would be emitting less JS, which is the renderer emitting
 fewer `.bend` functions, not fewer C lines.
+
+### 63.1 The certificate
+
+`runs/graphcmp/D/D0-run-summary.txt`, `substrate-head=6cac8569b`:
+
+```
+substrate-start = substrate-end = 664ac018287de265336bab244b0255325b7a9bb92cf836dfd6e04174d519f0d9
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+```
+
+**SO `c4e90a8e9` (§62, the packed worker) AND `6cac8569b` (§63) ARE CERTIFIED**: both changed only
+`portc.py` and this file, neither is in the substrate walk, so the digest they were built on is the one
+this run records. The `live` reading afterwards is a later unit's in-flight edit, not a gap in this one.
