@@ -2329,3 +2329,49 @@ was the NAME MATCHING, and 0.15 us/char (measured in §48 by padding) was the *s
 **⇒ SO THE WIRE LEVER IS DONE**, and it is done for a reason that is now measured rather than assumed: every
 remaining field is a number or a `-`, and removing them changes nothing. What is left in the decode is digit
 parsing, and §37 bounds the whole decode at 4.2 ms before §49/§50 took most of it.
+
+## 52. THE PROFILE AFTER §49/§50 IS MODULE LOAD -- AND `portc` WAS PHONING HOME
+
+Re-profiled the shipped artifact after the wire work (`--cpu-prof-interval=25`, 1 235 samples):
+
+| self% | function | |
+|---|---|---|
+| **30.2%** | `resolve` | native module resolution |
+| 6.1% | `parseModule` | module load |
+| 4.5% | `char_len` | the port's decode |
+| 3.7% | `anonymous` | native |
+| 2.9 / 1.9% | `List_set` | the port's render |
+| 1.9% | `List_get` | |
+| 1.2% | `u32_to_word` | |
+
+**THE PORT'S OWN SITES ARE NOW ALL UNDER 5% AND THE TOP OF THE PROFILE IS LOADING THE PROGRAM.** Measured
+directly on the same wire: start-up floor **24.1 ms**, one-shot 405-uop render **47.0 ms** (work ~22.9 ms),
+**daemon turn 10.0 ms**. So the daemon already removes the load; a one-shot render is now half start-up.
+
+### 52.1 The 30% is not what it looks like, and the fix is the tree's own rule
+
+`resolve` looked like the phone-home AGENTS.md documents -- Bend fetches `https://bend-lang.com/check` once a
+day and prints a "newer bend" notice -- so it was measured directly:
+
+```
+start-up floor, as shipped         24.1 ms
+start-up floor, BEND_NO_TELEMETRY  22.9 ms      -> the check is 1.1 ms, 5%
+```
+
+**1.1 ms, not 30%. `resolve` is Bun's own module resolution for the script, and it is not removable from
+here.** But `checks/differ.py:83` sets `BEND_NO_TELEMETRY=1` for every corpus child, with the comment *"THE
+ONLY OFF-REPO INPUT IN THE MEASUREMENT"*, and **`portc`'s three spawn points never did** -- so every render
+this project has measured carried an off-repo network dependency that the rest of the tree had already
+removed.
+
+### 52.2 Measured, and why it is kept even though the effect is small
+
+```
+without flag         min 46.4  p25 49.9  median 54.5 ms
+BEND_NO_TELEMETRY=1  min 44.9  p25 48.4  median 51.8 ms
+ratio min 0.6553  p25 0.8692  median 0.9644  max 1.3238   10 of 14 faster
+```
+
+A noisy reading (the machine was loaded), but the direction agrees with the 1.1 ms measured in isolation, and
+**the change is kept on the rule rather than on the ratio**: a render path whose cost depends on the network
+is not a measurement of the renderer. `ksweep 37 of 37` on both decoders after it.

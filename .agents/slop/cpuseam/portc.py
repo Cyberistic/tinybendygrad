@@ -42,6 +42,14 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 BEND = ROOT / "bin" / "bend"
 BUN = pathlib.Path(os.environ.get("BUN", str(pathlib.Path.home() / ".bun" / "bin" / "bun")))
+
+# **`BEND_NO_TELEMETRY=1` ON EVERY SPAWN, AND IT IS THE TREE's OWN RULE, NOT A TUNING.** Bend's runtime
+# fetches `https://bend-lang.com/check` once a day into `~/.bend/check.json` and prints a "newer bend" notice;
+# `checks/differ.py:83` sets this flag for every corpus child for exactly that reason ("THE ONLY OFF-REPO INPUT
+# IN THE MEASUREMENT"). `portc`'s two spawn points never did -- MEASURED: 24.1 ms of start-up without the flag
+# and 22.9 ms with it, so the phone-home was 1.1 ms of every one-shot render, and on a slow network it is not
+# 1.1 ms at all, it is whatever the resolver decides.
+ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"BEND_NO_TELEMETRY": "1"}
 GEN = HERE / "gen"
 OUT = HERE / "out"
 
@@ -125,7 +133,7 @@ def _build(names: list[str]) -> dict[str, str]:
     build = subprocess.run([str(BEND), str(driver), "-o", str(js)], capture_output=True, text=True)
     if build.returncode != 0:
       raise RuntimeError(f"portc: the port's renderer did not build: {build.stderr.strip()[:400]}")
-    run = subprocess.run([str(BUN), str(js)], capture_output=True, text=True)
+    run = subprocess.run([str(BUN), str(js)], capture_output=True, text=True, env=ENV)
     if run.returncode != 0:
       raise RuntimeError(f"portc: the port's renderer did not run: {run.stderr.strip()[:400]}")
   finally:
@@ -370,7 +378,7 @@ def _chunks(text: str) -> list[str]:
 
 def _render_wire(text: str) -> str:
   """render a WIRE STRING -- the live path's whole input, so it can be exercised without a uop list."""
-  run = subprocess.run([str(BUN), str(_live_js()), *_chunks(text)], capture_output=True, text=True)
+  run = subprocess.run([str(BUN), str(_live_js()), *_chunks(text)], capture_output=True, text=True, env=ENV)
   if run.returncode != 0:
     raise RuntimeError(f"portc: the live renderer did not run: {run.stderr.strip()[:400]}")
   if not run.stdout.strip():
@@ -428,7 +436,7 @@ class Worker:
   def start(self) -> None:
     self.proc = subprocess.Popen([str(BUN), str(self.js), f"{self.fifo}|{self.req}"],
                                  stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, text=True, bufsize=1)
+                                 stderr=subprocess.PIPE, text=True, bufsize=1, env=ENV)
     # **THE WRITER STAYS OPEN FOR THE WHOLE SESSION, AND THAT IS A MEASURED FIX.** Opening and closing it
     # per request gives the reader an EOF BETWEEN requests, and the worker -- which has no way to tell an
     # EOF read from a signal read without a branch it cannot express -- renders the current request file on
