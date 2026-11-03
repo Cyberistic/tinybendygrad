@@ -2296,3 +2296,36 @@ and the §49/§50 artifacts emit the SAME C on the 405-uop wire.
 
 `substrate-start = substrate-end = live = 2ffdeda54a59...`, 38 graphs, 38 answered, 38 agree, 0 refused,
 38 byte-identical. `618fe7d65` -- the op index table -- moves no byte.
+
+## 51. MERGING `shape` AND `numel` INTO ONE FIELD: 9% SHORTER, 0% FASTER
+
+The same lever the last two sections used -- delete wire text -- applied to the two most common values in the
+wire: `shape` is `-` and `numel` is `1` on most lines, and they cost two of the eight splits and two of the
+seven spaces. The wire went from 8 704 B to 7 914 B (9% shorter), `-` meaning "empty shape, numel 1" and
+`<n>~<dims>` carrying both otherwise:
+
+```
+§50 (8 fields)  min 42.9  p25 43.4  median 43.8 ms
+§51 (7 fields)  min 42.8  p25 43.4  median 44.0 ms
+ratio min 0.9686  p25 0.9958  median 1.0044  max 1.0419   6 of 14 faster
+```
+
+**NEUTRAL, SO REVERTED** -- and byte-identical first (`same emitted C: True`, `ksweep 37 of 37` on both
+decoders).
+
+### 51.1 Why this one is different from §49 and §50, and what it says
+
+| § | wire | cut | ratio |
+|---|---|---|---|
+| 49 | coded `dt`, `addr`, `kind` | 27% | **0.8903** (11/12) |
+| 50 | op as an index | 9% | **0.9244** (14/14) |
+| 51 | `shape`+`numel` merged | 9% | 1.0044 (6/14) |
+
+**THE TWO THAT PAID REMOVED STRING LOOKUPS** -- `dt_of`, `addr_of` and `arg_of` were chains of `String.eq`
+against names like `range_PLACEHOLDER`, and `op_of` was up to 75 of them per line. **THE ONE THAT DID NOT
+REMOVED A SPLIT AND A SPACE.** Same bytes, different work: the decoder's cost was never the characters, it
+was the NAME MATCHING, and 0.15 us/char (measured in §48 by padding) was the *scan*, which is the cheap half.
+
+**⇒ SO THE WIRE LEVER IS DONE**, and it is done for a reason that is now measured rather than assumed: every
+remaining field is a number or a `-`, and removing them changes nothing. What is left in the decode is digit
+parsing, and §37 bounds the whole decode at 4.2 ms before §49/§50 took most of it.
