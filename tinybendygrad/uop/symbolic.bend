@@ -2907,6 +2907,121 @@ def sym_rewrite(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 def sym(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sym_rewrite(sym_table(), x, u)
 
+# ===========================================================================
+# THE `Found` FAMILY -- the SAME TABLE, the SAME ORDER, and an answer that CARRIES THE ARENA.
+#
+# WHY IT EXISTS. `sym` answers `Maybe<&1, U32>`: an index and NO ARENA. A rule whose body MINTS
+# therefore cannot answer at all -- it can only return an index into an arena the caller never
+# sees. MEASURED: 55 of the 88 MISSING rules mint, so the majority of what is left is blocked by
+# the ANSWER TYPE and not by the rule. `gates/symclosure-gate.py` pins that as
+# `wall.sym_rewrite_index_only True`.
+#
+# THIS IS ADDITIVE AND NOT A REWRITE, and the shape is the port's own `pm_rewrite_m` /
+# `pm_rewrite_f` pair in `ops.bend`: one table, two scanners, and the scanner is chosen by what
+# its rules answer. The 54 index-only bodies are UNTOUCHED -- `sy_lift` wraps them against the
+# CALLER's arena, which is exact for a body that does not mint (a mint would have to be visible
+# in `Arena.next`, and `sy_lift` does not read it).
+#
+# THE ORDER IS ONE SCAN AND NOT TWO PASSES. Minting rules sit INTERLEAVED with index-only ones in
+# upstream's first-wins order (`:87` before `:120`, `:202` after `:197`), so a "minting pass
+# first" would be right for `:87` and wrong for `:202`. `sym_dispatch_f` picks the family PER
+# ENTRY and `sym_scan_f` keeps the same fold.
+def sy_lift(m: Maybe<&1, U32>, +ar: O.Arena) -> Maybe<&1, O.Found>:
+  match m:
+    case None{} : None{}
+    case Some{i}: Some{O.Found{ar, i}}
+
+# `UOp.const(v, dt)` AT AN EXPLICIT ARENA, carrying the arena `O.UOp.const` grew.
+def sy_cconst_f.mk(+f: O.Found, dt: S.Dt) -> Maybe<&1, O.Found>:
+  Some{mint_cast(f, O.Found.i(f), dt)}
+
+def sy_cconst_f.go(tv: Maybe<&1, O.Const>, +ar: O.Arena, dt: S.Dt) -> Maybe<&1, O.Found>:
+  match tv:
+    case Some{w}: sy_cconst_f.mk(O.UOp.const(ar, w), dt)
+    case None{}: None{}
+
+def sy_cconst_f(+ar: O.Arena, +dt: S.Dt, v: O.Const) -> Maybe<&1, O.Found>:
+  sy_cconst_f.go(sy_trunc(dt, v), ar, dt)
+
+# `UOp.ccast(dtype)` -- the CONST branch mints a const, the other branch casts the node. Both
+# carry the arena here, which is the whole difference from `sy_ccast`.
+def sy_ccast_f.of(is_const: Bool, v: Maybe<&2, O.Const>, +ar: O.Arena, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
+  match is_const:
+    case True{} : sy_cconst_f(ar, dt, sy_maybe_c2(v))
+    case False{}: Some{mint_cast(O.Found{ar, u}, u, dt)}
+
+def sy_ccast_f(+x: F.Folded, +u: U32, dt: S.Dt) -> Maybe<&1, O.Found>:
+  sy_ccast_f.of(sy_is_const(x, u), sy_val(x, u), sy_ar(x), u, dt)
+
+# `fold_const_where` answering with the arena -- `symbolic.py:202`'s `ccast` branch, which is the
+# one claim this lane could not keep. `go` false means the branch already has the strong dtype,
+# so the answer is that branch and nothing is minted.
+def sy_fcw_f.emit(go: Bool, +ret: U32, +x: F.Folded, +u: U32, dt: S.Dt) -> Maybe<&1, O.Found>:
+  match go:
+    case False{}: Some{O.Found{sy_ar(x), ret}}
+    case True{} : sy_ccast_f(x, ret, dt)
+
+def sy_fcw_f(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +ret = sy_fcw_pick(sy_val_truthy(x, sy_src0(x, u)), sy_src1(x, u), sy_src2(x, u))
+  sy_fcw_f.emit(Bool.and(sy_is_const(x, ret),
+                         Bool.and(dt_weak_of(sy_dt1(x, ret)),
+                                  Bool.not(dt_weak_of(sy_dt1(x, u))))),
+                ret, x, u, sy_dt1(x, u))
+
+# THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
+# `match` on the tag and the list is what says which tags it must have an arm for.
+def MINT_TAGS() -> List<&2, U32>: [46]
+
+def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match tag:
+    case 46: sy_fcw_f(x, u)
+    case _ : None{}
+
+def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match mint:
+    case True{} : sym_mint_f(tag, x, u)
+    case False{}: sy_lift(sym_dispatch(tag, x, u), sy_ar(x))
+
+def sym_dispatch_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sym_dispatch_f.pick(List.contains(U32, U32.is_eq, MINT_TAGS(), tag), tag, x, u)
+
+# The `ret is not uop` test, `ops.py:1605`, on the FOUND's index.
+def sy_novel_f.hit(same: Bool, +f: O.Found) -> Maybe<&1, O.Found>:
+  match same:
+    case True{}: None{}
+    case _     : Some{f}
+
+def sy_novel_f(+self: U32, m: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+f}: sy_novel_f.hit(U32.is_eq(O.Found.i(f), self), f)
+    case None{} : None{}
+
+def sy_keep_f.go(acc: Maybe<&1, O.Found>, v: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match acc:
+    case Some{f}: Some{f}
+    case _      : v
+
+def sym_try_f.pick(ok: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: sy_novel_f(u, sym_dispatch_f(tag, x, u))
+    case _     : None{}
+
+def sym_try_f(ts: O.PMEntrys, +x: F.Folded, +u: U32, +e: O.PMEntry) -> Maybe<&1, O.Found>:
+  sym_try_f.pick(Bool.and(O.op_in(O.PMEntry.ops(e), O.Arena.op(sy_ar(x), u)),
+                          O.pm_early(ts, sy_ar(x), u, O.PMEntry.rej(e))),
+                 O.PMEntry.tag(e), x, u)
+
+def sym_scan_f(+ts: O.PMEntrys, +x: F.Folded, +u: U32, todo: List<&2, O.PMEntry>, acc: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match todo:
+    case Nil{}  : acc
+    case e <> t : sym_scan_f(ts, x, u, t, sy_keep_f.go(acc, sym_try_f(ts, x, u, e)))
+
+def sym_rewrite_f(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sym_scan_f(ts, x, u, O.PMEntrys.es(ts), None{})
+
+def sym_f(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sym_rewrite_f(sym_table(), x, u)
+
 # `pm_remove_invalid` -- symbolic.py:104-108, and BOTH rules are ported.
 # symbolic.py:105  (invalid_gate.named("w"),
 #                     lambda cond,x,i,w: w.replace(src=(cond,x,w.const_like(0))))
