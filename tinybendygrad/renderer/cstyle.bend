@@ -142,8 +142,25 @@ type KUArg is Data:
   # helper's NAME from both: `WMMA_{'_'.join(dims)}_{dt_in.name}_{dt_out.name}`.
   KAWmma{dims: List<&2, U32>, dt_in: S.Dt}
 
+# `r` IS THE RENDERED TEXT OF EVERY UOP, STORED NEWEST-FIRST BEHIND ITS OWN LENGTH.
+# cstyle.py keeps it as a dict keyed by UOp, which is O(1) in both directions; a `List` charges the
+# ABSOLUTE INDEX for a lookup and THE WHOLE PREFIX for an append or a set (MEASURED: `rt` 233,235 of the
+# 292,446 list steps a 405-uop render still took after §76, `List_set` another 0.64 ms a turn). Reversed,
+# `st_put` is a CONS, `st_set` on the current uop is index 0, and `rt`'s index is the SRC-TO-CURRENT
+# DISTANCE -- MEASURED on the wire, 72.9 mean against 168.5 absolute. `PARITY.md` §77.
+type Rows is Data:
+  Rows{ts: List<&2, String>, n: U32}
+
+def Rows.ts(x: Rows) -> List<&2, String>:
+  match x:
+    case Rows{ts, n}: ts
+
+def Rows.n(x: Rows) -> U32:
+  match x:
+    case Rows{ts, n}: n
+
 type St is Data:
-  St{r: List<&2, String>, kernel: List<&2, String>, bufs: List<&2, BArg>,
+  St{r: Rows, kernel: List<&2, String>, bufs: List<&2, BArg>,
      c: List<&2, U32>, depth: U32, name: String}
 
 type DtN is Data:
@@ -1476,8 +1493,8 @@ def range_str.go(+ids: List<&2, U32>, +acc: String) -> String:
 def range_str(+ids: List<&2, U32>) -> String:
   range_str.go(ids, "")
 
-def rt(r: List<&2, String>, i: U32) -> String:
-  Maybe.default(&2, String, List.get(&2, String, r, U32.to_nat(i)), "")
+def rt(+r: Rows, +i: U32) -> String:
+  Maybe.default(&2, String, List.get(&2, String, Rows.ts(r), U32.to_nat(U32.sub(U32.sub(Rows.n(r), 1), i))), "")
 
 # **A 16-WAY BLOCKED VIEW, BECAUSE `List.get` IS O(INDEX) AND THIS LIST IS INDEXED 1,915 TIMES PER
 # RENDER.** `ku_at` was 292,722 of the 805,127 list steps a 405-uop render took (MEASURED, `PARITY.md` §76).
@@ -1567,7 +1584,7 @@ def ku_swizzle(n: U32) -> String:
 def ku_index_is_const_cast(+kus: List<&2, List<&2, KU>>, +idx: U32) -> Bool:
   Bool.and(ku_is_cast_at(kus, idx), ku_is_const_at(kus, ku_src0_at(kus, idx)))
 
-def ku_render_index.global(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_render_index.global(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   String.concat(["(", rt(r, KU.src0(k)), "+",
     Bool.pick(String, KUArg.index_is_add(KU.arg(k)), H.strip_parens(rt(r, KU.src1(k))), rt(r, KU.src1(k))), ")"])
 
@@ -1576,14 +1593,14 @@ def ku_render_index.global(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: L
 # OPS THE CPU LANE NEEDS. THE ORDER IS UPSTREAM'S ORDER, AND THE ORDER IS THE
 # RULE: the CONST arms come BEFORE the generic CAST arm.
 # ===========================================================================
-def ku_text_if(dev: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_if(dev: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   String.concat(["if (", rt(r, KU.src0(k)), ") {"])
 
 # `  if (!({ctx[c]})) {\n break;\n}\n}` -- cstyle.py:20.
-def ku_text_backedge(dev: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_backedge(dev: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   String.concat(["  if (!(", rt(r, KU.src0(k)), ")) {\n break;\n}\n}"])
 
-def ku_text_buffer(dev: U32, i: U32, +k: KU, +r: List<&2, String>) -> String:
+def ku_text_buffer(dev: U32, i: U32, +k: KU, +r: Rows) -> String:
   render_buffer(dev, KU.dtype(k), KU.numel(k), KU.addr(k), rt(r, i))
 
 # `f"__{_wmma_name(x)}({ctx[x.src[0]]}, {ctx[x.src[1]]}, {ctx[x.src[2]]})"` -- cstyle.py:63.
@@ -1593,7 +1610,7 @@ def ku_wmma_name(+k: KU) -> String:
   wmma_name_of(wmma_dims(KUArg.wmma_dims(KU.arg(k))), dt_name(KUArg.wmma_dt_in(KU.arg(k))),
     dt_name(KU.dtype(k)))
 
-def ku_text_wmma(dev: U32, +k: KU, +r: List<&2, String>) -> String:
+def ku_text_wmma(dev: U32, +k: KU, +r: Rows) -> String:
   String.concat(["__", ku_wmma_name(k), "(", rt(r, KU.src0(k)), ", ", rt(r, KU.src1(k)), ", ",
     rt(r, KU.src2(k)), ")"])
 
@@ -1612,7 +1629,7 @@ def ku_strips(+op: O.Op) -> Bool:
 # kernel's arguments), `c` (the six prefix counters), `depth` (the indent) and
 # `name` (the kernel's name, from the SINK).
 # ===========================================================================
-def St.r(s: St) -> List<&2, String>:
+def St.r(s: St) -> Rows:
   match s:
     case St{r, kernel, bufs, c, depth, name}: r
 
@@ -1636,17 +1653,19 @@ def St.name(s: St) -> String:
   match s:
     case St{r, kernel, bufs, c, depth, name}: name
 
-def St.of(+r: List<&2, String>, +kernel: List<&2, String>, +bufs: List<&2, BArg>,
+def St.of(+r: Rows, +kernel: List<&2, String>, +bufs: List<&2, BArg>,
           +c: List<&2, U32>, depth: U32, name: String) -> St: St{r, kernel, bufs, c, depth, name}
 
 # `r` GROWS BY ONE ENTRY PER UOP, INCLUDING THE SKIPPED ONES, because `r` IS
 # INDEXED BY THE UOP'S POSITION AND THE POSITIONS OF THE LATER UOPS MUST NOT
 # MOVE.
 def st_put(+st: St, x: String) -> St:
-  St.of(List.append(&2, String, St.r(st), [x]), St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+  St.of(Rows{List.append(&2, String, [x], Rows.ts(St.r(st))), U32.add(Rows.n(St.r(st)), 1)},
+    St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
 
 def st_set(+st: St, i: U32, x: String) -> St:
-  St.of(List.set(&2, String, St.r(st), U32.to_nat(i), x), St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+  St.of(Rows{List.set(&2, String, Rows.ts(St.r(st)), U32.to_nat(U32.sub(U32.sub(Rows.n(St.r(st)), 1), i)), x),
+    Rows.n(St.r(st))}, St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
 
 def st_kernel(+st: St, x: String) -> St:
   St.of(St.r(st), List.append(&2, String, St.kernel(st), [x]), St.bufs(st), St.c(st), St.depth(st), St.name(st))
@@ -1784,7 +1803,7 @@ def ku_range_name(+arg: KUArg) -> String:
 # `r` IS THE NAME/TEXT MAP AND IT IS INDEXED BY THE UOP'S POSITION, because the
 # uop list is POST-ORDER. `rt` READS IT.
 # ===========================================================================
-def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>,                    +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows,                    +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match ss:
     case Nil{}: acc
     case h <> t:
@@ -1792,7 +1811,7 @@ def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, 
         [Bool.pick(String, Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)),
           H.strip_parens(rt(r, h)), rt(r, h))]))
 
-def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> List<&2, String>:
+def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_alu_srcs.go(op, k, kus, r, KU.srcs(k), Nil{})
 
 def ku_inline2b1(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
@@ -1825,7 +1844,7 @@ def uops_to_dtypes.put(+x: DtN, +acc: List<&2, DtN>) -> List<&2, DtN>:
   Bool.pick(List<&2, DtN>, uops_to_dtypes.has(x, acc),
     acc, List.append(&2, DtN, acc, [x]))
 
-def ku_text_alu(dev: U32, +op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_alu(dev: U32, +op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   code_for_op.of(dev, op, ku_alu_srcs(op, k, kus, r), KU.dtype(k))
 def ku_inline2b2(+op: O.Op, +k: KU) -> Bool:
   Bool.or(ku_inline2b2a(op, k), ku_inline2b2b(op, k))
@@ -2215,7 +2234,7 @@ def ku_const_cast_f32(+dt: S.Dt, +dev: U32, k: KU, +f: F32) -> String:
               U.f32_repr(f)))))
 
 # THE GENERIC CAST: `f"({ctx.render_cast(x, ctx[x.src[0]])})"` (cstyle.py:40).
-def ku_cast_generic(dev: U32, +k: KU, +r: List<&2, String>) -> String:
+def ku_cast_generic(dev: U32, +k: KU, +r: Rows) -> String:
   String.concat(["(", render_cast(dev, KU.dtype(k), KU.numel(k), KU.addr(k), O.OpsCAST{}, False{}, rt(r, KU.src0(k))), ")"])
 
 # ===========================================================================
@@ -2238,27 +2257,27 @@ def ku_cast_generic(dev: U32, +k: KU, +r: List<&2, String>) -> String:
 #   * the GLOBAL arm is `(buf+idx)`, and the index's parens are stripped ONLY
 #     when the index's OWN arg is `Ops.ADD`.
 # ===========================================================================
-def ku_const_cast_flt.go(m: Maybe<&1, F32>, dev: U32, +k: KU, +r: List<&2, String>) -> String:
+def ku_const_cast_flt.go(m: Maybe<&1, F32>, dev: U32, +k: KU, +r: Rows) -> String:
   match m:
     case Some{f}: ku_const_cast_f32(KU.dtype(k), dev, k, f)
     case None{}: ku_cast_generic(dev, k, r)
 
-def ku_const_cast_flt(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_const_cast_flt(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_const_cast_flt.go(ku_const_float_at(kus, KU.src0(k)), dev, k, r)
 
-def ku_const_cast2.go(m: Maybe<&1, H.I64>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_const_cast2.go(m: Maybe<&1, H.I64>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   match m:
     case Some{i}: ku_const_cast_int(KU.dtype(k), dev, k, i)
     case None{}: ku_const_cast_flt(dev, k, kus, r)
 
-def ku_const_cast2(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_const_cast2(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_const_cast2.go(ku_const_int_at(kus, KU.src0(k)), dev, k, kus, r)
 
-def ku_const_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_const_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
     ku_const_cast2(dev, k, kus, r), ku_cast_generic(dev, k, r))
 
-def ku_render_index.aluconst.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                                  +r: List<&2, String>) -> String:
+def ku_render_index.aluconst.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                                  +r: Rows) -> String:
   match m:
     case Some{b}:
       Bool.pick(String, U32.is_gt(KU.numel(b), gep_arr_threshold.of(dev)),
@@ -2266,24 +2285,24 @@ def ku_render_index.aluconst.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&
         String.concat([rt(r, KU.src0(k)), ".", ku_swizzle(ku_const_val(kus, ku_src0_at(kus, KU.src1(k))))]))
     case None{}: ""
 
-def ku_render_index.aluconst(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_render_index.aluconst(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_render_index.aluconst.go(ku_at(kus, KU.src0(k)), dev, k, kus, r)
 
-def ku_render_index.aluarm.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_render_index.aluarm.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   match m:
     case Some{b}:
       Bool.pick(String, ku_index_is_const_cast(kus, KU.src1(k)),
         ku_render_index.aluconst(dev, k, kus, r),
         String.concat(["(", rt(r, KU.src0(k)), ")[", rt(r, KU.src1(k)), ")"]))
     case None{}: ""
-def ku_render_index.aluarm(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_render_index.aluarm(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_render_index.aluarm.go(ku_at(kus, KU.src0(k)), dev, k, kus, r)
 
-def ku_render_index(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_render_index(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   Bool.pick(String, is_alu_addr(KU.addr(k)), ku_render_index.aluarm(dev, k, kus, r),
     ku_render_index.global(dev, k, kus, r))
 
-def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   Bool.pick(String, O.eq_dt(KU.dtype(k), S.void()), "for (;;) {",
     String.concat(["for (", render_dtype(dev, KU.dtype(k), 1, S.Aalu{}, True{}, False{}, False{}), " ",
       rt(r, i), " = 0; ", rt(r, i), " < ", rt(r, KU.src0(k)), "; ", rt(r, i), "++) {"]))
@@ -2293,7 +2312,7 @@ def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: L
 # of `ku_text_go` called the outer one, which called the inner one, so a CAST line evaluated
 # `ku_is_const_at` twice and BOTH arms twice: `ku_const_cast2` and `ku_cast_generic` each ran twice and one of
 # each was thrown away. MEASURED in `PARITY.md` §38. One call, byte-identical.
-def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_const_cast(dev, k, kus, r)
 
 # ===========================================================================
@@ -2337,12 +2356,12 @@ def bitcast_text(+dev: U32, +a: S.Addr, +d: S.Dt, +sd: S.Dt, +s: String) -> Stri
     case S.ALocal{}: String.concat(["(((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
     case _: bitcast_named(dev, d, sd, s)
 
-def ku_text_bitcast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_bitcast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   bitcast_text(dev, KU.addr(k), KU.dtype(k), ku_dt_at(kus, KU.src0(k)), rt(r, KU.src0(k)))
 
 # `f"({ctx.render_access(bidx)})"` (cstyle.py:57) AND
 # `f"({ctx[gate]}?{ctx.render_access(bidx)}:{ctx[var]})"` (cstyle.py:58-59).
-def ku_ptr.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, +b: KU, kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_ptr.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, +b: KU, kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   match m:
     case Some{s}:
       Bool.pick(String, Bool.or(U32.is_gt(KU.numel(b), 1), Bool.not(O.eq_dt(KU.dtype(b), KU.dtype(s)))),
@@ -2350,27 +2369,27 @@ def ku_ptr.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, +b: KU, kus: List<&2, List<&
           rt(r, ai), "))"]),
         rt(r, ai))
     case None{}: ""
-def ku_ptr(dev: U32, +ai: U32, +b: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_ptr(dev: U32, +ai: U32, +b: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_ptr.go(ku_at(kus, KU.src0(b)), dev, ai, b, kus, r)
-def ku_access.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, k: KU, kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_access.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, k: KU, kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   match m:
     case Some{b}: String.concat(["*", ku_ptr(dev, ai, b, kus, r)])
     case None{}: "*"
-def ku_access(dev: U32, +ai: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_access(dev: U32, +ai: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_access.go(ku_at(kus, KU.src0(k)), dev, ai, k, kus, r)
-def ku_text_load(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_load(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   Bool.pick(String, U32.is_eq(KU.nsrc(k), 3),
     String.concat(["(", rt(r, KU.src2(k)), "?", ku_access(dev, KU.src0(k), k, kus, r), ":", rt(r, KU.src1(k)), ")"]),
     String.concat(["(", ku_access(dev, KU.src0(k), k, kus, r), ")"]))
-def ku_text_store(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_store(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   String.concat([ku_access(dev, KU.src0(k), k, kus, r), " = ", rt(r, KU.src1(k)), ";"])
-def ku_stack_srcs.go(+ss: List<&2, U32>, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>,
+def ku_stack_srcs.go(+ss: List<&2, U32>, +kus: List<&2, List<&2, KU>>, +r: Rows,
                     acc: List<&2, String>) -> List<&2, String>:
   match ss:
     case Nil{}: acc
     case h <> t: ku_stack_srcs.go(t, kus, r, List.append(&2, String, acc, [rt(r, h)]))
 
-def ku_stack_srcs(+k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> List<&2, String>:
+def ku_stack_srcs(+k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_stack_srcs.go(KU.srcs(k), kus, r, Nil{})
 
 # cstyle.py:52-54 -- `f"{ctx.float4.replace('float4', ctx.render_type(x))}"`. THE REPLACE IS
@@ -2395,11 +2414,11 @@ def float4_with(+dev: U32, +t: String) -> String:
     # which is how this line was found. The anchor is a WITNESS and duplicating it blinds it.
     case _: float4.of(dev)
 
-def ku_text_stack(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text_stack(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   String.concat([float4_with(dev, render_type(dev, KU.dtype(k), KU.numel(k), KU.addr(k), KU.op(k), False{})),
     float4_open(dev), String.join(ku_stack_srcs(k, kus, r), ","), float4_close(dev)])
 
-def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   match op:
     case O.OpsRANGE{}: ku_text_range(dev, i, k, kus, r)
     case O.OpsEND{}: "}"
@@ -2427,11 +2446,11 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, 
 # IT IS A STATEMENT, not an expression: the workitem id, a `;`, and a comment holding the
 # SPECIAL's SOURCE's rendered text (`/* 32 */`). `code_for_workitem.g` already answers the
 # id and already refuses base/Clang, which is what CPython's empty dict does.
-def ku_text_special(+dev: U32, +k: KU, +r: List<&2, String>) -> String:
+def ku_text_special(+dev: U32, +k: KU, +r: Rows) -> String:
   String.concat([code_for_workitem.g(dev, KUArg.special_axis(KU.arg(k)), KUArg.special_n(KU.arg(k))),
     "; /* ", rt(r, KU.src0(k)), " */"])
 
-def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: List<&2, String>) -> String:
+def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_text.go(KU.op(k), dev, i, k, kus, r)
 
 # THE WRITABLE PARAMS -- cstyle.py:214-215:
@@ -2534,7 +2553,7 @@ def _render.go(+walk: List<&2, KU>, +all: List<&2, List<&2, KU>>, +dev: U32, +i:
     case Nil{}: st
     case h <> t: _render.go(t, all, dev, U32.add(i, 1), _render.one(dev, i, h, all, st))
 def _render(dev: U32, +kus: List<&2, KU>) -> St:
-  _render.go(kus, chunks_of(kus), dev, 0, St.of(Nil{}, Nil{}, Nil{},
+  _render.go(kus, chunks_of(kus), dev, 0, St.of(Rows{Nil{}, 0}, Nil{}, Nil{},
     List.replicate(U32, 6n, 0), 1, "test"))
 def uops_to_dtypes.go(+kus: List<&2, KU>, acc: List<&2, DtN>) -> List<&2, DtN>:
   match kus:
@@ -2697,5 +2716,5 @@ def render(+dev: U32, cpu: Bool, +kus: List<&2, KU>) -> String:
 
 # THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
 def render_r(dev: U32, kus: List<&2, KU>) -> List<&2, String>:
-  St.r(_render(dev, kus))
+  Rows.ts(St.r(_render(dev, kus)))
 

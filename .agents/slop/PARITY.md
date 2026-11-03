@@ -3338,3 +3338,56 @@ portexec e2e 7/7 · emit-mm and emit-f64 byte-identical to the §75 render
 **⇒ AND THE ONE MISTAKE WORTH RECORDING IS THE CHUNK ORDER**: `chunk_close` APPENDS each finished block, so
 the outer list is already in forward order and the `List.reverse` I wrote first inverted it -- MEASURED
 `0 of 37` on both decoders, every kernel differing, which is exactly the failure the corpus exists to catch.
+
+## 77. `rt` WAS 80% OF EVERY LIST STEP LEFT: `St.r` REVERSED BEHIND ITS OWN LENGTH, 0.8583
+
+After §76 the render's `List.get` total was 292,446, and one site was 79.8% of it:
+
+```
+rt        233,235   <- the rendered text of a uop, by absolute index
+ku_at      19,187
+live_fld   18,463   (decode)
+ku_at_go   16,370
+```
+
+`rt` is `cstyle.py`'s `r: dict[UOp, str]` -- O(1) both ways in Python -- spelled as a `List` indexed by
+position. The same list is also built by `st_put` (`List.append`, O(n)) and patched by `st_set`
+(`List.set`, O(n)), which the profile priced at **0.32 + 0.64 ms a turn**.
+
+### 77.1 Newest-first behind a length
+
+`St.r` becomes `Rows{ts, n}` holding the text NEWEST-FIRST, so:
+
+| operation | before | after |
+|---|---|---|
+| `st_put` (append) | `List.append`, O(n) | CONS, **O(1)** |
+| `st_set` (current uop) | `List.set`, O(i) | index `n-1-i` = **0** |
+| `rt` (lookup) | `List.get`, O(i) | index `n-1-i` = the **src-to-current distance** |
+
+MEASURED from the wire: the absolute index averages 168.5, the distance **72.9** -- and the distance is
+what the render actually needs, because a uop almost always refers to something recent.
+
+**AND THE CHANGE IS ONE TYPE PLUS TWO ACCESSORS, BECAUSE THE PARAMETER IS STILL NAMED `r`.** The identifier
+does not move, so all 36 signatures and every call site are untouched; only `st_put`, `st_set` and `rt`
+change bodies. (`render_r` needed `Rows.ts` because it returns the list itself.)
+
+### 77.2 Measured
+
+```
+same C: True | bytes: 4426
+before median 7.76 ms   after median 6.65 ms
+ratio min 0.7262  p25 0.8314  median 0.8583  max 1.3261   23 of 24 faster
+```
+
+**THE BEST SINGLE SLICE OF THE SESSION AFTER §53's PACKAGING**, and it is a *deletion of work* rather than a
+cheaper route to the same work: two O(n) operations become O(1) and one O(i) lookup halves.
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec e2e 7/7 · emit-mm and emit-f64 byte-identical
+```
+
+**⇒ AND ONE NEAR-MISS WORTH RECORDING**: the first pass rewrote `r: List<&2, String>` with a regex that had
+no left word boundary and matched **`caller:`** inside `Emit_`, changing a field of a different record. The
+compiler caught it (`expected: List<&2, String>, observed: R` at `Emit_.caller`), which is the only reason it
+is a blemish in this paragraph and not a defect in the port.
