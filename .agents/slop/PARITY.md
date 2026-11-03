@@ -2104,3 +2104,49 @@ src list, or a mutable counter), and the other needs a tokenizer that is not the
 split. Both are real work with a measured prize, and the prize is now a NUMBER rather than a hope:
 ~20 ms of a ~47 ms command is allocated in `List.set`, and ~4 ms is spent splitting text that a cheaper
 encoding would not need split.
+
+## 47. `child_count` COSTS 6%, NOT 20% -- §46's NUMBER WAS WRONG AND THIS CORRECTS IT
+
+§46 counted calls and inferred a cost: 162 272 `List.set` calls, 22.6% of all calls, *"~20 ms of a ~47 ms
+command"*. That inference reused §36's `0.02 s` against `0.02 s` probe, which §46 had just finished calling
+wrong. **The call count was right and the cost derived from it was still wrong**, and the difference is a
+factor of seven.
+
+### 47.1 The two things measured here
+
+**(a) The fused walk, built and measured.** `cc_inc` replaces `List.get` + `List.set` with one recursive walk
+that increments as it rebuilds -- half the cons cells per source, byte-identical (`ksweep 37 of 37` on both
+decoders):
+
+```
+before (get+set)   min 44.8  p25 45.6  median 45.8 ms
+after  (one walk)  min 46.0  p25 46.6  median 46.9 ms
+ratio new/old  min 0.9550  p25 0.9986  median 1.0231  max 1.1246   4 of 12 faster
+```
+
+**SLOWER, SO REVERTED.** The fused version adds a `List.append` and a nested `match` per level, and against a
+component this small the overhead is the whole effect.
+
+**(b) The component's true cost, by plant.** `child_count` replaced by `List.replicate(n, 0)` -- the same
+length, no histogram -- 12 interleaved rounds:
+
+```
+real                min 44.9  p25 45.5  median 46.0 ms
+histogram skipped   min 42.4  p25 43.0  median 43.1 ms
+ratio  min 0.9079  p25 0.9349  median 0.9408  max 1.0880   11 of 12 faster
+```
+
+**6% OF THE COMMAND -- ABOUT 2.9 ms, NOT 20 ms.** 162 272 `List.set` calls, each cheap, are worth less than
+three milliseconds. **A CALL COUNT IS NOT A COST**, and §46 presented one as the other.
+
+### 47.2 The retraction, twice
+
+| section | said | truth |
+|---|---|---|
+| §36 | "does not reproduce; 0.02 vs 0.02 at 10 ms resolution" | the lead was real, the instrument was too coarse |
+| §46 | "~20 ms of a ~47 ms command" | **2.9 ms, 6%, 11 of 12 rounds** |
+
+**THE CORRECTED PICTURE IS UNCHANGED IN SHAPE AND SMALLER IN EVERY NUMBER**: of the ~21 ms render, no
+component exceeds ~3 ms, the ten axes already measured stand, and the remaining cost is spread thinner than
+any hypothesis in this record has assumed. **THE RENDER IS FLAT BECAUSE IT IS A THOUSAND THINGS OF TWO
+MILLISECONDS, NOT BECAUSE THE INSTRUMENT IS BLUNT.**
