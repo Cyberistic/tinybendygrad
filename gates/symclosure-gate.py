@@ -132,7 +132,10 @@ def table_rows() -> list[tuple[int, int]]:
     """(tag, cited upstream line) for `sym_table()` ALONE -- `rm_table()` is a second tag space."""
     text = (PKG / "uop/symbolic.bend").read_text(errors="ignore")
     lo, hi = text.index("def sym_table() -> O.PMEntrys:"), text.index("def rm_table() -> O.PMEntrys:")
-    return [(int(t), int(c)) for t, c in re.findall(r"O\.PMEntry\{(\d+),.*?# (\d+)", text[lo:hi])]
+    # THE CITATION MAY NAME ITS FILE: `divandmod.py:101` and `symbolic.py:101` are different
+    # rules on the same line number, so a bare-integer regex silently drops the prefixed rows.
+    return [(int(t), int(re.search(r"(\d+)$", c).group(1)))
+            for t, c in re.findall(r"O\.PMEntry\{(\d+),.*?# ([\w.]+(?::\d+)?)", text[lo:hi])]
 
 
 def match_arms(defname: str) -> dict[int, str]:

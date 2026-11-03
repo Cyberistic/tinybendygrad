@@ -3690,6 +3690,100 @@ def sym_276(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_276.pat(x, u), mint_const_v(sym_276.vc(F.UOp.vmin(ar, bt, u)), mint_ar(ar), sy_dt1(x, u)))
 
 
+# divandmod.py:101 -- `(x//c + a)//d -> (x + a*c)//(c*d)` for `c>0, d>0`.
+#
+# `div_and_mod_symbolic` is composed at the END of `sym` (`symbolic.py:326`:
+# `])+div_and_mod_symbolic+pm_uncast_const`), so these rules sit after `:473` in the table and
+# FIRST-WINS still holds. The guard is `d.vmin > 0`, and `d` is a CONST, so its bound is its
+# value.
+def dm_101.i(+x: F.Folded, +u: U32) -> U32: sy_src0(x, u)
+
+def dm_101.v(+x: F.Folded, +u: U32) -> U32: Sw.b(p_const(x, dm_101.i(x, u)))
+
+def dm_101.a(+x: F.Folded, +u: U32) -> U32: Sw.a(p_const(x, dm_101.i(x, u)))
+
+def dm_101.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = dm_101.i(x, u)
+  +v = dm_101.v(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(Bool.and(sy_is_const(x, sy_src1(x, u)), p_const_pos(x, sy_src1(x, u))),
+      Bool.and(Bool.and(sy_is_op(x, i, O.OpsADD{}), sy_nsrc_is(x, i, 2)),
+        Bool.and(Sw.ok(p_const(x, i)),
+          Bool.and(Bool.and(sy_is_op(x, v, O.OpsFLOORDIV{}), sy_nsrc_is(x, v, 2)),
+            sy_is_const(x, sy_src1(x, v)))))))
+
+def dm_101.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +v = dm_101.v(x, u)
+  +m1 = mint_bin(mint_ar(sy_ar(x)), O.OpsMUL{}, dm_101.a(x, u), sy_src1(x, v))
+  +s1 = mint_bin(m1, O.OpsADD{}, sy_src0(x, v), O.Found.i(m1))
+  +m2 = mint_bin(s1, O.OpsMUL{}, sy_src1(x, v), sy_src1(x, u))
+  Some{mint_bin(m2, O.OpsFLOORDIV{}, O.Found.i(s1), O.Found.i(m2))}
+
+def dm_101(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(dm_101.pat(x, u), dm_101.mk(x, u))
+
+# divandmod.py:103 -- `(x+c)//d -> (x + c%d)//d + c//d` and `(x+c)%d -> (x + c%d)%d`, for any
+# `d != 0`, and only when `c % d != c` (otherwise the constant is already inside the range and
+# the rewrite would loop).
+def dm_103.n(+x: F.Folded, +u: U32) -> U32: Sw.b(p_const(x, sy_src0(x, u)))
+
+def dm_103.c(+x: F.Folded, +u: U32) -> U32: Sw.a(p_const(x, sy_src0(x, u)))
+
+def dm_103.pat(+x: F.Folded, +u: U32) -> Bool:
+  +n = sy_src0(x, u)
+  Bool.and(Bool.or(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_is_op(x, u, O.OpsFLOORMOD{})),
+    Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sy_is_const(x, sy_src1(x, u))),
+      Bool.and(Bool.and(sy_is_op(x, n, O.OpsADD{}), sy_nsrc_is(x, n, 2)), Sw.ok(p_const(x, n)))))
+
+def dm_103.quo2(m: Maybe<&1, O.Found>, +s1: O.Found, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+k}:
+      +d = mint_bin(k, O.OpsFLOORDIV{}, O.Found.i(s1), sy_src1(x, u))
+      Some{mint_bin(d, O.OpsADD{}, O.Found.i(d), O.Found.i(k))}
+    case None{}: None{}
+
+def dm_103.quo(+s1: O.Found, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  dm_103.quo2(mint_const_like(s1, x, dm_103.n(x, u), O.CInt{H.i64_div(c, j)}), s1, x, u)
+
+def dm_103.byop(is_mod: Bool, +s1: O.Found, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match is_mod:
+    case True{} : Some{mint_bin(s1, O.OpsFLOORMOD{}, O.Found.i(s1), sy_src1(x, u))}
+    case False{}: dm_103.quo(s1, c, j, x, u)
+
+def dm_103.put(m: Maybe<&1, O.Found>, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32, +n: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+r}:
+      # A MATCH CANNOT SCRUTINIZE A CALL: the op test is read into a `Bool` parameter first.
+      dm_103.byop(sy_is_op(x, u, O.OpsFLOORMOD{}),
+        mint_bin(r, O.OpsADD{}, dm_103.n(x, u), O.Found.i(r)), c, j, x, u)
+    case None{}: None{}
+
+# A LINEAR `Maybe` IS A `Type` AND NOT A `Data`, so it cannot be bound with `+` and read
+# twice: the const is minted inside the call that consumes it.
+def dm_103.mk(+c: H.I64, +j: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  dm_103.put(mint_const_like(mint_ar(sy_ar(x)), x, dm_103.n(x, u), O.CInt{H.i64_mod(c, j)}),
+             c, j, x, u, sy_src0(x, u))
+
+def dm_103.go(gate: Bool, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match gate:
+    case True{} : dm_103.mk(c, j, x, u)
+    case False{}: None{}
+
+def dm_103.dv(m: Maybe<&2, O.Const>, +c: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{O.CInt{+j}}:
+      dm_103.go(Bool.and(Bool.not(Cmp.is_eq(H.i64_cmp(j, H.i64_of_i32(0)))),
+                          Bool.not(Cmp.is_eq(H.i64_cmp(H.i64_mod(c, j), c)))), c, j, x, u)
+    case _: None{}
+
+def dm_103.cv(m: Maybe<&2, O.Const>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{O.CInt{c}}: dm_103.dv(sy_val(x, sy_src1(x, u)), c, x, u)
+    case _: None{}
+
+def dm_103(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(dm_103.pat(x, u), dm_103.cv(sy_val(x, dm_103.c(x, u)), x, u))
+
 # symbolic.py:458  (UPat(Ops.STORE, src=(UPat(), invalid_pat), name="x"),
 #                     lambda i,x: UOp(Ops.NOOP).after(*x.src))
 # A STORE WHOSE VALUE IS INVALID STORES NOTHING: the node becomes `NOOP.after(*srcs)`, which is
@@ -4235,16 +4329,18 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{97, [O.OpsAFTER{}], Nil{}, },   # 318
     O.PMEntry{98, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
     O.PMEntry{99, [O.OpsEND{}], Nil{}, },   # 324
-    O.PMEntry{100, [O.OpsSTORE{}], Nil{}, },   # 453
-    O.PMEntry{101, [O.OpsSTORE{}], Nil{}, },   # 454
-    O.PMEntry{102, [O.OpsSTORE{}], Nil{}, },   # 458
-    O.PMEntry{103, [O.OpsSTORE{}], Nil{}, },   # 460
-    O.PMEntry{104, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{105, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{106, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{107, [O.OpsMUL{}], Nil{}, },   # 471
-    O.PMEntry{108, [O.OpsMUL{}], Nil{}, },   # 473
-    O.PMEntry{109, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{100, [O.OpsFLOORDIV{}], Nil{}, },   # divandmod.py:101
+    O.PMEntry{101, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}, },   # divandmod.py:103
+    O.PMEntry{102, [O.OpsSTORE{}], Nil{}, },   # 453
+    O.PMEntry{103, [O.OpsSTORE{}], Nil{}, },   # 454
+    O.PMEntry{104, [O.OpsSTORE{}], Nil{}, },   # 458
+    O.PMEntry{105, [O.OpsSTORE{}], Nil{}, },   # 460
+    O.PMEntry{106, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{107, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{108, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{109, [O.OpsMUL{}], Nil{}, },   # 471
+    O.PMEntry{110, [O.OpsMUL{}], Nil{}, },   # 473
+    O.PMEntry{111, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -4619,7 +4715,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4692,16 +4788,18 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 96: sym_316(x, u)
     case 97: sym_318(x, u)
     case 99: sym_324(x, u)
-    case 100: sym_453(x, u)
-    case 101: sym_454(x, u)
-    case 102: sym_458(x, u)
-    case 103: sym_460(x, u)
-    case 104: sym_462(x, u)
-    case 105: sym_463(x, u)
-    case 106: sym_464(x, u)
-    case 107: sym_471(x, u)
-    case 108: sym_473(x, u)
-    case 109: sym_444(x, u)
+    case 100: dm_101(x, u)
+    case 101: dm_103(x, u)
+    case 102: sym_453(x, u)
+    case 103: sym_454(x, u)
+    case 104: sym_458(x, u)
+    case 105: sym_460(x, u)
+    case 106: sym_462(x, u)
+    case 107: sym_463(x, u)
+    case 108: sym_464(x, u)
+    case 109: sym_471(x, u)
+    case 110: sym_473(x, u)
+    case 111: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:

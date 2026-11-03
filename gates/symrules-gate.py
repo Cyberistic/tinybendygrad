@@ -132,11 +132,16 @@ def main():
   def is_subseq(sub, whole):
     it = iter(whole)
     return all(any(x == y for y in it) for x in sub)
-  sym_pool = [r["line"] for r in rows if r["file"] == "symbolic.py"]
-  rm_pool = [r["line"] for r in rm_rows if r["file"] == "symbolic.py"]
-  if not is_subseq([c_ for c_ in cited[:len(tables.get("sym_table", []))]], sym_pool):
+  # THE ORDER IS A SEQUENCE OF (FILE, LINE) AND NOT OF LINES. `divandmod.py` and `weak.py` are
+  # composed into `sym` (`symbolic.py:326`) and their line numbers COLLIDE with symbolic's, so a
+  # line-only pool cannot see a `divandmod.py:101` citation at all -- and a citation that cannot
+  # be matched reads as an out-of-order row.
+  sym_pool = [(r["file"], r["line"]) for r in rows]
+  rm_pool = [(r["file"], r["line"]) for r in rm_rows]
+  port_seq = [(e.get("cited_file", "symbolic.py"), e["cited"]) for e in tables.get("sym_table", [])]
+  if not is_subseq(port_seq, sym_pool):
     problems.append("ORDER: sym_table is not a subsequence of upstream's order")
-  rm_cited = [e["cited"] for e in tables.get("rm_table", [])]
+  rm_cited = [(e.get("cited_file", "symbolic.py"), e["cited"]) for e in tables.get("rm_table", [])]
   if not is_subseq(rm_cited, rm_pool):
     problems.append("ORDER: rm_table is not a subsequence of upstream's pm_remove_invalid order")
 

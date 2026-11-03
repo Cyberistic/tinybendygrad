@@ -288,8 +288,13 @@ def port_tables():
       # row that cannot go red. MEASURED 2026-11-03 on `:162` (`NARROW:1-of-27`) and `:230`
       # (`1-of-8`): both declared their full sets and both read as one.
       rest = ln[e.end():]
-      cite = re.search(r"#\s*(\d+)\s*$", rest)
-      cited = int(cite.group(1)) if cite else None
+      # THE CITATION NAMES ITS FILE WHEN IT IS NOT `symbolic.py`. `divandmod.py` and `weak.py`
+      # are composed into `sym` (`symbolic.py:326`) and their line numbers COLLIDE with
+      # symbolic's -- `divandmod.py:101` and `symbolic.py:101` are different rules on the same
+      # number -- so a bare integer cannot say which rule a row ports.
+      cite = re.search(r"#\s*(?:([A-Za-z_0-9]+\.py):)?(\d+)\s*$", rest)
+      cited = int(cite.group(2)) if cite else None
+      cited_file = (cite.group(1) or "symbolic.py") if cite else "symbolic.py"
       if cite: rest = rest[:cite.start()]
       if rest.startswith("["):
         depth = 0
@@ -309,7 +314,8 @@ def port_tables():
       for h in helpers:
         if re.search(r"\b" + h + r"\(\)", body):
           ops = sorted(set(ops) | set(helpers[h]))
-      tables[cur].append({"tag": int(e.group(1)), "ops": ops, "cited": cited})
+      tables[cur].append({"tag": int(e.group(1)), "ops": ops, "cited": cited,
+                          "cited_file": cited_file})
   return tables
 
 
@@ -348,7 +354,8 @@ def verify(rows, rm_rows, tables):
       # `*((...) for op in GroupOp.Associative)`, which spawns FIVE patterns on the same line,
       # and first-match mapped every port row to whichever one happened to be first. The
       # mapping is by CITATION AND OP SET: an exact set wins, then any covering set.
-      cands = [c for c in pool if c["file"] == "symbolic.py" and c["line"] == e["cited"]]
+      cands = [c for c in pool if c["file"] == e.get("cited_file", "symbolic.py")
+               and c["line"] == e["cited"]]
       exact = [c for c in cands if set(c["ops"]) == set(e["ops"])]
       cover = [c for c in cands if set(e["ops"]) <= set(c["ops"])]
       up = (exact or cover or cands or [None])[0]
