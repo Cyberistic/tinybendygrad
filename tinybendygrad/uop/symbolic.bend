@@ -3651,14 +3651,14 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{73, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 266
     O.PMEntry{74, [O.OpsADD{}], Nil{}, },   # 269
     O.PMEntry{75, [O.OpsADD{}], Nil{}, },   # 272
-    O.PMEntry{76, [O.OpsMAX{}], Nil{}, },   # 284
-    O.PMEntry{77, [O.OpsOR{}], Nil{}, },   # 284
-    O.PMEntry{78, [O.OpsAND{}], Nil{}, },   # 284
-    O.PMEntry{79, [O.OpsADD{}], Nil{}, },   # 284
-    O.PMEntry{80, [O.OpsMUL{}], Nil{}, },   # 284
-    O.PMEntry{81, [O.OpsFLOORDIV{}], Nil{}, },   # 287
-    O.PMEntry{82, [O.OpsWHERE{}], Nil{}, },   # 279
-    O.PMEntry{83, [O.OpsWHERE{}], Nil{}, },   # 278
+    O.PMEntry{76, [O.OpsWHERE{}], Nil{}, },   # 278
+    O.PMEntry{77, [O.OpsWHERE{}], Nil{}, },   # 279
+    O.PMEntry{78, [O.OpsMAX{}], Nil{}, },   # 284
+    O.PMEntry{79, [O.OpsOR{}], Nil{}, },   # 284
+    O.PMEntry{80, [O.OpsAND{}], Nil{}, },   # 284
+    O.PMEntry{81, [O.OpsADD{}], Nil{}, },   # 284
+    O.PMEntry{82, [O.OpsMUL{}], Nil{}, },   # 284
+    O.PMEntry{83, [O.OpsFLOORDIV{}], Nil{}, },   # 287
     O.PMEntry{84, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
     O.PMEntry{85, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
     O.PMEntry{86, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
@@ -4086,14 +4086,14 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 73: sym_266(x, u)
     case 74: sym_269(x, u)
     case 75: sym_272(x, u)
-    case 76: sym_284(x, u)
-    case 77: sym_284(x, u)
+    case 76: sym_278(x, u)
+    case 77: sym_279(x, u)
     case 78: sym_284(x, u)
     case 79: sym_284(x, u)
     case 80: sym_284(x, u)
-    case 81: sym_287(x, u)
-    case 82: sym_279(x, u)
-    case 83: sym_278(x, u)
+    case 81: sym_284(x, u)
+    case 82: sym_284(x, u)
+    case 83: sym_287(x, u)
     case 84: sym_462(x, u)
     case 85: sym_463(x, u)
     case 86: sym_464(x, u)
