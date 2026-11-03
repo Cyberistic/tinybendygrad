@@ -2674,3 +2674,39 @@ i = 0..n-1 is `n^2/2` either way. The shape is symmetric; only random access fix
 2.9% + `List_get` 1.9% self, with the walks attributed to their callers) **AND WITH THE SCALING** (§37: render
 7.3 ms at 46 uops, 18.7 at 219, 27.7 at 405 -- superlinear, not quadratic, because the average index grows
 with n while the fixed cost does not).
+
+## 61. `rt` TWICE IN ONE PICK: HOISTED, MEASURED SLOWER, REVERTED
+
+§60's call count named `rt` at **3.7 calls per uop** -- the most-called function in the render, an O(index)
+walk down the rendered-name table -- so the obvious next question was whether any of those calls are
+duplicates. One is:
+
+```bend
+Bool.pick(String, cast_needed,
+  String.concat(["((", render_dtype(...), ")(", rt(r, ai), "))"]),
+  rt(r, ai))                      # SAME EXPRESSION, BOTH ARMS, STRICT PICK
+```
+
+`rt(r, ai)` is evaluated twice and one walk is discarded -- the §33/§34 pattern exactly. Hoisted into
+`ku_ptr_at(cast, dev, b, x)` with `x = rt(r, ai)` computed once, byte-identical (`ksweep 37 of 37` on both
+decoders):
+
+```
+same C: True
+ratio new/old  min 0.8367  p25 0.9866  median 1.0439  max 1.1160   5 of 12 faster
+```
+
+**NOT A WIN: MEDIAN 1.0439 AND FIVE OF TWELVE, SO REVERTED.** And the reason is measurable rather than
+mysterious: an `rt` walk to index i is i cons steps, and the average i in this kernel is ~200, but the hoist
+ADDS a function call (`ku_ptr_at`) and an extra argument to every pointer rendering -- so it trades ~200 cheap
+steps for a call plus argument passing, and on this kernel that is a loss.
+
+**THE PATTERN HAS NOW FAILED FOUR TIMES** (§37 one fold for another, §40 the index form, §41 the nested picks,
+§61 this duplicate) **and SUCCEEDED FOUR TIMES** (§33 seven decimals, §34 four casts, §38 the doubled
+conditional, §39 the statement built for inlined uops). **THE DIFFERENCE IS NOT "DUPLICATE WORK" -- IT IS
+WHETHER THE WORK REMOVED IS MORE EXPENSIVE THAN THE CALL ADDED.** All four that paid removed work costing
+tens of microseconds per uop (a decimal fold, a whole cast render, a whole statement); this one removes a
+200-step walk, which is microseconds.
+
+**⇒ AND THAT IS THE LAST DUPLICATE §60's COUNTS EXPOSE.** `st_put`, `_render.one_go` and `emit` are already at
+1.0 per uop; `cc_at`'s 2.5 and `rt`'s 3.7 are calls the render makes for different indices, not repeats.
