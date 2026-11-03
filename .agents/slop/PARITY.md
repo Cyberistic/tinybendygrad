@@ -2899,3 +2899,50 @@ run that makes 682 252 calls, and V8/Bun's young generation makes it near-free.
 **⇒ SO THE ANSWER TO "WHAT IS THE 40%?" IS THE SAME FROM THREE INSTRUMENTS**: the profile (11.6% across four
 sites), the call counts (everything at 1.0-6 per uop), and the plants (text 31% spread over 15 arms). **IT IS
 THE COST OF INTERPRETING A 405-UOP LIST IN A LANGUAGE WITH NO MUTABLE CONTAINER, AND THAT IS THE PORT.**
+
+## 67. THE DECODE IS 21% AND IS BOUNDED BY CHARACTERS, WHICH §49/§50 ALREADY CUT 34%
+
+The proposal was to replace the decoder's `String.split` with a positional fixed-width parse or a
+pre-tokenized argument list. Before building one, the prize was bounded -- both probes PACKED (§53/§54), so
+the start-up cancels:
+
+```
+packed floor              12.6 ms
+decode-only floor         13.1 ms
+decode only, 405 uops     17.1 ms  -> decode ~4.1 ms
+decode + render           32.5 ms  -> render ~15.4 ms
+shares: decode 21%   render 79%
+```
+
+**4.1 ms IS THE WHOLE DECODE, AND IT AGREES WITH §48'S 0.15 us/char** over the 8 704-byte wire plus the
+per-line splits (~7 000 characters of splitting, ~1-1.3 ms, plus the field parsing).
+
+### 67.1 Why no parser beats it
+
+Every parse the language offers walks characters:
+
+* `String.split` is a per-character recursion (`langs/js/core.js:357`) -- that IS the 4.1 ms;
+* `String.get(i)` walks to `i`, so a positional parser is worse, not better;
+* passing one argument per line moves the newline split into per-argument splits over the same characters;
+* a pre-tokenized argument list would need `IO.args()` -- a LINEAR list read once, so it cannot carry one
+  token per field across a kernel.
+
+**SO THE DECODE'S COST IS `k x characters` AND THE ONLY LEVER IS FEWER CHARACTERS.** §49 cut 27% and §50 9%
+(worth 0.8903 and 0.9244 TOGETHER WITH the lookup removal), and §51 tested a further 9% cut with the lookups
+already gone: **1.0044, neutral** -- 3 096 characters at 0.15 us/char is 0.46 ms, about 2% of the work, which
+is below what this instrument resolves.
+
+**⇒ AND THAT IS THE BOUND: another 50% of the wire would be ~1.5 ms, ~8% of a one-shot render, and the wire is
+already 34% shorter than when this stretch began.** A positional parser cannot reach even that, because it
+would still walk every character once.
+
+### 67.2 The split, for the record
+
+| term | one-shot, 405 uops | share |
+|---|---|---|
+| packed start | 12.6 ms | -- |
+| decode | 4.1 ms | 21% of the work |
+| render | 15.4 ms | 79% of the work |
+
+and the render decomposes (§56) into text 3.1 + histogram 1.7 + types 1.2 + loop 4.0 at the DAEMON's 10 ms,
+which is the same proportions with the JIT warm-up removed.
