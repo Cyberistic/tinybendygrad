@@ -1383,9 +1383,9 @@ def xpow.ret(+ar: O.Arena, +base: U32, +ex: U32) -> Xp:
 # int32 CAST both operands are ints (elementwise.py:216), and its `2` is the
 # fixture's OWN `C(2)`, so `a_xpow26` reads slot 7 and not a fresh CONST. The
 # trailing `.cast(dtypes.bool)` is a REAL CAST and `a_xpow27` is the row.
-def xpow.flags(+xp: Xp, +ex: U32) -> Xp:
+def xpow.flags(+xp: Xp, +ex: U32, +edt: S.Dt) -> Xp:
   +ci = tx_cast(Xp.ar(xp), ex, S.int32())
-  +cf = tx_cast(O.Found.ar(ci), O.Found.i(ci), S.single())
+  +cf = tx_cast(O.Found.ar(ci), O.Found.i(ci), edt)
   +ni = tx_alu2(O.Found.ar(cf), O.OpsCMPNE{}, ex, O.Found.i(cf))
   +z = tx_pintf(O.Found.ar(ni), 0)
   +lo = tx_alu2(O.Found.ar(z), O.OpsCMPLT{}, ex, O.Found.i(z))
@@ -1433,9 +1433,9 @@ def xpow.tail(+xp: Xp, +nb: O.Found, +base: U32, +ex: U32) -> O.Found:
 # produced inside an argument expression and read only through `.i` is DROPPED,
 # and `a_xpow28`..`a_xpow34` are seven nodes the gate could not see. `n_xpow`
 # read 34 against the oracle's 41.
-def xpow(+ar: O.Arena, +base: U32, +ex: U32) -> O.Found:
+def xpow(+ar: O.Arena, +base: U32, +ex: U32, +edt: S.Dt) -> O.Found:
   +xp = xpow.ret(ar, base, ex)
-  +fp = xpow.flags(xp, ex)
+  +fp = xpow.flags(xp, ex, edt)
   +nb = xpow.negbase(fp, base)
   xpow.tail(fp, nb, base, ex)
 
@@ -1522,16 +1522,16 @@ def tx_tab.at(+t: O.PMEntrys, +i: U32) -> O.PMEntry:
 # `decomp.bend` reads the entry's op and hands it here; that is the whole of the
 # duplicated scan. The SQRT rule's body is `lambda d: xpow(d, d.const_like(0.5))`
 # -- line 276 -- so the half is minted first.
-def tx_t_apply.sqrt(+ar: O.Arena, +d: U32) -> O.Found:
+def tx_t_apply.sqrt(+ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   +h = tx_cf(ar, 0.5)
-  xpow(O.Found.ar(h), d, O.Found.i(h))
+  xpow(O.Found.ar(h), d, O.Found.i(h), dt)
 
 def tx_t_apply(+op: O.Op, +ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
   match op:
     case O.OpsEXP2{}: xexp2(ar, d, tx_d64(dt))
     case O.OpsLOG2{}: xlog2(ar, d, tx_d64(dt))
     case O.OpsSIN{}: xsin(ar, d, dt, tx_d64(dt), False{}, 30.0)
-    case _: tx_t_apply.sqrt(ar, d)
+    case _: tx_t_apply.sqrt(ar, d, dt)
 
 # ===========================================================================
 # THE FIXTURE. ONE ARENA, addressed BY INDEX, and it is REBUILT FRESH for every
@@ -1726,7 +1726,7 @@ def w_xlog2() -> O.Arena:
   O.Found.ar(xlog2(t_fixtures(), t_d(), False{}))
 
 def w_xpow() -> O.Arena:
-  O.Found.ar(xpow(t_fixtures(), t_d(), t_c2f()))
+  O.Found.ar(xpow(t_fixtures(), t_d(), t_c2f(), S.single()))
 
 # `dtypes.floats` -- dtype.py:213 -- IS A TABLE in this order, and BOTH `dtype=`
 # conjuncts of the table are read off it. The oracle prints the DType's ATTRIBUTE
