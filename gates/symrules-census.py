@@ -93,7 +93,7 @@ ROWS = os.path.join(ROOT, "gates", "symrules.rows")
 
 # THE PIN, as a NAME. The string is the human-facing one; the blob ids in the table's
 # header are the machine-facing one, and the gate checks those.
-PIN = "5c2bf39d6c4b"
+PIN = "f5ac54685074"
 
 
 def blob_id(path):
