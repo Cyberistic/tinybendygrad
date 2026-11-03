@@ -38,9 +38,12 @@ from tinygrad.uop.ops import UOp, Ops
 from tinygrad import dtypes
 from tinygrad.uop.symbolic import sym
 
-DT = {"weakint": dtypes.weakint, "bool": dtypes.bool, "i32": dtypes.int32,
-      "u32": dtypes.uint32, "i64": dtypes.int64, "u64": dtypes.uint64,
-      "f32": dtypes.float32, "weakfloat": dtypes.weakfloat}
+# THE SAME SET THE PORT'S `fz_dt` NAMES. A case file that can spell a dtype the oracle
+# cannot build is a case the oracle refuses, and `can_lossless_cast` needs widths.
+DT = {"weakint": dtypes.weakint, "bool": dtypes.bool, "i8": dtypes.int8, "u8": dtypes.uint8,
+      "i16": dtypes.int16, "u16": dtypes.uint16, "i32": dtypes.int32, "u32": dtypes.uint32,
+      "i64": dtypes.int64, "u64": dtypes.uint64, "f16": dtypes.float16, "bf16": dtypes.bfloat16,
+      "f32": dtypes.float32, "f64": dtypes.float64, "weakfloat": dtypes.weakfloat}
 
 
 class Tok:

@@ -178,6 +178,7 @@ import ./../LAWS/spec.bend as S
 import ./ops.bend as O
 import ./fold.bend as F
 import ./render.bend as R
+import ./../dtype.bend as D
 
 # THE PRELUDE. Everything symbolic.py GETS FROM ELSEWHERE, in dependency order,
 # because Bend has no forward references and mutual recursion is refused. Every
@@ -2749,6 +2750,32 @@ def sym_173.vsrc(+x: F.Folded, +u: U32) -> U32:
 def sym_173(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_173.pat(x, u), mint_const_like(mint_ar(sy_ar(x)), x, sym_173.vsrc(x, u), O.CInt{H.i64_of_i32(1)}))
 
+# symbolic.py:186  (UPat.var('x').cast(name="a").cast(name="b"),
+#                     lambda x,a,b: x if x.dtype == b.dtype and can_lossless_cast(b.dtype, a.dtype) else None)
+# A CAST THAT RETURNS TO ITS OWN WIDTH: `b` is the OUTER dtype, `a` the inner one, and the
+# guard is `can_lossless_cast(b, a)` -- b's values must survive a round trip through a.
+# The answer is `x` itself, so this rule stays in the index lane.
+def sym_186.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsCAST{}), sy_nsrc_is(x, u, 1)),
+    Bool.and(Bool.and(sy_is_op(x, i, O.OpsCAST{}), sy_nsrc_is(x, i, 1)),
+      Bool.and(O.eq_dt(sy_dt1(x, sy_src0(x, i)), sy_dt1(x, u)),
+        D.can_lossless_cast(sy_dt1(x, u), sy_dt1(x, i)))))
+
+def sym_186(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+  sy_tri_u(sym_186.pat(x, u), sy_src0(x, sy_src0(x, u)))
+
+# symbolic.py:188  (UPat(Ops.BITCAST, name="b", src=(UPat.var('x').bitcast(),)),
+#                     lambda x,b: x.bitcast(b.dtype))
+# A BITCAST IS NOT A CONVERSION, so two of them COMPOSE into one at the OUTER dtype.
+def sym_188.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsBITCAST{}), sy_nsrc_is(x, u, 1)),
+    Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsBITCAST{}), sy_nsrc_is(x, sy_src0(x, u), 1)))
+
+def sym_188(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_188.pat(x, u),
+    Some{mint_bitcast(mint_ar(sy_ar(x)), sy_src0(x, sy_src0(x, u)), sy_dt1(x, u))})
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3020,16 +3047,18 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{48, [O.OpsMUL{}],                     Nil{},                           },   # 178
     O.PMEntry{49, OP_CASTS(),                       Nil{},                           },   # 181
     O.PMEntry{50, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
-    O.PMEntry{51, [O.OpsCAST{}],                    Nil{},                           },   # 189
-    O.PMEntry{52, [O.OpsPOW{}],                     Nil{},                           },   # 191
-    O.PMEntry{53, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
-    O.PMEntry{54, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
-    O.PMEntry{55, [O.OpsWHERE{}],                  Nil{},                           },   # 201
-    O.PMEntry{56, [O.OpsWHERE{}],                  Nil{},                           },   # 202
-    O.PMEntry{57, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{58, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{59, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{60, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{51, [O.OpsCAST{}], Nil{}, },   # 186
+    O.PMEntry{52, [O.OpsBITCAST{}], Nil{}, },   # 188
+    O.PMEntry{53, [O.OpsCAST{}],                    Nil{},                           },   # 189
+    O.PMEntry{54, [O.OpsPOW{}],                     Nil{},                           },   # 191
+    O.PMEntry{55, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
+    O.PMEntry{56, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
+    O.PMEntry{57, [O.OpsWHERE{}],                  Nil{},                           },   # 201
+    O.PMEntry{58, [O.OpsWHERE{}],                  Nil{},                           },   # 202
+    O.PMEntry{59, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{60, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{61, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{62, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3096,9 +3125,10 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 48: sym_178(x, u)
     case 49: sym_181(x, u)
     case 50: sym_183(x, u)
-    case 53: sym_196(x, u)
-    case 54: sym_197(x, u)
-    case 55: sy_wself(x, u)
+    case 51: sym_186(x, u)
+    case 55: sym_196(x, u)
+    case 56: sym_197(x, u)
+    case 57: sy_wself(x, u)
     case _: None{}
 
 def sym_dispatch(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -3394,7 +3424,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 51, 52, 56, 57, 58, 59, 60]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3418,13 +3448,14 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 44: sym_168(x, u)
     case 45: sym_169(x, u)
     case 46: sym_173(x, u)
-    case 51: sym_189(x, u)
-    case 52: sym_191(x, u)
-    case 56: sy_fcw_f(x, u)
-    case 57: sym_462(x, u)
-    case 58: sym_463(x, u)
-    case 59: sym_464(x, u)
-    case 60: sym_444(x, u)
+    case 52: sym_188(x, u)
+    case 53: sym_189(x, u)
+    case 54: sym_191(x, u)
+    case 58: sy_fcw_f(x, u)
+    case 59: sym_462(x, u)
+    case 60: sym_463(x, u)
+    case 61: sym_464(x, u)
+    case 62: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -4770,15 +4801,25 @@ def fz_toks(+s: String) -> List<&2, Tok>:
 # THE VOCABULARY. A head token is the op's own `Ops.name` in lower case, so a typo
 # cannot hide: the driver PRINTS `Ops.name`, so a head it did not recognise comes
 # back as `NOOP`.
+# THE DTYPE SET THE CASE FILE CAN NAME, and it is the whole of `spec.bend`'s, because a
+# pattern's dtype constraint is written in the FIXTURE: `:186` asks `can_lossless_cast(b, a)`
+# and a corpus that could only say `i32` could not state a lossless or a lossy pair at all.
 def fz_dt(nm: String) -> S.Dt:
   match nm:
     case "weakint": S.weakint()
     case "bool": S.boolean()
+    case "i8": S.int8()
+    case "u8": S.uint8()
+    case "i16": S.int16()
+    case "u16": S.uint16()
     case "i32": S.int32()
     case "u32": S.uint32()
     case "i64": S.int64()
     case "u64": S.uint64()
+    case "f16": S.half()
+    case "bf16": S.bfloat16()
     case "f32": S.single()
+    case "f64": S.double()
     case "weakfloat": S.weakfloat()
     case _: S.void()
 
