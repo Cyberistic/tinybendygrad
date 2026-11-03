@@ -121,13 +121,25 @@ Twelve files stand between the tree and 1:1 outside `runtime/autogen/`, and **ni
 semantics at all** — they are the `__init__` markers and stubs the tree's own convention already
 prescribes (`tinybendygrad/engine/__init__.bend` is the precedent: six lines for a zero-line upstream).
 
-| file(s) | upstream lines | treatment |
+**MEASURED 2026-11-03 AFTER LANDING THE MARKERS AND THE `amd` STUB: the non-`autogen` gap is FOUR
+FILES, 1051 lines, all of them `llm/`.** Port `.bend` 190 -> 197, no-port 100 -> 92 (88 of those are
+`autogen`). Seven files landed: `llm/__init__`, `llm/kernels/__init__`, `llm/kernels/amd` (the declared
+stub), and the five `__init__` markers `renderer/{amd,isa}`, `runtime/support/{am,nv,rdma}`.
+
+**AND TWO OF THOSE SEVEN ARE NOT EMPTY, WHICH THE FIRST DRAFT GOT WRONG.** `renderer/isa/__init__.py` is
+50 lines defining the `Register` algebra and `renderer/amd/__init__.py` is 75 lines of AMD
+instruction-format decoding; the generator wrote "Empty upstream (75 lines)" for both. Corrected by
+reading them: `isa` is a REAL GAP (its `Register` appears in `x86.bend` only as `TODO(p3)` markers) and
+`amd` is DECLARED OUT OF SCOPE (`TODO.md`, "Out of scope -- needs hardware we do not have", which names
+`renderer/amd/` by path). Both files now state that instead of claiming emptiness.
+
+| what remains | upstream lines | treatment |
 |---|---|---|
-| `renderer/amd/__init__`, `renderer/isa/__init__`, `runtime/support/{am,nv,rdma}/__init__` | 0 each (5 files) | **marker-only** `.bend`, engine precedent |
-| `llm/__init__`, `llm/kernels/__init__` | 0 each (2 files) | **marker-only** `.bend` |
-| `llm/kernels/amd.py` | 811 | **documented not-ported stub** — the disposition `TODO.md:5187` already declares for it |
-| `llm/__main__.py` | 1 | trivial: the `main()` guard |
+| `llm/__main__.py` | 2 | trivial, and it waits on `cli`: it IS the `if __name__ == "__main__": main()` guard |
 | `llm/cli.py` · `llm/model.py` · `llm/serve.py` | 223 · 650 · 176 | **the only real port work left** |
+
+Landed this pass (7 files): the two `llm` markers, `llm/kernels/amd`'s declared stub, and the five
+`__init__` markers. `renderer/isa/__init__` is recorded as a REAL GAP rather than a marker (see above).
 
 Note the count: my §4 census reported `__init__` as 5 because it excluded `llm/` from that bucket; the
 `__init__` total missing outside `autogen` is 7, plus `renderer/amd` which has 4 ports and no marker.
