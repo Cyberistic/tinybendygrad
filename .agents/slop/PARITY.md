@@ -1786,3 +1786,37 @@ controls=5 of 5   conflations=4 of 4
 rather than a commit -- so this reading covers both, and the previous attempt at a certificate for `542286312`
 straddled (`start 229cae27` against `end 1277bfa2`) because §39 was edited into the tree mid-run. **THE ORDER
 IS THE RULE THAT KEEPS BEING VIOLATED: freeze `.bend`, THEN take the reading.**
+
+## 40. THE REMAINING STRICT PICKS: ONE NEUTRAL (REVERTED), THREE NOT WORTH TAKING
+
+§39 mechanised the cure for the `Bool.pick` class and named the sites it had not converted. This section
+took them in order of expected value and found the well is nearly dry.
+
+### 40.1 Taken, measured, reverted
+
+`render_index.alu2` was the one CPU-path site whose two arms were both EXPENSIVE -- a whole
+`render_index.alu` (a `String.concat` plus a `gep_uses_idx`/`const_idx_str`/`swizzle_letter` pick) against a
+whole `(...+...)` fallback -- so every index line built both.
+
+```
+before (both arms)  min 45.2  p25 45.8  median 46.1 ms
+after  (one arm)    min 45.4  p25 45.6  median 45.9 ms
+ratio new/old  min 0.8960  p25 0.9900  median 0.9960  max 1.0270
+rounds where the new artifact is faster: 7 of 12
+```
+
+**NOT RESOLVED -- 7 of 12 and a median of 0.9960 -- SO REVERTED.** Byte-identical (`ksweep 37 of 37` on both
+decoders) and still not kept: §38's `0.9888 at 8/12` was the weakest change this record kept, and this is
+weaker than that on both statistics.
+
+### 40.2 Not taken, and why each one is not worth a corpus run
+
+| site | why not |
+|---|---|
+| `_render.pop` (`cstyle.bend:1708`) | the arms are `st_depth(st, depth-1)` and `st` -- a record update against the identity. There is no work to remove. |
+| `_render.push` (`:1713`) | the same, `st_depth(+1)` against `st`. |
+| `_render.one.go`'s `OpsSTACK` arm (`:2501`) | the strict pick builds `_render.named` even when `nsrc == 0`, but `nsrc == 0` is the RARE case for a STACK, so the common path pays nothing to fix. |
+
+**SO THE CLASS IS EXHAUSTED WHERE IT PAYS**: three of the four remaining sites have nothing to remove, and the
+fourth measured neutral. The four that paid (§33, §34, §38, §39) each had an EXPENSIVE arm being thrown away,
+and those were found by reading the call tree, not by grepping for `Bool.pick`.
