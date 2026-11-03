@@ -3244,6 +3244,51 @@ def sym_248.pat(+x: F.Folded, +u: U32) -> Bool:
                 Bool.or(Bool.and(p_mul_c(x, sy_src0(x, i)), p_same(sym_245.vside(x, sy_src0(x, i)), z)),
                         Bool.and(p_mul_c(x, sy_src1(x, i)), p_same(sym_245.vside(x, sy_src1(x, i)), z)))))))
 
+# **THE GUARD `:259`/`:261` CARRY AND THIS BODY DID NOT:**
+#   fits(x, c.vmin+1) and no_overflow(m:=x*(c+1))
+# The increment must fit the operand, and the PRODUCT must fit its own dtype at both ends of its
+# range. `no_overflow` is `fits(u, u.vmin) and fits(u, u.vmax)` on the MINTED node, so it needs a
+# fold of the arena that node was minted into -- the same repair `:309`/`:311` needed.
+def sym_248.iv(m: Maybe<&2, O.Const>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{O.CInt{i}}: fits(dt, H.i64_add(i, H.i64_of_i32(1)))
+    case _: False{}
+
+def sym_248.fitc(c: O.Const, +dt: S.Dt) -> Bool:
+  match c:
+    case O.CInt{i}: fits(dt, i)
+    case _: Bool.not(dt_in(DTS_SINTS(), dt))
+
+def sym_248.bc(b: F.Bnd) -> O.Const:
+  match b:
+    case F.BndInt{neg, mag}: O.CInt{H.i64_neg(neg, mag)}
+    case _: O.CInvalid{}
+
+def sym_248.g1(m: Maybe<&2, O.Const>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{+c}: sym_248.fitc(c, dt)
+    case None{}: False{}
+
+def sym_248.bm(m: Maybe<&2, F.Bnd>) -> Maybe<&2, O.Const>:
+  match m:
+    case Some{+b}: Some{sym_248.bc(b)}
+    case None{}: None{}
+
+def sym_248.g2(m: Maybe<&2, F.Bnd>, +dt: S.Dt) -> Bool:
+  sym_248.g1(sym_248.bm(m), dt)
+
+def sym_248.no_ov(+f: O.Found, +i: U32) -> Bool:
+  +fd: F.Folded = F.folded(O.Found.ar(f))
+  +bt = F.mm.sweep(F.Folded.ar(fd), F.Folded.t(fd))
+  +dt = sy_dt1(fd, i)
+  Bool.and(sym_248.g2(F.UOp.vmin(O.Found.ar(f), bt, i), dt),
+           sym_248.g2(F.UOp.vmax(O.Found.ar(f), bt, i), dt))
+
+def sym_248.done(ok: Bool, +d: O.Found, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: Some{mint_bin(d, O.OpsADD{}, sym_248.y(x, u), O.Found.i(d))}
+    case _: None{}
+
 def sym_248.mk(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match m:
     case Some{+c1}:
@@ -3251,12 +3296,18 @@ def sym_248.mk(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Foun
       +c = sym_248.k(x, u)
       +s = mint_bin(c1, O.OpsADD{}, c, O.Found.i(c1))
       +d = mint_bin(s, O.OpsMUL{}, v, O.Found.i(s))
-      Some{mint_bin(d, O.OpsADD{}, sym_248.y(x, u), O.Found.i(d))}
+      sym_248.done(sym_248.no_ov(d, O.Found.i(d)), d, x, u)
     case None{}: None{}
 
+def sym_248.hit(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}:
+      sym_248.mk(mint_const_like(mint_ar(sy_ar(x)), x, sym_248.v(x, u), O.CInt{H.i64_of_i32(1)}), x, u)
+    case _: None{}
+
 def sym_248(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sy_tri_f(sym_248.pat(x, u),
-    sym_248.mk(mint_const_like(mint_ar(sy_ar(x)), x, sym_248.v(x, u), O.CInt{H.i64_of_i32(1)}), x, u))
+  sym_248.hit(Bool.and(sym_248.pat(x, u),
+    sym_248.iv(sy_val(x, sym_248.k(x, u)), sy_dt1(x, sym_248.v(x, u)))), x, u)
 
 # TWO NAMES AND ONE BODY, because the census resolves a rule by the LINE its table row cites.
 def sym_249(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_248(x, u)
