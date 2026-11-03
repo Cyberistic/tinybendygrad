@@ -604,3 +604,37 @@ WHAT IS STILL OPEN: how many passes, and the `CONST`/`SINK` fast paths. Both are
 THIS IS THE END OF THE `graph_rewrite` ROAD, and it cost four turns to learn that the wall was never a
 missing driver -- it was that the driver and the bodies live on opposite sides of an import edge that
 this tree deliberately enforces.
+
+## 2026-11-03 (final, 16): `uop_given_valid`'s TWO shapes, found the hard way and then reverted
+
+Attempting `uop_given_valid` (the `try_simplex=False` half, which is all `:437` needs) produced two
+findings and an incomplete def; the def was REVERTED unbuilt.
+
+**1. THE UPSERT IS A CHAIN, NOT A RECURSION.** The `defaultdict`'s `bounds[expr][int(is_upper)] = c`
+is a LAST-WINS upsert that writes ONE side and leaves the other. The obvious one-def version binds the
+list TAIL twice (once in the replace branch, once in the recurse branch) and Bend refuses: `rest
+(consumed more than once)`. The expressible shape is three defs that form a CHAIN and never a cycle:
+
+    bd.get(bs, e) -> Maybe<&2, Bd>        find, no callback
+    bd.rm (bs, e, acc)                    filter, no callback
+    bd.mk2(m, bs, e, up, c)               calls bd.rm
+    bd.add(bs, e, up, c) = bd.mk2(bd.get(bs, e), bs, e, up, c)
+
+and **the order is not preserved, which is invisible**: the only thing order could change is the
+`fake{i}` NUMBERING, and those names are substituted back out before the answer is returned.
+
+**2. THE CANDIDATE LIST MUST BE A LIST OF PAIRS, AND THE FLATTENED FORM DOES NOT FOLD.** `(expr,
+var)` pairs flattened to `[e0, v0, e1, v1, ...]` cannot be walked -- a list pattern binds ONE head and
+a tail, and a nested match on the tail is a match on a local binder. A `Cd{e, v}` record makes it one
+match again:
+
+    def ugv.fwd(cs: List<&2, Cd>, +f: O.Found) -> O.Found:
+      match cs:
+        case Nil{}: f
+        case +c <> rest: ugv.fwd(rest, s1.sub(O.Found.ar(f), O.Found.i(f), Cd.e(c), Cd.v(c)))
+
+with `ugv.bwd` the same def with `Cd.e`/`Cd.v` swapped; then `simplify`, substitute back, `simplify`,
+and answer the ORIGINAL when the index did not move (upstream's `is not uop` test).
+
+That is the whole remaining shape of `:437`'s dependency, and it is written down rather than left in a
+reverted buffer.
