@@ -1293,3 +1293,51 @@ a different byte). Verified on the default path: `ksweep 37 of 37 byte-identical
 **NO `.bend` FILE UNDER `tinybendygrad/` CHANGED IN THIS SECTION** (`serve.bend` lives in
 `.agents/slop/cpuseam/`, which is harness and not substrate), so the certificate is the one already on
 disk: `substrate-start == substrate-end == live == 81db633f2891…`, `38 graphs, 38 byte-identical`.
+
+## 31. THE SHIPPED PATH'S PROFILE, AND THE MAP THAT WAS STILL REBUILDING ITSELF
+
+Every profile in §26-§28 was taken on the LITERAL driver, which builds its KU list at module load (`gen_
+<name>_kus`, 4.9% of that profile and absent from the shipped path). This one is taken on the artifact the
+DAEMON loads -- `out/live-*.js`, the same decode and the same `C.render` -- with the 405-uop wire as its
+chunked argument, `--cpu-prof-interval=50`.
+
+### 31.1 What it said
+
+| self% | function |
+|---|---|
+| **17.5%** | **`nat_divmod`** |
+| 7.2% | `char_len` |
+| 2.2% | `helpers_i64_of_hi_lo` |
+| 1.5 / 1.1 / 1.0 / 1.0 | `Map_bit_go`, `Map_seek`, `Map_bit_go_chr`, `Map_bit_go` |
+
+`nat_divmod` in this runtime is a NATIVE `Math.trunc(a / b)` -- 20.2 ms of it cannot be arithmetic, it is a
+CALL COUNT -- and its only caller in the tree is **`Map_bit`**, the port's hashed trie. `char_len` is the
+`String` key hash. So the render was still paying for **`type_map.of(dev)`: a fourteen-to-sixteen-entry
+`Map` with `String` keys, BUILT ON EVERY CALL.**
+
+§27 cut that from six builds per dtype to one. One per dtype is still one per uop, and `checks/census.json`
+cites `type_map`, so the maps stay as the transcription of record -- but the LOOKUP did not have to be a map
+at all: upstream's `type_map.get(dtype, dtype.name)` is a dict with a default of the name itself, which is a
+`match` with a `_` arm.
+
+### 31.2 The change
+
+`rd_base_name` now dispatches with `match`: one arm per device (the six dicts, entry for entry, including the
+fp8 group that is ABSENT on OpenCL, the FNUZ pair on CUDA, and `bf16` NOT remapped on HIP), and a `_` that
+answers the dtype's own name. No `Map`, no hashing, no allocation.
+
+### 31.3 Measured, and the same bytes
+
+Direct A/B, both artifacts still on disk, same wire, same machine, 7 runs each:
+
+```
+before (map)    median 77.0 ms   min 75.7   out=4427B
+after (match)   median 57.2 ms   min 56.3   out=4427B
+```
+
+**1.35x**, and the output is identical to the byte. Re-profiled after the change, `nat_divmod` is GONE from
+the top ten and what leads is `helpers_div_fit_put` (20.5%) -- the restoring division inside `i64_dec`,
+which is §28's remaining subject.
+
+Verified byte-identical: `ksweep 37 of 37` on BOTH decoders, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`,
+`opbattery 39 of 39`, `cstyle.bend ALL PROOFS CHECK`.

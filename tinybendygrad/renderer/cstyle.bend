@@ -735,7 +735,81 @@ def rd_suffix(+a: S.Addr, override_ptr: Bool) -> String:
 # an approximation of it.
 def rd_name.of(vect: Bool, unders: String, plain: String) -> String:
   Bool.pick(String, vect, unders, plain)
-def rd_base_name(+dev: U32, +d: S.Dt) -> String: type_name(type_map.of(dev), d)
+# **THE TYPE NAME IS A MATCH, NOT A MAP, AND THAT IS A MEASURED CHANGE.** `type_map.of(dev)` BUILDS the
+# device's fourteen-to-sixteen-entry `Map` on every call, its keys are `String`s, and the port's `Map` is a
+# hashed trie: a profile of the SHIPPED path (`.agents/slop/cpuseam/out/live-*.js`, the artifact the daemon
+# loads) put `nat_divmod` at 17.5% and `char_len` at 7.2%, reached through `Map_bit` / `Map_bit_go` /
+# `Map_seek` / `Map_diff` -- i.e. hashing a dtype name and walking trie levels, once per dtype render.
+#
+# The six maps are the transcription of upstream's six dicts, each an OVERLAY on the base, and the lookup's
+# default is THE NAME ITSELF (`cstyle.py`'s `type_map.get(dtype, dtype.name)`). That is exactly a `match`
+# with a `_` arm, so the transcription survives -- it is just no longer a data structure that has to be
+# built before it can be read. THE SIX ARMS BELOW ARE THE SIX DICTS, entry for entry; the comments that
+# pin each one (the fp8 group ABSENT on OpenCL, `bf16` NOT remapped on HIP, the FNUZ pair on CUDA) live on
+# `type_map.*` above, which is kept as the transcription of record.
+
+def rd_base_plain(nm: String) -> String:
+  match nm:
+    case "i8": "signed char"
+    case "u8": "unsigned char"
+    case "i16": "short"
+    case "u16": "unsigned short"
+    case "i32": "int"
+    case "u32": "unsigned int"
+    case "i64": "long"
+    case "u64": "unsigned long"
+    case "f16": "half"
+    case "bf16": "__bf16"
+    case "f32": "float"
+    case "f64": "double"
+    case _: nm
+
+def rd_base_clang(nm: String) -> String:
+  match nm:
+    case "bool": "_Bool"
+    case "f16": "__fp16"
+    case _: rd_base_plain(nm)
+
+def rd_base_opencl(nm: String) -> String:
+  match nm:
+    case "i8": "char"
+    case "u8": "uchar"
+    case "u16": "ushort"
+    case "u32": "uint"
+    case "u64": "ulong"
+    case "bf16": "ushort"
+    case _: rd_base_plain(nm)
+
+def rd_base_metal(nm: String) -> String:
+  match nm:
+    case "u32": "uint"
+    case "bf16": "bfloat"
+    case _: rd_base_plain(nm)
+
+def rd_base_cuda(nm: String) -> String:
+  match nm:
+    case "fp8e5m2": "__nv_fp8_e5m2"
+    case "fp8e4m3": "__nv_fp8_e4m3"
+    case "bf16": "nv_bfloat16"
+    case "u32": "uint"
+    case _: rd_base_plain(nm)
+
+def rd_base_hip(nm: String) -> String:
+  match nm:
+    case "fp8e4m3": "hip_fp8"
+    case "fp8e5m2": "hip_bf8"
+    case "fp8e4m3fnuz": "hip_fp8"
+    case "fp8e5m2fnuz": "hip_bf8"
+    case _: rd_base_plain(nm)
+
+def rd_base_dev(dev: U32, nm: String) -> String:
+  match dev:
+    case 1: rd_base_clang(nm)
+    case 2: rd_base_opencl(nm)
+    case 3: rd_base_metal(nm)
+    case 4: rd_base_cuda(nm)
+    case 5: rd_base_hip(nm)
+    case _: rd_base_plain(nm)
 
 
 # **`rd_base_name` IS COMPUTED ONCE, AND THAT IS A MEASURED CHANGE.** `type_map.of(dev)` BUILDS the device's
@@ -745,6 +819,8 @@ def rd_base_name(+dev: U32, +d: S.Dt) -> String: type_name(type_map.of(dev), d)
 # was 58% of the whole render and `Map_set` inside `type_map_clang` was 53%, with `char_len` 15% (String-key
 # hashing walks the key a character at a time). Nothing about the answer changes: the same name is looked up
 # once instead of six times.
+def rd_base_name(+dev: U32, +d: S.Dt) -> String: rd_base_dev(dev, dt_name(d))
+
 def rd_name_at(+nm: String, vect: Bool) -> String:
   rd_name.of(Bool.and(vect, has_space(nm)), under(nm), nm)
 
