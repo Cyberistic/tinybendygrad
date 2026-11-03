@@ -696,3 +696,7 @@ preset branches are exercised rather than assumed.
 
 **`render` IS NOW THE LAST PIECE OF `cli.bend` THAT CAN BE PORTED.** What remains in that file is `encode`
 (regex + `unicodedata`) and `main()` (needs `model.Transformer`).
+
+**AND THE CORPUS IS RE-CERTIFIED AFTER THIS CHANGE** (`cli.bend` moved the digest):
+`substrate-start == substrate-end == live == 081cf9045482...`, `graphs-agree=38`, `byte-identical=38`,
+`graphs-refused=0`.
