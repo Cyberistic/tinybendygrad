@@ -3279,3 +3279,62 @@ text -- and they are the next slice, not this one.
 proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39 · portexec e2e 7/7
 emit-mm and emit-f64 fixtures byte-identical before/after (20 lines each)
 ```
+
+### 75.4 The certificate, at `eddc2ef5a`
+
+```
+substrate-start = substrate-end = live = 4282c39b2a22...
+graphs=38  byte-identical=38   controls 5 of 5   conflations 4 of 4
+substrate-head = eddc2ef5a   (D0-run-summary.txt mtime 18:41:33)
+```
+
+Gated on `git status --porcelain -- tinybendygrad/` empty before the run started, so the digest it names is
+the digest of the commit this section stands on.
+
+## 76. `ku_at` WAS 292,722 OF 805,127 LIST STEPS: A 16-WAY BLOCKED VIEW, 0.9308
+
+§75 named the child count and left `ku_at` (292,722) and `rt` (233,235) as the remaining index-addressed
+lists. `ku_at` is `List.get` on the kernel by ABSOLUTE UOP INDEX -- 1,915 times per render -- so it charges
+the index for every lookup.
+
+### 76.1 The block size was chosen from the wire, not from taste
+
+MEASURED over the 623 source references of the 405-uop kernel:
+
+```
+absolute (today)     n=623  total= 104,945  mean=168.5  median=160.0
+blocked 16                 total=  11,135  mean= 17.9  median= 18.0
+reversed prefix            total=  45,403  mean= 72.9  median= 12.0
+```
+
+**SIXTEEN IS THE MINIMUM OF `i/16 + i%16` AT THIS LENGTH, AND THE REVERSED-PREFIX ALTERNATIVE -- which the
+render's forward walk would have made easy -- IS ONLY 2.3x BECAUSE SO MANY SOURCES POINT AT THE PROLOGUE
+(BUFFERS AND CONSTANTS AT INDEX 0-4), NOT AT RECENT UOPS.** The distribution is bimodal; blocking is the
+shape that serves both halves.
+
+### 76.2 The edit is a type change and two new defs
+
+`chunks_of` blocks the kernel in one forward pass (`chunk_close` + a 16-counting walk); `ku_at` reads
+`chunks[i >> 4]` then `[i & 15]`. **58 signatures change one type annotation and nothing else** -- the
+identifier stays `kus`, so every call site is untouched; the ten defs that WALK the kernel
+(`_render.go`, `uops_to_dtypes`, `_render_defines`, `wmma_*`, `metal_prefix`, `render*`) keep the flat list,
+and `_render` passes `chunks_of(kus)` as the lookup argument.
+
+### 76.3 Measured
+
+```
+run 1: before 8.17 ms  after 7.87 ms   median 0.9462   13/16   max 2.2491
+run 2: before 8.22 ms  after 7.70 ms   median 0.9308   19/24   max 1.2800
+```
+
+**TWO RUNS, 40 ROUNDS, BOTH UNDER THE KEEPER LINE**, and the second's p75 is 0.9710 -- the first run's 2.25
+outlier is interference, not the change (the machine has been at load 7-14 all session).
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec e2e 7/7 · emit-mm and emit-f64 byte-identical to the §75 render
+```
+
+**⇒ AND THE ONE MISTAKE WORTH RECORDING IS THE CHUNK ORDER**: `chunk_close` APPENDS each finished block, so
+the outer list is already in forward order and the `List.reverse` I wrote first inverted it -- MEASURED
+`0 of 37` on both decoders, every kernel differing, which is exactly the failure the corpus exists to catch.
