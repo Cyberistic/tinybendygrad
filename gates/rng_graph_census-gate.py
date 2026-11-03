@@ -143,16 +143,31 @@ RANGEIFY = ROOT / "tinybendygrad/schedule/rangeify.bend"
 # reading over it is new. THE DIVERGENCE COUNT DID NOT FALL: 0 rows became agreements, so the
 # rebuild did not quietly make both lanes wrong in the same way.
 #
-# FIVE REMAIN, AND THEY ARE THE NEXT FIXTURE DEFECT RATHER THAN A TABLE ANSWER:
-#   ct_17 ct_18 ct_55   ValueError -- a STAGE whose inner BUFFER still has no resolvable
-#                       shape for `pm_const_buffer_folding`.
-#   dg_39               IndexError  -- `pg` is `UOp(Ops.PARAM, src=())`, and `debuf` calls
-#                       `buf.max_numel()` which reads `src[0]`. A PARAM WITHOUT A SHAPE SRC
-#                       is illegal under the current `UOp.param`, exactly as a BUFFER was.
-#   dg_56               RuntimeError -- `mstb` is `MSTACK(bd, c1)` and `debuf` runs on it.
+# `pg`/`pa` NOW CARRY A SHAPE SRC AND THAT KILLED THE FIRST OF THE FIVE. `UOp.param`
+# (ops.py:1218-1228) is `src=(shape_to_shape_arg((prod(max_shape),)),)`; with `src=()` the
+# reader `_shape` (ops.py:359) is `assert len(self.src[0].as_shape) <= 1` -- an IndexError,
+# which is exactly what `dg_39` recorded. BOTH lanes now build `UOp.param(slot, int32, 4)`
+# (the port through `O.UOp.new.param(..., Some{4}, ...)`), `dg_39` answers a table, and just
+# THREE of the 44 pairs needed re-taking -- so the change's footprint is measured and small.
+# PLANT: setting `pg` back to `src=()` moves `aprt_34` and the gate goes rc=1.
 #
-# TODO(p3) GIVE `pg`/`pa` A SHAPE SRC (`UOp.param(slot, dtype, size)`) and a STAGE over such
-# a PARAM its shape, so the last five rows answer a TABLE rather than an exception.
+# FOUR REMAIN, AND THEY ARE TWO STRUCTURAL DEFECTS AND NOT A MISSING FIELD:
+#   ct_17 ct_18 ct_55   ValueError from `cleanup_dead_axes` (`rangeify.py:30-41`), which is
+#       `for s,rng in zip(b.shape, b.src[1:])`. That `zip` is only length-correct when
+#       `b.src[0].shape == ()`, because a STAGE's shape is `src[0].shape + (range lengths...)`.
+#       **`st2`/`st3`/`ct5b` ARE `STAGE(BUFFER(4,), r0)` -- A STAGE WHOSE `src[0]` IS NOT A
+#       SCALAR -- SO THE ZIP DROPS A SHAPE ELEMENT AND THE RESHAPE TARGET COMES OUT `(1,)`
+#       AGAINST A `(4,4)` SHAPE.** Upstream cannot fold this node because upstream never
+#       builds one; `ct4a`/`ct4d`, which are `STAGE(INDEX(BUFFER, r0), r0)`, are LEGAL and
+#       they stopped raising when the BUFFER got its size.
+#   dg_56               `RuntimeError: cannot create param for weak dtype` -- and it is
+#       UPSTREAM'S OWN raised guard (`ops.py:1223`), not a crash: `mstc` is `MSTACK(c4, c1)`,
+#       two WEAK consts, and `debuf` mints a PARAM from the stack's dtype. **THE ROW IS
+#       RECORDING A DESIGNED REFUSAL AND THE FIXTURE NEEDS NON-WEAK STACK SOURCES.**
+#
+# TODO(p3) REBUILD `st2`/`st3`/`ct5b` SO `src[0]` HAS SHAPE `()` (a STAGE over a scalar), and
+# give `mstc` NON-WEAK sources. Until then those four rows measure an exception, and a green
+# gate says nothing about the rule they are named after.
 TABLES = tuple(re.findall(r"^def ([a-z]+)_table\(\) -> List<&2, O\.PMEntry>", RANGEIFY.read_text(), re.M))
 if not TABLES:
     print(f"rng_graph_census-gate: REFUSED -- no `def <name>_table` in {RANGEIFY}, so there are no "
@@ -177,7 +192,7 @@ DIVERGES = {
     "rb_19": ("rb_19=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "rb_19=none"),
     "rb_32": ("rb_32=1 Ops.NOOP/0  arg=none t=none", "rb_32=1 Ops.NOOP/0 - arg=none t=none"),
     "rb_51": ("rb_51=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "rb_51=none"),
-    "aprt_34": ("aprt_34=1 Ops.PARAM/0  arg=other t=tuple", "aprt_34=1 Ops.PARAM/0 - arg=other t=tuple"),
+    "aprt_34": ("aprt_34=2 Ops.PARAM/1 Ops.CONST arg=other t=tuple", "aprt_34=2 Ops.PARAM/1 Ops.CONST arg=other t=tuple"),
     "sk_11": ("sk_11=4 Ops.CALL/1 Ops.SINK arg=other t=none", "sk_11=none"),
     "sk_12": ("sk_12=5 Ops.CALL/1 Ops.SINK arg=other t=none", "sk_12=none"),
     "sk_13": ("sk_13=6 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_13=none"),
@@ -200,8 +215,8 @@ DIVERGES = {
     "dg_16": ("dg_16=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_16=none"),
     "dg_26": ("dg_26=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_26=none"),
     "dg_30": ("dg_30=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_30=none"),
-    "dg_37": ("dg_37=1 Ops.PARAM/0  arg=other t=none", "dg_37=1 Ops.PARAM/0 - arg=other t=none"),
-    "dg_39": ("dg_39=raise=IndexError", "dg_39=none"),
+    "dg_37": ("dg_37=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_37=2 Ops.PARAM/1 Ops.CONST arg=other t=none"),
+    "dg_39": ("dg_39=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_39=none"),
     "dg_41": ("dg_41=1 Ops.NOOP/0  arg=none t=none", "dg_41=none"),
     "dg_42": ("dg_42=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_42=none"),
     "dg_47": ("dg_47=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_47=none"),

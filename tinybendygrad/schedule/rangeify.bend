@@ -1766,10 +1766,14 @@ def g() -> G:
   +sti = O.UOp.new(O.Found.ar(msr), O.OpsSTORE{}, [O.Found.i(b4), O.Found.i(cst)], O.ANone{}, O.TNone{})
   +sts = O.UOp.new(O.Found.ar(sti), O.OpsSTORE{}, [O.Found.i(b4), O.Found.i(b4)], O.ANone{}, O.TNone{})
   +std = O.UOp.new(O.Found.ar(sts), O.OpsSTORE{}, [O.Found.i(b4), O.Found.i(bx)], O.ANone{}, O.TNone{})
-  +pg = O.UOp.new(O.Found.ar(std), O.OpsPARAM{}, Nil{},
-                  O.AParam{g_psize(2, S.AGlobal{})}, O.TNone{})
-  +pa = O.UOp.new(O.Found.ar(pg), O.OpsPARAM{}, Nil{},
-                  O.AParam{g_psize(3, S.Aalu{})}, O.TNone{})
+  # A PARAM'S `src[0]` IS ITS CONCRETE MAX SIZE. `UOp.param` (ops.py:1218-1228) is
+  # `src=(shape_to_shape_arg((prod(max_shape),)),)`, and with `src=()` the reader
+  # `_shape` (`ops.py:359`) is `assert len(self.src[0].as_shape) <= 1` -- an IndexError,
+  # which is what `dg_39` recorded. `new.param` with `Some{n}` is the port's `UOp.param`.
+  +pg = O.UOp.new.param(O.Found.ar(std), O.OpsPARAM{}, Some{4},
+                        O.AParam{g_psize(2, S.AGlobal{})}, O.TNone{})
+  +pa = O.UOp.new.param(O.Found.ar(pg), O.OpsPARAM{}, Some{4},
+                        O.AParam{g_psize(3, S.Aalu{})}, O.TNone{})
   +ipg = O.UOp.new(O.Found.ar(pa), O.OpsINDEX{}, [O.Found.i(pg)], O.ANone{}, O.TNone{})
   +ipa = O.UOp.new(O.Found.ar(ipg), O.OpsINDEX{}, [O.Found.i(pa)], O.ANone{}, O.TNone{})
   +r0t = rf_rtag.found(O.Found.ar(ipa), O.Found.i(r0), rf_empty_tag())
