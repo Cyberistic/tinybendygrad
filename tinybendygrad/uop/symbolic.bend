@@ -3396,8 +3396,31 @@ def sym_284.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +k = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.c(x, i), sym_284.outer(x, u))
   Some{mint_bin(k, sy_op(x, u), sym_284.v(x, i), O.Found.i(k))}
 
+# **THE GUARD THESE SIX ARMS WERE MISSING:**
+#   fits(x, exec_alu(f.op, dtypes.weakint, [c1.vmin, c2.vmin]))
+# Two-stage folding replaces `(x op c1) op c2` with `x op (c1 op c2)` and computes the combined
+# constant in WEAKINT. When that constant does not fit `x`'s dtype the rewrite changes the answer,
+# so CPython refuses. MEASURED WITHOUT IT on int8: `(x+1)+127` folded to `x + (1+127)`, and 128 does
+# not fit int8. This ONE body answers for SIX rows.
+def sym_284.gk(m: Maybe<&1, O.Const>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{O.CInt{i}}: Some{i}
+    case _: None{}
+
+def sym_284.gf(m: Maybe<&1, H.I64>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{+s}: fits(dt, s)
+    case None{}: False{}
+
+def sym_284.guard(+x: F.Folded, +u: U32) -> Bool:
+  +op = sy_op(x, u)
+  +i = sym_284.inner(x, u, op)
+  sym_284.gf(sym_284.gk(exec_alu2(op, S.weakint(), sy_maybe_c2(sy_val(x, sym_284.c(x, i))),
+                                  sy_maybe_c2(sy_val(x, sym_284.outer(x, u))), True{})),
+             sy_dt1(x, sym_284.v(x, i)))
+
 def sym_284(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sy_tri_f(sym_284.pat(x, u), sym_284.mk(x, u))
+  sy_tri_f(Bool.and(sym_284.pat(x, u), sym_284.guard(x, u)), sym_284.mk(x, u))
 
 
 # ---- `symbolic.py:129`, `fold_add_divmod_recombine` -----------------------------
