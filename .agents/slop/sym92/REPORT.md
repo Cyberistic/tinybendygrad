@@ -1135,3 +1135,42 @@ REASON WAS AN INSTRUMENT AND NOT THE CODE** (sections 28, 29, 32). The pattern i
 one guard: in this lane a change is only worth landing when a probe can read its answer back, and
 three of the artefacts needed to read answers back are missing -- a bounds table that survives a
 mint, an `F32` accessor, and a per-row `pat`/`mk` sweep.
+
+## 33. `sy_trunc`'s INT half verified against `ctypes`, including the two's complement
+
+MEASURED, `.agents/slop/sym92/probe-trunc-int.bend`, `i64_show` prints `hi:lo` so a negative value
+cannot be mistaken for a positive one:
+
+    S.int8()   200     -> 4294967295:4294967240   = -56     ctypes.c_int8(200).value   -56
+    S.uint8()  200     -> 0:200                   = 200     ctypes.c_uint8(200).value  200
+    S.int16()  70000   -> 0:4464                  = 4464    ctypes.c_int16(70000)      4464
+    S.int8()   70000   -> 0:112                   = 112     ctypes.c_int8(70000)       112
+
+FOUR OF FOUR, and the first row is the one that matters: `-56` is the SIGN-EXTENDED wrap, which is
+what separates `ctypes.c_int8(x).value` from a mask. A mask would have answered `200`.
+
+## 34. CORRECTION: THE BASE LANE IS TWO ARMS, NOT A HUNDRED AND THIRTY
+
+Sections 24 and 30 said the last three rows need "~130 duplicated arms" because the dispatch is
+static. **THAT COST ESTIMATE IS WRONG, AND THE ERROR WAS MINE: it assumed the BASE lane needed its own
+COPY of the dispatch, which it does not -- the base dispatch ALREADY EXISTS.**
+
+MEASURED, and this is the shape that works:
+
+  * `sym_table()` stays the 130 base rows, and `sym_mint_f` / `sym_dispatch.go` keep dispatching them.
+    **None of that changes.**
+  * the two valid rules go in a SEPARATE `valid_table()` with their own tags;
+  * a SEPARATE, TINY `sym_valid_f` dispatches ONLY those two tags (**two arms**);
+  * the OUTER entry runs base fixpoint then a valid pass, to a fixpoint;
+  * `sy_simplify` -- the one `uop_given_valid` calls -- stays the BASE fixpoint, which is EXACTLY what
+    upstream does: `ops.py:492` re-enters `symbolic` (:247), not `sym` (:463).
+
+The cycle then does not exist: `sym_450 -> ugv -> sy_simplify -> sym_f -> sym_mint_f -> (no valid
+tags)`, and the only edge INTO `sym_450` comes from `sym_valid_f`, which the base lane never calls.
+**THE FIX WAS NEVER "DUPLICATE 130 ARMS"; IT WAS "DO NOT PUT THE TWO RULES IN THE DISPATCH THAT THEY
+MUST RE-ENTER".**
+
+WHAT REMAINS IS THE BODY, NOT THE ARCHITECTURE: `uop_given_valid` (split on AND, `parse_valid` per
+clause into a bounds map, substitute, re-`simplify`), `simplify_valid` (priority-sort the clauses and
+join them with `uprod`), and `gated_given_valid` (a dtype check plus `cond.where(ugv(cond, x), i)`).
+`sy_parse_valid` already exists, which is the hard half of `ugv`.
