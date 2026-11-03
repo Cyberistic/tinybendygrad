@@ -2977,7 +2977,9 @@ def sym_271.build(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.F
       +w = sy_src0(x, sy_src0(x, u))
       +v = sy_src1(x, w)
       +n0 = mint_bin(z, O.OpsCMPEQ{}, v, O.Found.i(z))
-      +n = mint_not(z, O.Found.i(n0))
+      # THE SECOND CHAIN GROWS FROM `n0`, NOT FROM `z`: two chains minted from the SAME base are
+      # assigned the SAME indices for DIFFERENT nodes, and the render says so with a `?`.
+      +n = mint_not(n0, O.Found.i(n0))
       Some{mint_bin(n, O.OpsAND{}, sy_src0(x, w), O.Found.i(n))}
     case None{}: None{}
 
