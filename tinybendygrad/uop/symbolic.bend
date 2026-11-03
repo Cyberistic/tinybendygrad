@@ -3137,9 +3137,35 @@ def sym_251.mk(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Foun
       Some{mint_bin(d, O.OpsADD{}, sym_251.y(x, u), O.Found.i(d))}
     case None{}: None{}
 
+# **THE GUARD `:263` CARRIES AND THIS BODY DID NOT: `fits(a, 2*x.vmin) and fits(a, 2*x.vmax)`.**
+# `(y + x) + x` becomes `y + x*2`, so the doubled operand must stay in the SUM's dtype at both ends
+# of its range. The bounds table is the CALLER's, which is right here because `x` and `y` already
+# exist and the node the guard is about is the root.
+def sym_251.fb(b: F.Bnd, +dt: S.Dt) -> Bool:
+  match b:
+    case F.BndInt{neg, mag}: fits(dt, H.i64_mul(H.i64_neg(neg, mag), H.i64_of_i32(2)))
+    case _: Bool.not(dt_in(DTS_SINTS(), dt))
+
+def sym_251.g1(m: Maybe<&2, F.Bnd>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{+b}: sym_251.fb(b, dt)
+    case None{}: False{}
+
+def sym_251.ok(+x: F.Folded, +u: U32) -> Bool:
+  +z = sym_251.z(x, u)
+  +ar = sy_ar(x)
+  +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
+  +dt = sy_dt1(x, u)
+  Bool.and(sym_251.g1(F.UOp.vmin(ar, bt, z), dt), sym_251.g1(F.UOp.vmax(ar, bt, z), dt))
+
+def sym_251.hit(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}:
+      sym_251.mk(mint_const_like(mint_ar(sy_ar(x)), x, sym_251.z(x, u), O.CInt{H.i64_of_i32(2)}), x, u)
+    case _: None{}
+
 def sym_251(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sy_tri_f(sym_251.pat(x, u),
-    sym_251.mk(mint_const_like(mint_ar(sy_ar(x)), x, sym_251.z(x, u), O.CInt{H.i64_of_i32(2)}), x, u))
+  sym_251.hit(Bool.and(sym_251.pat(x, u), sym_251.ok(x, u)), x, u)
 
 # symbolic.py:230 -- `commutative`, and IT IS A COMPOSITION AND NOT A RULE OF ITS OWN.
 #
