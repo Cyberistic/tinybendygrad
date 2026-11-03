@@ -432,3 +432,25 @@ who knows this tinygrad's codegen path; it is not a port defect and not a render
 `tinygrad/codegen/__init__.py:515`), by the name `tinygrad.codegen` exports, not the module that defines
 it -- and read `tinygrad/codegen/__init__.py:511`'s `to_program_key` first, because a key that is too
 coarse would explain every observation above in one stroke.
+
+## 16. HOW TO READ THE CORPUS DIGEST, AND A CERTIFICATE THAT WAS NOT ONE
+
+**A RUN IS ONLY A CERTIFICATE WHEN `substrate-start == substrate-end == live`.** MEASURED 2026-11-03, on
+a run I had already recorded as CURRENT:
+
+```
+substrate-start = e9d681461d0eb811...     <- before an edit
+substrate-end   = 699c0d5d14305173...     <- after it
+```
+
+That run straddled my own `cstyle.bend` edit, so it described NEITHER tree, even though
+`graphs-agree=38` and every plant fired. **AND MY CHECK WAS THE REASON I ALMOST MISSED IT:** I tested
+`live_digest in summary_text`, which matches the END digest and nothing else. The tree's own rule is
+`start == end == live`, and it takes all three.
+
+**THE RE-RUN WAS REFUSED, AND REFUSING WAS CORRECT:** `runs/graphcmp/.corpus.lock` was held by
+`pid 255 (.venv/bin/python checks/differ.py repro)` for 298 s, and `differ.py` refuses to start a second
+run because two runs write the SAME `runs/graphcmp/D` and would overwrite each other's artifacts. **So
+the corpus is NOT re-certified as of this note** — the last reading straddles an edit, and the
+re-certification is owed to whoever next finds the lock free. Do not read the previous
+`graphs-agree=38` as a certificate for this tree; read `start == end == live` or read nothing.
