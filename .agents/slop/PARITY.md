@@ -4592,3 +4592,48 @@ run 2 (30 rounds): before 3.86 ms  after 3.68 ms   median 0.9593   19/30
 proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
 portexec 7/7 · emit-mm and emit-f64 byte-identical
 ```
+
+## 103. THE DECODE AT 41%: THE WIRE-SHRINKING DIRECTION HAS A MEASURED CEILING OF ~2%
+
+The decomposition on §102, and the decode is now the largest single term:
+
+```
+stub (IPC + frame)   0.33 ms    8%
+decode               1.61 ms   41%
+render               2.01 ms   51%
+                     ------
+                     3.95 ms
+```
+
+### 103.1 What a shorter wire is worth, from the measured per-character rate
+
+§82 measured `String.split` over this exact wire at **731 us for 9,516 characters = 77 ns a character**. The
+split is linear in characters (§92's chunk sweep), so the ceiling of any wire compaction is:
+
+```
+idx in base-64 (1 char vs 1-2)                     ~4% of the wire  -> 0.03 ms  (0.8%)
+ALL numeric fields in base-64 (idx+numel+shape+srcs)  ~13%          -> 0.10 ms  (2.4%)
+an impossible 20% cut                                             -> 0.15 ms  (3.7%)
+```
+
+**2.4% AT A 13% CUT, AND §80 MEASURED ITS 12.8%-FEWER-BYTES PREDECESSOR AT 0.9900 WHEN THE TURN WAS 5.7 ms.**
+The direction is closed by arithmetic at the new scale as well as by that measurement.
+
+### 103.2 The one version that could have beaten that, attempted and reverted
+
+The same encoding removes `nums`' `String.split` -- a count character, then two base-64 characters an index,
+with no `~` to scan -- and `nums` is 0.43 ms of the decode. That is the part that could reach the keeper
+line, because it removes a PASS rather than shortening one.
+
+It was written: `portc` emits `<count><2 chars per index>`, `live.bend` gains `b64u`/`ch`/`b64at`/`src_nums`
+and keeps the old decimal `nums` for `shape` (395 of 405 rows are `-`). The literal path passed 37 of 37;
+**THE LIVE LANE DID NOT -- 0 of 37 -- and the mismatch is in the new decoder**, so the change was reverted
+rather than debugged at the end of a session:
+
+```
+ksweep after revert: 37 of 37 byte-identical, both decoders
+```
+
+**⇒ SO THE NEXT UNIT IS THAT DECODER, AND IT IS SMALL**: `src_nums`/`b64at` against `portc.B64`, with the
+`count` character read by `b64u` and two characters per index. The pieces are written down in this section
+and the gate that catches it (`ksweep`'s live lane) is already the thing that failed it.
