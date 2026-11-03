@@ -2040,16 +2040,16 @@ def sym_147.gate(+c: Mc) -> Bool:
   Bool.and(Mc.ok(c), Bool.and(U32.is_le(Mc.k(c), 31),
     U32.is_eq(U32.or(Mc.m(c), U32.sub(U32.shln(1, U32.to_nat(Mc.k(c))), 1)), ALL_ONES())))
 
-def sym_147.put(+k: U32, v: U32, +f: O.Found) -> U32:
+def sym_147.put(+k: U32, v: U32, +f: O.Found) -> O.Found:
   +c = mint_const(O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(k)}), O.CInt{H.i64_of_i32(k)}, S.weakint())
-  O.Found.i(mint_bin(c, O.OpsSHR{}, v, O.Found.i(c)))
+  mint_bin(c, O.OpsSHR{}, v, O.Found.i(c))
 
-def sym_147.hit(gate: Bool, +c: Mc, v: U32, +x: F.Folded) -> Maybe<&1, U32>:
+def sym_147.hit(gate: Bool, +c: Mc, v: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
   match gate:
     case True{}: Some{sym_147.put(Mc.k(c), v, mint_ar(sy_ar(x)))}
     case _: None{}
 
-def sym_147(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+def sym_147(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +p = p_const(x, sy_src0(x, u))
   +c = mc32.of(sy_val(x, Sw.a(p)), sy_val(x, sy_src1(x, u)))
   sym_147.hit(Bool.and(p_mask(x, u, O.OpsSHR{}, p), sym_147.gate(c)), c, Sw.b(p), x)
@@ -2059,16 +2059,16 @@ def sym_149.gate(+c: Mc) -> Bool:
     Bool.and(U32.is_eq(U32.and(Mc.k(c), U32.sub(Mc.k(c), 1)), 0),
       U32.is_eq(U32.or(Mc.m(c), U32.sub(Mc.k(c), 1)), ALL_ONES()))))
 
-def sym_149.put(+k: U32, v: U32, +f: O.Found) -> U32:
+def sym_149.put(+k: U32, v: U32, +f: O.Found) -> O.Found:
   +c = mint_const(O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(k)}), O.CInt{H.i64_of_i32(k)}, S.weakint())
-  O.Found.i(mint_bin(c, O.OpsFLOORDIV{}, v, O.Found.i(c)))
+  mint_bin(c, O.OpsFLOORDIV{}, v, O.Found.i(c))
 
-def sym_149.hit(gate: Bool, +c: Mc, v: U32, +x: F.Folded) -> Maybe<&1, U32>:
+def sym_149.hit(gate: Bool, +c: Mc, v: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
   match gate:
     case True{}: Some{sym_149.put(Mc.k(c), v, mint_ar(sy_ar(x)))}
     case _: None{}
 
-def sym_149(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+def sym_149(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +p = p_const(x, sy_src0(x, u))
   +c = mc32.of(sy_val(x, Sw.a(p)), sy_val(x, sy_src1(x, u)))
   sym_149.hit(Bool.and(p_mask(x, u, O.OpsFLOORDIV{}, p), sym_149.gate(c)), c, Sw.b(p), x)
@@ -2157,25 +2157,25 @@ def sym_163.at(+s: U32, +x: F.Folded, +f: O.Found, +dt: S.Dt) -> Maybe<&1, O.Fou
 # `Maybe` cannot carry one: src0 is committed first and its `Found` is the arena
 # src1 is committed into. The nested `match` IS the sealed-dtype refusal -- either
 # src unable to commit answers "no rewrite" rather than a wrong node.
-def sym_163.put(a: U32, m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+def sym_163.put(a: U32, m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match m:
-    case Some{+b}: Some{O.Found.i(mint_replace(b, x, u, [a, O.Found.i(b)]))}
+    case Some{+b}: Some{mint_replace(b, x, u, [a, O.Found.i(b)])}
     case _: None{}
 
-def sym_163.join(m: Maybe<&1, O.Found>, +s: U32, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, U32>:
+def sym_163.join(m: Maybe<&1, O.Found>, +s: U32, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
   match m:
     case Some{+a}: sym_163.put(O.Found.i(a), sym_163.at(s, x, a, dt), x, u)
     case _: None{}
 
-def sym_163.go(+f: O.Found, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, U32>:
+def sym_163.go(+f: O.Found, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
   sym_163.join(sym_163.at(sy_src0(x, u), x, f, dt), sy_src1(x, u), x, u, dt)
 
-def sym_163.hit(gate: Bool, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, U32>:
+def sym_163.hit(gate: Bool, +x: F.Folded, +u: U32, +dt: S.Dt) -> Maybe<&1, O.Found>:
   match gate:
     case True{}: sym_163.go(mint_ar(sy_ar(x)), x, u, dt)
     case _: None{}
 
-def sym_163(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+def sym_163(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_163.hit(Bool.and(sym_163.pat(x, u), Bool.not(dt_weak_of(sy_promo(x, u)))), x, u, sy_promo(x, u))
 
 # ---- the two THREEFRY unpack rules, and BOTH answer an EXISTING node ----
@@ -3244,9 +3244,6 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 27: sym_135(x, u)
     case 30: sym_140(x, u)
     case 34: sym_145(x, u)
-    case 35: sym_147(x, u)
-    case 36: sym_149(x, u)
-    case 42: sym_163(x, u)
     case 47: sym_174(x, u)
     case 48: sym_178(x, u)
     case 49: sym_181(x, u)
@@ -3563,7 +3560,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 37, 38, 39, 40, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3582,11 +3579,14 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 31: sym_142(x, u)
     case 32: sym_143(x, u)
     case 33: sym_144(x, u)
+    case 35: sym_147(x, u)
+    case 36: sym_149(x, u)
     case 37: sym_151(x, u)
     case 38: sym_155(x, u)
     case 39: sym_157(x, u)
     case 40: sym_161(x, u)
     case 41: sym_162(x, u)
+    case 42: sym_163(x, u)
     case 43: sym_167(x, u)
     case 44: sym_168(x, u)
     case 45: sym_169(x, u)
