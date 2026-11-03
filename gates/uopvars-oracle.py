@@ -192,6 +192,7 @@ def main():
     er1 = graph_rewrite(ecall, pm_post_sched_cache, ctx=(epx,), walk=True, enter_calls=True)
     a("ec_default", int(er0.src[0] is epp))
     a("ec_enter", int(er1.src[0] is epx))
+    a("sub_nocalls", int(ecall.substitute({epp: UOp.const(9)}).src[0] is epp))
 
     print("\n".join(out))
 

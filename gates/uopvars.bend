@@ -589,6 +589,18 @@ def ecrows(+fx: ECF) -> IO(Unit):
     p1 : Unit <- IO.print(String.concat(["ec_default=", ec_default(fx)]))
     IO.print(String.concat(["ec_enter=", ec_enter(fx)]))
 
+
+# `substitute` DOES NOT ENTER CALL BODIES BY DEFAULT (measured: `call.substitute({pp:c})`
+# answers `src0 is pp`). `ecfx()` is the fixture -- a CALL whose body IS `pp`.
+def sub_nocalls.of(m: (O.Arena & Maybe<&2, U32> & Map<&2, U32>), +pp: U32) -> String:
+  (ar, ms, m2) = m
+  match ms:
+    case None{}: "0"
+    case Some{s}: bf(U32.is_eq(O.Arena.src0(ar, s), pp))
+
+def sub_nocalls(+fx: ECF) -> String:
+  sub_nocalls.of(CG.UOp.substitute(ECF.ar(fx), ECF.call(fx), subsonly(U32.show(ECF.pp(fx)), ECF.px(fx))), ECF.pp(fx))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -613,4 +625,5 @@ def main() -> IO(Unit):
     ab3rows(subscall())
     p9 : Unit <- IO.print(String.concat(["subs_named=", subs_named()]))
     p8 : Unit <- abrows(abfx())
-    ecrows(ecfx())
+    p7 : Unit <- ecrows(ecfx())
+    IO.print(String.concat(["sub_nocalls=", sub_nocalls(ecfx())]))

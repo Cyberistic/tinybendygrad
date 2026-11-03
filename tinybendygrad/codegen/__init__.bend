@@ -406,8 +406,13 @@ def wr.go_sub(lst: List<&2, U32>, +dvars: Map<&2, U32>, acc: (O.Arena & Map<&2, 
 # and it is not a micro-optimisation: an entry `u -> u` would still rebuild the
 # node, so the identity filter is what makes `substitute` with no real entries
 # answer THE SAME NODE.
+# `enter_calls=False` IS THE DEFAULT HERE TOO, AND MEASURED: `call.substitute({pp: c})`
+# in CPython answers `src0 is pp` (UNTOUCHED); only `enter_calls=True` reaches into a
+# call body. `apply_binds` calls `s.substitute(subs, name=...)` with the default, so a
+# `toposort` here rewrote bodies upstream leaves alone -- the same defect as
+# `walk_rewrite`'s, found by auditing every `toposort` in this file after that fix.
 def UOp.substitute(+ar: O.Arena, +sink: U32, +dvars: Map<&2, U32>) -> (O.Arena & Maybe<&2, U32> & Map<&2, U32>):
-  walk_rewrite.put(sink, wr.go_sub(O.UOp.toposort(U32.to_nat(O.Arena.next(ar)), ar, sink), dvars, (ar, Map.new(&2, U32))))
+  walk_rewrite.put(sink, wr.go_sub(O.UOp.toposort_nocalls(U32.to_nat(O.Arena.next(ar)), ar, sink), dvars, (ar, Map.new(&2, U32))))
 
 # ============================================================================
 # THE GATE: build the smallest `pm_post_sched_cache` fixture, run
