@@ -3949,3 +3949,50 @@ noise.
 **AND THE OPCODE ATTRIBUTION SAYS WHY**: after CAST's 3.3 ms (inflated) the classes fall to 1.3, 0.9 and
 0.8 ms and then to a long tail -- there is no second CAST to find. The render is a distribution, and the
 distribution has no head left that a code change can take.
+
+## 89. PER-CLASS ABLATIONS REPLACE THE INFLATED TIMER, AND THE ALU PATH PAYS: 0.9504 / 0.9427
+
+§88's timer priced every class with a clock that costs microseconds a call, so its absolute figures were
+useless and its ranking was only a hint. This section ablates instead: each op arm returns a constant in a
+scratch build, and the render delta against §88 with 14 interleaved rounds is that class's real cost.
+
+### 89.1 The attribution, uninflated
+
+```
+CAST   full 5.66 -> ablated 5.04   saves 0.69 ms  (12.1%)
+INDEX  full 5.16 -> ablated 5.49   saves -0.13 ms  (noise)
+LOAD   full 4.88 -> ablated 5.34   saves -0.32 ms  (noise)
+ALU    full 4.79 -> ablated 4.15   saves 0.55 ms  (11.5%)
+```
+
+**THE TIMER'S LEADER SURVIVES (CAST, 0.69 ms) AND TWO OF ITS RUNNERS-UP DO NOT (INDEX, LOAD: BOTH NOISE).**
+The ALU catch-all -- `ADD`, `MUL`, `WHERE` and the rest -- is the second real class at 0.55 ms, and the timer
+had it as a single 1.31 ms `OpsADD` row that it attributed by tag rather than by arm.
+
+### 89.2 The ALU path paid, and the mechanism was a double lookup
+
+```
+Bool.pick(String, cond, H.strip_parens(rt(r, h)), rt(r, h))
+```
+
+STRICT, so `rt` ran TWICE per operand -- and `rt` is a `List.get` by src-to-current distance -- and
+`strip_parens` scanned the source even when its result was discarded. One binding, and the bool as a
+parameter so the scan only happens on the branch that keeps it (§39's cure):
+
+```
+same C: True | bytes: 4426
+run 1 (24 rounds): before 5.11 ms  after 4.70 ms   median 0.9504   17/24
+run 2 (30 rounds): before 4.97 ms  after 4.85 ms   median 0.9427   19/30
+```
+
+**36 OF 54 ROUNDS AND BOTH MEDIANS UNDER THE KEEPER LINE -- THE FIRST RENDER WIN SINCE §78**, and the first
+one the ablations found rather than the profile.
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
+
+**⇒ AND CAST'S 0.69 ms IS STILL THERE AND IS NOT §88's FIX.** §88 tried the strict pick on `ku_const_cast`
+and measured neutral, because the DISCARDED arm is cheap. The 0.69 ms is the arm that RUNS: the cast
+expression plus its source lookup, 50 times. That is the next slice, and the ablation is what says so.

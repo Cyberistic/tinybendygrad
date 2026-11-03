@@ -1803,13 +1803,23 @@ def ku_range_name(+arg: KUArg) -> String:
 # `r` IS THE NAME/TEXT MAP AND IT IS INDEXED BY THE UOP'S POSITION, because the
 # uop list is POST-ORDER. `rt` READS IT.
 # ===========================================================================
+# **ONE `rt` AND ONE `strip_parens`, NOT TWO OF EACH.** The old spelling was
+# `Bool.pick(String, cond, strip_parens(rt(r, h)), rt(r, h))`: STRICT, so `rt` ran twice -- and `rt` is a
+# `List.get` by src-to-current distance -- and `strip_parens` scanned the source even when its result was
+# discarded. The bool as a parameter means the scan happens only on the branch that keeps it (§39's cure).
+# MEASURED: the ALU catch-all is 0.55 ms of the render (`PARITY.md` §89) and this is its per-operand work.
+def ku_src_strip(b: Bool, +s: String) -> String:
+  match b:
+    case True{}: H.strip_parens(s)
+    case False{}: s
+
 def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows,                    +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match ss:
     case Nil{}: acc
     case h <> t:
+      +s = rt(r, h)
       ku_alu_srcs.go(op, k, kus, r, t, List.append(&2, String, acc,
-        [Bool.pick(String, Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)),
-          H.strip_parens(rt(r, h)), rt(r, h))]))
+        [ku_src_strip(Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)), s)]))
 
 def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_alu_srcs.go(op, k, kus, r, KU.srcs(k), Nil{})
