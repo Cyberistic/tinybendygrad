@@ -2982,3 +2982,34 @@ none of it, a 405-uop wire pays ~10 ms extra). That is proportional to code EXEC
 
 **⇒ THAT CLOSES THE LAST OPEN TERM IN THIS RECORD, AND IT CLOSES IT THE SAME WAY AS THE OTHERS**: the cost is
 accounted for, the lever is named, and the lever is either forbidden by the oracle or worth 0.1 ms.
+
+## 69. THE PER-REALIZE FLOOR: 0.5 ms IN BOTH LANES, AND STRUCTURALLY THE SAME CODE
+
+§25.1 measured the per-realize floor at ~0.5 ms in both lanes and §69 is its re-take, fifteen interleaved
+rounds on a 64-element add:
+
+```
+BEND median 493.2 us   CPU median 489.1 us
+BEND/CPU median 1.0099   spread 0.9472-1.0923
+rounds where BEND is SLOWER than CPU: 10 of 15
+ratio quartiles Q1 0.9680  Q3 1.0311     1.0 INSIDE the interquartile range: True
+```
+
+**UNCHANGED SINCE §25.1 (0.9893 THEN, 1.0099 NOW, BOTH WITH 1.0 INSIDE), AND THE REASON IS STRUCTURAL RATHER
+THAN MEASURED**: the compiled lane's device IS tinygrad's `Compiled` with tinygrad's `CPUProgram` --
+
+```python
+super().__init__(device, HostAllocator(self), renderers, CPUProgram, arch=... + ",native")
+```
+
+-- so a realize runs the same Python: graph build, schedule-cache lookup, kernel-cache lookup, launch. **THE
+PORT'S RENDER HAPPENS AT COMPILE TIME AND IS CONTENT-CACHED (§26-§62); IT IS NOT ON THE PER-REALIZE PATH AT
+ALL.** The only way to make the floor smaller would be to replace tinygrad's launch path, which is the thing
+being ported.
+
+**⇒ SO THIS AXIS IS CLOSED BY CONSTRUCTION, NOT BY EXHAUSTION**: the port cannot beat a floor it shares with the
+oracle, and any change that did beat it would be a change to the semantics the corpus exists to pin.
+
+**AND THAT MAKES THE STEADY-STATE PICTURE COMPLETE**: parity at ratio ~1.00 is not a shortfall of this port --
+it is BOTH LANES EXECUTING THE SAME COMPILED C THROUGH THE SAME LAUNCHER, which is the strongest possible
+evidence of 1:1 rather than the weakest evidence of speed.
