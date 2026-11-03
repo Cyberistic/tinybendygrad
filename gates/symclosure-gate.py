@@ -74,7 +74,14 @@ SCANS = ("pm_scan_m", "pm_rewrite_m", "pm_scan_f", "pm_rewrite_f")
 # ORDER over the whole UOp tree, with Python's mixed-tuple semantics (an int, then `repr(arg)`,
 # then the dtype, then the children). Take it away and the smallest member of `symbolic` is not
 # portable either.
-WALLS = ("UOp.tuplize",)
+# AND THE PART THAT IS PORTED IS PORTED ONLY PART WAY, WHICH IS A ROW AND NOT A SENTENCE.
+# `uop_tup_cmp` (`uop/render.bend`) decides `op.value` -- the first of `tuplize`'s four keys --
+# and answers `None{}` when the values tie. The three it refuses are named here so the refusal
+# cannot be mistaken for completeness, and a comparator that GUESSED a tie would be a row that
+# cannot go red: `commutative` would flip or not flip on an invented order.
+WALLS = ("UOp.tuplize", "uop_tup_cmp")
+REFUSED_KEYS = ("repr(arg) -> arg_repr, in the SAME file", "dtype -> needs a Table via dt_of",
+                "children -> a recursion over srcs, and Bend refuses the mutual kind")
 
 
 def rules(pm) -> int:
@@ -119,6 +126,8 @@ def main() -> int:
 
     for w in WALLS:
         print(f"wall.{w}\t{port_has(w)}")
+    for i, k in enumerate(REFUSED_KEYS):
+        print(f"tuplize.key{i + 2}_refused\t{k}")
 
     absent = [n for n in MISSING if not port_has(n)]
     landed = [n for n in MISSING if port_has(n)]

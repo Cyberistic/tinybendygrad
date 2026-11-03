@@ -700,6 +700,36 @@ def aprogram_repr(+pi: O.ProgramInfo) -> String:
 def customfunction_repr(+cf: O.CustomFunction) -> String:
   String.concat(["CustomFunction(name='", O.CustomFunction.name(cf), "', dtype=", dt_repr(O.CustomFunction.dtype(cf)), ")"])
 
+# ===========================================================================
+# `UOp.tuplize` -- THE ORDER, ops.py:316. IT IS NOT THE KEY.
+#
+#     def tuplize(self) -> _UOpTuple:
+#       return _UOpTuple((self.op.value, repr(self.arg), self.dtype,)+tuple([x.tuplize for x in self.src]))
+#
+# `_UOpTuple` is a `tuple` SUBCLASS (`ops.py:221-226`) whose `__eq__` is IDENTITY and whose `<`
+# is `tuple.__lt__`, so the order between two nodes is LEXICOGRAPHIC over FOUR KINDS OF THING:
+# an int (`op.value`), a STRING (`repr(arg)`), a `DType` and then the children as nested tuples.
+#
+# THE KEY HAS NO PURPOSE HERE AND THE ORDER DOES. `ops.bend:5321` records that `tuplize` exists
+# to KEY CPython's `ucache` and that this port's interner is `intern.find`, a direct comparison
+# over `Arena.nodes` -- so no key is wanted. But `uop/symbolic.py:225` is its OTHER consumer,
+# `commutative`'s single rule, which compares two OPERANDS, and that is an order.
+#
+# THIS DEF DECIDES KEY ONE AND REFUSES THE REST, AND THE REFUSAL IS THE POINT. When the two
+# `op.value`s differ the answer is certain; when they tie, the answer needs `repr(arg)`, then
+# the dtype, then a recursion over the children, and NEITHER OF THOSE THREE IS DECIDED HERE.
+# `None{}` says so. A comparator that GUESSED the tie would be a row that cannot go red --
+# `commutative` would flip or not flip on an invented order and no instrument could tell.
+def tup_pick(lt: Bool, gt: Bool) -> Maybe<&2, U32>:
+  match lt gt:
+    case True{} _: Some{1}
+    case _ True{}: Some{2}
+    case _ _     : None{}
+
+def uop_tup_cmp(+ar: O.Arena, +a: U32, +b: U32) -> Maybe<&2, U32>:
+  tup_pick(U32.is_lt(O.Ops.value(O.Arena.op(ar, a)), O.Ops.value(O.Arena.op(ar, b))),
+           U32.is_gt(O.Ops.value(O.Arena.op(ar, a)), O.Ops.value(O.Arena.op(ar, b))))
+
 def arg_repr(+ar: O.Arena, +self: U32, a: O.Arg) -> String:
   match a:
     case O.ANone{}: "None"
