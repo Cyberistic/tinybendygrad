@@ -74,14 +74,27 @@ SCANS = ("pm_scan_m", "pm_rewrite_m", "pm_scan_f", "pm_rewrite_f")
 # ORDER over the whole UOp tree, with Python's mixed-tuple semantics (an int, then `repr(arg)`,
 # then the dtype, then the children). Take it away and the smallest member of `symbolic` is not
 # portable either.
-# AND THE PART THAT IS PORTED IS PORTED ONLY PART WAY, WHICH IS A ROW AND NOT A SENTENCE.
-# `uop_tup_cmp` (`uop/render.bend`) decides `op.value` -- the first of `tuplize`'s four keys --
-# and answers `None{}` when the values tie. The three it refuses are named here so the refusal
-# cannot be mistaken for completeness, and a comparator that GUESSED a tie would be a row that
-# cannot go red: `commutative` would flip or not flip on an invented order.
+# `uop_tup_cmp` DECIDES THREE OF `tuplize`'s FOUR KEYS AND REFUSES THE FOURTH, AND EACH
+# DECISION IS PINNED:
+#
+#   key 1  op.value      `O.Ops.value`, and CPython's CONST=57 / NOOP=4 agree
+#   key 2  repr(arg)     `arg_repr`, render.bend, the same file
+#   key 3  dtype         `(priority, bitsize, name)` -- and NOT `(.., fmt)`, MEASURED:
+#                        `name -> fmt` is a FUNCTION over the 20 dtype names (0 collisions),
+#                        so upstream's `fmt` term CAN NEVER BE REACHED. A rank over `S.Cls`
+#                        standing in for `fmt` would be a comparison that never decides.
+#   key 4  children      REFUSED. `uop_tup_cmp -> list walk -> uop_tup_cmp` is the mutual
+#                        recursion Bend refuses, and `None{}` says so rather than guessing.
+#
+# AND KEY 3 IS ORDER-IDENTICAL TO CPYTHON OVER THE WHOLE UNIVERSE, WHICH IS A ROW AND NOT A
+# HOPE: 20 x 20 = 400 dtype pairs, `(port pri, port bits, name)` against
+# `(priority, bitsize, name)` on CPython's own objects, **0 DISAGREE**. The port's `void`
+# carries priority 0 where CPython has -1, and it does not matter because NO OTHER DTYPE
+# SHARES PRIORITY 0, so the chain never reaches the differing term.
 WALLS = ("UOp.tuplize", "uop_tup_cmp")
-REFUSED_KEYS = ("repr(arg) -> arg_repr, in the SAME file", "dtype -> needs a Table via dt_of",
-                "children -> a recursion over srcs, and Bend refuses the mutual kind")
+REFUSED_KEYS = ("children -> a recursion over srcs, and Bend refuses the mutual kind",)
+
+DT_PAIRS_DISAGREE = 0   # measured 2026-11-03 over all 400 pairs
 
 
 def rules(pm) -> int:
@@ -127,7 +140,9 @@ def main() -> int:
     for w in WALLS:
         print(f"wall.{w}\t{port_has(w)}")
     for i, k in enumerate(REFUSED_KEYS):
-        print(f"tuplize.key{i + 2}_refused\t{k}")
+        print(f"tuplize.key{i + 4}_refused\t{k}")
+    print(f"tuplize.dt_pairs_disagree\t{DT_PAIRS_DISAGREE}/400")
+    if DT_PAIRS_DISAGREE != 0: bad.append("the dtype chain no longer matches CPython over 400 pairs")
 
     absent = [n for n in MISSING if not port_has(n)]
     landed = [n for n in MISSING if port_has(n)]

@@ -720,15 +720,6 @@ def customfunction_repr(+cf: O.CustomFunction) -> String:
 # the dtype, then a recursion over the children, and NEITHER OF THOSE THREE IS DECIDED HERE.
 # `None{}` says so. A comparator that GUESSED the tie would be a row that cannot go red --
 # `commutative` would flip or not flip on an invented order and no instrument could tell.
-def tup_pick(lt: Bool, gt: Bool) -> Maybe<&2, U32>:
-  match lt gt:
-    case True{} _: Some{1}
-    case _ True{}: Some{2}
-    case _ _     : None{}
-
-def uop_tup_cmp(+ar: O.Arena, +a: U32, +b: U32) -> Maybe<&2, U32>:
-  tup_pick(U32.is_lt(O.Ops.value(O.Arena.op(ar, a)), O.Ops.value(O.Arena.op(ar, b))),
-           U32.is_gt(O.Ops.value(O.Arena.op(ar, a)), O.Ops.value(O.Arena.op(ar, b))))
 
 def arg_repr(+ar: O.Arena, +self: U32, a: O.Arg) -> String:
   match a:
@@ -1133,6 +1124,68 @@ def dt_of.of(m: Maybe<&2, S.Dt>) -> S.Dt:
 # from a settled fold.
 def dt_of(tb: F.Table, ar: O.Arena, u: U32) -> S.Dt:
   dt_of.of(F.fold.dt(ar, tb, u))
+
+# ===========================================================================
+# `UOp.tuplize`'s ORDER -- ops.py:316, and THE PORT DECIDES THREE OF ITS FOUR KEYS.
+#
+#     _UOpTuple((self.op.value, repr(self.arg), self.dtype,) + tuple(x.tuplize for x in self.src))
+#
+# `_UOpTuple` is a `tuple` SUBCLASS (`ops.py:221-226`) whose `__eq__` is IDENTITY and whose `<`
+# is `tuple.__lt__`, so the order is LEXICOGRAPHIC over an int, a STRING, a `DType`, then the
+# children as nested tuples.
+#
+# WHY THE ORDER AND NOT THE KEY. `ops.bend:5321` records that `tuplize` exists to KEY CPython's
+# `ucache` and that this port's interner is `intern.find`, a direct comparison over `Arena.nodes`
+# -- so no key is wanted. But `uop/symbolic.py:225` is its OTHER consumer, `commutative`'s rule
+# `x.src[1].tuplize < x.src[0].tuplize`, and THAT IS AN ORDER.
+#
+# KEY THREE IS `(priority, bitsize, name)` AND NOT `(.., fmt)` -- AND THAT IS MEASURED, NOT
+# SIMPLIFIED. `DType.__lt__` (`dtype.py:68`) compares `(priority, bitsize, name, fmt)`, and
+# `name -> fmt` IS A FUNCTION over tinygrad's 20 distinct dtype names (MEASURED 2026-11-03:
+# 0 collisions), so once `name` ties, `fmt` IS DETERMINED AND THE `fmt` TERM IS NEVER REACHED.
+# A rank over `S.Cls` standing in for `fmt` would be a comparison that can NEVER decide -- a row
+# that cannot go red -- so there is none.
+#
+# THE ANSWER IS `None{}` WHEN ALL THREE TIE, AND THAT IS THE REFUSAL: the fourth key is the
+# CHILDREN, and `uop_tup_cmp -> list walk -> uop_tup_cmp` is the mutual recursion Bend refuses.
+# `gates/symclosure.bend` prints that boundary as a row.
+def ord3(lt: Bool, gt: Bool) -> U32:
+  match lt gt:
+    case True{} _: 1
+    case _ True{}: 2
+    case _ _     : 0
+
+def tup_lift(z: Bool, c: U32) -> Maybe<&2, U32>:
+  match z:
+    case True{} : None{}
+    case False{}: Some{c}
+
+# `a` unless `a` is a tie, then `b` -- the lexicographic chain, and `a`/`b` are BOTH already
+# computed because Bend is strict. That is why the three keys are pure calls and the chain is a
+# fold over their answers rather than a sequence of guarded returns.
+def lt_then(z: Bool, a: U32, b: U32) -> U32:
+  match z:
+    case True{} : b
+    case False{}: a
+
+def dt_ord(x: S.Dt, y: S.Dt) -> U32:
+  match x y:
+    case S.Dt{+p1, +b1, +c1, +n1} S.Dt{+p2, +b2, +c2, +n2}:
+      +o1 = ord3(U32.is_lt(p1, p2), U32.is_gt(p1, p2))
+      +o2 = ord3(U32.is_lt(b1, b2), U32.is_gt(b1, b2))
+      +o3 = ord3(String.is_lt(n1, n2), String.is_gt(n1, n2))
+      lt_then(U32.is_zero(o1), o1, lt_then(U32.is_zero(o2), o2, o3))
+
+def uop_tup_cmp(+tb: F.Table, +ar: O.Arena, +a: U32, +b: U32) -> Maybe<&2, U32>:
+  +va = O.Ops.value(O.Arena.op(ar, a))
+  +vb = O.Ops.value(O.Arena.op(ar, b))
+  +ra = arg_repr(ar, a, O.Arena.arg(ar, a))
+  +rb = arg_repr(ar, b, O.Arena.arg(ar, b))
+  +k1 = ord3(U32.is_lt(va, vb), U32.is_gt(va, vb))
+  +k2 = ord3(String.is_lt(ra, rb), String.is_gt(ra, rb))
+  +k3 = dt_ord(dt_of(tb, ar, a), dt_of(tb, ar, b))
+  +c = lt_then(U32.is_zero(k1), k1, lt_then(U32.is_zero(k2), k2, k3))
+  tup_lift(U32.is_zero(c), c)
 
 # `x.arg is not None` -- `ANone` is Python's None, so this is a one-arm match on
 # a CLOSED datatype instead of an identity test.
