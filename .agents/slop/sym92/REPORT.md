@@ -1174,3 +1174,44 @@ WHAT REMAINS IS THE BODY, NOT THE ARCHITECTURE: `uop_given_valid` (split on AND,
 clause into a bounds map, substitute, re-`simplify`), `simplify_valid` (priority-sort the clauses and
 join them with `uprod`), and `gated_given_valid` (a dtype check plus `cond.where(ugv(cond, x), i)`).
 `sy_parse_valid` already exists, which is the hard half of `ugv`.
+
+## 35. THE LAST BLOCKER FOR `:450`/`:451`/`divandmod:103` IS ONE TRUNCATED FUEL
+
+With the architecture corrected in section 34, the remaining work is `uop_given_valid`'s BODY. Its
+steps, one at a time, and what each costs:
+
+    valid.split_uop(Ops.AND)          PRESENT  (UOp.split_uop, ops.bend:5169)
+    parse_valid(stmt) -> (e, up, c)   PRESENT  (sy_parse_valid)
+    cond.where(...)                   PRESENT  (mint_where / sy_where)
+    a MULTI-ENTRY substitute          <-- THE BLOCKER
+    .simplify()                       PRESENT  (sy_simplify, and section 34 says it must stay BASE)
+    UOp.uprod(*ret)                   PRESENT  (the AND product)
+
+MEASURED, `codegen/__init__.bend:414-415`:
+
+    def UOp.substitute(+ar, +sink, +dvars: Map<&2, U32>) -> (...):
+      walk_rewrite.put(sink, wr.go_sub(O.UOp.toposort_nocalls(U32.to_nat(O.Arena.next(ar)), ar, sink), ...))
+
+`Arena.next(ar)` is THE LENGTH OF THE ARENA, used as a `Nat` fuel for a topological walk
+(`ops.bend:1381`). `Arena.budget(+ar: O.Arena) -> Nat` (`ops.bend:3414`) is the sound fuel, and the
+comment directly above this line says a previous audit already swept this file for exactly that
+mistake -- **so this one call was MISSED BY THE SWEEP THAT WAS LOOKING FOR IT.** A `Nat` fuel equal to
+the node COUNT truncates the walk on any graph with a diamond in it, which is every non-tree graph
+`uop_given_valid` would be asked about.
+
+AND THE SINGLE-ENTRY SOUND ONE ALREADY EXISTS: `s1` (`symbolic.bend:5536`) was written with
+`Arena.budget` precisely because `Arena.next` truncated it, and it is verified 3 of 3. **So the fix is
+known and the fix is not new work -- the multi-entry substitute needs `s1`'s fuel and `s1`'s shape
+generalised to a map.**
+
+NOT CHANGED HERE, and the reason is disclosure rather than fatigue: `UOp.substitute` is in
+`codegen/`, not in this lane, the corpus is RED for reasons section 30 attributes elsewhere, so a
+change here could neither be validated by the corpus nor blamed by it -- and `codegen`'s `Map` is
+itself the "unverified in this port" component (`Map.put` has no call site and `nn/onnx.bend:722`
+records it LOSING KEYS). **A FIX TO A TRUNCATED FUEL THAT RUNS THROUGH A MAP THAT LOSES KEYS IS TWO
+DEFECTS, NOT ONE.**
+
+THE THREE ROWS STAY MISSING, and the full chain is now short and measured: generalise `s1` to a map
+with `Arena.budget` as fuel -> `uop_given_valid` -> `simplify_valid` and `gated_given_valid` in a
+separate `valid_table` behind a two-arm `sym_valid_f` (section 34) -> and `divandmod.py:103` after
+that, which additionally wants `UOp.gcd`, `UOp.divide_exact` and a `usum` it can reach.
