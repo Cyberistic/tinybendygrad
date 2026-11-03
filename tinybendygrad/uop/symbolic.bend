@@ -436,9 +436,40 @@ def sy_const_at(+x: F.Folded, +u: U32, dt: S.Dt, v: O.Const) -> Maybe<&1, U32>:
 # folds, so UOp.const cannot state the width". It is a bare CONST under a CAST
 # whose arg is the dtype, and it is the only spelling that can state a bool
 # width, which is why `fold_const_where` reaches for it.
+# **THE ARENA-THREADING TRAP, LIVE AND UNTIL NOW UNREACHED.** `UOp.const` and `sy_cast` both
+# MINT, and this def keeps only `Found.i` while dropping `Found.ar` -- then hands the index to
+# `sy_cast` with the OLD arena. The answer is an index into an arena nobody holds.
+#
+# IT WAS INVISIBLE BECAUSE THE DEF HAD NO CALLER. `fold_const_where` (rule :202, wired last
+# turn) is the first, and the probe that was supposed to CONFIRM the cast branch instead found
+# `fcw=node=7 op=NOOP dt=void` on a graph whose last node is 7 -- the first free slot read as
+# a node. FIVE OTHER DEFS in this session carried the same shape (`variables`, `unbound`,
+# `wr.rebuild.one`, `ca_ans_ar`, the `nv` fixture); this is the sixth.
+#
+# THE FIX IS A REFUSAL AND NOT A SIGNATURE CHANGE: `sym_table` answers `Maybe<&1, U32>`, an
+# index and no arena, so a MINTING rule cannot be expressed there at all -- the port says so in
+# `ops.bend` about `pm_rewrite_m`. So this def answers `None{}` for any index it cannot vouch
+# for, which leaves the node alone instead of returning garbage. A rule that declines is a
+# NARROW the census can show; a rule that answers a stale index is a wrong graph.
+def sy_cc_all.of(ok: Bool, +i: U32) -> Maybe<&1, U32>:
+  match ok:
+    case True{} : Some{i}
+    case False{}: None{}
+
+def sy_cc_all(+i: U32, +ar: O.Arena) -> Maybe<&1, U32>:
+  sy_cc_all.of(U32.is_lt(i, O.Arena.next(ar)), i)
+
+def sy_cc_build.go(ok: Bool, +f: O.Found, +ar: O.Arena, dt: S.Dt) -> Maybe<&1, U32>:
+  match ok:
+    case False{}: None{}
+    case True{} : sy_cc_all(sy_cast(O.Found.ar(f), O.Found.i(f), dt), ar)
+
+def sy_cc_build(+f: O.Found, +ar: O.Arena, dt: S.Dt) -> Maybe<&1, U32>:
+  sy_cc_build.go(U32.is_lt(O.Found.i(f), O.Arena.next(ar)), f, ar, dt)
+
 def sy_cconst_cast(tv: Maybe<&1, O.Const>, +ar: O.Arena, dt: S.Dt) -> Maybe<&1, U32>:
   match tv:
-    case Some{w}: Some{sy_cast(ar, O.Found.i(O.UOp.const(ar, w)), dt)}
+    case Some{w}: sy_cc_build(O.UOp.const(ar, w), ar, dt)
     case None{}: None{}
 
 def sy_cconst(+ar: O.Arena, +dt: S.Dt, v: O.Const) -> Maybe<&1, U32>:
