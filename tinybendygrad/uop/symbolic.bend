@@ -179,6 +179,7 @@ import ./ops.bend as O
 import ./fold.bend as F
 import ./render.bend as R
 import ./../dtype.bend as D
+import ./weak.bend as W
 
 # THE PRELUDE. Everything symbolic.py GETS FROM ELSEWHERE, in dependency order,
 # because Bend has no forward references and mutual recursion is refused. Every
@@ -4231,6 +4232,88 @@ def sym_302.run(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_302(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_302.pat(x, u), sym_302.run(x, u))
 
+# ---- `weak.py:89`, `pm_uncast_const` -------------------------------------------
+#
+# `(UPat(GroupOp.Broadcastable, name="u"), uncast_const)` and it is composed at the END of `sym`
+# (`symbolic.py:326`: `])+div_and_mod_symbolic+pm_uncast_const`), so its row is last.
+#
+#   src = tuple(s.src[0] if s.op is CAST and s.dtype not in weaks and s.src[0].op is CONST
+#                              and s.src[0].dtype in weaks else s for s in u.src)
+#   if src == u.src or (dts := derived_dtypes(u, src)) is None
+#      or dts[0] != promo_dtype(u.src) or dts[1] is not u.dtype: return None
+#   return u.replace(src=src)
+#
+# THE DROP MUST CHANGE NOTHING THE CONSUMER DERIVES: neither the operands' meet nor the node's
+# own dtype. That is the whole guard, and all four of its readings are landed (`derived_dtypes`
+# and `Dts` in `weak.bend`, `promo_dtype` in `fold.bend`).
+def p_uncastable(+x: F.Folded, +s: U32) -> Bool:
+  +ar = F.Folded.ar(x)
+  Bool.and(Bool.and(sy_is_op(x, s, O.OpsCAST{}), sy_nsrc_is(x, s, 1)),
+    Bool.and(Bool.not(dt_weak_of(sy_dt1(x, s))),
+      Bool.and(sy_is_op(x, O.Arena.src0(ar, s), O.OpsCONST{}),
+               dt_weak_of(sy_dt1(x, O.Arena.src0(ar, s))))))
+
+def uc.step(ok: Bool, s: U32, +ar: O.Arena, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ok:
+    case True{} : List.append(&2, U32, acc, [O.Arena.src0(ar, s)])
+    case False{}: List.append(&2, U32, acc, [s])
+
+def uc.srcs(ss: List<&2, U32>, +ar: O.Arena, +x: F.Folded, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case +s <> rest: uc.srcs(rest, ar, x, uc.step(p_uncastable(x, s), s, ar, acc))
+
+# `src != u.src` IS "AT LEAST ONE SRC WAS UNCASTABLE": the map only changes the entries that
+# pass `p_uncastable`, so a list comparison adds nothing but a second way to be wrong -- and Bend
+# will not take two list patterns in one `case` anyway.
+def uc.any(ss: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
+  match ss:
+    case Nil{}: acc
+    case +s <> rest: uc.any(rest, x, Bool.or(acc, p_uncastable(x, s)))
+
+def dt_list(ss: List<&2, U32>, +x: F.Folded, +acc: List<&2, S.Dt>) -> List<&2, S.Dt>:
+  match ss:
+    case Nil{}: acc
+    case +s <> rest: dt_list(rest, x, List.append(&2, S.Dt, acc, [sy_dt1(x, s)]))
+
+def uncast.fin(ok: Bool, +new: List<&2, U32>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{} : Some{mint_replace(mint_ar(F.Folded.ar(x)), x, u, new)}
+    case False{}: None{}
+
+# EVERY MATCH IS ON ITS OWN PARAMETER: a `match` after a local binder is refused, so the `Dts`
+# is read in one def and its `Bool` in another.
+def uncast.check2(ok: Bool, +d: W.Dts, +new: List<&2, U32>, +old: List<&2, U32>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}:
+      uncast.fin(Bool.and(O.eq_dt(W.Dts.meet(d), F.promo_dtype(dt_list(old, x, Nil{}))),
+                          O.eq_dt(W.Dts.result(d), sy_dt1(x, u))), new, x, u)
+    case False{}: None{}
+
+def uncast.check1(+d: W.Dts, +new: List<&2, U32>, +old: List<&2, U32>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  uncast.check2(W.Dts.some(d), d, new, old, x, u)
+
+def uncast.check(ok: Bool, +new: List<&2, U32>, +old: List<&2, U32>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{} : uncast.check1(W.derived_dtypes(x, u, new), new, old, x, u)
+    case False{}: None{}
+
+def uncast.go(diff: Bool, ok: Bool, +new: List<&2, U32>, +old: List<&2, U32>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match diff:
+    case True{} : uncast.check(ok, new, old, x, u)
+    case False{}: None{}
+
+def uncast.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +ar = F.Folded.ar(x)
+  +old = O.Arena.srcs(ar, u)
+  +new = uc.srcs(old, ar, x, Nil{})
+  uncast.go(uc.any(old, x, False{}), True{}, new, old, x, u)
+
+def uncast.pat(+x: F.Folded, +u: U32) -> Bool: O.GroupOp.broadcastable(sy_op(x, u))
+
+def wk_89(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(uncast.pat(x, u), uncast.mk(x, u))
+
 # symbolic.py:308  (UPat.var('x').cast(name="a").cast(name="b"),
 #                     lambda x,a,b: x.cast(b.dtype) if can_lossless_cast(x.dtype, a.dtype) else None)
 # IF THE INTERMEDIATE CAST DOES NOT NARROW, the pair is ONE cast to the outer dtype. `:186`
@@ -4683,16 +4766,17 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{101, [O.OpsEND{}], Nil{}, },   # 324
     O.PMEntry{102, [O.OpsFLOORDIV{}], Nil{}, },   # divandmod.py:101
     O.PMEntry{103, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}, },   # divandmod.py:103
-    O.PMEntry{104, [O.OpsSTORE{}], Nil{}, },   # 453
-    O.PMEntry{105, [O.OpsSTORE{}], Nil{}, },   # 454
-    O.PMEntry{106, [O.OpsSTORE{}], Nil{}, },   # 458
-    O.PMEntry{107, [O.OpsSTORE{}], Nil{}, },   # 460
-    O.PMEntry{108, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{109, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{110, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{111, [O.OpsMUL{}], Nil{}, },   # 471
-    O.PMEntry{112, [O.OpsMUL{}], Nil{}, },   # 473
-    O.PMEntry{113, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{104, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMULACC{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # weak.py:89
+    O.PMEntry{105, [O.OpsSTORE{}], Nil{}, },   # 453
+    O.PMEntry{106, [O.OpsSTORE{}], Nil{}, },   # 454
+    O.PMEntry{107, [O.OpsSTORE{}], Nil{}, },   # 458
+    O.PMEntry{108, [O.OpsSTORE{}], Nil{}, },   # 460
+    O.PMEntry{109, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{110, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{111, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{112, [O.OpsMUL{}], Nil{}, },   # 471
+    O.PMEntry{113, [O.OpsMUL{}], Nil{}, },   # 473
+    O.PMEntry{114, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -5067,7 +5151,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 53, 54, 55, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 96, 97, 98, 99, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 53, 54, 55, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 96, 97, 98, 99, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -5144,16 +5228,17 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 101: sym_324(x, u)
     case 102: dm_101(x, u)
     case 103: dm_103(x, u)
-    case 104: sym_453(x, u)
-    case 105: sym_454(x, u)
-    case 106: sym_458(x, u)
-    case 107: sym_460(x, u)
-    case 108: sym_462(x, u)
-    case 109: sym_463(x, u)
-    case 110: sym_464(x, u)
-    case 111: sym_471(x, u)
-    case 112: sym_473(x, u)
-    case 113: sym_444(x, u)
+    case 104: wk_89(x, u)
+    case 105: sym_453(x, u)
+    case 106: sym_454(x, u)
+    case 107: sym_458(x, u)
+    case 108: sym_460(x, u)
+    case 109: sym_462(x, u)
+    case 110: sym_463(x, u)
+    case 111: sym_464(x, u)
+    case 112: sym_471(x, u)
+    case 113: sym_473(x, u)
+    case 114: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
