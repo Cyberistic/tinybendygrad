@@ -26,11 +26,17 @@
 #                                               1. `UOp.uprod` -- elementwise.py:41,
 #                                                  `reduce(and_ if dtype is bool else mul,
 #                                                   uops, self)`. ABSENT.
-#                                               2. `c.ranges` needs an `RTable` BUILT INSIDE A
-#                                                  RULE BODY. `RTable{es}` exists in fold.bend
-#                                                  and this lane has no builder for one, so
-#                                                  `cond.split_uop(AND)`'s terms cannot be
-#                                                  filtered by the reduce's ranges at all.
+#                                               2. ~~`c.ranges` needs an `RTable` BUILT INSIDE A
+#                                                  RULE BODY~~ -- **THIS WAS FALSE AND THE
+#                                                  MEASUREMENT THAT REFUTED IT IS ONE GREP:
+#                                                  `fold.bend:5293` `def ranged(+ar: O.Arena)
+#                                                  -> Ranged` IS the builder**, and
+#                                                  `Ranged.rt` hands back the `RTable`.
+#                                                  `fold.bend:5589` already uses it that way
+#                                                  in its own rows. SO `c.ranges` IS REACHABLE
+#                                                  FROM A RULE BODY AND `:90` HAS **NO
+#                                                  REMAINING BLOCKER** -- `uprod` landed last
+#                                                  turn and the table was never missing.
 #   8  79-102  table pm_data_invalid      13 of 14  (rule 6 is #7)
 #   9  104-108 table pm_remove_invalid    2 of 2
 #  10  113     fold  fold_const_where     MISSING. This line said `PORTED` and named line
