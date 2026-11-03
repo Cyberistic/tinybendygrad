@@ -459,3 +459,39 @@ tree's own rule is that a row which cannot go red is a label. The next attempt s
 list is shorter, the fuel semantics of the port's `toposort` are the cause, and `UOp.substitute` in
 `codegen/__init__.bend` uses the SAME fuel expression, so it would be a defect in a def that is
 already gated rather than in this one.
+
+## 2026-11-03 (final, 11): `:436`, `:437` AND `divandmod:108` share ONE blocker -- `UOp.simplify`
+
+The wall for `:436`/`:437` was recorded as "`parse_valid` + `uop_given_valid` are absent". `parse_valid`
+is NINE LINES and `uop_given_valid` is twenty, but both call **`UOp.simplify()`** in their main path:
+
+    if (s_uop := uop.substitute(sub_dict)) is not uop:
+      uop = s_uop.simplify().substitute({newX:X ...}).simplify()
+
+and `divandmod.py:108` needs the same call (`UOp.gcd(...).simplify()`,
+`unwrap(x.divides(g)).simplify()`). So THREE rows share one missing function, and `fold.bend:7281`
+already records it as the wall: "`def simplify` -- `graph_rewrite`. STILL NOT PORTED".
+
+### And `simplify` IS reachable, which is the good news
+
+Upstream is `graph_rewrite(self, symbolic, name="simplify")` with two fast paths (`CONST` -> self, a
+fully-const `SINK` -> self) and `bottom_up=False`. Every piece exists here:
+
+| piece | where |
+|---|---|
+| `graph_rewrite(+ar, +sink, +pm, +ctx, walk: Bool)` | `codegen/__init__.bend:342`, and `walk=False` is the unified arm upstream's default selects |
+| a `CTX` VALUE | `codegen/__init__.bend:632` builds one: `Fx{..., CArgs{[...]}}`. So `CArgs{Nil{}}` is an empty context and `CTX` is not a wall |
+| the answer | `Rewritten` (`:206`), answer in `Rewritten.sink(w)`: `Maybe<&2, U32>` |
+| reachability | `symbolic.bend` already imports `codegen/__init__.bend` (for `substitute`), and that file imports no symbolic -- no cycle |
+
+### The ONE open question, and it is a table choice, not a capability
+
+Upstream `simplify` passes **`symbolic`**, and this port names only `sym_table()` and `rm_table()`.
+`sym` IS `symbolic + pm_simplify_valid + PatternMatcher([...])`, so passing `sym_table()` would be a
+DIFFERENT function -- and `:436`/`:437` live in `pm_simplify_valid`, which `sym` already contains.
+That recursion has to be settled before anyone calls it, or `simplify` will be the rewriter calling
+itself.
+
+So the three rows are one measured decision away: WHICH table is `symbolic` here. Everything else --
+the driver, the context, the answer shape, the import direction -- is in place, and `parse_valid` and
+`uop_given_valid` are small once that is answered.
