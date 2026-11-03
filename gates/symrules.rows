@@ -33,7 +33,7 @@
 # UPSTREAM-BLOB	movement.py	8237ba8eaf3a485f8a2b61b916358efb3c1b3b70
 # UPSTREAM-BLOB	symbolic.py	466a4f01d5185b6ce55798cbe6a6fe05b7154625
 # UPSTREAM-BLOB	weak.py	52a4c30bca4b81b945de6a3b787e6e738f640bfc
-# PORT-BLOB	uop/symbolic.bend	657a960b61d29b8a3ee544aa194a6962ebbc73f4
+# PORT-BLOB	uop/symbolic.bend	a2c8b4a0cf3d1d921a69d4b4a73932b67e5cad2e
 #
 1	symbolic.py:89	STACK	sym_table	0	PORTED
 2	symbolic.py:90	BITCAST,CAST,EXP2,LOG2,NEG,RECIP,SIN,SQRT,TRUNC	sym_table	1	PORTED
