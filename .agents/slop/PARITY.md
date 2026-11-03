@@ -1864,3 +1864,46 @@ by wasted work; it is dominated by the calls it legitimately makes.
 **⇒ AND THAT IS THE END OF THIS CLASS, STATED WITH THREE MEASUREMENTS RATHER THAN A JUDGEMENT.** The next
 change would have to reduce the number of calls a rendered line makes, not the number of arms it evaluates,
 and no site in the file does both any more.
+
+## 42. FEWER CALLS PER LINE: THE LIST IS REMOVED, THE TIME DOES NOT MOVE
+
+§41 closed the strict-`Bool.pick` class with three neutrals. The next lever named in the record was the
+NUMBER OF CALLS a line makes, and the concrete site was `ku_text_alu`: it folded the sources into a
+`List<String>` with `ku_alu_srcs` and the op table then walked that list back with `cfo_xs1/2/3` -- a
+`List.append` per source plus a `List.get` per read, for a list never longer than three.
+
+The change removed the list entirely: `ku_alu_src_at(n, ...)` answers one source (with the fold's own parens
+rule), and the six op tables (`code_for_op.of`, `code_for_base`, `_clang`, `_metal`, `_cuda`, `_hip`) now
+take `x1, x2, x3` as STRINGS. `ku_alu_srcs` and `ku_alu_srcs.go` became dead and were deleted.
+
+### 42.1 Measured
+
+```
+before (list)     min 47.0  p25 49.3  median 49.9 ms
+after  (3 strs)   min 47.3  p25 48.4  median 49.9 ms
+ratio new/old  min 0.9598  p25 0.9760  median 1.0003  max 1.0952
+rounds where the new artifact is faster: 6 of 12
+```
+
+**NEUTRAL, AND REVERTED** -- the median is 1.0003 and the rounds are a coin flip, and `ksweep 37 of 37` and
+`ops_bend_exec-e2e 7 of 7` passed on it, so it was correct and did not help.
+
+### 42.2 What four neutrals in a row establish, and the one thing they rule out
+
+| § | what was removed | ratio median | rounds faster |
+|---|---|---|---|
+| 37 | one right fold for another (89 sites) | 1.0021 | 5/12 |
+| 40 | a second whole index form per index line | 0.9960 | 7/12 |
+| 41 | two nested picks in the index path | 1.0013 | 6/12 |
+| 42 | **the per-line `List` for ALU sources** | 1.0003 | 6/12 |
+
+**A LIST BUILD AND THREE LIST WALKS PER ALU LINE ARE WORTH NOTHING MEASURABLE.** That rules out the last
+hypothesis the record had about *where* the 24 ms lives: it is not the arms (four fixed), not the string
+folds (one tested), not the list plumbing (this one), and not the strict picks (three tested). What is left
+is the call graph itself -- ~30 Bend-level calls per emitted line, each allocating in a CPS runtime -- and
+**cutting that means emitting FEWER PIECES, not cheaper ones**, which is a different program rather than a
+different line of it.
+
+**⇒ AND THE HONEST STATEMENT OF THE OBJECTIVE IS UNCHANGED AND NOW BETTER SUPPORTED**: steady state is at
+parity, the cold path is at or below the CPU lane in 7 of 7 readings, the render is ~45-48 ms for 405 uops
+with every structural lever this record could name now measured, four of them removed and four rejected.
