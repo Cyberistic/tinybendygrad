@@ -435,3 +435,27 @@ AND THERE IS NO SHORTCUT TO FALL BACK ON: the only other `substitute` in the tre
 `uop/upat.bend:362`, and that one is over `UPat` patterns (`C`), not over a `UOp` in an arena. So
 `:259` needs the tagged-work-item substitution, and nobody should spend another cycle looking for a
 single-entry helper that already exists.
+
+## 2026-11-03 (final, 10): `s1` was WRITTEN, it works on a LEAF and not on a TREE, and it was REVERTED
+
+The tagged-work-item form turned out not to be needed: a post-order fold over `toposort_nocalls`
+with a table of `Ky{k, n}` needs NO mutual recursion, because each step only LOOKS UP its srcs in
+answers already computed. `s1` was written that way (96 lines) and compiles.
+
+MEASURED with `probe-s1.bend`:
+
+    sub_one=bt              (sink = a LEAF, substituting it with the const -- CORRECT)
+    sub_hit=(where ab xi yi) (sink = a TREE containing it -- UNCHANGED, should be (where bt xi yi))
+    sub_miss=(where ab xi yi) (same, substituting yi -- UNCHANGED, should be (where ab xi bt))
+
+So the fold, the table, `s1.get` and the leaf case are all right, and the TREE case does nothing --
+which is the signature of the toposort LIST not containing the srcs (or the parent being decided
+before its children are in the table). Reversing the list was TRIED and did not change the answer,
+so the list itself is the suspect and not its direction.
+
+IT WAS REVERTED AND NOT COMMITTED. A def that answers the wrong node is worse than no def, and the
+tree's own rule is that a row which cannot go red is a label. The next attempt should print
+`List.length(toposort_nocalls(...))` for a four-node tree and compare it with `Arena.next` -- if the
+list is shorter, the fuel semantics of the port's `toposort` are the cause, and `UOp.substitute` in
+`codegen/__init__.bend` uses the SAME fuel expression, so it would be a defect in a def that is
+already gated rather than in this one.
