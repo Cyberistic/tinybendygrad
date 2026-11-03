@@ -28038,3 +28038,37 @@ rule must recurse into `canonicalize_call_body`, its body would live in `pm_disp
 (`ops.bend`), and `graph_rewrite` lives in `codegen/__init__.bend`.  **`RWk` IS THE
 **PROVEN **ANSWER **AND **IT **IS **ALREADY **IN **`schedule/__init__.bend`, **gated **by
 **`ab_nest`.
+
+`canonicalize_call_body` WAS WRITTEN, IT COMPILED, AND I REVERTED IT -- because its gate row could not be made to say anything
+
+**⇒ AND **THE **PORT **IS **A **FAITHFUL **TRANSCRIPTION **AND **IT **COMPILED **FIRST **TRY
+**AFTER **THE **USUAL **FIVE **LINEARITY/ORDERING **ROUNDS:** a `CWk` work item with
+`CGo`/`CFold`/`CRec`/`CAlloc`, fuel first, every scrutinee a field, `CRec` as the
+continuation for the CALL recursion, a FRESH `CallifyCtx` per call body, and
+`canonicalize_alloc` driving the ALLOC arm.  `schedule/__init__.bend` answered
+`ALL PROOFS CHECK`.
+
+**⇒ AND **THE **GATE **ROW **DID **NOT, **AND **I **DID **NOT **SHIP **IT.  **THE **TRACE,
+VERBATIM, **ON **A **CALL(SINK(ALLOC{slot=3})):**
+
+    ccb_dbg=r=CALL nsrc0=1 src0=SINK nsrc_of_src0=1 x=SINK slot=0
+
+`src0` is the SINK (right), it has ONE src (right), and **THAT SRC HAS OP `SINK`** --
+so either my fixture mints a self-referential SINK or the assemble writes the wrong
+index, and **THE **TRACE **DOES **NOT **SEPARATE **THOSE **TWO.  **A **ROW **THAT **CANNOT
+**SAY **WHICH **IS **WRONG **IS **NOT **A **GATE, **AND **I **HAVE **DELETED **THREE
+**SUCH **ROWS **THIS **SESSION **ALREADY.
+
+**⇒ AND **SO **THE **CODE **IS **REVERTED **AND **THE **TREE **IS **THE **CERTIFIED **ONE:**
+`git status --porcelain -- tinybendygrad/schedule/__init__.bend gates/uopvars.bend` is
+EMPTY, `uopvars` rc=0, `schedstore` rc=0, `realize_kernel_args` rc=0, and HEAD is
+`5ca0044cb` -- the commit that carries the `Aa`/`CallifyCtx` MOVE, `CTX.CCallify`, the
+whole-port census (`population=201 compiled=195 cold-by-design=6 findings=0`) and the
+corpus certificate at `01f74e5c`.
+
+**⇒ AND **WHAT **IS **LEFT **IS **NOW **ONE **DEBUGGING **QUESTION **WITH **A **NAMED
+**NEXT **PROBE:** print `nsrc`/op for EVERY node the `CFold` accumulates, on a
+`CALL(SINK(ALLOC))` with NO rewrite at all, so the fixture and the assemble are
+separated BEFORE `canonicalize_alloc` is in the picture.  **THAT **IS **A **FIXTURE
+**PROBE, **NOT **A **DESIGN **QUESTION, **AND **THE **PORT **ITSELF **IS **WRITTEN -- **IN
+**THIS **MESSAGE -- **AND **CAN **BE **RE-APPLIED **FROM **IT.
