@@ -2858,6 +2858,31 @@ def sym_264(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_264.pat(x, u),
     Some{mint_where(o, O.Found.i(o), sy_src1(x, u), sy_src2(x, i))})
 
+# symbolic.py:260  (UPat.var("gate").where(UPat.var("x"), 0) != 0, lambda gate,x: gate & (x != 0))
+# A GATED VALUE COMPARED AGAINST THE ELSE BRANCH: `gate ? x : 0` is non-zero exactly when the
+# gate holds AND `x` is non-zero, so the gate moves out of the comparison and the two AND.
+def sym_260.pat(+x: F.Folded, +u: U32) -> Bool:
+  +w = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsCMPNE{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(p_is_const_0(x, sy_src1(x, u)),
+      Bool.and(Bool.and(sy_is_op(x, w, O.OpsWHERE{}), sy_nsrc_is(x, w, 3)),
+        p_is_const_0(x, sy_src2(x, w)))))
+
+# THE MATCH IS THE FIRST STATEMENT: Bend refuses a `match` whose scrutinee is a parameter
+# read after a local binder ("'m' can't be matched in this position").
+def sym_260.build(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+z}:
+      +w = sy_src0(x, u)
+      +v = sy_src1(x, w)
+      +n = mint_bin(z, O.OpsCMPNE{}, v, O.Found.i(z))
+      Some{mint_bin(n, O.OpsAND{}, sy_src0(x, w), O.Found.i(n))}
+    case None{}: None{}
+
+def sym_260(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_260.pat(x, u),
+    sym_260.build(mint_const_like(mint_ar(sy_ar(x)), x, sy_src1(x, sy_src0(x, u)), O.CInt{H.i64_of_i32(0)}), x, u))
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3140,12 +3165,13 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{59, [O.OpsOR{}], Nil{}, },   # 243
     O.PMEntry{60, [O.OpsADD{}], Nil{}, },   # 250
     O.PMEntry{61, [O.OpsWHERE{}], Nil{}, },   # 256
-    O.PMEntry{62, [O.OpsWHERE{}], Nil{}, },   # 262
-    O.PMEntry{63, [O.OpsWHERE{}], Nil{}, },   # 264
-    O.PMEntry{64, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{65, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{66, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{67, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{62, [O.OpsCMPNE{}], Nil{}, },   # 260
+    O.PMEntry{63, [O.OpsWHERE{}], Nil{}, },   # 262
+    O.PMEntry{64, [O.OpsWHERE{}], Nil{}, },   # 264
+    O.PMEntry{65, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{66, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{67, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{68, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3378,11 +3404,16 @@ def sym_87.mk(+f: O.Found, +op: O.Op, +g: U32, +y: U32) -> Maybe<&1, O.Found>:
   +f1 = mint_alu(op, f, [O.Arena.src(ar, g, 1), y])
   Some{mint_where(f1, O.Arena.src(ar, g, 0), O.Found.i(f1), O.Arena.src(ar, g, 2))}
 
+# THE PATTERN IS THE RULE. `pat` existed and NOTHING CALLED IT, so both of these fired on
+# EVERY binary op and rewrote it into `cond.where(x.alu(op,y), i)` with `cond`/`i` read out of
+# whatever `src0` was. MEASURED 2026-11-03: `(cmpne (where gb x c0) c0)` answered
+# `(where gb (cmpne x c0) c0)` -- `:87` claiming a CMPNE whose src is not a gate at all.
+# The index lane hid it: `sym` has no arms for these tags, so only `symf` could see the answer.
 def sym_87(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src0(x, u), sy_src1(x, u))
+  sy_tri_f(sym_87.pat(x, u), sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src0(x, u), sy_src1(x, u)))
 
 def sym_88(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src1(x, u), sy_src0(x, u))
+  sy_tri_f(sym_88.pat(x, u), sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src1(x, u), sy_src0(x, u)))
 
 # ONE BODY FOR THE PAIR: `(g, y)` in that order, the gate's `x` first inside the op for :87 and
 # the swapped pair for :88 -- which is exactly the two upstream lambdas.
@@ -3511,7 +3542,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3542,12 +3573,13 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 59: sym_243(x, u)
     case 60: sym_250(x, u)
     case 61: sym_256(x, u)
-    case 62: sym_262(x, u)
-    case 63: sym_264(x, u)
-    case 64: sym_462(x, u)
-    case 65: sym_463(x, u)
-    case 66: sym_464(x, u)
-    case 67: sym_444(x, u)
+    case 62: sym_260(x, u)
+    case 63: sym_262(x, u)
+    case 64: sym_264(x, u)
+    case 65: sym_462(x, u)
+    case 66: sym_463(x, u)
+    case 67: sym_464(x, u)
+    case 68: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
