@@ -240,10 +240,30 @@ def ku_of(l: String) -> C.KU: ku_ws(String.split(l, ' '))
 # (`List.append([h], acc)`, which recurses over the ONE-element list) and the recursive call is the last
 # thing in the arm. MEASURED on this parser: with one frame per uop, 900 lines decoded and 1500 did not,
 # while the LITERAL path rendered 1500 KUs fine -- the ceiling was this walk, not the renderer.
-def ku_all(+xs: List<&2, String>, +acc: List<&2, C.KU>) -> List<&2, C.KU>:
+# **THE WIRE IS ONE FLAT SPACE-SEPARATED TOKEN STREAM AND NINE TOKENS ARE ONE UOP, BECAUSE A SECOND
+# SPLIT PASS COSTS A SECOND SCAN OF EVERY BYTE.** The wire used to be lines of fields, so decoding split it
+# once on '\n' (8 700 characters) and again per line on ' ' (8 526) -- MEASURED in `PARITY.md` §78, that first
+# pass alone is **0.89 ms of a 2.17 ms decode**. Nine tokens per row is the same shape, one separator, one
+# pass. `take9` peels them with a counter and a CONS (O(1) each) rather than `fld`'s `List.get` per field.
+# **NINE TOKENS ARE ONE UOP AND THE STATE LIVES IN THIS ONE DEF, BECAUSE BEND REFUSES MUTUAL RECURSION.**
+# `skip` is how many fields the row still needs (1 = the token arriving now completes it); `fields` holds
+# the ones already collected, REVERSED, so each costs a CONS. `take9`/`drop` would need a second recursive
+# def calling back into this one, which the compiler refuses ("expected a filled definition").
+def ku_all(+xs: List<&2, String>, skip: Nat, +fields: List<&2, String>, +acc: List<&2, C.KU>) -> List<&2, C.KU>:
   match xs:
-    case Nil{}: acc
-    case h <> t: ku_all(t, List.append(&2, C.KU, [ku_of(h)], acc))
+    case Nil{}:
+      match fields:
+        case Nil{}: acc
+        case _ <> _: List.append(&2, C.KU, [ku_ws(List.reverse(&2, String, fields))], acc)
+    case h <> t:
+      match skip:
+        case 1n: ku_all(t, 0n, Nil{}, List.append(&2, C.KU,
+          [ku_ws(List.reverse(&2, String, List.append(&2, String, [h], fields)))], acc))
+        case 0n: ku_all(t, 8n, List.append(&2, String, [h], Nil{}), acc)
+        case 2n+k: ku_all(t, Nat.add(k, 1n), List.append(&2, String, [h], fields), acc)
+
+def kus(+text: String) -> List<&2, C.KU>:
+  List.reverse(&2, C.KU, ku_all(String.split(text, ' '), 0n, Nil{}, Nil{}))
 
 # ---------------------------------------------------------------- the runtime entry point
 # **`IO.args()`'s INDEX 0 IS THE PROGRAM, NOT THE FIRST ARGUMENT** -- MEASURED with two probes under
@@ -263,7 +283,7 @@ def skip_first(as: List<&1, String>) -> List<&1, String>:
 def walk(as: List<&1, String>, +acc: List<&2, C.KU>) -> IO(List<&2, C.KU>):
   match as:
     case Nil{}: IO.pure(List<&2, C.KU>, acc)
-    case h <> t: walk(t, ku_all(String.split(h, nlch()), acc))
+    case h <> t: walk(t, ku_all(String.split(h, ' '), 0n, Nil{}, acc))
 
 def main() -> IO(Unit):
   do IO<Unit>:

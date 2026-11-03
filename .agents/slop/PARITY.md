@@ -3391,3 +3391,66 @@ portexec e2e 7/7 · emit-mm and emit-f64 byte-identical
 no left word boundary and matched **`caller:`** inside `Emit_`, changing a field of a different record. The
 compiler caught it (`expected: List<&2, String>, observed: R` at `Emit_.caller`), which is the only reason it
 is a blemish in this paragraph and not a defect in the port.
+
+### 77.3 The certificate, at `f5e813baa`
+
+```
+substrate-start = substrate-end = live = 4028d807a8d4...
+head = f5e813baa   38 graphs, 38 byte-identical
+```
+
+## 78. THE WIRE IS ONE FLAT TOKEN STREAM: THE SECOND SPLIT PASS WAS 0.89 ms, 0.9408
+
+The four-point decomposition rebuilt on the §77 build names the new leader, and it is the DECODER:
+
+```
+stub  (IPC + prints)      0.44 ms
+read  (+ 8.7 KB request)  0.95   -> read   0.51
+dec   (+ decode)          3.12   -> DECODE 2.17   (32% of the turn)
+full  (+ render)          6.74   -> render 3.62   (was 6.44 before §75-77)
+```
+
+### 78.1 The decode is three passes, and one of them buys nothing
+
+Ablating `ku_of` to a constant KU (so the line is never split, but the chunk still is):
+
+```
+read only          0.89 ms
+newline split only 1.78 ms   -> the '\n' pass alone = 0.89
+full decode        3.00 ms   -> line split + fields = 1.22
+```
+
+**THE WIRE WAS LINES OF FIELDS, SO EVERY BYTE WAS READ TWICE** -- once to find the line ends and once to
+find the field ends -- and the first pass bought nothing but a row boundary. Nine tokens are one uop, so the
+wire is now one flat space-separated stream and `_chunks` cuts on the TOKEN COUNT (`9 * CHUNK // 27`), never
+on a character count that could land mid-row.
+
+### 78.2 The state has to live in one def
+
+Bend refuses a second recursive def calling back into the decoder ("expected a filled definition"), so
+`take9` + `List.drop` cannot be composed with `ku_all`: the row state is carried by `ku_all` itself --
+`skip` (1 = the token arriving now completes the row) and `fields` collected REVERSED so each is a CONS.
+That is also why the peel is not a 9-deep nested match: one def with a counter is the shape this language
+allows.
+
+### 78.3 Measured
+
+```
+same C: True | bytes: 4426
+before median 6.81 ms   after median 6.27 ms
+ratio min 0.8002  p25 0.9111  median 0.9408  max 1.0364   22 of 24 faster
+```
+
+**AND THE WIN IS SMALLER THAN THE 0.89 ms THE ABLATION PREDICTED** (0.54 measured), because the flat wire is
+9,516 bytes against 8,700 -- three characters longer per row is what a token count costs against a line
+break -- and because `List.drop` is not free. `List.drop` is gone from the final shape but the row
+bookkeeping (`skip`, the reverse of nine) is not.
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec e2e 7/7 · emit-mm and emit-f64 byte-identical
+```
+
+**⇒ AND THE HARNESS NOW ASKS THE RENDERER FOR THE DECODE**: `serve.bend`'s private `kus` COPY of
+`String.split(text, nlch())` + `L.ku_all(...)` was a second declaration of the wire format, and it had to be
+edited in the same commit or the daemon and the one-shot path would have disagreed. It now calls `L.kus`.

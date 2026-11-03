@@ -324,7 +324,9 @@ _OPS_INDEX = {m: i for i, m in enumerate(enum_members())} if "_OPS_SRC" in globa
 
 
 def wire_rows(rs) -> str:
-  """the RUNTIME wire: one line per uop, nine space-separated fields, every value a name or a decimal."""
+  """the RUNTIME wire: NINE space-separated fields per uop, FLAT -- no line structure at all, because every
+  separator is a pass over every byte and the decoder can group nine tokens as cheaply as it can split a
+  line. `PARITY.md` §78 measures the second pass at 0.89 ms of a 2.17 ms decode."""
   _check_op_tables()
   # **THE CHILD COUNT TRAVELS ON THE WIRE BECAUSE THE RENDERER CANNOT COMPUTE IT FOR FREE.** `cstyle.py:212`
   # builds `Counter(v for ru in uops for v in ru.src)` once and then asks `child_count[u] == 1` twice per uop
@@ -345,7 +347,7 @@ def wire_rows(rs) -> str:
                            KIND_CODE[tag], val, zero, str(cc)]))
   if not lines:
     raise RuntimeError("portc: the port rendered no uops")
-  return "\n".join(lines) + "\n"
+  return " ".join(lines)
 
 
 def wire(uops) -> str:
@@ -380,17 +382,13 @@ CHUNK = 10000
 
 
 def _chunks(text: str) -> list[str]:
-  """split the wire at LINE boundaries into pieces `live.bend` can each split without the cliff."""
-  out, cur, n = [], [], 0
-  for line in text.splitlines():
-    if cur and n + len(line) + 1 > CHUNK:
-      out.append("\n".join(cur))
-      cur, n = [], 0
-    cur.append(line)
-    n += len(line) + 1
-  if cur:
-    out.append("\n".join(cur))
-  return out or [""]
+  """split the wire at UOP boundaries into pieces `live.bend` can each split without the cliff.
+
+  A chunk has to carry whole rows: nine tokens per uop, so the split is on the token count, never on a
+  character count that could land mid-row."""
+  toks = text.split()
+  per = 9 * max(1, CHUNK // 27)          # 27 bytes is the longest row this wire emits
+  return [" ".join(toks[i:i + per]) for i in range(0, len(toks), per)] or [""]
 
 
 # **THE RENDERER AS A COMPILED EXECUTABLE, BECAUSE START-UP IS NOW THE COST.** §52's profile of the shipped

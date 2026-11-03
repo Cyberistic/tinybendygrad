@@ -85,7 +85,7 @@ def signal(fifo: String) -> IO(String):
 # THE DECODE IS THE RENDERER'S OWN: `nlch` and `ku_all` are `live.bend`'s, so the daemon and the one-shot
 # path cannot disagree about what a wire means.
 def kus(+text: String) -> List<&2, C.KU>:
-  List.reverse(&2, C.KU, L.ku_all(String.split(text, L.nlch()), Nil{}))
+  L.kus(text)
 
 # A READ THAT RETURNS NOTHING IS NOT A REQUEST: once every writer has closed, POSIX answers EOF until a new
 # writer arrives, so an empty read costs one turn of fuel and the next read blocks. The fuel is structural
