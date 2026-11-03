@@ -5660,7 +5660,12 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:1048  def const_factor
 #   # *** uop symbolic stuff ***
 
-# TODO(p3) ops.py:1069  def divides
+
+
+# DONE(p3) ops.py:1048 def const_factor -- `UOp.const_factor` above, FLATTENED: the def and
+#   its fold are not mutually recursive once the arms are read (a STACK/ADD contributes the
+#   gcd identity and every other node is a leaf), so `cf.walk` is a FUEL-bounded worklist.
+#   The "Bend cannot express that" probe below was measuring the OBVIOUS spelling.
 
 # DONE(p3) ops.py:1082 def pop_const -- `UOp.pop_const_val` / `UOp.pop_const_hits` above, with
 #   `cval_arg`. Gated at `gates/ops-core-gate.py` in EIGHT rows over FOUR fixtures, and the
@@ -7720,6 +7725,112 @@ def UOp.pop_const_val(+ar: Arena, +i: U32, op: Op) -> Maybe<&1, Const>:
 def UOp.pop_const_hits(+ar: Arena, +i: U32, op: Op) -> Bool:
   Bool.and(eq_op(Arena.op(ar, i), op),
            eq_op(Arena.op(ar, Arena.src(ar, i, 1)), OpsCONST{}))
+
+# `UOp.const_factor` -- ops.py:1048, "largest known int that divides self".
+#
+# THE TODO ABOVE SAID THIS WAS INEXPRESSIBLE BECAUSE THE DEF AND ITS FOLD ARE MUTUALLY
+# RECURSIVE. THAT IS TRUE OF THE OBVIOUS SPELLING AND FALSE OF THE ARMS: a STACK or ADD node's
+# own contribution to the answer IS the gcd identity (`gcd(children)`), and every other node is a
+# LEAF -- MUL reads its srcs' OPS and never descends, CONST is its value, Defines is its
+# `multiple_of`, everything else is 1. So the answer is a `gcd` over the LOCAL values of the
+# nodes reachable through STACK/ADD EDGES ONLY, and `cf.walk` is that reachability: a worklist on
+# FUEL, which is one def and no cycle.
+#
+# THE ROOT IS HANDLED SEPARATELY AND IT IS NOT AN OPTIMISATION: `const_factor` returns `self.val`
+# for a CONST and that value can be NEGATIVE (ops.py's own comment says "for negatives it's not
+# the largest"), while `math.gcd` answers a non-negative. Folding the root in would answer 3 for
+# `CONST(-3)`.
+# `cval_arg` answers a `Const`, not a number: a MUL's const src can be a bool or a float, and
+# `const_factor` is an INT answer, so anything that is not a `CInt` falls back to the 1 upstream
+# would have answered for a non-const src.
+def cf.cv.c(c: Const) -> H.I64:
+  match c:
+    case CInt{i}: i
+    case _       : H.i64_of_i32(1)
+
+def cf.cv(m: Maybe<&1, Const>) -> H.I64:
+  match m:
+    case Some{+c}: cf.cv.c(c)
+    case None{}  : H.i64_of_i32(1)
+
+def cf.mul.val(+ar: Arena, i: U32, k: U32) -> H.I64:
+  cf.cv(cval_arg(Arena.arg(ar, Arena.src(ar, i, k))))
+
+def cf.mul.b(c1: Bool, +ar: Arena, i: U32) -> H.I64:
+  match c1:
+    case True{} : cf.mul.val(ar, i, 1)
+    case False{}: H.i64_of_i32(1)
+
+# A `match` MAY NOT SCRUTINISE A LOCAL BINDER, so `c0` is a PARAMETER of its own def.
+def cf.mul.a(c0: Bool, +ar: Arena, +i: U32, c1: Bool) -> H.I64:
+  match c0:
+    case True{} : cf.mul.val(ar, i, 0)
+    case False{}: cf.mul.b(c1, ar, i)
+
+# `self.src[0].val if src[0].op is CONST else self.src[1].val if src[1].op is CONST else 1`
+def cf.mul(+ar: Arena, +i: U32) -> H.I64:
+  cf.mul.a(eq_op(Arena.op(ar, Arena.src(ar, i, 0)), OpsCONST{}), ar, i,
+           eq_op(Arena.op(ar, Arena.src(ar, i, 1)), OpsCONST{}))
+
+def cf.defs(arg: Arg) -> H.I64:
+  match arg:
+    case AParam{pa}: H.i64_of_i32(Maybe.default(&2, U32, ParamArg.multiple_of(pa), 1))
+    case _: H.i64_of_i32(1)
+
+def cf.defs.op(+ar: Arena, +i: U32, d: Bool) -> H.I64:
+  match d:
+    case True{} : cf.defs(Arena.arg(ar, i))
+    case False{}: H.i64_of_i32(1)
+
+# A STACK OR ADD CONTRIBUTES THE GCD IDENTITY AND NOT 1, and the difference is the whole rule:
+# their arm is `gcd(children)`, so their own term must be 0 -- `gcd(0, x)` is `x` while
+# `gcd(1, x)` is 1. MEASURED on the probe: `add_m6_m4` answered 1 for want of this arm, and 2 is
+# `gcd(6, 4)`.
+def cf.local.go(op: Op, arg: Arg, +ar: Arena, +i: U32) -> H.I64:
+  match op:
+    case OpsCONST{}: cf.cv(cval_arg(arg))
+    case OpsMUL{}  : cf.mul(ar, i)
+    case OpsSTACK{}: H.i64_of_i32(0)
+    case OpsADD{}  : H.i64_of_i32(0)
+    case _         : cf.defs.op(ar, i, GroupOp.defines(op))
+
+# The local value of ONE node: the gcd identity for a STACK/ADD, else the leaf rule.
+def cf.local(+ar: Arena, +i: U32) -> H.I64:
+  cf.local.go(Arena.op(ar, i), Arena.arg(ar, i), ar, i)
+
+def cf.keep(op: Op) -> Bool:
+  match op:
+    case OpsSTACK{}: True{}
+    case OpsADD{}  : True{}
+    case _         : False{}
+
+def cf.next(nxt: Bool, +rest: List<&2, U32>, +ar: Arena, +h: U32) -> List<&2, U32>:
+  match nxt:
+    case True{} : List.concat(&2, U32, [Arena.srcs(ar, h), rest])
+    case False{}: rest
+
+# THE WORKLIST. Fuel, not the list, is the decreasing argument: a STACK's srcs are PUSHED, so
+# the list can grow and only fuel bounds the walk.
+def cf.walk(fuel: Nat, +ar: Arena, todo: List<&2, U32>, out: List<&2, U32>) -> List<&2, U32>:
+  match fuel todo:
+    case 0n Nil{}: out
+    case 1n+p Nil{}: out
+    case 0n +h <> rest: out
+    case 1n+p +h <> rest:
+      cf.walk(p, ar, cf.next(cf.keep(Arena.op(ar, h)), rest, ar, h), List.append(&2, U32, out, [h]))
+
+def cf.sum(ns: List<&2, U32>, +ar: Arena, acc: H.I64) -> H.I64:
+  match ns:
+    case Nil{}: acc
+    case n <> rest: cf.sum(rest, ar, H.gcd(acc, cf.local(ar, n)))
+
+def cf.top(keep: Bool, fuel: Nat, +ar: Arena, i: U32) -> H.I64:
+  match keep:
+    case True{} : cf.sum(cf.walk(fuel, ar, [i], Nil{}), ar, H.i64_of_i32(0))
+    case False{}: cf.local(ar, i)
+
+def UOp.const_factor(fuel: Nat, +ar: Arena, +i: U32) -> H.I64:
+  cf.top(cf.keep(Arena.op(ar, i)), fuel, ar, i)
 
 # `index` -- ops.py:578. `UOp(Ops.INDEX, src=(self,)+tuple(new_srcs))`, and above it
 # a guard: a STACK indexed by ONE CONST is not an INDEX at all, it is that element
