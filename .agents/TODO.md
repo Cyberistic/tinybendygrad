@@ -27743,3 +27743,26 @@ CORRECTION: MUTUAL RECURSION IS IMPOSSIBLE, BUT THE WORKLIST SHAPE IS NOT -- and
 **REFUSAL **STAYS **UNTIL **THAT **LANDS -- **but **its **stated **REASON **is **now
 **narrower **than **the **one **in **the **code, **and **a **wrong **reason **is **how **a
 **refusal **becomes **permanent.
+
+re-certified at `7e1b51dd` after the `substitute` fix -- and the audit that found it is the transferable part
+
+  graphs=38  graphs-agree=38  graphs-disagree=0  byte-identical=38  graphs-refused=0
+  substrate-start == substrate-end == 7e1b51dd7093eda5f51f4a1ae03abd164f24ef2b2a3a2de459bdcef8f35807df
+  D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
+  corpuswitness-gate -> PASS -- the claim is ESTABLISHED
+
+**⇒ AND **THE **CORPUS **STILL **DOES **NOT **DISCRIMINATE **EITHER **`enter_calls` **FIX,**
+**AND **THAT **IS **NOW **A **MEASURED **PROPERTY **OF **THE **CORPUS **AND **NOT **A
+**MISSING **RUN:** three runs across two `enter_calls` changes, all `38/38`, all
+`start == end`.  **SO **THE **CORPUS's **CLAIM **IS **"NOTHING **ELSE **BROKE"** **and
+**NEVER **"THIS **CHANGE **IS **RIGHT"; **the `ec_*`/`sub_nocalls` **rows **and **their
+**plants **are **the **only **thing **that **says **the **second.
+
+**⇒ AND **THE **PATTERN **IN **THIS **SESSION, **NAMED **SO **THE **NEXT **UNIT **DOES
+**NOT **REPEAT **IT:** every **defect **that **mattered **was **found **by **a **PLANT THAT
+**MOVED **NOTHING **OR **BY **AN **AUDIT **OF **A **SHAPE **I **HAD **ALREADY **FIXED
+**ONCE.  Three **rows **were **labels, **two **comments **asserted **guarantees **the
+**code **did **not **check (`wr.rebuild.go`'s **toposort **claim, **and **"`variables`/
+`unbound` **are **ported"** **when **nothing **called **them), **and **one **probe **was
+**vacuous **because **its **two **sides **interned **to **ONE **NODE.**  **NONE **OF **THE
+**FIVE **WOULD **HAVE **GONE **RED.
