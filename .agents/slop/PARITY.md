@@ -5321,3 +5321,30 @@ compare the RENDERER, and the renderer has not moved.
 **AND THE OLD ARTIFACTS ARE NOT OVERWRITTEN SILENTLY:** `D0-run-summary.txt` now reads
 `graphs-disagree=7`, `expect-moved=7`, so the certificate is a MEASUREMENT of the disagreement instead of a
 crash or a stale green.
+
+## 120. THE `Rows` BLOCKED VIEW: 43,385 -> ~10,000 `List.get` STEPS, 0.9978 AND 0.9883 -- REVERTED
+
+§113 named `rtp` as 43,385 of the render's 88,602 `List.get` steps at a mean index of 70.8, and §76's
+16-way blocked view of `ku_at` is the precedent. Built the same way -- blocks of sixteen, newest first,
+`st_put` starting a new block when the current one fills -- and it is BYTE-IDENTICAL at 37 of 37 on both
+decoders. The measurement is a WASH:
+
+```
+base cpu/render 12.084 ms  new 12.858 ms  ratio min 0.9067 p25 0.9592 median 0.9978  7/12 faster
+base cpu/render 11.632 ms  new 11.556 ms  ratio min 0.8649 p25 0.9687 median 0.9883  10/16 faster
+```
+
+**⇒ REVERTED, AND THE MODEL IS THE THING THAT MOVED.** Thirty-three thousand list steps is ~1% of a 3.1 ms
+turn (~1 ns a step), so the change could not have paid for the two extra index helpers it needs. §76's 7% was
+250,000 steps on a 5.7 ms turn whose DECODE was 40% of it -- **the step count was a proxy for time only
+because the steps were then a third of the turn, and after §75-§81 and §117 they are not.** What is left in
+the walk is CALL FRAMES: 50,984 of them after §117, mean 18 ns, and no single one of them is worth a change.
+
+### 120.1 The bug this found, which is worth more than the change
+
+The first version used `block = d / 16`. That is WRONG, and it produced a render with operands missing
+(`for (int Lidx3 = 0; Lidx3 < ; Lidx3++)`): every block is filled to sixteen and then a new one starts IN
+FRONT, so **block 0 has a VARIABLE length** (`((n-1) & 15) + 1`) and every block after it has sixteen. The
+lookup is `d < b0 -> (0, d)` else `(1 + (d-b0)/16, (d-b0) % 16)`. A block-of-N view of an APPEND-AT-FRONT
+list is not `d/N`; `ku_at`'s view is `d/N` only because §76 built it by cutting a FINISHED list in one
+forward pass, where the partial block is LAST and the arithmetic starts from the front.
