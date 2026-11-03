@@ -8621,26 +8621,38 @@ def vr.expr.rows(+ar: Arena) -> IO(Unit):
 #   both picks the arm and walks the list, which is a worklist rewrite of the
 #   shape `UOp.base` uses for a single peel.
 #
-#   So the wall is real and it is a substrate limit, not a missing thought. It also
-#   blocks ops.py:1069 `divides`, ops.py:1085 `gcd` and ops.py:1091 `divide_exact`,
-#   which all call it, and those in turn block ops.py:1046 `unbind_all` and
-#   ops.py:1049 `variables`. That is five of this file's markers on one wall.
+#   So the wall is real and it is a substrate limit, not a missing thought.
 #   `.agents/slop/bend-toposort.py` detects the cycle and refuses to write rather
 #   than oscillating, which is how this was found.
-
-# TODO(p3) ops.py:1069  def divides
-#   `if v==1: return self; if CONST: const_like(val//v) if val%v==0 else None; ...`
-#   Calls `const_factor`'s sibling `const_like` (ops.py:600, not ported) and does
-#   `//` and `%` on an `H.I64`, plus `UOp.__floordiv__` for the Defines arm.
-#   Gated on all three.
+#
+# **WHAT THAT WALL STILL BLOCKS, RE-MEASURED 2026-11-04 -- AND THIS PARAGRAPH USED TO
+# OVERSTATE IT.** It named five markers as blocked. **TWO OF THE FIVE ARE DONE:**
+#
+#   DONE  ops.py:1069 `divides`   -- `UOp.divides.op` (:7951) and `UOp.divides` (:7972),
+#                                    verified against CPython on 8 of 8 shapes.
+#   DONE  ops.py:1082 `pop_const` -- `UOp.pop_const_val` (:7738) / `UOp.pop_const_hits`
+#                                    (:7748), with its DONE(p3) marker at :5693.
+#   TODO  ops.py:1073 `gcd`
+#   TODO  ops.py:1079 `divide_exact`
+#
+# **A MARKER THAT NAMES FINISHED WORK IS NOT A TODO, IT IS A TRAP**: it tells the next
+# reader to build what is already there, and the reader who trusts it will either
+# duplicate the function or report the row as blocked. `divides` was listed as gated on
+# `const_like` while it sat ported and verified below the list.
 
 # TODO(p3) ops.py:1073  def gcd
 #   `zip(*[u.pop_const(Ops.MUL) for u in uops])`, a `Counter` intersection of
-#   `split_uop(Ops.MUL)` terms, and `math.gcd` over `const_factor`s. Needs
-#   `collections.Counter` as a fold and `const_factor` above.
+#   `split_uop(Ops.MUL)` terms, and `math.gcd` over `const_factor`s. `const_factor`
+#   (:7855), `split_uop` (:5169) and `pop_const` (:7738) all exist, so what is missing
+#   is the MULTISET and not the walk: a `Counter` intersection is a fold over two node
+#   lists, and `math.prod(count.elements(), start=...)` is a MUL chain from a base.
 
 # TODO(p3) ops.py:1079  def divide_exact
-#   Recurses over ADD/MUL srcs and calls `divides`, `const_like` and `__floordiv__`.
+#   Recurses over ADD/MUL srcs and calls `divides` (DONE), `const_like` and
+#   `__floordiv__`. `const_like` is ops.py:572 and is NOT ported (:5441): it is
+#   `UOp.const(b, dtype or self.dtype)` plus `_mop(Ops.EXPAND, arg=self._shape)`, so the
+#   SHAPED half needs the shape field this arena does not carry. The scalar half already
+#   exists as `sy_const_like` (symbolic.bend:485).
 
 
 # ==== ops.py:1901 symbol=resolve_returned_after  ===============================

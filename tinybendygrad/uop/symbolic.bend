@@ -3015,8 +3015,40 @@ def sym_245.put(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +s = mint_bin(mint_ar(sy_ar(x)), O.OpsADD{}, sym_245.cside(x, m0), sym_245.cside(x, sy_src1(x, u)))
   Some{mint_bin(s, O.OpsMUL{}, sym_245.vside(x, m0), O.Found.i(s))}
 
+# **THE GUARD IS `fits(x, c0.vmin+c1.vmin)`, AND IT WAS MISSING.** The coefficient sum is minted at
+# the CONSTS' dtype while the product is taken at the OPERAND's, so an `x` whose dtype cannot hold
+# `c0+c1` is rewritten into a product whose own coefficient does not fit -- CPython refuses it and a
+# port without the guard FIRES, which is a wrong rewrite and not a missing one.
+def sym_245.iv(m: Maybe<&2, O.Const>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{O.CInt{i}}: Some{i}
+    case _: None{}
+
+def sym_245.sum(a: Maybe<&1, H.I64>, b: Maybe<&1, H.I64>) -> Maybe<&1, H.I64>:
+  match a:
+    case Some{+p}:
+      match b:
+        case Some{+q}: Some{H.i64_add(p, q)}
+        case None{}: None{}
+    case None{}: None{}
+
+def sym_245.fit(m: Maybe<&1, H.I64>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{+s}: fits(dt, s)
+    case None{}: False{}
+
+def sym_245.hit(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: sym_245.put(x, u)
+    case _: None{}
+
 def sym_245(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sy_tri_f(sym_245.pat(x, u), sym_245.put(x, u))
+  +m0 = sy_src0(x, u)
+  +v = sym_245.vside(x, m0)
+  sym_245.hit(Bool.and(sym_245.pat(x, u),
+    sym_245.fit(sym_245.sum(sym_245.iv(sy_val(x, sym_245.cside(x, m0))),
+                           sym_245.iv(sy_val(x, sym_245.cside(x, sy_src1(x, u))))),
+                sy_dt1(x, v))), x, u)
 
 # symbolic.py:247  (UPat.var("x") + UPat.var("x") * UPat.cvar("c"), lambda x,c: x*(c+1))
 # ADD IS COMMUTATIVE, so the bare operand and the product are at either src and `p_mul_c`
