@@ -147,22 +147,35 @@ def upstream(cases):
     ans[name] = sh(sym.rewrite(u))
   return ans
 
-def port_answers(path):
+def port_answers(path, field="symf"):
   """THE PORT'S OWN DRIVER'S OUTPUT, one line per case IN THE CASE FILE'S ORDER.
-  The driver prints `root=... sym=<s-expr> rm=<s-expr>` and no name, so the rows
-  are matched BY POSITION -- which is why the case file and the output have to be
-  produced in one go."""
+  The driver prints `root=... sym=<s-expr> rm=<s-expr> symf=<s-expr>` and no name,
+  so the rows are matched BY POSITION -- which is why the case file and the output
+  have to be produced in one go.
+
+  `symf` AND NOT `sym`, because `sym` answers at an index into the arena it was
+  given and a rule that MINTS leaves that index past the end: the field read `?`
+  for every rule whose body builds a node, which is 55 of the remaining 84. `symf`
+  is the same table answered through the Found family, so for a rule that does NOT
+  mint the two fields are the same string."""
   ans = []
+  mark = " " + field + "="
   for ln in open(path):
-    parts = dict(p.split("=", 1) for p in ln.split(" ") if "=" in p)
-    if "sym=" in parts:
-      ans.append(parts["sym"])
+    ln = ln.rstrip("\n")
+    i = ln.find(mark)
+    if i < 0:
+      continue
+    # THE ANSWER CONTAINS SPACES -- `(mul (reciprocal x) (reciprocal x))` -- so it is the
+    # LINE'S TAIL and not a space-delimited token: tokenising truncated every nested answer
+    # to its first word and printed `(and` for `(and xb yb)`.
+    ans.append(ln[i + len(mark):])
   return ans
 
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--cases", default=CASES)
   ap.add_argument("--compare", help="the port's driver output to diff against")
+  ap.add_argument("--field", default="symf", help="which answer column to compare")
   args = ap.parse_args()
   cases = read_cases(args.cases)
   up = upstream(cases)
@@ -170,7 +183,7 @@ def main():
     for name, _ in cases:
       print("%s=%s" % (name, up[name]))
     return 0
-  port = port_answers(args.compare)
+  port = port_answers(args.compare, args.field)
   bad = []
   if len(port) != len(cases):
     bad.append("the port's driver printed %d rows and the case file has %d cases"

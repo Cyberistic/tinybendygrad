@@ -121,6 +121,30 @@ def mint_tags() -> list[int]:
 PORTED_RULES = ("commutative",)
 TUPLIZE_KEYS = 4   # decided, of 4
 
+
+# THE TAG IS A POSITION, AND A MISSING ARM IS SILENT. `sym_table()`'s tag indexes the table
+# row and `sym_mint_f`/`sym_dispatch.go` are `match`es on it, so a row whose tag collides with
+# another row is dispatched to the WRONG body and a tag with no arm answers `None{}` -- a rule
+# that is PORTED in the census and DEAD at runtime. MEASURED 2026-11-03: four appended rows
+# reused tags 50 and 51, so `:462`/`:464`/`:444` all dispatched to `fold_const_where`, and
+# `MINT_TAGS` was read by nothing that compared it with the arms.
+def table_rows() -> list[tuple[int, int]]:
+    """(tag, cited upstream line) for `sym_table()` ALONE -- `rm_table()` is a second tag space."""
+    text = (PKG / "uop/symbolic.bend").read_text(errors="ignore")
+    lo, hi = text.index("def sym_table() -> O.PMEntrys:"), text.index("def rm_table() -> O.PMEntrys:")
+    return [(int(t), int(c)) for t, c in re.findall(r"O\.PMEntry\{(\d+),.*?# (\d+)", text[lo:hi])]
+
+
+def match_arms(defname: str) -> dict[int, str]:
+    """`{tag: body}` for one `match tag:` driver, read out of the port's own source."""
+    text = (PKG / "uop/symbolic.bend").read_text(errors="ignore")
+    head = f"def {defname}("
+    lo = text.index(head)
+    lo = text.index("  match tag:\n", lo) + len("  match tag:\n")
+    hi = text.index("    case _", lo)
+    return {int(t): b for t, b in re.findall(r"    case (\d+): (\w+)\(", text[lo:hi])}
+
+
 DT_PAIRS_DISAGREE = 0   # measured 2026-11-03 over all 400 pairs
 
 
@@ -190,6 +214,25 @@ def main() -> int:
     # `symbolic.py:202`'s ccast branch is NARROW exactly while no rule has a Found-answering body.
     tags = mint_tags()
     print(f"family.mint_tags\t{len(tags)}\t{tags}")
+
+    # THE TAG IS A POSITION AND A MISSING ARM IS SILENT: these three rows are the wiring the
+    # census cannot see, because the census matches a table row to upstream BY ITS CITATION.
+    rows_, mint = table_rows(), match_arms("sym_mint_f")
+    disp = match_arms("sym_dispatch.go")
+    uniq = len({t for t, _ in rows_}) == len(rows_) and {t for t, _ in rows_} == set(range(len(rows_)))
+    print(f"tags.unique\t{uniq}\t{len(rows_)} rows, {len({t for t, _ in rows_})} distinct tags")
+    if not uniq: bad.append("sym_table's tags are not 0..n-1: a collision dispatches to the wrong body")
+    want_mint, want_disp = set(tags), {t for t, _ in rows_} - set(tags)
+    print(f"mint.arms\t{set(mint) == want_mint}\tmint={len(mint)} MINT_TAGS={len(want_mint)}")
+    if set(mint) != want_mint:
+        bad.append(f"sym_mint_f arms {sorted(mint)} != MINT_TAGS {sorted(want_mint)}")
+    print(f"dispatch.arms\t{set(disp) == want_disp}\tdispatched={len(disp)} index-tags={len(want_disp)}")
+    if set(disp) != want_disp:
+        bad.append(f"sym_dispatch.go arms {sorted(set(disp) - want_disp)} are not index tags, "
+                   f"{sorted(want_disp - set(disp))} have no arm")
+    missing = [b for b in mint.values() if not port_has(b)] + [b for b in disp.values() if not port_has(b)]
+    print(f"arms.bodies\t{not missing}\t{','.join(missing) or '-'}")
+    if missing: bad.append(f"an arm names a body that has no def: {missing}")
     print(f"narrow.symbolic_202_ccast\t{not tags}\tFalse once a rule has a Found-answering body")
     if not port_has("sym_f") and tags:
         print("  MINT_TAGS is non-empty but sym_f is gone -- the tags have no family", file=sys.stderr)
