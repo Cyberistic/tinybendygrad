@@ -3510,3 +3510,48 @@ reachable share is the syscall overhead alone, and its risk is the daemon's.**
 **⇒ THE WIRE'S SIZE IS THE LEVER UNDER BOTH TERMS**: it is 9,516 bytes, the decode is charged per byte
 (§78.1) and so is the I/O. Shrinking the row is the next slice that would pay twice; it is not in this
 commit.
+
+## 80. THE WIRE, SHRUNK AND MEASURED: 12.8% FEWER BYTES AND 33% FEWER TOKENS IS 0.9900
+
+§79 left the wire as the last unexploited lever, with a **wrong** cost model: a padding experiment (9,516 ->
+15,061 bytes, same token count) had cost 30%, and the model read that as 122 ns a byte. This section builds
+the shrink the model asked for, measures it, and **both the change and the model fail**.
+
+### 80.1 What was built
+
+Four one-character codes (`dt`, `addr`, `kind`, `cc`) were packed into ONE field, with `kind` re-coded from
+two characters (`RW`, `M1`) to one (18 distinct characters this port can emit) and `cc` as a base-64 digit
+(`portc` REFUSES above 63 rather than emitting one this would read wrong). The row goes from nine fields to
+six, and `ku_all`'s state machine from nine tokens to six.
+
+```
+old 9,516 bytes -> new 8,294 bytes (12.8% smaller); tokens 3,645 -> 2,430 (-33%)
+old row: 5 1 g 1568 1568 p 0~-~0~6272 0 4
+new row: 5 1gp4 1568 1568 0~-~0~6272 0
+same C: True | bytes: 4426
+9,516 B median 5.72 ms   8,294 B median 5.77 ms
+ratio min 0.8890  p25 0.9582  median 0.9900  max 1.1272   13 of 24 faster
+```
+
+**NEUTRAL, SO REVERTED** -- and it is a *cleaner* negative than §79.1's, because this one is the exact
+change the model prescribed.
+
+### 80.2 The padding experiment measured DIGITS, not BYTES
+
+`1` -> `0001` does not only add three bytes: it makes `U32.read` parse four digits instead of one, on every
+numeric field of every row. **THE 30% THE PADDING COST WAS THE EXTRA DIGIT PARSING, NOT THE EXTRA SCANNING**,
+which is why removing 1,222 bytes recovers 1% and not the 4.1% the model predicted. **A MODEL BUILT FROM A
+ONE-SIDED PERTURBATION IS NOT A MODEL** -- adding work to a field tells you what that field's work costs only
+if nothing else about it changed, and here two things did.
+
+### 80.3 What the decode actually charges
+
+| perturbation | result |
+|---|---|
+| +58% bytes, +3 digits per numeric field | **+30%** decode (1.30x) |
+| -12.8% bytes, -33% tokens, same digits | **-1%** (0.9900) |
+
+The decode's cost is in the WORK PER FIELD -- `fld`'s index walk, `U32.read`'s digit loop, and one
+`String` allocation per token -- none of which a shorter wire removes. **⇒ AND THE ROUTE TO A REAL DECODE
+WIN IS NOT A SMALLER WIRE, IT IS FEWER FIELDS AND FEWER `String`s**, which is a different rewrite with a
+different proof, and it is not in this commit.
