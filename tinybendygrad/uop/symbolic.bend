@@ -3236,6 +3236,51 @@ def sym_272(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_272.pat(x, u),
     Some{mint_where(mint_ar(sy_ar(x)), sy_src0(x, a), sy_src1(x, a), sy_src2(x, sym_272.b(x, u)))})
 
+# symbolic.py:284 -- `x.alu(op, c1).alu(op, c2) -> x.alu(op, c1.alu(op, c2))`, ONE RULE PER
+# MEMBER OF `GroupOp.Associative` (ADD AND MAX MUL OR XOR), which is FIVE census rows and ONE
+# body. It repeats `:133`'s shape at two levels and it TERMINATES because each step moves one
+# constant inside another: two CONSTS become one node and the outer ALU loses a level.
+def assoc_op(op: O.Op) -> Bool:
+  match op:
+    case O.OpsADD{}: True{}
+    case O.OpsMAX{}: True{}
+    case O.OpsMUL{}: True{}
+    case O.OpsOR{} : True{}
+    case O.OpsXOR{}: True{}
+    case _         : False{}
+
+def sym_284.v(+x: F.Folded, +u: U32) -> U32: Sw.b(p_const(x, u))
+
+def sym_284.c(+x: F.Folded, +u: U32) -> U32: Sw.a(p_const(x, u))
+
+# `x.alu(op, c1)` -- AN ALU OF THE SAME OP WITH A CONST SIDE.
+def sym_284.alu2c(+x: F.Folded, +s: U32, op: O.Op) -> Bool:
+  Bool.and(Bool.and(O.eq_op(sy_op(x, s), op), sy_nsrc_is(x, s, 2)), Sw.ok(p_const(x, s)))
+
+# THE INNER ALU IS THE ROOT'S NON-CONST SIDE, and it is found by asking which side IS an
+# `alu2c`. Two `Bool.pick`s that agree, because both must answer for the same side.
+def sym_284.inner(+x: F.Folded, +u: U32, op: O.Op) -> U32:
+  Bool.pick(U32, sym_284.alu2c(x, sy_src0(x, u), op), sy_src0(x, u), sy_src1(x, u))
+
+def sym_284.outer(+x: F.Folded, +u: U32) -> U32:
+  Bool.pick(U32, sym_284.alu2c(x, sy_src0(x, u), sy_op(x, u)), sy_src1(x, u), sy_src0(x, u))
+
+def sym_284.pat(+x: F.Folded, +u: U32) -> Bool:
+  +op = sy_op(x, u)
+  +i = sym_284.inner(x, u, op)
+  Bool.and(Bool.and(assoc_op(op), sy_nsrc_is(x, u, 2)),
+    Bool.and(sym_284.alu2c(x, i, op), sy_is_const(x, sym_284.outer(x, u))))
+
+def sym_284.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +i = sym_284.inner(x, u, sy_op(x, u))
+  # THE ROOT'S OTHER SIDE IS THE CONSTANT ITSELF: `outer` already answers the node, and
+  # running `c` over it again read a CONST as an ALU and rendered a slot that does not exist.
+  +k = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.c(x, i), sym_284.outer(x, u))
+  Some{mint_bin(k, sy_op(x, u), sym_284.v(x, i), O.Found.i(k))}
+
+def sym_284(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_284.pat(x, u), sym_284.mk(x, u))
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3532,10 +3577,15 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{73, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsXOR{}], Nil{}, },   # 266
     O.PMEntry{74, [O.OpsADD{}], Nil{}, },   # 269
     O.PMEntry{75, [O.OpsADD{}], Nil{}, },   # 272
-    O.PMEntry{76, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{77, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{78, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{79, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{76, [O.OpsMAX{}], Nil{}, },   # 284
+    O.PMEntry{77, [O.OpsOR{}], Nil{}, },   # 284
+    O.PMEntry{78, [O.OpsAND{}], Nil{}, },   # 284
+    O.PMEntry{79, [O.OpsADD{}], Nil{}, },   # 284
+    O.PMEntry{80, [O.OpsMUL{}], Nil{}, },   # 284
+    O.PMEntry{81, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{82, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{83, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{84, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3907,7 +3957,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3959,10 +4009,15 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 73: sym_266(x, u)
     case 74: sym_269(x, u)
     case 75: sym_272(x, u)
-    case 76: sym_462(x, u)
-    case 77: sym_463(x, u)
-    case 78: sym_464(x, u)
-    case 79: sym_444(x, u)
+    case 76: sym_284(x, u)
+    case 77: sym_284(x, u)
+    case 78: sym_284(x, u)
+    case 79: sym_284(x, u)
+    case 80: sym_284(x, u)
+    case 81: sym_462(x, u)
+    case 82: sym_463(x, u)
+    case 83: sym_464(x, u)
+    case 84: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
