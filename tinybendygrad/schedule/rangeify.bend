@@ -310,12 +310,26 @@ def raf.keep_srcs(+ar: O.Arena, +self: U32) -> List<&2, U32>:
 def raf_one(kept: List<&2, U32>) -> Bool:
   Nat.is_eq(List.length(&2, U32, kept), 1n)
 
-def remove_noop_afters.of(one: Bool, shrank: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
+# `shrank` IS ASKED FIRST AND THAT ORDER IS THE WHOLE RULE. Upstream's line is
+# `if len(src) != len(x.src): return src[0] if len(src) == 1 else x.replace(src=src)` and
+# the `return None` is the ELSE of that test -- so a ONE-SRC AFTER that LOST NOTHING is not
+# rewritten at all. Asking `one` first answers `src[0]` for every one-src AFTER, which
+# COLLAPSES an untouched `AFTER(CONST)` into `CONST`. MEASURED 2026-11-03 by
+# `gates/gkg-oracle.py`, stage 3 on fx_a: the port answered `SINK:none:CONST,...` where
+# CPython answers `SINK:none:AFTER,...`, and 8 of 16 engine rows disagreed BECAUSE OF THIS
+# ONE LINE. The `raf_*` rows could not see it: every one of them that reaches `one` also
+# SHRANK, so `one` and `one AND shrank` answered the same on all of them.
+# THE INNER LADDER IS ITS OWN DEF because a `match` may not scrutinise a binder that a
+# previous arm already passed -- Bend refuses `match shrank: ... match one: ...` in place.
+def rna_pick(one: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
   match one:
     case True{} : M.Hop{ar, M.mp_src0(ar, self)}
-    case False{}: match shrank:
-                  case True{} : M.mp_replace(M.mp_op(ar, self), M.mp_arg(ar, self), ar, self, raf.keep_srcs(ar, self))
-                  case False{}: M.Hop{ar, 0}
+    case False{}: M.mp_replace(M.mp_op(ar, self), M.mp_arg(ar, self), ar, self, raf.keep_srcs(ar, self))
+
+def remove_noop_afters.of(one: Bool, shrank: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
+  match shrank:
+    case False{}: M.Hop{ar, 0}
+    case True{} : rna_pick(one, ar, self)
 
 def remove_noop_afters(+ar: O.Arena, +self: U32) -> M.Hop:
   remove_noop_afters.of(raf_one(raf.keep_srcs(ar, self)),
@@ -2967,9 +2981,16 @@ def eng_range.go(ns: List<&2, Nat>, acc: List<&2, U32>) -> List<&2, U32>:
 
 # ONE STAGE, over the whole arena. The root is the node the caller cares
 # about; its new index is the map's answer for it.
+# THE SWEEP LIST IS THE WALK AND NOT THE ARENA, AND THE DIFFERENCE IS A CALL'S BODY.
+# `eng_sweep` wants an order where every node's children are already final, and the ARENA in
+# index order gives that -- but it also gives THE NODES NOBODY CAN REACH, and a CALL's `src[0]`
+# is one of them. CPython does not enter a CALL's body unless `enter_calls` (`ops.py:298`,
+# `node.src_without_body`), so a body-only node is NEVER rewritten; sweeping the arena rewrites
+# it. MEASURED 2026-11-03 by `gates/gkg-oracle.py`: on fx_a the arena sweep turned
+# `CALL(INDEX(CONST), RESHAPE)` into `CALL(CONST, RESHAPE)` where CPython keeps `INDEX` and 10
+# of 16 engine rows disagreed. `toposort_nocalls` is the same walk the rest of this port uses.
 def eng_run(st: Stg, +ar: O.Arena, root: U32) -> Eng:
-  eng_sweep(List.drop(&2, U32, eng_range.go(List.range(U32.to_nat(O.Arena.next(ar))), Nil{}), 1n),
-            st, eng_fresh(Eng{ar, Nil{}}))
+  eng_sweep(O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, root), st, eng_fresh(Eng{ar, Nil{}}))
 
 # THE COUNT of the nodes a stage MOVED.
 def eng_changed.one(same: Bool, acc: U32) -> U32:
@@ -3147,11 +3168,26 @@ def efx_b() -> G:
 # left, and one row per stage: how many nodes the stage MOVED and the arena
 # after it. The row NAME carries the fixture and the stage number, so a stage
 # can be read on its own.
+# TWO ROWS PER STAGE, AND THE SPLIT IS WHAT MAKES THE STAGE COMPARABLE TO CPYTHON.
+#
+# `eng_<tag>_s<n>` IS THE GRAPH AND NOTHING ELSE, so CPython can answer it: the dump is
+# `op:argkey:srcops` BFS from the root, and CPython produces the same string from its own
+# `graph_rewrite` over the same tables. MEASURED 2026-11-03: while the two numbers below were
+# INLINE, no CPython lane could read a stage row at all -- `changed` and `rep_len` are about
+# THIS ENGINE'S MAP, and CPython has no map to count.
+#
+# `eng_<tag>_r<n>` IS THOSE TWO NUMBERS -- entries the stage MOVED, entries it KEPT -- and
+# `gates/gkg-gate.py` declares it PORT-ONLY, because a number about a map cannot be compared
+# to a program that has no map. It stays because it is the number that moves FIRST when the
+# engine's memoisation is wrong.
 def eng_stage_row(+n: U32, +tag: String, +e: Eng, +root: U32) -> String:
   String.concat(["eng_", tag, "_s", U32.show(n), "=",
-                 U32.show(eng_changed(Eng.rep(e))), ";",
-                 U32.show(U32.from_nat(List.length(&2, Rep, Eng.rep(e)))), ";",
                  eng_dump(Eng.ar(e), rep_get(Eng.rep(e), root))])
+
+def eng_rep_row(+n: U32, +tag: String, +e: Eng) -> String:
+  String.concat(["eng_", tag, "_r", U32.show(n), "=",
+                 U32.show(eng_changed(Eng.rep(e))), ";",
+                 U32.show(U32.from_nat(List.length(&2, Rep, Eng.rep(e))))])
 
 def eng_drive(+stages: List<&2, Stg>, +e: Eng, +root: U32, +n: U32, +tag: String, acc: List<&2, String>) -> List<&2, String>:
   match stages:
@@ -3162,7 +3198,7 @@ def eng_drive(+stages: List<&2, Stg>, +e: Eng, +root: U32, +n: U32, +tag: String
       +e3 = eng_fresh(e2)
       eng_drive(t, e3, r2, U32.add(n, 1), tag,
                 List.append(&2, String, acc,
-                            [eng_stage_row(n, tag, e2, root)]))
+                            [eng_stage_row(n, tag, e2, root), eng_rep_row(n, tag, e2)]))
 
 # THE SAME DRIVE, AND THE **ARENA AND THE ROOT** INSTEAD OF THE ROWS. **⇒ AND
 # THE ANSWER IS **THE PORT's OWN `O.Found{ar, i}`** -- THE ARENA AND A NODE --
