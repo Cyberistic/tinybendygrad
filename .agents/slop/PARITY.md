@@ -2736,3 +2736,34 @@ kernel exists.
 **AND THE PACKAGING LEVER IS NOW SPENT ON BOTH PATHS**: one-shot 47.0 -> 34.8 (§53+§54) and worker start
 52.1 -> 40.1 (this section). What remains of start-up is Bun's own module resolution for a 64 MB embedded
 image, which is not this project's to change.
+
+## 63. THE WORKER'S 40 ms FIRST ANSWER, SPLIT: START 19, WARM-UP 10, RENDER 10
+
+§62 measured the worker's first answer at 40.1 ms after packaging and left it whole. Split by giving the SAME
+packed executable a ONE-UOP wire, so the render is free and what remains is start-up:
+
+```
+packed start (one-uop wire)   median 19.2 ms
+first 405-uop render          median 39.6 ms
+-> the render contributes 20.3 ms; start is 49% of the first answer
+```
+
+**AND THE 20.3 ms IS TWICE A STEADY TURN** (§55/§56: 10.0 ms). That gap is a term nothing in this record had
+named: **the FIRST render pays the JIT of the renderer's hot functions, and every later turn does not.** So
+the first answer decomposes as:
+
+| term | ms | status |
+|---|---|---|
+| packed start | 19.2 | Bun's own init of a 64 MB embedded image -- §53/§54/§62 took it from ~31 to 19.2 |
+| first-render JIT warm-up | ~10 | inherent to compiling 433 KB of Bend-generated JS once per process |
+| the render itself | ~10 | §56-§61: text 3.1, histogram 1.7, types 1.2, loop 4.0 |
+
+**A PROGRAM OF K KERNELS PAYS 19.2 + 10 ONCE AND ~10 PER KERNEL AFTER** -- which is why the cold per-kernel
+figure (§34.4: 10.0-13.5 ms) sits just above the steady turn and why the packaging work of §53/§54/§62 moved
+the per-kernel number less than it moved the first-answer number.
+
+**⇒ AND NONE OF THE THREE IS A DEFECT**: one is the runtime's own init, one is the cost of the first compile,
+and one is attributed (§56-§61) to five terms each at its floor. **THE WARM-UP IS THE ONLY TERM IN THIS
+RECORD THAT HAS NEVER BEEN ATTACKED AND IS NOT BLOCKED BY THE LANGUAGE** -- it is a property of shipping 433 KB
+of generated JS to a JIT, and the only lever on it would be emitting less JS, which is the renderer emitting
+fewer `.bend` functions, not fewer C lines.
