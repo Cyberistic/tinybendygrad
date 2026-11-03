@@ -1568,3 +1568,39 @@ one costs a corpus run per iteration.
 changing tinygrad's shared emit; the cold path is at or below the CPU lane in 7 of 7 whole-program readings;
 and the remaining port-side cost is 26% of a first run, diffuse, with no defect left to remove. That is where
 this record stops claiming progress and says what it would cost to go further.
+
+## 36. THE CALL TREE'S 27% DID NOT REPRODUCE, AND THAT SETTLES THE NEXT STEP
+
+§35 left a flat leaf profile (largest port-owned site 5.8%) and named an emitter rewrite as the next
+factor. Before starting a 2 500-line refactor on that basis, the one subtree the CALL TREE flagged was
+checked, because §27's 53% was invisible in the leaf list and only visible there:
+
+```
+27.0%  $List_length   ->  $List_replicate   (under cstyle._render_one_go)
+```
+
+The candidate was `child_count`, which builds a list of N zeros and folds every KU into it with
+`List.set(cc, src, get(cc, src) + 1)` -- a whole-prefix copy per source, i.e. O(n^2) cells for n uops.
+
+**MEASURED DIRECTLY, AND IT DOES NOT REPRODUCE**: a driver that calls `C.child_count` on the 405-uop
+fixture and prints its length takes **0.02-0.04 s**, against a **0.02 s** baseline for a driver that renders
+a one-uop wire. At `time -p`'s 10 ms resolution the two are the same reading.
+
+**SO THE CALL TREE'S `List_replicate` 27% IS A COLLAPSE ARTEFACT, NOT A HOT SPOT**, and the flat leaf list
+is the better reading of the same profile: the renderer's cost is spread across every token, with no
+subtree that a single change removes.
+
+### 36.1 What that means for the next step, stated as a decision
+
+The remaining port-side cost is **25.9% of a cold program** (§35), diffuse, and the two changes that could
+halve it -- one buffer per emitted line instead of per-token `String.concat`, and a fixed-arity binary wire
+instead of space-separated decimal text -- are rewrites of the renderer and the decoder respectively, with
+byte-identity on 37 kernels and 38 graphs as the only oracle and a corpus run per iteration.
+
+**THEY ARE NOT ATTEMPTED AS A SLICE, AND THIS SECTION SAYS WHY IN NUMBERS RATHER THAN IN CAUTION**: the
+measured target is 26% of a FIRST run only (it is 0% warm, because `portc` content-caches every render), the
+profile gives no single site above 5.8% to aim at, and the last three attempts to find one were: a real 53%
+defect (§27), a real 17.5% defect (§31), and a 27% lead that evaporates under direct measurement (here).
+**A rewrite whose best case is a quarter of a first run, with no measured site driving it, is not the next
+step -- it is a project**, and the tree is better served by the certificate and the four defects already
+removed than by a half-finished emitter.
