@@ -531,7 +531,12 @@ decide, dispatch); two defs may not call each other (so the fold is ONE recursiv
 `run.last`); and `match` cannot scrutinize a computed value or a binder that follows a local statement,
 so each such site becomes a `.by` def.
 
-**THE CORPUS CERTIFICATE IS OWED AGAIN, AND FOR THE REASON §16 NAMES.** A re-run on this tree read
+**THE CERTIFICATE WAS OWED FOR TWENTY MINUTES AND IS NOW PAID** — a quiet window gave
+`substrate-start == substrate-end == live == 70925b145d84...`, `graphs-agree=38`, `byte-identical=38`,
+`graphs-refused=0`. The paragraph below is kept because the FIRST attempt failed the rule, and the way it
+failed is the point.
+
+**AND THE FIRST ATTEMPT FAILED, FOR THE REASON §16 NAMES.** A re-run on this tree read
 `substrate-start=65ac57cd...` and `substrate-end=70925b14...` with `graphs-agree=38`: **ANOTHER UNIT
 COMMITTED `e9122b3dd` MID-RUN**, so the tree moved under the instrument. `start != end`, therefore not a
 certificate, and it is recorded rather than quoted. The digest is of the WORKING TREE, so landing this
