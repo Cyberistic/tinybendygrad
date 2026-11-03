@@ -519,3 +519,36 @@ THE PATTERN, AGAIN, AND IT IS NOW THE THIRD TIME: `toposort` needed `budget` and
 THAT WORKS.** The next unit should measure `graph_rewrite` the way this one measured `toposort` --
 print `Rewritten.passes` and `Rewritten.sink` on ONE node that `sym` rewrites -- before building
 `uop_given_valid` on it.
+
+## 2026-11-03 (final, 13): `graph_rewrite` RUNS and records a replacement -- its `sink` is what is None
+
+The measurement the last entry asked for, both arms, on `(mul xi c1)` which `sym` rewrites to `xi`:
+
+    unified passes=1 capped=0 repln=1 sink=none
+    walk    passes=1 capped=0 repln=1 sink=none
+
+So the driver is NOT idle: it takes one pass and its replace map holds ONE entry, in BOTH arms. The
+table is right, the context `CArgs{Nil{}}` is accepted, and the walk reaches the node. `walk=True`
+and `walk=False` agreeing rules out the "wrong arm" theory.
+
+WHAT IS NONE IS THE ANSWER, NOT THE RUN. `walk_rewrite.of(sink, u)` is
+
+    def walk_rewrite.of(sink: U32, u: U32) -> Maybe<&2, U32>:
+      match u:
+        case 0: None{}
+        case _: Some{u}
+
+so `sink=none` means the lookup answered the literal index `0` -- which is this tree's BOTTOM node
+and not a rewrite. With `repln=1` there are exactly two explanations and they are distinguishable in
+one probe:
+
+1. the map's KEY is not `sink` (so `R.cu32(repl, sink)` fell through to its default `0`), or
+2. the map's VALUE for `sink` really is `0` (the rewrite produced the bottom node).
+
+The next probe should print the map's ONE key and value directly -- `Map.get`/`Rewritten.repl` --
+and compare the key with `O.Found.i(m1)`. That is one row and it settles which of the two it is.
+
+`sy_simplify` STAYS REVERTED. It is now known that the driver runs, which is real progress over the
+last entry's "it does nothing", but an answer of `none` would make `uop_given_valid` behave as if no
+valid ever applied -- the exact failure mode a no-op substitution produces. Nothing is wired until
+the sink reads back.
