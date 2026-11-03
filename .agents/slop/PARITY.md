@@ -2009,3 +2009,51 @@ around it is a fraction of that**, while appending to a growing string is O(len)
 
 **A change bounded by a fraction of 3.1 ms, on a ~47 ms command, with a corpus run as its price, is not worth
 a reading** -- and that is a statement the cost map supports, not a preference.
+
+## 45. THE NUMBER OF EMITTED LINES IS NOT A FREE PARAMETER -- IT IS THE ORACLE
+
+§43's cost map left one multiplier untried: a kernel emits ~405 lines at ~30 Bend calls each, so emitting
+FEWER lines would cut the render proportionally. The proposal was to inline single-use temporaries into their
+consumer's expression.
+
+**THAT IS NOT AN OPTIMISATION THE PORT MAY MAKE.** The line count is decided by upstream's own inline rules
+(`cstyle.py`'s `u.op in ... and child_count[u] == 1` family), which `ku_inline` transcribes. Emitting fewer
+lines changes the C, and byte-identity with `ClangRenderer` is the invariant the entire project exists to
+hold.
+
+MEASURED, by planting `ku_inline` to `True{}` -- force every temporary inline, i.e. emit the fewest possible
+lines -- on an otherwise unchanged tree:
+
+```
+# kernels: 0 byte-identical, 37 differ
+# first live divergence at kernel 0:
+    -  for (int Lidx1 = 0; Lidx1 < 16; Lidx1++) {
+    -    int alu0 = (Lidx1<<4);
+    -    float4 val0 = (*((float4*)((data1_256+(alu0+12)))));
+```
+
+**37 OF 37 KERNELS DIVERGE**, not on a corner case but on the first loop of the first kernel. Reverted, and
+`ksweep` returns to `37 of 37 byte-identical` on both decoders.
+
+**⇒ SO THE LAST MULTIPLIER IS CLOSED BY THE SAME RULE THAT MAKES THE PORT A PORT**: fewer lines would be a
+FASTER renderer and a WRONG one. The line count is not a tuning knob, it is the specification.
+
+### 45.1 The complete list of axes, and how each was closed
+
+| axis | evidence | verdict |
+|---|---|---|
+| the type map rebuilt per uop | §27-§31, A/B median 0.9447 at 12/12 | **kept** |
+| seven decimal conversions per constant | §33, median 0.9538 | **kept** |
+| four cast renders per constant | §34, median 0.9767 | **kept** |
+| a statement assembled for every inlined uop | §39, median 0.9447 (combined) | **kept** |
+| one string fold for another | §37, 1.0021 | rejected |
+| a second index form per line | §40, 0.9960 | rejected |
+| two nested picks in the index path | §41, 1.0013 | rejected |
+| the per-line source list | §42, 1.0003 | rejected |
+| a mutable arena / indexed buffer | §44 -- no such primitive exists | not expressible |
+| fewer emitted lines | §45 -- 0/37 byte-identical | **forbidden by the oracle** |
+| type rendering, name lookups, all text | §43 -- 0.5 / 0.5 / 3.1 ms by plant | not worth a reading |
+
+**EVERY AXIS THIS RECORD COULD NAME HAS NOW BEEN MEASURED, AND NONE OF THEM IS THE REMAINING 21 ms.** What is
+left is the per-uop loop of a pure, `St`-threaded program: ~30 calls per line, each doing something, in a
+language whose only container is a cons list.
