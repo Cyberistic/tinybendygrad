@@ -728,3 +728,41 @@ more than noise.
 rounds, IQR 0.9966-1.0129 -- 1.0 is inside, so it is not evidence, but it is the one row whose centre is
 above 1.0 and it is recorded rather than smoothed. If a future measurement ever pushes a conv past the
 band, that is where to look first.
+
+## 24. THREE MORE OP FAMILIES, AND A PROFILE SAYING THE TIME IS THE KERNEL
+
+§23 measured only f32 matmul and conv2d. §24 adds the families that could plausibly differ -- a full-axis
+reduce, the threefry RNG, and a transpose-strided chain -- and then PROFILES the compiled lane to check
+that the time is the kernel rather than the wrapper.
+
+| family | size | BEND | CPU | ratio median | IQR | 1.0 in IQR |
+|---|---|---|---|---|---|---|
+| full-axis `sum()` | 4096x4096 | 6.659 ms | 6.268 ms | 0.9661 | 0.938-1.088 | yes |
+| `Tensor.rand` (threefry) | 2048x2048 | 13.845 ms | 16.448 ms | 0.9918 | 0.864-1.013 | yes |
+| transpose-strided chain | 2048x2048 | 13.927 ms | 15.238 ms | 0.9959 | 0.914-1.023 | yes |
+
+9 interleaved warm-first rounds each. **NO FAMILY SHOWS THE PORT SLOWER BY MORE THAN NOISE, and none shows
+it faster.** The bands are WIDER than the 1024 matmul's +-2% because these kernels are 6-14 ms, not 170 ms,
+so the machine's load variance fills more of the ratio -- that is a property of the size, not of the family.
+
+**⇒ AND THE PROFILE SETTLES THE REMAINING QUESTION: THE TIME IS THE KERNEL.** `sample` on the compiled lane
+running 60 realizes at 1024x1024, with the render and the compile already warm:
+
+```
+leaf census: 4512 of 4581 samples  -> 100.0% of them in '<unknown binary>'
+```
+
+`<unknown binary>` is tinygrad's JIT image, `dlopen`ed by `jit_loader`, so it has no symbol table -- and
+**THE PYTHON STACK IS RESOLVABLE IN THE SAME SAMPLE** (`Py_BytesMain`, `pymain_main`, 54 `_PyEval` frames),
+so the absence of wrapper frames is not a symbol-resolution artefact: **98.5% of the sampled time is inside
+the generated kernel and ~1.2% is Python.** `ops_bend`, `portc`, `BendProgram` and `exec_kernel` appear in
+NO frame.
+
+**⇒ SO THE ANSWER NOW COVERS A MEASURED POPULATION OF OP FAMILIES:** matmul (16, 32, 256, 512, 1024),
+conv2d (128, 256 at 3->8 channels), a full-axis reduce, threefry, and a transpose-strided chain -- **BEND/
+tinygrad-CPU = 1.00 with the IQR straddling 1.0 in every one**, the band narrowing to +-2% where the work
+dominates and widening where the kernel is only a few milliseconds. **AND THE PROFILE SAYS WHY: both lanes
+run byte-identical C through the same `CPUProgram`, and at 1024 the time is 98.5% kernel.**
+
+**THE RESIDUAL IS ATTRIBUTED: it is the machine's load variance around two lanes that execute the same
+instructions. There is nothing port-side left for it to be.**

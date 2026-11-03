@@ -50,6 +50,19 @@ def one(dev: str, iters: int) -> float:
     if dev_prog == "conv":
       x, w = (Tensor(v).realize() for v in conv_inputs(int(dev_size)))
       run = lambda: x.conv2d(w, padding=1).realize()   # noqa: E731
+    elif dev_prog == "reduce":
+      # A FULL-AXIS REDUCE: one kernel whose cost is the tree reduction over every element, with no
+      # matmul and no conv anywhere in it.
+      x = Tensor(mats(int(dev_size))[0]).realize()
+      run = lambda: x.sum().realize()                  # noqa: E731
+    elif dev_prog == "rand":
+      # THREEFRY: the counter-based RNG, i.e. an integer-arithmetic kernel over the whole buffer.
+      run = lambda: Tensor.rand(int(dev_size), int(dev_size)).realize()   # noqa: E731
+    elif dev_prog == "tchain":
+      # TRANSPOSE-STRIDED: two reads of the same permuted view plus arithmetic, so every load is strided
+      # and the linearizer's index math is the work. No matmul.
+      x = Tensor(mats(int(dev_size))[0]).realize()
+      run = lambda: (x.permute(1, 0) * 2 + x.permute(1, 0)).realize()      # noqa: E731
     else:
       ts = [Tensor(m).realize() for m in mats(int(dev_size))]
       a, b, c = ts
@@ -71,7 +84,7 @@ def main() -> int:
   ap.add_argument("--rounds", type=int, default=5)
   # ADDS A PROGRAM WHERE COMPUTE, NOT LAUNCH OVERHEAD, IS THE COST: at 16 and 32 both lanes read ~1.24 ms,
   # which is the signature of a fixed realize/launch floor rather than the lane's work.
-  ap.add_argument("--prog", choices=("matmul", "conv"), default="matmul")
+  ap.add_argument("--prog", choices=("matmul", "conv", "reduce", "rand", "tchain"), default="matmul")
   args = ap.parse_args()
   global dev_size, dev_prog
   dev_size, dev_prog = args.size, args.prog
