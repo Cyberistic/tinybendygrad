@@ -3876,6 +3876,34 @@ def sym_454.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_454(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_454.pat(x, u), sym_454.mk(x, u))
 
+# symbolic.py:471  (UPat.store(UPat(Ops.INDEX, name="index"),
+#                              UPat.var("gate").where(UPat.load(UPat(Ops.INDEX, name="index")),
+#                                                   UPat.var("alt"))),
+#                    lambda index, gate, alt:
+#                      UOp.store(index.src[0].index(index.src[1].valid(gate.logical_not())), alt))
+# THE MIRROR OF `:468`, and the mirror is the whole rule: the LOAD sits in the THEN arm instead of
+# the ELSE, so the gate that reaches `valid` is NEGATED and the value that reaches the STORE is the
+# ELSE (`alt`). Copying `:468` without the negation typechecks and stores the wrong arm.
+def sym_471x.pat(+x: F.Folded, +u: U32) -> Bool:
+  +k = sy_src0(x, u)
+  +v = sy_src1(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTORE{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(Bool.and(sy_is_op(x, k, O.OpsINDEX{}), sy_nsrc_ge(x, k, 2)),
+      Bool.and(Bool.and(sy_is_op(x, v, O.OpsWHERE{}), sy_nsrc_is(x, v, 3)),
+        p_load_of(x, sy_src1(x, v), k))))
+
+def sym_471x.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +k = sy_src0(x, u)
+  +v = sy_src1(x, u)
+  +z = O.UOp.new(sy_ar(x), O.OpsCONST{}, Nil{}, O.APy{O.CInvalid{}}, O.TNone{})
+  +n = mint_not(z, sy_src0(x, v))
+  +g = mint_where(n, O.Found.i(n), sy_src1(x, k), O.Found.i(z))
+  +i = mint_bin(g, O.OpsINDEX{}, sy_src0(x, k), O.Found.i(g))
+  Some{mint_bin(i, O.OpsSTORE{}, O.Found.i(i), sy_src2(x, v))}
+
+def sym_471x(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_471x.pat(x, u), sym_471x.mk(x, u))
+
 # symbolic.py:280  (UPat.maximum(UPat.var("x"), UPat.var("y")),
 #                     lambda x,y: x if x.vmin >= y.vmax else y if x.vmax <= y.vmin else None)
 # A MAXIMUM IS DECIDED BY THE BOUNDS when one side's WHOLE RANGE is past the other's: `max(x, y)`
@@ -5860,8 +5888,9 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{118, [O.OpsPOW{}], Nil{}, },   # symbolic.py:465
     O.PMEntry{119, [O.OpsSTORE{}], Nil{}, },   # 467
     O.PMEntry{120, [O.OpsSTORE{}], Nil{}, },   # 468
-    O.PMEntry{121, [O.OpsSTORE{}], Nil{}, },   # 471
-    O.PMEntry{122, [O.OpsSTORE{}], Nil{}, },   # 474
+    O.PMEntry{129, [O.OpsSTORE{}], Nil{}, },   # 471
+    O.PMEntry{121, [O.OpsSTORE{}], Nil{}, },   # 474
+    O.PMEntry{122, [O.OpsSTORE{}], Nil{}, },   # 476
     O.PMEntry{123, [O.OpsMUL{}], Nil{}, },   # symbolic.py:478
     O.PMEntry{124, [O.OpsMUL{}], Nil{}, },   # symbolic.py:479
     O.PMEntry{125, [O.OpsMUL{}], Nil{}, },   # symbolic.py:480
@@ -6242,7 +6271,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 58, 59, 60, 61, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 101, 102, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 58, 59, 60, 61, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 101, 102, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -6335,6 +6364,7 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 117: wk_89(x, u)
     case 118: sym_451(x, u)
     case 119: sym_453(x, u)
+    case 129: sym_471x(x, u)
     case 120: sym_454(x, u)
     case 121: sym_458(x, u)
     case 122: sym_460(x, u)    case 123: sym_465(x, u)
