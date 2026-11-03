@@ -552,3 +552,23 @@ and compare the key with `O.Found.i(m1)`. That is one row and it settles which o
 last entry's "it does nothing", but an answer of `none` would make `uop_given_valid` behave as if no
 valid ever applied -- the exact failure mode a no-op substitution produces. Nothing is wired until
 the sink reads back.
+
+## 2026-11-03 (final, 14): the replace map is keyed by `U32.show(index)`, and `sink` is not in it
+
+`R.cu32` is not a struct reader, it is a Map get:
+
+    def cu32(m: Map<&2, U32>, u: U32) -> U32:
+      cu32.of(Map.get(U32, 0, m, U32.show(u)))
+
+so the map's keys are the DECIMAL STRINGS of node indices (`ops.bend`'s note: "`CNodes{m}` -- keyed by
+`U32.show(node)`, i.e. by the node itself"), and a miss answers `0`. That is why `walk_rewrite.of`
+turned the miss into `None`: the two are the same value.
+
+So the measurement from the previous entry resolves to: **the one entry in `repl` is keyed by a node
+that is NOT `sink`.** The map has one replacement; the sink index is not its key. Which node it IS
+keyed by is the last thing to read, and it is one row: print `R.cu32(C.Rewritten.repl(w), k)` for `k`
+across `0 .. Arena.next`, and whichever returns non-zero names the key.
+
+That is where `UOp.simplify` stands: the driver runs, it rewrites, and the ANSWER is in a map whose
+key is not the sink the caller passes. Until that key is named, `sy_simplify` cannot be written, and
+`uop_given_valid` -- and therefore `:436`, `:437` and `divandmod:108` -- cannot be built on it.
