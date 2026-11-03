@@ -1002,3 +1002,32 @@ session and a one-line fix at the end of a long session is how the two reverts a
 
 THE NEXT STEP IS NAMED AND SMALL: for `fits(x, c0.vmin+c1.vmin)` the two constants must be READ from
 `cside` and ADDED, not read off the sum node -- `H.i64_add` of the two `CInt` payloads, then `fits`.
+
+## 29. `:283`'s `no_overflow` CANNOT BE DECIDED BY A CONST-BRANCH FIXTURE
+
+Attempted, measured, and REVERTED 2026-11-04; the file is byte-identical to `39312ed2`.
+
+The guard is `no_overflow(m:=c.where(t+tt, f+ff))`, and `no_overflow(u)` is
+`fits(u, u.vmin) and fits(u, u.vmax)` -- a statement about the WHERE's RANGE. The rule also requires
+`t.op == tt.op == Ops.CONST` (or the `f` pair), so the natural fixture has CONST branches:
+
+    c.where(100, 100) + c.where(101, 102)   ->  (where g (add c100 c101) (add c100 c102))
+
+and the port FIRES on it. So did my guarded version, which is why it was reverted as unverified.
+
+**AND THE FIXTURE CANNOT DISCRIMINATE, WHICH IS THE FINDING.** `t+tt` is `UOp.__add__` on two CONSTs,
+and a CONST's value is truncated to its dtype AT CONSTRUCTION (`dtype.const` -> `truncate[self]`, the
+table section 27 is about). So `100+101` becomes `CONST(-55, int8)` BEFORE the WHERE exists, the
+WHERE's own range is `[-55, -55]`, and `fits` is TRUE on both sides of the guard. **A GUARD ABOUT A
+RANGE NEEDS A FIXTURE WHOSE RANGE IS NOT ONE POINT, and a const pair collapses to one point by
+construction.**
+
+HOW TO TEST IT, named so the next pass does not rediscover this: one branch pair must be a PARAM with
+a range wider than the dtype (`UOp.variable("x", -128, 127, dtype=int8)` gives `vmin/vmax` endpoints
+that scale out of range), while the OTHER pair stays CONST so the rule's own `t.op == tt.op == CONST`
+premise still holds.
+
+THE THREE GUARDS THAT WERE REVERTED THIS SESSION ARE ALL THE SAME LESSON FROM THREE ANGLES: `:309`
+suppressed a live rule until the bounds table was rebuilt, `:255` suppressed it because `sy_val` on a
+sum is `None{}`, and `:283` could not be read at all because its fixture had one point of range.
+**IN ALL THREE THE PROBE, NOT THE RULE, WAS THE THING THAT COULD NOT ANSWER.**
