@@ -662,3 +662,8 @@ cannot disagree about a code point. The gate pins that across a 2-byte code poin
 `Maybe` cannot be written as loop + helper here: a def may not use a later def, and two defs may not call
 each other. The expressible shape is a TWO-PASS map-then-fold (`List.map` then one recursive fold that
 pops the `Maybe` off a list), and that is what its `TODO(parity)` records.
+
+**AND THE CORPUS IS RE-CERTIFIED AFTER THIS CHANGE** (`cli.bend` moved the digest):
+`substrate-start == substrate-end == live == 53cda1fd5ba4...`, `graphs-agree=38`,
+`byte-identical=38`, `graphs-refused=0`. The digest is taken over the WORKING TREE, and this note is
+outside the walk, so writing it does not invalidate the certificate.
