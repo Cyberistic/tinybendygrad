@@ -13,10 +13,24 @@
 #                                            dtypes Bend can state -- see below)
 #   3  29      fold  fold_const_alu      PORTED   (exec_alu over U32 and F32)
 #   4  31      fold  _quotient_base      PORTED   (index arithmetic + pop_const)
-#   5  43      fold  fold_add_divmod_recombine  PORTED
+#   5  43      fold  fold_add_divmod_recombine  MISSING. This line said PORTED and there is
+#                                             NO `def fold_add_divmod_recombine`: the census
+#                                             lists it MISSING and `symclosure-gate` counts it
+#                                             among `bodies.absent`. MEASURED 2026-11-03.
 #   6  63-70   data  invalid_pat/gate/bare_const/casted_const/const_arg  PORTED
-#   7  72      fold  lift_reduce_gate    DEFERRED `UOp.ranges` (fold.bend
-#                                            TODO(p3) ops.py:479  symbol=ranges)
+#   7  72      fold  lift_reduce_gate    MISSING, AND THE STATED REASON WAS FALSE. It said
+#                                             "DEFERRED `UOp.ranges`", and `UOp.ranges` IS
+#                                             PORTED (`fold.bend:5271`, with the `rg_self` row
+#                                             that makes the prepend visible). THE TWO REAL
+#                                             BLOCKERS, MEASURED 2026-11-03:
+#                                               1. `UOp.uprod` -- elementwise.py:41,
+#                                                  `reduce(and_ if dtype is bool else mul,
+#                                                   uops, self)`. ABSENT.
+#                                               2. `c.ranges` needs an `RTable` BUILT INSIDE A
+#                                                  RULE BODY. `RTable{es}` exists in fold.bend
+#                                                  and this lane has no builder for one, so
+#                                                  `cond.split_uop(AND)`'s terms cannot be
+#                                                  filtered by the reduce's ranges at all.
 #   8  79-102  table pm_data_invalid      13 of 14  (rule 6 is #7)
 #   9  104-108 table pm_remove_invalid    2 of 2
 #  10  113     fold  fold_const_where     MISSING. This line said `PORTED` and named line
@@ -4085,7 +4099,9 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #      `reduce_mul_chain`, `parse_valid`, `uop_given_valid`, `_valid_priority`,
 #      `simplify_valid`, `gated_given_valid` and about half of `symbolic`'s 47 --
 #      nine of the fourteen deferred blocks. It is `fold.bend`'s biggest piece.
-#   2. `UOp.ranges` + the set algebra unblocks `lift_reduce_gate`,
+#   2. **`UOp.ranges` IS PORTED** (`fold.bend:5271`), so this line was false; what
+#      `lift_reduce_gate` actually needs is `UOp.uprod` and an `RTable` buildable in a rule
+#      body -- see row 7 above. The set algebra does unblock
 #      `drop_and_clauses`, `where_on_load` and `fold_where_closure`.
 #   3. `math.gcd` on an I64 unblocks `const_factor`, `divides`, `_quotient_base`
 #      and `fold_add_divmod_recombine`.
