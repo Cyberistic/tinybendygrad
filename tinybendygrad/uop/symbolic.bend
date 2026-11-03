@@ -5591,10 +5591,41 @@ def sym_295.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sym_284.alu2c(x, sy_src0(x, u), sy_op(x, u))),
     Bool.not(sy_is_const(x, sy_src1(x, u))))
 
+# **THE GUARD `:309`/`:311` CARRY AND THIS BODY DID NOT: `no_overflow(m:=x op y)`, plus, for `*`,
+# `x.dtype in wints or c1.arg == -1`.** `no_overflow(u)` is `fits(u, u.vmin) and fits(u, u.vmax)`
+# read off the MINTED node -- and the bounds table must be built from the arena the node was just
+# minted INTO. The first version passed the CALLER's table, so the new node had no bounds, every
+# guard came back False, and the rule stopped firing altogether: a "stop firing" regression that
+# looks like a guard and is worse than no guard.
+def sym_295.fitc(c: O.Const, +dt: S.Dt) -> Bool:
+  match c:
+    case O.CInt{i}: fits(dt, i)
+    case _: Bool.not(dt_in(DTS_SINTS(), dt))
+
+def sym_295.ovm(m: Maybe<&2, O.Const>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{+c}: sym_295.fitc(c, dt)
+    case None{}: False{}
+
+def sym_295.no_ov(+f: O.Found, +i: U32) -> Bool:
+  +bt = sym_280.bt(F.folded(O.Found.ar(f)))
+  +dt = sy_dt1(F.folded(O.Found.ar(f)), i)
+  Bool.and(sym_295.ovm(sym_276.vc(F.UOp.vmin(O.Found.ar(f), bt, i)), dt),
+           sym_295.ovm(sym_276.vc(F.UOp.vmax(O.Found.ar(f), bt, i)), dt))
+
+def sym_295.opok(+x: F.Folded, +u: U32, +i: U32) -> Bool:
+  Bool.or(O.eq_op(sy_op(x, u), O.OpsADD{}),
+    Bool.or(dt_in(DTS_INTWEAK(), sy_dt1(x, sym_284.v(x, i))), p_is_const_neg1(x, sym_284.c(x, i))))
+
+def sym_295.hit(ok: Bool, +s: O.Found, +x: F.Folded, +u: U32, +i: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: Some{mint_bin(s, sy_op(x, u), O.Found.i(s), sym_284.c(x, i))}
+    case _: None{}
+
 def sym_295.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +i = sy_src0(x, u)
   +s = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sym_284.v(x, i), sy_src1(x, u))
-  Some{mint_bin(s, sy_op(x, u), O.Found.i(s), sym_284.c(x, i))}
+  sym_295.hit(Bool.and(sym_295.opok(x, u, i), sym_295.no_ov(s, O.Found.i(s))), s, x, u, i)
 
 def sym_295(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_295.pat(x, u), sym_295.mk(x, u))
