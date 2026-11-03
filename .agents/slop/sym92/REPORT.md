@@ -154,3 +154,36 @@ landed, which is what unblocked `:302` and the `vmax >= 0` guard here.
 
 So the remaining work is two substrate functions and then five rules, not eleven independent
 projects — and one of the eleven (`:252`) is dead upstream and can never be witnessed.
+
+## 2026-11-03 (final): 133 of 141, and `overflows` is no longer a wall
+
+`gates/symrules-cases.rows` holds **217** graphs, **217 of 217 agree** with CPython.
+`symrules-gate` rc=0: **133 entries, 133 mapped, 0 broken, 0 unresolved**. `symclosure-gate` PASS:
+**131 rows, 100 mint arms == 100 `MINT_TAGS`**. `PROOF-ALL`: `ALL PROOFS CHECK`.
+
+Landed in this stretch: `:309` (with `UOp.overflows` WRITTEN, not stubbed) and `:312` (nineteen
+ops in one row, because the pattern is `GroupOp.Binary` and the op is CARRIED).
+
+### Eight remain, and each names its instrument
+
+| citation | measured wall |
+|---|---|
+| `symbolic.py:193` | `math.log2(c.val)` on a CONST then `.exp2()`. `f32_log2`/`f32_exp2` fold a NODE; there is no const-fold from an int const to an `F32`, so the branch is unstatable. |
+| `symbolic.py:252` | **DEAD UPSTREAM.** Its pattern `(UPat.var("x") / UPat.var("x2")) / UPat.var("x3")` raises `NotImplementedError` from `shape` when constructed, and `(fdiv|(cdiv|(floordiv (fdiv x x2) x3))` answer `norewrite` on BOTH sides. No row can go red. |
+| `symbolic.py:259` | `fold_where_closure` needs `bool_slice` + `substitute` (TODO in `fold.bend`). |
+| `symbolic.py:299` | `lt_folding` is PORTABLE and NOT YET WRITTEN: it needs `pop_const(MUL)` (landed), a `gcd` FOLD over a list (`H.gcd` is binary only), and `ceildiv` on a potentially NEGATIVE numerator. It does NOT need `const_factor`, which the earlier note in this file assumed. |
+| `divandmod.py:108` | the body in `divandmod.bend` is 3 arms of ~10; the missing arms need `const_factor` + `divides`. Composed, measured against three shapes CPython rewrites, REVERTED. |
+| `symbolic.py:436` | `simplify_valid` needs `uop_given_valid` + `bool_slice`. |
+| `symbolic.py:437` | `gated_given_valid` needs the same plus the `IMAGE` ContextVar. |
+| `symbolic.py:451` | `xpow_int` (transcendental.py:267-282): square-and-multiply over the exponent's BITS with masking. `xpow` alone is the float arm, and a float-only body declines on ints -- the `divandmod:108` defect again, so it is NOT shipped. |
+
+### Two defects this stretch found and the instruments that caught them
+
+1. **`dt_weak_of` IS TRUE FOR `weakfloat`.** `:309`'s set is `dtypes.ints + (weakint,)`; the first
+   version tested "any weak", so the rule fired on `(cast:i16 (cast:i8 xf))`. `symrules-oracle
+   --compare` named it in ONE LINE, on a case that was ALREADY IN THE FILE -- not on one of the
+   four I had just written. **A ROW THAT AGREES ON THE CASES YOU THOUGHT OF AND DISAGREES ON A
+   CASE ALREADY IN THE FILE IS A ROW THAT WAS NEVER THE ONE YOU WERE TESTING.**
+2. **EVERY MINT READS THE ARENA ITS LAST OPERAND OPENED.** `mint_one_sub` (`:465-467`) built the
+   MUL from the arena *before* the negated const, so its second src named an index that arena did
+   not hold and the answer rendered `?`. One arena late is a silent hole, not an error.
