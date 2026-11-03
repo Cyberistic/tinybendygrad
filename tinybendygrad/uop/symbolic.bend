@@ -242,6 +242,18 @@ def OP_SELF() -> List<&2, O.Op>: [O.OpsADD{}, O.OpsXOR{}, O.OpsOR{}]
 
 def OP_SHIFTS() -> List<&2, O.Op>: [O.OpsSHL{}, O.OpsSHR{}]
 
+# `GroupOp.ALU - {Ops.THREEFRY}` -- TWENTY-SEVEN ops, and it is the op set of `symbolic.py:158`,
+# `:159` and `:161`. THE PORT'S BODY FOR :161 ALREADY TESTS IT (`sym_161.pat` asks
+# `O.GroupOp.alu(op) && op != THREEFRY`) AND THE TABLE ENTRY LISTED ONE OP -- so the rule was
+# correct and UNREACHABLE for twenty-six of its twenty-seven inputs. A NARROW row is exactly
+# that shape: the table says PORTED and the rule fires on a twenty-seventh of upstream's nodes.
+def OP_ALU_NT() -> List<&2, O.Op>:
+  [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{},
+   O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsLOG2{},
+   O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{},
+   O.OpsRECIPROCAL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{},
+   O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}]
+
 # `up if bool(x) else None` -- the shape of most of symbolic.py's rule bodies.
 # A `match` may not scrutinise a computed value, so the condition crosses a def
 # boundary as a parameter.
@@ -2190,7 +2202,7 @@ def p_one(+x: F.Folded, +u: U32) -> Sw:
 # upstream's does not, on a graph where upstream's does.**  That is the ORDER arm of
 # the plant, and it is the arm nobody writes.
 def sym_84.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_op_in(x, u, OP_CASTS()), sy_nsrc_is(x, u, 1)), p_where_gate(x, u, 0))
+  Bool.and(Bool.and(sy_op_in(x, u, OP_UNARY()), sy_nsrc_is(x, u, 1)), p_where_gate(x, u, 0))
 
 # `mint_bitcast`, which is `mint_cast`'s sibling: the BITCAST node at an explicit
 # dtype, interned into the arena the caller threads.
@@ -2712,7 +2724,7 @@ def sym_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, [O.OpsSTACK{}],                   OP_INVALID(),                    },   # 82
     O.PMEntry{1, OP_UNARY(),                       OP_INVALID(),                    },   # 83
-    O.PMEntry{2, OP_CASTS(),                       OP_INVALID(),                    },   # 84
+    O.PMEntry{2, OP_UNARY(),                       OP_INVALID(),                    },   # 84
     O.PMEntry{3, OP_BINARY_NC(),                   OP_INVALID(),                    },   # 89
     O.PMEntry{4, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 92
     O.PMEntry{5, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 93
@@ -2742,7 +2754,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{29, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 147
     O.PMEntry{30, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
     O.PMEntry{31, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
-    O.PMEntry{32, [O.OpsPOW{}],                     Nil{},                           },   # 161
+    O.PMEntry{32, OP_ALU_NT(),                     Nil{},                           },   # 161
     O.PMEntry{33, OP_BINARY_3F(),                   Nil{},                           },   # 163
     O.PMEntry{34, [O.OpsMUL{}],                     Nil{},                           },   # 167
     O.PMEntry{35, [O.OpsADD{}],                     Nil{},                           },   # 168
