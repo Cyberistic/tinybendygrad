@@ -247,6 +247,14 @@ def OP_SHIFTS() -> List<&2, O.Op>: [O.OpsSHL{}, O.OpsSHR{}]
 # `O.GroupOp.alu(op) && op != THREEFRY`) AND THE TABLE ENTRY LISTED ONE OP -- so the rule was
 # correct and UNREACHABLE for twenty-six of its twenty-seven inputs. A NARROW row is exactly
 # that shape: the table says PORTED and the rule fires on a twenty-seventh of upstream's nodes.
+# `GroupOp.Binary` -- NINETEEN ops, and it is the op set of `symbolic.py:87` and `:88`, the two
+# rules that lift an `invalid_gate` out of a binary operand. Spelled out because `PMEntry.ops` is
+# a LIST and `O.GroupOp.binary` is a PREDICATE -- the same reason `OP_ALU_NT` is.
+def OP_BINARY() -> List<&2, O.Op>:
+  [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{},
+   O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{},
+   O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}]
+
 def OP_ALU_NT() -> List<&2, O.Op>:
   [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{},
    O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsLOG2{},
@@ -2748,53 +2756,55 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{0, [O.OpsSTACK{}],                   OP_INVALID(),                    },   # 82
     O.PMEntry{1, OP_UNARY(),                       OP_INVALID(),                    },   # 83
     O.PMEntry{2, OP_UNARY(),                       OP_INVALID(),                    },   # 84
-    O.PMEntry{3, OP_BINARY_NC(),                   OP_INVALID(),                    },   # 89
-    O.PMEntry{4, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 92
-    O.PMEntry{5, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 93
-    O.PMEntry{6, [O.OpsWHERE{}],                   Nil{},                           },   # 95
-    O.PMEntry{7, [O.OpsSTORE{}],                   OP_INVALID(),                    },   # 101
-    O.PMEntry{8, [O.OpsLOAD{}],                    OP_INVALID(),                    },   # 103
-    O.PMEntry{9, OP_SELF(),                        Nil{},                           },   # 120
-    O.PMEntry{10, OP_SHIFTS(),                      Nil{},                           },   # 121
-    O.PMEntry{11, [O.OpsMUL{}],                     Nil{},                           },   # 122
-    O.PMEntry{12, [O.OpsFLOORDIV{}],                Nil{},                           },   # 123
-    O.PMEntry{13, [O.OpsFLOORDIV{}],                Nil{},                           },   # 124
-    O.PMEntry{14, [O.OpsFLOORDIV{}],                Nil{},                           },   # 125
-    O.PMEntry{15, [O.OpsXOR{}],                     Nil{},                           },   # 126
-    O.PMEntry{16, [O.OpsFLOORMOD{}],                [O.OpsFLOORMOD{}],               },   # 127
-    O.PMEntry{17, [O.OpsAND{}],                     Nil{},                           },   # 130
-    O.PMEntry{18, [O.OpsOR{}],                      Nil{},                           },   # 131
-    O.PMEntry{19, [O.OpsCMPNE{}],                   Nil{},                           },   # 132
-    O.PMEntry{20, OP_IDEMPOTENT(),                  Nil{},                           },   # 133
-    O.PMEntry{21, [O.OpsWHERE{}],                   Nil{},                           },   # 135
-    O.PMEntry{22, [O.OpsWHERE{}],                   Nil{},                           },   # 136
-    O.PMEntry{23, [O.OpsCMPNE{}],                   [O.OpsCAST{}, O.OpsCONST{}],     },   # 138
-    O.PMEntry{24, [O.OpsTRUNC{}],                   Nil{},                           },   # 140
-    O.PMEntry{25, [O.OpsCMPLT{}],                   Nil{},                           },   # 142
-    O.PMEntry{26, [O.OpsFLOORMOD{}],                Nil{},                           },   # 143
-    O.PMEntry{27, [O.OpsXOR{}],                     Nil{},                           },   # 144
-    O.PMEntry{28, [O.OpsAND{}],                     Nil{},                           },   # 145
-    O.PMEntry{29, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 147
-    O.PMEntry{30, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
-    O.PMEntry{31, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
-    O.PMEntry{32, OP_ALU_NT(),                     Nil{},                           },   # 161
-    O.PMEntry{33, OP_BINARY_3F(),                   Nil{},                           },   # 163
-    O.PMEntry{34, [O.OpsMUL{}],                     Nil{},                           },   # 167
-    O.PMEntry{35, [O.OpsADD{}],                     Nil{},                           },   # 168
-    O.PMEntry{36, [O.OpsMAX{}],                     Nil{},                           },   # 169
-    O.PMEntry{37, [O.OpsMUL{}],                     Nil{},                           },   # 173
-    O.PMEntry{38, [O.OpsMUL{}],                     Nil{},                           },   # 174
-    O.PMEntry{39, [O.OpsMUL{}],                     Nil{},                           },   # 178
-    O.PMEntry{40, OP_CASTS(),                       Nil{},                           },   # 181
-    O.PMEntry{41, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
-    O.PMEntry{42, [O.OpsCAST{}],                    Nil{},                           },   # 189
-    O.PMEntry{43, [O.OpsPOW{}],                     Nil{},                           },   # 191
-    O.PMEntry{44, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
-    O.PMEntry{45, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
-    O.PMEntry{46, [O.OpsWHERE{}],                  Nil{},                           },   # 201
-    O.PMEntry{47, [O.OpsWHERE{}],                  Nil{},                           },   # 202
-    O.PMEntry{48, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{49, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{3, OP_BINARY(),                     [O.OpsWHERE{}],                  },   # 87
+    O.PMEntry{4, OP_BINARY(),                     [O.OpsWHERE{}],                  },   # 88
+    O.PMEntry{5, OP_BINARY_NC(),                   OP_INVALID(),                    },   # 89
+    O.PMEntry{6, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 92
+    O.PMEntry{7, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 93
+    O.PMEntry{8, [O.OpsWHERE{}],                   Nil{},                           },   # 95
+    O.PMEntry{9, [O.OpsSTORE{}],                   OP_INVALID(),                    },   # 101
+    O.PMEntry{10, [O.OpsLOAD{}],                    OP_INVALID(),                    },   # 103
+    O.PMEntry{11, OP_SELF(),                        Nil{},                           },   # 120
+    O.PMEntry{12, OP_SHIFTS(),                      Nil{},                           },   # 121
+    O.PMEntry{13, [O.OpsMUL{}],                     Nil{},                           },   # 122
+    O.PMEntry{14, [O.OpsFLOORDIV{}],                Nil{},                           },   # 123
+    O.PMEntry{15, [O.OpsFLOORDIV{}],                Nil{},                           },   # 124
+    O.PMEntry{16, [O.OpsFLOORDIV{}],                Nil{},                           },   # 125
+    O.PMEntry{17, [O.OpsXOR{}],                     Nil{},                           },   # 126
+    O.PMEntry{18, [O.OpsFLOORMOD{}],                [O.OpsFLOORMOD{}],               },   # 127
+    O.PMEntry{19, [O.OpsAND{}],                     Nil{},                           },   # 130
+    O.PMEntry{20, [O.OpsOR{}],                      Nil{},                           },   # 131
+    O.PMEntry{21, [O.OpsCMPNE{}],                   Nil{},                           },   # 132
+    O.PMEntry{22, OP_IDEMPOTENT(),                  Nil{},                           },   # 133
+    O.PMEntry{23, [O.OpsWHERE{}],                   Nil{},                           },   # 135
+    O.PMEntry{24, [O.OpsWHERE{}],                   Nil{},                           },   # 136
+    O.PMEntry{25, [O.OpsCMPNE{}],                   [O.OpsCAST{}, O.OpsCONST{}],     },   # 138
+    O.PMEntry{26, [O.OpsTRUNC{}],                   Nil{},                           },   # 140
+    O.PMEntry{27, [O.OpsCMPLT{}],                   Nil{},                           },   # 142
+    O.PMEntry{28, [O.OpsFLOORMOD{}],                Nil{},                           },   # 143
+    O.PMEntry{29, [O.OpsXOR{}],                     Nil{},                           },   # 144
+    O.PMEntry{30, [O.OpsAND{}],                     Nil{},                           },   # 145
+    O.PMEntry{31, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 147
+    O.PMEntry{32, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
+    O.PMEntry{33, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
+    O.PMEntry{34, OP_ALU_NT(),                     Nil{},                           },   # 161
+    O.PMEntry{35, OP_BINARY_3F(),                   Nil{},                           },   # 163
+    O.PMEntry{36, [O.OpsMUL{}],                     Nil{},                           },   # 167
+    O.PMEntry{37, [O.OpsADD{}],                     Nil{},                           },   # 168
+    O.PMEntry{38, [O.OpsMAX{}],                     Nil{},                           },   # 169
+    O.PMEntry{39, [O.OpsMUL{}],                     Nil{},                           },   # 173
+    O.PMEntry{40, [O.OpsMUL{}],                     Nil{},                           },   # 174
+    O.PMEntry{41, [O.OpsMUL{}],                     Nil{},                           },   # 178
+    O.PMEntry{42, OP_CASTS(),                       Nil{},                           },   # 181
+    O.PMEntry{43, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
+    O.PMEntry{44, [O.OpsCAST{}],                    Nil{},                           },   # 189
+    O.PMEntry{45, [O.OpsPOW{}],                     Nil{},                           },   # 191
+    O.PMEntry{46, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
+    O.PMEntry{47, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
+    O.PMEntry{48, [O.OpsWHERE{}],                  Nil{},                           },   # 201
+    O.PMEntry{49, [O.OpsWHERE{}],                  Nil{},                           },   # 202
+    O.PMEntry{50, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{51, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
     O.PMEntry{50, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
     O.PMEntry{50, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
@@ -2825,7 +2835,7 @@ def sym_table_len() -> Nat:
   nats([1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
-        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
+        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
 
 # THE DRIVER, twice. `sym_*` for the `sym` composition and `rm_*` for
 # `pm_remove_invalid`, and the duplication is the honest cost of not having
@@ -3020,13 +3030,13 @@ def sym_88(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # the swapped pair for :88 -- which is exactly the two upstream lambdas.
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [3, 4, 46]
+def MINT_TAGS() -> List<&2, U32>: [3, 4, 49]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
     case 3 : sym_87(x, u)
     case 4 : sym_88(x, u)
-    case 46: sy_fcw_f(x, u)
+    case 49: sy_fcw_f(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:

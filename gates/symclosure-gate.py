@@ -112,6 +112,12 @@ WALLS = ("UOp.tuplize", "uop_tup_cmp")
 SYM_ANS = "Maybe<&1, U32>"
 SYM_FAMILY_IS_INDEX_ONLY = True
 SYM_MINTING_SITES = 37
+# THE TAGS WITH A MINTING BODY, read off the port so the gate and the lane cannot drift.
+def mint_tags() -> list[int]:
+    import re as _re
+    m = _re.search(r"def MINT_TAGS\(\) -> List<&2, U32>: \[([^\]]*)\]",
+                   (PKG / "uop/symbolic.bend").read_text(errors="ignore"))
+    return [int(x) for x in m.group(1).split(",") if x.strip()] if m else []
 PORTED_RULES = ("commutative",)
 TUPLIZE_KEYS = 4   # decided, of 4
 
@@ -171,7 +177,12 @@ def main() -> int:
     index_only = ("def sym_rewrite(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> " + SYM_ANS) in text
     print(f"wall.sym_rewrite_index_only\t{index_only}\t(index and NO arena: a minting rule cannot answer)")
     print(f"wall.sym_minting_sites\t{SYM_MINTING_SITES}\tcall sites that mint behind this family")
-    print(f"narrow.symbolic_202_ccast\tTrue\tNARROW BY CONSTRUCTION while the family is index-only")
+    # `symbolic.py:202`'s ccast branch is NARROW exactly while no rule has a Found-answering body.
+    tags = mint_tags()
+    print(f"family.mint_tags\t{len(tags)}\t{tags}")
+    print(f"narrow.symbolic_202_ccast\t{not tags}\tFalse once a rule has a Found-answering body")
+    if not port_has("sym_f") and tags:
+        print("  MINT_TAGS is non-empty but sym_f is gone -- the tags have no family", file=sys.stderr)
     if index_only != SYM_FAMILY_IS_INDEX_ONLY:
         print("  the symbolic answer family CHANGED -- re-derive symbolic.py:202's NARROW and the "
               "minting-site count before trusting either", file=sys.stderr)
