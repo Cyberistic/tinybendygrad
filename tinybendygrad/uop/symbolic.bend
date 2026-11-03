@@ -2968,12 +2968,64 @@ def sy_fcw_f(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
                                   Bool.not(dt_weak_of(sy_dt1(x, u))))),
                 ret, x, u, sy_dt1(x, u))
 
+# ===========================================================================
+# `symbolic.py:87` AND `:88` -- `invalid_gate` LIFTED THROUGH A BINARY OP.
+#
+#     (UPat(GroupOp.Binary, src=(invalid_gate, UPat.var("y")), name="alu"),
+#      lambda cond,x,y,alu,i: cond.where(x.alu(alu.op,y), i))              # :87
+#     (UPat(GroupOp.Binary, src=(UPat.var("y"), invalid_gate), name="alu"),
+#      lambda cond,x,y,alu,i: cond.where(y.alu(alu.op,x), i))              # :88
+#
+# `invalid_gate` IS `WHERE(cond, x, Invalid)`, so the rule moves the gate OUT of the operand and
+# around the op: `(cond ? x : Invalid) + y` becomes `cond ? (x + y) : Invalid`. THE ORDER OF THE
+# TWO OPERANDS IS THE ONLY DIFFERENCE BETWEEN THE PAIR, and it is not cosmetic -- `:88` builds
+# `y.alu(op, x)` with `y` FIRST, because `y` was the LEFT operand of the binary node.
+#
+# BOTH MINT, so both belong to the `Found` family: the `_f` bodies below carry the arena through
+# `mint_alu`/`mint_where`. THE PATTERNS DO NOT MINT, which is the file's own RULE/pattern split.
+def mint_alu(+op: O.Op, +f: O.Found, +srcs: List<&2, U32>) -> O.Found:
+  O.UOp.new(O.Found.ar(f), op, srcs, O.ANone{}, O.TNone{})
+
+def mint_where(+f: O.Found, c: U32, t: U32, e: U32) -> O.Found:
+  mint_alu(O.OpsWHERE{}, f, [c, t, e])
+
+# `invalid_gate` -- `WHERE(cond, x, Invalid)` and nothing looser.
+def p_ig3(+x: F.Folded, +a: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, a, O.OpsWHERE{}), sy_nsrc_is(x, a, 3)),
+           sy_is_invalid_const(x, sy_src2(x, a)))
+
+def sym_87.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(O.GroupOp.binary(sy_op(x, u)), sy_nsrc_is(x, u, 2)),
+           p_ig3(x, sy_src0(x, u)))
+
+def sym_88.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(O.GroupOp.binary(sy_op(x, u)), sy_nsrc_is(x, u, 2)),
+           p_ig3(x, sy_src1(x, u)))
+
+# ONE BODY FOR THE PAIR: `(g, y)` in that order, the gate's `x` first inside the op for :87 and
+# the swapped pair for :88 -- which is exactly the two upstream lambdas. It takes a `Found`
+# because it MINTS, and the reads are ARENA reads for the same reason.
+def sym_87.mk(+f: O.Found, +op: O.Op, +g: U32, +y: U32) -> Maybe<&1, O.Found>:
+  +ar = O.Found.ar(f)
+  +f1 = mint_alu(op, f, [O.Arena.src(ar, g, 1), y])
+  Some{mint_where(f1, O.Arena.src(ar, g, 0), O.Found.i(f1), O.Arena.src(ar, g, 2))}
+
+def sym_87(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src0(x, u), sy_src1(x, u))
+
+def sym_88(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src1(x, u), sy_src0(x, u))
+
+# ONE BODY FOR THE PAIR: `(g, y)` in that order, the gate's `x` first inside the op for :87 and
+# the swapped pair for :88 -- which is exactly the two upstream lambdas.
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [46]
+def MINT_TAGS() -> List<&2, U32>: [3, 4, 46]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
+    case 3 : sym_87(x, u)
+    case 4 : sym_88(x, u)
     case 46: sy_fcw_f(x, u)
     case _ : None{}
 
