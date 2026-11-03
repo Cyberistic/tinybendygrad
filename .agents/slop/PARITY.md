@@ -3218,3 +3218,16 @@ copied and decoded across sixty turns -- about 0.9 ms per turn of real I/O, not 
 1.7% is the decoder's per-character scan, `List_get` 2.8% is the name walks of §60, and there is nothing
 between them. **THE 60-TURN PROFILE AGREES WITH THE 20-TURN ONE, THE ONE-SHOT ONE (§52), THE CALL COUNTS (§60)
 AND THE PLANTS (§56/§58) -- FIVE INSTRUMENTS, ONE SHAPE.**
+
+### 74.2 The certificate, for the commit this section stands on
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **17:21:06**, `substrate-head=45c13b33b`:
+
+```
+substrate-start = substrate-end = live = 4cc9441eec35...
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4
+```
+
+The run was gated on `git status --porcelain -- tinybendygrad/` being EMPTY *and* the corpus lock being free,
+which is what finally produced a reading whose head is the commit it certifies rather than another unit's.
