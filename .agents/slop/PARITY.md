@@ -3555,3 +3555,47 @@ The decode's cost is in the WORK PER FIELD -- `fld`'s index walk, `U32.read`'s d
 `String` allocation per token -- none of which a shorter wire removes. **⇒ AND THE ROUTE TO A REAL DECODE
 WIN IS NOT A SMALLER WIRE, IT IS FEWER FIELDS AND FEWER `String`s**, which is a different rewrite with a
 different proof, and it is not in this commit.
+
+## 81. NINE NAMED FIELDS INSTEAD OF NINE `fld` WALKS: 0.9751 THEN 1.0075, REVERTED
+
+§80.3 left "fewer fields and fewer `String`s" as the open decode direction. The first half is buildable and
+was built: **a nested cons match is legal** (`case a <> r1: match r1: case b <> r2: ...` -- MEASURED, the
+tree had never used it), so `ku_ws` can take nine named parameters instead of calling `fld(ws, i)` nine
+times, and `ku_all` can hand it the accumulator NEWEST-FIRST so the per-row `List.reverse` disappears too.
+
+That deletes 36 `List.get` steps and a nine-step reverse per uop. MEASURED before the build, the decode
+decomposes as:
+
+```
+read only      0.78 ms
+split only     1.47 ms   -> split + token grouping = 0.69
+full decode    2.21 ms   -> FIELD WORK (fld + u32 + arg_of + records) = 0.75
+```
+
+### 81.1 Two runs, and they disagree
+
+```
+run 1: before 5.95 ms  after 5.90 ms   median 0.9751   18/24   min 0.8221  max 1.0737
+run 2: before 5.88 ms  after 5.85 ms   median 1.0075   10/24   p25 0.9524   p75 1.0269
+```
+
+**TWENTY-EIGHT OF FORTY-EIGHT ROUNDS, WHICH IS NOT A RESULT.** The predicted 4.8% (14,580 list steps) did not
+materialise, and §80's lesson is the explanation: `List.get` on a NINE-ELEMENT list is cheap -- the 36 steps
+were never the cost, and removing them removes 0.2 ms of a 6 ms turn at most.
+
+**⇒ AND THE CEILING IS NOW MEASURED FROM BOTH SIDES**: the whole of the field work is 0.75 ms, so *any*
+rewrite of field extraction -- nine parameters, a character scanner, anything -- can take at most 12% of the
+turn, and the part of it that is `fld` is under the instrument's floor.
+
+### 81.2 What the decoder actually spends, after four attempts
+
+| attempt | what it removed | measured |
+|---|---|---|
+| §78 one split instead of two | a pass over every byte | **kept**, 0.9408 |
+| §80 packed fields | 12.8% of the bytes, 33% of the tokens | 0.9900, reverted |
+| §81 nine named fields | 14,580 `List.get` steps | 0.9751 / 1.0075, reverted |
+| (§79.1 op order) | 80% of the tag comparisons | 0.9934, reverted |
+
+**THE ONE THAT PAID IS THE ONE THAT REMOVED A WHOLE PASS**, and every attempt to remove a *part* of a pass
+has been neutral. `String.split`'s per-character recursion is the runtime's, and it recurses whether the
+bytes are packed, the fields are named, or the tokens are grouped.
