@@ -1093,3 +1093,69 @@ controls=5 of 5   conflations=4 of 4   oracle-selfcheck=# ORACLE SELFCHECK: OK  
 
 **A 2x CHANGE TO THE RENDERER THAT MOVES NO BYTE**: every one of the 38 graphs is still byte-identical to
 CPython at the pin, and the digest that straddles the run is the one the tree is standing on.
+
+## 28. THE DECIMAL FOLD: 21 DIVISIONS FOR A THREE-DIGIT CONSTANT
+
+§27.4 named integer -> decimal as the next target and gave its composition. The cause is the FUEL: `i64_dec`
+ran `i64_dec.go(20n, ...)` -- twenty steps, one `u64_divmod` each -- and `u64_divmod` is `div_loop(64n, ...)`,
+i.e. **sixty-four bit steps whatever the values are**. So a constant like `392` paid 21 divisions and 1 344
+bit steps to print three digits, and every integer constant in every kernel paid it again.
+
+### 28.1 The change
+
+The fuel is now the ACTUAL digit count, and the count is found by COMPARISON, never by division: multiply a
+power of ten up from 1 and add one for each that fits. `i64_dec.digits` is that fold; `x * 10` is spelled
+`(x << 3) + (x << 1)` because `u64_mul` is defined LATER in `helpers.bend` and a Bend def cannot be
+referenced before it -- and two shifts and an add are cheaper than a full 64-bit multiply anyway, so the
+ordering constraint and the faster spelling coincide.
+
+### 28.2 Two defects, both caught by measurement rather than by reading
+
+1. **The first threshold test was INVERTED.** `Bool.not(u64_lt(hi(p), lo(p), hi(x), lo(x)))` is `p >= x`,
+   not `p <= x`, so the count came out right only for ten-digit values by accident. MEASURED with
+   `decode_only`-style value rows: `2147483647` printed `147483647` -- ONE DIGIT SHORT -- and the truncation
+   was invisible on every nine-digit-and-under row, which is most of them.
+2. **Counting needs a floor.** Zero fits no power of ten, so the fold answers 0 for it; the floor of 1 is
+   `i64_dec.digits.at` and it is what keeps `0` printing as `0`.
+
+`dec_check.bend` is the value gate: 23 rows against CPython's `str(int)`, chosen for the edges --
+0, 9/10, 99/100, 999/1000, 2**31-1, 2**31, 2**32-1, 2**32, 10**18, 2**63-1, -1, -2, -2**32, int64.min,
+int64.max -- **23 of 23 identical**. (That file is `.agents/slop/parity/dec_check.bend`; the `*probe.bend`
+name is gitignored, which is why the decode probe is called `decode_only.bend` and this one `dec_check`.)
+
+### 28.3 Measured
+
+Render of the same fixture kernels, `bun` run only, 5 runs each:
+
+| uops | §27 | now | speed-up |
+|---|---|---|---|
+| 46 | 41.7 ms | **32.6 ms** | 1.28x |
+| 219 | 62.1 ms | **50.7 ms** | 1.22x |
+| 405 | 94.0 ms | **68.0 ms** | 1.38x |
+
+**and against where §26 started, the same 405-uop render is 190.9 -> 68.0 ms, 2.81x.**
+
+`compile.py`, cold, every kernel compared against `ClangRenderer`: **43.8 -> 38.4 ms per kernel**, 4/4
+byte-identical (MEASURED on a machine at load average 14.8; a reading of 167.9 ms/kernel on the same tree was
+taken during that load and is not a measurement of anything).
+
+### 28.4 What the fixed costs are now, and why the end-to-end gap still looks flat
+
+At 405 uops the render is 68.0 ms, of which ~26 ms is `bun` start-up. A `compile.py` row of 38.4 ms/kernel
+for ~163-uop kernels is `26 ms start-up + ~12 ms of decode and render`: **the start-up is now the largest
+single term per kernel**, which is exactly the ~46 ms fixed cost §26.4 refused to buy a daemon for, and this
+section does not change that judgement.
+
+So the honest shape of the whole cold path, measured:
+
+| term | before §27 | after §28 |
+|---|---|---|
+| render, 405 uops | 190.9 ms | **68.0 ms** |
+| live decoder (405 uops) | ~10 ms | ~10 ms |
+| `bun` start-up + module load | ~46 ms | ~46 ms |
+| per kernel, `compile.py` | 89.8 ms | **38.4 ms** |
+
+**AND THAT IS THE FIRST TIME THE START-UP HAS BEEN THE LARGEST TERM.** For the ~163-uop kernels `compile.py`
+measures, one kernel now costs ~12 ms to render against ~26 ms to start the process that renders it -- the
+crossover, stated where it is true and not past it: at 405 uops the render is still 68.0 ms, more than twice
+the start-up.

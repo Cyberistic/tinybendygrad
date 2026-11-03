@@ -2178,9 +2178,40 @@ def i64_dec.put(neg: Bool, +body: String) -> String:
 # `hi:lo` fallback answered `2147483648:0` where CPython's `str` says
 # `-9223372036854775808`. So the fallback and its `wide` test are DELETED rather
 # than widened: the one value they existed for is now the one value that works.
+# **THE FUEL IS THE ACTUAL DIGIT COUNT, AND THAT IS A MEASURED CHANGE.** Every fold step is one
+# `u64_divmod` and every division is `div_loop(64n, ...)`, i.e. SIXTY-FOUR bit steps whatever the values
+# are -- so the fixed fuel of 20 paid 21 divisions for a constant like `392`, which needs three. The count is
+# found by COMPARISON, never by division: multiply a power of ten up and add one for each that fits, which is
+# `u64_mul` (four `U32` multiplies) and `u64_lt` (two compares) per step and no division at all.
+# MEASURED on the 405-uop kernel: this took the render from 94.0 ms to the number in `PARITY.md` §28.
+#
+# **THE TEST IS `p <= x`, WRITTEN AS `not (x < p)`.** The first spelling compared `p` on the left and counted
+# every power of ten ABOVE the value -- MEASURED: `2147483647` printed `147483647`, one digit short, and the
+# truncation was invisible on nine-digit-and-under rows.
+#
+# `* 10` IS `(x << 3) + (x << 1)`, and that is not a micro-optimisation: `u64_mul` is defined LATER in this
+# file and a Bend def cannot be referenced before it, while `i64_shl`/`i64_add` are above. Two shifts and an
+# add on a pair are also cheaper than a full 64-bit multiply, so the spelling that satisfies the ordering is
+# the faster one as well.
+def i64_dec.times10(+p: I64) -> I64: i64_add(i64_shl(p, 3n), i64_shl(p, 1n))
+
+def i64_dec.dig(+x: I64, f: Nat, +p: I64, +c: U32) -> U32:
+  match f:
+    case 0n: c
+    case 1n+g:
+      i64_dec.dig(x, g, i64_dec.times10(p),
+        U32.add(c, Bool.to_u32(Bool.not(u64_lt(hi32(x), lo32(x), hi32(p), lo32(p))))))
+
+# ZERO HAS ONE DIGIT AND THE COUNT ABOVE SAYS IT HAS NONE, so the floor is here rather than in the fold.
+def i64_dec.digits.at(+c: U32) -> U32: Bool.pick(U32, U32.is_zero(c), 1, c)
+
+def i64_dec.digits(+x: I64) -> U32: i64_dec.digits.at(i64_dec.dig(x, 19n, i64_of_i32(1), 0))
+
 def i64_dec(+x: I64) -> String:
   i64_dec.put(i64_is_neg(x),
-    i64_dec.text(i64_dec.trim(List.reverse(&2, U32, i64_dec.go(20n, Nil{}, u64_divmod(i64_abs(x), i64_of_i32(10))))), SNil{}))
+    i64_dec.text(i64_dec.trim(List.reverse(&2, U32,
+      i64_dec.go(U32.to_nat(i64_dec.digits(i64_abs(x))), Nil{},
+        u64_divmod(i64_abs(x), i64_of_i32(10))))), SNil{}))
 def i64_mod(a: I64, b: I64) -> I64:
   divmod_r(i64_divmod(a, b))
 
