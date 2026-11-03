@@ -2584,3 +2584,50 @@ which is the size §37, §40, §41 and §42 all measured as NEUTRAL when they tr
 functions that each render something the oracle requires, not because one of them is slow. The two levers that
 paid in this stretch (§49, §50) removed *lookups*, and there are no lookups left in this path -- `ku_text_load`
 does two `rt` calls, a `ku_access` and a `concat`, and every one of them emits text the C needs.
+
+## 59. THE LOOP'S 40% CANNOT BE PLANTED, AND THE PLANT ITSELF SHOWED WHY
+
+§56 and §58 attributed the daemon turn's text and histogram by setting components to constants. The remaining
+~40% is the per-uop loop -- the op dispatch, `st_put`/`st_c`, `_render.push`/`pop`, `ku_is_decl`, `ku_inline`
+-- and this section tried the same method on it. **IT DOES NOT APPLY, AND THE ATTEMPT PROVES IT RATHER THAN
+SUGGESTING IT:**
+
+| planted | turn (base 13.7 ms) | reading |
+|---|---|---|
+| `ku_is_decl` -> `False{}` | 9.8 ms | 28% "faster" |
+| `_render.pop` -> `st` | 11.5 ms | 16% "faster" |
+| `ku_inline` -> `False{}` | 10.7 ms | 22% "faster" |
+| `ku_inline2a` -> `False{}` | 16.3 ms | 19% "slower" |
+
+**`ku_inline -> False{}` MEANS NOTHING IS INLINED, WHICH EMITS MORE LINES -- AND IT MEASURED FASTER.**
+`ku_is_decl -> False{}` strips the TYPE PREFIX from every declaration, so the renderer writes less text and
+does less work. **THESE PLANTS DO NOT REMOVE OVERHEAD; THEY CHANGE WHAT IS EMITTED**, and the timing then
+measures the different output. §56's plants were valid because `ku_text`'s product IS the text and
+`child_count`'s product only feeds an inline test; the loop's decisions ARE the structure of the C, so
+removing one changes the program.
+
+**⇒ SO THE 40% IS NOT AN UNATTRIBUTED MYSTERY -- IT IS THE DISPATCH AND THE `St` THREADING, WHICH IS WHAT
+RENDERING IS.** Its components are already known from the profile rather than from plants: `_render.one_go`
+34% total with `List_set` 2.9% and `List_get` 1.9% under it (§52), and every one of those calls exists to
+produce a line the oracle compares byte for byte.
+
+### 59.1 The final accounting, and the boundary this record has reached
+
+```
+one-shot 405-uop render   ~35 ms   =  ~25 ms process start (§53/§54 cut it 26%)  +  ~10 ms render
+daemon turn               ~10 ms   =  ku_text 3.1  +  child_count 1.7  +  render_dtype 1.2  +  loop ~4.0
+```
+
+| term | status |
+|---|---|
+| start (~25 ms) | cut 26% by packaging; the rest is Bun's own module resolution |
+| `ku_text` 3.1 ms | 15 arms, none above 6% (§58) -- no leading site |
+| `child_count` 1.7 ms | linear fix INEXPRESSIBLE (§57: no mutable cell, no branch on a computed value) |
+| `render_dtype` 1.2 ms | hoisted twice already (§27, §31) |
+| loop ~4.0 ms | IS the rendering; not separable by plant (this section) |
+
+**EVERY TERM IS NAMED AND EVERY ONE IS AT ITS LANGUAGE'S FLOOR**: two are blocked by Bend (no `Array`, no
+branch on a computed value), one is diffuse by construction, one was removed twice, and one is the act of
+rendering. **THAT IS THE HONEST END OF THIS AXIS** -- not a claim that the goal is impossible, but a claim that
+on this renderer, in this language, with byte-identity as the oracle, the remaining 10 ms is accounted for
+and none of it is waste.
