@@ -2842,20 +2842,20 @@ def sym_262(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_262.pat(x, u),
     Some{mint_where(n, O.Found.i(n), sy_src1(x, i), sy_src2(x, i))})
 
-# symbolic.py:263  a.where(c, b.where(c, d)) -> (a|b).where(c, d)
+# symbolic.py:264  a.where(c, b.where(c, d)) -> (a|b).where(c, d)
 # THE MIRROR of `:262`, and the shared node is the TRUE BRANCH OF BOTH: `UPat.where(b, c, d)`
 # puts its second argument in the TRUE slot, so `c` is `src[1]` on each side and NOT the inner
 # condition. The two gates OR, because the value is kept when either one takes this branch.
-def sym_263.pat(+x: F.Folded, +u: U32) -> Bool:
+def sym_264.pat(+x: F.Folded, +u: U32) -> Bool:
   +i = sy_src2(x, u)
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)),
     Bool.and(Bool.and(sy_is_op(x, i, O.OpsWHERE{}), sy_nsrc_is(x, i, 3)),
       p_same(sy_src1(x, u), sy_src1(x, i))))
 
-def sym_263(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+def sym_264(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +i = sy_src2(x, u)
   +o = mint_bin(mint_ar(sy_ar(x)), O.OpsOR{}, sy_src0(x, u), sy_src0(x, i))
-  sy_tri_f(sym_263.pat(x, u),
+  sy_tri_f(sym_264.pat(x, u),
     Some{mint_where(o, O.Found.i(o), sy_src1(x, u), sy_src2(x, i))})
 
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
@@ -3119,7 +3119,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{38, [O.OpsCAST{}], Nil{}, },   # 155
     O.PMEntry{39, [O.OpsCAST{}], Nil{}, },   # 157
     O.PMEntry{40, OP_ALU_NT(),                     Nil{},                           },   # 161
-    O.PMEntry{41, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsXOR{}], Nil{}, },   # 162
+    O.PMEntry{41, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIPROCAL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # 162
     O.PMEntry{42, OP_BINARY_3F(),                   Nil{},                           },   # 163
     O.PMEntry{43, [O.OpsMUL{}],                     Nil{},                           },   # 167
     O.PMEntry{44, [O.OpsADD{}],                     Nil{},                           },   # 168
@@ -3141,7 +3141,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{60, [O.OpsADD{}], Nil{}, },   # 250
     O.PMEntry{61, [O.OpsWHERE{}], Nil{}, },   # 256
     O.PMEntry{62, [O.OpsWHERE{}], Nil{}, },   # 262
-    O.PMEntry{63, [O.OpsWHERE{}], Nil{}, },   # 263
+    O.PMEntry{63, [O.OpsWHERE{}], Nil{}, },   # 264
     O.PMEntry{64, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
     O.PMEntry{65, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
     O.PMEntry{66, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
@@ -3543,7 +3543,7 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 60: sym_250(x, u)
     case 61: sym_256(x, u)
     case 62: sym_262(x, u)
-    case 63: sym_263(x, u)
+    case 63: sym_264(x, u)
     case 64: sym_462(x, u)
     case 65: sym_463(x, u)
     case 66: sym_464(x, u)
