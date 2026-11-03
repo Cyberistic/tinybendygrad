@@ -384,3 +384,30 @@ on three constraints of the language that the port has never exercised, and the 
 (`Map.put`) is flagged as LOSSY by the tree's own note. The next attempt should settle `Map.put`
 with a one-entry round-trip before building the rule on it, or write a single-entry substitution
 and say why.
+
+## 2026-11-03 (final, 8): `Map.put` is SETTLED -- it cannot be verified here, so `:259` needs its own substitution
+
+The question was whether Bend's `Map.put` keeps a key on `Map<&2, U32>`. The answer is that **this
+port has no evidence either way and no way to obtain it cheaply**, measured four ways:
+
+1. **NO CALL SITE.** `rg 'Map\.put\(' tinybendygrad --glob '*.bend'` answers FOUR hits, all
+   `RrMap.put` -- a hand-rolled record in `schedule/rangify.bend`, not Bend's `Map`. So there is no
+   signature to copy, and guessing one is what this tree forbids.
+2. **NOT IN THE LANGUAGE GUIDE.** `./bin/bend guide` is 678 lines and mentions "map" six times; it
+   never names `Map.put`.
+3. **THE ONE EXERCISED API HAS A DIFFERENT SHAPE.** The port calls `Map.new(quant, V)` and
+   `Map.get(V, key, m, default)` -- FOUR arguments, answering a `Sigma` that has to be destructured
+   (`renderer/cstyle.bend:501`, `uop/render.bend:1047`). `Map.put` taking `(m, k, v)` is a guess
+   that those two call sites do not support.
+4. **THE TREE ALREADY RECORDS THAT IT IS LOSSY.** `nn/onnx.bend:722`: "`Map.put` LOSES KEYS and
+   `Map.get` answers a `Sigma`".
+
+SO THE ROUTE IS THE SINGLE-ENTRY SUBSTITUTION, and it has its own measured wall: a node rebuild and
+a src-list rebuild CALL EACH OTHER (`s1.go` -> `s1.ss` -> `s1.go`), which is the same mutual
+recursion that `divides`'s STACK arm and `const_factor`'s fold hit. It is expressible only in the
+TAGGED-WORK-ITEM form, where one def carries a work item that is either "a node" or "a list in
+progress" -- the form `UOp.divides` already demonstrates in this tree.
+
+That is the shape of the remaining work on `:259`, and it is why the rule is not wired: not a
+missing capability, but four unverified facts about one builtin and one language constraint that
+needs the machine this tree has written twice.
