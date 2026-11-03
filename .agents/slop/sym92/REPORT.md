@@ -711,3 +711,169 @@ in the `case N:` arms AND in `MINT_TAGS()` -- the third list is the one the firs
 THE RULE THIS TREE ALREADY HAD, WHICH I HAD BEEN READING AS A FORMALITY: verify the FILE, not an
 aggregate that cites it. `checks/port-compile-gate.py` exists for exactly this and sweeps every file
 one at a time.
+
+## 19. The re-vendor swapped a PRIMITIVE, and the census could only see part of it
+
+MEASURED 2026-11-04. `git diff 5c2bf39d6c4b..upstream/master -- tinygrad/mixin/elementwise.py`
+flips BOTH comparison primitives:
+
+    pin :  logical_not = cast(bool).ne(True)   -> CMPNE(x, True)
+           ne = _binop(CMPNE) ; eq = ne().logical_not()
+    HEAD:  logical_not = cast(bool).eq(False)  -> CMPEQ(x, False)
+           eq = _binop(CMPEQ) ; ne = eq().logical_not()
+
+Same NAMES, same MEANING, DIFFERENT NODES. `rg 'Ops\.CMPNE' tinygrad/uop/symbolic.py` answers
+NOTHING at HEAD, so inside this lane `CMPNE` is a node nothing builds. The port had 42 `CMPNE`
+sites. The census could only see the ones in a PATTERN (an op set is read off the source); the ones
+that only MINT a node were invisible to it and wrong at runtime.
+
+The shared mint was `mint_not`, and it was one line: `CMPNE(v, CONST True)` -> `CMPEQ(v, CONST False)`.
+
+`ne(a, b)` is `CMPEQ(CAST(CMPEQ(a,b)), False)` -- TWO CMPEQ levels where the pin had one CMPNE. That
+is why `:271` (`gate.where(x,0) != 0`) had to be re-ported as a two-level pattern AND a two-level
+answer, and why `:155` (`x == x -> True`) replaced the pin's `x != x -> False` outright: `x != x`
+now builds the same node as `logical_not(logical_not(x))`, which `:140` already owns.
+
+## 20. What the census reads, and the leniency that let five false rows stand
+
+`render()` marks an upstream row `PORTED` when ANY port entry mapped to that `(file, line)` has
+`why == "OK"`. Six upstream rules share one line when a table entry is a comprehension (`:171` is
+`for op in GroupOp.Associative`), so ONE correct port row at `:171` printed SIX `PORTED` rows --
+five of which had no arm of their own. MEASURED before this turn: tags 95..99 were parked on the
+pin's `:284` (a COMMENT at HEAD) and the six `:171` rows still read `PORTED` off tag 44 alone.
+They now each carry a row (`MAX/OR/AND/ADD/MUL` + the missing `XOR`), tags 44 and 136 collapsed.
+
+`symbolic.py:284` at the pin was that comprehension; at HEAD the comprehension is at `:171` and the
+COMMENT took `:284`. **A comment is not a rule, and a citation that lands on one is invisible --
+`verify()` calls it `CITATION-NOT-AN-UPSTREAM-RULE` and `render()` counts the row MISSING.**
+
+## 21. TAG NUMBERING IS A DISPATCH KEY, NOT A LABEL
+
+`symclosure-gate`'s `tags.unique` requires the table's tags to be `0..n-1`. That is not style: the
+tag is the key `sym_mint_f` / `sym_dispatch.go` match on, so a HOLE is a key nothing can reach and a
+DUPLICATE is a body reached by the wrong rule. Every row deletion therefore forces a renumbering
+that moves the rows, both arm tables AND `MINT_TAGS` together. MEASURED this turn: `MINT_TAGS` had
+been carrying NINE tags with no row, and was missing 48 (`sym_284`, which mints) -- the two errors
+cancel in the COUNT and show up only as `mint=96 MINT_TAGS=104`.
+
+A row's POSITION in the list is separate from its tag: `symrules-gate`'s `ORDER` check is a
+SUBSEQUENCE test over upstream's composition order, so the six `:171` arms had to move under tag 44,
+tag 47 above tag 45, and the two `:338` rows had to be adjacent -- with their old numbers until the
+renumbering pass. Moving a row and moving its number are two different edits and doing one is a
+half-repair that the gate names.
+
+## 22. `fits` IS THE MISSING PRIMITIVE, and it blocks every guarded rule
+
+`tinygrad/uop/symbolic.py:32`:
+
+    def fits(x:UOp, v:PyConst) -> bool: return x.dtype not in dtypes.sints or x.dtype.min <= v <= x.dtype.max
+
+It is called **12 times** in that file, and the port has NO equivalent: `rg 'def .*fits'` over
+`tinybendygrad/uop/symbolic.bend` answers only `ci_fits`, which is the i32 LANE check in
+`exec_alu`, not a dtype-range check. So `:316` (`x*-1 < c -> -c < x if fits(x, -c.vmin)`) is
+blocked on a primitive, not on a line: **an unguarded `:316` would rewrite `x*-1 < c` where `-c`
+overflows x's dtype, and a WRONG REWRITE IS WORSE THAN A MISSING ROW.**
+
+The same hole is worth measuring across the other 11 sites before claiming any of them: a guard
+dropped in translation is invisible to a census that compares OP SETS.
+
+## 23. MEASURED STATE at `6a726a812`
+
+`symrules-census.py --rows`: **135 rows -- 130 PORTED, 0 BROKEN, 5 MISSING** (was 121/1/13 at the
+re-pin, 99 before that). `symrules-gate`: `port entries 130, mapped 130, broken 0, unresolved 0`,
+**0 problems**, `ORDER` included.
+
+MISSING, each named: `symbolic.py:316` (the `fits` wall above), `divandmod.py:103`
+(`UOp.simplify`+`gcd`+`divide_exact` and the `usum` import cycle), `symbolic.py:450` / `:451`
+(`simplify_valid`'s `# late import!`, still present at HEAD), `symbolic.py:476` (STORE with
+where/invalid, needs the valid/INDEX machinery).
+
+`symclosure-gate` still FAILs on `narrow.symbolic_202_ccast` and `bodies.absent`
+(`fold_add_divmod_recombine`, `reduce_collapse`). Both PREDATE this turn and neither names a row
+this work touched. **A GREEN `symrules-gate` IS NOT A GREEN CLOSURE GATE.**
+
+`tinybendygrad/uop/symbolic.bend --check-only` = `ALL PROOFS CHECK`.
+
+## 24. THE CYCLE I CALLED "GENUINE" IS A TABLE CHOICE, AND BEND'S REFUSAL IS AT NAME RESOLUTION
+
+MEASURED 2026-11-04, and it CORRECTS section 16 of this report.
+
+Section 16 said `:450`/`:451` are blocked because `simplify_valid -> uop_given_valid -> simplify ->
+sym -> simplify_valid` is a genuine cycle and upstream escapes it with `# late import!`. **THE CHAIN
+IS RIGHT AND THE CONCLUSION WAS WRONG, because `simplify()` does NOT re-enter `sym`:**
+
+    tinygrad/uop/ops.py:490   # late import!
+    tinygrad/uop/ops.py:491   from tinygrad.uop.symbolic import symbolic      <-- BASE table
+    tinygrad/uop/ops.py:492   return graph_rewrite(self, symbolic, name="simplify")
+
+and the two tables are DIFFERENT:
+
+    symbolic.py:124  symbolic_simple = pm_data_invalid + PatternMatcher([...])
+    symbolic.py:247  symbolic        = symbolic_simple + commutative + PatternMatcher([...])
+    symbolic.py:448  pm_simplify_valid = PatternMatcher([...  :450, :451 ...])
+    symbolic.py:463  sym             = symbolic + pm_simplify_valid + PatternMatcher([...])
+
+`uop_given_valid` runs on `symbolic` -- WHICH EXCLUDES `pm_simplify_valid`. **So the rule that calls
+`uop_given_valid` re-enters a table that does not contain that rule, and there is no cycle at
+runtime at all.** The late import is there for MODULE-load order, not to defer the cycle; the cycle
+is avoided by the table choice.
+
+WHAT BEND ACTUALLY REFUSES, MEASURED with two throwaway files (`cycle-probe.bend`,
+`cycle-probe2.bend`), the same three defs and nothing else:
+
+    a -> b -> c -> a        "an unfilled law is a dead claim: live code cannot use it"
+    b -> c -> a -> b        SAME, so it is not definition ORDER either
+
+The refusal is at NAME RESOLUTION: a def cannot call one that is not yet filled, and a cycle can
+never fill. It is not a termination check and no decreasing counter reaches it.
+
+SO THE WALL IS REAL BUT ITS SHAPE IS WRONG IN THE RECORD: `:450`/`:451` are blocked because the
+port's fixpoint folds over ONE table (`sym_rewrite(sym_table(), ...)`, `symbolic.bend:5992` and
+`:6422`) and dispatches through ONE pair of tag functions, so a rule in that table that must
+re-enter it is a NAME cycle whatever table it asks for -- the table is a VALUE and the dispatch is
+the CALL GRAPH. Upstream separates the two by module-level name binding, which Bend does not have.
+
+THE FIX, NAMED SO IT IS A DESIGN DECISION AND NOT A SURPRISE: the base lane needs its OWN dispatch
+(`sym_dispatch_base` / `sym_mint_base`) over the base table, so `sym_450` has no static path back to
+itself. That duplicates ~130 arms, and a duplicated dispatch is exactly the copy-paste this tree
+refuses -- so it is a deliberate trade to be taken with the LOC cost written down, not smuggled in.
+**The same reasoning covers `divandmod.py:103`, which needs the same base-lane re-entry; `:451` is
+the second rule in the same table and shares the fix.**
+
+GOOD NEWS, MEASURED, AND IT IS WHY THIS IS NOT A DEFECT IN THE PORT: the port has NO cycle today
+because `:450`/`:451` are ABSENT. Absence is what makes the lane sound; adding them without the
+base lane would turn a correct port into one that does not compile.
+
+## 25. `divandmod.py:103` IS FOUR PRIMITIVES, THREE OF WHICH THE PORT HAS NEVER HAD
+
+MEASURED 2026-11-04 on `fold_divmod_general`. The record said it "needs `UOp.simplify`, `UOp.gcd`
+and `UOp.divide_exact` and the `usum` import cycle"; measured one at a time, the three primitives
+are ABSENT, not merely unreachable:
+
+    divandmod.py:9   x.pop_const()                        port: PRESENT
+    divandmod.py:26  UOp.usum(*new_xs)                     port: NO `UOp.usum` (only `sy_usum`, symbolic.bend:557)
+    divandmod.py:66  UOp.gcd(*all_uops, y).simplify()      port: NO `UOp.gcd`, and `.simplify()` is the wall in 24
+    divandmod.py:68  x.divide_exact(gcd)                   port: NO `UOp.divide_exact`
+
+and `UOp.gcd` is VARIADIC with a `simplify()` on its answer, so the row cannot be reached by adding
+one helper: it needs a new variadic reduction, an exact-division helper, a `usum` that
+`divandmod.bend` can call (which the `symbolic -> divandmod` import direction forbids), and the base
+lane from section 24.
+
+**THE POINT OF WRITING IT THIS WAY: "BLOCKED" IS A CLAIM AND IT SHOULD NAME WHAT IS MISSING.**
+Three of the four are ABSENT primitives, which is a different and cheaper defect than a cycle --
+they can be built and tested on their own, with CPython as the oracle, without touching the rewriter
+at all. Only the fourth is the design decision.
+
+STATE, FINAL FOR THIS SESSION: 135 census rows -- **132 PORTED, 0 BROKEN, 3 MISSING**
+(121 / 1 / 13 at the start of the session). `symrules-gate`: `port entries 132, mapped 132,
+broken 0, unresolved 0`, **0 problems**. `symclosure-gate`'s four structural rows green.
+`symbolic.bend --check-only` = `ALL PROOFS CHECK`.
+
+**A NOTE ON WHAT IS IN GIT HERE.** The `.py` halves of the four probe pairs ARE tracked; the
+`.bend` halves are NOT, because `.gitignore:37` ignores `probe-*.bend`. That ignore rule predates
+this session and is not mine to move, so the record says what it is rather than pretending
+otherwise: the port half is reproducible from the case lists above and the CPython half that IS in
+git, and `cycle-probe.bend`/`cycle-probe2.bend` ARE tracked because their names do not match the
+rule. **A REPORT THAT CITES A PATH GIT DOES NOT OWN IS THE DEFECT THIS TREE NAMES IN ITS OWN
+`TOOLS.md` LEDGER, SO IT IS NAMED HERE INSTEAD OF LEFT FOR A READER TO DISCOVER.**

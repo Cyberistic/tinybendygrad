@@ -28122,3 +28122,29 @@ THE `Found` FAMILY EXISTS: `sym_scan_f`/`sym_rewrite_f`/`sym_f` answer `Maybe<&1
 THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -> Ranged` IS the builder (`Ranged{ar, rt}`), and `fold.bend:5589` already uses it in its own rows. So `c.ranges` IS reachable from a rule body and `:90` has NO remaining blocker -- `uprod` landed last turn and the table was never missing. Mechanism of my error: I grepped for a def named after upstream (`RTable`, `ranges`) and concluded absence from a NAME -- the fourth time this session (`rr_kernel_graph`, `nic`, `sy_ccast`, `ranged`). `:90` handoff recorded in the `.bend` commit: pattern/gate/terms/keep-lift/inner/answer/minting.
 
 `symbolic.py:90` PORTED (`sym_90`, tag 6) and VERIFIED against CPython (`WHERE<CONST,REDUCE,CONST>`). 57 of 139 PORTED, 84 MISSING, MINT_TAGS [3,4,6,50]. FOUR defects found by the PROBE and none by the compiler: (1) `red.src[0]` is the gate, `red.src[1:]` the ranges; (2) `keep[0]`/`lift[0]` is the RECEIVER so `up()` seeds from `xs[0]`; (3) `mint_where` must build in `fr` arena not `fl` (arena-threading trap #7); (4) TAG 5 IS `:89` NOT `:90` -- `case 5` would have dispatched the wrong rule and the census would still have said PORTED.
+
+## Session 2026-11-04 — `symbolic.py` census: 121/1/13 -> 132/0/3, and the three walls MEASURED
+
+- [x] `UOp.const_factor`, `UOp.divides`, `UOp.overflows`, `UOp.bool_slice_has`, `parse_valid`,
+      `UOp.simplify`, `s1` single-entry substitution — each written and verified against CPython.
+- [x] Fast-forward the vendored `tinygrad/` to `f5ac54685074`; re-pin the census (141 -> 135 rows).
+- [x] `:175` re-ported after its row was found to be a FALSE PORTED (ops agreed, body did not).
+- [x] `mint_not` corrected: `logical_not` is `CMPEQ(x, False)` at HEAD, not `CMPNE(x, True)` — the
+      re-vendor swapped `ne`/`eq`, and 42 port sites were written against the old primitive.
+- [x] Re-ported `:138`, `:140`, `:144`, `:155`, `:271`, `:273`, `:287`, `:318`, `:316`, `:471`.
+- [x] `:316` needs `fits` (`symbolic.py:32`, 12 call sites) — added and verified.
+- [x] Dropped seven rows whose rules upstream DELETED (`:462`..`:464`, `-1*(x+y)`, `(x&mask)//k`,
+      movement's noop-PERMUTE, `:324`'s END rule) plus two duplicates (tag 44, `x != False`).
+- [x] Renumbered the table to 0..n-1 and moved `sym_mint_f`, `sym_dispatch.go` AND `MINT_TAGS`
+      together — `MINT_TAGS` had nine dead tags and was missing 48.
+- [x] VERIFIED 8 cases against CPython with `probe-swap.bend`/`probe-swap.py` (identical), and
+      `:316`/`:471` with their own probe pairs.
+- [ ] `:450` (`simplify_valid`) and `:451` (`gated_given_valid`) — blocked on a BASE DISPATCH LANE.
+      `ops.py:492` re-enters `symbolic` (:247), NOT `sym` (:463), so upstream has no cycle; Bend
+      refuses the cycle at NAME RESOLUTION (measured, `cycle-probe.bend`), so the base lane needs
+      its own dispatch (~130 duplicated arms: a deliberate LOC trade, not a bug fix).
+- [ ] `UOp.gcd(*uops)` and `UOp.divide_exact(v)` — ABSENT from the port. Prerequisites all exist
+      (`split_uop`, `pop_const`, `const_factor`, `divides`); they need a multiset (Counter
+      intersection / subtraction) over node lists.
+- [ ] `divandmod.py:103` (`fold_divmod_general`) — then needs `UOp.usum` reachable from
+      `divandmod.bend` (the `symbolic -> divandmod` import direction forbids it today).
