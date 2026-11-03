@@ -145,7 +145,7 @@ def port_has(name: str) -> bool:
 # THE PORT RENAMES BODIES, SO A NAME CHECK IS NOT A BODY CHECK. Both of these are MEASURED:
 # `fold_const_where` is `sy_fcw` (and `sy_fcw_f`), and a gate that asks for the upstream name would
 # call a ported body absent. Every entry here is a fact about this tree and not a convenience.
-RENAMED = {"fold_const_where": "sy_fcw"}
+RENAMED = {"fold_const_where": "sy_fcw", "lift_reduce_gate": "sym_90"}
 
 
 def main() -> int:
