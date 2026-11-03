@@ -602,7 +602,18 @@ outside the window), interleaved with the order alternating, and reports a per-r
 **NO SIZE SHOWS BEND MEASURABLY SLOWER.** The compute-dominant sizes read 0.96-1.00, i.e. the port is at
 or below tinygrad's own CPU device, never above it.
 
-**⇒ AND THE ONE CLEAR RESULT IS ATTRIBUTED AS FAR AS IT CAN BE, AND NOT FURTHER.** At 256x256 the ratio is
+**⚠ AND THE 256 RESULT ABOVE IS RETRACTED: IT WAS A SHORT-WINDOW ARTEFACT.** The same size, re-run with
+**7 rounds** instead of 5, reads **ratio 1.0058, IQR 0.9712-1.0423, and 1.0 INSIDE** -- indistinguishable.
+The tight 5-round IQR was not load noise in the ROUNDS, it was a short WINDOW: at this machine's load,
+five rounds is not enough to resolve a few percent and will invent one. Every "BEND faster" row above
+that used 5 rounds is therefore suspect, and the pattern is consistent: 5-round runs produced spurious
+3.7-4.8% effects, 7- and 9-round runs read ~1.0 every time.
+
+**⇒ SO THE CONSOLIDATED ANSWER IS STRONGER AND SIMPLER THAN THE TABLE SUGGESTS: with enough rounds,
+BEND/CPU = 1.00 with the IQR straddling 1.0 AT EVERY SIZE MEASURED -- 16, 32, 256, 512 matmul and a
+128 conv2d. The lanes are indistinguishable, and the port is never measurably slower.**
+
+**⇒ AND THE ONE CLEAR RESULT FROM THE 5-ROUND RUN IS ATTRIBUTED AS FAR AS IT CAN BE, AND NOT FURTHER.** At 256x256 the ratio is
 0.9633 with a TIGHT IQR (0.949-0.967), so it is not load. The obvious hypothesis -- that the CPU device
 picks a DIFFERENT renderer for that kernel and emits slower C -- is **RULED OUT BY MEASUREMENT**: patching
 all four of the CPU device's renderers shows `size 32: ['ClangRenderer']` and `size 256: ['
