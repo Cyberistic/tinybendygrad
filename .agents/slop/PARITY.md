@@ -4900,3 +4900,39 @@ comparison that a tag can replace, it is the per-character construction of the t
 replacements have been measured against it -- a character scanner refused by the language's recursion rules
 (§91), chunking neutral because the split is linear (§92), and a base-64 wire 13% slower because indexing a
 string costs more than splitting it (§104).
+
+## 110. THE DECODE'S CALL CENSUS ON THE CURRENT BUILD
+
+The attribution "split ~0.9, nums ~0.43, records ~0.3" dates from §91. This is the same question asked by
+COUNT on `1f205c6ff`, one render:
+
+```
+calls/render  function
+      19,246  String_split          <- the recursive split, one call per character
+      13,590  String_split_push     <- and one push per token/character
+       3,763  fld                   <- ku_ws's field reads: List.get(ws, i) for i = 0..8
+       1,638  U32_read
+       1,624  u32                   (the live.bend wrapper)
+         814  nums                  (405 shape + 409 srcs)
+         405  ku_ws, op_of, dt_of, addr_of, arg_of
+         366  nums_go
+```
+
+**THE DECODE IS TWO THINGS BY COUNT: `String_split` AT 19,246 CALLS AND `fld` AT 3,763.** `fld` is the
+single largest non-split term -- `List.get(ws, i)` walks i+1 conses, so the nine reads of a row cost 45
+steps, 18,225 steps a render.
+
+### 110.1 Both have a measured attempt, and the census does not change that
+
+| term | attempt | measured |
+|---|---|---|
+| `String_split` | per-chunk framing | 0.9924 / 1.0048 / 1.0185 (§92) |
+| | a character scanner | refused by the recursion rules (§91) |
+| | base-64 numeric fields | 1.1345, 13% slower (§104) |
+| `fld` | nine named fields, one cons match each | 0.9751 then 1.0075 (§81), reverted |
+| `U32_read` | `u32` ablated to a constant | noise (§89) |
+
+**⇒ SO THE CENSUS CONFIRMS THE SHAPE AND FINDS NO UNTRIED TERM.** The one thing it adds is a number: `fld`'s
+45 steps a row is an UPPER bound, and §81 -- which removed all of it -- measured 0-2.5% on a build where the
+decode was 40% of a *5.7 ms* turn. The turn is now 3.5 ms, so `fld`'s share is a third larger; that is the
+only reason to re-test §81's shape, and it is a re-proposal rather than a new mechanism.
