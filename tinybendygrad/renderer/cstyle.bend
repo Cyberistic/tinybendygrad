@@ -2080,7 +2080,13 @@ def ku_const_cast_f32(+dt: S.Dt, +dev: U32, k: KU, +f: F32) -> String:
         Bool.pick(String, O.eq_dt(d, S.single()), String.concat([U.f32_repr(f), "f"]),
           Bool.pick(String, O.eq_dt(d, S.half()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
             Bool.pick(String, O.eq_dt(d, S.bfloat16()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
-              ku_cast_wrapped(dev, d, U.f32_repr(f))))))
+              # **THE FALLBACK IS BARE, NOT CAST-WRAPPED.** cstyle.py:39 is
+              # `(UPat.cvar("c").cast(), lambda ctx,c: str(c.val))` -- the DEFAULT arm writes the value
+              # with no cast at all. MEASURED 2026-11-03, found by extending ksweep to f64: upstream emits
+              # `((double)(val0[0]))*2.0` and the port emitted `*((double)(2.0))`, one divergence in 37
+              # kernels. `double` is the only dtype that reaches this arm (f32 -> `f`, half/bf16 -> a
+              # cast of `{val}f`, fp8 -> the same), which is why nothing caught it before.
+              U.f32_repr(f)))))
 
 # THE GENERIC CAST: `f"({ctx.render_cast(x, ctx[x.src[0]])})"` (cstyle.py:40).
 def ku_cast_generic(dev: U32, +k: KU, +r: List<&2, String>) -> String:

@@ -58,6 +58,16 @@ def cases():
     ("pad", lambda: F([[1,2],[3,4]]).pad(((1,1),(1,1)))),
     ("cat", lambda: F([[1,2]]).cat(F([[3,4]]), dim=0)),
     ("bitcast", lambda: I([[1,2],[3,4]]).bitcast(dtypes.float32)),
+    # THE NARROW FLOAT PATHS: untested until 2026-11-03, when each was measured through the DEFAULT lane
+    # and then written down here so the claim has an instrument rather than an absence of failures.
+    ("fp8e4m3", lambda: F([[1.5,2.25],[3.0,4.5]]).cast(dtypes.fp8e4m3).cast(dtypes.float32)),
+    ("fp8e5m2", lambda: F([[1.5,2.25],[3.0,4.5]]).cast(dtypes.fp8e5m2).cast(dtypes.float32)),
+    ("fp8e4m3fnuz", lambda: F([[1.5,2.25],[3.0,4.5]]).cast(dtypes.fp8e4m3fnuz).cast(dtypes.float32)),
+    ("fp8e5m2fnuz", lambda: F([[1.5,2.25],[3.0,4.5]]).cast(dtypes.fp8e5m2fnuz).cast(dtypes.float32)),
+    ("f64", lambda: F([[1.5,2.25],[3.0,4.5]]).cast(dtypes.float64).cast(dtypes.float32)),
+    ("half_arith", lambda: (F([[1.5,2.0],[3.0,4.0]]).cast(dtypes.half) * F([[2.0,2.0],[2.0,2.0]]).cast(dtypes.half)).cast(dtypes.float32)),
+    ("bf16_arith", lambda: (F([[1.5,2.0],[3.0,4.0]]).cast(dtypes.bfloat16) + F([[1.0,1.0],[1.0,1.0]]).cast(dtypes.bfloat16)).cast(dtypes.float32)),
+    ("half_reduce", lambda: F([[1.5,2.0],[3.0,4.0]]).cast(dtypes.half).sum(axis=1).cast(dtypes.float32)),
   ]
 def run(dev, mk):
   with Context(DEV=dev):

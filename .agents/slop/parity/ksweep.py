@@ -94,6 +94,15 @@ def programs():
     ("embedding", lambda: F(np.random.rand(10, 4).astype(np.float32))[I([[1, 3], [5, 7]])]),
     ("cumsum", lambda: a4.cumsum(axis=1)),
     ("chained", lambda: ((a16 @ b16).relu().sum(axis=1) - (a16 @ b16).max(axis=0)).exp()),
+    # NARROW-FLOAT RENDERING: `cstyle.py` spells these through `f32_to_fp8(...)`, `(half)`/`(bfloat16)`
+    # casts and `dtypes.half.itemsize`-dependent vector widths, none of which the f32 programs reach.
+    ("fp8_e4m3", lambda: a4.cast(dtypes.fp8e4m3).cast(dtypes.float32)),
+    ("fp8_e5m2", lambda: a4.cast(dtypes.fp8e5m2).cast(dtypes.float32)),
+    ("fp8_fnuz", lambda: a4.cast(dtypes.fp8e4m3fnuz).cast(dtypes.float32)),
+    ("half_arith", lambda: (a4.cast(dtypes.half) * a4.cast(dtypes.half)).cast(dtypes.float32)),
+    ("bf16_arith", lambda: (a4.cast(dtypes.bfloat16) + a4.cast(dtypes.bfloat16)).cast(dtypes.float32)),
+    ("half_reduce", lambda: a4.cast(dtypes.half).sum(axis=1).cast(dtypes.float32)),
+    ("f64_arith", lambda: (a4.cast(dtypes.float64) * 2.0).cast(dtypes.float32)),
   ]
 
 
