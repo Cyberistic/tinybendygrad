@@ -125,33 +125,34 @@ RANGEIFY = ROOT / "tinybendygrad/schedule/rangeify.bend"
 # had been DEAD (exit 5) with the message "726 of 792 rows in 25 tries", i.e. it called a
 # DETERMINISTIC shortfall a FLAKE. A TABLE here is a `List<&2, O.PMEntry>`, and that is what
 # this asks for.
-# MEASURED 2026-11-03, ONCE THE POPULATION WAS FIXED AND THE GATE COULD FINALLY COMPARE, AND
-# THEN DECIDED PER ROW RATHER THAN IN BULK. 19 of the 44 `py` pins were stale and **0 `bd`
-# pins were**: the PORT's answers had not moved anywhere, so no row was "the port is now
-# right". Every one of the 19 is CPython's answer moving under ONE substrate change, and the
-# three shapes it takes are named here because a pin moved for "the run says so" pins nothing:
+# ===========================================================================
+# THE FIXTURE WAS REBUILT, AND THE TEN REFUSALS WERE THE FIXTURE'S FAULT.
 #
-#   5 rows  COUNT-MOVED -- `sk_13/31/32/33/43`, and the count moved by EXACTLY THREE
-#           (`sk_13` 7 -> 10). Three nodes is the size CONST, the SOURCE that carries it, and
-#           the wrapper -- the re-vendor that moved a BUFFER's size OUT OF `ParamArg` and INTO
-#           a size CONST SRC, which this file's own `sv`/`dg` notes record.
-#   4 rows  SHAPE GAINED THE SIZE NODE -- `dg_5/6/47/57`, `PARAM/0` -> `SHRINK/3 PARAM CONST
-#           SPECIAL`. `debuf` mints `param(...).reshape(buf.max_shape)` and appends a SHRINK
-#           only when `max_shape != shape`; under the new substrate it does, so the answer is
-#           a SHRINK and not a bare PARAM. **The divergence CLASS is unchanged** -- CPython
-#           rewrites, the port answers `none` -- only the wrapper is new.
-#  10 rows  ANSWER BECAME A REFUSAL -- `ab_17 ab_18 ab_30 ab_55 ct_49 dg_26 dg_30 fb_18`
-#           (ValueError), `dg_39` (IndexError), `dg_56` (RuntimeError). `bufferize_to_store`
-#           asserts `size > 0 and isinstance(size, int)`, and the size is now a UOp, so the
-#           fixture no longer builds a legal BUFFER. **THESE TEN ARE A STALE FIXTURE AND NOT A
-#           TABLE ANSWER**: the row now records that CPython cannot build the input, which is
-#           a fact about the fixture. THE PINS RECORD THE REFUSALS SO THE GATE IS HONEST
-#           TODAY; the rows stay listed because a fixture that raises is a backlog entry and
-#           hiding it behind a green gate is what this whole session is against. See
-#           TODO(p3) above the fixtures.
+# `world()` BUILT A BUFFER AS `UOp(Ops.BUFFER, src=(sp,), arg=ps(slot, 4))` -- a SPECIAL d
+# src and the size in `ParamArg`. BOTH HALVES ARE STALE AGAINST THE CURRENT `_buffer`
+# (ops.py:831): `src=(shape_to_shape_arg((size,)),)+device_range_src(device)`, and
+# `device_range_src` (:829) is `()` for a SINGLE STRING device, so **the size is `src[0]`, ONE
+# CONST, and there is no SPECIAL** -- and the third `ParamArg` field is `vmin_vmax`, not `size`,
+# so `ps(slot, 4)` was setting a VALUE RANGE and the real shape came from a SPECIAL that
+# `prod()` cannot resolve. `bufferize_to_store`'s `assert size > 0 and isinstance(size, int)`
+# fired on exactly that, which is why ten rows recorded a REFUSAL instead of a table answer.
 #
-# THE VERDICT PER ROW, IN ONE SENTENCE: **STALE PIN, PORT UNCHANGED** for all nineteen, with
-# the ten refusals additionally a **STALE FIXTURE**. Not one row's verdict is "the port moved".
+# MEASURED, AFTER: `src=(c4,)` on both sides and **ZERO undeclared disagreements out of 726**,
+# and `raise=` rows fall from 10 to 5. The 44 `DIVERGES` pairs were then RE-TAKEN from the
+# rebuilt fixture -- both sides, not just `py` -- because a fixture is an INPUT and every
+# reading over it is new. THE DIVERGENCE COUNT DID NOT FALL: 0 rows became agreements, so the
+# rebuild did not quietly make both lanes wrong in the same way.
+#
+# FIVE REMAIN, AND THEY ARE THE NEXT FIXTURE DEFECT RATHER THAN A TABLE ANSWER:
+#   ct_17 ct_18 ct_55   ValueError -- a STAGE whose inner BUFFER still has no resolvable
+#                       shape for `pm_const_buffer_folding`.
+#   dg_39               IndexError  -- `pg` is `UOp(Ops.PARAM, src=())`, and `debuf` calls
+#                       `buf.max_numel()` which reads `src[0]`. A PARAM WITHOUT A SHAPE SRC
+#                       is illegal under the current `UOp.param`, exactly as a BUFFER was.
+#   dg_56               RuntimeError -- `mstb` is `MSTACK(bd, c1)` and `debuf` runs on it.
+#
+# TODO(p3) GIVE `pg`/`pa` A SHAPE SRC (`UOp.param(slot, dtype, size)`) and a STAGE over such
+# a PARAM its shape, so the last five rows answer a TABLE rather than an exception.
 TABLES = tuple(re.findall(r"^def ([a-z]+)_table\(\) -> List<&2, O\.PMEntry>", RANGEIFY.read_text(), re.M))
 if not TABLES:
     print(f"rng_graph_census-gate: REFUSED -- no `def <name>_table` in {RANGEIFY}, so there are no "
@@ -173,49 +174,49 @@ ROWS = tuple(f"{t}_{n}" for t in TABLES for n in range(NODES))
 # file's docstring above. THE THREE FINDINGS THAT USED TO BE HERE ARE GONE -- see the foot.
 DIVERGES = {
     "rb_11": ("rb_11=1 Ops.NOOP/0  arg=none t=none", "rb_11=1 Ops.NOOP/0 - arg=none t=none"),
-    "rb_19": ("rb_19=3 Ops.BUFFER/1 Ops.SPECIAL arg=other t=none", "rb_19=none"),
+    "rb_19": ("rb_19=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "rb_19=none"),
     "rb_32": ("rb_32=1 Ops.NOOP/0  arg=none t=none", "rb_32=1 Ops.NOOP/0 - arg=none t=none"),
-    "rb_51": ("rb_51=3 Ops.BUFFER/1 Ops.SPECIAL arg=other t=none", "rb_51=none"),
+    "rb_51": ("rb_51=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "rb_51=none"),
     "aprt_34": ("aprt_34=1 Ops.PARAM/0  arg=other t=tuple", "aprt_34=1 Ops.PARAM/0 - arg=other t=tuple"),
     "sk_11": ("sk_11=4 Ops.CALL/1 Ops.SINK arg=other t=none", "sk_11=none"),
     "sk_12": ("sk_12=5 Ops.CALL/1 Ops.SINK arg=other t=none", "sk_12=none"),
-    "sk_13": ("sk_13=10 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_13=none"),
-    "sk_31": ("sk_31=11 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_31=none"),
-    "sk_32": ("sk_32=10 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_32=none"),
-    "sk_33": ("sk_33=13 Ops.CALL/3 Ops.SINK Ops.BUFFER Ops.BUFFER arg=other t=none", "sk_33=none"),
-    "sk_43": ("sk_43=10 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_43=none"),
+    "sk_13": ("sk_13=6 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_13=none"),
+    "sk_31": ("sk_31=7 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_31=none"),
+    "sk_32": ("sk_32=6 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_32=none"),
+    "sk_33": ("sk_33=8 Ops.CALL/3 Ops.SINK Ops.BUFFER Ops.BUFFER arg=other t=none", "sk_33=none"),
+    "sk_43": ("sk_43=7 Ops.CALL/2 Ops.SINK Ops.BUFFER arg=other t=none", "sk_43=none"),
     "ct_17": ("ct_17=raise=ValueError", "ct_17=none"),
     "ct_18": ("ct_18=raise=ValueError", "ct_18=none"),
-    "ct_49": ("ct_49=raise=ValueError", "ct_49=none"),
-    "ct_50": ("ct_50=11 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_50=none"),
+    "ct_49": ("ct_49=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "ct_49=none"),
+    "ct_50": ("ct_50=10 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_50=none"),
     "ct_53": ("ct_53=7 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_53=none"),
     "ct_54": ("ct_54=8 Ops.EXPAND/2 Ops.RESHAPE Ops.CONST arg=none t=none", "ct_54=none"),
     "ct_55": ("ct_55=raise=ValueError", "ct_55=none"),
-    "fb_18": ("fb_18=raise=ValueError", "fb_18=none"),
-    "dg_5": ("dg_5=6 Ops.SHRINK/3 Ops.PARAM Ops.CONST Ops.SPECIAL arg=none t=none", "dg_5=none"),
-    "dg_6": ("dg_6=6 Ops.SHRINK/3 Ops.PARAM Ops.CONST Ops.SPECIAL arg=none t=none", "dg_6=none"),
-    "dg_14": ("dg_14=3 Ops.BUFFER/1 Ops.SPECIAL arg=other t=none", "dg_14=none"),
-    "dg_15": ("dg_15=3 Ops.BUFFER/1 Ops.SPECIAL arg=other t=none", "dg_15=none"),
-    "dg_16": ("dg_16=3 Ops.BUFFER/1 Ops.SPECIAL arg=other t=none", "dg_16=none"),
-    "dg_26": ("dg_26=raise=ValueError", "dg_26=none"),
-    "dg_30": ("dg_30=raise=ValueError", "dg_30=none"),
+    "fb_18": ("fb_18=9 Ops.RESHAPE/2 Ops.STAGE Ops.STACK arg=none t=none", "fb_18=none"),
+    "dg_5": ("dg_5=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_5=none"),
+    "dg_6": ("dg_6=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_6=none"),
+    "dg_14": ("dg_14=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_14=none"),
+    "dg_15": ("dg_15=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_15=none"),
+    "dg_16": ("dg_16=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_16=none"),
+    "dg_26": ("dg_26=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_26=none"),
+    "dg_30": ("dg_30=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_30=none"),
     "dg_37": ("dg_37=1 Ops.PARAM/0  arg=other t=none", "dg_37=1 Ops.PARAM/0 - arg=other t=none"),
     "dg_39": ("dg_39=raise=IndexError", "dg_39=none"),
     "dg_41": ("dg_41=1 Ops.NOOP/0  arg=none t=none", "dg_41=none"),
-    "dg_42": ("dg_42=3 Ops.BUFFER/1 Ops.SPECIAL arg=other t=none", "dg_42=none"),
-    "dg_47": ("dg_47=6 Ops.SHRINK/3 Ops.PARAM Ops.CONST Ops.SPECIAL arg=none t=none", "dg_47=none"),
+    "dg_42": ("dg_42=2 Ops.BUFFER/1 Ops.CONST arg=other t=none", "dg_42=none"),
+    "dg_47": ("dg_47=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_47=none"),
     "dg_56": ("dg_56=raise=RuntimeError", "dg_56=none"),
-    "dg_57": ("dg_57=6 Ops.SHRINK/3 Ops.PARAM Ops.CONST Ops.SPECIAL arg=none t=none", "dg_57=none"),
-    "ab_17": ("ab_17=raise=ValueError", "ab_17=none"),
-    "ab_18": ("ab_18=raise=ValueError", "ab_18=none"),
-    "ab_30": ("ab_30=raise=ValueError", "ab_30=none"),
+    "dg_57": ("dg_57=2 Ops.PARAM/1 Ops.CONST arg=other t=none", "dg_57=none"),
+    "ab_17": ("ab_17=9 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_17=none"),
+    "ab_18": ("ab_18=9 Ops.RESHAPE/2 Ops.STAGE Ops.STACK arg=none t=none", "ab_18=none"),
+    "ab_30": ("ab_30=3 Ops.MSTACK/2 Ops.BUFFER Ops.BUFFER arg=none t=none", "ab_30=none"),
     "ab_31": ("ab_31=1 Ops.NOOP/0  arg=none t=none", "ab_31=1 Ops.NOOP/0 - arg=none t=none"),
     "ab_41": ("ab_41=1 Ops.NOOP/0  arg=none t=none", "ab_41=1 Ops.NOOP/0 - arg=none t=none"),
-    "ab_49": ("ab_49=10 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_49=none"),
-    "ab_50": ("ab_50=11 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_50=none"),
+    "ab_49": ("ab_49=9 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_49=none"),
+    "ab_50": ("ab_50=10 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_50=none"),
     "ab_53": ("ab_53=9 Ops.CAST/1 Ops.AFTER arg=dt:weakint t=none", "ab_53=none"),
     "ab_54": ("ab_54=8 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_54=none"),
-    "ab_55": ("ab_55=raise=ValueError", "ab_55=none"),
+    "ab_55": ("ab_55=9 Ops.AFTER/2 Ops.ALLOC Ops.END arg=none t=none", "ab_55=none"),
 }
 
 GATE = Gate(

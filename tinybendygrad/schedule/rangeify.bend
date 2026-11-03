@@ -1724,9 +1724,16 @@ def g() -> G:
   +c2 = O.UOp.const(O.Found.ar(c1), O.CInt{H.i64_of_i32(2)})
   +c4 = O.UOp.const(O.Found.ar(c2), O.CInt{H.i64_of_i32(4)})
   +sp = O.UOp.special(O.Found.ar(c4), O.Found.i(c4), "0")
-  +b4 = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, [O.Found.i(sp)],
+  # A BUFFER'S SRC IS ONE SIZE CONST AND NOT A SPECIAL. `UOp._buffer` (ops.py:831) is
+  # `src=(shape_to_shape_arg((size,)),)+device_range_src(device)` and `device_range_src`
+  # (:829) is `()` for a SINGLE STRING device, so the size is `src[0]` and THERE IS NO
+  # SPECIAL. MEASURED 2026-11-03: with `src=[sp]` the size is a SPECIAL, so `x.shape` and
+  # `prod(x.shape)` are UOps and `bufferize_to_store`'s `assert size > 0 and isinstance(size,
+  # int)` RAISES -- which is why ten rows of this census recorded a ValueError/IndexError/
+  # RuntimeError instead of a table answer.
+  +b4 = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, [O.Found.i(c4)],
                   O.AParam{g_psize(0, S.AGlobal{})}, O.TNone{})
-  +bx = O.UOp.new(O.Found.ar(b4), O.OpsBUFFER{}, [O.Found.i(sp)],
+  +bx = O.UOp.new(O.Found.ar(b4), O.OpsBUFFER{}, [O.Found.i(c4)],
                   O.AParam{g_psize(1, S.AGlobal{})}, O.TNone{})
   +r0 = O.UOp.range_end(O.Found.ar(bx), O.Found.i(c4), [0], O.AXIS_WEAK{})
   +r1 = O.UOp.range_end(O.Found.ar(r0), O.Found.i(c4), [1], O.AXIS_WEAK{})
@@ -1825,7 +1832,7 @@ def g() -> G:
 #                            visible: `UOp` accepts it and `replace` keeps it
 # CT8R0 the SAME node with `ANone`             the negative one row from it
 # CT7A  INDEX(AFTER)          ct_7's claim: root INDEX, child AFTER
-  +bd = O.UOp.new(O.Found.ar(clik0), O.OpsBUFFER{}, [O.Found.i(sp)],
+  +bd = O.UOp.new(O.Found.ar(clik0), O.OpsBUFFER{}, [O.Found.i(c4)],
                   O.AParam{g_pdev(4)}, O.TNone{})
   +ixb4 = O.UOp.new(O.Found.ar(bd), O.OpsINDEX{}, [O.Found.i(b4), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +ct4a = O.UOp.new(O.Found.ar(ixb4), O.OpsSTAGE{}, [O.Found.i(ixb4), O.Found.i(r0)], O.ANone{}, O.TNone{})

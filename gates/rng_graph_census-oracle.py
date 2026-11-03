@@ -98,13 +98,19 @@ def sig(u) -> str:
     return f"{len(s)} Ops.{u.op.name}/{len(u.src)} {srcs} arg={ctor(u.arg)} t={tagnm(u.tag)}"
 
 
-def ps(slot, n, addr=AddrSpace.GLOBAL, dev=None):
-    """`ParamArg(slot, dtype, size, ...)` with `size` a SCALAR `prod(shape)` (ops.py:1200)
-    -- `UOp._shape` returns `(self.arg.size,)` (ops.py:369-371), so a TUPLE size would give
-    `((n,),)` and a STAGE over it a shape of `(n, (n,))`, which is not a shape CPython can
-    reshape through. The port's `g_psize` (`rangeify.bend:1685`) holds `Some{n}` -- the scalar.
+def ps(slot, addr=AddrSpace.GLOBAL, dev=None):
+    """`ParamArg(slot, dtype, addrspace=..., device=...)` -- AND NO SIZE.
+
+    THE SIZE MOVED OUT OF `ParamArg` AND INTO `src[0]` AS A CONST. `UOp._buffer` (ops.py:831)
+    is `UOp(Ops.BUFFER, src=(shape_to_shape_arg((size,)),)+UOp.device_range_src(device), ...)`,
+    and `device_range_src` (:829) is `()` for a SINGLE STRING device -- so a BUFFER's src is
+    ONE size CONST and there is no SPECIAL. This function used to pass the size as the THIRD
+    POSITIONAL, which is `vmin_vmax` in the current `ParamArg`, so the fixture's "size" was a
+    value range AND the real shape was a SPECIAL. MEASURED 2026-11-03: `bufferize_to_store`'s
+    `assert size > 0 and isinstance(size, int)` raised on that, and ten census rows recorded a
+    REFUSAL instead of a table answer. THE PORT'S `g_psize` WAS ALREADY RIGHT.
     """
-    return ParamArg(slot, dtypes.int32, n, addrspace=addr, device=dev)
+    return ParamArg(slot, dtypes.int32, addrspace=addr, device=dev)
 
 
 def stage(*src):
@@ -116,8 +122,8 @@ def world():
     """THE PORT'S FIXTURE, node for node -- rangeify.bend:1707-1862, index for index."""
     c0, c1, c2, c4 = (UOp.const(v) for v in (0, 1, 2, 4))
     sp = UOp.special(4, "0")
-    b4 = UOp(Ops.BUFFER, src=(sp,), arg=ps(0, 4))
-    bx = UOp(Ops.BUFFER, src=(sp,), arg=ps(1, 4))
+    b4 = UOp(Ops.BUFFER, src=(c4,), arg=ps(0))
+    bx = UOp(Ops.BUFFER, src=(c4,), arg=ps(1))
     r0, r1 = UOp.range(4, (0,), AxisType.WEAK), UOp.range(4, (1,), AxisType.WEAK)
     n0, nx = UOp(Ops.NOOP), UOp(Ops.NOOP, src=(c0,))
     e0, e1, ek = UOp(Ops.END, src=(n0,)), UOp(Ops.END, src=(nx,)), UOp(Ops.END, src=(b4,))
@@ -140,8 +146,8 @@ def world():
     sti = UOp(Ops.STORE, src=(b4, cst))
     sts = UOp(Ops.STORE, src=(b4, b4))
     std = UOp(Ops.STORE, src=(b4, bx))
-    pg = UOp(Ops.PARAM, src=(), arg=ps(2, 4))
-    pa = UOp(Ops.PARAM, src=(), arg=ps(3, 4, AddrSpace.ALU))
+    pg = UOp(Ops.PARAM, src=(), arg=ps(2))
+    pa = UOp(Ops.PARAM, src=(), arg=ps(3, AddrSpace.ALU))
     ipg = UOp(Ops.INDEX, src=(pg,))
     ipa = UOp(Ops.INDEX, src=(pa,))
     r0t, pgt, pat = r0.rtag(()), pg.rtag(()), pa.rtag(())
@@ -151,7 +157,7 @@ def world():
     rsaf = UOp(Ops.RESHAPE, src=(af, c4))
     clik = UOp(Ops.CALL, src=(ixs, rs), arg=KernelInfo())
     clik0 = UOp(Ops.CALL, src=(ixs, rs))
-    bd = UOp(Ops.BUFFER, src=(sp,), arg=ps(4, 9, dev="1:0"))
+    bd = UOp(Ops.BUFFER, src=(c4,), arg=ps(4, dev="1:0"))
     ixb4 = UOp(Ops.INDEX, src=(b4, r0))
     ct4a, ct4d = stage(ixb4, r0), stage(ixb4, r1)
     ct4b = UOp(Ops.INDEX, src=(st2, r0))
