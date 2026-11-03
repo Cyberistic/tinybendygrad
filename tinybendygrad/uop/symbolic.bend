@@ -2628,6 +2628,25 @@ def sy_keep.go(acc: Maybe<&1, U32>, v: Maybe<&1, U32>) -> Maybe<&1, U32>:
 # src is a SINGLE-op UPat (ops.py:1475-1478).
 def OP_INVALID() -> List<&2, O.Op>: [O.OpsCONST{}]
 
+# `symbolic.py:201` -- `(UPat.var().where(UPat.var("val"), UPat.var("val")), lambda val: val)`.
+# A conditional with the SAME node in both branches is the node. NO NEW BODY and no minting:
+# the answer is already in the arena, which is why the rule is one line upstream and one
+# predicate here.
+#
+# IT COMES BEFORE :202 IN THE TABLE AND THE ORDER IS LOAD-BEARING: `WHERE(CONST_gate, x, x)`
+# matches BOTH rules, and upstream's first-wins gives it to this one. A table that put :202
+# first would fold the gate away and keep the branches, which is the same answer here but by a
+# longer route -- and on a gate that is NOT a const only this rule fires, so the order is what
+# makes the pair total.
+def sy_wself.of(is_where: Bool, differ: Bool, +v: U32) -> Maybe<&1, U32>:
+  match is_where differ:
+    case True{}  False{}: Some{v}
+    case _       _      : None{}
+
+def sy_wself(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+  sy_wself.of(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)),
+              Bool.not(U32.is_eq(sy_src1(x, u), sy_src2(x, u))), sy_src1(x, u))
+
 # `fold_const_where` -- symbolic.py:113, THE BODY OF THE RULE AT :202.
 #
 #     ret = c0 if gate.val else c1
@@ -2705,11 +2724,12 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{42, [O.OpsPOW{}],                     Nil{},                           },   # 191
     O.PMEntry{43, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
     O.PMEntry{44, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
-    O.PMEntry{45, [O.OpsWHERE{}],                  Nil{},                           },   # 202
-    O.PMEntry{46, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{47, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{48, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{49, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{45, [O.OpsWHERE{}],                  Nil{},                           },   # 201
+    O.PMEntry{46, [O.OpsWHERE{}],                  Nil{},                           },   # 202
+    O.PMEntry{47, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{48, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{49, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{50, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -2738,7 +2758,7 @@ def sym_table_len() -> Nat:
   nats([1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
-        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
+        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
 
 # THE DRIVER, twice. `sym_*` for the `sym` composition and `rm_*` for
 # `pm_remove_invalid`, and the duplication is the honest cost of not having
