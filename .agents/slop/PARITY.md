@@ -2946,3 +2946,39 @@ would still walk every character once.
 
 and the render decomposes (§56) into text 3.1 + histogram 1.7 + types 1.2 + loop 4.0 at the DAEMON's 10 ms,
 which is the same proportions with the JIT warm-up removed.
+
+## 68. SHIPPING FEWER `.bend` FUNCTIONS CANNOT HELP: 0.1 ms OF START IS THE RENDERER
+
+§63 left the ~10 ms first-render JIT warm-up as the one term never attacked, and the proposal was a CPU-only
+artifact -- drop the metal/cuda/hip/opencl arms the CPU lane cannot reach. That costs the port's device census
+(those arms ARE gated), so the PREMISE was measured first: **is start-up proportional to the shipped code at
+all?**
+
+A trivial Bend program (`IO.print("x")`), packed exactly like the renderer:
+
+```
+trivial artifact (constant print)   12.7 ms        63.1 MB binary
+renderer, one-uop wire              12.8 ms        64.1 MB binary   -> +0.1 ms
+renderer, 405-uop wire              32.1 ms
+```
+
+**THE ENTIRE RENDERER -- 433 KB of generated JS over ~70 `.bend` files -- COSTS 0.1 ms OF START.** The 12.7 ms
+is the embedded Bun runtime initialising, and it is the same whether the program prints one character or
+renders a kernel.
+
+**⇒ SO A CPU-ONLY ARTIFACT WOULD SAVE AT MOST 0.1 ms, AND THE PORT WOULD LOSE ITS DEVICE CENSUS FOR IT.**
+The idea is dead on measurement, not on judgement.
+
+### 68.1 What the ~10 ms warm-up actually is, and why it cannot be prewarmed away
+
+It is the JIT compiling the renderer's hot functions **on their first execution** (§63: a one-uop wire pays
+none of it, a 405-uop wire pays ~10 ms extra). That is proportional to code EXECUTED, so:
+
+* shipping less does nothing (this section);
+* prewarming moves it but does not remove it, and §65 measured the move as a LOSS (1.12 / 1.22) because
+  tinygrad's graph construction is only a few ms to hide it behind;
+* emitting fewer *executed* functions would mean emitting fewer C lines, which the oracle forbids (§45: forcing
+  inlining gave 0 of 37 byte-identical).
+
+**⇒ THAT CLOSES THE LAST OPEN TERM IN THIS RECORD, AND IT CLOSES IT THE SAME WAY AS THE OTHERS**: the cost is
+accounted for, the lever is named, and the lever is either forbidden by the oracle or worth 0.1 ms.
