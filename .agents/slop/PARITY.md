@@ -3104,3 +3104,37 @@ own sites are `char_len` 2.3, `i64_of_hi_lo` 1.9, `List_get` 1.6, `String_split`
 attributed. **`i64_of_hi_lo` AT 1.9% IS THE ONE ITEM THIS RANKING ADDS**, and it is the CONST payload's I64
 constructor: a two-field record literal, called 28.5 times per uop (§46), i.e. another diffuse site rather
 than a defect.
+
+## 72. `i64_shl` COMPUTED BOTH SHIFT FORMS PER CALL: FIXED, MEASURED NEUTRAL, REVERTED
+
+§71's worker profile left one unexplained site: `helpers_i64_of_hi_lo` at 1.9%, 28.5 calls per uop. Counting
+the whole I64 family (§46's instrument) named the path immediately:
+
+```
+i64_of_hi_lo    11,525   28.5/uop      div_step/div_bit/div_shift/div_fit/div_qbit each 1,224   3.0/uop
+i64_shl          3,086    7.6/uop      i64_bit 1,322  3.3/uop     u64_lt 2,155  5.3/uop
+i64_shl_put      3,086    7.6/uop
+i64_shl_lo       3,086    7.6/uop      <-- BOTH ARMS, EXACTLY ONCE PER SHIFT
+i64_shl_hi       3,086    7.6/uop
+```
+
+**`i64_shl.lo` AND `i64_shl.hi` EACH RUN ONCE PER SHIFT**, because `i64_shl.put` is
+`Bool.pick(I64, low, i64_shl.lo(...), i64_shl.hi(...))` and `Bool.pick` is strict: every 64-bit shift built
+both the `k <= 32` form and the `k > 32` form and threw one away. The §39 cure applies -- the bool becomes a
+parameter and `match` runs one arm -- and the change is byte-identical (`ksweep 37 of 37` on both decoders,
+`same C: True`).
+
+### 72.1 Measured
+
+```
+before median 45.0 ms   after median 44.7 ms
+ratio min 0.9655  p25 0.9838  median 0.9976  max 1.0480   8 of 14 faster
+```
+
+**NEUTRAL, SO REVERTED.** The two arms are `U32` shifts and a two-field record each; halving ~1 500 of them
+per render is about half a percent, which is under this instrument's floor -- the same arithmetic that made
+§38's `0.9888` keeper line and this one below it.
+
+**⇒ AND THAT IS THE I64 PATH EXPLAINED**: `i64_of_hi_lo`'s 28.5 per uop is the decimal fold's division loop
+(1 224 steps x a shift and an or each), not a repeated construction that a hoist could remove. The real defect
+in it (both shift arms) was worth half a percent.
