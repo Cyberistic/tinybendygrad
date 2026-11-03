@@ -3878,12 +3878,52 @@ def sym_473.pat(+x: F.Folded, +u: U32) -> Bool:
       Bool.and(Bool.and(sy_is_op(x, i, O.OpsADD{}), sy_nsrc_is(x, i, 2)),
         p_weakint(x, sy_src0(x, i)))))
 
+# **THE GUARD `:485` CARRIES AND THIS BODY DID NOT:**
+#   all(fits(a, v*c.vmin) for v in (x.vmin, x.vmax, y.vmin, y.vmax))
+# The distribution doubles the number of multiplications, so EVERY corner of `x` and `y` must stay
+# in `a`'s dtype after being scaled by `c`; otherwise the rewrite changes the answer. The bounds are
+# read off the CALLER's fold, which is right here because `x` and `y` already exist -- the node the
+# guard is about is `a`, and `a` is `x + y`.
+# `Bnd` is `{inf}`, `{neg, mag}` or `{flt}`, and `sym_276.vc` cannot be called from here -- it is
+# defined LATER in this file and Bend refuses a forward reference ("an unfilled law is a dead
+# claim"). So the conversion is local: a finite integer bound is `i64_neg(neg, mag)`.
+def sym_473.fb(b: F.Bnd, +dt: S.Dt, +cv: H.I64) -> Bool:
+  match b:
+    case F.BndInt{neg, mag}: fits(dt, H.i64_mul(H.i64_neg(neg, mag), cv))
+    # an INFINITE or floating bound: `fits` is `dtype not in sints or min <= v <= max`, so it holds
+    # exactly when the dtype is not a signed integer. The pattern constrains the sum to `weakint`,
+    # so these two arms are unreachable today and are written for the day they are not.
+    case _: Bool.not(dt_in(DTS_SINTS(), dt))
+
+def sym_473.g1(m: Maybe<&2, F.Bnd>, +dt: S.Dt, +cv: H.I64) -> Bool:
+  match m:
+    case Some{+b}: sym_473.fb(b, dt, cv)
+    case None{}: False{}
+
+def sym_473.cv0(m: Maybe<&2, O.Const>) -> H.I64:
+  match m:
+    case Some{O.CInt{i}}: i
+    case _: H.i64_of_i32(1)
+
+def sym_473.hit(ok: Bool, +m1: O.Found, +m2: O.Found) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: Some{mint_bin(m2, O.OpsADD{}, O.Found.i(m1), O.Found.i(m2))}
+    case _: None{}
+
 def sym_473.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +i = sym_473.inner(x, u)
   +c = sym_473.c(x, u)
-  +m1 = mint_bin(mint_ar(sy_ar(x)), O.OpsMUL{}, sy_src0(x, i), c)
+  +ar = sy_ar(x)
+  +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
+  +dt = sy_dt1(x, i)
+  +cv = sym_473.cv0(sy_val(x, c))
+  +ok = Bool.and(Bool.and(sym_473.g1(F.UOp.vmin(ar, bt, sy_src0(x, i)), dt, cv),
+                          sym_473.g1(F.UOp.vmax(ar, bt, sy_src0(x, i)), dt, cv)),
+                 Bool.and(sym_473.g1(F.UOp.vmin(ar, bt, sy_src1(x, i)), dt, cv),
+                          sym_473.g1(F.UOp.vmax(ar, bt, sy_src1(x, i)), dt, cv)))
+  +m1 = mint_bin(mint_ar(ar), O.OpsMUL{}, sy_src0(x, i), c)
   +m2 = mint_bin(m1, O.OpsMUL{}, sy_src1(x, i), c)
-  Some{mint_bin(m2, O.OpsADD{}, O.Found.i(m1), O.Found.i(m2))}
+  sym_473.hit(ok, m1, m2)
 
 def sym_473(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_473.pat(x, u), sym_473.mk(x, u))
@@ -3999,7 +4039,7 @@ def sym_280.pick(+x: F.Folded, +u: U32, +bt: F.BTable) -> U32:
     Bool.pick(U32, sym_280.second(x, u, bt), sy_src1(x, u), sy_src0(x, u)))
 
 def sym_280.pat(+x: F.Folded, +u: U32) -> Bool:
-  +bt = sym_280.bt(x)
+  +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsMAX{}), sy_nsrc_is(x, u, 2)),
     Bool.or(sym_280.first(x, u, bt), sym_280.second(x, u, bt)))
 
@@ -4065,7 +4105,7 @@ def sym_274.pat(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_274(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +ar = F.Folded.ar(x)
-  +bt = sym_280.bt(x)
+  +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
   sy_tri_f(sym_274.pat(x, u),
     mint_const_v(sym_276.vc(F.UOp.vmin(ar, bt, u)), mint_ar(ar), sy_dt1(x, u)))
 
@@ -4080,7 +4120,7 @@ def sym_276.pat(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_276(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +ar = F.Folded.ar(x)
-  +bt = sym_280.bt(x)
+  +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
   sy_tri_f(sym_276.pat(x, u), mint_const_v(sym_276.vc(F.UOp.vmin(ar, bt, u)), mint_ar(ar), sy_dt1(x, u)))
 
 
@@ -4783,7 +4823,7 @@ def sym_312.pat(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_312.guard(+x: F.Folded, +u: U32) -> Bool:
   +ar = F.Folded.ar(x)
-  +bt = sym_280.bt(x)
+  +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
   +a = sy_src0(x, u)
   +b = sy_src1(x, u)
   Bool.and(Bool.or(O.eq_dt(sy_dt1(x, a), S.int64()), O.eq_dt(sy_dt1(x, b), S.int64())),
@@ -5403,7 +5443,7 @@ def sym_259.ixs(+x: F.Folded, +u: U32) -> Bool:
 
 def sym_259.occ(+x: F.Folded, +u: U32) -> Bool:
   +ar = F.Folded.ar(x)
-  +bt = sym_280.bt(x)
+  +bt = F.mm.sweep(F.Folded.ar(x), F.Folded.t(x))
   +fu = O.Arena.budget(ar)
   +c = sy_src0(x, u)
   Bool.or(F.UOp.bool_slice_has(fu, ar, bt, sy_src1(x, u), c),
