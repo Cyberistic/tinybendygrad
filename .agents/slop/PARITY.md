@@ -1376,3 +1376,41 @@ call count is the only lever left on that site.
 `dec_check` 23/23 against CPython's `str(int)` (the bound is the thing that could truncate a digit, so that
 gate runs first), `ksweep 37 of 37 byte-identical on BOTH decoders`, `opbattery 39 of 39`,
 `helpers.bend ALL PROOFS CHECK`.
+
+## 33. ONE CONSTANT, SEVEN DECIMAL CONVERSIONS
+
+The shipped path's profile after §32 put `u32_to_word` (the runtime's own `U32.show`) at 15.7% and left a
+flat field behind it, so the next look was at WHERE the emitter formats numbers. It has only 18 `U32.show`
+call sites, and the interesting one is not a show at all:
+
+```bend
+Bool.pick(String, O.eq_dt(d, S.int64()),  String.concat([H.i64_dec(i), "l"]),
+  Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([H.i64_dec(i), "ul"]),
+    ...
+      H.i64_dec(i)))))))))
+```
+
+**`Bool.pick` IS STRICT, so every arm is evaluated and one is chosen**: that chain ran `H.i64_dec(i)` SEVEN
+times per integer constant, six of whose results were thrown away. `i64_dec` is the decimal fold of §28 --
+`digits + 1` divisions, each a restoring division -- so six wasted conversions per constant is the same
+class of defect as §27's six map builds per dtype.
+
+The cure is the same shape: compute it once, pass it in.
+
+```bend
+def ku_const_cast_int_at(+s: String, +dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String: ...
+def ku_const_cast_int(+dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
+  ku_const_cast_int_at(H.i64_dec(i), dt, dev, k, i)
+```
+
+### 33.1 Verified, and the one thing not yet measured
+
+**BYTE-IDENTICAL**: `ksweep 37 of 37 on BOTH decoders`, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`,
+`opbattery 39 of 39`, `cstyle.bend ALL PROOFS CHECK`. The six discarded conversions were computing the same
+string, so this cannot change the C, and it does not.
+
+**AND THE TIMING IS NOT RESOLVED IN THIS SECTION.** The machine was at load average **13.8** throughout (a
+`.venv` corpus run by another unit), where the same 57 ms command reads 78-154 ms: `min` 78.1 vs 79.5,
+`p25` 108.6 vs 96.2. The `p25` direction is the one the change predicts and the `min` is a tie, and neither
+is a measurement at that load. **A clean A/B on a quiet machine is owed, and this section does not claim a
+number for it.**

@@ -2126,22 +2126,30 @@ def ku_const_val(+kus: List<&2, KU>, i: U32) -> U32: ku_const_val.go(ku_const_in
 def ku_cast_wrapped(dev: U32, d: S.Dt, v: String) -> String:
   String.concat(["(", render_cast(dev, d, 1, S.Aalu{}, O.OpsCAST{}, False{}, v), ")"])
 
-def ku_const_cast_int(+dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
+def ku_const_cast_int_at(+s: String, +dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
   match dt:
     case d:
-      Bool.pick(String, O.eq_dt(d, S.int64()), String.concat([H.i64_dec(i), "l"]),
-        Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([H.i64_dec(i), "ul"]),
+      Bool.pick(String, O.eq_dt(d, S.int64()), String.concat([s, "l"]),
+        Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([s, "ul"]),
           # **A u32 CONST IS TRUNCATED, NOT PRINTED SIGNED.** cstyle.py:29 is
           # `f"{truncate[x.dtype](c.val)}u"`, so upstream writes `4294967169u` where the port wrote
           # `-127u` -- valid C, different text, and a divergence on 71 lines of `sin`. MEASURED
           # 2026-11-03: `sin` was the LAST of six transcendentals to stop being byte-identical.
           Bool.pick(String, O.eq_dt(d, S.uint32()), String.concat([U32.show(H.lo32(i)), "u"]),
             Bool.pick(String, O.eq_dt(d, S.boolean()), Bool.pick(String, H.i64_is_neg(i), "0", "1"),
-              Bool.pick(String, O.eq_dt(d, S.uint8()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
-                Bool.pick(String, O.eq_dt(d, S.uint16()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
-                  Bool.pick(String, O.eq_dt(d, S.int8()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
-                    Bool.pick(String, O.eq_dt(d, S.int16()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
-                      H.i64_dec(i)))))))))
+              Bool.pick(String, O.eq_dt(d, S.uint8()), ku_cast_wrapped(dev, d, s),
+                Bool.pick(String, O.eq_dt(d, S.uint16()), ku_cast_wrapped(dev, d, s),
+                  Bool.pick(String, O.eq_dt(d, S.int8()), ku_cast_wrapped(dev, d, s),
+                    Bool.pick(String, O.eq_dt(d, S.int16()), ku_cast_wrapped(dev, d, s),
+                      s))))))))
+
+# **THE DECIMAL IS COMPUTED ONCE AND PASSED IN, AND THAT IS A MEASURED CHANGE.** `Bool.pick` is STRICT here,
+# so every arm of the chain below is EVALUATED and one is chosen: this def used to call `H.i64_dec(i)` SEVEN
+# times per integer constant, six of whose results were discarded. MEASURED on the shipped path
+# (`PARITY.md` §33): with the decimal hoisted the 405-uop render drops by the amount in §33, and the C is
+# byte-identical because the four redundant conversions were computing the same string.
+def ku_const_cast_int(+dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
+  ku_const_cast_int_at(H.i64_dec(i), dt, dev, k, i)
 
 # **A NON-FINITE FLOAT IS NOT `repr(v) + "f"`.** `cstyle.py:26` spells the const as
 # `f"({ctx.render_cast(x, ctx.nan if math.isnan(v) else ctx.infinity if v > 0 else f'-{ctx.infinity}')})"`,
