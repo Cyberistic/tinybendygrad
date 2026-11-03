@@ -5073,3 +5073,47 @@ accessor calls = **18% of every call in the walk**) for a list of distinct `(dty
 **⇒ SO THE NEXT CHANGE IS NOT A NEW MECHANISM, IT IS A COUNT.** The walk has no hot spot to attack; it has
 159 calls a uop, and the only two terms in the whole turn that are a *structural* single item are `nums`
 (0.54, one call per field, two fields a uop) and the dtype pass (0.20, one whole extra pass over the kernel).
+
+## 114. ONE `nums` SPLIT PER ROW INSTEAD OF TWO: 1.0546, SIX OF 26, REVERTED
+
+§113 named `nums` as the largest structural single term (0.54 ms, 814 calls) and observed that its cost is
+per CALL, not per byte. The obvious shape followed: field 3 carries the shape list AND the source list
+behind their total count, field 7 carries the rank, the decoder splits once and cuts the list with
+`List.take`/`List.drop`.
+
+- byte-identical on the one kernel it was measured on: `same C: True | bytes: 4426`
+- the wire GREW: `9516 -> 10240 chars (+7.6%)`, because the count digit and the extra separator cost two
+  characters a row and field 7 was already one character when the source list was empty
+- `base median 3.91 ms   new median 4.10 ms`
+- `ratio min 0.5619 p25 1.0065 median 1.0546 max 2.0263   6 of 26 faster`
+
+**⇒ REVERTED, AND THE MODEL THAT PREDICTED −6% WAS WRONG BY 11 POINTS.** The correction: of the 814 `nums`
+calls, **330 return on a literal `match` against `"-"`, and 301 of the rest are field 3**, so the merge
+removes ~183 real splits (~0.12 ms), not 409 (~0.27 ms) -- while 3 list walks a row plus 724 extra wire
+characters cost more than that. **A COUNT IS NOT A COST, AND THIS TIME THE COUNT WAS MINE.**
+
+## 115. THE PARITY GATE IS RED FROM A RE-VENDOR, AND NOT FROM THIS SESSION'S CHANGES
+
+`75955a97a` fast-forwarded the vendored `tinygrad/` and renamed five ops, adding a sixth:
+
+```
+RECIPROCAL -> RECIP   CDIV -> TRUNCDIV   CMOD -> TRUNCMOD   FLOORDIV -> DIV   FLOORMOD -> MOD   + REFPARAM
+```
+
+The oracle now emits `REFPARAM`, which `tinybendygrad/uop/ops.bend` does not have, so `ksweep` answers
+`unknown op REFPARAM` **with this session's changes REVERTED**:
+
+```
+$ git status --porcelain -- tinybendygrad/     (empty)
+$ .venv/bin/python .agents/slop/parity/ksweep.py
+# programs that ran: 31; kernels captured: 37
+# ORACLE REFUSED pad_cat: AssertionError:
+live_4c65f6609f17912c: unknown op REFPARAM
+```
+
+**⇒ SO THE BYTE-IDENTITY GATE IS BLIND UNTIL THE PORT'S ENUM IS RE-PINNED, AND THAT IS A ~900-OCCURRENCE
+RENAME ACROSS 30 `.bend` FILES PLUS `gen_kus.py`'s op table — NOT A ONE-UNIT EDIT AND NOT ONE TO START
+CONCURRENTLY WITH WHOEVER IS RE-PINNING.** Until then every A/B in this record can be validated only
+DIFFERENTIALLY (previous build vs new build on the same input), which is what §112 and §114 did.
+`bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` still answers `ALL PROOFS CHECK` (rc=0), so the
+port is internally consistent; it is the comparison against the oracle that is red.
