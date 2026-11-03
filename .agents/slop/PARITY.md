@@ -2427,3 +2427,45 @@ this one; `_live_bin()` still returns `None` if `bun build` cannot produce it, a
 fallback with identical output.
 
 `ksweep 37 of 37 on both decoders`, `ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`. **NO `.bend` CHANGED.**
+
+## 55. THE DAEMON TURN MEASURED AGAINST THE ONE-SHOT PATH, AND A CORRECTION TO A SCARE OF MY OWN
+
+§53 and §54 took one-shot renders from 47.0 to ~35 ms by packaging. That leaves the question those sections
+could not answer: **how much of a render is START, and how much is the renderer?** Measured on the same
+405-uop wire, interleaved, medians of nine:
+
+```
+one-shot (compiled binary)   34.8 ms
+daemon turn                   9.8 ms
+-> the daemon saves 25.0 ms per kernel (72%)
+```
+
+**SO THE RENDERER IS ~10 ms FOR 405 UOPS AND THE OTHER ~25 ms IS PROCESS START**, which is what §53/§54 spent
+two turns cutting (47.0 -> 34.8) and what the daemon removes entirely. A program of K kernels pays the 25 ms
+once, not K times.
+
+### 55.1 The correction: the worker does not spin
+
+While profiling the daemon this section saw **154 rendered answers for 20 signals** and read it as a spin loop
+-- which would have meant the daemon renders ~8x more than asked and would have explained §29's three-turn
+stall as a backlog. **IT WAS CONTAMINATION, NOT A SPIN**: an orphaned worker from an earlier experiment was
+still writing into the same output file. Re-run cleanly, one worker, one fifo:
+
+```
+idle, no writer:        0 renders
+writer OPEN, 0 bytes:   0 renders
+after ONE byte:         1 render
+```
+
+**1 BYTE -> 1 RENDER, AND BLOCKING READS ARE BLOCKING.** `File.read` on a FIFO waits for a writer and then for
+a byte; the worker is idle when the caller is idle. The orphans have been killed (`pkill -f "bun .*serve-"`).
+
+**AND THE LESSON IS THE ONE THIS RECORD KEEPS RELEARNING**: a number taken while an earlier process of the
+same kind was still running is not a measurement, and the first thing to check when a latency or a count looks
+wrong is whether you are measuring your own leftovers.
+
+### 55.2 The certificate this stands on
+
+`substrate-start = substrate-end = live = 2ffdeda54a59...`, `substrate-head=974bb8fc4`, 38 graphs,
+38 byte-identical. §53 and §54 changed no `.bend`, so that certificate -- taken for the wire work -- still
+describes the tree they were built on.
