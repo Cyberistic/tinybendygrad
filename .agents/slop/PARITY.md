@@ -4165,3 +4165,42 @@ prize left on this side**, and a byte-identical gate set that will catch any mis
 type change cannot be finished and verified inside this turn, and a half-converted text path is a broken
 renderer. The measurement is the deliverable: **17.5x, 2.33 ms of copying, and the exact shape that removes
 it.**
+
+## 94. WHERE THE 77,500 CHARACTERS GO, AND WHY REMOVING ONE CONCAT IS ALWAYS NOISE
+
+The attribution of §93's 77,500 characters by call site:
+
+```
+60,635 (78.2%)  $String_concat itself   -- every part beyond the first, at every nesting level
+ 8,187 (10.6%)  st_pay_x                -- the FRAME assembling "<acc><chunk>": one copy of the whole wire
+ 1,920 ( 2.5%)  rd_body_at
+ 1,314 ( 1.7%)  ku_indent_go
+ 1,124 ( 1.5%)  _render_named
+ 1,032 ( 1.3%)  ku_render_index.aluconst_go
+```
+
+### 94.1 The one copy that could be removed, and why it is not worth removing
+
+`st_pay_x` did `String.concat([acc, text])` with `acc` EMPTY on the common path -- a 9.5 KB wire arrives in
+one chunk -- so it copied every character of it to prepend nothing. Skipping the copy when `acc` is empty
+(the Bool as a parameter, since `Bool.pick` is strict):
+
+```
+same C: True | bytes: 4426
+run 1: 4.94 -> 4.87 ms   median 0.9745   20/24
+run 2: 4.96 -> 4.95 ms   median 1.0093   10/30
+```
+
+NEUTRAL, REVERTED. **AND THAT IS THE CORRECTION TO §93's ARITHMETIC THAT MATTERS MOST: one concatenation
+of 8,187 characters is ONE memcpy -- a few microseconds at memory bandwidth -- not 8,187 character-by-
+character copies.** The ~30 ns a character is the cost of the NESTED case, where each level's output is
+re-copied by its parent; it does not divide by the number of concatenations.
+
+### 94.2 What that means for the piece-list transformation
+
+**EVERY "REMOVE ONE CONCAT" CHANGE IS THEREFORE BELOW NOISE BY CONSTRUCTION**, and six of them measured so
+(§87, §90, and this one). The only change that can move the 2.16 ms is the one that removes the NESTING
+itself -- pieces Consed, joined once -- and its prize is the 78.2% bucket, not any of the sites below it.
+The estimate in §93 (2.33 ms of copying) stands as an upper bound on that prize; the five sites under
+`st_pay_x` total 12,000 characters, i.e. about 1.2 ms of the nested work, and they are re-copied because
+they are nested, not because any single call is slow.
