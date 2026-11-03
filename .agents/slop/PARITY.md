@@ -136,7 +136,21 @@ reading them: `isa` is a REAL GAP (its `Register` appears in `x86.bend` only as 
 | what remains | upstream lines | treatment |
 |---|---|---|
 | `llm/__main__.py` | 2 | trivial, and it waits on `cli`: it IS the `if __name__ == "__main__": main()` guard |
-| `llm/cli.py` · `llm/model.py` · `llm/serve.py` | 223 · 650 · 176 | **the only real port work left** |
+| `llm/cli.py` · `llm/serve.py` | 223 · 176 | real port work left |
+| `llm/model.py` | 650 | **PARTIALLY PORTED** — see below |
+
+**`llm/model.bend` IS PARTIAL AND SAYS SO.** Landed: `ExpertGating`'s four members (as `U32`, because the
+VALUE is what a GGUF config carries and compares) and the four frozen config records `YaRNConfig`,
+`SSMConfig`, `HCConfig`, `IndexerConfig`, with upstream's defaults, because a default that differs is a
+silent behaviour change. **NOT landed, each with a `TODO(parity)` in the file:** `TransformerConfig` (40
+fields — it belongs with the first block that CONSUMES it, not with a file nothing reads yet), the four
+`Tensor` op helpers, and the blocks and `Transformer` itself (`model.py:134-650`).
+
+**⇒ AND ONE LANGUAGE FACT THE PORT MUST CARRY, MEASURED:** an upstream `float|None` cannot travel as a
+`Maybe` in a record field — `Maybe<&1, F32>` is REFUSED there ("expected : Data, observed : Type")
+because `F32` is a `Type`. It IS legal as a return type (`cstyle.bend` uses it three times). So
+`SSMConfig.gate_lower_bound` travels as `has_bound: Bool` beside `bound: F32`, and a `0.0` sentinel was
+rejected outright: 0.0 is a legal lower bound.
 
 Landed this pass (7 files): the two `llm` markers, `llm/kernels/amd`'s declared stub, and the five
 `__init__` markers. `renderer/isa/__init__` is recorded as a REAL GAP rather than a marker (see above).
