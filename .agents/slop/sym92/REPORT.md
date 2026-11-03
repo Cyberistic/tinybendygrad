@@ -269,3 +269,46 @@ negative-exponent tail. The mask const is `2**bits - 1` and for a u64 that value
 `:252` (dead upstream), `:259` + `:436` + `:437` (`bool_slice` + `substitute` + `uop_given_valid`),
 `divandmod.py:108` (`UOp.divides`, which needs the TAGGED-WORK-ITEM form because its STACK arm
 rebuilds rather than collects, plus ~7 arms of `fold_divmod_general`), and `:451`'s `xpow_int`.
+
+## 2026-11-03 (final, 4): `UOp.divides` written, and `divandmod.py:108` measured at FULL size
+
+`UOp.divides` (ops.py:1069) is WRITTEN and verified: **eight shapes, `diff` of the two sides
+empty** -- `c6d2=c3`, `c6d4=none`, `x6d2=(mul a c3)`, `x6d3=(mul a c2)`, `x6d1=(mul a c6)`,
+`sm_d2=(add (mul a c2) (mul b c3))`, `sm_d4=none`, `p4d2=(floordiv p c2)`. The four that carry the
+semantics are an exact CONST halving, an inexact one, the MUL first-side fall-through (`x*6/2` ->
+`a*c3`, not `c3*a`), and the Defines `//`.
+
+Two Bend rules forced the shape of the def, both measured: the ADD and MUL arms need **two chained
+self-calls and then a decision on both**, and a `match` may not scrutinise a local binder, so the
+answer is a `Dv{ok, f, i}` RECORD and the decision happens in a def whose PARAMETER is the Bool;
+and **each mint reads the arena its last operand opened**, so the second self-call takes
+`Found.ar(Dv.f(da))`.
+
+THE STACK ARM IS A NAMED GAP: it is a fold over the srcs, so a def answering one node and one
+answering a list would call each other, and Bend has no forward declarations. The flattening that
+got `const_factor` past the same wall does not apply, because this arm REBUILDS a STACK rather than
+collecting a gcd. A STACK operand declines where CPython rebuilds it.
+
+### The wall list was WRONG about `divandmod.py:108`, and this is the correction
+
+The previous entry said "needs `const_factor` + `divides`, for the ~7 arms `fold_divmod_general` is
+missing". Both of those now exist, so I measured the remaining body properly, and it needs FOUR
+MORE SUBSTRATE PIECES THAT ARE ABSENT:
+
+| needed by `fold_divmod_general` (divandmod.py:8-96) | state |
+|---|---|
+| `UOp.simplify` -- the whole rewriter applied INSIDE a rule (`UOp.gcd(...).simplify()`, `unwrap(x.divides(g)).simplify()`) | **MISSING**: no `UOp.simplify` exists anywhere |
+| `UOp.gcd(*uops)` -- a STATIC gcd over UOps (`math.prod(count.elements(), ...)`, `Counter`, `split_uop(MUL)`) | **MISSING**: `H.gcd` is `I64` x `I64` only |
+| `UOp.divide_exact(v)` -- recursive exact division by a NODE, not an int | **MISSING** |
+| `UOp.usum(*uops)` | only `sy_usum` exists, in `symbolic.bend`, and **`divandmod.bend` cannot import it**: `symbolic` imports `divandmod`, so the dependency points the other way |
+
+So this row is not "fill seven arms": it is a rewrite-driver call from inside a rule, plus three
+arithmetic helpers, one of which is blocked by an import cycle that has to be broken first. Writing
+a `simplify` for this purpose is the same job as `checks/`'s corpus, not a rule body.
+
+### Where the session ends
+
+`ops.bend` gained two verified defs (`const_factor`, `divides`), both measured against CPython;
+`:193` landed as a row (135 PORTED / 6 MISSING); and the remaining six each now have their TRUE
+size recorded -- `:252` dead upstream, `:259`/`:436`/`:437` gated on `bool_slice` + `uop_given_valid`,
+`:451` on `xpow_int`, and `divandmod.py:108` on the four pieces above.
