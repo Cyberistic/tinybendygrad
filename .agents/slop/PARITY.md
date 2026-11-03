@@ -1341,3 +1341,38 @@ which is §28's remaining subject.
 
 Verified byte-identical: `ksweep 37 of 37` on BOTH decoders, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`,
 `opbattery 39 of 39`, `cstyle.bend ALL PROOFS CHECK`.
+
+## 32. THE RESTORING DIVISION STARTS AT THE DIVIDEND'S TOP BIT
+
+§31 left `helpers_div_fit_put` at 20.5% of the shipped path's profile: `div_loop` always ran **64 steps**,
+so dividing a nine-bit number like `392` by ten paid for 55 steps that shift in ZEROS -- the quotient bit is
+0 and the remainder stays 0, so they are pure cost.
+
+`div_bits` answers a byte-bounded UPPER BOUND on the dividend's bit length (8/16/24/32 for a zero high word,
+64 otherwise) and the loop starts there. Rounded UP, so it can never be short; a value with a non-zero high
+word still gets the full 64.
+
+### 32.1 Measured
+
+Direct A/B on the 405-uop wire, both artifacts on disk, 7 runs each, output identical at 4 427 B:
+
+```
+before (64 steps)    median 61.8 ms   min 59.0
+after  (bit bound)   median 59.4 ms   min 54.5      4%
+```
+
+**FOUR PERCENT, NOT THE 2-4x THE STEP COUNT IMPLIES, AND THAT IS THE HONEST READING.** Two reasons, both
+measured: of the 57-61 ms this command takes, ~26 ms is `bun` start-up and module load, so the render is
+only about half of the wall; and the profile after the change shows `helpers_div_fit_put` GONE from the top
+ten while **`u32_to_word` -- the runtime's own `U32.show` -- takes 15.7%**, with `$List_set` 7.0% and
+`cstyle_St_bufs` 4.3% behind it.
+
+**⇒ SO THE REMAINING DECIMAL COST IS NO LONGER THE PORT'S.** `u32_to_word` is `langs/js`'s printer, called
+once per number the emitter writes (indices, sizes, counts); the port does not own it, and the emitter's
+call count is the only lever left on that site.
+
+### 32.2 Verified
+
+`dec_check` 23/23 against CPython's `str(int)` (the bound is the thing that could truncate a digit, so that
+gate runs first), `ksweep 37 of 37 byte-identical on BOTH decoders`, `opbattery 39 of 39`,
+`helpers.bend ALL PROOFS CHECK`.

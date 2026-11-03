@@ -1975,13 +1975,32 @@ def div_qbit(k: Nat, s: DivSt) -> DivSt:
 def div_step(+k: Nat, s: DivSt, +n: I64, d: I64) -> DivSt:
   div_qbit(k, div_fit(div_shift(s, div_bit(hi32(n), lo32(n), k)), d))
 
+# **THE FUEL IS AN UPPER BOUND ON THE DIVIDEND'S BIT LENGTH, NOT ALWAYS 64, AND THAT IS A MEASURED CHANGE.**
+# A restoring division must visit every bit from the dividend's top one down, and the steps above that bit
+# shift in ZEROS: the quotient bit is 0 and the remainder stays 0, so they are pure cost. MEASURED on the
+# shipped path (`PARITY.md` §31): `helpers_div_fit_put` was 20.5% of a 405-uop render, because every integer
+# constant was divided 64 times per digit's worth of work -- a constant like `392` paid 64 steps to divide a
+# NINE-BIT number. The bound below rounds UP to a byte boundary, so it is never short; a value with a
+# non-zero high word still gets the full 64.
+def div_bits_lo(+lo: U32) -> Nat:
+  Bool.pick(Nat, U32.is_lt(lo, 65536),
+    Bool.pick(Nat, U32.is_lt(lo, 256), 8n, 16n),
+    Bool.pick(Nat, U32.is_lt(lo, 16777216), 24n, 32n))
+
+def div_bits_hi(hi: U32, lo: U32) -> Nat:
+  match hi:
+    case 0: div_bits_lo(lo)
+    case _: 64n
+
 # The fuel is the FIRST parameter because the self-call's decreasing argument must
-# come first, and 64 steps read all 64 bits MSB first. `p` is the only argument of the
+# come first, and the steps read the dividend's bits MSB first. `p` is the only argument of the
 # call that is a strict subterm of its parameter, so everything after it is free. The
 # `+` is on the SCRUTINEE and not on the binder: `case 1n+p:` spends `p` on the match
 # and the step needs it twice, once as the fuel and once as the bit index.
 # The answer is UNWRAPPED HERE rather than by a caller, because a `match` on the
 # call's own result is a computed scrutinee and this walk has to return one.
+def div_bits(+a: I64) -> Nat: div_bits_hi(hi32(a), lo32(a))
+
 def div_loop(+k: Nat, +n: I64, +d: I64, s: DivSt) -> DivMod:
   match k:
     case 0n:
@@ -2047,7 +2066,7 @@ def i64_divmod.of(zero: Bool, a: I64, +b: I64, d: DivMod) -> DivMod:
 # `i64` and NOT `u64` because the signs are read here and nowhere else, and the
 # magnitudes handed to the walk are the only unsigned pair in the block.
 def i64_divmod(+a: I64, +b: I64) -> DivMod:
-  i64_divmod.of(i64_is_zero(b), a, b, div_loop(64n, i64_abs(a), i64_abs(b),
+  i64_divmod.of(i64_is_zero(b), a, b, div_loop(div_bits(i64_abs(a)), i64_abs(a), i64_abs(b),
     DivSt{i64_zero(), i64_zero(), False{}, False{}}))
 
 def i64_div(a: I64, b: I64) -> I64:
@@ -2096,7 +2115,7 @@ def u64_divmod.of(zero: Bool, a: I64, d: DivMod) -> DivMod:
 # negation here, and that is the point -- negating 2**63 again is what loses it.
 def u64_divmod(+a: I64, +b: I64) -> DivMod:
   u64_divmod.of(i64_is_zero(b), a,
-    div_loop(64n, a, b, DivSt{i64_zero(), i64_zero(), False{}, False{}}))
+    div_loop(div_bits(a), a, b, DivSt{i64_zero(), i64_zero(), False{}, False{}}))
 
 
 # ---- `i64_dec`: Python's `str(int)`, a SIGNED DECIMAL -----------------------
