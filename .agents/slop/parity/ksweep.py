@@ -187,6 +187,33 @@ def main() -> int:
   if batch is None:
     diff = len(cap)
   print(f"# kernels: {same} byte-identical, {diff} differ")
+  # **THE LIVE PATH IS THE ONE THE DEVICE USES, SO IT IS COMPARED ON THE SAME KERNELS.** It builds the
+  # renderer once and takes each kernel as text, which is a DIFFERENT decoder from the literal path above;
+  # a decoder defect shows up here and nowhere else.
+  live_same = live_diff = 0
+  first_live = None
+  for idx, (uops, theirs) in enumerate(cap):
+    try:
+      ours = portc.render_live(uops)
+    except Exception as e:
+      live_diff += 1
+      if first_live is None:
+        first_live = (idx, f"LIVE FAILED {type(e).__name__}: {str(e)[:200]}")
+      continue
+    if ours == theirs:
+      live_same += 1
+    else:
+      live_diff += 1
+      if first_live is None:
+        import difflib
+        d = [l for l in difflib.unified_diff(theirs.splitlines(), ours.splitlines(), "theirs", "live", lineterm="", n=0)
+             if l.startswith(("-", "+")) and not l.startswith(("---", "+++"))][:4]
+        first_live = (idx, "\n    ".join(d))
+  print(f"# kernels via the LIVE decoder: {live_same} byte-identical, {live_diff} differ")
+  if first_live:
+    print(f"# first live divergence at kernel {first_live[0]}:\n    {first_live[1]}")
+  if live_diff:
+    return 1
   if first:
     print(f"# first divergence at kernel {first[0]}:\n    {first[1]}")
   return 0 if diff == 0 else 1

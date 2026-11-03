@@ -71,7 +71,8 @@ def main() -> IO(Unit):
 # EVERY input that can change the emitted C: the port's own sources AND this transcription's two
 # generators. MEASURED 2026-11-03, twice: a key without the renderer returned the pre-fix `inff` after
 # `cstyle.bend` was fixed, and a key without `gen_kus.py` returned `0.0f` after the `-0.0` fix.
-RENDERER_SOURCES = ("tinybendygrad/renderer/cstyle.bend", "tinybendygrad/base.bend",
+RENDERER_SOURCES = ("tinybendygrad/renderer/cstyle.bend", "tinybendygrad/renderer/live.bend",
+                    "tinybendygrad/base.bend",
                     "tinybendygrad/uop/ops.bend", "tinybendygrad/LAWS/spec.bend",
                     "tinybendygrad/helpers.bend",
                     ".agents/slop/cpuseam/gen_kus.py", ".agents/slop/cpuseam/portc.py")
@@ -171,3 +172,139 @@ def render(uops) -> str:
   """the C the PORT's renderer emits for this uop list, cached by content."""
   return render_many([uops])[0]
 
+
+
+# ===========================================================================
+# THE LIVE PATH: build `renderer/live.bend` ONCE into a JS artifact, then feed it kernels at RUNTIME.
+#
+# WHY IT EXISTS. The literal path above puts the kernel INTO the driver, so each new kernel costs one
+# `bin/bend` build -- and that build is the TYPECHECK OF THE CLOSURE, not the kernel: MEASURED 2026-11-03,
+# 941 ms for a driver holding one kernel and 967 ms for one holding six. `render_many` amortises that over
+# a batch, which is the right shape for a caller that already has every kernel. A REAL PROGRAM DOES NOT: it
+# asks for one kernel at a time, in the scheduler's order, so it paid ~1 s per kernel and no batch could
+# help it. `live.bend` makes the renderer a fixed artifact and the kernel a string argument.
+#
+# THE DECODER IS PYTHON AND THE CONSTRUCTOR IS BEND, on purpose: a CONST arrives as EXACT BITS (`hi~lo`,
+# or the f32 pattern), never as text, because text is where `1e999`, `-0.0` and 64-bit constants each had
+# their own defect.
+# ===========================================================================
+import struct
+
+
+def _f32_bits(v: float) -> int:
+  return struct.unpack("<I", struct.pack("<f", v))[0]
+
+
+def _const(payload: str) -> tuple[str, str]:
+  """a CONST's value as exact bits -- never as text the renderer would have to parse."""
+  p = payload.strip()
+  if p.startswith("ConstFloat(") and p.endswith(")"):
+    p = p[len("ConstFloat("):-1]
+  if p in ("True", "False"):
+    return "const_bool", ("1" if p == "True" else "0")
+  try:
+    v = int(p)
+  except ValueError:
+    return "const_float", str(_f32_bits(float(p)))
+  u = v & 0xFFFFFFFFFFFFFFFF
+  return "const_int", f"{(u >> 32) & 0xFFFFFFFF}~{u & 0xFFFFFFFF}"
+
+
+def _arg(kind: str, payload: str) -> tuple[str, str]:
+  """the (tag, payload) pair `live.bend`'s `arg_of` reads. THE TAG CARRIES THE SLICING."""
+  if kind == "const":
+    return _const(payload)
+  if kind == "range":
+    axis, _sep, ids = payload.partition("~")
+    return f"range_{axis}", ids or "-"
+  if kind == "wmma":
+    dims, _sep, dt_in = payload.partition("~")
+    return f"wmma_{dt_in}", dims.replace("x", "~")
+  if kind == "special":
+    nm = payload.strip()
+    return "special", f"{nm[0]}~{int(nm[-1])}~{nm}"
+  if kind == "index":
+    return "index", ("0" if payload.strip() in ("-", "", "None") else str(int(payload)))
+  if kind in ("param", "sink"):
+    return kind, payload.strip()
+  return "none", "-"
+
+
+def wire_rows(rs) -> str:
+  """the RUNTIME wire: one line per uop, eight space-separated fields, every value a name or a decimal."""
+  lines = []
+  for r in rs:
+    _idx, op, dt, addr, shape, numel, srcs, kind, payload = r.split("|")
+    tag, val = _arg(kind, payload)
+    zero = "-" if not srcs.strip() else "~".join(str(int(x) - 1) for x in srcs.split())
+    lines.append(" ".join([op, dt, addr, shape or "-", numel, tag, val, zero]))
+  if not lines:
+    raise RuntimeError("portc: the port rendered no uops")
+  return "\n".join(lines) + "\n"
+
+
+def wire(uops) -> str:
+  """the RUNTIME wire for a live uop list."""
+  return wire_rows(rows(uops))
+
+
+def _live_js() -> pathlib.Path:
+  """the renderer compiled ONCE. Keyed on every source that can change the C, so an edit rebuilds it."""
+  js = OUT / f"live-{hashlib.sha256(_renderer_stamp().encode()).hexdigest()[:16]}.js"
+  if js.exists():
+    return js
+  OUT.mkdir(parents=True, exist_ok=True)
+  build = subprocess.run([str(BEND), str(ROOT / "tinybendygrad/renderer/live.bend"), "-o", str(js)],
+                         capture_output=True, text=True)
+  if build.returncode != 0:
+    raise RuntimeError(f"portc: live.bend did not build: {build.stderr.strip()[:400]}")
+  return js
+
+
+# **A LARGER STACK WAS TRIED FIRST AND DOES NOT WORK: `bun --stack-size=8192` IS A NO-OP HERE.** MEASURED
+# with a control -- a trivial 60 000-frame recursion fails identically with and without the flag -- so the
+# bound had to be removed from the parser instead of bought from the runtime.
+# **THE WIRE IS CHUNKED, BECAUSE `String.split` IS RECURSIVE PER CHARACTER.** The runtime's own JS
+# (`langs/js/core.js:357`, `$String$split$`) recurses on the tail string, so ONE call over ~28 KB answers
+# `RangeError` -> "the machine stack overflowed". MEASURED on this parser: 900 lines / 24.3 KB decoded and
+# 1500 lines / 40.5 KB did not, and 100 lines / 18.6 KB decoded while 200 long lines / 37.2 KB did not --
+# i.e. the cliff is on CHARACTERS, not on uops. MEASURED against this parser with the SAME bytes moved
+# between chunk sizes: 15 KB per chunk decoded at 1200 and at 2400 uops, while 20 KB and 30 KB failed at
+# both -- so the bound is the per-chunk string and 10 KB is margin, not a guess.
+CHUNK = 10000
+
+
+def _chunks(text: str) -> list[str]:
+  """split the wire at LINE boundaries into pieces `live.bend` can each split without the cliff."""
+  out, cur, n = [], [], 0
+  for line in text.splitlines():
+    if cur and n + len(line) + 1 > CHUNK:
+      out.append("\n".join(cur))
+      cur, n = [], 0
+    cur.append(line)
+    n += len(line) + 1
+  if cur:
+    out.append("\n".join(cur))
+  return out or [""]
+
+
+def _render_wire(text: str) -> str:
+  """render a WIRE STRING -- the live path's whole input, so it can be exercised without a uop list."""
+  run = subprocess.run([str(BUN), str(_live_js()), *_chunks(text)], capture_output=True, text=True)
+  if run.returncode != 0:
+    raise RuntimeError(f"portc: the live renderer did not run: {run.stderr.strip()[:400]}")
+  if not run.stdout.strip():
+    raise RuntimeError("portc: the live renderer printed no C")
+  return run.stdout
+
+
+def render_live(uops) -> str:
+  """the C for one kernel, with NO build: the renderer is an artifact and the kernel is an argument."""
+  text = wire(uops)
+  key = hashlib.sha256((text + "|" + _renderer_stamp()).encode()).hexdigest()[:16]
+  cached = OUT / f"livew_{key}.c"
+  if cached.exists():
+    return cached.read_text()
+  src = _render_wire(text)
+  cached.write_text(src)
+  return src

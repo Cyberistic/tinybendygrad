@@ -287,8 +287,12 @@ class PortRenderer(ClangRenderer):
   the port's own code and nothing else about the device changes: `ClangRenderer` still supplies the
   target, the Compiler and the pattern matcher, because those are not what the port ports.
 
-  A render costs one `bend -o .js` build plus one `bun` run (MEASURED 1.2 s for that kernel) and is
-  content-cached by `portc`, so an unchanged uop list costs nothing after the first launch.
+  **A RENDER COSTS ONE `bun` RUN, NOT ONE BUILD.** `portc.render_live` compiles `renderer/live.bend` ONCE
+  into a JS artifact (keyed on every source that can change the C) and then feeds it the kernel as text.
+  MEASURED 2026-11-03, cold, on live kernels: the literal path's per-kernel `bin/bend` build is ~1 s
+  (941 ms for a driver holding ONE kernel, 967 ms for one holding SIX -- the cost is the typecheck of the
+  closure), while the live path is ~40 ms of `bun` start-up plus the parse. `render` is still content-cached
+  by `portc`, so an unchanged uop list costs nothing after the first launch.
   It does NOT fall back to tinygrad's renderer on failure: a silent fallback is exactly the bug that
   hid a 168x-slower lane behind a dead branch.
   """
@@ -296,7 +300,7 @@ class PortRenderer(ClangRenderer):
     import sys as _sys
     _sys.path.insert(0, str(BEND/".agents"/"slop"/"cpuseam"))
     import portc
-    return portc.render(uops)
+    return portc.render_live(uops)
 
 class BendDevice(Compiled):
   def __init__(self, device:str):

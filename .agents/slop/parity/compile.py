@@ -99,6 +99,24 @@ def main() -> int:
     print(f"{size:>6} {one_ms[-1]:>15.1f} {str(ours == theirs):>12}")
   total_one = sum(one_ms)
 
+  # THE LIVE PATH: the renderer is an artifact and each kernel is a `bun` run. This is the path the device
+  # uses, and it is the only one a STREAMING caller (a real program) can use, because it never needs to know
+  # the kernel after this one.
+  print(f"\n{'size':>6} {'port LIVE ms':>13} {'C identical':>12}   (renderer prebuilt, one run each)")
+  live_ms, live_ok = [], 0
+  t0 = time.perf_counter()
+  js = portc._live_js()
+  boot = (time.perf_counter() - t0) * 1e3
+  for size, _dt, got in batch:
+    uops, theirs, _ms = got
+    t0 = time.perf_counter()
+    ours = portc.render_live(uops)
+    live_ms.append((time.perf_counter() - t0) * 1e3)
+    live_ok += ours == theirs
+  total_live = sum(live_ms)
+  print(f"{'-':>6} {total_live:>13.1f} {f'{live_ok}/{n}':>12}   (renderer artifact: {boot:.0f} ms if rebuilt)")
+  print(f"# live:   {total_live:8.1f} ms for {n} kernels  ({total_live / n:6.1f} ms each)")
+
   t0 = time.perf_counter()
   cs = portc.render_many([got[0] for _s, _d, got in batch])
   total_batch = (time.perf_counter() - t0) * 1e3
@@ -108,8 +126,8 @@ def main() -> int:
   print(f"\n# single: {total_one:8.1f} ms for {n} kernels  ({total_one / n:6.1f} ms each)")
   print(f"# batch:  {total_batch:8.1f} ms for {n} kernels  ({total_batch / n:6.1f} ms each)"
         f"  -> {total_one / total_batch:.2f}x faster cold")
-  print(f"# byte-identical to ClangRenderer: single {ok}/{n}, batch {same}/{n}")
-  return 0 if ok == n and same == n else 1
+  print(f"# byte-identical to ClangRenderer: single {ok}/{n}, batch {same}/{n}, live {live_ok}/{n}")
+  return 0 if ok == n and same == n and live_ok == n else 1
 
 
 if __name__ == "__main__":
