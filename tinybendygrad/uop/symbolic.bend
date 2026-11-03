@@ -56,8 +56,12 @@
 #                                            `Sw`.
 #  12  203     fold  lt_folding           **PORTED** (census row `symbolic.py:203` PORTED)
 #  13  209     fold  canonicalize_simplex **PORTED** (census row `symbolic.py:209` PORTED)
-#  14  222-226 table commutative          DEFERRED `UOp.tuplize`
-#  15  228     fold  fold_where_closure   DEFERRED `bool_slice` + `substitute`
+#  14  222-226 table commutative          DEFERRED `UOp.tuplize` -- **STILL TRUE: the only blocker
+#                                            in this list that is genuinely ABSENT**
+#  15  228     fold  fold_where_closure   **UNBLOCKED 2026-11-04**: `bool_slice` exists
+#                                            (`UOp.bool_slice_has`, fold.bend:5488) and the
+#                                            single-entry `substitute` exists (`s1`). The BODY is
+#                                            what is missing, not the substrate.
 #  16  235-324 table symbolic             **PORTED: 36 census rows in :235-324, ALL of them**
 #                                            (MEASURED 2026-11-04 against `gates/symrules.rows`)
 #
@@ -69,10 +73,12 @@
 # most likely to be believed.
 #  17  328-386 fold  parse_valid / uop_given_valid / _valid_priority /
 #                                 simplify_valid   DEFERRED, all four
-#  18  390     fold  reduce_mul_chain     DEFERRED `backward_slice` + `vmin`
-#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  DEFERRED `ranges`
-#  20  406-425 fold  where_on_load + pm_move_where_on_load  DEFERRED `ranges` +
-#                                            `backward_slice_with_self`
+#  18  390     fold  reduce_mul_chain     **UNBLOCKED**: `backward_slice` (ops.bend:3467) and
+#                                            `vmin` (fold.bend:5399) both EXIST.
+#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  **UNBLOCKED**: `ranges` exists
+#                                            (fold.bend:5273).
+#  20  406-425 fold  where_on_load + pm_move_where_on_load  **UNBLOCKED**: `ranges` and
+#                                            `backward_slice_with_self` both exist.
 #  21  427-438 fold  gated_given_valid + pm_simplify_valid DEFERRED `IMAGE` + #17
 #  22  442-448 table pm_clean_up_group_sink  2 of 2
 #  23  450-475 table sym                   3 of 5 reciprocal rules PORTED
