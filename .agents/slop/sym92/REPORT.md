@@ -119,3 +119,38 @@ and not FLOORMOD's. The fix belongs in `uop/fold.bend`.
    inside `sym`; `pm_uncast_const` is not), and both bodies need `const_factor`/`derived_dtypes`.
 5. Everything else above is a substrate TODO in `uop/ops.bend` or `uop/weak.bend`, and this file
    names the line for each.
+
+## 2026-11-03 (later): 131 of 141, and every one of the ten that remain was measured
+
+`gates/symrules-cases.rows` holds **210** graphs, **210 of 210 agree** with CPython.
+`symrules-gate` rc=0: **131 entries, 131 mapped, 0 broken, 0 unresolved**. `symclosure-gate` PASS:
+**129 rows, 98 mint arms == 98 `MINT_TAGS`**. `PROOF-ALL`: `ALL PROOFS CHECK`.
+
+Landed since the previous section: `:302`, `weak.py:89`, the nine `movement.py` rules,
+`:469`, `:171`, `:465`, `:466`, `:467`.
+
+### The ten that remain, each with the instrument that says so
+
+| citation | measured wall |
+|---|---|
+| `symbolic.py:193` | `math.log2(c.val)` then `.exp2()`: a float constant computed FROM a constant. `f32_log2` exists for a NODE; there is no const-fold from an int const to an `F32`. |
+| `symbolic.py:252` | **DEAD UPSTREAM, NOT A WALL.** The census parses it as `MUL`; the pin's line 252 is `(x/x2)/x3`. Its own pattern `(UPat.var("x") / UPat.var("x2")) / UPat.var("x3")` **raises `NotImplementedError` from `shape`** when constructed (`UPat` `/` goes through `_broadcasted`), and no fixture fires: `(fdiv (fdiv x x2) x3)`, `(cdiv …)` and `(floordiv …)` all answer `norewrite` on BOTH sides. A row here cannot go red, so there is nothing to port. |
+| `symbolic.py:259` | `fold_where_closure` needs `bool_slice` + `substitute` (TODO in `fold.bend`). |
+| `symbolic.py:299` | `lt_folding` → `u.const_factor()` → `divides`, and `const_factor` is a TODO stub (`ops.bend:5660`). |
+| `symbolic.py:309` | `x.overflows(a.dtype)`; `overflows` is a TODO stub (`ops.bend:5468`). |
+| `symbolic.py:312` | the same `overflows`, over THREE nodes (`u`, `x`, `y`). 19 ops in one rule. |
+| `divandmod.py:108` | **THE BODY IS COMPOSED IN `divandmod.bend` AND IT IS A HALF BODY**: `fold_divmod_general` there has the zero check, `dm_point` and `dm_multiple_of` — divandmod.py's lines 16-96 (congruence, gcd, nest-by-factor) are ABSENT. MEASURED: `(floordiv (mul x c2) c4)`, `(floordiv (floormod x c8) c2)` and `(floormod (add (floormod x c8) y) c2)` each fire in CPython and answer `norewrite` in the port, while `(floordiv (add (mul x c4) c7) c2)` agrees. Composing it would ship a rule that DECLINES where CPython fires, which is worse than MISSING — so the row was composed, measured, and **REVERTED**. The missing arms need `const_factor` + `divides`. |
+| `symbolic.py:436` | `simplify_valid` needs `uop_given_valid` + `bool_slice`. |
+| `symbolic.py:437` | `gated_given_valid` needs the same, plus the `IMAGE` ContextVar. |
+| `symbolic.py:451` | `xpow_int` for an INT pow needs `overflows`; `xpow` alone covers floats. A float-only branch declines on ints, which is the same half-body defect as `divandmod:108`, so it is NOT shipped. |
+
+### The shape of what is left
+
+**Four of the ten wait on ONE missing function**, `UOp.overflows` (`ops.py:661`, a two-line
+body over `vmin`/`vmax` and a dtype's bounds), and **three more wait on `const_factor`**
+(`ops.py:1048`, a five-arm recursion needing `math.gcd` over `I64` and `ParamArg.multiple_of`).
+`vmin`/`vmax` themselves are NOT the wall — they are readers over `fold.bend`'s sweep and they
+landed, which is what unblocked `:302` and the `vmax >= 0` guard here.
+
+So the remaining work is two substrate functions and then five rules, not eleven independent
+projects — and one of the eleven (`:252`) is dead upstream and can never be witnessed.
