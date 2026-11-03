@@ -81,9 +81,12 @@ class P:
     tk = self.t[self.i]; self.i += 1
     return tk
 
-def parse(p, ar):
+def parse(p, memo):
   """One node.  A leaf is a CONST or a PARAM; a head is an op with an OPTIONAL
-  dtype suffix, and the dtype is the node's ARG -- the port's own spelling."""
+  dtype suffix, and the dtype is the node's ARG -- the port's own spelling.
+
+  `memo` IS THE VARIABLE TABLE and it is per-graph, because two cases must not share
+  nodes: it is what makes a repeated name the SAME node."""
   tk = p.take()
   if tk.kind == "(":
     head = p.take()
@@ -94,7 +97,7 @@ def parse(p, ar):
       dt = DT[p.take().text]
     srcs = []
     while p.peek() is not None and p.peek().kind != ")":
-      srcs.append(parse(p, ar))
+      srcs.append(parse(p, memo))
     p.take()  # the )
     op = Ops[name.upper()]
     if dt is not None:
@@ -112,7 +115,16 @@ def parse(p, ar):
     return UOp.const(int(w[1:]), dtypes.weakint)
   if w[0] == "n":
     return UOp.const(-int(w[1:]), dtypes.weakint)
-  return UOp.variable(w, 0, 100, vdt(w))
+  # ONE NODE PER NAME. `UOp.variable` MINTS, so building a fresh PARAM per occurrence made
+  # every rule whose guard is an IDENTITY CHECK unstatable -- `(x^y)^y`, `x%x`, `x//x`,
+  # `x.where(b.where(c,d), d)` -- and since the PORT interns its params by name (its own
+  # `fz_var` comment says why), the two sides were not measuring the same graph at all.
+  # MEASURED 2026-11-03: `(where ab xb (where xb yb zb))` answered `norewrite` upstream and
+  # `(where (or ab yb) xb zb` in the port, and the port was right.
+  key = (w, vdt(w))
+  if key not in memo:
+    memo[key] = UOp.variable(w, 0, 100, vdt(w))
+  return memo[key]
 
 def sh(u):
   """THE PORT'S CANONICAL FORM, on the CPython side."""
@@ -146,7 +158,7 @@ def read_cases(path):
 def upstream(cases):
   ans = {}
   for name, expr in cases:
-    u = parse(P(lex(expr)), None)
+    u = parse(P(lex(expr)), {})
     ans[name] = sh(sym.rewrite(u))
   return ans
 

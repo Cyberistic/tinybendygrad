@@ -2812,6 +2812,52 @@ def sym_250.pat(+x: F.Folded, +u: U32) -> Bool:
 def sym_250(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_250.pat(x, u), sym_250.put(x, u, mint_ar(sy_ar(x))))
 
+# symbolic.py:256  (UPat.var("cond", dtype=dtypes.bool).logical_not().where(UPat.var("t"), UPat.var("f")),
+#                     lambda cond, t, f: cond.where(f,t) if not f.is_invalid else None)
+# A NEGATED GATE SWAPS THE ARMS. `fold_const_where` (`:202`) has already taken the const-gate
+# case, and the `if not f.is_invalid` arm is `:95`'s guard again.
+def sym_256.pat(+x: F.Folded, +u: U32) -> Bool:
+  +g = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)),
+    Bool.and(p_not_of(x, g, sy_src0(x, g)),
+      Bool.and(sy_nsrc_is(x, g, 2), Bool.not(p_invalid(x, sy_src2(x, u))))))
+
+def sym_256(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +g = sy_src0(x, u)
+  sy_tri_f(sym_256.pat(x, u),
+    Some{mint_where(mint_ar(sy_ar(x)), sy_src0(x, g), sy_src2(x, u), sy_src1(x, u))})
+
+# symbolic.py:262  a.where(b.where(c, d), d) -> (a&b).where(c, d)
+# THE TWO ARMS ARE ONE NODE, so the inner gate and the outer else branch are the same `d`
+# and the two conditions AND: a value survives iff both gates pass.
+def sym_262.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = sy_src1(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)),
+    Bool.and(Bool.and(sy_is_op(x, i, O.OpsWHERE{}), sy_nsrc_is(x, i, 3)),
+      p_same(sy_src2(x, i), sy_src2(x, u))))
+
+def sym_262(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +i = sy_src1(x, u)
+  +n = mint_bin(mint_ar(sy_ar(x)), O.OpsAND{}, sy_src0(x, u), sy_src0(x, i))
+  sy_tri_f(sym_262.pat(x, u),
+    Some{mint_where(n, O.Found.i(n), sy_src1(x, i), sy_src2(x, i))})
+
+# symbolic.py:263  a.where(c, b.where(c, d)) -> (a|b).where(c, d)
+# THE MIRROR of `:262`, and the shared node is the TRUE BRANCH OF BOTH: `UPat.where(b, c, d)`
+# puts its second argument in the TRUE slot, so `c` is `src[1]` on each side and NOT the inner
+# condition. The two gates OR, because the value is kept when either one takes this branch.
+def sym_263.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = sy_src2(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)),
+    Bool.and(Bool.and(sy_is_op(x, i, O.OpsWHERE{}), sy_nsrc_is(x, i, 3)),
+      p_same(sy_src1(x, u), sy_src1(x, i))))
+
+def sym_263(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +i = sy_src2(x, u)
+  +o = mint_bin(mint_ar(sy_ar(x)), O.OpsOR{}, sy_src0(x, u), sy_src0(x, i))
+  sy_tri_f(sym_263.pat(x, u),
+    Some{mint_where(o, O.Found.i(o), sy_src1(x, u), sy_src2(x, i))})
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3093,10 +3139,13 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{58, [O.OpsWHERE{}],                  Nil{},                           },   # 202
     O.PMEntry{59, [O.OpsOR{}], Nil{}, },   # 243
     O.PMEntry{60, [O.OpsADD{}], Nil{}, },   # 250
-    O.PMEntry{61, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{62, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{63, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{64, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{61, [O.OpsWHERE{}], Nil{}, },   # 256
+    O.PMEntry{62, [O.OpsWHERE{}], Nil{}, },   # 262
+    O.PMEntry{63, [O.OpsWHERE{}], Nil{}, },   # 263
+    O.PMEntry{64, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{65, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{66, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{67, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3462,7 +3511,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3492,10 +3541,13 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 58: sy_fcw_f(x, u)
     case 59: sym_243(x, u)
     case 60: sym_250(x, u)
-    case 61: sym_462(x, u)
-    case 62: sym_463(x, u)
-    case 63: sym_464(x, u)
-    case 64: sym_444(x, u)
+    case 61: sym_256(x, u)
+    case 62: sym_262(x, u)
+    case 63: sym_263(x, u)
+    case 64: sym_462(x, u)
+    case 65: sym_463(x, u)
+    case 66: sym_464(x, u)
+    case 67: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
