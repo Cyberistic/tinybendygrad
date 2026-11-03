@@ -192,6 +192,40 @@ def fx8():
     return dict(top=UOp(Ops.SINK, src=(kin, sa)), kin=kin, sa=sa, k1=k1, f1=f1, a=a)
 
 
+def fx9():
+    # THE `sc_kdeps.of` END WITNESS.  `create_schedule` reads a kernel's deps off
+    # `k.src[0].src[1:]` when `k` is an END and off `k.src[1:]` otherwise.  The shape that
+    # separates the arms: an END whose kernel READS `b`, and a later write of `b` whose kernel
+    # `kb` is NOT in the END's backward slice -- so the WAR pass is the only thing that can order
+    # them.  Correct arm: `kb` after `ey`, marks 3 then 2.  Broken arm: the queue seeds in
+    # insertion order, marks 2 then 3.
+    b = g_buf(0, "b9")
+    d2, d3 = g_body(2), g_body(3)
+    kb = UOp(Ops.CALL, src=(d2, b))
+    fb = UOp(Ops.AFTER, src=(b, kb))
+    ky = UOp(Ops.CALL, src=(d3, b))
+    ey = UOp(Ops.END, src=(ky,))
+    ge = UOp(Ops.AFTER, src=(fb, ey))
+    return dict(top=UOp(Ops.SINK, src=(ge, UOp.sink(b))), kb=kb, fb=fb, ky=ky, ey=ey, ge=ge, b=b)
+
+
+def fx10():
+    # THE `sc_gate.of` LINEAR WITNESS.  `gate_kernel_sink` rejects a LINEAR, so a LINEAR reachable
+    # from the sink STOPS the walk and its subtree is never scheduled: zero kernels.
+    a = g_buf(0, "a10")
+    d1 = g_body(1)
+    k1 = UOp(Ops.CALL, src=(d1, a))
+    f1 = UOp(Ops.AFTER, src=(a, k1))
+    ln = UOp(Ops.LINEAR, src=(f1,))
+    return dict(top=UOp(Ops.SINK, src=(ln, UOp.sink(a))), ln=ln, f1=f1, k1=k1, a=a)
+
+
+def kdeps(k: UOp):
+    """`create_schedule`'s own dep line (`__init__.py:47`), one line of it: an END wraps a CALL
+    and the CALL holds the srcs, so the deps are `k.src[0].src[1:]`."""
+    return k.src[0].src[1:] if k.op is Ops.END else k.src[1:]
+
+
 def fx1_bad():
     a, k1 = g_buf(0, "a"), UOp(Ops.CALL, src=(g_body(1), g_buf(0, "a")))
     return UOp(Ops.AFTER, src=(k1, UOp.sink(a)))
@@ -200,6 +234,7 @@ def fx1_bad():
 def rows() -> dict:
     r = {}
     F1, F2, F3, F4, F5, F7, F8 = fx1(), fx2(), fx3(), fx4(), fx5(), fx7(), fx8()
+    F9, F10 = fx9(), fx10()
 
     # ---- _unwrap_src / _states / _split_after / buf_uop / is_bound_var ----
     for nm, u in (("A1", F1["a"]), ("B1", F1["b"]), ("Vb", F1["vb"]),
@@ -226,7 +261,7 @@ def rows() -> dict:
 
     # ---- the linearization: create_schedule ITSELF ----
     for nm, F in (("fx0", None), ("fx1", F1), ("fx2", F2), ("fx3", F3),
-                  ("fx5", F5), ("fx7", F7), ("fx8", F8)):
+                  ("fx5", F5), ("fx7", F7), ("fx8", F8), ("fx9", F9), ("fx10", F10)):
         top = fx0() if F is None else F["top"]
         lin_ = create_schedule(top)
         r[f"{nm}_topo"] = len(top.toposort(gate_kernel_sink))
@@ -240,6 +275,9 @@ def rows() -> dict:
 
     r["gate_ki"] = b2u(gate_kernel_sink(F8["kin"]))
     r["gate_plain"] = b2u(gate_kernel_sink(F8["sa"]))
+    r["gate_lin"] = b2u(gate_kernel_sink(F10["ln"]))
+    r["kdeps_E2"] = len(kdeps(F1["e2"]))
+    r["kdeps_K2"] = len(kdeps(F1["k2"]))
     return r
 
 
@@ -269,6 +307,11 @@ ORDER = (
     "fx8_marks", "fx8_nsrcs", "fx8_ops", "gate_ki",
     "gate_plain", "fx5_topo", "fx5_lin_n", "fx5_lin_op",
     "fx5_marks", "fx5_nsrcs", "fx5_ops", "bs_Ka_Kb",
+    "kdeps_E2", "kdeps_K2", "fx9_topo_marks", "fx9_topo",
+    "fx9_lin_n", "fx9_lin_op", "fx9_marks", "fx9_nsrcs",
+    "fx9_ops", "gate_lin", "fx10_topo_marks", "fx10_topo",
+    "fx10_lin_n", "fx10_lin_op", "fx10_marks", "fx10_nsrcs",
+    "fx10_ops",
 )
 
 

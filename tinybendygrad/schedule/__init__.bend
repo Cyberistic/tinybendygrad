@@ -2533,6 +2533,44 @@ def fx8() -> O.Found:
   +sa = O.UOp.sink(O.Found.ar(kin), [O.Found.i(a)])
   O.UOp.sink(O.Found.ar(sa), [O.Found.i(kin), O.Found.i(sa)])
 
+# fx9 THE `sc_kdeps.of` END WITNESS.  `create_schedule` reads a kernel's BUFFER DEPS off
+# `k.src[0].src[1:]` when `k` is an END (`__init__.py:47`, because an END wraps a CALL and
+# the CALL holds the srcs), and off `k.src[1:]` otherwise.  The two arms are ONE line apart and
+# until this fixture NO ROW TOLD THEM APART: MEASURED 2026-11-03, replacing the END arm with
+# `sc_src_from(ar, k, 1)` -- the END's own srcs, which is empty -- moved ZERO rows out of 111.
+#
+# The shape that separates them needs an END whose kernel READS a state that a LATER write
+# supersedes, where the writing kernel is NOT already in the END's backward slice.  Then the WAR
+# pass is the only thing that can order them: `writes[b] = [(fb, (kb,))]` and `reads` contains
+# `(ge, ey, b)` only if the END arm found `b`.  So the CORRECT arm makes `kb` run AFTER `ey`
+# (marks 3 then 2 -> 32) and the broken arm lets the queue seed in insertion order, `kb` first
+# (marks 2 then 3 -> 23).  THE LINEARIZATION ORDER IS THE ROW.
+def fx9() -> O.Found:
+  +b = g_buf(0, "b9", O.Arena.empty())
+  +d2 = g_body(2, O.Found.ar(b))
+  +d3 = g_body(3, O.Found.ar(d2))
+  +kb = O.UOp.new(O.Found.ar(d3), O.OpsCALL{}, [O.Found.i(d2), O.Found.i(b)], O.ANone{}, O.TNone{})
+  +fb = O.UOp.new(O.Found.ar(kb), O.OpsAFTER{}, [O.Found.i(b), O.Found.i(kb)], O.ANone{}, O.TNone{})
+  +ky = O.UOp.new(O.Found.ar(fb), O.OpsCALL{}, [O.Found.i(d3), O.Found.i(b)], O.ANone{}, O.TNone{})
+  +ey = O.UOp.new(O.Found.ar(ky), O.OpsEND{}, [O.Found.i(ky)], O.ANone{}, O.TNone{})
+  +ge = O.UOp.new(O.Found.ar(ey), O.OpsAFTER{}, [O.Found.i(fb), O.Found.i(ey)], O.ANone{}, O.TNone{})
+  +sa = O.UOp.sink(O.Found.ar(ge), [O.Found.i(b)])
+  O.UOp.sink(O.Found.ar(sa), [O.Found.i(ge), O.Found.i(sa)])
+
+# fx10 THE `sc_gate.of` LINEAR WITNESS.  `gate_kernel_sink` rejects a LINEAR (`ops.py:1916`), so
+# a LINEAR reachable from the sink STOPS the walk and its whole subtree is never scheduled: zero
+# kernels.  MEASURED 2026-11-03: flipping that arm to `True{}` moved ZERO rows out of 111,
+# because no fixture had a LINEAR in the walk.  This one does -- and it is the third member of
+# the same family as fx8 (the KernelInfo SINK): a node the gate must REFUSE.
+def fx10() -> O.Found:
+  +a = g_buf(0, "a10", O.Arena.empty())
+  +d1 = g_body(1, O.Found.ar(a))
+  +k1 = O.UOp.new(O.Found.ar(d1), O.OpsCALL{}, [O.Found.i(d1), O.Found.i(a)], O.ANone{}, O.TNone{})
+  +f1 = O.UOp.new(O.Found.ar(k1), O.OpsAFTER{}, [O.Found.i(a), O.Found.i(k1)], O.ANone{}, O.TNone{})
+  +ln = O.UOp.new(O.Found.ar(f1), O.OpsLINEAR{}, [O.Found.i(f1)], O.ANone{}, O.TNone{})
+  +sa = O.UOp.sink(O.Found.ar(ln), [O.Found.i(a)])
+  O.UOp.sink(O.Found.ar(sa), [O.Found.i(ln), O.Found.i(sa)])
+
 # ===========================================================================
 # THE GATE'S READERS. `gate.code` is `sched-truth.py`'s `code()` verbatim, plus
 # LINEAR=10 and MSTACK=11, which that script never needed. `gate.enc` is its
@@ -2954,6 +2992,46 @@ def t_gate_ki() -> U32: b2u(sc_gate(fx8.ar(), fx8.kin()))
 def t_gate_plain() -> U32: b2u(sc_gate(fx8.ar(), fx8.sa()))
 
 # ===========================================================================
+# THE TWO ARMS THAT MOVED ZERO ROWS.  Each gets a DIRECT reader as well as an
+# end-to-end one, because a direct reader says WHICH arm and the end-to-end one
+# says that it MATTERS: `kdeps_*` is `create_schedule`'s `kernel_deps` line and
+# `gate_lin` is `gate_kernel_sink`'s LINEAR arm.  MEASURED 2026-11-03: with only
+# fx0..fx8 in the tree, breaking either arm moved 0 of 111 rows.
+# ===========================================================================
+def fx9.ar() -> O.Arena: O.Found.ar(fx9())
+def fx9.top() -> U32: O.Found.i(fx9())
+def fx10.ar() -> O.Arena: O.Found.ar(fx10())
+def fx10.top() -> U32: O.Found.i(fx10())
+def fx10.ln() -> U32: sc_src0(fx10.ar(), fx10.top())
+
+# `k.src[0].src[1:]` for an END, `k.src[1:]` for a CALL.  fx1's `e2` wraps
+# `k2 = CALL(body, b, vb)`, so the END arm answers 2 and the broken arm answers 0;
+# `k2` itself answers 2 either way, which is why the CALL row alone cannot see it.
+def t_kdeps_E2() -> U32: U32.from_nat(List.length(&2, U32, sc_kdeps(fx1.ar(), fx1.e2())))
+def t_kdeps_K2() -> U32: U32.from_nat(List.length(&2, U32, sc_kdeps(fx1.ar(), fx1.k2())))
+
+# THE `sc_kdeps.of` END WITNESS.  Correct arm: `kb` runs AFTER `ey` (marks 32).
+# Broken arm: the queue seeds in insertion order and `kb` runs first (marks 23).
+def t_fx9_topo() -> U32: U32.from_nat(List.length(&2, U32, sc_topo_of(O.Arena.budget(fx9.ar()), fx9.ar(), fx9.top())))
+def t_fx9_topo_marks() -> U32: gate.topo_marks(fx9.ar(), sc_topo_of(O.Arena.budget(fx9.ar()), fx9.ar(), fx9.top()))
+def t_fx9_lin_n() -> U32: t_fx3.lin.of(schedule(fx9.ar(), fx9.top()))
+def t_fx9_lin_op() -> U32: t_fx3.lin.op(linear(schedule(fx9.ar(), fx9.top())))
+def t_fx9_marks() -> U32: t_fx3.lin.marks(schedule(fx9.ar(), fx9.top()))
+def t_fx9_nsrcs() -> U32: t_fx3.lin.nsrcs(schedule(fx9.ar(), fx9.top()))
+def t_fx9_ops() -> U32: t_fx3.lin.ops(schedule(fx9.ar(), fx9.top()))
+
+# THE `sc_gate.of` LINEAR WITNESS.  CPython schedules ZERO kernels here: the
+# LINEAR stops the walk and `f1`'s subtree is never visited.
+def t_gate_lin() -> U32: b2u(sc_gate(fx10.ar(), fx10.ln()))
+def t_fx10_topo() -> U32: U32.from_nat(List.length(&2, U32, sc_topo_of(O.Arena.budget(fx10.ar()), fx10.ar(), fx10.top())))
+def t_fx10_topo_marks() -> U32: gate.topo_marks(fx10.ar(), sc_topo_of(O.Arena.budget(fx10.ar()), fx10.ar(), fx10.top()))
+def t_fx10_lin_n() -> U32: t_fx3.lin.of(schedule(fx10.ar(), fx10.top()))
+def t_fx10_lin_op() -> U32: t_fx3.lin.op(linear(schedule(fx10.ar(), fx10.top())))
+def t_fx10_marks() -> U32: t_fx3.lin.marks(schedule(fx10.ar(), fx10.top()))
+def t_fx10_nsrcs() -> U32: t_fx3.lin.nsrcs(schedule(fx10.ar(), fx10.top()))
+def t_fx10_ops() -> U32: t_fx3.lin.ops(schedule(fx10.ar(), fx10.top()))
+
+# ===========================================================================
 # THE TWELVE'S ROWS. Every expectation is `sb-oracle.py`'s printed output and
 # NONE is typed. Run `sh checks/sb-gate.sh`, which diffs
 # whole `name=value` LINES and never row names.
@@ -3077,3 +3155,20 @@ def main() -> IO(Unit):
     row("COUNT_fx5_cyc", t_fx5_cyc())
     row("COUNT_fx5_kidn", t_fx5_kidn())
     row("COUNT_fx2_kidn", t_fx2_kids_n())
+    row("kdeps_E2", t_kdeps_E2())
+    row("kdeps_K2", t_kdeps_K2())
+    row("fx9_topo_marks", t_fx9_topo_marks())
+    row("fx9_topo", t_fx9_topo())
+    row("fx9_lin_n", t_fx9_lin_n())
+    row("fx9_lin_op", t_fx9_lin_op())
+    row("fx9_marks", t_fx9_marks())
+    row("fx9_nsrcs", t_fx9_nsrcs())
+    row("fx9_ops", t_fx9_ops())
+    row("gate_lin", t_gate_lin())
+    row("fx10_topo_marks", t_fx10_topo_marks())
+    row("fx10_topo", t_fx10_topo())
+    row("fx10_lin_n", t_fx10_lin_n())
+    row("fx10_lin_op", t_fx10_lin_op())
+    row("fx10_marks", t_fx10_marks())
+    row("fx10_nsrcs", t_fx10_nsrcs())
+    row("fx10_ops", t_fx10_ops())

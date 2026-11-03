@@ -8,7 +8,7 @@
 `create_linear_with_vars` reaches through it.
 
 WHAT WAS WRONG, AND IT IS THE REASON THIS FILE EXISTS. `tinybendygrad/schedule/__init__.bend`
-emits 111 rows from its own `main()`: the fixtures `fx0`..`fx8`, the four dicts' sizes, the
+emits 128 rows from its own `main()`: the fixtures `fx0`..`fx8`, the four dicts' sizes, the
 gated toposort, and the LINEAR that `create_schedule` returns. NOT ONE OF THEM WAS COMPARED
 AGAINST CPYTHON -- `gates/schedstore-oracle.py` covers the twelve rule bodies and never calls
 `create_schedule`. Worse, the expectations in the port's comments were a reading of
@@ -49,21 +49,29 @@ never visited and its kernel is never scheduled. A port whose gate answers True 
 schedules one. Before this gate the only evidence for that was the port comparing itself to
 itself.
 
-FIVE PLANTS, THREE RED, AND THE TWO THAT ARE NOT ARE NAMED. MEASURED, each a TEXT edit to
-`tinybendygrad/schedule/__init__.bend` and the rows it moves:
+FIVE PLANTS, FIVE RED, AND TWO OF THEM MOVED ZERO ROWS UNTIL 2026-11-03. MEASURED, each a TEXT
+edit to `tinybendygrad/schedule/__init__.bend` and the rows it moves:
 
   `sc_gate.of`'s SINK arm -> `True{}`          7 rows: gate_ki and all six fx8_*
+  `sc_gate.of`'s LINEAR arm -> `True{}`        7 rows: gate_lin and all six fx10_*
+  `sc_kdeps.of`'s END arm reads the END        3 rows: kdeps_E2 2->0, fx9_marks 32->23,
+                                                       COUNT_fx1_rds
   `wt_keep`'s slice suppression dropped        8 rows: fx5_lin_n/marks/nsrcs/ops + 4 COUNT_fx5
   `ww.of`'s WAR arm -> `c`                     5 rows: fx2_marks + 4 COUNT_fx2
-  `sc_kdeps.of`'s END arm reads the END        0 rows  <- NO FIXTURE SEES IT
-  `sc_gate.of`'s LINEAR arm -> `True{}`        0 rows  <- NO FIXTURE HAS A LINEAR IN THE WALK
 
-So the END arm and the LINEAR arm are ported CODE WITH NO ROW, and this file says so rather
-than implying otherwise. The END arm is unreachable in the compared set because `e2`'s read
-states feed only the WAR pass and fx1 has no competing write on those states; a sixth fixture
-with an `END` whose kernel READS a state that is later superseded is what would see it. The
-LINEAR arm needs a graph that has already been linearized -- a `create_schedule` of a
-`create_schedule` output.
+`fx9` AND `fx10` EXIST ONLY BECAUSE TWO OF THOSE ARMS WERE MEASURED AT ZERO ROWS. Before them
+the table read `0 rows <- NO FIXTURE SEES IT` twice, which is a row that cannot go red sitting
+inside a green gate. Each new fixture is the minimal shape that reaches its arm, and each carries
+a DIRECT reader (`kdeps_*`, `gate_lin`) as well as an end-to-end one, because the direct reader
+says WHICH arm and the end-to-end one says it MATTERS:
+
+  fx9   the END arm.  An END whose kernel READS `b`, plus a later write of `b` whose kernel is
+        NOT in the END's backward slice, so the WAR pass is the only thing that can order them.
+        Correct arm: `kb` runs after `ey`, marks 3 then 2 -> 32. Broken arm: the queue seeds in
+        insertion order, marks 2 then 3 -> 23. THE LINEARIZATION ORDER IS THE ROW.
+  fx10  the LINEAR arm.  A LINEAR reachable from the sink stops the walk, so its subtree is
+        never scheduled: zero kernels, and `gate_lin=0`. Flipped, the LINEAR is visited, its
+        subtree with it, and one kernel is scheduled.
 """
 import sys
 from pathlib import Path
@@ -84,14 +92,15 @@ PORT_ONLY = (
 
 # Every row the port emits. Kept as the DECLARATION so a row that disappears is a red gate,
 # not a smaller denominator -- `rows=111` is what makes a deleted row visible.
-ROWS = 111
+ROWS = 128
 
 # The rows a diff cannot vouch for on its own: if BOTH lanes stopped emitting one of these, the
 # diff would still be green and the claim would be gone. `fx8_lin_n` is the `gate_kernel_sink`
 # witness (zero kernels), `fx2_kidn`-adjacent `fx2_ops` is the WAR edge showing up in the LINEAR,
 # and `fx0_lin_n` is the empty schedule.
 PINS = tuple((lane, row) for lane in ("py", "bd")
-             for row in ("fx0_lin_n", "fx1_ops", "fx2_ops", "fx5_ops", "fx8_lin_n"))
+             for row in ("fx0_lin_n", "fx1_ops", "fx2_ops", "fx5_ops", "fx8_lin_n",
+                       "fx9_marks", "fx10_lin_n", "gate_lin", "kdeps_E2"))
 
 GATE = Gate(
     "schedsched-gate",
@@ -104,8 +113,8 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "schedsched-gate: 111 rows, 84 compared -- `create_schedule` "
-                        "(`tinygrad/schedule/__init__.py:32-80`) over the fixtures fx0..fx8: "
+    sys.exit(main(GATE, "schedsched-gate: 128 rows, 101 compared -- `create_schedule` "
+                        "(`tinygrad/schedule/__init__.py:32-80`) over the fixtures fx0..fx10: "
                         "the gated toposort, the RAW and WAR passes, and the LINEAR it "
                         "returns. 27 rows are port-only and NAMED: arena slot counts, the "
                         "four dicts' sizes (locals, not observable), and the fixture CPython "
