@@ -3333,12 +3333,45 @@ def sym_246.pat(+x: F.Folded, +u: U32) -> Bool:
       Bool.and(p_mul_c(x, z), Bool.and(p_mul_c(x, p2),
         p_same(sym_245.vside(x, z), sym_245.vside(x, p2))))))
 
+# **THE GUARD `:255` CARRIES AND THIS BODY DID NOT:**
+#   fits(x, c0.vmin+c1.vmin) and no_overflow(m:=x*(c0+c1))
+# The COMBINED coefficient must fit the operand and the PRODUCT must fit its own dtype at both ends.
+# The first half reads the two `CInt` payloads and ADDS them: the first version read the minted SUM
+# node through `sy_val`, and `sy_val` on an `ADD` answers `None{}` because a sum is not a value --
+# so the guard was False for EVERY graph and the rule stopped firing. **A GUARD WHOSE INPUT IS
+# "None" IS NOT A GUARD, IT IS A DELETED RULE.**
+def sym_246.cv(m: Maybe<&2, O.Const>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{O.CInt{i}}: Some{i}
+    case _: None{}
+
+def sym_246.add(m: Maybe<&1, H.I64>, n: Maybe<&1, H.I64>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{+a}:
+      match n:
+        case Some{+b}: Some{H.i64_add(a, b)}
+        case None{}: None{}
+    case None{}: None{}
+
+def sym_246.fit(m: Maybe<&1, H.I64>, +dt: S.Dt) -> Bool:
+  match m:
+    case Some{+s}: fits(dt, s)
+    case None{}: False{}
+
+def sym_246.done(ok: Bool, +d: O.Found, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: Some{mint_bin(d, O.OpsADD{}, sym_246.y(x, u), O.Found.i(d))}
+    case _: None{}
+
 def sym_246.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +z = sym_251.z(x, u)
   +p2 = sym_246.p2(x, u)
   +s = mint_bin(mint_ar(sy_ar(x)), O.OpsADD{}, sym_245.cside(x, p2), sym_245.cside(x, z))
   +d = mint_bin(s, O.OpsMUL{}, sym_245.vside(x, z), O.Found.i(s))
-  Some{mint_bin(d, O.OpsADD{}, sym_246.y(x, u), O.Found.i(d))}
+  sym_246.done(Bool.and(sym_246.fit(sym_246.add(sym_246.cv(sy_val(x, sym_245.cside(x, p2))),
+                                                 sym_246.cv(sy_val(x, sym_245.cside(x, z)))),
+                                    sy_dt1(x, sym_245.vside(x, z))),
+                        sym_248.no_ov(d, O.Found.i(d))), d, x, u)
 
 def sym_246(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_246.pat(x, u), sym_246.mk(x, u))
