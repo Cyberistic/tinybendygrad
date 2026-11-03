@@ -111,8 +111,18 @@ def _key(rs: list[str]) -> str:
   return hashlib.sha256(("\n".join(rs) + "|" + _renderer_stamp()).encode()).hexdigest()[:16]
 
 
+def child_counts(rs) -> list[int]:
+  """how many times each uop is a src -- `cstyle.py:212`'s `Counter`, computed where an ARRAY exists."""
+  counts = [0] * len(rs)
+  for r in rs:
+    for s in (int(x) - 1 for x in r.split("|")[6].split()):
+      if 0 <= s < len(counts):
+        counts[s] += 1
+  return counts
+
+
 def _literal(name: str, rs: list[str]) -> None:
-  body = "\n".join(gen_kus.one(name, r) for r in rs)
+  body = "\n".join(gen_kus.one(name, r, c) for r, c in zip(rs, child_counts(rs)))
   # gen_kus.HEADER is the fixture generator's OWN header: same imports, same paths,
   # so the live list and the fixture list are rendered by identical code.
   (GEN / f"{name}.bend").write_text(gen_kus.HEADER.format(name=name) + "  [\n" + body + "\n  ]\n")
@@ -314,18 +324,25 @@ _OPS_INDEX = {m: i for i, m in enumerate(enum_members())} if "_OPS_SRC" in globa
 
 
 def wire_rows(rs) -> str:
-  """the RUNTIME wire: one line per uop, eight space-separated fields, every value a name or a decimal."""
+  """the RUNTIME wire: one line per uop, nine space-separated fields, every value a name or a decimal."""
   _check_op_tables()
+  # **THE CHILD COUNT TRAVELS ON THE WIRE BECAUSE THE RENDERER CANNOT COMPUTE IT FOR FREE.** `cstyle.py:212`
+  # builds `Counter(v for ru in uops for v in ru.src)` once and then asks `child_count[u] == 1` twice per uop
+  # (`:252`, `:254`). In this port the kernel is a `List`, so `List.get` is O(index) and `List.set` rebuilds
+  # the prefix: MEASURED, building that counter cost 104,946 list steps and reading it back 154,915, i.e. 32%
+  # of every `List.get` step in a 405-uop render (805,127 total). Python has the array, so it counts here.
+  child = child_counts(rs)
   lines = []
-  for r in rs:
+  for r, cc in zip(rs, child):
     _idx, op, dt, addr, shape, numel, srcs, kind, payload = r.split("|")
+    ss = [int(x) - 1 for x in srcs.split()] if srcs.strip() else []
     tag, val = _arg(kind, payload)
-    zero = "-" if not srcs.strip() else "~".join(str(int(x) - 1) for x in srcs.split())
+    zero = "-" if not ss else "~".join(str(s) for s in ss)
     idx = _OPS_INDEX.get(op)
     if idx is None:
       raise RuntimeError(f"portc: {op} is not in uop/ops.bend's enum")
     lines.append(" ".join([str(idx), DT_CODE[dt], ADDR_CODE[addr], shape or "-", numel,
-                           KIND_CODE[tag], val, zero]))
+                           KIND_CODE[tag], val, zero, str(cc)]))
   if not lines:
     raise RuntimeError("portc: the port rendered no uops")
   return "\n".join(lines) + "\n"

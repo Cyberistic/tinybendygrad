@@ -125,7 +125,7 @@ type Kv is Data:
 
 type KU is Data:
   KU{op: O.Op, dtype: S.Dt, addr: S.Addr, numel: U32, shape: List<&2, U32>,
-     arg: KUArg, srcs: List<&2, U32>}
+     arg: KUArg, srcs: List<&2, U32>, cc: U32}
 
 type KUArg is Data:
   KANone{}
@@ -1283,31 +1283,35 @@ def wmma_name_of(dims: String, din: String, dout: String) -> String:
 
 def KU.op(k: KU) -> O.Op:
   match k:
-    case KU{op, dtype, addr, numel, shape, arg, srcs}: op
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: op
 
 def KU.dtype(k: KU) -> S.Dt:
   match k:
-    case KU{op, dtype, addr, numel, shape, arg, srcs}: dtype
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: dtype
 
 def KU.addr(k: KU) -> S.Addr:
   match k:
-    case KU{op, dtype, addr, numel, shape, arg, srcs}: addr
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: addr
 
 def KU.numel(k: KU) -> U32:
   match k:
-    case KU{op, dtype, addr, numel, shape, arg, srcs}: numel
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: numel
 
 def KU.shape(k: KU) -> List<&2, U32>:
   match k:
-    case KU{op, dtype, addr, numel, shape, arg, srcs}: shape
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: shape
 
 def KU.arg(k: KU) -> KUArg:
   match k:
-    case KU{op, dtype, addr, numel, shape, arg, srcs}: arg
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: arg
 
 def KU.srcs(k: KU) -> List<&2, U32>:
   match k:
-    case KU{op, dtype, addr, numel, shape, arg, srcs}: srcs
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: srcs
+
+def KU.cc(k: KU) -> U32:
+  match k:
+    case KU{op, dtype, addr, numel, shape, arg, srcs, cc}: cc
 
 def KU.nsrc(k: KU) -> U32:
   U32.from_nat(List.length(&2, U32, KU.srcs(k)))
@@ -1646,17 +1650,13 @@ def ku_indent.go(depth: Nat, acc: String) -> String:
 #   `child_count = Counter(v for ru in uops for v in ru.src)`
 # IT IS THE HISTOGRAM OF "HOW MANY TIMES IS THIS UOP A SOURCE", AND IT IS THE
 # WHOLE OF THE INLINE-vs-STATEMENT DECISION.
+#
+# **IT IS COUNTED ON THE WIRE, NOT HERE.** `List.get` is O(index) and `List.set` rebuilds the prefix, so
+# computing this list cost 104,946 list steps per 405-uop render and reading it back another 154,915 --
+# 32% of every `List.get` step the renderer takes (MEASURED, `PARITY.md` §75). It is a pure function of
+# `srcs`, Python has an array, and `KU.cc` makes the read a field access.
 def ku_indent(depth: U32) -> String:
   ku_indent.go(U32.to_nat(depth), "")
-
-def cc_one.go(+ss: List<&2, U32>, +cc: List<&2, U32>) -> List<&2, U32>:
-  match ss:
-    case Nil{}: cc
-    case h <> t: cc_one.go(t, List.set(&2, U32, cc, U32.to_nat(h),
-      U32.add(Maybe.default(&2, U32, List.get(&2, U32, cc, U32.to_nat(h)), 0), 1)))
-
-def cc_one(k: KU, +cc: List<&2, U32>) -> List<&2, U32>:
-  cc_one.go(KU.srcs(k), cc)
 
 def ku_inline2a(+op: O.Op, k: KU, +kus: List<&2, KU>) -> Bool:
   Bool.or(Bool.and(O.eq_op(op, O.OpsCAST{}), ku_is_const_at(kus, KU.src0(k))),
@@ -1668,8 +1668,7 @@ def ku_inline2b2a(+op: O.Op, +k: KU) -> Bool:
     Bool.or(is_global(KU.addr(k)), is_local(KU.addr(k))))
 
 # `(u.op in {Ops.STACK, *(GroupOp.ALU-{Ops.WHERE}), Ops.CAST, Ops.BITCAST} and child_count[u] == 1)`
-def cc_at(+cc: List<&2, U32>, i: U32) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, cc, U32.to_nat(i)), 0)
+def cc_at(k: KU) -> U32: KU.cc(k)
 
 def ku_src_is_reg.go(m: Maybe<&2, KU>) -> Bool:
   match m:
@@ -1771,16 +1770,16 @@ def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, KU>, +r: List<&2, String>,  
 def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> List<&2, String>:
   ku_alu_srcs.go(op, k, kus, r, KU.srcs(k), Nil{})
 
-def ku_inline2b1(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
+def ku_inline2b1(+op: O.Op, +k: KU, +kus: List<&2, KU>) -> Bool:
   Bool.and(O.eq_op(op, O.OpsLOAD{}),
-    Bool.and(ku_src_is_reg(kus, k), U32.is_eq(cc_at(cc, i), 1)))
+    Bool.and(ku_src_is_reg(kus, k), U32.is_eq(cc_at(k), 1)))
 def ku_inline_op_set(+op: O.Op) -> Bool:
   Bool.or(O.eq_op(op, O.OpsSTACK{}),
     Bool.or(ku_is_alu_ex_where(op),
       Bool.or(O.eq_op(op, O.OpsCAST{}), O.eq_op(op, O.OpsBITCAST{}))))
 
-def ku_inline2b2b(+op: O.Op, +cc: List<&2, U32>, +i: U32) -> Bool:
-  Bool.and(ku_inline_op_set(op), U32.is_eq(cc_at(cc, i), 1))
+def ku_inline2b2b(+op: O.Op, +k: KU) -> Bool:
+  Bool.and(ku_inline_op_set(op), U32.is_eq(cc_at(k), 1))
 
 def ku_param_name(+k: KU) -> String:
   String.concat([ku_param_base(KU.arg(k)), "_", ku_shape_str(KU.shape(k))])
@@ -1788,7 +1787,7 @@ def ku_param_name(+k: KU) -> String:
 def ku_is_decl(+k: KU) -> Bool:
   Bool.and(ku_not_stmt_op(KU.op(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void())))
 
-def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
+def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, KU>,
                   +st: St, +l: String, nm: String, ix: U32) -> St:
   +st0 = _render.pop(st, k)
   # THE SEMICOLON IS THE WHOLE DIFFERENCE, so it is chosen as a STRING (two literals, free) and the line is
@@ -1803,23 +1802,23 @@ def uops_to_dtypes.put(+x: DtN, +acc: List<&2, DtN>) -> List<&2, DtN>:
 
 def ku_text_alu(dev: U32, +op: O.Op, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
   code_for_op.of(dev, op, ku_alu_srcs(op, k, kus, r), KU.dtype(k))
-def ku_inline2b2(+op: O.Op, k: KU, +cc: List<&2, U32>, +i: U32) -> Bool:
-  Bool.or(ku_inline2b2a(op, k), ku_inline2b2b(op, cc, i))
+def ku_inline2b2(+op: O.Op, +k: KU) -> Bool:
+  Bool.or(ku_inline2b2a(op, k), ku_inline2b2b(op, k))
 
 def uops_to_dtypes.one(+k: KU, +acc: List<&2, DtN>) -> List<&2, DtN>:
   Bool.pick(List<&2, DtN>,
     Bool.and(is_alu_addr(KU.addr(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void()))),
     uops_to_dtypes.put(DtN{KU.dtype(k), KU.numel(k)}, acc), acc)
 
-def ku_inline2b(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
-  Bool.or(ku_inline2b1(op, k, kus, cc, i), ku_inline2b2(op, k, cc, i))
-def ku_inline2(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
-  Bool.or(ku_inline2a(op, k, kus), ku_inline2b(op, k, kus, cc, i))
+def ku_inline2b(+op: O.Op, +k: KU, +kus: List<&2, KU>) -> Bool:
+  Bool.or(ku_inline2b1(op, k, kus), ku_inline2b2(op, k))
+def ku_inline2(+op: O.Op, +k: KU, +kus: List<&2, KU>) -> Bool:
+  Bool.or(ku_inline2a(op, k, kus), ku_inline2b(op, k, kus))
 
 # `(u.op is Ops.CAST and u.src[0].op is Ops.CONST) or u.op in {Ops.INDEX, Ops.SHRINK, Ops.CUSTOMI}`
-def ku_inline(+op: O.Op, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +i: U32) -> Bool:
+def ku_inline(+op: O.Op, +k: KU, +kus: List<&2, KU>) -> Bool:
   Bool.and(Bool.or(Bool.not(O.eq_op(op, O.OpsCAST{})), U32.is_eq(KU.numel(k), 1)),
-    ku_inline2(op, k, kus, cc, i))
+    ku_inline2(op, k, kus))
 
 def BArg.image(b: BArg) -> Bool:
   match b:
@@ -2410,16 +2409,6 @@ def ku_text_special(+dev: U32, +k: KU, +r: List<&2, String>) -> String:
 def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
   ku_text.go(KU.op(k), dev, i, k, kus, r)
 
-def cc_go.go(+kus: List<&2, KU>, cc: List<&2, U32>) -> List<&2, U32>:
-  match kus:
-    case Nil{}: cc
-    case h <> t: cc_go.go(t, cc_one(h, cc))
-def cc_go(kus: List<&2, KU>, cc: List<&2, U32>) -> List<&2, U32>:
-  cc_go.go(kus, cc)
-
-def child_count(+kus: List<&2, KU>) -> List<&2, U32>:
-  cc_go(kus, List.replicate(U32, List.length(&2, KU, kus), 0))
-
 # THE WRITABLE PARAMS -- cstyle.py:214-215:
 #   `writable_params = {u for u in UOp.sink(*[u.src[0] for u in uops if u.op is Ops.STORE]).toposort(...) if u.op is Ops.PARAM}`
 # I.E. THE PARAMS A STORE REACHES. THE PORT WALKS BACKWARD FROM EACH STORE'S
@@ -2435,7 +2424,7 @@ def _render.param(dev: U32, +k: KU, +kus: List<&2, KU>, st: St) -> St:
 # `if is_image_shape(shape): return f"{'write_only' if mutable else 'read_only'} image2d_t"`).
 # NO CPU KERNEL IS AN IMAGE, SO THE FLAG IS NOT READ BY THE C THE PORT EMITS --
 # AND THE PORT SAYS SO INSTEAD OF GUESSING A BACKWARD WALK.
-def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
+def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, KU>,
                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
   +st0 = _render.pop(st, k)
   +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), render_type(dev, KU.dtype(k),
@@ -2448,76 +2437,79 @@ def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, KU>, cc: List<&2, U32>,
 # away. `match` cannot scrutinize a computed value ("a match cannot scrutinize a computed value: give it its
 # own def"), but it CAN scrutinize a PARAMETER, so the bool is passed in and only the chosen arm runs.
 # MEASURED in `PARITY.md` §39.
-def _render.stmt_by(b: Bool, +dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
+def _render.stmt_by(b: Bool, +dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
   match b:
-    case True{}: _render.decl(dev, i, k, kus, cc, st, l, nm, ix, semi)
-    case False{}: _render.plain(dev, i, k, kus, cc, st, l, nm, ix)
+    case True{}: _render.decl(dev, i, k, kus, st, l, nm, ix, semi)
+    case False{}: _render.plain(dev, i, k, kus, st, l, nm, ix)
 
 # `if u.op not in {Ops.RANGE, Ops.BUFFER, Ops.BINARY} and u.dtype != dtypes.void:`
 # -- cstyle.py:257. IT IS THE TEST FOR "IS THIS A DECLARATION", AND THE
 # DECLARATION IS `"{type} {name} = {text};"`.
-def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
-  _render.stmt_by(ku_is_decl(k), dev, i, k, kus, cc, st, l, nm, ix, semi)
+def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
+  _render.stmt_by(ku_is_decl(k), dev, i, k, kus, st, l, nm, ix, semi)
 
 # **`_render.stmt` USED TO RUN FOR EVERY UOP, INLINED OR NOT.** The `Bool.pick` below is strict, so even when
 # a uop is INLINED -- which is the common case for casts and indexes -- the full statement was assembled
 # (`_render.pop`, `render_type`, a `String.concat`, `st_c`) and thrown away. Same cure as `_render.stmt`:
 # the bool goes in as a PARAMETER and `match` runs one arm. MEASURED in `PARITY.md` §39.
-def _render.emit_by(b: Bool, dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
+def _render.emit_by(b: Bool, dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
   match b:
     case True{}: st_set(st, i, l)
-    case False{}: _render.stmt(dev, i, k, kus, cc, st, l, nm, ix, semi)
+    case False{}: _render.stmt(dev, i, k, kus, st, l, nm, ix, semi)
 
-def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
-  _render.emit_by(ku_inline(KU.op(k), k, kus, cc, i), dev, i, k, kus, cc, st, l, nm, ix, semi)
+def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
+  _render.emit_by(ku_inline(KU.op(k), k, kus), dev, i, k, kus, st, l, nm, ix, semi)
 
 # THE STATEMENT -- cstyle.py:256-261.
-def _render.range(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, st: St) -> St:
+def _render.range(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, st: St) -> St:
   +nm = ku_range_name(KU.arg(k))
   +st1 = st_put(st, nm)
   +l = ku_text(dev, i, k, kus, St.r(st1))
-  _render.emit(dev, i, k, kus, cc, st1, l, nm, 255, True{})
+  _render.emit(dev, i, k, kus, st1, l, nm, 255, True{})
 
 # cstyle.py:239 -- `if u.op is Ops.SPECIAL: r[u] = u.arg`. THE NAME IS THE ARG, and
 # it burns no prefix counter (cstyle.py:261 increments only on the prefix path), so
 # `_render.decl` is called with `semi = False` and `st_c` is not reached.
-def _render.special(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, +st: St) -> St:
+def _render.special(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +st: St) -> St:
   +nm = KUArg.special_nm(KU.arg(k))
   +st1 = st_put(st, nm)
-  _render.decl(dev, i, k, kus, cc, st1, ku_text_special(dev, k, St.r(st1)), nm, 255, False{})
+  _render.decl(dev, i, k, kus, st1, ku_text_special(dev, k, St.r(st1)), nm, 255, False{})
 
-def _render.named(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, cc: List<&2, U32>, +st: St) -> St:
+def pfx_count(+cc: List<&2, U32>, ix: U32) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, cc, U32.to_nat(ix)), 0)
+
+def _render.named(+dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +st: St) -> St:
   +ix = ku_pfx_ix(KU.op(k))
-  +nm = String.concat([ku_pfx(ix), U32.show(cc_at(St.c(st), ix))])
+  +nm = String.concat([ku_pfx(ix), U32.show(pfx_count(St.c(st), ix))])
   +st1 = st_put(st, nm)
   +l = ku_text(dev, i, k, kus, St.r(st1))
-  _render.emit(dev, i, k, kus, cc, st1, l, nm, ix, True{})
-def _render.one.go(op: O.Op, dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, +st: St) -> St:
+  _render.emit(dev, i, k, kus, st1, l, nm, ix, True{})
+def _render.one.go(op: O.Op, dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +st: St) -> St:
   match op:
     case O.OpsNOOP{}: st_put(st, "")
     case O.OpsCONST{}: st_put(st, "")
     case O.OpsCUSTOM_FUNCTION{}: st_put(st, "")
     case O.OpsSINK{}: st_put(st_name(st, KUArg.sink_name(KU.arg(k))), "")
     case O.OpsSTACK{}: Bool.pick(St, U32.is_eq(KU.nsrc(k), 0), st_put(st, ""),
-      _render.named(dev, i, k, kus, cc, st))
+      _render.named(dev, i, k, kus, st))
     case O.OpsAFTER{}: st_put(st, rt(St.r(st), KU.src0(k)))
     case O.OpsPARAM{}: _render.param(dev, k, kus, st)
-    case O.OpsRANGE{}: _render.range(dev, i, k, kus, cc, st)
-    case O.OpsSPECIAL{}: _render.special(dev, i, k, kus, cc, st)
-    case op2: _render.named(dev, i, k, kus, cc, st)
+    case O.OpsRANGE{}: _render.range(dev, i, k, kus, st)
+    case O.OpsSPECIAL{}: _render.special(dev, i, k, kus, st)
+    case op2: _render.named(dev, i, k, kus, st)
 
 # THE PARAM -- cstyle.py:231-235. THE NAME IS
 # `(arg.name or "data{slot}") + "_" + "_".join(shape)` AND THE PARAM BECOMES
 # ONE OF THE KERNEL'S ARGUMENTS.
-def _render.one(dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, +cc: List<&2, U32>, st: St) -> St:
-  _render.one.go(KU.op(k), dev, i, k, kus, cc, st)
+def _render.one(dev: U32, i: U32, +k: KU, +kus: List<&2, KU>, st: St) -> St:
+  _render.one.go(KU.op(k), dev, i, k, kus, st)
 
-def _render.go(+kus: List<&2, KU>, +all: List<&2, KU>, +dev: U32, +i: U32, +cc: List<&2, U32>, +st: St) -> St:
+def _render.go(+kus: List<&2, KU>, +all: List<&2, KU>, +dev: U32, +i: U32, +st: St) -> St:
   match kus:
     case Nil{}: st
-    case h <> t: _render.go(t, all, dev, U32.add(i, 1), cc, _render.one(dev, i, h, all, cc, st))
+    case h <> t: _render.go(t, all, dev, U32.add(i, 1), _render.one(dev, i, h, all, st))
 def _render(dev: U32, +kus: List<&2, KU>) -> St:
-  _render.go(kus, kus, dev, 0, child_count(kus), St.of(Nil{}, Nil{}, Nil{},
+  _render.go(kus, kus, dev, 0, St.of(Nil{}, Nil{}, Nil{},
     List.replicate(U32, 6n, 0), 1, "test"))
 def uops_to_dtypes.go(+kus: List<&2, KU>, acc: List<&2, DtN>) -> List<&2, DtN>:
   match kus:

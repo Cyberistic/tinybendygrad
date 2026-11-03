@@ -83,12 +83,12 @@ def body() -> List<&2, String>:
 # (`.agents/slop/cpuseam/gen/r_10_98_4.bend`), so the typedef the port emits is
 # THE PORT's OWN and not a hand-written guess.
 def kus() -> List<&2, C.KU>:
-  [C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(10)}}, Nil{}},
-   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 10, [10], C.KAParam{0, None{}, False{}, 40}, [0]},
-   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 392, [392], C.KAParam{1, None{}, False{}, 1568}, [2]},
-   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(392)}}, Nil{}},
-   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 3920, [3920], C.KAParam{2, None{}, False{}, 15680}, [4]},
-   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 10, [10], C.KAParam{3, None{}, False{}, 40}, [0]}]
+  [C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(10)}}, Nil{}, 2},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 10, [10], C.KAParam{0, None{}, False{}, 40}, [0], 0},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 392, [392], C.KAParam{1, None{}, False{}, 1568}, [2], 1},
+   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(392)}}, Nil{}, 0},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 3920, [3920], C.KAParam{2, None{}, False{}, 15680}, [4], 1},
+   C.KU{O.OpsPARAM{}, S.single(), S.AGlobal{}, 10, [10], C.KAParam{3, None{}, False{}, 40}, [0], 0}]
 
 def main() -> IO(Unit):
   do IO<Unit>:

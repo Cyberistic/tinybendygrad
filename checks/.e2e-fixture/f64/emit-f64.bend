@@ -71,12 +71,12 @@ def bs() -> List<&2, C.BArg>:
 # (`_render_defines` -> `uops_to_dtypes`, `cstyle.bend:2265`), and the f64
 # lane's OWN `double4` TYPEDEF IS ONE OF THEM.
 def kus() -> List<&2, C.KU>:
-  [C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(10)}}, Nil{}},
-   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 10, [10], C.KAParam{0, None{}, False{}, 80}, [0]},
-   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 392, [392], C.KAParam{1, None{}, False{}, 3136}, [2]},
-   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(392)}}, Nil{}},
-   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 3920, [3920], C.KAParam{2, None{}, False{}, 31360}, [4]},
-   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 10, [10], C.KAParam{3, None{}, False{}, 80}, [0]}]
+  [C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(10)}}, Nil{}, 2},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 10, [10], C.KAParam{0, None{}, False{}, 80}, [0], 0},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 392, [392], C.KAParam{1, None{}, False{}, 3136}, [2], 1},
+   C.KU{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, Nil{}, C.KAConst{O.CInt{H.i64_of_i32(392)}}, Nil{}, 0},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 3920, [3920], C.KAParam{2, None{}, False{}, 31360}, [4], 1},
+   C.KU{O.OpsPARAM{}, S.double(), S.AGlobal{}, 10, [10], C.KAParam{3, None{}, False{}, 80}, [0], 0}]
 
 def body() -> List<&2, String>:
   ["  double tmp[16];",

@@ -229,7 +229,8 @@ def arg_of(kind: String, +p: String) -> C.KUArg:
 # ---------------------------------------------------------------- one uop line -> one KU
 def ku_ws(+ws: List<&2, String>) -> C.KU:
   C.KU{op_of(fld(ws, 0n)), dt_of(fld(ws, 1n)), addr_of(fld(ws, 2n)), u32(fld(ws, 4n)),
-       nums(fld(ws, 3n)), arg_of(fld(ws, 5n), fld(ws, 6n)), nums(fld(ws, 7n))}
+       nums(fld(ws, 3n)), arg_of(fld(ws, 5n), fld(ws, 6n)), nums(fld(ws, 7n)),
+       u32(fld(ws, 8n))}
 
 def ku_of(l: String) -> C.KU: ku_ws(String.split(l, ' '))
 

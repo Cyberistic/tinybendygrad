@@ -3231,3 +3231,51 @@ controls=5 of 5   conflations=4 of 4
 
 The run was gated on `git status --porcelain -- tinybendygrad/` being EMPTY *and* the corpus lock being free,
 which is what finally produced a reading whose head is the commit it certifies rather than another unit's.
+
+## 75. THE CHILD COUNT CROSSED THE WIRE: 0.8882, 16 OF 16, AND IT DELETED MORE CODE THAN IT ADDED
+
+§74's 60-turn profile put `List_get` at the top of the render, and counting its *depth* rather than its
+calls named the shape exactly:
+
+```
+List_get calls per 405-uop render : 11,118
+sum of index arguments           : 794,009        (mean depth 71.4)
+steps by caller:  ku_at 292,722   rt 233,235   cc_at 154,915   cc_one.go 104,946
+```
+
+**`cc_one.go` IS THE BUILD AND `cc_at` IS THE READ OF ONE LIST**, and both are `List` operations on an index
+space of 405: `List.set` rebuilds the prefix, `List.get` walks to the index. Together 259,861 steps -- 32% of
+every list step in the render -- to answer one question per uop, `child_count[u] == 1`.
+
+### 75.1 The count is a PURE FUNCTION OF `srcs`, and Python has an array
+
+`cstyle.py:212` computes `Counter(v for ru in uops for v in ru.src)` once and asks it twice (`:252`, `:254`).
+Nothing about it needs the renderer, so `portc.child_counts()` computes it while the wire is built and the
+ninth field carries it; `KU.cc` makes the read a field access. That deletes `cc_go`, `cc_one`, `cc_at`'s
+body and the `cc` argument that threaded through fifteen defs -- **63 insertions, 70 deletions**, so the
+port got smaller.
+
+### 75.2 Measured
+
+Both workers built from the same `serve.bend`, one against `HEAD`'s two renderer files and one against the
+edit, both rendering the same 405-uop kernel to the same 4,426 bytes:
+
+```
+same C: True | bytes: 4426
+before median 9.39 ms   after median 8.26 ms
+ratio min 0.7970  p25 0.8432  median 0.8882  max 0.9285   16 of 16 faster
+```
+
+**16 OF 16, AND THE WORST ROUND IS STILL 0.9285** -- unlike §72's 8 of 14 or §74's 13 of 24, this is not a
+median over a straddling IQR. It is also larger than the 32%-of-steps arithmetic predicted (0.936), because
+the build term disappears entirely rather than shrinking.
+
+### 75.3 What is left of the 794,009 steps
+
+`ku_at` 292,722 and `rt` 233,235 are the *remaining* index-addressed lists -- the kernel and its rendered
+text -- and they are the next slice, not this one.
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39 · portexec e2e 7/7
+emit-mm and emit-f64 fixtures byte-identical before/after (20 lines each)
+```

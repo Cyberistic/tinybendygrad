@@ -184,7 +184,7 @@ def sink_arg(payload: str) -> str:
     return f'C.KASink{{"{payload.strip()}"}}'
 
 
-def one(name: str, line: str) -> str:
+def one(name: str, line: str, cc: int) -> str:
     f = line.split("|")
     idx, op, dt, addr, shape, numel, srcs, kind, payload = f
     o = OPS.get(op)
@@ -214,7 +214,7 @@ def one(name: str, line: str) -> str:
         arg = wmma_arg(payload)
     else:
         arg = "C.KANone{}"
-    return (f"  C.KU{{{o}, {d}, {a}, {num(numel)}, {shp}, {arg}, {ss}}}, # {idx} {op} {dt} {addr}")
+    return (f"  C.KU{{{o}, {d}, {a}, {num(numel)}, {shp}, {arg}, {ss}, {cc}}}, # {idx} {op} {dt} {addr}")
 
 
 def main() -> int:
@@ -223,7 +223,17 @@ def main() -> int:
     for name in names:
         rows = [ln for ln in (UOPS / f"{name}.rows").read_text().splitlines()
                 if ln and not ln.startswith("#")]
-        body = "\n".join(one(name, ln) for ln in rows)
+        # THE CHILD COUNT IS A PURE FUNCTION OF `srcs` AND THE RENDERER CANNOT COMPUTE IT FOR FREE:
+        # `List.set` rebuilds the prefix, so the counter cost 104,946 list steps per 405-uop render and
+        # reading it back another 154,915 (`PARITY.md` §75). There is an array here, so count here.
+        srcs_of = [[int(x) - 1 for x in f[6].split()] if f[6].strip() else [] for f in
+                   (ln.split("|") for ln in rows)]
+        cc = [0] * len(rows)
+        for ss in srcs_of:
+            for x in ss:
+                if 0 <= x < len(cc):
+                    cc[x] += 1
+        body = "\n".join(one(name, ln, c) for ln, c in zip(rows, cc))
         (GEN / f"{name}.bend").write_text(HEADER.format(name=name) + "  [\n" + body + "\n  ]\n")
         print(f"# {name}: {len(rows)} uops")
     print(f"# wrote {len(names)} files to {GEN}")
