@@ -148,10 +148,14 @@ type KUArg is Data:
 # 292,446 list steps a 405-uop render still took after §76, `List_set` another 0.64 ms a turn). Reversed,
 # `st_put` is a CONS, `st_set` on the current uop is index 0, and `rt`'s index is the SRC-TO-CURRENT
 # DISTANCE -- MEASURED on the wire, 72.9 mean against 168.5 absolute. `PARITY.md` §77.
+# **THE RENDERED TEXT OF A UOP IS A LIST OF PIECES, NOT A STRING.** MEASURED (`PARITY.md` §93): the renderer
+# fed 77,500 characters to `String.concat` to emit 4,426 -- a 17.5x amplification -- because every expression
+# materialised its text and every parent COPIED it again. Pieces are Consed instead, and the one
+# `String.join` happens at the statement, so a character is copied once (§95 for the design).
 type Rows is Data:
-  Rows{ts: List<&2, String>, n: U32}
+  Rows{ts: List<&2, List<&2, String>>, n: U32}
 
-def Rows.ts(x: Rows) -> List<&2, String>:
+def Rows.ts(x: Rows) -> List<&2, List<&2, String>>:
   match x:
     case Rows{ts, n}: ts
 
@@ -1045,7 +1049,7 @@ def render_buffer(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, name: String) -> 
 # dropped op is a `KeyError` in Python, so the dropped arm is a gate row.
 # ===========================================================================
 
-def cfo_unary(nm: String, +x: String) -> String: String.concat([nm, "(", x, ")"])
+def cfo_unary(nm: String, +x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [[nm, "("], x, [")"]])
 
 # `f"(1/{x})"` and `f"-{x}"` are NEITHER of them the unary `f"{nm}({x})"` shape,
 # so they are their own defs rather than a "prefix" helper with an empty name.
@@ -1053,13 +1057,13 @@ def cfo_unary(nm: String, +x: String) -> String: String.concat([nm, "(", x, ")"]
 # would be `f"-1/({x})"` -- the unary template has the parens INSIDE, so neither
 # spelling of a prefix template reaches these two. MEASURED by the oracle:
 # RECIPROCAL is `(1/X)` and NEG is `-X`.
-def cfo_recip(+x: String) -> String: String.concat(["(1/", x, ")"])
+def cfo_recip(+x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["(1/"], x, [")"]])
 
-def cfo_neg(+x: String) -> String: String.concat(["-", x])
+def cfo_neg(+x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["-"], x])
 
-def cfo_bin(+a: String, sym: String, b: String) -> String: String.concat(["(", a, sym, b, ")"])
+def cfo_bin(+a: List<&2, String>, sym: String, +b: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["(", ], a, [sym], b, [")"]])
 
-def cfo_tern(+a: String, b: String, c: String) -> String: String.concat(["(", a, "?", b, ":", c, ")"])
+def cfo_tern(+a: List<&2, String>, +b: List<&2, String>, +c: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["("], a, ["?"], b, [":"], c, [")"]])
 
 # A DROPPED ARM IS CPython's `code_for_op[x.op]` AND THAT RAISES. Bend is total and cannot
 # raise, so the answer has to be a STRING, and `""` is the one string that is BOTH a silent
@@ -1071,21 +1075,21 @@ def cfo_tern(+a: String, b: String, c: String) -> String: String.concat(["(", a,
 # the same `KeyError` on the same twenty inherited arms, and `THE PORT's `renderer/wgsl.bend` HEADER` says those arms
 # MOVE HERE when cstyle lands. Two spellings of one refusal is FINDING 2 in `wgsl_render_census-gate.py`,
 # which is why this reuses the sibling's token instead of inventing a third.
-def cfo_unhandled(op: O.Op) -> String: String.concat(["UNHANDLED(Ops.", O.Ops.name.of(op), ")"])
+def cfo_unhandled(op: O.Op) -> List<&2, String>: [String.concat(["UNHANDLED(Ops.", O.Ops.name.of(op), ")"])]
 
 # `xs` is the src-name list, `xs0`/`xs1`/`xs2` its three positional reads. `nd` is
 # the number of srcs, which is the arity test: WHERE has three and everything
 # else has two or one, and `head`/`nth` on an empty list is the BOTTOM of the
 # list rather than a crash -- so an op reached with the wrong arity renders a
 # visibly wrong string instead of a wrong type.
-def xs_at(xs: List<&2, String>, n: Nat) -> String:
-  Maybe.default(&2, String, List.get(&2, String, xs, n), "?")
+def xs_at(xs: List<&2, List<&2, String>>, n: Nat) -> List<&2, String>:
+  Maybe.default(&2, List<&2, String>, List.get(&2, List<&2, String>, xs, n), ["?"])
 
-def cfo_xs1(xs: List<&2, String>) -> String: xs_at(xs, 0n)
+def cfo_xs1(xs: List<&2, List<&2, String>>) -> List<&2, String>: xs_at(xs, 0n)
 
-def cfo_xs2(xs: List<&2, String>) -> String: xs_at(xs, 1n)
+def cfo_xs2(xs: List<&2, List<&2, String>>) -> List<&2, String>: xs_at(xs, 1n)
 
-def cfo_xs3(xs: List<&2, String>) -> String: xs_at(xs, 2n)
+def cfo_xs3(xs: List<&2, List<&2, String>>) -> List<&2, String>: xs_at(xs, 2n)
 
 # THE BASE TABLE. `Ops.WHERE` is the ternary and it is matched FIRST because the
 # op match is a single `match` and Python's dict has no arity to distinguish it.
@@ -1097,7 +1101,7 @@ def cfo_xs3(xs: List<&2, String>) -> String: xs_at(xs, 2n)
 # GATE: with an `FDIV` arm in the base, the mutation "delete Clang's explicit FDIV arm" moved NO
 # ROW, because Clang then fell through to a base arm that should not have been
 # there. Removing it makes the Clang arm load-bearing, which is what it is.
-def code_for_base.of(op: O.Op, +xs: List<&2, String>) -> String:
+def code_for_base.of(op: O.Op, +xs: List<&2, List<&2, String>>) -> List<&2, String>:
   match op:
     case O.OpsSQRT{}: cfo_unary("sqrt", cfo_xs1(xs))
     case O.OpsRECIPROCAL{}: cfo_recip(cfo_xs1(xs))
@@ -1157,7 +1161,7 @@ def is_f64(+d: S.Dt) -> Bool: O.eq_dt(d, S.double())
 def ocml_or(+base: String, suf: String, f64: Bool) -> String:
   Bool.pick(String, f64, base, String.concat([base, suf]))
 
-def code_for_clang.of(op: O.Op, +xs: List<&2, String>, +d: S.Dt) -> String:
+def code_for_clang.of(op: O.Op, +xs: List<&2, List<&2, String>>, +d: S.Dt) -> List<&2, String>:
   match op:
     case O.OpsSQRT{}: cfo_unary(ocml_or("__builtin_sqrt", "f", is_f64(d)), cfo_xs1(xs))
     case O.OpsTRUNC{}: cfo_unary(ocml_or("__builtin_trunc", "f", is_f64(d)), cfo_xs1(xs))
@@ -1170,15 +1174,20 @@ def code_for_clang.of(op: O.Op, +xs: List<&2, String>, +d: S.Dt) -> String:
 
 # METAL: `SIN` is the ONLY override and it is `precise::sin` for every dtype
 # (cstyle.py:376).
-def code_for_metal.of(op: O.Op, +xs: List<&2, String>, +d: S.Dt) -> String:
+def code_for_metal.of(op: O.Op, +xs: List<&2, List<&2, String>>, +d: S.Dt) -> List<&2, String>:
   match op:
     case O.OpsSIN{}: cfo_unary("precise::sin", cfo_xs1(xs))
     case _: code_for_base.of(op, xs)
 
 # CUDA: `htrunc`/`hsin`/`hlog2`/`hexp2`/`hsqrt`/`hrcp` for half and bfloat16, and
 # the PLAIN form otherwise (cstyle.py:432-438). Six ops, one `Bool`.
-def cuda_pick(half: Bool, hnm: String, nm: String, +x: String) -> String:
-  Bool.pick(String, half, cfo_unary(hnm, x), cfo_unary(nm, x))
+def cuda_pick.go(b: Bool, hnm: String, nm: String, +x: List<&2, String>) -> List<&2, String>:
+  match b:
+    case True{}: cfo_unary(hnm, x)
+    case False{}: cfo_unary(nm, x)
+
+def cuda_pick(half: Bool, hnm: String, nm: String, +x: List<&2, String>) -> List<&2, String>:
+  cuda_pick.go(half, hnm, nm, x)
 
 # HIP: `_ocml(op)` is `f"__ocml_{op}_f{ {half:16, double:64}.get(dtype, 32)}({x})"`
 # (cstyle.py:493) -- the WIDTH, not a dtype name, and 32 is the default for
@@ -1190,7 +1199,7 @@ def ocml_bits(+d: S.Dt) -> U32:
 def ocml_name(op: String, +d: S.Dt) -> String:
   String.concat(["__ocml_", op, "_f", U32.show(ocml_bits(d))])
 
-def code_for_hip.of(op: O.Op, +xs: List<&2, String>, +d: S.Dt) -> String:
+def code_for_hip.of(op: O.Op, +xs: List<&2, List<&2, String>>, +d: S.Dt) -> List<&2, String>:
   match op:
     case O.OpsTRUNC{}: cfo_unary(ocml_name("trunc", d), cfo_xs1(xs))
     case O.OpsSIN{}: cfo_unary(ocml_name("sin", d), cfo_xs1(xs))
@@ -1199,20 +1208,27 @@ def code_for_hip.of(op: O.Op, +xs: List<&2, String>, +d: S.Dt) -> String:
     case O.OpsSQRT{}: cfo_unary(ocml_name("sqrt", d), cfo_xs1(xs))
     case _: code_for_base.of(op, xs)
 
-def code_for_cuda.of(op: O.Op, +xs: List<&2, String>, +d: S.Dt) -> String:
+def cuda_rcp.go(b: Bool, +x: List<&2, String>) -> List<&2, String>:
+  match b:
+    case True{}: cfo_unary("hrcp", x)
+    case False{}: cfo_recip(x)
+
+def cuda_rcp(b: Bool, +x: List<&2, String>) -> List<&2, String>: cuda_rcp.go(b, x)
+
+def code_for_cuda.of(op: O.Op, +xs: List<&2, List<&2, String>>, +d: S.Dt) -> List<&2, String>:
   match op:
     case O.OpsTRUNC{}: cuda_pick(is_half(d), "htrunc", "trunc", cfo_xs1(xs))
     case O.OpsSIN{}: cuda_pick(is_half(d), "hsin", "sin", cfo_xs1(xs))
     case O.OpsLOG2{}: cuda_pick(is_half(d), "hlog2", "log2", cfo_xs1(xs))
     case O.OpsEXP2{}: cuda_pick(is_half(d), "hexp2", "exp2", cfo_xs1(xs))
     case O.OpsSQRT{}: cuda_pick(is_half(d), "hsqrt", "sqrt", cfo_xs1(xs))
-    case O.OpsRECIPROCAL{}: Bool.pick(String, is_half(d), cfo_unary("hrcp", cfo_xs1(xs)), cfo_recip(cfo_xs1(xs)))
+    case O.OpsRECIPROCAL{}: cuda_rcp(is_half(d), cfo_xs1(xs))
     case _: code_for_base.of(op, xs)
 
 # THE DISPATCH. Five devices and the base, and OpenCL and QCOM are the BASE --
 # measured: neither overrides a single ALU op, and the gate's `cfo` rows are
 # what says so rather than a comment.
-def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, String>, +d: S.Dt) -> String:
+def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, List<&2, String>>, +d: S.Dt) -> List<&2, String>:
   match dev:
     case 1: code_for_clang.of(op, xs, d)
     case 3: code_for_metal.of(op, xs, d)
@@ -1493,8 +1509,32 @@ def range_str.go(+ids: List<&2, U32>, +acc: String) -> String:
 def range_str(+ids: List<&2, U32>) -> String:
   range_str.go(ids, "")
 
-def rt(+r: Rows, +i: U32) -> String:
-  Maybe.default(&2, String, List.get(&2, String, Rows.ts(r), U32.to_nat(U32.sub(U32.sub(Rows.n(r), 1), i))), "")
+def rtp(+r: Rows, +i: U32) -> List<&2, String>:
+  Maybe.default(&2, List<&2, String>,
+    List.get(&2, List<&2, String>, Rows.ts(r), U32.to_nat(U32.sub(U32.sub(Rows.n(r), 1), i))), Nil{})
+
+def rt(+r: Rows, +i: U32) -> String: String.join(rtp(r, i), "")
+
+# **STRIPPING THE OUTER PARENTHESES OF PIECES COSTS NO CHARACTERS.** `cfo_bin` emits `(` and `)` as their
+# OWN pieces, so a source with the parent's op is `["(", ...inner..., ")"]` and the strip is dropping those
+# two pieces -- the same answer as `H.strip_parens` on the joined string, without joining it (§95.1).
+def drop_last(+ps: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
+  match ps:
+    case Nil{}: List.reverse(&2, String, acc)
+    case h <> t:
+      match t:
+        case Nil{}: List.reverse(&2, String, acc)
+        case _ <> _: drop_last(t, List.append(&2, String, [h], acc))
+
+def strip_pieces.go(b: Bool, +t: List<&2, String>, +ps: List<&2, String>) -> List<&2, String>:
+  match b:
+    case True{}: drop_last(t, Nil{})
+    case False{}: ps
+
+def strip_pieces(+ps: List<&2, String>) -> List<&2, String>:
+  match ps:
+    case Nil{}: Nil{}
+    case h <> t: strip_pieces.go(String.eq(h, "("), t, ps)
 
 # **A 16-WAY BLOCKED VIEW, BECAUSE `List.get` IS O(INDEX) AND THIS LIST IS INDEXED 1,915 TIMES PER
 # RENDER.** `ku_at` was 292,722 of the 805,127 list steps a 405-uop render took (MEASURED, `PARITY.md` §76).
@@ -1659,13 +1699,17 @@ def St.of(+r: Rows, +kernel: List<&2, String>, +bufs: List<&2, BArg>,
 # `r` GROWS BY ONE ENTRY PER UOP, INCLUDING THE SKIPPED ONES, because `r` IS
 # INDEXED BY THE UOP'S POSITION AND THE POSITIONS OF THE LATER UOPS MUST NOT
 # MOVE.
-def st_put(+st: St, x: String) -> St:
-  St.of(Rows{List.append(&2, String, [x], Rows.ts(St.r(st))), U32.add(Rows.n(St.r(st)), 1)},
+def st_put.p(+ps: List<&2, String>, +st: St) -> St:
+  St.of(Rows{List.append(&2, List<&2, String>, [ps], Rows.ts(St.r(st))), U32.add(Rows.n(St.r(st)), 1)},
     St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
 
-def st_set(+st: St, i: U32, x: String) -> St:
-  St.of(Rows{List.set(&2, String, Rows.ts(St.r(st)), U32.to_nat(U32.sub(U32.sub(Rows.n(St.r(st)), 1), i)), x),
+def st_put(+st: St, x: String) -> St: st_put.p([x], st)
+
+def st_set.p(+st: St, i: U32, +ps: List<&2, String>) -> St:
+  St.of(Rows{List.set(&2, List<&2, String>, Rows.ts(St.r(st)), U32.to_nat(U32.sub(U32.sub(Rows.n(St.r(st)), 1), i)), ps),
     Rows.n(St.r(st))}, St.kernel(st), St.bufs(st), St.c(st), St.depth(st), St.name(st))
+
+def st_set(+st: St, i: U32, x: String) -> St: st_set.p(st, i, [x])
 
 def st_kernel(+st: St, x: String) -> St:
   St.of(St.r(st), List.append(&2, String, St.kernel(st), [x]), St.bufs(st), St.c(st), St.depth(st), St.name(st))
@@ -1808,20 +1852,20 @@ def ku_range_name(+arg: KUArg) -> String:
 # `List.get` by src-to-current distance -- and `strip_parens` scanned the source even when its result was
 # discarded. The bool as a parameter means the scan happens only on the branch that keeps it (§39's cure).
 # MEASURED: the ALU catch-all is 0.55 ms of the render (`PARITY.md` §89) and this is its per-operand work.
-def ku_src_strip(b: Bool, +s: String) -> String:
+def ku_src_pieces(b: Bool, +ps: List<&2, String>) -> List<&2, String>:
   match b:
-    case True{}: H.strip_parens(s)
-    case False{}: s
+    case True{}: strip_pieces(ps)
+    case False{}: ps
 
-def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows,                    +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
+def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows,                    +ss: List<&2, U32>, +acc: List<&2, List<&2, String>>) -> List<&2, List<&2, String>>:
   match ss:
     case Nil{}: acc
     case h <> t:
-      +s = rt(r, h)
-      ku_alu_srcs.go(op, k, kus, r, t, List.append(&2, String, acc,
-        [ku_src_strip(Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)), s)]))
+      +ps = rtp(r, h)
+      ku_alu_srcs.go(op, k, kus, r, t, List.append(&2, List<&2, String>, acc,
+        [ku_src_pieces(Bool.and(O.eq_op(ku_op_at(kus, h), op), ku_strips(op)), ps)]))
 
-def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+def ku_alu_srcs(op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, List<&2, String>>:
   ku_alu_srcs.go(op, k, kus, r, KU.srcs(k), Nil{})
 
 def ku_inline2b1(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
@@ -1842,11 +1886,11 @@ def ku_is_decl(+k: KU) -> Bool:
   Bool.and(ku_not_stmt_op(KU.op(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void())))
 
 def _render.plain(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
-                  +st: St, +l: String, nm: String, ix: U32) -> St:
+                  +st: St, +l: List<&2, String>, nm: String, ix: U32) -> St:
   +st0 = _render.pop(st, k)
   # THE SEMICOLON IS THE WHOLE DIFFERENCE, so it is chosen as a STRING (two literals, free) and the line is
   # assembled ONCE. The previous spelling built two `st_kernel` calls and discarded one.
-  +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), l,
+  +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), String.join(l, ""),
     Bool.pick(String, O.eq_op(KU.op(k), O.OpsCAST{}), ";", "")]))
   +st2 = st_c(st1, ix)
   _render.push(st2, k)
@@ -1854,7 +1898,7 @@ def uops_to_dtypes.put(+x: DtN, +acc: List<&2, DtN>) -> List<&2, DtN>:
   Bool.pick(List<&2, DtN>, uops_to_dtypes.has(x, acc),
     acc, List.append(&2, DtN, acc, [x]))
 
-def ku_text_alu(dev: U32, +op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_text_alu(dev: U32, +op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   code_for_op.of(dev, op, ku_alu_srcs(op, k, kus, r), KU.dtype(k))
 def ku_inline2b2(+op: O.Op, +k: KU) -> Bool:
   Bool.or(ku_inline2b2a(op, k), ku_inline2b2b(op, k))
@@ -2428,23 +2472,23 @@ def ku_text_stack(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> 
   String.concat([float4_with(dev, render_type(dev, KU.dtype(k), KU.numel(k), KU.addr(k), KU.op(k), False{})),
     float4_open(dev), String.join(ku_stack_srcs(k, kus, r), ","), float4_close(dev)])
 
-def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   match op:
-    case O.OpsRANGE{}: ku_text_range(dev, i, k, kus, r)
-    case O.OpsEND{}: "}"
-    case O.OpsENDIF{}: "}"
-    case O.OpsIF{}: ku_text_if(dev, k, kus, r)
-    case O.OpsBACKEDGE{}: ku_text_backedge(dev, k, kus, r)
-    case O.OpsCAST{}: ku_text_cast(dev, k, kus, r)
-    case O.OpsBITCAST{}: ku_text_bitcast(dev, k, kus, r)
-    case O.OpsBARRIER{}: barrier.of(dev)
-    case O.OpsINDEX{}: ku_render_index(dev, k, kus, r)
-    case O.OpsSHRINK{}: ku_render_index(dev, k, kus, r)
-    case O.OpsLOAD{}: ku_text_load(dev, k, kus, r)
-    case O.OpsSTORE{}: ku_text_store(dev, k, kus, r)
-    case O.OpsBUFFER{}: ku_text_buffer(dev, i, k, r)
-    case O.OpsWMMA{}: ku_text_wmma(dev, k, r)
-    case O.OpsSTACK{}: ku_text_stack(dev, k, kus, r)
+    case O.OpsRANGE{}: [ku_text_range(dev, i, k, kus, r)]
+    case O.OpsEND{}: ["}"]
+    case O.OpsENDIF{}: ["}"]
+    case O.OpsIF{}: [ku_text_if(dev, k, kus, r)]
+    case O.OpsBACKEDGE{}: [ku_text_backedge(dev, k, kus, r)]
+    case O.OpsCAST{}: [ku_text_cast(dev, k, kus, r)]
+    case O.OpsBITCAST{}: [ku_text_bitcast(dev, k, kus, r)]
+    case O.OpsBARRIER{}: [barrier.of(dev)]
+    case O.OpsINDEX{}: [ku_render_index(dev, k, kus, r)]
+    case O.OpsSHRINK{}: [ku_render_index(dev, k, kus, r)]
+    case O.OpsLOAD{}: [ku_text_load(dev, k, kus, r)]
+    case O.OpsSTORE{}: [ku_text_store(dev, k, kus, r)]
+    case O.OpsBUFFER{}: [ku_text_buffer(dev, i, k, r)]
+    case O.OpsWMMA{}: [ku_text_wmma(dev, k, r)]
+    case O.OpsSTACK{}: [ku_text_stack(dev, k, kus, r)]
     case op2: ku_text_alu(dev, op2, k, kus, r)
 
 # `for (;;) {` FOR A VOID RANGE AND `for ({dt} {name} = 0; {name} < {src0}; {name}++) {`
@@ -2460,7 +2504,7 @@ def ku_text_special(+dev: U32, +k: KU, +r: Rows) -> String:
   String.concat([code_for_workitem.g(dev, KUArg.special_axis(KU.arg(k)), KUArg.special_n(KU.arg(k))),
     "; /* ", rt(r, KU.src0(k)), " */"])
 
-def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_text(dev: U32, i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_text.go(KU.op(k), dev, i, k, kus, r)
 
 # THE WRITABLE PARAMS -- cstyle.py:214-215:
@@ -2479,10 +2523,11 @@ def _render.param(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, st: St) -> St:
 # NO CPU KERNEL IS AN IMAGE, SO THE FLAG IS NOT READ BY THE C THE PORT EMITS --
 # AND THE PORT SAYS SO INSTEAD OF GUESSING A BACKWARD WALK.
 def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
-                 +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
+                 +st: St, +l: List<&2, String>, nm: String, ix: U32, +semi: Bool) -> St:
   +st0 = _render.pop(st, k)
   +st1 = st_kernel(st0, String.concat([ku_indent(St.depth(st0)), render_type(dev, KU.dtype(k),
-    KU.numel(k), KU.addr(k), KU.op(k), False{}), " ", nm, " = ", l, Bool.pick(String, semi, ";", "")]))
+    KU.numel(k), KU.addr(k), KU.op(k), False{}), " ", nm, " = ", String.join(l, ""),
+    Bool.pick(String, semi, ";", "")]))
   +st2 = st_c(st1, ix)
   _render.push(st2, k)
 # **`match` ON A BOOL PARAMETER IS THE CURE FOR THE WHOLE `Bool.pick` CLASS, AND THIS IS WHY IT IS NEEDED
@@ -2491,7 +2536,7 @@ def _render.decl(dev: U32, i: U32, +k: KU, kus: List<&2, List<&2, KU>>,
 # away. `match` cannot scrutinize a computed value ("a match cannot scrutinize a computed value: give it its
 # own def"), but it CAN scrutinize a PARAMETER, so the bool is passed in and only the chosen arm runs.
 # MEASURED in `PARITY.md` §39.
-def _render.stmt_by(b: Bool, +dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
+def _render.stmt_by(b: Bool, +dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: List<&2, String>, +nm: String, +ix: U32, +semi: Bool) -> St:
   match b:
     case True{}: _render.decl(dev, i, k, kus, st, l, nm, ix, semi)
     case False{}: _render.plain(dev, i, k, kus, st, l, nm, ix)
@@ -2499,19 +2544,19 @@ def _render.stmt_by(b: Bool, +dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2,
 # `if u.op not in {Ops.RANGE, Ops.BUFFER, Ops.BINARY} and u.dtype != dtypes.void:`
 # -- cstyle.py:257. IT IS THE TEST FOR "IS THIS A DECLARATION", AND THE
 # DECLARATION IS `"{type} {name} = {text};"`.
-def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: String, +nm: String, +ix: U32, +semi: Bool) -> St:
+def _render.stmt(+dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: List<&2, String>, +nm: String, +ix: U32, +semi: Bool) -> St:
   _render.stmt_by(ku_is_decl(k), dev, i, k, kus, st, l, nm, ix, semi)
 
 # **`_render.stmt` USED TO RUN FOR EVERY UOP, INLINED OR NOT.** The `Bool.pick` below is strict, so even when
 # a uop is INLINED -- which is the common case for casts and indexes -- the full statement was assembled
 # (`_render.pop`, `render_type`, a `String.concat`, `st_c`) and thrown away. Same cure as `_render.stmt`:
 # the bool goes in as a PARAMETER and `match` runs one arm. MEASURED in `PARITY.md` §39.
-def _render.emit_by(b: Bool, dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
+def _render.emit_by(b: Bool, dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: List<&2, String>, nm: String, ix: U32, +semi: Bool) -> St:
   match b:
-    case True{}: st_set(st, i, l)
+    case True{}: st_set.p(st, i, l)
     case False{}: _render.stmt(dev, i, k, kus, st, l, nm, ix, semi)
 
-def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: String, nm: String, ix: U32, +semi: Bool) -> St:
+def _render.emit(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                  +st: St, +l: List<&2, String>, nm: String, ix: U32, +semi: Bool) -> St:
   _render.emit_by(ku_inline(KU.op(k), k, kus), dev, i, k, kus, st, l, nm, ix, semi)
 
 # THE STATEMENT -- cstyle.py:256-261.
@@ -2527,7 +2572,7 @@ def _render.range(+dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, st: 
 def _render.special(+dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +st: St) -> St:
   +nm = KUArg.special_nm(KU.arg(k))
   +st1 = st_put(st, nm)
-  _render.decl(dev, i, k, kus, st1, ku_text_special(dev, k, St.r(st1)), nm, 255, False{})
+  _render.decl(dev, i, k, kus, st1, [ku_text_special(dev, k, St.r(st1))], nm, 255, False{})
 
 def pfx_count(+cc: List<&2, U32>, ix: U32) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, cc, U32.to_nat(ix)), 0)
@@ -2725,6 +2770,11 @@ def render(+dev: U32, cpu: Bool, +kus: List<&2, KU>) -> String:
 # THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
 
 # THE NAME/TEXT MAP, EXPOSED -- the walk's `r`, so a harness can read one slot.
+def joins(+ps: List<&2, List<&2, String>>, +acc: List<&2, String>) -> List<&2, String>:
+  match ps:
+    case Nil{}: acc
+    case h <> t: joins(t, List.append(&2, String, acc, [String.join(h, "")]))
+
 def render_r(dev: U32, kus: List<&2, KU>) -> List<&2, String>:
-  Rows.ts(St.r(_render(dev, kus)))
+  joins(Rows.ts(St.r(_render(dev, kus))), Nil{})
 

@@ -4253,3 +4253,51 @@ DOES NOT LAND.** The plumbing alone is neutral by construction (one-piece lists)
 a type change through the renderer -- and a corpus re-run -- for zero. The next unit of work is
 `strip_pieces` plus the arms, and it is a single coherent change; doing half of it is what makes a
 renderer broken rather than slow.
+
+## 96. THE PIECE-LIST TRANSFORMATION LANDS: 0.9049 AND 0.9058, 39 OF 46 ROUNDS
+
+§93 measured 17.5x copy amplification and §95 specified the fix. This section builds it.
+
+### 96.1 What changed
+
+`Rows` holds `List<&2, List<&2, String>>` -- the PIECES of each uop's text -- and:
+
+| boundary | before | after |
+|---|---|---|
+| `Rows` | one `String` per uop | the pieces |
+| `rt` | the string | `String.join(rtp(r, i), "")`, with `rtp` answering pieces for the ALU path |
+| `ku_text` / `ku_text.go` | a `String` | pieces; the 19 non-ALU arms wrap, the ALU arm passes through |
+| `ku_alu_srcs` | `List<String>` | `List<List<String>>`, each source's PIECES |
+| `cfo_unary/recip/neg/bin/tern` | `String.concat` | `List.concat` over pieces -- no character copied |
+| `_render.plain` / `decl` | `String.concat([indent, l, ...])` | `String.concat([indent, String.join(l, ""), ...])` -- ONE join per statement |
+
+**AND `strip_parens` WAS THE LOAD-BEARING PIECE** (§95.1): the ALU path strips the source's outer parens
+when it shares the parent's op, and `H.strip_parens` needs characters. `cfo_bin` emits `(` and `)` as their
+OWN pieces, so `strip_pieces` drops the first and last PIECE -- the same answer, no join, no copy.
+
+### 96.2 Measured
+
+```
+same C: True | bytes: 4426
+run 1 (16 rounds): before 5.07 ms  after 4.63 ms   median 0.9049   14/16
+run 2 (30 rounds): before 4.85 ms  after 4.45 ms   median 0.9058   25/30
+```
+
+**39 OF 46 ROUNDS, BOTH MEDIANS 0.905 -- A 10% WIN ON THE TURN, THE LARGEST SINCE §77.**
+
+### 96.3 And the instrument that predicted it was wrong about WHY
+
+The `String.concat` counter reads **16.6x after the change against 17.5x before** -- nearly unchanged --
+because it does not count `String.join`, which is where the copying moved. **`String.join` is
+`join_go(tail, head, sep)`, a TAIL-RECURSIVE ACCUMULATOR, not the right-nested `h + join(t)` that
+`String.concat` is**, so the same characters cost less in that shape than in the nested one.
+
+**⇒ SO §94's ARITHMETIC WAS RIGHT ABOUT THE SIZE AND WRONG ABOUT THE MECHANISM**: the 2.16 ms was 17.5x
+AND a right-nested concat; the fix removes the NESTING (which the ablation measured) while leaving a copy
+per character at the join (which the counter measures). The counter alone would have called this neutral;
+the A/B is the arbiter, and it says 0.905.
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
