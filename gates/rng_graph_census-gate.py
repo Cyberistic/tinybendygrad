@@ -119,7 +119,20 @@ RANGEIFY = ROOT / "tinybendygrad/schedule/rangeify.bend"
 # matching -- the file is renamed, the `def` shape changes, the path moves -- `TABLES` is empty,
 # `ROWS` is empty, and a census over zero rows agrees with everything. That is the
 # "0 disagreements over 0 comparisons" shape, so the empty case REFUSES instead.
-TABLES = tuple(re.findall(r"^def ([a-z]+)_table", RANGEIFY.read_text(), re.M))
+# **THE POPULATION IS THE RETURN TYPE AND NOT THE NAME SUFFIX.** MEASURED 2026-11-03: the
+# regex was `^def ([a-z]+)_table`, which also matches `eng_table_n() -> U32` -- a COUNT row and
+# not a table -- so TABLES held TWELVE, `ROWS` held 792, the driver emitted 726 and this gate
+# had been DEAD (exit 5) with the message "726 of 792 rows in 25 tries", i.e. it called a
+# DETERMINISTIC shortfall a FLAKE. A TABLE here is a `List<&2, O.PMEntry>`, and that is what
+# this asks for.
+# MEASURED 2026-11-03, ONCE THE POPULATION WAS FIXED AND THE GATE COULD FINALLY COMPARE:
+# 19 of the 44 DIVERGES pins are STALE, and 10 of those 19 now answer a RAISE where the pin
+# recorded an ANSWER -- so this is not a count that shifted, it is CPython REFUSING a fixture
+# the pin says it accepted. NAMED, not hinted: ab_17, ab_18, ab_30, ab_55, ct_49, dg_26, dg_30, dg_39, dg_56, fb_18.
+# THE PINS WERE NOT MOVED. Moving a pin is what the gate's own message asks for, and doing it
+# for 10 rows would be replacing a recorded ANSWER with a recorded REFUSAL on the strength of
+# one run. THE GATE IS RED AND THIS IS WHY; the population fix above is independent of it.
+TABLES = tuple(re.findall(r"^def ([a-z]+)_table\(\) -> List<&2, O\.PMEntry>", RANGEIFY.read_text(), re.M))
 if not TABLES:
     print(f"rng_graph_census-gate: REFUSED -- no `def <name>_table` in {RANGEIFY}, so there are no "
           f"tables to census. A census over zero rows agrees with everything, and that is not a "
