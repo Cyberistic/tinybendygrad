@@ -33,7 +33,7 @@
 # UPSTREAM-BLOB	movement.py	8237ba8eaf3a485f8a2b61b916358efb3c1b3b70
 # UPSTREAM-BLOB	symbolic.py	466a4f01d5185b6ce55798cbe6a6fe05b7154625
 # UPSTREAM-BLOB	weak.py	52a4c30bca4b81b945de6a3b787e6e738f640bfc
-# PORT-BLOB	uop/symbolic.bend	d957eb30cc52e75cffd4991e6bc2273b51bd28cc
+# PORT-BLOB	uop/symbolic.bend	3267ae7401c8bbeddb4891adaf473d6e8891d0b3
 #
 1	symbolic.py:89	STACK	sym_table	0	PORTED
 2	symbolic.py:90	BITCAST,CAST,EXP2,LOG2,NEG,RECIP,SIN,SQRT,TRUNC	sym_table	1	PORTED
@@ -140,33 +140,33 @@
 103	symbolic.py:310	MUL	sym_table	102	PORTED
 104	symbolic.py:314	CMPLT	sym_table	103	PORTED
 105	symbolic.py:315	CMPLT	sym_table	104	PORTED
-106	symbolic.py:316	CMPLT	MISSING	-	MISSING
-107	symbolic.py:318	CMPEQ	sym_table	105	PORTED
-108	symbolic.py:320	MOD	sym_table	106	PORTED
-109	symbolic.py:321	DIV	sym_table	107	PORTED
-110	symbolic.py:324	CAST	sym_table	108	PORTED
-111	symbolic.py:325	CAST	sym_table	109	PORTED
-112	symbolic.py:327	ADD,AND,CMPEQ,CMPLT,CMPNE,DIV,FDIV,MAX,MOD,MUL,OR,POW,SHL,SHR,SUB,THREEFRY,TRUNCDIV,TRUNCMOD,XOR	sym_table	110	PORTED
-113	symbolic.py:332	CAST	sym_table	111	PORTED
-114	symbolic.py:334	AFTER	sym_table	112	PORTED
-115	symbolic.py:338	AFTER,END	sym_table	113	PORTED
-116	divandmod.py:96	DIV	sym_table	114	PORTED
-117	divandmod.py:98	DIV,MOD	sym_table	115	PORTED
+106	symbolic.py:316	CMPLT	sym_table	105	PORTED
+107	symbolic.py:318	CMPEQ	sym_table	106	PORTED
+108	symbolic.py:320	MOD	sym_table	107	PORTED
+109	symbolic.py:321	DIV	sym_table	108	PORTED
+110	symbolic.py:324	CAST	sym_table	109	PORTED
+111	symbolic.py:325	CAST	sym_table	110	PORTED
+112	symbolic.py:327	ADD,AND,CMPEQ,CMPLT,CMPNE,DIV,FDIV,MAX,MOD,MUL,OR,POW,SHL,SHR,SUB,THREEFRY,TRUNCDIV,TRUNCMOD,XOR	sym_table	111	PORTED
+113	symbolic.py:332	CAST	sym_table	112	PORTED
+114	symbolic.py:334	AFTER	sym_table	113	PORTED
+115	symbolic.py:338	AFTER,END	sym_table	114	PORTED
+116	divandmod.py:96	DIV	sym_table	115	PORTED
+117	divandmod.py:98	DIV,MOD	sym_table	116	PORTED
 118	divandmod.py:103	DIV,MOD	MISSING	-	MISSING
-119	weak.py:97	ADD,AND,CMPEQ,CMPLT,CMPNE,DIV,FDIV,MAX,MOD,MUL,MULACC,OR,POW,SHL,SHR,SUB,THREEFRY,TRUNCDIV,TRUNCMOD,WHERE,XOR	sym_table	116	PORTED
+119	weak.py:97	ADD,AND,CMPEQ,CMPLT,CMPNE,DIV,FDIV,MAX,MOD,MUL,MULACC,OR,POW,SHL,SHR,SUB,THREEFRY,TRUNCDIV,TRUNCMOD,WHERE,XOR	sym_table	117	PORTED
 120	symbolic.py:450	AND	MISSING	-	MISSING
 121	symbolic.py:451	WHERE	MISSING	-	MISSING
-122	symbolic.py:465	POW	sym_table	117	PORTED
-123	symbolic.py:467	STORE	sym_table	118	PORTED
-124	symbolic.py:468	STORE	sym_table	119	PORTED
-125	symbolic.py:471	STORE	sym_table	120	PORTED
-126	symbolic.py:474	STORE	sym_table	121	PORTED
+122	symbolic.py:465	POW	sym_table	118	PORTED
+123	symbolic.py:467	STORE	sym_table	119	PORTED
+124	symbolic.py:468	STORE	sym_table	120	PORTED
+125	symbolic.py:471	STORE	sym_table	121	PORTED
+126	symbolic.py:474	STORE	sym_table	122	PORTED
 127	symbolic.py:476	STORE	MISSING	-	MISSING
-128	symbolic.py:478	MUL	sym_table	122	PORTED
-129	symbolic.py:479	MUL	sym_table	123	PORTED
-130	symbolic.py:480	MUL	sym_table	124	PORTED
-131	symbolic.py:482	REDUCE	sym_table	125	PORTED
-132	symbolic.py:485	MUL	sym_table	126	PORTED
-133	symbolic.py:458	SINK	sym_table	127	PORTED
+128	symbolic.py:478	MUL	sym_table	123	PORTED
+129	symbolic.py:479	MUL	sym_table	124	PORTED
+130	symbolic.py:480	MUL	sym_table	125	PORTED
+131	symbolic.py:482	REDUCE	sym_table	126	PORTED
+132	symbolic.py:485	MUL	sym_table	127	PORTED
+133	symbolic.py:458	SINK	sym_table	128	PORTED
 134	symbolic.py:115	WHERE	rm_table	0	PORTED
 135	symbolic.py:116	STACK	rm_table	1	PORTED
