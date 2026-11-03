@@ -1079,3 +1079,17 @@ round this tree's I64 by 10, thirty-two bit steps at a time, for every integer c
 That is the next target and it is named here with its composition rather than guessed at; the fix is in
 `helpers.bend`'s decimal printing (chunked division by a power of ten), and it is not attempted in this
 commit.
+
+### 27.5 The certificate for THIS change
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **2026-11-03 08:05**, `substrate-head=adaf1ee20` -- the commit
+that carries the hoist:
+
+```
+substrate-start = substrate-end = live = 2d80b784a048e217680b9a4d965ccd63f07e87a76746b30b3e7f2cf12e306530
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4   oracle-selfcheck=# ORACLE SELFCHECK: OK   census-rc=rc=0
+```
+
+**A 2x CHANGE TO THE RENDERER THAT MOVES NO BYTE**: every one of the 38 graphs is still byte-identical to
+CPython at the pin, and the digest that straddles the run is the one the tree is standing on.
