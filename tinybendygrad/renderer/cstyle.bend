@@ -1239,9 +1239,16 @@ def KUArg.is_const(a: KUArg) -> Bool:
     case KAConst{v}: True{}
     case _: False{}
 
+# **A BOOL CONST IS AN INT CONST.** The `boolean()` arm of `ku_const_cast_int` was ALREADY WRITTEN
+# (`"0"`/`"1"`, which is cstyle.py:31's `lambda ctx,c: "1" if c.val else "0"`), but nothing could reach
+# it: this only matched `CInt`, so a `CBool` fell through const_int -> const_float -> the GENERIC cast
+# and rendered as `((_Bool)())` -- an EMPTY expression. MEASURED 2026-11-03: `exp` is the only kernel in
+# the 31-case battery that still diverged, and its C was `3782 B` against upstream's `3742 B` on exactly
+# two lines, each `!=((_Bool)())` where upstream has `!=1`.
 def ku_const_int(c: O.Const) -> Maybe<&1, H.I64>:
   match c:
     case O.CInt{i}: Some{i}
+    case O.CBool{b}: Some{H.i64_of_i32(Bool.to_u32(b))}
     case _: None{}
 
 def ku_const_float(c: O.Const) -> Maybe<&1, F32>:
@@ -2037,7 +2044,11 @@ def ku_const_cast_int(+dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
     case d:
       Bool.pick(String, O.eq_dt(d, S.int64()), String.concat([H.i64_dec(i), "l"]),
         Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([H.i64_dec(i), "ul"]),
-          Bool.pick(String, O.eq_dt(d, S.uint32()), String.concat([H.i64_dec(i), "u"]),
+          # **A u32 CONST IS TRUNCATED, NOT PRINTED SIGNED.** cstyle.py:29 is
+          # `f"{truncate[x.dtype](c.val)}u"`, so upstream writes `4294967169u` where the port wrote
+          # `-127u` -- valid C, different text, and a divergence on 71 lines of `sin`. MEASURED
+          # 2026-11-03: `sin` was the LAST of six transcendentals to stop being byte-identical.
+          Bool.pick(String, O.eq_dt(d, S.uint32()), String.concat([U32.show(H.lo32(i)), "u"]),
             Bool.pick(String, O.eq_dt(d, S.boolean()), Bool.pick(String, H.i64_is_neg(i), "0", "1"),
               Bool.pick(String, O.eq_dt(d, S.uint8()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
                 Bool.pick(String, O.eq_dt(d, S.uint16()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
@@ -2045,13 +2056,31 @@ def ku_const_cast_int(+dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
                     Bool.pick(String, O.eq_dt(d, S.int16()), ku_cast_wrapped(dev, d, H.i64_dec(i)),
                       H.i64_dec(i)))))))))
 
+# **A NON-FINITE FLOAT IS NOT `repr(v) + "f"`.** `cstyle.py:26` spells the const as
+# `f"({ctx.render_cast(x, ctx.nan if math.isnan(v) else ctx.infinity if v > 0 else f'-{ctx.infinity}')})"`,
+# so upstream emits `((float)(__builtin_inff()))` / `((float)(-__builtin_inff()))` /
+# `((float)(__builtin_nanf("")))`. The port emitted `U.f32_repr(f) ++ "f"`, which is `inff` and
+# `-inff` -- UNDECLARED IDENTIFIERS. MEASURED 2026-11-03: `exp`, `log2` and `sin` fail to COMPILE on
+# `use of undeclared identifier 'inff'`, and the rendered C is 3406 B against upstream's 3742 B.
+# `infinity.of` / `nan.of` (line 419) already carry the two `__builtin_` spellings, so this reuses them.
+def f32_nonfinite(+f: F32) -> Bool: U32.is_eq(U32.and(F32.bits(f), 2139095040), 2139095040)
+def f32_is_nan(+f: F32) -> Bool:
+  Bool.and(f32_nonfinite(f), Bool.not(U32.is_eq(U32.and(F32.bits(f), 8388607), 0)))
+
+def ku_flt_nonfinite(+dev: U32, +d: S.Dt, +f: F32) -> String:
+  Bool.pick(String, f32_is_nan(f), ku_cast_wrapped(dev, d, nan.of(dev)),
+    Bool.pick(String, F32.is_lt(f, 0.0),
+      ku_cast_wrapped(dev, d, String.concat(["-", infinity.of(dev)])),
+      ku_cast_wrapped(dev, d, infinity.of(dev))))
+
 def ku_const_cast_f32(+dt: S.Dt, +dev: U32, k: KU, +f: F32) -> String:
   match dt:
     case d:
-      Bool.pick(String, O.eq_dt(d, S.single()), String.concat([U.f32_repr(f), "f"]),
-        Bool.pick(String, O.eq_dt(d, S.half()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
-          Bool.pick(String, O.eq_dt(d, S.bfloat16()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
-            ku_cast_wrapped(dev, d, U.f32_repr(f)))))
+      Bool.pick(String, f32_nonfinite(f), ku_flt_nonfinite(dev, dt, f),
+        Bool.pick(String, O.eq_dt(d, S.single()), String.concat([U.f32_repr(f), "f"]),
+          Bool.pick(String, O.eq_dt(d, S.half()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
+            Bool.pick(String, O.eq_dt(d, S.bfloat16()), ku_cast_wrapped(dev, d, String.concat([U.f32_repr(f), "f"])),
+              ku_cast_wrapped(dev, d, U.f32_repr(f))))))
 
 # THE GENERIC CAST: `f"({ctx.render_cast(x, ctx[x.src[0]])})"` (cstyle.py:40).
 def ku_cast_generic(dev: U32, +k: KU, +r: List<&2, String>) -> String:

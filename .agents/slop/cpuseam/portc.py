@@ -52,6 +52,24 @@ def main() -> IO(Unit):
 """
 
 
+# EVERY input that can change the emitted C: the port's own sources AND this transcription's two
+# generators. MEASURED 2026-11-03, twice: a key without the renderer returned the pre-fix `inff` after
+# `cstyle.bend` was fixed, and a key without `gen_kus.py` returned `0.0f` after the `-0.0` fix.
+RENDERER_SOURCES = ("tinybendygrad/renderer/cstyle.bend", "tinybendygrad/base.bend",
+                    "tinybendygrad/uop/ops.bend", "tinybendygrad/LAWS/spec.bend",
+                    "tinybendygrad/helpers.bend",
+                    ".agents/slop/cpuseam/gen_kus.py", ".agents/slop/cpuseam/portc.py")
+
+
+def _renderer_stamp() -> str:
+  """mtime+size of every source the renderer compiles against, so a renderer edit re-keys."""
+  parts = []
+  for rel in RENDERER_SOURCES:
+    st = (ROOT / rel).stat()
+    parts.append(f"{rel}:{st.st_mtime_ns}:{st.st_size}")
+  return ";".join(parts)
+
+
 def rows(uops) -> list[str]:
   """the fixture's own row format, for a live uop list."""
   return [r for r in dump_kernel.dump_uops(uops) if r and not r.startswith("#")]
@@ -62,7 +80,11 @@ def render(uops) -> str:
   rs = rows(uops)
   if not rs:
     raise RuntimeError("portc: the port rendered no uops")
-  key = hashlib.sha256("\n".join(rs).encode()).hexdigest()[:16]
+  # **THE KEY MUST COVER THE RENDERER, NOT JUST THE UOPS.** A uop-only key returned the PRE-FIX C after
+  # `cstyle.bend` was corrected for non-finite constants, so the fix looked like it did nothing --
+  # MEASURED: `exp` still failed to compile with the old `inff` after the renderer had been fixed.
+  # A cache that hides a fix is the same defect class as a gate that cannot go red.
+  key = hashlib.sha256(("\n".join(rs) + "|" + _renderer_stamp()).encode()).hexdigest()[:16]
   name = f"live_{key}"
   cached = OUT / f"{name}.c"
   if cached.exists():

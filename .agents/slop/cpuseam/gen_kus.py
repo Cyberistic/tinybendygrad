@@ -24,31 +24,35 @@ SCRIPT-WRITTEN `.rows` FIXTURE, WHICH IS ITSELF READ OUT OF UPSTREAM's OWN
 OBJECTS.
 """
 import pathlib
+import re
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 UOPS = HERE / "uops"
 GEN = HERE / "gen"
 
-OPS = {
-    "CONST": "O.OpsCONST{}", "PARAM": "O.OpsPARAM{}", "CAST": "O.OpsCAST{}",
-    "RANGE": "O.OpsRANGE{}", "AFTER": "O.OpsAFTER{}", "MUL": "O.OpsMUL{}",
-    "ADD": "O.OpsADD{}", "SHL": "O.OpsSHL{}", "SHRINK": "O.OpsSHRINK{}",
-    "LOAD": "O.OpsLOAD{}", "INDEX": "O.OpsINDEX{}", "CMPLT": "O.OpsCMPLT{}",
-    "WHERE": "O.OpsWHERE{}", "STORE": "O.OpsSTORE{}", "END": "O.OpsEND{}",
-    "SINK": "O.OpsSINK{}", "BUFFER": "O.OpsBUFFER{}", "SPECIAL": "O.OpsSPECIAL{}",
-    "BITCAST": "O.OpsBITCAST{}", "IF": "O.OpsIF{}", "BARRIER": "O.OpsBARRIER{}",
-    "ENDIF": "O.OpsENDIF{}", "SUB": "O.OpsSUB{}", "MAX": "O.OpsMAX{}",
-    "AND": "O.OpsAND{}", "OR": "O.OpsOR{}", "XOR": "O.OpsXOR{}",
-    "DIV": "O.OpsFDIV{}", "CMOD": "O.OpsCMOD{}", "NEG": "O.OpsNEG{}",
-    "SQRT": "O.OpsSQRT{}", "EXP2": "O.OpsEXP2{}", "LOG2": "O.OpsLOG2{}",
-    "SIN": "O.OpsSIN{}", "RECIPROCAL": "O.OpsRECIPROCAL{}", "TRUNC": "O.OpsTRUNC{}",
-    "SHR": "O.OpsSHR{}", "STACK": "O.OpsSTACK{}", "WMMA": "O.OpsWMMA{}",
-    # `relu` lowers to a CMPEQ/WHERE chain (and `maximum` to MAX/CMPLT), so a program
-    # with a relu needs these; the CPU-lane fixtures never did.
-    "CMPEQ": "O.OpsCMPEQ{}", "CMPNE": "O.OpsCMPNE{}", "FDIV": "O.OpsFDIV{}",
-    "IDIV": "O.OpsIDIV{}", "MOD": "O.OpsCMOD{}", "POW": "O.OpsPOW{}",
-}
+# **THE OP MAP IS DERIVED FROM THE PORT's OWN ENUM, NOT HAND-LISTED.** A hand list is exactly the
+# shape AGENTS.md forbids for a population, and it FAILED ON ITS FIRST REAL USE: the matmul battery ran
+# `exp`/`log2`/`sin` and hit `unknown op CDIV`, which the list simply did not carry -- while carrying
+# `IDIV`, an entry whose target `O.OpsIDIV` DOES NOT EXIST in the enum (75 members, no OpsIDIV), so any
+# `IDIV` would have emitted invalid Bend rather than failing loudly. MEASURED: 0 of the fixture rows use
+# `DIV`, `IDIV` or `MOD`, so all three aliases were dead as well as wrong.
+#
+# The port's `Ops` enum is 1:1 with upstream's (75 members, same names), so the name IS the mapping.
+PORT_OPS_BEND = pathlib.Path(__file__).resolve().parents[3] / "tinybendygrad" / "uop" / "ops.bend"
+
+
+def enum_ops() -> dict[str, str]:
+    """upstream's op NAME -> the port's constructor, read out of `uop/ops.bend`."""
+    text = PORT_OPS_BEND.read_text()
+    body = text[text.index("type Op is Data:"):]
+    names = re.findall(r"^\s+(Ops[A-Z0-9_]+)\{\}", body, re.M)
+    if not names:
+        raise SystemExit(f"gen_kus: no Ops members found in {PORT_OPS_BEND}")
+    return {n[len("Ops"):]: f"O.{n}{{}}" for n in names}
+
+
+OPS = enum_ops()
 
 DTS = {
     "f32": "S.single()", "i32": "S.int32()", "u32": "S.uint32()",
@@ -77,6 +81,7 @@ import ./../../../../tinybendygrad/renderer/cstyle.bend as C
 import ./../../../../tinybendygrad/uop/ops.bend as O
 import ./../../../../tinybendygrad/LAWS/spec.bend as S
 import ./../../../../tinybendygrad/helpers.bend as H
+import ./../../../../tinybendygrad/base.bend as F
 
 def kus() -> List<&2, C.KU>:
 """
@@ -88,23 +93,48 @@ def num(s: str) -> str:
 
 
 def const_arg(payload: str) -> str:
-    """the CONST's value: an int, or a float."""
+    """the CONST's value: a bool, an int, or a float -- decided by PARSING, never by sniffing."""
     p = payload.strip()
-    # upstream's float const is a `ConstFloat` OBJECT and its repr is
-    # `ConstFloat(0.0)`; the VALUE is what the port needs.
+    # upstream's float const is a `ConstFloat` OBJECT; the VALUE is what the port needs.
     if p.startswith("ConstFloat(") and p.endswith(")"):
         p = p[len("ConstFloat("):-1]
-    if "." in p or "e" in p or "E" in p or p in ("inf", "-inf", "nan"):
-        # **A NEGATIVE LITERAL NEEDS ITS PARENS.** MEASURED: `O.CFloat{-1.4426950216293335}`
-        # is a PARSE ERROR ("expected a term, observed: '-'"), and it broke the whole driver
-        # because the driver imports EVERY generated module -- so one transcendental kernel's
-        # constant made all twelve kernels render nothing, which read as "port wrote no text".
-        # and the paren form alone is still a PARSE ERROR -- the subtraction needs its type:
-        # `O.CFloat{(0.0-1.5 : F32)}` is the spelling that compiles (MEASURED on all three).
+    # **A BOOL CONST IS NOT A FLOAT, AND SUBSTRING SNIFFING SAID IT WAS.** `"True"` CONTAINS AN `e`,
+    # so the old `"e" in p` test emitted `O.CFloat{True}` and the render failed with "expected : a
+    # defined name, observed : True". MEASURED on `exp`, whose kernel carries a `CONST bool`.
+    if p in ("True", "False"):
+        return "C.KAConst{O.CBool{True{}}}" if p == "True" else "C.KAConst{O.CBool{False{}}}"
+    # **`1e999` AND `inf` ARE NOT BEND LITERALS.** MEASURED with `bin/bend --check-only`: `1e999`
+    # answers "expected : a numeric literal", `inf` answers "expected : a defined name", and
+    # `O.CFloat{(0.0-inf : F32)}` is a parse error at the `-`. The port has `F32.from_bits`, and
+    # MEASURED `(1.0/0.0 : F32)` = 2139095040 (+inf), `(0.0-1.0/0.0 : F32)` = 4286578688 (-inf),
+    # `(0.0/0.0 : F32)` = 2143289344 (nan) -- so these are the EXACT patterns, not approximations.
+    special = {"inf": 2139095040, "-inf": 4286578688, "nan": 2143289344}
+    if p in special:
+        return f"C.KAConst{{O.CFloat{{F.F32.from_bits({special[p]})}}}}"
+    # **NEGATIVE ZERO IS NOT `(0.0-0.0)`.** That expression is +0.0, so the sign was destroyed at
+    # TRANSCRIPTION time and the renderer then spelled `0.0f` where upstream spells `-0.0f`.
+    # MEASURED 2026-11-03: `log2` and `sin` differed on exactly that token (`val0[i]<-0.0f` vs `<0.0f`)
+    # while still agreeing numerically. `F32.from_bits(0x80000000)` is the exact pattern.
+    if p.startswith("-"):
+        try:
+            if float(p) == 0.0:
+                return "C.KAConst{O.CFloat{F.F32.from_bits(2147483648)}}"
+        except ValueError:
+            pass
+    try:
+        v = int(p)
+    except ValueError:
+        # **A NEGATIVE LITERAL NEEDS ITS PARENS AND ITS TYPE.** MEASURED: `O.CFloat{-1.44}` is a
+        # parse error, `O.CFloat{(0.0-1.44)}` is still one, and `(0.0-1.44 : F32)` compiles.
         v = f"(0.0{p} : F32)" if p.startswith("-") else p
         return f"C.KAConst{{O.CFloat{{{v}}}}}"
-    v = int(p)
-    return f"C.KAConst{{O.CInt{{H.i64_of_i32({v & 0xFFFFFFFF})}}}}"
+    # **AN INT CONST IS 64 BITS, AND `i64_of_i32` IS 32.** The mask `& 0xFFFFFFFF` plus a
+    # sign-extending constructor silently truncated every wide constant: a `2**62-1` mask became
+    # `-1`. MEASURED 2026-11-03: `sin` was the last kernel to differ from upstream and its 11
+    # divergent lines were exactly `&4611686018427387903ul` against `&-1ul`. `i64_of_hi_lo` is the
+    # constructor that carries both halves (they are two's complement, helpers.bend:1644).
+    u = v & 0xFFFFFFFFFFFFFFFF
+    return f"C.KAConst{{O.CInt{{H.i64_of_hi_lo({(u >> 32) & 0xFFFFFFFF}, {u & 0xFFFFFFFF})}}}}"
 
 
 def param_arg(payload: str) -> str:
