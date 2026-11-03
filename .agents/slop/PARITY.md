@@ -2710,3 +2710,29 @@ tens of microseconds per uop (a decimal fold, a whole cast render, a whole state
 
 **⇒ AND THAT IS THE LAST DUPLICATE §60's COUNTS EXPOSE.** `st_put`, `_render.one_go` and `emit` are already at
 1.0 per uop; `cc_at`'s 2.5 and `rt`'s 3.7 are calls the render makes for different indices, not repeats.
+
+## 62. THE DAEMON PAYS START-UP TOO, AND PACKAGING IT IS WORTH 23%
+
+§53/§54 packed the ONE-SHOT renderer. **The worker was still spawned as `bun serve.js`** -- the same
+module-resolution start, paid once per session, and never packed. `_serve_bin` builds the same program as
+`--compile --minify --bytecode` (45 MB, 0.2 s, cached beside the `.js`), and `Worker.start` spawns that
+exe (falling back to `bun <js>` if the build fails).
+
+Measured from `Popen` to the FIRST ANSWER (spawn, module load, one 405-uop render), 12 interleaved rounds:
+
+```
+bun + serve.js  first answer   median 52.1 ms
+compiled worker                median 40.1 ms
+ratio min 0.4820  p25 0.7467  median 0.7729  max 0.8088   12 of 12 faster
+```
+
+**23%, EVERY ROUND** -- ~12 ms off the first kernel of every session. A program pays it once, so on a
+650 ms cold run it is ~2%; on a short session it is the difference between 52 and 40 ms before the first
+kernel exists.
+
+`ksweep 37 of 37 on both decoders`, `compile.py 4 of 4` (10.0 ms per cold kernel), `ops_bend_exec-e2e 7 of 7`,
+`opbattery 39 of 39`. **NO `.bend` CHANGED**, so the corpus digest is untouched.
+
+**AND THE PACKAGING LEVER IS NOW SPENT ON BOTH PATHS**: one-shot 47.0 -> 34.8 (§53+§54) and worker start
+52.1 -> 40.1 (this section). What remains of start-up is Bun's own module resolution for a 64 MB embedded
+image, which is not this project's to change.

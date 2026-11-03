@@ -459,7 +459,13 @@ class Worker:
     self.turns = 0
 
   def start(self) -> None:
-    self.proc = subprocess.Popen([str(BUN), str(self.js), f"{self.fifo}|{self.req}"],
+    # **THE DAEMON PAYS START-UP ONCE PER SESSION, AND §53/§54 SHOWED PACKAGING IS WORTH 26% OF IT.** The
+    # worker used to be spawned as `bun serve.js`, i.e. the same module-resolution start the one-shot path
+    # had before `--compile --minify --bytecode`. `_serve_bin` ships the same program as an executable, so
+    # the FIRST turn of a session pays the packed start and every later turn pays nothing.
+    exe = _serve_bin(self.js)
+    cmd = [str(exe), f"{self.fifo}|{self.req}"] if exe else [str(BUN), str(self.js), f"{self.fifo}|{self.req}"]
+    self.proc = subprocess.Popen(cmd,
                                  stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE, text=True, bufsize=1, env=ENV)
     # **THE WRITER STAYS OPEN FOR THE WHOLE SESSION, AND THAT IS A MEASURED FIX.** Opening and closing it
@@ -528,6 +534,16 @@ class Worker:
         return "\n".join(lines) + "\n"
       elif started:
         lines.append(line)
+
+
+def _serve_bin(js: pathlib.Path) -> pathlib.Path | None:
+  """the WORKER as a compiled executable, cached beside its .js; None when `bun build` cannot."""
+  exe = js.with_suffix(".bc")
+  if exe.exists():
+    return exe
+  build = subprocess.run([str(BUN), "build", "--compile", "--minify", "--bytecode", str(js), "--outfile", str(exe)],
+                         capture_output=True, text=True, env=ENV)
+  return exe if build.returncode == 0 and exe.exists() else None
 
 
 def worker_stats() -> dict:
