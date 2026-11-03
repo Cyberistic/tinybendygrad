@@ -181,7 +181,24 @@ def main():
     olinp = UOp(Ops.LINEAR, src=(ocallp,))
     otop = UOp(Ops.CALL, src=(olinp,))
     orr = resolve_linear_call(otop, {})
+    # arm 1 RESOLVES: `resolve_linear_call` on a CALL whose body is a bare LINEAR
+    # answers that LINEAR (`linear.replace(src=())` is itself).
+    olin1 = UOp(Ops.LINEAR, src=())
+    ocall1 = UOp(Ops.CALL, src=(olin1,))
+    a("ab_arm1", int(resolve_linear_call(ocall1, {}).op is Ops.LINEAR))
     a("ab_arm2", int(orr.src[0] is ocallp))
+
+    # arm 3: substitute + replace over the SAME fixture the port's `ab_arm3` uses.
+    # This is the body `apply_binds`'s arm 3 runs, expressed with the real API.
+    app = param(0, vmin=(0, 7), nm=None)
+    apx = param(0, vmin=(0, 9), nm=None)
+    ag = app + app
+    abinds = {0: apx}
+    asubs3 = {v: abinds[v.arg.slot] for s in ag.src for v in s.variables()
+              if v.arg.name is None and v.arg.slot in abinds}
+    ar3 = ag.replace(src=tuple(s.substitute(asubs3) for s in ag.src))
+    a("ab_arm3", int(ar3.src[0] is apx))
+
 
     # ---- `enter_calls` -- ops.py:1841 ----
     from tinygrad.uop.ops import graph_rewrite
@@ -193,6 +210,10 @@ def main():
     a("ec_default", int(er0.src[0] is epp))
     a("ec_enter", int(er1.src[0] is epx))
     a("sub_nocalls", int(ecall.substitute({epp: UOp.const(9)}).src[0] is epp))
+    # the NESTING: an OUTER LINEAR whose src is a CALL(bare LINEAR)
+    oouter = UOp(Ops.LINEAR, src=(ocall1,))
+    otop2 = UOp(Ops.CALL, src=(oouter,))
+    a("ab_nest", int(resolve_linear_call(otop2, {}).src[0].op is Ops.LINEAR))
 
     print("\n".join(out))
 

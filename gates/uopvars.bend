@@ -516,10 +516,13 @@ def ab_arm2.of(m: Maybe<&2, SC.SBind>, +pc: U32) -> String:
 def ab_arm2(+fx: ABF) -> String:
   ab_arm2.of(SC.sc_apply_binds(ABF.ar(fx), ABF.pc(fx), Map.new(&2, U32)), ABF.pc(fx))
 
+# ARM 1 IS NO LONGER A REFUSAL: it RESOLVES the nested LINEAR call and answers the
+# LINEAR, which is what upstream's `resolve_linear_call(si, binds)` answers. So this
+# row can be compared against CPython instead of being `port_only`.
 def ab_arm1.of(m: Maybe<&2, SC.SBind>) -> String:
   match m:
-    case None{}: "1"
-    case Some{_}: "0"
+    case None{}: "0"
+    case Some{+b}: bf(O.eq_op(SC.sc_op(SC.SBind.ar(b), SC.SBind.i(b)), O.OpsLINEAR{}))
 
 def ab_arm1(+fx: ABF) -> String:
   m = SC.sc_apply_binds(ABF.ar(fx), ABF.lc(fx), Map.new(&2, U32))
@@ -601,6 +604,23 @@ def sub_nocalls.of(m: (O.Arena & Maybe<&2, U32> & Map<&2, U32>), +pp: U32) -> St
 def sub_nocalls(+fx: ECF) -> String:
   sub_nocalls.of(CG.UOp.substitute(ECF.ar(fx), ECF.call(fx), subsonly(U32.show(ECF.pp(fx)), ECF.px(fx))), ECF.pp(fx))
 
+
+# THE NESTING, WHICH IS THE ONLY THING THAT EXERCISES `RJoin`. `abfx()`'s `lc` is a
+# CALL whose body is a bare LINEAR; wrapping it in an OUTER LINEAR makes it a SRC, so
+# `apply_binds` arm 1 fires INSIDE the loop and the continuation is a work item.
+def ab_nest.of(m: Maybe<&2, SC.SBind>) -> String:
+  match m:
+    case None{}: "0"
+    case Some{+b}:
+      bf(O.eq_op(SC.sc_op(SC.SBind.ar(b), O.Arena.src0(SC.SBind.ar(b), SC.SBind.i(b))), O.OpsLINEAR{}))
+
+def ab_nest() -> String:
+  +fx = abfx()
+  +ar = ABF.ar(fx)
+  +outer = O.UOp.new(ar, O.OpsLINEAR{}, [ABF.lc(fx)], O.ANone{}, O.TNone{})
+  +top = O.UOp.new(O.Found.ar(outer), O.OpsCALL{}, [O.Found.i(outer)], O.ANone{}, O.TNone{})
+  ab_nest.of(SC.sc_resolve_linear_call(O.Found.ar(top), O.Found.i(top), Map.new(&2, U32)))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -626,4 +646,5 @@ def main() -> IO(Unit):
     p9 : Unit <- IO.print(String.concat(["subs_named=", subs_named()]))
     p8 : Unit <- abrows(abfx())
     p7 : Unit <- ecrows(ecfx())
-    IO.print(String.concat(["sub_nocalls=", sub_nocalls(ecfx())]))
+    p6 : Unit <- IO.print(String.concat(["sub_nocalls=", sub_nocalls(ecfx())]))
+    IO.print(String.concat(["ab_nest=", ab_nest()]))

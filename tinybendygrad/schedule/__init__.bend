@@ -2038,53 +2038,78 @@ def apply_binds(+ar: O.Arena, +si: U32) -> U32:
 # `Kahn.gather` threads an `ok` flag "because an early return from the middle of a
 # self-call would need mutual recursion").  A `Some{}` here would be a WRONG ANSWER
 # shaped like a success; `None{}` is a refusal the caller can see.
+# ===========================================================================
+# ARM 1 IS NO LONGER REFUSED.  Upstream's `apply_binds` arm 1 returns
+# `resolve_linear_call(si, binds)` -- THE RECURSION -- and the port answered
+# `None{}` because upstream's shape is mutual recursion and Bend has none.
+#
+# THE MACHINE BELOW IS A WORK ITEM AND A FUEL, AND EVERY ONE OF ITS CONSTRAINTS WAS
+# MEASURED IN A MINIMAL FILE FIRST:
+#   1. `match` ON A COMPUTED VALUE IS REFUSED, even inside a self-recursive def
+#      ("give it its own def"), and "its own def" reintroduces the forward
+#      reference. SO EVERY SCRUTINEE IS A FIELD, decided in the ONE `match fuel w`.
+#   2. THE FUEL IS THE FIRST ARGUMENT. Inside the Data the checker answers "a
+#      decreasing self-call ... observed : w"; with `(fuel, w)` it is accepted.
+#   3. `case 1n++k:` IS A COPYABLE SUCCESSOR BINDER, so one step can spend the fuel
+#      on BOTH the nested call and the continuation.
+#   4. `RJoin` IS THE TRICK: a non-tail self-call cannot be followed by another, so
+#      arm 1's CONTINUATION is a work item carrying the nested result.
+#   5. A DOWNSTREAM ITEM CARRIES `lin` AS A `U32`, NOT A `Maybe` -- reconstructing
+#      `Some{lin}` and then passing it is what made a `Map` look linear.
+type RWk is Data:
+  RCall{ar: O.Arena, call: U32, outer: Map<&2, U32>, body: Maybe<&2, U32>, ctx: List<&2, U32>}
+  RSrcs{ar: O.Arena, lin: Maybe<&2, U32>, binds: Map<&2, U32>, xs: List<&2, U32>, acc: List<&2, U32>}
+  RStep{ar: O.Arena, lin: U32, binds: Map<&2, U32>, x: U32, t: List<&2, U32>,
+        acc: List<&2, U32>, arm: U32}
+  RDo{ar: O.Arena, lin: U32, binds: Map<&2, U32>, t: List<&2, U32>,
+      acc: List<&2, U32>, a3: Maybe<&2, SBind>}
+  RJoin{p: Maybe<&2, SBind>, lin: U32, binds: Map<&2, U32>, t: List<&2, U32>, acc: List<&2, U32>}
+
+def rwk_lin(+ar: O.Arena, +lin: U32, +acc: List<&2, U32>) -> Maybe<&2, SBind>:
+  +f = O.UOp.new(ar, O.Arena.op(ar, lin), acc, O.Arena.arg(ar, lin), O.Arena.tag(ar, lin))
+  Some{SBind{O.Found.ar(f), O.Found.i(f)}}
+
+def sc_resolve(fuel: Nat, w: RWk) -> Maybe<&2, SBind>:
+  match fuel w:
+    case 0n _: None{}
+    case 1n++k RCall{ar, call, outer, None{}, ctx}: None{}
+    case 1n++k RCall{ar, call, outer, Some{body}, ctx}:
+      +rw = CG.graph_rewrite(ar, body, CG.pm_post_sched_cache(), ctx, True{})
+      +ar2 = CG.Rewritten.ar(rw)
+      +ln = CG.Rewritten.sink(rw)
+      +lb = sc_linear_binds_outer(outer, ar2, call)
+      sc_resolve(k, RSrcs{LinBinds.ar(lb), ln, LinBinds.m(lb),
+                          sc_srcs(LinBinds.ar(lb), Maybe.default(&2, U32, ln, 0)), Nil{}})
+    case 1n++k RSrcs{ar, None{}, binds, xs, acc}: None{}
+    case 1n++k RSrcs{ar, Some{lin}, binds, Nil{}, acc}: rwk_lin(ar, lin, acc)
+    case 1n++k RSrcs{+ar, Some{lin}, +binds, +x <> t, acc}:
+      sc_resolve(k, RStep{ar, lin, binds, x, t, acc, apply_binds(ar, x)})
+    case 1n++k RStep{+ar, lin, +binds, +x, t, acc, 2}:
+      sc_resolve(k, RSrcs{ar, Some{lin}, binds, t, List.append(&2, U32, acc, [x])})
+    case 1n++k RStep{+ar, lin, +binds, +x, t, acc, 3}:
+      sc_resolve(k, RDo{ar, lin, binds, t, acc, sc_apply_binds3(ar, x, binds)})
+    case 1n++k RStep{+ar, lin, +binds, +x, t, acc, 1}:
+      +prev = sc_resolve(k, RCall{ar, x, binds, sc_body(ar, x), sc_src_from(ar, x, 1)})
+      sc_resolve(k, RJoin{prev, lin, binds, t, acc})
+    case 1n++k RDo{+ar, lin, +binds, t, acc, None{}}: None{}
+    case 1n++k RDo{+ar, lin, +binds, t, acc, Some{+b}}:
+      sc_resolve(k, RSrcs{SBind.ar(b), Some{lin}, binds, t, List.append(&2, U32, acc, [SBind.i(b)])})
+    case 1n++k RJoin{None{}, lin, +binds, t, acc}: None{}
+    case 1n++k RJoin{Some{+b}, lin, +binds, t, acc}:
+      sc_resolve(k, RSrcs{SBind.ar(b), Some{lin}, binds, t, List.append(&2, U32, acc, [SBind.i(b)])})
+    case 1n++k _: None{}
+
 def sc_ab2.of(arm: U32, +ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
   match arm:
-    case 1: None{}
+    case 1: sc_resolve(O.Arena.budget(ar), RCall{ar, si, binds, sc_body(ar, si), sc_src_from(ar, si, 1)})
     case 2: Some{SBind{ar, si}}
     case _: sc_apply_binds3(ar, si, binds)
 
 def sc_apply_binds(+ar: O.Arena, +si: U32, +binds: Map<&2, U32>) -> Maybe<&2, SBind>:
   sc_ab2.of(apply_binds(ar, si), ar, si, binds)
 
-def sc_ab_one.of(m: Maybe<&2, SBind>, +g: SSub) -> Maybe<&2, SSub>:
-  match m:
-    case None{}: None{}
-    case Some{+b}: Some{SSub{SBind.ar(b), List.append(&2, U32, SSub.xs(g), [SBind.i(b)])}}
-
-def sc_ab_one(+x: U32, +binds: Map<&2, U32>, +g: SSub) -> Maybe<&2, SSub>:
-  sc_ab_one.of(sc_apply_binds(SSub.ar(g), x, binds), g)
-
-def sc_ab_srcs(xs: List<&2, U32>, +binds: Map<&2, U32>, +g: Maybe<&2, SSub>) -> Maybe<&2, SSub>:
-  match xs g:
-    case Nil{} _: g
-    case _ None{}: None{}
-    case x <> t Some{+s}: sc_ab_srcs(t, binds, sc_ab_one(x, binds, s))
-
-def sc_res_lb.of(m: Maybe<&2, SSub>, +lin: U32) -> Maybe<&2, SBind>:
-  match m:
-    case None{}: None{}
-    case Some{+g}:
-      +f = O.UOp.new(SSub.ar(g), O.Arena.op(SSub.ar(g), lin), SSub.xs(g),
-                     O.Arena.arg(SSub.ar(g), lin), O.Arena.tag(SSub.ar(g), lin))
-      Some{SBind{O.Found.ar(f), O.Found.i(f)}}
-
-def sc_res_sink.of(m: Maybe<&2, U32>, +lin_ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
-  match m:
-    case None{}: None{}
-    case Some{+lin}:
-      +lb = sc_linear_binds_outer(outer, lin_ar, call)
-      sc_res_lb.of(sc_ab_srcs(sc_srcs(LinBinds.ar(lb), lin), LinBinds.m(lb), Some{SSub{LinBinds.ar(lb), Nil{}}}), lin)
-
-def sc_res_body.of(m: Maybe<&2, U32>, +ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
-  match m:
-    case None{}: None{}
-    case Some{body}:
-      +rw = CG.graph_rewrite(ar, body, CG.pm_post_sched_cache(), sc_src_from(ar, call, 1), True{})
-      sc_res_sink.of(CG.Rewritten.sink(rw), CG.Rewritten.ar(rw), call, outer)
-
 def sc_resolve_linear_call(+ar: O.Arena, +call: U32, +outer: Map<&2, U32>) -> Maybe<&2, SBind>:
-  sc_res_body.of(sc_body(ar, call), ar, call, outer)
+  sc_resolve(O.Arena.budget(ar), RCall{ar, call, outer, sc_body(ar, call), sc_src_from(ar, call, 1)})
 
 # ---------------------------------------------------------------------------
 # 9. `canonicalize_alloc` -- __init__.py:235-237. NEEDS ctx, and it is the
