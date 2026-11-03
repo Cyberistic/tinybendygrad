@@ -1949,11 +1949,24 @@ def pa.is_alu.of(a: Arg) -> Bool:
           eq_addr(addrspace, S.Aalu{})
     case _: False{}
 
+# **THE NAME COMPARE IS ONLY LOAD-BEARING FOR THE fp8 PAIRS, AND `String.eq` IS A LEXICOGRAPHIC ORDERING.**
+# MEASURED (`PARITY.md` §107): `Ops.eq_dt` accounts for 34,757 of the 39,478 `String.eq` calls in 1,500 turns,
+# and the runtime implements `String.eq` as `String_order(...) == EQ`. The dtype table has eight `pri` values
+# that are unique on `(pri, bits, cls)`, and TWO PAIRS THAT ARE NOT: `fp8e4m3`/`fp8e4m3fnuz` both 10/8/CFloat
+# and `fp8e5m2`/`fp8e5m2fnuz` both 11/8/CFloat. So the string is compared only when `pri` is 10 or 11 -- never
+# on the CPU lane -- and the `match` on a Bool parameter is what makes it SKIP rather than evaluate and discard.
+def eq_dt_name(amb: Bool, +nm: String, +n2: String) -> Bool:
+  match amb:
+    case True{}: String.eq(nm, n2)
+    case False{}: True{}
+
 def eq_dt(x: S.Dt, y: S.Dt) -> Bool:
   match x y:
     case S.Dt{pri, bits, cls, nm} S.Dt{p2, b2, c2, n2}:
-      Bool.and(U32.is_eq(pri, p2), Bool.and(U32.is_eq(bits, b2),
-        Bool.and(eq_cls(cls, c2), String.eq(nm, n2))))
+      +pr = pri
+      Bool.and(U32.is_eq(pr, p2), Bool.and(U32.is_eq(bits, b2),
+        Bool.and(eq_cls(cls, c2),
+          eq_dt_name(Bool.or(U32.is_eq(pr, 10), U32.is_eq(pr, 11)), nm, n2))))
 
 # AxisType is an auto() Enum in Python, so its value is its declaration order,
 # exactly like Ops. That is the whole of eq_axis.

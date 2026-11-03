@@ -4793,3 +4793,54 @@ path took the text class from 2.16 to 1.18), and `List_get` (§75-§81 took the 
 the samples to cost less than the work they attribute, and at 10 us a sample against sub-microsecond
 functions that is not true. The honest next instrument is an end-to-end A/B on a named change, which is what
 has produced every landed win since §89.
+
+## 108. `eq_dt` COMPARED dtype NAMES THROUGH A LEXICOGRAPHIC ORDER: 0.9051 AND 0.9062, 49 OF 56
+
+§107's profile led to `String_order`, which led to `String.eq`, which led to `Ops.eq_dt`: **88% of the
+39,478 `String.eq` calls.** §107 then argued the site could not matter because the profile showed "23 calls a
+turn" -- and that was wrong, because the profile reports SAMPLES and not calls. Counted directly:
+
+```
+before: 3,253 String.eq calls per render
+after :    91
+```
+
+### 108.1 The change, and why the name is still compared where it must be
+
+`Dt` compares on `(pri, bits, cls, nm)`. Every dtype in the table has a unique `(pri, bits, cls)` **except
+two pairs that share all three**:
+
+```
+fp8e4m3   {10, 8, CFloat}   fp8e4m3fnuz {10, 8, CFloat}
+fp8e5m2   {11, 8, CFloat}   fp8e5m2fnuz {11, 8, CFloat}
+```
+
+so the name cannot simply be dropped. It is compared only when `pri` is 10 or 11, and the deferral is a
+`match` on a Bool parameter -- `Bool.pick` would evaluate the string compare and discard it:
+
+```
+def eq_dt_name(amb: Bool, nm, n2) -> Bool:
+  match amb:
+    case True{}: String.eq(nm, n2)
+    case False{}: True{}
+```
+
+### 108.2 Measured
+
+```
+same C: True | bytes: 4426
+run 1 (26 rounds): before 3.75 ms  after 3.24 ms   median 0.9051   24/26
+run 2 (30 rounds): before 3.65 ms  after 3.37 ms   median 0.9062   25/30
+```
+
+**49 OF 56 ROUNDS, BOTH MEDIANS 0.906 -- ~9.4% ON THE TURN, THE LARGEST SINCE §77.**
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
+
+**⇒ AND THE LESSON IS THE ONE §107 GOT WRONG**: a SAMPLING PROFILE REPORTS SAMPLES, AND DIVIDING ITS COUNTS BY
+THE TURN COUNT PRODUCES A CALL COUNT THAT IS OFF BY TWO ORDERS OF MAGNITUDE. The site that the profile's
+*mechanism* named (string equality as ordering) was real and worth 9.4%; the number the profile gave for it
+was not.
