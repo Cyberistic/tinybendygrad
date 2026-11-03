@@ -33,7 +33,7 @@
 # UPSTREAM-BLOB	movement.py	790ef23661fac2b9c292bab949377215aa93d37d
 # UPSTREAM-BLOB	symbolic.py	4215370e02d319167044265456023419d62aeeab
 # UPSTREAM-BLOB	weak.py	b91f0c4a74e4516a8ed927c0db4ed51684fc3fba
-# PORT-BLOB	uop/symbolic.bend	eaeeea06fc4149d495b5f747e967d9bd6ca76bf4
+# PORT-BLOB	uop/symbolic.bend	7609e494f93ae14b8ab108683eb7d3d3762685e8
 #
 1	symbolic.py:82	STACK	sym_table	0	PORTED
 2	symbolic.py:83	BITCAST,CAST,EXP2,LOG2,NEG,RECIPROCAL,SIN,SQRT,TRUNC	sym_table	1	PORTED
@@ -148,31 +148,31 @@
 111	symbolic.py:305	FLOORDIV	sym_table	106	PORTED
 112	symbolic.py:308	CAST	sym_table	107	PORTED
 113	symbolic.py:309	CAST	sym_table	108	PORTED
-114	symbolic.py:312	ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,FLOORDIV,FLOORMOD,MAX,MUL,OR,POW,SHL,SHR,SUB,THREEFRY,XOR	MISSING	-	MISSING
-115	symbolic.py:316	CAST	sym_table	109	PORTED
-116	symbolic.py:318	AFTER	sym_table	110	PORTED
-117	symbolic.py:322	AFTER,END	sym_table	111	PORTED
-118	symbolic.py:324	END	sym_table	112	PORTED
-119	divandmod.py:101	FLOORDIV	sym_table	113	PORTED
-120	divandmod.py:103	FLOORDIV,FLOORMOD	sym_table	114	PORTED
+114	symbolic.py:312	ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,FLOORDIV,FLOORMOD,MAX,MUL,OR,POW,SHL,SHR,SUB,THREEFRY,XOR	sym_table	109	PORTED
+115	symbolic.py:316	CAST	sym_table	110	PORTED
+116	symbolic.py:318	AFTER	sym_table	111	PORTED
+117	symbolic.py:322	AFTER,END	sym_table	112	PORTED
+118	symbolic.py:324	END	sym_table	113	PORTED
+119	divandmod.py:101	FLOORDIV	sym_table	114	PORTED
+120	divandmod.py:103	FLOORDIV,FLOORMOD	sym_table	115	PORTED
 121	divandmod.py:108	FLOORDIV,FLOORMOD	MISSING	-	MISSING
-122	weak.py:89	ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,FLOORDIV,FLOORMOD,MAX,MUL,MULACC,OR,POW,SHL,SHR,SUB,THREEFRY,WHERE,XOR	sym_table	115	PORTED
+122	weak.py:89	ADD,AND,CDIV,CMOD,CMPEQ,CMPLT,CMPNE,FDIV,FLOORDIV,FLOORMOD,MAX,MUL,MULACC,OR,POW,SHL,SHR,SUB,THREEFRY,WHERE,XOR	sym_table	116	PORTED
 123	symbolic.py:436	AND	MISSING	-	MISSING
 124	symbolic.py:437	WHERE	MISSING	-	MISSING
 125	symbolic.py:451	POW	MISSING	-	MISSING
-126	symbolic.py:453	STORE	sym_table	116	PORTED
-127	symbolic.py:454	STORE	sym_table	117	PORTED
-128	symbolic.py:458	STORE	sym_table	118	PORTED
-129	symbolic.py:460	STORE	sym_table	119	PORTED
-130	symbolic.py:462	RECIPROCAL	sym_table	120	PORTED
-131	symbolic.py:463	RECIPROCAL	sym_table	121	PORTED
-132	symbolic.py:464	RECIPROCAL	sym_table	122	PORTED
-133	symbolic.py:465	MUL	sym_table	123	PORTED
-134	symbolic.py:466	MUL	sym_table	124	PORTED
-135	symbolic.py:467	MUL	sym_table	125	PORTED
-136	symbolic.py:469	REDUCE	sym_table	126	PORTED
-137	symbolic.py:471	MUL	sym_table	127	PORTED
-138	symbolic.py:473	MUL	sym_table	128	PORTED
-139	symbolic.py:444	SINK	sym_table	129	PORTED
+126	symbolic.py:453	STORE	sym_table	117	PORTED
+127	symbolic.py:454	STORE	sym_table	118	PORTED
+128	symbolic.py:458	STORE	sym_table	119	PORTED
+129	symbolic.py:460	STORE	sym_table	120	PORTED
+130	symbolic.py:462	RECIPROCAL	sym_table	121	PORTED
+131	symbolic.py:463	RECIPROCAL	sym_table	122	PORTED
+132	symbolic.py:464	RECIPROCAL	sym_table	123	PORTED
+133	symbolic.py:465	MUL	sym_table	124	PORTED
+134	symbolic.py:466	MUL	sym_table	125	PORTED
+135	symbolic.py:467	MUL	sym_table	126	PORTED
+136	symbolic.py:469	REDUCE	sym_table	127	PORTED
+137	symbolic.py:471	MUL	sym_table	128	PORTED
+138	symbolic.py:473	MUL	sym_table	129	PORTED
+139	symbolic.py:444	SINK	sym_table	130	PORTED
 140	symbolic.py:108	WHERE	rm_table	0	PORTED
 141	symbolic.py:109	STACK	rm_table	1	PORTED
