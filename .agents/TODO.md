@@ -28082,3 +28082,5 @@ THE `canonicalize_call_body` INCREMENT IS CERTIFIED: run+repro in ONE window, `c
 `g_buf` synthesized and then REMOVED from the comment: the BUFFER shape the comment described (SPECIAL-wrapped) is not the shape `UOp._buffer` builds, and my oracle was written to match the comment. Only the three port-only `fx*_nodes` counts moved. Corpus re-certified PASS after the `.bend` edit.
 
 fx9 and fx10 close the last two `0 rows` arms of `schedsched-gate`: `sc_kdeps.of`'s END arm now moves `kdeps_E2` 2->0 and `fx9_marks` 32->23 (the linearization ORDER, not a count), and `sc_gate.of`'s LINEAR arm now moves `gate_lin` 0->1 and all six `fx10_*`. Gate is 128 rows / 101 compared / 101 agree.
+
+`create_linear_with_vars`' TAIL IS PORTED: `schedule_vars` (`used_vars` + `var_vals`, `__init__.py:279-291`) with 7 `sv_*` rows, 5 plants all red (skip arm 2 rows, mismatch-never 1, always-mismatch 1, is_bound_var 1, `variables()` off the kernel 5). The ORACLE IS A TRANSCRIPTION and the gate says so — those 12 lines are inline in CPython behind the whole pipeline. Remaining in `create_linear_with_vars`: `transform_to_call`, `pm_resolve_linear_call`, `pm_copy_from_store`.
