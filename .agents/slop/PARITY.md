@@ -4954,3 +4954,37 @@ ratio min 0.7089  p25 0.8871  median 0.9796  max 2.3742   16 of 26 faster
 (§81's 0.9751, §81's 1.0075, this 0.9796). **A COST MODEL THAT SAYS 18,225 LIST STEPS SHOULD BE 5% AND THREE
 MEASUREMENTS THAT SAY 2% MEANS THE MODEL IS WRONG, NOT THE MEASUREMENTS**: `List.get` on a nine-element list
 is a handful of nanoseconds, and the cons match that replaces it allocates its own frame per level.
+
+## 111. THE TWO PROFILE-SAMPLED CANDIDATES, COUNTED: 1,004 RECORDS AND 405 NINE-ELEMENT REVERSES
+
+§107's profile named `List_reverse_go` (2,651 samples) and `St_of` (215 samples). §107 also showed that
+samples are not calls, so both are counted on the current build, one render:
+
+```
+1,004  St_of                    <- 406 st_put + 84 st_kernel + 84 st_c + 430 from the rest
+  513  List_reverse / _go       <- 405 of them are the NINE-ELEMENT field reverse in the decoder
+  406  st_put.p                 (one per uop, the entry the piece list needs)
+   84  st_kernel, st_c          (one each per emitted line)
+   49  i64_dec                  (the decimal)
+```
+
+### 111.1 What each candidate is worth, and why neither clears the line
+
+**`List_reverse` 513 CALLS ARE ALMOST ALL NINE ELEMENTS**: the decoder reverses each row's nine field
+strings before `ku_ws` reads them, so the whole class is 405 x 9 = 3,645 list steps a render -- a handful of
+microseconds, and the 405-element `kus` reverse is one of the 513. **`St_of` IS 1,004 RECORD ALLOCATIONS**,
+and at even 100 ns each that is 0.10 ms, ~3% of the turn, before any of them is removed -- and removing them
+means threading six fields through every `_render.*` signature, which is the shape §96's type change had and
+worth far more than 3%.
+
+**⇒ SO BOTH ARE COUNTED AND NEITHER IS TAKEN.** This is the fourth time in this record that a site named by a
+sampling profile has been two orders of magnitude smaller than the profile implied, and the arithmetic is now
+done BEFORE the change rather than after -- which is the correction §108 taught in the other direction (a
+sample count read as a call count hid a 9.4% win).
+
+### 111.2 What the census says about the floor instead
+
+The decode is 9,516 characters at ~95 ns each (`String.split` recursing once per character) and the rest is
+405 records. §92 established the cost is linear in characters, §91 and §104 established that every cheaper
+way to read those characters is slower or refused. **SO THE DECODE'S 1.61 ms IS CHARACTER-BOUND AND THE ONLY
+REMAINING LEVER IS A SHORTER WIRE -- WHICH §103 computed at 2.4% for a 13% cut and §80 measured at 0.9900.**
