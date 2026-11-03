@@ -3751,3 +3751,50 @@ wrong.
 
 **⇒ SO THE DEFECT STAYS OPEN AND MEASURED**: a kernel above ~810 uops kills the daemon and downgrades the
 session to the one-shot path. It is the next slice, and it needs the third mode, not a re-run of this one.
+
+## 85. §84.3 CLOSED: THE DAEMON RENDERS EVERY SIZE AGAIN, FOR 1.4% ON THE COMMON CASE
+
+The defect first: a kernel above ~810 uops killed the worker, `render_live` fell back to the one-shot path,
+and **that fallback is sticky** -- `_OFF[0] = True` for the rest of the session. One large kernel made every
+later kernel slower.
+
+### 85.1 A zero-length chunk ends the frame
+
+The caller already cuts chunks at ROW boundaries (`_chunks`), which is what the one-shot path passes as
+argv. The frame is now one `<length>\n<chunk>` per chunk, **terminated by a zero-length chunk**, and the
+state machine gains nothing: the same two modes, with the completed-chunk transition going back to
+`SRead{0n, "", 0n, chunks + [chunk]}` instead of to `SEmit`. A total-length prefix would have needed a third
+mode; the terminator does not.
+
+`decode` folds `L.kus(h)` over the chunks -- the renderer's own decode, applied to the same pieces the
+one-shot path uses.
+
+### 85.2 Measured
+
+```
+  405 uops /  9516 B: daemon  4426 B, one-shot  4427 B, identical: True
+  810 uops / 19033 B: daemon  8773 B, one-shot  8774 B, identical: True
+ 1215 uops / 28550 B: daemon 13158 B, one-shot 13159 B, identical: True   <- used to kill the worker
+ 1620 uops / 38067 B: daemon 17563 B, one-shot 17564 B, identical: True   <- used to kill the worker
+```
+
+(the one-byte difference is the one-shot path's trailing newline; the comparison is `got == ref.rstrip("\n")`.)
+
+Through the shipped path, one session, eleven turns: **`fallbacks: 0`**, and a 1,215-uop kernel returns
+13,159 bytes with the worker still alive.
+
+### 85.3 What it costs
+
+```
+single-frame median 5.32 ms   chunked median 5.41 ms
+ratio median 1.0136  min 0.6307  max 1.1015   9 of 24 faster
+```
+
+**1.4% ON THE COMMON CASE, WHICH IS THE TERMINATOR READ AND THE CHUNK BOOKKEEPING, AND IT BUYS THE SESSION.**
+A 9.5 KB wire is ONE chunk, so the frame is the same payload read plus two more bytes and one more loop
+turn; the nine rounds that favour the chunked build put the effect at the instrument's floor.
+
+```
+ksweep 37/37 both decoders · opbattery 39/39 · portexec 7/7
+emit-mm and emit-f64 byte-identical · substrate unchanged (harness only)
+```

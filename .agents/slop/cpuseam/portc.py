@@ -528,7 +528,12 @@ class Worker:
     # rename, open, read, close) at 0.96 ms of a 5.88 ms turn; two A/B runs of this protocol against it
     # were median 0.9103 and 0.9459 (`PARITY.md` §84). A short pipe read is not a truncated request here:
     # the worker loops until it has the length it was promised (§83 records the shape the language forces).
-    self.w.write(f"{len(text)}\n{text}".encode())
+    # **THE FRAME IS ONE "<length>\n<chunk>" PER CHUNK, TERMINATED BY A ZERO-LENGTH CHUNK.** The chunks are
+    # the ones `_chunks` already cuts at ROW boundaries, so the daemon splits exactly what the one-shot path
+    # splits -- one `String.split` over 28 KB overflows this runtime's stack, and §84.3 measured a 1,215-uop
+    # kernel killing the worker and downgrading the rest of the session to the one-shot path.
+    parts = _chunks(text)
+    self.w.write("".join(f"{len(c)}\n{c}" for c in parts).encode() + b"0\n")
     import queue
     deadline = time.time() + TIMEOUT
     lines, started = [], False
