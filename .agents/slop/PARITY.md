@@ -3837,3 +3837,56 @@ is dispatch, state and records, and four attempts on its identifiable sites have
 
 This is the same shape as §44 (no mutable container) and §57 (no branch on a computed value): **a property
 of the language the port is written in, measured rather than asserted.**
+
+## 87. THE CONCAT CENSUS, AND THE FIFTH RENDER NEUTRAL
+
+§86 priced the render's text at 2.16 ms (40% of the turn) and said the runtime has no builder. This section
+counts the calls, collapses the two sites that are LOOPS of concats rather than single joins, and measures
+the collapse.
+
+### 87.1 The census
+
+An instrumented build counting `String.concat` by caller and by arity:
+
+```
+String.concat calls per render: 15,653   parts total: 28,717   mean parts/call: 1.83
+top-level sites: under_tail_go 858   rd_body_at 429   render_dtype 429   ku_indent_go 365
+                 _render_named 336   ku_const_cast_in 147   cfo_bin 144   ...
+single-part calls (n=1): 3,762 of 15,653 (24%)
+```
+
+**`String.concat` RECURSES OVER ITS LIST**, so 15,653 calls is 28,717 pieces walked one function call at a
+time -- the ~11,900 self-calls in the census are that recursion, not the port's code.
+
+### 87.2 The two loops, collapsed, and measured
+
+`under_tail.go` built a name RIGHT-RECURSIVELY, allocating a string per suffix -- O(k^2) bytes for a k-part
+name -- and was the hottest renderer site at 858 calls. It now builds a piece list and joins once.
+`ku_indent.go` built indentation by repeated concat (365 calls); depths 0-5 are now literals with the loop
+as the tail.
+
+```
+same C: True | bytes: 4426
+before median 5.18 ms   after median 5.29 ms
+ratio min 0.9210  p25 0.9833  median 1.0005  max 1.4291   12 of 24 faster
+```
+
+**NEUTRAL, REVERTED.** 1,223 of the ~3,700 top-level calls -- a third of the class -- and the class is
+2.16 ms, so a third of it should have been ~0.7 ms if the calls were uniform. **THEY ARE NOT UNIFORM**:
+`under_tail`'s names are 2-3 parts of 3-8 characters, and `ku_indent`'s depths are 1-3, so each call moves
+a handful of bytes. The 2.16 ms is 3,700 allocations of small strings, and no subset of them is worth a
+measurable fraction.
+
+### 87.3 Five attempts on the render, five neutrals
+
+| attempt | mechanism | measured |
+|---|---|---|
+| §72 `i64_shl` both arms | a strict `Bool.pick` building two records | 0.9976 |
+| §79.1 `Ops.value` order | 80% fewer tag comparisons | 0.9934 |
+| §80 packed wire | 12.8% fewer bytes | 0.9900 |
+| §81 nine named fields | 14,580 `List.get` steps | 0.9751/1.0075 |
+| §87 concat loops collapsed | 1,223 of 3,700 concat calls | 1.0005 |
+
+**⇒ AND THE ONE CHANGE THAT PAID, §78, REMOVED A WHOLE PASS OVER EVERY BYTE.** Every attempt since has
+removed a FRACTION of a pass, and the renderer is now a sum of ~3,700 sub-microsecond allocations with no
+single site above 1.3% of its own profile.
