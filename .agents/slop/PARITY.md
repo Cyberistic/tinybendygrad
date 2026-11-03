@@ -283,3 +283,30 @@ the second lane and folds the child's exit status into its own.
 **rc=1** while both lanes still print `7 match` -- so the parent's verdict really does depend on the lane
 it did not run itself. Without that fold the gate would have measured half of what it claims, which is
 the same defect as a lane that silently falls back.
+
+## 13. THE RENDERER IS NOW BYTE-IDENTICAL TO UPSTREAM ON EVERY KERNEL THE BATTERY REACHES
+
+`.agents/slop/parity/opbattery.py` runs 31 small ops through the DEFAULT lane against **tinygrad's CPU
+device** -- the target, not the PYTHON emulator. It found FOUR defects that the 7-case e2e gate could
+not, because it reaches `exp`, `log2`, `sin`, reduces, casts and int ops:
+
+| # | defect | upstream (`cstyle.py`) | port before |
+|---|---|---|---|
+| 1 | non-finite float const | `({render_cast(x, nan\|infinity\|-infinity)})` -> `((float)(__builtin_inff()))` | `inff` -- **UNDECLARED IDENTIFIER**, so `exp`/`log2`/`sin` did not compile |
+| 2 | `CBool` const | `"1" if c.val else "0"` | `((_Bool)())` -- an **EMPTY expression**; the `boolean()` arm existed but was unreachable from `ku_const_int` |
+| 3 | `u32` const | `{truncate[u32](val)}u` -> `4294967169u` | `-127u` (signed) |
+| 4 | wide int const | 64 bits -> `4611686018427387903ul` | transcribed through `i64_of_i32` -> `-1ul` |
+
+Two transcription bugs from the same pass: `"True"` contains an `e` and was read as a FLOAT
+(`O.CFloat{True}`), and `-0.0` was transcribed as `(0.0-0.0 : F32)`, which is **+0.0**, losing the sign
+upstream prints as `-0.0f`.
+
+**MEASURED AFTER: 8 of 8 kernels render BYTE-IDENTICALLY to `ClangRenderer`** -- `exp`, `log2`, `sin`
+(the largest at 15323 B), `sqrt`, `reciprocal`, `trunc`, `relu`, `maximum` -- and the battery is **31
+match / 0 failed**.
+
+**⇒ AND A CACHE NEARLY HID ALL OF IT.** `portc`'s key was the sha256 of the uop rows alone, so after
+`cstyle.bend` was fixed for non-finite constants it returned the **PRE-FIX** C and the fix looked
+inert; the same happened again after the `-0.0` fix. The key now covers the renderer sources AND the two
+generators. **A CACHE THAT HIDES A FIX IS THE SAME DEFECT CLASS AS A GATE THAT CANNOT GO RED**, and it
+cost two wrong conclusions in this session before it was fixed.
