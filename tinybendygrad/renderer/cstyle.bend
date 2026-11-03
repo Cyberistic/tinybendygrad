@@ -1905,9 +1905,15 @@ def ku_text_alu(dev: U32, +op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>, +r: R
 def ku_inline2b2(+op: O.Op, +k: KU) -> Bool:
   Bool.or(ku_inline2b2a(op, k), ku_inline2b2b(op, k))
 
+# **`numel > 1` IS APPLIED HERE, NOT ONLY AT EMIT TIME, AND THE BYTES ARE UNCHANGED BECAUSE THE LIST HAS
+# ONE CONSUMER.** `_render_defines.go` asks `U32.is_gt(DtN.n(h), 1)` and emits nothing for the rest, so a
+# pair with `n == 1` was collected, deduped and scanned to produce nothing. MEASURED (`PARITY.md` §117): the
+# shipped 405-uop kernel has 315 ALU-addr uops of which ONE has `numel > 1`, and the pass still spent 2,559
+# `has` calls and ~8,800 `DtN` accessor calls -- 18% of every call in the walk -- to emit ONE typedef row.
 def uops_to_dtypes.one(+k: KU, +acc: List<&2, DtN>) -> List<&2, DtN>:
   Bool.pick(List<&2, DtN>,
-    Bool.and(is_alu_addr(KU.addr(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void()))),
+    Bool.and(Bool.and(is_alu_addr(KU.addr(k)), Bool.not(O.eq_dt(KU.dtype(k), S.void()))),
+      U32.is_gt(KU.numel(k), 1)),
     uops_to_dtypes.put(DtN{KU.dtype(k), KU.numel(k)}, acc), acc)
 
 def ku_inline2b(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:

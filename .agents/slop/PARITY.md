@@ -5179,3 +5179,52 @@ named divergence, not a hunt.
 
 **⇒ AND `pad_cat` IS `ORACLE REFUSED`, NOT A PASS:** the CPython lane asserts, so its kernels are captured by
 neither side and the row says so. The 37 that were captured are compared.
+
+## 117. THE DTYPE PASS WAS 18% OF THE WALK'S CALLS TO EMIT ONE TYPEDEF ROW
+
+§113 named the walk as 64,470 calls with no hot spot, and the largest single group inside it:
+`uops_to_dtypes` at 2,559 `has` calls plus ~8,805 `DtN` accessor calls. This is that group, measured
+before the change by COUNTING THE WIRE rather than by modelling:
+
+```
+rows 405  alu-addr 315  alu with numel>1 1
+distinct (dtcode, numel) pairs with numel>1: 1 [('1', 4)]
+```
+
+**315 pairs were collected, deduped and scanned, and ONE of them survived the emit filter.** The list has
+exactly one consumer -- `_render_defines.go`, which asks `U32.is_gt(DtN.n(h), 1)` and emits nothing for the
+rest -- so the predicate is now applied AT COLLECTION, in `uops_to_dtypes.one`, and the list, its order and
+the emitted bytes are unchanged.
+
+### 117.1 Two instruments, because the machine was at load 20
+
+Wall clock is not usable at this load, so the second instrument is the worker's own CPU time per render,
+read from `RUSAGE_CHILDREN` **after `kill()` AND `wait()`** -- an unreaped child is charged nothing, and the
+first version of this reading was `0.000 ms` for that reason.
+
+```
+wall, 26 rounds:  base 4.00 ms  new 3.64 ms  median 1.0010  13/26   (load ~4)
+wall, 34 rounds:  base 8.94 ms  new 9.46 ms  median 0.9639  18/34   (load ~20)
+wall, 30 rounds:  base 6.35 ms  new 7.16 ms  median 0.9577  15/30   (load ~22)
+cpu,  12 rounds:  base 12.73 ms new 11.87 ms median 0.9482  11/12   (load ~20)
+cpu,  16 rounds:  base 13.33 ms new 12.51 ms median 0.9665  13/16   (load ~21)
+```
+
+**THE CPU READING IS THE ONE THAT SURVIVES THE LOAD (24 of 28 rounds faster, 0.948 and 0.967), and the wall
+readings agree on two of three.** The 1.0010 run is the one taken at load ~4 and it is also the one with the
+fewest rounds; the two later wall runs are at 0.96.
+
+### 117.2 The benchmark input is a FUNCTION of the enum, and this turn paid for forgetting it
+
+The first A/B stalled the daemon after `@@BEGIN`. The cause was not the change: the wire carries op INDICES,
+`REFPARAM` was INSERTED at index 6 by §116, so the pre-re-pin wire decoded into the wrong constructors and
+the renderer looped. Re-indexing every op field (`+1` for any index >= 6) gave a wire the new build renders
+in 2 ms, and `same C: True | bytes: 4426` on the timed path. **A SAVED WIRE IS A SAVED ENUM**, and the
+`ENUM-PIN` guard in `portc` covers the table it generates but not a wire file lying on disk.
+
+### 117.3 The gates
+
+```
+PROOF-ALL rc=0 ALL PROOFS CHECK | ksweep 37/37 both decoders | opbattery 39/39 | portexec 7/7
+emit-mm and emit-f64 byte-identical
+```
