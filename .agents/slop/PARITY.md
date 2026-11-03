@@ -2780,3 +2780,16 @@ graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical
 **SO `c4e90a8e9` (§62, the packed worker) AND `6cac8569b` (§63) ARE CERTIFIED**: both changed only
 `portc.py` and this file, neither is in the substrate walk, so the digest they were built on is the one
 this run records. The `live` reading afterwards is a later unit's in-flight edit, not a gap in this one.
+
+### 63.2 The certificate for the tree as it stands
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **11:03**, `substrate-head=1fa03d291`:
+
+```
+substrate-start = substrate-end = live = af2e26407209...
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+```
+
+That is HEAD, on a tree another unit had just moved, and it is the first reading in several turns where all
+three digests agree **and** the head is the commit I am standing on. The whole of this session's renderer work
+is inside it.
