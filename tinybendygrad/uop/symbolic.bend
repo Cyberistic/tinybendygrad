@@ -3280,6 +3280,7 @@ def sym_284.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_284(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_284.pat(x, u), sym_284.mk(x, u))
 
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3370,6 +3371,30 @@ def p_const_neg.go(m: Maybe<&2, O.Const>) -> Bool:
     case _: False{}
 
 def p_const_neg(+x: F.Folded, +u: U32) -> Bool: p_const_neg.go(sy_val(x, u))
+
+def p_const_pos(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.not(p_const_neg(x, u)), Bool.not(p_is_const_0(x, u)))
+
+# symbolic.py:287  ((UPat.var("x") // UPat.cvar("c1")) // UPat.cvar("c2"),
+#                     lambda x,c1,c2: x//(c1*c2) if c2.vmin>0 else None)
+# TWO DIVISIONS BY CONSTANTS COMPOSE INTO ONE, and the guard is `c2 > 0`: a NEGATIVE divisor
+# would flip the rounding of the inner division, so the product is only the composition when
+# the OUTER divisor is positive.
+def sym_287.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(sy_is_const(x, sy_src1(x, u)),
+      Bool.and(p_const_pos(x, sy_src1(x, u)),
+        Bool.and(Bool.and(sy_is_op(x, i, O.OpsFLOORDIV{}), sy_nsrc_is(x, i, 2)),
+          sy_is_const(x, sy_src1(x, i))))))
+
+def sym_287.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +i = sy_src0(x, u)
+  +m = mint_bin(mint_ar(sy_ar(x)), O.OpsMUL{}, sy_src1(x, i), sy_src1(x, u))
+  Some{mint_bin(m, O.OpsFLOORDIV{}, sy_src0(x, i), O.Found.i(m))}
+
+def sym_287(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_287.pat(x, u), sym_287.mk(x, u))
 
 def sym_191.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsPOW{}), sy_nsrc_is(x, u, 2)),
@@ -3581,10 +3606,11 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{78, [O.OpsAND{}], Nil{}, },   # 284
     O.PMEntry{79, [O.OpsADD{}], Nil{}, },   # 284
     O.PMEntry{80, [O.OpsMUL{}], Nil{}, },   # 284
-    O.PMEntry{81, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{82, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{83, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{84, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{81, [O.OpsFLOORDIV{}], Nil{}, },   # 287
+    O.PMEntry{82, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{83, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{84, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{85, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3956,7 +3982,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4013,10 +4039,11 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 78: sym_284(x, u)
     case 79: sym_284(x, u)
     case 80: sym_284(x, u)
-    case 81: sym_462(x, u)
-    case 82: sym_463(x, u)
-    case 83: sym_464(x, u)
-    case 84: sym_444(x, u)
+    case 81: sym_287(x, u)
+    case 82: sym_462(x, u)
+    case 83: sym_463(x, u)
+    case 84: sym_464(x, u)
+    case 85: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
