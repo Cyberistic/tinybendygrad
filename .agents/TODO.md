@@ -27972,3 +27972,46 @@ the `CTX` this session just typed -- **AND **THE **VALUE **THAT **BODY **NEEDS *
 **⇒ AND **THE **CERTIFICATE **IS **TAKEN **AND **PUSHED **REGARDLESS:** `081cf904`, seven
 of seven readings OK, `PASS -- the claim is ESTABLISHED`, and it covers the whole `CTX`
 increment.
+
+`bottom_up` IS NOT ONE BEHAVIOUR, AND FOR THE DRIVER `canonicalize_call_body` USES IT IS INDISTINGUISHABLE FROM THE DEFAULT
+
+**⇒ AND **THE **PRESCRIPTION **IN **THE **BRIEF -- "`graph_rewrite_bu` ... per-node `pm_rewrite_m`
+**fixpoint copying `sub_fix` ... a gate row pair that proves it differs from
+`walk_rewrite` (pre-order vs post-order on a table whose rule reads a child)" -- I **TRIED
+**TO **SATISFY **AND **THE **MEASUREMENTS **SAY **IT **CANNOT **BE **SATISFIED **AS
+**WRITTEN.  **THREE **FIXTURES, **CPYTHON, **`AFTER(AFTER(CONST))`:**
+
+| rule | `graph_rewrite` default | `bottom_up=True` |
+|---|---|---|
+| `AFTER -> src0` | **`x`** (`is_x=True`) | **`x`** -- SAME |
+| `AFTER(CONST) -> src0` | `AFTER(...)` | `AFTER(...)` -- SAME |
+| `AFTER -> its src0`, but **`walk=True`** | `x` | **`a1`** -- DIFFERENT |
+
+**⇒ AND **THE **THIRD **ROW **IS **THE **ONLY **DIVERGENCE **AND **IT **IS **NOT **THE
+**DRIVER **`canonicalize_call_body` **USES.**  `canonicalize_call_body` calls
+`graph_rewrite(..., bottom_up=True)` with `walk` DEFAULTED TO `False`, i.e.
+`unified_rewrite`.  **AND **`unified bottom_up` AGREED **WITH **`unified default` **ON
+**EVERY **TABLE **I **COULD **CONSTRUCT, **INCLUDING **A **CHILD-READING **ONE **AND **A
+**SUBSTITUTION -- **SO **A **ROW **THAT **PROVES **THEY **DIFFER **HAS **NO **WITNESS
+**TODAY, **AND **A **ROW **THAT **CANNOT **GO **RED **IS **THE **LABEL **THIS **SESSION
+**HAS **DELETED **THREE **TIMES.
+
+**⇒ AND **THE **SOURCE **SAYS **WHY **THE **THIRD **ROW **DIVERGES:** `walk_rewrite`
+(:1788) **IS **A **DIFFERENT **ALGORITHM -- ON **A **FIRST **VISIT **IT **APPLIES `bpm`
+**ONCE **AND **THEN **`continue`s WITHOUT **DESCENDING** (`:1796-1798`: *"try bpm on
+original node first, if it rewrites, use result as-is (no traversal into replacement)"*),
+while `unified_rewrite`'s stage 0 runs `cached_bpm_rewrite` **IN **A **LOOP **WITH **A
+**WAITLIST.**  **TWO **DRIVERS, **TWO **`bottom_up` **SEMANTICS, **AND **I **HAD **BEEN
+**DESCRIBING **THE **`unified` **ONE **AS **IF **IT **WERE **THE **ONLY **ONE.
+
+**⇒ AND **SO **THE **HONEST **NEXT **STEP **IS **NOT **A **DRIVER, **IT **IS **A
+**QUESTION **THE **TREE **CAN **ANSWER: **port `canonicalize_call_body` ON **THE
+**EXISTING `unified` **DRIVER **WITHOUT `bottom_up` **AND **COMPARE **IT **WITH **CPYTHON.
+**IF **IT **AGREES,** `bottom_up` **IS **NOT **A **WALL **FOR **THIS **CALLER **AT **ALL
+-- **which **would **REMOVE **a **wall **instead **of **adding **a **driver **that **no
+**row **can **falsify.**  That **port **is **blocked **by **the **OTHER **half **named
+**in `c4d8a3ae0`: `Aa`/`CallifyCtx` **must **move **into `uop/ops.bend` **before
+`CTX` **can **carry **it, **because `ops.bend` **cannot **import `schedule`.
+
+**⇒ AND **THE **TREE **IS **GREEN **AND **UNCHANGED **BY **THIS **FINDING:** nothing was
+written, `uopvars-gate` rc=0, and the certificate at `081cf904` still stands.
