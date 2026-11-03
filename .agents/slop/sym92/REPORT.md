@@ -312,3 +312,27 @@ a `simplify` for this purpose is the same job as `checks/`'s corpus, not a rule 
 `:193` landed as a row (135 PORTED / 6 MISSING); and the remaining six each now have their TRUE
 size recorded -- `:252` dead upstream, `:259`/`:436`/`:437` gated on `bool_slice` + `uop_given_valid`,
 `:451` on `xpow_int`, and `divandmod.py:108` on the four pieces above.
+
+## 2026-11-03 (final, 5): `xpow_int` is written and BYTE-IDENTICAL; `:451` is held by `xpow`
+
+`xpow_int` (transcendental.py:267-282) is in `symbolic.bend` and its INT arm is **byte-identical to
+CPython over 25,260 characters** of canonical form on `i32**i32` — a 7-iteration square-and-multiply
+loop. Three of its shapes are not the obvious node and were read off the answer: `const_like(1)` on
+a u32 node is `CAST(CONST 1)`; `.eq(v)` is `CMPNE(CMPNE(x, v), True)`, two nodes; `-one` is
+`MUL(one, CONST -1)`; and the mask is a BARE weakint `CONST(2**bits - 1)`.
+
+IT IS NOT WIRED, because the FLOAT arm diverges and the cause is NOT this rule. First differing
+character at offset 87: the port prints `(cast:f32 (cast:i32 yf))` where CPython prints
+`(cast:weakfloat (cast:i32 yf))`. That is `xpow.flags`, which casts back to `S.single()` where
+transcendental.py:260 casts to `exponent.dtype`.
+
+**AND THERE ARE TWO STACKED DEFECTS THERE, not one**: `tx_t_apply.sqrt` mints `tx_cf(ar, 0.5)` — a
+bare weakfloat const — where transcendental.py:276 writes `d.const_like(0.5)`, a const at D's
+dtype. Both want the exponent's dtype, and `tx_t_apply` ALREADY RECEIVES one (`dt`), so the fix is
+threading `dt` into `xpow`/`xpow.flags`/`xpow.tail` plus the three other call sites, then
+re-verifying the SQRT rule and the two `w_xpow` fixture rows.
+
+The `TODO(p2)` above `sym_451` records that node, that offset, both defects and those call sites.
+**The row stays MISSING**: wiring it now would make the corpus red for a defect this session did
+not fix, and an unwired body byte-identical on its int arm is worth more than a wired one that is
+not.

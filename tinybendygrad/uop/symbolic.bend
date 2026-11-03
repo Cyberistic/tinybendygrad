@@ -5120,9 +5120,13 @@ def xpow_int(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 #   byte-identical to CPython (25,260 chars on `i32**i32`), and the FLOAT arm is not -- the port's
 #   `xpow.flags` casts `exponent.cast(int32)` to `S.single()` (f32) where transcendental.py:260
 #   casts to `exponent.dtype` (weakfloat for a weakfloat exponent). MEASURED, `probe-xi.bend`
-#   differs from CPython at char 87 on exactly that node. Fixing it means threading the exponent's
-#   dtype into `xpow`/`xpow.flags`/`xpow.tail` and its THREE other call sites (the SQRT rule and
-#   the two `w_xpow` fixture rows), each of which would then need its own re-verification.
+#   differs from CPython at char 87 on exactly that node. THERE ARE TWO DEFECTS, NOT ONE: `xpow`'s
+#   own cast wants `exponent.dtype`, and `tx_t_apply.sqrt` mints `tx_cf(ar, 0.5)` -- a BARE
+#   weakfloat const -- where transcendental.py:276 writes `d.const_like(0.5)`, i.e. a const at
+#   D'S dtype. Both want the exponent's dtype, and `tx_t_apply` already RECEIVES one (`dt`), so
+#   the fix is to thread `dt` into `xpow`/`xpow.flags`/`xpow.tail` and pass it at the three other
+#   call sites (the SQRT rule, which has it, and the two `w_xpow` fixture rows, which state it),
+#   each of which would then need its own re-verification.
 def sym_451.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(sy_is_op(x, u, O.OpsPOW{}), sy_nsrc_is(x, u, 2))
 
