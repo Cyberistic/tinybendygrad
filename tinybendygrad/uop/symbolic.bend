@@ -2628,6 +2628,36 @@ def sy_keep.go(acc: Maybe<&1, U32>, v: Maybe<&1, U32>) -> Maybe<&1, U32>:
 # src is a SINGLE-op UPat (ops.py:1475-1478).
 def OP_INVALID() -> List<&2, O.Op>: [O.OpsCONST{}]
 
+# `fold_const_where` -- symbolic.py:113, THE BODY OF THE RULE AT :202.
+#
+#     ret = c0 if gate.val else c1
+#     return ret.ccast(w.dtype) if ret.op is Ops.CONST and ret.dtype in dtypes.weaks
+#                                  and w.dtype not in dtypes.weaks else ret
+#
+# THE POINT OF IT IS THE DTYPE. Folding a strong-dtype WHERE whose surviving branch is a WEAK
+# const must KEEP the strong dtype, or the fold silently narrows the result. So the `ccast` is
+# guarded on BOTH sides: the branch is weak AND the WHERE is not.
+#
+# `sy_ccast` HAD NO CALLER BEFORE THIS -- ported (`symbolic.bend:456`) and unreachable, which is
+# a body with no rule; this rule is its first. `sy_val_truthy` is `bool(gate.val)` (its own
+# comment cites symbolic.py:127-128) and `dt_weak_of` is `dtype in dtypes.weaks`.
+def sy_fcw_pick(truthy: Bool, +c0: U32, +c1: U32) -> U32:
+  match truthy:
+    case True{} : c0
+    case False{}: c1
+
+def sy_fcw_emit(go: Bool, ret: U32, +x: F.Folded, +u: U32, wd: S.Dt) -> Maybe<&1, U32>:
+  match go:
+    case False{}: Some{ret}
+    case True{} : sy_ccast(x, ret, wd)
+
+def sy_fcw(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+  +ret = sy_fcw_pick(sy_val_truthy(x, sy_src0(x, u)), sy_src1(x, u), sy_src2(x, u))
+  sy_fcw_emit(Bool.and(sy_is_const(x, ret),
+                       Bool.and(dt_weak_of(sy_dt1(x, ret)),
+                                Bool.not(dt_weak_of(sy_dt1(x, u))))),
+              ret, x, u, sy_dt1(x, u))
+
 def sym_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, [O.OpsSTACK{}],                   OP_INVALID(),                    },   # 82
@@ -2675,10 +2705,11 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{42, [O.OpsPOW{}],                     Nil{},                           },   # 191
     O.PMEntry{43, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
     O.PMEntry{44, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
-    O.PMEntry{45, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{46, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{47, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{48, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{45, [O.OpsWHERE{}],                  Nil{},                           },   # 202
+    O.PMEntry{46, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{47, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{48, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{49, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -2707,7 +2738,7 @@ def sym_table_len() -> Nat:
   nats([1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
-        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
+        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
 
 # THE DRIVER, twice. `sym_*` for the `sym` composition and `rm_*` for
 # `pm_remove_invalid`, and the duplication is the honest cost of not having
