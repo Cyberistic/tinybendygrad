@@ -1414,3 +1414,41 @@ string, so this cannot change the C, and it does not.
 `p25` 108.6 vs 96.2. The `p25` direction is the one the change predicts and the `min` is a tie, and neither
 is a measurement at that load. **A clean A/B on a quiet machine is owed, and this section does not claim a
 number for it.**
+
+### 33.2 The A/B §33.1 owed, on a quiet-enough machine
+
+`.agents/slop/parity/ab33.py` runs the two artifacts **interleaved inside one round** with the order
+alternated, so a load spike lands on both and neither artifact pays whatever the machine was doing at the
+start. 12 rounds, 405-uop wire, load average **7.1** (a corpus run had just finished; `min` is the
+least-polluted statistic and the per-round RATIO is the one that survives a moving machine):
+
+| | min | p25 | median |
+|---|---|---|---|
+| before (7x `i64_dec`) | 53.5 ms | 54.2 ms | 54.7 ms |
+| after (1x) | **50.8 ms** | **51.5 ms** | **53.1 ms** |
+
+```
+ratio new/old   min 0.8676   p25 0.9449   median 0.9538   max 1.0233
+rounds where the new artifact is faster: 11 of 12
+```
+
+**SO THE CHANGE IS REAL AND IT IS ~4.6%**: 11 of 12 interleaved rounds faster, median ratio 0.954, and the
+band does not straddle 1.0 on any robust statistic. §33.1 recorded the delta as owed at load 13.8; it is paid
+here, and it is smaller than the seven-to-one call count would suggest for the same reason §32's four percent
+was: **the render is about half of this command and `bun`'s start-up is the other half.**
+
+**REVERTING WAS THE OTHER ARM OF THIS TEST AND IT WAS NOT TAKEN**, because the measurement came out on the
+side the change predicts rather than on the tie §33.1 saw.
+
+### 33.3 The certificate
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **08:33**, `substrate-head=cc3f34456`:
+
+```
+substrate-start = substrate-end = live = 442b8b619faf208976fb48def2b0bc42d7d5b5f761564b238a9bef26b7846208
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4
+```
+
+The same digest also covers §32's `helpers.bend` (commit `445396e21`), which had no certificate of its own --
+one run certifies the tree as it stands, which is the whole point of a worktree digest.
