@@ -1492,6 +1492,8 @@ def fold_const_alu(n: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 def fold_const_alu.at(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   fold_const_alu(sy_nsrc(x, u), x, u)
+
+
 # THE RULES. A RULE'S CAPTURES ARE `src[k]` OF THE NODE IT MATCHED -- Python's
 # compiled form passes them as arguments and this port reads them by index,
 # because the arena is the only shared value and a closure cannot take one. The
@@ -1749,11 +1751,17 @@ def sym_93.gi(x: F.Folded, u: U32) -> U32: sy_src2(x, u)
 
 def sym_93.pick(cond: Bool, t: U32, f: U32) -> U32: Bool.pick(U32, cond, t, f)
 
-def sym_93.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
-  sy_tri(hit, Some{sy_where(sy_ar(x), sy_src0(x, sym_93.gate(x, u)),
-    sy_where(sy_ar(x), sym_93.gx(x, u), sy_src1(x, u), sy_src2(x, u)), sym_93.gi(x, u))})
+# TWO WHERES AND BOTH ARE NEW, so this rule is Found-family: `cond.where(x.where(a,b), i)`
+# builds the inner gate first and the outer one on the arena the inner grew.
+def sym_93.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match hit:
+    case True{}:
+      +g = sym_93.gate(x, u)
+      +inner = mint_where(mint_ar(sy_ar(x)), sym_93.gx(x, g), sy_src1(x, u), sy_src2(x, u))
+      Some{mint_where(inner, sy_src0(x, g), O.Found.i(inner), sym_93.gi(x, g))}
+    case _: None{}
 
-def sym_93(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sym_93.hit(sym_93.pat(x, u), x, u)
+def sym_93(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_93.hit(sym_93.pat(x, u), x, u)
 
 # symbolic.py:99  (UPat(Ops.STORE, src=(UPat(Ops.INDEX, src=(UPat(), invalid_pat),
 #                       allow_any_len=True).or_casted(), UPat())), lambda i: UOp(Ops.NOOP))
@@ -1846,14 +1854,20 @@ def p_all_bare(+x: F.Folded, u: U32) -> Bool: p_all_bare.go(sy_srcs(x, u), x, Tr
 #                     fold_const_alu)
 # "one rule per spelling: bare has no width, a pair evaluates at its stated
 # width". `src=bare_const` is an `itertools.repeat`, so EVERY src is a bare const.
+def fold_const_alu_f(n: U32, +x: F.Folded, +u: U32, +f: O.Found) -> Maybe<&1, O.Found>:
+  mint_const_like(f, x, u, sy_maybe_c(fca.n(n, x, u)))
+
+def fold_const_alu_f.at(+x: F.Folded, +u: U32, +f: O.Found) -> Maybe<&1, O.Found>:
+  fold_const_alu_f(sy_nsrc(x, u), x, u, f)
+
 def sym_161.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(O.GroupOp.alu(sy_op(x, u)), Bool.not(O.eq_op(sy_op(x, u), O.OpsTHREEFRY{}))),
     p_all_bare(x, u))
 
-def sym_161.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
-  sy_tri(hit, fold_const_alu.at(x, u))
+def sym_161.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(hit, fold_const_alu_f.at(x, u, mint_ar(sy_ar(x))))
 
-def sym_161(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sym_161.hit(sym_161.pat(x, u), x, u)
+def sym_161(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_161.hit(sym_161.pat(x, u), x, u)
 
 # `UOp.const_like(v)` carrying the arena, for a body that has the VALUE and not a `Const`:
 # `:155`/`:157` read it out of a `CONST` node, so the `Maybe` crosses the boundary and the
@@ -1888,12 +1902,6 @@ def sym_157(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # symbolic.py:162 -- the CASTED spelling of `:161`. The two rules differ in the PATTERN only
 # (`bare_const` against `casted_const`) and both answer `fold_const_alu`, which MINTs.
-def fold_const_alu_f(n: U32, +x: F.Folded, +u: U32, +f: O.Found) -> Maybe<&1, O.Found>:
-  mint_const_like(f, x, u, sy_maybe_c(fca.n(n, x, u)))
-
-def fold_const_alu_f.at(+x: F.Folded, +u: U32, +f: O.Found) -> Maybe<&1, O.Found>:
-  fold_const_alu_f(sy_nsrc(x, u), x, u, f)
-
 def sym_162.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(O.GroupOp.alu(sy_op(x, u)), Bool.not(O.eq_op(sy_op(x, u), O.OpsTHREEFRY{}))),
     p_all_casted(x, u))
@@ -1955,17 +1963,17 @@ def sym_138.pat(+x: F.Folded, +u: U32, +p: Sw) -> Bool:
 # THE THREE ARMS AS INDICES, and each is ONE `Found` chain: `x`, then
 # `CMPNE(x, CONST(True))` and then the bare `CONST(True)` -- the last because
 # `x.const_like(True)` is at `x`'s own dtype, which is bool.
-def sym_138.arm(+c3: U32, +b: U32, +f: O.Found) -> U32:
-  Bool.pick(U32, U32.is_eq(c3, 0), b,
-    Bool.pick(U32, U32.is_eq(c3, 1), O.Found.i(mint_not(f, b)),
-      O.Found.i(mint_const(O.UOp.const(O.Found.ar(f), O.CBool{True{}}), O.CBool{True{}}, S.boolean()))))
+def sym_138.arm(+c3: U32, +b: U32, +f: O.Found) -> O.Found:
+  Bool.pick(O.Found, U32.is_eq(c3, 0), O.Found{O.Found.ar(f), b},
+    Bool.pick(O.Found, U32.is_eq(c3, 1), mint_not(f, b),
+      mint_const(O.UOp.const(O.Found.ar(f), O.CBool{True{}}), O.CBool{True{}}, S.boolean())))
 
-def sym_138.hit(hit: Bool, c3: U32, +p: Sw, +x: F.Folded) -> Maybe<&1, U32>:
+def sym_138.hit(hit: Bool, c3: U32, +p: Sw, +x: F.Folded) -> Maybe<&1, O.Found>:
   match hit:
     case True{}: Some{sym_138.arm(c3, sy_src0(x, Sw.a(p)), mint_ar(sy_ar(x)))}
     case _: None{}
 
-def sym_138(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+def sym_138(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +p = p_cast(x, u)
   sym_138.hit(sym_138.pat(x, u, p), sy_cval3(sy_val(x, Sw.b(p))), p, x)
 
@@ -3120,10 +3128,10 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{5, OP_BINARY_NC(),                   OP_INVALID(),                    },   # 89
     O.PMEntry{6, [O.OpsREDUCE{}],                   Nil{},                           },   # 90
     O.PMEntry{7, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 92
-    O.PMEntry{8, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 93
+    O.PMEntry{8, [O.OpsWHERE{}],                   [O.OpsWHERE{}],                    },   # 93
     O.PMEntry{9, [O.OpsWHERE{}],                   Nil{},                           },   # 95
     O.PMEntry{10, [O.OpsWHERE{}], Nil{}, },   # 97
-    O.PMEntry{11, [O.OpsWHERE{}], Nil{}, },   # 99
+    O.PMEntry{11, [O.OpsWHERE{}], [O.OpsWHERE{}], },   # 99
     O.PMEntry{12, [O.OpsSTORE{}],                   OP_INVALID(),                    },   # 101
     O.PMEntry{13, [O.OpsLOAD{}],                    OP_INVALID(),                    },   # 103
     O.PMEntry{14, OP_SELF(),                        Nil{},                           },   # 120
@@ -3220,7 +3228,6 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 1: sym_83(x, u)
     case 5: sym_89(x, u)
     case 7: sym_92(x, u)
-    case 8: sym_93(x, u)
     case 12: sym_101(x, u)
     case 13: sym_103(x, u)
     case 14: sym_120(x, u)
@@ -3235,12 +3242,10 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 25: sym_133(x, u)
     case 26: sym_134(x, u)
     case 27: sym_135(x, u)
-    case 29: sym_138(x, u)
     case 30: sym_140(x, u)
     case 34: sym_145(x, u)
     case 35: sym_147(x, u)
     case 36: sym_149(x, u)
-    case 40: sym_161(x, u)
     case 42: sym_163(x, u)
     case 47: sym_174(x, u)
     case 48: sym_178(x, u)
@@ -3420,8 +3425,16 @@ def sym_87.mk(+f: O.Found, +op: O.Op, +g: U32, +y: U32) -> Maybe<&1, O.Found>:
 def sym_87(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_87.pat(x, u), sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src0(x, u), sy_src1(x, u)))
 
+# `y.alu(op, x)` AND NOT `x.alu(op, y)`: the gate is src1 here, so the ROOT's src0 comes
+# FIRST in the answer and the gate's src1 second. MEASURED 2026-11-03: sharing `:87`'s body
+# emitted `(add x y)` where CPython emits `(add y x)`.
+def sym_88.mk(+f: O.Found, +op: O.Op, +g: U32, +y: U32) -> Maybe<&1, O.Found>:
+  +ar = O.Found.ar(f)
+  +f1 = mint_alu(op, f, [y, O.Arena.src(ar, g, 1)])
+  Some{mint_where(f1, O.Arena.src(ar, g, 0), O.Found.i(f1), O.Arena.src(ar, g, 2))}
+
 def sym_88(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
-  sy_tri_f(sym_88.pat(x, u), sym_87.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src1(x, u), sy_src0(x, u)))
+  sy_tri_f(sym_88.pat(x, u), sym_88.mk(O.Found{sy_ar(x), u}, sy_op(x, u), sy_src1(x, u), sy_src0(x, u)))
 
 # ONE BODY FOR THE PAIR: `(g, y)` in that order, the gate's `x` first inside the op for :87 and
 # the swapped pair for :88 -- which is exactly the two upstream lambdas.
@@ -3550,7 +3563,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 17, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 37, 38, 39, 40, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3558,18 +3571,21 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 3: sym_87(x, u)
     case 4: sym_88(x, u)
     case 6: sym_90(x, u)
+    case 8: sym_93(x, u)
     case 9: sym_95(x, u)
     case 10: sym_97(x, u)
     case 11: sym_99(x, u)
     case 17: sym_123(x, u)
     case 19: sym_125(x, u)
     case 28: sym_136(x, u)
+    case 29: sym_138(x, u)
     case 31: sym_142(x, u)
     case 32: sym_143(x, u)
     case 33: sym_144(x, u)
     case 37: sym_151(x, u)
     case 38: sym_155(x, u)
     case 39: sym_157(x, u)
+    case 40: sym_161(x, u)
     case 41: sym_162(x, u)
     case 43: sym_167(x, u)
     case 44: sym_168(x, u)
