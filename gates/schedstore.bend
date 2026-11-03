@@ -347,19 +347,19 @@ def calls() -> List<&2, U32>:
   [Fx.saB(fx()), Fx.saS(fx()), Fx.saA(fx()), Fx.saAs(fx()), Fx.saE(fx()), Fx.saSk(fx()),
    Fx.saRsa(fx()), Fx.saRsb(fx()), Fx.saRsast(fx()), Fx.call(fx())]
 
-def ctx() -> S.CallifyCtx:
-  S.cs_run(S.callify_ctx(), Fx.ar(fx()), calls())
+def ctx() -> O.CallifyCtx:
+  S.cs_run(O.callify_ctx(), Fx.ar(fx()), calls())
 
 def count(l: List<&2, U32>) -> U32:
   U32.from_nat(List.length(&2, U32, l))
 
-def counta(l: List<&2, S.Aa>) -> U32:
-  U32.from_nat(List.length(&2, S.Aa, l))
+def counta(l: List<&2, O.Aa>) -> U32:
+  U32.from_nat(List.length(&2, O.Aa, l))
 
-def cs_reps() -> String: U32.show(count(S.CallifyCtx.replacements(ctx())))
-def cs_allocs() -> String: U32.show(counta(S.CallifyCtx.allocs(ctx())))
-def cs_views() -> String: U32.show(count(S.CallifyCtx.views(ctx())))
-def cs_stores() -> String: U32.show(count(S.CallifyCtx.stores(ctx())))
+def cs_reps() -> String: U32.show(count(O.CallifyCtx.replacements(ctx())))
+def cs_allocs() -> String: U32.show(counta(O.CallifyCtx.allocs(ctx())))
+def cs_views() -> String: U32.show(count(O.CallifyCtx.views(ctx())))
+def cs_stores() -> String: U32.show(count(O.CallifyCtx.stores(ctx())))
 
 # THE STORES' OPS, IN ORDER: "AFTER,AFTER,AFTER". CPython prints the same
 # three ops in the same order, so this row pins the APPEND ORDER and the COUNT
@@ -384,7 +384,7 @@ def ops2(l: List<&2, U32>) -> String:
     case Nil{}     : ""
     case x <> rest : String.concat([opname(Fx.ar(fx()), x), ",", ops2(rest)])
 
-def cs_ord() -> String: ops2(S.CallifyCtx.stores(ctx()))
+def cs_ord() -> String: ops2(O.CallifyCtx.stores(ctx()))
 
 # ===========================================================================
 # `canonicalize_alloc` -- __init__.py:231-233. THE SECOND AND LAST OF THE
@@ -485,9 +485,9 @@ def ca_slot.of(m: Maybe<&2, U32>) -> String:
 # canonicalized ALLOC is a NEW node -- and a ctx without its arena cannot
 # answer for the next call.
 type CaS is Data:
-  CaS{c: S.CallifyCtx, ar: O.Arena, a: Maybe<&2, O.Found>}
+  CaS{c: O.CallifyCtx, ar: O.Arena, a: Maybe<&2, O.Found>}
 
-def CaS.c(x: CaS) -> S.CallifyCtx:
+def CaS.c(x: CaS) -> O.CallifyCtx:
   match x:
     case CaS{c, ar, a}: c
 
@@ -524,11 +524,11 @@ def ca_step.of(p: S.CaPut, ar: O.Arena) -> CaS:
         case Some{+f}: CaS{c2, O.Found.ar(f), a2}
         case None{}   : CaS{c2, ar, a2}
 
-def ca_step(c: S.CallifyCtx, +ar: O.Arena, b: U32) -> CaS:
+def ca_step(c: O.CallifyCtx, +ar: O.Arena, b: U32) -> CaS:
   ca_step.of(S.canonicalize_alloc(c, ar, b), ar)
 
 # THE FOUR CALLS, IN UPSTREAM'S ORDER, AND EACH ONE THREADS THE ARENA.
-def ca_s1() -> CaS: ca_step(S.callify_ctx(), Ca.ar(ca()), Ca.al7(ca()))
+def ca_s1() -> CaS: ca_step(O.callify_ctx(), Ca.ar(ca()), Ca.al7(ca()))
 def ca_s2() -> CaS: ca_step(CaS.c(ca_s1()), CaS.ar(ca_s1()), Ca.al9(ca()))
 def ca_s3() -> CaS: ca_step(CaS.c(ca_s2()), CaS.ar(ca_s2()), Ca.al9b(ca()))
 def ca_s4() -> CaS: ca_step(CaS.c(ca_s3()), CaS.ar(ca_s3()), Ca.alneg(ca()))
@@ -537,12 +537,12 @@ def ca_slot1() -> String: Ca.slot(ca_s1())
 def ca_slot2() -> String: Ca.slot(ca_s2())
 def ca_slot3() -> String: Ca.slot(ca_s3())
 def ca_neg_none() -> String: Ca.slot(ca_s4())
-def ca_n1() -> String: U32.show(counta(S.CallifyCtx.allocs(CaS.c(ca_s1()))))
-def ca_n2() -> String: U32.show(counta(S.CallifyCtx.allocs(CaS.c(ca_s2()))))
-def ca_n3() -> String: U32.show(counta(S.CallifyCtx.allocs(CaS.c(ca_s3()))))
-def ca_n4() -> String: U32.show(counta(S.CallifyCtx.allocs(CaS.c(ca_s4()))))
-def ca_reps() -> String: U32.show(count(S.CallifyCtx.replacements(CaS.c(ca_s4()))))
-def ca_views() -> String: U32.show(count(S.CallifyCtx.views(CaS.c(ca_s4()))))
+def ca_n1() -> String: U32.show(counta(O.CallifyCtx.allocs(CaS.c(ca_s1()))))
+def ca_n2() -> String: U32.show(counta(O.CallifyCtx.allocs(CaS.c(ca_s2()))))
+def ca_n3() -> String: U32.show(counta(O.CallifyCtx.allocs(CaS.c(ca_s3()))))
+def ca_n4() -> String: U32.show(counta(O.CallifyCtx.allocs(CaS.c(ca_s4()))))
+def ca_reps() -> String: U32.show(count(O.CallifyCtx.replacements(CaS.c(ca_s4()))))
+def ca_views() -> String: U32.show(count(O.CallifyCtx.views(CaS.c(ca_s4()))))
 
 # ===========================================================================
 # THE FIVE BODIES THAT HAD NO ROW. MEASURED 2026-10-31.

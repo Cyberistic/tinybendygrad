@@ -4226,6 +4226,105 @@ def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
 # The no-op `pm_rewrite_m` body for a SINK is `Some(self)` so the engine
 # does not have to special-case SINK in the rebuild step.
 
+type Aa is Data:
+  Aa{b: U32, v: U32}
+
+type CallifyCtx is Data:
+  CallifyCtx{replacements: List<&2, U32>, allocs: List<&2, Aa>, views: List<&2, U32>, stores: List<&2, U32>}
+
+def CallifyCtx.of(replacements: List<&2, U32>, allocs: List<&2, Aa>, views: List<&2, U32>, stores: List<&2, U32>) -> CallifyCtx:
+  CallifyCtx{replacements, allocs, views, stores}
+
+# `CallifyCtx()` -- all four fields are `field(default_factory=...)`, so four
+# `Nil{}`. `CallifyCtx.of` is the four-argument rebuild, exactly as `Ctx.of` is.
+def callify_ctx() -> CallifyCtx:
+  CallifyCtx.of(Nil{}, Nil{}, Nil{}, Nil{})
+
+def CallifyCtx.replacements(x: CallifyCtx) -> List<&2, U32>:
+  match x:
+    case CallifyCtx{replacements, allocs, views, stores}: replacements
+
+def CallifyCtx.allocs(x: CallifyCtx) -> List<&2, Aa>:
+  match x:
+    case CallifyCtx{replacements, allocs, views, stores}: allocs
+
+def CallifyCtx.views(x: CallifyCtx) -> List<&2, U32>:
+  match x:
+    case CallifyCtx{replacements, allocs, views, stores}: views
+
+def CallifyCtx.stores(x: CallifyCtx) -> List<&2, U32>:
+  match x:
+    case CallifyCtx{replacements, allocs, views, stores}: stores
+
+def Aa.b(x: Aa) -> U32:
+  match x:
+    case Aa{b, v}: b
+
+def Aa.v(x: Aa) -> U32:
+  match x:
+    case Aa{b, v}: v
+
+# `ctx.allocs.get(b, None)` -- the ONE reader of `allocs` a ported body needs.
+def ag_pick(hit: Bool, acc: Maybe<&2, U32>, v: U32) -> Maybe<&2, U32>:
+  match hit:
+    case True{} : Some{v}
+    case False{}: acc
+
+def ag_go(+as: List<&2, Aa>, +b: U32, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
+  match as:
+    case Nil{}       : acc
+    case Aa{j, v} <> t: ag_go(t, b, ag_pick(U32.is_eq(j, b), acc, v))
+
+def aa_get(+c: CallifyCtx, +b: U32) -> Maybe<&2, U32>:
+  ag_go(CallifyCtx.allocs(c), b, None{})
+
+# `ctx.allocs[b] = v`. INSERT if absent and REPLACE if present -- Python's
+# `dict[k] = v` does both -- so the walk needs the `found` accumulator `ka_go`
+# uses: without it a second write leaves TWO entries for ONE key, and `ca_n3` is
+# the row that sees it.
+def ap_tail(found: Bool, +b: U32, +v: U32) -> List<&2, Aa>:
+  match found:
+    case True{} : Nil{}
+    case False{}: [Aa{b, v}]
+
+def ap_pick(hit: Bool, r: List<&2, Aa>, j: U32, old: U32, +v: U32) -> List<&2, Aa>:
+  match hit:
+    case True{} : List.append(&2, Aa, [Aa{j, v}], r)
+    case False{}: List.append(&2, Aa, [Aa{j, old}], r)
+
+def ap_go(+as: List<&2, Aa>, found: Bool, +b: U32, +v: U32) -> List<&2, Aa>:
+  match as:
+    case Nil{}        : ap_tail(found, b, v)
+    case Aa{j, old} <> t:
+      r = ap_go(t, Bool.or(found, U32.is_eq(j, b)), b, v)
+      ap_pick(U32.is_eq(j, b), r, j, old, v)
+
+def aa_put(+c: CallifyCtx, +b: U32, +v: U32) -> CallifyCtx:
+  CallifyCtx.of(CallifyCtx.replacements(c),
+    ap_go(CallifyCtx.allocs(c), False{}, b, v),
+    CallifyCtx.views(c), CallifyCtx.stores(c))
+
+# `b in ctx.allocs`
+def aa_has(+as: List<&2, Aa>, +b: U32) -> Bool:
+  match as:
+    case Nil{}       : False{}
+    case Aa{j, _} <> t: Bool.or(U32.is_eq(j, b), aa_has(t, b))
+
+# ---------------------------------------------------------------------------
+# 3. `collect_stores` -- __init__.py:220-221. NEEDS ctx, and it is one of only
+# TWO of the twelve that do:
+#
+#     def collect_stores(ctx:CallifyCtx, u:UOp):
+#       if is_store_after(u): ctx.stores.append(u)
+#
+# Python returns None on BOTH arms and the rewriter reads that as "no rewrite",
+# so the ANSWER is `None{}` twice and the only effect is the append. A rule body
+# that mutated the ctx and returned the node would be a DIFFERENT rule, so the
+# ctx and the answer come back TOGETHER in `Cw`: Python's one-call-one-side-effect
+# signature cannot be spelled, and splitting it into two defs would let a caller
+# drop one of them.
+# ---------------------------------------------------------------------------
+
 # ===========================================================================
 # `CTX` -- THE REWRITER'S CONTEXT, TYPED. Until now every one of the ~20 defs
 # from `pm_r_sink_m` to `graph_rewrite` carried `ctx: CTX`, which is
@@ -4251,6 +4350,13 @@ def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
 type CTX is Data:
   CArgs{xs: List<&2, U32>}
   CNodes{m: Map<&2, U32>}
+  # `canonicalize_alloc`'s ctx. IT IS HERE AND NOT IN `schedule/` FOR A MEASURED
+  # REASON: `uop/ops.bend` imports Base, helpers, LAWS/spec and renderer/estimates
+  # and NOTHING that reaches `schedule`, while `schedule/__init__.bend` imports
+  # `uop/ops.bend`. So a rule body dispatched from `pm_dispatch_m` -- which is in
+  # this file -- can only carry a ctx this file can name, and `CallifyCtx` had to
+  # MOVE here for that to be possible. `Aa` came with it (its `allocs` element).
+  CCallify{c: CallifyCtx}
 
 def CTX.has_hit.m(r: Sigma<&1, &1, Map<&2, U32>, _ => Bool>) -> Bool:
   match r:
@@ -4275,6 +4381,7 @@ def CTX.at(+ctx: CTX, n: Nat, +self: U32) -> Maybe<&2, U32>:
   match ctx:
     case CArgs{xs}: List.get(&2, U32, xs, n)
     case CNodes{m}: CTX.at_node(m, self)
+    case CCallify{c}: None{}
 
 def pm_r_sink_m(+ctx: CTX, ar: Arena, self: U32) -> Maybe<&2, U32>:
   Some{self}
@@ -4306,6 +4413,7 @@ def pm_r_param_m.go(slot: U32, +ctx: CTX) -> Maybe<&2, U32>:
     case 1 CArgs{xs}: List.get(&2, U32, xs, U32.to_nat(1))
     case _ CArgs{xs}: None{}
     case _ CNodes{m}: None{}
+    case _ CCallify{c}: None{}
 
 def pm_r_param_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_r_param_m.go(pm_r_param_m.slot(Arena.arg(ar, self)), ctx)
@@ -4331,6 +4439,7 @@ def pm_r_alloc_m.at(+ctx: CTX, n: Nat) -> Maybe<&2, U32>:
   match ctx:
     case CArgs{xs}: pm_r_alloc_m.at.go(xs, n)
     case CNodes{m}: None{}
+    case CCallify{c}: None{}
 
 def pm_r_alloc_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_r_alloc_m.at(ctx, 2n)
@@ -4435,6 +4544,7 @@ def pm_r_rp_m.at(+ctx: CTX, slot: U32) -> Maybe<&2, U32>:
     case CArgs{xs} 4294967295: None{}
     case CArgs{xs} _: List.get(&2, U32, xs, U32.to_nat(slot))
     case CNodes{m} _: None{}
+    case CCallify{c} _: None{}
 
 def pm_r_rp_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
   pm_r_rp_m.at(ctx, pm_r_rp_m.slot(Arena.arg(ar, self)))

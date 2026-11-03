@@ -1539,108 +1539,10 @@ def is_store_after(+ar: O.Arena, +u: U32) -> Bool:
 # NOT. `cs_dup2` is the identity row for `stores`; no row covers `views` because
 # no body ported here writes it.
 # ---------------------------------------------------------------------------
-type Aa is Data:
-  Aa{b: U32, v: U32}
-
-type CallifyCtx is Data:
-  CallifyCtx{replacements: List<&2, U32>, allocs: List<&2, Aa>, views: List<&2, U32>, stores: List<&2, U32>}
-
-def CallifyCtx.of(replacements: List<&2, U32>, allocs: List<&2, Aa>, views: List<&2, U32>, stores: List<&2, U32>) -> CallifyCtx:
-  CallifyCtx{replacements, allocs, views, stores}
-
-# `CallifyCtx()` -- all four fields are `field(default_factory=...)`, so four
-# `Nil{}`. `CallifyCtx.of` is the four-argument rebuild, exactly as `Ctx.of` is.
-def callify_ctx() -> CallifyCtx:
-  CallifyCtx.of(Nil{}, Nil{}, Nil{}, Nil{})
-
-def CallifyCtx.replacements(x: CallifyCtx) -> List<&2, U32>:
-  match x:
-    case CallifyCtx{replacements, allocs, views, stores}: replacements
-
-def CallifyCtx.allocs(x: CallifyCtx) -> List<&2, Aa>:
-  match x:
-    case CallifyCtx{replacements, allocs, views, stores}: allocs
-
-def CallifyCtx.views(x: CallifyCtx) -> List<&2, U32>:
-  match x:
-    case CallifyCtx{replacements, allocs, views, stores}: views
-
-def CallifyCtx.stores(x: CallifyCtx) -> List<&2, U32>:
-  match x:
-    case CallifyCtx{replacements, allocs, views, stores}: stores
-
-def Aa.b(x: Aa) -> U32:
-  match x:
-    case Aa{b, v}: b
-
-def Aa.v(x: Aa) -> U32:
-  match x:
-    case Aa{b, v}: v
-
-# `ctx.allocs.get(b, None)` -- the ONE reader of `allocs` a ported body needs.
-def ag_pick(hit: Bool, acc: Maybe<&2, U32>, v: U32) -> Maybe<&2, U32>:
-  match hit:
-    case True{} : Some{v}
-    case False{}: acc
-
-def ag_go(+as: List<&2, Aa>, +b: U32, acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
-  match as:
-    case Nil{}       : acc
-    case Aa{j, v} <> t: ag_go(t, b, ag_pick(U32.is_eq(j, b), acc, v))
-
-def aa_get(+c: CallifyCtx, +b: U32) -> Maybe<&2, U32>:
-  ag_go(CallifyCtx.allocs(c), b, None{})
-
-# `ctx.allocs[b] = v`. INSERT if absent and REPLACE if present -- Python's
-# `dict[k] = v` does both -- so the walk needs the `found` accumulator `ka_go`
-# uses: without it a second write leaves TWO entries for ONE key, and `ca_n3` is
-# the row that sees it.
-def ap_tail(found: Bool, +b: U32, +v: U32) -> List<&2, Aa>:
-  match found:
-    case True{} : Nil{}
-    case False{}: [Aa{b, v}]
-
-def ap_pick(hit: Bool, r: List<&2, Aa>, j: U32, old: U32, +v: U32) -> List<&2, Aa>:
-  match hit:
-    case True{} : List.append(&2, Aa, [Aa{j, v}], r)
-    case False{}: List.append(&2, Aa, [Aa{j, old}], r)
-
-def ap_go(+as: List<&2, Aa>, found: Bool, +b: U32, +v: U32) -> List<&2, Aa>:
-  match as:
-    case Nil{}        : ap_tail(found, b, v)
-    case Aa{j, old} <> t:
-      r = ap_go(t, Bool.or(found, U32.is_eq(j, b)), b, v)
-      ap_pick(U32.is_eq(j, b), r, j, old, v)
-
-def aa_put(+c: CallifyCtx, +b: U32, +v: U32) -> CallifyCtx:
-  CallifyCtx.of(CallifyCtx.replacements(c),
-    ap_go(CallifyCtx.allocs(c), False{}, b, v),
-    CallifyCtx.views(c), CallifyCtx.stores(c))
-
-# `b in ctx.allocs`
-def aa_has(+as: List<&2, Aa>, +b: U32) -> Bool:
-  match as:
-    case Nil{}       : False{}
-    case Aa{j, _} <> t: Bool.or(U32.is_eq(j, b), aa_has(t, b))
-
-# ---------------------------------------------------------------------------
-# 3. `collect_stores` -- __init__.py:220-221. NEEDS ctx, and it is one of only
-# TWO of the twelve that do:
-#
-#     def collect_stores(ctx:CallifyCtx, u:UOp):
-#       if is_store_after(u): ctx.stores.append(u)
-#
-# Python returns None on BOTH arms and the rewriter reads that as "no rewrite",
-# so the ANSWER is `None{}` twice and the only effect is the append. A rule body
-# that mutated the ctx and returned the node would be a DIFFERENT rule, so the
-# ctx and the answer come back TOGETHER in `Cw`: Python's one-call-one-side-effect
-# signature cannot be spelled, and splitting it into two defs would let a caller
-# drop one of them.
-# ---------------------------------------------------------------------------
 type Cw is Data:
-  Cw{c: CallifyCtx, a: Maybe<&2, U32>}
+  Cw{c: O.CallifyCtx, a: Maybe<&2, U32>}
 
-def Cw.c(x: Cw) -> CallifyCtx:
+def Cw.c(x: Cw) -> O.CallifyCtx:
   match x:
     case Cw{c, a}: c
 
@@ -1648,24 +1550,24 @@ def Cw.a(x: Cw) -> Maybe<&2, U32>:
   match x:
     case Cw{c, a}: a
 
-def cs_put(hit: Bool, +c: CallifyCtx, +u: U32) -> CallifyCtx:
+def cs_put(hit: Bool, +c: O.CallifyCtx, +u: U32) -> O.CallifyCtx:
   match hit:
-    case True{} : CallifyCtx.of(CallifyCtx.replacements(c), CallifyCtx.allocs(c),
-                 CallifyCtx.views(c), List.append(&2, U32, CallifyCtx.stores(c), [u]))
+    case True{} : O.CallifyCtx.of(O.CallifyCtx.replacements(c), O.CallifyCtx.allocs(c),
+                 O.CallifyCtx.views(c), List.append(&2, U32, O.CallifyCtx.stores(c), [u]))
     case False{}: c
 
-def collect_stores(c: CallifyCtx, +ar: O.Arena, +u: U32) -> Cw:
+def collect_stores(c: O.CallifyCtx, +ar: O.Arena, +u: U32) -> Cw:
   Cw{cs_put(is_store_after(ar, u), c, u), None{}}
 
 # THE EIGHT CALLS in the gate's order, so `cs_ops2` is an APPEND-ORDER row and
 # not a count. `cs_dup2` is the identity row: `stores[1]` and `stores[2]` are the
 # same SA_B, so a `set` would answer 2 where the list answers 3.
-def cs_run.go(+us: List<&2, U32>, +ar: O.Arena, c: CallifyCtx) -> CallifyCtx:
+def cs_run.go(+us: List<&2, U32>, +ar: O.Arena, c: O.CallifyCtx) -> O.CallifyCtx:
   match us:
     case Nil{}     : c
     case u <> rest : cs_run.go(rest, ar, Cw.c(collect_stores(c, ar, u)))
 
-def cs_run(c: CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> CallifyCtx:
+def cs_run(c: O.CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> O.CallifyCtx:
   cs_run.go(us, ar, c)
 
 # ---------------------------------------------------------------------------
@@ -2168,21 +2070,21 @@ def ca_arg.slot(arg: O.Arg) -> Maybe<&2, U32>:
     case _           : None{}
 
 # `slot >= 0` on a Python int is `slot < 2**31` on the port's U32.
-def ca_fresh(s: Maybe<&2, U32>, +as: List<&2, Aa>, +b: U32) -> Bool:
+def ca_fresh(s: Maybe<&2, U32>, +as: List<&2, O.Aa>, +b: U32) -> Bool:
   match s:
-    case Some{v}: Bool.and(U32.is_lt(v, 2147483648), Bool.not(aa_has(as, b)))
+    case Some{v}: Bool.and(U32.is_lt(v, 2147483648), Bool.not(O.aa_has(as, b)))
     case None{}  : False{}
 
 # `-1 - len(ctx.allocs)` as a U32: one wrap, and `ca_slot1`/`ca_slot2` are the
 # rows that would catch a wrap in the WRONG DIRECTION (`1 - len` answers 1 and 0
 # and is still "negative-looking" enough to pass a boolean row).
-def ca_slotn(c: CallifyCtx) -> U32:
-  U32.sub(4294967295, U32.from_nat(List.length(&2, Aa, CallifyCtx.allocs(c))))
+def ca_slotn(c: O.CallifyCtx) -> U32:
+  U32.sub(4294967295, U32.from_nat(List.length(&2, O.Aa, O.CallifyCtx.allocs(c))))
 
 type CaPut is Data:
-  CaPut{c: CallifyCtx, a: Maybe<&2, O.Found>}
+  CaPut{c: O.CallifyCtx, a: Maybe<&2, O.Found>}
 
-def CaPut.c(x: CaPut) -> CallifyCtx:
+def CaPut.c(x: CaPut) -> O.CallifyCtx:
   match x:
     case CaPut{c, a}: c
 
@@ -2203,29 +2105,29 @@ def CaPut.a(x: CaPut) -> Maybe<&2, O.Found>:
 # THE STORED VALUE IS THE CANONICALIZED NODE'S INDEX, AND IT LIVES IN THE
 # ARENA THAT INTERNED IT -- WHICH IS THE ARENA THE CALLER PASSES, BECAUSE
 # `canonicalize_alloc` GROWS IT. SO THE ANSWER IS `O.Found{ar, stored}`.
-def ca_hit.of(m: Maybe<&2, U32>, +ar: O.Arena, +c: CallifyCtx) -> CaPut:
+def ca_hit.of(m: Maybe<&2, U32>, +ar: O.Arena, +c: O.CallifyCtx) -> CaPut:
   match m:
     case Some{v}: CaPut{c, Some{O.Found{ar, v}}}
     case None{}  : CaPut{c, None{}}
 
-def ca_hit(+ar: O.Arena, +c: CallifyCtx, +b: U32) -> CaPut:
-  ca_hit.of(aa_get(c, b), ar, c)
+def ca_hit(+ar: O.Arena, +c: O.CallifyCtx, +b: U32) -> CaPut:
+  ca_hit.of(O.aa_get(c, b), ar, c)
 
-def ca_new(fresh: Bool, +pa: O.ParamArg, +ar: O.Arena, +c: CallifyCtx, +b: U32) -> CaPut:
+def ca_new(fresh: Bool, +pa: O.ParamArg, +ar: O.Arena, +c: O.CallifyCtx, +b: U32) -> CaPut:
   match fresh:
     case True{}:
       +f = O.UOp.new(ar, sc_op(ar, b), sc_srcs(ar, b), O.AParam{pa}, sc_tag(ar, b))
-      CaPut{aa_put(c, b, O.Found.i(f)), Some{f}}
+      CaPut{O.aa_put(c, b, O.Found.i(f)), Some{f}}
     case False{}: ca_hit(ar, c, b)
 
-def canonicalize_alloc.pa(m: Maybe<&2, O.ParamArg>, n: U32, s: Maybe<&2, U32>, +as: List<&2, Aa>, +ar: O.Arena, +c: CallifyCtx, +b: U32) -> CaPut:
+def canonicalize_alloc.pa(m: Maybe<&2, O.ParamArg>, n: U32, s: Maybe<&2, U32>, +as: List<&2, O.Aa>, +ar: O.Arena, +c: O.CallifyCtx, +b: U32) -> CaPut:
   match m:
     case Some{pa}: ca_new(ca_fresh(s, as, b), ca_slot.of(pa, n), ar, c, b)
     case None{}  : CaPut{c, None{}}
 
-def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
+def canonicalize_alloc(+c: O.CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
   canonicalize_alloc.pa(ca_arg.of(sc_arg(ar, b)), ca_slotn(c),
-    ca_arg.slot(sc_arg(ar, b)), CallifyCtx.allocs(c), ar, c, b)
+    ca_arg.slot(sc_arg(ar, b)), O.CallifyCtx.allocs(c), ar, c, b)
 
 # THE TWO WALLS THAT REMAIN, each with `file:line`, and each NOT a `graph_rewrite`:
 #
