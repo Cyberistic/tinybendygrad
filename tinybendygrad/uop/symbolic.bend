@@ -3375,6 +3375,56 @@ def p_const_neg(+x: F.Folded, +u: U32) -> Bool: p_const_neg.go(sy_val(x, u))
 def p_const_pos(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.not(p_const_neg(x, u)), Bool.not(p_is_const_0(x, u)))
 
+# TWO CONSTANTS WITH THE SAME VALUE, and the join of two `Maybe`s is a nested match because a
+# `Data` payload cannot be compared through a `Type`.
+def p_consteq.b(a: O.Const, mb: Maybe<&2, O.Const>) -> Bool:
+  match mb:
+    case Some{b}: O.eq_const(a, b)
+    case _: False{}
+
+def p_consteq.a(ma: Maybe<&2, O.Const>, mb: Maybe<&2, O.Const>) -> Bool:
+  match ma:
+    case Some{a}: p_consteq.b(a, mb)
+    case _: False{}
+
+def p_consteq(+x: F.Folded, +u: U32, +w: U32) -> Bool: p_consteq.a(sy_val(x, u), sy_val(x, w))
+
+# symbolic.py:278  ((UPat.cvar("a") < UPat.var("b")).where(UPat.var("b"), UPat.cvar("c")),
+#                     lambda a,b,c: UOp.maximum(a,b) if a.val == c.val else None)
+# `a < b ? b : a` IS `max(a, b)` when the else branch is the SAME VALUE as `a` -- the identity
+# is on the VALUE and not on the node, because the two branches may be two CONST slots.
+def sym_278.pat(+x: F.Folded, +u: U32) -> Bool:
+  +c = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)),
+    Bool.and(Bool.and(sy_is_op(x, c, O.OpsCMPLT{}), sy_nsrc_is(x, c, 2)),
+      Bool.and(sy_is_const(x, sy_src0(x, c)),
+        Bool.and(p_same(sy_src1(x, c), sy_src1(x, u)),
+          Bool.and(sy_is_const(x, sy_src2(x, u)),
+            p_consteq(x, sy_src0(x, c), sy_src2(x, u)))))))
+
+def sym_278(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +c = sy_src0(x, u)
+  sy_tri_f(sym_278.pat(x, u),
+    Some{mint_bin(mint_ar(sy_ar(x)), O.OpsMAX{}, sy_src0(x, c), sy_src1(x, c))})
+
+# symbolic.py:279  ((UPat.var("a") < UPat.cvar("b")).where(UPat.cvar("c"), UPat.var("a")),
+#                     lambda a,b,c: UOp.maximum(a,b) if b.val == c.val else None)
+# THE MIRROR: here the CMPLT's second src is the constant and the WHERE's TRUE branch repeats
+# its value.
+def sym_279.pat(+x: F.Folded, +u: U32) -> Bool:
+  +c = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsWHERE{}), sy_nsrc_is(x, u, 3)),
+    Bool.and(Bool.and(sy_is_op(x, c, O.OpsCMPLT{}), sy_nsrc_is(x, c, 2)),
+      Bool.and(p_same(sy_src0(x, c), sy_src2(x, u)),
+        Bool.and(sy_is_const(x, sy_src1(x, c)),
+          Bool.and(sy_is_const(x, sy_src1(x, u)),
+            p_consteq(x, sy_src1(x, c), sy_src1(x, u)))))))
+
+def sym_279(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +c = sy_src0(x, u)
+  sy_tri_f(sym_279.pat(x, u),
+    Some{mint_bin(mint_ar(sy_ar(x)), O.OpsMAX{}, sy_src0(x, c), sy_src1(x, c))})
+
 # symbolic.py:287  ((UPat.var("x") // UPat.cvar("c1")) // UPat.cvar("c2"),
 #                     lambda x,c1,c2: x//(c1*c2) if c2.vmin>0 else None)
 # TWO DIVISIONS BY CONSTANTS COMPOSE INTO ONE, and the guard is `c2 > 0`: a NEGATIVE divisor
@@ -3607,10 +3657,12 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{79, [O.OpsADD{}], Nil{}, },   # 284
     O.PMEntry{80, [O.OpsMUL{}], Nil{}, },   # 284
     O.PMEntry{81, [O.OpsFLOORDIV{}], Nil{}, },   # 287
-    O.PMEntry{82, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{83, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{84, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{85, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{82, [O.OpsWHERE{}], Nil{}, },   # 279
+    O.PMEntry{83, [O.OpsWHERE{}], Nil{}, },   # 278
+    O.PMEntry{84, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{85, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{86, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{87, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3982,7 +4034,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4040,10 +4092,12 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 79: sym_284(x, u)
     case 80: sym_284(x, u)
     case 81: sym_287(x, u)
-    case 82: sym_462(x, u)
-    case 83: sym_463(x, u)
-    case 84: sym_464(x, u)
-    case 85: sym_444(x, u)
+    case 82: sym_279(x, u)
+    case 83: sym_278(x, u)
+    case 84: sym_462(x, u)
+    case 85: sym_463(x, u)
+    case 86: sym_464(x, u)
+    case 87: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
