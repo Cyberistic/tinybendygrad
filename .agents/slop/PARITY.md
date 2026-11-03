@@ -4044,3 +4044,47 @@ calls one of them ~1,500 times a render.
 **⇒ AND THAT CLOSES THE RENDER'S LAST NAMED CLASSES.** After CAST (0.69) and ALU (0.55, §89's win) the
 ablations fall to INDEX and LOAD -- both noise -- and inside CAST the three pieces are 0.24, 0.17 and 0.28.
 There is no fourth place to look.
+
+## 91. THE DECODE, ABLATED: `nums` IS 22%, AND THE SCANNER THAT WOULD FIX IT CANNOT BE WRITTEN
+
+The three-point decomposition rebuilt on the §90 build, so the render's share is post-§89:
+
+```
+stub (IPC + frame)   0.30 ms    6%
+decode               1.63 ms   33%
+render               2.99 ms   61%     (was 3.49 -- §89's 0.50 ms shows up here)
+                     ------
+                     4.92 ms
+```
+
+### 91.1 Decode ablations, decode-only, 14 interleaved rounds each
+
+```
+nums   (shape + srcs parse)   dec 1.93 -> 1.44   saves 0.43 ms (22.4%)
+arg_of (payload, 18 kinds)    dec 1.60 -> 1.73   saves -0.07 ms  (noise)
+u32    (numel + cc)           dec 1.52 -> 1.69   saves -0.12 ms  (noise)
+```
+
+**`nums` IS THE DECODE'S ONLY CLASS ABOVE NOISE**, and it is 0.43 ms because `String.split` allocates a
+STRING PER ELEMENT: 342 of its 352 real calls parse `srcs`, whose element counts are 1 (106), 2 (229),
+3-6 (17). MEASURED per call: 1.2 us for a two-element string.
+
+### 91.2 The scanner, and the two refusals that stop it
+
+A character scan would build the numbers arithmetically -- no substring, no intermediate list, no
+`U32.read` per element. It cannot be written:
+
+```
+expected : a decreasing self-call (arguments are read left to right: each passed
+           unchanged until one shrinks)                  -- Nat.sub(fuel, 1n) is not a subterm
+```
+
+and the shape that WOULD satisfy it (`case 1n+k` for the fuel) needs a second `match` on the character,
+which is §83's other refusal (`'m' can't be matched ... after a match on a later binder`). The state could
+be carried as a Bool plus a defaulted `Char` to dodge the second match, but the loop would then run
+`length(s)` times past the end and needs trailing-separator handling -- for a ceiling of 0.2 ms on a 4.9 ms
+turn, that is not a trade this record should make.
+
+**⇒ SO THE DECODE'S 1.63 ms IS 0.9 OF ONE PASS OVER EVERY BYTE (§78's split), 0.43 OF `nums`, AND 0.3 OF
+RECORD BUILDING** -- and both of the first two are the runtime charging per character and per allocated
+string, the same wall §82 hit with `String.to_list`.
