@@ -77,14 +77,21 @@
 # most likely to be believed.
 #  17  328-386 fold  parse_valid / uop_given_valid / _valid_priority /
 #                                 simplify_valid   DEFERRED, all four
-#  18  390     fold  reduce_mul_chain     blocker ABSENT: `backward_slice` (ops.bend:3467) and
-#                                            `vmin` (fold.bend:5399) both exist. WHETHER THE BODY
-#                                            EXISTS IS A SEPARATE QUESTION and a grep for the
-#                                            source name does NOT answer it (see row 15).
-#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  blocker ABSENT: `ranges` exists
-#                                            (fold.bend:5273). Same caveat as row 18.
-#  20  406-425 fold  where_on_load + pm_move_where_on_load  blocker ABSENT: `ranges` and
-#                                            `backward_slice_with_self` exist. Same caveat.
+#  18  390     fold  reduce_mul_chain     **PORTED, as `rm469`** (`:4829`) -- and the name is a
+#                                            MISNOMER, not a description: the `rm` prefix reads as
+#                                            "remove-invalid", while `rm469.pat` is `REDUCE` whose
+#                                            src0 is `MUL` and `rm469.run` splits on `O.OpsMUL`,
+#                                            which is this fold exactly. Census row `:482` PORTED.
+#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  blocker ABSENT (`ranges`,
+#                                            fold.bend:5273). NOT A CENSUS ROW AT ALL: it lives in
+#                                            `pm_drop_and_clauses`, a SEPARATE matcher, so the
+#                                            census cannot answer whether the body exists.
+#  20  406-425 fold  where_on_load + pm_move_where_on_load  blocker ABSENT (`ranges`,
+#                                            `backward_slice_with_self`). Same: a separate matcher,
+#                                            invisible to the census.
+# **THE CENSUS CANNOT SEE THESE TWO, SO "PORTED" AND "NOT A ROW" LOOK THE SAME FROM OUTSIDE IT.**
+# Six of the ten items in this list are now accounted for; rows 19 and 20 are the two that no
+# instrument in this tree currently answers.
 #  21  427-438 fold  gated_given_valid + pm_simplify_valid DEFERRED `IMAGE` + #17
 #  22  442-448 table pm_clean_up_group_sink  2 of 2
 #  23  450-475 table sym                   3 of 5 reciprocal rules PORTED
