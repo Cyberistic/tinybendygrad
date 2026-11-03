@@ -19,7 +19,14 @@
 #                                            TODO(p3) ops.py:479  symbol=ranges)
 #   8  79-102  table pm_data_invalid      13 of 14  (rule 6 is #7)
 #   9  104-108 table pm_remove_invalid    2 of 2
-#  10  110     fold  fold_const_where     PORTED
+#  10  113     fold  fold_const_where     MISSING. This line said `PORTED` and named line
+#                                            110, and BOTH WERE WRONG: `fold_const_where` is
+#                                            at 113 (`110` is `pm_remove_invalid`'s first
+#                                            rule) and no `def fold_const_where` exists in
+#                                            this file -- three mentions, all comments. The
+#                                            ONE rule that calls it, `symbolic.py:202`, is
+#                                            MISSING in `gates/symrules.rows` too, so the
+#                                            absence is not hidden by an inlining.
 #  11  115-199 table symbolic_simple      23 of 47 PORTED. The 23 are every rule
 #                                            whose substrate need is `alu`, `where`,
 #                                            `const_like`, a `U32` bit pattern,
