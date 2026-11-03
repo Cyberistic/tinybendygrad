@@ -4677,3 +4677,38 @@ byte saving was overestimated: `srcs` is mostly 0-9, which is one character eith
 
 **⇒ THE DECODE'S 1.61 ms IS: one linear pass over every byte (~0.9), `nums`' splits (~0.43), and record
 building (~0.3). Every cheaper form of the second term has now been measured and lost to the original.**
+
+## 105. THE LAST ARMS CONVERTED IN A BATCH, AND THE MEASUREMENT CANNOT SEE THEM
+
+§97/§100/§102 converted CAST, INDEX, LOAD, STORE and BITCAST to pieces. This section converted the rest --
+IF, BACKEDGE, WMMA, SPECIAL -- in one batch (Bool-parameter matches where they had strict picks, `rtp` where
+they copied a source).
+
+```
+same C: True | bytes: 4426
+before median 3.94 ms   batch median 3.89 ms
+ratio min 0.9124  p25 0.9812  median 0.9980  max 1.3093   13 of 26 faster
+```
+
+**NEUTRAL, REVERTED -- AND THE REASON IS THE POINT: THE MEASURED KERNEL DOES NOT CONTAIN THEM.**
+
+```
+OpsIF        0 of 405     OpsBACKEDGE  0 of 405     OpsWMMA  0 of 405
+OpsSPECIAL   0 of 405     OpsBARRIER   0 of 405
+OpsSTACK     1 of 405     OpsBUFFER    1 of 405     OpsRANGE 4 of 405
+top ops: ADD=90  INDEX=65  LOAD=54  CONST=52  CAST=50  MUL=41
+```
+
+**A NEUTRAL READING ON A WORKLOAD THAT NEVER ENTERS THE ARM PROVES NOTHING ABOUT THE ARM**, and keeping a
+conversion with no measurement behind it is what this record refuses.
+
+### 105.1 And that is also the answer to "is there a priced term left in the render"
+
+**EVERY ARM THIS KERNEL ACTUALLY CONTAINS IS ALREADY CONVERTED**: ADD and MUL (90 and 41) go through the ALU
+capture, INDEX (65) through §100, LOAD (54) through §102, CAST (50) through §97, and CONST (52) emits no
+text. The remaining arms are 1-4 uops of RANGE/STACK/BUFFER and **zero** of the four this section converted.
+So the render's 2.01 ms is the piece path plus dispatch, records and the statement join -- the converted
+arms account for 300 of the 405 uops and the other 105 are a tail.
+
+**⇒ A KERNEL WITH LOOPS WOULD EXERCISE IF/BACKEDGE/RANGE AND THE CONVERSION WOULD BE MEASURABLE THERE.** It is
+not in this corpus, so the change is written down here as unmeasured rather than landed.
