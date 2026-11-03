@@ -3996,3 +3996,51 @@ portexec 7/7 · emit-mm and emit-f64 byte-identical
 **⇒ AND CAST'S 0.69 ms IS STILL THERE AND IS NOT §88's FIX.** §88 tried the strict pick on `ku_const_cast`
 and measured neutral, because the DISCARDED arm is cheap. The 0.69 ms is the arm that RUNS: the cast
 expression plus its source lookup, 50 times. That is the next slice, and the ablation is what says so.
+
+### 89.3 The certificate, at `b7a7cc8f6`
+
+```
+substrate-start = substrate-end = live = 59fabefa8c95...   head b7a7cc8f6
+38 graphs, 38 byte-identical
+```
+
+## 90. ABLATING INSIDE CAST: THE CLASS IS THREE PIECES AND NONE OF THEM PAYS
+
+§89's ablation named CAST at 0.69 ms for 50 calls and left the question of WHERE inside it. Two more
+ablations, same method (constant in a scratch build, 24 interleaved rounds against §89):
+
+```
+render_type ablated:  4.91 -> 4.65 ms   saves 0.17 ms (3.5%)
+H.i64_dec ablated:    4.73 -> 4.61 ms   saves 0.24 ms (5.0%)
+```
+
+So CAST's 0.69 ms is `i64_dec` 0.24 + `render_type` 0.17 + 0.28 of lookups and concatenation -- **THREE
+PIECES, EACH BELOW THE KEEPER LINE, AND NOT ONE HEAD.**
+
+### 90.1 The restructure that should have worked, and what it teaches
+
+`i64_dec` runs a restoring-division fold, and **47 of the 51 int constants on the 405-uop wire have
+`hi == 0`** -- non-negative and below 2^32, where `U32.show(lo32)` is the same decimal. The fast path is
+three lines and the C cannot move:
+
+```
+same C: True | bytes: 4426
+before median 4.84 ms   after median 4.89 ms
+ratio min 0.9147  p25 0.9834  median 1.0069  max 1.1996   9 of 24 faster
+```
+
+**NEUTRAL, REVERTED -- AND THE REASON IS THE WHOLE POINT OF THIS SECTION.** `U32.show` is
+`u32_to_word` plus a fold, and `u32_to_word` is
+
+```js
+function u32_to_word(x) { let w = {$: "WNil"}; for (let i = 31; i >= 0; i--) { w = {$: "WCon", ...}; } return w; }
+```
+
+**THIRTY-TWO CONS CELLS PER NUMBER, IN THE LANGUAGE'S OWN PRELUDE.** Substituting `U32.show` for the I64
+fold is one expensive decimal formatter for another, which is why §86's ablation of ALL decimal formatting
+priced the entire class at **0.26 ms**: there is no cheap decimal anywhere in this runtime, and the port
+calls one of them ~1,500 times a render.
+
+**⇒ AND THAT CLOSES THE RENDER'S LAST NAMED CLASSES.** After CAST (0.69) and ALU (0.55, §89's win) the
+ablations fall to INDEX and LOAD -- both noise -- and inside CAST the three pieces are 0.24, 0.17 and 0.28.
+There is no fourth place to look.
