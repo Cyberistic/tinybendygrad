@@ -1518,3 +1518,53 @@ All four hoists of §27, §28, §33 and §34 are in that tree, and none of them 
 
 **SEVEN READINGS NOW, AND THE PORT'S LANE IS AT OR BELOW tinygrad's CPU LANE IN ALL SEVEN** (seeds 8-14),
 checksums identical in every one.
+
+## 35. WHERE THE REMAINING RENDER COST SITS IN A PROGRAM, AND WHY THERE IS NO NEXT DEFECT
+
+The profile of the shipped artifact after §34 (`live-63eb554dd99d40c9.js`, `--cpu-prof-interval=25`, 1062
+samples) is FLAT and START-UP HEAVY:
+
+| self% | function | |
+|---|---|---|
+| 7.6% | `resolve` | module load |
+| 7.3% | `parseModule` | module load |
+| 4.1% | `anonymous` | native |
+| 2.7% | `fetch` | module load |
+| 5.8% | `char_len` | **the port's decode** |
+| 3.3% | `List_set` | the port's decode and emitter |
+| 2.3% | `List_get` | the port's decode |
+| 1.9% | `String_split_push` | the port's decode |
+
+**NO PORT-OWNED SITE IS ABOVE 5.8%**, which is the difference between this and §27/§31/§33: those were
+single defects (a map rebuilt per uop, six decimals, four casts) that a `match` or a `let` removed. What is
+left is the cost of the CPS-compiled emitter and the text decoder themselves, spread across every token.
+
+### 35.1 What that is worth in a program, measured
+
+Rather than a percentage of a profile, the number that decides whether more work here matters: how much of a
+REAL cold run is the port's render. Instrumented by timing every `PortRenderer.render` call inside a
+5-kernel program (matmul, conv2d, softmax, sum, elementwise; `n=56`):
+
+```
+cold wall 652.6 ms    port render 169.3 ms over 5 kernels    -> 25.9% of the cold path
+```
+
+**A QUARTER OF A COLD PROGRAM IS THE PORT'S RENDER**, so this is not academic: ~34 ms per kernel against
+`ClangRenderer`'s 0.12-2.54 ms. **AND IT IS ZERO ONCE WARM** -- `portc` content-caches every render, so a
+second run of the same program pays none of it, which is why the steady-state comparisons in §23-§24 read
+1.00.
+
+### 35.2 So what a further 2x would take, stated rather than attempted
+
+The four hoists of §27-§34 each removed a *defect*: work done repeatedly that only had to be done once. What
+remains is not of that kind. `char_len`, `List_set`, `List_get` and `String_split_push` are the runtime's
+list and string primitives under the port's own decode and emit loops, so the next factor is a REWRITE of how
+the emitter builds a line (accumulate into one buffer rather than concat per token) and of how the wire is
+decoded (a compact fixed-arity encoding rather than space-separated decimal text). **BOTH ARE STRUCTURAL
+CHANGES TO A 2 500-LINE RENDERER WHOSE ONLY ORACLE IS BYTE-IDENTITY ON 37 KERNELS AND 38 GRAPHS**, and each
+one costs a corpus run per iteration.
+
+**⇒ AND THE HONEST SUMMARY OF THE OBJECTIVE IS THIS**: steady state is at parity and cannot move without
+changing tinygrad's shared emit; the cold path is at or below the CPU lane in 7 of 7 whole-program readings;
+and the remaining port-side cost is 26% of a first run, diffuse, with no defect left to remove. That is where
+this record stops claiming progress and says what it would cost to go further.
