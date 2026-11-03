@@ -877,3 +877,66 @@ otherwise: the port half is reproducible from the case lists above and the CPyth
 git, and `cycle-probe.bend`/`cycle-probe2.bend` ARE tracked because their names do not match the
 rule. **A REPORT THAT CITES A PATH GIT DOES NOT OWN IS THE DEFECT THIS TREE NAMES IN ITS OWN
 `TOOLS.md` LEDGER, SO IT IS NAMED HERE INSTEAD OF LEFT FOR A READER TO DISCOVER.**
+
+## 26. OPEN: `sym_f` rewrites the `:171` node and `sy_simplify` does not
+
+MEASURED 2026-11-04 with `.agents/slop/sym92/probe-171.bend` (int8 `x`, `(x+1)+2` and `(x+100)+100`,
+each node rendered in ITS OWN arena). Every reading on one graph:
+
+    sym_284.pat(ok)                                   True
+    Maybe.is_some(sym_284.mk(ok))                     True
+    assoc_op(Ops.ADD)                                 True
+    sym_mint_f(46, ok)      -> (add x (add c1 c2))    REWRITES
+    sym_rewrite_f(table, ok)-> (add x (add c1 c2))    REWRITES
+    sym_f(ok)               -> (add x (add c1 c2))    REWRITES
+    sy_simplify(ok)         -> (add (add c1 x) c2)    UNCHANGED
+
+`sy_simp.n` is `8` iterations of `sy_simp.go(sym_f(F.folded(O.Found.ar(f)), O.Found.i(f)), f)` and
+`go` adopts ANY `Some` (`case Some{+g}: g`), so a `sym_f` that answers `Some` on the same node must
+be adopted on pass 1. It is not. **The two are therefore being asked about DIFFERENT NODES or
+DIFFERENT FOLDS, and the surviving suspects are `F.folded(ar)` versus the probe's
+`F.Folded{ar, F.UOp.fold(ar)}`.**
+
+**ROOT-CAUSED ONE LEVEL FURTHER, AND IT IS AN OSCILLATION.** Walked pass by pass on the same node:
+
+    sy_simp.n(1n)  -> (add x (add c1 c2))        REWRITTEN
+    sy_simp.n(2n)  -> (add (add c1 x) c2)        ORIGINAL
+    sy_simp.n(3n)  -> (add x (add c1 c2))        REWRITTEN
+    sy_simp.n(4n)  -> (add (add c1 x) c2)        ORIGINAL
+
+A PERIOD-2 CYCLE: one rule folds `(x+c1)+c2` into `x+(c1+c2)` and another unfolds it back, so the
+answer `sy_simplify` returns depends only on the PARITY OF THE PASS BUDGET -- and the budget is
+`8`, an even number, which is why the public entry shows the original. `sym_f` on the REWRITTEN node
+answers the original (`B_step = (add (add c1 x) c2)`), so the reverting rule is reachable in one step.
+
+THREE CANDIDATES ARE EXCLUDED, MEASURED on the rewritten node:
+
+    sym_245.pat  False      (:253, the coefficient-sum fold)
+    sym_284.pat  False      (:171, the two-stage fold that CREATED it)
+    sym_271.pat  False      (:271, the gated-where rule)
+
+so the reverting rule is none of the obvious three and the next step is a TAG SWEEP -- call
+`sym_mint_f(tag, ...)` for every tag and name the first `Some`. **A SWEEP IS THE RIGHT INSTRUMENT
+HERE AND A GUESS IS NOT: the tree's own doctrine is that an instrument declares its population by
+discovery, and "which rule fires on this node" is exactly a population question.**
+
+WHY THIS MATTERS BEYOND `:171`: `UOp.simplify` is the port's public simplifier and it is
+`sy_simplify`, so ANY graph that reaches this pair of rules gets an answer chosen by pass parity. It
+is a confluence defect, not a `:171` defect.
+
+NOT ROOT-CAUSED FURTHER HERE, and deliberately not guessed at. What IS established: the six `:171` arms are
+NOT dead -- `sym_f` reaches them -- so the five `PORTED` rows are honest. What is NOT established is
+whether `UOp.simplify` (the port's public entry) applies them, and that is the question a `:171`
+guard has to be tested through.
+
+THE EARLIER `:171` GUARD ATTEMPT WAS THEREFORE MEASURING NOTHING, and its revert was correct: the
+probe rendered `(mul c100 c2)` for a node built from `100` twice, i.e. a constant the graph did not
+contain, which is the ARENA-ALIASING symptom this tree already names -- **every row must render in
+the arena its node belongs to, and a row that renders another arena's index is not a measurement.**
+Two of the readings in this section had exactly that defect before it was fixed.
+
+CONSEQUENCE FOR THE GUARD WORK: `:253`'s guard (committed, `probe-253`) was verified through
+`sy_simplify` on nodes rendered in their own arenas and it refuses correctly, so that one stands.
+`fits` for `:171`, `:309`/`:311`, `:485`, `:255`/`:259`/`:261` and `:283` STAYS UNWRITTEN until this
+discrepancy is settled, because a guard tested through a path that never reaches the rule proves
+nothing in either direction.
