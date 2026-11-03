@@ -2469,3 +2469,38 @@ wrong is whether you are measuring your own leftovers.
 `substrate-start = substrate-end = live = 2ffdeda54a59...`, `substrate-head=974bb8fc4`, 38 graphs,
 38 byte-identical. §53 and §54 changed no `.bend`, so that certificate -- taken for the wire work -- still
 describes the tree they were built on.
+
+## 56. THE DAEMON'S 10 ms, ATTRIBUTED BY PLANT
+
+§55 measured the daemon turn at 9.8 ms and could not attribute it -- `bun --cpu-prof` writes nothing when the
+worker is killed. So the plants do the attribution: each candidate set to a constant in a scratch copy of
+`cstyle.bend`, the SERVE artifact rebuilt, and the Worker turn measured on the 405-uop wire (medians of nine,
+same fifo/req protocol the device uses).
+
+| planted | turn | share of 10.0 ms |
+|---|---|---|
+| -- (baseline) | 10.0 ms | -- |
+| `ku_text` | 6.9 ms | **31%** (~3.1 ms) |
+| `child_count` | 8.3 ms | **17%** (~1.7 ms) |
+| `render_dtype` | 8.8 ms | **12%** (~1.2 ms) |
+| everything else | -- | ~40% (~4.0 ms) |
+
+The file was restored after each plant (`git status` clean for `cstyle.bend`, `ALL PROOFS CHECK`, `ksweep 37
+of 37`).
+
+### 56.1 What it changes
+
+**`render_dtype` IS 12% OF THE DAEMON TURN AND WAS 2.5% OF A ONE-SHOT RENDER** (§43). Nothing about
+`render_dtype` changed -- what changed is everything around it: §49 and §50 removed the name matching, §53 and
+§54 removed the start, and a component that was a rounding error is now an eighth of what is left. **THIS IS
+WHAT A SHRINKING BUDGET DOES TO A PERCENTAGE, AND IT IS WHY THE LAST FOUR SECTIONS' TARGETS WERE NOT THE ONES
+§43 NAMED.**
+
+**AND THE LARGEST SINGLE ATTRIBUTABLE SITE IS `child_count` AT ~1.7 ms**, because `ku_text`'s 3.1 ms is spread
+across ~15 `ku_text_*` functions. `child_count` is one def with one known defect: it builds the per-uop child
+counts with `List.set` per source, and `List.set` rebuilds the whole prefix -- O(n^2) cons cells for n uops.
+
+**⇒ SO THE NEXT CHANGE IS THE ONE §40 TRIED AND MEASURED SLOW** (fusing `get`+`set` into `cc_inc` was 1.0231
+and reverted): the same computation needs a pass that does not rebuild a prefix at all -- merge-sort the ~2n
+source indices and run-length encode them -- because the constant-factor version of an O(n^2) is still
+O(n^2). That is a real piece of work with a measured 17% at stake, and it is where this record stops today.
