@@ -47,7 +47,7 @@ def row_exp2_op() -> Bool:
 def row_rsqrt_op() -> Bool:
   +t = mk_tensor()
   +r = T.tn_rsqrt(t)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsRECIPROCAL{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsRECIP{})
 
 def row_rsqrt_arg() -> Bool:
   +t = mk_tensor()

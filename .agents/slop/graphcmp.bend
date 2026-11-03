@@ -1250,7 +1250,7 @@ def g_prog() -> O.Found:
 # position IS the `i<k>` both sides print. `runs/graphcmp/D/D2-canon-py-loop.txt` is the
 # specification (52 rows; re-emitted live and byte-identical 2026-10-18T18:50:20Z), and the
 # census this block has to reproduce is `CONST=8 INDEX=8 AFTER=7 CALL=4 PARAM=4 BUFFER=3
-# ADD=2 CMPLT=2 LOAD=2 MUL=2 SINK=2 AND=1 BACKEDGE=1 CAST=1 CUSTOM_FUNCTION=1 FLOORDIV=1
+# ADD=2 CMPLT=2 LOAD=2 MUL=2 SINK=2 AND=1 BACKEDGE=1 CAST=1 CUSTOM_FUNCTION=1 DIV=1
 # NOOP=1 RANGE=1 STORE=1`.
 #
 # WHAT THE PREVIOUS 25-NODE FIXTURE MODELLED, AND THE THREE WRONG THINGS BESIDES THE 27 IT
@@ -1271,7 +1271,7 @@ def g_prog() -> O.Found:
 #     params.
 # The 27 it did not model are, KIND BY KIND, `CUSTOM_FUNCTION` 1 (i13), `CALL` 3 (i17, i29,
 # i40), `BUFFER` 3 REG-addrspace placeholders (i8, i12, i38), `PARAM` 2 of them addrspace
-# `REG` (i9) / slot 3 (i51), `FLOORDIV` 1 (i24), `CONST` 6 new values (i11,i14,i20,i23,i43,
+# `REG` (i9) / slot 3 (i51), `DIV` 1 (i24), `CONST` 6 new values (i11,i14,i20,i23,i43,
 # i46), `INDEX` 4 (i10,i16,i19,i22), `CAST` 1 (i15), `MUL` 1 (i44), `ADD` 1 (i45), `AND` 1
 # (i48), `CMPLT` 1 (i47), `AFTER` 6 (i18,i28,i30,i32,i39,i41) -- and they are NOT exotic:
 # they are `@uopfunc`'s `do_get_time_ms` body (hcq2.py:65-69) and `get_time_ms` (hcq2.py:70),
@@ -1351,7 +1351,7 @@ def g_loop() -> O.Found:
   +ml0 = O.UOp.new(O.Found.ar(c1000), O.OpsMUL{}, [O.Found.i(ix3), O.Found.i(c1000)], O.ANone{}, O.TNone{})
   +ix4 = O.UOp.new(O.Found.ar(ml0), O.OpsINDEX{}, [O.Found.i(af0), O.Found.i(c1)], O.ANone{}, O.TNone{})
   +c1e6 = O.UOp.const(O.Found.ar(ix4), O.CInt{H.i64_of_i32(1000000)})
-  +fd = O.UOp.new(O.Found.ar(c1e6), O.OpsFLOORDIV{}, [O.Found.i(ix4), O.Found.i(c1e6)], O.ANone{}, O.TNone{})
+  +fd = O.UOp.new(O.Found.ar(c1e6), O.OpsDIV{}, [O.Found.i(ix4), O.Found.i(c1e6)], O.ANone{}, O.TNone{})
   +ad0 = O.UOp.new(O.Found.ar(fd), O.OpsADD{}, [O.Found.i(ml0), O.Found.i(fd)], O.ANone{}, O.TNone{})
   +st0 = O.UOp.new(O.Found.ar(ad0), O.OpsSTORE{}, [O.Found.i(ix1), O.Found.i(ad0)], O.ANone{}, O.TNone{})
   +sk0 = O.UOp.new(O.Found.ar(st0), O.OpsSINK{}, [O.Found.i(st0)], O.ANone{}, O.TNone{})
@@ -1555,8 +1555,8 @@ def g_bw() -> O.Found:
 # and a fold defect would have been reported against all four.
 #
 # AND EVERY ONE OF THEM IS `?`-ZERO BY MEASUREMENT, not by design. The port's fold has an
-# arm per op for all eighteen (`fold.bend`: `unary_ds` for SQRT/RECIPROCAL/LOG2/EXP2/SIN,
-# `thru0` for TRUNC/DETACH/CONTIGUOUS_BACKWARD, `alu_ds` for POW/FLOORDIV/FLOORMOD,
+# arm per op for all eighteen (`fold.bend`: `unary_ds` for SQRT/RECIP/LOG2/EXP2/SIN,
+# `thru0` for TRUNC/DETACH/CONTIGUOUS_BACKWARD, `alu_ds` for POW/DIV/MOD,
 # `shift_ds` for SHL/SHR, `where_ds` for WHERE, `pad_ds`/`shrink_ds`/`flip_ds`/`bitcast_ds`
 # for the movements), so nothing here is a new fold obligation -- they are existing arms
 # that no graph had reached, which is the same distinction `bw` made about `EXPAND`.
@@ -1573,7 +1573,7 @@ def allocd(slot: U32, dtx: S.Dt) -> O.ParamArg:
 # `--graph alu`: `UOp.group(sqrt(a), reciprocal(a), a**a, log2(a), exp2(a), sin(a),
 # trunc(a), detach(a))` over ONE `Tensor.empty(4,3)`. MEASURED at 14 nodes on the py side
 # with the census
-# `ALLOC=1 CONST=2 DETACH=1 EXP2=1 GROUP=1 LOG2=1 POW=1 RECIPROCAL=1 RESHAPE=1 SIN=1
+# `ALLOC=1 CONST=2 DETACH=1 EXP2=1 GROUP=1 LOG2=1 POW=1 RECIP=1 RESHAPE=1 SIN=1
 #  SQRT=1 STACK=1 TRUNC=1`.
 #
 # EIGHT NEW OPS IN FOURTEEN NODES, and it is the densest graph in the corpus by that
@@ -1592,7 +1592,7 @@ def g_alu() -> O.Found:
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +sq = O.UOp.new(O.Found.ar(r43), O.OpsSQRT{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +rp = O.UOp.new(O.Found.ar(sq), O.OpsRECIPROCAL{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
+  +rp = O.UOp.new(O.Found.ar(sq), O.OpsRECIP{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
   +pw = O.UOp.new(O.Found.ar(rp), O.OpsPOW{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
   +lg = O.UOp.new(O.Found.ar(pw), O.OpsLOG2{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
   +e2 = O.UOp.new(O.Found.ar(lg), O.OpsEXP2{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
@@ -1604,7 +1604,7 @@ def g_alu() -> O.Found:
 
 # `--graph bit`: `UOp.group(a<<a, a>>a, a//a, a%a)` over ONE `Tensor.empty(4,3, int)`.
 # MEASURED at 10 nodes, census
-# `ALLOC=1 CONST=2 FLOORDIV=1 FLOORMOD=1 GROUP=1 RESHAPE=1 SHL=1 SHR=1 STACK=1`.
+# `ALLOC=1 CONST=2 DIV=1 MOD=1 GROUP=1 RESHAPE=1 SHL=1 SHR=1 STACK=1`.
 #
 # THE ALLOC IS `int32` AND NOT f32, and that is the point rather than a convenience:
 # `shift_ds`/`alu_ds` branch on the operand dtype, so an f32 fixture would have measured a
@@ -1618,8 +1618,8 @@ def g_bit() -> O.Found:
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +sl = O.UOp.new(O.Found.ar(r43), O.OpsSHL{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
   +sr = O.UOp.new(O.Found.ar(sl), O.OpsSHR{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +fd = O.UOp.new(O.Found.ar(sr), O.OpsFLOORDIV{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +fm = O.UOp.new(O.Found.ar(fd), O.OpsFLOORMOD{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
+  +fd = O.UOp.new(O.Found.ar(sr), O.OpsDIV{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
+  +fm = O.UOp.new(O.Found.ar(fd), O.OpsMOD{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
   O.UOp.group(O.Found.ar(fm), [O.Found.i(sl), O.Found.i(sr), O.Found.i(fd),
     O.Found.i(fm)])
 
@@ -1869,10 +1869,10 @@ def g_allred() -> O.Found:
   O.UOp.allreduce(O.Found.ar(cp), O.Found.i(cp), O.OpsADD{}, S.Dn{[0, 0]})
 
 # `--graph cdiv`: `UOp.group(a.fmod(b).uop, a.div(b, rounding_mode="trunc").uop)` over two
-# `Tensor.empty(4,3,int)` -- 10 nodes, the ONLY route to `CMOD` and `CDIV` (both minted
+# `Tensor.empty(4,3,int)` -- 10 nodes, the ONLY route to `TRUNCMOD` and `TRUNCDIV` (both minted
 # from int dtypes only). `b`'s CONST 4 / CONST 3 / STACK are the SHARED shape nodes, so
 # `b` adds only its ALLOC and RESHAPE. Order: ALLOC CONST CONST STACK RESHAPE ALLOC
-# RESHAPE CMOD CDIV GROUP.
+# RESHAPE TRUNCMOD TRUNCDIV GROUP.
 def g_cdiv() -> O.Found:
   +ar = O.Arena.empty()
   +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{allocd(0, S.int32())}, O.TNone{})
@@ -1882,8 +1882,8 @@ def g_cdiv() -> O.Found:
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +b0 = O.UOp.new.param(O.Found.ar(r43), O.OpsALLOC{}, Some{12}, O.AParam{allocd(1, S.int32())}, O.TNone{})
   +rb = O.UOp.new(O.Found.ar(b0), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +cm = O.UOp.new(O.Found.ar(rb), O.OpsCMOD{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
-  +cd = O.UOp.new(O.Found.ar(cm), O.OpsCDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +cm = O.UOp.new(O.Found.ar(rb), O.OpsTRUNCMOD{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +cd = O.UOp.new(O.Found.ar(cm), O.OpsTRUNCDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
   O.UOp.group(O.Found.ar(cd), [O.Found.i(cm), O.Found.i(cd)])
 
 # `--graph late`: upstream's OWN late rewrite applied to its own eager graph -- 12 nodes,
@@ -2127,7 +2127,7 @@ def g_grad() -> O.Found:
 # a body that is never entered is a body no graph can disagree with.
 #
 # SO THE FIXTURE CARRIES ONE OF EACH: EXP2 (rule 4), SQRT (rule 5), TRUNC (rule 6),
-# POW (rule 10) and MAX (rule 11).  Those five rules build CONSTs, a LOG2, a RECIPROCAL,
+# POW (rule 10) and MAX (rule 11).  Those five rules build CONSTs, a LOG2, a RECIP,
 # two CMPNEs, a CMPLT and two WHEREs between them, so the graph is 52 nodes on the py
 # side and reaches ops no forward graph in the corpus reaches.
 #

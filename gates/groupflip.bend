@@ -39,7 +39,7 @@
 #   one src          `if len(srcs) == 1 ...: return srcs[0]` -> the src ITSELF, no node at all
 #   two srcs         `AFTER(STACK, a, b)`           -- the corpus's `group` graph
 #   three / six      the same with more, so a transposition inside the list moves the row
-# The six children are ADD/MUL/SUB/DIV/MAX/CMOD over ONE base, each with two srcs, so a
+# The six children are ADD/MUL/SUB/DIV/MAX/TRUNCMOD over ONE base, each with two srcs, so a
 # swapped pair inside `group6` is visible in the src op sequence of the AFTER.
 #
 # WHAT IS **NOT** A ROW, AND WHY. Upstream's `group` FILTERS `None` OUT OF ITS ARGUMENTS and

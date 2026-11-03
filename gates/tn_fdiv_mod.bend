@@ -12,28 +12,28 @@
 # WHAT THIS GRAPH IS. `tn_fdiv` ports `Tensor.__floordiv__` (elementwise.py:279,
 # `return self.div(x, rounding_mode="floor")`), and `div` at elementwise.py:249-252
 # reads `a, b = self._broadcasted(x, reverse); if dtypes.is_int(a.dtype) and
-# dtypes.is_int(b.dtype): if rounding_mode == "floor": return a.alu(Ops.FLOORDIV, b)`.
+# dtypes.is_int(b.dtype): if rounding_mode == "floor": return a.alu(Ops.DIV, b)`.
 # For two Tensors of the same shape, `_broadcasted` is identity: `__floordiv__` builds
-# `FLOORDIV(self, x)` with srcs `(self, x)`, and `__rfloordiv__` (with `reverse=True`)
-# builds `FLOORDIV(x, self)` with srcs `(x, self)`. `tn_mod` ports `Tensor.__mod__`
+# `DIV(self, x)` with srcs `(self, x)`, and `__rfloordiv__` (with `reverse=True`)
+# builds `DIV(x, self)` with srcs `(x, self)`. `tn_mod` ports `Tensor.__mod__`
 # (elementwise.py:282, `return self.mod(x)`), and `mod` at elementwise.py:212-213 is
 # `a, b = self._broadcasted(x, reverse); if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype):
-# return a.alu(Ops.FLOORMOD, b)`. The same `_broadcasted`-is-identity collapse:
-# `__mod__` builds `FLOORMOD(self, x)` and `__rmod__` builds `FLOORMOD(x, self)`.
+# return a.alu(Ops.MOD, b)`. The same `_broadcasted`-is-identity collapse:
+# `__mod__` builds `MOD(self, x)` and `__rmod__` builds `MOD(x, self)`.
 # The dispatch is `tn_fdiv.go` / `tn_mod.go`, each keyed on a `Bool` (the same
 # shape as `tn_pow.go` at `tensor.bend:674`). The broadcasting case stays walled
 # on `_broadcasted` (mixin/movement.py:24, fold reads and a `least_upper_dtype`
 # helper). The float arms of `div` and `mod` (the `cast(default_float).alu(FDIV, b)`
 # path past the int guard) stay walled on the dtype fold and on the FDIV op.
 #
-# WHY `OpsFLOORDIV{}` AND `OpsFLOORMOD{}` AND NOT `OpsFDIV{}` / `OpsMOD{}`.
+# WHY `OpsDIV{}` AND `OpsMOD{}` AND NOT `OpsFDIV{}` / `OpsMOD{}`.
 # CPython's `__floordiv__` routes through `div(x, rounding_mode="floor")` which
-# builds `Ops.FLOORDIV` for int inputs (elementwise.py:252), and `__mod__` routes
-# through `mod` which builds `Ops.FLOORMOD` for int inputs (elementwise.py:213).
+# builds `Ops.DIV` for int inputs (elementwise.py:252), and `__mod__` routes
+# through `mod` which builds `Ops.MOD` for int inputs (elementwise.py:213).
 # `Ops.FDIV` is the FLOAT-division op (renderer-cstyle:294, `f"({a}/{b})"`); the
-# substrate's `ops.bend` has `OpsFLOORDIV{}` and `OpsFLOORMOD{}` (and no `OpsMOD{}`
-# at all). The port mirrors CPython, so the defs build `OpsFLOORDIV{}` and
-# `OpsFLOORMOD{}` -- a strict read of the source, not the brief's op-name copy.
+# substrate's `ops.bend` has `OpsDIV{}` and `OpsMOD{}` (and no `OpsMOD{}`
+# at all). The port mirrors CPython, so the defs build `OpsDIV{}` and
+# `OpsMOD{}` -- a strict read of the source, not the brief's op-name copy.
 
 import Base
 import ./../tinybendygrad/LAWS/spec.bend as S
@@ -58,7 +58,7 @@ def row_fdiv_op() -> Bool:
   +c = mk_tensor(7)
   +d = mk_tensor(2)
   +r = T.tn_fdiv(c, d)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORDIV{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsDIV{})
 
 def row_fdiv_arg() -> Bool:
   +c = mk_tensor(7)
@@ -77,14 +77,14 @@ def row_fdiv_pure() -> Bool:
   +d = mk_tensor(2)
   +r = T.tn_fdiv(c, d)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORDIV{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsDIV{}))
 
 # ROW 5-8: tn_rfdiv -- the `reverse=True` arm of `tn_fdiv.go`.
 def row_rfdiv_op() -> Bool:
   +c = mk_tensor(7)
   +d = mk_tensor(2)
   +r = T.tn_rfdiv(c, d)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORDIV{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsDIV{})
 
 def row_rfdiv_arg() -> Bool:
   +c = mk_tensor(7)
@@ -103,14 +103,14 @@ def row_rfdiv_pure() -> Bool:
   +d = mk_tensor(2)
   +r = T.tn_rfdiv(c, d)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORDIV{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsDIV{}))
 
-# ROW 9-12: tn_mod -- same shape as tn_fdiv, with OpsFLOORMOD instead of OpsFLOORDIV.
+# ROW 9-12: tn_mod -- same shape as tn_fdiv, with OpsMOD instead of OpsDIV.
 def row_mod_op() -> Bool:
   +c = mk_tensor(7)
   +d = mk_tensor(2)
   +r = T.tn_mod(c, d)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORMOD{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsMOD{})
 
 def row_mod_arg() -> Bool:
   +c = mk_tensor(7)
@@ -129,7 +129,7 @@ def row_mod_pure() -> Bool:
   +d = mk_tensor(2)
   +r = T.tn_mod(c, d)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORMOD{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsMOD{}))
 
 # ROW 13: tn_rmod -- the `reverse=True` arm of `tn_mod.go`. Reuses tn_mod for
 # the op/arg; the srcs row is the row that distinguishes the two arms.
@@ -137,7 +137,7 @@ def row_rmod_op() -> Bool:
   +c = mk_tensor(7)
   +d = mk_tensor(2)
   +r = T.tn_rmod(c, d)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORMOD{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsMOD{})
 
 def row_rmod_arg() -> Bool:
   +c = mk_tensor(7)
@@ -156,7 +156,7 @@ def row_rmod_pure() -> Bool:
   +d = mk_tensor(2)
   +r = T.tn_rmod(c, d)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsFLOORMOD{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsMOD{}))
 
 # ROW 14: the four defs are REACHABLE -- the audit's wall text said the three
 # dunders were unwritten.

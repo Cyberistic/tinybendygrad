@@ -153,12 +153,12 @@ def dc_l2i_pick(+i: U32) -> List<&2, String>:
     case 19: dc_l2i1("lgk", O.OpsAND{}, S.int32(), S.uint32(), 9n, 4)
     case 20: dc_l2i1("lgl", O.OpsWHERE{}, S.int32(), S.uint32(), 9n, 5)
     case 21: dc_l2i1("lgm", O.OpsMAX{}, S.int32(), S.uint32(), 9n, 4)
-    case 22: dc_l2i1("lgn", O.OpsFLOORDIV{}, S.int32(), S.uint32(), 9n, 4)
+    case 22: dc_l2i1("lgn", O.OpsDIV{}, S.int32(), S.uint32(), 9n, 4)
     case 23: dc_l2i1("lgo", O.OpsCAST{}, S.int64(), S.uint32(), 9n, 1)
-    case 24: dc_l2i1("lgq", O.OpsCDIV{}, S.int32(), S.uint32(), 9n, 4)
-    case 25: dc_l2i1("lgr", O.OpsCMOD{}, S.int32(), S.uint32(), 9n, 4)
-    case 26: dc_l2i1("lgs", O.OpsCDIV{}, S.uint32(), S.uint32(), 9n, 4)
-    case 27: dc_l2i1("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4)
+    case 24: dc_l2i1("lgq", O.OpsTRUNCDIV{}, S.int32(), S.uint32(), 9n, 4)
+    case 25: dc_l2i1("lgr", O.OpsTRUNCMOD{}, S.int32(), S.uint32(), 9n, 4)
+    case 26: dc_l2i1("lgs", O.OpsTRUNCDIV{}, S.uint32(), S.uint32(), 9n, 4)
+    case 27: dc_l2i1("lgt", O.OpsTRUNCMOD{}, S.uint32(), S.uint32(), 9n, 4)
     case 28: dc_l2i1("lgu", O.OpsCAST{}, S.single(), S.single(), 19n, 2)
     # `lgz` IS `lgu`'S OWN CELL WITH THE TARGET'S WIDTH CHANGED, AND IT IS NOT ONE OF
     # `l2i.pick`'s ARMS. A TARGET AXIS THAT IS THE PORT'S OWN FIXTURE TABLE HAS **ZERO**
@@ -239,7 +239,7 @@ def dc_up() -> List<&2, String>:
 # THE SECOND `unpack32` FIXTURE, AND IT IS THE ONE THAT MAKES A BITCAST'S `ADt` LOAD-BEARING.
 # `up` reads the pool's `u32` word at offset 9 and passes `xdt = u32`, so
 # `unpack32.bc`'s fold (`dtype.bend:591`, `O.eq_dt(xdt, S.uint32())`) FIRES and the row
-# carries NO BITCAST AT ALL: MEASURED, `up` is `AND/2,PARAM/0,CONST/0,FLOORDIV/2,CONST/0` and
+# carries NO BITCAST AT ALL: MEASURED, `up` is `AND/2,PARAM/0,CONST/0,DIV/2,CONST/0` and
 # `gates/decomp_graph_census-mutate.py` A13 -- which breaks ONLY that arm's `ADt` -- moved
 # 0 of 38 rows and 0 under the bare printer. So the BITCAST `ops.py:13` builds was in no row,
 # which is the same coverage hole `dtype.bend:2824-2830` records for `l2i_cast3.bitc`'s False

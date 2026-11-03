@@ -174,7 +174,7 @@ def op_name(+i: U32) -> String:
 def op_of(+i: U32) -> O.Op:
   match i:
     case 0: O.OpsSQRT{}
-    case 1: O.OpsRECIPROCAL{}
+    case 1: O.OpsRECIP{}
     case 2: O.OpsNEG{}
     case 3: O.OpsEXP2{}
     case 4: O.OpsLOG2{}
@@ -186,8 +186,8 @@ def op_of(+i: U32) -> O.Op:
     case 10: O.OpsADD{}
     case 11: O.OpsSUB{}
     case 12: O.OpsMUL{}
-    case 13: O.OpsCMOD{}
-    case 14: O.OpsCDIV{}
+    case 13: O.OpsTRUNCMOD{}
+    case 14: O.OpsTRUNCDIV{}
     case 15: O.OpsCMPNE{}
     case 16: O.OpsSHR{}
     case 17: O.OpsSHL{}

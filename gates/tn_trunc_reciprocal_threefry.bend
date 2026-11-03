@@ -1,7 +1,7 @@
 # tn_trunc_reciprocal_threefry.bend -- a small driver for the three one-liner ports
 # in `tinybendygrad/tensor.bend`:
 #   `tn_trunc`        -- elementwise.py:474  return self.alu(Ops.TRUNC)
-#   `tn_reciprocal`   -- elementwise.py:460  return self.alu(Ops.RECIPROCAL)
+#   `tn_reciprocal`   -- elementwise.py:460  return self.alu(Ops.RECIP)
 #   `tn_threefry`     -- elementwise.py:457  return self.alu(Ops.THREEFRY, seed)
 #
 #   .venv/bin/python gates/tn_trunc_reciprocal_threefry-gate.py
@@ -42,13 +42,13 @@ def row_trunc_pure() -> Bool:
 def row_reciprocal_op() -> Bool:
   +t = mk_tensor()
   +r = T.tn_reciprocal(t)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsRECIPROCAL{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsRECIP{})
 
 def row_reciprocal_pure() -> Bool:
   +t = mk_tensor()
   +r = T.tn_reciprocal(t)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsRECIPROCAL{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsRECIP{}))
 
 # ROW 5-7: tn_threefry.
 def row_threefry_op() -> Bool:
