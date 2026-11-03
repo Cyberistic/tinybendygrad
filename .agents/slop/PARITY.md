@@ -2235,3 +2235,14 @@ removing waste. It is also exactly what §48 predicted from the per-character me
 
 `ksweep 37 of 37 byte-identical on BOTH decoders`, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`,
 `opbattery 39 of 39`, and the two artifacts emit the SAME C on the 405-uop wire compared byte for byte.
+
+### 49.4 The certificate
+
+`runs/graphcmp/D/D0-run-summary.txt`:
+
+```
+substrate-start = substrate-end = live = 17a26cff0426...
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+```
+
+`a7ecd4ac0` -- the coded wire -- moves no byte in any of the 38 graphs.
