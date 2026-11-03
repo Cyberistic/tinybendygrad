@@ -54,13 +54,19 @@
 #                                            permuted src list" was the wall ten of
 #                                            them were deferred behind, and it is
 #                                            `Sw`.
-#  12  203     fold  lt_folding           DEFERRED `const_factor` -> gcd on I64
-#  13  209     fold  canonicalize_simplex DEFERRED `UOp.vmin` (_min_max)
+#  12  203     fold  lt_folding           **PORTED** (census row `symbolic.py:203` PORTED)
+#  13  209     fold  canonicalize_simplex **PORTED** (census row `symbolic.py:209` PORTED)
 #  14  222-226 table commutative          DEFERRED `UOp.tuplize`
 #  15  228     fold  fold_where_closure   DEFERRED `bool_slice` + `substitute`
-#  16  235-324 table symbolic             DEFERRED -- every one of the 47 reaches
-#                                            for `vmin`/`vmax`/`const_factor`/
-#                                            `tuplize`/`bool_slice`
+#  16  235-324 table symbolic             **PORTED: 36 census rows in :235-324, ALL of them**
+#                                            (MEASURED 2026-11-04 against `gates/symrules.rows`)
+#
+# **THREE LINES ABOVE USED TO SAY `DEFERRED` ABOUT WORK THAT IS DONE, AND THIS INVENTORY IS THE MAP
+# A READER TRUSTS BEFORE TOUCHING ANYTHING.** It is the same defect this tree names elsewhere: a
+# marker that names finished work is not a TODO, it is a trap -- the next reader is told to build
+# what is already here, and the reader who trusts it reports a ported rule as blocked.
+# **AND ONE OF THE THREE WAS THE LARGEST ENTRY IN THE FILE** (`:235-324`), so the trap was the one
+# most likely to be believed.
 #  17  328-386 fold  parse_valid / uop_given_valid / _valid_priority /
 #                                 simplify_valid   DEFERRED, all four
 #  18  390     fold  reduce_mul_chain     DEFERRED `backward_slice` + `vmin`
