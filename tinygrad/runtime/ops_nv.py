@@ -5,19 +5,17 @@ from dataclasses import dataclass, replace
 from tinygrad.runtime.support.hcq2 import HWQueue, patch, to_name, unwrap_view, make_submit, timeline, HCQInfo, lower_call, hcq_link
 from tinygrad.runtime.support.hcq2 import layout_args, make_program, ins
 from tinygrad.runtime.support.memory import MMIOInterface, BumpAllocator
-from tinygrad.runtime.support.system import FileIOInterface, filter_visible_devices
+from tinygrad.runtime.support.system import FileIOInterface, filter_visible_devices, PCIIfaceBase, MAP_FIXED
 from tinygrad.uop.ops import Ops, UOp, UPat, PatternMatcher, KernelInfo, uopfunc
 from tinygrad.engine.realize import get_call_arg_uops, get_call_kernel_args, lower_and_compile, run_linear
 from tinygrad.device import BufferStorage, Buffer, BufferSpec, Allocator, Compiled, Device, TinyELF
 from tinygrad.dtype import dtypes, DType, AddrSpace
-from tinygrad.helpers import getenv, mv_address, round_up, data64, data64_le, prod, OSX, PROFILE, ContextVar, VIZ
-from tinygrad.helpers import ProfileEvent, unwrap
+from tinygrad.helpers import getenv, mv_address, round_up, data64, data64_le, prod, OSX, PROFILE, ContextVar, VIZ, ProfileEvent, unwrap
 from tinygrad.renderer.ptx import PTXRenderer
 from tinygrad.renderer.cstyle import CUDARenderer, NVCCRenderer
 from tinygrad.runtime.autogen import nv_570, nv_580, nv_610, nv_615, mesa
 from tinygrad.runtime.support.elf import elf_loader
 from tinygrad.runtime.support.nv.nvdev import NVDev, NVMemoryManager
-from tinygrad.runtime.support.system import PCIIfaceBase, MAP_FIXED
 from tinygrad.renderer.nir import NAKRenderer
 if getenv("IOCTL"): import extra.nv_gpu_driver.nv_ioctl # noqa: F401 # pylint: disable=unused-import
 
@@ -677,7 +675,7 @@ class NVDevice(Compiled):
                          dev=self.device, queue=queue, deps=(tl,))
     call = UOp.sink(tl.after(submit).index(1).store(value + 1), arg=KernelInfo("nv_setup")).call(aux=HCQInfo((self.device,)))
     linear = lower_and_compile(UOp(Ops.LINEAR, src=(unwrap(lower_call(call)),)))
-    run_linear(hcq_link(linear, allow_cache=True), jit=True, update_stats=False, wait=True)
+    run_linear(hcq_link(linear), jit=True, update_stats=False, wait=True)
 
   def _ensure_has_local_memory(self, required):
     if self.slm_per_thread >= required: return

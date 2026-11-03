@@ -1,4 +1,5 @@
 import ctypes, struct, time, functools, itertools
+from typing import cast
 from tinygrad.runtime.autogen import libusb, libc
 from tinygrad.helpers import DEBUG, DEV, HCQ_RUNTIME_DEV, to_mv, round_up, ceildiv, flatten, to_tuple
 from tinygrad.dtype import dtypes, DType, AddrSpace
@@ -415,7 +416,7 @@ Compiled.pm_encode = PatternMatcher([(UPat.sink().call(UPat(Ops.PARAM)).after(al
 Compiled.pm_lower += PatternMatcher([
   # the gpu's memory is reached over usb
   (UPat.custom_function("memcpy", dtypes.uint64).call(UPat.var("dst"), UPat.var("src"), UPat.var("n")), usb_memcpy),
-  (UPat.custom_function("memset", dtypes.uint64).call(UPat.var("dst"), UPat.const(0), UPat.var("n")),
+  (UPat.custom_function("memset", dtypes.uint64).call(UPat.var("dst"), UPat.const(0).or_casted(), UPat.var("n")),
    lambda dst, n: usb_memcpy(dst, usb_zeros(dst.src[0].device).index(0), n, fill=True)),
   (UPat.var("b").index(UPat.var("idx")).store(UPat.var("v")), lambda b, idx, v: usb_store(b, idx, v) if is_remote(b) else None),
   (UPat.var("b").index(UPat.var("idx")).load(name="ld"), lambda b, idx, ld: usb_load(b, idx, ld) if is_remote(b) else None),
@@ -434,7 +435,7 @@ Compiled.pm_lower += PatternMatcher([
 # 6. bufferize
 
 def usb_reset(dev):
-  host = Compiled.link_bufs[to_name(dev.device, "usb_host")]
+  host = cast(Buffer, Compiled.link_bufs[to_name(dev.device, "usb_host")])
   for buf, off, n in ((dev.iface.ctrl, 0x800, 4), (dev.iface.ctrl, 0x5000, 0x80000), (host, 16, 8)): buf.host.view(off, n)[:] = bytes(n)
   for t in map(libusb.struct_libusb_transfer.from_address, host.host.view(fmt='Q')[3:5]): t.status = 0xff * (t.status == 0xff)
 
