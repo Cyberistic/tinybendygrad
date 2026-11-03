@@ -27870,3 +27870,29 @@ tinybendygrad/` EMPTY.  **THE **REFUSAL **ON **ARM 1 **STANDS **AND **ITS **STAT
 **REASON **IS **NOW **EXACT:** not "Bend has no mutual recursion", not "the scrutinee
 rule", but **`Map` **IS **LINEAR **AND **A **STATE **MACHINE **NEEDS **A **COPYABLE
 **CARRIER.
+
+re-certified at `743bdb0c` WITH arm 1 RESOLVING -- and the repro was refused TWICE first, both times correctly
+
+  graphs=38  graphs-agree=38  byte-identical=38  graphs-refused=0
+  substrate-start == substrate-end == 743bdb0cb7dca29c77d274b1d36268bdb0e57be5906019e50b74e23dd0793ff2
+  D0-repro.txt: repro-files=340  repro-identical=340  repro-rc=rc=0
+  corpuswitness-gate -> PASS -- the claim is ESTABLISHED
+
+**⇒ AND **THE **FIRST **REFUSAL **WAS **THE **LOCK:** *"another corpus run holds the
+lock: runs/graphcmp/.corpus.lock is held by pid 90712 (held for 89s)"*.  **A **SECOND
+**CORPUS **RUN **REFUSES **RATHER **THAN **INTERLEAVING** -- the singleton the tree
+added after the 2026-10-23 collision, doing exactly what it was built for.
+
+**⇒ AND **THE **SECOND **WAS **THE **TREE **MOVING:** run A `699c0d5d`, run B
+`743bdb0c`, *"the snapshots differ because THE TREE MOVED BETWEEN THEM"*.  Another
+unit committed `a6ada8938` between the two halves.  **I **DID **NOT **TOUCH **IT
+**AND **DID **NOT **REPORT **A **GREEN **FROM **IT.**
+
+**⇒ AND **THE **THIRD **ATTEMPT **PASSED **BECAUSE **NOTHING **WAS **WORKED
+**AROUND:** the unit stopped writing, `743bdb0c == live`, and the repro is newer than
+the verdict it certifies.
+
+**⇒ AND **SO **THE **SESSION's **CLAIM **NOW **INCLUDES **ARM 1:** `resolve_linear_call`
+RESOLVES NESTED LINEAR CALLS, `ab_arm1` and `ab_arm3` are asked of CPython and AGREE
+(they were `port_only` divergences an hour ago), and `ab_nest` is the one row that
+exercises the continuation.
