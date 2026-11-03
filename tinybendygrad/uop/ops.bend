@@ -4239,10 +4239,15 @@ def pm_rewrite(+ts: PMEntrys, ar: Arena, self: U32) -> Verdict:
 #   CArgs{xs}    -- positional. tags 3, 4, 42. The behaviour is UNCHANGED.
 #   CNodes{m}    -- keyed by `U32.show(node)`, i.e. by the node itself.
 #
-# `CNodes` IS NOT REACHED BY A RULE YET and that is stated rather than implied:
-# a node-keyed table needs `PMEntry.ops` to mean "any op", and `op_in(Nil{}, x)`
-# is `False` (a Nil ops list matches NOTHING today), so wiring `_substitute` onto
-# this needs that sentinel decided first. THE TYPE IS THE WALL THIS REMOVES.
+# `CNodes` IS NOT REACHED BY A RULE YET and that is stated rather than implied.
+# THE SENTINEL IT NEEDS ALREADY EXISTS AND I SAID IT DID NOT: a node-keyed table
+# needs `PMEntry.ops` to mean "any op", `op_in(Nil{}, x)` is `False`, and Nil IS
+# ALREADY A NEVER-MATCH DEFAULT in about ten tables (`weak.bend:1631`,
+# `mixin/gradient.bend:2062`, `schedule/indexing.bend:1307`,
+# `codegen/late/linearizer.bend:1649`, ...), so it cannot be reinterpreted. The
+# right sentinel is `all_ops()` -- this file's own, at `:4578`, already used by
+# `pm_drop_after` -- so wiring `_substitute` onto `CNodes` is a TABLE and not a
+# decision. THE TYPE IS THE WALL THIS REMOVES.
 type CTX is Data:
   CArgs{xs: List<&2, U32>}
   CNodes{m: Map<&2, U32>}
