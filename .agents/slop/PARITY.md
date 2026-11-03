@@ -4863,3 +4863,40 @@ evidence to land a change -- the same standard that reverted §72, §79.1, §80,
 
 **⇒ SO THE `eq_dt` FIX WAS THE WHOLE OF THAT MECHANISM**: 3,253 compares a render to 91 was worth 9.4%;
 the last 91 are worth ~2% and cannot be separated from the instrument.
+
+## 109. THE SPLIT AFTER §108, AND WHERE THE "EXPENSIVE PRIMITIVE" LENS STOPS
+
+Every decomposition before §108 measured a render that §108 then cut by 0.44 ms, so this one is re-taken on
+`c664beda1` with probes rebuilt from the current `serve.bend`:
+
+```
+stub (IPC + frame)   0.35 ms   10%
+decode               1.61 ms   46%     <- NOW THE LARGEST TERM
+render               1.57 ms   44%     (2.01 before §108)
+                     ------
+                     3.53 ms
+```
+
+**§108 MOVED THE RENDER FROM 51% TO 44% AND THE DECODE IS NOW THE LARGER HALF** -- and the decode has not
+moved since §78.
+
+### 109.1 The §108 lens, applied to the sites the reviewer named
+
+| site | what it is | verdict |
+|---|---|---|
+| `eq_cls` | `S.Cls` equality | **ALREADY A TAG MATCH** -- `match y: case S.CVoid{}: True{} ...`, no string anywhere |
+| helpers' `String.eq` | `dedup_str`, `all_same_str`, `kv_find`, `Target.device` | counted in §108's remaining **91 calls a render**, and §108.3 measured two of the hot ones at 0.9729/0.9813 -- **at the keeper line, not kept** |
+| `List.get` lookups | §75-§81 left ~189,000 steps | every one is a `List.get` by index, and §75/§76/§77/§81 respectively blocked the list, added the distance form and deleted the index walk; the residue is 45 steps a uop |
+
+**⇒ SO THE LENS IS HARVESTED WHERE IT CAN BE.** The `String.eq`-as-ordering primitive was worth 9.4% at one
+site (3,253 calls) and ~2% at all the others combined (91 calls), and `eq_cls` never used it. There is no
+third site of that class in the render.
+
+### 109.2 What the decode would need, and why §108's lesson does not transfer
+
+The decode's 1.61 ms is `String.split` on the wire (~0.9), `nums`' splits (~0.43) and record building
+(~0.3). **ITS EXPENSIVE PRIMITIVE IS `String.split`, AND §108's LESSON DOES NOT REACH IT**: `split` is not a
+comparison that a tag can replace, it is the per-character construction of the token list, and three
+replacements have been measured against it -- a character scanner refused by the language's recursion rules
+(§91), chunking neutral because the split is linear (§92), and a base-64 wire 13% slower because indexing a
+string costs more than splitting it (§104).
