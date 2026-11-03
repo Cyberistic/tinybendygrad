@@ -2546,3 +2546,41 @@ NOT A DEFECT THAT CAN BE FIXED IN THIS LANGUAGE; IT IS THE PRICE OF THE ONLY HIS
 container or a branch on a computed value. **THE TWO BLOCKERS ARE THE SAME TWO, AND THEY ARE THE ONES §44 AND
 §45 ALREADY NAMED** -- no mutable container, and no way to branch on a computed value without evaluating both
 sides. What is left of the renderer is written in the shape those constraints force.
+
+## 58. `ku_text` IS 31% BECAUSE IT IS FIFTEEN THINGS, AND THE DAEMON IS THE DEFAULT
+
+### 58.1 The daemon is what the device pays -- confirmed, not assumed
+
+§30 made the long-lived renderer the default and `BEND_SERVE=0` the opt-out, but the per-kernel figure every
+section since has quoted (≈10 ms) was measured through `portc.Worker` directly. Checked end to end: a real
+`DEV=BEND` program run with NO environment variables set --
+
+```
+BEND_SERVE in env: None
+worker stats after a device run: {'turns': 1, 'fallbacks': 0}
+fallbacks recorded: 0
+```
+
+**ONE KERNEL, ONE WORKER TURN, NO FALLBACK.** The path being optimised is the path a user gets.
+
+### 58.2 `ku_text`'s 3.1 ms, attributed across its arms
+
+Same method as §56: each arm set to a constant, the SERVE artifact rebuilt, the Worker turn measured
+(medians of nine, base 9.9-10.4 ms across the runs):
+
+| planted | turn | share |
+|---|---|---|
+| `ku_text_load` | 9.8 ms | ~6% (~0.6 ms) |
+| `ku_text_alu` | 9.4 ms | ~5% (~0.5 ms) |
+| `ku_text_cast` | 9.5 ms | ~4% (~0.4 ms) |
+| `ku_text_range` | 10.1 ms | ~3% (~0.3 ms) |
+| `ku_text_store` | 9.9 ms | ~0% |
+
+**NO ARM IS ABOVE 6%, AND THE FIVE TOGETHER ARE ~1.8 ms OF THE 3.1 ms** -- the rest is the dispatch in
+`ku_text.go` and the arms too small to plant. Cutting even half of the largest would be ~3% of the turn,
+which is the size §37, §40, §41 and §42 all measured as NEUTRAL when they tried it.
+
+**⇒ SO `ku_text` HAS THE SAME SHAPE AS THE RENDERER IT SITS IN**: it is 31% of the turn because it is fifteen
+functions that each render something the oracle requires, not because one of them is slow. The two levers that
+paid in this stretch (§49, §50) removed *lookups*, and there are no lookups left in this path -- `ku_text_load`
+does two `rt` calls, a `ku_access` and a `concat`, and every one of them emits text the C needs.
