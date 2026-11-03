@@ -3138,3 +3138,45 @@ per render is about half a percent, which is under this instrument's floor -- th
 **⇒ AND THAT IS THE I64 PATH EXPLAINED**: `i64_of_hi_lo`'s 28.5 per uop is the decimal fold's division loop
 (1 224 steps x a shift and an or each), not a repeated construction that a hoist could remove. The real defect
 in it (both shift arms) was worth half a percent.
+
+## 73. THE REST OF THE I64 FAMILY, AUDITED BY CALL COUNT: THE DEFECT IS UNREACHABLE ANYWHERE ELSE
+
+§72 found the double-arm defect in `i64_shl.put` by counting, and the reviewer's question is whether its
+siblings have it too. Two instruments answer it, and they agree.
+
+### 73.1 The candidates, counted
+
+```
+i64_shr        0.0/uop     i64_cmp        0.0/uop
+i64_shr_put    0.0/uop     i64_cmp_sgn    0.0/uop
+i64_shr_lo     0.0/uop
+i64_shr_hi     0.0/uop
+i64_shl        7.6/uop     i64_shl_lo     7.6/uop     i64_shl_hi     7.6/uop
+```
+
+**`i64_shr` AND `i64_cmp` ARE NEVER CALLED ON THIS PATH AT ALL.** They carry the same strict-`Bool.pick` shape
+(`i64_shr.put` picks between `i64_shr.lo` and `i64_shr.hi`), and **a defect in a function the renderer never
+reaches is worth exactly zero** -- fixing them would be a change with no measurement behind it, which is the
+thing this record refuses.
+
+### 73.2 And the equal-count scan found no other arm pair
+
+A scan for functions sharing a call count (the signature of both arms of one pick running) returns mostly
+CHAINS -- a caller and its single callee, which naturally run the same number of times:
+
+```
+3,162: ops_eq_cls, ops_eq_cls_sel, ops_eq_dt          (one predicate, three defs deep)
+1,224: div_bit, div_fit, div_fit_put, div_qbit, div_shift, div_step   (one division loop)
+  769: cstyle_is_global, cstyle_is_local              (both sides of a `Bool.or`, which is strict by nature)
+  429: rd_body, rd_body_at, rd_image, rd_prefix, rd_prefix_of        (one dtype render)
+```
+
+The only true arm pair in the list is `i64_shl_lo`/`i64_shl_hi`, which is §72. **`cstyle_is_global` and
+`cstyle_is_local` look like a pair and are not**: they are the two operands of `Bool.or`, and Bend's `or` is
+strict, so both run by the language's rule rather than by a mistake -- §33/§34/§38/§39 all exploit the same
+strictness, and rewriting `or` to short-circuit is not expressible (that is §57's blocker in its `Bool.pick`
+form).
+
+**⇒ SO THE I64 AUDIT IS CLOSED WITH A NEGATIVE**: one reachable defect, found in §72, worth 0.5% and below the
+instrument's floor; two unreachable lookalikes; and one apparent pair that is the language's strictness rather
+than a defect.
