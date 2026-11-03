@@ -655,6 +655,40 @@ def ctx_miss() -> String:
   +m = Map.set(&2, U32, Map.new(&2, U32), "4294967295", 7)
   ctx_miss.of(O.CTX.at(O.CNodes{m}, 0n, O.Found.i(n)))
 
+
+# ---- `canonicalize_call_body` -- __init__.py:203-205 -------------------------
+# A CALL's body is rewritten with a FRESH `CallifyCtx`, so the `-1-len(allocs)`
+# slot numbering RESTARTS per call body -- `ccb_nested` is the row that sees it.
+def mkalloc(ar: O.Arena, slot: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{pa(slot, None{}, SP.AGlobal{}, None{}, None{})}, O.TNone{})
+
+def mksink(ar: O.Arena, +bo: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsSINK{}, [bo], O.ANone{}, O.TNone{})
+
+def mkcall(ar: O.Arena, +bo: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsCALL{}, [bo], O.ANone{}, O.TNone{})
+
+def ccb_slot.of(arg: O.Arg) -> U32:
+  match arg:
+    case O.AParam{q}: O.ParamArg.slot(q)
+    case _: 111
+
+# `src0` of the CALL is its BODY; the ALLOC is `src0` of that body, so the row
+# descends one level per wrapper it built.
+def ccb_src0_slot(+ar: O.Arena, +bo: U32) -> U32:
+  ccb_slot.of(SC.sc_arg(ar, O.Arena.src0(ar, bo)))
+
+def ccb_body_alloc_slot(+ar: O.Arena, +r: U32) -> U32:
+  ccb_src0_slot(ar, O.Arena.src0(ar, r))
+
+def ccb_one() -> String:
+  +a = mkalloc(O.Arena.empty(), 3)
+  +sk = mksink(O.Found.ar(a), O.Found.i(a))
+  +c = mkcall(O.Found.ar(sk), O.Found.i(sk))
+  +r = SC.canonicalize_call_body(O.Found.ar(c), O.Found.i(c))
+  +ar = O.Found.ar(r)
+  bf(U32.is_eq(ccb_body_alloc_slot(ar, O.Found.i(r)), O.ParamArg.no_slot()))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -683,4 +717,6 @@ def main() -> IO(Unit):
     p6 : Unit <- IO.print(String.concat(["sub_nocalls=", sub_nocalls(ecfx())]))
     p5 : Unit <- IO.print(String.concat(["ab_nest=", ab_nest()]))
     c2 : Unit <- IO.print(String.concat(["ctx_nodes=", ctx_nodes()]))
-    IO.print(String.concat(["ctx_miss=", ctx_miss()]))
+    c3 : Unit <- IO.print(String.concat(["ctx_miss=", ctx_miss()]))
+    IO.print(String.concat(["ccb_one=", ccb_one()]))
+

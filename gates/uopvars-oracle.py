@@ -215,6 +215,16 @@ def main():
     otop2 = UOp(Ops.CALL, src=(oouter,))
     a("ab_nest", int(resolve_linear_call(otop2, {}).src[0].op is Ops.LINEAR))
 
+    # `canonicalize_call_body` -- the ALLOC's slot becomes `-1`
+    from tinygrad.schedule import canonicalize_call_body
+    def mka(slot):
+        return UOp(Ops.ALLOC, src=(UOp(Ops.STACK),),
+                   arg=ParamArg(slot, dtypes.int32, addrspace=AddrSpace.GLOBAL))
+    za = mka(3)
+    zr = canonicalize_call_body(UOp(Ops.CALL, src=(UOp(Ops.SINK, src=(za,)),)))
+    zslots = [x.arg.slot for x in zr.src[0].toposort() if x.op is Ops.ALLOC]
+    a("ccb_one", int(zslots == [-1]))
+
     print("\n".join(out))
 
 

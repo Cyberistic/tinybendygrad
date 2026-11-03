@@ -2129,6 +2129,78 @@ def canonicalize_alloc(+c: O.CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
   canonicalize_alloc.pa(ca_arg.of(sc_arg(ar, b)), ca_slotn(c),
     ca_arg.slot(sc_arg(ar, b)), O.CallifyCtx.allocs(c), ar, c, b)
 
+type CRes is Data:
+  CRes{ar: O.Arena, i: U32, ctx: O.CallifyCtx, repl: Map<&2, U32>}
+
+type CWk is Data:
+  CGo{ar: O.Arena, u: U32, op: O.Op, ctx: O.CallifyCtx, repl: Map<&2, U32>}
+  CFold{ar: O.Arena, u: U32, xs: List<&2, U32>, ctx: O.CallifyCtx, repl: Map<&2, U32>, acc: List<&2, U32>}
+  CRec{ar: O.Arena, i: U32, u: U32, ctx: O.CallifyCtx, repl: Map<&2, U32>}
+  CAlloc{ar: O.Arena, u: U32, i: U32, ok: Bool, ctx: O.CallifyCtx, repl: Map<&2, U32>}
+
+def ca_ans_i(m: Maybe<&2, O.Found>) -> U32:
+  match m:
+    case Some{f}: O.Found.i(f)
+    case None{}: 0
+
+def ca_ans_ok(m: Maybe<&2, O.Found>) -> Bool:
+  match m:
+    case Some{_}: True{}
+    case None{}: False{}
+
+# `CaPut.a`'s `Found` CARRIES THE GROWN ARENA, because `ca_new` MINTS. Taking only
+# `Found.i` is the defect `gates/uopvars-gate.py` found twice in Wall C and it is
+# what this port had: MEASURED, `sc_canon` on one ALLOC answered `ri=2 op=NOOP`
+# with `next=2` -- index 2 did not exist.
+def ca_ans_ar(m: Maybe<&2, O.Found>, +ar: O.Arena) -> O.Arena:
+  match m:
+    case Some{f}: O.Found.ar(f)
+    case None{}: ar
+
+def CRes.ar(x: CRes) -> O.Arena: match x: case CRes{ar, i, ctx, repl}: ar
+def CRes.i(x: CRes) -> U32: match x: case CRes{ar, i, ctx, repl}: i
+def CRes.ctx(x: CRes) -> O.CallifyCtx: match x: case CRes{ar, i, ctx, repl}: ctx
+def CRes.repl(x: CRes) -> Map<&2, U32>: match x: case CRes{ar, i, ctx, repl}: repl
+
+def sc_ccb_assemble(+ar: O.Arena, +u: U32, +ctx: O.CallifyCtx, +repl: Map<&2, U32>, srcs: List<&2, U32>) -> CRes:
+  +f = O.UOp.new(ar, sc_op(ar, u), srcs, sc_arg(ar, u), O.Arena.tag(ar, u))
+  CRes{O.Found.ar(f), O.Found.i(f), ctx, Map.set(&2, U32, repl, U32.show(u), O.Found.i(f))}
+
+def sc_canon(fuel: Nat, w: CWk) -> CRes:
+  match fuel w:
+    case 0n CGo{ar, u, op, ctx, repl}: CRes{ar, u, ctx, repl}
+    case 0n CFold{ar, u, xs, ctx, repl, acc}: CRes{ar, u, ctx, repl}
+    case 0n CRec{ar, i, u, ctx, repl}: CRes{ar, i, ctx, repl}
+    case 0n CAlloc{ar, u, i, ok, ctx, repl}: CRes{ar, i, ctx, repl}
+    case 1n++k CGo{+ar, +u, O.OpsCALL{}, ctx, repl}:
+      +bo = sc_src0(ar, u)
+      +r = sc_canon(k, CGo{ar, bo, sc_op(ar, bo), O.callify_ctx(), Map.new(&2, U32)})
+      sc_canon(k, CRec{CRes.ar(r), CRes.i(r), u, ctx, repl})
+    case 1n++k CGo{+ar, +u, O.OpsALLOC{}, ctx, repl}:
+      +p = canonicalize_alloc(ctx, ar, u)
+      +m = CaPut.a(p)
+      sc_canon(k, CAlloc{ca_ans_ar(m, ar), u, ca_ans_i(m), ca_ans_ok(m), CaPut.c(p), repl})
+    case 1n++k CGo{+ar, +u, op, ctx, repl}:
+      sc_canon(k, CFold{ar, u, sc_srcs(ar, u), ctx, repl, Nil{}})
+    case 1n++k CFold{+ar, +u, Nil{}, ctx, repl, acc}:
+      sc_ccb_assemble(ar, u, ctx, repl, acc)
+    case 1n++k CFold{+ar, +u, +x <> t, ctx, repl, acc}:
+      +r = sc_canon(k, CGo{ar, x, sc_op(ar, x), ctx, repl})
+      sc_canon(k, CFold{CRes.ar(r), u, t, CRes.ctx(r), CRes.repl(r), List.append(&2, U32, acc, [CRes.i(r)])})
+    case 1n++k CRec{+ar, +i, +u, ctx, repl}:
+      sc_ccb_assemble(ar, u, ctx, repl, List.append(&2, U32, [i], sc_src_from(ar, u, 1)))
+    case 1n++k CAlloc{+ar, +u, +i, True{}, ctx, repl}:
+      CRes{ar, i, ctx, Map.set(&2, U32, repl, U32.show(u), i)}
+    case 1n++k CAlloc{+ar, +u, +i, False{}, ctx, repl}:
+      CRes{ar, u, ctx, repl}
+
+def canonicalize_call_body(+ar: O.Arena, +c: U32) -> O.Found:
+  +bo = sc_src0(ar, c)
+  +r = sc_canon(O.Arena.budget(ar), CGo{ar, bo, sc_op(ar, bo), O.callify_ctx(), Map.new(&2, U32)})
+  +ar2 = CRes.ar(r)
+  O.UOp.new(ar2, sc_op(ar2, c), List.append(&2, U32, [CRes.i(r)], sc_src_from(ar2, c, 1)),
+            sc_arg(ar2, c), O.Arena.tag(ar2, c))
+
 # THE TWO WALLS THAT REMAIN, each with `file:line`, and each NOT a `graph_rewrite`:
 #
 # 10. `canonicalize_call_body` -- __init__.py:235-236. NO ctx. IT IS A ONE-LINE
