@@ -344,11 +344,14 @@ def verify(rows, rm_rows, tables):
   for tname, entries in tables.items():
     pool = pools.get(tname, rows)
     for e in entries:
-      up = None
-      for cand in pool:
-        if cand["file"] == "symbolic.py" and cand["line"] == e["cited"]:
-          up = cand
-          break
+      # ONE CITATION CAN NAME SEVERAL UPSTREAM RULES. `:284` is
+      # `*((...) for op in GroupOp.Associative)`, which spawns FIVE patterns on the same line,
+      # and first-match mapped every port row to whichever one happened to be first. The
+      # mapping is by CITATION AND OP SET: an exact set wins, then any covering set.
+      cands = [c for c in pool if c["file"] == "symbolic.py" and c["line"] == e["cited"]]
+      exact = [c for c in cands if set(c["ops"]) == set(e["ops"])]
+      cover = [c for c in cands if set(e["ops"]) <= set(c["ops"])]
+      up = (exact or cover or cands or [None])[0]
       if up is None:
         out.append({"table": tname, **e, "upstream": None, "why": "CITATION-NOT-AN-UPSTREAM-RULE"})
         continue

@@ -3154,10 +3154,9 @@ def sym_266.guard(+x: F.Folded, +a: U32, +b: U32) -> Bool:
 def sym_266.pat(+x: F.Folded, +u: U32) -> Bool:
   +a = sy_src0(x, u)
   +b = sy_src1(x, u)
-  Bool.and(Bool.and(O.GroupOp.binary(sy_op(x, u)), Bool.not(O.eq_op(sy_op(x, u), O.OpsTHREEFRY{}))),
-    Bool.and(sy_nsrc_is(x, u, 2),
-      Bool.and(Bool.and(p_where3(x, a), p_where3(x, b)),
-        Bool.and(p_same(sy_src0(x, a), sy_src0(x, b)), sym_266.guard(x, a, b)))))
+  Bool.and(Bool.and(O.GroupOp.binary(sy_op(x, u)), sy_nsrc_is(x, u, 2)),
+    Bool.and(Bool.and(p_where3(x, a), p_where3(x, b)),
+      Bool.and(p_same(sy_src0(x, a), sy_src0(x, b)), sym_266.guard(x, a, b))))
 
 def sym_266.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +a = sy_src0(x, u)
@@ -3574,7 +3573,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{70, [O.OpsCMPNE{}], Nil{}, },   # 260
     O.PMEntry{71, [O.OpsWHERE{}], Nil{}, },   # 262
     O.PMEntry{72, [O.OpsWHERE{}], Nil{}, },   # 264
-    O.PMEntry{73, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsXOR{}], Nil{}, },   # 266
+    O.PMEntry{73, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 266
     O.PMEntry{74, [O.OpsADD{}], Nil{}, },   # 269
     O.PMEntry{75, [O.OpsADD{}], Nil{}, },   # 272
     O.PMEntry{76, [O.OpsMAX{}], Nil{}, },   # 284
