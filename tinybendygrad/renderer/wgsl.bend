@@ -473,7 +473,7 @@ def cfo_bin(sym: String, +a: String, +b: String) -> String:
 def code_for_op.of(+op: O.Op, +a: String, +b: String, +c: String) -> String:
   match op:
     case O.OpsSQRT{}      : cfo_un("sqrt", a)
-    case O.OpsRECIPROCAL{}: String.concat(["(1/", a, ")"])
+    case O.OpsRECIP{}: String.concat(["(1/", a, ")"])
     case O.OpsNEG{}       : String.concat(["-", a])
     case O.OpsEXP2{}      : cfo_un("exp2", a)
     case O.OpsLOG2{}      : cfo_un("log2", a)
@@ -485,11 +485,11 @@ def code_for_op.of(+op: O.Op, +a: String, +b: String, +c: String) -> String:
     case O.OpsADD{}       : cfo_bin("+", a, b)
     case O.OpsSUB{}       : cfo_bin("-", a, b)
     case O.OpsMUL{}       : cfo_bin("*", a, b)
-    case O.OpsCMOD{}      : cfo_bin("%", a, b)
-    case O.OpsCDIV{}      : cfo_bin("/", a, b)
+    case O.OpsTRUNCMOD{}      : cfo_bin("%", a, b)
+    case O.OpsTRUNCDIV{}      : cfo_bin("/", a, b)
     # Ops.FDIV is MISSING from WGSLRenderer.code_for_op upstream and present in
     # ClangRenderer's (cstyle.py:294 renders `(a/b)`). Measured, not assumed:
-    #   clang - wgsl = ['Ops.FDIV'];  wgsl - clang = ['Ops.EXP2','Ops.LOG2','Ops.RECIPROCAL','Ops.SIN']
+    #   clang - wgsl = ['Ops.FDIV'];  wgsl - clang = ['Ops.EXP2','Ops.LOG2','Ops.RECIP','Ops.SIN']
     # so this is ONE missing arm, not five -- the other four are WGSL builtins with no C spelling.
     # It matters because the fallthrough below is `case _: ""`, so before this arm an FDIV rendered
     # as the EMPTY STRING: a malformed shader, not a Python KeyError. BatchNorm's
@@ -1497,11 +1497,11 @@ def r_cfo1(+op: O.Op, py: String) -> String:
   r("code_for_op " ++ O.Ops.name.of(op), code_for_op.of(op, "A", "B", "C"), py)
 
 def r_cfos() -> String:
-  String.concat([r_cfo1(O.OpsSQRT{}, "sqrt(A)"), r_cfo1(O.OpsRECIPROCAL{}, "(1/A)"), r_cfo1(O.OpsNEG{}, "-A"),
+  String.concat([r_cfo1(O.OpsSQRT{}, "sqrt(A)"), r_cfo1(O.OpsRECIP{}, "(1/A)"), r_cfo1(O.OpsNEG{}, "-A"),
     r_cfo1(O.OpsEXP2{}, "exp2(A)"), r_cfo1(O.OpsLOG2{}, "log2(A)"), r_cfo1(O.OpsSIN{}, "sin(A)"),
     r_cfo1(O.OpsTRUNC{}, "trunc(A)"), r_cfo1(O.OpsAND{}, "(A&B)"), r_cfo1(O.OpsXOR{}, "(A^B)"),
     r_cfo1(O.OpsOR{}, "(A|B)"), r_cfo1(O.OpsADD{}, "(A+B)"), r_cfo1(O.OpsSUB{}, "(A-B)"),
-    r_cfo1(O.OpsMUL{}, "(A*B)"), r_cfo1(O.OpsCMOD{}, "(A%B)"), r_cfo1(O.OpsCDIV{}, "(A/B)"),
+    r_cfo1(O.OpsMUL{}, "(A*B)"), r_cfo1(O.OpsTRUNCMOD{}, "(A%B)"), r_cfo1(O.OpsTRUNCDIV{}, "(A/B)"),
     r_cfo1(O.OpsFDIV{}, "(A/B)"),
     r_cfo1(O.OpsCMPNE{}, "(A!=B)"), r_cfo1(O.OpsSHR{}, "(A>>B)"), r_cfo1(O.OpsSHL{}, "(A<<B)"),
     r_cfo1(O.OpsCMPLT{}, "(A<B)"), r_cfo1(O.OpsCMPEQ{}, "(A==B)"), r_cfo1(O.OpsWHERE{}, "select(C,B,A)"),

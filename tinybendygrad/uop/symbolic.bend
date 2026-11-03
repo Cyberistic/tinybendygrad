@@ -257,7 +257,7 @@ def OP_CASTS() -> List<&2, O.Op>: [O.OpsCAST{}, O.OpsBITCAST{}]
 # Unary.  Upstream's `:83` and `:84` therefore fire on ALL NINE, and a two-op
 # set is a NARROWING that makes the port skip nodes upstream rewrites.
 def OP_UNARY() -> List<&2, O.Op>:
-  [O.OpsCAST{}, O.OpsBITCAST{}, O.OpsNEG{}, O.OpsRECIPROCAL{}, O.OpsEXP2{},
+  [O.OpsCAST{}, O.OpsBITCAST{}, O.OpsNEG{}, O.OpsRECIP{}, O.OpsEXP2{},
    O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsTRUNC{}]
 
 
@@ -276,15 +276,15 @@ def OP_SHIFTS() -> List<&2, O.Op>: [O.OpsSHL{}, O.OpsSHR{}]
 # rules that lift an `invalid_gate` out of a binary operand. Spelled out because `PMEntry.ops` is
 # a LIST and `O.GroupOp.binary` is a PREDICATE -- the same reason `OP_ALU_NT` is.
 def OP_BINARY() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{},
-   O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{},
+  [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{},
+   O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsMAX{}, O.OpsMUL{},
    O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}]
 
 def OP_ALU_NT() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{},
-   O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsLOG2{},
+  [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{},
+   O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsLOG2{},
    O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{},
-   O.OpsRECIPROCAL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{},
+   O.OpsRECIP{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{},
    O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}]
 
 # `up if bool(x) else None` -- the shape of most of symbolic.py's rule bodies.
@@ -843,10 +843,10 @@ def exec_alu_i32.cmp(+uns: Bool, op: O.Op, o: I3) -> Maybe<&1, O.Const>:
 
 def exec_alu_i32.div(+uns: Bool, op: O.Op, o: I3) -> Maybe<&1, O.Const>:
   match op o:
-    case O.OpsFLOORDIV{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_fdiv(uns, a, b))}
-    case O.OpsFLOORMOD{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_fmod(uns, a, b))}
-    case O.OpsCDIV{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_cdiv(uns, a, b))}
-    case O.OpsCMOD{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_cmod(uns, a, b))}
+    case O.OpsDIV{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_fdiv(uns, a, b))}
+    case O.OpsMOD{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_fmod(uns, a, b))}
+    case O.OpsTRUNCDIV{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_cdiv(uns, a, b))}
+    case O.OpsTRUNCMOD{} I3{2, +a, +b, _}: Some{i64_of_c(uns, i32_cmod(uns, a, b))}
     case _ _: None{}
 
 def exec_alu_i32.arith(+uns: Bool, op: O.Op, o: I3) -> Maybe<&1, O.Const>:
@@ -872,7 +872,7 @@ def exec_alu_i32.where(+uns: Bool, +o: I3) -> Maybe<&1, O.Const>:
     case _: None{}
 
 def op_is_div(op: O.Op) -> Bool:
-  O.op_in([O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsCDIV{}, O.OpsCMOD{}], op)
+  O.op_in([O.OpsDIV{}, O.OpsMOD{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}], op)
 
 def op_is_bit(op: O.Op) -> Bool:
   O.op_in([O.OpsAND{}, O.OpsOR{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}], op)
@@ -942,7 +942,7 @@ def exec_alu_f32.unary(op: O.Op, a: F32) -> Maybe<&1, O.Const>:
     case O.OpsLOG2{}: Some{O.CFloat{f32_log2(a)}}
     case O.OpsEXP2{}: Some{O.CFloat{f32_exp2(a)}}
     case O.OpsSQRT{}: Some{O.CFloat{F32.sqrt(a)}}
-    case O.OpsRECIPROCAL{}: Some{O.CFloat{f32_recip(a)}}
+    case O.OpsRECIP{}: Some{O.CFloat{f32_recip(a)}}
     case O.OpsSIN{}: Some{O.CFloat{f32_sin(a)}}
     case O.OpsTRUNC{}: Some{O.CFloat{f32_trunc(a)}}
     case _: None{}
@@ -960,10 +960,10 @@ def exec_alu_f32.arith(op: O.Op, a: F32, b: F32) -> Maybe<&1, O.Const>:
     case O.OpsSUB{}: Some{O.CFloat{F32.sub(a, b)}}
     case O.OpsMUL{}: Some{O.CFloat{F32.mul(a, b)}}
     case O.OpsMAX{}: Some{O.CFloat{f32_max(a, b)}}
-    case O.OpsFLOORDIV{}: Some{O.CFloat{f32_fdiv(a, b)}}
-    case O.OpsFLOORMOD{}: Some{O.CFloat{f32_fmod(a, b)}}
-    case O.OpsCDIV{}: Some{O.CFloat{f32_cdiv(a, b)}}
-    case O.OpsCMOD{}: Some{O.CFloat{f32_cmod(a, b)}}
+    case O.OpsDIV{}: Some{O.CFloat{f32_fdiv(a, b)}}
+    case O.OpsMOD{}: Some{O.CFloat{f32_fmod(a, b)}}
+    case O.OpsTRUNCDIV{}: Some{O.CFloat{f32_cdiv(a, b)}}
+    case O.OpsTRUNCMOD{}: Some{O.CFloat{f32_cmod(a, b)}}
     case O.OpsPOW{}: Some{O.CFloat{f32_pow(a, b)}}
     case _ : exec_alu_f32.cmp(op, a, b)
 
@@ -1434,7 +1434,7 @@ def sp_false(+dt: S.Dt, +ar: O.Arena) -> U32:
 # PYTHON FLOAT and `int(h)` has no exact spelling here (`helpers.bend` has no
 # `I64 -> F32` and no `F32 -> I64`), and the halving then needs `i64_div`.
 def sp_neg_pow(+x: F.Folded, +u: U32, i: H.I64) -> U32:
-  sy_alu2(sy_ar(x), O.OpsPOW{}, sy_alu1(sy_ar(x), O.OpsRECIPROCAL{}, u),
+  sy_alu2(sy_ar(x), O.OpsPOW{}, sy_alu1(sy_ar(x), O.OpsRECIP{}, u),
     sp_const(sy_dt1(x, u), H.i64_sub(H.i64_of_i32(0), i), sy_ar(x)))
 
 def sp_pow.cint(+i: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -1566,7 +1566,7 @@ def mint_not(+f: O.Found, v: U32) -> O.Found:
   mint_bin(c, O.OpsCMPNE{}, v, O.Found.i(c))
 
 # `x.reciprocal()` at an explicit arena.
-def mint_recip(+f: O.Found, v: U32) -> O.Found: mint_un(f, O.OpsRECIPROCAL{}, v)
+def mint_recip(+f: O.Found, v: U32) -> O.Found: mint_un(f, O.OpsRECIP{}, v)
 
 # symbolic.py:462  ((UPat.var("x") * UPat.var("x")).reciprocal(),
 #                     lambda x: x.reciprocal()*x.reciprocal())   # 1/(x*x) -> (1/x)*(1/x)
@@ -1576,7 +1576,7 @@ def mint_recip(+f: O.Found, v: U32) -> O.Found: mint_un(f, O.OpsRECIPROCAL{}, v)
 # 100-105` emits the identity compare for a duplicate store, so the honest port is
 # the IDENTITY CHECK again; it is STRICTER than Python here (see the TODO block).
 def sym_462.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsRECIPROCAL{}), sy_nsrc_is(x, u, 1)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsRECIP{}), sy_nsrc_is(x, u, 1)),
     Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsMUL{}), Bool.and(sy_nsrc_is(x, sy_src0(x, u), 2),
       p_same(sy_src0(x, sy_src0(x, u)), sy_src1(x, sy_src0(x, u))))))
 
@@ -1822,7 +1822,7 @@ def sym_120(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # IDENTITY CHECK and it is LOAD-BEARING: without it the rule also fires on
 # `x // y` for two different nodes, and that is a wrong rewrite.
 def sym_123.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsDIV{}), sy_nsrc_is(x, u, 2)),
     p_same(sy_src0(x, u), sy_src1(x, u)))
 
 def sym_123.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -1948,10 +1948,10 @@ def p_cast_at(+x: F.Folded, +s: U32, want: S.Dt) -> Bool:
 # ---- the SECOND rebind, and the shape it shares with `sym_126` ----
 # symbolic.py:124  ((UPat.var() % UPat.var("y")).named("base") % UPat.var("y"),
 #                     lambda base,y: base)        # (x%y)%y -> x%y
-# `FLOORMOD` is NOT commutative, so there is ONE permutation and the shape is
+# `MOD` is NOT commutative, so there is ONE permutation and the shape is
 # `p_rebind2`'s verbatim. `base` is `.named("base")` on the INNER node, so the
 # answer is that node -- `src[0]` here and NOT `src[0]`'s src[0] as in `sym_126`.
-def sym_127.pat(+x: F.Folded, +u: U32) -> Bool: p_rebind2(x, O.OpsFLOORMOD{}, u)
+def sym_127.pat(+x: F.Folded, +u: U32) -> Bool: p_rebind2(x, O.OpsMOD{}, u)
 
 def sym_127(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sy_tri(sym_127.pat(x, u), Some{sy_src0(x, u)})
@@ -2038,7 +2038,7 @@ def mc32.of(mo: Maybe<&2, O.Const>, ko: Maybe<&2, O.Const>) -> Mc:
     case None{}: mc32.mask(mo, None{})
 
 # The mask is the `&`'s `a` and its `x` the `&`'s `b`, and the amount is the
-# OUTER's src[1] because neither `SHR` nor `FLOORDIV` permutes.
+# OUTER's src[1] because neither `SHR` nor `DIV` permutes.
 def p_mask(+x: F.Folded, +u: U32, +op: O.Op, +p: Sw) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, op), sy_nsrc_is(x, u, 2)),
     Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsAND{}),
@@ -2069,7 +2069,7 @@ def sym_149.gate(+c: Mc) -> Bool:
 
 def sym_149.put(+k: U32, v: U32, +f: O.Found) -> O.Found:
   +c = mint_const(O.UOp.const(O.Found.ar(f), O.CInt{H.i64_of_i32(k)}), O.CInt{H.i64_of_i32(k)}, S.weakint())
-  mint_bin(c, O.OpsFLOORDIV{}, v, O.Found.i(c))
+  mint_bin(c, O.OpsDIV{}, v, O.Found.i(c))
 
 def sym_149.hit(gate: Bool, +c: Mc, v: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
   match gate:
@@ -2079,7 +2079,7 @@ def sym_149.hit(gate: Bool, +c: Mc, v: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
 def sym_149(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +p = p_const(x, sy_src0(x, u))
   +c = mc32.of(sy_val(x, Sw.a(p)), sy_val(x, sy_src1(x, u)))
-  sym_149.hit(Bool.and(p_mask(x, u, O.OpsFLOORDIV{}, p), sym_149.gate(c)), c, Sw.b(p), x)
+  sym_149.hit(Bool.and(p_mask(x, u, O.OpsDIV{}, p), sym_149.gate(c)), c, Sw.b(p), x)
 
 # ---- the weak-src PROMOTION, and it is a two-src fold ----
 # symbolic.py:160-162  (UPat(GroupOp.Binary-{Ops.THREEFRY}, src=[casted_const, bare_const], name="a"),
@@ -2092,9 +2092,9 @@ def sym_149(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # both captured sides are `UPat.any(...)` and an `is_any` pattern has no op of its
 # own for ops.py:1478 to read.
 def OP_BINARY_3F() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsMUL{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{},
+  [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{},
    O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{},
-   O.OpsAND{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}]
+   O.OpsAND{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{}, O.OpsMOD{}]
 
 # `dt = promo_dtype(a.src)` -- ops.py:120 -- and `F.promo_dtype` is the same lattice
 # `least_upper_dtype` is, over the srcs' OWN dtypes.
@@ -2247,7 +2247,7 @@ def sym_197(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   +p = p_shl(x, sy_src0(x, u))
   sym_197.hit(sym_197.pat(x, u, p), p, x, u)
 
-# ---- the last two RECIPROCAL rules, which are `sym_462`'s shape ----
+# ---- the last two RECIP rules, which are `sym_462`'s shape ----
 # symbolic.py:463  ((UPat.var("x") * UPat.var("x") * UPat.var("x")).reciprocal(),
 #                     lambda x: x.reciprocal()*x.reciprocal()*x.reciprocal())
 # THREE copies of one name, so `upat.py:100-105` emits the identity compare twice
@@ -2270,12 +2270,12 @@ def p_mul3(+x: F.Folded, +u: U32) -> Sw:
   Sw{p_mul3.ok(Sw.ok(i), x, Sw.a(i), Sw.b(i)), Sw.a(i), Sw.b(i)}
 
 # THE SHARED ENTRY TEST, and there is only ONE because the two rules' patterns
-# differ in NOTHING but which `Sw` they build: both are `RECIPROCAL(MUL(..))` with
+# differ in NOTHING but which `Sw` they build: both are `RECIP(MUL(..))` with
 # two srcs, and the third clause that tells them apart is the `Sw`'s `ok`. Writing
 # it once is also what makes `sym_463`/`sym_464` each gated on the same predicate
 # their pattern spells, which is `bend2-constraints`' RF6.
 def p_recip1(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(sy_is_op(x, u, O.OpsRECIPROCAL{}),
+  Bool.and(sy_is_op(x, u, O.OpsRECIP{}),
     Bool.and(sy_nsrc_is(x, u, 1), Bool.and(sy_is_op(x, sy_src0(x, u), O.OpsMUL{}),
       sy_nsrc_is(x, sy_src0(x, u), 2))))
 
@@ -2350,9 +2350,9 @@ def sym_464(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # a dropped op makes the rule unfireable and a spurious one makes it fire where
 # Python does not.  `GroupOp.Binary` is NINETEEN and `GroupOp.Comparison` is THREE.
 def OP_BINARY_NC() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsMUL{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsXOR{},
+  [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsXOR{},
    O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{}, O.OpsAND{}, O.OpsSUB{}, O.OpsFDIV{},
-   O.OpsPOW{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsTHREEFRY{}]
+   O.OpsPOW{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsTHREEFRY{}]
 
 # `GroupOp.Idempotent` -- {AND, MAX, OR}, the three ops where `x op x` is `x`.
 def OP_IDEMPOTENT() -> List<&2, O.Op>: [O.OpsAND{}, O.OpsMAX{}, O.OpsOR{}]
@@ -2517,9 +2517,9 @@ def sym_122(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
   sy_tri(sym_122.pat(x, u, p), Some{Sw.b(p)})
 
 # symbolic.py:124  (UPat.var("x") // 1, lambda x: x)
-# FLOORDIV IS NOT COMMUTATIVE, so the src is ORDERED.
+# DIV IS NOT COMMUTATIVE, so the src is ORDERED.
 def sym_124.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsDIV{}), sy_nsrc_is(x, u, 2)),
     p_is_const_1(x, sy_src1(x, u)))
 
 def sym_124(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -2529,7 +2529,7 @@ def sym_124(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # `-x` IS `x * (-1)` -- `mixin/elementwise.py`'s `neg` is `self * (-1)` for a
 # non-bool -- and that is the port's `sy_neg`.
 def sym_125.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsDIV{}), sy_nsrc_is(x, u, 2)),
     p_is_const_m1(x, sy_src1(x, u)))
 
 def sym_125(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -2653,9 +2653,9 @@ def sym_142(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_142.pat(x, u), Some{mint_false(mint_ar(sy_ar(x)), S.boolean())})
 
 # symbolic.py:143  (UPat.var("x") % UPat.var("x"), lambda x: x.const_like(0))
-# `%` IS FLOORMOD AND IT IS NOT COMMUTATIVE.
+# `%` IS MOD AND IT IS NOT COMMUTATIVE.
 def sym_143.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORMOD{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsMOD{}), sy_nsrc_is(x, u, 2)),
     p_same(sy_src0(x, u), sy_src1(x, u)))
 
 def sym_143(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -2753,16 +2753,16 @@ def sym_169(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # symbolic.py:173  (UPat.var("x") / UPat.var("x"), lambda x: x.const_like(1))
 # `/` ON A PATTERN WITH NO DTYPE IS NOT A DIVISION: `mixin/elementwise.py`'s `div`
 # takes the FLOAT branch when the dtype is not known, and the float branch is
-# `a.alu(MUL, b.recip())`.  So the shape is `MUL(x, RECIPROCAL(x))`.  MUL IS
-# COMMUTATIVE, so the RECIPROCAL is at either side, and the name is bound twice, so
+# `a.alu(MUL, b.recip())`.  So the shape is `MUL(x, RECIP(x))`.  MUL IS
+# COMMUTATIVE, so the RECIP is at either side, and the name is bound twice, so
 # the IDENTITY CHECK is load-bearing.
-# THE RECIPROCAL AND ITS PARTNER, and the side is a `Bool` and not an index: a
+# THE RECIP AND ITS PARTNER, and the side is a `Bool` and not an index: a
 # PLAIN PARAMETER IN BEND IS A LINEAR RESOURCE and it is CONSUMED ONCE, so an
 # index that names two different srcs would be consumed twice.
 def p_recip_of(+x: F.Folded, +u: U32, +first: Bool) -> Bool:
   +r = Bool.pick(U32, first, sy_src0(x, u), sy_src1(x, u))
   +o = Bool.pick(U32, first, sy_src1(x, u), sy_src0(x, u))
-  Bool.and(sy_is_op(x, r, O.OpsRECIPROCAL{}),
+  Bool.and(sy_is_op(x, r, O.OpsRECIP{}),
     Bool.and(sy_nsrc_is(x, r, 1), p_same(sy_src0(x, r), o)))
 
 def sym_173.pat(+x: F.Folded, +u: U32) -> Bool:
@@ -2770,7 +2770,7 @@ def sym_173.pat(+x: F.Folded, +u: U32) -> Bool:
     Bool.or(p_recip_of(x, u, True{}), p_recip_of(x, u, False{})))
 
 def sym_173.vsrc(+x: F.Folded, +u: U32) -> U32:
-  Bool.pick(U32, sy_is_op(x, sy_src0(x, u), O.OpsRECIPROCAL{}), sy_src1(x, u), sy_src0(x, u))
+  Bool.pick(U32, sy_is_op(x, sy_src0(x, u), O.OpsRECIP{}), sy_src1(x, u), sy_src0(x, u))
 
 def sym_173(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_173.pat(x, u), mint_const_like(mint_ar(sy_ar(x)), x, sym_173.vsrc(x, u), O.CInt{H.i64_of_i32(1)}))
@@ -3382,13 +3382,13 @@ def qb.mqv(mqv: Maybe<&1, H.I64>, +ar: O.Arena, +q0: U32, +base: U32, +div: H.I6
   match mqv:
     case Some{+qv}:
       +num0 = pc_n(ar, base, O.OpsADD{})
-      qb.mc(pc_cv(ar, num0, O.OpsFLOORDIV{}), ar, q0, base, div, s, qv, num0, pc_v(ar, base, O.OpsADD{}), x)
+      qb.mc(pc_cv(ar, num0, O.OpsDIV{}), ar, q0, base, div, s, qv, num0, pc_v(ar, base, O.OpsADD{}), x)
     case None{}: None{}
 
 def qb.go(+x: F.Folded, +q: U32, +base: U32, +div: H.I64) -> Maybe<&1, O.Found>:
   +ar = F.Folded.ar(x)
   +q0 = pc_n(ar, q, O.OpsADD{})
-  qb.mqv(pc_cv(ar, q0, O.OpsFLOORDIV{}), ar, q0, base, div, pc_v(ar, q, O.OpsADD{}), x)
+  qb.mqv(pc_cv(ar, q0, O.OpsDIV{}), ar, q0, base, div, pc_v(ar, q, O.OpsADD{}), x)
 
 # `(b*mul).usum(*rest)` folds ADD left to right over the answer and the surviving terms.
 def sym_129.rest(ts: List<&2, U32>, +it: U32, +v: U32, +acc: List<&2, U32>) -> List<&2, U32>:
@@ -3423,7 +3423,7 @@ def sym_129.build(b: Maybe<&1, O.Found>, rest: List<&2, U32>, +x: F.Folded, +mul
 def sym_129.mk2c(m: Maybe<&1, O.Found>, +rest: List<&2, U32>, +x: F.Folded, +b: O.Found, +mul: H.I64) -> Maybe<&1, O.Found>:
   match m:
     case Some{+c}:
-      +r = mint_bin(c, O.OpsFLOORMOD{}, O.Found.i(b), O.Found.i(c))
+      +r = mint_bin(c, O.OpsMOD{}, O.Found.i(b), O.Found.i(c))
       sym_129.build(Some{r}, rest, x, mul, O.Found.i(r))
     case None{}: None{}
 
@@ -3448,7 +3448,7 @@ def sym_129.jalt1(md: Maybe<&1, H.I64>, +q: U32, v: U32, terms: List<&2, U32>, i
     case None{}   : None{}
 
 def sym_129.jalt(+q: U32, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
-  sym_129.jalt1(pc_cv(F.Folded.ar(x), q, O.OpsFLOORMOD{}), q, v, terms, it, div, mul, base, x)
+  sym_129.jalt1(pc_cv(F.Folded.ar(x), q, O.OpsMOD{}), q, v, terms, it, div, mul, base, x)
 
 def sym_129.jqq(b: Maybe<&1, O.Found>, +q: U32, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
   match b:
@@ -3498,7 +3498,7 @@ def sym_129.ione2(go: Bool, +u: U32, +mod: U32, +terms: List<&2, U32>, +x: F.Fol
 def sym_129.ione(+u: U32, +terms: List<&2, U32>, +x: F.Folded) -> Maybe<&1, O.Found>:
   +ar = F.Folded.ar(x)
   +mod = pc_n(ar, u, O.OpsMUL{})
-  sym_129.ione2(Bool.and(O.eq_op(O.Arena.op(ar, mod), O.OpsFLOORMOD{}),
+  sym_129.ione2(Bool.and(O.eq_op(O.Arena.op(ar, mod), O.OpsMOD{}),
                          O.eq_op(O.Arena.op(ar, O.Arena.src(ar, mod, 1)), O.OpsCONST{})),
                 u, mod, terms, x)
 
@@ -3674,7 +3674,7 @@ def sym_292.pat(+x: F.Folded, +u: U32) -> Bool:
   +d = sy_src1(x, i)
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsCMPLT{}), sy_nsrc_is(x, u, 2)),
     Bool.and(sy_is_cint(sy_val(x, sy_src1(x, u))),
-      Bool.and(Bool.and(sy_is_op(x, i, O.OpsFLOORDIV{}), sy_nsrc_is(x, i, 2)),
+      Bool.and(Bool.and(sy_is_op(x, i, O.OpsDIV{}), sy_nsrc_is(x, i, 2)),
         Bool.and(sy_is_cint(sy_val(x, d)), Bool.not(p_is_const_0(x, d))))))
 
 def sym_292(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -3875,7 +3875,7 @@ def sym_276.vc(m: Maybe<&2, F.Bnd>) -> Maybe<&2, O.Const>:
     case Some{+b}: bnd_const(b)
     case None{}: None{}
 
-# symbolic.py:274  (UPat({Ops.CMPLT, Ops.CMPNE, Ops.FLOORDIV, Ops.FLOORMOD, Ops.PARAM, Ops.SPECIAL},
+# symbolic.py:274  (UPat({Ops.CMPLT, Ops.CMPNE, Ops.DIV, Ops.MOD, Ops.PARAM, Ops.SPECIAL},
 #                          name="x"),
 #                    lambda x: x.const_like(x.vmin) if x.dtype is not dtypes.void and x.vmin == x.vmax
 #                              else None)
@@ -3886,15 +3886,15 @@ def op_274(op: O.Op) -> Bool:
   match op:
     case O.OpsCMPLT{}   : True{}
     case O.OpsCMPNE{}   : True{}
-    case O.OpsFLOORDIV{}: True{}
-    case O.OpsFLOORMOD{}: True{}
+    case O.OpsDIV{}: True{}
+    case O.OpsMOD{}: True{}
     case O.OpsPARAM{}   : True{}
     case O.OpsSPECIAL{} : True{}
     case _              : False{}
 
 # TODO(p2): `(floormod x c1)` DOES NOT FIRE and CPython answers `c0`. MEASURED 2026-11-03:
 # `(cmplt x c0)` fires (`bf`) and `(floormod x c2)` declines, so the rule and its guard are
-# wired; the missing half is fold.bend's sweep, which does not collapse FLOORMOD's range to
+# wired; the missing half is fold.bend's sweep, which does not collapse MOD's range to
 # `[0, 0]` the way it collapses CMPLT's. The case file states the two that agree, and this row
 # is the wall the third one sits on -- the fix belongs in `uop/fold.bend`, not here.
 def sym_274.pat(+x: F.Folded, +u: U32) -> Bool:
@@ -3937,11 +3937,11 @@ def dm_101.a(+x: F.Folded, +u: U32) -> U32: Sw.a(p_const(x, dm_101.i(x, u)))
 def dm_101.pat(+x: F.Folded, +u: U32) -> Bool:
   +i = dm_101.i(x, u)
   +v = dm_101.v(x, u)
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsDIV{}), sy_nsrc_is(x, u, 2)),
     Bool.and(Bool.and(sy_is_const(x, sy_src1(x, u)), p_const_pos(x, sy_src1(x, u))),
       Bool.and(Bool.and(sy_is_op(x, i, O.OpsADD{}), sy_nsrc_is(x, i, 2)),
         Bool.and(Sw.ok(p_const(x, i)),
-          Bool.and(Bool.and(sy_is_op(x, v, O.OpsFLOORDIV{}), sy_nsrc_is(x, v, 2)),
+          Bool.and(Bool.and(sy_is_op(x, v, O.OpsDIV{}), sy_nsrc_is(x, v, 2)),
             sy_is_const(x, sy_src1(x, v)))))))
 
 def dm_101.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -3949,7 +3949,7 @@ def dm_101.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +m1 = mint_bin(mint_ar(sy_ar(x)), O.OpsMUL{}, dm_101.a(x, u), sy_src1(x, v))
   +s1 = mint_bin(m1, O.OpsADD{}, sy_src0(x, v), O.Found.i(m1))
   +m2 = mint_bin(s1, O.OpsMUL{}, sy_src1(x, v), sy_src1(x, u))
-  Some{mint_bin(m2, O.OpsFLOORDIV{}, O.Found.i(s1), O.Found.i(m2))}
+  Some{mint_bin(m2, O.OpsDIV{}, O.Found.i(s1), O.Found.i(m2))}
 
 def dm_101(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(dm_101.pat(x, u), dm_101.mk(x, u))
@@ -3963,14 +3963,14 @@ def dm_103.c(+x: F.Folded, +u: U32) -> U32: Sw.a(p_const(x, sy_src0(x, u)))
 
 def dm_103.pat(+x: F.Folded, +u: U32) -> Bool:
   +n = sy_src0(x, u)
-  Bool.and(Bool.or(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_is_op(x, u, O.OpsFLOORMOD{})),
+  Bool.and(Bool.or(sy_is_op(x, u, O.OpsDIV{}), sy_is_op(x, u, O.OpsMOD{})),
     Bool.and(Bool.and(sy_nsrc_is(x, u, 2), sy_is_const(x, sy_src1(x, u))),
       Bool.and(Bool.and(sy_is_op(x, n, O.OpsADD{}), sy_nsrc_is(x, n, 2)), Sw.ok(p_const(x, n)))))
 
 def dm_103.quo2(m: Maybe<&1, O.Found>, +s1: O.Found, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match m:
     case Some{+k}:
-      +d = mint_bin(k, O.OpsFLOORDIV{}, O.Found.i(s1), sy_src1(x, u))
+      +d = mint_bin(k, O.OpsDIV{}, O.Found.i(s1), sy_src1(x, u))
       Some{mint_bin(d, O.OpsADD{}, O.Found.i(d), O.Found.i(k))}
     case None{}: None{}
 
@@ -3979,14 +3979,14 @@ def dm_103.quo(+s1: O.Found, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32) -> May
 
 def dm_103.byop(is_mod: Bool, +s1: O.Found, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match is_mod:
-    case True{} : Some{mint_bin(s1, O.OpsFLOORMOD{}, O.Found.i(s1), sy_src1(x, u))}
+    case True{} : Some{mint_bin(s1, O.OpsMOD{}, O.Found.i(s1), sy_src1(x, u))}
     case False{}: dm_103.quo(s1, c, j, x, u)
 
 def dm_103.put(m: Maybe<&1, O.Found>, +c: H.I64, +j: H.I64, +x: F.Folded, +u: U32, +n: U32) -> Maybe<&1, O.Found>:
   match m:
     case Some{+r}:
       # A MATCH CANNOT SCRUTINIZE A CALL: the op test is read into a `Bool` parameter first.
-      dm_103.byop(sy_is_op(x, u, O.OpsFLOORMOD{}),
+      dm_103.byop(sy_is_op(x, u, O.OpsMOD{}),
         mint_bin(r, O.OpsADD{}, dm_103.n(x, u), O.Found.i(r)), c, j, x, u)
     case None{}: None{}
 
@@ -4512,7 +4512,7 @@ def sym_171(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # `SUB` here would be a different graph that no later rule makes equal.
 def p_recip1p(+x: F.Folded, +d: U32, +v: U32) -> Bool:
   +a = sy_src0(x, d)
-  Bool.and(Bool.and(sy_is_op(x, d, O.OpsRECIPROCAL{}), sy_nsrc_is(x, d, 1)),
+  Bool.and(Bool.and(sy_is_op(x, d, O.OpsRECIP{}), sy_nsrc_is(x, d, 1)),
     Bool.and(sy_is_op(x, a, O.OpsADD{}), Bool.and(sy_nsrc_is(x, a, 2),
       Bool.and(p_c1(x, sy_src0(x, a)), p_same(sy_src1(x, a), v)))))
 
@@ -5378,7 +5378,7 @@ def p_range_of(+x: F.Folded, +r: U32, +e: U32) -> Bool:
 
 def sym_304.pat(+x: F.Folded, +u: U32) -> Bool:
   +r = sy_src0(x, u)
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORMOD{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsMOD{}), sy_nsrc_is(x, u, 2)),
     Bool.and(p_range_of(x, r, sy_src1(x, u)), p_same(sy_src0(x, r), sy_src1(x, u))))
 
 # symbolic.py:304  RANGE(end) % end is the RANGE itself: an index over its own upper bound.
@@ -5387,7 +5387,7 @@ def sym_304(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sy_tri_u(sym_304.pat(x, u)
 # symbolic.py:305  RANGE(end) // end is 0, and the 0 is minted at the RANGE's dtype.
 def sym_305.pat(+x: F.Folded, +u: U32) -> Bool:
   +r = sy_src0(x, u)
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsDIV{}), sy_nsrc_is(x, u, 2)),
     Bool.and(p_range_of(x, r, sy_src1(x, u)), p_same(sy_src0(x, r), sy_src1(x, u))))
 
 def sym_305(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -5505,16 +5505,16 @@ def sym_279(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 # the OUTER divisor is positive.
 def sym_287.pat(+x: F.Folded, +u: U32) -> Bool:
   +i = sy_src0(x, u)
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsDIV{}), sy_nsrc_is(x, u, 2)),
     Bool.and(sy_is_const(x, sy_src1(x, u)),
       Bool.and(p_const_pos(x, sy_src1(x, u)),
-        Bool.and(Bool.and(sy_is_op(x, i, O.OpsFLOORDIV{}), sy_nsrc_is(x, i, 2)),
+        Bool.and(Bool.and(sy_is_op(x, i, O.OpsDIV{}), sy_nsrc_is(x, i, 2)),
           sy_is_const(x, sy_src1(x, i))))))
 
 def sym_287.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +i = sy_src0(x, u)
   +m = mint_bin(mint_ar(sy_ar(x)), O.OpsMUL{}, sy_src1(x, i), sy_src1(x, u))
-  Some{mint_bin(m, O.OpsFLOORDIV{}, sy_src0(x, i), O.Found.i(m))}
+  Some{mint_bin(m, O.OpsDIV{}, sy_src0(x, i), O.Found.i(m))}
 
 def sym_287(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_287.pat(x, u), sym_287.mk(x, u))
@@ -5625,8 +5625,8 @@ def sy_fcw(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 
 # `symbolic.py:174` -- `((UPat.var("x") * UPat.var("x2")) / UPat.var("x2"), lambda x,x2: x)`.
 #
-# `/` IS `* reciprocal()`, so the pattern is `MUL(MUL(x, x2), RECIPROCAL(x2))` and the rule is
-# THREE tests deep: the root is a MUL, its `src[0]` is a MUL, and its `src[1]` is the RECIPROCAL
+# `/` IS `* reciprocal()`, so the pattern is `MUL(MUL(x, x2), RECIP(x2))` and the rule is
+# THREE tests deep: the root is a MUL, its `src[0]` is a MUL, and its `src[1]` is the RECIP
 # of `src[0]`'s OWN `src[1]`. THE `x2` IS ONE NAMED VAR IN TWO PLACES, so the identity test is
 # the pattern and not a guard.
 #
@@ -5636,7 +5636,7 @@ def sy_fcw(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
 # ALREADY IN THE ARENA is the shape that can be added without the family change.
 def sym_174.deep(+x: F.Folded, +a: U32, +b: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, a, O.OpsMUL{}), sy_nsrc_is(x, a, 2)),
-    Bool.and(sy_is_op(x, b, O.OpsRECIPROCAL{}),
+    Bool.and(sy_is_op(x, b, O.OpsRECIP{}),
              U32.is_eq(sy_src0(x, b), sy_src1(x, a))))
 
 def sym_174.pat(+x: F.Folded, +u: U32) -> Bool:
@@ -5665,11 +5665,11 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{14, OP_SELF(),                        Nil{},                           },   # 126
     O.PMEntry{15, OP_SHIFTS(),                      Nil{},                           },   # 127
     O.PMEntry{16, [O.OpsMUL{}],                     Nil{},                           },   # 128
-    O.PMEntry{17, [O.OpsFLOORDIV{}],                Nil{},                           },   # 129
-    O.PMEntry{18, [O.OpsFLOORDIV{}],                Nil{},                           },   # 130
-    O.PMEntry{19, [O.OpsFLOORDIV{}],                Nil{},                           },   # 131
+    O.PMEntry{17, [O.OpsDIV{}],                Nil{},                           },   # 129
+    O.PMEntry{18, [O.OpsDIV{}],                Nil{},                           },   # 130
+    O.PMEntry{19, [O.OpsDIV{}],                Nil{},                           },   # 131
     O.PMEntry{20, [O.OpsXOR{}],                     Nil{},                           },   # 132
-    O.PMEntry{21, [O.OpsFLOORMOD{}],                [O.OpsFLOORMOD{}],               },   # 133
+    O.PMEntry{21, [O.OpsMOD{}],                [O.OpsMOD{}],               },   # 133
     O.PMEntry{22, [O.OpsADD{}], Nil{}, },   # 135
     O.PMEntry{23, [O.OpsAND{}],                     Nil{},                           },   # 136
     O.PMEntry{24, [O.OpsOR{}],                      Nil{},                           },   # 137
@@ -5681,16 +5681,16 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{30, [O.OpsCMPNE{}],                   [O.OpsCAST{}, O.OpsCONST{}],     },   # 138
     O.PMEntry{31, [O.OpsTRUNC{}],                   Nil{},                           },   # 146
     O.PMEntry{32, [O.OpsCMPLT{}],                   Nil{},                           },   # 148
-    O.PMEntry{33, [O.OpsFLOORMOD{}],                Nil{},                           },   # 149
+    O.PMEntry{33, [O.OpsMOD{}],                Nil{},                           },   # 149
     O.PMEntry{34, [O.OpsXOR{}],                     Nil{},                           },   # 150
     O.PMEntry{35, [O.OpsAND{}],                     Nil{},                           },   # 151
     O.PMEntry{36, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 153
-    O.PMEntry{37, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
+    O.PMEntry{37, [O.OpsDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
     O.PMEntry{38, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
     O.PMEntry{39, [O.OpsCAST{}], Nil{}, },   # 159
     O.PMEntry{40, [O.OpsCAST{}], Nil{}, },   # 161
     O.PMEntry{41, OP_ALU_NT(),                     Nil{},                           },   # 165
-    O.PMEntry{42, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIPROCAL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # 166
+    O.PMEntry{42, [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIP{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # 166
     O.PMEntry{43, OP_BINARY_3F(),                   Nil{},                           },   # 167
     O.PMEntry{44, [O.OpsMUL{}],                     Nil{},                           },   # 171
     O.PMEntry{45, [O.OpsADD{}],                     Nil{},                           },   # 176
@@ -5735,10 +5735,10 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{84, [O.OpsCMPNE{}], Nil{}, },   # 260
     O.PMEntry{85, [O.OpsWHERE{}], Nil{}, },   # 275
     O.PMEntry{86, [O.OpsWHERE{}], Nil{}, },   # 277
-    O.PMEntry{87, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 279
+    O.PMEntry{87, [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 279
     O.PMEntry{88, [O.OpsADD{}], Nil{}, },   # 282
     O.PMEntry{89, [O.OpsADD{}], Nil{}, },   # 285
-    O.PMEntry{90, [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsPARAM{}, O.OpsSPECIAL{}], Nil{}, },   # 274
+    O.PMEntry{90, [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsPARAM{}, O.OpsSPECIAL{}], Nil{}, },   # 274
     O.PMEntry{91, [O.OpsRANGE{}], Nil{}, },   # 289
     O.PMEntry{92, [O.OpsWHERE{}], Nil{}, },   # 291
     O.PMEntry{93, [O.OpsWHERE{}], Nil{}, },   # 293
@@ -5748,7 +5748,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{97, [O.OpsAND{}], Nil{}, },   # 284
     O.PMEntry{98, [O.OpsADD{}], Nil{}, },   # 284
     O.PMEntry{99, [O.OpsMUL{}], Nil{}, },   # 284
-    O.PMEntry{100, [O.OpsFLOORDIV{}], Nil{}, },   # 299
+    O.PMEntry{100, [O.OpsDIV{}], Nil{}, },   # 299
     O.PMEntry{101, [O.OpsCMPLT{}], Nil{}, },   # 303
     O.PMEntry{102, [O.OpsCMPLT{}], Nil{}, },   # 306
     O.PMEntry{103, [O.OpsADD{}], Nil{}, },   # 309
@@ -5756,26 +5756,26 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{105, [O.OpsCMPLT{}], Nil{}, },   # symbolic.py:314
     O.PMEntry{106, [O.OpsCMPLT{}], Nil{}, },   # 315
     O.PMEntry{107, [O.OpsCMPNE{}], Nil{}, },   # 302
-    O.PMEntry{108, [O.OpsFLOORMOD{}], Nil{}, },   # 320
-    O.PMEntry{109, [O.OpsFLOORDIV{}], Nil{}, },   # 321
+    O.PMEntry{108, [O.OpsMOD{}], Nil{}, },   # 320
+    O.PMEntry{109, [O.OpsDIV{}], Nil{}, },   # 321
     O.PMEntry{110, [O.OpsCAST{}], Nil{}, },   # 324
     O.PMEntry{111, [O.OpsCAST{}], Nil{}, },   # symbolic.py:325
-    O.PMEntry{112, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # symbolic.py:327
+    O.PMEntry{112, [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # symbolic.py:327
     O.PMEntry{113, [O.OpsCAST{}], Nil{}, },   # 332
     O.PMEntry{114, [O.OpsAFTER{}], Nil{}, },   # 334
     O.PMEntry{115, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 338
     O.PMEntry{116, [O.OpsEND{}], Nil{}, },   # 324
-    O.PMEntry{117, [O.OpsFLOORDIV{}], Nil{}, },   # divandmod.py:96
-    O.PMEntry{118, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}, },   # divandmod.py:98
-    O.PMEntry{119, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMULACC{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # weak.py:97
+    O.PMEntry{117, [O.OpsDIV{}], Nil{}, },   # divandmod.py:96
+    O.PMEntry{118, [O.OpsDIV{}, O.OpsMOD{}], Nil{}, },   # divandmod.py:98
+    O.PMEntry{119, [O.OpsADD{}, O.OpsAND{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsMAX{}, O.OpsMULACC{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # weak.py:97
     O.PMEntry{120, [O.OpsPOW{}], Nil{}, },   # symbolic.py:465
     O.PMEntry{121, [O.OpsSTORE{}], Nil{}, },   # 467
     O.PMEntry{122, [O.OpsSTORE{}], Nil{}, },   # 468
     O.PMEntry{123, [O.OpsSTORE{}], Nil{}, },   # 471
     O.PMEntry{124, [O.OpsSTORE{}], Nil{}, },   # 474
-    O.PMEntry{125, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{126, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{127, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{125, [O.OpsRECIP{}],              Nil{},                           },   # 462
+    O.PMEntry{126, [O.OpsRECIP{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{127, [O.OpsRECIP{}],              [O.OpsMUL{}],                    },   # 464
     O.PMEntry{128, [O.OpsMUL{}], Nil{}, },   # symbolic.py:478
     O.PMEntry{129, [O.OpsMUL{}], Nil{}, },   # symbolic.py:479
     O.PMEntry{130, [O.OpsMUL{}], Nil{}, },   # symbolic.py:480
@@ -6418,18 +6418,18 @@ def fx_add0() -> O.Found:
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(0)})
   f_alu2(b, O.OpsADD{}, f_i(a))
 
-# `x // x` with `x = CONST(7)`: 0 is `CONST(7)`, 1 is the FLOORDIV. The two srcs
+# `x // x` with `x = CONST(7)`: 0 is `CONST(7)`, 1 is the DIV. The two srcs
 # are the SAME node, which is the rebind the rule checks for.
 def fx_samediv() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
-  f_alu2(a, O.OpsFLOORDIV{}, f_i(a))
+  f_alu2(a, O.OpsDIV{}, f_i(a))
 
 # `x // y` for TWO DIFFERENT consts: 0 is `CONST(7)`, 1 is `CONST(2)`, 2 is the
-# FLOORDIV. The SAME rule, and it must NOT fire.
+# DIV. The SAME rule, and it must NOT fire.
 def fx_diffdiv() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(2)})
-  f_alu2(b, O.OpsFLOORDIV{}, f_i(a))
+  f_alu2(b, O.OpsDIV{}, f_i(a))
 
 # `CAST(bool, CONST(Invalid))`: 0 is the Invalid CONST, 1 is the CAST.
 def fx_castbad() -> O.Found:
@@ -6547,15 +6547,15 @@ def fx_i32() -> O.Found:
 def f_bin(+ar: O.Arena, op: O.Op, a: U32, b: U32) -> O.Found:
   O.UOp.alu(ar, op, [a, b])
 
-# `FLOORMOD(FLOORMOD(x, y), y)` over the SAME `y`: 1 is `CONST(7)`, 2 is `CONST(3)`,
-# 3 is the inner FLOORMOD and 4 the outer, and tag 13 answers the inner node at 3.
+# `MOD(MOD(x, y), y)` over the SAME `y`: 1 is `CONST(7)`, 2 is `CONST(3)`,
+# 3 is the inner MOD and 4 the outer, and tag 13 answers the inner node at 3.
 # `sym_126`'s shape with a different op, and the answer is `base` -- NOT `x`, which is
 # node 1 -- so `modb` and `xorb` are not the same claim.
 def fx_mod() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(3)})
-  +c = f_bin(O.Found.ar(b), O.OpsFLOORMOD{}, f_i(a), f_i(b))
-  f_bin(O.Found.ar(c), O.OpsFLOORMOD{}, f_i(c), f_i(b))
+  +c = f_bin(O.Found.ar(b), O.OpsMOD{}, f_i(a), f_i(b))
+  f_bin(O.Found.ar(c), O.OpsMOD{}, f_i(c), f_i(b))
 
 # THE NEGATIVE, and it is the ONLY witness for the rebind check: 1, 2 and 3 are
 # `CONST(7)`, `CONST(3)` and `CONST(5)`, 4 is the inner and 5 the outer, and the two
@@ -6565,8 +6565,8 @@ def fx_mod2() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(3)})
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(5)})
-  +d = f_bin(O.Found.ar(c), O.OpsFLOORMOD{}, f_i(a), f_i(b))
-  f_bin(O.Found.ar(d), O.OpsFLOORMOD{}, f_i(d), f_i(c))
+  +d = f_bin(O.Found.ar(c), O.OpsMOD{}, f_i(a), f_i(b))
+  f_bin(O.Found.ar(d), O.OpsMOD{}, f_i(d), f_i(c))
 
 # `CMPNE(CAST(x, weakint), CONST(c))` with `x` a BOOL-dtype node that is NOT a
 # CONST -- `AND(CONST(True), CONST(False))` -- so the THREE arms of symbolic.py:136
@@ -6641,7 +6641,7 @@ def fx_fdivm() -> O.Found:
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(4294967280)})
   +c = f_bin(O.Found.ar(b), O.OpsAND{}, f_i(a), f_i(b))
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(16)})
-  f_bin(O.Found.ar(d), O.OpsFLOORDIV{}, f_i(c), f_i(d))
+  f_bin(O.Found.ar(d), O.OpsDIV{}, f_i(c), f_i(d))
 
 # THE NEGATIVE, and it is the POWER-OF-TWO half: `c = 15` is not one, so the rule
 # must not fire even though `mask | (c-1)` is still `-1`.
@@ -6650,7 +6650,7 @@ def fx_fdivm0() -> O.Found:
   +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(4294967280)})
   +c = f_bin(O.Found.ar(b), O.OpsAND{}, f_i(a), f_i(b))
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(15)})
-  f_bin(O.Found.ar(d), O.OpsFLOORDIV{}, f_i(c), f_i(d))
+  f_bin(O.Found.ar(d), O.OpsDIV{}, f_i(c), f_i(d))
 
 # THE PROMOTION, and it is a TWO-SRC fold over `[casted_const, bare_const]`: 1 is
 # the bare `CONST(3)`, 2 is `CAST(CONST(3), int32)` -- a `casted_const` at a
@@ -6707,13 +6707,13 @@ def fx_tfhi() -> O.Found:
   f_bin(O.Found.ar(i), O.OpsSHR{}, f_i(i), f_i(d))
 
 # `1/(x*x*x)`: 1 is `CONST(7)`, 2 is `MUL(1,1)`, 3 is `MUL(2,1)` and 4 the
-# RECIPROCAL. The answer is `MUL(MUL(R,R),R)` over the SAME `R`, so it is three new
+# RECIP. The answer is `MUL(MUL(R,R),R)` over the SAME `R`, so it is three new
 # nodes and NOT the arity the fixture has.
 def fx_recip3() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
   +b = f_bin(O.Found.ar(a), O.OpsMUL{}, f_i(a), f_i(a))
   +c = f_bin(O.Found.ar(b), O.OpsMUL{}, f_i(b), f_i(a))
-  f_new(O.Found.ar(c), O.OpsRECIPROCAL{}, [f_i(c)], O.ANone{})
+  f_new(O.Found.ar(c), O.OpsRECIP{}, [f_i(c)], O.ANone{})
 
 # THE NEGATIVE, and it is the SIBLING identity check: the inner MUL's two srcs are
 # the same node and the outer's other src is NOT it, so a rule that checked only the
@@ -6726,16 +6726,16 @@ def fx_recip3x() -> O.Found:
   +b = O.UOp.new(O.Found.ar(a), O.OpsADD{}, [f_i(a), f_i(a)], O.ANone{}, O.TNone{})
   +c = f_bin(O.Found.ar(b), O.OpsMUL{}, f_i(a), f_i(a))
   +d = f_bin(O.Found.ar(c), O.OpsMUL{}, f_i(c), f_i(b))
-  f_new(O.Found.ar(d), O.OpsRECIPROCAL{}, [f_i(d)], O.ANone{})
+  f_new(O.Found.ar(d), O.OpsRECIP{}, [f_i(d)], O.ANone{})
 
 # `1/(x*c)` with a NON-CONST `x`, so the rule's own two names are distinguishable:
 # 1 is `CONST(9)`, 2 is the weakint `ADD(1,1)` -- the weak non-const node -- 3 is
-# `MUL(2,1)` and 4 the RECIPROCAL. The answer is `MUL(R(2), R(1))`.
+# `MUL(2,1)` and 4 the RECIP. The answer is `MUL(R(2), R(1))`.
 def fx_recipc() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(9)})
   +b = O.UOp.new(O.Found.ar(a), O.OpsADD{}, [f_i(a), f_i(a)], O.ANone{}, O.TNone{})
   +c = f_bin(O.Found.ar(b), O.OpsMUL{}, f_i(b), f_i(a))
-  f_new(O.Found.ar(c), O.OpsRECIPROCAL{}, [f_i(c)], O.ANone{})
+  f_new(O.Found.ar(c), O.OpsRECIP{}, [f_i(c)], O.ANone{})
 
 # THE SAME, WITH THE CONST AT src[0] -- the SECOND permutation, and the row that
 # says `Sw` picks the cvar and not the position. The answer is the SAME NODE as
@@ -6744,7 +6744,7 @@ def fx_recipc0() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(9)})
   +b = O.UOp.new(O.Found.ar(a), O.OpsADD{}, [f_i(a), f_i(a)], O.ANone{}, O.TNone{})
   +c = f_bin(O.Found.ar(b), O.OpsMUL{}, f_i(a), f_i(b))
-  f_new(O.Found.ar(c), O.OpsRECIPROCAL{}, [f_i(c)], O.ANone{})
+  f_new(O.Found.ar(c), O.OpsRECIP{}, [f_i(c)], O.ANone{})
 
 def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
 # THE GATE. `main` builds the fixtures above, folds each with `fold.bend`, runs the
@@ -6999,11 +6999,11 @@ def t_alu_big() -> U32: Bool.to_u32(Maybe.is_none(&1, O.Const, exec_alu2(O.OpsAD
 
 def t_alu_f32() -> U32: Bool.to_u32(f32_is(exec_alu_f32(O.OpsADD{}, 2, 1.5, 2.0, 0.0), 3.5))
 
-def t_fdiv() -> U32: Bool.to_u32(f32_is(exec_alu_f32(O.OpsFLOORDIV{}, 2, 7.0, 2.0, 0.0), 3.0))
+def t_fdiv() -> U32: Bool.to_u32(f32_is(exec_alu_f32(O.OpsDIV{}, 2, 7.0, 2.0, 0.0), 3.0))
 
-def t_fdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsFLOORDIV{}, I3{2, 7, 2, 0}), H.i64_of_i32(3)))
+def t_fdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsDIV{}, I3{2, 7, 2, 0}), H.i64_of_i32(3)))
 
-def t_cdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsCDIV{}, I3{2, 7, 2, 0}), H.i64_of_i32(3)))
+def t_cdiv_i() -> U32: Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsTRUNCDIV{}, I3{2, 7, 2, 0}), H.i64_of_i32(3)))
 
 # THE INTEGER LANE'S `max`, WHICH WAS A `min` (see `i32_max`). THE ROW IS
 # SYMMETRIC ON PURPOSE: `max(3, 7)` AND `max(7, 3)` MUST BOTH BE 7, AND A `min`
@@ -7016,7 +7016,7 @@ def t_max_i() -> U32:
 def neg7() -> U32: H.i32_neg(7)
 
 def t_cdiv_neg() -> U32:
-  Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsCDIV{}, I3{2, neg7(), 2, 0}),
+  Bool.to_u32(i32_is(exec_alu_i32(False{}, O.OpsTRUNCDIV{}, I3{2, neg7(), 2, 0}),
     H.i64_sub(H.i64_of_i32(0), H.i64_of_i32(3))))
 
 def t_inval() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_castbad()), 2), 1))
@@ -7654,16 +7654,16 @@ def fz_op(nm: String) -> O.Op:
     case "log2": O.OpsLOG2{}
     case "sin": O.OpsSIN{}
     case "sqrt": O.OpsSQRT{}
-    case "reciprocal": O.OpsRECIPROCAL{}
+    case "reciprocal": O.OpsRECIP{}
     case "neg": O.OpsNEG{}
     case "trunc": O.OpsTRUNC{}
     case "add": O.OpsADD{}
     case "mul": O.OpsMUL{}
     case "shl": O.OpsSHL{}
     case "shr": O.OpsSHR{}
-    case "cdiv": O.OpsCDIV{}
+    case "cdiv": O.OpsTRUNCDIV{}
     case "max": O.OpsMAX{}
-    case "cmod": O.OpsCMOD{}
+    case "cmod": O.OpsTRUNCMOD{}
     case "cmplt": O.OpsCMPLT{}
     case "cmpne": O.OpsCMPNE{}
     case "cmpeq": O.OpsCMPEQ{}
@@ -7674,8 +7674,8 @@ def fz_op(nm: String) -> O.Op:
     case "sub": O.OpsSUB{}
     case "fdiv": O.OpsFDIV{}
     case "pow": O.OpsPOW{}
-    case "floordiv": O.OpsFLOORDIV{}
-    case "floormod": O.OpsFLOORMOD{}
+    case "floordiv": O.OpsDIV{}
+    case "floormod": O.OpsMOD{}
     case "range": O.OpsRANGE{}
     case "after": O.OpsAFTER{}
     case "end": O.OpsEND{}

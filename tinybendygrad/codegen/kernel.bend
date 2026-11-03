@@ -207,7 +207,7 @@ def kn_nsrc_ge(+ar: O.Arena, i: U32, n: U32) -> Bool:
 # `pm_cast_float_alu` -- __init__.py:244-247. THE OP SET AND THE TABLE ARE
 # PORTED; THE DTYPE GUARD IS A WALL.
 #
-#     (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIPROCAL), src=(UPat(name="x"),), name="u"),
+#     (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIP), src=(UPat(name="x"),), name="u"),
 #      lambda u,x: u.replace(src=(x.cast(u.dtype),)) if x.dtype != u.dtype else None)
 #
 # `# TODO(p3) __init__.py:242  x.dtype != u.dtype` -- the guard, and the `cast` it
@@ -229,11 +229,11 @@ def kn_alu_is(op: O.Op) -> Bool:
     case O.OpsLOG2{}      : True{}
     case O.OpsEXP2{}      : True{}
     case O.OpsSQRT{}      : True{}
-    case O.OpsRECIPROCAL{}: True{}
+    case O.OpsRECIP{}: True{}
     case _: False{}
 
 def cfa_table() -> List<&2, O.PMEntry>:
-  [O.PMEntry{0, [O.OpsSIN{}, O.OpsLOG2{}, O.OpsEXP2{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}], Nil{}}]
+  [O.PMEntry{0, [O.OpsSIN{}, O.OpsLOG2{}, O.OpsEXP2{}, O.OpsSQRT{}, O.OpsRECIP{}], Nil{}}]
 
 # `UOp.replace` -- ops.py:252, with `arg` and `tag` as PARAMETERS. The arena
 # hash-conses, so `(self.op, self.src, self.arg, self.tag) == new_args` returning
@@ -929,7 +929,7 @@ def tp_stage(+ar: O.Arena, +self: U32) -> U32:
 #   --------------------------------------------------------------------------
 #   M1  `kn_np` writes `n - 1` for the slot       np_slot
 #   M2  `kn_np.next` drops the increment          np_next
-#   M3  `kn_alu_is` loses the RECIPROCAL arm      alu_recip
+#   M3  `kn_alu_is` loses the RECIP arm      alu_recip
 #   M4  `ab_new` keeps the ALLOC op               ab, ab_grow, ab_nsrc
 #   M5  `tp_stage` reads the INS (rule 3)         stage_pr2
 #   M6  `tp_stage`'s arity test always true       stage_pr1, stage_pr4
@@ -1156,12 +1156,12 @@ def k_alu_sin() -> U32:
 def k_alu_add() -> U32:
   k2u(kn_alu_is(O.OpsADD{}))
 
-# `k_alu_recip` -- the FIFTH arm. Without it, dropping the RECIPROCAL arm from the
+# `k_alu_recip` -- the FIFTH arm. Without it, dropping the RECIP arm from the
 # op set moved NO row: `alu_sqrt`, `alu_sin` and `alu_add` all still answer the
 # same, and a rule that served three of five float ALUs looked correct. One row per
 # arm is the only thing that makes a five-armed disjunction checkable.
 def k_alu_recip() -> U32:
-  k2u(kn_alu_is(O.OpsRECIPROCAL{}))
+  k2u(kn_alu_is(O.OpsRECIP{}))
 
 # `k_al_store` -- `pm_add_loads`'s STORE arm fires on `STORE(C0, C1)`, and the
 # answer's SECOND src is the LOAD. The op NAME is the row, and `k_al_store_nsrc`

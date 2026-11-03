@@ -406,10 +406,10 @@ def tn_contiguous_backward(+t: Tensor) -> Tensor:
 def tn_trunc(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsTRUNC{}, Nil{})
 
-# `reciprocal` -- elementwise.py:460. `return self.alu(Ops.RECIPROCAL)`. Same shape
+# `reciprocal` -- elementwise.py:460. `return self.alu(Ops.RECIP)`. Same shape
 # as `tn_trunc` and `tn_contiguous_backward`.
 def tn_reciprocal(+t: Tensor) -> Tensor:
-  tn_alu(t, O.OpsRECIPROCAL{}, Nil{})
+  tn_alu(t, O.OpsRECIP{}, Nil{})
 
 # `threefry` -- elementwise.py:457. `return self.alu(Ops.THREEFRY, seed)`. The seed
 # is a Tensor (not a constant), so the body is `tn_alu(t, O.OpsTHREEFRY{}, [seed_uop])`
@@ -442,7 +442,7 @@ def tn_exp2(+t: Tensor) -> Tensor:
 # is now stale: the chain is built by `tn_alu`, not by a fold.
 def tn_rsqrt(+t: Tensor) -> Tensor:
   +sqrt = tn_sqrt(t)
-  tn_alu(sqrt, O.OpsRECIPROCAL{}, Nil{})
+  tn_alu(sqrt, O.OpsRECIP{}, Nil{})
 
 # `where` -- elementwise.py:426. `x, y = self.ufix(x)._broadcasted(y); return
 # self.alu(Ops.WHERE, x, y)`. The wall at `THE PORT's `nn/__init__.bend` HEADER` calls the
@@ -1018,23 +1018,23 @@ def tn_rpow(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `__floordiv__` -- elementwise.py:279. `return self.div(x, rounding_mode="floor")`,
 # and `div` (elementwise.py:229) is `a, b = self._broadcasted(x, reverse); if
 # dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype): ... if rounding_mode == "floor":
-# return a.alu(Ops.FLOORDIV, b)`. For two Tensors of the same shape with int dtypes
+# return a.alu(Ops.DIV, b)`. For two Tensors of the same shape with int dtypes
 # the no-broadcasting case: `_broadcasted` is the identity, and the body collapses
-# to `_binop`'s shape (elementwise.py:36) with `MUL` replaced by `FLOORDIV`:
-# `tn_alu(self, FLOORDIV, [Tensor.u(x)])` for `__floordiv__` (srcs `(self, x)`),
-# `tn_alu(x, FLOORDIV, [Tensor.u(self)])` for `__rfloordiv__` (srcs `(x, self)`).
+# to `_binop`'s shape (elementwise.py:36) with `MUL` replaced by `DIV`:
+# `tn_alu(self, DIV, [Tensor.u(x)])` for `__floordiv__` (srcs `(self, x)`),
+# `tn_alu(x, DIV, [Tensor.u(self)])` for `__rfloordiv__` (srcs `(x, self)`).
 # The `__truediv__` arm (`self.div(x)` with `rounding_mode=None`) is NOT ported:
 # its body is `cast(self, default_float).alu(FDIV, b)` past the int-arm guard, and
 # `cast` plus the `default_float` constant need fold reads the port does not carry.
-# `__floordiv__` IS the integer path, and the FLOORDIV op is the one CPython's
+# `__floordiv__` IS the integer path, and the DIV op is the one CPython's
 # `div(x, rounding_mode="floor")` builds for int inputs (elementwise.py:252, gated
 # below). The `reverse` flag covers `__rfloordiv__` (the `reverse=True` arm of the
 # same `_binop`). The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it) (same wall
 # as the rest of the binop defs).
 def tn_fdiv.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_binop(rhs, lhs, O.OpsFLOORDIV{})
-    case False{}: tn_binop(lhs, rhs, O.OpsFLOORDIV{})
+    case True{}: tn_binop(rhs, lhs, O.OpsDIV{})
+    case False{}: tn_binop(lhs, rhs, O.OpsDIV{})
 
 def tn_fdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_fdiv.go(False{}, lhs, rhs)
@@ -1043,11 +1043,11 @@ def tn_rfdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_fdiv.go(True{}, lhs, rhs)
 
 # `__mod__` -- elementwise.py:282, via `mod` at elementwise.py:202
-# (`self._binop(Ops.FLOORMOD, x, reverse)`). Same shape as `tn_pow.go` with
-# `Ops.FLOORMOD` instead of `Ops.POW`: for two Tensors of the same shape,
+# (`self._binop(Ops.MOD, x, reverse)`). Same shape as `tn_pow.go` with
+# `Ops.MOD` instead of `Ops.POW`: for two Tensors of the same shape,
 # `_binop`'s `_broadcasted` is the identity and the body is
-# `tn_alu(self, FLOORMOD, [Tensor.u(x)])`. The `mod` body at elementwise.py:213
-# is `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype): return a.alu(Ops.FLOORMOD, b)`
+# `tn_alu(self, MOD, [Tensor.u(x)])`. The `mod` body at elementwise.py:213
+# is `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype): return a.alu(Ops.MOD, b)`
 # -- the same op the port covers. The float arm (`return a - a.div(b,
 # rounding_mode="floor") * b`, elementwise.py:214) stays walled on the dtype fold
 # (the same wall `tn_bitwise_not`'s arith arms name at tensor.bend:580) and on
@@ -1055,8 +1055,8 @@ def tn_rfdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `tn_pow.go`'s `reverse` arm. The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_mod.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_binop(rhs, lhs, O.OpsFLOORMOD{})
-    case False{}: tn_binop(lhs, rhs, O.OpsFLOORMOD{})
+    case True{}: tn_binop(rhs, lhs, O.OpsMOD{})
+    case False{}: tn_binop(lhs, rhs, O.OpsMOD{})
 
 def tn_mod(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_mod.go(False{}, lhs, rhs)
@@ -2035,7 +2035,7 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 #   tensor.py:537  __isub__        -> elementwise.py     sub          Ops.SUB
 #   tensor.py:538  __imul__        -> elementwise.py:143  mul          Ops.MUL
 #   tensor.py:539  __itruediv__    -> elementwise.py     div          Ops.FDIV
-#   tensor.py:540  __ifloordiv__   -> elementwise.py     floordiv     Ops.FLOORDIV
+#   tensor.py:540  __ifloordiv__   -> elementwise.py     floordiv     Ops.DIV
 #   tensor.py:541  __ipow__        -> elementwise.py     pow          Ops.POW
 #   tensor.py:542  __iand__        -> elementwise.py:171  bitwise_and  Ops.AND
 #   tensor.py:543  __ior__         -> elementwise.py:185  bitwise_or   Ops.OR

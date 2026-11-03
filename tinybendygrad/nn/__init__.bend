@@ -359,17 +359,17 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `Tensor.__floordiv__` (elementwise.py:279, `self.div(x, rounding_mode="floor")`)
 # and its `__rfloordiv__` arm are ported as
 # `tn_fdiv.go` / `tn_fdiv` / `tn_rfdiv` for the no-broadcasting INT case
-# (elementwise.py:252, `if rounding_mode == "floor": return a.alu(Ops.FLOORDIV, b)`,
+# (elementwise.py:252, `if rounding_mode == "floor": return a.alu(Ops.DIV, b)`,
 # which is the int-typed path of `div`). For two same-shape Tensors `_broadcasted`
-# is identity and the body is `_binop`'s shape with `Ops.FLOORDIV`: `__floordiv__`
-# is `self.alu(FLOORDIV, x)` -- srcs `(self, x)` -- and `__rfloordiv__` (the
-# `reverse=True` arm of `_binop`) is `x.alu(FLOORDIV, self)` -- srcs `(x, self)`.
+# is identity and the body is `_binop`'s shape with `Ops.DIV`: `__floordiv__`
+# is `self.alu(DIV, x)` -- srcs `(self, x)` -- and `__rfloordiv__` (the
+# `reverse=True` arm of `_binop`) is `x.alu(DIV, self)` -- srcs `(x, self)`.
 # `Tensor.__mod__` (elementwise.py:282, `self.mod(x)`) and its `__rmod__` arm
 # (the `reverse=True` arm of `mod`) are ported as
 # `tn_mod.go` / `tn_mod` / `tn_rmod` for the no-broadcasting INT case
 # (elementwise.py:213, `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype):
-# return a.alu(Ops.FLOORMOD, b)`). The shape is `_binop`'s with `Ops.FLOORMOD`:
-# `__mod__` is `self.alu(FLOORMOD, x)` and `__rmod__` is `x.alu(FLOORMOD, self)`.
+# return a.alu(Ops.MOD, b)`). The shape is `_binop`'s with `Ops.MOD`:
+# `__mod__` is `self.alu(MOD, x)` and `__rmod__` is `x.alu(MOD, self)`.
 # The float arm of `mod` (`return a - a.div(b, rounding_mode="floor") * b`,
 # elementwise.py:214) and the float arm of `div` (the `cast(default_float)` +
 # FDIV path past the int-typed guard, elementwise.py:253-254) stay walled on

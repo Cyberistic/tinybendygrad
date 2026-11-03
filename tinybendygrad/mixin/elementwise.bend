@@ -544,7 +544,7 @@ def ew_sub(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
 
 def ew_detach(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsDETACH{}, Nil{})
 def ew_contiguous_backward(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsCONTIGUOUS_BACKWARD{}, Nil{})
-def ew_reciprocal(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsRECIPROCAL{}, Nil{})
+def ew_reciprocal(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsRECIP{}, Nil{})
 def ew_trunc(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsTRUNC{}, Nil{})
 def ew_sqrt(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsSQRT{}, Nil{})
 def ew_sin(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsSIN{}, Nil{})
@@ -579,8 +579,8 @@ def ew_masked_fill(+t: T.Tensor, +mask: T.Tensor, +value: Ew) -> T.Tensor:
 # it is a THREE-armed `Data` sum and the arm is a match, not a Bool. The int/int
 # tests come BEFORE the promotion-to-default_float, so a `None` mode FALLS THROUGH
 # both of them and reaches the float arm -- which is Python, and is why
-# `Tensor([1,2,3]) / Tensor([2,3,4])` builds an `MUL` over a `RECIPROCAL` and not a
-# `CDIV`. That fall-through is the single most surprising line in this file.
+# `Tensor([1,2,3]) / Tensor([2,3,4])` builds an `MUL` over a `RECIP` and not a
+# `TRUNCDIV`. That fall-through is the single most surprising line in this file.
 type Rm is Data:
   RNone{}
   RTrunc{}
@@ -641,8 +641,8 @@ def ew_div_float(rm: Rm, +a: T.Tensor, +b: T.Tensor) -> T.Tensor:
 
 def ew_div_int(rm: Rm, +a: T.Tensor, +b: T.Tensor) -> T.Tensor:
   match rm:
-    case RTrunc{}: ew_alu2(O.OpsCDIV{}, a, b)
-    case RFloor{}: ew_alu2(O.OpsFLOORDIV{}, a, b)
+    case RTrunc{}: ew_alu2(O.OpsTRUNCDIV{}, a, b)
+    case RFloor{}: ew_alu2(O.OpsDIV{}, a, b)
     case _: ew_div_float(rm, a, b)
 
 def ew_div.go(ai: Bool, bi: Bool, rm: Rm, +a: T.Tensor, +b: T.Tensor) -> T.Tensor:
@@ -672,7 +672,7 @@ def ew_div(+t: T.Tensor, +e: Ew, rev: Bool, rm: Rm) -> T.Tensor:
 #     print(dtypes.is_int(a.dtype), dtypes.is_int(x.dtype) and dtypes.is_int(y.dtype))"
 #   ->  True False
 #
-# So `int % float` took the INT arm (`FLOORMOD`) where CPython takes the float arm
+# So `int % float` took the INT arm (`MOD`) where CPython takes the float arm
 # (`a - a.div(b, "floor") * b`). THE DISPATCH IS INSIDE NOW, not a pair of Bools at the caller,
 # because THREE call sites shared the wrong pattern and a caller can no longer pass a
 # pre-promotion dtype -- it has none to pass.
@@ -688,7 +688,7 @@ def ew_mod.float(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
 
 def ew_mod.go(isint: Bool, +a: T.Tensor, +b: T.Tensor) -> T.Tensor:
   match isint:
-    case True{}: ew_alu2(O.OpsFLOORMOD{}, a, b)
+    case True{}: ew_alu2(O.OpsMOD{}, a, b)
     case _: ew_mod.float(a, b)
 
 def ew_mod.p(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
@@ -700,7 +700,7 @@ def ew_mod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
   +p = ew_broadcasted(t, e, rev)
   ew_mod.p(ew_br_l(p), ew_br_r(p))
 
-# `fmod` -- elementwise.py:225-227. The same shape with `Ops.CMOD` and a TRUNCATING
+# `fmod` -- elementwise.py:225-227. The same shape with `Ops.TRUNCMOD` and a TRUNCATING
 # division, so it is a separate def and not a rounding_mode parameter of `mod`. SAME FIX,
 # SAME REASON: the dtype test belongs on the PROMOTED pair.
 def ew_fmod.float(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
@@ -710,7 +710,7 @@ def ew_fmod.float(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
 
 def ew_fmod.go(isint: Bool, +a: T.Tensor, +b: T.Tensor) -> T.Tensor:
   match isint:
-    case True{}: ew_alu2(O.OpsCMOD{}, a, b)
+    case True{}: ew_alu2(O.OpsTRUNCMOD{}, a, b)
     case _: ew_fmod.float(a, b)
 
 def ew_fmod.p(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
@@ -862,7 +862,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # old text said "blocked on sqrt's own fold, not on a constant" -- which was true
 # when `tn_sqrt` was a fold call, but `tn_sqrt` is now a `tn_alu` over an empty src
 # list, and `tn_reciprocal` is the same shape, so the chain `self.sqrt().reciprocal()`
-# is portable as `tn_alu(sqrt, O.OpsRECIPROCAL{}, Nil{})` (the reciprocal's implicit
+# is portable as `tn_alu(sqrt, O.OpsRECIP{}, Nil{})` (the reciprocal's implicit
 # first src is the sqrt result, not the original input). Gated at
 # `gates/tn_sin_log2_exp2_rsqrt-gate.py` 11/11 rows.
 
@@ -1428,7 +1428,7 @@ def ew_acos(+t: T.Tensor) -> T.Tensor:
 # `atan` -- elementwise.py:952-960. `(self / (1 + self * self).sqrt()).asin()`.
 # TWO ORDERING FACTS: the `1 +` IS `Tensor.__radd__` -> `add(1, True)` -> the
 # CONST IS ON THE LEFT, and the DIVISION IS `div`'s FLOAT ARM -> `MUL(self,
-# RECIPROCAL(sqrt))` and not a `DIV`.  `atan` HAS NO DOMAIN PROBLEM: the
+# RECIP(sqrt))` and not a `DIV`.  `atan` HAS NO DOMAIN PROBLEM: the
 # argument of the `asin` is `self / sqrt(1 + self*self)`, whose magnitude is
 # at most 1 -- and at `self = inf` it is `inf / inf`, which is NaN in CPython
 # and NaN here.
@@ -1454,8 +1454,8 @@ def ew_elu(+t: T.Tensor, +alpha: F32) -> T.Tensor:
 
 # `celu` -- elementwise.py:974-984. `alpha * (self / alpha).elu()`.  THE
 # DIVISION IS UPSTREAM'S `self / alpha` -- the DIVISION, NOT A MULTIPLY BY A
-# RECIPROCAL SPELLED OUTSIDE: `div`'s float arm builds `MUL(self,
-# RECIPROCAL(alpha))`, and `elu` is then called with UPSTREAM'S DEFAULT
+# RECIP SPELLED OUTSIDE: `div`'s float arm builds `MUL(self,
+# RECIP(alpha))`, and `elu` is then called with UPSTREAM'S DEFAULT
 # `alpha=1.0` and not with the `celu`'s own alpha.
 def ew_celu(+t: T.Tensor, +alpha: F32) -> T.Tensor:
   +q = ew_div(t, ETen{ew_ct(ew_cf(T.Tensor.ar(t), alpha))}, False{}, RNone{})

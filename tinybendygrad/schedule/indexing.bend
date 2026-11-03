@@ -42,8 +42,8 @@
 #     `mixin/creation.bend` and `mixin/rand.bend`. It is NOT a fold property
 #     (no `Derived` field answers it) because it is ARITHMETIC over the srcs'
 #     intervals, and the `helpers.bend` wall recorded in bend2-constraints.md
-#     ("a 64-BIT PRODUCT IS A WALL, NOT A TODO") blocks the `CMOD`/`FLOORDIV`/
-#     `CDIV` arms specifically. `apply_movement_op`'s SHRINK and FLIP arms and
+#     ("a 64-BIT PRODUCT IS A WALL, NOT A TODO") blocks the `TRUNCMOD`/`DIV`/
+#     `TRUNCDIV` arms specifically. `apply_movement_op`'s SHRINK and FLIP arms and
 #     `_apply_reshape`'s `%` and `//` are all here, and all three are
 #     `ix_min_max_miss()`.
 # W3. The BUILDERS. `UOp.index`, `.end`, `.valid`, `.const_like`, `UOp(Ops.STAGE,
@@ -821,7 +821,7 @@ def ix_mv_reshape_same.go(+as: List<&2, U32>, +bs: List<&2, U32>, +aa: List<&2, 
 #     axes_out.append(combined_axes % s); combined_axes //= s
 #   return graph_rewrite(UOp.sink(*axes_out[::-1]), symbolic+..., name="reshape")
 #
-# `usum` is W3, `%` and `//` are W2 (the `FLOORDIV`/`FLOORMOD` arms of
+# `usum` is W3, `%` and `//` are W2 (the `DIV`/`MOD` arms of
 # `_min_max` are the ones the 64-bit-product wall blocks), and the `graph_rewrite`
 # is W3. What IS portable and gated is the REVERSE walk -- `axes_in` is built
 # from the zip read BACKWARDS, which is a fold with a reversed accumulator, and
@@ -1806,7 +1806,7 @@ def g_expand() -> IO(Unit):
 # build and the symbolic simplify, both walls. What IS ported is the identity: a
 # RESHAPE whose `arg` IS the source shape returns the input unchanged, and
 # `mv_reshape2_ids=R0` is that row. The other three fixtures build real graphs
-# (`FLOORDIV,FLOORMOD`), so they print `W3` rather than a faked answer.
+# (`DIV,MOD`), so they print `W3` rather than a faked answer.
 
 # What IS ported of `_apply_reshape` is its ONE-DIM case: `in_shape` of length
 # one makes `axes_in` a single `acc*src` with `acc = 1`, so `axes_out` is the one

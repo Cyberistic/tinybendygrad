@@ -662,16 +662,16 @@ def op_sqrt.node(ar: O.Arena, a: U32) -> T.Tensor:
 def op_sqrt(+a: T.Tensor) -> T.Tensor:
   op_sqrt.node(op_ar(a), T.Tensor.u(a))
 
-# `reciprocal` -- elementwise.py:460, `self.alu(Ops.RECIPROCAL)`.
+# `reciprocal` -- elementwise.py:460, `self.alu(Ops.RECIP)`.
 def op_recip.node(ar: O.Arena, a: U32) -> T.Tensor:
-  T.tn_alu.of(ar, a, O.OpsRECIPROCAL{}, Nil{})
+  T.tn_alu.of(ar, a, O.OpsRECIP{}, Nil{})
 
 def op_recip(+a: T.Tensor) -> T.Tensor:
   op_recip.node(op_ar(a), T.Tensor.u(a))
 
 # `a / b` -- elementwise.py:250, `a.alu(Ops.MUL, b.reciprocal())`. THERE IS NO DIVISION ALU
-# OP: `Ops` has `CDIV`/`FLOORDIV` for the INTEGER cases (elementwise.py:247-248) and true
-# float division is a MUL by a RECIPROCAL. The comment above it is load-bearing and is
+# OP: `Ops` has `TRUNCDIV`/`DIV` for the INTEGER cases (elementwise.py:247-248) and true
+# float division is a MUL by a RECIP. The comment above it is load-bearing and is
 # kept: "alu, not *: _broadcasted already promoted these, and a second promote would cast
 # 1/b (only a weak CONST is kept weak)". So `tcoef * r1 / (...)` is TWO nodes and not one,
 # and `op_trust` is wrong by a node if this is a DIV. THE NUMERATOR IS A `Tensor` SO ITS
@@ -1314,7 +1314,7 @@ def t_lars0() -> IO(Unit):
 # TWENTY-FOUR NODES and the row is worth all of them. It pins, in one signature:
 # `square` is `MUL(self, self)` (elementwise.py:575) and not a SQUARE op; `.sum()` is a
 # REDUCE (reduce.py:20) over EVERY axis and not a `sum` shape change; `sqrt` is
-# `Ops.SQRT` and not a POW; `div` is `MUL` by a RECIPROCAL (elementwise.py:250) and not
+# `Ops.SQRT` and not a POW; `div` is `MUL` by a RECIP (elementwise.py:250) and not
 # a DIV; `where` is the TERNARY `Ops.WHERE` with src order (q, x, y) (elementwise.py:426);
 # and the two nested WHEREs are built OUTERMOST FIRST, which is the order the source
 # reads in. There is no fixture trick here at all: every one of those is a wrong-op bug

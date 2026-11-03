@@ -36,11 +36,11 @@
 #    `GroupOp.Commutative`. Both numerators are a TWO-WAY DISJUNCTION, and writing
 #    one as a conjunction drops `r01` and `r08` and typechecks. `dm_which` is the
 #    disjunction and `r01`/`r08` are its two-sided rows. Exactly one alternative
-#    can ever match -- both sides cannot be a CONST and a `FLOORDIV(_, CONST)` at
+#    can ever match -- both sides cannot be a CONST and a `DIV(_, CONST)` at
 #    once -- so no name is bound twice and there is not one identity check here.
 # 2. THE REJECT SETS ARE NOT EMPTY: `[ADD, CONST]`, `[ADD, CONST]`, `[]`, measured.
 #    Rules 0 and 1 are `strict_length=True, required_len=2` and rule 2 is not, so a
-#    THREE-src FLOORDIV falls to rule 2 and Python raises `ValueError` on
+#    THREE-src DIV falls to rule 2 and Python raises `ValueError` on
 #    `x, y = d.src`. `r22` is that row: rule 2 still CLAIMS it, which is what
 #    Python does before it raises.
 
@@ -155,10 +155,10 @@ def dm_pos(+v: U32) -> Bool:
 def dm_isn2(ar: O.Arena, u: U32) -> Bool:
   U32.is_eq(O.Arena.nsrc(ar, u), 2)
 
-# `x//c` as a SHAPE: a FLOORDIV whose divisor is a CONST. Rule 0's
+# `x//c` as a SHAPE: a DIV whose divisor is a CONST. Rule 0's
 # `UPat.var("x")//UPat.cvar("c")`, with the name bindings left to `dm_which`.
 def dm_is_quot(+ar: O.Arena, +s: U32) -> Bool:
-  Bool.and(O.op_is(ar, s, O.OpsFLOORDIV{}), dm_has(dm_val(ar, O.Arena.src(ar, s, 1))))
+  Bool.and(O.op_is(ar, s, O.OpsDIV{}), dm_has(dm_val(ar, O.Arena.src(ar, s, 1))))
 
 # WHICH side of the commutative ADD is the quotient: 0 = src0, 1 = src1,
 # 2 = "not the pattern". The 2 is the both-or-neither arm, and it is what a
@@ -219,16 +219,16 @@ def dm_zero(+ar: O.Arena, +d: U32) -> Bool:
 # `x//y is constant` -- divandmod.py:12, and the arm is EXACT rather than
 # conservative on CONST/CONST, where `_min_max` is four identical `a//b` and the
 # test always holds. Outside CONST/CONST it needs the range (see the TODO block).
-# `x - xdiv.vmin*y`, the FLOORMOD half of divandmod.py:13.
+# `x - xdiv.vmin*y`, the MOD half of divandmod.py:13.
 def dm_point.sub(ar: O.Arena, x: U32, y: U32, q: U32) -> O.Found:
   +qc = O.UOp.const(ar, O.CInt{H.i64_of_i32(q)})
   +m = O.UOp.alu(O.Found.ar(qc), O.OpsMUL{}, [O.Found.i(qc), y])
   O.UOp.alu(O.Found.ar(m), O.OpsSUB{}, [x, O.Found.i(m)])
 
-# `xdiv.const_like(xdiv.vmin)`, the FLOORDIV half.
+# `xdiv.const_like(xdiv.vmin)`, the DIV half.
 def dm_point.body(ar: O.Arena, op: O.Op, x: U32, y: U32, q: U32) -> O.Found:
   match op:
-    case O.OpsFLOORDIV{}: O.UOp.const(ar, O.CInt{H.i64_of_i32(q)})
+    case O.OpsDIV{}: O.UOp.const(ar, O.CInt{H.i64_of_i32(q)})
     case _: dm_point.sub(ar, x, y, q)
 
 # divandmod.py:13, for CONST/CONST. `q` is the FLOOR quotient.
@@ -249,7 +249,7 @@ def dm_point(+ar: O.Arena, +d: U32) -> Maybe<&2, O.Found>:
 # PARAM // c is irreducible -- divandmod.py:15, and it is the last of the three
 # ported arms. `x.arg.multiple_of % y.val == 0`. No range at all, so PORTED IN
 # FULL, and the DEFAULT is load-bearing: `UOp.variable`'s `multiple_of` defaults to
-# 1 (ops.py:1013) and `1 % 1 == 0`, so `FLOORMOD(param, CONST(1))` rewrites to
+# 1 (ops.py:1013) and `1 % 1 == 0`, so `MOD(param, CONST(1))` rewrites to
 # `CONST(0)`. `out_r18` is that row and it is the row a wrong default moves.
 def dm_multiple_of.mod(mult: Maybe<&2, U32>, y: U32) -> Bool:
   match mult:
@@ -272,11 +272,11 @@ def dm_multiple_of(+ar: O.Arena, +d: U32) -> Bool:
   dm_multiple_of.go(O.Arena.op(ar, O.Arena.src0(ar, d)), O.Arena.arg(ar, O.Arena.src0(ar, d)),
                     dm_ival(dm_val(ar, O.Arena.src(ar, d, 1))))
 
-# `d.const_like(0) if d.op is Ops.FLOORMOD else None` -- the tail of the lambda on
-# divandmod.py:15. FLOORDIV is the `None`, so the ladder below keys on it.
+# `d.const_like(0) if d.op is Ops.MOD else None` -- the tail of the lambda on
+# divandmod.py:15. DIV is the `None`, so the ladder below keys on it.
 def dm_multiple_of.hit(ar: O.Arena, op: O.Op) -> Maybe<&2, O.Found>:
   match op:
-    case O.OpsFLOORDIV{}: None{}
+    case O.OpsDIV{}: None{}
     case _: Some{O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})}
 
 def dm_multiple_of.arm.go(+ar: O.Arena, d: U32, hit: Bool) -> Maybe<&2, O.Found>:
@@ -312,7 +312,7 @@ def dm_0.build(+ar: O.Arena, q: U32, a: U32, +c: U32, d: U32) -> O.Found:
   +ac = O.UOp.alu(ar, O.OpsMUL{}, [a, c])
   +s = O.UOp.alu(O.Found.ar(ac), O.OpsADD{}, [O.Arena.src0(ar, q), O.Found.i(ac)])
   +cd = O.UOp.alu(O.Found.ar(s), O.OpsMUL{}, [c, d])
-  O.UOp.alu(O.Found.ar(cd), O.OpsFLOORDIV{}, [O.Found.i(s), O.Found.i(cd)])
+  O.UOp.alu(O.Found.ar(cd), O.OpsDIV{}, [O.Found.i(s), O.Found.i(cd)])
 
 # the two `is_any` alternatives, resolved: `which` names the `x//c` side and the
 # other side is `a`. The Python is `(x//c + a)`, so `x` is that side's src0 and
@@ -341,7 +341,7 @@ def dm_0.go(+ar: O.Arena, +d: U32, +add: U32, +which: U32, op: Bool, self: U32) 
 
 def dm_0.put(+ar: O.Arena, +self: U32) -> Maybe<&2, O.Found>:
   dm_0.go(ar, O.Arena.src(ar, self, 1), O.Arena.src0(ar, self),
-          dm_which(ar, O.Arena.src0(ar, self)), O.op_is(ar, self, O.OpsFLOORDIV{}), self)
+          dm_which(ar, O.Arena.src0(ar, self)), O.op_is(ar, self, O.OpsDIV{}), self)
 
 def dm_0(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
   dm_0.put(F.Folded.ar(fx), self)
@@ -356,18 +356,18 @@ def dm_0(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
 def dm_1.fd(ar: O.Arena, x: U32, d: U32, cm: U32, cq: U32) -> O.Found:
   +cmc = O.UOp.const(ar, O.CInt{H.i64_of_i32(cm)})
   +s = O.UOp.alu(O.Found.ar(cmc), O.OpsADD{}, [x, O.Found.i(cmc)])
-  +q = O.UOp.alu(O.Found.ar(s), O.OpsFLOORDIV{}, [O.Found.i(s), d])
+  +q = O.UOp.alu(O.Found.ar(s), O.OpsDIV{}, [O.Found.i(s), d])
   +cqc = O.UOp.const(O.Found.ar(q), O.CInt{H.i64_of_i32(cq)})
   O.UOp.alu(O.Found.ar(cqc), O.OpsADD{}, [O.Found.i(q), O.Found.i(cqc)])
 
 def dm_1.fm(ar: O.Arena, x: U32, d: U32, cm: U32) -> O.Found:
   +cmc = O.UOp.const(ar, O.CInt{H.i64_of_i32(cm)})
   +s = O.UOp.alu(O.Found.ar(cmc), O.OpsADD{}, [x, O.Found.i(cmc)])
-  O.UOp.alu(O.Found.ar(s), O.OpsFLOORMOD{}, [O.Found.i(s), d])
+  O.UOp.alu(O.Found.ar(s), O.OpsMOD{}, [O.Found.i(s), d])
 
 def dm_1.finish(ar: O.Arena, op: O.Op, x: U32, d: U32, cm: U32, cq: U32) -> O.Found:
   match op:
-    case O.OpsFLOORDIV{}: dm_1.fd(ar, x, d, cm, cq)
+    case O.OpsDIV{}: dm_1.fd(ar, x, d, cm, cq)
     case _: dm_1.fm(ar, x, d, cm)
 
 def dm_1.pick(s0: U32, s1: U32, which: U32) -> U32:
@@ -435,7 +435,7 @@ def dm_1(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
 
 # ** 2. Slow Rules ** -- divandmod.py:108, the one entry. The weakint conjunct is
 # on the ROOT here (contrast rule 1, where it is on the numerator), and there is no
-# arity constraint, so a three-src FLOORDIV still gets here.
+# arity constraint, so a three-src DIV still gets here.
 def dm_2.armed(fx: F.Folded, self: U32, weak: Bool) -> Maybe<&2, O.Found>:
   match weak:
     case True{}: fold_divmod_general(F.Folded.ar(fx), self)
@@ -450,9 +450,9 @@ def dm_2(fx: F.Folded, self: U32) -> Maybe<&2, O.Found>:
 # cannot call a def in this file, so this file gets its own scan, and `O.pm_claimed`
 # and `O.pm_early` are used as they are rather than re-derived.
 def dm_table() -> O.PMEntrys:
-  O.PMEntrys{[O.PMEntry{0, [O.OpsFLOORDIV{}], [O.OpsADD{}, O.OpsCONST{}]},                       # 101
-             O.PMEntry{1, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], [O.OpsADD{}, O.OpsCONST{}]},         # 103
-             O.PMEntry{2, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}}]}                           # 108
+  O.PMEntrys{[O.PMEntry{0, [O.OpsDIV{}], [O.OpsADD{}, O.OpsCONST{}]},                       # 101
+             O.PMEntry{1, [O.OpsDIV{}, O.OpsMOD{}], [O.OpsADD{}, O.OpsCONST{}]},         # 103
+             O.PMEntry{2, [O.OpsDIV{}, O.OpsMOD{}], Nil{}}]}                           # 108
 
 # The first non-None wins, so `dm_fold` keys on the ACCUMULATOR; keying on the new
 # answer is last-wins, and `r02` is the row that tells the two apart (rule 0 grows
@@ -529,13 +529,13 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #   zero_r05=0 zero_r15=0   the control for the three above: an ordinary divisor
 #                  of 7 and of 4 is not a zero divisor.
 #   on_r00=1       rule 0 fires: `(Px//3 + 5)//7`.
-#   out_r00        `FLOORDIV(ADD(Px,MUL),MUL(CONST(3),CONST(7)))` -- rule 0's
+#   out_r00        `DIV(ADD(Px,MUL),MUL(CONST(3),CONST(7)))` -- rule 0's
 #                  answer, and `MUL(C(3),C(7))` is the `(c*d)` term.
 #   on_r01=1 out_r01   the SWAPPED add, `(5 + Px//3)//7`. THE ROW for `ADD` being
 #                  commutative: a conjunction here drops r01 and r08 and
 #                  typechecks.
 #   on_r02=1 grown_r02=4 out_r02   THREE rules claim this node -- rule 0, rule 1
-#                  (its `x` is a `FLOORDIV`, which `UPat.var` allows) and rule 2
+#                  (its `x` is a `DIV`, which `UPat.var` allows) and rule 2
 #                  (the root is weakint) -- and rules 0 and 1 answer DIFFERENTLY.
 #                  FIRST-WINS, and `grown_r02` is the numeric witness: rule 0 adds
 #                  four nodes and rule 1 adds three, so last-wins reads 3 and a
@@ -547,19 +547,19 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #                  `out_r10` are the FLOOR rows.
 #   on_r04=0       `//0`. Rule 0 skips on `d.vmin>0`, rule 1 skips on `d.val==0`,
 #                  and rule 2 REPORTS the zero divisor. Python RAISES.
-#   on_r05=1 out_r05 grown_r05=1   `(Px+10)//7` -> `ADD(FLOORDIV(ADD(Px,C(3)),
+#   on_r05=1 out_r05 grown_r05=1   `(Px+10)//7` -> `ADD(DIV(ADD(Px,C(3)),
 #                  C(7)),C(1))`. `grown_r05` is 1 and not 4 because the fixture
-#                  already contains `ADD(Px,C(3))` and `FLOORDIV(...,C(7))` as
+#                  already contains `ADD(Px,C(3))` and `DIV(...,C(7))` as
 #                  r07, so `UOp.make` interns both: the count is PORT-INTERNAL and
 #                  the low number is the interning working.
-#   on_r06=1 out_r06 grown_r06=1   `(Px+10)%7` -> `FLOORMOD(ADD(Px,C(3)),C(7))`,
+#   on_r06=1 out_r06 grown_r06=1   `(Px+10)%7` -> `MOD(ADD(Px,C(3)),C(7))`,
 #                  EXACTLY Python's tree, and with NO `+ C(0)` because Python's
-#                  ternary omits the `+ c//d` term in the FLOORMOD arm.
+#                  ternary omits the `+ c//d` term in the MOD arm.
 #   on_r07=0 out_r07=none   `(Px+3)//7`: `c.val%d.val == c.val`, so rule 1 SKIPS
 #                  and rule 2 skips. THE ROW for the second arm of that `or`.
 #   on_r08=1 out_r08   `(10 + Px)//7` gives r05's answer: the commutative rewrite
 #                  puts `x` FIRST whatever the input order.
-#   on_r09=1 out_r09   `(Px+10)//1` -> `ADD(FLOORDIV(...,C(1)),C(10))`: `10%1=0`
+#   on_r09=1 out_r09   `(Px+10)//1` -> `ADD(DIV(...,C(1)),C(10))`: `10%1=0`
 #                  and `10//1=10`.
 #   on_r10=1 out_r10   `(Px+10)//-7` -> `C(-4)` and `C(-2)`. THE FLOOR ROW: a
 #                  truncating port prints 3 and -1.
@@ -579,17 +579,17 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 #                  `1 % 1 == 0`, so `Pz % 1` folds to `CONST(0)`. A port that
 #                  reads `multiple_of` as `None` misses this entirely, and the
 #                  mutation table shows it moving five rows.
-#   out_r19=none   `Pp//4`: divandmod.py:15 returns `None` for FLOORDIV.
+#   out_r19=none   `Pp//4`: divandmod.py:15 returns `None` for DIV.
 #   out_r20=none   `Pq%4`: `3 % 4 != 0`.
 #   out_r21=none   `Px%4`: past divandmod.py:15, i.e. behind the wall. Python
 #                  returns `None` too, so this row cannot tell the two apart --
 #                  `on_r13` is the row that CAN, and the mutation table shows why.
-#   on_r22=0       a THREE-src FLOORDIV. Rules 0 and 1 are `strict_length` so
+#   on_r22=0       a THREE-src DIV. Rules 0 and 1 are `strict_length` so
 #                  they skip; rule 2 claims it and Python then raises
 #                  `ValueError: too many values to unpack` on `x, y = d.src`.
 #   on_r23=0 on_r24=0   the two zero-divisor roots, which Python raises on.
 #   on_r25=0 out_r25=none   the (0,5)-range divisor.
-#   grown_r00=4 grown_r01=4   rule 0's shape: MUL, ADD, MUL, FLOORDIV, all new.
+#   grown_r00=4 grown_r01=4   rule 0's shape: MUL, ADD, MUL, DIV, all new.
 #
 # MUTATIONS, measured by `.agents/slop/tools/mutate-dm.py`, which applies one edit,
 # runs the INTERPRETED lane, diffs the rows against this baseline and restores. A
@@ -608,13 +608,13 @@ def div_and_mod_symbolic(+fx: F.Folded, self: U32) -> Hit:
 # | `dm_1.pat.put`: drop the weakint conjunct | `on_r12`, `out_r12` | 2 |
 # | `dm_weak.cls`: `CWeakFloat` instead of `CWeakInt` | 21 rows | 21 |
 # | `dm_pos`: unsigned reading of `d.vmin > 0` | `out_r03` | 1 |
-# | `dm_1.finish`: FLOORDIV and FLOORMOD branches swapped | `out_r03`, `out_r05`, `out_r06`, `out_r08`, `out_r09`, `out_r10` | 6 |
+# | `dm_1.finish`: DIV and MOD branches swapped | `out_r03`, `out_r05`, `out_r06`, `out_r08`, `out_r09`, `out_r10` | 6 |
 # | `dm_zero.range`: `vmin == 0` only, the `vmax` half dropped | `zero_r25` | 1 |
 # | `dm_multiple_of.mod`: an unset `multiple_of` read as 1 | `grown_r05`, `grown_r06`, `on_r07`, `on_r22`, `on_r25`, `out_r03`, `out_r05`, `out_r06`, `out_r07`, `out_r08`, `out_r09`, `out_r10`, `out_r17`, `out_r18`, ... | 18 |
 # | `dm_table`: rule 2 given a reject set | `rej2`, `on_r13`, `out_r13`, `out_r14`, `out_r15`, `out_r16`, `out_r17`, `out_r18` | 8 |
-# | `dm_table`: rule 2 given FLOORDIV only | `out_r14`, `out_r16`, `out_r17`, `out_r18` | 4 |
+# | `dm_table`: rule 2 given DIV only | `out_r14`, `out_r16`, `out_r17`, `out_r18` | 4 |
 # | `dm_point`: truncating instead of floor | `out_r15`, `out_r16` | 2 |
-# | `dm_multiple_of.hit`: answer FLOORDIV as well | `out_r19` | 1 |
+# | `dm_multiple_of.hit`: answer DIV as well | `out_r19` | 1 |
 # | `dm_cval`: read the `x` side instead of the `c` side | 14 rows | 14 |
 #
 # FOUR THINGS WORTH READING TWICE.
@@ -750,42 +750,42 @@ def dm_param(dt: S.Dt, mult: U32, nm: String) -> O.ParamArg:
 # 14 PARAM "q" weakint multiple_of 3     15 PARAM "z" weakint multiple_of 1
 # 16 PARAM "i" int32   multiple_of 1     17 PARAM "y" weakint range (0,0)
 # 18 PARAM "u" weakint range (0,5)
-# 19 FLOORDIV(Px,C(3))                     the `x//c`
+# 19 DIV(Px,C(3))                     the `x//c`
 # 20 ADD(19,C(5))  21 ADD(C(5),19)  22 ADD(19,C(10))  23 ADD(Px,C(10))  24 ADD(Px,C(3))
 # 25 ADD(C(10),Px)  26 ADD(Pi,C(10))
 # 27..52 the twenty-six roots, in `dm_root` order
 #
 # ROOTS, in the order `dm_root` indexes them, with the oracle's tree:
-#  r00 t0_a   FLOORDIV(ADD(FLOORDIV(Px,C(3)),C(5)),C(7))
-#             -> FLOORDIV(ADD(Px,MUL(C(5),C(3))),MUL(C(3),C(7)))
+#  r00 t0_a   DIV(ADD(DIV(Px,C(3)),C(5)),C(7))
+#             -> DIV(ADD(Px,MUL(C(5),C(3))),MUL(C(3),C(7)))
 #  r01 t0_b   ... the SWAPPED add; the same answer
 #  r02 t0_c   (x//3 + 10)//7 -> rule 0 AND rule 1 both fire, differently. FIRST-WINS.
 #  r03 t0_neg //-7: rule 0 skips on d.vmin>0 and rule 1 answers -> ADD(...,C(-1))
 #  r04 t0_d0  //0:  Python RAISES ZeroDivisionError. rule 0 skips, rule 1 skips on
 #             d.val==0, rule 2 reports it. `on=0`.
-#  r05 t1_fd  (Px+C(10))//7  -> ADD(FLOORDIV(ADD(Px,C(3)),C(7)),C(1))
-#  r06 t1_fm  (Px+C(10))%7   -> FLOORMOD(ADD(Px,C(3)),C(7))
+#  r05 t1_fd  (Px+C(10))//7  -> ADD(DIV(ADD(Px,C(3)),C(7)),C(1))
+#  r06 t1_fm  (Px+C(10))%7   -> MOD(ADD(Px,C(3)),C(7))
 #  r07 t1_same (Px+C(3))//7   -> None: c%d == c
 #  r08 t1_swap C(10)+Px       -> the same as r05: x goes FIRST
-#  r09 t1_d1  //1             -> ADD(FLOORDIV(ADD(Px,C(0)),C(1)),C(10))
-#  r10 t1_dn  //-7            -> ADD(FLOORDIV(ADD(Px,C(-4)),C(-7)),C(-2)). THE FLOOR ROW.
+#  r09 t1_d1  //1             -> ADD(DIV(ADD(Px,C(0)),C(1)),C(10))
+#  r10 t1_dn  //-7            -> ADD(DIV(ADD(Px,C(-4)),C(-7)),C(-2)). THE FLOOR ROW.
 #  r11 t1_d0  //0             -> Python RAISES. `on=0`
 #  r12 t1_i   int32 numerator -> None. THE WEAKINT-CONJUNCT ROW.
-#  r13 t2_cst FLOORDIV(C(6),C(4))     -> CONST(1)
-#  r14 t2_cst2 FLOORMOD(C(6),C(4))    -> SUB(C(6),MUL(C(1),C(4)))   [Python: ADD(MUL(MUL,-1))]
-#  r15 t2_cn  FLOORDIV(C(-7),C(4))    -> CONST(-2). THE FLOOR ROW.
-#  r16 t2_cm  FLOORMOD(C(-7),C(4))    -> SUB(C(-7),MUL(C(-2),C(4)))
-#  r17 t2_pm  FLOORMOD(Pp,C(4))       -> CONST(0): multiple_of 4 % 4 == 0
-#  r18 t2_p1  FLOORMOD(Pz,C(1))       -> CONST(0): multiple_of DEFAULTS to 1
-#  r19 t2_pd  FLOORDIV(Pp,C(4))       -> None: the lambda returns None for FLOORDIV
-#  r20 t2_p3  FLOORMOD(Pq,C(4))       -> None: 3 % 4 != 0
-#  r21 t2_var FLOORMOD(Px,C(4))       -> None: past divandmod.py:15
-#  r22 n_3src FLOORDIV(ADD(Px,C(10)),C(7),C(1)) -> rule 2 CLAIMS it; Python then
+#  r13 t2_cst DIV(C(6),C(4))     -> CONST(1)
+#  r14 t2_cst2 MOD(C(6),C(4))    -> SUB(C(6),MUL(C(1),C(4)))   [Python: ADD(MUL(MUL,-1))]
+#  r15 t2_cn  DIV(C(-7),C(4))    -> CONST(-2). THE FLOOR ROW.
+#  r16 t2_cm  MOD(C(-7),C(4))    -> SUB(C(-7),MUL(C(-2),C(4)))
+#  r17 t2_pm  MOD(Pp,C(4))       -> CONST(0): multiple_of 4 % 4 == 0
+#  r18 t2_p1  MOD(Pz,C(1))       -> CONST(0): multiple_of DEFAULTS to 1
+#  r19 t2_pd  DIV(Pp,C(4))       -> None: the lambda returns None for DIV
+#  r20 t2_p3  MOD(Pq,C(4))       -> None: 3 % 4 != 0
+#  r21 t2_var MOD(Px,C(4))       -> None: past divandmod.py:15
+#  r22 n_3src DIV(ADD(Px,C(10)),C(7),C(1)) -> rule 2 CLAIMS it; Python then
 #             RAISES ValueError on `x, y = d.src`
-#  r23 y0_fd  FLOORDIV(Px,Py0)         -> rule 2's zero test on a PARAM range (0,0).
+#  r23 y0_fd  DIV(Px,Py0)         -> rule 2's zero test on a PARAM range (0,0).
 #             Python RAISES ZeroDivisionError.
-#  r24 y0_fm  FLOORMOD(Px,Py0)         -> the same, modulo
-#  r25 y05    FLOORDIV(Px,Pu) where Pu's range is (0,5) -- `vmin == 0` but `vmax`
+#  r24 y0_fm  MOD(Px,Py0)         -> the same, modulo
+#  r25 y05    DIV(Px,Pu) where Pu's range is (0,5) -- `vmin == 0` but `vmax`
 #             is not, so Python does NOT raise and `zero_r25` is 0. THE ROW for
 #             `y.vmin==y.vmax==0` being a CONJUNCTION and not `vmin==0`: with the
 #             vmax half dropped, the mutation table shows this row moving and
@@ -810,7 +810,7 @@ def trees() -> Gate:
   +pi = O.UOp.new(O.Found.ar(pz), O.OpsPARAM{}, Nil{}, O.AParam{dm_param(S.int32(), 1, "i")}, O.TNone{})
   +py = O.UOp.new(O.Found.ar(pi), O.OpsPARAM{}, Nil{}, O.AParam{dm_param.range(S.weakint(), 1, "y", 0, 0)}, O.TNone{})
   +py05 = O.UOp.new(O.Found.ar(py), O.OpsPARAM{}, Nil{}, O.AParam{dm_param.range(S.weakint(), 1, "u", 0, 5)}, O.TNone{})
-  +q3 = O.UOp.alu(O.Found.ar(py05), O.OpsFLOORDIV{}, [O.Found.i(px), O.Found.i(c3)])
+  +q3 = O.UOp.alu(O.Found.ar(py05), O.OpsDIV{}, [O.Found.i(px), O.Found.i(c3)])
   +a5 = O.UOp.alu(O.Found.ar(q3), O.OpsADD{}, [O.Found.i(q3), O.Found.i(c5)])
   +b5 = O.UOp.alu(O.Found.ar(a5), O.OpsADD{}, [O.Found.i(c5), O.Found.i(q3)])
   +a10 = O.UOp.alu(O.Found.ar(b5), O.OpsADD{}, [O.Found.i(q3), O.Found.i(c10)])
@@ -818,35 +818,35 @@ def trees() -> Gate:
   +c10x = O.UOp.alu(O.Found.ar(x10), O.OpsADD{}, [O.Found.i(c10), O.Found.i(px)])
   +x3 = O.UOp.alu(O.Found.ar(c10x), O.OpsADD{}, [O.Found.i(px), O.Found.i(c3)])
   +i10 = O.UOp.alu(O.Found.ar(x3), O.OpsADD{}, [O.Found.i(pi), O.Found.i(c10)])
-  # the eight FLOORMOD/FLOORDIV roots of the two Fast Inline Rules
-  +r00 = O.UOp.alu(O.Found.ar(i10), O.OpsFLOORDIV{}, [O.Found.i(a5), O.Found.i(c7)])
-  +r01 = O.UOp.alu(O.Found.ar(r00), O.OpsFLOORDIV{}, [O.Found.i(b5), O.Found.i(c7)])
-  +r02 = O.UOp.alu(O.Found.ar(r01), O.OpsFLOORDIV{}, [O.Found.i(a10), O.Found.i(c7)])
-  +r03 = O.UOp.alu(O.Found.ar(r02), O.OpsFLOORDIV{}, [O.Found.i(a5), O.Found.i(cm7)])
-  +r04 = O.UOp.alu(O.Found.ar(r03), O.OpsFLOORDIV{}, [O.Found.i(a5), O.Found.i(c0)])
-  +r05 = O.UOp.alu(O.Found.ar(r04), O.OpsFLOORDIV{}, [O.Found.i(x10), O.Found.i(c7)])
-  +r06 = O.UOp.alu(O.Found.ar(r05), O.OpsFLOORMOD{}, [O.Found.i(x10), O.Found.i(c7)])
-  +r07 = O.UOp.alu(O.Found.ar(r06), O.OpsFLOORDIV{}, [O.Found.i(x3), O.Found.i(c7)])
-  +r08 = O.UOp.alu(O.Found.ar(r07), O.OpsFLOORDIV{}, [O.Found.i(c10x), O.Found.i(c7)])
-  +r09 = O.UOp.alu(O.Found.ar(r08), O.OpsFLOORDIV{}, [O.Found.i(x10), O.Found.i(c1)])
-  +r10 = O.UOp.alu(O.Found.ar(r09), O.OpsFLOORDIV{}, [O.Found.i(x10), O.Found.i(cm7)])
-  +r11 = O.UOp.alu(O.Found.ar(r10), O.OpsFLOORDIV{}, [O.Found.i(x10), O.Found.i(c0)])
-  +r12 = O.UOp.alu(O.Found.ar(r11), O.OpsFLOORDIV{}, [O.Found.i(i10), O.Found.i(c7)])
+  # the eight MOD/DIV roots of the two Fast Inline Rules
+  +r00 = O.UOp.alu(O.Found.ar(i10), O.OpsDIV{}, [O.Found.i(a5), O.Found.i(c7)])
+  +r01 = O.UOp.alu(O.Found.ar(r00), O.OpsDIV{}, [O.Found.i(b5), O.Found.i(c7)])
+  +r02 = O.UOp.alu(O.Found.ar(r01), O.OpsDIV{}, [O.Found.i(a10), O.Found.i(c7)])
+  +r03 = O.UOp.alu(O.Found.ar(r02), O.OpsDIV{}, [O.Found.i(a5), O.Found.i(cm7)])
+  +r04 = O.UOp.alu(O.Found.ar(r03), O.OpsDIV{}, [O.Found.i(a5), O.Found.i(c0)])
+  +r05 = O.UOp.alu(O.Found.ar(r04), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(c7)])
+  +r06 = O.UOp.alu(O.Found.ar(r05), O.OpsMOD{}, [O.Found.i(x10), O.Found.i(c7)])
+  +r07 = O.UOp.alu(O.Found.ar(r06), O.OpsDIV{}, [O.Found.i(x3), O.Found.i(c7)])
+  +r08 = O.UOp.alu(O.Found.ar(r07), O.OpsDIV{}, [O.Found.i(c10x), O.Found.i(c7)])
+  +r09 = O.UOp.alu(O.Found.ar(r08), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(c1)])
+  +r10 = O.UOp.alu(O.Found.ar(r09), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(cm7)])
+  +r11 = O.UOp.alu(O.Found.ar(r10), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(c0)])
+  +r12 = O.UOp.alu(O.Found.ar(r11), O.OpsDIV{}, [O.Found.i(i10), O.Found.i(c7)])
   # the nine `fold_divmod_general` roots
-  +r13 = O.UOp.alu(O.Found.ar(r12), O.OpsFLOORDIV{}, [O.Found.i(c6), O.Found.i(c4)])
-  +r14 = O.UOp.alu(O.Found.ar(r13), O.OpsFLOORMOD{}, [O.Found.i(c6), O.Found.i(c4)])
-  +r15 = O.UOp.alu(O.Found.ar(r14), O.OpsFLOORDIV{}, [O.Found.i(cm7), O.Found.i(c4)])
-  +r16 = O.UOp.alu(O.Found.ar(r15), O.OpsFLOORMOD{}, [O.Found.i(cm7), O.Found.i(c4)])
-  +r17 = O.UOp.alu(O.Found.ar(r16), O.OpsFLOORMOD{}, [O.Found.i(pp), O.Found.i(c4)])
-  +r18 = O.UOp.alu(O.Found.ar(r17), O.OpsFLOORMOD{}, [O.Found.i(pz), O.Found.i(c1)])
-  +r19 = O.UOp.alu(O.Found.ar(r18), O.OpsFLOORDIV{}, [O.Found.i(pp), O.Found.i(c4)])
-  +r20 = O.UOp.alu(O.Found.ar(r19), O.OpsFLOORMOD{}, [O.Found.i(pq), O.Found.i(c4)])
-  +r21 = O.UOp.alu(O.Found.ar(r20), O.OpsFLOORMOD{}, [O.Found.i(px), O.Found.i(c4)])
+  +r13 = O.UOp.alu(O.Found.ar(r12), O.OpsDIV{}, [O.Found.i(c6), O.Found.i(c4)])
+  +r14 = O.UOp.alu(O.Found.ar(r13), O.OpsMOD{}, [O.Found.i(c6), O.Found.i(c4)])
+  +r15 = O.UOp.alu(O.Found.ar(r14), O.OpsDIV{}, [O.Found.i(cm7), O.Found.i(c4)])
+  +r16 = O.UOp.alu(O.Found.ar(r15), O.OpsMOD{}, [O.Found.i(cm7), O.Found.i(c4)])
+  +r17 = O.UOp.alu(O.Found.ar(r16), O.OpsMOD{}, [O.Found.i(pp), O.Found.i(c4)])
+  +r18 = O.UOp.alu(O.Found.ar(r17), O.OpsMOD{}, [O.Found.i(pz), O.Found.i(c1)])
+  +r19 = O.UOp.alu(O.Found.ar(r18), O.OpsDIV{}, [O.Found.i(pp), O.Found.i(c4)])
+  +r20 = O.UOp.alu(O.Found.ar(r19), O.OpsMOD{}, [O.Found.i(pq), O.Found.i(c4)])
+  +r21 = O.UOp.alu(O.Found.ar(r20), O.OpsMOD{}, [O.Found.i(px), O.Found.i(c4)])
   # the arity row and the two zero-divisor rows
-  +r22 = O.UOp.alu(O.Found.ar(r21), O.OpsFLOORDIV{}, [O.Found.i(x10), O.Found.i(c7), O.Found.i(c1)])
-  +r23 = O.UOp.alu(O.Found.ar(r22), O.OpsFLOORDIV{}, [O.Found.i(px), O.Found.i(py)])
-  +r24 = O.UOp.alu(O.Found.ar(r23), O.OpsFLOORMOD{}, [O.Found.i(px), O.Found.i(py)])
-  +r25 = O.UOp.alu(O.Found.ar(r24), O.OpsFLOORDIV{}, [O.Found.i(px), O.Found.i(py05)])
+  +r22 = O.UOp.alu(O.Found.ar(r21), O.OpsDIV{}, [O.Found.i(x10), O.Found.i(c7), O.Found.i(c1)])
+  +r23 = O.UOp.alu(O.Found.ar(r22), O.OpsDIV{}, [O.Found.i(px), O.Found.i(py)])
+  +r24 = O.UOp.alu(O.Found.ar(r23), O.OpsMOD{}, [O.Found.i(px), O.Found.i(py)])
+  +r25 = O.UOp.alu(O.Found.ar(r24), O.OpsDIV{}, [O.Found.i(px), O.Found.i(py05)])
   Gate{O.Found.ar(r25), [O.Found.i(r00), O.Found.i(r01), O.Found.i(r02), O.Found.i(r03), O.Found.i(r04), O.Found.i(r05), O.Found.i(r06), O.Found.i(r07), O.Found.i(r08), O.Found.i(r09), O.Found.i(r10), O.Found.i(r11), O.Found.i(r12), O.Found.i(r13), O.Found.i(r14), O.Found.i(r15), O.Found.i(r16), O.Found.i(r17), O.Found.i(r18), O.Found.i(r19), O.Found.i(r20), O.Found.i(r21), O.Found.i(r22), O.Found.i(r23), O.Found.i(r24), O.Found.i(r25)]}
 
 # NOT PORTED, one line each, with the WALL and the phase that owns it. The block
@@ -887,8 +887,8 @@ def trees() -> Gate:
 #   `new_x.vmin >= 0`. WALL: `gcd`, `_min_max`, `simplify`. `math.gcd` over a
 #   VARIADIC fold is a fold over a list, which is expressible; the rest is not.
 # TODO(p3) divandmod.py:57-70 `nest_by_factor: x//c -> (x//f)//(c//f),
-#   x%c -> (x//f%(c//f))*f + b where b=x%f` and `FLOORDIV identity holds for any
-#   sign of x; FLOORMOD reconstruction needs x.vmin>=0` -- the set comprehension
+#   x%c -> (x//f%(c//f))*f + b where b=x%f` and `DIV identity holds for any
+#   sign of x; MOD reconstruction needs x.vmin>=0` -- the set comprehension
 #   `{abs(f) for u, f in zip(...) if ...}` is a set (an ORDERED fold with a dedup
 #   step), then a RECURSIVE call to `fold_divmod_general(x//div)` (mutual
 #   recursion, refused), then `backward_slice` twice for the `min(results, key=
@@ -904,7 +904,7 @@ def trees() -> Gate:
 #   `Counter` fold), `u.divides(c)*(c%y.val)` and `y.vmin<0` / `x.vmin<0`. WALL:
 #   `gcd`, `const_factor`, `simplify`, `_min_max`. P3.
 # TODO(p3) divandmod.py:11  symbol=fold_divmod_general  the `raise` itself -- Python's
-#   `ZeroDivisionError(f"{'Division' if d.op is Ops.FLOORDIV else 'Mod'} by zero
+#   `ZeroDivisionError(f"{'Division' if d.op is Ops.DIV else 'Mod'} by zero
 #   trying to rewrite {x.alu(d.op, y)}")` needs a `raise` and an f-string over a
 #   UOp. `dm_zero` REPORTS the condition and `zero_r04`/`zero_r11`/`zero_r23` are
 #   the rows; rendering the message is the caller's job, exactly as `fold.bend`
@@ -951,7 +951,7 @@ def t_out(g: Gate, n: U32) -> String: t_out.put(rw(g, n))
 # how many nodes the rewrite ADDED. PORT-INTERNAL, because Python's count is one
 # lower per folded CONST MUL (divergence C), and it is here because it is the
 # only NUMERIC discriminator between first-wins and last-wins on `r02`: rule 0
-# adds four (MUL, ADD, MUL, FLOORDIV) and rule 1 adds three (ADD, FLOORDIV, ADD
+# adds four (MUL, ADD, MUL, DIV) and rule 1 adds three (ADD, DIV, ADD
 # -- its two CONSTs are already interned). So `r02` reads 4 under first-wins and
 # 3 under last-wins, and a conjunction would give 7.
 def t_grown.put(+h: Hit, g: Gate) -> U32:
@@ -1051,19 +1051,19 @@ def gate() -> IO(Unit):
 # Python's `None`; `RAISED` is its `ZeroDivisionError` at divandmod.py:11, which
 # this file reports as the Bool `dm_zero`.
 
-# `op` -- the five ops the case format spells. CDIV/CMOD/FDIV are REAL Ops that
+# `op` -- the five ops the case format spells. TRUNCDIV/TRUNCMOD/FDIV are REAL Ops that
 # the table does NOT claim, so a case naming one must print `nofold` on both
-# sides: the row that says the table's op set is {FLOORDIV, FLOORMOD} and not
-# something wider. `case _` answers FLOORDIV, the only default that cannot make a
+# sides: the row that says the table's op set is {DIV, MOD} and not
+# something wider. `case _` answers DIV, the only default that cannot make a
 # typo'd case name a DIFFERENT op.
 def dmc.op(s: String) -> O.Op:
   match s:
-    case "FLOORDIV": O.OpsFLOORDIV{}
-    case "FLOORMOD": O.OpsFLOORMOD{}
-    case "CDIV": O.OpsCDIV{}
-    case "CMOD": O.OpsCMOD{}
+    case "DIV": O.OpsDIV{}
+    case "MOD": O.OpsMOD{}
+    case "TRUNCDIV": O.OpsTRUNCDIV{}
+    case "TRUNCMOD": O.OpsTRUNCMOD{}
     case "FDIV": O.OpsFDIV{}
-    case _: O.OpsFLOORDIV{}
+    case _: O.OpsDIV{}
 
 # a signed decimal literal as a `U32` bit pattern. `a` and `b` are int32 in
 # both languages and this file has no signed type, so the case's decimal is read
@@ -1152,7 +1152,7 @@ def dmc.out(zero: Bool, +h: Hit) -> String:
     case _: dmc.out.hit(h)
 
 # The zero test is reported ONLY where Python reaches `fold_divmod_general` at all,
-# which is where RULE 2 claims the node -- a CMOD root is claimed by nobody, so
+# which is where RULE 2 claims the node -- a TRUNCMOD root is claimed by nobody, so
 # Python answers `None` there and never raises. The op set is READ from
 # `dm_table()` rather than spelled here, so a wider rule 2 moves the word with it.
 def dmc.two.go(m: Maybe<&2, O.PMEntry>) -> List<&2, O.Op>:

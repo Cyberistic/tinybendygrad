@@ -5117,3 +5117,65 @@ CONCURRENTLY WITH WHOEVER IS RE-PINNING.** Until then every A/B in this record c
 DIFFERENTIALLY (previous build vs new build on the same input), which is what §112 and §114 did.
 `bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only` still answers `ALL PROOFS CHECK` (rc=0), so the
 port is internally consistent; it is the comparison against the oracle that is red.
+
+## 116. THE OPS ENUM RE-PINNED, AND THE FOUR RENDERER DEFECTS THE PACKED-ARGS ABI EXPOSED
+
+`75955a97a` fast-forwarded the vendored `tinygrad/` and renamed five ops and added a sixth. This is the
+re-pin, and it is measured against the oracle rather than against a memory:
+
+```
+upstream 76  port 76
+order identical: True
+missing: [] | extra: []
+```
+
+`Ops.name.of` and `Ops.value` are now REGENERATED from the declaration order (so a number and a name cannot
+drift), `live.bend`'s `op_by_idx` was re-indexed in its frequency order with `REFPARAM` added at 6, and its
+`# ENUM-PIN` moved to `56feedfd5ba184a9`. Every generic predicate that lists `PARAM` now lists `REFPARAM`
+too, each with its upstream line: `GroupOp.defines` (`uop/__init__.py:114`'s `Defines`),
+`UOp.buf_uop.cont`, `UOp.has_buffer_identity.term`, `addrspace_of` and `dt_shape` (`ops.py:169`, `:350`,
+`:873`), and the four "whole enum" lists (`ops.bend`, `viz/serve.bend`, `schedule/rangeify.bend`'s
+`GS_ALL`, `uop/spec.bend`'s `OP_ALL`, `schedule/prepare.bend`'s PMEntry 26).
+
+### 116.1 The re-pin was the easy half; the enum's new member is a NEW UPSTREAM FEATURE
+
+`renderer.packed_args` (`codegen/__init__.py:492`) now rewrites every non-ALU param read through
+`pack_args` (`:422-427`):
+
+```python
+reads = {p: v if p.addrspace is AddrSpace.ALU else UOp(Ops.REFPARAM, src=(p.src[0], v), arg=p.arg) ...}
+```
+
+so **every** CPU kernel gained an `unsigned char* args`, three `unsigned long valN` loads and one REFPARAM
+per param. The port answered `UNHANDLED(Ops.REFPARAM)` for all of it. FOUR defects fell out, and all four
+were invisible before because the shapes they live in never occurred:
+
+| defect | upstream | port had |
+|---|---|---|
+| BITCAST on GLOBAL/LOCAL | `f"(({_render_dtype(...)})({src}))"` (`cstyle.py:42`) | `(((` -- one paren too many |
+| REFPARAM | `f"(({ctx.param_type(x)})({ctx[x.src[1]]}))"` (`:44`, `:277`) | `UNHANDLED(Ops.REFPARAM)` |
+| bool const | `"1" if c.val else "0"` (`:29`) -- a test of ZERO | tested `i64_is_neg`, so `False` rendered `1` |
+| uint64 / uint8 / uint16 const | `truncate[uint64](c.val)` (`:28`); `f'{c.val}u'` (`:33`) | `-64ul`; `(unsigned char)(127)` |
+
+`i64_udec` is new in `helpers.bend` and is `i64_dec`'s own loop without the sign -- that loop already
+divides through `u64_divmod`, which reads bit 63 as a MAGNITUDE, so the digits were already the unsigned
+ones and only the entry pair and the `-` were wrong.
+
+### 116.2 The gates, in one run
+
+```
+$ bin/bend tinybendygrad/LAWS/PROOF-ALL.bend --check-only      rc=0  ALL PROOFS CHECK
+$ .venv/bin/python .agents/slop/parity/ksweep.py
+# kernels: 37 byte-identical, 0 differ
+# kernels via the LIVE decoder: 37 byte-identical, 0 differ
+$ .venv/bin/python .agents/slop/parity/opbattery.py            # 39 match, 0 failed
+$ .venv/bin/python gates/ops_bend_exec-e2e.py                  # compiled: 7 match, 0 mismatch-or-refused
+$ emit-mm / emit-f64                                           # byte-identical
+```
+
+**⇒ AND THE TWO LANES AGREED ON 29 OF 37 AT THE FIRST FIX AND ON 37 AFTER FOUR**, which is the useful part of
+the record: the enum re-pin is a mechanical sweep whose gate is 37 kernels, and each remaining kernel was ONE
+named divergence, not a hunt.
+
+**⇒ AND `pad_cat` IS `ORACLE REFUSED`, NOT A PASS:** the CPython lane asserts, so its kernels are captured by
+neither side and the row says so. The 37 that were captured are compared.

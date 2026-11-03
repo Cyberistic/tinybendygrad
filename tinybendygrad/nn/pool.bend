@@ -14,8 +14,8 @@ import ./../extra/datasets/__init__.bend as D
 #
 # THE HEADLINE MEASUREMENT, and it is the reason this file is mostly movement
 # ops: THERE IS NO POOL OP, UPSTREAM OR HERE. `tinygrad/uop/__init__.py:13-97`
-# is the whole `Ops` enum and its members are ADD MUL SHL SHR CDIV MAX CMOD
-# CMPLT CMPNE CMPEQ XOR OR AND THREEFRY SUB FDIV POW FLOORDIV FLOORMOD WHERE
+# is the whole `Ops` enum and its members are ADD MUL SHL SHR TRUNCDIV MAX TRUNCMOD
+# CMPLT CMPNE CMPEQ XOR OR AND THREEFRY SUB FDIV POW DIV MOD WHERE
 # MULACC ... RESHAPE PERMUTE EXPAND PAD UNSHARD REDUCE ALLREDUCE. There is no
 # MAXPOOL, no AVGPOOL, no MAXPOW2, no AVGPOW2 and no CMOV in it, and
 # `grep -rn "MAXPOW2\|AVGPOW2\|MAX_POOL\|AVG_POOL" tinygrad/` = 0 HITS.

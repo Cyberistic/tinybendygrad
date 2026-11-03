@@ -67,7 +67,7 @@
 # 1. `shr`/`shl` (lines 19-20) TAKE A `UOp` `y` AND CALL `y.simplify().val`.
 #    EVERY ONE OF THE ELEVEN CALL SITES IN THIS FILE PASSES A PYTHON `int`.
 #    MEASURED by regex over the source. So the fold is DEAD here and
-#    `tx_shr`/`tx_shl` are `FLOORDIV`/`MUL` by a CONST, NOT `SHR`/`SHL` -- and
+#    `tx_shr`/`tx_shl` are `DIV`/`MUL` by a CONST, NOT `SHR`/`SHL` -- and
 #    `ldexp2k`, which DOES take a symbolic `e`, survives without the fold
 #    because the `y` it shifts by is the literal `1`. `a_ilogb9` is the row.
 # 2. `_reduce_d` (lines 121-142) RECURSES on the float16 arm -- into float32,
@@ -228,7 +228,7 @@ def tx_bitcast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
 # `shr`/`shl` -- lines 19-20, and header note 1.
 def tx_shr(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   +c = tx_pow2(ar, y)
-  tx_alu2(O.Found.ar(c), O.OpsFLOORDIV{}, x, O.Found.i(c))
+  tx_alu2(O.Found.ar(c), O.OpsDIV{}, x, O.Found.i(c))
 
 def tx_shl(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   +c = tx_pow2(ar, y)
@@ -845,7 +845,7 @@ def ph_p(+ar: O.Arena, +ia: O.Found, +hi: O.Found, +mi: O.Found, +lo: O.Found) -
 # `a_ph103` and `a_ph104` vanish and `n_ph` come out 114 against 116.
 def ph_qr(+ar: O.Arena, +p: U32, +f: U32, +inter: S.Dt, +same: Bool, +dt: S.Dt) -> Red:
   +c = tx_ci64(ar, tx_powi(62))
-  +d = tx_alu2(O.Found.ar(c), O.OpsFLOORDIV{}, p, O.Found.i(c))
+  +d = tx_alu2(O.Found.ar(c), O.OpsDIV{}, p, O.Found.i(c))
   +q = tx_cast(O.Found.ar(d), O.Found.i(d), S.int32())
   +pq = O.Found.i(q)
   +m = tx_ci64(O.Found.ar(q), H.i64_of_hi_lo(1073741823, 4294967295))
@@ -876,11 +876,11 @@ def ph_ia(+ar: O.Arena, +f: U32, +inter: S.Dt, +same: Bool) -> O.Found:
   tx_cast(O.Found.ar(m), O.Found.i(m), S.uint64())
 
 # `i = shr(e.cast(dtypes.u64), 5)` -- line 84. `shr` by a Python int, so this is
-# a FLOORDIV by `2**5` and NOT a `SHR`; header note 1.
+# a DIV by `2**5` and NOT a `SHR`; header note 1.
 def ph_i(+ar: O.Arena, +e: U32) -> O.Found:
   +a = tx_cast(ar, e, S.uint64())
   +b = tx_ci(O.Found.ar(a), 32)
-  tx_alu2(O.Found.ar(b), O.OpsFLOORDIV{}, O.Found.i(a), O.Found.i(b))
+  tx_alu2(O.Found.ar(b), O.OpsDIV{}, O.Found.i(a), O.Found.i(b))
 
 # `e = e.cast(dtypes.i32) & 31` -- line 85. `e` is REBOUND, so the frexp exponent
 # and the masked exponent are two different nodes and `a_ph30` vs `a_ph23` is the
@@ -1243,7 +1243,7 @@ def xexp2(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
 # loop is a self-call, so splitting it would mean threading `(Arena, U32)` pairs
 # through four carriers for no gain.
 #
-# `x = (m - 1.0) / (m + 1.0)` is `MUL(m-1, RECIPROCAL(m+1))` because `div`
+# `x = (m - 1.0) / (m + 1.0)` is `MUL(m-1, RECIP(m+1))` because `div`
 # builds the reciprocal FIRST -- `a_xlog2 42` is the row -- and `denormal_exp`'s
 # 64 is an INT literal against a float, so `tx_pintf` mints the weakint CONST and
 # the float CONST and both are slots: `a_xlog2 33` is the one nothing reads.
@@ -1273,7 +1273,7 @@ def xlog2.negzero(+ar: O.Arena, +r: U32, +d: U32, +ninf: U32) -> O.Found:
   +w3 = tx_alu3(O.Found.ar(nan), O.OpsWHERE{}, O.Found.i(lt), O.Found.i(nan), r)
   +c4 = tx_alu2(O.Found.ar(w3), O.OpsCMPNE{}, d, d)
   +w4 = tx_alu3(O.Found.ar(c4), O.OpsWHERE{}, O.Found.i(c4), O.Found.i(nan), O.Found.i(w3))
-  +rc = tx_alu1(O.Found.ar(w4), O.OpsRECIPROCAL{}, d)
+  +rc = tx_alu1(O.Found.ar(w4), O.OpsRECIP{}, d)
   xlog2.recip(O.Found.ar(rc), O.Found.i(rc), w4, ninf)
 
 def xlog2.clamp(+ar: O.Arena, +r: U32, +d: U32, +lt: O.Found) -> O.Found:
@@ -1292,7 +1292,7 @@ def xlog2.slo(+ar: O.Arena, +x: U32, +r2: U32, +sl: U32, +d: U32, +lt: O.Found) 
   xlog2.clamp(O.Found.ar(r3), O.Found.i(r3), d, lt)
 
 # Lines 247-255: the four special-case WHEREs and then the `-0.0` reciprocal test.
-# `d.reciprocal()` is a RECIPROCAL NODE and not a division: `a_xlog2 76` is the row.
+# `d.reciprocal()` is a RECIP NODE and not a division: `a_xlog2 76` is the row.
 
 
 
@@ -1316,7 +1316,7 @@ def xlog2.head(+ar: O.Arena, +d: U32, +d64: Bool) -> O.Found:
   +mn = tx_alu2(O.Found.ar(one), O.OpsMUL{}, O.Found.i(one), O.Found.i(nm))
   +mo = tx_alu2(O.Found.ar(mn), O.OpsADD{}, O.Found.i(m), O.Found.i(mn))
   +mp = tx_alu2(O.Found.ar(mo), O.OpsADD{}, O.Found.i(m), O.Found.i(one))
-  +rc = tx_alu1(O.Found.ar(mp), O.OpsRECIPROCAL{}, O.Found.i(mp))
+  +rc = tx_alu1(O.Found.ar(mp), O.OpsRECIP{}, O.Found.i(mp))
   +x = tx_alu2(O.Found.ar(rc), O.OpsMUL{}, O.Found.i(mo), O.Found.i(rc))
   +x2 = tx_alu2(O.Found.ar(x), O.OpsMUL{}, O.Found.i(x), O.Found.i(x))
   +ta = O.Found.ar(x2)
@@ -1379,7 +1379,7 @@ def xpow.ret(+ar: O.Arena, +base: U32, +ex: U32) -> Xp:
   +rt = tx_alu1(O.Found.ar(ml), O.OpsEXP2{}, O.Found.i(ml))
   Xp{O.Found.ar(rt), O.Found.i(rt), 0, 0}
 
-# `non_int` and `is_odd` -- lines 261-262. `mod` is `FLOORMOD` because after the
+# `non_int` and `is_odd` -- lines 261-262. `mod` is `MOD` because after the
 # int32 CAST both operands are ints (elementwise.py:216), and its `2` is the
 # fixture's OWN `C(2)`, so `a_xpow26` reads slot 7 and not a fresh CONST. The
 # trailing `.cast(dtypes.bool)` is a REAL CAST and `a_xpow27` is the row.
@@ -1395,7 +1395,7 @@ def xpow.flags(+xp: Xp, +ex: U32, +edt: S.Dt) -> Xp:
   +w = tx_alu3(O.Found.ar(ne), O.OpsWHERE{}, O.Found.i(lo), O.Found.i(ne), ex)
   +wj = tx_cast(O.Found.ar(w), O.Found.i(w), S.int32())
   +c2 = tx_ci(O.Found.ar(wj), 2)
-  +fm = tx_alu2(O.Found.ar(c2), O.OpsFLOORMOD{}, O.Found.i(wj), O.Found.i(c2))
+  +fm = tx_alu2(O.Found.ar(c2), O.OpsMOD{}, O.Found.i(wj), O.Found.i(c2))
   +io = tx_cast(O.Found.ar(fm), O.Found.i(fm), S.boolean())
   Xp{O.Found.ar(io), Xp.ret(xp), O.Found.i(ni), O.Found.i(io)}
 
@@ -1968,7 +1968,7 @@ def main() -> IO(Unit):
 # | `tx_tab.sqrt` ignores `force` | `e_force6`, `n_force` | `force` is `TRANSCENDENTAL` and it is the ONLY difference between the `non` and `force` tables; `n_non` does not move |
 # | the `name="x"` half of every pair loses its name | `e_empty1`, `e_empty3`, `e_empty5`, `e_force1`, `e_force3`, `e_force5`, `e_non1`, `e_non3`, `e_non5` | a rule table whose SIZE and SHAPE are right and whose `name=` is wrong. Only a per-entry row sees this |
 # | `rintk`'s `d.const_like(-0.5)` -> `+0.5` | `a_rintk#11`, `a_cw#19`.., `a_xsinf#35`, `a_xsin#140`, ... (+187) and `n_rintk`, `n_cw`, `n_xexp2`, `n_xsin`, `n_xsinf`, `sw30`, `sw7` | the sign of the rounding bias, which is `round away from 0` and not `round half up`. Every expansion that rounds moves |
-# | `ldexp2k`: `shr(e, 1)` -> `shr(e, 2)` | `a_ldexp2#10`..`#22`, `a_xexp2#49`.., ... (+37) and `n_ldexp2`, `n_xexp2` | header note 1: `shr` by a Python int is a `FLOORDIV` by `2**y`, and `y` is 1 |
+# | `ldexp2k`: `shr(e, 1)` -> `shr(e, 2)` | `a_ldexp2#10`..`#22`, `a_xexp2#49`.., ... (+37) and `n_ldexp2`, `n_xexp2` | header note 1: `shr` by a Python int is a `DIV` by `2**y`, and `y` is 1 |
 # | `payne_hanek`: `shl(p, 62)` -> `shl(p, 63)` | `a_ph#99`, `a_xsin#115` and nothing else | the `2**62` CONST is one node and one reader in each window; `n_ph` does not move because the node is still there |
 # | `xpow`: `ret.const_like(1)` -> `2.0` | `a_xpow#38`, `a_xpow#39`, `a_xpow#40`, `n_xpow` | `x ** 0 = 1`, and the CONST is the last node of the window |
 # | `xsin`'s `switch_over` hard-coded at 30.0 | `sw7` and nothing else | `switch_over` is a PARAMETER. This is the only mutation `sw30`/`sw7` exists to see, and it is why both rows are read at the SAME SLOT: the shape does not depend on the value |

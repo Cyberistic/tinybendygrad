@@ -32,7 +32,7 @@
 # `List` field, not a `Maybe` of a list (a `Data` record cannot hold a `Maybe` -- see the
 # notes, rule 15). `GFired{gs, ar}` is "matched, here are the per-src gradients" and `GSkip{}`
 # is "no opinion, keep scanning". The `ar` field is the arena AFTER the rule grew it, because
-# a gradient rule BUILDS nodes: `RECIPROCAL` is `(-ctx * ret * ret)`, three new nodes. `gs`
+# a gradient rule BUILDS nodes: `RECIP` is `(-ctx * ret * ret)`, three new nodes. `gs`
 # uses index 0 for a hole: index 0 is the arena's bottom node (`Arena.empty` spends it,
 # ops.bend:1377 symbol=Arena.empty) and `UOp.is_none(u) = U32.is_zero(u)`
 # (ops.bend:1376 symbol=UOp.is_none), so 0 IS tinygrad's own "no uop" and
@@ -221,7 +221,7 @@ def gmul(+ar: O.Arena, x: U32, y: U32) -> O.Found: gnew(ar, O.OpsMUL{}, [x, y], 
 # `neg` IS NOT `Ops.NEG`, and this is measured against the tree rather than read off.
 # `elementwise.py:74-76` defines `neg` as `alu(Ops.NEG)`, but by the time a gradient rule
 # sees the node the symbolic rules have rewritten NEG away: `UOp.const(1.0).neg()` has
-# `op=MUL` with srcs `(CONST(1.0), CONST(-1.0))`, and Python's tree for the `RECIPROCAL`
+# `op=MUL` with srcs `(CONST(1.0), CONST(-1.0))`, and Python's tree for the `RECIP`
 # gradient (gradient.py:68 `-ctx * ret * ret`) shows exactly that -- MULs and two
 # `CONST(-1.0)`, no NEG anywhere. `Ops.NEG` exists in the enum and `schedule/` lowers it;
 # emitting it here would build a graph Python never builds.
@@ -283,20 +283,20 @@ def glog2(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsLOG2{}, [x], O.ANone{}
 def gexp2(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsEXP2{}, [x], O.ANone{})
 def gsin(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsSIN{}, [x], O.ANone{})
 def gsqrt(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsSQRT{}, [x], O.ANone{})
-def grecip(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsRECIPROCAL{}, [x], O.ANone{})
+def grecip(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsRECIP{}, [x], O.ANone{})
 def gtrunc(+ar: O.Arena, x: U32) -> O.Found: gnew(ar, O.OpsTRUNC{}, [x], O.ANone{})
 
 # `x / y` IS NOT AN `FDIV` NODE, and this is the most surprising fact in the arithmetic
 # of this file. `div` (elementwise.py:229-259) is
 #
-#     if is_int(a) and is_int(b): ...CDIV / FLOORDIV...
+#     if is_int(a) and is_int(b): ...TRUNCDIV / DIV...
 #     if is_int(a.dtype) or a.dtype is bool: a = a.cast(dtypes.default_float)
 #     d = a.alu(Ops.MUL, b.reciprocal())
 #
-# so for two FLOATS it is `MUL(x, RECIPROCAL(y))` -- TWO nodes -- and `Ops.FDIV` is never
+# so for two FLOATS it is `MUL(x, RECIP(y))` -- TWO nodes -- and `Ops.FDIV` is never
 # emitted by `div` at all. Measured against Python: the `LOG2` gradient is
-# `MUL, RECIPROCAL, MUL, CONST, CONST` and the `SQRT` gradient is
-# `MUL, RECIPROCAL, MUL, SQRT, CONST, CONST`; neither contains an FDIV.
+# `MUL, RECIP, MUL, CONST, CONST` and the `SQRT` gradient is
+# `MUL, RECIP, MUL, SQRT, CONST, CONST`; neither contains an FDIV.
 # `gradient.py:70` (`ctx / (...)`) and `:72` (`ctx / (ret*2)`) are the only `/` users.
 def gdiv(+ar: O.Arena, x: U32, y: U32) -> O.Found:
   +r = grecip(ar, y)
@@ -361,7 +361,7 @@ def gr_0.go(+ar: O.Arena, ctx: U32, +self: U32, +fx: F.Folded) -> GRes:
 
 def gr_0(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_0.go(ar, ctx, self, F.folded(ar))
 
-# --- 1. RECIPROCAL -- gradient.py:68. `(-ctx * ret * ret,)`
+# --- 1. RECIP -- gradient.py:68. `(-ctx * ret * ret,)`
 #
 # `__neg__` is `self.neg()` = `alu(Ops.NEG)` (elementwise.py:74, :261), and the two `*`
 # are `alu(Ops.MUL)`. So this is THREE new nodes: NEG, MUL, MUL, and the gate row
@@ -392,7 +392,7 @@ def gr_2(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: gr_2.go(ar, ctx, self)
 # --- 3. LOG2 -- gradient.py:70. `(ctx / (ret.src[0] * math.log(2)),)`
 #
 # Two nodes: MUL by the folded `log(2)`, then FDIV. `/` is `__truediv__` -> `div`, which
-# at float dtype is `Ops.FDIV` -- NOT `Ops.CDIV`, which is the INTEGER divide.
+# at float dtype is `Ops.FDIV` -- NOT `Ops.TRUNCDIV`, which is the INTEGER divide.
 def gr_3.go(+ar: O.Arena, ctx: U32, +ret: U32) -> GRes:
   +c = gconst_raw(ar, k_ln2())
   +f1 = gmul(O.Found.ar(c), O.Arena.src(O.Found.ar(c), ret, 0), O.Found.i(c))
@@ -1033,7 +1033,7 @@ def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 def gr_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0,  [O.OpsCAST{}],                Nil{}},                        # 67
-    O.PMEntry{1,  [O.OpsRECIPROCAL{}],           Nil{}},                        # 68
+    O.PMEntry{1,  [O.OpsRECIP{}],           Nil{}},                        # 68
     O.PMEntry{2,  [O.OpsSIN{}],                  Nil{}},                        # 69
     O.PMEntry{3,  [O.OpsLOG2{}],                 Nil{}},                        # 70
     O.PMEntry{4,  [O.OpsEXP2{}],                 Nil{}},                        # 71
@@ -1650,7 +1650,7 @@ def fix.put(fx: F.Folded, t1: U32, t4: U32, t5: U32, t6: U32, t7: U32, t8: U32, 
 #   1 CONST 1.0       the seed ctx of every rule call
 #   2 CONST 0.5       POW's base
 #   3 CAST(1.0,int)   CAST's ret.src[0], whose dtype the rule reads
-#   4 RECIPROCAL(1)   tag 1
+#   4 RECIP(1)   tag 1
 #   5 SIN(1)          tag 2
 #   6 LOG2(1)         tag 3
 #   7 EXP2(1)         tag 4
@@ -1680,7 +1680,7 @@ def fix() -> Fix:
   +n1 = gconst(O.Arena.empty(), k_fone())
   +n2 = gconst(O.Found.ar(n1), k_fhalf())
   +n3 = gcast(O.Found.ar(n2), O.Found.i(n2), S.int32())
-  +n4 = gnew(O.Found.ar(n3), O.OpsRECIPROCAL{}, [O.Found.i(n1)], O.ANone{})
+  +n4 = gnew(O.Found.ar(n3), O.OpsRECIP{}, [O.Found.i(n1)], O.ANone{})
   +n5 = gnew(O.Found.ar(n4), O.OpsSIN{}, [O.Found.i(n1)], O.ANone{})
   +n6 = gnew(O.Found.ar(n5), O.OpsLOG2{}, [O.Found.i(n1)], O.ANone{})
   +n7 = gnew(O.Found.ar(n6), O.OpsEXP2{}, [O.Found.i(n1)], O.ANone{})

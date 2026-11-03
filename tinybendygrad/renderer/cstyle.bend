@@ -32,7 +32,7 @@
 #     it is the device TAG plus a `match` -- `code_for_op.of(dev, op, ..)`. The
 #     tag is the only per-device information the ALU table needs, and it is
 #     MEASURED: the six devices differ on exactly SIX of the twenty-one ops
-#     (SQRT, TRUNC, SIN, LOG2, EXP2, RECIPROCAL) plus Clang's FDIV, and every
+#     (SQRT, TRUNC, SIN, LOG2, EXP2, RECIP) plus Clang's FDIV, and every
 #     other op's rendering is the base's on all six.
 #   * `code_for_workitem` is `dict[Literal["g","l"], Callable]`. Same answer: the
 #     workitem id is a `String` argument and the device picks the spelling.
@@ -1043,7 +1043,7 @@ def render_buffer(+dev: U32, +d: S.Dt, numel: U32, +a: S.Addr, name: String) -> 
 #     so it is a parameter of the def rather than a per-arm read.
 #
 # THE DEVICE SPLIT IS MEASURED AND IT IS SMALL: Clang DROPS `EXP2`, `SIN`, `LOG2`
-# and `RECIPROCAL` entirely (they become libcalls the compiler lowers, cstyle.py:
+# and `RECIP` entirely (they become libcalls the compiler lowers, cstyle.py:
 # :288) and adds `FDIV`; CUDA and HIP keep all twenty-one and override six; Metal
 # overrides one (`SIN` -> `precise::sin`); OpenCL and QCOM change nothing. A
 # dropped op is a `KeyError` in Python, so the dropped arm is a gate row.
@@ -1056,7 +1056,7 @@ def cfo_unary(nm: String, +x: List<&2, String>) -> List<&2, String>: List.concat
 # `cfo_prefixed("", x)` would be `f"-{x}"` by accident and `cfo_prefixed("1/", x)`
 # would be `f"-1/({x})"` -- the unary template has the parens INSIDE, so neither
 # spelling of a prefix template reaches these two. MEASURED by the oracle:
-# RECIPROCAL is `(1/X)` and NEG is `-X`.
+# RECIP is `(1/X)` and NEG is `-X`.
 def cfo_recip(+x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["(1/"], x, [")"]])
 
 def cfo_neg(+x: List<&2, String>) -> List<&2, String>: List.concat(&2, String, [["-"], x])
@@ -1104,7 +1104,7 @@ def cfo_xs3(xs: List<&2, List<&2, String>>) -> List<&2, String>: xs_at(xs, 2n)
 def code_for_base.of(op: O.Op, +xs: List<&2, List<&2, String>>) -> List<&2, String>:
   match op:
     case O.OpsSQRT{}: cfo_unary("sqrt", cfo_xs1(xs))
-    case O.OpsRECIPROCAL{}: cfo_recip(cfo_xs1(xs))
+    case O.OpsRECIP{}: cfo_recip(cfo_xs1(xs))
     case O.OpsNEG{}: cfo_neg(cfo_xs1(xs))
     case O.OpsEXP2{}: cfo_unary("exp2", cfo_xs1(xs))
     case O.OpsLOG2{}: cfo_unary("log2", cfo_xs1(xs))
@@ -1116,8 +1116,8 @@ def code_for_base.of(op: O.Op, +xs: List<&2, List<&2, String>>) -> List<&2, Stri
     case O.OpsADD{}: cfo_bin(cfo_xs1(xs), "+", cfo_xs2(xs))
     case O.OpsSUB{}: cfo_bin(cfo_xs1(xs), "-", cfo_xs2(xs))
     case O.OpsMUL{}: cfo_bin(cfo_xs1(xs), "*", cfo_xs2(xs))
-    case O.OpsCMOD{}: cfo_bin(cfo_xs1(xs), "%", cfo_xs2(xs))
-    case O.OpsCDIV{}: cfo_bin(cfo_xs1(xs), "/", cfo_xs2(xs))
+    case O.OpsTRUNCMOD{}: cfo_bin(cfo_xs1(xs), "%", cfo_xs2(xs))
+    case O.OpsTRUNCDIV{}: cfo_bin(cfo_xs1(xs), "/", cfo_xs2(xs))
     case O.OpsCMPNE{}: cfo_bin(cfo_xs1(xs), "!=", cfo_xs2(xs))
     case O.OpsSHR{}: cfo_bin(cfo_xs1(xs), ">>", cfo_xs2(xs))
     case O.OpsSHL{}: cfo_bin(cfo_xs1(xs), "<<", cfo_xs2(xs))
@@ -1145,9 +1145,9 @@ def is_f64(+d: S.Dt) -> Bool: O.eq_dt(d, S.double())
 # spell "not one of those two".
 
 # CLANG: `SQRT` and `TRUNC` pick the `f64` spelling by dtype, `FDIV` is ADDED,
-# and `EXP2`/`SIN`/`LOG2`/`RECIPROCAL` are DELETED (cstyle.py:288-291). The
+# and `EXP2`/`SIN`/`LOG2`/`RECIP` are DELETED (cstyle.py:288-291). The
 # comprehension is `{k:v for k,v in base.items() if k not in [EXP2, SIN, LOG2,
-# TRUNC, RECIPROCAL]}` and then TRUNC and FDIV and SQRT are re-set, so TRUNC
+# TRUNC, RECIP]}` and then TRUNC and FDIV and SQRT are re-set, so TRUNC
 # SURVIVES and the other three do not. The deletion is the load-bearing half and
 # `cfo_unhandled` is its answer -- a `KeyError` in Python, and here a token that names
 # the op and cannot compile. THOSE FOUR ARMS STAY EXPLICIT even though all four now
@@ -1169,7 +1169,7 @@ def code_for_clang.of(op: O.Op, +xs: List<&2, List<&2, String>>, +d: S.Dt) -> Li
     case O.OpsEXP2{}: cfo_unhandled(op)
     case O.OpsSIN{}: cfo_unhandled(op)
     case O.OpsLOG2{}: cfo_unhandled(op)
-    case O.OpsRECIPROCAL{}: cfo_unhandled(op)
+    case O.OpsRECIP{}: cfo_unhandled(op)
     case _: code_for_base.of(op, xs)
 
 # METAL: `SIN` is the ONLY override and it is `precise::sin` for every dtype
@@ -1222,7 +1222,7 @@ def code_for_cuda.of(op: O.Op, +xs: List<&2, List<&2, String>>, +d: S.Dt) -> Lis
     case O.OpsLOG2{}: cuda_pick(is_half(d), "hlog2", "log2", cfo_xs1(xs))
     case O.OpsEXP2{}: cuda_pick(is_half(d), "hexp2", "exp2", cfo_xs1(xs))
     case O.OpsSQRT{}: cuda_pick(is_half(d), "hsqrt", "sqrt", cfo_xs1(xs))
-    case O.OpsRECIPROCAL{}: cuda_rcp(is_half(d), cfo_xs1(xs))
+    case O.OpsRECIP{}: cuda_rcp(is_half(d), cfo_xs1(xs))
     case _: code_for_base.of(op, xs)
 
 # THE DISPATCH. Five devices and the base, and OpenCL and QCOM are the BASE --
@@ -1754,7 +1754,8 @@ def ku_indent(depth: U32) -> String:
 
 def ku_inline2a(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
   Bool.or(Bool.and(O.eq_op(op, O.OpsCAST{}), ku_is_const_at(kus, KU.src0(k))),
-    Bool.or(O.eq_op(op, O.OpsINDEX{}), O.eq_op(op, O.OpsSHRINK{})))
+    Bool.or(Bool.or(O.eq_op(op, O.OpsINDEX{}), O.eq_op(op, O.OpsSHRINK{})),
+      Bool.or(O.eq_op(op, O.OpsCUSTOMI{}), O.eq_op(op, O.OpsREFPARAM{}))))
 
 # `(u.op is Ops.LOAD and u.src[0].addrspace == AddrSpace.REG and child_count[u] == 1)`
 def ku_inline2b2a(+op: O.Op, +k: KU) -> Bool:
@@ -1914,7 +1915,7 @@ def ku_inline2b(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
 def ku_inline2(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
   Bool.or(ku_inline2a(op, k, kus), ku_inline2b(op, k, kus))
 
-# `(u.op is Ops.CAST and u.src[0].op is Ops.CONST) or u.op in {Ops.INDEX, Ops.SHRINK, Ops.CUSTOMI}`
+# `(u.op is Ops.CAST and u.src[0].op is Ops.CONST) or u.op in {Ops.INDEX, Ops.SHRINK, Ops.CUSTOMI, Ops.REFPARAM}`
 def ku_inline(+op: O.Op, +k: KU, +kus: List<&2, List<&2, KU>>) -> Bool:
   Bool.and(Bool.or(Bool.not(O.eq_op(op, O.OpsCAST{})), U32.is_eq(KU.numel(k), 1)),
     ku_inline2(op, k, kus))
@@ -2250,9 +2251,16 @@ def dtw(+d: S.Dt) -> Nat:
 def ku_ccw.at(ix: Nat, +s: String, +d: S.Dt, +dev: U32, +i: H.I64) -> String:
   match ix:
     case 0n: String.concat([s, "l"])
-    case 1n: String.concat([s, "ul"])
+    case 1n: String.concat([H.i64_udec(i), "ul"])
     case 2n: String.concat([U32.show(H.lo32(i)), "u"])
-    case 3n: Bool.pick(String, H.i64_is_neg(i), "0", "1")
+    # `"1" if c.val else "0"` (cstyle.py:29) is a test of ZERO, not of the SIGN: the port asked
+    # `i64_is_neg`, which answers "0" only for a negative constant, so a bool constant `False` rendered
+    # `1`. MEASURED against the oracle (`PARITY.md` §116): every `exp` kernel diverged on `==1` vs `==0`.
+    case 3n: Bool.pick(String, H.i64_is_zero(i), "0", "1")
+    # `f"({ctx.render_cast(x, f'{c.val}u')})"` (cstyle.py:33, the uint8/uint16 arm): the SUFFIX is part of
+    # the text, so `(unsigned char)(127)` is wrong where upstream says `(unsigned char)(127u)`.
+    case 4n: ku_cast_wrapped(dev, d, String.concat([s, "u"]))
+    case 5n: ku_cast_wrapped(dev, d, String.concat([s, "u"]))
     case 8n: s
     case _: ku_cast_wrapped(dev, d, s)
 
@@ -2435,11 +2443,24 @@ def bitcast_named(+dev: U32, +d: S.Dt, +sd: S.Dt, +s: String) -> String:
     case 4: String.concat([bitcast_head(dev, d), ", (", render_dtype_legacy(dev, sd), ")(", s, "))"])
     case _: String.concat([bitcast_head(dev, d), "((", render_dtype_legacy(dev, sd), ")(", s, "))"])
 
+# **TWO PARENS, NOT THREE.** upstream cstyle.py:42-43 is `f"(({_render_dtype(x.dtype, addrspace=x.addrspace)})({ctx[x.src[0]]}))"`
+# and `_render_dtype` returns a bare spelling like `unsigned long*` (cstyle.py:191-202 adds only a prefix and a
+# `*`), so the cast text is `((unsigned long*)(args_24))`. MEASURED: the port carried a third `(` here and it was
+# INVISIBLE until the packed-args ABI made a GLOBAL BITCAST appear in every kernel (PARITY.md §116).
 def bitcast_text(+dev: U32, +a: S.Addr, +d: S.Dt, +sd: S.Dt, +s: String) -> String:
   match a:
-    case S.AGlobal{}: String.concat(["(((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
-    case S.ALocal{}: String.concat(["(((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
+    case S.AGlobal{}: String.concat(["((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
+    case S.ALocal{}: String.concat(["((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
     case _: bitcast_named(dev, d, sd, s)
+
+# `f"(({ctx.param_type(x)})({ctx[x.src[1]]}))"` (cstyle.py:44), where `param_type` is
+# `_render_dtype(x.dtype, 1, x.addrspace, mutable=True, override_ptr=x.addrspace != ALU)` (cstyle.py:277):
+# the pointer spelling comes from the ADDRSPACE, never from a buffer. REFPARAM exists only since the
+# packed-args ABI (`codegen/__init__.py:422-427`), which rewrites every non-ALU param read to
+# `REFPARAM(p.src[0], <load from args>)`.
+def ku_text_refparam(+dev: U32, +k: KU, +r: Rows) -> String:
+  String.concat(["((", render_dtype(dev, KU.dtype(k), 1, KU.addr(k), True{}, Bool.not(is_alu_addr(KU.addr(k))), False{}),
+    ")(", String.join(rtp(r, KU.src1(k)), ""), "))"])
 
 def ku_text_bitcast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   [bitcast_text(dev, KU.addr(k), KU.dtype(k), ku_dt_at(kus, KU.src0(k)), String.join(rtp(r, KU.src0(k)), ""))]
@@ -2516,6 +2537,7 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, 
     case O.OpsBACKEDGE{}: [ku_text_backedge(dev, k, kus, r)]
     case O.OpsCAST{}: ku_text_cast(dev, k, kus, r)
     case O.OpsBITCAST{}: ku_text_bitcast(dev, k, kus, r)
+    case O.OpsREFPARAM{}: [ku_text_refparam(dev, k, r)]
     case O.OpsBARRIER{}: [barrier.of(dev)]
     case O.OpsINDEX{}: ku_render_index(dev, k, kus, r)
     case O.OpsSHRINK{}: ku_render_index(dev, k, kus, r)

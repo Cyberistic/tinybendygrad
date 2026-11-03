@@ -1625,7 +1625,7 @@ def stage_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape
 # This file ports no rule engine, so it cannot RUN it. What it CAN decide is the ONE
 # place in `symbolic` whose pattern names PARAM or a SPECIAL, symbolic.py:269-270:
 #
-#   (UPat({Ops.CMPLT, Ops.CMPNE, Ops.FLOORDIV, Ops.FLOORMOD, Ops.PARAM, Ops.AFTER,
+#   (UPat({Ops.CMPLT, Ops.CMPNE, Ops.DIV, Ops.MOD, Ops.PARAM, Ops.AFTER,
 #         Ops.SPECIAL}, name="x"), lambda x: x.const_like(x.vmin) if x.vmin == x.vmax
 #         else None)
 #
@@ -2434,6 +2434,7 @@ def addrspace_of.rest(+op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Addr>:
 def addrspace_of(arg: O.Arg, op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Addr>:
   match op:
     case O.OpsPARAM{}: addrspace_of.param(arg)
+    case O.OpsREFPARAM{}: addrspace_of.param(arg)
     case O.OpsBUFFER{}: addrspace_of.param(arg)
     case O.OpsALLOC{}: addrspace_of.param(arg)
     case O.OpsBINARY{}: Some{S.AGlobal{}}
@@ -2559,7 +2560,7 @@ def is_invalid(+ar: O.Arena, +u: U32) -> Bool:
 def unary_dt(ar: O.Arena, +ss: List<&2, Derived>) -> S.Dt:
   unary_dt.go(is_invalid(ar, src_base(0, ss)), src_dt(0, ss))
 
-# SIN | LOG2 | EXP2 | SQRT | RECIPROCAL: `return dtypes.bool if
+# SIN | LOG2 | EXP2 | SQRT | RECIP: `return dtypes.bool if
 # src[0].base.is_invalid else least_upper_float(src[0].dtype)`, and `_shape`'s
 # `GroupOp.Unary.union({Ops.CAST})` arm `return self.src[0]._shape`
 def unary_ds(ar: O.Arena, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
@@ -2675,6 +2676,7 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsBUFFER{}: param_ds(arg, O.ParamArg.size(ar, i))
     case O.OpsALLOC{}: param_ds(arg, O.ParamArg.size(ar, i))
     case O.OpsPARAM{}: param_ds(arg, O.ParamArg.size(ar, i))
+    case O.OpsREFPARAM{}: param_ds(arg, O.ParamArg.size(ar, i))
     case O.OpsCALL{}: call_ds(arg)
     case O.OpsINS{}: ins_ds(arg)
     case O.OpsCAST{}: cast_ds(arg, ss)
@@ -2750,7 +2752,7 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsLOG2{}: unary_ds(ar, ss)
     case O.OpsSIN{}: unary_ds(ar, ss)
     case O.OpsSQRT{}: unary_ds(ar, ss)
-    case O.OpsRECIPROCAL{}: unary_ds(ar, ss)
+    case O.OpsRECIP{}: unary_ds(ar, ss)
 
     # `return dtypes.bool`, then the Broadcastable arm. NOTE: CMPLT, CMPNE, CMPEQ,
 # WHERE, SHL and SHR are handled here rather than by the GroupOp fallbacks.
@@ -2772,16 +2774,16 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # with shape must match"
     case O.OpsADD{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsMUL{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
-    case O.OpsCDIV{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
+    case O.OpsTRUNCDIV{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsMAX{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
-    case O.OpsCMOD{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
+    case O.OpsTRUNCMOD{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsXOR{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsOR{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsAND{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsSUB{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsPOW{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
-    case O.OpsFLOORDIV{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
-    case O.OpsFLOORMOD{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
+    case O.OpsDIV{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
+    case O.OpsMOD{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
     case O.OpsMULACC{}: alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)
 
     # THE DEFERRED OPS, and there are now only TWO of them -- the five movement arms
@@ -3791,7 +3793,7 @@ def bnd_lim(+d: S.Dt, top: Bool) -> Bnd:
 #     lands on `(dtype.min, dtype.max)`.
 #   * the `Ops.LOAD`-from-`Ops.BINARY` arm -- it needs `self.src[0].buf_uop`, a `while`
 #     over five ops (ops.py:1053-1071) that mints a node the arena never interned.
-#   * `CMOD`/`CDIV`/`FLOORDIV`/`FLOORMOD` need SIGNED division and `mm.dm.*` is an
+#   * `TRUNCMOD`/`TRUNCDIV`/`DIV`/`MOD` need SIGNED division and `mm.dm.*` is an
 #     UNSIGNED restoring divider. `mm.sn.div` below is the signed core and it is gated;
 #     the four arms that call it are the next block, not this one.
 # ===========================================================================
@@ -7385,7 +7387,7 @@ def main() -> IO(Unit):
 #   MAIN fold, so a node `dt_shape` defers has no interval -- and that is the measured
 #   divergence, not an estimate. WHAT IS STILL MISSING IS FOUR THINGS, and none of them is
 #   the walk:
-#     * FOUR SIGNED-DIVISION ARMS: `CMOD`, `CDIV`, `FLOORDIV`, `FLOORMOD`. `mm.dm.*` is an
+#     * FOUR SIGNED-DIVISION ARMS: `TRUNCMOD`, `TRUNCDIV`, `DIV`, `MOD`. `mm.dm.*` is an
 #       UNSIGNED restoring divider and `mm.sn.div` is the signed core and is LANDED, so
 #       these four are arithmetic on top of a landed core rather than a new wall.
 #     * `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend` and
@@ -7457,7 +7459,7 @@ def main() -> IO(Unit):
 #       `(False, True)` instead of refusing. So the refused set is `STAGE`, `CUSTOM`,
 #       `CUSTOMI`, `UNSHARD` and a symbolic-marg RESHAPE -- four ops and a special case,
 #       and `STAGE` is the only one of them a fixture in this file's gate can reach.
-#     2. FOUR SIGNED-DIVISION ARMS: `CMOD`, `CDIV`, `FLOORDIV`, `FLOORMOD`. `mm.dm.*` is
+#     2. FOUR SIGNED-DIVISION ARMS: `TRUNCMOD`, `TRUNCDIV`, `DIV`, `MOD`. `mm.dm.*` is
 #       an UNSIGNED restoring divider, and all four need signed `//` -- a FLOOR and not a
 #       truncation -- plus the remainder. `divandmod.bend` is the consumer. `mm.sn.div`
 #       is the signed core and it is LANDED, so these four are arithmetic on top of it.

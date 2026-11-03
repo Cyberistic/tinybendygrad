@@ -98,7 +98,7 @@ def addr_of(nm: String) -> S.Addr:
     case "r": S.AReg{}
     case _: S.Aalu{}
 
-# ENUM-PIN af08eecb67ba77d6
+# ENUM-PIN 56feedfd5ba184a9
 # **THE ARMS ARE ORDERED BY MEASURED FREQUENCY, NOT BY THE ENUM.** `match` is a linear chain of string
 # comparisons, so an arm costs (its position) compares -- at enum order that averages ~38 per uop over 75
 # members. MEASURED over the 5 fixture kernels (782 uops): eight op names cover
@@ -106,81 +106,82 @@ def addr_of(nm: String) -> S.Addr:
 # cannot move, and `ksweep` and the corpus are the proof.
 def op_by_idx(nm: String) -> O.Op:
   match nm:
-    case "29": O.OpsADD{}
-    case "15": O.OpsINDEX{}
-    case "56": O.OpsCONST{}
-    case "20": O.OpsCAST{}
-    case "30": O.OpsMUL{}
-    case "17": O.OpsLOAD{}
-    case "36": O.OpsCMPLT{}
-    case "18": O.OpsSTORE{}
-    case "12": O.OpsAFTER{}
+    case "30": O.OpsADD{}
+    case "16": O.OpsINDEX{}
+    case "57": O.OpsCONST{}
+    case "21": O.OpsCAST{}
+    case "31": O.OpsMUL{}
+    case "18": O.OpsLOAD{}
+    case "37": O.OpsCMPLT{}
+    case "19": O.OpsSTORE{}
+    case "13": O.OpsAFTER{}
     case "5": O.OpsPARAM{}
-    case "48": O.OpsWHERE{}
-    case "51": O.OpsRANGE{}
-    case "53": O.OpsEND{}
-    case "16": O.OpsSHRINK{}
-    case "41": O.OpsAND{}
-    case "31": O.OpsSHL{}
-    case "11": O.OpsSINK{}
-    case "13": O.OpsSTACK{}
+    case "49": O.OpsWHERE{}
+    case "52": O.OpsRANGE{}
+    case "54": O.OpsEND{}
+    case "17": O.OpsSHRINK{}
+    case "42": O.OpsAND{}
+    case "32": O.OpsSHL{}
+    case "12": O.OpsSINK{}
+    case "14": O.OpsSTACK{}
     case "1": O.OpsBUFFER{}
     case "0": O.OpsSPECIAL{}
     case "2": O.OpsALLOC{}
     case "3": O.OpsNOOP{}
     case "4": O.OpsREWRITE_ERROR{}
-    case "6": O.OpsCALL{}
-    case "7": O.OpsPROGRAM{}
-    case "8": O.OpsLINEAR{}
-    case "9": O.OpsSOURCE{}
-    case "10": O.OpsBINARY{}
-    case "14": O.OpsGETADDR{}
-    case "19": O.OpsWMMA{}
-    case "21": O.OpsBITCAST{}
-    case "22": O.OpsEXP2{}
-    case "23": O.OpsLOG2{}
-    case "24": O.OpsSIN{}
-    case "25": O.OpsSQRT{}
-    case "26": O.OpsRECIPROCAL{}
-    case "27": O.OpsNEG{}
-    case "28": O.OpsTRUNC{}
-    case "32": O.OpsSHR{}
-    case "33": O.OpsCDIV{}
-    case "34": O.OpsMAX{}
-    case "35": O.OpsCMOD{}
-    case "37": O.OpsCMPNE{}
-    case "38": O.OpsCMPEQ{}
-    case "39": O.OpsXOR{}
-    case "40": O.OpsOR{}
-    case "42": O.OpsTHREEFRY{}
-    case "43": O.OpsSUB{}
-    case "44": O.OpsFDIV{}
-    case "45": O.OpsPOW{}
-    case "46": O.OpsFLOORDIV{}
-    case "47": O.OpsFLOORMOD{}
-    case "49": O.OpsMULACC{}
-    case "50": O.OpsBARRIER{}
-    case "52": O.OpsIF{}
-    case "54": O.OpsENDIF{}
-    case "55": O.OpsBACKEDGE{}
-    case "57": O.OpsCUSTOM{}
-    case "58": O.OpsCUSTOMI{}
-    case "59": O.OpsINS{}
-    case "60": O.OpsCONTIGUOUS_BACKWARD{}
-    case "61": O.OpsDETACH{}
-    case "62": O.OpsSTAGE{}
-    case "63": O.OpsCOPY{}
-    case "64": O.OpsMSELECT{}
-    case "65": O.OpsMSTACK{}
-    case "66": O.OpsCUSTOM_FUNCTION{}
-    case "67": O.OpsRESHAPE{}
-    case "68": O.OpsPERMUTE{}
-    case "69": O.OpsEXPAND{}
-    case "70": O.OpsPAD{}
-    case "71": O.OpsUNSHARD{}
-    case "72": O.OpsREDUCE{}
-    case "73": O.OpsALLREDUCE{}
-    case "74": O.OpsPYLITERAL{}
+    case "7": O.OpsCALL{}
+    case "8": O.OpsPROGRAM{}
+    case "9": O.OpsLINEAR{}
+    case "10": O.OpsSOURCE{}
+    case "11": O.OpsBINARY{}
+    case "15": O.OpsGETADDR{}
+    case "20": O.OpsWMMA{}
+    case "22": O.OpsBITCAST{}
+    case "23": O.OpsEXP2{}
+    case "24": O.OpsLOG2{}
+    case "25": O.OpsSIN{}
+    case "26": O.OpsSQRT{}
+    case "27": O.OpsRECIP{}
+    case "28": O.OpsNEG{}
+    case "29": O.OpsTRUNC{}
+    case "33": O.OpsSHR{}
+    case "34": O.OpsTRUNCDIV{}
+    case "35": O.OpsMAX{}
+    case "36": O.OpsTRUNCMOD{}
+    case "38": O.OpsCMPNE{}
+    case "39": O.OpsCMPEQ{}
+    case "40": O.OpsXOR{}
+    case "41": O.OpsOR{}
+    case "43": O.OpsTHREEFRY{}
+    case "44": O.OpsSUB{}
+    case "45": O.OpsFDIV{}
+    case "46": O.OpsPOW{}
+    case "47": O.OpsDIV{}
+    case "48": O.OpsMOD{}
+    case "50": O.OpsMULACC{}
+    case "51": O.OpsBARRIER{}
+    case "53": O.OpsIF{}
+    case "55": O.OpsENDIF{}
+    case "56": O.OpsBACKEDGE{}
+    case "58": O.OpsCUSTOM{}
+    case "59": O.OpsCUSTOMI{}
+    case "60": O.OpsINS{}
+    case "61": O.OpsCONTIGUOUS_BACKWARD{}
+    case "62": O.OpsDETACH{}
+    case "63": O.OpsSTAGE{}
+    case "64": O.OpsCOPY{}
+    case "65": O.OpsMSELECT{}
+    case "66": O.OpsMSTACK{}
+    case "67": O.OpsCUSTOM_FUNCTION{}
+    case "68": O.OpsRESHAPE{}
+    case "69": O.OpsPERMUTE{}
+    case "70": O.OpsEXPAND{}
+    case "71": O.OpsPAD{}
+    case "72": O.OpsUNSHARD{}
+    case "73": O.OpsREDUCE{}
+    case "74": O.OpsALLREDUCE{}
+    case "75": O.OpsPYLITERAL{}
+    case "6": O.OpsREFPARAM{}
     case _: O.OpsCONST{}
 
 def op_of(+nm: String) -> O.Op: op_by_idx(nm)

@@ -54,9 +54,9 @@
 #                                                                       an `IO(F32)`-style EFFECT SEAM
 #   MUL                                 i64_mul                 NOWHERE. Not helpers.bend, not
 #                                                                       dtype.bend, not any tinygrad .py.
-#   CDIV/FLOORDIV                       i64_div                 `Dt.i64_cdiv` / `Dt.i64_floor_div` --
+#   TRUNCDIV/DIV                       i64_div                 `Dt.i64_cdiv` / `Dt.i64_floor_div` --
 #                                                                       dtype.bend:567,563, EFFECT SEAMS
-#   FLOORMOD/CMOD                       i64_mod                 `Dt.i64_floor_mod` / `Dt.i64_cmod` --
+#   MOD/TRUNCMOD                       i64_mod                 `Dt.i64_floor_mod` / `Dt.i64_cmod` --
 #                                                                       dtype.bend:563,571, EFFECT SEAMS
 #   SHL/SHR                             i64 shift               NOWHERE.
 # SO THE WALL IS NOT "three helpers are missing", which is what `uop/weak.bend` and

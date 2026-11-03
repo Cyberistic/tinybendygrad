@@ -172,7 +172,7 @@ import ./../LAWS/spec.bend as S
 #     M4: 6 rows, disagree 10 -> 16.
 #   `create_bounded` built `Le(vmin, sym)`. With `vmin` a Python `int`, validate.py:51 REFLECTS
 #     and z3 receives `Ge(sym, vmin)`. M6: 24 rows, disagree 10 -> 29.
-#   `Ops.MAX` was reaching the `k`-tag ladder as `k = 0` and being silently FLOORMODded. `dv_max`
+#   `Ops.MAX` was reaching the `k`-tag ladder as `k = 0` and being silently MODded. `dv_max`
 #     is the row that found it. M7: 3 rows, disagree 10 -> 13.
 #   `range_str` and the violation join both DROPPED their first element (a `Bool` flag that took
 #     the accumulator arm on the head), which is why `dv_const_ok` printed `[]` where CPython
@@ -180,7 +180,7 @@ import ./../LAWS/spec.bend as S
 #   `Sol.put` appended every node's TERM to the assertion list. M8: 34 rows, 10 -> 33.
 #   `z3_lt` -- z3 canonicalises `a < n` to `n > a` when `n` is a z3 numeral and NOT when it is a
 #     Python `int`, and `python_alu[CMPLT]` is `operator.lt`. M9: 5 rows, 15 -> 18.
-#   `Ops.CDIV` was `k = 2`, i.e. `z3_floordiv`, and those are DIFFERENT FUNCTIONS. Two `z3_alu`
+#   `Ops.TRUNCDIV` was `k = 2`, i.e. `z3_floordiv`, and those are DIFFERENT FUNCTIONS. Two `z3_alu`
 #     keys on one tag, and for a POSITIVE divisor they agree on shape and disagree on nothing
 #     visible -- which is why nothing caught it. `dv_cdiv4` caught it.
 #   NO PARENTHESES AT ALL: `dv_xor_m1` printed `-r0 + 1` where CPython prints `-(r0 + 1)`, and
@@ -189,7 +189,7 @@ import ./../LAWS/spec.bend as S
 # WHAT THE EIGHT NEW `z3_alu` ROWS FOUND ON THEIR FIRST RUN, which is the argument for adding them
 # rather than only naming the gap: before them 4 of the 11 keys had a fixture that REACHED them
 # and SEVEN did not, `n_z3_alu=11` passed throughout, and the first gate run over the new rows
-# reported FOUR defects -- `Ops.CDIV` floormodded, the missing parentheses, and `z3_xor's` `-(x+1)`
+# reported FOUR defects -- `Ops.TRUNCDIV` floormodded, the missing parentheses, and `z3_xor's` `-(x+1)`
 # printing as `-x + 1`. **A membership count is not coverage; eight rows found three real bugs the
 # day they were written.**
 #
@@ -1012,18 +1012,18 @@ def ren_7.put(m: Maybe<&1, U32>, is_bool: Bool, +s: Sol) -> Ren:
 def ren_8.put(+x: ZAt, +sb: Bool, +db: Bool, +s: Sol) -> Ren:
   Bool.pick(Ren, ZAt.hit(x), Ren{s, zat.hit(z3_cast(sb, db, ZAt.t(x)))}, Ren{s, x})
 
-# `k` is 1 CMOD, 2 CDIV/FLOORDIV, 3 FLOORMOD -- `ren_9.go`'s tag for the four `z3_alu`
-# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is FLOORMOD, so a tag this
-# ladder does not know becomes FLOORMOD rather than an error; `dv_max` is the row that caught
+# `k` is 1 TRUNCMOD, 2 TRUNCDIV/DIV, 3 MOD -- `ren_9.go`'s tag for the four `z3_alu`
+# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is MOD, so a tag this
+# ladder does not know becomes MOD rather than an error; `dv_max` is the row that caught
 # `Ops.MAX` arriving as `k = 0` and being silently floormodded.
-# `k` is 1 CMOD, 2 CDIV/FLOORDIV, 3 FLOORMOD -- `ren_9.go`'s tag for the four `z3_alu`
-# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is FLOORMOD, so a tag this
-# ladder does not know becomes FLOORMOD rather than an error; `dv_max` is the row that caught
+# `k` is 1 TRUNCMOD, 2 TRUNCDIV/DIV, 3 MOD -- `ren_9.go`'s tag for the four `z3_alu`
+# entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is MOD, so a tag this
+# ladder does not know becomes MOD rather than an error; `dv_max` is the row that caught
 # `Ops.MAX` arriving as `k = 0` and being silently floormodded.
-# `k` is 1 CMOD, 2 FLOORDIV, 3 FLOORMOD, 4 CDIV -- and the LAST arm is FLOORMOD, so an
+# `k` is 1 TRUNCMOD, 2 DIV, 3 MOD, 4 TRUNCDIV -- and the LAST arm is MOD, so an
 # unrecognised tag is silently floormodded. That default is what let `Ops.MAX` arrive as `k = 0`
-# and be rendered as FLOORMOD (`ren_9.mx.mk` below, and `dv_max` is the row).
-# ⚠ `Ops.CDIV` WAS `k = 2`, i.e. `z3_floordiv`, AND THAT IS A DIFFERENT FUNCTION. `z3_cdiv`
+# and be rendered as MOD (`ren_9.mx.mk` below, and `dv_max` is the row).
+# ⚠ `Ops.TRUNCDIV` WAS `k = 2`, i.e. `z3_floordiv`, AND THAT IS A DIFFERENT FUNCTION. `z3_cdiv`
 # (validate.py:12) truncates toward zero and only its `a < 0` arm differs from `z3_floordiv`'s
 # `b > 0` test, so for a POSITIVE divisor the two agree on the shape and disagree on nothing
 # visible -- which is exactly why no row caught it. `dv_cdiv4` caught it: the port printed
@@ -1037,11 +1037,11 @@ def ren_9.b2.mk(+k: U32, +a: Z, +b: Z) -> Z:
                                    ZSub{a, ZMul{z3_floordiv(a, b), b}})))
 
 # ⚠ A REAL DEFECT WAS HERE AND NO ROW COVERED IT. `Ops.MAX` was reaching this ladder as `k =
-# 0`, which is neither 2 (FLOORDIV) nor 1 (CMOD), so it fell through to the FLOORMOD arm:
+# 0`, which is neither 2 (DIV) nor 1 (TRUNCMOD), so it fell through to the MOD arm:
 # `validate.py:47`'s `Ops.MAX: lambda _,a,b: z3.If(a<b, b, a)` was rendered as
 # `a - floordiv(a,b)*b`. `MAX` is a `z3_alu` key (`n_z3_alu=11` counts it) and `ren_9.go`
 # routed it here, so this was reachable from `uops_to_z3` and INVISIBLE: zero fixtures used
-# MAX, and `Ops.FLOORMOD` is a real key too, so a mistranslation here is invisible to a
+# MAX, and `Ops.MOD` is a real key too, so a mistranslation here is invisible to a
 # membership count. `dv_max` is the row, and it is in the oracle.
 def ren_9.mx.mk(+a: Z, +b: Z) -> Z:
   ZIf{z3_lt(a, b), b, a}
@@ -1086,7 +1086,7 @@ def ren_t8(+ar: O.Arena, +self: U32) -> Bool:
 # table linear (the notes' "CLOSURE IN A DATATYPE FIELD" section), and the KEYS
 # are all this rule reads. `n_z3_alu` is the COUNT row that pins the membership.
 def z3_alu_ops() -> List<&2, O.Op>:
-  [O.OpsCMOD{}, O.OpsCDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsWHERE{},
+  [O.OpsTRUNCMOD{}, O.OpsTRUNCDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsWHERE{},
    O.OpsMAX{}, O.OpsAND{}, O.OpsOR{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}]
 
 # the six terms the integer `python_alu` arms produce. `k` is 1 ADD, 2 SUB,
@@ -1639,7 +1639,7 @@ def ren_t5(+ar: O.Arena, +fx: F.Folded, +self: U32) -> Bool:
 
 # rule 10 -- `GroupOp.ALU` minus `z3_alu`, i.e. `python_alu`. The integer ops
 # are `operator.*` and are one `Z` constructor each. The FLOAT ops
-# (LOG2/EXP2/SQRT/RECIPROCAL/SIN/POW/TRUNC) and FDIV are NOT PORTED: they are
+# (LOG2/EXP2/SQRT/RECIP/SIN/POW/TRUNC) and FDIV are NOT PORTED: they are
 # `math.*` on a SYMBOLIC z3 value, which CPython itself cannot do -- MEASURED,
 # `python_alu[TRUNC]` on a z3 int is `TypeError: must be real number, not
 # ArithRef` and `python_alu[FDIV]` is a `KeyError`. They are also UNREACHABLE
@@ -1817,10 +1817,10 @@ def ren_9.bv(k: U32, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
 
 def ren_9.go(op: O.Op, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   match op:
-    case O.OpsCMOD{}: ren_9.b2(1, ar, s, self)
-    case O.OpsCDIV{}: ren_9.b2(4, ar, s, self)
-    case O.OpsFLOORDIV{}: ren_9.b2(2, ar, s, self)
-    case O.OpsFLOORMOD{}: ren_9.b2(3, ar, s, self)
+    case O.OpsTRUNCMOD{}: ren_9.b2(1, ar, s, self)
+    case O.OpsTRUNCDIV{}: ren_9.b2(4, ar, s, self)
+    case O.OpsDIV{}: ren_9.b2(2, ar, s, self)
+    case O.OpsMOD{}: ren_9.b2(3, ar, s, self)
     case O.OpsMAX{}: ren_9.mx(ar, s, self)
     case O.OpsWHERE{}: ren_9.w3(ar, s, self)
     case O.OpsAND{}: ren_9.bv(bv_and(), ar, s, self)
@@ -2356,8 +2356,8 @@ def dv_and.of(+ar: O.Arena, nm: String, k: U32) -> String:
 # --- `Ops.MAX`, and THIS ROW EXISTS BECAUSE A DEFECT HAD NO ROW.
 # `validate.py:47` is `Ops.MAX: lambda _,a,b: z3.If(a<b, b, a)`, and `Ops.MAX` is one of the
 # eleven `z3_alu` keys (`n_z3_alu=11`), but `ren_9.mx` was routing it into the `k`-tag ladder
-# as `k = 0` -- which is neither 2 (FLOORDIV) nor 1 (CMOD) -- so it silently took the LAST arm
-# and `r0 & 21`-shaped MAX rendered as `a - floordiv(a,b)*b`, i.e. FLOORMOD. Reachable from
+# as `k = 0` -- which is neither 2 (DIV) nor 1 (TRUNCMOD) -- so it silently took the LAST arm
+# and `r0 & 21`-shaped MAX rendered as `a - floordiv(a,b)*b`, i.e. MOD. Reachable from
 # `uops_to_z3`, invisible to every existing row, and invisible to `n_z3_alu` because the key
 # set was right and only the TRANSLATION was wrong. A membership count cannot see this; a
 # value row can.
@@ -2383,23 +2383,23 @@ def dv_alu.of(op: O.Op, k: U32, nm: String) -> String:
 # `RANGE(100) op CONST(4)` for the four arms whose TAG decides the answer. `Ops.MAX` proved a tag
 # can be wrong with no error anywhere, so each of the four `k`-tagged builders gets its own row
 # rather than sharing one with a comment.
-# --- `Ops.CDIV` (validate.py:45), and the only row reaching `z3_cdiv` at all -- including its
+# --- `Ops.TRUNCDIV` (validate.py:45), and the only row reaching `z3_cdiv` at all -- including its
 # inner `0<b` test, which is `ZGt` and not `ZLt` because Python reflects.
 def dv_cdiv4() -> String:
-  dv_alu.of(O.OpsCDIV{}, 4, "dv_cdiv4")
+  dv_alu.of(O.OpsTRUNCDIV{}, 4, "dv_cdiv4")
 
-# --- `Ops.CMOD`: `a - z3_cdiv(a,b)*b`, so its text CONTAINS `z3_cdiv`'s whole `If` plus `* b`.
+# --- `Ops.TRUNCMOD`: `a - z3_cdiv(a,b)*b`, so its text CONTAINS `z3_cdiv`'s whole `If` plus `* b`.
 def dv_cmod4() -> String:
-  dv_alu.of(O.OpsCMOD{}, 4, "dv_cmod4")
+  dv_alu.of(O.OpsTRUNCMOD{}, 4, "dv_cmod4")
 
-# --- `Ops.FLOORDIV` (validate.py:46), the other `0<b`-shaped test and a different one.
+# --- `Ops.DIV` (validate.py:46), the other `0<b`-shaped test and a different one.
 def dv_floordiv4() -> String:
-  dv_alu.of(O.OpsFLOORDIV{}, 4, "dv_floordiv4")
+  dv_alu.of(O.OpsDIV{}, 4, "dv_floordiv4")
 
-# --- `Ops.FLOORMOD`: `a - z3_floordiv(a,b)*b`. This is the `k = 3` arm `Ops.MAX` was silently
+# --- `Ops.MOD`: `a - z3_floordiv(a,b)*b`. This is the `k = 3` arm `Ops.MAX` was silently
 # falling into, so this row is what makes that confusion impossible to repeat.
 def dv_floormod4() -> String:
-  dv_alu.of(O.OpsFLOORMOD{}, 4, "dv_floormod4")
+  dv_alu.of(O.OpsMOD{}, 4, "dv_floormod4")
 
 # --- `z3_or`'s bit-blast, and the THIRD caller of `z3_bv` after AND and XOR. No constant case in
 # Python either, which is why `r | (r << 1)` in test_validate_oob.py:113 is a BV expression.

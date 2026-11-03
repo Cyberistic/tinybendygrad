@@ -198,7 +198,7 @@
 # the thirteen nodes `_softmax` (op.py:657 symbol=_softmax) builds are interned ONCE.
 # `log_softmax` prints 18 over a graph whose shared prefix is 13 nodes -- MEASURED on
 # both sides: the first thirteen op names of the longer row are the shorter row minus
-# its last two -- and the tails are `RECIPROCAL MUL` against `LOG2 CONST MUL MUL ADD`.
+# its last two -- and the tails are `RECIP MUL` against `LOG2 CONST MUL MUL ADD`.
 # The row prints BOTH signatures from ONE arena. See its own comment for the half of
 # the claim that no arena can see: a DUPLICATED `_softmax` re-interns the same nodes,
 # because the arena is a hashcons.
@@ -573,12 +573,12 @@ def mo_bin(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
 # `mo_bin` WITHOUT THE RIGHT-HAND PROMOTION, and that difference is the whole of
 # `div`. `mo_bin` IS `_binop` (elementwise.py:36) -- promote both, then `alu` -- and
 # `_binop` promotes ONCE. `div` (elementwise.py:229-259) is NOT `_binop`: it
-# promotes both in `_broadcasted`, builds the RECIPROCAL of the promoted right-hand
+# promotes both in `_broadcasted`, builds the RECIP of the promoted right-hand
 # side, and then `alu`s that WITHOUT promoting again -- elementwise.py:253 says so:
 # "alu, not *: _broadcasted already promoted these, and a second promote would cast
 # 1/b (only a weak CONST is kept weak)".
-# THE RECIPROCAL OF A WEAK CONST IS WEAK, so the second promotion is a REAL CAST,
-# not a no-op: MEASURED 2026-10-23, `mo_bin` put a `CAST/1` between the RECIPROCAL
+# THE RECIP OF A WEAK CONST IS WEAK, so the second promotion is a REAL CAST,
+# not a no-op: MEASURED 2026-10-23, `mo_bin` put a `CAST/1` between the RECIP
 # and the MUL in ELEVEN of this gate's rows.
 #
 # `mo_alu2` IS THE ARENA-LEVEL NODE BUILDER FOR A TWO-SOURCE `alu`; THIS IS THE
@@ -875,7 +875,7 @@ def mo_max(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # `mixin/elementwise.py` methods it spells, and each carries the line it ports.
 # ===========================================================================
 
-# `reciprocal` -- elementwise.py:468. `self.alu(Ops.RECIPROCAL)`, and `E.ew_reciprocal`
+# `reciprocal` -- elementwise.py:468. `self.alu(Ops.RECIP)`, and `E.ew_reciprocal`
 # IS that one line, so this is the CALL -- elementwise.bend's own export, reused.
 def mo_recip(+t: T.Tensor) -> T.Tensor: E.ew_reciprocal(t)
 
@@ -887,18 +887,18 @@ def mo_recip(+t: T.Tensor) -> T.Tensor: E.ew_reciprocal(t)
 # which is precisely what the oracle's six-node `t_mean0` says.
 # THE ORDER IS `_broadcasted` THEN `reciprocal` (elementwise.py:250-255), so the
 # promotion has already lifted the weakint CONST to weakfloat by the time the
-# RECIPROCAL is built. MEASURED: taking the reciprocal FIRST printed a `CAST/1` where
+# RECIP is built. MEASURED: taking the reciprocal FIRST printed a `CAST/1` where
 # CPython prints none -- `t_mean0` was 6 nodes against CPython's 5 -- because the
-# promotion then had to CAST a RECIPROCAL instead of REMINTing a CONST.
+# promotion then had to CAST a RECIP instead of REMINTing a CONST.
 #
 # AND THERE IS NO SECOND PROMOTION, and that is the whole of the difference from
 # `mo_bin`. elementwise.py:253 says it in as many words: "alu, not *: _broadcasted
 # already promoted these, and a second promote would cast 1/b (only a weak CONST is
 # kept weak)". `_broadcasted` promotes BOTH operands ONCE; `div` then builds the
-# RECIPROCAL of the promoted right-hand side -- which is a weakfloat, because a weak
+# RECIP of the promoted right-hand side -- which is a weakfloat, because a weak
 # CONST is KEPT WEAK -- and `alu`s it WITHOUT promoting again.
-# MEASURED 2026-10-23, on this tree: `mo_bin` promoted the RECIPROCAL, so the port
-# printed `RECIPROCAL/1 CAST/1 MUL/2` where CPython prints `RECIPROCAL/1 MUL/2` --
+# MEASURED 2026-10-23, on this tree: `mo_bin` promoted the RECIP, so the port
+# printed `RECIP/1 CAST/1 MUL/2` where CPython prints `RECIP/1 MUL/2` --
 # ELEVEN of this gate's rows, all of them the same one extra `CAST/1`, and the
 # DENOMINATOR's VALUE (`f4.000000`) was RIGHT ON BOTH SIDES. The `val_*` rows are
 # what made that visible: a signature prints `CONST/0` and the payload lives in the
@@ -909,8 +909,8 @@ def mo_div(+t: T.Tensor, +c: T.Tensor) -> T.Tensor:
 
 # `x.div(n)` for a Python `int` `n`, which is `mean`'s `denominator` and `var`'s
 # `smax(n - correction, 0)`. `ufix` (ops.py:606) turns it into a weakint CONST and
-# `promote` lifts it to `weakfloat`, so the node is `MUL(a, RECIPROCAL(const))` -- and
-# `t_mean0` printing `REDUCE CONST RECIPROCAL MUL` rather than a `DIV` is the row that
+# `promote` lifts it to `weakfloat`, so the node is `MUL(a, RECIP(const))` -- and
+# `t_mean0` printing `REDUCE CONST RECIP MUL` rather than a `DIV` is the row that
 # says so.
 def mo_divn(+t: T.Tensor, n: U32) -> T.Tensor:
   mo_div(t, mo_const_t(t, mo_ki(n)))
@@ -1150,10 +1150,10 @@ def Softmax3.ss(s: Softmax3) -> T.Tensor:
     case Softmax3{m, e, ss}: ss
 
 # `e * ss.reciprocal()` -- `mo_alu2` rather than `E.ew_mul` for W9's reason, and with the
-# RECIPROCAL BOUND FIRST for `mo_const_t`'s reason: written inline as
+# RECIP BOUND FIRST for `mo_const_t`'s reason: written inline as
 # `mo_alu2(Tensor.ar(ss), u(ee), OpsMUL{}, u(mo_recip(ss)))` the arena is read before
 # the reciprocal is interned. MEASURED: `t_softmax0` printed eleven nodes against
-# CPython's fifteen, missing exactly `REDUCE/1 RESHAPE/2 RECIPROCAL/1 MUL/2`.
+# CPython's fifteen, missing exactly `REDUCE/1 RESHAPE/2 RECIP/1 MUL/2`.
 def mo_softmax(+t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
   +sx = mo_softmax3(t, axis)
   +ee = Softmax3.e(sx)
@@ -1389,7 +1389,7 @@ def t_min0kd() -> IO(Unit):
   mo_sig_t("min0kd", mo_min(True{}, x, mo_ax(False{}, x, 0)))
 
 # --- 11-15: the mean family. `t_mean0` is the five-node row and it is the one that
-# says `div` by a Python `int` is `MUL(x, RECIPROCAL(const))` and NOT a `DIV`.
+# says `div` by a Python `int` is `MUL(x, RECIP(const))` and NOT a `DIV`.
 
 def t_mean0() -> IO(Unit):
   +x = mo_fx1d()
@@ -1506,7 +1506,7 @@ def t_softmin0() -> IO(Unit):
 # pin the three outputs as three DISTINCT nodes.
 #
 # `softmax` prints 15 and `log_softmax` prints 18, and 15 - 13 = 2 and 18 - 13 = 5,
-# which is `RECIPROCAL MUL` for one and `LOG2 CONST MUL MUL ADD` for the other.
+# which is `RECIP MUL` for one and `LOG2 CONST MUL MUL ADD` for the other.
 # BOTH ROWS IN ONE `IO.print`, because a def body is one expression and because the
 # POINT of the row is that the two signatures come out of ONE arena -- if they came
 # from two, the sharing would not be measured at all.

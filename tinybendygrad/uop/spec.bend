@@ -901,12 +901,12 @@ def sh_8(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_SHIFTS()), nsrc_is(fx, self, 2)), sp_vb(sh_8.body(fx, self)))
 
 def OP_IDIVS() -> List<&2, O.Op>:
-  [O.OpsCDIV{}, O.OpsCMOD{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}]
+  [O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsDIV{}, O.OpsMOD{}]
 
 def sh_9.body(+fx: F.Folded, +self: U32) -> Bool:
   Bool.or(sp_is_int(fx, self), any_base_invalid(sp_srcs(fx, self), fx, False{}))
 
-# spec.py:73  (UPat((Ops.CDIV, Ops.CMOD, Ops.FLOORDIV, Ops.FLOORMOD), name="x"),
+# spec.py:73  (UPat((Ops.TRUNCDIV, Ops.TRUNCMOD, Ops.DIV, Ops.MOD), name="x"),
 #              lambda x: None if dtypes.is_int(x.dtype) or any(s.base.is_invalid for s in x.src)
 #                        else False)
 # `None` rather than `False`, which is load-bearing for every later rule for these ops.
@@ -1288,11 +1288,11 @@ def sh_33(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsWMMA{}), nsrc_is(fx, self, 3)), sp_vb(arg_wmma(sp_arg(fx, self))))
 
 def OP_ALU.go() -> List<&2, O.Op>:
-  [O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}, O.OpsNEG{},
-   O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{}, O.OpsMAX{},
-   O.OpsCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsOR{},
-   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{},
-   O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}]
+  [O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIP{}, O.OpsNEG{},
+   O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsTRUNCDIV{}, O.OpsMAX{},
+   O.OpsTRUNCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsOR{},
+   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{},
+   O.OpsMOD{}, O.OpsWHERE{}, O.OpsMULACC{}]
 
 def OP_ALU() -> List<&2, O.Op>:
   OP_ALU.go()
@@ -1621,7 +1621,7 @@ def sp_and_vdr(facts: Bool, vdr: Maybe<&1, Bool>) -> Maybe<&1, Bool>:
   sp_and_vdr.go(facts, vdr)
 
 def OP_FUN1() -> List<&2, O.Op>:
-  [O.OpsSIN{}, O.OpsLOG2{}, O.OpsEXP2{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}]
+  [O.OpsSIN{}, O.OpsLOG2{}, O.OpsEXP2{}, O.OpsSQRT{}, O.OpsRECIP{}]
 
 # ===========================================================================
 # `spec_tensor` -- spec.py:143-202. Twenty-three rules, then `+ spec_shared`.
@@ -1629,7 +1629,7 @@ def OP_FUN1() -> List<&2, O.Op>:
 # so the table is this list FOLLOWED BY `shared_table()`'s, in that order, and the
 # tag space restarts at 0.
 # ===========================================================================
-# spec.py:144 (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIPROCAL), src=(UPat(),), name="u"),
+# spec.py:144 (UPat((Ops.SIN, Ops.LOG2, Ops.EXP2, Ops.SQRT, Ops.RECIP), src=(UPat(),), name="u"),
 #              lambda u: dtypes.is_float(u.dtype) or u.src[0].base.is_invalid)
 def te_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op_in(fx, self, OP_FUN1()), nsrc_is(fx, self, 1)),
@@ -2228,14 +2228,14 @@ def pr_8(+fx: F.Folded, +self: U32) -> O.Verdict:
 # `Bool`-per-op predicate, and it is what `pdict` does anyway.
 def OP_ALL() -> List<&2, O.Op>:
   [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{},
-   O.OpsPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{},
+   O.OpsPARAM{}, O.OpsREFPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{},
    O.OpsPYLITERAL{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsSTACK{}, O.OpsGETADDR{},
    O.OpsINDEX{}, O.OpsSHRINK{}, O.OpsLOAD{}, O.OpsSTORE{}, O.OpsWMMA{}, O.OpsCAST{},
-   O.OpsBITCAST{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{},
-   O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{},
-   O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsOR{},
-   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{},
-   O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}, O.OpsBARRIER{}, O.OpsRANGE{}, O.OpsIF{},
+   O.OpsBITCAST{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIP{},
+   O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsTRUNCDIV{},
+   O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsOR{},
+   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{},
+   O.OpsMOD{}, O.OpsWHERE{}, O.OpsMULACC{}, O.OpsBARRIER{}, O.OpsRANGE{}, O.OpsIF{},
    O.OpsEND{}, O.OpsENDIF{}, O.OpsBACKEDGE{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsINS{},
    O.OpsCONTIGUOUS_BACKWARD{}, O.OpsDETACH{}, O.OpsSTAGE{}, O.OpsCOPY{}, O.OpsMSELECT{},
    O.OpsMSTACK{}, O.OpsCUSTOM_FUNCTION{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{},

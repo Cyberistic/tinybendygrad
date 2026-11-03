@@ -540,14 +540,14 @@ def op_of(nm: String) -> Maybe<&1, O.Op>:
     case "CMPLT": Some{O.OpsCMPLT{}}
     case "CMPEQ": Some{O.OpsCMPEQ{}}
     case "CMPNE": Some{O.OpsCMPNE{}}
-    case "CDIV": Some{O.OpsCDIV{}}
-    case "CMOD": Some{O.OpsCMOD{}}
-    case "FLOORDIV": Some{O.OpsFLOORDIV{}}
-    case "FLOORMOD": Some{O.OpsFLOORMOD{}}
+    case "TRUNCDIV": Some{O.OpsTRUNCDIV{}}
+    case "TRUNCMOD": Some{O.OpsTRUNCMOD{}}
+    case "DIV": Some{O.OpsDIV{}}
+    case "MOD": Some{O.OpsMOD{}}
     case "LOG2": Some{O.OpsLOG2{}}
     case "EXP2": Some{O.OpsEXP2{}}
     case "SQRT": Some{O.OpsSQRT{}}
-    case "RECIPROCAL": Some{O.OpsRECIPROCAL{}}
+    case "RECIP": Some{O.OpsRECIP{}}
     case "SIN": Some{O.OpsSIN{}}
     case "POW": Some{O.OpsPOW{}}
     case "TRUNC": Some{O.OpsTRUNC{}}
@@ -605,10 +605,10 @@ def got(c: Maybe<&1, O.Const>, d: S.Dt) -> Elem:
 
 # `python_alu` (ops.py:1417-1424) is a PYTHON-NUMBER table, so the ops whose
 # result is a float whatever the operand type are the float lane always, and the
-# rest follow the operands. LOG2/EXP2/SQRT/RECIPROCAL/SIN are `math.*` lambdas
+# rest follow the operands. LOG2/EXP2/SQRT/RECIP/SIN are `math.*` lambdas
 # that return a float for an int argument, and POW is `safe_pow`.
 def op_is_mathy(op: O.Op) -> Bool:
-  O.op_in([O.OpsLOG2{}, O.OpsEXP2{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}, O.OpsSIN{},
+  O.op_in([O.OpsLOG2{}, O.OpsEXP2{}, O.OpsSQRT{}, O.OpsRECIP{}, O.OpsSIN{},
     O.OpsPOW{}], op)
 
 # `ops_python.py:126-127` increments `values[u][j]`, and :129 compares against

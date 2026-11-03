@@ -1505,13 +1505,13 @@ def op_row(nm: String, py: String, op: O.Op) -> IO(Unit):
 # `uops_color` total rather than partial.
 def op_list() -> List<&2, O.Op>:
   List.concat(&2, O.Op, [
-    [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{}, O.OpsPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}],
+    [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{}, O.OpsPARAM{}, O.OpsREFPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}],
     [O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsSTACK{}, O.OpsGETADDR{}],
     [O.OpsINDEX{}, O.OpsSHRINK{}, O.OpsLOAD{}, O.OpsSTORE{}, O.OpsWMMA{}, O.OpsCAST{}, O.OpsBITCAST{}, O.OpsEXP2{}],
-    [O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}, O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}],
-    [O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}],
-    [O.OpsXOR{}, O.OpsOR{}, O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{}],
-    [O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}, O.OpsBARRIER{}, O.OpsRANGE{}, O.OpsIF{}, O.OpsEND{}, O.OpsENDIF{}],
+    [O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIP{}, O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}],
+    [O.OpsSHL{}, O.OpsSHR{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}],
+    [O.OpsXOR{}, O.OpsOR{}, O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{}],
+    [O.OpsMOD{}, O.OpsWHERE{}, O.OpsMULACC{}, O.OpsBARRIER{}, O.OpsRANGE{}, O.OpsIF{}, O.OpsEND{}, O.OpsENDIF{}],
     [O.OpsBACKEDGE{}, O.OpsCONST{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsINS{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsDETACH{}, O.OpsSTAGE{}],
     [O.OpsCOPY{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsCUSTOM_FUNCTION{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}],
     [O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}, O.OpsPYLITERAL{}]])
@@ -1840,16 +1840,16 @@ def main() -> IO(Unit):
     op_row("op_color.LOG2", "#ffffc0", O.OpsLOG2{})
     op_row("op_color.SIN", "#ffffc0", O.OpsSIN{})
     op_row("op_color.SQRT", "#ffffc0", O.OpsSQRT{})
-    op_row("op_color.RECIPROCAL", "#ffffc0", O.OpsRECIPROCAL{})
+    op_row("op_color.RECIP", "#ffffc0", O.OpsRECIP{})
     op_row("op_color.NEG", "#ffffc0", O.OpsNEG{})
     op_row("op_color.TRUNC", "#ffffc0", O.OpsTRUNC{})
     op_row("op_color.ADD", "#ffffc0", O.OpsADD{})
     op_row("op_color.MUL", "#ffffc0", O.OpsMUL{})
     op_row("op_color.SHL", "#ffffc0", O.OpsSHL{})
     op_row("op_color.SHR", "#ffffc0", O.OpsSHR{})
-    op_row("op_color.CDIV", "#ffffc0", O.OpsCDIV{})
+    op_row("op_color.TRUNCDIV", "#ffffc0", O.OpsTRUNCDIV{})
     op_row("op_color.MAX", "#ffffc0", O.OpsMAX{})
-    op_row("op_color.CMOD", "#ffffc0", O.OpsCMOD{})
+    op_row("op_color.TRUNCMOD", "#ffffc0", O.OpsTRUNCMOD{})
     op_row("op_color.CMPLT", "#ffffc0", O.OpsCMPLT{})
     op_row("op_color.CMPNE", "#ffffc0", O.OpsCMPNE{})
     op_row("op_color.CMPEQ", "#ffffc0", O.OpsCMPEQ{})
@@ -1860,8 +1860,8 @@ def main() -> IO(Unit):
     op_row("op_color.SUB", "#ffffc0", O.OpsSUB{})
     op_row("op_color.FDIV", "#ffffc0", O.OpsFDIV{})
     op_row("op_color.POW", "#ffffc0", O.OpsPOW{})
-    op_row("op_color.FLOORDIV", "#ffffc0", O.OpsFLOORDIV{})
-    op_row("op_color.FLOORMOD", "#ffffc0", O.OpsFLOORMOD{})
+    op_row("op_color.DIV", "#ffffc0", O.OpsDIV{})
+    op_row("op_color.MOD", "#ffffc0", O.OpsMOD{})
     op_row("op_color.WHERE", "#ffffc0", O.OpsWHERE{})
     op_row("op_color.MULACC", "#ffffc0", O.OpsMULACC{})
     op_row("op_color.BARRIER", "#ff8080", O.OpsBARRIER{})

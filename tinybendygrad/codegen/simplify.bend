@@ -488,7 +488,7 @@ def pm_simplify_ranges() -> List<&2, O.PMEntry>:
    O.PMEntry{3, [O.OpsSINK{}], Nil{}}]                  # simplify.py:72  SINK do_substitute
 
 def pm_split_ranges() -> List<&2, O.PMEntry>:
-  [O.PMEntry{0, [O.OpsFLOORMOD{}], Nil{}},              # simplify.py:80  RANGE % cvar -> FLOORMOD
+  [O.PMEntry{0, [O.OpsMOD{}], Nil{}},              # simplify.py:80  RANGE % cvar -> MOD
    O.PMEntry{1, [O.OpsSINK{}], Nil{}}]                  # simplify.py:81  SINK do_substitute
 
 # `pm_reduce_collapse`'s OWN seven, in Python's order (simplify.py:109-125). The

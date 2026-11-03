@@ -807,8 +807,8 @@ def syms_of(op: O.Op) -> String:
   match op:
     case O.OpsADD{}: "+"
     case O.OpsSUB{}: "-"
-    case O.OpsFLOORDIV{}: "//"
-    case O.OpsFLOORMOD{}: "%"
+    case O.OpsDIV{}: "//"
+    case O.OpsMOD{}: "%"
     case O.OpsSHL{}: "<<"
     case O.OpsSHR{}: ">>"
     case O.OpsMUL{}: "*"
@@ -828,8 +828,8 @@ def syms_of(op: O.Op) -> String:
 def precedence_of(op: O.Op) -> U32:
   match op:
     case O.OpsMUL{}: 1
-    case O.OpsFLOORDIV{}: 1
-    case O.OpsFLOORMOD{}: 1
+    case O.OpsDIV{}: 1
+    case O.OpsMOD{}: 1
     case O.OpsADD{}: 2
     case O.OpsSUB{}: 2
     case O.OpsSHL{}: 3
@@ -852,7 +852,7 @@ def has_precedence(op: O.Op) -> Bool: U32.is_lt(precedence_of(op), 99)
 # differed, this def would need a tag for "which code_for_op" and the arms would
 # be duplicated; nothing in render.py does that.
 #
-# The `if` is not decoration. CDIV and CMOD are in `syms` and NOT in
+# The `if` is not decoration. TRUNCDIV and TRUNCMOD are in `syms` and NOT in
 # `precedence`, so they reach the first line and the srcs are never read -- which
 # is why `has_precedence` is a parameter of the arm rather than a second `if`.
 # ===========================================================================
@@ -1103,7 +1103,7 @@ def srcs(+c: Ctx, +srcs: List<&2, U32>) -> String:
 #   * `REDUCE` is claimed by rule 7 (when `arg[1]` is nonzero) AND by the `sugar`
 #     rules. Rule 7 is earlier, so a REDUCE with num_axes 0 renders as
 #     `c0.reduce()` and one with num_axes 3 as `c0._rop(Ops.ADD, (0, 1, 2))`.
-#   * `SUB` is in `syms` and NOT in rule 12's set (`syms - {SUB, CDIV, CMOD}`), so
+#   * `SUB` is in `syms` and NOT in rule 12's set (`syms - {SUB, TRUNCDIV, TRUNCMOD}`), so
 #     it goes straight to the fallback and prints `UOp(Ops.SUB, (..))`. That is
 #     why the arm list below omits it, and the gate pins it.
 # ===========================================================================
@@ -1572,9 +1572,9 @@ def pmp.range.of(any: Bool, isconst: Bool, one: Bool, +ar: O.Arena, +ctx: Ctx, +
 def pmp.range(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.range.of(Nat.is_le(1n, List.length(&2, U32, O.Arena.srcs(ar, u))), is_const(ar, O.Arena.src0(ar, u)), range_one_id(range_ids(ar, u)), ar, ctx, u)
 
-# RULES 9, 10 and 11 -- CDIV, CMOD and WHERE all render through `.alu(...)`, and
-# the comment above them says why: `//` and `%` parse as FLOORDIV/FLOORMOD so CDIV
-# and CMOD cannot be written infix, `.where` re-promotes its operands, and the
+# RULES 9, 10 and 11 -- TRUNCDIV, TRUNCMOD and WHERE all render through `.alu(...)`, and
+# the comment above them says why: `//` and `%` parse as DIV/MOD so TRUNCDIV
+# and TRUNCMOD cannot be written infix, `.where` re-promotes its operands, and the
 # binary operators re-promote too.
 def pmp.alu.where(+ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
   String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", O.Ops.name(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 2)), ")"])
@@ -1582,7 +1582,7 @@ def pmp.alu.where(+ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
 def pmp.alu.bin(+ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
   String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".alu(", O.Ops.name(O.Arena.op(ar, u)), ", ", ctx_get(ctx, O.Arena.src(ar, u, 1)), ")"])
 
-# RULE 12: `UPat(set(syms.keys())-{Ops.SUB, Ops.CDIV, Ops.CMOD})` ->
+# RULE 12: `UPat(set(syms.keys())-{Ops.SUB, Ops.TRUNCDIV, Ops.TRUNCMOD})` ->
 #   strip_binary_parens(x, ctx[src0], ctx[src1], ..) if `x.src[0]._broadcasted(x.src[1]) == x.src`
 #   else `f"{ctx[x.src[0]]}.alu({x.op}, {ctx[x.src[1]]})"`.
 #
@@ -1824,15 +1824,15 @@ def pmp.go.of(op: O.Op, ar: O.Arena, tb: F.Table, ctx: Ctx, u: U32) -> String:
     case O.OpsCUSTOM_FUNCTION{}: pmp.cfn(ar, ctx, u)
     case O.OpsREDUCE{}: pmp.reduce(ar, ctx, u)
     case O.OpsRANGE{}: pmp.range(ar, ctx, u)
-    case O.OpsCDIV{}: pmp.alu.bin(ar, ctx, u)
-    case O.OpsCMOD{}: pmp.alu.bin(ar, ctx, u)
+    case O.OpsTRUNCDIV{}: pmp.alu.bin(ar, ctx, u)
+    case O.OpsTRUNCMOD{}: pmp.alu.bin(ar, ctx, u)
     case O.OpsWHERE{}: pmp.alu.where(ar, ctx, u)
     case O.OpsADD{}: pmp.syms(ar, ctx, u)
     case O.OpsMUL{}: pmp.syms(ar, ctx, u)
     case O.OpsSHL{}: pmp.syms(ar, ctx, u)
     case O.OpsSHR{}: pmp.syms(ar, ctx, u)
-    case O.OpsFLOORDIV{}: pmp.syms(ar, ctx, u)
-    case O.OpsFLOORMOD{}: pmp.syms(ar, ctx, u)
+    case O.OpsDIV{}: pmp.syms(ar, ctx, u)
+    case O.OpsMOD{}: pmp.syms(ar, ctx, u)
     case O.OpsAND{}: pmp.syms(ar, ctx, u)
     case O.OpsXOR{}: pmp.syms(ar, ctx, u)
     case O.OpsOR{}: pmp.syms(ar, ctx, u)
@@ -1848,7 +1848,7 @@ def pmp.go.of(op: O.Op, ar: O.Arena, tb: F.Table, ctx: Ctx, u: U32) -> String:
     case O.OpsBACKEDGE{}: pmp.sugar(ar, ctx, u)
     case O.OpsAFTER{}: pmp.sugar(ar, ctx, u)
     case O.OpsTHREEFRY{}: pmp.sugar(ar, ctx, u)
-    case O.OpsRECIPROCAL{}: pmp.sugar(ar, ctx, u)
+    case O.OpsRECIP{}: pmp.sugar(ar, ctx, u)
     case O.OpsEXP2{}: pmp.sugar(ar, ctx, u)
     case O.OpsLOG2{}: pmp.sugar(ar, ctx, u)
     case O.OpsSIN{}: pmp.sugar(ar, ctx, u)
@@ -2479,18 +2479,18 @@ def g_range2() -> O.Found:
   +b = f_const(O.Found.ar(a), 0)
   O.UOp.new(O.Found.ar(b), O.OpsRANGE{}, [O.Found.i(a), O.Found.i(b)], O.ARange{[0], O.AXIS_LOOP{}}, O.TNone{})
 
-# RULE 9. `UOp.const(7).alu(Ops.CDIV, UOp.const(2))` -- CDIV is excluded from
-# rule 12 because `//` parses as FLOORDIV, so it can only be written `.alu`.
+# RULE 9. `UOp.const(7).alu(Ops.TRUNCDIV, UOp.const(2))` -- TRUNCDIV is excluded from
+# rule 12 because `//` parses as DIV, so it can only be written `.alu`.
 def g_cdiv() -> O.Found:
   +a = f_const(O.Arena.empty(), 7)
   +b = f_const(O.Found.ar(a), 2)
-  O.UOp.alu(O.Found.ar(b), O.OpsCDIV{}, [O.Found.i(a), O.Found.i(b)])
+  O.UOp.alu(O.Found.ar(b), O.OpsTRUNCDIV{}, [O.Found.i(a), O.Found.i(b)])
 
-# RULE 10. CMOD, the `%` sibling of rule 9 -- same arm, different op.
+# RULE 10. TRUNCMOD, the `%` sibling of rule 9 -- same arm, different op.
 def g_cmod() -> O.Found:
   +a = f_const(O.Arena.empty(), 7)
   +b = f_const(O.Found.ar(a), 2)
-  O.UOp.alu(O.Found.ar(b), O.OpsCMOD{}, [O.Found.i(a), O.Found.i(b)])
+  O.UOp.alu(O.Found.ar(b), O.OpsTRUNCMOD{}, [O.Found.i(a), O.Found.i(b)])
 
 # RULE 11. `.alu(Ops.WHERE, ...)` with THREE srcs, because `.where` re-promotes
 # its operands and so cannot be written infix.
@@ -3235,7 +3235,7 @@ def main() -> IO(Unit):
     IO.print("dev_repr Dn      = [" ++ dev_repr(S.Dn{[0, 2]}) ++ "]   py=('CPU', 'METAL')")
     IO.print("syms_of MUL      = [" ++ syms_of(O.OpsMUL{}) ++ "]   py=*")
     IO.print("prec_of MUL      = [" ++ U32.show(precedence_of(O.OpsMUL{})) ++ "]   py=1")
-    IO.print("prec_of CDIV     = [" ++ U32.show(precedence_of(O.OpsCDIV{})) ++ "]   py=99")
+    IO.print("prec_of TRUNCDIV     = [" ++ U32.show(precedence_of(O.OpsTRUNCDIV{})) ++ "]   py=99")
     IO.print("arg_repr ANone   = [" ++ arg_repr(O.Arena.empty(), 0, O.ANone{}) ++ "]   py=None")
     IO.print("arg_repr ADt     = [" ++ arg_repr(O.Arena.empty(), 0, O.ADt{S.int32()}) ++ "]   py=dtypes.i32")
     IO.print("arg_repr AStr    = [" ++ arg_repr(O.Arena.empty(), 0, O.AStr{"g"}) ++ "]   py='g'")

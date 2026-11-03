@@ -246,7 +246,7 @@ def c(+d: S.Dt, unsigned: Bool) -> String: c.arm1(d, Bool.and(c.in_uints(d), uns
 # against live CPython did not exist until `gates/nir_render-gate.py` did.
 #
 # `s_aop`'s FIVE overrides are the whole difference between the two integer
-# tables and they are NOT the ones a reader would guess. CMPLT, CDIV, CMOD, MAX
+# tables and they are NOT the ones a reader would guess. CMPLT, TRUNCDIV, TRUNCMOD, MAX
 # and SHR change; ADD, MUL, CMPNE, CMPEQ, OR, AND, XOR, WHERE and SHL are
 # spelled the SAME for signed and unsigned -- NINE shared spellings, FIVE
 # diverging ones. So each table is its own match rather than `u_aop` plus a
@@ -474,8 +474,8 @@ def u_aop(op: O.Op) -> String:
   match op:
     case O.OpsADD{}: "iadd"
     case O.OpsMUL{}: "imul"
-    case O.OpsCDIV{}: "udiv"
-    case O.OpsCMOD{}: "umod"
+    case O.OpsTRUNCDIV{}: "udiv"
+    case O.OpsTRUNCMOD{}: "umod"
     case O.OpsCMPLT{}: "ult"
     case O.OpsCMPNE{}: "ine"
     case O.OpsCMPEQ{}: "ieq"
@@ -492,8 +492,8 @@ def s_aop(op: O.Op) -> String:
   match op:
     case O.OpsADD{}: "iadd"
     case O.OpsMUL{}: "imul"
-    case O.OpsCDIV{}: "idiv"
-    case O.OpsCMOD{}: "irem"
+    case O.OpsTRUNCDIV{}: "idiv"
+    case O.OpsTRUNCMOD{}: "irem"
     case O.OpsCMPLT{}: "ilt"
     case O.OpsCMPNE{}: "ine"
     case O.OpsCMPEQ{}: "ieq"
@@ -514,7 +514,7 @@ def f_aop(op: O.Op) -> String:
     case O.OpsCMPNE{}: "fneu"
     case O.OpsCMPEQ{}: "feq"
     case O.OpsFDIV{}: "fdiv"
-    case O.OpsRECIPROCAL{}: "frcp"
+    case O.OpsRECIP{}: "frcp"
     case O.OpsMAX{}: "fmax"
     case O.OpsTRUNC{}: "ftrunc"
     case O.OpsSIN{}: "fsin"
@@ -530,8 +530,8 @@ def u_aop.rev(nm: String) -> String:
   match nm:
     case "iadd": "ADD"
     case "imul": "MUL"
-    case "udiv": "CDIV"
-    case "umod": "CMOD"
+    case "udiv": "TRUNCDIV"
+    case "umod": "TRUNCMOD"
     case "ult": "CMPLT"
     case "ine": "CMPNE"
     case "ieq": "CMPEQ"
@@ -548,8 +548,8 @@ def s_aop.rev(nm: String) -> String:
   match nm:
     case "iadd": "ADD"
     case "imul": "MUL"
-    case "idiv": "CDIV"
-    case "irem": "CMOD"
+    case "idiv": "TRUNCDIV"
+    case "irem": "TRUNCMOD"
     case "ilt": "CMPLT"
     case "ine": "CMPNE"
     case "ieq": "CMPEQ"
@@ -570,7 +570,7 @@ def f_aop.rev(nm: String) -> String:
     case "fneu": "CMPNE"
     case "feq": "CMPEQ"
     case "fdiv": "FDIV"
-    case "frcp": "RECIPROCAL"
+    case "frcp": "RECIP"
     case "fmax": "MAX"
     case "ftrunc": "TRUNC"
     case "fsin": "SIN"
@@ -617,16 +617,16 @@ def aop_keys() -> List<&2, S.Dt>:
 
 # THE FOURTEEN OP NAMES, IN `u_aop`'s OWN ORDER (nir.py:19-20). The oracle emits
 # each table's real `dict` order, so a reordering is a diff and not a set match.
-def u_ops() -> List<&2, String>: ["ADD","MUL","CDIV","CMOD","CMPLT","CMPNE","CMPEQ","OR","AND","XOR","WHERE","MAX","SHL","SHR"]
+def u_ops() -> List<&2, String>: ["ADD","MUL","TRUNCDIV","TRUNCMOD","CMPLT","CMPNE","CMPEQ","OR","AND","XOR","WHERE","MAX","SHL","SHR"]
 
-def f_ops() -> List<&2, String>: ["ADD","MUL","CMPLT","CMPNE","CMPEQ","FDIV","RECIPROCAL","MAX","TRUNC","SIN","EXP2","LOG2","SQRT"]
+def f_ops() -> List<&2, String>: ["ADD","MUL","CMPLT","CMPNE","CMPEQ","FDIV","RECIP","MAX","TRUNC","SIN","EXP2","LOG2","SQRT"]
 
 def op_of(nm: String) -> O.Op:
   match nm:
     case "ADD": O.OpsADD{}
     case "MUL": O.OpsMUL{}
-    case "CDIV": O.OpsCDIV{}
-    case "CMOD": O.OpsCMOD{}
+    case "TRUNCDIV": O.OpsTRUNCDIV{}
+    case "TRUNCMOD": O.OpsTRUNCMOD{}
     case "CMPLT": O.OpsCMPLT{}
     case "CMPNE": O.OpsCMPNE{}
     case "CMPEQ": O.OpsCMPEQ{}
@@ -641,7 +641,7 @@ def op_of(nm: String) -> O.Op:
     case "SHL": O.OpsSHL{}
     case "SHR": O.OpsSHR{}
     case "FDIV": O.OpsFDIV{}
-    case "RECIPROCAL": O.OpsRECIPROCAL{}
+    case "RECIP": O.OpsRECIP{}
     case "TRUNC": O.OpsTRUNC{}
     case "SIN": O.OpsSIN{}
     case "EXP2": O.OpsEXP2{}
@@ -1142,8 +1142,8 @@ def cfo.is(nm: String) -> Bool:
   match nm:
     case "ADD": True{}
     case "AND": True{}
-    case "CDIV": True{}
-    case "CMOD": True{}
+    case "TRUNCDIV": True{}
+    case "TRUNCMOD": True{}
     case "CMPEQ": True{}
     case "CMPLT": True{}
     case "CMPNE": True{}
@@ -1153,7 +1153,7 @@ def cfo.is(nm: String) -> Bool:
     case "MAX": True{}
     case "MUL": True{}
     case "OR": True{}
-    case "RECIPROCAL": True{}
+    case "RECIP": True{}
     case "SHL": True{}
     case "SHR": True{}
     case "SIN": True{}
@@ -1171,7 +1171,7 @@ def cfo.is(nm: String) -> Bool:
 def cfo.has(+n: Nir, +nm: String) -> Bool:
   Bool.and(cfo.is(nm), Bool.or(Bool.not(Nir.drops_exp2(n)), Bool.not(String.eq(nm, "EXP2"))))
 
-def cfo_names() -> List<&2, String>: ["ADD","AND","CDIV","CMOD","CMPEQ","CMPLT","CMPNE","EXP2","FDIV","LOG2","MAX","MUL","OR","RECIPROCAL","SHL","SHR","SIN","SQRT","TRUNC","WHERE","XOR"]
+def cfo_names() -> List<&2, String>: ["ADD","AND","TRUNCDIV","TRUNCMOD","CMPEQ","CMPLT","CMPNE","EXP2","FDIV","LOG2","MAX","MUL","OR","RECIP","SHL","SHR","SIN","SQRT","TRUNC","WHERE","XOR"]
 
 def cfo.go(+n: Nir, +ns: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
   match ns:

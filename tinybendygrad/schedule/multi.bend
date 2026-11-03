@@ -266,10 +266,10 @@ def mu_has_axis(a: Maybe<&2, U32>) -> Bool:
 # it is the one rule in `multi_pm` whose pattern carries NO src test at all --
 # `custom_early_reject=set([Ops.UNSHARD])` is its whole shape. `mt_alu_n` is 28.
 def mu_alu_ops() -> List<&2, O.Op>:
-  [O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}, O.OpsNEG{}, O.OpsTRUNC{},
-   O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{},
+  [O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIP{}, O.OpsNEG{}, O.OpsTRUNC{},
+   O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{},
    O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsOR{}, O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{},
-   O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}]
+   O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsWHERE{}, O.OpsMULACC{}]
 
 # `GroupOp.Movement` -- six members, and it is `ra_4`'s pdict key
 # (`UPat(GroupOp.Movement, src=(UPat.var("s"),), name="v")`, multi.py:41).

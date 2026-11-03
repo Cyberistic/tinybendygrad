@@ -180,6 +180,10 @@ type Op is Data:
   OpsREWRITE_ERROR{}
   # CALL is a kernel invocation; value-producing calls write to ALLOC arguments
   OpsPARAM{}
+  # **REFERENCE A PARAM -- upstream `codegen/__init__.py:426` builds one when a param's addrspace is not ALU,
+  # and every generic predicate that lists PARAM lists it too** (`uop/__init__.py:114`'s `Defines`,
+  # `ops.py:169`, `ops.py:350`, `ops.py:873`, `render.py:40`).
+  OpsREFPARAM{}
   OpsCALL{}
   # renderer
   # LINEAR is a list of UOps, SOURCE has a str arg that's human readable, BINARY has bytes arg that's compiled
@@ -212,7 +216,7 @@ type Op is Data:
   OpsLOG2{}
   OpsSIN{}
   OpsSQRT{}
-  OpsRECIPROCAL{}
+  OpsRECIP{}
   OpsNEG{}
   OpsTRUNC{}
   # BinaryOps
@@ -220,9 +224,9 @@ type Op is Data:
   OpsMUL{}
   OpsSHL{}
   OpsSHR{}
-  OpsCDIV{}
+  OpsTRUNCDIV{}
   OpsMAX{}
-  OpsCMOD{}
+  OpsTRUNCMOD{}
   OpsCMPLT{}
   OpsCMPNE{}
   OpsCMPEQ{}
@@ -233,8 +237,8 @@ type Op is Data:
   OpsSUB{}
   OpsFDIV{}
   OpsPOW{}
-  OpsFLOORDIV{}
-  OpsFLOORMOD{}
+  OpsDIV{}
+  OpsMOD{}
   # TernaryOps
   OpsWHERE{}
   OpsMULACC{}
@@ -293,6 +297,7 @@ def Ops.name.of(op: Op) -> String:
     case OpsNOOP{}: "NOOP"
     case OpsREWRITE_ERROR{}: "REWRITE_ERROR"
     case OpsPARAM{}: "PARAM"
+    case OpsREFPARAM{}: "REFPARAM"
     case OpsCALL{}: "CALL"
     case OpsPROGRAM{}: "PROGRAM"
     case OpsLINEAR{}: "LINEAR"
@@ -313,16 +318,16 @@ def Ops.name.of(op: Op) -> String:
     case OpsLOG2{}: "LOG2"
     case OpsSIN{}: "SIN"
     case OpsSQRT{}: "SQRT"
-    case OpsRECIPROCAL{}: "RECIPROCAL"
+    case OpsRECIP{}: "RECIP"
     case OpsNEG{}: "NEG"
     case OpsTRUNC{}: "TRUNC"
     case OpsADD{}: "ADD"
     case OpsMUL{}: "MUL"
     case OpsSHL{}: "SHL"
     case OpsSHR{}: "SHR"
-    case OpsCDIV{}: "CDIV"
+    case OpsTRUNCDIV{}: "TRUNCDIV"
     case OpsMAX{}: "MAX"
-    case OpsCMOD{}: "CMOD"
+    case OpsTRUNCMOD{}: "TRUNCMOD"
     case OpsCMPLT{}: "CMPLT"
     case OpsCMPNE{}: "CMPNE"
     case OpsCMPEQ{}: "CMPEQ"
@@ -333,8 +338,8 @@ def Ops.name.of(op: Op) -> String:
     case OpsSUB{}: "SUB"
     case OpsFDIV{}: "FDIV"
     case OpsPOW{}: "POW"
-    case OpsFLOORDIV{}: "FLOORDIV"
-    case OpsFLOORMOD{}: "FLOORMOD"
+    case OpsDIV{}: "DIV"
+    case OpsMOD{}: "MOD"
     case OpsWHERE{}: "WHERE"
     case OpsMULACC{}: "MULACC"
     case OpsBARRIER{}: "BARRIER"
@@ -377,82 +382,84 @@ def Ops.value(op: Op) -> U32:
     case OpsNOOP{}: 4
     case OpsREWRITE_ERROR{}: 5
     case OpsPARAM{}: 6
-    case OpsCALL{}: 7
-    case OpsPROGRAM{}: 8
-    case OpsLINEAR{}: 9
-    case OpsSOURCE{}: 10
-    case OpsBINARY{}: 11
-    case OpsSINK{}: 12
-    case OpsAFTER{}: 13
-    case OpsSTACK{}: 14
-    case OpsGETADDR{}: 15
-    case OpsINDEX{}: 16
-    case OpsSHRINK{}: 17
-    case OpsLOAD{}: 18
-    case OpsSTORE{}: 19
-    case OpsWMMA{}: 20
-    case OpsCAST{}: 21
-    case OpsBITCAST{}: 22
-    case OpsEXP2{}: 23
-    case OpsLOG2{}: 24
-    case OpsSIN{}: 25
-    case OpsSQRT{}: 26
-    case OpsRECIPROCAL{}: 27
-    case OpsNEG{}: 28
-    case OpsTRUNC{}: 29
-    case OpsADD{}: 30
-    case OpsMUL{}: 31
-    case OpsSHL{}: 32
-    case OpsSHR{}: 33
-    case OpsCDIV{}: 34
-    case OpsMAX{}: 35
-    case OpsCMOD{}: 36
-    case OpsCMPLT{}: 37
-    case OpsCMPNE{}: 38
-    case OpsCMPEQ{}: 39
-    case OpsXOR{}: 40
-    case OpsOR{}: 41
-    case OpsAND{}: 42
-    case OpsTHREEFRY{}: 43
-    case OpsSUB{}: 44
-    case OpsFDIV{}: 45
-    case OpsPOW{}: 46
-    case OpsFLOORDIV{}: 47
-    case OpsFLOORMOD{}: 48
-    case OpsWHERE{}: 49
-    case OpsMULACC{}: 50
-    case OpsBARRIER{}: 51
-    case OpsRANGE{}: 52
-    case OpsIF{}: 53
-    case OpsEND{}: 54
-    case OpsENDIF{}: 55
-    case OpsBACKEDGE{}: 56
-    case OpsCONST{}: 57
-    case OpsCUSTOM{}: 58
-    case OpsCUSTOMI{}: 59
-    case OpsINS{}: 60
-    case OpsCONTIGUOUS_BACKWARD{}: 61
-    case OpsDETACH{}: 62
-    case OpsSTAGE{}: 63
-    case OpsCOPY{}: 64
-    case OpsMSELECT{}: 65
-    case OpsMSTACK{}: 66
-    case OpsCUSTOM_FUNCTION{}: 67
-    case OpsRESHAPE{}: 68
-    case OpsPERMUTE{}: 69
-    case OpsEXPAND{}: 70
-    case OpsPAD{}: 71
-    case OpsUNSHARD{}: 72
-    case OpsREDUCE{}: 73
-    case OpsALLREDUCE{}: 74
-    case OpsPYLITERAL{}: 75
+    case OpsREFPARAM{}: 7
+    case OpsCALL{}: 8
+    case OpsPROGRAM{}: 9
+    case OpsLINEAR{}: 10
+    case OpsSOURCE{}: 11
+    case OpsBINARY{}: 12
+    case OpsSINK{}: 13
+    case OpsAFTER{}: 14
+    case OpsSTACK{}: 15
+    case OpsGETADDR{}: 16
+    case OpsINDEX{}: 17
+    case OpsSHRINK{}: 18
+    case OpsLOAD{}: 19
+    case OpsSTORE{}: 20
+    case OpsWMMA{}: 21
+    case OpsCAST{}: 22
+    case OpsBITCAST{}: 23
+    case OpsEXP2{}: 24
+    case OpsLOG2{}: 25
+    case OpsSIN{}: 26
+    case OpsSQRT{}: 27
+    case OpsRECIP{}: 28
+    case OpsNEG{}: 29
+    case OpsTRUNC{}: 30
+    case OpsADD{}: 31
+    case OpsMUL{}: 32
+    case OpsSHL{}: 33
+    case OpsSHR{}: 34
+    case OpsTRUNCDIV{}: 35
+    case OpsMAX{}: 36
+    case OpsTRUNCMOD{}: 37
+    case OpsCMPLT{}: 38
+    case OpsCMPNE{}: 39
+    case OpsCMPEQ{}: 40
+    case OpsXOR{}: 41
+    case OpsOR{}: 42
+    case OpsAND{}: 43
+    case OpsTHREEFRY{}: 44
+    case OpsSUB{}: 45
+    case OpsFDIV{}: 46
+    case OpsPOW{}: 47
+    case OpsDIV{}: 48
+    case OpsMOD{}: 49
+    case OpsWHERE{}: 50
+    case OpsMULACC{}: 51
+    case OpsBARRIER{}: 52
+    case OpsRANGE{}: 53
+    case OpsIF{}: 54
+    case OpsEND{}: 55
+    case OpsENDIF{}: 56
+    case OpsBACKEDGE{}: 57
+    case OpsCONST{}: 58
+    case OpsCUSTOM{}: 59
+    case OpsCUSTOMI{}: 60
+    case OpsINS{}: 61
+    case OpsCONTIGUOUS_BACKWARD{}: 62
+    case OpsDETACH{}: 63
+    case OpsSTAGE{}: 64
+    case OpsCOPY{}: 65
+    case OpsMSELECT{}: 66
+    case OpsMSTACK{}: 67
+    case OpsCUSTOM_FUNCTION{}: 68
+    case OpsRESHAPE{}: 69
+    case OpsPERMUTE{}: 70
+    case OpsEXPAND{}: 71
+    case OpsPAD{}: 72
+    case OpsUNSHARD{}: 73
+    case OpsREDUCE{}: 74
+    case OpsALLREDUCE{}: 75
+    case OpsPYLITERAL{}: 76
+
 def GroupOp.unary(op: Op) -> Bool:
   match op:
     case OpsEXP2{}: True{}
     case OpsLOG2{}: True{}
     case OpsSIN{}: True{}
     case OpsSQRT{}: True{}
-    case OpsRECIPROCAL{}: True{}
+    case OpsRECIP{}: True{}
     case OpsNEG{}: True{}
     case OpsTRUNC{}: True{}
     case _: False{}
@@ -461,9 +468,9 @@ def GroupOp.binary(op: Op) -> Bool:
   match op:
     case OpsADD{}: True{}
     case OpsMUL{}: True{}
-    case OpsCDIV{}: True{}
+    case OpsTRUNCDIV{}: True{}
     case OpsMAX{}: True{}
-    case OpsCMOD{}: True{}
+    case OpsTRUNCMOD{}: True{}
     case OpsCMPLT{}: True{}
     case OpsCMPNE{}: True{}
     case OpsCMPEQ{}: True{}
@@ -476,8 +483,8 @@ def GroupOp.binary(op: Op) -> Bool:
     case OpsSUB{}: True{}
     case OpsFDIV{}: True{}
     case OpsPOW{}: True{}
-    case OpsFLOORDIV{}: True{}
-    case OpsFLOORMOD{}: True{}
+    case OpsDIV{}: True{}
+    case OpsMOD{}: True{}
     case _: False{}
 
 def GroupOp.ternary(op: Op) -> Bool:
@@ -489,6 +496,7 @@ def GroupOp.ternary(op: Op) -> Bool:
 def GroupOp.defines(op: Op) -> Bool:
   match op:
     case OpsPARAM{}: True{}
+    case OpsREFPARAM{}: True{}
     case OpsBUFFER{}: True{}
     case OpsALLOC{}: True{}
     case _: False{}
@@ -4501,11 +4509,11 @@ def pm_r_alloc_m(+ctx: CTX, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # entry; `all_ops_n` in `.agents/slop/lintable/03-PROBE.md` re-measures both the
 # count and the set against `from tinygrad.uop import Ops`.
 def all_ops() -> List<&2, Op>:
-  [OpsSPECIAL{} OpsBUFFER{} OpsALLOC{} OpsNOOP{} OpsREWRITE_ERROR{} OpsPARAM{} OpsCALL{} OpsPROGRAM{} OpsLINEAR{} OpsSOURCE{} OpsBINARY{},
+  [OpsSPECIAL{} OpsBUFFER{} OpsALLOC{} OpsNOOP{} OpsREWRITE_ERROR{} OpsPARAM{} OpsREFPARAM{} OpsCALL{} OpsPROGRAM{} OpsLINEAR{} OpsSOURCE{} OpsBINARY{},
    OpsSINK{} OpsAFTER{} OpsSTACK{} OpsGETADDR{} OpsINDEX{} OpsSHRINK{} OpsLOAD{} OpsSTORE{} OpsWMMA{} OpsCAST{},
-   OpsBITCAST{} OpsEXP2{} OpsLOG2{} OpsSIN{} OpsSQRT{} OpsRECIPROCAL{} OpsNEG{} OpsTRUNC{} OpsADD{} OpsMUL{} OpsSHL{},
-   OpsSHR{} OpsCDIV{} OpsMAX{} OpsCMOD{} OpsCMPLT{} OpsCMPNE{} OpsCMPEQ{} OpsXOR{} OpsOR{} OpsAND{} OpsTHREEFRY{},
-   OpsSUB{} OpsFDIV{} OpsPOW{} OpsFLOORDIV{} OpsFLOORMOD{} OpsWHERE{} OpsMULACC{} OpsBARRIER{} OpsRANGE{} OpsIF{} OpsEND{},
+   OpsBITCAST{} OpsEXP2{} OpsLOG2{} OpsSIN{} OpsSQRT{} OpsRECIP{} OpsNEG{} OpsTRUNC{} OpsADD{} OpsMUL{} OpsSHL{},
+   OpsSHR{} OpsTRUNCDIV{} OpsMAX{} OpsTRUNCMOD{} OpsCMPLT{} OpsCMPNE{} OpsCMPEQ{} OpsXOR{} OpsOR{} OpsAND{} OpsTHREEFRY{},
+   OpsSUB{} OpsFDIV{} OpsPOW{} OpsDIV{} OpsMOD{} OpsWHERE{} OpsMULACC{} OpsBARRIER{} OpsRANGE{} OpsIF{} OpsEND{},
    OpsENDIF{} OpsBACKEDGE{} OpsCONST{} OpsCUSTOM{} OpsCUSTOMI{} OpsINS{} OpsCONTIGUOUS_BACKWARD{} OpsDETACH{} OpsSTAGE{} OpsCOPY{} OpsMSELECT{},
    OpsMSTACK{} OpsCUSTOM_FUNCTION{} OpsRESHAPE{} OpsPERMUTE{} OpsEXPAND{} OpsPAD{} OpsUNSHARD{} OpsREDUCE{} OpsALLREDUCE{} OpsPYLITERAL{}]
 
@@ -4939,6 +4947,7 @@ def UOp.buf_uop.cont(op: Op) -> Bool:
     case OpsBUFFER{}: False{}
     case OpsALLOC{}: False{}
     case OpsPARAM{}: False{}
+    case OpsREFPARAM{}: False{}
     case OpsSTAGE{}: False{}
     case OpsMSTACK{}: False{}
     case _: True{}
@@ -4982,6 +4991,7 @@ def UOp.has_buffer_identity.term(op: Op) -> Bool:
     case OpsBUFFER{}: True{}
     case OpsALLOC{}: True{}
     case OpsPARAM{}: True{}
+    case OpsREFPARAM{}: True{}
     case _: False{}
 
 def UOp.has_buffer_identity(fuel: Nat, +after_ok: Bool, +ar: Arena, +self: U32) -> Bool:
@@ -7914,7 +7924,7 @@ def dv.defs3(z: Bool, +f: Found, +v: H.I64, +i: U32) -> Dv:
   match z:
     case True{}:
       +c = UOp.const(Found.ar(f), CInt{v})
-      +q = UOp.alu(Found.ar(c), OpsFLOORDIV{}, [i, Found.i(c)])
+      +q = UOp.alu(Found.ar(c), OpsDIV{}, [i, Found.i(c)])
       dv.yes(q, Found.i(q))
     case False{}: dv.no(f)
 

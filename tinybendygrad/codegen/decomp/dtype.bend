@@ -178,9 +178,9 @@
 #
 # WHY `l2i` NEEDS NO FUEL. Every recursive step of `l2i` lands on a DIFFERENT
 # op -- `NEG` calls `SUB`, `MUL` calls `ADD`, `MAX` calls `CMPLT` and `WHERE`,
-# `CDIV` calls `NEG`/`SHL`/`SHR`/`CMPLT`/`SUB`/`WHERE`/`BITCAST` -- and none of
+# `TRUNCDIV` calls `NEG`/`SHL`/`SHR`/`CMPLT`/`SUB`/`WHERE`/`BITCAST` -- and none of
 # those calls `l2i` again. So `l2i` is a `match` with no self-call, which is why
-# the 64-iteration `CDIV` loop can be its own def: Bend refuses MUTUAL recursion,
+# the 64-iteration `TRUNCDIV` loop can be its own def: Bend refuses MUTUAL recursion,
 # and this loop's body calls only arms that are themselves leaves.
 #
 # ---------------------------------------------------------------------------
@@ -616,7 +616,7 @@ def l2i_cast0(+ar: O.Arena, +x: U32, +ldt: S.Dt, +zeroext: Bool, +xdt: S.Dt) -> 
 def l2i_cast1.quo(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt, +loi: U32) -> O.Found:
   # ⚠ dtype.py:34's `2**32` AND `0` ARE PYTHON INTEGERS AND BOTH GO THROUGH
   # `_broadcasted`'s `promote` (`mixin/elementwise.py:29-31`), WHICH REMINTS A weak
-  # CONST TO `weak_dtype(out_dtype)` = `weakfloat`. So the `RECIPROCAL`'s operand is the
+  # CONST TO `weak_dtype(out_dtype)` = `weakfloat`. So the `RECIP`'s operand is the
   # FLOAT 4294967296.0 and NOT `C(1:0)`, and `x < 0`'s ZERO is a node of its own rather
   # than the `C(0)` that `lo.ne(0)` reuses -- `promote` returns `t` unchanged there
   # because `lo` is `int32`, so `weak_dtype(int32) == weakint == t.dtype`.
@@ -631,7 +631,7 @@ def l2i_cast1.quo(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt, +loi: U32) -> O
   # two float constants are at its positions 6 and 10.
   +ci = dd_wk(ar, T.tx_powi(32))
   +c = dd_wf(O.Found.ar(ci), F32.pow(2.0, F32.from_nat(32n)))
-  +rc = T.tx_alu1(O.Found.ar(c), O.OpsRECIPROCAL{}, O.Found.i(c))
+  +rc = T.tx_alu1(O.Found.ar(c), O.OpsRECIP{}, O.Found.i(c))
   +xf = dd_cast_bool(O.Found.ar(rc), x, dd_is_bool(xdt))
   +m = dd_mul(O.Found.ar(xf), O.Found.i(xf), O.Found.i(rc))
   +hi = P.dc_cast(O.Found.ar(m), O.Found.i(m), ldt)
@@ -651,8 +651,8 @@ def l2i_cast1(+ar: O.Arena, +x: U32, +ldt: S.Dt, +xdt: S.Dt) -> W2:
   W2{O.Found.ar(hi), loi, O.Found.i(hi)}
 
 # `(x / 2**32).cast(ldt) - ((x < 0) & lo.ne(0))`. `x / 2**32` is
-# `elementwise.py:255`: both operands are integers so the `CDIV`/`FLOORDIV`
-# arm is skipped and it becomes `MUL(x, RECIPROCAL(C(2**32)))`, after
+# `elementwise.py:255`: both operands are integers so the `TRUNCDIV`/`DIV`
+# arm is skipped and it becomes `MUL(x, RECIP(C(2**32)))`, after
 # `a.cast(default_float)` when `a` is a bool. `reciprocal()` is UNARY
 # (`elementwise.py:468`), not `FDIV(C(1), x)`.
 
@@ -865,10 +865,10 @@ def l2i_sub(+ar: O.Arena, +ad: S.Dt, +bd: S.Dt, +ws: List<&2, U32>) -> W2:
 # PRODUCT. `shr(a00*b01, 16)` is the raw `a00*b01` floored, not the bitcast `shl`
 # of it -- `shl`/`shr` are transcendental.py:19-20 (`x * 2**y`, `x // 2**y`) and
 # dtype.py:54 spells both off the same parenthesised product. MEASURED
-# (`dd-cone.py lge`): `#24 FLOORDIV` has `#4 MUL` as its src0 and `#4` is the
+# (`dd-cone.py lge`): `#24 DIV` has `#4 MUL` as its src0 and `#4` is the
 # `a00*b01` product itself, while `#2 BITCAST` sits over `#3 MUL` which is that same
 # `#4` times `C(65536)`. Chaining `shr` off the bitcast -- as this did -- builds a
-# second, different `FLOORDIV` and puts an extra node in every sig.
+# second, different `DIV` and puts an extra node in every sig.
 def l2i_mul.w(+ar: O.Arena, +dt: S.Dt, +x: U32, +y: U32) -> W2:
   +m = dd_mul(ar, x, y)
   +mar = O.Found.ar(m)
@@ -914,7 +914,7 @@ def l2i_mul.p(+ar: O.Arena, +dt: S.Dt, +a0: U32, +a1: U32, +b0: U32, +b1: U32, +
 # `shr` node and none of them built `shl`. MEASURED (`dd-cone.py lge`): the cone's
 # `#2 BITCAST` sits over `#3 MUL` (the `shl`, since `shl` is `x * 2**16`) and only
 # `#11`/`#16` sit over `MUL`s; the port's `lgesig` position 3 was
-# `FLOORDIV/2,BITCAST/1` where CPython has `MUL/2,MUL/2` -- it never had a `shl` at
+# `DIV/2,BITCAST/1` where CPython has `MUL/2,MUL/2` -- it never had a `shl` at
 # all. `W2` carries both halves in one arena, so the `shl` and the `shr` of one
 # product cannot be separated by index again.
 def l2i_mul(+ar: O.Arena, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> W2:
@@ -991,7 +991,7 @@ def l2i_max(+ar: O.Arena, +xdt: S.Dt, +ws: List<&2, U32>) -> W2:
   W2{O.Found.ar(r1), O.Found.i(r0), O.Found.i(r1)}
 
 # ===========================================================================
-# CDIV / CMOD (dtype.py:56-74). TAOCP 4.3.1D, unrolled 64 times by a `Nat`
+# TRUNCDIV / TRUNCMOD (dtype.py:56-74). TAOCP 4.3.1D, unrolled 64 times by a `Nat`
 # countdown. The loop carries `a0/a1/b0/b1` (the operands, absolute-valued when
 # `dt` is signed), the shift `r` and the quotient `q`, and both sign flags; `z`
 # is `UOp.const(0, dtypes.uint)` and rides in the record because CPython interns
@@ -1102,7 +1102,7 @@ def l2i_cdiv.abs(+ar: O.Arena, +xdt: S.Dt, +zero: U32, +a0: U32, +a1: U32, +b0: 
   # dtype.py:59's FOUR BITCASTS FOLD on a `u32` source -- `mixin/dtype.py:53` returns
   # `self` when the dtypes already agree -- and `dd_bcast` IS that rule, already used
   # by `l2i_shl` and `l2i_shr` for dtype.py:42/46. `T.tx_bitcast` always minted the
-  # node, so every signed CDIV/CMOD cone carried four BITCASTs CPython's does not.
+  # node, so every signed TRUNCDIV/TRUNCMOD cone carried four BITCASTs CPython's does not.
   # `xdt` is the ONLY place the source dtype is known, which is why it is a parameter
   # of `abs`, `sign` and `cdiv` now. MEASURED, `.agents/slop/dd-gap.py --sig lgq`:
   # ONLY-PORT held `BITCAST/1` four times over against a cone CPython's lacks.
@@ -1143,7 +1143,7 @@ def l2i_cdiv.abs(+ar: O.Arena, +xdt: S.Dt, +zero: U32, +a0: U32, +a1: U32, +b0: 
 # So the real difference is not a missing power of two. It is that the port emits ONE
 # leading word `C(64)` and then a RUN of powers of two, while CPython interleaves
 # `C(i)` with `2**(i-32)` for i = 63..33 -- the port never emits the 31 `UOp.const(i,
-# dtypes.uint)` shift words of dtype.py:65 at all. Whether that is the CDIV loop or the
+# dtypes.uint)` shift words of dtype.py:65 at all. Whether that is the TRUNCDIV loop or the
 # `q` accumulator is not yet established; `lgtk` is still 3 constants against CPython's
 # 66 and `lgtsig` 57 cone nodes against 2184, so the family is OPEN. `.agents/slop/
 # dd-truth.py` is what prints both sequences side by side.
@@ -1231,11 +1231,11 @@ def l2i_cdiv.loop(k: Nat, +c: Cd, +i: U32) -> Cd:
       +d = l2i_cdiv.step(Cd.ar(c), c, i)
       l2i_cdiv.loop(p, d, U32.sub(i, 1))
 
-# `return r if op is Ops.CMOD else q` -- dtype.py:74. SO `isdiv` ANSWERS `q` AND
+# `return r if op is Ops.TRUNCMOD else q` -- dtype.py:74. SO `isdiv` ANSWERS `q` AND
 # NOT `r`. The arms were the other way round, and it is invisible on the SIGNED
 # fixtures, where dtype.py:73 has already replaced the return with the two WHEREs
 # and `l2i_cdiv.uns` is never reached. It shows on the unsigned pair, and it shows
-# as a SWAP: MEASURED, `lgs` (CDIV uint) is `OR(OR(OR,MUL),MUL(CAST,C(1)))` --
+# as a SWAP: MEASURED, `lgs` (TRUNCDIV uint) is `OR(OR(OR,MUL),MUL(CAST,C(1)))` --
 # the quotient, `q[1] | shl(cond, i%32)` -- while the port answered the `r` shape
 # `WHERE(CMPNE(CMPLT,C(1)),ADD(OR,MUL),OR(WHERE,AND))`, which is what CPython
 # answers for `lgt`. `lgs` and `lgt` were each other's answer.
@@ -1255,7 +1255,7 @@ def l2i_cdiv.loop(k: Nat, +c: Cd, +i: U32) -> Cd:
 #     lgtsig            2184          66         57        3      lgsp, lgtp
 #     lgssig            2396          92       1642       36      lgsp, lgtp
 #
-# So the port's CMOD cone is 38x smaller than CPython's and still is after this fix. THE
+# So the port's TRUNCMOD cone is 38x smaller than CPython's and still is after this fix. THE
 # FIX IS CORRECT AND INCOMPLETE: it stopped an arena slot from being read as a node and it
 # recovered the two rows CPython emits that the port was not emitting at all, but the loop
 # still does not reach back through its own iterations. `lgsn` is 1976 against CPython's
@@ -1365,8 +1365,8 @@ def l2i.go(+ar: O.Arena, +zero: U32, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List
     case O.OpsAND{}: Some{l2i_binop(ar, O.OpsAND{}, ws)}
     case O.OpsWHERE{}: Some{l2i_where(ar, ws)}
     case O.OpsMAX{}: Some{l2i_max(ar, xdt, ws)}
-    case O.OpsCDIV{}: Some{l2i_cdiv(True{}, ar, dt, xdt, zero, ws)}
-    case O.OpsCMOD{}: Some{l2i_cdiv(False{}, ar, dt, xdt, zero, ws)}
+    case O.OpsTRUNCDIV{}: Some{l2i_cdiv(True{}, ar, dt, xdt, zero, ws)}
+    case O.OpsTRUNCMOD{}: Some{l2i_cdiv(False{}, ar, dt, xdt, zero, ws)}
     case _: None{}
 
 def l2i(+ar: O.Arena, +op: O.Op, +dt: S.Dt, +xdt: S.Dt, +ws: List<&2, U32>) -> Maybe<&2, W2>:
@@ -1980,25 +1980,25 @@ def dd_ops.cmp() -> List<&2, O.Op>:
 # cannot be a shared list.
 
 def dd_ops.alu11() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsAND{}, O.OpsBITCAST{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{},
-   O.OpsFLOORMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{},
-   O.OpsRECIPROCAL{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsTRUNC{}, O.OpsXOR{}]
+  [O.OpsADD{}, O.OpsAND{}, O.OpsBITCAST{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsDIV{},
+   O.OpsMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{},
+   O.OpsRECIP{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsTRUNC{}, O.OpsXOR{}]
 
 def dd_ops.alu() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsAND{}, O.OpsBITCAST{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{},
-   O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsINDEX{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{},
-   O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIPROCAL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{},
+  [O.OpsADD{}, O.OpsAND{}, O.OpsBITCAST{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{},
+   O.OpsEXP2{}, O.OpsFDIV{}, O.OpsDIV{}, O.OpsMOD{}, O.OpsINDEX{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{},
+   O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIP{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{},
    O.OpsSQRT{}, O.OpsSTACK{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}]
 
 def dd_ops.all() -> List<&2, O.Op>:
   [O.OpsADD{}, O.OpsAFTER{}, O.OpsALLOC{}, O.OpsALLREDUCE{}, O.OpsAND{}, O.OpsBACKEDGE{}, O.OpsBARRIER{},
-   O.OpsBINARY{}, O.OpsBITCAST{}, O.OpsBUFFER{}, O.OpsCALL{}, O.OpsCAST{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{},
+   O.OpsBINARY{}, O.OpsBITCAST{}, O.OpsBUFFER{}, O.OpsCALL{}, O.OpsCAST{}, O.OpsTRUNCDIV{}, O.OpsTRUNCMOD{}, O.OpsCMPEQ{},
    O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCONST{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsCOPY{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{},
    O.OpsCUSTOM_FUNCTION{}, O.OpsDETACH{}, O.OpsEND{}, O.OpsENDIF{}, O.OpsEXP2{}, O.OpsEXPAND{}, O.OpsFDIV{},
-   O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsGETADDR{}, O.OpsIF{}, O.OpsINDEX{},
+   O.OpsDIV{}, O.OpsMOD{}, O.OpsGETADDR{}, O.OpsIF{}, O.OpsINDEX{},
    O.OpsINS{}, O.OpsLINEAR{}, O.OpsLOAD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsMUL{},
    O.OpsMULACC{}, O.OpsNEG{}, O.OpsNOOP{}, O.OpsOR{}, O.OpsPAD{}, O.OpsPARAM{}, O.OpsPERMUTE{}, O.OpsPOW{},
-   O.OpsPROGRAM{}, O.OpsPYLITERAL{}, O.OpsRANGE{}, O.OpsRECIPROCAL{}, O.OpsREDUCE{}, O.OpsRESHAPE{},
+   O.OpsPROGRAM{}, O.OpsPYLITERAL{}, O.OpsRANGE{}, O.OpsRECIP{}, O.OpsREDUCE{}, O.OpsRESHAPE{},
    O.OpsREWRITE_ERROR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSHRINK{}, O.OpsSIN{}, O.OpsSINK{}, O.OpsSOURCE{},
    O.OpsSPECIAL{}, O.OpsSQRT{}, O.OpsSTACK{}, O.OpsSTAGE{}, O.OpsSTORE{}, O.OpsSUB{}, O.OpsTHREEFRY{},
    O.OpsTRUNC{}, O.OpsUNSHARD{}, O.OpsWHERE{}, O.OpsWMMA{}, O.OpsXOR{}]
@@ -2224,10 +2224,10 @@ def dd_tree(+ar: O.Arena, +u: U32) -> String:
 # holds at most `n` stack entries per edge, so `32 * n + 64` cannot run out.
 #
 # ⚠ `n` IS `Arena.next(ar)` AND NOT THE CREATION WINDOW, and that is the whole of the
-# CDIV/CMOD cone collapse. The fuel used to be `32 * (to - from)` -- the SIZE OF THE
+# TRUNCDIV/TRUNCMOD cone collapse. The fuel used to be `32 * (to - from)` -- the SIZE OF THE
 # FIXTURE'S OWN INTERNING WINDOW -- and a fixture that interns NOTHING has
 # `to == from`, so it got `64`. `lgt` interns nothing (`lgtn = 0` in both lanes: the
-# whole CDIV cone was interned by the `lgs` fixture before it), so its cone walk ran
+# whole TRUNCDIV cone was interned by the `lgs` fixture before it), so its cone walk ran
 # out of fuel after 57 nodes and `lgtsig` read
 #     WHERE/3,CMPNE/2,OR/2,CMPLT/2,WHERE/3,...,SHL/2
 # against CPython's 2184-node cone; `lgrn = 2` gave fuel 128 and `lgrsig` read 112
@@ -2297,8 +2297,8 @@ def dd_rs.cat(h: U32, st: List<&2, U32>) -> List<&2, U32>:
 # APPENDS each src in order, so the head popped is src[0], which is what
 # dd-oracle.py's `cone` walks (`for s in v.src: go(s)`). Prepending here popped
 # src[n] first, which reversed the children of every multi-src node in `sig`:
-# `upsig` read `AND/2,CONST/0,PARAM/0,FLOORDIV/2,CONST/0,PARAM/0` where CPython
-# reads `AND/2,PARAM/0,CONST/0,FLOORDIV/2,PARAM/0,CONST/0`.
+# `upsig` read `AND/2,CONST/0,PARAM/0,DIV/2,CONST/0,PARAM/0` where CPython
+# reads `AND/2,PARAM/0,CONST/0,DIV/2,PARAM/0,CONST/0`.
 def dd_rs.push(f: Nat, srcs: List<&2, U32>, st: List<&2, U32>) -> List<&2, U32>:
   match f:
     case 0n: st
@@ -2690,8 +2690,8 @@ def dd_l2i_ok(op: O.Op) -> Bool:
     case O.OpsAND{}: True{}
     case O.OpsWHERE{}: True{}
     case O.OpsMAX{}: True{}
-    case O.OpsCDIV{}: True{}
-    case O.OpsCMOD{}: True{}
+    case O.OpsTRUNCDIV{}: True{}
+    case O.OpsTRUNCMOD{}: True{}
     case _: False{}
 
 def dd_ws.go(n: Nat, +k: U32, +ps: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
@@ -2810,12 +2810,12 @@ def l2i.pick(+i: U32, +ga: Ga) -> Ga:
     case 19: l2i.one("lgk", O.OpsAND{}, S.int32(), S.uint32(), 9n, 4, ga)
     case 20: l2i.one("lgl", O.OpsWHERE{}, S.int32(), S.uint32(), 9n, 5, ga)
     case 21: l2i.one("lgm", O.OpsMAX{}, S.int32(), S.uint32(), 9n, 4, ga)
-    case 22: l2i.one("lgn", O.OpsFLOORDIV{}, S.int32(), S.uint32(), 9n, 4, ga)
+    case 22: l2i.one("lgn", O.OpsDIV{}, S.int32(), S.uint32(), 9n, 4, ga)
     case 23: l2i.one("lgo", O.OpsCAST{}, S.int64(), S.uint32(), 9n, 1, ga)
-    case 24: l2i.one("lgq", O.OpsCDIV{}, S.int32(), S.uint32(), 9n, 4, ga)
-    case 25: l2i.one("lgr", O.OpsCMOD{}, S.int32(), S.uint32(), 9n, 4, ga)
-    case 26: l2i.one("lgs", O.OpsCDIV{}, S.uint32(), S.uint32(), 9n, 4, ga)
-    case 27: l2i.one("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
+    case 24: l2i.one("lgq", O.OpsTRUNCDIV{}, S.int32(), S.uint32(), 9n, 4, ga)
+    case 25: l2i.one("lgr", O.OpsTRUNCMOD{}, S.int32(), S.uint32(), 9n, 4, ga)
+    case 26: l2i.one("lgs", O.OpsTRUNCDIV{}, S.uint32(), S.uint32(), 9n, 4, ga)
+    case 27: l2i.one("lgt", O.OpsTRUNCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
     # dtype.py:28-32, source not a float, unsigned: zero-extend. CPython:
     # `(CAST(CAST(C(0))), CAST(C(0)))`. NOT the note's `(CAST(C(0)), CAST(C(0)))`.
     case 28: l2i.const("lgv", 0, S.int64(), S.uint32(), ga)
@@ -2840,7 +2840,7 @@ def l2i.pick(+i: U32, +ga: Ga) -> Ga:
     # CPython, `.agents/slop/dd-mut-fixtures.py lgy`:
     #   lgy=CAST(BITCAST(Pi320))  lgyn=0  lgysig=CAST/1,BITCAST/1,PARAM/0  lgyk=-
     case 32: l2i.one("lgy", O.OpsCAST{}, S.int32(), S.int32(), 4n, 2, ga)
-    case _: l2i.one("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
+    case _: l2i.one("lgt", O.OpsTRUNCMOD{}, S.uint32(), S.uint32(), 9n, 4, ga)
 
 def l2i.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
   match n:

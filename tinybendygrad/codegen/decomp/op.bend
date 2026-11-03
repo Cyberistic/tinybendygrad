@@ -254,9 +254,9 @@ def dc_sgn(+a: O.Found,+b: U32) -> O.Found:
   +lb = dc_alu2(O.Found.ar(la), O.OpsCMPLT{}, b, O.Found.i(z))
   dc_alu2(O.Found.ar(lb), O.OpsCMPNE{}, O.Found.i(la), O.Found.i(lb))
 
-# `a.alu(CMOD, b).ne(0)`
+# `a.alu(TRUNCMOD, b).ne(0)`
 def dc_cmod_ne(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
-  +r = dc_alu2(ar, O.OpsCMOD{}, a, b)
+  +r = dc_alu2(ar, O.OpsTRUNCMOD{}, a, b)
   +z = dc_cint(O.Found.ar(r), 0)
   dc_alu2(O.Found.ar(z), O.OpsCMPNE{}, O.Found.i(r), O.Found.i(z))
 
@@ -350,10 +350,10 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 #
 # `0`  !x & !y      -> !(x|y)              op.py:85-86   AND    [CMPNE]
 # `1`  x * 2**y     -> x << y              op.py:88      MUL    [CONST]
-# `2`  u // 2**y    -> u >> y              op.py:91-92   CDIV   [CONST]
-# `3`  x // 2**y    -> (x + (x<0 ? c-1:0)) >> y   op.py:94-96  CDIV [CONST]
-# `4`  x // d       -> fast_idiv           op.py:99      CDIV   [CONST]
-# `5`  x % d        -> x - d*fast_idiv     op.py:102-103 CMOD   [CONST]
+# `2`  u // 2**y    -> u >> y              op.py:91-92   TRUNCDIV   [CONST]
+# `3`  x // 2**y    -> (x + (x<0 ? c-1:0)) >> y   op.py:94-96  TRUNCDIV [CONST]
+# `4`  x // d       -> fast_idiv           op.py:99      TRUNCDIV   [CONST]
+# `5`  x % d        -> x - d*fast_idiv     op.py:102-103 TRUNCMOD   [CONST]
 # `6`  x * -1       -> x.alu(NEG)          op.py:105     MUL    [CONST]
 # `7`  x + (-y)     -> x.alu(SUB, y)       op.py:106     ADD    [NEG]
 # `8`  !(x < c)     -> c-1 < x             op.py:110     CMPNE  [CMPLT,CONST]
@@ -368,7 +368,7 @@ def dc_isn2(+ar: O.Arena,+u: U32) -> Bool:
 # `17` a * (1/b)    -> a.alu(FDIV, b)      op.py:125     MUL    [FDIV]
 #
 # THE TWO RULES BOTH CLAIMING ONE NODE are `2`/`3`/`4`: `3` (the signed
-# power-of-two CDIV) and `4` (`fast_idiv`) both claim `CDIV(x, 2**y)` and they
+# power-of-two TRUNCDIV) and `4` (`fast_idiv`) both claim `TRUNCDIV(x, 2**y)` and they
 # answer DIFFERENTLY -- `3` is an ADD under a SHR and `4` is a MUL under a SHR.
 # FIRST-WINS, and `l7`/`l8`/`l9` are the three sides: `l7` is int32 `// 4` and
 # rule 3 answers, `l8` is the same on a non-negative numerator and STILL rule 3
@@ -379,8 +379,8 @@ def dc_l_tab(+fast: Bool) -> O.PMEntrys:
   match fast:
     case True{}: O.PMEntrys{[O.PMEntry{0,  [O.OpsAND{}],        [O.OpsCMPNE{}]},                  # 85
                            O.PMEntry{1,  [O.OpsMUL{}],        [O.OpsCONST{}]},                  # 88
-                           O.PMEntry{2,  [O.OpsCDIV{}],       [O.OpsCONST{}]},                  # 91
-                           O.PMEntry{3,  [O.OpsCDIV{}],       [O.OpsCONST{}]},                  # 94
+                           O.PMEntry{2,  [O.OpsTRUNCDIV{}],       [O.OpsCONST{}]},                  # 91
+                           O.PMEntry{3,  [O.OpsTRUNCDIV{}],       [O.OpsCONST{}]},                  # 94
                            O.PMEntry{6,  [O.OpsMUL{}],        [O.OpsCONST{}]},                  # 105
                            O.PMEntry{7,  [O.OpsADD{}],        [O.OpsNEG{}]},                    # 106
                            O.PMEntry{8,  [O.OpsCMPNE{}],      [O.OpsCMPLT{}, O.OpsCONST{}]},    # 110
@@ -391,14 +391,14 @@ def dc_l_tab(+fast: Bool) -> O.PMEntrys:
                            O.PMEntry{13, [O.OpsCMPNE{}],      [O.OpsCMPNE{}, O.OpsCONST{}]},    # 117
                            O.PMEntry{14, [O.OpsADD{}],        [O.OpsMUL{}]},                    # 119
                            O.PMEntry{15, [O.OpsADD{}],        [O.OpsSHL{}]},                    # 121
-                           O.PMEntry{16, [O.OpsRECIPROCAL{}], Nil{}},                           # 124
+                           O.PMEntry{16, [O.OpsRECIP{}], Nil{}},                           # 124
                            O.PMEntry{17, [O.OpsMUL{}],        [O.OpsFDIV{}]}]}                  # 125
     case False{}: O.PMEntrys{[O.PMEntry{0,  [O.OpsAND{}],        [O.OpsCMPNE{}]},                 # 85
                             O.PMEntry{1,  [O.OpsMUL{}],        [O.OpsCONST{}]},                 # 88
-                            O.PMEntry{2,  [O.OpsCDIV{}],       [O.OpsCONST{}]},                 # 91
-                            O.PMEntry{3,  [O.OpsCDIV{}],       [O.OpsCONST{}]},                 # 94
-                            O.PMEntry{4,  [O.OpsCDIV{}],       [O.OpsCONST{}]},                 # 99
-                            O.PMEntry{5,  [O.OpsCMOD{}],       [O.OpsCONST{}]},                 # 102
+                            O.PMEntry{2,  [O.OpsTRUNCDIV{}],       [O.OpsCONST{}]},                 # 91
+                            O.PMEntry{3,  [O.OpsTRUNCDIV{}],       [O.OpsCONST{}]},                 # 94
+                            O.PMEntry{4,  [O.OpsTRUNCDIV{}],       [O.OpsCONST{}]},                 # 99
+                            O.PMEntry{5,  [O.OpsTRUNCMOD{}],       [O.OpsCONST{}]},                 # 102
                             O.PMEntry{6,  [O.OpsMUL{}],        [O.OpsCONST{}]},                 # 105
                             O.PMEntry{7,  [O.OpsADD{}],        [O.OpsNEG{}]},                   # 106
                             O.PMEntry{8,  [O.OpsCMPNE{}],      [O.OpsCMPLT{}, O.OpsCONST{}]},   # 110
@@ -409,7 +409,7 @@ def dc_l_tab(+fast: Bool) -> O.PMEntrys:
                             O.PMEntry{13, [O.OpsCMPNE{}],      [O.OpsCMPNE{}, O.OpsCONST{}]},   # 117
                             O.PMEntry{14, [O.OpsADD{}],        [O.OpsMUL{}]},                   # 119
                             O.PMEntry{15, [O.OpsADD{}],        [O.OpsSHL{}]},                   # 121
-                            O.PMEntry{16, [O.OpsRECIPROCAL{}], Nil{}},                          # 124
+                            O.PMEntry{16, [O.OpsRECIP{}], Nil{}},                          # 124
                             O.PMEntry{17, [O.OpsMUL{}],        [O.OpsFDIV{}]}]}                 # 125
 
 def dc_one(+which: U32) -> Bool:
@@ -500,7 +500,7 @@ def dc_shlside(+ar: O.Arena,+u: U32) -> U32:
              O.op_is(ar, O.Arena.src(ar, u, 1), O.OpsSHL{}))
 
 def dc_l16.pat(+ar: O.Arena,+self: U32) -> Bool:
-  O.op_is(ar, self, O.OpsRECIPROCAL{})
+  O.op_is(ar, self, O.OpsRECIP{})
 
 def dc_l16.one(+ar: O.Arena) -> U32:
   O.Found.i(dc_cflt(ar, 1.0))
@@ -586,7 +586,7 @@ def rows(+nm: String,+v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
 
 # WHICH rule fired. `tag_*` is the row that makes first-wins observable and not
-# just on/off: rules 3 and 4 both claim `CDIV(x, 2**y)` and answer differently, and
+# just on/off: rules 3 and 4 both claim `TRUNCDIV(x, 2**y)` and answer differently, and
 # the `out_` row says which answer while the `tag_` row says it was the EARLIER
 # rule. 0 means "nothing fired", which is unambiguous because the scan never
 # reaches tag 0 without rule 0 firing.
@@ -883,7 +883,7 @@ def dc_dt(+fx: F.Folded,+u: U32,+want: U32) -> Bool:
 #   * A CONST's `_min_max` IS `(val, val)` (ops.py:1127) and a PARAM's IS
 #     `arg.vmin_vmax` (ops.py:1129). Both are plain field reads, so BOTH ends of
 #     the guard are exact for the two node kinds the port can build, and
-#     `out_s7` (a uint numerator, `vmin >= 0` on both, so the SHORT CDIV) is the
+#     `out_s7` (a uint numerator, `vmin >= 0` on both, so the SHORT TRUNCDIV) is the
 #     row that says the guard was read rather than assumed.
 #   * Any other op needs the recursive `_min_max`, which is P3 and the port's
 #     `uop/fold.bend:5238 symbol=UOp.min_max` is the reader that would answer it.
@@ -940,13 +940,13 @@ def dc_both_nonneg(+ar: O.Arena,+a: U32,+b: U32) -> Bool:
           Bool.and(dc_vmax(ar, a), dc_vmax(ar, b)))
 
 # ===========================================================================
-# `floordiv_to_idiv` -- op.py:54-56. The short arm is the WHOLE of `a.alu(CDIV,
+# `floordiv_to_idiv` -- op.py:54-56. The short arm is the WHOLE of `a.alu(TRUNCDIV,
 # b)` and `out_s7` is its row; the general arm is
-# `a.alu(CDIV,b) - (a.alu(CMOD,b).ne(0) & (a<0).ne(b<0))`, and because `&` on
-# bools is `AND` and `-` is `dc_sub` the tree is `ADD(CDIV, MUL(AND, C(-1)))`.
+# `a.alu(TRUNCDIV,b) - (a.alu(TRUNCMOD,b).ne(0) & (a<0).ne(b<0))`, and because `&` on
+# bools is `AND` and `-` is `dc_sub` the tree is `ADD(TRUNCDIV, MUL(AND, C(-1)))`.
 # ===========================================================================
 def dc_fd.gen(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
-  +q = dc_alu2(ar, O.OpsCDIV{}, a, b)
+  +q = dc_alu2(ar, O.OpsTRUNCDIV{}, a, b)
   +nz = dc_cmod_ne(O.Found.ar(q), a, b)
   +s = dc_sgn(nz, b)
   +g = dc_alu2(O.Found.ar(s), O.OpsAND{}, O.Found.i(nz), O.Found.i(s))
@@ -954,7 +954,7 @@ def dc_fd.gen(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
 
 def dc_fd.put(+ar: O.Arena,+a: U32,+b: U32,+short: Bool) -> O.Found:
   match short:
-    case True{}: dc_alu2(ar, O.OpsCDIV{}, a, b)
+    case True{}: dc_alu2(ar, O.OpsTRUNCDIV{}, a, b)
     case False{}: dc_fd.gen(ar, a, b)
 
 def floordiv_to_idiv(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
@@ -978,7 +978,7 @@ def dc_s1(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
 # and `b.const_like(0)` is `C(0)` -- a CONST and not a node.
 # ===========================================================================
 def dc_fm.gen(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
-  +r = dc_alu2(ar, O.OpsCMOD{}, a, b)
+  +r = dc_alu2(ar, O.OpsTRUNCMOD{}, a, b)
   +nz = dc_cmod_ne(O.Found.ar(r), a, b)
   +s = dc_sgn(nz, b)
   +g = dc_alu2(O.Found.ar(s), O.OpsAND{}, O.Found.i(nz), O.Found.i(s))
@@ -988,7 +988,7 @@ def dc_fm.gen(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
 
 def dc_fm.put(+ar: O.Arena,+a: U32,+b: U32,+short: Bool) -> O.Found:
   match short:
-    case True{}: dc_alu2(ar, O.OpsCMOD{}, a, b)
+    case True{}: dc_alu2(ar, O.OpsTRUNCMOD{}, a, b)
     case False{}: dc_fm.gen(ar, a, b)
 
 def floormod_to_mod(+ar: O.Arena,+a: U32,+b: U32) -> O.Found:
@@ -1243,25 +1243,25 @@ def tf_split_str(+ar: O.Arena,+x: U32) -> String:
 # `match`. That is `spec.bend`'s `+` composition in its smallest form: the tag
 # means "(this table, index in THIS list)".
 #
-# `0` FLOORDIV(x:ints, c) -> x >> v if v            op.py:70-71
-# `1` FLOORDIV(a, b)     -> floordiv_to_idiv        op.py:72
-# `2` FLOORMOD(x:ints, c) -> x & (c-1) if c is 2**y op.py:74
-# `3` FLOORMOD(a, b)     -> floormod_to_mod         op.py:75
+# `0` DIV(x:ints, c) -> x >> v if v            op.py:70-71
+# `1` DIV(a, b)     -> floordiv_to_idiv        op.py:72
+# `2` MOD(x:ints, c) -> x & (c-1) if c is 2**y op.py:74
+# `3` MOD(a, b)     -> floormod_to_mod         op.py:75
 # `4` THREEFRY(x, key)   -> threefry2x32            op.py:77
 #
 # The reject sets are MEASURED, not guessed: `rejs0..rejs3` in the gate.
 # ===========================================================================
 def dc_s_tab(+shifts: Bool,+threefry: Bool) -> O.PMEntrys:
   match threefry:
-    case True{}: O.PMEntrys{[O.PMEntry{0, [O.OpsFLOORDIV{}],  [O.OpsCONST{}]},              # 70
-                            O.PMEntry{1, [O.OpsFLOORDIV{}],  Nil{}},                       # 72
-                            O.PMEntry{2, [O.OpsFLOORMOD{}],  [O.OpsCONST{}]},              # 74
-                            O.PMEntry{3, [O.OpsFLOORMOD{}],  Nil{}},                       # 75
+    case True{}: O.PMEntrys{[O.PMEntry{0, [O.OpsDIV{}],  [O.OpsCONST{}]},              # 70
+                            O.PMEntry{1, [O.OpsDIV{}],  Nil{}},                       # 72
+                            O.PMEntry{2, [O.OpsMOD{}],  [O.OpsCONST{}]},              # 74
+                            O.PMEntry{3, [O.OpsMOD{}],  Nil{}},                       # 75
                             O.PMEntry{4, [O.OpsTHREEFRY{}],  Nil{}}]}                      # 77
-    case False{}: O.PMEntrys{[O.PMEntry{0, [O.OpsFLOORDIV{}], [O.OpsCONST{}]},              # 70
-                             O.PMEntry{1, [O.OpsFLOORDIV{}], Nil{}},                        # 72
-                             O.PMEntry{2, [O.OpsFLOORMOD{}], [O.OpsCONST{}]},              # 74
-                             O.PMEntry{3, [O.OpsFLOORMOD{}], Nil{}}]}                      # 75
+    case False{}: O.PMEntrys{[O.PMEntry{0, [O.OpsDIV{}], [O.OpsCONST{}]},              # 70
+                             O.PMEntry{1, [O.OpsDIV{}], Nil{}},                        # 72
+                             O.PMEntry{2, [O.OpsMOD{}], [O.OpsCONST{}]},              # 74
+                             O.PMEntry{3, [O.OpsMOD{}], Nil{}}]}                      # 75
 
 def dc_entry_s(+n: U32) -> Maybe<&2, O.PMEntry>:
   List.get(&2, O.PMEntry, O.PMEntrys.es(dc_s_tab(False{}, False{})), U32.to_nat(n))
@@ -1346,26 +1346,26 @@ def nroots(+g: Gate) -> U32:
 # 15 Pi int32 [-20,20]  16 Pz int32 [0,100]  17 Pu uint32 [0,40]  18 Pb bool
 # 19 Pf float32  20 Pg float32  21 Pj int32 [-20,20]
 # ROOTS, in the oracle's order, with the rule Python's scan picks:
-#  s0 FLOORDIV(i,C4)            r0  SHR(i,2)
-#  s1 FLOORDIV(i,C3)            r1  the general form
-#  s2 FLOORDIV(i,C1)            r1  powers_of_two[1]==0 is FALSY
-#  s3 FLOORMOD(i,C4)            r2  AND(i,3)
-#  s4 FLOORMOD(i,C3)            r3  the general form
-#  s5 FLOORMOD(i,C1)            r2  1 IS in powers_of_two
-#  s6 FLOORMOD(i,C0)            r3  0 is not
-#  s7 FLOORDIV(u,C3)            r1  uint is not dtypes.ints: the SHORT CDIV
-#  s8 FLOORDIV(i,C(2**31))      r0  SHR(i,31)
+#  s0 DIV(i,C4)            r0  SHR(i,2)
+#  s1 DIV(i,C3)            r1  the general form
+#  s2 DIV(i,C1)            r1  powers_of_two[1]==0 is FALSY
+#  s3 MOD(i,C4)            r2  AND(i,3)
+#  s4 MOD(i,C3)            r3  the general form
+#  s5 MOD(i,C1)            r2  1 IS in powers_of_two
+#  s6 MOD(i,C0)            r3  0 is not
+#  s7 DIV(u,C3)            r1  uint is not dtypes.ints: the SHORT TRUNCDIV
+#  s8 DIV(i,C(2**31))      r0  SHR(i,31)
 #  l0 AND(!b,!b)                r0  the only `logical_not` rule
 #  l1 MUL(i,C4)                 r1  SHL(i,2)
 #  l2 MUL(i,C1)                 --  r1 skips (v=0) and r6 skips (!= -1)
 #  l3 MUL(i,C-1)                r6  NEG(i)
 #  l4 MUL(i,C(2**31-1))         --  a CONST, not a power of two
 #  l5 MUL(i,C5)                 --  a CONST, not a power of two
-#  l6 CDIV(u,C4)                r2  SHR(u,2)
-#  l7 CDIV(i,C4)                r3  r3 BEATS r4
-#  l8 CDIV(z,C4)                r3  the same, non-negative
-#  l9 CDIV(z,C3)                r4  fast_idiv -- THE WALL, Python answers
-#  l10 CMOD(z,C3)               r5  fast_idiv -- THE WALL, Python answers
+#  l6 TRUNCDIV(u,C4)                r2  SHR(u,2)
+#  l7 TRUNCDIV(i,C4)                r3  r3 BEATS r4
+#  l8 TRUNCDIV(z,C4)                r3  the same, non-negative
+#  l9 TRUNCDIV(z,C3)                r4  fast_idiv -- THE WALL, Python answers
+#  l10 TRUNCMOD(z,C3)               r5  fast_idiv -- THE WALL, Python answers
 #  l11 ADD(i,NEG(i))            r7  SUB(i,i): the one SUB node
 #  l12 !(i<5)                   r8  CMPLT(ADD(5,MUL),i)
 #  l13 !(5<i)                   r9  CMPLT(i,ADD(5,1))
@@ -1382,9 +1382,9 @@ def nroots(+g: Gate) -> U32:
 #  l24 (1<i)&(i<4)              --  c1+1 != c2-1
 #  l25 C4*i                     r1  SHL(i,2): the is_any, CONST on the LEFT
 #  l26 (-1*i)<(3*j)             r10 both MULs flipped
-#  l27 CDIV(z,C200)             r4  vmax 100 < 200 -> C(0)
-#  l28 CDIV(z,C0)               --  d <= 0
-#  l29 CDIV(i,C3)               --  x.vmin -20 < 0
+#  l27 TRUNCDIV(z,C200)             r4  vmax 100 < 200 -> C(0)
+#  l28 TRUNCDIV(z,C0)               --  d <= 0
+#  l29 TRUNCDIV(i,C3)               --  x.vmin -20 < 0
 #  tf THREEFRY(c13,c14)         r4  the OR/SHL head, in the FIVE-rule table
 def fixtures() -> Gate:
   +a = O.Arena.empty()
@@ -1428,30 +1428,30 @@ def fixtures() -> Gate:
   +n10 = dc_lnot(O.Found.ar(nj), O.Found.i(nj))
   +ij = dc_alu2(O.Found.ar(n10), O.OpsMUL{}, O.Found.i(pi), O.Found.i(pj))
   +sh3 = dc_shl(O.Found.ar(ij), O.Found.i(pi), 3)
-  +rc = dc_alu1(O.Found.ar(sh3), O.OpsRECIPROCAL{}, O.Found.i(pf))
+  +rc = dc_alu1(O.Found.ar(sh3), O.OpsRECIP{}, O.Found.i(pf))
   +fd = dc_alu2(O.Found.ar(rc), O.OpsFDIV{}, O.Found.i(c1f), O.Found.i(pg))
   +anb = dc_alu2(O.Found.ar(fd), O.OpsAND{}, O.Found.i(nb), O.Found.i(nb))
   # s0..s8
-  +r0 = dc_alu2(O.Found.ar(anb), O.OpsFLOORDIV{}, O.Found.i(pi), O.Found.i(c4))
-  +r1 = dc_alu2(O.Found.ar(r0), O.OpsFLOORDIV{}, O.Found.i(pi), O.Found.i(c3))
-  +r2 = dc_alu2(O.Found.ar(r1), O.OpsFLOORDIV{}, O.Found.i(pi), O.Found.i(c1))
-  +r3 = dc_alu2(O.Found.ar(r2), O.OpsFLOORMOD{}, O.Found.i(pi), O.Found.i(c4))
-  +r4 = dc_alu2(O.Found.ar(r3), O.OpsFLOORMOD{}, O.Found.i(pi), O.Found.i(c3))
-  +r5 = dc_alu2(O.Found.ar(r4), O.OpsFLOORMOD{}, O.Found.i(pi), O.Found.i(c1))
-  +r6 = dc_alu2(O.Found.ar(r5), O.OpsFLOORMOD{}, O.Found.i(pi), O.Found.i(c0))
-  +r7 = dc_alu2(O.Found.ar(r6), O.OpsFLOORDIV{}, O.Found.i(pu), O.Found.i(c3))
-  +r8 = dc_alu2(O.Found.ar(r7), O.OpsFLOORDIV{}, O.Found.i(pi), O.Found.i(c2p))
+  +r0 = dc_alu2(O.Found.ar(anb), O.OpsDIV{}, O.Found.i(pi), O.Found.i(c4))
+  +r1 = dc_alu2(O.Found.ar(r0), O.OpsDIV{}, O.Found.i(pi), O.Found.i(c3))
+  +r2 = dc_alu2(O.Found.ar(r1), O.OpsDIV{}, O.Found.i(pi), O.Found.i(c1))
+  +r3 = dc_alu2(O.Found.ar(r2), O.OpsMOD{}, O.Found.i(pi), O.Found.i(c4))
+  +r4 = dc_alu2(O.Found.ar(r3), O.OpsMOD{}, O.Found.i(pi), O.Found.i(c3))
+  +r5 = dc_alu2(O.Found.ar(r4), O.OpsMOD{}, O.Found.i(pi), O.Found.i(c1))
+  +r6 = dc_alu2(O.Found.ar(r5), O.OpsMOD{}, O.Found.i(pi), O.Found.i(c0))
+  +r7 = dc_alu2(O.Found.ar(r6), O.OpsDIV{}, O.Found.i(pu), O.Found.i(c3))
+  +r8 = dc_alu2(O.Found.ar(r7), O.OpsDIV{}, O.Found.i(pi), O.Found.i(c2p))
   # l0..l9
   +r9 = dc_alu2(O.Found.ar(r8), O.OpsMUL{}, O.Found.i(pi), O.Found.i(c4))
   +ra = dc_alu2(O.Found.ar(r9), O.OpsMUL{}, O.Found.i(pi), O.Found.i(c1))
   +rb = dc_alu2(O.Found.ar(ra), O.OpsMUL{}, O.Found.i(pi), O.Found.i(cm1))
   +rc2 = dc_alu2(O.Found.ar(rb), O.OpsMUL{}, O.Found.i(pi), O.Found.i(cbig))
   +rd = dc_alu2(O.Found.ar(rc2), O.OpsMUL{}, O.Found.i(pi), O.Found.i(c5))
-  +re = dc_alu2(O.Found.ar(rd), O.OpsCDIV{}, O.Found.i(pu), O.Found.i(c4))
-  +rf = dc_alu2(O.Found.ar(re), O.OpsCDIV{}, O.Found.i(pi), O.Found.i(c4))
-  +rg = dc_alu2(O.Found.ar(rf), O.OpsCDIV{}, O.Found.i(pz), O.Found.i(c4))
-  +rh = dc_alu2(O.Found.ar(rg), O.OpsCDIV{}, O.Found.i(pz), O.Found.i(c3))
-  +ri = dc_alu2(O.Found.ar(rh), O.OpsCMOD{}, O.Found.i(pz), O.Found.i(c3))
+  +re = dc_alu2(O.Found.ar(rd), O.OpsTRUNCDIV{}, O.Found.i(pu), O.Found.i(c4))
+  +rf = dc_alu2(O.Found.ar(re), O.OpsTRUNCDIV{}, O.Found.i(pi), O.Found.i(c4))
+  +rg = dc_alu2(O.Found.ar(rf), O.OpsTRUNCDIV{}, O.Found.i(pz), O.Found.i(c4))
+  +rh = dc_alu2(O.Found.ar(rg), O.OpsTRUNCDIV{}, O.Found.i(pz), O.Found.i(c3))
+  +ri = dc_alu2(O.Found.ar(rh), O.OpsTRUNCMOD{}, O.Found.i(pz), O.Found.i(c3))
   +rj = dc_alu2(O.Found.ar(ri), O.OpsADD{}, O.Found.i(pi), O.Found.i(ng))
   +rk = dc_alu2(O.Found.ar(rj), O.OpsCMPLT{}, O.Found.i(im1), O.Found.i(j3))
   +rl = dc_alu2(O.Found.ar(rk), O.OpsCMPLT{}, O.Found.i(im1), O.Found.i(c5))
@@ -1468,9 +1468,9 @@ def fixtures() -> Gate:
   +rt = dc_alu2(O.Found.ar(rs), O.OpsMUL{}, O.Found.i(c4), O.Found.i(pi))
   +ru = dc_alu2(O.Found.ar(rt), O.OpsCMPLT{}, O.Found.i(m1i), O.Found.i(cj))
   # l27..l29
-  +rv = dc_alu2(O.Found.ar(ru), O.OpsCDIV{}, O.Found.i(pz), O.Found.i(c200))
-  +rw = dc_alu2(O.Found.ar(rv), O.OpsCDIV{}, O.Found.i(pz), O.Found.i(c0))
-  +rx = dc_alu2(O.Found.ar(rw), O.OpsCDIV{}, O.Found.i(pi), O.Found.i(c3))
+  +rv = dc_alu2(O.Found.ar(ru), O.OpsTRUNCDIV{}, O.Found.i(pz), O.Found.i(c200))
+  +rw = dc_alu2(O.Found.ar(rv), O.OpsTRUNCDIV{}, O.Found.i(pz), O.Found.i(c0))
+  +rx = dc_alu2(O.Found.ar(rw), O.OpsTRUNCDIV{}, O.Found.i(pi), O.Found.i(c3))
   +tf = dc_alu2(O.Found.ar(rx), O.OpsTHREEFRY{}, O.Found.i(ctx), O.Found.i(ctk))
   Gate{O.Found.ar(tf), [O.Found.i(r0), O.Found.i(r1), O.Found.i(r2), O.Found.i(r3), O.Found.i(r4), O.Found.i(r5), O.Found.i(r6), O.Found.i(r7), O.Found.i(r8), O.Found.i(anb), O.Found.i(r9), O.Found.i(ra), O.Found.i(rb), O.Found.i(rc2), O.Found.i(rd), O.Found.i(re), O.Found.i(rf), O.Found.i(rg), O.Found.i(rh), O.Found.i(ri), O.Found.i(rj), O.Found.i(n8), O.Found.i(n9), O.Found.i(rk), O.Found.i(rl), O.Found.i(rm), O.Found.i(rn), O.Found.i(n10), O.Found.i(ro), O.Found.i(rp), O.Found.i(rq), O.Found.i(rc), O.Found.i(rr), O.Found.i(rs), O.Found.i(rt), O.Found.i(ru), O.Found.i(rv), O.Found.i(rw), O.Found.i(rx)], O.Found.i(tf)}
 
@@ -1674,7 +1674,7 @@ def dc_cminus1(+ar: O.Arena, +u: U32) -> U32:
   U32.sub(dc_ival(dc_val(ar, O.Arena.src(ar, u, 1))), 1)
 
 # THE SAME TWO READS for a COMMUTATIVE node, where the CONST may be EITHER src.
-# `dc_cval`/`dc_hit` read `src1` because FLOORDIV and CDIV are not commutative, and
+# `dc_cval`/`dc_hit` read `src1` because DIV and TRUNCDIV are not commutative, and
 # a rule that reuses them on a MUL reads the OTHER operand: `l25` is
 # `MUL(C(4), i)`, `dc_cval` there sees the PARAM, answers 0, and the rule skips.
 def dc_cval_s(+ar: O.Arena, +u: U32) -> U32:
@@ -1690,7 +1690,7 @@ def dc_hit_s(+ar: O.Arena, +u: U32) -> Bool:
 def dc_cval(+ar: O.Arena,+u: U32) -> U32:
   dc_pow2(dc_ival(dc_val(ar, O.Arena.src(ar, u, 1))))
 
-# `UPat.var("x", dtypes.ints)//UPat.cvar("c")` -- op.py:70. FLOORDIV is NOT in
+# `UPat.var("x", dtypes.ints)//UPat.cvar("c")` -- op.py:70. DIV is NOT in
 # `GroupOp.Commutative`, so there is no side question: the CONST is `src1` and
 # the numerator is `src0`. The `dtypes.ints` conjunct is on the NUMERATOR and is
 # load-bearing -- `s7` is a uint32 numerator and it SKIPS this rule.
@@ -1705,7 +1705,7 @@ def dc_l1.go(+ar: O.Arena,+fx: F.Folded,+self: U32,+ok: Bool) -> Maybe<&2, O.Fou
     case False{}: None{}
 
 # ---- rule 2 -- op.py:91-92. `u // 2**y -> u >> y` for an UNSIGNED numerator.
-# CDIV is not commutative, so the CONST is `src1` with no side question, and the
+# TRUNCDIV is not commutative, so the CONST is `src1` with no side question, and the
 # `dtypes.uints` conjunct is what separates this rule from rule 3. `l6` is the
 # row and `l7` is its negative: the same `// 4` on a SIGNED numerator skips here.
 def dc_l2.go(+ar: O.Arena,+fx: F.Folded,+self: U32,+ok: Bool) -> Maybe<&2, O.Found>:
@@ -1823,7 +1823,7 @@ def dc_l1(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_l1.go(F.Folded.ar(fx), fx, self, dc_l1.pat(F.Folded.ar(fx), fx, self))
 
 def dc_l2.pat(+ar: O.Arena,+fx: F.Folded,+self: U32) -> Bool:
-  Bool.and(O.op_is(ar, self, O.OpsCDIV{}),
+  Bool.and(O.op_is(ar, self, O.OpsTRUNCDIV{}),
     Bool.and(dc_isn2(ar, self),
       Bool.and(dc_hit(ar, self),
         Bool.and(U32.is_ne(dc_cval(ar, self), 0), dc_dt(fx, O.Arena.src0(ar, self), 1)))))
@@ -1832,18 +1832,18 @@ def dc_l2(+fx: F.Folded,+self: U32) -> Maybe<&2, O.Found>:
   dc_l2.go(F.Folded.ar(fx), fx, self, dc_l2.pat(F.Folded.ar(fx), fx, self))
 
 def dc_l3.pat(+ar: O.Arena,+fx: F.Folded,+self: U32) -> Bool:
-  Bool.and(O.op_is(ar, self, O.OpsCDIV{}),
+  Bool.and(O.op_is(ar, self, O.OpsTRUNCDIV{}),
     Bool.and(dc_isn2(ar, self),
       Bool.and(dc_hit(ar, self),
         Bool.and(U32.is_ne(dc_cval(ar, self), 0), dc_dt(fx, O.Arena.src0(ar, self), 0)))))
 
 def dc_l4.pat(+ar: O.Arena,+fx: F.Folded,+self: U32) -> Bool:
-  Bool.and(O.op_is(ar, self, O.OpsCDIV{}),
+  Bool.and(O.op_is(ar, self, O.OpsTRUNCDIV{}),
     Bool.and(dc_isn2(ar, self),
       Bool.and(dc_hit(ar, self), dc_dt(fx, O.Arena.src0(ar, self), 0))))
 
 def dc_l5.pat(+ar: O.Arena,+fx: F.Folded,+self: U32) -> Bool:
-  Bool.and(O.op_is(ar, self, O.OpsCMOD{}),
+  Bool.and(O.op_is(ar, self, O.OpsTRUNCMOD{}),
     Bool.and(dc_isn2(ar, self),
       Bool.and(dc_hit(ar, self), dc_dt(fx, O.Arena.src0(ar, self), 0))))
 
@@ -2341,7 +2341,7 @@ def main() -> IO(Unit):
 # | `dc_s2.pat`: `dc_is_pow2(dc_cval(...))` | `on_s5`, `out_s5` | op.py:64 read as a VALUE (`0`, and `1 -> 0` is falsy) rather than a MEMBERSHIP test |
 # | `dc_s0.pat`: drop the `U32.is_ne(dc_cval(...), 0)` conjunct | `on_s2`, `out_s2` | the other half of the same pair: `x // 1` is NOT rewritten |
 # | `dc_s0.pat` / `dc_s1`: drop the `dtypes.ints` conjunct | `on_s7`, `out_s7` | `dtypes.ints` is the four SIGNED widths and is NOT weakint, so `Cls.is_int` is the wrong test |
-# | `dc_fd.gen` / `dc_fm.gen`: drop the `O.OpsAND{}` | `out_s1`, `out_s2`, `out_s4`, `out_s6` | op.py:56 ANDs `a.alu(CMOD,b).ne(0)` with `(a<0).ne(b<0)`; without the `&` the tree is a CMPNE of two CMPNEs |
+# | `dc_fd.gen` / `dc_fm.gen`: drop the `O.OpsAND{}` | `out_s1`, `out_s2`, `out_s4`, `out_s6` | op.py:56 ANDs `a.alu(TRUNCMOD,b).ne(0)` with `(a<0).ne(b<0)`; without the `&` the tree is a CMPNE of two CMPNEs |
 # | `dc_sub` -> a real `SUB` node | `out_s1`, `out_s2`, `out_s4`, `out_s6`, `out_l10` | divergence B: `__sub__` is `self + (other * -1)` |
 # | `dc_lnot`: re-insert the `cast(bool)` | `on_l0`, `out_l0`, `on_l18`, `out_l18` | `mixin/dtype.py:19` elides the CAST on a bool, and the port's `logical_not` must too or rule 13 cannot see its own pattern |
 # | `dc_l8.leg` / `dc_l9.leg`: swap the two sides | `on_l12`, `out_l12`, `on_l13`, `out_l13` | `x < c` puts `x` on src0 and `c < x` puts it on src1; the two rules differ only there |

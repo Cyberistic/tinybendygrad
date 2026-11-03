@@ -1059,10 +1059,10 @@ def wk_store_cast(+fx: F.Folded, +self: U32) -> Maybe<&2, O.Found>:
 # GroupOp.Broadcastable == GroupOp.Binary | GroupOp.Ternary
 # (tinygrad/uop/__init__.py:110).
 def OP_BC() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsMUL{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{},
+  [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{},
    O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{},
-   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{},
-   O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}]
+   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{},
+   O.OpsMOD{}, O.OpsWHERE{}, O.OpsMULACC{}]
 
 # pm_commit_weak -- weak.py:35-41. THREE rules in Python; TWO here. It rides every round
 # that can mint a weak const, and must reach fixpoint before pm_lower_weak below defaults
@@ -1088,10 +1088,10 @@ def wk_commit_table() -> O.PMEntrys:
 # a subset test is invisible to any per-op boolean: a dropped op makes
 # `lower_weak_node` skip a node and a spurious one makes it rewrite one.
 def LOWER_OPS() -> List<&2, O.Op>:
-  [O.OpsADD{}, O.OpsMUL{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{},
+  [O.OpsADD{}, O.OpsMUL{}, O.OpsTRUNCDIV{}, O.OpsMAX{}, O.OpsTRUNCMOD{}, O.OpsCMPLT{},
    O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsOR{},
-   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{},
-   O.OpsFLOORMOD{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{},
+   O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsDIV{},
+   O.OpsMOD{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIP{},
    O.OpsNEG{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsRANGE{}, O.OpsSTACK{}, O.OpsSPECIAL{}]
 
 # pm_lower_weak -- weak.py:67-78. FOUR rules in Python; NONE here. All four read

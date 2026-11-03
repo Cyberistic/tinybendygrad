@@ -2254,6 +2254,17 @@ def i64_dec.slow(+x: I64) -> String:
 
 def i64_dec(+x: I64) -> String:
   Bool.pick(String, U32.is_eq(hi32(x), 0), u32_dec(lo32(x)), i64_dec.slow(x))
+
+# `truncate[uint64](c.val)` -- cstyle.py:28 renders a uint64 constant as the UNSIGNED decimal of the bit
+# pattern, and `i64_dec` is signed: it answers `-64ul` where CPython's `str` of the truncated value says
+# `18446744073709551552ul`. MEASURED (`PARITY.md` §116): every kernel carrying a uint64 constant diverged on
+# exactly this value. The digits are `i64_dec`'s own -- that loop already divides through `u64_divmod`, which
+# reads bit 63 as a MAGNITUDE -- so the only differences are WHICH PAIR goes in and that no "-" comes out.
+# THE FUEL IS 20 AND THE EXTRA ZEROS ARE `i64_dec.trim`'s JOB: 20 is the digit count of 2**64-1, and dividing
+# a short value 20 times leaves leading zeros for `trim` to drop -- the same def the sign path uses.
+def i64_udec(+x: I64) -> String:
+  i64_dec.text(i64_dec.trim(List.reverse(&2, U32,
+    i64_dec.go(20n, Nil{}, u64_divmod(x, i64_of_i32(10))))), "")
 def i64_mod(a: I64, b: I64) -> I64:
   divmod_r(i64_divmod(a, b))
 

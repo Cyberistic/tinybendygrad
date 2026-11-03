@@ -198,9 +198,9 @@ def is_alu(op: O.Op) -> Bool:
     case O.OpsPOW{}: True{}
     case O.OpsSHR{}: True{}
     case O.OpsSHL{}: True{}
-    case O.OpsCDIV{}: True{}
+    case O.OpsTRUNCDIV{}: True{}
     case O.OpsMAX{}: True{}
-    case O.OpsCMOD{}: True{}
+    case O.OpsTRUNCMOD{}: True{}
     case O.OpsXOR{}: True{}
     case O.OpsCMPEQ{}: True{}
     case O.OpsCMPNE{}: True{}
@@ -212,11 +212,11 @@ def is_alu(op: O.Op) -> Bool:
     case O.OpsEXP2{}: True{}
     case O.OpsLOG2{}: True{}
     case O.OpsSQRT{}: True{}
-    case O.OpsRECIPROCAL{}: True{}
+    case O.OpsRECIP{}: True{}
     case O.OpsTRUNC{}: True{}
     case O.OpsSIN{}: True{}
-    case O.OpsFLOORDIV{}: True{}
-    case O.OpsFLOORMOD{}: True{}
+    case O.OpsDIV{}: True{}
+    case O.OpsMOD{}: True{}
     case O.OpsMULACC{}: True{}
     case O.OpsWHERE{}: True{}
     case _: False{}
