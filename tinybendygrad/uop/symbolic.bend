@@ -3013,6 +3013,39 @@ def mint_alu(+op: O.Op, +f: O.Found, +srcs: List<&2, U32>) -> O.Found:
 def mint_where(+f: O.Found, c: U32, t: U32, e: U32) -> O.Found:
   mint_alu(O.OpsWHERE{}, f, [c, t, e])
 
+# `UOp.uprod` -- mixin/elementwise.py:41:
+#
+#     reduce(operator.and_ if self.dtype is dtypes.bool else operator.mul, argfix(*uops), self)
+#
+# THREE THINGS AND ONLY ONE OF THEM IS OBVIOUS. The receiver is the INITIAL VALUE (so a
+# one-element `uprod` answers the receiver and mints nothing), the fold is LEFT to right (so the
+# shape is `((self op a) op b)` and not the other grouping), and **THE OP IS `AND` WHEN THE
+# RECEIVER IS BOOL AND `MUL` OTHERWISE** -- a port that always folds `MUL` is right on every int
+# case and silently wrong on every bool one, which is why the probe below runs BOTH.
+def sy_uprod_cls(c: S.Cls) -> O.Op:
+  match c:
+    case S.CBool{}: O.OpsAND{}
+    case _        : O.OpsMUL{}
+
+def sy_uprod_op(d: S.Dt) -> O.Op:
+  match d:
+    case S.Dt{pri, bits, c, nm}: sy_uprod_cls(c)
+
+# THE SHRINKING ARGUMENT COMES FIRST. Bend reads a self-call's arguments left to right and each
+# must be passed UNCHANGED until one shrinks; `f` changes on every step (it is the arena the mint
+# grew), so it cannot precede `xs`. MEASURED: with `(f, op, xs, acc)` the compiler answered
+# "a decreasing self-call ... observed : sy_uprod_f".
+def sy_uprod_f(xs: List<&2, U32>, +f: O.Found, +op: O.Op, acc: U32) -> O.Found:
+  match xs:
+    case Nil{}  : f
+    case x <> t :
+      +f2 = mint_alu(op, f, [acc, x])
+      sy_uprod_f(t, f2, op, O.Found.i(f2))
+
+# The entry. `self` is the RECEIVER, so the op is read off ITS dtype and `rest` is `*uops`.
+def sy_uprod(+x: F.Folded, +self: U32, rest: List<&2, U32>) -> Maybe<&1, O.Found>:
+  Some{sy_uprod_f(rest, O.Found{sy_ar(x), self}, sy_uprod_op(sy_dt1(x, self)), self)}
+
 # `invalid_gate` -- `WHERE(cond, x, Invalid)` and nothing looser.
 def p_ig3(+x: F.Folded, +a: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, a, O.OpsWHERE{}), sy_nsrc_is(x, a, 3)),
