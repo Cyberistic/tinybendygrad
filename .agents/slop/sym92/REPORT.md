@@ -638,3 +638,50 @@ and answer the ORIGINAL when the index did not move (upstream's `is not uop` tes
 
 That is the whole remaining shape of `:437`'s dependency, and it is written down rather than left in a
 reverted buffer.
+
+## 2026-11-03 (final, 17): `:436` AND `:437` ARE BLOCKED BY A CYCLE, AND IT IS BEND'S, NOT A MISSING HELPER
+
+`uop_given_valid` was written -- 138 lines, the chain upsert and the `Cd{e,v}` pair list, compiling
+FIRST TRY on the two shapes the previous entry derived -- and `sym_437` on top of it. Then the TABLE
+refused it:
+
+    observed : sym_437        (a filled definition ... live code cannot use it)
+
+and the line numbers say why, exactly:
+
+    5135  sym_451            <- a rule body
+    5240  s1.sub             <- its helper, before the table
+    5649  sym_table()
+    5820  sym_dispatch.go
+    6277  sym_dispatch_f     <- the minting dispatch: THIS references `sym_437`
+    6314  sym_f              <- ... which is defined AFTER this, and CALLS it
+    7966  sy_simplify        <- needs sym_f
+    8169  sym_437            <- needs ugv -> sy_simplify
+
+The chain is `sym_dispatch_f` -> `sym_437` -> `ugv` -> `sy_simplify` -> `sym_f` -> `sym_dispatch_f`.
+**IT IS A CYCLE, AND IT IS NOT AN ORDERING MISTAKE**: `:437`'s body calls `simplify`, `simplify` is a
+fixpoint of the whole table, and the table dispatches back to `:437`.
+
+UPSTREAM ESCAPES IT WITH A LATE IMPORT, AND THE SOURCE SAYS SO:
+
+    def simplify(self, tracked=False):
+      # late import!
+      from tinygrad.uop.symbolic import symbolic
+      return graph_rewrite(self, symbolic, name="simplify")
+
+That `# late import!` comment exists precisely to break this cycle, and a late import is the one thing
+Bend cannot express: defs are resolved at compile time, there are no forward declarations, and a
+cycle is refused rather than deferred.
+
+SO `:436` AND `:437` ARE NOT PORTABLE AS RULE BODIES IN THIS FILE -- not for want of `parse_valid`
+(landed, 4/4), `bool_slice` (landed, 5/5), `s1` (landed, 3/3) or `simplify` (landed, 4/4), but because
+their body is the rewriter and the rewriter dispatches to them. `divandmod.py:108` shares it: its
+`fold_divmod_general` calls `simplify` too, and its rules are reached from the same table.
+
+THE THREE WAYS OUT, none of them small and all of them measurable:
+1. a TWO-LEVEL dispatch -- an outer table for rules that may call the rewriter, taking the inner
+   table as a PARAMETER, which is expressible because a parameter breaks the name cycle;
+2. `simplify` as a FIXED-POINT THUNK defined before the bodies and given the table at the call site
+   (same idea, threaded through every caller);
+3. declaring the two rows UNPORTABLE-IN-THIS-LAYOUT with this cycle as the evidence, which is what
+   this entry now does.
