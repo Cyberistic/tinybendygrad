@@ -1271,6 +1271,13 @@ identical):
 |---|---|---|
 | 8 | 463.1 ms | **452.7 ms** |
 | 9 | 375.0 ms | **347.0 ms** |
+| 10 | 802.6 ms | **391.0 ms** |
+| 11 | 417.9 ms | **386.3 ms** |
+| 12 | 469.2 ms | 468.4 ms |
+
+**FIVE READINGS, AND THE PORT IS AT OR BELOW tinygrad's CPU LANE IN ALL FIVE**, checksums identical in
+every one. Two of them (10 and 12) are within a few ms of each other and one CPU reading (seed 10) is an
+outlier at 802 ms, so the claim is "not slower, and usually a little faster", not "twice as fast".
 
 **That is the first reading in this record where the port's lane is not slower than tinygrad's CPU lane on
 a whole program**: the ~46 ms of per-kernel start-up that §26.4 refused to buy is gone from the steady path,
