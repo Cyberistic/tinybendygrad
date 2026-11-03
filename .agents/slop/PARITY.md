@@ -4712,3 +4712,37 @@ arms account for 300 of the 405 uops and the other 105 are a tail.
 
 **⇒ A KERNEL WITH LOOPS WOULD EXERCISE IF/BACKEDGE/RANGE AND THE CONVERSION WOULD BE MEASURABLE THERE.** It is
 not in this corpus, so the change is written down here as unmeasured rather than landed.
+
+## 106. THE FOUR ARMS ARE ABSENT FROM THE CORPUS, AND THAT IS WHY §105 WAS NEUTRAL
+
+§105 could not measure the batch conversion because the kernel it used contains none of the four arms. The
+reviewer's question is whether that was the workload's accident. It was not -- a census of **300 kernels,
+34,248 uops** from the fixture generator:
+
+```
+OpsIF          0    0.00%
+OpsBACKEDGE    0    0.00%
+OpsWMMA        0    0.00%
+OpsSPECIAL     0    0.00%
+OpsRANGE     333    0.97%
+OpsSTACK     333    0.97%
+OpsBUFFER      5    0.01%
+top ops: ADD=5200  CAST=5126  CONST=3436  MUL=3256  WHERE=3090  INDEX=2444
+```
+
+**FOUR OF THE SIX ARMS DO NOT OCCUR ONCE IN THIRTY-FOUR THOUSAND UOPS.** No workload in this project can
+price a conversion of `IF`, `BACKEDGE`, `WMMA` or `SPECIAL`: the CPU lane this port serves never renders
+them, because upstream's `ClangRenderer` lowers conditionals and backedges through the base rewrite rather
+than as `IF`/`BACKEDGE` text. The two that do occur are 0.97% each.
+
+### 106.1 What that is worth, and why it is not landed
+
+One percent of uops, on arms whose text is a few characters, is a ceiling well under the instrument's
+floor -- the same arithmetic that made §105 measure 0.9980. So the conversion is **written down and not
+landed**: it would add six definitions and a type change to a path the corpus never enters, and the record
+refuses changes it cannot measure.
+
+**⇒ AND IT CLOSES THE LAST RENDER ITEM THE ABLATIONS NAMED.** Every op this corpus contains above 1% is
+either already a piece path (`ADD`, `MUL`, `WHERE` through the ALU capture; `CAST` §97; `INDEX` §100;
+`LOAD` §102) or emits no text (`CONST`, `PARAM`). The remaining 2% is `RANGE`/`STACK`/`BUFFER`/`BUFFER`,
+and the four arms the reviewer named are 0.00%.
