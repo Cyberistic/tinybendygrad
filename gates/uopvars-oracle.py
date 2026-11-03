@@ -224,6 +224,14 @@ def main():
     zr = canonicalize_call_body(UOp(Ops.CALL, src=(UOp(Ops.SINK, src=(za,)),)))
     zslots = [x.arg.slot for x in zr.src[0].toposort() if x.op is Ops.ALLOC]
     a("ccb_one", int(zslots == [-1]))
+    # the NESTED call gets a FRESH ctx, so its ALLOC is `-1` again
+    zi = mka(5)
+    zci = UOp(Ops.CALL, src=(UOp(Ops.SINK, src=(zi,)),))
+    zco = UOp(Ops.CALL, src=(UOp(Ops.SINK, src=(zci,)),))
+    zn = canonicalize_call_body(zco)
+    zinner = [x for x in zn.src[0].src if x.op is Ops.CALL][0]
+    znslots = [x.arg.slot for x in zinner.src[0].toposort() if x.op is Ops.ALLOC]
+    a("ccb_nested", int(znslots == [-1]))
 
     print("\n".join(out))
 

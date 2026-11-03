@@ -689,6 +689,21 @@ def ccb_one() -> String:
   +ar = O.Found.ar(r)
   bf(U32.is_eq(ccb_body_alloc_slot(ar, O.Found.i(r)), O.ParamArg.no_slot()))
 
+
+# THE CHAIN IS `CALL > SINK > CALL > SINK > ALLOC` (measured), so the inner call is
+# `src0(src0(r))` and its body's ALLOC is two more levels down. THE FRESH CTX IS THE
+# CLAIM: the inner ALLOC is `no_slot` AGAIN, not the one before it.
+def ccb_nested() -> String:
+  +ai = mkalloc(O.Arena.empty(), 5)
+  +ski = mksink(O.Found.ar(ai), O.Found.i(ai))
+  +ci = mkcall(O.Found.ar(ski), O.Found.i(ski))
+  +so = mksink(O.Found.ar(ci), O.Found.i(ci))
+  +co = mkcall(O.Found.ar(so), O.Found.i(so))
+  +r = SC.canonicalize_call_body(O.Found.ar(co), O.Found.i(co))
+  +ar = O.Found.ar(r)
+  +inner = O.Arena.src0(ar, O.Arena.src0(ar, O.Found.i(r)))
+  bf(U32.is_eq(ccb_body_alloc_slot(ar, inner), O.ParamArg.no_slot()))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- ivrow("iv_alu_range", param(O.Arena.empty(), pa(0, rng(10), SP.Aalu{}, None{}, None{})))
@@ -718,5 +733,6 @@ def main() -> IO(Unit):
     p5 : Unit <- IO.print(String.concat(["ab_nest=", ab_nest()]))
     c2 : Unit <- IO.print(String.concat(["ctx_nodes=", ctx_nodes()]))
     c3 : Unit <- IO.print(String.concat(["ctx_miss=", ctx_miss()]))
-    IO.print(String.concat(["ccb_one=", ccb_one()]))
+    c4 : Unit <- IO.print(String.concat(["ccb_one=", ccb_one()]))
+    IO.print(String.concat(["ccb_nested=", ccb_nested()]))
 
