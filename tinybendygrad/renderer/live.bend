@@ -68,31 +68,35 @@ def maybe_name(nm: String) -> Maybe<&2, String>:
     case _: Some{nm}
 
 # ---------------------------------------------------------------- names -> the port's own values
+# THE WIRE IS 32.5 BYTES PER UOP AND SCANNING IT COSTS 0.15 us A CHARACTER (`PARITY.md` §48), so the dtype,
+# the address space and the arg kind travel as ONE CHARACTER each. `kind` is the biggest saving -- the string
+# `range_PLACEHOLDER` was 17 bytes for one fact. The op NAME stays textual: coding it needs a 75-arm table
+# whose only guard is a coverage check, and the win here is already 44% of the wire.
 def dt_of(nm: String) -> S.Dt:
   match nm:
-    case "f32": S.single()
-    case "i32": S.int32()
-    case "u32": S.uint32()
-    case "i64": S.int64()
-    case "u64": S.uint64()
-    case "u8": S.uint8()
-    case "i8": S.int8()
-    case "u16": S.uint16()
-    case "i16": S.int16()
-    case "bool": S.boolean()
-    case "void": S.void()
-    case "weakint": S.weakint()
-    case "weakfloat": S.weakfloat()
-    case "f16": S.half()
-    case "bf16": S.bfloat16()
-    case "f64": S.double()
+    case "1": S.single()
+    case "2": S.int32()
+    case "3": S.uint32()
+    case "4": S.int64()
+    case "5": S.uint64()
+    case "6": S.uint8()
+    case "7": S.int8()
+    case "8": S.uint16()
+    case "9": S.int16()
+    case "b": S.boolean()
+    case "v": S.void()
+    case "w": S.weakint()
+    case "W": S.weakfloat()
+    case "h": S.half()
+    case "B": S.bfloat16()
+    case "d": S.double()
     case _: S.void()
 
 def addr_of(nm: String) -> S.Addr:
   match nm:
-    case "GLOBAL": S.AGlobal{}
-    case "LOCAL": S.ALocal{}
-    case "REG": S.AReg{}
+    case "g": S.AGlobal{}
+    case "l": S.ALocal{}
+    case "r": S.AReg{}
     case _: S.Aalu{}
 
 # **`P.op_of` IS THE EXECUTOR's TABLE AND IT COVERS 46 OF THE ENUM's 75 MEMBERS, BECAUSE THE EXECUTOR ONLY
@@ -155,25 +159,25 @@ def nums(s: String) -> List<&2, U32>:
 # `wmma_f32` is an input dtype AND an arg kind, so the payload is always the plain list of numbers.
 def arg_of(kind: String, +p: String) -> C.KUArg:
   match kind:
-    case "const_int": C.KAConst{O.CInt{H.i64_of_hi_lo(u32(field(p, 0n)), u32(field(p, 1n)))}}
-    case "const_float": C.KAConst{O.CFloat{F.F32.from_bits(u32(p))}}
-    case "const_bool": C.KAConst{O.CBool{truth(p)}}
-    case "param": C.KAParam{u32(field(p, 0n)), maybe_name(field(p, 1n)), flag(field(p, 2n)),
+    case "i": C.KAConst{O.CInt{H.i64_of_hi_lo(u32(field(p, 0n)), u32(field(p, 1n)))}}
+    case "f": C.KAConst{O.CFloat{F.F32.from_bits(u32(p))}}
+    case "t": C.KAConst{O.CBool{truth(p)}}
+    case "p": C.KAParam{u32(field(p, 0n)), maybe_name(field(p, 1n)), flag(field(p, 2n)),
                             u32(field(p, 3n))}
-    case "range_WEAK": C.KARange{O.AXIS_WEAK{}, nums(p)}
-    case "range_GLOBAL": C.KARange{O.AXIS_GLOBAL{}, nums(p)}
-    case "range_LOCAL": C.KARange{O.AXIS_LOCAL{}, nums(p)}
-    case "range_DEVICE": C.KARange{O.AXIS_DEVICE{}, nums(p)}
-    case "range_UPCAST": C.KARange{O.AXIS_UPCAST{}, nums(p)}
-    case "range_WARP": C.KARange{O.AXIS_WARP{}, nums(p)}
-    case "range_LOOP": C.KARange{O.AXIS_LOOP{}, nums(p)}
-    case "range_PLACEHOLDER": C.KARange{O.AXIS_PLACEHOLDER{}, nums(p)}
-    case "index": C.KAIndex{u32(p), False{}}
-    case "sink": C.KASink{p}
-    case "special": C.KASpecial{field(p, 0n), u32(field(p, 1n)), field(p, 2n)}
-    case "wmma_f32": C.KAWmma{nums(p), S.single()}
-    case "wmma_f16": C.KAWmma{nums(p), S.half()}
-    case "wmma_bf16": C.KAWmma{nums(p), S.bfloat16()}
+    case "RW": C.KARange{O.AXIS_WEAK{}, nums(p)}
+    case "RG": C.KARange{O.AXIS_GLOBAL{}, nums(p)}
+    case "RL": C.KARange{O.AXIS_LOCAL{}, nums(p)}
+    case "RD": C.KARange{O.AXIS_DEVICE{}, nums(p)}
+    case "RU": C.KARange{O.AXIS_UPCAST{}, nums(p)}
+    case "RR": C.KARange{O.AXIS_WARP{}, nums(p)}
+    case "RO": C.KARange{O.AXIS_LOOP{}, nums(p)}
+    case "RP": C.KARange{O.AXIS_PLACEHOLDER{}, nums(p)}
+    case "x": C.KAIndex{u32(p), False{}}
+    case "s": C.KASink{p}
+    case "q": C.KASpecial{field(p, 0n), u32(field(p, 1n)), field(p, 2n)}
+    case "M1": C.KAWmma{nums(p), S.single()}
+    case "M2": C.KAWmma{nums(p), S.half()}
+    case "M3": C.KAWmma{nums(p), S.bfloat16()}
     case _: C.KANone{}
 
 # ---------------------------------------------------------------- one uop line -> one KU

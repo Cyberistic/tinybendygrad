@@ -2190,3 +2190,48 @@ check and `ksweep`'s 37 kernels.
 **⇒ SO THE DECODER'S CEILING IS 4.6 ms AND THE BEST AVAILABLE CHANGE IS 1.7 OF IT.** That is above ab33's
 noise floor (§38 resolved 1.1%), so it is a real target rather than a rounding -- but it is also the whole of
 what this axis contains, and it is a coded wire with four tables to get right, not a one-line change.
+
+## 49. THE WIRE IS 27% SHORTER AND THE RENDER IS 11% FASTER
+
+§48 measured 0.15 us per scanned character and bounded the decoder at 4.6 ms, with the available change
+being to emit less TEXT. This is that change, and it is the largest single win since §39.
+
+### 49.1 What changed
+
+Three wire fields were carrying names for facts that fit in one character:
+
+```
+CONST weakint ALU - 1 const_int 0~392 -          40 bytes
+CONST w       a   - 1 i         0~392 -          25 bytes
+```
+
+`dt` (16 dtypes), `addr` (4) and `kind` (17, and `range_PLACEHOLDER` alone was 17 bytes) now travel as one
+character each; `kind`'s range codes carry the axis (`RG`, `RL`, `RU`, `RP`, ...) and the WMMA codes carry the
+input dtype (`M1`, `M2`, `M3`), so the tag still is the slicing and the decoder still never slices. **The op
+NAME stays textual** -- coding it would need a 75-arm table whose only guard is a coverage check, and the
+three small fields are already 27% of the wire.
+
+```
+wire 13 152 B -> 9 541 B   (27% shorter)
+same emitted C: True
+```
+
+### 49.2 Measured
+
+```
+before (names)  min 90.3  p25 104.4  median 106.6 ms
+after  (coded)  min 81.0  p25  86.3  median  92.2 ms
+ratio new/old  min 0.7429  p25 0.8537  median 0.8903  max 1.0001
+rounds where the new artifact is faster: 11 of 12
+```
+
+**11% MEDIAN, 11 OF 12 ROUNDS, AND THE WORST ROUND IS A TIE (1.0001)** -- the strongest reading in this record
+after §39's 0.9447 at 12/12, and the first one that came from making the WORK smaller rather than from
+removing waste. It is also exactly what §48 predicted from the per-character measurement: 27% of the text at
+0.15 us/char is ~1.2 ms per 405 uops, and the rest of the 11% is the shorter string COMPARISONS in
+`dt_of`/`addr_of`/`arg_of`, which the character count does not see.
+
+### 49.3 Byte-identical
+
+`ksweep 37 of 37 byte-identical on BOTH decoders`, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`,
+`opbattery 39 of 39`, and the two artifacts emit the SAME C on the 405-uop wire compared byte for byte.

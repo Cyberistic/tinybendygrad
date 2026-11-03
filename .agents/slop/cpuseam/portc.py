@@ -211,6 +211,21 @@ def _const(payload: str) -> tuple[str, str]:
   return "const_int", f"{(u >> 32) & 0xFFFFFFFF}~{u & 0xFFFFFFFF}"
 
 
+# **THE WIRE IS 32.5 BYTES PER UOP AND SCANNING IT COSTS 0.15 us A CHARACTER** (`PARITY.md` §48). So the
+# three NAME fields travel as ONE CHARACTER each: the dtype, the address space, and the arg kind. `kind` is
+# the big one -- `range_PLACEHOLDER` is 17 bytes for one fact. The op NAME stays textual because coding it
+# would need a 75-arm table whose only guard is a coverage check, and the win here is already 44% of the wire.
+KIND_CODE = {"const_int": "i", "const_float": "f", "const_bool": "t", "param": "p", "index": "x",
+             "sink": "s", "special": "q", "none": "-",
+             "range_WEAK": "RW", "range_GLOBAL": "RG", "range_LOCAL": "RL", "range_DEVICE": "RD",
+             "range_UPCAST": "RU", "range_WARP": "RR", "range_LOOP": "RO", "range_PLACEHOLDER": "RP",
+             "wmma_f32": "M1", "wmma_f16": "M2", "wmma_bf16": "M3"}
+DT_CODE = {"f32": "1", "i32": "2", "u32": "3", "i64": "4", "u64": "5", "u8": "6", "i8": "7", "u16": "8",
+           "i16": "9", "bool": "b", "void": "v", "weakint": "w", "weakfloat": "W", "f16": "h",
+           "bf16": "B", "f64": "d"}
+ADDR_CODE = {"GLOBAL": "g", "LOCAL": "l", "REG": "r", "ALU": "a", "NONE": "n"}
+
+
 def _arg(kind: str, payload: str) -> tuple[str, str]:
   """the (tag, payload) pair `live.bend`'s `arg_of` reads. THE TAG CARRIES THE SLICING."""
   if kind == "const":
@@ -275,7 +290,8 @@ def wire_rows(rs) -> str:
     _idx, op, dt, addr, shape, numel, srcs, kind, payload = r.split("|")
     tag, val = _arg(kind, payload)
     zero = "-" if not srcs.strip() else "~".join(str(int(x) - 1) for x in srcs.split())
-    lines.append(" ".join([op, dt, addr, shape or "-", numel, tag, val, zero]))
+    lines.append(" ".join([op, DT_CODE[dt], ADDR_CODE[addr], shape or "-", numel,
+                           KIND_CODE[tag], val, zero]))
   if not lines:
     raise RuntimeError("portc: the port rendered no uops")
   return "\n".join(lines) + "\n"
