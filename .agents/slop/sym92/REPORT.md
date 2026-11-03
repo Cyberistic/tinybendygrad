@@ -940,3 +940,36 @@ CONSEQUENCE FOR THE GUARD WORK: `:253`'s guard (committed, `probe-253`) was veri
 `fits` for `:171`, `:309`/`:311`, `:485`, `:255`/`:259`/`:261` and `:283` STAYS UNWRITTEN until this
 discrepancy is settled, because a guard tested through a path that never reaches the rule proves
 nothing in either direction.
+
+## 27. OPEN: `:263` IS DEAD IN THE PORT -- `pat` says True and `mk` answers None
+
+MEASURED 2026-11-04, `.agents/slop/sym92/probe-263.bend`, `(y + x) + x` with x,y int8, one arena per
+case, every question asked of the SAME folded node:
+
+    sym_251.pat(node)                          True
+    sym_251(node)                              norewrite
+    sym_mint_f(82, node)                       norewrite
+    sy_simp.n(1n)  sy_simp.n(2n)  sy_simp.n(3n)  all unchanged
+
+So the six `:263` arms do not fire, and the failure is in the BODY and not in the pattern, the
+dispatch or the fixpoint -- **this is NOT the oscillation from section 26: pass 1 does not rewrite
+either, so there is no parity to blame.**
+
+`sym_251` is `sy_tri_f(pat, mk(mint_const_like(mint_ar(sy_ar(x)), x, sym_251.z(x, u), CInt 2), ...))`
+and `mk` matches on `Maybe`: a `None` from `mint_const_like` makes the whole rule answer `None`. That
+is the surviving suspect -- `mint_const_like.go` calls `sy_trunc(sy_dt1(x, u), v)` and answers `None`
+when the truncation does.
+
+**WHY THIS IS A ROW-LEVEL DEFECT THE CENSUS CANNOT SEE.** The `:263` row reads PORTED because the
+port has an entry, the entry cites the line, and the op set matches -- and the rule has never fired.
+**A PORTED ROW IS A CLAIM ABOUT A MAPPING; IT IS NOT A CLAIM THAT THE BODY RUNS**, and this tree's
+own `DEAD IS NOT A ZERO` is the same sentence one level down.
+
+NOT FIXED HERE. The next step is one call of `mint_const_like` on that exact node to see whether
+`sy_trunc` refuses int8 `2` or whether the `Maybe` is being consumed twice, and the fix belongs
+wherever that answers, not here.
+
+THE SAME QUESTION NOW APPLIES TO EVERY ROW THIS SESSION DID NOT OPEN. `:171` was found dead in the
+same way except that its `mk` was fine and the FIXPOINT was lying; `:263`'s `mk` is not fine. A
+sweep that calls `pat`, then `mk`, then `sy_simp.n(1n)` on a fixture for every resposed row would
+name every dead body at once, and that sweep is the instrument this lane is missing.
