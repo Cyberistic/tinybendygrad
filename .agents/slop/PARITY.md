@@ -4464,3 +4464,37 @@ ratio min 0.7722  p25 0.9627  median 1.0061  max 1.3833   12 of 26 faster
 0.65 ms §99 removed was `i64_dec`'s FOLD (a division loop per digit, over the wide form), not the forty
 small `U32.show` calls the renderer itself makes. **A CLASS COUNTED BY CALL SITES IS NOT A CLASS COUNTED BY
 TIME** -- the same trap §79.1 hit with `Ops.value`'s 12,600 calls.
+
+## 100. THE INDEX ARM JOINS THE PIECE PATH: 0.9403 AND 0.9454, 46 OF 56 ROUNDS
+
+§98's post-piece ablation put INDEX at 0.26 ms (5.8%), no longer noise. It is three defs, each with a
+strict `Bool.pick` at its head, and all three now branch instead:
+
+| def | before | after |
+|---|---|---|
+| `ku_render_index` | `Bool.pick(alu_addr, aluarm, global)` | `ku_render_index.by(b, ...)`, a Bool-parameter `match` |
+| `ku_render_index.aluarm` | `Bool.pick(const_cast, aluconst, "(src0)[src1)")` | `ku_render_index.aluarm.pick(b, ...)` |
+| `ku_render_index.aluconst` | `Bool.pick(numel > thresh, "src0[ix]", "src0.ix")` | `ku_render_index.aluconst.pick(b, ...)` |
+| `ku_render_index.global` | `Bool.pick(add, strip(rt(src1)), rt(src1))` — **`rt` twice** | `ku_src_pieces(add, rtp(src1))` |
+
+Every arm answers pieces with `rtp`, so the source's text is Consed rather than copied -- and the three
+strict picks stop building the arm they discard.
+
+### 100.1 Measured
+
+```
+same C: True | bytes: 4426
+run 1 (26 rounds): before 4.27 ms  after 4.11 ms   median 0.9403   23/26
+run 2 (30 rounds): before 4.23 ms  after 4.04 ms   median 0.9454   23/30
+```
+
+**46 OF 56 ROUNDS, BOTH MEDIANS ~0.94 -- ~6% ON THE TURN.**
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
+
+**⇒ AND THE PIECE HELPERS HAD TO BE HOISTED**: `strip_pieces`/`ku_src_pieces` lived beside the ALU path at
+~1830 and `ku_render_index.global` sits at ~1627, so the file needed them above their first user -- the
+same forward-reference rule that has shaped every change since §83.

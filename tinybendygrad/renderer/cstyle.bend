@@ -1518,24 +1518,6 @@ def rt(+r: Rows, +i: U32) -> String: String.join(rtp(r, i), "")
 # **STRIPPING THE OUTER PARENTHESES OF PIECES COSTS NO CHARACTERS.** `cfo_bin` emits `(` and `)` as their
 # OWN pieces, so a source with the parent's op is `["(", ...inner..., ")"]` and the strip is dropping those
 # two pieces -- the same answer as `H.strip_parens` on the joined string, without joining it (§95.1).
-def drop_last(+ps: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
-  match ps:
-    case Nil{}: List.reverse(&2, String, acc)
-    case h <> t:
-      match t:
-        case Nil{}: List.reverse(&2, String, acc)
-        case _ <> _: drop_last(t, List.append(&2, String, [h], acc))
-
-def strip_pieces.go(b: Bool, +t: List<&2, String>, +ps: List<&2, String>) -> List<&2, String>:
-  match b:
-    case True{}: drop_last(t, Nil{})
-    case False{}: ps
-
-def strip_pieces(+ps: List<&2, String>) -> List<&2, String>:
-  match ps:
-    case Nil{}: Nil{}
-    case h <> t: strip_pieces.go(String.eq(h, "("), t, ps)
-
 # **A 16-WAY BLOCKED VIEW, BECAUSE `List.get` IS O(INDEX) AND THIS LIST IS INDEXED 1,915 TIMES PER
 # RENDER.** `ku_at` was 292,722 of the 805,127 list steps a 405-uop render took (MEASURED, `PARITY.md` §76).
 # Sixteen is the block that minimises `i/16 + i%16` at this length: MEASURED off the wire, the mean source
@@ -1624,9 +1606,33 @@ def ku_swizzle(n: U32) -> String:
 def ku_index_is_const_cast(+kus: List<&2, List<&2, KU>>, +idx: U32) -> Bool:
   Bool.and(ku_is_cast_at(kus, idx), ku_is_const_at(kus, ku_src0_at(kus, idx)))
 
-def ku_render_index.global(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
-  String.concat(["(", rt(r, KU.src0(k)), "+",
-    Bool.pick(String, KUArg.index_is_add(KU.arg(k)), H.strip_parens(rt(r, KU.src1(k))), rt(r, KU.src1(k))), ")"])
+def drop_last(+ps: List<&2, String>, +acc: List<&2, String>) -> List<&2, String>:
+  match ps:
+    case Nil{}: List.reverse(&2, String, acc)
+    case h <> t:
+      match t:
+        case Nil{}: List.reverse(&2, String, acc)
+        case _ <> _: drop_last(t, List.append(&2, String, [h], acc))
+
+def strip_pieces.go(b: Bool, +t: List<&2, String>, +ps: List<&2, String>) -> List<&2, String>:
+  match b:
+    case True{}: drop_last(t, Nil{})
+    case False{}: ps
+
+def strip_pieces(+ps: List<&2, String>) -> List<&2, String>:
+  match ps:
+    case Nil{}: Nil{}
+    case h <> t: strip_pieces.go(String.eq(h, "("), t, ps)
+
+def ku_src_pieces(b: Bool, +ps: List<&2, String>) -> List<&2, String>:
+  match b:
+    case True{}: strip_pieces(ps)
+    case False{}: ps
+
+def ku_render_index.global(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  +ps = rtp(r, KU.src1(k))
+  List.concat(&2, String, [["("], rtp(r, KU.src0(k)), ["+"],
+    ku_src_pieces(KUArg.index_is_add(KU.arg(k)), ps), [")"]])
 
 # ===========================================================================
 # THE TEXT OF ONE UOP -- the port of `base_rewrite` (cstyle.py:11-77), FOR THE
@@ -1852,11 +1858,6 @@ def ku_range_name(+arg: KUArg) -> String:
 # `List.get` by src-to-current distance -- and `strip_parens` scanned the source even when its result was
 # discarded. The bool as a parameter means the scan happens only on the branch that keeps it (§39's cure).
 # MEASURED: the ALU catch-all is 0.55 ms of the render (`PARITY.md` §89) and this is its per-operand work.
-def ku_src_pieces(b: Bool, +ps: List<&2, String>) -> List<&2, String>:
-  match b:
-    case True{}: strip_pieces(ps)
-    case False{}: ps
-
 def ku_alu_srcs.go(+op: O.Op, k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows,                    +ss: List<&2, U32>, +acc: List<&2, List<&2, String>>) -> List<&2, List<&2, String>>:
   match ss:
     case Nil{}: acc
@@ -2351,30 +2352,40 @@ def ku_const_cast_by(b: Bool, +dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +
 def ku_const_cast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_const_cast_by(ku_is_const_at(kus, KU.src0(k)), dev, k, kus, r)
 
-def ku_render_index.aluconst.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                                  +r: Rows) -> String:
+def ku_render_index.aluconst.pick(b: Bool, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows, +ix: U32) -> List<&2, String>:
+  match b:
+    case True{}: List.concat(&2, String, [rtp(r, KU.src0(k)), ["["], [U32.show(ix)], ["]"]])
+    case False{}: List.concat(&2, String, [rtp(r, KU.src0(k)), ["."], [ku_swizzle(ix)]])
+
+def ku_render_index.aluconst.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>,                                  +r: Rows) -> List<&2, String>:
   match m:
     case Some{b}:
-      Bool.pick(String, U32.is_gt(KU.numel(b), gep_arr_threshold.of(dev)),
-        String.concat([rt(r, KU.src0(k)), "[", U32.show(ku_const_val(kus, ku_src0_at(kus, KU.src1(k)))), "]"]),
-        String.concat([rt(r, KU.src0(k)), ".", ku_swizzle(ku_const_val(kus, ku_src0_at(kus, KU.src1(k))))]))
-    case None{}: ""
+      ku_render_index.aluconst.pick(U32.is_gt(KU.numel(b), gep_arr_threshold.of(dev)), k, kus, r,
+        ku_const_val(kus, ku_src0_at(kus, KU.src1(k))))
+    case None{}: [""]
 
-def ku_render_index.aluconst(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_render_index.aluconst(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_render_index.aluconst.go(ku_at(kus, KU.src0(k)), dev, k, kus, r)
 
-def ku_render_index.aluarm.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+def ku_render_index.aluarm.pick(b: Bool, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  match b:
+    case True{}: ku_render_index.aluconst(dev, k, kus, r)
+    case False{}: List.concat(&2, String, [["("], rtp(r, KU.src0(k)), [")["], rtp(r, KU.src1(k)), [")"]])
+
+def ku_render_index.aluarm.go(m: Maybe<&2, KU>, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   match m:
-    case Some{b}:
-      Bool.pick(String, ku_index_is_const_cast(kus, KU.src1(k)),
-        ku_render_index.aluconst(dev, k, kus, r),
-        String.concat(["(", rt(r, KU.src0(k)), ")[", rt(r, KU.src1(k)), ")"]))
-    case None{}: ""
-def ku_render_index.aluarm(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
+    case Some{b}: ku_render_index.aluarm.pick(ku_index_is_const_cast(kus, KU.src1(k)), dev, k, kus, r)
+    case None{}: [""]
+def ku_render_index.aluarm(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
   ku_render_index.aluarm.go(ku_at(kus, KU.src0(k)), dev, k, kus, r)
 
-def ku_render_index(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
-  Bool.pick(String, is_alu_addr(KU.addr(k)), ku_render_index.aluarm(dev, k, kus, r),
-    ku_render_index.global(dev, k, kus, r))
+def ku_render_index.by(b: Bool, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  match b:
+    case True{}: ku_render_index.aluarm(dev, k, kus, r)
+    case False{}: ku_render_index.global(dev, k, kus, r)
+
+def ku_render_index(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  ku_render_index.by(is_alu_addr(KU.addr(k)), dev, k, kus, r)
 
 def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   Bool.pick(String, O.eq_dt(KU.dtype(k), S.void()), "for (;;) {",
@@ -2502,8 +2513,8 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, 
     case O.OpsCAST{}: ku_text_cast(dev, k, kus, r)
     case O.OpsBITCAST{}: [ku_text_bitcast(dev, k, kus, r)]
     case O.OpsBARRIER{}: [barrier.of(dev)]
-    case O.OpsINDEX{}: [ku_render_index(dev, k, kus, r)]
-    case O.OpsSHRINK{}: [ku_render_index(dev, k, kus, r)]
+    case O.OpsINDEX{}: ku_render_index(dev, k, kus, r)
+    case O.OpsSHRINK{}: ku_render_index(dev, k, kus, r)
     case O.OpsLOAD{}: [ku_text_load(dev, k, kus, r)]
     case O.OpsSTORE{}: [ku_text_store(dev, k, kus, r)]
     case O.OpsBUFFER{}: [ku_text_buffer(dev, i, k, r)]
