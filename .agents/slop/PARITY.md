@@ -2403,3 +2403,27 @@ that directory holds five TRACKED fixture `.c` files beside 250 MB of build outp
 
 `ksweep 37 of 37 on both decoders`, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`.
 **NO `.bend` CHANGED, so the corpus digest is untouched by this section.**
+
+## 54. `--bytecode`: THE SECOND HALF OF THE PACKAGING WIN, 15% MORE
+
+§53 embedded the renderer as a compiled executable and took 11% off a one-shot render. But `--compile` embeds
+the script as SOURCE, so the runtime still parses 433 KB at every start. Bun ships the COMPILED form with
+`--bytecode`.
+
+Measured against the §53 binary, same 405-uop wire, output compared first:
+
+```
+bytecode output identical to §53 binary: True
+§53 binary      min 39.8  p25 42.0  median 43.7 ms
+§54 bytecode    min 33.6  p25 35.6  median 37.0 ms
+ratio min 0.7267  p25 0.8074  median 0.8491  max 1.0663   13 of 14 faster
+```
+
+**15% ON TOP OF §53, AND 47.0 -> 37.0 ms FROM WHERE THE PACKAGING WORK STARTED** -- the whole reduction is
+`bun file.js` -> `--compile --minify` -> `+ --bytecode`, with the renderer byte-for-byte unchanged throughout.
+
+The artifact is written as `<stamp>.bc`, not `.bin`, so a pre-bytecode binary beside it cannot be mistaken for
+this one; `_live_bin()` still returns `None` if `bun build` cannot produce it, and the `.js` path remains the
+fallback with identical output.
+
+`ksweep 37 of 37 on both decoders`, `ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`. **NO `.bend` CHANGED.**

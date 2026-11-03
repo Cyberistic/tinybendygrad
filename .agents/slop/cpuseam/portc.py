@@ -384,10 +384,15 @@ def _chunks(text: str) -> list[str]:
 def _live_bin() -> pathlib.Path | None:
   """the compiled renderer, or None when `bun build` cannot make one (the .js path still works)."""
   js = _live_js()
-  exe = js.with_suffix(".bin")
+  # **`--bytecode` IS THE SECOND HALF OF THE PACKAGING WIN.** `--compile` embeds the script as SOURCE, so the
+  # runtime still parses 433 KB at every start; `--bytecode` ships the COMPILED form. MEASURED on the
+  # 405-uop wire against the §53 binary, same output: `median 0.8491, 13 of 14 rounds faster`, and against
+  # `bun file.js` the pair is `47.0 -> 37.0 ms` of one-shot render. The suffix is `.bc` so a pre-bytecode
+  # `.bin` beside it cannot be mistaken for this one.
+  exe = js.with_suffix(".bc")
   if exe.exists():
     return exe
-  build = subprocess.run([str(BUN), "build", "--compile", "--minify", str(js), "--outfile", str(exe)],
+  build = subprocess.run([str(BUN), "build", "--compile", "--minify", "--bytecode", str(js), "--outfile", str(exe)],
                          capture_output=True, text=True, env=ENV)
   if build.returncode != 0 or not exe.exists():
     return None
