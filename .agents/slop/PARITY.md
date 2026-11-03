@@ -3013,3 +3013,42 @@ oracle, and any change that did beat it would be a change to the semantics the c
 **AND THAT MAKES THE STEADY-STATE PICTURE COMPLETE**: parity at ratio ~1.00 is not a shortfall of this port --
 it is BOTH LANES EXECUTING THE SAME COMPILED C THROUGH THE SAME LAUNCHER, which is the strongest possible
 evidence of 1:1 rather than the weakest evidence of speed.
+
+## 70. MEASURED BY TIME INSIDE THE WORKER: THE OP TABLE LEADS, AND ORDERING IT BY FREQUENCY PAYS 2.8%
+
+§66 attributed the loop by time in a ONE-SHOT profile and found nothing above 5.4%. This profiles the WORKER
+itself: a scratch `serve.bend` with `serve(2n, ...)` so it exits after two turns and `--cpu-prof` flushes
+(the worker otherwise never exits, which is why §55 could not get a profile).
+
+```
+duration 2.15 s (mostly idle between signals), 101 538 samples at 10 us
+top port-owned by self time:
+  2.4%  live_op_by_idx      <- THE OP TABLE, written in §50
+  0.7%  dlopen              0.5% fetch
+  0.4%  char_len            0.1% List_set  0.1% List_get  0.1% List_append  0.1% String_split_push
+```
+
+**THE SINGLE LARGEST PORT-OWNED FUNCTION IS `op_by_idx`** -- the table §50 generated -- because `match` in this
+language is a LINEAR CHAIN OF STRING COMPARISONS: at enum order, a uop's op name costs on average ~38 compares
+against `"0".."74"`.
+
+### 70.1 The change
+
+The same 75 arms, the same mapping, **reordered by measured frequency** -- counted over the five fixture
+kernels (782 uops): `ADD, INDEX, CONST, CAST, MUL, LOAD, CMPLT, STORE` cover **86% of every uop**, so the average
+arm position drops from ~38 to single digits. The mapping is untouched, only the order of comparisons, so the
+C cannot move.
+
+```
+same C: True
+before (enum order)   median 46.9 ms
+after  (by frequency) median 46.8 ms
+ratio min 0.7893  p25 0.9488  median 0.9717  max 1.5357   11 of 14 faster
+```
+
+**2.8%, AND BYTE-IDENTICAL**: `ksweep 37 of 37` on both decoders, `compile.py 4 of 4`,
+`ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`.
+
+**AND THIS IS THE FIRST CHANGE IN SIX ATTEMPTS THAT CAME FROM THE PROFILE RATHER THAN FROM A CALL COUNT** --
+§47 established that a call count is not a cost, and §60/§61 spent three sections on counts without finding
+this. The instrument that worked was the one that measured TIME in the process that pays it.

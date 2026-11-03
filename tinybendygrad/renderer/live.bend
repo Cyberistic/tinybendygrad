@@ -99,35 +99,43 @@ def addr_of(nm: String) -> S.Addr:
     case _: S.Aalu{}
 
 # ENUM-PIN af08eecb67ba77d6
-# **THE OP INDEX TABLE, AND THE PIN IS WHAT MAKES IT SAFE.** The wire carries an op as its POSITION in
-# `uop/ops.bend`'s enum -- one or two characters instead of an average of 4.1, the last large field in a wire
-# §48 measured at 0.15 us per scanned character. An index table is ORDER-COUPLED, so `portc` recomputes the
-# sha256 of the enum's member list and REFUSES to render when it does not match the pin: a unit that adds or
-# reorders an op gets a loud failure, not a silent mis-mapping. It also removed the last reason to import
-# `runtime/ops_python.bend`, which was the heaviest import in this file.
+# **THE ARMS ARE ORDERED BY MEASURED FREQUENCY, NOT BY THE ENUM.** `match` is a linear chain of string
+# comparisons, so an arm costs (its position) compares -- at enum order that averages ~38 per uop over 75
+# members. MEASURED over the 5 fixture kernels (782 uops): eight op names cover
+# 86% of every uop rendered. The MAPPING is unchanged -- only the order of the comparisons -- so the C
+# cannot move, and `ksweep` and the corpus are the proof.
 def op_by_idx(nm: String) -> O.Op:
   match nm:
-    case "0": O.OpsSPECIAL{}
+    case "29": O.OpsADD{}
+    case "15": O.OpsINDEX{}
+    case "56": O.OpsCONST{}
+    case "20": O.OpsCAST{}
+    case "30": O.OpsMUL{}
+    case "17": O.OpsLOAD{}
+    case "36": O.OpsCMPLT{}
+    case "18": O.OpsSTORE{}
+    case "12": O.OpsAFTER{}
+    case "5": O.OpsPARAM{}
+    case "48": O.OpsWHERE{}
+    case "51": O.OpsRANGE{}
+    case "53": O.OpsEND{}
+    case "16": O.OpsSHRINK{}
+    case "41": O.OpsAND{}
+    case "31": O.OpsSHL{}
+    case "11": O.OpsSINK{}
+    case "13": O.OpsSTACK{}
     case "1": O.OpsBUFFER{}
+    case "0": O.OpsSPECIAL{}
     case "2": O.OpsALLOC{}
     case "3": O.OpsNOOP{}
     case "4": O.OpsREWRITE_ERROR{}
-    case "5": O.OpsPARAM{}
     case "6": O.OpsCALL{}
     case "7": O.OpsPROGRAM{}
     case "8": O.OpsLINEAR{}
     case "9": O.OpsSOURCE{}
     case "10": O.OpsBINARY{}
-    case "11": O.OpsSINK{}
-    case "12": O.OpsAFTER{}
-    case "13": O.OpsSTACK{}
     case "14": O.OpsGETADDR{}
-    case "15": O.OpsINDEX{}
-    case "16": O.OpsSHRINK{}
-    case "17": O.OpsLOAD{}
-    case "18": O.OpsSTORE{}
     case "19": O.OpsWMMA{}
-    case "20": O.OpsCAST{}
     case "21": O.OpsBITCAST{}
     case "22": O.OpsEXP2{}
     case "23": O.OpsLOG2{}
@@ -136,34 +144,25 @@ def op_by_idx(nm: String) -> O.Op:
     case "26": O.OpsRECIPROCAL{}
     case "27": O.OpsNEG{}
     case "28": O.OpsTRUNC{}
-    case "29": O.OpsADD{}
-    case "30": O.OpsMUL{}
-    case "31": O.OpsSHL{}
     case "32": O.OpsSHR{}
     case "33": O.OpsCDIV{}
     case "34": O.OpsMAX{}
     case "35": O.OpsCMOD{}
-    case "36": O.OpsCMPLT{}
     case "37": O.OpsCMPNE{}
     case "38": O.OpsCMPEQ{}
     case "39": O.OpsXOR{}
     case "40": O.OpsOR{}
-    case "41": O.OpsAND{}
     case "42": O.OpsTHREEFRY{}
     case "43": O.OpsSUB{}
     case "44": O.OpsFDIV{}
     case "45": O.OpsPOW{}
     case "46": O.OpsFLOORDIV{}
     case "47": O.OpsFLOORMOD{}
-    case "48": O.OpsWHERE{}
     case "49": O.OpsMULACC{}
     case "50": O.OpsBARRIER{}
-    case "51": O.OpsRANGE{}
     case "52": O.OpsIF{}
-    case "53": O.OpsEND{}
     case "54": O.OpsENDIF{}
     case "55": O.OpsBACKEDGE{}
-    case "56": O.OpsCONST{}
     case "57": O.OpsCUSTOM{}
     case "58": O.OpsCUSTOMI{}
     case "59": O.OpsINS{}
