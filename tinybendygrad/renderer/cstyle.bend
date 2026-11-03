@@ -2231,24 +2231,36 @@ def ku_cast_wrapped(dev: U32, d: S.Dt, v: String) -> String:
 # FOUR arms of the chain below and `Bool.pick` evaluates every arm, so the port was rendering the same cast
 # four times per integer constant and using one -- and a cast render is a `render_cast` -> `render_dtype`,
 # i.e. a whole dtype render each time. MEASURED in `PARITY.md` §34.
-def ku_const_cast_int_w(+s: String, +w: String, +d: S.Dt, +dev: U32, +i: H.I64) -> String:
-  Bool.pick(String, O.eq_dt(d, S.int64()), String.concat([s, "l"]),
-      Bool.pick(String, O.eq_dt(d, S.uint64()), String.concat([s, "ul"]),
-        # **A u32 CONST IS TRUNCATED, NOT PRINTED SIGNED.** cstyle.py:29 is
-        # `f"{truncate[x.dtype](c.val)}u"`, so upstream writes `4294967169u` where the port wrote
-        # `-127u` -- valid C, different text, and a divergence on 71 lines of `sin`. MEASURED
-        # 2026-11-03: `sin` was the LAST of six transcendentals to stop being byte-identical.
-        Bool.pick(String, O.eq_dt(d, S.uint32()), String.concat([U32.show(H.lo32(i)), "u"]),
-          Bool.pick(String, O.eq_dt(d, S.boolean()), Bool.pick(String, H.i64_is_neg(i), "0", "1"),
-            Bool.pick(String, O.eq_dt(d, S.uint8()), w,
-              Bool.pick(String, O.eq_dt(d, S.uint16()), w,
-                Bool.pick(String, O.eq_dt(d, S.int8()), w,
-                  Bool.pick(String, O.eq_dt(d, S.int16()), w,
-                    s))))))))
+# **ONE ARM BUILDS ONE STRING; THE CHAIN BUILT NINE AND THREW EIGHT AWAY.** `Bool.pick` is STRICT, so the
+# old spelling evaluated `s + "l"`, `s + "ul"`, `U32.show(lo) + "u"` and `ku_cast_wrapped` for EVERY integer
+# constant and kept one. MEASURED (`PARITY.md` §98): CAST is the renderer's most expensive class at 0.89 ms
+# of a 4.7 ms turn, 19%, and this is its per-constant work. A Nat code answers the dispatch and `match` runs
+# exactly one arm -- §39's cure, on the arm that runs.
+def dtw(+d: S.Dt) -> Nat:
+  Bool.pick(Nat, O.eq_dt(d, S.int64()), 0n,
+    Bool.pick(Nat, O.eq_dt(d, S.uint64()), 1n,
+      Bool.pick(Nat, O.eq_dt(d, S.uint32()), 2n,
+        Bool.pick(Nat, O.eq_dt(d, S.boolean()), 3n,
+          Bool.pick(Nat, O.eq_dt(d, S.uint8()), 4n,
+            Bool.pick(Nat, O.eq_dt(d, S.uint16()), 5n,
+              Bool.pick(Nat, O.eq_dt(d, S.int8()), 6n,
+                Bool.pick(Nat, O.eq_dt(d, S.int16()), 7n, 8n))))))))
+
+def ku_ccw.at(ix: Nat, +s: String, +d: S.Dt, +dev: U32, +i: H.I64) -> String:
+  match ix:
+    case 0n: String.concat([s, "l"])
+    case 1n: String.concat([s, "ul"])
+    case 2n: String.concat([U32.show(H.lo32(i)), "u"])
+    case 3n: Bool.pick(String, H.i64_is_neg(i), "0", "1")
+    case 8n: s
+    case _: ku_cast_wrapped(dev, d, s)
+
+def ku_const_cast_int_w(+s: String, +d: S.Dt, +dev: U32, +i: H.I64) -> String:
+  ku_ccw.at(dtw(d), s, d, dev, i)
 
 def ku_const_cast_int_at(+s: String, +dt: S.Dt, +dev: U32, k: KU, +i: H.I64) -> String:
   match dt:
-    case d: ku_const_cast_int_w(s, ku_cast_wrapped(dev, d, s), d, dev, i)
+    case d: ku_const_cast_int_w(s, d, dev, i)
 
 # **THE DECIMAL IS COMPUTED ONCE AND PASSED IN, AND THAT IS A MEASURED CHANGE.** `Bool.pick` is STRICT here,
 # so every arm of the chain below is EVALUATED and one is chosen: this def used to call `H.i64_dec(i)` SEVEN

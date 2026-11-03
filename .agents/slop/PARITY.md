@@ -4340,3 +4340,56 @@ portexec 7/7 · emit-mm and emit-f64 byte-identical
 **⇒ AND THE DECOMPOSITION ON THE §96 BUILD WAS `stub 0.38 / decode 1.64 / render 2.85`**, so the render is
 now 58% of the turn, decode 34%, protocol 8%. LOAD, STORE and INDEX remain un-converted; §89 measured LOAD
 and INDEX at noise, so CAST was the only one of the four with a price.
+
+## 98. THE POST-PIECE ABLATIONS, AND THE NINE-DEEP PICK CHAIN INSIDE CAST: 0.9221 / 0.9311
+
+The per-class ablations re-run against §97, 16 interleaved rounds each:
+
+```
+CAST   full 4.66 -> ablated 3.75   saves 0.89 ms (19.0%)
+ALU    full 4.21 -> ablated 4.12   saves 0.13 ms ( 3.0%)   <-- was 0.55 before §96
+INDEX  full 4.44 -> ablated 4.07   saves 0.26 ms ( 5.8%)   <-- was noise
+LOAD   full 4.23 -> ablated 4.24   saves 0.05 ms ( 1.3%)
+TEXT   full 4.47 -> ablated 3.17   saves 1.18 ms (26.3%)   <-- was 2.16 before §96/§97
+```
+
+**THE PIECE PATH IS VISIBLE IN ITS OWN ATTRIBUTION: the ALU catch-all fell from 0.55 to 0.13 and the whole
+text class from 2.16 to 1.18 -- HALVED.** CAST is now the leader at 0.89 and it GREW, which sent the look
+inside it again.
+
+### 98.1 Nine strict picks, eight strings discarded
+
+```
+def ku_const_cast_int_w(s, w, d, dev, i) -> String:
+  Bool.pick(String, eq_dt(d, int64),  s + "l",
+    Bool.pick(String, eq_dt(d, uint64), s + "ul",
+      Bool.pick(String, eq_dt(d, uint32), U32.show(lo32(i)) + "u",
+        Bool.pick(String, eq_dt(d, boolean), i64_is_neg ? "0" : "1",
+          Bool.pick(String, eq_dt(d, uint8),  w, ... s)))))
+```
+
+Every arm is built and eight are discarded, and `w` (`ku_cast_wrapped(dev, d, s)`, itself a concatenation)
+was computed at the CALL SITE for four of the nine arms. A Nat code answers the dispatch once:
+
+```
+def dtw(+d: S.Dt) -> Nat            -- int64 0, uint64 1, uint32 2, bool 3, u8 4, u16 5, i8 6, i16 7, else 8
+def ku_ccw.at(ix: Nat, s, d, dev, i) -- match ix: one arm builds one string
+def ku_const_cast_int_w(...)         -- ku_ccw.at(dtw(d), s, d, dev, i)
+```
+
+and `w` is computed inside the four arms that need it.
+
+### 98.2 Measured
+
+```
+same C: True | bytes: 4426
+run 1 (26 rounds): before 4.68 ms  after 4.47 ms   median 0.9221   18/26
+run 2 (30 rounds): before 4.57 ms  after 4.18 ms   median 0.9311   19/30
+```
+
+**37 OF 56 ROUNDS, BOTH MEDIANS ~0.93 -- ~7% ON THE TURN.**
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
