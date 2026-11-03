@@ -5228,3 +5228,49 @@ in 2 ms, and `same C: True | bytes: 4426` on the timed path. **A SAVED WIRE IS A
 PROOF-ALL rc=0 ALL PROOFS CHECK | ksweep 37/37 both decoders | opbattery 39/39 | portexec 7/7
 emit-mm and emit-f64 byte-identical
 ```
+
+## 118. THE CORPUS IS BLOCKED BY A SECOND API CHANGE FROM THE SAME RE-VENDOR: `UOp.tag` IS GONE
+
+With the probe fixed (§116/§117) the corpus driver runs again and now stops in the CPYTHON lane, on `allred`:
+
+```
+emit py allred: rc=1:
+  File "graphcmp.py", line 949, in row_of
+    ctag(n.tag), carg(n.op, n.arg, n), tup([u(ix[id(s)]) for s in n.src])])
+AttributeError: 'UOp' object has no attribute 'tag'. Did you mean: 'tan'?
+the batch did not produce allred's output
+```
+
+**THE FIELD DID NOT MOVE, IT WAS DELETED.** `tagstr` is absent from the whole vendored tree -- the only `.tag`
+left is `ProfileProgramEvent`'s, in `renderer/amd/sqtt.py:764` and `viz/serve.py:353`, which is a different
+object:
+
+```
+$ find tinygrad -name "*.py" | xargs grep -ln tagstr
+(no output)
+```
+
+So the corpus's R6 field -- `UOp.tagstr`'s `bool | str | int | tuple[UOp,...] | None` (`ops.py:277` at the
+OLD pin, quoted in `graphcmp.py:79`) -- is now a field with no counterpart on the oracle side, and the port
+still carries a tag (`Arena.tag`, `UOp.tag`, `AInk`, and the row emitter). **THE CORPUS CANNOT AGREE ON A
+FIELD ONE SIDE NO LONGER HAS**: the faithful change is to DROP the tag from the port's uop model and from the
+R6 row on BOTH sides, which is a feature REMOVAL and not a re-pin -- 231 `tag` mentions in `ops.bend` alone,
+and the arena is the structure that stores it.
+
+**⇒ AND THE PREVIOUS ARTIFACTS SURVIVED THE FAILED RUN** (`runs/graphcmp/D/D0-run-summary.txt` is still the
+2026-10-31 22:52 file, `graphs-agree=38`), so `unhealthy()` correctly reports it STALE against the live
+substrate rather than a fresh run reporting a false green. **A REFUSED RUN LEAVES THE LAST CERTIFICATE
+VISIBLY OLD, WHICH IS THE BEHAVIOUR THE `D/`-GUARD WAS BUILT FOR.**
+
+### 118.1 What IS certified, and what is not
+
+The three ORACLE comparisons that do not read the tag are green after the re-pin and after §117:
+
+```
+PROOF-ALL rc=0 ALL PROOFS CHECK | ksweep 37/37 both decoders | opbattery 39/39 | portexec 7/7
+emit-mm and emit-f64 byte-identical
+```
+
+**SO THE RENDERER AGREES WITH CPYTHON BYTE FOR BYTE ON 37 KERNELS AND 39 OPS, AND THE 38-GRAPH CORPUS
+AGREEMENT IS UNCERTIFIED UNTIL THE TAG IS REMOVED FROM BOTH SIDES.** That is the next unit's first task, and
+it is a port feature removal with a harness row deletion, not a measurement.
