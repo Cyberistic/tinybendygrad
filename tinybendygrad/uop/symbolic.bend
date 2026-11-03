@@ -3133,6 +3133,42 @@ def sym_254.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_254(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_254.pat(x, u), sym_254.mk(x, u))
 
+# symbolic.py:266 and :269 -- TWO WHERES UNDER THE SAME CONDITION COMBINE.
+#
+#     alu(c.where(t,f), c.where(tt,ff)) -> c.where(t.alu(tt), f.alu(ff))
+#
+# and `:269` is the ASSOCIATIVE variation with a `y` riding along on the left. THE GUARD IS
+# WHY THIS TERMINATES: it fires only when BOTH true branches or BOTH false branches are
+# CONSTANTS, so the two ALUs it builds are the ones `fold_const_alu` will fold and the pair
+# cannot keep rewriting itself.
+def p_where3(+x: F.Folded, +s: U32) -> Bool:
+  Bool.and(sy_is_op(x, s, O.OpsWHERE{}), sy_nsrc_is(x, s, 3))
+
+def p_both_const(+x: F.Folded, +a: U32, +b: U32) -> Bool:
+  Bool.and(sy_is_const(x, a), sy_is_const(x, b))
+
+def sym_266.guard(+x: F.Folded, +a: U32, +b: U32) -> Bool:
+  Bool.or(p_both_const(x, sy_src1(x, a), sy_src1(x, b)),
+          p_both_const(x, sy_src2(x, a), sy_src2(x, b)))
+
+def sym_266.pat(+x: F.Folded, +u: U32) -> Bool:
+  +a = sy_src0(x, u)
+  +b = sy_src1(x, u)
+  Bool.and(Bool.and(O.GroupOp.binary(sy_op(x, u)), Bool.not(O.eq_op(sy_op(x, u), O.OpsTHREEFRY{}))),
+    Bool.and(sy_nsrc_is(x, u, 2),
+      Bool.and(Bool.and(p_where3(x, a), p_where3(x, b)),
+        Bool.and(p_same(sy_src0(x, a), sy_src0(x, b)), sym_266.guard(x, a, b)))))
+
+def sym_266.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +a = sy_src0(x, u)
+  +b = sy_src1(x, u)
+  +l = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sy_src1(x, a), sy_src1(x, b))
+  +r = mint_bin(l, sy_op(x, u), sy_src2(x, a), sy_src2(x, b))
+  Some{mint_where(r, sy_src0(x, a), O.Found.i(l), O.Found.i(r))}
+
+def sym_266(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_266.pat(x, u), sym_266.mk(x, u))
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3426,10 +3462,11 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{70, [O.OpsCMPNE{}], Nil{}, },   # 260
     O.PMEntry{71, [O.OpsWHERE{}], Nil{}, },   # 262
     O.PMEntry{72, [O.OpsWHERE{}], Nil{}, },   # 264
-    O.PMEntry{73, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{74, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{75, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{76, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{73, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsXOR{}], Nil{}, },   # 266
+    O.PMEntry{74, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{75, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{76, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{77, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3801,7 +3838,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3850,10 +3887,11 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 70: sym_260(x, u)
     case 71: sym_262(x, u)
     case 72: sym_264(x, u)
-    case 73: sym_462(x, u)
-    case 74: sym_463(x, u)
-    case 75: sym_464(x, u)
-    case 76: sym_444(x, u)
+    case 73: sym_266(x, u)
+    case 74: sym_462(x, u)
+    case 75: sym_463(x, u)
+    case 76: sym_464(x, u)
+    case 77: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
