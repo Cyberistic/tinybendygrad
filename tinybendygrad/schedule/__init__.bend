@@ -2307,11 +2307,15 @@ def g_pv(+nm: String, val: Maybe<&2, O.Const>) -> O.ParamArg:
   O.ParamArg{0, S.int32(), Some{O.PyRange{H.i64_of_i32(0), H.i64_of_i32(10)}},
     Some{1}, Some{nm}, S.Aalu{}, None{}, False{}, None{}, None{}, False{}, val}
 
-# `UOp(Ops.BUFFER, src=(UOp(Ops.SPECIAL, arg=name, src=(UOp.const(1),)),), arg=...)`
+# `UOp._buffer` (ops.py:831) is `src=(shape_to_shape_arg((size,)),)+device_range_src(device)`,
+# and `device_range_src` (:829) is `()` for a SINGLE STRING device -- so a BUFFER's src is ONE
+# CONST and **THERE IS NO SPECIAL**. MEASURED 2026-11-03 by `gates/schedsched-oracle.py`: the
+# SPECIAL form gave a gated toposort of `CONST SPECIAL BUFFER ...` where CPython's own `_buffer`
+# gives `CONST BUFFER ...`, and every `fx*_topo` row moved by one. This comment used to describe
+# the SPECIAL form, which the code never built, and the oracle was written to match the COMMENT
+# rather than the code. The bare SPECIAL it also minted was a DEAD NODE in every fixture.
 def g_buf(+slot: U32, +nm: String, ar: O.Arena) -> O.Found:
-  +z = O.UOp.const(ar, O.CInt{H.i64_of_i32(1)})
-  +sp = O.UOp.special(O.Found.ar(z), O.Found.i(z), nm)
-  O.UOp.new.param(O.Found.ar(sp), O.OpsBUFFER{}, Some{4}, O.AParam{g_pb(slot, nm)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{4}, O.AParam{g_pb(slot, nm)}, O.TNone{})
 
 # `UOp(Ops.SINK, src=(UOp(Ops.STORE, src=(UOp.const(0), UOp.const(n))),))`
 def g_body(+n: U32, ar: O.Arena) -> O.Found:
