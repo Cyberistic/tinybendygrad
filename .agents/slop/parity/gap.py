@@ -38,8 +38,10 @@ def mats(size: int):
 
 def conv_inputs(size: int):
   rng = np.random.default_rng(7)
-  return (rng.random((1, 1, size, size), dtype=np.float32),
-          rng.random((4, 1, 3, 3), dtype=np.float32))
+  # 3 in-channels and 8 filters, so a conv at a given `size` does an order of magnitude more work than
+  # the 1x4 version this started with -- the point of the larger sizes is to leave the launch floor.
+  return (rng.random((1, 3, size, size), dtype=np.float32),
+          rng.random((8, 3, 3, 3), dtype=np.float32))
 
 
 def one(dev: str, iters: int) -> float:

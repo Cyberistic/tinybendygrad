@@ -700,3 +700,31 @@ preset branches are exercised rather than assumed.
 **AND THE CORPUS IS RE-CERTIFIED AFTER THIS CHANGE** (`cli.bend` moved the digest):
 `substrate-start == substrate-end == live == 081cf9045482...`, `graphs-agree=38`, `byte-identical=38`,
 `graphs-refused=0`.
+
+## 23. PAST THE RESOLUTION: AT 1024x1024 THE LANES AGREE TO WITHIN 2%, WITH 1.0 INSIDE THE IQR
+
+§20 sampled the compute-dominant regime at 256 and 512 matmul. §23 pushes it past the launch floor by
+more than two orders of magnitude and adds a heavier conv (3 in-channels, 8 filters -- the original was
+1x4, an order of magnitude less work).
+
+| workload | BEND | CPU | ratio median | IQR | 1.0 in IQR |
+|---|---|---|---|---|---|
+| matmul 1024x1024 | 170.562 ms | 169.747 ms | **0.9971** | **0.9830-1.0065** | **yes** |
+| conv 256 (3->8 ch) | 2.800 ms | 2.714 ms | 1.0079 | 0.9966-1.0129 | yes |
+
+9 rounds each, `--iters 3`, warm-first, interleaved with the order alternating.
+
+**⇒ AND THE 1024 ROW IS THE ONE THAT SETTLES IT.** At 170 ms per realize the launch floor (~1.24 ms) is
+**1.4% of the work**, so it cannot hide anything: the lanes agree to **within 2%** and 1.0 sits inside the
+interquartile range. A 0.3% median in BEND's favour is not a claim either -- it is inside the band.
+
+**⇒ SO THE MEASURED ANSWER TO "FASTEST POSSIBLE" IS A RESOLUTION-BOUNDED OPTIMUM, AND IT IS NOW TIGHT:**
+at 16, 32, 256, 512 and **1024** matmul, and a 128 and a 256 conv2d, **BEND/tinygrad-CPU = 1.00 with the
+IQR straddling 1.0 every time**; the band shrinks from +-4% at the small sizes to +-2% at 1024 because the
+work finally dominates. **NO WORKLOAD SHOWS THE PORT MEASURABLY SLOWER**, and none shows it faster by
+more than noise.
+
+**AND THE CONV ROWS ARE THE HONEST EXCEPTION TO WATCH:** conv 256 reads 1.0079 with BEND slower in 6 of 9
+rounds, IQR 0.9966-1.0129 -- 1.0 is inside, so it is not evidence, but it is the one row whose centre is
+above 1.0 and it is recorded rather than smoothed. If a future measurement ever pushes a conv past the
+band, that is where to look first.
