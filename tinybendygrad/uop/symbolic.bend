@@ -3375,6 +3375,50 @@ def p_const_neg(+x: F.Folded, +u: U32) -> Bool: p_const_neg.go(sy_val(x, u))
 def p_const_pos(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.not(p_const_neg(x, u)), Bool.not(p_is_const_0(x, u)))
 
+# symbolic.py:300  (UPat.var("x", dtypes.weakint)*-1 < UPat.var("y")*-1, lambda x,y: y<x)
+# NEGATING BOTH SIDES FLIPS THE COMPARISON. `-1 * v` IS `MUL(CONST(-1), v)`, so each side is a
+# MUL whose const side is -1 and the answer swaps the two operands.
+def p_mul_neg1(+x: F.Folded, +s: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, s, O.OpsMUL{}), sy_nsrc_is(x, s, 2)),
+    p_is_const_neg1(x, Sw.a(p_const(x, s))))
+
+def p_mul_neg1.v(+x: F.Folded, +s: U32) -> U32: Sw.b(p_const(x, s))
+
+def sym_300.pat(+x: F.Folded, +u: U32) -> Bool:
+  +a = sy_src0(x, u)
+  +b = sy_src1(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsCMPLT{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(p_mul_neg1(x, a), p_mul_neg1(x, b)))
+
+def sym_300(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +a = sy_src0(x, u)
+  sy_tri_f(sym_300.pat(x, u),
+    Some{mint_bin(mint_ar(sy_ar(x)), O.OpsCMPLT{}, p_mul_neg1.v(x, sy_src1(x, u)), p_mul_neg1.v(x, a))})
+
+# `UPat(Ops.RANGE, src=UPat.var("end"), name="r")` -- a RANGE whose source is the node the other
+# side repeats.
+def p_range_of(+x: F.Folded, +r: U32, +e: U32) -> Bool:
+  Bool.or(Bool.and(sy_is_op(x, r, O.OpsRANGE{}), sy_nsrc_ge(x, r, 1)),
+    False{})
+
+def sym_304.pat(+x: F.Folded, +u: U32) -> Bool:
+  +r = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORMOD{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(p_range_of(x, r, sy_src1(x, u)), p_same(sy_src0(x, r), sy_src1(x, u))))
+
+# symbolic.py:304  RANGE(end) % end is the RANGE itself: an index over its own upper bound.
+def sym_304(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sy_tri_u(sym_304.pat(x, u), sy_src0(x, u))
+
+# symbolic.py:305  RANGE(end) // end is 0, and the 0 is minted at the RANGE's dtype.
+def sym_305.pat(+x: F.Folded, +u: U32) -> Bool:
+  +r = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(p_range_of(x, r, sy_src1(x, u)), p_same(sy_src0(x, r), sy_src1(x, u))))
+
+def sym_305(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_305.pat(x, u),
+    mint_const_like(mint_ar(sy_ar(x)), x, sy_src0(x, u), O.CInt{H.i64_of_i32(0)}))
+
 # symbolic.py:295  ((UPat.var("x") + UPat.cvar("c1")) + UPat.var("y"),
 #                     lambda x,c1,y: (x+y)+c1 if y.op is not Ops.CONST else None)
 # symbolic.py:296  the same for `*`.
@@ -3716,10 +3760,13 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{84, [O.OpsCMPLT{}], Nil{}, },   # 290
     O.PMEntry{85, [O.OpsADD{}], Nil{}, },   # 295
     O.PMEntry{86, [O.OpsMUL{}], Nil{}, },   # 296
-    O.PMEntry{87, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{88, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{89, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{90, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{87, [O.OpsCMPLT{}], Nil{}, },   # 300
+    O.PMEntry{88, [O.OpsFLOORMOD{}], Nil{}, },   # 304
+    O.PMEntry{89, [O.OpsFLOORDIV{}], Nil{}, },   # 305
+    O.PMEntry{90, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{91, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{92, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{93, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3783,6 +3830,7 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 55: sym_196(x, u)
     case 56: sym_197(x, u)
     case 57: sy_wself(x, u)
+    case 88: sym_304(x, u)
     case _: None{}
 
 def sym_dispatch(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -4091,7 +4139,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 89, 90, 91, 92, 93]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4154,10 +4202,12 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 84: sym_290(x, u)
     case 85: sym_295(x, u)
     case 86: sym_296(x, u)
-    case 87: sym_462(x, u)
-    case 88: sym_463(x, u)
-    case 89: sym_464(x, u)
-    case 90: sym_444(x, u)
+    case 87: sym_300(x, u)
+    case 89: sym_305(x, u)
+    case 90: sym_462(x, u)
+    case 91: sym_463(x, u)
+    case 92: sym_464(x, u)
+    case 93: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -5580,7 +5630,12 @@ def fz_op(nm: String) -> O.Op:
     case "pow": O.OpsPOW{}
     case "floordiv": O.OpsFLOORDIV{}
     case "floormod": O.OpsFLOORMOD{}
+    case "range": O.OpsRANGE{}
     case "mulacc": O.OpsMULACC{}
+    # TODO(p2): AN UNKNOWN OP NAME IS A SILENT NOOP, so a misspelt fixture builds the wrong
+    # graph and reports `norewrite`. Reproduced 2026-11-03 on `(range c8)`, which the reader
+    # could not name and turned into a NOOP instead of refusing. The fix is a `Maybe` answer
+    # through `fz_build`, and the case file should never be able to state an op nobody has.
     case _: O.OpsNOOP{}
 
 # THE BUILD. One def, and every def it calls does NOT call back, so this is a fold
