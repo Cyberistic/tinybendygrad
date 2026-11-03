@@ -5029,3 +5029,47 @@ work that REACHES the output. This is work that never reaches it: a strict `Bool
 a whole-kernel walk. The base build's absolute medians (3.55-4.04 ms) also show the machine was busier than
 the 3.3 ms the earlier turns recorded, which is why the PAIRED ratio and not the median of absolute times is
 the verdict.
+
+## 113. THE POST-§112 TURN, MEASURED INSIDE BOTH HALVES: THE DECODE IS NOT "CHARACTER-BOUND"
+
+§111 said "the decode's 1.61 ms is character-bound and the only remaining lever is a shorter wire". That was a
+MODEL, and it is wrong in a way the record has now made four times (§80, §107, §110.2, §111). This is the
+turn measured by ABLATION -- six builds of `serve.bend`, each with one layer replaced, interleaved 18 rounds
+on the same wire:
+
+```
+stub     0.30 ms   emits "X": the frame protocol + IPC floor
+split    1.09 ms   + String.split per chunk, tokens counted
+nonums   1.52 ms   + the full KU records, with `nums` returning Nil
+decode   2.07 ms   + the 484 real `nums` splits
+walk     2.95 ms   + C._render (the piece list), no output assembly
+full     3.26 ms   + render_kernel
+```
+
+### 113.1 Both halves, and the one term §111 called the floor
+
+```
+floor 0.30 | wire split 0.78 | KU records 0.43 | nums splits 0.54 | walk 1.17 | assemble 0.31
+```
+
+**THE WIRE IS 53% OF THE DECODE, NOT 100%:** 9,516 characters at 82 ns each. The other 47% is per-KU work
+-- 405 records at 1,060 ns each (`fld` x9, `op_of`, `dt_of`, `addr_of`, `arg_of`, the `KU` allocation) and
+**814 `nums` calls at 660 ns each**, which is 17% of the whole turn.
+
+### 113.2 Why `nums` is 3x the wire's per-character cost
+
+`nums` is called 814 times a render (405 shapes + 409 srcs), of which 330 are the `-` fast path. The 484
+real calls split ~2,000 characters, i.e. **270 ns a character against the wire's 82** -- because a 4-character
+string is below V8's `SlicedString` threshold, so `String_split`'s `slice` COPIES, and the ~1,100 ns is
+per-call overhead spread over four characters. Its cost is a function of the CALL COUNT, not the byte count.
+
+### 113.3 And the walk's 1.17 ms is 64,470 calls, not a hot spot
+
+Every `cstyle` function counted, one render: 296 functions, 64,470 calls, 159 a uop, mean 18 ns -- and the
+top 28 hold only 30% of them. The largest single group is `uops_to_dtypes` (2,559 `has` calls + 8,805 `DtN`
+accessor calls = **18% of every call in the walk**) for a list of distinct `(dtype, numel)` pairs; then the
+`St` record (1,004 allocations + 7,789 accessors) and the `KU`/`Rows` readers.
+
+**⇒ SO THE NEXT CHANGE IS NOT A NEW MECHANISM, IT IS A COUNT.** The walk has no hot spot to attack; it has
+159 calls a uop, and the only two terms in the whole turn that are a *structural* single item are `nums`
+(0.54, one call per field, two fields a uop) and the dtype pass (0.20, one whole extra pass over the kernel).
