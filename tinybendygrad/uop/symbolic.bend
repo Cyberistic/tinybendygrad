@@ -2779,50 +2779,51 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{3, OP_BINARY(),                     [O.OpsWHERE{}],                  },   # 87
     O.PMEntry{4, OP_BINARY(),                     [O.OpsWHERE{}],                  },   # 88
     O.PMEntry{5, OP_BINARY_NC(),                   OP_INVALID(),                    },   # 89
-    O.PMEntry{6, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 92
-    O.PMEntry{7, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 93
-    O.PMEntry{8, [O.OpsWHERE{}],                   Nil{},                           },   # 95
-    O.PMEntry{9, [O.OpsSTORE{}],                   OP_INVALID(),                    },   # 101
-    O.PMEntry{10, [O.OpsLOAD{}],                    OP_INVALID(),                    },   # 103
-    O.PMEntry{11, OP_SELF(),                        Nil{},                           },   # 120
-    O.PMEntry{12, OP_SHIFTS(),                      Nil{},                           },   # 121
-    O.PMEntry{13, [O.OpsMUL{}],                     Nil{},                           },   # 122
-    O.PMEntry{14, [O.OpsFLOORDIV{}],                Nil{},                           },   # 123
-    O.PMEntry{15, [O.OpsFLOORDIV{}],                Nil{},                           },   # 124
-    O.PMEntry{16, [O.OpsFLOORDIV{}],                Nil{},                           },   # 125
-    O.PMEntry{17, [O.OpsXOR{}],                     Nil{},                           },   # 126
-    O.PMEntry{18, [O.OpsFLOORMOD{}],                [O.OpsFLOORMOD{}],               },   # 127
-    O.PMEntry{19, [O.OpsAND{}],                     Nil{},                           },   # 130
-    O.PMEntry{20, [O.OpsOR{}],                      Nil{},                           },   # 131
-    O.PMEntry{21, [O.OpsCMPNE{}],                   Nil{},                           },   # 132
-    O.PMEntry{22, OP_IDEMPOTENT(),                  Nil{},                           },   # 133
-    O.PMEntry{23, [O.OpsWHERE{}],                   Nil{},                           },   # 135
-    O.PMEntry{24, [O.OpsWHERE{}],                   Nil{},                           },   # 136
-    O.PMEntry{25, [O.OpsCMPNE{}],                   [O.OpsCAST{}, O.OpsCONST{}],     },   # 138
-    O.PMEntry{26, [O.OpsTRUNC{}],                   Nil{},                           },   # 140
-    O.PMEntry{27, [O.OpsCMPLT{}],                   Nil{},                           },   # 142
-    O.PMEntry{28, [O.OpsFLOORMOD{}],                Nil{},                           },   # 143
-    O.PMEntry{29, [O.OpsXOR{}],                     Nil{},                           },   # 144
-    O.PMEntry{30, [O.OpsAND{}],                     Nil{},                           },   # 145
-    O.PMEntry{31, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 147
-    O.PMEntry{32, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
-    O.PMEntry{33, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
-    O.PMEntry{34, OP_ALU_NT(),                     Nil{},                           },   # 161
-    O.PMEntry{35, OP_BINARY_3F(),                   Nil{},                           },   # 163
-    O.PMEntry{36, [O.OpsMUL{}],                     Nil{},                           },   # 167
-    O.PMEntry{37, [O.OpsADD{}],                     Nil{},                           },   # 168
-    O.PMEntry{38, [O.OpsMAX{}],                     Nil{},                           },   # 169
-    O.PMEntry{39, [O.OpsMUL{}],                     Nil{},                           },   # 173
-    O.PMEntry{40, [O.OpsMUL{}],                     Nil{},                           },   # 174
-    O.PMEntry{41, [O.OpsMUL{}],                     Nil{},                           },   # 178
-    O.PMEntry{42, OP_CASTS(),                       Nil{},                           },   # 181
-    O.PMEntry{43, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
-    O.PMEntry{44, [O.OpsCAST{}],                    Nil{},                           },   # 189
-    O.PMEntry{45, [O.OpsPOW{}],                     Nil{},                           },   # 191
-    O.PMEntry{46, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
-    O.PMEntry{47, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
-    O.PMEntry{48, [O.OpsWHERE{}],                  Nil{},                           },   # 201
-    O.PMEntry{49, [O.OpsWHERE{}],                  Nil{},                           },   # 202
+    O.PMEntry{6, [O.OpsREDUCE{}],                   Nil{},                           },   # 90
+    O.PMEntry{7, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 92
+    O.PMEntry{8, [O.OpsWHERE{}],                   OP_INVALID(),                    },   # 93
+    O.PMEntry{9, [O.OpsWHERE{}],                   Nil{},                           },   # 95
+    O.PMEntry{10, [O.OpsSTORE{}],                   OP_INVALID(),                    },   # 101
+    O.PMEntry{11, [O.OpsLOAD{}],                    OP_INVALID(),                    },   # 103
+    O.PMEntry{12, OP_SELF(),                        Nil{},                           },   # 120
+    O.PMEntry{13, OP_SHIFTS(),                      Nil{},                           },   # 121
+    O.PMEntry{14, [O.OpsMUL{}],                     Nil{},                           },   # 122
+    O.PMEntry{15, [O.OpsFLOORDIV{}],                Nil{},                           },   # 123
+    O.PMEntry{16, [O.OpsFLOORDIV{}],                Nil{},                           },   # 124
+    O.PMEntry{17, [O.OpsFLOORDIV{}],                Nil{},                           },   # 125
+    O.PMEntry{18, [O.OpsXOR{}],                     Nil{},                           },   # 126
+    O.PMEntry{19, [O.OpsFLOORMOD{}],                [O.OpsFLOORMOD{}],               },   # 127
+    O.PMEntry{20, [O.OpsAND{}],                     Nil{},                           },   # 130
+    O.PMEntry{21, [O.OpsOR{}],                      Nil{},                           },   # 131
+    O.PMEntry{22, [O.OpsCMPNE{}],                   Nil{},                           },   # 132
+    O.PMEntry{23, OP_IDEMPOTENT(),                  Nil{},                           },   # 133
+    O.PMEntry{24, [O.OpsWHERE{}],                   Nil{},                           },   # 135
+    O.PMEntry{25, [O.OpsWHERE{}],                   Nil{},                           },   # 136
+    O.PMEntry{26, [O.OpsCMPNE{}],                   [O.OpsCAST{}, O.OpsCONST{}],     },   # 138
+    O.PMEntry{27, [O.OpsTRUNC{}],                   Nil{},                           },   # 140
+    O.PMEntry{28, [O.OpsCMPLT{}],                   Nil{},                           },   # 142
+    O.PMEntry{29, [O.OpsFLOORMOD{}],                Nil{},                           },   # 143
+    O.PMEntry{30, [O.OpsXOR{}],                     Nil{},                           },   # 144
+    O.PMEntry{31, [O.OpsAND{}],                     Nil{},                           },   # 145
+    O.PMEntry{32, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 147
+    O.PMEntry{33, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
+    O.PMEntry{34, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
+    O.PMEntry{35, OP_ALU_NT(),                     Nil{},                           },   # 161
+    O.PMEntry{36, OP_BINARY_3F(),                   Nil{},                           },   # 163
+    O.PMEntry{37, [O.OpsMUL{}],                     Nil{},                           },   # 167
+    O.PMEntry{38, [O.OpsADD{}],                     Nil{},                           },   # 168
+    O.PMEntry{39, [O.OpsMAX{}],                     Nil{},                           },   # 169
+    O.PMEntry{40, [O.OpsMUL{}],                     Nil{},                           },   # 173
+    O.PMEntry{41, [O.OpsMUL{}],                     Nil{},                           },   # 174
+    O.PMEntry{42, [O.OpsMUL{}],                     Nil{},                           },   # 178
+    O.PMEntry{43, OP_CASTS(),                       Nil{},                           },   # 181
+    O.PMEntry{44, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
+    O.PMEntry{45, [O.OpsCAST{}],                    Nil{},                           },   # 189
+    O.PMEntry{46, [O.OpsPOW{}],                     Nil{},                           },   # 191
+    O.PMEntry{47, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
+    O.PMEntry{48, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
+    O.PMEntry{49, [O.OpsWHERE{}],                  Nil{},                           },   # 201
+    O.PMEntry{50, [O.OpsWHERE{}],                  Nil{},                           },   # 202
     O.PMEntry{50, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
     O.PMEntry{51, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
     O.PMEntry{50, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
@@ -2855,7 +2856,7 @@ def sym_table_len() -> Nat:
   nats([1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
-        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
+        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
 
 # THE DRIVER, twice. `sym_*` for the `sym` composition and `rm_*` for
 # `pm_remove_invalid`, and the duplication is the honest cost of not having
@@ -3081,15 +3082,139 @@ def sym_88(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # ONE BODY FOR THE PAIR: `(g, y)` in that order, the gate's `x` first inside the op for :87 and
 # the swapped pair for :88 -- which is exactly the two upstream lambdas.
+# ===========================================================================
+# `symbolic.py:90` -- `(invalid_gate.reduce(allow_any_len=True, name="red"), lift_reduce_gate)`
+# and the body at `:72`:
+#
+#   def lift_reduce_gate(red, cond, x, i):
+#     if red.arg[1] != 0: return None
+#     keep, lift = partition(cond.split_uop(Ops.AND),
+#                            lambda c: any(rr in c.ranges for r in red.src[1:] for rr in r.ranges))
+#     inner = keep[0].uprod(*keep[1:]).where(x, i) if keep else x
+#     return lift[0].uprod(*lift[1:]).where(red.replace(src=(inner,)+red.src[1:]), i) if lift else None
+#
+# A REDUCE moves inside the gate clauses WITHOUT its ranges, because the ranges invalidate every
+# lane at once and so the gate lifts out around the reduce.
+#
+# `F.ranged(ar)` IS BUILT HERE AND NOT IN THE SCAN. It folds the WHOLE ARENA, so building it per
+# candidate node would be quadratic; this body runs only when the pattern matched, and the pattern
+# is a REDUCE, so it is built once per reduce and not once per node. `fold.bend:5293` is the
+# builder and `fold.bend:5589` already uses it this way.
+type KS is Data:
+  KS{keep: List<&2, U32>, lift: List<&2, U32>}
+
+def KS.keep(x: KS) -> List<&2, U32>:
+  match x:
+    case KS{k, l}: k
+
+def KS.lift(x: KS) -> List<&2, U32>:
+  match x:
+    case KS{k, l}: l
+
+# `rr in c.ranges` for one reduce range `r`: the term's range SET against the node.
+# NOT WIRED, AND THE REASON IS A TAG AND NOT A DOUBT. `:90`'s entry belongs BETWEEN `:89`
+# (tag 5, `OP_BINARY_NC`) and `:92` (tag 6), so inserting it makes it tag 6 and SHIFTS FORTY-FOUR
+# TAGS by one -- and `MINT_TAGS`, `sym_mint_f`'s arms and the census's mapping all read tags. THE
+# BODY BELOW IS THEREFORE UNREACHABLE UNTIL THAT INSERTION, and it is committed unreachable on
+# purpose: wiring it to `case 5` would dispatch `symbolic.py:89`'s nodes to THIS body, and `:89`
+# is a different rule. MEASURED: tag 5 is `# 89`, not `# 90`.
+def sym_90.mem(+ar: O.Arena, +rt: F.RTable, +c: U32, +r: U32) -> Bool:
+  F.mem_u32(F.Rng.rs(F.UOp.ranges(ar, rt, c)), r)
+
+def sym_90.any(+ar: O.Arena, +rt: F.RTable, +c: U32, +rs: List<&2, U32>) -> Bool:
+  match rs:
+    case Nil{} : False{}
+    case r <> t: Bool.or(sym_90.mem(ar, rt, c, r), sym_90.any(ar, rt, c, t))
+
+def sym_90.put(hit: Bool, +c: U32, +acc: KS) -> KS:
+  match hit:
+    case True{} : KS{List.append(&2, U32, KS.keep(acc), [c]), KS.lift(acc)}
+    case False{}: KS{KS.keep(acc), List.append(&2, U32, KS.lift(acc), [c])}
+
+def sym_90.part(ts: List<&2, U32>, +rs: List<&2, U32>, +ar: O.Arena, +rt: F.RTable, +acc: KS) -> KS:
+  match ts:
+    case Nil{} : acc
+    case +c <> t: sym_90.part(t, rs, ar, rt, sym_90.put(sym_90.any(ar, rt, c, rs), c, acc))
+
+# `xs.upred(*rest)` from the FIRST element: `sy_uprod_f` folds `acc op x` over the tail.
+# `keep[0].uprod(*keep[1:])` -- THE FIRST ELEMENT IS THE RECEIVER, so the answer's INDEX is
+# `xs[0]` when the tail is empty and NOT the `Found` we were handed. MEASURED: seeding with `f`
+# made a one-element list answer the REDUCE ITSELF and the probe read
+# `WHERE<REDUCE,WHERE,NOOP>` where the first src should have been the gate.
+def sym_90.up(xs: List<&2, U32>, +f: O.Found, +op: O.Op) -> O.Found:
+  match xs:
+    case Nil{} : f
+    case +x <> t: sy_uprod_f(t, O.Found{O.Found.ar(f), x}, op, x)
+
+def sym_90.rep(+ar: O.Arena, +red: U32, +in2: U32) -> O.Found:
+  O.UOp.new(ar, O.Arena.op(ar, red),
+            List.append(&2, U32, [in2], O.Arena.src_from(ar, red, 1)),
+            O.Arena.arg(ar, red), O.Arena.tag(ar, red))
+
+def sym_90.inner(keep: List<&2, U32>, +f: O.Found, +op: O.Op, +ar: O.Arena, +xa: U32, +inv: U32) -> U32:
+  match keep:
+    case Nil{} : xa
+    case _ <> _:
+      +fw = sym_90.up(keep, f, op)
+      O.Found.i(mint_where(fw, O.Found.i(fw), xa, inv))
+
+def sym_90.out(lift: List<&2, U32>, +f: O.Found, +op: O.Op, +ar: O.Arena, +red: U32, +in2: U32, +inv: U32) -> Maybe<&1, O.Found>:
+  match lift:
+    case Nil{}: None{}
+    case _ <> _:
+      +fl = sym_90.up(lift, f, op)
+      +fr = sym_90.rep(ar, red, in2)
+      # BUILT IN `fr`'S ARENA AND NOT `fl`'S: `rep` minted, so `Found.ar(fr)` is the one that
+      # holds the reduce `mint_where` is about to wrap. Seeding from `fl` -- the arena BEFORE that
+      # mint -- is the arena-threading trap, and MEASURED it printed `WHERE<CONST,WHERE,CONST>`
+      # where CPython answers `WHERE<CONST,REDUCE,CONST>`.
+      Some{mint_where(fr, O.Found.i(fl), O.Found.i(fr), inv)}
+
+# `match` MAY NOT SCRUTINISE A CALL, so the arg crosses as a parameter -- the same shape as
+# `sy_ccast.dispatch` and `sym_87.pat` elsewhere in this file.
+def sym_90.zero.of(a: O.Arg) -> Bool:
+  match a:
+    case O.AReduce{rop, n}: U32.is_zero(n)
+    case _               : False{}
+
+def sym_90.zero(+x: F.Folded, +u: U32) -> Bool:
+  sym_90.zero.of(sy_arg(x, u))
+
+def sym_90.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsREDUCE{}), sy_nsrc_ge(x, u, 1)), sym_90.zero(x, u))
+
+def sym_90.go(ok: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ok:
+    case False{}: None{}
+    case True{} :
+      +ar = sy_ar(x)
+      +rt = F.Ranged.rt(F.ranged(ar))
+      # THE GATE IS `red.src[0]`, AND `cond`/`x`/`i` ARE ITS THREE SRCS -- NOT THE REDUCE's.
+      # MEASURED: reading them off the REDUCE made `x` the reduce's RANGE and the answer
+      # `WHERE<WHERE,WHERE,NOOP>` where CPython answers `WHERE<CONST,REDUCE,CONST>`.
+      +gate = sy_src0(x, u)
+      +cond = sy_src0(x, gate)
+      +xa   = sy_src1(x, gate)
+      +inv  = sy_src2(x, gate)
+      +ks = sym_90.part(O.UOp.split_uop(O.Arena.budget(ar), ar, cond, O.OpsAND{}),
+                        O.Arena.src_from(ar, u, 1), ar, rt, KS{Nil{}, Nil{}})
+      +in2 = sym_90.inner(KS.keep(ks), O.Found{ar, u}, O.OpsMUL{}, ar, xa, inv)
+      sym_90.out(KS.lift(ks), O.Found{ar, u}, O.OpsMUL{}, ar, u, in2, inv)
+
+def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sym_90.go(sym_90.pat(x, u), x, u)
+
+
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [3, 4, 49]
+def MINT_TAGS() -> List<&2, U32>: [3, 4, 6, 50]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
     case 3 : sym_87(x, u)
+    case 6 : sym_90(x, u)
     case 4 : sym_88(x, u)
-    case 49: sy_fcw_f(x, u)
+    case 50: sy_fcw_f(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
