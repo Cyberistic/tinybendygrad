@@ -336,3 +336,28 @@ The `TODO(p2)` above `sym_451` records that node, that offset, both defects and 
 **The row stays MISSING**: wiring it now would make the corpus red for a defect this session did
 not fix, and an unwired body byte-identical on its int arm is worth more than a wired one that is
 not.
+
+## 2026-11-03 (final, 6): `bool_slice` written; `:259`'s two dependencies are now both reachable
+
+`UOp.bool_slice` is in `fold.bend` as `UOp.bool_slice_has` and verified **5 of 5** against
+CPython's `want in root.bool_slice` (`diff` empty): `and_root=1`, `and_src=1`, `wh_cond=1`,
+`wh_root=0`, `wh_arm=0`. The last two are the rows that separate "reachable" from "in the slice".
+
+IT IS A MEMBERSHIP PREDICATE AND NOT A SET, because the whole of `tinygrad/` has exactly ONE
+consumer (`symbolic.py:235`) and it is a membership test; a `List` standing in for a `frozenset`
+would need dedup for no reader. It needs a dtype READER, which is why it is in `fold.bend` and not
+`ops.bend`.
+
+### `:259`'s dependency list, measured
+
+`fold_where_closure` needs three things and TWO are now in place:
+
+| needs | state |
+|---|---|
+| `bool_slice` membership | **DONE** (`UOp.bool_slice_has`, 5/5 identical) |
+| `UOp.substitute` | **present** at `codegen/__init__.bend:414`, and REACHABLE: that file imports only `Base`, `uop/ops`, `uop/render`, `helpers`, `LAWS/spec` -- no symbolic, so no cycle. Its shape is `(ar, sink, dvars: Map<&2, U32>) -> (Arena & Maybe<&2,U32> & Map<&2,U32>)`, a THREE-TUPLE, which is the awkward part. |
+| `op_in_backward_slice_with_self(Ops.INDEX)` over `(cond, t, f)` | `UOp.backward_slice_with_self` exists; the op test over it is the remaining glue |
+
+`:436`/`:437` need `parse_valid` (absent) and `uop_given_valid` (`symbolic.py:340`, absent) on top of
+this, and `:437` also the `IMAGE` ContextVar. `divandmod.py:108` is unchanged: `UOp.simplify`,
+`UOp.gcd(*uops)`, `UOp.divide_exact`, and the `usum` cycle.
