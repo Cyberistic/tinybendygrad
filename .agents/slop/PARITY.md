@@ -4448,3 +4448,19 @@ portexec 7/7 · emit-mm and emit-f64 byte-identical
 **⇒ AND `U32.show` IS STILL CALLED ~1,500 TIMES A RENDER** (§86 priced the whole decimal class at 0.26 ms
 then, before the NUMBERS grew cheaper elsewhere). Replacing those call sites with `u32_dec` is the next
 slice, and it is now known to be worth something rather than guessed.
+
+### 99.3 The follow-up the section named, measured: replacing `U32.show` at its 20 call sites is NEUTRAL
+
+§99 predicted the next slice would be swapping the renderer's `U32.show` calls for `u32_dec`. Done and
+measured:
+
+```
+same C: True | bytes: 4426
+U32.show median 4.18 ms   u32_dec median 4.16 ms
+ratio min 0.7722  p25 0.9627  median 1.0061  max 1.3833   12 of 26 faster
+```
+
+**NEUTRAL, REVERTED.** The ~1,500 `U32.show` calls a render are not where the decimal time is spent: the
+0.65 ms §99 removed was `i64_dec`'s FOLD (a division loop per digit, over the wide form), not the forty
+small `U32.show` calls the renderer itself makes. **A CLASS COUNTED BY CALL SITES IS NOT A CLASS COUNTED BY
+TIME** -- the same trap §79.1 hit with `Ops.value`'s 12,600 calls.
