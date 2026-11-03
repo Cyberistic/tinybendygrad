@@ -2504,3 +2504,45 @@ counts with `List.set` per source, and `List.set` rebuilds the whole prefix -- O
 and reverted): the same computation needs a pass that does not rebuild a prefix at all -- merge-sort the ~2n
 source indices and run-length encode them -- because the constant-factor version of an O(n^2) is still
 O(n^2). That is a real piece of work with a measured 17% at stake, and it is where this record stops today.
+
+## 57. THE LINEAR PASS IS NOT EXPRESSIBLE: MERGE NEEDS A BRANCH THIS LANGUAGE WILL NOT GIVE
+
+§56 left one target: `child_count`'s O(n^2) `List.set` histogram (17% of the daemon turn), whose fix is a
+sorted counting pass. **THAT PASS CANNOT BE WRITTEN HERE, AND THE COMPILER SAYS SO IN TWO DIFFERENT WAYS.**
+
+A merge needs, at each step, to take the smaller head and recurse on that side:
+
+```bend
+def mrg(+a: List<&2, U32>, +b: List<&2, U32>) -> List<&2, U32>:
+  match a:
+    case Nil{}: b
+    case ha <> ta:
+      match b:
+        case Nil{}: List.append(&2, U32, [ha], ta)
+        case hb <> tb:
+          match U32.is_le(ha, hb):                # WHICH BRANCH DEPENDS ON A COMPUTED VALUE
+            case True{}:  List.append(&2, U32, [ha], mrg(ta, b))
+            case False{}: List.append(&2, U32, [hb], mrg(a, tb))
+```
+
+```
+- message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+```
+
+The three escape routes are all closed, each measured earlier in this record:
+
+| route | why it fails |
+|---|---|
+| pass the `Bool` in as a parameter (§39's cure) | the helper that chooses must call `mrg`, so `mrg -> helper -> mrg` is MUTUAL RECURSION -- refused ("expected : a filled definition"), which is exactly what `serve.bend` hit in §29 |
+| `Bool.pick(take_a, mrg(ta, b), mrg(a, tb))` | `Bool.pick` is STRICT (§33/§34/§38/§39 all exploit this) -- it would evaluate BOTH recursive calls, i.e. 2^n |
+| pass a computed half/list as the argument | "expected : a decreasing self-call (arguments are read left to right: each passed unchanged until one shrinks)" -- a merged or split list is not a subterm |
+
+**⇒ AND WITH SORTING OUT, SO IS EVERY LINEAR FORMULATION**: a counting pass needs either a mutable cell (§44 --
+`langs/core.bend` has no `Array` and no `Ref`) or a sort (this section). **`child_count`'s O(n^2) is therefore
+NOT A DEFECT THAT CAN BE FIXED IN THIS LANGUAGE; IT IS THE PRICE OF THE ONLY HISTOGRAM THE LANGUAGE OFFERS.**
+
+**THE HONEST ACCOUNTING OF THE LAST THREE SECTIONS**: §56 attributed the daemon's 10 ms (text 31%, histogram
+17%, types 12%, loop 40%); this section shows the 17% cannot be taken without the language gaining a mutable
+container or a branch on a computed value. **THE TWO BLOCKERS ARE THE SAME TWO, AND THEY ARE THE ONES §44 AND
+§45 ALREADY NAMED** -- no mutable container, and no way to branch on a computed value without evaluating both
+sides. What is left of the renderer is written in the shape those constraints force.
