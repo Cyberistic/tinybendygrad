@@ -4637,3 +4637,43 @@ ksweep after revert: 37 of 37 byte-identical, both decoders
 **⇒ SO THE NEXT UNIT IS THAT DECODER, AND IT IS SMALL**: `src_nums`/`b64at` against `portc.B64`, with the
 `count` character read by `b64u` and two characters per index. The pieces are written down in this section
 and the gate that catches it (`ksweep`'s live lane) is already the thing that failed it.
+
+## 104. THE BASE-64 `srcs` DECODER WAS BUILT AND IT IS 13% SLOWER
+
+§103.2 left one unfinished unit: the count-prefixed two-character base-64 `srcs` token, whose decoder had
+failed the live lane at 0 of 37. It was fixed and measured.
+
+### 104.1 The failure was a missing constant, not a defect
+
+`ksweep`'s live lane said `LIVE FAILED NameError: name 'B64' is not defined` -- `B64` came from §80's packing
+experiment, which was reverted, so `portc` no longer had it. With the alphabet restored:
+
+```
+ksweep: 37 of 37 byte-identical, BOTH DECODERS
+```
+
+and the decoder is correct in isolation (`"20001"` -> `[0, 1]`, `"100"` -> `[0]`).
+
+### 104.2 And it is SLOWER
+
+```
+same C: True | 4,426 bytes both
+old median 3.84 ms   base-64 srcs median 4.52 ms
+ratio min 0.7331  p25 1.0023  median 1.1345  max 1.5324   6 of 26 faster
+```
+
+**13% SLOWER, 6 OF 26 -- REVERTED, AND THE THEORY BEHIND IT WAS WRONG.** The premise was §103's: removing
+`nums`' `String.split` removes a PASS, and passes are what pay. But the replacement is not free either:
+`src_nums` does `String.get(s, i)` -- an INDEX into a UTF-8 string -- twice per element plus two `b64u`
+arithmetic chains, and 352 srcs of 1-2 elements are cheaper to split than to index. **THE SPLIT WAS NOT A
+PASS EARNING ITS COST; IT WAS CHEAPER THAN THE ALTERNATIVE**, which is the same answer §92 got from the
+chunk sweep and §91 from the refused scanner -- three instruments, one conclusion.
+
+### 104.3 Where the decode actually is
+
+The wire is 9,234 bytes in the base-64 form against 9,516 decimal -- **3% smaller, not the 13% §103 estimated**,
+because two characters an index is LONGER than a one-digit decimal for the common small indices. So even the
+byte saving was overestimated: `srcs` is mostly 0-9, which is one character either way plus a separator.
+
+**⇒ THE DECODE'S 1.61 ms IS: one linear pass over every byte (~0.9), `nums`' splits (~0.43), and record
+building (~0.3). Every cheaper form of the second term has now been measured and lost to the original.**
