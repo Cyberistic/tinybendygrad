@@ -7964,6 +7964,80 @@ def sy_simp.n(fuel: Nat, +f: O.Found) -> O.Found:
 def sy_simplify(+ar: O.Arena, i: U32) -> Maybe<&1, O.Found>:
   Some{sy_simp.n(8n, O.Found{ar, i})}
 
+# ---- `symbolic.py:330`, `parse_valid` ----------------------------------------------
+#
+#     neg = v.op is CMPNE and v.src[1].op is CONST and v.src[1].val == 1
+#     if (lt:=v.src[0] if neg else v).op is not CMPLT or not dtypes.is_int(lt.src[0].dtype): return None
+#     if (a:=lt.src[0]).op is CONST: return lt.src[1], neg, int(a.val) + (0 if neg else 1)
+#     return a, not neg, int(lt.src[1].vmin) if neg else int(lt.src[1].vmax)-1
+#
+# `X <= c` answers `(X, True, c)` and `X >= c` answers `(X, False, c)`. The negation is NOT `NOT`:
+# `a < b` is `a <= b.vmax-1`, so the constant is ADJUSTED by one and the direction FLIPS, which is
+# why the two arms differ in more than a Bool.
+#
+# A RECORD AND NOT A `Maybe` OF A TRIPLE: `Maybe` is affine and cannot be destructured twice, and
+# the caller reads all three fields.
+type Pv is Data:
+  Pv{ok: Bool, e: U32, up: Bool, c: H.I64}
+
+def Pv.ok(x: Pv) -> Bool:
+  match x:
+    case Pv{ok, e, up, c}: ok
+
+def Pv.e(x: Pv) -> U32:
+  match x:
+    case Pv{ok, e, up, c}: e
+
+def Pv.up(x: Pv) -> Bool:
+  match x:
+    case Pv{ok, e, up, c}: up
+
+def Pv.c(x: Pv) -> H.I64:
+  match x:
+    case Pv{ok, e, up, c}: c
+
+# `v.op is CMPNE and src[1] is CONST and src[1].val == 1`
+# `src[1].val == 1` IS TRUE FOR A BOOL `CONST(True)` AS WELL AS AN INT `CONST(1)`: Python compares
+# `True == 1`. MEASURED: reading only `cval` (which is `CInt`) answered `none` for
+# `CMPNE(CMPLT, True)`, and upstream answers `(X, False, c)`.
+def pv.neg.src(+fx: F.Folded, +v: U32) -> Bool:
+  +ar = F.Folded.ar(fx)
+  Bool.and(O.eq_op(O.Arena.op(ar, v), O.OpsCMPNE{}),
+    Bool.and(O.eq_op(O.Arena.op(ar, O.Arena.src(ar, v, 1)), O.OpsCONST{}),
+      Bool.or(cb_true(sy_val(fx, O.Arena.src(ar, v, 1))),
+              Cmp.is_eq(H.i64_cmp(cval(ar, O.Arena.src(ar, v, 1)), H.i64_of_i32(1))))))
+
+def pv.lt(neg: Bool, +ar: O.Arena, +v: U32) -> U32:
+  Bool.pick(U32, neg, O.Arena.src(ar, v, 0), v)
+
+# the two shapes, both built eagerly and one selected -- `Bool.pick` has no branch laziness.
+def pv.other(+ar: O.Arena, +lt: U32, +neg: Bool, +bt: F.BTable) -> Pv:
+  Pv{True{}, O.Arena.src(ar, lt, 0), Bool.not(neg),
+     Bool.pick(H.I64, neg,
+       vmin_i64(ar, bt, O.Arena.src(ar, lt, 1)),
+       H.i64_sub(vmax_i64(ar, bt, O.Arena.src(ar, lt, 1)), H.i64_of_i32(1)))}
+
+def pv.arm(con: Bool, +ar: O.Arena, +lt: U32, +neg: Bool, +bt: F.BTable) -> Pv:
+  Bool.pick(Pv, con,
+    Pv{True{}, O.Arena.src(ar, lt, 1), neg,
+       H.i64_add(cval(ar, O.Arena.src(ar, lt, 0)), Bool.pick(H.I64, neg, H.i64_of_i32(0), H.i64_of_i32(1)))},
+    pv.other(ar, lt, neg, bt))
+
+def pv.mk(ok: Bool, +ar: O.Arena, +lt: U32, neg: Bool, +bt: F.BTable) -> Pv:
+  match ok:
+    case True{} : pv.arm(O.eq_op(O.Arena.op(ar, O.Arena.src(ar, lt, 0)), O.OpsCONST{}), ar, lt, neg, bt)
+    case False{}: Pv{False{}, 0, False{}, H.i64_of_i32(0)}
+
+# `(lt:=v.src[0] if neg else v).op is not CMPLT or not is_int(lt.src[0].dtype)`
+def pv.gate(+neg: Bool, +ar: O.Arena, +v: U32, +bt: F.BTable) -> Pv:
+  +lt = pv.lt(neg, ar, v)
+  pv.mk(Bool.and(O.eq_op(O.Arena.op(ar, lt), O.OpsCMPLT{}),
+                 S.Cls.is_int(S.Dt.cls(sy_dt1(F.folded(ar), O.Arena.src(ar, lt, 0))))), ar, lt, neg, bt)
+
+def sy_parse_valid(+ar: O.Arena, +v: U32) -> Pv:
+  +bt = F.mm.sweep(ar, F.Folded.t(F.folded(ar)))
+  pv.gate(pv.neg.src(F.folded(ar), v), ar, v, bt)
+
 def fz_head(+ar: O.Arena, +u: U32) -> String: fz_head.of(O.Arena.op(ar, u), O.Arena.arg(ar, u), ar)
 
 # A LEAF IS NOT A NODE WITH NO SRCS. `fz_head` answers a CONST's value and a PARAM's name
