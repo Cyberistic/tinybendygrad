@@ -58,10 +58,14 @@
 #  13  209     fold  canonicalize_simplex **PORTED** (census row `symbolic.py:209` PORTED)
 #  14  222-226 table commutative          DEFERRED `UOp.tuplize` -- **STILL TRUE: the only blocker
 #                                            in this list that is genuinely ABSENT**
-#  15  228     fold  fold_where_closure   **UNBLOCKED 2026-11-04**: `bool_slice` exists
-#                                            (`UOp.bool_slice_has`, fold.bend:5488) and the
-#                                            single-entry `substitute` exists (`s1`). The BODY is
-#                                            what is missing, not the substrate.
+#  15  228     fold  fold_where_closure   **PORTED, as `sym_259`** -- and the name is why nobody
+#                                            found it: it is `sym_259` (`:5631-5665`), it calls
+#                                            `bool_slice_has` on BOTH arms, it carries the INDEX
+#                                            guard (`sym_259.ixs` / `not_ix`), and its `mk` builds
+#                                            the True/False substitution. **A BODY IS NAMED AFTER
+#                                            THE PIN'S LINE AND NOT AFTER THE SOURCE FUNCTION**, so
+#                                            `rg 'def fold_where_closure'` finds only the TODO
+#                                            comment and a reader concludes it is unported.
 #  16  235-324 table symbolic             **PORTED: 36 census rows in :235-324, ALL of them**
 #                                            (MEASURED 2026-11-04 against `gates/symrules.rows`)
 #
@@ -73,12 +77,14 @@
 # most likely to be believed.
 #  17  328-386 fold  parse_valid / uop_given_valid / _valid_priority /
 #                                 simplify_valid   DEFERRED, all four
-#  18  390     fold  reduce_mul_chain     **UNBLOCKED**: `backward_slice` (ops.bend:3467) and
-#                                            `vmin` (fold.bend:5399) both EXIST.
-#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  **UNBLOCKED**: `ranges` exists
-#                                            (fold.bend:5273).
-#  20  406-425 fold  where_on_load + pm_move_where_on_load  **UNBLOCKED**: `ranges` and
-#                                            `backward_slice_with_self` both exist.
+#  18  390     fold  reduce_mul_chain     blocker ABSENT: `backward_slice` (ops.bend:3467) and
+#                                            `vmin` (fold.bend:5399) both exist. WHETHER THE BODY
+#                                            EXISTS IS A SEPARATE QUESTION and a grep for the
+#                                            source name does NOT answer it (see row 15).
+#  19  400-403 fold  drop_and_clauses + pm_drop_and_clauses  blocker ABSENT: `ranges` exists
+#                                            (fold.bend:5273). Same caveat as row 18.
+#  20  406-425 fold  where_on_load + pm_move_where_on_load  blocker ABSENT: `ranges` and
+#                                            `backward_slice_with_self` exist. Same caveat.
 #  21  427-438 fold  gated_given_valid + pm_simplify_valid DEFERRED `IMAGE` + #17
 #  22  442-448 table pm_clean_up_group_sink  2 of 2
 #  23  450-475 table sym                   3 of 5 reciprocal rules PORTED
