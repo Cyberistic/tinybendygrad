@@ -1972,3 +1972,40 @@ every step. **That is a shape, not a site** -- which is why four fixes aimed at 
 of the renderer being a `St`-threaded, `Data`-copying Bend program at all. Reducing it means replacing the
 data flow (a mutable arena, or an emitter that writes into one buffer by index) rather than editing any
 function in it -- and that is a different program, not a bigger slice of this one.
+
+## 44. THE ARENA DOES NOT EXIST IN THIS LANGUAGE, AND THE EVIDENCE IS TWO RUNTIME FUNCTIONS
+
+§43's cost map left one prescription: replace the renderer's data flow -- a threaded `St` record -- with a
+mutable arena and an indexed line buffer. That prescription assumes the language has one. It does not.
+
+`langs/core.bend` defines no `Array`, no `Ref`, no mutable container of any kind, and the compiler emits
+exactly one sequence type. The two functions it emits for it are in the artifact:
+
+```js
+function $List$get(xs, n) {          // a for(;;) walk down the cons cells
+  for (;;) { ... if (n === 0) return {$:"Some", value: h}; ... }
+}
+function $List$set(xs, n, x) {       // REBUILDS the whole prefix, recursively
+  ... if (n === 0) return {$:"Con", head: x, tail: t};
+      return {$:"Con", head: h, tail: $List$set(t, n - 1, x)};
+}
+```
+
+**`List.get` IS O(i) AND `List.set` IS O(i) RECURSIVE REBUILD -- a "mutable arena" written in this language
+would be a cons list whose every write copies the prefix**, which is strictly WORSE than the current design:
+`St` is threaded and its line buffer is PREPENDED (`List.append(&2, String, [line], acc)` is the O(1) shape,
+the same one §26 established for `ku_all`), and the single `join` at the end is what turns it into text.
+
+**⇒ SO THE REQUESTED CHANGE IS NOT A REFACTOR, IT IS A LANGUAGE FEATURE.** An indexed mutable buffer would
+need either a Bend primitive that does not exist or a C FFI, and the second is exactly what this port does not
+have -- "no external dependencies" is the rule the whole tree is built on.
+
+### 44.1 The nearest expressible thing, and why the cost map already rules it out
+
+The one expressible approximation is to stop accumulating a `List<String>` of lines and append each line to a
+single growing `String` in `St.kernel` -- "one buffer" in the only sense the language allows. §43 bounds what
+that could win: **ALL per-line text is at most 3.1 ms of a ~47 ms command (14.7%), and the list-then-join
+around it is a fraction of that**, while appending to a growing string is O(len) per line.
+
+**A change bounded by a fraction of 3.1 ms, on a ~47 ms command, with a corpus run as its price, is not worth
+a reading** -- and that is a statement the cost map supports, not a preference.
