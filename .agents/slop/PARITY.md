@@ -2825,3 +2825,45 @@ PATH is now measurably faster, by 22% on this shape, for a reason that is not th
 405-uop kernel against `ClangRenderer`'s 0.12-2.54 ms, and that gap is real. What the port has is a cheaper
 *way to reach* the compiled C, not cheaper C -- and for a program that compiles many kernels once, the way is
 what a user waits for.
+
+## 65. PREWARMING THE WORKER: BUILT TWICE, SLOWER BOTH TIMES, REVERTED
+
+§63 named the ~10 ms first-render JIT warm-up as "the only term in this record that has never been attacked
+and is not blocked by the language", and proposed shipping fewer `.bend` functions. That proposal does not
+survive its own mechanism: a JIT compiles what is EXECUTED, not what is shipped, and `--bytecode` (§54) already
+removed the parse. So the real lever is not a smaller artifact -- it is **moving the start and the warm-up off
+the critical path**, by starting the worker while the caller is still building its graph.
+
+### 65.1 Built, measured, reverted -- twice
+
+**Synchronous** (`BendDevice.__init__` calls `portc.prewarm()`, which starts the worker AND renders one
+synthetic uop):
+
+```
+prewarm OFF median 355.5 ms   ON median 409.5 ms
+ratio ON/OFF  min 0.4072  p25 0.4266  median 1.1236  max 2.2001   6 of 12 faster
+```
+
+**Asynchronous** (the spawn on a daemon thread, so it overlaps graph construction):
+
+```
+prewarm OFF median 337.2 ms   ON median 367.2 ms
+ratio ON/OFF  min 0.4133  p25 0.4318  median 1.2186  max 23.4145   7 of 14 faster
+```
+
+**BOTH SLOWER, AND THE ASYNC ONE ALSO EARNED ITS REVERT ON CORRECTNESS**: a background start can race the
+first real `render`, and the lock I added to prevent a double spawn makes the first render wait on the
+thread -- which is the serialisation the whole idea was meant to avoid. **REVERTED ENTIRELY**, and
+`ksweep 37 of 37` / `e2e 7 of 7` / `compile.py 4 of 4` re-verified on the reverted tree.
+
+### 65.2 Why it did not work, stated as a mechanism
+
+The two costs it was meant to hide are **19.2 ms of packed process start** and **~10 ms of JIT**, and both are
+already behind the caller's first `realize` -- but tinygrad's graph construction for a 5-kernel program is
+only a few milliseconds, so there is nothing to hide them behind. **The overlap is real in principle and too
+small to matter on these programs**: the prewarm adds a synthetic render and a thread and a lock to save at
+most a few milliseconds of a 337 ms run, and the measurement says the overhead is larger than the saving.
+
+**⇒ AND THAT CLOSES THE LAST NAMED TERM.** Every component of the port's cost is now either measured-and-cut
+(§27, §31, §33, §34, §38, §39, §49, §50, §53, §54, §62), measured-and-inexpressible (§44, §57), measured-and-diffuse
+(§58, §60), or measured-and-not-paying (this section, §37, §40, §41, §61).
