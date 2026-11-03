@@ -220,6 +220,58 @@ def fx10():
     return dict(top=UOp(Ops.SINK, src=(ln, UOp.sink(a))), ln=ln, f1=f1, k1=k1, a=a)
 
 
+def sv_var(nm: str, val: int) -> UOp:
+    return UOp.variable(nm, 0, 10, dtype=dtypes.int32).bind(val)
+
+
+def sv_body(vb: UOp, vw: UOp) -> UOp:
+    return UOp(Ops.SINK, src=(UOp(Ops.STORE, src=(UOp.const(0), UOp(Ops.ADD, src=(vb, vw)))),))
+
+
+def svfx_ok():
+    vb, vw = sv_var("v", 3), sv_var("w", 2)
+    vu, w2 = sv_var("u", 5), sv_var("w", 2)
+    b = g_buf(0, "sb")
+    k1 = UOp(Ops.CALL, src=(sv_body(vb, vw), b))
+    lin = UOp(Ops.LINEAR, src=(k1,))
+    # the last src is an UNBOUND variable named `v`: `if b.is_bound_var` must skip it, and if
+    # it does not, it overwrites the answer `v`=3 and raises -- two rows red from one src.
+    nv = UOp.variable("v", 0, 10, dtype=dtypes.int32)
+    return dict(big_sink=UOp(Ops.CALL, src=(lin, vb, vu, vw, w2, nv)), linear=lin)
+
+
+def svfx_bad():
+    vb, v7 = sv_var("v", 3), sv_var("v", 7)
+    b = g_buf(0, "sb2")
+    k1 = UOp(Ops.CALL, src=(sv_body(vb, vb), b))
+    lin = UOp(Ops.LINEAR, src=(k1,))
+    return dict(big_sink=UOp(Ops.CALL, src=(lin, vb, v7)), linear=lin)
+
+
+def schedule_vars(big_sink: UOp, linear: UOp):
+    """`create_linear_with_vars`' TAIL, `__init__.py:279-291`, TRANSCRIBED -- and the
+    transcription is the whole point, so it is declared rather than dressed up.
+
+    THERE IS NO CPython FUNCTION TO CALL HERE: those twelve lines are inline in
+    `create_linear_with_vars`, behind `transform_to_call` and two `graph_rewrite` passes, so
+    the only way to ask CPython is to run the pipeline. What this compares is therefore the
+    TRANSLATION and not the algorithm -- `Maybe` against `None`, `O.Const` against PyConst,
+    an association list against a `dict` -- over fixtures both lanes build from the same
+    source arguments. One change is made on BOTH sides and said here: upstream RAISES on a
+    mismatch, and a raise cannot be a row, so both lanes answer `bad` instead.
+    """
+    used_vars = set().union(*[{v.expr for v in si.src[0].variables()} for si in linear.src])
+    var_vals: dict[str, int] = {}
+    bad = False
+    for b in big_sink.src[1:]:
+        if b.is_bound_var:
+            nm, val = b.expr, b.arg.val
+            if nm not in used_vars: continue
+            if var_vals.get(nm, val) != val: bad = True
+            var_vals[nm] = val
+    return var_vals, bad
+
+
 def kdeps(k: UOp):
     """`create_schedule`'s own dep line (`__init__.py:47`), one line of it: an END wraps a CALL
     and the CALL holds the srcs, so the deps are `k.src[0].src[1:]`."""
@@ -278,6 +330,15 @@ def rows() -> dict:
     r["gate_lin"] = b2u(gate_kernel_sink(F10["ln"]))
     r["kdeps_E2"] = len(kdeps(F1["e2"]))
     r["kdeps_K2"] = len(kdeps(F1["k2"]))
+    v_ok, bad_ok = schedule_vars(svfx_ok()["big_sink"], svfx_ok()["linear"])
+    r["sv_ok_n"] = len(v_ok)
+    r["sv_ok_bad"] = b2u(bad_ok)
+    r["sv_ok_v"] = b2u(v_ok.get("v") == 3)
+    r["sv_ok_w"] = b2u(v_ok.get("w") == 2)
+    r["sv_ok_skip"] = b2u("u" not in v_ok)
+    v_bad, bad_bad = schedule_vars(svfx_bad()["big_sink"], svfx_bad()["linear"])
+    r["sv_bad_n"] = len(v_bad)
+    r["sv_bad_bad"] = b2u(bad_bad)
     return r
 
 
@@ -311,7 +372,8 @@ ORDER = (
     "fx9_lin_n", "fx9_lin_op", "fx9_marks", "fx9_nsrcs",
     "fx9_ops", "gate_lin", "fx10_topo_marks", "fx10_topo",
     "fx10_lin_n", "fx10_lin_op", "fx10_marks", "fx10_nsrcs",
-    "fx10_ops",
+    "fx10_ops", "sv_ok_n", "sv_ok_bad", "sv_ok_v",
+    "sv_ok_w", "sv_ok_skip", "sv_bad_n", "sv_bad_bad",
 )
 
 

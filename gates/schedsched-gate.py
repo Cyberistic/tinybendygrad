@@ -8,7 +8,7 @@
 `create_linear_with_vars` reaches through it.
 
 WHAT WAS WRONG, AND IT IS THE REASON THIS FILE EXISTS. `tinybendygrad/schedule/__init__.bend`
-emits 128 rows from its own `main()`: the fixtures `fx0`..`fx8`, the four dicts' sizes, the
+emits 135 rows from its own `main()`: the fixtures `fx0`..`fx8`, the four dicts' sizes, the
 gated toposort, and the LINEAR that `create_schedule` returns. NOT ONE OF THEM WAS COMPARED
 AGAINST CPYTHON -- `gates/schedstore-oracle.py` covers the twelve rule bodies and never calls
 `create_schedule`. Worse, the expectations in the port's comments were a reading of
@@ -72,6 +72,33 @@ says WHICH arm and the end-to-end one says it MATTERS:
   fx10  the LINEAR arm.  A LINEAR reachable from the sink stops the walk, so its subtree is
         never scheduled: zero kernels, and `gate_lin=0`. Flipped, the LINEAR is visited, its
         subtree with it, and one kernel is scheduled.
+
+`schedule_vars` -- `create_linear_with_vars`' TAIL, `__init__.py:279-291` -- IS THE ONE PART OF
+THAT FUNCTION NOTHING ABOVE IT BLOCKS. The rest is `transform_to_call` (needs
+`pm_callify_ctx_collect` + `pm_replace_buf`) and two passes (`pm_resolve_linear_call`,
+`pm_copy_from_store`), none of which are in the tree. The tail reads `linear` -- which
+`create_schedule` produces and the rows above now check -- and `big_sink.src[1:]`. So it is
+ported, and `sv_*` are its seven rows.
+
+ITS SEVEN ROWS COVER THREE ARMS AND ONE NON-ARM, AND EACH HAS A PLANT THAT MOVES IT:
+
+  the `nm not in used_vars` skip removed          2 rows  sv_ok_n, sv_ok_skip
+  a mismatch is never flagged                     1 row   sv_bad_bad
+  every repeat bind is flagged                    1 row   sv_ok_bad
+  `if b.is_bound_var` accepts an UNBOUND var      1 row   sv_ok_bad
+  `variables()` read off the KERNEL not the body  5 rows  sv_ok_n/v/w, sv_bad_n/bad
+
+`sv_ok_bad=0` is the row that separates `var_vals.get(nm, val) != val` from `nm in var_vals`,
+which is the one thing in these twelve lines that is easy to get subtly wrong: fx11 binds `w`
+TWICE WITH THE SAME VALUE, which upstream does not treat as a mismatch.
+
+AND THE ORACLE HERE IS A TRANSCRIPTION, SAID PLAINLY. There is no CPython function to call --
+those twelve lines are inline in `create_linear_with_vars`, behind the whole pipeline -- so
+`gates/schedsched-oracle.py`'s `schedule_vars` is upstream's text with `bad` in place of
+`raise` ON BOTH SIDES (a raise cannot be a row). What the rows therefore check is the
+TRANSLATION -- `Maybe` against `None`, `O.Const` against PyConst, an association list against
+a `dict` -- and not the algorithm. A transcription that quietly disagrees with the port would
+still be caught; a decoding mistake in both would not, and that limit is the honest one.
 """
 import sys
 from pathlib import Path
@@ -92,7 +119,7 @@ PORT_ONLY = (
 
 # Every row the port emits. Kept as the DECLARATION so a row that disappears is a red gate,
 # not a smaller denominator -- `rows=111` is what makes a deleted row visible.
-ROWS = 128
+ROWS = 135
 
 # The rows a diff cannot vouch for on its own: if BOTH lanes stopped emitting one of these, the
 # diff would still be green and the claim would be gone. `fx8_lin_n` is the `gate_kernel_sink`
@@ -100,7 +127,8 @@ ROWS = 128
 # and `fx0_lin_n` is the empty schedule.
 PINS = tuple((lane, row) for lane in ("py", "bd")
              for row in ("fx0_lin_n", "fx1_ops", "fx2_ops", "fx5_ops", "fx8_lin_n",
-                       "fx9_marks", "fx10_lin_n", "gate_lin", "kdeps_E2"))
+                       "fx9_marks", "fx10_lin_n", "gate_lin", "kdeps_E2",
+                       "sv_ok_n", "sv_ok_skip", "sv_bad_bad", "sv_ok_w"))
 
 GATE = Gate(
     "schedsched-gate",
@@ -113,8 +141,8 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "schedsched-gate: 128 rows, 101 compared -- `create_schedule` "
-                        "(`tinygrad/schedule/__init__.py:32-80`) over the fixtures fx0..fx10: "
+    sys.exit(main(GATE, "schedsched-gate: 135 rows, 108 compared -- `create_schedule` "
+                        "(`tinygrad/schedule/__init__.py:32-80`) over the fixtures fx0..fx12: "
                         "the gated toposort, the RAW and WAR passes, and the LINEAR it "
                         "returns. 27 rows are port-only and NAMED: arena slot counts, the "
                         "four dicts' sizes (locals, not observable), and the fixture CPython "

@@ -1441,6 +1441,168 @@ def cycles(c: Ctx) -> Nat:
   List.length(&2, U32, cy_go(Ctx.degs(c), Nil{}))
 
 # ===========================================================================
+# `used_vars` AND `var_vals` -- __init__.py:279-291, THE TAIL OF
+# `create_linear_with_vars` AND THE ONE PIECE OF IT NOTHING ABOVE IT BLOCKS.
+#
+#   used_vars = set().union(*[{v.expr for v in si.src[0].variables()} for si in linear.src])
+#   var_vals: dict[str,int] = {}
+#   for b in big_sink.src[1:]:
+#     if b.is_bound_var:
+#       nm, val = b.expr, b.arg.val
+#       if nm not in used_vars: continue
+#       if var_vals.get(nm, val) != val: raise RuntimeError(f"bind mismatch on {nm}, ...")
+#       var_vals[nm] = val
+#
+# THE REST OF ITS FUNCTION IS TWO PASSES AND ONE TRANSFORM. `transform_to_call` needs
+# `pm_callify_ctx_collect` and `pm_replace_buf`; the passes are `pm_resolve_linear_call` and
+# `pm_copy_from_store`. THIS half needs neither: it reads `linear`, which `create_schedule`
+# produces and `schedsched-gate` now checks against CPython, and `big_sink.src[1:]`.
+#
+# `si.src[0]` IS THE KERNEL'S BODY AND NOT THE KERNEL: `linearizer` builds each kernel as
+# `k.replace(src=(k.body, *buf_uops))`, so `src[0]` is the body SINK. Reading `variables()`
+# off the KERNEL instead would also walk the BUFFER args, which is the difference between
+# this and `apply_binds`' arm 3 (`for s in si.src for v in s.variables()`).
+#
+# THREE ANSWERS AND EACH HAS A ROW: a USED bind lands in `var_vals`, an UNUSED bind is
+# SKIPPED, and a MISMATCH raises where Python raises. A raise cannot be a row, so `bad` is.
+# `bad` is an `or`, so ONE mismatch does not hide a second.
+#
+# TWO CHOICES HERE ARE UNOBSERVABLE AND ARE MADE FOR SHAPE, NOT FOR A ROW. Upstream
+# OVERWRITES `var_vals[nm]`; this keeps the FIRST value, because a second write of one name
+# is exactly the mismatch case and after `bad` the value is not read. And `sv_get` keeps the
+# LAST match; all stored values for one name are equal unless `bad` is set. WRITING BOTH
+# BRANCHES OF EITHER AS IF THEY DIFFERED WOULD BE A ROW THAT CANNOT GO RED.
+type VVal is Data:
+  VVal{nm: String, v: O.Const}
+
+type SVar is Data:
+  SVar{ar: O.Arena, us: List<&2, String>, vs: List<&2, VVal>, bad: Bool}
+
+def SVar.ar(x: SVar) -> O.Arena:
+  match x:
+    case SVar{ar, us, vs, bad}: ar
+
+def SVar.us(x: SVar) -> List<&2, String>:
+  match x:
+    case SVar{ar, us, vs, bad}: us
+
+def SVar.vs(x: SVar) -> List<&2, VVal>:
+  match x:
+    case SVar{ar, us, vs, bad}: vs
+
+def SVar.bad(x: SVar) -> Bool:
+  match x:
+    case SVar{ar, us, vs, bad}: bad
+
+# `set()`: one entry per NAME, FIRST-SEEN order. The same shape as `helpers.bend`'s
+# `dedup_str.put`, which is why it is five lines and not a table.
+def sv_us(has: Bool, acc: List<&2, String>, +nm: String) -> List<&2, String>:
+  match has:
+    case True{} : acc
+    case False{}: List.append(&2, String, acc, [nm])
+
+def sv_nm.nm(nm: Maybe<&2, String>, +r: SVar) -> SVar:
+  match nm:
+    case None{}  : r
+    case Some{+n}: SVar{SVar.ar(r), sv_us(List.contains(String, String.eq, SVar.us(r), n), SVar.us(r), n),
+                        SVar.vs(r), SVar.bad(r)}
+
+def sv_names(xs: List<&2, U32>, +r: SVar) -> SVar:
+  match xs:
+    case Nil{}  : r
+    case x <> t : sv_names(t, sv_nm.nm(O.UOp.expr(SVar.ar(r), x), r))
+
+def sv_one(m: Maybe<&2, F.VarR>, +r: SVar) -> SVar:
+  match m:
+    case None{}   : r
+    case Some{+vr}: sv_names(F.VarR.xs(vr), SVar{F.VarR.ar(vr), SVar.us(r), SVar.vs(r), SVar.bad(r)})
+
+def sv_kernel(+si: U32, +r: SVar) -> SVar:
+  +ar = SVar.ar(r)
+  +bd = Maybe.default(&2, U32, sc_body(ar, si), 0)
+  +fx = F.folded(ar)
+  sv_one(F.UOp.variables(ar, F.Folded.t(fx), bd, O.Arena.budget(ar)), r)
+
+def sv_kernels(xs: List<&2, U32>, +r: SVar) -> SVar:
+  match xs:
+    case Nil{}  : r
+    case x <> t : sv_kernels(t, sv_kernel(x, r))
+
+# `var_vals.get(nm, val)` -- the DEFAULT IS `val` because upstream's default is `val`, so
+# an absent name and a name bound to the same value are the SAME outcome. `CInvalid{}` is
+# never a bound value, so a sentinel was available; it is not used, because using it would
+# mean writing a second rule for a case upstream does not have.
+def sv_get.pick(hit: Bool, acc: O.Const, v: O.Const) -> O.Const:
+  match hit:
+    case True{} : v
+    case False{}: acc
+
+def sv_get.go(vs: List<&2, VVal>, +nm: String, acc: O.Const) -> O.Const:
+  match vs:
+    case Nil{}          : acc
+    case VVal{j, v} <> t: sv_get.go(t, nm, sv_get.pick(String.eq(j, nm), acc, v))
+
+def sv_get(vs: List<&2, VVal>, nm: String, d: O.Const) -> O.Const:
+  sv_get.go(vs, nm, d)
+
+# insert-if-absent, keeping the FIRST value and the insertion order.
+def sv_set_tail(found: Bool, +nm: String, +v: O.Const) -> List<&2, VVal>:
+  match found:
+    case True{} : Nil{}
+    case False{}: [VVal{nm, v}]
+
+def sv_set_go(+vs: List<&2, VVal>, found: Bool, +nm: String, +val: O.Const) -> List<&2, VVal>:
+  match vs:
+    case Nil{}: sv_set_tail(found, nm, val)
+    case VVal{+j, +v} <> t:
+      List.append(&2, VVal, [VVal{j, v}], sv_set_go(t, Bool.or(found, String.eq(j, nm)), nm, val))
+
+def sv_set(vs: List<&2, VVal>, +nm: String, +val: O.Const) -> List<&2, VVal>:
+  sv_set_go(vs, False{}, nm, val)
+
+# `b.arg.val` -- a bound var's value, which `is_bound_var` has already guaranteed is Some.
+def sv_val.of(arg: O.Arg) -> O.Const:
+  match arg:
+    case O.AParam{pa}: Maybe.default(&2, O.Const, O.ParamArg.val(pa), O.CInvalid{})
+    case _           : O.CInvalid{}
+
+def sv_val(+ar: O.Arena, +i: U32) -> O.Const:
+  sv_val.of(sc_arg(ar, i))
+
+def sv_bind.put(+nm: String, +bs: U32, +r: SVar) -> SVar:
+  +ar = SVar.ar(r)
+  +v = sv_val(ar, bs)
+  SVar{ar, SVar.us(r), sv_set(SVar.vs(r), nm, v),
+       Bool.or(SVar.bad(r), Bool.not(O.eq_const(sv_get(SVar.vs(r), nm, v), v)))}
+
+def sv_bind.used(used: Bool, +nm: String, +bs: U32, +r: SVar) -> SVar:
+  match used:
+    case False{}: r
+    case True{} : sv_bind.put(nm, bs, r)
+
+def sv_bind.nm(nm: Maybe<&2, String>, +bs: U32, +r: SVar) -> SVar:
+  match nm:
+    case None{}  : r
+    case Some{+n}: sv_bind.used(List.contains(String, String.eq, SVar.us(r), n), n, bs, r)
+
+def sv_bind.of(bv: Bool, nm: Maybe<&2, String>, +bs: U32, +r: SVar) -> SVar:
+  match bv:
+    case False{}: r
+    case True{} : sv_bind.nm(nm, bs, r)
+
+def sv_bind(+bs: U32, +r: SVar) -> SVar:
+  sv_bind.of(sc_is_bound_var(SVar.ar(r), bs), O.UOp.expr(SVar.ar(r), bs), bs, r)
+
+def sv_binds(xs: List<&2, U32>, +r: SVar) -> SVar:
+  match xs:
+    case Nil{}  : r
+    case x <> t : sv_binds(t, sv_bind(x, r))
+
+def schedule_vars(+ar: O.Arena, +big_sink: U32, +linear: U32) -> SVar:
+  +r = sv_kernels(sc_srcs(ar, linear), SVar{ar, Nil{}, Nil{}, False{}})
+  sv_binds(sc_src_from(SVar.ar(r), big_sink, 1), r)
+
+# ===========================================================================
 # THE TWELVE -- __init__.py:82-301. THE RULE BODIES, in the order they unblock.
 #
 # The header deferred this region on THREE clauses, and the measurement in
@@ -2571,6 +2733,64 @@ def fx10() -> O.Found:
   +sa = O.UOp.sink(O.Found.ar(ln), [O.Found.i(a)])
   O.UOp.sink(O.Found.ar(sa), [O.Found.i(ln), O.Found.i(sa)])
 
+# fx11/fx12 THE `schedule_vars` FIXTURES -- `used_vars` and `var_vals`, `__init__.py:279-291`.
+#
+# `big_sink.src[0]` IS `lin` HERE AND NOT A SINK, and that is deliberate: upstream's
+# `big_sink` is a CALL whose `src[0]` is the tensor-graph SINK, and `schedule_vars` reads
+# ONLY `src[1:]` -- so wiring `src[0]` to the LINEAR is what makes the LINEAR reachable from
+# ONE fixture entry point without `schedule_vars` ever looking at it.
+#
+# fx11 has FOUR bound vars in `src[1:]` and TWO names in the schedule: `v`=3 and `w`=2 are
+# read by the kernel body, `u`=5 is not, and `w`=2 appears a SECOND time with the SAME value.
+# So one fixture answers three questions: `v` and `w` LAND, `u` is SKIPPED, and a repeat bind
+# with an equal value is NOT a mismatch -- which is what separates
+# `var_vals.get(nm, val) != val` from `nm in var_vals`.
+def sv_var(+ar: O.Arena, nm: String, val: U32) -> O.Found:
+  O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{g_pv(nm, Some{O.CInt{H.i64_of_i32(val)}})}, O.TNone{})
+
+def sv_body(+ar: O.Arena, +vb: U32, +vw: U32) -> O.Found:
+  +c0 = O.UOp.const(ar, O.CInt{H.i64_of_i32(0)})
+  +sm = O.UOp.alu(O.Found.ar(c0), O.OpsADD{}, [vb, vw])
+  +st = O.UOp.new(O.Found.ar(sm), O.OpsSTORE{}, [O.Found.i(c0), O.Found.i(sm)], O.ANone{}, O.TNone{})
+  O.UOp.sink(O.Found.ar(st), [O.Found.i(st)])
+
+def svfx_ok() -> O.Found:
+  +vb = sv_var(O.Arena.empty(), "v", 3)
+  +vw = sv_var(O.Found.ar(vb), "w", 2)
+  +vu = sv_var(O.Found.ar(vw), "u", 5)
+  +w2 = sv_var(O.Found.ar(vu), "w", 2)
+  +b = g_buf(0, "sb", O.Found.ar(w2))
+  +bd = sv_body(O.Found.ar(b), O.Found.i(vb), O.Found.i(vw))
+  +k1 = O.UOp.new(O.Found.ar(bd), O.OpsCALL{}, [O.Found.i(bd), O.Found.i(b)], O.ANone{}, O.TNone{})
+  +lin = O.UOp.new(O.Found.ar(k1), O.OpsLINEAR{}, [O.Found.i(k1)], O.ANone{}, O.TNone{})
+  # THE LAST SRC IS A BOUND-LOOKING VARIABLE THAT IS NOT BOUND, AND IT IS NAMED `v` ON
+  # PURPOSE: `if b.is_bound_var` is the loop's FIRST test, and an unbound `u` would be
+  # skipped by `not in used_vars` too, so it would be a src that no row could tell apart
+  # from an absent one. Named `v`, breaking that test OVERWRITES the answer `v`=3 and sets
+  # `bad` -- two rows red from one src.
+  # `O.Found.ar(lin)` AND NOT `O.Found.ar(w2)`: `nv` mints, and an arena is a VALUE, so
+  # building it from the SMALLER arena `w2` left it holding `next=8` while `lin` sits at
+  # index 12 -- MEASURED, `bs.src0` read `12:NOOP`, and every `sv_ok_*` row answered 0 for a
+  # reason that had nothing to do with `schedule_vars`. THE FIFTH TIME THIS SESSION.
+  +nv = O.UOp.new.param(O.Found.ar(lin), O.OpsPARAM{}, None{}, O.AParam{g_pv("v", None{})}, O.TNone{})
+  +bs = O.UOp.new(O.Found.ar(nv), O.OpsCALL{},
+    [O.Found.i(lin), O.Found.i(vb), O.Found.i(vu), O.Found.i(vw), O.Found.i(w2), O.Found.i(nv)],
+    O.ANone{}, O.TNone{})
+  O.UOp.sink(O.Found.ar(bs), [O.Found.i(bs)])
+
+# fx12 is the MISMATCH: one name, two values. Python RAISES here and a raise cannot be a row,
+# so the port carries `bad` and the row is that flag.
+def svfx_bad() -> O.Found:
+  +vb = sv_var(O.Arena.empty(), "v", 3)
+  +v7 = sv_var(O.Found.ar(vb), "v", 7)
+  +b = g_buf(0, "sb2", O.Found.ar(v7))
+  +bd = sv_body(O.Found.ar(b), O.Found.i(vb), O.Found.i(vb))
+  +k1 = O.UOp.new(O.Found.ar(bd), O.OpsCALL{}, [O.Found.i(bd), O.Found.i(b)], O.ANone{}, O.TNone{})
+  +lin = O.UOp.new(O.Found.ar(k1), O.OpsLINEAR{}, [O.Found.i(k1)], O.ANone{}, O.TNone{})
+  +bs = O.UOp.new(O.Found.ar(lin), O.OpsCALL{},
+    [O.Found.i(lin), O.Found.i(vb), O.Found.i(v7)], O.ANone{}, O.TNone{})
+  O.UOp.sink(O.Found.ar(bs), [O.Found.i(bs)])
+
 # ===========================================================================
 # THE GATE'S READERS. `gate.code` is `sched-truth.py`'s `code()` verbatim, plus
 # LINEAR=10 and MSTACK=11, which that script never needed. `gate.enc` is its
@@ -3042,6 +3262,44 @@ def t_fx10_ops() -> U32: t_fx3.lin.ops(schedule(fx10.ar(), fx10.top()))
 # are different `unsharded_base` answers and a boolean row cannot tell them
 # apart. `ab_body_C_PROG` needs the PROGRAM code.
 # ===========================================================================
+# ===========================================================================
+# THE `schedule_vars` ROWS -- seven, over THREE arms and one NON-arm.
+#
+#   sv_ok_n     TWO names landed, so `u` was skipped and the repeat `w` added no third.
+#   sv_ok_bad   0: a repeat bind with an EQUAL value is not a mismatch. THE ROW that
+#               separates `var_vals.get(nm, val) != val` from `nm in var_vals`.
+#   sv_ok_v     `v` answers 3.
+#   sv_ok_w     `w` answers 2 -- the FIRST value; answering 7 would mean the mismatch was
+#               read off the wrong entry.
+#   sv_ok_skip  `u` is ABSENT, so the `continue` fired.
+#   sv_bad_n    ONE name: the second bind added no second entry.
+#   sv_bad_bad  1: `v` bound 3 then 7.
+# ===========================================================================
+def svfx_ok.ar() -> O.Arena: O.Found.ar(svfx_ok())
+def svfx_ok.top() -> U32: O.Found.i(svfx_ok())
+def svfx_ok.bs() -> U32: sc_src0(svfx_ok.ar(), svfx_ok.top())
+def svfx_ok.lin() -> U32: sc_src0(svfx_ok.ar(), svfx_ok.bs())
+def svfx_bad.ar() -> O.Arena: O.Found.ar(svfx_bad())
+def svfx_bad.top() -> U32: O.Found.i(svfx_bad())
+def svfx_bad.bs() -> U32: sc_src0(svfx_bad.ar(), svfx_bad.top())
+def svfx_bad.lin() -> U32: sc_src0(svfx_bad.ar(), svfx_bad.bs())
+
+def sv_ok_r() -> SVar: schedule_vars(svfx_ok.ar(), svfx_ok.bs(), svfx_ok.lin())
+def sv_bad_r() -> SVar: schedule_vars(svfx_bad.ar(), svfx_bad.bs(), svfx_bad.lin())
+def sv_n(+r: SVar) -> U32: U32.from_nat(List.length(&2, VVal, SVar.vs(r)))
+def sv_is_arg(+r: SVar, +nm: String, +c: O.Const) -> U32: b2u(O.eq_const(sv_get(SVar.vs(r), nm, O.CInvalid{}), c))
+def sv_i32(n: U32) -> O.Const: O.CInt{H.i64_of_i32(n)}
+
+def t_sv_ok_n() -> U32: sv_n(sv_ok_r())
+def t_sv_ok_bad() -> U32: b2u(SVar.bad(sv_ok_r()))
+def t_sv_ok_v() -> U32: sv_is_arg(sv_ok_r(), "v", sv_i32(3))
+def t_sv_ok_w() -> U32: sv_is_arg(sv_ok_r(), "w", sv_i32(2))
+def t_sv_ok_skip() -> U32: b2u(O.eq_const(sv_get(SVar.vs(sv_ok_r()), "u", O.CInvalid{}), O.CInvalid{}))
+def t_sv_bad_n() -> U32: sv_n(sv_bad_r())
+def t_sv_bad_bad() -> U32: b2u(SVar.bad(sv_bad_r()))
+
+
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("unwrap_A1", t_unwrap_A1())
@@ -3172,3 +3430,10 @@ def main() -> IO(Unit):
     row("fx10_marks", t_fx10_marks())
     row("fx10_nsrcs", t_fx10_nsrcs())
     row("fx10_ops", t_fx10_ops())
+    row("sv_ok_n", t_sv_ok_n())
+    row("sv_ok_bad", t_sv_ok_bad())
+    row("sv_ok_v", t_sv_ok_v())
+    row("sv_ok_w", t_sv_ok_w())
+    row("sv_ok_skip", t_sv_ok_skip())
+    row("sv_bad_n", t_sv_bad_n())
+    row("sv_bad_bad", t_sv_bad_bad())
