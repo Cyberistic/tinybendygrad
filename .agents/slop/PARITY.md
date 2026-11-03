@@ -1820,3 +1820,47 @@ weaker than that on both statistics.
 **SO THE CLASS IS EXHAUSTED WHERE IT PAYS**: three of the four remaining sites have nothing to remove, and the
 fourth measured neutral. The four that paid (§33, §34, §38, §39) each had an EXPENSIVE arm being thrown away,
 and those were found by reading the call tree, not by grepping for `Bool.pick`.
+
+## 41. `render_index.alu`: BOTH PICKS CURED, MEASURED NEUTRAL, REVERTED
+
+The last site with expensive arms in both branches of a strict pick, and it had TWO of them nested:
+
+```bend
+Bool.pick(String, lane, "(bname)[iname]",
+  String.concat([bname, Bool.pick(String, gep_uses_idx(dev, bnumel),
+                                  const_idx_str(ar, idx), swizzle_letter(ar, idx))]))
+```
+
+so every index line built `"(bname)[iname]"` AND the `bname ++ (...)` form, and inside the second built BOTH
+`const_idx_str` and `swizzle_letter`. §39's cure applied twice -- `render_index.alu_by(lane, ...)` and
+`render_index.alu_idx(gep, ...)`, each a `match` on a bool PARAMETER.
+
+### 41.1 Measured
+
+```
+before (both arms)  min 48.1  p25 50.2  median 50.7 ms
+after  (one arm)    min 48.3  p25 50.4  median 50.7 ms
+ratio new/old  min 0.8297  p25 0.9924  median 1.0013  max 1.0284
+rounds where the new artifact is faster: 6 of 12
+```
+
+**DEAD NEUTRAL: 6 of 12 is a coin flip and the median is 1.0013**, so it is REVERTED, and the revert has a
+property worth stating -- **the worktree goes back to the digest the certificate on disk already describes**
+(`ed700df7222c`), so reverting a neutral change costs nothing but does not invalidate anything either.
+
+### 41.2 What three neutrals in a row establish
+
+| § | site | ratio median | verdict |
+|---|---|---|---|
+| 37 | `String.concat` -> `String.join`, 89 sites | 1.0021 (5/12) | reverted |
+| 40 | `render_index.alu2` | 0.9960 (7/12) | reverted |
+| 41 | `render_index.alu` (two nested picks) | 1.0013 (6/12) | reverted |
+
+**THE FOUR THAT PAID ALL HAD A LARGE EXPENSIVE ARM BEING THROWN AWAY** (seven decimals, four cast renders, a
+doubled conditional, and a whole statement assembled for every inlined uop). These three have expensive arms
+too, and removing them changes nothing measurable -- because at ~0.05 ms/uop the render is no longer dominated
+by wasted work; it is dominated by the calls it legitimately makes.
+
+**⇒ AND THAT IS THE END OF THIS CLASS, STATED WITH THREE MEASUREMENTS RATHER THAN A JUDGEMENT.** The next
+change would have to reduce the number of calls a rendered line makes, not the number of arms it evaluates,
+and no site in the file does both any more.
