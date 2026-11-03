@@ -1065,3 +1065,39 @@ task.
 THE METHOD IS REUSABLE AND CHEAP: `git show <rev>:tinybendygrad/uop/symbolic.bend > /tmp/x`,
 `cp` it in, run, `cp` back. Three runs, ~100 s each, and the answer is a count that either moves or
 does not. **A CLAIM OF "NOT MINE" IS ONLY WORTH ANYTHING IF IT IS TAKEN THIS WAY.**
+
+## 31. `sy_trunc`'s FLOAT half is the same defect, and here is the exact remainder
+
+Section 27 widened `sy_trunc` for the INT widths. The FLOAT widths are still missing, and the whole
+of what is left is measured here so the next pass does not re-derive it:
+
+    tinygrad/dtype.py:293   truncate[float16]   = float_to_fp16                        <-- MISSING
+                            truncate[bfloat16] = lambda x: float_to_bf16(float(x))     <-- MISSING
+                            truncate[float]    = ctypes.c_float                        <-- present as `{14, 32, CFloat}`
+                            truncate[double]   = ctypes.c_double == identity           <-- MISSING (arm absent)
+
+and the port's own dtype table separates all four by `pri`, which is what an arm would match on:
+
+    LAWS/spec.bend:739  half()      = Dt{12, 16, CFloat{}, "f16"}
+    LAWS/spec.bend:740  bfloat16()  = Dt{13, 16, CFloat{}, "bf16"}
+    LAWS/spec.bend:741  single()    = Dt{14, 32, CFloat{}, "f32"}
+    LAWS/spec.bend:742  double()    = Dt{15, 64, CFloat{}, "f64"}
+
+`bfloat16` and `half` share `bits=16` and `cls=CFloat`, so **(bits, cls) CANNOT tell them apart and
+the arm must key on `pri`** -- which is the same thing the six existing arms do (`0`, `9`, `5`, `6`,
+`14`), so this is the established shape and not a new hack.
+
+THE ENCODERS ARE ALREADY IN THE TREE and `symbolic.bend` already imports the module they live in
+(`import ./../dtype.bend as D`, line 181):
+
+    dtype.bend:797  Dt.fp16(+x: F32) -> F32
+    dtype.bend:1168 float_to_bf16(x: F32) -> F32
+
+so the arms are `case S.Dt{12, 16, S.CFloat{}, _}: ... D.Dt.fp16(f)` and
+`case S.Dt{13, 16, S.CFloat{}, _}: ... D.float_to_bf16(f)`, plus `{15, 64, CFloat}` as identity.
+
+NOT DONE HERE, and the reason is a real edge case rather than fatigue: a float-dtype const can arrive
+with an INT payload (`UOp.const(1, dtypes.float16)` goes through `dtype.const`'s float branch, which
+converts first), so the arms need an int->float conversion before the encoder, and `O.CFloat{f}` is
+the only float payload the port's `Const` has. **THAT CONVERSION IS THE UNMEASURED PART; the encoders
+are not.**
