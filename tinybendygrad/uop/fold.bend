@@ -5459,6 +5459,33 @@ def ovf.cls(ar: O.Arena, bt: BTable, i: U32, +cls: S.Cls, +bits: U32) -> Bool:
 def UOp.overflows(ar: O.Arena, bt: BTable, i: U32, +dt: S.Dt) -> Bool:
   ovf.cls(ar, bt, i, S.Dt.cls(dt), S.Dt.bits(dt))
 
+# `UOp.bool_slice` -- ops.py:284-287:
+#   _bool_slice = lambda self: frozenset().union(*[s.bool_slice for s in self.src])
+#   bool_slice  = lambda self: self._bool_slice | {self} if self.dtype is bool else self._bool_slice
+# i.e. every BOOL-TYPED node in the backward slice, the root included when it is bool.
+#
+# THE SET IS NOT MATERIALISED, AND THIS IS THE MEASURED REASON: the only consumer in the whole of
+# `tinygrad/` is a MEMBERSHIP TEST -- `symbolic.py:235`, `cond not in t.bool_slice and cond not in
+# f.bool_slice`. `grep -n bool_slice tinygrad/` answers three lines, two of them the definition
+# above. A `List` standing in for a `frozenset` would need dedup for no reader.
+#
+# SO THE ANSWER IS `want` IS BOOL **AND** `want` IS REACHABLE THROUGH `src` EDGES, which for a
+# boolean `want` is the same predicate and for a non-boolean one is upstream's `False` rather than
+# a reachability answer. `src` and not `src_without_body`: `Arena.srcs` is the former.
+def bs.dt(+ar: O.Arena, +bt: BTable, i: U32) -> Bool:
+  dt_is(folded(ar), i, S.boolean())
+
+def UOp.bs_reach(fuel: Nat, +ar: O.Arena, todo: List<&2, U32>, +want: U32) -> Bool:
+  match fuel todo:
+    case 0n Nil{}: False{}
+    case 1n+p Nil{}: False{}
+    case 0n +h <> rest: False{}
+    case 1n+p +h <> rest:
+      Bool.or(U32.is_eq(h, want), UOp.bs_reach(p, ar, List.concat(&2, U32, [O.Arena.srcs(ar, h), rest]), want))
+
+def UOp.bool_slice_has(fuel: Nat, +ar: O.Arena, +bt: BTable, root: U32, +want: U32) -> Bool:
+  Bool.and(bs.dt(ar, bt, want), UOp.bs_reach(fuel, ar, [root], want))
+
 # The main fold ONCE, then the sweep over the FINISHED table, for `Ranged`'s reason: the
 # sweep reads dtypes, and only a complete main table answers one everywhere. The main
 # `Table` is not a field -- the sweep closed over it.
