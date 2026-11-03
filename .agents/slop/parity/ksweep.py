@@ -162,13 +162,18 @@ def main() -> int:
 
   same = diff = 0
   first = None
-  for idx, (uops, theirs) in enumerate(cap):
-    try:
-      ours = portc.render(uops)
-    except Exception as e:
-      diff += 1
-      if first is None:
-        first = (idx, f"PORT FAILED {type(e).__name__}: {str(e)[:200]}")
+  # **ONE BUILD FOR EVERY KERNEL.** The build is the typecheck of `cstyle.bend`'s closure and does not grow
+  # with the kernel count -- MEASURED 941 ms for one kernel, 967 ms for six -- so comparing 37 kernels one
+  # at a time paid the same second 37 times. `render_many` is the same code path as `render` (which is
+  # `render_many` with one element), so this cannot change which bytes are compared; it changes only how
+  # many times the renderer is compiled.
+  batch = None
+  try:
+    batch = portc.render_many([u for u, _t in cap])
+  except Exception as e:
+    first = (0, f"PORT FAILED ON THE BATCH {type(e).__name__}: {str(e)[:200]}")
+  for idx, ((uops, theirs), ours) in enumerate(zip(cap, batch or [])):
+    if ours is None:
       continue
     if ours == theirs:
       same += 1
@@ -179,6 +184,8 @@ def main() -> int:
         d = [l for l in difflib.unified_diff(theirs.splitlines(), ours.splitlines(), "theirs", "ours", lineterm="", n=0)
              if l.startswith(("-", "+")) and not l.startswith(("---", "+++"))][:4]
         first = (idx, "\n    ".join(d))
+  if batch is None:
+    diff = len(cap)
   print(f"# kernels: {same} byte-identical, {diff} differ")
   if first:
     print(f"# first divergence at kernel {first[0]}:\n    {first[1]}")

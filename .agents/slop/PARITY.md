@@ -774,3 +774,72 @@ placed 1.0 inside the interquartile range and the third placed the WHOLE IQR jus
 +-1-2%, so the stable statement is not "1.0 is always inside" but "the two lanes are the same to within
 1-2% and the port is never the slower one."** A single run's "inside/outside" verdict at this resolution is
 a coin flip around a 0.5% effect; the three medians together are the measurement.
+
+## 25. THE FLOOR IS tinygrad's, AND THE COLD PATH WAS 7000x TOO SLOW -- AND IT WAS OURS
+
+§23 and §24 measured WARM lanes: tinygrad caches the compiled kernel on the uop hash, so after the first
+realize neither the render nor the compile is in the timing. Two things follow from that, and NEITHER was
+measured before this section: (a) at the BOTTOM of the size range, where the kernel is negligible, is the
+per-realize overhead the same in both lanes? and (b) what does the FIRST realize of a kernel cost?
+
+### 25.1 The floor, by slope
+
+`.agents/slop/parity/floor.py`: a 64-element `a + b` (one and a half cache lines), timed as a SLOPE --
+`(t(400) - t(100)) / 300` -- so interpreter start-up, imports, allocation and the first compile cancel
+out and what is left is the marginal cost of ONE realize.
+
+| lane | slope | 
+|---|---|
+| BEND | 492.5 us/realize |
+| CPU  | 500.8 us/realize |
+
+15 interleaved rounds, order alternating: ratio median **0.9893**, IQR **0.9506-1.0024**, 1.0 inside,
+BEND slower in 4 of 15. **THE FLOOR IS ~0.5 ms IN BOTH LANES AND IT IS tinygrad's OWN PYTHON LAUNCH PATH**,
+which both lanes run: graph build, schedule-cache lookup, kernel-cache lookup, launch. The port adds nothing
+to it that this instrument can see -- and 0.5 ms per realize is the number that explains the +-4% band at
+16x16, because at that size the kernel is a small fraction of a 1.2 ms realize.
+
+### 25.2 The cold path, and the defect it exposed
+
+`.agents/slop/parity/compile.py` renders the SAME live uop lists twice, cold (distinct sizes, so neither
+content cache can answer), and compares the port's C against `ClangRenderer`'s byte for byte:
+
+| | upstream `ClangRenderer.render` | port `portc.render` |
+|---|---|---|
+| per kernel | 0.12 - 2.54 ms | **915 - 1100 ms** |
+
+**THE PORT'S RENDER WAS ~7 000x SLOWER PER UNIQUE KERNEL**, because `portc.render` is a `bin/bend` BUILD of
+`cstyle.bend` -- one process per kernel -- and what that build pays for is the TYPECHECK OF THE CLOSURE.
+MEASURED directly: a driver holding ONE kernel builds in **941 ms**, a driver holding SIX builds in **967 ms**.
+**THE COST IS FIXED, NOT PER-KERNEL, AND THE CODE WAS PAYING IT ONCE PER KERNEL.**
+
+For a model with K distinct kernels the first run therefore cost K x ~1 s: 500 kernels, 8 minutes, against
+upstream's 0.07 s -- and no instrument in this tree could see it, because every timing instrument ran warm.
+
+### 25.3 The fix: one build for every miss
+
+`portc.render_many(uops_list)` puts every cache miss into ONE driver, prints each kernel's C behind a
+`@@KERNEL <name>` line marker, and splits the output. `render` IS `render_many` with one element, so the
+two paths cannot emit different C.
+
+| kernels | one-at-a-time | batched | speed-up | C identical to upstream |
+|---|---|---|---|---|
+| 6  | 5 811 ms | **1 026 ms** | 5.67x | single 6/6, batch 6/6 |
+| 20 | 23 668 ms | **2 024 ms** | **11.69x** | single 20/20, batch 20/20 |
+
+So the cold cost is now `one build (~1.0 s) + K x ~50 ms` instead of `K x ~1.0 s`, and **the gap widens
+with K, which is the shape a per-kernel charge always has when the charge is really a fixed one.**
+
+`ksweep.py` now renders its 37 real kernels through the batch too, and it is the batch's correctness
+witness on kernels this section did not construct: **37 byte-identical, 0 differ**, in 7.3 s total where
+37 separate builds would have been ~37 s of building alone.
+
+### 25.4 What is NOT fixed, stated rather than implied
+
+The remaining ~1.0 s is the typecheck of `cstyle.bend`'s closure, and `bin/bend` has no typecheck cache
+(MEASURED in this tree: two consecutive builds of the same file take 2.64 s and 2.45 s). Batching removes
+it from the per-kernel path but not from the first miss of a session. Removing it from the first miss needs
+a renderer that reads uop lists at RUNTIME instead of compiling them as literals -- the executor's
+`op_of(String)` table exists (`runtime/ops_python.bend:507`), a rows->KU parser does not, and that is the
+next structural step, not a micro-optimisation. **AND IT IS THE LAST ONE: at 1024x1024 the whole cold path
+is 1.2% of the workload (§24), so this only ever mattered for the first run of a many-kernel program.**
