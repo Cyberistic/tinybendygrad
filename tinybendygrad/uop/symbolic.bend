@@ -3019,6 +3019,61 @@ def sym_230.go(m: Maybe<&2, O.Found>) -> Maybe<&1, O.Found>:
 def sym_230(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sym_230.go(R.commutative(F.Folded.t(x), sy_ar(x), u))
 
+# symbolic.py:248  ((UPat.var("y") + UPat.var("x")) + UPat.var("x") * UPat.cvar("c"),
+#                     lambda x,y,c: y+x*(c+1))
+# symbolic.py:249  ((UPat.var("y") + UPat.var("x") * UPat.cvar("c")) + UPat.var("x"),
+#                     lambda x,y,c: y+x*(c+1))
+# ONE SHAPE WITH THE PRODUCT ON ONE OF TWO SIDES: the ROOT's other src is `x*c` in `:248`
+# and `x` in `:249`, so `sym_248.prod` names whichever slot holds the product and the rest of
+# the body reads through it. THE PATTERN IS NOT `:251`'s -- `:251` requires the inner add's
+# src to BE the root's other src, and here the shared node is the product's VAR side.
+def sym_248.prod(+x: F.Folded, +u: U32) -> U32:
+  +i = sym_251.inner(x, u)
+  Bool.pick(U32, p_mul_c(x, sym_251.z(x, u)), sym_251.z(x, u),
+    Bool.pick(U32, p_mul_c(x, sy_src0(x, i)), sy_src0(x, i), sy_src1(x, i)))
+
+def sym_248.v(+x: F.Folded, +u: U32) -> U32: sym_245.vside(x, sym_248.prod(x, u))
+
+def sym_248.k(+x: F.Folded, +u: U32) -> U32: sym_245.cside(x, sym_248.prod(x, u))
+
+def sym_248.has_src(+x: F.Folded, +s: U32, +v: U32) -> Bool:
+  Bool.or(p_same(sy_src0(x, s), v), p_same(sy_src1(x, s), v))
+
+# `y` -- the INNER add's src that is neither the shared operand nor the product.
+def sym_248.y(+x: F.Folded, +u: U32) -> U32:
+  +i = sym_251.inner(x, u)
+  +v = sym_248.v(x, u)
+  +p = sym_248.prod(x, u)
+  +a = sy_src0(x, i)
+  Bool.pick(U32, Bool.and(Bool.not(p_same(a, v)), Bool.not(p_same(a, p))), a, sy_src1(x, i))
+
+def sym_248.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = sym_251.inner(x, u)
+  +z = sym_251.z(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsADD{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(p_add2(x, i),
+      Bool.or(Bool.and(p_mul_c(x, z), sym_248.has_src(x, i, sym_245.vside(x, z))),
+              Bool.and(Bool.not(p_mul_c(x, z)),
+                Bool.or(Bool.and(p_mul_c(x, sy_src0(x, i)), p_same(sym_245.vside(x, sy_src0(x, i)), z)),
+                        Bool.and(p_mul_c(x, sy_src1(x, i)), p_same(sym_245.vside(x, sy_src1(x, i)), z)))))))
+
+def sym_248.mk(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+c1}:
+      +v = sym_248.v(x, u)
+      +c = sym_248.k(x, u)
+      +s = mint_bin(c1, O.OpsADD{}, c, O.Found.i(c1))
+      +d = mint_bin(s, O.OpsMUL{}, v, O.Found.i(s))
+      Some{mint_bin(d, O.OpsADD{}, sym_248.y(x, u), O.Found.i(d))}
+    case None{}: None{}
+
+def sym_248(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_248.pat(x, u),
+    sym_248.mk(mint_const_like(mint_ar(sy_ar(x)), x, sym_248.v(x, u), O.CInt{H.i64_of_i32(1)}), x, u))
+
+# TWO NAMES AND ONE BODY, because the census resolves a rule by the LINE its table row cites.
+def sym_249(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_248(x, u)
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3302,16 +3357,18 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{60, [O.OpsOR{}], Nil{}, },   # 243
     O.PMEntry{61, [O.OpsADD{}], Nil{}, },   # 245
     O.PMEntry{62, [O.OpsADD{}], Nil{}, },   # 247
-    O.PMEntry{63, [O.OpsADD{}], Nil{}, },   # 250
-    O.PMEntry{64, [O.OpsADD{}], Nil{}, },   # 251
-    O.PMEntry{65, [O.OpsWHERE{}], Nil{}, },   # 256
-    O.PMEntry{66, [O.OpsCMPNE{}], Nil{}, },   # 260
-    O.PMEntry{67, [O.OpsWHERE{}], Nil{}, },   # 262
-    O.PMEntry{68, [O.OpsWHERE{}], Nil{}, },   # 264
-    O.PMEntry{69, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{70, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{71, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{72, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{63, [O.OpsADD{}], Nil{}, },   # 248
+    O.PMEntry{64, [O.OpsADD{}], Nil{}, },   # 249
+    O.PMEntry{65, [O.OpsADD{}], Nil{}, },   # 250
+    O.PMEntry{66, [O.OpsADD{}], Nil{}, },   # 251
+    O.PMEntry{67, [O.OpsWHERE{}], Nil{}, },   # 256
+    O.PMEntry{68, [O.OpsCMPNE{}], Nil{}, },   # 260
+    O.PMEntry{69, [O.OpsWHERE{}], Nil{}, },   # 262
+    O.PMEntry{70, [O.OpsWHERE{}], Nil{}, },   # 264
+    O.PMEntry{71, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{72, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{73, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{74, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3683,7 +3740,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3722,16 +3779,18 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 60: sym_243(x, u)
     case 61: sym_245(x, u)
     case 62: sym_247(x, u)
-    case 63: sym_250(x, u)
-    case 64: sym_251(x, u)
-    case 65: sym_256(x, u)
-    case 66: sym_260(x, u)
-    case 67: sym_262(x, u)
-    case 68: sym_264(x, u)
-    case 69: sym_462(x, u)
-    case 70: sym_463(x, u)
-    case 71: sym_464(x, u)
-    case 72: sym_444(x, u)
+    case 63: sym_248(x, u)
+    case 64: sym_249(x, u)
+    case 65: sym_250(x, u)
+    case 66: sym_251(x, u)
+    case 67: sym_256(x, u)
+    case 68: sym_260(x, u)
+    case 69: sym_262(x, u)
+    case 70: sym_264(x, u)
+    case 71: sym_462(x, u)
+    case 72: sym_463(x, u)
+    case 73: sym_464(x, u)
+    case 74: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
