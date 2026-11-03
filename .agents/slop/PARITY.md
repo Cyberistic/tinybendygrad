@@ -2867,3 +2867,35 @@ most a few milliseconds of a 337 ms run, and the measurement says the overhead i
 **⇒ AND THAT CLOSES THE LAST NAMED TERM.** Every component of the port's cost is now either measured-and-cut
 (§27, §31, §33, §34, §38, §39, §49, §50, §53, §54, §62), measured-and-inexpressible (§44, §57), measured-and-diffuse
 (§58, §60), or measured-and-not-paying (this section, §37, §40, §41, §61).
+
+## 66. THE LOOP BY TIME, NOT BY COUNT: 11.6% OF THE PROFILE AND NO SITE ABOVE 5.4%
+
+§60 ranked the loop by CALL COUNT and §59's plants were confounded, so this ranks it by TIME: the live
+artifact under `--cpu-prof-interval=10` (finer than §52's 25), one 405-uop render, summing only the port's own
+functions.
+
+```
+port-owned sites   11.6% of the profile
+load sites         38.8%
+top port-owned by SELF time:
+  5.4%  char_len      (the decode's string scanning)
+  2.8%  List_set      (the child-count histogram, §56/§57)
+  1.8%  List_get      (rt and cc_at's walks, §60)
+  1.6%  List_set
+```
+
+**NO PORT-OWNED SITE ABOVE 5.4%, AND THE FOUR TOGETHER ARE 11.6%** -- the same shape the counts gave and the
+same shape the plants gave from the other direction (`ku_text` 31% of the TURN because it is fifteen arms,
+§58). **THE ~4 ms "LOOP" IS NOT A SITE; IT IS THE PER-UOP CONSTANT** -- one dispatch, one `st_put`, one emit,
+six lookups, all at their minimum (§60) and each too small to move the total.
+
+### 66.1 Why the `St`-record theory was worth testing and what the ranking says about it
+
+The proposal was that the per-uop `St` rebuild (`st_put`/`st_c` allocating a fresh six-field record per line)
+would be the leading site. It is not in the top four: `List_set` (2.8 + 1.6) is the histogram and the
+statement counters, and `St.of` does not appear at all -- a six-field object literal is one allocation in a
+run that makes 682 252 calls, and V8/Bun's young generation makes it near-free.
+
+**⇒ SO THE ANSWER TO "WHAT IS THE 40%?" IS THE SAME FROM THREE INSTRUMENTS**: the profile (11.6% across four
+sites), the call counts (everything at 1.0-6 per uop), and the plants (text 31% spread over 15 arms). **IT IS
+THE COST OF INTERPRETING A 405-UOP LIST IN A LANGUAGE WITH NO MUTABLE CONTAINER, AND THAT IS THE PORT.**
