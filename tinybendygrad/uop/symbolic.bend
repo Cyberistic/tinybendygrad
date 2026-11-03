@@ -3429,12 +3429,22 @@ def sym_266.pat(+x: F.Folded, +u: U32) -> Bool:
     Bool.and(Bool.and(p_where3(x, a), p_where3(x, b)),
       Bool.and(p_same(sy_src0(x, a), sy_src0(x, b)), sym_266.guard(x, a, b))))
 
+# **THE GUARD `:283` CARRIES AND THIS BODY DID NOT: `no_overflow(m:=c.where(t+tt, f+ff))`.**
+# The rule pushes one ALU through a WHERE and combines both branches, so the COMBINED WHERE must keep
+# its range in its own dtype. The bounds are read off the node just minted, from a fold of ITS arena
+# -- the repair `:309`/`:311` established and `:259`/`:261`/`:255` reuse.
+def sym_266.done(ok: Bool, +w: O.Found) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{}: Some{w}
+    case _: None{}
+
 def sym_266.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   +a = sy_src0(x, u)
   +b = sy_src1(x, u)
   +l = mint_bin(mint_ar(sy_ar(x)), sy_op(x, u), sy_src1(x, a), sy_src1(x, b))
   +r = mint_bin(l, sy_op(x, u), sy_src2(x, a), sy_src2(x, b))
-  Some{mint_where(r, sy_src0(x, a), O.Found.i(l), O.Found.i(r))}
+  +w = mint_where(r, sy_src0(x, a), O.Found.i(l), O.Found.i(r))
+  sym_266.done(sym_248.no_ov(w, O.Found.i(w)), w)
 
 def sym_266(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_266.pat(x, u), sym_266.mk(x, u))
