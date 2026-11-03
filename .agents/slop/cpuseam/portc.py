@@ -352,13 +352,14 @@ def _render_wire(text: str) -> str:
 #     not the silent-fallback defect the tree forbids (that was handing the kernel to TINYGRAD's renderer):
 #     the port still renders it, and `worker_stats()` counts every fallback so nothing is invisible.
 # ===========================================================================
-# **THE DAEMON IS OPT-IN, AND THAT IS A MEASUREMENT RATHER THAN CAUTION.** MEASURED: `serve.bend` answers in
-# 6-10 ms per turn -- 4.6x cheaper than the 38.4 ms one-shot path -- for THREE turns and then stops
-# answering, with the process ALIVE, `poll()` None, no output pending and no bytes on stderr. The cause was
-# not established inside this session (the FIFO is opened once for reading and once for writing and neither
-# side reports an error), and a stalled worker costs the TIMEOUT and then the fallback, which is SLOWER than
-# never starting it. So `BEND_SERVE=1` is the only way in, the default is the one-shot path, and every
-# fallback is recorded rather than swallowed.
+# **THE DAEMON IS THE DEFAULT, AND IT GOT THERE BY LOSING ITS LAST DEFECT.** It first stalled on the FOURTH
+# turn while the same six signals driven from a shell all answered -- which localised the fault to this file
+# and not to Bend: `select.select([proc.stdout], ...)` plus `readline()` is wrong against a `TextIOWrapper`,
+# because `readline` fills an 8 KB buffer and a later result can already be IN PYTHON with the fd empty, so
+# `select` waits for a byte that has arrived. A reader thread blocking in `readline` with a `Queue` has no
+# such window. MEASURED after the fix: 12 consecutive turns, median 6.0 ms, every answer byte-identical,
+# zero fallbacks; and `compile.py` cold 38.4 -> 14.2 ms per kernel. `BEND_SERVE=0` opts out, and one stall
+# still disables it for the session, so the failure mode stays a timeout and a fallback rather than a hang.
 TIMEOUT = 20.0
 _FALLBACKS = []
 _WORKER = None
@@ -378,6 +379,8 @@ class Worker:
       os.mkfifo(self.fifo)
     self.proc = None
     self.w = None
+    self.q = None
+    self.reader = None
     self.turns = 0
 
   def start(self) -> None:
@@ -390,8 +393,28 @@ class Worker:
     # every read. MEASURED with a per-request writer: `live 1/6 byte-identical`, because one extra turn per
     # request shifted every answer by one. A writer that never closes has no EOF between requests.
     self.w = open(self.fifo, "wb", buffering=0)
+    # **A READER THREAD, NOT `select` ON THE STREAM.** MEASURED: `select.select([proc.stdout], ...)` plus
+    # `readline()` stalled on the FOURTH turn while the worker answered all six when the same six signals
+    # were driven from a shell. The cause is read-ahead: `readline()` on a `TextIOWrapper` fills an 8 KB
+    # buffer, so a later result can already be IN PYTHON with the fd empty, and `select` then waits for a
+    # byte that has arrived. A thread that blocks in `readline()` has no such window, and a `Queue` carries
+    # the line to the caller with its own timeout.
+    import threading
+    import queue
+    self.q = queue.Queue()
+    out = self.proc.stdout
+
+    def pump():
+      for line in out:
+        self.q.put(line)
+      self.q.put(None)
+
+    self.reader = threading.Thread(target=pump, daemon=True)
+    self.reader.start()
 
   def stop(self) -> None:
+    if self.q is not None:
+      self.q.put(None)
     if self.w is not None:
       self.w.close()
       self.w = None
@@ -409,19 +432,19 @@ class Worker:
     tmp.write_text(text)
     os.replace(tmp, self.req)
     self.w.write(b"x")
-    assert self.proc.stdout is not None
+    import queue
     deadline = time.time() + TIMEOUT
     lines, started = [], False
     while True:
       left = deadline - time.time()
       if left <= 0:
         raise TimeoutError("serve: no answer within the timeout")
-      ready, _, _ = select.select([self.proc.stdout], [], [], left)
-      if not ready:
-        raise TimeoutError("serve: no answer within the timeout")
-      line = self.proc.stdout.readline()
-      if line == "":
-        raise RuntimeError(f"serve: worker died: {(self.proc.stderr.read() if self.proc.stderr else '')[:200]}")
+      try:
+        line = self.q.get(timeout=left)
+      except queue.Empty:
+        raise TimeoutError("serve: no answer within the timeout") from None
+      if line is None:
+        raise RuntimeError("serve: worker exited")
       line = line.rstrip("\n")
       if line == "@@BEGIN":
         started = True
@@ -459,7 +482,7 @@ def render_live(uops) -> str:
   cached = OUT / f"livew_{key}.c"
   if cached.exists():
     return cached.read_text()
-  if not os.environ.get("BEND_SERVE") or _OFF[0]:
+  if os.environ.get("BEND_SERVE") == "0" or _OFF[0]:
     src = _render_wire(text)
   else:
     try:

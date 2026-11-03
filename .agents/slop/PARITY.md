@@ -1221,3 +1221,68 @@ decoders**, so the opt-in path is correct for the turns it serves.
 
 **⇒ AND THE HONEST SUMMARY OF §29 IS THAT THE 46 ms IS STILL THERE.** The mechanism is built, its cost is
 measured at 8.3 ms per turn, and it does not survive more than three requests in this tree today.
+
+## 30. THE STALL WAS IN THE HARNESS: THE DAEMON IS NOW THE DEFAULT, AND THE PORT IS FASTER THAN CPU END TO END
+
+§29 ended with "the mechanism is built, its cost is measured, and it does not survive three requests". That
+was true and the LOCATION was wrong: the fault was in `portc.py`, not in Bend.
+
+### 30.1 How it was localised
+
+`File.read` on a FIFO was the suspect, so it was taken out of Python's hands: one `bun serve.js` started
+against `/tmp/sig|/tmp/req`, a shell holding `exec 3>/tmp/sig` open, six `printf 'x' >&3` at 0.6 s spacing.
+
+```
+after signal 1: 1 result(s)      after signal 4: 4 result(s)
+after signal 2: 2 result(s)      after signal 5: 5 result(s)
+after signal 3: 3 result(s)      after signal 6: 6 result(s)
+```
+
+**SIX OF SIX.** Bend's `File.read` on a persistent FIFO descriptor is fine, and `serve.bend` never had the
+defect.
+
+### 30.2 The defect
+
+`select.select([proc.stdout], [], [], left)` followed by `proc.stdout.readline()`. `proc.stdout` is a
+`TextIOWrapper`, so `readline` fills an **8 KB buffer**: after one result the wrapper can already hold the
+NEXT result while the underlying fd is empty. `select` then reports "not ready" and waits for a byte that is
+already in Python. MEASURED: stalls on the fourth turn, every run, with the worker alive and answering.
+
+The cure is a reader thread blocking in `readline`, pushing lines to a `Queue` that the caller drains with
+`get(timeout=...)`. There is no window: the thread owns the buffer, the queue owns the handoff.
+
+### 30.3 Measured after the fix
+
+12 consecutive turns, one wire, every answer compared to the one-shot path:
+
+```
+turns: 50 7 7 7 5 6 9 4 7 5 4 6 ms     steady median 6.0 ms, 12 of 12 identical, 0 fallbacks
+```
+
+| | one-shot (`live`, §28) | daemon |
+|---|---|---|
+| `compile.py` cold, per kernel | 38.4 ms | **14.2 ms** |
+| ratio to the original literal path (89.8) | 2.34x | **6.3x** |
+
+**AND END TO END THE LANES HAVE CROSSED** (`e2ecold.py`, fresh process, 5 kernels, seeds 8-9, checksums
+identical):
+
+| seed | CPU cold wall | BEND cold wall |
+|---|---|---|
+| 8 | 463.1 ms | **452.7 ms** |
+| 9 | 375.0 ms | **347.0 ms** |
+
+**That is the first reading in this record where the port's lane is not slower than tinygrad's CPU lane on
+a whole program**: the ~46 ms of per-kernel start-up that §26.4 refused to buy is gone from the steady path,
+and what is left per kernel is a ~6 ms render plus the decode.
+
+### 30.4 What changed in the shipped path
+
+The daemon is **the default**; `BEND_SERVE=0` opts out, and one stall still disables it for the session and
+falls back to the same renderer (so the failure mode is a timeout and a slower answer, never a hang and never
+a different byte). Verified on the default path: `ksweep 37 of 37 byte-identical on BOTH decoders`,
+`ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`, `compile.py 4 of 4 identical`.
+
+**NO `.bend` FILE UNDER `tinybendygrad/` CHANGED IN THIS SECTION** (`serve.bend` lives in
+`.agents/slop/cpuseam/`, which is harness and not substrate), so the certificate is the one already on
+disk: `substrate-start == substrate-end == live == 81db633f2891…`, `38 graphs, 38 byte-identical`.
