@@ -321,3 +321,7 @@ checks/.e2e-fixture/opsbend-milestone/PACKET.out
 .agents/slop/browser/imagenet-train/inet-train-net.json
 .agents/slop/browser/web/inet-train-net.json
 .agents/slop/browser/web/inet-train-oracle.json
+
+# the renderer artifacts portc builds beside the tracked fixture .c files
+.agents/slop/cpuseam/out/*.js
+.agents/slop/cpuseam/out/*.bin

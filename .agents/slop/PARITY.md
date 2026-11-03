@@ -2375,3 +2375,31 @@ ratio min 0.6553  p25 0.8692  median 0.9644  max 1.3238   10 of 14 faster
 A noisy reading (the machine was loaded), but the direction agrees with the 1.1 ms measured in isolation, and
 **the change is kept on the rule rather than on the ratio**: a render path whose cost depends on the network
 is not a measurement of the renderer. `ksweep 37 of 37` on both decoders after it.
+
+## 53. START-UP IS THE COST NOW, AND PACKAGING REMOVES 11% OF IT
+
+§52's profile put 30.2% `resolve` and 6.1% `parseModule` at the top of a one-shot render: loading a 433 KB
+script costs 24.1 ms of a 47 ms command, more than the render does. That is a PACKAGING cost, so it was
+attacked as one.
+
+`bun build --compile --minify` embeds the runtime and the script into a single executable (63 MB, built in
+0.2 s, cached beside the `.js` by the same renderer stamp). MEASURED on the same 405-uop wire, output compared
+byte for byte first:
+
+```
+same output: True (4427 B)
+bun + .js          min 44.0  p25 45.7  median 47.0 ms
+compiled binary    min 40.0  p25 40.4  median 40.9 ms
+ratio min 0.7124  p25 0.8559  median 0.8907  max 0.9234   14 of 14 faster
+```
+
+**11%, EVERY ROUND, AND THE WORST ROUND IS STILL 7.7% FASTER** -- from packaging alone, with no change to the
+renderer at all. `_live_bin()` builds it lazily and returns `None` when `bun build` cannot, in which case the
+`.js` path runs exactly as before, so the fallback is the same renderer and the same bytes.
+
+**AND THE ARTIFACTS ARE NOW IGNORED**: `.gitignore` gained `.agents/slop/cpuseam/out/*.js` and `*.bin`, because
+that directory holds five TRACKED fixture `.c` files beside 250 MB of build output, and a 63 MB executable in
+`git status` is a hazard, not a cache.
+
+`ksweep 37 of 37 on both decoders`, `compile.py 4 of 4`, `ops_bend_exec-e2e 7 of 7`, `opbattery 39 of 39`.
+**NO `.bend` CHANGED, so the corpus digest is untouched by this section.**

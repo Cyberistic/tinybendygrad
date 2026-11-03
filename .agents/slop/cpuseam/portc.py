@@ -376,9 +376,29 @@ def _chunks(text: str) -> list[str]:
   return out or [""]
 
 
+# **THE RENDERER AS A COMPILED EXECUTABLE, BECAUSE START-UP IS NOW THE COST.** §52's profile of the shipped
+# artifact is 30.2% `resolve` and 6.1% `parseModule`: loading a 433 KB script is 24.1 ms of a 47 ms one-shot
+# render, twice the work it does. `bun build --compile` embeds the runtime and the script in one executable,
+# and MEASURED on the same 405-uop wire it is `median 0.8907, 14 of 14 rounds faster` than `bun file.js` with
+# byte-identical output. The build is 0.2 s ONCE per renderer stamp, cached beside the .js.
+def _live_bin() -> pathlib.Path | None:
+  """the compiled renderer, or None when `bun build` cannot make one (the .js path still works)."""
+  js = _live_js()
+  exe = js.with_suffix(".bin")
+  if exe.exists():
+    return exe
+  build = subprocess.run([str(BUN), "build", "--compile", "--minify", str(js), "--outfile", str(exe)],
+                         capture_output=True, text=True, env=ENV)
+  if build.returncode != 0 or not exe.exists():
+    return None
+  return exe
+
+
 def _render_wire(text: str) -> str:
   """render a WIRE STRING -- the live path's whole input, so it can be exercised without a uop list."""
-  run = subprocess.run([str(BUN), str(_live_js()), *_chunks(text)], capture_output=True, text=True, env=ENV)
+  exe = _live_bin()
+  cmd = [str(exe), *_chunks(text)] if exe else [str(BUN), str(_live_js()), *_chunks(text)]
+  run = subprocess.run(cmd, capture_output=True, text=True, env=ENV)
   if run.returncode != 0:
     raise RuntimeError(f"portc: the live renderer did not run: {run.stderr.strip()[:400]}")
   if not run.stdout.strip():
