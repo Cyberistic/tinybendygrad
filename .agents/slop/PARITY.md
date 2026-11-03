@@ -1493,3 +1493,28 @@ than six decimal folds, and the band stops at 0.9976 rather than crossing 1.0.**
 load, so the render itself is **~24 ms for 405 uops, ~0.06 ms/uop** -- against the ~0.35 ms/uop §26 measured.
 The next five percent would each cost a corpus run and a re-read of a flat profile; the profile no longer has
 a site above 8% that the port owns.
+
+### 34.3 The certificate
+
+`runs/graphcmp/D/D0-run-summary.txt`, mtime **08:43**, `substrate-head=5f1a5f866`:
+
+```
+substrate-start = substrate-end = live = f72043914feb…
+graphs=38  graphs-answered=38  graphs-agree=38  graphs-refused=0  byte-identical=38
+controls=5 of 5   conflations=4 of 4
+```
+
+All four hoists of §27, §28, §33 and §34 are in that tree, and none of them moved a byte of any graph.
+
+### 34.4 The whole cold path, at this commit
+
+`compile.py` on the shipped (daemon) path, 4 cold kernels: **15.9 ms per kernel**, 4/4 byte-identical.
+`e2ecold.py`, 5 kernels, fresh process:
+
+| seed | CPU cold wall | BEND cold wall | checksum |
+|---|---|---|---|
+| 13 | 652.4 ms | **336.8 ms** | identical |
+| 14 | 398.8 ms | **324.6 ms** | identical |
+
+**SEVEN READINGS NOW, AND THE PORT'S LANE IS AT OR BELOW tinygrad's CPU LANE IN ALL SEVEN** (seeds 8-14),
+checksums identical in every one.
