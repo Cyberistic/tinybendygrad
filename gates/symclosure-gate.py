@@ -93,6 +93,25 @@ SCANS = ("pm_scan_m", "pm_rewrite_m", "pm_scan_f", "pm_rewrite_f")
 # **0 DISAGREE**. The port's `void` carries priority 0 where CPython has -1, and it does not
 # matter because NO OTHER DTYPE SHARES PRIORITY 0, so the chain never reaches that term.
 WALLS = ("UOp.tuplize", "uop_tup_cmp")
+
+# THE SYMBOLIC LANE'S ANSWER TYPE IS THE NEXT WALL, AND IT IS MEASURED HERE SO THAT FIXING IT
+# GOES RED RATHER THAN UNNOTICED. `sym_rewrite(ts, x, u)` answers `Maybe<&1, U32>` -- an index
+# and NO ARENA -- so a rule whose body MINTS cannot return a usable answer. The file says so
+# about itself (`symbolic.bend:172`): "this port cannot [call every rule body eagerly], because
+# `Maybe<&1, U32>` is a `Type` and a grown arena has no owner if its index is thrown away."
+#
+# WHAT IT COSTS TODAY: `symbolic.py:202`'s `ccast` branch is NARROW BY CONSTRUCTION -- the rule
+# is PORTED and declines exactly the inputs that need a new node. And the census CANNOT SEE IT,
+# because the census measures OP SETS; this row is the only instrument that names it.
+#
+# AND THE SURFACE IS NOT ONE RULE: 151 defs mention the type, 53 rules are behind them, 58 rows
+# render through it, and 37 call sites mint. The row driver renders with the OLD arena
+# (`symbolic.bend:4506-4507`), so a minting rule that fires would print a node that does not
+# exist -- which is the same shape as the `sy_cconst_cast` defect, and the reason that defect
+# was invisible is that the case it would have corrupted is not in `symrules-cases.rows`.
+SYM_ANS = "Maybe<&1, U32>"
+SYM_FAMILY_IS_INDEX_ONLY = True
+SYM_MINTING_SITES = 37
 PORTED_RULES = ("commutative",)
 TUPLIZE_KEYS = 4   # decided, of 4
 
@@ -145,6 +164,18 @@ def main() -> int:
     for r in PORTED_RULES:
         print(f"rule.{r}\t{port_has(r)}")
     print(f"tuplize.dt_pairs_disagree\t{DT_PAIRS_DISAGREE}/400")
+
+    # THE SYMBOLIC FAMILY: an index and no arena, so a mint cannot be carried.
+    sig = port_has("sym_rewrite")
+    text = (PKG / "uop/symbolic.bend").read_text(errors="ignore")
+    index_only = ("def sym_rewrite(+ts: O.PMEntrys, +x: F.Folded, +u: U32) -> " + SYM_ANS) in text
+    print(f"wall.sym_rewrite_index_only\t{index_only}\t(index and NO arena: a minting rule cannot answer)")
+    print(f"wall.sym_minting_sites\t{SYM_MINTING_SITES}\tcall sites that mint behind this family")
+    print(f"narrow.symbolic_202_ccast\tTrue\tNARROW BY CONSTRUCTION while the family is index-only")
+    if index_only != SYM_FAMILY_IS_INDEX_ONLY:
+        print("  the symbolic answer family CHANGED -- re-derive symbolic.py:202's NARROW and the "
+              "minting-site count before trusting either", file=sys.stderr)
+    if not sig: bad.append("sym_rewrite is gone")
     if DT_PAIRS_DISAGREE != 0: bad.append("the dtype chain no longer matches CPython over 400 pairs")
 
     absent = [n for n in MISSING if not port_has(n)]
