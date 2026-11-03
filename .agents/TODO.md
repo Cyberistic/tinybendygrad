@@ -28148,3 +28148,30 @@ THE `RTable` MEASUREMENT REFUTED MY OWN CLAIM: `fold.bend:5293 def ranged(+ar) -
       intersection / subtraction) over node lists.
 - [ ] `divandmod.py:103` (`fold_divmod_general`) — then needs `UOp.usum` reachable from
       `divandmod.bend` (the `symbolic -> divandmod` import direction forbids it today).
+
+### Session 2026-11-04 addendum — the guard audit CLOSED, and two defects found by probes
+
+- [x] **All 19 `fits`/`no_overflow` guard sites in `symbolic.py` now have a MEASURED guard**:
+      `:171`(6 rows) `:253` `:255` `:256`/`:258` `:259`/`:261` `:263` `:283` `:304` `:309`/`:311`
+      `:316` `:485`. Each one verified as a PAIR (a case that fires, a case that is refused) with a
+      probe under `.agents/slop/sym92/probe-*.bend` and CPython's own answers where reachable.
+- [x] **`UOp.simplify` OSCILLATED with period 2 and `8n` passes hid it** (`sym_295` accepted the
+      ALU-with-a-constant on either side; upstream is positional). FIXED and verified: pass 1 ==
+      pass 8, and the rule still reorders the shape it is for.
+- [x] **`sy_trunc` had 6 arms where `truncate` has 15**, so every rule building a narrow-int
+      constant was DEAD ON ARRIVAL (`:263` was the one caught). Widened to every int width and
+      verified against CPython (`const_like(2)` on int8 == `CAST(CONST 2, i8)`; 200 wraps to -56).
+- [x] Recorded the CUES for the three guards that could not be read (`:309`, `:255`, `:283`): in all
+      three THE PROBE, not the rule, was what could not answer.
+- [ ] `symbolic.py:450`/`:451` + `divandmod.py:103` still MISSING. MEASURED: `sym_rewrite_f` already
+      takes the table as a PARAMETER, but the cycle runs through `sym_dispatch_f`, which is STATIC --
+      so a base TABLE cannot break it and the base lane needs its own DISPATCH (~130 duplicated
+      arms). A deliberate LOC trade, not a bug fix.
+- [ ] `UOp.gcd` / `UOp.divide_exact` / a `usum` reachable from `divandmod.bend` — all ABSENT, and
+      they are standalone primitives that can be built and oracle-tested without the rewriter.
+- [ ] THE CORPUS IS RED (31/38, seven graphs: binblob bw commute flip gral matmul reduce) and it is
+      NOT this lane: MEASURED across three `symbolic.bend` versions (HEAD, pre-`sy_trunc`,
+      pre-session) and the count never moved. The run is also unhealthy on its own terms
+      (`not-comparable=38`, `pI(` dead on both sides).
+- [ ] THE MISSING INSTRUMENT: a sweep that calls `pat`, then `mk`, then `sy_simp.n(1n)` on a fixture
+      per row. `:263` was dead and PORTED; that sweep would name every such body at once.
