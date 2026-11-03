@@ -3454,3 +3454,59 @@ portexec e2e 7/7 · emit-mm and emit-f64 byte-identical
 **⇒ AND THE HARNESS NOW ASKS THE RENDERER FOR THE DECODE**: `serve.bend`'s private `kus` COPY of
 `String.split(text, nlch())` + `L.ku_all(...)` was a second declaration of the wire format, and it had to be
 edited in the same commit or the daemon and the one-shot path would have disagreed. It now calls `L.kus`.
+
+### 78.4 The certificate, at `53ad9d648`
+
+```
+substrate-start = substrate-end = live = c9efaa78a64d...
+head = 53ad9d648   38 graphs, 38 byte-identical
+```
+
+## 79. TWO NEGATIVE RESULTS: THE OP MATCH ORDER, AND WHAT THE PROTOCOL IS ACTUALLY WORTH
+
+### 79.1 `Ops.value`'s arm order: 80% fewer comparisons, 0.7% of wall time
+
+The 1500-turn profile put `ops_eq_op` (315 us a turn) and `Ops_value` (215 us) near the top, and the
+generated JS says why:
+
+```js
+function $..._Ops_value(_op_0) {
+  if (_op_0.$ === "OpsSPECIAL") { return 1; }
+  else if (_op_0.$ === "OpsBUFFER") { return 2; }   // ... 73 more
+```
+
+**A LINEAR if/else CHAIN OVER THE CONSTRUCTOR TAGS.** MEASURED over the 405-uop wire, 12,600 calls walk
+**27.3 of 73 arms** = **344,031 string comparisons per render**. Reordering the arms by measured frequency
+(`ADD 2571, CAST 2078, LOAD 1382, MUL 1284, INDEX 1059, ...`) cuts that to **67,205, 5.3 arms, 80% fewer**.
+
+```
+same C: True | bytes: 4426
+before median 5.84 ms   after median 6.00 ms
+ratio min 0.8791  p25 0.9531  median 0.9934  max 1.2751   13 of 24 faster
+```
+
+**NEUTRAL, SO REVERTED.** The comparison count is real and the reduction is real, and 344,031 tag compares
+cost **nothing measurable** -- V8 compares interned strings by pointer, so the chain is far cheaper than its
+length suggests. **THE PROFILE HAD ATTRIBUTED 530 us A TURN TO THIS, AND THE PROFILE WAS WRONG**: the
+`--cpu-prof` run takes 38 ms a turn against 6.3 ms unprofiled, so every per-function share in it is inflated
+by the profiler's own work, and only the *ranking* was worth reading.
+
+### 79.2 The protocol's whole prize is 14.7% and only part of it is reachable
+
+§74 bounded the file protocol at `0.9944` with an argument-fed worker. The same bound on the §78 build:
+
+```
+shipped median 5.88 ms   no-file-IO median 4.91 ms
+ratio median 0.8530  min 0.7048   -> the whole protocol is worth 0.96 ms, 14.7%
+```
+
+**AND THE BOUND IS NOT THE PRIZE.** The measured 0.96 ms covers the caller's `write_text` + `os.replace`, the
+worker's `open`/`read`/`close`, AND the 9.5 KB copy in and out. A pipe protocol replaces the syscalls but
+still copies the same 9.5 KB through a `File.read` loop -- and `live.bend` has no `read_more`, so the frame
+reader would be new code threading a linear `File` through a byte-at-a-time length parse, whose failure mode
+is a stall that disables the daemon for the session. **So the pipe is not taken: its bound is 14.7%, its
+reachable share is the syscall overhead alone, and its risk is the daemon's.**
+
+**⇒ THE WIRE'S SIZE IS THE LEVER UNDER BOTH TERMS**: it is 9,516 bytes, the decode is charged per byte
+(§78.1) and so is the I/O. Shrinking the row is the next slice that would pay twice; it is not in this
+commit.
