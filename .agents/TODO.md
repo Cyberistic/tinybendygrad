@@ -28072,3 +28072,5 @@ corpus certificate at `01f74e5c`.
 separated BEFORE `canonicalize_alloc` is in the picture.  **THAT **IS **A **FIXTURE
 **PROBE, **NOT **A **DESIGN **QUESTION, **AND **THE **PORT **ITSELF **IS **WRITTEN -- **IN
 **THIS **MESSAGE -- **AND **CAN **BE **RE-APPLIED **FROM **IT.
+
+THE `canonicalize_call_body` INCREMENT IS CERTIFIED: run+repro in ONE window, `corpuswitness-gate` PASS on all seven readings, and the port agrees with CPython on `ccb_one`.

@@ -152,7 +152,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **AND **AFTER **THE **`api` **GRAPH's **ALLOC-SLOT **DEFECT **WAS **FIXED**
   (**`gates/alloc_slot-gate.py`**) **AND **`KernelInfo` **WAS **MADE **UPSTREAM's **SIX **FIELDS**
   (**`c2fbda4ca`**) **AND **THE **BEND **LANE **WAS **BATCHED** (**`09945ab98`**): **`substrate-start ==
-  substrate-end == live == repro-substrate == 01f74e5cac3a583ba8e0684426161e8c7d215b7e9cc4db07ffba4b13decee406`**,
+  substrate-end == live == repro-substrate == f1be4f109f07a1736c8c3a42a57fbb8656a023aeb7243d6c17533dcb3088cddb`**,
   **AND **`graphs=38 graphs-answered=38 graphs-agree=38 graphs-disagree=0 byte-identical=38 graphs-refused=0`** —
   **⇒ AND **THE **CORPUS's **FIRST **EVER **EXCEPTION **IS **GONE**: **`checks/differ.py`'s **`WANT` **TABLE
   **IS **NOW **`{}`**, **AND **THE **`api` **GRAPH **— **THE **FIRST **GRAPH **WHOSE **BEND **SIDE **IS
@@ -205,9 +205,9 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   **`repro_bad() -> 0`**, **AND `repro`: `340 of 340 files identical across two clean runs`**
   (`D0-repro.txt`: `repro-files=340 repro-identical=340 repro-rc=rc=0`).
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
-  **`substrate-start == substrate-end == live == repro-substrate == 01f74e5cac3a583ba8e0684426161e8c7d215b7e9cc4db07ffba4b13decee406`** -- **THE **RUN **DESCRIBES **THE **WORKING
+  **`substrate-start == substrate-end == live == repro-substrate == f1be4f109f07a1736c8c3a42a57fbb8656a023aeb7243d6c17533dcb3088cddb`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=1c22471f56781145618add6ff9689d2da70e646a` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=a6844425283dc3b08cbb8d4bca38e60e05687b28` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION**, **THE **RANGEIFY **AND
