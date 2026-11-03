@@ -218,11 +218,11 @@ ANSWER (`mul x c0`) rather than a crash.
 both sides: `:302`, `weak.py:89`, the nine `movement.py` rows, `:469`, `:171`, `:465`, `:466`,
 `:467`, `:309` (with `UOp.overflows` WRITTEN), `:312`, `:299`.
 
-## 2026-11-03 (final, 3): 136 of 141, and two wall-list corrections
+## 2026-11-03 (final, 3): 135 of 141, and two wall-list corrections
 
 `gates/symrules-cases.rows`: **226** graphs, **226 of 226 agree**. `symrules-gate` rc=0:
-**135 entries, 135 mapped, 0 broken, 0 unresolved** (census now reads 136 PORTED, since `:193` and
-`UOp.const_factor` landed after the last row write). `symclosure-gate` PASS: **133 rows,
+**135 entries, 135 mapped, 0 broken, 0 unresolved**, which is also the census's PORTED count --
+`UOp.const_factor` is substrate and owns no row. `symclosure-gate` PASS: **133 rows,
 102 mint arms**. `PROOF-ALL`: `ALL PROOFS CHECK`.
 
 ### `UOp.const_factor` is WRITTEN, and the TODO that called it impossible was measuring the wrong spelling
