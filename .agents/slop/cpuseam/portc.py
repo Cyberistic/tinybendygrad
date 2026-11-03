@@ -524,10 +524,11 @@ class Worker:
     import select
     if self.proc is None or self.proc.poll() is not None:
       self.start()
-    tmp = self.dir / "req.tmp"
-    tmp.write_text(text)
-    os.replace(tmp, self.req)
-    self.w.write(b"x")
+    # **THE FRAME IS "<decimal length>\n<wire>" IN ONE WRITE.** §79.2 measured the file round trip (write,
+    # rename, open, read, close) at 0.96 ms of a 5.88 ms turn; two A/B runs of this protocol against it
+    # were median 0.9103 and 0.9459 (`PARITY.md` §84). A short pipe read is not a truncated request here:
+    # the worker loops until it has the length it was promised (§83 records the shape the language forces).
+    self.w.write(f"{len(text)}\n{text}".encode())
     import queue
     deadline = time.time() + TIMEOUT
     lines, started = [], False

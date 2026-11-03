@@ -1,136 +1,93 @@
-# serve.bend -- THE LIVE RENDERER AS A LONG-LIVED PROCESS, fed one kernel per signal.
-#
-# WHY. `renderer/live.bend` removed the per-kernel TYPECHECK but not the per-kernel PROCESS: every kernel
-# still starts `bun`, which MEASURES at ~26.5 ms of start-up plus module load for a 349 KB artifact. That
-# fixed cost is the largest single term per kernel (`PARITY.md` §28.4), and it is the one thing a batch
-# cannot remove, because a real program asks for one kernel at a time.
-#
-# THE PROTOCOL, AND WHY IT IS TWO CHANNELS RATHER THAN ONE PIPE. `File.read` on a pipe returns WHATEVER IS
-# AVAILABLE, so a 13 KB wire can arrive in pieces and a single read would render a truncated kernel. So the
-# request travels through a REGULAR FILE (written to a temporary name and RENAMED, hence complete) and the
-# PIPE CARRIES ONLY A ONE-BYTE SIGNAL -- a short read of one byte is still a whole request.
-#
-#   caller                            worker
-#   ------                            ------
-#   write req (atomic rename)
-#   open fifo, write 1 byte, close    -> open fifo (blocks until a writer), read, close
-#                                     read req whole
-#                                     print "@@BEGIN" / <the C> / "@@END"
-#   read until "@@END"                 (loop)
-#
-# THE LOOP IS ONE DECREASING SELF-CALL AND HAS NO SHUTDOWN ARM, for a measured reason: Bend refuses two
-# defs that call each other ("expected : a filled definition"), so a `serve -> read -> branch -> serve`
-# chain does not compile, and a self-call carrying a COMPUTED fuel is refused too ("expected : a decreasing
-# self-call"). So the fuel is structural, and the process ends when its parent kills it -- which is what a
-# caller that goes away wants anyway.
-#
-# **THE PIPE IS OPENED ONCE AND READ FOREVER, AND THAT IS A MEASURED FIX.** The first version opened the
-# fifo, read one byte, closed it, and opened it again -- MEASURED: the FIRST request answered in 90.7 ms and
-# the SECOND never did, with the worker alive and silent. The race is the close: a writer that opens while
-# the previous reader is still closing PAIRS WITH THE STALE READER, so its byte goes into a pipe nobody will
-# read again, and the worker's next open blocks forever waiting for a writer that has already gone. One
-# persistent reader has no such window.
+# serve_frame.bend -- the live renderer fed by a length-prefixed frame on the pipe.
+# Shipped protocol: file + 1-byte signal. Measured difference: 0.96 ms of a 5.88 ms turn (§79.2).
+# The language shapes are forced; each refusal is recorded in PARITY §83.
 import Base
 import ./../../../tinybendygrad/renderer/live.bend as L
 import ./../../../tinybendygrad/renderer/cstyle.bend as C
 
-def begun() -> String: "@@BEGIN"
+type St is Data:
+  SRead{mode: Nat, acc: String, need: Nat}
+  SEmit{acc: String}
+  SBad{}
 
+def begun() -> String: "@@BEGIN"
 def ended() -> String: "@@END"
 
-# ---- reading a REGULAR file whole. ONE `File.read`, the same shape `runtime/ops_bend.bend:2055` uses for
-# its packets; the channel that can arrive in pieces is the PIPE, and the pipe carries one byte.
-def read_done(f: File, r: Result<&1, &1, U32 & String, String>) -> IO(String):
+def is_nl(text: String) -> Bool: String.eq(text, "\n")
+
+def parse_len(+s: String) -> Nat: U32.to_nat(Maybe.default(&2, U32, U32.read(s), 0))
+
+def read_pay(need: Nat, +acc: String) -> U32:
+  U32.from_nat(Nat.max(1n, Nat.sub(need, String.length(acc))))
+
+def st_len.x(+acc: String, +text: String) -> St:
+  Bool.pick(St, is_nl(text), SRead{1n, "", parse_len(acc)}, SRead{0n, String.concat([acc, text]), 0n})
+
+def st_len(r: Result<&1, &1, U32 & String, String>, +acc: String) -> St:
   match r:
-    case Done{text}: IO.bind(Unit, String, File.close(f), _ => IO.pure(String, text))
-    case Fail{error}:
-      IO.bind(Unit, String, File.close(f), _ => IO.die(String, 1, "serve: request could not be read"))
+    case Fail{error}: SBad{}
+    case Done{text}: st_len.x(acc, text)
 
-def read_take(m: (File & Result<&1, &1, U32 & String, String>)) -> IO(String):
-  (f, r) = m
-  read_done(f, r)
+def st_pay.x(+acc: String, +text: String, +need: Nat) -> St:
+  +both = String.concat([acc, text])
+  Bool.pick(St, Nat.is_le(need, String.length(both)), SEmit{both}, SRead{1n, both, need})
 
-def read_after(r: Result<&1, &1, U32 & String, File>) -> IO(String):
+def st_pay(r: Result<&1, &1, U32 & String, String>, +acc: String, +need: Nat) -> St:
   match r:
-    case Done{f}:
-      IO.bind(File & Result<&1, &1, U32 & String, String>, String, File.read(f, 1073741824),
-        m => read_take(m))
-    case Fail{error}: IO.die(String, 1, "serve: request file could not be opened")
+    case Fail{error}: SBad{}
+    case Done{text}: st_pay.x(acc, text, need)
 
-def read_whole(path: String) -> IO(String):
-  IO.bind(Result<&1, &1, U32 & String, File>, String, File.open(path, "r"),
-    r => read_after(r))
+def st_of(mode: Nat, r: Result<&1, &1, U32 & String, String>, +acc: String, +need: Nat) -> St:
+  match mode:
+    case 0n: st_len(r, acc)
+    case _: st_pay(r, acc, need)
 
-# ---- the one-byte signal
-def signal_done(f: File, r: Result<&1, &1, U32 & String, String>) -> IO(String):
-  match r:
-    case Done{text}: IO.bind(Unit, String, File.close(f), _ => IO.pure(String, text))
-    case Fail{error}: IO.die(String, 1, "serve: fifo could not be read")
+def sz_of(s: St) -> U32:
+  match s:
+    case SRead{mode, acc, need}: Bool.pick(U32, Nat.is_eq(mode, 0n), 1, read_pay(need, acc))
+# THE EMIT STATE ASKS FOR NOTHING. MEASURED: a read of 0 bytes returns immediately, and a read of 1
+# byte here BLOCKS on the next frame -- which is exactly why the first version printed nothing.
+    case SEmit{acc}: 0
+    case SBad{}: 1
 
-def signal_take(m: (File & Result<&1, &1, U32 & String, String>)) -> IO(String):
-  (f, r) = m
-  signal_done(f, r)
+# the number the length digits parsed to, for the first frame only (scratch diagnostic)
+def len_dbg(acc: String) -> Nat: parse_len(acc)
 
-def signal_after(r: Result<&1, &1, U32 & String, File>) -> IO(String):
-  match r:
-    case Done{f}:
-      IO.bind(File & Result<&1, &1, U32 & String, String>, String, File.read(f, 1),
-        m => signal_take(m))
-    case Fail{error}: IO.die(String, 1, "serve: fifo could not be opened")
-
-def signal(fifo: String) -> IO(String):
-  IO.bind(Result<&1, &1, U32 & String, File>, String, File.open(fifo, "r"),
-    r => signal_after(r))
-
-# THE DECODE IS THE RENDERER'S OWN: `nlch` and `ku_all` are `live.bend`'s, so the daemon and the one-shot
-# path cannot disagree about what a wire means.
-def kus(+text: String) -> List<&2, C.KU>:
-  L.kus(text)
-
-# A READ THAT RETURNS NOTHING IS NOT A REQUEST: once every writer has closed, POSIX answers EOF until a new
-# writer arrives, so an empty read costs one turn of fuel and the next read blocks. The fuel is structural
-# and huge, so a handful of those is nothing.
-# THE PAIR COMES BACK FROM `File.read` AND ITS `File` HALF MUST SURVIVE THE TURN. A destructuring bind is a
-# DEF body in this language, not a do-block statement ("expected : a pattern"), so the accessor is here and
-# the recursion stays a direct self-call -- any helper that called `serve` would make the cycle mutual, which
-# Bend refuses ("expected : a filled definition") -- MEASURED on this file's first three shapes.
-def fst_of(m: (File & Result<&1, &1, U32 & String, String>)) -> File:
-  (f, _) = m
-  f
-
-def serve(fuel: Nat, f: File, +req: String) -> IO(Unit):
+def serve(fuel: Nat, m: (File & Result<&1, &1, U32 & String, String>), s: St) -> IO(Unit):
   match fuel:
     case 0n: IO.pure(Unit, Unit{})
-    case 1n+g:
-      do IO<Unit>:
-        m : (File & Result<&1, &1, U32 & String, String>) <- File.read(f, 1)
-        text : String <- read_whole(req)
-        IO.print(begun())
-        IO.print(C.render(C.dev_clang(), True{}, kus(text)))
-        IO.print(ended())
-        serve(g, fst_of(m), req)
+    case 1n+k:
+      (f, r) = m
+      match s:
+        case SBad{}: IO.die(Unit, 1, "serve: the fifo could not be read")
+        case SRead{mode, acc, need}:
+          +st2 = st_of(mode, r, acc, need)
+          IO.bind((File & Result<&1, &1, U32 & String, String>), Unit, File.read(f, sz_of(st2)),
+            m2 => serve(k, m2, st2))
+        case SEmit{acc}:
+          +a = acc
+          IO.bind(Unit, Unit, IO.print(begun()), _ =>
+            IO.bind(Unit, Unit, IO.print(C.render(C.dev_clang(), True{}, L.kus(a))), _ =>
+              IO.bind(Unit, Unit, IO.print(ended()), _ =>
+                IO.bind((File & Result<&1, &1, U32 & String, String>), Unit, File.read(f, 1),
+                  io => serve(k, io, SRead{0n, "", 0n})))))
 
-# ONE ARGUMENT, "fifo|req", because `IO.args()` is LINEAR and a list read twice is refused.
 def pick(n: Nat, +xs: List<&2, String>) -> String:
   Maybe.default(&2, String, List.get(&2, String, xs, n), "")
 
-def serve_after(r: Result<&1, &1, U32 & String, File>, +req: String) -> IO(Unit):
+def serve_after(r: Result<&1, &1, U32 & String, File>) -> IO(Unit):
   match r:
-    case Done{f}: serve(1000000n, f, req)
+    case Done{f}:
+      do IO<Unit>:
+        io : (File & Result<&1, &1, U32 & String, String>) <- File.read(f, 1)
+        serve(1000000n, io, SRead{0n, "", 0n})
     case Fail{error}: IO.die(Unit, 1, "serve: fifo could not be opened")
 
-def serve_open(+fifo: String, +req: String) -> IO(Unit):
-  IO.bind(Result<&1, &1, U32 & String, File>, Unit, File.open(fifo, "r"),
-    r => serve_after(r, req))
-
-# `+pair` LETS ONE STRING BE SPLIT TWICE. A `List` split once and read twice is refused ("consumed more
-# than once") even when the callee takes it `+`, because the CALLER would be consuming the same variable
-# twice; the string is the thing that may be used many times, so the split happens per use.
-def go(+pair: String) -> IO(Unit):
-  serve_open(pick(0n, String.split(pair, '|')), pick(1n, String.split(pair, '|')))
+def go(+fifo: String) -> IO(Unit):
+  IO.bind(Result<&1, &1, U32 & String, File>, Unit, File.open(fifo, "r"), r => serve_after(r))
 
 def main() -> IO(Unit):
   do IO<Unit>:
     as : List<String> <- IO.args()
     pair : String <- IO.pure(String, Maybe.default(&1, String, List.get(&1, String, as, 1n), "|"))
-    go(pair)
+    go(pick(0n, String.split(pair, '|')))

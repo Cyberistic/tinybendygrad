@@ -3673,3 +3673,59 @@ could print once.
 **⇒ SO IT IS NOT SHIPPED, AND THAT IS THE MEASUREMENT.** A protocol that cannot be seen to render is not a
 protocol; the shipped one renders, and its 0.96 ms stays spent. The scratch file is deleted rather than left
 in the tree, because a harness that does not work is a harness that rots.
+
+## 84. THE FRAME PROTOCOL LANDED: 0.9103 THEN 0.9459, AND THE STALL WAS ONE INCH
+
+§83 shipped nothing because the frame loop rendered nothing. The probe that decides it took five lines and
+six seconds:
+
+```
+PROBE: open a fifo, read one byte, then read again while the pipe is EMPTY
+  output: ['got1', '<second read did not return>']      <- BLOCKED
+  after writing a second byte: second=1                 <- and the blocked read woke up
+```
+
+**`File.read(f, 1)` BLOCKS on an empty pipe and answers `""` never.** So the stall was not the loop reading
+empty; it was the loop asking for a read it should not have made.
+
+### 84.1 The inch
+
+`sz_of(SEmit{...})` returned **1**. When the payload reached its promised length the state became `SEmit`,
+and the arm then issued `File.read(f, 1)` *before* recursing into the render -- a read that waits for the
+NEXT frame's first byte, which never comes. One number:
+
+```
+case SEmit{acc}: 1   ->   case SEmit{acc}: 0
+```
+
+A zero-length read returns immediately, `serve` receives an empty pair, and the `SEmit` arm renders.
+
+### 84.2 Measured
+
+Same 4,426 bytes of C as the file protocol, three consecutive turns identical:
+
+```
+run 1 (24 rounds): file 5.83 ms  frame 5.40 ms   median 0.9103   15/24   max 1.3269
+run 2 (30 rounds): file 5.92 ms  frame 5.29 ms   median 0.9459   21/30   max 1.3760
+```
+
+**36 OF 54 ROUNDS AND BOTH MEDIANS UNDER THE KEEPER LINE.** The bound was 0.8530 (§79.2); the realised
+0.91-0.95 is 5-9% of the turn, and the file write, the rename, the open and the close are gone -- only the
+9.5 KB copy remains, which is why it is not the 0.85 the argument-fed worker predicted.
+
+### 84.3 And the stress test found a defect that was already there
+
+Both protocols, same wire, repeated rows:
+
+```
+  9,516 B ( 405 uops): file=C   frame=C   identical=True
+ 19,033 B ( 810 uops): file=C   frame=C   identical=True
+ 28,550 B (1215 uops): file=<exit> frame=<exit> identical=True
+```
+
+**NEITHER PROTOCOL RENDERS A KERNEL ABOVE ~810 UOPS IN THE DAEMON**, because `L.kus` splits the whole wire
+in one `String.split`, and that is the 28 KB recursion cliff §78's chunking exists for -- the ONE-SHOT path
+chunks (`_chunks`), the DAEMON does not. Measured on the OLD worker before this change, so it is
+pre-existing and not introduced here. Its cost is not a wrong answer: `render_live` catches the dead worker,
+falls back to the one-shot path, and **disables the daemon for the rest of the session** -- so ONE large
+kernel makes every later kernel slower. That is the next slice, and it is a defect, not an optimisation.
