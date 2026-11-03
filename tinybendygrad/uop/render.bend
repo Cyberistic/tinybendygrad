@@ -1176,7 +1176,30 @@ def dt_ord(x: S.Dt, y: S.Dt) -> U32:
       +o3 = ord3(String.is_lt(n1, n2), String.is_gt(n1, n2))
       lt_then(U32.is_zero(o1), o1, lt_then(U32.is_zero(o2), o2, o3))
 
-def uop_tup_cmp(+tb: F.Table, +ar: O.Arena, +a: U32, +b: U32) -> Maybe<&2, U32>:
+# KEY FOUR IS THE CHILDREN, AND IT IS A WORK ITEM BECAUSE THE RECURSION IS NOT TAIL.
+# `uop_tup_cmp -> src-list walk -> uop_tup_cmp` is MUTUAL recursion, which Bend refuses, so the
+# shape is the tree's own (`RWk`/`CWk`/`eng_*`): ONE `Data` item, a `TCStep` that is either an
+# ANSWER or the NEXT item, and ONE self-recursive def
+#
+#     def tc_go(fuel: Nat, s: TCStep, ...)      <- the ONLY recursive def, declared LAST
+#       case 1n++k TSn{w}: tc_go(k, tc_step(w, ...), ...)
+#
+# `tc_step` is NOT recursive -- it computes the next step and returns it -- which is what keeps
+# the switch tower below out of the recursion. `eng_fix`/`eng_fix.go` split the same way and for
+# the same reason.
+#
+# THE SEMANTICS ARE `tuple.__lt__`'s. Element-wise; the FIRST unequal pair decides; a PREFIX
+# sorts first. And equal CHILDREN are equal BY IDENTITY (`_UOpTuple.__eq__ is self is other`,
+# ops.py:225) -- in this port that is index equality, because the arena IS the interning.
+type TC is Data:
+  TCn{a: U32, b: U32}
+  TCl{sa: List<&2, U32>, sb: List<&2, U32>}
+
+type TCStep is Data:
+  TSa{m: Maybe<&2, U32>}
+  TSn{w: TC}
+
+def tc_keys(+tb: F.Table, +ar: O.Arena, +a: U32, +b: U32) -> U32:
   +va = O.Ops.value(O.Arena.op(ar, a))
   +vb = O.Ops.value(O.Arena.op(ar, b))
   +ra = arg_repr(ar, a, O.Arena.arg(ar, a))
@@ -1184,8 +1207,105 @@ def uop_tup_cmp(+tb: F.Table, +ar: O.Arena, +a: U32, +b: U32) -> Maybe<&2, U32>:
   +k1 = ord3(U32.is_lt(va, vb), U32.is_gt(va, vb))
   +k2 = ord3(String.is_lt(ra, rb), String.is_gt(ra, rb))
   +k3 = dt_ord(dt_of(tb, ar, a), dt_of(tb, ar, b))
-  +c = lt_then(U32.is_zero(k1), k1, lt_then(U32.is_zero(k2), k2, k3))
-  tup_lift(U32.is_zero(c), c)
+  lt_then(U32.is_zero(k1), k1, lt_then(U32.is_zero(k2), k2, k3))
+
+# A tie on all three keys means the answer is the CHILDREN's, so the item becomes a list pair.
+def tc_n_step(c: U32, zero: Bool, +ar: O.Arena, +a: U32, +b: U32) -> TCStep:
+  match zero:
+    case False{}: TSa{Some{c}}
+    case True{} : TSn{TCl{O.Arena.srcs(ar, a), O.Arena.srcs(ar, b)}}
+
+def tc_l_pick(same: Bool, +xt: List<&2, U32>, +yt: List<&2, U32>, x: U32, y: U32) -> TCStep:
+  match same:
+    case True{} : TSn{TCl{xt, yt}}
+    case False{}: TSn{TCn{x, y}}
+
+def tc_l_step(sa: List<&2, U32>, sb: List<&2, U32>) -> TCStep:
+  match sa sb:
+    case Nil{} Nil{}     : TSa{None{}}
+    case Nil{} _         : TSa{Some{1}}
+    case _ Nil{}         : TSa{Some{2}}
+    case +x <> +xt +y <> +yt: tc_l_pick(U32.is_eq(x, y), xt, yt, x, y)
+
+def tc_step(w: TC, +tb: F.Table, +ar: O.Arena) -> TCStep:
+  match w:
+    case TCn{+a, +b}:
+      +c = tc_keys(tb, ar, a, b)
+      tc_n_step(c, U32.is_zero(c), ar, a, b)
+    case TCl{sa, sb}: tc_l_step(sa, sb)
+
+# THE FUEL. Every step either answers or descends one level, and a list step consumes one pair,
+# so the bound is the arena's own size times the arity headroom -- the same argument `eng_fuel`
+# makes, and generous rather than tight because a short fuel is a WRONG ANSWER shaped like a tie.
+def tc_fuel(ar: O.Arena) -> Nat: U32.to_nat(U32.add(U32.mul(O.Arena.next(ar), 4), 8))
+
+def tc_go(fuel: Nat, s: TCStep, +tb: F.Table, +ar: O.Arena) -> Maybe<&2, U32>:
+  match fuel s:
+    case 0n _      : None{}
+    case 1n++k TSa{m}: m
+    case 1n++k TSn{w}: tc_go(k, tc_step(w, tb, ar), tb, ar)
+
+def uop_tup_cmp(+tb: F.Table, +ar: O.Arena, +a: U32, +b: U32) -> Maybe<&2, U32>:
+  tc_go(tc_fuel(ar), TSn{TCn{a, b}}, tb, ar)
+# ===========================================================================
+# `commutative` -- uop/symbolic.py:227-232, and it is ONE RULE with EIGHT placements.
+#
+#     commutative = PatternMatcher([
+#       (UPat(GroupOp.Commutative, dtype=dtypes.weakint, name='x'),
+#        lambda x: x.replace(src=x.src[::-1]) if x.src[1].tuplize < x.src[0].tuplize else None),
+#     ])
+#
+# `GroupOp.Commutative` is EIGHT ops (ADD AND CMPEQ CMPNE MAX MUL OR XOR) and `pdict` buckets a
+# `UPat` into every one of them, which is why `gates/symclosure-gate.py` pins `commutative` as
+# 8 placements and 1 rule. THE RULE IS THE ORDER: `uop_tup_cmp` on the two operands, reversed
+# when the SECOND sorts first. `None{}` from the comparator means a TIE, which is Python's
+# "neither less nor greater", and a tie is NOT a flip -- `src[1] < src[0]` is FALSE for a tie
+# exactly as it is for `src[0] < src[1]`.
+def comm_op(op: O.Op) -> Bool:
+  match op:
+    case O.OpsADD{}  : True{}
+    case O.OpsAND{}  : True{}
+    case O.OpsCMPEQ{}: True{}
+    case O.OpsCMPNE{}: True{}
+    case O.OpsMAX{}  : True{}
+    case O.OpsMUL{}  : True{}
+    case O.OpsOR{}   : True{}
+    case O.OpsXOR{}  : True{}
+    case _           : False{}
+
+# `dtype=dtypes.weakint` -- the rule fires on INDEX arithmetic, and that is the only dtype it
+# claims. `S.Dt{pri, bits, cls, nm}` carries the class, so the test is on `cls`.
+def dt_weak(d: S.Dt) -> Bool:
+  match d:
+    case S.Dt{pri, bits, c, nm}:
+      match c:
+        case S.CWeakInt{}: True{}
+        case _           : False{}
+
+def comm_fire(+tb: F.Table, +ar: O.Arena, +x: U32) -> Bool:
+  Bool.and(comm_op(O.Arena.op(ar, x)), dt_weak(dt_of(tb, ar, x)))
+
+# `x.src[1] < x.src[0]` AND NOT `<=`: a tie leaves the operands alone.
+def comm_flip(m: Maybe<&2, U32>) -> Bool:
+  match m:
+    case Some{v}: U32.is_eq(v, 1)
+    case None{} : False{}
+
+def comm_do(go: Bool, +ar: O.Arena, +x: U32) -> Maybe<&2, O.Found>:
+  match go:
+    case False{}: None{}
+    case True{} :
+      +f = O.UOp.new(ar, O.Arena.op(ar, x),
+                     List.reverse(&2, U32, O.Arena.srcs(ar, x)),
+                     O.Arena.arg(ar, x), O.Arena.tag(ar, x))
+      Some{f}
+
+# `x.src[1] < x.src[0]`. EVERY `GroupOp.Commutative` member is BINARY -- ADD AND CMPEQ CMPNE MAX
+# MUL OR XOR -- so `src[1]` exists whenever `comm_fire` fires, and the default 0 below is only
+# the shape `List.head` needs.
+def commutative(+tb: F.Table, +ar: O.Arena, +x: U32) -> Maybe<&2, O.Found>:
+  +s1 = Maybe.default(&2, U32, List.head(&2, U32, O.Arena.src_from(ar, x, 1)), 0)
+  comm_do(Bool.and(comm_fire(tb, ar, x), comm_flip(uop_tup_cmp(tb, ar, s1, O.Arena.src0(ar, x)))), ar, x)
 
 # `x.arg is not None` -- `ANone` is Python's None, so this is a one-arm match on
 # a CLOSED datatype instead of an identity test.

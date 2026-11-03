@@ -74,25 +74,27 @@ SCANS = ("pm_scan_m", "pm_rewrite_m", "pm_scan_f", "pm_rewrite_f")
 # ORDER over the whole UOp tree, with Python's mixed-tuple semantics (an int, then `repr(arg)`,
 # then the dtype, then the children). Take it away and the smallest member of `symbolic` is not
 # portable either.
-# `uop_tup_cmp` DECIDES THREE OF `tuplize`'s FOUR KEYS AND REFUSES THE FOURTH, AND EACH
-# DECISION IS PINNED:
+# `uop_tup_cmp` NOW DECIDES ALL FOUR OF `tuplize`'s KEYS, AND `commutative` IS PORTED.
 #
-#   key 1  op.value      `O.Ops.value`, and CPython's CONST=57 / NOOP=4 agree
+#   key 1  op.value      `O.Ops.value`
 #   key 2  repr(arg)     `arg_repr`, render.bend, the same file
-#   key 3  dtype         `(priority, bitsize, name)` -- and NOT `(.., fmt)`, MEASURED:
-#                        `name -> fmt` is a FUNCTION over the 20 dtype names (0 collisions),
-#                        so upstream's `fmt` term CAN NEVER BE REACHED. A rank over `S.Cls`
-#                        standing in for `fmt` would be a comparison that never decides.
-#   key 4  children      REFUSED. `uop_tup_cmp -> list walk -> uop_tup_cmp` is the mutual
-#                        recursion Bend refuses, and `None{}` says so rather than guessing.
+#   key 3  dtype         `(priority, bitsize, name)` and NOT `(.., fmt)`: `name -> fmt` is a
+#                        FUNCTION over the 20 dtype names (0 collisions), so upstream's `fmt`
+#                        term CAN NEVER BE REACHED
+#   key 4  children      A WORK ITEM (`TC`/`TCStep`, one recursive `tc_go` declared last),
+#                        because `uop_tup_cmp -> list walk -> uop_tup_cmp` is the mutual
+#                        recursion Bend refuses
 #
-# AND KEY 3 IS ORDER-IDENTICAL TO CPYTHON OVER THE WHOLE UNIVERSE, WHICH IS A ROW AND NOT A
-# HOPE: 20 x 20 = 400 dtype pairs, `(port pri, port bits, name)` against
-# `(priority, bitsize, name)` on CPython's own objects, **0 DISAGREE**. The port's `void`
-# carries priority 0 where CPython has -1, and it does not matter because NO OTHER DTYPE
-# SHARES PRIORITY 0, so the chain never reaches the differing term.
+# AND `None{}` FROM IT IS NOT A REFUSAL ANY MORE -- IT IS THE TIE, which is Python's "neither
+# less nor greater", and `commutative` reads it as "do not flip".
+#
+# KEY THREE IS ORDER-IDENTICAL TO CPYTHON OVER THE WHOLE UNIVERSE: 20 x 20 = 400 dtype pairs,
+# `(port pri, port bits, name)` against `(priority, bitsize, name)` on CPython's own objects,
+# **0 DISAGREE**. The port's `void` carries priority 0 where CPython has -1, and it does not
+# matter because NO OTHER DTYPE SHARES PRIORITY 0, so the chain never reaches that term.
 WALLS = ("UOp.tuplize", "uop_tup_cmp")
-REFUSED_KEYS = ("children -> a recursion over srcs, and Bend refuses the mutual kind",)
+PORTED_RULES = ("commutative",)
+TUPLIZE_KEYS = 4   # decided, of 4
 
 DT_PAIRS_DISAGREE = 0   # measured 2026-11-03 over all 400 pairs
 
@@ -139,8 +141,9 @@ def main() -> int:
 
     for w in WALLS:
         print(f"wall.{w}\t{port_has(w)}")
-    for i, k in enumerate(REFUSED_KEYS):
-        print(f"tuplize.key{i + 4}_refused\t{k}")
+    print(f"tuplize.keys_decided\t{TUPLIZE_KEYS}/4")
+    for r in PORTED_RULES:
+        print(f"rule.{r}\t{port_has(r)}")
     print(f"tuplize.dt_pairs_disagree\t{DT_PAIRS_DISAGREE}/400")
     if DT_PAIRS_DISAGREE != 0: bad.append("the dtype chain no longer matches CPython over 400 pairs")
 
@@ -157,8 +160,9 @@ def main() -> int:
         return 1
     print(f"symclosure-gate: PASS -- {len(TABLES)} tables, {sum(t[3] for t in TABLES)} RULES "
           f"({sum(t[2] for t in TABLES)} placements), composition expressible, "
-          f"{len(absent)} rule bodies absent. PORT ORDER: symbolic (122 rules) FIRST, "
-          f"pm_reduce_simplify (2) LAST")
+          f"{len(absent)} rule bodies absent. PORTED OUT OF `symbolic`: "
+          f"{', '.join(PORTED_RULES)} (1 of 122 rules). PORT ORDER: symbolic FIRST, "
+          f"pm_reduce_simplify LAST")
     return 0
 
 
