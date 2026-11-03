@@ -1101,3 +1101,37 @@ with an INT payload (`UOp.const(1, dtypes.float16)` goes through `dtype.const`'s
 converts first), so the arms need an int->float conversion before the encoder, and `O.CFloat{f}` is
 the only float payload the port's `Const` has. **THAT CONVERSION IS THE UNMEASURED PART; the encoders
 are not.**
+
+## 32. THE FLOAT ARMS OF `sy_trunc` ARE UNVERIFIABLE, AND THAT IS A MEASUREMENT
+
+Section 31 named the remainder. It was then ATTEMPTED, COMPILED, and REVERTED, because F32 values
+cannot be observed anywhere in this port:
+
+    F32.bits(f)      is an AXIOM with no body (helpers.bend:902 says so in words)
+    H.f32_show(f)    does not reduce: a probe that prints it emits the CONSTRUCTOR TREE
+                     (`SCon{'f', SCon{'1', ...}}`) instead of a string, so the term never normalises
+
+MEASURED, both: a probe over `sy_trunc(half(), CFloat 1.1)` printed `SCon{...}` where the integer
+probes print `"fits_1_2=(add ...)"`. **SO THE ANSWER OF AN ENCODER CANNOT BE READ BY ANY INSTRUMENT IN
+THIS TREE, AND AN fp16 ROUNDING THAT CANNOT BE READ IS PRECISION CODE THAT CANNOT BE CHECKED.**
+
+CPython's answers are recorded here so the next attempt has an oracle ready and does not have to
+re-derive them (`float_to_fp16`/`float_to_bf16` applied at CONSTRUCTION, which is the part that
+surprised me):
+
+    UOp.const(1.1,   float16)  -> ConstFloat(1.099609375)     bits 0x3f8cc000
+    UOp.const(70000, float16)  -> ConstFloat(inf)             bits 0x7f800000
+    UOp.const(1.1,   bfloat16) -> bits 0x3f8d0000
+    UOp.const(70000, bfloat16) -> bits 0x47890000
+
+THE ENCODERS THEMSELVES ARE NOT THE PROBLEM: `dtype.bend:797 Dt.fp16` and `dtype.bend:1168
+float_to_bf16` are in the tree and the whole file passes `ALL PROOFS CHECK`, and the `pri` mapping is
+read straight off `LAWS/spec.bend:739-742`. What cannot be checked is the WIRING plus the INT-PAYLOAD
+conversion, and a half-written arm is the "partial table reads as a refusal" defect of section 27 --
+so the whole half stays out rather than half of it going in.
+
+**THIS IS THE THIRD TIME THIS SESSION THAT THE HONEST ANSWER WAS "CANNOT VERIFY", AND EACH TIME THE
+REASON WAS AN INSTRUMENT AND NOT THE CODE** (sections 28, 29, 32). The pattern is worth more than any
+one guard: in this lane a change is only worth landing when a probe can read its answer back, and
+three of the artefacts needed to read answers back are missing -- a bounds table that survives a
+mint, an `F32` accessor, and a per-row `pat`/`mk` sweep.
