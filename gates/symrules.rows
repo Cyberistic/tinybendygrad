@@ -113,8 +113,8 @@
 76	symbolic.py:247	ADD	sym_table	62	PORTED
 77	symbolic.py:248	ADD	MISSING	-	MISSING
 78	symbolic.py:249	ADD	MISSING	-	MISSING
-79	symbolic.py:250	ADD	sym_table	64	PORTED
-80	symbolic.py:251	ADD	sym_table	63	PORTED
+79	symbolic.py:250	ADD	sym_table	63	PORTED
+80	symbolic.py:251	ADD	sym_table	64	PORTED
 81	symbolic.py:252	MUL	MISSING	-	MISSING
 82	symbolic.py:253	MUL	MISSING	-	MISSING
 83	symbolic.py:254	MUL	MISSING	-	MISSING

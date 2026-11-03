@@ -3302,8 +3302,8 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{60, [O.OpsOR{}], Nil{}, },   # 243
     O.PMEntry{61, [O.OpsADD{}], Nil{}, },   # 245
     O.PMEntry{62, [O.OpsADD{}], Nil{}, },   # 247
-    O.PMEntry{63, [O.OpsADD{}], Nil{}, },   # 251
-    O.PMEntry{64, [O.OpsADD{}], Nil{}, },   # 250
+    O.PMEntry{63, [O.OpsADD{}], Nil{}, },   # 250
+    O.PMEntry{64, [O.OpsADD{}], Nil{}, },   # 251
     O.PMEntry{65, [O.OpsWHERE{}], Nil{}, },   # 256
     O.PMEntry{66, [O.OpsCMPNE{}], Nil{}, },   # 260
     O.PMEntry{67, [O.OpsWHERE{}], Nil{}, },   # 262
@@ -3722,8 +3722,8 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 60: sym_243(x, u)
     case 61: sym_245(x, u)
     case 62: sym_247(x, u)
-    case 63: sym_251(x, u)
-    case 64: sym_250(x, u)
+    case 63: sym_250(x, u)
+    case 64: sym_251(x, u)
     case 65: sym_256(x, u)
     case 66: sym_260(x, u)
     case 67: sym_262(x, u)
