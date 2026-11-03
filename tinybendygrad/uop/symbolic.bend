@@ -388,6 +388,17 @@ def i64_bits(i: H.I64) -> U32: H.lo32(i)
 # eight answer `None{}`, which is Python's "this fold does not apply". For weakint
 # and weakfloat `DType.const` (dtype.py:79) IS the identity, which is the `Some{v}`
 # on the two weak rows.
+# `ctypes.c_int8(x).value` IS A WRAP, so the narrow arms need one: `lo32` keeps the low word, the
+# mask keeps the low N bits, and a signed width subtracts 2**N when the sign bit is set.
+def sy_wrap_u(v: O.Const, +mask: U32) -> U32:
+  match v:
+    case O.CInt{i}: U32.and(H.lo32(i), mask)
+    case _: 0
+
+def sy_wrap_s(+u: U32, +half: U32, +wide: U32) -> H.I64:
+  H.i64_sub(H.i64_of_i32(u),
+    Bool.pick(H.I64, U32.is_lt(u, half), H.i64_of_i32(0), H.i64_of_i32(wide)))
+
 def sy_trunc(dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>:
   match dt:
     case S.Dt{0, 1, S.CBool{}, _}: Some{O.CBool{sy_truthy.go(v)}}
@@ -396,6 +407,17 @@ def sy_trunc(dt: S.Dt, v: O.Const) -> Maybe<&1, O.Const>:
     case S.Dt{5, 32, S.CSint{}, _}: Some{v}
     case S.Dt{6, 32, S.CUint{}, _}: Some{v}
     case S.Dt{14, 32, S.CFloat{}, _}: Some{v}
+    # **THE TABLE IN `tinygrad/dtype.py:293` HAS EVERY INT WIDTH** -- `int8..uint64` are all
+    # `ctypes.c_<n>(x).value` -- and this def had SIX arms, so `sy_trunc(int8, ...)` answered `None`.
+    # `mint_const_like`, `trunc_m` and `exec_alu.trunc` all read `None` as "no answer", so EVERY
+    # rule that builds a const at a narrow int dtype was DEAD: `:263` is the one that was caught,
+    # and it was caught only because a probe asked its `pat` and its `mk` separately.
+    case S.Dt{_, 8, S.CSint{}, _}: Some{O.CInt{sy_wrap_s(sy_wrap_u(v, 255), 128, 256)}}
+    case S.Dt{_, 16, S.CSint{}, _}: Some{O.CInt{sy_wrap_s(sy_wrap_u(v, 65535), 32768, 65536)}}
+    case S.Dt{_, 64, S.CSint{}, _}: Some{v}
+    case S.Dt{_, 8, S.CUint{}, _}: Some{O.CInt{H.i64_of_hi_lo(0, sy_wrap_u(v, 255))}}
+    case S.Dt{_, 16, S.CUint{}, _}: Some{O.CInt{H.i64_of_hi_lo(0, sy_wrap_u(v, 65535))}}
+    case S.Dt{_, 64, S.CUint{}, _}: Some{v}
     case _: None{}
 
 # THE DTYPE A CONST'S VALUE DERIVES, which is `fold.bend`'s `cconst_dt` and is
