@@ -2057,3 +2057,50 @@ FASTER renderer and a WRONG one. The line count is not a tuning knob, it is the 
 **EVERY AXIS THIS RECORD COULD NAME HAS NOW BEEN MEASURED, AND NONE OF THEM IS THE REMAINING 21 ms.** What is
 left is the per-uop loop of a pure, `St`-threaded program: ~30 calls per line, each doing something, in a
 language whose only container is a cons list.
+
+## 46. CALL COUNTS PER LINE -- AND §36 IS WRONG, WHICH THIS RETRACTS
+
+Ten axes were measured without ever counting the CALLS, so this section did: a scratch copy of the artifact
+with a counter injected into every function (553 wrapped, no commit, the substrate untouched), run on the
+405-uop wire.
+
+```
+total instrumented calls   718,648      per emitted line (405 uops)   1,774
+
+List_set                       162,272   22.6%   <- child_count's histogram
+the decoder's split chain      150,984   21.0%   (String_split + _fin + _push + Char_is_eq + String_take)
+List_append                     91,082   12.7%
+everything else                314,310   43.7%
+```
+
+### 46.1 The retraction
+
+**§36 DISMISSED `child_count` ON A BAD MEASUREMENT AND THIS SECTION OVERTURNS IT.** §36 said: *"the call
+tree's 27% did not reproduce -- a driver calling `C.child_count` on the fixture takes 0.02-0.04 s against a
+0.02 s baseline, and at `time -p`'s 10 ms resolution the two are the same reading."* **THEY WERE NOT THE SAME
+READING. 0.04 s AGAINST 0.02 s IS 20 ms, WHICH IS EXACTLY WHAT A 162 272-CALL `List.set` HISTOGRAM COSTS.**
+The lead was real, the call tree had it right, and a 10 ms instrument was read as a null result.
+
+`child_count` builds a list of N zeros and folds every uop into it with `List.set(cc, src, get+1)`; `List.set`
+rebuilds the whole prefix (`$List$set` in the artifact is the recursive `{h, tail: List_set(t, n-1, x)}`), so n
+uops with ~2 srcs each cost ~n^2/2 consses: 162 272 for n=405.
+
+### 46.2 What the counts say about the decoder, too
+
+The split chain is **21% of all calls** -- 150 984 for a 13 KB wire -- because `String.split` is the per
+character recursion (`langs/js/core.js:357`) and a 13 KB chunk costs ~13 000 calls on its own. §37 measured
+the decode at ~4.2 ms; 21% of the calls for ~10% of the time is consistent, since a split call is cheap and a
+`List.set` is not.
+
+### 46.3 So the two real targets, in order
+
+| target | calls | why it is expensive |
+|---|---|---|
+| `child_count`'s histogram | 162 272 | each `List.set` allocates the whole prefix |
+| the decoder's `String.split` | 150 984 | one call per character of the wire |
+
+**AND NEITHER IS A §39-STYLE FIX**: one needs a counting pass that does not rebuild a prefix (a merge over the
+src list, or a mutable counter), and the other needs a tokenizer that is not the runtime's per-character
+split. Both are real work with a measured prize, and the prize is now a NUMBER rather than a hope:
+~20 ms of a ~47 ms command is allocated in `List.set`, and ~4 ms is spent splitting text that a cheaper
+encoding would not need split.
