@@ -2441,8 +2441,8 @@ def bitcast_text(+dev: U32, +a: S.Addr, +d: S.Dt, +sd: S.Dt, +s: String) -> Stri
     case S.ALocal{}: String.concat(["(((", render_dtype(dev, d, 1, a, False{}, False{}, False{}), ")(", s, "))"])
     case _: bitcast_named(dev, d, sd, s)
 
-def ku_text_bitcast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
-  bitcast_text(dev, KU.addr(k), KU.dtype(k), ku_dt_at(kus, KU.src0(k)), rt(r, KU.src0(k)))
+def ku_text_bitcast(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  [bitcast_text(dev, KU.addr(k), KU.dtype(k), ku_dt_at(kus, KU.src0(k)), String.join(rtp(r, KU.src0(k)), ""))]
 
 # `f"({ctx.render_access(bidx)})"` (cstyle.py:57) AND
 # `f"({ctx[gate]}?{ctx.render_access(bidx)}:{ctx[var]})"` (cstyle.py:58-59).
@@ -2462,12 +2462,16 @@ def ku_access.go(m: Maybe<&2, KU>, dev: U32, +ai: U32, k: KU, kus: List<&2, List
     case None{}: "*"
 def ku_access(dev: U32, +ai: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
   ku_access.go(ku_at(kus, KU.src0(k)), dev, ai, k, kus, r)
-def ku_text_load(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
-  Bool.pick(String, U32.is_eq(KU.nsrc(k), 3),
-    String.concat(["(", rt(r, KU.src2(k)), "?", ku_access(dev, KU.src0(k), k, kus, r), ":", rt(r, KU.src1(k)), ")"]),
-    String.concat(["(", ku_access(dev, KU.src0(k), k, kus, r), ")"]))
-def ku_text_store(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> String:
-  String.concat([ku_access(dev, KU.src0(k), k, kus, r), " = ", rt(r, KU.src1(k)), ";"])
+def ku_text_load.by(b: Bool, dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  match b:
+    case True{}: List.concat(&2, String, [["("], rtp(r, KU.src2(k)), ["?"],
+      [ku_access(dev, KU.src0(k), k, kus, r)], [":"], rtp(r, KU.src1(k)), [")"]])
+    case False{}: List.concat(&2, String, [["("], [ku_access(dev, KU.src0(k), k, kus, r)], [")"]])
+
+def ku_text_load(+dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  ku_text_load.by(U32.is_eq(KU.nsrc(k), 3), dev, k, kus, r)
+def ku_text_store(dev: U32, +k: KU, +kus: List<&2, List<&2, KU>>, +r: Rows) -> List<&2, String>:
+  List.concat(&2, String, [[ku_access(dev, KU.src0(k), k, kus, r)], [" = "], rtp(r, KU.src1(k)), [";"]])
 def ku_stack_srcs.go(+ss: List<&2, U32>, +kus: List<&2, List<&2, KU>>, +r: Rows,
                     acc: List<&2, String>) -> List<&2, String>:
   match ss:
@@ -2511,12 +2515,12 @@ def ku_text.go(op: O.Op, dev: U32, i: U32, k: KU, +kus: List<&2, List<&2, KU>>, 
     case O.OpsIF{}: [ku_text_if(dev, k, kus, r)]
     case O.OpsBACKEDGE{}: [ku_text_backedge(dev, k, kus, r)]
     case O.OpsCAST{}: ku_text_cast(dev, k, kus, r)
-    case O.OpsBITCAST{}: [ku_text_bitcast(dev, k, kus, r)]
+    case O.OpsBITCAST{}: ku_text_bitcast(dev, k, kus, r)
     case O.OpsBARRIER{}: [barrier.of(dev)]
     case O.OpsINDEX{}: ku_render_index(dev, k, kus, r)
     case O.OpsSHRINK{}: ku_render_index(dev, k, kus, r)
-    case O.OpsLOAD{}: [ku_text_load(dev, k, kus, r)]
-    case O.OpsSTORE{}: [ku_text_store(dev, k, kus, r)]
+    case O.OpsLOAD{}: ku_text_load(dev, k, kus, r)
+    case O.OpsSTORE{}: ku_text_store(dev, k, kus, r)
     case O.OpsBUFFER{}: [ku_text_buffer(dev, i, k, r)]
     case O.OpsWMMA{}: [ku_text_wmma(dev, k, r)]
     case O.OpsSTACK{}: [ku_text_stack(dev, k, kus, r)]

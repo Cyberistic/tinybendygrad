@@ -4549,3 +4549,46 @@ change can take without restructuring the runtime's `String.split`.
 **THERE IS NO CLASS ABOVE THE KEEPER LINE LEFT IN THE RENDER**, and the remaining arms (STORE, LOAD,
 BITCAST, RANGE, WMMA, STACK, IF, BACKEDGE, BUFFER, SPECIAL) are each one materialisation of a short string
 that the statement then copies once -- the piece path has taken everything with a price.
+
+## 102. §101's CORRECTION WAS WRONG, AND THE REMAINING ARMS STILL PAID: 0.9351 / 0.9593
+
+§101 claimed the per-class ablations were inflated because a text arm's constant also shortens the C, and
+scaled every figure by the removed output. That correction was itself an estimate. This section measures
+the thing it assumed -- the cost of a character in the output pipeline -- and the assumption is wrong by
+two orders of magnitude.
+
+### 102.1 The padding sweep: 5 ns a character
+
+Two scratch builds that append a literal to EVERY statement, so the C grows by a known amount while nothing
+else changes:
+
+```
++ 2,100 characters (4,426 -> 6,526):   4.13 -> 3.92 ms   (noise; the padded build is FASTER)
++21,000 characters (4,426 -> 25,426):  3.87 -> 3.98 ms   +0.11 ms  =  +5 ns a character
+```
+
+**A CHARACTER OF OUTPUT COSTS 5 NS, NOT THE 230 NS §101 SCALED BY.** So the ablation deltas were never
+output-size-confounded: CAST's 500 characters cost 2.5 us of its 0.41 ms, and `i64_dec`'s 279 cost 1.4 us of
+its 0.38. **§101 IS RETRACTED.**
+
+**⇒ AND THAT LEAVES A DIFFERENT DIAGNOSIS: the per-arm deltas (0.1-0.4 ms) are the same size as the drift in
+their own baselines (0.2-0.3 ms across the runs of one batch). The instrument is not biased, it is NOISY,
+and the end-to-end A/B is the only one that can carry a decision.**
+
+### 102.2 So the arms were converted and the A/B judged them
+
+`ku_text_load` (its 3-source choice is a strict `Bool.pick` building both forms -- now a Bool-parameter
+`match`), `ku_text_store`, and `ku_text_bitcast` all answer pieces with `rtp`:
+
+```
+same C: True | bytes: 4426
+run 1 (26 rounds): before 4.00 ms  after 3.70 ms   median 0.9351   17/26
+run 2 (30 rounds): before 3.86 ms  after 3.68 ms   median 0.9593   19/30
+```
+
+**36 OF 56 ROUNDS, BOTH MEDIANS UNDER THE KEEPER LINE -- ~4-6%.**
+
+```
+proofs ALL PROOFS CHECK · ksweep 37/37 both decoders · opbattery 39/39
+portexec 7/7 · emit-mm and emit-f64 byte-identical
+```
