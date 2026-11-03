@@ -1707,8 +1707,17 @@ def simplify_pow_f(+f: O.Found, +x: F.Folded, +u: U32, c: U32) -> Maybe<&1, O.Fo
 
 
 
+# `invalid_pat.broadcast()` IS A STACK WHOSE SRCS ARE ALL INVALID, and the port tested
+# only `src[0]`. MEASURED 2026-11-03: `(stack bad x)` answered `bad` where CPython answers
+# `norewrite` -- a rule that fires on a stack it must not touch.
+def all_invalid.go(srcs: List<&2, U32>, +x: F.Folded, acc: Bool) -> Bool:
+  match srcs:
+    case Nil{}: acc
+    case s <> t: all_invalid.go(t, x, Bool.and(acc, p_invalid(x, s)))
+
 def sym_82.pat(+x: F.Folded, +u: U32) -> Bool:
-  Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTACK{}), sy_nsrc_ge(x, u, 1)), p_invalid(x, sy_src0(x, u)))
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsSTACK{}), sy_nsrc_ge(x, u, 1)),
+    all_invalid.go(sy_srcs(x, u), x, True{}))
 
 def sym_82(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sy_tri(sym_82.pat(x, u), Some{sy_src0(x, u)})
 
@@ -1800,10 +1809,10 @@ def sym_123.pat(+x: F.Folded, +u: U32) -> Bool:
   Bool.and(Bool.and(sy_is_op(x, u, O.OpsFLOORDIV{}), sy_nsrc_is(x, u, 2)),
     p_same(sy_src0(x, u), sy_src1(x, u)))
 
-def sym_123.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
-  sy_tri(hit, sy_const_like(x, u, O.CInt{H.i64_of_i32(1)}))
+def sym_123.hit(hit: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(hit, mint_const_like(mint_ar(sy_ar(x)), x, sy_src0(x, u), O.CInt{H.i64_of_i32(1)}))
 
-def sym_123(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sym_123.hit(sym_123.pat(x, u), x, u)
+def sym_123(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>: sym_123.hit(sym_123.pat(x, u), x, u)
 
 # THE REBIND SHAPE, ONCE. `sym_126` (symbolic.py:123, `(x^y)^y`) and `sym_127`
 # (symbolic.py:124, `(x%y)%y`) are the same shape with a different op: `op` over
@@ -3217,7 +3226,6 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 14: sym_120(x, u)
     case 15: sym_121(x, u)
     case 16: sym_122(x, u)
-    case 17: sym_123(x, u)
     case 18: sym_124(x, u)
     case 20: sym_126(x, u)
     case 21: sym_127(x, u)
@@ -3542,7 +3550,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 17, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3553,6 +3561,7 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 9: sym_95(x, u)
     case 10: sym_97(x, u)
     case 11: sym_99(x, u)
+    case 17: sym_123(x, u)
     case 19: sym_125(x, u)
     case 28: sym_136(x, u)
     case 31: sym_142(x, u)
