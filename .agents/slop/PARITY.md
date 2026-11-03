@@ -3599,3 +3599,28 @@ turn, and the part of it that is `fld` is under the instrument's floor.
 **THE ONE THAT PAID IS THE ONE THAT REMOVED A WHOLE PASS**, and every attempt to remove a *part* of a pass
 has been neutral. `String.split`'s per-character recursion is the runtime's, and it recurses whether the
 bytes are packed, the fields are named, or the tokens are grouped.
+
+## 82. THE CHARACTER SCANNER'S CENTRAL SUBSTITUTION IS A WASH: `String.to_list` COSTS WHAT `String.split` COSTS
+
+§80.3 named "fewer fields and fewer `String`s" as the open direction, and §81 measured the field half's
+ceiling at 0.75 ms. The remaining half is the split (0.69 ms), which a character scanner would replace with
+one walk of the wire. **Before writing two hundred lines, the substitution was priced directly**: the same
+9,516-byte wire, 300 passes, one program splitting it and one converting it to a character list, both
+counting what they walk.
+
+```
+String.split(s, ' ') + count   219.2 ms / 300 = 731 us a pass
+String.to_list(s)     + count   166.5 ms / 300 = 555 us a pass
+```
+
+**`String.to_list` ALLOCATES ONE CONS CELL PER CHARACTER -- 9,516 OF THEM -- WHERE `String.split` ALLOCATES
+ONE STRING PER TOKEN, 3,645.** The two constructions cost the same order, and the difference (176 us) is the
+ENTIRE prize a scanner could win on the split side, before paying for its own walk, its digit parsing, and
+the payload `String`s it must still materialise (one per row, for `arg_of`). **A rewrite of the decoder
+cannot buy more than ~0.2 ms here, and every attempt to remove a PART of the decode has measured neutral --
+three in a row** (§79.1 0.9934, §80 0.9900, §81 0.9751/1.0075).
+
+**⇒ AND THAT IS WHY IT IS NOT WRITTEN.** The measured decomposition of the decode is 0.78 read + 0.69 split
++ 0.75 fields, and the two terms a scanner attacks are the two whose parts have all measured free: `fld`'s
+list walks (§81) and the token grouping (§80). What it could win is one construction replacing another of
+the same order.
