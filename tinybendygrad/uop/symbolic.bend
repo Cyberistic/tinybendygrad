@@ -4174,6 +4174,31 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 #     [CInt(6), CInt(7)])` answers `CInt(42)` with the fix and `None{}` without it.
 #     One row is the whole sensitivity, so `alu` is the only witness the lane
 #     selector has; the two divergences listed at `exec_alu.pick` move NO row.
+# THE ROW `:87`/`:88` DID NOT HAVE. Both bodies carry the gate's OWN `src[2]` (the `Invalid`
+# const) into the answer, and that was RIGHT BY CONSTRUCTION -- the body passes
+# `O.Arena.src(ar, g, 2)` -- with no row saying so. A CLAIM THAT RESTS ON THE SHAPE OF THE CODE
+# THAT MAKES IT IS NOT A MEASUREMENT, so this builds `(cond ? x : Invalid) + y`, rewrites it, and
+# asks whether the ANSWER's third src is the invalid const.
+def t_ig_src2.of(m: Maybe<&1, O.Found>) -> U32:
+  match m:
+    case None{}: 0
+    case Some{+f}:
+      +i = O.Found.i(f)
+      +a2 = O.Found.ar(f)
+      Bool.to_u32(Bool.and(U32.is_eq(O.Arena.nsrc(a2, i), 3),
+                           sy_is_invalid_const(F.folded(a2), O.Arena.src(a2, i, 2))))
+
+def t_ig_src2() -> U32:
+  +gi  = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
+  +gt  = O.UOp.const(O.Found.ar(gi), O.CBool{True{}})
+  +cx  = O.UOp.const(O.Found.ar(gt), O.CInt{H.i64_of_i32(2)})
+  +cy  = O.UOp.const(O.Found.ar(cx), O.CInt{H.i64_of_i32(3)})
+  +inv = O.UOp.const(O.Found.ar(cy), O.CInvalid{})
+  +g   = O.UOp.new(O.Found.ar(inv), O.OpsWHERE{}, [O.Found.i(gt), O.Found.i(cx), O.Found.i(inv)], O.ANone{}, O.TNone{})
+  +t87 = O.UOp.new(O.Found.ar(g), O.OpsADD{}, [O.Found.i(g), O.Found.i(cy)], O.ANone{}, O.TNone{})
+  +fx  = F.folded(O.Found.ar(t87))
+  t_ig_src2.of(sym_87(fx, O.Found.i(t87)))
+
 def row(nm: String, v: U32) -> IO(Unit):
   IO.print(String.concat([nm, "=", U32.show(v)]))
 
@@ -4238,6 +4263,7 @@ def fz.gate() -> IO(Unit):
     row("bin3f_n", t_bin3f_n())
     row("len_dec", t_len_dec())
     row("len_dec_rm", t_len_dec_rm())
+    row("ig87_src2", t_ig_src2())
 
 # THE FUZZ DRIVER. `main` with NO argument is the gate above, byte for byte; with
 # ONE argument it reads that case file, builds the arena out of the s-expr the case
