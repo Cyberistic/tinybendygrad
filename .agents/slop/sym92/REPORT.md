@@ -572,3 +572,35 @@ across `0 .. Arena.next`, and whichever returns non-zero names the key.
 That is where `UOp.simplify` stands: the driver runs, it rewrites, and the ANSWER is in a map whose
 key is not the sink the caller passes. Until that key is named, `sy_simplify` cannot be written, and
 `uop_given_valid` -- and therefore `:436`, `:437` and `divandmod:108` -- cannot be built on it.
+
+## 2026-11-03 (final, 15): `graph_rewrite` CANNOT apply `sym_table` -- the rule BODIES are not reachable from codegen
+
+The one-row probe, `(mul xi c1)` which rewrites to `xi`:
+
+    xi=1 c1=2 mul=3 n=4 n2=4
+    repl: 0->0 1->1 2->0 3->0 4->0
+
+So the replace map holds ONE entry and it is `1->1` -- `xi` mapping to ITSELF, an identity. `mul=3`,
+the node the table should rewrite, is a MISS (`3->0`). `repln=1` was counting the identity entry, and
+`walk_rewrite.of` turning the miss into `None` is now explained exactly.
+
+**THE DRIVER RUNS, READS THE TABLE, AND NEVER APPLIES A BODY.** And it cannot: `O.PMEntry` carries the
+tag, the ops and the reject set, but the BODY for each tag is dispatched by `sym_dispatch` -- which
+lives in `symbolic.bend` -- and `codegen/__init__.bend` does not import symbolic (that is the
+direction the dependency has: symbolic imports codegen, for `substitute`). So
+`graph_rewrite(ar, i, sym_table(), ...)` is a table with no dispatcher: it can decide WHICH entries
+match and has nothing to call when they do.
+
+THAT SETTLES `UOp.simplify`, AND THE ANSWER IS THAT IT CANNOT BE BUILT WHERE I WAS TRYING. It must
+live in `symbolic.bend` on top of the `Found`-threaded scanner that ALREADY works -- `sym_f` /
+`sym_rewrite` -- iterated to a FIXPOINT, because `simplify` upstream is `graph_rewrite(self,
+symbolic)` and `graph_rewrite`'s fixpoint is the `walk=False` arm. The pieces it needs are all here and
+all in symbolic already: `sym_table()`, `sym_f`, `sy_novel` (which is the "did it change" test), and
+`mint_ar`.
+
+WHAT IS STILL OPEN: how many passes, and the `CONST`/`SINK` fast paths. Both are readable off
+`ops.py:495-501`; neither needs codegen.
+
+THIS IS THE END OF THE `graph_rewrite` ROAD, and it cost four turns to learn that the wall was never a
+missing driver -- it was that the driver and the bodies live on opposite sides of an import edge that
+this tree deliberately enforces.
