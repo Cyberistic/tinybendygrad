@@ -3286,6 +3286,235 @@ def sym_284(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_284.pat(x, u), sym_284.mk(x, u))
 
 
+# ---- `symbolic.py:129`, `fold_add_divmod_recombine` -----------------------------
+#
+# `pop_const(op)` -- ops.py:1082 -- DEFAULTS TO `ADD` AND NOT `MUL`: a node that does not pop
+# answers `(self, identity_element(op, dtype))`, and the identity is 0 for ADD and 1 for MUL. That
+# default is load-bearing here: `_quotient_base` builds `t = xa + a - pa` from ADD-pops, so `a`
+# and `xa` are ZEROS on nodes that are not ADDs, and a port defaulting to MUL would compute
+# `t = 1` and refuse every graph the rule is for.
+def pc_id(op: O.Op) -> H.I64:
+  Bool.pick(H.I64, O.eq_op(op, O.OpsMUL{}), H.i64_of_i32(1), H.i64_of_i32(0))
+
+def pc_v.go(m: Maybe<&1, O.Const>, op: O.Op) -> H.I64:
+  match m:
+    case Some{O.CInt{i}}: i
+    case _: pc_id(op)
+
+def pc_v(+ar: O.Arena, +i: U32, +op: O.Op) -> H.I64: pc_v.go(O.UOp.pop_const_val(ar, i, op), op)
+
+def pc_n(+ar: O.Arena, +i: U32, op: O.Op) -> U32:
+  Bool.pick(U32, O.UOp.pop_const_hits(ar, i, op), O.Arena.src0(ar, i), i)
+
+def pc_cv.some(m: Maybe<&1, O.Const>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{O.CInt{i}}: Some{i}
+    case _: None{}
+
+# THE VALUE OF A CONST NODE ITSELF. `pop_const_val` reads the SECOND SRC of an ALU, so on a
+# CONST it answers nothing and `pc_id` then hands back the ADD/MUL identity -- which made the
+# divisor 0.
+def cval.go(m: Maybe<&1, O.Const>) -> H.I64:
+  match m:
+    case Some{O.CInt{i}}: i
+    case _: H.i64_of_i32(0)
+
+def cval(+ar: O.Arena, +i: U32) -> H.I64: cval.go(O.UOp.ssimplify_val(ar, i))
+
+def pc_cv(+ar: O.Arena, +i: U32, op: O.Op) -> Maybe<&1, H.I64>:
+  Bool.pick(Maybe<&1, H.I64>,
+    Bool.and(O.eq_op(O.Arena.op(ar, i), op),
+             O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 1)), O.OpsCONST{})),
+    pc_cv.some(O.UOp.ssimplify_val(ar, O.Arena.src(ar, i, 1))), None{})
+
+# `_quotient_base(q, base, div)` -- divandmod.py:32-42: `base` or `base - k*div`, and the second
+# MINTS. `k*div` is a PYTHON INT product, so the answer is one `SUB(base, CONST(k*div))`.
+def qb.sub(m: Maybe<&1, O.Found>, +base: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+c}: Some{mint_bin(c, O.OpsSUB{}, base, O.Found.i(c))}
+    case None{}: None{}
+
+def qb.res2(zero: Bool, +f: O.Found, +k: H.I64, +D: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match zero:
+    case True{} : Some{O.Found{O.Found.ar(f), base}}
+    case False{}: qb.sub(mint_const_like(f, x, base, O.CInt{H.i64_mul(k, D)}), base)
+
+def qb.res(+f: O.Found, +k: H.I64, +D: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  qb.res2(Cmp.is_eq(H.i64_cmp(k, H.i64_of_i32(0))), f, k, D, base, x)
+
+def qb.end2(ok: Bool, +ar: O.Arena, +s: H.I64, +base: U32, +t: H.I64, +D: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{} : qb.res(mint_ar(ar), H.i64_sub(H.i64_div(t, D), s), D, base, x)
+    case False{}: None{}
+
+def qb.end(+ar: O.Arena, +q0: U32, +base: U32, +s: H.I64, +num: U32, +a: H.I64, +D: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  +t = H.i64_add(H.i64_sub(pc_v(ar, num, O.OpsADD{}), pc_v(ar, O.Arena.src0(ar, q0), O.OpsADD{})), a)
+  qb.end2(Bool.and(U32.is_eq(pc_n(ar, num, O.OpsADD{}), pc_n(ar, O.Arena.src0(ar, q0), O.OpsADD{})),
+                   Cmp.is_eq(H.i64_cmp(H.i64_mod(t, D), H.i64_of_i32(0)))),
+          ar, s, base, t, D, x)
+
+def qb.b2(eq: Bool, +ar: O.Arena, +q0: U32, +base: U32, +div: H.I64, +s: H.I64, num0: U32, a0: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match eq:
+    case True{} : qb.end(ar, q0, base, s, num0, a0, div, x)
+    case False{}: None{}
+
+def qb.b(+ar: O.Arena, +q0: U32, +base: U32, +div: H.I64, +s: H.I64, +qv: H.I64, num0: U32, a0: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  qb.b2(Cmp.is_eq(H.i64_cmp(qv, div)), ar, q0, base, div, s, num0, a0, x)
+
+def qb.a2(ok: Bool, +ar: O.Arena, +q0: U32, +base: U32, +div: H.I64, +s: H.I64, +qv: H.I64, num0: U32, a0: H.I64, +c: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{} : qb.end(ar, q0, base, s, pc_n(ar, num0, O.OpsADD{}), c, H.i64_mul(c, div), x)
+    case False{}: qb.b(ar, q0, base, div, s, qv, num0, a0, x)
+
+def qb.a(+ar: O.Arena, +q0: U32, +base: U32, +div: H.I64, +s: H.I64, +qv: H.I64, num0: U32, a0: H.I64, +c: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  qb.a2(Bool.and(Bool.not(H.i64_is_neg(div)), Cmp.is_eq(H.i64_cmp(qv, H.i64_mul(c, div)))),
+        ar, q0, base, div, s, qv, num0, a0, c, x)
+
+def qb.mc(mc: Maybe<&1, H.I64>, +ar: O.Arena, +q0: U32, +base: U32, +div: H.I64, +s: H.I64, +qv: H.I64, num0: U32, a0: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match mc:
+    case Some{+c}: qb.a(ar, q0, base, div, s, qv, num0, a0, c, x)
+    case None{}  : qb.b(ar, q0, base, div, s, qv, num0, a0, x)
+
+def qb.mqv(mqv: Maybe<&1, H.I64>, +ar: O.Arena, +q0: U32, +base: U32, +div: H.I64, +s: H.I64, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match mqv:
+    case Some{+qv}:
+      +num0 = pc_n(ar, base, O.OpsADD{})
+      qb.mc(pc_cv(ar, num0, O.OpsFLOORDIV{}), ar, q0, base, div, s, qv, num0, pc_v(ar, base, O.OpsADD{}), x)
+    case None{}: None{}
+
+def qb.go(+x: F.Folded, +q: U32, +base: U32, +div: H.I64) -> Maybe<&1, O.Found>:
+  +ar = F.Folded.ar(x)
+  +q0 = pc_n(ar, q, O.OpsADD{})
+  qb.mqv(pc_cv(ar, q0, O.OpsFLOORDIV{}), ar, q0, base, div, pc_v(ar, q, O.OpsADD{}), x)
+
+# `(b*mul).usum(*rest)` folds ADD left to right over the answer and the surviving terms.
+def sym_129.rest(ts: List<&2, U32>, +it: U32, +v: U32, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ts:
+    case Nil{}: acc
+    case +t <> r:
+      sym_129.rest(r, it, v, Bool.pick(List<&2, U32>, Bool.or(U32.is_eq(t, it), U32.is_eq(t, v)),
+        acc, List.append(&2, U32, acc, [t])))
+
+def sym_129.step(m: Maybe<&1, O.Found>, +t: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+a}: Some{mint_bin(a, O.OpsADD{}, O.Found.i(a), t)}
+    case None{}: None{}
+
+def sym_129.sum(ts: List<&2, U32>, +f: O.Found, +x: F.Folded, first: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match ts:
+    case Nil{}: first
+    case t <> rest: sym_129.sum(rest, f, x, sym_129.step(first, t))
+
+def sym_129.on(m: Maybe<&1, O.Found>, rest: List<&2, U32>, +b: O.Found, +x: F.Folded, +d: U32, +mul: H.I64) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+c}:
+      +p = mint_bin(c, O.OpsMUL{}, O.Found.i(b), O.Found.i(c))
+      sym_129.sum(rest, p, x, Some{p})
+    case None{}: None{}
+
+def sym_129.build(b: Maybe<&1, O.Found>, rest: List<&2, U32>, +x: F.Folded, +mul: H.I64, +d: U32) -> Maybe<&1, O.Found>:
+  match b:
+    case Some{+f}: sym_129.on(mint_const_like(f, x, d, O.CInt{mul}), rest, f, x, d, mul)
+    case None{}: None{}
+
+def sym_129.mk2c(m: Maybe<&1, O.Found>, +rest: List<&2, U32>, +x: F.Folded, +b: O.Found, +mul: H.I64) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+c}:
+      +r = mint_bin(c, O.OpsFLOORMOD{}, O.Found.i(b), O.Found.i(c))
+      sym_129.build(Some{r}, rest, x, mul, O.Found.i(r))
+    case None{}: None{}
+
+def sym_129.mk2(m: Maybe<&1, O.Found>, +rest: List<&2, U32>, +x: F.Folded, +b: O.Found, +mul: H.I64, +div: H.I64, +d0: H.I64) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+z}: sym_129.mk2c(mint_const_like(z, x, O.Found.i(b), O.CInt{H.i64_mul(div, d0)}), rest, x, b, mul)
+    case None{}: None{}
+
+def sym_129.jalt3(b: Maybe<&1, O.Found>, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded, +d0: H.I64) -> Maybe<&1, O.Found>:
+  match b:
+    case Some{+f}: sym_129.mk2(Some{f}, sym_129.rest(terms, it, v, Nil{}), x, f, mul, div, d0)
+    case None{}  : None{}
+
+def sym_129.jalt2(go: Bool, +q: U32, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded, +d0: H.I64) -> Maybe<&1, O.Found>:
+  match go:
+    case True{} : sym_129.jalt3(qb.go(x, O.Arena.src0(F.Folded.ar(x), q), base, div), v, terms, it, div, mul, base, x, d0)
+    case False{}: None{}
+
+def sym_129.jalt1(md: Maybe<&1, H.I64>, +q: U32, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match md:
+    case Some{+d0}: sym_129.jalt2(Bool.not(H.i64_is_neg(d0)), q, v, terms, it, div, mul, base, x, d0)
+    case None{}   : None{}
+
+def sym_129.jalt(+q: U32, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  sym_129.jalt1(pc_cv(F.Folded.ar(x), q, O.OpsFLOORMOD{}), q, v, terms, it, div, mul, base, x)
+
+def sym_129.jqq(b: Maybe<&1, O.Found>, +q: U32, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match b:
+    case Some{+f}: sym_129.build(Some{f}, sym_129.rest(terms, it, v, Nil{}), x, mul, base)
+    case None{}  : sym_129.jalt(q, v, terms, it, div, mul, base, x)
+
+def sym_129.jq(+v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  +q = pc_n(F.Folded.ar(x), v, O.OpsMUL{})
+  sym_129.jqq(qb.go(x, q, base, div), q, v, terms, it, div, mul, base, x)
+
+def sym_129.jok(ok: Bool, v: U32, terms: List<&2, U32>, it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match ok:
+    case True{} : sym_129.jq(v, terms, it, div, mul, base, x)
+    case False{}: None{}
+
+def sym_129.jone(+v: U32, +terms: List<&2, U32>, +it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded) -> Maybe<&1, O.Found>:
+  +ar = F.Folded.ar(x)
+  sym_129.jok(Bool.and(Bool.not(U32.is_eq(v, it)),
+                       Cmp.is_eq(H.i64_cmp(pc_v(ar, v, O.OpsMUL{}), H.i64_mul(div, mul)))),
+              v, terms, it, div, mul, base, x)
+
+def sym_129.keep2(m: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+f}: Some{f}
+    case None{}  : None{}
+
+def sym_129.keep(acc: Maybe<&1, O.Found>, m: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match acc:
+    case Some{+f}: Some{f}
+    case None{}  : sym_129.keep2(m)
+
+def sym_129.jloop(vs: List<&2, U32>, +terms: List<&2, U32>, +it: U32, +div: H.I64, +mul: H.I64, +base: U32, +x: F.Folded, acc: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match vs:
+    case Nil{}: acc
+    case +v <> rest:
+      sym_129.jloop(rest, terms, it, div, mul, base, x,
+        sym_129.keep(acc, sym_129.jone(v, terms, it, div, mul, base, x)))
+
+def sym_129.ione2(go: Bool, +u: U32, +mod: U32, +terms: List<&2, U32>, +x: F.Folded) -> Maybe<&1, O.Found>:
+  match go:
+    case True{}:
+      +ar = F.Folded.ar(x)
+      sym_129.jloop(terms, terms, u, cval(ar, O.Arena.src(ar, mod, 1)),
+        pc_v(ar, u, O.OpsMUL{}), O.Arena.src0(ar, mod), x, None{})
+    case False{}: None{}
+
+def sym_129.ione(+u: U32, +terms: List<&2, U32>, +x: F.Folded) -> Maybe<&1, O.Found>:
+  +ar = F.Folded.ar(x)
+  +mod = pc_n(ar, u, O.OpsMUL{})
+  sym_129.ione2(Bool.and(O.eq_op(O.Arena.op(ar, mod), O.OpsFLOORMOD{}),
+                         O.eq_op(O.Arena.op(ar, O.Arena.src(ar, mod, 1)), O.OpsCONST{})),
+                u, mod, terms, x)
+
+def sym_129.iloop(ts: List<&2, U32>, +terms: List<&2, U32>, +x: F.Folded, acc: Maybe<&1, O.Found>) -> Maybe<&1, O.Found>:
+  match ts:
+    case Nil{}: acc
+    case +u <> rest:
+      sym_129.iloop(rest, terms, x, sym_129.keep(acc, sym_129.ione(u, terms, x)))
+
+def sym_129.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsADD{}), sy_nsrc_is(x, u, 2)), p_intweak(x, u))
+
+def sym_129.run(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +terms = O.UOp.split_uop(U32.to_nat(O.Arena.next(F.Folded.ar(x))), F.Folded.ar(x), u, O.OpsADD{})
+  sym_129.iloop(terms, terms, x, None{})
+
+def sym_129(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_129.pat(x, u), sym_129.run(x, u))
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -4251,96 +4480,97 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{19, [O.OpsFLOORDIV{}],                Nil{},                           },   # 125
     O.PMEntry{20, [O.OpsXOR{}],                     Nil{},                           },   # 126
     O.PMEntry{21, [O.OpsFLOORMOD{}],                [O.OpsFLOORMOD{}],               },   # 127
-    O.PMEntry{22, [O.OpsAND{}],                     Nil{},                           },   # 130
-    O.PMEntry{23, [O.OpsOR{}],                      Nil{},                           },   # 131
-    O.PMEntry{24, [O.OpsCMPNE{}],                   Nil{},                           },   # 132
-    O.PMEntry{25, OP_IDEMPOTENT(),                  Nil{},                           },   # 133
-    O.PMEntry{26, [O.OpsCMPNE{}], Nil{}, },   # 134
-    O.PMEntry{27, [O.OpsWHERE{}],                   Nil{},                           },   # 135
-    O.PMEntry{28, [O.OpsWHERE{}],                   Nil{},                           },   # 136
-    O.PMEntry{29, [O.OpsCMPNE{}],                   [O.OpsCAST{}, O.OpsCONST{}],     },   # 138
-    O.PMEntry{30, [O.OpsTRUNC{}],                   Nil{},                           },   # 140
-    O.PMEntry{31, [O.OpsCMPLT{}],                   Nil{},                           },   # 142
-    O.PMEntry{32, [O.OpsFLOORMOD{}],                Nil{},                           },   # 143
-    O.PMEntry{33, [O.OpsXOR{}],                     Nil{},                           },   # 144
-    O.PMEntry{34, [O.OpsAND{}],                     Nil{},                           },   # 145
-    O.PMEntry{35, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 147
-    O.PMEntry{36, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
-    O.PMEntry{37, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
-    O.PMEntry{38, [O.OpsCAST{}], Nil{}, },   # 155
-    O.PMEntry{39, [O.OpsCAST{}], Nil{}, },   # 157
-    O.PMEntry{40, OP_ALU_NT(),                     Nil{},                           },   # 161
-    O.PMEntry{41, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIPROCAL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # 162
-    O.PMEntry{42, OP_BINARY_3F(),                   Nil{},                           },   # 163
-    O.PMEntry{43, [O.OpsMUL{}],                     Nil{},                           },   # 167
-    O.PMEntry{44, [O.OpsADD{}],                     Nil{},                           },   # 168
-    O.PMEntry{45, [O.OpsMAX{}],                     Nil{},                           },   # 169
-    O.PMEntry{46, [O.OpsMUL{}],                     Nil{},                           },   # 173
-    O.PMEntry{47, [O.OpsMUL{}],                     Nil{},                           },   # 174
-    O.PMEntry{48, [O.OpsMUL{}],                     Nil{},                           },   # 178
-    O.PMEntry{49, OP_CASTS(),                       Nil{},                           },   # 181
-    O.PMEntry{50, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
-    O.PMEntry{51, [O.OpsCAST{}], Nil{}, },   # 186
-    O.PMEntry{52, [O.OpsBITCAST{}], Nil{}, },   # 188
-    O.PMEntry{53, [O.OpsCAST{}],                    Nil{},                           },   # 189
-    O.PMEntry{54, [O.OpsPOW{}],                     Nil{},                           },   # 191
-    O.PMEntry{55, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
-    O.PMEntry{56, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
-    O.PMEntry{57, [O.OpsWHERE{}],                  Nil{},                           },   # 201
-    O.PMEntry{58, [O.OpsWHERE{}],                  Nil{},                           },   # 202
-    O.PMEntry{59, [O.OpsADD{}, O.OpsAND{}, O.OpsCMPEQ{}, O.OpsCMPNE{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsXOR{}], Nil{}, },   # 230
-    O.PMEntry{60, [O.OpsOR{}], Nil{}, },   # 243
-    O.PMEntry{61, [O.OpsADD{}], Nil{}, },   # 245
-    O.PMEntry{62, [O.OpsADD{}], Nil{}, },   # 246
-    O.PMEntry{63, [O.OpsADD{}], Nil{}, },   # 247
-    O.PMEntry{64, [O.OpsADD{}], Nil{}, },   # 248
-    O.PMEntry{65, [O.OpsADD{}], Nil{}, },   # 249
-    O.PMEntry{66, [O.OpsADD{}], Nil{}, },   # 250
-    O.PMEntry{67, [O.OpsADD{}], Nil{}, },   # 251
-    O.PMEntry{68, [O.OpsMUL{}], Nil{}, },   # 253
-    O.PMEntry{69, [O.OpsMUL{}], Nil{}, },   # 254
-    O.PMEntry{70, [O.OpsWHERE{}], Nil{}, },   # 256
-    O.PMEntry{71, [O.OpsCMPNE{}], Nil{}, },   # 260
-    O.PMEntry{72, [O.OpsWHERE{}], Nil{}, },   # 262
-    O.PMEntry{73, [O.OpsWHERE{}], Nil{}, },   # 264
-    O.PMEntry{74, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 266
-    O.PMEntry{75, [O.OpsADD{}], Nil{}, },   # 269
-    O.PMEntry{76, [O.OpsADD{}], Nil{}, },   # 272
-    O.PMEntry{77, [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsPARAM{}, O.OpsSPECIAL{}], Nil{}, },   # 274
-    O.PMEntry{78, [O.OpsRANGE{}], Nil{}, },   # 276
-    O.PMEntry{79, [O.OpsWHERE{}], Nil{}, },   # 278
-    O.PMEntry{80, [O.OpsWHERE{}], Nil{}, },   # 279
-    O.PMEntry{81, [O.OpsMAX{}], Nil{}, },   # 280
-    O.PMEntry{82, [O.OpsMAX{}], Nil{}, },   # 284
-    O.PMEntry{83, [O.OpsOR{}], Nil{}, },   # 284
-    O.PMEntry{84, [O.OpsAND{}], Nil{}, },   # 284
-    O.PMEntry{85, [O.OpsADD{}], Nil{}, },   # 284
-    O.PMEntry{86, [O.OpsMUL{}], Nil{}, },   # 284
-    O.PMEntry{87, [O.OpsFLOORDIV{}], Nil{}, },   # 287
-    O.PMEntry{88, [O.OpsCMPLT{}], Nil{}, },   # 290
-    O.PMEntry{89, [O.OpsCMPLT{}], Nil{}, },   # 292
-    O.PMEntry{90, [O.OpsADD{}], Nil{}, },   # 295
-    O.PMEntry{91, [O.OpsMUL{}], Nil{}, },   # 296
-    O.PMEntry{92, [O.OpsCMPLT{}], Nil{}, },   # 300
-    O.PMEntry{93, [O.OpsFLOORMOD{}], Nil{}, },   # 304
-    O.PMEntry{94, [O.OpsFLOORDIV{}], Nil{}, },   # 305
-    O.PMEntry{95, [O.OpsCAST{}], Nil{}, },   # 308
-    O.PMEntry{96, [O.OpsCAST{}], Nil{}, },   # 316
-    O.PMEntry{97, [O.OpsAFTER{}], Nil{}, },   # 318
-    O.PMEntry{98, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
-    O.PMEntry{99, [O.OpsEND{}], Nil{}, },   # 324
-    O.PMEntry{100, [O.OpsFLOORDIV{}], Nil{}, },   # divandmod.py:101
-    O.PMEntry{101, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}, },   # divandmod.py:103
-    O.PMEntry{102, [O.OpsSTORE{}], Nil{}, },   # 453
-    O.PMEntry{103, [O.OpsSTORE{}], Nil{}, },   # 454
-    O.PMEntry{104, [O.OpsSTORE{}], Nil{}, },   # 458
-    O.PMEntry{105, [O.OpsSTORE{}], Nil{}, },   # 460
-    O.PMEntry{106, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{107, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{108, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{109, [O.OpsMUL{}], Nil{}, },   # 471
-    O.PMEntry{110, [O.OpsMUL{}], Nil{}, },   # 473
-    O.PMEntry{111, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{22, [O.OpsADD{}], Nil{}, },   # 129
+    O.PMEntry{23, [O.OpsAND{}],                     Nil{},                           },   # 130
+    O.PMEntry{24, [O.OpsOR{}],                      Nil{},                           },   # 131
+    O.PMEntry{25, [O.OpsCMPNE{}],                   Nil{},                           },   # 132
+    O.PMEntry{26, OP_IDEMPOTENT(),                  Nil{},                           },   # 133
+    O.PMEntry{27, [O.OpsCMPNE{}], Nil{}, },   # 134
+    O.PMEntry{28, [O.OpsWHERE{}],                   Nil{},                           },   # 135
+    O.PMEntry{29, [O.OpsWHERE{}],                   Nil{},                           },   # 136
+    O.PMEntry{30, [O.OpsCMPNE{}],                   [O.OpsCAST{}, O.OpsCONST{}],     },   # 138
+    O.PMEntry{31, [O.OpsTRUNC{}],                   Nil{},                           },   # 140
+    O.PMEntry{32, [O.OpsCMPLT{}],                   Nil{},                           },   # 142
+    O.PMEntry{33, [O.OpsFLOORMOD{}],                Nil{},                           },   # 143
+    O.PMEntry{34, [O.OpsXOR{}],                     Nil{},                           },   # 144
+    O.PMEntry{35, [O.OpsAND{}],                     Nil{},                           },   # 145
+    O.PMEntry{36, [O.OpsSHR{}],                     [O.OpsAND{}, O.OpsCONST{}],      },   # 147
+    O.PMEntry{37, [O.OpsFLOORDIV{}],                [O.OpsAND{}, O.OpsCONST{}],      },   # 149
+    O.PMEntry{38, [O.OpsCMPNE{}],                   Nil{},                           },   # 151
+    O.PMEntry{39, [O.OpsCAST{}], Nil{}, },   # 155
+    O.PMEntry{40, [O.OpsCAST{}], Nil{}, },   # 157
+    O.PMEntry{41, OP_ALU_NT(),                     Nil{},                           },   # 161
+    O.PMEntry{42, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsEXP2{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsOR{}, O.OpsPOW{}, O.OpsRECIPROCAL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsSUB{}, O.OpsTRUNC{}, O.OpsWHERE{}, O.OpsXOR{}], Nil{}, },   # 162
+    O.PMEntry{43, OP_BINARY_3F(),                   Nil{},                           },   # 163
+    O.PMEntry{44, [O.OpsMUL{}],                     Nil{},                           },   # 167
+    O.PMEntry{45, [O.OpsADD{}],                     Nil{},                           },   # 168
+    O.PMEntry{46, [O.OpsMAX{}],                     Nil{},                           },   # 169
+    O.PMEntry{47, [O.OpsMUL{}],                     Nil{},                           },   # 173
+    O.PMEntry{48, [O.OpsMUL{}],                     Nil{},                           },   # 174
+    O.PMEntry{49, [O.OpsMUL{}],                     Nil{},                           },   # 178
+    O.PMEntry{50, OP_CASTS(),                       Nil{},                           },   # 181
+    O.PMEntry{51, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
+    O.PMEntry{52, [O.OpsCAST{}], Nil{}, },   # 186
+    O.PMEntry{53, [O.OpsBITCAST{}], Nil{}, },   # 188
+    O.PMEntry{54, [O.OpsCAST{}],                    Nil{},                           },   # 189
+    O.PMEntry{55, [O.OpsPOW{}],                     Nil{},                           },   # 191
+    O.PMEntry{56, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
+    O.PMEntry{57, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
+    O.PMEntry{58, [O.OpsWHERE{}],                  Nil{},                           },   # 201
+    O.PMEntry{59, [O.OpsWHERE{}],                  Nil{},                           },   # 202
+    O.PMEntry{60, [O.OpsADD{}, O.OpsAND{}, O.OpsCMPEQ{}, O.OpsCMPNE{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsXOR{}], Nil{}, },   # 230
+    O.PMEntry{61, [O.OpsOR{}], Nil{}, },   # 243
+    O.PMEntry{62, [O.OpsADD{}], Nil{}, },   # 245
+    O.PMEntry{63, [O.OpsADD{}], Nil{}, },   # 246
+    O.PMEntry{64, [O.OpsADD{}], Nil{}, },   # 247
+    O.PMEntry{65, [O.OpsADD{}], Nil{}, },   # 248
+    O.PMEntry{66, [O.OpsADD{}], Nil{}, },   # 249
+    O.PMEntry{67, [O.OpsADD{}], Nil{}, },   # 250
+    O.PMEntry{68, [O.OpsADD{}], Nil{}, },   # 251
+    O.PMEntry{69, [O.OpsMUL{}], Nil{}, },   # 253
+    O.PMEntry{70, [O.OpsMUL{}], Nil{}, },   # 254
+    O.PMEntry{71, [O.OpsWHERE{}], Nil{}, },   # 256
+    O.PMEntry{72, [O.OpsCMPNE{}], Nil{}, },   # 260
+    O.PMEntry{73, [O.OpsWHERE{}], Nil{}, },   # 262
+    O.PMEntry{74, [O.OpsWHERE{}], Nil{}, },   # 264
+    O.PMEntry{75, [O.OpsADD{}, O.OpsAND{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsMAX{}, O.OpsMUL{}, O.OpsOR{}, O.OpsPOW{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsXOR{}], Nil{}, },   # 266
+    O.PMEntry{76, [O.OpsADD{}], Nil{}, },   # 269
+    O.PMEntry{77, [O.OpsADD{}], Nil{}, },   # 272
+    O.PMEntry{78, [O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsPARAM{}, O.OpsSPECIAL{}], Nil{}, },   # 274
+    O.PMEntry{79, [O.OpsRANGE{}], Nil{}, },   # 276
+    O.PMEntry{80, [O.OpsWHERE{}], Nil{}, },   # 278
+    O.PMEntry{81, [O.OpsWHERE{}], Nil{}, },   # 279
+    O.PMEntry{82, [O.OpsMAX{}], Nil{}, },   # 280
+    O.PMEntry{83, [O.OpsMAX{}], Nil{}, },   # 284
+    O.PMEntry{84, [O.OpsOR{}], Nil{}, },   # 284
+    O.PMEntry{85, [O.OpsAND{}], Nil{}, },   # 284
+    O.PMEntry{86, [O.OpsADD{}], Nil{}, },   # 284
+    O.PMEntry{87, [O.OpsMUL{}], Nil{}, },   # 284
+    O.PMEntry{88, [O.OpsFLOORDIV{}], Nil{}, },   # 287
+    O.PMEntry{89, [O.OpsCMPLT{}], Nil{}, },   # 290
+    O.PMEntry{90, [O.OpsCMPLT{}], Nil{}, },   # 292
+    O.PMEntry{91, [O.OpsADD{}], Nil{}, },   # 295
+    O.PMEntry{92, [O.OpsMUL{}], Nil{}, },   # 296
+    O.PMEntry{93, [O.OpsCMPLT{}], Nil{}, },   # 300
+    O.PMEntry{94, [O.OpsFLOORMOD{}], Nil{}, },   # 304
+    O.PMEntry{95, [O.OpsFLOORDIV{}], Nil{}, },   # 305
+    O.PMEntry{96, [O.OpsCAST{}], Nil{}, },   # 308
+    O.PMEntry{97, [O.OpsCAST{}], Nil{}, },   # 316
+    O.PMEntry{98, [O.OpsAFTER{}], Nil{}, },   # 318
+    O.PMEntry{99, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
+    O.PMEntry{100, [O.OpsEND{}], Nil{}, },   # 324
+    O.PMEntry{101, [O.OpsFLOORDIV{}], Nil{}, },   # divandmod.py:101
+    O.PMEntry{102, [O.OpsFLOORDIV{}, O.OpsFLOORMOD{}], Nil{}, },   # divandmod.py:103
+    O.PMEntry{103, [O.OpsSTORE{}], Nil{}, },   # 453
+    O.PMEntry{104, [O.OpsSTORE{}], Nil{}, },   # 454
+    O.PMEntry{105, [O.OpsSTORE{}], Nil{}, },   # 458
+    O.PMEntry{106, [O.OpsSTORE{}], Nil{}, },   # 460
+    O.PMEntry{107, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{108, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{109, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{110, [O.OpsMUL{}], Nil{}, },   # 471
+    O.PMEntry{111, [O.OpsMUL{}], Nil{}, },   # 473
+    O.PMEntry{112, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -4388,25 +4618,25 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 18: sym_124(x, u)
     case 20: sym_126(x, u)
     case 21: sym_127(x, u)
-    case 22: sym_130(x, u)
-    case 23: sym_131(x, u)
-    case 24: sym_132(x, u)
-    case 25: sym_133(x, u)
-    case 26: sym_134(x, u)
-    case 27: sym_135(x, u)
-    case 30: sym_140(x, u)
-    case 34: sym_145(x, u)
-    case 47: sym_174(x, u)
-    case 48: sym_178(x, u)
-    case 49: sym_181(x, u)
-    case 50: sym_183(x, u)
-    case 51: sym_186(x, u)
-    case 55: sym_196(x, u)
-    case 56: sym_197(x, u)
-    case 57: sy_wself(x, u)
-    case 81: sym_280(x, u)
-    case 93: sym_304(x, u)
-    case 98: sym_322(x, u)
+    case 23: sym_130(x, u)
+    case 24: sym_131(x, u)
+    case 25: sym_132(x, u)
+    case 26: sym_133(x, u)
+    case 27: sym_134(x, u)
+    case 28: sym_135(x, u)
+    case 31: sym_140(x, u)
+    case 35: sym_145(x, u)
+    case 48: sym_174(x, u)
+    case 49: sym_178(x, u)
+    case 50: sym_181(x, u)
+    case 51: sym_183(x, u)
+    case 52: sym_186(x, u)
+    case 56: sym_196(x, u)
+    case 57: sym_197(x, u)
+    case 58: sy_wself(x, u)
+    case 82: sym_280(x, u)
+    case 94: sym_304(x, u)
+    case 99: sym_322(x, u)
     case _: None{}
 
 def sym_dispatch(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -4715,7 +4945,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 22, 29, 30, 32, 33, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 53, 54, 55, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 95, 96, 97, 98, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4729,77 +4959,78 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 11: sym_99(x, u)
     case 17: sym_123(x, u)
     case 19: sym_125(x, u)
-    case 28: sym_136(x, u)
-    case 29: sym_138(x, u)
-    case 31: sym_142(x, u)
-    case 32: sym_143(x, u)
-    case 33: sym_144(x, u)
-    case 35: sym_147(x, u)
-    case 36: sym_149(x, u)
-    case 37: sym_151(x, u)
-    case 38: sym_155(x, u)
-    case 39: sym_157(x, u)
-    case 40: sym_161(x, u)
-    case 41: sym_162(x, u)
-    case 42: sym_163(x, u)
-    case 43: sym_167(x, u)
-    case 44: sym_168(x, u)
-    case 45: sym_169(x, u)
-    case 46: sym_173(x, u)
-    case 52: sym_188(x, u)
-    case 53: sym_189(x, u)
-    case 54: sym_191(x, u)
-    case 58: sy_fcw_f(x, u)
-    case 59: sym_230(x, u)
-    case 60: sym_243(x, u)
-    case 61: sym_245(x, u)
-    case 62: sym_246(x, u)
-    case 63: sym_247(x, u)
-    case 64: sym_248(x, u)
-    case 65: sym_249(x, u)
-    case 66: sym_250(x, u)
-    case 67: sym_251(x, u)
-    case 68: sym_253(x, u)
-    case 69: sym_254(x, u)
-    case 70: sym_256(x, u)
-    case 71: sym_260(x, u)
-    case 72: sym_262(x, u)
-    case 73: sym_264(x, u)
-    case 74: sym_266(x, u)
-    case 75: sym_269(x, u)
-    case 76: sym_272(x, u)
-    case 77: sym_274(x, u)
-    case 78: sym_276(x, u)
-    case 79: sym_278(x, u)
-    case 80: sym_279(x, u)
-    case 82: sym_284(x, u)
+    case 22: sym_129(x, u)
+    case 29: sym_136(x, u)
+    case 30: sym_138(x, u)
+    case 32: sym_142(x, u)
+    case 33: sym_143(x, u)
+    case 34: sym_144(x, u)
+    case 36: sym_147(x, u)
+    case 37: sym_149(x, u)
+    case 38: sym_151(x, u)
+    case 39: sym_155(x, u)
+    case 40: sym_157(x, u)
+    case 41: sym_161(x, u)
+    case 42: sym_162(x, u)
+    case 43: sym_163(x, u)
+    case 44: sym_167(x, u)
+    case 45: sym_168(x, u)
+    case 46: sym_169(x, u)
+    case 47: sym_173(x, u)
+    case 53: sym_188(x, u)
+    case 54: sym_189(x, u)
+    case 55: sym_191(x, u)
+    case 59: sy_fcw_f(x, u)
+    case 60: sym_230(x, u)
+    case 61: sym_243(x, u)
+    case 62: sym_245(x, u)
+    case 63: sym_246(x, u)
+    case 64: sym_247(x, u)
+    case 65: sym_248(x, u)
+    case 66: sym_249(x, u)
+    case 67: sym_250(x, u)
+    case 68: sym_251(x, u)
+    case 69: sym_253(x, u)
+    case 70: sym_254(x, u)
+    case 71: sym_256(x, u)
+    case 72: sym_260(x, u)
+    case 73: sym_262(x, u)
+    case 74: sym_264(x, u)
+    case 75: sym_266(x, u)
+    case 76: sym_269(x, u)
+    case 77: sym_272(x, u)
+    case 78: sym_274(x, u)
+    case 79: sym_276(x, u)
+    case 80: sym_278(x, u)
+    case 81: sym_279(x, u)
     case 83: sym_284(x, u)
     case 84: sym_284(x, u)
     case 85: sym_284(x, u)
     case 86: sym_284(x, u)
-    case 87: sym_287(x, u)
-    case 88: sym_290(x, u)
-    case 89: sym_292(x, u)
-    case 90: sym_295(x, u)
-    case 91: sym_296(x, u)
-    case 92: sym_300(x, u)
-    case 94: sym_305(x, u)
-    case 95: sym_308(x, u)
-    case 96: sym_316(x, u)
-    case 97: sym_318(x, u)
-    case 99: sym_324(x, u)
-    case 100: dm_101(x, u)
-    case 101: dm_103(x, u)
-    case 102: sym_453(x, u)
-    case 103: sym_454(x, u)
-    case 104: sym_458(x, u)
-    case 105: sym_460(x, u)
-    case 106: sym_462(x, u)
-    case 107: sym_463(x, u)
-    case 108: sym_464(x, u)
-    case 109: sym_471(x, u)
-    case 110: sym_473(x, u)
-    case 111: sym_444(x, u)
+    case 87: sym_284(x, u)
+    case 88: sym_287(x, u)
+    case 89: sym_290(x, u)
+    case 90: sym_292(x, u)
+    case 91: sym_295(x, u)
+    case 92: sym_296(x, u)
+    case 93: sym_300(x, u)
+    case 95: sym_305(x, u)
+    case 96: sym_308(x, u)
+    case 97: sym_316(x, u)
+    case 98: sym_318(x, u)
+    case 100: sym_324(x, u)
+    case 101: dm_101(x, u)
+    case 102: dm_103(x, u)
+    case 103: sym_453(x, u)
+    case 104: sym_454(x, u)
+    case 105: sym_458(x, u)
+    case 106: sym_460(x, u)
+    case 107: sym_462(x, u)
+    case 108: sym_463(x, u)
+    case 109: sym_464(x, u)
+    case 110: sym_471(x, u)
+    case 111: sym_473(x, u)
+    case 112: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
