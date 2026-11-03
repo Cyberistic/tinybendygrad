@@ -454,3 +454,50 @@ run because two runs write the SAME `runs/graphcmp/D` and would overwrite each o
 the corpus is NOT re-certified as of this note** — the last reading straddles an edit, and the
 re-certification is owed to whoever next finds the lock free. Do not read the previous
 `graphs-agree=38` as a certificate for this tree; read `start == end == live` or read nothing.
+
+## 17. THE CORPUS IS RE-CERTIFIED, AND `llm/cli.bend` IS PORTED AND GATED
+
+**§16's debt is paid.** Re-read on a quiet tree, by the rule §16 states:
+
+```
+substrate-start = 743bdb0cb7dca29c...   substrate-end = 743bdb0cb7dca29c...   live = 743bdb0cb7dca29c...
+graphs=38  graphs-agree=38  byte-identical=38  graphs-refused=0   substrate-head=a6ada8938
+```
+
+`start == end == live`, so this run DESCRIBES THE WORKING TREE, and `AGENTS.md` records the same digest.
+(My own `differ.py run` was refused twice by the singleton lock — `pid 255` then `pid 23922`, both
+`differ.py repro` — so the reading comes from the lock holder's run. **Same artifacts, same rule, and the
+rule is what makes it countable: `start == end == live`.**)
+
+**`llm/cli.bend` LANDED, SPLIT STATED, AND THE PORTED PART IS GATED.**
+
+| piece of `cli.py` | state |
+|---|---|
+| `FallbackTemplate.role` / `.end_turn` | **PORTED AND GATED** — `gates/llm_cli_template-gate.py` |
+| `SimpleTokenizer` | **NOT PORTABLE AS WRITTEN** — see below |
+| `main()` + the `models` URL table | not ported: needs `model.bend`'s `Transformer` and a fetch |
+
+The gate compares all **38 rows** (6 presets × 3 roles, plus `end_turn`) against upstream's own
+`FallbackTemplate`, with a stub tokenizer whose `decode` answers `"EOS"`:
+
+```
+rows  38 port / 38 upstream, 0 differ
+llm_cli_template: PASS -- every preset x role and end_turn is byte-identical to upstream
+```
+
+**AND IT CAN GO RED:** planting one `X` in `end_turn`'s kimi-k2 arm makes it print
+`row 21: port='kimi/end_turn\tEOSX' upstream='kimi/end_turn\tEOS'` and **exit 1** (clean: exit 0). A gate
+that cannot fail is a label, and this one was measured both ways in the same minute.
+
+**TWO THINGS THE PORT LEARNED, BOTH MEASURED:**
+- `tekken` + a role it does not have RAISES upstream; a string-returning port would have answered `""`,
+  so `Template.role` is a `Maybe` and the gate asserts both sides say `RAISE`.
+- **`IO.print` APPENDS A NEWLINE.** The first differential disagreed by exactly one blank line per row
+  because the driver added `"\n"` as well; the fix was to drop it from the payload. That is a one-line
+  trap worth recording, since the port writes row dumps everywhere.
+
+**`SimpleTokenizer` IS BLOCKED ON A LANGUAGE CAPABILITY, NOT ON EFFORT.** `__init__` builds a SPLIT
+REGEX from `unicodedata.category` ranges (`ucat_range`, compacted with `itertools.groupby`) and compiles
+it with `re`; `encode` is `findall` plus a greedy BPE merge. Bend has no regex engine and no Unicode
+category table. `decode` and `is_end` WOULD port cheaply (`b''.join(self._tok2bytes[tid])` and a
+membership test) and are the next slice — `render` comes with them, since it needs `decode`.
