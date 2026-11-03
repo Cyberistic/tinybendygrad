@@ -28074,3 +28074,5 @@ separated BEFORE `canonicalize_alloc` is in the picture.  **THAT **IS **A **FIXT
 **THIS **MESSAGE -- **AND **CAN **BE **RE-APPLIED **FROM **IT.
 
 THE `canonicalize_call_body` INCREMENT IS CERTIFIED: run+repro in ONE window, `corpuswitness-gate` PASS on all seven readings, and the port agrees with CPython on `ccb_one`.
+
+`ccb_nested` IS IN AND PROVEN (fresh `CallifyCtx` per call body agrees with CPython); `uopvars-gate` 49 rows rc=0; corpus witness PASS. `pm_schedule` is NEXT AND ITS FIXTURE NEEDS a `KernelInfo` arg -- `lower_sink_to_linear` reads `call.arg.precompile`, and a bare CALL raises `AttributeError: NoneType has no attribute precompile` (measured).

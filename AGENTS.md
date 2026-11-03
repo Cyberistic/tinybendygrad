@@ -207,7 +207,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   ***AND ***THE **PART **THAT **MAKES **IT **CURRENT **RATHER **THAN **MERELY **GREEN**:***
   **`substrate-start == substrate-end == live == repro-substrate == f1be4f109f07a1736c8c3a42a57fbb8656a023aeb7243d6c17533dcb3088cddb`** -- **THE **RUN **DESCRIBES **THE **WORKING
   **TREE **AS **IT
-  **STANDS**, **AND `substrate-head=a6844425283dc3b08cbb8d4bca38e60e05687b28` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
+  **STANDS**, **AND `substrate-head=bec55764d908ff5dabe16f237b9ad944e6bf2753` **IS **THE **COMMIT **IT **WAS **TAKEN **ON** --
   **AND **THE **LIVE
   **DIGEST **IS **THE **RUN's **RECORDED **DIGEST.**
   **⇒ AND **THE **READING **WAS **TAKEN **ON **THE **TREE **THE **CITATION**, **THE **RANGEIFY **AND
