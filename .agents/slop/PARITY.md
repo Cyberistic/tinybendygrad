@@ -3890,3 +3890,62 @@ measurable fraction.
 **⇒ AND THE ONE CHANGE THAT PAID, §78, REMOVED A WHOLE PASS OVER EVERY BYTE.** Every attempt since has
 removed a FRACTION of a pass, and the renderer is now a sum of ~3,700 sub-microsecond allocations with no
 single site above 1.3% of its own profile.
+
+## 88. THE OPCODE ATTRIBUTION, AND THE SIXTH RENDER NEUTRAL
+
+§87 left the render as "~3,700 sub-microsecond allocations with no site above 1.3%". This section
+attributes the PER-UOP work by opcode class instead, which is the granularity the flat profile could not
+give.
+
+### 88.1 The instrument, and its own cost
+
+An inclusive timer around `ku_text` in the generated JS, keyed on `k.op.$` (one instrumented build, one
+render):
+
+```
+ku_text inclusive 8.246 ms over 340 calls -- MORE THAN THE RENDER ITSELF, because `performance.now()`
+is not free and every one of the 340 calls pays it twice.
+     ms  calls  us/call  op
+  3.347     50    66.95  OpsCAST     <-
+  1.310     90    14.55  OpsADD
+  0.876     54    16.23  OpsLOAD
+  0.814     65    12.53  OpsINDEX
+  0.533      1   532.54  OpsBUFFER   (one call, 532 us -- the kernel header)
+  0.300      1   300.38  OpsSHL
+  0.224     41     5.46  OpsMUL
+```
+
+**THE ABSOLUTE FIGURES ARE INFLATED AND THE RANKING IS NOT**: the cheapest class (CMPLT, 8 calls, 7.6 us)
+prices the clock at several microseconds a call, which is why the total exceeds the render. CAST is the
+leader on both raw and corrected readings, and it is 15% of the dispatches.
+
+### 88.2 CAST is the §39 class, and the cure still does not pay here
+
+`ku_const_cast` was `Bool.pick(String, is_const, ku_const_cast2(...), ku_cast_generic(...))` -- STRICT, so
+every CAST built the const-cast text AND the generic-cast text and discarded one. The §39 cure (bool as a
+parameter, `match` runs one arm) applies verbatim, `ksweep 37 of 37` both decoders, same 4,426 bytes:
+
+```
+run 1: before 5.21 ms  after 5.06 ms   median 0.9613   16/24   max 1.2919
+run 2: before 5.31 ms  after 5.58 ms   median 0.9929   15/30   max 1.2630
+```
+
+**TWO RUNS DISAGREE, 31 OF 54 ROUNDS, REVERTED.** §39 measured 0.9447 for this cure on the *statement*
+path, where the discarded arm built `render_type`, a `String.concat` and `st_c`; here the discarded arm
+builds a cast expression of a handful of characters, and the strictness costs less than the instrument's
+noise.
+
+### 88.3 Six render hypotheses, six neutrals
+
+| attempt | mechanism | measured |
+|---|---|---|
+| §72 `i64_shl` both arms | strict `Bool.pick` building two records | 0.9976 |
+| §79.1 `Ops.value` order | 80% fewer tag comparisons | 0.9934 |
+| §80 packed wire | 12.8% fewer bytes | 0.9900 |
+| §81 nine named fields | 14,580 `List.get` steps | 0.9751/1.0075 |
+| §87 concat loops | 1,223 of 3,700 concat calls | 1.0005 |
+| §88 CAST strict pick | one of two cast texts per CAST | 0.9613/0.9929 |
+
+**AND THE OPCODE ATTRIBUTION SAYS WHY**: after CAST's 3.3 ms (inflated) the classes fall to 1.3, 0.9 and
+0.8 ms and then to a long tail -- there is no second CAST to find. The render is a distribution, and the
+distribution has no head left that a code change can take.
