@@ -310,3 +310,27 @@ match / 0 failed**.
 inert; the same happened again after the `-0.0` fix. The key now covers the renderer sources AND the two
 generators. **A CACHE THAT HIDES A FIX IS THE SAME DEFECT CLASS AS A GATE THAT CANNOT GO RED**, and it
 cost two wrong conclusions in this session before it was fixed.
+
+## 14. REAL PROGRAMS: 20 KERNELS, ALL BYTE-IDENTICAL — AND FOUR PROGRAMS THIS INSTRUMENT CANNOT SEE
+
+`.agents/slop/parity/ksweep.py` runs 25 real programs (chained matmuls, conv2d, reduces, permute/reshape/
+expand, slice/pad/cat, where/cmp, relu/abs/neg, the transcendentals, pow/maximum, half and bfloat16 casts,
+int ops, bitops, argmax, embedding, cumsum, softmax, layernorm, threefry), captures EVERY kernel
+`ClangRenderer` produced for each, and renders the same uop list through the port's `cstyle.bend`:
+
+```
+# programs that ran: 24; kernels captured: 20
+# NO kernel (folded to nothing, or served from cache): 4 -- softmax, layernorm, threefry, argmax
+# kernels: 20 byte-identical, 0 differ
+```
+
+**20 of 20 real kernels are BYTE-IDENTICAL to upstream.** That is the third surface this session has
+measured, and the widest: 7 (e2e gate) -> 31 (op battery) -> 20 real kernels here.
+
+**AND FOUR PROGRAMS PRODUCED NO KERNEL AT ALL, WHICH IS AN INSTRUMENT GAP AND NOT A PARITY RESULT.**
+`softmax`, `layernorm`, `threefry` and `argmax` return CORRECT values (`softmax` to 5.6e-17 against numpy,
+`argmax` exact), so their kernels run somewhere the `ClangRenderer.render` hook does not see; `CACHELEVEL=0`
+does not change it and a control (`x*2`) captures one kernel in the same context. **The cause was not
+established.** A program that compiles no kernel exercises nothing, so the instrument prints the count of
+covered programs beside the kernel count and names the zero-kernel ones rather than folding them into a
+coverage claim.
