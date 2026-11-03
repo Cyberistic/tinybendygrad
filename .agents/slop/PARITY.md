@@ -4088,3 +4088,39 @@ turn, that is not a trade this record should make.
 **⇒ SO THE DECODE'S 1.63 ms IS 0.9 OF ONE PASS OVER EVERY BYTE (§78's split), 0.43 OF `nums`, AND 0.3 OF
 RECORD BUILDING** -- and both of the first two are the runtime charging per character and per allocated
 string, the same wall §82 hit with `String.to_list`.
+
+## 92. CHUNKING THE SPLIT IS NEUTRAL, AND THE SCANNER TRADES ONE ALLOCATION FOR FOUR
+
+§91 left two candidates: split the wire in smaller chunks (the caller already cuts row-aligned pieces),
+and write `nums` as a character scanner via a Bool-plus-defaulted-Char state. Both were tried or priced.
+
+### 92.1 The chunk sweep: `String.split` is LINEAR in characters
+
+The §85 framing already carries one length-prefixed frame per chunk and the worker already calls `L.kus`
+per chunk -- but `CHUNK` is 10,000 and the wire is 9,516, so it has always been ONE chunk. Sweeping the
+size costs nothing (the frames are built in Python), decode-only and full, 20 interleaved rounds each:
+
+```
+decode-only   chunks of 4000 (3 parts): 0.9924   13/20
+              chunks of 2000 (5 parts): 1.0048    6/20
+              chunks of 1000 (10 parts): 1.0185   7/20
+full          chunks of 4000 (3 parts): 1.0224    9/20
+              chunks of 2000 (5 parts): 1.0669    9/20
+              chunks of 1000 (10 parts): 1.0244   10/20
+```
+
+**NEUTRAL TO WORSE, AND THAT IS THE ANSWER: THE SPLIT IS LINEAR.** Ten splits of 1 KB cost what one split
+of 9.5 KB costs, plus the per-call overhead. If `String.split` had been O(n^2) -- which the per-character
+recursion could have made it -- ten chunks would have been 9x cheaper. **SO THE 0.9 ms IS 9,516 CHARACTERS
+AT ~95 ns EACH AND THERE IS NO SHAPE OF CALL THAT MAKES IT CHEAPER.**
+
+### 92.2 Why the scanner does not get written
+
+The Bool-plus-defaulted-Char state avoids the second `match`, but it forces every branch decision through
+`Bool.pick`, which is STRICT: the "push this number" arm builds `List.append(out, [acc])` on EVERY
+CHARACTER and discards it whenever the character is not a separator. A two-element `srcs` would trade two
+substring allocations for four cons cells -- one per character scanned -- to save a `String.split` that
+§92.1 just showed is linear and cheap per character.
+
+**⇒ AND THAT CLOSES THE DECODE.** 0.9 ms of one linear pass, 0.43 ms of `nums` whose only cheaper form is a
+pass with MORE allocations, and 0.3 ms of record building.
