@@ -2720,6 +2720,29 @@ def sy_fcw(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
                                 Bool.not(dt_weak_of(sy_dt1(x, u))))),
               ret, x, u, sy_dt1(x, u))
 
+# `symbolic.py:174` -- `((UPat.var("x") * UPat.var("x2")) / UPat.var("x2"), lambda x,x2: x)`.
+#
+# `/` IS `* reciprocal()`, so the pattern is `MUL(MUL(x, x2), RECIPROCAL(x2))` and the rule is
+# THREE tests deep: the root is a MUL, its `src[0]` is a MUL, and its `src[1]` is the RECIPROCAL
+# of `src[0]`'s OWN `src[1]`. THE `x2` IS ONE NAMED VAR IN TWO PLACES, so the identity test is
+# the pattern and not a guard.
+#
+# THE ANSWER IS `x` -- AN EXISTING NODE -- so this rule is one of the few in the 88 that the
+# index-only family CARRIES AS IS. That is measured and not assumed: `gates/symclosure-gate.py`
+# pins `wall.sym_rewrite_index_only True` and 55 of the 88 mint, so a rule that RETURNS A NODE
+# ALREADY IN THE ARENA is the shape that can be added without the family change.
+def sym_174.deep(+x: F.Folded, +a: U32, +b: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, a, O.OpsMUL{}), sy_nsrc_is(x, a, 2)),
+    Bool.and(sy_is_op(x, b, O.OpsRECIPROCAL{}),
+             U32.is_eq(sy_src0(x, b), sy_src1(x, a))))
+
+def sym_174.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsMUL{}), sy_nsrc_is(x, u, 2)),
+    sym_174.deep(x, sy_src0(x, u), sy_src1(x, u)))
+
+def sym_174(+x: F.Folded, +u: U32) -> Maybe<&1, U32>:
+  sy_tri(sym_174.pat(x, u), Some{sy_src0(x, sy_src0(x, u))})
+
 def sym_table() -> O.PMEntrys:
   O.PMEntrys{[
     O.PMEntry{0, [O.OpsSTACK{}],                   OP_INVALID(),                    },   # 82
@@ -2760,18 +2783,19 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{35, [O.OpsADD{}],                     Nil{},                           },   # 168
     O.PMEntry{36, [O.OpsMAX{}],                     Nil{},                           },   # 169
     O.PMEntry{37, [O.OpsMUL{}],                     Nil{},                           },   # 173
-    O.PMEntry{38, [O.OpsMUL{}],                     Nil{},                           },   # 178
-    O.PMEntry{39, OP_CASTS(),                       Nil{},                           },   # 181
-    O.PMEntry{40, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
-    O.PMEntry{41, [O.OpsCAST{}],                    Nil{},                           },   # 189
-    O.PMEntry{42, [O.OpsPOW{}],                     Nil{},                           },   # 191
-    O.PMEntry{43, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
-    O.PMEntry{44, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
-    O.PMEntry{45, [O.OpsWHERE{}],                  Nil{},                           },   # 201
-    O.PMEntry{46, [O.OpsWHERE{}],                  Nil{},                           },   # 202
-    O.PMEntry{47, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{48, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{49, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{38, [O.OpsMUL{}],                     Nil{},                           },   # 174
+    O.PMEntry{39, [O.OpsMUL{}],                     Nil{},                           },   # 178
+    O.PMEntry{40, OP_CASTS(),                       Nil{},                           },   # 181
+    O.PMEntry{41, [O.OpsBITCAST{}],                 Nil{},                           },   # 183
+    O.PMEntry{42, [O.OpsCAST{}],                    Nil{},                           },   # 189
+    O.PMEntry{43, [O.OpsPOW{}],                     Nil{},                           },   # 191
+    O.PMEntry{44, [O.OpsCAST{}],                    [O.OpsOR{}],                     },   # 196
+    O.PMEntry{45, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
+    O.PMEntry{46, [O.OpsWHERE{}],                  Nil{},                           },   # 201
+    O.PMEntry{47, [O.OpsWHERE{}],                  Nil{},                           },   # 202
+    O.PMEntry{48, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{49, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{50, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
     O.PMEntry{50, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
@@ -2801,7 +2825,7 @@ def sym_table_len() -> Nat:
   nats([1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
         1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n,
-        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
+        1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n, 1n])
 
 # THE DRIVER, twice. `sym_*` for the `sym` composition and `rm_*` for
 # `pm_remove_invalid`, and the duplication is the honest cost of not having
