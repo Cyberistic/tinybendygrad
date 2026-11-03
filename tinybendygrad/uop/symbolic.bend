@@ -1247,6 +1247,11 @@ def p_nc(+x: F.Folded, +u: U32) -> U32: sy_src(x, u, p_nconst(x, u))
 def DTS_INTS() -> List<&2, S.Dt>:
   [S.uint8(), S.uint16(), S.uint32(), S.uint64(), S.int8(), S.int16(), S.int32(), S.int64()]
 
+# `dtypes.sints` -- the four SIGNED ints, which is `:316`'s cast target.
+def DTS_SINTS() -> List<&2, S.Dt>: [S.int8(), S.int16(), S.int32(), S.int64()]
+
+
+
 def DTS_INTISH() -> List<&2, S.Dt>:
   List.append(&2, S.Dt, List.append(&2, S.Dt, DTS_INTS(), [S.boolean()]), [S.weakint()])
 
@@ -3422,6 +3427,39 @@ def sym_308(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
       Some{O.Found{sy_ar(x), v}},
       Some{mint_cast(mint_ar(sy_ar(x)), v, sy_dt1(x, u))}))
 
+# symbolic.py:316  ((UPat.var("x", dtypes.weakint) + UPat.cvar("c")).cast(dtypes.sints, name="cast"),
+#                     lambda x,c,cast: x.cast(cast.dtype)+cast.const_like(c.val))
+# A SIGNED CAST PUSHES THROUGH THE SUM: the variable takes the cast and the constant is rebuilt
+# at the CAST's dtype -- `cast.const_like(c.val)`, so the value is the CONSTANT's and the dtype
+# is the cast's. The constant is at either side of the ADD, so `p_const`'s `Sw` finds it.
+def sym_316.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = sy_src0(x, u)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsCAST{}), sy_nsrc_is(x, u, 1)),
+    Bool.and(p_dt_in(DTS_SINTS(), sy_arg_dt(x, u)),
+      Bool.and(Bool.and(sy_is_op(x, i, O.OpsADD{}), sy_nsrc_is(x, i, 2)),
+        Bool.and(Sw.ok(p_const(x, i)), p_weakint(x, Sw.b(p_const(x, i)))))))
+
+def sym_316.join(m: Maybe<&1, O.Found>, +c: O.Found) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+k}: Some{mint_bin(k, O.OpsADD{}, O.Found.i(c), O.Found.i(k))}
+    case None{}: None{}
+
+def sym_316.add(+c: O.Found, +x: F.Folded, +u: U32, +i: U32) -> Maybe<&1, O.Found>:
+  sym_316.join(mint_const_v(sy_val(x, Sw.a(p_const(x, i))), c, sy_dt1(x, u)), c)
+
+def sym_316.put(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32, +i: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+c}: sym_316.add(c, x, u, i)
+    case None{}: None{}
+
+def sym_316.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +i = sy_src0(x, u)
+  sym_316.put(Some{mint_cast(mint_ar(sy_ar(x)), Sw.b(p_const(x, i)), sy_dt1(x, u))}, x, u, i)
+
+def sym_316(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_316.pat(x, u), sym_316.mk(x, u))
+
+
 # symbolic.py:300  (UPat.var("x", dtypes.weakint)*-1 < UPat.var("y")*-1, lambda x,y: y<x)
 # NEGATING BOTH SIDES FLIPS THE COMPARISON. `-1 * v` IS `MUL(CONST(-1), v)`, so each side is a
 # MUL whose const side is -1 and the answer swaps the two operands.
@@ -3812,10 +3850,11 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{89, [O.OpsFLOORMOD{}], Nil{}, },   # 304
     O.PMEntry{90, [O.OpsFLOORDIV{}], Nil{}, },   # 305
     O.PMEntry{91, [O.OpsCAST{}], Nil{}, },   # 308
-    O.PMEntry{92, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{93, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{94, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{95, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{92, [O.OpsCAST{}], Nil{}, },   # 316
+    O.PMEntry{93, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{94, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{95, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{96, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -4188,7 +4227,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93, 94, 95]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93, 94, 95, 96]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4255,10 +4294,11 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 88: sym_300(x, u)
     case 90: sym_305(x, u)
     case 91: sym_308(x, u)
-    case 92: sym_462(x, u)
-    case 93: sym_463(x, u)
-    case 94: sym_464(x, u)
-    case 95: sym_444(x, u)
+    case 92: sym_316(x, u)
+    case 93: sym_462(x, u)
+    case 94: sym_463(x, u)
+    case 95: sym_464(x, u)
+    case 96: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
