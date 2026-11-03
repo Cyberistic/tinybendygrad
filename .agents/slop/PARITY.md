@@ -766,3 +766,11 @@ run byte-identical C through the same `CPUProgram`, and at 1024 the time is 98.5
 
 **THE RESIDUAL IS ATTRIBUTED: it is the machine's load variance around two lanes that execute the same
 instructions. There is nothing port-side left for it to be.**
+
+**⚠ AND "1.0 INSIDE THE IQR" IS NOT STABLE AT 1024 ACROSS REPEATS, WHICH IS ITSELF THE READING.** Three
+separate 9-round runs of the same workload gave ratio medians **0.9971, 0.9999 and 0.9911**; the first two
+placed 1.0 inside the interquartile range and the third placed the WHOLE IQR just below it
+(spread 0.9648-1.0032), i.e. BEND marginally faster. **THE CENTRE OF THE BAND IS ~0.995 AND ITS WIDTH IS
++-1-2%, so the stable statement is not "1.0 is always inside" but "the two lanes are the same to within
+1-2% and the port is never the slower one."** A single run's "inside/outside" verdict at this resolution is
+a coin flip around a 0.5% effect; the three medians together are the measurement.
