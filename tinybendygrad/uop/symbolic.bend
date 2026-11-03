@@ -2776,6 +2776,42 @@ def sym_188(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_188.pat(x, u),
     Some{mint_bitcast(mint_ar(sy_ar(x)), sy_src0(x, sy_src0(x, u)), sy_dt1(x, u))})
 
+# `y IS logical_not(x)`: `CMPNE(x, CONST(True))`, which is what `mixin/elementwise.py`'s
+# `logical_not` is on a bool node (`self.cast(bool).ne(True)`, and the cast is a no-op).
+def p_not_of(+x: F.Folded, +n: U32, +v: U32) -> Bool:
+  Bool.and(sy_is_op(x, n, O.OpsCMPNE{}),
+    Bool.and(sy_nsrc_is(x, n, 2),
+      Bool.and(p_is_const_true(x, sy_src1(x, n)), p_same(sy_src0(x, n), v))))
+
+# symbolic.py:243  (UPat.var("x", dtype=dtypes.bool) | UPat.var("x", dtype=dtypes.bool).logical_not(),
+#                     lambda x: x.const_like(True))
+# OR IS COMMUTATIVE, so the complement is at either src and the test is the same node twice.
+def sym_243.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsOR{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(sy_dt_is(x, sy_src0(x, u), S.boolean()),
+      Bool.or(p_not_of(x, sy_src0(x, u), sy_src1(x, u)), p_not_of(x, sy_src1(x, u), sy_src0(x, u)))))
+
+def sym_243(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_243.pat(x, u), mint_const_like(mint_ar(sy_ar(x)), x, sy_src0(x, u), O.CBool{True{}}))
+
+# symbolic.py:250  (UPat.var("x") + UPat.var("x"), lambda x: x*2)
+# `x*2` IS `MUL(x, CONST(2))`: the 2 is a Python int, so it interns at the OPERAND's dtype
+# and not at the ADD's, which is the reading that cost three rules earlier today.
+def sym_250.build(m: Maybe<&1, O.Found>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+c}: Some{mint_bin(c, O.OpsMUL{}, sy_src0(x, u), O.Found.i(c))}
+    case None{}: None{}
+
+def sym_250.put(+x: F.Folded, +u: U32, +f: O.Found) -> Maybe<&1, O.Found>:
+  sym_250.build(mint_const_like(f, x, sy_src0(x, u), O.CInt{H.i64_of_i32(2)}), x, u)
+
+def sym_250.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsADD{}), sy_nsrc_is(x, u, 2)),
+    p_same(sy_src0(x, u), sy_src1(x, u)))
+
+def sym_250(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_250.pat(x, u), sym_250.put(x, u, mint_ar(sy_ar(x))))
+
 def sy_is_float_const.go(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{O.CFloat{f}}: True{}
@@ -3055,10 +3091,12 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{56, [O.OpsSHR{}],                     [O.OpsOR{}, O.OpsCONST{}],       },   # 197
     O.PMEntry{57, [O.OpsWHERE{}],                  Nil{},                           },   # 201
     O.PMEntry{58, [O.OpsWHERE{}],                  Nil{},                           },   # 202
-    O.PMEntry{59, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{60, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{61, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{62, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{59, [O.OpsOR{}], Nil{}, },   # 243
+    O.PMEntry{60, [O.OpsADD{}], Nil{}, },   # 250
+    O.PMEntry{61, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{62, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{63, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{64, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3424,7 +3462,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 9, 10, 11, 19, 28, 31, 32, 33, 37, 38, 39, 41, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -3452,10 +3490,12 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 53: sym_189(x, u)
     case 54: sym_191(x, u)
     case 58: sy_fcw_f(x, u)
-    case 59: sym_462(x, u)
-    case 60: sym_463(x, u)
-    case 61: sym_464(x, u)
-    case 62: sym_444(x, u)
+    case 59: sym_243(x, u)
+    case 60: sym_250(x, u)
+    case 61: sym_462(x, u)
+    case 62: sym_463(x, u)
+    case 63: sym_464(x, u)
+    case 64: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
