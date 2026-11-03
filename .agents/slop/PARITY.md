@@ -843,3 +843,104 @@ a renderer that reads uop lists at RUNTIME instead of compiling them as literals
 `op_of(String)` table exists (`runtime/ops_python.bend:507`), a rows->KU parser does not, and that is the
 next structural step, not a micro-optimisation. **AND IT IS THE LAST ONE: at 1024x1024 the whole cold path
 is 1.2% of the workload (§24), so this only ever mattered for the first run of a many-kernel program.**
+
+## 26. THE COLD PATH, FIXED AT THE ROOT: ONE PREBUILT RENDERER, KERNELS AS ARGUMENTS
+
+§25 batched the literal path, which helps a caller that already holds every kernel. **A REAL PROGRAM DOES
+NOT**: it asks for one kernel at a time, in the scheduler's order, so it kept paying one `bin/bend` build per
+kernel -- and that build is the typecheck of `cstyle.bend`'s closure, ~1.0-3.7 s on an idle-to-loaded
+machine. The residual was structural, not a tuning knob. **§25.4 NAMED THIS AS THE NEXT STRUCTURAL STEP AND
+THIS IS IT** -- and the tree walked into it with a measurement at every step, including three of the four
+defects below.
+
+`tinybendygrad/renderer/live.bend` removes it: the renderer is compiled ONCE into a JS artifact (cached by
+`portc` against every source that can change the C) and each kernel arrives as TEXT. `ops_bend.py`'s
+`PortRenderer` now calls `portc.render_live`, so this is the path the device uses, and it still raises on
+failure rather than falling back to tinygrad's renderer.
+
+### 26.1 The division of labour: PYTHON DECODES, BEND CONSTRUCTS
+
+Every field the Bend side reads is a NAME it can `match` on, or an unsigned decimal `U32.read` can take:
+
+* a `CONST` value arrives as EXACT BITS -- `hi~lo` for an integer, the f32 bit pattern for a float, `0`/`1`
+  for a bool. Parsing `1e999`, `inf`, `-0.0` and `-1.44` out of text is where `gen_kus`'s predecessor had
+  four separate defects, and `F32.from_bits` cannot disagree with `struct.pack` about a value.
+* the ARG's own tag rides in the `kind` field (`range_GLOBAL`, `wmma_f32`, ...), so `live.bend` never has to
+  SLICE a payload. Bend refuses `match` on a computed value and on a value bound after a parameter, and
+  every slicing design ended in one of the two.
+* the op table is IMPORTED from `runtime/ops_python.bend`'s `op_of`, so the executor's names and the
+  renderer's cannot drift apart -- and the 29 enum members the executor does not port are added beside it.
+
+### 26.2 Four defects, each measured and each fixed
+
+| the defect | what it looked like | how it was caught |
+|---|---|---|
+| `List.append(acc, [h])` ALREADY appends, so a closing `List.reverse` inverted every list | binary ops rendered with their OPERANDS SWAPPED (`(1<<Lidx4)` for `(Lidx4<<1)`) and every `srcs` index shifted | a fixture must render byte-identically to `gen/<name>.bend`; it did not |
+| `op_of` covers **46 of 75** enum members (it is the EXECUTOR's table) | `PAD`/`MSELECT` fell to the default and the kernel rendered `(float4){,,,}` -- plausible, compilable, wrong | live C vs `ClangRenderer` on 10 live kernels: 8 identical, 2 not |
+| `$String$split$` recurses **per character** (`langs/js/core.js:357`) | one call over ~28 KB answered `RangeError` -> "the machine stack overflowed"; a 1063-uop kernel is 31 KB | bisected: 900 lines / 24 KB decoded, 1500 / 40 KB did not; 100 LONG lines / 18.6 KB decoded while 200 / 37 KB did not, so the bound is CHARACTERS, not uops |
+| `bun --stack-size=8192` **is a no-op here** | a larger stack looked like the fix for the cliff | control: a trivial 60 000-frame recursion fails identically with and without the flag |
+
+The walk is TAIL-recursive and its accumulator is PREPENDED, because the runtime compiles a tail call to a
+`for(;;)` loop (`$List$reverse$go$`) while a non-tail one builds a frame per element (`$List$append$`).
+MEASURED: with one frame per uop, 900 lines decoded and 1500 did not, WHILE THE LITERAL PATH RENDERED 1500
+KUs FINE -- the ceiling was this walk and not the renderer.
+
+### 26.3 What it costs now
+
+`compile.py`, cold, distinct sizes per lane, every kernel compared byte-for-byte against `ClangRenderer`:
+
+| | per kernel |
+|---|---|
+| literal path (`render_many`, one build for all) | 348 ms |
+| literal path, one kernel per build | 3 727 ms |
+| **live path (`render_live`)** | **89.8 ms** |
+
+**41x cheaper than the one-build-per-kernel path that was shipping**, and 6/6 byte-identical.
+
+And END TO END, which is the number a person would ask for (`e2ecold.py`: a fresh process, a 5-kernel
+program -- matmul, conv2d, softmax, reduce, elementwise -- with a seed that shifts every shape so no content
+cache can answer):
+
+| seed | CPU cold wall | BEND cold wall | checksum |
+|---|---|---|---|
+| 4 | 1 137.8 ms | 1 385.0 ms | identical |
+| 5 | 513.9 ms | 900.5 ms | identical |
+| 6 | 491.7 ms | 909.9 ms | identical |
+| 7 | 483.2 ms | 903.4 ms | identical |
+
+**~83 ms per distinct kernel of port overhead, with the answers identical to the last digit.**
+
+### 26.4 WHERE THE 83 ms GOES, MEASURED -- AND THE CORRECTION TO WHAT THIS SECTION FIRST SAID
+
+This section first recorded the residual as "~40 ms of `bun` start-up", i.e. a daemon would remove it. That
+was TWO GUESSES IN ONE SENTENCE and both were wrong. Measured, on a real 405-uop kernel, with a decode-only
+probe (`.agents/slop/parity/decode_only.bend`, which imports the real `live.bend` and calls its real `walk`):
+
+| step | time |
+|---|---|
+| `bun` start-up floor (same artifact, a one-line wire) | **26.5 ms** |
+| decode only (start-up + parse of 405 uops, 13 KB in 2 chunks) | 36.6 ms |
+| decode + render (the live path) | 183.4 ms |
+| the SAME kernel through the LITERAL path | 173.1 ms |
+
+**So the live decoder adds ~10 ms over compiling the kernel in as a literal -- 1.06x -- and the other 173 ms
+is the PORT's OWN RENDERER.** `cstyle.bend` renders that kernel in 173 ms; tinygrad's `ClangRenderer`
+renders a kernel in **0.12-2.54 ms** (measured, `compile.py`). The render cost is ~-fixed + marginal, and the
+marginal part scales with the kernel:
+
+| uops | 44 | 46 | 68 | 219 | 405 |
+|---|---|---|---|---|---|
+| render ms | 61.1 | 93.4 | 86.3 | 115.5 | 190.9 |
+
+i.e. roughly **~46 ms fixed + ~0.35 ms/uop**, of which 26.5 ms is `bun` start-up and ~20 ms is loading the
+renderer's own JS.
+
+**WHAT THIS MEANS FOR "FASTEST", STATED PLAINLY:**
+
+1. A long-lived render process would remove the ~46 ms FIXED cost, not the 83 ms. It is not shipped: the
+   runtime has no stdin (there is no `read_line`/`process.stdin` anywhere in `langs/js` or the engine), so the
+   only route is `File.open` on a FIFO (`runtime/ops_bend.bend:2055` shows the primitives), and a blocking
+   read in the shipped compile path can HANG rather than fail. That trade is not obviously worth 46 ms.
+2. **The bigger number is the renderer itself.** 0.35 ms/uop against upstream's 0.13 ms per WHOLE KERNEL is
+   two to three orders of magnitude, and it is the port's own code, not the harness. It is now the named next
+   target, and it is a change to `cstyle.bend`, not to any instrument here.

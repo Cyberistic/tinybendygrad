@@ -230,8 +230,45 @@ def _arg(kind: str, payload: str) -> tuple[str, str]:
   return "none", "-"
 
 
+# ===========================================================================
+# THE OP TABLE IS TWO TABLES AND THE ENUM IS THEIR DENOMINATOR, SO THE COVERAGE IS COMPUTED AND NOT ASSUMED.
+#
+# `live.bend` maps a name to an `Op` with `P.op_of` (46 members, the ones the EXECUTOR ports) and then
+# `extra_op` (the rest). **AN UNKNOWN NAME FALLS TO A DEFAULT, WHICH IS A SILENT WRONG ANSWER** -- MEASURED
+# while building this: `PAD` and `MSELECT` defaulted and the kernel rendered `(float4){,,,}`, which compiled.
+# So the enum is READ OUT OF `uop/ops.bend` and the two tables OUT OF `live.bend`, and a member that neither
+# covers RAISES HERE instead of rendering. A new enum member therefore breaks the build, not the C.
+# ===========================================================================
+_OPS_SRC = ROOT / "tinybendygrad/uop/ops.bend"
+_EXEC_SRC = ROOT / "tinybendygrad/runtime/ops_python.bend"
+_LIVE_SRC = ROOT / "tinybendygrad/renderer/live.bend"
+
+
+def op_table_cover(enum_src: str, exec_src: str, live_src: str) -> tuple[list[str], list[str]]:
+  """(the enum's members, the members no table names). Text in, so a doctored copy can be measured."""
+  import re
+  body = enum_src[enum_src.index("type Op is Data:"):]
+  members = sorted(set(re.findall(r"^\s+(Ops[A-Z0-9_]+)\{\}", body, re.M)))
+  exec_of = exec_src[exec_src.index("def op_of(nm: String)"):]
+  exec_of = exec_of[:exec_of.index("\ndef ", 10)]
+  named = set(re.findall(r'case "([A-Z0-9_]+)":', exec_of))
+  extra = live_src[live_src.index("def extra_op("):]
+  extra = extra[:extra.index("def op_of(")]
+  named |= set(re.findall(r'case "([A-Z0-9_]+)": O\.Ops([A-Z0-9_]+)\{\}', extra) and
+               [a for a, _b in re.findall(r'case "([A-Z0-9_]+)": O\.Ops([A-Z0-9_]+)\{\}', extra)])
+  return [m[3:] for m in members], sorted(m[3:] for m in members if m[3:] not in named)
+
+
+def _check_op_tables() -> None:
+  members, missing = op_table_cover(_OPS_SRC.read_text(), _EXEC_SRC.read_text(), _LIVE_SRC.read_text())
+  if missing:
+    raise RuntimeError(f"portc: live.bend names {len(members) - len(missing)} of {len(members)} ops; "
+                       f"it would render these as a default: {missing}")
+
+
 def wire_rows(rs) -> str:
   """the RUNTIME wire: one line per uop, eight space-separated fields, every value a name or a decimal."""
+  _check_op_tables()
   lines = []
   for r in rs:
     _idx, op, dt, addr, shape, numel, srcs, kind, payload = r.split("|")
