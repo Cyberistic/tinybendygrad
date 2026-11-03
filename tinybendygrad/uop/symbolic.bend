@@ -3449,6 +3449,51 @@ def sym_292(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_292.pat(x, u), sym_292.c(sy_val(x, sy_src1(x, u)), x, u))
 
 
+# symbolic.py:318  an AFTER waits only on the EFFECT ops; any other dependency is replaced by
+# ITS OWN SRCS, and the result is deduped:
+#   x.replace(src=(x.src[0],)+tuple(dedup(flatten([(y,) if y.op in FENCE else y.src
+#                                                   for y in x.src[1:]]))))
+# so a plain value in the tail expands to what it depends on and a fence stays whole.
+def fence_op(op: O.Op) -> Bool:
+  match op:
+    case O.OpsRANGE{}   : True{}
+    case O.OpsSTORE{}   : True{}
+    case O.OpsCALL{}    : True{}
+    case O.OpsBARRIER{} : True{}
+    case O.OpsEND{}     : True{}
+    case O.OpsBACKEDGE{}: True{}
+    case O.OpsLINEAR{}  : True{}
+    case O.OpsSTAGE{}   : True{}
+    case _              : False{}
+
+def sym_318.part(+x: F.Folded, +y: U32) -> List<&2, U32>:
+  Bool.pick(List<&2, U32>, fence_op(sy_op(x, y)), [y], O.Arena.srcs(sy_ar(x), y))
+
+# `List.concat` takes a LIST OF LISTS, so two flat lists join one element at a time. `push` is
+# defined first because `gather` calls it -- the other order is mutual recursion, which Bend
+# refuses.
+def sym_318.push(ps: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ps:
+    case Nil{}: acc
+    case p <> t: sym_318.push(t, List.append(&2, U32, acc, [p]))
+
+def sym_318.gather(ys: List<&2, U32>, +x: F.Folded, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ys:
+    case Nil{}: acc
+    case y <> t: sym_318.gather(t, x, sym_318.push(sym_318.part(x, y), acc))
+
+def sym_318.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(sy_is_op(x, u, O.OpsAFTER{}), sy_nsrc_ge(x, u, 1))
+
+def sym_318.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +rest = O.Arena.srcs(sy_ar(x), u)
+  Some{mint_replace(mint_ar(sy_ar(x)), x, u,
+    List.append(&2, U32, [sy_src0(x, u)],
+      H.dedup_u32(sym_318.gather(List.tail(&2, U32, rest), x, Nil{}))))}
+
+def sym_318(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_318.pat(x, u), sym_318.mk(x, u))
+
 # symbolic.py:322  (UPat((Ops.AFTER, Ops.END), src=(UPat.var("s"),)), lambda s: s)
 # AN AFTER OR AN END WITH ONE SRC IS THAT SRC -- the node is a fence and a fence over nothing
 # is nothing. The answer is an index the arena already holds, so this stays in the index lane.
@@ -3924,12 +3969,13 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{91, [O.OpsFLOORDIV{}], Nil{}, },   # 305
     O.PMEntry{92, [O.OpsCAST{}], Nil{}, },   # 308
     O.PMEntry{93, [O.OpsCAST{}], Nil{}, },   # 316
-    O.PMEntry{94, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
-    O.PMEntry{95, [O.OpsEND{}], Nil{}, },   # 324
-    O.PMEntry{96, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{97, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{98, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{99, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{94, [O.OpsAFTER{}], Nil{}, },   # 318
+    O.PMEntry{95, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
+    O.PMEntry{96, [O.OpsEND{}], Nil{}, },   # 324
+    O.PMEntry{97, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{98, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{99, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{100, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3994,7 +4040,7 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 56: sym_197(x, u)
     case 57: sy_wself(x, u)
     case 90: sym_304(x, u)
-    case 94: sym_322(x, u)
+    case 95: sym_322(x, u)
     case _: None{}
 
 def sym_dispatch(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -4303,7 +4349,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 95, 96, 97, 98, 99]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 96, 97, 98, 99, 100]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4372,11 +4418,12 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 91: sym_305(x, u)
     case 92: sym_308(x, u)
     case 93: sym_316(x, u)
-    case 95: sym_324(x, u)
-    case 96: sym_462(x, u)
-    case 97: sym_463(x, u)
-    case 98: sym_464(x, u)
-    case 99: sym_444(x, u)
+    case 94: sym_318(x, u)
+    case 96: sym_324(x, u)
+    case 97: sym_462(x, u)
+    case 98: sym_463(x, u)
+    case 99: sym_464(x, u)
+    case 100: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
