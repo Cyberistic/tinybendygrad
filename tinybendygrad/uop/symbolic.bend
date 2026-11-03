@@ -3449,6 +3449,39 @@ def sym_292(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_292.pat(x, u), sym_292.c(sy_val(x, sy_src1(x, u)), x, u))
 
 
+# symbolic.py:322  (UPat((Ops.AFTER, Ops.END), src=(UPat.var("s"),)), lambda s: s)
+# AN AFTER OR AN END WITH ONE SRC IS THAT SRC -- the node is a fence and a fence over nothing
+# is nothing. The answer is an index the arena already holds, so this stays in the index lane.
+def sym_322.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(Bool.or(sy_is_op(x, u, O.OpsAFTER{}), sy_is_op(x, u, O.OpsEND{})), sy_nsrc_is(x, u, 1))
+
+def sym_322(+x: F.Folded, +u: U32) -> Maybe<&1, U32>: sy_tri_u(sym_322.pat(x, u), sy_src0(x, u))
+
+# symbolic.py:324  (UPat(Ops.END, name="x"),
+#                    lambda x: x.replace(src=(x.src[0],)+tuple(r for r in x.src[1:] if r.op is not Ops.CONST)))
+# A RANGE THAT WAS SUBBED FOR A CONST IS GONE FROM THE END's tail: the CONST is kept out and
+# everything else stays. `replace` MINTS, so this is a Found body.
+# ONE DEF AND NOT TWO: `step` and `keep` calling each other is MUTUAL RECURSION, which Bend
+# refuses outright -- the file header says so. `Bool.pick` over a `List<&2, U32>` is legal
+# because an unrestricted list is `Data` and not a linear `Type`.
+def sym_324.keep(ss: List<&2, U32>, +x: F.Folded, +acc: List<&2, U32>) -> List<&2, U32>:
+  match ss:
+    case Nil{}: acc
+    case +s <> t:
+      sym_324.keep(t, x, Bool.pick(List<&2, U32>, sy_is_op(x, s, O.OpsCONST{}), acc,
+        List.append(&2, U32, acc, [s])))
+
+def sym_324.pat(+x: F.Folded, +u: U32) -> Bool:
+  Bool.and(sy_is_op(x, u, O.OpsEND{}), sy_nsrc_ge(x, u, 1))
+
+def sym_324.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +rest = O.Arena.srcs(sy_ar(x), u)
+  Some{mint_replace(mint_ar(sy_ar(x)), x, u,
+    List.append(&2, U32, [sy_src0(x, u)], sym_324.keep(List.tail(&2, U32, rest), x, Nil{})))}
+
+def sym_324(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_324.pat(x, u), sym_324.mk(x, u))
+
 # symbolic.py:308  (UPat.var('x').cast(name="a").cast(name="b"),
 #                     lambda x,a,b: x.cast(b.dtype) if can_lossless_cast(x.dtype, a.dtype) else None)
 # IF THE INTERMEDIATE CAST DOES NOT NARROW, the pair is ONE cast to the outer dtype. `:186`
@@ -3891,10 +3924,12 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{91, [O.OpsFLOORDIV{}], Nil{}, },   # 305
     O.PMEntry{92, [O.OpsCAST{}], Nil{}, },   # 308
     O.PMEntry{93, [O.OpsCAST{}], Nil{}, },   # 316
-    O.PMEntry{94, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{95, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{96, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{97, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{94, [O.OpsAFTER{}, O.OpsEND{}], Nil{}, },   # 322
+    O.PMEntry{95, [O.OpsEND{}], Nil{}, },   # 324
+    O.PMEntry{96, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{97, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{98, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{99, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3959,6 +3994,7 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 56: sym_197(x, u)
     case 57: sy_wself(x, u)
     case 90: sym_304(x, u)
+    case 94: sym_322(x, u)
     case _: None{}
 
 def sym_dispatch(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -4267,7 +4303,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 95, 96, 97, 98, 99]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4336,10 +4372,11 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 91: sym_305(x, u)
     case 92: sym_308(x, u)
     case 93: sym_316(x, u)
-    case 94: sym_462(x, u)
-    case 95: sym_463(x, u)
-    case 96: sym_464(x, u)
-    case 97: sym_444(x, u)
+    case 95: sym_324(x, u)
+    case 96: sym_462(x, u)
+    case 97: sym_463(x, u)
+    case 98: sym_464(x, u)
+    case 99: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
@@ -5763,6 +5800,11 @@ def fz_op(nm: String) -> O.Op:
     case "floordiv": O.OpsFLOORDIV{}
     case "floormod": O.OpsFLOORMOD{}
     case "range": O.OpsRANGE{}
+    case "after": O.OpsAFTER{}
+    case "end": O.OpsEND{}
+    case "barrier": O.OpsBARRIER{}
+    case "reduce": O.OpsREDUCE{}
+    case "param": O.OpsPARAM{}
     case "mulacc": O.OpsMULACC{}
     # TODO(p2): AN UNKNOWN OP NAME IS A SILENT NOOP, so a misspelt fixture builds the wrong
     # graph and reports `norewrite`. Reproduced 2026-11-03 on `(range c8)`, which the reader
