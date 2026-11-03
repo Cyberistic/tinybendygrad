@@ -217,3 +217,55 @@ ANSWER (`mul x c0`) rather than a crash.
 **134 PORTED / 7 MISSING**, and every one of the 18 that moved was measured against CPython on
 both sides: `:302`, `weak.py:89`, the nine `movement.py` rows, `:469`, `:171`, `:465`, `:466`,
 `:467`, `:309` (with `UOp.overflows` WRITTEN), `:312`, `:299`.
+
+## 2026-11-03 (final, 3): 136 of 141, and two wall-list corrections
+
+`gates/symrules-cases.rows`: **226** graphs, **226 of 226 agree**. `symrules-gate` rc=0:
+**135 entries, 135 mapped, 0 broken, 0 unresolved** (census now reads 136 PORTED, since `:193` and
+`UOp.const_factor` landed after the last row write). `symclosure-gate` PASS: **133 rows,
+102 mint arms**. `PROOF-ALL`: `ALL PROOFS CHECK`.
+
+### `UOp.const_factor` is WRITTEN, and the TODO that called it impossible was measuring the wrong spelling
+
+`ops.bend` carried a probe claiming Bend could not express it -- the def and its fold are mutually
+recursive. True of the obvious spelling; the ARMS say the recursion is unnecessary: a STACK/ADD
+node contributes the gcd IDENTITY and every other node is a LEAF, so the answer is a `gcd` over the
+LOCAL values of the nodes reachable through STACK/ADD edges only, and `cf.walk` is a FUEL-bounded
+worklist in ONE def. Two things are only right in one spelling, and the probe caught both:
+
+- a STACK/ADD must contribute **0, not 1** (`gcd(0,x)` is `x`; `gcd(1,x)` is 1) -- `add_m6_m4`
+  answered 1 for want of that arm, and the answer is `gcd(6,4)` = 2;
+- the **root is separate**: `const_factor` answers `self.val` for a CONST and that can be NEGATIVE,
+  while `math.gcd` is non-negative. Folding the root in would answer 3 for `CONST(-3)`.
+
+MEASURED nine shapes against CPython, identical on both sides: `const6` 6, `const_neg3` -3,
+`param_mo4` 4, `mul_x_c6` 6, `mul_c6_x` 6, `mul_x_y` 1, `add_m6_m4` 2, `stack_m6_m9` 3,
+`add_x_y` 1. The probe is `.agents/slop/sym92/probe-cf.bend`.
+
+### `:193` landed, and the wall list was wrong about it
+
+The report said "an int -> F32 conversion does not exist". It does: **`U32.to_f32`**, a Bend
+builtin, used by `tx_pintf` two files away. `f32_of` answers 0.0 for a `CInt` -- that is a CONST
+reader, not a conversion, and it is what the wall list was reading. Both const classes are handled,
+because `UPat.cvar` matches a VALUE and a float const is one.
+
+### `:451` is REACHABLE, and that changes what is left of it
+
+Measured with `sym.rewrite` on three shapes:
+
+| shape | answered by |
+|---|---|
+| `float ** float` | `:451`'s **`xpow`** arm -- a `WHERE`-rooted transcendental expansion, and `xpow` IS ported |
+| `i32 ** i32` | `:451`'s **`xpow_int`** arm -- the answer's root is `BITCAST`, which is `xpow_int`'s last step |
+| `int ** const(3)` | an EARLIER rule (`MUL(MUL(POW(x,c1), POW(x,c1)), x)`), which is why the const-exponent shape is not a `:451` witness |
+
+So `:451` needs `xpow_int` and not `xpow`: cast, bitcast to the UNSIGNED twin, a Nat loop over
+`bit_length(max(hi,0))` exponent bits with `(ret*sq) & udt.max`, a bitcast back, and a
+negative-exponent tail. The mask const is `2**bits - 1` and for a u64 that value does not fit an
+`I64`, which is a byte-identity trap for the 64-bit dtypes only.
+
+### What is left
+
+`:252` (dead upstream), `:259` + `:436` + `:437` (`bool_slice` + `substitute` + `uop_given_valid`),
+`divandmod.py:108` (`UOp.divides`, which needs the TAGGED-WORK-ITEM form because its STACK arm
+rebuilds rather than collects, plus ~7 arms of `fold_divmod_general`), and `:451`'s `xpow_int`.
