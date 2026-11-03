@@ -3410,6 +3410,45 @@ def sym_253.mk(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 def sym_253(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   sy_tri_f(sym_253.pat(x, u), sym_253.mk(x, u))
 
+# symbolic.py:292  ((UPat.var("x", dtype=dtypes.weakint)//UPat.cvar("d"))<UPat.cvar("c"),
+#                    lambda x,d,c: (x<c.val*d.val) if d.val > 0 else (x>c.val*d.val) if d.val < 0 else None)
+# A DIVISION MOVES ACROSS THE COMPARISON AS A MULTIPLICATION, and the SIGN of the divisor says
+# which way it points. `c.val*d.val` is TWO PYTHON INTS multiplied, so the product is ONE const
+# node and not a MUL: CPython answers `(cmplt x c36)`.
+def sym_292.put(m: Maybe<&1, O.Found>, neg: Bool, +d: U32) -> Maybe<&1, O.Found>:
+  match m:
+    case Some{+f}:
+      match neg:
+        case True{} : Some{mint_bin(f, O.OpsCMPLT{}, O.Found.i(f), d)}
+        case False{}: Some{mint_bin(f, O.OpsCMPLT{}, d, O.Found.i(f))}
+    case None{}: None{}
+
+def sym_292.emit(v: H.I64, neg: Bool, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  +d = sy_src0(x, sy_src0(x, u))
+  sym_292.put(mint_const_like(mint_ar(sy_ar(x)), x, d, O.CInt{v}), neg, d)
+
+def sym_292.d(ma: Maybe<&2, O.Const>, +j: H.I64, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match ma:
+    case Some{O.CInt{i}}: sym_292.emit(H.i64_mul(i, j), H.i64_is_neg(j), x, u)
+    case _: None{}
+
+def sym_292.c(mb: Maybe<&2, O.Const>, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  match mb:
+    case Some{O.CInt{j}}: sym_292.d(sy_val(x, sy_src1(x, sy_src0(x, u))), j, x, u)
+    case _: None{}
+
+def sym_292.pat(+x: F.Folded, +u: U32) -> Bool:
+  +i = sy_src0(x, u)
+  +d = sy_src1(x, i)
+  Bool.and(Bool.and(sy_is_op(x, u, O.OpsCMPLT{}), sy_nsrc_is(x, u, 2)),
+    Bool.and(sy_is_cint(sy_val(x, sy_src1(x, u))),
+      Bool.and(Bool.and(sy_is_op(x, i, O.OpsFLOORDIV{}), sy_nsrc_is(x, i, 2)),
+        Bool.and(sy_is_cint(sy_val(x, d)), Bool.not(p_is_const_0(x, d))))))
+
+def sym_292(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
+  sy_tri_f(sym_292.pat(x, u), sym_292.c(sy_val(x, sy_src1(x, u)), x, u))
+
+
 # symbolic.py:308  (UPat.var('x').cast(name="a").cast(name="b"),
 #                     lambda x,a,b: x.cast(b.dtype) if can_lossless_cast(x.dtype, a.dtype) else None)
 # IF THE INTERMEDIATE CAST DOES NOT NARROW, the pair is ONE cast to the outer dtype. `:186`
@@ -3844,17 +3883,18 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{83, [O.OpsMUL{}], Nil{}, },   # 284
     O.PMEntry{84, [O.OpsFLOORDIV{}], Nil{}, },   # 287
     O.PMEntry{85, [O.OpsCMPLT{}], Nil{}, },   # 290
-    O.PMEntry{86, [O.OpsADD{}], Nil{}, },   # 295
-    O.PMEntry{87, [O.OpsMUL{}], Nil{}, },   # 296
-    O.PMEntry{88, [O.OpsCMPLT{}], Nil{}, },   # 300
-    O.PMEntry{89, [O.OpsFLOORMOD{}], Nil{}, },   # 304
-    O.PMEntry{90, [O.OpsFLOORDIV{}], Nil{}, },   # 305
-    O.PMEntry{91, [O.OpsCAST{}], Nil{}, },   # 308
-    O.PMEntry{92, [O.OpsCAST{}], Nil{}, },   # 316
-    O.PMEntry{93, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
-    O.PMEntry{94, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
-    O.PMEntry{95, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
-    O.PMEntry{96, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
+    O.PMEntry{86, [O.OpsCMPLT{}], Nil{}, },   # 292
+    O.PMEntry{87, [O.OpsADD{}], Nil{}, },   # 295
+    O.PMEntry{88, [O.OpsMUL{}], Nil{}, },   # 296
+    O.PMEntry{89, [O.OpsCMPLT{}], Nil{}, },   # 300
+    O.PMEntry{90, [O.OpsFLOORMOD{}], Nil{}, },   # 304
+    O.PMEntry{91, [O.OpsFLOORDIV{}], Nil{}, },   # 305
+    O.PMEntry{92, [O.OpsCAST{}], Nil{}, },   # 308
+    O.PMEntry{93, [O.OpsCAST{}], Nil{}, },   # 316
+    O.PMEntry{94, [O.OpsRECIPROCAL{}],              Nil{},                           },   # 462
+    O.PMEntry{95, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 463
+    O.PMEntry{96, [O.OpsRECIPROCAL{}],              [O.OpsMUL{}],                    },   # 464
+    O.PMEntry{97, [O.OpsSINK{}],                    Nil{},                           }]}   # 444
 
 # `pm_remove_invalid` is a SEPARATE MATCHER in Python -- `codegen/__init__.py:367`
 # uses it ALONE and it is never composed into `sym` -- so it gets its own tag space
@@ -3918,7 +3958,7 @@ def sym_dispatch.go(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
     case 55: sym_196(x, u)
     case 56: sym_197(x, u)
     case 57: sy_wself(x, u)
-    case 89: sym_304(x, u)
+    case 90: sym_304(x, u)
     case _: None{}
 
 def sym_dispatch(tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, U32>:
@@ -4227,7 +4267,7 @@ def sym_90(+x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
 
 # THE TAGS WITH A MINTING BODY. A LIST and not a predicate, because the dispatch below is a
 # `match` on the tag and the list is what says which tags it must have an arm for.
-def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93, 94, 95, 96]
+def MINT_TAGS() -> List<&2, U32>: [2, 3, 4, 6, 8, 9, 10, 11, 17, 19, 28, 29, 31, 32, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97]
 
 def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
   match tag:
@@ -4289,16 +4329,17 @@ def sym_mint_f(+tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
     case 83: sym_284(x, u)
     case 84: sym_287(x, u)
     case 85: sym_290(x, u)
-    case 86: sym_295(x, u)
-    case 87: sym_296(x, u)
-    case 88: sym_300(x, u)
-    case 90: sym_305(x, u)
-    case 91: sym_308(x, u)
-    case 92: sym_316(x, u)
-    case 93: sym_462(x, u)
-    case 94: sym_463(x, u)
-    case 95: sym_464(x, u)
-    case 96: sym_444(x, u)
+    case 86: sym_292(x, u)
+    case 87: sym_295(x, u)
+    case 88: sym_296(x, u)
+    case 89: sym_300(x, u)
+    case 91: sym_305(x, u)
+    case 92: sym_308(x, u)
+    case 93: sym_316(x, u)
+    case 94: sym_462(x, u)
+    case 95: sym_463(x, u)
+    case 96: sym_464(x, u)
+    case 97: sym_444(x, u)
     case _ : None{}
 
 def sym_dispatch_f.pick(mint: Bool, +tag: U32, +x: F.Folded, +u: U32) -> Maybe<&1, O.Found>:
