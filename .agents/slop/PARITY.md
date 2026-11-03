@@ -501,3 +501,39 @@ REGEX from `unicodedata.category` ranges (`ucat_range`, compacted with `itertool
 it with `re`; `encode` is `findall` plus a greedy BPE merge. Bend has no regex engine and no Unicode
 category table. `decode` and `is_end` WOULD port cheaply (`b''.join(self._tok2bytes[tid])` and a
 membership test) and are the next slice — `render` comes with them, since it needs `decode`.
+
+## 18. `llm/serve.bend`: THE STREAMING STATE MACHINE IS PORTED AND GATED
+
+| piece of `serve.py` | state |
+|---|---|
+| `StreamRouter` (43-70) | **PORTED AND GATED** — `gates/llm_serve_router-gate.py` |
+| `parse_tool_call` (10-30) | not portable: two `re` patterns + `json.loads` — the same language gap as `SimpleTokenizer.encode` |
+| `normalize_messages` (32-41) | not ported: mutates a caller's dicts; ports with a JSON/message layer |
+| `Handler` / `LLMServer` (71-176) | not ported: `http.server`, `uuid`, `time`, `model.Transformer` |
+
+```
+rows  16 port / 16 upstream, 0 differ
+llm_serve_router: PASS -- every delta and the final (mode, buf) match upstream on 6 sequences
+```
+
+Six sequences reach each branch: a stream whose `<think>` tag is SPLIT across pieces, plain content, a
+`<tool_call>`, `reasoning=True` with no think block, a PARTIAL tag that must be HELD rather than emitted,
+and two empty pieces. **AND IT GOES RED:** forcing `Router.hold` to `0n` makes the gate exit **1** with
+`row 4: port='reason/R\tlo' upstream='reason/C\tlo'` — the port would flush the reasoning text as
+content instead of switching modes. Clean: exit 0.
+
+**THE PORT IS PURE, AND THAT IS A REPRESENTATION CHANGE THE GATE PROVES IS NOT A BEHAVIOUR CHANGE.**
+`route` returns the new `Router` and the deltas instead of mutating and yielding, because Bend has no
+mutable cell. Writing it that way needed four things this session measured, each of which cost a compile
+cycle and is now recorded in the file: a self-call must DECREASE a LEADING argument (so the search loops
+carry `fuel`); a def may not use a later def (so the pipeline is written bottom-up: content, reason,
+decide, dispatch); two defs may not call each other (so the fold is ONE recursive def, not `run` +
+`run.last`); and `match` cannot scrutinize a computed value or a binder that follows a local statement,
+so each such site becomes a `.by` def.
+
+**THE CORPUS CERTIFICATE IS OWED AGAIN, AND FOR THE REASON §16 NAMES.** A re-run on this tree read
+`substrate-start=65ac57cd...` and `substrate-end=70925b14...` with `graphs-agree=38`: **ANOTHER UNIT
+COMMITTED `e9122b3dd` MID-RUN**, so the tree moved under the instrument. `start != end`, therefore not a
+certificate, and it is recorded rather than quoted. The digest is of the WORKING TREE, so landing this
+commit does not change it: the certificate is owed to the next quiet window, and the rule remains
+`start == end == live`.
