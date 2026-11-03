@@ -1664,3 +1664,59 @@ only lever left is to EMIT FEWER, LARGER PIECES -- a semantic rewrite of every `
 
 **A NEGATIVE RESULT IS A RESULT**: the last section's guess about where to push now has a measurement against
 it, and the number a rewrite would have to beat is 24.3 ms per 405-uop kernel, of which ~7 ms is fixed.
+
+## 38. THE CAST LINE PAID FOR ITS CONDITIONAL TWICE
+
+§37 established that the render's cost is spread, so this section read the CALL TREE for the renderer's own
+functions rather than the leaf list, and the top of it is:
+
+| total% | function |
+|---|---|
+| 17.5% | `cstyle_ku_text` |
+| 17.4 / 14.9% | `cstyle__render_named` |
+| 15.1% | `cstyle__render_emit` |
+| 8.1% | `cstyle__render_stmt` |
+| 7.4% | `cstyle_ku_text_cast` |
+| 6.9% | `cstyle_ku_const_cast` |
+| 6.1% | `cstyle_ku_const_cast2` |
+
+`ku_text` and `_render_named`/`_render_emit` are the spine -- `_render.named` computes a name and calls
+`ku_text` once -- and there is no redundancy in them. **BUT THE THREE CAST ENTRIES ARE ONE PATH, ~20%
+TOGETHER, AND THEY HELD A DUPLICATE:**
+
+```bend
+def ku_text_cast(...) -> String:      # the CAST arm of ku_text_go
+  Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
+    ku_const_cast(dev, k, kus, r), ku_cast_generic(dev, k, r))
+
+def ku_const_cast(...) -> String:     # called BY ku_text_cast, with the SAME test
+  Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
+    ku_const_cast2(dev, k, kus, r), ku_cast_generic(dev, k, r))
+```
+
+The two defs are the same conditional. `Bool.pick` is STRICT, so a CAST line evaluated `ku_is_const_at`
+twice and **both arms twice** -- `ku_const_cast2` and `ku_cast_generic` each ran twice and one of each was
+discarded. It is the §33/§34 defect in its third form: not a table lookup and not a fold, but the same
+question asked twice because one def wrapped another.
+
+`ku_text_cast` now delegates: one call, one test, one arm.
+
+### 38.1 Measured
+
+12 interleaved rounds, order alternated, 405-uop wire:
+
+```
+before (dup cast)  min 49.8  p25 50.7  median 51.1 ms
+after  (one call)  min 50.3  p25 50.5  median 50.8 ms
+ratio new/old  min 0.8075  p25 0.9835  median 0.9888  max 1.0205
+rounds where the new artifact is faster: 8 of 12
+```
+
+**~1%, AND THAT IS THE HONEST SIZE**: the dedup is PROVABLE (byte-identical, `ksweep 37 of 37` on both
+decoders), but this fixture's kernel is a reduce/shape kernel and CAST lines are a minority of it, so the
+removed work is a minority of the render here. The 20% figure above is the SHARE OF PROFILED SAMPLES ACROSS
+ALL FUNCTIONS IN THE CAST PATH, not the share of any one kernel's lines.
+
+**KEPT, NOT REVERTED**, on the rule that the measurement must decide: 8 of 12 and a median under 1.0 with a
+provable dedup behind it. §37's `concat` -> `join` was 5 of 12 and 1.0021 and was reverted; this is the
+other side of the same line.

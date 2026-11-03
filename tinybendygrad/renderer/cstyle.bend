@@ -2263,9 +2263,13 @@ def ku_text_range(dev: U32, +i: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, St
     String.concat(["for (", render_dtype(dev, KU.dtype(k), 1, S.Aalu{}, True{}, False{}, False{}), " ",
       rt(r, i), " = 0; ", rt(r, i), " < ", rt(r, KU.src0(k)), "; ", rt(r, i), "++) {"]))
 
+# **THIS WAS A DUPLICATE OF `ku_const_cast`, AND `Bool.pick` BEING STRICT MADE IT PAY TWICE.** The two defs
+# held the SAME conditional -- `Bool.pick(ku_is_const_at(src0), const-path, generic-path)` -- and the CAST arm
+# of `ku_text_go` called the outer one, which called the inner one, so a CAST line evaluated
+# `ku_is_const_at` twice and BOTH arms twice: `ku_const_cast2` and `ku_cast_generic` each ran twice and one of
+# each was thrown away. MEASURED in `PARITY.md` §38. One call, byte-identical.
 def ku_text_cast(+dev: U32, +k: KU, +kus: List<&2, KU>, +r: List<&2, String>) -> String:
-  Bool.pick(String, ku_is_const_at(kus, KU.src0(k)),
-    ku_const_cast(dev, k, kus, r), ku_cast_generic(dev, k, r))
+  ku_const_cast(dev, k, kus, r)
 
 # ===========================================================================
 # `BITCAST` -- cstyle.py:41-43 (the BASE's two rules), :338 (OpenCL `as_<dt>`), :386
